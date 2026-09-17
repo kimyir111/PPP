@@ -1929,6 +1929,7 @@ function parseMusicXML(xmlText, name) {
   const order = [];           /* measure numbers, in document order */
   let staffBase = 0;          /* so a second single-staff part becomes the left hand */
   let maxStaffSeen = 0;
+  const partSpan = [];        /* {base, count} per part, to find the piano among them */
 
   parts.forEach((part, partIdx) => {
     let divisions = 1;
@@ -2059,14 +2060,26 @@ function parseMusicXML(xmlText, name) {
       }
     });
 
+    partSpan[partIdx] = { base: staffBase, count: Math.max(partStaves, 1) };
     staffBase += Math.max(partStaves, 1);
   });
 
   if (!order.length) throw new Error(tx('This MusicXML file contains no measures.'));
 
-  /* Staff 1 is the right hand, anything below it the left. A two-part score
-     (one staff each) resolves the same way because of staffBase. */
-  notes.forEach(n => { n.hand = n.staff <= 1 ? 'r' : 'l'; });
+  /* A vocal line above a piano part is not a hand. The piano is the part with
+     two staves — or, failing that, the last part, which is where a piano
+     reduction sits in almost every published arrangement. Its upper staff is
+     the right hand and its lower the left; every other part is shown but not
+     played, so it neither sounds nor counts against you. */
+  let pianoPart = partSpan.findIndex(sp => sp && sp.count >= 2);
+  if (pianoPart < 0) pianoPart = partSpan.length - 1;
+  const piano = partSpan[pianoPart] || { base: 0, count: 2 };
+  notes.forEach(n => {
+    const off = (n.staff || 1) - piano.base;
+    n.hand = (off < 1 || off > piano.count) ? 'x' : (off === 1 ? 'r' : 'l');
+  });
+  /* a single-part, single-staff score is still something you play */
+  if (!notes.some(n => n.hand !== 'x')) notes.forEach(n => { n.hand = n.staff <= 1 ? 'r' : 'l'; });
 
   const measures = order.map(no => measureInfo[no]);
   const sounding = notes.filter(n => !n.rest);
@@ -2077,7 +2090,7 @@ function parseMusicXML(xmlText, name) {
     title, composer: composer || 'Unknown',
     source: name || 'MusicXML',
     tempo: Math.round(tempo || 84),
-    staves: Math.max(1, Math.min(maxStaffSeen, 2)),
+    staves: Math.max(1, Math.min(maxStaffSeen, 4)),
     measures, notes, chords: chords, sections: null, seeds: null
   });
 }
@@ -2419,6 +2432,7 @@ class PerformanceEngine {
   }
 
   _handOk(n, hands) {
+    if (n.hand === 'x') return false;   /* a cue staff is read, not played */
     return !hands || hands === 'both' || (hands === 'right' ? n.hand === 'r' : n.hand === 'l');
   }
 
@@ -4535,7 +4549,7 @@ function makeScoreView(React) {
       const p = this.props;
       return [
         p.score.id, p.startM, p.count, p.grand !== false, p.numbers !== false,
-        p.clefs !== false, !!p.guidance, p.theme, p.mW, p.zoom, p.fluid, p.perRow || 0, p.paper !== false, p.chords !== false, (p.weak || []).join(','), p.notesKey || ''
+        p.clefs !== false, !!p.guidance, p.theme, p.mW, p.zoom, p.fluid, p.perRow || 0, p.paper !== false, p.chords !== false, p.staves || 0, (p.weak || []).join(','), p.notesKey || ''
       ].join('|');
     }
 
@@ -4596,6 +4610,13 @@ function makeScoreView(React) {
 
       /* Chord symbols sit above the top staff, so the system starts lower when
          there are any to print. */
+      /* which staff the piano's right hand is on, so the brace goes round the
+         right pair when a melody line sits above it */
+      const pianoTop = (() => {
+        const rh = (score.notes || []).filter(n => n.hand === 'r')[0];
+        return rh ? Math.max(0, (rh.staff || 1) - 1) : 0;
+      })();
+
       const chordsFor = {};
       let anyChord = false;
       if (p.chords !== false) {
@@ -4605,8 +4626,14 @@ function makeScoreView(React) {
       const CHORD_H = anyChord ? 22 : 0;
 
       const LEAD = (p.clefs !== false) ? 62 : 12;
-      const TREBLE_Y = 12 + CHORD_H, BASS_Y = 104 + CHORD_H;
-      const SYS_H = (grand ? 196 : 104) + CHORD_H;
+      /* A vocal line over a piano part is three staves, not two. The system is
+         however many the score has, stacked, rather than a hardcoded pair. */
+      const nStaves = grand ? Math.max(2, Math.min(4, p.staves || score.staves || 2)) : 1;
+      const STAFF_GAP = 92;
+      const TOP_Y = 12 + CHORD_H;
+      const staffY = k => TOP_Y + k * STAFF_GAP;
+      const TREBLE_Y = TOP_Y, BASS_Y = staffY(1);
+      const SYS_H = TOP_Y + (nStaves - 1) * STAFF_GAP + 84;
       /* A whole piece will not fit on one line, and a fixed number of bars per
          line is not how music is set. A bar of sixteen notes needs more room
          than a bar of two, so each one is measured by what is in it, bars are
@@ -4673,33 +4700,32 @@ function makeScoreView(React) {
         const rowTop = it.row * ROW_H;
         x = col === 0 ? 10 : it.x;
         const w = (col === 0 ? LEAD : 0) + it.w;
-        const treble = new VF.Stave(x, TREBLE_Y + rowTop, w, { spacing_between_lines_px: 10 });
-        const bass = grand ? new VF.Stave(x, BASS_Y + rowTop, w, { spacing_between_lines_px: 10 }) : null;
-        /* The stave lines are stroked in --staff; the clef, key and time
-           signature are filled glyphs and take the fill style, which is why
-           they came out pure black and vanished on a dark background. */
-        treble.setStyle({ strokeStyle: staffCol, fillStyle: ink, lineWidth: 1 });
-        if (bass) bass.setStyle({ strokeStyle: staffCol, fillStyle: ink, lineWidth: 1 });
-
-        if (col === 0 && p.clefs !== false) {
-          treble.addClef(mm.clefs[1] || 'treble');
-          if (bass) bass.addClef(mm.clefs[2] || 'bass');
-          const ks = vexKeySig(mm.key.fifths, mm.key.mode);
-          if (mm.key.fifths) {
-            treble.addKeySignature(ks);
-            if (bass) bass.addKeySignature(ks);
+        const ks = vexKeySig(mm.key.fifths, mm.key.mode);
+        const staves = [];
+        for (let k = 0; k < nStaves; k++) {
+          const st = new VF.Stave(x, staffY(k) + rowTop, w, { spacing_between_lines_px: 10 });
+          /* The stave lines are stroked in --staff; the clef, key and time
+             signature are filled glyphs and take the fill style, which is why
+             they came out pure black and vanished on a dark background. */
+          st.setStyle({ strokeStyle: staffCol, fillStyle: ink, lineWidth: 1 });
+          if (col === 0 && p.clefs !== false) {
+            st.addClef(mm.clefs[k + 1] || (k === 0 ? 'treble' : 'bass'));
+            if (mm.key.fifths) st.addKeySignature(ks);
+            st.addTimeSignature(mm.time.beats + '/' + mm.time.beatType);
           }
-          treble.addTimeSignature(mm.time.beats + '/' + mm.time.beatType);
-          if (bass) bass.addTimeSignature(mm.time.beats + '/' + mm.time.beatType);
+          st.setContext(ctx).draw();
+          staves.push(st);
         }
-
-        treble.setContext(ctx).draw();
-        if (bass) bass.setContext(ctx).draw();
+        const treble = staves[0], bass = staves[1] || null;
 
         /* every system carries the brace, not only the first one */
-        if (col === 0 && grand && p.clefs !== false) {
-          new VF.StaveConnector(treble, bass).setType(VF.StaveConnector.type.BRACE).setContext(ctx).draw();
-          new VF.StaveConnector(treble, bass).setType(VF.StaveConnector.type.SINGLE_LEFT).setContext(ctx).draw();
+        if (col === 0 && nStaves > 1 && p.clefs !== false) {
+          /* the brace belongs to the piano's pair; anything above it is a
+             separate line and gets only the bracket down the left edge */
+          const lo = staves[pianoTop], hi = staves[Math.min(pianoTop + 1, nStaves - 1)];
+          if (lo && hi && lo !== hi)
+            new VF.StaveConnector(lo, hi).setType(VF.StaveConnector.type.BRACE).setContext(ctx).draw();
+          new VF.StaveConnector(staves[0], staves[nStaves - 1]).setType(VF.StaveConnector.type.SINGLE_LEFT).setContext(ctx).draw();
         }
 
         /* Build one VexFlow voice per (staff, voice) so real two-voice piano
@@ -4719,8 +4745,8 @@ function makeScoreView(React) {
             built.push(built1);
           });
         };
-        mkVoices(1, treble, mm.clefs[1] || 'treble');
-        if (grand) mkVoices(2, bass, mm.clefs[2] || 'bass');
+        for (let k = 0; k < nStaves; k++)
+          mkVoices(k + 1, staves[k], mm.clefs[k + 1] || (k === 0 ? 'treble' : 'bass'));
 
         if (built.length) {
           const voices = built.map(b => b.voice);
@@ -4728,10 +4754,10 @@ function makeScoreView(React) {
           /* Align the hands on a shared tick grid; if the file's voices do not
              agree on measure length, fall back to formatting them loosely. */
           try {
-            const treb = built.filter(b => b.staffNo === 1).map(b => b.voice);
-            const bas = built.filter(b => b.staffNo === 2).map(b => b.voice);
-            if (treb.length > 1) fmt.joinVoices(treb);
-            if (bas.length > 1) fmt.joinVoices(bas);
+            for (let k = 1; k <= nStaves; k++) {
+              const grp = built.filter(b => b.staffNo === k).map(b => b.voice);
+              if (grp.length > 1) fmt.joinVoices(grp);
+            }
           } catch (e) { /* ragged voices — tick alignment below still applies */ }
           /* Spread the notes across the space that is actually left after the
              clef, key and time signature, rather than a fixed guess. */
@@ -6155,7 +6181,10 @@ class Component extends DCLogic {
     if (!this._rangeCache[key]) this._rangeCache[key] = Score.notesIn(sc, from, to);
     return this._rangeCache[key];
   }
-  handOk(n, hands) { return !hands || hands === 'both' || (hands === 'right' ? n.hand === 'r' : n.hand === 'l'); }
+  handOk(n, hands) {
+    if (n.hand === 'x') return false;   /* a cue staff is read, not played */
+    return !hands || hands === 'both' || (hands === 'right' ? n.hand === 'r' : n.hand === 'l');
+  }
 
   /* ============================ transport ============================ */
   range(S) {
@@ -6649,6 +6678,7 @@ class Component extends DCLogic {
     if (!this._SV) this._SV = makeScoreView(React);
     return h(this._SV, Object.assign({
       score: this.state.score, theme: this.state.theme,
+      staves: this.state.score.staves,
       paper: this.state.toggles.paper !== false
     }, props));
   }
