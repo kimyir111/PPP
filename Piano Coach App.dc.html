@@ -4560,8 +4560,11 @@ function makeScoreView(React) {
         const w = (col === 0 ? LEAD : 0) + mW;
         const treble = new VF.Stave(x, TREBLE_Y + rowTop, w, { spacing_between_lines_px: 10 });
         const bass = grand ? new VF.Stave(x, BASS_Y + rowTop, w, { spacing_between_lines_px: 10 }) : null;
-        treble.setStyle({ strokeStyle: staffCol, lineWidth: 1 });
-        if (bass) bass.setStyle({ strokeStyle: staffCol, lineWidth: 1 });
+        /* The stave lines are stroked in --staff; the clef, key and time
+           signature are filled glyphs and take the fill style, which is why
+           they came out pure black and vanished on a dark background. */
+        treble.setStyle({ strokeStyle: staffCol, fillStyle: ink, lineWidth: 1 });
+        if (bass) bass.setStyle({ strokeStyle: staffCol, fillStyle: ink, lineWidth: 1 });
 
         if (col === 0 && p.clefs !== false) {
           treble.addClef(mm.clefs[1] || 'treble');
@@ -4687,6 +4690,15 @@ function makeScoreView(React) {
       this._noteEls = allNoteMeta;
 
       const svg = ctx.svg;
+      /* Nothing on a page of music is meant to be a colour the theme did not
+         choose. Pure black is VexFlow's default, not a decision. */
+      try {
+        svg.querySelectorAll('[fill="#000000"],[fill="black"],[fill="rgb(0, 0, 0)"]')
+          .forEach(e => e.setAttribute('fill', ink));
+        svg.querySelectorAll('[stroke="#000000"],[stroke="black"],[stroke="rgb(0, 0, 0)"]')
+          .forEach(e => e.setAttribute('stroke', ink));
+      } catch (e) { /* styling is not worth failing an engraving over */ }
+
       /* Ledger lines, high notes and the guidance letters all sit outside the
          nominal stave box, so fit the viewBox to what was actually drawn
          instead of cropping it. */
@@ -7312,7 +7324,10 @@ class Component extends DCLogic {
         pick: n => this.pickMeasure(n),
         mW: S.wholeScore ? 168 : 210, zoom: S.wholeScore ? 1 : S.zoom, currentM: cur,
         playX: S.beat, beat: S.beat, hands: S.hands, wrong: S.wrongNotes,
-        guidance: S.guidance && S.practiceMode === 'practice',
+        /* A letter under every note helps while reading four bars closely and
+           is five hundred letters of noise across a whole piece, which is not
+           what you are looking at the whole piece for. */
+        guidance: S.guidance && S.practiceMode === 'practice' && !S.wholeScore,
         hidePlan: S.practiceMode === 'memory' ? memPlan : null,
         loopFrom: S.loop ? S.loopFrom : null, loopTo: S.loop ? S.loopTo : null,
         grand: score.staves > 1
