@@ -685,6 +685,9 @@
     "chord-heavy": "和弦多",
     "wide hand jumps": "较大的手部跳进",
     "many accidentals": "临时记号多",
-    "multiple voices": "多个声部"
+    "multiple voices": "多个声部",
+    "{{n}} measures": "{{n}} 小节",
+    "Take it slowly": "放慢",
+    "“{{reason}} — drop the tempo until it is clean.”": "“{{reason}} — 降到干净为止。”"
   }
 }

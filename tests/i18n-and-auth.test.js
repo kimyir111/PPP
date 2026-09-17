@@ -96,13 +96,44 @@ const ok = (name, cond, detail) => {
       staves: score.staves
     });
     const body = (document.body.innerText || '');
-    return { quizWant, quizGot, parsedWant, parsedHit: body.indexOf(parsedWant) > -1 };
+    const first = score.sections[3] || score.sections[0];
+    click(I.tx('Practice'));
+    await new Promise(r => setTimeout(r, 400));
+    const focusWant = I.tx('“Let’s focus on Measures {{from}}–{{to}}.”', { from: first.from, to: first.to });
+    const focusHit = (document.body.innerText || '').indexOf(focusWant) > -1;
+    click(I.tx('Measure Loop'));
+    await new Promise(r => setTimeout(r, 400));
+    const loopWant = I.tx('Loop: {{from}} → {{to}}', { from: first.from, to: first.to });
+    const loopHit = (document.body.innerText || '').indexOf(loopWant) > -1;
+    click(I.tx('Progress'));
+    await new Promise(r => setTimeout(r, 400));
+    const mapWant = score.title + ' · ' + I.tx('{{n}} measures', { n: window.PPP.Score.count(score) });
+    const tempoWant = I.tx('score says {{tempo}}', { tempo: score.tempo });
+    const recSkeleton = I.tx('“{{action}} — measures {{from}}–{{to}}, about {{minutes}} minutes.”', {
+      action: '\u0001', from: '\u0001', to: '\u0001', minutes: '\u0001'
+    });
+    const recParts = recSkeleton.split('\u0001').filter(Boolean);
+    const progressBody = document.body.innerText || '';
+    const recHit = recParts.every(p => progressBody.indexOf(p) > -1) && progressBody.indexOf(' — measures ') === -1;
+    return {
+      quizWant, quizGot, parsedWant, parsedHit: body.indexOf(parsedWant) > -1,
+      loopWant, loopHit,
+      mapWant, mapHit: progressBody.indexOf(mapWant) > -1,
+      tempoWant, tempoHit: progressBody.indexOf(tempoWant) > -1,
+      recWant: recParts.join('…'), recHit: recHit,
+      focusWant, focusHit
+    };
   }, loc);
 
   for (const loc of ['ko-KR', 'ja-JP', 'zh-CN']) {
     const r = await interpolated(loc);
     ok(loc + ' quizCount matches catalog, not English', r.quizGot === r.quizWant && r.quizWant !== 'Question 1 of 10', r.quizGot + ' vs ' + r.quizWant);
     ok(loc + ' analyzeSummary-done matches catalog, not English', r.parsedHit && !/^Parsed 64 measures/.test(r.parsedWant), r.parsedWant);
+    ok(loc + ' coachLine1 catalog is translated, not English', r.focusWant && r.focusWant.indexOf('Let’s focus') === -1 && /\d/.test(r.focusWant), r.focusWant);
+    ok(loc + ' loopChip matches catalog, not English', r.loopHit && r.loopWant.indexOf('Loop:') !== 0, r.loopWant);
+    ok(loc + ' progress mapSub matches catalog, not English', r.mapHit && !/ measures$/.test(r.mapWant), r.mapWant);
+    ok(loc + ' progress tempo sub matches catalog, not English', r.tempoHit && r.tempoWant.indexOf('score says ') !== 0, r.tempoWant);
+    ok(loc + ' progress recommendation matches catalog, not English', r.recHit, r.recWant);
   }
 
   await page.evaluate(() => window.PPP_I18N.setLocale('en-US'));

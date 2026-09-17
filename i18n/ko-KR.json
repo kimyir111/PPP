@@ -687,6 +687,9 @@
     "chord-heavy": "화음이 많음",
     "wide hand jumps": "넓은 손 도약",
     "many accidentals": "임시표가 많음",
-    "multiple voices": "성부가 여러 개"
+    "multiple voices": "성부가 여러 개",
+    "{{n}} measures": "{{n}}마디",
+    "Take it slowly": "천천히",
+    "“{{reason}} — drop the tempo until it is clean.”": "“{{reason}} — 깨끗해질 때까지 템포를 낮추세요.”"
   }
 }

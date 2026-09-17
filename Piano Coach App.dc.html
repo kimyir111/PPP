@@ -6610,16 +6610,16 @@ class Component extends DCLogic {
         + (midiLive ? 'var(--accent-3)' : 'var(--bg)') + ';border:1px solid ' + (midiLive ? 'var(--accent-2)' : 'var(--line)') + ';',
       midiDotStyle: 'width:7px;height:7px;border-radius:999px;flex:none;background:' + midiTone + ';',
       midiConnect: () => { if (midiLive) this.toggleMidi(); else this.connectMidi(); },
-      midiAction: midiLive ? 'Disconnect' : mi.status === 'connecting' ? 'Connecting…' : 'Connect',
+      midiAction: tx(midiLive ? 'Disconnect' : mi.status === 'connecting' ? 'Connecting…' : 'Connect'),
       midiActionStyle: 'margin-left:auto;padding:9px 15px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;',
       hasMidiDevices: !!(mi.devices && mi.devices.length),
       midiDevices: (mi.devices || []).map(d => ({
         label: d.name, style: this.chip(d.id === mi.deviceId), on: () => this.selectMidiDevice(d.id)
       })),
-      coachLine1: '“Let’s focus on Measures ' + S.loopFrom + '–' + S.loopTo + '.”',
-      coachLine2: S.hands === 'left' ? '“Left hand alone — keep the wrist loose through the jump.”'
-        : S.hands === 'right' ? '“Right hand alone — let the melody breathe over the bar line.”'
-          : '“' + (this.sectionOf(S.loopFrom).reason || 'Take it slowly') + ' — drop the tempo until it is clean.”',
+      coachLine1: tx('“Let’s focus on Measures {{from}}–{{to}}.”', { from: S.loopFrom, to: S.loopTo }),
+      coachLine2: S.hands === 'left' ? tx('“Left hand alone — keep the wrist loose through the jump.”')
+        : S.hands === 'right' ? tx('“Right hand alone — let the melody breathe over the bar line.”')
+          : tx('“{{reason}} — drop the tempo until it is clean.”', { reason: tx(this.sectionOf(S.loopFrom).reason || 'Take it slowly') }),
       coachBtns: [['Practice Right Hand', 'right'], ['Practice Left Hand', 'left'], ['Practice Both Hands', 'both']].map(([label, id]) => ({
         label: tx(label),
         style: `width:100%;padding:11px;border-radius:11px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;text-align:left;padding-left:14px;border:1px solid ${S.hands === id ? 'var(--accent)' : 'var(--line)'};background:${S.hands === id ? 'var(--accent-3)' : 'var(--bg)'};color:${S.hands === id ? 'var(--accent)' : 'var(--ink)'};`,
@@ -6629,27 +6629,30 @@ class Component extends DCLogic {
       drillOn: () => this.applyRecommendation(rec),
 
       /* ---- loop screen ---- */
-      loopTitle: 'Measure ' + S.loopFrom + '–' + S.loopTo,
+      loopTitle: tx('Measures {{from}}–{{to}}', { from: S.loopFrom, to: S.loopTo }),
       drillPct: R0((S.seqStep / Math.max(1, steps.length)) * 100) + '%',
       drillBarStyle: this.bar((S.seqStep / Math.max(1, steps.length)) * 100, 'var(--warn)'),
-      loopChip: 'Loop: ' + S.loopFrom + ' → ' + S.loopTo,
+      loopChip: tx('Loop: {{from}} → {{to}}', { from: S.loopFrom, to: S.loopTo }),
       prevMeasure: () => this.setState(st => ({ beat: Math.max(Score.startQ(st.score, st.loopFrom), st.beat - Score.lenQ(st.score, cur)) })),
       nextMeasure: () => this.setState(st => ({ beat: Math.min(Score.endQ(st.score, st.loopTo) - 0.01, st.beat + Score.lenQ(st.score, cur)) })),
       tempoPresets: [50, 75, 100].map(p => ({
         label: p + '%', style: this.chip(S.tempo === R0(score.tempo * p / 100)),
         on: () => this.setState({ tempo: clamp(R0(score.tempo * p / 100), 30, 200) })
       })),
-      sequence, seqCount: S.seqStep + ' / ' + steps.length + ' done',
+      sequence, seqCount: tx('{{n}} / {{total}} done', { n: S.seqStep, total: steps.length }),
       drillReason: loopExplain.length ? '“' + loopExplain[0] + '”'
-        : loopAgg.attempts ? '“This passage is holding together.”'
-          : '“No practice data here yet — play it once.”',
+        : loopAgg.attempts ? '“' + tx('This passage is holding together.') + '”'
+          : '“' + tx('No practice data here yet — play it once.') + '”',
       drillWhy: loopExplain.slice(1),
       drillAcc: loopAgg.acc == null ? '—' : R0(loopAgg.acc * 100) + '%',
       drillTempo: S.tempo + ' BPM',
-      drillTip: 'Recommended: ' + (steps[S.seqStep]
-        ? steps[S.seqStep].label.toLowerCase() + ' × ' + steps[S.seqStep].reps
-          + (steps[S.seqStep].tempoPct !== 100 ? ' at ' + steps[S.seqStep].tempoPct + '% tempo' : ' at full tempo') + '.'
-        : 'Drill complete — ' + rec.action.toLowerCase() + '.'),
+      drillTip: steps[S.seqStep]
+        ? tx(steps[S.seqStep].tempoPct !== 100
+          ? 'Recommended: {{label}} × {{reps}} at {{pct}}% tempo.'
+          : 'Recommended: {{label}} × {{reps}} at full tempo.', {
+          label: steps[S.seqStep].label, reps: steps[S.seqStep].reps, pct: steps[S.seqStep].tempoPct
+        })
+        : tx('Drill complete — {{action}}.', { action: rec.action }),
 
       /* ---- memory ---- */
       memTitle: tx('Memorize This — Measures {{from}}–{{to}}', { from: S.loopFrom, to: S.loopTo }),
@@ -6732,29 +6735,29 @@ class Component extends DCLogic {
           .map(x => {
             const d = Memory.daysUntil(x.r, now);
             return {
-              when: d <= 0 ? 'Due now' : d === 1 ? 'Tomorrow' : 'In ' + d + ' days',
-              what: 'bars ' + x.sec.from + '–' + x.sec.to,
+              when: d <= 0 ? tx('Due now') : d === 1 ? tx('Tomorrow') : tx('In {{n}} days', { n: d }),
+              what: tx('bars {{from}}–{{to}}', { from: x.sec.from, to: x.sec.to }),
               dotStyle: 'width:8px;height:8px;border-radius:999px;flex:none;background:' + (d <= 0 ? 'var(--bad)' : d <= 3 ? 'var(--accent)' : 'var(--accent-2)') + ';'
             };
           });
         return rows.length ? rows : [{
-          when: 'Nothing scheduled', what: 'memorize a section first',
+          when: tx('Nothing scheduled'), what: tx('memorize a section first'),
           dotStyle: 'width:8px;height:8px;border-radius:999px;flex:none;background:var(--line);'
         }];
       })(),
 
       /* ---- progress ---- */
       stats: [
-        { k: 'Song Progress', v: prog + '%', sub: S.laps ? S.laps + ' runs this session' : 'up 9% this week' },
-        { k: 'Sections mastered', v: this.masteredCount() + ' / ' + secList.length, sub: this.masteredCount() + ' total' },
-        { k: 'Memory', v: mem + '%', sub: Memory.due(S.memory, Clock.now()).length + ' due for review' },
-        { k: 'Accuracy', v: S.lastAcc + '%', sub: 'last run' },
-        { k: 'Tempo', v: S.tempo + ' BPM', sub: 'score says ' + score.tempo }
+        { k: tx('Song Progress'), v: prog + '%', sub: S.laps ? tx('{{n}} runs this session', { n: S.laps }) : tx('up 9% this week') },
+        { k: tx('Sections mastered'), v: this.masteredCount() + ' / ' + secList.length, sub: tx('{{n}} total', { n: this.masteredCount() }) },
+        { k: tx('Memory'), v: mem + '%', sub: tx('{{n}} due for review', { n: Memory.due(S.memory, Clock.now()).length }) },
+        { k: tx('Accuracy'), v: S.lastAcc + '%', sub: tx('last run') },
+        { k: tx('Tempo'), v: S.tempo + ' BPM', sub: tx('score says {{tempo}}', { tempo: score.tempo }) }
       ],
-      mapRows, mapBars, mapSub: score.title + ' · ' + Score.count(score) + ' measures',
-      recommendation: '“' + rec.action + ' — measures ' + rec.from + '–' + rec.to + ', about ' + rec.minutes + ' minutes.”',
+      mapRows, mapBars, mapSub: score.title + ' · ' + tx('{{n}} measures', { n: Score.count(score) }),
+      recommendation: tx('“{{action}} — measures {{from}}–{{to}}, about {{minutes}} minutes.”', { action: rec.action, from: rec.from, to: rec.to, minutes: rec.minutes }),
       sessions: (() => {
-        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(tx);
         const max = Math.max.apply(null, S.sessions.concat([1]));
         return S.sessions.map((v, i) => ({
           day: days[i],

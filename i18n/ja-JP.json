@@ -685,6 +685,9 @@
     "chord-heavy": "和音が多い",
     "wide hand jumps": "大きな手の跳躍",
     "many accidentals": "臨時記号が多い",
-    "multiple voices": "声部が複数"
+    "multiple voices": "声部が複数",
+    "{{n}} measures": "{{n}}小節",
+    "Take it slowly": "ゆっくり",
+    "“{{reason}} — drop the tempo until it is clean.”": "「{{reason}} — きれいになるまでテンポを下げて。」"
   }
 }
