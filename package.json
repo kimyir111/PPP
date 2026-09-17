@@ -1,0 +1,21 @@
+{
+  "name": "ppp-piano-practice-partner",
+  "version": "4.0.0",
+  "private": true,
+  "description": "PPP — Piano Practice Partner. Static app plus a small auth server for online deploy.",
+  "scripts": {
+    "start": "node server.js",
+    "serve": "node server.js",
+    "test": "node tests/import.test.js && node tests/memory.test.js && node tests/learning.test.js && node tests/midi.test.js && node tests/musicxml.test.js && node tests/interactions.test.js && node tests/import-and-persistence.test.js && node tests/coach.test.js && node tests/i18n-and-auth.test.js",
+    "omr": "node omr-service.js",
+    "fixtures": "node tests/fixtures/make-fixtures.js"
+  },
+  "devDependencies": {
+    "puppeteer": "^25.11.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.126.0",
+    "pg": "^8.23.0",
+    "zod": "^4.6.5"
+  }
+}

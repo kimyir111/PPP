@@ -1,0 +1,11 @@
+node_modules/
+tests/.shots/
+tools/
+data/*.json
+.env
+.DS_Store
+
+# Secrets. The API key lives here in development and must never be committed.
+.env
+.env.*
+!.env.example
