@@ -3,7 +3,10 @@
 DuckScope와 같이 결제수단 없이 Singapore 리전에 올립니다.
 
 - `ppp-web`: 무료 Node 웹 서비스 (앱 + 로그인 API)
-- `ppp-db`: 30일 동안 사용하는 무료 PostgreSQL
+
+공개 주소: https://ppp-web-2o99.onrender.com
+
+이 워크스페이스에는 이미 무료 Postgres(`duckscope-db`)가 있어서 PPP는 파일 저장소를 씁니다. 인스턴스가 잠들거나 재시작되면 계정 데이터는 초기화됩니다. 장기 계정은 `DATABASE_URL`에 Postgres를 연결하세요.
 
 OMR(Audiveris)은 로컬 전용입니다. 온라인에서는 MusicXML 가져오기와 연습·암보·로그인이 동작합니다.
 
