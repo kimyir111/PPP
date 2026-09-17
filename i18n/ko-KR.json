@@ -702,6 +702,19 @@
     "Hide": "숨기기",
     "Menu": "메뉴",
     "Hide sidebar": "사이드바 숨기기",
-    "Show menu": "메뉴 열기"
+    "Show menu": "메뉴 열기",
+    "Memory review is {{days}} day(s) overdue.": "복습이 {{days}}일 밀렸어요.",
+    "Memory review is due today.": "오늘 복습할 차례예요.",
+    "Left hand is at {{pct}}% here, the weaker of the two.": "여기 왼손이 {{pct}}%예요. 더 약한 쪽이에요.",
+    "Right hand is at {{pct}}% here, the weaker of the two.": "여기 오른손이 {{pct}}%예요. 더 약한 쪽이에요.",
+    "Put the hands together at a tempo where it stays clean.": "깨끗하게 나오는 빠르기로 양손을 붙여요.",
+    "Final check at the score tempo.": "원래 빠르기로 마지막 확인.",
+    "Recommended next step.": "다음에 할 것.",
+    "Measures {{from}}–{{to}} are steady enough to work from memory.": "마디 {{from}}–{{to}}는 외워도 될 만큼 안정적이에요.",
+    "Nothing has been practised yet — play it through so PPP can see where you stand.": "아직 친 적이 없어요. 한 번 쳐 보면 PPP가 약한 곳을 찾아요.",
+    "Measures {{from}}–{{to}} are the weakest part of the piece at {{pct}}%.": "마디 {{from}}–{{to}}가 {{pct}}%로 제일 약해요.",
+    "Everything you have practised is holding together.": "연습한 곳은 다 잘 잡혀 있어요.",
+    "No practice data for this score yet.": "이 곡은 아직 연습 기록이 없어요.",
+    "Play through and let PPP find the weak spots.": "한 번 쳐 보면 약한 곳을 찾아 줄게요."
   }
 }

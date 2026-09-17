@@ -3914,7 +3914,13 @@ const Coach = {
       accuracy: pctOf(r.accuracy), timingMs: r.meanDeltaMs, simulated: !!r.simulated
     }));
 
+    const I = typeof window !== 'undefined' ? window.PPP_I18N : null;
+    const opt = I && I.getOption ? I.getOption() : null;
     const ctx = {
+      /* The plan is read by a person, in their language. Everything PPP writes
+         itself is already translated; a model has to be told. */
+      language: opt && opt.language ? opt.language : 'English',
+      locale: I && I.getLocale ? I.getLocale() : 'en-US',
       song: {
         title: score.title, composer: score.composer, tempo: score.tempo,
         key: keyName(m0.key.fifths, m0.key.mode),
@@ -4042,7 +4048,9 @@ const Coach = {
       tasks.push({
         range: { start: due.from, end: due.to }, hand: 'both', tempoPercent: 100,
         mode: 'memory', repetitions: 1,
-        reason: 'Memory review is ' + (due.daysOverdue > 0 ? due.daysOverdue + ' day(s) overdue' : 'due today') + '.'
+        reason: due.daysOverdue > 0
+          ? tx('Memory review is {{days}} day(s) overdue.', { days: due.daysOverdue })
+          : tx('Memory review is due today.')
       });
     }
 
@@ -4055,25 +4063,27 @@ const Coach = {
         tasks.push({
           range: { start: weak.from, end: weak.to }, hand: weaker, tempoPercent: slow,
           mode: 'practice', repetitions: 3,
-          reason: (weaker === 'left' ? 'Left' : 'Right') + ' hand is at ' +
-            (weaker === 'left' ? weak.leftAccuracy : weak.rightAccuracy) + '% here, the weaker of the two.'
+          reason: tx(weaker === 'left'
+            ? 'Left hand is at {{pct}}% here, the weaker of the two.'
+            : 'Right hand is at {{pct}}% here, the weaker of the two.',
+            { pct: weaker === 'left' ? weak.leftAccuracy : weak.rightAccuracy })
         });
       }
       tasks.push({
         range: { start: weak.from, end: weak.to }, hand: 'both', tempoPercent: slow,
         mode: 'practice', repetitions: 2,
-        reason: 'Put the hands together at a tempo where it stays clean.'
+        reason: tx('Put the hands together at a tempo where it stays clean.')
       });
       tasks.push({
         range: { start: weak.from, end: weak.to }, hand: 'both', tempoPercent: 100,
         mode: 'practice', repetitions: 1,
-        reason: 'Final check at the score tempo.'
+        reason: tx('Final check at the score tempo.')
       });
     } else if (rec) {
       tasks.push({
         range: { start: rec.from, end: rec.to }, hand: rec.hands || 'both',
         tempoPercent: rec.tempoPercent || 100, mode: rec.mode === 'memory' ? 'memory' : 'practice',
-        repetitions: 2, reason: (rec.reasons && rec.reasons[0]) || rec.headline || 'Recommended next step.'
+        repetitions: 2, reason: (rec.reasons && rec.reasons[0]) || rec.headline || tx('Recommended next step.')
       });
     }
 
@@ -4083,7 +4093,7 @@ const Coach = {
       tasks.push({
         range: { start: ready.from, end: ready.to }, hand: 'both', tempoPercent: 100,
         mode: 'memory', repetitions: 1,
-        reason: 'Measures ' + ready.from + '–' + ready.to + ' are steady enough to work from memory.'
+        reason: tx('Measures {{from}}–{{to}} are steady enough to work from memory.', { from: ready.from, to: ready.to })
       });
     }
 
@@ -4092,17 +4102,18 @@ const Coach = {
       const to = Math.min(ctx.song.lastMeasure, from + 7);
       tasks.push({
         range: { start: from, end: to }, hand: 'both', tempoPercent: 75, mode: 'practice',
-        repetitions: 2, reason: 'Nothing has been practised yet — play it through so PPP can see where you stand.'
+        repetitions: 2, reason: tx('Nothing has been practised yet — play it through so PPP can see where you stand.')
       });
     }
 
     const headline = rec ? rec.headline : null;
     return {
       summary: ctx.learning.hasHistory
-        ? (weak ? 'Measures ' + weak.from + '–' + weak.to + ' are the weakest part of the piece at ' + weak.accuracy + '%.'
-          : 'Everything you have practised is holding together.')
-        : 'No practice data for this score yet.',
-      todayGoal: rec ? rec.action : 'Play through and let PPP find the weak spots.',
+        ? (weak ? tx('Measures {{from}}–{{to}} are the weakest part of the piece at {{pct}}%.',
+            { from: weak.from, to: weak.to, pct: weak.accuracy })
+          : tx('Everything you have practised is holding together.'))
+        : tx('No practice data for this score yet.'),
+      todayGoal: rec ? rec.action : tx('Play through and let PPP find the weak spots.'),
       tasks: tasks.slice(0, COACH.maxTasks),
       coachNote: headline || '',
       sessionMinutes: Math.max(COACH.minSessionMinutes,
@@ -4951,11 +4962,16 @@ class Component extends DCLogic {
     this.setState({ midi: this.midiLayer().snapshot() });
     this.bootI18n();
     this.checkAuth();
-    /* Is an AI coach reachable? PPP plans the session either way. */
+    /* Is an AI coach reachable? PPP plans the session either way — but not
+       before the translations are in, since the plan's wording is written once
+       and then kept. */
+    const I = window.PPP_I18N;
+    const translated = I && I.ready && I.ready.then ? I.ready : Promise.resolve();
+    const plan = () => translated.then(() => { if (!this._dead) this.requestPlan(); });
     Coach.providers.service.available().then(ok => {
       if (!this._dead) this.setState({ coachAi: !!ok });
-      this.requestPlan();
-    }, () => this.requestPlan());
+      plan();
+    }, plan);
   }
   componentDidUpdate() {
     this.applyTheme();
@@ -5099,8 +5115,12 @@ class Component extends DCLogic {
     const I = window.PPP_I18N;
     if (!I) return;
     const apply = () => {
-      this.setState({ locale: I.getLocale() });
+      const changed = this._locale != null && this._locale !== I.getLocale();
+      this._locale = I.getLocale();
+      this.setState({ locale: this._locale });
       this.applyI18n();
+      /* the plan's sentences were written in the old language */
+      if (changed && this.state.coachPlan) this.requestPlan({ keepDone: true });
     };
     this._offI18n = I.onChange(apply);
     if (I.ready && I.ready.then) I.ready.then(apply);

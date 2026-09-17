@@ -702,6 +702,19 @@
     "Hide": "隠す",
     "Menu": "メニュー",
     "Hide sidebar": "サイドバーを隠す",
-    "Show menu": "メニューを開く"
+    "Show menu": "メニューを開く",
+    "Memory review is {{days}} day(s) overdue.": "復習が{{days}}日遅れています。",
+    "Memory review is due today.": "今日が復習の日です。",
+    "Left hand is at {{pct}}% here, the weaker of the two.": "ここは左手が{{pct}}%。弱いほうです。",
+    "Right hand is at {{pct}}% here, the weaker of the two.": "ここは右手が{{pct}}%。弱いほうです。",
+    "Put the hands together at a tempo where it stays clean.": "きれいに弾けるテンポで両手を合わせます。",
+    "Final check at the score tempo.": "楽譜のテンポで最終確認。",
+    "Recommended next step.": "次にやること。",
+    "Measures {{from}}–{{to}} are steady enough to work from memory.": "第{{from}}〜{{to}}小節は暗譜に進めるくらい安定しています。",
+    "Nothing has been practised yet — play it through so PPP can see where you stand.": "まだ弾いていません。一度通すと弱い場所が分かります。",
+    "Measures {{from}}–{{to}} are the weakest part of the piece at {{pct}}%.": "第{{from}}〜{{to}}小節が{{pct}}%で一番弱いです。",
+    "Everything you have practised is holding together.": "練習した所はどこも安定しています。",
+    "No practice data for this score yet.": "この曲の練習記録はまだありません。",
+    "Play through and let PPP find the weak spots.": "一度通して弾くと弱い場所を見つけます。"
   }
 }

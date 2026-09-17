@@ -702,6 +702,19 @@
     "Hide": "隐藏",
     "Menu": "菜单",
     "Hide sidebar": "隐藏侧栏",
-    "Show menu": "打开菜单"
+    "Show menu": "打开菜单",
+    "Memory review is {{days}} day(s) overdue.": "复习已推迟 {{days}} 天。",
+    "Memory review is due today.": "今天该复习了。",
+    "Left hand is at {{pct}}% here, the weaker of the two.": "这里左手 {{pct}}%，是较弱的一只。",
+    "Right hand is at {{pct}}% here, the weaker of the two.": "这里右手 {{pct}}%，是较弱的一只。",
+    "Put the hands together at a tempo where it stays clean.": "用能弹干净的速度把双手合起来。",
+    "Final check at the score tempo.": "用原速做最后确认。",
+    "Recommended next step.": "接下来要做的。",
+    "Measures {{from}}–{{to}} are steady enough to work from memory.": "第 {{from}}–{{to}} 小节已稳，可以开始背谱。",
+    "Nothing has been practised yet — play it through so PPP can see where you stand.": "还没弹过。先通一遍，PPP 就能找出薄弱处。",
+    "Measures {{from}}–{{to}} are the weakest part of the piece at {{pct}}%.": "第 {{from}}–{{to}} 小节最弱，只有 {{pct}}%。",
+    "Everything you have practised is holding together.": "练过的地方都挺稳。",
+    "No practice data for this score yet.": "这首曲子还没有练习记录。",
+    "Play through and let PPP find the weak spots.": "先通一遍，我来找出薄弱处。"
   }
 }

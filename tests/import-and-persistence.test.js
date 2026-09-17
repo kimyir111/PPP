@@ -117,7 +117,17 @@ const clickText = (page, text, root) => page.evaluate((t, sel) => {
     s.call(i, '52');
     i.dispatchEvent(new Event('change', { bubbles: true }));
   });
-  await sleep(900);
+  /* Wait for the value to actually reach storage rather than guessing at a
+     delay. A fixed sleep passes on an idle machine and fails on a busy one,
+     which is the worst way for a test to behave. */
+  await page.waitForFunction(() => {
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        if (/"tempo":52\b/.test(localStorage.getItem(localStorage.key(i)) || '')) return true;
+      }
+    } catch (e) {}
+    return false;
+  }, { timeout: 10000 });
   await page.reload({ waitUntil: 'networkidle2' });
   await page.waitForFunction(() => document.querySelectorAll('aside nav button').length >= 6, { timeout: 25000 });
   await clickText(page, 'Practice', 'aside nav');
