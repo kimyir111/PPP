@@ -4914,7 +4914,7 @@ class Component extends DCLogic {
         if (!body) return;
         const user = body.id ? body : body.user;
         if (!user || !user.id) {
-          this.setState({ authReady: true, guest: this.readGuest() || !this.state.user });
+          this.setState({ authReady: true, guest: this.readGuest() });
           return;
         }
         this.writeGuest(false);
