@@ -787,7 +787,7 @@
               <sc-if value="{{ showFollowHint }}" hint-placeholder-val="{{ false }}">
                 <div class="ppp-setup-only" style="margin: 0 16px; padding: 9px 12px; border-radius: 10px; background: var(--accent-3); border: 1px solid var(--accent-2); font-size: 12.5px; line-height: 1.45; color: var(--ink2);">{{ followHint }}</div>
               </sc-if>
-              <div class="ppp-staffwrap ppp-focus-grow" data-whole="{{ wholeAttr }}" style="overflow-x: auto; padding: 18px 16px 22px;">{{ playerStaff }}</div>
+              <div class="ppp-staffwrap ppp-focus-grow" ref="{{ staffRef }}" data-whole="{{ wholeAttr }}" style="overflow-x: auto; padding: 18px 16px 22px;">{{ playerStaff }}</div>
             </div>
 
             <div style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); padding: 16px;">
@@ -4719,7 +4719,7 @@ function makeScoreView(React) {
         return e;
       };
       this._loopBox = mk('rect', { fill: 'none', stroke: col('--accent-2'), 'stroke-width': 1.5, 'stroke-dasharray': '5 4', rx: 10, opacity: 0 });
-      this._hl = mk('rect', { fill: col('--accent-3'), rx: 8, opacity: 0 });
+      this._hl = mk('rect', { class: 'ppp-now', fill: col('--accent-3'), rx: 8, opacity: 0 });
       svg.insertBefore(this._loopBox, svg.firstChild);
       svg.insertBefore(this._hl, svg.firstChild);
 
@@ -5084,6 +5084,29 @@ class Component extends DCLogic {
     };
   })();
 
+  /* Sixteen systems do not fit on a screen, and you cannot scroll a page with
+     both hands on the keys. The whole score follows the playhead — but only
+     when the bar being played has actually left the view, so it does not creep
+     under you while you are reading a line you can already see. */
+  followStaff() {
+    if (!this.state.wholeScore) { this._lastBar = null; return; }
+    /* Only when the bar being played changes. Otherwise scrolling away to read
+       ahead would be undone by the next playhead tick. */
+    const bar = this.curMeasure();
+    if (bar === this._lastBar) return;
+    this._lastBar = bar;
+    const wrap = this._staff && this._staff.current;
+    if (!wrap || wrap.scrollHeight <= wrap.clientHeight + 4) return;
+    const now = wrap.querySelector('.ppp-now');
+    if (!now || now.getAttribute('opacity') === '0') return;
+    const r = now.getBoundingClientRect();
+    const w = wrap.getBoundingClientRect();
+    if (r.top >= w.top && r.bottom <= w.bottom) return;   /* already readable */
+    const top = (r.top - w.top) + wrap.scrollTop;
+    const want = clamp(top - (wrap.clientHeight - r.height) / 2, 0, wrap.scrollHeight - wrap.clientHeight);
+    wrap.scrollTo({ top: want, behavior: 'smooth' });
+  }
+
   /* Scrolling the keyboard by hand while playing is not realistic, so the
      strip follows the notes being asked for. */
   followKeyboard() {
@@ -5105,6 +5128,7 @@ class Component extends DCLogic {
 
   _root = React.createRef();
   _kb = React.createRef();
+  _staff = React.createRef();
 
   /* ============================ lifecycle ============================ */
   componentDidMount() {
@@ -5145,6 +5169,7 @@ class Component extends DCLogic {
     this.persist();
     this.maybeReplan();
     this.followKeyboard();
+    this.followStaff();
     if (this._i18nRaf) cancelAnimationFrame(this._i18nRaf);
     this._i18nRaf = requestAnimationFrame(() => { this._i18nRaf = 0; this.applyI18n(); });
     if (this._shownScreen !== this.state.screen) {
@@ -7228,6 +7253,7 @@ class Component extends DCLogic {
         { label: '+', on: () => this.setState(st => ({ zoom: Math.min(1.6, st.zoom + 0.15) })) }
       ],
       kbRef: this._kb,
+      staffRef: this._staff,
       focusNarrow: S.focus && this.narrowScreen(),
       /* planning screens keep the journey; working screens do not */
       showRail: !S.focus && ['home', 'upload', 'analysis', 'plan', 'songs', 'progress'].indexOf(sc) > -1,
