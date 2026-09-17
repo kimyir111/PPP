@@ -677,6 +677,16 @@
     "Recognised {{found}}, but {{rest}}": "{{found}}를 인식했지만, {{rest}}",
     "Recognised {{found}} — please check it against your original before practising.": "{{found}}를 인식했습니다 — 연습 전에 원본과 맞춰 보세요.",
     "file": "파일",
-    "{{n}} of {{total}}": "{{total}} 중 {{n}}"
+    "{{n}} of {{total}}": "{{total}} 중 {{n}}",
+    "planning…": "계획 중…",
+    "planned by PPP": "PPP가 계획함",
+    "planned by {{source}}": "{{source}}가 계획함",
+    "{{n}} min": "{{n}}분",
+    "From the notation, measures {{from}}–{{to}} look hardest ({{traits}}). That is a prediction, not a measurement of your playing.": "기보상 마디 {{from}}–{{to}}가 가장 어려워 보입니다 ({{traits}}). 연주 측정이 아니라 예측입니다.",
+    "rhythmically dense": "리듬이 빽빽함",
+    "chord-heavy": "화음이 많음",
+    "wide hand jumps": "넓은 손 도약",
+    "many accidentals": "임시표가 많음",
+    "multiple voices": "성부가 여러 개"
   }
 }

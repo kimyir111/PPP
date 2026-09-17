@@ -4747,11 +4747,12 @@ class Component extends DCLogic {
     this.applyTheme();
     this.persist();
     this.maybeReplan();
-    const key = [this.state.locale, this.state.screen, this.state.localeMenuOpen, this.state.guest, this.state.authMode, this.state.user && this.state.user.id].join('|');
-    if (this._i18nKey !== key) { this._i18nKey = key; this.applyI18n(); }
+    if (this._i18nRaf) cancelAnimationFrame(this._i18nRaf);
+    this._i18nRaf = requestAnimationFrame(() => { this._i18nRaf = 0; this.applyI18n(); });
   }
   componentWillUnmount() {
     clearInterval(this._iv);
+    if (this._i18nRaf) cancelAnimationFrame(this._i18nRaf);
     clearTimeout(this._an); clearTimeout(this._toast); clearTimeout(this._quiz); clearTimeout(this._save);
     this.writeState();   /* flush whatever was still pending */
     window.removeEventListener('keydown', this._onKey);
@@ -6088,15 +6089,15 @@ class Component extends DCLogic {
       const ms = memState(s);
       const r = ms.rec;
       const acc = ms.practice.accuracy;
-      const meta = ms.state === 'due' ? 'review ' + Math.abs(Memory.daysUntil(r, nowT)) + ' day(s) overdue'
-        : ms.state === 'memorized' ? 'memory ' + R0(r.strength) + '% · next in ' + Memory.daysUntil(r, nowT) + 'd'
-          : ms.state === 'memorizing' ? MEM_LEVELS[r.level] + ' · memory ' + R0(r.strength) + '%'
-            : ms.state === 'weak' ? R0((acc || 0) * 100) + '% — needs work'
-              : ms.state === 'memory-ready' ? R0((acc || 0) * 100) + '% — ready to memorize'
-              : !ms.practice.attempts ? 'not played yet'
-                : R0((acc || 0) * 100) + '% accuracy';
+      const meta = ms.state === 'due' ? tx('review {{n}} day(s) overdue', { n: Math.abs(Memory.daysUntil(r, nowT)) })
+        : ms.state === 'memorized' ? tx('memory {{pct}}% · next in {{n}}d', { pct: R0(r.strength), n: Memory.daysUntil(r, nowT) })
+          : ms.state === 'memorizing' ? tx('{{label}} · memory {{pct}}%', { label: tx(MEM_LEVELS[r.level]), pct: R0(r.strength) })
+            : ms.state === 'weak' ? tx('{{pct}}% — needs work', { pct: R0((acc || 0) * 100) })
+              : ms.state === 'memory-ready' ? tx('{{pct}}% — ready to memorize', { pct: R0((acc || 0) * 100) })
+              : !ms.practice.attempts ? tx('not played yet')
+                : tx('{{pct}}% accuracy', { pct: R0((acc || 0) * 100) });
       return {
-        range: tx('Measures {{from}}–{{to}}', { from: s.from, to: s.to }), label: tx(MEM_LABEL[ms.state]), meta: tx(meta),
+        range: tx('Measures {{from}}–{{to}}', { from: s.from, to: s.to }), label: tx(MEM_LABEL[ms.state]), meta: meta,
         icon: ms.state === 'memorized' ? '✓' : (ms.state === 'due' || ms.state === 'weak') ? '!' : ms.state === 'not-learned' ? '' : '·',
         iconStyle: `width:20px;height:20px;flex:none;border-radius:999px;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;background:${MEM_TONE[ms.state]};`,
         labelStyle: `font-size:13px;color:${ms.state === 'memorized' ? 'var(--good)' : ms.state === 'due' ? 'var(--bad)' : ms.state === 'weak' ? 'var(--warn)' : ms.state === 'not-learned' ? 'var(--ink3)' : 'var(--ink)'};`,
@@ -6426,12 +6427,12 @@ class Component extends DCLogic {
       replaceOn: () => this.replaceSource(),
       reviewPageLabel: (() => {
         const n = this.reviewPages().length;
-        return n ? 'Original · page ' + (S.reviewPage + 1) + ' of ' + n : 'Original';
+        return n ? tx('Original · page {{n}} of {{total}}', { n: S.reviewPage + 1, total: n }) : tx('Original');
       })(),
       reviewImageEl: (() => {
         const p = this.reviewPages()[S.reviewPage];
         if (!p) return h('div', { style: { padding: '34px', textAlign: 'center', color: 'var(--ink3)', fontSize: 13 } },
-          'No page image — this score was read from MusicXML rather than a picture.');
+          tx('No page image — this score was read from MusicXML rather than a picture.'));
         return h('img', {
           src: p.dataUrl, alt: 'Uploaded page ' + (S.reviewPage + 1),
           style: { width: '100%', display: 'block', borderRadius: 8, border: '1px solid var(--line)', background: '#fff' }
@@ -6439,7 +6440,7 @@ class Component extends DCLogic {
       })(),
       reviewPrevPage: () => this.setState(st => ({ reviewPage: Math.max(0, st.reviewPage - 1) })),
       reviewNextPage: () => this.setState(st => ({ reviewPage: Math.min(this.reviewPages().length - 1, st.reviewPage + 1) })),
-      reviewRangeLabel: 'Recognised · measures ' + S.reviewFrom + '–' + Score.step(score, S.reviewFrom, 3),
+      reviewRangeLabel: tx('Recognised · measures {{from}}–{{to}}', { from: S.reviewFrom, to: Score.step(score, S.reviewFrom, 3) }),
       reviewStaff: this.sv({
         startM: S.reviewFrom, count: 4, mW: 200, numbers: true, guidance: false,
         grand: score.staves > 1, fluid: true
@@ -6450,7 +6451,7 @@ class Component extends DCLogic {
         const suspect = ((S.importReport && S.importReport.suspectMeasures) || []).indexOf(mm.number) > -1;
         const shown = mm.number >= S.reviewFrom && mm.number <= Score.step(score, S.reviewFrom, 3);
         return {
-          title: 'Measure ' + mm.number + (suspect ? ' · needs checking' : ''),
+          title: tx(suspect ? 'Measure {{n}} · needs checking' : 'Measure {{n}}', { n: mm.number }),
           style: 'flex:1;min-width:3px;height:22px;padding:0;border-radius:4px;cursor:pointer;border:1px solid '
             + (shown ? 'var(--accent)' : 'transparent') + ';background:' + (suspect ? 'var(--bad)' : 'var(--accent-2)')
             + ';opacity:' + (shown ? 1 : suspect ? 0.85 : 0.4) + ';',
@@ -6468,40 +6469,47 @@ class Component extends DCLogic {
 
       analyzeSummary: failed ? S.parseError
         : S.analysis === 'done'
-          ? 'Parsed ' + Score.count(score) + ' measures in ' + m0.time.beats + '/' + m0.time.beatType + ', key of '
-          + keyName(m0.key.fifths, m0.key.mode) + ', ' + sounding.length + ' notes across ' + score.staves + ' staves.'
-          : running ? 'Reading ' + S.fileName + '…'
-            : 'Choose a MusicXML file (.musicxml, .xml or .mxl), or use the sample, then run the analysis.',
+          ? tx('Parsed {{n}} measures in {{time}}, key of {{key}}, {{notes}} notes across {{staves}} staves.', {
+            n: Score.count(score),
+            time: m0.time.beats + '/' + m0.time.beatType,
+            key: keyName(m0.key.fifths, m0.key.mode),
+            notes: sounding.length,
+            staves: score.staves
+          })
+          : running ? tx('Reading {{file}}…', { file: S.fileName })
+            : tx('Choose a MusicXML file (.musicxml, .xml or .mxl), or use the sample, then run the analysis.'),
       analyzeSummaryStyle: `margin-top:20px;padding:14px;border-radius:13px;font-size:12.5px;line-height:1.55;background:${failed ? 'var(--surface2)' : 'var(--bg)'};border:1px solid ${failed ? 'var(--bad)' : 'var(--line)'};color:${failed ? 'var(--ink)' : 'var(--ink2)'};`,
       analyzeCta: S.analysis === 'done' ? tx('See analysis') : running ? tx('Reading…') : failed ? tx('Try again') : tx('Run analysis'),
       analyzeOn: () => { if (S.analysis === 'done') this.go('analysis')(); else if (!running) this.runAnalysis(); },
 
       /* ---- analysis ---- */
       facts: [
-        { k: 'Difficulty', v: this.difficultyLabel() },
-        { k: 'Key', v: keyName(m0.key.fifths, m0.key.mode) },
-        { k: 'Time', v: m0.time.beats + '/' + m0.time.beatType },
-        { k: 'Tempo', v: score.tempo + ' BPM' },
-        { k: 'Measures', v: String(Score.count(score)) },
-        { k: 'Notes', v: String(sounding.length) }
+        { k: tx('Difficulty'), v: tx(this.difficultyLabel()) },
+        { k: tx('Key'), v: keyName(m0.key.fifths, m0.key.mode) },
+        { k: tx('Time'), v: m0.time.beats + '/' + m0.time.beatType },
+        { k: tx('Tempo'), v: score.tempo + ' BPM' },
+        { k: tx('Measures'), v: String(Score.count(score)) },
+        { k: tx('Notes'), v: String(sounding.length) }
       ],
       analysisHeadline: score.title + ' · ' + score.composer,
       stages,
       hardCount: learn.ranges.length
-        ? 'From your playing, PPP flagged ' + learn.ranges.length + ' passage' + (learn.ranges.length === 1 ? '' : 's') + ' to work on.'
-        : 'From the notation, PPP expects ' + secList.filter(s => s.hard).length + ' tricky sections.',
+        ? tx(learn.ranges.length === 1
+          ? 'From your playing, PPP flagged {{n}} passage to work on.'
+          : 'From your playing, PPP flagged {{n}} passages to work on.', { n: learn.ranges.length })
+        : tx('From the notation, PPP expects {{n}} tricky sections.', { n: secList.filter(s => s.hard).length }),
       hard: (learn.ranges.length
         ? learn.ranges.slice(0, 4).map(r => ({
-          range: 'Measures ' + r.from + '–' + r.to,
-          reason: Learning.explain(score, S.history, r.from, r.to)[0] || 'Accuracy is slipping here.',
+          range: tx('Measures {{from}}–{{to}}', { from: r.from, to: r.to }),
+          reason: Learning.explain(score, S.history, r.from, r.to)[0] || tx('Accuracy is slipping here.'),
           on: this.drill(r.from, r.to)
         }))
         : secList.filter(s => s.hard).map(s => ({
-          range: 'Measures ' + s.from + '–' + s.to, reason: s.reason, on: this.drill(s.from, s.to)
+          range: tx('Measures {{from}}–{{to}}', { from: s.from, to: s.to }), reason: tx(s.reason), on: this.drill(s.from, s.to)
         }))),
 
       /* ---- transport ---- */
-      nowMeasure: 'Measure ' + cur + ' · beat ' + (1 + Math.floor(S.beat - Score.startQ(score, cur))),
+      nowMeasure: tx('Measure {{n}} · beat {{beat}}', { n: cur, beat: 1 + Math.floor(S.beat - Score.startQ(score, cur)) }),
       playLabel: tx(S.playing ? 'Pause' : 'Play'),
       togglePlay: () => this.togglePlay(),
       restart: () => this.setState({ beat: Score.startQ(score, rFrom), runHit: 0, runTot: 0, wrongNotes: [] }),
@@ -6552,13 +6560,13 @@ class Component extends DCLogic {
       hasCoachSummary: !!(S.coachPlan && S.coachPlan.summary),
       coachPlanNote: S.coachPlan ? S.coachPlan.coachNote : '',
       hasCoachNote: !!(S.coachPlan && S.coachPlan.coachNote),
-      coachSourceLabel: S.coachBusy ? 'planning…'
-        : (S.coachSource === 'PPP' ? 'planned by PPP' : 'planned by ' + S.coachSource),
+      coachSourceLabel: S.coachBusy ? tx('planning…')
+        : (S.coachSource === 'PPP' ? tx('planned by PPP') : tx('planned by {{source}}', { source: S.coachSource })),
       coachSourceStyle: 'font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:'
         + (S.coachSource === 'PPP' ? 'var(--ink3)' : 'var(--accent)') + ';',
-      coachMinutes: S.coachPlan ? S.coachPlan.sessionMinutes + ' min' : '',
+      coachMinutes: S.coachPlan ? tx('{{n}} min', { n: S.coachPlan.sessionMinutes }) : '',
       coachProgress: S.coachPlan
-        ? Math.min(S.coachDone.length, S.coachPlan.tasks.length) + ' / ' + S.coachPlan.tasks.length + ' done' : '',
+        ? tx('{{n}} / {{total}} done', { n: Math.min(S.coachDone.length, S.coachPlan.tasks.length), total: S.coachPlan.tasks.length }) : '',
       coachProgressBar: this.bar(S.coachPlan ? (S.coachDone.length / Math.max(1, S.coachPlan.tasks.length)) * 100 : 0),
       hasCoachPlan: !!(S.coachPlan && S.coachPlan.tasks.length),
       noCoachPlan: !(S.coachPlan && S.coachPlan.tasks.length),
@@ -6590,15 +6598,14 @@ class Component extends DCLogic {
       coachStructural: (() => {
         const st = Coach.structural(score).hardest;
         if (!st || !st.traits.length) return '';
-        return 'From the notation, measures ' + st.from + '–' + st.to + ' look hardest (' +
-          st.traits.join(', ') + '). That is a prediction, not a measurement of your playing.';
+        return tx('From the notation, measures {{from}}–{{to}} look hardest ({{traits}}). That is a prediction, not a measurement of your playing.', { from: st.from, to: st.to, traits: st.traits.map(t => tx(t)).join(', ') });
       })(),
       hasCoachStructural: !learn.played,
 
       runAccuracy: (S.runTot ? R0((S.runHit / S.runTot) * 100) : S.lastAcc) + '%',
       runDrift: (S.drift > 0 ? '+' : '') + S.drift + ' ms',
       midiLabel, midiSub,
-      midiHint: midiLive ? 'Playing ' + mi.deviceName : 'Click to connect a MIDI keyboard',
+      midiHint: midiLive ? tx('Playing {{device}}', { device: mi.deviceName }) : tx('Click to connect a MIDI keyboard'),
       midiBadgeStyle: 'display:flex;align-items:center;gap:7px;padding:6px 11px;border-radius:999px;font-family:inherit;font-size:12px;color:var(--ink);cursor:pointer;background:'
         + (midiLive ? 'var(--accent-3)' : 'var(--bg)') + ';border:1px solid ' + (midiLive ? 'var(--accent-2)' : 'var(--line)') + ';',
       midiDotStyle: 'width:7px;height:7px;border-radius:999px;flex:none;background:' + midiTone + ';',
@@ -6775,8 +6782,8 @@ class Component extends DCLogic {
       ].map(d => Object.assign(d, { done: d.tasks.filter(x => x.check).length + ' / ' + d.tasks.length })),
       planPct: R0((planDone / planTotal) * 100) + '%',
       planBarStyle: this.bar((planDone / planTotal) * 100),
-      planNext: 'Hands together, Measures ' + this.firstM() + '–' + half.to + ' at 75% tempo.',
-      planSub: 'Estimated time: 4 days · generated from ' + Score.count(score) + ' parsed measures.',
+      planNext: tx('Hands together, Measures {{from}}–{{to}} at 75% tempo.', { from: this.firstM(), to: half.to }),
+      planSub: tx('Estimated time: 4 days · generated from {{n}} parsed measures.', { n: Score.count(score) }),
 
       /* ---- songs ---- */
       filters: ['All', 'Learning', 'Memorized', 'Needs Review'].map(label => ({
@@ -6785,26 +6792,26 @@ class Component extends DCLogic {
       query: S.query, setQuery: e => this.setState({ query: e.target.value }), songs,
 
       /* ---- sight reading ---- */
-      quizQuestion: S.quizDone ? 'Session complete — ' + S.quizRight + ' of 10 correct.' : 'What note is this?',
-      quizCount: 'Question ' + S.quizIdx + ' of 10',
+      quizQuestion: S.quizDone ? tx('Session complete — {{n}} of 10 correct.', { n: S.quizRight }) : tx('What note is this?'),
+      quizCount: tx('Question {{n}} of 10', { n: S.quizIdx }),
       quizBarStyle: this.bar((S.quizIdx - 1) * 10),
       quizStaff: h(this._SV || (this._SV = makeScoreView(React)), {
         score: this.quizScore(), theme: S.theme, startM: 1, count: 1, mW: 150,
         grand: false, numbers: false, guidance: false, notesKey: S.quizNote
       }),
       quizOptions,
-      quizFeedback: S.quizPick == null ? 'Tap the note name — or play it on your keyboard.'
-        : S.quizPick === quizName ? 'Yes — ' + quizName + ', ' + S.quizNote + ' on the treble staff.'
-          : 'Not quite. Count up from the bottom line: E, G, B, D, F.',
+      quizFeedback: S.quizPick == null ? tx('Tap the note name — or play it on your keyboard.')
+        : S.quizPick === quizName ? tx('Yes — {{name}}, {{note}} on the treble staff.', { name: quizName, note: S.quizNote })
+          : tx('Not quite. Count up from the bottom line: E, G, B, D, F.'),
       quizFeedbackStyle: `margin-top:20px;padding:13px;border-radius:12px;text-align:center;font-size:13px;line-height:1.5;background:${S.quizPick == null ? 'var(--bg)' : S.quizPick === quizName ? 'var(--accent-3)' : 'var(--surface2)'};color:${S.quizPick == null ? 'var(--ink3)' : 'var(--ink)'};border:1px solid ${S.quizPick === quizName ? 'var(--accent-2)' : 'var(--line)'};`,
-      basicsNext: ['Bass clef notes', 'Ledger lines', 'Key signatures', 'Accidentals', 'Simple chords'],
+      basicsNext: ['Bass clef notes', 'Ledger lines', 'Key signatures', 'Accidentals', 'Simple chords'].map(tx),
       basicsDrill: () => { this.setState({ quizIdx: 1, quizRight: 0, quizDone: false, quizPick: null }); this.nextQuiz(); this.say(tx('Bass clef drill queued.')); },
       skills: [['Treble clef', 'treble'], ['Bass clef', 'bass'], ['Note positions', 'pos'], ['Ledger lines', 'ledger'],
       ['Rhythm', 'rhythm'], ['Key signatures', 'keysig'], ['Accidentals', 'acc'], ['Chords', 'chords']]
         .map(([label, key]) => {
           const ms = S.skillMs[key];
           const v = clamp(R0(110 - ms * 30), 5, 100);
-          return { label, ms: ms.toFixed(1) + 's', barStyle: this.bar(v, v < 55 ? 'var(--warn)' : 'var(--accent)') };
+          return { label: tx(label), ms: ms.toFixed(1) + 's', barStyle: this.bar(v, v < 55 ? 'var(--warn)' : 'var(--accent)') };
         }),
 
       settingGroups,

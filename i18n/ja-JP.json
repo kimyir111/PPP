@@ -675,6 +675,16 @@
     "Recognised {{found}}, but {{rest}}": "{{found}}を認識しましたが、{{rest}}",
     "Recognised {{found}} — please check it against your original before practising.": "{{found}}を認識しました — 練習前に原本と照合してください。",
     "file": "ファイル",
-    "{{n}} of {{total}}": "{{total}}中{{n}}"
+    "{{n}} of {{total}}": "{{total}}中{{n}}",
+    "planning…": "計画中…",
+    "planned by PPP": "PPPが計画",
+    "planned by {{source}}": "{{source}}が計画",
+    "{{n}} min": "{{n}}分",
+    "From the notation, measures {{from}}–{{to}} look hardest ({{traits}}). That is a prediction, not a measurement of your playing.": "記譜では小節 {{from}}–{{to}} がいちばん難しそうです（{{traits}}）。演奏の測定ではなく予測です。",
+    "rhythmically dense": "リズムが密集",
+    "chord-heavy": "和音が多い",
+    "wide hand jumps": "大きな手の跳躍",
+    "many accidentals": "臨時記号が多い",
+    "multiple voices": "声部が複数"
   }
 }

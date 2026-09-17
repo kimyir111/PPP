@@ -675,6 +675,16 @@
     "Recognised {{found}}, but {{rest}}": "识别了 {{found}}，但{{rest}}",
     "Recognised {{found}} — please check it against your original before practising.": "识别了 {{found}} — 练习前请对照原件。",
     "file": "文件",
-    "{{n}} of {{total}}": "{{n}} / {{total}}"
+    "{{n}} of {{total}}": "{{n}} / {{total}}",
+    "planning…": "正在规划…",
+    "planned by PPP": "由 PPP 规划",
+    "planned by {{source}}": "由 {{source}} 规划",
+    "{{n}} min": "{{n}} 分钟",
+    "From the notation, measures {{from}}–{{to}} look hardest ({{traits}}). That is a prediction, not a measurement of your playing.": "从记谱看，小节 {{from}}–{{to}} 最难（{{traits}}）。这是预测，不是对你演奏的测量。",
+    "rhythmically dense": "节奏密集",
+    "chord-heavy": "和弦多",
+    "wide hand jumps": "较大的手部跳进",
+    "many accidentals": "临时记号多",
+    "multiple voices": "多个声部"
   }
 }

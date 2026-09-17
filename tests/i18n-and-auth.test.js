@@ -69,6 +69,42 @@ const ok = (name, cond, detail) => {
     ok(loc + ' Continue as guest matches catalog, not English', r.guest === r.wantGuest && r.guest !== 'Continue as guest', r.guest + ' vs ' + r.wantGuest);
   }
 
+  const interpolated = loc => page.evaluate(async (loc) => {
+    const I = window.PPP_I18N;
+    await I.ready;
+    I.setLocale(loc);
+    await new Promise(r => setTimeout(r, 400));
+    const click = t => {
+      const b = [...document.querySelectorAll('button')].find(e => (e.innerText || '').trim() === t);
+      if (b) b.click();
+      return !!b;
+    };
+    click(I.tx('Sight Reading'));
+    await new Promise(r => setTimeout(r, 400));
+    const quizWant = I.tx('Question {{n}} of 10', { n: 1 });
+    const quizGot = [...document.querySelectorAll('*')].map(e => (e.childNodes.length === 1 && e.childNodes[0].nodeType === 3) ? (e.textContent || '').trim() : '')
+      .find(t => t === quizWant || t === 'Question 1 of 10') || '';
+    click(I.tx('Upload'));
+    await new Promise(r => setTimeout(r, 400));
+    const score = window.PPP.buildDemoScore();
+    const m0 = score.measures[0];
+    const parsedWant = I.tx('Parsed {{n}} measures in {{time}}, key of {{key}}, {{notes}} notes across {{staves}} staves.', {
+      n: window.PPP.Score.count(score),
+      time: m0.time.beats + '/' + m0.time.beatType,
+      key: window.PPP.keyName(m0.key.fifths, m0.key.mode),
+      notes: score.notes.filter(n => !n.rest).length,
+      staves: score.staves
+    });
+    const body = (document.body.innerText || '');
+    return { quizWant, quizGot, parsedWant, parsedHit: body.indexOf(parsedWant) > -1 };
+  }, loc);
+
+  for (const loc of ['ko-KR', 'ja-JP', 'zh-CN']) {
+    const r = await interpolated(loc);
+    ok(loc + ' quizCount matches catalog, not English', r.quizGot === r.quizWant && r.quizWant !== 'Question 1 of 10', r.quizGot + ' vs ' + r.quizWant);
+    ok(loc + ' analyzeSummary-done matches catalog, not English', r.parsedHit && !/^Parsed 64 measures/.test(r.parsedWant), r.parsedWant);
+  }
+
   await page.evaluate(() => window.PPP_I18N.setLocale('en-US'));
   await sleep(300);
 

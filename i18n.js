@@ -158,7 +158,7 @@
   }
 
   function apply(root) {
-    if (!root) return;
+    if (!root || locale === 'en-US') return;
     var skip = 'svg, [data-no-i18n], script, style, textarea, input, code';
     var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
     var nodes = [];
