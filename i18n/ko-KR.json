@@ -718,6 +718,9 @@
     "Play through and let PPP find the weak spots.": "한 번 쳐 보면 약한 곳을 찾아 줄게요.",
     "Focus": "집중 모드",
     "Leave focus": "집중 모드 끄기",
-    "Hide everything except the score and the keyboard (F)": "악보와 건반만 남기고 다 숨겨요 (F)"
+    "Hide everything except the score and the keyboard (F)": "악보와 건반만 남기고 다 숨겨요 (F)",
+    "Whole score": "전체 악보",
+    "This part": "이 부분만",
+    "See the whole piece at once, with the weak bars shaded": "곡 전체를 한눈에. 약한 마디가 표시돼요"
   }
 }

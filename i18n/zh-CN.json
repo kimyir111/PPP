@@ -718,6 +718,9 @@
     "Play through and let PPP find the weak spots.": "先通一遍，我来找出薄弱处。",
     "Focus": "专注模式",
     "Leave focus": "退出专注模式",
-    "Hide everything except the score and the keyboard (F)": "只留下乐谱和键盘，其余全部隐藏 (F)"
+    "Hide everything except the score and the keyboard (F)": "只留下乐谱和键盘，其余全部隐藏 (F)",
+    "Whole score": "整首乐谱",
+    "This part": "仅此段",
+    "See the whole piece at once, with the weak bars shaded": "一次看完整首，薄弱小节会标色"
   }
 }

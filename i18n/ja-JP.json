@@ -718,6 +718,9 @@
     "Play through and let PPP find the weak spots.": "一度通して弾くと弱い場所を見つけます。",
     "Focus": "集中モード",
     "Leave focus": "集中モードを終了",
-    "Hide everything except the score and the keyboard (F)": "楽譜と鍵盤以外をすべて隠します (F)"
+    "Hide everything except the score and the keyboard (F)": "楽譜と鍵盤以外をすべて隠します (F)",
+    "Whole score": "全体を表示",
+    "This part": "この部分だけ",
+    "See the whole piece at once, with the weak bars shaded": "曲全体を一度に表示。弱い小節に色が付きます"
   }
 }

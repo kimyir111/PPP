@@ -215,6 +215,15 @@
   .ppp-shell[data-focus="true"] .ppp-focus-grow svg {
     height: 100% !important; width: 100% !important;
   }
+  /* A whole piece is taller than the box: let it scroll instead of shrinking
+     it until the notes are gone. */
+  .ppp-staffwrap[data-whole="true"] { max-height: 62vh; overflow-y: auto !important; }
+  .ppp-shell[data-focus="true"] .ppp-focus-grow[data-whole="true"] {
+    align-items: flex-start; overflow-y: auto !important;
+  }
+  .ppp-shell[data-focus="true"] .ppp-focus-grow[data-whole="true"] svg {
+    height: auto !important;
+  }
   /* A phone cannot fit four octaves at a readable size, so while focused the
      keys keep their size and the strip scrolls, following what is being asked
      for rather than shrinking until nothing can be read. */
@@ -769,12 +778,13 @@
                   <button onClick="{{ toggleGuidance }}" style="{{ guidanceBtnStyle }}">{{ guidanceLabel }}</button>
                   <button onClick="{{ toggleFollow }}" style="{{ followBtnStyle }}">{{ followLabel }}</button>
                 </span>
+                <button onClick="{{ toggleWhole }}" style="{{ wholeBtnStyle }}" title="{{ wholeHint }}">{{ wholeLabel }}</button>
                 <button onClick="{{ toggleFocus }}" style="{{ focusBtnStyle }}" title="{{ focusHint }}">{{ focusLabel }}</button>
               </div>
               <sc-if value="{{ showFollowHint }}" hint-placeholder-val="{{ false }}">
                 <div class="ppp-setup-only" style="margin: 0 16px; padding: 9px 12px; border-radius: 10px; background: var(--accent-3); border: 1px solid var(--accent-2); font-size: 12.5px; line-height: 1.45; color: var(--ink2);">{{ followHint }}</div>
               </sc-if>
-              <div class="ppp-staffwrap ppp-focus-grow" style="overflow-x: auto; padding: 18px 16px 22px;">{{ playerStaff }}</div>
+              <div class="ppp-staffwrap ppp-focus-grow" data-whole="{{ wholeAttr }}" style="overflow-x: auto; padding: 18px 16px 22px;">{{ playerStaff }}</div>
             </div>
 
             <div style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); padding: 16px;">
@@ -4464,7 +4474,7 @@ function makeScoreView(React) {
       const p = this.props;
       return [
         p.score.id, p.startM, p.count, p.grand !== false, p.numbers !== false,
-        p.clefs !== false, !!p.guidance, p.theme, p.mW, p.zoom, p.fluid, p.notesKey || ''
+        p.clefs !== false, !!p.guidance, p.theme, p.mW, p.zoom, p.fluid, p.perRow || 0, (p.weak || []).join(','), p.notesKey || ''
       ].join('|');
     }
 
@@ -4520,8 +4530,14 @@ function makeScoreView(React) {
 
       const LEAD = (p.clefs !== false) ? 62 : 12;
       const TREBLE_Y = 12, BASS_Y = 104;
-      const H = grand ? 196 : 104;
-      const W = LEAD + mW * measures.length + 14;
+      const SYS_H = grand ? 196 : 104;
+      /* A whole piece will not fit on one line. perRow folds it into systems,
+         the way printed music has always done it, so you can see the shape of
+         the thing instead of a four-bar window into it. */
+      const perRow = Math.max(1, p.perRow || measures.length);
+      const rows = Math.ceil(measures.length / perRow);
+      const H = SYS_H * rows;
+      const W = LEAD + mW * Math.min(perRow, measures.length) + 14;
 
       const renderer = new VF.Renderer(el, VF.Renderer.Backends.SVG);
       renderer.resize(W, H);
@@ -4532,13 +4548,16 @@ function makeScoreView(React) {
       const allNoteMeta = [];
 
       measures.forEach((mm, i) => {
-        const w = (i === 0 ? LEAD : 0) + mW;
-        const treble = new VF.Stave(x, TREBLE_Y, w, { spacing_between_lines_px: 10 });
-        const bass = grand ? new VF.Stave(x, BASS_Y, w, { spacing_between_lines_px: 10 }) : null;
+        const col = i % perRow;
+        const rowTop = ((i / perRow) | 0) * SYS_H;
+        if (col === 0) x = 10;
+        const w = (col === 0 ? LEAD : 0) + mW;
+        const treble = new VF.Stave(x, TREBLE_Y + rowTop, w, { spacing_between_lines_px: 10 });
+        const bass = grand ? new VF.Stave(x, BASS_Y + rowTop, w, { spacing_between_lines_px: 10 }) : null;
         treble.setStyle({ strokeStyle: staffCol, lineWidth: 1 });
         if (bass) bass.setStyle({ strokeStyle: staffCol, lineWidth: 1 });
 
-        if (i === 0 && p.clefs !== false) {
+        if (col === 0 && p.clefs !== false) {
           treble.addClef(mm.clefs[1] || 'treble');
           if (bass) bass.addClef(mm.clefs[2] || 'bass');
           const ks = vexKeySig(mm.key.fifths, mm.key.mode);
@@ -4623,7 +4642,7 @@ function makeScoreView(React) {
         if (p.numbers !== false) {
           const t = document.createElementNS(SVGNS, 'text');
           t.setAttribute('x', x + 3);
-          t.setAttribute('y', TREBLE_Y - 1);
+          t.setAttribute('y', TREBLE_Y + rowTop - 1);
           t.setAttribute('font-size', '10.5');
           t.setAttribute('font-family', "'JetBrains Mono', monospace");
           t.setAttribute('fill', ink3);
@@ -4631,9 +4650,30 @@ function makeScoreView(React) {
           ctx.svg.appendChild(t);
         }
 
-        this._map.push({ number: mm.number, x: x + (i === 0 ? LEAD : 0), w: mW, startQ: mm.startQ, lenQ: mm.lenQ });
+        this._map.push({ number: mm.number, x: x + (col === 0 ? LEAD : 0), y: rowTop, w: mW, startQ: mm.startQ, lenQ: mm.lenQ });
         x += w;
       });
+
+      /* "Measures 21–24" means nothing to someone who cannot see which part of
+         the piece that is. On the whole score the weak bars are shaded where
+         they actually are, so the advice points at something. */
+      if (p.weak && p.weak.length) {
+        const bad = col('--bad');
+        const want = {};
+        p.weak.forEach(n => { want[n] = true; });
+        this._map.forEach(seg => {
+          if (!want[seg.number]) return;
+          const r = document.createElementNS(SVGNS, 'rect');
+          r.setAttribute('x', seg.x - 2);
+          r.setAttribute('y', (seg.y || 0) + 8);
+          r.setAttribute('width', seg.w + 4);
+          r.setAttribute('height', SYS_H - 18);
+          r.setAttribute('rx', 7);
+          r.setAttribute('fill', bad);
+          r.setAttribute('opacity', 0.14);
+          ctx.svg.insertBefore(r, ctx.svg.firstChild);
+        });
+      }
 
       /* Order the note groups in time so memory-mode hiding is stable. */
       allNoteMeta.sort((a, b) => a.absStart - b.absStart);
@@ -4683,6 +4723,7 @@ function makeScoreView(React) {
       svg.appendChild(this._phLine);
       svg.appendChild(this._phDot);
       this._H = H;
+      this._SYS = SYS_H;
     }
 
     buildVoice(VF, list, clef, mm, ink, guidance) {
@@ -4787,10 +4828,11 @@ function makeScoreView(React) {
       if (this._hl) {
         const cm = p.currentM != null ? this._map.filter(s => s.number === p.currentM)[0] : null;
         if (cm) {
+          const sys = this._SYS || this._H;
           this._hl.setAttribute('x', cm.x - 4);
-          this._hl.setAttribute('y', 16);
+          this._hl.setAttribute('y', (cm.y || 0) + 16);
           this._hl.setAttribute('width', cm.w);
-          this._hl.setAttribute('height', this._H - 28);
+          this._hl.setAttribute('height', sys - 28);
           this._hl.setAttribute('opacity', 1);
         } else this._hl.setAttribute('opacity', 0);
       }
@@ -4799,11 +4841,14 @@ function makeScoreView(React) {
         const a = p.loopFrom != null ? this._map.filter(s => s.number >= p.loopFrom)[0] : null;
         const bs = p.loopTo != null ? this._map.filter(s => s.number <= p.loopTo) : [];
         const b = bs.length ? bs[bs.length - 1] : null;
-        if (a && b && b.x + b.w > a.x) {
+        /* Across a wrap the bracket would be a box round half the page, so it
+           marks the first system of the range and the wash marks the rest. */
+        if (a && b && (a.y || 0) === (b.y || 0) && b.x + b.w > a.x) {
+          const sys = this._SYS || this._H;
           this._loopBox.setAttribute('x', a.x - 6);
-          this._loopBox.setAttribute('y', 10);
+          this._loopBox.setAttribute('y', (a.y || 0) + 10);
           this._loopBox.setAttribute('width', (b.x + b.w) - a.x + 12);
-          this._loopBox.setAttribute('height', this._H - 18);
+          this._loopBox.setAttribute('height', sys - 18);
           this._loopBox.setAttribute('opacity', 1);
         } else this._loopBox.setAttribute('opacity', 0);
       }
@@ -4812,10 +4857,12 @@ function makeScoreView(React) {
         const s = p.playX != null ? seg(p.playX) : null;
         if (s) {
           const x = s.x + ((p.playX - s.startQ) / Math.max(0.001, s.lenQ)) * s.w;
+          const sys = this._SYS || this._H;
+          const top = (s.y || 0);
           this._phLine.setAttribute('x1', x); this._phLine.setAttribute('x2', x);
-          this._phLine.setAttribute('y1', 14); this._phLine.setAttribute('y2', this._H - 10);
+          this._phLine.setAttribute('y1', top + 14); this._phLine.setAttribute('y2', top + sys - 10);
           this._phLine.setAttribute('opacity', 1);
-          this._phDot.setAttribute('cx', x); this._phDot.setAttribute('cy', 14);
+          this._phDot.setAttribute('cx', x); this._phDot.setAttribute('cy', top + 14);
           this._phDot.setAttribute('opacity', 1);
         } else {
           this._phLine.setAttribute('opacity', 0);
@@ -4989,7 +5036,7 @@ class Component extends DCLogic {
       /* MIDI stays off until the user asks for it: requesting access can
          prompt, and claiming a connection we do not have would be a lie. */
       toggles: { midi: false, notify: true, sound: false, notes: true, auto: true, follow: true },
-      gateIdx: 0, focus: false,
+      gateIdx: 0, focus: false, wholeScore: false,
       toast: '',
       locale: (typeof window !== 'undefined' && window.PPP_I18N) ? window.PPP_I18N.getLocale() : 'en-US',
       localeMenuOpen: false,
@@ -6398,6 +6445,15 @@ class Component extends DCLogic {
   /* The notes the current loop and hand mode actually ask for, widened to
      whole octaves so the keyboard still reads as a keyboard, and never
      narrower than two octaves. */
+  /* Straight from the Learning model — PPP does not get a second opinion on
+     what is weak just because it is being drawn. */
+  weakMeasures() {
+    const m = this.model();
+    const out = [];
+    (m.ranges || []).forEach(r => { for (let n = r.from; n <= r.to; n++) out.push(n); });
+    return out;
+  }
+
   playingKeyRange() {
     const S = this.state;
     /* With the loop off, range() is the whole piece, which is no narrower than
@@ -7136,6 +7192,11 @@ class Component extends DCLogic {
       focusNarrow: S.focus && this.narrowScreen(),
       /* planning screens keep the journey; working screens do not */
       showRail: !S.focus && ['home', 'upload', 'analysis', 'plan', 'songs', 'progress'].indexOf(sc) > -1,
+      wholeAttr: S.wholeScore ? 'true' : 'false',
+      toggleWhole: () => this.setState(st => ({ wholeScore: !st.wholeScore })),
+      wholeBtnStyle: this.chip(S.wholeScore),
+      wholeLabel: tx(S.wholeScore ? 'Whole score' : 'This part'),
+      wholeHint: tx('See the whole piece at once, with the weak bars shaded'),
       focusAttr: S.focus ? 'true' : 'false',
       toggleFocus: () => this.toggleFocus(),
       focusBtnStyle: this.chip(S.focus),
@@ -7172,7 +7233,11 @@ class Component extends DCLogic {
         /* Four bars across a phone leaves each note a few pixels. Focused on a
            narrow screen the window halves instead, so the notation is legible
            at the distance you actually sit from a tablet. */
-        startM: this.viewStart(staffBars), count: staffBars, mW: 210, zoom: S.zoom, currentM: cur,
+        startM: S.wholeScore ? this.firstM() : this.viewStart(staffBars),
+        count: S.wholeScore ? Score.count(score) : staffBars,
+        perRow: S.wholeScore ? (this.narrowScreen() ? 2 : 4) : 0,
+        weak: S.wholeScore ? this.weakMeasures() : null,
+        mW: S.wholeScore ? 168 : 210, zoom: S.wholeScore ? 1 : S.zoom, currentM: cur,
         playX: S.beat, beat: S.beat, hands: S.hands, wrong: S.wrongNotes,
         guidance: S.guidance && S.practiceMode === 'practice',
         hidePlan: S.practiceMode === 'memory' ? memPlan : null,
