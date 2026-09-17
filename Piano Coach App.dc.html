@@ -1925,11 +1925,23 @@ function parseMusicXML(xmlText, name) {
   let tempo = null;
   const notes = [];
   const chords = [];          /* {m, b, text} — chord symbols above the staff */
+  const pedals = [];          /* {m, b, type} — Ped. and its release */
+  const ottavas = [];         /* {m, b, endM, endB, size, dir} — 8va / 8vb spans */
   const measureInfo = {};     /* measure number -> {time, key, clefs, lenQ} */
   const order = [];           /* measure numbers, in document order */
   let staffBase = 0;          /* so a second single-staff part becomes the left hand */
   let maxStaffSeen = 0;
   const partSpan = [];        /* {base, count} per part, to find the piano among them */
+
+  /* The piano is the part with two staves, or the last one. Directions that
+     belong to the player — pedal, 8va — are taken from it and not from a
+     vocal line that happens to come first. */
+  const pianoGuess = (() => {
+    for (let i = 0; i < parts.length; i++)
+      if (parts[i].querySelector('attributes > staves') &&
+          (parseInt(parts[i].querySelector('attributes > staves').textContent, 10) || 1) >= 2) return i;
+    return parts.length - 1;
+  })();
 
   parts.forEach((part, partIdx) => {
     let divisions = 1;
@@ -1986,6 +1998,30 @@ function parseMusicXML(xmlText, name) {
         }
 
         if (tag === 'direction') {
+          if (partIdx === pianoGuess) {
+            const off = num(el, 'offset', 0) / divisions;
+            const ped = el.querySelector('pedal');
+            if (ped) {
+              const t = ped.getAttribute('type');
+              if (t === 'start' || t === 'stop' || t === 'change')
+                pedals.push({ m: number, b: cursor + off, type: t });
+            }
+            const oct = el.querySelector('octave-shift');
+            if (oct) {
+              const t = oct.getAttribute('type');
+              const size = parseInt(oct.getAttribute('size') || '8', 10) || 8;
+              if (t === 'up' || t === 'down') {
+                /* MusicXML says which way the printed notes move; "down" is the
+                   8va above, because the notes are written an octave lower. */
+                ottavas.push({ m: number, b: cursor + off, endM: null, endB: null,
+                  size: size, dir: t === 'down' ? 1 : -1 });
+              } else if (t === 'stop') {
+                for (let i = ottavas.length - 1; i >= 0; i--) {
+                  if (ottavas[i].endM == null) { ottavas[i].endM = number; ottavas[i].endB = cursor + off; break; }
+                }
+              }
+            }
+          }
           const snd = el.querySelector('sound[tempo]');
           if (snd) { const t2 = parseFloat(snd.getAttribute('tempo')); if (isFinite(t2) && !tempo) tempo = t2; }
           const per = el.querySelector('metronome per-minute');
@@ -2025,8 +2061,18 @@ function parseMusicXML(xmlText, name) {
           }
         }
 
-        let tieStop = false;
-        [].forEach.call(el.querySelectorAll('tie'), t => { if (t.getAttribute('type') === 'stop') tieStop = true; });
+        let tieStop = false, tieStart = false;
+        [].forEach.call(el.querySelectorAll('tie'), t => {
+          const ty = t.getAttribute('type');
+          if (ty === 'stop') tieStop = true;
+          if (ty === 'start') tieStart = true;
+        });
+        let slurStart = false, slurStop = false;
+        [].forEach.call(el.querySelectorAll('notations slur'), sl => {
+          const ty = sl.getAttribute('type');
+          if (ty === 'start') slurStart = true;
+          if (ty === 'stop') slurStop = true;
+        });
 
         const type = txt(el, 'type', null) || typeFromQ(durQ);
         const dots = el.querySelectorAll('dot').length;
@@ -2037,7 +2083,7 @@ function parseMusicXML(xmlText, name) {
         notes.push({
           m: number, b: onset, dur: durQ, p,
           midi: p ? pitchToMidi(p) : null,
-          staff: globalStaff, voice, rest: isRest && !p, chord: isChord, tieStop,
+          staff: globalStaff, voice, rest: isRest && !p, chord: isChord, tieStop, tieStart, slurStart, slurStop,
           type, dots, acc, hand: 'r'   /* resolved once all parts are in */
         });
 
@@ -2091,7 +2137,9 @@ function parseMusicXML(xmlText, name) {
     source: name || 'MusicXML',
     tempo: Math.round(tempo || 84),
     staves: Math.max(1, Math.min(maxStaffSeen, 4)),
-    measures, notes, chords: chords, sections: null, seeds: null
+    measures, notes, chords: chords,
+    pedals: pedals, ottavas: ottavas.filter(o => o.endM != null),
+    sections: null, seeds: null
   });
 }
 
@@ -4549,7 +4597,7 @@ function makeScoreView(React) {
       const p = this.props;
       return [
         p.score.id, p.startM, p.count, p.grand !== false, p.numbers !== false,
-        p.clefs !== false, !!p.guidance, p.theme, p.mW, p.zoom, p.fluid, p.perRow || 0, p.paper !== false, p.chords !== false, p.staves || 0, (p.weak || []).join(','), p.notesKey || ''
+        p.clefs !== false, !!p.guidance, p.theme, p.mW, p.zoom, p.fluid, p.perRow || 0, p.paper !== false, p.chords !== false, p.staves || 0, p.heading === true, p.marks !== false, (p.weak || []).join(','), p.notesKey || ''
       ].join('|');
     }
 
@@ -4625,15 +4673,23 @@ function makeScoreView(React) {
       }
       const CHORD_H = anyChord ? 22 : 0;
 
+      /* Printed music puts the title, who wrote it and the tempo mark on the
+         page, not in the surrounding application. On the whole score PPP does
+         the same, so the page is a page rather than a strip of staves. */
+      const heading = p.heading === true && !!p.perRow;
+      const HEAD_H = heading ? 72 : 0;
+
       const LEAD = (p.clefs !== false) ? 62 : 12;
-      /* A vocal line over a piano part is three staves, not two. The system is
+      /* A vocal line over a piano part is three staves. The system is
          however many the score has, stacked, rather than a hardcoded pair. */
       const nStaves = grand ? Math.max(2, Math.min(4, p.staves || score.staves || 2)) : 1;
       const STAFF_GAP = 92;
-      const TOP_Y = 12 + CHORD_H;
+      const TOP_Y = 12 + CHORD_H + HEAD_H;
       const staffY = k => TOP_Y + k * STAFF_GAP;
       const TREBLE_Y = TOP_Y, BASS_Y = staffY(1);
-      const SYS_H = TOP_Y + (nStaves - 1) * STAFF_GAP + 84;
+      /* room under the lowest staff when the score asks for the pedal */
+      const PED_H = (p.marks !== false && (score.pedals || []).length) ? 26 : 0;
+      const SYS_H = (12 + CHORD_H) + (nStaves - 1) * STAFF_GAP + 84 + PED_H;
       /* A whole piece will not fit on one line, and a fixed number of bars per
          line is not how music is set. A bar of sixteen notes needs more room
          than a bar of two, so each one is measured by what is in it, bars are
@@ -4683,7 +4739,7 @@ function makeScoreView(React) {
       /* systems that touch each other read as one block of lines */
       const GAP = wrapping ? 46 : 0;
       const ROW_H = SYS_H + GAP;
-      const H = ROW_H * rows - GAP;
+      const H = HEAD_H + ROW_H * rows - GAP;
       const W = PAGE + 14;
 
       const renderer = new VF.Renderer(el, VF.Renderer.Backends.SVG);
@@ -4693,11 +4749,35 @@ function makeScoreView(React) {
       const first = measures[0];
       let x = 10;
       const allNoteMeta = [];
+      /* one ordered chain per (staff, voice), so a tie or a slur can find the
+         note it runs to even when that note is in the next bar */
+      const chains = {};
+
+      if (heading) {
+        const mid = (10 + PAGE) / 2;
+        const put = (text, y, size, weight, anchor, xx, fill) => {
+          if (!text) return;
+          const t = document.createElementNS(SVGNS, 'text');
+          t.setAttribute('x', xx); t.setAttribute('y', y);
+          t.setAttribute('text-anchor', anchor);
+          t.setAttribute('font-size', size);
+          t.setAttribute('font-weight', weight);
+          t.setAttribute('font-family', "'Instrument Serif', Georgia, serif");
+          t.setAttribute('fill', fill || ink);
+          t.textContent = text;
+          ctx.svg.appendChild(t);
+        };
+        put(score.title, 34, 26, '400', 'middle', mid);
+        put(score.composer, 56, 13, '400', 'end', PAGE - 4, staffCol === ink ? ink : ink);
+        /* the tempo mark belongs over the first bar, left, as it is printed */
+        const bpm = Math.round(score.tempo || 0);
+        if (bpm) put('♩ = ' + bpm, 56, 13, '600', 'start', 10);
+      }
 
       measures.forEach((mm, i) => {
         const it = lay[i];
         const col = (i === 0 || lay[i - 1].row !== it.row) ? 0 : 1;
-        const rowTop = it.row * ROW_H;
+        const rowTop = HEAD_H + it.row * ROW_H;
         x = col === 0 ? 10 : it.x;
         const w = (col === 0 ? LEAD : 0) + it.w;
         const ks = vexKeySig(mm.key.fifths, mm.key.mode);
@@ -4742,6 +4822,7 @@ function makeScoreView(React) {
             if (!built1) return;
             built1.stave = stave;
             built1.staffNo = staffNo;
+            built1.voiceNo = vn;
             built.push(built1);
           });
         };
@@ -4776,6 +4857,14 @@ function makeScoreView(React) {
               if (g && g.classList) g.classList.add('ppp-note');
               try { sn.setStave(b.stave).setContext(ctx).draw(); } catch (e) {}
               ctx.closeGroup();
+              if (!meta.rest && meta.sn) {
+                const ck = b.staffNo + ':' + (b.voiceNo || 1);
+                (chains[ck] = chains[ck] || []).push({
+                  sn: meta.sn, stave: b.stave, row: it.row,
+                  tieStart: meta.tieStart, tieStop: meta.tieStop,
+                  slurStart: meta.slurStart, slurStop: meta.slurStop
+                });
+              }
               if (meta.rest) return;
               allNoteMeta.push({
                 el: g,
@@ -4821,6 +4910,80 @@ function makeScoreView(React) {
         this._map.push({ number: mm.number, x: x + (col === 0 ? LEAD : 0), y: rowTop, w: it.w, startQ: mm.startQ, lenQ: mm.lenQ });
         x += w;
       });
+
+      /* Ties and slurs are drawn after every note exists, because both of them
+         run from one note to another and the second one is often in the next
+         bar. A curve that would cross a line break is dropped rather than
+         drawn across the page. */
+      Object.keys(chains).forEach(ck => {
+        const seq = chains[ck];
+        for (let i = 0; i < seq.length - 1; i++) {
+          const a = seq[i], bn = seq[i + 1];
+          if (a.row !== bn.row) continue;
+          try {
+            if (a.tieStart && bn.tieStop)
+              new VF.StaveTie({ first_note: a.sn, last_note: bn.sn }).setContext(ctx).draw();
+          } catch (e) { /* a tie that VexFlow cannot place is not worth failing over */ }
+        }
+        /* a slur runs from its start to the next stop in the same voice */
+        for (let i = 0; i < seq.length; i++) {
+          if (!seq[i].slurStart) continue;
+          let j = i + 1;
+          while (j < seq.length && !seq[j].slurStop) j++;
+          if (j >= seq.length || seq[j].row !== seq[i].row) continue;
+          try {
+            new VF.Curve(seq[i].sn, seq[j].sn, { cps: [{ x: 0, y: 18 }, { x: 0, y: 18 }] })
+              .setContext(ctx).draw();
+          } catch (e) { /* likewise */ }
+        }
+      });
+
+      /* Pedal and 8va are instructions to the player, so they are drawn where
+         a printed score puts them: the pedal under the lowest staff, the
+         octave bracket over the highest. */
+      const segOf = n => this._map.filter(sg => sg.number === n)[0] || null;
+      const atBeat = (mNo, beat) => {
+        const sg = segOf(mNo);
+        if (!sg) return null;
+        const mm2 = Score.measure(score, mNo);
+        const frac = Math.max(0, Math.min(1, (beat || 0) / Math.max(0.001, mm2 ? mm2.lenQ : 4)));
+        return { x: sg.x + frac * sg.w, y: sg.y || 0 };
+      };
+      if (p.marks !== false) {
+        (score.pedals || []).forEach(pd => {
+          const at = atBeat(pd.m, pd.b);
+          if (!at) return;
+          const t = document.createElementNS(SVGNS, 'text');
+          /* below the lowest staff, where it does not sit on the notes */
+          t.setAttribute('x', at.x); t.setAttribute('y', at.y + staffY(nStaves - 1) + 102);
+          t.setAttribute('font-size', '13');
+          t.setAttribute('font-style', 'italic');
+          t.setAttribute('font-family', "'Instrument Serif', Georgia, serif");
+          t.setAttribute('fill', ink);
+          t.textContent = pd.type === 'start' ? 'Ped.' : pd.type === 'change' ? '∗' : '∗';
+          ctx.svg.appendChild(t);
+        });
+        (score.ottavas || []).forEach(ov => {
+          const a = atBeat(ov.m, ov.b), bq = atBeat(ov.endM, ov.endB);
+          if (!a || !bq || a.y !== bq.y || bq.x <= a.x) return;
+          const y = a.y + TOP_Y - 14;
+          const line = document.createElementNS(SVGNS, 'path');
+          line.setAttribute('d', 'M ' + (a.x + 26) + ' ' + y + ' L ' + bq.x + ' ' + y + ' L ' + bq.x + ' ' + (y + 6));
+          line.setAttribute('fill', 'none');
+          line.setAttribute('stroke', ink);
+          line.setAttribute('stroke-width', '1');
+          line.setAttribute('stroke-dasharray', '4 3');
+          ctx.svg.appendChild(line);
+          const t = document.createElementNS(SVGNS, 'text');
+          t.setAttribute('x', a.x); t.setAttribute('y', y + 4);
+          t.setAttribute('font-size', '12');
+          t.setAttribute('font-style', 'italic');
+          t.setAttribute('font-family', "'Instrument Serif', Georgia, serif");
+          t.setAttribute('fill', ink);
+          t.textContent = ov.dir > 0 ? '8va' : '8vb';
+          ctx.svg.appendChild(t);
+        });
+      }
 
       /* "Measures 21–24" means nothing to someone who cannot see which part of
          the piece that is. On the whole score the weak bars are shaded where
@@ -4984,7 +5147,11 @@ function makeScoreView(React) {
           abs: (mm.startQ + g.b), dur: head.dur, rest: isRest,
           midis: g.notes.filter(n => !n.rest).map(n => n.midi),
           hand: head.hand,
-          key: onsetKey(head.m, g.b, head.staff)
+          key: onsetKey(head.m, g.b, head.staff),
+          /* kept so ties and slurs can be drawn between the real objects */
+          sn: sn,
+          tieStart: g.notes.some(n => n.tieStart), tieStop: g.notes.some(n => n.tieStop),
+          slurStart: g.notes.some(n => n.slurStart), slurStop: g.notes.some(n => n.slurStop)
         });
       });
       if (!tickables.length) return null;
@@ -7497,6 +7664,7 @@ class Component extends DCLogic {
         count: S.wholeScore ? Score.count(score) : staffBars,
         perRow: S.wholeScore ? (this.narrowScreen() ? 3 : 5) : 0,
         weak: S.wholeScore ? this.weakMeasures() : null,
+        heading: S.wholeScore,
         pick: n => this.pickMeasure(n),
         mW: S.wholeScore ? 168 : 210, zoom: S.wholeScore ? 1 : S.zoom, currentM: cur,
         playX: S.beat, beat: S.beat, hands: S.hands, wrong: S.wrongNotes,
