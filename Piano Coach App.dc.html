@@ -26,12 +26,14 @@
     --ink3: #948d85; --line: #e6e0d8; --accent: oklch(0.52 0.19 285); --accent-2: oklch(0.88 0.05 285);
     --accent-3: oklch(0.95 0.025 285); --good: oklch(0.6 0.12 155); --warn: oklch(0.72 0.14 65);
     --bad: oklch(0.58 0.17 25); --staff: #cdc6bd; --key-w: #fffefc; --key-b: #221f1d; --shadow: 0 1px 2px rgba(28,24,20,.05), 0 8px 24px -12px rgba(28,24,20,.16);
+    --paper: #fffefc; --paper-ink: #1b1a18; --paper-staff: #cdc6bd; --paper-line: #e6e0d8;
   }
   [data-app="dark"], [data-auth="dark"] {
     --bg: #131211; --surface: #1b1a19; --surface2: #242221; --ink: #f5f2ee; --ink2: #a9a29a;
     --ink3: #79726b; --line: #2d2b28; --accent: oklch(0.68 0.16 285); --accent-2: oklch(0.42 0.11 285);
     --accent-3: oklch(0.28 0.05 285); --good: oklch(0.7 0.13 155); --warn: oklch(0.78 0.13 65);
     --bad: oklch(0.66 0.17 25); --staff: #45413d; --key-w: #e9e5e0; --key-b: #100f0e; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+    --paper: #e8e4dc; --paper-ink: #171614; --paper-staff: #a8a29a; --paper-line: #cfc9c0;
   }
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
@@ -787,7 +789,7 @@
               <sc-if value="{{ showFollowHint }}" hint-placeholder-val="{{ false }}">
                 <div class="ppp-setup-only" style="margin: 0 16px; padding: 9px 12px; border-radius: 10px; background: var(--accent-3); border: 1px solid var(--accent-2); font-size: 12.5px; line-height: 1.45; color: var(--ink2);">{{ followHint }}</div>
               </sc-if>
-              <div class="ppp-staffwrap ppp-focus-grow" ref="{{ staffRef }}" data-whole="{{ wholeAttr }}" style="overflow-x: auto; padding: 18px 16px 22px;">{{ playerStaff }}</div>
+              <div class="ppp-staffwrap ppp-focus-grow" ref="{{ staffRef }}" data-whole="{{ wholeAttr }}" style="overflow-x: auto; padding: 18px 16px 22px; background: var(--paper);">{{ playerStaff }}</div>
             </div>
 
             <div style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); padding: 16px;">
@@ -4517,7 +4519,9 @@ function makeScoreView(React) {
 
       const cs = getComputedStyle(el);
       const col = n => (cs.getPropertyValue(n) || '').trim() || '#222';
-      const ink = col('--ink'), staffCol = col('--staff'), ink3 = col('--ink3');
+      const ink = col('--paper-ink') || col('--ink');
+      const staffCol = col('--paper-staff') || col('--staff');
+      const ink3 = col('--paper-staff') || col('--ink3');
 
       const grand = p.grand !== false;
       const zoom = p.zoom || 1;
@@ -4542,7 +4546,10 @@ function makeScoreView(React) {
          the thing instead of a four-bar window into it. */
       const perRow = Math.max(1, p.perRow || measures.length);
       const rows = Math.ceil(measures.length / perRow);
-      const H = SYS_H * rows;
+      /* systems that touch each other read as one block of lines */
+      const GAP = perRow < measures.length ? 46 : 0;
+      const ROW_H = SYS_H + GAP;
+      const H = ROW_H * rows - GAP;
       const W = LEAD + mW * Math.min(perRow, measures.length) + 14;
 
       const renderer = new VF.Renderer(el, VF.Renderer.Backends.SVG);
@@ -4555,7 +4562,7 @@ function makeScoreView(React) {
 
       measures.forEach((mm, i) => {
         const col = i % perRow;
-        const rowTop = ((i / perRow) | 0) * SYS_H;
+        const rowTop = ((i / perRow) | 0) * ROW_H;
         if (col === 0) x = 10;
         const w = (col === 0 ? LEAD : 0) + mW;
         const treble = new VF.Stave(x, TREBLE_Y + rowTop, w, { spacing_between_lines_px: 10 });
@@ -4678,8 +4685,8 @@ function makeScoreView(React) {
           r.setAttribute('width', seg.w + 4);
           r.setAttribute('height', SYS_H - 18);
           r.setAttribute('rx', 7);
-          r.setAttribute('fill', bad);
-          r.setAttribute('opacity', 0.14);
+          r.setAttribute('fill', 'rgb(214,64,52)');
+          r.setAttribute('opacity', 0.15);
           ctx.svg.insertBefore(r, ctx.svg.firstChild);
         });
       }
@@ -4714,6 +4721,10 @@ function makeScoreView(React) {
          aspect ratio. */
       svg.setAttribute('height', height);
       svg.style.height = 'auto';
+      /* The notation is ink on paper wherever it appears — the thumbnails, the
+         loop screen, the recognition review — so the paper travels with it
+         rather than being painted on each container that happens to hold one. */
+      svg.style.background = 'var(--paper)';
       if (p.fluid) {
         svg.setAttribute('width', '100%');
         svg.style.width = '100%';
@@ -4730,8 +4741,9 @@ function makeScoreView(React) {
         Object.keys(attrs).forEach(a => e.setAttribute(a, attrs[a]));
         return e;
       };
-      this._loopBox = mk('rect', { fill: 'none', stroke: col('--accent-2'), 'stroke-width': 1.5, 'stroke-dasharray': '5 4', rx: 10, opacity: 0 });
-      this._hl = mk('rect', { class: 'ppp-now', fill: col('--accent-3'), rx: 8, opacity: 0 });
+      this._loopBox = mk('rect', { fill: 'none', stroke: 'rgba(96,74,220,.5)', 'stroke-width': 1.5, 'stroke-dasharray': '5 4', rx: 10, opacity: 0 });
+      /* fixed mixes, because these sit on paper whatever the theme is doing */
+      this._hl = mk('rect', { class: 'ppp-now', fill: 'rgba(96,74,220,.16)', stroke: 'rgba(96,74,220,.55)', 'stroke-width': 1.5, rx: 8, opacity: 0 });
       svg.insertBefore(this._loopBox, svg.firstChild);
       svg.insertBefore(this._hl, svg.firstChild);
 
@@ -4760,8 +4772,8 @@ function makeScoreView(React) {
       }
 
       /* In front: the playhead. */
-      this._phLine = mk('line', { stroke: col('--accent'), 'stroke-width': 2, opacity: 0 });
-      this._phDot = mk('circle', { r: 4, fill: col('--accent'), opacity: 0 });
+      this._phLine = mk('line', { stroke: 'rgb(96,74,220)', 'stroke-width': 2.5, opacity: 0 });
+      this._phDot = mk('circle', { r: 5, fill: 'rgb(96,74,220)', opacity: 0 });
       svg.appendChild(this._phLine);
       svg.appendChild(this._phDot);
       this._H = H;
@@ -7319,7 +7331,7 @@ class Component extends DCLogic {
            at the distance you actually sit from a tablet. */
         startM: S.wholeScore ? this.firstM() : this.viewStart(staffBars),
         count: S.wholeScore ? Score.count(score) : staffBars,
-        perRow: S.wholeScore ? (this.narrowScreen() ? 2 : 4) : 0,
+        perRow: S.wholeScore ? (this.narrowScreen() ? 2 : 3) : 0,
         weak: S.wholeScore ? this.weakMeasures() : null,
         pick: n => this.pickMeasure(n),
         mW: S.wholeScore ? 168 : 210, zoom: S.wholeScore ? 1 : S.zoom, currentM: cur,
