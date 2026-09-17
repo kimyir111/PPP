@@ -1849,6 +1849,48 @@ function buildDemoScore() {
    grace), backup / forward cursor moves, and tempo from either a sound
    directive or a metronome mark.
    ========================================================================== */
+/* MusicXML names a chord in parts — a root, a kind, sometimes a bass note —
+   and exporters usually also carry the text they printed. The printed text is
+   what the player recognises, so it wins when it is there; the parts are the
+   fallback. */
+const CHORD_KIND = {
+  'major': '', 'minor': 'm', 'augmented': 'aug', 'diminished': 'dim',
+  'dominant': '7', 'major-seventh': 'M7', 'minor-seventh': 'm7',
+  'diminished-seventh': 'dim7', 'augmented-seventh': 'aug7',
+  'half-diminished': 'm7b5', 'major-minor': 'mM7',
+  'major-sixth': '6', 'minor-sixth': 'm6',
+  'dominant-ninth': '9', 'major-ninth': 'M9', 'minor-ninth': 'm9',
+  'dominant-11th': '11', 'major-11th': 'M11', 'minor-11th': 'm11',
+  'dominant-13th': '13', 'major-13th': 'M13', 'minor-13th': 'm13',
+  'suspended-second': 'sus2', 'suspended-fourth': 'sus4',
+  'power': '5', 'none': '', 'other': ''
+};
+const ALTER_SIGN = { '-2': 'bb', '-1': 'b', '0': '', '1': '#', '2': '##' };
+
+function chordText(el, txt) {
+  const step = txt(el, 'root root-step', null);
+  if (!step) return null;
+  const alter = ALTER_SIGN[String(parseInt(txt(el, 'root root-alter', '0'), 10) || 0)] || '';
+  const kindEl = el.querySelector('kind');
+  const printed = kindEl && kindEl.getAttribute('text');
+  let quality = printed != null && printed !== ''
+    ? printed
+    : (CHORD_KIND[(kindEl && kindEl.textContent || '').trim()] || '');
+  /* alterations an exporter adds on top of the kind, e.g. 7(b9) */
+  const degs = [].slice.call(el.querySelectorAll('degree')).map(d => {
+    const v = txt(d, 'degree-value', '');
+    const a = ALTER_SIGN[String(parseInt(txt(d, 'degree-alter', '0'), 10) || 0)] || '';
+    const t = (d.querySelector('degree-type') || {}).textContent;
+    return t === 'subtract' ? 'omit' + v : a + v;
+  }).filter(Boolean);
+  if (degs.length) quality += '(' + degs.join(',') + ')';
+  const bStep = txt(el, 'bass bass-step', null);
+  const bass = bStep
+    ? '/' + bStep + (ALTER_SIGN[String(parseInt(txt(el, 'bass bass-alter', '0'), 10) || 0)] || '')
+    : '';
+  return step + alter + quality + bass;
+}
+
 function parseMusicXML(xmlText, name) {
   const doc = new DOMParser().parseFromString(xmlText, 'application/xml');
   const bad = doc.querySelector('parsererror');
@@ -1882,6 +1924,7 @@ function parseMusicXML(xmlText, name) {
 
   let tempo = null;
   const notes = [];
+  const chords = [];          /* {m, b, text} — chord symbols above the staff */
   const measureInfo = {};     /* measure number -> {time, key, clefs, lenQ} */
   const order = [];           /* measure numbers, in document order */
   let staffBase = 0;          /* so a second single-staff part becomes the left hand */
@@ -1928,6 +1971,16 @@ function parseMusicXML(xmlText, name) {
             const sign = txt(c, 'sign', 'G');
             clefs[nStaff] = sign === 'F' ? 'bass' : sign === 'C' ? 'alto' : sign === 'percussion' ? 'percussion' : 'treble';
           });
+          return;
+        }
+
+        if (tag === 'harmony') {
+          /* only from the first part, or a piano reduction would print twice */
+          if (partIdx === 0) {
+            const t = chordText(el, txt);
+            const off = num(el, 'offset', 0) / divisions;
+            if (t) chords.push({ m: number, b: cursor + off, text: t });
+          }
           return;
         }
 
@@ -2025,7 +2078,7 @@ function parseMusicXML(xmlText, name) {
     source: name || 'MusicXML',
     tempo: Math.round(tempo || 84),
     staves: Math.max(1, Math.min(maxStaffSeen, 2)),
-    measures, notes, sections: null, seeds: null
+    measures, notes, chords: chords, sections: null, seeds: null
   });
 }
 
@@ -4482,7 +4535,7 @@ function makeScoreView(React) {
       const p = this.props;
       return [
         p.score.id, p.startM, p.count, p.grand !== false, p.numbers !== false,
-        p.clefs !== false, !!p.guidance, p.theme, p.mW, p.zoom, p.fluid, p.perRow || 0, p.paper !== false, (p.weak || []).join(','), p.notesKey || ''
+        p.clefs !== false, !!p.guidance, p.theme, p.mW, p.zoom, p.fluid, p.perRow || 0, p.paper !== false, p.chords !== false, (p.weak || []).join(','), p.notesKey || ''
       ].join('|');
     }
 
@@ -4541,9 +4594,19 @@ function makeScoreView(React) {
       }
       if (!measures.length) return;
 
+      /* Chord symbols sit above the top staff, so the system starts lower when
+         there are any to print. */
+      const chordsFor = {};
+      let anyChord = false;
+      if (p.chords !== false) {
+        (score.chords || []).forEach(c => { (chordsFor[c.m] = chordsFor[c.m] || []).push(c); });
+        anyChord = measures.some(mm => chordsFor[mm.number] && chordsFor[mm.number].length);
+      }
+      const CHORD_H = anyChord ? 22 : 0;
+
       const LEAD = (p.clefs !== false) ? 62 : 12;
-      const TREBLE_Y = 12, BASS_Y = 104;
-      const SYS_H = grand ? 196 : 104;
+      const TREBLE_Y = 12 + CHORD_H, BASS_Y = 104 + CHORD_H;
+      const SYS_H = (grand ? 196 : 104) + CHORD_H;
       /* A whole piece will not fit on one line, and a fixed number of bars per
          line is not how music is set. A bar of sixteen notes needs more room
          than a bar of two, so each one is measured by what is in it, bars are
@@ -4710,6 +4773,23 @@ function makeScoreView(React) {
           t.setAttribute('fill', ink3);
           t.textContent = String(mm.number);
           ctx.svg.appendChild(t);
+        }
+
+        const cs = chordsFor[mm.number];
+        if (cs && cs.length) {
+          const barX = x + (col === 0 ? LEAD : 0);
+          cs.forEach(c => {
+            const frac = Math.max(0, Math.min(0.92, (c.b || 0) / Math.max(0.001, mm.lenQ)));
+            const t = document.createElementNS(SVGNS, 'text');
+            t.setAttribute('x', barX + frac * it.w);
+            t.setAttribute('y', rowTop + TREBLE_Y - 7);
+            t.setAttribute('font-size', '13');
+            t.setAttribute('font-weight', '600');
+            t.setAttribute('font-family', "Figtree, system-ui, sans-serif");
+            t.setAttribute('fill', ink);
+            t.textContent = c.text;
+            ctx.svg.appendChild(t);
+          });
         }
 
         this._map.push({ number: mm.number, x: x + (col === 0 ? LEAD : 0), y: rowTop, w: it.w, startQ: mm.startQ, lenQ: mm.lenQ });
@@ -7119,7 +7199,7 @@ class Component extends DCLogic {
       curSection: 'Measures ' + S.loopFrom + '–' + S.loopTo,
       lastPracticed: S.laps ? tx('just now') : tx('12 minutes ago'),
       streakDays: S.streak + ' days',
-      thumbStaff: this.sv({ startM: S.loopFrom, count: 1, mW: 120, numbers: false, guidance: false, fluid: true, clefs: false, grand: score.staves > 1 }),
+      thumbStaff: this.sv({ startM: S.loopFrom, count: 1, mW: 120, numbers: false, guidance: false, chords: false, fluid: true, clefs: false, grand: score.staves > 1 }),
       /* Detected from performance history. Empty until PPP has heard you play. */
       hasWeak: !!learn.ranges.length,
       noWeak: !learn.ranges.length,
