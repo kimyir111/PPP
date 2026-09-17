@@ -26,14 +26,14 @@
     --ink3: #948d85; --line: #e6e0d8; --accent: oklch(0.52 0.19 285); --accent-2: oklch(0.88 0.05 285);
     --accent-3: oklch(0.95 0.025 285); --good: oklch(0.6 0.12 155); --warn: oklch(0.72 0.14 65);
     --bad: oklch(0.58 0.17 25); --staff: #cdc6bd; --key-w: #fffefc; --key-b: #221f1d; --shadow: 0 1px 2px rgba(28,24,20,.05), 0 8px 24px -12px rgba(28,24,20,.16);
-    --paper: #fffefc; --paper-ink: #1b1a18; --paper-staff: #cdc6bd; --paper-line: #e6e0d8;
+    --paper: #fffefc; --paper-ink: #1b1a18; --paper-staff: #8d867d; --paper-ink3: #6b645c; --paper-line: #e6e0d8;
   }
   [data-app="dark"], [data-auth="dark"] {
     --bg: #131211; --surface: #1b1a19; --surface2: #242221; --ink: #f5f2ee; --ink2: #a9a29a;
     --ink3: #79726b; --line: #2d2b28; --accent: oklch(0.68 0.16 285); --accent-2: oklch(0.42 0.11 285);
     --accent-3: oklch(0.28 0.05 285); --good: oklch(0.7 0.13 155); --warn: oklch(0.78 0.13 65);
-    --bad: oklch(0.66 0.17 25); --staff: #45413d; --key-w: #e9e5e0; --key-b: #100f0e; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
-    --paper: #e8e4dc; --paper-ink: #171614; --paper-staff: #a8a29a; --paper-line: #cfc9c0;
+    --bad: oklch(0.66 0.17 25); --staff: #7b736b; --key-w: #e9e5e0; --key-b: #100f0e; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+    --paper: #e8e4dc; --paper-ink: #171614; --paper-staff: #7d766e; --paper-ink3: #5d574f; --paper-line: #cfc9c0;
   }
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
@@ -4639,7 +4639,8 @@ function makeScoreView(React) {
       const onPaper = p.paper !== false;
       const ink = onPaper ? (col('--paper-ink') || col('--ink')) : col('--ink');
       const staffCol = onPaper ? (col('--paper-staff') || col('--staff')) : col('--staff');
-      const ink3 = onPaper ? (col('--paper-staff') || col('--ink3')) : col('--ink3');
+      /* bar numbers are read, so they are darker than the staff lines */
+      const ink3 = onPaper ? (col('--paper-ink3') || col('--ink3')) : col('--ink3');
 
       const grand = p.grand !== false;
       const zoom = p.zoom || 1;
@@ -5013,7 +5014,13 @@ function makeScoreView(React) {
 
       const svg = ctx.svg;
       /* Nothing on a page of music is meant to be a colour the theme did not
-         choose. Pure black is VexFlow's default, not a decision. */
+         choose. Pure black is VexFlow's default, not a decision.
+
+         The sweep below only reaches elements that carry an explicit fill. Some
+         glyphs carry none at all and inherit, so the inherited value is set on
+         the root as well — otherwise they fall back to black and disappear on a
+         dark background whatever the sweep does. */
+      svg.style.fill = ink;
       try {
         svg.querySelectorAll('[fill="#000000"],[fill="black"],[fill="rgb(0, 0, 0)"]')
           .forEach(e => e.setAttribute('fill', ink));
@@ -5542,7 +5549,14 @@ class Component extends DCLogic {
     if (!el) return;
     const a = this.props.accent;
     if (a) {
-      el.style.setProperty('--accent', a);
+      /* The design file's accent is tuned for the light theme. Pinned inline it
+         beat the dark stylesheet, so every accent in dark mode — the playhead,
+         a note you got right, the primary buttons — stayed the light purple on
+         a near-black background and could barely be seen. Lifted for dark, the
+         way the stylesheet's own dark accent is. */
+      const lifted = this.state.theme === 'dark'
+        ? 'color-mix(in oklab, ' + a + ' 72%, white)' : a;
+      el.style.setProperty('--accent', lifted);
       el.style.setProperty('--accent-2', `color-mix(in oklab, ${a} 34%, var(--surface))`);
       el.style.setProperty('--accent-3', `color-mix(in oklab, ${a} 12%, var(--surface))`);
     }
