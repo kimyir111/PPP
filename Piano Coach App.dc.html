@@ -4544,16 +4544,57 @@ function makeScoreView(React) {
       const LEAD = (p.clefs !== false) ? 62 : 12;
       const TREBLE_Y = 12, BASS_Y = 104;
       const SYS_H = grand ? 196 : 104;
-      /* A whole piece will not fit on one line. perRow folds it into systems,
-         the way printed music has always done it, so you can see the shape of
-         the thing instead of a four-bar window into it. */
-      const perRow = Math.max(1, p.perRow || measures.length);
-      const rows = Math.ceil(measures.length / perRow);
+      /* A whole piece will not fit on one line, and a fixed number of bars per
+         line is not how music is set. A bar of sixteen notes needs more room
+         than a bar of two, so each one is measured by what is in it, bars are
+         packed until the line is full, and then the line is justified so it
+         ends where every other line ends. p.perRow is the width of the page in
+         average bars, not a count of them. */
+      const wrapping = !!p.perRow;
+      const PAGE = wrapping ? LEAD + mW * p.perRow : LEAD + mW * measures.length;
+      const natural = mm => {
+        const ns = Score.notesIn(score, mm.number, mm.number);
+        const onsets = {};
+        ns.forEach(n => { if (!n.rest) onsets[n.b.toFixed(4)] = true; });
+        const k = Object.keys(onsets).length;
+        return mW * clamp(0.5 + k * 0.1, 0.5, 2.4);
+      };
+
+      const lay = measures.map(mm => ({ mm: mm, w: wrapping ? natural(mm) : mW, row: 0, x: 0 }));
+      let rowNo = 0, rowFrom = 0, used = LEAD;
+      const closeRow = (from, to) => {
+        if (to <= from) return;
+        const room = PAGE - LEAD;
+        let sum = 0;
+        for (let i = from; i < to; i++) sum += lay[i].w;
+        /* the last line of a piece is not stretched — it ends where it ends */
+        const stretch = (to < lay.length && sum > 0) ? room / sum : 1;
+        let x = 10 + LEAD;
+        for (let i = from; i < to; i++) {
+          lay[i].w = lay[i].w * stretch;
+          lay[i].x = x;
+          lay[i].row = rowNo;
+          x += lay[i].w;
+        }
+      };
+      if (wrapping) {
+        lay.forEach((it, i) => {
+          if (used + it.w > PAGE && i > rowFrom) {
+            closeRow(rowFrom, i);
+            rowNo++; rowFrom = i; used = LEAD;
+          }
+          used += it.w;
+        });
+        closeRow(rowFrom, lay.length);
+      } else {
+        closeRow(0, lay.length);
+      }
+      const rows = rowNo + 1;
       /* systems that touch each other read as one block of lines */
-      const GAP = perRow < measures.length ? 46 : 0;
+      const GAP = wrapping ? 46 : 0;
       const ROW_H = SYS_H + GAP;
       const H = ROW_H * rows - GAP;
-      const W = LEAD + mW * Math.min(perRow, measures.length) + 14;
+      const W = PAGE + 14;
 
       const renderer = new VF.Renderer(el, VF.Renderer.Backends.SVG);
       renderer.resize(W, H);
@@ -4564,10 +4605,11 @@ function makeScoreView(React) {
       const allNoteMeta = [];
 
       measures.forEach((mm, i) => {
-        const col = i % perRow;
-        const rowTop = ((i / perRow) | 0) * ROW_H;
-        if (col === 0) x = 10;
-        const w = (col === 0 ? LEAD : 0) + mW;
+        const it = lay[i];
+        const col = (i === 0 || lay[i - 1].row !== it.row) ? 0 : 1;
+        const rowTop = it.row * ROW_H;
+        x = col === 0 ? 10 : it.x;
+        const w = (col === 0 ? LEAD : 0) + it.w;
         const treble = new VF.Stave(x, TREBLE_Y + rowTop, w, { spacing_between_lines_px: 10 });
         const bass = grand ? new VF.Stave(x, BASS_Y + rowTop, w, { spacing_between_lines_px: 10 }) : null;
         /* The stave lines are stroked in --staff; the clef, key and time
@@ -4591,7 +4633,8 @@ function makeScoreView(React) {
         treble.setContext(ctx).draw();
         if (bass) bass.setContext(ctx).draw();
 
-        if (i === 0 && grand && p.clefs !== false) {
+        /* every system carries the brace, not only the first one */
+        if (col === 0 && grand && p.clefs !== false) {
           new VF.StaveConnector(treble, bass).setType(VF.StaveConnector.type.BRACE).setContext(ctx).draw();
           new VF.StaveConnector(treble, bass).setType(VF.StaveConnector.type.SINGLE_LEFT).setContext(ctx).draw();
         }
@@ -4669,7 +4712,7 @@ function makeScoreView(React) {
           ctx.svg.appendChild(t);
         }
 
-        this._map.push({ number: mm.number, x: x + (col === 0 ? LEAD : 0), y: rowTop, w: mW, startQ: mm.startQ, lenQ: mm.lenQ });
+        this._map.push({ number: mm.number, x: x + (col === 0 ? LEAD : 0), y: rowTop, w: it.w, startQ: mm.startQ, lenQ: mm.lenQ });
         x += w;
       });
 
@@ -7342,7 +7385,7 @@ class Component extends DCLogic {
            at the distance you actually sit from a tablet. */
         startM: S.wholeScore ? this.firstM() : this.viewStart(staffBars),
         count: S.wholeScore ? Score.count(score) : staffBars,
-        perRow: S.wholeScore ? (this.narrowScreen() ? 2 : 3) : 0,
+        perRow: S.wholeScore ? (this.narrowScreen() ? 3 : 5) : 0,
         weak: S.wholeScore ? this.weakMeasures() : null,
         pick: n => this.pickMeasure(n),
         mW: S.wholeScore ? 168 : 210, zoom: S.wholeScore ? 1 : S.zoom, currentM: cur,
