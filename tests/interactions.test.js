@@ -41,6 +41,12 @@ const screenTitle = page => page.evaluate(() => {
   const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
   const page = await browser.newPage();
   await preparePage(page);
+  /* The design file's showcase screens ("Empty state", "Loading & errors") are
+     not navigation for a player, so the sidebar only offers them under this
+     flag. They are still worth walking, so this suite asks for them. */
+  await page.evaluateOnNewDocument(() => {
+    try { localStorage.setItem('ppp-dev', '1'); } catch (e) {}
+  });
   await page.setViewport({ width: 1440, height: 950 });
 
   page.on('console', m => {
