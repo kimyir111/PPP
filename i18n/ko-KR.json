@@ -715,6 +715,9 @@
     "Measures {{from}}–{{to}} are the weakest part of the piece at {{pct}}%.": "마디 {{from}}–{{to}}가 {{pct}}%로 제일 약해요.",
     "Everything you have practised is holding together.": "연습한 곳은 다 잘 잡혀 있어요.",
     "No practice data for this score yet.": "이 곡은 아직 연습 기록이 없어요.",
-    "Play through and let PPP find the weak spots.": "한 번 쳐 보면 약한 곳을 찾아 줄게요."
+    "Play through and let PPP find the weak spots.": "한 번 쳐 보면 약한 곳을 찾아 줄게요.",
+    "Focus": "집중 모드",
+    "Leave focus": "집중 모드 끄기",
+    "Hide everything except the score and the keyboard (F)": "악보와 건반만 남기고 다 숨겨요 (F)"
   }
 }

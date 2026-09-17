@@ -715,6 +715,9 @@
     "Measures {{from}}–{{to}} are the weakest part of the piece at {{pct}}%.": "第{{from}}〜{{to}}小節が{{pct}}%で一番弱いです。",
     "Everything you have practised is holding together.": "練習した所はどこも安定しています。",
     "No practice data for this score yet.": "この曲の練習記録はまだありません。",
-    "Play through and let PPP find the weak spots.": "一度通して弾くと弱い場所を見つけます。"
+    "Play through and let PPP find the weak spots.": "一度通して弾くと弱い場所を見つけます。",
+    "Focus": "集中モード",
+    "Leave focus": "集中モードを終了",
+    "Hide everything except the score and the keyboard (F)": "楽譜と鍵盤以外をすべて隠します (F)"
   }
 }

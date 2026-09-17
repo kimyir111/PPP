@@ -168,6 +168,62 @@
     box-shadow: 0 -8px 24px -18px rgba(0,0,0,.35);
     box-sizing: border-box;
   }
+  /* ---- focus mode ----
+     On a tablet held at the piano there is no room for a sidebar, a ten-step
+     rail, a coach panel and a next-step bar. Everything that is not the score,
+     the keyboard and the transport goes away, and what is left gets the space. */
+  .ppp-shell[data-focus="true"] { grid-template-columns: minmax(0, 1fr); }
+  .ppp-shell[data-focus="true"] .ppp-aside,
+  .ppp-shell[data-focus="true"] .ppp-header,
+  .ppp-shell[data-focus="true"] .ppp-rail,
+  .ppp-shell[data-focus="true"] .ppp-nextbar,
+  .ppp-shell[data-focus="true"] .ppp-panel,
+  .ppp-shell[data-focus="true"] .ppp-hide-in-focus { display: none !important; }
+  .ppp-shell[data-focus="true"] .ppp-split {
+    grid-template-columns: minmax(0, 1fr) !important;
+    /* the inline align-items:start keeps the column from filling the height */
+    align-items: stretch !important;
+  }
+  .ppp-shell[data-focus="true"] .ppp-page {
+    padding: 10px 12px 12px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    gap: 10px;
+    min-height: 100vh; min-height: 100dvh;
+  }
+  .ppp-focus-exit { display: none; }
+  .ppp-shell[data-focus="true"] .ppp-focus-exit {
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  /* the staff takes whatever height is left once the keyboard has its share */
+  .ppp-shell[data-focus="true"] .ppp-staffwrap { padding: 8px 4px !important; }
+  .ppp-shell[data-focus="true"] .ppp-staffwrap svg { width: 100%; height: auto; }
+  /* the two cards share the height that the hidden chrome gave back */
+  .ppp-shell[data-focus="true"] .ppp-page > div,
+  .ppp-shell[data-focus="true"] .ppp-page > div > section { min-width: 0; }
+  .ppp-shell[data-focus="true"] .ppp-page > div { flex: 1 1 auto; min-height: 0; display: flex; }
+  .ppp-shell[data-focus="true"] .ppp-page > div > section { flex: 1 1 auto; min-height: 0; }
+  .ppp-shell[data-focus="true"] .ppp-staffcard {
+    flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;
+  }
+  .ppp-shell[data-focus="true"] .ppp-focus-grow {
+    flex: 1 1 auto; min-height: 0;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden !important;
+  }
+  /* viewBox + the default preserveAspectRatio letterboxes the engraving
+     inside whatever box is left, so it grows without distorting. */
+  .ppp-shell[data-focus="true"] .ppp-focus-grow svg {
+    height: 100% !important; width: 100% !important;
+  }
+  /* A phone cannot fit four octaves at a readable size, so while focused the
+     keys keep their size and the strip scrolls, following what is being asked
+     for rather than shrinking until nothing can be read. */
+  .ppp-shell[data-focus="true"] .ppp-kbwrap { overflow-x: auto !important; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
+  .ppp-shell[data-focus="true"] .ppp-kbwrap svg { height: auto; }
+  /* setup controls are not playing controls */
+  .ppp-shell[data-focus="true"] .ppp-setup-only { display: none !important; }
+  .ppp-shell[data-focus="true"] .ppp-focus-only { display: flex !important; }
+
   @media (max-width: 1024px) {
     .ppp-shell, .ppp-shell[data-sidebar-collapsed="true"] {
       grid-template-columns: minmax(0, 1fr);
@@ -267,7 +323,7 @@
   </div>
 </sc-if>
 
-<div data-app="{{ theme }}" ref="{{ rootRef }}" class="ppp-shell" data-sidebar-collapsed="{{ sidebarCollapsedAttr }}" data-sidebar-open="{{ sidebarOpenAttr }}" style="background: var(--bg); color: var(--ink); font-family: Figtree, 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', system-ui, sans-serif;">
+<div data-app="{{ theme }}" ref="{{ rootRef }}" class="ppp-shell" data-focus="{{ focusAttr }}" data-sidebar-collapsed="{{ sidebarCollapsedAttr }}" data-sidebar-open="{{ sidebarOpenAttr }}" style="background: var(--bg); color: var(--ink); font-family: Figtree, 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', system-ui, sans-serif;">
 
   <button type="button" class="ppp-backdrop" onClick="{{ closeSidebar }}" aria-label="{{ hideSidebarLabel }}"></button>
 
@@ -366,6 +422,7 @@
       </div>
     </header>
 
+    <sc-if value="{{ showRail }}" hint-placeholder-val="{{ true }}">
     <div class="ppp-rail">
       <div style="flex: none;">
         <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3);">Learning loop</div>
@@ -380,6 +437,7 @@
         </sc-for>
       </div>
     </div>
+    </sc-if>
 
     <div class="ppp-page">
 
@@ -672,7 +730,7 @@
       <sc-if value="{{ isPlayer }}" hint-placeholder-val="{{ false }}">
         <div class="ppp-split" style="display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 22px; align-items: start;">
           <section style="display: flex; flex-direction: column; gap: 14px; min-width: 0;">
-            <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <div class="ppp-hide-in-focus" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
               <div>
                 <div style="font-size: 20px; font-weight: 600; letter-spacing: -0.02em;">{{ songTitle }}</div>
                 <div style="font-size: 12.5px; color: var(--ink3);">{{ songComposer }}</div>
@@ -689,31 +747,34 @@
               </button>
             </div>
 
-            <div style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); overflow: hidden;">
+            <div class="ppp-staffcard" style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); overflow: hidden;">
               <div style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap;">
                 <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink2);">{{ nowMeasure }}</span>
                 <div style="flex: 1;"></div>
-                <div style="display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface2);">
+                <div class="ppp-setup-only" style="display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface2);">
                   <sc-for list="{{ modeTabs }}" as="m" hint-placeholder-count="2">
                     <button onClick="{{ m.on }}" style="{{ m.style }}">{{ m.label }}</button>
                   </sc-for>
                 </div>
-                <div style="display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface2);">
+                <div class="ppp-setup-only" style="display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface2);">
                   <sc-for list="{{ handTabs }}" as="h" hint-placeholder-count="3">
                     <button onClick="{{ h.on }}" style="{{ h.style }}">{{ h.label }}</button>
                   </sc-for>
                 </div>
-                <div style="width: 1px; height: 20px; background: var(--line);"></div>
-                <sc-for list="{{ zoomBtns }}" as="z" hint-placeholder-count="2">
-                  <button onClick="{{ z.on }}" style="width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 14px; cursor: pointer;" style-hover="border-color: var(--ink3);">{{ z.label }}</button>
-                </sc-for>
-                <button onClick="{{ toggleGuidance }}" style="{{ guidanceBtnStyle }}">{{ guidanceLabel }}</button>
-                <button onClick="{{ toggleFollow }}" style="{{ followBtnStyle }}">{{ followLabel }}</button>
+                <span class="ppp-setup-only" style="display: flex; align-items: center; gap: 10px;">
+                  <span style="width: 1px; height: 20px; background: var(--line);"></span>
+                  <sc-for list="{{ zoomBtns }}" as="z" hint-placeholder-count="2">
+                    <button onClick="{{ z.on }}" style="width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 14px; cursor: pointer;" style-hover="border-color: var(--ink3);">{{ z.label }}</button>
+                  </sc-for>
+                  <button onClick="{{ toggleGuidance }}" style="{{ guidanceBtnStyle }}">{{ guidanceLabel }}</button>
+                  <button onClick="{{ toggleFollow }}" style="{{ followBtnStyle }}">{{ followLabel }}</button>
+                </span>
+                <button onClick="{{ toggleFocus }}" style="{{ focusBtnStyle }}" title="{{ focusHint }}">{{ focusLabel }}</button>
               </div>
               <sc-if value="{{ showFollowHint }}" hint-placeholder-val="{{ false }}">
-                <div style="margin: 0 16px; padding: 9px 12px; border-radius: 10px; background: var(--accent-3); border: 1px solid var(--accent-2); font-size: 12.5px; line-height: 1.45; color: var(--ink2);">{{ followHint }}</div>
+                <div class="ppp-setup-only" style="margin: 0 16px; padding: 9px 12px; border-radius: 10px; background: var(--accent-3); border: 1px solid var(--accent-2); font-size: 12.5px; line-height: 1.45; color: var(--ink2);">{{ followHint }}</div>
               </sc-if>
-              <div style="overflow-x: auto; padding: 18px 16px 22px;">{{ playerStaff }}</div>
+              <div class="ppp-staffwrap ppp-focus-grow" style="overflow-x: auto; padding: 18px 16px 22px;">{{ playerStaff }}</div>
             </div>
 
             <div style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); padding: 16px;">
@@ -721,8 +782,13 @@
                 <button onClick="{{ togglePlay }}" style="display: flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 11px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; min-width: 104px; justify-content: center;">{{ playLabel }}</button>
                 <button onClick="{{ toggleFollow }}" style="{{ followBtnStyle }}">{{ followLabel }}</button>
                 <button onClick="{{ restart }}" style="padding: 10px 14px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 13px; cursor: pointer;" style-hover="border-color: var(--ink3);">Restart</button>
-                <button onClick="{{ toggleLoop }}" style="{{ loopBtnStyle }}">{{ loopLabel }}</button>
-                <div style="display: flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg);">
+                <div class="ppp-focus-only" style="display: none; gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface2);">
+                  <sc-for list="{{ handTabs }}" as="h" hint-placeholder-count="3">
+                    <button onClick="{{ h.on }}" style="{{ h.style }}">{{ h.label }}</button>
+                  </sc-for>
+                </div>
+                <button class="ppp-setup-only" onClick="{{ toggleLoop }}" style="{{ loopBtnStyle }}">{{ loopLabel }}</button>
+                <div class="ppp-setup-only" style="display: flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg);">
                   <span style="font-size: 11px; color: var(--ink3);">Measures</span>
                   <button onClick="{{ loopFromDown }}" style="{{ stepStyle }}">−</button>
                   <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; min-width: 20px; text-align: center;">{{ loopFromLabel }}</span>
@@ -732,7 +798,7 @@
                   <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; min-width: 20px; text-align: center;">{{ loopToLabel }}</span>
                   <button onClick="{{ loopToUp }}" style="{{ stepStyle }}">+</button>
                 </div>
-                <button onClick="{{ toggleMetro }}" style="{{ metroBtnStyle }}">
+                <button class="ppp-setup-only" onClick="{{ toggleMetro }}" style="{{ metroBtnStyle }}">
                   <span style="{{ metroDotStyle }}"></span> Metronome
                 </button>
                 <div style="display: flex; align-items: center; gap: 10px; margin-left: auto; min-width: 210px;">
@@ -741,8 +807,8 @@
                   <span style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; width: 58px; text-align: right;">{{ tempoLabel }}</span>
                 </div>
               </div>
-              <div style="margin-top: 16px; border-radius: 13px; border: 1px solid var(--line); background: var(--key-b); padding: 10px 10px 0; overflow: hidden;">{{ keyboard }}</div>
-              <div style="display: flex; gap: 18px; margin-top: 12px; font-size: 11.5px; color: var(--ink3); flex-wrap: wrap;">
+              <div class="ppp-kbwrap" ref="{{ kbRef }}" style="margin-top: 16px; border-radius: 13px; border: 1px solid var(--line); background: var(--key-b); padding: 10px 10px 0; overflow: hidden;">{{ keyboard }}</div>
+              <div class="ppp-setup-only" style="display: flex; gap: 18px; margin-top: 12px; font-size: 11.5px; color: var(--ink3); flex-wrap: wrap;">
                 <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 9px; height: 9px; border-radius: 3px; background: var(--accent);"></span>Played correctly</span>
                 <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 9px; height: 9px; border-radius: 3px; background: var(--bad);"></span>Wrong note</span>
                 <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 9px; height: 9px; border-radius: 3px; background: var(--accent-2);"></span>Expected next</span>
@@ -4923,7 +4989,7 @@ class Component extends DCLogic {
       /* MIDI stays off until the user asks for it: requesting access can
          prompt, and claiming a connection we do not have would be a lie. */
       toggles: { midi: false, notify: true, sound: false, notes: true, auto: true, follow: true },
-      gateIdx: 0,
+      gateIdx: 0, focus: false,
       toast: '',
       locale: (typeof window !== 'undefined' && window.PPP_I18N) ? window.PPP_I18N.getLocale() : 'en-US',
       localeMenuOpen: false,
@@ -4941,7 +5007,27 @@ class Component extends DCLogic {
     };
   })();
 
+  /* Scrolling the keyboard by hand while playing is not realistic, so the
+     strip follows the notes being asked for. */
+  followKeyboard() {
+    if (!this.state.focus) return;
+    const wrap = this._kb && this._kb.current;
+    if (!wrap || wrap.scrollWidth <= wrap.clientWidth) return;
+    const marks = wrap.querySelectorAll('[data-state="expected"],[data-state="wrong"],[data-state="on"]');
+    if (!marks.length) return;
+    let lo = Infinity, hi = -Infinity;
+    marks.forEach(el => {
+      const x = el.getBoundingClientRect().left - wrap.getBoundingClientRect().left + wrap.scrollLeft;
+      if (x < lo) lo = x;
+      if (x > hi) hi = x;
+    });
+    const mid = (lo + hi) / 2;
+    const want = clamp(mid - wrap.clientWidth / 2, 0, wrap.scrollWidth - wrap.clientWidth);
+    if (Math.abs(want - wrap.scrollLeft) > 24) wrap.scrollTo({ left: want, behavior: 'smooth' });
+  }
+
   _root = React.createRef();
+  _kb = React.createRef();
 
   /* ============================ lifecycle ============================ */
   componentDidMount() {
@@ -4957,8 +5043,12 @@ class Component extends DCLogic {
       if (typeof window !== 'undefined' && window.innerWidth > 1024 && this.state.sidebarOpen)
         this.setState({ sidebarOpen: false });
     };
+    this._onFsChange = () => {
+      if (!document.fullscreenElement && this.state.focus) this.setState({ focus: false });
+    };
     window.addEventListener('keydown', this._onKey);
     window.addEventListener('resize', this._onResize);
+    document.addEventListener('fullscreenchange', this._onFsChange);
     this.setState({ midi: this.midiLayer().snapshot() });
     this.bootI18n();
     this.checkAuth();
@@ -4977,6 +5067,7 @@ class Component extends DCLogic {
     this.applyTheme();
     this.persist();
     this.maybeReplan();
+    this.followKeyboard();
     if (this._i18nRaf) cancelAnimationFrame(this._i18nRaf);
     this._i18nRaf = requestAnimationFrame(() => { this._i18nRaf = 0; this.applyI18n(); });
     if (this._shownScreen !== this.state.screen) {
@@ -4991,6 +5082,7 @@ class Component extends DCLogic {
     this.writeState();   /* flush whatever was still pending */
     window.removeEventListener('keydown', this._onKey);
     window.removeEventListener('resize', this._onResize);
+    document.removeEventListener('fullscreenchange', this._onFsChange);
     if (this._midi) this._midi.stop();
     if (this._ac && this._ac.close) { try { this._ac.close(); } catch (e) {} }
   }
@@ -6026,6 +6118,9 @@ class Component extends DCLogic {
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
     const k = e.key.toLowerCase();
     if (k === 'escape' && this.state.sidebarOpen) { this.setState({ sidebarOpen: false }); return; }
+    /* Escape is what everyone tries first to get out of a full screen. */
+    if (k === 'escape' && this.state.focus) { this.toggleFocus(); return; }
+    if (k === 'f') { e.preventDefault(); this.toggleFocus(); return; }
     if (k === ' ') { e.preventDefault(); this.togglePlay(); }
     else if (k === 'r') this.setState({ beat: Score.startQ(this.state.score, this.range()[0]), runHit: 0, runTot: 0, wrongNotes: [] });
     else if (k === 'l') this.setState(s => ({ loop: !s.loop }));
@@ -6043,6 +6138,20 @@ class Component extends DCLogic {
     else this.setState({ sidebarCollapsed: false });
   }
   closeSidebar() { this.setState({ sidebarOpen: false }); }
+
+  /* Focus mode also asks the browser for the actual screen, because on a
+     tablet the address bar and the OS chrome are most of what is in the way.
+     If that is refused — iOS Safari refuses on iPhone — the layout still
+     changes, so the feature works either way. */
+  toggleFocus() {
+    const on = !this.state.focus;
+    this.setState({ focus: on, screen: on ? 'player' : this.state.screen });
+    try {
+      const el = document.documentElement;
+      if (on && el.requestFullscreen) el.requestFullscreen().catch(() => {});
+      else if (!on && document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+    } catch (e) { /* layout-only focus is still focus */ }
+  }
 
   togglePlay() {
     this.wake();
@@ -6286,9 +6395,44 @@ class Component extends DCLogic {
     return score;
   }
 
+  /* The notes the current loop and hand mode actually ask for, widened to
+     whole octaves so the keyboard still reads as a keyboard, and never
+     narrower than two octaves. */
+  playingKeyRange() {
+    const S = this.state;
+    /* With the loop off, range() is the whole piece, which is no narrower than
+       the full keyboard. The section you are in is the stable unit: narrow
+       enough to help, and it does not resize under your hands as the playhead
+       moves the way a sliding window would. */
+    let from, to;
+    if (S.loop) { from = S.loopFrom; to = S.loopTo; }
+    else {
+      const sec = this.sectionOf(this.curMeasure(S));
+      if (sec) { from = sec.from; to = sec.to; } else { const r = this.range(S); from = r[0]; to = r[1]; }
+    }
+    const key = S.score.id + ':' + from + ':' + to + ':' + S.hands;
+    if (this._playKey === key && this._playRange) return this._playRange;
+    const mine = this.notesIn(from, to).filter(n => !n.rest && this.handOk(n, S.hands));
+    const full = this._kbRange || (this._kbRange = Score.keyRange(S.score));
+    if (!mine.length) return full;
+    let lo = Infinity, hi = -Infinity;
+    mine.forEach(n => { if (n.midi < lo) lo = n.midi; if (n.midi > hi) hi = n.midi; });
+    lo = Math.floor(lo / 12) * 12;            /* down to the C below */
+    hi = Math.ceil((hi + 1) / 12) * 12;       /* up to the C above */
+    while (hi - lo < 24) { lo = Math.max(full[0], lo - 12); hi = hi + 12; }
+    lo = Math.max(full[0], lo); hi = Math.min(full[1], Math.max(hi, lo + 24));
+    this._playKey = key;
+    this._playRange = [lo, hi];
+    return this._playRange;
+  }
+
   keyboard() {
     const S = this.state;
-    const range = this._kbRange || (this._kbRange = Score.keyRange(S.score));
+    /* Full width, the keyboard spans the whole piece — on a phone that is
+       twenty-nine white keys in 310px, too small to read at the piano. While
+       focused it shows only the range actually in play, so the keys you are
+       being asked for are big enough to see. */
+    const range = S.focus ? this.playingKeyRange() : (this._kbRange || (this._kbRange = Score.keyRange(S.score)));
     const lo = range[0], hi = range[1];
     const whites = [];
     for (let m = lo; m <= hi; m++) if (isWhite(m)) whites.push(m);
@@ -6303,11 +6447,13 @@ class Component extends DCLogic {
         key: 'w' + m, x: i * KW + 1, y: 0, width: KW - 2, height: H, rx: 5,
         'data-midi': m, 'data-state': bad ? 'wrong' : on ? 'on' : ex ? 'expected' : 'idle',
         fill: bad ? 'var(--bad)' : on ? 'var(--accent)' : ex ? 'var(--accent-2)' : 'var(--key-w)',
-        stroke: 'rgba(0,0,0,.18)', strokeWidth: 1, style: { cursor: 'pointer' }, onClick: play(m)
+        stroke: bad ? 'var(--bad)' : 'rgba(0,0,0,.18)', strokeWidth: bad ? 3 : 1,
+        style: { cursor: 'pointer' }, onClick: play(m)
       }));
-      if (m % 12 === 0) els.push(h('text', {
-        key: 'l' + m, x: i * KW + KW / 2, y: H - 11, textAnchor: 'middle', fontSize: 9.5,
-        fontFamily: "'JetBrains Mono', monospace", fill: on || bad ? 'rgba(255,255,255,.9)' : 'rgba(0,0,0,.42)',
+      if (m % 12 === 0 || bad || ex || on) els.push(h('text', {
+        key: 'l' + m, x: i * KW + KW / 2, y: H - 11, textAnchor: 'middle',
+        fontSize: bad || ex || on ? 11 : 9.5, fontWeight: bad || ex || on ? 700 : 400,
+        fontFamily: "'JetBrains Mono', monospace", fill: on || bad ? 'rgba(255,255,255,.95)' : 'rgba(0,0,0,.52)',
         style: { pointerEvents: 'none' }
       }, midiName(m)));
     });
@@ -6319,10 +6465,25 @@ class Component extends DCLogic {
         key: 'b' + bm, x: i * KW + KW - 11, y: 0, width: 22, height: 93, rx: 4,
         'data-midi': bm, 'data-state': bad ? 'wrong' : on ? 'on' : ex ? 'expected' : 'idle',
         fill: bad ? 'var(--bad)' : on ? 'var(--accent)' : ex ? 'var(--accent-2)' : 'var(--key-b)',
-        stroke: 'rgba(0,0,0,.35)', style: { cursor: 'pointer' }, onClick: play(bm)
+        stroke: bad ? 'var(--bad)' : 'rgba(0,0,0,.35)', strokeWidth: bad ? 3 : 1,
+        style: { cursor: 'pointer' }, onClick: play(bm)
       }));
+      if (bad || ex || on) els.push(h('text', {
+        key: 'bl' + bm, x: i * KW + KW, y: 84, textAnchor: 'middle', fontSize: 9.5, fontWeight: 700,
+        fontFamily: "'JetBrains Mono', monospace", fill: 'rgba(255,255,255,.95)',
+        style: { pointerEvents: 'none' }
+      }, midiName(bm)));
     });
-    return h('svg', { viewBox: `0 0 ${W} ${H}`, width: '100%', style: { display: 'block', height: 'auto' } }, els);
+    /* 26px is about the narrowest a white key can be and still be aimed at
+       with a finger; below that the keyboard is decoration. Where there is
+       height to spare the keys take it, since a bigger key is the whole point
+       of the feedback. */
+    const tall = typeof window !== 'undefined' && window.innerHeight >= 700;
+    const minW = S.focus ? whites.length * (tall ? 34 : 26) : 0;
+    return h('svg', {
+      viewBox: `0 0 ${W} ${H}`, width: '100%',
+      style: { display: 'block', height: 'auto', minWidth: minW ? minW + 'px' : undefined }
+    }, els);
   }
 
   litNotes() {
@@ -6595,6 +6756,7 @@ class Component extends DCLogic {
     const midiLabel = midiLive ? tx('MIDI Connected') : !mi.supported ? tx('Demo Input · no Web MIDI') : tx('Demo Input');
     const midiTone = midiLive ? 'var(--good)' : mi.status === 'denied' || mi.status === 'error' ? 'var(--bad)' : 'var(--ink3)';
     const follows = this.following();
+    const staffBars = (S.focus && this.narrowScreen()) ? 2 : 4;
 
     const settingGroups = [
       { title: 'Practice', sub: 'How the coach guides you', rows: [
@@ -6970,6 +7132,15 @@ class Component extends DCLogic {
         { label: '−', on: () => this.setState(st => ({ zoom: Math.max(0.7, st.zoom - 0.15) })) },
         { label: '+', on: () => this.setState(st => ({ zoom: Math.min(1.6, st.zoom + 0.15) })) }
       ],
+      kbRef: this._kb,
+      focusNarrow: S.focus && this.narrowScreen(),
+      /* planning screens keep the journey; working screens do not */
+      showRail: !S.focus && ['home', 'upload', 'analysis', 'plan', 'songs', 'progress'].indexOf(sc) > -1,
+      focusAttr: S.focus ? 'true' : 'false',
+      toggleFocus: () => this.toggleFocus(),
+      focusBtnStyle: this.chip(S.focus),
+      focusLabel: tx(S.focus ? 'Leave focus' : 'Focus'),
+      focusHint: tx('Hide everything except the score and the keyboard (F)'),
       following: follows,
       toggleFollow: () => {
         const on = this.state.toggles.follow === false;
@@ -6998,7 +7169,10 @@ class Component extends DCLogic {
       measureCells, sectionChips,
 
       playerStaff: this.sv({
-        startM: this.viewStart(4), count: 4, mW: 210, zoom: S.zoom, currentM: cur,
+        /* Four bars across a phone leaves each note a few pixels. Focused on a
+           narrow screen the window halves instead, so the notation is legible
+           at the distance you actually sit from a tablet. */
+        startM: this.viewStart(staffBars), count: staffBars, mW: 210, zoom: S.zoom, currentM: cur,
         playX: S.beat, beat: S.beat, hands: S.hands, wrong: S.wrongNotes,
         guidance: S.guidance && S.practiceMode === 'practice',
         hidePlan: S.practiceMode === 'memory' ? memPlan : null,

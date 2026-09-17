@@ -715,6 +715,9 @@
     "Measures {{from}}–{{to}} are the weakest part of the piece at {{pct}}%.": "第 {{from}}–{{to}} 小节最弱，只有 {{pct}}%。",
     "Everything you have practised is holding together.": "练过的地方都挺稳。",
     "No practice data for this score yet.": "这首曲子还没有练习记录。",
-    "Play through and let PPP find the weak spots.": "先通一遍，我来找出薄弱处。"
+    "Play through and let PPP find the weak spots.": "先通一遍，我来找出薄弱处。",
+    "Focus": "专注模式",
+    "Leave focus": "退出专注模式",
+    "Hide everything except the score and the keyboard (F)": "只留下乐谱和键盘，其余全部隐藏 (F)"
   }
 }
