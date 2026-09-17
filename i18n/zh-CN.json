@@ -721,6 +721,16 @@
     "Hide everything except the score and the keyboard (F)": "只留下乐谱和键盘，其余全部隐藏 (F)",
     "Whole score": "整首乐谱",
     "This part": "仅此段",
-    "See the whole piece at once, with the weak bars shaded": "一次看完整首，薄弱小节会标色"
+    "See the whole piece at once, with the weak bars shaded": "一次看完整首，薄弱小节会标色",
+    "Red bars are the ones PPP found weak. Click a bar to start a passage, then click where it ends.": "红色小节是 PPP 认为薄弱的地方。点一个小节作为开始，再点一个作为结束。",
+    "Measure {{n}} is the start — now click where the passage ends.": "第 {{n}} 小节是开始，请点击结束的小节。",
+    "Play it from memory": "不看谱弹一遍",
+    "at full speed": "用原速",
+    "a little under speed": "稍慢一点",
+    "slowly ({{pct}}%)": "放慢 ({{pct}}%)",
+    "Both hands together, {{pace}}": "双手一起，{{pace}}",
+    "Left hand alone, {{pace}}": "只用左手，{{pace}}",
+    "Right hand alone, {{pace}}": "只用右手，{{pace}}",
+    "bar {{n}}": "第 {{n}} 小节"
   }
 }

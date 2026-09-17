@@ -781,6 +781,9 @@
                 <button onClick="{{ toggleWhole }}" style="{{ wholeBtnStyle }}" title="{{ wholeHint }}">{{ wholeLabel }}</button>
                 <button onClick="{{ toggleFocus }}" style="{{ focusBtnStyle }}" title="{{ focusHint }}">{{ focusLabel }}</button>
               </div>
+              <sc-if value="{{ showPickHint }}" hint-placeholder-val="{{ false }}">
+                <div style="margin: 0 16px; padding: 9px 12px; border-radius: 10px; background: var(--surface2); font-size: 12.5px; line-height: 1.45; color: var(--ink2);">{{ pickHint }}</div>
+              </sc-if>
               <sc-if value="{{ showFollowHint }}" hint-placeholder-val="{{ false }}">
                 <div class="ppp-setup-only" style="margin: 0 16px; padding: 9px 12px; border-radius: 10px; background: var(--accent-3); border: 1px solid var(--accent-2); font-size: 12.5px; line-height: 1.45; color: var(--ink2);">{{ followHint }}</div>
               </sc-if>
@@ -859,7 +862,10 @@
                         <span style="display: block; font-size: 13px; font-weight: 500;">{{ ct.label }}</span>
                         <span style="display: block; font-size: 11.5px; color: var(--ink3); margin-top: 2px; line-height: 1.4;">{{ ct.reason }}</span>
                       </span>
-                      <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink3); flex: none;">{{ ct.reps }}</span>
+                      <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex: none;">
+                        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink3);">{{ ct.reps }}</span>
+                        <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--ink3); opacity: .75;">{{ ct.where }}</span>
+                      </span>
                     </button>
                   </sc-for>
                 </div>
@@ -4717,6 +4723,30 @@ function makeScoreView(React) {
       svg.insertBefore(this._loopBox, svg.firstChild);
       svg.insertBefore(this._hl, svg.firstChild);
 
+      /* Seeing where the hard part is only helps if you can then go there, so
+         the page itself is the control: click a bar to start a range, click
+         another to close it. The same two-click gesture as the measure strip,
+         because it is the same act. */
+      if (p.pick) {
+        svg.style.cursor = 'pointer';
+        svg.addEventListener('click', ev => {
+          /* read the live prop, not the one captured when this was drawn */
+          const fn = this.props.pick;
+          if (!fn) return;
+          let pt;
+          try {
+            pt = svg.createSVGPoint();
+            pt.x = ev.clientX; pt.y = ev.clientY;
+            pt = pt.matrixTransform(svg.getScreenCTM().inverse());
+          } catch (e) { return; }
+          const sys = this._SYS || this._H;
+          const hit = this._map.filter(seg =>
+            pt.x >= seg.x - 8 && pt.x <= seg.x + seg.w + 8 &&
+            pt.y >= (seg.y || 0) && pt.y <= (seg.y || 0) + sys)[0];
+          if (hit) fn(hit.number);
+        });
+      }
+
       /* In front: the playhead. */
       this._phLine = mk('line', { stroke: col('--accent'), 'stroke-width': 2, opacity: 0 });
       this._phDot = mk('circle', { r: 4, fill: col('--accent'), opacity: 0 });
@@ -5444,10 +5474,19 @@ class Component extends DCLogic {
     this.say(tx('Task {{n}}: {{label}}', { n: i + 1, label: this.taskLabel(t) }));
   }
   taskLabel(t) {
-    const hand = t.hand === 'both' ? tx('Both hands') : t.hand === 'left' ? tx('Left hand') : tx('Right hand');
-    return t.mode === 'memory'
-      ? tx('Measures {{from}}–{{to}} · from memory', { from: t.range.start, to: t.range.end })
-      : tx('Measures {{from}}–{{to}} · {{hand}} · {{pct}}%', { from: t.range.start, to: t.range.end, hand: hand, pct: t.tempoPercent });
+    if (t.mode === 'memory') return tx('Play it from memory');
+    const pace = t.tempoPercent >= 98 ? tx('at full speed')
+      : t.tempoPercent >= 90 ? tx('a little under speed')
+        : tx('slowly ({{pct}}%)', { pct: t.tempoPercent });
+    return t.hand === 'both' ? tx('Both hands together, {{pace}}', { pace: pace })
+      : t.hand === 'left' ? tx('Left hand alone, {{pace}}', { pace: pace })
+        : tx('Right hand alone, {{pace}}', { pace: pace });
+  }
+  /* Where it is, kept for the eye rather than the sentence. */
+  taskWhere(t) {
+    return t.range.start === t.range.end
+      ? tx('bar {{n}}', { n: t.range.start })
+      : tx('bars {{from}}–{{to}}', { from: t.range.start, to: t.range.end });
   }
   /* Called when a run finishes. A task completes on its repetitions, and only
      then — never mid-run — does PPP consider asking for a new plan. */
@@ -7193,6 +7232,10 @@ class Component extends DCLogic {
       /* planning screens keep the journey; working screens do not */
       showRail: !S.focus && ['home', 'upload', 'analysis', 'plan', 'songs', 'progress'].indexOf(sc) > -1,
       wholeAttr: S.wholeScore ? 'true' : 'false',
+      showPickHint: S.wholeScore,
+      pickHint: S.anchor != null
+        ? tx('Measure {{n}} is the start — now click where the passage ends.', { n: S.anchor })
+        : tx('Red bars are the ones PPP found weak. Click a bar to start a passage, then click where it ends.'),
       toggleWhole: () => this.setState(st => ({ wholeScore: !st.wholeScore })),
       wholeBtnStyle: this.chip(S.wholeScore),
       wholeLabel: tx(S.wholeScore ? 'Whole score' : 'This part'),
@@ -7237,6 +7280,7 @@ class Component extends DCLogic {
         count: S.wholeScore ? Score.count(score) : staffBars,
         perRow: S.wholeScore ? (this.narrowScreen() ? 2 : 4) : 0,
         weak: S.wholeScore ? this.weakMeasures() : null,
+        pick: n => this.pickMeasure(n),
         mW: S.wholeScore ? 168 : 210, zoom: S.wholeScore ? 1 : S.zoom, currentM: cur,
         playX: S.beat, beat: S.beat, hands: S.hands, wrong: S.wrongNotes,
         guidance: S.guidance && S.practiceMode === 'practice',
@@ -7273,6 +7317,7 @@ class Component extends DCLogic {
         return {
           n: String(i + 1),
           label: this.taskLabel(t),
+          where: this.taskWhere(t),
           reason: t.reason || '',
           reps: active ? S.coachReps + ' / ' + t.repetitions : '× ' + t.repetitions,
           rowStyle: 'display:flex;align-items:flex-start;gap:10px;width:100%;padding:10px;border-radius:11px;border:1px solid '

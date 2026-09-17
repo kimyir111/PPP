@@ -721,6 +721,16 @@
     "Hide everything except the score and the keyboard (F)": "악보와 건반만 남기고 다 숨겨요 (F)",
     "Whole score": "전체 악보",
     "This part": "이 부분만",
-    "See the whole piece at once, with the weak bars shaded": "곡 전체를 한눈에. 약한 마디가 표시돼요"
+    "See the whole piece at once, with the weak bars shaded": "곡 전체를 한눈에. 약한 마디가 표시돼요",
+    "Red bars are the ones PPP found weak. Click a bar to start a passage, then click where it ends.": "빨간 마디가 PPP가 약하다고 본 곳이에요. 마디를 누르면 시작, 한 번 더 누르면 끝이에요.",
+    "Measure {{n}} is the start — now click where the passage ends.": "{{n}}마디가 시작이에요. 끝날 마디를 눌러 주세요.",
+    "Play it from memory": "악보 없이 쳐 보기",
+    "at full speed": "원래 빠르기로",
+    "a little under speed": "조금 느리게",
+    "slowly ({{pct}}%)": "천천히 ({{pct}}%)",
+    "Both hands together, {{pace}}": "양손 같이, {{pace}}",
+    "Left hand alone, {{pace}}": "왼손만, {{pace}}",
+    "Right hand alone, {{pace}}": "오른손만, {{pace}}",
+    "bar {{n}}": "{{n}}마디"
   }
 }

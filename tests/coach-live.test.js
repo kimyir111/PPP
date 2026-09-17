@@ -182,13 +182,13 @@ const ok = (name, cond, detail) => {
   const applied = await page.evaluate(async (t) => {
     /* scoped to the coach panel — Home's recommendation card can carry the
        same "Measures 21–24" label, and clicking that would prove nothing */
-    const label = 'Measures ' + t.range.start + '–' + t.range.end;
+    const label = t.range.start === t.range.end ? 'bar ' + t.range.start : 'bars ' + t.range.start + '–' + t.range.end;
     const panel = [...document.querySelectorAll('main section')]
       .find(s => /PPP Coach/.test(s.innerText || ''));
     /* task rows render in plan order and each is numbered, so the first row
        carrying a measure range is tasks[0] */
     const b = [...(panel ? panel.querySelectorAll('button') : [])]
-      .filter(x => /Measures \d+/.test(x.innerText || ''))[0];
+      .filter(x => /bars? \d+/.test(x.innerText || ''))[0];
     if (!b || (b.innerText || '').indexOf(label) < 0) return { found: false, saw: b ? b.innerText.replace(/\n/g, ' | ') : null };
     b.click();
     await new Promise(r => setTimeout(r, 900));

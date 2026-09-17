@@ -340,11 +340,11 @@ function harness() {
 
   const applied = await page.evaluate(async () => {
     /* scoped to the coach panel: Home and the analysis screen have their own
-       "Measures 9–12" buttons, and clicking one of those would prove nothing */
+       "bars 9–12" buttons, and clicking one of those would prove nothing */
     const panel = [...document.querySelectorAll('main section')]
       .find(s => /PPP Coach/.test(s.innerText || ''));
     const b = [...(panel ? panel.querySelectorAll('button') : [])]
-      .find(x => /Measures 9–12/.test(x.innerText || ''));
+      .find(x => /bars 9–12/.test(x.innerText || ''));
     if (b) b.click();
     await new Promise(r => setTimeout(r, 800));
     const t = document.querySelector('main').innerText;
