@@ -336,6 +336,9 @@
       </div>
       <div style="flex: 1;"></div>
       <div class="ppp-header-tools">
+      <button onClick="{{ midiConnect }}" style="{{ headerMidiStyle }}" title="{{ midiSub }}">
+        <span style="{{ midiDotStyle }}"></span><span class="ppp-header-label">{{ midiLabel }}</span>
+      </button>
       <div style="position: relative;">
         <button onClick="{{ toggleLocaleMenu }}" style="display: flex; align-items: center; gap: 7px; padding: 7px 12px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 12px; cursor: pointer;" style-hover="color: var(--ink); border-color: var(--ink3);">{{ localeFlag }} <span class="ppp-header-label">{{ localeLanguage }}</span></button>
         <sc-if value="{{ localeMenuOpen }}" hint-placeholder-val="{{ false }}">
@@ -705,9 +708,7 @@
                   <button onClick="{{ z.on }}" style="width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 14px; cursor: pointer;" style-hover="border-color: var(--ink3);">{{ z.label }}</button>
                 </sc-for>
                 <button onClick="{{ toggleGuidance }}" style="{{ guidanceBtnStyle }}">{{ guidanceLabel }}</button>
-                <sc-if value="{{ showFollowBtn }}" hint-placeholder-val="{{ false }}">
-                  <button onClick="{{ toggleFollow }}" style="{{ followBtnStyle }}">{{ followLabel }}</button>
-                </sc-if>
+                <button onClick="{{ toggleFollow }}" style="{{ followBtnStyle }}">{{ followLabel }}</button>
               </div>
               <sc-if value="{{ showFollowHint }}" hint-placeholder-val="{{ false }}">
                 <div style="margin: 0 16px; padding: 9px 12px; border-radius: 10px; background: var(--accent-3); border: 1px solid var(--accent-2); font-size: 12.5px; line-height: 1.45; color: var(--ink2);">{{ followHint }}</div>
@@ -718,6 +719,7 @@
             <div style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); padding: 16px;">
               <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                 <button onClick="{{ togglePlay }}" style="display: flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 11px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; min-width: 104px; justify-content: center;">{{ playLabel }}</button>
+                <button onClick="{{ toggleFollow }}" style="{{ followBtnStyle }}">{{ followLabel }}</button>
                 <button onClick="{{ restart }}" style="padding: 10px 14px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 13px; cursor: pointer;" style-hover="border-color: var(--ink3);">Restart</button>
                 <button onClick="{{ toggleLoop }}" style="{{ loopBtnStyle }}">{{ loopLabel }}</button>
                 <div style="display: flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg);">
@@ -868,6 +870,7 @@
               </div>
               <div style="display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-top: 1px solid var(--line); flex-wrap: wrap;">
                 <button onClick="{{ togglePlay }}" style="padding: 10px 18px; border-radius: 11px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; min-width: 104px;">{{ playLabel }}</button>
+                <button onClick="{{ toggleFollow }}" style="{{ followBtnStyle }}">{{ followLabel }}</button>
                 <button onClick="{{ toggleLoop }}" style="{{ loopBtnStyle }}">Loop</button>
                 <div style="display: flex; gap: 6px; margin-left: auto;">
                   <sc-for list="{{ tempoPresets }}" as="p" hint-placeholder-count="3">
@@ -3423,6 +3426,14 @@ const OMR_URL = 'http://127.0.0.1:8788';
    copy PPP simply knows the helper is not there. */
 const LOCAL_HELPER = typeof location === 'undefined' || location.protocol === 'file:' ||
   /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname || '');
+
+/* The design file's own showcase pages — an empty library, a loading state, an
+   error. They are worth keeping and worth looking at while building, but they
+   are not places a player ever needs to go, so they stay out of the sidebar
+   unless someone is working on them. */
+const DEV_SCREENS = (() => {
+  try { return localStorage.getItem('ppp-dev') === '1'; } catch (e) { return false; }
+})();
 const PDFJS_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js';
 const PDFJS_WORKER = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js';
 
@@ -6403,7 +6414,16 @@ class Component extends DCLogic {
 
     const nav = [['Home', 'home'], ['My Songs', 'songs'], ['Practice', 'player'], ['Sight Reading', 'basics'], ['Progress', 'progress'], ['Settings', 'settings']]
       .map(([label, id]) => ({ label: tx(label), style: this.navBtn(sc === id), markStyle: this.markStyle(sc === id), on: this.go(id) }));
-    const flows = [['Upload', 'upload'], ['AI Analysis', 'analysis'], ['Practice Plan', 'plan'], ['Measure Loop', 'loop'], ['Memory Mode', 'memory'], ['Check recognition', 'review'], ['Empty state', 'empty'], ['Loading & errors', 'states']]
+    /* Only places a player actually goes. The design file's own showcase pages
+       ("Empty state", "Loading & errors") are reachable by URL for development
+       but are not navigation, and a recognition review only exists while there
+       is something to review. */
+    const flowList = [['Upload', 'upload'], ['AI Analysis', 'analysis'], ['Practice Plan', 'plan'],
+      ['Measure Loop', 'loop'], ['Memory Mode', 'memory']];
+    if (S.importReport || sc === 'review') flowList.push(['Check recognition', 'review']);
+    if (DEV_SCREENS || sc === 'empty') flowList.push(['Empty state', 'empty']);
+    if (DEV_SCREENS || sc === 'states') flowList.push(['Loading & errors', 'states']);
+    const flows = flowList
       .map(([label, id]) => ({ label: tx(label), style: this.subBtn(sc === id), on: this.go(id) }));
 
     const planTotal = Object.keys(S.tasks).length;
@@ -6934,14 +6954,19 @@ class Component extends DCLogic {
       toggleFollow: () => {
         const on = this.state.toggles.follow === false;
         const patch = { toggles: Object.assign({}, this.state.toggles, { follow: on }) };
-        if (on) this.followReset(patch); else patch.playing = false;
+        if (on) {
+          this.followReset(patch);
+          if (!this.liveMidi()) this.connectMidi();
+        } else patch.playing = false;
         this.setState(patch);
       },
-      followBtnStyle: this.chip(follows),
+      followBtnStyle: this.chip(S.toggles.follow !== false),
       followLabel: tx(S.toggles.follow === false ? 'Follow off' : 'Follow on'),
-      showFollowBtn: this.liveMidi(),
-      showFollowHint: follows,
-      followHint: tx('Just play — the score waits for each note and moves when you get it. No tempo to keep up with.'),
+      showFollowBtn: true,
+      showFollowHint: S.toggles.follow !== false,
+      followHint: follows
+        ? tx('Just play — the score waits for each note and moves when you get it. No tempo to keep up with.')
+        : tx('Connect a MIDI keyboard, then just play. The score waits for each note.'),
       toggleGuidance: () => this.setState(st => ({ guidance: !st.guidance })),
       guidanceBtnStyle: this.chip(S.guidance),
       guidanceLabel: tx(S.guidance ? 'Guidance on' : 'Guidance off'),
@@ -7019,6 +7044,9 @@ class Component extends DCLogic {
       runDrift: follows ? '—' : (S.drift > 0 ? '+' : '') + S.drift + ' ms',
       midiLabel, midiSub,
       midiHint: midiLive ? tx('Playing {{device}}', { device: mi.deviceName }) : tx('Click to connect a MIDI keyboard'),
+      headerMidiStyle: 'display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:9px;font-family:inherit;font-size:12px;cursor:pointer;color:'
+        + (midiLive ? 'var(--accent)' : 'var(--ink2)') + ';background:' + (midiLive ? 'var(--accent-3)' : 'var(--bg)')
+        + ';border:1px solid ' + (midiLive ? 'var(--accent-2)' : 'var(--line)') + ';',
       midiBadgeStyle: 'display:flex;align-items:center;gap:7px;padding:6px 11px;border-radius:999px;font-family:inherit;font-size:12px;color:var(--ink);cursor:pointer;background:'
         + (midiLive ? 'var(--accent-3)' : 'var(--bg)') + ';border:1px solid ' + (midiLive ? 'var(--accent-2)' : 'var(--line)') + ';',
       midiDotStyle: 'width:7px;height:7px;border-radius:999px;flex:none;background:' + midiTone + ';',
