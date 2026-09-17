@@ -731,6 +731,8 @@
     "Both hands together, {{pace}}": "양손 같이, {{pace}}",
     "Left hand alone, {{pace}}": "왼손만, {{pace}}",
     "Right hand alone, {{pace}}": "오른손만, {{pace}}",
-    "bar {{n}}": "{{n}}마디"
+    "bar {{n}}": "{{n}}마디",
+    "Keep the score on paper": "악보는 종이색으로",
+    "Off, the notation follows the dark theme instead": "끄면 악보도 다크 모드를 따라가요"
   }
 }

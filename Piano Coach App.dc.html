@@ -789,7 +789,7 @@
               <sc-if value="{{ showFollowHint }}" hint-placeholder-val="{{ false }}">
                 <div class="ppp-setup-only" style="margin: 0 16px; padding: 9px 12px; border-radius: 10px; background: var(--accent-3); border: 1px solid var(--accent-2); font-size: 12.5px; line-height: 1.45; color: var(--ink2);">{{ followHint }}</div>
               </sc-if>
-              <div class="ppp-staffwrap ppp-focus-grow" ref="{{ staffRef }}" data-whole="{{ wholeAttr }}" style="overflow-x: auto; padding: 18px 16px 22px; background: var(--paper);">{{ playerStaff }}</div>
+              <div class="ppp-staffwrap ppp-focus-grow" ref="{{ staffRef }}" data-whole="{{ wholeAttr }}" style="overflow-x: auto; padding: 18px 16px 22px; background: {{ paperBg }};">{{ playerStaff }}</div>
             </div>
 
             <div style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); padding: 16px;">
@@ -4482,7 +4482,7 @@ function makeScoreView(React) {
       const p = this.props;
       return [
         p.score.id, p.startM, p.count, p.grand !== false, p.numbers !== false,
-        p.clefs !== false, !!p.guidance, p.theme, p.mW, p.zoom, p.fluid, p.perRow || 0, (p.weak || []).join(','), p.notesKey || ''
+        p.clefs !== false, !!p.guidance, p.theme, p.mW, p.zoom, p.fluid, p.perRow || 0, p.paper !== false, (p.weak || []).join(','), p.notesKey || ''
       ].join('|');
     }
 
@@ -4519,9 +4519,12 @@ function makeScoreView(React) {
 
       const cs = getComputedStyle(el);
       const col = n => (cs.getPropertyValue(n) || '').trim() || '#222';
-      const ink = col('--paper-ink') || col('--ink');
-      const staffCol = col('--paper-staff') || col('--staff');
-      const ink3 = col('--paper-staff') || col('--ink3');
+      /* On paper the notation is mixed for paper; following the theme it is
+         mixed for the theme. Nothing else about the engraving changes. */
+      const onPaper = p.paper !== false;
+      const ink = onPaper ? (col('--paper-ink') || col('--ink')) : col('--ink');
+      const staffCol = onPaper ? (col('--paper-staff') || col('--staff')) : col('--staff');
+      const ink3 = onPaper ? (col('--paper-staff') || col('--ink3')) : col('--ink3');
 
       const grand = p.grand !== false;
       const zoom = p.zoom || 1;
@@ -4685,8 +4688,8 @@ function makeScoreView(React) {
           r.setAttribute('width', seg.w + 4);
           r.setAttribute('height', SYS_H - 18);
           r.setAttribute('rx', 7);
-          r.setAttribute('fill', 'rgb(214,64,52)');
-          r.setAttribute('opacity', 0.15);
+          r.setAttribute('fill', onPaper ? 'rgb(214,64,52)' : col('--bad'));
+          r.setAttribute('opacity', onPaper ? 0.15 : 0.22);
           ctx.svg.insertBefore(r, ctx.svg.firstChild);
         });
       }
@@ -4724,7 +4727,7 @@ function makeScoreView(React) {
       /* The notation is ink on paper wherever it appears — the thumbnails, the
          loop screen, the recognition review — so the paper travels with it
          rather than being painted on each container that happens to hold one. */
-      svg.style.background = 'var(--paper)';
+      svg.style.background = onPaper ? 'var(--paper)' : 'transparent';
       if (p.fluid) {
         svg.setAttribute('width', '100%');
         svg.style.width = '100%';
@@ -4741,9 +4744,12 @@ function makeScoreView(React) {
         Object.keys(attrs).forEach(a => e.setAttribute(a, attrs[a]));
         return e;
       };
-      this._loopBox = mk('rect', { fill: 'none', stroke: 'rgba(96,74,220,.5)', 'stroke-width': 1.5, 'stroke-dasharray': '5 4', rx: 10, opacity: 0 });
-      /* fixed mixes, because these sit on paper whatever the theme is doing */
-      this._hl = mk('rect', { class: 'ppp-now', fill: 'rgba(96,74,220,.16)', stroke: 'rgba(96,74,220,.55)', 'stroke-width': 1.5, rx: 8, opacity: 0 });
+      /* fixed mixes on paper; the theme's own tokens when following it */
+      const nowFill = onPaper ? 'rgba(96,74,220,.16)' : col('--accent-3');
+      const nowLine = onPaper ? 'rgba(96,74,220,.55)' : col('--accent-2');
+      const accent = onPaper ? 'rgb(96,74,220)' : col('--accent');
+      this._loopBox = mk('rect', { fill: 'none', stroke: nowLine, 'stroke-width': 1.5, 'stroke-dasharray': '5 4', rx: 10, opacity: 0 });
+      this._hl = mk('rect', { class: 'ppp-now', fill: nowFill, stroke: nowLine, 'stroke-width': 1.5, rx: 8, opacity: 0 });
       svg.insertBefore(this._loopBox, svg.firstChild);
       svg.insertBefore(this._hl, svg.firstChild);
 
@@ -4772,8 +4778,8 @@ function makeScoreView(React) {
       }
 
       /* In front: the playhead. */
-      this._phLine = mk('line', { stroke: 'rgb(96,74,220)', 'stroke-width': 2.5, opacity: 0 });
-      this._phDot = mk('circle', { r: 5, fill: 'rgb(96,74,220)', opacity: 0 });
+      this._phLine = mk('line', { stroke: accent, 'stroke-width': 2.5, opacity: 0 });
+      this._phDot = mk('circle', { r: 5, fill: accent, opacity: 0 });
       svg.appendChild(this._phLine);
       svg.appendChild(this._phDot);
       this._H = H;
@@ -5089,7 +5095,7 @@ class Component extends DCLogic {
       minutes: 18, xp: 1240, streak: 7, sessions: [10, 18, 14, 23, 8, 20, 18],
       /* MIDI stays off until the user asks for it: requesting access can
          prompt, and claiming a connection we do not have would be a lie. */
-      toggles: { midi: false, notify: true, sound: false, notes: true, auto: true, follow: true },
+      toggles: { midi: false, notify: true, sound: false, notes: true, auto: true, follow: true, paper: true },
       gateIdx: 0, focus: false,
       /* The whole piece, by default. Four bars at a time and a measure number in
          a sidebar tells you nothing about where you are; you have to see it. */
@@ -6518,7 +6524,10 @@ class Component extends DCLogic {
   /* ============================ views ============================ */
   sv(props) {
     if (!this._SV) this._SV = makeScoreView(React);
-    return h(this._SV, Object.assign({ score: this.state.score, theme: this.state.theme }, props));
+    return h(this._SV, Object.assign({
+      score: this.state.score, theme: this.state.theme,
+      paper: this.state.toggles.paper !== false
+    }, props));
   }
   quizScore() {
     const p = this.state.quizNote;
@@ -6915,7 +6924,8 @@ class Component extends DCLogic {
         { key: 'notes', label: 'Play note audio while practicing', sub: 'Hear the notes as the playhead passes' }] },
       { title: 'Account', sub: 'Notifications and appearance', rows: [
         { key: 'notify', label: 'Daily practice reminder', sub: 'One nudge, 7:30pm' },
-        { key: 'theme', label: 'Dark mode', sub: 'Easier at the piano in the evening' }] }
+        { key: 'theme', label: 'Dark mode', sub: 'Easier at the piano in the evening' },
+        { key: 'paper', label: 'Keep the score on paper', sub: 'Off, the notation follows the dark theme instead' }] }
     ].map(g => ({
       title: tx(g.title), sub: tx(g.sub),
       rows: g.rows.map(r => {
@@ -7281,6 +7291,7 @@ class Component extends DCLogic {
       ],
       kbRef: this._kb,
       staffRef: this._staff,
+      paperBg: S.toggles.paper !== false ? 'var(--paper)' : 'transparent',
       focusNarrow: S.focus && this.narrowScreen(),
       /* planning screens keep the journey; working screens do not */
       showRail: !S.focus && ['home', 'upload', 'analysis', 'plan', 'songs', 'progress'].indexOf(sc) > -1,
