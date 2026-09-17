@@ -5066,7 +5066,10 @@ class Component extends DCLogic {
       /* MIDI stays off until the user asks for it: requesting access can
          prompt, and claiming a connection we do not have would be a lie. */
       toggles: { midi: false, notify: true, sound: false, notes: true, auto: true, follow: true },
-      gateIdx: 0, focus: false, wholeScore: false,
+      gateIdx: 0, focus: false,
+      /* The whole piece, by default. Four bars at a time and a measure number in
+         a sidebar tells you nothing about where you are; you have to see it. */
+      wholeScore: true,
       toast: '',
       locale: (typeof window !== 'undefined' && window.PPP_I18N) ? window.PPP_I18N.getLocale() : 'en-US',
       localeMenuOpen: false,
