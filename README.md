@@ -377,9 +377,9 @@ for review**. Playing accuracy alone never reaches Memorized.
 
 The coach turns what PPP measured into a short session you can do right now. It interprets; it
 never measures. Learning decides what is weak, Memory decides what is memorized, the
-PerformanceEngine decides what was played — none of that is delegated to a model. With no key
-the deterministic planner produces the session instead and the panel reads **planned by PPP**.
-AI is an enhancement here, never a dependency.
+PerformanceEngine decides what was played — none of that is delegated to a model. With no
+provider at all the deterministic planner produces the session instead and the panel reads
+**planned by PPP**. AI is an enhancement here, never a dependency.
 
 ### What the coach is told
 
@@ -437,6 +437,53 @@ repetitions, and only at that boundary does PPP consider re-planning: when the w
 changes, a review comes due, overall accuracy swings by 8 points, or a memory level moves. A
 picture that has not moved is left alone, so the plan does not churn mid-session.
 
+### Two providers, one endpoint
+
+Something has to write the plan, and it does not have to be a paid API:
+
+| | Needs | Costs | Panel reads |
+| --- | --- | --- | --- |
+| **Claude** | `ANTHROPIC_API_KEY` | per request | planned by Claude |
+| **Ollama** | a model running on this machine | nothing | planned by Ollama |
+| **PPP** | nothing at all | nothing | planned by PPP |
+
+Both models answer the same `/coach` endpoint, get the same `CoachContext` and the same system
+prompt, and return the same schema — Anthropic through `messages.parse()`, Ollama through
+`/api/chat` with a JSON Schema derived from the very same zod definition, so the shape is
+declared once. Everything after the response is identical: the same validator, the same
+guardrails, the same panel.
+
+PPP prefers Claude when a key is present and falls back to Ollama, then to itself.
+`PPP_COACH_PROVIDER=anthropic|ollama` pins one.
+
+```sh
+PPP_OLLAMA_URL=http://127.0.0.1:11434    # default
+PPP_OLLAMA_MODEL=qwen3:8b                # default; must already be pulled
+PPP_OLLAMA_TIMEOUT_MS=180000             # a local model can think for a while
+```
+
+If Ollama is running somewhere the host cannot see — inside another project's Docker network,
+say — it needs a way through. A one-line bridge is enough, and it changes nothing in the project
+that owns the container:
+
+```sh
+docker run -d --name ppp-ollama-bridge --restart unless-stopped \
+  --network <that-project's-network> -p 127.0.0.1:11434:11434 \
+  alpine/socat tcp-listen:11434,fork,reuseaddr tcp-connect:<ollama-container>:11434
+```
+
+It binds to `127.0.0.1` only, so nothing is exposed beyond this machine, and `docker rm -f
+ppp-ollama-bridge` undoes it.
+
+`/health` reports which provider is live, and **the panel names whoever actually answered** —
+that attribution is taken from the service, never assumed by the frontend, because a plan
+credited to the wrong model is exactly the kind of lie the rest of this app is built to avoid.
+
+A local model is worse at this than Claude, which is precisely why the guardrails are not
+optional. In testing, qwen3:8b proposed blind recall on a passage that had not earned it and
+asked for ten repetitions where eight is the limit. Both were caught: the task was dropped and
+the count clamped, and the session it produced was still executable.
+
 ### Where the key lives
 
 `ANTHROPIC_API_KEY` is read by the local Node service and never reaches the browser. The app
@@ -470,8 +517,9 @@ honest about which planner produced the session. `PPP_COACH_MODEL` overrides the
 
 Unreachable, throwing, rejecting, malformed, empty, or a plan where every task fails validation —
 all six land in the same place: PPP's own session, attributed to PPP, with a line saying what
-happened. The deterministic planner is both the fallback and the yardstick, so a failed request
-costs you the interpretation, never the practice.
+happened. A missing key, an Ollama that is not running, a model that is not pulled and a request
+that times out are all just more ways into that same path. The deterministic planner is both the
+fallback and the yardstick, so a failed request costs you the interpretation, never the practice.
 
 ### Before you have played anything
 

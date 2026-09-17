@@ -158,10 +158,17 @@ const ok = (name, cond, detail) => {
     '  ' + t.hand + '  ' + t.tempoPercent + '%  ' + t.mode + '  ×' + t.repetitions + '  — ' + t.reason));
   if (checked.note) console.log('    note:    ' + checked.note);
 
-  /* ---- attribution ---- */
+  /* ---- attribution ----
+     The coach panel is on the player screen, so go there before reading it. */
+  await page.evaluate(() => {
+    const b = [...document.querySelectorAll('aside nav button')].find(x => /Practice/.test(x.innerText || ''));
+    if (b) b.click();
+  });
+  await sleep(1200);
   const attributed = await page.evaluate(() => {
-    const t = document.querySelector('main').innerText;
-    return (t.match(/PLANNED BY [A-Z]+/i) || [])[0] || null;
+    const panel = [...document.querySelectorAll('main section')]
+      .find(s => /PPP Coach/.test(s.innerText || ''));
+    return panel ? ((panel.innerText.match(/PLANNED BY [^\n]+/i) || [])[0] || null) : null;
   });
   console.log('\n── the panel is honest ────────────────');
   ok('the panel credits the provider that actually answered',
@@ -173,13 +180,20 @@ const ok = (name, cond, detail) => {
   const first = checked.tasks[0];
   const scoreTempo = await page.evaluate(() => 84);
   const applied = await page.evaluate(async (t) => {
+    /* scoped to the coach panel — Home's recommendation card can carry the
+       same "Measures 21–24" label, and clicking that would prove nothing */
     const label = 'Measures ' + t.range.start + '–' + t.range.end;
-    const b = [...document.querySelectorAll('main button')].find(x => (x.innerText || '').indexOf(label) === 0);
-    if (!b) return { found: false };
+    const panel = [...document.querySelectorAll('main section')]
+      .find(s => /PPP Coach/.test(s.innerText || ''));
+    /* task rows render in plan order and each is numbered, so the first row
+       carrying a measure range is tasks[0] */
+    const b = [...(panel ? panel.querySelectorAll('button') : [])]
+      .filter(x => /Measures \d+/.test(x.innerText || ''))[0];
+    if (!b || (b.innerText || '').indexOf(label) < 0) return { found: false, saw: b ? b.innerText.replace(/\n/g, ' | ') : null };
     b.click();
     await new Promise(r => setTimeout(r, 900));
     const txt = document.querySelector('main').innerText;
-    const loop = (txt.match(/Loop:\s*(\d+)\s*→\s*(\d+)/) || []).slice(1).map(Number);
+    const loop = (txt.match(/Loop:?\s*(\d+)\s*→\s*(\d+)/) || []).slice(1).map(Number);
     const tempo = +((txt.match(/(\d+)\s*BPM/) || [])[1]);
     const memory = /Memory Mode/i.test((document.querySelector('header div div') || {}).innerText || '');
     const nav = [...document.querySelectorAll('aside nav button')].find(x => /Practice/.test(x.innerText || ''));
@@ -193,7 +207,8 @@ const ok = (name, cond, detail) => {
   }, first);
 
   console.log('\n── clicking a real task ───────────────');
-  ok('the task is on screen as a button', applied.found === true);
+  ok('the task is on screen as a button', applied.found === true,
+    applied.found ? 'task 1 of the plan' : 'saw: ' + applied.saw);
   ok('it sets the loop to the task’s range',
     applied.found && applied.loop[0] === first.range.start && applied.loop[1] === first.range.end,
     applied.found ? 'Loop ' + applied.loop.join(' → ') + ', task asked for ' +

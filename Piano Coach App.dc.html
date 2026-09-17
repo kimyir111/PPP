@@ -2,7 +2,7 @@
 <html lang="en" translate="no" class="notranslate">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="google" content="notranslate">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%231b1a18'/%3E%3Crect x='9' y='13' width='4' height='11' rx='2' fill='%23fffefc'/%3E%3Crect x='14' y='7' width='4' height='17' rx='2' fill='%237c5cd6'/%3E%3Crect x='19' y='16' width='4' height='8' rx='2' fill='%23fffefc'/%3E%3C/svg%3E">
 <script src="./i18n.js"></script>
@@ -51,6 +51,172 @@
   .ppp-note.ppp-on [stroke]:not([stroke="none"]) { stroke: var(--accent) !important; }
   .ppp-note.ppp-bad [fill]:not([fill="none"]) { fill: var(--bad) !important; }
   .ppp-note.ppp-bad [stroke]:not([stroke="none"]) { stroke: var(--bad) !important; }
+
+  html, body { overflow-x: hidden; max-width: 100%; }
+  body { -webkit-text-size-adjust: 100%; }
+  .ppp-shell {
+    display: grid;
+    grid-template-columns: 248px minmax(0, 1fr);
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  .ppp-shell[data-sidebar-collapsed="true"] { grid-template-columns: 0 minmax(0, 1fr); }
+  .ppp-aside {
+    border-right: 1px solid var(--line);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    padding: 22px 16px;
+    gap: 26px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100dvh;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto;
+    width: 248px;
+    min-width: 0;
+  }
+  .ppp-shell[data-sidebar-collapsed="true"] .ppp-aside {
+    width: 0;
+    padding: 0;
+    border-right-width: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .ppp-main { display: flex; flex-direction: column; min-width: 0; }
+  .ppp-brand { display: flex; align-items: center; gap: 10px; padding: 0 2px; }
+  .ppp-brand-text { min-width: 0; flex: 1; }
+  .ppp-icon-btn {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--ink2);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .ppp-menu-btn { display: none; }
+  .ppp-shell[data-sidebar-collapsed="true"] .ppp-menu-btn { display: inline-flex; }
+  .ppp-chevron {
+    width: 7px; height: 7px;
+    border-left: 1.6px solid currentColor;
+    border-bottom: 1.6px solid currentColor;
+    transform: rotate(45deg);
+    margin-left: 2px;
+  }
+  .ppp-burger, .ppp-burger::before, .ppp-burger::after {
+    display: block; width: 14px; height: 1.6px; border-radius: 2px; background: currentColor;
+  }
+  .ppp-burger { position: relative; }
+  .ppp-burger::before, .ppp-burger::after { content: ''; position: absolute; left: 0; }
+  .ppp-burger::before { top: -5px; }
+  .ppp-burger::after { top: 5px; }
+  .ppp-backdrop {
+    display: none;
+    border: 0; padding: 0; margin: 0;
+    background: transparent;
+    cursor: pointer;
+    appearance: none;
+  }
+  .ppp-header {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 32px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+    backdrop-filter: blur(8px);
+    box-sizing: border-box;
+  }
+  .ppp-header-tools { display: flex; align-items: center; gap: 10px; flex: none; }
+  .ppp-rail {
+    position: sticky; top: 62px; z-index: 19;
+    display: flex; align-items: center; gap: 18px;
+    padding: 11px 32px 13px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+    box-sizing: border-box;
+  }
+  .ppp-rail-track {
+    flex: 1; display: flex; gap: 6px; min-width: 0;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+  }
+  .ppp-page {
+    padding: 30px 32px 56px;
+    display: flex; flex-direction: column; gap: 22px;
+    animation: rise .35s ease;
+    box-sizing: border-box;
+  }
+  .ppp-nextbar {
+    position: sticky; bottom: 0; z-index: 21;
+    margin-top: auto;
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    padding: 14px 32px;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: 0 -8px 24px -18px rgba(0,0,0,.35);
+    box-sizing: border-box;
+  }
+  @media (max-width: 1024px) {
+    .ppp-shell, .ppp-shell[data-sidebar-collapsed="true"] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .ppp-aside, .ppp-shell[data-sidebar-collapsed="true"] .ppp-aside {
+      position: fixed; left: 0; top: 0; bottom: 0;
+      width: min(280px, 88vw);
+      height: 100vh; height: 100dvh;
+      z-index: 40;
+      padding: 18px 14px;
+      transform: translateX(-105%);
+      pointer-events: none;
+      overflow: hidden auto;
+      border-right: 1px solid var(--line);
+      box-shadow: none;
+      transition: transform .22s ease;
+    }
+    .ppp-shell[data-sidebar-open="true"] .ppp-aside {
+      transform: translateX(0);
+      pointer-events: auto;
+      box-shadow: var(--shadow);
+    }
+    .ppp-shell[data-sidebar-open="true"] .ppp-backdrop {
+      display: block;
+      position: fixed; inset: 0; z-index: 35;
+      background: rgba(20, 18, 16, .42);
+    }
+    .ppp-menu-btn { display: inline-flex; }
+    .ppp-account-meta { display: none; }
+    .ppp-split { grid-template-columns: minmax(0, 1fr) !important; }
+    .ppp-panel { position: static !important; top: auto !important; }
+    .ppp-header, .ppp-rail, .ppp-page, .ppp-nextbar { padding-left: 16px; padding-right: 16px; }
+    .ppp-page { padding-top: 20px; padding-bottom: 36px; }
+    .ppp-rail { top: 56px; gap: 12px; }
+    .ppp-rail-track button { flex: 0 0 auto !important; min-width: 72px; }
+    .ppp-modes { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+    body:has(.ppp-shell[data-sidebar-open="true"]) { overflow: hidden; }
+  }
+  @media (max-width: 720px) {
+    .ppp-header { flex-wrap: wrap; gap: 8px; padding-top: 10px; padding-bottom: 10px; }
+    .ppp-header-label { display: none; }
+    .ppp-hero { padding: 22px 18px !important; }
+    .ppp-hero h1 { font-size: 30px !important; }
+    .ppp-continue { grid-template-columns: minmax(0, 1fr) !important; }
+    .ppp-modes { grid-template-columns: minmax(0, 1fr) !important; }
+    .ppp-search { width: 100% !important; }
+    .ppp-icon-btn .ppp-btn-label { display: none; }
+    input, select, textarea { font-size: 16px !important; }
+  }
 </style>
 </helmet>
 
@@ -101,19 +267,25 @@
   </div>
 </sc-if>
 
-<div data-app="{{ theme }}" ref="{{ rootRef }}" style="display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; background: var(--bg); color: var(--ink); font-family: Figtree, 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', system-ui, sans-serif;">
+<div data-app="{{ theme }}" ref="{{ rootRef }}" class="ppp-shell" data-sidebar-collapsed="{{ sidebarCollapsedAttr }}" data-sidebar-open="{{ sidebarOpenAttr }}" style="background: var(--bg); color: var(--ink); font-family: Figtree, 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', system-ui, sans-serif;">
 
-  <aside style="border-right: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; padding: 22px 16px; gap: 26px; position: sticky; top: 0; height: 100vh; box-sizing: border-box;">
-    <div style="display: flex; align-items: center; gap: 10px; padding: 0 6px;">
+  <button type="button" class="ppp-backdrop" onClick="{{ closeSidebar }}" aria-label="{{ hideSidebarLabel }}"></button>
+
+  <aside class="ppp-aside">
+    <div class="ppp-brand">
       <div style="width: 32px; height: 32px; border-radius: 10px; background: var(--ink); display: flex; align-items: flex-end; justify-content: center; gap: 3px; padding-bottom: 8px; box-sizing: border-box;">
         <div style="width: 4px; height: 11px; background: var(--surface); border-radius: 2px;"></div>
         <div style="width: 4px; height: 17px; background: var(--accent); border-radius: 2px;"></div>
         <div style="width: 4px; height: 8px; background: var(--surface); border-radius: 2px;"></div>
       </div>
-      <div>
+      <div class="ppp-brand-text">
         <div style="font-size: 16px; font-weight: 700; letter-spacing: 0.01em;">PPP</div>
         <div style="font-size: 11px; color: var(--ink3); letter-spacing: 0.02em;">Piano Practice Partner</div>
       </div>
+      <button type="button" class="ppp-icon-btn" data-sidebar-toggle="hide" onClick="{{ hideSidebar }}" title="{{ hideSidebarLabel }}" aria-label="{{ hideSidebarLabel }}">
+        <span class="ppp-chevron"></span>
+        <span class="ppp-btn-label">Hide</span>
+      </button>
     </div>
 
     <button onClick="{{ goUpload }}" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 11px 14px; border-radius: 11px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow); transition: transform .15s ease, filter .15s ease;" style-hover="filter: brightness(1.08); transform: translateY(-1px);">
@@ -129,7 +301,7 @@
       </sc-for>
     </nav>
 
-    <div style="display: flex; flex-direction: column; gap: 2px;">
+    <div class="ppp-flows" style="display: flex; flex-direction: column; gap: 2px;">
       <div style="font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink3); padding: 6px 10px;">Song flow</div>
       <sc-for list="{{ flows }}" as="item" hint-placeholder-count="7">
         <button onClick="{{ item.on }}" style="{{ item.style }}" style-hover="background: var(--surface2);">{{ item.label }}</button>
@@ -152,15 +324,20 @@
     </sc-if>
   </aside>
 
-  <main style="display: flex; flex-direction: column; min-width: 0;">
-    <header style="position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 16px; padding: 14px 32px; border-bottom: 1px solid var(--line); background: var(--surface); backdrop-filter: blur(8px);">
+  <main class="ppp-main">
+    <header class="ppp-header">
+      <button type="button" class="ppp-icon-btn ppp-menu-btn" data-sidebar-toggle="show" onClick="{{ showSidebar }}" title="{{ showSidebarLabel }}" aria-label="{{ showSidebarLabel }}">
+        <span class="ppp-burger"></span>
+        <span class="ppp-btn-label">Menu</span>
+      </button>
       <div style="min-width: 0;">
         <div style="font-size: 14.5px; font-weight: 600; letter-spacing: -0.01em;">{{ screenTitle }}</div>
         <div style="font-size: 11.5px; color: var(--ink3);">{{ screenCrumb }}</div>
       </div>
       <div style="flex: 1;"></div>
+      <div class="ppp-header-tools">
       <div style="position: relative;">
-        <button onClick="{{ toggleLocaleMenu }}" style="display: flex; align-items: center; gap: 7px; padding: 7px 12px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 12px; cursor: pointer;" style-hover="color: var(--ink); border-color: var(--ink3);">{{ localeFlag }} {{ localeLanguage }}</button>
+        <button onClick="{{ toggleLocaleMenu }}" style="display: flex; align-items: center; gap: 7px; padding: 7px 12px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 12px; cursor: pointer;" style-hover="color: var(--ink); border-color: var(--ink3);">{{ localeFlag }} <span class="ppp-header-label">{{ localeLanguage }}</span></button>
         <sc-if value="{{ localeMenuOpen }}" hint-placeholder-val="{{ false }}">
           <div style="position: absolute; right: 0; top: 40px; z-index: 30; min-width: 188px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); padding: 6px; display: flex; flex-direction: column; gap: 2px;">
             <sc-for list="{{ localeOptions }}" as="opt" hint-placeholder-count="4">
@@ -170,7 +347,7 @@
         </sc-if>
       </div>
       <button onClick="{{ toggleTheme }}" style="display: flex; align-items: center; gap: 7px; padding: 7px 12px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 12px; cursor: pointer;" style-hover="color: var(--ink); border-color: var(--ink3);">
-        <span style="width: 11px; height: 11px; border-radius: 999px; background: var(--ink); display: inline-block;"></span>{{ themeLabel }}
+        <span style="width: 11px; height: 11px; border-radius: 999px; background: var(--ink); display: inline-block;"></span><span class="ppp-header-label">{{ themeLabel }}</span>
       </button>
       <button onClick="{{ notifyOn }}" style="position: relative; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); cursor: pointer; display: grid; place-items: center;" style-hover="border-color: var(--ink3);">
         <span style="width: 12px; height: 12px; border: 1.5px solid var(--ink2); border-radius: 4px 4px 6px 6px; display: block;"></span>
@@ -178,19 +355,20 @@
       </button>
       <button onClick="{{ accountOn }}" style="display: flex; align-items: center; gap: 9px; padding: 4px 0 4px 14px; border: 0; border-left: 1px solid var(--line); background: transparent; cursor: pointer; font-family: inherit; color: inherit; text-align: left;">
         <div style="width: 32px; height: 32px; border-radius: 999px; background: var(--accent-2); color: var(--accent); display: grid; place-items: center; font-size: 12px; font-weight: 600;">{{ userInitials }}</div>
-        <div style="line-height: 1.25;">
+        <div class="ppp-account-meta" style="line-height: 1.25;">
           <div style="font-size: 12.5px; font-weight: 500;">{{ userName }}</div>
           <div style="font-size: 11px; color: var(--ink3);">{{ userRole }}</div>
         </div>
       </button>
+      </div>
     </header>
 
-    <div style="position: sticky; top: 62px; z-index: 19; display: flex; align-items: center; gap: 18px; padding: 11px 32px 13px; border-bottom: 1px solid var(--line); background: var(--surface);">
+    <div class="ppp-rail">
       <div style="flex: none;">
         <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3);">Learning loop</div>
         <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; margin-top: 2px;">{{ railCount }}</div>
       </div>
-      <div style="flex: 1; display: flex; gap: 6px; min-width: 0;">
+      <div class="ppp-rail-track">
         <sc-for list="{{ rail }}" as="r" hint-placeholder-count="10">
           <button onClick="{{ r.on }}" style="{{ r.nodeStyle }}" style-hover="opacity: 1;">
             <span style="{{ r.lineStyle }}"></span>
@@ -200,11 +378,11 @@
       </div>
     </div>
 
-    <div style="padding: 30px 32px 56px; display: flex; flex-direction: column; gap: 22px; animation: rise .35s ease;">
+    <div class="ppp-page">
 
       <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
         <div style="display: flex; flex-direction: column; gap: 22px;">
-          <section style="position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); padding: 38px 40px; box-shadow: var(--shadow);">
+          <section class="ppp-hero" style="position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); padding: 38px 40px; box-shadow: var(--shadow);">
             <div style="position: absolute; inset: 0 0 auto auto; width: 300px; height: 300px; border-radius: 999px; background: var(--accent-3); filter: blur(10px); transform: translate(90px, -130px);"></div>
             <div style="position: relative; max-width: 620px;">
               <div style="font-size: 11.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent);">Today's focus</div>
@@ -232,10 +410,10 @@
             </div>
           </section>
 
-          <div style="display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 22px; align-items: start;">
+          <div class="ppp-split" style="display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 22px; align-items: start;">
             <section style="display: flex; flex-direction: column; gap: 12px;">
               <h2 style="margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em;">Continue Practicing</h2>
-              <div style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 22px; box-shadow: var(--shadow); display: grid; grid-template-columns: 116px minmax(0, 1fr); gap: 20px;">
+              <div class="ppp-continue" style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 22px; box-shadow: var(--shadow); display: grid; grid-template-columns: 116px minmax(0, 1fr); gap: 20px;">
                 <div style="border-radius: 12px; border: 1px solid var(--line); background: var(--bg); overflow: hidden; display: grid; place-items: center; padding: 8px;">{{ thumbStaff }}</div>
                 <div style="min-width: 0;">
                   <div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;">
@@ -347,7 +525,7 @@
       </sc-if>
 
       <sc-if value="{{ isUpload }}" hint-placeholder-val="{{ true }}">
-        <div style="display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 22px; align-items: start;">
+        <div class="ppp-split" style="display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 22px; align-items: start;">
           <section style="border: 1px solid var(--line); border-radius: 20px; background: var(--surface); padding: 26px; box-shadow: var(--shadow);">
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
               <h2 style="margin: 0; font-size: 16px; font-weight: 600;">{{ uploadHeading }}</h2>
@@ -435,7 +613,7 @@
             </div>
           </section>
 
-          <div style="display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 22px; align-items: start;">
+          <div class="ppp-split" style="display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 22px; align-items: start;">
             <section>
               <h2 style="margin: 0 0 6px; font-size: 15px; font-weight: 600;">AI Practice Plan</h2>
               <p style="margin: 0 0 14px; font-size: 13.5px; color: var(--ink2);">“Based on your sheet music, I recommend learning this song in 6 stages.”</p>
@@ -489,7 +667,7 @@
       </sc-if>
 
       <sc-if value="{{ isPlayer }}" hint-placeholder-val="{{ false }}">
-        <div style="display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 22px; align-items: start;">
+        <div class="ppp-split" style="display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 22px; align-items: start;">
           <section style="display: flex; flex-direction: column; gap: 14px; min-width: 0;">
             <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
               <div>
@@ -527,7 +705,13 @@
                   <button onClick="{{ z.on }}" style="width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 14px; cursor: pointer;" style-hover="border-color: var(--ink3);">{{ z.label }}</button>
                 </sc-for>
                 <button onClick="{{ toggleGuidance }}" style="{{ guidanceBtnStyle }}">{{ guidanceLabel }}</button>
+                <sc-if value="{{ showFollowBtn }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ toggleFollow }}" style="{{ followBtnStyle }}">{{ followLabel }}</button>
+                </sc-if>
               </div>
+              <sc-if value="{{ showFollowHint }}" hint-placeholder-val="{{ false }}">
+                <div style="margin: 0 16px; padding: 9px 12px; border-radius: 10px; background: var(--accent-3); border: 1px solid var(--accent-2); font-size: 12.5px; line-height: 1.45; color: var(--ink2);">{{ followHint }}</div>
+              </sc-if>
               <div style="overflow-x: auto; padding: 18px 16px 22px;">{{ playerStaff }}</div>
             </div>
 
@@ -564,7 +748,7 @@
             </div>
           </section>
 
-          <section style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); padding: 20px; position: sticky; top: 92px;">
+          <section class="ppp-panel" style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); padding: 20px; position: sticky; top: 92px;">
             <div style="display: flex; align-items: center; gap: 9px;">
               <span style="width: 22px; height: 22px; border-radius: 7px; background: var(--accent); display: grid; place-items: center; color: #fff; font-size: 11px; font-weight: 700;">AI</span>
               <span style="font-size: 14.5px; font-weight: 600;">PPP Coach</span>
@@ -635,7 +819,7 @@
       </sc-if>
 
       <sc-if value="{{ isLoop }}" hint-placeholder-val="{{ false }}">
-        <div style="display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 22px; align-items: start;">
+        <div class="ppp-split" style="display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 22px; align-items: start;">
           <section style="display: flex; flex-direction: column; gap: 14px; min-width: 0;">
             <div style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap;">
               <div>
@@ -733,7 +917,7 @@
 
       <sc-if value="{{ isMemory }}" hint-placeholder-val="{{ false }}">
         <div style="display: flex; flex-direction: column; gap: 22px;">
-          <section style="border: 1px solid var(--line); border-radius: 20px; background: var(--surface); padding: 26px 30px; box-shadow: var(--shadow); display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 30px; align-items: center;">
+          <section class="ppp-split ppp-hero" style="border: 1px solid var(--line); border-radius: 20px; background: var(--surface); padding: 26px 30px; box-shadow: var(--shadow); display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 30px; align-items: center;">
             <div>
               <div style="font-size: 11.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent);">Memory Mode</div>
               <h1 style="font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 36px; margin: 10px 0 8px; letter-spacing: -0.01em;">{{ memTitle }}</h1>
@@ -763,12 +947,12 @@
             </div>
           </section>
 
-          <div style="display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 22px; align-items: start;">
+          <div class="ppp-split" style="display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 22px; align-items: start;">
             <section style="display: flex; flex-direction: column; gap: 14px; min-width: 0;">
               <sc-if value="{{ memNotEligible }}" hint-placeholder-val="{{ false }}">
                 <div style="border: 1px solid var(--warn); border-radius: 14px; background: var(--surface); padding: 14px 16px; font-size: 13px; line-height: 1.5; color: var(--ink);">{{ memGate }}</div>
               </sc-if>
-              <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;">
+              <div class="ppp-modes" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;">
                 <sc-for list="{{ memModes }}" as="mm" hint-placeholder-count="4">
                   <button onClick="{{ mm.on }}" style="{{ mm.style }}">
                     <span style="font-size: 13.5px; font-weight: 600;">{{ mm.label }}</span>
@@ -872,7 +1056,7 @@
             </sc-for>
           </section>
 
-          <div style="display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 22px; align-items: start;">
+          <div class="ppp-split" style="display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 22px; align-items: start;">
             <section style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 22px; box-shadow: var(--shadow);">
               <h2 style="margin: 0 0 4px; font-size: 15px; font-weight: 600;">Song map</h2>
               <p style="margin: 0 0 18px; font-size: 13px; color: var(--ink3);">{{ mapSub }}</p>
@@ -930,7 +1114,7 @@
       </sc-if>
 
       <sc-if value="{{ isPlan }}" hint-placeholder-val="{{ false }}">
-        <div style="display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 22px; align-items: start;">
+        <div class="ppp-split" style="display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 22px; align-items: start;">
           <section>
             <h1 style="font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 34px; margin: 0 0 6px;">{{ planTitle }}</h1>
             <p style="margin: 0 0 20px; font-size: 14px; color: var(--ink2);">{{ planSub }}</p>
@@ -955,7 +1139,7 @@
               </sc-for>
             </div>
           </section>
-          <section style="display: flex; flex-direction: column; gap: 12px; position: sticky; top: 92px;">
+          <section class="ppp-panel" style="display: flex; flex-direction: column; gap: 12px; position: sticky; top: 92px;">
             <div style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 20px; box-shadow: var(--shadow);">
               <div style="font-size: 13px; color: var(--ink2);">Plan progress</div>
               <div style="font-family: 'Instrument Serif', serif; font-size: 40px; line-height: 1.05; margin-top: 4px;">{{ planPct }}</div>
@@ -982,7 +1166,7 @@
               </sc-for>
             </div>
             <div style="flex: 1;"></div>
-            <input type="search" placeholder="Search songs or composers" value="{{ query }}" onChange="{{ setQuery }}" style="width: 260px; padding: 10px 14px; border-radius: 11px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px; outline: none;" />
+            <input type="search" class="ppp-search" placeholder="Search songs or composers" value="{{ query }}" onChange="{{ setQuery }}" style="width: 260px; padding: 10px 14px; border-radius: 11px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px; outline: none;" />
           </div>
           <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(258px, 1fr)); gap: 16px;">
             <sc-for list="{{ songs }}" as="s" hint-placeholder-count="6">
@@ -1017,7 +1201,7 @@
       </sc-if>
 
       <sc-if value="{{ isBasics }}" hint-placeholder-val="{{ false }}">
-        <div style="display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 22px; align-items: start;">
+        <div class="ppp-split" style="display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 22px; align-items: start;">
           <section style="display: flex; flex-direction: column; gap: 16px;">
             <div>
               <h1 style="font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 32px; margin: 0 0 6px;">Remember the Basics</h1>
@@ -1186,7 +1370,7 @@
             </div>
           </section>
 
-          <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; align-items: start;">
+          <div class="ppp-split" style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; align-items: start;">
             <section style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); overflow: hidden;">
               <div style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line);">
                 <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink2);">{{ reviewPageLabel }}</span>
@@ -1277,7 +1461,7 @@
 
     </div>
 
-    <div style="position: sticky; bottom: 0; z-index: 21; margin-top: auto; display: flex; align-items: center; gap: 18px; padding: 14px 32px; border-top: 1px solid var(--line); background: var(--surface); box-shadow: 0 -8px 24px -18px rgba(0,0,0,.35); flex-wrap: wrap;">
+    <div class="ppp-nextbar">
       <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
         <span style="width: 26px; height: 26px; flex: none; border-radius: 8px; background: var(--accent); display: grid; place-items: center; color: #fff; font-size: 11px; font-weight: 700;">PPP</span>
         <div style="min-width: 0;">
@@ -2344,7 +2528,9 @@ const Learning = {
     if (!result || !result.byMeasure) return h;
 
     const at = meta.at, tempo = meta.tempo, hands = meta.hands;
-    const bucket = Learning.tempoBucket(tempo, meta.scoreTempo);
+    /* A run you paced yourself is not proof you can play it at tempo, so it
+       never lands in the 100% bucket however accurate it was. */
+    const bucket = meta.follow ? 50 : Learning.tempoBucket(tempo, meta.scoreTempo);
 
     Object.keys(result.byMeasure).forEach(key => {
       const m = +key;
@@ -3230,6 +3416,13 @@ const Memory = {
    ========================================================================== */
 
 const OMR_URL = 'http://127.0.0.1:8788';
+
+/* The helper runs on the same machine as the browser. A page served from a
+   real host has no business probing the visitor's own localhost — it would
+   fail as mixed content on every load and tell us nothing — so on a deployed
+   copy PPP simply knows the helper is not there. */
+const LOCAL_HELPER = typeof location === 'undefined' || location.protocol === 'file:' ||
+  /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname || '');
 const PDFJS_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js';
 const PDFJS_WORKER = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js';
 
@@ -3283,6 +3476,7 @@ const Import = {
   /* Is the local OMR service there? Asked before a PDF or image import so the
      failure is "start the service", not a mystery. */
   health() {
+    if (!LOCAL_HELPER) return Promise.resolve({ ok: false, unreachable: true, remote: true });
     return fetch(OMR_URL + '/health', { method: 'GET', cache: 'no-store' })
       .then(r => (r.ok ? r.json() : null))
       .then(j => j || { ok: false })
@@ -4026,6 +4220,7 @@ const Coach = {
     service: {
       name: 'AI',
       available() {
+        if (!LOCAL_HELPER) return Promise.resolve(false);
         return fetch(COACH_URL + '/health', { cache: 'no-store' })
           .then(r => (r.ok ? r.json() : null))
           .then(j => {
@@ -4705,10 +4900,13 @@ class Component extends DCLogic {
       minutes: 18, xp: 1240, streak: 7, sessions: [10, 18, 14, 23, 8, 20, 18],
       /* MIDI stays off until the user asks for it: requesting access can
          prompt, and claiming a connection we do not have would be a lie. */
-      toggles: { midi: false, notify: true, sound: false, notes: true, auto: true },
+      toggles: { midi: false, notify: true, sound: false, notes: true, auto: true, follow: true },
+      gateIdx: 0,
       toast: '',
       locale: (typeof window !== 'undefined' && window.PPP_I18N) ? window.PPP_I18N.getLocale() : 'en-US',
       localeMenuOpen: false,
+      sidebarCollapsed: false,
+      sidebarOpen: false,
       user: null,
       guest: (function () { try { return localStorage.getItem('ppp-guest') === '1'; } catch (e) { return false; } })(),
       authReady: false,
@@ -4733,7 +4931,12 @@ class Component extends DCLogic {
     this._last = (window.performance || Date).now();
     this._iv = setInterval(() => this.tick(), 40);
     this._onKey = e => this.onKey(e);
+    this._onResize = () => {
+      if (typeof window !== 'undefined' && window.innerWidth > 1024 && this.state.sidebarOpen)
+        this.setState({ sidebarOpen: false });
+    };
     window.addEventListener('keydown', this._onKey);
+    window.addEventListener('resize', this._onResize);
     this.setState({ midi: this.midiLayer().snapshot() });
     this.bootI18n();
     this.checkAuth();
@@ -4749,6 +4952,10 @@ class Component extends DCLogic {
     this.maybeReplan();
     if (this._i18nRaf) cancelAnimationFrame(this._i18nRaf);
     this._i18nRaf = requestAnimationFrame(() => { this._i18nRaf = 0; this.applyI18n(); });
+    if (this._shownScreen !== this.state.screen) {
+      this._shownScreen = this.state.screen;
+      if (this.state.sidebarOpen) this.setState({ sidebarOpen: false });
+    }
   }
   componentWillUnmount() {
     clearInterval(this._iv);
@@ -4756,6 +4963,7 @@ class Component extends DCLogic {
     clearTimeout(this._an); clearTimeout(this._toast); clearTimeout(this._quiz); clearTimeout(this._save);
     this.writeState();   /* flush whatever was still pending */
     window.removeEventListener('keydown', this._onKey);
+    window.removeEventListener('resize', this._onResize);
     if (this._midi) this._midi.stop();
     if (this._ac && this._ac.close) { try { this._ac.close(); } catch (e) {} }
   }
@@ -4791,6 +4999,7 @@ class Component extends DCLogic {
           mastered: S.mastered, minutes: S.minutes, xp: S.xp, streak: S.streak,
           tempo: S.tempo, loopFrom: S.loopFrom, loopTo: S.loopTo, toggles: S.toggles,
           theme: S.theme, sessions: S.sessions, guidance: S.guidance, skillMs: S.skillMs,
+          sidebarCollapsed: !!S.sidebarCollapsed,
           fileName: S.fileName, fileMeta: S.fileMeta,
           midiDeviceId: (S.midi && S.midi.deviceId) || S.midiDeviceId || null,
           history: S.history, memory: S.memory,
@@ -4826,6 +5035,7 @@ class Component extends DCLogic {
       'theme', 'sessions', 'guidance', 'skillMs', 'fileName', 'fileMeta'].forEach(k => {
         if (d[k] !== undefined) patch[k] = d[k];
       });
+    if (d.sidebarCollapsed != null) patch.sidebarCollapsed = !!d.sidebarCollapsed;
     if (d.toggles) patch.toggles = Object.assign({}, this.state.toggles, d.toggles);
     if (d.midiDeviceId) patch.midiDeviceId = d.midiDeviceId;
     /* What PPP has learned about you outlives the tab. */
@@ -5317,7 +5527,10 @@ class Component extends DCLogic {
         this.setState(st => ({ toggles: Object.assign({}, st.toggles, { midi: true }) }));
         this.say(tx('Connected to {{device}}.', { device: m.deviceName }));
       } else if (okFlag) this.say(tx('No MIDI inputs found — plug a keyboard in.'));
-      else this.say(tx('MIDI access was refused — staying on Demo Input.'));
+      /* "Refused" on its own is a dead end. Say which refusal it was and what
+         undoes it, because the fix is always in the browser, not in PPP. */
+      else if (m.status === 'denied') this.say(tx('The browser is blocking MIDI. Open the icon left of the address bar, set MIDI devices to Allow, then try again.'));
+      else this.say(tx('MIDI could not start — {{reason}}', { reason: m.error || tx('unknown reason') }));
       return okFlag;
     });
   }
@@ -5355,16 +5568,171 @@ class Component extends DCLogic {
     });
   }
 
+  /* ======================== follow mode ========================
+     The clock-driven transport measures a performance: it marches at the tempo
+     and you keep up. That is the right way to test what you can already play,
+     and the wrong way to learn notes you do not have yet — nothing you do
+     moves the page, and falling behind is scored against you.
+
+     Follow mode inverts it. The playhead parks on the next onset and will not
+     move until you play it. No clock, no tempo, nothing to fall behind. A
+     chord releases only once every note of it has been pressed.
+
+     It records which notes you got, and nothing else. You are setting the
+     pace, so "late" has no meaning here: no timing is written, and a passage
+     played this way never counts as evidence that you can play it at tempo. */
+  following() {
+    return this.liveMidi() && this.state.toggles.follow !== false;
+  }
+
+  /* Every onset in the loop range, hand-filtered, in playing order. */
+  followGates() {
+    const S = this.state;
+    const [from, to] = this.range(S);
+    const key = S.score.id + ':' + from + ':' + to + ':' + S.hands;
+    if (this._gatesKey === key && this._gates) return this._gates;
+    const gates = [];
+    this.notesIn(from, to).forEach(n => {
+      if (n.rest || n.tieStop || !this.handOk(n, S.hands)) return;
+      const last = gates[gates.length - 1];
+      const note = { midi: n.midi, hand: n.hand === 'l' ? 'l' : 'r' };
+      if (last && Math.abs(last.b - n.abs) < 1e-6) last.notes.push(note);
+      else gates.push({ b: n.abs, m: n.m, notes: [note] });
+    });
+    this._gatesKey = key;
+    this._gates = gates;
+    return gates;
+  }
+
+  /* Park on the first onset of the range and start a fresh tally. */
+  followReset(patch) {
+    const p = patch || {};
+    this._got = [];
+    this._tally = {};
+    this._gatesKey = null;
+    const gates = this.followGates();
+    p.gateIdx = 0;
+    p.beat = gates.length ? gates[0].b : Score.startQ(this.state.score, this.range(this.state)[0]);
+    p.runHit = 0; p.runTot = 0; p.wrongNotes = [];
+    return p;
+  }
+
+  followStat(m) {
+    const t = this._tally || (this._tally = {});
+    if (!t[m]) t[m] = {
+      total: 0, matched: 0, missed: 0, wrong: 0, extra: 0,
+      onTime: 0, early: 0, late: 0, timingAbsSum: 0, timingCount: 0,
+      hands: { r: { total: 0, matched: 0, timingAbsSum: 0, timingCount: 0 },
+               l: { total: 0, matched: 0, timingAbsSum: 0, timingCount: 0 } }
+    };
+    return t[m];
+  }
+
+  /* A key went down while following. It either belongs to the onset we are
+     waiting on, or it is simply wrong — there is no "early" or "late" here. */
+  followNote(ev) {
+    const S = this.state;
+    const gates = this.followGates();
+    const g = gates[S.gateIdx];
+    if (!g) return;
+    /* Following can begin the moment a keyboard is connected, without anything
+       having reset it first, so the tally starts here if it has not already. */
+    if (!this._got) this._got = [];
+    const want = g.notes.map(n => n.midi);
+
+    if (want.indexOf(ev.midi) < 0) {
+      const t = this.followStat(g.m);
+      t.wrong++; t.extra++;
+      const held = (S.wrongNotes || []).slice();
+      if (held.indexOf(ev.midi) < 0) held.push(ev.midi);
+      this.setState({ wrongNotes: held });
+      return;
+    }
+    if (this._got.indexOf(ev.midi) < 0) this._got.push(ev.midi);
+    if (!want.every(p => this._got.indexOf(p) > -1)) { this.setState({ wrongNotes: [] }); return; }
+
+    /* the onset is complete: bank it and step to the next one */
+    const t = this.followStat(g.m);
+    g.notes.forEach(n => {
+      t.total++; t.matched++; t.onTime++;
+      const h = t.hands[n.hand];
+      h.total++; h.matched++;
+    });
+    this._got = [];
+
+    const patch = {
+      wrongNotes: [],
+      runHit: S.runHit + g.notes.length,
+      runTot: S.runTot + g.notes.length
+    };
+    const next = S.gateIdx + 1;
+    if (next < gates.length) {
+      patch.gateIdx = next;
+      patch.beat = gates[next].b;
+      this.setState(patch);
+      return;
+    }
+    this.followFinish(patch);
+  }
+
+  /* End of the range. Finish the lap exactly the way a timed run does, with a
+     result in the same shape — minus every timing figure, which was never
+     measured. */
+  followFinish(patch) {
+    const S = this.state;
+    const [from, to] = this.range(S);
+    const byMeasure = {};
+    let total = 0, matched = 0;
+    Object.keys(this._tally || {}).forEach(k => {
+      const t = this._tally[k];
+      byMeasure[k] = Object.assign({}, t, { accuracy: t.total ? t.matched / t.total : 1 });
+      total += t.total; matched += t.matched;
+    });
+    const bySection = {};
+    this.sections().forEach(sec => {
+      if (sec.to < from || sec.from > to) return;
+      let st = 0, sm = 0;
+      Object.keys(byMeasure).forEach(k => {
+        const m = +k;
+        if (m < sec.from || m > sec.to) return;
+        st += byMeasure[k].total; sm += byMeasure[k].matched;
+      });
+      if (st) bySection[sec.id] = { total: st, matched: sm, accuracy: sm / st };
+    });
+
+    const result = {
+      byMeasure: byMeasure, bySection: bySection,
+      expected: total, matched: matched,
+      accuracy: total ? matched / total : 1,
+      meanDeltaMs: 0, timing: null,
+      /* the flag that keeps this out of the at-tempo evidence */
+      follow: true
+    };
+    Object.assign(patch, this.completeLap(S, matched, total, result));
+    this.followReset(patch);
+    this.setState(patch);
+    this.say(tx('Lap done — {{percent}}% of the notes.', { percent: R0(result.accuracy * 100) }));
+  }
+
   onMidiEvent(ev) {
     const S = this.state;
     if (ev.type === 'off') {
       if (this._perf) this._perf.noteOff(ev);
-      this.setState({ held: this._perf ? this._perf.heldNotes() : [] });
+      const patch = { held: this._perf ? this._perf.heldNotes() : [] };
+      if (this.following()) patch.wrongNotes = (S.wrongNotes || []).filter(p => p !== ev.midi);
+      this.setState(patch);
       return;
     }
     /* The player's own key press is the only tone source while MIDI is live,
        so a silent controller still gives feedback and nothing doubles up. */
     if (S.toggles.notes) { this.wake(); this.tone(ev.midi); }
+    /* Following: the note itself is the transport. Nothing here is on a clock. */
+    if (this.following()) {
+      this.perf().noteOn(ev);
+      this.setState({ held: this.perf().heldNotes() });
+      this.followNote(ev);
+      return;
+    }
     if (!S.playing || !this._perf || !this._perf.run) {
       this.perf().noteOn(ev);
       this.setState({ held: this.perf().heldNotes() });
@@ -5428,6 +5796,9 @@ class Component extends DCLogic {
 
   advance(dt) {
     const S = this.state;
+    /* Follow mode and the clock are mutually exclusive: there the playhead
+       moves only when a note lands. */
+    if (this.following()) return;
     const [from, to] = this.range(S);
     const startB = Score.startQ(S.score, from), endB = Score.endQ(S.score, to);
     let prev = S.beat;
@@ -5567,7 +5938,7 @@ class Component extends DCLogic {
       if (!result) patch.drift = measured.meanDeltaMs;
       patch.history = Learning.record(S.history, measured, {
         at: Clock.now(), tempo: S.tempo, scoreTempo: S.score.tempo,
-        hands: S.hands, simulated: !result
+        hands: S.hands, simulated: !result, follow: !!(result && result.follow)
       });
     }
 
@@ -5623,11 +5994,24 @@ class Component extends DCLogic {
     const t = e.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
     const k = e.key.toLowerCase();
+    if (k === 'escape' && this.state.sidebarOpen) { this.setState({ sidebarOpen: false }); return; }
     if (k === ' ') { e.preventDefault(); this.togglePlay(); }
     else if (k === 'r') this.setState({ beat: Score.startQ(this.state.score, this.range()[0]), runHit: 0, runTot: 0, wrongNotes: [] });
     else if (k === 'l') this.setState(s => ({ loop: !s.loop }));
     else if (k === 'm') this.setState(s => ({ metro: !s.metro }));
   }
+  narrowScreen() {
+    return typeof window !== 'undefined' && window.innerWidth <= 1024;
+  }
+  hideSidebar() {
+    if (this.narrowScreen()) this.setState({ sidebarOpen: false });
+    else this.setState({ sidebarCollapsed: true, sidebarOpen: false });
+  }
+  showSidebar() {
+    if (this.narrowScreen()) this.setState(st => ({ sidebarOpen: !st.sidebarOpen }));
+    else this.setState({ sidebarCollapsed: false });
+  }
+  closeSidebar() { this.setState({ sidebarOpen: false }); }
 
   togglePlay() {
     this.wake();
@@ -5645,7 +6029,9 @@ class Component extends DCLogic {
     const sc = this.state.score;
     const a = Score.snap(sc, Math.min(from, to));
     const b = Score.snap(sc, Math.max(from, to));
-    this.setState({ loopFrom: a, loopTo: b, beat: Score.startQ(sc, a), runHit: 0, runTot: 0, wrongNotes: [], anchor: null });
+    const patch = { loopFrom: a, loopTo: b, beat: Score.startQ(sc, a), runHit: 0, runTot: 0, wrongNotes: [], anchor: null };
+    if (this.following()) { this._gatesKey = null; this.followReset(patch); patch.loopFrom = a; patch.loopTo = b; }
+    this.setState(patch);
   }
   nudgeLoop(which, d) {
     this.setState(s => {
@@ -5884,6 +6270,7 @@ class Component extends DCLogic {
       const bad = wrong.indexOf(m) > -1, on = lit.indexOf(m) > -1, ex = exp.indexOf(m) > -1;
       els.push(h('rect', {
         key: 'w' + m, x: i * KW + 1, y: 0, width: KW - 2, height: H, rx: 5,
+        'data-midi': m, 'data-state': bad ? 'wrong' : on ? 'on' : ex ? 'expected' : 'idle',
         fill: bad ? 'var(--bad)' : on ? 'var(--accent)' : ex ? 'var(--accent-2)' : 'var(--key-w)',
         stroke: 'rgba(0,0,0,.18)', strokeWidth: 1, style: { cursor: 'pointer' }, onClick: play(m)
       }));
@@ -5899,6 +6286,7 @@ class Component extends DCLogic {
       const bad = wrong.indexOf(bm) > -1, on = lit.indexOf(bm) > -1, ex = exp.indexOf(bm) > -1;
       els.push(h('rect', {
         key: 'b' + bm, x: i * KW + KW - 11, y: 0, width: 22, height: 93, rx: 4,
+        'data-midi': bm, 'data-state': bad ? 'wrong' : on ? 'on' : ex ? 'expected' : 'idle',
         fill: bad ? 'var(--bad)' : on ? 'var(--accent)' : ex ? 'var(--accent-2)' : 'var(--key-b)',
         stroke: 'rgba(0,0,0,.35)', style: { cursor: 'pointer' }, onClick: play(bm)
       }));
@@ -5921,6 +6309,11 @@ class Component extends DCLogic {
   }
   expected() {
     const S = this.state;
+    if (this.following()) {
+      const g = this.followGates()[S.gateIdx];
+      /* every note still owed at this onset, so a chord shows all of it */
+      return g ? g.notes.map(n => n.midi).filter(p => (this._got || []).indexOf(p) < 0) : [];
+    }
     const [from, to] = this.range(S);
     const nx = this.notesIn(from, to).find(n => n.abs > S.beat && this.handOk(n, S.hands));
     return nx ? [nx.midi] : [];
@@ -5941,7 +6334,7 @@ class Component extends DCLogic {
   go(s) {
     return () => this.setState(st => {
       const i = this.journey().findIndex(j => j.screen === s);
-      const patch = { screen: s, playing: false, runHit: 0, runTot: 0, wrongNotes: [] };
+      const patch = { screen: s, playing: false, runHit: 0, runTot: 0, wrongNotes: [], sidebarOpen: false };
       if (i > -1) patch.journeyStep = i;
       const [from] = this.range(Object.assign({}, st, { screen: s }));
       patch.beat = Score.startQ(st.score, from);
@@ -5951,7 +6344,7 @@ class Component extends DCLogic {
   drill(from, to, extra) {
     return () => {
       this.setLoop(from, to);
-      this.setState(Object.assign({ screen: 'loop', journeyStep: 5, seqStep: 0, seqReps: 0, practiceMode: 'practice' }, extra || {}));
+      this.setState(Object.assign({ screen: 'loop', journeyStep: 5, seqStep: 0, seqReps: 0, practiceMode: 'practice', sidebarOpen: false }, extra || {}));
     };
   }
   /* Arm the practice context without leaving the current screen — ticking a
@@ -6161,6 +6554,7 @@ class Component extends DCLogic {
                 : tx('Not connected — PPP is simulating your playing');
     const midiLabel = midiLive ? tx('MIDI Connected') : !mi.supported ? tx('Demo Input · no Web MIDI') : tx('Demo Input');
     const midiTone = midiLive ? 'var(--good)' : mi.status === 'denied' || mi.status === 'error' ? 'var(--bad)' : 'var(--ink3)';
+    const follows = this.following();
 
     const settingGroups = [
       { title: 'Practice', sub: 'How the coach guides you', rows: [
@@ -6241,6 +6635,13 @@ class Component extends DCLogic {
 
       theme: S.theme, themeLabel: tx(S.theme === 'dark' ? 'Dark' : 'Light'),
       toggleTheme: () => this.setState(st => ({ theme: st.theme === 'dark' ? 'light' : 'dark' })),
+      sidebarCollapsedAttr: S.sidebarCollapsed ? 'true' : 'false',
+      sidebarOpenAttr: S.sidebarOpen ? 'true' : 'false',
+      hideSidebar: () => this.hideSidebar(),
+      showSidebar: () => this.showSidebar(),
+      closeSidebar: () => this.closeSidebar(),
+      hideSidebarLabel: tx('Hide sidebar'),
+      showSidebarLabel: tx('Show menu'),
       screenTitle: t[0], screenCrumb: t[1], nav, flows,
       locale: S.locale,
       localeMenuOpen: !!S.localeMenuOpen,
@@ -6529,6 +6930,18 @@ class Component extends DCLogic {
         { label: '−', on: () => this.setState(st => ({ zoom: Math.max(0.7, st.zoom - 0.15) })) },
         { label: '+', on: () => this.setState(st => ({ zoom: Math.min(1.6, st.zoom + 0.15) })) }
       ],
+      following: follows,
+      toggleFollow: () => {
+        const on = this.state.toggles.follow === false;
+        const patch = { toggles: Object.assign({}, this.state.toggles, { follow: on }) };
+        if (on) this.followReset(patch); else patch.playing = false;
+        this.setState(patch);
+      },
+      followBtnStyle: this.chip(follows),
+      followLabel: tx(S.toggles.follow === false ? 'Follow off' : 'Follow on'),
+      showFollowBtn: this.liveMidi(),
+      showFollowHint: follows,
+      followHint: tx('Just play — the score waits for each note and moves when you get it. No tempo to keep up with.'),
       toggleGuidance: () => this.setState(st => ({ guidance: !st.guidance })),
       guidanceBtnStyle: this.chip(S.guidance),
       guidanceLabel: tx(S.guidance ? 'Guidance on' : 'Guidance off'),
@@ -6603,7 +7016,7 @@ class Component extends DCLogic {
       hasCoachStructural: !learn.played,
 
       runAccuracy: (S.runTot ? R0((S.runHit / S.runTot) * 100) : S.lastAcc) + '%',
-      runDrift: (S.drift > 0 ? '+' : '') + S.drift + ' ms',
+      runDrift: follows ? '—' : (S.drift > 0 ? '+' : '') + S.drift + ' ms',
       midiLabel, midiSub,
       midiHint: midiLive ? tx('Playing {{device}}', { device: mi.deviceName }) : tx('Click to connect a MIDI keyboard'),
       midiBadgeStyle: 'display:flex;align-items:center;gap:7px;padding:6px 11px;border-radius:999px;font-family:inherit;font-size:12px;color:var(--ink);cursor:pointer;background:'

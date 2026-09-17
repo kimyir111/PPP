@@ -10,7 +10,7 @@ file upload).
 npm install                    # once — pulls puppeteer
 npm run serve                  # in another terminal
 npm run omr                    # optional, for the OMR tests
-npm test                       # all eight suites
+npm test                       # all nine suites
 ```
 
 Or one at a time: `node tests/midi.test.js`.
@@ -26,7 +26,17 @@ Each file exits non-zero on failure and prints every check it ran.
 | `musicxml.test.js` | Parsing `samples/prelude-fragment.musicxml` — measures, pitch, duration, rests, chords, ties, accidentals, key, metre, tempo — then importing it through the UI and practising on it. |
 | `interactions.test.js` | All navigation, transport, loop selection, memory progression, plan, search, quiz and settings. |
 | `import-and-persistence.test.js` | Unsupported-file refusal, a real MusicXML import, keyboard shortcuts, and `localStorage` persistence across a reload. |
-| `coach.test.js` | What the CoachContext may contain and what must stay out of it, every guardrail on a returned plan, the stripping of invented figures, deterministic planning, re-planning boundaries, all provider-failure modes, and a fake AI plan driving the real player. Needs no API key. |
+| `i18n-and-auth.test.js` | Locale switching across English, Korean, Japanese and Chinese, `html lang` following the locale, the health endpoint, and signup / session / progress round-tripping against the Node server. |
+| `layout.test.js` | Sidebar hide/show on desktop, overlay drawer on tablet and phone, and no sideways page scroll. |
+| `coach.test.js` | What the CoachContext may contain and what must stay out of it, every guardrail on a returned plan, the stripping of invented figures, deterministic planning, re-planning boundaries, all provider-failure modes, and a fake AI plan driving the real player. Needs no API key and never reaches a live model. |
+
+`coach-live.test.js` is **not** in `npm test` and is run by hand: it makes one real request to
+whichever provider is configured. Against Ollama that is free; against Anthropic it costs one
+request. With no provider available it skips.
+
+```sh
+node tests/coach-live.test.js
+```
 
 Screenshots land in `tests/.shots/`. Each suite needs the app served at
 `http://127.0.0.1:8777`.
@@ -46,3 +56,17 @@ at `window.__pppCoachProvider` that returns a hand-written plan with one deliber
 task, then checks the surviving task against the loop range, the tempo and which notes are
 filtered out of the engraved score. That last check reads the effect rather than the button
 styling, so it cannot pass for the wrong reason.
+
+The fake provider is installed **before the page loads**, not by asking for a re-plan afterwards.
+That matters: if a live coach is configured on the machine, the startup plan is still in flight
+when the test runs, and `requestPlan()` correctly refuses to stack a second request — so a
+re-plan click would be ignored and the suite would fail for a reason that has nothing to do with
+the code under test. Installing the fake first means no live model ever answers, whatever is
+running locally.
+
+`coach-live.test.js` records the real `/coach` request and response without altering either, then
+re-runs `PPP.Coach.validate()` on the actual plan against the actual context that was sent. It
+asserts the live call count is exactly 1 both before and after driving the UI, so a stray
+re-plan cannot go unnoticed. Both coach suites read the panel scoped to the `PPP Coach` section
+on the player screen, because Home carries its own "Measures 21–24" recommendation button and
+clicking that one would prove nothing.

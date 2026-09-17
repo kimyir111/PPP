@@ -298,7 +298,13 @@ function harness() {
 
   /* ---------- through the real UI ---------- */
   console.log('\n── the plan drives the real player ──');
-  const uiPlan = await page.evaluate(async () => {
+  /* The fake provider is installed BEFORE the page loads, so the very first
+     plan of the session is the fake one. Asking for a re-plan afterwards would
+     depend on the startup request having finished — and if a real provider is
+     configured on this machine, that request is still in flight and PPP
+     correctly refuses to stack a second one. This suite must not care whether
+     a live coach happens to be running, so it never lets one answer. */
+  await page.evaluateOnNewDocument(() => {
     window.__pppCoachProvider = {
       name: 'FakeCoach',
       generate: () => Promise.resolve({
@@ -311,16 +317,21 @@ function harness() {
         coachNote: 'note', sessionMinutes: 12
       })
     };
-    const click = re => {
-      const b = [...document.querySelectorAll('main button, aside nav button, aside button')]
-        .find(x => re.test((x.innerText || '').trim()));
-      if (b) b.click(); return !!b;
-    };
-    click(/^Practice$/);
-    await new Promise(r => setTimeout(r, 400));
-    click(/Re-plan the session/);
-    await new Promise(r => setTimeout(r, 900));
-    const text = document.querySelector('main').innerText;
+  });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await sleep(2500);
+
+  /* the coach panel lives on the player screen */
+  await page.evaluate(() => {
+    const b = [...document.querySelectorAll('aside nav button')].find(x => /Practice/.test(x.innerText || ''));
+    if (b) b.click();
+  });
+  await sleep(1200);
+
+  const uiPlan = await page.evaluate(() => {
+    const panel = [...document.querySelectorAll('main section')]
+      .find(s => /PPP Coach/.test(s.innerText || ''));
+    const text = panel ? panel.innerText : '';
     return { text, source: (text.match(/PLANNED BY [^\n]+/) || [''])[0] };
   });
   ok('an injected provider is used', /FakeCoach/i.test(uiPlan.source), uiPlan.source);
@@ -328,11 +339,16 @@ function harness() {
     (uiPlan.text.match(/Measures \d+–\d+ · [^\n]+/) || ['?'])[0]);
 
   const applied = await page.evaluate(async () => {
-    const b = [...document.querySelectorAll('main button')].find(x => /Measures 9–12/.test(x.innerText || ''));
+    /* scoped to the coach panel: Home and the analysis screen have their own
+       "Measures 9–12" buttons, and clicking one of those would prove nothing */
+    const panel = [...document.querySelectorAll('main section')]
+      .find(s => /PPP Coach/.test(s.innerText || ''));
+    const b = [...(panel ? panel.querySelectorAll('button') : [])]
+      .find(x => /Measures 9–12/.test(x.innerText || ''));
     if (b) b.click();
     await new Promise(r => setTimeout(r, 800));
     const t = document.querySelector('main').innerText;
-    const loop = (t.match(/Loop:\s*(\d+)\s*→\s*(\d+)/) || []).slice(1).join('-');
+    const loop = (t.match(/Loop:?\s*(\d+)\s*→\s*(\d+)/) || []).slice(1).join('-');
     const tempo = (t.match(/(\d+)\s*BPM/) || [])[1];
     /* Test what the hand setting does, not how a button is styled: with the
        left hand selected, the right-hand notes are filtered out of the score. */

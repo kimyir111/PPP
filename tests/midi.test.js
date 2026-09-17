@@ -294,6 +294,13 @@ function installFakeMidi() {
   });
   await sleep(500);
   const held = await page.evaluate(async () => {
+    /* This is about the timed transport's held-key display. Follow mode is on
+       by default once a keyboard is connected, and there an unexpected key is
+       correctly shown as wrong rather than merely held — so switch it off and
+       test the thing this case is actually about. */
+    const f = [...document.querySelectorAll('main button')].find(x => /Follow on/.test(x.innerText || ''));
+    if (f) f.click();
+    await new Promise(r => setTimeout(r, 400));
     const before = document.querySelectorAll('svg rect[fill="var(--accent)"]').length;
     window.__fake.send([0x90, 60, 100]);
     window.__fake.send([0x90, 64, 100]);
