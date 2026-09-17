@@ -26,34 +26,48 @@ const ok = (name, cond, detail) => {
   });
   ok('English guest session shows Home', enHome === 'Home', enHome);
 
-  const switched = await page.evaluate(async () => {
+  const readChrome = loc => page.evaluate(async (loc) => {
     const I = window.PPP_I18N;
     if (!I) return { error: 'no i18n' };
     await I.ready;
-    I.setLocale('ko-KR');
-    await new Promise(r => setTimeout(r, 400));
+    I.setLocale(loc);
+    await new Promise(r => setTimeout(r, 500));
+    const catalog = await fetch('./i18n/' + loc + '.json').then(r => r.json());
+    const want = key => (catalog.content && catalog.content[key]) || key;
     const nav = [...document.querySelectorAll('aside nav button')].map(b => (b.innerText || '').trim());
-    return { locale: I.getLocale(), home: nav[0], lang: document.documentElement.lang };
-  });
-  ok('switching to Korean changes the locale', switched.locale === 'ko-KR', JSON.stringify(switched));
-  ok('Korean Home is 홈', switched.home === '홈', switched.home);
-  ok('html lang follows the locale', switched.lang === 'ko-KR', switched.lang);
+    const addBtn = document.querySelector('aside > button');
+    const add = addBtn ? (addBtn.innerText || '').replace(/^\+\s*/, '').trim() : '';
+    const guestBtn = [...document.querySelectorAll('header button, [data-app] button')].find(b => {
+      const t = (b.innerText || '').trim();
+      return t.indexOf(I.tx('Guest')) > -1 || t === I.tx('Guest');
+    });
+    if (guestBtn) guestBtn.click();
+    await new Promise(r => setTimeout(r, 400));
+    const guestCta = [...document.querySelectorAll('[data-auth] button, button')].map(b => (b.innerText || '').trim())
+      .find(t => t === I.tx('Continue as guest') || t === 'Continue as guest') || '';
+    const stayGuest = [...document.querySelectorAll('[data-auth] button, button')].find(b => (b.innerText || '').trim() === I.tx('Continue as guest'));
+    if (stayGuest) stayGuest.click();
+    await new Promise(r => setTimeout(r, 200));
+    return {
+      locale: I.getLocale(),
+      lang: document.documentElement.lang,
+      home: nav[0],
+      add: add,
+      guest: guestCta,
+      wantHome: want('Home'),
+      wantAdd: want('Add Sheet Music'),
+      wantGuest: want('Continue as guest')
+    };
+  }, loc);
 
-  const ja = await page.evaluate(async () => {
-    window.PPP_I18N.setLocale('ja-JP');
-    await new Promise(r => setTimeout(r, 400));
-    const nav = [...document.querySelectorAll('aside nav button')].map(b => (b.innerText || '').trim());
-    return nav[0];
-  });
-  ok('Japanese Home is ホーム', ja === 'ホーム', ja);
-
-  const zh = await page.evaluate(async () => {
-    window.PPP_I18N.setLocale('zh-CN');
-    await new Promise(r => setTimeout(r, 400));
-    const nav = [...document.querySelectorAll('aside nav button')].map(b => (b.innerText || '').trim());
-    return nav[0];
-  });
-  ok('Chinese Home is 首页', zh === '首页', zh);
+  for (const loc of ['ko-KR', 'ja-JP', 'zh-CN']) {
+    const r = await readChrome(loc);
+    ok(loc + ' locale is active', r.locale === loc, JSON.stringify(r));
+    ok(loc + ' html lang follows', r.lang === loc, r.lang);
+    ok(loc + ' Home matches catalog, not English', r.home === r.wantHome && r.home !== 'Home', r.home + ' vs ' + r.wantHome);
+    ok(loc + ' Add Sheet Music matches catalog, not English', r.add === r.wantAdd && r.add !== 'Add Sheet Music', r.add + ' vs ' + r.wantAdd);
+    ok(loc + ' Continue as guest matches catalog, not English', r.guest === r.wantGuest && r.guest !== 'Continue as guest', r.guest + ' vs ' + r.wantGuest);
+  }
 
   await page.evaluate(() => window.PPP_I18N.setLocale('en-US'));
   await sleep(300);

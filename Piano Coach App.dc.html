@@ -81,14 +81,14 @@
       <h1 style="font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 32px; margin: 0 0 6px;">{{ authTitle }}</h1>
       <p style="margin: 0 0 18px; font-size: 13.5px; color: var(--ink2);">{{ authLead }}</p>
       <sc-if value="{{ authIsSignup }}" hint-placeholder-val="{{ false }}">
-        <label style="display: block; font-size: 12px; color: var(--ink3); margin-bottom: 12px;">Display name
+        <label style="display: block; font-size: 12px; color: var(--ink3); margin-bottom: 12px;">{{ authNameLabel }}
           <input type="text" autocomplete="name" value="{{ authName }}" onChange="{{ setAuthName }}" style="display: block; width: 100%; margin-top: 6px; padding: 11px 12px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 14px; box-sizing: border-box;" />
         </label>
       </sc-if>
-      <label style="display: block; font-size: 12px; color: var(--ink3); margin-bottom: 12px;">Email
+      <label style="display: block; font-size: 12px; color: var(--ink3); margin-bottom: 12px;">{{ authEmailLabel }}
         <input type="email" autocomplete="email" value="{{ authEmail }}" onChange="{{ setAuthEmail }}" style="display: block; width: 100%; margin-top: 6px; padding: 11px 12px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 14px; box-sizing: border-box;" />
       </label>
-      <label style="display: block; font-size: 12px; color: var(--ink3); margin-bottom: 14px;">Password
+      <label style="display: block; font-size: 12px; color: var(--ink3); margin-bottom: 14px;">{{ authPasswordLabel }}
         <input type="password" autocomplete="current-password" value="{{ authPassword }}" onChange="{{ setAuthPassword }}" style="display: block; width: 100%; margin-top: 6px; padding: 11px 12px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 14px; box-sizing: border-box;" />
       </label>
       <sc-if value="{{ hasAuthError }}" hint-placeholder-val="{{ false }}">
@@ -96,7 +96,7 @@
       </sc-if>
       <button onClick="{{ submitAuth }}" style="width: 100%; padding: 12px; border-radius: 11px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">{{ authSubmit }}</button>
       <button onClick="{{ toggleAuthMode }}" style="width: 100%; margin-top: 8px; padding: 10px; border-radius: 11px; border: 0; background: transparent; color: var(--ink2); font-family: inherit; font-size: 13px; cursor: pointer;">{{ authSwitch }}</button>
-      <button onClick="{{ continueGuest }}" style="width: 100%; margin-top: 4px; padding: 10px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer;">Continue as guest</button>
+      <button onClick="{{ continueGuest }}" style="width: 100%; margin-top: 4px; padding: 10px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer;">{{ guestCta }}</button>
     </div>
   </div>
 </sc-if>
@@ -117,7 +117,7 @@
     </div>
 
     <button onClick="{{ goUpload }}" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 11px 14px; border-radius: 11px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow); transition: transform .15s ease, filter .15s ease;" style-hover="filter: brightness(1.08); transform: translateY(-1px);">
-      <span style="font-size: 16px; line-height: 1;">+</span> Add Sheet Music
+      <span style="font-size: 16px; line-height: 1;">+</span> {{ addSheetLabel }}
     </button>
 
     <nav style="display: flex; flex-direction: column; gap: 2px;">
@@ -585,7 +585,7 @@
 
               <sc-if value="{{ hasCoachPlan }}" hint-placeholder-val="{{ true }}">
                 <div style="display: flex; align-items: center; gap: 9px; margin-top: 4px;">
-                  <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3);">Session</span>
+                  <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3);">{{ sessionLabel }}</span>
                   <div style="flex: 1; height: 5px; border-radius: 999px; background: var(--surface2); overflow: hidden;"><div style="{{ coachProgressBar }}"></div></div>
                   <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink3);">{{ coachProgress }}</span>
                 </div>
@@ -603,7 +603,7 @@
                 </div>
               </sc-if>
               <sc-if value="{{ noCoachPlan }}" hint-placeholder-val="{{ false }}">
-                <div style="font-size: 12.5px; color: var(--ink3);">No session planned yet.</div>
+                <div style="font-size: 12.5px; color: var(--ink3);">{{ noSessionLabel }}</div>
               </sc-if>
 
               <sc-if value="{{ hasCoachNote }}" hint-placeholder-val="{{ true }}">
@@ -612,7 +612,7 @@
               <sc-if value="{{ hasCoachAdapted }}" hint-placeholder-val="{{ false }}">
                 <div style="font-size: 11.5px; line-height: 1.45; color: var(--ink3);">{{ coachAdapted }}</div>
               </sc-if>
-              <button onClick="{{ coachReplan }}" style="align-self: flex-start; padding: 7px 12px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 12px; cursor: pointer;" style-hover="border-color: var(--ink3);">Re-plan the session</button>
+              <button onClick="{{ coachReplan }}" style="align-self: flex-start; padding: 7px 12px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 12px; cursor: pointer;" style-hover="border-color: var(--ink3);">{{ replanLabel }}</button>
             </div>
             <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 18px;">
               <sc-for list="{{ coachBtns }}" as="c" hint-placeholder-count="3">
@@ -1581,13 +1581,13 @@ function buildDemoScore() {
 function parseMusicXML(xmlText, name) {
   const doc = new DOMParser().parseFromString(xmlText, 'application/xml');
   const bad = doc.querySelector('parsererror');
-  if (bad) throw new Error('That file is not valid XML.');
+  if (bad) throw new Error(tx('That file is not valid XML.'));
 
   const root = doc.documentElement;
   if (root.nodeName === 'score-timewise')
-    throw new Error('This is a score-timewise file. Re-export it as score-partwise MusicXML.');
+    throw new Error(tx('This is a score-timewise file. Re-export it as score-partwise MusicXML.'));
   if (root.nodeName !== 'score-partwise')
-    throw new Error('No <score-partwise> element — this does not look like MusicXML.');
+    throw new Error(tx('No <score-partwise> element — this does not look like MusicXML.'));
 
   const txt = (el, sel, dflt) => {
     const n = el.querySelector(sel);
@@ -1607,7 +1607,7 @@ function parseMusicXML(xmlText, name) {
   });
 
   const parts = [].slice.call(root.children).filter(c => c.nodeName === 'part');
-  if (!parts.length) throw new Error('This MusicXML file contains no parts.');
+  if (!parts.length) throw new Error(tx('This MusicXML file contains no parts.'));
 
   let tempo = null;
   const notes = [];
@@ -1738,7 +1738,7 @@ function parseMusicXML(xmlText, name) {
     staffBase += Math.max(partStaves, 1);
   });
 
-  if (!order.length) throw new Error('This MusicXML file contains no measures.');
+  if (!order.length) throw new Error(tx('This MusicXML file contains no measures.'));
 
   /* Staff 1 is the right hand, anything below it the left. A two-part score
      (one staff each) resolves the same way because of staffBase. */
@@ -1746,7 +1746,7 @@ function parseMusicXML(xmlText, name) {
 
   const measures = order.map(no => measureInfo[no]);
   const sounding = notes.filter(n => !n.rest);
-  if (!sounding.length) throw new Error('No playable notes were found in this file.');
+  if (!sounding.length) throw new Error(tx('No playable notes were found in this file.'));
 
   return Score.finalize({
     id: 'xml:' + (name || title) + ':' + Date.now(),
@@ -1792,13 +1792,13 @@ async function readMxl(buffer) {
        central directory instead of guessing. */
     if ((flags & 0x08) && !compSize) {
       const cd = findCentral(dv, u8, name);
-      if (!cd) throw new Error('Could not read this .mxl archive.');
+      if (!cd) throw new Error(tx('Could not read this .mxl archive.'));
       compSize = cd.compSize; uncompSize = cd.uncompSize;
     }
     entries[name] = { method, start: data, compSize, uncompSize };
     off = data + compSize;
   }
-  if (!Object.keys(entries).length) throw new Error('This .mxl file is not a readable archive.');
+  if (!Object.keys(entries).length) throw new Error(tx('This .mxl file is not a readable archive.'));
 
   const read = async key => {
     const e = entries[key];
@@ -1806,7 +1806,7 @@ async function readMxl(buffer) {
     const raw = u8.subarray(e.start, e.start + e.compSize);
     if (e.method === 0) return dec.decode(raw);
     if (e.method === 8) return dec.decode(await inflateRaw(raw));
-    throw new Error('Unsupported compression in this .mxl file.');
+    throw new Error(tx('Unsupported compression in this .mxl file.'));
   };
 
   let target = null;
@@ -1818,7 +1818,7 @@ async function readMxl(buffer) {
   }
   if (!target || !entries[target])
     target = Object.keys(entries).find(k => /\.(xml|musicxml)$/i.test(k) && k.indexOf('META-INF') !== 0);
-  if (!target) throw new Error('No MusicXML score was found inside this .mxl file.');
+  if (!target) throw new Error(tx('No MusicXML score was found inside this .mxl file.'));
   return read(target);
 }
 
@@ -3297,13 +3297,13 @@ const Import = {
     try {
       doc = await pdfjsLib.getDocument({ data: new Uint8Array(buf), isEvalSupported: false }).promise;
     } catch (e) {
-      throw importError('bad-pdf', 'That PDF could not be opened — it may be corrupt or password protected.',
-        ['Try re-exporting the PDF', 'Or upload a PNG/JPG of the page']);
+      throw importError('bad-pdf', tx('That PDF could not be opened — it may be corrupt or password protected.'),
+        [tx('Try re-exporting the PDF'), tx('Or upload a PNG/JPG of the page')]);
     }
-    if (!doc.numPages) throw importError('bad-pdf', 'That PDF has no pages.');
+    if (!doc.numPages) throw importError('bad-pdf', tx('That PDF has no pages.'));
     if (doc.numPages > IMPORT_LIMITS.maxPages)
-      throw importError('too-many-pages', 'That PDF has ' + doc.numPages + ' pages; PPP reads up to ' + IMPORT_LIMITS.maxPages + '.',
-        ['Split the file and import a few pages at a time']);
+      throw importError('too-many-pages', tx('That PDF has {{n}} pages; PPP reads up to {{max}}.', { n: doc.numPages, max: IMPORT_LIMITS.maxPages }),
+        [tx('Split the file and import a few pages at a time')]);
 
     const pages = [];
     for (let i = 1; i <= doc.numPages; i++) {
@@ -3344,10 +3344,10 @@ const Import = {
           ctx.drawImage(img, 0, 0);
           resolve([{ dataUrl: c.toDataURL('image/png'), width: c.width, height: c.height }]);
         };
-        img.onerror = () => reject(importError('bad-image', 'That image could not be opened.'));
+        img.onerror = () => reject(importError('bad-image', tx('That image could not be opened.')));
         img.src = fr.result;
       };
-      fr.onerror = () => reject(importError('bad-image', 'That image could not be read.'));
+      fr.onerror = () => reject(importError('bad-image', tx('That image could not be read.')));
       fr.readAsDataURL(file);
     });
   },
@@ -3364,19 +3364,19 @@ const Import = {
       });
     } catch (e) {
       throw importError('service-down',
-        'PPP could not reach the OMR service. Sheet-music recognition runs as a small local process.',
-        ['Start it with: npm run omr', 'Or upload MusicXML (.musicxml, .xml, .mxl) instead']);
+        tx('PPP could not reach the OMR service. Sheet-music recognition runs as a small local process.'),
+        [tx('Start it with: npm run omr'), tx('Or upload MusicXML (.musicxml, .xml, .mxl) instead')]);
     }
     let body;
     try { body = await res.json(); } catch (e) {
-      throw importError('service-error', 'The OMR service returned something unreadable.');
+      throw importError('service-error', tx('The OMR service returned something unreadable.'));
     }
     if (!res.ok || !body.ok) {
       const code = body.code || 'recognition-failed';
       const hints = code === 'engine-missing'
-        ? ['Install Audiveris into tools/, or point PPP_AUDIVERIS at it', 'Or upload MusicXML instead']
-        : ['Try a clearer or higher-resolution scan', 'Crop to just the music', 'Or upload MusicXML instead'];
-      throw importError(code, body.error || 'Recognition failed.', hints);
+        ? [tx('Install Audiveris into tools/, or point PPP_AUDIVERIS at it'), tx('Or upload MusicXML instead')]
+        : [tx('Try a clearer or higher-resolution scan'), tx('Crop to just the music'), tx('Or upload MusicXML instead')];
+      throw importError(code, body.error || tx('Recognition failed.'), hints);
     }
     return body;
   },
@@ -3387,12 +3387,12 @@ const Import = {
      MusicXML stays the interchange format throughout — no second parser. */
   mergeMusicXml(docs) {
     const usable = docs.filter(Boolean);
-    if (!usable.length) throw importError('recognition-failed', 'No page produced any notation.');
+    if (!usable.length) throw importError('recognition-failed', tx('No page produced any notation.'));
     if (usable.length === 1) return usable[0];
 
     const parser = new DOMParser();
     const base = parser.parseFromString(usable[0], 'application/xml');
-    if (base.querySelector('parsererror')) throw importError('bad-musicxml', 'The recognised MusicXML was malformed.');
+    if (base.querySelector('parsererror')) throw importError('bad-musicxml', tx('The recognised MusicXML was malformed.'));
     const baseParts = [].slice.call(base.documentElement.children).filter(c => c.nodeName === 'part');
 
     for (let i = 1; i < usable.length; i++) {
@@ -3432,50 +3432,50 @@ const Import = {
     const measures = score.measures || [];
     const sounding = (score.notes || []).filter(n => !n.rest);
 
-    if (!measures.length) flag(null, 'empty', 'No measures were recognised.');
-    if (!sounding.length) flag(null, 'empty', 'No notes were recognised.');
+    if (!measures.length) flag(null, 'empty', tx('No measures were recognised.'));
+    if (!sounding.length) flag(null, 'empty', tx('No notes were recognised.'));
 
     /* a piano score read as a single staff usually means the grand staff was missed */
     if (score.staves < 2)
-      flag(null, 'staves', 'Only one staff was found. Piano music normally has two — the grand staff may have been missed.');
+      flag(null, 'staves', tx('Only one staff was found. Piano music normally has two — the grand staff may have been missed.'));
 
     /* measure content against its own time signature */
     measures.forEach(mm => {
       const notes = Score.notesIn(score, mm.number, mm.number);
-      if (!notes.length) { flag(mm.number, 'empty-measure', 'Measure ' + mm.number + ' came back empty.'); return; }
+      if (!notes.length) { flag(mm.number, 'empty-measure', tx('Measure {{n}} came back empty.', { n: mm.number })); return; }
       let end = 0;
       notes.forEach(n => { end = Math.max(end, n.b + n.dur); });
       const sig = (mm.time.beats * 4) / mm.time.beatType;
       if (end > sig + 0.01)
-        flag(mm.number, 'overfull', 'Measure ' + mm.number + ' holds ' + (Math.round(end * 100) / 100) +
-          ' beats where ' + sig + ' fit.');
+        flag(mm.number, 'overfull', tx('Measure {{n}} holds {{have}} beats where {{need}} fit.', { n: mm.number, have: Math.round(end * 100) / 100, need: sig }));
       else if (end < sig * 0.5 - 0.01)
-        flag(mm.number, 'underfull', 'Measure ' + mm.number + ' is less than half full.');
+        flag(mm.number, 'underfull', tx('Measure {{n}} is less than half full.', { n: mm.number }));
     });
 
     /* pitches outside a piano */
     const outside = sounding.filter(n => n.midi < 21 || n.midi > 108);
     if (outside.length)
-      flag(outside[0].m, 'range', outside.length + ' note' + (outside.length === 1 ? ' falls' : 's fall') +
-        ' outside a piano keyboard — around measure ' + outside[0].m + '.');
+      flag(outside[0].m, 'range', tx(outside.length === 1
+        ? '{{n}} note falls outside a piano keyboard — around measure {{m}}.'
+        : '{{n}} notes fall outside a piano keyboard — around measure {{m}}.', { n: outside.length, m: outside[0].m }));
 
     /* a page that produced almost nothing */
     const perPage = ctx.pageCount ? sounding.length / ctx.pageCount : sounding.length;
     if (ctx.pageCount && perPage < 8)
-      flag(null, 'sparse', 'Only ' + sounding.length + ' notes were found across ' + ctx.pageCount +
-        ' page' + (ctx.pageCount === 1 ? '' : 's') + '. That is unusually few.');
+      flag(null, 'sparse', tx(ctx.pageCount === 1
+        ? 'Only {{n}} notes were found across {{p}} page. That is unusually few.'
+        : 'Only {{n}} notes were found across {{p}} pages. That is unusually few.', { n: sounding.length, p: ctx.pageCount }));
 
     /* time signatures wandering is a classic misread */
     const sigs = {};
     measures.forEach(mm => { sigs[mm.time.beats + '/' + mm.time.beatType] = true; });
     const sigList = Object.keys(sigs);
     if (sigList.length > 3)
-      flag(null, 'time', 'Recognised ' + sigList.length + ' different time signatures (' + sigList.join(', ') +
-        '). Some are probably misreads.');
+      flag(null, 'time', tx('Recognised {{n}} different time signatures ({{list}}). Some are probably misreads.', { n: sigList.length, list: sigList.join(', ') }));
 
     /* failed pages */
     (ctx.pages || []).forEach(p => {
-      if (!p.ok) flag(null, 'page', 'Page ' + (p.index + 1) + ' could not be read' + (p.error ? ': ' + p.error : '.'));
+      if (!p.ok) flag(null, 'page', tx(p.error ? 'Page {{n}} could not be read: {{error}}' : 'Page {{n}} could not be read.', { n: p.index + 1, error: p.error || '' }));
     });
 
     const suspectMeasures = Object.keys(suspect).map(Number).sort((a, b) => a - b);
@@ -3493,16 +3493,16 @@ const Import = {
        no particular measure — a missed grand staff, a page that failed — and
        reporting "0 measures need checking" next to a reduced score reads as a
        contradiction. */
-    const found = measures.length + ' measures, ' + sounding.length + ' notes';
+    const found = tx('{{n}} measures, {{m}} notes', { n: measures.length, m: sounding.length });
     const general = issues.filter(i => i.measure == null);
     let summary;
-    if (!measures.length || !sounding.length) summary = 'Nothing usable was recognised.';
-    else if (level === 'good') summary = 'Recognition looks clean: ' + found + '.';
-    else if (suspectMeasures.length) summary = 'Recognised ' + found + ', but ' + suspectMeasures.length +
-      ' measure' + (suspectMeasures.length === 1 ? '' : 's') + ' need checking before you practise.';
-    else if (general.length) summary = 'Recognised ' + found + ', but ' + general[0].message.charAt(0).toLowerCase() +
-      general[0].message.slice(1);
-    else summary = 'Recognised ' + found + ' — please check it against your original before practising.';
+    if (!measures.length || !sounding.length) summary = tx('Nothing usable was recognised.');
+    else if (level === 'good') summary = tx('Recognition looks clean: {{found}}.', { found: found });
+    else if (suspectMeasures.length) summary = tx(suspectMeasures.length === 1
+      ? 'Recognised {{found}}, but {{n}} measure need checking before you practise.'
+      : 'Recognised {{found}}, but {{n}} measures need checking before you practise.', { found: found, n: suspectMeasures.length });
+    else if (general.length) summary = tx('Recognised {{found}}, but {{rest}}', { found: found, rest: general[0].message.charAt(0).toLowerCase() + general[0].message.slice(1) });
+    else summary = tx('Recognised {{found}} — please check it against your original before practising.', { found: found });
 
     /* group runs of suspect measures for a readable sentence */
     const runs = [];
@@ -3511,8 +3511,9 @@ const Import = {
       if (last && m === last[1] + 1) last[1] = m; else runs.push([m, m]);
     });
     const advice = runs.length
-      ? 'PPP may have had trouble reading measures ' +
-        runs.slice(0, 3).map(r => r[0] === r[1] ? r[0] : r[0] + '–' + r[1]).join(', ') + '.'
+      ? tx('PPP may have had trouble reading measures {{list}}.', {
+        list: runs.slice(0, 3).map(r => r[0] === r[1] ? r[0] : r[0] + '–' + r[1]).join(', ')
+      })
       : null;
 
     return {
@@ -3529,12 +3530,13 @@ const Import = {
 
     stage('validate', { name: file.name, bytes: file.size });
     if (!kind)
-      throw importError('unsupported', 'PPP cannot read ' + (file.name || 'that file') + '.',
-        ['Supported: MusicXML (.musicxml, .xml, .mxl), PDF, PNG, JPG']);
+      throw importError('unsupported', tx('PPP cannot read {{name}}.', { name: file.name || tx('that file') }),
+        [tx('Supported: MusicXML (.musicxml, .xml, .mxl), PDF, PNG, JPG')]);
     if (file.size > IMPORT_LIMITS.maxBytes)
-      throw importError('too-large', 'That file is ' + Math.round(file.size / 1048576) + ' MB; the limit is ' +
-        Math.round(IMPORT_LIMITS.maxBytes / 1048576) + ' MB.');
-    if (!file.size) throw importError('empty', 'That file is empty.');
+      throw importError('too-large', tx('That file is {{n}} MB; the limit is {{max}} MB.', {
+        n: Math.round(file.size / 1048576), max: Math.round(IMPORT_LIMITS.maxBytes / 1048576)
+      }));
+    if (!file.size) throw importError('empty', tx('That file is empty.'));
 
     const source = {
       name: file.name, kind: kind, bytes: file.size,
@@ -3556,12 +3558,12 @@ const Import = {
     const health = await Import.health();
     if (!health.ok)
       throw importError('service-down',
-        'PPP could not reach the OMR service. Recognising a PDF or photo needs a small local process.',
-        ['Start it with: npm run omr', 'Or upload MusicXML instead']);
+        tx('PPP could not reach the OMR service. Recognising a PDF or photo needs a small local process.'),
+        [tx('Start it with: npm run omr'), tx('Or upload MusicXML instead')]);
     if (!health.audiveris)
       throw importError('engine-missing',
-        'The OMR service is running but the Audiveris engine is missing.',
-        ['See the README for the one-time Audiveris setup', 'Or upload MusicXML instead']);
+        tx('The OMR service is running but the Audiveris engine is missing.'),
+        [tx('See the README for the one-time Audiveris setup'), tx('Or upload MusicXML instead')]);
 
     const pages = kind === 'pdf'
       ? await Import.rasterisePdf(file, onStage)
@@ -3580,8 +3582,8 @@ const Import = {
       score = parseMusicXML(xml, file.name);
     } catch (e) {
       throw importError('bad-musicxml',
-        'The notation was recognised but could not be turned into a score: ' + e.message,
-        ['Try a clearer scan', 'Or upload MusicXML instead']);
+        tx('The notation was recognised but could not be turned into a score: {{message}}', { message: e.message }),
+        [tx('Try a clearer scan'), tx('Or upload MusicXML instead')]);
     }
 
     stage('check', {});
@@ -5058,12 +5060,13 @@ class Component extends DCLogic {
       journeyStep: t.mode === 'memory' ? 6 : 5,
       seqStep: 0, seqReps: 0
     });
-    this.say('Task ' + (i + 1) + ': ' + this.taskLabel(t));
+    this.say(tx('Task {{n}}: {{label}}', { n: i + 1, label: this.taskLabel(t) }));
   }
   taskLabel(t) {
-    const hand = t.hand === 'both' ? 'Both hands' : t.hand === 'left' ? 'Left hand' : 'Right hand';
-    return 'Measures ' + t.range.start + '–' + t.range.end + ' · ' +
-      (t.mode === 'memory' ? 'from memory' : hand + ' · ' + t.tempoPercent + '%');
+    const hand = t.hand === 'both' ? tx('Both hands') : t.hand === 'left' ? tx('Left hand') : tx('Right hand');
+    return t.mode === 'memory'
+      ? tx('Measures {{from}}–{{to}} · from memory', { from: t.range.start, to: t.range.end })
+      : tx('Measures {{from}}–{{to}} · {{hand}} · {{pct}}%', { from: t.range.start, to: t.range.end, hand: hand, pct: t.tempoPercent });
   }
   /* Called when a run finishes. A task completes on its repetitions, and only
      then — never mid-run — does PPP consider asking for a new plan. */
@@ -5081,7 +5084,7 @@ class Component extends DCLogic {
     patch.coachDone = done;
     patch.coachReps = 0;
     patch.coachTask = Math.min(plan.tasks.length, S.coachTask + 1);
-    this.say('Task ' + (S.coachTask + 1) + ' done.');
+    this.say(tx('Task {{n}} done.', { n: S.coachTask + 1 }));
     /* Replan only when the picture actually moved. */
     this._replanAfter = true;
   }
@@ -5140,7 +5143,7 @@ class Component extends DCLogic {
       const hints = has ? st.hints.filter(h => h !== id) : st.hints.concat([id]);
       return { hints: hints, memReveal: false };
     });
-    if (this.state.hints.indexOf(id) < 0) this.say('Hint used — this attempt counts for less.');
+    if (this.state.hints.indexOf(id) < 0) this.say(tx('Hint used — this attempt counts for less.'));
   }
   /* Begin an explicit recall attempt. This is what separates memory work from
      ordinary practice: it is marked, scored and recorded on its own. */
@@ -5302,7 +5305,7 @@ class Component extends DCLogic {
     const m = this.midiLayer();
     if (!m.supported()) {
       this.setState({ midi: m.snapshot(), toggles: Object.assign({}, this.state.toggles, { midi: false }) });
-      this.say('This browser has no Web MIDI — staying on Demo Input.');
+      this.say(tx('This browser has no Web MIDI — staying on Demo Input.'));
       return Promise.resolve(false);
     }
     return m.start(preferId || this.state.midiDeviceId).then(okFlag => {
@@ -5311,9 +5314,9 @@ class Component extends DCLogic {
            otherwise a device could be attached while PPP still scored you by
            simulation. */
         this.setState(st => ({ toggles: Object.assign({}, st.toggles, { midi: true }) }));
-        this.say('Connected to ' + m.deviceName + '.');
-      } else if (okFlag) this.say('No MIDI inputs found — plug a keyboard in.');
-      else this.say('MIDI access was refused — staying on Demo Input.');
+        this.say(tx('Connected to {{device}}.', { device: m.deviceName }));
+      } else if (okFlag) this.say(tx('No MIDI inputs found — plug a keyboard in.'));
+      else this.say(tx('MIDI access was refused — staying on Demo Input.'));
       return okFlag;
     });
   }
@@ -5327,7 +5330,7 @@ class Component extends DCLogic {
     if (S.toggles.midi) {
       this.setState({ toggles: Object.assign({}, S.toggles, { midi: false }), held: [] });
       this.disconnectMidi();
-      this.say('Switched to Demo Input.');
+      this.say(tx('Switched to Demo Input.'));
     } else {
       this.setState({ toggles: Object.assign({}, S.toggles, { midi: true }) });
       this.connectMidi();
@@ -5580,15 +5583,15 @@ class Component extends DCLogic {
         const after = mem.sections[this.sectionOf(from).id];
         if (after.memorized && !before.memorized) {
           patch.mastered = true; patch.journeyStep = 9;
-          this.say('Measures ' + from + '–' + to + ' memorized — review in ' + MEMORY.reviewDays[Math.max(0, after.reviewStage)] + ' days.');
+          this.say(tx('Measures {{from}}–{{to}} memorized — review in {{n}} days.', { from: from, to: to, n: MEMORY.reviewDays[Math.max(0, after.reviewStage)] }));
         } else if (after.level > before.level) {
-          this.say('Cleared — dropping to ' + MEM_LEVELS[after.level] + '.');
+          this.say(tx('Cleared — dropping to {{level}}.', { level: tx(MEM_LEVELS[after.level]) }));
         } else if (after.level < before.level) {
-          this.say('Bringing some notation back — ' + MEM_LEVELS[after.level] + '.');
+          this.say(tx('Bringing some notation back — {{level}}.', { level: tx(MEM_LEVELS[after.level]) }));
         } else if (acc >= R0(MEMORY.pass * 100)) {
-          this.say('Recall passed at ' + acc + '%' + (S.hints.length ? ' with help.' : '.'));
+          this.say(tx(S.hints.length ? 'Recall passed at {{pct}}% with help.' : 'Recall passed at {{pct}}%.', { pct: acc }));
         } else {
-          this.say('Recall broke down at ' + acc + '% — same level again.');
+          this.say(tx('Recall broke down at {{pct}}% — same level again.', { pct: acc }));
         }
       }
     } else if (S.screen === 'loop') {
@@ -5603,9 +5606,9 @@ class Component extends DCLogic {
           patch.hands = nx.hands;
           patch.tempo = clamp(R0((S.score.tempo || 84) * nx.tempoPct / 100), 30, 200);
         }
-        this.say(stp.label + ' done.');
+        this.say(tx('{{label}} done.', { label: stp.label }));
       } else patch.seqReps = reps;
-    } else this.say('Run finished at ' + acc + '% accuracy.');
+    } else this.say(tx('Run finished at {{pct}}% accuracy.', { pct: acc }));
     return patch;
   }
 
@@ -5673,7 +5676,7 @@ class Component extends DCLogic {
       analysis: 'idle', analysisStep: 0, analysisPct: 0, parseError: null,
       importReport: null, importSource: null, importHints: [], stageLog: [], reviewPage: 0
     });
-    this.say(f.name + ' added.');
+    this.say(tx('{{name}} added.', { name: f.name }));
     try { e.target.value = ''; } catch (err) {}
   }
   loadSample() {
@@ -5699,12 +5702,12 @@ class Component extends DCLogic {
     });
 
     const STAGE_LABEL = {
-      validate: () => 'Checking the file',
-      rasterise: d => 'Rendering page ' + d.page + ' of ' + d.of + ' at ' + Import.LIMITS.dpi + ' DPI',
-      recognise: d => 'Reading the notation' + (d.of > 1 ? ' on ' + d.of + ' pages' : ''),
-      merge: d => 'Joining ' + d.pages + ' page' + (d.pages === 1 ? '' : 's'),
-      parse: () => 'Building the score',
-      check: () => 'Checking the recognition'
+      validate: () => tx('Checking the file'),
+      rasterise: d => tx('Rendering page {{page}} of {{of}} at {{dpi}} DPI', { page: d.page, of: d.of, dpi: Import.LIMITS.dpi }),
+      recognise: d => d.of > 1 ? tx('Reading the notation on {{n}} pages', { n: d.of }) : tx('Reading the notation'),
+      merge: d => tx(d.pages === 1 ? 'Joining {{n}} page' : 'Joining {{n}} pages', { n: d.pages }),
+      parse: () => tx('Building the score'),
+      check: () => tx('Checking the recognition')
     };
     const WEIGHT = { validate: 5, rasterise: 25, recognise: 55, merge: 70, parse: 85, check: 95 };
     const onStage = (name, detail) => {
@@ -5737,11 +5740,11 @@ class Component extends DCLogic {
     }).catch(err => {
       this.setState({
         analysis: 'error', analysisPct: 0,
-        parseError: (err && err.message) || 'That file could not be read.',
+        parseError: (err && err.message) || tx('That file could not be read.'),
         importHints: (err && err.hints) || [],
         importReport: null
       });
-      this.say('Import failed.');
+      this.say(tx('Import failed.'));
     });
   }
 
@@ -5767,8 +5770,8 @@ class Component extends DCLogic {
     });
     setTimeout(() => this.requestPlan(), 0);
     this.say(isDemo
-      ? 'Sample loaded — ' + Score.count(score) + ' measures.'
-      : 'Imported ' + Score.count(score) + ' measures, ' + score.notes.filter(n => !n.rest).length + ' notes.');
+      ? tx('Sample loaded — {{n}} measures.', { n: Score.count(score) })
+      : tx('Imported {{n}} measures, {{notes}} notes.', { n: Score.count(score), notes: score.notes.filter(n => !n.rest).length }));
   }
 
   /* ============================ recognition review ============================ */
@@ -5790,8 +5793,8 @@ class Component extends DCLogic {
     if (best) this.setLoop(best.from, best.to);
     this.setState({ screen: 'analysis', journeyStep: 1 });
     this.say(best && (best.to - best.from + 1) < Score.count(S.score)
-      ? 'Starting on measures ' + best.from + '–' + best.to + ', the cleanest stretch.'
-      : 'Recognition accepted.');
+      ? tx('Starting on measures {{from}}–{{to}}, the cleanest stretch.', { from: best.from, to: best.to })
+      : tx('Recognition accepted.'));
   }
   retryRecognition() { this.setState({ screen: 'upload' }); this.runAnalysis(); }
   replaceSource() {
@@ -6264,6 +6267,11 @@ class Component extends DCLogic {
       toggleAuthMode: () => this.setState(st => ({ authMode: st.authMode === 'signup' ? 'login' : 'signup', authError: '' })),
       authSwitch: tx(S.authMode === 'signup' ? 'Already have an account? Sign in' : 'Need an account? Sign up'),
       continueGuest: () => this.continueGuest(),
+      guestCta: tx('Continue as guest'),
+      authNameLabel: tx('Display name'),
+      authEmailLabel: tx('Email'),
+      authPasswordLabel: tx('Password'),
+      addSheetLabel: tx('Add Sheet Music'),
       userInitials: (function () {
         const n = (S.user && S.user.displayName) || tx('Guest');
         const parts = n.split(/\s+/).filter(Boolean);
@@ -6353,14 +6361,14 @@ class Component extends DCLogic {
       onFile: e => this.onFile(e),
       fileName: S.fileName, fileMeta: S.fileMeta,
       previewStaff: this.sv({ startM: this.firstM(), count: Math.min(3, Score.count(score)), mW: 210, fluid: true, guidance: false, grand: score.staves > 1 }),
-      analysisTitle: failed ? 'That file could not be imported' : idle ? 'Ready to analyze' : running ? 'Reading your sheet music…' : 'Analysis complete',
+      analysisTitle: failed ? tx('That file could not be imported') : idle ? tx('Ready to analyze') : running ? tx('Reading your sheet music…') : tx('Analysis complete'),
       analysisSpinner: `width:26px;height:26px;border-radius:999px;border:2px solid var(--accent-2);border-top-color:${running ? 'var(--accent)' : failed ? 'var(--bad)' : 'var(--good)'};animation:${running ? 'spin 1s linear infinite' : 'none'};`,
       steps: (() => {
         const dot = tone => 'width:18px;height:18px;flex:none;border-radius:999px;display:grid;place-items:center;font-size:10px;color:#fff;background:' + tone + ';';
         const txt = (c, w) => 'font-size:13.5px;color:' + c + ';font-weight:' + w + ';';
         /* while importing, each row is a stage that actually ran */
         if (running && S.stageLog.length) return S.stageLog.map(st => ({
-          label: st.label, meta: st.done ? 'done' : 'now',
+          label: st.label, meta: st.done ? tx('done') : tx('now'),
           dotStyle: dot(st.done ? 'var(--good)' : 'var(--accent)') + (st.done ? '' : 'animation:pulse 1.4s ease-in-out infinite;'),
           textStyle: txt(st.done ? 'var(--ink2)' : 'var(--ink)', st.done ? 400 : 600)
         }));
@@ -6378,21 +6386,21 @@ class Component extends DCLogic {
           ];
           if (rep.level) rows.push(['Confidence', R0((rep.confidence || 0) * 100) + '% · ' + rep.level]);
           return rows.map(([label, meta]) => ({
-            label: label, meta: meta,
+            label: tx(label), meta: meta,
             dotStyle: dot('var(--good)'), textStyle: txt('var(--ink2)', 400)
           }));
         }
         return [
           ['Check the file', 'ready'], ['Render pages', 'PDF only'], ['Read the notation', 'needs the OMR service'],
           ['Join pages', ''], ['Build the score', ''], ['Check the recognition', '']
-        ].map(([label, meta]) => ({ label: label, meta: meta || '—', dotStyle: dot('var(--surface2)'), textStyle: txt('var(--ink3)', 400) }));
+        ].map(([label, meta]) => ({ label: tx(label), meta: meta ? tx(meta) : '—', dotStyle: dot('var(--surface2)'), textStyle: txt('var(--ink3)', 400) }));
       })(),
       analyzeBarStyle: this.bar(S.analysis === 'done' ? 100 : S.analysisPct, failed ? 'var(--bad)' : 'var(--accent)'),
-      analyzeEta: S.analysis === 'done' ? 'done' : failed ? 'failed' : running ? 'reading…' : 'not started',
+      analyzeEta: S.analysis === 'done' ? tx('done') : failed ? tx('failed') : running ? tx('reading…') : tx('not started'),
       /* ---- recognition review ---- */
-      reviewTitle: (S.importReport && S.importReport.level === 'good') ? 'This looks right.'
-        : (S.importReport && S.importReport.level === 'fair') ? 'Mostly read — please check.'
-          : 'PPP is unsure about this.',
+      reviewTitle: (S.importReport && S.importReport.level === 'good') ? tx('This looks right.')
+        : (S.importReport && S.importReport.level === 'fair') ? tx('Mostly read — please check.')
+          : tx('PPP is unsure about this.'),
       reviewSummary: (S.importReport && S.importReport.summary) || '',
       reviewAdvice: (S.importReport && S.importReport.advice) || '',
       hasReviewAdvice: !!(S.importReport && S.importReport.advice),
@@ -6465,7 +6473,7 @@ class Component extends DCLogic {
           : running ? 'Reading ' + S.fileName + '…'
             : 'Choose a MusicXML file (.musicxml, .xml or .mxl), or use the sample, then run the analysis.',
       analyzeSummaryStyle: `margin-top:20px;padding:14px;border-radius:13px;font-size:12.5px;line-height:1.55;background:${failed ? 'var(--surface2)' : 'var(--bg)'};border:1px solid ${failed ? 'var(--bad)' : 'var(--line)'};color:${failed ? 'var(--ink)' : 'var(--ink2)'};`,
-      analyzeCta: S.analysis === 'done' ? 'See analysis' : running ? 'Reading…' : failed ? 'Try again' : 'Run analysis',
+      analyzeCta: S.analysis === 'done' ? tx('See analysis') : running ? tx('Reading…') : failed ? tx('Try again') : tx('Run analysis'),
       analyzeOn: () => { if (S.analysis === 'done') this.go('analysis')(); else if (!running) this.runAnalysis(); },
 
       /* ---- analysis ---- */
@@ -6575,6 +6583,9 @@ class Component extends DCLogic {
       coachAdapted: S.coachNote,
       hasCoachAdapted: !!S.coachNote,
       coachReplan: () => this.requestPlan(),
+      sessionLabel: tx('Session'),
+      noSessionLabel: tx('No session planned yet.'),
+      replanLabel: tx('Re-plan the session'),
       /* structural difficulty is labelled as a prediction, never as measurement */
       coachStructural: (() => {
         const st = Coach.structural(score).hardest;
@@ -6787,7 +6798,7 @@ class Component extends DCLogic {
           : 'Not quite. Count up from the bottom line: E, G, B, D, F.',
       quizFeedbackStyle: `margin-top:20px;padding:13px;border-radius:12px;text-align:center;font-size:13px;line-height:1.5;background:${S.quizPick == null ? 'var(--bg)' : S.quizPick === quizName ? 'var(--accent-3)' : 'var(--surface2)'};color:${S.quizPick == null ? 'var(--ink3)' : 'var(--ink)'};border:1px solid ${S.quizPick === quizName ? 'var(--accent-2)' : 'var(--line)'};`,
       basicsNext: ['Bass clef notes', 'Ledger lines', 'Key signatures', 'Accidentals', 'Simple chords'],
-      basicsDrill: () => { this.setState({ quizIdx: 1, quizRight: 0, quizDone: false, quizPick: null }); this.nextQuiz(); this.say('Bass clef drill queued.'); },
+      basicsDrill: () => { this.setState({ quizIdx: 1, quizRight: 0, quizDone: false, quizPick: null }); this.nextQuiz(); this.say(tx('Bass clef drill queued.')); },
       skills: [['Treble clef', 'treble'], ['Bass clef', 'bass'], ['Note positions', 'pos'], ['Ledger lines', 'ledger'],
       ['Rhythm', 'rhythm'], ['Key signatures', 'keysig'], ['Accidentals', 'acc'], ['Chords', 'chords']]
         .map(([label, key]) => {
