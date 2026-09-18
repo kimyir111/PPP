@@ -902,6 +902,11 @@
     "The video could not be kept — the browser would not give it the space.": "動画を保存できませんでした — ブラウザの保存容量が足りません。",
     "That is not a video file.": "動画ファイルではありません。",
     "{{title}} was not saved before the page closed, so it was taken off My Songs. Please add it again.": "{{title}}はページが閉じる前に保存されなかったため、「自分の曲」から外しました。もう一度追加してください。",
-    "{{n}} songs were not saved before the page closed, so they were taken off My Songs. Please add them again.": "{{n}}曲がページが閉じる前に保存されなかったため、「自分の曲」から外しました。もう一度追加してください。"
+    "{{n}} songs were not saved before the page closed, so they were taken off My Songs. Please add them again.": "{{n}}曲がページが閉じる前に保存されなかったため、「自分の曲」から外しました。もう一度追加してください。",
+    "Transparency": "透明度",
+    "Finger numbers": "指番号",
+    "Playing only": "弾く指だけ",
+    "Off": "オフ",
+    "Left / right labels": "左手・右手の文字"
   }
 }

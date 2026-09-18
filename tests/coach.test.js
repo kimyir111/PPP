@@ -349,7 +349,8 @@ function harness() {
     if (b) b.click();
     await new Promise(r => setTimeout(r, 800));
     const t = document.querySelector('main').innerText;
-    const loop = (t.match(/Loop:?\s*(\d+)\s*→\s*(\d+)/) || []).slice(1).join('-');
+    const crumb = document.querySelector('header').innerText;
+    const loop = (crumb.match(/Measures (\d+)–(\d+)/) || []).slice(1).join('-');
     const tempo = (t.match(/(\d+)\s*BPM/) || [])[1];
     /* Test what the hand setting does, not how a button is styled: with the
        left hand selected, the right-hand notes are filtered out of the score. */

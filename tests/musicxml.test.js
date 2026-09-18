@@ -87,24 +87,14 @@ const ok = (name, cond, detail) => {
   /* ---------- import through the real UI ---------- */
   console.log('\n── import through the UI ──');
   await page.evaluate(() => {
-    const b = [...document.querySelectorAll('aside button')].find(x => /^Upload$/.test((x.innerText || '').trim()));
-    if (b) b.click();
+    window.__pppTest.upload();
   });
   await sleep(250);
-  await page.evaluate(() => {
-    const b = [...document.querySelectorAll('button')].find(x => /Show drop zone/.test(x.innerText || ''));
-    if (b) b.click();
-  });
-  await sleep(250);
-  const input = await page.$('input[type=file]');
+  const input = await page.$('input[type=file][data-add-file]');
   ok('file input present', !!input);
   if (input) {
+    /* choosing the file is the whole gesture — reading starts at once */
     await input.uploadFile(SAMPLE);
-    await sleep(400);
-    await page.evaluate(() => {
-      const b = [...document.querySelectorAll('button')].find(x => /Run analysis/.test(x.innerText || ''));
-      if (b) b.click();
-    });
     await page.waitForFunction(() => /See analysis/.test(document.body.innerText), { timeout: 20000 })
       .catch(() => errors.push('import never completed'));
     await sleep(400);
@@ -123,11 +113,8 @@ const ok = (name, cond, detail) => {
 
   /* ---------- the practice system now runs on parsed measures ---------- */
   console.log('\n── practice system on parsed data ──');
-  await page.evaluate(() => {
-    const b = [...document.querySelectorAll('aside button')].find(x => /Measure Loop/.test(x.innerText || ''));
-    if (b) b.click();
-  });
-  await sleep(400);
+  await page.evaluate(() => window.__pppTest.practice('Loop a passage'));
+  await sleep(200);
   const cells = await page.evaluate(() => document.querySelectorAll('button[title^="Measure "]').length);
   ok('measure strip uses parsed measures', cells === 8, cells + ' cells');
 
@@ -179,11 +166,8 @@ const ok = (name, cond, detail) => {
     'both=' + both + ' hidden, right=' + right + ', left=' + left);
 
   await page.screenshot({ path: path.join(__dirname, '.shots', 'parsed-player.png') });
-  await page.evaluate(() => {
-    const b = [...document.querySelectorAll('aside button')].find(x => /Measure Loop/.test(x.innerText || ''));
-    if (b) b.click();
-  });
-  await sleep(500);
+  await page.evaluate(() => window.__pppTest.practice('Loop a passage'));
+  await sleep(300);
   await page.screenshot({ path: path.join(__dirname, '.shots', 'parsed-loop.png') });
 
   console.log('\n────────────────────────────────────────');

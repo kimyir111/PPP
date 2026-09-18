@@ -26,23 +26,17 @@ const omrHealth = () => new Promise(resolve => {
 /* Drive an import through the real UI and read back what came out. */
 async function importFile(page, file, waitMs) {
   await page.evaluate(() => {
-    const b = [...document.querySelectorAll('aside button')].find(x => /^Upload$/.test((x.innerText || '').trim()));
-    if (b) b.click();
+    window.__pppTest.upload();
   });
   await sleep(300);
-  await page.evaluate(() => {
-    const b = [...document.querySelectorAll('button')].find(x => /Show drop zone/.test(x.innerText || ''));
-    if (b) b.click();
-  });
-  await sleep(250);
-  const input = await page.$('input[type=file]');
+  const input = await page.$('input[type=file][data-add-file]');
   if (!input) return { error: 'no file input' };
+  /* choosing the file starts the import; there is no second button */
   await input.uploadFile(file);
-  await sleep(400);
-  await page.evaluate(() => {
-    const b = [...document.querySelectorAll('button')].find(x => /Run analysis|Try again/.test(x.innerText || ''));
-    if (b) b.click();
-  });
+  /* wait for this import to be under way, so the last one's result is not
+     mistaken for this one's */
+  await page.waitForFunction(() => /\bCancel\b/.test(
+    (document.querySelector('main') || document.body).innerText), { timeout: 10000 }).catch(() => {});
   await page.waitForFunction(
     () => {
       const t = (document.querySelector("main") || document.body).innerText;
@@ -78,14 +72,30 @@ async function importFile(page, file, waitMs) {
       musicxml: k('a.musicxml'), xml: k('a.xml'), mxl: k('a.mxl'),
       pdf: k('a.pdf'), png: k('a.png'), jpg: k('a.jpg'), jpeg: k('a.jpeg'),
       midi: k('a.mid'), junk: k('a.txt'),
+      mp3: k('a.mp3'), wav: k('a.WAV'), m4a: k('a.m4a'), mp4: k('a.mp4'), mov: k('a.mov'),
+      byType: PPP.Import.kindOf({ name: 'noext', type: 'audio/mpeg' }),
       omrPdf: PPP.Import.needsOmr('pdf'), omrImg: PPP.Import.needsOmr('image'),
-      omrXml: PPP.Import.needsOmr('musicxml')
+      omrXml: PPP.Import.needsOmr('musicxml'), omrMp3: PPP.Import.needsOmr('audio'),
+      heard: ['audio', 'video', 'youtube'].every(PPP.Import.isRecording) && !PPP.Import.isRecording('pdf'),
+      yt: [
+        'https://www.youtube.com/watch?v=2WfaotSK3mI', 'https://youtu.be/2WfaotSK3mI',
+        'https://m.youtube.com/watch?v=2WfaotSK3mI&t=10', 'https://www.youtube.com/shorts/2WfaotSK3mI',
+        'https://music.youtube.com/watch?v=2WfaotSK3mI'
+      ].map(PPP.Import.youtubeId),
+      notYt: ['https://vimeo.com/123456', 'https://www.youtube.com/playlist?list=PL123', 'javascript:alert(1)',
+        'youtube.com/watch?v=2WfaotSK3mI', 'https://evil.example/youtube.com/watch?v=2WfaotSK3mI'].map(PPP.Import.youtubeId)
     };
   });
   ok('every supported extension routes somewhere',
     kinds.musicxml === 'musicxml' && kinds.xml === 'musicxml' && kinds.mxl === 'mxl' &&
     kinds.pdf === 'pdf' && kinds.png === 'image' && kinds.jpg === 'image' && kinds.jpeg === 'image',
     JSON.stringify(kinds));
+  ok('recordings route to transcription',
+    kinds.mp3 === 'audio' && kinds.wav === 'audio' && kinds.m4a === 'audio' && kinds.mp4 === 'video' &&
+    kinds.mov === 'video' && kinds.byType === 'audio' && kinds.heard && !kinds.omrMp3,
+    [kinds.mp3, kinds.wav, kinds.m4a, kinds.mp4, kinds.mov, kinds.byType].join(','));
+  ok('YouTube links are recognised in every usual form', kinds.yt.every(id => id === '2WfaotSK3mI'), kinds.yt.join(','));
+  ok('anything that is not one YouTube video is refused', kinds.notYt.every(id => id === null), kinds.notYt.join(','));
   ok('unsupported types are refused up front', kinds.midi === null && kinds.junk === null);
   ok('only pictures go through OMR', kinds.omrPdf && kinds.omrImg && !kinds.omrXml);
 
@@ -196,9 +206,8 @@ async function importFile(page, file, waitMs) {
   /* ============ honest failure ============ */
   console.log('\n── failure is honest ──');
   const before = await page.evaluate(async () => {
-    const b = [...document.querySelectorAll('aside button')].find(x => /^Measure Loop$/.test((x.innerText || '').trim()));
-    if (b) b.click();
-    await new Promise(r => setTimeout(r, 500));
+    await window.__pppTest.practice('Loop a passage');
+    await new Promise(r => setTimeout(r, 250));
     return document.querySelectorAll('button[title^="Measure "]').length;
   });
   const bad = await importFile(page, path.join(FIX, 'malformed.pdf'), 60000);
@@ -208,9 +217,8 @@ async function importFile(page, file, waitMs) {
   /* Compare the score itself, not the summary sentence — the sentence is
      replaced by the error, but the loaded score must be untouched. */
   const after = await page.evaluate(async () => {
-    const b = [...document.querySelectorAll('aside button')].find(x => /^Measure Loop$/.test((x.innerText || '').trim()));
-    if (b) b.click();
-    await new Promise(r => setTimeout(r, 500));
+    await window.__pppTest.practice('Loop a passage');
+    await new Promise(r => setTimeout(r, 250));
     return document.querySelectorAll('button[title^="Measure "]').length;
   });
   ok('a failed import never invents notation', after === before && after > 0,
@@ -219,8 +227,8 @@ async function importFile(page, file, waitMs) {
   if (engineUp) {
     const noMusic = await importFile(page, path.join(FIX, 'no-music.png'), 120000);
     ok('an image with no notation is refused',
-      /no musical notation|could not be read|nothing could be recognised|recognition/i.test(noMusic.text),
-      (noMusic.text.match(/(No musical[^\n]+|Recognition[^\n]+)/i) || ['?'])[0].slice(0, 90));
+      /no musical notation|could not be read|nothing could be recognised|produced no MusicXML|Recognition failed/i.test(noMusic.text),
+      (noMusic.text.match(/(No musical[^\n]+|[^\n]*produced no MusicXML[^\n]*|Recognition[^\n]+)/i) || ['?'])[0].slice(0, 90));
   }
 
   /* ============ the real thing: picture → Score ============ */
@@ -287,8 +295,8 @@ async function importFile(page, file, waitMs) {
           .find(x => re.test((x.innerText || '').trim()));
         if (b) b.click(); return !!b;
       };
-      click(/^Measure Loop$/);
-      await new Promise(r => setTimeout(r, 500));
+      await window.__pppTest.practice('Loop a passage');
+      await new Promise(r => setTimeout(r, 250));
       const cells = document.querySelectorAll('button[title^="Measure "]').length;
       const staves = document.querySelectorAll('.ppp-score svg').length;
       const notes = document.querySelectorAll('.ppp-note').length;

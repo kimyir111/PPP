@@ -193,9 +193,10 @@ const ok = (name, cond, detail) => {
     b.click();
     await new Promise(r => setTimeout(r, 900));
     const txt = document.querySelector('main').innerText;
-    const loop = (txt.match(/Loop:?\s*(\d+)\s*→\s*(\d+)/) || []).slice(1).map(Number);
+    const crumb = document.querySelector('header').innerText;
+    const loop = (crumb.match(/Measures (\d+)–(\d+)/) || []).slice(1).map(Number);
     const tempo = +((txt.match(/(\d+)\s*BPM/) || [])[1]);
-    const memory = /Memory Mode/i.test((document.querySelector('header div div') || {}).innerText || '');
+    const memory = /Memorize/i.test(crumb);
     const nav = [...document.querySelectorAll('aside nav button')].find(x => /Practice/.test(x.innerText || ''));
     if (nav) nav.click();
     await new Promise(r => setTimeout(r, 900));

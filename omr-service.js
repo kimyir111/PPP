@@ -16,10 +16,14 @@
 
      node omr-service.js [--port 8788] [--audiveris <path to Audiveris.exe>]
 
-   Also hosts the AI coach (/coach), so the Anthropic key stays server-side.
+   Also hosts the AI coach (/coach), so the Anthropic key stays server-side,
+   and audio transcription (/transcribe): a YouTube link, an MP3 or an MP4 in,
+   the notes a piano model hears out. Notation is still PPP's job, in the
+   browser, so MusicXML remains the only thing the parser ever reads.
 
    OMR needs no dependencies; the coach needs @anthropic-ai/sdk and zod, and is
-   simply off without them. Binds to 127.0.0.1 only.
+   simply off without them; transcription needs ffmpeg and the Python model in
+   tools/ (yt-dlp too, for links). Binds to 127.0.0.1 only.
    ========================================================================== */
 
 const http = require('http');
@@ -27,7 +31,8 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const zlib = require('zlib');
-const { execFile } = require('child_process');
+const crypto = require('crypto');
+const { execFile, spawn } = require('child_process');
 
 /* ---- .env, for development ----
    The key belongs to the environment, not to the source tree, and never to the
@@ -488,29 +493,412 @@ async function handleCoach(req, res) {
   }
 }
 
+/* ============================================================================
+   AUDIO TRANSCRIPTION
+
+   A recording in, the notes a piano model hears out:
+
+     YouTube link ─ yt-dlp ─┐
+     MP3 / MP4 / … ─────────┴─ ffmpeg → 16 kHz mono WAV ─ transcribe.py → notes
+
+   The model is Kong et al.'s high-resolution piano transcription (ByteDance,
+   Apache-2.0), run by transcribe.py in the Python environment in tools/. It
+   hears notes, velocities and the sustain pedal. It does not hear bars, beats,
+   hands or spelling — PPP works those out in the browser, so the notes that
+   come back here are the whole contract.
+
+   A long recording takes a while, so this is a job: POST starts it, GET
+   reports the stage and how far along it is, and the result is collected once.
+   Uploads go straight to a private temp directory and are only ever read by
+   ffmpeg, never executed. Everything a job wrote is deleted when it expires.
+   ========================================================================== */
+
+const TRANSCRIBE = {
+  maxUploadBytes: 400 * 1024 * 1024,
+  maxSeconds: 15 * 60,           /* longer recordings are cut here, and say so */
+  jobTtlMs: 30 * 60 * 1000,
+  maxJobs: 3                     /* at once — a model run is a whole CPU */
+};
+
+function firstExisting(list) {
+  for (const c of list.filter(Boolean)) { try { if (fs.existsSync(c)) return c; } catch (e) {} }
+  return null;
+}
+const TOOLS_DIR = path.join(__dirname, 'tools');
+const TRANSCRIBE_PY = path.join(__dirname, 'transcribe.py');
+const PYTHON = firstExisting([
+  process.env.PPP_TRANSCRIBE_PYTHON,
+  path.join(TOOLS_DIR, 'transcribe-venv', 'Scripts', 'python.exe'),
+  path.join(TOOLS_DIR, 'transcribe-venv', 'bin', 'python')
+]);
+/* The checkpoint is ~172 MB; anything much smaller is a download that stopped. */
+const CHECKPOINT = (() => {
+  const dir = path.join(TOOLS_DIR, 'piano-transcription');
+  const found = [process.env.PPP_TRANSCRIBE_CHECKPOINT];
+  try { fs.readdirSync(dir).filter(f => /\.pth$/i.test(f)).forEach(f => found.push(path.join(dir, f))); } catch (e) {}
+  return found.filter(Boolean).find(f => { try { return fs.statSync(f).size > 1.6e8; } catch (e) { return false; } }) || null;
+})();
+
+/* ffmpeg and yt-dlp may be vendored in tools/ or on PATH. Asked once, by
+   running them, because a path that exists is not a program that works. */
+const EXE = process.platform === 'win32' ? '.exe' : '';
+function probe(cmd, argv) {
+  return new Promise(resolve => {
+    execFile(cmd, argv, { timeout: 15000, windowsHide: true }, err => resolve(!err));
+  });
+}
+const TOOL = { ffmpeg: null, ytdlp: null };
+const toolsReady = (async () => {
+  for (const c of [process.env.PPP_FFMPEG, path.join(TOOLS_DIR, 'ffmpeg' + EXE), 'ffmpeg'].filter(Boolean)) {
+    if (await probe(c, ['-version'])) { TOOL.ffmpeg = c; break; }
+  }
+  for (const c of [process.env.PPP_YTDLP, path.join(TOOLS_DIR, 'yt-dlp' + EXE), 'yt-dlp'].filter(Boolean)) {
+    if (await probe(c, ['--version'])) { TOOL.ytdlp = c; break; }
+  }
+})();
+
+function transcriberStatus() {
+  const missing = [];
+  if (!TOOL.ffmpeg) missing.push('ffmpeg');
+  if (!PYTHON) missing.push('the Python environment in tools/transcribe-venv');
+  if (!CHECKPOINT) missing.push('the piano model checkpoint in tools/piano-transcription');
+  return {
+    ok: !missing.length,
+    youtube: !missing.length && !!TOOL.ytdlp,
+    missing: missing.concat(TOOL.ytdlp ? [] : ['yt-dlp (for YouTube links only)'])
+  };
+}
+
+/* Only YouTube, and only as a link to one video. The URL is handed to yt-dlp
+   after "--", so it can never be read as an option. */
+function youtubeUrl(raw) {
+  let u;
+  try { u = new URL(String(raw || '').trim()); } catch (e) { return null; }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
+  const host = u.hostname.toLowerCase().replace(/^(www|m|music)\./, '');
+  if (host === 'youtu.be') return /^\/[\w-]{6,}$/.test(u.pathname) ? u.toString() : null;
+  if (host !== 'youtube.com') return null;
+  if (u.pathname === '/watch' && /^[\w-]{6,}$/.test(u.searchParams.get('v') || ''))
+    return 'https://www.youtube.com/watch?v=' + u.searchParams.get('v');
+  const m = /^\/(shorts|live|embed)\/([\w-]{6,})/.exec(u.pathname);
+  return m ? 'https://www.youtube.com/watch?v=' + m[2] : null;
+}
+
+const jobs = new Map();
+
+function newJob(kind) {
+  const id = crypto.randomBytes(12).toString('hex');
+  const job = {
+    id, kind, dir: fs.mkdtempSync(path.join(os.tmpdir(), 'ppp-audio-')),
+    state: 'running', stage: 'queued', pct: 0,
+    title: null, duration: null, truncated: false,
+    error: null, code: null, result: null,
+    audioPath: null, audioType: null, child: null,
+    createdAt: Date.now()
+  };
+  jobs.set(id, job);
+  return job;
+}
+function endJob(job) {
+  if (job.child) { try { job.child.kill(); } catch (e) {} job.child = null; }
+  try { fs.rmSync(job.dir, { recursive: true, force: true }); } catch (e) {}
+  jobs.delete(job.id);
+}
+setInterval(() => {
+  const now = Date.now();
+  jobs.forEach(job => { if (now - job.createdAt > TRANSCRIBE.jobTtlMs) endJob(job); });
+}, 60000).unref();
+function running() { let n = 0; jobs.forEach(j => { if (j.state === 'running') n++; }); return n; }
+
+function fail(job, code, message) {
+  if (job.state !== 'running') return;
+  job.state = 'error'; job.code = code; job.error = redact(message);
+  job.child = null;
+}
+
+/* Run a tool, relay its progress, keep only the tail of what it said. */
+function run(job, cmd, argv, opts) {
+  opts = opts || {};
+  return new Promise(resolve => {
+    let tail = '';
+    const child = spawn(cmd, argv, {
+      windowsHide: true, cwd: job.dir,
+      env: Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' })
+    });
+    job.child = child;
+    const timer = setTimeout(() => { try { child.kill(); } catch (e) {} }, opts.timeoutMs || 600000);
+    const onText = chunk => {
+      const s = chunk.toString('utf8');
+      tail = (tail + s).slice(-6000);
+      if (opts.onLine) s.split(/\r?\n|\r/).forEach(l => { if (l.trim()) opts.onLine(l.trim()); });
+    };
+    child.stdout.on('data', onText);
+    child.stderr.on('data', onText);
+    child.on('error', e => { clearTimeout(timer); resolve({ code: -1, tail: String(e.message) }); });
+    child.on('close', (code, signal) => {
+      clearTimeout(timer);
+      if (job.child === child) job.child = null;
+      resolve({ code: code == null ? -1 : code, signal: signal, tail: tail });
+    });
+  });
+}
+
+async function downloadYoutube(job, url) {
+  job.stage = 'download';
+  let info = null;
+  const r = await run(job, TOOL.ytdlp, [
+    '--no-playlist', '--no-progress', '--newline', '--no-warnings',
+    '--js-runtimes', 'node:' + process.execPath,
+    '-f', 'bestaudio[ext=m4a]/bestaudio/best',
+    '--max-filesize', String(TRANSCRIBE.maxUploadBytes),
+    '--match-filter', '!is_live',
+    '--print', 'before_dl:PPPINFO %(.{title,duration,uploader})j',
+    '--progress', '--progress-template', 'download:PPPDL %(progress._percent_str)s',
+    '--no-simulate',
+    '-o', path.join(job.dir, 'source.%(ext)s'),
+    '--', url
+  ], {
+    timeoutMs: 10 * 60 * 1000,
+    onLine: line => {
+      if (line.indexOf('PPPINFO ') === 0) {
+        try { info = JSON.parse(line.slice(8)); } catch (e) {}
+        if (info) { job.title = info.title || null; job.duration = info.duration || null; }
+      } else if (line.indexOf('PPPDL ') === 0) {
+        const p = parseFloat(line.slice(6));
+        if (isFinite(p)) job.pct = Math.min(0.99, p / 100);
+      }
+    }
+  });
+  const file = (() => {
+    try { return fs.readdirSync(job.dir).filter(f => /^source\./.test(f) && !/\.part$/.test(f)).map(f => path.join(job.dir, f))[0]; }
+    catch (e) { return null; }
+  })();
+  if (r.code !== 0 || !file) {
+    const t = r.tail;
+    const msg = /Private video|Sign in to confirm your age|age-restricted/i.test(t) ? 'That video is private or age-restricted, so it cannot be downloaded.'
+      : /Video unavailable|This video is not available|removed/i.test(t) ? 'That video is unavailable.'
+        : /is_live|live event|premieres in/i.test(t) ? 'That is a live stream. PPP can only read a finished recording.'
+          : /File is larger than max-filesize/i.test(t) ? 'That recording is too large to download.'
+            : /Sign in to confirm you.re not a bot|HTTP Error 429/i.test(t) ? 'YouTube refused the download for now. Try again later, or download the audio yourself and upload the file.'
+              : /Unable to download|getaddrinfo|timed out|Connection/i.test(t) ? 'YouTube could not be reached.'
+                : 'The audio could not be downloaded from that link.';
+    throw Object.assign(new Error(msg), { code: 'download-failed' });
+  }
+  job.audioPath = file;
+  job.audioType = /\.m4a$|\.mp4$/i.test(file) ? 'audio/mp4' : /\.webm$/i.test(file) ? 'audio/webm'
+    : /\.mp3$/i.test(file) ? 'audio/mpeg' : /\.ogg|\.opus$/i.test(file) ? 'audio/ogg' : 'application/octet-stream';
+  return file;
+}
+
+async function toWav(job, input) {
+  job.stage = 'decode'; job.pct = 0;
+  const out = path.join(job.dir, 'audio.wav');
+  let total = job.duration || null;
+  const r = await run(job, TOOL.ffmpeg, [
+    '-hide_banner', '-nostdin', '-y', '-i', input,
+    '-vn', '-ac', '1', '-ar', '16000', '-t', String(TRANSCRIBE.maxSeconds),
+    '-c:a', 'pcm_s16le', '-f', 'wav', out
+  ], {
+    timeoutMs: 5 * 60 * 1000,
+    onLine: line => {
+      const d = /Duration:\s*(\d+):(\d+):([\d.]+)/.exec(line);
+      if (d && !total) total = (+d[1]) * 3600 + (+d[2]) * 60 + (+d[3]);
+      const t = /time=(\d+):(\d+):([\d.]+)/.exec(line);
+      if (t && total) job.pct = Math.min(0.99, ((+t[1]) * 3600 + (+t[2]) * 60 + (+t[3])) / Math.min(total, TRANSCRIBE.maxSeconds));
+    }
+  });
+  let bytes = 0;
+  try { bytes = fs.statSync(out).size; } catch (e) {}
+  if (r.code !== 0 || bytes < 16000) {
+    const noAudio = /does not contain any stream|Output file #0 does not contain|matches no streams/i.test(r.tail);
+    throw Object.assign(new Error(noAudio ? 'That file has no audio track.'
+      : 'That file could not be decoded as audio or video.'), { code: noAudio ? 'no-audio' : 'bad-audio' });
+  }
+  const seconds = (bytes - 44) / 32000;
+  if (total && total > TRANSCRIBE.maxSeconds + 1) job.truncated = true;
+  job.duration = total || seconds;
+  return { wav: out, seconds: seconds };
+}
+
+async function transcribeWav(job, wav, seconds) {
+  job.stage = 'transcribe'; job.pct = 0;
+  const out = path.join(job.dir, 'notes.json');
+  const r = await run(job, PYTHON, [TRANSCRIBE_PY, '--wav', wav, '--out', out, '--checkpoint', CHECKPOINT], {
+    /* CPU inference is roughly real time or better; allow plenty. */
+    timeoutMs: Math.max(5 * 60 * 1000, seconds * 4000),
+    onLine: line => {
+      const m = /^PROGRESS\s+([\d.]+)/.exec(line);
+      if (m) job.pct = Math.min(1, +m[1]);
+    }
+  });
+  let result = null;
+  try { result = JSON.parse(fs.readFileSync(out, 'utf8')); } catch (e) {}
+  if (r.code !== 0 || !result) {
+    console.error('transcribe.py failed:\n' + redact(r.tail.slice(-2000)));
+    throw Object.assign(new Error('The piano model failed on this recording.'), { code: 'engine-failed' });
+  }
+  return result;
+}
+
+async function runJob(job, source) {
+  const t0 = Date.now();
+  try {
+    await toolsReady;
+    const input = source.url ? await downloadYoutube(job, source.url) : source.file;
+    const { wav, seconds } = await toWav(job, input);
+    if (job.state !== 'running') return;
+    const result = await transcribeWav(job, wav, seconds);
+    if (job.state !== 'running') return;
+    result.title = job.title;
+    result.truncated = job.truncated;
+    result.sourceDuration = job.duration;
+    result.totalMs = Date.now() - t0;
+    job.result = result;
+    job.stage = 'done'; job.pct = 1; job.state = 'done';
+    /* the WAV is no longer needed; a downloaded source stays for playback */
+    try { fs.rmSync(wav, { force: true }); } catch (e) {}
+    if (source.file) { try { fs.rmSync(source.file, { force: true }); } catch (e) {} }
+  } catch (err) {
+    fail(job, (err && err.code) || 'failed', (err && err.message) || 'Transcription failed.');
+  }
+}
+
+/* The upload goes to disk as it arrives; a video can be hundreds of MB. */
+function saveUpload(req, file, limit) {
+  return new Promise((resolve, reject) => {
+    let size = 0;
+    const out = fs.createWriteStream(file);
+    req.on('data', c => {
+      size += c.length;
+      if (size > limit) {
+        reject(Object.assign(new Error('That file is larger than ' + Math.round(limit / 1048576) + ' MB.'), { code: 'too-large' }));
+        req.destroy(); out.destroy();
+      }
+    });
+    req.pipe(out);
+    out.on('finish', () => resolve(size));
+    out.on('error', reject);
+    req.on('error', reject);
+  });
+}
+
+/* A transcription downloads and burns CPU, so unlike a health check it is
+   only started for a page served from this machine. The helper listens on
+   127.0.0.1, but any website open in the same browser can still reach it. */
+const LOCAL_ORIGIN = /^(https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?|null)$/i;
+function fromLocalPage(req) {
+  const o = req.headers.origin;
+  return !o || LOCAL_ORIGIN.test(o);
+}
+
+async function handleTranscribe(req, res) {
+  if (!fromLocalPage(req))
+    return send(res, 403, { ok: false, code: 'forbidden', error: 'Transcription is only offered to PPP pages on this machine.' });
+  await toolsReady;
+  const status = transcriberStatus();
+  if (!status.ok)
+    return send(res, 503, {
+      ok: false, code: 'engine-missing',
+      error: 'Audio transcription is not set up here. Missing: ' + status.missing.filter(m => !/yt-dlp/.test(m)).join(', ') + '.'
+    });
+  if (running() >= TRANSCRIBE.maxJobs)
+    return send(res, 429, { ok: false, code: 'busy', error: 'PPP is already transcribing ' + TRANSCRIBE.maxJobs + ' recordings. Try again when one finishes.' });
+
+  const type = String(req.headers['content-type'] || '');
+  if (/application\/json/.test(type)) {
+    let body;
+    try { body = JSON.parse((await readBody(req, 64 * 1024)).toString('utf8')); } catch (e) {
+      return send(res, 400, { ok: false, code: 'bad-request', error: 'Expected {"url": "..."}.' });
+    }
+    const url = youtubeUrl(body && body.url);
+    if (!url) return send(res, 400, { ok: false, code: 'bad-url', error: 'That is not a link to a YouTube video.' });
+    if (!status.youtube)
+      return send(res, 503, { ok: false, code: 'youtube-missing', error: 'yt-dlp is not installed, so PPP cannot download from YouTube. Upload the audio file instead.' });
+    const job = newJob('youtube');
+    runJob(job, { url: url });
+    return send(res, 202, { ok: true, job: job.id });
+  }
+
+  /* the custom header makes every browser ask first (a CORS preflight), so a
+     plain cross-site form post cannot start a job */
+  if (!req.headers['x-ppp-filename'])
+    return send(res, 400, { ok: false, code: 'bad-request', error: 'Send the file with an X-PPP-Filename header.' });
+  const job = newJob('file');
+  const rawName = String(req.headers['x-ppp-filename'] || 'upload');
+  const ext = (/\.([a-z0-9]{1,5})$/i.exec(rawName) || [])[1] || 'bin';
+  const file = path.join(job.dir, 'upload.' + ext.toLowerCase());
+  try {
+    const size = await saveUpload(req, file, TRANSCRIBE.maxUploadBytes);
+    if (!size) throw Object.assign(new Error('That file is empty.'), { code: 'empty' });
+  } catch (e) {
+    endJob(job);
+    return send(res, e.code === 'too-large' ? 413 : 400, { ok: false, code: e.code || 'bad-request', error: e.message });
+  }
+  job.title = decodeURIComponent(rawName).replace(/\.[^.]+$/, '');
+  runJob(job, { file: file });
+  return send(res, 202, { ok: true, job: job.id });
+}
+
+function jobView(job) {
+  return {
+    ok: job.state !== 'error', id: job.id, state: job.state, stage: job.stage,
+    pct: Math.round(job.pct * 1000) / 1000, title: job.title, duration: job.duration,
+    truncated: job.truncated, hasAudio: !!job.audioPath,
+    code: job.code, error: job.error,
+    result: job.state === 'done' ? job.result : null
+  };
+}
+
+function handleJob(req, res, id, sub) {
+  const job = jobs.get(id);
+  if (!job) return send(res, 404, { ok: false, code: 'no-job', error: 'That transcription is not here any more.' });
+  if (req.method === 'DELETE') { endJob(job); return send(res, 200, { ok: true }); }
+  if (sub === 'audio') {
+    if (!job.audioPath) return send(res, 404, { ok: false, error: 'no audio kept for this job' });
+    let size;
+    try { size = fs.statSync(job.audioPath).size; } catch (e) { return send(res, 404, { ok: false, error: 'gone' }); }
+    res.writeHead(200, {
+      'Content-Type': job.audioType, 'Content-Length': size,
+      'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store'
+    });
+    return fs.createReadStream(job.audioPath).pipe(res);
+  }
+  return send(res, 200, jobView(job));
+}
+
 const server = http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') {
+    if (/^\/transcribe/.test(req.url || '') && !fromLocalPage(req)) { res.writeHead(403); return res.end(); }
     res.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type'
+      'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, X-PPP-Filename'
     });
     return res.end();
   }
 
   if (req.url === '/health') {
     const coach = await coachStatus();
+    await toolsReady;
+    const tr = transcriberStatus();
     return send(res, 200, {
-      ok: true, service: 'ppp-local', version: 3,
+      ok: true, service: 'ppp-local', version: 4,
       audiveris: !!AUDIVERIS, audiverisPath: AUDIVERIS || null,
       coach: !!coach,
       coachProvider: coach ? coach.name : null,
       coachModel: coach ? coach.model : null,
-      limits: LIMITS
+      transcriber: tr.ok, youtube: tr.youtube, transcriberMissing: tr.missing,
+      limits: Object.assign({}, LIMITS, {
+        audioBytes: TRANSCRIBE.maxUploadBytes, audioSeconds: TRANSCRIBE.maxSeconds
+      })
     });
   }
 
   if (req.method === 'POST' && req.url === '/coach') return handleCoach(req, res);
+
+  if (req.method === 'POST' && req.url === '/transcribe') return handleTranscribe(req, res);
+  const jm = /^\/transcribe\/([0-9a-f]{24})(?:\/(audio))?$/.exec(req.url || '');
+  if (jm && (req.method === 'GET' || req.method === 'DELETE')) return handleJob(req, res, jm[1], jm[2]);
 
   if (req.method !== 'POST' || req.url !== '/omr') return send(res, 404, { ok: false, error: 'not found' });
 
@@ -573,6 +961,12 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, '127.0.0.1', () => {
   console.log('PPP OMR service on http://127.0.0.1:' + PORT);
   console.log(AUDIVERIS ? '  Audiveris: ' + AUDIVERIS : '  Audiveris: NOT FOUND — /omr will report engine-missing');
+  toolsReady.then(() => {
+    const tr = transcriberStatus();
+    console.log(tr.ok
+      ? '  Transcription: on' + (tr.youtube ? ', YouTube links too' : ' (no yt-dlp, so files only)')
+      : '  Transcription: off — missing ' + tr.missing.join(', '));
+  });
   coachStatus().then(c => {
     console.log(c
       ? '  Coach: on — ' + c.name + ' (' + c.model + ')'

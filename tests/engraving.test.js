@@ -186,6 +186,76 @@ const survey = page => page.evaluate(() => {
 
   ok('no page errors', pageErrors.length === 0, pageErrors.slice(0, 2).join(' | ') || 'clean');
   ok('nothing failed to engrave', warnings.length === 0, warnings.slice(0, 1).join('') || 'clean');
+
+  console.log('\n── dark theme labels ──────────────────');
+  const clickSetting = lab => page.evaluate(name => {
+    const labs = [...document.querySelectorAll('div')].filter(d => (d.textContent || '').trim() === name);
+    const el = labs[labs.length - 1];
+    const row = el && el.parentElement && el.parentElement.parentElement;
+    const btn = row && row.querySelector('button');
+    if (!btn) return false;
+    btn.click();
+    return true;
+  }, lab);
+  await page.evaluate(() => window.__pppTest.nav('Settings'));
+  await sleep(400);
+  ok('dark mode can be switched on', await clickSetting('Dark mode'));
+  ok('paper can be switched off', await clickSetting('Keep the score on paper'));
+  await page.evaluate(() => window.__pppTest.nav('Practice'));
+  await sleep(400);
+  await page.evaluate(() => {
+    const tab = [...document.querySelectorAll('main [role=tab]')].find(x => /Start to finish/.test(x.textContent || ''));
+    if (tab) tab.click();
+  });
+  await sleep(500);
+  await page.evaluate(() => {
+    const whole = [...document.querySelectorAll('button')].find(x => (x.textContent || '').trim() === 'Whole score');
+    if (!whole) return;
+    const on = /var\(--accent\)/.test(whole.getAttribute('style') || '');
+    if (!on) whole.click();
+  });
+  await sleep(2800);
+  const dark = await page.evaluate(() => {
+    const svg = document.querySelector('.ppp-staffwrap svg');
+    if (!svg) return null;
+    const lumOf = c => {
+      const s = String(c || '');
+      let r, g, b;
+      const rgb = s.match(/rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)/i);
+      if (rgb) { r = +rgb[1]; g = +rgb[2]; b = +rgb[3]; }
+      else {
+        const hex = s.match(/^#([0-9a-f]{3,8})$/i);
+        if (!hex) return 0;
+        let h = hex[1];
+        if (h.length === 3 || h.length === 4) h = h.split('').map(ch => ch + ch).join('');
+        r = parseInt(h.slice(0, 2), 16); g = parseInt(h.slice(2, 4), 16); b = parseInt(h.slice(4, 6), 16);
+      }
+      return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+    };
+    const anns = [...svg.querySelectorAll('text.ppp-ann')].map(t => {
+      const fill = getComputedStyle(t).fill;
+      return { text: (t.textContent || '').trim(), fill: fill, lum: lumOf(fill) };
+    });
+    return {
+      theme: document.querySelector('[data-app]').getAttribute('data-app'),
+      tempo: anns.filter(a => /=\s*\d+/.test(a.text))[0] || null,
+      composer: anns.filter(a => /PPP tests/i.test(a.text))[0] || null,
+      bars: anns.filter(a => /^\d+$/.test(a.text))
+    };
+  });
+  ok('the page is in dark mode without paper', !!(dark && dark.theme === 'dark'), dark ? dark.theme : 'no score');
+  ok('the tempo mark is light on a dark score', !!(dark && dark.tempo && dark.tempo.lum > 0.7),
+    dark && dark.tempo ? dark.tempo.fill + ' lum=' + dark.tempo.lum.toFixed(2) : 'missing');
+  ok('the composer is light on a dark score', !!(dark && dark.composer && dark.composer.lum > 0.7),
+    dark && dark.composer ? dark.composer.fill + ' lum=' + dark.composer.lum.toFixed(2) : 'missing');
+  ok('bar numbers are light on a dark score', !!(dark && dark.bars.length && dark.bars.every(b => b.lum > 0.7)),
+    dark && dark.bars.length ? dark.bars.slice(0, 4).map(b => b.text + '=' + b.lum.toFixed(2)).join(', ') : 'missing');
+  const SHOTS = path.join(__dirname, '.shots');
+  fs.mkdirSync(SHOTS, { recursive: true });
+  const staff = await page.$('.ppp-staffwrap');
+  if (staff) await staff.screenshot({ path: path.join(SHOTS, 'engraving-dark-labels.png') });
+  else await page.screenshot({ path: path.join(SHOTS, 'engraving-dark-labels.png'), fullPage: false });
+
   await page.evaluate(() => { try { localStorage.removeItem('ppp.state.v2'); } catch (e) {} });
 
   await browser.close();

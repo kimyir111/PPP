@@ -303,13 +303,12 @@ function harness() {
       if (b) b.click(); return !!b;
     };
     /* one measure, so a recall lap completes in a couple of seconds */
-    click(/^Measure Loop$/);
-    await new Promise(r => setTimeout(r, 400));
+    await window.__pppTest.practice('Loop a passage');
     const cells = document.querySelectorAll('button[title^="Measure "]');
     cells[20].click(); cells[20].click();
     await new Promise(r => setTimeout(r, 300));
-    click(/^Memory Mode$/);
-    await new Promise(r => setTimeout(r, 500));
+    await window.__pppTest.practice('Memorize');
+    await new Promise(r => setTimeout(r, 250));
     const started = click(/^Start recall$/);
     await new Promise(r => setTimeout(r, 7000));
     click(/^Pause$/);

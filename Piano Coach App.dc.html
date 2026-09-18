@@ -889,11 +889,31 @@
                 <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 9px; height: 9px; border-radius: 3px; background: var(--accent);"></span>Played correctly</span>
                 <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 9px; height: 9px; border-radius: 3px; background: var(--bad);"></span>Wrong note</span>
                 <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 9px; height: 9px; border-radius: 3px; background: var(--accent-2);"></span>Expected next</span>
-                <!-- The hand guide: which finger, not just which key. -->
                 <sc-if value="{{ showFingerKey }}" hint-placeholder-val="{{ true }}">
                   <span style="color: var(--ink2);">{{ fingerKey }}</span>
                 </sc-if>
+              </div>
+              <!-- The hand guide - which finger, not just which key - and how
+                   much of it to draw: how see-through, which numbers, whether
+                   each hand is named. -->
+              <div class="ppp-setup-only ppp-handset" style="display: flex; align-items: center; gap: 10px 18px; flex-wrap: wrap; margin-top: 10px; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); font-size: 12px; color: var(--ink2);">
                 <button onClick="{{ toggleHandGuide }}" title="{{ handGuideHint }}" aria-pressed="{{ handGuidePressed }}" style="{{ handGuideBtnStyle }}">{{ handGuideLabel }}</button>
+                <sc-if value="{{ handsShown }}" hint-placeholder-val="{{ true }}">
+                  <label style="display: flex; align-items: center; gap: 9px; flex: 1 1 180px; min-width: 0; max-width: 250px;">
+                    <span style="flex: none;">{{ handSeeLabel }}</span>
+                    <input type="range" min="10" max="85" step="5" value="{{ handSee }}" onChange="{{ setHandSee }}" style="flex: 1; min-width: 70px; accent-color: var(--accent); height: 4px; cursor: pointer;" />
+                    <span style="flex: none; width: 34px; text-align: right; font-family: 'JetBrains Mono', monospace; color: var(--ink);">{{ handSeeValue }}</span>
+                  </label>
+                  <span style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span>{{ handNumsLabel }}</span>
+                    <span role="radiogroup" aria-label="{{ handNumsLabel }}" style="display: flex; gap: 3px; padding: 3px; border-radius: 10px; background: var(--surface2);">
+                      <sc-for list="{{ handNumTabs }}" as="hn" hint-placeholder-count="3">
+                        <button role="radio" aria-checked="{{ hn.selected }}" onClick="{{ hn.on }}" style="{{ hn.style }}">{{ hn.label }}</button>
+                      </sc-for>
+                    </span>
+                  </span>
+                  <button onClick="{{ toggleHandNames }}" aria-pressed="{{ handNamesPressed }}" style="{{ handNamesBtnStyle }}">{{ handNamesLabel }}</button>
+                </sc-if>
               </div>
             </div>
           </section>
@@ -2224,6 +2244,19 @@ const CHORD_KIND = {
 };
 const ALTER_SIGN = { '-2': 'bb', '-1': 'b', '0': '', '1': '#', '2': '##' };
 
+/* What OCR makes of a printed chord name: "A/Cﬂ" for A/C#, "Am?" for Am7,
+   "D73us4" for D7sus4, "Cm/El’" for Cm/Eb. Mended only where the result is
+   unmistakably a chord name; anything else stays words. */
+function mendChord(raw) {
+  let t = String(raw || '').replace(/\s+/g, '');
+  if (!t || t.length > 14 || !/^[A-G]/.test(t)) return null;
+  t = t.replace(/[ﬂﬁ♯]/g, '#')
+    .replace(/l[’'‘:]|[’‘♭]/g, 'b')
+    .replace(/\?/g, '7')
+    .replace(/[38]us(?=\d)/g, 'sus');
+  return PdfLayer.CHORD.test(t) ? t : null;
+}
+
 function chordText(el, txt) {
   const step = txt(el, 'root root-step', null);
   if (!step) return null;
@@ -2240,7 +2273,9 @@ function chordText(el, txt) {
     const t = (d.querySelector('degree-type') || {}).textContent;
     return t === 'subtract' ? 'omit' + v : a + v;
   }).filter(Boolean);
-  if (degs.length) quality += '(' + degs.join(',') + ')';
+  /* a degree the printed text already shows is not added twice */
+  const extra = printed ? degs.filter(d => printed.indexOf(d) < 0) : degs;
+  if (extra.length) quality += '(' + extra.join(',') + ')';
   const bStep = txt(el, 'bass bass-step', null);
   const bass = bStep
     ? '/' + bStep + (ALTER_SIGN[String(parseInt(txt(el, 'bass bass-alter', '0'), 10) || 0)] || '')
@@ -2269,6 +2304,9 @@ function parseMusicXML(xmlText, name) {
   };
 
   const title = txt(root, 'work > work-title', null) || txt(root, 'movement-title', null) || name || 'Untitled';
+  /* a file straight from recognition, whose words above the staff are
+     chord names it could not finish reading */
+  const fromOmr = /audiveris/i.test(txt(root, 'identification encoding software', ''));
   let composer = null;
   [].forEach.call(root.querySelectorAll('identification > creator'), c => {
     if (!composer || c.getAttribute('type') === 'composer') {
@@ -2366,6 +2404,13 @@ function parseMusicXML(xmlText, name) {
         }
 
         if (tag === 'direction') {
+          if (fromOmr && partIdx === 0) {
+            const w = el.querySelector('direction-type > words');
+            const c = w ? mendChord(w.textContent) : null;
+            const at = cursor + num(el, 'offset', 0) / divisions;
+            if (c && !chords.some(k => k.m === number && Math.abs(k.b - at) < 0.01))
+              chords.push({ m: number, b: at, text: c });
+          }
           if (partIdx === pianoGuess) {
             const off = num(el, 'offset', 0) / divisions;
             const ped = el.querySelector('pedal');
@@ -2381,8 +2426,10 @@ function parseMusicXML(xmlText, name) {
               if (t === 'up' || t === 'down') {
                 /* MusicXML says which way the printed notes move; "down" is the
                    8va above, because the notes are written an octave lower. */
+                const onStaff = parseInt(txt(el, 'staff', ''), 10);
                 ottavas.push({ m: number, b: cursor + off, endM: null, endB: null,
-                  size: size, dir: t === 'down' ? 1 : -1 });
+                  size: size, dir: t === 'down' ? 1 : -1,
+                  staff: isFinite(onStaff) ? staffBase + onStaff : null });
               } else if (t === 'stop') {
                 for (let i = ottavas.length - 1; i >= 0; i--) {
                   if (ottavas[i].endM == null) { ottavas[i].endM = number; ottavas[i].endB = cursor + off; break; }
@@ -2427,7 +2474,8 @@ function parseMusicXML(xmlText, name) {
               const ty = end.getAttribute('type');
               if (ty === 'start') {
                 const nos = (end.getAttribute('number') || '1').split(/[ ,]+/).filter(Boolean);
-                barMarks.ending = (end.textContent || '').trim() || nos.map(x => x + '.').join(' ');
+                const said = (end.textContent || '').trim();
+                barMarks.ending = /^[\d.,\s]+$/.test(said) ? said : nos.map(x => x + '.').join(' ');
               }
               /* "stop" closes the bracket with a hook; "discontinue" leaves it open */
               if (ty === 'stop') barMarks.endingEnd = 'stop';
@@ -2513,6 +2561,10 @@ function parseMusicXML(xmlText, name) {
           });
           const stem = txt(el, 'stem', null);
           if (nn && (stem === 'up' || stem === 'down')) nn.stem = stem;
+          /* where the note was drawn in its bar, so marks read from a PDF can
+             be put on the note under them */
+          const dx = parseFloat(el.getAttribute('default-x'));
+          if (nn && isFinite(dx)) nn.dx = dx;
         }
         if (!isChord) { lastOnset = cursor; cursor += durQ; }
         maxCursor = Math.max(maxCursor, cursor);
@@ -2529,6 +2581,7 @@ function parseMusicXML(xmlText, name) {
           key: { fifths: key.fifths, mode: key.mode },
           clefs: Object.assign({}, startClefs || clefs),
           clefChanges: clefChanges.length ? clefChanges : null,
+          w: parseFloat(mEl.getAttribute('width')) || null,
           bar: Object.keys(barMarks).length ? barMarks : null
         };
         order.push(number);
@@ -4184,7 +4237,10 @@ const Import = {
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       await page.render({ canvasContext: ctx, viewport: vp }).promise;
-      pages.push({ dataUrl: canvas.toDataURL('image/png'), width: canvas.width, height: canvas.height });
+      /* what the page says in its own text and lines, for PdfLayer.apply */
+      let layer = null;
+      try { layer = await PdfLayer.read(page, pdfjsLib); } catch (e) { /* a picture-only page */ }
+      pages.push({ dataUrl: canvas.toDataURL('image/png'), width: canvas.width, height: canvas.height, layer: layer });
     }
     return pages;
   },
@@ -4680,6 +4736,15 @@ const Import = {
       throw importError('bad-musicxml',
         tx('The notation was recognised but could not be turned into a score: {{message}}', { message: e.message }),
         [tx('Try a clearer scan'), tx('Or upload MusicXML instead')]);
+    }
+
+    /* A PDF made by notation software says in its own text and lines what
+       recognition misses: the chord names, 8va brackets, title and tempo. */
+    if (kind === 'pdf') {
+      try {
+        source.fromPdf = PdfLayer.apply(score, pages.map(p => p.layer || null), omr.musicxml, file.name);
+      } catch (e) { /* the recognised score stands as it is */ }
+      pages.forEach(p => { delete p.layer; });
     }
 
     stage('check', {});
@@ -5911,11 +5976,411 @@ const ACC_VEX = {
   'flat-flat': 'bb', 'double-flat': 'bb', 'quarter-sharp': '+', 'quarter-flat': 'd'
 };
 
+/* ============================================================================
+   WHAT A PDF SAYS IN ITS OWN WORDS
+
+   A PDF exported from notation software is not a picture. Its chord names,
+   title and tempo are text with a position, and its staff lines, bar lines
+   and 8va brackets are lines with coordinates. Recognition reads the picture
+   and gets these wrong or misses them — a chord name read as "A/Cﬂ", an 8va
+   bracket not read at all. So when a PDF has them, PPP takes them from the
+   PDF itself and puts them on the bars recognition found: the bar lines on
+   each page are counted against the recognised bars of that page, and a chord
+   or an 8va lands on the note that sits under it.
+
+   A scanned page has no text and no lines, and nothing here touches it.
+   ========================================================================== */
+const PdfLayer = {
+  /* One page: its text, its straight lines and its small filled shapes, in
+     PDF points with y pointing up. */
+  async read(page, lib) {
+    const OPS = lib.OPS;
+    const vp = page.getViewport({ scale: 1 });
+    const tc = await page.getTextContent();
+    const texts = tc.items.filter(it => it.str && it.str.trim()).map(it => ({
+      s: it.str, x: it.transform[4], y: it.transform[5], w: it.width || 0,
+      size: Math.abs(it.transform[3]) || it.height || 0, font: it.fontName
+    }));
+    const ol = await page.getOperatorList();
+    const hl = [], vl = [], blobs = [];
+    const mul = (m, c) => [m[0] * c[0] + m[1] * c[2], m[0] * c[1] + m[1] * c[3],
+      m[2] * c[0] + m[3] * c[2], m[2] * c[1] + m[3] * c[3],
+      m[4] * c[0] + m[5] * c[2] + c[4], m[4] * c[1] + m[5] * c[3] + c[5]];
+    let ctm = [1, 0, 0, 1, 0, 0];
+    const stack = [];
+    let path = null;
+    const pt = (x, y) => [ctm[0] * x + ctm[2] * y + ctm[4], ctm[1] * x + ctm[3] * y + ctm[5]];
+    const addPath = (codes, nums) => {
+      path = path || { segs: [], pts: [], curved: false };
+      let j = 0, cx = 0, cy = 0, sx = 0, sy = 0;
+      const seg = (x0, y0, x1, y1) => {
+        const a = pt(x0, y0), b = pt(x1, y1);
+        path.segs.push([a[0], a[1], b[0], b[1]]);
+        path.pts.push(a, b);
+      };
+      for (let k = 0; k < codes.length; k++) {
+        const o = codes[k];
+        if (o === OPS.moveTo) { cx = sx = nums[j++]; cy = sy = nums[j++]; path.pts.push(pt(cx, cy)); }
+        else if (o === OPS.lineTo) { const x = nums[j++], y = nums[j++]; seg(cx, cy, x, y); cx = x; cy = y; }
+        else if (o === OPS.curveTo) {
+          for (let q = 0; q < 3; q++) path.pts.push(pt(nums[j + 2 * q], nums[j + 2 * q + 1]));
+          cx = nums[j + 4]; cy = nums[j + 5]; j += 6; path.curved = true;
+        } else if (o === OPS.curveTo2 || o === OPS.curveTo3) {
+          path.pts.push(pt(nums[j], nums[j + 1]), pt(nums[j + 2], nums[j + 3]));
+          cx = nums[j + 2]; cy = nums[j + 3]; j += 4; path.curved = true;
+        } else if (o === OPS.closePath) { seg(cx, cy, sx, sy); cx = sx; cy = sy; }
+        else if (o === OPS.rectangle) {
+          const x = nums[j++], y = nums[j++], w = nums[j++], h = nums[j++];
+          seg(x, y, x + w, y); seg(x + w, y, x + w, y + h); seg(x + w, y + h, x, y + h); seg(x, y + h, x, y);
+          cx = sx = x; cy = sy = y;
+        }
+      }
+    };
+    const stroked = () => path.segs.forEach(s => {
+      const dx = Math.abs(s[2] - s[0]), dy = Math.abs(s[3] - s[1]);
+      if (dy < 0.35 && dx > 0.8) hl.push({ x0: Math.min(s[0], s[2]), x1: Math.max(s[0], s[2]), y: (s[1] + s[3]) / 2 });
+      else if (dx < 0.35 && dy > 0.8) vl.push({ x: (s[0] + s[2]) / 2, y0: Math.min(s[1], s[3]), y1: Math.max(s[1], s[3]) });
+    });
+    const filled = () => {
+      if (!path.pts.length) return;
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      path.pts.forEach(p => { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]); });
+      const w = x1 - x0, h = y1 - y0;
+      if (h < 1.6 && w > 8 && !path.curved) hl.push({ x0: x0, x1: x1, y: (y0 + y1) / 2 });
+      else if (w < 3.2 && h > 8 && !path.curved) vl.push({ x: (x0 + x1) / 2, y0: y0, y1: y1 });
+      else if (w < 80 && h < 40) blobs.push({ x0: x0, x1: x1, y0: y0, y1: y1 });
+    };
+    const FILL = [OPS.fill, OPS.eoFill];
+    const BOTH = [OPS.fillStroke, OPS.eoFillStroke, OPS.closeFillStroke, OPS.closeEOFillStroke];
+    const fa = ol.fnArray, aa = ol.argsArray;
+    for (let i = 0; i < fa.length; i++) {
+      const fn = fa[i], a = aa[i];
+      if (fn === OPS.save) stack.push(ctm.slice());
+      else if (fn === OPS.restore) ctm = stack.pop() || [1, 0, 0, 1, 0, 0];
+      else if (fn === OPS.transform) ctm = mul(a, ctm);
+      else if (fn === OPS.paintFormXObjectBegin) { stack.push(ctm.slice()); if (a && a[0]) ctm = mul(a[0], ctm); }
+      else if (fn === OPS.paintFormXObjectEnd) ctm = stack.pop() || ctm;
+      else if (fn === OPS.constructPath) addPath(a[0], a[1]);
+      else if (fn === OPS.stroke || fn === OPS.closeStroke) { if (path) stroked(); path = null; }
+      else if (FILL.indexOf(fn) > -1) { if (path) filled(); path = null; }
+      else if (BOTH.indexOf(fn) > -1) { if (path) { filled(); stroked(); } path = null; }
+      else if (fn === OPS.endPath) path = null;
+    }
+    return { w: vp.width, h: vp.height, texts: texts, hl: hl, vl: vl, blobs: blobs };
+  },
+
+  /* note heads and rests, in the fonts notation programs write them in */
+  NOTE_GLYPH: /[œ˙wŒ‰≈Ó∑\uE0A0-\uE0A4\uE4E0-\uE4EE]/,
+
+  /* the font the notes are set in: the one most of the note heads use */
+  musicFont(L) {
+    const n = {};
+    L.texts.forEach(t => { if (/[œ\uE0A4]/.test(t.s)) n[t.font] = (n[t.font] || 0) + 1; });
+    let best = null;
+    Object.keys(n).forEach(f => { if (!best || n[f] > n[best]) best = f; });
+    return best;
+  },
+
+  /* The page's systems, top to bottom, each with its staves and its bars
+     left to right. */
+  layout(L, perSystem) {
+    const long = L.hl.filter(l => l.x1 - l.x0 > 40).sort((a, b) => b.y - a.y || a.x0 - b.x0);
+    const lines = [];
+    long.forEach(l => {
+      const m = lines.filter(k => Math.abs(k.y - l.y) < 0.4 && l.x0 <= k.x1 + 3 && l.x1 >= k.x0 - 3)[0];
+      if (m) { m.x0 = Math.min(m.x0, l.x0); m.x1 = Math.max(m.x1, l.x1); }
+      else lines.push({ x0: l.x0, x1: l.x1, y: l.y });
+    });
+    lines.sort((a, b) => b.y - a.y);
+    /* a staff is five lines, equally spaced, that start and end together */
+    const staves = [];
+    const used = {};
+    for (let i = 0; i < lines.length; i++) {
+      if (used[i]) continue;
+      const pick = [i];
+      for (let j = i + 1; j < lines.length && pick.length < 5; j++) {
+        if (used[j]) continue;
+        const a = lines[pick[0]], l = lines[j], prev = lines[pick[pick.length - 1]];
+        if (Math.abs(l.x0 - a.x0) > 8 || Math.abs(l.x1 - a.x1) > 8) continue;
+        const gap = prev.y - l.y;
+        const g0 = pick.length > 1 ? lines[pick[0]].y - lines[pick[1]].y : null;
+        if (g0 == null ? (gap >= 2.5 && gap <= 12) : Math.abs(gap - g0) < 0.6) pick.push(j);
+        else if (gap > (g0 || 12) + 0.6) break;
+      }
+      if (pick.length === 5) {
+        pick.forEach(k => { used[k] = true; });
+        const ls = pick.map(k => lines[k]);
+        staves.push({
+          top: ls[0].y, bottom: ls[4].y, gap: (ls[0].y - ls[4].y) / 4,
+          x0: Math.max.apply(null, ls.map(l => l.x0)), x1: Math.min.apply(null, ls.map(l => l.x1))
+        });
+      }
+    }
+    staves.sort((a, b) => b.top - a.top);
+
+    const systems = [];
+    for (let i = 0; i < staves.length;) {
+      const grp = [staves[i]];
+      while (grp.length < perSystem && i + grp.length < staves.length) {
+        const nx = staves[i + grp.length];
+        if (Math.abs(nx.x0 - staves[i].x0) > 8 || Math.abs(nx.x1 - staves[i].x1) > 8) break;
+        grp.push(nx);
+      }
+      systems.push({ staves: grp, bars: [] });
+      i += grp.length;
+    }
+
+    const font = PdfLayer.musicFont(L);
+    const noted = L.texts.filter(t => t.font === font && PdfLayer.NOTE_GLYPH.test(t.s));
+    /* bar lines end exactly on the outer staff lines; a stem only nearly does */
+    const near = (a, b) => Math.abs(a - b) < 0.5;
+    systems.forEach(sys => {
+      const top = sys.staves[0], bot = sys.staves[sys.staves.length - 1];
+      /* a bar line runs the height of a staff, or of the whole system; a
+         stem that happens to be as long is not exactly as long */
+      const xs = L.vl.filter(v => v.x > top.x0 - 1.5 && v.x < top.x1 + 1.5 && (
+        (near(v.y1, top.top) && (near(v.y0, top.bottom) || near(v.y0, bot.bottom))) ||
+        sys.staves.some(st => near(v.y1, st.top) && near(v.y0, st.bottom))
+      )).map(v => v.x).sort((a, b) => a - b);
+      const groups = [];
+      xs.forEach(x => {
+        const g = groups[groups.length - 1];
+        if (g && x - g.x1 < 6) g.x1 = x; else groups.push({ x0: x, x1: x });
+      });
+      const bars = [];
+      let start = top.x0;
+      groups.forEach(g => {
+        if (g.x1 < top.x0 + 4) { start = Math.max(start, g.x1); return; }
+        bars.push({ x0: start, x1: g.x0 });
+        start = g.x1;
+      });
+      if (top.x1 - start > 12) bars.push({ x0: start, x1: top.x1 });
+      /* A "bar" with no note or rest in it is the clef and key in front of a
+         start-repeat sign; it belongs to the bar after it. Only judged when
+         the page sets its notes as text at all. */
+      const inSys = t => t.y < top.top + 30 && t.y > bot.bottom - 30;
+      const hasNotes = b => noted.some(t => inSys(t) && t.x + t.w > b.x0 + 1 && t.x < b.x1 - 1);
+      const judge = noted.length > 10;
+      bars.forEach((b, k) => {
+        if (judge && !hasNotes(b) && k + 1 < bars.length) { bars[k + 1].x0 = b.x0; return; }
+        sys.bars.push(b);
+      });
+    });
+    return { systems: systems, font: font };
+  },
+
+  /* A chord name is text above the top staff of a system that reads as a
+     chord once its pieces are put together — "C", "m", "/E" and a flat set
+     in the music font are one "Cm/Eb". */
+  CHORD: /^[A-G][#b]?(?:maj|min|dim|aug|sus|add|omit|alt|m|M|[0-9]|[#b+°ø()\-,])*(?:\/[A-G][#b]?)?$/,
+  chords(L, lay) {
+    const out = [];
+    lay.systems.forEach(sys => {
+      const top = sys.staves[0];
+      const zone = L.texts.filter(t => t.y > top.top + 2 && t.y < top.top + 45 &&
+        t.x >= top.x0 - 5 && t.x <= top.x1 + 5 &&
+        (t.font !== lay.font || /^[#b♯♭()]$/.test(t.s.trim())))
+        .sort((a, b) => a.x - b.x);
+      const groups = [];
+      zone.forEach(t => {
+        const g = groups.filter(g => Math.abs(g.y - t.y) < 7 && t.x - g.end < 3 && t.x >= g.x - 1)[0];
+        const piece = t.s.replace(/\s+/g, '');
+        if (g) { g.s += piece; g.end = Math.max(g.end, t.x + t.w); if (t.font !== lay.font) g.y = Math.min(g.y, t.y); }
+        else if (t.font !== lay.font) groups.push({ s: piece, x: t.x, y: t.y, end: t.x + t.w });
+      });
+      groups.forEach(g => {
+        const s = g.s.replace(/♯/g, '#').replace(/♭/g, 'b');
+        if (PdfLayer.CHORD.test(s)) out.push({ text: s, x: g.x, y: g.y, sys: sys });
+      });
+    });
+    return out;
+  },
+
+  /* An 8va is a dashed line beside the "8va" sign, just above a staff; an
+     8vb the same just below one. */
+  ottavas(L, lay) {
+    const short = L.hl.filter(l => { const n = l.x1 - l.x0; return n > 0.8 && n < 9; })
+      .sort((a, b) => a.y - b.y || a.x0 - b.x0);
+    const runs = [];
+    short.forEach(l => {
+      const r = runs.filter(r => Math.abs(r.y - l.y) < 0.4 && l.x0 - r.x1 > 0.5 && l.x0 - r.x1 < 9)[0];
+      if (r) { r.x1 = l.x1; r.n++; } else runs.push({ y: l.y, x0: l.x0, x1: l.x1, n: 1 });
+    });
+    const out = [];
+    runs.filter(r => r.n >= 3 && r.x1 - r.x0 > 15).forEach(r => {
+      /* the sign in front of it: drawn as a shape, or written as text */
+      const signs = L.blobs.filter(b => b.x1 > r.x0 - 26 && b.x1 < r.x0 + 3 &&
+        b.y1 > r.y - 4 && b.y0 < r.y + 6 && b.y1 - b.y0 > 3 && b.y1 - b.y0 < 18);
+      /* "8va" as letters, Finale's Maestro sign (√) or the SMuFL signs */
+      const said = L.texts.filter(t => /^(8va|8vb|8|15ma|15mb|Ã|√|[\uE510-\uE51C])/.test(t.s.trim()) &&
+        t.x < r.x0 + 3 && t.x > r.x0 - 30 && Math.abs(t.y - r.y) < 10);
+      if (!signs.length && !said.length) return;
+      const x0 = Math.min.apply(null, signs.map(b => b.x0).concat(said.map(t => t.x)));
+      let where = null;
+      lay.systems.forEach(sys => sys.staves.forEach((st, k) => {
+        const above = r.y - st.top, below = st.bottom - r.y;
+        if (above > 0 && above < 35 && (!where || above < where.d)) where = { sys: sys, staff: k, dir: 1, d: above };
+        if (below > 0 && below < 35 && (!where || below < where.d)) where = { sys: sys, staff: k, dir: -1, d: below };
+      }));
+      if (!where) return;
+      out.push({ x0: x0, x1: r.x1, y: r.y, sys: where.sys, staff: where.staff, dir: where.dir });
+    });
+    return out;
+  },
+
+  /* Title, composer and tempo from the head of the first page. */
+  heading(L, lay) {
+    const out = {};
+    const firstTop = lay.systems.length ? lay.systems[0].staves[0].top : L.h * 0.8;
+    const head = L.texts.filter(t => t.y > firstTop + 20 && t.font !== lay.font);
+    const big = head.slice().sort((a, b) => b.size - a.size)[0];
+    if (big && big.size >= 14) out.title = big.s.trim();
+    const credits = head.filter(t => t !== big && t.x > L.w * 0.55 && t.size < (big ? big.size : 99))
+      .sort((a, b) => b.y - a.y);
+    const who = credits.filter(t => /작곡|compos|music by|comp\.|arr/i.test(t.s))[0] || null;
+    if (who) out.composer = who.s.trim();
+    const bpm = L.texts.filter(t => /^=\s*\d{2,3}\s*$/.test(t.s.trim()) &&
+      L.texts.some(q => q.font === lay.font && /^[q♩\uE1D5]$/.test(q.s.trim()) && q.x < t.x && t.x - q.x < 14 && Math.abs(q.y - t.y) < 8))[0];
+    if (bpm) out.tempo = parseInt(bpm.s.replace(/\D/g, ''), 10);
+    return out;
+  },
+
+  /* Put what the PDF says onto the recognised score. layers: one per page,
+     null where a page could not be read; docs: the recognised MusicXML of
+     each page, which says how many bars that page holds. A page whose bar
+     lines do not agree with recognition, bar for bar, is left alone. */
+  apply(score, layers, docs, fileName) {
+    const out = { pages: 0, chords: 0, ottavas: 0, title: false, tempo: false };
+    if (!score || !layers || !layers.some(Boolean)) return out;
+    const per = Math.max(1, Math.min(4, score.staves || 2));
+    const counts = (docs || []).map(d => {
+      if (!d) return 0;
+      try {
+        const x = new DOMParser().parseFromString(d, 'application/xml');
+        const part = x.querySelector('part');
+        return part ? [].filter.call(part.children, c => c.nodeName === 'measure').length : 0;
+      } catch (e) { return 0; }
+    });
+    const byNo = {};
+    score.measures.forEach(mm => { byNo[mm.number] = mm; });
+    const inBar = {};
+    score.notes.forEach(n => { (inBar[n.m] = inBar[n.m] || []).push(n); });
+    const absOf = (m, b) => (byNo[m] ? byNo[m].startQ : 0) + b;
+
+    let offset = 0;
+    const placed = [];
+    layers.forEach((L, pi) => {
+      const n = counts[pi] || 0;
+      const first = offset;
+      offset += n;
+      if (!L || !n) return;
+      let lay;
+      try { lay = PdfLayer.layout(L, per); } catch (e) { return; }
+      const bars = [];
+      lay.systems.forEach(sys => sys.bars.forEach(b => bars.push(b)));
+      if (bars.length !== n) return;
+      bars.forEach((b, k) => { const mm = score.measures[first + k]; b.m = mm ? mm.number : null; });
+      placed.push({ L: L, lay: lay, page: pi });
+      out.pages++;
+    });
+
+    /* Where a point of the page falls in its bar, and the notes nearest it.
+       Recognition says where it drew each note (default-x in a bar of a
+       given width); without that, the nearest beat by proportion. */
+    const rel = (b, x) => (x - b.x0) / Math.max(1, b.x1 - b.x0);
+    const ranked = (b, x, keep) => {
+      const mm = byNo[b.m];
+      if (!mm) return [];
+      const r = rel(b, x);
+      const list = (inBar[b.m] || []).filter(keep || (() => true));
+      const pos = n => (n.dx != null && mm.w) ? n.dx / mm.w : n.b / Math.max(0.001, mm.lenQ);
+      return list.map(n => ({ n: n, d: Math.abs(pos(n) - r), at: pos(n) })).sort((p, q) => p.d - q.d);
+    };
+    const barAt = (sys, x) => sys.bars.filter(b => x >= b.x0 - 3 && x < b.x1 - 1)[0] || null;
+
+    /* chord names */
+    const chords = [];
+    const taken = {};
+    const covered = {};
+    placed.forEach(pl => {
+      pl.lay.systems.forEach(sys => sys.bars.forEach(b => { if (b.m != null) covered[b.m] = true; }));
+      PdfLayer.chords(pl.L, pl.lay).forEach(c => {
+        const b = barAt(c.sys, c.x);
+        if (!b || b.m == null) return;
+        /* the nearest note that does not already carry a chord */
+        const hit = ranked(b, c.x + 2).filter(h => !taken[b.m + '|' + h.n.b])[0];
+        if (!hit) return;
+        taken[b.m + '|' + hit.n.b] = true;
+        chords.push({ m: b.m, b: hit.n.b, text: c.text });
+      });
+    });
+    if (chords.length) {
+      /* the page's own chord names replace what recognition made of them */
+      score.chords = (score.chords || []).filter(c => !covered[c.m]).concat(chords)
+        .sort((a, b) => absOf(a.m, a.b) - absOf(b.m, b.b));
+      out.chords = chords.length;
+    }
+
+    /* 8va and 8vb: the notes under the bracket sound an octave away from
+       where they are written, and are played there */
+    score.ottavas = score.ottavas || [];
+    placed.forEach(pl => {
+      PdfLayer.ottavas(pl.L, pl.lay).forEach(o => {
+        const staffNo = o.staff + 1;
+        const onStaff = n => (n.staff || 1) === staffNo && !n.rest && !!n.p;
+        const bA = barAt(o.sys, o.x0), bZ = barAt(o.sys, o.x1 - 1);
+        if (!bA || !bZ || bA.m == null || bZ.m == null) return;
+        const firstN = ranked(bA, o.x0, onStaff).filter(h => h.at >= rel(bA, o.x0) - 0.02)
+          .sort((p, q) => p.n.b - q.n.b)[0];
+        const lastN = ranked(bZ, o.x1, onStaff).filter(h => h.at <= rel(bZ, o.x1) + 0.02)
+          .sort((p, q) => q.n.b - p.n.b)[0];
+        if (!firstN || !lastN) return;
+        const a = absOf(firstN.n.m, firstN.n.b), z = absOf(lastN.n.m, lastN.n.b);
+        if (z < a) return;
+        const clash = score.ottavas.some(ov => (ov.staff || 1) === staffNo &&
+          absOf(ov.m, ov.b) <= z && absOf(ov.endM, ov.endB) >= a);
+        if (clash) return;
+        score.notes.forEach(n => {
+          if (!onStaff(n) || n.abs < a - 1e-6 || n.abs > z + 1e-6) return;
+          const m = PITCH_RE.exec(n.p);
+          if (!m) return;
+          n.p = m[1] + m[2] + (+m[3] + o.dir);
+          n.midi = pitchToMidi(n.p);
+        });
+        score.ottavas.push({ m: firstN.n.m, b: firstN.n.b, endM: lastN.n.m, endB: lastN.n.b + 0.001,
+          size: 8, dir: o.dir, staff: staffNo });
+        out.ottavas++;
+      });
+    });
+
+    /* title, composer and tempo, when recognition had only the file name */
+    const L0 = layers[0];
+    if (L0) {
+      const p0 = placed.filter(pl => pl.page === 0)[0];
+      let lay0 = p0 ? p0.lay : null;
+      if (!lay0) { try { lay0 = PdfLayer.layout(L0, per); } catch (e) { lay0 = { systems: [], font: null }; } }
+      const hd = PdfLayer.heading(L0, lay0);
+      const plain = !score.title || score.title === fileName || score.title === 'Untitled' ||
+        /\.(pdf|png|jpe?g)$/i.test(score.title);
+      if (hd.title && plain) { score.title = hd.title; out.title = true; }
+      if (hd.composer && (!score.composer || score.composer === 'Unknown')) score.composer = hd.composer;
+      if (hd.tempo >= 20 && hd.tempo <= 300) { score.tempo = hd.tempo; out.tempo = true; }
+    }
+    return out;
+  }
+};
+/* reachable from tests, beside the importer it serves */
+Import.pdfLayer = PdfLayer;
+
 /* Where in a drawn bar a beat falls. Notes are spaced by what they need, not
    evenly, so the answer comes from the columns they were actually drawn in,
    shared out evenly between two of them. NOTE_MID is half a note head, so a
    position is the middle of the note rather than its left edge. */
 const NOTE_MID = 5;
+/* A chord name as it is printed: a sharp and a flat as signs, not letters. */
+function chordFace(t) {
+  return String(t || '').replace(/#/g, '♯').replace(/([A-G])b/g, '$1♭').replace(/([0-9(,])b(?=\d)/g, '$1♭');
+}
 function barX(seg, q) {
   const pts = (seg && seg.pts) || [];
   if (!pts.length) return seg.x + (q / Math.max(0.001, seg.lenQ)) * seg.w;
@@ -6119,6 +6584,25 @@ function makeScoreView(React) {
       })();
       const END_PAD = 12;
 
+      /* Notes under an 8va sound an octave above where they are written, and
+         PPP keeps each note at the pitch it sounds, which is what is played
+         and checked. On the page they are drawn where the page writes them,
+         under the bracket. With the marks hidden there is no bracket, so they
+         are drawn where they sound. */
+      const ottRanges = (p.marks !== false ? (score.ottavas || []) : []).filter(ov => ov.endM != null).map(ov => ({
+        staff: ov.staff || (ov.dir > 0 ? pianoTop + 1 : pianoTop + 2),
+        a: Score.startQ(score, ov.m) + (ov.b || 0), z: Score.startQ(score, ov.endM) + (ov.endB || 0), dir: ov.dir
+      }));
+      const written = n => {
+        for (let i = 0; i < ottRanges.length; i++) {
+          const o = ottRanges[i];
+          if ((n.staff || 1) !== o.staff || n.abs < o.a - 1e-6 || n.abs >= o.z) continue;
+          const pm = PITCH_RE.exec(n.p || '');
+          return pm ? pm[1] + pm[2] + (+pm[3] - o.dir) : n.p;
+        }
+        return n.p;
+      };
+
       /* ---- every bar's notes, built once and measured ----
          What a bar needs is decided by what is in it: sixteen notes with
          accidentals need more room than two half notes. Each bar is built and
@@ -6146,7 +6630,7 @@ function makeScoreView(React) {
               .forEach((r, idx) => { dirOf[r.vn] = idx === 0 ? 1 : -1; });
           }
           vns.forEach(vn => {
-            const b1 = this.buildVoice(VF, byVoice[vn], b => clefAt(mm, k, b), mm, ink, p.guidance, dirOf[vn] || 0);
+            const b1 = this.buildVoice(VF, byVoice[vn], b => clefAt(mm, k, b), mm, ink, p.guidance, dirOf[vn] || 0, written);
             if (!b1) return;
             b1.staffNo = staffNo;
             b1.voiceNo = vn;
@@ -6317,6 +6801,13 @@ function makeScoreView(React) {
         });
       }
 
+      /* how high each bar's notes reach, and the chord names waiting for
+         their line to be finished */
+      const barReach = {};
+      const chordQueue = [];
+      const voltaQueue = [];
+      const rowOttava = {};
+
       /* First and second endings: which part of the bracket each bar carries. */
       const voltaOf = [];
       {
@@ -6358,7 +6849,7 @@ function makeScoreView(React) {
             else if (endType === 'final' && BAR.END != null) st.setEndBarType(BAR.END);
             else if (endType === 'double' && BAR.DOUBLE != null) st.setEndBarType(BAR.DOUBLE);
             const vo = voltaOf[i];
-            if (k === 0 && vo && VOLTA[vo.type] != null) st.setVoltaType(VOLTA[vo.type], vo.label, 10);
+            if (k === 0 && vo) voltaQueue.push({ row: r, x0: x + (lineStart ? bw : 0), x1: x + w, type: vo.type, label: vo.label });
             /* every staff starts its notes at the same x, whatever its clef */
             st.setNoteStartX(x + bw);
             const g = ctx.openGroup('ppp-stave', null);
@@ -6450,6 +6941,18 @@ function makeScoreView(React) {
               ctx.closeGroup();
             });
           });
+          /* the highest point the top staff's notes reach in this bar, so the
+             chord names and an 8va can sit above them rather than on them */
+          let reach = Infinity;
+          pr.built.filter(b => b.staffNo === 1).forEach(b => b.voice.getTickables().forEach(sn => {
+            if (VF.GhostNote && sn instanceof VF.GhostNote) return;
+            try {
+              let t = Math.min.apply(null, sn.getYs()) - 7;
+              if (sn.hasStem && sn.hasStem() && sn.getStemDirection() > 0) t = Math.min(t, sn.getStemExtents().topY - 3);
+              reach = Math.min(reach, t);
+            } catch (e) { /* a rest or a note VexFlow cannot measure */ }
+          }));
+          barReach[mm.number] = reach;
 
           if (p.numbers !== false) {
             /* just above the top line of the top staff, not above its empty headroom */
@@ -6470,15 +6973,7 @@ function makeScoreView(React) {
 
           const chs = chordsFor[mm.number];
           if (chs && chs.length) {
-            chs.forEach(c => {
-              /* above the bar numbers, clear of the staff */
-              svgLabel(c.text, {
-                x: barX(seg, c.b || 0) - NOTE_MID,
-                y: rowTop + TREBLE_Y + LINE0 - 24,
-                size: 13, weight: '600',
-                family: "Figtree, system-ui, sans-serif"
-              });
-            });
+            chs.forEach(c => chordQueue.push({ row: r, x: barX(seg, c.b || 0) - NOTE_MID, text: chordFace(c.text) }));
           }
 
           this._map.push(seg);
@@ -6536,22 +7031,105 @@ function makeScoreView(React) {
             x: at.x, y: at.y + staffY(nStaves - 1) + 102, size: 13, italic: true
           });
         });
+        const absOfBar = n => Score.startQ(score, n);
+        /* the left and right ends of each line of the page */
+        const rowSpan = {};
+        this._map.forEach(sg => {
+          const r = rowSpan[sg.y] = rowSpan[sg.y] || { x0: Infinity, x1: -Infinity };
+          r.x0 = Math.min(r.x0, sg.x); r.x1 = Math.max(r.x1, sg.x + sg.w);
+        });
         (score.ottavas || []).forEach(ov => {
-          const a = atBeat(ov.m, ov.b), bq = atBeat(ov.endM, ov.endB);
-          if (!a || !bq || a.y !== bq.y || bq.x <= a.x) return;
-          const y = a.y + TOP_Y - 14;
-          const line = document.createElementNS(SVGNS, 'path');
-          line.setAttribute('d', 'M ' + (a.x + 26) + ' ' + y + ' L ' + bq.x + ' ' + y + ' L ' + bq.x + ' ' + (y + 6));
-          line.setAttribute('fill', 'none');
-          line.setAttribute('stroke', ink);
-          line.setAttribute('stroke-width', '1');
-          line.setAttribute('stroke-dasharray', '4 3');
-          ctx.svg.appendChild(line);
-          svgLabel(ov.dir > 0 ? '8va' : '8vb', {
-            x: a.x, y: y + 4, size: 12, italic: true
+          if (ov.endM == null) return;
+          const a = atBeat(ov.m, ov.b || 0);
+          const z = atBeat(ov.endM, Math.max(0, (ov.endB || 0) - 0.002));
+          if (!a || !z || z.y < a.y) return;
+          const staffNo = ov.staff || (ov.dir > 0 ? pianoTop + 1 : pianoTop + 2);
+          const k = Math.max(0, Math.min(nStaves - 1, staffNo - 1));
+          /* over the staff for an 8va, under it for an 8vb */
+          const lineY = ry => {
+            if (ov.dir < 0) return ry + staffY(k) + LINE0 + 40 + 22;
+            let y = ry + staffY(k) + LINE0 - 16;
+            /* over the notes it covers, when they climb above that */
+            if (k === 0) this._map.forEach(sg => {
+              if (sg.y !== ry || barReach[sg.number] == null) return;
+              const inSpan = absOfBar(sg.number) + sg.lenQ > Score.startQ(score, ov.m) + (ov.b || 0) &&
+                absOfBar(sg.number) <= Score.startQ(score, ov.endM) + (ov.endB || 0);
+              if (inSpan) y = Math.min(y, barReach[sg.number] - 4);
+            });
+            rowOttava[ry] = Math.min(rowOttava[ry] == null ? Infinity : rowOttava[ry], y);
+            return y;
+          };
+          const name = ov.dir > 0 ? '8va' : '8vb';
+          const rows = Object.keys(rowSpan).map(Number).filter(ry => ry >= a.y && ry <= z.y).sort((u, v) => u - v);
+          rows.forEach((ry, i) => {
+            const first = i === 0, last = i === rows.length - 1;
+            const x0 = first ? a.x : rowSpan[ry].x0;
+            const x1 = last ? z.x + 12 : rowSpan[ry].x1;
+            const y = lineY(ry);
+            /* the sign at the start, and in brackets where it carries on */
+            const label = first ? name : '(' + name + ')';
+            const lw = first ? 24 : 34;
+            svgLabel(label, { x: x0, y: y + 4, size: 13, italic: true, stroke: 0.4 });
+            if (x1 <= x0 + lw + 4) return;
+            const line = document.createElementNS(SVGNS, 'path');
+            line.setAttribute('d', 'M ' + (x0 + lw) + ' ' + y + ' L ' + x1 + ' ' + y +
+              (last ? ' L ' + x1 + ' ' + (y + (ov.dir > 0 ? 6 : -6)) : ''));
+            line.setAttribute('fill', 'none');
+            line.setAttribute('stroke', ink);
+            line.setAttribute('stroke-width', '1');
+            line.setAttribute('stroke-dasharray', '4 3');
+            line.setAttribute('class', 'ppp-ottava');
+            ctx.svg.appendChild(line);
           });
         });
       }
+
+      /* Chord names sit on one line per system, as a lead sheet prints them:
+         where the staff leaves room, or higher when a note, a beam or an 8va
+         climbs into that room. */
+      const chordBase = {};
+      this._map.forEach(sg => {
+        const need = barReach[sg.number];
+        let y = chordBase[sg.y] == null ? sg.y + TREBLE_Y + LINE0 - 24 : chordBase[sg.y];
+        if (need != null && isFinite(need)) y = Math.min(y, need - 5);
+        if (rowOttava[sg.y] != null) y = Math.min(y, rowOttava[sg.y] - 13);
+        chordBase[sg.y] = y;
+      });
+      const hasChords = {};
+      chordQueue.forEach(c => { hasChords[HEAD_H + c.row * ROW_H] = true; });
+      /* left to right along each line; a name that would run into the one
+         before it moves along rather than printing over it */
+      const lastEnd = {};
+      chordQueue.slice().sort((a, b) => a.row - b.row || a.x - b.x).forEach(c => {
+        const rTop = HEAD_H + c.row * ROW_H;
+        const x = Math.max(c.x, (lastEnd[c.row] || -Infinity) + 6);
+        const t = svgLabel(c.text, { x: x, y: chordBase[rTop], size: 13, weight: '600', family: "Figtree, system-ui, sans-serif" });
+        let wd = c.text.length * 7.5;
+        try { wd = t.getComputedTextLength() || wd; } catch (e) {}
+        lastEnd[c.row] = x + wd;
+      });
+
+      /* First and second endings, over the chord names of their line: a line
+         with a hook down where the ending starts and, when it is closed, where
+         it stops, and its number inside. */
+      voltaQueue.forEach(v => {
+        const rTop = HEAD_H + v.row * ROW_H;
+        const base = chordBase[rTop] != null ? chordBase[rTop] : rTop + TREBLE_Y + LINE0 - 24;
+        const y = hasChords[rTop] ? base - 27 : Math.min(base - 4, rTop + TREBLE_Y + LINE0 - 22);
+        const x0 = v.x0 + 2, x1 = v.x1 - 3;
+        let d = 'M ' + x0 + ' ' + y + ' L ' + x1 + ' ' + y;
+        if (v.type === 'BEGIN' || v.type === 'BEGIN_END') d = 'M ' + x0 + ' ' + (y + 12) + ' L ' + x0 + ' ' + y + ' L ' + x1 + ' ' + y;
+        if (v.type === 'END' || v.type === 'BEGIN_END') d += ' L ' + x1 + ' ' + (y + 12);
+        const path = document.createElementNS(SVGNS, 'path');
+        path.setAttribute('d', d);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', ink);
+        path.setAttribute('stroke-width', '1.2');
+        path.setAttribute('class', 'ppp-volta');
+        ctx.svg.appendChild(path);
+        if (v.label && (v.type === 'BEGIN' || v.type === 'BEGIN_END'))
+          svgLabel(v.label, { x: x0 + 5, y: y + 12, size: 12, weight: '600' });
+      });
 
       /* "Measures 21–24" means nothing to someone who cannot see which part of
          the piece that is. On the whole score the weak bars are shaded where
@@ -6727,7 +7305,7 @@ function makeScoreView(React) {
       } catch (e) {}
     }
 
-    buildVoice(VF, list, clef, mm, ink, guidance, stemDir) {
+    buildVoice(VF, list, clef, mm, ink, guidance, stemDir, written) {
       /* the clef may be one name, or change partway through the bar */
       const clefFor = typeof clef === 'function' ? clef : () => clef;
       const groups = [];
@@ -6782,7 +7360,7 @@ function makeScoreView(React) {
         try {
           const cl = clefFor(g.b);
           const opts = {
-            keys: isRest ? [restKey(dir, cl)] : heads.map(n => vexKey(n.p)),
+            keys: isRest ? [restKey(dir, cl)] : heads.map(n => vexKey(written ? written(n) : n.p)),
             duration: base + (isRest ? 'r' : ''),
             clef: cl
           };
@@ -7136,7 +7714,7 @@ class Component extends DCLogic {
       minutes: 18, xp: 1240, streak: 7, sessions: [10, 18, 14, 23, 8, 20, 18],
       /* MIDI stays off until the user asks for it: requesting access can
          prompt, and claiming a connection we do not have would be a lie. */
-      toggles: { midi: false, notify: true, sound: false, notes: true, auto: true, follow: true, paper: true, handGuide: true },
+      toggles: { midi: false, notify: true, sound: false, notes: true, auto: true, follow: true, paper: true, handGuide: true, handSee: 45, handNums: 'all', handNames: true },
       gateIdx: 0, focus: false,
       /* The whole piece, by default. Four bars at a time and a measure number in
          a sidebar tells you nothing about where you are; you have to see it. */
@@ -9634,6 +10212,18 @@ class Component extends DCLogic {
 
   handsOn() { return this.state.toggles.handGuide !== false; }
 
+  /* How the hands are drawn: how see-through (percent), which finger
+     numbers - all five, only the ones to play, or none - and whether each
+     hand is named. */
+  handSettings() {
+    const t = this.state.toggles;
+    return {
+      see: clamp(t.handSee == null || isNaN(+t.handSee) ? 45 : +t.handSee, 10, 85),
+      nums: t.handNums === 'now' || t.handNums === 'off' ? t.handNums : 'all',
+      names: t.handNames !== false
+    };
+  }
+
   /* What one hand is doing at the playhead: the position it is in, and the
      fingers that play now — or next, while it waits between notes. */
   handAt(hand) {
@@ -9669,6 +10259,7 @@ class Component extends DCLogic {
     const act = {};
     at.fingers.forEach(f => { if (f) act[f] = true; });
     const look = f => !act[f] ? 'rest' : at.state === 'now' ? 'now' : at.state === 'next' ? 'next' : 'rest';
+    const set = this.handSettings();
     const W = HandArt.WIDTH, T = HandArt.TIP;
     const shape = (f, from) => f === 1
       ? HandArt.finger(g.thumbRoot, g.thumbBend, g.tip[0], W[0], T[0], from)
@@ -9697,7 +10288,7 @@ class Component extends DCLogic {
       const st = look(f);
       if (st === 'rest') continue;
       marks.push(h('path', {
-        key: 'o' + f, d: shape(f, f === 1 ? 0.42 : 0.18).side, fill: 'none', stroke: 'var(--accent)',
+        key: 'o' + f, 'data-finger-outline': f, d: shape(f, f === 1 ? 0.42 : 0.18).side, fill: 'none', stroke: 'var(--accent)',
         strokeWidth: st === 'now' ? 3 : 2.2, strokeLinejoin: 'round', strokeLinecap: 'round',
         strokeDasharray: st === 'next' ? '5 3' : undefined
       }));
@@ -9705,6 +10296,7 @@ class Component extends DCLogic {
     for (let f = 1; f <= 5; f++) {
       const st = look(f), px = g.tip[f - 1][0], py = g.tip[f - 1][1] - 2;
       const now = st === 'now', next = st === 'next';
+      if (set.nums === 'off' || (set.nums === 'now' && st === 'rest')) continue;
       marks.push(h('g', { key: 'm' + f, 'data-finger': f, 'data-finger-state': st },
         h('circle', {
           cx: px, cy: py, r: now ? 10.5 : next ? 9.5 : 7.5,
@@ -9717,13 +10309,13 @@ class Component extends DCLogic {
           fill: now ? '#fff' : next ? 'var(--accent)' : 'var(--hand-ink)'
         }, String(f))));
     }
-    marks.push(h('text', {
-      key: 'name', x: g.cx, y: g.yK + 40, textAnchor: 'middle', fontSize: 11.5, fontWeight: 700, fill: 'rgba(255,255,255,.9)'
+    if (set.names) marks.push(h('text', {
+      key: 'name', 'data-hand-name': hand, x: g.cx, y: g.yK + 40, textAnchor: 'middle', fontSize: 11.5, fontWeight: 700, fill: 'rgba(255,255,255,.9)'
     }, tx(hand === 'l' ? 'Left hand' : 'Right hand')));
     return h('g', {
       key: 'hand-' + hand, className: 'ppp-hand', 'data-hand': hand, 'data-hand-state': at.state,
       style: { transform: `translate(${(ref - base) * KW}px, 0px)`, pointerEvents: 'none' }
-    }, h('g', { opacity: 0.55, mask: 'url(#ppp-hand-fade)' }, skin), marks);
+    }, h('g', { className: 'ppp-hand-skin', opacity: (100 - set.see) / 100, mask: 'url(#ppp-hand-fade)' }, skin), marks);
   }
 
   litNotes() {
@@ -10547,12 +11139,33 @@ class Component extends DCLogic {
         : tx('Connect a MIDI keyboard, then just play. The score waits for each note.'),
       toggleGuidance: () => this.setState(st => ({ guidance: !st.guidance })),
       toggleHandGuide: () => this.setState(st => ({ toggles: Object.assign({}, st.toggles, { handGuide: st.toggles.handGuide === false }) })),
-      handGuideBtnStyle: this.chip(this.handsOn()) + 'margin-left:auto;',
+      handGuideBtnStyle: this.chip(this.handsOn()),
       handGuidePressed: this.handsOn() ? 'true' : 'false',
       handGuideLabel: tx('Show hands'),
       handGuideHint: tx('Show which finger plays each note, with a see-through hand over the keys'),
-      showFingerKey: this.handsOn(),
+      showFingerKey: this.handsOn() && this.handSettings().nums !== 'off',
       fingerKey: tx('1 thumb · 2 index · 3 middle · 4 ring · 5 little finger'),
+      handsShown: this.handsOn(),
+      handSeeLabel: tx('Transparency'),
+      handSee: this.handSettings().see,
+      handSeeValue: this.handSettings().see + '%',
+      setHandSee: e => {
+        const v = clamp(Math.round(+e.target.value / 5) * 5, 10, 85);
+        this.setState(st => ({ toggles: Object.assign({}, st.toggles, { handSee: v }) }));
+      },
+      handNumsLabel: tx('Finger numbers'),
+      handNumTabs: [['All', 'all'], ['Playing only', 'now'], ['Off', 'off']].map(([label, id]) => {
+        const on = this.handSettings().nums === id;
+        return {
+          label: tx(label), selected: on ? 'true' : 'false',
+          style: `padding:5px 11px;border-radius:8px;border:0;cursor:pointer;font-family:inherit;font-size:12px;font-weight:${on ? 600 : 500};background:${on ? 'var(--surface)' : 'transparent'};color:${on ? 'var(--ink)' : 'var(--ink3)'};box-shadow:${on ? 'var(--shadow)' : 'none'};`,
+          on: () => this.setState(st => ({ toggles: Object.assign({}, st.toggles, { handNums: id }) }))
+        };
+      }),
+      toggleHandNames: () => this.setState(st => ({ toggles: Object.assign({}, st.toggles, { handNames: st.toggles.handNames === false }) })),
+      handNamesPressed: this.handSettings().names ? 'true' : 'false',
+      handNamesBtnStyle: this.chip(this.handSettings().names),
+      handNamesLabel: tx('Left / right labels'),
       guidanceBtnStyle: this.chip(S.guidance),
       guidanceLabel: tx(S.guidance ? 'Guidance on' : 'Guidance off'),
       stepStyle: this.step(),

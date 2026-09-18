@@ -319,8 +319,7 @@ function installFakeMidi() {
   const live = await page.evaluate(async () => {
     /* one-measure loop at a brisk tempo so a lap completes quickly */
     const click = re => { const b = [...document.querySelectorAll('main button, aside button')].find(x => re.test((x.innerText || '').trim())); if (b) b.click(); };
-    click(/^Measure Loop$/);
-    await new Promise(r => setTimeout(r, 400));
+    await window.__pppTest.practice('Loop a passage');
     const cells = document.querySelectorAll('button[title^="Measure "]');
     cells[20].click(); cells[20].click();
     await new Promise(r => setTimeout(r, 300));

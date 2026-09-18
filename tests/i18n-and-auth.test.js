@@ -21,7 +21,7 @@ const ok = (name, cond, detail) => {
   await sleep(400);
 
   const enHome = await page.evaluate(() => {
-    const nav = [...document.querySelectorAll('aside nav button')].map(b => (b.innerText || '').trim());
+    const nav = [...document.querySelectorAll('aside nav button')].map(b => (b.innerText || '').trim().split('\n')[0].trim());
     return nav[0];
   });
   ok('English guest session shows Home', enHome === 'Home', enHome);
@@ -34,7 +34,7 @@ const ok = (name, cond, detail) => {
     await new Promise(r => setTimeout(r, 500));
     const catalog = await fetch('./i18n/' + loc + '.json').then(r => r.json());
     const want = key => (catalog.content && catalog.content[key]) || key;
-    const nav = [...document.querySelectorAll('aside nav button')].map(b => (b.innerText || '').trim());
+    const nav = [...document.querySelectorAll('aside nav button')].map(b => (b.innerText || '').trim().split('\n')[0].trim());
     const addBtn = document.querySelector('aside > button');
     const add = addBtn ? (addBtn.innerText || '').replace(/^\+\s*/, '').trim() : '';
     const guestBtn = [...document.querySelectorAll('header button, [data-app] button')].find(b => {
@@ -75,7 +75,7 @@ const ok = (name, cond, detail) => {
     I.setLocale(loc);
     await new Promise(r => setTimeout(r, 400));
     const click = t => {
-      const b = [...document.querySelectorAll('button')].find(e => (e.innerText || '').trim() === t);
+      const b = [...document.querySelectorAll('button')].find(e => (e.innerText || '').trim().split('\n')[0].trim() === t);
       if (b) b.click();
       return !!b;
     };
@@ -84,8 +84,11 @@ const ok = (name, cond, detail) => {
     const quizWant = I.tx('Question {{n}} of 10', { n: 1 });
     const quizGot = [...document.querySelectorAll('*')].map(e => (e.childNodes.length === 1 && e.childNodes[0].nodeType === 3) ? (e.textContent || '').trim() : '')
       .find(t => t === quizWant || t === 'Question 1 of 10') || '';
-    click(I.tx('Upload'));
+    window.__pppTest.upload();
     await new Promise(r => setTimeout(r, 400));
+    /* the add page reports on what was added, so add the sample */
+    click(I.tx('Use the sample'));
+    await new Promise(r => setTimeout(r, 900));
     const score = window.PPP.buildDemoScore();
     const m0 = score.measures[0];
     const parsedWant = I.tx('Parsed {{n}} measures in {{time}}, key of {{key}}, {{notes}} notes across {{staves}} staves.', {
@@ -101,13 +104,17 @@ const ok = (name, cond, detail) => {
     await new Promise(r => setTimeout(r, 400));
     const focusWant = I.tx('“Let’s focus on Measures {{from}}–{{to}}.”', { from: first.from, to: first.to });
     const focusHit = (document.body.innerText || '').indexOf(focusWant) > -1;
-    click(I.tx('Measure Loop'));
-    await new Promise(r => setTimeout(r, 400));
-    const loopWant = I.tx('Loop: {{from}} → {{to}}', { from: first.from, to: first.to });
+    await window.__pppTest.practice(I.tx('Loop a passage'), I.tx('Practice'));
+    await new Promise(r => setTimeout(r, 200));
+    const loopWant = I.tx('Repeat {{passage}} until it holds.', {
+      passage: I.tx('Measures {{from}}–{{to}}', { from: first.from, to: first.to })
+    });
     const loopHit = (document.body.innerText || '').indexOf(loopWant) > -1;
     click(I.tx('Progress'));
     await new Promise(r => setTimeout(r, 400));
-    const mapWant = score.title + ' · ' + I.tx('{{n}} measures', { n: window.PPP.Score.count(score) });
+    /* the page names its song: the title, and the measure count in that locale */
+    const mapWant = I.tx('{{n}} measures', { n: window.PPP.Score.count(score) });
+    const secWant = I.tx('{{n}} sections — pick one to practise it', { n: score.sections.length });
     const tempoWant = I.tx('score says {{tempo}}', { tempo: score.tempo });
     const recSkeleton = I.tx('“{{action}} — measures {{from}}–{{to}}, about {{minutes}} minutes.”', {
       action: '\u0001', from: '\u0001', to: '\u0001', minutes: '\u0001'
@@ -119,6 +126,8 @@ const ok = (name, cond, detail) => {
       quizWant, quizGot, parsedWant, parsedHit: body.indexOf(parsedWant) > -1,
       loopWant, loopHit,
       mapWant, mapHit: progressBody.indexOf(mapWant) > -1,
+      secWant, secHit: progressBody.indexOf(secWant) > -1,
+      titleHit: progressBody.indexOf(score.title) > -1,
       tempoWant, tempoHit: progressBody.indexOf(tempoWant) > -1,
       recWant: recParts.join('…'), recHit: recHit,
       focusWant, focusHit
@@ -130,8 +139,9 @@ const ok = (name, cond, detail) => {
     ok(loc + ' quizCount matches catalog, not English', r.quizGot === r.quizWant && r.quizWant !== 'Question 1 of 10', r.quizGot + ' vs ' + r.quizWant);
     ok(loc + ' analyzeSummary-done matches catalog, not English', r.parsedHit && !/^Parsed 64 measures/.test(r.parsedWant), r.parsedWant);
     ok(loc + ' coachLine1 catalog is translated, not English', r.focusWant && r.focusWant.indexOf('Let’s focus') === -1 && /\d/.test(r.focusWant), r.focusWant);
-    ok(loc + ' loopChip matches catalog, not English', r.loopHit && r.loopWant.indexOf('Loop:') !== 0, r.loopWant);
-    ok(loc + ' progress mapSub matches catalog, not English', r.mapHit && !/ measures$/.test(r.mapWant), r.mapWant);
+    ok(loc + ' loop tab note matches catalog, not English', r.loopHit && r.loopWant.indexOf('Repeat ') !== 0, r.loopWant);
+    ok(loc + ' progress names its song, measure count from catalog', r.titleHit && r.mapHit && !/ measures$/.test(r.mapWant), r.mapWant);
+    ok(loc + ' progress section-map subtitle matches catalog, not English', r.secHit && r.secWant.indexOf(' sections') === -1, r.secWant);
     ok(loc + ' progress tempo sub matches catalog, not English', r.tempoHit && r.tempoWant.indexOf('score says ') !== 0, r.tempoWant);
     ok(loc + ' progress recommendation matches catalog, not English', r.recHit, r.recWant);
   }

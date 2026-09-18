@@ -36,11 +36,10 @@ const clickText = (page, text, root) => page.evaluate((t, sel) => {
   /* ---------- 1. an unsupported file is refused, clearly ---------- */
   const tmp = path.join(__dirname, 'moonlight-sonata.pdf');
   fs.writeFileSync(tmp, Buffer.alloc(287000, 1));
-  await clickText(page, 'Upload', 'aside');
+  await page.evaluate(() => window.__pppTest.upload());
   await sleep(200);
-  await clickText(page, 'Show drop zone');   /* mounts the file input */
-  await sleep(200);
-  let input = await page.$('input[type=file]');
+  /* the drop zone and the picker are always there on the add page */
+  let input = await page.$('input[type=file][data-add-file]');
   if (!input) { errors.push('file input not found on upload screen'); }
   else {
     await input.uploadFile(tmp);
@@ -51,8 +50,8 @@ const clickText = (page, text, root) => page.evaluate((t, sel) => {
     if (!okName) errors.push('uploaded filename not displayed');
 
     /* PDFs are supported now, so this one is refused for being corrupt rather
-       than for being a PDF — and it must still say why and what to do next. */
-    await clickText(page, 'Run analysis');
+       than for being a PDF — and it must still say why and what to do next.
+       Choosing it is enough: reading starts without a second click. */
     await sleep(2500);
     const msg = await page.evaluate(() => (document.querySelector('main') || document.body).innerText);
     const refused = /could not be opened|corrupt|password|could not be read|no musical notation|could not reach/i.test(msg);
@@ -64,15 +63,10 @@ const clickText = (page, text, root) => page.evaluate((t, sel) => {
   }
 
   /* ---------- 2. a real MusicXML file imports end to end ---------- */
-  await clickText(page, 'Show drop zone');
-  await sleep(250);
-  input = await page.$('input[type=file]');
+  input = await page.$('input[type=file][data-add-file]');
   if (!input) { errors.push('file input missing for the MusicXML import'); }
   else {
     await input.uploadFile('D:/PPP/samples/prelude-fragment.musicxml');
-    await sleep(400);
-    const ran = await clickText(page, 'Run analysis');
-    if (!ran) errors.push('Run analysis button missing after MusicXML upload');
     await page.waitForFunction(() => /See analysis/.test(document.body.innerText), { timeout: 15000 })
       .catch(() => errors.push('MusicXML import never completed (no "See analysis" CTA)'));
     const summary = await page.evaluate(() => (document.body.innerText.match(/Parsed [^\n]+/) || ['?'])[0]);
@@ -81,7 +75,10 @@ const clickText = (page, text, root) => page.evaluate((t, sel) => {
 
   await clickText(page, 'See analysis');
   await sleep(300);
-  const onAnalysis = await page.evaluate(() => /Your song is ready/.test(document.body.innerText));
+  /* the analysis page, which now also holds the plan, names the imported song */
+  const onAnalysis = await page.evaluate(() =>
+    (document.querySelector('header div div') || {}).textContent === 'Analysis & Plan'
+    && /Analysis complete/i.test(document.querySelector('main').innerText));
   step('analysis screen reached', onAnalysis ? 'yes' : 'NO');
   if (!onAnalysis) errors.push('See analysis did not navigate to the analysis screen');
 
@@ -141,7 +138,7 @@ const clickText = (page, text, root) => page.evaluate((t, sel) => {
 
   /* ---------- 5. screenshots, light + dark ---------- */
   const screens = [['Home', 'home'], ['Practice', 'player'], ['Progress', 'progress']];
-  const flows = [['Measure Loop', 'loop'], ['Memory Mode', 'memory'], ['Upload', 'upload']];
+  const tabs = [['Loop a passage', 'loop'], ['Memorize', 'memory']];
   for (const theme of ['light', 'dark']) {
     await page.evaluate(t => {
       const el = document.querySelector('[data-app]');
@@ -152,15 +149,18 @@ const clickText = (page, text, root) => page.evaluate((t, sel) => {
     }, theme);
     await sleep(350);
     for (const [label, id] of screens) {
-      await clickText(page, label, 'aside nav');
+      await page.evaluate(l => window.__pppTest.nav(l), label);
       await sleep(400);
       await page.screenshot({ path: path.join(SHOTS, id + '-' + theme + '.png') });
     }
-    for (const [label, id] of flows) {
-      await clickText(page, label, 'aside');
+    for (const [tab, id] of tabs) {
+      await page.evaluate(t => window.__pppTest.practice(t), tab);
       await sleep(400);
       await page.screenshot({ path: path.join(SHOTS, id + '-' + theme + '.png') });
     }
+    await page.evaluate(() => window.__pppTest.upload());
+    await sleep(400);
+    await page.screenshot({ path: path.join(SHOTS, 'upload-' + theme + '.png') });
   }
   step('screenshots captured', fs.readdirSync(SHOTS).length + ' files');
 

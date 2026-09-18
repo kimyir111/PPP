@@ -251,13 +251,10 @@ function harness() {
       const b = [...document.querySelectorAll('main button, aside button')].find(x => re.test((x.innerText || '').trim()));
       if (b) b.click();
     };
-    click(/^Measure Loop$/);
-    await new Promise(r => setTimeout(r, 400));
+    await window.__pppTest.practice('Loop a passage');
     const cells = document.querySelectorAll('button[title^="Measure "]');
     cells[20].click(); cells[20].click();       /* loop one weak bar */
     await new Promise(r => setTimeout(r, 300));
-    click(/^100%$/);
-    await new Promise(r => setTimeout(r, 200));
     click(/^Play$/);
     await new Promise(r => setTimeout(r, 9000));
     click(/^Pause$/);

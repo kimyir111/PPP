@@ -1,0 +1,293 @@
+/* From a recording to a score.
+
+   The model's half (which notes were played) is measured elsewhere, by its
+   authors. This suite checks PPP's half: given the notes a performance
+   contains, does it find the beat, the bar, the metre, the key and the hands,
+   and write something the parser, the engraver and the practice system take?
+
+   The performances here are built from scores whose answers are known, played
+   with a human's untidiness — onsets early and late, chords spread, a tempo
+   that drifts — so each check reads "did PPP recover what was written?".
+
+   With the local helper running and transcription set up, it also sends a
+   synthesised recording through the real UI, end to end. */
+const puppeteer = require('puppeteer');
+const { preparePage } = require('./boot');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const http = require('http');
+const A = require('../audio-score.js');
+
+const URL = 'http://127.0.0.1:8777/Piano%20Coach%20App.dc.html';
+const errors = [];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const ok = (name, cond, detail) => {
+  console.log((cond ? '  ✓ ' : '  ✗ ') + name + (detail ? ' — ' + detail : ''));
+  if (!cond) errors.push(name + (detail ? ' — ' + detail : ''));
+};
+
+/* a repeatable wobble, so a failure can be reproduced */
+function rng(seed) {
+  let s = seed >>> 0;
+  return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+}
+
+/* Play a list of { beat, len, midi, vel } at a tempo, humanly. */
+function perform(events, opts) {
+  const r = rng(opts.seed || 7);
+  const out = [];
+  let t = opts.start || 1.0;
+  const beatSec = b => {
+    /* integrate a tempo that drifts sinusoidally by opts.drift */
+    let s = 0;
+    const step = 0.05;
+    for (let x = 0; x < b; x += step) {
+      const bpm = opts.bpm * (1 + (opts.drift || 0) * Math.sin(x / 7));
+      s += Math.min(step, b - x) * 60 / bpm;
+    }
+    return s;
+  };
+  events.forEach(e => {
+    const jitter = ((r() - 0.5) * 2) * (opts.jitter || 0.015);
+    const on = t + beatSec(e.beat) + jitter;
+    const off = t + beatSec(e.beat + e.len) - 0.04;
+    out.push({ on: on, off: Math.max(on + 0.05, off), midi: e.midi, vel: e.vel || 64 });
+  });
+  return out.sort((a, b) => a.on - b.on);
+}
+
+/* 3/4 in G: bass on one, a chord on two and three, a melody over it. */
+function waltz(bars) {
+  const ev = [];
+  const harm = [[43, [59, 62, 67]], [38, [57, 60, 66]], [40, [59, 64, 67]], [38, [57, 62, 66]]];
+  /* kept above the chords, so no key is struck by both hands at once */
+  const tune = [71, 74, 79, 78, 76, 74, 72, 71, 72, 74, 76, 74];
+  for (let b = 0; b < bars; b++) {
+    const [bass, chord] = harm[b % harm.length];
+    const t0 = b * 3;
+    ev.push({ beat: t0, len: 3, midi: bass, vel: 80 });
+    [1, 2].forEach(k => chord.forEach(m => ev.push({ beat: t0 + k, len: 1, midi: m, vel: 48 })));
+    for (let k = 0; k < 3; k++) ev.push({ beat: t0 + k, len: 1, midi: tune[(b * 3 + k) % tune.length], vel: 70 });
+  }
+  return ev;
+}
+
+/* 4/4 in C: an Alberti bass in eighths, a melody in quarters and halves. */
+function alberti(bars) {
+  const ev = [];
+  /* C, F, G7, C — a cadence that could only be C major */
+  const shapes = [[48, 55, 52, 55], [48, 57, 53, 57], [47, 55, 53, 55], [48, 55, 52, 55]];
+  const tune = [[76, 1], [74, 1], [72, 2], [74, 1], [76, 1], [77, 2], [79, 2], [77, 1], [76, 1], [74, 4]];
+  for (let b = 0; b < bars; b++) {
+    const sh = shapes[b % shapes.length];
+    for (let k = 0; k < 8; k++) ev.push({ beat: b * 4 + k * 0.5, len: 0.5, midi: sh[k % 4], vel: k === 0 ? 72 : 50 });
+  }
+  let t = 0, i = 0;
+  while (t < bars * 4) { const [m, l] = tune[i++ % tune.length]; ev.push({ beat: t, len: l, midi: m, vel: 76 }); t += l; }
+  return ev;
+}
+
+function readXml(xml) {
+  const measures = (xml.match(/<measure /g) || []).length;
+  const fifths = +(/<fifths>(-?\d+)<\/fifths>/.exec(xml) || [])[1];
+  const beats = +(/<beats>(\d+)<\/beats>/.exec(xml) || [])[1];
+  return { measures, fifths, beats };
+}
+
+/* ---- a WAV the model can hear: struck, decaying, a few partials ---- */
+function synthWav(notes, file) {
+  const SR = 16000;
+  const end = notes.reduce((m, n) => Math.max(m, n.off), 0) + 1.5;
+  const buf = new Float32Array(Math.ceil(end * SR));
+  notes.forEach(n => {
+    const f = 440 * Math.pow(2, (n.midi - 69) / 12);
+    const a0 = 0.18 * (n.vel / 127);
+    const i0 = Math.floor(n.on * SR), i1 = Math.min(buf.length, Math.floor((n.off + 0.25) * SR));
+    for (let i = i0; i < i1; i++) {
+      const t = (i - i0) / SR;
+      const rel = i > n.off * SR ? Math.exp(-(i - n.off * SR) / (0.06 * SR)) : 1;
+      const env = Math.exp(-t * 2.2) * Math.min(1, t * 400) * rel;
+      let s = 0;
+      for (let h = 1; h <= 6; h++) if (f * h < SR / 2) s += Math.sin(2 * Math.PI * f * h * t) / (h * h * 0.8 + 0.2);
+      buf[i] += a0 * env * s;
+    }
+  });
+  const pcm = Buffer.alloc(44 + buf.length * 2);
+  pcm.write('RIFF', 0); pcm.writeUInt32LE(36 + buf.length * 2, 4); pcm.write('WAVE', 8);
+  pcm.write('fmt ', 12); pcm.writeUInt32LE(16, 16); pcm.writeUInt16LE(1, 20); pcm.writeUInt16LE(1, 22);
+  pcm.writeUInt32LE(SR, 24); pcm.writeUInt32LE(SR * 2, 28); pcm.writeUInt16LE(2, 32); pcm.writeUInt16LE(16, 34);
+  pcm.write('data', 36); pcm.writeUInt32LE(buf.length * 2, 40);
+  for (let i = 0; i < buf.length; i++) pcm.writeInt16LE(Math.max(-32767, Math.min(32767, Math.round(buf[i] * 32767))), 44 + i * 2);
+  fs.writeFileSync(file, pcm);
+}
+
+const helperHealth = () => new Promise(resolve => {
+  const req = http.get({ host: '127.0.0.1', port: 8788, path: '/health', timeout: 3000 }, r => {
+    let d = ''; r.on('data', c => d += c);
+    r.on('end', () => { try { resolve(JSON.parse(d)); } catch (e) { resolve(null); } });
+  });
+  req.on('error', () => resolve(null));
+  req.on('timeout', () => { req.destroy(); resolve(null); });
+});
+
+(async () => {
+  /* ============ PPP's reading of a performance, without a browser ============ */
+  console.log('\n── beat, metre, key and hands from played notes ──');
+  const w = A.toMusicXml({ notes: perform(waltz(16), { bpm: 96, start: 1.37, jitter: 0.02 }) }, { title: 'Waltz' });
+  ok('a waltz is heard in three', w.stats.beatsPerBar === 3, w.stats.beatsPerBar + '/4');
+  ok('its tempo is recovered', Math.abs(w.stats.tempo - 96) <= 3, w.stats.tempo + ' BPM (played at 96)');
+  ok('its key is G major', w.stats.key.fifths === 1 && w.stats.key.mode === 'major', w.stats.key.fifths + ' ' + w.stats.key.mode);
+  ok('every bar is where the bass is', w.stats.bars === 16, w.stats.bars + ' bars of 16');
+  const wb1 = w.xml.split('<measure ')[1];
+  ok('bar one opens on the bass note', /<staff>2<\/staff>/.test(wb1.split('<backup>')[1].split('</note>')[0]) &&
+    /<step>G<\/step><octave>2<\/octave>/.test(wb1.split('<backup>')[1].split('</note>')[0]), 'first left-hand note of bar 1');
+  ok('the chords go to the left hand, the tune to the right',
+    w.stats.lh === 16 + 16 * 6 && w.stats.rh === 48, 'left ' + w.stats.lh + ', right ' + w.stats.rh);
+  ok('the rhythm sits on the grid', w.stats.gridError < 0.06, 'mean error ' + w.stats.gridError.toFixed(3) + ' beats');
+
+  const al = A.toMusicXml({ notes: perform(alberti(12), { bpm: 112, start: 0.6, jitter: 0.015, seed: 3 }) });
+  ok('Alberti bass is heard in four', al.stats.beatsPerBar === 4, al.stats.beatsPerBar + '/4');
+  ok('and in C major', al.stats.key.fifths === 0 && al.stats.key.mode === 'major', al.stats.key.fifths + ' ' + al.stats.key.mode);
+  ok('its tempo is the quarter, not the eighth', Math.abs(al.stats.tempo - 112) <= 4, al.stats.tempo + ' BPM (played at 112)');
+  ok('twelve bars come out as twelve', al.stats.bars === 12, al.stats.bars + ' bars');
+  const e8 = (al.xml.split('<measure ')[3].split('<backup>')[1].match(/<type>eighth<\/type>/g) || []).length;
+  ok('the left hand is written in eighths', e8 >= 7, e8 + ' eighths in bar 3');
+
+  const rub = A.toMusicXml({ notes: perform(waltz(24), { bpm: 80, drift: 0.12, jitter: 0.025, seed: 11 }) });
+  ok('a tempo that breathes still keeps its bars', rub.stats.bars === 24 && rub.stats.beatsPerBar === 3,
+    rub.stats.bars + ' bars, ' + rub.stats.beatsPerBar + '/4, tempo variation ' + (rub.stats.tempoVariation * 100).toFixed(0) + '%');
+
+  console.log('\n── spelling ──');
+  const nm = s => s.step + (s.alter > 0 ? '#'.repeat(s.alter) : 'b'.repeat(-s.alter));
+  const row = (fifths, mode, tonic) => { const t = A._.spellingTable({ fifths, mode, tonic }); return [...Array(12).keys()].map(pc => nm(t[pc])).join(' '); };
+  ok('D major writes C natural, not B sharp', row(2, 'major', 2).split(' ')[0] === 'C', row(2, 'major', 2));
+  ok('A minor raises its seventh to G sharp', row(0, 'minor', 9).split(' ')[8] === 'G#', row(0, 'minor', 9));
+  ok('D minor leads with C sharp', row(-1, 'minor', 2).split(' ')[1] === 'C#', row(-1, 'minor', 2));
+  ok('E flat major stays in flats', row(-3, 'major', 3) === 'C Db D Eb E F Gb G Ab A Bb B', row(-3, 'major', 3));
+  const sp = A._.spell(61, A._.spellingTable({ fifths: 2, mode: 'major', tonic: 2 }));
+  ok('octave follows the letter', sp.step === 'C' && sp.alter === 1 && sp.octave === 4, 'C#4 = ' + sp.step + sp.alter + '/' + sp.octave);
+
+  console.log('\n── note values ──');
+  const crosses = (pos, len, bar) => {
+    let p = pos;
+    return A._.pieces(pos, len, bar).some(v => { const bad = (p % 4) && Math.floor(p / 4) !== Math.floor((p + v - 1) / 4); p += v; return bad; });
+  };
+  ok('an off-beat note never hides a beat', ![[1, 6], [3, 5], [2, 9], [5, 7]].some(([p, l]) => crosses(p, l, 16)));
+  ok('a whole bar is one whole note', A._.pieces(0, 16, 16).join() === '16');
+  ok('three beats from the downbeat are a dotted half', A._.pieces(0, 12, 12).join() === '12');
+
+  console.log('\n── honest failure ──');
+  let nothing = null;
+  try { A.toMusicXml({ notes: [{ on: 1, off: 1.2, midi: 60, vel: 60 }] }); } catch (e) { nothing = e; }
+  ok('a recording with no piano in it is refused, not padded out', nothing && nothing.code === 'no-notes', nothing && nothing.message);
+
+  /* ============ the parser, the review and the UI ============ */
+  const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox', '--autoplay-policy=no-user-gesture-required'] });
+  const page = await browser.newPage();
+  await preparePage(page);
+  await page.setViewport({ width: 1500, height: 1000 });
+  page.on('pageerror', e => errors.push('[pageerror] ' + e.message));
+  await page.goto(URL, { waitUntil: 'networkidle2', timeout: 45000 });
+  await page.waitForFunction(() => window.PPP && window.PPP.Import && window.PPPAudioScore, { timeout: 25000 });
+
+  console.log('\n── the written score reads back ──');
+  const back = await page.evaluate((xml, stats) => {
+    const sc = PPP.parseMusicXML(xml, 'waltz');
+    const m0 = sc.measures[0];
+    const full = sc.measures.every(mm => {
+      const ns = sc.notes.filter(n => n.m === mm.number);
+      const end = [1, 2].map(st => ns.filter(n => (n.staff || 1) === st && !n.chord).reduce((s, n) => s + n.dur, 0));
+      return Math.abs(end[0] - 3) < 1e-6 && Math.abs(end[1] - 3) < 1e-6;
+    });
+    const rep = PPP.Import.validateTranscription(sc, stats, { duration: 40 });
+    const shaky = PPP.Import.validateTranscription(sc, Object.assign({}, stats, { tempoVariation: 0.3, gridError: 0.2 }), { duration: 40 });
+    return {
+      measures: sc.measures.length, time: m0.time.beats + '/' + m0.time.beatType, fifths: m0.key.fifths,
+      staves: sc.staves, hands: [...new Set(sc.notes.filter(n => !n.rest).map(n => n.hand))].sort().join(''),
+      full: full, level: rep.level, conf: rep.confidence, shaky: shaky.level, shakyKinds: shaky.issues.map(i => i.kind).join(',')
+    };
+  }, w.xml, w.stats);
+  ok('the parser reads it as written', back.measures === 16 && back.time === '3/4' && back.fifths === 1 && back.staves === 2,
+    back.measures + ' bars, ' + back.time + ', ' + back.fifths + ' sharp, ' + back.staves + ' staves');
+  ok('both hands are playable', back.hands === 'lr', back.hands);
+  ok('every bar of every staff adds up', back.full);
+  ok('a clean transcription is trusted, but never fully', back.level === 'good' && back.conf < 1, Math.round(back.conf * 100) + '%');
+  ok('a wandering tempo and loose rhythm are said out loud', back.shaky !== 'good' && /tempo/.test(back.shakyKinds) && /rhythm/.test(back.shakyKinds),
+    back.shaky + ': ' + back.shakyKinds);
+
+  const refusals = await page.evaluate(async () => {
+    const out = {};
+    try { await PPP.Import.loadYoutube('https://vimeo.com/1', () => {}); } catch (e) { out.notYt = e.message; }
+    try { await PPP.Import.load({ name: 'big.mp4', size: 900 * 1024 * 1024 }, () => {}); } catch (e) { out.big = e.message; }
+    out.limit = Math.round(PPP.IMPORT_LIMITS.maxAudioBytes / 1048576);
+    return out;
+  });
+  ok('a link that is not YouTube is refused before anything is sent', /not a link to a YouTube video/.test(refusals.notYt || ''), refusals.notYt);
+  ok('an oversized video is refused with the limit', /limit is \d+ MB/.test(refusals.big || ''), refusals.big);
+
+  /* ============ end to end, when the helper can listen ============ */
+  const health = await helperHealth();
+  if (!(health && health.transcriber)) {
+    console.log('\n── recording → score through the UI: SKIPPED (' + (health ? 'transcription not set up' : 'local helper not running') + ') ──');
+    const said = await page.evaluate(async () => {
+      window.__pppTest.upload();
+      await new Promise(r => setTimeout(r, 600));
+      return (document.querySelector('[data-youtube]') || {}).innerText || '';
+    });
+    ok('the add page says recordings need the helper, before anyone tries', /local helper/i.test(said), said.split('\n').pop());
+  } else {
+    console.log('\n── recording → score through the UI ──');
+    const wav = path.join(os.tmpdir(), 'ppp-waltz-' + process.pid + '.wav');
+    synthWav(perform(waltz(8), { bpm: 92, start: 0.8, jitter: 0.01, seed: 5 }), wav);
+    await page.evaluate(() => window.__pppTest.upload());
+    await sleep(400);
+    const input = await page.$('input[type=file][data-add-file]');
+    await input.uploadFile(wav);
+    await page.waitForFunction(() => /Listening for piano notes|Taking the sound|Handing the recording/.test(document.body.innerText), { timeout: 20000 })
+      .then(() => ok('progress is reported while the helper listens', true))
+      .catch(() => ok('progress is reported while the helper listens', false));
+    await page.waitForFunction(() => !!document.querySelector('[data-recording]') || /could not|Import failed/i.test(document.body.innerText), { timeout: 240000 }).catch(() => {});
+    const r = await page.evaluate(() => {
+      const t = (document.querySelector('main') || document.body).innerText;
+      const stat = label => { const m = t.match(new RegExp('(?:^|\\n)' + label + '\\s*\\n\\s*([0-9]+)', 'i')); return m ? +m[1] : 0; };
+      return {
+        review: !!document.querySelector('[data-recording]'), audio: !!document.querySelector('[data-recording] audio'),
+        measures: stat('Measures'), notes: stat('Notes'), time: (t.match(/(?:^|\n)Time\s*\n\s*(\d\/\d)/i) || [])[1] || '',
+        text: t.slice(0, 200)
+      };
+    });
+    ok('a recording reaches the review screen', r.review, r.review ? r.measures + ' measures, ' + r.notes + ' notes, ' + r.time : r.text);
+    ok('the recording can be heard beside the notation', r.audio);
+    ok('what was played is roughly what was written', r.measures >= 7 && r.measures <= 9 && r.notes >= 60,
+      r.measures + ' measures (8 played), ' + r.notes + ' notes (80 played)');
+    ok('and in the right metre', r.time === '3/4', r.time);
+
+    const played = await page.evaluate(async () => {
+      const b = [...document.querySelectorAll('[data-recording] button')][0];
+      if (b) b.click();
+      await new Promise(r => setTimeout(r, 700));
+      const a = document.querySelector('[data-recording] audio');
+      return a ? { t: a.currentTime, paused: a.paused } : null;
+    });
+    ok('"Play measures" plays the recording from those measures', played && played.t > 0, played ? played.t.toFixed(2) + 's' : 'no audio');
+
+    const shelf = await page.evaluate(async () => {
+      [...document.querySelectorAll('main button')].find(x => /Accept and practise/.test(x.innerText)).click();
+      await new Promise(r => setTimeout(r, 500));
+      window.__pppTest.nav('My Songs');
+      await new Promise(r => setTimeout(r, 500));
+      return [...document.querySelectorAll('[data-song]')].map(c => c.innerText.split('\n').slice(0, 4).join(' · '));
+    });
+    ok('an accepted transcription joins My Songs', shelf.some(s => /ppp-waltz/.test(s) && /recording/i.test(s)), shelf.join(' | '));
+    try { fs.unlinkSync(wav); } catch (e) {}
+  }
+
+  console.log('\n────────────────────────────────────────');
+  if (errors.length) {
+    console.log(errors.length + ' PROBLEM(S):');
+    [...new Set(errors)].forEach(e => console.log('  ✗ ' + e));
+  } else console.log('Recordings become scores PPP can practise, and say how sure they are.');
+  await browser.close();
+  process.exit(errors.length ? 1 : 0);
+})().catch(e => { console.error('HARNESS FAILURE:', e); process.exit(2); });

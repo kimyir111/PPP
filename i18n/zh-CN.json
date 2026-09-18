@@ -902,6 +902,11 @@
     "The video could not be kept — the browser would not give it the space.": "无法保存视频——浏览器没有足够的空间。",
     "That is not a video file.": "这不是视频文件。",
     "{{title}} was not saved before the page closed, so it was taken off My Songs. Please add it again.": "{{title}} 在页面关闭前没有保存，已从“我的曲子”中移除。请重新添加。",
-    "{{n}} songs were not saved before the page closed, so they were taken off My Songs. Please add them again.": "有 {{n}} 首曲子在页面关闭前没有保存，已从“我的曲子”中移除。请重新添加。"
+    "{{n}} songs were not saved before the page closed, so they were taken off My Songs. Please add them again.": "有 {{n}} 首曲子在页面关闭前没有保存，已从“我的曲子”中移除。请重新添加。",
+    "Transparency": "透明度",
+    "Finger numbers": "手指编号",
+    "Playing only": "仅弹奏的手指",
+    "Off": "关闭",
+    "Left / right labels": "左右手文字"
   }
 }

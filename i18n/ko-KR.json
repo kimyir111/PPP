@@ -902,6 +902,11 @@
     "The video could not be kept — the browser would not give it the space.": "영상을 저장하지 못했어요 — 브라우저 저장 공간이 부족해요.",
     "That is not a video file.": "영상 파일이 아니에요.",
     "{{title}} was not saved before the page closed, so it was taken off My Songs. Please add it again.": "{{title}}은(는) 페이지가 닫히기 전에 저장되지 않아서 내 곡에서 뺐어요. 다시 추가해 주세요.",
-    "{{n}} songs were not saved before the page closed, so they were taken off My Songs. Please add them again.": "{{n}}곡이 페이지가 닫히기 전에 저장되지 않아서 내 곡에서 뺐어요. 다시 추가해 주세요."
+    "{{n}} songs were not saved before the page closed, so they were taken off My Songs. Please add them again.": "{{n}}곡이 페이지가 닫히기 전에 저장되지 않아서 내 곡에서 뺐어요. 다시 추가해 주세요.",
+    "Transparency": "투명도",
+    "Finger numbers": "손가락 번호",
+    "Playing only": "칠 손가락만",
+    "Off": "끄기",
+    "Left / right labels": "왼손·오른손 글자"
   }
 }

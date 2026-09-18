@@ -3,8 +3,10 @@
 A working frontend prototype of PPP. Upload your song, PPP breaks it down, you practise the
 hard parts, then memorise it.
 
-Upload a **PDF, photo or MusicXML** file and PPP turns it into a real, playable score. MusicXML
-is parsed in the browser; PDFs and images go through optical music recognition. Either way PPP
+Add a **PDF, photo or MusicXML** file — or a **recording: a YouTube link, an MP3 or an MP4** —
+and PPP turns it into a real, playable score. MusicXML is parsed in the browser; PDFs and images
+go through optical music recognition; recordings go through a piano transcription model, and PPP
+works out the beat, the bars, the key and the hands from what it heard. Either way PPP
 extracts the measures, notes, rests, voices, staves, key, time signature and tempo, engraves them with VexFlow, and runs the whole practice system
 on that data. **Connect a MIDI keyboard and PPP scores what you actually play** against those
 notes, **learns which passages you struggle with, and decides what to practise next**. Without
@@ -16,13 +18,14 @@ before PPP will run it.
 
 ```sh
 npm start          # the app + login API, on http://127.0.0.1:8777
-npm run omr        # optional: PDF/image recognition and the AI coach, in another terminal
+npm run omr        # optional: PDF/image recognition, recordings → scores, and the AI coach
 ```
 
 The UI is localized in Korean, Japanese, English and Simplified Chinese (header language button). Sign in to keep progress across devices, or continue as a guest. Online deploy is in `DEPLOY_RENDER.md`.
 
 The app itself is a static site with no build step. The local service is only needed to import a
-PDF or a photograph, and to let the AI plan a session — MusicXML, practice, weakness detection
+PDF or a photograph, to make a score from a recording, and to let the AI plan a session —
+MusicXML, practice, weakness detection
 and memory all work without it, and PPP says plainly which part is unavailable rather than
 pretending otherwise. Set `ANTHROPIC_API_KEY` before starting it to enable the coach; see
 **The AI coach** below.
@@ -37,10 +40,14 @@ with subresource integrity, which `file://` blocks.
 | `Piano Coach App.dc.html` | The app: music model, MusicXML parser, notation renderer, practice engine. |
 | `support.js` | Generated `dc-runtime` — parses `<x-dc>`, renders through React. Do not edit. |
 | `index.html` | Entry point; redirects to the app. |
+| `audio/piano/` | Salamander Grand Piano samples (CC BY 3.0), 30 MP3s, 1.3 MB. See its `README.md`. |
 | `samples/prelude-fragment.musicxml` | A test score — 3/4, G major, chords, rests, a tie, a printed accidental. |
 | `tests/` | Browser tests and fixtures. See `tests/README.md`. |
-| `omr-service.js` | The local helper: OMR (page images in, MusicXML out) and the coach endpoint. Holds the API key. |
+| `omr-service.js` | The local helper: OMR (page images in, MusicXML out), audio transcription jobs (a recording or a YouTube link in, notes out) and the coach endpoint. Holds the API key. |
+| `transcribe.py` | Runs the piano transcription model over a WAV for the helper. Notes and pedal out, as JSON. |
+| `audio-score.js` | Notes heard in a recording → beats, metre, key, hands → MusicXML. Browser and Node, no dependencies. |
 | `tools/audiveris/` | Vendored Audiveris (AGPL-3.0), not committed. See below. |
+| `tools/transcribe-venv/`, `tools/piano-transcription/`, `tools/yt-dlp.exe` | The transcription model's Python environment, its checkpoint, and yt-dlp. Not committed. See **Making a score from a recording**. |
 
 The source Claude Design project also holds `Design System.dc.html`, a gallery of the tokens
 and components this app is built from. It is reference material and was not pulled down.
@@ -138,6 +145,118 @@ running, engine missing, nothing recognised, malformed MusicXML — each says wh
 what to do instead. **A failed import never falls back to demo notation**; the score you already
 had is left exactly as it was.
 
+## Making a score from a recording
+
+Paste a YouTube link, or add an MP3, WAV, M4A or MP4 (a video's sound track is used), and PPP
+writes out the piano:
+
+```
+YouTube link ─ yt-dlp ─┐                                          local helper
+.mp3 .wav .m4a .mp4 ───┴─ ffmpeg → 16 kHz mono ─ piano model → notes ─────────────┐
+                                                                                  │ browser
+                   audio-score.js: beats, metre, key, hands → MusicXML → parseMusicXML() → Score
+```
+
+### Two halves: the model hears, PPP writes
+
+The model is Kong et al.'s high-resolution piano transcription (ByteDance, Apache-2.0, 2021).
+It reports when each key went down and came up, how hard, and the sustain pedal. It was trained
+on solo piano, and that is what it does best; with a voice or a band it writes whatever it hears
+in the piano's range.
+
+It does not hear bars, beats, hands or how a pitch is spelled. `audio-score.js` works those out,
+and each step is a plain heuristic that reports how sure it was:
+
+| Step | How |
+| --- | --- |
+| beat | the notes as one onset signal (louder and lower count more); the tempo from where that signal best matches itself; a local tempo curve over eight-second windows; dynamic-programming beat tracking (Ellis 2007), so the grid bends with rubato instead of drifting off it. The first beat is put on the first note. |
+| metre & downbeat | three or four beats, from where a low note arrives and is held. Four unless three clearly wins. |
+| grid | sixteenths. A finer position is charged in milliseconds, not in fractions of a beat, so a chord leaned on 100 ms late stays on the beat while a real sixteenth at a fast tempo is still written. |
+| key & spelling | Krumhansl–Kessler key profiles. The key's notes as its signature spells them, the rest as the chromatic degree they usually are — D major's C is C♮, A minor's raised seventh is G♯. |
+| hands | a split point per chord, so neither hand stretches past an octave, holds more than five notes or crowds the other; it moves as little as it can, and a chord either hand could play takes its hand from the chords around it. |
+| notation | one voice per hand, ties at barlines, note values that never hide a beat, pedal marks. The piece ends with the bar its last note starts in, rather than tying a ringing final chord on through empty bars. |
+
+On Satie's Gymnopédie No. 1 from YouTube (4:05, one pianist's rubato): 3/4 at 66 BPM in D major,
+the bass on beat one of every one of its 78 bars, the chord on beat two in the left hand, the
+melody entering on the second beat of bar 5 — about 1 min 45 s on a CPU.
+
+### Checked by ear, not trusted
+
+A transcription always stops at the review screen, with the recording beside the notation:
+**Play measures 5–8** plays exactly those bars from the recording and stops, and the panel says
+where in the recording each bar starts. Confidence never reaches 100% — a transcription is a
+hearing, not the composer's page — and drops for a tempo that wanders, notes that sit between
+the grid lines, a metre with no clear accent, or very few notes; bars with a loose rhythm or a
+sudden change of tempo are marked red. Accepting starts practice on the longest clean stretch,
+as with OMR.
+
+### Setup
+
+Python 3.10+ (tested on 3.13), ffmpeg (on `PATH`, `tools/ffmpeg.exe` or `PPP_FFMPEG`), and for
+links yt-dlp (`tools/yt-dlp.exe`, `PATH` or `PPP_YTDLP`):
+
+```sh
+python -m venv tools/transcribe-venv
+tools/transcribe-venv/Scripts/python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+tools/transcribe-venv/Scripts/python -m pip install piano_transcription_inference soundfile audioread
+mkdir -p tools/piano-transcription
+curl -L -o "tools/piano-transcription/note_F1=0.9677_pedal_F1=0.9186.pth" \
+  "https://zenodo.org/record/4034264/files/CRNN_note_F1%3D0.9677_pedal_F1%3D0.9186.pth?download=1"
+curl -L -o tools/yt-dlp.exe https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe
+```
+
+The checkpoint is about 172 MB; the helper ignores a partial one. `npm run omr` then prints
+`Transcription: on, YouTube links too`, and the add page says the same before anyone tries. A
+CUDA build of PyTorch is several times faster and is used automatically when it sees a GPU.
+`PPP_TRANSCRIBE_PYTHON` and `PPP_TRANSCRIBE_CHECKPOINT` point elsewhere if needed.
+
+### Limits and what is kept
+
+400 MB per file, 15 minutes of music (a longer recording is cut there, and the review says so),
+three transcriptions at once. Only single YouTube videos are accepted — not playlists or live
+streams — and the helper hands yt-dlp the link after `--`, so it can never be read as an option.
+Download only what you have the right to use.
+
+**An audio recording is never stored.** It lives in memory for the review screen and is released
+afterwards; the helper deletes the upload, the WAV and any download when the job ends, and every
+job expires after 30 minutes regardless. **A video file is the one exception:** it is kept in
+this browser's IndexedDB (`ppp-media`, one entry per song) so the practice page can show it, and
+it is deleted with the song. A YouTube song stores nothing — it is embedded from YouTube.
+
+### Watching the performance while you practise
+
+A song made from a YouTube link or a video file shows that video on the Practice page, in the
+right-hand column under the coach. **Watch measures 21–28** plays the passage you are on from the
+performance — from where its first bar starts, as measured when it was transcribed — at your
+practice speed (75% practice tempo, 75% video; YouTube in its quarter steps), and stops at the
+end of the passage. One sound at a time: watching stops the score, and pressing Play on the score
+pauses the video. YouTube is embedded from `youtube-nocookie.com` and driven through the player's
+own `postMessage` commands, so no YouTube script is loaded into PPP. A video song added before
+videos were kept says so and takes the file again.
+
+Not yet: triplets and compound metres (6/8, 12/8) are written on a straight sixteenth grid; one
+voice per hand, so a note held under a moving line in the same hand is shortened; no dynamics;
+one tempo marking for the whole piece. The online deploy has no local helper, and says so.
+
+## My Songs
+
+Every song you add is kept, and each keeps its own progress: what PPP has learned about your
+playing of it, its memory record, the passage you were on and the tempo. Opening another song
+puts the current one back on the shelf as it was. A song you remove asks twice first; the
+built-in sample cannot be removed. A recognition or transcription you turn down at the review
+step (**Replace the file**, **Try again**) never joins the list.
+
+The open song lives in the ordinary saved state (`ppp.state.v2`, now with its `songId`); the
+others wait in slots of their own (`ppp.song.v1.<id>`), indexed by `ppp.library.v1`. A score
+imported before there was a library becomes its first song rather than being lost. Signing in
+syncs the open song only — the rest of the shelf stays in this browser.
+
+A song is written the moment it is added or opened — its slot and the saved state — rather than
+after the usual save delay, and whatever that delay is still holding is written as the page goes
+(`pagehide`, or the tab being hidden). Before this, a reload within a second or so of adding a song
+left its card with no score behind it; such a card is now taken off on load, with a message
+asking for the song to be added again. A full browser store is reported, not silently ignored.
+
 ## The music model
 
 Everything musical goes through one structure, so the practice system never knows or cares
@@ -166,8 +285,9 @@ PPP.Score.notesIn(score, 21, 28)              // → notes in a measure range
 
 `score-partwise`, with `divisions` resolved to quarter notes: measures and their printed
 numbers, pitch (step / alter / octave → scientific pitch → MIDI), duration, notated type and
-dots, rests, chords, voices, staves, clefs, key and time signature, ties, and tempo from either
-a `sound` directive or a metronome mark. `backup` and `forward` are honoured, so multi-voice
+dots, rests, chords, voices, staves, clefs, key and time signature, ties, printed fingering, and tempo from either
+a `sound` directive or a metronome mark (a mark in dotted quarters or halves is converted to
+quarters a minute, which is what PPP counts in). `backup` and `forward` are honoured, so multi-voice
 piano writing lands on the right beats. Staff 1 is the right hand and anything below it the
 left — a two-part score with one staff each resolves the same way.
 
@@ -176,9 +296,12 @@ left — a two-part score with one staff each resolves the same way.
 
 ### What it does not read yet
 
-Repeats and voltas are not expanded, so playback runs straight through. Grace notes are
-skipped. Tuplets play at the right time but are not bracketed. Ties are marked and do not
-re-trigger on playback, but are not drawn as slurs. Transposing parts are not transposed.
+Repeats and voltas are not expanded, so playback runs straight through. Only the first tempo
+mark is used, so a later change of tempo is not heard. Dynamics are not read, so playback is at
+an even mezzo-forte. Grace notes are skipped. Tuplets play at the right time but are not
+bracketed. Ties are marked and do not re-trigger on playback (a tie that leads to no matching
+note is treated as absent, so that note still sounds), but are not drawn as slurs. Transposing
+parts are not transposed.
 `score-timewise` is rejected with a message rather than mis-parsed.
 
 ## Real piano input
@@ -227,6 +350,43 @@ average, and that feeds the existing progress, weak-area and memory model unchan
 If Web MIDI is missing, access is refused, or no device is attached, the badge reads **Demo
 Input** and PPP simulates your playing as before. It never shows "MIDI Connected" without a
 device actually selected.
+
+## Hand guide
+
+For someone who has never had a lesson, knowing *which key* is half the answer; the other half
+is *which finger*. With **Show hands** on (the default, under the keyboard) a see-through hand
+lies over the on-screen keys for each hand the passage uses: every fingertip rests on a key,
+the finger to play now is outlined and numbered, and the keys stay readable underneath. It
+follows the playhead — the timed transport, follow mode and a stopped player alike — and
+glides to a new position when the hand has to move. The numbers are the ones every piano book
+uses, 1 for the thumb to 5 for the little finger, and they are spelled out under the keyboard.
+
+Beside the toggle, a slider sets how see-through the hands are (45% to start); the finger
+numbers can show all five, only the fingers to play, or none — the finger to play stays
+outlined either way — and the *Left hand* / *Right hand* labels can be hidden. All of it is
+kept with the rest of your settings.
+
+**`Fingering`** chooses the fingers. It is the ergonomic model of Parncutt et al. (1997): for
+every pair of fingers, how far apart they can comfortably and practically reach, plus rules for
+the thumb on black keys, the thumb passing under, and the weaker fourth and fifth fingers.
+Distances are measured across the keyboard as it is built rather than in semitones (Jacobs
+2001), so E–F counts as wide as C–D. Its position-change rules look at three notes at a time,
+so the best fingering is a second-order shortest path over each hand's notes; chords are one
+step with one finger per key, and a change from one chord to the next is costed by how far the
+whole hand travels. It is weighted for a beginner: staying in one five-finger position counts
+for more than it would for a pianist, and a rest is where the hand moves. A long rest splits
+the part into phrases, so the demo piece is fingered in a few milliseconds.
+
+A finger number printed in the MusicXML (`<technical><fingering>`) is kept as written, and the
+rest of the passage is fitted around it.
+
+Fingers that play nothing in a position rest a key apart beside the ones that do — on a key of
+the passage's scale, so in F major the fourth finger waits over B flat, not B.
+
+Checked against what a piano book prints: C, G and F major scales in both hands (the thumb
+kept off B flat), two octaves with the thumb under, *Ode to Joy* and *Mary Had a Little Lamb*
+in one C position, *Minuet in G*, *Happy Birthday*, root-position and inverted triads, a
+I–IV–V–I left hand, an Alberti bass and an arpeggio.
 
 ## Weakness detection
 
@@ -530,24 +690,44 @@ context, and the model is told never to report it as something you did.
 
 ## The flow
 
-Upload → AI Analysis → Practice Plan → Practice → Difficult Measure Loop → Memory Mode → Progress
+Add Sheet Music → Analysis & Plan → Practice (start to finish · loop a passage · memorize) → Progress
 
-The **Learning loop** rail across the top walks the ten steps of that journey; the sidebar
-**Song flow** jumps straight to any screen.
+Each step is one place. The sidebar has one list, with a line under each entry saying what is
+there. Home puts the one recommended next step on top, and the four steps of the flow run
+underneath it, each opening its page.
+
+- **Analysis & Plan** — the song's facts, the passages PPP expects to be hard (or has heard you
+  miss), the one recommended next step, and the day-by-day plan. Each plan task has a box to tick
+  it done and a **Start** button that opens Practice set up for it. This page used to be two,
+  "AI Analysis" and "Practice Plan", which described the same plan twice.
+- **Practice** — one score, one transport, one keyboard, and three tabs for what you are doing
+  with them. The loop screen and the memory screen used to be separate pages with their own copy
+  of the score:
+  - *Start to finish* plays the whole piece.
+  - *Loop a passage* repeats the chosen bars.
+  - *Memorize* hides the notes of that passage a level at a time.
+
+  The side panel follows the tab. It shows the coach's session, or the steps for a passage you
+  picked yourself, or the memory levels, hints and recall.
+- **Home's "Today's Practice"** is the coach's session, the same list the Practice panel works
+  through, not a second one.
+
+Old screen ids (`loop`, `memory`, `plan`) still work and land on the tab or page that holds that
+work now.
 
 ## What actually works
 
 **Transport** — Play / Pause / Restart, driven by wall-clock time so tempo is honest. Tempo
-30–200 BPM by slider, or 50/75/100% of whatever tempo the score itself specifies. Right hand / Left hand / Both filters the notes
-that render, sound and count toward accuracy.
+30–200 BPM by slider. Right hand / Left hand / Both filters the notes that render, sound and
+count toward accuracy.
 
-**Loop selection** — Set a range with the `21 → 28` steppers, click a section chip, or click
-the measure strip on the Measure Loop screen (click a measure to start the loop, click
-again to set its end). Weak-area cards, the analysis hard-section list and the Progress song
-map all jump straight to a drill on their range.
+**Loop selection** — On the *Loop a passage* tab: drag across bars on the score, set a range with
+the `21 → 28` steppers, click a section chip, or click the bar strip (click a measure to start the
+loop, click again to set its end). Weak-area cards, the hard-section list on Analysis & Plan and
+the Progress song map all jump straight to a loop on their range.
 
-**Practice Mode / Memory Mode** — switched from the player toolbar, or from the dedicated
-Memory Mode screen.
+**Practice / Memory** — the *Memorize* tab on the Practice page. Blind play replaces the score
+with a notice rather than blanking one passage of it.
 
 **Memory progression** — five levels, from full sheet music to none (see **Memory** above for
 how the score is withdrawn and how recall is verified):
@@ -568,15 +748,32 @@ Accuracy is simulated, and the simulation is opinionated: neutral at the score's
 better when you slow down, worse when you rush, and harder the more sheet music is hidden.
 Practising a weak section slowly does raise its score.
 
-**Audio** — WebAudio metronome and note tones. Clicking the on-screen keyboard plays notes.
-Metronome sound is off by default (Settings → Devices & sound); the visual pulse stays on
-either way. With MIDI connected the score stops auto-playing its notes and only your key
-presses sound, so the two never double up.
+**Audio** — a sampled grand piano (Salamander, `audio/piano/`), one recording every minor third,
+so no note is pitched more than a semitone. The recordings load in the background; until they
+arrive, or if they cannot, a small synthesized piano stands in at the same loudness.
 
-**Upload & analysis** — pick a MusicXML file and it is parsed in the browser. The analysis
-panel reports what was actually found (note count, bar count, staves, time signature, how many
-sections were flagged) and the summary names the key, metre and note count. An unsupported
-file is refused with a reason rather than silently accepted.
+Playback follows the score, not a timer. Each run is anchored — this beat is heard at this
+moment — and every note is placed on the Web Audio clock at its exact time, 400 ms ahead, so
+chords land together and the tempo holds while the page is busy drawing. A note is held for
+its written length, through ties and through the pedal where the score marks one, and let go
+the way a damper stops a string. A loop's laps join without a gap. Changing the tempo, the
+hands or the loop mid-run re-plans only what has not been heard yet; moving the playhead starts
+again from there. The visual playhead is corrected for output latency, so it sits on what you
+hear. The metronome counts the metre as it is conducted: 6/8 in two, cut time in two, a pickup
+counted back from its bar line.
+
+Simulated misses in Demo Input are shown on the page but never sounded — playback is always
+the score as written. Clicking the on-screen keyboard plays a note; a MIDI keyboard sounds for
+as long as each key is held, at the velocity it was struck. Metronome sound is off by default
+(Settings → Devices & sound); the visual pulse stays on either way. With MIDI connected the
+score stops auto-playing its notes and only your key presses sound, so the two never double up.
+
+**Add Sheet Music** — choose a file, drop one anywhere on the page, or paste a YouTube link, and
+reading starts at once; there is no second button to find. The panel beside it lists each stage
+as it actually runs, with the helper's own percentages for downloading and listening, and a
+**Cancel**. It then reports what was actually found (note count, bar count, staves, time
+signature, recording length and tempo for a recording). An unsupported file is refused with a
+reason rather than silently accepted.
 
 **The coach panel** — the sidebar panel on Practice carries the session: today’s goal, the
 numbered tasks with the reason for each, progress through them, and a re-plan button. It says
@@ -597,14 +794,16 @@ toggles are live, including a progress reset.
 The built-in demo, Interstellar Theme, is generated rather than parsed: 64 bars of 4/4 in A
 minor, eight sections seeded to match the original design (21–28 weak at 62%, 57–64 not
 started). It is built through the same `Score` model as an imported file, so nothing
-special-cases "no upload yet". The other five library entries are display-only cards.
+special-cases "no upload yet". It is the first song in My Songs, and the only one until you add
+your own.
 
-Import a MusicXML file and all of it is replaced: real measures, notes, hands, key, metre and
-tempo, with sections re-derived from the notation and progress reset to zero.
+Add a score and it becomes the open song: real measures, notes, hands, key, metre and tempo,
+with sections re-derived from the notation and progress starting at zero. The sample, and its
+progress, stay on the shelf.
 
 ## Not built yet
 
-No backend beyond the local helper that runs OMR and the coach. MIDI *files* are still refused
+No backend beyond the local helper that runs OMR, transcription and the coach. MIDI *files* are still refused
 as an import format —
 export MusicXML instead; MIDI *input* from a keyboard is real. There is no notation editor, so a
 misread note cannot be corrected in PPP yet: reimport a better scan, or fix it in a notation

@@ -63,33 +63,65 @@ const screenTitle = page => page.evaluate(() => {
   step('app booted', 'sidebar rendered');
 
   /* ---------- 1. main navigation ---------- */
-  const navItems = ['Home', 'My Songs', 'Practice', 'Sight Reading', 'Progress', 'Settings'];
+  const navItems = ['Home', 'My Songs', 'Analysis & Plan', 'Practice', 'Progress', 'Sight Reading', 'Settings'];
   for (const item of navItems) {
-    const ok = await clickText(page, item, { root: 'aside nav' });
+    const ok = await page.evaluate(l => window.__pppTest.nav(l), item);
     if (!ok) { errors.push('nav item not found: ' + item); continue; }
     await sleep(160);
     const title = await screenTitle(page);
     step('nav → ' + item, 'title "' + title + '"');
+    if (title !== item) errors.push('nav ' + item + ' opened "' + title + '"');
   }
 
-  /* ---------- 2. song-flow navigation ---------- */
-  const flows = ['Upload', 'AI Analysis', 'Practice Plan', 'Measure Loop', 'Memory Mode', 'Empty state', 'Loading & errors'];
-  for (const f of flows) {
+  /* ---------- 2. one list, and the merged places ---------- */
+  /* The loop, memory, plan and upload places are no longer separate entries:
+     each lives inside another page, and the sidebar says so in words. */
+  const listed = await page.evaluate(() => [...document.querySelectorAll('aside button')]
+    .map(b => (b.innerText || '').trim().split('\n')[0].trim()));
+  const gone = ['Upload', 'AI Analysis', 'Practice Plan', 'Measure Loop', 'Memory Mode'].filter(l => listed.indexOf(l) > -1);
+  step('merged places are not separate entries', gone.length ? 'still listed: ' + gone.join(', ') : 'none listed');
+  if (gone.length) errors.push('sidebar still lists merged places: ' + gone.join(', '));
+  const practiceSub = await page.evaluate(() => {
+    const b = [...document.querySelectorAll('aside nav button')].find(x => /^Practice/.test((x.innerText || '').trim()));
+    return b ? (b.innerText || '').trim().split('\n').slice(1).join(' ').trim() : '';
+  });
+  step('Practice says what is inside it', practiceSub);
+  if (!/loop/i.test(practiceSub) || !/memori/i.test(practiceSub)) errors.push('Practice entry does not mention loop and memorize: ' + practiceSub);
+  const railOrBar = await page.evaluate(() => !!document.querySelector('.ppp-rail, .ppp-nextbar'));
+  if (railOrBar) errors.push('the step rail or the next-step bar is still on the page');
+
+  /* the showcase pages are still reachable in dev mode */
+  for (const f of ['Empty state', 'Loading & errors']) {
     const ok = await clickText(page, f, { root: 'aside' });
-    if (!ok) { errors.push('flow item not found: ' + f); continue; }
+    if (!ok) { errors.push('dev page not found: ' + f); continue; }
     await sleep(160);
-    step('flow → ' + f, 'title "' + (await screenTitle(page)) + '"');
+    step('dev → ' + f, 'title "' + (await screenTitle(page)) + '"');
+  }
+
+  /* old addresses land where that work lives now */
+  for (const [label, crumb] of [['Start to finish', /Start to finish/], ['Loop a passage', /Loop a passage · Measures \d+–\d+/], ['Memorize', /Memorize · Measures \d+–\d+/]]) {
+    const ok = await page.evaluate(t => window.__pppTest.practice(t), label);
+    await sleep(150);
+    const got = await page.evaluate(() => document.querySelector('header').innerText);
+    step('practice tab → ' + label, ok ? got.split('\n').slice(0, 2).join(' / ') : 'NOT FOUND');
+    if (!ok) errors.push('practice tab not found: ' + label);
+    else if (!crumb.test(got)) errors.push('practice tab ' + label + ' did not show in the header: ' + got);
   }
 
   /* ---------- 3. upload → analysis ---------- */
-  await clickText(page, 'Upload', { root: 'aside' });
+  await page.evaluate(() => window.__pppTest.upload());
   await sleep(150);
-  const ranAnalysis = await clickText(page, 'Run analysis') || await clickText(page, 'See analysis');
-  step('upload screen analyze button', ranAnalysis ? 'clicked' : 'NOT FOUND');
+  /* adding something starts reading it at once; the sample is the quickest */
+  const ranAnalysis = await clickText(page, 'Use the sample');
+  step('upload screen adds the sample', ranAnalysis ? 'clicked' : 'NOT FOUND');
+  if (!ranAnalysis) errors.push('"Use the sample" missing on the add screen');
   await sleep(1200);
+  const analysed = await page.evaluate(() => /See analysis/.test(document.body.innerText));
+  step('sample read without a second click', analysed ? 'See analysis offered' : 'NO RESULT');
+  if (!analysed) errors.push('adding the sample did not finish reading it');
 
   /* ---------- 4. practice transport ---------- */
-  await clickText(page, 'Practice', { root: 'aside nav' });
+  await page.evaluate(l => window.__pppTest.nav(l), 'Practice');
   await sleep(200);
 
   const beatNow = () => page.evaluate(() => {
@@ -143,17 +175,26 @@ const screenTitle = page => page.evaluate(() => {
     if (!ok) errors.push('hand tab not found: ' + hand); else step('hand → ' + hand);
   }
 
-  /* practice / memory switching — scoped to main so the sidebar flow link can't shadow it */
-  for (const mode of ['Memory', 'Practice']) {
-    const ok = await clickText(page, mode, { root: 'main' });
+  /* the three ways to use the page */
+  for (const tab of ['Memorize', 'Start to finish', 'Loop a passage']) {
+    const ok = await page.evaluate(t => window.__pppTest.practice(t), tab);
     await sleep(140);
-    if (!ok) errors.push('mode tab not found: ' + mode); else step('mode → ' + mode);
+    if (!ok) errors.push('practice tab not found: ' + tab); else step('tab → ' + tab);
   }
+  const wholeRange = await page.evaluate(async () => {
+    await window.__pppTest.practice('Start to finish');
+    const steppers = !![...document.querySelectorAll('main div')].find(d => /^Measures/.test((d.innerText || '').trim()) && d.querySelectorAll('button').length === 4);
+    const strip = document.querySelectorAll('button[title^="Measure "]').length;
+    await window.__pppTest.practice('Loop a passage');
+    return { steppers, strip };
+  });
+  step('start to finish hides the passage tools', JSON.stringify(wholeRange));
+  if (wholeRange.steppers || wholeRange.strip) errors.push('passage tools shown while playing start to finish');
 
   /* loop range steppers */
   const loopLabel = () => page.evaluate(() => {
-    const el = [...document.querySelectorAll('button')].find(e => /^Loop \d+ → \d+$/.test((e.textContent || '').trim()));
-    return el ? el.textContent.trim() : null;
+    const row = [...document.querySelectorAll('main div')].find(d => /^Measures/.test((d.innerText || '').trim()) && d.querySelectorAll('button').length === 4);
+    return row ? (row.innerText || '').replace(/[−+\s]+/g, ' ').trim() : null;
   });
   const l0 = await loopLabel();
   await page.evaluate(() => {
@@ -172,8 +213,8 @@ const screenTitle = page => page.evaluate(() => {
   await sleep(120);
   step('guidance toggle');
 
-  /* ---------- 5. measure loop screen ---------- */
-  await clickText(page, 'Measure Loop', { root: 'aside' });
+  /* ---------- 5. picking a passage on the practice page ---------- */
+  await page.evaluate(() => window.__pppTest.practice('Loop a passage'));
   await sleep(200);
   const cells = await page.evaluate(() => document.querySelectorAll('button[title^="Measure "]').length);
   step('measure strip', cells + ' cells');
@@ -190,26 +231,25 @@ const screenTitle = page => page.evaluate(() => {
   });
   await sleep(180);
   const loopTitle = await page.evaluate(() => {
-    const h = document.querySelector('h1');
-    return h ? h.textContent.trim() : null;
+    const m = document.querySelector('header').innerText.match(/Measures \d+–\d+/);
+    return m ? m[0] : null;
   });
   step('measure-strip loop select', loopTitle);
   if (!/10.*16/.test(loopTitle || '')) errors.push('measure strip did not set loop 10–16 (got ' + loopTitle + ')');
 
   /* ---------- 6. progress updates during the flow ---------- */
-  await clickText(page, 'Progress', { root: 'aside nav' });
+  await page.evaluate(l => window.__pppTest.nav(l), 'Progress');
   await sleep(200);
   const readStat = () => page.evaluate(() => {
-    const tiles = [...document.querySelectorAll('section > div')];
-    const t = tiles.find(d => /Song Progress/.test(d.textContent || ''));
+    const t = document.querySelector('[data-progress-song] [data-stat="progress"]');
     if (!t) return null;
     const m = (t.textContent || '').match(/(\d+)%/);
     return m ? +m[1] : null;
   });
   const p0 = await readStat();
   const sectionAcc = () => page.evaluate(() => {
-    /* the map meta now leads with a learning state, so match the number loosely */
-    const m = document.body.innerText.match(/Measures 21–28\s*\n?\s*[\w \-]*\s*(\d+)%/);
+    const row = document.querySelector('[data-song-map] [data-sec="21-28"]');
+    const m = row && (row.textContent || '').match(/(\d+)%/);
     return m ? +m[1] : null;
   });
   const a0 = await sectionAcc();
@@ -223,21 +263,19 @@ const screenTitle = page => page.evaluate(() => {
   const untouched0 = await attemptsOf(45);
 
   /* Loop a single weak measure so laps complete fast enough to observe. */
-  await clickText(page, 'Measure Loop', { root: 'aside' });
+  await page.evaluate(() => window.__pppTest.practice('Loop a passage'));
   await sleep(200);
   await page.evaluate(() => {
     const c = document.querySelectorAll('button[title^="Measure "]');
     c[20].click(); c[20].click();
   });
   await sleep(200);
-  await clickText(page, '100%');
-  await sleep(150);
   await clickText(page, 'Play');
   await sleep(10000);
   await clickText(page, 'Pause');
   await sleep(300);
 
-  await clickText(page, 'Progress', { root: 'aside nav' });
+  await page.evaluate(l => window.__pppTest.nav(l), 'Progress');
   await sleep(250);
   const p1 = await readStat();
   const a1 = await sectionAcc();
@@ -258,7 +296,7 @@ const screenTitle = page => page.evaluate(() => {
   if (untouched1 !== untouched0) errors.push('measure 45 changed without being played');
 
   /* ---------- 7. memory progression ---------- */
-  await clickText(page, 'Memory Mode', { root: 'aside' });
+  await page.evaluate(() => window.__pppTest.practice('Memorize'));
   await sleep(250);
   /* The visibility read-out is the exact MEM_VIS label beside the memory prompt. */
   const VIS = ['100% visible', '75% visible', '50% visible', 'notes hidden', 'no sheet music', 'measure revealed'];
@@ -266,8 +304,7 @@ const screenTitle = page => page.evaluate(() => {
     const el = [...document.querySelectorAll('span')].find(e => v.indexOf((e.textContent || '').trim()) > -1);
     return el ? el.textContent.trim() : null;
   }, VIS);
-  /* Target the mode buttons by their unique descriptions — the journey rail has its
-     own buttons labelled "Memory", "Fade" and "Recall" that would otherwise match. */
+  /* Target the level buttons by their unique descriptions. */
   /* Deep memory work is gated on the passage being stable, so measures 21–28
      (weak in the demo) must refuse Recall and Blind Play. */
   const lockedNote = await page.evaluate(() =>
@@ -276,14 +313,14 @@ const screenTitle = page => page.evaluate(() => {
   if (lockedNote !== 2) errors.push('expected Recall and Blind Play locked for a weak passage, got ' + lockedNote);
 
   /* Now move to a section that has earned memory work and walk the levels. */
-  await clickText(page, 'Measure Loop', { root: 'aside' });
+  await page.evaluate(() => window.__pppTest.practice('Loop a passage'));
   await sleep(350);
   await page.evaluate(() => {
     const c = document.querySelectorAll('button[title^="Measure "]');
     c[0].click(); c[7].click();          /* measures 1–8 */
   });
   await sleep(300);
-  await clickText(page, 'Memory Mode', { root: 'aside' });
+  await page.evaluate(() => window.__pppTest.practice('Memorize'));
   await sleep(400);
 
   const MODES = [
@@ -304,7 +341,11 @@ const screenTitle = page => page.evaluate(() => {
   if (new Set(levels.map(l => l.split('=')[1])).size < 4) errors.push('memory modes did not change sheet visibility: ' + levels.join(' | '));
   step('memory progression', levels.join(' | '));
 
-  const hiddenStaff = await page.evaluate(() => /Sheet music hidden/.test(document.body.innerText));
+  /* the score itself is gone, not just described as gone */
+  const hiddenStaff = await page.evaluate(() => {
+    const w = document.querySelector('.ppp-staffwrap');
+    return !!w && /Sheet music hidden/.test(w.innerText || '') && !w.querySelector('.ppp-note');
+  });
   step('blind play hides sheet music', hiddenStaff ? 'yes' : 'NO');
   if (!hiddenStaff) errors.push('Blind Play did not hide the sheet music');
 
@@ -325,7 +366,7 @@ const screenTitle = page => page.evaluate(() => {
   if (!hasAssist) errors.push('memory panel does not state the assistance level');
 
   /* ---------- 8. plan / songs / sight reading / settings ---------- */
-  await clickText(page, 'Practice Plan', { root: 'aside' });
+  await page.evaluate(() => window.__pppTest.nav('Analysis & Plan'));
   await sleep(200);
   const planPct = () => page.evaluate(() => {
     const m = document.body.innerText.match(/Plan progress\s*(\d+)%/);
@@ -340,20 +381,51 @@ const screenTitle = page => page.evaluate(() => {
   const pp1 = await planPct();
   step('plan task toggle', pp0 + '%  →  ' + pp1 + '%');
   if (pp0 === pp1) errors.push('plan progress did not change when ticking a task');
+  const stayed = await screenTitle(page);
+  if (stayed !== 'Analysis & Plan') errors.push('ticking a plan task moved the page to ' + stayed);
 
-  await clickText(page, 'My Songs', { root: 'aside nav' });
+  /* a task's Start opens the practice page set up for it */
+  const started = await page.evaluate(async () => {
+    const row = [...document.querySelectorAll('button')].find(b => /Left hand, first section/.test(b.textContent || ''));
+    const start = row && row.parentElement.querySelector('button:last-child');
+    if (start) start.click();
+    await new Promise(r => setTimeout(r, 400));
+    return { title: document.querySelector('header div div').textContent.trim(), crumb: document.querySelector('header').innerText };
+  });
+  step('plan task Start opens practice', started.title + ' — ' + (started.crumb.match(/Loop a passage[^\n]*/) || [''])[0]);
+  if (started.title !== 'Practice' || !/Loop a passage/.test(started.crumb)) errors.push('plan Start did not open the loop tab: ' + JSON.stringify(started));
+
+  await page.evaluate(l => window.__pppTest.nav(l), 'My Songs');
   await sleep(200);
   await page.evaluate(() => {
     const i = document.querySelector('input[type=search]');
     const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-    setter.call(i, 'satie');
+    setter.call(i, 'zimmer');
     i.dispatchEvent(new Event('change', { bubbles: true }));
   });
   await sleep(250);
-  const cardCount = await page.evaluate(() => document.body.innerText.match(/Gymnop/) ? 1 : 0);
-  step('song search filter', cardCount ? 'matched Gymnopédie' : 'NO match');
+  const cardCount = await page.evaluate(() => document.querySelectorAll('[data-song]').length);
+  const cardHit = await page.evaluate(() => /Interstellar Theme/.test(document.body.innerText));
+  step('song search filter', cardHit ? 'matched Interstellar Theme (' + cardCount + ' card)' : 'NO match');
+  if (!cardHit) errors.push('song search by composer did not find the sample');
+  await page.evaluate(() => {
+    const i = document.querySelector('input[type=search]');
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+    setter.call(i, 'no such song');
+    i.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await sleep(250);
+  const noneLeft = await page.evaluate(() => document.querySelectorAll('[data-song]').length);
+  step('song search filters out non-matches', noneLeft + ' cards');
+  if (noneLeft !== 0) errors.push('song search left ' + noneLeft + ' non-matching cards');
+  await page.evaluate(() => {
+    const i = document.querySelector('input[type=search]');
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+    setter.call(i, '');
+    i.dispatchEvent(new Event('change', { bubbles: true }));
+  });
 
-  await clickText(page, 'Sight Reading', { root: 'aside nav' });
+  await page.evaluate(l => window.__pppTest.nav(l), 'Sight Reading');
   await sleep(200);
   const q0 = await page.evaluate(() => (document.body.innerText.match(/Question (\d+) of 10/) || [])[1]);
   await page.evaluate(() => {
@@ -365,7 +437,7 @@ const screenTitle = page => page.evaluate(() => {
   step('sight-reading quiz advances', 'Q' + q0 + ' → Q' + q1);
   if (q0 === q1) errors.push('quiz did not advance after answering');
 
-  await clickText(page, 'Settings', { root: 'aside nav' });
+  await page.evaluate(l => window.__pppTest.nav(l), 'Settings');
   await sleep(200);
   const themeBefore = await page.evaluate(() => document.querySelector('[data-app]').getAttribute('data-app'));
   await page.evaluate(() => {
