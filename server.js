@@ -6,8 +6,10 @@
 const http = require('http');
 const https = require('https');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
+const { spawn } = require('child_process');
 const { URL } = require('url');
 
 const ROOT = __dirname;
@@ -507,6 +509,80 @@ async function handleApi(req, res, url) {
       req2.on('timeout', () => { req2.destroy(); resolve(null); });
     });
     send(res, 200, { title: title }, { 'Cache-Control': 'no-store' });
+    return;
+  }
+
+  if (method === 'GET' && p === '/api/youtube-audio') {
+    const raw = String(url.searchParams.get('url') || '').trim();
+    let watch = null;
+    try {
+      const u = new URL(raw);
+      const host = u.hostname.toLowerCase().replace(/^(www|m|music)\./, '');
+      if (host === 'youtu.be') {
+        const m = /^\/([\w-]{6,})$/.exec(u.pathname);
+        if (m) watch = 'https://www.youtube.com/watch?v=' + m[1];
+      } else if (host === 'youtube.com' && u.pathname === '/watch') {
+        const v = u.searchParams.get('v') || '';
+        if (/^[\w-]{6,}$/.test(v)) watch = 'https://www.youtube.com/watch?v=' + v;
+      } else if (host === 'youtube.com') {
+        const m = /^\/(shorts|live|embed)\/([\w-]{6,})/.exec(u.pathname);
+        if (m) watch = 'https://www.youtube.com/watch?v=' + m[2];
+      }
+    } catch (e) { watch = null; }
+    if (!watch) return jsonError(res, 422, 'Not a YouTube video.');
+    const exe = process.platform === 'win32' ? '.exe' : '';
+    const ytdlp = [
+      process.env.PPP_YTDLP,
+      path.join(ROOT, 'tools', 'yt-dlp' + exe),
+      path.join(ROOT, 'tools', 'yt-dlp')
+    ].filter(Boolean).find(c => { try { return fs.existsSync(c); } catch (e) { return false; } })
+      || (process.platform === 'win32' ? null : 'yt-dlp');
+    if (!ytdlp) return jsonError(res, 503, 'YouTube audio is not available on this host.');
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ppp-yt-'));
+    const child = spawn(ytdlp, [
+      '--no-playlist', '--no-progress', '--newline', '--no-warnings',
+      '-f', 'bestaudio[ext=m4a]/bestaudio/best',
+      '--max-filesize', '80M',
+      '--match-filter', '!is_live',
+      '-o', path.join(dir, 'audio.%(ext)s'),
+      '--', watch
+    ], { windowsHide: true, cwd: dir });
+    const timer = setTimeout(() => { try { child.kill(); } catch (e) {} }, 180000);
+    child.on('close', code => {
+      clearTimeout(timer);
+      let file = null;
+      try {
+        file = fs.readdirSync(dir).map(f => path.join(dir, f)).filter(f => fs.statSync(f).isFile())[0] || null;
+      } catch (e) {}
+      if (code !== 0 || !file) {
+        try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {}
+        if (!res.headersSent) jsonError(res, 502, 'The audio could not be downloaded from that link.');
+        return;
+      }
+      const ext = path.extname(file).toLowerCase();
+      const type = ext === '.m4a' || ext === '.mp4' ? 'audio/mp4'
+        : ext === '.webm' ? 'audio/webm'
+          : ext === '.mp3' ? 'audio/mpeg'
+            : ext === '.ogg' || ext === '.opus' ? 'audio/ogg'
+              : 'application/octet-stream';
+      let size = 0;
+      try { size = fs.statSync(file).size; } catch (e) {}
+      res.writeHead(200, {
+        'Content-Type': type,
+        'Content-Length': size,
+        'Cache-Control': 'no-store'
+      });
+      const stream = fs.createReadStream(file);
+      stream.pipe(res);
+      const done = () => { try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {} };
+      stream.on('close', done);
+      stream.on('error', () => { done(); if (!res.headersSent) jsonError(res, 500, 'Read failed'); });
+    });
+    child.on('error', () => {
+      clearTimeout(timer);
+      try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {}
+      if (!res.headersSent) jsonError(res, 503, 'YouTube audio is not available on this host.');
+    });
     return;
   }
 

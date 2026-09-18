@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     region: singapore
-    buildCommand: npm install --omit=dev
+    buildCommand: npm install --omit=dev && curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o tools/yt-dlp && chmod +x tools/yt-dlp
     startCommand: node server.js
     healthCheckPath: /health
     envVars:

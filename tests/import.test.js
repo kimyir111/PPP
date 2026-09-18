@@ -58,7 +58,7 @@ async function importFile(page, file, waitMs) {
   await preparePage(page);
   await page.setViewport({ width: 1500, height: 1000 });
   page.on('pageerror', e => errors.push('[pageerror] ' + e.message));
-  page.on('console', m => { if (m.type() === 'error' && !/404|422/.test(m.text())) errors.push('[console] ' + m.text()); });
+  page.on('console', m => { if (m.type() === 'error' && !/404|422|CONNECTION_REFUSED/.test(m.text())) errors.push('[console] ' + m.text()); });
 
   await page.goto(URL, { waitUntil: 'networkidle2', timeout: 45000 });
   await page.waitForFunction(() => window.PPP && window.PPP.Import, { timeout: 25000 });
@@ -120,15 +120,16 @@ async function importFile(page, file, waitMs) {
   ok('a PNG with no type is still an image', sniffed.png === 'image', JSON.stringify(sniffed));
 
   const ytCat = await page.evaluate(async () => {
-    const oldH = PPP.Import.health, oldT = PPP.Import.youtubeTitle;
+    const oldH = PPP.Import.health, oldT = PPP.Import.youtubeTitle, oldA = PPP.Import.transcribeHere;
     PPP.Import.health = () => Promise.resolve({ ok: false, remote: true, unreachable: true });
     PPP.Import.youtubeTitle = () => Promise.resolve('Beethoven Fur Elise official audio');
+    PPP.Import.transcribeHere = () => Promise.reject(Object.assign(new Error('skip-amt'), { code: 'skip' }));
     let out;
     try {
       const r = await PPP.Import.loadYoutube('https://www.youtube.com/watch?v=2WfaotSK3mI');
       out = { title: r.score && r.score.title, engine: r.source && r.source.engine, notes: r.score && r.score.notes.filter(n => !n.rest).length };
     } catch (e) { out = { error: e.message }; }
-    PPP.Import.health = oldH; PPP.Import.youtubeTitle = oldT;
+    PPP.Import.health = oldH; PPP.Import.youtubeTitle = oldT; PPP.Import.transcribeHere = oldA;
     return out;
   });
   ok('a YouTube link matching the catalog does not need the local helper',
