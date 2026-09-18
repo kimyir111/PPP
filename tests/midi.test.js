@@ -13,17 +13,25 @@ const ok = (name, cond, detail) => {
 /* A fake Web MIDI implementation, installed before the app boots so the
    support check sees it. Tests push raw bytes through window.__fake.send(). */
 function installFakeMidi() {
-  const mkPort = (id, name) => ({
-    id, name, manufacturer: 'PPP Test', state: 'connected', type: 'input',
-    onmidimessage: null, open() { return Promise.resolve(this); }, close() { return Promise.resolve(this); }
+  const mkPort = (id, name, type) => ({
+    id, name, manufacturer: 'PPP Test', state: 'connected', type: type || 'input',
+    onmidimessage: null, open() { return Promise.resolve(this); }, close() { return Promise.resolve(this); },
+    send(data, timestamp) {
+      if (this.type === 'output' && window.__fake) {
+        window.__fake.sent.push({ data: Array.from(data), timestamp: timestamp, id: this.id });
+      }
+    }
   });
-  const p1 = mkPort('fake-1', 'Fake Piano');
-  const p2 = mkPort('fake-2', 'Second Keyboard');
+  const p1 = mkPort('fake-1', 'Fake Piano', 'input');
+  const p2 = mkPort('fake-2', 'Second Keyboard', 'input');
+  const oSame = mkPort('fake-1', 'Fake Piano', 'output');
+  const oOut = mkPort('fake-out', 'Fake Piano Out', 'output');
   const inputs = new Map([['fake-1', p1], ['fake-2', p2]]);
-  const access = { inputs, outputs: new Map(), onstatechange: null, addEventListener() {}, removeEventListener() {} };
+  const outputs = new Map([['fake-1', oSame], ['fake-out', oOut]]);
+  const access = { inputs, outputs, onstatechange: null, addEventListener() {}, removeEventListener() {} };
   navigator.requestMIDIAccess = () => Promise.resolve(access);
   window.__fake = {
-    access, p1, p2,
+    access, p1, p2, oSame, oOut, sent: [],
     send(bytes, t, which) {
       const p = which === 2 ? p2 : p1;
       if (p.onmidimessage) p.onmidimessage({ data: new Uint8Array(bytes), timeStamp: t == null ? performance.now() : t });
@@ -267,11 +275,12 @@ function installFakeMidi() {
     const b = [...document.querySelectorAll('aside nav button')].find(x => /Settings/.test(x.innerText || ''));
     if (b) b.click();
     return new Promise(r => setTimeout(() => {
-      r([...document.querySelectorAll('main button')].map(x => (x.innerText || '').trim())
-        .filter(t => /Fake Piano|Second Keyboard/.test(t)));
+      const heading = [...document.querySelectorAll('main div')].find(x => (x.textContent || '').trim() === 'Input device');
+      const row = heading && heading.nextElementSibling;
+      r(row ? [...row.querySelectorAll('button')].map(x => (x.innerText || '').trim()) : []);
     }, 500));
   });
-  ok('device picker lists both inputs', devices.length === 2, devices.join(', '));
+  ok('device picker lists both inputs', devices.length === 2 && devices[0] === 'Fake Piano', devices.join(', '));
 
   const switched = await page.evaluate(() => {
     const b = [...document.querySelectorAll('main button')].find(x => /Second Keyboard/.test(x.innerText || ''));
@@ -350,7 +359,109 @@ function installFakeMidi() {
   await sleep(500);
   ok('disconnecting falls back to Demo Input', /Demo Input/.test(await badge()), await badge());
 
-  /* ================= 4. no Web MIDI at all ================= */
+  /* ================= 4. MIDI output sink ================= */
+  console.log('\n── MIDI output ──');
+  const midiOutXml = '<?xml version="1.0"?><score-partwise version="3.1"><part-list><score-part id="P1"><part-name>P</part-name></score-part></part-list><part id="P1">' +
+    '<measure number="1"><attributes><divisions>2</divisions><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>' +
+    '<direction><direction-type><pedal type="start"/></direction-type><sound damper-pedal="yes"/></direction>' +
+    '<note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><type>eighth</type></note>' +
+    '<note><pitch><step>D</step><octave>4</octave></pitch><duration>1</duration><type>eighth</type></note>' +
+    '<direction><direction-type><words>una corda</words></direction-type><sound soft-pedal="yes"/></direction>' +
+    '<note><pitch><step>E</step><octave>4</octave></pitch><duration>1</duration><type>eighth</type></note>' +
+    '<note><pitch><step>F</step><octave>4</octave></pitch><duration>1</duration><type>eighth</type></note>' +
+    '<note><pitch><step>G</step><octave>4</octave></pitch><duration>1</duration><type>eighth</type></note>' +
+    '<note><pitch><step>A</step><octave>4</octave></pitch><duration>1</duration><type>eighth</type></note>' +
+    '<note><pitch><step>B</step><octave>4</octave></pitch><duration>1</duration><type>eighth</type></note>' +
+    '<note><pitch><step>C</step><octave>5</octave></pitch><duration>1</duration><type>eighth</type></note>' +
+    '<direction><direction-type><pedal type="stop"/></direction-type><sound damper-pedal="no"/></direction>' +
+    '</measure></part></score-partwise>';
+
+  const outRun = await page.evaluate(async xml => {
+    const app = PPP.app;
+    const score = PPP.parseMusicXML(xml, 'midi-out.musicxml');
+    window.__fake.sent = [];
+    let strikes = 0;
+    const orig = PPP.PianoPlayer.prototype.strike;
+    PPP.PianoPlayer.prototype.strike = function (midi, when, vel) {
+      strikes++;
+      return orig.apply(this, arguments);
+    };
+    app.setState({
+      score: score, tempo: 180, loop: false, loopFrom: 1, loopTo: 1, beat: 0,
+      playing: false, hands: 'both', practiceMode: 'practice',
+      toggles: Object.assign({}, app.state.toggles, { notes: true, midi: false, midiOut: true, sound: false, follow: false })
+    });
+    await app.connectMidiOut('fake-out');
+    const beforePlay = window.__fake.sent.slice();
+    app.wake();
+    if (app.state.playing) app.togglePlay();
+    app.togglePlay();
+    /* One or two ticks so lookahead is queued, then stop before those ons fire. */
+    await new Promise(r => setTimeout(r, 80));
+    const panicTime = performance.now();
+    app.togglePlay();
+    await new Promise(r => setTimeout(r, 50));
+    PPP.PianoPlayer.prototype.strike = orig;
+    const all = window.__fake.sent.map(x => ({
+      st: x.data[0], d1: x.data[1], d2: x.data[2], t: x.timestamp, id: x.id
+    }));
+    const isOn = x => (x.st & 0xf0) === 0x90 && x.d2 > 0;
+    const isOff = x => (x.st & 0xf0) === 0x80 || ((x.st & 0xf0) === 0x90 && x.d2 === 0);
+    const ts = all.map(x => x.t).filter(t => t != null && isFinite(t));
+    const uniqTs = [...new Set(ts.map(t => Math.round(t)))];
+    const futureOns = all.map((x, i) => Object.assign({ i: i }, x)).filter(x => isOn(x) && x.t > panicTime);
+    const cancelled = futureOns.filter(on =>
+      all.slice(on.i + 1).some(x => isOff(x) && x.d1 === on.d1 && x.t != null && x.t >= on.t)
+    );
+    return {
+      strikes,
+      midiOutLive: app.midiOutLive(),
+      nSent: all.length,
+      hasOn: all.some(isOn),
+      hasOff: all.some(isOff),
+      hasPedal: all.some(x => (x.st & 0xf0) === 0xb0 && (x.d1 === 64 || x.d1 === 67)),
+      tsCount: ts.length,
+      uniqTs: uniqTs.length,
+      allTsNow: ts.length > 1 && uniqTs.length === 1,
+      panicOff: all.some(x => (x.st & 0xf0) === 0xb0 && (x.d1 === 123 || x.d1 === 120)),
+      panicPedal: all.some(x => (x.st & 0xf0) === 0xb0 && x.d1 === 64 && x.d2 === 0),
+      beforePlay: beforePlay.length,
+      outId: app.state.midiOut && app.state.midiOut.deviceId,
+      futureOnCount: futureOns.length,
+      cancelledCount: cancelled.length
+    };
+  }, midiOutXml);
+
+  ok('MIDI-out is the sound destination', outRun.midiOutLive === true && outRun.outId === 'fake-out', JSON.stringify({ live: outRun.midiOutLive, id: outRun.outId }));
+  ok('playback sends note-on', outRun.hasOn, 'n=' + outRun.nSent);
+  ok('playback sends note-off', outRun.hasOff);
+  ok('playback sends pedal CCs', outRun.hasPedal);
+  ok('MIDI timestamps are present', outRun.tsCount > 0, 'ts=' + outRun.tsCount);
+  ok('timestamps are not all the same instant', outRun.uniqTs > 1 && !outRun.allTsNow, 'unique=' + outRun.uniqTs);
+  ok('stop sends all-notes-off or panic CC', outRun.panicOff, JSON.stringify(outRun));
+  ok('stop releases the damper', outRun.panicPedal);
+  ok('in-app piano is not struck for score notes when MIDI-out is on', outRun.strikes === 0, 'strikes=' + outRun.strikes);
+  ok('stop cancels every still-queued note-on with a later note-off at that time',
+    outRun.futureOnCount > 0 && outRun.cancelledCount === outRun.futureOnCount,
+    'futureOns=' + outRun.futureOnCount + ' cancelled=' + outRun.cancelledCount);
+
+  const local = await page.evaluate(async () => {
+    window.__fake.sent = [];
+    const app = PPP.app;
+    await app.connectMidi();
+    await app.connectMidiOut('fake-1');
+    const sent = window.__fake.sent.map(x => ({ st: x.data[0], d1: x.data[1], d2: x.data[2], id: x.id }));
+    return {
+      local: sent.some(x => (x.st & 0xf0) === 0xb0 && x.d1 === 122 && x.d2 === 0),
+      same: app.midiOutIsAlsoIn(),
+      inId: app.state.midi && app.state.midi.deviceId,
+      outId: app.state.midiOut && app.state.midiOut.deviceId
+    };
+  });
+  ok('Local Control off when output is the same device as input', local.local && local.same,
+    JSON.stringify(local));
+
+  /* ================= 5. no Web MIDI at all ================= */
   console.log('\n── unsupported browser ──');
   const page2 = await browser.newPage();
   await page2.evaluateOnNewDocument(() => { try { delete navigator.requestMIDIAccess; } catch (e) {} navigator.requestMIDIAccess = undefined; });

@@ -30,6 +30,10 @@ ok('a YouTube-style padded title still matches', cover && cover.entry && cover.e
 const elise = Search.search('Beethoven Fur Elise official audio', catalog);
 ok('Für Elise is in the catalog', elise && elise.entry && elise.entry.id === 'fur-elise', elise && elise.entry && elise.entry.title);
 
+const bday = Search.search('피아노 반주 생일 축하합니다 생일 축하곡 Happy birthday song', catalog);
+ok('a Happy Birthday accompaniment video title finds the easy score', bday && bday.entry && bday.entry.id === 'happy-birthday', bday && bday.entry && bday.entry.title);
+ok('that score is 3/4', bday && Search.xmlFacts(bday.entry.xml).beats === 3 && Search.xmlFacts(bday.entry.xml).beatType === 4);
+
 const xml = hit.entry.xml;
 const aligned = Search.align(xml, { duration: 24 });
 ok('alignment produces barStarts covering the recording',

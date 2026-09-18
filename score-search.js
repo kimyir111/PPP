@@ -20,6 +20,7 @@
       .replace(/[^a-z0-9]+/g, ' ')
       /* YouTube titles pad the piece name with these; they are not the work. */
       .replace(/\b(the|a|an|no|nr|n|op|in|for|piano|official|audio|video|mv|cover|piano cover|synthesia|slowed|reverb|hours|hour|lyrics|tutorial|easy|sheet|music|full|hd|4k|live|performance|played|by)\b/g, ' ')
+      .replace(/반주|악보|연주|피아노/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
   }

@@ -160,6 +160,157 @@ const look = page => page.evaluate(() => {
   });
   ok('no timing figure is reported while following', drift != null && /—/.test(drift), drift);
 
+  console.log('\n── a rest is a gate, not a skip ──');
+  const mx = body => '<?xml version="1.0"?><score-partwise version="3.1"><part-list><score-part id="P1"><part-name>P</part-name></score-part></part-list><part id="P1">' + body + '</part></score-partwise>';
+  const restXml = mx(
+    '<measure number="1"><attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time>' +
+    '<clef><sign>G</sign><line>2</line></clef></attributes>' +
+    '<note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><type>quarter</type></note>' +
+    '<note><rest/><duration>1</duration><type>quarter</type></note>' +
+    '<note><pitch><step>E</step><octave>4</octave></pitch><duration>1</duration><type>quarter</type></note>' +
+    '<note><rest/><duration>1</duration><type>quarter</type></note></measure>'
+  );
+  const otherHandXml = mx(
+    '<measure number="1"><attributes><divisions>1</divisions><time><beats>2</beats><beat-type>4</beat-type></time>' +
+    '<staves>2</staves>' +
+    '<clef number="1"><sign>G</sign><line>2</line></clef>' +
+    '<clef number="2"><sign>F</sign><line>4</line></clef></attributes>' +
+    '<note><pitch><step>C</step><octave>4</octave></pitch><duration>2</duration><type>half</type><staff>1</staff></note>' +
+    '<backup><duration>2</duration></backup>' +
+    '<note><rest/><duration>1</duration><voice>5</voice><type>quarter</type><staff>2</staff></note>' +
+    '<note><rest/><duration>1</duration><voice>5</voice><type>quarter</type><staff>2</staff></note></measure>'
+  );
+  const tiedXml = mx(
+    '<measure number="1"><attributes><divisions>1</divisions><time><beats>3</beats><beat-type>4</beat-type></time>' +
+    '<clef><sign>G</sign><line>2</line></clef></attributes>' +
+    '<note><pitch><step>C</step><octave>4</octave></pitch><duration>2</duration><type>half</type><tie type="start"/></note>' +
+    '<note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><type>quarter</type><tie type="stop"/></note></measure>'
+  );
+
+  const structure = await page.evaluate((restSrc, otherSrc, tiedSrc) => {
+    const app = PPP.app;
+    const dump = sc => {
+      app.setState({
+        score: sc, tempo: 120, hands: 'both', loop: false, practiceMode: 'whole',
+        playing: false, toggles: Object.assign({}, app.state.toggles, { follow: true })
+      });
+      app._gatesKey = null;
+      return app.followGates().map(g => ({
+        b: Math.round(g.b * 1000) / 1000,
+        rest: !!g.rest,
+        midi: (g.notes || []).map(n => n.midi),
+        dur: g.dur != null ? Math.round(g.dur * 1000) / 1000 : null
+      }));
+    };
+    return {
+      rest: dump(PPP.parseMusicXML(restSrc, 'follow-rests.musicxml')),
+      other: dump(PPP.parseMusicXML(otherSrc, 'follow-other-rest.musicxml')),
+      tied: dump(PPP.parseMusicXML(tiedSrc, 'follow-tie.musicxml'))
+    };
+  }, restXml, otherHandXml, tiedXml);
+
+  const restGates = structure.rest || [];
+  ok('note / rest / note / rest are four gates',
+    restGates.length === 4 && restGates[0].midi[0] === 60 && restGates[1].rest && restGates[2].midi[0] === 64 && restGates[3].rest,
+    JSON.stringify(restGates));
+  ok('the rest gate keeps its written length',
+    restGates[1] && restGates[1].rest && Math.abs(restGates[1].dur - 1) < 1e-6,
+    restGates[1] ? String(restGates[1].dur) : 'no rest gate');
+  ok('a rest in the other hand is still a gate while this hand is holding',
+    structure.other.length === 2 && !structure.other[0].rest && structure.other[0].midi[0] === 60
+      && structure.other[1].rest && Math.abs(structure.other[1].b - 1) < 1e-6,
+    JSON.stringify(structure.other));
+  ok('a tied continuation is not a rest in the middle of the hold',
+    structure.tied.length === 1 && !structure.tied[0].rest,
+    JSON.stringify(structure.tied));
+
+  const heldRest = await page.evaluate(async xml => {
+    const app = PPP.app;
+    const sc = PPP.parseMusicXML(xml, 'follow-held-rest.musicxml');
+    app.setState({
+      score: sc, tempo: 120, hands: 'both', loop: false, practiceMode: 'whole',
+      playing: false, toggles: Object.assign({}, app.state.toggles, { follow: true })
+    });
+    app.setState(app.followReset({}));
+    await new Promise(r => setTimeout(r, 500));
+    window.__press(60);
+    await new Promise(r => setTimeout(r, 80));
+    const g = app.followGates()[app.state.gateIdx] || {};
+    window.__release(60);
+    return { rest: !!g.rest, b: g.b, want: [...document.querySelectorAll('[data-state="expected"]')].map(e => +e.getAttribute('data-midi')) };
+  }, otherHandXml);
+  ok('after the held note it parks on the other hand\'s rest',
+    heldRest.rest === true && Math.abs((heldRest.b || 0) - 1) < 0.05 && heldRest.want.length === 0,
+    JSON.stringify(heldRest));
+
+  const liveRest = await page.evaluate(async xml => {
+    const app = PPP.app;
+    const sc = PPP.parseMusicXML(xml, 'follow-rests-live.musicxml');
+    app.setState({
+      score: sc, tempo: 120, hands: 'both', loop: false, practiceMode: 'whole',
+      playing: false, toggles: Object.assign({}, app.state.toggles, { follow: true })
+    });
+    app.setState(app.followReset({}));
+    await new Promise(r => setTimeout(r, 700));
+    const snap = () => {
+      const g = app.followGates()[app.state.gateIdx] || {};
+      return {
+        rest: !!g.rest,
+        midi: (g.notes || []).map(n => n.midi),
+        want: [...document.querySelectorAll('[data-state="expected"]')].map(e => +e.getAttribute('data-midi')).sort((a, b) => a - b),
+        restOn: !!document.querySelector('[data-rest="1"].ppp-on')
+      };
+    };
+    const start = snap();
+    window.__press(60);
+    await new Promise(r => setTimeout(r, 80));
+    const afterC = snap();
+    window.__release(60);
+    await new Promise(r => setTimeout(r, 180));
+    const midRest = snap();
+    await new Promise(r => setTimeout(r, 450));
+    const afterWait = snap();
+    return { start, afterC, midRest, afterWait };
+  }, restXml);
+
+  ok('it first asks for the note before the rest',
+    liveRest.start && liveRest.start.want.join() === '60' && !liveRest.start.rest,
+    JSON.stringify(liveRest.start));
+  ok('playing that note parks on the rest instead of jumping to the next pitch',
+    liveRest.afterC && liveRest.afterC.rest === true && liveRest.afterC.want.length === 0,
+    JSON.stringify(liveRest.afterC));
+  ok('the rest glyph is the thing under the playhead',
+    liveRest.afterC && liveRest.afterC.restOn === true);
+  ok('the rest still holds if you wait a moment',
+    liveRest.midRest && liveRest.midRest.rest === true && liveRest.midRest.want.length === 0,
+    JSON.stringify(liveRest.midRest));
+  ok('when the rest is up it asks for the next note',
+    liveRest.afterWait && liveRest.afterWait.want.join() === '64' && !liveRest.afterWait.rest,
+    JSON.stringify(liveRest.afterWait));
+
+  const skipped = await page.evaluate(async xml => {
+    const app = PPP.app;
+    const sc = PPP.parseMusicXML(xml, 'follow-rest-skip.musicxml');
+    app.setState({
+      score: sc, tempo: 120, hands: 'both', loop: false, practiceMode: 'whole',
+      playing: false, toggles: Object.assign({}, app.state.toggles, { follow: true })
+    });
+    app.setState(app.followReset({}));
+    await new Promise(r => setTimeout(r, 400));
+    window.__press(60);
+    await new Promise(r => setTimeout(r, 40));
+    window.__release(60);
+    window.__press(64);
+    await new Promise(r => setTimeout(r, 80));
+    const g = app.followGates()[app.state.gateIdx] || {};
+    const want = [...document.querySelectorAll('[data-state="expected"]')].map(e => +e.getAttribute('data-midi'));
+    window.__release(64);
+    return { rest: !!g.rest, b: g.b, midi: (g.notes || []).map(n => n.midi), want };
+  }, restXml);
+  ok('playing the next written pitch skips the rest wait',
+    skipped.rest === true && Math.abs((skipped.b || 0) - 3) < 0.05,
+    JSON.stringify(skipped));
+
   console.log('\n── turning it off restores the clock ──');
   await page.evaluate(() => {
     const b = [...document.querySelectorAll('main button')].find(x => /Follow on/.test(x.innerText || ''));

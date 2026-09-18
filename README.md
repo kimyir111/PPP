@@ -39,6 +39,7 @@ with subresource integrity, which `file://` blocks.
 | --- | --- |
 | `Piano Coach App.dc.html` | The app: music model, MusicXML parser, notation renderer, practice engine. |
 | `support.js` | Generated `dc-runtime` — parses `<x-dc>`, renders through React. Do not edit. |
+| `lessons.js` | Piano Basics: the beginner course as data, the checks for each exercise, and the keyboard, staff, rhythm and hand drawings it teaches with. |
 | `index.html` | Entry point; redirects to the app. |
 | `audio/piano/` | Salamander Grand Piano samples (CC BY 3.0), 30 MP3s, 1.3 MB. See its `README.md`. |
 | `samples/prelude-fragment.musicxml` | A test score — 3/4, G major, chords, rests, a tie, a printed accidental. |
@@ -271,6 +272,31 @@ Triplets and 6/8 are written when the grid is clear; 12/8 is still heard as 6/8 
 One voice per hand, so a note held under a moving line in the same hand is shortened; no dynamics;
 one tempo marking for the whole piece. The online deploy has no local helper, and says so.
 
+## Piano Basics
+
+For someone who has never played. The tab under Home (and a link on Home itself) is a course of
+twenty short lessons in six units: the white and black keys, Do, Do Re Mi up to the octave,
+finger numbers, the letter names C D E F G A B, the staff and treble clef, reading Do to high Do,
+the beat, half and whole notes, measures and rests, four first songs (Airplane / Mary Had a
+Little Lamb, School Bell, Twinkle Twinkle, Ode to Joy), sharps and flats, the left hand and bass
+clef, and a first chord.
+
+Each lesson is a few steps, one on screen at a time: something to read and hear, then something
+to do — play a sequence with the next key lit and then without it, find every key of a kind,
+answer a quiz, name notes on a staff, tap a rhythm against a count-in, or hold a chord. Next
+waits until the exercise is done; the dots above the card skip ahead for anyone who wants to.
+Every exercise takes the keys on screen, the computer keyboard (A S D F G H J K is Do to high Do,
+W E T Y U the black keys) and a MIDI keyboard alike. On this page those letters and the space bar
+belong to the lesson, so none of the practice shortcuts fire. A rhythm is timed on the press, not
+the click, and counts a tap within a fifth of a second of the note.
+
+The course lives in `lessons.js` as data plus small pure functions — a key in, the step's new
+state out — so `tests/lessons.test.js` walks every exercise in Node as well as in the page. The
+lesson and step you are on and the lessons finished are part of the saved state
+(`learnLesson`, `learnStep`, `learnDone`), so they survive a reload and sync when you sign in.
+A finished lesson is worth 25 XP, once. Every word is in all four languages; the note names
+follow the language (도 레 미, ド レ ミ, Do Re Mi).
+
 ## My Songs
 
 Every song you add is kept, and each keeps its own progress: what PPP has learned about your
@@ -289,6 +315,37 @@ after the usual save delay, and whatever that delay is still holding is written 
 (`pagehide`, or the tab being hidden). Before this, a reload within a second or so of adding a song
 left its card with no score behind it; such a card is now taken off on load, with a message
 asking for the song to be added again. A full browser store is reported, not silently ignored.
+
+## Shared Scores
+
+Every song of yours in My Songs has a **Share** button (the built-in sample does not). It opens
+a dialog with two separate things:
+
+- **Post to Shared Scores** lists the song in the Shared Scores tab, where anyone can find it and
+  **Add to My Songs**. **Take down** unlists it; its link keeps working.
+- **Send a link** — copy it, or send it to X, Facebook, LINE, Threads or email, or through the
+  phone's own share sheet (**Other apps…**, which is where KakaoTalk is). The link is made the
+  first time one is sent, and sending it never posts the song. **Stop sharing** (asked twice)
+  deletes the copy, and the link stops working.
+
+Only the notes are sent: never the practice history, the memory record, the recording, or the
+file name — a YouTube source is kept as its link, since the video is public. The server keeps
+the copy (`data/shares.json` locally, the `ppp_shares` table on Postgres), so sharing your own
+songs needs an account; anyone can open a link or add a posted score, signed in or not. A link
+is `/?share=<id>`: it opens straight onto the score without the sign-in gate, and the server puts
+the title in the page's Open Graph tags so a post shows what it links to. Sharing again sends the
+notes as they are now, under the same link.
+
+| Route | |
+| --- | --- |
+| `GET /api/shares` | Posted scores, newest first, with a two-bar preview each. `?mine=1`: yours, posted or not. |
+| `POST /api/shares` | Share a song (signed in). One copy per song: sharing it again updates it. |
+| `GET /api/shares/:id` | One share, with its score. Anyone with the id. |
+| `PATCH /api/shares/:id` | `{ listed }` — post or take down. Owner only. |
+| `DELETE /api/shares/:id` | Stop sharing. Owner only. |
+
+On Render without `DATABASE_URL` the file store is wiped when the instance sleeps, and shared
+scores go with it; connect Postgres to keep them.
 
 ## The music model
 
@@ -329,12 +386,11 @@ left — a two-part score with one staff each resolves the same way.
 
 ### What it does not read yet
 
-Repeats and voltas are not expanded, so playback runs straight through. Only the first tempo
-mark is used, so a later change of tempo is not heard. Dynamics are not read, so playback is at
-an even mezzo-forte. Grace notes are skipped. Tuplets play at the right time but are not
+Grace notes are skipped. Tuplets play at the right time but are not
 bracketed. Ties are marked and do not re-trigger on playback (a tie that leads to no matching
 note is treated as absent, so that note still sounds), but are not drawn as slurs. Transposing
-parts are not transposed.
+parts are not transposed. D.S. / D.C. / Fine navigation is stored as marks but playback follows
+repeat signs and voltas, not those jumps.
 `score-timewise` is rejected with a message rather than mis-parsed.
 
 ## Real piano input
@@ -798,8 +854,11 @@ counted back from its bar line.
 Simulated misses in Demo Input are shown on the page but never sounded — playback is always
 the score as written. Clicking the on-screen keyboard plays a note; a MIDI keyboard sounds for
 as long as each key is held, at the velocity it was struck. Metronome sound is off by default
-(Settings → Devices & sound); the visual pulse stays on either way. With MIDI connected the
+(Settings → Devices & sound); the visual pulse stays on either way. With MIDI *input* connected the
 score stops auto-playing its notes and only your key presses sound, so the two never double up.
+With a MIDI *output* selected, those score notes go to the piano instead of the in-app samples;
+if that output is the same device as the input, Local Control is switched off so the piano does
+not double the computer's notes.
 
 **Add Sheet Music** — choose a file, drop one anywhere on the page, or paste a YouTube link, and
 reading starts at once; there is no second button to find. The panel beside it lists each stage
@@ -838,7 +897,8 @@ progress, stay on the shelf.
 
 No backend beyond the local helper that runs OMR, transcription and the coach. MIDI *files* are still refused
 as an import format —
-export MusicXML instead; MIDI *input* from a keyboard is real. There is no notation editor, so a
+export MusicXML instead; MIDI *input* from a keyboard is real, and MIDI *output* can play the score
+through a connected digital piano (note-on/off and sustain / una corda / sostenuto). There is no notation editor, so a
 misread note cannot be corrected in PPP yet: reimport a better scan, or fix it in a notation
 editor and import the MusicXML.
 

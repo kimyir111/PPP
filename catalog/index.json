@@ -29,6 +29,22 @@
       "composer": "Ludwig van Beethoven",
       "license": "CC0",
       "file": "fur-elise.musicxml"
+    },
+    {
+      "id": "happy-birthday",
+      "title": "Happy Birthday",
+      "titles": [
+        "Happy Birthday to You",
+        "Happy birthday song",
+        "생일 축하합니다",
+        "생일 축하 노래",
+        "생일 축하곡",
+        "생일축하",
+        "Happy Birthday 피아노"
+      ],
+      "composer": "Traditional",
+      "license": "CC0",
+      "file": "happy-birthday.musicxml"
     }
   ]
 }

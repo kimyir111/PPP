@@ -49,6 +49,34 @@
 
   /* Notes whose onsets sit inside CLUSTER_S of the first of a group are one
      attack — a rolled chord, not a run of sixteenths. */
+  /* Keep the tune and the bass; drop inner accompaniment notes. A YouTube
+     "piano accompaniment" of a simple song is otherwise written denser than
+     the page in the video. */
+  function simplifyNotes(notes) {
+    const src = clusterNotes(clean(notes), CLUSTER_S);
+    const out = [];
+    let i = 0;
+    while (i < src.length) {
+      const t0 = src[i].attack != null ? src[i].attack : src[i].on;
+      let j = i + 1;
+      while (j < src.length) {
+        const t = src[j].attack != null ? src[j].attack : src[j].on;
+        if (t - t0 > CLUSTER_S) break;
+        j++;
+      }
+      const g = src.slice(i, j);
+      let hi = g[0], lo = g[0];
+      g.forEach(n => {
+        if (n.midi > hi.midi) hi = n;
+        if (n.midi < lo.midi) lo = n;
+      });
+      out.push(Object.assign({}, hi));
+      if (lo.midi <= hi.midi - 5) out.push(Object.assign({}, lo));
+      i = j;
+    }
+    return out.sort((a, b) => a.on - b.on || a.midi - b.midi);
+  }
+
   function clusterNotes(notes, window) {
     window = window == null ? CLUSTER_S : window;
     const out = notes.map(n => Object.assign({}, n));
@@ -921,7 +949,7 @@
     opts = opts || {};
     if (input && input.grid && input.grid.notes && input.grid.notes.length) return fromGrid(input, opts);
 
-    const notes = clean(input.notes);
+    const notes = opts.easy ? simplifyNotes(input.notes) : clean(input.notes);
     if (notes.length < 4) noNotes();
     const clustered = clusterNotes(notes, CLUSTER_S);
     const last = clustered.reduce((m, n) => Math.max(m, n.off), 0);
@@ -1090,7 +1118,7 @@
 
   const api = {
     toMusicXml: toMusicXml,
-    _: { estimateKey, spellingTable, spell, pieces, snap: snap16, beatPosition, meterAndPhase, centreSplit, clusterNotes, SUB, Q }
+    _: { estimateKey, spellingTable, spell, pieces, snap: snap16, beatPosition, meterAndPhase, centreSplit, clusterNotes, simplifyNotes, SUB, Q }
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (global) global.PPPAudioScore = api;

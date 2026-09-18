@@ -237,6 +237,21 @@ const helperHealth = () => new Promise(resolve => {
     { notes: perform(compound(8), { bpm: 90, start: 0.5, jitter: 0.008, seed: 6 }) },
     { lock: { beats: 12, beatType: 8, bpm: 60, firstDownbeat: 0.5 } }
   );
+  const thick = [];
+  for (let i = 0; i < 8; i++) {
+    const t = 0.5 + i * 0.5;
+    [48, 52, 55, 60, 64, 67, 72].forEach(m => thick.push({ on: t, off: t + 0.4, midi: m, vel: 70 }));
+  }
+  const full = A.toMusicXml({ notes: thick });
+  const easy = A.toMusicXml({ notes: thick }, { easy: true });
+  ok('an easier arrangement keeps fewer notes than the dense accompaniment',
+    easy.stats.notes < full.stats.notes && easy.stats.notes <= 8 * 2 + 1,
+    'full ' + full.stats.notes + ', easy ' + easy.stats.notes);
+  const hiLo = A._.simplifyNotes(thick.filter((_, i) => i < 7));
+  ok('simplify keeps the top and the bass of a chord',
+    hiLo.some(n => n.midi === 72) && hiLo.some(n => n.midi === 48) && !hiLo.some(n => n.midi === 60),
+    hiLo.map(n => n.midi).join(','));
+
   ok('a 12/8 lock writes compound twelve',
     locked12.stats.beatsPerBar === 12 && locked12.stats.beatType === 8 && /<beat-type>8<\/beat-type>/.test(locked12.xml) && /<beats>12<\/beats>/.test(locked12.xml),
     locked12.stats.beatsPerBar + '/' + locked12.stats.beatType);
@@ -437,10 +452,12 @@ const helperHealth = () => new Promise(resolve => {
     const lockUi = await page.evaluate(() => ({
       lock: !!document.querySelector('[data-rhythm-lock]'),
       rewrite: !!document.querySelector('[data-lock-rewrite]'),
+      easier: !!document.querySelector('[data-easier]'),
       metre: (document.querySelector('[data-lock-metre]') || {}).value || '',
       bpm: (document.querySelector('[data-lock-bpm]') || {}).value || ''
     }));
     ok('the review can lock metre, tempo and downbeat', lockUi.lock && lockUi.rewrite && /\d\/\d/.test(lockUi.metre), JSON.stringify(lockUi));
+    ok('the review offers an easier arrangement', lockUi.easier);
     await page.click('[data-lock-rewrite]');
     await sleep(800);
     const afterLock = await page.evaluate(() => !!document.querySelector('[data-recording]'));

@@ -134,6 +134,89 @@ async function metrics(page) {
   });
   await sleep(120);
 
+  async function focusMetrics() {
+    return page.evaluate(() => {
+      const shell = document.querySelector('.ppp-shell');
+      const staff = document.querySelector('.ppp-staffwrap');
+      const now = staff && staff.querySelector('.ppp-now');
+      const kb = document.querySelector('.ppp-kbwrap');
+      const transport = document.querySelector('.ppp-transport');
+      const sr = staff && staff.getBoundingClientRect();
+      const nr = now && now.getAttribute('opacity') !== '0' ? now.getBoundingClientRect() : null;
+      const kr = kb && kb.getBoundingClientRect();
+      const tr = transport && transport.getBoundingClientRect();
+      const vh = window.innerHeight, vw = window.innerWidth;
+      const nowInView = !!(nr && sr && nr.top >= sr.top - 8 && nr.bottom <= sr.bottom + 8);
+      return {
+        focus: shell ? shell.getAttribute('data-focus') : null,
+        vh, vw,
+        staffH: sr ? Math.round(sr.height) : 0,
+        staffTop: sr ? Math.round(sr.top) : 0,
+        staffBot: sr ? Math.round(sr.bottom) : 0,
+        nowTop: nr ? Math.round(nr.top) : null,
+        nowBot: nr ? Math.round(nr.bottom) : null,
+        nowInView,
+        kbH: kr ? Math.round(kr.height) : 0,
+        kbBot: kr ? Math.round(kr.bottom) : 0,
+        transportBot: tr ? Math.round(tr.bottom) : 0
+      };
+    });
+  }
+  async function clickFocusLabel(label) {
+    return page.evaluate(want => {
+      const b = [...document.querySelectorAll('button')].find(x => (x.innerText || '').trim() === want);
+      if (b) b.click();
+      return !!b;
+    }, label);
+  }
+
+  const entered = await clickFocusLabel('Focus');
+  await sleep(900);
+  let f = await focusMetrics();
+  ok('tablet Focus enters focus mode', entered && f.focus === 'true', JSON.stringify(f));
+  ok('tablet focus keeps the score taller than the keyboard',
+    f.staffH > f.kbH && f.staffH >= Math.round(f.vh * 0.48), JSON.stringify(f));
+  ok('tablet focus keeps the current bar on the score', f.nowInView, JSON.stringify(f));
+  ok('tablet focus keeps the keyboard on screen',
+    f.kbBot <= f.vh + 8 && f.transportBot <= f.vh + 8, JSON.stringify(f));
+  ok('tablet focus has no empty band under the keyboard',
+    f.vh - f.transportBot <= 24, JSON.stringify(f));
+  await shot(page, 'layout-tablet-focus.png');
+
+  await page.setViewport({ width: 1024, height: 768 });
+  await sleep(900);
+  f = await focusMetrics();
+  ok('tablet landscape focus still shows a tall score',
+    f.focus === 'true' && f.staffH > f.kbH && f.staffH >= Math.round(f.vh * 0.55), JSON.stringify(f));
+  ok('tablet landscape focus keeps the current bar on the score', f.nowInView, JSON.stringify(f));
+  ok('tablet landscape focus fits the keyboard on screen',
+    f.kbBot <= f.vh + 8 && f.transportBot <= f.vh + 8, JSON.stringify(f));
+  ok('tablet landscape has no empty band under the keyboard',
+    f.vh - f.transportBot <= 24, JSON.stringify(f));
+  await shot(page, 'layout-tablet-focus-landscape.png');
+
+  const hid = await clickFocusLabel('Hide keys');
+  await sleep(700);
+  f = await focusMetrics();
+  const kbHidden = await page.evaluate(() => {
+    const kb = document.querySelector('.ppp-kbwrap');
+    const s = kb && getComputedStyle(kb);
+    return !kb || s.display === 'none' || kb.getBoundingClientRect().height < 8;
+  });
+  ok('tablet Hide keys hides the keyboard', hid && kbHidden, JSON.stringify(f));
+  ok('tablet Hide keys gives the score most of the landscape screen',
+    f.staffH >= Math.round(f.vh * 0.7), JSON.stringify(f));
+  await shot(page, 'layout-tablet-focus-landscape-nokeys.png');
+  await clickFocusLabel('Show keys');
+  await sleep(400);
+
+  await page.setViewport({ width: 768, height: 1024 });
+  await sleep(400);
+  const left = await clickFocusLabel('Leave focus');
+  await sleep(400);
+  f = await focusMetrics();
+  ok('tablet Leave focus restores the full screen', left && f.focus === 'false', JSON.stringify(f));
+
   await page.click('[data-sidebar-toggle="show"]');
   await sleep(280);
   m = await metrics(page);

@@ -9,6 +9,7 @@
 <script src="./audio-score.js"></script>
 <script src="./score-search.js"></script>
 <script src="./support.js"></script>
+<script src="./lessons.js"></script>
 </head>
 <body>
 <x-dc>
@@ -190,70 +191,93 @@
   .ppp-videocard video { width: 100%; height: 100%; display: block; border: 0; background: #000; }
 
   /* ---- focus mode ----
-     On a tablet held at the piano there is no room for a sidebar, a header and
-     a coach panel. Everything that is not the score, the keyboard and the
-     transport goes away. The column is locked to the screen so the score keeps
-     the height the keyboard would otherwise grow into. */
+     Lock to the visible screen (fixed, not 100vh) so iPad Safari cannot leave
+     a blank band under the keyboard. flex-basis 0% so the score takes leftover
+     height instead of sizing to one system and dumping the rest below. */
+  html:has(.ppp-shell[data-focus="true"]),
+  body:has(.ppp-shell[data-focus="true"]) {
+    overflow: hidden;
+    height: 100%;
+  }
   .ppp-shell[data-focus="true"] {
+    position: fixed; inset: 0;
     grid-template-columns: minmax(0, 1fr);
-    height: 100vh; height: 100dvh;
+    height: 100%;
+    width: 100%;
     overflow: hidden;
   }
   .ppp-shell[data-focus="true"] .ppp-aside,
   .ppp-shell[data-focus="true"] .ppp-header,
   .ppp-shell[data-focus="true"] .ppp-panel,
   .ppp-shell[data-focus="true"] .ppp-hide-in-focus { display: none !important; }
-  .ppp-shell[data-focus="true"] .ppp-main {
-    height: 100%; min-height: 0; overflow: hidden;
-  }
-  .ppp-shell[data-focus="true"] .ppp-split {
-    grid-template-columns: minmax(0, 1fr) !important;
-    /* the inline align-items:start keeps the column from filling the height */
-    align-items: stretch !important;
-  }
-  .ppp-shell[data-focus="true"] .ppp-page {
-    flex: 1 1 auto;
+  .ppp-shell[data-focus="true"] .ppp-main,
+  .ppp-shell[data-focus="true"] .ppp-page,
+  .ppp-shell[data-focus="true"] .ppp-split,
+  .ppp-shell[data-focus="true"] .ppp-playcol {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1 1 0%;
     min-height: 0;
     height: 100%;
     overflow: hidden;
-    padding: 8px 10px;
-    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
-    gap: 8px;
   }
+  .ppp-shell[data-focus="true"] .ppp-split {
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: stretch !important;
+    gap: 0 !important;
+  }
+  .ppp-shell[data-focus="true"] .ppp-page {
+    padding: 6px 8px;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+    gap: 6px;
+  }
+  .ppp-shell[data-focus="true"] .ppp-playcol { gap: 6px !important; }
   .ppp-focus-exit { display: none; }
   .ppp-shell[data-focus="true"] .ppp-focus-exit {
     display: inline-flex; align-items: center; gap: 7px;
   }
-  /* the staff takes whatever height is left once the keyboard has its share */
-  .ppp-shell[data-focus="true"] .ppp-staffhead { padding: 8px 10px !important; flex-wrap: nowrap; }
-  .ppp-shell[data-focus="true"] .ppp-staffwrap { padding: 6px 4px !important; }
-  .ppp-shell[data-focus="true"] .ppp-staffwrap svg { width: 100%; height: auto; }
-  /* the two cards share the height that the hidden chrome gave back */
-  .ppp-shell[data-focus="true"] .ppp-page > div,
-  .ppp-shell[data-focus="true"] .ppp-page > div > section { min-width: 0; }
-  .ppp-shell[data-focus="true"] .ppp-page > div { flex: 1 1 auto; min-height: 0; display: flex; }
-  .ppp-shell[data-focus="true"] .ppp-page > div > section {
-    flex: 1 1 auto; min-height: 0; gap: 8px !important;
+  .ppp-shell[data-focus="true"] .ppp-staffhead {
+    padding: 6px 10px !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
   }
+  .ppp-shell[data-focus="true"] .ppp-staffhead button {
+    padding: 5px 10px !important;
+    font-size: 12px !important;
+    flex: none;
+  }
+  @media (max-width: 720px) {
+    .ppp-shell[data-focus="true"] .ppp-nowbeat { display: none; }
+  }
+  .ppp-shell[data-focus="true"] .ppp-staffwrap { padding: 4px 4px 8px !important; }
+  .ppp-shell[data-focus="true"] .ppp-staffwrap svg { width: 100%; height: auto; }
   .ppp-shell[data-focus="true"] .ppp-staffcard {
-    flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;
+    flex: 1 1 0%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
   }
   .ppp-shell[data-focus="true"] .ppp-transport {
     flex: 0 0 auto;
     padding: 8px 10px !important;
   }
   .ppp-shell[data-focus="true"] .ppp-focus-grow {
-    flex: 1 1 auto; min-height: 0;
-    display: flex; align-items: center; justify-content: center;
+    flex: 1 1 0%;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     overflow: hidden !important;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
-  /* viewBox + the default preserveAspectRatio letterboxes the engraving
-     inside whatever box is left, so it grows without distorting. */
+  .ppp-shell[data-focus="true"] .ppp-focus-grow:not([data-whole="true"]) .ppp-score {
+    width: 100%; height: 100%;
+  }
   .ppp-shell[data-focus="true"] .ppp-focus-grow svg {
     height: 100% !important; width: 100% !important;
   }
-  /* A whole piece is taller than the box: let it scroll instead of shrinking
-     it until the notes are gone. */
   .ppp-staffwrap[data-whole="true"] { max-height: 62vh; overflow-y: auto !important; }
   .ppp-shell[data-focus="true"] .ppp-staffwrap[data-whole="true"],
   .ppp-shell[data-focus="true"] .ppp-focus-grow[data-whole="true"] {
@@ -264,26 +288,37 @@
   .ppp-shell[data-focus="true"] .ppp-focus-grow[data-whole="true"] svg {
     height: auto !important;
   }
-  /* A phone cannot fit four octaves at a readable size, so while focused the
-     keys keep their size and the strip scrolls, following what is being asked
-     for rather than shrinking until nothing can be read. The strip itself is
-     capped so a tablet's score is not squeezed to half a system. */
   .ppp-shell[data-focus="true"] .ppp-kbwrap {
     overflow-x: auto !important; overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     margin-top: 8px !important;
-    max-height: clamp(110px, 18vh, 168px);
+    max-height: clamp(96px, 16vh, 148px);
   }
   .ppp-shell[data-focus="true"] .ppp-kbwrap svg {
     display: block;
-    height: clamp(110px, 18vh, 168px) !important;
+    height: clamp(96px, 16vh, 148px) !important;
     width: auto !important;
     max-width: none;
     margin: 0 auto;
   }
-  /* setup controls are not playing controls */
+  .ppp-shell[data-focus="true"][data-keys="false"] .ppp-kbwrap { display: none !important; }
   .ppp-shell[data-focus="true"] .ppp-setup-only { display: none !important; }
+  .ppp-focus-only { display: none !important; }
   .ppp-shell[data-focus="true"] .ppp-focus-only { display: flex !important; }
+
+  /* Landscape at the piano: the score is the page, the keys are a strip. */
+  @media (orientation: landscape) and (max-height: 900px) {
+    .ppp-shell[data-focus="true"] .ppp-page {
+      padding: 4px 8px;
+      padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+      gap: 4px;
+    }
+    .ppp-shell[data-focus="true"] .ppp-playcol { gap: 4px !important; }
+    .ppp-shell[data-focus="true"] .ppp-staffhead { padding: 4px 10px !important; }
+    .ppp-shell[data-focus="true"] .ppp-transport { padding: 6px 10px !important; }
+    .ppp-shell[data-focus="true"] .ppp-kbwrap { margin-top: 6px !important; max-height: min(18vh, 112px); }
+    .ppp-shell[data-focus="true"] .ppp-kbwrap svg { height: min(18vh, 112px) !important; }
+  }
 
   @media (max-width: 1024px) {
     .ppp-shell, .ppp-shell[data-sidebar-collapsed="true"] {
@@ -397,7 +432,7 @@
   </div>
 </sc-if>
 
-<div data-app="{{ theme }}" ref="{{ rootRef }}" class="ppp-shell" data-focus="{{ focusAttr }}" data-sidebar-collapsed="{{ sidebarCollapsedAttr }}" data-sidebar-open="{{ sidebarOpenAttr }}" style="background: var(--bg); color: var(--ink); font-family: Figtree, 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', system-ui, sans-serif;">
+<div data-app="{{ theme }}" ref="{{ rootRef }}" class="ppp-shell" data-focus="{{ focusAttr }}" data-keys="{{ keysAttr }}" data-sidebar-collapsed="{{ sidebarCollapsedAttr }}" data-sidebar-open="{{ sidebarOpenAttr }}" style="background: var(--bg); color: var(--ink); font-family: Figtree, 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', system-ui, sans-serif;">
 
   <button type="button" class="ppp-backdrop" onClick="{{ closeSidebar }}" aria-label="{{ hideSidebarLabel }}"></button>
 
@@ -525,6 +560,7 @@
                 <button onClick="{{ goUpload }}" style="padding: 12px 20px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer;" style-hover="border-color: var(--ink3);">Upload Sheet Music</button>
                 <button onClick="{{ loadSample }}" style="padding: 12px 20px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer;" style-hover="border-color: var(--ink3);">Try a Sample Song</button>
               </div>
+              <button onClick="{{ goLearn }}" data-go-learn style="display: inline-block; margin-top: 14px; padding: 0; border: 0; background: transparent; color: var(--accent); font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; text-align: left;" style-hover="text-decoration: underline;">New to the piano? Start with Piano Basics →</button>
               <div style="display: flex; align-items: center; gap: 6px; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); flex-wrap: wrap;">
                 <span style="font-size: 12px; color: var(--ink3); margin-right: 4px;">How PPP works</span>
                 <sc-for list="{{ promise }}" as="p" hint-placeholder-count="4">
@@ -861,7 +897,7 @@
 
             <div class="ppp-staffcard" style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); overflow: hidden;">
               <div class="ppp-staffhead" style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap;">
-                <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink2);">{{ nowMeasure }}</span>
+                <span class="ppp-nowbeat" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink2);">{{ nowMeasure }}</span>
                 <div style="flex: 1;"></div>
                 <div class="ppp-setup-only" style="display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface2);">
                   <sc-for list="{{ handTabs }}" as="h" hint-placeholder-count="3">
@@ -877,6 +913,7 @@
                   </span>
                 </sc-if>
                 <button onClick="{{ toggleWhole }}" style="{{ wholeBtnStyle }}" title="{{ wholeHint }}">{{ wholeLabel }}</button>
+                <button class="ppp-focus-only" data-keys-toggle onClick="{{ toggleKeys }}" style="{{ keysBtnStyle }}" title="{{ keysHint }}">{{ keysLabel }}</button>
                 <button onClick="{{ toggleFocus }}" style="{{ focusBtnStyle }}" title="{{ focusHint }}">{{ focusLabel }}</button>
               </div>
               <sc-if value="{{ showHint }}" hint-placeholder-val="{{ false }}">
@@ -1411,6 +1448,135 @@
         </div>
       </sc-if>
 
+      <sc-if value="{{ isLearn }}" hint-placeholder-val="{{ false }}">
+        <!-- Piano Basics: a course for someone who has never played. The step
+             you are on fills the page, one thing at a time; the whole course
+             is on the right with what is done ticked. Every exercise answers
+             to the keys on screen, the computer keyboard and MIDI alike. -->
+        <div class="ppp-split" data-learn style="display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 22px; align-items: start;">
+          <section style="display: flex; flex-direction: column; gap: 16px; min-width: 0;">
+            <div>
+              <div style="font-size: 11.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent);">{{ learnKicker }}</div>
+              <h1 data-learn-title style="font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 38px; line-height: 1.08; letter-spacing: -0.01em; margin: 8px 0 6px;">{{ learnTitle }}</h1>
+              <p style="margin: 0; font-size: 14px; color: var(--ink2);">{{ learnGoal }}</p>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <sc-for list="{{ learnDots }}" as="d" hint-placeholder-count="4">
+                <button type="button" onClick="{{ d.on }}" style="{{ d.style }}" title="{{ d.label }}" aria-label="{{ d.label }}"></button>
+              </sc-for>
+              <span style="margin-left: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--ink3);">{{ learnStepCount }}</span>
+            </div>
+
+            <sc-if value="{{ learnInStep }}" hint-placeholder-val="{{ true }}">
+              <div data-learn-card data-kind="{{ learnKind }}" style="border: 1px solid var(--line); border-radius: 20px; background: var(--surface); padding: 26px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 16px; min-width: 0;">
+                <div>
+                  <span style="{{ learnKindStyle }}">{{ learnKindLabel }}</span>
+                  <h2 style="margin: 10px 0 0; font-size: 21px; font-weight: 600; letter-spacing: -0.015em;">{{ learnStepTitle }}</h2>
+                </div>
+                <sc-for list="{{ learnText }}" as="p" hint-placeholder-count="2">
+                  <p style="margin: 0; font-size: 15px; line-height: 1.65; color: var(--ink); max-width: 64ch;">{{ p }}</p>
+                </sc-for>
+
+                <sc-if value="{{ learnHasQuestion }}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
+                    <div data-learn-question style="font-size: 17px; font-weight: 600; line-height: 1.4;">{{ learnQuestion }}</div>
+                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink3);">{{ learnQuestionCount }}</span>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ learnHasPicture }}" hint-placeholder-val="{{ false }}">
+                  <div data-learn-picture style="border: 1px solid var(--line); border-radius: 16px; background: {{ learnPictureBg }}; padding: 16px; overflow-x: auto;">{{ learnPicture }}</div>
+                </sc-if>
+
+                <sc-if value="{{ learnHasChips }}" hint-placeholder-val="{{ false }}">
+                  <div data-learn-chips style="display: flex; flex-wrap: wrap; gap: 6px;">
+                    <sc-for list="{{ learnChips }}" as="c" hint-placeholder-count="8">
+                      <span style="{{ c.style }}">{{ c.label }}</span>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ learnHasChoices }}" hint-placeholder-val="{{ false }}">
+                  <div data-learn-choices style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <sc-for list="{{ learnChoices }}" as="o" hint-placeholder-count="3">
+                      <button type="button" onClick="{{ o.on }}" data-choice="{{ o.i }}" style="{{ o.style }}">{{ o.label }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ learnHasTap }}" hint-placeholder-val="{{ false }}">
+                  <div>{{ learnTapPad }}</div>
+                </sc-if>
+
+                <sc-if value="{{ learnHasKeys }}" hint-placeholder-val="{{ true }}">
+                  <div class="ppp-learn-keys" style="border-radius: 14px; border: 1px solid var(--line); background: var(--key-b); padding: 10px 10px 0; overflow-x: auto;">{{ learnKeys }}</div>
+                </sc-if>
+
+                <div data-learn-feedback style="{{ learnFeedbackStyle }}">{{ learnFeedback }}</div>
+
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                  <sc-for list="{{ learnTools }}" as="b" hint-placeholder-count="1">
+                    <button type="button" onClick="{{ b.on }}" data-learn-tool="{{ b.id }}" style="{{ b.style }}">{{ b.label }}</button>
+                  </sc-for>
+                  <div style="flex: 1;"></div>
+                  <button type="button" onClick="{{ learnBack }}" data-learn-back style="{{ learnBackStyle }}">{{ learnBackLabel }}</button>
+                  <button type="button" onClick="{{ learnNext }}" data-learn-next="{{ learnNextState }}" style="{{ learnNextStyle }}">{{ learnNextLabel }}</button>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ learnFinished }}" hint-placeholder-val="{{ false }}">
+              <div data-learn-complete style="border: 1px solid var(--line); border-radius: 20px; background: var(--surface); padding: 38px 28px; box-shadow: var(--shadow); text-align: center;">
+                <div style="width: 64px; height: 64px; margin: 0 auto; border-radius: 999px; background: var(--good); color: #fff; display: grid; place-items: center; font-size: 30px; font-weight: 700;">✓</div>
+                <h2 style="font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 34px; margin: 16px 0 6px;">{{ learnDoneTitle }}</h2>
+                <p style="margin: 0; font-size: 14.5px; color: var(--ink2);">{{ learnDoneText }}</p>
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 22px;">
+                  <button type="button" onClick="{{ learnAgain }}" style="padding: 11px 18px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;">Practice again</button>
+                  <button type="button" onClick="{{ learnGoNext }}" data-learn-go-next style="padding: 11px 20px; border-radius: 11px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;" style-hover="filter: brightness(1.08);">{{ learnGoNextLabel }}</button>
+                </div>
+              </div>
+            </sc-if>
+          </section>
+
+          <section style="display: flex; flex-direction: column; gap: 12px;">
+            <div data-learn-course style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px;">
+                <span style="font-size: 13.5px; font-weight: 600;">Your course</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink3);">{{ learnDoneCount }}</span>
+              </div>
+              <div style="height: 6px; border-radius: 999px; background: var(--surface2); margin-top: 10px; overflow: hidden;"><div style="{{ learnBarStyle }}"></div></div>
+              <sc-for list="{{ learnUnits }}" as="u" hint-placeholder-count="3">
+                <div style="margin-top: 16px;">
+                  <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3);">{{ u.title }}</div>
+                  <div style="display: flex; flex-direction: column; gap: 2px; margin-top: 6px;">
+                    <sc-for list="{{ u.lessons }}" as="l" hint-placeholder-count="3">
+                      <button type="button" onClick="{{ l.on }}" data-lesson="{{ l.id }}" style="{{ l.style }}" style-hover="background: var(--surface2);">
+                        <span style="{{ l.markStyle }}">{{ l.mark }}</span>
+                        <span style="flex: 1; min-width: 0;">{{ l.title }}</span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="border: 1px solid var(--accent-2); border-radius: 18px; background: var(--accent-3); padding: 18px;">
+              <div style="font-size: 11.5px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--accent);">How to play along</div>
+              <p style="margin: 10px 0 0; font-size: 13px; line-height: 1.55; color: var(--ink);">Tap the keys on screen, or use your computer keyboard:</p>
+              <div style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; margin-top: 10px;">
+                <sc-for list="{{ learnKeycaps }}" as="k" hint-placeholder-count="8">
+                  <div style="display: flex; flex-direction: column; align-items: center; gap: 3px;">
+                    <span style="width: 100%; max-width: 30px; padding: 4px 0; border-radius: 6px; border: 1px solid var(--line); border-bottom-width: 2px; background: var(--surface); font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 600; text-align: center;">{{ k.cap }}</span>
+                    <span style="font-size: 10.5px; color: var(--ink2);">{{ k.name }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <p style="margin: 10px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--ink2);">A MIDI keyboard works too — connect it with the MIDI button at the top.</p>
+            </div>
+          </section>
+        </div>
+      </sc-if>
+
       <sc-if value="{{ isBasics }}" hint-placeholder-val="{{ false }}">
         <div class="ppp-split" style="display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 22px; align-items: start;">
           <section style="display: flex; flex-direction: column; gap: 16px;">
@@ -1776,7 +1942,7 @@
 </div>
 
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;upload&quot;,&quot;analysis&quot;,&quot;plan&quot;,&quot;player&quot;,&quot;loop&quot;,&quot;memory&quot;,&quot;progress&quot;,&quot;songs&quot;,&quot;basics&quot;,&quot;settings&quot;,&quot;empty&quot;,&quot;states&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Demo&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Demo&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;oklch(0.52 0.19 285)&quot;,&quot;oklch(0.52 0.19 255)&quot;,&quot;oklch(0.52 0.19 310)&quot;,&quot;oklch(0.52 0.16 195)&quot;],&quot;default&quot;:&quot;oklch(0.52 0.19 285)&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;showGamification&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Theme&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;upload&quot;,&quot;analysis&quot;,&quot;plan&quot;,&quot;player&quot;,&quot;loop&quot;,&quot;memory&quot;,&quot;progress&quot;,&quot;songs&quot;,&quot;learn&quot;,&quot;basics&quot;,&quot;settings&quot;,&quot;empty&quot;,&quot;states&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Demo&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Demo&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;oklch(0.52 0.19 285)&quot;,&quot;oklch(0.52 0.19 255)&quot;,&quot;oklch(0.52 0.19 310)&quot;,&quot;oklch(0.52 0.16 195)&quot;],&quot;default&quot;:&quot;oklch(0.52 0.19 285)&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;showGamification&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Theme&quot;}}">
 /* ============================================================================
    PIANO
 
@@ -3627,7 +3793,10 @@ class MidiOut {
     this._input = opts.input || null;
     this.deviceId = null;
     this.deviceName = null;
-    this._held = {};
+    /* Web MIDI cannot un-send a timestamped message. Each note-on is kept
+       with the time it was queued so panic can place a note-off at that
+       same timestamp (later send, same t) and the on never sounds. */
+    this._queuedOn = [];
   }
   access() { return this._input ? this._input.access : null; }
   devices() { return this._input && this._input.outputs ? this._input.outputs() : []; }
@@ -3668,26 +3837,34 @@ class MidiOut {
   }
   noteOn(midi, vel, t) {
     const m = midi & 127, v = Math.max(1, Math.min(127, vel == null ? 80 : vel | 0));
+    const when = (t == null || !isFinite(t)) ? nowMs() : t;
     this.send([0x90, m, v], t);
-    this._held[m] = true;
+    this._queuedOn.push({ midi: m, t: when });
   }
   noteOff(midi, t) {
     const m = midi & 127;
     this.send([0x80, m, 0], t);
-    delete this._held[m];
   }
   cc(n, v, t) {
     this.send([0xB0, n & 127, (v == null ? 0 : v) & 127], t);
   }
   localOff() { this.cc(122, 0); }
   panic(t) {
-    Object.keys(this._held).forEach(m => this.noteOff(+m, t));
-    this.cc(64, 0, t);
-    this.cc(66, 0, t);
-    this.cc(67, 0, t);
-    this.cc(123, 0, t);
-    this.cc(120, 0, t);
-    this._held = {};
+    const when = (t == null || !isFinite(t)) ? nowMs() : t;
+    const pending = this._queuedOn;
+    this._queuedOn = [];
+    /* A later send at the same timestamp as a queued on runs after it, so
+       the key goes down and up in the same instant and is not heard. Ons
+       that already reached their time are cut off now. */
+    pending.forEach(q => {
+      const at = q.t > when ? q.t : when;
+      this.send([0x80, q.midi & 127, 0], at);
+    });
+    this.cc(64, 0, when);
+    this.cc(66, 0, when);
+    this.cc(67, 0, when);
+    this.cc(123, 0, when);
+    this.cc(120, 0, when);
   }
 }
 
@@ -8530,6 +8707,7 @@ function makeScoreView(React) {
               if (g && g.classList) g.classList.add('ppp-note');
               /* bar|beat|staff, so what sounds together can be checked to be drawn together */
               if (g && g.setAttribute && meta.key) g.setAttribute('data-onset', meta.key);
+              if (g && g.setAttribute && meta.rest) g.setAttribute('data-rest', '1');
               try { sn.setStave(stave).setContext(ctx).draw(); } catch (e) {}
               ctx.closeGroup();
               if (!meta.rest && meta.sn) {
@@ -8540,12 +8718,11 @@ function makeScoreView(React) {
                   slurStart: meta.slurStart, slurStop: meta.slurStop
                 });
               }
-              if (meta.rest) return;
               allNoteMeta.push({
                 el: g,
                 absStart: meta.abs,
                 absEnd: meta.abs + Math.max(meta.dur, 0.25),
-                midis: meta.midis,
+                midis: meta.midis || [],
                 hand: meta.hand,
                 key: meta.key
               });
@@ -8920,34 +9097,46 @@ function makeScoreView(React) {
         /* read the live prop, not the one captured when this was drawn */
         const send = e => { const fn = this.props.pick; if (fn) fn(e); };
 
-        let from = null, last = null, downY = 0;
+        let from = null, last = null, downY = 0, downX = 0, mode = null;
         svg.addEventListener('pointerdown', ev => {
           const h = hit(ev);
           if (!h || ev.button > 0) return;
           from = h.seg.number;
           last = h;
           downY = ev.clientY;
-          try { svg.setPointerCapture(ev.pointerId); } catch (e) {}
-          send({ from: from, to: from, q: h.q, extend: ev.shiftKey, phase: 'start' });
+          downX = ev.clientX;
+          mode = null;
         });
         svg.addEventListener('pointermove', ev => {
           const h = hit(ev);
           outline(h && h.seg);
-          if (from == null || !h) return;
+          if (from == null) return;
+          const dx = Math.abs(ev.clientX - downX), dy = Math.abs(ev.clientY - downY);
+          if (mode == null) {
+            if (dx < 12 && dy < 12) return;
+            /* a vertical pan scrolls the page of music; capturing the pointer
+               had stolen that gesture on a tablet */
+            if (dy > dx) { mode = 'pan'; from = null; last = null; return; }
+            mode = 'pick';
+            try { svg.setPointerCapture(ev.pointerId); } catch (e) {}
+            send({ from: from, to: from, q: last.q, extend: ev.shiftKey, phase: 'start' });
+          }
+          if (mode !== 'pick' || !h) return;
           last = h;
           send({ from: from, to: h.seg.number, q: h.q, extend: ev.shiftKey, phase: 'move' });
         });
         svg.addEventListener('pointerup', ev => {
-          if (from != null && last) {
-            const dy = Math.abs((ev && ev.clientY) - downY);
-            /* a vertical pan on the same bar is a scroll, not a click */
-            if (!(from === last.seg.number && dy > 24)) {
+          if (from != null && last && mode !== 'pan') {
+            if (mode === 'pick') {
+              send({ from: from, to: last.seg.number, q: last.q, extend: !!(ev && ev.shiftKey), phase: 'end' });
+            } else {
+              /* a tap: no drag, so it never sent start */
               send({ from: from, to: last.seg.number, q: last.q, extend: !!(ev && ev.shiftKey), phase: 'end' });
             }
           }
-          from = null; last = null;
+          from = null; last = null; mode = null;
         });
-        svg.addEventListener('pointercancel', () => { from = null; last = null; });
+        svg.addEventListener('pointercancel', () => { from = null; last = null; mode = null; });
         svg.addEventListener('pointerleave', () => { if (from == null) outline(null); });
       }
 
@@ -9413,7 +9602,7 @@ class Component extends DCLogic {
       minutes: 18, xp: 1240, streak: 7, sessions: [10, 18, 14, 23, 8, 20, 18],
       /* MIDI stays off until the user asks for it: requesting access can
          prompt, and claiming a connection we do not have would be a lie. */
-      toggles: { midi: false, midiOut: false, notify: true, sound: false, notes: true, auto: true, follow: true, paper: true, handGuide: true, handSee: 45, handNums: 'all', handNames: true },
+      toggles: { midi: false, midiOut: false, notify: true, sound: false, notes: true, auto: true, follow: true, paper: true, handGuide: true, handSee: 45, handNums: 'all', handNames: true, keys: true },
       gateIdx: 0, focus: false,
       /* The whole piece, by default. Four bars at a time and a measure number in
          a sidebar tells you nothing about where you are; you have to see it. */
@@ -9435,7 +9624,10 @@ class Component extends DCLogic {
       authName: '',
       /* Shared Scores, and the share dialog (null when closed) */
       sharedList: null, sharedLoad: 'idle', sharedError: '', sharedFilter: 'All', sharedQuery: '',
-      sharedLinked: null, sharedOpening: null, shareDlg: null
+      sharedLinked: null, sharedOpening: null, shareDlg: null,
+      /* Piano Basics: where you are in the course, what is done, and the
+         working state of the step on screen (see learnVals) */
+      learnLesson: 'keys', learnStep: 0, learnDone: {}, lx: null, learnClock: null, learnNow: 0
     };
   })();
 
@@ -9590,10 +9782,13 @@ class Component extends DCLogic {
     this._shareUid = uid;
   }
   componentWillUnmount() {
+    this._dead = true;
     clearInterval(this._iv);
     if (this._i18nRaf) cancelAnimationFrame(this._i18nRaf);
     clearTimeout(this._an); clearTimeout(this._toast); clearTimeout(this._quiz); clearTimeout(this._save);
     clearTimeout(this._staffRetry);
+    clearTimeout(this._focusFollow);
+    clearInterval(this._lxIv); clearTimeout(this._lxFlash); clearTimeout(this._lxNext);
     this.writeState();   /* flush whatever was still pending */
     window.removeEventListener('keydown', this._onKey);
     window.removeEventListener('resize', this._onResize);
@@ -9646,6 +9841,7 @@ class Component extends DCLogic {
           mastered: S.mastered, minutes: S.minutes, xp: S.xp, streak: S.streak,
           tempo: S.tempo, loopFrom: S.loopFrom, loopTo: S.loopTo, toggles: S.toggles,
           theme: S.theme, sessions: S.sessions, guidance: S.guidance, skillMs: S.skillMs,
+          learnDone: S.learnDone, learnLesson: S.learnLesson, learnStep: S.learnStep,
           sidebarCollapsed: !!S.sidebarCollapsed,
           fileName: S.fileName, fileMeta: S.fileMeta,
           /* which song in My Songs this progress belongs to */
@@ -9687,7 +9883,7 @@ class Component extends DCLogic {
 
     const patch = {};
     ['tasks', 'memLevel', 'blindRuns', 'mastered', 'minutes', 'xp', 'streak', 'tempo',
-      'theme', 'sessions', 'guidance', 'skillMs', 'fileName', 'fileMeta'].forEach(k => {
+      'theme', 'sessions', 'guidance', 'skillMs', 'fileName', 'fileMeta', 'learnDone', 'learnLesson', 'learnStep'].forEach(k => {
         if (d[k] !== undefined) patch[k] = d[k];
       });
     if (d.sidebarCollapsed != null) patch.sidebarCollapsed = !!d.sidebarCollapsed;
@@ -10410,6 +10606,14 @@ class Component extends DCLogic {
      move until you play it. No clock, no tempo, nothing to fall behind. A
      chord releases only once every note of it has been pressed.
 
+     A rest is an onset with nothing to play. Skipping those jumped the
+     playhead to the next sounding note, so the silence never happened. A rest
+     in the hands in play is a gate of its own — even while the other hand is
+     still holding — and so is a stretch of full silence with no rest glyph.
+     The playhead sits on it until the next written event, a wrong key is still
+     wrong, and playing the next written pitch skips the rest — you still set
+     the pace.
+
      It records which notes you got, and nothing else. You are setting the
      pace, so "late" has no meaning here: no timing is written, and a passage
      played this way never counts as evidence that you can play it at tempo. */
@@ -10417,23 +10621,119 @@ class Component extends DCLogic {
     return this.liveMidi() && this.state.toggles.follow !== false;
   }
 
-  /* Every onset in the loop range, hand-filtered, in playing order. */
+  /* Every onset in the loop range, hand-filtered, in playing order — sounding
+     notes, written rests (including in one hand while the other holds), and
+     silent gaps that have no rest glyph. */
   followGates() {
     const S = this.state;
     const [from, to] = this.range(S);
     const key = S.score.id + ':' + from + ':' + to + ':' + S.hands;
     if (this._gatesKey === key && this._gates) return this._gates;
-    const gates = [];
-    this.notesIn(from, to).forEach(n => {
-      if (n.rest || n.tieStop || !this.handOk(n, S.hands)) return;
-      const last = gates[gates.length - 1];
-      const note = { midi: n.midi, hand: n.hand === 'l' ? 'l' : 'r' };
-      if (last && Math.abs(last.b - n.abs) < 1e-6) last.notes.push(note);
-      else gates.push({ b: n.abs, m: n.m, notes: [note] });
+    const playAt = {}, restAt = {}, spans = [];
+    const tok = t => t.toFixed(5);
+    Score.allIn(S.score, from, to).forEach(n => {
+      if (!this.handOk(n, S.hands)) return;
+      const t0 = n.abs, t1 = n.abs + Math.max(n.dur || 0, 0), k = tok(t0);
+      if (n.rest) {
+        if (t1 - t0 < 1e-4) return;
+        const r = restAt[k] || (restAt[k] = { b: t0, m: n.m, dur: 0 });
+        r.dur = Math.max(r.dur, t1 - t0);
+        return;
+      }
+      if (n.midi == null) return;
+      spans.push([t0, t1]);
+      if (n.tieStop) return;
+      const p = playAt[k] || (playAt[k] = { b: t0, m: n.m, notes: [], rest: false });
+      p.notes.push({ midi: n.midi, hand: n.hand === 'l' ? 'l' : 'r' });
+    });
+    spans.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const merged = [];
+    spans.forEach(s => {
+      const last = merged[merged.length - 1];
+      if (!last || s[0] > last[1] + 1e-6) merged.push([s[0], s[1]]);
+      else last[1] = Math.max(last[1], s[1]);
+    });
+    const startQ = Score.startQ(S.score, from);
+    const endQ = Score.endQ(S.score, to);
+    const addGap = (a, b) => {
+      if (b - a < 1e-4) return;
+      const k = tok(a);
+      if (playAt[k] || restAt[k]) return;
+      restAt[k] = { b: a, m: Score.at(S.score, a), dur: b - a };
+    };
+    let cover = startQ;
+    merged.forEach(s => {
+      const a = Math.max(s[0], startQ), b = Math.min(s[1], endQ);
+      if (a > cover + 1e-4) addGap(cover, a);
+      cover = Math.max(cover, b);
+    });
+    if (endQ > cover + 1e-4) addGap(cover, endQ);
+    const events = [];
+    Object.keys(playAt).forEach(k => events.push({ t: playAt[k].b, play: playAt[k] }));
+    Object.keys(restAt).forEach(k => {
+      if (playAt[k]) return;
+      events.push({ t: restAt[k].b, rest: restAt[k] });
+    });
+    events.sort((a, b) => a.t - b.t);
+    const gates = events.map((e, i) => {
+      if (e.play) return e.play;
+      const nextT = i + 1 < events.length ? events[i + 1].t : endQ;
+      const span = nextT - e.rest.b;
+      return { b: e.rest.b, m: e.rest.m, notes: [], rest: true, dur: span > 1e-4 ? span : e.rest.dur };
     });
     this._gatesKey = key;
     this._gates = gates;
     return gates;
+  }
+
+  followDisarmRest() { this._restFrom = this._restUntil = null; }
+
+  /* A rest gate runs on the written length at the current tempo. */
+  followArmRest(i) {
+    this.followDisarmRest();
+    const g = this.followGates()[i];
+    if (!g || !g.rest) return;
+    const msQ = 60000 / Math.max(1, this.state.tempo || 84);
+    this._restFrom = nowMs();
+    this._restUntil = this._restFrom + Math.max(40, (g.dur || 0) * msQ);
+  }
+
+  followPark(idx, patch) {
+    const gates = this.followGates();
+    if (idx >= gates.length) return false;
+    patch.gateIdx = idx;
+    patch.beat = gates[idx].b;
+    this.followArmRest(idx);
+    return true;
+  }
+
+  followRestTick(now) {
+    if (this._restUntil == null) return;
+    const S = this.state;
+    const g = this.followGates()[S.gateIdx];
+    if (!g || !g.rest) { this.followDisarmRest(); return; }
+    if (now < this._restUntil) {
+      const msQ = 60000 / Math.max(1, S.tempo || 84);
+      const b = g.b + (now - this._restFrom) / msQ;
+      const cap = g.b + (g.dur || 0) - 1e-4;
+      const beat = Math.max(g.b, Math.min(cap, b));
+      if (Math.abs((S.beat || 0) - beat) > 0.02) this.setState({ beat });
+      return;
+    }
+    this.followAdvanceRest();
+  }
+
+  followAdvanceRest() {
+    this.followDisarmRest();
+    if (!this.following()) return;
+    const S = this.state;
+    const gates = this.followGates();
+    const g = gates[S.gateIdx];
+    if (!g || !g.rest) return;
+    const patch = { wrongNotes: [] };
+    const next = S.gateIdx + 1;
+    if (next < gates.length) { this.followPark(next, patch); this.setState(patch); return; }
+    this.followFinish(patch);
   }
 
   /* Park on the first onset of the range and start a fresh tally. */
@@ -10442,10 +10742,14 @@ class Component extends DCLogic {
     this._got = [];
     this._tally = {};
     this._gatesKey = null;
+    this.followDisarmRest();
     const gates = this.followGates();
-    p.gateIdx = 0;
-    p.beat = gates.length ? gates[0].b : Score.startQ(this.state.score, this.range(this.state)[0]);
     p.runHit = 0; p.runTot = 0; p.wrongNotes = [];
+    if (gates.length) this.followPark(0, p);
+    else {
+      p.gateIdx = 0;
+      p.beat = Score.startQ(this.state.score, this.range(this.state)[0]);
+    }
     return p;
   }
 
@@ -10461,27 +10765,51 @@ class Component extends DCLogic {
   }
 
   /* A key went down while following. It either belongs to the onset we are
-     waiting on, or it is simply wrong — there is no "early" or "late" here. */
+     waiting on, or it is simply wrong — there is no "early" or "late" here.
+     On a rest, the next written pitch skips the wait; anything else is extra. */
   followNote(ev) {
     const S = this.state;
     const gates = this.followGates();
-    const g = gates[S.gateIdx];
+    let gi = S.gateIdx;
+    let g = gates[gi];
     if (!g) return;
     /* Following can begin the moment a keyboard is connected, without anything
        having reset it first, so the tally starts here if it has not already. */
     if (!this._got) this._got = [];
-    const want = g.notes.map(n => n.midi);
+    const wantOf = gate => (gate.notes || []).map(n => n.midi);
 
+    if (g.rest || !g.notes.length) {
+      let ni = gi + 1;
+      while (ni < gates.length && (gates[ni].rest || !gates[ni].notes.length)) ni++;
+      const ng = gates[ni];
+      if (!ng || wantOf(ng).indexOf(ev.midi) < 0) {
+        const t = this.followStat(g.m);
+        t.wrong++; t.extra++;
+        const held = (S.wrongNotes || []).slice();
+        if (held.indexOf(ev.midi) < 0) held.push(ev.midi);
+        this.setState({ wrongNotes: held });
+        return;
+      }
+      this._got = [];
+      this.followDisarmRest();
+      gi = ni;
+      g = ng;
+    }
+
+    const want = wantOf(g);
     if (want.indexOf(ev.midi) < 0) {
       const t = this.followStat(g.m);
       t.wrong++; t.extra++;
       const held = (S.wrongNotes || []).slice();
       if (held.indexOf(ev.midi) < 0) held.push(ev.midi);
-      this.setState({ wrongNotes: held });
+      this.setState({ wrongNotes: held, gateIdx: gi, beat: g.b });
       return;
     }
     if (this._got.indexOf(ev.midi) < 0) this._got.push(ev.midi);
-    if (!want.every(p => this._got.indexOf(p) > -1)) { this.setState({ wrongNotes: [] }); return; }
+    if (!want.every(p => this._got.indexOf(p) > -1)) {
+      this.setState({ wrongNotes: [], gateIdx: gi, beat: g.b });
+      return;
+    }
 
     /* the onset is complete: bank it and step to the next one */
     const t = this.followStat(g.m);
@@ -10494,13 +10822,12 @@ class Component extends DCLogic {
 
     const patch = {
       wrongNotes: [],
-      runHit: S.runHit + g.notes.length,
-      runTot: S.runTot + g.notes.length
+      runHit: (S.runHit || 0) + g.notes.length,
+      runTot: (S.runTot || 0) + g.notes.length
     };
-    const next = S.gateIdx + 1;
+    const next = gi + 1;
     if (next < gates.length) {
-      patch.gateIdx = next;
-      patch.beat = gates[next].b;
+      this.followPark(next, patch);
       this.setState(patch);
       return;
     }
@@ -10559,6 +10886,8 @@ class Component extends DCLogic {
     /* The player's own key press is the only tone source while MIDI is live,
        so a silent controller still gives feedback and nothing doubles up. */
     if (S.toggles.notes) this.keyDown(ev.midi, ev.velocity);
+    /* On Piano Basics a note is an answer to the step on screen. */
+    if (S.screen === 'learn') { this.learnInput(ev.midi, true); return; }
     /* Following: the note itself is the transport. Nothing here is on a clock. */
     if (this.following()) {
       this.perf().noteOn(ev);
@@ -10633,7 +10962,12 @@ class Component extends DCLogic {
   tick() {
     const now = nowMs();
     this._last = now;
-    if (!this.state.playing || this.following()) { this.stopTransport(); return; }
+    if (this.following()) {
+      this.followRestTick(now);
+      this.stopTransport();
+      return;
+    }
+    if (!this.state.playing) { this.stopTransport(); return; }
     this.advance(now);
   }
 
@@ -11043,6 +11377,9 @@ class Component extends DCLogic {
     if (e.key === 'Escape' && this.state.shareDlg) { this.closeShareDialog(); return; }
     const t = e.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    /* On Piano Basics the letter row is a piano (A S D F… from Do) and the
+       space bar taps the rhythm, so no practice shortcut fires there. */
+    if (this.state.screen === 'learn' && !e.metaKey && !e.ctrlKey && !e.altKey && this.learnKey(e)) return;
     const k = e.key.toLowerCase();
     if (k === 'escape' && this.state.sidebarOpen) { this.setState({ sidebarOpen: false }); return; }
     /* Escape is what everyone tries first to get out of a full screen. */
@@ -11117,15 +11454,15 @@ class Component extends DCLogic {
       this._got = [];
       this._tally = {};
       this._gatesKey = null;
+      this.followDisarmRest();
       const gates = this.followGates();
       let gi = 0;
       while (gi < gates.length && gates[gi].b < b - 1e-6) gi++;
       if (gi >= gates.length) gi = 0;
-      this.setState({
-        beat: gates.length ? gates[gi].b : b,
-        gateIdx: gi,
-        runHit: 0, runTot: 0, wrongNotes: [], held: []
-      });
+      const patch = { runHit: 0, runTot: 0, wrongNotes: [], held: [] };
+      if (gates.length) this.followPark(gi, patch);
+      else { patch.beat = b; patch.gateIdx = 0; }
+      this.setState(patch);
       return;
     }
     this._last = nowMs();
@@ -12651,7 +12988,10 @@ class Component extends DCLogic {
        strip's height so a tablet still has room for the score; the width
        follows the viewBox so the keys are not squashed. */
     const vh = typeof window !== 'undefined' ? window.innerHeight : 900;
-    const focusCap = S.focus ? Math.max(110, Math.min(168, Math.round(vh * 0.18))) : 0;
+    const landscape = typeof window !== 'undefined' && window.innerWidth > window.innerHeight;
+    const focusCap = S.focus
+      ? (landscape ? Math.max(72, Math.min(112, Math.round(vh * 0.18))) : Math.max(96, Math.min(148, Math.round(vh * 0.16))))
+      : 0;
     const tall = vh >= 700;
     const minW = S.focus && !focusCap ? whites.length * (tall ? 34 : 26) : 0;
     /* The hands go over the keys, and their palms into a strip below them. */
@@ -12906,6 +13246,7 @@ class Component extends DCLogic {
         : tab === 'loop' ? tx('Loop a passage') + ' · ' + passage : tx('Memorize') + ' · ' + passage)],
       progress: [tx('Progress'), score.title],
       songs: [tx('My Songs'), tx('{{n}} songs in your library', { n: this.shelfSongs().length })], basics: [tx('Sight Reading'), tx('Remember the Basics')],
+      learn: [tx('Piano Basics'), tx('Step by step from Do Re Mi')],
       shared: [tx('Shared Scores'), tx('Scores anyone can open')],
       settings: [tx('Settings'), tx('Account · practice · devices')], empty: [tx('My Songs'), tx('Nothing here yet')],
       states: [tx('States'), tx('Loading · error · offline')],
@@ -12917,6 +13258,7 @@ class Component extends DCLogic {
        that say what is there. Upload is the button above the list. */
     const navList = [
       ['Home', 'home', 'What to do today'],
+      ['Piano Basics', 'learn', 'Step by step from Do Re Mi'],
       ['My Songs', 'songs', 'Your library'],
       ['Shared Scores', 'shared', 'Scores anyone can open'],
       ['Analysis & Plan', 'analysis', 'Hard parts and the plan'],
@@ -13270,11 +13612,11 @@ class Component extends DCLogic {
 
       isHome: sc === 'home', isUpload: sc === 'upload', isAnalysis: sc === 'analysis',
       isPlayer: sc === 'player', isProgress: sc === 'progress',
-      isSongs: sc === 'songs', isBasics: sc === 'basics', isSettings: sc === 'settings', isEmpty: sc === 'empty', isStates: sc === 'states',
+      isSongs: sc === 'songs', isLearn: sc === 'learn', isBasics: sc === 'basics', isSettings: sc === 'settings', isEmpty: sc === 'empty', isStates: sc === 'states',
       isReview: sc === 'review',
       goUpload: this.go('upload'), goAnalysis: this.go('analysis'), goPlayer: this.go('player'),
       goMemory: this.go('memory'),
-      goProgress: this.go('progress'), goSongs: this.go('songs'),
+      goProgress: this.go('progress'), goSongs: this.go('songs'), goLearn: this.go('learn'),
       loadSample: () => this.loadSample(),
 
       /* ---- home ---- */
@@ -13660,7 +14002,14 @@ class Component extends DCLogic {
       wholeLabel: tx(S.wholeScore ? 'Whole score' : 'This part'),
       wholeHint: tx('See the whole piece at once, with the weak bars shaded'),
       focusAttr: S.focus ? 'true' : 'false',
+      keysAttr: S.toggles.keys === false ? 'false' : 'true',
       toggleFocus: () => this.toggleFocus(),
+      toggleKeys: () => this.setState(st => ({
+        toggles: Object.assign({}, st.toggles, { keys: st.toggles.keys === false })
+      }), () => { this._lastBar = null; this.followStaff(); }),
+      keysBtnStyle: this.chip(S.toggles.keys !== false),
+      keysLabel: tx(S.toggles.keys === false ? 'Show keys' : 'Hide keys'),
+      keysHint: tx('Hide the on-screen keyboard so the score has the screen'),
       focusBtnStyle: this.chip(S.focus),
       focusLabel: tx(S.focus ? 'Leave focus' : 'Focus'),
       focusHint: tx('Hide everything except the score and the keyboard (F)'),
@@ -13671,7 +14020,10 @@ class Component extends DCLogic {
         if (on) {
           this.followReset(patch);
           if (!this.liveMidi()) this.connectMidi();
-        } else patch.playing = false;
+        } else {
+          patch.playing = false;
+          this.followDisarmRest();
+        }
         this.setState(patch);
       },
       followBtnStyle: this.chip(S.toggles.follow !== false),
@@ -13726,13 +14078,15 @@ class Component extends DCLogic {
           tx('Sheet music hidden — play Measures {{from}}–{{to}} from memory.', { from: S.loopFrom, to: S.loopTo }))
         : this.sv({
         /* Four bars across a phone leaves each note a few pixels. Focused on a
-           narrow screen the window halves instead, so the notation is legible
-           at the distance you actually sit from a tablet. */
+           phone the window is two bars; a tablet keeps four, on two lines. */
         startM: S.wholeScore ? this.firstM() : this.viewStart(staffBars),
         count: S.wholeScore ? Score.count(score) : staffBars,
         /* a wider page holds more bars at the same note size, the way a
-           landscape page does, instead of leaving a margin down the right */
-        perRow: S.wholeScore ? this.barsPerLine() : 0,
+           landscape page does, instead of leaving a margin down the right.
+           Focused on a tablet the close view is two bars on two lines, so the
+           extra height becomes bigger notes instead of empty paper. */
+        perRow: S.wholeScore ? this.barsPerLine()
+          : (S.focus && typeof window !== 'undefined' && window.innerWidth > 720 ? 2 : 0),
         fluid: S.wholeScore,
         weak: S.wholeScore ? this.weakMeasures() : null,
         heading: S.wholeScore,
@@ -14016,7 +14370,454 @@ class Component extends DCLogic {
       stateTabs: ['Loading', 'Error', 'Offline'].map(label => ({ label: tx(label), style: this.pill(S.stateTab === label), on: () => this.setState({ stateTab: label }) })),
       stateLoading: S.stateTab === 'Loading', stateError: S.stateTab === 'Error', stateOffline: S.stateTab === 'Offline',
       skeletons: [1, 2, 3]
-    }, sc === 'shared' ? this.sharedVals() : null, this.shareDialogVals());
+    }, sc === 'shared' ? this.sharedVals() : null, sc === 'learn' ? this.learnVals() : null, this.shareDialogVals());
+  }
+
+  /* ============================ piano basics ============================
+     The beginner course in lessons.js. The state holds the lesson and step
+     you are on, what is done, and `lx`: the working state of that step's
+     exercise, which the course's reducers turn over on every key. Keys on
+     the screen, the computer keyboard and a MIDI keyboard all arrive at
+     learnInput, so each exercise answers to all three alike. */
+  learnLessonObj() {
+    const C = window.PPP_LESSONS;
+    return C.lesson(this.state.learnLesson) || C.LESSONS[0];
+  }
+  learnStepObj() { return this.learnLessonObj().steps[this.state.learnStep] || null; }
+  /* The step's working state, made fresh the first time a step is shown
+     (after a reload, say) and kept from then on. */
+  learnLx() {
+    const C = window.PPP_LESSONS, S = this.state, L = this.learnLessonObj(), st = L.steps[S.learnStep];
+    if (!st) return null;
+    const key = L.id + ':' + S.learnStep;
+    if (S.lx && S.lx.key === key) return S.lx;
+    if (!this._lxInit || this._lxInit.key !== key) this._lxInit = Object.assign(C.fresh(st), { key });
+    return this._lxInit;
+  }
+  learnOpen(id, step) {
+    const C = window.PPP_LESSONS;
+    const L = C.lesson(id) || C.LESSONS[0];
+    const s = clamp(step || 0, 0, L.steps.length);
+    this.learnStop();
+    this.setState({
+      learnLesson: L.id, learnStep: s, sidebarOpen: false,
+      lx: L.steps[s] ? Object.assign(C.fresh(L.steps[s]), { key: L.id + ':' + s }) : null
+    });
+  }
+  learnNext() {
+    const S = this.state, C = window.PPP_LESSONS, L = this.learnLessonObj(), st = L.steps[S.learnStep];
+    if (!st) { const nx = C.next(L.id); this.learnOpen(nx ? nx.id : L.id, 0); return; }
+    const lx = this.learnLx();
+    if (st.kind === 'quiz' && lx.right && !lx.done) { this.setState({ lx: C.nextQuestion(st, lx) }); return; }
+    if (!lx.done) {
+      this.setState({ lx: Object.assign({}, lx, { msg: tx('Finish this step first — or tap a dot above to skip ahead.'), tone: '' }) });
+      return;
+    }
+    if (S.learnStep + 1 < L.steps.length) { this.learnOpen(L.id, S.learnStep + 1); return; }
+    /* past the last step: the lesson is done */
+    this.learnStop();
+    const first = !(S.learnDone || {})[L.id];
+    this.setState({
+      learnStep: L.steps.length, lx: null,
+      learnDone: Object.assign({}, S.learnDone, { [L.id]: true }), xp: S.xp + (first ? 25 : 0)
+    });
+    this.learnCheer();
+    this.say(tx('Lesson complete!'));
+  }
+  learnBack() { if (this.state.learnStep > 0) this.learnOpen(this.state.learnLesson, this.state.learnStep - 1); }
+
+  /* A key, from anywhere. On-screen and computer keys sound here; a MIDI key
+     has already sounded through keyDown. */
+  learnInput(m, fromMidi) {
+    const C = window.PPP_LESSONS;
+    if (!C) return;
+    if (!fromMidi) { this.wake(); this.tone(m); }
+    const L = this.learnLessonObj(), st = L.steps[this.state.learnStep];
+    if (!st) return;
+    if (st.kind === 'rhythm') { this.learnTap(); return; }
+    const was = this.learnLx();
+    const lx = st.kind === 'quiz' ? Object.assign({}, was, { flash: { m, kind: 'hl' } }) : C.press(L, st, was, m);
+    this.setState({ lx });
+    this.learnAfter(st, was, lx);
+  }
+  /* An answer button: a quiz choice, or a note name for the staff drill. */
+  learnPick(i) {
+    const C = window.PPP_LESSONS, st = this.learnStepObj();
+    if (!st) return;
+    const was = this.learnLx();
+    const lx = st.kind === 'quiz' ? C.choose(st, was, i) : C.answer(st, was, i, null);
+    if (lx.msg === was.msg && lx.right === was.right && lx.misses === was.misses) return;
+    this.wake();
+    if (st.kind === 'drill' && lx.right) this.tone(was.note);
+    else this.blip(lx.tone === 'good' ? 880 : 300, 0.12, 0.06, lx.tone === 'good' ? 'sine' : 'triangle');
+    this.setState({ lx });
+    this.learnAfter(st, was, lx);
+  }
+  learnAfter(st, was, lx) {
+    clearTimeout(this._lxFlash);
+    if (lx.flash) {
+      const f = lx.flash;
+      this._lxFlash = setTimeout(() => this.setState(s => (s.lx && s.lx.flash === f ? { lx: Object.assign({}, s.lx, { flash: null }) } : null)), 420);
+    }
+    if (lx.done && !was.done) {
+      if (st.kind === 'chord') setTimeout(() => this.learnChord(st.notes), 200);
+      else setTimeout(() => this.learnCheer(), 250);
+    }
+    /* a note named right: the next one, after a moment to see it was right */
+    if (st.kind === 'drill' && lx.right && !was.right && !lx.done) {
+      clearTimeout(this._lxNext);
+      this._lxNext = setTimeout(() => {
+        if (this.learnStepObj() !== st || !this.state.lx) return;
+        this.setState({ lx: window.PPP_LESSONS.nextDrill(st, this.state.lx) });
+      }, 800);
+    }
+  }
+  learnKey(e) {
+    const C = window.PPP_LESSONS;
+    if (!C || e.key === 'Escape' || e.key === 'Tab' || e.key === 'Enter') return false;
+    const st = this.learnStepObj();
+    if (e.code === 'Space' || e.key === ' ') {
+      e.preventDefault();
+      if (!e.repeat && st && st.kind === 'rhythm') { this.wake(); this.tone(60); this.learnTap(); }
+      return true;
+    }
+    const m = C.codeToMidi(e.code, C.kbBase(this.learnLessonObj(), st || {}));
+    if (m == null) return !!(e.key && e.key.length === 1);
+    e.preventDefault();
+    if (!e.repeat) this.learnInput(m);
+    return true;
+  }
+
+  /* ---- sound: a step's example, a chord, a little fanfare ---- */
+  learnChord(notes) {
+    const p = this.piano();
+    if (!p.context()) return;
+    const t = p.now() + 0.02;
+    notes.forEach(m => p.release(p.strike(m, t, 84), t + 1.8));
+  }
+  learnCheer() {
+    const p = this.piano();
+    if (!p.running()) return;
+    const t = p.now() + 0.02;
+    [72, 76, 79, 84].forEach((m, i) => p.release(p.strike(m, t + i * 0.085, 70), t + i * 0.085 + (i === 3 ? 0.7 : 0.16)));
+  }
+  learnListen() {
+    const st = this.learnStepObj();
+    if (!st) return;
+    const spec = st.listen || (st.kind === 'play' ? { seq: st.seq, beats: st.beats, bpm: st.bpm }
+      : st.kind === 'chord' ? { chord: st.notes } : st.kind === 'rhythm' ? { pattern: st.pattern, bpm: st.bpm } : null);
+    if (!spec) return;
+    if (this.state.lx && this.state.lx.run && !this.state.lx.run.over) return;
+    this.wake();
+    const p = this.piano();
+    if (!p.context()) return;
+    if (this.state.learnClock) { this.learnStop(); return; }
+    this.learnStop();
+    if (spec.chord) { this.learnChord(spec.chord); return; }
+    const beat = 60 / (spec.bpm || 96), t0 = p.now() + 0.12;
+    let at = 0, count = 0;
+    if (spec.pattern) {
+      /* four clicks to count in, then the rhythm on Do with the click under it */
+      count = 4;
+      at = count;
+      spec.pattern.forEach(d => {
+        if (d > 0) p.release(p.strike(60, t0 + at * beat, 78), t0 + (at + d * 0.9) * beat);
+        at += Math.abs(d);
+      });
+      for (let b = 0; b < at; b++) p.click(t0 + b * beat, b % 4 === 0);
+    } else {
+      const beats = spec.beats || [];
+      spec.seq.forEach((m, i) => {
+        const d = beats[i] || 1;
+        p.release(p.strike(m, t0 + at * beat, 82), t0 + (at + d * 0.92) * beat);
+        at += d;
+      });
+    }
+    const start = nowMs() + (t0 - p.now()) * 1000 + count * beat * 1000;
+    this.setState({ learnClock: { t0: start, beatMs: beat * 1000, total: at - count, seq: spec.seq || null, beats: spec.beats || null }, learnNow: nowMs() });
+    this.learnTick(true);
+  }
+  /* Stop whatever the page is playing or timing. */
+  learnStop() {
+    clearInterval(this._lxIv); this._lxIv = 0;
+    clearTimeout(this._lxNext);
+    const S = this.state;
+    const tapping = !!(S.lx && S.lx.run && !S.lx.run.over);
+    if ((S.learnClock || tapping) && this._piano) this._piano.silence(0.08);
+    /* a rhythm cut short is dropped, so Start is there again */
+    if (S.learnClock || tapping) this.setState({ learnClock: null, lx: tapping ? Object.assign({}, S.lx, { run: null, msg: '', tone: '' }) : S.lx });
+  }
+  learnTick(on) {
+    clearInterval(this._lxIv); this._lxIv = 0;
+    if (!on) return;
+    this._lxIv = setInterval(() => {
+      const S = this.state, now = nowMs();
+      if (S.screen !== 'learn') { this.learnStop(); return; }
+      const run = S.lx && S.lx.run && !S.lx.run.over ? S.lx.run : null, clock = S.learnClock;
+      const end = run ? run.t0 + (run.total + 0.6) * run.beatMs : clock ? clock.t0 + (clock.total + 0.3) * clock.beatMs : 0;
+      if (now > end) {
+        clearInterval(this._lxIv); this._lxIv = 0;
+        if (run) this.learnRhythmEnd(); else this.setState({ learnClock: null, learnNow: now });
+        return;
+      }
+      this.setState({ learnNow: now });
+    }, 45);
+  }
+
+  /* ---- rhythm: four clicks, then tap along; judged on the page's clock ---- */
+  learnRhythmStart() {
+    const C = window.PPP_LESSONS, st = this.learnStepObj();
+    if (!st || st.kind !== 'rhythm') return;
+    this.wake();
+    this.learnStop();
+    /* the space bar is the tap now; it must not press the button still focused */
+    try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {}
+    const p = this.piano(), beatMs = 60000 / st.bpm, now = nowMs();
+    const t0 = now + 300 + 4 * beatMs;
+    const total = C.length(st.pattern);
+    if (p.context()) {
+      const off = p.running() ? p.clockOffset() : p.now() - now / 1000;
+      for (let b = -4; b < total; b++) p.click(off + (t0 + b * beatMs) / 1000, ((b % 4) + 4) % 4 === 0);
+    }
+    const ons = C.onsets(st.pattern);
+    const run = { t0, beatMs, total, ons, hits: ons.map(() => false), tol: C.tolerance(st.bpm), extra: 0, over: false };
+    this.setState({ lx: Object.assign({}, this.learnLx(), { run, result: null, msg: tx('Listen to the four clicks… then tap on every note.'), tone: '' }), learnNow: now });
+    this.learnTick(true);
+  }
+  learnTap() {
+    const C = window.PPP_LESSONS, lx = this.learnLx();
+    if (!lx || !lx.run || lx.run.over) {
+      if (lx && !lx.run) this.setState({ lx: Object.assign({}, lx, { msg: tx('Press Start first, then tap along.'), tone: '' }) });
+      return;
+    }
+    const beat = (nowMs() - lx.run.t0) / lx.run.beatMs;
+    if (beat < -0.6) return;   /* still counting in */
+    this.setState({ lx: Object.assign({}, lx, { run: C.tap(lx.run, beat) }), learnNow: nowMs() });
+  }
+  learnRhythmEnd() {
+    const C = window.PPP_LESSONS, lx = this.state.lx;
+    if (!lx || !lx.run) return;
+    const v = C.verdict(lx.run);
+    this.setState({
+      lx: Object.assign({}, lx, {
+        run: Object.assign({}, lx.run, { over: true }), result: v, done: lx.done || v.pass, tone: v.pass ? 'good' : 'bad',
+        msg: v.pass ? tx('{{hits}} of {{n}} on time — great rhythm!', v)
+          : tx('{{hits}} of {{n}} on time. Press Try again — tap just as the line reaches each note.', v)
+      }),
+      learnNow: nowMs()
+    });
+    if (v.pass && !lx.done) this.learnCheer();
+  }
+
+  /* ---- what the page shows ---- */
+  learnVals() {
+    const C = window.PPP_LESSONS;
+    if (!C) return { learnInStep: false, learnFinished: false, learnUnits: [], learnDots: [], learnText: [], learnKeycaps: [] };
+    /* the music font arriving changes how the clefs are measured */
+    if (!C.onFonts) C.onFonts = () => { if (!this._dead) this.setState({ learnNow: nowMs() }); };
+    const S = this.state, L = this.learnLessonObj(), n = L.steps.length;
+    const si = clamp(S.learnStep | 0, 0, n), st = L.steps[si] || null;
+    const lx = st ? this.learnLx() : null;
+    const done = S.learnDone || {};
+    const clock = S.learnClock, now = S.learnNow || nowMs();
+    /* what comes next: the next lesson in order, or after the last one the
+       first still not done — only when there is none is the course over */
+    const nx = C.next(L.id) || C.nextUp(done);
+    const btn = (primary, on) => `padding:11px 18px;border-radius:11px;font-family:inherit;font-size:13.5px;font-weight:600;cursor:${on === false ? 'default' : 'pointer'};`
+      + (primary ? `border:0;background:${on === false ? 'var(--surface2)' : 'var(--accent)'};color:${on === false ? 'var(--ink3)' : '#fff'};`
+        : 'border:1px solid var(--line);background:var(--bg);color:var(--ink);');
+
+    /* which note of a sequence an example is sounding, if one is */
+    let demo = -1;
+    if (clock && clock.seq) {
+      const el = (now - clock.t0) / clock.beatMs;
+      let at = 0;
+      for (let i = 0; i < clock.seq.length; i++) {
+        const d = (clock.beats && clock.beats[i]) || 1;
+        if (el >= at && el < at + d) { demo = i; break; }
+        at += d;
+      }
+    }
+
+    const nDone = C.LESSONS.filter(l => done[l.id]).length;
+    const out = {
+      learnKicker: tx('Unit {{u}} · Lesson {{n}} of {{total}}', { u: L.unitIndex + 1, n: L.n, total: C.LESSONS.length }),
+      learnTitle: tx(L.title), learnGoal: tx(L.goal),
+      learnDots: L.steps.map((s, i) => ({
+        label: tx('Step {{n}}', { n: i + 1 }) + ' · ' + tx(s.title),
+        on: () => this.learnOpen(L.id, i),
+        style: `width:${i === si ? 30 : 22}px;height:8px;padding:0;border:0;border-radius:999px;cursor:pointer;transition:width .2s ease;background:${i === si ? 'var(--accent)' : (i < si || done[L.id]) ? 'var(--accent-2)' : 'var(--surface2)'};`
+      })),
+      learnStepCount: st ? tx('Step {{n}} of {{total}}', { n: si + 1, total: n }) : tx('Lesson complete'),
+      learnInStep: !!st, learnFinished: !st,
+      learnDoneCount: tx('{{done}} of {{total}} done', { done: nDone, total: C.LESSONS.length }),
+      learnBarStyle: this.bar(nDone / C.LESSONS.length * 100),
+      learnUnits: C.COURSE.map((u, ui) => ({
+        title: tx('Unit {{n}}', { n: ui + 1 }) + ' · ' + tx(u.title),
+        lessons: u.lessons.map(l => {
+          const ok = !!done[l.id], cur = l.id === L.id;
+          return {
+            id: l.id, title: tx(l.title), mark: ok ? '✓' : String(l.n), on: () => this.learnOpen(l.id, 0),
+            style: `display:flex;align-items:center;gap:10px;width:100%;padding:7px 8px;border-radius:9px;border:0;cursor:pointer;font-family:inherit;font-size:13px;text-align:left;line-height:1.3;background:${cur ? 'var(--accent-3)' : 'transparent'};color:${cur ? 'var(--accent)' : 'var(--ink)'};font-weight:${cur ? 600 : 400};`,
+            markStyle: `flex:none;width:22px;height:22px;border-radius:999px;display:grid;place-items:center;font-size:10.5px;font-weight:700;font-family:'JetBrains Mono',monospace;`
+              + (ok ? 'background:var(--good);color:#fff;' : cur ? 'background:var(--accent);color:#fff;' : 'background:var(--surface2);color:var(--ink3);')
+          };
+        })
+      })),
+      learnKeycaps: ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K'].map((cap, i) => ({ cap, name: C.sol([60, 62, 64, 65, 67, 69, 71, 72][i]) })),
+      learnDoneTitle: tx('Lesson complete!'),
+      learnDoneText: nx ? tx('Next up: {{title}}', { title: tx(nx.title) }) : tx('You have finished every lesson. Now try a real song in My Songs!'),
+      learnGoNext: nx ? () => this.learnOpen(nx.id, 0) : this.go('songs'),
+      learnGoNextLabel: nx ? tx('Next lesson') : tx('Go to My Songs'),
+      learnAgain: () => this.learnOpen(L.id, 0),
+      learnBack: () => this.learnBack(),
+      learnNext: () => this.learnNext()
+    };
+    if (!st) return out;
+
+    const KIND = { read: 'Read & listen', play: 'Play it', find: 'Find the keys', quiz: 'Quick quiz', drill: 'Note reading', rhythm: 'Rhythm', chord: 'Chord' };
+    const q = st.kind === 'quiz' ? st.qs[lx.qi] : null;
+    out.learnKind = st.kind;
+    out.learnKindLabel = tx(KIND[st.kind]);
+    out.learnKindStyle = 'display:inline-block;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;'
+      + (st.kind === 'read' ? 'background:var(--surface2);color:var(--ink2);' : 'background:var(--accent-3);color:var(--accent);');
+    out.learnStepTitle = tx(st.title);
+    out.learnText = (st.text || []).map(p => tx(p));
+    out.learnHasQuestion = !!q || st.kind === 'drill';
+    out.learnQuestion = q ? tx(q.q) : st.kind === 'drill' ? tx('What note is this?') : '';
+    out.learnQuestionCount = q ? (st.qs.length > 1 ? (lx.qi + 1) + ' / ' + st.qs.length : '')
+      : st.kind === 'drill' ? Math.min(lx.n + (lx.right ? 0 : 1), st.count) + ' / ' + st.count : '';
+
+    /* the picture: hands, a staff or a rhythm */
+    let pic = null, paper = true;
+    if (st.hands) { pic = C.hands(h); paper = false; }
+    else if (st.kind === 'drill') {
+      pic = C.staff(h, { clef: st.clef, notes: [lx.note], beats: [4], solo: true,
+        states: [lx.right ? 'done' : lx.wrong.length ? 'bad' : null], labels: lx.right ? 'names' : null });
+    } else if (st.staff) {
+      const notes = st.staff.notes || st.seq || [];
+      const states = st.kind === 'play' ? notes.map((m, i) => i < lx.idx ? 'done' : i === lx.idx && !lx.done ? (lx.flash && lx.flash.kind === 'bad' ? 'bad' : 'now') : null)
+        : notes.map((m, i) => i === demo ? 'now' : null);
+      pic = C.staff(h, Object.assign({}, st.staff, { notes, beats: st.staff.beats || st.beats, states }));
+    } else if (st.rhythm || st.kind === 'rhythm') {
+      const pattern = st.pattern || st.rhythm;
+      const run = st.kind === 'rhythm' ? lx.run : null;
+      let cursor = null, results = [];
+      if (run) {
+        cursor = (now - run.t0) / run.beatMs;
+        results = run.ons.map((o, j) => run.hits[j] ? 'hit' : (run.over || cursor > o.at + run.tol) ? 'miss' : null);
+        if (run.over) cursor = null;
+      } else if (clock && !clock.seq) cursor = (now - clock.t0) / clock.beatMs;
+      pic = C.rhythm(h, { pattern, cursor, results });
+    }
+    out.learnHasPicture = !!pic;
+    out.learnPicture = pic;
+    out.learnPictureBg = paper ? 'var(--paper)' : 'var(--bg)';
+
+    /* the notes of a tune, as names you can follow */
+    const seq = st.seq || [];
+    out.learnHasChips = !!st.chips && seq.length > 0;
+    out.learnChips = out.learnHasChips ? seq.map((m, i) => {
+      const d = (st.beats && st.beats[i]) || (st.listen && st.listen.beats && st.listen.beats[i]) || 1;
+      const state = demo === i ? 'now' : st.kind === 'play' ? (i < lx.idx ? 'done' : i === lx.idx && !lx.done ? 'now' : '') : '';
+      return {
+        label: C.sol(m) + (d >= 2 ? ' –' : ''),
+        style: `display:inline-flex;align-items:center;justify-content:center;min-width:${30 + Math.min(3, Math.max(0, d - 1)) * 12}px;padding:6px 8px;border-radius:9px;font-size:13px;font-weight:600;box-sizing:border-box;transition:background .12s ease;`
+          + (state === 'now' ? 'background:var(--accent);color:#fff;border:1px solid var(--accent);'
+            : state === 'done' ? 'background:color-mix(in oklab, var(--good) 16%, var(--surface));color:var(--good);border:1px solid color-mix(in oklab, var(--good) 35%, var(--surface));'
+              : 'background:var(--bg);color:var(--ink2);border:1px solid var(--line);')
+      };
+    }) : [];
+
+    /* answer buttons */
+    let choices = [];
+    if (q) {
+      choices = q.choices.map((c, i) => {
+        const wrong = lx.wrong.indexOf(i) > -1, right = lx.right && i === q.answer;
+        return { i, label: tx(c), on: () => this.learnPick(i), style: this.learnChoiceStyle(right, wrong) };
+      });
+    } else if (st.kind === 'drill') {
+      const pcs = [];
+      st.pool.forEach(m => { if (pcs.indexOf(C.pc(m)) < 0) pcs.push(C.pc(m)); });
+      choices = pcs.map(p => {
+        const wrong = lx.wrong.indexOf(p) > -1, right = lx.right && p === C.pc(lx.note);
+        return { i: p, label: C.sol(60 + p), on: () => this.learnPick(p), style: this.learnChoiceStyle(right, wrong) };
+      });
+    }
+    out.learnHasChoices = choices.length > 0;
+    out.learnChoices = choices;
+
+    /* the keyboard, lit for the step */
+    const showKeys = st.kind !== 'rhythm' && !st.hands && !st.rhythm && (st.kind !== 'quiz' || !!L.keys) && (!!L.keys || !!st.keys || st.kind !== 'read');
+    out.learnHasKeys = showKeys;
+    out.learnKeys = null;
+    if (showKeys) {
+      const k = C.keysFor(L, st), marks = {};
+      (k.hl || []).forEach(m => { marks[m] = 'hl'; });
+      (k.hl2 || []).forEach(m => { marks[m] = 'hl2'; });
+      if (st.kind === 'play' && !lx.done && (st.hint || lx.slips >= 2)) marks[st.seq[lx.idx]] = 'next';
+      if (st.kind === 'find') lx.found.forEach(m => { marks[m] = 'found'; });
+      if (st.kind === 'chord') {
+        if (lx.misses >= 2 || lx.done) st.notes.forEach(m => { marks[m] = 'hl'; });
+        lx.got.forEach(m => { marks[m] = 'got'; });
+      }
+      if (demo > -1 && clock && clock.seq) marks[clock.seq[demo]] = 'next';
+      if (lx.flash) marks[lx.flash.m] = lx.flash.kind;
+      out.learnKeys = C.keyboard(h, Object.assign({}, k, { marks, onKey: m => this.learnInput(m) }));
+    }
+
+    /* the Tap pad for rhythm: pressed, not clicked, so the time is the press */
+    out.learnHasTap = st.kind === 'rhythm';
+    out.learnTapPad = st.kind === 'rhythm' ? h('button', {
+      type: 'button', 'data-learn-tap': 1,
+      onPointerDown: e => { e.preventDefault(); this.wake(); this.tone(60); this.learnTap(); },
+      style: {
+        width: '100%', padding: '26px 16px', borderRadius: 16, border: '2px dashed var(--accent-2)', background: 'var(--accent-3)',
+        color: 'var(--accent)', fontFamily: 'inherit', fontSize: 18, fontWeight: 700, cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none'
+      }
+    }, tx('Tap')) : null;
+
+    /* what just happened, or what to do */
+    const hint = {
+      read: tx('Tap any key to hear it. Press Next when you are ready.'),
+      play: st.read ? tx('Read the first note and play it.') : tx('Start with {{note}}.', { note: seq.length ? C.sol(seq[0]) : '' }),
+      find: tx('{{got}} of {{n}} found.', { got: (lx.found || []).length, n: st.pcs ? C.targets(L, st).length : 0 }),
+      quiz: tx('Pick an answer.'),
+      drill: tx('Tap a name below, or play the note.'),
+      rhythm: tx('Press Start, listen to four clicks, then tap along.'),
+      chord: tx('Play the three keys together.')
+    }[st.kind];
+    const tone = lx.msg ? lx.tone : '';
+    out.learnFeedback = lx.msg || (st.kind === 'read' && !showKeys ? tx('Press Next when you are ready.') : hint);
+    out.learnFeedbackStyle = 'padding:12px 14px;border-radius:12px;font-size:13.5px;line-height:1.5;'
+      + (tone === 'good' ? 'background:color-mix(in oklab, var(--good) 13%, var(--surface));border:1px solid color-mix(in oklab, var(--good) 40%, var(--surface));color:var(--ink);'
+        : tone === 'bad' ? 'background:color-mix(in oklab, var(--bad) 11%, var(--surface));border:1px solid color-mix(in oklab, var(--bad) 35%, var(--surface));color:var(--ink);'
+          : 'background:var(--bg);border:1px solid var(--line);color:var(--ink2);');
+
+    /* the buttons beside Back / Next */
+    const tools = [];
+    const canListen = !!(st.listen || (st.kind === 'play' && seq.length > 1) || st.kind === 'chord' || st.kind === 'rhythm');
+    if (st.kind === 'rhythm') {
+      const running = !!(lx.run && !lx.run.over);
+      tools.push({ id: 'start', label: running ? tx('Playing…') : lx.run ? tx('Try again') : tx('Start'), on: () => { if (!running) this.learnRhythmStart(); }, style: btn(true, !running) });
+    }
+    if (canListen) tools.push({ id: 'listen', label: clock ? tx('Stop') : tx('Listen'), on: () => this.learnListen(), style: btn(false) });
+    if (st.kind === 'play' && lx.idx > 0 && !lx.done) tools.push({ id: 'restart', label: tx('Start over'), on: () => this.learnOpen(L.id, si), style: btn(false) });
+    out.learnTools = tools;
+
+    const ready = !!(lx.done || (st.kind === 'quiz' && lx.right));
+    out.learnNextLabel = st.kind === 'quiz' && lx.right && !lx.done ? tx('Next question') : si === n - 1 ? tx('Finish lesson') : tx('Next');
+    out.learnNextState = ready ? 'ready' : 'locked';
+    out.learnNextStyle = btn(true, ready);
+    out.learnBackLabel = tx('Back');
+    out.learnBackStyle = btn(false) + (si === 0 ? 'visibility:hidden;' : '');
+    return out;
+  }
+  learnChoiceStyle(right, wrong) {
+    return 'min-width:64px;padding:12px 18px;border-radius:12px;font-family:inherit;font-size:14.5px;font-weight:600;cursor:pointer;transition:background .12s ease;'
+      + (right ? 'border:1px solid var(--good);background:var(--good);color:#fff;'
+        : wrong ? 'border:1px solid color-mix(in oklab, var(--bad) 45%, var(--surface));background:color-mix(in oklab, var(--bad) 10%, var(--surface));color:var(--ink3);text-decoration:line-through;'
+          : 'border:1px solid var(--line);background:var(--bg);color:var(--ink);');
   }
 
   /* ============================ sight reading ============================ */
