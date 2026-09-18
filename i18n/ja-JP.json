@@ -733,6 +733,7 @@
     "Right hand alone, {{pace}}": "右手だけ、{{pace}}",
     "bar {{n}}": "第{{n}}小節",
     "Keep the score on paper": "楽譜は紙の色で",
-    "Off, the notation follows the dark theme instead": "オフにすると楽譜もダークテーマに合わせます"
+    "Off, the notation follows the dark theme instead": "オフにすると楽譜もダークテーマに合わせます",
+    "Hide these tips": "ヒントを隠す"
   }
 }

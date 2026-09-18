@@ -332,7 +332,8 @@ function harness() {
     const panel = [...document.querySelectorAll('main section')]
       .find(s => /PPP Coach/.test(s.innerText || ''));
     const text = panel ? panel.innerText : '';
-    return { text, source: (text.match(/PLANNED BY [^\n]+/) || [''])[0] };
+    /* case-insensitive: the label's capitalisation is styling, not behaviour */
+    return { text, source: (text.match(/PLANNED BY [^\n]+/i) || [''])[0] };
   });
   ok('an injected provider is used', /FakeCoach/i.test(uiPlan.source), uiPlan.source);
   ok('the invalid task never reaches the UI', !/900/.test(uiPlan.text) && /9–12/.test(uiPlan.text),

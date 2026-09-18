@@ -170,10 +170,21 @@
     box-shadow: 0 -8px 24px -18px rgba(0,0,0,.35);
     box-sizing: border-box;
   }
+  @media (min-width: 1025px) {
+    .ppp-playcol {
+      height: calc(100vh - 150px); height: calc(100dvh - 150px);
+      min-height: 620px;
+    }
+    .ppp-playcol .ppp-staffcard { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+    .ppp-playcol .ppp-staffwrap { flex: 1 1 auto; min-height: 0; overflow-y: auto; max-height: none; }
+    .ppp-playcol .ppp-transport { flex: none; }
+  }
+
   /* ---- focus mode ----
      On a tablet held at the piano there is no room for a sidebar, a ten-step
      rail, a coach panel and a next-step bar. Everything that is not the score,
      the keyboard and the transport goes away, and what is left gets the space. */
+  .ppp-nextbar[data-hide="true"] { display: none; }
   .ppp-shell[data-focus="true"] { grid-template-columns: minmax(0, 1fr); }
   .ppp-shell[data-focus="true"] .ppp-aside,
   .ppp-shell[data-focus="true"] .ppp-header,
@@ -740,7 +751,7 @@
 
       <sc-if value="{{ isPlayer }}" hint-placeholder-val="{{ false }}">
         <div class="ppp-split" style="display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 22px; align-items: start;">
-          <section style="display: flex; flex-direction: column; gap: 14px; min-width: 0;">
+          <section class="ppp-playcol" style="display: flex; flex-direction: column; gap: 14px; min-width: 0;">
             <div class="ppp-hide-in-focus" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
               <div>
                 <div style="font-size: 20px; font-weight: 600; letter-spacing: -0.02em;">{{ songTitle }}</div>
@@ -752,10 +763,6 @@
                 </div>
                 <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">{{ songProgPct }}</span>
               </div>
-              <button onClick="{{ midiConnect }}" style="{{ midiBadgeStyle }}" title="{{ midiHint }}">
-                <span style="{{ midiDotStyle }}"></span>
-                <span style="font-size: 12px; color: var(--ink);">{{ midiLabel }}</span>
-              </button>
             </div>
 
             <div class="ppp-staffcard" style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); overflow: hidden;">
@@ -772,27 +779,27 @@
                     <button onClick="{{ h.on }}" style="{{ h.style }}">{{ h.label }}</button>
                   </sc-for>
                 </div>
-                <span class="ppp-setup-only" style="display: flex; align-items: center; gap: 10px;">
-                  <span style="width: 1px; height: 20px; background: var(--line);"></span>
-                  <sc-for list="{{ zoomBtns }}" as="z" hint-placeholder-count="2">
-                    <button onClick="{{ z.on }}" style="width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 14px; cursor: pointer;" style-hover="border-color: var(--ink3);">{{ z.label }}</button>
-                  </sc-for>
-                  <button onClick="{{ toggleGuidance }}" style="{{ guidanceBtnStyle }}">{{ guidanceLabel }}</button>
-                  <button onClick="{{ toggleFollow }}" style="{{ followBtnStyle }}">{{ followLabel }}</button>
-                </span>
+                <sc-if value="{{ showCloseControls }}" hint-placeholder-val="{{ true }}">
+                  <span class="ppp-setup-only" style="display: flex; align-items: center; gap: 8px;">
+                    <sc-for list="{{ zoomBtns }}" as="z" hint-placeholder-count="2">
+                      <button onClick="{{ z.on }}" style="width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 14px; cursor: pointer;" style-hover="border-color: var(--ink3);">{{ z.label }}</button>
+                    </sc-for>
+                    <button onClick="{{ toggleGuidance }}" style="{{ guidanceBtnStyle }}">{{ guidanceLabel }}</button>
+                  </span>
+                </sc-if>
                 <button onClick="{{ toggleWhole }}" style="{{ wholeBtnStyle }}" title="{{ wholeHint }}">{{ wholeLabel }}</button>
                 <button onClick="{{ toggleFocus }}" style="{{ focusBtnStyle }}" title="{{ focusHint }}">{{ focusLabel }}</button>
               </div>
-              <sc-if value="{{ showPickHint }}" hint-placeholder-val="{{ false }}">
-                <div style="margin: 0 16px; padding: 9px 12px; border-radius: 10px; background: var(--surface2); font-size: 12.5px; line-height: 1.45; color: var(--ink2);">{{ pickHint }}</div>
-              </sc-if>
-              <sc-if value="{{ showFollowHint }}" hint-placeholder-val="{{ false }}">
-                <div class="ppp-setup-only" style="margin: 0 16px; padding: 9px 12px; border-radius: 10px; background: var(--accent-3); border: 1px solid var(--accent-2); font-size: 12.5px; line-height: 1.45; color: var(--ink2);">{{ followHint }}</div>
+              <sc-if value="{{ showHint }}" hint-placeholder-val="{{ false }}">
+                <div class="ppp-setup-only" style="margin: 10px 16px 0; padding: 9px 10px 9px 13px; border-radius: 10px; background: var(--surface2); font-size: 13px; line-height: 1.45; color: var(--ink2); display: flex; align-items: flex-start; gap: 10px;">
+                  <span style="flex: 1;">{{ hintText }}</span>
+                  <button onClick="{{ dismissHints }}" title="{{ dismissLabel }}" style="flex: none; width: 24px; height: 24px; border-radius: 7px; border: 0; background: transparent; color: var(--ink2); font-size: 15px; line-height: 1; cursor: pointer;" style-hover="background: var(--line);">×</button>
+                </div>
               </sc-if>
               <div class="ppp-staffwrap ppp-focus-grow" ref="{{ staffRef }}" data-whole="{{ wholeAttr }}" style="overflow-x: auto; padding: 18px 16px 22px; background: {{ paperBg }};">{{ playerStaff }}</div>
             </div>
 
-            <div style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); padding: 16px;">
+            <div class="ppp-transport" style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); padding: 16px;">
               <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                 <button onClick="{{ togglePlay }}" style="display: flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 11px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; min-width: 104px; justify-content: center;">{{ playLabel }}</button>
                 <button onClick="{{ toggleFollow }}" style="{{ followBtnStyle }}">{{ followLabel }}</button>
@@ -833,40 +840,47 @@
 
           <section class="ppp-panel" style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); padding: 20px; position: sticky; top: 92px;">
             <div style="display: flex; align-items: center; gap: 9px;">
-              <span style="width: 22px; height: 22px; border-radius: 7px; background: var(--accent); display: grid; place-items: center; color: #fff; font-size: 11px; font-weight: 700;">AI</span>
-              <span style="font-size: 14.5px; font-weight: 600;">PPP Coach</span>
-              <span style="margin-left: auto; font-size: 11px; color: var(--ink3); display: flex; align-items: center; gap: 5px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: var(--good); animation: pulse 2s ease-in-out infinite;"></span>listening</span>
+              <span style="width: 24px; height: 24px; border-radius: 7px; background: var(--accent); display: grid; place-items: center; color: var(--surface); font-size: 12px; font-weight: 800;">AI</span>
+              <span style="font-size: 15px; font-weight: 600;">PPP Coach</span>
+              <span style="margin-left: auto; font-size: 12px; color: var(--ink2); display: flex; align-items: center; gap: 5px;"><span style="width: 6px; height: 6px; border-radius: 999px; background: var(--good); animation: pulse 2s ease-in-out infinite;"></span>listening</span>
             </div>
-            <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="margin-top: 16px; padding: 14px 16px; border-radius: 14px; background: var(--bg); border: 1px solid var(--line); display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div>
+                <div style="font-size: 12px; color: var(--ink2);">{{ accuracyLabel }}</div>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 600; margin-top: 2px;">{{ runAccuracy }}</div>
+              </div>
+              <div>
+                <div style="font-size: 12px; color: var(--ink2);">{{ driftLabel }}</div>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 600; margin-top: 2px;">{{ runDrift }}</div>
+              </div>
+            </div>
+            <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px;">
               <div style="display: flex; align-items: baseline; gap: 8px;">
                 <span style="{{ coachSourceStyle }}">{{ coachSourceLabel }}</span>
-                <span style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink3);">{{ coachMinutes }}</span>
+                <span style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink2);">{{ coachMinutes }}</span>
               </div>
-              <div style="border-radius: 14px 14px 14px 4px; background: var(--accent-3); border: 1px solid var(--accent-2); padding: 13px; font-size: 14px; line-height: 1.5;">{{ coachPlanGoal }}</div>
-              <sc-if value="{{ hasCoachSummary }}" hint-placeholder-val="{{ true }}">
-                <div style="font-size: 12.5px; line-height: 1.5; color: var(--ink2);">{{ coachPlanSummary }}</div>
-              </sc-if>
+              <div style="border-radius: 12px; background: var(--accent-3); border: 1px solid var(--accent-2); padding: 13px 14px; font-size: 15px; font-weight: 600; line-height: 1.45;">{{ coachPlanGoal }}</div>
               <sc-if value="{{ hasCoachStructural }}" hint-placeholder-val="{{ false }}">
                 <div style="font-size: 12px; line-height: 1.5; color: var(--ink3); border-left: 2px solid var(--line); padding-left: 10px;">{{ coachStructural }}</div>
               </sc-if>
 
               <sc-if value="{{ hasCoachPlan }}" hint-placeholder-val="{{ true }}">
-                <div style="display: flex; align-items: center; gap: 9px; margin-top: 4px;">
-                  <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3);">{{ sessionLabel }}</span>
-                  <div style="flex: 1; height: 5px; border-radius: 999px; background: var(--surface2); overflow: hidden;"><div style="{{ coachProgressBar }}"></div></div>
-                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink3);">{{ coachProgress }}</span>
+                <div style="display: flex; align-items: center; gap: 10px; margin-top: 2px;">
+                  <span style="font-size: 12px; font-weight: 600; color: var(--ink2);">{{ sessionLabel }}</span>
+                  <div style="flex: 1; height: 6px; border-radius: 999px; background: var(--surface2); overflow: hidden;"><div style="{{ coachProgressBar }}"></div></div>
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink2);">{{ coachProgress }}</span>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 2px;">
                   <sc-for list="{{ coachTasks }}" as="ct" hint-placeholder-count="4">
                     <button onClick="{{ ct.on }}" style="{{ ct.rowStyle }}" style-hover="background: var(--bg);">
                       <span style="{{ ct.dotStyle }}">{{ ct.dotLabel }}</span>
                       <span style="min-width: 0; flex: 1;">
-                        <span style="display: block; font-size: 13px; font-weight: 500;">{{ ct.label }}</span>
-                        <span style="display: block; font-size: 11.5px; color: var(--ink3); margin-top: 2px; line-height: 1.4;">{{ ct.reason }}</span>
-                      </span>
-                      <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex: none;">
-                        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink3);">{{ ct.reps }}</span>
-                        <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--ink3); opacity: .75;">{{ ct.where }}</span>
+                        <span style="display: flex; align-items: baseline; gap: 8px;">
+                          <span style="font-size: 14px; font-weight: 600;">{{ ct.label }}</span>
+                          <span style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink2); flex: none;">{{ ct.reps }}</span>
+                        </span>
+                        <span style="display: block; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent); margin-top: 3px;">{{ ct.where }}</span>
+                        <span style="display: block; font-size: 13px; color: var(--ink2); margin-top: 4px; line-height: 1.45;">{{ ct.reason }}</span>
                       </span>
                     </button>
                   </sc-for>
@@ -877,29 +891,13 @@
               </sc-if>
 
               <sc-if value="{{ hasCoachNote }}" hint-placeholder-val="{{ true }}">
-                <div style="border-radius: 14px 14px 14px 4px; background: var(--bg); border: 1px solid var(--line); padding: 12px; font-size: 13px; line-height: 1.5; color: var(--ink2);">{{ coachPlanNote }}</div>
+                <div style="border-left: 3px solid var(--accent-2); padding: 2px 0 2px 12px; font-size: 13.5px; line-height: 1.5; color: var(--ink);">{{ coachPlanNote }}</div>
               </sc-if>
               <sc-if value="{{ hasCoachAdapted }}" hint-placeholder-val="{{ false }}">
-                <div style="font-size: 11.5px; line-height: 1.45; color: var(--ink3);">{{ coachAdapted }}</div>
+                <div style="font-size: 12.5px; line-height: 1.45; color: var(--ink2);">{{ coachAdapted }}</div>
               </sc-if>
-              <button onClick="{{ coachReplan }}" style="align-self: flex-start; padding: 7px 12px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 12px; cursor: pointer;" style-hover="border-color: var(--ink3);">{{ replanLabel }}</button>
+              <button onClick="{{ coachReplan }}" style="align-self: flex-start; padding: 8px 13px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 12.5px; cursor: pointer;" style-hover="border-color: var(--ink3); color: var(--ink);">{{ replanLabel }}</button>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 18px;">
-              <sc-for list="{{ coachBtns }}" as="c" hint-placeholder-count="3">
-                <button onClick="{{ c.on }}" style="{{ c.style }}">{{ c.label }}</button>
-              </sc-for>
-            </div>
-            <div style="margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-              <div>
-                <div style="font-size: 11px; color: var(--ink3);">Accuracy this run</div>
-                <div style="font-family: 'JetBrains Mono', monospace; font-size: 18px; margin-top: 3px;">{{ runAccuracy }}</div>
-              </div>
-              <div>
-                <div style="font-size: 11px; color: var(--ink3);">Timing drift</div>
-                <div style="font-family: 'JetBrains Mono', monospace; font-size: 18px; margin-top: 3px;">{{ runDrift }}</div>
-              </div>
-            </div>
-            <button onClick="{{ drillOn }}" style="width: 100%; margin-top: 18px; padding: 11px; border-radius: 11px; border: 0; background: var(--ink); color: var(--surface); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">{{ drillCta }}</button>
           </section>
         </div>
       </sc-if>
@@ -1548,7 +1546,7 @@
 
     </div>
 
-    <div class="ppp-nextbar">
+    <div class="ppp-nextbar" data-hide="{{ hideNextbar }}">
       <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
         <span style="width: 26px; height: 26px; flex: none; border-radius: 8px; background: var(--accent); display: grid; place-items: center; color: #fff; font-size: 11px; font-weight: 700;">PPP</span>
         <div style="min-width: 0;">
@@ -4496,6 +4494,21 @@ const Coach = {
       });
   },
 
+  /* Does a line only restate others? Word overlap, ignoring punctuation and
+     one-character tokens. A model asked for a goal, a summary and a note will
+     often write the same sentence three ways, and showing it three times is
+     the panel talking to itself. */
+  saysTheSame(line, others) {
+    const words = t => String(t || '').toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter(w => w.length > 1);
+    const mine = words(line);
+    if (!mine.length) return true;
+    const seen = {};
+    (others || []).forEach(o => words(o).forEach(w => { seen[w] = true; }));
+    const shared = mine.filter(w => seen[w]).length;
+    return shared / mine.length >= 0.6;
+  },
+
   /* Is a fresh plan worth asking for? Only at task boundaries, and only when
      something actually changed. */
   shouldReplan(prev, next) {
@@ -6881,6 +6894,14 @@ class Component extends DCLogic {
      narrower than two octaves. */
   /* Straight from the Learning model — PPP does not get a second opinion on
      what is weak just because it is being drawn. */
+  barsPerLine() {
+    if (typeof window === 'undefined' || this.narrowScreen()) return 3;
+    const side = this.state.sidebarCollapsed ? 0 : 248;
+    const panel = this.state.focus ? 0 : 360;
+    const col = window.innerWidth - side - panel - 110;
+    return clamp(Math.floor((col - 76) / 168), 4, 8);
+  }
+
   weakMeasures() {
     const m = this.model();
     const out = [];
@@ -7630,6 +7651,19 @@ class Component extends DCLogic {
       /* planning screens keep the journey; working screens do not */
       showRail: !S.focus && ['home', 'upload', 'analysis', 'plan', 'songs', 'progress'].indexOf(sc) > -1,
       wholeAttr: S.wholeScore ? 'true' : 'false',
+      /* zoom and letter hints only act on the close view */
+      showCloseControls: !S.wholeScore,
+      showHint: S.toggles.hints !== false && (S.wholeScore || follows),
+      /* One tip at a time. Follow mode wins when it is on: it changes what
+         happens under your hands, which matters more than how to pick a bar. */
+      hintText: follows && S.anchor == null
+        ? tx('Just play — the score waits for each note and moves when you get it. No tempo to keep up with.')
+        : S.anchor != null
+          ? tx('Measure {{n}} is the start — now click where the passage ends.', { n: S.anchor })
+          : tx('Red bars are the ones PPP found weak. Click a bar to start a passage, then click where it ends.'),
+      dismissHints: () => this.setState(st => ({ toggles: Object.assign({}, st.toggles, { hints: false }) })),
+      dismissLabel: tx('Hide these tips'),
+      hideNextbar: ['player', 'loop', 'memory'].indexOf(sc) > -1 ? 'true' : 'false',
       showPickHint: S.wholeScore,
       pickHint: S.anchor != null
         ? tx('Measure {{n}} is the start — now click where the passage ends.', { n: S.anchor })
@@ -7676,7 +7710,10 @@ class Component extends DCLogic {
            at the distance you actually sit from a tablet. */
         startM: S.wholeScore ? this.firstM() : this.viewStart(staffBars),
         count: S.wholeScore ? Score.count(score) : staffBars,
-        perRow: S.wholeScore ? (this.narrowScreen() ? 3 : 5) : 0,
+        /* a wider page holds more bars at the same note size, the way a
+           landscape page does, instead of leaving a margin down the right */
+        perRow: S.wholeScore ? this.barsPerLine() : 0,
+        fluid: S.wholeScore,
         weak: S.wholeScore ? this.weakMeasures() : null,
         heading: S.wholeScore,
         pick: n => this.pickMeasure(n),
@@ -7702,11 +7739,15 @@ class Component extends DCLogic {
       coachPlanSummary: S.coachPlan ? S.coachPlan.summary : '',
       hasCoachSummary: !!(S.coachPlan && S.coachPlan.summary),
       coachPlanNote: S.coachPlan ? S.coachPlan.coachNote : '',
-      hasCoachNote: !!(S.coachPlan && S.coachPlan.coachNote),
+      /* the note earns a place only when it says something the goal did not */
+      hasCoachNote: !!(S.coachPlan && S.coachPlan.coachNote &&
+        !Coach.saysTheSame(S.coachPlan.coachNote, [S.coachPlan.todayGoal, S.coachPlan.summary])),
+      accuracyLabel: tx('Accuracy this run'),
+      driftLabel: tx('Timing drift'),
       coachSourceLabel: S.coachBusy ? tx('planning…')
         : (S.coachSource === 'PPP' ? tx('planned by PPP') : tx('planned by {{source}}', { source: S.coachSource })),
-      coachSourceStyle: 'font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:'
-        + (S.coachSource === 'PPP' ? 'var(--ink3)' : 'var(--accent)') + ';',
+      coachSourceStyle: 'font-size:12px;font-weight:600;letter-spacing:.02em;color:'
+        + (S.coachSource === 'PPP' ? 'var(--ink2)' : 'var(--accent)') + ';',
       coachMinutes: S.coachPlan ? tx('{{n}} min', { n: S.coachPlan.sessionMinutes }) : '',
       coachProgress: S.coachPlan
         ? tx('{{n}} / {{total}} done', { n: Math.min(S.coachDone.length, S.coachPlan.tasks.length), total: S.coachPlan.tasks.length }) : '',
@@ -7725,9 +7766,10 @@ class Component extends DCLogic {
           rowStyle: 'display:flex;align-items:flex-start;gap:10px;width:100%;padding:10px;border-radius:11px;border:1px solid '
             + (active ? 'var(--accent)' : 'transparent') + ';background:' + (active ? 'var(--accent-3)' : 'transparent')
             + ';cursor:pointer;font-family:inherit;color:inherit;text-align:left;',
-          dotStyle: 'width:20px;height:20px;flex:none;border-radius:999px;display:grid;place-items:center;font-size:10.5px;'
+          dotStyle: 'width:22px;height:22px;flex:none;border-radius:999px;display:grid;place-items:center;font-size:12px;font-weight:600;'
             + "font-family:'JetBrains Mono',monospace;background:" + (done ? 'var(--good)' : active ? 'var(--accent)' : 'var(--surface2)')
-            + ';color:' + (done || active ? '#fff' : 'var(--ink3)') + ';',
+            /* the surface colour, not white: white on the lifted dark-mode accent is 3.3:1 */
+            + ';color:' + (done || active ? 'var(--surface)' : 'var(--ink2)') + ';',
           dotLabel: done ? '✓' : String(i + 1),
           on: () => this.runCoachTask(i)
         };

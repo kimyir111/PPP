@@ -733,6 +733,7 @@
     "Right hand alone, {{pace}}": "只用右手，{{pace}}",
     "bar {{n}}": "第 {{n}} 小节",
     "Keep the score on paper": "乐谱保持纸张底色",
-    "Off, the notation follows the dark theme instead": "关闭后乐谱跟随深色主题"
+    "Off, the notation follows the dark theme instead": "关闭后乐谱跟随深色主题",
+    "Hide these tips": "隐藏提示"
   }
 }
