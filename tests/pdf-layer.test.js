@@ -162,6 +162,46 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
     };
   }, makePdf(), XML, PDFJS_WORKER);
 
+  const built = await page.evaluate(async (b64, worker) => {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = worker;
+    const bin = atob(b64); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    const raw = u.slice();
+    const doc = await pdfjsLib.getDocument({ data: u }).promise;
+    const page1 = await doc.getPage(1);
+    const L = await PPP.Import.pdfLayer.read(page1, pdfjsLib);
+    const vp = page1.getViewport({ scale: 1 });
+    const old = PPP.Import.health;
+    PPP.Import.health = () => Promise.resolve({ ok: false, remote: true, unreachable: true });
+    let load = null;
+    try {
+      const file = {
+        name: 'vector.pdf', type: 'application/pdf', size: raw.byteLength,
+        arrayBuffer: () => Promise.resolve(raw.slice().buffer)
+      };
+      load = await PPP.Import.load(file);
+    } catch (e) { load = { error: e.message, size: raw.byteLength }; }
+    PPP.Import.health = old;
+    const n = PPP.Import.pdfLayer.notate([{ layer: L, width: vp.width, height: vp.height }], 'vector.pdf');
+    const score = n && n.xml ? PPP.parseMusicXML(n.xml, 'vector.pdf') : null;
+    return {
+      notes: n && n.notes, measures: n && n.measures, title: n && n.title,
+      pitches: score ? score.notes.filter(x => !x.rest).map(x => x.p) : [],
+      engine: load && load.source && load.source.engine,
+      loadNotes: load && load.score ? load.score.notes.filter(x => !x.rest).length : 0,
+      loadError: load && load.error
+    };
+  }, makePdf(), PDFJS_WORKER);
+
+  console.log('\n── reading the page as a score, without a helper ──');
+  ok('the vector page notates itself', built.notes >= 8 && built.measures >= 3,
+    'notes=' + built.notes + ' measures=' + built.measures);
+  ok('title is taken from the page', built.title === 'Vector Song', built.title);
+  ok('G4 and C5 are on the page', built.pitches.indexOf('G4') > -1 && built.pitches.indexOf('C5') > -1,
+    built.pitches.join(', '));
+  ok('Import.load reads a PDF when the helper is not there',
+    built.engine === 'pdf' && built.loadNotes >= 8 && !built.loadError,
+    JSON.stringify({ engine: built.engine, notes: built.loadNotes, error: built.loadError }));
+
   console.log('\n── reading the page ───────────────────');
   ok('one system of two staves is found', r.staves === 2);
   ok('three bars, and the stem that is nearly a bar line is not one', r.bars.length === 3, r.bars.join(', '));

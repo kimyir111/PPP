@@ -192,37 +192,55 @@
   /* ---- focus mode ----
      On a tablet held at the piano there is no room for a sidebar, a header and
      a coach panel. Everything that is not the score, the keyboard and the
-     transport goes away, and what is left gets the space. */
-  .ppp-shell[data-focus="true"] { grid-template-columns: minmax(0, 1fr); }
+     transport goes away. The column is locked to the screen so the score keeps
+     the height the keyboard would otherwise grow into. */
+  .ppp-shell[data-focus="true"] {
+    grid-template-columns: minmax(0, 1fr);
+    height: 100vh; height: 100dvh;
+    overflow: hidden;
+  }
   .ppp-shell[data-focus="true"] .ppp-aside,
   .ppp-shell[data-focus="true"] .ppp-header,
   .ppp-shell[data-focus="true"] .ppp-panel,
   .ppp-shell[data-focus="true"] .ppp-hide-in-focus { display: none !important; }
+  .ppp-shell[data-focus="true"] .ppp-main {
+    height: 100%; min-height: 0; overflow: hidden;
+  }
   .ppp-shell[data-focus="true"] .ppp-split {
     grid-template-columns: minmax(0, 1fr) !important;
     /* the inline align-items:start keeps the column from filling the height */
     align-items: stretch !important;
   }
   .ppp-shell[data-focus="true"] .ppp-page {
-    padding: 10px 12px 12px;
-    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-    gap: 10px;
-    min-height: 100vh; min-height: 100dvh;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+    padding: 8px 10px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    gap: 8px;
   }
   .ppp-focus-exit { display: none; }
   .ppp-shell[data-focus="true"] .ppp-focus-exit {
     display: inline-flex; align-items: center; gap: 7px;
   }
   /* the staff takes whatever height is left once the keyboard has its share */
-  .ppp-shell[data-focus="true"] .ppp-staffwrap { padding: 8px 4px !important; }
+  .ppp-shell[data-focus="true"] .ppp-staffhead { padding: 8px 10px !important; flex-wrap: nowrap; }
+  .ppp-shell[data-focus="true"] .ppp-staffwrap { padding: 6px 4px !important; }
   .ppp-shell[data-focus="true"] .ppp-staffwrap svg { width: 100%; height: auto; }
   /* the two cards share the height that the hidden chrome gave back */
   .ppp-shell[data-focus="true"] .ppp-page > div,
   .ppp-shell[data-focus="true"] .ppp-page > div > section { min-width: 0; }
   .ppp-shell[data-focus="true"] .ppp-page > div { flex: 1 1 auto; min-height: 0; display: flex; }
-  .ppp-shell[data-focus="true"] .ppp-page > div > section { flex: 1 1 auto; min-height: 0; }
+  .ppp-shell[data-focus="true"] .ppp-page > div > section {
+    flex: 1 1 auto; min-height: 0; gap: 8px !important;
+  }
   .ppp-shell[data-focus="true"] .ppp-staffcard {
     flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;
+  }
+  .ppp-shell[data-focus="true"] .ppp-transport {
+    flex: 0 0 auto;
+    padding: 8px 10px !important;
   }
   .ppp-shell[data-focus="true"] .ppp-focus-grow {
     flex: 1 1 auto; min-height: 0;
@@ -237,17 +255,32 @@
   /* A whole piece is taller than the box: let it scroll instead of shrinking
      it until the notes are gone. */
   .ppp-staffwrap[data-whole="true"] { max-height: 62vh; overflow-y: auto !important; }
+  .ppp-shell[data-focus="true"] .ppp-staffwrap[data-whole="true"],
   .ppp-shell[data-focus="true"] .ppp-focus-grow[data-whole="true"] {
-    align-items: flex-start; overflow-y: auto !important;
+    max-height: none;
+    align-items: flex-start;
+    overflow-y: auto !important;
   }
   .ppp-shell[data-focus="true"] .ppp-focus-grow[data-whole="true"] svg {
     height: auto !important;
   }
   /* A phone cannot fit four octaves at a readable size, so while focused the
      keys keep their size and the strip scrolls, following what is being asked
-     for rather than shrinking until nothing can be read. */
-  .ppp-shell[data-focus="true"] .ppp-kbwrap { overflow-x: auto !important; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
-  .ppp-shell[data-focus="true"] .ppp-kbwrap svg { height: auto; }
+     for rather than shrinking until nothing can be read. The strip itself is
+     capped so a tablet's score is not squeezed to half a system. */
+  .ppp-shell[data-focus="true"] .ppp-kbwrap {
+    overflow-x: auto !important; overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    margin-top: 8px !important;
+    max-height: clamp(110px, 18vh, 168px);
+  }
+  .ppp-shell[data-focus="true"] .ppp-kbwrap svg {
+    display: block;
+    height: clamp(110px, 18vh, 168px) !important;
+    width: auto !important;
+    max-width: none;
+    margin: 0 auto;
+  }
   /* setup controls are not playing controls */
   .ppp-shell[data-focus="true"] .ppp-setup-only { display: none !important; }
   .ppp-shell[data-focus="true"] .ppp-focus-only { display: flex !important; }
@@ -827,7 +860,7 @@
             </div>
 
             <div class="ppp-staffcard" style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); overflow: hidden;">
-              <div style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap;">
+              <div class="ppp-staffhead" style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap;">
                 <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink2);">{{ nowMeasure }}</span>
                 <div style="flex: 1;"></div>
                 <div class="ppp-setup-only" style="display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface2);">
@@ -1579,6 +1612,7 @@
                     <input type="number" min="0" step="0.01" value="{{ lockDownbeat }}" onChange="{{ setLockDownbeat }}" data-lock-downbeat style="display: block; margin-top: 5px; width: 88px; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px;" />
                   </label>
                   <button onClick="{{ rewriteRhythm }}" data-lock-rewrite style="padding: 10px 14px; border-radius: 10px; border: 0; background: var(--ink); color: var(--surface); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">{{ lockRewrite }}</button>
+                  <button onClick="{{ easierArrangement }}" data-easier style="padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">{{ easierLabel }}</button>
                 </div>
               </div>
             </sc-if>
@@ -5058,6 +5092,12 @@ const Import = {
       /* what the page says in its own text and lines, for PdfLayer.apply */
       let layer = null;
       try { layer = await PdfLayer.read(page, pdfjsLib); } catch (e) { /* a picture-only page */ }
+      const pdfVp = page.getViewport({ scale: 1 });
+      let systems = 0;
+      try { systems = layer ? PdfLayer.layout(layer, 2).systems.length : 0; } catch (e) {}
+      if (!systems) {
+        try { layer = PdfLayer.fromCanvas(canvas, pdfVp.width, pdfVp.height) || layer; } catch (e) {}
+      }
       pages.push({ dataUrl: canvas.toDataURL('image/png'), width: canvas.width, height: canvas.height, layer: layer });
     }
     return pages;
@@ -5077,7 +5117,9 @@ const Import = {
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(0, 0, c.width, c.height);
           ctx.drawImage(img, 0, 0);
-          resolve([{ dataUrl: c.toDataURL('image/png'), width: c.width, height: c.height }]);
+          let layer = null;
+          try { layer = PdfLayer.fromCanvas(c, c.width, c.height); } catch (e) {}
+          resolve([{ dataUrl: c.toDataURL('image/png'), width: c.width, height: c.height, layer: layer }]);
         };
         img.onerror = () => reject(importError('bad-image', tx('That image could not be opened.')));
         img.src = fr.result;
@@ -5683,31 +5725,39 @@ const Import = {
       return { score: score, source: source, report: Object.assign(report, { confidence: 1, level: 'good', advice: null, summary: null }) };
     }
 
-    /* --- the OMR route --- */
-    const health = await Import.health();
-    if (!health.ok)
-      throw importError('service-down',
-        tx(health.remote
-          ? 'Recognising a PDF or photo needs PPP’s local helper on the computer running PPP. A tablet or phone opening the website cannot run it.'
-          : 'PPP could not reach the OMR service. Recognising a PDF or photo needs a small local process.'),
-        health.remote
-          ? [tx('On the computer, run npm run omr and open PPP there'), tx('Or upload MusicXML (.musicxml, .xml, .mxl) instead — that works here')]
-          : [tx('Start it with: npm run omr'), tx('Or upload MusicXML instead')]);
-    if (!health.audiveris)
-      throw importError('engine-missing',
-        tx('The OMR service is running but the Audiveris engine is missing.'),
-        [tx('See the README for the one-time Audiveris setup'), tx('Or upload MusicXML instead')]);
-
+    /* --- PDF / photo: read on this device, same path as a computer ---
+       A PDF from notation software already says where the notes are. A scan
+       is read from the pixels. The local Audiveris helper is only a fallback
+       when that reading finds too little. */
     const pages = kind === 'pdf'
       ? await Import.rasterisePdf(file, onStage)
       : await Import.imageToPage(file);
 
-    const omr = await Import.recognise(pages, onStage);
-    source.engine = omr.engine;
-    source.pages = omr.pages;
+    let xml = null, omr = null;
+    try {
+      const built = PdfLayer.notate(pages, file.name);
+      if (built && built.notes >= 4 && built.measures >= 1) {
+        xml = built.xml;
+        source.engine = 'pdf';
+        source.pages = pages.map((_, i) => ({ index: i, ok: true }));
+        stage('merge', { pages: pages.length });
+      }
+    } catch (e) { /* fall through to the helper */ }
 
-    stage('merge', { pages: omr.pages.filter(p => p.ok).length });
-    const xml = Import.mergeMusicXml(omr.musicxml);
+    if (!xml) {
+      const health = await Import.health();
+      if (health.ok && health.audiveris) {
+        omr = await Import.recognise(pages, onStage);
+        source.engine = omr.engine;
+        source.pages = omr.pages;
+        stage('merge', { pages: omr.pages.filter(p => p.ok).length });
+        xml = Import.mergeMusicXml(omr.musicxml);
+      } else {
+        throw importError('recognition-failed',
+          tx('PPP could not read notation on that file.'),
+          [tx('Try a clearer scan, or a PDF exported from notation software'), tx('Or upload MusicXML instead')]);
+      }
+    }
 
     stage('parse', {});
     let score;
@@ -5723,13 +5773,13 @@ const Import = {
        recognition misses: the chord names, 8va brackets, title and tempo. */
     if (kind === 'pdf') {
       try {
-        source.fromPdf = PdfLayer.apply(score, pages.map(p => p.layer || null), omr.musicxml, file.name);
+        source.fromPdf = PdfLayer.apply(score, pages.map(p => p.layer || null), omr ? omr.musicxml : [xml], file.name);
       } catch (e) { /* the recognised score stands as it is */ }
       pages.forEach(p => { delete p.layer; });
     }
 
     stage('check', {});
-    const report = Import.validate(score, { pageCount: pages.length, pages: omr.pages,
+    const report = Import.validate(score, { pageCount: pages.length, pages: (omr && omr.pages) || source.pages,
       missing: source.fromPdf ? source.fromPdf.missing : null });
     source.status = report.level === 'poor' ? 'low-confidence' : 'recognised';
     score.source = source;
@@ -7315,6 +7365,312 @@ const PdfLayer = {
       else arps.push({ x: a.x, y0: a.y0, y1: a.y1 });
     });
     return { heads: heads, accs: accs, arps: arps };
+  },
+
+  /* A scan or a PDF that drew its notes as pictures, not as text: staff lines
+     and note-head blobs from the pixels, in PDF points with y pointing up, so
+     layout() can read them the same way it reads a vector page. */
+  fromCanvas(src, pdfW, pdfH) {
+    if (!src || !src.getContext || !(src.width > 8 && src.height > 8)) return null;
+    const maxEdge = 1800;
+    let c = src, cw = src.width, ch = src.height;
+    if (Math.max(cw, ch) > maxEdge) {
+      const s = maxEdge / Math.max(cw, ch);
+      c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(cw * s));
+      c.height = Math.max(1, Math.round(ch * s));
+      c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+      cw = c.width; ch = c.height;
+    }
+    let ctx;
+    try { ctx = c.getContext('2d', { willReadFrequently: true }); } catch (e) { ctx = c.getContext('2d'); }
+    let img;
+    try { img = ctx.getImageData(0, 0, cw, ch); } catch (e) { return null; }
+    const d = img.data;
+    const lum = i => d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
+    const sx = pdfW / cw, sy = pdfH / ch;
+    const py = y => pdfH - y * sy;
+    const rowInk = new Float64Array(ch);
+    for (let y = 0; y < ch; y++) {
+      let n = 0;
+      const row = y * cw;
+      for (let x = 0; x < cw; x++) if (lum((row + x) * 4) < 145) n++;
+      rowInk[y] = n / cw;
+    }
+    const peaks = [];
+    for (let y = 2; y < ch - 2; y++) {
+      const v = rowInk[y];
+      if (v > 0.18 && v >= rowInk[y - 1] && v >= rowInk[y + 1] && v > rowInk[y - 2] && v > rowInk[y + 2])
+        peaks.push(y);
+    }
+    const merged = [];
+    peaks.forEach(y => {
+      const g = merged[merged.length - 1];
+      if (g && y - g.y < 3) { g.y = (g.y * g.n + y) / (g.n + 1); g.n++; }
+      else merged.push({ y: y, n: 1 });
+    });
+    const ys = merged.map(g => Math.round(g.y));
+    const hl = [], staffBands = [];
+    const used = {};
+    for (let i = 0; i < ys.length; i++) {
+      if (used[i]) continue;
+      const pick = [i];
+      for (let j = i + 1; j < ys.length && pick.length < 5; j++) {
+        if (used[j]) continue;
+        const gap = ys[j] - ys[pick[pick.length - 1]];
+        const g0 = pick.length > 1 ? ys[pick[1]] - ys[pick[0]] : null;
+        if (g0 == null ? (gap >= 4 && gap <= 28) : Math.abs(gap - g0) <= 2) pick.push(j);
+        else if (g0 != null && gap > g0 + 3) break;
+      }
+      if (pick.length === 5) {
+        pick.forEach(k => { used[k] = true; });
+        const lines = pick.map(k => ys[k]);
+        const gap = (lines[4] - lines[0]) / 4;
+        const x0 = 8, x1 = cw - 8;
+        lines.forEach(y => hl.push({ x0: x0 * sx, x1: x1 * sx, y: py(y) }));
+        staffBands.push({ top: lines[0], bot: lines[4], gap: gap, x0: x0, x1: x1 });
+      }
+    }
+    if (!staffBands.length) return { w: pdfW, h: pdfH, texts: [], hl: hl, vl: [], blobs: [] };
+
+    const vl = [];
+    staffBands.sort((a, b) => a.top - b.top);
+    const systems = [];
+    for (let i = 0; i < staffBands.length;) {
+      const grp = [staffBands[i]];
+      if (i + 1 < staffBands.length) {
+        const nxt = staffBands[i + 1];
+        const sep = nxt.top - staffBands[i].bot;
+        if (sep > 0 && sep < staffBands[i].gap * 8) grp.push(nxt);
+      }
+      systems.push(grp);
+      i += grp.length;
+    }
+    systems.forEach(grp => {
+      const y0 = grp[0].top, y1 = grp[grp.length - 1].bot, H = y1 - y0;
+      if (H < 8) return;
+      const ink = [];
+      for (let x = 4; x < cw - 4; x++) {
+        let n = 0;
+        for (let y = y0; y <= y1; y++) if (lum((y * cw + x) * 4) < 140) n++;
+        ink.push({ x: x, v: n / H });
+      }
+      const xs = [];
+      ink.forEach((col, k) => {
+        if (col.v > 0.45 && (!ink[k - 1] || col.v >= ink[k - 1].v) && (!ink[k + 1] || col.v >= ink[k + 1].v))
+          xs.push(col.x);
+      });
+      const groups = [];
+      xs.forEach(x => {
+        const g = groups[groups.length - 1];
+        if (g && x - g.x1 < 4) g.x1 = x; else groups.push({ x0: x, x1: x });
+      });
+      groups.forEach(g => {
+        const x = (g.x0 + g.x1) / 2;
+        vl.push({ x: x * sx, y0: py(y1), y1: py(y0) });
+      });
+    });
+
+    const onLine = new Uint8Array(ch);
+    staffBands.forEach(st => {
+      for (let k = 0; k < 5; k++) {
+        const y = Math.round(st.top + k * st.gap);
+        for (let dy = -1; dy <= 1; dy++) if (y + dy >= 0 && y + dy < ch) onLine[y + dy] = 1;
+      }
+    });
+    const blobs = [];
+    staffBands.forEach(st => {
+      const pad = st.gap * 4;
+      const yA = Math.max(0, Math.floor(st.top - pad));
+      const yB = Math.min(ch - 1, Math.ceil(st.bot + pad));
+      const minW = st.gap * 0.7, maxW = st.gap * 2.4;
+      const minH = st.gap * 0.45, maxH = st.gap * 1.8;
+      const seen = new Uint8Array(cw * ch);
+      const at = (x, y) => y * cw + x;
+      const dark = (x, y) => !onLine[y] && lum((y * cw + x) * 4) < 130;
+      for (let y = yA; y <= yB; y++) for (let x = st.x0; x <= st.x1; x++) {
+        if (seen[at(x, y)] || !dark(x, y)) continue;
+        let x0 = x, x1 = x, y0 = y, y1 = y, n = 0;
+        const stack = [x, y];
+        seen[at(x, y)] = 1;
+        while (stack.length) {
+          const cy = stack.pop(), cx = stack.pop();
+          n++;
+          if (cx < x0) x0 = cx; if (cx > x1) x1 = cx;
+          if (cy < y0) y0 = cy; if (cy > y1) y1 = cy;
+          const step = (nx, ny) => {
+            if (nx < 0 || ny < yA || nx >= cw || ny > yB || seen[at(nx, ny)] || !dark(nx, ny)) return;
+            seen[at(nx, ny)] = 1; stack.push(nx, ny);
+          };
+          step(cx + 1, cy); step(cx - 1, cy); step(cx, cy + 1); step(cx, cy - 1);
+        }
+        const bw = x1 - x0 + 1, bh = y1 - y0 + 1;
+        if (bw < minW || bw > maxW || bh < minH || bh > maxH) continue;
+        if (n < bw * bh * 0.28) continue;
+        if (bw > st.gap * 3 && bh < st.gap * 0.55) continue;
+        blobs.push({ x0: x0 * sx, x1: (x1 + 1) * sx, y0: py(y1 + 1), y1: py(y0) });
+      }
+    });
+    return { w: pdfW, h: pdfH, texts: [], hl: hl, vl: vl, blobs: blobs };
+  },
+
+  /* Build MusicXML from the pages we already rasterised. Tablet and computer
+     both run this in the browser, so a PDF does not need the local helper. */
+  notate(pages, fileName) {
+    const STEPS = 'CDEFGAB';
+    const TOP = { treble: { s: 3, o: 5 }, bass: { s: 5, o: 3 } };
+    const pitchAt = (st, y, clef) => {
+      const half = st.gap / 2;
+      let n = Math.round((st.top - y) / half);
+      let si = TOP[clef].s, oct = TOP[clef].o;
+      while (n > 0) { si--; if (si < 0) { si = 6; oct--; } n--; }
+      while (n < 0) { si++; if (si > 6) { si = 0; oct++; } n++; }
+      return { step: STEPS.charAt(si), octave: oct };
+    };
+    const snap = (q, cap) => {
+      const g = [4, 3, 2, 1.5, 1, 0.75, 0.5, 0.375, 0.25, 0.125];
+      let best = 0.25, d = 99;
+      g.forEach(v => {
+        if (v > cap + 0.08) return;
+        const e = Math.abs(q - v);
+        if (e < d) { d = e; best = v; }
+      });
+      return best;
+    };
+    const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const DIV = 8;
+    const measures = [];
+    let title = '', composer = '', tempo = 84, beats = 4, beatType = 4, fifths = 0, per = 2;
+
+    (pages || []).forEach((p, pi) => {
+      const L = p && p.layer;
+      if (!L) return;
+      let lay;
+      try { lay = this.layout(L, per); } catch (e) { return; }
+      if (!lay.systems.length) {
+        try { lay = this.layout(L, 1); } catch (e) { return; }
+      }
+      if (!lay.systems.length) return;
+      if (lay.systems[0].staves.length === 1) per = 1;
+      if (pi === 0) {
+        const hd = this.heading(L, lay);
+        if (hd.title) title = hd.title;
+        if (hd.composer) composer = hd.composer;
+        if (hd.tempo) tempo = hd.tempo;
+      }
+      const mk = this.marks(L, lay);
+      const blobHeads = (L.blobs || []).map(b => ({
+        x: b.x0, y: (b.y0 + b.y1) / 2, w: Math.max(1, b.x1 - b.x0),
+        size: Math.max(1, b.y1 - b.y0), n: 1
+      }));
+      lay.systems.forEach(sys => {
+        const staves = sys.staves;
+        sys.bars.forEach(bar => {
+          const barQ = (beats * 4) / beatType;
+          const cols = [];
+          staves.forEach((st, si) => {
+            const clef = si === 0 ? 'treble' : 'bass';
+            const inSt = y => y <= st.top + 4 * st.gap && y >= st.bottom - 4 * st.gap;
+            mk.heads.concat(blobHeads).filter(h =>
+              inSt(h.y) && h.x + h.w * 0.5 >= bar.x0 + 2 && h.x < bar.x1 - 1
+            ).forEach(h => {
+              const cx = h.x + Math.min(h.w, st.gap) * 0.4;
+              if (cx < bar.x0 + st.gap * 3.2) return;
+              const acc = mk.accs.filter(a => Math.abs(a.y - h.y) < st.gap * 0.7 && a.x < cx && cx - a.x < st.gap * 2.4)
+                .sort((a, b) => b.x - a.x)[0];
+              const alter = acc ? (acc.kind === 'sharp' ? 1 : acc.kind === 'flat' ? -1 : 0) : 0;
+              let col = cols.filter(c => Math.abs(c.x - cx) < st.gap * 0.65)[0];
+              if (!col) { col = { x: cx, items: [] }; cols.push(col); }
+              col.items.push({ staff: si + 1, y: h.y, alter: alter, st: st, clef: clef });
+            });
+          });
+          cols.sort((a, b) => a.x - b.x);
+          const span = Math.max(1, bar.x1 - bar.x0);
+          const byStaff = {};
+          staves.forEach((_, si) => { byStaff[si + 1] = []; });
+          cols.forEach((c, i) => {
+            const nextX = i + 1 < cols.length ? cols[i + 1].x : bar.x1;
+            const remain = {};
+            Object.keys(byStaff).forEach(s => {
+              const used = byStaff[s].reduce((q, n) => n.chord ? q : q + n.dur, 0);
+              remain[s] = Math.max(0.125, barQ - used);
+            });
+            const dur = snap(((nextX - c.x) / span) * barQ, Math.max(0.125, Math.min.apply(null, Object.keys(remain).map(s => remain[s]))));
+            const groups = {};
+            c.items.forEach(it => { (groups[it.staff] = groups[it.staff] || []).push(it); });
+            Object.keys(groups).forEach(s => {
+              const seen = {};
+              let first = true;
+              groups[s].sort((a, b) => a.y - b.y).forEach(it => {
+                const p = pitchAt(it.st, it.y, it.clef);
+                const key = p.step + p.octave;
+                if (seen[key]) return;
+                seen[key] = true;
+                byStaff[s].push({
+                  staff: +s, step: p.step, octave: p.octave, alter: it.alter,
+                  dur: dur, chord: !first, rest: false
+                });
+                first = false;
+              });
+            });
+          });
+          Object.keys(byStaff).forEach(s => {
+            let t = 0;
+            byStaff[s].forEach(n => { if (!n.chord) { n.b = t; t += n.dur; } else n.b = t - n.dur; });
+            if (t < barQ - 0.12) {
+              byStaff[s].push({ rest: true, staff: +s, dur: snap(barQ - t, barQ - t), b: t, chord: false, step: 'C', octave: 4, alter: 0 });
+            }
+          });
+          const notes = [];
+          Object.keys(byStaff).forEach(s => { notes.push.apply(notes, byStaff[s]); });
+          if (notes.some(n => !n.rest)) measures.push({ notes: notes, beats: beats, beatType: beatType, fifths: fifths, staves: staves.length });
+        });
+      });
+    });
+
+    const sounding = measures.reduce((n, m) => n + m.notes.filter(x => !x.rest).length, 0);
+    if (sounding < 4 || !measures.length) return null;
+    const staves = Math.max.apply(null, measures.map(m => m.staves || 1));
+    let xml = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1">';
+    xml += '<work><work-title>' + esc(title || fileName || 'Untitled') + '</work-title></work>';
+    if (composer) xml += '<identification><creator type="composer">' + esc(composer) + '</creator></identification>';
+    xml += '<part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list><part id="P1">';
+    measures.forEach((mm, i) => {
+      xml += '<measure number="' + (i + 1) + '">';
+      if (i === 0) {
+        xml += '<attributes><divisions>' + DIV + '</divisions><key><fifths>' + mm.fifths + '</fifths></key>';
+        xml += '<time><beats>' + mm.beats + '</beats><beat-type>' + mm.beatType + '</beat-type></time>';
+        xml += '<staves>' + staves + '</staves>';
+        xml += '<clef number="1"><sign>G</sign><line>2</line></clef>';
+        if (staves > 1) xml += '<clef number="2"><sign>F</sign><line>4</line></clef>';
+        xml += '</attributes>';
+        if (tempo >= 20 && tempo <= 300)
+          xml += '<direction placement="above"><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>' +
+            tempo + '</per-minute></metronome></direction-type><sound tempo="' + tempo + '"/></direction>';
+      }
+      const groups = {};
+      mm.notes.forEach(n => { (groups[n.staff] = groups[n.staff] || []).push(n); });
+      const staffNos = Object.keys(groups).map(Number).sort((a, b) => a - b);
+      staffNos.forEach((s, si) => {
+        if (si) xml += '<backup><duration>' + Math.round(((mm.beats * 4) / mm.beatType) * DIV) + '</duration></backup>';
+        groups[s].forEach(n => {
+          xml += '<note>';
+          if (n.chord) xml += '<chord/>';
+          if (n.rest) xml += '<rest/>';
+          else {
+            xml += '<pitch><step>' + n.step + '</step>';
+            if (n.alter) xml += '<alter>' + n.alter + '</alter>';
+            xml += '<octave>' + n.octave + '</octave></pitch>';
+          }
+          xml += '<duration>' + Math.max(1, Math.round(n.dur * DIV)) + '</duration>';
+          xml += '<voice>' + s + '</voice><type>' + typeFromQ(n.dur) + '</type>';
+          xml += '<staff>' + s + '</staff></note>';
+        });
+      });
+      xml += '</measure>';
+    });
+    xml += '</part></score-partwise>';
+    return { xml: xml, notes: sounding, measures: measures.length, title: title };
   },
 
   /* Put what the PDF says onto the recognised score. layers: one per page,
@@ -9114,8 +9470,18 @@ class Component extends DCLogic {
     if (wrap.scrollHeight <= wrap.clientHeight + 4) return;
     const r = now.getBoundingClientRect();
     const w = wrap.getBoundingClientRect();
-    if (r.top >= w.top && r.bottom <= w.bottom) return;   /* already readable */
     const top = (r.top - w.top) + wrap.scrollTop;
+    if (this.state.focus) {
+      /* Upcoming bars matter more than the line you just played: pin the
+         current bar near the top so the next system stays on a tablet
+         instead of being clipped under the keyboard. */
+      const pad = Math.min(12, Math.max(4, wrap.clientHeight * 0.03));
+      const want = clamp(top - pad, 0, wrap.scrollHeight - wrap.clientHeight);
+      if (Math.abs(want - wrap.scrollTop) < 6) return;
+      wrap.scrollTo({ top: want, behavior: 'smooth' });
+      return;
+    }
+    if (r.top >= w.top && r.bottom <= w.bottom) return;   /* already readable */
     const want = clamp(top - (wrap.clientHeight - r.height) / 2, 0, wrap.scrollHeight - wrap.clientHeight);
     wrap.scrollTo({ top: want, behavior: 'smooth' });
   }
@@ -9175,6 +9541,10 @@ class Component extends DCLogic {
     this._onResize = () => {
       if (typeof window !== 'undefined' && window.innerWidth > 1024 && this.state.sidebarOpen)
         this.setState({ sidebarOpen: false });
+      if (this.state.focus) {
+        this._lastBar = null;
+        this.followStaff();
+      }
     };
     this._onFsChange = () => {
       if (!document.fullscreenElement && this.state.focus) this.setState({ focus: false });
@@ -10702,7 +11072,17 @@ class Component extends DCLogic {
      changes, so the feature works either way. */
   toggleFocus() {
     const on = !this.state.focus;
-    this.setState({ focus: on, screen: on ? 'player' : this.state.screen });
+    this._lastBar = null;
+    this.setState({ focus: on, screen: on ? 'player' : this.state.screen }, () => {
+      this.followStaff();
+      /* the staff wrap's height is not final until the keyboard has laid out */
+      clearTimeout(this._focusFollow);
+      this._focusFollow = setTimeout(() => {
+        if (this._dead || !this.state.focus) return;
+        this._lastBar = null;
+        this.followStaff();
+      }, 80);
+    });
     try {
       const el = document.documentElement;
       if (on && el.requestFullscreen) el.requestFullscreen().catch(() => {});
@@ -11133,7 +11513,7 @@ class Component extends DCLogic {
       built = window.PPPAudioScore.toMusicXml({
         notes: heard.notes, pedals: heard.pedals,
         beats: heard.beats, downbeats: heard.downbeats
-      }, { title: S.score.title, lock: lock });
+      }, { title: S.score.title, lock: lock, easy: !!S.lockEasy });
     } catch (e) {
       this.say((e && e.message) || tx('The rhythm could not be rewritten.'));
       return;
@@ -11160,6 +11540,57 @@ class Component extends DCLogic {
       reviewFrom: Score.first(score)
     });
     this.say(tx('Rewrote the rhythm as {{metre}} at {{tempo}} BPM.', { metre: lock.beats + '/' + lock.beatType, tempo: lock.bpm }));
+  }
+  easierArrangement() {
+    this.rewriteFromHeard({ easy: true });
+  }
+  rewriteFromHeard(extra) {
+    const heard = this._heard;
+    if (!heard || !heard.notes || !window.PPPAudioScore) return;
+    extra = extra || {};
+    const S = this.state;
+    const parts = String(S.lockMetre || '4/4').split('/');
+    const lock = {
+      beats: parseInt(parts[0], 10) || 4,
+      beatType: parseInt(parts[1], 10) || 4,
+      bpm: +S.lockBpm || S.score.tempo || 80,
+      firstDownbeat: S.lockDownbeat == null ? 0 : +S.lockDownbeat
+    };
+    let built;
+    try {
+      built = window.PPPAudioScore.toMusicXml({
+        notes: heard.notes, pedals: heard.pedals,
+        beats: heard.beats, downbeats: heard.downbeats
+      }, { title: S.score.title, lock: extra.easy ? null : lock, easy: !!extra.easy || !!S.lockEasy });
+    } catch (e) {
+      this.say((e && e.message) || tx('The rhythm could not be rewritten.'));
+      return;
+    }
+    let score;
+    try { score = parseMusicXML(built.xml, S.score.title); } catch (e) {
+      this.say(tx('The notes were heard but could not be turned into a score: {{message}}', { message: e.message }));
+      return;
+    }
+    score.composer = S.score.composer || '';
+    const report = Import.validateTranscription(score, built.stats, heard);
+    const source = Object.assign({}, S.importSource || {}, {
+      tempo: built.stats.tempo, barStarts: built.stats.barStarts,
+      status: report.level === 'poor' ? 'low-confidence' : 'transcribed',
+      easy: !!(extra.easy || S.lockEasy)
+    });
+    score.source = source;
+    if (this._recording) this._recording.barStarts = built.stats.barStarts;
+    this.adoptScore(score);
+    const m0 = score.measures[0] || { time: { beats: lock.beats, beatType: lock.beatType } };
+    this.setState({
+      importReport: report, importSource: source, lockEasy: !!source.easy,
+      lockMetre: m0.time.beats + '/' + m0.time.beatType,
+      lockBpm: built.stats.tempo,
+      reviewFrom: Score.first(score)
+    });
+    this.say(extra.easy
+      ? tx('Wrote an easier arrangement — melody and bass, inner notes dropped.')
+      : tx('Rewrote the rhythm as {{metre}} at {{tempo}} BPM.', { metre: lock.beats + '/' + lock.beatType, tempo: lock.bpm }));
   }
   recordingPanel(S, score) {
     const rec = this._recording;
@@ -12216,11 +12647,13 @@ class Component extends DCLogic {
       }, midiName(bm)));
     });
     /* 26px is about the narrowest a white key can be and still be aimed at
-       with a finger; below that the keyboard is decoration. Where there is
-       height to spare the keys take it, since a bigger key is the whole point
-       of the feedback. */
-    const tall = typeof window !== 'undefined' && window.innerHeight >= 700;
-    const minW = S.focus ? whites.length * (tall ? 34 : 26) : 0;
+       with a finger; below that the keyboard is decoration. Focus caps the
+       strip's height so a tablet still has room for the score; the width
+       follows the viewBox so the keys are not squashed. */
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 900;
+    const focusCap = S.focus ? Math.max(110, Math.min(168, Math.round(vh * 0.18))) : 0;
+    const tall = vh >= 700;
+    const minW = S.focus && !focusCap ? whites.length * (tall ? 34 : 26) : 0;
     /* The hands go over the keys, and their palms into a strip below them. */
     let HT = H;
     if (this.handsOn()) {
@@ -12244,9 +12677,19 @@ class Component extends DCLogic {
     }
     /* key names last, so they read through a hand lying over them */
     names.forEach(t => els.push(t));
+    const svgH = focusCap ? Math.min(focusCap, HT) : 0;
+    const svgW = svgH ? Math.round(W * (svgH / HT)) : 0;
     return h('svg', {
-      viewBox: `0 0 ${W} ${HT}`, width: '100%',
-      style: { display: 'block', height: 'auto', minWidth: minW ? minW + 'px' : undefined }
+      viewBox: `0 0 ${W} ${HT}`,
+      width: svgW || '100%',
+      height: svgH || undefined,
+      style: {
+        display: 'block',
+        height: svgH ? svgH + 'px' : 'auto',
+        width: svgW ? svgW + 'px' : '100%',
+        minWidth: svgW ? svgW + 'px' : (minW ? minW + 'px' : undefined),
+        margin: svgW ? '0 auto' : undefined
+      }
     }, els);
   }
 
@@ -12652,7 +13095,10 @@ class Component extends DCLogic {
       : tx('Play the score through a connected digital piano');
     const midiOutAction = tx(midiOutLive ? 'Disconnect' : 'Connect');
     const follows = this.following();
-    const staffBars = (S.focus && this.narrowScreen()) ? 2 : 4;
+    /* Four bars across a phone are too small to read at the piano; a tablet
+       has the width for four. Focus used to treat every ≤1024px screen as a
+       phone and halved the window on an iPad. */
+    const staffBars = (S.focus && typeof window !== 'undefined' && window.innerWidth <= 720) ? 2 : 4;
 
     const settingGroups = [
       { title: 'Practice', sub: 'How the coach guides you', rows: [
@@ -12927,7 +13373,7 @@ class Component extends DCLogic {
       helperNote: (() => {
         const hp = S.helper;
         if (!hp) return tx('Recordings and links are listened to by PPP’s local helper, on this computer.');
-        if (hp.remote) return tx('PDF, photos and recordings need PPP’s local helper on the computer running PPP. MusicXML works in this browser.');
+        if (hp.remote) return tx('PDF and photos are read here. Recordings still need PPP’s local helper on the computer running PPP.');
         if (!hp.ok) return tx('The local helper is not running — start it with npm run omr.');
         if (!hp.transcriber) return tx('The local helper is running, but transcription is not set up yet (see the README).');
         if (!hp.youtube) return tx('Recordings are ready. YouTube links also need yt-dlp in tools/.');
@@ -13012,6 +13458,8 @@ class Component extends DCLogic {
       setLockBpm: e => this.setState({ lockBpm: +e.target.value }),
       setLockDownbeat: e => this.setState({ lockDownbeat: +e.target.value }),
       rewriteRhythm: () => this.rewriteRhythm(),
+      easierArrangement: () => this.easierArrangement(),
+      easierLabel: tx('Easier arrangement'),
       reviewKicker: this._recording ? tx('Check the transcription') : tx('Check recognition'),
       reviewTitle: this._recording
         ? ((S.importReport && S.importReport.level === 'good') ? tx('Written out. Have a listen.')
