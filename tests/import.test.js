@@ -157,6 +157,48 @@ async function importFile(page, file, waitMs) {
   ok('a YouTube miss is a generate failure, not a catalog lookup',
     ytGen.code === 'download-failed' && !/could not find a score/i.test(ytGen.message || ''),
     JSON.stringify(ytGen));
+
+  const ytHeard = await page.evaluate(async () => {
+    const oldH = PPP.Import.health, oldT = PPP.Import.youtubeTitle, oldA = PPP.Import.transcribeHere;
+    PPP.Import.health = () => Promise.resolve({ ok: false, remote: true, unreachable: true });
+    /* a title that would hit the catalog — listen-first must still write the heard notes */
+    PPP.Import.youtubeTitle = () => Promise.resolve('Beethoven Fur Elise official audio');
+    const notes = [];
+    for (let i = 0; i < 8; i++) notes.push({ on: i * 0.5, off: i * 0.5 + 0.4, midi: 60 + i, vel: 80 });
+    PPP.Import.transcribeHere = () => Promise.resolve({
+      heard: { notes: notes, duration: 4.2, engine: 'basic-pitch' },
+      title: 'Heard piano',
+      audioUrl: null
+    });
+    let out;
+    try {
+      const r = await PPP.Import.loadYoutube('https://youtu.be/Vyn_63QDW7g?si=z1gf7KR6_F4W7WFv');
+      out = {
+        engine: r.source && r.source.engine,
+        retrieved: !!(r.source && r.source.retrieved),
+        notes: r.score && r.score.notes.filter(n => !n.rest).length,
+        measures: r.score && r.score.measures && r.score.measures.length,
+        transcribed: !!(r.report && r.report.transcribed),
+        kind: r.source && r.source.kind,
+        youtubeId: r.source && r.source.youtubeId,
+        summary: (r.report && r.report.summary) || ''
+      };
+    } catch (e) { out = { error: e.message, code: e.code }; }
+    PPP.Import.health = oldH; PPP.Import.youtubeTitle = oldT; PPP.Import.transcribeHere = oldA;
+    return out;
+  });
+  ok('enough heard notes become a written score, not a catalog miss',
+    !ytHeard.error && ytHeard.youtubeId === 'Vyn_63QDW7g' && ytHeard.kind === 'youtube'
+      && ytHeard.notes >= 4 && ytHeard.measures >= 1 && ytHeard.transcribed
+      && ytHeard.engine !== 'Public-domain catalog' && !ytHeard.retrieved
+      && !/could not find a score/i.test(ytHeard.summary || ''),
+    JSON.stringify(ytHeard));
+
+  const ytCopy = await page.content();
+  ok('hosted add-sheet copy does not tell you to run npm run omr',
+    /PPP reads PDFs, recordings and YouTube links here/.test(ytCopy)
+      && /hosted \|\| \(hp && hp\.remote\)/.test(ytCopy),
+    'helper note wiring');
   ok('YouTube links are recognised in every usual form', kinds.yt.every(id => id === '2WfaotSK3mI'), kinds.yt.join(','));
   ok('anything that is not one YouTube video is refused', kinds.notYt.every(id => id === null), kinds.notYt.join(','));
   ok('unsupported types are refused up front', kinds.midi === null && kinds.junk === null);
