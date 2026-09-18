@@ -140,6 +140,62 @@ function pipeAudioFile(res, file, dir) {
   stream.on('error', () => { done(); if (!res.headersSent) jsonError(res, 500, 'Read failed'); });
 }
 
+function httpGetText(url, timeoutMs, hops) {
+  hops = hops || 0;
+  return new Promise((resolve, reject) => {
+    if (hops > 6) return reject(new Error('too many redirects'));
+    let u;
+    try { u = new URL(url); } catch (e) { return reject(e); }
+    const lib = u.protocol === 'http:' ? http : https;
+    const req = lib.get(url, {
+      timeout: timeoutMs || 12000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) PPP/1',
+        'Accept': 'application/json, */*'
+      }
+    }, res => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        res.resume();
+        return httpGetText(new URL(res.headers.location, url).href, timeoutMs, hops + 1).then(resolve, reject);
+      }
+      if (res.statusCode !== 200) {
+        res.resume();
+        return reject(new Error('HTTP ' + res.statusCode));
+      }
+      const chunks = [];
+      let n = 0;
+      res.on('data', c => { n += c.length; if (n < 1024 * 1024) chunks.push(c); });
+      res.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+    req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+    req.on('error', reject);
+  });
+}
+
+async function fetchViaLoaderTo(parsed, dir) {
+  const startUrl = 'https://loader.to/ajax/download.php?format=mp3&url=' + encodeURIComponent(parsed.url);
+  let start;
+  try { start = JSON.parse(await httpGetText(startUrl, 12000)); }
+  catch (e) { throw new Error('loader start'); }
+  const progress = start && start.progress_url;
+  if (!progress) throw new Error('loader progress');
+  const deadline = Date.now() + 40000;
+  while (Date.now() < deadline) {
+    await new Promise(r => setTimeout(r, 2000));
+    let p;
+    try { p = JSON.parse(await httpGetText(progress, 10000)); }
+    catch (e) { continue; }
+    const durl = p && (p.download_url || p.url);
+    if (p && (p.success === 1 || p.success === true) && durl) {
+      const dest = path.join(dir, 'audio.mp3');
+      await httpGetToFile(String(durl), dest, { timeout: 30000 });
+      if (!looksLikeAudioFile(dest)) throw new Error('not audio');
+      return dest;
+    }
+  }
+  throw new Error('loader timeout');
+}
+
 function httpGetToFile(url, dest, opts) {
   opts = opts || {};
   const timeoutMs = opts.timeout || 20000;
@@ -247,22 +303,36 @@ function runYtDlp(ytdlp, watch, extraArgs, timeoutMs) {
 }
 
 async function fetchYoutubeAudioFile(parsed) {
-  const ytdlp = await findYtDlp();
-  const attempts = ytdlp ? [
-    /* Default clients (visionos in current yt-dlp). android,web is bot-walled
-       from datacenter IPs and was why hosted YouTube imports always 502'd. */
-    { extra: [], ms: 60000 },
-    { extra: ['--extractor-args', 'youtube:player_client=tv_downgraded,web_safari,ios'], ms: 25000 }
-  ] : [];
-  let lastTail = '';
-  for (let i = 0; i < attempts.length; i++) {
-    const got = await runYtDlp(ytdlp, parsed.url, attempts[i].extra, attempts[i].ms);
-    if (got.file) return got;
-    lastTail = got.tail || lastTail;
-    rmDir(got.dir);
-    if (got.timedOut && i === 0) break;
-  }
+  const hosted = process.env.NODE_ENV === 'production';
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ppp-yt-'));
+  let lastTail = '';
+  /* Datacenter IPs are bot-walled by YouTube, so on Render try a proxy first. */
+  if (hosted) {
+    try {
+      const file = await fetchViaLoaderTo(parsed, dir);
+      return { file: file, dir: dir, tail: lastTail };
+    } catch (e) {
+      lastTail = String(e && e.message || 'proxy');
+    }
+  }
+  const ytdlp = await findYtDlp();
+  if (ytdlp) {
+    const got = await runYtDlp(ytdlp, parsed.url, [], hosted ? 25000 : 70000);
+    if (got.file) {
+      rmDir(dir);
+      return got;
+    }
+    lastTail = (lastTail + '\n' + (got.tail || '')).slice(-4000);
+    rmDir(got.dir);
+  }
+  if (!hosted) {
+    try {
+      const file = await fetchViaLoaderTo(parsed, dir);
+      return { file: file, dir: dir, tail: lastTail };
+    } catch (e) {
+      lastTail = (lastTail + '\n' + (e && e.message || '')).slice(-4000);
+    }
+  }
   const dest = path.join(dir, 'audio.m4a');
   const mirrors = [
     'https://invidious.f5.si/latest_version?id=' + parsed.id + '&itag=140&local=true',
@@ -270,11 +340,12 @@ async function fetchYoutubeAudioFile(parsed) {
   ];
   for (let i = 0; i < mirrors.length; i++) {
     try {
-      await httpGetToFile(mirrors[i], dest, { timeout: 12000 });
+      await httpGetToFile(mirrors[i], dest, { timeout: 10000 });
       if (looksLikeAudioFile(dest)) return { file: dest, dir: dir, tail: lastTail };
     } catch (e) {}
   }
   rmDir(dir);
+  if (lastTail) console.error('[youtube-audio]', lastTail.slice(-800));
   return { file: null, dir: null, tail: lastTail };
 }
 
