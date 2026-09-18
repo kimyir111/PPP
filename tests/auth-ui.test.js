@@ -95,6 +95,34 @@ const ok = (name, cond, detail) => {
   }));
   ok('login with the new account works', logged.gate === false && /Pat Pianist/.test(logged.header), logged.header);
 
+  const guestCtx = await browser.createBrowserContext();
+  const guestPage = await guestCtx.newPage();
+  await guestPage.evaluateOnNewDocument(() => {
+    try {
+      localStorage.setItem('ppp-guest', '1');
+      localStorage.setItem('ppp-locale', 'en-US');
+    } catch (e) {}
+  });
+  await guestPage.goto(URL, { waitUntil: 'networkidle2', timeout: 45000 });
+  await sleep(1200);
+  const guestSnap = await guestPage.evaluate(() => ({
+    gate: !!document.querySelector('[data-auth]'),
+    signIn: [...document.querySelectorAll('header button')].some(b => (b.innerText || '').trim() === 'Sign in')
+  }));
+  ok('guest session skips the gate but shows Sign in', guestSnap.gate === false && guestSnap.signIn, JSON.stringify(guestSnap));
+  await guestPage.evaluate(() => {
+    const b = [...document.querySelectorAll('header button')].find(x => (x.innerText || '').trim() === 'Sign in');
+    if (b) b.click();
+  });
+  await sleep(1500);
+  const held = await guestPage.evaluate(() => ({
+    gate: !!document.querySelector('[data-auth]'),
+    title: document.querySelector('[data-auth] h1') ? document.querySelector('[data-auth] h1').innerText : ''
+  }));
+  ok('Sign in stays open after /api/auth/me returns', held.gate === true && /Sign in to PPP/.test(held.title), JSON.stringify(held));
+  await guestPage.close();
+  await guestCtx.close();
+
   await browser.close();
   if (errors.length) {
     console.error('\n' + errors.length + ' failed');

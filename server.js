@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* PPP web server — static app + email/password auth + progress sync.
+/* PPP web server — static app + email/password auth + progress sync + shared scores.
    Locally uses data/store.json. On Render, DATABASE_URL selects Postgres. */
 'use strict';
 
@@ -510,7 +510,8 @@ async function handleApi(req, res, url) {
     const password = String(body.password || '');
     if (!email || !password) return jsonError(res, 422, 'Invalid email or password.');
     const user = await store.findByEmail(email);
-    if (!user || !verifyPassword(password, user.passwordHash)) {
+    if (!user) return jsonError(res, 401, 'No account with that email. Create one first.');
+    if (!verifyPassword(password, user.passwordHash)) {
       return jsonError(res, 401, 'Invalid email or password.');
     }
     setCookie(res, signSession(user.id));

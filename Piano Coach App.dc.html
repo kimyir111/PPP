@@ -460,6 +460,9 @@
         <span style="width: 12px; height: 12px; border: 1.5px solid var(--ink2); border-radius: 4px 4px 6px 6px; display: block;"></span>
         <span style="position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 999px; background: var(--accent); border: 1.5px solid var(--bg);"></span>
       </button>
+      <sc-if value="{{ showSignInBtn }}" hint-placeholder-val="{{ false }}">
+        <button type="button" onClick="{{ accountOn }}" style="padding: 8px 14px; border-radius: 10px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;">{{ signInBtnLabel }}</button>
+      </sc-if>
       <button onClick="{{ accountOn }}" style="display: flex; align-items: center; gap: 9px; padding: 4px 0 4px 14px; border: 0; border-left: 1px solid var(--line); background: transparent; cursor: pointer; font-family: inherit; color: inherit; text-align: left;">
         <div style="width: 32px; height: 32px; border-radius: 999px; background: var(--accent-2); color: var(--accent); display: grid; place-items: center; font-size: 12px; font-weight: 600;">{{ userInitials }}</div>
         <div class="ppp-account-meta" style="line-height: 1.25;">
@@ -1311,50 +1314,50 @@
            own songs. A shared link lands here, on the score it points to. -->
       <sc-if value="{{ isShared }}" hint-placeholder-val="{{ false }}">
         <div data-shared-page style="display: flex; flex-direction: column; gap: 18px;">
-          <sc-if value="{{ shr.hasLinked }}" hint-placeholder-val="{{ false }}">
+          <sc-if value="{{ sharedHasLinked }}" hint-placeholder-val="{{ false }}">
             <section data-shared-linked style="border: 1px solid var(--accent); box-shadow: 0 0 0 1px var(--accent), var(--shadow); border-radius: 18px; background: var(--surface); overflow: hidden;">
-              <sc-if value="{{ shr.linkedReady }}" hint-placeholder-val="{{ true }}">
+              <sc-for list="{{ sharedLinkedCards }}" as="lc" hint-placeholder-count="1">
                 <div class="ppp-split" style="display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); align-items: stretch;">
-                  <div style="background: var(--bg); padding: 16px; min-height: 140px; overflow: hidden;">{{ shr.linked.thumb }}</div>
+                  <div style="background: var(--bg); padding: 16px; min-height: 140px; overflow: hidden;">{{ lc.thumb }}</div>
                   <div style="padding: 20px; display: flex; flex-direction: column; gap: 8px; border-left: 1px solid var(--line);">
-                    <div style="font-size: 11.5px; font-weight: 600; letter-spacing: .04em; color: var(--accent);">{{ shr.linkedLead }}</div>
-                    <div data-no-i18n="1" style="font-size: 21px; font-weight: 600; letter-spacing: -0.01em; overflow-wrap: anywhere;">{{ shr.linked.title }}</div>
-                    <div data-no-i18n="1" style="font-size: 12.5px; color: var(--ink2);">{{ shr.linked.sub }}</div>
-                    <div data-no-i18n="1" style="font-size: 12px; color: var(--ink3);">{{ shr.linked.meta }}</div>
+                    <div style="font-size: 11.5px; font-weight: 600; letter-spacing: .04em; color: var(--accent);">{{ sharedLinkedLead }}</div>
+                    <div data-no-i18n="1" style="font-size: 21px; font-weight: 600; letter-spacing: -0.01em; overflow-wrap: anywhere;">{{ lc.title }}</div>
+                    <div data-no-i18n="1" style="font-size: 12.5px; color: var(--ink2);">{{ lc.sub }}</div>
+                    <div data-no-i18n="1" style="font-size: 12px; color: var(--ink3);">{{ lc.meta }}</div>
                     <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; padding-top: 10px;">
-                      <button onClick="{{ shr.linked.on }}" data-open-shared="{{ shr.linked.id }}" style="padding: 10px 16px; border-radius: 10px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">{{ shr.linked.openLabel }}</button>
-                      <button onClick="{{ shr.linked.share }}" data-share-shared="{{ shr.linked.id }}" style="padding: 9px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer;" style-hover="border-color: var(--accent); color: var(--accent);">{{ shr.linked.shareLabel }}</button>
+                      <button onClick="{{ lc.on }}" data-open-shared="{{ lc.id }}" style="padding: 10px 16px; border-radius: 10px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">{{ lc.openLabel }}</button>
+                      <button onClick="{{ lc.share }}" data-share-shared="{{ lc.id }}" style="padding: 9px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer;" style-hover="border-color: var(--accent); color: var(--accent);">{{ lc.shareLabel }}</button>
                     </div>
                   </div>
                 </div>
-              </sc-if>
-              <sc-if value="{{ !shr.linkedReady }}" hint-placeholder-val="{{ false }}">
+              </sc-for>
+              <sc-if value="{{ sharedLinkedPending }}" hint-placeholder-val="{{ false }}">
                 <div style="display: flex; align-items: center; gap: 12px; padding: 16px 18px;">
-                  <span data-no-i18n="1" style="flex: 1; font-size: 13px; color: var(--ink2);">{{ shr.linkedNote }}</span>
-                  <button onClick="{{ shr.closeLinked }}" style="padding: 7px 12px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 12px; cursor: pointer;">{{ shr.closeLabel }}</button>
+                  <span data-no-i18n="1" style="flex: 1; font-size: 13px; color: var(--ink2);">{{ sharedLinkedNote }}</span>
+                  <button onClick="{{ closeSharedLinked }}" style="padding: 7px 12px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 12px; cursor: pointer;">{{ sharedCloseLabel }}</button>
                 </div>
               </sc-if>
             </section>
           </sc-if>
           <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
             <div style="display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface2);">
-              <sc-for list="{{ shr.filters }}" as="f" hint-placeholder-count="2">
+              <sc-for list="{{ sharedFilters }}" as="f" hint-placeholder-count="2">
                 <button onClick="{{ f.on }}" style="{{ f.style }}">{{ f.label }}</button>
               </sc-for>
             </div>
             <div style="flex: 1;"></div>
-            <input type="search" class="ppp-search" data-shared-search placeholder="Search titles, composers or people" value="{{ shr.query }}" onChange="{{ shr.setQuery }}" style="width: 260px; padding: 10px 14px; border-radius: 11px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px; outline: none;" />
+            <input type="search" class="ppp-search" data-shared-search placeholder="Search titles, composers or people" value="{{ sharedQuery }}" onChange="{{ setSharedQuery }}" style="width: 260px; padding: 10px 14px; border-radius: 11px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px; outline: none;" />
           </div>
-          <sc-if value="{{ shr.hasNote }}" hint-placeholder-val="{{ false }}">
+          <sc-if value="{{ sharedHasNote }}" hint-placeholder-val="{{ false }}">
             <div data-shared-note style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 18px 20px; border: 1px dashed var(--line); border-radius: 16px; background: var(--surface);">
-              <span data-no-i18n="1" style="flex: 1; min-width: 200px; font-size: 13.5px; color: var(--ink2); line-height: 1.5;">{{ shr.note }}</span>
-              <sc-if value="{{ shr.hasAction }}" hint-placeholder-val="{{ false }}">
-                <button onClick="{{ shr.action }}" style="padding: 9px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;" style-hover="border-color: var(--accent); color: var(--accent);">{{ shr.actionLabel }}</button>
+              <span data-no-i18n="1" style="flex: 1; min-width: 200px; font-size: 13.5px; color: var(--ink2); line-height: 1.5;">{{ sharedNote }}</span>
+              <sc-if value="{{ sharedHasAction }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ sharedAction }}" style="padding: 9px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;" style-hover="border-color: var(--accent); color: var(--accent);">{{ sharedActionLabel }}</button>
               </sc-if>
             </div>
           </sc-if>
           <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(258px, 1fr)); gap: 16px;">
-            <sc-for list="{{ shr.cards }}" as="c" hint-placeholder-count="6">
+            <sc-for list="{{ sharedCards }}" as="c" hint-placeholder-count="6">
               <div data-shared="{{ c.id }}" style="{{ c.cardStyle }}" style-hover="transform: translateY(-3px);">
                 <div style="background: var(--bg); border-bottom: 1px solid var(--line); padding: 14px; height: 108px; overflow: hidden;">{{ c.thumb }}</div>
                 <div style="padding: 16px; display: flex; flex-direction: column; gap: 8px; flex: 1;">
@@ -1683,53 +1686,53 @@
 
   <!-- Share a song: post it to Shared Scores, or send its link. Sits under
        the toast, so "Link copied" is seen over it. -->
-  <sc-if value="{{ sd.open }}" hint-placeholder-val="{{ false }}">
+  <sc-if value="{{ shareOpen }}" hint-placeholder-val="{{ false }}">
     <div data-share-dialog style="position: fixed; inset: 0; z-index: 58; display: grid; place-items: center; padding: 16px;">
-      <button type="button" onClick="{{ sd.close }}" aria-label="{{ sd.closeLabel }}" style="position: absolute; inset: 0; border: 0; padding: 0; background: rgba(20, 18, 16, .45); cursor: pointer;"></button>
-      <div role="dialog" aria-modal="true" aria-label="{{ sd.heading }}" style="position: relative; width: 100%; max-width: 460px; max-height: calc(100dvh - 32px); overflow-y: auto; box-sizing: border-box; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); box-shadow: var(--shadow); padding: 20px; display: flex; flex-direction: column; gap: 14px; animation: rise .2s ease;">
+      <button type="button" onClick="{{ closeShare }}" aria-label="{{ shareCloseLabel }}" style="position: absolute; inset: 0; border: 0; padding: 0; background: rgba(20, 18, 16, .45); cursor: pointer;"></button>
+      <div role="dialog" aria-modal="true" aria-label="{{ shareHeading }}" style="position: relative; width: 100%; max-width: 460px; max-height: calc(100dvh - 32px); overflow-y: auto; box-sizing: border-box; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); box-shadow: var(--shadow); padding: 20px; display: flex; flex-direction: column; gap: 14px; animation: rise .2s ease;">
         <div style="display: flex; align-items: flex-start; gap: 12px;">
           <div style="min-width: 0; flex: 1;">
-            <div style="font-size: 11.5px; font-weight: 600; letter-spacing: .04em; color: var(--ink3);">{{ sd.heading }}</div>
-            <div data-no-i18n="1" style="font-size: 18px; font-weight: 600; letter-spacing: -0.01em; margin-top: 2px; overflow-wrap: anywhere;">{{ sd.title }}</div>
+            <div style="font-size: 11.5px; font-weight: 600; letter-spacing: .04em; color: var(--ink3);">{{ shareHeading }}</div>
+            <div data-no-i18n="1" style="font-size: 18px; font-weight: 600; letter-spacing: -0.01em; margin-top: 2px; overflow-wrap: anywhere;">{{ shareTitle }}</div>
           </div>
-          <button type="button" data-share-close onClick="{{ sd.close }}" aria-label="{{ sd.closeLabel }}" style="width: 32px; height: 32px; flex: none; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 17px; line-height: 1; cursor: pointer;">×</button>
+          <button type="button" data-share-close onClick="{{ closeShare }}" aria-label="{{ shareCloseLabel }}" style="width: 32px; height: 32px; flex: none; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 17px; line-height: 1; cursor: pointer;">×</button>
         </div>
-        <sc-if value="{{ sd.needSignIn }}" hint-placeholder-val="{{ false }}">
+        <sc-if value="{{ shareNeedsSignIn }}" hint-placeholder-val="{{ false }}">
           <div data-share-signin style="display: flex; flex-direction: column; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg);">
-            <p style="margin: 0; font-size: 13px; line-height: 1.55; color: var(--ink2);">{{ sd.signInNote }}</p>
-            <button onClick="{{ sd.signIn }}" style="{{ sd.signInStyle }}">{{ sd.signInLabel }}</button>
+            <p style="margin: 0; font-size: 13px; line-height: 1.55; color: var(--ink2);">{{ shareSignInNote }}</p>
+            <button onClick="{{ shareSignIn }}" style="{{ shareSignInStyle }}">{{ shareSignInLabel }}</button>
           </div>
         </sc-if>
-        <sc-if value="{{ sd.canPost }}" hint-placeholder-val="{{ true }}">
+        <sc-if value="{{ shareCanPost }}" hint-placeholder-val="{{ true }}">
           <section style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg);">
-            <div style="font-size: 13.5px; font-weight: 600;">{{ sd.postHeading }}</div>
-            <p style="margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--ink2);">{{ sd.postNote }}</p>
-            <button data-share-post data-posted="{{ sd.postedAttr }}" onClick="{{ sd.post }}" style="{{ sd.postStyle }}">{{ sd.postLabel }}</button>
+            <div style="font-size: 13.5px; font-weight: 600;">{{ sharePostHeading }}</div>
+            <p style="margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--ink2);">{{ sharePostNote }}</p>
+            <button data-share-post data-posted="{{ sharePostedAttr }}" onClick="{{ sharePost }}" style="{{ sharePostStyle }}">{{ sharePostLabel }}</button>
           </section>
         </sc-if>
-        <sc-if value="{{ sd.canLink }}" hint-placeholder-val="{{ true }}">
+        <sc-if value="{{ shareCanLink }}" hint-placeholder-val="{{ true }}">
           <section style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg);">
-            <div style="font-size: 13.5px; font-weight: 600;">{{ sd.linkHeading }}</div>
-            <p style="margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--ink2);">{{ sd.linkNote }}</p>
+            <div style="font-size: 13.5px; font-weight: 600;">{{ shareLinkHeading }}</div>
+            <p style="margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--ink2);">{{ shareLinkNote }}</p>
             <div style="display: flex; gap: 8px; align-items: stretch;">
-              <sc-if value="{{ sd.hasLink }}" hint-placeholder-val="{{ false }}">
-                <div data-share-link data-no-i18n="1" style="flex: 1; min-width: 0; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: all;">{{ sd.link }}</div>
+              <sc-if value="{{ shareHasLink }}" hint-placeholder-val="{{ false }}">
+                <div data-share-link data-no-i18n="1" style="flex: 1; min-width: 0; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: all;">{{ shareLinkText }}</div>
               </sc-if>
-              <button data-share-net="copy" onClick="{{ sd.copy }}" style="{{ sd.copyStyle }}">{{ sd.copyLabel }}</button>
+              <button data-share-net="copy" onClick="{{ shareCopy }}" style="{{ shareCopyStyle }}">{{ shareCopyLabel }}</button>
             </div>
             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-              <sc-for list="{{ sd.nets }}" as="n" hint-placeholder-count="5">
+              <sc-for list="{{ shareNets }}" as="n" hint-placeholder-count="5">
                 <button data-share-net="{{ n.id }}" onClick="{{ n.on }}" style="{{ n.style }}" style-hover="border-color: var(--accent);"><span data-no-i18n="1" style="{{ n.glyphStyle }}">{{ n.glyph }}</span>{{ n.label }}</button>
               </sc-for>
             </div>
           </section>
         </sc-if>
-        <sc-if value="{{ sd.hasError }}" hint-placeholder-val="{{ false }}">
-          <p role="alert" data-share-error data-no-i18n="1" style="margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--bad);">{{ sd.error }}</p>
+        <sc-if value="{{ shareHasError }}" hint-placeholder-val="{{ false }}">
+          <p role="alert" data-share-error data-no-i18n="1" style="margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--bad);">{{ shareError }}</p>
         </sc-if>
-        <p style="margin: 0; font-size: 11.5px; line-height: 1.55; color: var(--ink3);">{{ sd.fine }}</p>
-        <sc-if value="{{ sd.canStop }}" hint-placeholder-val="{{ false }}">
-          <button data-share-stop onClick="{{ sd.stop }}" style="{{ sd.stopStyle }}">{{ sd.stopLabel }}</button>
+        <p style="margin: 0; font-size: 11.5px; line-height: 1.55; color: var(--ink3);">{{ shareFine }}</p>
+        <sc-if value="{{ shareCanStop }}" hint-placeholder-val="{{ false }}">
+          <button data-share-stop onClick="{{ shareStop }}" style="{{ shareStopStyle }}">{{ shareStopLabel }}</button>
         </sc-if>
       </div>
     </div>
@@ -2686,7 +2689,8 @@ const Score = {
         taken[i] = (taken[i] || 0) + 1;
         if (taken[i] < times) {
           const start = startStack.length ? startStack[startStack.length - 1] : i0;
-          Object.keys(taken).forEach(k => { if (+k > start) delete taken[k]; });
+          /* Reset nested repeats inside this one, not the end we just counted. */
+          Object.keys(taken).forEach(k => { if (+k > start && +k < i) delete taken[k]; });
           Object.keys(passAt).forEach(k => { if (+k > start) delete passAt[k]; });
           passAt[start] = (passAt[start] || 1) + 1;
           i = start;
@@ -3407,20 +3411,24 @@ class MidiInput {
 
   /* Asks for access. Browsers may prompt, so this is only ever called from a
      user action — never on load. */
-  start(preferId) {
+  start(preferId, opts) {
+    opts = opts || {};
     if (!this.supported()) {
       this.status = 'unsupported';
       this.error = 'This browser does not support the Web MIDI API.';
       this.onState(this.snapshot());
       return Promise.resolve(false);
     }
+    const pickIn = () => {
+      const list = this.devices();
+      const want = opts.noInput ? null : (list.filter(d => d.id === preferId)[0] || list[0] || null);
+      if (want) this.select(want.id);
+      else { this.status = 'connected'; this.onState(this.snapshot()); }
+    };
     if (this.access) {
       this.status = 'connecting';
       this.onState(this.snapshot());
-      const list = this.devices();
-      const want = list.filter(d => d.id === preferId)[0] || list[0] || null;
-      if (want) this.select(want.id);
-      else { this.status = 'connected'; this.onState(this.snapshot()); }
+      pickIn();
       return Promise.resolve(true);
     }
     this.status = 'connecting';
@@ -3436,10 +3444,7 @@ class MidiInput {
         } else if (access) {
           access.onstatechange = () => this._refresh();
         }
-        const list = this.devices();
-        const want = list.filter(d => d.id === preferId)[0] || list[0] || null;
-        if (want) this.select(want.id);
-        else { this.status = 'connected'; this.onState(this.snapshot()); }
+        pickIn();
         return true;
       })
       .catch(err => {
@@ -9433,26 +9438,23 @@ class Component extends DCLogic {
     fetch('/api/auth/me', { credentials: 'include' })
       .then(r => {
         if (!this.hostedAuth() && (r.status === 404 || r.status === 502)) {
-          this.setState({ guest: true, authReady: true }); return null;
+          this.setState({ authReady: true }); return null;
         }
-        if (!r.ok) { this.setState({ authReady: true, guest: this.readGuest() }); return null; }
+        if (!r.ok) { this.setState({ authReady: true }); return null; }
         return r.json();
       })
       .then(body => {
         if (!body) return;
         const user = body.id ? body : body.user;
         if (!user || !user.id) {
-          this.setState({ authReady: true, guest: this.readGuest() });
+          this.setState({ authReady: true });
           return;
         }
         this.writeGuest(false);
         this.setState({ user: user, guest: false, authReady: true });
         this.pullProgress();
       })
-      .catch(() => this.setState({
-        guest: this.hostedAuth() ? this.readGuest() : true,
-        authReady: true
-      }));
+      .catch(() => this.setState({ authReady: true }));
   }
   authInputValue(name) {
     const el = document.querySelector('[data-auth] [name="' + name + '"]');
@@ -9882,8 +9884,12 @@ class Component extends DCLogic {
       this._midi = new MidiInput({
         onEvent: ev => this.onMidiEvent(ev),
         onState: snap => {
-          const out = this._midiOut ? this._midiOut.snapshot() : { deviceId: this.state.midiOutDeviceId, deviceName: null, devices: (this._midi && this._midi.outputs) ? this._midi.outputs() : [] };
-          this.setState({ midi: snap, midiDeviceId: snap.deviceId || this.state.midiDeviceId, midiOut: Object.assign({}, this.state.midiOut, { devices: out.devices }) });
+          const outs = this._midi.outputs ? this._midi.outputs() : [];
+          this.setState({
+            midi: snap,
+            midiDeviceId: snap.deviceId || this.state.midiDeviceId,
+            midiOut: Object.assign({}, this.state.midiOut, { devices: outs })
+          });
         }
       });
     }
@@ -9941,7 +9947,7 @@ class Component extends DCLogic {
       return true;
     };
     if (m.access) return Promise.resolve(pick());
-    return m.start().then(ok => {
+    return m.start(null, { noInput: true }).then(ok => {
       this.setState({ midi: m.snapshot(), midiDeviceId: m.deviceId || this.state.midiDeviceId });
       return ok ? pick() : false;
     });
@@ -12667,14 +12673,16 @@ class Component extends DCLogic {
         const on = r.key === 'theme' ? S.theme === 'dark'
           : r.key === 'guidance' ? S.guidance
             : r.key === 'midi' ? this.liveMidi()
+              : r.key === 'midiOut' ? this.midiOutLive()
               : !!S.toggles[r.key];
         return {
-          label: tx(r.label), sub: r.key === 'midi' ? r.sub : tx(r.sub),
+          label: tx(r.label), sub: (r.key === 'midi' || r.key === 'midiOut') ? r.sub : tx(r.sub),
           trackStyle: `width:42px;height:24px;border-radius:999px;border:0;cursor:pointer;padding:3px;display:flex;justify-content:${on ? 'flex-end' : 'flex-start'};background:${on ? 'var(--accent)' : 'var(--surface2)'};transition:background .2s ease;`,
           knobStyle: 'width:18px;height:18px;border-radius:999px;background:#fff;display:block;box-shadow:0 1px 3px rgba(0,0,0,.25);',
           on: r.key === 'theme' ? () => this.setState(st => ({ theme: st.theme === 'dark' ? 'light' : 'dark' }))
             : r.key === 'guidance' ? () => this.setState(st => ({ guidance: !st.guidance }))
               : r.key === 'midi' ? () => this.toggleMidi()
+                : r.key === 'midiOut' ? () => { if (this.midiOutLive()) this.disconnectMidiOut(); else this.connectMidiOut(); }
                 : () => this.setState(st => ({ toggles: Object.assign({}, st.toggles, { [r.key]: !st.toggles[r.key] }) }))
         };
       })
@@ -12801,7 +12809,10 @@ class Component extends DCLogic {
       })(),
       userName: (S.user && S.user.displayName) || tx('Guest'),
       userRole: S.user ? tx('Returning player') : tx('Sign in to sync progress across devices.'),
-      accountOn: () => { if (S.user) this.signOut(); else this.setState({ guest: false }); },
+      accountOn: () => { if (S.user) this.signOut(); else { this.writeGuest(false); this.setState({ guest: false, authMode: 'login', authError: '' }); } },
+      openSignup: () => { this.writeGuest(false); this.setState({ guest: false, authMode: 'signup', authError: '' }); },
+      showSignInBtn: !S.user,
+      signInBtnLabel: tx('Sign in'),
       showGamification: this.props.showGamification !== false,
       toast: S.toast,
       toastStyle: `position:fixed;left:50%;bottom:88px;transform:translateX(-50%) translateY(${S.toast ? '0' : '12px'});z-index:60;padding:11px 18px;border-radius:12px;background:var(--ink);color:var(--surface);font-size:13px;font-weight:500;box-shadow:var(--shadow);pointer-events:none;opacity:${S.toast ? 1 : 0};transition:opacity .25s ease, transform .25s ease;max-width:70vw;text-align:center;`,
@@ -13363,6 +13374,12 @@ class Component extends DCLogic {
       hasMidiDevices: !!(mi.devices && mi.devices.length),
       midiDevices: (mi.devices || []).map(d => ({
         label: d.name, style: this.chip(d.id === mi.deviceId), on: () => this.selectMidiDevice(d.id)
+      })),
+      midiOutSub, midiOutAction,
+      midiOutConnect: () => { if (midiOutLive) this.disconnectMidiOut(); else this.connectMidiOut(); },
+      hasMidiOutputs: !!(mo.devices && mo.devices.length),
+      midiOutDevices: (mo.devices || []).map(d => ({
+        label: d.name, style: this.chip(d.id === mo.deviceId), on: () => this.selectMidiOut(d.id)
       })),
       coachLine1: tx('“Let’s focus on Measures {{from}}–{{to}}.”', { from: S.loopFrom, to: S.loopTo }),
       coachLine2: S.hands === 'left' ? tx('“Left hand alone — keep the wrist loose through the jump.”')
