@@ -279,6 +279,7 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
       [456, 451, 446, 442, 437], [377, 372, 367, 361, 356], [309, 304, 298, 293, 287],
       [206, 201, 197, 192, 187], [128, 122, 117, 112, 106], [59, 54, 48, 43, 38]
     ];
+    const head = (x, y) => ({ x0: x, x1: x + 6, y0: y - 3, y1: y + 3 });
     const hl = [];
     staffYs.forEach(lines => lines.forEach(y => hl.push({ x0: 8, x1: 712, y: y })));
     const vl = [];
@@ -286,42 +287,107 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
       const top = staffYs[pair[0]][0], bot = staffYs[pair[1]][4];
       [50, 200, 350, 500, 680].forEach(x => vl.push({ x: x, y0: bot, y1: top }));
     });
+    /* stems on one staff only — must not become bars */
+    staffYs.forEach(lines => {
+      [120, 270, 420].forEach(x => vl.push({ x: x, y0: lines[4], y1: lines[0] }));
+    });
     const blobs = [];
     [[0, 1, 2], [3, 4, 5], [6, 7, 8]].forEach(triple => {
       const vocal = staffYs[triple[0]], treble = staffYs[triple[1]], bass = staffYs[triple[2]];
       [90, 240, 390, 540].forEach(x => {
-        blobs.push({ x0: x, x1: x + 6, y0: vocal[2] - 3, y1: vocal[2] + 3 });
-        blobs.push({ x0: x, x1: x + 6, y0: treble[2] - 3, y1: treble[2] + 3 });
-        blobs.push({ x0: x, x1: x + 6, y0: bass[2] - 3, y1: bass[2] + 3 });
+        blobs.push(head(x, vocal[0]));   /* top line → F5 */
+        blobs.push(head(x, treble[2]));  /* third line → B4 */
+        blobs.push(head(x, bass[0]));    /* top line → A3 */
       });
+      blobs.push(head(90, (treble[0] + treble[1]) / 2)); /* space under top → E5 */
     });
     const L = { w: 720, h: 1018, texts: [], hl: hl, vl: vl, blobs: blobs };
     const lay = PPP.Import.pdfLayer.layout(L, 0);
     const built = PPP.Import.pdfLayer.notate([{ layer: L, width: 720, height: 1018 }], 'scan.jpg');
     const score = built && built.xml ? PPP.parseMusicXML(built.xml, 'scan.jpg') : null;
+    const sounding = score ? score.notes.filter(n => !n.rest) : [];
     return {
       systems: (lay.systems || []).map(s => s.staves.length),
       bars: (lay.systems || []).map(s => s.bars.length),
       notes: built && built.notes,
       measures: built && built.measures,
       staves: score && score.staves,
-      hands: score ? {
-        x: score.notes.filter(n => !n.rest && n.hand === 'x').length,
-        r: score.notes.filter(n => !n.rest && n.hand === 'r').length,
-        l: score.notes.filter(n => !n.rest && n.hand === 'l').length
-      } : null
+      pitches: sounding.map(n => n.staff + ':' + n.hand + ':' + n.p),
+      hands: {
+        x: sounding.filter(n => n.hand === 'x').length,
+        r: sounding.filter(n => n.hand === 'r').length,
+        l: sounding.filter(n => n.hand === 'l').length
+      },
+      has: {
+        F5x: sounding.some(n => n.hand === 'x' && n.p === 'F5'),
+        B4r: sounding.some(n => n.hand === 'r' && n.p === 'B4'),
+        A3l: sounding.some(n => n.hand === 'l' && n.p === 'A3'),
+        E5r: sounding.some(n => n.hand === 'r' && n.p === 'E5')
+      }
     };
   });
   ok('uneven staff lines still group into 5-line staves',
     raster.systems.length === 3 && raster.systems.every(n => n === 3),
     JSON.stringify(raster.systems));
-  ok('each system has the printed bars', raster.bars.every(n => n >= 3), JSON.stringify(raster.bars));
-  ok('the page notates itself without a helper',
-    raster.notes >= 8 && raster.measures >= 3,
-    'notes=' + raster.notes + ' measures=' + raster.measures);
-  ok('the piano is the last two of three staves',
-    raster.staves === 3 && raster.hands && raster.hands.x > 0 && raster.hands.r > 0 && raster.hands.l > 0,
+  ok('printed bar lines define the measures; stems do not',
+    raster.bars.length === 3 && raster.bars.every(n => n === 4) && raster.measures === 12,
+    JSON.stringify({ bars: raster.bars, measures: raster.measures }));
+  ok('a head on a named line or space becomes that pitch on that staff',
+    raster.has.F5x && raster.has.B4r && raster.has.A3l && raster.has.E5r,
+    JSON.stringify(raster.has) + ' ' + (raster.pitches || []).slice(0, 12).join(' '));
+  ok('the vocal staff is shown and not scored; piano is the last two staves',
+    raster.staves === 3 && raster.hands.x > 0 && raster.hands.r > 0 && raster.hands.l > 0,
     JSON.stringify({ staves: raster.staves, hands: raster.hands }));
+
+  const fromPixels = await page.evaluate(() => {
+    const c = document.createElement('canvas');
+    c.width = 720; c.height = 280;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 720, 280);
+    ctx.strokeStyle = '#111111'; ctx.lineWidth = 1.4;
+    const staff = (top) => {
+      for (let i = 0; i < 5; i++) {
+        const y = top + i * 8;
+        ctx.beginPath(); ctx.moveTo(40, y); ctx.lineTo(680, y); ctx.stroke();
+      }
+    };
+    staff(40); staff(120);
+    const bar = (x) => { ctx.beginPath(); ctx.moveTo(x, 40); ctx.lineTo(x, 152); ctx.stroke(); };
+    [40, 220, 400, 580, 680].forEach(bar);
+    /* a stem on the upper staff only */
+    ctx.beginPath(); ctx.moveTo(300, 40); ctx.lineTo(300, 72); ctx.stroke();
+    ctx.fillStyle = '#111111';
+    const fillHead = (x, y) => { ctx.beginPath(); ctx.ellipse(x, y, 6, 5, 0, 0, Math.PI * 2); ctx.fill(); };
+    fillHead(130, 40);  /* treble top line F5 */
+    fillHead(250, 56);  /* treble third line B4 */
+    fillHead(430, 152); /* bass bottom line G2 */
+    fillHead(600, 120); /* bass top line A3 */
+    ctx.beginPath(); ctx.ellipse(340, 72, 7, 5.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.ellipse(340, 72, 3, 2.2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#111111'; /* open, treble bottom line E4 */
+    const L = PPP.Import.pdfLayer.fromCanvas(c, 720, 280);
+    const built = PPP.Import.pdfLayer.notate([{ layer: L, width: 720, height: 280 }], 'heads.png');
+    const score = built && built.xml ? PPP.parseMusicXML(built.xml, 'heads.png') : null;
+    const sounding = score ? score.notes.filter(n => !n.rest) : [];
+    const lay = L ? PPP.Import.pdfLayer.layout(L, 0) : { systems: [] };
+    return {
+      hl: L && L.hl.length, vl: L && L.vl.length, blobs: L && L.blobs.length,
+      systems: (lay.systems || []).map(s => ({ staves: s.staves.length, bars: s.bars.length })),
+      notes: built && built.notes, measures: built && built.measures,
+      pitches: sounding.map(n => n.staff + ':' + n.p)
+    };
+  });
+  ok('fromCanvas finds open and filled heads on the staff',
+    fromPixels.blobs >= 2 && fromPixels.notes >= 2,
+    JSON.stringify(fromPixels));
+  ok('an open or filled head on a staff line is that pitch, not a ledger note',
+    (fromPixels.pitches || []).indexOf('1:F5') > -1 && (fromPixels.pitches || []).indexOf('1:E4') > -1,
+    (fromPixels.pitches || []).join(' '));
+  ok('printed bar lines on the pixels are the measures',
+    fromPixels.systems.length === 1 && fromPixels.systems[0].staves === 2 &&
+      fromPixels.systems[0].bars === 4 && fromPixels.measures === 4,
+    JSON.stringify(fromPixels.systems) + ' measures=' + fromPixels.measures);
 
   const cleanPng = fs.readFileSync(path.join(__dirname, 'fixtures', 'piano-clean.png')).toString('base64');
   const fromPng = await page.evaluate(async b64 => {
@@ -329,6 +395,12 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
     const u = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
     const file = new File([u], 'piano-clean.png', { type: 'image/png' });
+    const old = PPP.Import.health;
+    PPP.Import.health = () => Promise.resolve({ ok: false, remote: true, unreachable: true });
+    let load = null;
+    try { load = await PPP.Import.load(file); }
+    catch (e) { load = { error: e.message || String(e) }; }
+    PPP.Import.health = old;
     const pages = await PPP.Import.imageToPage(file);
     const L = pages[0].layer || {};
     const lay = PPP.Import.pdfLayer.layout(L, 0);
@@ -336,7 +408,11 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
     return {
       hl: (L.hl || []).length, blobs: (L.blobs || []).length,
       systems: (lay.systems || []).map(s => s.staves.length),
-      notes: built && built.notes, measures: built && built.measures
+      notes: built && built.notes, measures: built && built.measures,
+      engine: load && load.source && load.source.engine,
+      loadNotes: load && load.score ? load.score.notes.filter(n => !n.rest).length : 0,
+      loadStaves: load && load.score && load.score.staves,
+      loadError: load && load.error
     };
   }, cleanPng);
   ok('a clean piano PNG still shows staff lines in the browser',
@@ -344,6 +420,9 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
   ok('that PNG notates as a grand staff without a helper',
     fromPng.systems.some(n => n >= 2) && fromPng.notes >= 8,
     JSON.stringify(fromPng));
+  ok('Import.load of piano-clean.png without a helper yields a score',
+    fromPng.engine === 'pdf' && fromPng.loadStaves >= 2 && fromPng.loadNotes >= 8 && !fromPng.loadError,
+    JSON.stringify({ engine: fromPng.engine, staves: fromPng.loadStaves, notes: fromPng.loadNotes, error: fromPng.loadError }));
 
   console.log('\n── a rolled chord ─────────────────────');
   const roll = await page.evaluate(() => {
