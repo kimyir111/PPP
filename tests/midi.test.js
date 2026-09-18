@@ -543,9 +543,20 @@ function installFakeMidi() {
     const localOn = window.__fake.sent.some(x => (x.data[0] & 0xf0) === 0xb0 && x.data[1] === 122 && x.data[2] === 127);
     window.__fake.send([0x90, 60, 100]);
     const afterStrike = window.__fake.sent.length;
-    const thruCh1 = window.__fake.sent.some(x => x.data[0] === 0x91);
+    window.__fake.send([0x80, 60, 0]);
+    const afterLift = window.__fake.sent.slice(afterStrike);
+    const extraOff = afterLift.filter(x =>
+      ((x.data[0] & 0xf0) === 0x80 || ((x.data[0] & 0xf0) === 0x90 && x.data[2] === 0)) &&
+      x.data[1] === 60
+    );
+    const ch1 = window.__fake.sent.filter(x => (x.data[0] & 0x0f) === 1);
     await wait(2000);
-    const laterOns = window.__fake.sent.slice(afterStrike).filter(scoreOn);
+    const later = window.__fake.sent.slice(afterStrike);
+    const laterOns = later.filter(scoreOn);
+    const laterOffs = later.filter(x =>
+      ((x.data[0] & 0xf0) === 0x80 || ((x.data[0] & 0xf0) === 0x90 && x.data[2] === 0)) &&
+      x.data[1] === 60
+    );
     const laterVel = laterOns[0] && laterOns[0].data[2];
     if (app.state.playing) app.togglePlay();
     return {
@@ -553,9 +564,11 @@ function installFakeMidi() {
       listenVel: listenVel,
       laterVel: laterVel,
       laterN: laterOns.length,
+      laterOff60: laterOffs.length,
+      extraOffOnLift: extraOff.length,
       sameCh: sameCh,
       localOn: localOn,
-      thruCh1: thruCh1,
+      ch1: ch1.length,
       live: app.liveMidi(),
       sameDev: app.midiOutIsAlsoIn()
     };
@@ -563,10 +576,14 @@ function installFakeMidi() {
   ok('listen-only Play keeps written dynamics',
     mix.listenVel === mix.planVel, 'plan=' + mix.planVel + ' listen=' + mix.listenVel);
   ok('player and score share the piano voice',
-    mix.localOn && mix.sameCh && !mix.thruCh1 && mix.sameDev, JSON.stringify(mix));
+    mix.localOn && mix.sameCh && mix.ch1 === 0 && mix.sameDev, JSON.stringify(mix));
+  ok('lifting a key does not send a software note-off on the score channel',
+    mix.extraOffOnLift === 0, JSON.stringify(mix));
   ok('after a player strike the score is quieter than written and quieter than 100',
     mix.laterN > 0 && mix.laterVel < mix.listenVel && mix.laterVel < 100,
     JSON.stringify(mix));
+  ok('score note-ons and offs for that pitch still go out after the player lifts',
+    mix.laterN > 0 && mix.laterOff60 > 0, JSON.stringify(mix));
 
   const longRun = await page.evaluate(async xml => {
     const app = PPP.app;

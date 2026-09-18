@@ -1501,9 +1501,55 @@
              you are on fills the page, one thing at a time; the whole course
              is on the right with what is done ticked. Every exercise answers
              to the keys on screen, the computer keyboard and MIDI alike. -->
+        <!-- The tab opens here: three levels to choose from, each saying who
+             it is for and what is in it, and a way straight back to the
+             lesson you were on. -->
+        <sc-if value="{{ learnPicker }}" hint-placeholder-val="{{ true }}">
+          <div data-learn-levels style="display: flex; flex-direction: column; gap: 18px;">
+            <div>
+              <div style="font-size: 11.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent);">Piano Basics</div>
+              <h1 style="font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 40px; line-height: 1.08; letter-spacing: -0.01em; margin: 8px 0 6px;">Choose your level</h1>
+              <p style="margin: 0; font-size: 14.5px; color: var(--ink2); max-width: 62ch;">Start from the very beginning, or go straight to where you are. You can switch levels any time.</p>
+            </div>
+            <sc-if value="{{ learnHasResume }}" hint-placeholder-val="{{ true }}">
+              <button type="button" onClick="{{ learnResume }}" data-learn-resume style="display: flex; align-items: center; gap: 14px; width: 100%; padding: 16px 20px; border-radius: 16px; border: 1px solid var(--accent-2); background: var(--accent-3); color: var(--ink); font-family: inherit; text-align: left; cursor: pointer;" style-hover="border-color: var(--accent);">
+                <span style="flex: none; width: 36px; height: 36px; border-radius: 999px; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: 14px;">▶</span>
+                <span style="flex: 1; min-width: 0;">
+                  <span style="display: block; font-size: 15px; font-weight: 600;">{{ learnResumeLabel }}</span>
+                  <span style="display: block; font-size: 12.5px; color: var(--ink2); margin-top: 2px;">{{ learnResumeSub }}</span>
+                </span>
+              </button>
+            </sc-if>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; align-items: stretch;">
+              <sc-for list="{{ learnLevels }}" as="lv" hint-placeholder-count="3">
+                <div data-level="{{ lv.n }}" style="{{ lv.cardStyle }}">
+                  <span style="{{ lv.badgeStyle }}">{{ lv.badge }}</span>
+                  <div>
+                    <div style="font-family: 'Instrument Serif', Georgia, serif; font-size: 27px; line-height: 1.12;">{{ lv.title }}</div>
+                    <div style="font-size: 12.5px; font-weight: 600; color: var(--accent); margin-top: 6px;">{{ lv.who }}</div>
+                  </div>
+                  <p style="margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--ink2);">{{ lv.sub }}</p>
+                  <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                    <sc-for list="{{ lv.units }}" as="u" hint-placeholder-count="4">
+                      <span style="padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); font-size: 11.5px; color: var(--ink2);">{{ u.label }}</span>
+                    </sc-for>
+                  </div>
+                  <div>
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--ink3);"><span>{{ lv.count }}</span></div>
+                    <div style="height: 6px; border-radius: 999px; background: var(--surface2); margin-top: 6px; overflow: hidden;"><div style="{{ lv.barStyle }}"></div></div>
+                  </div>
+                  <button type="button" onClick="{{ lv.on }}" data-level-go="{{ lv.n }}" style="{{ lv.ctaStyle }}">{{ lv.cta }}</button>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ learnInLesson }}" hint-placeholder-val="{{ false }}">
         <div class="ppp-split" data-learn style="display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 22px; align-items: start;">
           <section style="display: flex; flex-direction: column; gap: 16px; min-width: 0;">
             <div>
+              <button type="button" onClick="{{ learnToLevels }}" data-learn-to-levels style="display: inline-flex; align-items: center; gap: 6px; margin: 0 0 10px; padding: 0; border: 0; background: transparent; color: var(--ink3); font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;" style-hover="color: var(--accent);">← All levels</button>
               <div style="font-size: 11.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent);">{{ learnKicker }}</div>
               <h1 data-learn-title style="font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 38px; line-height: 1.08; letter-spacing: -0.01em; margin: 8px 0 6px;">{{ learnTitle }}</h1>
               <p style="margin: 0; font-size: 14px; color: var(--ink2);">{{ learnGoal }}</p>
@@ -1589,8 +1635,13 @@
 
           <section style="display: flex; flex-direction: column; gap: 12px;">
             <div data-learn-course style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 20px;">
+              <div role="tablist" style="display: flex; gap: 3px; padding: 3px; border-radius: 11px; background: var(--surface2); margin-bottom: 14px;">
+                <sc-for list="{{ learnLevelTabs }}" as="lt" hint-placeholder-count="3">
+                  <button type="button" role="tab" onClick="{{ lt.on }}" data-level-tab="{{ lt.n }}" style="{{ lt.style }}">{{ lt.label }}</button>
+                </sc-for>
+              </div>
               <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px;">
-                <span style="font-size: 13.5px; font-weight: 600;">Your course</span>
+                <span style="font-size: 13.5px; font-weight: 600;">{{ learnLevelTitle }}</span>
                 <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink3);">{{ learnDoneCount }}</span>
               </div>
               <div style="height: 6px; border-radius: 999px; background: var(--surface2); margin-top: 10px; overflow: hidden;"><div style="{{ learnBarStyle }}"></div></div>
@@ -1623,6 +1674,7 @@
             </div>
           </section>
         </div>
+        </sc-if>
       </sc-if>
 
       <sc-if value="{{ isBasics }}" hint-placeholder-val="{{ false }}">
@@ -3928,6 +3980,7 @@ class MidiOut {
   }
   thruOff(midi) {
     const m = midi & 127;
+    if (!this._thru[m]) return;
     this.send([0x80, m, 0]);
     delete this._thru[m];
   }
@@ -7241,8 +7294,8 @@ const Fingering = {
 const HandArt = {
   /* fingers 1..5: width at the root and at the tip, how far up a white key
      the tip rests, and how far up a black one */
-  WIDTH: [25, 20.5, 21.5, 20, 17],
-  TIP: [19, 16.8, 17.6, 16.2, 13.8],
+  WIDTH: [29, 23.5, 24.5, 23, 19.5],
+  TIP: [20.5, 18.2, 19, 17.7, 15.2],
   REACH_WHITE: [29, 42, 48, 43, 34],
   BLACK_Y: [82, 72, 68, 72, 79],
   /* the knuckles sit this far below the front edge of the keys */
@@ -7395,13 +7448,28 @@ const HandArt = {
     /* Only the outside of the palm gets an ink edge. Outlining the scalloped
        top drew deep black triangles between spread fingers. */
     const palmEdge = line(palm.slice(8).concat([palm[0]]));
+    /* Flexible skin between the four long fingers. This rises between the
+       finger tubes and removes the flat, glove-like palm edge in a spread
+       octave while leaving a real valley between adjacent fingers. */
+    const web = [];
+    for (let f = 2; f < 5; f++) {
+      const a = root[f], b = root[f + 1], mx = (a[0] + b[0]) / 2;
+      const top = Math.min(knuckle[f][1], knuckle[f + 1][1]) - 8;
+      const low = Math.max(a[1], b[1]) + 5;
+      web.push(HandArt.smooth([
+        [a[0], a[1] - 7],
+        [mx, top],
+        [b[0], b[1] - 7],
+        [mx, low]
+      ]));
+    }
     /* Sparse dorsal details: the thenar arc and metacarpal tendons make the
        hand read as a hand at small sizes without turning it into a photo. */
     const detail = [
       line([[thumbRoot[0] + dir * 3, thumbRoot[1] - 5], [k2[0] - dir * s * 0.55, yK + 46], [cx - dir * s * 0.46, yK + 67]]),
       line([[cx - dir * s * 0.64, yK + 57], [cx, yK + 62], [cx + dir * s * 0.58, yK + 55]])
     ];
-    return { tip, knuckle, root, bend, palm, palmEdge, thumbRoot, thumbBend, detail, yK, cx };
+    return { tip, knuckle, root, bend, palm, palmEdge, web, thumbRoot, thumbBend, detail, yK, cx };
   }
 };
 
@@ -10115,7 +10183,7 @@ class Component extends DCLogic {
       sharedLinked: null, sharedOpening: null, shareDlg: null,
       /* Piano Basics: where you are in the course, what is done, and the
          working state of the step on screen (see learnVals) */
-      learnLesson: 'keys', learnStep: 0, learnDone: {}, lx: null, learnClock: null, learnNow: 0
+      learnLesson: 'keys', learnStep: 0, learnDone: {}, lx: null, learnClock: null, learnNow: 0, learnView: 'levels'
     };
   })();
 
@@ -10647,7 +10715,7 @@ class Component extends DCLogic {
   }
   keyUp(midi) {
     if (this.midiOutLive()) {
-      this.midiOutLayer().thruOff(midi);
+      if (!this.midiOutIsAlsoIn()) this.midiOutLayer().thruOff(midi);
       return;
     }
     if (!this._held || !this._held[midi]) return;
@@ -13726,6 +13794,7 @@ class Component extends DCLogic {
        whole hand is drawn. */
     bodies.forEach((d, i) => skin.push(h('path', { key: 'sh' + i, d, fill: 'var(--hand-shadow)', opacity: 0.14, transform: 'translate(0 2.5)' })));
     bodies.forEach((d, i) => skin.push(h('path', { key: 's' + i, d, fill: 'url(#ppp-hand-tone)' })));
+    g.web.forEach((d, i) => skin.push(h('path', { key: 'w' + i, d, fill: 'url(#ppp-hand-tone)' })));
     /* Open finger sides plus the outside wrist contour form one readable
        silhouette without drawing seams where skin joins skin. */
     fingers.forEach((sh, i) => skin.push(h('path', {
@@ -13835,6 +13904,8 @@ class Component extends DCLogic {
     if (s === 'loop') return { screen: 'player', practiceMode: 'practice', loop: true };
     if (s === 'memory') return { screen: 'player', practiceMode: 'memory', memReveal: false, hints: [] };
     if (s === 'plan') return { screen: 'analysis' };
+    /* Piano Basics opens on its levels, so you choose where to start */
+    if (s === 'learn') return { screen: 'learn', learnView: 'levels' };
     return { screen: s };
   }
   go(s) {
@@ -15049,9 +15120,17 @@ class Component extends DCLogic {
     const s = clamp(step || 0, 0, L.steps.length);
     this.learnStop();
     this.setState({
-      learnLesson: L.id, learnStep: s, sidebarOpen: false,
+      learnLesson: L.id, learnStep: s, sidebarOpen: false, learnView: 'lesson',
       lx: L.steps[s] ? Object.assign(C.fresh(L.steps[s]), { key: L.id + ':' + s }) : null
     });
+  }
+  /* Into a level: the lesson you were on if it is in that level, else the
+     level's first lesson not yet done. */
+  learnLevel(n) {
+    const C = window.PPP_LESSONS, lv = C.level(n), L = this.learnLessonObj(), done = this.state.learnDone || {};
+    if (L.level === lv.n) { this.learnStop(); this.setState({ learnView: 'lesson' }); return; }
+    const to = lv.lessons.find(l => !done[l.id]) || lv.lessons[0];
+    this.learnOpen(to.id, 0);
   }
   learnNext() {
     const S = this.state, C = window.PPP_LESSONS, L = this.learnLessonObj(), st = L.steps[S.learnStep];
@@ -15151,9 +15230,11 @@ class Component extends DCLogic {
     [72, 76, 79, 84].forEach((m, i) => p.release(p.strike(m, t + i * 0.085, 70), t + i * 0.085 + (i === 3 ? 0.7 : 0.16)));
   }
   learnListen() {
-    const st = this.learnStepObj();
+    const C = window.PPP_LESSONS, st = this.learnStepObj();
     if (!st) return;
-    const spec = st.listen || (st.kind === 'play' ? { seq: st.seq, beats: st.beats, bpm: st.bpm }
+    /* a question you answer by ear brings its own example */
+    const q = st.kind === 'quiz' ? st.qs[(this.learnLx() || {}).qi || 0] : null;
+    const spec = (q && q.listen) || st.listen || (st.kind === 'play' ? { seq: st.seq, beats: st.beats, bpm: st.bpm }
       : st.kind === 'chord' ? { chord: st.notes } : st.kind === 'rhythm' ? { pattern: st.pattern, bpm: st.bpm } : null);
     if (!spec) return;
     if (this.state.lx && this.state.lx.run && !this.state.lx.run.over) return;
@@ -15166,19 +15247,18 @@ class Component extends DCLogic {
     const beat = 60 / (spec.bpm || 96), t0 = p.now() + 0.12;
     let at = 0, count = 0;
     if (spec.pattern) {
-      /* four clicks to count in, then the rhythm on Do with the click under it */
-      count = 4;
-      at = count;
-      spec.pattern.forEach(d => {
-        if (d > 0) p.release(p.strike(60, t0 + at * beat, 78), t0 + (at + d * 0.9) * beat);
-        at += Math.abs(d);
-      });
-      for (let b = 0; b < at; b++) p.click(t0 + b * beat, b % 4 === 0);
+      /* a measure of clicks to count in, then the rhythm on Do with the click under it */
+      const per = spec.per || st.per || 4;
+      count = per;
+      C.sounds(spec.pattern).forEach(n => p.release(p.strike(60, t0 + (count + n.at) * beat, 78), t0 + (count + n.at + n.d * 0.9) * beat));
+      at = count + C.length(spec.pattern);
+      for (let b = 0; b < at; b++) p.click(t0 + b * beat, b % per === 0);
     } else {
-      const beats = spec.beats || [];
-      spec.seq.forEach((m, i) => {
-        const d = beats[i] || 1;
-        p.release(p.strike(m, t0 + at * beat, 82), t0 + (at + d * 0.92) * beat);
+      /* a chord in the line sounds all at once; loudness and staccato when the example asks */
+      const beats = spec.beats || [], vels = spec.vels || [], short = spec.short || [];
+      spec.seq.forEach((item, i) => {
+        const d = beats[i] || 1, len = short[i] ? Math.min(0.3, d * 0.3) : d * 0.92;
+        C.notesOf(item).forEach(m => p.release(p.strike(m, t0 + at * beat, vels[i] || 82), t0 + (at + len) * beat));
         at += d;
       });
     }
@@ -15221,16 +15301,16 @@ class Component extends DCLogic {
     this.learnStop();
     /* the space bar is the tap now; it must not press the button still focused */
     try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {}
-    const p = this.piano(), beatMs = 60000 / st.bpm, now = nowMs();
-    const t0 = now + 300 + 4 * beatMs;
+    const p = this.piano(), beatMs = 60000 / st.bpm, now = nowMs(), per = st.per || 4;
+    const t0 = now + 300 + per * beatMs;
     const total = C.length(st.pattern);
     if (p.context()) {
       const off = p.running() ? p.clockOffset() : p.now() - now / 1000;
-      for (let b = -4; b < total; b++) p.click(off + (t0 + b * beatMs) / 1000, ((b % 4) + 4) % 4 === 0);
+      for (let b = -per; b < total; b++) p.click(off + (t0 + b * beatMs) / 1000, ((b % per) + per) % per === 0);
     }
     const ons = C.onsets(st.pattern);
     const run = { t0, beatMs, total, ons, hits: ons.map(() => false), tol: C.tolerance(st.bpm), extra: 0, over: false };
-    this.setState({ lx: Object.assign({}, this.learnLx(), { run, result: null, msg: tx('Listen to the four clicks… then tap on every note.'), tone: '' }), learnNow: now });
+    this.setState({ lx: Object.assign({}, this.learnLx(), { run, result: null, msg: per === 3 ? tx('Listen to the three clicks… then tap on every note.') : tx('Listen to the four clicks… then tap on every note.'), tone: '' }), learnNow: now });
     this.learnTick(true);
   }
   learnTap() {
@@ -15278,7 +15358,7 @@ class Component extends DCLogic {
 
     /* which note of a sequence an example is sounding, if one is */
     let demo = -1;
-    if (clock && clock.seq) {
+    if (clock && clock.seq && S.learnView === 'lesson') {
       const el = (now - clock.t0) / clock.beatMs;
       let at = 0;
       for (let i = 0; i < clock.seq.length; i++) {
@@ -15288,9 +15368,11 @@ class Component extends DCLogic {
       }
     }
 
-    const nDone = C.LESSONS.filter(l => done[l.id]).length;
+    /* the level this lesson is in: its units, and how far through it you are */
+    const LV = C.level(L.level), unit = C.COURSE.find(u => u.id === L.unit) || LV.units[0];
+    const nDone = LV.lessons.filter(l => done[l.id]).length;
     const out = {
-      learnKicker: tx('Unit {{u}} · Lesson {{n}} of {{total}}', { u: L.unitIndex + 1, n: L.n, total: C.LESSONS.length }),
+      learnKicker: tx('Level {{lv}} · Unit {{u}} · Lesson {{n}} of {{total}}', { lv: LV.n, u: unit.ui, n: L.li, total: LV.lessons.length }),
       learnTitle: tx(L.title), learnGoal: tx(L.goal),
       learnDots: L.steps.map((s, i) => ({
         label: tx('Step {{n}}', { n: i + 1 }) + ' · ' + tx(s.title),
@@ -15299,14 +15381,15 @@ class Component extends DCLogic {
       })),
       learnStepCount: st ? tx('Step {{n}} of {{total}}', { n: si + 1, total: n }) : tx('Lesson complete'),
       learnInStep: !!st, learnFinished: !st,
-      learnDoneCount: tx('{{done}} of {{total}} done', { done: nDone, total: C.LESSONS.length }),
-      learnBarStyle: this.bar(nDone / C.LESSONS.length * 100),
-      learnUnits: C.COURSE.map((u, ui) => ({
-        title: tx('Unit {{n}}', { n: ui + 1 }) + ' · ' + tx(u.title),
+      learnDoneCount: tx('{{done}} of {{total}} done', { done: nDone, total: LV.lessons.length }),
+      learnBarStyle: this.bar(nDone / LV.lessons.length * 100),
+      learnLevelTitle: tx('Level {{n}}', { n: LV.n }) + ' · ' + tx(LV.title),
+      learnUnits: LV.units.map(u => ({
+        title: tx('Unit {{n}}', { n: u.ui }) + ' · ' + tx(u.title),
         lessons: u.lessons.map(l => {
           const ok = !!done[l.id], cur = l.id === L.id;
           return {
-            id: l.id, title: tx(l.title), mark: ok ? '✓' : String(l.n), on: () => this.learnOpen(l.id, 0),
+            id: l.id, title: tx(l.title), mark: ok ? '✓' : String(l.li), on: () => this.learnOpen(l.id, 0),
             style: `display:flex;align-items:center;gap:10px;width:100%;padding:7px 8px;border-radius:9px;border:0;cursor:pointer;font-family:inherit;font-size:13px;text-align:left;line-height:1.3;background:${cur ? 'var(--accent-3)' : 'transparent'};color:${cur ? 'var(--accent)' : 'var(--ink)'};font-weight:${cur ? 600 : 400};`,
             markStyle: `flex:none;width:22px;height:22px;border-radius:999px;display:grid;place-items:center;font-size:10.5px;font-weight:700;font-family:'JetBrains Mono',monospace;`
               + (ok ? 'background:var(--good);color:#fff;' : cur ? 'background:var(--accent);color:#fff;' : 'background:var(--surface2);color:var(--ink3);')
@@ -15314,10 +15397,40 @@ class Component extends DCLogic {
         })
       })),
       learnKeycaps: ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K'].map((cap, i) => ({ cap, name: C.sol([60, 62, 64, 65, 67, 69, 71, 72][i]) })),
-      learnDoneTitle: tx('Lesson complete!'),
-      learnDoneText: nx ? tx('Next up: {{title}}', { title: tx(nx.title) }) : tx('You have finished every lesson. Now try a real song in My Songs!'),
+      learnDoneTitle: nx && nx.level !== L.level ? tx('Level {{n}} complete!', { n: L.level }) : tx('Lesson complete!'),
+      learnDoneText: !nx ? tx('You have finished every lesson. Now try a real song in My Songs!')
+        : nx.level !== L.level ? tx('Next: Level {{n}}, {{title}}.', { n: nx.level, title: tx(C.level(nx.level).title) })
+          : tx('Next up: {{title}}', { title: tx(nx.title) }),
       learnGoNext: nx ? () => this.learnOpen(nx.id, 0) : this.go('songs'),
-      learnGoNextLabel: nx ? tx('Next lesson') : tx('Go to My Songs'),
+      learnGoNextLabel: !nx ? tx('Go to My Songs') : nx.level !== L.level ? tx('Start Level {{n}}', { n: nx.level }) : tx('Next lesson'),
+      /* the level picker the tab opens on, and the way back to it */
+      learnPicker: S.learnView !== 'lesson', learnInLesson: S.learnView === 'lesson',
+      learnToLevels: () => { this.learnStop(); this.setState({ learnView: 'levels' }); },
+      learnLevelTabs: C.LEVELS.map(lv => ({
+        n: lv.n, label: tx('Level {{n}}', { n: lv.n }), on: () => this.learnLevel(lv.n),
+        style: `flex:1;padding:7px 6px;border-radius:9px;border:0;cursor:pointer;font-family:inherit;font-size:12px;font-weight:${lv.n === LV.n ? 700 : 500};`
+          + (lv.n === LV.n ? 'background:var(--surface);color:var(--accent);box-shadow:var(--shadow);' : 'background:transparent;color:var(--ink3);')
+      })),
+      learnLevels: C.LEVELS.map(lv => {
+        const got = lv.lessons.filter(l => done[l.id]).length, all = lv.lessons.length, cur = lv.n === L.level;
+        return {
+          n: lv.n, badge: tx('Level {{n}}', { n: lv.n }), title: tx(lv.title), who: tx(lv.who), sub: tx(lv.sub),
+          units: lv.units.map(u => ({ label: tx(u.title) })),
+          count: tx('{{done}} of {{total}} done', { done: got, total: all }), barStyle: this.bar(got / all * 100, got === all ? 'var(--good)' : 'var(--accent)'),
+          cta: got === all ? tx('Review') : got || cur ? tx('Continue') : tx('Start'),
+          on: () => this.learnLevel(lv.n),
+          cardStyle: 'display:flex;flex-direction:column;gap:12px;min-width:0;padding:22px;border-radius:20px;background:var(--surface);box-shadow:var(--shadow);'
+            + 'border:' + (cur ? '2px solid var(--accent)' : '1px solid var(--line)') + ';',
+          badgeStyle: 'align-self:flex-start;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;'
+            + (cur ? 'background:var(--accent);color:#fff;' : 'background:var(--accent-3);color:var(--accent);'),
+          ctaStyle: 'margin-top:auto;padding:11px 16px;border-radius:11px;font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;'
+            + (cur ? 'border:0;background:var(--accent);color:#fff;' : 'border:1px solid var(--line);background:var(--bg);color:var(--ink);')
+        };
+      }),
+      learnHasResume: !!(done[L.id] || nDone || S.learnStep > 0 || L.n > 1),
+      learnResumeLabel: tx('Continue: {{title}}', { title: tx(L.title) }),
+      learnResumeSub: tx('Level {{lv}} · Lesson {{n}} of {{total}}', { lv: LV.n, n: L.li, total: LV.lessons.length }),
+      learnResume: () => { this.learnStop(); this.setState({ learnView: 'lesson' }); },
       learnAgain: () => this.learnOpen(L.id, 0),
       learnBack: () => this.learnBack(),
       learnNext: () => this.learnNext()
@@ -15357,7 +15470,7 @@ class Component extends DCLogic {
         results = run.ons.map((o, j) => run.hits[j] ? 'hit' : (run.over || cursor > o.at + run.tol) ? 'miss' : null);
         if (run.over) cursor = null;
       } else if (clock && !clock.seq) cursor = (now - clock.t0) / clock.beatMs;
-      pic = C.rhythm(h, { pattern, cursor, results });
+      pic = C.rhythm(h, { pattern, cursor, results, per: st.per || (st.listen && st.listen.per) || 4 });
     }
     out.learnHasPicture = !!pic;
     out.learnPicture = pic;
@@ -15370,7 +15483,7 @@ class Component extends DCLogic {
       const d = (st.beats && st.beats[i]) || (st.listen && st.listen.beats && st.listen.beats[i]) || 1;
       const state = demo === i ? 'now' : st.kind === 'play' ? (i < lx.idx ? 'done' : i === lx.idx && !lx.done ? 'now' : '') : '';
       return {
-        label: C.sol(m) + (d >= 2 ? ' –' : ''),
+        label: C.itemName(L, st, i) + (d >= 2 ? ' –' : ''),
         style: `display:inline-flex;align-items:center;justify-content:center;min-width:${30 + Math.min(3, Math.max(0, d - 1)) * 12}px;padding:6px 8px;border-radius:9px;font-size:13px;font-weight:600;box-sizing:border-box;transition:background .12s ease;`
           + (state === 'now' ? 'background:var(--accent);color:#fff;border:1px solid var(--accent);'
             : state === 'done' ? 'background:color-mix(in oklab, var(--good) 16%, var(--surface));color:var(--good);border:1px solid color-mix(in oklab, var(--good) 35%, var(--surface));'
@@ -15406,19 +15519,21 @@ class Component extends DCLogic {
       const k = C.keysFor(L, st), marks = {};
       (k.hl || []).forEach(m => { marks[m] = 'hl'; });
       (k.hl2 || []).forEach(m => { marks[m] = 'hl2'; });
-      if (st.kind === 'play' && !lx.done && (st.hint || lx.slips >= 2)) marks[st.seq[lx.idx]] = 'next';
+      if (st.kind === 'play' && !lx.done && (st.hint || lx.slips >= 2)) C.notesOf(st.seq[lx.idx]).forEach(m => { marks[m] = 'next'; });
+      if (st.kind === 'play') (lx.got || []).forEach(m => { marks[m] = 'got'; });
+      if (q && q.hl) q.hl.forEach(m => { marks[m] = 'hl'; });
       if (st.kind === 'find') lx.found.forEach(m => { marks[m] = 'found'; });
       if (st.kind === 'chord') {
         if (lx.misses >= 2 || lx.done) st.notes.forEach(m => { marks[m] = 'hl'; });
         lx.got.forEach(m => { marks[m] = 'got'; });
       }
-      if (demo > -1 && clock && clock.seq) marks[clock.seq[demo]] = 'next';
+      if (demo > -1 && clock && clock.seq) C.notesOf(clock.seq[demo]).forEach(m => { marks[m] = 'next'; });
       if (lx.flash) marks[lx.flash.m] = lx.flash.kind;
       /* the see-through hand of the practice screen, over these keys: its
          finger numbers replace the ones printed on the keys */
-      const hand = handable && this.handsOn() ? this.learnHandAt(L, si, st, lx, demo) : null;
+      const hand = handable && this.handsOn() ? this.learnHandAt(L, si, st, lx, demo) : [];
       let hands = null;
-      if (hand) {
+      if (hand.length) {
         const KW = C.KEY_W, KH = C.KEY_H, HT = KH + HandArt.ZONE;
         const far = { x: -4000, y: -100, width: 10000, height: HT + 200 };
         hands = {
@@ -15436,7 +15551,7 @@ class Component extends DCLogic {
               h('stop', { offset: 1, stopColor: '#000' })),
             h('mask', Object.assign({ id: 'ppp-hand-fade', maskUnits: 'userSpaceOnUse' }, far),
               h('rect', Object.assign({ fill: 'url(#ppp-hand-fall)' }, far)))),
-          layers: [this.handLayer(hand.hand, hand.at, Fingering.keyX(k.lo), KW, KH)]
+          layers: hand.map(x => this.handLayer(x.hand, x.at, Fingering.keyX(k.lo), KW, KH))
         };
       }
       out.learnKeys = C.keyboard(h, Object.assign({}, k, {
@@ -15458,11 +15573,11 @@ class Component extends DCLogic {
     /* what just happened, or what to do */
     const hint = {
       read: tx('Tap any key to hear it. Press Next when you are ready.'),
-      play: st.read ? tx('Read the first note and play it.') : tx('Start with {{note}}.', { note: seq.length ? C.sol(seq[0]) : '' }),
+      play: st.read ? tx('Read the first note and play it.') : tx('Start with {{note}}.', { note: seq.length ? C.itemName(L, st, 0) : '' }),
       find: tx('{{got}} of {{n}} found.', { got: (lx.found || []).length, n: st.pcs ? C.targets(L, st).length : 0 }),
       quiz: tx('Pick an answer.'),
       drill: tx('Tap a name below, or play the note.'),
-      rhythm: tx('Press Start, listen to four clicks, then tap along.'),
+      rhythm: st.per === 3 ? tx('Press Start, listen to three clicks, then tap along.') : tx('Press Start, listen to four clicks, then tap along.'),
       chord: tx('Play the three keys together.')
     }[st.kind];
     const tone = lx.msg ? lx.tone : '';
@@ -15474,7 +15589,7 @@ class Component extends DCLogic {
 
     /* the buttons beside Back / Next */
     const tools = [];
-    const canListen = !!(st.listen || (st.kind === 'play' && seq.length > 1) || st.kind === 'chord' || st.kind === 'rhythm');
+    const canListen = !!(st.listen || (q && q.listen) || (st.kind === 'play' && seq.length > 1) || st.kind === 'chord' || st.kind === 'rhythm');
     if (st.kind === 'rhythm') {
       const running = !!(lx.run && !lx.run.over);
       tools.push({ id: 'start', label: running ? tx('Playing…') : lx.run ? tx('Try again') : tx('Start'), on: () => { if (!running) this.learnRhythmStart(); }, style: btn(true, !running) });
@@ -15499,63 +15614,75 @@ class Component extends DCLogic {
     out.learnBackStyle = btn(false) + (si === 0 ? 'visibility:hidden;' : '');
     return out;
   }
-  /* The hand for a step: which hand, and PPP's fingering of its notes —
-     the same engine as the practice screen, keeping a fingering the lesson
-     writes out. A step with no notes but a hand position (thumb on Do…)
-     gets that position at rest. Worked out once per step. */
+  /* The hands for a step, and PPP's fingering of its notes — the same
+     engine as the practice screen, keeping a fingering the lesson writes
+     out. A step for both hands gives the left everything below Middle Do.
+     A step with no notes but a hand position (thumb on Do…) gets that
+     position at rest. Worked out once per step. */
   learnHandPlan(L, si, st) {
     const key = L.id + ':' + si;
     if (this._lhp && this._lhp.key === key) return this._lhp.plan;
+    const C = window.PPP_LESSONS;
     let plan = null;
     try {
       const listen = st.listen || {};
       const chord = st.kind === 'chord' ? st.notes : (!st.seq && listen.chord) || null;
-      const seq = chord ? null : (st.seq || listen.seq || null);
+      const seq = chord ? [chord] : (st.seq || listen.seq || null);
       const map = (st.keys && st.keys.fingers) || (L.keys && L.keys.fingers) || null;
-      const all = chord || seq || (map ? Object.keys(map).map(Number) : []);
-      const hand = all.length && all.every(m => m < 60) ? 'l' : 'r';
-      if (['play', 'chord', 'read'].indexOf(st.kind) < 0 || !all.length) plan = null;
-      else if (chord && Math.max.apply(null, chord) - Math.min.apply(null, chord) > 12) plan = null;   /* not one hand */
-      else if (!chord && !seq) {
+      const all = seq ? C.flat(seq) : (map ? Object.keys(map).map(Number) : []);
+      const two = !!st.twoHands, one = all.length && all.every(m => m < 60) ? 'l' : 'r';
+      const handOf = m => two ? (m < 60 ? 'l' : 'r') : one;
+      /* more than an octave at once is not one hand's chord */
+      const wide = !two && (seq || []).some(x => { const ns = C.notesOf(x); return Math.max.apply(null, ns) - Math.min.apply(null, ns) > 12; });
+      if (['play', 'chord', 'read'].indexOf(st.kind) < 0 || !all.length || wide) plan = null;
+      else if (!seq) {
         const fm = {};
         Object.keys(map).forEach(m => { fm[map[m]] = +m; });
-        plan = { hand, rest: Fingering.restFingers(fm, hand, 0) };
+        plan = { rest: { hand: one, pose: Fingering.restFingers(fm, one, 0) } };
       } else {
-        const beats = st.beats || listen.beats || [], fing = chord ? null : (st.fingering || listen.fingering || null);
-        const notes = [];
+        const beats = chord ? [4] : (st.beats || listen.beats || []), fing = chord ? null : (st.fingering || listen.fingering || null);
+        const notes = [], times = [];
         let at = 0;
-        if (chord) chord.forEach(m => notes.push({ m: 1, b: 0, dur: 4, midi: m, hand, staff: 1, voice: 1 }));
-        else seq.forEach((m, j) => {
+        seq.forEach((item, j) => {
           const d = beats[j] || 1;
-          notes.push({ m: 1, b: at, dur: d, midi: m, hand, staff: 1, voice: 1, finger: fing ? fing[j] : undefined });
+          times.push(at);
+          C.notesOf(item).forEach(m => notes.push({ m: 1, b: at, dur: d, midi: m, hand: handOf(m), staff: handOf(m) === 'l' ? 2 : 1, voice: 1,
+            finger: fing && !Array.isArray(item) ? fing[j] : undefined }));
           at += d;
         });
         const score = Score.finalize({
-          id: 'learn:' + key, title: 'learn', tempo: 90, staves: 1,
-          measures: [{ number: 1, lenQ: Math.max(4, Math.ceil(at / 4) * 4), time: { beats: 4, beatType: 4 }, key: { fifths: 0, mode: 'major' }, clefs: { 1: hand === 'l' ? 'bass' : 'treble' } }],
+          id: 'learn:' + key, title: 'learn', tempo: 90, staves: 2,
+          measures: [{ number: 1, lenQ: Math.max(4, Math.ceil(at / 4) * 4), time: { beats: 4, beatType: 4 }, key: { fifths: 0, mode: 'major' }, clefs: { 1: 'treble', 2: 'bass' } }],
           notes, sections: [{ id: 's1', from: 1, to: 1 }]
         });
-        const H = Fingering.plan(score).hands[hand];
-        plan = H && H.events.length ? { hand, events: H.events, poses: H.poses } : null;
+        const fp = Fingering.plan(score), hands = {};
+        ['l', 'r'].forEach(hd => { const H = fp.hands[hd]; if (H && H.events.length) hands[hd] = { events: H.events, poses: H.poses }; });
+        plan = Object.keys(hands).length ? { hands, times } : null;
       }
     } catch (e) { plan = null; }
     this._lhp = { key, plan };
     return plan;
   }
-  /* Where that hand is now: on the key to play next (its finger marked when
-     the step shows the key too), on the note an example is sounding, or
-     resting in position. */
+  /* Where each hand is now: on the keys to play next (their fingers marked
+     when the step lights the keys too), on the notes an example is
+     sounding, or resting in position. A hand with nothing to play at that
+     moment waits where it last played. */
   learnHandAt(L, si, st, lx, demo) {
     const P = this.learnHandPlan(L, si, st);
-    if (!P) return null;
-    if (P.rest) return { hand: P.hand, at: { pose: P.rest, fingers: [], state: 'rest' } };
-    const last = P.events.length - 1;
-    let i = 0, state = 'rest';
-    if (demo > -1) { i = demo; state = 'now'; }
-    else if (st.kind === 'play') { i = lx.idx; state = !lx.done && (st.hint || lx.slips >= 2) ? 'now' : 'rest'; }
-    else if (st.kind === 'chord') state = lx.done ? 'rest' : 'now';
-    const e = P.events[clamp(i, 0, last)];
-    return { hand: P.hand, at: { pose: P.poses[e.pose], fingers: e.fingers, state } };
+    if (!P) return [];
+    if (P.rest) return [{ hand: P.rest.hand, at: { pose: P.rest.pose, fingers: [], state: 'rest' } }];
+    let i = 0, marked = false;
+    if (demo > -1) { i = demo; marked = true; }
+    else if (st.kind === 'play') { i = lx.idx; marked = !lx.done && (st.hint || lx.slips >= 2); }
+    else if (st.kind === 'chord') marked = !lx.done;
+    const t = P.times[clamp(i, 0, P.times.length - 1)];
+    return Object.keys(P.hands).map(hd => {
+      const H = P.hands[hd];
+      let k = 0;
+      H.events.forEach((e, j) => { if (e.at <= t + 1e-6) k = j; });
+      const e = H.events[k], on = marked && Math.abs(e.at - t) < 1e-6;
+      return { hand: hd, at: { pose: H.poses[e.pose], fingers: e.fingers, state: on ? 'now' : 'rest' } };
+    });
   }
   learnChoiceStyle(right, wrong) {
     return 'min-width:64px;padding:12px 18px;border-radius:12px;font-family:inherit;font-size:14.5px;font-weight:600;cursor:pointer;transition:background .12s ease;'
