@@ -65,7 +65,7 @@ function installFakeMidi() {
   page.on('console', m => {
     if (m.type() !== 'error') return;
     const t = m.text() || '';
-    if (/ERR_CONNECTION_REFUSED|Failed to load resource/.test(t)) return;
+    if (/ERR_CONNECTION_REFUSED|Failed to load resource|CORS policy|127\.0\.0\.1:8788/.test(t)) return;
     errors.push('[console] ' + t);
   });
 
@@ -508,6 +508,17 @@ function installFakeMidi() {
     playWithMidi.hasOn && playWithMidi.follow === false && playWithMidi.live,
     JSON.stringify(playWithMidi));
 
+  const mixXml = '<?xml version="1.0"?><score-partwise version="3.1"><part-list><score-part id="P1"><part-name>P</part-name></score-part></part-list><part id="P1">' +
+    '<measure number="1"><attributes><divisions>2</divisions><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>' +
+    '<note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><type>eighth</type></note>' +
+    '<note><pitch><step>D</step><octave>4</octave></pitch><duration>1</duration><type>eighth</type></note>' +
+    '<note><pitch><step>E</step><octave>4</octave></pitch><duration>1</duration><type>eighth</type></note>' +
+    '<note><pitch><step>F</step><octave>4</octave></pitch><duration>1</duration><type>eighth</type></note>' +
+    '<note><pitch><step>G</step><octave>4</octave></pitch><duration>1</duration><type>eighth</type></note>' +
+    '<note><pitch><step>A</step><octave>4</octave></pitch><duration>1</duration><type>eighth</type></note>' +
+    '<note><pitch><step>B</step><octave>4</octave></pitch><duration>1</duration><type>eighth</type></note>' +
+    '<note><pitch><step>C</step><octave>5</octave></pitch><duration>1</duration><type>eighth</type></note>' +
+    '</measure></part></score-partwise>';
   const mix = await page.evaluate(async xml => {
     const app = PPP.app;
     const score = PPP.parseMusicXML(xml, 'mix.musicxml');
@@ -515,33 +526,47 @@ function installFakeMidi() {
     await app.connectMidi('fake-1');
     await app.connectMidiOut('fake-1');
     window.__fake.sent = [];
-    window.__fake.send([0x90, 60, 100]);
-    const thru = window.__fake.sent.filter(x => x.data[0] === 0x91 && x.data[1] === 60);
-    window.__fake.send([0x80, 60, 0]);
-    window.__fake.sent = [];
     app.setState({
-      score: score, tempo: 180, loop: false, loopFrom: 1, loopTo: 1, beat: 0,
+      score: score, tempo: 120, loop: true, loopFrom: 1, loopTo: 1, beat: 0,
       playing: false, hands: 'both', practiceMode: 'practice',
       toggles: Object.assign({}, app.state.toggles, { notes: true, midi: true, follow: false, sound: false })
     });
     app.wake();
     if (app.state.playing) app.togglePlay();
     app.togglePlay();
-    await new Promise(r => setTimeout(r, 80));
-    const ons = window.__fake.sent.filter(x => x.data[0] === 0x90 && x.data[2] > 0);
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    await wait(120);
+    const scoreOn = x => (x.data[0] & 0xf0) === 0x90 && x.data[2] > 0;
+    const listenOns = window.__fake.sent.filter(scoreOn);
+    const listenVel = listenOns[0] && listenOns[0].data[2];
+    const sameCh = listenOns.length > 0 && listenOns.every(x => (x.data[0] & 0x0f) === 0);
+    const localOn = window.__fake.sent.some(x => (x.data[0] & 0xf0) === 0xb0 && x.data[1] === 122 && x.data[2] === 127);
+    window.__fake.send([0x90, 60, 100]);
+    const afterStrike = window.__fake.sent.length;
+    const thruCh1 = window.__fake.sent.some(x => x.data[0] === 0x91);
+    await wait(2000);
+    const laterOns = window.__fake.sent.slice(afterStrike).filter(scoreOn);
+    const laterVel = laterOns[0] && laterOns[0].data[2];
     if (app.state.playing) app.togglePlay();
     return {
-      thruVel: thru[0] && thru[0].data[2],
-      thruN: thru.length,
       planVel: planVel,
-      scoreVel: ons[0] && ons[0].data[2],
-      live: app.liveMidi()
+      listenVel: listenVel,
+      laterVel: laterVel,
+      laterN: laterOns.length,
+      sameCh: sameCh,
+      localOn: localOn,
+      thruCh1: thruCh1,
+      live: app.liveMidi(),
+      sameDev: app.midiOutIsAlsoIn()
     };
-  }, midiOutXml);
-  ok('a key you strike is sent to the piano at that velocity', mix.thruVel === 100, JSON.stringify(mix));
-  ok('the playing score is quieter than the written dynamic while you play along',
-    mix.live && mix.scoreVel > 0 && mix.scoreVel < mix.planVel,
-    'plan=' + mix.planVel + ' out=' + mix.scoreVel);
+  }, mixXml);
+  ok('listen-only Play keeps written dynamics',
+    mix.listenVel === mix.planVel, 'plan=' + mix.planVel + ' listen=' + mix.listenVel);
+  ok('player and score share the piano voice',
+    mix.localOn && mix.sameCh && !mix.thruCh1 && mix.sameDev, JSON.stringify(mix));
+  ok('after a player strike the score is quieter than written and quieter than 100',
+    mix.laterN > 0 && mix.laterVel < mix.listenVel && mix.laterVel < 100,
+    JSON.stringify(mix));
 
   const longRun = await page.evaluate(async xml => {
     const app = PPP.app;
@@ -587,13 +612,14 @@ function installFakeMidi() {
     await app.connectMidiOut('fake-1');
     const sent = window.__fake.sent.map(x => ({ st: x.data[0], d1: x.data[1], d2: x.data[2], id: x.id }));
     return {
-      local: sent.some(x => (x.st & 0xf0) === 0xb0 && x.d1 === 122 && x.d2 === 0),
+      localOn: sent.some(x => (x.st & 0xf0) === 0xb0 && x.d1 === 122 && x.d2 === 127),
+      localOff: sent.some(x => (x.st & 0xf0) === 0xb0 && x.d1 === 122 && x.d2 === 0),
       same: app.midiOutIsAlsoIn(),
       inId: app.state.midi && app.state.midi.deviceId,
       outId: app.state.midiOut && app.state.midiOut.deviceId
     };
   });
-  ok('Local Control off when output is the same device as input', local.local && local.same,
+  ok('Local Control on when output is the same device as input', local.localOn && !local.localOff && local.same,
     JSON.stringify(local));
 
   /* ================= 5. no Web MIDI at all ================= */

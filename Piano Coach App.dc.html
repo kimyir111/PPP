@@ -30,7 +30,8 @@
     --accent-3: oklch(0.95 0.025 285); --good: oklch(0.6 0.12 155); --warn: oklch(0.72 0.14 65);
     --bad: oklch(0.58 0.17 25); --staff: #cdc6bd; --key-w: #fffefc; --key-b: #221f1d; --shadow: 0 1px 2px rgba(28,24,20,.05), 0 8px 24px -12px rgba(28,24,20,.16);
     --paper: #fffefc; --paper-ink: #1b1a18; --paper-staff: #8d867d; --paper-ink3: #6b645c; --paper-line: #e6e0d8;
-    --hand: #f1c6a3; --hand-line: #a5684a; --hand-nail: #fbe3d3; --hand-ink: #5a3a26;
+    --hand: #efbf9b; --hand-light: #f8d8bc; --hand-shadow: #bd7b59;
+    --hand-line: #9d5f43; --hand-nail: #fde5d5; --hand-ink: #553321;
   }
   [data-app="dark"], [data-auth="dark"] {
     --bg: #131211; --surface: #1b1a19; --surface2: #242221; --ink: #f5f2ee; --ink2: #a9a29a;
@@ -38,7 +39,8 @@
     --accent-3: oklch(0.28 0.05 285); --good: oklch(0.7 0.13 155); --warn: oklch(0.78 0.13 65);
     --bad: oklch(0.66 0.17 25); --staff: #7b736b; --key-w: #e9e5e0; --key-b: #100f0e; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
     --paper: #e8e4dc; --paper-ink: #171614; --paper-staff: #7d766e; --paper-ink3: #5d574f; --paper-line: #cfc9c0;
-    --hand: #e8b996; --hand-line: #c98d66; --hand-nail: #f6ddcb; --hand-ink: #4a2f1f;
+    --hand: #e5b28e; --hand-light: #f2ccb0; --hand-shadow: #a96549;
+    --hand-line: #bd7958; --hand-nail: #f8ddcb; --hand-ink: #452b1d;
   }
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
@@ -288,25 +290,71 @@
   .ppp-shell[data-focus="true"] .ppp-focus-grow[data-whole="true"] svg {
     height: auto !important;
   }
+  .ppp-kb-split { display: none; }
+  .ppp-shell[data-focus="true"] .ppp-kb-split {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    height: 16px;
+    margin-top: 4px;
+    cursor: ns-resize;
+    touch-action: none;
+    flex: none;
+  }
+  .ppp-shell[data-focus="true"] .ppp-kb-split::after {
+    content: '';
+    width: 48px; height: 4px; border-radius: 99px;
+    background: var(--ink3); opacity: .7;
+  }
   .ppp-shell[data-focus="true"] .ppp-kbwrap {
     overflow-x: auto !important; overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
-    margin-top: 8px !important;
-    max-height: clamp(96px, 16vh, 148px);
+    margin-top: 0 !important;
+    height: var(--ppp-kb-h, 226px);
+    max-height: none;
+    box-sizing: border-box;
   }
   .ppp-shell[data-focus="true"] .ppp-kbwrap svg {
     display: block;
-    height: clamp(96px, 16vh, 148px) !important;
+    height: 100% !important;
     width: auto !important;
     max-width: none;
     margin: 0 auto;
   }
-  .ppp-shell[data-focus="true"][data-keys="false"] .ppp-kbwrap { display: none !important; }
+  .ppp-shell[data-focus="true"][data-keys="false"] .ppp-kbwrap,
+  .ppp-shell[data-focus="true"][data-keys="false"] .ppp-kb-split { display: none !important; }
   .ppp-shell[data-focus="true"] .ppp-setup-only { display: none !important; }
   .ppp-focus-only { display: none !important; }
   .ppp-shell[data-focus="true"] .ppp-focus-only { display: flex !important; }
 
-  /* Landscape at the piano: the score is the page, the keys are a strip. */
+  @keyframes ppp-miss-a {
+    0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+    14% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    72% { opacity: 1; }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+  }
+  @keyframes ppp-miss-b {
+    0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+    14% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    72% { opacity: 1; }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+  }
+  .ppp-miss {
+    position: fixed; top: 10px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 70;
+    padding: 10px 20px;
+    border-radius: 12px;
+    background: var(--bad);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: .02em;
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  /* Landscape at the piano: keep chrome tight; keyboard size is the drag, not a crop. */
   @media (orientation: landscape) and (max-height: 900px) {
     .ppp-shell[data-focus="true"] .ppp-page {
       padding: 4px 8px;
@@ -316,8 +364,6 @@
     .ppp-shell[data-focus="true"] .ppp-playcol { gap: 4px !important; }
     .ppp-shell[data-focus="true"] .ppp-staffhead { padding: 4px 10px !important; }
     .ppp-shell[data-focus="true"] .ppp-transport { padding: 6px 10px !important; }
-    .ppp-shell[data-focus="true"] .ppp-kbwrap { margin-top: 6px !important; max-height: min(18vh, 112px); }
-    .ppp-shell[data-focus="true"] .ppp-kbwrap svg { height: min(18vh, 112px) !important; }
   }
 
   @media (max-width: 1024px) {
@@ -432,7 +478,7 @@
   </div>
 </sc-if>
 
-<div data-app="{{ theme }}" ref="{{ rootRef }}" class="ppp-shell" data-focus="{{ focusAttr }}" data-keys="{{ keysAttr }}" data-sidebar-collapsed="{{ sidebarCollapsedAttr }}" data-sidebar-open="{{ sidebarOpenAttr }}" style="background: var(--bg); color: var(--ink); font-family: Figtree, 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', system-ui, sans-serif;">
+<div data-app="{{ theme }}" ref="{{ rootRef }}" class="ppp-shell" data-focus="{{ focusAttr }}" data-keys="{{ keysAttr }}" data-sidebar-collapsed="{{ sidebarCollapsedAttr }}" data-sidebar-open="{{ sidebarOpenAttr }}" style="background: var(--bg); color: var(--ink); font-family: Figtree, 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', system-ui, sans-serif;{{ kbVar }}">
 
   <button type="button" class="ppp-backdrop" onClick="{{ closeSidebar }}" aria-label="{{ hideSidebarLabel }}"></button>
 
@@ -975,6 +1021,7 @@
                   </div>
                 </div>
               </sc-if>
+              <div class="ppp-kb-split ppp-focus-only" data-kb-split title="{{ kbSplitHint }}" onPointerDown="{{ onKbSplit }}" onPointerMove="{{ onKbSplitMove }}" onPointerUp="{{ onKbSplitUp }}"></div>
               <div class="ppp-kbwrap" ref="{{ kbRef }}" style="margin-top: 16px; border-radius: 13px; border: 1px solid var(--line); background: var(--key-b); padding: 10px 10px 0; overflow: hidden;">{{ keyboard }}</div>
               <div class="ppp-setup-only" style="display: flex; gap: 8px 18px; margin-top: 12px; font-size: 11.5px; color: var(--ink3); flex-wrap: wrap; align-items: center;">
                 <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 9px; height: 9px; border-radius: 3px; background: var(--accent);"></span>Played correctly</span>
@@ -1939,6 +1986,7 @@
   </sc-if>
 
   <div style="{{ toastStyle }}">{{ toast }}</div>
+  <div class="ppp-miss" data-miss="{{ missN }}" style="{{ missStyle }}">{{ missText }}</div>
 </div>
 
 </x-dc>
@@ -3869,17 +3917,17 @@ class MidiOut {
     this.send([0xB0, n & 127, (v == null ? 0 : v) & 127], t);
   }
   localOff() { this.cc(122, 0); }
-  /* The player's keys, on a second channel so a note-off does not cut a
-     score note still held on the same key. */
+  localOn() { this.cc(122, 127); }
+  /* Only used when the output is a different device than the keyboard.
+     Same channel as the score so it is the same piano voice. */
   thruOn(midi, vel) {
     const m = midi & 127, v = Math.max(1, Math.min(127, vel == null ? 80 : vel | 0));
-    this.send([0x91, m, v]);
+    this.send([0x90, m, v]);
     this._thru[m] = true;
   }
   thruOff(midi) {
     const m = midi & 127;
-    this.send([0x91, m, 0]);
-    this.send([0x81, m, 0]);
+    this.send([0x80, m, 0]);
     delete this._thru[m];
   }
   panic(t) {
@@ -3894,8 +3942,7 @@ class MidiOut {
       this.send([0x80, q.midi & 127, 0], at);
     });
     Object.keys(this._thru).forEach(m => {
-      this.send([0x81, (+m) & 127, 0], when);
-      this.send([0x91, (+m) & 127, 0], when);
+      this.send([0x80, (+m) & 127, 0], when);
     });
     this._thru = {};
     this.cc(64, 0, when);
@@ -3903,8 +3950,6 @@ class MidiOut {
     this.cc(67, 0, when);
     this.cc(123, 0, when);
     this.cc(120, 0, when);
-    this.send([0xB1, 123, 0], when);
-    this.send([0xB1, 120, 0], when);
   }
 }
 
@@ -5664,6 +5709,198 @@ const Import = {
     return Search.align(xml, opts || {});
   },
 
+  /* Hear notes in this browser (Spotify Basic Pitch). Tablet and computer
+     both generate a score this way; the local helper is a better engine when
+     it is there, not a requirement. */
+  amtLib: null,
+  loadAmt() {
+    if (Import.amtLib) return Import.amtLib;
+    Import.amtLib = Promise.all([
+      import('https://esm.sh/@tensorflow/tfjs@3.21.0'),
+      import('https://esm.sh/@spotify/basic-pitch@1.0.1')
+    ]).then(function (mods) {
+      const tf = mods[0], bp = mods[1];
+      const model = 'https://cdn.jsdelivr.net/npm/@spotify/basic-pitch@1.0.1/model/model.json';
+      const pitch = new bp.BasicPitch(model);
+      return { tf: tf, bp: bp, pitch: pitch };
+    });
+    return Import.amtLib;
+  },
+  resampleMono(audio, rate) {
+    const nch = audio.numberOfChannels;
+    const srcLen = audio.length;
+    if (audio.sampleRate === rate && nch === 1) return Promise.resolve(audio);
+    const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const outLen = Math.max(1, Math.ceil(srcLen * rate / audio.sampleRate));
+    const off = new OAC(1, outLen, rate);
+    const mono = off.createBuffer(1, srcLen, audio.sampleRate);
+    const d = mono.getChannelData(0);
+    for (let i = 0; i < srcLen; i++) {
+      let s = 0;
+      for (let c = 0; c < nch; c++) s += audio.getChannelData(c)[i];
+      d[i] = s / nch;
+    }
+    const src = off.createBufferSource();
+    src.buffer = mono;
+    src.connect(off.destination);
+    src.start(0);
+    return off.startRendering();
+  },
+  async amtNotes(arrayBuf, onPct) {
+    const amt = await Import.loadAmt();
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ac = new AC();
+    let decoded;
+    try {
+      decoded = await new Promise((ok, fail) => {
+        const p = ac.decodeAudioData(arrayBuf.slice(0), ok, fail);
+        if (p && p.then) p.then(ok, fail);
+      });
+    } catch (e) {
+      try { ac.close(); } catch (e2) {}
+      throw importError('bad-audio', tx('That file could not be decoded as audio or video.'));
+    }
+    const maxSec = IMPORT_LIMITS.maxAudioMinutes * 60;
+    let audio = decoded;
+    if (decoded.duration > maxSec) {
+      const keep = Math.floor(decoded.sampleRate * maxSec);
+      const cut = ac.createBuffer(decoded.numberOfChannels, keep, decoded.sampleRate);
+      for (let c = 0; c < decoded.numberOfChannels; c++)
+        cut.getChannelData(c).set(decoded.getChannelData(c).subarray(0, keep));
+      audio = cut;
+    }
+    const mono = await Import.resampleMono(audio, 22050);
+    try { ac.close(); } catch (e) {}
+    const frames = [], onsets = [], contours = [];
+    await amt.pitch.evaluateModel(mono, function (f, o, c) {
+      frames.push.apply(frames, f);
+      onsets.push.apply(onsets, o);
+      contours.push.apply(contours, c);
+    }, function (p) { if (onPct) onPct(p); });
+    const raw = amt.bp.outputToNotesPoly(frames, onsets, 0.5, 0.3, 5);
+    const timed = amt.bp.noteFramesToTime(amt.bp.addPitchBendsToNoteEvents(contours, raw));
+    const notes = timed.map(n => ({
+      on: Math.max(0, n.startTimeSeconds),
+      off: Math.max(n.startTimeSeconds + 0.05, n.startTimeSeconds + n.durationSeconds),
+      midi: n.pitchMidi | 0,
+      vel: Math.max(8, Math.min(127, Math.round((n.amplitude || 0.5) * 127)))
+    })).filter(n => n.midi >= 21 && n.midi <= 108);
+    return { notes: notes, duration: mono.duration, engine: 'basic-pitch' };
+  },
+  async transcribeHere(what, onStage, ctl) {
+    const stage = (name, detail) => { if (onStage) onStage(name, detail || {}); };
+    stage('transcribe', { pct: 0 });
+    let buf, audioUrl, title;
+    if (what.file) {
+      buf = await what.file.arrayBuffer();
+      audioUrl = URL.createObjectURL(what.file);
+      title = String(what.file.name || '').replace(/\.[^.]+$/, '');
+    } else if (what.url) {
+      stage('download', { pct: 0 });
+      const r = await fetch('/api/youtube-audio?url=' + encodeURIComponent(what.url));
+      if (!r.ok) {
+        let msg = tx('The audio could not be downloaded from that link.');
+        try { const j = await r.json(); if (j && j.error) msg = j.error; } catch (e) {}
+        throw importError('download-failed', msg);
+      }
+      buf = await r.arrayBuffer();
+      const type = r.headers.get('content-type') || 'audio/mp4';
+      audioUrl = URL.createObjectURL(new Blob([buf], { type: type }));
+      title = await Import.youtubeTitle(what.url);
+    } else {
+      throw importError('empty', tx('That file is empty.'));
+    }
+    if (ctl && ctl.cancelled) throw importError('cancelled', tx('Cancelled.'));
+    const heard = await Import.amtNotes(buf, p => stage('transcribe', { pct: p }));
+    heard.duration = heard.duration || 0;
+    return { heard: heard, title: title, audioUrl: audioUrl };
+  },
+  finishHeard(got, what, onStage) {
+    const stage = (name, detail) => { if (onStage) onStage(name, detail || {}); };
+    const heard = got.heard || {};
+    const nameGuess = (what.file ? String(what.file.name).replace(/\.[^.]+$/, '') : '') || '';
+    const title = (got.title || nameGuess || tx('Transcribed recording')).trim();
+    const yt = what.url ? Import.youtubeWatch(what.url) : null;
+    if (heard.engine === 'catalog' && heard.xml) {
+      stage('parse', {});
+      const score = parseMusicXML(heard.xml, heard.title || title);
+      if (heard.composer) score.composer = heard.composer;
+      const aligned = heard.barStarts && heard.barStarts.length
+        ? { barStarts: heard.barStarts, duration: heard.duration, tempo: score.tempo, measures: score.measures.length }
+        : Import.alignScore(heard.xml, { duration: heard.duration, downbeats: heard.downbeats, beats: heard.beats });
+      const source = {
+        name: what.file ? what.file.name : title,
+        kind: what.url ? 'youtube' : Import.kindOf(what.file),
+        url: yt ? yt.url : (what.url || null), youtubeId: yt ? yt.id : null,
+        bytes: what.file ? what.file.size : null,
+        importedAt: Clock.now(), engine: 'Public-domain catalog', pages: null,
+        status: 'retrieved', seconds: heard.duration || null, truncated: !!heard.truncated,
+        tempo: aligned.tempo || score.tempo, barStarts: aligned.barStarts, retrieved: true,
+        catalogId: heard.catalogId
+      };
+      score.source = source;
+      const report = {
+        confidence: 0.94, level: 'good', issues: [], suspectMeasures: [],
+        summary: tx('Found a public-domain score for this title.'),
+        advice: null, measures: (score.measures || []).length,
+        notes: (score.notes || []).filter(n => !n.rest).length, staves: score.staves,
+        transcribed: false, retrieved: true, tempo: source.tempo
+      };
+      return {
+        score: score, source: source, report: report, musicxml: heard.xml,
+        recording: { url: got.audioUrl, barStarts: aligned.barStarts },
+        heard: heard
+      };
+    }
+    stage('notate', {});
+    let built;
+    try {
+      built = window.PPPAudioScore.toMusicXml({
+        notes: heard.notes, pedals: heard.pedals,
+        beats: heard.beats, downbeats: heard.downbeats,
+        grid: heard.grid, title: title
+      }, { title: title });
+    } catch (e) {
+      throw importError(e.code || 'no-notes',
+        e.code === 'no-notes' ? tx('No piano notes were heard in this recording.') : e.message,
+        [tx('Solo piano, clearly recorded, works best')]);
+    }
+    stage('parse', {});
+    let score;
+    try {
+      score = parseMusicXML(built.xml, title);
+    } catch (e) {
+      throw importError('bad-musicxml', tx('The notes were heard but could not be turned into a score: {{message}}', { message: e.message }));
+    }
+    score.composer = '';
+    stage('check', {});
+    const report = Import.validateTranscription(score, built.stats, heard);
+    const engineLabel = heard.engine === 'transkun' ? 'Transkun'
+      : heard.engine === 'basic-pitch' ? 'Basic Pitch'
+      : heard.engine === 'pm2s' || (heard.grid && heard.grid.engine === 'pm2s') ? 'Piano transcription + PM2S'
+        : 'Piano transcription';
+    const source = {
+      name: what.file ? what.file.name : title,
+      kind: what.url ? 'youtube' : Import.kindOf(what.file),
+      url: yt ? yt.url : (what.url || null), youtubeId: yt ? yt.id : null,
+      bytes: what.file ? what.file.size : null,
+      importedAt: Clock.now(), engine: engineLabel, pages: null,
+      status: report.level === 'poor' ? 'low-confidence' : 'transcribed',
+      seconds: heard.duration || null, truncated: !!heard.truncated,
+      tempo: built.stats.tempo, device: heard.device || null,
+      barStarts: built.stats.barStarts,
+      amt: heard.engine || null,
+      beatSource: built.stats.beatSource,
+      quantizer: built.stats.quantizer
+    };
+    score.source = source;
+    return {
+      score: score, source: source, report: report, musicxml: built.xml,
+      recording: { url: got.audioUrl, barStarts: built.stats.barStarts },
+      heard: heard
+    };
+  },
+
   async fromRecording(what, onStage, ctl) {
     const stage = (name, detail) => { if (onStage) onStage(name, detail || {}); };
     if (what.file) {
@@ -5678,6 +5915,14 @@ const Import = {
       if (ytTitle) query = ytTitle;
     }
     const localHit = await Import.findScore(query);
+
+    let generated = null, genErr = null;
+    try {
+      generated = await Import.transcribeHere(what, onStage, ctl);
+    } catch (e) { genErr = e; }
+    if (generated && generated.heard && (generated.heard.notes || []).length >= 4)
+      return Import.finishHeard(generated, what, onStage);
+
     if (localHit && what.file && !what.url) {
       /* a named public-domain file: use the catalog score, keep the audio */
       const audioUrl = URL.createObjectURL(what.file);
@@ -5741,95 +5986,14 @@ const Import = {
       return { score: score, source: source, report: report, musicxml: xml, recording: null };
     }
 
-    const got = await Import.transcribe(what, onStage, ctl);
-    const heard = got.heard || {};
-    const title = (got.title || nameGuess || tx('Transcribed recording')).trim();
-    const yt = what.url ? Import.youtubeWatch(what.url) : null;
-
-    if (heard.engine === 'catalog' && heard.xml) {
-      stage('parse', {});
-      const score = parseMusicXML(heard.xml, heard.title || title);
-      if (heard.composer) score.composer = heard.composer;
-      const aligned = heard.barStarts && heard.barStarts.length
-        ? { barStarts: heard.barStarts, duration: heard.duration, tempo: score.tempo, measures: score.measures.length }
-        : Import.alignScore(heard.xml, { duration: heard.duration, downbeats: heard.downbeats, beats: heard.beats });
-      const source = {
-        name: what.file ? what.file.name : title,
-        kind: what.url ? 'youtube' : Import.kindOf(what.file),
-        url: yt ? yt.url : (what.url || null), youtubeId: yt ? yt.id : null,
-        bytes: what.file ? what.file.size : null,
-        importedAt: Clock.now(), engine: 'Public-domain catalog', pages: null,
-        status: 'retrieved', seconds: heard.duration || null, truncated: !!heard.truncated,
-        tempo: aligned.tempo || score.tempo, barStarts: aligned.barStarts, retrieved: true,
-        catalogId: heard.catalogId
-      };
-      score.source = source;
-      const report = {
-        confidence: 0.94, level: 'good', issues: [], suspectMeasures: [],
-        summary: tx('Found a public-domain score for this title.'),
-        advice: null, measures: Score.count ? null : (score.measures || []).length,
-        notes: (score.notes || []).filter(n => !n.rest).length, staves: score.staves,
-        transcribed: false, retrieved: true, tempo: source.tempo
-      };
-      report.measures = (score.measures || []).length;
-      return {
-        score: score, source: source, report: report, musicxml: heard.xml,
-        recording: { url: got.audioUrl, barStarts: aligned.barStarts },
-        heard: heard
-      };
+    const health = await Import.health();
+    if (health.ok && health.transcriber) {
+      const got = await Import.transcribe(what, onStage, ctl);
+      return Import.finishHeard(got, what, onStage);
     }
-
-    stage('notate', {});
-    let built;
-    try {
-      built = window.PPPAudioScore.toMusicXml({
-        notes: heard.notes, pedals: heard.pedals,
-        beats: heard.beats, downbeats: heard.downbeats,
-        grid: heard.grid, title: title
-      }, { title: title });
-    } catch (e) {
-      throw importError(e.code || 'no-notes',
-        e.code === 'no-notes' ? tx('No piano notes were heard in this recording.') : e.message,
-        [tx('Solo piano, clearly recorded, works best')]);
-    }
-
-    stage('parse', {});
-    let score;
-    try {
-      score = parseMusicXML(built.xml, title);
-    } catch (e) {
-      throw importError('bad-musicxml', tx('The notes were heard but could not be turned into a score: {{message}}', { message: e.message }));
-    }
-    /* A recording does not say who wrote the piece. The score is printed
-       without a composer rather than with a label that cannot be translated
-       inside the engraving; My Songs says where it came from. */
-    score.composer = '';
-
-    stage('check', {});
-    const report = Import.validateTranscription(score, built.stats, heard);
-    const engineLabel = heard.engine === 'transkun' ? 'Transkun'
-      : heard.engine === 'pm2s' || (heard.grid && heard.grid.engine === 'pm2s') ? 'Piano transcription + PM2S'
-        : 'Piano transcription';
-    const source = {
-      name: what.file ? what.file.name : title,
-      kind: what.url ? 'youtube' : Import.kindOf(what.file),
-      url: yt ? yt.url : (what.url || null), youtubeId: yt ? yt.id : null,
-      bytes: what.file ? what.file.size : null,
-      importedAt: Clock.now(), engine: engineLabel, pages: null,
-      status: report.level === 'poor' ? 'low-confidence' : 'transcribed',
-      seconds: heard.duration || null, truncated: !!heard.truncated,
-      tempo: built.stats.tempo, device: heard.device || null,
-      barStarts: built.stats.barStarts,
-      amt: heard.engine || null,
-      beatSource: built.stats.beatSource,
-      quantizer: built.stats.quantizer
-    };
-    score.source = source;
-    return {
-      score: score, source: source, report: report, musicxml: built.xml,
-      recording: { url: got.audioUrl, barStarts: built.stats.barStarts },
-      heard: heard
-    };
+    throw genErr || importError('no-score',
+      tx('PPP could not hear piano notes in that recording.'),
+      [tx('Use a clear solo piano recording'), tx('Or add the sheet music as a PDF or MusicXML')]);
   },
 
   /* ---- is this transcription trustworthy? ----
@@ -7070,14 +7234,14 @@ const Fingering = {
 const HandArt = {
   /* fingers 1..5: width at the root and at the tip, how far up a white key
      the tip rests, and how far up a black one */
-  WIDTH: [29, 23, 23.5, 22, 19],
-  TIP: [21, 18.5, 19, 18, 15.5],
-  REACH_WHITE: [30, 40, 44, 40, 32],
-  BLACK_Y: [80, 70, 66, 70, 76],
+  WIDTH: [25, 20.5, 21.5, 20, 17],
+  TIP: [19, 16.8, 17.6, 16.2, 13.8],
+  REACH_WHITE: [29, 42, 48, 43, 34],
+  BLACK_Y: [82, 72, 68, 72, 79],
   /* the knuckles sit this far below the front edge of the keys */
-  KNUCKLE: 24,
+  KNUCKLE: 21,
   /* the strip below the keys the hand is drawn in */
-  ZONE: 78,
+  ZONE: 88,
 
   r1(v) { return Math.round(v * 10) / 10; },
 
@@ -7096,9 +7260,9 @@ const HandArt = {
   },
 
   /* A finger seen from above, along a gentle curve from its root b through
-     c to its tip t: a little fuller at each joint, rounded at the end, with
-     its nail and the creases over the two joints. `from` (0..1) starts the
-     outline part of the way along, for marking only what shows. */
+     c to its tip t. Real fingers taper in three sections rather than being
+     five parallel bars, and each side has a slightly different fullness.
+     `from` (0..1) starts the outline part-way along for the active mark. */
   finger(b, c, t, wb, wt, from) {
     const r1 = HandArt.r1;
     const at = s => [
@@ -7111,21 +7275,25 @@ const HandArt = {
       const l = Math.hypot(dx, dy) || 1;
       return [dx / l, dy / l];
     };
-    const bump = (s, m) => Math.exp(-Math.pow((s - m) / 0.08, 2));
-    const width = s => (wb + (wt - wb) * s) * (1 + 0.06 * bump(s, 0.4) + 0.05 * bump(s, 0.74) - 0.03 * bump(s, 0.57));
-    const s0 = from || 0, N = 9, L = [], R = [];
+    const bump = (s, m, spread) => Math.exp(-Math.pow((s - m) / spread, 2));
+    const width = s => (wb + (wt - wb) * s) *
+      (1 + 0.075 * bump(s, 0.32, 0.095) + 0.065 * bump(s, 0.67, 0.085) - 0.045 * bump(s, 0.5, 0.085));
+    const s0 = from || 0, N = 13, L = [], R = [];
     for (let i = 0; i < N; i++) {
-      const s = s0 + (1 - s0) * i / (N - 1) * 0.94;
+      const s = s0 + (1 - s0) * i / (N - 1) * 0.955;
       const p = at(s), u = dir(s), w = width(s) / 2;
-      L.push([p[0] - u[1] * w, p[1] + u[0] * w]);
-      R.push([p[0] + u[1] * w, p[1] - u[0] * w]);
+      /* A tiny asymmetry keeps the outline anatomical without changing the
+         fingertip's exact key position. */
+      const lean = Math.sin(Math.PI * s) * wt * 0.018;
+      L.push([p[0] - u[1] * (w + lean), p[1] + u[0] * (w + lean)]);
+      R.push([p[0] + u[1] * (w - lean), p[1] - u[0] * (w - lean)]);
     }
     const u = dir(1), r = wt / 2;
     /* round the end off: the last points lean in over the tip */
     const cap = [
-      [t[0] - u[1] * r * 0.8 + u[0] * r * 0.45, t[1] + u[0] * r * 0.8 + u[1] * r * 0.45],
-      [t[0] + u[0] * r * 0.92, t[1] + u[1] * r * 0.92],
-      [t[0] + u[1] * r * 0.8 + u[0] * r * 0.45, t[1] - u[0] * r * 0.8 + u[1] * r * 0.45]
+      [t[0] - u[1] * r * 0.84 + u[0] * r * 0.38, t[1] + u[0] * r * 0.84 + u[1] * r * 0.38],
+      [t[0] + u[0] * r * 0.94, t[1] + u[1] * r * 0.94],
+      [t[0] + u[1] * r * 0.84 + u[0] * r * 0.38, t[1] - u[0] * r * 0.84 + u[1] * r * 0.38]
     ];
     const edge = L.concat(cap, R.reverse());
     const body = HandArt.smooth(edge);
@@ -7133,17 +7301,18 @@ const HandArt = {
        the finger leaves the hand */
     const side = HandArt.smooth(edge, true);
     /* the nail: a rounded shield just short of the tip */
-    const nw = wt * 0.3, nl = wt * 0.5;
-    const nc = [t[0] - u[0] * wt * 0.12, t[1] - u[1] * wt * 0.12];
+    const nw = wt * 0.29, nl = wt * 0.48;
+    const nc = [t[0] - u[0] * wt * 0.16, t[1] - u[1] * wt * 0.16];
     const P = (a, bb) => [nc[0] + u[0] * a - u[1] * bb, nc[1] + u[1] * a + u[0] * bb];
     const nail = HandArt.smooth([P(nl * 0.34, 0), P(nl * 0.2, nw), P(-nl * 0.42, nw * 0.92), P(-nl * 0.62, 0), P(-nl * 0.42, -nw * 0.92), P(nl * 0.2, -nw)]);
     /* creases over the middle and end joints */
-    const crease = [0.4, 0.74].map(s => {
+    const crease = [0.33, 0.67].map((s, ci) => {
       const p = at(s), v = dir(s), w = width(s) * 0.26;
       return 'M' + r1(p[0] - v[1] * w) + ',' + r1(p[1] + v[0] * w) +
-        ' Q' + r1(p[0] - v[0] * 3) + ',' + r1(p[1] - v[1] * 3) + ' ' + r1(p[0] + v[1] * w) + ',' + r1(p[1] - v[0] * w);
+        ' Q' + r1(p[0] - v[0] * (ci ? 2.4 : 3.2)) + ',' + r1(p[1] - v[1] * (ci ? 2.4 : 3.2)) +
+        ' ' + r1(p[0] + v[1] * w) + ',' + r1(p[1] - v[0] * w);
     });
-    return { body, side, nail, crease };
+    return { body, side, nail, crease, at, dir, width };
   },
 
   /* Every part of one hand, for one position. x: fingers 1..5 in white-key
@@ -7152,20 +7321,25 @@ const HandArt = {
   geometry(x, played, hand, KW, H) {
     const dir = hand === 'l' ? -1 : 1;
     const black = x.map(v => Math.abs(v - Math.round(v)) > 0.25);
-    /* a finger on a black key brings the whole hand forward */
+    /* A finger on a black key brings the whole hand forward. A resting
+       finger stays softly curled a few pixels nearer the player; the active
+       finger lengthens onto the key instead of every pose looking splayed. */
     const fwd = played.some((p, i) => p && black[i]) ? 1 : 0;
-    /* a finger resting over a black key waits just in front of it, a little
-       further in than its neighbours, rather than reaching in as if to play */
-    const tip = x.map((v, i) => [(v + 0.5) * KW,
-      black[i] && played[i] ? HandArt.BLACK_Y[i] : H - HandArt.REACH_WHITE[i] - fwd * 14 - (black[i] ? 8 : 0)]);
-    const yK = H + HandArt.KNUCKLE - fwd * 16;
+    const tip = x.map((v, i) => {
+      let y;
+      if (black[i] && played[i]) y = HandArt.BLACK_Y[i];
+      else if (black[i]) y = H - HandArt.REACH_WHITE[i] - fwd * 10 - 5;
+      else y = H - HandArt.REACH_WHITE[i] - fwd * 13 + (played[i] ? -2 : 4);
+      return [(v + 0.5) * KW, y];
+    });
+    const yK = H + HandArt.KNUCKLE - fwd * 15;
     const cx = (tip[1][0] + tip[2][0] + tip[3][0] + tip[4][0]) / 4;
-    const s = 0.9 * KW;
+    const s = 0.86 * KW;
     /* knuckles in a gentle arch, drawn part of the way toward their tips so
        a stretched hand fans its fingers out rather than bending them */
-    const arch = [0, 2, -2, 0, 7];
+    const arch = [0, 0, -5, -1, 8];
     const knuckle = [null, null];   /* by finger number, 2..5 */
-    for (let f = 2; f <= 5; f++) knuckle.push([(cx + dir * (f - 3.5) * s) * 0.7 + tip[f - 1][0] * 0.3, yK + arch[f - 1]]);
+    for (let f = 2; f <= 5; f++) knuckle.push([(cx + dir * (f - 3.5) * s) * 0.74 + tip[f - 1][0] * 0.26, yK + arch[f - 1]]);
     const k2 = knuckle[2], k3 = knuckle[3], k4 = knuckle[4], k5 = knuckle[5];
     const w = HandArt.WIDTH;
     /* each finger leaves its knuckle heading up the keys, then bends toward
@@ -7173,35 +7347,50 @@ const HandArt = {
     const root = [null, null], bend = [null, null];
     for (let f = 2; f <= 5; f++) {
       const k = knuckle[f], t = tip[f - 1];
-      root.push([k[0], k[1] + 12]);
-      bend.push([k[0] + (t[0] - k[0]) * 0.3, k[1] + (t[1] - k[1]) * 0.55]);
+      root.push([k[0], k[1] + 9]);
+      const reach = Math.min(1, Math.abs(t[0] - k[0]) / (KW * 3.2));
+      bend.push([
+        k[0] + (t[0] - k[0]) * (0.31 + reach * 0.08),
+        k[1] + (t[1] - k[1]) * (0.48 - reach * 0.08)
+      ]);
     }
     /* the back of the hand: square across the knuckles, narrowing to the
        wrist, fuller on the thumb side where the thumb's root lies */
     const palm = [
-      [k2[0] - dir * w[1] * 0.58, k2[1] + 5],
-      [k2[0] - dir * w[1] * 0.12, k2[1] - 6],
-      [(k2[0] + k3[0]) / 2, (k2[1] + k3[1]) / 2 - 3],
-      [k3[0], k3[1] - 7],
-      [(k3[0] + k4[0]) / 2, (k3[1] + k4[1]) / 2 - 4],
-      [k4[0], k4[1] - 6],
-      [(k4[0] + k5[0]) / 2, (k4[1] + k5[1]) / 2 - 3],
-      [k5[0] + dir * w[4] * 0.2, k5[1] - 5],
-      [k5[0] + dir * w[4] * 0.62, k5[1] + 8],
-      [k5[0] + dir * w[4] * 0.7, yK + 38],
-      [k5[0] + dir * w[4] * 0.3, yK + 76],
-      [cx + dir * s * 0.62, yK + 112],
-      [cx - dir * s * 0.95, yK + 114],
-      [k2[0] - dir * s * 0.78, yK + 84],
-      [k2[0] - dir * s * 0.98, yK + 52],
-      [k2[0] - dir * s * 0.72, yK + 22]
+      [k2[0] - dir * w[1] * 0.6, k2[1] + 7],
+      [k2[0] - dir * w[1] * 0.14, k2[1] - 5],
+      [(k2[0] + k3[0]) / 2, (k2[1] + k3[1]) / 2 - 2],
+      [k3[0], k3[1] - 6],
+      [(k3[0] + k4[0]) / 2, (k3[1] + k4[1]) / 2 - 3],
+      [k4[0], k4[1] - 5],
+      [(k4[0] + k5[0]) / 2, (k4[1] + k5[1]) / 2 - 2],
+      [k5[0] + dir * w[4] * 0.22, k5[1] - 3],
+      [k5[0] + dir * w[4] * 0.68, k5[1] + 10],
+      [k5[0] + dir * s * 0.55, yK + 38],
+      [cx + dir * s * 1.12, yK + 75],
+      [cx + dir * s * 0.88, yK + 111],
+      [cx + dir * s * 0.6, yK + 132],
+      [cx - dir * s * 0.7, yK + 132],
+      [cx - dir * s * 1.02, yK + 108],
+      [k2[0] - dir * s * 1.15, yK + 74],
+      [k2[0] - dir * s * 1.14, yK + 48],
+      [k2[0] - dir * s * 0.82, yK + 20]
     ];
     /* the thumb comes from low on the side of the hand and curves in to its
        key; passing under the hand, it goes under the palm */
-    const thumbRoot = [k2[0] - dir * s * 0.62, yK + 62];
+    const thumbRoot = [k2[0] - dir * s * 0.83, yK + 58];
     const t1 = tip[0];
-    const thumbBend = [thumbRoot[0] + (t1[0] - thumbRoot[0]) * 0.2 - dir * 12, thumbRoot[1] + (t1[1] - thumbRoot[1]) * 0.62];
-    return { tip, knuckle, root, bend, palm, thumbRoot, thumbBend, yK, cx };
+    const thumbBend = [thumbRoot[0] + (t1[0] - thumbRoot[0]) * 0.24 - dir * 9, thumbRoot[1] + (t1[1] - thumbRoot[1]) * 0.57];
+    const line = pts => HandArt.smooth(pts, true);
+    /* Sparse dorsal details: the thenar arc and metacarpal tendons make the
+       hand read as a hand at small sizes without turning it into a photo. */
+    const detail = [
+      line([[thumbRoot[0] + dir * 3, thumbRoot[1] - 5], [k2[0] - dir * s * 0.55, yK + 50], [cx - dir * s * 0.48, yK + 82]]),
+      line([[k2[0], k2[1] + 12], [k2[0] + dir * 3, yK + 42], [cx - dir * s * 0.32, yK + 78]]),
+      line([[k3[0], k3[1] + 11], [k3[0], yK + 38], [cx - dir * s * 0.02, yK + 72]]),
+      line([[k4[0], k4[1] + 12], [k4[0] - dir * 2, yK + 38], [cx + dir * s * 0.3, yK + 72]])
+    ];
+    return { tip, knuckle, root, bend, palm, thumbRoot, thumbBend, detail, yK, cx };
   }
 };
 
@@ -7837,12 +8026,15 @@ const PdfLayer = {
       }
     });
     const blobs = [];
+    const lowest = staffBands[staffBands.length - 1];
+    const highest = staffBands[0];
     staffBands.forEach(st => {
-      const pad = st.gap * 2.4;
-      const yA = Math.max(0, Math.floor(st.top - pad));
-      const yB = Math.min(ch - 1, Math.ceil(st.bot + pad));
-      const minW = st.gap * 0.65, maxW = st.gap * 2.6;
-      const minH = st.gap * 0.4, maxH = st.gap * 2.0;
+      const below = st === lowest ? st.gap * 4.4 : st.gap * 2.6;
+      const above = st === highest ? st.gap * 3.2 : st.gap * 2.6;
+      const yA = Math.max(0, Math.floor(st.top - above));
+      const yB = Math.min(ch - 1, Math.ceil(st.bot + below));
+      const minW = st.gap * 0.65, maxW = st.gap * 2.8;
+      const minH = st.gap * 0.4, maxH = st.gap * 2.2;
       const seen = new Uint8Array(cw * ch);
       const at = (x, y) => y * cw + x;
       const inkCut = Math.min(130, darkLum - 10);
@@ -7894,7 +8086,31 @@ const PdfLayer = {
         }
         glued.push(cur);
       });
-      glued.forEach(g => {
+      /* A stem glued to a head makes a tall mark whose middle is not the
+         pitch. The oval is the widest row; that row is the pitch. */
+      const cropHead = g => {
+        let bestY = Math.round((g.y0 + g.y1) / 2), bestW = -1, bx0 = g.x0, bx1 = g.x1;
+        for (let y = g.y0; y <= g.y1; y++) {
+          let rx0 = 1e9, rx1 = -1;
+          for (let x = g.x0; x <= g.x1; x++) {
+            if (!dark(x, y)) continue;
+            if (x < rx0) rx0 = x; if (x > rx1) rx1 = x;
+          }
+          if (rx1 < rx0) continue;
+          const w = rx1 - rx0 + 1;
+          if (w > bestW) { bestW = w; bestY = y; bx0 = rx0; bx1 = rx1; }
+        }
+        if (bestW < minW) return g;
+        const half = Math.max(2, Math.round(st.gap * 0.55));
+        return {
+          x0: bx0, x1: bx1,
+          y0: Math.max(g.y0, bestY - half),
+          y1: Math.min(g.y1, bestY + half),
+          n: g.n
+        };
+      };
+      glued.forEach(g0 => {
+        const g = cropHead(g0);
         const bw = g.x1 - g.x0 + 1, bh = g.y1 - g.y0 + 1;
         if (bw < minW || bw > maxW || bh < minH || bh > maxH) return;
         if (g.n < bw * bh * 0.12) return;
@@ -7969,10 +8185,13 @@ const PdfLayer = {
             if (cx < bar.x0 + 2 || h.x >= bar.x1 - 1) return;
             let best = null, bestD = 1e9;
             staves.forEach((st, si) => {
+              const lo = si === nSt - 1 ? st.gap * 3.8 : st.gap * 1.8;
+              const hi = si === 0 ? st.gap * 3.0 : st.gap * 1.8;
+              if (h.y > st.top + hi || h.y < st.bottom - lo) return;
               const d = h.y > st.top ? h.y - st.top : h.y < st.bottom ? st.bottom - h.y : 0;
               if (d < bestD) { bestD = d; best = { st: st, si: si }; }
             });
-            if (!best || bestD > best.st.gap * 2.2) return;
+            if (!best) return;
             const st = best.st, si = best.si;
             const clef = (nSt >= 2 && si === nSt - 1) ? 'bass' : 'treble';
             /* the clef lives at the start of the system, not of every bar */
@@ -9835,6 +10054,8 @@ class Component extends DCLogic {
          a sidebar tells you nothing about where you are; you have to see it. */
       wholeScore: true,
       toast: '',
+      missN: 0,
+      missText: '',
       locale: (typeof window !== 'undefined' && window.PPP_I18N) ? window.PPP_I18N.getLocale() : 'en-US',
       localeMenuOpen: false,
       sidebarCollapsed: false,
@@ -10016,6 +10237,7 @@ class Component extends DCLogic {
     clearTimeout(this._an); clearTimeout(this._toast); clearTimeout(this._quiz); clearTimeout(this._save);
     clearTimeout(this._staffRetry);
     clearTimeout(this._focusFollow);
+    clearTimeout(this._miss);
     clearInterval(this._lxIv); clearTimeout(this._lxFlash); clearTimeout(this._lxNext);
     this.writeState();   /* flush whatever was still pending */
     window.removeEventListener('keydown', this._onKey);
@@ -10369,10 +10591,10 @@ class Component extends DCLogic {
   }
   /* A key on a MIDI keyboard sounds for exactly as long as it is held. */
   keyDown(midi, vel) {
-    /* Local Control is off on the same piano, so the key is silent until we
-       send it back out — on the piano, at the velocity they struck. */
+    /* Same piano as MIDI-out: Local Control is on, so the instrument itself
+       sounds the strike. A different output gets a same-channel thru. */
     if (this.midiOutLive()) {
-      this.midiOutLayer().thruOn(midi, vel);
+      if (!this.midiOutIsAlsoIn()) this.midiOutLayer().thruOn(midi, vel);
       return;
     }
     const p = this.piano();
@@ -10760,7 +10982,7 @@ class Component extends DCLogic {
         midiOutDeviceId: want.id,
         midiOut: out.snapshot()
       });
-      if (this.midiOutIsAlsoIn()) out.localOff();
+      if (this.midiOutIsAlsoIn()) out.localOn();
       this.say(tx('Playing through {{device}}.', { device: want.name }));
       return true;
     };
@@ -10778,7 +11000,7 @@ class Component extends DCLogic {
       midiOutDeviceId: id,
       midiOut: out.snapshot()
     });
-    if (this.midiOutIsAlsoIn()) out.localOff();
+    if (this.midiOutIsAlsoIn()) out.localOn();
   }
   armMidiOutForDevice(id, name) {
     if (this.midiOutLive()) return;
@@ -11064,6 +11286,7 @@ class Component extends DCLogic {
         const held = (S.wrongNotes || []).slice();
         if (held.indexOf(ev.midi) < 0) held.push(ev.midi);
         this.setState({ wrongNotes: held });
+        this.flashMiss();
         return;
       }
       this._got = [];
@@ -11079,6 +11302,7 @@ class Component extends DCLogic {
       const held = (S.wrongNotes || []).slice();
       if (held.indexOf(ev.midi) < 0) held.push(ev.midi);
       this.setState({ wrongNotes: held, gateIdx: gi, beat: g.b });
+      this.flashMiss();
       return;
     }
     if (this._got.indexOf(ev.midi) < 0) this._got.push(ev.midi);
@@ -11159,6 +11383,7 @@ class Component extends DCLogic {
       this.setState(patch);
       return;
     }
+    if (S.playing) this._playAlong = true;
     /* The player's own key press is the only tone source while MIDI is live,
        so a silent controller still gives feedback and nothing doubles up. */
     if (S.toggles.notes) this.keyDown(ev.midi, ev.velocity);
@@ -11178,11 +11403,14 @@ class Component extends DCLogic {
     }
     this._perf.noteOn(ev);
     const live = this._perf.live();
+    const wrong = this._perf.recentWrong(ev.t);
+    const prevWrong = S.wrongNotes || [];
     this.setState({
       held: this._perf.heldNotes(),
       runHit: live.matched, runTot: live.seen,
-      wrongNotes: this._perf.recentWrong(ev.t)
+      wrongNotes: wrong
     });
+    if (wrong && wrong.some(p => prevWrong.indexOf(p) < 0)) this.flashMiss();
   }
 
   /* ============================ score access ============================ */
@@ -11283,7 +11511,8 @@ class Component extends DCLogic {
       born: now, waiting: !(p && p.running()) && !this.midiOutLive(),
       plan: plan, from: from, to: to
     };
-    if (this.midiOutLive() && this.midiOutIsAlsoIn()) this.midiOutLayer().localOff();
+    this._playAlong = false;
+    if (this.midiOutLive() && this.midiOutIsAlsoIn()) this.midiOutLayer().localOn();
     return t0;
   }
   /* How far ahead the first note of a run can be placed and still be on time:
@@ -11394,6 +11623,9 @@ class Component extends DCLogic {
     const patch = { beat: b, runHit: hit, runTot: tot };
     if (live) patch.wrongNotes = this._perf.recentWrong(nowMs());
     else if (ev.tot) patch.wrongNotes = ev.wrong;
+    const prevWrong = S.wrongNotes || [];
+    const nextWrong = patch.wrongNotes;
+    if (nextWrong && nextWrong.some(p => prevWrong.indexOf(p) < 0)) this.flashMiss();
 
     if (sq >= endB) {
       if (live) {
@@ -11479,9 +11711,9 @@ class Component extends DCLogic {
             if (t >= horizon) break;
             if (t < from || n.q <= skip || !this.handOk(n.note, S.hands)) continue;
             const up = S.loop ? Math.min(T(n.upQ), lapEnd) : T(n.upQ);
-            /* While you play along, the score sits under your touch instead of
-               blasting over it. Listening without a keyboard stays at written level. */
-            const vel = this.liveMidi() ? Math.max(1, Math.round(n.vel * 0.55)) : n.vel;
+            /* Duck only after a strike in this run. Listen-only Play keeps
+               the written dynamic even if a keyboard is plugged in. */
+            const vel = this._playAlong ? Math.max(1, Math.round(n.vel * 0.55)) : n.vel;
             if (sendAudio) p.release(p.strike(n.midi, A(t), vel), A(up));
             if (out) { out.noteOn(n.midi, vel, t); out.noteOff(n.midi, up); }
           }
@@ -11659,6 +11891,42 @@ class Component extends DCLogic {
     this._toast = setTimeout(() => this.setState({ toast: '' }), 2800);
   }
 
+  /* Loop practice: a miss is a moment, not a panel. Fade a line in at the
+     top and let it go, so the score stays readable. */
+  flashMiss() {
+    if (!this.state.loop && !this.state.focus) return;
+    const n = (this.state.missN || 0) + 1;
+    this.setState({ missN: n, missText: tx('Wrong note') });
+    clearTimeout(this._miss);
+    this._miss = setTimeout(() => { if (!this._dead) this.setState({ missN: 0 }); }, 1400);
+  }
+
+  kbHeightClamp(h) {
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+    return clamp(Math.round(h), 130, Math.round(vh * 0.48));
+  }
+  kbHeight() {
+    const stored = this.state.toggles && this.state.toggles.kbH;
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+    const nat = 226;
+    const fallback = this.kbHeightClamp(Math.min(nat, Math.round(vh * 0.32)));
+    if (stored == null || !isFinite(+stored)) return fallback;
+    return this.kbHeightClamp(+stored);
+  }
+  beginKbResize(e) {
+    if (!this.state.focus || this.state.toggles.keys === false) return;
+    e.preventDefault();
+    this._kbDrag = { y: e.clientY, h: this.kbHeight() };
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+  }
+  onKbSplitMove(e) {
+    if (!this._kbDrag) return;
+    const h = this.kbHeightClamp(this._kbDrag.h + (this._kbDrag.y - e.clientY));
+    if (h === this.kbHeight()) return;
+    this.setState(st => ({ toggles: Object.assign({}, st.toggles, { kbH: h }) }));
+  }
+  onKbSplitUp() { this._kbDrag = null; }
+
   onKey(e) {
     if (e.key === 'Escape' && this.state.shareDlg) { this.closeShareDialog(); return; }
     const t = e.target;
@@ -11793,8 +12061,22 @@ class Component extends DCLogic {
   }
   /* Start to finish: a click plays from that place to the last bar. A drag
      across bars is still picking a passage to loop. Loop and memorize keep
-     the two-click / drag range. */
+     the two-click / drag range. Focused at the piano, a tap is always play
+     from here — setup is off the screen. */
   onScorePick(e) {
+    const tap = (!e.phase || e.phase === 'end') && e.from === e.to;
+    if (this.state.focus && tap) {
+      const sc = this.state.score;
+      const q = e.q != null ? e.q : Score.startQ(sc, e.from);
+      const m = Score.at(sc, q);
+      const barStart = Score.startQ(sc, m);
+      let at = barStart;
+      Score.notesIn(sc, m, m).forEach(n => {
+        if (n.abs <= q + 0.06 && n.abs >= at) at = n.abs;
+      });
+      this.playFromBeat(at);
+      return;
+    }
     if (this.practiceTab() !== 'whole') {
       this.selectBars(e);
       return;
@@ -13275,16 +13557,10 @@ class Component extends DCLogic {
       }, midiName(bm)));
     });
     /* 26px is about the narrowest a white key can be and still be aimed at
-       with a finger; below that the keyboard is decoration. Focus caps the
-       strip's height so a tablet still has room for the score; the width
-       follows the viewBox so the keys are not squashed. */
-    const vh = typeof window !== 'undefined' ? window.innerHeight : 900;
-    const landscape = typeof window !== 'undefined' && window.innerWidth > window.innerHeight;
-    const focusCap = S.focus
-      ? (landscape ? Math.max(72, Math.min(112, Math.round(vh * 0.18))) : Math.max(96, Math.min(148, Math.round(vh * 0.16))))
-      : 0;
-    const tall = vh >= 700;
-    const minW = S.focus && !focusCap ? whites.length * (tall ? 34 : 26) : 0;
+       with a finger. Focus sizes the strip by --ppp-kb-h so the whole
+       viewBox — keys and hands — stays in view instead of being cropped. */
+    const tall = typeof window !== 'undefined' && window.innerHeight >= 700;
+    const minW = S.focus ? whites.length * (tall ? 28 : 24) : 0;
     /* The hands go over the keys, and their palms into a strip below them. */
     let HT = H;
     if (this.handsOn()) {
@@ -13295,8 +13571,12 @@ class Component extends DCLogic {
         /* the arm fades out toward the edge of the strip instead of being cut off */
         const far = { x: -4000, y: -100, width: 10000, height: HT + 200 };
         els.unshift(h('defs', { key: 'defs' },
+          h('linearGradient', { id: 'ppp-hand-tone', gradientUnits: 'userSpaceOnUse', x1: 0, y1: H - 20, x2: 0, y2: HT + 24 },
+            h('stop', { offset: 0, stopColor: 'var(--hand-light)' }),
+            h('stop', { offset: 0.5, stopColor: 'var(--hand)' }),
+            h('stop', { offset: 1, stopColor: 'var(--hand-shadow)' })),
           h('radialGradient', { id: 'ppp-hand-sheen' },
-            h('stop', { offset: 0, stopColor: '#fff', stopOpacity: 0.35 }),
+            h('stop', { offset: 0, stopColor: '#fff', stopOpacity: 0.42 }),
             h('stop', { offset: 1, stopColor: '#fff', stopOpacity: 0 })),
           h('linearGradient', { id: 'ppp-hand-fall', gradientUnits: 'userSpaceOnUse', x1: 0, y1: HT - 34, x2: 0, y2: HT },
             h('stop', { offset: 0, stopColor: '#fff' }),
@@ -13308,18 +13588,13 @@ class Component extends DCLogic {
     }
     /* key names last, so they read through a hand lying over them */
     names.forEach(t => els.push(t));
-    const svgH = focusCap ? Math.min(focusCap, HT) : 0;
-    const svgW = svgH ? Math.round(W * (svgH / HT)) : 0;
     return h('svg', {
       viewBox: `0 0 ${W} ${HT}`,
-      width: svgW || '100%',
-      height: svgH || undefined,
+      width: '100%',
       style: {
         display: 'block',
-        height: svgH ? svgH + 'px' : 'auto',
-        width: svgW ? svgW + 'px' : '100%',
-        minWidth: svgW ? svgW + 'px' : (minW ? minW + 'px' : undefined),
-        margin: svgW ? '0 auto' : undefined
+        height: S.focus ? '100%' : 'auto',
+        minWidth: minW ? minW + 'px' : undefined
       }
     }, els);
   }
@@ -13397,13 +13672,19 @@ class Component extends DCLogic {
     /* One silhouette: every outline first, then every fill over them, so the
        lines where a finger joins the hand disappear and only the edge of the
        whole hand is drawn. */
-    bodies.forEach((d, i) => skin.push(h('path', { key: 'e' + i, d, fill: 'none', stroke: 'var(--hand-line)', strokeWidth: 3, strokeLinejoin: 'round' })));
-    bodies.forEach((d, i) => skin.push(h('path', { key: 's' + i, d, fill: 'var(--hand)' })));
+    bodies.forEach((d, i) => skin.push(h('path', { key: 'sh' + i, d, fill: 'var(--hand-shadow)', opacity: 0.18, transform: 'translate(0 3)' })));
+    bodies.forEach((d, i) => skin.push(h('path', { key: 'e' + i, d, fill: 'none', stroke: 'var(--hand-line)', strokeWidth: 2.2, strokeLinejoin: 'round' })));
+    bodies.forEach((d, i) => skin.push(h('path', { key: 's' + i, d, fill: 'url(#ppp-hand-tone)' })));
     /* light on the back of the hand and over each knuckle */
-    skin.push(h('ellipse', { key: 'sheen', cx: g.cx, cy: g.yK + 34, rx: KW * 1.7, ry: 42, fill: 'url(#ppp-hand-sheen)' }));
-    for (let f = 2; f <= 5; f++) skin.push(h('ellipse', { key: 'k' + f, cx: g.knuckle[f][0], cy: g.knuckle[f][1] + 3, rx: 9, ry: 5, fill: 'url(#ppp-hand-sheen)' }));
+    skin.push(h('ellipse', { key: 'sheen', cx: g.cx, cy: g.yK + 38, rx: KW * 1.55, ry: 39, fill: 'url(#ppp-hand-sheen)' }));
+    for (let f = 2; f <= 5; f++) skin.push(h('ellipse', { key: 'k' + f, cx: g.knuckle[f][0], cy: g.knuckle[f][1] + 3, rx: 7.5, ry: 4.4, fill: 'url(#ppp-hand-sheen)' }));
+    g.detail.forEach((d, i) => skin.push(h('path', {
+      key: 'p' + i, d, fill: 'none', stroke: 'var(--hand-line)', strokeOpacity: i ? 0.24 : 0.38,
+      strokeWidth: i ? 0.75 : 1, strokeLinecap: 'round'
+    })));
     fingers.forEach((sh, i) => {
       skin.push(h('path', { key: 'n' + i, d: sh.nail, fill: 'var(--hand-nail)', stroke: 'var(--hand-line)', strokeOpacity: 0.45, strokeWidth: 0.8 }));
+      skin.push(h('path', { key: 'nh' + i, d: sh.nail, fill: 'none', stroke: '#fff', strokeOpacity: 0.28, strokeWidth: 1.1, transform: 'translate(0 -0.7)' }));
       sh.crease.forEach((c, j) => skin.push(h('path', { key: 'c' + i + j, d: c, fill: 'none', stroke: 'var(--hand-line)', strokeOpacity: 0.6, strokeWidth: 1, strokeLinecap: 'round' })));
     });
     const marks = [];
@@ -14294,6 +14575,16 @@ class Component extends DCLogic {
       wholeHint: tx('See the whole piece at once, with the weak bars shaded'),
       focusAttr: S.focus ? 'true' : 'false',
       keysAttr: S.toggles.keys === false ? 'false' : 'true',
+      kbVar: `--ppp-kb-h:${this.kbHeight()}px;`,
+      kbSplitHint: tx('Drag to resize the keyboard'),
+      onKbSplit: e => this.beginKbResize(e),
+      onKbSplitMove: e => this.onKbSplitMove(e),
+      onKbSplitUp: () => this.onKbSplitUp(),
+      missN: String(S.missN || 0),
+      missText: S.missText || '',
+      missStyle: (S.missN
+        ? `animation:${S.missN % 2 ? 'ppp-miss-a' : 'ppp-miss-b'} 1.4s ease both;`
+        : 'opacity:0;') + 'position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:70;padding:10px 20px;border-radius:12px;background:var(--bad);color:#fff;font-size:15px;font-weight:600;letter-spacing:.02em;pointer-events:none;',
       toggleFocus: () => this.toggleFocus(),
       toggleKeys: () => this.setState(st => ({
         toggles: Object.assign({}, st.toggles, { keys: st.toggles.keys === false })
@@ -15066,8 +15357,12 @@ class Component extends DCLogic {
         hands = {
           zone: HandArt.ZONE,
           defs: h('defs', { key: 'defs' },
+            h('linearGradient', { id: 'ppp-hand-tone', gradientUnits: 'userSpaceOnUse', x1: 0, y1: KH - 20, x2: 0, y2: HT + 24 },
+              h('stop', { offset: 0, stopColor: 'var(--hand-light)' }),
+              h('stop', { offset: 0.5, stopColor: 'var(--hand)' }),
+              h('stop', { offset: 1, stopColor: 'var(--hand-shadow)' })),
             h('radialGradient', { id: 'ppp-hand-sheen' },
-              h('stop', { offset: 0, stopColor: '#fff', stopOpacity: 0.35 }),
+              h('stop', { offset: 0, stopColor: '#fff', stopOpacity: 0.42 }),
               h('stop', { offset: 1, stopColor: '#fff', stopOpacity: 0 })),
             h('linearGradient', { id: 'ppp-hand-fall', gradientUnits: 'userSpaceOnUse', x1: 0, y1: HT - 34, x2: 0, y2: HT },
               h('stop', { offset: 0, stopColor: '#fff' }),
