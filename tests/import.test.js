@@ -84,7 +84,7 @@ async function importFile(page, file, waitMs) {
       yt: [
         'https://www.youtube.com/watch?v=2WfaotSK3mI', 'https://youtu.be/2WfaotSK3mI',
         'https://m.youtube.com/watch?v=2WfaotSK3mI&t=10', 'https://www.youtube.com/shorts/2WfaotSK3mI',
-        'https://music.youtube.com/watch?v=2WfaotSK3mI'
+        'https://music.youtube.com/watch?v=2WfaotSK3mI', 'https://youtu.be/2WfaotSK3mI?si=z1gf7KR6_F4W7WFv'
       ].map(PPP.Import.youtubeId),
       notYt: ['https://vimeo.com/123456', 'https://www.youtube.com/playlist?list=PL123', 'javascript:alert(1)',
         'youtube.com/watch?v=2WfaotSK3mI', 'https://evil.example/youtube.com/watch?v=2WfaotSK3mI'].map(PPP.Import.youtubeId)

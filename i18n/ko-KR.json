@@ -799,6 +799,7 @@
     "Recordings need PPP’s local helper, which runs on your own computer.": "녹음을 악보로 만들려면 내 컴퓨터에서 도는 PPP 도우미가 필요해요.",
     "PDF, photos and recordings need PPP’s local helper on the computer running PPP. MusicXML works in this browser.": "PDF·사진·녹음은 PPP가 돌아가는 컴퓨터의 도우미가 필요해요. MusicXML은 이 화면에서 바로 읽어요.",
     "PDF and photos are read here. Recordings still need PPP’s local helper on the computer running PPP.": "PDF와 사진은 이 화면에서 읽어요. 녹음만 컴퓨터에서 도는 PPP 도우미가 필요해요.",
+    "PPP reads PDFs, recordings and YouTube links here.": "PDF, 녹음, 유튜브 링크는 이 화면에서 바로 악보로 만들어요.",
     "PPP could not read notation on that file.": "그 파일에서 악보를 읽지 못했어요.",
     "Try a clearer scan, or a PDF exported from notation software": "더 선명한 스캔이나, 악보 프로그램에서 보낸 PDF를 넣어 보세요",
     "Recognising a PDF or photo needs PPP’s local helper on the computer running PPP. A tablet or phone opening the website cannot run it.": "PDF나 사진은 PPP가 돌아가는 컴퓨터의 도우미가 읽어요. 태블릿이나 폰에서 웹사이트만 열면 읽을 수 없어요.",

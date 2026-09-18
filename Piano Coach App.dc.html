@@ -5857,7 +5857,12 @@ const Import = {
       title = String(what.file.name || '').replace(/\.[^.]+$/, '');
     } else if (what.url) {
       stage('download', { pct: 0 });
-      const r = await fetch('/api/youtube-audio?url=' + encodeURIComponent(what.url));
+      const audioApi = '/api/youtube-audio?url=' + encodeURIComponent(what.url);
+      let r = await fetch(audioApi);
+      if (!r.ok) {
+        await new Promise(ok => setTimeout(ok, 1500));
+        r = await fetch(audioApi);
+      }
       if (!r.ok) {
         throw importError('download-failed',
           tx('PPP could not get the sound from that YouTube link.'),
@@ -14419,8 +14424,10 @@ class Component extends DCLogic {
       hasYtError: !!S.ytError, ytError: S.ytError || '',
       helperNote: (() => {
         const hp = S.helper;
+        const hosted = typeof location !== 'undefined' && !/^(localhost|127\.0\.0\.1)$/i.test(location.hostname || '');
+        if (hosted || (hp && hp.remote))
+          return tx('PPP reads PDFs, recordings and YouTube links here.');
         if (!hp) return tx('Recordings and links are listened to by PPP’s local helper, on this computer.');
-        if (hp.remote) return tx('PDF and photos are read here. Recordings still need PPP’s local helper on the computer running PPP.');
         if (!hp.ok) return tx('The local helper is not running — start it with npm run omr.');
         if (!hp.transcriber) return tx('The local helper is running, but transcription is not set up yet (see the README).');
         if (!hp.youtube) return tx('Recordings are ready. YouTube links also need yt-dlp in tools/.');

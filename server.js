@@ -172,28 +172,53 @@ function httpGetText(url, timeoutMs, hops) {
   });
 }
 
-async function fetchViaLoaderTo(parsed, dir) {
-  const startUrl = 'https://loader.to/ajax/download.php?format=mp3&url=' + encodeURIComponent(parsed.url);
+function loaderDownloadUrl(p) {
+  if (!p || typeof p !== 'object') return null;
+  const cand = [p.download_url, p.url, p.file, p.text && p.text.url];
+  for (let i = 0; i < cand.length; i++) {
+    const u = String(cand[i] || '');
+    if (/^https?:\/\//i.test(u)) return u;
+  }
+  return null;
+}
+
+async function loaderOnce(parsed, dir, fmt) {
+  const startUrl = 'https://loader.to/ajax/download.php?format=' + fmt + '&url=' + encodeURIComponent(parsed.url);
   let start;
-  try { start = JSON.parse(await httpGetText(startUrl, 12000)); }
+  try { start = JSON.parse(await httpGetText(startUrl, 15000)); }
   catch (e) { throw new Error('loader start'); }
   const progress = start && start.progress_url;
   if (!progress) throw new Error('loader progress');
-  const deadline = Date.now() + 40000;
+  const ready = loaderDownloadUrl(start);
+  if (ready) {
+    const dest = path.join(dir, fmt === 'm4a' ? 'audio.m4a' : 'audio.mp3');
+    await httpGetToFile(ready, dest, { timeout: 45000 });
+    if (!looksLikeAudioFile(dest)) throw new Error('not audio');
+    return dest;
+  }
+  const deadline = Date.now() + 50000;
   while (Date.now() < deadline) {
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise(r => setTimeout(r, 1500));
     let p;
     try { p = JSON.parse(await httpGetText(progress, 10000)); }
     catch (e) { continue; }
-    const durl = p && (p.download_url || p.url);
-    if (p && (p.success === 1 || p.success === true) && durl) {
-      const dest = path.join(dir, 'audio.mp3');
-      await httpGetToFile(String(durl), dest, { timeout: 30000 });
+    const durl = loaderDownloadUrl(p);
+    if (durl) {
+      const dest = path.join(dir, fmt === 'm4a' ? 'audio.m4a' : 'audio.mp3');
+      await httpGetToFile(durl, dest, { timeout: 45000 });
       if (!looksLikeAudioFile(dest)) throw new Error('not audio');
       return dest;
     }
   }
   throw new Error('loader timeout');
+}
+
+async function fetchViaLoaderTo(parsed, dir) {
+  try { return await loaderOnce(parsed, dir, 'mp3'); }
+  catch (e) {
+    if (e && /timeout/i.test(String(e.message))) throw e;
+    return loaderOnce(parsed, dir, 'm4a');
+  }
 }
 
 function httpGetToFile(url, dest, opts) {
@@ -306,18 +331,23 @@ async function fetchYoutubeAudioFile(parsed) {
   const hosted = process.env.NODE_ENV === 'production';
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ppp-yt-'));
   let lastTail = '';
-  /* Datacenter IPs are bot-walled by YouTube, so on Render try a proxy first. */
+  /* Datacenter IPs are bot-walled by YouTube, so hosted PPP uses a proxy.
+     Do not spend the request budget on yt-dlp there — it fails and the
+     client then cannot retry before the proxy cache is warm. */
   if (hosted) {
     try {
       const file = await fetchViaLoaderTo(parsed, dir);
       return { file: file, dir: dir, tail: lastTail };
     } catch (e) {
       lastTail = String(e && e.message || 'proxy');
+      rmDir(dir);
+      if (lastTail) console.error('[youtube-audio]', lastTail.slice(-800));
+      return { file: null, dir: null, tail: lastTail };
     }
   }
   const ytdlp = await findYtDlp();
   if (ytdlp) {
-    const got = await runYtDlp(ytdlp, parsed.url, [], hosted ? 25000 : 70000);
+    const got = await runYtDlp(ytdlp, parsed.url, [], 70000);
     if (got.file) {
       rmDir(dir);
       return got;
@@ -325,24 +355,11 @@ async function fetchYoutubeAudioFile(parsed) {
     lastTail = (lastTail + '\n' + (got.tail || '')).slice(-4000);
     rmDir(got.dir);
   }
-  if (!hosted) {
-    try {
-      const file = await fetchViaLoaderTo(parsed, dir);
-      return { file: file, dir: dir, tail: lastTail };
-    } catch (e) {
-      lastTail = (lastTail + '\n' + (e && e.message || '')).slice(-4000);
-    }
-  }
-  const dest = path.join(dir, 'audio.m4a');
-  const mirrors = [
-    'https://invidious.f5.si/latest_version?id=' + parsed.id + '&itag=140&local=true',
-    'https://invidious.f5.si/latest_version?id=' + parsed.id + '&itag=139&local=true'
-  ];
-  for (let i = 0; i < mirrors.length; i++) {
-    try {
-      await httpGetToFile(mirrors[i], dest, { timeout: 10000 });
-      if (looksLikeAudioFile(dest)) return { file: dest, dir: dir, tail: lastTail };
-    } catch (e) {}
+  try {
+    const file = await fetchViaLoaderTo(parsed, dir);
+    return { file: file, dir: dir, tail: lastTail };
+  } catch (e) {
+    lastTail = (lastTail + '\n' + (e && e.message || '')).slice(-4000);
   }
   rmDir(dir);
   if (lastTail) console.error('[youtube-audio]', lastTail.slice(-800));

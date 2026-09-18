@@ -799,6 +799,7 @@
     "Recordings need PPP’s local helper, which runs on your own computer.": "录音转乐谱需要在你自己电脑上运行的 PPP 本地助手。",
     "PDF, photos and recordings need PPP’s local helper on the computer running PPP. MusicXML works in this browser.": "PDF、照片和录音需要 PPP 所在电脑上的本地助手。MusicXML 可以在这个页面里直接读。",
     "PDF and photos are read here. Recordings still need PPP’s local helper on the computer running PPP.": "PDF 和照片在这个页面里读取。只有录音还需要 PPP 所在电脑上的本地助手。",
+    "PPP reads PDFs, recordings and YouTube links here.": "PDF、录音和 YouTube 链接会在这个页面做成乐谱。",
     "PPP could not read notation on that file.": "没能从该文件读出乐谱。",
     "Try a clearer scan, or a PDF exported from notation software": "请试试更清晰的扫描，或从记谱软件导出的 PDF",
     "Recognising a PDF or photo needs PPP’s local helper on the computer running PPP. A tablet or phone opening the website cannot run it.": "识别 PDF 或照片需要 PPP 所在电脑上的本地助手。仅在平板或手机上打开网站无法识别。",

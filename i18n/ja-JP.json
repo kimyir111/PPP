@@ -799,6 +799,7 @@
     "Recordings need PPP’s local helper, which runs on your own computer.": "録音から楽譜を作るには、ご自分のコンピューターで動くPPPローカルヘルパーが必要です。",
     "PDF, photos and recordings need PPP’s local helper on the computer running PPP. MusicXML works in this browser.": "PDF・写真・録音はPPPが動いているコンピューターのローカルヘルパーが必要です。MusicXMLはこの画面で読めます。",
     "PDF and photos are read here. Recordings still need PPP’s local helper on the computer running PPP.": "PDFと写真はこの画面で読みます。録音だけ、PPPが動いているコンピューターのヘルパーが必要です。",
+    "PPP reads PDFs, recordings and YouTube links here.": "PDF・録音・YouTubeリンクはこの画面で楽譜にします。",
     "PPP could not read notation on that file.": "そのファイルから楽譜を読めませんでした。",
     "Try a clearer scan, or a PDF exported from notation software": "より鮮明なスキャンか、楽譜ソフトから書き出したPDFを試してください",
     "Recognising a PDF or photo needs PPP’s local helper on the computer running PPP. A tablet or phone opening the website cannot run it.": "PDFや写真の読み取りは、PPPが動いているコンピューターのヘルパーが行います。タブレットやスマホでサイトを開いただけでは読めません。",
