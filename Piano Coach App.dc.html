@@ -1968,9 +1968,13 @@ function parseMusicXML(xmlText, name) {
       let cursor = 0;       /* quarters from the measure start */
       let maxCursor = 0;
       let lastOnset = 0;    /* for <chord/> */
+      const barMarks = {};  /* repeats, endings and the bar line style */
+      let startClefs = null;   /* the clefs the bar begins in */
+      const clefChanges = [];  /* {staff, b, clef} — a change partway through */
 
       [].forEach.call(mEl.children, el => {
         const tag = el.nodeName;
+        if (!startClefs && (tag === 'note' || tag === 'backup' || tag === 'forward')) startClefs = Object.assign({}, clefs);
 
         if (tag === 'attributes') {
           const d = num(el, 'divisions', null);
@@ -1989,6 +1993,13 @@ function parseMusicXML(xmlText, name) {
             const nStaff = parseInt(c.getAttribute('number') || '1', 10) || 1;
             const sign = txt(c, 'sign', 'G');
             clefs[nStaff] = sign === 'F' ? 'bass' : sign === 'C' ? 'alto' : sign === 'percussion' ? 'percussion' : 'treble';
+            /* A left hand that moves from treble to bass halfway through a bar
+               is drawn in treble up to that point. Drawn in bass throughout,
+               its first notes climb on ledger lines into the right hand. */
+            if (startClefs) {
+              if (cursor > 1e-6) clefChanges.push({ staff: nStaff, b: cursor, clef: clefs[nStaff] });
+              else startClefs[nStaff] = clefs[nStaff];
+            }
           });
           return;
         }
@@ -2037,6 +2048,33 @@ function parseMusicXML(xmlText, name) {
         if (tag === 'sound') {
           const t4 = parseFloat(el.getAttribute('tempo'));
           if (isFinite(t4) && !tempo) tempo = t4;
+          return;
+        }
+        /* A repeat sign, a first or second ending and the heavy final bar are
+           printed on the page, and a player uses them to know where to go back
+           to. They are read from the first part, which every other part copies. */
+        if (tag === 'barline') {
+          if (partIdx === 0) {
+            const left = (el.getAttribute('location') || 'right') === 'left';
+            const rep = el.querySelector('repeat');
+            if (rep) {
+              if (rep.getAttribute('direction') === 'forward') barMarks.repeatStart = true;
+              else barMarks.repeatEnd = parseInt(rep.getAttribute('times') || '2', 10) || 2;
+            }
+            const style = txt(el, 'bar-style', '');
+            if (style && !left) barMarks.style = style;
+            const end = el.querySelector('ending');
+            if (end) {
+              const ty = end.getAttribute('type');
+              if (ty === 'start') {
+                const nos = (end.getAttribute('number') || '1').split(/[ ,]+/).filter(Boolean);
+                barMarks.ending = (end.textContent || '').trim() || nos.map(x => x + '.').join(' ');
+              }
+              /* "stop" closes the bracket with a hook; "discontinue" leaves it open */
+              if (ty === 'stop') barMarks.endingEnd = 'stop';
+              if (ty === 'discontinue') barMarks.endingEnd = 'open';
+            }
+          }
           return;
         }
         if (tag === 'backup') { cursor -= num(el, 'duration', 0) / divisions; if (cursor < 0) cursor = 0; return; }
@@ -2093,6 +2131,25 @@ function parseMusicXML(xmlText, name) {
           type, dots, acc, hand: 'r'   /* resolved once all parts are in */
         });
 
+        /* A triplet is three notes in the time of two, and the page marks it
+           with a 3 over the group. A stem direction the file sets is kept: it is
+           what stops two voices on one staff being drawn on top of each other. */
+        {
+          const nn = notes[notes.length - 1];
+          const tmEl = el.querySelector('time-modification');
+          if (tmEl && nn) {
+            const a = parseInt(txt(tmEl, 'actual-notes', '0'), 10);
+            const o = parseInt(txt(tmEl, 'normal-notes', '0'), 10);
+            if (a > 0 && o > 0 && a !== o) nn.tm = { a: a, n: o };
+          }
+          [].forEach.call(el.querySelectorAll('notations tuplet'), t => {
+            if (!nn) return;
+            if (t.getAttribute('type') === 'start') nn.tupletStart = true;
+            if (t.getAttribute('type') === 'stop') nn.tupletStop = true;
+          });
+          const stem = txt(el, 'stem', null);
+          if (nn && (stem === 'up' || stem === 'down')) nn.stem = stem;
+        }
         if (!isChord) { lastOnset = cursor; cursor += durQ; }
         maxCursor = Math.max(maxCursor, cursor);
       });
@@ -2106,7 +2163,9 @@ function parseMusicXML(xmlText, name) {
           lenQ: implicit && content > 0 ? content : (content > sigLen + 1e-6 ? content : sigLen),
           time: { beats: time.beats, beatType: time.beatType },
           key: { fifths: key.fifths, mode: key.mode },
-          clefs: Object.assign({}, clefs)
+          clefs: Object.assign({}, startClefs || clefs),
+          clefChanges: clefChanges.length ? clefChanges : null,
+          bar: Object.keys(barMarks).length ? barMarks : null
         };
         order.push(number);
       }
@@ -4590,6 +4649,26 @@ const ACC_VEX = {
   'flat-flat': 'bb', 'double-flat': 'bb', 'quarter-sharp': '+', 'quarter-flat': 'd'
 };
 
+/* Where in a drawn bar a beat falls. Notes are spaced by what they need, not
+   evenly, so the answer comes from the columns they were actually drawn in,
+   shared out evenly between two of them. NOTE_MID is half a note head, so a
+   position is the middle of the note rather than its left edge. */
+const NOTE_MID = 5;
+function barX(seg, q) {
+  const pts = (seg && seg.pts) || [];
+  if (!pts.length) return seg.x + (q / Math.max(0.001, seg.lenQ)) * seg.w;
+  if (q <= pts[0][0]) return pts[0][1];
+  const end = [Math.max(seg.lenQ, pts[pts.length - 1][0] + 1e-3), seg.x + seg.w];
+  for (let j = 0; j < pts.length; j++) {
+    const a = pts[j], b = j + 1 < pts.length ? pts[j + 1] : end;
+    if (q < b[0] || j + 1 >= pts.length) {
+      const f = (q - a[0]) / Math.max(1e-6, b[0] - a[0]);
+      return a[1] + Math.max(0, Math.min(1, f)) * (b[1] - a[1]);
+    }
+  }
+  return end[1];
+}
+
 function makeScoreView(React) {
   return class ScoreView extends React.Component {
     constructor(props) {
@@ -4701,79 +4780,230 @@ function makeScoreView(React) {
       const heading = p.heading === true && !!p.perRow;
       const HEAD_H = heading ? 72 : 0;
 
-      const LEAD = (p.clefs !== false) ? 62 : 12;
+      const showClefs = p.clefs !== false;
       /* A vocal line over a piano part is three staves. The system is
          however many the score has, stacked, rather than a hardcoded pair. */
       const nStaves = grand ? Math.max(2, Math.min(4, p.staves || score.staves || 2)) : 1;
       const STAFF_GAP = 92;
       const TOP_Y = 12 + CHORD_H;     /* inside the row; rowTop already clears the heading */
       const staffY = k => TOP_Y + k * STAFF_GAP;
-      const TREBLE_Y = TOP_Y, BASS_Y = staffY(1);
+      const TREBLE_Y = TOP_Y;
       /* room under the lowest staff when the score asks for the pedal */
       const PED_H = (p.marks !== false && (score.pedals || []).length) ? 26 : 0;
       const SYS_H = (12 + CHORD_H) + (nStaves - 1) * STAFF_GAP + 84 + PED_H;
       const LINE0 = 40;                               /* first line below the stave's y */
       const BAND_TOP = TOP_Y + LINE0 - 18;
       const BAND_BOT = staffY(nStaves - 1) + LINE0 + 40 + 18;
-      /* A whole piece will not fit on one line, and a fixed number of bars per
-         line is not how music is set. A bar of sixteen notes needs more room
-         than a bar of two, so each one is measured by what is in it, bars are
-         packed until the line is full, and then the line is justified so it
-         ends where every other line ends. p.perRow is the width of the page in
-         average bars, not a count of them. */
-      const wrapping = !!p.perRow;
-      const PAGE = wrapping ? LEAD + mW * p.perRow : LEAD + mW * measures.length;
-      const onsetsIn = mm => {
-        const seen = {};
-        Score.notesIn(score, mm.number, mm.number).forEach(n => { if (!n.rest) seen[n.b.toFixed(4)] = true; });
-        return Object.keys(seen).length;
-      };
-      const counts = measures.map(onsetsIn);
-      const avgK = Math.max(1, counts.reduce((a, b) => a + b, 0) / Math.max(1, counts.length));
-      const natural = (mm, i) => mW * clamp(0.6 + 0.4 * (counts[i] / avgK), 0.5, 2.2);
+      const BAR = VF.BarlineType || (VF.Barline && VF.Barline.type) || {};
+      const VOLTA = VF.VoltaType || (VF.Volta && VF.Volta.type) || {};
+      const QT = (VF.RESOLUTION || 16384) / 4;        /* ticks in a quarter */
 
-      const lay = measures.map((mm, i) => ({ mm: mm, w: wrapping ? natural(mm, i) : mW, row: 0, x: 0 }));
-      let rowNo = 0, rowFrom = 0, used = LEAD;
-      const closeRow = (from, to) => {
-        if (to <= from) return;
-        const room = PAGE - LEAD;
-        let sum = 0;
-        for (let i = from; i < to; i++) sum += lay[i].w;
-        /* the last line of a piece is not stretched — it ends where it ends */
-        const stretch = (to < lay.length && sum > 0) ? room / sum : 1;
-        let x = 10 + LEAD;
-        for (let i = from; i < to; i++) {
-          lay[i].w = lay[i].w * stretch;
-          lay[i].x = x;
-          lay[i].row = rowNo;
-          x += lay[i].w;
-        }
+      /* ---- what a bar prints before its notes ----
+         Clef and key begin every line. The time signature is printed at the
+         start and again only where it changes, not at the head of every line.
+         A change of clef or key inside a line is printed where it happens. */
+      const clefOf = (mm, k) => mm.clefs[k + 1] || (k === 0 ? 'treble' : 'bass');
+      const changesOf = (mm, k) => (mm.clefChanges || []).filter(c => c.staff === k + 1).sort((a, b) => a.b - b.b);
+      /* the clef in force at a beat of the bar, and the one the bar ends in */
+      const clefAt = (mm, k, b) => {
+        let c = clefOf(mm, k);
+        changesOf(mm, k).forEach(ch => { if (ch.b <= b + 1e-6) c = ch.clef; });
+        return c;
       };
-      if (wrapping) {
-        lay.forEach((it, i) => {
-          if (used + it.w > PAGE * 1.04 && i > rowFrom) {
-            closeRow(rowFrom, i);
-            rowNo++; rowFrom = i; used = LEAD;
+      const clefEndOf = (mm, k) => clefAt(mm, k, Infinity);
+      const timeOf = mm => mm.time.beats + '/' + mm.time.beatType;
+      const keyOf = mm => vexKeySig(mm.key.fifths, mm.key.mode);
+      const dress = (st, i, k, lineStart) => {
+        const mm = measures[i], prev = i > 0 ? measures[i - 1] : null;
+        const bm = mm.bar || {};
+        const put = { time: false };
+        if (bm.repeatStart && BAR.REPEAT_BEGIN != null) st.setBegBarType(BAR.REPEAT_BEGIN);
+        if (!showClefs) return put;
+        if (lineStart || !prev || clefEndOf(prev, k) !== clefOf(mm, k))
+          st.addClef(clefOf(mm, k), lineStart ? 'default' : 'small');
+        if (lineStart ? !!mm.key.fifths : (!!prev && prev.key.fifths !== mm.key.fifths))
+          st.addKeySignature(keyOf(mm), (!lineStart && prev) ? keyOf(prev) : undefined);
+        if (!prev || timeOf(prev) !== timeOf(mm)) { st.addTimeSignature(timeOf(mm)); put.time = true; }
+        return put;
+      };
+      /* how far in from a bar's left edge its notes may start: the widest of
+         its staves, so every staff of the system starts its notes together */
+      const beginCache = {};
+      const beginW = (i, lineStart) => {
+        const ck = i + (lineStart ? 'L' : 'M');
+        if (beginCache[ck] != null) return beginCache[ck];
+        let best = 0;
+        for (let k = 0; k < nStaves; k++) {
+          try {
+            const st = new VF.Stave(0, 0, 600);
+            dress(st, i, k, lineStart);
+            best = Math.max(best, st.getNoteStartX());
+          } catch (e) { /* a bar that cannot be dressed gets no extra room */ }
+        }
+        return (beginCache[ck] = best);
+      };
+      /* VexFlow puts a note this far after where the stave says notes start */
+      const PAD = (() => {
+        try {
+          const st = new VF.Stave(0, 0, 300);
+          const n = new VF.StaveNote({ keys: ['b/4'], duration: 'q' });
+          const tc = new VF.TickContext();
+          tc.addTickable(n); tc.preFormat(); tc.setX(0);
+          n.setStave(st);
+          const v = n.getAbsoluteX() - st.getNoteStartX();
+          return isFinite(v) && v >= 0 && v < 60 ? v : 12;
+        } catch (e) { return 12; }
+      })();
+      const END_PAD = 12;
+
+      /* ---- every bar's notes, built once and measured ----
+         What a bar needs is decided by what is in it: sixteen notes with
+         accidentals need more room than two half notes. Each bar is built and
+         measured before any line is laid out, so no bar is given less room than
+         its notes take up and nothing runs over the bar line into the next. */
+      const prep = measures.map(mm => {
+        const built = [];
+        for (let k = 0; k < nStaves; k++) {
+          const staffNo = k + 1;
+          const mine = score.notes.filter(n => n.m === mm.number && (n.staff || 1) === staffNo);
+          if (!mine.length) continue;
+          const byVoice = {};
+          mine.forEach(n => { (byVoice[n.voice || 1] = byVoice[n.voice || 1] || []).push(n); });
+          const vns = Object.keys(byVoice);
+          /* Two voices on one staff are told apart by their stems: the upper
+             voice points up and the lower one down, so their notes are not
+             drawn on top of each other. A voice alone chooses its own stems. */
+          const dirOf = {};
+          if (vns.length > 1) {
+            const mean = vn => {
+              const ms = byVoice[vn].filter(n => !n.rest && n.midi != null).map(n => n.midi);
+              return ms.length ? ms.reduce((a, b) => a + b, 0) / ms.length : -1;
+            };
+            vns.map(vn => ({ vn: vn, m: mean(vn) })).sort((a, b) => b.m - a.m)
+              .forEach((r, idx) => { dirOf[r.vn] = idx === 0 ? 1 : -1; });
           }
-          used += it.w;
-        });
-        closeRow(rowFrom, lay.length);
-      } else {
-        closeRow(0, lay.length);
+          vns.forEach(vn => {
+            const b1 = this.buildVoice(VF, byVoice[vn], b => clefAt(mm, k, b), mm, ink, p.guidance, dirOf[vn] || 0);
+            if (!b1) return;
+            b1.staffNo = staffNo;
+            b1.voiceNo = vn;
+            built.push(b1);
+          });
+        }
+        let ctxs = [];
+        if (built.length) {
+          const fmt = new VF.Formatter();
+          /* per staff, and for a single voice too: this is what places a
+             chord's accidentals so they do not overlap each other or the note
+             before */
+          for (let k = 1; k <= nStaves; k++) {
+            const grp = built.filter(b => b.staffNo === k).map(b => b.voice);
+            if (grp.length) { try { fmt.joinVoices(grp); } catch (e) { /* ragged voices */ } }
+          }
+          try {
+            fmt.format(built.map(b => b.voice), 0);
+            const tcs = fmt.getTickContexts();
+            const rm = tcs.resolutionMultiplier || 1;
+            ctxs = tcs.list.map(key => {
+              const c = tcs.map[key];
+              const mt = c.getMetrics() || {};
+              const left = Math.max(0, mt.totalLeftPx || 0);
+              return { c: c, q: key / rm / QT, left: left, right: Math.max(0, c.getWidth() - left) };
+            });
+          } catch (e) { ctxs = []; }
+        }
+        /* room for a clef that changes partway through, just before the first
+           notes it applies to */
+        for (let k = 0; k < nStaves; k++) {
+          changesOf(mm, k).forEach(ch => {
+            const c = ctxs.filter(cx => cx.q >= ch.b - 1e-6)[0];
+            if (!c) return;
+            let cw = 18;
+            try { cw = new VF.Clef(ch.clef, 'small').getWidth() + 4; } catch (e) {}
+            (c.clefs = c.clefs || []).push({ staff: k + 1, clef: ch.clef, acc: c.left, w: cw });
+            c.left += cw;
+          });
+        }
+        const lastQ = ctxs.length ? ctxs[ctxs.length - 1].q + 0.01 : 0;
+        return { mm: mm, built: built, ctxs: ctxs, barQ: Math.max(mm.lenQ || 4, lastQ) };
+      });
+
+      /* Spacing inside a bar. Each column of notes gets at least what its
+         notes, accidentals and dots need, and otherwise room that grows with
+         the time until the next column — a half note gets more than a
+         quarter, but not twice as much, as in any engraved score. u is the
+         room given to one beat. Columns are shared by every staff, so what
+         sounds together stays drawn together. */
+      const spaceBar = (pr, u) => {
+        const cs = pr.ctxs;
+        const xs = [];
+        if (!cs.length) return { xs: xs, width: PAD + Math.max(END_PAD * 2, u * Math.pow(pr.barQ, 0.65)) };
+        let xx = cs[0].left;
+        for (let j = 0; j < cs.length; j++) {
+          xs.push(xx);
+          const nx = j + 1 < cs.length ? cs[j + 1] : null;
+          const d = Math.max(1 / 32, (nx ? nx.q : pr.barQ) - cs[j].q);
+          xx += Math.max(cs[j].right + (nx ? nx.left : END_PAD), u * Math.pow(d, 0.65));
+        }
+        return { xs: xs, width: PAD + xx };
+      };
+      const rowWidth = (idxs, u) => {
+        let sum = 0;
+        idxs.forEach((j, t) => { sum += beginW(j, t === 0) + spaceBar(prep[j], u).width; });
+        return sum;
+      };
+      /* the beat room that makes a line exactly fill the page */
+      const solveU = (idxs, room) => {
+        if (rowWidth(idxs, 0) >= room) return 0;
+        let lo = 0, hi = 64;
+        while (rowWidth(idxs, hi) < room && hi < 1e5) hi *= 2;
+        for (let it = 0; it < 32; it++) {
+          const mid = (lo + hi) / 2;
+          if (rowWidth(idxs, mid) < room) lo = mid; else hi = mid;
+        }
+        return lo;
+      };
+
+      /* Four bars to a line, as a printed score sets them, unless four will not
+         fit even closely spaced — then fewer. Every line but a short last one
+         is spread to the full width of the page. */
+      const wrapping = !!p.perRow;
+      const per = wrapping ? Math.max(1, Math.round(p.perRow)) : measures.length;
+      const PAGE = beginW(0, true) + mW * per;
+      const rowsIdx = [];
+      for (let i0 = 0; i0 < measures.length;) {
+        let n = Math.min(per, measures.length - i0);
+        const take = cnt => { const a = []; for (let j = 0; j < cnt; j++) a.push(i0 + j); return a; };
+        /* a strip of bars stays one strip, however much it holds */
+        while (wrapping && n > 1 && rowWidth(take(n), 0) * 1.05 > PAGE) n--;
+        rowsIdx.push(take(n));
+        i0 += n;
       }
-      const rows = rowNo + 1;
+      const rowU = rowsIdx.map((idxs, r) =>
+        (wrapping && r === rowsIdx.length - 1 && idxs.length < per) ? null : solveU(idxs, PAGE));
+      const fullRows = rowU.filter(u => u != null).sort((a, b) => a - b);
+      rowU.forEach((u, r) => {
+        if (u != null) return;
+        const idxs = rowsIdx[r];
+        /* a short last line keeps the spacing of the lines above it */
+        const typical = fullRows.length ? fullRows[Math.floor(fullRows.length / 2)]
+          : solveU(idxs, beginW(idxs[0], true) + mW * idxs.length);
+        rowU[r] = Math.min(typical, solveU(idxs, PAGE));
+      });
+
+      const rows = rowsIdx.length;
       /* systems that touch each other read as one block of lines */
       const GAP = wrapping ? 46 : 0;
       const ROW_H = SYS_H + GAP;
       const H = HEAD_H + ROW_H * rows - GAP;
-      const W = PAGE + 14;
+      let widest = PAGE;
+      rowsIdx.forEach((idxs, r) => { widest = Math.max(widest, rowWidth(idxs, rowU[r])); });
+      const W = Math.ceil(widest) + 14;
 
       const renderer = new VF.Renderer(el, VF.Renderer.Backends.SVG);
       renderer.resize(W, H);
       const ctx = renderer.getContext();
 
-      const first = measures[0];
-      let x = 10;
       const allNoteMeta = [];
       /* one ordered chain per (staff, voice), so a tie or a slur can find the
          note it runs to even when that note is in the next bar */
@@ -4794,87 +5024,108 @@ function makeScoreView(React) {
           ctx.svg.appendChild(t);
         };
         put(score.title, 34, 26, '400', 'middle', mid);
-        put(score.composer, 56, 13, '400', 'end', PAGE - 4, staffCol === ink ? ink : ink);
+        put(score.composer, 56, 13, '400', 'end', PAGE - 4, ink);
         /* the tempo mark belongs over the first bar, left, as it is printed */
         const bpm = Math.round(score.tempo || 0);
         if (bpm) put('♩ = ' + bpm, 56, 13, '600', 'start', 10);
       }
 
-      measures.forEach((mm, i) => {
-        const it = lay[i];
-        const col = (i === 0 || lay[i - 1].row !== it.row) ? 0 : 1;
-        const rowTop = HEAD_H + it.row * ROW_H;
-        x = col === 0 ? 10 : it.x;
-        const w = (col === 0 ? LEAD : 0) + it.w;
-        const ks = vexKeySig(mm.key.fifths, mm.key.mode);
-        const staves = [];
-        for (let k = 0; k < nStaves; k++) {
-          const st = new VF.Stave(x, staffY(k) + rowTop, w, { spacing_between_lines_px: 10 });
-          /* The stave lines are stroked in --staff; the clef, key and time
-             signature are filled glyphs and take the fill style, which is why
-             they came out pure black and vanished on a dark background. */
-          st.setStyle({ strokeStyle: staffCol, fillStyle: ink, lineWidth: 1 });
-          if (col === 0 && p.clefs !== false) {
-            st.addClef(mm.clefs[k + 1] || (k === 0 ? 'treble' : 'bass'));
-            if (mm.key.fifths) st.addKeySignature(ks);
-            st.addTimeSignature(mm.time.beats + '/' + mm.time.beatType);
+      /* First and second endings: which part of the bracket each bar carries. */
+      const voltaOf = [];
+      {
+        let open = false;
+        measures.forEach(mm => {
+          const bm = mm.bar || {};
+          let type = null;
+          if (bm.ending) {
+            type = bm.endingEnd === 'stop' ? 'BEGIN_END' : 'BEGIN';
+            open = !bm.endingEnd;
+          } else if (open) {
+            type = bm.endingEnd === 'stop' ? 'END' : 'MID';
+            if (bm.endingEnd) open = false;
           }
-          st.setContext(ctx).draw();
-          staves.push(st);
-        }
-        const treble = staves[0], bass = staves[1] || null;
+          voltaOf.push(type ? { type: type, label: bm.ending || '' } : null);
+        });
+      }
 
-        /* every system carries the brace, not only the first one */
-        if (col === 0 && nStaves > 1 && p.clefs !== false) {
-          /* the brace belongs to the piano's pair; anything above it is a
-             separate line and gets only the bracket down the left edge */
-          const lo = staves[pianoTop], hi = staves[Math.min(pianoTop + 1, nStaves - 1)];
-          if (lo && hi && lo !== hi)
-            new VF.StaveConnector(lo, hi).setType(VF.StaveConnector.type.BRACE).setContext(ctx).draw();
-          new VF.StaveConnector(staves[0], staves[nStaves - 1]).setType(VF.StaveConnector.type.SINGLE_LEFT).setContext(ctx).draw();
-        }
-
-        /* Build one VexFlow voice per (staff, voice) so real two-voice piano
-           writing keeps its independent stems instead of being flattened. */
-        const built = [];
-        const mkVoices = (staffNo, stave, clef) => {
-          if (!stave) return;
-          const mine = score.notes.filter(n => n.m === mm.number && (n.staff || 1) === staffNo);
-          if (!mine.length) return;
-          const byVoice = {};
-          mine.forEach(n => { (byVoice[n.voice || 1] = byVoice[n.voice || 1] || []).push(n); });
-          Object.keys(byVoice).forEach(vn => {
-            const built1 = this.buildVoice(VF, byVoice[vn], clef, mm, ink, p.guidance);
-            if (!built1) return;
-            built1.stave = stave;
-            built1.staffNo = staffNo;
-            built1.voiceNo = vn;
-            built.push(built1);
-          });
-        };
-        for (let k = 0; k < nStaves; k++)
-          mkVoices(k + 1, staves[k], mm.clefs[k + 1] || (k === 0 ? 'treble' : 'bass'));
-
-        if (built.length) {
-          const voices = built.map(b => b.voice);
-          const fmt = new VF.Formatter();
-          /* Align the hands on a shared tick grid; if the file's voices do not
-             agree on measure length, fall back to formatting them loosely. */
-          try {
-            for (let k = 1; k <= nStaves; k++) {
-              const grp = built.filter(b => b.staffNo === k).map(b => b.voice);
-              if (grp.length > 1) fmt.joinVoices(grp);
+      rowsIdx.forEach((idxs, r) => {
+        const rowTop = HEAD_H + r * ROW_H;
+        let x = 10;
+        idxs.forEach((i, t) => {
+          const pr = prep[i], mm = pr.mm;
+          const lineStart = t === 0;
+          const bw = beginW(i, lineStart);
+          const sp = spaceBar(pr, rowU[r]);
+          const w = bw + sp.width;
+          const bm = mm.bar || {};
+          const endType = bm.repeatEnd ? 'repeat' : bm.style === 'light-heavy' ? 'final' : bm.style === 'light-light' ? 'double' : '';
+          const staves = [];
+          for (let k = 0; k < nStaves; k++) {
+            const st = new VF.Stave(x, staffY(k) + rowTop, w, { spacing_between_lines_px: 10 });
+            /* The stave lines are stroked in --staff; the clef, key and time
+               signature are filled glyphs and take the fill style, which is why
+               they came out pure black and vanished on a dark background. */
+            st.setStyle({ strokeStyle: staffCol, fillStyle: ink, lineWidth: 1 });
+            const put = dress(st, i, k, lineStart);
+            if (endType === 'repeat' && BAR.REPEAT_END != null) st.setEndBarType(BAR.REPEAT_END);
+            else if (endType === 'final' && BAR.END != null) st.setEndBarType(BAR.END);
+            else if (endType === 'double' && BAR.DOUBLE != null) st.setEndBarType(BAR.DOUBLE);
+            const vo = voltaOf[i];
+            if (k === 0 && vo && VOLTA[vo.type] != null) st.setVoltaType(VOLTA[vo.type], vo.label, 10);
+            /* every staff starts its notes at the same x, whatever its clef */
+            st.setNoteStartX(x + bw);
+            const g = ctx.openGroup('ppp-stave', null);
+            if (g && g.setAttribute) {
+              if (g.classList) g.classList.add('ppp-stave');
+              g.setAttribute('data-m', mm.number);
+              g.setAttribute('data-staff', k + 1);
+              if (bm.repeatStart) g.setAttribute('data-begin', 'repeat');
+              if (endType) g.setAttribute('data-end', endType);
+              if (k === 0 && vo) g.setAttribute('data-volta', vo.type + (vo.label ? ':' + vo.label : ''));
+              if (put.time) g.setAttribute('data-time', timeOf(mm));
             }
-          } catch (e) { /* ragged voices — tick alignment below still applies */ }
-          /* Spread the notes across the space that is actually left after the
-             clef, key and time signature, rather than a fixed guess. */
-          const startPad = treble.getNoteStartX() - treble.getX();
-          fmt.format(voices, Math.max(40, w - startPad - 16));
+            st.setContext(ctx).draw();
+            ctx.closeGroup();
+            staves.push(st);
+          }
 
-          built.forEach(b => {
-            b.voice.setStave(b.stave);
-            b.beams = VF.Beam.generateBeams(b.voice.getTickables()
-              .filter(t => !(VF.GhostNote && t instanceof VF.GhostNote) && (!t.isRest || !t.isRest())));
+          if (nStaves > 1) {
+            /* the brace belongs to the piano's pair; anything above it is a
+               separate line and gets only the bracket down the left edge */
+            const lo = staves[pianoTop], hi = staves[Math.min(pianoTop + 1, nStaves - 1)];
+            const CT = VF.StaveConnector.type;
+            if (lineStart && showClefs) {
+              if (lo && hi && lo !== hi)
+                new VF.StaveConnector(lo, hi).setType(CT.BRACE).setContext(ctx).draw();
+              new VF.StaveConnector(staves[0], staves[nStaves - 1]).setType(CT.SINGLE_LEFT).setContext(ctx).draw();
+            }
+            /* a piano's bar lines run through both of its staves */
+            if (lo && hi && lo !== hi) {
+              try {
+                const ty = (endType === 'repeat' || endType === 'final') ? CT.BOLD_DOUBLE_RIGHT
+                  : endType === 'double' ? CT.THIN_DOUBLE : CT.SINGLE_RIGHT;
+                new VF.StaveConnector(lo, hi).setType(ty).setContext(ctx).draw();
+              } catch (e) { /* a missing connector is cosmetic */ }
+            }
+          }
+
+          /* the bar's notes, in the columns worked out for them */
+          pr.ctxs.forEach((c, j) => { try { c.c.setX(sp.xs[j]); } catch (e) {} });
+          pr.ctxs.forEach((c, j) => (c.clefs || []).forEach(cl => {
+            const stave = staves[cl.staff - 1];
+            if (!stave || !showClefs) return;
+            try {
+              const glyph = new VF.Clef(cl.clef, 'small');
+              glyph.setStave(stave);
+              glyph.setX(x + bw + PAD + sp.xs[j] - cl.acc - cl.w + 2);
+              glyph.setStyle({ fillStyle: ink, strokeStyle: ink });
+              glyph.draw();
+            } catch (e) { /* the notes are right either way */ }
+          }));
+          pr.built.forEach(b => {
+            const stave = staves[b.staffNo - 1];
+            if (!stave) return;
+            b.voice.setStave(stave);
             b.voice.getTickables().forEach((sn, idx) => {
               const meta = b.meta[idx];
               if (!meta) return;
@@ -4884,12 +5135,12 @@ function makeScoreView(React) {
               if (g && g.classList) g.classList.add('ppp-note');
               /* bar|beat|staff, so what sounds together can be checked to be drawn together */
               if (g && g.setAttribute && meta.key) g.setAttribute('data-onset', meta.key);
-              try { sn.setStave(b.stave).setContext(ctx).draw(); } catch (e) {}
+              try { sn.setStave(stave).setContext(ctx).draw(); } catch (e) {}
               ctx.closeGroup();
               if (!meta.rest && meta.sn) {
                 const ck = b.staffNo + ':' + (b.voiceNo || 1);
                 (chains[ck] = chains[ck] || []).push({
-                  sn: meta.sn, stave: b.stave, row: it.row,
+                  sn: meta.sn, stave: stave, row: r,
                   tieStart: meta.tieStart, tieStop: meta.tieStop,
                   slurStart: meta.slurStart, slurStop: meta.slurStop
                 });
@@ -4904,42 +5155,55 @@ function makeScoreView(React) {
                 key: meta.key
               });
             });
-            b.beams.forEach(bm => { try { bm.setContext(ctx).draw(); } catch (e) {} });
+            b.beams.forEach(bm2 => { try { bm2.setContext(ctx).draw(); } catch (e) {} });
+            b.tuplets.forEach(tp => {
+              const g = ctx.openGroup('ppp-tuplet', null);
+              if (g && g.classList) g.classList.add('ppp-tuplet');
+              try { tp.setContext(ctx).draw(); } catch (e) {}
+              ctx.closeGroup();
+            });
           });
-        }
 
-        if (p.numbers !== false) {
-          const t = document.createElementNS(SVGNS, 'text');
-          t.setAttribute('x', x + 3);
-          /* just above the top line of the top staff, not above its empty headroom */
-          t.setAttribute('y', TREBLE_Y + rowTop + LINE0 - 9);
-          t.setAttribute('font-size', '10.5');
-          t.setAttribute('font-family', "'JetBrains Mono', monospace");
-          t.setAttribute('fill', ink3);
-          t.textContent = String(mm.number);
-          ctx.svg.appendChild(t);
-        }
+          if (p.numbers !== false) {
+            const tn = document.createElementNS(SVGNS, 'text');
+            tn.setAttribute('x', x + 3);
+            /* just above the top line of the top staff, not above its empty headroom */
+            tn.setAttribute('y', TREBLE_Y + rowTop + LINE0 - 9);
+            tn.setAttribute('font-size', '10.5');
+            tn.setAttribute('font-family', "'JetBrains Mono', monospace");
+            tn.setAttribute('fill', ink3);
+            tn.textContent = String(mm.number);
+            ctx.svg.appendChild(tn);
+          }
 
-        const cs = chordsFor[mm.number];
-        if (cs && cs.length) {
-          const barX = x + (col === 0 ? LEAD : 0);
-          cs.forEach(c => {
-            const frac = Math.max(0, Math.min(0.92, (c.b || 0) / Math.max(0.001, mm.lenQ)));
-            const t = document.createElementNS(SVGNS, 'text');
-            t.setAttribute('x', barX + frac * it.w);
-            /* above the bar numbers, clear of the staff */
-            t.setAttribute('y', rowTop + TREBLE_Y + LINE0 - 24);
-            t.setAttribute('font-size', '13');
-            t.setAttribute('font-weight', '600');
-            t.setAttribute('font-family', "Figtree, system-ui, sans-serif");
-            t.setAttribute('fill', ink);
-            t.textContent = c.text;
-            ctx.svg.appendChild(t);
-          });
-        }
+          /* where each beat of this bar was drawn: the playhead, chord symbols
+             and pedal marks follow the notes rather than an even grid */
+          const noteX = x + bw + PAD;
+          const seg = {
+            number: mm.number, x: x + (lineStart ? bw : 0), y: rowTop, w: w - (lineStart ? bw : 0),
+            startQ: mm.startQ, lenQ: mm.lenQ,
+            pts: sp.xs.map((xx, j) => [pr.ctxs[j].q, noteX + xx + NOTE_MID])
+          };
 
-        this._map.push({ number: mm.number, x: x + (col === 0 ? LEAD : 0), y: rowTop, w: it.w, startQ: mm.startQ, lenQ: mm.lenQ });
-        x += w;
+          const chs = chordsFor[mm.number];
+          if (chs && chs.length) {
+            chs.forEach(c => {
+              const tc = document.createElementNS(SVGNS, 'text');
+              tc.setAttribute('x', barX(seg, c.b || 0) - NOTE_MID);
+              /* above the bar numbers, clear of the staff */
+              tc.setAttribute('y', rowTop + TREBLE_Y + LINE0 - 24);
+              tc.setAttribute('font-size', '13');
+              tc.setAttribute('font-weight', '600');
+              tc.setAttribute('font-family', "Figtree, system-ui, sans-serif");
+              tc.setAttribute('fill', ink);
+              tc.textContent = c.text;
+              ctx.svg.appendChild(tc);
+            });
+          }
+
+          this._map.push(seg);
+          x += w;
+        });
       });
 
       /* Ties and slurs are drawn after every note exists, because both of them
@@ -4963,7 +5227,12 @@ function makeScoreView(React) {
           while (j < seq.length && !seq[j].slurStop) j++;
           if (j >= seq.length || seq[j].row !== seq[i].row) continue;
           try {
-            new VF.Curve(seq[i].sn, seq[j].sn, { cps: [{ x: 0, y: 18 }, { x: 0, y: 18 }] })
+            /* a slur between two close notes is a shallow arc; a fixed height
+               turned the short ones into hooks */
+            let dx = 60;
+            try { dx = Math.abs(seq[j].sn.getAbsoluteX() - seq[i].sn.getAbsoluteX()); } catch (e) {}
+            const hgt = Math.max(5, Math.min(16, dx * 0.14));
+            new VF.Curve(seq[i].sn, seq[j].sn, { cps: [{ x: 0, y: hgt }, { x: 0, y: hgt }] })
               .setContext(ctx).draw();
           } catch (e) { /* likewise */ }
         }
@@ -4976,9 +5245,7 @@ function makeScoreView(React) {
       const atBeat = (mNo, beat) => {
         const sg = segOf(mNo);
         if (!sg) return null;
-        const mm2 = Score.measure(score, mNo);
-        const frac = Math.max(0, Math.min(1, (beat || 0) / Math.max(0.001, mm2 ? mm2.lenQ : 4)));
-        return { x: sg.x + frac * sg.w, y: sg.y || 0 };
+        return { x: barX(sg, beat || 0) - NOTE_MID, y: sg.y || 0 };
       };
       if (p.marks !== false) {
         (score.pedals || []).forEach(pd => {
@@ -5086,7 +5353,7 @@ function makeScoreView(React) {
       svg.style.display = 'block';
       /* a page has a width: on a very wide monitor the whole score is centred
          at a readable size rather than stretched until four bars fill a wall */
-      svg.style.maxWidth = (wrapping && p.fluid) ? '1080px' : '100%';
+      svg.style.maxWidth = (wrapping && p.fluid) ? '1320px' : '100%';
       if (wrapping && p.fluid) svg.style.margin = '0 auto';
       svg.style.overflow = 'visible';
 
@@ -5168,9 +5435,21 @@ function makeScoreView(React) {
       this._H = H;
       this._SYS = SYS_H;
       this._band = { top: BAND_TOP, bottom: BAND_BOT };
+      /* how the page was laid out, for the engraving checks */
+      try {
+        svg.__ppp = {
+          page: PAGE, pad: PAD,
+          rows: rowsIdx.map(idxs => idxs.map(i => measures[i].number)),
+          tight: prep.map(pr => Math.round(spaceBar(pr, 0).width)),
+          begin: measures.map((mm, i) => Math.round(beginW(i, false))),
+          bars: this._map.map(sg => ({ m: sg.number, x: sg.x, y: sg.y, w: sg.w }))
+        };
+      } catch (e) {}
     }
 
-    buildVoice(VF, list, clef, mm, ink, guidance) {
+    buildVoice(VF, list, clef, mm, ink, guidance, stemDir) {
+      /* the clef may be one name, or change partway through the bar */
+      const clefFor = typeof clef === 'function' ? clef : () => clef;
       const groups = [];
       const byOnset = {};
       list.forEach(n => {
@@ -5184,45 +5463,61 @@ function makeScoreView(React) {
       const meta = [];
       const tickables = [];
       const QT = (VF.RESOLUTION || 16384) / 4;          /* ticks in a quarter */
-      const fit = (t, quarters) => {
-        const want = Math.max(1, Math.round(quarters * QT));
-        let have = 0;
-        try { have = t.getTicks().value(); } catch (e) { return; }
-        if (!have || Math.abs(want - have) < 2) return;
-        try { t.applyTickMultiplier(want, have); } catch (e) { /* leave it as written */ }
+      /* Each note is made to take up exactly the time from its onset to where
+         it ends, both counted from the start of the bar and rounded to the
+         tick grid once. Voices that start a note at the same moment then land
+         on the same tick — also after a triplet — and are drawn in one column,
+         whatever lengths the file wrote. The glyph stays as written. */
+      const at = q => Math.round(q * QT);
+      const fit = (t, fromQ, toQ) => {
+        const want = Math.max(1, at(toQ) - at(fromQ));
+        let tk = null;
+        try { tk = t.getTicks(); } catch (e) { return; }
+        if (!tk || !tk.value() || Math.abs(tk.value() - want) < 1e-9) return;
+        try { t.applyTickMultiplier(want * tk.denominator, tk.numerator); } catch (e) { /* leave it as written */ }
       };
-      const spacer = quarters => {
+      const spacer = (fromQ, toQ) => {
         const gn = new VF.GhostNote({ duration: 'q' });
-        fit(gn, quarters);
+        fit(gn, fromQ, toQ);
         return gn;
       };
+      /* a rest in the upper of two voices sits high, in the lower one low */
+      const restKey = (dir, cl) => cl === 'bass'
+        ? (dir > 0 ? 'f/3' : dir < 0 ? 'b/2' : 'd/3')
+        : (dir > 0 ? 'd/5' : dir < 0 ? 'g/4' : 'b/4');
       const barQ = mm.lenQ || 4;
-      if (groups[0].b > 1e-3) { tickables.push(spacer(groups[0].b)); meta.push(null); }
+      const fits = [];
+      const drawn = [];                 /* {g, sn, isRest, type, dir} per note column */
+      if (groups[0].b > 1e-3) { tickables.push(spacer(0, groups[0].b)); meta.push(null); }
       groups.forEach((g, gi) => {
         const head = g.notes[0];
-        const nextB = gi + 1 < groups.length ? groups[gi + 1].b : barQ;
+        const nextB = gi + 1 < groups.length ? groups[gi + 1].b : Math.max(barQ, g.b + 0.01);
         const span = Math.max(0.01, nextB - g.b);
         const sounding = head.dur > 0 ? Math.min(head.dur, span) : span;
-        const isRest = g.notes.every(n => n.rest);
+        const heads = g.notes.filter(n => !n.rest && n.p);
+        const isRest = !heads.length;
         const base = VF_TYPE[head.type] || 'q';
+        const dir = head.stem === 'up' ? 1 : head.stem === 'down' ? -1 : (stemDir || 0);
         let sn;
         try {
-          sn = new VF.StaveNote({
-            keys: isRest ? [clef === 'bass' ? 'd/3' : 'b/4'] : g.notes.map(n => vexKey(n.p)),
+          const cl = clefFor(g.b);
+          const opts = {
+            keys: isRest ? [restKey(dir, cl)] : heads.map(n => vexKey(n.p)),
             duration: base + (isRest ? 'r' : ''),
-            clef,
-            auto_stem: true
-          });
+            clef: cl
+          };
+          if (dir) opts.stem_direction = dir; else opts.auto_stem = true;
+          sn = new VF.StaveNote(opts);
         } catch (e) { return; }
 
         if (!isRest) {
-          g.notes.forEach((n, i) => {
+          heads.forEach((n, i) => {
             const a = n.acc ? ACC_VEX[n.acc] : null;
             if (a) { try { sn.addModifier(new VF.Accidental(a), i); } catch (e) {} }
           });
           if (guidance) {
             try {
-              const ann = new VF.Annotation(head.p.charAt(0))
+              const ann = new VF.Annotation(heads[0].p.charAt(0))
                 .setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM)
                 .setFont('JetBrains Mono, monospace', 9);
               sn.addModifier(ann, 0);
@@ -5232,11 +5527,12 @@ function makeScoreView(React) {
         for (let d = 0; d < (head.dots || 0); d++) { try { VF.Dot.buildAndAttach([sn], { all: true }); } catch (e) {} }
         try { sn.setStyle({ fillStyle: ink, strokeStyle: ink }); } catch (e) {}
 
-        fit(sn, sounding);
+        fits.push([sn, g.b, g.b + sounding]);
+        drawn.push({ g: g, sn: sn, isRest: isRest, dir: dir, next: nextB });
         tickables.push(sn);
         meta.push({
           abs: (mm.startQ + g.b), dur: head.dur, rest: isRest,
-          midis: g.notes.filter(n => !n.rest).map(n => n.midi),
+          midis: heads.map(n => n.midi),
           hand: head.hand,
           key: onsetKey(head.m, g.b, head.staff),
           /* kept so ties and slurs can be drawn between the real objects */
@@ -5245,14 +5541,71 @@ function makeScoreView(React) {
           slurStart: g.notes.some(n => n.slurStart), slurStop: g.notes.some(n => n.slurStop)
         });
         /* a note shorter than the gap to the next one: hold the rest of the gap */
-        if (span - sounding > 1e-3) { tickables.push(spacer(span - sounding)); meta.push(null); }
+        if (span - sounding > 1e-3) { tickables.push(spacer(g.b + sounding, nextB)); meta.push(null); }
       });
       if (!tickables.length) return null;
+
+      /* Beams join the eighths and shorter notes of one beat — counted from
+         the bar line, not from wherever the voice happens to begin, which is
+         what grouped a run starting half a beat late across the beat. */
+      const beatQ = (mm.time.beatType === 8 && mm.time.beats % 3 === 0) ? 1.5 : 1;
+      const SHORT = { eighth: 1, '16th': 1, '32nd': 1, '64th': 1, '128th': 1 };
+      const beams = [];
+      let run = [], runBeat = null;
+      const closeRun = () => {
+        if (run.length > 1) {
+          try { beams.push(new VF.Beam(run.map(d => d.sn), !run[0].dir)); } catch (e) { /* unbeamable */ }
+        }
+        run = []; runBeat = null;
+      };
+      drawn.forEach(d => {
+        const beat = Math.floor((d.g.b + 1e-6) / beatQ);
+        if (d.isRest || !SHORT[d.g.notes[0].type]) { closeRun(); return; }
+        if (runBeat != null && beat !== runBeat) closeRun();
+        run.push(d); runBeat = beat;
+      });
+      closeRun();
+
+      /* A triplet is marked with a 3 over the group. A group runs until the
+         file says it stops, or until it has filled the time it stands for:
+         three triplet eighths fill the time of two ordinary ones. */
+      const TYPE_Q = { whole: 4, half: 2, quarter: 1, eighth: 0.5, '16th': 0.25, '32nd': 0.125, '64th': 0.0625 };
+      const tuplets = [];
+      let tr = [], trFrom = 0, trTm = null, trUnit = 1;
+      const closeTuplet = () => {
+        if (tr.length > 1 && trTm) {
+          try {
+            const up = tr[0].dir >= 0;
+            tuplets.push(new VF.Tuplet(tr.map(d => d.sn), {
+              num_notes: trTm.a, notes_occupied: trTm.n,
+              location: up ? 1 : -1
+            }));
+          } catch (e) { /* leave the notes unmarked */ }
+        }
+        tr = []; trTm = null; trUnit = 1;
+      };
+      drawn.forEach(d => {
+        const head = d.g.notes[0];
+        const tm = head.tm;
+        if (!tm || (trTm && (tm.a !== trTm.a || tm.n !== trTm.n)) || head.tupletStart) closeTuplet();
+        if (!tm) return;
+        if (!tr.length) { trFrom = d.g.b; trTm = tm; }
+        tr.push(d);
+        const unit = TYPE_Q[head.type] || 0.5;
+        trUnit = tr.length === 1 ? unit : Math.min(trUnit, unit);
+        const filled = d.next - trFrom >= trTm.n * trUnit - 0.02;
+        if (head.tupletStop || filled) closeTuplet();
+      });
+      closeTuplet();
+
+      /* only now the lengths: a tuplet sets its own ratio on its notes, and
+         the fit is made on top of whatever that left */
+      fits.forEach(f => fit(f[0], f[1], f[2]));
 
       const voice = new VF.Voice({ num_beats: mm.time.beats, beat_value: mm.time.beatType })
         .setMode(VF.Voice.Mode.SOFT);
       voice.addTickables(tickables);
-      return { voice, meta };
+      return { voice, meta, beams, tuplets };
     }
 
     /* Cheap per-frame update: no re-engraving. */
@@ -5327,7 +5680,7 @@ function makeScoreView(React) {
       if (this._phLine) {
         const s = p.playX != null ? seg(p.playX) : null;
         if (s) {
-          const x = s.x + ((p.playX - s.startQ) / Math.max(0.001, s.lenQ)) * s.w;
+          const x = barX(s, p.playX - s.startQ);
           const sys = this._SYS || this._H;
           const top = (s.y || 0);
           this._phLine.setAttribute('x1', x); this._phLine.setAttribute('x2', x);
@@ -7806,7 +8159,10 @@ class Component extends DCLogic {
         weak: S.wholeScore ? this.weakMeasures() : null,
         heading: S.wholeScore,
         pick: e => this.selectBars(e),
-        mW: S.wholeScore ? 168 : 210, zoom: S.wholeScore ? 1 : S.zoom, currentM: cur,
+        /* a printed page is about twenty-five staff heights wide, which is what
+           lets four bars of real piano writing share a line; a phone holds
+           two, set a little closer so they are not drawn too small to read */
+        mW: S.wholeScore ? (this.barsPerLine() >= 4 ? 236 : 180) : 210, zoom: S.wholeScore ? 1 : S.zoom, currentM: cur,
         playX: S.beat, beat: S.beat, hands: S.hands, wrong: S.wrongNotes,
         /* A letter under every note helps while reading four bars closely and
            is five hundred letters of noise across a whole piece, which is not
