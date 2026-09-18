@@ -4,6 +4,7 @@
 'use strict';
 
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -471,6 +472,40 @@ async function handleApi(req, res, url) {
 
   if (p === '/health' || p === '/api/health') {
     send(res, 200, { ok: true, service: 'ppp' });
+    return;
+  }
+
+  if (method === 'GET' && p === '/api/youtube-title') {
+    const raw = String(url.searchParams.get('url') || '').trim();
+    let watch = null;
+    try {
+      const u = new URL(raw);
+      const host = u.hostname.toLowerCase().replace(/^(www|m|music)\./, '');
+      if (host === 'youtu.be') {
+        const m = /^\/([\w-]{6,})$/.exec(u.pathname);
+        if (m) watch = 'https://www.youtube.com/watch?v=' + m[1];
+      } else if (host === 'youtube.com' && u.pathname === '/watch') {
+        const v = u.searchParams.get('v') || '';
+        if (/^[\w-]{6,}$/.test(v)) watch = 'https://www.youtube.com/watch?v=' + v;
+      } else if (host === 'youtube.com') {
+        const m = /^\/(shorts|live|embed)\/([\w-]{6,})/.exec(u.pathname);
+        if (m) watch = 'https://www.youtube.com/watch?v=' + m[2];
+      }
+    } catch (e) { watch = null; }
+    if (!watch) return jsonError(res, 422, 'Not a YouTube video.');
+    const oembed = 'https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent(watch);
+    const title = await new Promise(resolve => {
+      const req2 = https.get(oembed, { timeout: 8000, headers: { 'User-Agent': 'PPP/1' } }, r => {
+        let d = '';
+        r.on('data', c => d += c);
+        r.on('end', () => {
+          try { resolve((JSON.parse(d) || {}).title || null); } catch (e) { resolve(null); }
+        });
+      });
+      req2.on('error', () => resolve(null));
+      req2.on('timeout', () => { req2.destroy(); resolve(null); });
+    });
+    send(res, 200, { title: title }, { 'Cache-Control': 'no-store' });
     return;
   }
 

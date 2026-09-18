@@ -101,6 +101,39 @@ async function importFile(page, file, waitMs) {
   ok('tablet files without an extension still route by MIME type',
     kinds.byPdfType === 'pdf' && kinds.byPngType === 'image' && kinds.byJpegType === 'image' && kinds.byXmlType === 'musicxml',
     [kinds.byPdfType, kinds.byPngType, kinds.byJpegType, kinds.byXmlType].join(','));
+  const sniffed = await page.evaluate(async () => {
+    const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34]);
+    const fake = (name, type, bytes) => ({
+      name: name, type: type, size: bytes.length,
+      slice(a, b) {
+        const part = bytes.subarray(a, b == null ? bytes.length : b);
+        const copy = part.slice();
+        return { arrayBuffer: () => Promise.resolve(copy.buffer) };
+      }
+    });
+    return {
+      pdf: await PPP.Import.sniff(fake('document', 'video/mp4', pdfBytes)),
+      png: await PPP.Import.sniff(fake('photo', '', new Uint8Array([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])))
+    };
+  });
+  ok('a PDF handed over as a video is still a PDF', sniffed.pdf === 'pdf', JSON.stringify(sniffed));
+  ok('a PNG with no type is still an image', sniffed.png === 'image', JSON.stringify(sniffed));
+
+  const ytCat = await page.evaluate(async () => {
+    const oldH = PPP.Import.health, oldT = PPP.Import.youtubeTitle;
+    PPP.Import.health = () => Promise.resolve({ ok: false, remote: true, unreachable: true });
+    PPP.Import.youtubeTitle = () => Promise.resolve('Beethoven Fur Elise official audio');
+    let out;
+    try {
+      const r = await PPP.Import.loadYoutube('https://www.youtube.com/watch?v=2WfaotSK3mI');
+      out = { title: r.score && r.score.title, engine: r.source && r.source.engine, notes: r.score && r.score.notes.filter(n => !n.rest).length };
+    } catch (e) { out = { error: e.message }; }
+    PPP.Import.health = oldH; PPP.Import.youtubeTitle = oldT;
+    return out;
+  });
+  ok('a YouTube link matching the catalog does not need the local helper',
+    !ytCat.error && ytCat.engine === 'Public-domain catalog' && ytCat.notes > 8,
+    JSON.stringify(ytCat));
   ok('YouTube links are recognised in every usual form', kinds.yt.every(id => id === '2WfaotSK3mI'), kinds.yt.join(','));
   ok('anything that is not one YouTube video is refused', kinds.notYt.every(id => id === null), kinds.notYt.join(','));
   ok('unsupported types are refused up front', kinds.midi === null && kinds.junk === null);

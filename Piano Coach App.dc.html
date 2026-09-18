@@ -5165,11 +5165,30 @@ const Import = {
     const t = (file && file.type || '').toLowerCase();
     if (/\.mxl$/.test(n) || t === 'application/vnd.recordare.musicxml') return 'mxl';
     if (/\.(musicxml|xml)$/.test(n) || t === 'application/vnd.recordare.musicxml+xml') return 'musicxml';
-    if (/\.pdf$/.test(n) || t === 'application/pdf' || t === 'application/x-pdf') return 'pdf';
-    if (/\.(png|jpe?g)$/.test(n) || /^image\/(png|jpe?g)$/.test(t)) return 'image';
+    if (/\.pdf$/.test(n) || t === 'application/pdf' || t === 'application/x-pdf' || t === 'application/acrobat') return 'pdf';
+    if (/\.(png|jpe?g|webp)$/.test(n) || /^image\/(png|jpe?g|webp)$/.test(t)) return 'image';
     if (AUDIO_RE.test(n) || /^audio\//.test(t)) return 'audio';
     if (VIDEO_RE.test(n) || /^video\//.test(t)) return 'video';
     return null;
+  },
+  /* A tablet often hands over a PDF with no extension, or the wrong MIME.
+     The first bytes are what the file is. */
+  sniff(file) {
+    const named = Import.kindOf(file);
+    if (!file || typeof file.slice !== 'function') return Promise.resolve(named);
+    return file.slice(0, 16).arrayBuffer().then(buf => {
+      const u = new Uint8Array(buf);
+      if (u.length >= 4 && u[0] === 0x25 && u[1] === 0x50 && u[2] === 0x44 && u[3] === 0x46) return 'pdf';
+      if (u.length >= 3 && u[0] === 0x89 && u[1] === 0x50 && u[2] === 0x4E) return 'image';
+      if (u.length >= 2 && u[0] === 0xFF && u[1] === 0xD8) return 'image';
+      if (u.length >= 4 && u[0] === 0x50 && u[1] === 0x4B && named !== 'mxl') {
+        /* zip: only call it MusicXML if the name already said so */
+        if (named === 'mxl' || /\.mxl$/i.test(file.name || '')) return 'mxl';
+      }
+      const s = Array.prototype.map.call(u, b => (b >= 32 && b < 127) ? String.fromCharCode(b) : ' ').join('');
+      if (/<\?xml|score-partwise|score-timewise/.test(s)) return 'musicxml';
+      return named;
+    }).catch(() => named);
   },
   needsOmr(kind) { return kind === 'pdf' || kind === 'image'; },
   isRecording(kind) { return kind === 'audio' || kind === 'video' || kind === 'youtube'; },
@@ -5200,10 +5219,12 @@ const Import = {
   youtubeTitle(url) {
     const watch = Import.youtubeWatch(url);
     if (!watch) return Promise.resolve(null);
-    return fetch('https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent(watch.url))
-      .then(r => (r.ok ? r.json() : null))
-      .then(j => (j && j.title) || null)
-      .catch(() => null);
+    const q = encodeURIComponent(watch.url);
+    const take = p => p.then(r => (r && r.ok ? r.json() : null)).then(j => (j && j.title) || null).catch(() => null);
+    return take(fetch('/api/youtube-title?url=' + q)).then(t => {
+      if (t) return t;
+      return take(fetch('https://www.youtube.com/oembed?format=json&url=' + q));
+    });
   },
   /* Which performance belongs to this song. The score's own origin and the
      library card win over a session leftover — importing another YouTube
@@ -5502,16 +5523,12 @@ const Import = {
   async transcribe(what, onStage, ctl) {
     const stage = (name, detail) => { if (onStage) onStage(name, detail || {}); };
     ctl = ctl || {};
-    const orUpload = tx('Or add the sheet music itself: MusicXML, PDF or a photo');
+    const orUpload = tx('Add the sheet music as a PDF, photo or MusicXML');
     const health = await Import.health();
     if (!health.ok)
       throw importError('service-down',
-        tx(health.remote
-          ? 'Making sheet music from a recording needs PPP’s local helper on the computer running PPP. A tablet or phone opening the website cannot run it.'
-          : 'PPP could not reach its local helper. Making sheet music from a recording needs it.'),
-        health.remote
-          ? [tx('On the computer, run npm run omr and open PPP there'), orUpload]
-          : [tx('Start it with: npm run omr'), orUpload]);
+        tx('PPP could not find a score for that recording.'),
+        [orUpload, tx('A YouTube title that matches a public-domain piece in PPP will work')]);
     if (!health.transcriber)
       throw importError('engine-missing',
         tx('The local helper is running, but the piano transcription model is not set up.'),
@@ -5609,6 +5626,10 @@ const Import = {
 
   async fromRecording(what, onStage, ctl) {
     const stage = (name, detail) => { if (onStage) onStage(name, detail || {}); };
+    if (what.file) {
+      const real = await Import.sniff(what.file);
+      if (real && !Import.isRecording(real)) return Import.load(what.file, onStage, ctl);
+    }
     const nameGuess = (what.file ? String(what.file.name).replace(/\.[^.]+$/, '') : '') || '';
     stage('search', {});
     let query = nameGuess;
@@ -5654,33 +5675,30 @@ const Import = {
         recording: { url: audioUrl, barStarts: aligned.barStarts } };
     }
     if (localHit && what.url) {
-      const health = await Import.health();
-      if (!health.ok || !health.transcriber) {
-        const xml = localHit.entry.xml;
-        const aligned = Import.alignScore(xml, {});
-        stage('parse', {});
-        const score = parseMusicXML(xml, localHit.entry.title);
-        if (localHit.entry.composer) score.composer = localHit.entry.composer;
-        const yt = Import.youtubeWatch(what.url);
-        const source = {
-          name: localHit.entry.title, kind: 'youtube',
-          url: yt ? yt.url : what.url, youtubeId: yt ? yt.id : null,
-          bytes: null, importedAt: Clock.now(),
-          engine: 'Public-domain catalog', pages: null, status: 'retrieved',
-          seconds: aligned.duration, truncated: false,
-          tempo: aligned.tempo, barStarts: aligned.barStarts, retrieved: true,
-          catalogId: localHit.entry.id
-        };
-        score.source = source;
-        const report = {
-          confidence: 0.94, level: 'good', issues: [], suspectMeasures: [],
-          summary: tx('Found a public-domain score for this title.'),
-          advice: null, measures: aligned.measures,
-          notes: (score.notes || []).filter(n => !n.rest).length,
-          staves: score.staves, transcribed: false, retrieved: true, tempo: aligned.tempo
-        };
-        return { score: score, source: source, report: report, musicxml: xml, recording: null };
-      }
+      const xml = localHit.entry.xml;
+      const aligned = Import.alignScore(xml, {});
+      stage('parse', {});
+      const score = parseMusicXML(xml, localHit.entry.title);
+      if (localHit.entry.composer) score.composer = localHit.entry.composer;
+      const yt = Import.youtubeWatch(what.url);
+      const source = {
+        name: localHit.entry.title, kind: 'youtube',
+        url: yt ? yt.url : what.url, youtubeId: yt ? yt.id : null,
+        bytes: null, importedAt: Clock.now(),
+        engine: 'Public-domain catalog', pages: null, status: 'retrieved',
+        seconds: aligned.duration, truncated: false,
+        tempo: aligned.tempo, barStarts: aligned.barStarts, retrieved: true,
+        catalogId: localHit.entry.id
+      };
+      score.source = source;
+      const report = {
+        confidence: 0.94, level: 'good', issues: [], suspectMeasures: [],
+        summary: tx('Found a public-domain score for this title.'),
+        advice: null, measures: aligned.measures,
+        notes: (score.notes || []).filter(n => !n.rest).length,
+        staves: score.staves, transcribed: false, retrieved: true, tempo: aligned.tempo
+      };
+      return { score: score, source: source, report: report, musicxml: xml, recording: null };
     }
 
     const got = await Import.transcribe(what, onStage, ctl);
@@ -5866,7 +5884,7 @@ const Import = {
   /* ---- the one entry point ---- */
   async load(file, onStage, ctl) {
     const stage = (name, detail) => { if (onStage) onStage(name, detail || {}); };
-    const kind = Import.kindOf(file);
+    const kind = (await Import.sniff(file)) || Import.kindOf(file);
 
     stage('validate', { name: file.name, bytes: file.size });
     if (!kind)
