@@ -4698,12 +4698,15 @@ function makeScoreView(React) {
          however many the score has, stacked, rather than a hardcoded pair. */
       const nStaves = grand ? Math.max(2, Math.min(4, p.staves || score.staves || 2)) : 1;
       const STAFF_GAP = 92;
-      const TOP_Y = 12 + CHORD_H + HEAD_H;
+      const TOP_Y = 12 + CHORD_H;     /* inside the row; rowTop already clears the heading */
       const staffY = k => TOP_Y + k * STAFF_GAP;
       const TREBLE_Y = TOP_Y, BASS_Y = staffY(1);
       /* room under the lowest staff when the score asks for the pedal */
       const PED_H = (p.marks !== false && (score.pedals || []).length) ? 26 : 0;
       const SYS_H = (12 + CHORD_H) + (nStaves - 1) * STAFF_GAP + 84 + PED_H;
+      const LINE0 = 40;                               /* first line below the stave's y */
+      const BAND_TOP = TOP_Y + LINE0 - 18;
+      const BAND_BOT = staffY(nStaves - 1) + LINE0 + 40 + 18;
       /* A whole piece will not fit on one line, and a fixed number of bars per
          line is not how music is set. A bar of sixteen notes needs more room
          than a bar of two, so each one is measured by what is in it, bars are
@@ -4712,15 +4715,16 @@ function makeScoreView(React) {
          average bars, not a count of them. */
       const wrapping = !!p.perRow;
       const PAGE = wrapping ? LEAD + mW * p.perRow : LEAD + mW * measures.length;
-      const natural = mm => {
-        const ns = Score.notesIn(score, mm.number, mm.number);
-        const onsets = {};
-        ns.forEach(n => { if (!n.rest) onsets[n.b.toFixed(4)] = true; });
-        const k = Object.keys(onsets).length;
-        return mW * clamp(0.5 + k * 0.1, 0.5, 2.4);
+      const onsetsIn = mm => {
+        const seen = {};
+        Score.notesIn(score, mm.number, mm.number).forEach(n => { if (!n.rest) seen[n.b.toFixed(4)] = true; });
+        return Object.keys(seen).length;
       };
+      const counts = measures.map(onsetsIn);
+      const avgK = Math.max(1, counts.reduce((a, b) => a + b, 0) / Math.max(1, counts.length));
+      const natural = (mm, i) => mW * clamp(0.6 + 0.4 * (counts[i] / avgK), 0.5, 2.2);
 
-      const lay = measures.map(mm => ({ mm: mm, w: wrapping ? natural(mm) : mW, row: 0, x: 0 }));
+      const lay = measures.map((mm, i) => ({ mm: mm, w: wrapping ? natural(mm, i) : mW, row: 0, x: 0 }));
       let rowNo = 0, rowFrom = 0, used = LEAD;
       const closeRow = (from, to) => {
         if (to <= from) return;
@@ -4739,7 +4743,7 @@ function makeScoreView(React) {
       };
       if (wrapping) {
         lay.forEach((it, i) => {
-          if (used + it.w > PAGE && i > rowFrom) {
+          if (used + it.w > PAGE * 1.04 && i > rowFrom) {
             closeRow(rowFrom, i);
             rowNo++; rowFrom = i; used = LEAD;
           }
@@ -4896,7 +4900,8 @@ function makeScoreView(React) {
         if (p.numbers !== false) {
           const t = document.createElementNS(SVGNS, 'text');
           t.setAttribute('x', x + 3);
-          t.setAttribute('y', TREBLE_Y + rowTop - 1);
+          /* just above the top line of the top staff, not above its empty headroom */
+          t.setAttribute('y', TREBLE_Y + rowTop + LINE0 - 9);
           t.setAttribute('font-size', '10.5');
           t.setAttribute('font-family', "'JetBrains Mono', monospace");
           t.setAttribute('fill', ink3);
@@ -4911,7 +4916,8 @@ function makeScoreView(React) {
             const frac = Math.max(0, Math.min(0.92, (c.b || 0) / Math.max(0.001, mm.lenQ)));
             const t = document.createElementNS(SVGNS, 'text');
             t.setAttribute('x', barX + frac * it.w);
-            t.setAttribute('y', rowTop + TREBLE_Y - 7);
+            /* above the bar numbers, clear of the staff */
+            t.setAttribute('y', rowTop + TREBLE_Y + LINE0 - 24);
             t.setAttribute('font-size', '13');
             t.setAttribute('font-weight', '600');
             t.setAttribute('font-family', "Figtree, system-ui, sans-serif");
@@ -5010,9 +5016,9 @@ function makeScoreView(React) {
           if (!want[seg.number]) return;
           const r = document.createElementNS(SVGNS, 'rect');
           r.setAttribute('x', seg.x - 2);
-          r.setAttribute('y', (seg.y || 0) + 8);
+          r.setAttribute('y', (seg.y || 0) + BAND_TOP);
           r.setAttribute('width', seg.w + 4);
-          r.setAttribute('height', SYS_H - 18);
+          r.setAttribute('height', BAND_BOT - BAND_TOP);
           r.setAttribute('rx', 7);
           r.setAttribute('fill', onPaper ? 'rgb(214,64,52)' : col('--bad'));
           r.setAttribute('opacity', onPaper ? 0.15 : 0.22);
@@ -5067,7 +5073,10 @@ function makeScoreView(React) {
         svg.style.width = W + 'px';
       }
       svg.style.display = 'block';
-      svg.style.maxWidth = '100%';
+      /* a page has a width: on a very wide monitor the whole score is centred
+         at a readable size rather than stretched until four bars fill a wall */
+      svg.style.maxWidth = (wrapping && p.fluid) ? '1080px' : '100%';
+      if (wrapping && p.fluid) svg.style.margin = '0 auto';
       svg.style.overflow = 'visible';
 
       /* Behind the notes: loop bracket and current-measure wash. */
@@ -5091,22 +5100,53 @@ function makeScoreView(React) {
          because it is the same act. */
       if (p.pick) {
         svg.style.cursor = 'pointer';
-        svg.addEventListener('click', ev => {
-          /* read the live prop, not the one captured when this was drawn */
-          const fn = this.props.pick;
-          if (!fn) return;
+        /* vertical scrolling of the score still works on touch; a sideways
+           drag selects */
+        svg.style.touchAction = 'pan-y';
+        const hover = mk('rect', { fill: 'none', stroke: nowLine, 'stroke-width': 1.5, rx: 8, opacity: 0 });
+        hover.style.pointerEvents = 'none';
+        svg.insertBefore(hover, svg.firstChild);
+
+        const barAt = ev => {
           let pt;
           try {
             pt = svg.createSVGPoint();
             pt.x = ev.clientX; pt.y = ev.clientY;
             pt = pt.matrixTransform(svg.getScreenCTM().inverse());
-          } catch (e) { return; }
+          } catch (e) { return null; }
           const sys = this._SYS || this._H;
-          const hit = this._map.filter(seg =>
+          return this._map.filter(seg =>
             pt.x >= seg.x - 8 && pt.x <= seg.x + seg.w + 8 &&
-            pt.y >= (seg.y || 0) && pt.y <= (seg.y || 0) + sys)[0];
-          if (hit) fn(hit.number);
+            pt.y >= (seg.y || 0) && pt.y <= (seg.y || 0) + sys)[0] || null;
+        };
+        const outline = seg => {
+          if (!seg) { hover.setAttribute('opacity', 0); return; }
+          const sys = this._SYS || this._H;
+          hover.setAttribute('x', seg.x - 4); hover.setAttribute('y', (seg.y || 0) + BAND_TOP - 4);
+          hover.setAttribute('width', seg.w + 8); hover.setAttribute('height', BAND_BOT - BAND_TOP + 8);
+          hover.setAttribute('opacity', 1);
+        };
+        /* read the live prop, not the one captured when this was drawn */
+        const send = e => { const fn = this.props.pick; if (fn) fn(e); };
+
+        let from = null;
+        svg.addEventListener('pointerdown', ev => {
+          const seg = barAt(ev);
+          if (!seg || ev.button > 0) return;
+          from = seg.number;
+          try { svg.setPointerCapture(ev.pointerId); } catch (e) {}
+          send({ from: from, to: from, extend: ev.shiftKey });
         });
+        svg.addEventListener('pointermove', ev => {
+          const seg = barAt(ev);
+          outline(seg);
+          if (from == null || !seg) return;
+          send({ from: from, to: seg.number });
+        });
+        const end = () => { from = null; };
+        svg.addEventListener('pointerup', end);
+        svg.addEventListener('pointercancel', end);
+        svg.addEventListener('pointerleave', () => { if (from == null) outline(null); });
       }
 
       /* In front: the playhead. */
@@ -5116,6 +5156,7 @@ function makeScoreView(React) {
       svg.appendChild(this._phDot);
       this._H = H;
       this._SYS = SYS_H;
+      this._band = { top: BAND_TOP, bottom: BAND_BOT };
     }
 
     buildVoice(VF, list, clef, mm, ink, guidance) {
@@ -5226,9 +5267,10 @@ function makeScoreView(React) {
         if (cm) {
           const sys = this._SYS || this._H;
           this._hl.setAttribute('x', cm.x - 4);
-          this._hl.setAttribute('y', (cm.y || 0) + 16);
+          const band = this._band || { top: 16, bottom: sys - 12 };
+          this._hl.setAttribute('y', (cm.y || 0) + band.top);
           this._hl.setAttribute('width', cm.w);
-          this._hl.setAttribute('height', sys - 28);
+          this._hl.setAttribute('height', band.bottom - band.top);
           this._hl.setAttribute('opacity', 1);
         } else this._hl.setAttribute('opacity', 0);
       }
@@ -5242,9 +5284,10 @@ function makeScoreView(React) {
         if (a && b && (a.y || 0) === (b.y || 0) && b.x + b.w > a.x) {
           const sys = this._SYS || this._H;
           this._loopBox.setAttribute('x', a.x - 6);
-          this._loopBox.setAttribute('y', (a.y || 0) + 10);
+          const band2 = this._band || { top: 16, bottom: sys - 12 };
+          this._loopBox.setAttribute('y', (a.y || 0) + band2.top - 6);
           this._loopBox.setAttribute('width', (b.x + b.w) - a.x + 12);
-          this._loopBox.setAttribute('height', sys - 18);
+          this._loopBox.setAttribute('height', band2.bottom - band2.top + 12);
           this._loopBox.setAttribute('opacity', 1);
         } else this._loopBox.setAttribute('opacity', 0);
       }
@@ -5256,9 +5299,10 @@ function makeScoreView(React) {
           const sys = this._SYS || this._H;
           const top = (s.y || 0);
           this._phLine.setAttribute('x1', x); this._phLine.setAttribute('x2', x);
-          this._phLine.setAttribute('y1', top + 14); this._phLine.setAttribute('y2', top + sys - 10);
+          const band3 = this._band || { top: 14, bottom: sys - 10 };
+          this._phLine.setAttribute('y1', top + band3.top); this._phLine.setAttribute('y2', top + band3.bottom);
           this._phLine.setAttribute('opacity', 1);
-          this._phDot.setAttribute('cx', x); this._phDot.setAttribute('cy', top + 14);
+          this._phDot.setAttribute('cx', x); this._phDot.setAttribute('cy', top + band3.top);
           this._phDot.setAttribute('opacity', 1);
         } else {
           this._phLine.setAttribute('opacity', 0);
@@ -6672,6 +6716,19 @@ class Component extends DCLogic {
       return { loopFrom: a, loopTo: b, beat: clamp(s.beat, Score.startQ(sc, a), Score.endQ(sc, b) - 0.01) };
     });
   }
+  /* From the score: a drag reports its start and where it is now; a click is
+     a drag that did not move; shift extends what is already selected. */
+  selectBars(e) {
+    const S = this.state;
+    if (e.extend && S.loopFrom != null) {
+      this.setLoop(Math.min(S.loopFrom, e.to), Math.max(S.loopTo, e.to));
+    } else {
+      this.setLoop(Math.min(e.from, e.to), Math.max(e.from, e.to));
+    }
+    if (!S.loop) this.setState({ loop: true });
+    if (S.anchor != null) this.setState({ anchor: null });
+  }
+
   pickMeasure(m) {
     this.setState(s => {
       if (s.anchor == null) return { anchor: m, loopFrom: m, loopTo: m, beat: Score.startQ(s.score, m) };
@@ -6894,12 +6951,12 @@ class Component extends DCLogic {
      narrower than two octaves. */
   /* Straight from the Learning model — PPP does not get a second opinion on
      what is weak just because it is being drawn. */
+  /* Piano music is set about four bars to a line, and a bigger screen shows
+     a bigger page rather than a longer line. A phone gets two, or the notes
+     are too small to read at the piano. */
   barsPerLine() {
-    if (typeof window === 'undefined' || this.narrowScreen()) return 3;
-    const side = this.state.sidebarCollapsed ? 0 : 248;
-    const panel = this.state.focus ? 0 : 360;
-    const col = window.innerWidth - side - panel - 110;
-    return clamp(Math.floor((col - 76) / 168), 4, 8);
+    if (typeof window === 'undefined') return 4;
+    return window.innerWidth <= 720 ? 2 : 4;
   }
 
   weakMeasures() {
@@ -7660,7 +7717,7 @@ class Component extends DCLogic {
         ? tx('Just play — the score waits for each note and moves when you get it. No tempo to keep up with.')
         : S.anchor != null
           ? tx('Measure {{n}} is the start — now click where the passage ends.', { n: S.anchor })
-          : tx('Red bars are the ones PPP found weak. Click a bar to start a passage, then click where it ends.'),
+          : tx('Red bars are where PPP found you weak. Drag across bars to pick a passage, or click one bar.'),
       dismissHints: () => this.setState(st => ({ toggles: Object.assign({}, st.toggles, { hints: false }) })),
       dismissLabel: tx('Hide these tips'),
       hideNextbar: ['player', 'loop', 'memory'].indexOf(sc) > -1 ? 'true' : 'false',
@@ -7716,7 +7773,7 @@ class Component extends DCLogic {
         fluid: S.wholeScore,
         weak: S.wholeScore ? this.weakMeasures() : null,
         heading: S.wholeScore,
-        pick: n => this.pickMeasure(n),
+        pick: e => this.selectBars(e),
         mW: S.wholeScore ? 168 : 210, zoom: S.wholeScore ? 1 : S.zoom, currentM: cur,
         playX: S.beat, beat: S.beat, hands: S.hands, wrong: S.wrongNotes,
         /* A letter under every note helps while reading four bars closely and

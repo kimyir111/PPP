@@ -734,6 +734,7 @@
     "bar {{n}}": "第{{n}}小節",
     "Keep the score on paper": "楽譜は紙の色で",
     "Off, the notation follows the dark theme instead": "オフにすると楽譜もダークテーマに合わせます",
-    "Hide these tips": "ヒントを隠す"
+    "Hide these tips": "ヒントを隠す",
+    "Red bars are where PPP found you weak. Drag across bars to pick a passage, or click one bar.": "赤い小節が弱い所です。小節をドラッグして区間を選ぶか、1小節だけクリックします。"
   }
 }

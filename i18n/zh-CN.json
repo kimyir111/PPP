@@ -734,6 +734,7 @@
     "bar {{n}}": "第 {{n}} 小节",
     "Keep the score on paper": "乐谱保持纸张底色",
     "Off, the notation follows the dark theme instead": "关闭后乐谱跟随深色主题",
-    "Hide these tips": "隐藏提示"
+    "Hide these tips": "隐藏提示",
+    "Red bars are where PPP found you weak. Drag across bars to pick a passage, or click one bar.": "红色小节是薄弱处。拖过几个小节选一段，或只点一个小节。"
   }
 }

@@ -734,6 +734,7 @@
     "bar {{n}}": "{{n}}마디",
     "Keep the score on paper": "악보는 종이색으로",
     "Off, the notation follows the dark theme instead": "끄면 악보도 다크 모드를 따라가요",
-    "Hide these tips": "안내 숨기기"
+    "Hide these tips": "안내 숨기기",
+    "Red bars are where PPP found you weak. Drag across bars to pick a passage, or click one bar.": "빨간 마디가 약한 곳이에요. 마디를 드래그해서 구간을 고르거나, 한 마디만 눌러도 돼요."
   }
 }
