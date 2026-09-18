@@ -174,6 +174,7 @@ function publicUser(u) {
    Scores tab; every one opens by its link. */
 const SHARE_MAX_BYTES = 4 * 1024 * 1024;
 const SHARES_PER_USER = 200;
+const SHARE_LIST_LIMIT = 250;
 
 function newShareId() {
   return crypto.randomBytes(9).toString('base64url');
@@ -602,7 +603,7 @@ async function handleShares(req, res, url) {
     const rows = await store.listShares({
       ownerId: mine ? user.id : null,
       q: clipText(url.searchParams.get('q'), 80),
-      limit: 100
+      limit: SHARE_LIST_LIMIT
     });
     send(res, 200, { shares: rows.map(r => shareCard(r, user)) }, { 'Cache-Control': 'no-store' });
     return;
