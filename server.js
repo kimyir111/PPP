@@ -56,6 +56,48 @@ function jsonError(res, status, message) {
   send(res, status, { error: message });
 }
 
+function httpsDownload(url, dest, hops) {
+  hops = hops || 0;
+  return new Promise((resolve, reject) => {
+    if (hops > 6) return reject(new Error('too many redirects'));
+    https.get(url, { timeout: 60000, headers: { 'User-Agent': 'PPP/1' } }, res => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        res.resume();
+        return httpsDownload(res.headers.location, dest, hops + 1).then(resolve, reject);
+      }
+      if (res.statusCode !== 200) {
+        res.resume();
+        return reject(new Error('HTTP ' + res.statusCode));
+      }
+      const file = fs.createWriteStream(dest);
+      res.pipe(file);
+      file.on('finish', () => file.close(() => resolve(dest)));
+      file.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
+let _ytdlp = null;
+function findYtDlp() {
+  if (_ytdlp) return Promise.resolve(_ytdlp);
+  const exe = process.platform === 'win32' ? '.exe' : '';
+  const local = [
+    process.env.PPP_YTDLP,
+    path.join(ROOT, 'tools', 'yt-dlp' + exe),
+    path.join(ROOT, 'tools', 'yt-dlp')
+  ].filter(Boolean).find(c => { try { return fs.existsSync(c); } catch (e) { return false; } });
+  if (local) { _ytdlp = local; return Promise.resolve(local); }
+  if (process.platform === 'win32') return Promise.resolve(null);
+  const dest = path.join(os.tmpdir(), 'ppp-yt-dlp');
+  return httpsDownload('https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp', dest)
+    .then(() => {
+      try { fs.chmodSync(dest, 0o755); } catch (e) {}
+      _ytdlp = dest;
+      return dest;
+    })
+    .catch(() => null);
+}
+
 function readBody(req, limit) {
   const max = limit || 2 * 1024 * 1024;
   return new Promise((resolve, reject) => {
@@ -530,13 +572,7 @@ async function handleApi(req, res, url) {
       }
     } catch (e) { watch = null; }
     if (!watch) return jsonError(res, 422, 'Not a YouTube video.');
-    const exe = process.platform === 'win32' ? '.exe' : '';
-    const ytdlp = [
-      process.env.PPP_YTDLP,
-      path.join(ROOT, 'tools', 'yt-dlp' + exe),
-      path.join(ROOT, 'tools', 'yt-dlp')
-    ].filter(Boolean).find(c => { try { return fs.existsSync(c); } catch (e) { return false; } })
-      || (process.platform === 'win32' ? null : 'yt-dlp');
+    const ytdlp = await findYtDlp();
     if (!ytdlp) return jsonError(res, 503, 'YouTube audio is not available on this host.');
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ppp-yt-'));
     const child = spawn(ytdlp, [
