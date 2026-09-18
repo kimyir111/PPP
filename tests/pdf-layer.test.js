@@ -45,9 +45,18 @@ function makePdf() {
   [50, 200, 350, 550].forEach(x => line(x, 596, x, 700));
   /* a stem nearly as tall as the staff, which is not a bar line */
   line(450, 677, 450, 701.2);
-  /* note heads, in the music font: two in each bar on each staff */
-  [[90, 685], [140, 682], [230, 679], [300, 688], [380, 694], [450, 682]].forEach(p => text('F2', 20, p[0], p[1], '\\234'));
-  [[90, 605], [230, 605], [380, 605]].forEach(p => text('F2', 20, p[0], p[1], '\\234'));
+  /* note heads, in the music font, each on its own line or space: G4 A4 |
+     C5 E5 | G5 B4 on top, the first a G-B-D chord (and two more in bar 3
+     that recognition will miss),
+     G3 | C3 | G2 below */
+  [[90, 682], [90, 688], [90, 694], [140, 685], [230, 691], [300, 697], [380, 703], [450, 688], [500, 694], [520, 691]]
+    .forEach(p => text('F2', 20, p[0], p[1], '\\234'));
+  [[90, 617], [230, 605], [380, 596]].forEach(p => text('F2', 20, p[0], p[1], '\\234'));
+  /* an arpeggio before the first note, in pieces as Finale sets it */
+  text('F2', 20, 76, 680, 'g');
+  text('F2', 20, 76, 686, 'g');
+  /* a flat in front of the B in bar 3 */
+  text('F2', 20, 440, 688, 'b');
   /* chord names, one of them in pieces with a flat from the music font */
   text('F1', 11, 88, 720, 'G');
   text('F1', 11, 138, 720, 'D');
@@ -89,10 +98,16 @@ const bar = (n, width, rh, lh, head) => '<measure number="' + n + '" width="' + 
 const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1">' +
   '<identification><encoding><software>Audiveris 5.11.0</software></encoding></identification>' +
   '<part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list><part id="P1">' +
-  bar(1, 150, note('G4', 2, 1, 'half', 1, 40) + note('A4', 2, 1, 'half', 1, 90), note('G3', 4, 5, 'whole', 2, 40),
+  /* bar 1: the arpeggio line read as an E5 in front of the real notes */
+  bar(1, 150, note('E5', 1, 1, 'quarter', 1, 27) + note('G4', 1, 1, 'quarter', 1, 40) + note('B4', 1, 1, 'quarter', 1, 40, true) + note('D5', 1, 1, 'quarter', 1, 40, true) +
+    note('A4', 2, 1, 'half', 1, 90),
+    note('G3', 4, 5, 'whole', 2, 40),
     '<attributes><divisions>1</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time><staves>2</staves>' +
     '<clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef></attributes>') +
-  bar(2, 150, note('C5', 2, 1, 'half', 1, 30) + note('E5', 2, 1, 'half', 1, 100), note('C3', 4, 5, 'whole', 2, 30)) +
+  /* bar 2: the left hand started two beats late, though it is drawn under the first note */
+  bar(2, 150, note('C5', 2, 1, 'half', 1, 30) + note('E5', 2, 1, 'half', 1, 100),
+    '<forward><duration>2</duration><voice>5</voice><staff>2</staff></forward>' + note('C3', 2, 5, 'half', 2, 30)) +
+  /* bar 3: the flat before the B not read, and two notes not read at all */
   bar(3, 200, note('G5', 2, 1, 'half', 1, 30) + note('B4', 2, 1, 'half', 1, 100), note('G2', 4, 5, 'whole', 2, 30)) +
   '</part></score-partwise>';
 
@@ -129,6 +144,9 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
       chords: score.chords.map(c => c.m + '|' + c.b + '|' + c.text),
       ottavas: score.ottavas,
       pitches: score.notes.filter(n => n.staff === 1).map(n => n.m + '|' + n.b + '|' + n.p),
+      left: score.notes.filter(n => n.staff === 2).map(n => n.m + '|' + n.b + '|' + n.p),
+      rolled: score.notes.filter(n => n.arp).map(n => n.m + '|' + n.b + '|' + n.p),
+      flats: score.notes.filter(n => n.acc === 'flat').map(n => n.m + '|' + n.b + '|' + n.p),
       untouched: untouched, otherChords: (other.chords || []).length,
       saved: JSON.stringify({ score: score })
     };
@@ -140,14 +158,24 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
 
   console.log('\n── putting it on the score ────────────');
   ok('the page is used', r.out.pages === 1, JSON.stringify(r.out));
+  ok('the arpeggio line read as a note is not a note; what followed moves back',
+    r.out.phantoms === 1 && r.pitches.indexOf('1|0|G4') > -1 && r.pitches.indexOf('1|1|A4') > -1 && !r.pitches.some(p => /E5$/.test(p) && p.indexOf('1|') === 0),
+    r.pitches.join(', '));
+  ok('the arpeggio is put on the chord to its right', r.rolled.join(',') === '1|0|G4,1|0|B4,1|0|D5', r.rolled.join(', ') || 'none');
+  ok('the flat printed before the B is read into it', r.flats.join(',') === '3|2|Bb4' && r.out.accidentals === 1, r.flats.join(', ') || 'none');
+  ok('a left hand recognition started late joins the note it is drawn under',
+    r.left.indexOf('2|0|C3') > -1 && r.out.realigned === 1, r.left.join(', '));
+  ok('the bar with notes recognition missed is reported',
+    (r.out.missing || []).length === 1 && r.out.missing[0].m === 3 && r.out.missing[0].staff === 1 && r.out.missing[0].page === 4,
+    JSON.stringify(r.out.missing));
   ok('the chord names land on the notes under them',
-    ['1|0|G', '1|2|D', '2|0|C', '3|0|Cm/Eb'].every(c => r.chords.indexOf(c) > -1) && r.chords.length === 4, r.chords.join(', '));
+    ['1|0|G', '1|1|D', '2|0|C', '3|0|Cm/Eb'].every(c => r.chords.indexOf(c) > -1) && r.chords.length === 4, r.chords.join(', '));
   ok('a chord name set in pieces is read whole', r.chords.indexOf('3|0|Cm/Eb') > -1);
   ok('the 8va runs from the note under its sign to the last note before its hook',
     r.ottavas.length === 1 && r.ottavas[0].m === 2 && r.ottavas[0].b === 2 && r.ottavas[0].endM === 3 && r.ottavas[0].dir === 1 && r.ottavas[0].staff === 1,
     JSON.stringify(r.ottavas));
   ok('the notes under it sound an octave higher; the one after it does not',
-    r.pitches.indexOf('2|2|E6') > -1 && r.pitches.indexOf('3|0|G6') > -1 && r.pitches.indexOf('3|2|B4') > -1 && r.pitches.indexOf('2|0|C5') > -1,
+    r.pitches.indexOf('2|2|E6') > -1 && r.pitches.indexOf('3|0|G6') > -1 && r.pitches.indexOf('3|2|Bb4') > -1 && r.pitches.indexOf('2|0|C5') > -1,
     r.pitches.join(', '));
   ok('the title comes from the page, not the file name', r.before.title === 'vector.pdf' && r.title === 'Vector Song', r.title);
   ok('the composer comes from the page', r.composer === 'Music by Test Composer', r.composer);
@@ -176,6 +204,27 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
   ok('in a file someone wrote, words are never taken for chords', mended.written === 0);
   ok('a degree the printed name already shows is not added twice', mended.sus[0] === 'D7sus4', mended.sus[0]);
 
+  console.log('\n── a rolled chord ─────────────────────');
+  const roll = await page.evaluate(() => {
+    const nt = (step, oct, chord, arp) => '<note>' + (chord ? '<chord/>' : '') + '<pitch><step>' + step + '</step><octave>' + oct +
+      '</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type>' + (arp ? '<notations><arpeggiate/></notations>' : '') + '</note>';
+    const xml = '<?xml version="1.0"?><score-partwise><part-list><score-part id="P1"><part-name>P</part-name></score-part></part-list><part id="P1">' +
+      '<measure number="1"><attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>' +
+      nt('C', 4, false, true) + nt('E', 4, true, true) + nt('G', 4, true, true) +
+      nt('C', 4, false, false) + nt('E', 4, true, false) + nt('G', 4, true, false) +
+      '<note><rest/><duration>2</duration><voice>1</voice><type>half</type></note></measure></part></score-partwise>';
+    const sc = PPP.parseMusicXML(xml, 'x');
+    const E = new PPP.PerformanceEngine(sc);
+    /* 60 a minute: the rolled chord at 1000 ms, the plain one at 2000 ms */
+    E.begin({ from: 1, to: 1, hands: 'both', tempo: 60, startedAt: 1000 });
+    const rolled = [E.noteOn({ midi: 60, t: 1000 }).verdict, E.noteOn({ midi: 64, t: 1080 }).verdict, E.noteOn({ midi: 67, t: 1160 }).verdict];
+    const plain = [E.noteOn({ midi: 60, t: 2000 }).verdict, E.noteOn({ midi: 67, t: 2160 }).verdict];
+    return { arp: sc.notes.filter(n => n.arp).length, rolled: rolled, plain: plain };
+  });
+  ok('an arpeggiated chord is read from the file', roll.arp === 3, roll.arp + ' notes');
+  ok('its notes played bottom to top are all on time', roll.rolled.every(v => v === 'on'), roll.rolled.join(', '));
+  ok('the same spread on a plain chord is late', roll.plain[1] === 'late', roll.plain.join(', '));
+
   console.log('\n── drawing it ─────────────────────────');
   await page.close();
   const view = await browser.newPage();
@@ -200,9 +249,14 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
     const head = [...svg.querySelectorAll('g.ppp-note[data-onset]')].filter(g => /^2\|2\.000\|1$/.test(g.getAttribute('data-onset')))[0];
     const sb = staff ? staff.getBBox() : null;
     const hb = head ? head.querySelector('.vf-notehead').getBBox() : null;
+    /* the rolled G4: its wavy line is drawn with it, to the left of its head */
+    const g4 = [...svg.querySelectorAll('g.ppp-note[data-onset]')].filter(g => /^1\|0\.000\|1$/.test(g.getAttribute('data-onset')))[0];
+    /* the head is the first shape of its group; VexFlow draws the wavy line into the same group */
+    const gb = g4 ? g4.getBBox() : null, g4h = g4 ? g4.querySelector('.vf-notehead path').getBBox() : null;
     return {
       texts: texts, ottava: svg.querySelectorAll('.ppp-ottava').length,
-      staffTop: sb ? sb.y : null, staffBottom: sb ? sb.y + sb.height : null, headY: hb ? hb.y : null
+      staffTop: sb ? sb.y : null, staffBottom: sb ? sb.y + sb.height : null, headY: hb ? hb.y : null,
+      wavyReach: gb && g4h ? g4h.x - gb.x : null
     };
   });
   ok('the chord names are printed, with the flat as a sign', !!d && d.texts.indexOf('Cm/E♭') > -1 && d.texts.indexOf('G') > -1, d ? d.texts.filter(t => /^[A-G]/.test(t)).join(' ') : 'no staff');
@@ -211,6 +265,8 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
     !!d && d.headY != null && d.headY >= d.staffTop - 6 && d.headY <= d.staffBottom,
     d ? 'head at ' + Math.round(d.headY) + ', staff ' + Math.round(d.staffTop) + '–' + Math.round(d.staffBottom) : '');
   ok('the title from the page heads the score', !!d && d.texts.indexOf('Vector Song') > -1);
+  ok('the arpeggio is drawn beside its chord', !!d && d.wavyReach != null && d.wavyReach > 6,
+    d && d.wavyReach != null ? 'reaches ' + d.wavyReach.toFixed(1) + 'px left of the head' : 'not found');
   ok('no page errors', pageErrors.length === 0, pageErrors.slice(0, 2).join(' | ') || 'clean');
   await view.evaluate(() => { try { localStorage.removeItem('ppp.state.v2'); } catch (e) {} });
 

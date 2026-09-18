@@ -149,6 +149,45 @@ const clickText = (page, re) => page.evaluate(src => {
   ok('in D major the hand around F sharp is D E F# G A', rest.d.join() === '62,64,66,67,69', rest.d.join(' '));
   ok('in C the hand around E is C D E F G', rest.c.join() === '60,62,64,65,67', rest.c.join(' '));
 
+  console.log('\n── the hand is drawn on the keys it plays ──');
+  const drawn = await page.evaluate(() => {
+    const F = window.PPP.Fingering;
+    /* C–E–G–C in F minor, repeated: E to G is a stretch for 2 and 3 by the
+       table, and once made the drawn hand fall back to a made-up position */
+    const notes = [];
+    for (let i = 0; i < 8; i++) [60, 64, 67, 72].forEach(m => notes.push({ abs: i * 0.25, dur: 0.25, midi: m, hand: 'r', m: 20 }));
+    const plan = F.plan({ notes, _byNumber: { 20: { key: { fifths: -4 } } } });
+    const e = plan.hands.r.events[0], pose = plan.hands.r.poses[e.pose];
+    /* and every onset of a piece full of wide chords */
+    let seed = 11;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const wide = [];
+    let m = 64;
+    for (let i = 0; i < 400; i++) {
+      m = Math.max(48, Math.min(84, m + Math.round((rnd() - 0.5) * 9)));
+      wide.push({ abs: i / 2, dur: 0.5, midi: m, hand: 'r' });
+      const k = rnd() < 0.4 ? 1 + Math.floor(rnd() * 3) : 0;
+      for (let c = 0; c < k; c++) wide.push({ abs: i / 2, dur: 0.5, midi: m + [3, 4, 7, 8, 12][Math.floor(rnd() * 5)] + c, hand: 'r' });
+      wide.push({ abs: i / 2, dur: 0.5, midi: m - 12 - Math.floor(rnd() * 12), hand: 'l' });
+    }
+    const off = (sc) => {
+      const p = F.plan(sc);
+      let n = 0, bad = 0;
+      ['r', 'l'].forEach(h => p.hands[h].events.forEach(ev => {
+        const ps = p.hands[h].poses[ev.pose];
+        n++;
+        if (!ev.fingers.every((f, j) => !f || (ps.key[f - 1] === ev.midi[j] && ps.played[f - 1]))) bad++;
+      }));
+      return n + ' onsets, ' + bad + ' off';
+    };
+    return { fingers: e.fingers.join(''), keys: pose.key.join(','), played: pose.played.map(Number).join(''),
+      wide: off({ notes: wide, _byNumber: {} }), demo: off(window.PPP.buildDemoScore()) };
+  });
+  ok('C–E–G–C in F minor puts 1 2 3 5 on C E G C', drawn.fingers === '1235' && drawn.played === '11101' &&
+    drawn.keys.split(',').filter((k, i) => drawn.played[i] === '1').join() === '60,64,67,72', 'hand over ' + drawn.keys);
+  ok('every onset of a piece of wide chords is drawn on its own keys', / 0 off$/.test(drawn.wide), drawn.wide);
+  ok('and every onset of the demo', / 0 off$/.test(drawn.demo), drawn.demo);
+
   console.log('\n── the whole demo piece ──');
   const demo = await page.evaluate(() => {
     const sc = window.PPP.buildDemoScore();

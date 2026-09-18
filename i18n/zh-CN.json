@@ -907,6 +907,7 @@
     "Finger numbers": "手指编号",
     "Playing only": "仅弹奏的手指",
     "Off": "关闭",
-    "Left / right labels": "左右手文字"
+    "Left / right labels": "左右手文字",
+    "Measure {{n}}: the page shows {{page}} notes, recognition found {{found}}.": "第{{n}}小节：乐谱上有{{page}}个音符，只识别出{{found}}个。"
   }
 }

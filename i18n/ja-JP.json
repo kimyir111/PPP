@@ -907,6 +907,7 @@
     "Finger numbers": "指番号",
     "Playing only": "弾く指だけ",
     "Off": "オフ",
-    "Left / right labels": "左手・右手の文字"
+    "Left / right labels": "左手・右手の文字",
+    "Measure {{n}}: the page shows {{page}} notes, recognition found {{found}}.": "{{n}}小節：楽譜には音符が{{page}}個ありますが、認識できたのは{{found}}個です。"
   }
 }

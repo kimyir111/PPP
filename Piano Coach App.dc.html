@@ -2565,6 +2565,8 @@ function parseMusicXML(xmlText, name) {
              be put on the note under them */
           const dx = parseFloat(el.getAttribute('default-x'));
           if (nn && isFinite(dx)) nn.dx = dx;
+          /* a chord rolled from the bottom up, drawn with a wavy line */
+          if (nn && el.querySelector('notations arpeggiate')) nn.arp = true;
         }
         if (!isChord) { lastOnset = cursor; cursor += durQ; }
         maxCursor = Math.max(maxCursor, cursor);
@@ -2914,7 +2916,8 @@ class MidiInput {
 const TIMING_DEFAULTS = {
   perfect: 55,   /* |dt| within this counts as on the beat */
   good: 130,     /* within this is a clean note for timing accuracy */
-  window: 250    /* beyond this a note cannot belong to that onset at all */
+  window: 250,   /* beyond this a note cannot belong to that onset at all */
+  roll: 180      /* how far into an arpeggio its top note may come and still be on time */
 };
 
 class PerformanceEngine {
@@ -2942,6 +2945,9 @@ class PerformanceEngine {
     this.wrong = [];
     this.extras = [];
     this.held = {};
+    /* a chord marked to be rolled: every note of it on that staff */
+    const rolled = {};
+    Score.notesIn(score, from, to).forEach(n => { if (n.arp) rolled[n.m + '|' + n.b + '|' + (n.staff || 1)] = true; });
     this.expected = Score.notesIn(score, from, to)
       .filter(n => !n.tieStop)                   /* tied over: already sounding, not re-struck */
       .filter(n => this._handOk(n, run.hands))
@@ -2953,6 +2959,7 @@ class PerformanceEngine {
         hand: n.hand,
         absQ: n.abs,
         tMs: run.startedAt + (n.abs - startQ) * perQuarterMs,
+        arp: !!rolled[n.m + '|' + n.b + '|' + (n.staff || 1)],
         matched: false,
         deltaMs: null,
         verdict: null,
@@ -2979,11 +2986,14 @@ class PerformanceEngine {
       const x = this.expected[i];
       if (x.matched || x.midi !== ev.midi) continue;
       const d = ev.t - x.tMs;
-      if (Math.abs(d) > w) continue;
+      if (d < -w || d > w + (x.arp ? this.timing.roll : 0)) continue;
       if (Math.abs(d) < Math.abs(bestD)) { best = x; bestD = d; }
     }
 
     if (best) {
+      /* the upper notes of a rolled chord arrive after the lower ones by
+         design; only lateness beyond the roll counts */
+      if (best.arp && bestD > 0) bestD = Math.max(0, bestD - this.timing.roll);
       best.matched = true;
       best.closed = true;
       best.deltaMs = bestD;
@@ -3030,7 +3040,7 @@ class PerformanceEngine {
     for (let i = 0; i < this.expected.length; i++) {
       const x = this.expected[i];
       if (x.closed || x.matched) continue;
-      if (tMs > x.tMs + w) { x.closed = true; x.verdict = 'missed'; }
+      if (tMs > x.tMs + w + (x.arp ? this.timing.roll : 0)) { x.closed = true; x.verdict = 'missed'; }
     }
   }
 
@@ -4390,6 +4400,10 @@ const Import = {
     if (sigList.length > 3)
       flag(null, 'time', tx('Recognised {{n}} different time signatures ({{list}}). Some are probably misreads.', { n: sigList.length, list: sigList.join(', ') }));
 
+    /* bars where a PDF prints more notes than recognition found */
+    (ctx.missing || []).forEach(x => flag(x.m, 'missing', tx('Measure {{n}}: the page shows {{page}} notes, recognition found {{found}}.',
+      { n: x.m, page: x.page, found: x.found })));
+
     /* failed pages */
     (ctx.pages || []).forEach(p => {
       if (!p.ok) flag(null, 'page', tx(p.error ? 'Page {{n}} could not be read: {{error}}' : 'Page {{n}} could not be read.', { n: p.index + 1, error: p.error || '' }));
@@ -4748,7 +4762,8 @@ const Import = {
     }
 
     stage('check', {});
-    const report = Import.validate(score, { pageCount: pages.length, pages: omr.pages });
+    const report = Import.validate(score, { pageCount: pages.length, pages: omr.pages,
+      missing: source.fromPdf ? source.fromPdf.missing : null });
     source.status = report.level === 'poor' ? 'low-confidence' : 'recognised';
     score.source = source;
     /* page images stay in memory for the review screen; they are never persisted */
@@ -5680,34 +5695,45 @@ const Fingering = {
     return out;
   },
 
-  /* Where the whole hand sits. A position lasts as long as every finger in it
-     stays on one key and the fingers stay in order within reach. */
+  /* Where the whole hand sits. Every onset puts its fingers on its own keys;
+     the hand stays where it is for the next one as long as each finger keeps
+     its key, the fingers stay in order, and whatever the next one adds is
+     within comfortable reach of what the hand already covers. An onset is
+     never judged against itself — a chord was chosen to be played, however
+     wide, so its own keys are always where the hand goes. */
   positions(evs, fings, hand, keyOf) {
     const poses = [];
     let cur = null;
-    const fits = (map, e, f) => {
-      const next = Object.assign({}, map);
-      for (let j = 0; j < e.midi.length; j++) {
-        if (!f[j]) continue;
-        if (next[f[j]] != null && next[f[j]] !== e.midi[j]) return null;
-        next[f[j]] = e.midi[j];
+    const own = (e, f) => {
+      const m = {};
+      for (let j = 0; j < e.midi.length; j++) if (f[j]) m[f[j]] = e.midi[j];
+      return m;
+    };
+    const extend = (map, add) => {
+      const next = Object.assign({}, map), fresh = {};
+      for (const k in add) {
+        if (next[k] != null) { if (next[k] !== add[k]) return null; }
+        else { next[k] = add[k]; fresh[k] = true; }
       }
       const used = Object.keys(next).map(Number).sort((x, y) => x - y);
       for (let i = 0; i < used.length; i++) {
         for (let j = i + 1; j < used.length; j++) {
           const fa = used[i], fb = used[j];
           const d = Fingering.span(fa, next[fa], fb, next[fb], hand);
-          /* in order (a thumb passing under is a new position) and in reach */
-          if (d < 0.5 || d > Fingering.SPANS[fa + '-' + fb][4] + 1e-6) return null;
+          /* out of order: a thumb passing under is a new position */
+          if (d < 0.5) return null;
+          /* a new key must be in reach of the ones the hand is already on */
+          if (!fresh[fa] !== !fresh[fb] && d > Fingering.SPANS[fa + '-' + fb][4] + 1e-6) return null;
         }
       }
       return next;
     };
     evs.forEach((e, i) => {
-      const merged = cur && fits(cur.map, e, fings[i]);
+      const add = own(e, fings[i]);
+      const merged = cur && extend(cur.map, add);
       if (merged) cur.map = merged;
       else {
-        cur = { map: fits({}, e, fings[i]) || {}, first: i };
+        cur = { map: add, first: i };
         poses.push(cur);
       }
       e.pose = poses.length - 1;
@@ -5744,7 +5770,7 @@ const Fingering = {
           if (Math.abs(kx - raw) > 0.76) continue;
           if (g && (kx - x[g]) * dir < 0.5 - 1e-9) continue;
           if (gh && (x[gh] - kx) * dir < 0.5 - 1e-9) continue;
-          const sc = Math.abs(kx - raw) + (inScale(m) ? 0 : 1) + (Fingering.isBlack(m) ? 0.2 : 0) + 0.01 * Math.abs(kx - x[nb]);
+          const sc = Math.abs(kx - raw) + (inScale(m) ? 0 : 1) + (Fingering.isBlack(m) ? 0.45 : 0) + 0.01 * Math.abs(kx - x[nb]);
           if (sc < bs) { bs = sc; best = m; }
         }
         if (best != null) { key[f] = best; x[f] = Fingering.keyX(best); }
@@ -5877,7 +5903,10 @@ const HandArt = {
     const black = x.map(v => Math.abs(v - Math.round(v)) > 0.25);
     /* a finger on a black key brings the whole hand forward */
     const fwd = played.some((p, i) => p && black[i]) ? 1 : 0;
-    const tip = x.map((v, i) => [(v + 0.5) * KW, black[i] ? HandArt.BLACK_Y[i] : H - HandArt.REACH_WHITE[i] - fwd * 14]);
+    /* a finger resting over a black key waits just in front of it, a little
+       further in than its neighbours, rather than reaching in as if to play */
+    const tip = x.map((v, i) => [(v + 0.5) * KW,
+      black[i] && played[i] ? HandArt.BLACK_Y[i] : H - HandArt.REACH_WHITE[i] - fwd * 14 - (black[i] ? 8 : 0)]);
     const yK = H + HandArt.KNUCKLE - fwd * 16;
     const cx = (tip[1][0] + tip[2][0] + tip[3][0] + tip[4][0]) / 4;
     const s = 0.9 * KW;
@@ -5999,6 +6028,7 @@ const PdfLayer = {
     const tc = await page.getTextContent();
     const texts = tc.items.filter(it => it.str && it.str.trim()).map(it => ({
       s: it.str, x: it.transform[4], y: it.transform[5], w: it.width || 0,
+      rx: it.transform[0], ry: it.transform[1],
       size: Math.abs(it.transform[3]) || it.height || 0, font: it.fontName
     }));
     const ol = await page.getOperatorList();
@@ -6245,6 +6275,35 @@ const PdfLayer = {
     return out;
   },
 
+  /* Note heads, accidentals and arpeggio lines, as the music font sets them. */
+  marks(L, lay) {
+    const heads = [], accs = [], bits = [];
+    L.texts.forEach(t => {
+      if (t.font !== lay.font) return;
+      const s = t.s.trim();
+      if (/[œ˙w\uE0A2-\uE0A4]/.test(s))
+        heads.push({ x: t.x, y: t.y, w: Math.max(t.w, 6), size: t.size, n: (s.match(/[œ˙w\uE0A2-\uE0A4]/g) || []).length });
+      if (s.length === 1) {
+        const kind = /[n\uE261]/.test(s) ? 'natural' : /[#\uE262]/.test(s) ? 'sharp' : /[b\uE260]/.test(s) ? 'flat' : null;
+        if (kind) accs.push({ x: t.x, y: t.y, kind: kind });
+      }
+      /* Finale's arpeggio is a run of "g" pieces, set upright */
+      if (/^[g\uEAA9-\uEAAC]+$/.test(s)) {
+        const len = Math.max(t.w, 4), n = Math.hypot(t.rx || 1, t.ry || 0) || 1;
+        const x1 = t.x + ((t.rx || 1) / n) * len, y1 = t.y + ((t.ry || 0) / n) * len;
+        bits.push({ x: Math.min(t.x, x1), y0: Math.min(t.y, y1) - 3, y1: Math.max(t.y, y1) + 3 });
+      }
+    });
+    bits.sort((a, b) => a.x - b.x || a.y0 - b.y0);
+    const arps = [];
+    bits.forEach(a => {
+      const l = arps.filter(l => Math.abs(l.x - a.x) < 2 && a.y0 <= l.y1 + 4 && a.y1 >= l.y0 - 4)[0];
+      if (l) { l.y0 = Math.min(l.y0, a.y0); l.y1 = Math.max(l.y1, a.y1); }
+      else arps.push({ x: a.x, y0: a.y0, y1: a.y1 });
+    });
+    return { heads: heads, accs: accs, arps: arps };
+  },
+
   /* Put what the PDF says onto the recognised score. layers: one per page,
      null where a page could not be read; docs: the recognised MusicXML of
      each page, which says how many bars that page holds. A page whose bar
@@ -6297,6 +6356,158 @@ const PdfLayer = {
       return list.map(n => ({ n: n, d: Math.abs(pos(n) - r), at: pos(n) })).sort((p, q) => p.d - q.d);
     };
     const barAt = (sys, x) => sys.bars.filter(b => x >= b.x0 - 3 && x < b.x1 - 1)[0] || null;
+
+    /* ---- the notes, where the page settles what recognition got wrong ----
+       A wavy arpeggio line read as notes; an accidental not read, so an F
+       natural sounds as F sharp; and the arpeggio itself, not drawn. Each is
+       judged on one bar of one staff: the page's note heads, accidentals and
+       arpeggio lines against where recognition drew its notes. */
+    const DI = { C: 0, D: 1, E: 2, F: 3, G: 4, A: 5, B: 6 };
+    const TOP_DI = { treble: 38, bass: 26, alto: 32, tenor: 30 };   /* the top line, as a diatonic step */
+    const di = p => { const q = PITCH_RE.exec(p || ''); return q ? (+q[3]) * 7 + DI[q[1]] : null; };
+    const clefAt = (mm, staffNo, b) => {
+      let c = (mm.clefs && mm.clefs[staffNo]) || (staffNo === 1 ? 'treble' : 'bass');
+      (mm.clefChanges || []).forEach(ch => { if (ch.staff === staffNo && ch.b <= b + 1e-6) c = ch.clef; });
+      return c;
+    };
+    const stepOf = (mm, n) => {
+      const t = TOP_DI[clefAt(mm, n.staff || 1, n.b)], d = di(n.p);
+      return t == null || d == null ? null : t - d;
+    };
+    const xOf = (b, n) => { const mm = byNo[b.m]; return (n.dx != null && mm && mm.w) ? b.x0 + (n.dx / mm.w) * (b.x1 - b.x0) : null; };
+    const setAlter = (n, alter) => {
+      const r = PITCH_RE.exec(n.p);
+      n.p = r[1] + (alter > 0 ? '#'.repeat(alter) : alter < 0 ? 'b'.repeat(-alter) : '') + r[3];
+      n.midi = pitchToMidi(n.p);
+    };
+    out.phantoms = 0; out.accidentals = 0; out.arpeggios = 0;
+    const gone = new Set();
+    placed.forEach(pl => {
+      const mk = PdfLayer.marks(pl.L, pl.lay);
+      pl.lay.systems.forEach(sys => sys.bars.forEach(b => {
+        const mm = b.m != null ? byNo[b.m] : null;
+        if (!mm) return;
+        sys.staves.forEach((st, k) => {
+          const staffNo = k + 1;
+          const inStaff = y => y <= st.top + 3 * st.gap && y >= st.bottom - 3 * st.gap;
+          const here = x => x >= b.x0 - 2 && x <= b.x1 + 2;
+          const mine = () => (inBar[b.m] || []).filter(n => (n.staff || 1) === staffNo && !n.rest && n.p && !gone.has(n));
+          const headNear = x => mk.heads.some(h => inStaff(h.y) && h.x - 3 <= x && h.x + h.w + 3 >= x);
+          const arps = mk.arps.filter(a => here(a.x) && a.y1 >= st.bottom - st.gap && a.y0 <= st.top + st.gap);
+
+          /* 1. notes recognition found where the page has only an arpeggio
+                line; what followed them in that voice moves back */
+          arps.forEach(a => {
+            const groups = {};
+            mine().forEach(n => {
+              const gx = xOf(b, n);
+              if (gx != null && gx >= a.x - 3 && gx <= a.x + 5) (groups[(n.voice || 1) + '|' + n.b] = groups[(n.voice || 1) + '|' + n.b] || []).push(n);
+            });
+            Object.keys(groups).forEach(key => {
+              const grp = groups[key], head = grp[0];
+              if (headNear(xOf(b, head))) return;
+              const d = Math.max(0, head.dur || 0);
+              grp.forEach(n => gone.add(n));
+              (inBar[b.m] || []).forEach(n => {
+                if (gone.has(n) || (n.staff || 1) !== staffNo || (n.voice || 1) !== (head.voice || 1) || n.b <= head.b + 1e-6) return;
+                n.b = Math.max(head.b, n.b - d);
+              });
+              out.phantoms++;
+            });
+          });
+
+          /* 2. an accidental printed in front of a note; it holds for the
+                rest of the bar. The key signature is not one. */
+          mk.accs.filter(a => here(a.x) && inStaff(a.y) && a.x > st.x0 + 45).forEach(a => {
+            const printedBefore = mk.heads.some(h => Math.abs(h.y - a.y) < 1.2 && h.x + h.w >= a.x + 2 && h.x <= a.x + 16);
+            if (!printedBefore) return;
+            const step = Math.round((st.top - a.y) / (st.gap / 2));
+            const c = mine().map(n => ({ n: n, gx: xOf(b, n) }))
+              .filter(q => q.gx != null && q.gx >= a.x + 1 && q.gx <= a.x + 20 && stepOf(mm, q.n) === step)
+              .sort((p, q) => p.gx - q.gx)[0];
+            if (!c) return;
+            const n = c.n;
+            const want = a.kind === 'sharp' ? 1 : a.kind === 'flat' ? -1 : 0;
+            const q = PITCH_RE.exec(n.p);
+            const have = q[2] ? (q[2].charAt(0) === '#' ? q[2].length : -q[2].length) : 0;
+            if (have === want && n.acc === a.kind) return;
+            setAlter(n, want);
+            n.acc = a.kind;
+            mine().forEach(x => {
+              if (x === n || x.b <= n.b + 1e-6 || x.acc) return;
+              const r = PITCH_RE.exec(x.p);
+              if (r && r[1] === q[1] && r[3] === q[3]) setAlter(x, want);
+            });
+            out.accidentals++;
+          });
+
+          /* 3. the arpeggio, on the chord just to its right */
+          arps.forEach(a => {
+            const c = mine().map(n => ({ n: n, gx: xOf(b, n) }))
+              .filter(q => q.gx != null && q.gx > a.x + 2 && q.gx <= a.x + 22).sort((p, q) => p.gx - q.gx);
+            if (!c.length) return;
+            const at = c[0].n.b;
+            let marked = false;
+            mine().forEach(n => { if (Math.abs(n.b - at) < 1e-6 && !n.arp) { n.arp = true; marked = true; } });
+            if (marked) out.arpeggios++;
+          });
+        });
+
+        /* 4. A voice recognition started late: its first note stands in the
+              same column as a note that sounds earlier. Notes drawn one above
+              the other sound together, so the voice moves back to meet it. A
+              bar where the columns and the beats agree is not touched. */
+        const all = (inBar[b.m] || []).filter(n => !n.rest && n.p && !gone.has(n));
+        const voiceOf = n => (n.staff || 1) + '|' + (n.voice || 1);
+        const voices = {};
+        all.forEach(n => { (voices[voiceOf(n)] = voices[voiceOf(n)] || []).push(n); });
+        Object.keys(voices).forEach(v => {
+          const first = voices[v].slice().sort((p, q) => p.b - q.b)[0];
+          const fx = first ? xOf(b, first) : null;
+          if (!first || first.b < 1e-6 || fx == null) return;
+          const partner = all.filter(n => voiceOf(n) !== v && n.b < first.b - 1e-6 && xOf(b, n) != null)
+            .map(n => ({ n: n, d: Math.abs(xOf(b, n) - fx) })).filter(q => q.d <= 3)
+            .sort((p, q) => p.d - q.d)[0];
+          if (!partner) return;
+          const shift = first.b - partner.n.b;
+          (inBar[b.m] || []).forEach(n => {
+            if (!gone.has(n) && voiceOf(n) === v && n.b >= first.b - 1e-6) n.b = Math.max(0, n.b - shift);
+          });
+          out.realigned = (out.realigned || 0) + 1;
+        });
+      }));
+    });
+    /* Bars where the page prints more notes than recognition found, so the
+       check screen can point at them: note heads at full size (a grace note's
+       smaller head is not counted) against the notes recognition kept. */
+    out.missing = [];
+    placed.forEach(pl => {
+      const mk = PdfLayer.marks(pl.L, pl.lay);
+      const sizes = mk.heads.map(h => h.size).sort((a, b) => a - b);
+      const full = sizes.length ? sizes[Math.floor(sizes.length / 2)] * 0.8 : 0;
+      pl.lay.systems.forEach(sys => sys.bars.forEach(b => {
+        if (b.m == null) return;
+        const nearest = y => sys.staves.map((s2, j) => ({ j: j, d: Math.abs(y - (s2.top + s2.bottom) / 2) }))
+          .sort((p, q) => p.d - q.d)[0].j;
+        sys.staves.forEach((st, k) => {
+          /* only this system's notes: ledger lines reach about four spaces out */
+          const top = sys.staves[0], bot = sys.staves[sys.staves.length - 1];
+          const onPage = mk.heads.filter(h => h.size >= full && h.x >= b.x0 && h.x < b.x1 &&
+              h.y <= top.top + 5 * top.gap && h.y >= bot.bottom - 5 * bot.gap && nearest(h.y) === k)
+            .reduce((a, h) => a + h.n, 0);
+          const found = (inBar[b.m] || []).filter(n => (n.staff || 1) === k + 1 && !n.rest && n.p && !gone.has(n)).length;
+          if (onPage - found >= 2) out.missing.push({ m: b.m, staff: k + 1, page: onPage, found: found });
+        });
+      }));
+    });
+
+    if (gone.size || out.realigned) {
+      score.notes = score.notes.filter(n => !gone.has(n));
+      score.notes.forEach(n => { n.abs = absOf(n.m, n.b); });
+      score.notes.sort((a, b) => a.abs - b.abs || (a.staff || 1) - (b.staff || 1));
+      Object.keys(inBar).forEach(k => { delete inBar[k]; });
+      score.notes.forEach(n => { (inBar[n.m] = inBar[n.m] || []).push(n); });
+    }
 
     /* chord names */
     const chords = [];
@@ -7368,6 +7579,9 @@ function makeScoreView(React) {
           sn = new VF.StaveNote(opts);
         } catch (e) { return; }
 
+        if (!isRest && g.notes.some(n => n.arp)) {
+          try { sn.addStroke(0, new VF.Stroke(VF.Stroke.Type.ARPEGGIO_DIRECTIONLESS)); } catch (e) { /* drawn without it */ }
+        }
         if (!isRest) {
           heads.forEach((n, i) => {
             const a = n.acc ? ACC_VEX[n.acc] : null;

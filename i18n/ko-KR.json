@@ -907,6 +907,7 @@
     "Finger numbers": "손가락 번호",
     "Playing only": "칠 손가락만",
     "Off": "끄기",
-    "Left / right labels": "왼손·오른손 글자"
+    "Left / right labels": "왼손·오른손 글자",
+    "Measure {{n}}: the page shows {{page}} notes, recognition found {{found}}.": "{{n}}마디: 악보에는 음표가 {{page}}개인데 {{found}}개만 인식됐어요."
   }
 }
