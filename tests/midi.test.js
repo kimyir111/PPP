@@ -28,10 +28,26 @@ function installFakeMidi() {
   const oOut = mkPort('fake-out', 'Fake Piano Out', 'output');
   const inputs = new Map([['fake-1', p1], ['fake-2', p2]]);
   const outputs = new Map([['fake-1', oSame], ['fake-out', oOut]]);
-  const access = { inputs, outputs, onstatechange: null, addEventListener() {}, removeEventListener() {} };
+  const listeners = [];
+  const access = {
+    inputs, outputs, onstatechange: null,
+    addEventListener(type, fn) { if (type === 'statechange' && fn) listeners.push(fn); },
+    removeEventListener(type, fn) {
+      const i = listeners.indexOf(fn); if (i > -1) listeners.splice(i, 1);
+    }
+  };
   navigator.requestMIDIAccess = () => Promise.resolve(access);
   window.__fake = {
     access, p1, p2, oSame, oOut, sent: [],
+    addInput(id, name) {
+      const p = mkPort(id, name, 'input');
+      inputs.set(id, p);
+      return p;
+    },
+    fireState() {
+      listeners.slice().forEach(fn => fn());
+      if (typeof access.onstatechange === 'function') access.onstatechange();
+    },
     send(bytes, t, which) {
       const p = which === 2 ? p2 : p1;
       if (p.onmidimessage) p.onmidimessage({ data: new Uint8Array(bytes), timeStamp: t == null ? performance.now() : t });
@@ -364,6 +380,23 @@ function installFakeMidi() {
   await sleep(500);
   ok('disconnecting falls back to Demo Input', /Demo Input/.test(await badge()), await badge());
 
+  const hot = await page.evaluate(() => {
+    window.__fake.addInput('fake-hot', 'Hotplug Piano');
+    window.__fake.fireState();
+    return new Promise(r => setTimeout(() => {
+      const app = window.PPP.app;
+      r({
+        id: app.state.midi && app.state.midi.deviceId,
+        name: app.state.midi && app.state.midi.deviceName,
+        live: app.liveMidi()
+      });
+    }, 250));
+  });
+  ok('plugging a piano in selects it without clicking Connect',
+    hot.live && hot.id === 'fake-hot' && hot.name === 'Hotplug Piano', JSON.stringify(hot));
+  ok('the badge shows MIDI Connected after a plug-in',
+    /MIDI Connected/.test(await badge()), await badge());
+
   /* ================= 4. MIDI output sink ================= */
   console.log('\n── MIDI output ──');
   const midiOutXml = '<?xml version="1.0"?><score-partwise version="3.1"><part-list><score-part id="P1"><part-name>P</part-name></score-part></part-list><part id="P1">' +
@@ -479,7 +512,7 @@ function installFakeMidi() {
     const app = PPP.app;
     const score = PPP.parseMusicXML(xml, 'mix.musicxml');
     const planVel = PPP.PianoScore.of(score).strikes[0].vel;
-    await app.connectMidi();
+    await app.connectMidi('fake-1');
     await app.connectMidiOut('fake-1');
     window.__fake.sent = [];
     window.__fake.send([0x90, 60, 100]);
@@ -550,7 +583,7 @@ function installFakeMidi() {
   const local = await page.evaluate(async () => {
     window.__fake.sent = [];
     const app = PPP.app;
-    await app.connectMidi();
+    await app.connectMidi('fake-1');
     await app.connectMidiOut('fake-1');
     const sent = window.__fake.sent.map(x => ({ st: x.data[0], d1: x.data[1], d2: x.data[2], id: x.id }));
     return {

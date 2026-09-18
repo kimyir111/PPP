@@ -3625,6 +3625,7 @@ class MidiInput {
     }
     const pickIn = () => {
       const list = this.devices();
+      this._idList = list.map(d => d.id);
       const want = opts.noInput ? null : (list.filter(d => d.id === preferId)[0] || list[0] || null);
       if (want) this.select(want.id);
       else { this.status = 'connected'; this.onState(this.snapshot()); }
@@ -3700,16 +3701,26 @@ class MidiInput {
     return true;
   }
 
-  /* A device vanishing mid-session must not throw or leave a stale label. */
+  /* A device vanishing mid-session must not throw or leave a stale label.
+     Plugging one in while none is selected takes it — that is how a cable
+     being seated is recognised without clicking Connect again. */
   _refresh() {
     const list = this.devices();
-    const stillThere = list.filter(d => d.id === this.deviceId)[0];
+    const ids = list.map(d => d.id);
+    const prev = this._idList || [];
+    this._idList = ids;
+    const stillThere = this.deviceId && ids.indexOf(this.deviceId) >= 0;
     if (this.deviceId && !stillThere) {
       this._unbind();
       this.deviceId = null; this.deviceName = null;
       const next = list[0];
       if (next) this.select(next.id);
       else { this.status = 'connected'; this.onState(this.snapshot()); }
+      return;
+    }
+    const added = list.filter(d => prev.indexOf(d.id) < 0);
+    if (!this.deviceId && added.length) {
+      this.select(added[0].id);
       return;
     }
     this.onState(this.snapshot());
@@ -9924,6 +9935,7 @@ class Component extends DCLogic {
     if (window.PPP) window.PPP.app = this;
     this.applyTheme();
     this.restore();
+    this.warmMidiIfAllowed();
     loadVexFlow().catch(() => {});
     if (this.props.startScreen) this.setState({ screen: this.props.startScreen });
     if (this.props.theme === 'dark') this.setState({ theme: 'dark' });
@@ -10682,12 +10694,20 @@ class Component extends DCLogic {
       this._midi = new MidiInput({
         onEvent: ev => this.onMidiEvent(ev),
         onState: snap => {
+          const prevId = this.state.midi && this.state.midi.deviceId;
           const outs = this._midi.outputs ? this._midi.outputs() : [];
-          this.setState({
+          const patch = {
             midi: snap,
             midiDeviceId: snap.deviceId || this.state.midiDeviceId,
             midiOut: Object.assign({}, this.state.midiOut, { devices: outs })
-          });
+          };
+          if (snap.deviceId && !this.state.toggles.midi)
+            patch.toggles = Object.assign({}, this.state.toggles, { midi: true });
+          this.setState(patch);
+          if (snap.deviceId && snap.deviceId !== prevId) {
+            this.armMidiOutForDevice(snap.deviceId, snap.deviceName);
+            this.say(tx('Connected to {{device}}.', { device: snap.deviceName }));
+          }
         }
       });
     }
@@ -10775,6 +10795,24 @@ class Component extends DCLogic {
       midiOut: { deviceId: null, deviceName: null, devices: this._midiOut ? this._midiOut.devices() : [] }
     });
   }
+  /* Browsers only skip the MIDI prompt after the person has allowed it once.
+     If that grant is still in place, open access on load so seating a cable
+     is enough — no Connect click. */
+  warmMidiIfAllowed() {
+    const m = this.midiLayer();
+    if (!m.supported()) return;
+    const P = typeof navigator !== 'undefined' && navigator.permissions;
+    if (!P || typeof P.query !== 'function') return;
+    const go = () => { if (this._midiWarm) return; this._midiWarm = true; this.connectMidi(this.state.midiDeviceId); };
+    Promise.resolve()
+      .then(() => P.query({ name: 'midi' }))
+      .then(p => {
+        if (p && p.state === 'granted') go();
+        if (p && typeof p.addEventListener === 'function')
+          p.addEventListener('change', () => { if (p.state === 'granted') go(); });
+      })
+      .catch(() => {});
+  }
   connectMidi(preferId) {
     const m = this.midiLayer();
     if (!m.supported()) {
@@ -10786,12 +10824,8 @@ class Component extends DCLogic {
       if (okFlag && m.deviceId) {
         /* Connecting is the act of choosing MIDI, so it arms the input mode —
            otherwise a device could be attached while PPP still scored you by
-           simulation. */
+           simulation. Device-select already toasts and arms the output. */
         this.setState(st => ({ toggles: Object.assign({}, st.toggles, { midi: true }) }));
-        this.say(tx('Connected to {{device}}.', { device: m.deviceName }));
-        /* The same USB piano almost always has an output. Arm it so Play
-           is heard on the instrument, not only taps on the on-screen keys. */
-        this.armMidiOutForDevice(m.deviceId, m.deviceName);
       } else if (okFlag) this.say(tx('No MIDI inputs found — plug a keyboard in.'));
       /* "Refused" on its own is a dead end. Say which refusal it was and what
          undoes it, because the fix is always in the browser, not in PPP. */
