@@ -31,6 +31,7 @@ const MIME = {
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
   '.woff2': 'font/woff2',
+  '.mp3': 'audio/mpeg',
   '.txt': 'text/plain; charset=utf-8',
   '.md': 'text/markdown; charset=utf-8'
 };
@@ -223,32 +224,32 @@ function postgresStore(url) {
   return {
     async ready() {
       await q(`
-        CREATE TABLE IF NOT EXISTS users (
+        CREATE TABLE IF NOT EXISTS ppp_users (
           id TEXT PRIMARY KEY,
           email TEXT UNIQUE NOT NULL,
           display_name TEXT NOT NULL,
           password_hash TEXT NOT NULL,
           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         );
-        CREATE TABLE IF NOT EXISTS progress (
-          user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        CREATE TABLE IF NOT EXISTS ppp_progress (
+          user_id TEXT PRIMARY KEY REFERENCES ppp_users(id) ON DELETE CASCADE,
           payload JSONB NOT NULL,
           updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
         );
       `);
     },
     async findByEmail(email) {
-      const r = await q('SELECT id, email, display_name AS "displayName", password_hash AS "passwordHash" FROM users WHERE email = $1', [email]);
+      const r = await q('SELECT id, email, display_name AS "displayName", password_hash AS "passwordHash" FROM ppp_users WHERE email = $1', [email]);
       return r.rows[0] || null;
     },
     async findById(id) {
-      const r = await q('SELECT id, email, display_name AS "displayName", password_hash AS "passwordHash" FROM users WHERE id = $1', [id]);
+      const r = await q('SELECT id, email, display_name AS "displayName", password_hash AS "passwordHash" FROM ppp_users WHERE id = $1', [id]);
       return r.rows[0] || null;
     },
     async createUser(user) {
       try {
         await q(
-          'INSERT INTO users (id, email, display_name, password_hash) VALUES ($1, $2, $3, $4)',
+          'INSERT INTO ppp_users (id, email, display_name, password_hash) VALUES ($1, $2, $3, $4)',
           [user.id, user.email, user.displayName, user.passwordHash]
         );
         return user;
@@ -258,12 +259,12 @@ function postgresStore(url) {
       }
     },
     async getProgress(userId) {
-      const r = await q('SELECT payload, updated_at AS "updatedAt" FROM progress WHERE user_id = $1', [userId]);
+      const r = await q('SELECT payload, updated_at AS "updatedAt" FROM ppp_progress WHERE user_id = $1', [userId]);
       return r.rows[0] || null;
     },
     async putProgress(userId, payload) {
       await q(
-        `INSERT INTO progress (user_id, payload, updated_at) VALUES ($1, $2, now())
+        `INSERT INTO ppp_progress (user_id, payload, updated_at) VALUES ($1, $2, now())
          ON CONFLICT (user_id) DO UPDATE SET payload = EXCLUDED.payload, updated_at = now()`,
         [userId, payload]
       );
@@ -306,7 +307,9 @@ function serveStatic(req, res, urlPath) {
     if (err || !st.isFile()) return jsonError(res, 404, 'Not found');
     const ext = path.extname(abs).toLowerCase();
     const type = MIME[ext] || 'application/octet-stream';
-    const cache = ext === '.html' || ext === '.js' || ext === '.json' ? 'no-store' : 'public, max-age=3600';
+    /* the piano recordings never change once shipped, and are the heaviest thing here */
+    const cache = ext === '.html' || ext === '.js' || ext === '.json' ? 'no-store'
+      : ext === '.mp3' ? 'public, max-age=2592000' : 'public, max-age=3600';
     fs.readFile(abs, (e2, buf) => {
       if (e2) return jsonError(res, 500, 'Read failed');
       send(res, 200, buf, { 'Content-Type': type, 'Cache-Control': cache });
