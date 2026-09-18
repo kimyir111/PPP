@@ -5649,7 +5649,7 @@ const Import = {
      parser as any engraved file. */
   transcribeHints(code) {
     return ({
-      'download-failed': [tx('Check that the link opens in a browser'), tx('Or download the audio yourself and upload the file')],
+      'download-failed': [tx('Try again in a moment'), tx('Or add the sheet music as a PDF or MusicXML')],
       'bad-url': [tx('Paste the link to a single YouTube video')],
       'no-audio': [tx('Try a file that has a sound track')],
       'bad-audio': [tx('Try MP3, WAV, M4A or MP4')],
@@ -5666,8 +5666,8 @@ const Import = {
     const health = await Import.health();
     if (!health.ok)
       throw importError('service-down',
-        tx('PPP could not find a score for that recording.'),
-        [orUpload, tx('A YouTube title that matches a public-domain piece in PPP will work')]);
+        tx('PPP could not hear piano notes in that recording.'),
+        [orUpload]);
     if (!health.transcriber)
       throw importError('engine-missing',
         tx('The local helper is running, but the piano transcription model is not set up.'),
@@ -5859,9 +5859,9 @@ const Import = {
       stage('download', { pct: 0 });
       const r = await fetch('/api/youtube-audio?url=' + encodeURIComponent(what.url));
       if (!r.ok) {
-        let msg = tx('The audio could not be downloaded from that link.');
-        try { const j = await r.json(); if (j && j.error) msg = j.error; } catch (e) {}
-        throw importError('download-failed', msg);
+        throw importError('download-failed',
+          tx('PPP could not get the sound from that YouTube link.'),
+          Import.transcribeHints('download-failed'));
       }
       buf = await r.arrayBuffer();
       const type = r.headers.get('content-type') || 'audio/mp4';
@@ -5968,13 +5968,6 @@ const Import = {
       if (real && !Import.isRecording(real)) return Import.load(what.file, onStage, ctl);
     }
     const nameGuess = (what.file ? String(what.file.name).replace(/\.[^.]+$/, '') : '') || '';
-    stage('search', {});
-    let query = nameGuess;
-    if (what.url) {
-      const ytTitle = await Import.youtubeTitle(what.url);
-      if (ytTitle) query = ytTitle;
-    }
-    const localHit = await Import.findScore(query);
 
     let generated = null, genErr = null;
     try {
@@ -5982,6 +5975,14 @@ const Import = {
     } catch (e) { genErr = e; }
     if (generated && generated.heard && (generated.heard.notes || []).length >= 4)
       return Import.finishHeard(generated, what, onStage);
+
+    stage('search', {});
+    let query = nameGuess;
+    if (what.url) {
+      const ytTitle = await Import.youtubeTitle(what.url);
+      if (ytTitle) query = ytTitle;
+    }
+    const localHit = await Import.findScore(query);
 
     if (localHit && what.file && !what.url) {
       /* a named public-domain file: use the catalog score, keep the audio */

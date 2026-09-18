@@ -852,6 +852,8 @@
     "Add the sheet music as a PDF, photo or MusicXML": "楽譜をPDF・写真・MusicXMLで追加してください",
     "PPP could not find a score for that recording.": "その録音に合う楽譜が見つかりませんでした。",
     "PPP could not hear piano notes in that recording.": "その録音からピアノの音を聴き取れませんでした。",
+    "PPP could not get the sound from that YouTube link.": "そのYouTubeリンクから音声を取得できませんでした。",
+    "Try again in a moment": "少し待ってからもう一度試してください",
     "Use a clear solo piano recording": "ピアノ独奏がはっきりした録音を使ってください",
     "Or add the sheet music as a PDF or MusicXML": "または楽譜をPDFかMusicXMLで追加してください",
     "A YouTube title that matches a public-domain piece in PPP will work": "PPPにあるパブリックドメイン曲のタイトルに合うYouTubeリンクは使えます",

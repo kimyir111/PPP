@@ -52,8 +52,8 @@ function send(res, status, body, headers) {
   res.end(body);
 }
 
-function jsonError(res, status, message) {
-  send(res, status, { error: message });
+function jsonError(res, status, message, extra) {
+  send(res, status, Object.assign({ error: message }, extra || {}));
 }
 
 function httpsDownload(url, dest, hops) {
@@ -75,6 +75,207 @@ function httpsDownload(url, dest, hops) {
       file.on('error', reject);
     }).on('error', reject);
   });
+}
+
+function parseYoutubeWatch(raw) {
+  try {
+    const u = new URL(String(raw || '').trim());
+    const host = u.hostname.toLowerCase().replace(/^(www|m|music)\./, '');
+    if (host === 'youtu.be') {
+      const m = /^\/([\w-]{6,})$/.exec(u.pathname);
+      if (m) return { id: m[1], url: 'https://www.youtube.com/watch?v=' + m[1] };
+    } else if (host === 'youtube.com' && u.pathname === '/watch') {
+      const v = u.searchParams.get('v') || '';
+      if (/^[\w-]{6,}$/.test(v)) return { id: v, url: 'https://www.youtube.com/watch?v=' + v };
+    } else if (host === 'youtube.com') {
+      const m = /^\/(shorts|live|embed)\/([\w-]{6,})/.exec(u.pathname);
+      if (m) return { id: m[2], url: 'https://www.youtube.com/watch?v=' + m[2] };
+    }
+  } catch (e) {}
+  return null;
+}
+
+function looksLikeAudioFile(file) {
+  try {
+    const fd = fs.openSync(file, 'r');
+    const buf = Buffer.alloc(12);
+    const n = fs.readSync(fd, buf, 0, 12, 0);
+    fs.closeSync(fd);
+    if (n >= 8 && buf[4] === 0x66 && buf[5] === 0x74 && buf[6] === 0x79 && buf[7] === 0x70) return true;
+    if (n >= 3 && buf[0] === 0x49 && buf[1] === 0x44 && buf[2] === 0x33) return true;
+    if (n >= 2 && buf[0] === 0xff && (buf[1] & 0xe0) === 0xe0) return true;
+    if (n >= 4 && buf[0] === 0x1a && buf[1] === 0x45 && buf[2] === 0xdf && buf[3] === 0xa3) return true;
+    if (n >= 4 && buf[0] === 0x4f && buf[1] === 0x67 && buf[2] === 0x67 && buf[3] === 0x53) return true;
+    if (n >= 4 && buf.toString('ascii', 0, 4) === 'RIFF') return true;
+    return false;
+  } catch (e) { return false; }
+}
+
+function audioTypeFor(file) {
+  const ext = path.extname(file).toLowerCase();
+  if (ext === '.m4a' || ext === '.mp4') return 'audio/mp4';
+  if (ext === '.webm') return 'audio/webm';
+  if (ext === '.mp3') return 'audio/mpeg';
+  if (ext === '.ogg' || ext === '.opus') return 'audio/ogg';
+  if (ext === '.wav') return 'audio/wav';
+  return 'application/octet-stream';
+}
+
+function rmDir(dir) {
+  try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {}
+}
+
+function pipeAudioFile(res, file, dir) {
+  let size = 0;
+  try { size = fs.statSync(file).size; } catch (e) {}
+  res.writeHead(200, {
+    'Content-Type': audioTypeFor(file),
+    'Content-Length': size,
+    'Cache-Control': 'no-store'
+  });
+  const stream = fs.createReadStream(file);
+  stream.pipe(res);
+  const done = () => rmDir(dir);
+  stream.on('close', done);
+  stream.on('error', () => { done(); if (!res.headersSent) jsonError(res, 500, 'Read failed'); });
+}
+
+function httpGetToFile(url, dest, opts) {
+  opts = opts || {};
+  const timeoutMs = opts.timeout || 20000;
+  const maxBytes = opts.maxBytes || 80 * 1024 * 1024;
+  const hops = opts.hops || 0;
+  return new Promise((resolve, reject) => {
+    if (hops > 6) return reject(new Error('too many redirects'));
+    let u;
+    try { u = new URL(url); } catch (e) { return reject(e); }
+    const lib = u.protocol === 'http:' ? http : https;
+    const req = lib.get(url, {
+      timeout: timeoutMs,
+      headers: Object.assign({
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) PPP/1',
+        'Accept': '*/*'
+      }, opts.headers || {})
+    }, res => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        res.resume();
+        const next = new URL(res.headers.location, url).href;
+        return httpGetToFile(next, dest, Object.assign({}, opts, { hops: hops + 1 })).then(resolve, reject);
+      }
+      if (res.statusCode !== 200 && res.statusCode !== 206) {
+        res.resume();
+        return reject(new Error('HTTP ' + res.statusCode));
+      }
+      const type = String(res.headers['content-type'] || '').toLowerCase();
+      if (type.indexOf('text/html') >= 0 || type.indexOf('application/json') >= 0) {
+        res.resume();
+        return reject(new Error('not audio'));
+      }
+      const file = fs.createWriteStream(dest);
+      let n = 0;
+      let limited = false;
+      res.on('data', c => {
+        n += c.length;
+        if (n > maxBytes && !limited) {
+          limited = true;
+          req.destroy();
+          try { file.destroy(); } catch (e) {}
+          reject(new Error('too large'));
+        }
+      });
+      res.pipe(file);
+      file.on('finish', () => file.close(() => {
+        if (limited) return;
+        if (!looksLikeAudioFile(dest)) return reject(new Error('not audio'));
+        resolve(dest);
+      }));
+      file.on('error', reject);
+    });
+    req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+    req.on('error', reject);
+  });
+}
+
+function runYtDlp(ytdlp, watch, extraArgs, timeoutMs) {
+  return new Promise(resolve => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ppp-yt-'));
+    const args = [
+      '--no-playlist', '--no-progress', '--newline', '--no-warnings',
+      '--fixup', 'never',
+      '--force-ipv4',
+      '--socket-timeout', '20',
+      '--retries', '2',
+      '--js-runtimes', 'node:' + process.execPath,
+      '-f', 'bestaudio[ext=m4a]/bestaudio[ext=mp4]/140/139/18/bestaudio',
+      '--max-filesize', '80M',
+      '--match-filter', '!is_live',
+      '-o', path.join(dir, 'audio.%(ext)s')
+    ];
+    if (extraArgs && extraArgs.length) args.push.apply(args, extraArgs);
+    args.push('--', watch);
+    const child = spawn(ytdlp, args, { windowsHide: true, cwd: dir });
+    let tail = '';
+    const onText = c => { tail = (tail + c.toString('utf8')).slice(-4000); };
+    child.stdout.on('data', onText);
+    child.stderr.on('data', onText);
+    let settled = false;
+    const done = result => {
+      if (settled) return;
+      settled = true;
+      resolve(result);
+    };
+    const timer = setTimeout(() => {
+      try { child.kill(); } catch (e) {}
+      done({ file: null, dir: dir, tail: tail, timedOut: true });
+    }, timeoutMs || 70000);
+    child.on('close', () => {
+      clearTimeout(timer);
+      let file = null;
+      try {
+        file = fs.readdirSync(dir).map(f => path.join(dir, f)).filter(f => {
+          try { return fs.statSync(f).isFile() && fs.statSync(f).size > 256 && looksLikeAudioFile(f); }
+          catch (e) { return false; }
+        })[0] || null;
+      } catch (e) {}
+      done({ file: file, dir: dir, tail: tail, timedOut: false });
+    });
+    child.on('error', () => {
+      clearTimeout(timer);
+      done({ file: null, dir: dir, tail: tail, timedOut: false, spawnError: true });
+    });
+  });
+}
+
+async function fetchYoutubeAudioFile(parsed) {
+  const ytdlp = await findYtDlp();
+  const attempts = ytdlp ? [
+    /* Default clients (visionos in current yt-dlp). android,web is bot-walled
+       from datacenter IPs and was why hosted YouTube imports always 502'd. */
+    { extra: [], ms: 60000 },
+    { extra: ['--extractor-args', 'youtube:player_client=tv_downgraded,web_safari,ios'], ms: 25000 }
+  ] : [];
+  let lastTail = '';
+  for (let i = 0; i < attempts.length; i++) {
+    const got = await runYtDlp(ytdlp, parsed.url, attempts[i].extra, attempts[i].ms);
+    if (got.file) return got;
+    lastTail = got.tail || lastTail;
+    rmDir(got.dir);
+    if (got.timedOut && i === 0) break;
+  }
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ppp-yt-'));
+  const dest = path.join(dir, 'audio.m4a');
+  const mirrors = [
+    'https://invidious.f5.si/latest_version?id=' + parsed.id + '&itag=140&local=true',
+    'https://invidious.f5.si/latest_version?id=' + parsed.id + '&itag=139&local=true'
+  ];
+  for (let i = 0; i < mirrors.length; i++) {
+    try {
+      await httpGetToFile(mirrors[i], dest, { timeout: 12000 });
+      if (looksLikeAudioFile(dest)) return { file: dest, dir: dir, tail: lastTail };
+    } catch (e) {}
+  }
+  rmDir(dir);
+  return { file: null, dir: null, tail: lastTail };
 }
 
 let _ytdlp = null;
@@ -521,23 +722,9 @@ async function handleApi(req, res, url) {
   }
 
   if (method === 'GET' && p === '/api/youtube-title') {
-    const raw = String(url.searchParams.get('url') || '').trim();
-    let watch = null;
-    try {
-      const u = new URL(raw);
-      const host = u.hostname.toLowerCase().replace(/^(www|m|music)\./, '');
-      if (host === 'youtu.be') {
-        const m = /^\/([\w-]{6,})$/.exec(u.pathname);
-        if (m) watch = 'https://www.youtube.com/watch?v=' + m[1];
-      } else if (host === 'youtube.com' && u.pathname === '/watch') {
-        const v = u.searchParams.get('v') || '';
-        if (/^[\w-]{6,}$/.test(v)) watch = 'https://www.youtube.com/watch?v=' + v;
-      } else if (host === 'youtube.com') {
-        const m = /^\/(shorts|live|embed)\/([\w-]{6,})/.exec(u.pathname);
-        if (m) watch = 'https://www.youtube.com/watch?v=' + m[2];
-      }
-    } catch (e) { watch = null; }
-    if (!watch) return jsonError(res, 422, 'Not a YouTube video.');
+    const parsed = parseYoutubeWatch(url.searchParams.get('url'));
+    if (!parsed) return jsonError(res, 422, 'Not a YouTube video.');
+    const watch = parsed.url;
     const oembed = 'https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent(watch);
     const title = await new Promise(resolve => {
       const req2 = https.get(oembed, { timeout: 8000, headers: { 'User-Agent': 'PPP/1' } }, r => {
@@ -555,80 +742,19 @@ async function handleApi(req, res, url) {
   }
 
   if (method === 'GET' && p === '/api/youtube-audio') {
-    const raw = String(url.searchParams.get('url') || '').trim();
-    let watch = null;
+    const parsed = parseYoutubeWatch(url.searchParams.get('url'));
+    if (!parsed) return jsonError(res, 422, 'Not a YouTube video.', { code: 'bad-url' });
+    let got = null;
     try {
-      const u = new URL(raw);
-      const host = u.hostname.toLowerCase().replace(/^(www|m|music)\./, '');
-      if (host === 'youtu.be') {
-        const m = /^\/([\w-]{6,})$/.exec(u.pathname);
-        if (m) watch = 'https://www.youtube.com/watch?v=' + m[1];
-      } else if (host === 'youtube.com' && u.pathname === '/watch') {
-        const v = u.searchParams.get('v') || '';
-        if (/^[\w-]{6,}$/.test(v)) watch = 'https://www.youtube.com/watch?v=' + v;
-      } else if (host === 'youtube.com') {
-        const m = /^\/(shorts|live|embed)\/([\w-]{6,})/.exec(u.pathname);
-        if (m) watch = 'https://www.youtube.com/watch?v=' + m[2];
-      }
-    } catch (e) { watch = null; }
-    if (!watch) return jsonError(res, 422, 'Not a YouTube video.');
-    const ytdlp = await findYtDlp();
-    if (!ytdlp) return jsonError(res, 503, 'YouTube audio is not available on this host.');
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ppp-yt-'));
-    const child = spawn(ytdlp, [
-      '--no-playlist', '--no-progress', '--newline', '--no-warnings',
-      '--js-runtimes', 'node:' + process.execPath,
-      '--extractor-args', 'youtube:player_client=android,web',
-      '-f', 'bestaudio[ext=m4a]/bestaudio/best',
-      '--max-filesize', '80M',
-      '--match-filter', '!is_live',
-      '-o', path.join(dir, 'audio.%(ext)s'),
-      '--', watch
-    ], { windowsHide: true, cwd: dir });
-    let tail = '';
-    const onText = c => { tail = (tail + c.toString('utf8')).slice(-4000); };
-    child.stdout.on('data', onText);
-    child.stderr.on('data', onText);
-    const timer = setTimeout(() => { try { child.kill(); } catch (e) {} }, 180000);
-    child.on('close', code => {
-      clearTimeout(timer);
-      let file = null;
-      try {
-        file = fs.readdirSync(dir).map(f => path.join(dir, f)).filter(f => fs.statSync(f).isFile())[0] || null;
-      } catch (e) {}
-      if (code !== 0 || !file) {
-        try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {}
-        const bot = /Sign in to confirm you.re not a bot|HTTP Error 429/i.test(tail);
-        const msg = bot
-          ? 'YouTube refused the download. Upload the audio or video file instead.'
-          : 'The audio could not be downloaded from that link.';
-        if (!res.headersSent) jsonError(res, 502, msg);
-        return;
-      }
-      const ext = path.extname(file).toLowerCase();
-      const type = ext === '.m4a' || ext === '.mp4' ? 'audio/mp4'
-        : ext === '.webm' ? 'audio/webm'
-          : ext === '.mp3' ? 'audio/mpeg'
-            : ext === '.ogg' || ext === '.opus' ? 'audio/ogg'
-              : 'application/octet-stream';
-      let size = 0;
-      try { size = fs.statSync(file).size; } catch (e) {}
-      res.writeHead(200, {
-        'Content-Type': type,
-        'Content-Length': size,
-        'Cache-Control': 'no-store'
-      });
-      const stream = fs.createReadStream(file);
-      stream.pipe(res);
-      const done = () => { try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {} };
-      stream.on('close', done);
-      stream.on('error', () => { done(); if (!res.headersSent) jsonError(res, 500, 'Read failed'); });
-    });
-    child.on('error', () => {
-      clearTimeout(timer);
-      try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {}
-      if (!res.headersSent) jsonError(res, 503, 'YouTube audio is not available on this host.');
-    });
+      got = await fetchYoutubeAudioFile(parsed);
+    } catch (e) {
+      got = { file: null, dir: null, tail: String(e && e.message || '') };
+    }
+    if (!got || !got.file) {
+      if (got && got.dir) rmDir(got.dir);
+      return jsonError(res, 502, 'The audio could not be downloaded from that link.', { code: 'download-failed' });
+    }
+    pipeAudioFile(res, got.file, got.dir);
     return;
   }
 

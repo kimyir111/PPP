@@ -852,6 +852,8 @@
     "Add the sheet music as a PDF, photo or MusicXML": "악보를 PDF, 사진, MusicXML로 넣으세요",
     "PPP could not find a score for that recording.": "그 녹음에 맞는 악보를 찾지 못했어요.",
     "PPP could not hear piano notes in that recording.": "그 녹음에서 피아노 음을 듣지 못했어요.",
+    "PPP could not get the sound from that YouTube link.": "유튜브에서 소리를 받지 못했어요.",
+    "Try again in a moment": "잠시 후 다시 시도해 주세요",
     "Use a clear solo piano recording": "피아노 솔로가 또렷한 녹음을 쓰세요",
     "Or add the sheet music as a PDF or MusicXML": "또는 악보를 PDF나 MusicXML로 넣으세요",
     "A YouTube title that matches a public-domain piece in PPP will work": "PPP에 있는 퍼블릭 도메인 곡 제목과 맞는 유튜브 링크는 돼요",

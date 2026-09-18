@@ -852,6 +852,8 @@
     "Add the sheet music as a PDF, photo or MusicXML": "请用 PDF、照片或 MusicXML 添加乐谱",
     "PPP could not find a score for that recording.": "没能为这段录音找到对应乐谱。",
     "PPP could not hear piano notes in that recording.": "没能从这段录音里听出钢琴音。",
+    "PPP could not get the sound from that YouTube link.": "没能从这条 YouTube 链接取得声音。",
+    "Try again in a moment": "请稍后再试",
     "Use a clear solo piano recording": "请用清晰的钢琴独奏录音",
     "Or add the sheet music as a PDF or MusicXML": "或者用 PDF 或 MusicXML 添加乐谱",
     "A YouTube title that matches a public-domain piece in PPP will work": "YouTube 标题若能对上 PPP 里的公有领域曲目就可以用",

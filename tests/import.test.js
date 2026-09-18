@@ -135,6 +135,28 @@ async function importFile(page, file, waitMs) {
   ok('a YouTube link matching the catalog does not need the local helper',
     !ytCat.error && ytCat.engine === 'Public-domain catalog' && ytCat.notes > 8,
     JSON.stringify(ytCat));
+
+  const ytGen = await page.evaluate(async () => {
+    const oldH = PPP.Import.health, oldT = PPP.Import.youtubeTitle, oldA = PPP.Import.transcribeHere;
+    PPP.Import.health = () => Promise.resolve({ ok: false, remote: true, unreachable: true });
+    PPP.Import.youtubeTitle = () => Promise.resolve('Random piano cover xyzzy not in catalog');
+    PPP.Import.transcribeHere = () => Promise.reject(Object.assign(
+      new Error('PPP could not get the sound from that YouTube link.'),
+      { code: 'download-failed', hints: ['Try again in a moment'] }
+    ));
+    let out;
+    try {
+      await PPP.Import.loadYoutube('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+      out = { unexpected: true };
+    } catch (e) {
+      out = { code: e.code, message: e.message };
+    }
+    PPP.Import.health = oldH; PPP.Import.youtubeTitle = oldT; PPP.Import.transcribeHere = oldA;
+    return out;
+  });
+  ok('a YouTube miss is a generate failure, not a catalog lookup',
+    ytGen.code === 'download-failed' && !/could not find a score/i.test(ytGen.message || ''),
+    JSON.stringify(ytGen));
   ok('YouTube links are recognised in every usual form', kinds.yt.every(id => id === '2WfaotSK3mI'), kinds.yt.join(','));
   ok('anything that is not one YouTube video is refused', kinds.notYt.every(id => id === null), kinds.notYt.join(','));
   ok('unsupported types are refused up front', kinds.midi === null && kinds.junk === null);
