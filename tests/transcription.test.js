@@ -17,6 +17,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const http = require('http');
+const { spawnSync } = require('child_process');
 const A = require('../audio-score.js');
 
 const URL = 'http://127.0.0.1:8777/Piano%20Coach%20App.dc.html';
@@ -158,6 +159,80 @@ const helperHealth = () => new Promise(resolve => {
   ok('a tempo that breathes still keeps its bars', rub.stats.bars === 24 && rub.stats.beatsPerBar === 3,
     rub.stats.bars + ' bars, ' + rub.stats.beatsPerBar + '/4, tempo variation ' + (rub.stats.tempoVariation * 100).toFixed(0) + '%');
 
+  console.log('\n── rolled chords, 6/8, triplets, lock, audio beats, PM2S grid ──');
+  const rolled = [
+    { on: 1.10, off: 1.50, midi: 60, vel: 70 },
+    { on: 1.13, off: 1.50, midi: 64, vel: 70 },
+    { on: 1.16, off: 1.50, midi: 67, vel: 70 },
+    { on: 1.50, off: 1.90, midi: 72, vel: 70 },
+    { on: 2.00, off: 2.40, midi: 71, vel: 70 },
+    { on: 2.50, off: 2.90, midi: 69, vel: 70 }
+  ];
+  const rc = A.toMusicXml({ notes: rolled });
+  const rcBar = rc.xml.split('<measure ')[1] || '';
+  const rcChords = (rcBar.match(/<chord\/>/g) || []).length;
+  ok('a rolled chord is written as one attack', rcChords >= 2, rcChords + ' chord marks in bar 1');
+
+  function compound(bars) {
+    const ev = [];
+    for (let b = 0; b < bars; b++) {
+      const t0 = b * 3;
+      ev.push({ beat: t0, len: 1.5, midi: 43, vel: 88 });
+      ev.push({ beat: t0 + 1.5, len: 1.5, midi: 38, vel: 80 });
+      [0, 0.5, 1, 1.5, 2, 2.5].forEach((k, i) => ev.push({ beat: t0 + k, len: 0.5, midi: 67 + (i % 3), vel: 60 }));
+    }
+    return ev;
+  }
+  const c68 = A.toMusicXml({ notes: perform(compound(8), { bpm: 90, start: 0.8, jitter: 0.01, seed: 4 }) });
+  ok('a 6/8 jig is written in 6/8, not 3/4', c68.stats.beatsPerBar === 6 && c68.stats.beatType === 8,
+    c68.stats.beatsPerBar + '/' + c68.stats.beatType + ', ' + c68.stats.bars + ' bars');
+  ok('and the page says beat-type 8', /<beat-type>8<\/beat-type>/.test(c68.xml));
+
+  function trips(bars) {
+    const ev = [];
+    for (let b = 0; b < bars; b++) {
+      ev.push({ beat: b * 4, len: 4, midi: 48, vel: 80 });
+      for (let beat = 0; beat < 4; beat++) {
+        for (let k = 0; k < 3; k++) ev.push({ beat: b * 4 + beat + k / 3, len: 1 / 3, midi: 72 + k, vel: 70 });
+      }
+    }
+    return ev;
+  }
+  const trp = A.toMusicXml({ notes: perform(trips(4), { bpm: 100, start: 0.5, jitter: 0.004, seed: 2 }) });
+  ok('eighth-note triplets are written as tuplets',
+    (trp.xml.match(/<time-modification>/g) || []).length >= 8 && (trp.xml.match(/<tuplet /g) || []).length >= 4,
+    'time-mod ' + (trp.xml.match(/<time-modification>/g) || []).length + ', tuplet ' + (trp.xml.match(/<tuplet /g) || []).length);
+  ok('not as dotted-eighth plus sixteenth', !(trp.xml.match(/<type>eighth<\/type>\s*<dot\/>/g) || []).length);
+
+  const locked = A.toMusicXml(
+    { notes: perform(waltz(8), { bpm: 96, start: 1.2, jitter: 0.02 }) },
+    { lock: { beats: 4, beatType: 4, bpm: 80, firstDownbeat: 1.2 } }
+  );
+  ok('a lock rewrites metre, tempo and downbeat without new notes',
+    locked.stats.beatsPerBar === 4 && locked.stats.beatType === 4 && locked.stats.tempo === 80 &&
+    locked.stats.beatSource === 'lock' && Math.abs(locked.stats.barStarts[0] - 1.2) < 0.02,
+    locked.stats.beatsPerBar + '/' + locked.stats.beatType + ' @ ' + locked.stats.tempo + ', bar0 ' + locked.stats.barStarts[0]);
+
+  const notes4 = perform(alberti(8), { bpm: 100, start: 1.0, jitter: 0.01, seed: 1 });
+  const beats = [], downs = [];
+  for (let i = 0; i < 50; i++) beats.push(0.4 + i * 0.6);
+  for (let i = 0; i < 16; i++) downs.push(0.4 + i * 1.8);
+  const inj = A.toMusicXml({ notes: notes4, beats: beats, downbeats: downs });
+  ok('injected audio beats win over onset tracking',
+    inj.stats.beatsPerBar === 3 && inj.stats.beatSource === 'audio' && Math.abs(inj.stats.barStarts[0] - 0.4) < 0.05,
+    inj.stats.beatsPerBar + '/' + inj.stats.beatType + ' source ' + inj.stats.beatSource + ' bar0 ' + inj.stats.barStarts[0]);
+
+  const grid = { ticksPerQuarter: 24, beatsPerBar: 6, beatType: 8, bpm: 60, notes: [] };
+  for (let bar = 0; bar < 4; bar++) {
+    const o = bar * 72;
+    grid.notes.push({ midi: 43, tick: o, endTick: o + 36, vel: 80 });
+    grid.notes.push({ midi: 47, tick: o + 36, endTick: o + 72, vel: 70 });
+    for (let i = 0; i < 6; i++) grid.notes.push({ midi: 67, tick: o + i * 12, endTick: o + i * 12 + 12, vel: 60 });
+  }
+  const g = A.toMusicXml({ grid: grid }, { title: 'Grid' });
+  ok('a PM2S-shaped grid becomes 6/8 MusicXML', g.stats.beatsPerBar === 6 && g.stats.beatType === 8 && g.stats.quantizer === 'pm2s' && /<beat-type>8<\/beat-type>/.test(g.xml),
+    g.stats.beatsPerBar + '/' + g.stats.beatType + ' ' + g.stats.quantizer);
+
   console.log('\n── spelling ──');
   const nm = s => s.step + (s.alter > 0 ? '#'.repeat(s.alter) : 'b'.repeat(-s.alter));
   const row = (fifths, mode, tonic) => { const t = A._.spellingTable({ fifths, mode, tonic }); return [...Array(12).keys()].map(pc => nm(t[pc])).join(' '); };
@@ -169,18 +244,57 @@ const helperHealth = () => new Promise(resolve => {
   ok('octave follows the letter', sp.step === 'C' && sp.alter === 1 && sp.octave === 4, 'C#4 = ' + sp.step + sp.alter + '/' + sp.octave);
 
   console.log('\n── note values ──');
+  const beatTicks = A._.Q;
   const crosses = (pos, len, bar) => {
     let p = pos;
-    return A._.pieces(pos, len, bar).some(v => { const bad = (p % 4) && Math.floor(p / 4) !== Math.floor((p + v - 1) / 4); p += v; return bad; });
+    return A._.pieces(pos, len, bar).some(v => {
+      const bad = (p % beatTicks) && Math.floor(p / beatTicks) !== Math.floor((p + v - 1) / beatTicks);
+      p += v; return bad;
+    });
   };
-  ok('an off-beat note never hides a beat', ![[1, 6], [3, 5], [2, 9], [5, 7]].some(([p, l]) => crosses(p, l, 16)));
-  ok('a whole bar is one whole note', A._.pieces(0, 16, 16).join() === '16');
-  ok('three beats from the downbeat are a dotted half', A._.pieces(0, 12, 12).join() === '12');
+  ok('an off-beat note never hides a beat', ![[6, 36], [18, 30], [12, 54], [30, 42]].some(([p, l]) => crosses(p, l, 96)));
+  ok('a whole bar is one whole note', A._.pieces(0, 96, 96).join() === '96');
+  ok('three beats from the downbeat are a dotted half', A._.pieces(0, 72, 72).join() === '72');
 
   console.log('\n── honest failure ──');
   let nothing = null;
   try { A.toMusicXml({ notes: [{ on: 1, off: 1.2, midi: 60, vel: 60 }] }); } catch (e) { nothing = e; }
   ok('a recording with no piano in it is refused, not padded out', nothing && nothing.code === 'no-notes', nothing && nothing.message);
+
+  console.log('\n── Transkun launch path ──');
+  const pyCands = [
+    process.env.PPP_TRANSCRIBE_PYTHON,
+    path.join(__dirname, '..', 'tools', 'transcribe-venv', 'Scripts', 'python.exe'),
+    path.join(__dirname, '..', 'tools', 'transcribe-venv', 'bin', 'python'),
+    'python'
+  ].filter(Boolean);
+  const py = pyCands.find(c => c === 'python' || fs.existsSync(c)) || 'python';
+  const launched = spawnSync(py, ['-c', [
+    'import json,sys,os',
+    'sys.path.insert(0, ' + JSON.stringify(path.join(__dirname, '..')) + ')',
+    'import transcribe',
+    'print(json.dumps(transcribe.transkun_cmd(' + JSON.stringify(py) + ', "in.wav", "out.mid", "cuda")))'
+  ].join('; ')], { encoding: 'utf8', timeout: 20000 });
+  let cmds = null;
+  try { cmds = JSON.parse((launched.stdout || '').trim().split('\n').pop()); } catch (e) { cmds = null; }
+  ok('the shipped worker exposes transkun_cmd', !!(cmds && cmds.module && cmds.script), (launched.stderr || launched.stdout || '').slice(0, 240));
+  ok('Transkun is invoked as python -m transkun.transcribe',
+    cmds && cmds.module[1] === '-m' && cmds.module[2] === 'transkun.transcribe',
+    cmds && cmds.module.join(' '));
+  ok('the module command passes wav, midi and device',
+    cmds && cmds.module.indexOf('in.wav') > -1 && cmds.module.indexOf('out.mid') > -1 &&
+    cmds.module.indexOf('--device') > -1 && cmds.module.indexOf('cuda') > -1);
+  ok('the fallback is the venv transkun console script, not transkun.commandline',
+    cmds && /transkun(\.exe)?$/i.test(cmds.script[0]) &&
+    path.dirname(cmds.script[0]).toLowerCase() === path.dirname(py).toLowerCase() &&
+    cmds.script.indexOf('in.wav') > -1,
+    cmds && cmds.script[0]);
+  const help = spawnSync(py, ['-m', 'transkun.transcribe', '-h'], { encoding: 'utf8', timeout: 20000 });
+  if (help.status === 0 && /audioPath|outPath/i.test(help.stdout || help.stderr || '')) {
+    ok('installed Transkun answers python -m transkun.transcribe -h', true);
+  } else {
+    console.log('  · Transkun module: SKIPPED (' + (help.status == null ? 'python missing' : 'not installed') + ')');
+  }
 
   /* ============ the parser, the review and the UI ============ */
   const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox', '--autoplay-policy=no-user-gesture-required'] });
@@ -215,6 +329,39 @@ const helperHealth = () => new Promise(resolve => {
   ok('a clean transcription is trusted, but never fully', back.level === 'good' && back.conf < 1, Math.round(back.conf * 100) + '%');
   ok('a wandering tempo and loose rhythm are said out loud', back.shaky !== 'good' && /tempo/.test(back.shakyKinds) && /rhythm/.test(back.shakyKinds),
     back.shaky + ': ' + back.shakyKinds);
+
+  const gridBack = await page.evaluate(xml => {
+    const sc = PPP.parseMusicXML(xml, 'jig');
+    const m0 = sc.measures[0];
+    const trips = sc.notes.filter(n => n.tm && n.tm.a === 3).length;
+    return { time: m0.time.beats + '/' + m0.time.beatType, measures: sc.measures.length, tuplets: trips };
+  }, g.xml);
+  ok('the parser keeps 6/8 from the grid', gridBack.time === '6/8' && gridBack.measures === 4, gridBack.time + ', ' + gridBack.measures + ' bars');
+
+  const tripBack = await page.evaluate(xml => {
+    const sc = PPP.parseMusicXML(xml, 'trips');
+    return {
+      time: sc.measures[0].time.beats + '/' + sc.measures[0].time.beatType,
+      tm: sc.notes.filter(n => n.tm && n.tm.a === 3 && n.tm.n === 2).length,
+      tupletMarks: sc.notes.filter(n => n.tupletStart || n.tupletStop).length
+    };
+  }, trp.xml);
+  ok('the parser keeps triplet time-modification', tripBack.tm >= 8, 'tm ' + tripBack.tm + ', marks ' + tripBack.tupletMarks);
+
+  const cat = await page.evaluate(async () => {
+    const hit = await PPP.Import.findScore('Satie Gymnopédie No. 1');
+    const miss = await PPP.Import.findScore('zzzxq-not-a-piece-999');
+    if (!hit || !hit.entry || !hit.entry.xml) return { ok: false };
+    const aligned = PPP.Import.alignScore(hit.entry.xml, { duration: 20 });
+    return {
+      ok: true, title: hit.entry.title, retrieved: !!hit.retrieved, license: hit.entry.license,
+      miss: miss, bars: aligned.measures, cover: aligned.barStarts && aligned.barStarts[aligned.barStarts.length - 1] >= 20,
+      starts: aligned.barStarts && aligned.barStarts.length
+    };
+  });
+  ok('a catalog title returns the public-domain score', cat.ok && /Gymnop/i.test(cat.title) && cat.retrieved && cat.license === 'CC0', JSON.stringify(cat));
+  ok('alignment covers the recording duration', cat.cover && cat.starts > 2, 'starts ' + cat.starts);
+  ok('a nonsense title does not match', cat.miss == null, String(cat.miss));
 
   const refusals = await page.evaluate(async () => {
     const out = {};
@@ -262,6 +409,31 @@ const helperHealth = () => new Promise(resolve => {
     ok('what was played is roughly what was written', r.measures >= 7 && r.measures <= 9 && r.notes >= 60,
       r.measures + ' measures (8 played), ' + r.notes + ' notes (80 played)');
     ok('and in the right metre', r.time === '3/4', r.time);
+    const lockUi = await page.evaluate(() => ({
+      lock: !!document.querySelector('[data-rhythm-lock]'),
+      rewrite: !!document.querySelector('[data-lock-rewrite]'),
+      metre: (document.querySelector('[data-lock-metre]') || {}).value || '',
+      bpm: (document.querySelector('[data-lock-bpm]') || {}).value || ''
+    }));
+    ok('the review can lock metre, tempo and downbeat', lockUi.lock && lockUi.rewrite && /\d\/\d/.test(lockUi.metre), JSON.stringify(lockUi));
+    await page.click('[data-lock-rewrite]');
+    await sleep(800);
+    const afterLock = await page.evaluate(() => !!document.querySelector('[data-recording]'));
+    ok('rewrite rebuilds notation from the notes already heard', afterLock);
+    try {
+      await page.screenshot({ path: process.env.PPP_LOCK_SHOT || 'tests/.shots/review-lock.png', fullPage: false });
+    } catch (e) {}
+    if (health.amt) ok('health names the AMT engine', health.amt === 'kong' || health.amt === 'transkun', String(health.amt));
+    if (health.beatThis) {
+      const beatLine = await page.evaluate(() => /from the recording/i.test(document.body.innerText));
+      ok('a helper with Beat This returns audio beats', beatLine, 'review mentions audio beats');
+    } else console.log('  · Beat This: SKIPPED (not installed)');
+    if (health.pm2s) {
+      const used = await page.evaluate(() => /PM2S/.test(document.body.innerText));
+      ok('a helper with PM2S quantized the waltz', used);
+    } else console.log('  · PM2S: SKIPPED (not installed)');
+    if (health.amt === 'transkun') ok('Transkun is the AMT engine', true, health.amt);
+    else console.log('  · Transkun: SKIPPED (Kong remains)');
 
     const played = await page.evaluate(async () => {
       const b = [...document.querySelectorAll('[data-recording] button')][0];

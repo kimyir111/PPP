@@ -46,6 +46,8 @@ with subresource integrity, which `file://` blocks.
 | `omr-service.js` | The local helper: OMR (page images in, MusicXML out), audio transcription jobs (a recording or a YouTube link in, notes out) and the coach endpoint. Holds the API key. |
 | `transcribe.py` | Runs the piano transcription model over a WAV for the helper. Notes and pedal out, as JSON. |
 | `audio-score.js` | Notes heard in a recording → beats, metre, key, hands → MusicXML. Browser and Node, no dependencies. |
+| `score-search.js` | Title → public-domain catalog hit → bar times aligned to the recording. |
+| `catalog/` | CC0 / public-domain MusicXML (not committed model weights; not commercial scrapes). |
 | `tools/audiveris/` | Vendored Audiveris (AGPL-3.0), not committed. See below. |
 | `tools/transcribe-venv/`, `tools/piano-transcription/`, `tools/yt-dlp.exe` | The transcription model's Python environment, its checkpoint, and yt-dlp. Not committed. See **Making a score from a recording**. |
 
@@ -223,6 +225,24 @@ The checkpoint is about 172 MB; the helper ignores a partial one. `npm run omr` 
 CUDA build of PyTorch is several times faster and is used automatically when it sees a GPU.
 `PPP_TRANSCRIBE_PYTHON` and `PPP_TRANSCRIBE_CHECKPOINT` point elsewhere if needed.
 
+Optional extras, same venv, weights uncommitted under `tools/`:
+
+```sh
+# preferred piano AMT (falls back to Kong if missing)
+tools/transcribe-venv/Scripts/python -m pip install transkun
+
+# audio beat/downbeat tracker (falls back to onset tracking if missing)
+tools/transcribe-venv/Scripts/python -m pip install beat-this
+
+# neural rhythm quantization (falls back to PPP's multi-metre snap if missing)
+tools/transcribe-venv/Scripts/python -m pip install git+https://github.com/cheriell/PM2S.git
+```
+
+A YouTube title or file name is searched against `catalog/` (public-domain / CC0 MusicXML only)
+before anyone transcribes. A confident hit becomes the practice score; the recording is aligned
+to it. A miss goes through AMT as before. The review screen can lock time signature, tempo and
+the first downbeat and rewrite the bars from the notes already heard — it does not listen again.
+
 ### Limits and what is kept
 
 400 MB per file, 15 minutes of music (a longer recording is cut there, and the review says so),
@@ -247,8 +267,8 @@ pauses the video. YouTube is embedded from `youtube-nocookie.com` and driven thr
 own `postMessage` commands, so no YouTube script is loaded into PPP. A video song added before
 videos were kept says so and takes the file again.
 
-Not yet: triplets and compound metres (6/8, 12/8) are written on a straight sixteenth grid; one
-voice per hand, so a note held under a moving line in the same hand is shortened; no dynamics;
+Triplets and 6/8 are written when the grid is clear; 12/8 is still heard as 6/8 or 3/4.
+One voice per hand, so a note held under a moving line in the same hand is shortened; no dynamics;
 one tempo marking for the whole piece. The online deploy has no local helper, and says so.
 
 ## My Songs

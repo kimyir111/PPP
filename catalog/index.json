@@ -1,0 +1,20 @@
+{
+  "license": "All entries are public domain or CC0. PPP does not scrape commercial catalogs.",
+  "scores": [
+    {
+      "id": "gymnopedie-1",
+      "title": "Gymnopédie No. 1",
+      "titles": [
+        "Gymnopedie No. 1",
+        "Gymnopédie n°1",
+        "First Gymnopedie",
+        "Gymnopedie 1",
+        "Satie Gymnopedie",
+        "Erik Satie Gymnopédie No. 1"
+      ],
+      "composer": "Erik Satie",
+      "license": "CC0",
+      "file": "gymnopedie-1.musicxml"
+    }
+  ]
+}

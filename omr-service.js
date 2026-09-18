@@ -526,11 +526,16 @@ function firstExisting(list) {
 }
 const TOOLS_DIR = path.join(__dirname, 'tools');
 const TRANSCRIBE_PY = path.join(__dirname, 'transcribe.py');
+const BEAT_PY = path.join(__dirname, 'beat_track.py');
+const PM2S_PY = path.join(__dirname, 'pm2s_quant.py');
+const CATALOG_DIR = path.join(__dirname, 'catalog');
 const PYTHON = firstExisting([
   process.env.PPP_TRANSCRIBE_PYTHON,
   path.join(TOOLS_DIR, 'transcribe-venv', 'Scripts', 'python.exe'),
   path.join(TOOLS_DIR, 'transcribe-venv', 'bin', 'python')
 ]);
+let ScoreSearch = null;
+try { ScoreSearch = require('./score-search.js'); } catch (e) { ScoreSearch = null; }
 /* The checkpoint is ~172 MB; anything much smaller is a download that stopped. */
 const CHECKPOINT = (() => {
   const dir = path.join(TOOLS_DIR, 'piano-transcription');
@@ -547,7 +552,13 @@ function probe(cmd, argv) {
     execFile(cmd, argv, { timeout: 15000, windowsHide: true }, err => resolve(!err));
   });
 }
-const TOOL = { ffmpeg: null, ytdlp: null };
+const TOOL = { ffmpeg: null, ytdlp: null, transkun: false, beatThis: false, pm2s: false };
+function pyHas(mod) {
+  if (!PYTHON) return Promise.resolve(false);
+  return new Promise(resolve => {
+    execFile(PYTHON, ['-c', 'import ' + mod], { timeout: 20000, windowsHide: true }, err => resolve(!err));
+  });
+}
 const toolsReady = (async () => {
   for (const c of [process.env.PPP_FFMPEG, path.join(TOOLS_DIR, 'ffmpeg' + EXE), 'ffmpeg'].filter(Boolean)) {
     if (await probe(c, ['-version'])) { TOOL.ffmpeg = c; break; }
@@ -555,18 +566,41 @@ const toolsReady = (async () => {
   for (const c of [process.env.PPP_YTDLP, path.join(TOOLS_DIR, 'yt-dlp' + EXE), 'yt-dlp'].filter(Boolean)) {
     if (await probe(c, ['--version'])) { TOOL.ytdlp = c; break; }
   }
+  if (PYTHON) {
+    TOOL.transkun = await pyHas('transkun');
+    TOOL.beatThis = await pyHas('beat_this');
+    TOOL.pm2s = await pyHas('pm2s');
+  }
 })();
 
 function transcriberStatus() {
   const missing = [];
   if (!TOOL.ffmpeg) missing.push('ffmpeg');
   if (!PYTHON) missing.push('the Python environment in tools/transcribe-venv');
-  if (!CHECKPOINT) missing.push('the piano model checkpoint in tools/piano-transcription');
+  const amt = TOOL.transkun ? 'transkun' : (CHECKPOINT ? 'kong' : null);
+  if (!amt) missing.push('Transkun or the Kong piano model checkpoint in tools/piano-transcription');
   return {
     ok: !missing.length,
     youtube: !missing.length && !!TOOL.ytdlp,
+    amt: amt,
+    beatThis: !!TOOL.beatThis,
+    pm2s: !!TOOL.pm2s,
+    transkun: !!TOOL.transkun,
+    kong: !!CHECKPOINT,
     missing: missing.concat(TOOL.ytdlp ? [] : ['yt-dlp (for YouTube links only)'])
   };
+}
+
+function loadCatalog() {
+  if (!ScoreSearch) return null;
+  try { return ScoreSearch.loadCatalogSync(fs, path, CATALOG_DIR); } catch (e) { return null; }
+}
+function catalogHit(title) {
+  const cat = loadCatalog();
+  if (!cat || !title) return null;
+  const hit = ScoreSearch.search(title, cat);
+  if (!hit || !hit.entry || !hit.entry.xml) return null;
+  return hit;
 }
 
 /* Only YouTube, and only as a link to one video. The URL is handed to yt-dlp
@@ -723,8 +757,9 @@ async function toWav(job, input) {
 async function transcribeWav(job, wav, seconds) {
   job.stage = 'transcribe'; job.pct = 0;
   const out = path.join(job.dir, 'notes.json');
-  const r = await run(job, PYTHON, [TRANSCRIBE_PY, '--wav', wav, '--out', out, '--checkpoint', CHECKPOINT], {
-    /* CPU inference is roughly real time or better; allow plenty. */
+  const argv = [TRANSCRIBE_PY, '--wav', wav, '--out', out, '--engine', 'auto'];
+  if (CHECKPOINT) argv.push('--checkpoint', CHECKPOINT);
+  const r = await run(job, PYTHON, argv, {
     timeoutMs: Math.max(5 * 60 * 1000, seconds * 4000),
     onLine: line => {
       const m = /^PROGRESS\s+([\d.]+)/.exec(line);
@@ -740,6 +775,42 @@ async function transcribeWav(job, wav, seconds) {
   return result;
 }
 
+async function beatTrackWav(job, wav) {
+  if (!TOOL.beatThis || !fs.existsSync(BEAT_PY)) return null;
+  job.stage = 'beats'; job.pct = 0;
+  const out = path.join(job.dir, 'beats.json');
+  const r = await run(job, PYTHON, [BEAT_PY, '--wav', wav, '--out', out], {
+    timeoutMs: 8 * 60 * 1000,
+    onLine: line => {
+      const m = /^PROGRESS\s+([\d.]+)/.exec(line);
+      if (m) job.pct = Math.min(1, +m[1]);
+    }
+  });
+  if (r.code !== 0) {
+    console.error('beat_track.py skipped:\n' + redact(r.tail.slice(-800)));
+    return null;
+  }
+  try { return JSON.parse(fs.readFileSync(out, 'utf8')); } catch (e) { return null; }
+}
+
+async function pm2sQuant(job, notesPath) {
+  if (!TOOL.pm2s || !fs.existsSync(PM2S_PY)) return null;
+  job.stage = 'quantize'; job.pct = 0;
+  const out = path.join(job.dir, 'grid.json');
+  const r = await run(job, PYTHON, [PM2S_PY, '--notes', notesPath, '--out', out], {
+    timeoutMs: 10 * 60 * 1000,
+    onLine: line => {
+      const m = /^PROGRESS\s+([\d.]+)/.exec(line);
+      if (m) job.pct = Math.min(1, +m[1]);
+    }
+  });
+  if (r.code !== 0) {
+    console.error('pm2s_quant.py skipped:\n' + redact(r.tail.slice(-800)));
+    return null;
+  }
+  try { return JSON.parse(fs.readFileSync(out, 'utf8')); } catch (e) { return null; }
+}
+
 async function runJob(job, source) {
   const t0 = Date.now();
   try {
@@ -747,15 +818,56 @@ async function runJob(job, source) {
     const input = source.url ? await downloadYoutube(job, source.url) : source.file;
     const { wav, seconds } = await toWav(job, input);
     if (job.state !== 'running') return;
+
+    const hit = catalogHit(job.title);
+    if (hit) {
+      job.stage = 'catalog';
+      const beats = await beatTrackWav(job, wav);
+      const aligned = ScoreSearch.align(hit.entry.xml, {
+        duration: job.duration || seconds,
+        downbeats: beats && beats.downbeats,
+        beats: beats && beats.beats
+      });
+      job.result = {
+        engine: 'catalog',
+        catalogId: hit.entry.id,
+        license: hit.entry.license || 'CC0',
+        title: hit.entry.title,
+        composer: hit.entry.composer || '',
+        xml: hit.entry.xml,
+        duration: job.duration || seconds,
+        truncated: job.truncated,
+        sourceDuration: job.duration,
+        beats: beats && beats.beats,
+        downbeats: beats && beats.downbeats,
+        barStarts: aligned.barStarts,
+        retrieved: true,
+        totalMs: Date.now() - t0
+      };
+      job.stage = 'done'; job.pct = 1; job.state = 'done';
+      try { fs.rmSync(wav, { force: true }); } catch (e) {}
+      if (source.file) { try { fs.rmSync(source.file, { force: true }); } catch (e) {} }
+      return;
+    }
+
     const result = await transcribeWav(job, wav, seconds);
     if (job.state !== 'running') return;
+    const beats = await beatTrackWav(job, wav);
+    if (beats) {
+      result.beats = beats.beats;
+      result.downbeats = beats.downbeats;
+      result.beatEngine = beats.engine;
+    }
+    const notesPath = path.join(job.dir, 'notes.json');
+    try { fs.writeFileSync(notesPath, JSON.stringify(result)); } catch (e) {}
+    const grid = await pm2sQuant(job, notesPath);
+    if (grid) result.grid = grid;
     result.title = job.title;
     result.truncated = job.truncated;
     result.sourceDuration = job.duration;
     result.totalMs = Date.now() - t0;
     job.result = result;
     job.stage = 'done'; job.pct = 1; job.state = 'done';
-    /* the WAV is no longer needed; a downloaded source stays for playback */
     try { fs.rmSync(wav, { force: true }); } catch (e) {}
     if (source.file) { try { fs.rmSync(source.file, { force: true }); } catch (e) {} }
   } catch (err) {
@@ -888,6 +1000,8 @@ const server = http.createServer(async (req, res) => {
       coachProvider: coach ? coach.name : null,
       coachModel: coach ? coach.model : null,
       transcriber: tr.ok, youtube: tr.youtube, transcriberMissing: tr.missing,
+      amt: tr.amt || null, transkun: !!tr.transkun, kong: !!tr.kong,
+      beatThis: !!tr.beatThis, pm2s: !!tr.pm2s,
       limits: Object.assign({}, LIMITS, {
         audioBytes: TRANSCRIBE.maxUploadBytes, audioSeconds: TRANSCRIBE.maxSeconds
       })
@@ -964,7 +1078,8 @@ server.listen(PORT, '127.0.0.1', () => {
   toolsReady.then(() => {
     const tr = transcriberStatus();
     console.log(tr.ok
-      ? '  Transcription: on' + (tr.youtube ? ', YouTube links too' : ' (no yt-dlp, so files only)')
+      ? '  Transcription: on (' + (tr.amt || 'kong') + ')' + (tr.youtube ? ', YouTube links too' : ' (no yt-dlp, so files only)')
+        + (tr.beatThis ? ', Beat This' : '') + (tr.pm2s ? ', PM2S' : '')
       : '  Transcription: off — missing ' + tr.missing.join(', '));
   });
   coachStatus().then(c => {

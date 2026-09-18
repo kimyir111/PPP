@@ -191,6 +191,66 @@ const screenTitle = page => page.evaluate(() => {
   step('start to finish hides the passage tools', JSON.stringify(wholeRange));
   if (wholeRange.steppers || wholeRange.strip) errors.push('passage tools shown while playing start to finish');
 
+  /* Clicking a bar in start-to-finish plays from that bar to the end, and
+     must not switch the page into a one-bar loop. */
+  await page.evaluate(() => window.__pppTest.practice('Start to finish'));
+  await page.waitForFunction(() => {
+    const svg = document.querySelector('.ppp-staffwrap svg');
+    return !!(svg && svg.__ppp && (svg.__ppp.bars || []).some(b => b.m === 12));
+  }, { timeout: 8000 });
+  const seeked = await page.evaluate(() => {
+    const svg = document.querySelector('.ppp-staffwrap svg');
+    const bar = (svg.__ppp.bars || []).find(b => b.m === 12);
+    if (!bar) return { ok: false, why: 'no-bar' };
+    const pt = svg.createSVGPoint();
+    pt.x = bar.x + Math.min(20, bar.w * 0.2);
+    pt.y = bar.y + 40;
+    const s = pt.matrixTransform(svg.getScreenCTM());
+    const fire = type => svg.dispatchEvent(new PointerEvent(type, {
+      bubbles: true, cancelable: true, composed: true,
+      pointerId: 1, pointerType: 'mouse', isPrimary: true,
+      clientX: s.x, clientY: s.y, button: 0,
+      buttons: type === 'pointerdown' ? 1 : 0
+    }));
+    fire('pointerdown');
+    fire('pointerup');
+    return { ok: true };
+  });
+  await sleep(350);
+  const afterSeek = await page.evaluate(() => {
+    const header = document.querySelector('header');
+    const crumb = header ? header.innerText : '';
+    const beatEl = [...document.querySelectorAll('span')].find(e => /^Measure \d+ · beat \d$/.test((e.textContent || '').trim()));
+    const play = [...document.querySelectorAll('button')].find(b => /^(Play|Pause)$/.test((b.textContent || '').trim()));
+    return {
+      crumb: crumb,
+      beat: beatEl ? beatEl.textContent.trim() : null,
+      play: play ? play.textContent.trim() : null
+    };
+  });
+  step('start to finish click seeks', JSON.stringify(afterSeek));
+  if (!seeked.ok) errors.push('could not click measure 12 on the score');
+  if (!/Start to finish/.test(afterSeek.crumb || '')) errors.push('clicking a bar left start-to-finish: ' + afterSeek.crumb);
+  if (!/^Measure 12 · beat /.test(afterSeek.beat || '')) errors.push('clicking measure 12 did not move the playhead (got ' + afterSeek.beat + ')');
+  if (afterSeek.play !== 'Pause') errors.push('clicking a bar did not start playback (got ' + afterSeek.play + ')');
+  await sleep(1600);
+  const afterRun = await page.evaluate(() => {
+    const beatEl = [...document.querySelectorAll('span')].find(e => /^Measure \d+ · beat \d$/.test((e.textContent || '').trim()));
+    const header = document.querySelector('header');
+    return {
+      beat: beatEl ? beatEl.textContent.trim() : null,
+      crumb: header ? header.innerText : ''
+    };
+  });
+  step('start to finish keeps playing past the click', JSON.stringify(afterRun));
+  const mAfter = afterRun.beat && afterRun.beat.match(/^Measure (\d+)/);
+  if (!mAfter || +mAfter[1] < 12) errors.push('playback did not continue from the clicked bar (got ' + afterRun.beat + ')');
+  if (!/Start to finish/.test(afterRun.crumb || '')) errors.push('playback switched away from start-to-finish: ' + afterRun.crumb);
+  await clickText(page, 'Pause');
+  await sleep(120);
+  await page.evaluate(() => window.__pppTest.practice('Loop a passage'));
+  await sleep(200);
+
   /* loop range steppers */
   const loopLabel = () => page.evaluate(() => {
     const row = [...document.querySelectorAll('main div')].find(d => /^Measures/.test((d.innerText || '').trim()) && d.querySelectorAll('button').length === 4);

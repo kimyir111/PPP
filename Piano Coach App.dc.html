@@ -7,6 +7,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%231b1a18'/%3E%3Crect x='9' y='13' width='4' height='11' rx='2' fill='%23fffefc'/%3E%3Crect x='14' y='7' width='4' height='17' rx='2' fill='%237c5cd6'/%3E%3Crect x='19' y='16' width='4' height='8' rx='2' fill='%23fffefc'/%3E%3C/svg%3E">
 <script src="./i18n.js"></script>
 <script src="./audio-score.js"></script>
+<script src="./score-search.js"></script>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -171,6 +172,8 @@
     .ppp-sidecol { max-height: calc(100vh - 110px); max-height: calc(100dvh - 110px); }
     .ppp-sidecol > .ppp-panel { max-height: none; flex: 1 1 auto; min-height: 0; }
   }
+  .ppp-videocard iframe,
+  .ppp-videocard video { width: 100%; height: 100%; display: block; border: 0; background: #000; }
 
   /* ---- focus mode ----
      On a tablet held at the piano there is no room for a sidebar, a header and
@@ -1098,8 +1101,8 @@
                   <span style="width: 22px; height: 15px; border-radius: 4px; background: #e5352b; display: grid; place-items: center; flex: none;"><span style="width: 0; height: 0; border-left: 6px solid #fff; border-top: 4px solid transparent; border-bottom: 4px solid transparent; margin-left: 2px;"></span></span>
                 </sc-if>
                 <span style="font-size: 13.5px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ videoTitle }}</span>
-                <sc-if value="{{ videoIsYoutube }}" hint-placeholder-val="{{ true }}">
-                  <a href="{{ videoLink }}" target="_blank" rel="noopener" style="margin-left: auto; flex: none; font-size: 12px; color: var(--ink3); text-decoration: none;">Open on YouTube ↗</a>
+                <sc-if value="{{ hasVideoLink }}" hint-placeholder-val="{{ true }}">
+                  <a href="{{ videoLink }}" target="_blank" rel="noopener" data-video-link style="margin-left: auto; flex: none; font-size: 12px; color: var(--ink3); text-decoration: none;">Open on YouTube ↗</a>
                 </sc-if>
               </div>
               <div style="aspect-ratio: 16 / 9; background: #000;">{{ videoEl }}</div>
@@ -1449,6 +1452,29 @@
                 </div>
               </sc-for>
             </div>
+            <sc-if value="{{ showRhythmLock }}" hint-placeholder-val="{{ false }}">
+              <div data-rhythm-lock="1" style="margin-top: 18px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); display: flex; flex-direction: column; gap: 10px;">
+                <div style="font-size: 13px; font-weight: 600;">{{ lockTitle }}</div>
+                <p style="margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--ink2);">{{ lockHint }}</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
+                  <label style="font-size: 12px; color: var(--ink3);">{{ lockMetreLabel }}
+                    <select value="{{ lockMetre }}" onChange="{{ setLockMetre }}" data-lock-metre style="display: block; margin-top: 5px; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px;">
+                      <option value="2/4">2/4</option>
+                      <option value="3/4">3/4</option>
+                      <option value="4/4">4/4</option>
+                      <option value="6/8">6/8</option>
+                    </select>
+                  </label>
+                  <label style="font-size: 12px; color: var(--ink3);">{{ lockTempoLabel }}
+                    <input type="number" min="30" max="240" step="1" value="{{ lockBpm }}" onChange="{{ setLockBpm }}" data-lock-bpm style="display: block; margin-top: 5px; width: 88px; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px;" />
+                  </label>
+                  <label style="font-size: 12px; color: var(--ink3);">{{ lockDownbeatLabel }}
+                    <input type="number" min="0" step="0.01" value="{{ lockDownbeat }}" onChange="{{ setLockDownbeat }}" data-lock-downbeat style="display: block; margin-top: 5px; width: 88px; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px;" />
+                  </label>
+                  <button onClick="{{ rewriteRhythm }}" data-lock-rewrite style="padding: 10px 14px; border-radius: 10px; border: 0; background: var(--ink); color: var(--surface); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">{{ lockRewrite }}</button>
+                </div>
+              </div>
+            </sc-if>
             <div style="display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap;">
               <button onClick="{{ acceptOn }}" style="padding: 12px 20px; border-radius: 11px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;" style-hover="filter: brightness(1.08);">Accept and practise</button>
               <button onClick="{{ retryOn }}" style="padding: 12px 20px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 14px; cursor: pointer;" style-hover="border-color: var(--ink3);">Try again</button>
@@ -4230,6 +4256,33 @@ const Import = {
     const m = /^\/(shorts|live|embed)\/([\w-]{6,})/.exec(u.pathname);
     return m ? m[2] : null;
   },
+  /* A pasted link, or a stored id, as one watch URL. Saved on the score so
+     the practice page can embed that video and no other. */
+  youtubeWatch(text) {
+    const raw = String(text || '').trim();
+    if (!raw) return null;
+    let id = Import.youtubeId(raw);
+    if (!id && /^[\w-]{11}$/.test(raw)) id = raw;
+    return id ? { id: id, url: 'https://www.youtube.com/watch?v=' + id } : null;
+  },
+  /* Which performance belongs to this song. The score's own origin and the
+     library card win over a session leftover — importing another YouTube
+     link used to write that new URL onto the song that was open. */
+  songVideo(scoreSource, importSource, lib) {
+    const kind = (scoreSource && scoreSource.kind) || (lib && lib.kind) || null;
+    if (kind && kind !== 'youtube' && kind !== 'video') return null;
+    const origin = kind || (importSource && importSource.kind) || null;
+    if (origin === 'youtube') {
+      const pick = src => src && (src.kind == null || src.kind === 'youtube')
+        ? Import.youtubeWatch(src.url || src.youtubeId) : null;
+      const watch = pick(scoreSource && scoreSource.kind === 'youtube' ? scoreSource : null)
+        || pick(lib && lib.kind === 'youtube' ? lib : null)
+        || pick(importSource && importSource.kind === 'youtube' ? importSource : null);
+      return { kind: 'youtube', id: watch ? watch.id : null, url: watch ? watch.url : '' };
+    }
+    if (origin === 'video') return { kind: 'file' };
+    return null;
+  },
 
   /* Is the local OMR service there? Asked before a PDF or image import so the
      failure is "start the service", not a mystery. */
@@ -4570,16 +4623,130 @@ const Import = {
     return { heard: now.result, title: now.title, audioUrl: audioUrl };
   },
 
+  catalogIndex: null,
+  async loadCatalog() {
+    if (Import.catalogIndex) return Import.catalogIndex;
+    try {
+      const r = await fetch('./catalog/index.json', { cache: 'no-store' });
+      if (!r.ok) return { scores: [] };
+      const index = await r.json();
+      const scores = await Promise.all((index.scores || []).map(async s => {
+        if (!s.file) return s;
+        try {
+          const x = await fetch('./catalog/' + s.file, { cache: 'no-store' });
+          if (x.ok) s.xml = await x.text();
+        } catch (e) {}
+        return s;
+      }));
+      Import.catalogIndex = { scores: scores };
+      return Import.catalogIndex;
+    } catch (e) {
+      Import.catalogIndex = { scores: [] };
+      return Import.catalogIndex;
+    }
+  },
+  async findScore(query) {
+    const Search = (typeof window !== 'undefined' && window.PPPScoreSearch) || null;
+    if (!Search || !query) return null;
+    const cat = await Import.loadCatalog();
+    const hit = Search.search(query, cat);
+    if (!hit || !hit.entry || !hit.entry.xml) return null;
+    return hit;
+  },
+  alignScore(xml, opts) {
+    const Search = (typeof window !== 'undefined' && window.PPPScoreSearch) || null;
+    if (!Search) return { barStarts: [0], duration: (opts && opts.duration) || 0 };
+    return Search.align(xml, opts || {});
+  },
+
   async fromRecording(what, onStage, ctl) {
     const stage = (name, detail) => { if (onStage) onStage(name, detail || {}); };
+    const nameGuess = (what.file ? String(what.file.name).replace(/\.[^.]+$/, '') : '') || '';
+    stage('search', {});
+    const localHit = await Import.findScore(nameGuess);
+    if (localHit && what.file && !what.url) {
+      /* a named public-domain file: use the catalog score, keep the audio */
+      const audioUrl = URL.createObjectURL(what.file);
+      let duration = 0;
+      try {
+        duration = await new Promise((resolve, reject) => {
+          const a = new Audio();
+          a.preload = 'metadata';
+          a.onloadedmetadata = () => resolve(a.duration || 0);
+          a.onerror = () => resolve(0);
+          a.src = audioUrl;
+        });
+      } catch (e) { duration = 0; }
+      const xml = localHit.entry.xml;
+      const aligned = Import.alignScore(xml, { duration: duration });
+      stage('parse', {});
+      const score = parseMusicXML(xml, localHit.entry.title);
+      if (localHit.entry.composer) score.composer = localHit.entry.composer;
+      const source = {
+        name: what.file.name, kind: Import.kindOf(what.file),
+        url: null, bytes: what.file.size, importedAt: Clock.now(),
+        engine: 'Public-domain catalog', pages: null, status: 'retrieved',
+        seconds: duration || aligned.duration, truncated: false,
+        tempo: aligned.tempo, barStarts: aligned.barStarts, retrieved: true,
+        catalogId: localHit.entry.id
+      };
+      score.source = source;
+      const report = {
+        confidence: 0.94, level: 'good', issues: [], suspectMeasures: [],
+        summary: tx('Found a public-domain score for this title.'),
+        advice: null, measures: aligned.measures, notes: (score.notes || []).filter(n => !n.rest).length,
+        staves: score.staves, transcribed: false, retrieved: true, tempo: aligned.tempo
+      };
+      return { score: score, source: source, report: report, musicxml: xml,
+        recording: { url: audioUrl, barStarts: aligned.barStarts } };
+    }
+
     const got = await Import.transcribe(what, onStage, ctl);
     const heard = got.heard || {};
-    const title = (got.title || (what.file ? what.file.name.replace(/\.[^.]+$/, '') : '') || tx('Transcribed recording')).trim();
+    const title = (got.title || nameGuess || tx('Transcribed recording')).trim();
+    const yt = what.url ? Import.youtubeWatch(what.url) : null;
+
+    if (heard.engine === 'catalog' && heard.xml) {
+      stage('parse', {});
+      const score = parseMusicXML(heard.xml, heard.title || title);
+      if (heard.composer) score.composer = heard.composer;
+      const aligned = heard.barStarts && heard.barStarts.length
+        ? { barStarts: heard.barStarts, duration: heard.duration, tempo: score.tempo, measures: score.measures.length }
+        : Import.alignScore(heard.xml, { duration: heard.duration, downbeats: heard.downbeats, beats: heard.beats });
+      const source = {
+        name: what.file ? what.file.name : title,
+        kind: what.url ? 'youtube' : Import.kindOf(what.file),
+        url: yt ? yt.url : (what.url || null), youtubeId: yt ? yt.id : null,
+        bytes: what.file ? what.file.size : null,
+        importedAt: Clock.now(), engine: 'Public-domain catalog', pages: null,
+        status: 'retrieved', seconds: heard.duration || null, truncated: !!heard.truncated,
+        tempo: aligned.tempo || score.tempo, barStarts: aligned.barStarts, retrieved: true,
+        catalogId: heard.catalogId
+      };
+      score.source = source;
+      const report = {
+        confidence: 0.94, level: 'good', issues: [], suspectMeasures: [],
+        summary: tx('Found a public-domain score for this title.'),
+        advice: null, measures: Score.count ? null : (score.measures || []).length,
+        notes: (score.notes || []).filter(n => !n.rest).length, staves: score.staves,
+        transcribed: false, retrieved: true, tempo: source.tempo
+      };
+      report.measures = (score.measures || []).length;
+      return {
+        score: score, source: source, report: report, musicxml: heard.xml,
+        recording: { url: got.audioUrl, barStarts: aligned.barStarts },
+        heard: heard
+      };
+    }
 
     stage('notate', {});
     let built;
     try {
-      built = window.PPPAudioScore.toMusicXml({ notes: heard.notes, pedals: heard.pedals }, { title: title });
+      built = window.PPPAudioScore.toMusicXml({
+        notes: heard.notes, pedals: heard.pedals,
+        beats: heard.beats, downbeats: heard.downbeats,
+        grid: heard.grid, title: title
+      }, { title: title });
     } catch (e) {
       throw importError(e.code || 'no-notes',
         e.code === 'no-notes' ? tx('No piano notes were heard in this recording.') : e.message,
@@ -4600,23 +4767,28 @@ const Import = {
 
     stage('check', {});
     const report = Import.validateTranscription(score, built.stats, heard);
+    const engineLabel = heard.engine === 'transkun' ? 'Transkun'
+      : heard.engine === 'pm2s' || (heard.grid && heard.grid.engine === 'pm2s') ? 'Piano transcription + PM2S'
+        : 'Piano transcription';
     const source = {
       name: what.file ? what.file.name : title,
       kind: what.url ? 'youtube' : Import.kindOf(what.file),
-      url: what.url || null, bytes: what.file ? what.file.size : null,
-      importedAt: Clock.now(), engine: 'Piano transcription', pages: null,
+      url: yt ? yt.url : (what.url || null), youtubeId: yt ? yt.id : null,
+      bytes: what.file ? what.file.size : null,
+      importedAt: Clock.now(), engine: engineLabel, pages: null,
       status: report.level === 'poor' ? 'low-confidence' : 'transcribed',
       seconds: heard.duration || null, truncated: !!heard.truncated,
       tempo: built.stats.tempo, device: heard.device || null,
-      /* where each bar starts in the recording, so the practice page can play
-         the passage you are on from the performance itself */
-      barStarts: built.stats.barStarts
+      barStarts: built.stats.barStarts,
+      amt: heard.engine || null,
+      beatSource: built.stats.beatSource,
+      quantizer: built.stats.quantizer
     };
     score.source = source;
     return {
       score: score, source: source, report: report, musicxml: built.xml,
-      /* in memory only, for listening back while checking */
-      recording: { url: got.audioUrl, barStarts: built.stats.barStarts }
+      recording: { url: got.audioUrl, barStarts: built.stats.barStarts },
+      heard: heard
     };
   },
 
@@ -4646,7 +4818,7 @@ const Import = {
     const rough = stats.gridError > 0.1;
     if (rough) flag(null, 'rhythm', tx('Many notes fall between the beats PPP found, so some rhythms are simplified.'));
     const metre = stats.meterContrast < 1.15;
-    if (metre) flag(null, 'time', tx('The metre was hard to hear, so PPP chose {{beats}}/4.', { beats: stats.beatsPerBar }));
+    if (metre) flag(null, 'time', tx('The metre was hard to hear, so PPP chose {{beats}}/{{beatType}}.', { beats: stats.beatsPerBar, beatType: stats.beatType || 4 }));
 
     let barFlags = 0;
     stats.perBar.forEach(b => {
@@ -5993,7 +6165,7 @@ window.PPP = {
   MidiInput, PerformanceEngine, TIMING_DEFAULTS,
   Learning, LEARN, STATE_TONE, STATE_LABEL, seedDemoHistory,
   Memory, MEMORY, MEM_LABEL, MEM_TONE, HINTS, Clock, onsetKey,
-  Import, IMPORT_LIMITS, OMR_URL,
+  Import, IMPORT_LIMITS, OMR_URL, ScoreSearch: (typeof window !== 'undefined' ? window.PPPScoreSearch : null),
   Coach, COACH, Fingering, HandArt, tx: tx
 };
 /* ============================================================================
@@ -6696,6 +6868,27 @@ function barX(seg, q) {
     }
   }
   return end[1];
+}
+/* Inverse of barX: the beat inside the bar that was drawn at this x. */
+function barQ(seg, x) {
+  const pts = (seg && seg.pts) || [];
+  const len = Math.max(0.001, (seg && seg.lenQ) || 1);
+  const x0 = seg.x, x1 = seg.x + seg.w;
+  if (!pts.length) {
+    const f = (x - x0) / Math.max(0.001, x1 - x0);
+    return Math.max(0, Math.min(len, f * len));
+  }
+  if (x <= pts[0][1]) return pts[0][0];
+  const end = [Math.max(len, pts[pts.length - 1][0] + 1e-3), x1];
+  for (let j = 0; j < pts.length; j++) {
+    const a = pts[j], b = j + 1 < pts.length ? pts[j + 1] : end;
+    if (x < b[1] || j + 1 >= pts.length) {
+      const f = (x - a[1]) / Math.max(1e-6, b[1] - a[1]);
+      const q = a[0] + Math.max(0, Math.min(1, f)) * (b[0] - a[0]);
+      return Math.max(0, Math.min(len, q));
+    }
+  }
+  return len;
 }
 
 function makeScoreView(React) {
@@ -7568,10 +7761,9 @@ function makeScoreView(React) {
       svg.insertBefore(this._loopBox, svg.firstChild);
       svg.insertBefore(this._hl, svg.firstChild);
 
-      /* Seeing where the hard part is only helps if you can then go there, so
-         the page itself is the control: click a bar to start a range, click
-         another to close it. The same two-click gesture as the measure strip,
-         because it is the same act. */
+      /* The page itself is the control. A click reports the bar and the beat
+         under the pointer; a sideways drag reports a range. Start-to-finish
+         plays from that beat, loop and memorize still pick a passage. */
       if (p.pick) {
         svg.style.cursor = 'pointer';
         /* vertical scrolling of the score still works on touch; a sideways
@@ -7581,7 +7773,7 @@ function makeScoreView(React) {
         hover.style.pointerEvents = 'none';
         svg.insertBefore(hover, svg.firstChild);
 
-        const barAt = ev => {
+        const hit = ev => {
           let pt;
           try {
             pt = svg.createSVGPoint();
@@ -7589,9 +7781,12 @@ function makeScoreView(React) {
             pt = pt.matrixTransform(svg.getScreenCTM().inverse());
           } catch (e) { return null; }
           const sys = this._SYS || this._H;
-          return this._map.filter(seg =>
-            pt.x >= seg.x - 8 && pt.x <= seg.x + seg.w + 8 &&
-            pt.y >= (seg.y || 0) && pt.y <= (seg.y || 0) + sys)[0] || null;
+          const seg = this._map.filter(s =>
+            pt.x >= s.x - 8 && pt.x <= s.x + s.w + 8 &&
+            pt.y >= (s.y || 0) && pt.y <= (s.y || 0) + sys)[0] || null;
+          if (!seg) return null;
+          const inner = Math.max(0, Math.min(seg.lenQ - 1e-4, barQ(seg, pt.x)));
+          return { seg: seg, q: seg.startQ + inner };
         };
         const outline = seg => {
           if (!seg) { hover.setAttribute('opacity', 0); return; }
@@ -7603,23 +7798,34 @@ function makeScoreView(React) {
         /* read the live prop, not the one captured when this was drawn */
         const send = e => { const fn = this.props.pick; if (fn) fn(e); };
 
-        let from = null;
+        let from = null, last = null, downY = 0;
         svg.addEventListener('pointerdown', ev => {
-          const seg = barAt(ev);
-          if (!seg || ev.button > 0) return;
-          from = seg.number;
+          const h = hit(ev);
+          if (!h || ev.button > 0) return;
+          from = h.seg.number;
+          last = h;
+          downY = ev.clientY;
           try { svg.setPointerCapture(ev.pointerId); } catch (e) {}
-          send({ from: from, to: from, extend: ev.shiftKey });
+          send({ from: from, to: from, q: h.q, extend: ev.shiftKey, phase: 'start' });
         });
         svg.addEventListener('pointermove', ev => {
-          const seg = barAt(ev);
-          outline(seg);
-          if (from == null || !seg) return;
-          send({ from: from, to: seg.number });
+          const h = hit(ev);
+          outline(h && h.seg);
+          if (from == null || !h) return;
+          last = h;
+          send({ from: from, to: h.seg.number, q: h.q, extend: ev.shiftKey, phase: 'move' });
         });
-        const end = () => { from = null; };
-        svg.addEventListener('pointerup', end);
-        svg.addEventListener('pointercancel', end);
+        svg.addEventListener('pointerup', ev => {
+          if (from != null && last) {
+            const dy = Math.abs((ev && ev.clientY) - downY);
+            /* a vertical pan on the same bar is a scroll, not a click */
+            if (!(from === last.seg.number && dy > 24)) {
+              send({ from: from, to: last.seg.number, q: last.q, extend: !!(ev && ev.shiftKey), phase: 'end' });
+            }
+          }
+          from = null; last = null;
+        });
+        svg.addEventListener('pointercancel', () => { from = null; last = null; });
         svg.addEventListener('pointerleave', () => { if (from == null) outline(null); });
       }
 
@@ -8327,6 +8533,25 @@ class Component extends DCLogic {
     const lt = d.loopTo != null ? Score.snap(score, d.loopTo) : hi;
     patch.loopFrom = lf; patch.loopTo = Math.max(lf, lt);
     patch.beat = Score.startQ(score, lf);
+    /* The open song's video lives on the score and in its slot. A session
+       snapshot taken while another import was running can have lost it. */
+    {
+      const id = d.songId || 'demo';
+      const slot = this.readSong(id);
+      const entry = this.libraryRead().songs.find(s => s.id === id);
+      const vs = Import.songVideo(
+        (score && score.source) || (slot && slot.score && slot.score.source),
+        patch.importSource || (slot && slot.importSource) || null,
+        entry
+      );
+      if (vs && vs.kind === 'youtube' && vs.id) {
+        patch.importSource = Object.assign({}, patch.importSource || (slot && slot.importSource) || {}, {
+          kind: 'youtube', url: vs.url, youtubeId: vs.id
+        });
+      } else if (!patch.importSource && slot && slot.importSource) {
+        patch.importSource = slot.importSource;
+      }
+    }
     this.setState(patch);
   }
   resetProgress() {
@@ -9547,6 +9772,36 @@ class Component extends DCLogic {
     if (this.liveMidi()) this.beginRun(s, b, heard); else this._sim = this.newSim();
     this.setState({ playing: true, beat: b, runHit: 0, runTot: 0, wrongNotes: [], held: [] });
   }
+  /* Start (or jump) playback at beat q and run to the end of the current
+     range. A click on the score in start-to-finish lands here. */
+  playFromBeat(q) {
+    this.wake();
+    const s = this.state;
+    const sc = s.score;
+    const [from, to] = this.range(s);
+    const startB = Score.startQ(sc, from), endB = Score.endQ(sc, to);
+    const b = (q == null || !(q >= startB) || q >= endB) ? startB : q;
+    /* Follow mode has no clock: park on the next onset at or after this beat. */
+    if (this.following()) {
+      this._got = [];
+      this._tally = {};
+      this._gatesKey = null;
+      const gates = this.followGates();
+      let gi = 0;
+      while (gi < gates.length && gates[gi].b < b - 1e-6) gi++;
+      if (gi >= gates.length) gi = 0;
+      this.setState({
+        beat: gates.length ? gates[gi].b : b,
+        gateIdx: gi,
+        runHit: 0, runTot: 0, wrongNotes: [], held: []
+      });
+      return;
+    }
+    this._last = nowMs();
+    const heard = this.startTransport(s, b);
+    if (this.liveMidi()) this.beginRun(s, b, heard); else this._sim = this.newSim();
+    this.setState({ playing: true, beat: b, runHit: 0, runTot: 0, wrongNotes: [], held: [] });
+  }
 
   setLoop(from, to) {
     const sc = this.state.score;
@@ -9576,6 +9831,31 @@ class Component extends DCLogic {
     }
     if (!S.loop) this.setState({ loop: true });
     if (S.anchor != null) this.setState({ anchor: null });
+  }
+  /* Start to finish: a click plays from that place to the last bar. A drag
+     across bars is still picking a passage to loop. Loop and memorize keep
+     the two-click / drag range. */
+  onScorePick(e) {
+    if (this.practiceTab() !== 'whole') {
+      this.selectBars(e);
+      return;
+    }
+    if (e.from !== e.to) {
+      this.selectBars(e);
+      return;
+    }
+    if (e.phase && e.phase !== 'end') return;
+    const sc = this.state.score;
+    const q = e.q != null ? e.q : Score.startQ(sc, e.from);
+    /* Land on the note under the pointer, or the start of the bar if the
+       click is before the first one. */
+    const m = Score.at(sc, q);
+    const barStart = Score.startQ(sc, m);
+    let at = barStart;
+    Score.notesIn(sc, m, m).forEach(n => {
+      if (n.abs <= q + 0.06 && n.abs >= at) at = n.abs;
+    });
+    this.playFromBeat(at);
   }
 
   /* From the bar strip: the first click starts a passage, the second ends it.
@@ -9632,10 +9912,13 @@ class Component extends DCLogic {
     this._yt = src.url || null;
     this._pageImages = null;
     this.dropRecording();
+    /* Freeze the open song before this import touches origin fields. setState
+       writes through at once, and the new YouTube URL must not land on it. */
+    this.shelveSong();
     this.setState({
       screen: 'upload', upload: 'done', fileName: src.name, fileMeta: src.meta, importKind: src.kind,
       ytError: null, analysis: 'idle', analysisStep: 0, analysisPct: 0, parseError: null,
-      importReport: null, importSource: null, importHints: [], stageLog: [], reviewPage: 0
+      importReport: null, importHints: [], stageLog: [], reviewPage: 0
     });
     this.say(src.url ? tx('Reading the YouTube link.') : tx('{{name}} added.', { name: src.name }));
     this.runAnalysis();
@@ -9653,6 +9936,7 @@ class Component extends DCLogic {
   dropRecording() {
     if (this._recording && this._recording.url) { try { URL.revokeObjectURL(this._recording.url); } catch (e) {} }
     this._recording = null;
+    this._heard = null;
   }
   /* A file dropped anywhere is a file to add. Without this the browser would
      open it in place of PPP and the session would be gone. */
@@ -9687,7 +9971,7 @@ class Component extends DCLogic {
      so before anyone tries rather than after. */
   checkHelper() {
     Import.health().then(hh => this.setState({
-      helper: { ok: !!hh.ok, remote: !!hh.remote, transcriber: !!hh.transcriber, youtube: !!hh.youtube, omr: !!hh.audiveris }
+      helper: { ok: !!hh.ok, remote: !!hh.remote, transcriber: !!hh.transcriber, youtube: !!hh.youtube, omr: !!hh.audiveris, amt: hh.amt || null, beatThis: !!hh.beatThis, pm2s: !!hh.pm2s }
     }));
   }
   unbindFileDrop() {
@@ -9744,13 +10028,17 @@ class Component extends DCLogic {
       download: d => pct(d) ? tx('Downloading the sound from YouTube — {{pct}}%', { pct: pct(d) }) : tx('Downloading the sound from YouTube'),
       decode: () => tx('Taking the sound out of the file'),
       transcribe: d => tx('Listening for piano notes — {{pct}}%', { pct: pct(d) }),
+      search: () => tx('Looking for a public-domain score with this title'),
+      catalog: () => tx('Using the catalog score'),
+      beats: () => tx('Finding the beat in the recording'),
+      quantize: () => tx('Writing the rhythm'),
       notate: () => tx('Finding the beat, the bars and the hands'),
       parse: () => tx('Building the score'),
       check: () => tx(recording ? 'Checking the transcription' : 'Checking the recognition')
     };
     /* where each stage sits on the bar; a stage that reports progress fills its span */
     const SPAN = recording
-      ? { validate: [2, 2], upload: [3, 6], download: [3, 20], decode: [20, 26], transcribe: [26, 90], notate: [92, 92], parse: [95, 95], check: [98, 98] }
+      ? { validate: [2, 2], search: [3, 4], upload: [3, 6], download: [3, 20], decode: [20, 26], catalog: [26, 30], transcribe: [26, 84], beats: [84, 88], quantize: [88, 92], notate: [92, 92], parse: [95, 95], check: [98, 98] }
       : { validate: [5, 5], rasterise: [25, 25], recognise: [55, 55], merge: [70, 70], parse: [85, 85], check: [95, 95] };
     const onStage = (name, detail) => {
       if (ctl.cancelled) return;
@@ -9789,13 +10077,19 @@ class Component extends DCLogic {
       this._pageImages = r.pageImages || null;
       this.dropRecording();
       this._recording = r.recording || null;
+      this._heard = r.heard || null;
+      const m0 = (r.score && r.score.measures && r.score.measures[0]) || { time: { beats: 4, beatType: 4 } };
+      /* Put the open song back first, still with its own origin. Applying the
+         new source and then shelving would give it this import's video. */
+      this.shelveSong();
       this.setState(st => ({
+        lockMetre: m0.time.beats + '/' + m0.time.beatType,
+        lockBpm: (r.source && r.source.tempo) || r.score.tempo || 80,
+        lockDownbeat: (r.recording && r.recording.barStarts && r.recording.barStarts[0]) || 0,
         stageLog: st.stageLog.map(x => Object.assign({}, x, { done: true })),
         importReport: r.report, importSource: r.source, analysisPct: 100,
         fileName: yt ? r.score.title : st.fileName
       }));
-      /* the song you were on keeps its progress; the new one joins My Songs */
-      this.shelveSong();
       this.adoptScore(r.score);
       const checked = !!(r.pageImages || r.recording);
       this.enterSong(r.score, r.source, checked, file);
@@ -9871,6 +10165,50 @@ class Component extends DCLogic {
         }
       }, 60);
     }
+  }
+  rewriteRhythm() {
+    const heard = this._heard;
+    if (!heard || !heard.notes || !window.PPPAudioScore) return;
+    const S = this.state;
+    const parts = String(S.lockMetre || '4/4').split('/');
+    const lock = {
+      beats: parseInt(parts[0], 10) || 4,
+      beatType: parseInt(parts[1], 10) || 4,
+      bpm: +S.lockBpm || S.score.tempo || 80,
+      firstDownbeat: S.lockDownbeat == null ? 0 : +S.lockDownbeat
+    };
+    let built;
+    try {
+      built = window.PPPAudioScore.toMusicXml({
+        notes: heard.notes, pedals: heard.pedals,
+        beats: heard.beats, downbeats: heard.downbeats
+      }, { title: S.score.title, lock: lock });
+    } catch (e) {
+      this.say((e && e.message) || tx('The rhythm could not be rewritten.'));
+      return;
+    }
+    let score;
+    try { score = parseMusicXML(built.xml, S.score.title); } catch (e) {
+      this.say(tx('The notes were heard but could not be turned into a score: {{message}}', { message: e.message }));
+      return;
+    }
+    score.composer = S.score.composer || '';
+    const report = Import.validateTranscription(score, built.stats, heard);
+    const source = Object.assign({}, S.importSource || {}, {
+      tempo: built.stats.tempo, barStarts: built.stats.barStarts,
+      status: report.level === 'poor' ? 'low-confidence' : 'transcribed'
+    });
+    score.source = source;
+    if (this._recording) this._recording.barStarts = built.stats.barStarts;
+    this.adoptScore(score);
+    this.setState({
+      importReport: report, importSource: source,
+      lockMetre: lock.beats + '/' + lock.beatType,
+      lockBpm: lock.bpm,
+      lockDownbeat: lock.firstDownbeat,
+      reviewFrom: Score.first(score)
+    });
+    this.say(tx('Rewrote the rhythm as {{metre}} at {{tempo}} BPM.', { metre: lock.beats + '/' + lock.beatType, tempo: lock.bpm }));
   }
   recordingPanel(S, score) {
     const rec = this._recording;
@@ -10018,9 +10356,15 @@ class Component extends DCLogic {
       return;
     }
     const id = 'song-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const yt = source && source.kind === 'youtube' ? Import.youtubeWatch(source.url || source.youtubeId) : null;
+    if (yt) {
+      source.url = yt.url;
+      source.youtubeId = yt.id;
+      score.source = Object.assign({}, score.source || source, { kind: 'youtube', url: yt.url, youtubeId: yt.id });
+    }
     lib.songs.unshift({
       id: id, title: score.title, composer: score.composer,
-      kind: (source && source.kind) || 'musicxml', url: (source && source.url) || null,
+      kind: (source && source.kind) || 'musicxml', url: (yt && yt.url) || (source && source.url) || null,
       addedAt: Clock.now(), lastAt: Clock.now(), prog: 0, mem: 0, measures: Score.count(score)
     });
     lib.current = id;
@@ -10057,6 +10401,15 @@ class Component extends DCLogic {
     const first = score.sections[0] || { from: Score.first(score), to: Score.last(score) };
     const lf = data && data.loopFrom != null ? Score.snap(score, data.loopFrom) : first.from;
     const lt = data && data.loopTo != null ? Score.snap(score, data.loopTo) : first.to;
+    const lib0 = this.libraryRead();
+    const card = lib0.songs.find(s => s.id === id);
+    let importSource = data ? data.importSource || null : null;
+    const vs0 = Import.songVideo(score.source, importSource, card);
+    if (vs0 && vs0.kind === 'youtube' && vs0.id) {
+      importSource = Object.assign({}, importSource || {}, { kind: 'youtube', url: vs0.url, youtubeId: vs0.id });
+      score.source = Object.assign({}, score.source || {}, { kind: (score.source && score.source.kind) || 'youtube', url: vs0.url, youtubeId: vs0.id });
+      if (card && card.kind === 'youtube') card.url = vs0.url;
+    }
     this.setState({
       score: score, secs: secs,
       history: data && data.history && data.history.byMeasure ? data.history : (id === 'demo' ? seedDemoHistory(score) : Learning.empty()),
@@ -10066,18 +10419,16 @@ class Component extends DCLogic {
       memLevel: data ? data.memLevel || 0 : 0, blindRuns: data ? data.blindRuns || 0 : 0, mastered: !!(data && data.mastered),
       fileName: (data && data.fileName) || (id === 'demo' ? 'interstellar-theme.musicxml' : score.title),
       fileMeta: (data && data.fileMeta) || (id === 'demo' ? 'built-in sample' : ''),
-      importSource: data ? data.importSource || null : null, importReport: data ? data.importReport || null : null,
+      importSource: importSource, importReport: data ? data.importReport || null : null,
       playing: false, hands: 'both', practiceMode: 'practice', seqStep: 0, seqReps: 0, memReveal: false,
       laps: 0, runHit: 0, runTot: 0, wrongNotes: [], lastAcc: 0,
       coachPlan: null, coachTask: 0, coachReps: 0, coachDone: [],
       analysis: 'done', analysisPct: 100, parseError: null, upload: 'empty', importKind: null,
       songId: id, pendingSong: null, armedRemove: null
     });
-    const lib = this.libraryRead();
-    lib.current = id;
-    const entry = lib.songs.find(s => s.id === id);
-    if (entry) entry.lastAt = Clock.now();
-    this.libraryWrite(lib);
+    lib0.current = id;
+    if (card) card.lastAt = Clock.now();
+    this.libraryWrite(lib0);
     /* the saved state follows the switch at once */
     this.setState({}, () => this.saveNow());
     setTimeout(() => this.requestPlan(), 0);
@@ -10165,14 +10516,26 @@ class Component extends DCLogic {
   /* What there is to watch for a song: the YouTube video it was made from,
      embedded, or the video file, kept in IndexedDB. */
   videoSource(S) {
-    const src = (S || this.state).importSource;
-    if (!src) return null;
-    if (src.kind === 'youtube') {
-      const id = Import.youtubeId(src.url);
-      return id ? { kind: 'youtube', id: id, url: 'https://www.youtube.com/watch?v=' + id } : null;
-    }
-    if (src.kind === 'video') return { kind: 'file' };
-    return null;
+    S = S || this.state;
+    const id = S.songId || 'demo';
+    if (id === 'demo') return null;
+    const lib = (S.library || []).find(s => s.id === id) || this.libraryRead().songs.find(s => s.id === id);
+    return Import.songVideo(S.score && S.score.source, S.importSource, lib);
+  }
+  /* Paste a YouTube link onto this song when the original was not kept. */
+  attachYoutube() {
+    const typed = document.querySelector('[data-yt-attach]');
+    const watch = Import.youtubeWatch((typed && typed.value) || this.state.ytAttachUrl);
+    if (!watch) return this.setState({ ytAttachError: tx('That is not a link to a YouTube video.') });
+    const S = this.state;
+    const source = Object.assign({}, S.importSource || {}, { kind: 'youtube', url: watch.url, youtubeId: watch.id });
+    if (S.score) S.score.source = Object.assign({}, S.score.source || {}, { kind: (S.score.source && S.score.source.kind) || 'youtube', url: watch.url, youtubeId: watch.id });
+    const lib = this.libraryRead();
+    const entry = lib.songs.find(s => s.id === (S.songId || 'demo'));
+    if (entry) { entry.url = watch.url; if (entry.kind !== 'video') entry.kind = entry.kind || 'youtube'; this.libraryWrite(lib); }
+    this._videoFor = null;
+    this.setState({ importSource: source, ytAttachUrl: '', ytAttachError: null, videoTick: (S.videoTick || 0) + 1 }, () => this.saveNow());
+    this.say(tx('Saved the YouTube video with this song.'));
   }
   keepVideo(id, file) {
     MediaStore.put(id, file).then(() => {
@@ -10209,7 +10572,10 @@ class Component extends DCLogic {
   /* The passage on the practice page, in seconds of the performance. */
   passageSpan(S) {
     const src = S.importSource;
-    const starts = src && src.barStarts;
+    const fromScore = S.score && S.score.source;
+    const starts = (fromScore && fromScore.barStarts && fromScore.barStarts.length)
+      ? fromScore.barStarts
+      : (src && src.barStarts);
     if (!starts || !starts.length) return null;
     const [from, to] = this.range(S);
     const a = Score.measure(S.score, from), b = Score.measure(S.score, to);
@@ -10226,6 +10592,7 @@ class Component extends DCLogic {
     const S = this.state;
     const vs = this.videoSource(S), span = this.passageSpan(S);
     if (!vs || !span) return;
+    if (vs.kind === 'youtube' && !vs.id) return;
     clearTimeout(this._vidStop); clearInterval(this._vidWatch);
     /* one sound at a time: the score stops while the performance plays */
     if (S.playing) this.setState({ playing: false });
@@ -10265,14 +10632,31 @@ class Component extends DCLogic {
     this._ytRef = this._ytRef || (el => { this._ytFrame = el; });
     this._vidRef = this._vidRef || (el => { this._videoEl = el; });
     let el;
-    if (vs.kind === 'youtube') {
+    if (vs.kind === 'youtube' && vs.id) {
       const origin = typeof location !== 'undefined' && /^https?:/.test(location.protocol) ? '&origin=' + encodeURIComponent(location.origin) : '';
       el = h('iframe', {
         key: 'yt-' + vs.id, ref: this._ytRef, style: box, title: S.score.title,
+        width: '100%', height: '100%',
         src: 'https://www.youtube-nocookie.com/embed/' + vs.id + '?enablejsapi=1&rel=0&playsinline=1&modestbranding=1' + origin,
         allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share',
         allowFullScreen: true, referrerPolicy: 'strict-origin-when-cross-origin'
       });
+    } else if (vs.kind === 'youtube') {
+      el = h('div', { style: quiet, 'data-video-attach': '1' },
+        tx('This song’s YouTube video was not kept. Paste the link to watch it here.'),
+        h('input', {
+          type: 'url', 'data-yt-attach': '1',
+          placeholder: 'https://www.youtube.com/watch?v=…',
+          value: S.ytAttachUrl || '',
+          onChange: e => this.setState({ ytAttachUrl: e.target.value, ytAttachError: null }),
+          onKeyDown: e => { if (e.key === 'Enter') { e.preventDefault(); this.attachYoutube(); } },
+          style: { width: '100%', maxWidth: 320, padding: '9px 12px', borderRadius: 9, border: '1px solid #5c5854', background: '#2a2724', color: '#f5f2ee', fontFamily: 'inherit', fontSize: 13, boxSizing: 'border-box' }
+        }),
+        S.ytAttachError ? h('span', { style: { color: '#f0b4a8', fontSize: 12 } }, S.ytAttachError) : null,
+        h('button', {
+          type: 'button', onClick: () => this.attachYoutube(),
+          style: { padding: '8px 14px', borderRadius: 9, border: 0, background: '#fff', color: '#1b1a18', fontWeight: 600, fontFamily: 'inherit', fontSize: 12.5, cursor: 'pointer' }
+        }, tx('Save the link')));
     } else if (this._videoUrl) {
       el = h('video', { key: 'v-' + id, ref: this._vidRef, src: this._videoUrl, controls: true, playsInline: true, preload: 'metadata', style: box });
     } else if (this._videoMissing) {
@@ -10286,12 +10670,13 @@ class Component extends DCLogic {
     }
     const span = this.passageSpan(S);
     const rate = this.videoRate(S, vs.kind === 'youtube');
-    const ready = !!span && (vs.kind === 'youtube' || !!this._videoUrl);
+    const ready = !!span && ((vs.kind === 'youtube' && !!vs.id) || !!this._videoUrl);
     return {
       hasVideo: true,
       videoEl: el,
       videoTitle: tx('The performance'),
       videoIsYoutube: vs.kind === 'youtube',
+      hasVideoLink: vs.kind === 'youtube' && !!vs.url,
       videoLink: vs.url || '',
       videoPlay: () => this.playPassageVideo(),
       videoPlayLabel: span
@@ -11176,7 +11561,7 @@ class Component extends DCLogic {
       xpLabel: String(S.xp), masteredToday: String(this.masteredCount()),
 
       /* ---- the performance, beside the score (songs made from a video) ---- */
-      ...(sc === 'player' ? this.videoPanel(S) : { hasVideo: false }),
+      ...(sc === 'player' ? this.videoPanel(S) : { hasVideo: false, hasVideoLink: false, videoIsYoutube: false }),
 
       /* ---- upload & recognition ---- */
       formats: [['MusicXML', 0], ['.mxl', 0], ['PDF', 0], ['PNG', 0], ['JPG', 0], ['MP3', 1], ['WAV', 1], ['M4A', 1], ['MP4', 1]].map(([label, rec]) => ({
@@ -11263,6 +11648,20 @@ class Component extends DCLogic {
       analyzeBarStyle: this.bar(added ? 100 : running ? S.analysisPct : 0, failed ? 'var(--bad)' : 'var(--accent)'),
       analyzeEta: added ? tx('done') : failed ? tx('failed') : running ? R0(S.analysisPct || 0) + '%' : tx('not started'),
       /* ---- recognition review ---- */
+      showRhythmLock: !!(this._recording && this._heard && this._heard.notes),
+      lockTitle: tx('Fix the beat'),
+      lockHint: tx('PPP will rewrite the bars from the notes it already heard.'),
+      lockMetreLabel: tx('Time signature'),
+      lockTempoLabel: tx('Tempo'),
+      lockDownbeatLabel: tx('First downbeat (s)'),
+      lockRewrite: tx('Rewrite the rhythm'),
+      lockMetre: S.lockMetre || ((m0.time.beats || 4) + '/' + (m0.time.beatType || 4)),
+      lockBpm: S.lockBpm == null ? (score.tempo || 80) : S.lockBpm,
+      lockDownbeat: S.lockDownbeat == null ? 0 : S.lockDownbeat,
+      setLockMetre: e => this.setState({ lockMetre: e.target.value }),
+      setLockBpm: e => this.setState({ lockBpm: +e.target.value }),
+      setLockDownbeat: e => this.setState({ lockDownbeat: +e.target.value }),
+      rewriteRhythm: () => this.rewriteRhythm(),
       reviewKicker: this._recording ? tx('Check the transcription') : tx('Check recognition'),
       reviewTitle: this._recording
         ? ((S.importReport && S.importReport.level === 'good') ? tx('Written out. Have a listen.')
@@ -11289,7 +11688,9 @@ class Component extends DCLogic {
           { k: 'Tempo', v: score.tempo + ' BPM' },
           { k: 'Time', v: m0.time.beats + '/' + m0.time.beatType },
           { k: 'Needs a look', v: String((rep.suspectMeasures || []).length) }
-        ];
+        ].concat(src.retrieved ? [{ k: 'Score', v: tx('catalog') }] : [])
+         .concat(src.beatSource === 'audio' ? [{ k: 'Beat', v: tx('from the recording') }] : [])
+         .concat(src.quantizer === 'pm2s' ? [{ k: 'Rhythm', v: 'PM2S' }] : []);
         return [
           { k: 'Confidence', v: R0((rep.confidence == null ? 1 : rep.confidence) * 100) + '%' },
           { k: 'Measures', v: String(Score.count(score)) },
@@ -11419,7 +11820,7 @@ class Component extends DCLogic {
           style: this.pill(tab === id) + 'font-size:13.5px;padding:8px 16px;',
           on: () => this.setPracticeTab(id)
         })),
-      modeNote: tab === 'whole' ? tx('Play the whole piece from the first bar to the last.')
+      modeNote: tab === 'whole' ? tx('Play the whole piece. Click a bar to start from there to the end.')
         : tab === 'loop' ? tx('Repeat {{passage}} until it holds.', { passage: passage })
           : tx('Play {{passage}} with less of the score each time you pass.', { passage: passage }),
       showPassage: tab !== 'whole',
@@ -11445,13 +11846,17 @@ class Component extends DCLogic {
         ? tx('Just play — the score waits for each note and moves when you get it. No tempo to keep up with.')
         : S.anchor != null
           ? tx('Measure {{n}} is the start — now click where the passage ends.', { n: S.anchor })
-          : tx('Red bars are where PPP found you weak. Drag across bars to pick a passage, or click one bar.'),
+          : tab === 'whole'
+            ? tx('Click a bar to play from there to the end. Red bars are where PPP found you weak.')
+            : tx('Red bars are where PPP found you weak. Drag across bars to pick a passage, or click one bar.'),
       dismissHints: () => this.setState(st => ({ toggles: Object.assign({}, st.toggles, { hints: false }) })),
       dismissLabel: tx('Hide these tips'),
       showPickHint: S.wholeScore,
-      pickHint: S.anchor != null
-        ? tx('Measure {{n}} is the start — now click where the passage ends.', { n: S.anchor })
-        : tx('Red bars are the ones PPP found weak. Click a bar to start a passage, then click where it ends.'),
+      pickHint: tab === 'whole'
+        ? tx('Click a bar to play from there to the end. Red bars are where PPP found you weak.')
+        : S.anchor != null
+          ? tx('Measure {{n}} is the start — now click where the passage ends.', { n: S.anchor })
+          : tx('Red bars are the ones PPP found weak. Click a bar to start a passage, then click where it ends.'),
       toggleWhole: () => this.setState(st => ({ wholeScore: !st.wholeScore })),
       wholeBtnStyle: this.chip(S.wholeScore),
       wholeLabel: tx(S.wholeScore ? 'Whole score' : 'This part'),
@@ -11533,7 +11938,7 @@ class Component extends DCLogic {
         fluid: S.wholeScore,
         weak: S.wholeScore ? this.weakMeasures() : null,
         heading: S.wholeScore,
-        pick: e => this.selectBars(e),
+        pick: e => this.onScorePick(e),
         /* a printed page is about twenty-five staff heights wide, which is what
            lets four bars of real piano writing share a line; a phone holds
            two, set a little closer so they are not drawn too small to read */
