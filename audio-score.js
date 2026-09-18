@@ -961,8 +961,11 @@
        on almost every pulse is 6/8; bass once a bar is 4/4 triplets. */
     function compoundTactus() {
       if (lock || opts.beatsPerBar) return false;
-      const pulses = Math.max(1, beats.length - 1);
-      const tripN = Object.keys(trip).filter(k => trip[k]).length;
+      const t0 = clustered[0].on, t1 = clustered[clustered.length - 1].off;
+      const live = [];
+      for (let i = 0; i < beats.length; i++) if (beats[i] >= t0 - 0.15 && beats[i] <= t1 + 0.15) live.push(i);
+      const pulses = Math.max(1, live.length);
+      const tripN = live.filter(i => trip[i]).length;
       if (tripN < pulses * 0.28) return false;
       let bassHits = 0;
       clustered.forEach(n => {
@@ -971,7 +974,7 @@
         const f = pos - Math.floor(pos + 1e-6);
         if (f < 0.14 || f > 0.86) bassHits++;
       });
-      return bassHits >= pulses * 0.45;
+      return bassHits >= pulses * 0.4;
     }
     let compoundPulse = compoundTactus();
     if (compoundPulse) {
@@ -1002,14 +1005,17 @@
 
     const lockedMetre = lock && (lock.beats || lock.beatsPerBar);
     if (compoundPulse && !lockedMetre && !opts.beatsPerBar) {
-      beatsPerBar = 6;
+      /* 6/8 is two dotted-quarter pulses; 12/8 is four. Downbeats decide. */
+      const fromDown = metreFromDownbeats(beats, input.downbeats);
+      const pulses = (fromDown && fromDown.beats === 4) ? 4 : 2;
+      beatsPerBar = pulses === 4 ? 12 : 6;
       beatType = 8;
       meterContrast = 2;
       origin = 0;
       if (input.downbeats && input.downbeats.length && beatSource === 'audio') {
         origin = Math.round(beatPosition(beats, input.downbeats[0]) * 36);
       }
-      const bar = 72;
+      const bar = pulses * 36;
       const firstTick = Math.min.apply(null, q.map(n => n.tick));
       while (origin > firstTick) origin -= bar;
       while (origin + bar <= firstTick) origin += bar;

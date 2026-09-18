@@ -18,7 +18,8 @@
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/&/g, 'and')
       .replace(/[^a-z0-9]+/g, ' ')
-      .replace(/\b(the|a|an|no|nr|n|op|in|for|piano)\b/g, ' ')
+      /* YouTube titles pad the piece name with these; they are not the work. */
+      .replace(/\b(the|a|an|no|nr|n|op|in|for|piano|official|audio|video|mv|cover|piano cover|synthesia|slowed|reverb|hours|hour|lyrics|tutorial|easy|sheet|music|full|hd|4k|live|performance|played|by)\b/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
   }

@@ -68,6 +68,20 @@
 
   html, body { overflow-x: hidden; max-width: 100%; }
   body { -webkit-text-size-adjust: 100%; }
+  button { touch-action: manipulation; }
+  /* iOS ignores taps on display:none file inputs. Cover the drop zone instead. */
+  .ppp-drop { position: relative; overflow: hidden; }
+  .ppp-file {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    font-size: 64px;
+    border: 0;
+    background: transparent;
+  }
   .ppp-shell {
     display: grid;
     grid-template-columns: 248px minmax(0, 1fr);
@@ -266,6 +280,7 @@
       background: rgba(20, 18, 16, .42);
     }
     .ppp-menu-btn { display: inline-flex; }
+    .ppp-playbtn { min-height: 44px; min-width: 120px; }
     .ppp-account-meta { display: none; }
     .ppp-split { grid-template-columns: minmax(0, 1fr) !important; }
     .ppp-panel { position: static !important; top: auto !important; }
@@ -614,14 +629,14 @@
               <p style="margin: 4px 0 0; font-size: 13px; color: var(--ink3);">Each song you add is kept in My Songs, with its own progress.</p>
             </div>
 
-            <label data-drop-zone style="{{ dropZoneStyle }}" style-hover="border-color: var(--accent); background: var(--accent-3);">
+            <label data-drop-zone class="ppp-drop" style="{{ dropZoneStyle }}" style-hover="border-color: var(--accent); background: var(--accent-3);">
               <div style="width: 54px; height: 54px; margin: 0 auto; border-radius: 15px; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center;">
                 <span style="font-family: 'Noto Music', serif; font-size: 26px; color: var(--accent);">&#119070;</span>
               </div>
               <div style="font-family: 'Instrument Serif', serif; font-size: 30px; line-height: 1.15; margin-top: 16px; letter-spacing: -0.01em;">{{ dropTitle }}</div>
               <div style="font-size: 13.5px; line-height: 1.55; color: var(--ink2); margin: 8px auto 0; max-width: 520px;">Sheet music, or a recording of it being played — PPP listens to a recording and writes out the notes.</div>
-              <span style="margin-top: 20px; padding: 11px 22px; border-radius: 11px; background: var(--accent); color: #fff; font-size: 13.5px; font-weight: 600; display: inline-flex; align-items: center;">Choose file</span>
-              <input type="file" data-add-file accept=".musicxml,.xml,.mxl,.pdf,.png,.jpg,.jpeg,.mp3,.wav,.m4a,.aac,.ogg,.oga,.opus,.flac,.mp4,.m4v,.mov,.webm,.mkv,audio/*,video/*" onChange="{{ onFile }}" style="display: none;" />
+              <span style="margin-top: 20px; padding: 11px 22px; border-radius: 11px; background: var(--accent); color: #fff; font-size: 13.5px; font-weight: 600; display: inline-flex; align-items: center; pointer-events: none;">Choose file</span>
+              <input type="file" class="ppp-file" data-add-file accept=".musicxml,.xml,.mxl,.pdf,.png,.jpg,.jpeg,.mp3,.wav,.m4a,.aac,.ogg,.oga,.opus,.flac,.mp4,.m4v,.mov,.webm,.mkv,application/pdf" onChange="{{ onFile }}" />
               <div style="display: flex; gap: 6px; justify-content: center; margin-top: 20px; flex-wrap: wrap;">
                 <sc-for list="{{ formats }}" as="f" hint-placeholder-count="9">
                   <span style="{{ f.style }}">{{ f.label }}</span>
@@ -839,7 +854,7 @@
 
             <div class="ppp-transport" style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); padding: 16px;">
               <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                <button onClick="{{ togglePlay }}" style="display: flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 11px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; min-width: 104px; justify-content: center;">{{ playLabel }}</button>
+                <button type="button" class="ppp-playbtn" onClick="{{ togglePlay }}" style="display: flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 11px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; min-width: 104px; justify-content: center;">{{ playLabel }}</button>
                 <button onClick="{{ toggleFollow }}" style="{{ followBtnStyle }}">{{ followLabel }}</button>
                 <button onClick="{{ restart }}" style="padding: 10px 14px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 13px; cursor: pointer;" style-hover="border-color: var(--ink3);">Restart</button>
                 <div class="ppp-focus-only" style="display: none; gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface2);">
@@ -1270,10 +1285,13 @@
                       <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; width: 30px; text-align: right;">{{ s.mem }}</span>
                     </div>
                   </div>
-                  <div style="display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 6px;">
+                  <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 6px;">
                     <span style="font-size: 11.5px; color: var(--ink3);">{{ s.last }}</span>
                     <sc-if value="{{ s.canRemove }}" hint-placeholder-val="{{ false }}">
                       <button onClick="{{ s.remove }}" data-remove-song="{{ s.id }}" style="{{ s.removeStyle }}">{{ s.removeLabel }}</button>
+                    </sc-if>
+                    <sc-if value="{{ s.canShare }}" hint-placeholder-val="{{ false }}">
+                      <button onClick="{{ s.share }}" data-share-song="{{ s.id }}" style="{{ s.shareStyle }}">{{ s.shareLabel }}</button>
                     </sc-if>
                     <button onClick="{{ s.on }}" data-open-song="{{ s.id }}" style="margin-left: auto; padding: 8px 14px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer;" style-hover="border-color: var(--accent); color: var(--accent);">{{ s.openLabel }}</button>
                   </div>
@@ -1285,6 +1303,74 @@
               <span style="font-size: 14px; font-weight: 600;">Add sheet music</span>
               <span style="font-size: 12px; color: var(--ink3); max-width: 200px; text-align: center;">MusicXML, PDF, a photo, or a recording — MP3, MP4 or a YouTube link</span>
             </button>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- Shared Scores: what people have posted, for anyone to add to their
+           own songs. A shared link lands here, on the score it points to. -->
+      <sc-if value="{{ isShared }}" hint-placeholder-val="{{ false }}">
+        <div data-shared-page style="display: flex; flex-direction: column; gap: 18px;">
+          <sc-if value="{{ shr.hasLinked }}" hint-placeholder-val="{{ false }}">
+            <section data-shared-linked style="border: 1px solid var(--accent); box-shadow: 0 0 0 1px var(--accent), var(--shadow); border-radius: 18px; background: var(--surface); overflow: hidden;">
+              <sc-if value="{{ shr.linkedReady }}" hint-placeholder-val="{{ true }}">
+                <div class="ppp-split" style="display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); align-items: stretch;">
+                  <div style="background: var(--bg); padding: 16px; min-height: 140px; overflow: hidden;">{{ shr.linked.thumb }}</div>
+                  <div style="padding: 20px; display: flex; flex-direction: column; gap: 8px; border-left: 1px solid var(--line);">
+                    <div style="font-size: 11.5px; font-weight: 600; letter-spacing: .04em; color: var(--accent);">{{ shr.linkedLead }}</div>
+                    <div data-no-i18n="1" style="font-size: 21px; font-weight: 600; letter-spacing: -0.01em; overflow-wrap: anywhere;">{{ shr.linked.title }}</div>
+                    <div data-no-i18n="1" style="font-size: 12.5px; color: var(--ink2);">{{ shr.linked.sub }}</div>
+                    <div data-no-i18n="1" style="font-size: 12px; color: var(--ink3);">{{ shr.linked.meta }}</div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; padding-top: 10px;">
+                      <button onClick="{{ shr.linked.on }}" data-open-shared="{{ shr.linked.id }}" style="padding: 10px 16px; border-radius: 10px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">{{ shr.linked.openLabel }}</button>
+                      <button onClick="{{ shr.linked.share }}" data-share-shared="{{ shr.linked.id }}" style="padding: 9px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer;" style-hover="border-color: var(--accent); color: var(--accent);">{{ shr.linked.shareLabel }}</button>
+                    </div>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ !shr.linkedReady }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; align-items: center; gap: 12px; padding: 16px 18px;">
+                  <span data-no-i18n="1" style="flex: 1; font-size: 13px; color: var(--ink2);">{{ shr.linkedNote }}</span>
+                  <button onClick="{{ shr.closeLinked }}" style="padding: 7px 12px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 12px; cursor: pointer;">{{ shr.closeLabel }}</button>
+                </div>
+              </sc-if>
+            </section>
+          </sc-if>
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <div style="display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface2);">
+              <sc-for list="{{ shr.filters }}" as="f" hint-placeholder-count="2">
+                <button onClick="{{ f.on }}" style="{{ f.style }}">{{ f.label }}</button>
+              </sc-for>
+            </div>
+            <div style="flex: 1;"></div>
+            <input type="search" class="ppp-search" data-shared-search placeholder="Search titles, composers or people" value="{{ shr.query }}" onChange="{{ shr.setQuery }}" style="width: 260px; padding: 10px 14px; border-radius: 11px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px; outline: none;" />
+          </div>
+          <sc-if value="{{ shr.hasNote }}" hint-placeholder-val="{{ false }}">
+            <div data-shared-note style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 18px 20px; border: 1px dashed var(--line); border-radius: 16px; background: var(--surface);">
+              <span data-no-i18n="1" style="flex: 1; min-width: 200px; font-size: 13.5px; color: var(--ink2); line-height: 1.5;">{{ shr.note }}</span>
+              <sc-if value="{{ shr.hasAction }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ shr.action }}" style="padding: 9px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;" style-hover="border-color: var(--accent); color: var(--accent);">{{ shr.actionLabel }}</button>
+              </sc-if>
+            </div>
+          </sc-if>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(258px, 1fr)); gap: 16px;">
+            <sc-for list="{{ shr.cards }}" as="c" hint-placeholder-count="6">
+              <div data-shared="{{ c.id }}" style="{{ c.cardStyle }}" style-hover="transform: translateY(-3px);">
+                <div style="background: var(--bg); border-bottom: 1px solid var(--line); padding: 14px; height: 108px; overflow: hidden;">{{ c.thumb }}</div>
+                <div style="padding: 16px; display: flex; flex-direction: column; gap: 8px; flex: 1;">
+                  <div>
+                    <span style="{{ c.badgeStyle }}"><span style="width: 6px; height: 6px; border-radius: 999px; background: var(--accent);"></span>{{ c.badge }}</span>
+                    <div data-no-i18n="1" style="{{ c.titleStyle }}">{{ c.title }}</div>
+                    <div data-no-i18n="1" style="font-size: 12px; color: var(--ink3); margin-top: 2px;">{{ c.sub }}</div>
+                  </div>
+                  <div data-no-i18n="1" style="font-size: 11.5px; color: var(--ink3);">{{ c.meta }}</div>
+                  <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 6px;">
+                    <button onClick="{{ c.share }}" data-share-shared="{{ c.id }}" style="padding: 8px 11px; border-radius: 9px; border: 1px solid var(--line); background: transparent; color: var(--ink2); font-family: inherit; font-size: 12px; cursor: pointer;">{{ c.shareLabel }}</button>
+                    <button onClick="{{ c.on }}" data-open-shared="{{ c.id }}" style="margin-left: auto; padding: 8px 14px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer;" style-hover="border-color: var(--accent); color: var(--accent);">{{ c.openLabel }}</button>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
           </div>
         </div>
       </sc-if>
@@ -1417,6 +1503,23 @@
                 </div>
               </div>
             </sc-if>
+            <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--line);">
+              <div style="min-width: 0;">
+                <div style="font-size: 13.5px; font-weight: 500;">MIDI output</div>
+                <div style="font-size: 12px; color: var(--ink3); margin-top: 2px;">{{ midiOutSub }}</div>
+              </div>
+              <button onClick="{{ midiOutConnect }}" style="{{ midiActionStyle }}">{{ midiOutAction }}</button>
+            </div>
+            <sc-if value="{{ hasMidiOutputs }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3);">Output device</div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <sc-for list="{{ midiOutDevices }}" as="d" hint-placeholder-count="2">
+                    <button onClick="{{ d.on }}" style="{{ d.style }}">{{ d.label }}</button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
           </div>
         </div>
       </sc-if>
@@ -1463,6 +1566,7 @@
                       <option value="3/4">3/4</option>
                       <option value="4/4">4/4</option>
                       <option value="6/8">6/8</option>
+                      <option value="12/8">12/8</option>
                     </select>
                   </label>
                   <label style="font-size: 12px; color: var(--ink3);">{{ lockTempoLabel }}
@@ -1577,6 +1681,60 @@
 
   </main>
 
+  <!-- Share a song: post it to Shared Scores, or send its link. Sits under
+       the toast, so "Link copied" is seen over it. -->
+  <sc-if value="{{ sd.open }}" hint-placeholder-val="{{ false }}">
+    <div data-share-dialog style="position: fixed; inset: 0; z-index: 58; display: grid; place-items: center; padding: 16px;">
+      <button type="button" onClick="{{ sd.close }}" aria-label="{{ sd.closeLabel }}" style="position: absolute; inset: 0; border: 0; padding: 0; background: rgba(20, 18, 16, .45); cursor: pointer;"></button>
+      <div role="dialog" aria-modal="true" aria-label="{{ sd.heading }}" style="position: relative; width: 100%; max-width: 460px; max-height: calc(100dvh - 32px); overflow-y: auto; box-sizing: border-box; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); box-shadow: var(--shadow); padding: 20px; display: flex; flex-direction: column; gap: 14px; animation: rise .2s ease;">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <div style="min-width: 0; flex: 1;">
+            <div style="font-size: 11.5px; font-weight: 600; letter-spacing: .04em; color: var(--ink3);">{{ sd.heading }}</div>
+            <div data-no-i18n="1" style="font-size: 18px; font-weight: 600; letter-spacing: -0.01em; margin-top: 2px; overflow-wrap: anywhere;">{{ sd.title }}</div>
+          </div>
+          <button type="button" data-share-close onClick="{{ sd.close }}" aria-label="{{ sd.closeLabel }}" style="width: 32px; height: 32px; flex: none; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 17px; line-height: 1; cursor: pointer;">×</button>
+        </div>
+        <sc-if value="{{ sd.needSignIn }}" hint-placeholder-val="{{ false }}">
+          <div data-share-signin style="display: flex; flex-direction: column; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg);">
+            <p style="margin: 0; font-size: 13px; line-height: 1.55; color: var(--ink2);">{{ sd.signInNote }}</p>
+            <button onClick="{{ sd.signIn }}" style="{{ sd.signInStyle }}">{{ sd.signInLabel }}</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ sd.canPost }}" hint-placeholder-val="{{ true }}">
+          <section style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg);">
+            <div style="font-size: 13.5px; font-weight: 600;">{{ sd.postHeading }}</div>
+            <p style="margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--ink2);">{{ sd.postNote }}</p>
+            <button data-share-post data-posted="{{ sd.postedAttr }}" onClick="{{ sd.post }}" style="{{ sd.postStyle }}">{{ sd.postLabel }}</button>
+          </section>
+        </sc-if>
+        <sc-if value="{{ sd.canLink }}" hint-placeholder-val="{{ true }}">
+          <section style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg);">
+            <div style="font-size: 13.5px; font-weight: 600;">{{ sd.linkHeading }}</div>
+            <p style="margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--ink2);">{{ sd.linkNote }}</p>
+            <div style="display: flex; gap: 8px; align-items: stretch;">
+              <sc-if value="{{ sd.hasLink }}" hint-placeholder-val="{{ false }}">
+                <div data-share-link data-no-i18n="1" style="flex: 1; min-width: 0; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: all;">{{ sd.link }}</div>
+              </sc-if>
+              <button data-share-net="copy" onClick="{{ sd.copy }}" style="{{ sd.copyStyle }}">{{ sd.copyLabel }}</button>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <sc-for list="{{ sd.nets }}" as="n" hint-placeholder-count="5">
+                <button data-share-net="{{ n.id }}" onClick="{{ n.on }}" style="{{ n.style }}" style-hover="border-color: var(--accent);"><span data-no-i18n="1" style="{{ n.glyphStyle }}">{{ n.glyph }}</span>{{ n.label }}</button>
+              </sc-for>
+            </div>
+          </section>
+        </sc-if>
+        <sc-if value="{{ sd.hasError }}" hint-placeholder-val="{{ false }}">
+          <p role="alert" data-share-error data-no-i18n="1" style="margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--bad);">{{ sd.error }}</p>
+        </sc-if>
+        <p style="margin: 0; font-size: 11.5px; line-height: 1.55; color: var(--ink3);">{{ sd.fine }}</p>
+        <sc-if value="{{ sd.canStop }}" hint-placeholder-val="{{ false }}">
+          <button data-share-stop onClick="{{ sd.stop }}" style="{{ sd.stopStyle }}">{{ sd.stopLabel }}</button>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
   <div style="{{ toastStyle }}">{{ toast }}</div>
 </div>
 
@@ -1608,8 +1766,8 @@ const PIANO = {
   low: 21, step: 3,
   /* Half the memory of 48 kHz stereo, and a piano puts next to nothing above 16 kHz. */
   decodeRate: 32000,
-  /* PPP does not read dynamics yet, so a score plays at an even mezzo-forte. */
-  velocity: 78,
+  /* Fallback when a score has no dynamic marks (mezzo-forte). */
+  velocity: 80,
   maxVoices: 72,
   /* How far ahead notes are committed to the audio clock. A frame that stalls
      for less than this costs the sound nothing. */
@@ -1696,16 +1854,51 @@ const PianoSamples = {
 };
 
 /* What a score asks of the sound beyond its notes: how long each struck note
-   really sounds (a tie is one note, not two strikes), where the pedal holds
-   the strings, and where the beats fall for the metronome. Worked out once
-   per score. */
+   really sounds (a tie is one note, not two strikes), how loud it is, where
+   the three piano pedals move, where tempo changes, and the sounding order
+   after repeats and voltas. Worked out once per score and range. */
+const DYN_VEL = {
+  pppp: 8, ppp: 16, pp: 32, p: 48, mp: 64, mf: 80, f: 96, ff: 112, fff: 124, ffff: 127,
+  sf: 108, sfz: 112, sffz: 124, fz: 108, rf: 104, rfz: 104, fp: 96, pf: 80, sfp: 108, sfpp: 96, n: 80
+};
+const PEDAL_CC = { damper: 64, sostenuto: 66, soft: 67 };
+
 const PianoScore = {
   _cache: typeof WeakMap === 'function' ? new WeakMap() : null,
-  of(score) {
-    const hit = this._cache && this._cache.get(score);
-    if (hit) return hit;
-    const plan = Object.assign(this.ties(score), { pedal: this.pedal(score), beats: this.beats(score) });
-    if (this._cache) this._cache.set(score, plan);
+  of(score, from, to) {
+    if (!score) return this._empty();
+    const a = from == null ? Score.first(score) : from;
+    const b = to == null ? Score.last(score) : to;
+    const key = a + ':' + b;
+    let bag = this._cache && this._cache.get(score);
+    if (bag && bag[key]) return bag[key];
+    const plan = this.build(score, a, b);
+    if (this._cache) {
+      if (!bag) { bag = {}; this._cache.set(score, bag); }
+      bag[key] = plan;
+    }
+    return plan;
+  },
+  _empty() {
+    return { hold: new Map(), cont: new Set(), pedal: [], beats: [],
+      visits: [], strikes: [], ccs: [], tempoMap: [{ q: 0, bpm: 84 }], soundLengthQ: 0 };
+  },
+  build(score, from, to) {
+    const ties = this.ties(score);
+    const pedal = this.pedal(score);
+    const plan = Object.assign(ties, {
+      pedal: pedal,
+      beatsWritten: this.beats(score),
+      visits: Score.form(score, from, to)
+    });
+    plan.soundLengthQ = 0;
+    plan.visits.forEach(v => { v.soundQ = plan.soundLengthQ; plan.soundLengthQ += v.lenQ; });
+    plan.tempoMap = this.tempoMap(score, plan.visits);
+    plan.dyn = this.dynPlan(score);
+    plan.ccsWritten = this.pedalEvents(score);
+    plan.ccs = this.pedalCCs(score, plan.visits);
+    plan.beats = this.soundBeats(plan);
+    plan.strikes = this.strikes(score, plan);
     return plan;
   },
   /* A note is struck unless a tie really carries the one before it into it.
@@ -1739,9 +1932,11 @@ const PianoScore = {
     });
     return { hold: hold, cont: cont };
   },
-  /* [down, up) spans in absolute quarters; a "change" lifts and presses again. */
+  /* [down, up) spans in written quarters for the damper. A "change" is half-pedal:
+     the strings stay up. */
   pedal(score) {
     const ev = (score.pedals || [])
+      .filter(p => !p.kind || p.kind === 'damper')
       .map(p => ({ q: Score.startQ(score, p.m) + (p.b || 0), type: p.type }))
       .sort((a, b) => a.q - b.q);
     const spans = [];
@@ -1749,7 +1944,7 @@ const PianoScore = {
     ev.forEach(e => {
       if (e.type === 'start') { if (down == null) down = e.q; }
       else if (e.type === 'stop') { if (down != null) spans.push([down, e.q]); down = null; }
-      else if (e.type === 'change') { if (down != null) spans.push([down, e.q]); down = e.q; }
+      else if (e.type === 'change') { if (down == null) down = e.q; }
     });
     if (down != null) spans.push([down, score.lengthQ]);
     return spans;
@@ -1772,18 +1967,266 @@ const PianoScore = {
       }
     });
     return out;
+  },
+  soundBeats(plan) {
+    const out = [];
+    (plan.visits || []).forEach(v => {
+      (plan.beatsWritten || []).forEach(k => {
+        if (k.q >= v.startQ - 1e-9 && k.q < v.startQ + v.lenQ - 1e-9)
+          out.push({ q: v.soundQ + (k.q - v.startQ), accent: k.accent, m: v.number });
+      });
+    });
+    return out.sort((a, b) => a.q - b.q);
+  },
+  dynPlan(score) {
+    const marks = [];
+    (score.dynamics || []).forEach(d => {
+      const q = Score.startQ(score, d.m) + (d.b || 0);
+      let vel = d.vel;
+      if (vel == null) {
+        const k = String(d.mark || '').toLowerCase();
+        vel = DYN_VEL[k];
+      }
+      if (vel == null) return;
+      marks.push({ q: q, mark: d.mark || 'mf', vel: vel });
+    });
+    marks.sort((a, b) => a.q - b.q);
+    const wedges = [];
+    let open = null;
+    (score.wedges || []).forEach(w => {
+      const q = Score.startQ(score, w.m) + (w.b || 0);
+      if (w.type === 'crescendo' || w.type === 'diminuendo') open = { q0: q, type: w.type };
+      else if (w.type === 'stop' && open) {
+        wedges.push({ q0: open.q0, q1: q, type: open.type });
+        open = null;
+      }
+    });
+    if (open) wedges.push({ q0: open.q0, q1: score.lengthQ, type: open.type });
+    const velAt = q => {
+      let v = PIANO.velocity, seen = -Infinity;
+      for (let i = 0; i < marks.length; i++) {
+        if (marks[i].q <= q + 1e-9 && marks[i].q >= seen) { seen = marks[i].q; v = marks[i].vel; }
+      }
+      return v;
+    };
+    wedges.forEach(s => {
+      s.v0 = velAt(s.q0);
+      let v1 = null;
+      for (let i = 0; i < marks.length; i++) {
+        if (marks[i].q >= s.q1 - 1e-6) { v1 = marks[i].vel; break; }
+      }
+      s.v1 = v1 != null ? v1 : (s.type === 'crescendo' ? Math.min(127, s.v0 + 24) : Math.max(1, s.v0 - 24));
+    });
+    return { marks: marks, wedges: wedges, velAt: velAt };
+  },
+  velocity(plan, n, writtenQ) {
+    const dyn = plan.dyn;
+    let base = dyn && dyn.velAt ? dyn.velAt(writtenQ) : PIANO.velocity;
+    if (dyn && dyn.wedges) {
+      for (let i = 0; i < dyn.wedges.length; i++) {
+        const w = dyn.wedges[i];
+        if (writtenQ < w.q0 - 1e-9 || writtenQ > w.q1 + 1e-9) continue;
+        const t = w.q1 - w.q0 < 1e-6 ? 1 : (writtenQ - w.q0) / (w.q1 - w.q0);
+        base = Math.round(w.v0 + (w.v1 - w.v0) * Math.max(0, Math.min(1, t)));
+      }
+    }
+    let vel = base;
+    if (n && n.marcato) vel += 22;
+    else if (n && n.accent) vel += 14;
+    if (n && n.dyn) {
+      const k = String(n.dyn).toLowerCase();
+      const dv = DYN_VEL[k];
+      if (dv != null) vel = /^sf|^fz|^rf/.test(k) ? Math.max(vel, dv) : dv;
+    }
+    if (this.softAt(plan, writtenQ)) vel = Math.max(1, Math.round(vel * 0.72));
+    return Math.max(1, Math.min(127, vel | 0));
+  },
+  softAt(plan, q) {
+    const ccs = plan.ccsWritten || [];
+    let on = false;
+    for (let i = 0; i < ccs.length; i++) {
+      if (ccs[i].q > q + 1e-9) break;
+      if (ccs[i].kind === 'soft') on = ccs[i].value > 0;
+    }
+    return on;
+  },
+  sostWritten(plan) {
+    const spans = [];
+    let down = null;
+    (plan.ccsWritten || []).forEach(e => {
+      if (e.kind !== 'sostenuto') return;
+      if (e.value > 0 && down == null) down = e.q;
+      else if (!(e.value > 0) && down != null) { spans.push([down, e.q]); down = null; }
+    });
+    return spans;
+  },
+  tempoMap(score, visits) {
+    const written = [];
+    (score.tempos || []).forEach(t => {
+      const bpm = +t.bpm;
+      if (!(bpm > 0)) return;
+      written.push({ q: Score.startQ(score, t.m) + (t.b || 0), bpm: bpm });
+    });
+    written.sort((a, b) => a.q - b.q);
+    const fallback = score.tempo || 84;
+    if (!written.length || written[0].q > 1e-9) written.unshift({ q: 0, bpm: fallback });
+    const lastAt = q => {
+      let bpm = fallback;
+      for (let i = 0; i < written.length; i++) if (written[i].q <= q + 1e-9) bpm = written[i].bpm;
+      return bpm;
+    };
+    const out = [];
+    (visits || []).forEach(v => {
+      out.push({ q: v.soundQ, bpm: lastAt(v.startQ) });
+      written.forEach(t => {
+        if (t.q >= v.startQ - 1e-9 && t.q < v.startQ + v.lenQ - 1e-9)
+          out.push({ q: v.soundQ + (t.q - v.startQ), bpm: t.bpm });
+      });
+    });
+    out.sort((a, b) => a.q - b.q);
+    const dedup = [];
+    out.forEach(p => {
+      const last = dedup[dedup.length - 1];
+      if (last && Math.abs(last.q - p.q) < 1e-9) dedup[dedup.length - 1] = p;
+      else dedup.push(p);
+    });
+    return dedup.length ? dedup : [{ q: 0, bpm: fallback }];
+  },
+  pedalEvents(score) {
+    const ev = [];
+    (score.pedals || []).forEach(p => {
+      const kind = p.kind || 'damper';
+      const q = Score.startQ(score, p.m) + (p.b || 0);
+      let value = p.value;
+      if (value == null) {
+        if (p.type === 'stop') value = 0;
+        else if (p.type === 'change') value = 64;
+        else value = 127;
+      }
+      ev.push({ q: q, kind: kind, type: p.type, value: Math.max(0, Math.min(127, value | 0)) });
+    });
+    ev.sort((a, b) => a.q - b.q || a.kind.localeCompare(b.kind));
+    const out = [];
+    ev.forEach(e => {
+      const last = out[out.length - 1];
+      if (last && last.kind === e.kind && Math.abs(last.q - e.q) < 1e-6) out[out.length - 1] = e;
+      else out.push(e);
+    });
+    return out;
+  },
+  pedalCCs(score, visits) {
+    const written = this.pedalEvents(score);
+    const out = [];
+    (visits || []).forEach(v => {
+      written.forEach(e => {
+        if (e.q >= v.startQ - 1e-9 && e.q < v.startQ + v.lenQ - 1e-9)
+          out.push({
+            q: v.soundQ + (e.q - v.startQ),
+            kind: e.kind,
+            cc: PEDAL_CC[e.kind] || 64,
+            value: e.value,
+            type: e.type
+          });
+      });
+    });
+    return out.sort((a, b) => a.q - b.q);
+  },
+  strikes(score, plan) {
+    const out = [];
+    const sost = this.sostWritten(plan);
+    (plan.visits || []).forEach(v => {
+      (score.notes || []).forEach(n => {
+        if (n.rest || n.abs < v.startQ - 1e-9 || n.abs >= v.startQ + v.lenQ - 1e-9) return;
+        if (!this.struck(plan, n)) return;
+        const q = v.soundQ + (n.abs - v.startQ);
+        let upWritten = n.abs + this.hold(plan, n);
+        const ped = this.pedalUp(plan, upWritten);
+        if (ped != null) upWritten = ped;
+        sost.forEach(s => {
+          if (n.abs <= s[0] + 1e-9 && n.abs + this.hold(plan, n) > s[0] + 1e-9)
+            upWritten = Math.max(upWritten, s[1]);
+        });
+        const upQ = q + (upWritten - n.abs);
+        out.push({
+          midi: n.midi, vel: this.velocity(plan, n, n.abs), q: q, upQ: upQ,
+          hand: n.hand, m: n.m, abs: n.abs, note: n, visit: v
+        });
+      });
+    });
+    return out.sort((a, b) => a.q - b.q || a.midi - b.midi);
+  },
+  sostSpans(plan) {
+    const spans = [];
+    let down = null;
+    (plan.ccs || []).forEach(e => {
+      if (e.kind !== 'sostenuto') return;
+      if (e.value > 0 && down == null) down = e.q;
+      else if (e.value === 0 && down != null) { spans.push([down, e.q]); down = null; }
+    });
+    if (down != null) spans.push([down, plan.soundLengthQ || down]);
+    return spans;
+  },
+  msAt(plan, q, scale) {
+    scale = scale > 0 ? scale : 1;
+    const map = (plan && plan.tempoMap) || [];
+    let ms = 0, q0 = 0, bpm = (map[0] && map[0].bpm) || 84;
+    for (let i = 0; i < map.length; i++) {
+      const p = map[i];
+      if (p.q <= q0 + 1e-12) { bpm = p.bpm || bpm; continue; }
+      if (p.q >= q - 1e-12) break;
+      ms += (p.q - q0) * 60000 / Math.max(1, bpm);
+      q0 = p.q;
+      bpm = p.bpm || bpm;
+    }
+    ms += Math.max(0, q - q0) * 60000 / Math.max(1, bpm);
+    return ms / scale;
+  },
+  qAt(plan, ms, scale) {
+    const end = (plan && plan.soundLengthQ) || 0;
+    if (!(ms > 0)) return 0;
+    let lo = 0, hi = Math.max(end, 0);
+    if (this.msAt(plan, hi, scale) <= ms) return hi;
+    for (let k = 0; k < 48; k++) {
+      const mid = (lo + hi) / 2;
+      if (this.msAt(plan, mid, scale) < ms) lo = mid; else hi = mid;
+    }
+    return hi;
+  },
+  soundAtWritten(plan, wq) {
+    const vs = (plan && plan.visits) || [];
+    for (let i = 0; i < vs.length; i++) {
+      const v = vs[i];
+      if (wq >= v.startQ - 1e-9 && wq < v.startQ + v.lenQ - 1e-9)
+        return v.soundQ + (wq - v.startQ);
+    }
+    if (vs.length && wq >= vs[vs.length - 1].startQ + vs[vs.length - 1].lenQ - 1e-9)
+      return plan.soundLengthQ;
+    return 0;
+  },
+  writtenAtSound(plan, sq) {
+    const vs = (plan && plan.visits) || [];
+    for (let i = 0; i < vs.length; i++) {
+      const v = vs[i];
+      if (sq >= v.soundQ - 1e-9 && sq < v.soundQ + v.lenQ - 1e-9)
+        return v.startQ + (sq - v.soundQ);
+    }
+    if (vs.length && sq >= (plan.soundLengthQ || 0) - 1e-9) {
+      const v = vs[vs.length - 1];
+      return v.startQ + v.lenQ;
+    }
+    return sq;
   }
 };
 
 /* One per page. Times in are audio-clock seconds; clockOffset() relates them
    to the performance.now() milliseconds the rest of PPP runs on. */
 class PianoPlayer {
-  constructor() { this.ac = null; this.voices = []; this.keys = {}; }
+  constructor() { this.ac = null; this.voices = []; this.keys = {}; this._wakeAt = 0; }
 
   /* Made on first use. A browser lets it start only from a person's own click
      or key press, which is why wake() is called from those. */
   context() {
-    if (this.ac !== null) return this.ac || null;
+    if (this.ac && this.ac !== false && this.ac.state !== 'closed') return this.ac;
     this.ac = false;
     const AC = typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext);
     if (!AC) return null;
@@ -1816,11 +2259,37 @@ class PianoPlayer {
     this.clickBus.connect(ac.destination);
   }
   wake() {
-    const ac = this.context();
-    PianoSamples.load();
-    if (ac && ac.state !== 'running' && ac.resume) {
-      try { const p = ac.resume(); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+    /* iOS: creating the context on pointerdown (not a gesture) can leave it
+       suspended forever. Recreate only after a resume from a later tap failed. */
+    let ac = this.ac && this.ac !== false && this.ac.state !== 'closed' ? this.ac : null;
+    const stuck = ac && ac.state !== 'running' && this._wakeAt && ((window.performance || Date).now() - this._wakeAt > 800);
+    if (stuck) {
+      try { if (ac.close) ac.close(); } catch (e) {}
+      this.ac = null;
+      ac = null;
     }
+    if (!ac) ac = this.context();
+    this._wakeAt = (window.performance || Date).now();
+    PianoSamples.load();
+    if (!ac) return;
+    this.unlock(ac);
+  }
+  /* A silent buffer is what iOS actually takes as "the page may use sound". */
+  unlock(ac) {
+    if (ac && ac.state !== 'running' && ac.resume) {
+      try { const p = ac.resume(); if (p && p.then) p.then(() => this.ping(ac), () => {}); } catch (e) {}
+    }
+    this.ping(ac);
+  }
+  ping(ac) {
+    if (!ac) return;
+    try {
+      const buf = ac.createBuffer(1, 1, ac.sampleRate || 44100);
+      const src = ac.createBufferSource();
+      src.buffer = buf;
+      src.connect(ac.destination);
+      src.start(0);
+    } catch (e) {}
   }
   running() { return !!(this.ac && this.ac.state === 'running'); }
   now() { return this.ac ? this.ac.currentTime : 0; }
@@ -2182,6 +2651,51 @@ const Score = {
     hi = Math.min(108, Math.ceil((hi + 1) / 12) * 12);    /* up to a C */
     while (hi - lo < 36) { if (lo > 24) lo -= 12; else hi += 12; }
     return [lo, Math.min(108, hi)];
+  },
+  /* Sounding order of measures after expanding repeat signs and voltas.
+     D.S. / D.C. / Fine are not taken — only barline repeats and endings. */
+  form(score, from, to) {
+    const ms = score.measures || [];
+    if (!ms.length) return [];
+    const i0 = (Score.measure(score, from) || ms[0]).index;
+    const i1 = (Score.measure(score, to) || ms[ms.length - 1]).index;
+    const visits = [];
+    const startStack = [];
+    const taken = {};
+    const passAt = {};
+    let openEnding = null;
+    let i = i0;
+    let guard = 0;
+    const passNow = () => {
+      const s = startStack.length ? startStack[startStack.length - 1] : i0;
+      return passAt[s] || 1;
+    };
+    while (i >= i0 && i <= i1 && guard++ < 8000) {
+      const mm = ms[i];
+      const bar = mm.bar || {};
+      if (bar.repeatStart) startStack.push(i);
+      if (bar.endingNos && bar.endingNos.length && (bar.endingType === 'start' || bar.ending))
+        openEnding = { nos: bar.endingNos };
+      const pass = passNow();
+      const nos = openEnding ? openEnding.nos : null;
+      const skip = !!(nos && nos.length && nos.indexOf(pass) < 0);
+      if (!skip) visits.push({ index: i, number: mm.number, pass: pass, startQ: mm.startQ, lenQ: mm.lenQ });
+      if (bar.endingEnd) openEnding = null;
+      if (!skip && bar.repeatEnd) {
+        const times = bar.repeatEnd > 0 ? bar.repeatEnd : 2;
+        taken[i] = (taken[i] || 0) + 1;
+        if (taken[i] < times) {
+          const start = startStack.length ? startStack[startStack.length - 1] : i0;
+          Object.keys(taken).forEach(k => { if (+k > start) delete taken[k]; });
+          Object.keys(passAt).forEach(k => { if (+k > start) delete passAt[k]; });
+          passAt[start] = (passAt[start] || 1) + 1;
+          i = start;
+          continue;
+        } else if (startStack.length) startStack.pop();
+      }
+      i++;
+    }
+    return visits;
   }
 };
 
@@ -2299,6 +2813,29 @@ function navWord(raw) {
   return null;
 }
 
+function pedalSoundValue(s) {
+  if (s == null || s === '') return null;
+  if (s === 'yes') return 127;
+  if (s === 'no') return 0;
+  const n = parseFloat(s);
+  if (!isFinite(n)) return null;
+  if (n <= 1) return Math.round(n * 127);
+  return Math.max(0, Math.min(127, Math.round(n)));
+}
+
+function parseEndingNumbers(attr, text) {
+  const from = s => String(s || '').split(/[^\d]+/).map(x => parseInt(x, 10)).filter(n => n > 0);
+  const a = from(attr);
+  return a.length ? a : from(text);
+}
+
+function soundDynToVel(v) {
+  if (!(v > 0)) return 1;
+  if (v <= 1) return Math.max(1, Math.round(v * 90));
+  if (v <= 100) return Math.max(1, Math.min(127, Math.round(v * 0.9)));
+  return Math.max(1, Math.min(127, Math.round(v)));
+}
+
 function chordText(el, txt) {
   const step = txt(el, 'root root-step', null);
   if (!step) return null;
@@ -2362,9 +2899,12 @@ function parseMusicXML(xmlText, name) {
   let tempo = null;
   const notes = [];
   const chords = [];          /* {m, b, text} — chord symbols above the staff */
-  const pedals = [];          /* {m, b, type} — Ped. and its release */
+  const pedals = [];          /* {m, b, type, kind, value} — damper / una corda / sostenuto */
   const ottavas = [];         /* {m, b, endM, endB, size, dir} — 8va / 8vb spans */
   const marks = [];           /* {m, kind, text} — segno, coda, To Coda, D.S., D.C., Fine */
+  const tempos = [];          /* {m, b, bpm} — every tempo mark, not only the first */
+  const dynamics = [];        /* {m, b, mark, vel?} */
+  const wedges = [];          /* {m, b, type} — crescendo / diminuendo / stop */
   const measureInfo = {};     /* measure number -> {time, key, clefs, lenQ} */
   const order = [];           /* measure numbers, in document order */
   let staffBase = 0;          /* so a second single-staff part becomes the left hand */
@@ -2465,14 +3005,23 @@ function parseMusicXML(xmlText, name) {
             if (c && !chords.some(k => k.m === number && Math.abs(k.b - at) < 0.01))
               chords.push({ m: number, b: at, text: c });
           }
+          const off = num(el, 'offset', 0) / divisions;
+          const atB = cursor + off;
           if (partIdx === pianoGuess) {
-            const off = num(el, 'offset', 0) / divisions;
             const ped = el.querySelector('pedal');
             if (ped) {
-              const t = ped.getAttribute('type');
+              let t = ped.getAttribute('type');
+              let kind = 'damper';
+              if (t === 'sostenuto') { kind = 'sostenuto'; t = 'start'; }
               if (t === 'start' || t === 'stop' || t === 'change')
-                pedals.push({ m: number, b: cursor + off, type: t });
+                pedals.push({ m: number, b: atB, type: t, kind: kind });
             }
+            const wEl = el.querySelector('direction-type > words');
+            const wt = wEl ? (wEl.textContent || '').replace(/\s+/g, ' ').trim() : '';
+            if (wt && /una\s*corda|soft\s*pedal/i.test(wt))
+              pedals.push({ m: number, b: atB, type: 'start', kind: 'soft' });
+            if (wt && /tre\s*corde|tutte\s*le\s*corde/i.test(wt))
+              pedals.push({ m: number, b: atB, type: 'stop', kind: 'soft' });
             const oct = el.querySelector('octave-shift');
             if (oct) {
               const t = oct.getAttribute('type');
@@ -2481,33 +3030,69 @@ function parseMusicXML(xmlText, name) {
                 /* MusicXML says which way the printed notes move; "down" is the
                    8va above, because the notes are written an octave lower. */
                 const onStaff = parseInt(txt(el, 'staff', ''), 10);
-                ottavas.push({ m: number, b: cursor + off, endM: null, endB: null,
+                ottavas.push({ m: number, b: atB, endM: null, endB: null,
                   size: size, dir: t === 'down' ? 1 : -1,
                   staff: isFinite(onStaff) ? staffBase + onStaff : null });
               } else if (t === 'stop') {
                 for (let i = ottavas.length - 1; i >= 0; i--) {
-                  if (ottavas[i].endM == null) { ottavas[i].endM = number; ottavas[i].endB = cursor + off; break; }
+                  if (ottavas[i].endM == null) { ottavas[i].endM = number; ottavas[i].endB = atB; break; }
                 }
               }
             }
           }
-          const snd = el.querySelector('sound[tempo]');
-          if (snd) { const t2 = parseFloat(snd.getAttribute('tempo')); if (isFinite(t2) && !tempo) tempo = t2; }
+          const dynEl = el.querySelector('direction-type > dynamics');
+          if (dynEl) {
+            const kids = [].slice.call(dynEl.children).filter(c => c.nodeName && c.nodeName !== '#text');
+            if (kids.length) dynamics.push({ m: number, b: atB, mark: kids[0].nodeName });
+          }
+          const wedge = el.querySelector('direction-type > wedge');
+          if (wedge) {
+            const wt = wedge.getAttribute('type');
+            if (wt === 'crescendo' || wt === 'diminuendo' || wt === 'stop')
+              wedges.push({ m: number, b: atB, type: wt });
+          }
+          const snd = el.querySelector('sound');
+          if (snd) {
+            const t2 = parseFloat(snd.getAttribute('tempo'));
+            if (isFinite(t2) && t2 > 0) {
+              tempos.push({ m: number, b: atB, bpm: t2 });
+              if (!tempo) tempo = t2;
+            }
+            const dAttr = snd.getAttribute('dynamics');
+            if (dAttr != null && dAttr !== '') {
+              const dv = parseFloat(dAttr);
+              if (isFinite(dv)) dynamics.push({ m: number, b: atB, mark: 'sound', vel: soundDynToVel(dv) });
+            }
+            [['damper-pedal', 'damper'], ['soft-pedal', 'soft'], ['sostenuto-pedal', 'sostenuto']].forEach(pair => {
+              const raw = snd.getAttribute(pair[0]);
+              const val = pedalSoundValue(raw);
+              if (val == null) return;
+              const ty = val <= 0 ? 'stop' : val < 127 ? 'change' : 'start';
+              pedals.push({ m: number, b: atB, type: ty, kind: pair[1], value: val });
+            });
+          }
           /* <sound tempo> is always quarters a minute; a printed mark counts in
              its own unit — a dotted quarter in 6/8, a half in cut time */
           const met = el.querySelector('metronome');
           const per = met && met.querySelector('per-minute');
-          if (per && !tempo) {
+          if (per) {
             const t3 = parseFloat(per.textContent);
             const unit = { breve: 8, whole: 4, half: 2, quarter: 1, eighth: 0.5, '16th': 0.25, '32nd': 0.125 }[txt(met, 'beat-unit', 'quarter')] || 1;
             const dots = met.querySelectorAll('beat-unit-dot').length;
-            if (isFinite(t3)) tempo = t3 * unit * (2 - Math.pow(0.5, dots));
+            if (isFinite(t3) && t3 > 0) {
+              const bpm = t3 * unit * (2 - Math.pow(0.5, dots));
+              tempos.push({ m: number, b: atB, bpm: bpm });
+              if (!tempo) tempo = bpm;
+            }
           }
           return;
         }
         if (tag === 'sound') {
           const t4 = parseFloat(el.getAttribute('tempo'));
-          if (isFinite(t4) && !tempo) tempo = t4;
+          if (isFinite(t4) && t4 > 0) {
+            tempos.push({ m: number, b: cursor, bpm: t4 });
+            if (!tempo) tempo = t4;
+          }
           return;
         }
         /* A repeat sign, a first or second ending and the heavy final bar are
@@ -2526,14 +3111,17 @@ function parseMusicXML(xmlText, name) {
             const end = el.querySelector('ending');
             if (end) {
               const ty = end.getAttribute('type');
+              const said = (end.textContent || '').trim();
+              const nos = parseEndingNumbers(end.getAttribute('number'), said);
               if (ty === 'start') {
-                const nos = (end.getAttribute('number') || '1').split(/[ ,]+/).filter(Boolean);
-                const said = (end.textContent || '').trim();
-                barMarks.ending = /^[\d.,\s]+$/.test(said) ? said : nos.map(x => x + '.').join(' ');
+                barMarks.endingNos = nos.length ? nos : [1];
+                barMarks.endingType = 'start';
+                barMarks.ending = /^[\d.,\s]+$/.test(said) ? said : barMarks.endingNos.map(x => x + '.').join(' ');
               }
               /* "stop" closes the bracket with a hook; "discontinue" leaves it open */
-              if (ty === 'stop') barMarks.endingEnd = 'stop';
-              if (ty === 'discontinue') barMarks.endingEnd = 'open';
+              if (ty === 'stop') { barMarks.endingEnd = 'stop'; if (!barMarks.endingType) barMarks.endingType = 'stop'; }
+              if (ty === 'discontinue') { barMarks.endingEnd = 'open'; if (!barMarks.endingType) barMarks.endingType = 'discontinue'; }
+              if (nos.length && !barMarks.endingNos) barMarks.endingNos = nos;
             }
           }
           return;
@@ -2621,6 +3209,13 @@ function parseMusicXML(xmlText, name) {
           if (nn && isFinite(dx)) nn.dx = dx;
           /* a chord rolled from the bottom up, drawn with a wavy line */
           if (nn && el.querySelector('notations arpeggiate')) nn.arp = true;
+          if (nn && el.querySelector('notations articulations accent')) nn.accent = true;
+          if (nn && el.querySelector('notations articulations strong-accent')) nn.marcato = true;
+          const ndyn = el.querySelector('notations dynamics');
+          if (nn && ndyn) {
+            const kid = [].slice.call(ndyn.children).filter(c => c.nodeName && c.nodeName !== '#text')[0];
+            if (kid) nn.dyn = kid.nodeName;
+          }
         }
         if (!isChord) { lastOnset = cursor; cursor += durQ; }
         maxCursor = Math.max(maxCursor, cursor);
@@ -2677,6 +3272,7 @@ function parseMusicXML(xmlText, name) {
     staves: Math.max(1, Math.min(maxStaffSeen, 4)),
     measures, notes, chords: chords,
     pedals: pedals, ottavas: ottavas.filter(o => o.endM != null), marks: marks,
+    tempos: tempos, dynamics: dynamics, wedges: wedges,
     sections: null, seeds: null
   });
 }
@@ -2818,6 +3414,15 @@ class MidiInput {
       this.onState(this.snapshot());
       return Promise.resolve(false);
     }
+    if (this.access) {
+      this.status = 'connecting';
+      this.onState(this.snapshot());
+      const list = this.devices();
+      const want = list.filter(d => d.id === preferId)[0] || list[0] || null;
+      if (want) this.select(want.id);
+      else { this.status = 'connected'; this.onState(this.snapshot()); }
+      return Promise.resolve(true);
+    }
     this.status = 'connecting';
     this.onState(this.snapshot());
     const req = this._request || (() => navigator.requestMIDIAccess({ sysex: false }));
@@ -2908,10 +3513,34 @@ class MidiInput {
 
   stop() {
     this._unbind();
-    this.access = null;
     this.deviceId = null; this.deviceName = null;
     this.status = 'idle';
     this.onState(this.snapshot());
+  }
+
+  release() {
+    this.stop();
+    this.access = null;
+    this.onState(this.snapshot());
+  }
+
+  outputs() {
+    if (!this.access || !this.access.outputs) return [];
+    const out = [];
+    const ports = this.access.outputs;
+    const push = p => { if (p) out.push({ id: p.id, name: p.name || 'MIDI output', manufacturer: p.manufacturer || '', state: p.state || 'connected' }); };
+    if (typeof ports.forEach === 'function') ports.forEach(push);
+    else if (typeof ports.values === 'function') { const it = ports.values(); let n = it.next(); while (!n.done) { push(n.value); n = it.next(); } }
+    return out;
+  }
+
+  outputPort(id) {
+    if (!this.access || !this.access.outputs) return null;
+    const ports = this.access.outputs;
+    if (typeof ports.get === 'function') { const p = ports.get(id); if (p) return p; }
+    let found = null;
+    if (typeof ports.forEach === 'function') ports.forEach(p => { if (p && p.id === id) found = p; });
+    return found;
   }
 
   /* Raw bytes in, normalized event out. Anything that is not a note message —
@@ -2947,6 +3576,79 @@ class MidiInput {
       deviceName: this.deviceName,
       devices: this.devices()
     };
+  }
+}
+
+/* MIDI-out sink. One sounding plan, this is the other destination besides
+   the in-app piano. Timestamps are performance.now() milliseconds so notes
+   go out on the same clock as the playhead. */
+class MidiOut {
+  constructor(opts) {
+    opts = opts || {};
+    this._input = opts.input || null;
+    this.deviceId = null;
+    this.deviceName = null;
+    this._held = {};
+  }
+  access() { return this._input ? this._input.access : null; }
+  devices() { return this._input && this._input.outputs ? this._input.outputs() : []; }
+  _port() {
+    if (!this.deviceId || !this._input) return null;
+    return this._input.outputPort(this.deviceId);
+  }
+  select(id) {
+    const port = this._input && this._input.outputPort(id);
+    if (!port) {
+      this.deviceId = null; this.deviceName = null;
+      return false;
+    }
+    if (typeof port.open === 'function') { try { port.open(); } catch (e) {} }
+    this.deviceId = port.id;
+    this.deviceName = port.name || 'MIDI output';
+    return true;
+  }
+  clear() {
+    this.deviceId = null; this.deviceName = null;
+  }
+  snapshot() {
+    return {
+      deviceId: this.deviceId,
+      deviceName: this.deviceName,
+      devices: this.devices()
+    };
+  }
+  send(bytes, t) {
+    const p = this._port();
+    if (!p || typeof p.send !== 'function') return false;
+    const data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    try {
+      if (t == null || !isFinite(t)) p.send(data);
+      else p.send(data, t);
+      return true;
+    } catch (e) { return false; }
+  }
+  noteOn(midi, vel, t) {
+    const m = midi & 127, v = Math.max(1, Math.min(127, vel == null ? 80 : vel | 0));
+    this.send([0x90, m, v], t);
+    this._held[m] = true;
+  }
+  noteOff(midi, t) {
+    const m = midi & 127;
+    this.send([0x80, m, 0], t);
+    delete this._held[m];
+  }
+  cc(n, v, t) {
+    this.send([0xB0, n & 127, (v == null ? 0 : v) & 127], t);
+  }
+  localOff() { this.cc(122, 0); }
+  panic(t) {
+    Object.keys(this._held).forEach(m => this.noteOff(+m, t));
+    this.cc(64, 0, t);
+    this.cc(66, 0, t);
+    this.cc(67, 0, t);
+    this.cc(123, 0, t);
+    this.cc(120, 0, t);
+    this._held = {};
   }
 }
 
@@ -2994,26 +3696,29 @@ class PerformanceEngine {
     const from = run.from, to = run.to;
     const startQ = Score.startQ(score, from);
     const perQuarterMs = 60000 / Math.max(1, run.tempo);
+    const plan = PianoScore.of(score, from, to);
+    const scale = (run.tempo || score.tempo || 84) / Math.max(1, score.tempo || run.tempo || 84);
+    this._plan = plan;
+    this._scale = scale;
 
-    this.run = Object.assign({ startQ, perQuarterMs }, run);
+    this.run = Object.assign({ startQ, perQuarterMs, scale }, run);
     this.wrong = [];
     this.extras = [];
     this.held = {};
     /* a chord marked to be rolled: every note of it on that staff */
     const rolled = {};
     Score.notesIn(score, from, to).forEach(n => { if (n.arp) rolled[n.m + '|' + n.b + '|' + (n.staff || 1)] = true; });
-    this.expected = Score.notesIn(score, from, to)
-      .filter(n => !n.tieStop)                   /* tied over: already sounding, not re-struck */
-      .filter(n => this._handOk(n, run.hands))
-      .map((n, i) => ({
+    this.expected = (plan.strikes || [])
+      .filter(s => this._handOk(s.note, run.hands))
+      .map((s, i) => ({
         id: i,
-        note: n,
-        midi: n.midi,
-        m: n.m,
-        hand: n.hand,
-        absQ: n.abs,
-        tMs: run.startedAt + (n.abs - startQ) * perQuarterMs,
-        arp: !!rolled[n.m + '|' + n.b + '|' + (n.staff || 1)],
+        note: s.note,
+        midi: s.midi,
+        m: s.m,
+        hand: s.hand,
+        absQ: s.abs,
+        tMs: run.startedAt + PianoScore.msAt(plan, s.q, scale) - PianoScore.msAt(plan, 0, scale),
+        arp: !!rolled[s.note.m + '|' + s.note.b + '|' + (s.note.staff || 1)],
         matched: false,
         deltaMs: null,
         verdict: null,
@@ -3075,6 +3780,10 @@ class PerformanceEngine {
      still be blamed on somewhere. */
   measureAt(t) {
     if (!this.run) return null;
+    if (this._plan) {
+      const sq = PianoScore.qAt(this._plan, Math.max(0, t - this.run.startedAt), this._scale || 1);
+      return Score.at(this.score, Math.max(0, PianoScore.writtenAtSound(this._plan, sq)));
+    }
     const absQ = this.run.startQ + (t - this.run.startedAt) / this.run.perQuarterMs;
     return Score.at(this.score, Math.max(0, absQ));
   }
@@ -4166,14 +4875,21 @@ const Memory = {
               page images anyway.
    ========================================================================== */
 
-const OMR_URL = 'http://127.0.0.1:8788';
+const DIRECT_HELPER = 'http://127.0.0.1:8788';
 
 /* The helper runs on the same machine as the browser. A page served from a
    real host has no business probing the visitor's own localhost — it would
-   fail as mixed content on every load and tell us nothing — so on a deployed
-   copy PPP simply knows the helper is not there. */
+   fail as mixed content on every load and tell us nothing. A tablet on the
+   LAN talks to this page's host instead, and the web server forwards to the
+   helper. A public deploy answers /helper with "not here". */
 const LOCAL_HELPER = typeof location === 'undefined' || location.protocol === 'file:' ||
   /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname || '');
+function helperUrl() {
+  if (LOCAL_HELPER) return DIRECT_HELPER;
+  if (typeof location !== 'undefined' && /^https?:$/.test(location.protocol)) return '/helper';
+  return DIRECT_HELPER;
+}
+const OMR_URL = helperUrl();
 
 /* The design file's own showcase pages — an empty library, a loading state, an
    error. They are worth keeping and worth looking at while building, but they
@@ -4230,15 +4946,13 @@ const Import = {
 
   kindOf(file) {
     const n = (file && file.name || '').toLowerCase();
-    if (/\.mxl$/.test(n)) return 'mxl';
-    if (/\.(musicxml|xml)$/.test(n)) return 'musicxml';
-    if (/\.pdf$/.test(n)) return 'pdf';
-    if (/\.(png|jpe?g)$/.test(n)) return 'image';
-    if (AUDIO_RE.test(n)) return 'audio';
-    if (VIDEO_RE.test(n)) return 'video';
-    const t = (file && file.type) || '';
-    if (/^audio\//.test(t)) return 'audio';
-    if (/^video\//.test(t)) return 'video';
+    const t = (file && file.type || '').toLowerCase();
+    if (/\.mxl$/.test(n) || t === 'application/vnd.recordare.musicxml') return 'mxl';
+    if (/\.(musicxml|xml)$/.test(n) || t === 'application/vnd.recordare.musicxml+xml') return 'musicxml';
+    if (/\.pdf$/.test(n) || t === 'application/pdf' || t === 'application/x-pdf') return 'pdf';
+    if (/\.(png|jpe?g)$/.test(n) || /^image\/(png|jpe?g)$/.test(t)) return 'image';
+    if (AUDIO_RE.test(n) || /^audio\//.test(t)) return 'audio';
+    if (VIDEO_RE.test(n) || /^video\//.test(t)) return 'video';
     return null;
   },
   needsOmr(kind) { return kind === 'pdf' || kind === 'image'; },
@@ -4265,6 +4979,16 @@ const Import = {
     if (!id && /^[\w-]{11}$/.test(raw)) id = raw;
     return id ? { id: id, url: 'https://www.youtube.com/watch?v=' + id } : null;
   },
+  /* The video's title, for catalog search before anyone transcribes. oEmbed
+     is public; a failure just means we search the filename instead. */
+  youtubeTitle(url) {
+    const watch = Import.youtubeWatch(url);
+    if (!watch) return Promise.resolve(null);
+    return fetch('https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent(watch.url))
+      .then(r => (r.ok ? r.json() : null))
+      .then(j => (j && j.title) || null)
+      .catch(() => null);
+  },
   /* Which performance belongs to this song. The score's own origin and the
      library card win over a session leftover — importing another YouTube
      link used to write that new URL onto the song that was open. */
@@ -4287,10 +5011,8 @@ const Import = {
   /* Is the local OMR service there? Asked before a PDF or image import so the
      failure is "start the service", not a mystery. */
   health() {
-    if (!LOCAL_HELPER) return Promise.resolve({ ok: false, unreachable: true, remote: true });
     return fetch(OMR_URL + '/health', { method: 'GET', cache: 'no-store' })
-      .then(r => (r.ok ? r.json() : null))
-      .then(j => j || { ok: false })
+      .then(r => r.json().catch(() => null).then(j => j || (r.ok ? { ok: false } : { ok: false, unreachable: true })))
       .catch(() => ({ ok: false, unreachable: true }));
   },
 
@@ -4561,9 +5283,11 @@ const Import = {
     if (!health.ok)
       throw importError('service-down',
         tx(health.remote
-          ? 'Making sheet music from a recording needs PPP’s local helper, which runs on your own computer.'
+          ? 'Making sheet music from a recording needs PPP’s local helper on the computer running PPP. A tablet or phone opening the website cannot run it.'
           : 'PPP could not reach its local helper. Making sheet music from a recording needs it.'),
-        [tx('Start it with: npm run omr'), orUpload]);
+        health.remote
+          ? [tx('On the computer, run npm run omr and open PPP there'), orUpload]
+          : [tx('Start it with: npm run omr'), orUpload]);
     if (!health.transcriber)
       throw importError('engine-missing',
         tx('The local helper is running, but the piano transcription model is not set up.'),
@@ -4663,7 +5387,12 @@ const Import = {
     const stage = (name, detail) => { if (onStage) onStage(name, detail || {}); };
     const nameGuess = (what.file ? String(what.file.name).replace(/\.[^.]+$/, '') : '') || '';
     stage('search', {});
-    const localHit = await Import.findScore(nameGuess);
+    let query = nameGuess;
+    if (what.url) {
+      const ytTitle = await Import.youtubeTitle(what.url);
+      if (ytTitle) query = ytTitle;
+    }
+    const localHit = await Import.findScore(query);
     if (localHit && what.file && !what.url) {
       /* a named public-domain file: use the catalog score, keep the audio */
       const audioUrl = URL.createObjectURL(what.file);
@@ -4699,6 +5428,35 @@ const Import = {
       };
       return { score: score, source: source, report: report, musicxml: xml,
         recording: { url: audioUrl, barStarts: aligned.barStarts } };
+    }
+    if (localHit && what.url) {
+      const health = await Import.health();
+      if (!health.ok || !health.transcriber) {
+        const xml = localHit.entry.xml;
+        const aligned = Import.alignScore(xml, {});
+        stage('parse', {});
+        const score = parseMusicXML(xml, localHit.entry.title);
+        if (localHit.entry.composer) score.composer = localHit.entry.composer;
+        const yt = Import.youtubeWatch(what.url);
+        const source = {
+          name: localHit.entry.title, kind: 'youtube',
+          url: yt ? yt.url : what.url, youtubeId: yt ? yt.id : null,
+          bytes: null, importedAt: Clock.now(),
+          engine: 'Public-domain catalog', pages: null, status: 'retrieved',
+          seconds: aligned.duration, truncated: false,
+          tempo: aligned.tempo, barStarts: aligned.barStarts, retrieved: true,
+          catalogId: localHit.entry.id
+        };
+        score.source = source;
+        const report = {
+          confidence: 0.94, level: 'good', issues: [], suspectMeasures: [],
+          summary: tx('Found a public-domain score for this title.'),
+          advice: null, measures: aligned.measures,
+          notes: (score.notes || []).filter(n => !n.rest).length,
+          staves: score.staves, transcribed: false, retrieved: true, tempo: aligned.tempo
+        };
+        return { score: score, source: source, report: report, musicxml: xml, recording: null };
+      }
     }
 
     const got = await Import.transcribe(what, onStage, ctl);
@@ -4924,8 +5682,12 @@ const Import = {
     const health = await Import.health();
     if (!health.ok)
       throw importError('service-down',
-        tx('PPP could not reach the OMR service. Recognising a PDF or photo needs a small local process.'),
-        [tx('Start it with: npm run omr'), tx('Or upload MusicXML instead')]);
+        tx(health.remote
+          ? 'Recognising a PDF or photo needs PPP’s local helper on the computer running PPP. A tablet or phone opening the website cannot run it.'
+          : 'PPP could not reach the OMR service. Recognising a PDF or photo needs a small local process.'),
+        health.remote
+          ? [tx('On the computer, run npm run omr and open PPP there'), tx('Or upload MusicXML (.musicxml, .xml, .mxl) instead — that works here')]
+          : [tx('Start it with: npm run omr'), tx('Or upload MusicXML instead')]);
     if (!health.audiveris)
       throw importError('engine-missing',
         tx('The OMR service is running but the Audiveris engine is missing.'),
@@ -5457,7 +6219,6 @@ const Coach = {
     service: {
       name: 'AI',
       available() {
-        if (!LOCAL_HELPER) return Promise.resolve(false);
         return fetch(COACH_URL + '/health', { cache: 'no-store' })
           .then(r => (r.ok ? r.json() : null))
           .then(j => {
@@ -6162,7 +6923,7 @@ window.PPP = {
   Score, parseMusicXML, readMxl, scoreFromFile, buildDemoScore,
   pitchToMidi, midiToFreq, keyName, vexKey,
   PIANO, PianoSamples, PianoScore, PianoPlayer,
-  MidiInput, PerformanceEngine, TIMING_DEFAULTS,
+  MidiInput, MidiOut, PerformanceEngine, TIMING_DEFAULTS, DYN_VEL, PEDAL_CC,
   Learning, LEARN, STATE_TONE, STATE_LABEL, seedDemoHistory,
   Memory, MEMORY, MEM_LABEL, MEM_TONE, HINTS, Clock, onsetKey,
   Import, IMPORT_LIMITS, OMR_URL, ScoreSearch: (typeof window !== 'undefined' ? window.PPPScoreSearch : null),
@@ -8230,6 +8991,35 @@ function sizeLabel(f) {
   const kb = f.size / 1024;
   return (kb > 1024 ? (kb / 1024).toFixed(1) + ' MB' : Math.max(1, R0(kb)) + ' KB');
 }
+/* The opening bars of a score as a score of their own, not yet finalized:
+   what a card draws. */
+function openingBars(full, n) {
+  const ms = full.measures.slice(0, n).map(m => Object.assign({}, m));
+  const keep = {};
+  ms.forEach(m => { keep[m.number] = true; });
+  const mine = list => (list || []).filter(x => keep[x.m]).map(x => Object.assign({}, x));
+  return Object.assign({}, full, {
+    measures: ms, notes: mine(full.notes), chords: mine(full.chords), pedals: mine(full.pedals), ottavas: [],
+    marks: mine(full.marks),
+    sections: [{ id: 's1', from: ms[0].number, to: ms[ms.length - 1].number }], _byNumber: undefined
+  });
+}
+/* ?share=<id> — the link a shared score is sent as. */
+function sharedParam() {
+  try {
+    const v = new URLSearchParams(location.search).get('share');
+    return v && /^[\w-]{6,32}$/.test(v) ? v : null;
+  } catch (e) { return null; }
+}
+/* Where a link can be sent. Each is that network's own share page, so none
+   needs an app key; KakaoTalk and the rest are in the phone's share sheet. */
+const SHARE_TARGETS = {
+  x: (u, t) => 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(t) + '&url=' + encodeURIComponent(u),
+  facebook: u => 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(u),
+  line: u => 'https://social-plugin.line.me/lineit/share?url=' + encodeURIComponent(u),
+  threads: (u, t) => 'https://www.threads.net/intent/post?text=' + encodeURIComponent(t + ' ' + u),
+  email: (u, t) => 'mailto:?subject=' + encodeURIComponent(t) + '&body=' + encodeURIComponent(t + '\n' + u)
+};
 
 class Component extends DCLogic {
   state = (() => {
@@ -8244,7 +9034,8 @@ class Component extends DCLogic {
       practiceMode: 'practice', anchor: null,
       runHit: 0, runTot: 0, wrongNotes: [], lastAcc: 91, drift: -42, laps: 0,
       midi: { supported: false, status: 'idle', error: null, deviceId: null, deviceName: null, devices: [] },
-      held: [], midiDeviceId: null, lastResult: null,
+      midiOut: { deviceId: null, deviceName: null, devices: [] },
+      held: [], midiDeviceId: null, midiOutDeviceId: null, lastResult: null,
       upload: 'done', fileName: 'interstellar-theme.musicxml', fileMeta: 'built-in sample',
       analysis: 'done', analysisStep: ANALYSIS_STEPS.length, analysisPct: 100, parseError: null,
       stageLog: [], importReport: null, importSource: null, importHints: [],
@@ -8261,7 +9052,7 @@ class Component extends DCLogic {
       minutes: 18, xp: 1240, streak: 7, sessions: [10, 18, 14, 23, 8, 20, 18],
       /* MIDI stays off until the user asks for it: requesting access can
          prompt, and claiming a connection we do not have would be a lie. */
-      toggles: { midi: false, notify: true, sound: false, notes: true, auto: true, follow: true, paper: true, handGuide: true, handSee: 45, handNums: 'all', handNames: true },
+      toggles: { midi: false, midiOut: false, notify: true, sound: false, notes: true, auto: true, follow: true, paper: true, handGuide: true, handSee: 45, handNums: 'all', handNames: true },
       gateIdx: 0, focus: false,
       /* The whole piece, by default. Four bars at a time and a measure number in
          a sidebar tells you nothing about where you are; you have to see it. */
@@ -8272,7 +9063,7 @@ class Component extends DCLogic {
       sidebarCollapsed: false,
       sidebarOpen: false,
       user: null,
-      guest: (function () { try { return localStorage.getItem('ppp-guest') === '1'; } catch (e) { return false; } })(),
+      guest: (function () { try { return localStorage.getItem('ppp-guest') === '1' || !!sharedParam(); } catch (e) { return false; } })(),
       authReady: false,
       authMode: 'login',
       authBusy: false,
@@ -8280,7 +9071,10 @@ class Component extends DCLogic {
       authEmail: '',
       authPassword: '',
       authConfirm: '',
-      authName: ''
+      authName: '',
+      /* Shared Scores, and the share dialog (null when closed) */
+      sharedList: null, sharedLoad: 'idle', sharedError: '', sharedFilter: 'All', sharedQuery: '',
+      sharedLinked: null, sharedOpening: null, shareDlg: null
     };
   })();
 
@@ -8343,9 +9137,12 @@ class Component extends DCLogic {
   _root = React.createRef();
   _kb = React.createRef();
   _staff = React.createRef();
+  /* the shared score this page was opened to, if any */
+  _viaShare = sharedParam();
 
   /* ============================ lifecycle ============================ */
   componentDidMount() {
+    if (window.PPP) window.PPP.app = this;
     this.applyTheme();
     this.restore();
     loadVexFlow().catch(() => {});
@@ -8357,13 +9154,18 @@ class Component extends DCLogic {
        unlocked by the first click or key anywhere — so a MIDI keyboard, which
        cannot unlock it itself, is audible from the start. */
     this._pianoLoad = setTimeout(() => PianoSamples.load(), 1200);
-    /* a touch only counts as a gesture when the finger lifts */
-    this._unlockOn = ['pointerdown', 'pointerup', 'keydown'];
+    /* a touch only counts as a gesture when the finger lifts — iOS will not
+       start sound from pointerdown, and a context created then can stay dead */
+    this._unlockOn = ['pointerup', 'click', 'touchend', 'keydown'];
     this._unlock = () => {
       this.wake();
       if (this.piano().running()) this._unlockOn.forEach(t => window.removeEventListener(t, this._unlock, true));
     };
     this._unlockOn.forEach(t => window.addEventListener(t, this._unlock, true));
+    this._onVis = () => { if (document.visibilityState === 'visible') this.wake(); };
+    document.addEventListener('visibilitychange', this._onVis);
+    this._onPageShow = () => this.wake();
+    window.addEventListener('pageshow', this._onPageShow);
     this._onKey = e => this.onKey(e);
     this._onResize = () => {
       if (typeof window !== 'undefined' && window.innerWidth > 1024 && this.state.sidebarOpen)
@@ -8379,6 +9181,7 @@ class Component extends DCLogic {
     this.setState({ midi: this.midiLayer().snapshot() });
     this.bootI18n();
     this.checkAuth();
+    if (this._viaShare) this.landShared(this._viaShare);
     /* Is an AI coach reachable? PPP plans the session either way — but not
        before the translations are in, since the plan's wording is written once
        and then kept. */
@@ -8403,7 +9206,13 @@ class Component extends DCLogic {
     if (this._shownScreen !== this.state.screen) {
       this._shownScreen = this.state.screen;
       if (this.state.sidebarOpen) this.setState({ sidebarOpen: false });
+      /* what others have shared changes while you are away from it */
+      if (this.state.screen === 'shared') this.loadShared(!!this.state.sharedList);
     }
+    /* signing in or out changes which shared scores are yours */
+    const uid = this.state.user ? this.state.user.id : null;
+    if (this._shareUid !== undefined && uid !== this._shareUid && this.state.screen === 'shared') this.loadShared(true);
+    this._shareUid = uid;
   }
   componentWillUnmount() {
     clearInterval(this._iv);
@@ -8414,8 +9223,11 @@ class Component extends DCLogic {
     window.removeEventListener('keydown', this._onKey);
     window.removeEventListener('resize', this._onResize);
     document.removeEventListener('fullscreenchange', this._onFsChange);
+    if (this._onVis) document.removeEventListener('visibilitychange', this._onVis);
+    if (this._onPageShow) window.removeEventListener('pageshow', this._onPageShow);
     this.unbindFileDrop();
-    if (this._midi) this._midi.stop();
+    if (this._midiOut) this._midiOut.panic();
+    if (this._midi) this._midi.release();
     clearTimeout(this._pianoLoad);
     (this._unlockOn || []).forEach(t => window.removeEventListener(t, this._unlock, true));
     if (this._piano) this._piano.close();
@@ -8464,6 +9276,7 @@ class Component extends DCLogic {
           /* which song in My Songs this progress belongs to */
           songId: S.songId || 'demo',
           midiDeviceId: (S.midi && S.midi.deviceId) || S.midiDeviceId || null,
+          midiOutDeviceId: (S.midiOut && S.midiOut.deviceId) || S.midiOutDeviceId || null,
           history: S.history, memory: S.memory,
           /* Enough to know where a score came from and how well it was read.
              The PDF or photograph itself is never stored. */
@@ -8505,6 +9318,7 @@ class Component extends DCLogic {
     if (d.sidebarCollapsed != null) patch.sidebarCollapsed = !!d.sidebarCollapsed;
     if (d.toggles) patch.toggles = Object.assign({}, this.state.toggles, d.toggles);
     if (d.midiDeviceId) patch.midiDeviceId = d.midiDeviceId;
+    if (d.midiOutDeviceId) patch.midiOutDeviceId = d.midiOutDeviceId;
     /* What PPP has learned about you outlives the tab. */
     if (d.history && d.history.byMeasure) patch.history = d.history;
     /* Memory levels, strengths and review dates outlive the session. */
@@ -8514,6 +9328,7 @@ class Component extends DCLogic {
     /* Re-attach to the device the user chose last time, but only because they
        had already turned MIDI on. */
     if (d.toggles && d.toggles.midi) setTimeout(() => this.connectMidi(d.midiDeviceId), 0);
+    if (d.toggles && d.toggles.midiOut) setTimeout(() => this.connectMidiOut(d.midiOutDeviceId), 0);
 
     let score = this.state.score;
     if (d.score && d.score.measures && d.score.measures.length) {
@@ -8598,6 +9413,8 @@ class Component extends DCLogic {
     this.setState({ locale: locale, localeMenuOpen: false });
   }
   readGuest() {
+    /* a shared score's link opens for anyone, without an account */
+    if (this._viaShare) return true;
     try { return localStorage.getItem('ppp-guest') === '1'; } catch (e) { return false; }
   }
   writeGuest(on) {
@@ -9064,7 +9881,10 @@ class Component extends DCLogic {
     if (!this._midi) {
       this._midi = new MidiInput({
         onEvent: ev => this.onMidiEvent(ev),
-        onState: snap => this.setState({ midi: snap, midiDeviceId: snap.deviceId || this.state.midiDeviceId })
+        onState: snap => {
+          const out = this._midiOut ? this._midiOut.snapshot() : { deviceId: this.state.midiOutDeviceId, deviceName: null, devices: (this._midi && this._midi.outputs) ? this._midi.outputs() : [] };
+          this.setState({ midi: snap, midiDeviceId: snap.deviceId || this.state.midiDeviceId, midiOut: Object.assign({}, this.state.midiOut, { devices: out.devices }) });
+        }
       });
     }
     return this._midi;
@@ -9074,6 +9894,75 @@ class Component extends DCLogic {
   liveMidi() {
     const m = this.state.midi;
     return !!(m && m.status === 'connected' && m.deviceId && this.state.toggles.midi);
+  }
+  midiOutLayer() {
+    if (!this._midiOut) this._midiOut = new MidiOut({ input: this.midiLayer() });
+    return this._midiOut;
+  }
+  midiOutLive() {
+    const o = this.state.midiOut;
+    return !!(this.state.toggles.midiOut && o && o.deviceId);
+  }
+  midiOutId() {
+    return (this.state.midiOut && this.state.midiOut.deviceId) || this.state.midiOutDeviceId || null;
+  }
+  midiOutIsAlsoIn() {
+    const inId = this.state.midi && this.state.midi.deviceId;
+    const outId = this.midiOutId();
+    if (inId && outId && inId === outId) return true;
+    const inn = this.state.midi && this.state.midi.deviceName;
+    const outn = this.state.midiOut && this.state.midiOut.deviceName;
+    return !!(inn && outn && inn === outn);
+  }
+  refreshMidiOutState(extra) {
+    const out = this.midiOutLayer();
+    const snap = out.snapshot();
+    this.setState(Object.assign({ midiOut: snap, midiOutDeviceId: snap.deviceId || this.state.midiOutDeviceId }, extra || {}));
+  }
+  connectMidiOut(preferId) {
+    const m = this.midiLayer();
+    const pick = () => {
+      const out = this.midiOutLayer();
+      const list = out.devices();
+      const want = list.filter(d => d.id === (preferId || this.state.midiOutDeviceId))[0] || list[0] || null;
+      if (!want) {
+        this.refreshMidiOutState({ toggles: Object.assign({}, this.state.toggles, { midiOut: false }) });
+        this.say(tx('No MIDI outputs found — connect a piano that can receive MIDI.'));
+        return false;
+      }
+      out.select(want.id);
+      this.setState({
+        toggles: Object.assign({}, this.state.toggles, { midiOut: true }),
+        midiOutDeviceId: want.id,
+        midiOut: out.snapshot()
+      });
+      if (this.midiOutIsAlsoIn()) out.localOff();
+      this.say(tx('Playing through {{device}}.', { device: want.name }));
+      return true;
+    };
+    if (m.access) return Promise.resolve(pick());
+    return m.start().then(ok => {
+      this.setState({ midi: m.snapshot(), midiDeviceId: m.deviceId || this.state.midiDeviceId });
+      return ok ? pick() : false;
+    });
+  }
+  selectMidiOut(id) {
+    const out = this.midiOutLayer();
+    if (!out.select(id)) return;
+    this.setState({
+      toggles: Object.assign({}, this.state.toggles, { midiOut: true }),
+      midiOutDeviceId: id,
+      midiOut: out.snapshot()
+    });
+    if (this.midiOutIsAlsoIn()) out.localOff();
+  }
+  disconnectMidiOut() {
+    if (this._midiOut) this._midiOut.panic(nowMs());
+    if (this._midiOut) this._midiOut.clear();
+    this.setState({
+      toggles: Object.assign({}, this.state.toggles, { midiOut: false }),
+      midiOut: { deviceId: null, deviceName: null, devices: this._midiOut ? this._midiOut.devices() : [] }
+    });
   }
   connectMidi(preferId) {
     const m = this.midiLayer();
@@ -9123,13 +10012,15 @@ class Component extends DCLogic {
      lap start its clock aligned to where the playhead actually is. */
   beginRun(S, beatNow, at) {
     const [from, to] = this.range(S);
+    const plan = PianoScore.of(S.score, from, to);
+    const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);
     const startQ = Score.startQ(S.score, from);
-    const offsetQ = beatNow == null ? 0 : Math.max(0, beatNow - startQ);
+    const sq = PianoScore.soundAtWritten(plan, beatNow == null ? startQ : beatNow);
     /* `at` is when beatNow is heard; the transport starts a beat a moment
        ahead so its first notes land whole */
     this.perf().begin({
       from, to, hands: S.hands, tempo: S.tempo, practiceMode: S.practiceMode,
-      startedAt: (at == null ? nowMs() : at) - (offsetQ * 60000) / S.tempo
+      startedAt: (at == null ? nowMs() : at) - PianoScore.msAt(plan, sq, scale)
     });
   }
 
@@ -9376,6 +10267,7 @@ class Component extends DCLogic {
   transportKey(S) {
     const [from, to] = this.range(S);
     return [S.score.id, from, to, S.loop ? 1 : 0, S.tempo, S.hands, this.liveMidi() ? 1 : 0,
+      this.midiOutLive() ? 1 : 0, this.midiOutId() || '',
       S.toggles.notes ? 1 : 0, S.metro && S.toggles.sound ? 1 : 0].join('|');
   }
   /* Anchor a run at beat b. It is heard a moment from now — long enough for
@@ -9384,15 +10276,27 @@ class Component extends DCLogic {
   startTransport(S, b) {
     const p = this._piano;
     if (this._tp && p) p.silence();
+    if (this._tp && this.midiOutLive()) this.midiOutLayer().panic(nowMs());
     const now = nowMs();
     const [from, to] = this.range(S);
+    const plan = PianoScore.of(S.score, from, to);
+    const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);
     const t0 = now + this.leadMs(now);
+    const writtenStart = Score.startQ(S.score, from);
+    const writtenEnd = Score.endQ(S.score, to);
+    let b0 = 0;
+    if (b != null && b >= writtenStart - 0.001 && b < writtenEnd - 1e-9)
+      b0 = PianoScore.soundAtWritten(plan, b);
     this._tp = {
-      b0: b, t0: t0, msQ: 60000 / Math.max(1, S.tempo), key: this.transportKey(S),
-      startB: Score.startQ(S.score, from), endB: Score.endQ(S.score, to),
-      schedT: t0, skipTo: -Infinity, beat: b,
-      born: now, waiting: !(p && p.running()) && !this.liveMidi()
+      b0: b0, t0: t0, scale: scale, msQ: 60000 / Math.max(1, S.tempo),
+      key: this.transportKey(S),
+      startB: 0, endB: plan.soundLengthQ,
+      writtenStart: writtenStart, writtenEnd: writtenEnd,
+      schedT: t0, skipTo: -Infinity, beat: b, soundQ: b0,
+      born: now, waiting: !(p && p.running()) && !this.liveMidi() && !this.midiOutLive(),
+      plan: plan, from: from, to: to
     };
+    if (this.midiOutLive() && this.midiOutIsAlsoIn()) this.midiOutLayer().localOff();
     return t0;
   }
   /* How far ahead the first note of a run can be placed and still be on time:
@@ -9408,6 +10312,7 @@ class Component extends DCLogic {
     if (!this._tp) return;
     this._tp = null;
     if (this._piano) this._piano.silence();
+    if (this.midiOutLive()) this.midiOutLayer().panic(nowMs());
   }
 
   advance(now) {
@@ -9417,7 +10322,7 @@ class Component extends DCLogic {
     if (this.following()) return;
     if (now == null) now = nowMs();
     const [from, to] = this.range(S);
-    const startB = Score.startQ(S.score, from), endB = Score.endQ(S.score, to);
+    const writtenStart = Score.startQ(S.score, from), writtenEnd = Score.endQ(S.score, to);
     const key = this.transportKey(S);
     const p = this._piano;
     let tp = this._tp;
@@ -9425,26 +10330,34 @@ class Component extends DCLogic {
        than the one the transport last set means the playhead was moved — a
        bar was clicked, R was pressed — and the run starts again from there. */
     if (!tp || Math.abs(S.beat - tp.beat) > 1e-6) {
-      const b0 = S.beat < startB - 0.001 || S.beat >= endB ? startB : S.beat;
+      const b0 = S.beat < writtenStart - 0.001 || S.beat >= writtenEnd ? writtenStart : S.beat;
       this.startTransport(S, b0);
       tp = this._tp;
     } else if (tp.key !== key) {
       /* What the audio thread already has cannot be taken back without a
          click, so it stays, and the new plan picks up exactly where it ends. */
-      let b0 = tp.b0 + Math.max(0, now - tp.t0) / tp.msQ, t0 = Math.max(now, tp.t0), skip = -Infinity;
+      const oldPlan = tp.plan || PianoScore.of(S.score, from, to);
+      const oldScale = tp.scale || 1;
+      let sq = PianoScore.qAt(oldPlan, PianoScore.msAt(oldPlan, tp.b0, oldScale) + Math.max(0, now - tp.t0), oldScale);
+      let t0 = Math.max(now, tp.t0), skip = -Infinity;
       if (p && p.running()) {
         const edge = p.now() + 0.005;
         p.cancelAfter(edge);
         const heard = (edge - (tp.clock != null ? tp.clock : p.clockOffset())) * 1000;
-        if (heard > t0) { b0 = tp.b0 + (heard - tp.t0) / tp.msQ; t0 = heard; skip = b0; }
+        if (heard > t0) {
+          sq = PianoScore.qAt(oldPlan, PianoScore.msAt(oldPlan, tp.b0, oldScale) + (heard - tp.t0), oldScale);
+          t0 = heard; skip = sq;
+        }
       }
-      if (b0 < startB - 0.001 || b0 >= endB) {
-        this.startTransport(S, startB);
+      const plan = PianoScore.of(S.score, from, to);
+      const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);
+      if (sq < -0.001 || sq >= plan.soundLengthQ) {
+        this.startTransport(S, writtenStart);
         tp = this._tp;
       } else {
         Object.assign(tp, {
-          b0: b0, t0: t0, msQ: 60000 / Math.max(1, S.tempo), key: key,
-          startB: startB, endB: endB, schedT: t0, skipTo: skip
+          b0: sq, t0: t0, scale: scale, msQ: 60000 / Math.max(1, S.tempo), key: key,
+          startB: 0, endB: plan.soundLengthQ, schedT: t0, skipTo: skip, plan: plan, soundQ: sq
         });
       }
     }
@@ -9454,16 +10367,28 @@ class Component extends DCLogic {
        first chord straggle in late. */
     if (tp.waiting) {
       const ready = p && p.running();
-      if (ready || now - tp.born > 400) {
+      if (ready) {
         tp.waiting = false;
-        if (ready) { tp.t0 = Math.max(tp.t0, now + this.leadMs(now)); tp.schedT = tp.t0; }
-      } else { tp.t0 = Math.max(tp.t0, now + 60); tp.schedT = tp.t0; }
+        tp.t0 = Math.max(tp.t0, now + this.leadMs(now));
+        tp.schedT = tp.t0;
+      } else if (now - tp.born > 1500) {
+        tp.waiting = false;
+      } else {
+        this.wake();
+        tp.t0 = Math.max(tp.t0, now + 60);
+        tp.schedT = tp.t0;
+        return;
+      }
     }
 
-    let prev = tp.beat;
-    if (prev < startB - 0.001 || prev > endB) prev = startB;
-    let b = tp.b0 + Math.max(0, now - tp.t0) / tp.msQ;
-    const ev = this.fire(S, prev, Math.min(b, endB));
+    const plan = tp.plan || PianoScore.of(S.score, from, to);
+    const scale = tp.scale || 1;
+    const endB = plan.soundLengthQ;
+    let prevSq = tp.soundQ != null ? tp.soundQ : tp.b0;
+    if (prevSq < -0.001 || prevSq > endB) prevSq = 0;
+    let sq = PianoScore.qAt(plan, PianoScore.msAt(plan, tp.b0, scale) + Math.max(0, now - tp.t0), scale);
+    const ev = this.fire(S, prevSq, Math.min(sq, endB));
+    let b = PianoScore.writtenAtSound(plan, Math.min(sq, endB));
 
     const live = this.liveMidi() && this._perf && this._perf.run;
     let hit, tot, result = null;
@@ -9482,7 +10407,7 @@ class Component extends DCLogic {
     if (live) patch.wrongNotes = this._perf.recentWrong(nowMs());
     else if (ev.tot) patch.wrongNotes = ev.wrong;
 
-    if (b >= endB) {
+    if (sq >= endB) {
       if (live) {
         this._perf.advanceTo(nowMs() + this._perf.timing.window + 1);
         result = this._perf.result();
@@ -9491,18 +10416,20 @@ class Component extends DCLogic {
       if (S.loop) {
         /* The next lap starts exactly when this one ended, not when a tick
            happened to notice — the notes for it are already on that time. */
-        const lapEnd = tp.t0 + (endB - tp.b0) * tp.msQ;
-        tp.b0 = startB; tp.t0 = lapEnd; tp.skipTo = -Infinity;
-        b = startB + Math.max(0, now - lapEnd) / tp.msQ;
-        if (b >= endB) {
+        const lapEnd = tp.t0 + PianoScore.msAt(plan, endB, scale) - PianoScore.msAt(plan, tp.b0, scale);
+        tp.b0 = 0; tp.t0 = lapEnd; tp.skipTo = -Infinity; tp.soundQ = 0;
+        sq = PianoScore.qAt(plan, PianoScore.msAt(plan, 0, scale) + Math.max(0, now - lapEnd), scale);
+        if (sq >= endB) {
           /* the page stalled for longer than a whole lap: carry on from here */
           if (p) p.silence();
-          tp.t0 = now; tp.schedT = now; b = startB;
+          if (this.midiOutLive()) this.midiOutLayer().panic(now);
+          tp.t0 = now; tp.schedT = now; sq = 0;
         }
+        b = PianoScore.writtenAtSound(plan, sq);
         patch.beat = b;
         if (live) this.beginRun(S, patch.beat); else this._sim = this.newSim();
       } else {
-        patch.beat = startB;
+        patch.beat = writtenStart;
         patch.playing = false;
         this._tp = null;            /* not stopTransport(): the last notes ring on */
       }
@@ -9510,6 +10437,7 @@ class Component extends DCLogic {
     if (!this._tp) { this.setState(patch); return; }
     this.schedule(now);
     tp.beat = patch.beat;
+    tp.soundQ = sq;
     this.setState(patch);
   }
 
@@ -9518,60 +10446,75 @@ class Component extends DCLogic {
      starts where the last one ended. */
   schedule(now) {
     const tp = this._tp, p = this._piano, S = this.state;
-    if (!tp || !p || !p.running()) return;
+    if (!tp) return;
+    const midiOk = this.midiOutLive();
+    const audioOk = !!(p && p.running());
+    if (!audioOk && !midiOk) return;
     const horizon = now + PIANO.lookaheadMs;
     /* Anything due longer ago than this is let go. Playing it late, bunched
        up with what comes next, would sound worse than leaving it out. */
     const from = Math.max(tp.schedT, now - 80);
     if (horizon <= from) return;
     tp.schedT = horizon;
-    /* One reading of the audio clock for the whole run, so every note keeps
-       its exact distance from every other. It is taken again only if the two
-       clocks jump apart — the sound was suspended and resumed. */
-    const off = p.clockOffset();
-    if (tp.clock == null || Math.abs(off - tp.clock) > 0.08) tp.clock = off;
-    const A = ms => tp.clock + ms / 1000;
+    if (audioOk) {
+      const off = p.clockOffset();
+      if (tp.clock == null || Math.abs(off - tp.clock) > 0.08) tp.clock = off;
+    }
+    const A = ms => (tp.clock != null ? tp.clock : 0) + ms / 1000;
     const notes = S.toggles.notes && !this.liveMidi();
-    const clicks = S.metro && S.toggles.sound;
-    if (!notes && !clicks) return;
-    const plan = PianoScore.of(S.score);
+    const sendMidi = midiOk && notes;
+    const sendAudio = audioOk && notes && !midiOk;
+    const clicks = audioOk && S.metro && S.toggles.sound;
+    if (!sendMidi && !sendAudio && !clicks) return;
     const [rf, rt] = this.range(S);
-    const list = notes ? this.notesIn(rf, rt) : [];
-    const msQ = tp.msQ, startB = tp.startB, endB = tp.endB;
+    const plan = tp.plan || PianoScore.of(S.score, rf, rt);
+    const scale = tp.scale || 1;
+    const endB = plan.soundLengthQ;
+    const list = plan.strikes || [];
+    const out = sendMidi ? this.midiOutLayer() : null;
     let lapB = tp.b0, lapT = tp.t0, skip = tp.skipTo;
     for (let lap = 0; lap < 64 && lapT < horizon; lap++) {
-      const lapEnd = lapT + (endB - lapB) * msQ;
+      const lapEnd = lapT + PianoScore.msAt(plan, endB, scale) - PianoScore.msAt(plan, lapB, scale);
       if (lapEnd > from) {
-        const T = q => lapT + (q - lapB) * msQ;
-        const bA = lapB + (Math.max(from, lapT) - lapT) / msQ - 1e-6;
-        for (let i = firstAtOrAfter(list, bA, 'abs'); i < list.length; i++) {
-          const n = list[i];
-          if (n.abs >= endB - 1e-9) break;
-          const t = T(n.abs);
-          if (t >= horizon) break;
-          if (t < from || n.abs <= skip || !PianoScore.struck(plan, n) || !this.handOk(n, S.hands)) continue;
-          let upQ = n.abs + PianoScore.hold(plan, n);
-          const ped = PianoScore.pedalUp(plan, upQ);
-          if (ped != null) upQ = ped;
-          /* a loop lifts its hands to begin again */
-          const up = S.loop ? Math.min(T(upQ), lapEnd) : T(upQ);
-          const vel = PIANO.velocity + (Math.abs(n.b) < 1e-6 ? 6 : 0);
-          p.release(p.strike(n.midi, A(t), vel), A(up));
+        const T = q => lapT + PianoScore.msAt(plan, q, scale) - PianoScore.msAt(plan, lapB, scale);
+        const bA = PianoScore.qAt(plan, PianoScore.msAt(plan, lapB, scale) + Math.max(0, from - lapT), scale) - 1e-6;
+        if (sendAudio || sendMidi) {
+          for (let i = firstAtOrAfter(list, bA, 'q'); i < list.length; i++) {
+            const n = list[i];
+            if (n.q >= endB - 1e-9) break;
+            const t = T(n.q);
+            if (t >= horizon) break;
+            if (t < from || n.q <= skip || !this.handOk(n.note, S.hands)) continue;
+            const up = S.loop ? Math.min(T(n.upQ), lapEnd) : T(n.upQ);
+            if (sendAudio) p.release(p.strike(n.midi, A(t), n.vel), A(up));
+            if (out) { out.noteOn(n.midi, n.vel, t); out.noteOff(n.midi, up); }
+          }
+        }
+        if (out) {
+          const ccs = plan.ccs || [];
+          for (let i = firstAtOrAfter(ccs, bA, 'q'); i < ccs.length; i++) {
+            const e = ccs[i];
+            if (e.q >= endB - 1e-9) break;
+            const t = T(e.q);
+            if (t >= horizon) break;
+            if (t < from || e.q <= skip) continue;
+            out.cc(e.cc, e.value, t);
+          }
         }
         if (clicks) {
-          const beats = plan.beats;
+          const beats = plan.beats || [];
           for (let i = firstAtOrAfter(beats, bA, 'q'); i < beats.length; i++) {
             const k = beats[i];
             if (k.q >= endB - 1e-9) break;
             const t = T(k.q);
             if (t >= horizon) break;
-            if (t < from || k.q <= skip || k.q < startB - 1e-9) continue;
+            if (t < from || k.q <= skip || k.q < -1e-9) continue;
             p.click(A(t), k.accent);
           }
         }
       }
-      if (!S.loop || endB - startB < 1e-6) break;
-      lapB = startB; lapT = lapEnd; skip = -Infinity;
+      if (!S.loop || endB < 1e-6) break;
+      lapB = 0; lapT = lapEnd; skip = -Infinity;
     }
   }
 
@@ -9585,13 +10528,14 @@ class Component extends DCLogic {
        performance engine scores them, so the simulation stands down. */
     if (this.liveMidi()) return out;
     const [from, to] = this.range(S);
-    const list = this.notesIn(from, to);
-    for (let i = firstAtOrAfter(list, a, 'abs'); i < list.length; i++) {
-      const n = list[i];
-      if (n.abs >= b) break;
-      if (n.tieStop) continue;               /* tied over — already sounding */
-      if (!this.handOk(n, S.hands)) continue;
+    const plan = PianoScore.of(S.score, from, to);
+    const list = plan.strikes || [];
+    for (let i = firstAtOrAfter(list, a, 'q'); i < list.length; i++) {
+      const s = list[i];
+      if (s.q >= b) break;
+      if (!this.handOk(s.note, S.hands)) continue;
       out.tot++;
+      const n = s.note;
       const mb = this._sim ? this.simBucket(n.m) : null;   /* not "b" — that is the span end */
       const hb = mb ? (mb.hands[n.hand] || mb.hands.r) : null;
       if (mb) { mb.total++; hb.total++; }
@@ -9720,6 +10664,7 @@ class Component extends DCLogic {
   }
 
   onKey(e) {
+    if (e.key === 'Escape' && this.state.shareDlg) { this.closeShareDialog(); return; }
     const t = e.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
     const k = e.key.toLowerCase();
@@ -10365,7 +11310,9 @@ class Component extends DCLogic {
     lib.songs.unshift({
       id: id, title: score.title, composer: score.composer,
       kind: (source && source.kind) || 'musicxml', url: (yt && yt.url) || (source && source.url) || null,
-      addedAt: Clock.now(), lastAt: Clock.now(), prog: 0, mem: 0, measures: Score.count(score)
+      addedAt: Clock.now(), lastAt: Clock.now(), prog: 0, mem: 0, measures: Score.count(score),
+      /* added from Shared Scores: adding it again opens this one */
+      sharedFrom: (source && source.shareId) || undefined
     });
     lib.current = id;
     if (!this.libraryWrite(lib)) this.storageFull();
@@ -10464,16 +11411,7 @@ class Component extends DCLogic {
       else {
         const d = this.readSong(id);
         const full = d && d.score;
-        if (full && full.measures && full.measures.length) {
-          const ms = full.measures.slice(0, 2).map(m => Object.assign({}, m));
-          const keep = {};
-          ms.forEach(m => { keep[m.number] = true; });
-          const mine = list => (list || []).filter(x => keep[x.m]).map(x => Object.assign({}, x));
-          sc = Score.finalize(Object.assign({}, full, {
-            measures: ms, notes: mine(full.notes), chords: mine(full.chords), pedals: mine(full.pedals), ottavas: [],
-            sections: [{ id: 's1', from: ms[0].number, to: ms[ms.length - 1].number }], _byNumber: undefined
-          }));
-        }
+        if (full && full.measures && full.measures.length) sc = Score.finalize(openingBars(full, 2));
       }
     } catch (e) { sc = null; }
     this._thumbs[id] = sc;
@@ -10511,6 +11449,388 @@ class Component extends DCLogic {
     MediaStore.del(id);
     this.setState({ armedRemove: null });
     if (!opts.quiet && gone) this.say(tx('Removed {{title}} from My Songs.', { title: gone.title }));
+  }
+  /* ============================ sharing ============================ */
+  /* A song is shared as its notes only — never what PPP has learned about
+     your playing of it, its memory record, or the file or recording it came
+     from. The server keeps that copy. A posted copy is listed in Shared
+     Scores for anyone to add; every copy, posted or not, opens by its link. */
+  shareApi(path, opts) {
+    return fetch('/api/shares' + (path || ''), Object.assign({ credentials: 'include', cache: 'no-store' }, opts))
+      .catch(() => { throw new Error(tx('Could not reach the server.')); })
+      .then(async r => {
+        const body = await r.json().catch(() => null);
+        if (r.ok && body) return body;
+        /* an older server, or a page not served by PPP's server at all */
+        const missing = !body || (r.status === 404 && body.error === 'Not found');
+        const err = new Error(tx(r.status >= 500 ? 'Could not reach the server.'
+          : missing ? 'Sharing needs the PPP server.' : body.error));
+        err.status = r.status;
+        throw err;
+      });
+  }
+  shareLink(id) {
+    let base = '';
+    try { if (/^https?:$/.test(location.protocol)) base = location.origin; } catch (e) {}
+    return base + '/?share=' + encodeURIComponent(id);
+  }
+  /* The song as it is sent: its notes, and where it came from cut down to a
+     YouTube link at most — the video is public, a file name is not. */
+  shareScoreOf(songId) {
+    const S = this.state;
+    const cur = songId === (S.songId || 'demo');
+    const d = cur ? null : this.readSong(songId);
+    const score = cur ? S.score : d && d.score;
+    if (songId === 'demo' || !score || score.id === 'demo' || !score.measures || !score.measures.length || !Array.isArray(score.notes)) return null;
+    const src = score.source && typeof score.source === 'object' ? score.source : {};
+    const yt = src.kind === 'youtube' ? Import.youtubeWatch(src.url || src.youtubeId) : null;
+    const out = JSON.parse(JSON.stringify(Object.assign({}, score, { _byNumber: undefined })));
+    out.id = 'shared:' + songId;
+    out.source = yt
+      ? { kind: 'youtube', url: yt.url, youtubeId: yt.id, barStarts: src.barStarts || null, tempo: src.tempo || null, seconds: src.seconds || null }
+      : { kind: 'shared' };
+    if (/^Transcribed from /.test(out.composer || '')) out.composer = '';
+    return out;
+  }
+  /* Send a song to the server: posted to Shared Scores (listed true), taken
+     down (false), or only given a link (left out). Each send carries the
+     score as it is now, so a song changed since it was shared is updated. */
+  publishSong(songId, listed) {
+    if (!this.state.user) return Promise.reject(new Error(tx('Sign in to share your scores.')));
+    const score = this.shareScoreOf(songId);
+    if (!score) return Promise.reject(new Error(tx('That song could not be shared.')));
+    const preview = openingBars(score, 2);
+    delete preview.source; delete preview.seeds;
+    const body = JSON.stringify({
+      songKey: songId, title: score.title,
+      composer: score.composer === 'Unknown' ? '' : score.composer || '',
+      kind: (this.shelfSongs().find(s => s.id === songId) || {}).kind || '',
+      listed: listed, score: score, preview: preview
+    });
+    if (new Blob([body]).size > 4 * 1024 * 1024) return Promise.reject(new Error(tx('That score is too large to share.')));
+    return this.shareApi('', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body })
+      .then(row => { this.rememberShare(songId, row); return row; });
+  }
+  /* Whether a song of yours is shared, and posted, is kept on its card. */
+  rememberShare(songId, row) {
+    const lib = this.libraryRead();
+    const card = lib.songs.find(s => s.id === songId);
+    if (!card) return;
+    if (row) card.share = { id: row.id, listed: !!row.listed };
+    else delete card.share;
+    this.libraryWrite(lib);
+  }
+  /* What the server says you have shared is what your cards say. */
+  syncShareCards(list) {
+    const lib = this.libraryRead();
+    let changed = false;
+    lib.songs.forEach(card => {
+      const row = list.find(r => r.songKey === card.id);
+      const want = row ? { id: row.id, listed: !!row.listed } : null;
+      if (JSON.stringify(want) === JSON.stringify(card.share || null)) return;
+      /* a list cut short cannot say a song is not shared */
+      if (!want && list.length >= 100) return;
+      if (want) card.share = want; else delete card.share;
+      changed = true;
+    });
+    if (changed) this.libraryWrite(lib);
+  }
+  /* Shared Scores: everything posted, or only yours (posted or not). */
+  loadShared(quiet) {
+    const S = this.state;
+    const mine = S.sharedFilter === 'Mine';
+    const seq = this._sharedSeq = (this._sharedSeq || 0) + 1;
+    if (mine && !S.user) { this.setState({ sharedList: [], sharedLoad: 'ready', sharedError: '' }); return; }
+    if (!quiet) this.setState({ sharedLoad: 'loading', sharedError: '' });
+    this.shareApi(mine ? '?mine=1' : '')
+      .then(body => {
+        if (seq !== this._sharedSeq) return;
+        const list = Array.isArray(body.shares) ? body.shares : [];
+        this.setState({ sharedList: list, sharedLoad: 'ready' });
+        if (mine) this.syncShareCards(list);
+      })
+      .catch(e => { if (seq === this._sharedSeq) this.setState({ sharedLoad: 'error', sharedError: e.message }); });
+  }
+  setSharedFilter(f) {
+    if (this.state.sharedFilter === f) return;
+    this.setState({ sharedFilter: f, sharedList: null }, () => this.loadShared());
+  }
+  /* A shared score's link lands on it, for anyone, signed in or not. */
+  landShared(id) {
+    this.setState({ screen: 'shared', sharedLinked: { id: id, state: 'loading' } });
+    this.shareApi('/' + encodeURIComponent(id))
+      .then(row => {
+        this._linkedScore = row.score;
+        this.setState({ sharedLinked: Object.assign({}, row, { score: undefined, state: 'ready' }) });
+      })
+      .catch(e => this.setState({ sharedLinked: { id: id, state: 'error', error: e.message } }));
+    /* once landed, a reload is an ordinary visit */
+    try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) {}
+  }
+  /* The song on your shelf that a shared score already is: one of yours, or
+     one added from it before. */
+  sharedOnShelf(x) {
+    return (this.state.library || []).find(s => s.sharedFrom === x.id || (x.mine && x.songKey && s.id === x.songKey)) || null;
+  }
+  /* Add a shared score to My Songs and practise it; one already there opens. */
+  openShared(x) {
+    const have = this.sharedOnShelf(x);
+    if (have) return this.openSong(have.id);
+    if (this.state.sharedOpening) return;
+    this.setState({ sharedOpening: x.id });
+    const got = this._linkedScore && this.state.sharedLinked && this.state.sharedLinked.id === x.id
+      ? Promise.resolve({ id: x.id, title: x.title, owner: x.owner, score: this._linkedScore })
+      : this.shareApi('/' + encodeURIComponent(x.id));
+    got.then(row => {
+      let score = null;
+      try { score = Score.finalize(JSON.parse(JSON.stringify(row.score))); } catch (e) { score = null; }
+      if (!score || !score.measures.length || !score.notes.some(n => !n.rest)) throw new Error(tx('That shared score could not be read.'));
+      score.id = 'shared:' + row.id + ':' + Date.now();
+      const source = { kind: 'shared', name: row.title, shareId: row.id, owner: row.owner, importedAt: Clock.now(), status: 'shared' };
+      if (!score.source || score.source.kind !== 'youtube') score.source = { kind: 'shared', shareId: row.id };
+      this.cancelImport(true);
+      this._file = null; this._yt = null; this._pageImages = null;
+      this.dropRecording();
+      this.shelveSong();
+      this.setState({
+        importSource: score.source.kind === 'youtube' ? Object.assign({}, source, { kind: 'youtube', url: score.source.url, youtubeId: score.source.youtubeId }) : source,
+        importReport: null, importKind: null, upload: 'empty', pendingSong: null,
+        fileName: score.title, fileMeta: tx('Shared by {{name}}', { name: row.owner })
+      });
+      this.adoptScore(score);
+      this.enterSong(score, source, false);
+      this.setState({ sharedOpening: null });
+      this.go('player')();
+      this.say(tx('Added {{title}} to My Songs.', { title: score.title }));
+    }).catch(e => {
+      this.setState({ sharedOpening: null });
+      this.say(e.message || tx('That shared score could not be read.'));
+    });
+  }
+  sharedThumb(key, full, bars) {
+    this._sharedThumbs = this._sharedThumbs || {};
+    if (key in this._sharedThumbs) return this._sharedThumbs[key];
+    let sc = null;
+    try {
+      if (full && full.measures && full.measures.length) sc = Score.finalize(openingBars(JSON.parse(JSON.stringify(full)), bars));
+    } catch (e) { sc = null; }
+    return (this._sharedThumbs[key] = sc);
+  }
+  /* One card of Shared Scores, and the larger one a link lands on. */
+  sharedCard(x, big) {
+    const S = this.state;
+    const have = this.sharedOnShelf(x);
+    const opening = S.sharedOpening === x.id;
+    const th = big ? this.sharedThumb('linked:' + x.id, this._linkedScore, 4) : this.sharedThumb(x.id + ':' + x.updatedAt, x.preview, 2);
+    return {
+      id: x.id, title: x.title,
+      sub: [x.composer, tx('Shared by {{name}}', { name: x.owner })].filter(Boolean).join(' · '),
+      meta: tx('{{n}} measures', { n: x.measures }) + ' · ' + this.agoLabel(Date.parse(x.updatedAt)),
+      thumb: th ? this.sv({
+        score: th, staves: th.staves, startM: Score.first(th), count: big ? 4 : 2, mW: big ? 170 : 150,
+        numbers: false, guidance: false, fluid: true, grand: th.staves > 1
+      }) : null,
+      badge: x.mine ? tx(x.listed ? 'Yours · posted' : 'Yours · link only') : '',
+      badgeStyle: this.nowBadgeStyle(!!x.mine),
+      titleStyle: `font-size:${big ? 21 : 15}px;font-weight:600;letter-spacing:-0.01em;margin-top:${x.mine ? 8 : 0}px;`,
+      cardStyle: 'border:1px solid var(--line);box-shadow:var(--shadow);border-radius:18px;background:var(--surface);overflow:hidden;display:flex;flex-direction:column;transition:transform .18s ease;',
+      openLabel: opening ? tx('Adding…') : have ? tx('Open') : tx('Add to My Songs'),
+      on: () => this.openShared(x),
+      shareLabel: tx('Share'),
+      share: () => this.openShareDialog({ shareId: x.id, listed: x.listed, mine: x.mine, songId: x.mine && x.songKey && (S.library || []).some(s => s.id === x.songKey) ? x.songKey : null, title: x.title })
+    };
+  }
+
+  /* ---- the share dialog ---- */
+  /* From My Songs it is a song of yours; from Shared Scores, a score already
+     there — yours or anyone's. */
+  openShareDialog(target) {
+    this.setState({ shareDlg: Object.assign({ busy: null, error: '', copied: false, armStop: false }, target), armedRemove: null });
+  }
+  closeShareDialog() { this.setState({ shareDlg: null }); }
+  patchShareDialog(p) { this.setState(st => st.shareDlg ? { shareDlg: Object.assign({}, st.shareDlg, p) } : null); }
+  shareTarget() {
+    const S = this.state, d = S.shareDlg;
+    if (!d) return null;
+    const card = d.songId ? (S.library || []).find(s => s.id === d.songId) || null : null;
+    const share = card && card.share ? card.share : d.shareId ? { id: d.shareId, listed: !!d.listed } : null;
+    return { d: d, card: card, share: share, mine: !!card || !!d.mine, title: (card && card.id === (S.songId || 'demo') ? S.score.title : card && card.title) || d.title || '' };
+  }
+  /* The link, made the first time it is needed. Sending a link never posts
+     the song to Shared Scores. */
+  ensureShareLink() {
+    const t = this.shareTarget();
+    if (!t) return Promise.reject(new Error(''));
+    if (t.share) return Promise.resolve(this.shareLink(t.share.id));
+    if (!t.card) return Promise.reject(new Error(tx('That song could not be shared.')));
+    this.patchShareDialog({ busy: 'link', error: '' });
+    return this.publishSong(t.card.id).then(row => {
+      this.patchShareDialog({ busy: null, shareId: row.id, listed: !!row.listed });
+      if (this.state.sharedList) this.loadShared(true);
+      return this.shareLink(row.id);
+    }, e => { this.patchShareDialog({ busy: null, error: e.message }); throw e; });
+  }
+  sendShare(net) {
+    const t = this.shareTarget();
+    if (!t || t.d.busy) return;
+    const text = tx('{{title}} — sheet music on PPP', { title: t.title });
+    let win = null;
+    const send = link => {
+      if (net === 'copy') return this.copyLink(link);
+      if (net === 'native') {
+        return navigator.share({ title: t.title, text: text, url: link })
+          .catch(e => { if (!e || e.name !== 'AbortError') this.copyLink(link); });
+      }
+      const url = SHARE_TARGETS[net](link, text);
+      if (net === 'email') { window.location.href = url; return; }
+      if (win) { try { win.opener = null; } catch (e) {} win.location.href = url; }
+      else window.open(url, '_blank', 'noopener');
+    };
+    if (t.share) { send(this.shareLink(t.share.id)); return; }
+    /* No link yet. Making one takes a moment, and a window opened after that
+       moment is one the browser blocks — so open it now and point it later. */
+    if (SHARE_TARGETS[net] && net !== 'email') win = window.open('', '_blank');
+    this.ensureShareLink().then(send, () => { if (win) win.close(); });
+  }
+  copyLink(link) {
+    const done = () => { this.patchShareDialog({ copied: true }); this.say(tx('Link copied.')); };
+    const byHand = () => {
+      const el = document.createElement('textarea');
+      el.value = link;
+      el.setAttribute('readonly', '');
+      el.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+      document.body.appendChild(el);
+      el.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) {}
+      el.remove();
+      if (ok) done(); else this.say(tx('Copy the link from the box above.'));
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(done, byHand);
+    else byHand();
+  }
+  /* Post to Shared Scores, or take it down; the link keeps working either way. */
+  postShared(on) {
+    const t = this.shareTarget();
+    if (!t || !t.mine || t.d.busy) return;
+    if (!this.state.user) return this.patchShareDialog({ error: tx('Sign in to share your scores.') });
+    this.patchShareDialog({ busy: 'post', error: '', armStop: false });
+    /* posting sends the notes as they are now */
+    const run = on && t.card ? this.publishSong(t.card.id, true)
+      : t.share ? this.shareApi('/' + encodeURIComponent(t.share.id), {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ listed: on })
+      })
+        : Promise.reject(new Error(tx('That song could not be shared.')));
+    run.then(row => {
+      if (t.card) this.rememberShare(t.card.id, row);
+      this.patchShareDialog({ busy: null, shareId: row.id, listed: !!row.listed });
+      this.say(on ? tx('Posted to Shared Scores.') : tx('Taken down from Shared Scores. The link still works.'));
+      if (this.state.sharedList) this.loadShared(true);
+    }).catch(e => this.patchShareDialog({ busy: null, error: e.message }));
+  }
+  /* Stop sharing altogether: the link stops working too. Asks twice. */
+  stopSharing() {
+    const t = this.shareTarget();
+    if (!t || !t.mine || !t.share || t.d.busy) return;
+    if (!t.d.armStop) return this.patchShareDialog({ armStop: true });
+    this.patchShareDialog({ busy: 'stop', error: '' });
+    this.shareApi('/' + encodeURIComponent(t.share.id), { method: 'DELETE' })
+      .then(() => {
+        if (t.card) this.rememberShare(t.card.id, null);
+        if (t.card) this.patchShareDialog({ busy: null, armStop: false, shareId: null, listed: false, copied: false });
+        else this.closeShareDialog();
+        this.say(tx('Stopped sharing. The link no longer opens it.'));
+        if (this.state.sharedList) this.loadShared(true);
+      })
+      .catch(e => this.patchShareDialog({ busy: null, error: e.message }));
+  }
+  /* Render values for the Shared Scores page. */
+  sharedVals() {
+    const S = this.state;
+    const q = (S.sharedQuery || '').trim();
+    const ql = q.toLowerCase();
+    const list = S.sharedList || [];
+    const shown = list.filter(x => !ql || (x.title + ' ' + (x.composer || '') + ' ' + x.owner).toLowerCase().indexOf(ql) > -1);
+    const mine = S.sharedFilter === 'Mine';
+    const L = S.sharedLinked;
+    const linked = L && L.state === 'ready' ? this.sharedCard(L, true) : null;
+    /* one line that says why the grid is empty, and what to do about it */
+    let note = '', act = null;
+    if (S.sharedLoad === 'error') {
+      note = S.sharedError || tx('Could not reach the server.');
+      act = { label: tx('Try again'), on: () => this.loadShared() };
+    } else if (mine && !S.user) {
+      note = tx('Sign in to see the scores you have shared.');
+      act = { label: tx('Sign in'), on: () => this.setState({ guest: false }) };
+    } else if (!S.sharedList) note = tx('Loading shared scores…');
+    else if (!list.length) {
+      note = tx(mine ? 'You have not shared a score yet. Share one from My Songs.' : 'Nothing has been shared yet. Share one of your songs from My Songs.');
+      act = { label: tx('Go to My Songs'), on: this.go('songs') };
+    } else if (!shown.length) note = tx('No shared score matches “{{q}}”.', { q: q });
+    return {
+      sharedFilters: [['All', 'All'], ['Mine', 'Shared by me']].map(([id, label]) => ({
+        label: tx(label), style: this.pill((S.sharedFilter || 'All') === id), on: () => this.setSharedFilter(id)
+      })),
+      sharedQuery: S.sharedQuery || '', setSharedQuery: e => this.setState({ sharedQuery: e.target.value }),
+      sharedCards: shown.map(x => this.sharedCard(x)),
+      sharedHasNote: !!note, sharedNote: note,
+      sharedHasAction: !!act, sharedActionLabel: act ? act.label : '', sharedAction: act ? act.on : null,
+      /* the score a link landed on: a list of one once it has arrived */
+      sharedHasLinked: !!L, sharedLinkedCards: linked ? [linked] : [], sharedLinkedPending: !!L && !linked,
+      sharedLinkedLead: tx('Shared with you'),
+      sharedLinkedNote: !L || linked ? '' : L.state === 'error' ? L.error || tx('That shared score is no longer there.') : tx('Opening the shared score…'),
+      closeSharedLinked: () => this.setState({ sharedLinked: null }), sharedCloseLabel: tx('Close')
+    };
+  }
+  /* Render values for the share dialog. */
+  shareDialogVals() {
+    const S = this.state, t = this.shareTarget();
+    if (!t) return { shareOpen: false };
+    const d = t.d, sh = t.share;
+    /* your own song needs an account: it keeps the copy, so you can take it down */
+    const needSignIn = !S.user && !!t.card;
+    const posted = !!(sh && sh.listed);
+    const primary = 'align-self:flex-start;padding:10px 16px;border-radius:10px;border:0;background:var(--accent);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;';
+    const plain = 'align-self:flex-start;padding:9px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;';
+    const nets = [
+      ['x', 'X', 'X', 'background:var(--ink);color:var(--surface);'],
+      ['facebook', 'Facebook', 'f', 'background:#1877f2;color:#fff;'],
+      ['line', 'LINE', 'L', 'background:#06c755;color:#fff;'],
+      ['threads', 'Threads', '@', 'background:var(--ink);color:var(--surface);'],
+      ['email', 'Email', '✉', 'background:var(--surface2);color:var(--ink2);']
+    ];
+    if (typeof navigator !== 'undefined' && navigator.share) nets.unshift(['native', 'Other apps…', '↗', 'background:var(--accent-3);color:var(--accent);']);
+    return {
+      shareOpen: true, shareTitle: t.title, shareHeading: tx('Share'), shareCloseLabel: tx('Close'), closeShare: () => this.closeShareDialog(),
+      shareNeedsSignIn: needSignIn,
+      shareSignInNote: tx('Sign in to share your scores. Your account keeps the shared copy, so you can take it down later.'),
+      shareSignInLabel: tx('Sign in'), shareSignInStyle: primary, shareSignIn: () => this.setState({ shareDlg: null, guest: false }),
+      shareCanPost: t.mine && !needSignIn,
+      sharePostHeading: tx('Shared Scores'),
+      sharePostNote: tx(posted ? 'Posted — anyone using PPP can find it in Shared Scores and add it to their songs.'
+        : 'Post it, and anyone using PPP can find it in Shared Scores and add it to their songs.'),
+      sharePostLabel: d.busy === 'post' ? tx(posted ? 'Taking down…' : 'Posting…') : tx(posted ? 'Take down' : 'Post to Shared Scores'),
+      sharePostStyle: posted ? plain : primary, sharePostedAttr: posted ? 'true' : 'false',
+      sharePost: () => this.postShared(!posted),
+      shareCanLink: !needSignIn,
+      shareLinkHeading: tx('Send a link'),
+      shareLinkNote: tx(sh ? 'Anyone with the link can open it, posted or not.' : 'A link is made the first time you send one. Sending it does not post the song.'),
+      shareHasLink: !!sh, shareLinkText: sh ? this.shareLink(sh.id) : '',
+      shareCopyLabel: tx(d.busy === 'link' ? 'Making the link…' : d.copied ? 'Copied' : 'Copy link'), shareCopyStyle: plain.replace('align-self:flex-start;', 'flex:none;'),
+      shareCopy: () => this.sendShare('copy'),
+      shareNets: nets.map(([id, label, glyph, look]) => ({
+        id: id, label: tx(label), glyph: glyph, on: () => this.sendShare(id),
+        style: 'display:flex;align-items:center;gap:8px;padding:8px 12px 8px 8px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;',
+        glyphStyle: 'width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-size:12px;font-weight:700;line-height:1;' + look
+      })),
+      shareCanStop: t.mine && !!sh && !!S.user,
+      shareStopLabel: d.busy === 'stop' ? tx('Stopping…') : tx(d.armStop ? 'Stop sharing? The link will stop working.' : 'Stop sharing'),
+      shareStopStyle: 'align-self:flex-start;padding:8px 12px;border-radius:9px;font-family:inherit;font-size:12px;cursor:pointer;border:1px solid '
+        + (d.armStop ? 'var(--bad);background:var(--bad);color:#fff;' : 'var(--line);background:transparent;color:var(--ink3);'),
+      shareStop: () => this.stopSharing(),
+      shareHasError: !!d.error, shareError: d.error,
+      shareFine: tx('Only the notes are shared — never your progress, recordings or files. Share only music you have the right to share.')
+    };
   }
   /* ============================ the performance, beside the score ============================ */
   /* What there is to watch for a song: the YouTube video it was made from,
@@ -11137,6 +12457,7 @@ class Component extends DCLogic {
         : tab === 'loop' ? tx('Loop a passage') + ' · ' + passage : tx('Memorize') + ' · ' + passage)],
       progress: [tx('Progress'), score.title],
       songs: [tx('My Songs'), tx('{{n}} songs in your library', { n: this.shelfSongs().length })], basics: [tx('Sight Reading'), tx('Remember the Basics')],
+      shared: [tx('Shared Scores'), tx('Scores anyone can open')],
       settings: [tx('Settings'), tx('Account · practice · devices')], empty: [tx('My Songs'), tx('Nothing here yet')],
       states: [tx('States'), tx('Loading · error · offline')],
       review: [tx('Check recognition'), S.fileName]
@@ -11148,6 +12469,7 @@ class Component extends DCLogic {
     const navList = [
       ['Home', 'home', 'What to do today'],
       ['My Songs', 'songs', 'Your library'],
+      ['Shared Scores', 'shared', 'Scores anyone can open'],
       ['Analysis & Plan', 'analysis', 'Hard parts and the plan'],
       ['Practice', 'player', 'Play · loop · memorize'],
       ['Progress', 'progress', 'How each part is going'],
@@ -11155,7 +12477,7 @@ class Component extends DCLogic {
       ['Settings', 'settings', 'Devices and display']
     ];
     /* A recognition review only exists while there is something to review. */
-    if (S.importReport || sc === 'review') navList.splice(3, 0, ['Check recognition', 'review', 'Compare with the page']);
+    if (S.importReport || sc === 'review') navList.splice(navList.findIndex(x => x[1] === 'analysis') + 1, 0, ['Check recognition', 'review', 'Compare with the page']);
     const nav = navList.map(([label, id, sub]) => ({
       label: tx(label), sub: tx(sub), style: this.navBtn(sc === id), markStyle: this.markStyle(sc === id),
       subStyle: 'font-size:11px;font-weight:400;line-height:1.3;color:' + (sc === id ? 'var(--accent)' : 'var(--ink3)') + ';opacity:' + (sc === id ? 0.85 : 1) + ';',
@@ -11318,6 +12640,11 @@ class Component extends DCLogic {
                 : tx('Not connected — PPP is simulating your playing');
     const midiLabel = midiLive ? tx('MIDI Connected') : !mi.supported ? tx('Demo Input · no Web MIDI') : tx('Demo Input');
     const midiTone = midiLive ? 'var(--good)' : mi.status === 'denied' || mi.status === 'error' ? 'var(--bad)' : 'var(--ink3)';
+    const mo = S.midiOut || {};
+    const midiOutLive = this.midiOutLive();
+    const midiOutSub = midiOutLive ? tx('{{device}} · score plays through this piano', { device: mo.deviceName })
+      : tx('Play the score through a connected digital piano');
+    const midiOutAction = tx(midiOutLive ? 'Disconnect' : 'Connect');
     const follows = this.following();
     const staffBars = (S.focus && this.narrowScreen()) ? 2 : 4;
 
@@ -11327,6 +12654,7 @@ class Component extends DCLogic {
         { key: 'auto', label: 'Auto-detect weak measures', sub: 'Build drills from your playing' }] },
       { title: 'Devices & sound', sub: 'MIDI, metronome and audio', rows: [
         { key: 'midi', label: 'Use MIDI keyboard input', sub: midiSub },
+        { key: 'midiOut', label: 'Play score through MIDI piano', sub: midiOutSub },
         { key: 'sound', label: 'Metronome click sound', sub: 'Visual pulse stays on either way' },
         { key: 'notes', label: 'Play note audio while practicing', sub: 'Hear the notes as the playhead passes' }] },
       { title: 'Account', sub: 'Notifications and appearance', rows: [
@@ -11360,7 +12688,7 @@ class Component extends DCLogic {
     const shelf = this.shelfSongs();
     const KIND_LABEL = {
       'built-in': 'Built-in sample', musicxml: 'MusicXML', mxl: 'MusicXML', pdf: 'From a PDF', image: 'From a photo',
-      audio: 'From a recording', video: 'From a video', youtube: 'From YouTube'
+      audio: 'From a recording', video: 'From a video', youtube: 'From YouTube', shared: 'Shared score'
     };
     const songs = shelf.map(s => {
       const isCur = s.id === curId;
@@ -11399,7 +12727,13 @@ class Component extends DCLogic {
           removeLabel: armed ? tx('Remove?') : tx('Remove'),
           removeStyle: 'padding:8px 11px;border-radius:9px;font-family:inherit;font-size:12px;cursor:pointer;border:1px solid '
             + (armed ? 'var(--bad)' : 'var(--line)') + ';background:' + (armed ? 'var(--bad)' : 'transparent') + ';color:' + (armed ? '#fff' : 'var(--ink3)') + ';',
-          remove: () => this.askRemoveSong(x.s.id)
+          remove: () => this.askRemoveSong(x.s.id),
+          /* the sample is PPP's, not yours to share */
+          canShare: x.s.id !== 'demo',
+          shareLabel: tx(x.s.share && x.s.share.listed ? 'Shared' : 'Share'),
+          shareStyle: 'padding:8px 11px;border-radius:9px;font-family:inherit;font-size:12px;cursor:pointer;border:1px solid '
+            + (x.s.share && x.s.share.listed ? 'var(--accent-2);background:var(--accent-3);color:var(--accent);' : 'var(--line);background:transparent;color:var(--ink2);'),
+          share: () => this.openShareDialog({ songId: x.s.id, title: x.title })
         };
       });
 
@@ -11413,7 +12747,7 @@ class Component extends DCLogic {
       m0.time.beats + '/' + m0.time.beatType, secList.filter(s => s.hard).length + ' hard', secList.length + ' sections'
     ];
 
-    return {
+    return Object.assign({
       rootRef: this._root,
 
       theme: S.theme, themeLabel: tx(S.theme === 'dark' ? 'Dark' : 'Light'),
@@ -11569,7 +12903,9 @@ class Component extends DCLogic {
         style: "padding:5px 10px;border-radius:999px;font-family:'JetBrains Mono',monospace;font-size:11px;border:1px solid "
           + (rec ? 'var(--accent-2)' : 'var(--line)') + ';background:' + (rec ? 'var(--accent-3)' : 'var(--surface)') + ';color:' + (rec ? 'var(--accent)' : 'var(--ink3)') + ';'
       })),
-      dropTitle: S.dragging ? tx('Let go to add it') : tx('Drop sheet music or a recording here'),
+      dropTitle: S.dragging ? tx('Let go to add it')
+        : this.narrowScreen() ? tx('Tap to add sheet music or a recording')
+          : tx('Drop sheet music or a recording here'),
       dropZoneStyle: 'display:block;cursor:pointer;border:2px dashed ' + (S.dragging ? 'var(--accent)' : 'var(--line)') + ';border-radius:18px;background:'
         + (S.dragging ? 'var(--accent-3)' : 'var(--bg)') + ';padding:44px 28px;text-align:center;transition:border-color .2s ease, background .2s ease;',
       ytUrl: S.ytUrl || '',
@@ -11580,11 +12916,14 @@ class Component extends DCLogic {
       helperNote: (() => {
         const hp = S.helper;
         if (!hp) return tx('Recordings and links are listened to by PPP’s local helper, on this computer.');
-        if (hp.remote) return tx('Recordings need PPP’s local helper, which runs on your own computer.');
+        if (hp.remote) return tx('PDF, photos and recordings need PPP’s local helper on the computer running PPP. MusicXML works in this browser.');
         if (!hp.ok) return tx('The local helper is not running — start it with npm run omr.');
         if (!hp.transcriber) return tx('The local helper is running, but transcription is not set up yet (see the README).');
         if (!hp.youtube) return tx('Recordings are ready. YouTube links also need yt-dlp in tools/.');
-        return tx('Ready — the local helper does the listening, on this computer.');
+        const bits = [hp.amt === 'transkun' ? 'Transkun' : 'Kong'];
+        if (hp.beatThis) bits.push('Beat This');
+        if (hp.pm2s) bits.push('PM2S');
+        return tx('Ready — listening with {{engines}}.', { engines: bits.join(', ') });
       })(),
       importHints: S.importHints || [],
       hasImportHints: !!(S.importHints && S.importHints.length),
@@ -12179,6 +13518,9 @@ class Component extends DCLogic {
       })),
       query: S.query, setQuery: e => this.setState({ query: e.target.value }), songs,
 
+      /* ---- shared scores; their values, and the share dialog's, are added below ---- */
+      isShared: sc === 'shared',
+
       /* ---- sight reading ---- */
       quizQuestion: S.quizDone ? tx('Session complete — {{n}} of 10 correct.', { n: S.quizRight }) : tx('What note is this?'),
       quizCount: tx('Question {{n}} of 10', { n: S.quizIdx }),
@@ -12209,7 +13551,7 @@ class Component extends DCLogic {
       stateTabs: ['Loading', 'Error', 'Offline'].map(label => ({ label: tx(label), style: this.pill(S.stateTab === label), on: () => this.setState({ stateTab: label }) })),
       stateLoading: S.stateTab === 'Loading', stateError: S.stateTab === 'Error', stateOffline: S.stateTab === 'Offline',
       skeletons: [1, 2, 3]
-    };
+    }, sc === 'shared' ? this.sharedVals() : null, this.shareDialogVals());
   }
 
   /* ============================ sight reading ============================ */

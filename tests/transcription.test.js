@@ -233,6 +233,25 @@ const helperHealth = () => new Promise(resolve => {
   ok('a PM2S-shaped grid becomes 6/8 MusicXML', g.stats.beatsPerBar === 6 && g.stats.beatType === 8 && g.stats.quantizer === 'pm2s' && /<beat-type>8<\/beat-type>/.test(g.xml),
     g.stats.beatsPerBar + '/' + g.stats.beatType + ' ' + g.stats.quantizer);
 
+  const locked12 = A.toMusicXml(
+    { notes: perform(compound(8), { bpm: 90, start: 0.5, jitter: 0.008, seed: 6 }) },
+    { lock: { beats: 12, beatType: 8, bpm: 60, firstDownbeat: 0.5 } }
+  );
+  ok('a 12/8 lock writes compound twelve',
+    locked12.stats.beatsPerBar === 12 && locked12.stats.beatType === 8 && /<beat-type>8<\/beat-type>/.test(locked12.xml) && /<beats>12<\/beats>/.test(locked12.xml),
+    locked12.stats.beatsPerBar + '/' + locked12.stats.beatType);
+
+  const cBeats = [], cDown = [];
+  for (let i = 0; i < 40; i++) cBeats.push(0.5 + i * 1.0);
+  for (let i = 0; i < 10; i++) cDown.push(0.5 + i * 4.0);
+  const c12 = A.toMusicXml({
+    notes: perform(compound(8), { bpm: 90, start: 0.5, jitter: 0.008, seed: 6 }),
+    beats: cBeats, downbeats: cDown
+  });
+  ok('audio downbeats every four pulses become 12/8',
+    c12.stats.beatsPerBar === 12 && c12.stats.beatType === 8,
+    c12.stats.beatsPerBar + '/' + c12.stats.beatType + ' source ' + c12.stats.beatSource);
+
   console.log('\n── spelling ──');
   const nm = s => s.step + (s.alter > 0 ? '#'.repeat(s.alter) : 'b'.repeat(-s.alter));
   const row = (fifths, mode, tonic) => { const t = A._.spellingTable({ fifths, mode, tonic }); return [...Array(12).keys()].map(pc => nm(t[pc])).join(' '); };
@@ -362,6 +381,12 @@ const helperHealth = () => new Promise(resolve => {
   ok('a catalog title returns the public-domain score', cat.ok && /Gymnop/i.test(cat.title) && cat.retrieved && cat.license === 'CC0', JSON.stringify(cat));
   ok('alignment covers the recording duration', cat.cover && cat.starts > 2, 'starts ' + cat.starts);
   ok('a nonsense title does not match', cat.miss == null, String(cat.miss));
+  const coverTitle = await page.evaluate(async () => {
+    const hit = await PPP.Import.findScore('Gymnopedie No. 1 piano cover Synthesia');
+    return hit && hit.entry && hit.entry.id;
+  });
+  ok('a padded YouTube title still finds the catalog score', coverTitle === 'gymnopedie-1', String(coverTitle));
+  ok('oEmbed title lookup is wired', await page.evaluate(() => typeof PPP.Import.youtubeTitle === 'function'));
 
   const refusals = await page.evaluate(async () => {
     const out = {};

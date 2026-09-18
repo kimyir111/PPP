@@ -24,6 +24,12 @@ ok('the hit is the catalog file, not a scrape', hit && hit.entry && hit.entry.id
 const miss = Search.search('zzzxq-not-a-piece-999 xyzzy', catalog);
 ok('a nonsense title returns no match', miss == null, String(miss));
 
+const cover = Search.search('Gymnopedie No. 1 piano cover Synthesia', catalog);
+ok('a YouTube-style padded title still matches', cover && cover.entry && cover.entry.id === 'gymnopedie-1', cover && cover.entry && cover.entry.id);
+
+const elise = Search.search('Beethoven Fur Elise official audio', catalog);
+ok('Für Elise is in the catalog', elise && elise.entry && elise.entry.id === 'fur-elise', elise && elise.entry && elise.entry.title);
+
 const xml = hit.entry.xml;
 const aligned = Search.align(xml, { duration: 24 });
 ok('alignment produces barStarts covering the recording',

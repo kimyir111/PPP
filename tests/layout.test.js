@@ -88,6 +88,52 @@ async function metrics(page) {
   ok('tablet page does not scroll sideways', !m.overflow, 'overflow=' + m.overflow);
   await shot(page, 'layout-tablet-closed.png');
 
+  await page.evaluate(() => window.__pppTest.upload());
+  await sleep(300);
+  const picker = await page.evaluate(() => {
+    const input = document.querySelector('input[type=file][data-add-file]');
+    if (!input) return { error: 'no file input' };
+    const s = getComputedStyle(input);
+    const r = input.getBoundingClientRect();
+    const title = (document.querySelector('[data-drop-zone]') || {}).innerText || '';
+    return {
+      accept: input.getAttribute('accept') || '',
+      display: s.display,
+      width: Math.round(r.width),
+      height: Math.round(r.height),
+      tapCopy: /Tap to add/.test(title)
+    };
+  });
+  ok('tablet add-sheet copy is tap, not drop', picker.tapCopy, JSON.stringify(picker));
+  ok('tablet file picker is a real tap target',
+    !picker.error && picker.display !== 'none' && picker.width > 80 && picker.height > 80,
+    JSON.stringify(picker));
+  ok('tablet file picker can offer a PDF',
+    picker.accept && picker.accept.indexOf('.pdf') > -1 && !/audio\/\*|video\/\*/.test(picker.accept),
+    picker.accept);
+
+  await page.evaluate(() => window.__pppTest.nav('Practice'));
+  await sleep(400);
+  const play = await page.evaluate(async () => {
+    const b = document.querySelector('.ppp-playbtn')
+      || [...document.querySelectorAll('main button')].find(x => /^Play$/.test((x.innerText || '').trim()));
+    if (!b) return { error: 'no play' };
+    const r = b.getBoundingClientRect();
+    b.click();
+    await new Promise(res => setTimeout(res, 250));
+    return {
+      height: Math.round(r.height),
+      label: b.textContent.trim()
+    };
+  });
+  ok('tablet Play control is large enough to tap', play.height >= 40, JSON.stringify(play));
+  ok('tablet Play starts the run', play.label === 'Pause', JSON.stringify(play));
+  await page.evaluate(() => {
+    const b = [...document.querySelectorAll('main button')].find(x => /^Pause$/.test((x.innerText || '').trim()));
+    if (b) b.click();
+  });
+  await sleep(120);
+
   await page.click('[data-sidebar-toggle="show"]');
   await sleep(280);
   m = await metrics(page);

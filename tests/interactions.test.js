@@ -63,7 +63,7 @@ const screenTitle = page => page.evaluate(() => {
   step('app booted', 'sidebar rendered');
 
   /* ---------- 1. main navigation ---------- */
-  const navItems = ['Home', 'My Songs', 'Analysis & Plan', 'Practice', 'Progress', 'Sight Reading', 'Settings'];
+  const navItems = ['Home', 'My Songs', 'Shared Scores', 'Analysis & Plan', 'Practice', 'Progress', 'Sight Reading', 'Settings'];
   for (const item of navItems) {
     const ok = await page.evaluate(l => window.__pppTest.nav(l), item);
     if (!ok) { errors.push('nav item not found: ' + item); continue; }

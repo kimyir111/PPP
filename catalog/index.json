@@ -15,6 +15,20 @@
       "composer": "Erik Satie",
       "license": "CC0",
       "file": "gymnopedie-1.musicxml"
+    },
+    {
+      "id": "fur-elise",
+      "title": "Für Elise",
+      "titles": [
+        "Fur Elise",
+        "For Elise",
+        "Bagatelle No. 25",
+        "Beethoven Fur Elise",
+        "Ludwig van Beethoven Für Elise"
+      ],
+      "composer": "Ludwig van Beethoven",
+      "license": "CC0",
+      "file": "fur-elise.musicxml"
     }
   ]
 }

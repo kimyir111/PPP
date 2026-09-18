@@ -74,6 +74,10 @@ async function importFile(page, file, waitMs) {
       midi: k('a.mid'), junk: k('a.txt'),
       mp3: k('a.mp3'), wav: k('a.WAV'), m4a: k('a.m4a'), mp4: k('a.mp4'), mov: k('a.mov'),
       byType: PPP.Import.kindOf({ name: 'noext', type: 'audio/mpeg' }),
+      byPdfType: PPP.Import.kindOf({ name: 'scan', type: 'application/pdf' }),
+      byPngType: PPP.Import.kindOf({ name: 'photo', type: 'image/png' }),
+      byJpegType: PPP.Import.kindOf({ name: 'IMG_001', type: 'image/jpeg' }),
+      byXmlType: PPP.Import.kindOf({ name: 'score', type: 'application/vnd.recordare.musicxml+xml' }),
       omrPdf: PPP.Import.needsOmr('pdf'), omrImg: PPP.Import.needsOmr('image'),
       omrXml: PPP.Import.needsOmr('musicxml'), omrMp3: PPP.Import.needsOmr('audio'),
       heard: ['audio', 'video', 'youtube'].every(PPP.Import.isRecording) && !PPP.Import.isRecording('pdf'),
@@ -94,10 +98,37 @@ async function importFile(page, file, waitMs) {
     kinds.mp3 === 'audio' && kinds.wav === 'audio' && kinds.m4a === 'audio' && kinds.mp4 === 'video' &&
     kinds.mov === 'video' && kinds.byType === 'audio' && kinds.heard && !kinds.omrMp3,
     [kinds.mp3, kinds.wav, kinds.m4a, kinds.mp4, kinds.mov, kinds.byType].join(','));
+  ok('tablet files without an extension still route by MIME type',
+    kinds.byPdfType === 'pdf' && kinds.byPngType === 'image' && kinds.byJpegType === 'image' && kinds.byXmlType === 'musicxml',
+    [kinds.byPdfType, kinds.byPngType, kinds.byJpegType, kinds.byXmlType].join(','));
   ok('YouTube links are recognised in every usual form', kinds.yt.every(id => id === '2WfaotSK3mI'), kinds.yt.join(','));
   ok('anything that is not one YouTube video is refused', kinds.notYt.every(id => id === null), kinds.notYt.join(','));
   ok('unsupported types are refused up front', kinds.midi === null && kinds.junk === null);
   ok('only pictures go through OMR', kinds.omrPdf && kinds.omrImg && !kinds.omrXml);
+
+  console.log('\n── tablet file picker ──');
+  await page.evaluate(() => window.__pppTest.upload());
+  await sleep(300);
+  const picker = await page.evaluate(() => {
+    const input = document.querySelector('input[type=file][data-add-file]');
+    if (!input) return { error: 'no file input' };
+    const s = getComputedStyle(input);
+    const r = input.getBoundingClientRect();
+    return {
+      accept: input.getAttribute('accept') || '',
+      display: s.display,
+      opacity: s.opacity,
+      width: Math.round(r.width),
+      height: Math.round(r.height)
+    };
+  });
+  ok('file picker is on the add-sheet page', !picker.error, picker.error);
+  ok('file picker lists PDF without a media-only accept list',
+    picker.accept.indexOf('.pdf') > -1 && !/audio\/\*|video\/\*/.test(picker.accept),
+    picker.accept);
+  ok('file picker is tappable on a tablet (not display:none)',
+    picker.display !== 'none' && picker.width > 40 && picker.height > 40,
+    JSON.stringify(picker));
 
   /* ============ validation is independent of OMR ============ */
   console.log('\n── recognition validation ──');

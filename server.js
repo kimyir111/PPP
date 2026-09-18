@@ -167,9 +167,42 @@ function publicUser(u) {
   return { id: u.id, email: u.email, displayName: u.displayName };
 }
 
+/* ---------------- shared scores ----------------
+   A shared score is a copy of the notes only: never the practice history or
+   memory record that goes with it at home. Listed ones appear in the Shared
+   Scores tab; every one opens by its link. */
+const SHARE_MAX_BYTES = 4 * 1024 * 1024;
+const SHARES_PER_USER = 200;
+
+function newShareId() {
+  return crypto.randomBytes(9).toString('base64url');
+}
+
+function clipText(value, max) {
+  return String(value == null ? '' : value).replace(/\s+/g, ' ').trim().slice(0, max);
+}
+
+/* Just enough of a score to be one: measures and notes as arrays. */
+function validScore(s) {
+  return !!(s && typeof s === 'object' && Array.isArray(s.measures) && s.measures.length
+    && s.measures.length <= 5000 && Array.isArray(s.notes));
+}
+
+/* What the list shows: no score, only the preview drawn on its card. */
+function shareCard(row, viewer) {
+  return {
+    id: row.id, title: row.title, composer: row.composer, kind: row.kind,
+    measures: row.measures, owner: row.ownerName, mine: !!(viewer && viewer.id === row.ownerId),
+    songKey: viewer && viewer.id === row.ownerId ? row.songKey : undefined,
+    listed: !!row.listed, preview: row.preview || null,
+    createdAt: row.createdAt, updatedAt: row.updatedAt
+  };
+}
+
 /* ---------------- store ---------------- */
 function fileStore() {
   const file = path.join(ROOT, 'data', 'store.json');
+  const sharesFile = path.join(ROOT, 'data', 'shares.json');
   const dir = path.dirname(file);
   function load() {
     try { return JSON.parse(fs.readFileSync(file, 'utf8')); }
@@ -204,8 +237,43 @@ function fileStore() {
       const db = load();
       db.progress[userId] = { payload: payload, updatedAt: new Date().toISOString() };
       save(db);
+    },
+    /* Shares live in a file of their own: they carry whole scores, and the
+       account file is read on every request. */
+    async listShares(opts) {
+      const rows = loadShares().filter(r => opts.ownerId ? r.ownerId === opts.ownerId : r.listed);
+      rows.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+      const q = (opts.q || '').toLowerCase();
+      return rows.filter(r => !q || (r.title + ' ' + r.composer + ' ' + r.ownerName).toLowerCase().indexOf(q) > -1)
+        .slice(0, opts.limit);
+    },
+    async getShare(id) {
+      return loadShares().find(r => r.id === id) || null;
+    },
+    async findShare(ownerId, songKey) {
+      return loadShares().find(r => r.ownerId === ownerId && r.songKey === songKey) || null;
+    },
+    async countShares(ownerId) {
+      return loadShares().filter(r => r.ownerId === ownerId).length;
+    },
+    async putShare(row) {
+      const rows = loadShares().filter(r => r.id !== row.id);
+      rows.push(row);
+      saveShares(rows);
+      return row;
+    },
+    async deleteShare(id) {
+      saveShares(loadShares().filter(r => r.id !== id));
     }
   };
+  function loadShares() {
+    try { return JSON.parse(fs.readFileSync(sharesFile, 'utf8')).shares || []; }
+    catch (e) { return []; }
+  }
+  function saveShares(rows) {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(sharesFile, JSON.stringify({ shares: rows }));
+  }
 }
 
 function postgresStore(url) {
@@ -236,6 +304,23 @@ function postgresStore(url) {
           payload JSONB NOT NULL,
           updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
         );
+        CREATE TABLE IF NOT EXISTS ppp_shares (
+          id TEXT PRIMARY KEY,
+          owner_id TEXT NOT NULL REFERENCES ppp_users(id) ON DELETE CASCADE,
+          owner_name TEXT NOT NULL,
+          song_key TEXT NOT NULL,
+          title TEXT NOT NULL,
+          composer TEXT NOT NULL DEFAULT '',
+          kind TEXT NOT NULL DEFAULT '',
+          measures INTEGER NOT NULL DEFAULT 0,
+          listed BOOLEAN NOT NULL DEFAULT false,
+          preview JSONB,
+          score JSONB NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        );
+        CREATE INDEX IF NOT EXISTS ppp_shares_listed ON ppp_shares (listed, updated_at DESC);
+        CREATE UNIQUE INDEX IF NOT EXISTS ppp_shares_owner_song ON ppp_shares (owner_id, song_key);
       `);
     },
     async findByEmail(email) {
@@ -268,9 +353,54 @@ function postgresStore(url) {
          ON CONFLICT (user_id) DO UPDATE SET payload = EXCLUDED.payload, updated_at = now()`,
         [userId, payload]
       );
+    },
+    async listShares(opts) {
+      const where = [], params = [];
+      if (opts.ownerId) { params.push(opts.ownerId); where.push('owner_id = $' + params.length); }
+      else where.push('listed');
+      if (opts.q) {
+        params.push('%' + opts.q.replace(/[\\%_]/g, '\\$&') + '%');
+        where.push("(title || ' ' || composer || ' ' || owner_name) ILIKE $" + params.length);
+      }
+      params.push(opts.limit);
+      const r = await q('SELECT ' + SHARE_COLS + ' FROM ppp_shares WHERE ' + where.join(' AND ')
+        + ' ORDER BY updated_at DESC LIMIT $' + params.length, params);
+      return r.rows;
+    },
+    async getShare(id) {
+      const r = await q('SELECT ' + SHARE_COLS + ', score FROM ppp_shares WHERE id = $1', [id]);
+      return r.rows[0] || null;
+    },
+    async findShare(ownerId, songKey) {
+      const r = await q('SELECT ' + SHARE_COLS + ' FROM ppp_shares WHERE owner_id = $1 AND song_key = $2', [ownerId, songKey]);
+      return r.rows[0] || null;
+    },
+    async countShares(ownerId) {
+      const r = await q('SELECT count(*)::int AS n FROM ppp_shares WHERE owner_id = $1', [ownerId]);
+      return r.rows[0].n;
+    },
+    async putShare(row) {
+      await q(
+        `INSERT INTO ppp_shares (id, owner_id, owner_name, song_key, title, composer, kind, measures, listed, preview, score, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+         ON CONFLICT (id) DO UPDATE SET owner_name = EXCLUDED.owner_name, title = EXCLUDED.title,
+           composer = EXCLUDED.composer, kind = EXCLUDED.kind, measures = EXCLUDED.measures,
+           listed = EXCLUDED.listed, preview = EXCLUDED.preview, score = EXCLUDED.score,
+           updated_at = EXCLUDED.updated_at`,
+        [row.id, row.ownerId, row.ownerName, row.songKey, row.title, row.composer, row.kind, row.measures,
+          row.listed, row.preview == null ? null : JSON.stringify(row.preview), JSON.stringify(row.score),
+          row.createdAt, row.updatedAt]
+      );
+      return row;
+    },
+    async deleteShare(id) {
+      await q('DELETE FROM ppp_shares WHERE id = $1', [id]);
     }
   };
 }
+
+const SHARE_COLS = 'id, owner_id AS "ownerId", owner_name AS "ownerName", song_key AS "songKey", title, composer, kind, '
+  + 'measures, listed, preview, created_at AS "createdAt", updated_at AS "updatedAt"';
 
 const store = process.env.DATABASE_URL ? postgresStore(process.env.DATABASE_URL) : fileStore();
 
@@ -294,10 +424,18 @@ function safePath(urlPath) {
   return abs;
 }
 
-function serveStatic(req, res, urlPath) {
+async function serveStatic(req, res, urlPath, url) {
   if (urlPath === '/' || urlPath === '/index.html') {
     const app = path.join(ROOT, 'Piano Coach App.dc.html');
-    const html = fs.readFileSync(app);
+    let html = fs.readFileSync(app);
+    const meta = await shareMeta(url && url.searchParams.get('share'), req);
+    if (meta) {
+      const text = html.toString('utf8');
+      /* after the charset, which has to come first */
+      html = Buffer.from(/<meta charset="utf-8">/i.test(text)
+        ? text.replace(/<meta charset="utf-8">/i, m => m + '\n' + meta)
+        : text.replace(/<head>/i, m => m + '\n' + meta));
+    }
     send(res, 200, html, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
     return;
   }
@@ -410,7 +548,181 @@ async function handleApi(req, res, url) {
     }
   }
 
+  if (p === '/api/shares' || p.indexOf('/api/shares/') === 0) {
+    return handleShares(req, res, url);
+  }
+
   jsonError(res, 404, 'Not found');
+}
+
+async function handleShares(req, res, url) {
+  const method = req.method;
+  const p = url.pathname;
+  const user = await currentUser(req);
+
+  if (p === '/api/shares' && method === 'GET') {
+    const mine = url.searchParams.get('mine') === '1';
+    if (mine && !user) return jsonError(res, 401, 'Sign in to see your shared scores.');
+    const rows = await store.listShares({
+      ownerId: mine ? user.id : null,
+      q: clipText(url.searchParams.get('q'), 80),
+      limit: 100
+    });
+    send(res, 200, { shares: rows.map(r => shareCard(r, user)) }, { 'Cache-Control': 'no-store' });
+    return;
+  }
+
+  if (p === '/api/shares' && method === 'POST') {
+    if (!user) return jsonError(res, 401, 'Sign in to share your scores.');
+    let raw, body;
+    try { raw = await readBody(req, SHARE_MAX_BYTES); }
+    catch (e) { return jsonError(res, 413, 'That score is too large to share.'); }
+    try { body = JSON.parse(raw.toString('utf8') || '{}'); }
+    catch (e) { return jsonError(res, 400, 'Invalid JSON'); }
+    if (!body || !validScore(body.score)) return jsonError(res, 422, 'That is not a score PPP can share.');
+    const songKey = clipText(body.songKey, 80);
+    if (!songKey) return jsonError(res, 422, 'That is not a score PPP can share.');
+    const title = clipText(body.title || body.score.title, 120);
+    if (!title) return jsonError(res, 422, 'A shared score needs a title.');
+    const prev = await store.findShare(user.id, songKey);
+    if (!prev && await store.countShares(user.id) >= SHARES_PER_USER) {
+      return jsonError(res, 429, 'You have shared as many scores as PPP keeps for one account.');
+    }
+    const preview = validScore(body.preview) && body.preview.measures.length <= 4
+      && JSON.stringify(body.preview).length < 96 * 1024 ? body.preview : null;
+    const now = new Date().toISOString();
+    const row = {
+      id: prev ? prev.id : newShareId(),
+      ownerId: user.id, ownerName: user.displayName, songKey: songKey,
+      title: title, composer: clipText(body.composer, 160), kind: clipText(body.kind, 24),
+      measures: body.score.measures.length,
+      /* sending a link never takes a posted score down, and never posts one */
+      listed: typeof body.listed === 'boolean' ? body.listed : !!(prev && prev.listed),
+      preview: preview, score: body.score,
+      createdAt: prev ? prev.createdAt : now, updatedAt: now
+    };
+    await store.putShare(row);
+    send(res, prev ? 200 : 201, Object.assign(shareCard(row, user), { url: '/?share=' + row.id }));
+    return;
+  }
+
+  const m = /^\/api\/shares\/([\w-]{6,32})$/.exec(p);
+  if (!m) return jsonError(res, 404, 'Not found');
+  const row = await store.getShare(m[1]);
+  if (!row) return jsonError(res, 404, 'That shared score is no longer there.');
+
+  if (method === 'GET') {
+    send(res, 200, Object.assign(shareCard(row, user), { score: row.score, url: '/?share=' + row.id }),
+      { 'Cache-Control': 'no-store' });
+    return;
+  }
+  if (!user || user.id !== row.ownerId) return jsonError(res, 403, 'Only the person who shared it can change that.');
+  if (method === 'PATCH') {
+    let body;
+    try { body = JSON.parse((await readBody(req)).toString('utf8') || '{}'); }
+    catch (e) { return jsonError(res, 400, 'Invalid JSON'); }
+    if (typeof body.listed !== 'boolean') return jsonError(res, 422, 'Nothing to change.');
+    row.listed = body.listed;
+    row.updatedAt = new Date().toISOString();
+    await store.putShare(row);
+    send(res, 200, Object.assign(shareCard(row, user), { url: '/?share=' + row.id }));
+    return;
+  }
+  if (method === 'DELETE') {
+    await store.deleteShare(row.id);
+    send(res, 200, { ok: true });
+    return;
+  }
+  jsonError(res, 405, 'Method not allowed');
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+
+/* A link to a shared score says what it is before it is opened, so a post on
+   a social network shows the title rather than the app's name alone. */
+async function shareMeta(id, req) {
+  if (!/^[\w-]{6,32}$/.test(id || '')) return '';
+  let row = null;
+  try { row = await store.getShare(id); } catch (e) { row = null; }
+  if (!row) return '';
+  const proto = String(req.headers['x-forwarded-proto'] || (COOKIE_SECURE ? 'https' : 'http')).split(',')[0].trim();
+  const link = proto + '://' + (req.headers.host || 'localhost') + '/?share=' + encodeURIComponent(row.id);
+  const title = row.title + (row.composer ? ' · ' + row.composer : '');
+  const desc = row.measures + (row.measures === 1 ? ' bar' : ' bars') + ' · shared by ' + row.ownerName + ' on PPP — Piano Practice Partner';
+  return [
+    '<title>' + escapeHtml(title + ' — PPP') + '</title>',
+    '<meta name="description" content="' + escapeHtml(desc) + '">',
+    '<meta property="og:type" content="website">',
+    '<meta property="og:site_name" content="PPP — Piano Practice Partner">',
+    '<meta property="og:title" content="' + escapeHtml(title) + '">',
+    '<meta property="og:description" content="' + escapeHtml(desc) + '">',
+    '<meta property="og:url" content="' + escapeHtml(link) + '">',
+    '<meta name="twitter:card" content="summary">',
+    '<meta name="twitter:title" content="' + escapeHtml(title) + '">',
+    '<meta name="twitter:description" content="' + escapeHtml(desc) + '">'
+  ].join('\n');
+}
+
+/* The local helper (OMR, transcription, coach) binds 127.0.0.1:8788. A tablet
+   on the LAN cannot reach that, so this process forwards /helper/* to it.
+   Public production hosts have no Audiveris; they answer "not here" unless
+   PPP_HELPER=1. */
+const HELPER_URL = (process.env.PPP_HELPER_URL || 'http://127.0.0.1:8788').replace(/\/+$/, '');
+function helperEnabled() {
+  if (process.env.PPP_HELPER === '0') return false;
+  if (process.env.PPP_HELPER === '1') return true;
+  return process.env.NODE_ENV !== 'production';
+}
+function proxyHelper(req, res, helperPath) {
+  const pathOnly = String(helperPath || '/').split('?')[0] || '/';
+  if (!helperEnabled()) {
+    if (req.method === 'GET' && pathOnly === '/health') {
+      return send(res, 200, { ok: false, remote: true, unreachable: true, service: 'ppp' });
+    }
+    return send(res, 503, {
+      ok: false, remote: true, code: 'service-down',
+      error: 'The local helper is not available on this host.'
+    });
+  }
+  let dest;
+  try { dest = new URL(helperPath || '/', HELPER_URL + '/'); }
+  catch (e) { return jsonError(res, 400, 'Bad request'); }
+  let allowed;
+  try { allowed = new URL(HELPER_URL).origin; }
+  catch (e) { return jsonError(res, 500, 'Helper URL is invalid'); }
+  if (dest.origin !== allowed) return jsonError(res, 400, 'Bad request');
+
+  const headers = {};
+  Object.keys(req.headers).forEach(k => {
+    const lk = k.toLowerCase();
+    if (lk === 'host' || lk === 'origin' || lk === 'referer' || lk === 'connection' || lk === 'keep-alive') return;
+    headers[k] = req.headers[k];
+  });
+  const hreq = http.request({
+    protocol: dest.protocol,
+    hostname: dest.hostname,
+    port: dest.port,
+    path: dest.pathname + dest.search,
+    method: req.method,
+    headers: headers,
+    timeout: 10 * 60 * 1000
+  }, hres => {
+    const out = {};
+    Object.keys(hres.headers || {}).forEach(k => {
+      const lk = k.toLowerCase();
+      if (lk === 'connection' || lk === 'keep-alive' || lk === 'transfer-encoding') return;
+      out[k] = hres.headers[k];
+    });
+    res.writeHead(hres.statusCode || 502, out);
+    hres.pipe(res);
+  });
+  hreq.on('timeout', () => hreq.destroy());
+  hreq.on('error', () => {
+    if (!res.headersSent) send(res, 200, { ok: false, unreachable: true, service: 'ppp-local' });
+  });
+  req.pipe(hreq);
 }
 
 const server = http.createServer((req, res) => {
@@ -418,6 +730,12 @@ const server = http.createServer((req, res) => {
   let url;
   try { url = new URL(req.url, 'http://' + host); }
   catch (e) { return jsonError(res, 400, 'Bad request'); }
+
+  if (url.pathname === '/helper' || url.pathname.indexOf('/helper/') === 0) {
+    const rest = (url.pathname.slice('/helper'.length) || '/') + url.search;
+    proxyHelper(req, res, rest);
+    return;
+  }
 
   if (url.pathname.indexOf('/api/') === 0 || url.pathname === '/health') {
     handleApi(req, res, url).catch(err => {
@@ -430,7 +748,10 @@ const server = http.createServer((req, res) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     return jsonError(res, 405, 'Method not allowed');
   }
-  serveStatic(req, res, url.pathname);
+  serveStatic(req, res, url.pathname, url).catch(err => {
+    console.error(err);
+    if (!res.headersSent) jsonError(res, 500, 'Server error');
+  });
 });
 
 store.ready().then(() => {
