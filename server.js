@@ -577,12 +577,18 @@ async function handleApi(req, res, url) {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ppp-yt-'));
     const child = spawn(ytdlp, [
       '--no-playlist', '--no-progress', '--newline', '--no-warnings',
+      '--js-runtimes', 'node:' + process.execPath,
+      '--extractor-args', 'youtube:player_client=android,web',
       '-f', 'bestaudio[ext=m4a]/bestaudio/best',
       '--max-filesize', '80M',
       '--match-filter', '!is_live',
       '-o', path.join(dir, 'audio.%(ext)s'),
       '--', watch
     ], { windowsHide: true, cwd: dir });
+    let tail = '';
+    const onText = c => { tail = (tail + c.toString('utf8')).slice(-4000); };
+    child.stdout.on('data', onText);
+    child.stderr.on('data', onText);
     const timer = setTimeout(() => { try { child.kill(); } catch (e) {} }, 180000);
     child.on('close', code => {
       clearTimeout(timer);
@@ -592,7 +598,11 @@ async function handleApi(req, res, url) {
       } catch (e) {}
       if (code !== 0 || !file) {
         try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {}
-        if (!res.headersSent) jsonError(res, 502, 'The audio could not be downloaded from that link.');
+        const bot = /Sign in to confirm you.re not a bot|HTTP Error 429/i.test(tail);
+        const msg = bot
+          ? 'YouTube refused the download. Upload the audio or video file instead.'
+          : 'The audio could not be downloaded from that link.';
+        if (!res.headersSent) jsonError(res, 502, msg);
         return;
       }
       const ext = path.extname(file).toLowerCase();

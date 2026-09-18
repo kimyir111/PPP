@@ -30,8 +30,8 @@
     --accent-3: oklch(0.95 0.025 285); --good: oklch(0.6 0.12 155); --warn: oklch(0.72 0.14 65);
     --bad: oklch(0.58 0.17 25); --staff: #cdc6bd; --key-w: #fffefc; --key-b: #221f1d; --shadow: 0 1px 2px rgba(28,24,20,.05), 0 8px 24px -12px rgba(28,24,20,.16);
     --paper: #fffefc; --paper-ink: #1b1a18; --paper-staff: #8d867d; --paper-ink3: #6b645c; --paper-line: #e6e0d8;
-    --hand: #efbf9b; --hand-light: #f8d8bc; --hand-shadow: #bd7b59;
-    --hand-line: #9d5f43; --hand-nail: #fde5d5; --hand-ink: #553321;
+    --hand: #efc4a4; --hand-light: #f9dec8; --hand-shadow: #d49370;
+    --hand-line: #a96b4d; --hand-nail: #fde8d9; --hand-ink: #553321;
   }
   [data-app="dark"], [data-auth="dark"] {
     --bg: #131211; --surface: #1b1a19; --surface2: #242221; --ink: #f5f2ee; --ink2: #a9a29a;
@@ -39,8 +39,8 @@
     --accent-3: oklch(0.28 0.05 285); --good: oklch(0.7 0.13 155); --warn: oklch(0.78 0.13 65);
     --bad: oklch(0.66 0.17 25); --staff: #7b736b; --key-w: #e9e5e0; --key-b: #100f0e; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
     --paper: #e8e4dc; --paper-ink: #171614; --paper-staff: #7d766e; --paper-ink3: #5d574f; --paper-line: #cfc9c0;
-    --hand: #e5b28e; --hand-light: #f2ccb0; --hand-shadow: #a96549;
-    --hand-line: #bd7958; --hand-nail: #f8ddcb; --hand-ink: #452b1d;
+    --hand: #e5b895; --hand-light: #f2cfb5; --hand-shadow: #c68060;
+    --hand-line: #b97859; --hand-nail: #f8dfce; --hand-ink: #452b1d;
   }
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
@@ -975,6 +975,7 @@
               <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                 <button type="button" class="ppp-playbtn" onClick="{{ togglePlay }}" style="display: flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 11px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; min-width: 104px; justify-content: center;">{{ playLabel }}</button>
                 <button onClick="{{ toggleFollow }}" style="{{ followBtnStyle }}">{{ followLabel }}</button>
+                <button onClick="{{ toggleTellRight }}" style="{{ tellRightBtnStyle }}" title="{{ tellRightHint }}">{{ tellRightLabel }}</button>
                 <button onClick="{{ restart }}" style="padding: 10px 14px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 13px; cursor: pointer;" style-hover="border-color: var(--ink3);">Restart</button>
                 <div class="ppp-focus-only" style="display: none; gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface2);">
                   <sc-for list="{{ handTabs }}" as="h" hint-placeholder-count="3">
@@ -5715,14 +5716,20 @@ const Import = {
   amtLib: null,
   loadAmt() {
     if (Import.amtLib) return Import.amtLib;
-    Import.amtLib = Promise.all([
-      import('https://esm.sh/@tensorflow/tfjs@3.21.0'),
-      import('https://esm.sh/@spotify/basic-pitch@1.0.1')
-    ]).then(function (mods) {
-      const tf = mods[0], bp = mods[1];
+    const boot = (tfMod, bpMod) => {
+      const tf = tfMod, bp = bpMod;
       const model = 'https://cdn.jsdelivr.net/npm/@spotify/basic-pitch@1.0.1/model/model.json';
       const pitch = new bp.BasicPitch(model);
       return { tf: tf, bp: bp, pitch: pitch };
+    };
+    Import.amtLib = Promise.all([
+      import('https://esm.sh/@tensorflow/tfjs@3.21.0'),
+      import('https://esm.sh/@spotify/basic-pitch@1.0.1')
+    ]).then(function (mods) { return boot(mods[0], mods[1]); }).catch(function () {
+      return Promise.all([
+        import('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/+esm'),
+        import('https://esm.sh/@spotify/basic-pitch@1.0.1')
+      ]).then(function (mods) { return boot(mods[0], mods[1]); });
     });
     return Import.amtLib;
   },
@@ -7241,7 +7248,7 @@ const HandArt = {
   /* the knuckles sit this far below the front edge of the keys */
   KNUCKLE: 21,
   /* the strip below the keys the hand is drawn in */
-  ZONE: 88,
+  ZONE: 120,
 
   r1(v) { return Math.round(v * 10) / 10; },
 
@@ -7347,7 +7354,10 @@ const HandArt = {
     const root = [null, null], bend = [null, null];
     for (let f = 2; f <= 5; f++) {
       const k = knuckle[f], t = tip[f - 1];
-      root.push([k[0], k[1] + 9]);
+      /* Start well inside the palm. The overlap is the web of the hand;
+         starting at the knuckle made wide chords look like five sticks
+         glued to a separate mitten. */
+      root.push([k[0], k[1] + 19]);
       const reach = Math.min(1, Math.abs(t[0] - k[0]) / (KW * 3.2));
       bend.push([
         k[0] + (t[0] - k[0]) * (0.31 + reach * 0.08),
@@ -7357,7 +7367,7 @@ const HandArt = {
     /* the back of the hand: square across the knuckles, narrowing to the
        wrist, fuller on the thumb side where the thumb's root lies */
     const palm = [
-      [k2[0] - dir * w[1] * 0.6, k2[1] + 7],
+      [k2[0] - dir * w[1] * 0.62, k2[1] + 11],
       [k2[0] - dir * w[1] * 0.14, k2[1] - 5],
       [(k2[0] + k3[0]) / 2, (k2[1] + k3[1]) / 2 - 2],
       [k3[0], k3[1] - 6],
@@ -7365,16 +7375,16 @@ const HandArt = {
       [k4[0], k4[1] - 5],
       [(k4[0] + k5[0]) / 2, (k4[1] + k5[1]) / 2 - 2],
       [k5[0] + dir * w[4] * 0.22, k5[1] - 3],
-      [k5[0] + dir * w[4] * 0.68, k5[1] + 10],
-      [k5[0] + dir * s * 0.55, yK + 38],
-      [cx + dir * s * 1.12, yK + 75],
-      [cx + dir * s * 0.88, yK + 111],
-      [cx + dir * s * 0.6, yK + 132],
-      [cx - dir * s * 0.7, yK + 132],
-      [cx - dir * s * 1.02, yK + 108],
-      [k2[0] - dir * s * 1.15, yK + 74],
-      [k2[0] - dir * s * 1.14, yK + 48],
-      [k2[0] - dir * s * 0.82, yK + 20]
+      [k5[0] + dir * w[4] * 0.64, k5[1] + 12],
+      [k5[0] + dir * s * 0.43, yK + 34],
+      [cx + dir * s * 1.16, yK + 52],
+      [cx + dir * s * 1.01, yK + 76],
+      [cx + dir * s * 0.7, yK + 98],
+      [cx - dir * s * 0.72, yK + 98],
+      [cx - dir * s * 1.02, yK + 78],
+      [k2[0] - dir * s * 1.12, yK + 58],
+      [k2[0] - dir * s * 1.06, yK + 39],
+      [k2[0] - dir * s * 0.78, yK + 19]
     ];
     /* the thumb comes from low on the side of the hand and curves in to its
        key; passing under the hand, it goes under the palm */
@@ -7382,15 +7392,16 @@ const HandArt = {
     const t1 = tip[0];
     const thumbBend = [thumbRoot[0] + (t1[0] - thumbRoot[0]) * 0.24 - dir * 9, thumbRoot[1] + (t1[1] - thumbRoot[1]) * 0.57];
     const line = pts => HandArt.smooth(pts, true);
+    /* Only the outside of the palm gets an ink edge. Outlining the scalloped
+       top drew deep black triangles between spread fingers. */
+    const palmEdge = line(palm.slice(8).concat([palm[0]]));
     /* Sparse dorsal details: the thenar arc and metacarpal tendons make the
        hand read as a hand at small sizes without turning it into a photo. */
     const detail = [
-      line([[thumbRoot[0] + dir * 3, thumbRoot[1] - 5], [k2[0] - dir * s * 0.55, yK + 50], [cx - dir * s * 0.48, yK + 82]]),
-      line([[k2[0], k2[1] + 12], [k2[0] + dir * 3, yK + 42], [cx - dir * s * 0.32, yK + 78]]),
-      line([[k3[0], k3[1] + 11], [k3[0], yK + 38], [cx - dir * s * 0.02, yK + 72]]),
-      line([[k4[0], k4[1] + 12], [k4[0] - dir * 2, yK + 38], [cx + dir * s * 0.3, yK + 72]])
+      line([[thumbRoot[0] + dir * 3, thumbRoot[1] - 5], [k2[0] - dir * s * 0.55, yK + 46], [cx - dir * s * 0.46, yK + 67]]),
+      line([[cx - dir * s * 0.64, yK + 57], [cx, yK + 62], [cx + dir * s * 0.58, yK + 55]])
     ];
-    return { tip, knuckle, root, bend, palm, thumbRoot, thumbBend, detail, yK, cx };
+    return { tip, knuckle, root, bend, palm, palmEdge, thumbRoot, thumbBend, detail, yK, cx };
   }
 };
 
@@ -8074,6 +8085,11 @@ const PdfLayer = {
           const yOver = Math.min(cur.y1, b.y1) - Math.max(cur.y0, b.y0);
           const vGap = Math.max(0, Math.max(cur.y0, b.y0) - Math.min(cur.y1, b.y1) - 1);
           const hGap = Math.max(0, Math.max(cur.x0, b.x0) - Math.min(cur.x1, b.x1) - 1);
+          const lineish = p => {
+            const w = p.x1 - p.x0 + 1, h = p.y1 - p.y0 + 1;
+            return w > Math.max(st.gap * 1.8, h * 2.5);
+          };
+          if (lineish(cur) || lineish(b)) continue;
           const acrossLine = xOver > st.gap * 0.2 && vGap <= 4;
           const openSides = yOver > st.gap * 0.15 && hGap <= st.gap * 1.1 && hGap + (cur.x1 - cur.x0) + (b.x1 - b.x0) < st.gap * 3;
           if (!acrossLine && !openSides) continue;
@@ -8089,17 +8105,41 @@ const PdfLayer = {
       /* A stem glued to a head makes a tall mark whose middle is not the
          pitch. The oval is the widest row; that row is the pitch. */
       const cropHead = g => {
-        let bestY = Math.round((g.y0 + g.y1) / 2), bestW = -1, bx0 = g.x0, bx1 = g.x1;
+        const span = g.x1 - g.x0 + 1;
+        const target = Math.max(minW, Math.round(st.gap * 1.5));
+        let wx0 = g.x0;
+        if (span > target) {
+          const col = new Int32Array(span);
+          for (let y = g.y0; y <= g.y1; y++) {
+            for (let x = g.x0; x <= g.x1; x++) {
+              if (lum((y * cw + x) * 4) < inkCut) col[x - g.x0]++;
+            }
+          }
+          let bestS = -1;
+          for (let i = 0; i <= span - target; i++) {
+            let s = 0;
+            for (let k = 0; k < target; k++) s += col[i + k];
+            if (s > bestS) { bestS = s; wx0 = g.x0 + i; }
+          }
+        }
+        const wx1 = Math.min(g.x1, wx0 + target - 1);
+        const row = [];
         for (let y = g.y0; y <= g.y1; y++) {
           let rx0 = 1e9, rx1 = -1;
-          for (let x = g.x0; x <= g.x1; x++) {
-            if (!dark(x, y)) continue;
+          for (let x = wx0; x <= wx1; x++) {
+            if (lum((y * cw + x) * 4) >= inkCut) continue;
             if (x < rx0) rx0 = x; if (x > rx1) rx1 = x;
           }
-          if (rx1 < rx0) continue;
-          const w = rx1 - rx0 + 1;
-          if (w > bestW) { bestW = w; bestY = y; bx0 = rx0; bx1 = rx1; }
+          row.push(rx1 < rx0 ? null : { y: y, x0: rx0, x1: rx1, w: rx1 - rx0 + 1 });
         }
+        let bestY = Math.round((g.y0 + g.y1) / 2), bestS = -1, bx0 = wx0, bx1 = wx1, bestW = 0;
+        row.forEach((r, i) => {
+          if (!r || r.w < minW) return;
+          const prev = row[i - 1], next = row[i + 1];
+          const thick = !!(prev && prev.w >= minW * 0.45 && next && next.w >= minW * 0.45);
+          const s = r.w + (thick ? st.gap * 2 : 0);
+          if (s > bestS) { bestS = s; bestY = r.y; bestW = r.w; bx0 = r.x0; bx1 = r.x1; }
+        });
         if (bestW < minW) return g;
         const half = Math.max(2, Math.round(st.gap * 0.55));
         return {
@@ -10048,7 +10088,7 @@ class Component extends DCLogic {
       minutes: 18, xp: 1240, streak: 7, sessions: [10, 18, 14, 23, 8, 20, 18],
       /* MIDI stays off until the user asks for it: requesting access can
          prompt, and claiming a connection we do not have would be a lie. */
-      toggles: { midi: false, midiOut: false, notify: true, sound: false, notes: true, auto: true, follow: true, paper: true, handGuide: true, handSee: 45, handNums: 'all', handNames: true, keys: true },
+      toggles: { midi: false, midiOut: false, notify: true, sound: false, notes: true, auto: true, follow: true, paper: true, handGuide: true, handSee: 45, handNums: 'all', handNames: true, keys: true, tellRight: true },
       gateIdx: 0, focus: false,
       /* The whole piece, by default. Four bars at a time and a measure number in
          a sidebar tells you nothing about where you are; you have to see it. */
@@ -11286,7 +11326,7 @@ class Component extends DCLogic {
         const held = (S.wrongNotes || []).slice();
         if (held.indexOf(ev.midi) < 0) held.push(ev.midi);
         this.setState({ wrongNotes: held });
-        this.flashMiss();
+        this.flashMiss(ng ? wantOf(ng) : wantOf(g), ev.midi);
         return;
       }
       this._got = [];
@@ -11302,7 +11342,7 @@ class Component extends DCLogic {
       const held = (S.wrongNotes || []).slice();
       if (held.indexOf(ev.midi) < 0) held.push(ev.midi);
       this.setState({ wrongNotes: held, gateIdx: gi, beat: g.b });
-      this.flashMiss();
+      this.flashMiss(want, ev.midi);
       return;
     }
     if (this._got.indexOf(ev.midi) < 0) this._got.push(ev.midi);
@@ -11410,7 +11450,7 @@ class Component extends DCLogic {
       runHit: live.matched, runTot: live.seen,
       wrongNotes: wrong
     });
-    if (wrong && wrong.some(p => prevWrong.indexOf(p) < 0)) this.flashMiss();
+    if (wrong && wrong.some(p => prevWrong.indexOf(p) < 0)) this.flashMiss(this.expected(), ev.midi);
   }
 
   /* ============================ score access ============================ */
@@ -11625,7 +11665,7 @@ class Component extends DCLogic {
     else if (ev.tot) patch.wrongNotes = ev.wrong;
     const prevWrong = S.wrongNotes || [];
     const nextWrong = patch.wrongNotes;
-    if (nextWrong && nextWrong.some(p => prevWrong.indexOf(p) < 0)) this.flashMiss();
+    if (nextWrong && nextWrong.some(p => prevWrong.indexOf(p) < 0)) this.flashMiss(nextWrong);
 
     if (sq >= endB) {
       if (live) {
@@ -11892,11 +11932,23 @@ class Component extends DCLogic {
   }
 
   /* Loop practice: a miss is a moment, not a panel. Fade a line in at the
-     top and let it go, so the score stays readable. */
-  flashMiss() {
+     top and let it go, so the score stays readable. When Answer is on, name
+     the pitch that was owed — that is the whole point of the flash. */
+  flashMiss(wantMidis, gotMidi) {
     if (!this.state.loop && !this.state.focus) return;
+    const tell = this.state.toggles.tellRight !== false;
+    let text = tx('Wrong note');
+    if (tell) {
+      let want = (wantMidis && wantMidis.length) ? wantMidis : this.expected();
+      want = (want || []).filter((p, i, a) => a.indexOf(p) === i);
+      if (want.length) {
+        const names = want.map(midiName).join(' · ');
+        const got = gotMidi != null && want.indexOf(gotMidi) < 0 ? midiName(gotMidi) : '';
+        text = got ? tx('{{want}}, not {{got}}', { want: names, got: got }) : names;
+      }
+    }
     const n = (this.state.missN || 0) + 1;
-    this.setState({ missN: n, missText: tx('Wrong note') });
+    this.setState({ missN: n, missText: text });
     clearTimeout(this._miss);
     this._miss = setTimeout(() => { if (!this._dead) this.setState({ missN: 0 }); }, 1400);
   }
@@ -13574,7 +13626,7 @@ class Component extends DCLogic {
           h('linearGradient', { id: 'ppp-hand-tone', gradientUnits: 'userSpaceOnUse', x1: 0, y1: H - 20, x2: 0, y2: HT + 24 },
             h('stop', { offset: 0, stopColor: 'var(--hand-light)' }),
             h('stop', { offset: 0.5, stopColor: 'var(--hand)' }),
-            h('stop', { offset: 1, stopColor: 'var(--hand-shadow)' })),
+            h('stop', { offset: 1, stopColor: 'var(--hand-shadow)', stopOpacity: 0.78 })),
           h('radialGradient', { id: 'ppp-hand-sheen' },
             h('stop', { offset: 0, stopColor: '#fff', stopOpacity: 0.42 }),
             h('stop', { offset: 1, stopColor: '#fff', stopOpacity: 0 })),
@@ -13672,15 +13724,24 @@ class Component extends DCLogic {
     /* One silhouette: every outline first, then every fill over them, so the
        lines where a finger joins the hand disappear and only the edge of the
        whole hand is drawn. */
-    bodies.forEach((d, i) => skin.push(h('path', { key: 'sh' + i, d, fill: 'var(--hand-shadow)', opacity: 0.18, transform: 'translate(0 3)' })));
-    bodies.forEach((d, i) => skin.push(h('path', { key: 'e' + i, d, fill: 'none', stroke: 'var(--hand-line)', strokeWidth: 2.2, strokeLinejoin: 'round' })));
+    bodies.forEach((d, i) => skin.push(h('path', { key: 'sh' + i, d, fill: 'var(--hand-shadow)', opacity: 0.14, transform: 'translate(0 2.5)' })));
     bodies.forEach((d, i) => skin.push(h('path', { key: 's' + i, d, fill: 'url(#ppp-hand-tone)' })));
+    /* Open finger sides plus the outside wrist contour form one readable
+       silhouette without drawing seams where skin joins skin. */
+    fingers.forEach((sh, i) => skin.push(h('path', {
+      key: 'e' + i, d: sh.side, fill: 'none', stroke: 'var(--hand-line)',
+      strokeWidth: 1.65, strokeLinejoin: 'round', strokeLinecap: 'round'
+    })));
+    skin.push(h('path', {
+      key: 'pe', d: g.palmEdge, fill: 'none', stroke: 'var(--hand-line)',
+      strokeWidth: 1.65, strokeLinejoin: 'round', strokeLinecap: 'round'
+    }));
     /* light on the back of the hand and over each knuckle */
     skin.push(h('ellipse', { key: 'sheen', cx: g.cx, cy: g.yK + 38, rx: KW * 1.55, ry: 39, fill: 'url(#ppp-hand-sheen)' }));
     for (let f = 2; f <= 5; f++) skin.push(h('ellipse', { key: 'k' + f, cx: g.knuckle[f][0], cy: g.knuckle[f][1] + 3, rx: 7.5, ry: 4.4, fill: 'url(#ppp-hand-sheen)' }));
     g.detail.forEach((d, i) => skin.push(h('path', {
-      key: 'p' + i, d, fill: 'none', stroke: 'var(--hand-line)', strokeOpacity: i ? 0.24 : 0.38,
-      strokeWidth: i ? 0.75 : 1, strokeLinecap: 'round'
+      key: 'p' + i, d, fill: 'none', stroke: 'var(--hand-line)', strokeOpacity: i ? 0.13 : 0.24,
+      strokeWidth: i ? 0.65 : 0.85, strokeLinecap: 'round'
     })));
     fingers.forEach((sh, i) => {
       skin.push(h('path', { key: 'n' + i, d: sh.nail, fill: 'var(--hand-nail)', stroke: 'var(--hand-line)', strokeOpacity: 0.45, strokeWidth: 0.8 }));
@@ -13717,7 +13778,7 @@ class Component extends DCLogic {
         }, String(f))));
     }
     if (set.names) marks.push(h('text', {
-      key: 'name', 'data-hand-name': hand, x: g.cx, y: g.yK + 40, textAnchor: 'middle', fontSize: 11.5, fontWeight: 700, fill: 'rgba(255,255,255,.9)'
+      key: 'name', 'data-hand-name': hand, x: g.cx, y: g.yK + 72, textAnchor: 'middle', fontSize: 11.5, fontWeight: 700, fill: 'rgba(255,255,255,.86)'
     }, tx(hand === 'l' ? 'Left hand' : 'Right hand')));
     return h('g', {
       key: 'hand-' + hand, className: 'ppp-hand', 'data-hand': hand, 'data-hand-state': at.state,
@@ -14610,6 +14671,12 @@ class Component extends DCLogic {
       },
       followBtnStyle: this.chip(S.toggles.follow !== false),
       followLabel: tx(S.toggles.follow === false ? 'Follow off' : 'Follow on'),
+      toggleTellRight: () => this.setState(st => ({
+        toggles: Object.assign({}, st.toggles, { tellRight: st.toggles.tellRight === false })
+      })),
+      tellRightBtnStyle: this.chip(S.toggles.tellRight !== false),
+      tellRightLabel: tx(S.toggles.tellRight === false ? 'Answer off' : 'Answer on'),
+      tellRightHint: tx('When you miss, name the note you should have played'),
       showFollowBtn: true,
       showFollowHint: S.toggles.follow !== false,
       followHint: follows
@@ -15360,7 +15427,7 @@ class Component extends DCLogic {
             h('linearGradient', { id: 'ppp-hand-tone', gradientUnits: 'userSpaceOnUse', x1: 0, y1: KH - 20, x2: 0, y2: HT + 24 },
               h('stop', { offset: 0, stopColor: 'var(--hand-light)' }),
               h('stop', { offset: 0.5, stopColor: 'var(--hand)' }),
-              h('stop', { offset: 1, stopColor: 'var(--hand-shadow)' })),
+              h('stop', { offset: 1, stopColor: 'var(--hand-shadow)', stopOpacity: 0.78 })),
             h('radialGradient', { id: 'ppp-hand-sheen' },
               h('stop', { offset: 0, stopColor: '#fff', stopOpacity: 0.42 }),
               h('stop', { offset: 1, stopColor: '#fff', stopOpacity: 0 })),
