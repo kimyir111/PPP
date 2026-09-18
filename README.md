@@ -290,6 +290,13 @@ W E T Y U the black keys) and a MIDI keyboard alike. On this page those letters 
 belong to the lesson, so none of the practice shortcuts fire. A rhythm is timed on the press, not
 the click, and counts a tap within a fifth of a second of the note.
 
+The see-through hand from the practice screen lies over the lesson keyboard too (**Show hands**,
+the same setting and transparency as there). It is fingered by the same engine — Do Re Mi with 1 2 3,
+the scale with the thumb passing under after Mi, the left hand 5 4 3 2 1, a chord with 1 3 5 —
+except where a lesson writes the fingering out as beginner books print it (Twinkle: 1 1 4 4 5 5 4).
+The finger for the next note is marked only when the step lights the next key, so a step to be
+played on your own does not give the answer away.
+
 The course lives in `lessons.js` as data plus small pure functions — a key in, the step's new
 state out — so `tests/lessons.test.js` walks every exercise in Node as well as in the page. The
 lesson and step you are on and the lessons finished are part of the saved state

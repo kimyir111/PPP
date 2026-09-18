@@ -2,8 +2,8 @@
    The first half runs the course itself in node — every lesson well formed,
    every exercise finishable, every word translated. The second half drives
    the real page: the tab, a whole lesson by clicking, the computer keyboard,
-   MIDI, the staff drill, a chord, a rhythm tapped on time, progress kept
-   across a reload, Korean, and a phone. */
+   MIDI, the see-through hands, the staff drill, a chord, a rhythm tapped on
+   time, progress kept across a reload, Korean, and a phone. */
 const fs = require('fs');
 const path = require('path');
 const puppeteer = require('puppeteer');
@@ -51,6 +51,10 @@ ok('each song has a length for every note, in whole 4/4 measures',
   songs.every(([, s]) => s.notes.length === s.beats.length && s.beats.reduce((a, b) => a + b, 0) % 4 === 0),
   songs.map(([k, s]) => k + ':' + s.notes.length + '/' + s.beats.reduce((a, b) => a + b, 0)).join(' '));
 ok('the first song is Mi Re Do Re Mi Mi Mi', C.SONGS.airplane.notes.slice(0, 7).join() === '64,62,60,62,64,64,64');
+ok('a written fingering has a finger for every note, and the song steps carry it',
+  songs.every(([, s]) => !s.fingering || s.fingering.length === s.notes.length) &&
+  C.lesson('twinkle').steps.slice(1).every(st => st.fingering && st.fingering.length === st.seq.length));
+ok('Twinkle is fingered as beginner books print it', C.SONGS.twinkle.fingering.slice(0, 14).join('') === '11445543322111');
 
 console.log('exercises');
 {
@@ -256,6 +260,58 @@ console.log('translations');
   ok('Listen lights each key as it sounds', lit.length === 1 && ['60', '62', '64'].indexOf(lit[0]) > -1, lit.join());
   await page.waitForFunction(() => !window.PPP.app.state.learnClock, { timeout: 5000 }).catch(() => {});
   ok('and stops when the example ends', !(await page.evaluate(() => window.PPP.app.state.learnClock)));
+
+  console.log('hands');
+  const hands = () => page.evaluate(() => {
+    const kb = document.querySelector('[data-learn-keyboard]');
+    const g = kb && kb.querySelector('[data-hand]');
+    const btn = document.querySelector('[data-learn-tool="hands"]');
+    const names = kb ? [...kb.children].filter(x => x.tagName === 'g').pop() : null;
+    return {
+      hand: g ? g.getAttribute('data-hand') : null,
+      now: g ? [...g.querySelectorAll('[data-finger-state="now"]')].map(e => +e.getAttribute('data-finger')).sort() : [],
+      numbers: g ? g.querySelectorAll('[data-finger]').length : 0,
+      button: btn ? btn.getAttribute('aria-pressed') : null,
+      keyDigits: names ? [...names.querySelectorAll('text')].some(t => /^[1-5]$/.test(t.textContent)) : false
+    };
+  });
+  await page.evaluate(() => window.PPP.app.learnOpen('doremi', 1)); await sleep(200);
+  let hd = await hands();
+  ok('a play step shows the right hand, thumb marked for Do', hd.hand === 'r' && hd.now.join() === '1' && hd.button === 'true', JSON.stringify(hd));
+  await page.keyboard.press('KeyA'); await sleep(120);
+  hd = await hands();
+  ok('after Do the mark moves to finger 2 for Re', hd.now.join() === '2', JSON.stringify(hd.now));
+  await page.click('[data-learn-tool="hands"]'); await sleep(150);
+  hd = await hands();
+  ok('Show hands turns the hand off', hd.hand === null && hd.button === 'false');
+  await page.click('[data-learn-tool="hands"]'); await sleep(150);
+  hd = await hands();
+  ok('and back on — the same setting as the practice screen', hd.hand === 'r' && (await page.evaluate(() => window.PPP.app.state.toggles.handGuide)) !== false);
+
+  await page.evaluate(() => window.PPP.app.learnOpen('octave', 1)); await sleep(150);
+  for (const k of ['KeyA', 'KeyS', 'KeyD']) { await page.keyboard.press(k); await sleep(80); }
+  hd = await hands();
+  ok('in the scale, after Mi the thumb goes under for Fa', hd.now.join() === '1', JSON.stringify(hd.now));
+  await page.evaluate(() => window.PPP.app.learnOpen('lefthand', 2)); await sleep(150);
+  hd = await hands();
+  ok('the left-hand lesson shows the left hand, little finger on Do', hd.hand === 'l' && hd.now.join() === '5', JSON.stringify(hd));
+  await page.evaluate(() => window.PPP.app.learnOpen('twinkle', 1)); await sleep(150);
+  for (const k of ['KeyA', 'KeyA']) { await page.keyboard.press(k); await sleep(80); }
+  hd = await hands();
+  ok('Twinkle follows its written fingering: Sol with 4', hd.now.join() === '4', JSON.stringify(hd.now));
+  await page.evaluate(() => window.PPP.app.learnOpen('chords', 1)); await sleep(150);
+  hd = await hands();
+  ok('the chord marks fingers 1, 3 and 5 together', hd.now.join() === '1,3,5', JSON.stringify(hd.now));
+  await page.evaluate(() => window.PPP.app.learnOpen('doremi', 3)); await sleep(150);
+  hd = await hands();
+  ok('with no hints the hand is there but marks no finger', hd.hand === 'r' && hd.now.length === 0, JSON.stringify(hd));
+  await page.evaluate(() => window.PPP.app.learnOpen('fingers', 1)); await sleep(150);
+  hd = await hands();
+  ok('“right hand on the keys” shows the hand in place, all five numbered', hd.hand === 'r' && hd.numbers === 5 && hd.now.length === 0, JSON.stringify(hd));
+  ok('with a hand shown, the keys lose their own finger numbers', !hd.keyDigits);
+  await page.evaluate(() => window.PPP.app.learnOpen('keys', 2)); await sleep(150);
+  hd = await hands();
+  ok('finding keys has no hand and no hand button', hd.hand === null && hd.button === null, JSON.stringify(hd));
 
   console.log('reading, a chord, a rhythm');
   await page.evaluate(() => window.PPP.app.learnOpen('readlow', 1)); await sleep(200);

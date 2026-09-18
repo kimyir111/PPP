@@ -1224,7 +1224,6 @@
     "Now all of it, without the coloured key. Take your time — the song waits for you.": "이제 색 표시 없이 처음부터 끝까지. 천천히 해도 돼요 — 곡이 기다려 줘요.",
     "School Bell (Korean children’s song)": "학교종",
     "Play a song that reaches up to La.": "라까지 올라가는 곡을 쳐요.",
-    "This song uses Do, Re, Mi, Sol and La. La is one key past your little finger — stretch over to it, then come back.": "이 곡은 도, 레, 미, 솔, 라를 써요. 라는 새끼손가락보다 한 건반 더 가야 해요 — 손을 뻗어 치고 다시 돌아오세요.",
     "Press Listen and follow the note names.": "'듣기'를 누르고 계이름을 따라가 보세요.",
     "Twinkle, Twinkle, Little Star": "반짝반짝 작은 별",
     "Play a longer song with six notes.": "여섯 음으로 좀 더 긴 곡을 쳐요.",
@@ -1343,6 +1342,10 @@
     "How to play along": "따라 치는 방법",
     "Tap the keys on screen, or use your computer keyboard:": "화면의 건반을 누르거나, 컴퓨터 키보드를 써요:",
     "A MIDI keyboard works too — connect it with the MIDI button at the top.": "MIDI 키보드도 돼요 — 위쪽의 MIDI 버튼으로 연결하세요.",
-    "New to the piano? Start with Piano Basics →": "피아노가 처음이세요? 피아노 기초부터 시작해요 →"
+    "New to the piano? Start with Piano Basics →": "피아노가 처음이세요? 피아노 기초부터 시작해요 →",
+    "Five fingers, eight notes: after Mi, tuck your thumb under your hand to play Fa — then 2 3 4 5 carry you to the top.": "손가락은 다섯 개, 음은 여덟 개예요. 미를 친 다음 엄지를 손 밑으로 넣어 파를 치고, 2 3 4 5로 끝까지 올라가요.",
+    "Coming down, after Fa with your thumb, cross finger 3 over it onto Mi.": "내려올 때는 엄지로 파를 친 다음, 3번 손가락을 엄지 위로 넘겨 미를 쳐요.",
+    "This song uses Do, Re, Mi, Sol and La. Put your hand one key higher: thumb on Re, little finger on La. At the very end the thumb reaches down to Do.": "이 곡은 도, 레, 미, 솔, 라를 써요. 손을 한 건반 위로 옮겨서 엄지는 레, 새끼손가락은 라에 두세요. 맨 끝에서만 엄지를 도로 내려요.",
+    "Put your hand one key higher: thumb on Re, little finger on La. When the song goes down to Do, reach for it with your thumb.": "손을 한 건반 위로 옮겨서 엄지는 레, 새끼손가락은 라에 두세요. 곡이 도로 내려갈 때는 엄지를 뻗어 쳐요."
   }
 }

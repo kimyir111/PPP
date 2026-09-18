@@ -1224,7 +1224,6 @@
     "Now all of it, without the coloured key. Take your time — the song waits for you.": "今度は色の目印なしで、全部通して弾きます。あわてなくて大丈夫 — 曲は待っていてくれます。",
     "School Bell (Korean children’s song)": "学校の鐘（韓国の童謡）",
     "Play a song that reaches up to La.": "ラまで届く曲を弾きます。",
-    "This song uses Do, Re, Mi, Sol and La. La is one key past your little finger — stretch over to it, then come back.": "この曲はド、レ、ミ、ソ、ラを使います。ラは小指の1つ先 — 指をのばして弾き、また戻りましょう。",
     "Press Listen and follow the note names.": "「聴く」を押して、ドレミを目で追ってみましょう。",
     "Twinkle, Twinkle, Little Star": "きらきら星",
     "Play a longer song with six notes.": "6つの音で、少し長い曲を弾きます。",
@@ -1343,6 +1342,10 @@
     "How to play along": "弾き方",
     "Tap the keys on screen, or use your computer keyboard:": "画面の鍵盤を押すか、パソコンのキーボードを使います：",
     "A MIDI keyboard works too — connect it with the MIDI button at the top.": "MIDIキーボードも使えます — 上のMIDIボタンで接続してください。",
-    "New to the piano? Start with Piano Basics →": "ピアノははじめて？「ピアノの基礎」から始めましょう →"
+    "New to the piano? Start with Piano Basics →": "ピアノははじめて？「ピアノの基礎」から始めましょう →",
+    "Five fingers, eight notes: after Mi, tuck your thumb under your hand to play Fa — then 2 3 4 5 carry you to the top.": "指は5本、音は8つ。ミのあと、親指を手の下にくぐらせてファを弾き、2 3 4 5で上まで行きます。",
+    "Coming down, after Fa with your thumb, cross finger 3 over it onto Mi.": "下りるときは、親指でファを弾いたあと、3の指を親指の上から越えてミを弾きます。",
+    "This song uses Do, Re, Mi, Sol and La. Put your hand one key higher: thumb on Re, little finger on La. At the very end the thumb reaches down to Do.": "この曲はド、レ、ミ、ソ、ラを使います。手を1つ上にずらして、親指をレ、小指をラに置きましょう。最後だけ親指をドまでのばします。",
+    "Put your hand one key higher: thumb on Re, little finger on La. When the song goes down to Do, reach for it with your thumb.": "手を1つ上にずらして、親指をレ、小指をラに置きましょう。曲がドまで下がるときは、親指をのばして弾きます。"
   }
 }

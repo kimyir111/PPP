@@ -54,7 +54,9 @@
     school: {
       notes: [67, 67, 69, 69, 67, 67, 64, 67, 67, 64, 64, 62, 67, 67, 69, 69, 67, 67, 64, 67, 64, 62, 64, 60],
       beats: [1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 4, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 4],
-      split: 12, bpm: 104
+      split: 12, bpm: 104,
+      /* the hand one key up: thumb on Re, little finger on La, thumb down to Do at the end */
+      fingering: [4, 4, 5, 5, 4, 4, 2, 4, 4, 2, 2, 1, 4, 4, 5, 5, 4, 4, 2, 4, 2, 1, 2, 1]
     },
     twinkle: {
       notes: [60, 60, 67, 67, 69, 69, 67, 65, 65, 64, 64, 62, 62, 60,
@@ -63,7 +65,11 @@
       beats: [1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2,
         1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2,
         1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2],
-      split: 14, bpm: 100
+      split: 14, bpm: 100,
+      /* as beginner books print it: 1 1 4 4 5 5 4, 3 3 2 2 1 1 1 */
+      fingering: [1, 1, 4, 4, 5, 5, 4, 3, 3, 2, 2, 1, 1, 1,
+        4, 4, 3, 3, 2, 2, 1, 4, 4, 3, 3, 2, 2, 1,
+        1, 1, 4, 4, 5, 5, 4, 3, 3, 2, 2, 1, 1, 1]
     },
     ode: {
       notes: [64, 64, 65, 67, 67, 65, 64, 62, 60, 60, 62, 64, 64, 62, 62,
@@ -78,13 +84,14 @@
   function songSteps(id) {
     var s = SONGS[id], a = s.notes.slice(0, s.split), b = s.notes.slice(s.split);
     var ba = s.beats.slice(0, s.split), bb = s.beats.slice(s.split);
+    var f = s.fingering, fa = f ? f.slice(0, s.split) : null, fb = f ? f.slice(s.split) : null;
     return [
-      { kind: 'play', title: 'First half', text: ['Play the first half. The coloured key shows where to go next.'], seq: a, beats: ba, bpm: s.bpm, hint: true, chips: true },
-      { kind: 'play', title: 'Second half', text: ['Now the second half.'], seq: b, beats: bb, bpm: s.bpm, hint: true, chips: true },
-      { kind: 'play', title: 'The whole song', text: ['Now all of it, without the coloured key. Take your time — the song waits for you.'], seq: s.notes, beats: s.beats, bpm: s.bpm, hint: false, chips: true }
+      { kind: 'play', title: 'First half', text: ['Play the first half. The coloured key shows where to go next.'], seq: a, beats: ba, fingering: fa, bpm: s.bpm, hint: true, chips: true },
+      { kind: 'play', title: 'Second half', text: ['Now the second half.'], seq: b, beats: bb, fingering: fb, bpm: s.bpm, hint: true, chips: true },
+      { kind: 'play', title: 'The whole song', text: ['Now all of it, without the coloured key. Take your time — the song waits for you.'], seq: s.notes, beats: s.beats, fingering: f || null, bpm: s.bpm, hint: false, chips: true }
     ];
   }
-  function songListen(id) { var s = SONGS[id]; return { seq: s.notes, beats: s.beats, bpm: s.bpm }; }
+  function songListen(id) { var s = SONGS[id]; return { seq: s.notes, beats: s.beats, bpm: s.bpm, fingering: s.fingering || null }; }
 
   /* ---------------------------------------------------------------- course */
   var COURSE = [
@@ -148,8 +155,8 @@
             text: ['After Sol come La and Ti. Then comes Do again — a higher Do.',
               'From one Do to the next is called an octave. Do Re Mi Fa Sol La Ti Do is the C major scale.'],
             keys: { hl: [69, 71, 72] }, listen: { seq: UP8 } },
-          { kind: 'play', title: 'The whole scale', text: ['Play all eight, from Do up to high Do.'], seq: UP8, hint: true },
-          { kind: 'play', title: 'And back down', text: ['Now from high Do down to Do.'], seq: rev(UP8), hint: true },
+          { kind: 'play', title: 'The whole scale', text: ['Play all eight, from Do up to high Do.', 'Five fingers, eight notes: after Mi, tuck your thumb under your hand to play Fa — then 2 3 4 5 carry you to the top.'], seq: UP8, hint: true },
+          { kind: 'play', title: 'And back down', text: ['Now from high Do down to Do.', 'Coming down, after Fa with your thumb, cross finger 3 over it onto Mi.'], seq: rev(UP8), hint: true },
           { kind: 'quiz', title: 'Quick check', qs: [
             { q: 'What comes after Sol?', choices: ['La', 'Fa', 'Ti'], answer: 0, why: 'Do Re Mi Fa Sol La Ti Do.' },
             { q: 'Which white key sits between the two black keys?', choices: ['Do', 'Re', 'Mi'], answer: 1,
@@ -290,7 +297,7 @@
       { id: 'school', title: 'School Bell (Korean children’s song)', goal: 'Play a song that reaches up to La.',
         keys: { lo: 60, hi: 71, labels: 'names' }, steps: [
           { kind: 'read', title: 'Listen first', chips: true,
-            text: ['This song uses Do, Re, Mi, Sol and La. La is one key past your little finger — stretch over to it, then come back.',
+            text: ['This song uses Do, Re, Mi, Sol and La. Put your hand one key higher: thumb on Re, little finger on La. At the very end the thumb reaches down to Do.',
               'Press Listen and follow the note names.'],
             seq: SONGS.school.notes, listen: songListen('school') }
         ].concat(songSteps('school')) },
@@ -298,6 +305,7 @@
         keys: { lo: 60, hi: 71, labels: 'names' }, steps: [
           { kind: 'read', title: 'Listen first', chips: true,
             text: ['Twinkle uses six notes, from Do up to La. It starts with a jump: Do Do, then up to Sol Sol.',
+              'Put your hand one key higher: thumb on Re, little finger on La. When the song goes down to Do, reach for it with your thumb.',
               'Each line ends on a longer note — hold it for two beats.'],
             seq: SONGS.twinkle.notes, listen: songListen('twinkle') }
         ].concat(songSteps('twinkle')) },
@@ -550,6 +558,7 @@
     var whites = [];
     for (var m = o.lo; m <= o.hi; m++) if (!isBlack(m)) whites.push(m);
     var W = whites.length * KW, els = [], over = [];
+    var HT = KH + (o.hands ? o.hands.zone : 0);
     var marks = o.marks || {}, fingers = o.fingers || {};
     var named = o.names ? o.names : null;
     var click = function (mm) { return o.onKey ? function (e) { if (e && e.preventDefault) e.preventDefault(); o.onKey(mm); } : undefined; };
@@ -562,7 +571,12 @@
         style: { cursor: 'pointer', transition: 'fill .12s ease' }, onPointerDown: click(mm) }));
       var ink = solid ? 'rgba(255,255,255,.97)' : 'rgba(20,18,16,.78)', ink3 = solid ? 'rgba(255,255,255,.8)' : 'rgba(20,18,16,.48)';
       var show = !named || named.indexOf(mm) > -1;
-      if (o.labels === 'names' && show) {
+      /* under a hand the fingertips sit where the names usually go: one name
+         along the very front edge instead */
+      if (o.hands && show && (o.labels === 'names' || o.labels === 'letters')) {
+        over.push(h('text', { key: 's' + mm, x: x + KW / 2, y: KH - 8, textAnchor: 'middle', fontSize: 12.5, fontWeight: 700,
+          fontFamily: o.labels === 'letters' ? "'JetBrains Mono', monospace" : undefined, fill: ink }, o.labels === 'letters' ? letter(mm) : sol(mm)));
+      } else if (o.labels === 'names' && show) {
         over.push(h('text', { key: 's' + mm, x: x + KW / 2, y: KH - 25, textAnchor: 'middle', fontSize: 13, fontWeight: 700, fill: ink }, sol(mm)));
         over.push(h('text', { key: 'l' + mm, x: x + KW / 2, y: KH - 10, textAnchor: 'middle', fontSize: 10, fontFamily: "'JetBrains Mono', monospace", fill: ink3 }, letter(mm)));
       } else if (o.labels === 'letters' && show) {
@@ -575,7 +589,7 @@
         }
       }
       if (o.middle && mm === C4) {
-        over.push(h('circle', { key: 'mid', cx: x + KW / 2, cy: o.labels === 'fingers' ? KH - 64 : KH - 48, r: 4.5, fill: solid ? '#fff' : 'var(--accent)', 'data-middle-c': 1 }));
+        over.push(h('circle', { key: 'mid', cx: x + KW / 2, cy: o.hands ? 101 : o.labels === 'fingers' ? KH - 64 : KH - 48, r: 4.5, fill: solid ? '#fff' : 'var(--accent)', 'data-middle-c': 1 }));
       }
     });
     whites.forEach(function (mm, i) {
@@ -600,9 +614,13 @@
       }
     });
     /* names and marks never take the tap from the key under them */
-    return h('svg', { viewBox: '0 0 ' + W + ' ' + KH, width: '100%', 'data-learn-keyboard': 1,
+    return h('svg', { viewBox: '0 0 ' + W + ' ' + HT, width: '100%', 'data-learn-keyboard': 1,
       style: { display: 'block', height: 'auto', margin: '0 auto', maxWidth: whites.length * 56 + 'px', minWidth: Math.min(W, whites.length * 30) + 'px', userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation', fontFamily: "Figtree, 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', system-ui, sans-serif" } },
+      o.hands ? o.hands.defs : null,
       h('g', { key: 'keys' }, els),
+      /* a hand over the keys (drawn by the page, as on the practice screen);
+         the names go on top so they read through it */
+      o.hands ? h('g', { key: 'hands', 'data-learn-hands-over': 1, style: { pointerEvents: 'none' } }, o.hands.layers) : null,
       h('g', { key: 'names', style: { pointerEvents: 'none' } }, over));
   }
 
@@ -815,6 +833,8 @@
   var api = global.PPP_LESSONS = {
     /* set by the page: draw again once the music font has loaded */
     onFonts: null,
+    /* the keyboard's white key, for drawing hands to the same scale */
+    KEY_W: KW, KEY_H: KH,
     COURSE: COURSE, LESSONS: LESSONS, SONGS: SONGS, SOL: SOL,
     lesson: lesson, next: next, nextUp: nextUp, keysFor: keysFor, kbBase: kbBase, codeToMidi: codeToMidi,
     fresh: fresh, press: press, answer: answer, nextDrill: nextDrill, choose: choose, nextQuestion: nextQuestion, targets: targets,

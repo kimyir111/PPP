@@ -1224,7 +1224,6 @@
     "Now all of it, without the coloured key. Take your time — the song waits for you.": "这次没有颜色提示，从头弹到尾。慢慢来——曲子会等你。",
     "School Bell (Korean children’s song)": "学校的钟声（韩国童谣）",
     "Play a song that reaches up to La.": "弹一首用到 La 的曲子。",
-    "This song uses Do, Re, Mi, Sol and La. La is one key past your little finger — stretch over to it, then come back.": "这首曲子用 Do、Re、Mi、Sol 和 La。La 在小指再往外一个键——伸过去弹，再回来。",
     "Press Listen and follow the note names.": "按“听一听”，跟着音名看。",
     "Twinkle, Twinkle, Little Star": "小星星",
     "Play a longer song with six notes.": "用六个音弹一首长一点的曲子。",
@@ -1343,6 +1342,10 @@
     "How to play along": "怎么跟着弹",
     "Tap the keys on screen, or use your computer keyboard:": "点屏幕上的琴键，或者用电脑键盘：",
     "A MIDI keyboard works too — connect it with the MIDI button at the top.": "也可以用 MIDI 键盘——用顶部的 MIDI 按钮连接。",
-    "New to the piano? Start with Piano Basics →": "第一次弹钢琴？从“钢琴入门”开始 →"
+    "New to the piano? Start with Piano Basics →": "第一次弹钢琴？从“钢琴入门”开始 →",
+    "Five fingers, eight notes: after Mi, tuck your thumb under your hand to play Fa — then 2 3 4 5 carry you to the top.": "五根手指，八个音：弹完 Mi 后，把大拇指从手掌下面穿过去弹 Fa，再用 2 3 4 5 弹到顶。",
+    "Coming down, after Fa with your thumb, cross finger 3 over it onto Mi.": "往下弹时，用大拇指弹完 Fa 后，把 3 指从大拇指上方跨过去弹 Mi。",
+    "This song uses Do, Re, Mi, Sol and La. Put your hand one key higher: thumb on Re, little finger on La. At the very end the thumb reaches down to Do.": "这首曲子用 Do、Re、Mi、Sol 和 La。把手往上挪一个键：大拇指放 Re，小指放 La。只有最后大拇指要往下够到 Do。",
+    "Put your hand one key higher: thumb on Re, little finger on La. When the song goes down to Do, reach for it with your thumb.": "把手往上挪一个键：大拇指放 Re，小指放 La。曲子下到 Do 时，伸出大拇指去弹。"
   }
 }
