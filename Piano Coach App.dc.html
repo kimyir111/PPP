@@ -1517,7 +1517,7 @@
 
                 <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                   <sc-for list="{{ learnTools }}" as="b" hint-placeholder-count="1">
-                    <button type="button" onClick="{{ b.on }}" data-learn-tool="{{ b.id }}" style="{{ b.style }}">{{ b.label }}</button>
+                    <button type="button" onClick="{{ b.on }}" data-learn-tool="{{ b.id }}" aria-pressed="{{ b.pressed }}" title="{{ b.hint }}" style="{{ b.style }}">{{ b.label }}</button>
                   </sc-for>
                   <div style="flex: 1;"></div>
                   <button type="button" onClick="{{ learnBack }}" data-learn-back style="{{ learnBackStyle }}">{{ learnBackLabel }}</button>
@@ -3801,6 +3801,7 @@ class MidiOut {
        with the time it was queued so panic can place a note-off at that
        same timestamp (later send, same t) and the on never sounds. */
     this._queuedOn = [];
+    this._thru = {};
   }
   access() { return this._input ? this._input.access : null; }
   devices() { return this._input && this._input.outputs ? this._input.outputs() : []; }
@@ -3853,6 +3854,19 @@ class MidiOut {
     this.send([0xB0, n & 127, (v == null ? 0 : v) & 127], t);
   }
   localOff() { this.cc(122, 0); }
+  /* The player's keys, on a second channel so a note-off does not cut a
+     score note still held on the same key. */
+  thruOn(midi, vel) {
+    const m = midi & 127, v = Math.max(1, Math.min(127, vel == null ? 80 : vel | 0));
+    this.send([0x91, m, v]);
+    this._thru[m] = true;
+  }
+  thruOff(midi) {
+    const m = midi & 127;
+    this.send([0x91, m, 0]);
+    this.send([0x81, m, 0]);
+    delete this._thru[m];
+  }
   panic(t) {
     const when = (t == null || !isFinite(t)) ? nowMs() : t;
     const pending = this._queuedOn;
@@ -3864,11 +3878,18 @@ class MidiOut {
       const at = q.t > when ? q.t : when;
       this.send([0x80, q.midi & 127, 0], at);
     });
+    Object.keys(this._thru).forEach(m => {
+      this.send([0x81, (+m) & 127, 0], when);
+      this.send([0x91, (+m) & 127, 0], when);
+    });
+    this._thru = {};
     this.cc(64, 0, when);
     this.cc(66, 0, when);
     this.cc(67, 0, when);
     this.cc(123, 0, when);
     this.cc(120, 0, when);
+    this.send([0xB1, 123, 0], when);
+    this.send([0xB1, 120, 0], when);
   }
 }
 
@@ -7441,19 +7462,20 @@ const PdfLayer = {
     const raster = !(L.texts && L.texts.length) && !!(L.blobs && L.blobs.length);
     systems.forEach(sys => {
       const top = sys.staves[0], bot = sys.staves[sys.staves.length - 1];
+      const nSt = sys.staves.length;
       const tol = raster ? Math.max(0.55, (top.gap || 1) * 0.35) : 0.5;
       const near = (a, b) => Math.abs(a - b) <= tol;
-      const covers = (v, st) => v.y1 >= st.top - tol && v.y0 <= st.bottom + tol;
-      /* a bar line runs the height of a staff, the piano pair, or the system */
-      const xs = L.vl.filter(v => v.x > top.x0 - 1.5 && v.x < top.x1 + 1.5 && (
-        (near(v.y1, top.top) && (near(v.y0, top.bottom) || near(v.y0, bot.bottom))) ||
-        sys.staves.some((st, i) => near(v.y1, st.top) && (
-          near(v.y0, st.bottom) ||
-          (i + 1 < sys.staves.length && near(v.y0, sys.staves[i + 1].bottom)) ||
-          (i + 2 < sys.staves.length && near(v.y0, sys.staves[i + 2].bottom))
-        )) ||
-        sys.staves.filter(st => covers(v, st)).length >= Math.min(2, sys.staves.length)
-      )).map(v => v.x).sort((a, b) => a - b);
+      /* a bar line runs the system, or the piano pair under a vocal line.
+         A stem that only covers one staff of a grand staff is not a bar. */
+      const xs = L.vl.filter(v => {
+        if (v.x <= top.x0 - 1.5 || v.x >= top.x1 + 1.5) return false;
+        const fullSys = near(v.y1, top.top) && near(v.y0, bot.bottom);
+        if (nSt === 1) return near(v.y1, top.top) && near(v.y0, top.bottom);
+        const pianoTop = sys.staves[nSt - 2];
+        const piano = near(v.y1, pianoTop.top) && near(v.y0, bot.bottom);
+        if (raster) return fullSys || piano;
+        return fullSys || piano || sys.staves.some(st => near(v.y1, st.top) && near(v.y0, st.bottom));
+      }).map(v => v.x).sort((a, b) => a - b);
       const groups = [];
       xs.forEach(x => {
         const g = groups[groups.length - 1];
@@ -7467,12 +7489,27 @@ const PdfLayer = {
         start = g.x1;
       });
       if (top.x1 - start > 12) bars.push({ x0: start, x1: top.x1 });
+      if (raster && bars.length) {
+        const minBar = Math.max(16, (top.x1 - top.x0) * 0.065);
+        const packed = [];
+        bars.forEach(b => {
+          const last = packed[packed.length - 1];
+          if (last && ((b.x1 - b.x0) < minBar || (last.x1 - last.x0) < minBar)) last.x1 = b.x1;
+          else packed.push({ x0: b.x0, x1: b.x1 });
+        });
+        bars.length = 0;
+        packed.forEach(b => bars.push(b));
+      }
       /* A "bar" with no note or rest in it is the clef and key in front of a
-         start-repeat sign; it belongs to the bar after it. Only judged when
-         the page sets its notes as text at all. */
+         start-repeat sign; it belongs to the bar after it. */
       const inSys = t => t.y < top.top + 30 && t.y > bot.bottom - 30;
-      const hasNotes = b => noted.some(t => inSys(t) && t.x + t.w > b.x0 + 1 && t.x < b.x1 - 1);
-      const judge = noted.length > 10;
+      const blobHit = b => (L.blobs || []).some(h => {
+        const y = (h.y0 + h.y1) / 2, x = (h.x0 + h.x1) / 2;
+        return y <= top.top + 3 * top.gap && y >= bot.bottom - 3 * bot.gap &&
+          x > b.x0 + 1 && x < b.x1 - 1;
+      });
+      const hasNotes = b => noted.some(t => inSys(t) && t.x + t.w > b.x0 + 1 && t.x < b.x1 - 1) || blobHit(b);
+      const judge = noted.length > 10 || (raster && (L.blobs || []).length > 4);
       bars.forEach((b, k) => {
         if (judge && !hasNotes(b) && k + 1 < bars.length) { bars[k + 1].x0 = b.x0; return; }
         sys.bars.push(b);
@@ -7750,17 +7787,29 @@ const PdfLayer = {
         if (g && x - g.x1 < 4) g.x1 = x; else groups.push({ x0: x, x1: x });
       });
       groups.forEach(g => {
-        /* a bar line is a thin run through the staves; a chord is a wider blob */
-        if (g.x1 - g.x0 > 5) return;
+        /* a bar line is a thin run through the staves and the gaps between
+           them; a stem lives on one staff and a chord is a wider blob */
+        if (g.x1 - g.x0 > 4) return;
         const x = Math.round((g.x0 + g.x1) / 2);
         let hit = 0;
         grp.forEach(st => {
           const h = Math.max(1, st.bot - st.top);
           let n = 0;
           for (let y = st.top; y <= st.bot; y++) if (lum((y * cw + x) * 4) < darkLum) n++;
-          if (n / h > 0.5) hit++;
+          if (n / h > 0.45) hit++;
         });
         if (hit < Math.min(2, grp.length)) return;
+        if (grp.length >= 2) {
+          let gapH = 0, gapN = 0;
+          for (let i = 0; i < grp.length - 1; i++) {
+            const a = grp[i].bot, b = grp[i + 1].top;
+            for (let y = a; y <= b; y++) {
+              gapH++;
+              if (lum((y * cw + x) * 4) < darkLum) gapN++;
+            }
+          }
+          if (gapH > 4 && gapN / gapH < 0.18) return;
+        }
         vl.push({ x: x * sx, y0: py(y1), y1: py(y0) });
       });
     });
@@ -7774,14 +7823,16 @@ const PdfLayer = {
     });
     const blobs = [];
     staffBands.forEach(st => {
-      const pad = st.gap * 4;
+      const pad = st.gap * 2.4;
       const yA = Math.max(0, Math.floor(st.top - pad));
       const yB = Math.min(ch - 1, Math.ceil(st.bot + pad));
-      const minW = st.gap * 0.7, maxW = st.gap * 2.4;
-      const minH = st.gap * 0.45, maxH = st.gap * 1.8;
+      const minW = st.gap * 0.65, maxW = st.gap * 2.6;
+      const minH = st.gap * 0.4, maxH = st.gap * 2.0;
       const seen = new Uint8Array(cw * ch);
       const at = (x, y) => y * cw + x;
-      const dark = (x, y) => !onLine[y] && lum((y * cw + x) * 4) < Math.min(130, darkLum - 10);
+      const inkCut = Math.min(130, darkLum - 10);
+      const dark = (x, y) => !onLine[y] && lum((y * cw + x) * 4) < inkCut;
+      const raw = [];
       for (let y = yA; y <= yB; y++) for (let x = st.x0; x <= st.x1; x++) {
         if (seen[at(x, y)] || !dark(x, y)) continue;
         let x0 = x, x1 = x, y0 = y, y1 = y, n = 0;
@@ -7798,12 +7849,47 @@ const PdfLayer = {
           };
           step(cx + 1, cy); step(cx - 1, cy); step(cx, cy + 1); step(cx, cy - 1);
         }
-        const bw = x1 - x0 + 1, bh = y1 - y0 + 1;
-        if (bw < minW || bw > maxW || bh < minH || bh > maxH) continue;
-        if (n < bw * bh * 0.28) continue;
-        if (bw > st.gap * 3 && bh < st.gap * 0.55) continue;
-        blobs.push({ x0: x0 * sx, x1: (x1 + 1) * sx, y0: py(y1 + 1), y1: py(y0) });
+        if (n < 4) continue;
+        raw.push({ x0: x0, x1: x1, y0: y0, y1: y1, n: n });
       }
+      /* A head on a staff line is cut in two by the line; an open head is a
+         pair of arcs. Glue those pieces before judging size. */
+      raw.sort((a, b) => a.x0 - b.x0 || a.y0 - b.y0);
+      const usedB = {};
+      const glued = [];
+      raw.forEach((a, i) => {
+        if (usedB[i]) return;
+        let cur = a;
+        for (let j = i + 1; j < raw.length; j++) {
+          if (usedB[j]) continue;
+          const b = raw[j];
+          const xOver = Math.min(cur.x1, b.x1) - Math.max(cur.x0, b.x0);
+          const yOver = Math.min(cur.y1, b.y1) - Math.max(cur.y0, b.y0);
+          const vGap = Math.max(0, Math.max(cur.y0, b.y0) - Math.min(cur.y1, b.y1) - 1);
+          const hGap = Math.max(0, Math.max(cur.x0, b.x0) - Math.min(cur.x1, b.x1) - 1);
+          const acrossLine = xOver > st.gap * 0.2 && vGap <= 4;
+          const openSides = yOver > st.gap * 0.15 && hGap <= st.gap * 1.1 && hGap + (cur.x1 - cur.x0) + (b.x1 - b.x0) < st.gap * 3;
+          if (!acrossLine && !openSides) continue;
+          usedB[j] = true;
+          cur = {
+            x0: Math.min(cur.x0, b.x0), x1: Math.max(cur.x1, b.x1),
+            y0: Math.min(cur.y0, b.y0), y1: Math.max(cur.y1, b.y1),
+            n: cur.n + b.n
+          };
+        }
+        glued.push(cur);
+      });
+      glued.forEach(g => {
+        const bw = g.x1 - g.x0 + 1, bh = g.y1 - g.y0 + 1;
+        if (bw < minW || bw > maxW || bh < minH || bh > maxH) return;
+        if (g.n < bw * bh * 0.12) return;
+        if (bw > st.gap * 2.2 && bh < st.gap * 0.55) return;
+        const cy = Math.round((g.y0 + g.y1) / 2), cx = Math.round((g.x0 + g.x1) / 2);
+        const inner = lum((cy * cw + cx) * 4);
+        const ring = g.n < bw * bh * 0.32;
+        if (ring && inner < inkCut) return;
+        blobs.push({ x0: g.x0 * sx, x1: (g.x1 + 1) * sx, y0: py(g.y1 + 1), y1: py(g.y0) });
+      });
     });
     return { w: pdfW, h: pdfH, texts: [], hl: hl, vl: vl, blobs: blobs };
   },
@@ -7859,26 +7945,30 @@ const PdfLayer = {
       lay.systems.forEach(sys => {
         const staves = sys.staves;
         const nSt = staves.length;
+        const gap0 = (staves[0] && staves[0].gap) || 6;
         sys.bars.forEach(bar => {
           const barQ = (beats * 4) / beatType;
           const cols = [];
-          staves.forEach((st, si) => {
-            const clef = (nSt >= 2 && si === nSt - 1) ? 'bass' : 'treble';
-            const inSt = y => y <= st.top + 4 * st.gap && y >= st.bottom - 4 * st.gap;
-            mk.heads.concat(blobHeads).filter(h =>
-              inSt(h.y) && h.x + h.w * 0.5 >= bar.x0 + 2 && h.x < bar.x1 - 1
-            ).forEach(h => {
-              const cx = h.x + Math.min(h.w, st.gap) * 0.4;
-              /* a vector page's notes sit close after the clef; a photo's clef
-                 is a blob we must skip, so the pad is larger there */
-              if (cx < bar.x0 + st.gap * (mk.heads.length ? 3.2 : 6.5)) return;
-              const acc = mk.accs.filter(a => Math.abs(a.y - h.y) < st.gap * 0.7 && a.x < cx && cx - a.x < st.gap * 2.4)
-                .sort((a, b) => b.x - a.x)[0];
-              const alter = acc ? (acc.kind === 'sharp' ? 1 : acc.kind === 'flat' ? -1 : 0) : 0;
-              let col = cols.filter(c => Math.abs(c.x - cx) < st.gap * 0.65)[0];
-              if (!col) { col = { x: cx, items: [] }; cols.push(col); }
-              col.items.push({ staff: si + 1, y: h.y, alter: alter, st: st, clef: clef });
+          mk.heads.concat(blobHeads).forEach(h => {
+            const cx = h.x + Math.min(h.w, gap0) * 0.4;
+            if (cx < bar.x0 + 2 || h.x >= bar.x1 - 1) return;
+            let best = null, bestD = 1e9;
+            staves.forEach((st, si) => {
+              const d = h.y > st.top ? h.y - st.top : h.y < st.bottom ? st.bottom - h.y : 0;
+              if (d < bestD) { bestD = d; best = { st: st, si: si }; }
             });
+            if (!best || bestD > best.st.gap * 2.2) return;
+            const st = best.st, si = best.si;
+            const clef = (nSt >= 2 && si === nSt - 1) ? 'bass' : 'treble';
+            /* the clef lives at the start of the system, not of every bar */
+            const clefPad = (bar === sys.bars[0]) ? st.gap * (mk.heads.length ? 3.2 : 6.5) : st.gap * 0.8;
+            if (cx < bar.x0 + clefPad) return;
+            const acc = mk.accs.filter(a => Math.abs(a.y - h.y) < st.gap * 0.7 && a.x < cx && cx - a.x < st.gap * 2.4)
+              .sort((a, b) => b.x - a.x)[0];
+            const alter = acc ? (acc.kind === 'sharp' ? 1 : acc.kind === 'flat' ? -1 : 0) : 0;
+            let col = cols.filter(c => Math.abs(c.x - cx) < st.gap * 0.65)[0];
+            if (!col) { col = { x: cx, items: [] }; cols.push(col); }
+            col.items.push({ staff: si + 1, y: h.y, alter: alter, st: st, clef: clef });
           });
           cols.sort((a, b) => a.x - b.x);
           const span = Math.max(1, bar.x1 - bar.x0);
@@ -10263,6 +10353,12 @@ class Component extends DCLogic {
   }
   /* A key on a MIDI keyboard sounds for exactly as long as it is held. */
   keyDown(midi, vel) {
+    /* Local Control is off on the same piano, so the key is silent until we
+       send it back out — on the piano, at the velocity they struck. */
+    if (this.midiOutLive()) {
+      this.midiOutLayer().thruOn(midi, vel);
+      return;
+    }
     const p = this.piano();
     /* a key press is not a click, so it cannot start the sound itself — and
        notes banked while it was stopped would all land at once later */
@@ -10272,6 +10368,10 @@ class Component extends DCLogic {
     this._held[midi] = p.strike(midi, null, vel || 90);
   }
   keyUp(midi) {
+    if (this.midiOutLive()) {
+      this.midiOutLayer().thruOff(midi);
+      return;
+    }
     if (!this._held || !this._held[midi]) return;
     this.piano().release(this._held[midi]);
     delete this._held[midi];
@@ -11336,8 +11436,11 @@ class Component extends DCLogic {
             if (t >= horizon) break;
             if (t < from || n.q <= skip || !this.handOk(n.note, S.hands)) continue;
             const up = S.loop ? Math.min(T(n.upQ), lapEnd) : T(n.upQ);
-            if (sendAudio) p.release(p.strike(n.midi, A(t), n.vel), A(up));
-            if (out) { out.noteOn(n.midi, n.vel, t); out.noteOff(n.midi, up); }
+            /* While you play along, the score sits under your touch instead of
+               blasting over it. Listening without a keyboard stays at written level. */
+            const vel = this.liveMidi() ? Math.max(1, Math.round(n.vel * 0.55)) : n.vel;
+            if (sendAudio) p.release(p.strike(n.midi, A(t), vel), A(up));
+            if (out) { out.noteOn(n.midi, vel, t); out.noteOff(n.midi, up); }
           }
         }
         if (out) {
@@ -14894,6 +14997,8 @@ class Component extends DCLogic {
 
     /* the keyboard, lit for the step */
     const showKeys = st.kind !== 'rhythm' && !st.hands && !st.rhythm && (st.kind !== 'quiz' || !!L.keys) && (!!L.keys || !!st.keys || st.kind !== 'read');
+    /* a hand is shown where fingers matter: playing, a chord, a hand position */
+    const handable = showKeys && !!this.learnHandPlan(L, si, st);
     out.learnHasKeys = showKeys;
     out.learnKeys = null;
     if (showKeys) {
@@ -14908,7 +15013,30 @@ class Component extends DCLogic {
       }
       if (demo > -1 && clock && clock.seq) marks[clock.seq[demo]] = 'next';
       if (lx.flash) marks[lx.flash.m] = lx.flash.kind;
-      out.learnKeys = C.keyboard(h, Object.assign({}, k, { marks, onKey: m => this.learnInput(m) }));
+      /* the see-through hand of the practice screen, over these keys: its
+         finger numbers replace the ones printed on the keys */
+      const hand = handable && this.handsOn() ? this.learnHandAt(L, si, st, lx, demo) : null;
+      let hands = null;
+      if (hand) {
+        const KW = C.KEY_W, KH = C.KEY_H, HT = KH + HandArt.ZONE;
+        const far = { x: -4000, y: -100, width: 10000, height: HT + 200 };
+        hands = {
+          zone: HandArt.ZONE,
+          defs: h('defs', { key: 'defs' },
+            h('radialGradient', { id: 'ppp-hand-sheen' },
+              h('stop', { offset: 0, stopColor: '#fff', stopOpacity: 0.35 }),
+              h('stop', { offset: 1, stopColor: '#fff', stopOpacity: 0 })),
+            h('linearGradient', { id: 'ppp-hand-fall', gradientUnits: 'userSpaceOnUse', x1: 0, y1: HT - 34, x2: 0, y2: HT },
+              h('stop', { offset: 0, stopColor: '#fff' }),
+              h('stop', { offset: 1, stopColor: '#000' })),
+            h('mask', Object.assign({ id: 'ppp-hand-fade', maskUnits: 'userSpaceOnUse' }, far),
+              h('rect', Object.assign({ fill: 'url(#ppp-hand-fall)' }, far)))),
+          layers: [this.handLayer(hand.hand, hand.at, Fingering.keyX(k.lo), KW, KH)]
+        };
+      }
+      out.learnKeys = C.keyboard(h, Object.assign({}, k, {
+        labels: hands && k.labels === 'fingers' ? 'names' : k.labels, marks, hands, onKey: m => this.learnInput(m)
+      }));
     }
 
     /* the Tap pad for rhythm: pressed, not clicked, so the time is the press */
@@ -14948,6 +15076,14 @@ class Component extends DCLogic {
     }
     if (canListen) tools.push({ id: 'listen', label: clock ? tx('Stop') : tx('Listen'), on: () => this.learnListen(), style: btn(false) });
     if (st.kind === 'play' && lx.idx > 0 && !lx.done) tools.push({ id: 'restart', label: tx('Start over'), on: () => this.learnOpen(L.id, si), style: btn(false) });
+    if (handable) {
+      const on = this.handsOn();
+      tools.push({
+        id: 'hands', label: tx('Show hands'), pressed: on ? 'true' : 'false', hint: tx('Show which finger plays each note, with a see-through hand over the keys'),
+        on: () => this.setState(s2 => ({ toggles: Object.assign({}, s2.toggles, { handGuide: s2.toggles.handGuide === false }) })),
+        style: btn(false) + (on ? 'border-color:var(--accent);background:var(--accent-3);color:var(--accent);' : 'color:var(--ink2);')
+      });
+    }
     out.learnTools = tools;
 
     const ready = !!(lx.done || (st.kind === 'quiz' && lx.right));
@@ -14957,6 +15093,64 @@ class Component extends DCLogic {
     out.learnBackLabel = tx('Back');
     out.learnBackStyle = btn(false) + (si === 0 ? 'visibility:hidden;' : '');
     return out;
+  }
+  /* The hand for a step: which hand, and PPP's fingering of its notes —
+     the same engine as the practice screen, keeping a fingering the lesson
+     writes out. A step with no notes but a hand position (thumb on Do…)
+     gets that position at rest. Worked out once per step. */
+  learnHandPlan(L, si, st) {
+    const key = L.id + ':' + si;
+    if (this._lhp && this._lhp.key === key) return this._lhp.plan;
+    let plan = null;
+    try {
+      const listen = st.listen || {};
+      const chord = st.kind === 'chord' ? st.notes : (!st.seq && listen.chord) || null;
+      const seq = chord ? null : (st.seq || listen.seq || null);
+      const map = (st.keys && st.keys.fingers) || (L.keys && L.keys.fingers) || null;
+      const all = chord || seq || (map ? Object.keys(map).map(Number) : []);
+      const hand = all.length && all.every(m => m < 60) ? 'l' : 'r';
+      if (['play', 'chord', 'read'].indexOf(st.kind) < 0 || !all.length) plan = null;
+      else if (chord && Math.max.apply(null, chord) - Math.min.apply(null, chord) > 12) plan = null;   /* not one hand */
+      else if (!chord && !seq) {
+        const fm = {};
+        Object.keys(map).forEach(m => { fm[map[m]] = +m; });
+        plan = { hand, rest: Fingering.restFingers(fm, hand, 0) };
+      } else {
+        const beats = st.beats || listen.beats || [], fing = chord ? null : (st.fingering || listen.fingering || null);
+        const notes = [];
+        let at = 0;
+        if (chord) chord.forEach(m => notes.push({ m: 1, b: 0, dur: 4, midi: m, hand, staff: 1, voice: 1 }));
+        else seq.forEach((m, j) => {
+          const d = beats[j] || 1;
+          notes.push({ m: 1, b: at, dur: d, midi: m, hand, staff: 1, voice: 1, finger: fing ? fing[j] : undefined });
+          at += d;
+        });
+        const score = Score.finalize({
+          id: 'learn:' + key, title: 'learn', tempo: 90, staves: 1,
+          measures: [{ number: 1, lenQ: Math.max(4, Math.ceil(at / 4) * 4), time: { beats: 4, beatType: 4 }, key: { fifths: 0, mode: 'major' }, clefs: { 1: hand === 'l' ? 'bass' : 'treble' } }],
+          notes, sections: [{ id: 's1', from: 1, to: 1 }]
+        });
+        const H = Fingering.plan(score).hands[hand];
+        plan = H && H.events.length ? { hand, events: H.events, poses: H.poses } : null;
+      }
+    } catch (e) { plan = null; }
+    this._lhp = { key, plan };
+    return plan;
+  }
+  /* Where that hand is now: on the key to play next (its finger marked when
+     the step shows the key too), on the note an example is sounding, or
+     resting in position. */
+  learnHandAt(L, si, st, lx, demo) {
+    const P = this.learnHandPlan(L, si, st);
+    if (!P) return null;
+    if (P.rest) return { hand: P.hand, at: { pose: P.rest, fingers: [], state: 'rest' } };
+    const last = P.events.length - 1;
+    let i = 0, state = 'rest';
+    if (demo > -1) { i = demo; state = 'now'; }
+    else if (st.kind === 'play') { i = lx.idx; state = !lx.done && (st.hint || lx.slips >= 2) ? 'now' : 'rest'; }
+    else if (st.kind === 'chord') state = lx.done ? 'rest' : 'now';
+    const e = P.events[clamp(i, 0, last)];
+    return { hand: P.hand, at: { pose: P.poses[e.pose], fingers: e.fingers, state } };
   }
   learnChoiceStyle(right, wrong) {
     return 'min-width:64px;padding:12px 18px;border-radius:12px;font-family:inherit;font-size:14.5px;font-weight:600;cursor:pointer;transition:background .12s ease;'

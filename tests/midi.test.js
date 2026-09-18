@@ -470,6 +470,41 @@ function installFakeMidi() {
     playWithMidi.hasOn && playWithMidi.follow === false && playWithMidi.live,
     JSON.stringify(playWithMidi));
 
+  const mix = await page.evaluate(async xml => {
+    const app = PPP.app;
+    const score = PPP.parseMusicXML(xml, 'mix.musicxml');
+    const planVel = PPP.PianoScore.of(score).strikes[0].vel;
+    await app.connectMidi();
+    await app.connectMidiOut('fake-1');
+    window.__fake.sent = [];
+    window.__fake.send([0x90, 60, 100]);
+    const thru = window.__fake.sent.filter(x => x.data[0] === 0x91 && x.data[1] === 60);
+    window.__fake.send([0x80, 60, 0]);
+    window.__fake.sent = [];
+    app.setState({
+      score: score, tempo: 180, loop: false, loopFrom: 1, loopTo: 1, beat: 0,
+      playing: false, hands: 'both', practiceMode: 'practice',
+      toggles: Object.assign({}, app.state.toggles, { notes: true, midi: true, follow: false, sound: false })
+    });
+    app.wake();
+    if (app.state.playing) app.togglePlay();
+    app.togglePlay();
+    await new Promise(r => setTimeout(r, 80));
+    const ons = window.__fake.sent.filter(x => x.data[0] === 0x90 && x.data[2] > 0);
+    if (app.state.playing) app.togglePlay();
+    return {
+      thruVel: thru[0] && thru[0].data[2],
+      thruN: thru.length,
+      planVel: planVel,
+      scoreVel: ons[0] && ons[0].data[2],
+      live: app.liveMidi()
+    };
+  }, midiOutXml);
+  ok('a key you strike is sent to the piano at that velocity', mix.thruVel === 100, JSON.stringify(mix));
+  ok('the playing score is quieter than the written dynamic while you play along',
+    mix.live && mix.scoreVel > 0 && mix.scoreVel < mix.planVel,
+    'plan=' + mix.planVel + ' out=' + mix.scoreVel);
+
   const local = await page.evaluate(async () => {
     window.__fake.sent = [];
     const app = PPP.app;
