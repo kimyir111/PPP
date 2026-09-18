@@ -1823,10 +1823,18 @@ function buildDemoScore() {
       key: { fifths: 0, mode: 'minor' },
       clefs: { 1: 'treble', 2: 'bass' }
     });
-    [0, 1, 1.5, 2, 3, 3.5].forEach((b, j) => notes.push({
-      m, b, dur: b % 1 ? 0.5 : 1, p: RH[(i * 3 + j) % RH.length],
-      hand: 'r', staff: 1, voice: 1, type: b % 1 ? 'eighth' : 'quarter', dots: 0
-    }));
+    /* A note lasts until the next one in its voice. Giving every on-beat note
+       a quarter made beats 1 and 3 overlap the eighth that follows them — five
+       beats in a bar of four — and the engraving drew the left hand under the
+       wrong right-hand note. */
+    const onsets = [0, 1, 1.5, 2, 3, 3.5];
+    onsets.forEach((b, j) => {
+      const len = (j + 1 < onsets.length ? onsets[j + 1] : 4) - b;
+      notes.push({
+        m, b, dur: len, p: RH[(i * 3 + j) % RH.length],
+        hand: 'r', staff: 1, voice: 1, type: len >= 1 ? 'quarter' : 'eighth', dots: 0
+      });
+    });
     [0, 2].forEach((b, j) => LH[(i + j) % LH.length].forEach((p, k) => notes.push({
       m, b, dur: 2, p, hand: 'l', staff: 2, voice: 5, type: 'half', dots: 0, chord: k > 0
     })));
@@ -4865,7 +4873,8 @@ function makeScoreView(React) {
 
           built.forEach(b => {
             b.voice.setStave(b.stave);
-            b.beams = VF.Beam.generateBeams(b.voice.getTickables().filter(t => !t.isRest || !t.isRest()));
+            b.beams = VF.Beam.generateBeams(b.voice.getTickables()
+              .filter(t => !(VF.GhostNote && t instanceof VF.GhostNote) && (!t.isRest || !t.isRest())));
             b.voice.getTickables().forEach((sn, idx) => {
               const meta = b.meta[idx];
               if (!meta) return;
@@ -4873,6 +4882,8 @@ function makeScoreView(React) {
                  ourselves rather than depending on that. */
               const g = ctx.openGroup('ppp-note', null);
               if (g && g.classList) g.classList.add('ppp-note');
+              /* bar|beat|staff, so what sounds together can be checked to be drawn together */
+              if (g && g.setAttribute && meta.key) g.setAttribute('data-onset', meta.key);
               try { sn.setStave(b.stave).setContext(ctx).draw(); } catch (e) {}
               ctx.closeGroup();
               if (!meta.rest && meta.sn) {
@@ -5172,8 +5183,26 @@ function makeScoreView(React) {
 
       const meta = [];
       const tickables = [];
-      groups.forEach(g => {
+      const QT = (VF.RESOLUTION || 16384) / 4;          /* ticks in a quarter */
+      const fit = (t, quarters) => {
+        const want = Math.max(1, Math.round(quarters * QT));
+        let have = 0;
+        try { have = t.getTicks().value(); } catch (e) { return; }
+        if (!have || Math.abs(want - have) < 2) return;
+        try { t.applyTickMultiplier(want, have); } catch (e) { /* leave it as written */ }
+      };
+      const spacer = quarters => {
+        const gn = new VF.GhostNote({ duration: 'q' });
+        fit(gn, quarters);
+        return gn;
+      };
+      const barQ = mm.lenQ || 4;
+      if (groups[0].b > 1e-3) { tickables.push(spacer(groups[0].b)); meta.push(null); }
+      groups.forEach((g, gi) => {
         const head = g.notes[0];
+        const nextB = gi + 1 < groups.length ? groups[gi + 1].b : barQ;
+        const span = Math.max(0.01, nextB - g.b);
+        const sounding = head.dur > 0 ? Math.min(head.dur, span) : span;
         const isRest = g.notes.every(n => n.rest);
         const base = VF_TYPE[head.type] || 'q';
         let sn;
@@ -5203,6 +5232,7 @@ function makeScoreView(React) {
         for (let d = 0; d < (head.dots || 0); d++) { try { VF.Dot.buildAndAttach([sn], { all: true }); } catch (e) {} }
         try { sn.setStyle({ fillStyle: ink, strokeStyle: ink }); } catch (e) {}
 
+        fit(sn, sounding);
         tickables.push(sn);
         meta.push({
           abs: (mm.startQ + g.b), dur: head.dur, rest: isRest,
@@ -5214,6 +5244,8 @@ function makeScoreView(React) {
           tieStart: g.notes.some(n => n.tieStart), tieStop: g.notes.some(n => n.tieStop),
           slurStart: g.notes.some(n => n.slurStart), slurStop: g.notes.some(n => n.slurStop)
         });
+        /* a note shorter than the gap to the next one: hold the rest of the gap */
+        if (span - sounding > 1e-3) { tickables.push(spacer(span - sounding)); meta.push(null); }
       });
       if (!tickables.length) return null;
 
