@@ -46,7 +46,12 @@ function installFakeMidi() {
   await page.setViewport({ width: 1500, height: 1000 });
   await page.evaluateOnNewDocument(installFakeMidi);
   page.on('pageerror', e => errors.push('[pageerror] ' + e.message));
-  page.on('console', m => { if (m.type() === 'error') errors.push('[console] ' + m.text()); });
+  page.on('console', m => {
+    if (m.type() !== 'error') return;
+    const t = m.text() || '';
+    if (/ERR_CONNECTION_REFUSED|Failed to load resource/.test(t)) return;
+    errors.push('[console] ' + t);
+  });
 
   await page.goto(URL, { waitUntil: 'networkidle2', timeout: 45000 });
   await page.waitForFunction(() => document.querySelectorAll('aside nav button').length >= 6, { timeout: 25000 });
@@ -504,6 +509,43 @@ function installFakeMidi() {
   ok('the playing score is quieter than the written dynamic while you play along',
     mix.live && mix.scoreVel > 0 && mix.scoreVel < mix.planVel,
     'plan=' + mix.planVel + ' out=' + mix.scoreVel);
+
+  const longRun = await page.evaluate(async xml => {
+    const app = PPP.app;
+    const score = PPP.parseMusicXML(xml, 'long-run.musicxml');
+    await app.connectMidi();
+    await app.connectMidiOut('fake-out');
+    window.__fake.sent = [];
+    app.setState({
+      score: score, tempo: 120, loop: true, loopFrom: 1, loopTo: 1, beat: 0,
+      playing: false, hands: 'both', practiceMode: 'practice',
+      toggles: Object.assign({}, app.state.toggles, { notes: true, midi: true, follow: false, sound: false })
+    });
+    app.wake();
+    if (app.state.playing) app.togglePlay();
+    app.togglePlay();
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    await wait(400);
+    const ons = () => window.__fake.sent.filter(x => (x.data[0] & 0xf0) === 0x90 && x.data[2] > 0).length;
+    const panics = () => window.__fake.sent.filter(x => (x.data[0] & 0xf0) === 0xb0 && x.data[1] === 123).length;
+    const a = ons();
+    const p0 = panics();
+    await wait(1800);
+    const b = ons();
+    const p1 = panics();
+    window.__fake.sent = [];
+    app.advance(performance.now() + 900);
+    await wait(50);
+    const hitchPanic = window.__fake.sent.filter(x => (x.data[0] & 0xf0) === 0xb0 && x.data[1] === 123).length;
+    const still = !!app.state.playing;
+    const after = window.__fake.sent.filter(x => (x.data[0] & 0xf0) === 0x90 && x.data[2] > 0).length;
+    if (app.state.playing) app.togglePlay();
+    return { a: a, b: b, p0: p0, p1: p1, hitchPanic: hitchPanic, still: still, after: after };
+  }, midiOutXml);
+  ok('looped playback is still sending notes after a couple of seconds',
+    longRun.still && longRun.b > longRun.a, JSON.stringify(longRun));
+  ok('a stalled frame does not all-notes-off the sounding run',
+    longRun.hitchPanic === 0 && longRun.still, JSON.stringify(longRun));
 
   const local = await page.evaluate(async () => {
     window.__fake.sent = [];

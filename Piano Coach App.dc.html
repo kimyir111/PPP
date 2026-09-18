@@ -3845,6 +3845,10 @@ class MidiOut {
     const when = (t == null || !isFinite(t)) ? nowMs() : t;
     this.send([0x90, m, v], t);
     this._queuedOn.push({ midi: m, t: when });
+    if (this._queuedOn.length > 48) {
+      const cut = nowMs() - 80;
+      this._queuedOn = this._queuedOn.filter(q => q.t > cut);
+    }
   }
   noteOff(midi, t) {
     const m = midi & 127;
@@ -11214,7 +11218,8 @@ class Component extends DCLogic {
      taken back and planned again from that point. */
   transportKey(S) {
     const [from, to] = this.range(S);
-    return [S.score.id, from, to, S.loop ? 1 : 0, S.tempo, S.hands, this.liveMidi() ? 1 : 0,
+    /* liveMidi is not in the key: a USB blip would panic the sounding score. */
+    return [S.score.id, from, to, S.loop ? 1 : 0, S.tempo, S.hands,
       this.midiOutLive() ? 1 : 0, this.midiOutId() || '',
       S.toggles.notes ? 1 : 0, S.metro && S.toggles.sound ? 1 : 0].join('|');
   }
@@ -11274,10 +11279,11 @@ class Component extends DCLogic {
     const key = this.transportKey(S);
     const p = this._piano;
     let tp = this._tp;
-    /* setState lands in this.state at once in this runtime, so a beat other
-       than the one the transport last set means the playhead was moved — a
-       bar was clicked, R was pressed — and the run starts again from there. */
-    if (!tp || Math.abs(S.beat - tp.beat) > 1e-6) {
+    /* Restart only on a real seek (a bar click, R). Comparing beats to a
+       millionth of a quarter panicked MIDI every time qAt drifted, which
+       is how a long run went silent. */
+    const seeked = tp && Math.abs((S.beat || 0) - (tp.beat || 0)) > 0.5;
+    if (!tp || seeked) {
       const b0 = S.beat < writtenStart - 0.001 || S.beat >= writtenEnd ? writtenStart : S.beat;
       this.startTransport(S, b0);
       tp = this._tp;
@@ -11398,10 +11404,13 @@ class Component extends DCLogic {
     const midiOk = this.midiOutLive();
     const audioOk = !!(p && p.running());
     if (!audioOk && !midiOk) return;
-    const horizon = now + PIANO.lookaheadMs;
+    /* MIDI is queued on the device. A 400ms window dies when the tab's
+       40ms timer is throttled or a frame stalls; keep about two seconds. */
+    const ahead = midiOk ? Math.max(PIANO.lookaheadMs, 1600) : PIANO.lookaheadMs;
+    const horizon = now + ahead;
     /* Anything due longer ago than this is let go. Playing it late, bunched
        up with what comes next, would sound worse than leaving it out. */
-    const from = Math.max(tp.schedT, now - 80);
+    const from = Math.max(tp.schedT, now - ahead);
     if (horizon <= from) return;
     tp.schedT = horizon;
     if (audioOk) {
