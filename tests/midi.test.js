@@ -445,6 +445,31 @@ function installFakeMidi() {
     outRun.futureOnCount > 0 && outRun.cancelledCount === outRun.futureOnCount,
     'futureOns=' + outRun.futureOnCount + ' cancelled=' + outRun.cancelledCount);
 
+  const playWithMidi = await page.evaluate(async xml => {
+    const app = PPP.app;
+    const score = PPP.parseMusicXML(xml, 'play-with-midi.musicxml');
+    await app.connectMidi();
+    window.__fake.sent = [];
+    app.setState({
+      score: score, tempo: 180, loop: false, loopFrom: 1, loopTo: 1, beat: 0,
+      playing: false, hands: 'both', practiceMode: 'practice',
+      toggles: Object.assign({}, app.state.toggles, { notes: true, midi: true, follow: true, sound: false })
+    });
+    app.wake();
+    if (app.state.playing) app.togglePlay();
+    app.togglePlay();
+    await new Promise(r => setTimeout(r, 120));
+    const sent = window.__fake.sent;
+    const hasOn = sent.some(x => (x.data[0] & 0xf0) === 0x90 && x.data[2] > 0);
+    const follow = app.state.toggles.follow;
+    const playing = !!app.state.playing;
+    if (app.state.playing) app.togglePlay();
+    return { hasOn: hasOn, follow: follow, playing: playing, live: app.liveMidi(), out: app.midiOutLive(), n: sent.length };
+  }, midiOutXml);
+  ok('Play with a MIDI piano connected sends the score to the piano',
+    playWithMidi.hasOn && playWithMidi.follow === false && playWithMidi.live,
+    JSON.stringify(playWithMidi));
+
   const local = await page.evaluate(async () => {
     window.__fake.sent = [];
     const app = PPP.app;
