@@ -100,8 +100,21 @@ curl -L -o tools/audiveris.msi \
 msiexec /a tools\audiveris.msi /qn TARGETDIR=D:\PPP\tools\audiveris
 ```
 
-Audiveris ships without Tesseract language data, so it reads notes but not text — titles and
-tempo words come back empty. Notes, clefs, rests and staves are unaffected.
+Audiveris ships without Tesseract language data. Without it, Audiveris reads the notes but no
+text: no chord names, titles or tempo words (its log says `No installed OCR languages`). Add the
+English data once:
+
+```sh
+curl -L -o "$APPDATA/AudiverisLtd/audiveris/config/tessdata/eng.traineddata" \
+  https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata
+```
+
+A PDF exported from notation software (Finale, MuseScore, Sibelius) needs none of this for its
+chord names, 8va brackets, title and tempo. Those are text and lines in the PDF itself, and PPP
+reads them from there (`PdfLayer` in the app). On each page it counts the bar lines against the
+bars Audiveris found, and puts each chord name or 8va on the note under it. A page whose bar
+lines disagree with recognition is left as recognised. Notes under an 8va are stored at the pitch
+they sound and drawn where the page writes them.
 
 ### PDFs are rasterised in the browser
 
