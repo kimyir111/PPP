@@ -2257,6 +2257,22 @@ function mendChord(raw) {
   return PdfLayer.CHORD.test(t) ? t : null;
 }
 
+/* "To Coda", "D.S. al Coda", "D.C. al Fine", "Fine": where the player goes
+   next. OCR's "T0 Coda" is To Coda. Anything else is not one of these. */
+function navWord(raw) {
+  const t = String(raw || '').replace(/\s+/g, ' ').trim().replace(/0/g, 'O');
+  if (!t || t.length > 24) return null;
+  if (/^to\s*coda$/i.test(t)) return { kind: 'tocoda', text: 'To Coda' };
+  const ds = /^d\.?\s*s\.?(?:\s*al\s*(coda|fine))?$/i.exec(t);
+  if (ds) return { kind: 'ds', text: 'D.S.' + (ds[1] ? ' al ' + ds[1].charAt(0).toUpperCase() + ds[1].slice(1).toLowerCase() : '') };
+  const dc = /^d\.?\s*c\.?(?:\s*al\s*(coda|fine))?$/i.exec(t);
+  if (dc) return { kind: 'dc', text: 'D.C.' + (dc[1] ? ' al ' + dc[1].charAt(0).toUpperCase() + dc[1].slice(1).toLowerCase() : '') };
+  if (/^fine$/i.test(t)) return { kind: 'fine', text: 'Fine' };
+  if (/^coda$/i.test(t)) return { kind: 'coda', text: null };
+  if (/^segno$/i.test(t)) return { kind: 'segno', text: null };
+  return null;
+}
+
 function chordText(el, txt) {
   const step = txt(el, 'root root-step', null);
   if (!step) return null;
@@ -2322,6 +2338,7 @@ function parseMusicXML(xmlText, name) {
   const chords = [];          /* {m, b, text} — chord symbols above the staff */
   const pedals = [];          /* {m, b, type} — Ped. and its release */
   const ottavas = [];         /* {m, b, endM, endB, size, dir} — 8va / 8vb spans */
+  const marks = [];           /* {m, kind, text} — segno, coda, To Coda, D.S., D.C., Fine */
   const measureInfo = {};     /* measure number -> {time, key, clefs, lenQ} */
   const order = [];           /* measure numbers, in document order */
   let staffBase = 0;          /* so a second single-staff part becomes the left hand */
@@ -2404,6 +2421,17 @@ function parseMusicXML(xmlText, name) {
         }
 
         if (tag === 'direction') {
+          /* segno, coda and the words that send the player back or on */
+          if (partIdx === 0) {
+            const put = (kind, text) => {
+              if (!marks.some(k => k.m === number && k.kind === kind)) marks.push({ m: number, kind: kind, text: text || null });
+            };
+            if (el.querySelector('direction-type > segno')) put('segno');
+            if (el.querySelector('direction-type > coda')) put('coda');
+            const nw = el.querySelector('direction-type > words');
+            const nav = nw ? navWord(nw.textContent) : null;
+            if (nav) put(nav.kind, nav.text);
+          }
           if (fromOmr && partIdx === 0) {
             const w = el.querySelector('direction-type > words');
             const c = w ? mendChord(w.textContent) : null;
@@ -2622,7 +2650,7 @@ function parseMusicXML(xmlText, name) {
     tempo: Math.round(tempo || 84),
     staves: Math.max(1, Math.min(maxStaffSeen, 4)),
     measures, notes, chords: chords,
-    pedals: pedals, ottavas: ottavas.filter(o => o.endM != null),
+    pedals: pedals, ottavas: ottavas.filter(o => o.endM != null), marks: marks,
     sections: null, seeds: null
   });
 }
@@ -6220,7 +6248,7 @@ const PdfLayer = {
       });
       groups.forEach(g => {
         const s = g.s.replace(/♯/g, '#').replace(/♭/g, 'b');
-        if (PdfLayer.CHORD.test(s)) out.push({ text: s, x: g.x, y: g.y, sys: sys });
+        if (PdfLayer.CHORD.test(s) || /^\/[A-G][#b]?$/.test(s)) out.push({ text: s, x: g.x, y: g.y, sys: sys });
       });
     });
     return out;
@@ -6272,6 +6300,53 @@ const PdfLayer = {
     const bpm = L.texts.filter(t => /^=\s*\d{2,3}\s*$/.test(t.s.trim()) &&
       L.texts.some(q => q.font === lay.font && /^[q♩\uE1D5]$/.test(q.s.trim()) && q.x < t.x && t.x - q.x < 14 && Math.abs(q.y - t.y) < 8))[0];
     if (bpm) out.tempo = parseInt(bpm.s.replace(/\D/g, ''), 10);
+    return out;
+  },
+
+  /* Segno and coda signs over a staff, and the words that go with them:
+     "To Coda", "D.S. al Coda", "D.C.", "Fine". A sign stands at the start of
+     its bar (one set just before a bar line belongs to the bar after it); a
+     word ends where the bar it belongs to ends. */
+  navigation(L, lay) {
+    const out = [];
+    const where = y => {
+      let best = null;
+      lay.systems.forEach(sys => {
+        const top = sys.staves[0], bot = sys.staves[sys.staves.length - 1];
+        const above = y - top.top, below = bot.bottom - y;
+        if (above > -2 && above < 45 && (!best || above < best.d)) best = { sys: sys, d: above };
+        if (below > 0 && below < 45 && (!best || below < best.d)) best = { sys: sys, d: below };
+      });
+      return best ? best.sys : null;
+    };
+    const barIn = (sys, x) => sys.bars.filter(b => x >= b.x0 - 3 && x < b.x1 + 3)[0] || null;
+    L.texts.forEach(t => {
+      const sgn = t.s.trim();
+      let kind = null, text = null;
+      if (t.font === lay.font) {
+        /* Maestro sets the segno as "%" and the coda as a character that comes
+           out as "Þ" or the "fi" ligature; SMuFL has its own */
+        if (/^[%\uE047]$/.test(sgn)) kind = 'segno';
+        else if (/^(Þ|fi|ﬁ|\uE048)$/.test(sgn)) kind = 'coda';
+      } else {
+        const nav = navWord(sgn);
+        if (nav) { kind = nav.kind; text = nav.text; }
+      }
+      if (!kind) return;
+      const sys = where(t.y);
+      if (!sys) return;
+      if (kind === 'segno' || kind === 'coda') {
+        let b = barIn(sys, t.x);
+        if (b && b.x1 - t.x < 14) {
+          const i = sys.bars.indexOf(b);
+          if (i + 1 < sys.bars.length) b = sys.bars[i + 1];
+        }
+        if (b && b.m != null) out.push({ m: b.m, kind: kind, text: text });
+      } else {
+        const b = barIn(sys, t.x + Math.max(0, t.w - 4));
+        if (b && b.m != null) out.push({ m: b.m, kind: kind, text: text });
+      }
+    });
     return out;
   },
 
@@ -6563,6 +6638,22 @@ const PdfLayer = {
         out.ottavas++;
       });
     });
+
+    /* segno, coda and the words around them; the page's own replace what
+       recognition made of the bars it covers */
+    const navs = [];
+    const navCovered = {};
+    placed.forEach(pl => {
+      pl.lay.systems.forEach(sys => sys.bars.forEach(b => { if (b.m != null) navCovered[b.m] = true; }));
+      PdfLayer.navigation(pl.L, pl.lay).forEach(n => {
+        if (!navs.some(k => k.m === n.m && k.kind === n.kind)) navs.push(n);
+      });
+    });
+    if (navs.length) {
+      score.marks = (score.marks || []).filter(k => !navCovered[k.m]).concat(navs)
+        .sort((a, b) => absOf(a.m, 0) - absOf(b.m, 0));
+    }
+    out.marks = navs.length;
 
     /* title, composer and tempo, when recognition had only the file name */
     const L0 = layers[0];
@@ -7295,6 +7386,19 @@ function makeScoreView(React) {
         });
       }
 
+      /* A segno or coda sign stands at the start of its bar, on the line of
+         the chord names, and takes its turn with them. */
+      const segOfBar = {};
+      this._map.forEach(sg => { segOfBar[sg.number] = sg; });
+      const rowOfY = y => Math.round((y - HEAD_H) / ROW_H);
+      (score.marks || []).forEach(mk => {
+        const sg = segOfBar[mk.m];
+        if (!sg || (mk.kind !== 'segno' && mk.kind !== 'coda')) return;
+        /* Noto Music draws the coda smaller than the segno; printed, they match */
+        chordQueue.push({ row: rowOfY(sg.y), x: sg.x + 1, text: mk.kind === 'segno' ? '𝄋' : '𝄌',
+          family: "'Noto Music', 'Segoe UI Symbol', serif", size: mk.kind === 'segno' ? 22 : 30, weight: '400', sign: true });
+      });
+
       /* Chord names sit on one line per system, as a lead sheet prints them:
          where the staff leaves room, or higher when a note, a beam or an 8va
          climbs into that room. */
@@ -7314,10 +7418,33 @@ function makeScoreView(React) {
       chordQueue.slice().sort((a, b) => a.row - b.row || a.x - b.x).forEach(c => {
         const rTop = HEAD_H + c.row * ROW_H;
         const x = Math.max(c.x, (lastEnd[c.row] || -Infinity) + 6);
-        const t = svgLabel(c.text, { x: x, y: chordBase[rTop], size: 13, weight: '600', family: "Figtree, system-ui, sans-serif" });
+        const t = svgLabel(c.text, { x: x, y: chordBase[rTop] + (c.sign ? 4 : 0), size: c.size || 13, weight: c.weight || '600',
+          family: c.family || "Figtree, system-ui, sans-serif" });
         let wd = c.text.length * 7.5;
         try { wd = t.getComputedTextLength() || wd; } catch (e) {}
-        lastEnd[c.row] = x + wd;
+        /* a long name at the end of a line is pulled back inside the page */
+        const room = W - 4;
+        if (t && x + wd > room) {
+          const nx = Math.max((lastEnd[c.row] || -Infinity) + 6, room - wd);
+          t.setAttribute('x', nx);
+          lastEnd[c.row] = nx + wd;
+        } else lastEnd[c.row] = x + wd;
+      });
+
+      /* "To Coda" and "Fine" over the end of their bar, "D.S." and "D.C."
+         under it, set as a printed score sets them. */
+      (score.marks || []).forEach(mk => {
+        const sg = segOfBar[mk.m];
+        if (!sg || !mk.text || mk.kind === 'segno' || mk.kind === 'coda') return;
+        const x = sg.x + sg.w - 4;
+        if (mk.kind === 'tocoda' || mk.kind === 'fine') {
+          let y = sg.y + TREBLE_Y + LINE0 - 6;
+          if (barReach[mk.m] != null && isFinite(barReach[mk.m])) y = Math.min(y, barReach[mk.m] - 4);
+          svgLabel(mk.text, { x: x, y: y, size: 13, weight: '700', anchor: 'end' });
+        } else {
+          const below = sg.y + staffY(nStaves - 1) + LINE0 + 40 + (PED_H ? 44 : 22);
+          svgLabel(mk.text, { x: x, y: below, size: 13, weight: '700', anchor: 'end' });
+        }
       });
 
       /* First and second endings, over the chord names of their line: a line

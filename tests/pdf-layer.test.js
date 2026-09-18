@@ -65,6 +65,15 @@ function makePdf() {
   text('F1', 11, 386, 720, 'm');
   text('F1', 11, 395, 720, '/E');
   text('F2', 14, 405, 724, 'b');
+  /* a change of bass alone over the E in bar 2 */
+  text('F1', 11, 298, 720, '/E');
+  /* segno at the start of bar 2, a coda sign just before the bar line into
+     bar 3 (Maestro's coda comes out of WinAnsi as "Þ"), "To Coda" at the end
+     of bar 1 and "D.S. al Coda" under the end of bar 3 */
+  text('F2', 20, 205, 706, '%');
+  text('F2', 20, 342, 706, '\\336');
+  text('F1', 10, 150, 703, 'To Coda');
+  text('F1', 10, 470, 585, 'D.S. al Coda');
   /* 8va, its dashed line and the hook at its end */
   text('F1', 10, 292, 708, '8va');
   for (let x = 312; x < 400; x += 6) line(x, 711, x + 3, 711);
@@ -142,6 +151,7 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
       out: out, before: before,
       title: score.title, composer: score.composer, tempo: score.tempo,
       chords: score.chords.map(c => c.m + '|' + c.b + '|' + c.text),
+      marks: (score.marks || []).map(k => k.m + ':' + k.kind + (k.text ? '(' + k.text + ')' : '')),
       ottavas: score.ottavas,
       pitches: score.notes.filter(n => n.staff === 1).map(n => n.m + '|' + n.b + '|' + n.p),
       left: score.notes.filter(n => n.staff === 2).map(n => n.m + '|' + n.b + '|' + n.p),
@@ -169,7 +179,11 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
     (r.out.missing || []).length === 1 && r.out.missing[0].m === 3 && r.out.missing[0].staff === 1 && r.out.missing[0].page === 4,
     JSON.stringify(r.out.missing));
   ok('the chord names land on the notes under them',
-    ['1|0|G', '1|1|D', '2|0|C', '3|0|Cm/Eb'].every(c => r.chords.indexOf(c) > -1) && r.chords.length === 4, r.chords.join(', '));
+    ['1|0|G', '1|1|D', '2|0|C', '3|0|Cm/Eb'].every(c => r.chords.indexOf(c) > -1) && r.chords.length === 5, r.chords.join(', '));
+  ok('a change of bass alone is a chord name too', r.chords.indexOf('2|2|/E') > -1);
+  ok('segno, coda, To Coda and D.S. al Coda land on their bars',
+    ['2:segno', '3:coda', '1:tocoda(To Coda)', '3:ds(D.S. al Coda)'].every(k => r.marks.indexOf(k) > -1) && r.marks.length === 4,
+    r.marks.join(', '));
   ok('a chord name set in pieces is read whole', r.chords.indexOf('3|0|Cm/Eb') > -1);
   ok('the 8va runs from the note under its sign to the last note before its hook',
     r.ottavas.length === 1 && r.ottavas[0].m === 2 && r.ottavas[0].b === 2 && r.ottavas[0].endM === 3 && r.ottavas[0].dir === 1 && r.ottavas[0].staff === 1,
@@ -196,13 +210,25 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
     return {
       fromOmr: PPP.parseMusicXML(omr + bars + '</part></score-partwise>', 'x').chords.map(c => c.m + ':' + c.text),
       written: PPP.parseMusicXML(head + bars + '</part></score-partwise>', 'x').chords.length,
-      sus: sus.chords.map(c => c.text)
+      sus: sus.chords.map(c => c.text),
+      nav: (() => {
+        const dir = x => '<direction placement="above"><direction-type>' + x + '</direction-type></direction>';
+        const xml = omr +
+          '<measure number="1"><attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>' +
+          dir('<segno/>') + n + dir('<words>T0 Coda</words>') + '</measure>' +
+          '<measure number="2">' + dir('<coda/>') + n + dir('<words>D.S. al Coda</words>') + dir('<words>Fine</words>') + '</measure>' +
+          '</part></score-partwise>';
+        return PPP.parseMusicXML(xml, 'x').marks.map(k => k.m + ':' + k.kind + (k.text ? '(' + k.text + ')' : ''));
+      })()
     };
   });
   ok('chord names OCR garbled are mended', ['1:A/C#', '2:Am7', '3:D7sus4', '4:Cm/Eb'].every(c => mended.fromOmr.indexOf(c) > -1), mended.fromOmr.join(', '));
   ok('words that are not chord names stay words', mended.fromOmr.length === 4, mended.fromOmr.length + ' chords');
   ok('in a file someone wrote, words are never taken for chords', mended.written === 0);
   ok('a degree the printed name already shows is not added twice', mended.sus[0] === 'D7sus4', mended.sus[0]);
+  ok('segno, coda and the words around them are read from a file, and the "T0 Coda" OCR makes too',
+    ['1:segno', '1:tocoda(To Coda)', '2:coda', '2:ds(D.S. al Coda)', '2:fine(Fine)'].every(k => mended.nav.indexOf(k) > -1) && mended.nav.length === 5,
+    mended.nav.join(', '));
 
   console.log('\n── a rolled chord ─────────────────────');
   const roll = await page.evaluate(() => {
@@ -265,6 +291,9 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
     !!d && d.headY != null && d.headY >= d.staffTop - 6 && d.headY <= d.staffBottom,
     d ? 'head at ' + Math.round(d.headY) + ', staff ' + Math.round(d.staffTop) + '–' + Math.round(d.staffBottom) : '');
   ok('the title from the page heads the score', !!d && d.texts.indexOf('Vector Song') > -1);
+  ok('the segno and coda signs and their words are printed',
+    !!d && ['𝄋', '𝄌', 'To Coda', 'D.S. al Coda'].every(t => d.texts.indexOf(t) > -1),
+    d ? d.texts.filter(t => /𝄋|𝄌|Coda/.test(t)).join(' | ') : '');
   ok('the arpeggio is drawn beside its chord', !!d && d.wavyReach != null && d.wavyReach > 6,
     d && d.wavyReach != null ? 'reaches ' + d.wavyReach.toFixed(1) + 'px left of the head' : 'not found');
   ok('no page errors', pageErrors.length === 0, pageErrors.slice(0, 2).join(' | ') || 'clean');
