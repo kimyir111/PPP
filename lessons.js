@@ -37,6 +37,16 @@
   function letterFlat(m) { var p = pc(m); return PC_SHARP[p] ? LET[(PC_STEP[p] + 1) % 7] + '♭' : letter(m); }
   /* diatonic position: one per white key, so a staff line or space is one step */
   function diat(m) { return (Math.floor(m / 12) - 1) * 7 + PC_STEP[pc(m)]; }
+  /* A note as a lesson spells it: in a flat key a black key is a flat. */
+  function nm(les, step, m) { return (step && step.flats) || (les && les.flats) ? solFlat(m) : sol(m); }
+  /* An item of a sequence: one note, or several struck together. */
+  function notesOf(item) { return Array.isArray(item) ? item : [item]; }
+  function flat(list) { var out = []; (list || []).forEach(function (x) { out = out.concat(notesOf(x)); }); return out; }
+  /* What an item is called: its chord symbol if the step gives one, else its notes. */
+  function itemName(les, step, i) {
+    if (step.names && step.names[i]) return t(step.names[i]);
+    return notesOf(step.seq[i]).map(function (m) { return nm(les, step, m); }).join('·');
+  }
 
   var C4 = 60;
   var UP8 = [60, 62, 64, 65, 67, 69, 71, 72];
@@ -93,7 +103,23 @@
   }
   function songListen(id) { var s = SONGS[id]; return { seq: s.notes, beats: s.beats, bpm: s.bpm, fingering: s.fingering || null }; }
 
-  /* ---------------------------------------------------------------- course */
+  /* The left hand's root under a melody, at the start of each measure:
+     note index → bass key. */
+  var BASS = {
+    airplane: { 0: 48, 4: 48, 7: 43, 10: 48, 13: 48, 17: 48, 20: 43, 24: 48 },
+    ode: { 0: 48, 4: 43, 8: 48, 12: 43, 15: 48, 19: 43, 23: 48, 27: 43, 29: 48 }
+  };
+  function withBass(notes, bass) { return notes.map(function (m, i) { return bass[i] != null ? [bass[i], m] : m; }); }
+  function halves(n) { var a = []; for (var i = 0; i < n; i++) a.push(0.5); return a; }
+
+  /* ---------------------------------------------------------------- course
+     Three levels. Level 1 is for someone who has never played; level 2 adds
+     scales, keys and building chords; level 3 is harmony and accompaniment. */
+  var LEVELS = [
+    { n: 1, title: 'First steps', who: 'Never played before', sub: 'The keys, Do Re Mi, finger numbers, reading notes, the beat and your first songs.' },
+    { n: 2, title: 'Scales and chords', who: 'You can play a simple tune', sub: 'Intervals, major and minor scales, key signatures, building chords and chord symbols, trickier rhythms and expression.' },
+    { n: 3, title: 'Chords and accompaniment', who: 'You know your triads', sub: 'The chords of a key, progressions, seventh chords, accompaniment patterns and both hands together.' }
+  ];
   var COURSE = [
     { id: 'u1', title: 'Meet the piano', lessons: [
       { id: 'keys', title: 'White keys and black keys', goal: 'Find your way around the keyboard.',
@@ -363,18 +389,374 @@
             notes: [60, 64, 67], keys: { labels: 'fingers', fingers: { 60: 1, 64: 3, 67: 5 } } },
           { kind: 'chord', title: 'Left hand chord', text: ['Now the left hand, one octave lower, with fingers 5, 3 and 1.'],
             notes: [48, 52, 55], keys: { labels: 'fingers', fingers: { 48: 5, 52: 3, 55: 1 } }, kbBase: 48 },
-          { kind: 'read', title: 'You finished the basics!',
+          { kind: 'read', title: 'You finished Level 1!',
             text: ['You can find every key, read notes on both clefs, count the beat, and play songs and chords.',
-              'Next: open My Songs, try a sample song, and let PPP coach you through it.'],
+              'Next comes Level 2: scales, key signatures and building chords of your own.'],
             listen: { chord: [48, 60, 64, 67, 72] } }
         ] }
     ] }
+    ,
+
+    /* ============================ level 2: scales and chords ============================ */
+    { id: 'u7', level: 2, title: 'Intervals and steps', lessons: [
+      { id: 'intervals', title: 'Intervals: how far apart', goal: 'Measure the distance between two notes.',
+        keys: { lo: 60, hi: 72, labels: 'names' }, steps: [
+          { kind: 'read', title: 'Count the white keys',
+            text: ['An interval is the distance between two notes. Count the white keys from the first note to the second, counting both.',
+              'Do to Re is a 2nd, Do to Mi a 3rd, Do to Fa a 4th, Do to Sol a 5th, and Do to high Do an octave — an 8th.'],
+            keys: { hl: [60, 67] }, listen: { seq: [60, 62, 60, 64, 60, 65, 60, 67, 60, 72], bpm: 110 } },
+          { kind: 'read', title: 'Steps and skips',
+            text: ['A 2nd moves to the very next key: a step. A 3rd skips one key. On the staff a step goes from a line to the next space; a 3rd goes line to line, or space to space.',
+              'Played together, a 3rd sounds sweet and a 5th sounds open and hollow.'],
+            staff: { clef: 'treble', notes: [[60, 64], [62, 65], [60, 67], [60, 72]], names: ['3rd', '3rd', '5th', 'Octave'] },
+            listen: { seq: [[60, 64], [62, 65], [60, 67], [60, 72]], beats: [2, 2, 2, 2] } },
+          { kind: 'quiz', title: 'Name the interval', qs: [
+            { q: 'Do up to Mi is a…', choices: ['2nd', '3rd', '5th'], answer: 1, why: 'Do, Re, Mi: three keys counting both ends — a 3rd.', hl: [60, 64] },
+            { q: 'Do up to Sol is a…', choices: ['4th', '5th', '6th'], answer: 1, why: 'Do Re Mi Fa Sol: five keys — a 5th.', hl: [60, 67] },
+            { q: 'Re up to Fa is a…', choices: ['2nd', '3rd', '4th'], answer: 1, why: 'Re, Mi, Fa: skipping one white key is always a 3rd.', hl: [62, 65] },
+            { q: 'Listen: a step or a skip?', choices: ['A step (2nd)', 'A skip (3rd)'], answer: 1, why: 'Mi to Sol skips Fa — a 3rd.', listen: { seq: [64, 67] } }] },
+          { kind: 'play', title: 'Play the intervals', text: ['Play Do and the note a 3rd above it, then Do and the note a 5th above it.'],
+            seq: [60, 64, 60, 67], hint: false, chips: true },
+          { kind: 'play', title: 'Both notes together', text: ['Now press each pair at the same moment: a 3rd, a 5th, then an octave with thumb and little finger.'],
+            seq: [[60, 64], [60, 67], [60, 72]], names: ['3rd', '5th', 'Octave'], hint: true, chips: true }
+        ] },
+      { id: 'halfwhole', title: 'Half steps and whole steps', goal: 'Tell the two smallest steps apart.',
+        keys: { lo: 60, hi: 72, labels: 'names' }, steps: [
+          { kind: 'read', title: 'Two half steps make a whole step',
+            text: ['A half step goes to the very next key. A whole step is two half steps: it skips exactly one key, black or white.',
+              'Do to Re is a whole step — the black key between them is skipped. Mi to Fa is only a half step: there is no black key between them.'],
+            keys: { hl: [60, 62], hl2: [64, 65] }, listen: { seq: [60, 62, 64, 65] } },
+          { kind: 'quiz', title: 'Half or whole?', qs: [
+            { q: 'Mi to Fa is a…', choices: ['Half step', 'Whole step'], answer: 0, why: 'No key between them: a half step.', hl: [64, 65] },
+            { q: 'Fa to Sol is a…', choices: ['Half step', 'Whole step'], answer: 1, why: 'Fa♯ sits between them, so Fa to Sol is a whole step.', hl: [65, 67] },
+            { q: 'Ti to high Do is a…', choices: ['Half step', 'Whole step'], answer: 0, why: 'Like Mi–Fa, Ti–Do has no black key between: a half step.', hl: [71, 72] }] },
+          { kind: 'play', title: 'Walk in whole steps', text: ['From Do, go up in whole steps, skipping one key each time: Do, Re, Mi, Fa♯, Sol♯, La♯. It sounds dreamy — this is the whole-tone scale.'],
+            seq: [60, 62, 64, 66, 68, 70], hint: true, keys: { blackNames: true } },
+          { kind: 'play', title: 'Walk in half steps', text: ['Now in half steps — every key, black and white — from Sol up to high Do.'],
+            seq: [67, 68, 69, 70, 71, 72], hint: true, keys: { blackNames: true } }
+        ] }
+    ] },
+    { id: 'u8', level: 2, title: 'Scales and keys', lessons: [
+      { id: 'majorscale', title: 'The major scale pattern', goal: 'Learn the recipe behind Do Re Mi.',
+        keys: { lo: 60, hi: 72, labels: 'names' }, steps: [
+          { kind: 'read', title: 'Whole, whole, half…',
+            text: ['Do Re Mi Fa Sol La Ti Do climbs in a fixed pattern of steps: whole, whole, half, whole, whole, whole, half.',
+              'The half steps are Mi–Fa and Ti–Do. A major scale on any key uses this same pattern — that is why every major scale sounds like Do Re Mi.'],
+            keys: { hl: [64, 65, 71, 72] }, listen: { seq: UP8 } },
+          { kind: 'quiz', title: 'The pattern', qs: [
+            { q: 'Where are the half steps in a major scale?', choices: ['Between notes 3–4 and 7–8', 'Between notes 1–2 and 5–6', 'There are none'], answer: 0, why: 'Mi–Fa is 3–4 and Ti–Do is 7–8.' },
+            { q: 'How many different notes before the scale repeats?', choices: ['5', '7', '12'], answer: 1, why: 'Seven different notes, then Do again.' }] },
+          { kind: 'play', title: 'Right hand, C major', text: ['1 2 3, thumb under, 1 2 3 4 5 — and listen for the pattern.'], seq: UP8, hint: true },
+          { kind: 'play', title: 'Left hand, C major', text: ['Left hand, from the Do below Middle Do: 5 4 3 2 1, then finger 3 crosses over the thumb to La, and 2 1.'],
+            seq: [48, 50, 52, 53, 55, 57, 59, 60], hint: true, kbBase: 48, keys: { lo: 48, hi: 64 } }
+        ] },
+      { id: 'gmajor', title: 'G major: one sharp', goal: 'Play a scale with a black key in it.',
+        keys: { lo: 60, hi: 83, labels: 'names', blackNames: true }, steps: [
+          { kind: 'read', title: 'Start on Sol',
+            text: ['Start the same pattern on Sol and one note has to change: to keep the half step at the top, Fa becomes Fa♯.',
+              'Sol La Ti Do Re Mi Fa♯ Sol is the G major scale.'],
+            keys: { hl: [67, 69, 71, 72, 74, 76, 78, 79] }, listen: { seq: [67, 69, 71, 72, 74, 76, 78, 79] } },
+          { kind: 'read', title: 'The key signature',
+            text: ['Instead of a ♯ in front of every Fa, music in G major puts one sharp at the start of every line, on the Fa line. That is the key signature.',
+              'It means: every Fa is Fa♯, all the way through.'],
+            staff: { clef: 'treble', key: 1, notes: [67, 69, 71, 72, 74, 76, 78, 79], labels: 'names' } },
+          { kind: 'play', title: 'Play G major', text: ['Right hand: 1 2 3 on Sol La Ti, thumb under to Do, then 1 2 3 4 5 up to high Sol. Watch for Fa♯!'],
+            seq: [67, 69, 71, 72, 74, 76, 78, 79], hint: true },
+          { kind: 'quiz', title: 'Quick check', qs: [
+            { q: 'Which note is sharp in G major?', choices: ['Fa', 'Do', 'Ti'], answer: 0, why: 'One sharp: Fa♯.' },
+            { q: 'Where is a key signature written?', choices: ['At the start of every line', 'Only at the very end', 'Above each note'], answer: 0, why: 'Right after the clef, on every line.' }] }
+        ] },
+      { id: 'fmajor', title: 'F major: one flat', goal: 'Meet the flat in a key signature.', flats: true,
+        keys: { lo: 60, hi: 77, labels: 'names', blackNames: true }, steps: [
+          { kind: 'read', title: 'Start on Fa',
+            text: ['Start the pattern on Fa and this time Ti must come down a half step: Ti♭.',
+              'Fa Sol La Ti♭ Do Re Mi Fa is the F major scale. Its key signature is one flat, on the Ti line.'],
+            staff: { clef: 'treble', key: -1, notes: [65, 67, 69, 70, 72, 74, 76, 77], labels: 'names' }, listen: { seq: [65, 67, 69, 70, 72, 74, 76, 77] } },
+          { kind: 'play', title: 'Play F major', text: ['The fingering changes here: 1 2 3 4 on Fa Sol La Ti♭, then thumb under to Do and 1 2 3 4 to the top.'],
+            seq: [65, 67, 69, 70, 72, 74, 76, 77], fingering: [1, 2, 3, 4, 1, 2, 3, 4], hint: true },
+          { kind: 'quiz', title: 'Quick check', qs: [
+            { q: 'Which note is flat in F major?', choices: ['Ti', 'Mi', 'Fa'], answer: 0, why: 'One flat: Ti♭.' },
+            { q: 'Ti♭ is the same key as…', choices: ['La♯', 'Do♯', 'Sol♯'], answer: 0, why: 'One black key, two names: La♯ and Ti♭.' }] }
+        ] },
+      { id: 'minor', title: 'Minor: the darker sound', goal: 'Hear the difference between major and minor.',
+        keys: { lo: 57, hi: 72, labels: 'names' }, steps: [
+          { kind: 'read', title: 'Same keys, a new home',
+            text: ['Play the white keys from La to La and you get the A minor scale. It uses the same keys as C major, but La is home.',
+              'Minor sounds darker and softer, sometimes sad. Listen: C major first, then A minor.'],
+            listen: { seq: [60, 62, 64, 65, 67, 69, 71, 72, 57, 59, 60, 62, 64, 65, 67, 69], beats: [1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2], bpm: 110 } },
+          { kind: 'quiz', title: 'Major or minor?', qs: [
+            { q: 'Listen. Major or minor?', choices: ['Major (bright)', 'Minor (dark)'], answer: 1, why: 'La Ti Do Re Mi: the sound of A minor.', listen: { seq: [57, 59, 60, 62, 64] } },
+            { q: 'Listen again. Major or minor?', choices: ['Major (bright)', 'Minor (dark)'], answer: 0, why: 'Do Re Mi Fa Sol: major.', listen: { seq: [60, 62, 64, 65, 67] } },
+            { q: 'Which note is home in A minor?', choices: ['La', 'Do', 'Mi'], answer: 0, why: 'A minor starts and ends on La.' }] },
+          { kind: 'play', title: 'Play A minor', text: ['From the La below Middle Do: 1 2 3 on La Ti Do, thumb under to Re, then 1 2 3 4 5 up to La.'],
+            seq: [57, 59, 60, 62, 64, 65, 67, 69], hint: true }
+        ] }
+    ] },
+    { id: 'u9', level: 2, title: 'Chords', lessons: [
+      { id: 'triads', title: 'Building a triad', goal: 'Build a chord on any white key.',
+        keys: { lo: 60, hi: 76, labels: 'names' }, steps: [
+          { kind: 'read', title: 'Skip, skip',
+            text: ['The most common chord is the triad: three notes stacked in 3rds. Start on a white key and skip one, skip one: Do Mi Sol, Fa La Do, Sol Ti Re.',
+              'The bottom note is the root, and it names the chord: Do Mi Sol is the C chord, Fa La Do is F, Sol Ti Re is G.'],
+            staff: { clef: 'treble', notes: [[60, 64, 67], [65, 69, 72], [67, 71, 74]], names: ['C', 'F', 'G'] },
+            listen: { seq: [[60, 64, 67], [65, 69, 72], [67, 71, 74]], beats: [2, 2, 2] } },
+          { kind: 'chord', title: 'The F chord', text: ['Build a triad on Fa: Fa, La, Do — fingers 1, 3 and 5.'], notes: [65, 69, 72] },
+          { kind: 'chord', title: 'The G chord', text: ['Now on Sol: Sol, Ti, Re.'], notes: [67, 71, 74] },
+          { kind: 'play', title: 'C, F, G, C', text: ['Play the three chords in a row and back to C. Lift the whole hand and move it as one.'],
+            seq: [[60, 64, 67], [65, 69, 72], [67, 71, 74], [60, 64, 67]], names: ['C', 'F', 'G', 'C'], hint: true, chips: true }
+        ] },
+      { id: 'majorminor', title: 'Major and minor chords', goal: 'Hear and build both kinds of triad.',
+        keys: { lo: 57, hi: 72, labels: 'names' }, steps: [
+          { kind: 'read', title: 'The middle note decides',
+            text: ['In a major chord the middle note is 4 half steps above the root. In a minor chord it is 3 — one half step lower.',
+              'C major is Do Mi Sol. C minor is Do Mi♭ Sol: only the middle finger moves, down to the black key. Listen to both.'],
+            flats: true, keys: { hl: [60, 64, 67], hl2: [63] }, listen: { seq: [[60, 64, 67], [60, 63, 67]], beats: [2, 2] } },
+          { kind: 'quiz', title: 'Bright or dark?', qs: [
+            { q: 'Listen. Major or minor chord?', choices: ['Major (bright)', 'Minor (dark)'], answer: 1, why: 'La Do Mi: A minor.', listen: { chord: [57, 60, 64] } },
+            { q: 'Listen. Major or minor chord?', choices: ['Major (bright)', 'Minor (dark)'], answer: 0, why: 'Fa La Do: F major.', listen: { chord: [65, 69, 72] } },
+            { q: 'Which of these is a minor chord?', choices: ['Re Fa La', 'Do Mi Sol', 'Fa La Do'], answer: 0, why: 'Re to Fa is only 3 half steps: D minor.' }] },
+          { kind: 'chord', title: 'C minor', text: ['Play Do, Mi♭ and Sol.'], notes: [60, 63, 67], flats: true },
+          { kind: 'chord', title: 'A minor', text: ['A minor needs no black key: La, Do, Mi.'], notes: [57, 60, 64] },
+          { kind: 'play', title: 'Major, minor, major', text: ['Move only the middle finger: C, Cm, C — then D minor and D major.'],
+            seq: [[60, 64, 67], [60, 63, 67], [60, 64, 67], [62, 65, 69], [62, 66, 69]], names: ['C', 'Cm', 'C', 'Dm', 'D'], hint: true, chips: true }
+        ] },
+      { id: 'chordnames', title: 'Chord symbols', goal: 'Read chord names like C, Am and G.',
+        keys: { lo: 57, hi: 76, labels: 'names' }, steps: [
+          { kind: 'read', title: 'Letters above the music',
+            text: ['Songbooks write chords as letters above the melody. The letter is the root: C means the C major chord, G the G major chord.',
+              'A small m means minor: Am is A minor, Dm is D minor. That is enough to play most pop songs.'],
+            keys: { hl: [57, 60, 64] }, listen: { seq: [[57, 60, 64], [62, 65, 69]], beats: [2, 2] } },
+          { kind: 'quiz', title: 'Read the symbol', qs: [
+            { q: 'What does Am mean?', choices: ['A minor: La Do Mi', 'A major: La Do♯ Mi', 'A and M together'], answer: 0, why: 'A small m means minor.' },
+            { q: 'Which notes make the chord F?', choices: ['Fa La Do', 'Fa La♭ Do', 'Fa Sol La'], answer: 0, why: 'Root Fa, skip, La, skip, Do.' },
+            { q: 'Which symbol means Re Fa La?', choices: ['D', 'Dm', 'F'], answer: 1, why: 'Re Fa La is D minor: Dm.' },
+            { q: 'Which symbol means Sol Ti Re?', choices: ['G', 'Gm', 'B'], answer: 0, why: 'Sol Ti Re is G major.' }] },
+          { kind: 'play', title: 'Play from the symbols', text: ['Play each chord the symbol names. The keys will not light up — build each triad yourself.'],
+            seq: [[60, 64, 67], [57, 60, 64], [62, 65, 69], [67, 71, 74]], names: ['C', 'Am', 'Dm', 'G'], hint: false, chips: true }
+        ] },
+      { id: 'inversions', title: 'Inversions', goal: 'Move between chords without jumping.',
+        keys: { lo: 57, hi: 76, labels: 'names' }, steps: [
+          { kind: 'read', title: 'Same notes, a new order',
+            text: ['A chord keeps its name when its notes are stacked in another order. Mi Sol Do is still a C chord — its first inversion. Sol Do Mi is the second inversion.',
+              'Inversions let the hand move only a little from one chord to the next.'],
+            staff: { clef: 'treble', notes: [[60, 64, 67], [64, 67, 72], [67, 72, 76]], names: ['C', 'C/E', 'C/G'] },
+            listen: { seq: [[60, 64, 67], [64, 67, 72], [67, 72, 76]], beats: [2, 2, 2] } },
+          { kind: 'play', title: 'C to F, the short way', text: ['Keep Do under your thumb: C is Do Mi Sol, and F in second inversion is Do Fa La. Only two fingers move.'],
+            seq: [[60, 64, 67], [60, 65, 69], [60, 64, 67], [60, 65, 69]], names: ['C', 'F/C', 'C', 'F/C'], hint: true, chips: true },
+          { kind: 'play', title: 'C, F, G, C, close together', text: ['Add G in first inversion — Ti Re Sol — just under C. The hand hardly moves at all.'],
+            seq: [[60, 64, 67], [60, 65, 69], [59, 62, 67], [60, 64, 67]], names: ['C', 'F/C', 'G/B', 'C'], hint: true, chips: true },
+          { kind: 'quiz', title: 'Quick check', qs: [
+            { q: 'Mi Sol Do is which chord?', choices: ['C, first inversion', 'E minor', 'G'], answer: 0, why: 'The same three notes as C, starting on Mi.' },
+            { q: 'Why use inversions?', choices: ['So the hand moves less between chords', 'To make chords louder', 'Because root position is wrong'], answer: 0, why: 'Close chords are easier and sound smoother.' }] }
+        ] }
+    ] },
+    { id: 'u10', level: 2, title: 'Rhythm and expression', lessons: [
+      { id: 'eighths', title: 'Eighth notes', goal: 'Fit two notes into one beat.', steps: [
+        { kind: 'read', title: 'Two to a beat',
+          text: ['An eighth note lasts half a beat, so two fit in one beat. Alone it has a flag; in pairs a beam joins their stems.',
+            'Count them “1 and 2 and”: the number on the beat, “and” in between.'],
+          rhythm: [1, 0.5, 0.5, 1, 0.5, 0.5], listen: { pattern: [1, 0.5, 0.5, 1, 0.5, 0.5], bpm: 66 } },
+        { kind: 'quiz', title: 'Quick check', qs: [
+          { q: 'How many eighth notes fit in one beat?', choices: ['1', '2', '4'], answer: 1, why: 'Each lasts half a beat.' },
+          { q: 'How many eighth notes last as long as a half note?', choices: ['2', '4', '8'], answer: 1, why: 'A half note is 2 beats: four halves of a beat.' }] },
+        { kind: 'rhythm', title: 'Tap the eighths', text: ['Tap every note, saying “1 and 2 and” out loud.'],
+          pattern: [1, 1, 0.5, 0.5, 1, 0.5, 0.5, 0.5, 0.5, 2], bpm: 60 }
+      ] },
+      { id: 'dotted', title: 'Dotted notes and ties', goal: 'Hold notes for three beats — and for one and a half.', steps: [
+        { kind: 'read', title: 'A dot adds half',
+          text: ['A dot after a note makes it half as long again. A dotted half note lasts 3 beats; a dotted quarter lasts one and a half.',
+            'A dotted quarter is usually followed by an eighth: long, short — like the end of each line of the Ode to Joy.'],
+          rhythm: [3, 1, 1.5, 0.5, 2], listen: { pattern: [3, 1, 1.5, 0.5, 2], bpm: 66 } },
+        { kind: 'read', title: 'Ties join notes',
+          text: ['A tie is a curve joining two notes of the same pitch. Play the first and hold it through the second — do not play it again.',
+            'Ties are how a note is held across a bar line.'],
+          rhythm: [1, 1, 2, { d: 1, tie: true }, 1, 2], listen: { pattern: [1, 1, 2, { d: 1, tie: true }, 1, 2], bpm: 66 } },
+        { kind: 'quiz', title: 'Quick check', qs: [
+          { q: 'How long is a dotted half note?', choices: ['2 beats', '3 beats', '4 beats'], answer: 1, why: '2 beats plus half again: 3.' },
+          { q: 'How long is a dotted quarter note?', choices: ['1 beat', '1½ beats', '2 beats'], answer: 1, why: '1 beat plus half again.' },
+          { q: 'What do you do at a tie?', choices: ['Hold the note on — do not play it again', 'Play the note twice', 'Stop playing'], answer: 0, why: 'A tie adds the second note’s length to the first.' }] },
+        { kind: 'rhythm', title: 'Tap dotted rhythms', text: ['Tap at the start of each note — and not on a note the tie carries on.'],
+          pattern: [3, 1, 1.5, 0.5, 1, 1, 2, { d: 2, tie: true }], bpm: 60 }
+      ] },
+      { id: 'threefour', title: '3/4 time: the waltz', goal: 'Count music in threes.', steps: [
+        { kind: 'read', title: 'One, two, three',
+          text: ['In 3/4 time each measure has three beats, and the first is the strongest: ONE two three, ONE two three — the waltz.',
+            'A dotted half note fills a whole measure of 3/4.'],
+          rhythm: [1, 1, 1, 2, 1, 3], per: 3, listen: { pattern: [1, 1, 1, 2, 1, 3], per: 3, bpm: 84 } },
+        { kind: 'rhythm', title: 'Tap a waltz', text: ['The count-in is three clicks now. Tap every note and lean on the first beat of each measure.'],
+          pattern: [1, 1, 1, 2, 1, 1, 1, 1, 3], per: 3, bpm: 84 },
+        { kind: 'play', title: 'Oom-pah-pah', text: ['Left hand plays low Do on ONE; the right hand plays Mi and Sol together on two and three. Then Sol and Fa–Ti for G7, and home.'],
+          seq: [48, [64, 67], [64, 67], 43, [65, 71], [65, 71], 48, [64, 67], [64, 67]], twoHands: true, hint: true, chips: true,
+          beats: [1, 1, 1, 1, 1, 1, 1, 1, 1], bpm: 100, keys: { lo: 36, hi: 71 } }
+      ] },
+      { id: 'expression', title: 'Loud, soft, fast, slow', goal: 'Read the words and signs that say how to play.', steps: [
+        { kind: 'read', title: 'Dynamics',
+          text: ['Dynamics say how loud to play. p (piano) is soft and f (forte) is loud; mp and mf are medium-soft and medium-loud; pp and ff are very soft and very loud.',
+            'A long opening wedge (crescendo) means grow louder; a closing one (decrescendo) means grow softer. Listen to a crescendo.'],
+          listen: { seq: [60, 62, 64, 65, 67, 69, 71, 72], vels: [28, 38, 48, 60, 72, 86, 100, 116] } },
+        { kind: 'read', title: 'Legato and staccato',
+          text: ['Legato, shown by a curved slur over the notes, means smooth and connected: hold each key until the next one sounds.',
+            'Staccato, a dot above or below a note, means short and detached: let the key spring straight back up. Listen: legato, then staccato.'],
+          listen: { seq: [60, 62, 64, 65, 67, 67, 65, 64, 62, 60], short: [0, 0, 0, 0, 0, 1, 1, 1, 1, 1], bpm: 100 } },
+        { kind: 'read', title: 'Tempo words',
+          text: ['Tempo words, usually Italian, sit above the first line: Largo is very slow, Andante a walking pace, Moderato moderate, Allegro fast and lively, Presto very fast.',
+            'A fermata — an arch with a dot — over a note means: hold it longer than written, as long as feels right.'] },
+        { kind: 'quiz', title: 'Quick check', qs: [
+          { q: 'What does f mean?', choices: ['Loud', 'Soft', 'Fast'], answer: 0, why: 'f is forte: loud.' },
+          { q: 'Which is the softest?', choices: ['pp', 'mf', 'f'], answer: 0, why: 'pp is pianissimo: very soft.' },
+          { q: 'Listen. Legato or staccato?', choices: ['Legato (smooth)', 'Staccato (short)'], answer: 1, why: 'Each note was cut short: staccato.', listen: { seq: [67, 65, 64, 62, 60], short: [1, 1, 1, 1, 1], bpm: 100 } },
+          { q: 'Listen. Growing louder or softer?', choices: ['Louder (crescendo)', 'Softer (decrescendo)'], answer: 1, why: 'Each note was quieter than the last.', listen: { seq: [72, 71, 69, 67, 65, 64], vels: [116, 96, 76, 58, 42, 28] } },
+          { q: 'What does Allegro mean?', choices: ['Fast and lively', 'Very slow', 'Very soft'], answer: 0, why: 'Allegro: fast and cheerful.' }] }
+      ] }
+    ] },
+
+    /* ============================ level 3: chords and accompaniment ============================ */
+    { id: 'u11', level: 3, title: 'Chords in a key', lessons: [
+      { id: 'diatonic', title: 'The chords of a key: I, IV, V', goal: 'Find the three chords most songs are built on.',
+        keys: { lo: 60, hi: 83, labels: 'names' }, steps: [
+          { kind: 'read', title: 'A chord on every note',
+            text: ['Build a triad on each note of the C major scale and you get the seven chords of C major. Musicians number them with Roman numerals: I on Do, II on Re, and so on up to VII on Ti.',
+              'I, IV and V — C, F and G — are major and do most of the work. II, III and VI — Dm, Em and Am — are minor.'],
+            staff: { clef: 'treble', notes: [[60, 64, 67], [62, 65, 69], [64, 67, 71], [65, 69, 72], [67, 71, 74], [69, 72, 76], [71, 74, 77]], names: ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'] },
+            listen: { seq: [[60, 64, 67], [62, 65, 69], [64, 67, 71], [65, 69, 72], [67, 71, 74], [69, 72, 76], [71, 74, 77], [72, 76, 79]], bpm: 90 } },
+          { kind: 'quiz', title: 'Numbers and names', qs: [
+            { q: 'In C major, which chord is V?', choices: ['G', 'F', 'Am'], answer: 0, why: 'Count up the scale: Do 1, Re 2, Mi 3, Fa 4, Sol 5 — G.' },
+            { q: 'In C major, which chord is IV?', choices: ['F', 'D', 'E'], answer: 0, why: 'The fourth note is Fa: F.' },
+            { q: 'Which chord of C major is minor?', choices: ['Am', 'F', 'G'], answer: 0, why: 'VI — La Do Mi — is minor.' },
+            { q: 'In G major, which chord is I?', choices: ['G', 'C', 'D'], answer: 0, why: 'I is always the chord of the key’s own note.' }] },
+          { kind: 'play', title: 'I – IV – V – I', text: ['Play C, F, G and C in root position — and hear how G wants to come home to C.'],
+            seq: [[60, 64, 67], [65, 69, 72], [67, 71, 74], [60, 64, 67]], names: ['I (C)', 'IV (F)', 'V (G)', 'I (C)'], hint: true, chips: true }
+        ] },
+      { id: 'progression', title: 'The four-chord progression', goal: 'Play the chords behind countless pop songs.',
+        keys: { lo: 36, hi: 71, labels: 'names' }, steps: [
+          { kind: 'read', title: 'I – V – vi – IV',
+            text: ['C, G, Am, F — in numbers I, V, vi, IV — is the most used chord progression in pop music. Countless songs loop just these four chords.',
+              'With inversions the right hand barely moves: C (Do Mi Sol), G (Ti Re Sol), Am (Do Mi La), F (Do Fa La).'],
+            chips: true, seq: [[60, 64, 67], [59, 62, 67], [60, 64, 69], [60, 65, 69]], names: ['C', 'G', 'Am', 'F'],
+            listen: { seq: [[60, 64, 67], [59, 62, 67], [60, 64, 69], [60, 65, 69], [60, 64, 67], [59, 62, 67], [60, 64, 69], [60, 65, 69]], beats: [2, 2, 2, 2, 2, 2, 2, 2], bpm: 90 } },
+          { kind: 'play', title: 'Right-hand chords', text: ['Play the four chords in order, twice round.'],
+            seq: [[60, 64, 67], [59, 62, 67], [60, 64, 69], [60, 65, 69], [60, 64, 67], [59, 62, 67], [60, 64, 69], [60, 65, 69]],
+            names: ['C', 'G', 'Am', 'F', 'C', 'G', 'Am', 'F'], hint: true, chips: true },
+          { kind: 'play', title: 'Add the bass', text: ['Now the left hand plays each chord’s root down low, pressed together with the right-hand chord.'],
+            seq: [[48, 60, 64, 67], [43, 59, 62, 67], [45, 60, 64, 69], [41, 60, 65, 69]], names: ['C', 'G', 'Am', 'F'], twoHands: true, hint: true, chips: true }
+        ] },
+      { id: 'sevenths', title: 'Seventh chords', goal: 'Add a fourth note and feel the pull home.',
+        keys: { lo: 48, hi: 72, labels: 'names' }, steps: [
+          { kind: 'read', title: 'G7 wants to go home',
+            text: ['Stack one more 3rd on a triad and you get a seventh chord. On Sol: Sol Ti Re Fa — G7.',
+              'G7 sounds restless: Ti wants to rise to Do and Fa wants to fall to Mi. Played before C, it leads home.'],
+            keys: { hl: [55, 59, 62, 65] }, listen: { seq: [[55, 59, 62, 65], [60, 64, 67]], beats: [2, 3] } },
+          { kind: 'chord', title: 'Play G7', text: ['Sol, Ti, Re and Fa, with fingers 1, 2, 3 and 5.'], notes: [55, 59, 62, 65] },
+          { kind: 'play', title: 'G7 to C', text: ['A handy shape for G7 is Ti Fa Sol, right beside C. Play G7 and then C, and hear it settle.'],
+            seq: [[59, 65, 67], [60, 64, 67], [59, 65, 67], [60, 64, 67]], names: ['G7', 'C', 'G7', 'C'], hint: true, chips: true },
+          { kind: 'quiz', title: 'Quick check', qs: [
+            { q: 'How many notes are in a seventh chord?', choices: ['3', '4', '5'], answer: 1, why: 'A triad plus one more 3rd.' },
+            { q: 'Where does G7 want to go?', choices: ['C', 'D', 'A'], answer: 0, why: 'V7 leads to I: G7 to C.' },
+            { q: 'Listen. A triad or a seventh chord?', choices: ['Triad', 'Seventh chord'], answer: 1, why: 'Four notes, with that restless sound: G7.', listen: { chord: [55, 59, 62, 65] } }] }
+        ] },
+      { id: 'colors', title: 'More chord colours', goal: 'Hear diminished, augmented and suspended chords.',
+        keys: { lo: 57, hi: 72, labels: 'names', blackNames: true }, steps: [
+          { kind: 'read', title: 'Diminished and augmented',
+            text: ['Two minor 3rds stacked make a diminished chord: Ti Re Fa (B°). It sounds tense, like a question.',
+              'Two major 3rds make an augmented chord: Do Mi Sol♯ (C+). It sounds strange, as if floating.'],
+            listen: { seq: [[59, 62, 65], [60, 64, 68]], beats: [2, 2] } },
+          { kind: 'read', title: 'Suspended chords',
+            text: ['A sus4 chord swaps the 3rd for the 4th: Do Fa Sol (Csus4). It hangs in the air until Fa falls back to Mi.'],
+            listen: { seq: [[60, 65, 67], [60, 64, 67]], beats: [2, 2] } },
+          { kind: 'quiz', title: 'Which chord is it?', qs: [
+            { q: 'Listen. Which kind of chord?', choices: ['Major', 'Minor', 'Diminished', 'Augmented'], answer: 3, why: 'Do Mi Sol♯: two major 3rds — augmented.', listen: { chord: [60, 64, 68] } },
+            { q: 'Listen. Which kind of chord?', choices: ['Major', 'Minor', 'Diminished', 'Augmented'], answer: 2, why: 'Ti Re Fa: two minor 3rds — diminished.', listen: { chord: [59, 62, 65] } },
+            { q: 'Listen. Which kind of chord?', choices: ['Major', 'Minor', 'Diminished', 'Augmented'], answer: 1, why: 'La Do Mi: minor.', listen: { chord: [57, 60, 64] } },
+            { q: 'Listen. Which kind of chord?', choices: ['Major', 'Minor', 'Diminished', 'Augmented'], answer: 0, why: 'Fa La Do: major.', listen: { chord: [65, 69, 72] } }] },
+          { kind: 'play', title: 'Sus4 to major', text: ['Play Csus4, then let Fa fall to Mi to make C.'],
+            seq: [[60, 65, 67], [60, 64, 67], [60, 65, 67], [60, 64, 67]], names: ['Csus4', 'C', 'Csus4', 'C'], hint: true, chips: true }
+        ] }
+    ] },
+    { id: 'u12', level: 3, title: 'Accompaniment patterns', lessons: [
+      { id: 'broken', title: 'Broken chords and arpeggios', goal: 'Play a chord one note at a time.',
+        keys: { lo: 48, hi: 72, labels: 'names' }, steps: [
+          { kind: 'read', title: 'Unfold the chord',
+            text: ['A broken chord plays a chord’s notes one after another instead of together. Carried on up into the next octave, it is an arpeggio.',
+              'Most accompaniments are broken chords: they keep the music moving.'],
+            listen: { seq: [60, 64, 67, 72, 67, 64, 60], bpm: 120 } },
+          { kind: 'play', title: 'A C arpeggio', text: ['Right hand: Do Mi Sol Do with fingers 1 2 3 5, then back down 3 2 1.'],
+            seq: [60, 64, 67, 72, 67, 64, 60], fingering: [1, 2, 3, 5, 3, 2, 1], hint: true },
+          { kind: 'play', title: 'Left-hand broken chords', text: ['Left hand, below Middle Do: C (Do Mi Sol Mi), F (Do Fa La Fa), G (Ti Re Sol Re), and C again.'],
+            seq: [48, 52, 55, 52, 48, 53, 57, 53, 47, 50, 55, 50, 48, 52, 55, 52], hint: true, kbBase: 48 }
+        ] },
+      { id: 'alberti', title: 'Alberti bass', goal: 'The classic low–high–middle–high pattern.',
+        keys: { lo: 36, hi: 60, labels: 'names' }, kbBase: 48, steps: [
+          { kind: 'read', title: 'Low, high, middle, high',
+            text: ['Alberti bass plays a chord as lowest, highest, middle, highest: Do Sol Mi Sol. Mozart and Haydn used it everywhere.',
+              'Keep the hand still over the chord and let the fingers do the work: 5 1 3 1.'],
+            listen: { seq: [48, 55, 52, 55, 48, 55, 52, 55, 48, 57, 53, 57, 47, 55, 53, 55, 48, 55, 52, 55], beats: halves(20), bpm: 90 } },
+          { kind: 'play', title: 'Alberti on C', text: ['Left hand: Do Sol Mi Sol, twice.'],
+            seq: [48, 55, 52, 55, 48, 55, 52, 55], fingering: [5, 1, 3, 1, 5, 1, 3, 1], hint: true },
+          { kind: 'play', title: 'C, F, G7, C', text: ['Now through the chords, keeping the pattern: C (Do Sol Mi Sol), F (Do La Fa La), G7 (Ti Sol Fa Sol), and C.'],
+            seq: [48, 55, 52, 55, 48, 57, 53, 57, 47, 55, 53, 55, 48, 55, 52, 55], fingering: [5, 1, 3, 1, 5, 1, 2, 1, 5, 1, 2, 1, 5, 1, 3, 1], hint: true }
+        ] },
+      { id: 'waltz', title: 'Waltz and oom-pah', goal: 'Bass note, then chord: the dance accompaniment.',
+        keys: { lo: 36, hi: 60, labels: 'names' }, kbBase: 48, steps: [
+          { kind: 'read', title: 'Bass, chord, chord',
+            text: ['A waltz accompaniment plays the root low on beat 1 — oom — and the rest of the chord on beats 2 and 3 — pah, pah.',
+              'In 4/4 the same idea is oom-pah: bass on 1 and 3, chord on 2 and 4.'],
+            listen: { seq: [48, [52, 55], [52, 55], 48, [53, 57], [53, 57], 47, [53, 55], [53, 55], 48, [52, 55], [52, 55]], bpm: 132 } },
+          { kind: 'play', title: 'Left-hand waltz', text: ['Left hand only: the low note, then the two upper notes together, twice — through C, F, G7 and C.'],
+            seq: [48, [52, 55], [52, 55], 48, [53, 57], [53, 57], 47, [53, 55], [53, 55], 48, [52, 55], [52, 55]], hint: true, chips: true,
+            beats: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], bpm: 132 },
+          { kind: 'quiz', title: 'Quick check', qs: [
+            { q: 'In a waltz accompaniment, the bass note falls on…', choices: ['Beat 1', 'Beat 2', 'Beat 3'], answer: 0, why: 'Oom on 1, pah pah on 2 and 3.' },
+            { q: 'Oom-pah in 4/4 plays the chord on…', choices: ['Beats 2 and 4', 'Beats 1 and 3', 'Every beat'], answer: 0, why: 'Bass on 1 and 3, chord on 2 and 4.' }] }
+        ] }
+    ] },
+    { id: 'u13', level: 3, title: 'Both hands together', lessons: [
+      { id: 'together', title: 'Melody over a bass note', goal: 'Play with both hands at once.',
+        keys: { lo: 36, hi: 71, labels: 'names' }, steps: [
+          { kind: 'read', title: 'One hand leads, one supports',
+            text: ['With both hands, the right hand usually plays the melody and the left hand the harmony underneath.',
+              'Where the hands play together, press both keys at exactly the same moment. The lit keys show both.'],
+            chips: true, seq: withBass(SONGS.airplane.notes, BASS.airplane), twoHands: true,
+            listen: { seq: withBass(SONGS.airplane.notes, BASS.airplane), beats: SONGS.airplane.beats, bpm: 100 } },
+          { kind: 'play', title: 'Airplane with a bass', text: ['The left hand plays low Do — or Sol under the G chord — at the start of each measure, together with the melody.'],
+            seq: withBass(SONGS.airplane.notes, BASS.airplane), beats: SONGS.airplane.beats, bpm: 100, twoHands: true, hint: true, chips: true },
+          { kind: 'play', title: 'On your own', text: ['Now with no lit keys. Go slowly — the song waits for you.'],
+            seq: withBass(SONGS.airplane.notes, BASS.airplane), beats: SONGS.airplane.beats, bpm: 100, twoHands: true, hint: false, chips: true }
+        ] },
+      { id: 'finale', title: 'Ode to Joy with both hands', goal: 'Put it all together: melody and harmony.',
+        keys: { lo: 36, hi: 71, labels: 'names' }, steps: [
+          { kind: 'read', title: 'Two chords under the melody',
+            text: ['The Ode to Joy needs just two chords, C and G. The left hand plays each chord’s root at the start of the measure: Do for C, Sol for G.',
+              'This is your graduation piece. Take it slowly.'],
+            chips: true, seq: withBass(SONGS.ode.notes, BASS.ode), twoHands: true,
+            listen: { seq: withBass(SONGS.ode.notes, BASS.ode), beats: SONGS.ode.beats, bpm: 100 } },
+          { kind: 'play', title: 'First half', text: ['The first half, with the next keys lit.'],
+            seq: withBass(SONGS.ode.notes, BASS.ode).slice(0, 15), beats: SONGS.ode.beats.slice(0, 15), bpm: 100, twoHands: true, hint: true, chips: true },
+          { kind: 'play', title: 'Second half', text: ['Now the second half.'],
+            seq: withBass(SONGS.ode.notes, BASS.ode).slice(15), beats: SONGS.ode.beats.slice(15), bpm: 100, twoHands: true, hint: true, chips: true },
+          { kind: 'play', title: 'The whole piece', text: ['All of it, both hands, no lit keys.'],
+            seq: withBass(SONGS.ode.notes, BASS.ode), beats: SONGS.ode.beats, bpm: 100, twoHands: true, hint: false, chips: true },
+          { kind: 'read', title: 'You finished all three levels!',
+            text: ['You can read both clefs, play scales in three keys, build major, minor and seventh chords, follow chord symbols, play accompaniment patterns and use both hands.',
+              'Now choose a real song in My Songs — PPP will find its hard parts and coach you through them.'],
+            listen: { seq: [[48, 60, 64, 67], [41, 60, 65, 69], [43, 59, 62, 65, 67], [36, 55, 60, 64, 72]], beats: [2, 2, 2, 4], bpm: 80 } }
+        ] }
+    ] }
+
   ];
 
   var LESSONS = [];
   COURSE.forEach(function (u, ui) {
-    u.lessons.forEach(function (l) { l.unit = u.id; l.unitIndex = ui; l.n = LESSONS.length + 1; LESSONS.push(l); });
+    if (!u.level) u.level = 1;
+    u.lessons.forEach(function (l) { l.unit = u.id; l.unitIndex = ui; l.level = u.level; l.n = LESSONS.length + 1; LESSONS.push(l); });
   });
+  /* each level's own units and lessons, numbered within it */
+  LEVELS.forEach(function (lv) {
+    lv.units = COURSE.filter(function (u) { return u.level === lv.n; });
+    lv.lessons = LESSONS.filter(function (l) { return l.level === lv.n; });
+    lv.units.forEach(function (u, i) { u.ui = i + 1; });
+    lv.lessons.forEach(function (l, i) { l.li = i + 1; });
+  });
+  function level(n) { return LEVELS[(n | 0) - 1] || LEVELS[0]; }
   function lesson(id) { for (var i = 0; i < LESSONS.length; i++) if (LESSONS[i].id === id) return LESSONS[i]; return null; }
   function next(id) { var l = lesson(id); return l ? LESSONS[l.n] || null : LESSONS[0]; }
   /* the first lesson not yet done, in course order */
@@ -390,7 +772,8 @@
     var base = les.keys || {}, own = step.keys || {};
     Object.keys(base).forEach(function (k) { o[k] = base[k]; });
     Object.keys(own).forEach(function (k) { o[k] = own[k]; });
-    var want = (step.seq || []).concat(step.notes || [], step.pool || []);
+    var want = flat(step.seq).concat(step.notes || [], step.pool || []);
+    (step.qs || []).forEach(function (q) { want = want.concat(q.hl || []); });
     var lo = o.lo != null ? o.lo : 60, hi = o.hi != null ? o.hi : 72;
     want.forEach(function (m) {
       if (m < lo) lo = m - pc(m);
@@ -411,7 +794,7 @@
   function copy(o) { var r = {}; for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) r[k] = o[k]; return r; }
   function fresh(step, rnd) {
     var lx = { kind: step.kind, done: step.kind === 'read', flash: null, msg: '', tone: '', misses: 0 };
-    if (step.kind === 'play') { lx.idx = 0; lx.slips = 0; }
+    if (step.kind === 'play') { lx.idx = 0; lx.slips = 0; lx.got = []; }
     if (step.kind === 'find') lx.found = [];
     if (step.kind === 'chord') lx.got = [];
     if (step.kind === 'quiz') { lx.qi = 0; lx.wrong = []; lx.right = false; lx.first = 0; }
@@ -436,15 +819,20 @@
     var lx = copy(prev);
     if (step.kind === 'play') {
       if (lx.done) return good(lx, m, prev.msg);
-      var want = step.seq[lx.idx];
-      if (m === want) {
-        lx.idx++; lx.slips = 0;
+      var want = notesOf(step.seq[lx.idx]), have = lx.got || [];
+      if (want.indexOf(m) > -1) {
+        /* a chord in the line: every key of it, in any order, then on */
+        if (want.length > 1) {
+          have = have.indexOf(m) > -1 ? have : have.concat([m]);
+          if (have.length < want.length) { lx.got = have; return good(lx, m, t('{{got}} of {{n}} keys.', { got: have.length, n: want.length })); }
+        }
+        lx.got = []; lx.idx++; lx.slips = 0;
         if (lx.idx >= step.seq.length) { lx.done = true; return good(lx, m, t('Well done — you played it all!')); }
-        return good(lx, m, step.read ? t('Good!') : t('Good! Next: {{note}}', { note: sol(step.seq[lx.idx]) }));
+        return good(lx, m, step.read ? t('Good!') : t('Good! Next: {{note}}', { note: itemName(les, step, lx.idx) }));
       }
-      lx.slips++;
-      return bad(lx, m, step.read ? t('That was {{got}}. Look at the staff again.', { got: sol(m) })
-        : t('That was {{got}} — look for {{want}}.', { got: sol(m), want: sol(want) }));
+      lx.got = []; lx.slips++;
+      return bad(lx, m, step.read ? t('That was {{got}}. Look at the staff again.', { got: nm(les, step, m) })
+        : t('That was {{got}} — look for {{want}}.', { got: nm(les, step, m), want: itemName(les, step, lx.idx) }));
     }
     if (step.kind === 'find') {
       var all = targets(les, step);
@@ -457,7 +845,7 @@
     if (step.kind === 'chord') {
       if (step.notes.indexOf(m) < 0) {
         lx.got = [];
-        return bad(lx, m, t('That was {{got}}. The chord is {{names}}.', { got: sol(m), names: step.notes.map(sol).join(' · ') }));
+        return bad(lx, m, t('That was {{got}}. The chord is {{names}}.', { got: nm(les, step, m), names: step.notes.map(function (x) { return nm(les, step, x); }).join(' · ') }));
       }
       if (lx.got.indexOf(m) < 0) lx.got = lx.got.concat([m]);
       if (lx.got.length >= step.notes.length) { lx.done = true; return good(lx, m, t('All together — that is a chord!')); }
@@ -516,12 +904,25 @@
 
   /* --------------------------------------------------------------- rhythm
      Beats from the first note; a negative length is a rest. */
+  function dur(x) { return Math.abs(typeof x === 'number' ? x : x.d); }
+  function isRest(x) { return typeof x === 'number' && x < 0; }
+  function isTie(x) { return typeof x === 'object' && !!x.tie; }
   function onsets(pattern) {
     var at = 0, out = [];
-    pattern.forEach(function (d, i) { if (d > 0) out.push({ i: i, at: at }); at += Math.abs(d); });
+    pattern.forEach(function (x, i) { if (!isRest(x) && !isTie(x)) out.push({ i: i, at: at }); at += dur(x); });
     return out;
   }
-  function length(pattern) { return pattern.reduce(function (a, d) { return a + Math.abs(d); }, 0); }
+  function length(pattern) { return pattern.reduce(function (a, x) { return a + dur(x); }, 0); }
+  /* what is heard: each struck note and how long it sounds, a tie adding on */
+  function sounds(pattern) {
+    var at = 0, out = [];
+    pattern.forEach(function (x) {
+      if (isTie(x) && out.length) out[out.length - 1].d += dur(x);
+      else if (!isRest(x)) out.push({ at: at, d: dur(x) });
+      at += dur(x);
+    });
+    return out;
+  }
   /* How far off a tap may be and still count: a fifth of a second either way,
      never more than a third of a beat. */
   function tolerance(bpm) { return Math.min(0.33, 0.22 / (60 / bpm)); }
@@ -629,7 +1030,7 @@
      size and height. So the ink of a glyph is measured, and it is scaled and
      placed to fill the space it should, whatever font is doing the drawing. */
   var MUSIC_FONT = "'Noto Music', 'Segoe UI Symbol', 'Apple Symbols', serif";
-  var GLYPH = { treble: '𝄞', bass: '𝄢', q: '𝄽', sharp: '♯' };
+  var GLYPH = { treble: '𝄞', bass: '𝄢', q: '𝄽', sharp: '♯', flat: '♭' };
   var INK = {}, inkCanvas = null, fontAsked = false;
   function ink(g) {
     var doc = global.document;
@@ -639,7 +1040,7 @@
     if (!ready && !fontAsked && doc.fonts && doc.fonts.load) {
       fontAsked = true;
       /* when the music font arrives, measure again and draw again */
-      doc.fonts.load("40px 'Noto Music'", GLYPH.treble + GLYPH.bass + GLYPH.q + GLYPH.sharp).then(function () {
+      doc.fonts.load("40px 'Noto Music'", GLYPH.treble + GLYPH.bass + GLYPH.q + GLYPH.sharp + GLYPH.flat).then(function () {
         INK = {};
         if (api.onFonts) api.onFonts();
       }, function () {});
@@ -673,22 +1074,30 @@
     return h('ellipse', { key: key, cx: cx, cy: cy, rx: 6.4 * k, ry: 4.5 * k, transform: 'rotate(-20 ' + cx + ' ' + cy + ')',
       fill: hollow ? 'none' : color, stroke: color, strokeWidth: hollow ? 1.8 * k : 1 });
   }
+  /* key signatures: which pitch classes they alter, and where the signs sit
+     on a treble staff (diatonic positions; a bass staff is two octaves lower) */
+  var SHARP_PCS = [6, 1, 8, 3, 10], FLAT_PCS = [10, 3, 8, 1, 6];
+  var SHARP_POS = [38, 35, 39, 36, 33], FLAT_POS = [34, 37, 33, 36, 32];
   function staff(h, o) {
     var clef = o.clef || 'treble', ref = CLEF_REF[clef];
     var big = !!o.big;
     var top = big ? 34 : 42, bottom = top + 4 * LS;
     var notes = o.notes || [], beats = o.beats || [];
     var states = o.states || [];
-    var labels = o.labels === 'names';
-    var x0 = big ? 64 : 46, x = x0 + (o.time ? 26 : 0) + 14;
-    if (o.solo) x = 112;
+    var fifths = o.key | 0, flats = fifths < 0 || !!o.flats;
+    var inKey = (fifths > 0 ? SHARP_PCS.slice(0, fifths) : FLAT_PCS.slice(0, -fifths));
+    var per = o.time === 3 ? 3 : 4;
+    var named = !!o.names, labels = o.labels === 'names' || named;
+    var ks = Math.abs(fifths);
+    var x0 = (big ? 64 : 46) + (ks ? ks * 9 + 6 : 0), x = x0 + (o.time ? 26 : 0) + 14;
+    if (o.solo) x = Math.max(x, 112);
     var cols = [], at = 0;
     notes.forEach(function (m, i) {
-      var d = beats[i] || 1;
-      cols.push({ m: m, d: d, x: x + 8, ni: i });
-      x += 30 + Math.min(4, Math.abs(d)) * 8;
+      var d = beats[i] || 1, chord = Array.isArray(m);
+      cols.push({ ms: notesOf(m), d: d, x: x + 8, ni: i });
+      x += (chord ? 40 : 30) + Math.min(4, Math.abs(d)) * 8 + (named ? 10 : 0);
       at += Math.abs(d);
-      if (o.time && at % 4 === 0 && i < notes.length - 1) { cols.push({ bar: true, x: x - 6 }); x += 8; }
+      if (o.time && at % per === 0 && i < notes.length - 1) { cols.push({ bar: true, x: x - 6 }); x += 8; }
     });
     var W = Math.max(big ? 200 : o.solo ? 230 : 150, x + (o.time ? 14 : 6));
     var H = bottom + (labels ? 44 : 30);
@@ -702,78 +1111,125 @@
        its dots either side of the F line */
     els.push(clef === 'treble' ? glyph(h, 'clef', GLYPH.treble, 8, top - 1.4 * LS, bottom + 1.65 * LS, ink)
       : glyph(h, 'clef', GLYPH.bass, 9, top - 0.05 * LS, bottom - 0.45 * LS, ink));
+    /* the key signature, straight after the clef */
+    for (var k0 = 0; k0 < ks; k0++) {
+      var kp = (fifths > 0 ? SHARP_POS : FLAT_POS)[k0] - (clef === 'bass' ? 14 : 0) - ref, ky = bottom - kp * LS / 2;
+      var kx = (big ? 60 : 42) + k0 * 9;
+      els.push(fifths > 0 ? glyph(h, 'ks' + k0, GLYPH.sharp, kx, ky - 1.4 * LS, ky + 1.4 * LS, ink)
+        : glyph(h, 'ks' + k0, GLYPH.flat, kx, ky - 1.75 * LS, ky + 0.55 * LS, ink));
+    }
     if (o.time) {
       [0, 1].forEach(function (k) {
         els.push(h('text', { key: 'ts' + k, x: x0 + 12, y: top + (k ? 4 : 2) * LS - 1.5, textAnchor: 'middle', fontSize: 21, fontWeight: 700,
-          fontFamily: "Georgia, 'Times New Roman', serif", fill: ink }, '4'));
+          fontFamily: "Georgia, 'Times New Roman', serif", fill: ink }, k ? '4' : String(per)));
       });
     }
+    /* a black key is written on the white line or space next to it: below
+       it as a sharp, above it as a flat */
+    var place = function (m) {
+      var black = isBlack(m);
+      return { d: (black && flats ? diat(m + 1) : diat(m)) - ref, acc: black && inKey.indexOf(pc(m)) < 0 ? (flats ? GLYPH.flat : GLYPH.sharp) : null };
+    };
     cols.forEach(function (c, i) {
       if (c.bar) { els.push(h('line', { key: 'bar' + i, x1: c.x, x2: c.x, y1: top, y2: bottom, stroke: lineC, strokeWidth: 1.2 })); return; }
       var st = states[c.ni] || null;
       var col = st === 'now' ? 'var(--accent)' : st === 'done' ? 'var(--good)' : st === 'bad' ? 'var(--bad)' : ink;
-      var dd = diat(c.m) - ref, cy = bottom - dd * LS / 2;
+      var ps = c.ms.map(place).sort(function (a, b) { return a.d - b.d; });
+      var lo = ps[0].d, hi = ps[ps.length - 1].d;
       /* ledger lines, below the bottom line or above the top one */
-      for (var k = -2; k >= dd; k -= 2) els.push(h('line', { key: 'lg' + i + k, x1: c.x - 10, x2: c.x + 10, y1: bottom - k * LS / 2, y2: bottom - k * LS / 2, stroke: lineC, strokeWidth: 1.2 }));
-      for (var k2 = 10; k2 <= dd; k2 += 2) els.push(h('line', { key: 'lh' + i + k2, x1: c.x - 10, x2: c.x + 10, y1: bottom - k2 * LS / 2, y2: bottom - k2 * LS / 2, stroke: lineC, strokeWidth: 1.2 }));
-      if (isBlack(c.m)) els.push(glyph(h, 'acc' + i, GLYPH.sharp, c.x - 19, cy - 1.4 * LS, cy + 1.4 * LS, col));
-      els.push(noteHead(h, 'n' + i, c.x, cy, c.d >= 2, col));
+      for (var k = -2; k >= lo; k -= 2) els.push(h('line', { key: 'lg' + i + k, x1: c.x - 10, x2: c.x + 10, y1: bottom - k * LS / 2, y2: bottom - k * LS / 2, stroke: lineC, strokeWidth: 1.2 }));
+      for (var k2 = 10; k2 <= hi; k2 += 2) els.push(h('line', { key: 'lh' + i + k2, x1: c.x - 10, x2: c.x + 10, y1: bottom - k2 * LS / 2, y2: bottom - k2 * LS / 2, stroke: lineC, strokeWidth: 1.2 }));
+      var up = (lo + hi) / 2 < 4;
+      ps.forEach(function (p, j) {
+        var cy = bottom - p.d * LS / 2;
+        /* two notes a step apart cannot share a place: the upper one moves over */
+        var side = j > 0 && p.d - ps[j - 1].d === 1 && !ps[j - 1].moved ? (p.moved = true, up ? 11.5 : -11.5) : 0;
+        if (p.acc) els.push(p.acc === GLYPH.flat
+          ? glyph(h, 'acc' + i + j, GLYPH.flat, c.x - 19 - j * 4, cy - 1.75 * LS, cy + 0.55 * LS, col)
+          : glyph(h, 'acc' + i + j, GLYPH.sharp, c.x - 19 - j * 4, cy - 1.4 * LS, cy + 1.4 * LS, col));
+        els.push(noteHead(h, 'n' + i + '_' + j, c.x + side, cy, c.d >= 2, col));
+        if (c.d === 1.5 || c.d === 3) els.push(h('circle', { key: 'dot' + i + j, cx: c.x + 11 + Math.max(0, side), cy: p.d % 2 === 0 ? cy - 3 : cy, r: 1.8, fill: col }));
+      });
       if (c.d < 4) {
-        var up = dd < 4;
-        els.push(h('line', { key: 's' + i, x1: up ? c.x + 5.6 : c.x - 5.6, x2: up ? c.x + 5.6 : c.x - 5.6, y1: cy + (up ? -1 : 1), y2: cy + (up ? -34 : 34), stroke: col, strokeWidth: 1.4 }));
-        if (c.d === 0.5) els.push(h('path', { key: 'f' + i, d: up ? 'M' + (c.x + 5.6) + ' ' + (cy - 34) + ' q 2 10 9 14' : 'M' + (c.x - 5.6) + ' ' + (cy + 34) + ' q 2 -10 9 -14', stroke: col, strokeWidth: 1.6, fill: 'none' }));
+        var yLo = bottom - lo * LS / 2, yHi = bottom - hi * LS / 2;
+        var sx = up ? c.x + 5.6 : c.x - 5.6, y1 = up ? yLo - 1 : yHi + 1, y2 = up ? yHi - 34 : yLo + 34;
+        els.push(h('line', { key: 's' + i, x1: sx, x2: sx, y1: y1, y2: y2, stroke: col, strokeWidth: 1.4 }));
+        if (c.d === 0.5) els.push(h('path', { key: 'f' + i, d: up ? 'M' + sx + ' ' + y2 + ' q 2 10 9 14' : 'M' + sx + ' ' + y2 + ' q 2 -10 9 -14', stroke: col, strokeWidth: 1.6, fill: 'none' }));
       }
-      if (c.d === 1.5 || c.d === 3) els.push(h('circle', { key: 'dot' + i, cx: c.x + 11, cy: dd % 2 === 0 ? cy - 3 : cy, r: 1.8, fill: col }));
-      if (labels) els.push(h('text', { key: 'nm' + i, x: c.x, y: bottom + 34, textAnchor: 'middle', fontSize: 12, fontWeight: 700, fill: st ? col : 'var(--paper-ink3)' }, sol(c.m)));
+      if (labels) {
+        var txt = named ? (o.names[c.ni] ? t(o.names[c.ni]) : '') : c.ms.length === 1 ? (flats ? solFlat(c.ms[0]) : sol(c.ms[0])) : '';
+        if (txt) els.push(h('text', { key: 'nm' + i, x: c.x, y: bottom + 34, textAnchor: 'middle', fontSize: 12, fontWeight: 700, fill: st ? col : 'var(--paper-ink3)' }, txt));
+      }
     });
     if (o.time) {
       els.push(h('line', { key: 'end1', x1: W - 9, x2: W - 9, y1: top, y2: bottom, stroke: lineC, strokeWidth: 1.2 }));
       els.push(h('line', { key: 'end2', x1: W - 5, x2: W - 5, y1: top, y2: bottom, stroke: ink, strokeWidth: 3 }));
     } else els.push(h('line', { key: 'end', x1: W - 4, x2: W - 4, y1: top, y2: bottom, stroke: lineC, strokeWidth: 1 }));
-    return h('svg', { viewBox: '0 0 ' + W + ' ' + H, width: W * (big ? 1.9 : 1.7), 'data-learn-staff': clef,
+    return h('svg', { viewBox: '0 0 ' + W + ' ' + H, width: W * (big ? 1.9 : 1.7), 'data-learn-staff': clef, 'data-key': fifths,
       style: { display: 'block', maxWidth: '100%', height: 'auto', margin: '0 auto', fontFamily: "Figtree, 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', system-ui, sans-serif" } }, els);
   }
 
   /* A rhythm on one line, spaced by time so the cursor moves at an even
-     speed: beat numbers under it, bar lines every four beats, and two
-     measures to a row so the notes stay big enough to read. */
+     speed: beat numbers under it (and "&" between them when a beat is
+     split), bar lines every measure, two measures to a row so the notes stay
+     big enough to read. Eighths in a beat share a beam; a dot adds half; a
+     tie carries a note on without playing it again. */
   function rhythm(h, o) {
-    var pat = o.pattern, total = length(pat), PER = 8, BW = 54, x0 = 28, ROW = 96, Y = 50;
+    var pat = o.pattern, per = o.per || 4, total = length(pat), PER = per * 2, BW = 54, x0 = 28, ROW = 96, Y = 50;
     var rows = Math.max(1, Math.ceil(total / PER));
     var W = x0 * 2 + Math.min(total, PER) * BW - 20, H = rows * ROW;
     var at0 = function (b) { var r = Math.min(rows - 1, Math.floor(b / PER + 1e-9)); return { r: r, x: x0 + (b - r * PER) * BW, y: Y + r * ROW }; };
-    var els = [], at = 0, ons = onsets(pat), results = o.results || [];
+    var els = [], ons = onsets(pat), results = o.results || [];
     var ink = 'var(--paper-ink)', line = 'var(--paper-staff)';
+    var split = pat.some(function (x) { return dur(x) % 1 !== 0; });
     for (var r = 0; r < rows; r++) els.push(h('line', { key: 'base' + r, x1: 6, x2: W - 6, y1: Y + r * ROW, y2: Y + r * ROW, stroke: line, strokeWidth: 1 }));
     for (var b = 0; b < total; b++) {
       var p = at0(b);
       els.push(h('text', { key: 'c' + b, x: p.x, y: p.y + 36, textAnchor: 'middle', fontSize: 13, fontWeight: 600,
-        fontFamily: "'JetBrains Mono', monospace", fill: 'var(--paper-ink3)' }, String((b % 4) + 1)));
-      if (b % 4 === 0 && b % PER !== 0) els.push(h('line', { key: 'bar' + b, x1: p.x - 16, x2: p.x - 16, y1: p.y - 26, y2: p.y + 14, stroke: line, strokeWidth: 1.3 }));
+        fontFamily: "'JetBrains Mono', monospace", fill: 'var(--paper-ink3)' }, String((b % per) + 1)));
+      if (split) els.push(h('text', { key: 'a' + b, x: p.x + BW / 2, y: p.y + 36, textAnchor: 'middle', fontSize: 11.5,
+        fontFamily: "'JetBrains Mono', monospace", fill: 'var(--paper-ink3)', opacity: 0.8 }, '&'));
+      if (b % per === 0 && b % PER !== 0) els.push(h('line', { key: 'bar' + b, x1: p.x - 16, x2: p.x - 16, y1: p.y - 26, y2: p.y + 14, stroke: line, strokeWidth: 1.3 }));
     }
-    pat.forEach(function (d, i) {
-      var p = at0(at), x = p.x, y = p.y, oi = -1;
+    var at = 0, pos = [];
+    pat.forEach(function (x) { pos.push(at); at += dur(x); });
+    pat.forEach(function (x, i) {
+      var d = dur(x), p = at0(pos[i]), X = p.x, y = p.y, oi = -1;
       ons.forEach(function (on, j) { if (on.i === i) oi = j; });
       var res = oi > -1 ? results[oi] : null;
+      /* a tied note takes the colour of the note it carries on */
+      if (isTie(x)) for (var q = i - 1; q >= 0 && oi < 0; q--) ons.forEach(function (on, j) { if (on.i === q) { oi = j; res = results[j]; } });
       var col = res === 'hit' ? 'var(--good)' : res === 'miss' ? 'var(--bad)' : ink;
-      if (d < 0) {
+      if (isRest(x)) {
         /* a quarter rest stands on the line; half and whole rests are the
            little blocks that sit on it and hang from it */
-        if (-d >= 2) els.push(h('rect', { key: 'r' + i, x: x - 7, y: -d >= 4 ? y : y - 6, width: 14, height: 6, fill: 'var(--paper-ink3)' }));
-        else els.push(glyph(h, 'r' + i, GLYPH.q, x, y - 15, y + 15, 'var(--paper-ink3)', true));
-      } else {
-        els.push(noteHead(h, 'n' + i, x, y, d >= 2, col, 1.2));
-        if (d < 4) els.push(h('line', { key: 's' + i, x1: x + 6.8, x2: x + 6.8, y1: y - 1, y2: y - 36, stroke: col, strokeWidth: 1.7 }));
-        /* a held note: a bar showing how long it lasts */
-        if (d > 1) els.push(h('rect', { key: 'hold' + i, x: x + 11, y: y - 2.5, width: d * BW - 26, height: 5, rx: 2.5, fill: col, opacity: 0.2 }));
+        if (d >= 2) els.push(h('rect', { key: 'r' + i, x: X - 7, y: d >= 4 ? y : y - 6, width: 14, height: 6, fill: 'var(--paper-ink3)' }));
+        else els.push(glyph(h, 'r' + i, GLYPH.q, X, y - 15, y + 15, 'var(--paper-ink3)', true));
+        return;
       }
-      at += Math.abs(d);
+      els.push(noteHead(h, 'n' + i, X, y, d >= 2, col, 1.2));
+      if (d < 4) els.push(h('line', { key: 's' + i, x1: X + 6.8, x2: X + 6.8, y1: y - 1, y2: y - 36, stroke: col, strokeWidth: 1.7 }));
+      if (d % 1 === 0.5 && d > 1) els.push(h('circle', { key: 'dot' + i, cx: X + 14, cy: y - 3, r: 2.4, fill: col }));
+      if (d === 0.5) {
+        /* two eighths in one beat are beamed; a lone one has a flag */
+        var nx = pat[i + 1], pv = pat[i - 1];
+        var first = pos[i] % 1 === 0 && nx != null && !isRest(nx) && dur(nx) === 0.5;
+        var second = pos[i] % 1 !== 0 && pv != null && !isRest(pv) && dur(pv) === 0.5;
+        if (first) els.push(h('rect', { key: 'bm' + i, x: X + 6, y: y - 38, width: BW / 2 + 1.6, height: 5, fill: col }));
+        else if (!second) els.push(h('path', { key: 'fl' + i, d: 'M' + (X + 6.8) + ' ' + (y - 36) + ' q 3 12 11 16', stroke: col, strokeWidth: 2, fill: 'none' }));
+      }
+      /* a held note: a bar showing how long it lasts */
+      if (d > 1) els.push(h('rect', { key: 'hold' + i, x: X + 11, y: y - 2.5, width: d * BW - 26, height: 5, rx: 2.5, fill: col, opacity: 0.2 }));
+      if (isTie(x) && i > 0) {
+        var pp = at0(pos[i - 1]);
+        if (pp.r === p.r) els.push(h('path', { key: 'tie' + i, d: 'M' + (pp.x + 4) + ' ' + (y + 9) + ' Q' + ((pp.x + X) / 2) + ' ' + (y + 22) + ' ' + (X - 4) + ' ' + (y + 9), stroke: col, strokeWidth: 2, fill: 'none', 'data-tie': 1 }));
+      }
     });
     if (o.cursor != null && o.cursor > -0.5 && o.cursor < total + 0.5) {
       var c = at0(Math.max(0, o.cursor));
       els.push(h('line', { key: 'cur', x1: c.x, x2: c.x, y1: c.y - 40, y2: c.y + 20, stroke: 'var(--accent)', strokeWidth: 3, strokeLinecap: 'round', 'data-cursor': 1 }));
     }
-    return h('svg', { viewBox: '0 0 ' + W + ' ' + H, width: '100%', 'data-learn-rhythm': 1,
+    return h('svg', { viewBox: '0 0 ' + W + ' ' + H, width: '100%', 'data-learn-rhythm': per,
       style: { display: 'block', maxWidth: Math.round(W * 1.2) + 'px', height: 'auto', margin: '0 auto' } }, els);
   }
 
@@ -815,13 +1271,14 @@
   /* Every string the course shows, for the translation check. */
   function strings() {
     var out = {};
-    var add = function (s) { if (s && typeof s === 'string' && !/^[\d\s]+$/.test(s) && !/^[A-G]$/.test(s)) out[s] = true; };
+    var add = function (s) { if (s && typeof s === 'string' && !/^[\d\s]+$/.test(s) && !isSymbol(s)) out[s] = true; };
+    LEVELS.forEach(function (lv) { add(lv.title); add(lv.who); add(lv.sub); });
     COURSE.forEach(function (u) {
       add(u.title);
       u.lessons.forEach(function (l) {
         add(l.title); add(l.goal);
         l.steps.forEach(function (s) {
-          add(s.title); (s.text || []).forEach(add); add(s.miss);
+          add(s.title); (s.text || []).forEach(add); add(s.miss); (s.names || []).forEach(add); ((s.staff && s.staff.names) || []).forEach(add);
           (s.qs || []).forEach(function (q) { add(q.q); add(q.why); q.choices.forEach(add); });
         });
       });
@@ -830,12 +1287,16 @@
     return Object.keys(out);
   }
 
+  /* chord symbols and Roman numerals read the same in every language */
+  function isSymbol(s) { return /^[A-G][♯♭#b]?(m|7|m7|°|\+|sus4)?(\/[A-G])?$/.test(s) || /^(I|II|III|IV|V|VI|VII|i|ii|iii|iv|v|vi|vii)°?( \([A-G][^)]*\))?$/.test(s); }
+
   var api = global.PPP_LESSONS = {
     /* set by the page: draw again once the music font has loaded */
     onFonts: null,
     /* the keyboard's white key, for drawing hands to the same scale */
     KEY_W: KW, KEY_H: KH,
-    COURSE: COURSE, LESSONS: LESSONS, SONGS: SONGS, SOL: SOL,
+    COURSE: COURSE, LESSONS: LESSONS, LEVELS: LEVELS, SONGS: SONGS, SOL: SOL, level: level,
+    notesOf: notesOf, flat: flat, itemName: itemName, nm: nm, sounds: sounds, isSymbol: isSymbol,
     lesson: lesson, next: next, nextUp: nextUp, keysFor: keysFor, kbBase: kbBase, codeToMidi: codeToMidi,
     fresh: fresh, press: press, answer: answer, nextDrill: nextDrill, choose: choose, nextQuestion: nextQuestion, targets: targets,
     onsets: onsets, length: length, tolerance: tolerance, tap: tap, verdict: verdict,

@@ -1,9 +1,11 @@
 /* Piano Basics: the beginner course in lessons.js and the page that teaches it.
    The first half runs the course itself in node — every lesson well formed,
    every exercise finishable, every word translated. The second half drives
-   the real page: the tab, a whole lesson by clicking, the computer keyboard,
-   MIDI, the see-through hands, the staff drill, a chord, a rhythm tapped on
-   time, progress kept across a reload, Korean, and a phone. */
+   the real page: the level picker, a whole lesson by clicking, the computer
+   keyboard, MIDI, the see-through hands (both of them), the staff drill,
+   chords inside a line, ear questions, key signatures, rhythms in 4/4 and 3/4
+   with ties, the end of a level, progress kept across a reload, Korean, and
+   a phone. */
 const fs = require('fs');
 const path = require('path');
 const puppeteer = require('puppeteer');
@@ -23,7 +25,12 @@ require(path.join(ROOT, 'lessons.js'));
 const C = globalThis.PPP_LESSONS;
 
 console.log('course');
-ok('twenty lessons in six units', C.LESSONS.length === 20 && C.COURSE.length === 6, C.LESSONS.length + ' / ' + C.COURSE.length);
+ok('43 lessons in 13 units over three levels', C.LESSONS.length === 43 && C.COURSE.length === 13 && C.LEVELS.length === 3, C.LESSONS.length + ' / ' + C.COURSE.length);
+ok('level 1 has the first 20, level 2 has 14 and level 3 has 9',
+  C.LEVELS.map(l => l.lessons.length).join() === '20,14,9' && C.LEVELS[0].lessons[0].id === 'keys' && C.LEVELS[1].lessons[0].id === 'intervals' && C.LEVELS[2].lessons[0].id === 'diatonic');
+ok('each level numbers its own units and lessons from 1', C.LEVELS.every(lv => lv.lessons[0].li === 1 && lv.units[0].ui === 1 && lv.lessons[lv.lessons.length - 1].li === lv.lessons.length));
+ok('the harder levels cover chords, progressions, sevenths and accompaniment',
+  ['triads', 'majorminor', 'chordnames', 'inversions', 'diatonic', 'progression', 'sevenths', 'colors', 'broken', 'alberti', 'waltz', 'together', 'finale'].every(id => C.lesson(id) && C.lesson(id).level >= 2));
 ok('lesson ids are unique', new Set(C.LESSONS.map(l => l.id)).size === C.LESSONS.length);
 ok('it starts from the keys and Do Re Mi', C.LESSONS[0].id === 'keys' && C.LESSONS[1].id === 'do' && C.LESSONS[2].id === 'doremi');
 
@@ -35,13 +42,15 @@ C.LESSONS.forEach(L => L.steps.forEach((st, i) => {
   if (!st.title) bad.push(at + ' has no title');
   const k = C.keysFor(L, st);
   const inRange = m => m >= k.lo && m <= k.hi;
-  if (st.kind === 'play' && !(st.seq && st.seq.length && st.seq.every(inRange))) bad.push(at + ' plays a key the keyboard does not show');
+  if (st.kind === 'play' && !(st.seq && st.seq.length && C.flat(st.seq).every(inRange))) bad.push(at + ' plays a key the keyboard does not show');
+  if (st.names && st.seq && st.names.length !== st.seq.length) bad.push(at + ' names and notes differ');
+  (st.qs || []).forEach((q, j) => { if (q.hl && !q.hl.every(inRange)) bad.push(at + ' question ' + j + ' lights a key off the keyboard'); });
   if (st.kind === 'play' && st.beats && st.beats.length !== st.seq.length) bad.push(at + ' beats and notes differ');
   if (st.kind === 'chord' && !st.notes.every(inRange)) bad.push(at + ' chord off the keyboard');
   if (st.kind === 'drill' && !(st.pool.length > 1 && st.count > 0 && CLEFS(st.clef))) bad.push(at + ' drill');
   if (st.kind === 'find' && !C.targets(L, st).length) bad.push(at + ' nothing to find');
   if (st.kind === 'quiz') st.qs.forEach((q, j) => { if (!(q.answer >= 0 && q.answer < q.choices.length && q.why)) bad.push(at + ' question ' + j); });
-  if (st.kind === 'rhythm' && !(C.onsets(st.pattern).length && C.length(st.pattern) % 4 === 0 && st.bpm > 0)) bad.push(at + ' rhythm');
+  if (st.kind === 'rhythm' && !(C.onsets(st.pattern).length && C.length(st.pattern) % (st.per || 4) === 0 && st.bpm > 0)) bad.push(at + ' rhythm');
 }));
 function CLEFS(c) { return c === 'treble' || c === 'bass'; }
 ok('every step is well formed', !bad.length, bad.join('; '));
@@ -123,6 +132,25 @@ console.log('exercises');
   [0.6, 1.6, 3.6, 4.6].forEach(b => { late = C.tap(late, b); });
   ok('half a beat late is not on time', C.verdict(late).hits === 0 && !C.verdict(late).pass);
 }
+{
+  const L = C.lesson('triads'), st = L.steps[3];
+  let lx = C.fresh(st);
+  lx = C.press(L, st, lx, 64); lx = C.press(L, st, lx, 60);
+  ok('a chord inside a line waits for all its keys', lx.idx === 0 && lx.got.join() === '64,60' && lx.tone === 'good', lx.msg);
+  lx = C.press(L, st, lx, 67);
+  ok('the third key completes it and names the next chord', lx.idx === 1 && lx.got.length === 0 && /F/.test(lx.msg), lx.msg);
+  lx = C.press(L, st, lx, 62);
+  ok('a wrong key names the chord to look for', lx.idx === 1 && lx.tone === 'bad' && /F/.test(lx.msg), lx.msg);
+  ok('chips name chords by symbol', C.itemName(L, st, 2) === 'G');
+  const F = C.lesson('fmajor');
+  ok('in F major the black key is Ti♭, not La♯', C.itemName(F, F.steps[1], 3) === 'Ti♭');
+}
+{
+  const tied = [1, 1, 2, { d: 1, tie: true }, 1, 2];
+  ok('a tied note is no new onset, and sounds on from the note before',
+    C.onsets(tied).map(o => o.at).join() === '0,1,2,5,6' && C.sounds(tied)[2].d === 3 && C.length(tied) === 8);
+  ok('chord symbols and numerals are not sent for translation', C.isSymbol('Am') && C.isSymbol('G/B') && C.isSymbol('I (C)') && C.isSymbol('vii°') && !C.isSymbol('3rd') && !C.isSymbol('Octave'));
+}
 ok('the computer keyboard plays from Do: A S D F = Do Re Mi Fa', ['KeyA', 'KeyS', 'KeyD', 'KeyF'].map(c => C.codeToMidi(c, 60)).join() === '60,62,64,65');
 ok('W and E are the black keys between them', C.codeToMidi('KeyW', 60) === 61 && C.codeToMidi('KeyE', 60) === 63 && C.codeToMidi('KeyQ', 60) === null);
 
@@ -185,12 +213,25 @@ console.log('translations');
   await homeLink.click(); await sleep(300);
   let st = await S();
   ok('that link opens Piano Basics', st.screen === 'learn');
+  const picker = await page.evaluate(() => ({
+    shown: !!document.querySelector('[data-learn-levels]'),
+    lesson: !!document.querySelector('[data-learn-card]'),
+    levels: [...document.querySelectorAll('[data-level]')].map(el => el.getAttribute('data-level')).join(),
+    text: (document.querySelector('[data-learn-levels]') || {}).innerText || '',
+    resume: !!document.querySelector('[data-learn-resume]'),
+    cta: [...document.querySelectorAll('[data-level-go]')].map(b => b.innerText.trim()).join('|')
+  }));
+  ok('the tab opens on a choice of three levels', picker.shown && !picker.lesson && picker.levels === '1,2,3', picker.levels);
+  ok('each level says who it is for and what is in it',
+    /First steps/.test(picker.text) && /Scales and chords/.test(picker.text) && /Chords and accompaniment/.test(picker.text) && /Never played before/.test(picker.text) && /Chords in a key/.test(picker.text));
+  ok('a fresh start offers Start everywhere and no resume', !picker.resume && picker.cta === 'Start|Start|Start', picker.cta);
+  await page.click('[data-level-go="1"]'); await sleep(250);
   const course = await page.evaluate(() => ({
     lessons: document.querySelectorAll('[data-learn-course] [data-lesson]').length,
     title: document.querySelector('[data-learn-title]').innerText.trim(),
     header: document.querySelector('.ppp-header').innerText
   }));
-  ok('the course lists all twenty lessons', course.lessons === 20, String(course.lessons));
+  ok('level 1 lists its twenty lessons', course.lessons === 20, String(course.lessons));
   ok('a fresh start is lesson 1', course.title === 'White keys and black keys', course.title);
   ok('the header names the page', /Piano Basics/.test(course.header));
 
@@ -361,8 +402,68 @@ console.log('translations');
   ok('Listen does nothing while a rhythm is being tapped', !(await page.evaluate(() => window.PPP.app.state.learnClock)));
   await page.evaluate(() => window.__pppTest.nav('Home')); await sleep(250);
   await page.evaluate(() => window.__pppTest.nav('Piano Basics')); await sleep(250);
+  await page.click('[data-learn-resume]'); await sleep(200);
   const back = await page.evaluate(() => ({ run: window.PPP.app.state.lx.run, start: document.querySelector('[data-learn-tool="start"]').innerText.trim() }));
   ok('leaving in the middle of a rhythm drops it, and Start is back', back.run === null && back.start === 'Start', JSON.stringify(back));
+
+  console.log('levels 2 and 3');
+  await page.evaluate(() => window.PPP.app.learnOpen('triads', 3)); await sleep(200);
+  const chips = await page.$$eval('[data-learn-chips] span', els => els.filter(e => !e.querySelector('span')).map(e => e.innerText.trim()));
+  ok('a chord progression shows its chord names', chips.join(' ') === 'C F G C', chips.join(' '));
+  ok('all three keys of the first chord are lit', (await page.$$eval('[data-learn-keyboard] rect[data-mark="next"]', els => els.map(e => e.getAttribute('data-midi')))).join() === '60,64,67');
+  await tapKey(60); await tapKey(64); await sleep(500);
+  ok('keys already pressed for the chord stay marked', (await page.$$eval('[data-learn-keyboard] rect[data-mark="got"]', els => els.length)) === 2);
+  await tapKey(67); await sleep(80);
+  st = await S();
+  ok('the chord done, the next one is F', st.lx.idx === 1, String(st.lx.idx));
+
+  await page.evaluate(() => window.PPP.app.learnOpen('progression', 2)); await sleep(250);
+  const both = await page.$$eval('[data-learn-keyboard] [data-hand]', els => els.map(e => e.getAttribute('data-hand')).sort().join());
+  ok('bass and chord together show both hands', both === 'l,r', both);
+
+  await page.evaluate(() => window.PPP.app.learnOpen('gmajor', 1)); await sleep(200);
+  ok('G major is written with one sharp in the key signature', !!(await page.$('[data-learn-staff="treble"][data-key="1"]')));
+  await page.evaluate(() => window.PPP.app.learnOpen('fmajor', 0)); await sleep(200);
+  ok('F major with one flat', !!(await page.$('[data-learn-staff="treble"][data-key="-1"]')));
+
+  await page.evaluate(() => window.PPP.app.learnOpen('minor', 1)); await sleep(200);
+  ok('an ear question has its own Listen button', !!(await page.$('[data-learn-tool="listen"]')));
+  await page.click('[data-learn-tool="listen"]'); await sleep(150);
+  ok('and plays that question’s example', !!(await page.evaluate(() => window.PPP.app.state.learnClock)));
+  await page.click('[data-choice="1"]'); await sleep(120);
+  ok('answered by ear', /A minor/.test(await feedback()), await feedback());
+
+  const tapAlong = async (lesson, i) => {
+    await page.evaluate((lesson, i) => window.PPP.app.learnOpen(lesson, i), lesson, i); await sleep(150);
+    await page.click('[data-learn-tool="start"]'); await sleep(50);
+    const info = await page.evaluate(() => {
+      const run = window.PPP.app.state.lx.run;
+      run.ons.forEach(o => setTimeout(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true })), run.t0 + o.at * run.beatMs + 30 - performance.now()));
+      return { lead: Math.round((run.t0 - performance.now()) / run.beatMs), n: run.ons.length };
+    });
+    await page.waitForFunction(() => { const lx = window.PPP.app.state.lx; return lx && lx.result; }, { timeout: 25000 }).catch(() => {});
+    return Object.assign(info, { result: (await S()).lx.result });
+  };
+  const waltz = await tapAlong('threefour', 1);
+  ok('a 3/4 rhythm counts in with three clicks', waltz.lead === 3, String(waltz.lead));
+  ok('and tapping each note on time passes', waltz.result && waltz.result.pass && waltz.result.hits === waltz.n, JSON.stringify(waltz.result));
+  ok('the waltz is drawn three beats to the bar', !!(await page.$('[data-learn-rhythm="3"]')));
+  const tied = await tapAlong('dotted', 3);
+  ok('dotted notes and a tie: seven notes to tap, the tie not one of them', tied.n === 7 && tied.result && tied.result.pass, JSON.stringify(tied));
+
+  await page.evaluate(() => window.PPP.app.learnOpen('chords', 3)); await sleep(150);
+  await clickNext(); await sleep(200);
+  const end1 = await page.evaluate(() => ({ text: document.querySelector('[data-learn-complete]').innerText, go: document.querySelector('[data-learn-go-next]').innerText.trim() }));
+  ok('the last lesson of level 1 says the level is complete and offers level 2', /Level 1 complete!/.test(end1.text) && end1.go === 'Start Level 2', end1.go);
+  await page.click('[data-learn-go-next]'); await sleep(200);
+  st = await S();
+  ok('which opens its first lesson', st.lesson === 'intervals' && st.step === 0);
+  const tabs = await page.$$eval('[data-level-tab]', els => els.map(e => e.innerText.trim()).join('|'));
+  ok('the course panel switches between levels', tabs === 'Level 1|Level 2|Level 3', tabs);
+  await page.click('[data-level-tab="3"]'); await sleep(200);
+  ok('Level 3 opens its first lesson not yet done', (await S()).lesson === 'diatonic');
+  await page.click('[data-learn-to-levels]'); await sleep(200);
+  ok('← All levels goes back to the picker', !!(await page.$('[data-learn-levels]')) && !(await page.$('[data-learn-card]')));
 
   console.log('kept');
   await page.evaluate(() => window.PPP.app.learnOpen('fasol', 2)); await sleep(200);
@@ -370,6 +471,9 @@ console.log('translations');
   await page.reload({ waitUntil: 'networkidle2' });
   await page.waitForFunction(() => document.querySelectorAll('aside nav button').length >= 6, { timeout: 25000 });
   await page.evaluate(() => window.__pppTest.nav('Piano Basics')); await sleep(300);
+  const resume = await page.$eval('[data-learn-resume]', el => el.innerText);
+  ok('after a reload the picker offers to continue the lesson you were on', /Continue: Fa and Sol/.test(resume) && /Level 1/.test(resume), resume.replace(/\n/g, ' '));
+  await page.click('[data-learn-resume]'); await sleep(250);
   const kept = await page.evaluate(() => ({
     title: document.querySelector('[data-learn-title]').innerText.trim(),
     step: window.PPP.app.state.learnStep,
@@ -394,7 +498,13 @@ console.log('translations');
   });
   ok('the tab reads 피아노 기초', ko.nav === '피아노 기초', ko.nav);
   ok('the lesson is in Korean', ko.title === '흰 건반과 검은 건반' && /피아노에는 흰 건반과 검은 건반이 있어요/.test(ko.text), ko.title);
-  ok('the course list and its words are in Korean', /나의 코스/.test(ko.course) && /떴다 떴다 비행기/.test(ko.course) && !/Your course/.test(ko.course));
+  ok('the course list and its words are in Korean', /1단계 · 첫걸음/.test(ko.course) && /떴다 떴다 비행기/.test(ko.course) && !/First steps/.test(ko.course), ko.course.slice(0, 60));
+  const koPicker = await page.evaluate(async () => {
+    window.PPP.app.setState({ learnView: 'levels' });
+    await new Promise(r => setTimeout(r, 400));
+    return document.querySelector('[data-learn-levels]').innerText;
+  });
+  ok('the level picker is in Korean', /단계를 골라요/.test(koPicker) && /음계와 화음/.test(koPicker) && /코드와 반주/.test(koPicker) && !/Choose your level/.test(koPicker));
   await page.evaluate(() => window.PPP.app.learnOpen('doremi', 1)); await sleep(200);
   const keyNames = await page.$$eval('[data-learn-keyboard] text', els => els.map(e => e.textContent));
   ok('keys are named 도 레 미', ['도', '레', '미'].every(n => keyNames.indexOf(n) > -1), keyNames.slice(0, 6).join(' '));
@@ -406,7 +516,10 @@ console.log('translations');
   /* turning on touch reloads the page */
   await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
   await page.waitForFunction(() => window.PPP && window.PPP.app && document.querySelectorAll('aside nav button').length >= 6, { timeout: 25000 });
-  await page.evaluate(() => { window.PPP.app.go('learn')(); window.PPP.app.learnOpen('keys', 1); }); await sleep(500);
+  await page.evaluate(() => { window.PPP.app.go('learn')(); }); await sleep(400);
+  const phonePicker = await page.evaluate(() => ({ overflow: document.documentElement.scrollWidth - window.innerWidth, cards: document.querySelectorAll('[data-level]').length }));
+  ok('the level picker fits a phone', phonePicker.overflow <= 1 && phonePicker.cards === 3, JSON.stringify(phonePicker));
+  await page.evaluate(() => window.PPP.app.learnOpen('keys', 1)); await sleep(500);
   const phone = await page.evaluate(() => ({
     overflow: document.documentElement.scrollWidth - window.innerWidth,
     card: document.querySelector('[data-learn-card]').getBoundingClientRect().width,

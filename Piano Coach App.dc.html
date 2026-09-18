@@ -10,6 +10,7 @@
 <script src="./score-search.js"></script>
 <script src="./support.js"></script>
 <script src="./lessons.js"></script>
+<script src="./course.js"></script>
 </head>
 <body>
 <x-dc>
@@ -68,6 +69,35 @@
   .ppp-note.ppp-on [stroke]:not([stroke="none"]) { stroke: var(--accent) !important; }
   .ppp-note.ppp-bad [fill]:not([fill="none"]) { fill: var(--bad) !important; }
   .ppp-note.ppp-bad [stroke]:not([stroke="none"]) { stroke: var(--bad) !important; }
+
+  /* Falling Notes keeps its fast-changing picture inside one high-DPI canvas.
+     The surrounding controls remain ordinary PPP UI and inherit its theme. */
+  .ppp-falling-wrap {
+    position: relative;
+    min-height: 390px;
+    height: min(58vh, 620px);
+    overflow: hidden;
+    background: #07070d;
+  }
+  .ppp-falling-canvas { display: block; width: 100%; height: 100%; }
+  .ppp-staffcard[data-visual-mode="split"] .ppp-staffwrap,
+  .ppp-staffcard[data-visual-mode="split"] .ppp-falling-wrap { flex: 1 1 0%; min-height: 250px; }
+  .ppp-staffcard[data-visual-mode="split"] .ppp-staffwrap { max-height: 46vh; border-bottom: 1px solid var(--line); }
+  .ppp-viz-settings {
+    display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    background: var(--bg); color: var(--ink2); font-size: 12px;
+  }
+  .ppp-viz-settings label { display: inline-flex; align-items: center; gap: 7px; }
+  .ppp-viz-settings input[type="range"] { width: 110px; accent-color: var(--accent); }
+  @media (min-width: 1025px) {
+    .ppp-playcol .ppp-falling-wrap { flex: 1 1 auto; height: auto; min-height: 330px; }
+  }
+  @media (max-width: 720px) {
+    .ppp-falling-wrap { min-height: 340px; height: 56vh; }
+    .ppp-staffcard[data-visual-mode="split"] .ppp-staffwrap,
+    .ppp-staffcard[data-visual-mode="split"] .ppp-falling-wrap { min-height: 280px; }
+  }
 
   html, body { overflow-x: hidden; max-width: 100%; }
   body { -webkit-text-size-adjust: 100%; }
@@ -353,6 +383,13 @@
     pointer-events: none;
     opacity: 0;
   }
+  .ppp-mstrip {
+    display: flex;
+    gap: 2px;
+    touch-action: none;
+    user-select: none;
+  }
+  .ppp-mstrip button { touch-action: none; }
 
   /* Landscape at the piano: keep chrome tight; keyboard size is the drag, not a crop. */
   @media (orientation: landscape) and (max-height: 900px) {
@@ -607,6 +644,7 @@
                 <button onClick="{{ loadSample }}" style="padding: 12px 20px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer;" style-hover="border-color: var(--ink3);">Try a Sample Song</button>
               </div>
               <button onClick="{{ goLearn }}" data-go-learn style="display: inline-block; margin-top: 14px; padding: 0; border: 0; background: transparent; color: var(--accent); font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; text-align: left;" style-hover="text-decoration: underline;">New to the piano? Start with Piano Basics →</button>
+              <button onClick="{{ goCourse }}" data-go-course style="display: block; margin-top: 8px; padding: 0; border: 0; background: transparent; color: var(--accent); font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; text-align: left;" style-hover="text-decoration: underline;">Working through Beyer or Czerny? Today's method-book pieces →</button>
               <div style="display: flex; align-items: center; gap: 6px; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); flex-wrap: wrap;">
                 <span style="font-size: 12px; color: var(--ink3); margin-right: 4px;">How PPP works</span>
                 <sc-for list="{{ promise }}" as="p" hint-placeholder-count="4">
@@ -941,9 +979,14 @@
               </span>
             </div>
 
-            <div class="ppp-staffcard" style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); overflow: hidden;">
+            <div class="ppp-staffcard" data-visual-mode="{{ visualMode }}" style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); overflow: hidden;">
               <div class="ppp-staffhead" style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap;">
                 <span class="ppp-nowbeat" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink2);">{{ nowMeasure }}</span>
+                <div role="tablist" aria-label="Learning view" style="display: flex; gap: 3px; padding: 3px; border-radius: 10px; background: var(--surface2);">
+                  <sc-for list="{{ visualModeTabs }}" as="vm" hint-placeholder-count="3">
+                    <button role="tab" aria-selected="{{ vm.selected }}" onClick="{{ vm.on }}" style="{{ vm.style }}">{{ vm.label }}</button>
+                  </sc-for>
+                </div>
                 <div style="flex: 1;"></div>
                 <div class="ppp-setup-only" style="display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface2);">
                   <sc-for list="{{ handTabs }}" as="h" hint-placeholder-count="3">
@@ -958,17 +1001,40 @@
                     <button onClick="{{ toggleGuidance }}" style="{{ guidanceBtnStyle }}">{{ guidanceLabel }}</button>
                   </span>
                 </sc-if>
-                <button onClick="{{ toggleWhole }}" style="{{ wholeBtnStyle }}" title="{{ wholeHint }}">{{ wholeLabel }}</button>
+                <sc-if value="{{ showSheetControls }}" hint-placeholder-val="{{ true }}">
+                  <button onClick="{{ toggleWhole }}" style="{{ wholeBtnStyle }}" title="{{ wholeHint }}">{{ wholeLabel }}</button>
+                </sc-if>
                 <button class="ppp-focus-only" data-keys-toggle onClick="{{ toggleKeys }}" style="{{ keysBtnStyle }}" title="{{ keysHint }}">{{ keysLabel }}</button>
+                <sc-if value="{{ showVisualizerControls }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ toggleVisualizerSettings }}" style="{{ visualSettingsBtnStyle }}" aria-expanded="{{ visualSettingsExpanded }}">Visual settings</button>
+                </sc-if>
                 <button onClick="{{ toggleFocus }}" style="{{ focusBtnStyle }}" title="{{ focusHint }}">{{ focusLabel }}</button>
               </div>
+              <sc-if value="{{ showVisualizerSettings }}" hint-placeholder-val="{{ false }}">
+                <div class="ppp-viz-settings">
+                  <label>Look ahead
+                    <input type="range" min="2" max="8" step="0.5" value="{{ visualLookAhead }}" onChange="{{ setVisualLookAhead }}" />
+                    <span style="font-family: 'JetBrains Mono', monospace; min-width: 30px;">{{ visualLookAheadLabel }}</span>
+                  </label>
+                  <button onClick="{{ toggleVisualRange }}" style="{{ visualRangeBtnStyle }}">{{ visualRangeLabel }}</button>
+                  <button onClick="{{ toggleVisualKeyboard }}" style="{{ visualKeyboardBtnStyle }}">Keyboard</button>
+                  <button onClick="{{ toggleVisualEffects }}" style="{{ visualEffectsBtnStyle }}">Hit effects</button>
+                  <button onClick="{{ toggleVisualMeasures }}" style="{{ visualMeasuresBtnStyle }}">Measures</button>
+                  <button onClick="{{ toggleVisualLabels }}" style="{{ visualLabelsBtnStyle }}">Note labels</button>
+                </div>
+              </sc-if>
               <sc-if value="{{ showHint }}" hint-placeholder-val="{{ false }}">
                 <div class="ppp-setup-only" style="margin: 10px 16px 0; padding: 9px 10px 9px 13px; border-radius: 10px; background: var(--surface2); font-size: 13px; line-height: 1.45; color: var(--ink2); display: flex; align-items: flex-start; gap: 10px;">
                   <span style="flex: 1;">{{ hintText }}</span>
                   <button onClick="{{ dismissHints }}" title="{{ dismissLabel }}" style="flex: none; width: 24px; height: 24px; border-radius: 7px; border: 0; background: transparent; color: var(--ink2); font-size: 15px; line-height: 1; cursor: pointer;" style-hover="background: var(--line);">×</button>
                 </div>
               </sc-if>
-              <div class="ppp-staffwrap ppp-focus-grow" ref="{{ staffRef }}" data-whole="{{ wholeAttr }}" style="overflow-x: auto; padding: 18px 16px 22px; background: {{ paperBg }};">{{ playerStaff }}</div>
+              <sc-if value="{{ showSheetView }}" hint-placeholder-val="{{ true }}">
+                <div class="ppp-staffwrap ppp-focus-grow" ref="{{ staffRef }}" data-whole="{{ wholeAttr }}" style="overflow-x: auto; padding: 18px 16px 22px; background: {{ paperBg }};">{{ playerStaff }}</div>
+              </sc-if>
+              <sc-if value="{{ showFallingView }}" hint-placeholder-val="{{ false }}">
+                <div class="ppp-falling-wrap ppp-focus-grow">{{ pianoVisualizer }}</div>
+              </sc-if>
             </div>
 
             <div class="ppp-transport" style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); padding: 16px;">
@@ -1007,9 +1073,9 @@
                    by how each one is going, and its sections as one-tap chips. -->
               <sc-if value="{{ showPassage }}" hint-placeholder-val="{{ true }}">
                 <div class="ppp-setup-only" style="margin-top: 14px; display: flex; flex-direction: column; gap: 8px;">
-                  <div style="display: flex; gap: 2px;">
+                  <div class="ppp-mstrip" data-mstrip onPointerDown="{{ onStripDown }}" onPointerMove="{{ onStripMove }}" onPointerUp="{{ onStripUp }}" onPointerCancel="{{ onStripUp }}">
                     <sc-for list="{{ measureCells }}" as="mc" hint-placeholder-count="16">
-                      <button onClick="{{ mc.on }}" style="{{ mc.style }}" title="{{ mc.title }}"></button>
+                      <button data-m="{{ mc.n }}" onClick="{{ mc.on }}" style="{{ mc.style }}" title="{{ mc.title }}"></button>
                     </sc-for>
                   </div>
                   <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
@@ -1022,8 +1088,9 @@
                   </div>
                 </div>
               </sc-if>
-              <div class="ppp-kb-split ppp-focus-only" data-kb-split title="{{ kbSplitHint }}" onPointerDown="{{ onKbSplit }}" onPointerMove="{{ onKbSplitMove }}" onPointerUp="{{ onKbSplitUp }}"></div>
-              <div class="ppp-kbwrap" ref="{{ kbRef }}" style="margin-top: 16px; border-radius: 13px; border: 1px solid var(--line); background: var(--key-b); padding: 10px 10px 0; overflow: hidden;">{{ keyboard }}</div>
+              <sc-if value="{{ showPracticeKeyboard }}" hint-placeholder-val="{{ true }}">
+                <div class="ppp-kb-split ppp-focus-only" data-kb-split title="{{ kbSplitHint }}" onPointerDown="{{ onKbSplit }}" onPointerMove="{{ onKbSplitMove }}" onPointerUp="{{ onKbSplitUp }}"></div>
+                <div class="ppp-kbwrap" ref="{{ kbRef }}" style="margin-top: 16px; border-radius: 13px; border: 1px solid var(--line); background: var(--key-b); padding: 10px 10px 0; overflow: hidden;">{{ keyboard }}</div>
               <div class="ppp-setup-only" style="display: flex; gap: 8px 18px; margin-top: 12px; font-size: 11.5px; color: var(--ink3); flex-wrap: wrap; align-items: center;">
                 <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 9px; height: 9px; border-radius: 3px; background: var(--accent);"></span>Played correctly</span>
                 <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 9px; height: 9px; border-radius: 3px; background: var(--bad);"></span>Wrong note</span>
@@ -1054,6 +1121,7 @@
                   <button onClick="{{ toggleHandNames }}" aria-pressed="{{ handNamesPressed }}" style="{{ handNamesBtnStyle }}">{{ handNamesLabel }}</button>
                 </sc-if>
               </div>
+              </sc-if>
             </div>
           </section>
 
@@ -1493,6 +1561,132 @@
               </div>
             </sc-for>
           </div>
+        </div>
+      </sc-if>
+
+      <!-- Method Books: the order piano academies teach in — Beyer, Czerny 100
+           with Burgmüller and Hanon beside it, sonatinas, Czerny 30 and 40.
+           Today's pieces sit on top with the circles you fill each time you
+           play one through, as an academy's practice book has them. -->
+      <sc-if value="{{ isCourse }}" hint-placeholder-val="{{ false }}">
+        <div data-course-page style="display: flex; flex-direction: column; gap: 18px;">
+          <section data-course-today style="border: 1px solid var(--line); border-radius: 20px; background: var(--surface); padding: 22px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 16px; min-width: 0;">
+            <div style="display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap;">
+              <div style="flex: 1; min-width: 220px;">
+                <div data-no-i18n="1" style="font-size: 11.5px; font-weight: 600; letter-spacing: .04em; color: var(--accent);">{{ courseDate }}</div>
+                <h2 style="margin: 4px 0 0; font-size: 21px; font-weight: 600; letter-spacing: -0.015em;">Today's practice</h2>
+                <div data-no-i18n="1" data-course-today-note style="font-size: 13px; color: var(--ink2); margin-top: 5px; line-height: 1.5; max-width: 62ch;">{{ courseTodayNote }}</div>
+              </div>
+              <div data-course-streak style="display: flex; flex-direction: column; align-items: flex-end; gap: 7px;">
+                <span data-no-i18n="1" style="{{ courseStreakStyle }}">{{ courseStreak }}</span>
+                <div style="display: flex; gap: 3px;">
+                  <sc-for list="{{ courseDays }}" as="d" hint-placeholder-count="14">
+                    <span title="{{ d.label }}" data-day="{{ d.day }}" style="{{ d.style }}"></span>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+            <sc-if value="{{ courseHasItems }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <sc-for list="{{ courseItems }}" as="it" hint-placeholder-count="3">
+                  <div data-course-item="{{ it.key }}" data-role="{{ it.role }}" style="{{ it.rowStyle }}">
+                    <div style="min-width: 0; flex: 1 1 220px;">
+                      <span data-no-i18n="1" style="{{ it.roleStyle }}">{{ it.roleLabel }}</span>
+                      <div data-no-i18n="1" style="font-size: 16px; font-weight: 600; margin-top: 6px; letter-spacing: -0.01em;">{{ it.title }}</div>
+                      <div data-no-i18n="1" style="font-size: 12px; color: var(--ink3); margin-top: 2px;">{{ it.meta }}</div>
+                    </div>
+                    <div data-course-circles style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                      <sc-for list="{{ it.dots }}" as="d" hint-placeholder-count="5">
+                        <button type="button" onClick="{{ d.on }}" data-circle="{{ d.n }}" aria-pressed="{{ d.pressed }}" title="{{ d.label }}" aria-label="{{ d.label }}" style="{{ d.style }}"></button>
+                      </sc-for>
+                      <span data-no-i18n="1" data-course-count style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--ink3); margin-left: 4px;">{{ it.count }}</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                      <button type="button" onClick="{{ it.open }}" data-course-open="{{ it.key }}" style="{{ it.openStyle }}">{{ it.openLabel }}</button>
+                      <sc-if value="{{ it.canPass }}" hint-placeholder-val="{{ true }}">
+                        <button type="button" onClick="{{ it.pass }}" data-course-pass="{{ it.key }}" title="{{ it.passHint }}" style="{{ it.passStyle }}">{{ it.passLabel }}</button>
+                      </sc-if>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ courseHasNote }}" hint-placeholder-val="{{ false }}">
+              <div data-course-note style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 16px 18px; border: 1px dashed var(--line); border-radius: 14px;">
+                <span data-no-i18n="1" style="flex: 1; min-width: 200px; font-size: 13.5px; color: var(--ink2); line-height: 1.5;">{{ courseNote }}</span>
+                <sc-if value="{{ courseHasAction }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ courseAction }}" style="padding: 9px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;" style-hover="border-color: var(--accent); color: var(--accent);">{{ courseActionLabel }}</button>
+                </sc-if>
+              </div>
+            </sc-if>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink2);">
+              <span>Circles a day</span>
+              <div style="display: flex; gap: 3px; padding: 3px; border-radius: 10px; background: var(--surface2);">
+                <sc-for list="{{ courseRepsOpts }}" as="r" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ r.on }}" data-course-reps="{{ r.n }}" aria-pressed="{{ r.pressed }}" style="{{ r.style }}">{{ r.label }}</button>
+                </sc-for>
+              </div>
+              <span data-no-i18n="1" style="color: var(--ink3); flex: 1; min-width: 200px;">{{ courseHowTo }}</span>
+            </div>
+          </section>
+
+          <section data-course-path style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;">
+              <h3 style="margin: 0; font-size: 16px; font-weight: 600;">The academy path</h3>
+              <span style="font-size: 12.5px; color: var(--ink3);">The order piano academies teach in. Pick a book to see its pieces.</span>
+            </div>
+            <div class="ppp-course-stages" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px;">
+              <sc-for list="{{ courseStages }}" as="st" hint-placeholder-count="4">
+                <div data-course-stage="{{ st.n }}" style="{{ st.style }}">
+                  <div data-no-i18n="1" style="font-size: 11px; font-weight: 600; letter-spacing: .05em; color: var(--accent);">{{ st.label }}</div>
+                  <div data-no-i18n="1" style="font-size: 12.5px; color: var(--ink2); margin-bottom: 4px;">{{ st.sub }}</div>
+                  <sc-for list="{{ st.books }}" as="b" hint-placeholder-count="2">
+                    <button type="button" onClick="{{ b.on }}" data-course-book="{{ b.id }}" aria-pressed="{{ b.pressed }}" style="{{ b.style }}">
+                      <span style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                        <span data-no-i18n="1" style="font-weight: 600; font-size: 14px;">{{ b.title }}</span>
+                        <span data-no-i18n="1" style="{{ b.tagStyle }}">{{ b.tag }}</span>
+                      </span>
+                      <span data-no-i18n="1" style="font-size: 11.5px; color: var(--ink3);">{{ b.sub }}</span>
+                      <span style="display: block; height: 5px; border-radius: 999px; background: var(--surface2); overflow: hidden;"><span style="{{ b.barStyle }}"></span></span>
+                      <span data-no-i18n="1" style="font-size: 11px; color: var(--ink3);">{{ b.count }}</span>
+                    </button>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+
+          <section data-course-book-view="{{ courseBookId }}" style="border: 1px solid var(--line); border-radius: 20px; background: var(--surface); padding: 22px; display: flex; flex-direction: column; gap: 16px; min-width: 0;">
+            <div style="display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap;">
+              <div style="flex: 1; min-width: 220px;">
+                <div data-no-i18n="1" style="font-size: 11.5px; font-weight: 600; letter-spacing: .04em; color: var(--accent);">{{ courseBookStage }}</div>
+                <h3 data-no-i18n="1" style="margin: 4px 0 0; font-size: 19px; font-weight: 600; letter-spacing: -0.01em;">{{ courseBookTitle }}</h3>
+                <div data-no-i18n="1" style="font-size: 12.5px; color: var(--ink2); margin-top: 3px;">{{ courseBookSub }}</div>
+              </div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <sc-for list="{{ courseBookRoles }}" as="r" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ r.on }}" data-course-role="{{ r.id }}" aria-pressed="{{ r.pressed }}" style="{{ r.style }}">{{ r.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <div data-course-numbers style="display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 6px;">
+              <sc-for list="{{ courseNums }}" as="n" hint-placeholder-count="24">
+                <button type="button" onClick="{{ n.on }}" data-course-no="{{ n.no }}" data-state="{{ n.state }}" title="{{ n.hint }}" aria-label="{{ n.hint }}" style="{{ n.style }}">{{ n.label }}</button>
+              </sc-for>
+            </div>
+            <sc-if value="{{ courseHasSel }}" hint-placeholder-val="{{ false }}">
+              <div data-course-selected="{{ courseSelNo }}" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 16px; border-radius: 14px; background: var(--bg); border: 1px solid var(--line);">
+                <div style="flex: 1; min-width: 200px;">
+                  <div data-no-i18n="1" style="font-size: 15px; font-weight: 600;">{{ courseSelTitle }}</div>
+                  <div data-no-i18n="1" style="font-size: 12px; color: var(--ink3); margin-top: 2px;">{{ courseSelMeta }}</div>
+                </div>
+                <sc-for list="{{ courseSelActions }}" as="a" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ a.on }}" data-course-action="{{ a.id }}" style="{{ a.style }}">{{ a.label }}</button>
+                </sc-for>
+              </div>
+            </sc-if>
+            <div data-no-i18n="1" data-course-source style="font-size: 11.5px; color: var(--ink3); line-height: 1.55;">{{ courseBookSource }}</div>
+          </section>
         </div>
       </sc-if>
 
@@ -2521,6 +2715,210 @@ const PianoScore = {
     return sq;
   }
 };
+
+/* ============================================================================
+   FALLING-NOTE TIMELINE
+
+   The canvas never reads MusicXML. It receives this source-neutral timeline,
+   built from the same sounding plan as the piano player. That matters for
+   repeats, tempo changes and ties: there is one interpretation of the score
+   for both what is heard and what reaches the keyboard on screen.
+   ========================================================================== */
+const PIANO_VISUALIZER_DEFAULTS = Object.freeze({
+  lookAheadSeconds: 4,
+  showKeyboard: true,
+  showHitEffects: true,
+  showMeasureLines: true,
+  showNoteLabels: false,
+  keyboardRangeMode: 'auto',
+  leftHandColor: '#f4b942',
+  rightHandColor: '#7567ff',
+  unknownHandColor: '#42d9e8',
+  debug: false
+});
+
+/**
+ * Source-neutral note consumed by the visualizer.
+ * @typedef {Object} PianoVisualNote
+ * @property {string} id
+ * @property {number} midi
+ * @property {number} startTime Seconds in the current playback timeline.
+ * @property {number} endTime
+ * @property {number} duration
+ * @property {'left'|'right'|'unknown'} hand
+ * @property {number=} staff
+ * @property {number=} measureIndex
+ * @property {string=} sourceNoteId
+ * @property {number=} velocity
+ */
+
+const VISUAL_PITCH_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const VISUAL_BLACK_PC = { 1: true, 3: true, 6: true, 8: true, 10: true };
+
+function midiToPitchClass(midi) {
+  const n = Math.round(+midi || 0);
+  return VISUAL_PITCH_NAMES[((n % 12) + 12) % 12];
+}
+function isBlackKey(midi) {
+  return !!VISUAL_BLACK_PC[((Math.round(+midi || 0) % 12) + 12) % 12];
+}
+function visualHand(hand) {
+  return hand === 'r' || hand === 'right' ? 'right'
+    : hand === 'l' || hand === 'left' ? 'left' : 'unknown';
+}
+function visualFirstAtOrAfter(list, time) {
+  let lo = 0, hi = list.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (list[mid].startTime < time) lo = mid + 1; else hi = mid;
+  }
+  return lo;
+}
+
+/* Convert a Score into PianoVisualNote[]. Times are seconds in this exact
+   practice run (including its selected range, repeats and tempo scale). */
+function scoreToVisualTimeline(score, options) {
+  options = options || {};
+  if (!score || !score.measures || !score.measures.length) {
+    return { score: score || null, plan: PianoScore._empty(), notes: [], measures: [], duration: 0, maxDuration: 0, range: [48, 84], scale: 1 };
+  }
+  const from = options.from == null ? Score.first(score) : options.from;
+  const to = options.to == null ? Score.last(score) : options.to;
+  const plan = options.plan || PianoScore.of(score, from, to);
+  const practiceTempo = +options.tempo || score.tempo || 84;
+  const scale = practiceTempo / Math.max(1, score.tempo || practiceTempo);
+  const notes = [];
+  let maxDuration = 0;
+
+  (plan.strikes || []).forEach((strike, i) => {
+    const source = strike.note || {};
+    /* `x` is a cue/non-piano staff in PPP. It is printed on the sheet but is
+       deliberately not sounded, so showing it as a falling key would lie. */
+    if (source.hand === 'x' || !isFinite(strike.midi)) return;
+    const startTime = PianoScore.msAt(plan, strike.q, scale) / 1000;
+    const heldQ = Math.max(0.05, PianoScore.hold(plan, source));
+    const endTime = PianoScore.msAt(plan, strike.q + heldQ, scale) / 1000;
+    const mm = Score.measure(score, strike.m);
+    const sourceId = source.id != null ? String(source.id)
+      : [source.m, source.b, source.staff || 1, source.voice || 1, strike.midi].join(':');
+    const duration = Math.max(0.025, endTime - startTime);
+    maxDuration = Math.max(maxDuration, duration);
+    notes.push({
+      id: sourceId + '@' + strike.q.toFixed(6) + ':' + i,
+      midi: Math.round(strike.midi),
+      startTime: startTime,
+      endTime: startTime + duration,
+      duration: duration,
+      hand: visualHand(source.hand),
+      staff: source.staff,
+      measureIndex: mm ? mm.index : undefined,
+      sourceNoteId: sourceId,
+      velocity: strike.vel,
+      startQ: strike.q,
+      endQ: strike.q + heldQ
+    });
+  });
+  notes.sort((a, b) => a.startTime - b.startTime || a.midi - b.midi);
+
+  const measures = (plan.visits || []).map((visit, i) => ({
+    id: String(visit.number) + '@' + i,
+    number: visit.number,
+    measureIndex: visit.index,
+    startTime: PianoScore.msAt(plan, visit.soundQ, scale) / 1000,
+    startQ: visit.soundQ
+  }));
+  const duration = PianoScore.msAt(plan, plan.soundLengthQ || 0, scale) / 1000;
+  return {
+    score: score, from: from, to: to, plan: plan, notes: notes, measures: measures,
+    duration: duration, maxDuration: maxDuration, range: visualKeyboardRange(notes, 'auto'),
+    scale: scale, tempo: practiceTempo
+  };
+}
+
+function visualKeyboardRange(notes, mode) {
+  if (mode === '88key') return [21, 108];
+  let lo = 127, hi = 0;
+  (notes || []).forEach(n => {
+    if (!isFinite(n.midi)) return;
+    lo = Math.min(lo, Math.round(n.midi));
+    hi = Math.max(hi, Math.round(n.midi));
+  });
+  if (lo > hi) { lo = 48; hi = 84; }
+  lo = Math.max(0, lo - 4);
+  hi = Math.min(127, hi + 4);
+  while (lo > 0 && isBlackKey(lo)) lo--;
+  while (hi < 127 && isBlackKey(hi)) hi++;
+  /* A tiny range is hard to read and makes each key comically wide. */
+  while (hi - lo < 23) {
+    if (lo > 0) lo--;
+    if (hi < 127 && hi - lo < 23) hi++;
+  }
+  while (lo > 0 && isBlackKey(lo)) lo--;
+  while (hi < 127 && isBlackKey(hi)) hi++;
+  return [lo, hi];
+}
+
+/* Real piano geometry: white keys divide the width; black keys sit across the
+   boundary between their neighbouring whites instead of occupying a twelfth
+   of an equal chromatic grid. */
+function buildKeyboardGeometry(range, width, keyboardHeight) {
+  const first = Math.max(0, Math.min(127, Math.round(range && range[0] != null ? range[0] : 21)));
+  const last = Math.max(first, Math.min(127, Math.round(range && range[1] != null ? range[1] : 108)));
+  const whiteMidis = [];
+  for (let midi = first; midi <= last; midi++) if (!isBlackKey(midi)) whiteMidis.push(midi);
+  const whiteWidth = width / Math.max(1, whiteMidis.length);
+  const blackWidth = Math.max(3, whiteWidth * 0.62);
+  const whiteHeight = keyboardHeight;
+  const blackHeight = keyboardHeight * 0.62;
+  const byMidi = {};
+  const white = [];
+  const black = [];
+  let whitesSeen = 0;
+  for (let midi = first; midi <= last; midi++) {
+    if (!isBlackKey(midi)) {
+      const key = { midi: midi, black: false, x: whitesSeen * whiteWidth, width: whiteWidth, height: whiteHeight };
+      white.push(key); byMidi[midi] = key; whitesSeen++;
+    } else {
+      const key = { midi: midi, black: true, x: whitesSeen * whiteWidth - blackWidth / 2, width: blackWidth, height: blackHeight };
+      black.push(key); byMidi[midi] = key;
+    }
+  }
+  return { first: first, last: last, width: width, height: keyboardHeight, whiteWidth: whiteWidth, blackWidth: blackWidth, white: white, black: black, byMidi: byMidi };
+}
+
+function getVisibleNotes(timeline, currentTime, lookAheadSeconds, pastWindow) {
+  const notes = timeline && timeline.notes ? timeline.notes : [];
+  const past = pastWindow == null ? 0.32 : pastWindow;
+  const lower = currentTime - past - ((timeline && timeline.maxDuration) || 0);
+  const upper = currentTime + Math.max(0.25, lookAheadSeconds || 4);
+  const from = Math.max(0, visualFirstAtOrAfter(notes, lower) - 1);
+  const to = visualFirstAtOrAfter(notes, upper + 1e-9);
+  const out = [];
+  for (let i = from; i < to; i++) {
+    const n = notes[i];
+    if (n && n.endTime >= currentTime - past && n.startTime <= upper) out.push(n);
+  }
+  return out;
+}
+
+function getActiveMidiNotes(notes, currentTime, hands) {
+  const active = {};
+  (notes || []).forEach(n => {
+    const selected = !hands || hands === 'both' || n.hand === hands || n.hand === 'unknown';
+    if (selected && n.startTime <= currentTime + 1e-6 && n.endTime >= currentTime - 1e-6) active[n.midi] = n;
+  });
+  return active;
+}
+
+function getNoteRect(note, currentTime, geometry, hitLineY, noteAreaHeight, lookAheadSeconds) {
+  const key = geometry && geometry.byMidi[note.midi];
+  if (!key) return null;
+  const pxPerSecond = noteAreaHeight / Math.max(0.25, lookAheadSeconds || 4);
+  const height = Math.max(5, note.duration * pxPerSecond);
+  const bottom = hitLineY - (note.startTime - currentTime) * pxPerSecond;
+  const inset = Math.max(1, key.width * 0.1);
+  return { x: key.x + inset, y: bottom - height, width: Math.max(2, key.width - inset * 2), height: height, bottom: bottom };
+}
 
 /* One per page. Times in are audio-clock seconds; clockOffset() relates them
    to the performance.now() milliseconds the rest of PPP runs on. */
@@ -7487,6 +7885,17 @@ window.PPP = {
   Score, parseMusicXML, readMxl, scoreFromFile, buildDemoScore,
   pitchToMidi, midiToFreq, keyName, vexKey,
   PIANO, PianoSamples, PianoScore, PianoPlayer,
+  PianoVisual: {
+    defaults: PIANO_VISUALIZER_DEFAULTS,
+    scoreToTimeline: scoreToVisualTimeline,
+    keyboardRange: visualKeyboardRange,
+    buildKeyboardGeometry: buildKeyboardGeometry,
+    getVisibleNotes: getVisibleNotes,
+    getNoteRect: getNoteRect,
+    getActiveMidiNotes: getActiveMidiNotes,
+    midiToPitchClass: midiToPitchClass,
+    isBlackKey: isBlackKey
+  },
   MidiInput, MidiOut, PerformanceEngine, TIMING_DEFAULTS, DYN_VEL, PEDAL_CC,
   Learning, LEARN, STATE_TONE, STATE_LABEL, seedDemoHistory,
   Memory, MEMORY, MEM_LABEL, MEM_TONE, HINTS, Clock, onsetKey,
@@ -10019,6 +10428,303 @@ const ANALYSIS_STEPS = [
   'Detecting rhythms', 'Analyzing difficulty', 'Building your practice plan'
 ];
 
+/* Canvas renderer. React owns its lifecycle and props; animation state stays in
+   the instance so the 60fps loop never asks React to reconcile a frame. */
+class PianoVisualizerCanvas extends React.Component {
+  constructor(props) {
+    super(props);
+    this.canvas = null;
+    this.host = null;
+    this.raf = 0;
+    this.ro = null;
+    this.width = 0;
+    this.height = 0;
+    this.dpr = 1;
+    this.geometry = null;
+    this.geometryKey = '';
+    this.particles = [];
+    this.previousTime = null;
+    this.previousTimeline = null;
+    this.fps = 0;
+    this.fpsFrames = 0;
+    this.fpsAt = 0;
+    this.visibleCount = 0;
+    this.reduceMotion = false;
+    this._draw = this.draw.bind(this);
+    this._resize = this.resize.bind(this);
+  }
+  componentDidMount() {
+    try { this.reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
+    if (typeof ResizeObserver === 'function') {
+      this.ro = new ResizeObserver(this._resize);
+      if (this.host) this.ro.observe(this.host);
+    } else window.addEventListener('resize', this._resize);
+    this.resize();
+    this.raf = requestAnimationFrame(this._draw);
+  }
+  componentWillUnmount() {
+    if (this.raf) cancelAnimationFrame(this.raf);
+    if (this.ro) this.ro.disconnect();
+    else window.removeEventListener('resize', this._resize);
+    if (this.canvas) delete this.canvas.__pppVisualizer;
+  }
+  settings() {
+    return Object.assign({}, PIANO_VISUALIZER_DEFAULTS, this.props.settings || {});
+  }
+  resize() {
+    if (!this.canvas || !this.host) return;
+    const r = this.host.getBoundingClientRect();
+    const width = Math.max(1, Math.round(r.width));
+    const height = Math.max(1, Math.round(r.height));
+    const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+    if (width === this.width && height === this.height && dpr === this.dpr) return;
+    this.width = width; this.height = height; this.dpr = dpr;
+    this.canvas.width = Math.round(width * dpr);
+    this.canvas.height = Math.round(height * dpr);
+    this.canvas.style.width = width + 'px';
+    this.canvas.style.height = height + 'px';
+    this.geometryKey = '';
+  }
+  color(note, settings) {
+    return note.hand === 'left' ? settings.leftHandColor
+      : note.hand === 'right' ? settings.rightHandColor : settings.unknownHandColor;
+  }
+  selected(note) {
+    const hands = this.props.hands || 'both';
+    return hands === 'both' || note.hand === 'unknown' || note.hand === hands;
+  }
+  rounded(ctx, x, y, width, height, radius) {
+    const r = Math.max(0, Math.min(radius, width / 2, height / 2));
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + width - r, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+    ctx.lineTo(x + width, y + height - r);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+    ctx.lineTo(x + r, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+  geometryFor(settings, keyboardHeight) {
+    const timeline = this.props.timeline || { notes: [], range: [48, 84] };
+    const range = settings.keyboardRangeMode === '88key' ? [21, 108]
+      : (timeline.range || visualKeyboardRange(timeline.notes, 'auto'));
+    const key = [range[0], range[1], this.width, keyboardHeight].join(':');
+    if (key !== this.geometryKey) {
+      this.geometry = buildKeyboardGeometry(range, this.width, keyboardHeight);
+      this.geometryKey = key;
+    }
+    return this.geometry;
+  }
+  spawnHits(notes, geometry, hitLineY, now, settings) {
+    if (!settings.showHitEffects || this.reduceMotion || !notes.length) return;
+    for (let i = 0; i < notes.length; i++) {
+      const note = notes[i], key = geometry.byMidi[note.midi];
+      if (!key || !this.selected(note)) continue;
+      const color = this.color(note, settings);
+      const cx = key.x + key.width / 2;
+      for (let p = 0; p < 5 && this.particles.length < 180; p++) {
+        const spread = (Math.random() - 0.5) * Math.max(12, key.width * 0.8);
+        this.particles.push({
+          x: cx + spread * 0.25, y: hitLineY - 2,
+          vx: spread * 1.1, vy: -(18 + Math.random() * 34),
+          born: now, life: 320 + Math.random() * 230,
+          size: 1.2 + Math.random() * 2.2, color: color
+        });
+      }
+    }
+  }
+  drawParticles(ctx, now) {
+    let keep = 0;
+    for (let i = 0; i < this.particles.length; i++) {
+      const p = this.particles[i];
+      const age = now - p.born;
+      if (age >= p.life) continue;
+      const t = age / 1000;
+      ctx.globalAlpha = Math.max(0, 1 - age / p.life);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x + p.vx * t, p.y + p.vy * t + 38 * t * t, p.size, 0, Math.PI * 2);
+      ctx.fill();
+      this.particles[keep++] = p;
+    }
+    this.particles.length = keep;
+    ctx.globalAlpha = 1;
+  }
+  drawKeyboard(ctx, geometry, hitLineY, active, settings) {
+    const drawKey = (key, black) => {
+      const note = active[key.midi];
+      const color = note ? this.color(note, settings) : null;
+      const x = key.x + (black ? 0 : 0.5);
+      const width = Math.max(1, key.width - (black ? 0 : 1));
+      const height = key.height;
+      ctx.save();
+      if (note) {
+        ctx.shadowColor = color;
+        ctx.shadowBlur = black ? 18 : 24;
+        ctx.fillStyle = color;
+      } else ctx.fillStyle = black ? '#11121a' : '#f3f2f7';
+      this.rounded(ctx, x, hitLineY, width, height, black ? 3 : 2);
+      ctx.fill();
+      ctx.restore();
+      ctx.strokeStyle = black ? '#040408' : '#8c8d99';
+      ctx.lineWidth = black ? 1 : 0.7;
+      this.rounded(ctx, x, hitLineY, width, height, black ? 3 : 2);
+      ctx.stroke();
+      if (!black && note) {
+        ctx.globalAlpha = 0.34;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x + 2, hitLineY + 2, Math.max(1, width - 4), 5);
+        ctx.globalAlpha = 1;
+      }
+    };
+    geometry.white.forEach(key => drawKey(key, false));
+    geometry.black.forEach(key => drawKey(key, true));
+  }
+  draw(now) {
+    this.raf = requestAnimationFrame(this._draw);
+    if (!this.canvas || !this.width || !this.height) return;
+    const timeline = this.props.timeline || { notes: [], measures: [], maxDuration: 0, range: [48, 84] };
+    const settings = this.settings();
+    let frame = this.props.getFrame ? this.props.getFrame() : null;
+    if (!frame || !isFinite(frame.currentTime)) frame = { currentTime: 0, playing: false };
+    const currentTime = Math.max(0, frame.currentTime);
+    const keyboardHeight = settings.showKeyboard ? Math.max(92, Math.min(148, this.height * 0.23)) : 0;
+    const hitLineY = Math.max(70, this.height - keyboardHeight - (settings.showKeyboard ? 0 : 18));
+    const noteAreaHeight = Math.max(40, hitLineY - 18);
+    const geometry = this.geometryFor(settings, keyboardHeight);
+    const ctx = this.canvas.getContext('2d');
+    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    ctx.clearRect(0, 0, this.width, this.height);
+
+    /* Quiet cinematic background, with lane guides tied to real white keys. */
+    ctx.fillStyle = '#07070d';
+    ctx.fillRect(0, 0, this.width, this.height);
+    const haze = ctx.createLinearGradient(0, 0, 0, hitLineY);
+    haze.addColorStop(0, '#080811');
+    haze.addColorStop(0.7, '#0d0d19');
+    haze.addColorStop(1, '#171626');
+    ctx.fillStyle = haze;
+    ctx.fillRect(0, 0, this.width, hitLineY);
+    ctx.strokeStyle = 'rgba(255,255,255,.035)';
+    ctx.lineWidth = 1;
+    geometry.white.forEach(key => {
+      ctx.beginPath(); ctx.moveTo(Math.round(key.x) + 0.5, 0); ctx.lineTo(Math.round(key.x) + 0.5, hitLineY); ctx.stroke();
+    });
+
+    const lookAhead = Math.max(0.5, +settings.lookAheadSeconds || 4);
+    const pxPerSecond = noteAreaHeight / lookAhead;
+    if (settings.showMeasureLines && timeline.measures && timeline.measures.length) {
+      const mi0 = Math.max(0, visualFirstAtOrAfter(timeline.measures, currentTime - 0.35) - 1);
+      const mi1 = visualFirstAtOrAfter(timeline.measures, currentTime + lookAhead + 0.01);
+      ctx.font = '500 11px "JetBrains Mono", monospace';
+      ctx.textBaseline = 'bottom';
+      for (let i = mi0; i < mi1; i++) {
+        const marker = timeline.measures[i];
+        const y = hitLineY - (marker.startTime - currentTime) * pxPerSecond;
+        if (y < 5 || y > hitLineY + 5) continue;
+        ctx.strokeStyle = 'rgba(255,255,255,.12)';
+        ctx.setLineDash([5, 7]);
+        ctx.beginPath(); ctx.moveTo(0, y + 0.5); ctx.lineTo(this.width, y + 0.5); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(255,255,255,.42)';
+        ctx.fillText('Measure ' + marker.number, 12, y - 5);
+      }
+    }
+
+    const visible = getVisibleNotes(timeline, currentTime, lookAhead, 0.34);
+    this.visibleCount = visible.length;
+    const active = getActiveMidiNotes(visible, currentTime, this.props.hands || 'both');
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, 0, this.width, hitLineY + 14); ctx.clip();
+    for (let i = 0; i < visible.length; i++) {
+      const note = visible[i];
+      const rect = getNoteRect(note, currentTime, geometry, hitLineY, noteAreaHeight, lookAhead);
+      if (!rect || rect.y > hitLineY + 16 || rect.y + rect.height < -4) continue;
+      const selected = this.selected(note);
+      const isActive = note.startTime <= currentTime + 1e-6 && note.endTime >= currentTime - 1e-6;
+      const approaching = note.startTime > currentTime && note.startTime - currentTime < 0.45;
+      const color = this.color(note, settings);
+      ctx.save();
+      ctx.globalAlpha = selected ? 1 : 0.13;
+      if (selected && (isActive || approaching)) {
+        ctx.shadowColor = color;
+        ctx.shadowBlur = isActive ? 22 : 12;
+      }
+      this.rounded(ctx, rect.x, rect.y, rect.width, rect.height, Math.min(4, rect.width * 0.2));
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = selected ? 0.72 : 0.08;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      if (settings.showNoteLabels && selected && rect.width >= 18 && rect.height >= 18) {
+        ctx.globalAlpha = 0.9;
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '600 ' + Math.min(12, Math.max(9, rect.width * 0.32)) + 'px Figtree, sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.fillText(midiToPitchClass(note.midi), rect.x + rect.width / 2, Math.max(rect.y + 4, 3));
+      }
+      ctx.restore();
+    }
+    ctx.restore();
+
+    /* The hit line is bright enough to aim for, not bright enough to hide the
+       bottom edge of a short note. */
+    ctx.save();
+    ctx.shadowColor = 'rgba(255,255,255,.9)'; ctx.shadowBlur = 12;
+    ctx.strokeStyle = 'rgba(255,255,255,.92)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, hitLineY + 0.5); ctx.lineTo(this.width, hitLineY + 0.5); ctx.stroke();
+    ctx.restore();
+
+    if (frame.playing && this.previousTimeline === timeline && this.previousTime != null) {
+      const dt = currentTime - this.previousTime;
+      if (dt > 0 && dt < 0.24) {
+        const i0 = visualFirstAtOrAfter(timeline.notes || [], this.previousTime + 1e-6);
+        const i1 = visualFirstAtOrAfter(timeline.notes || [], currentTime + 1e-6);
+        if (i1 > i0) this.spawnHits(timeline.notes.slice(i0, i1), geometry, hitLineY, now, settings);
+      }
+    }
+    if (settings.showHitEffects) this.drawParticles(ctx, now);
+    else this.particles.length = 0;
+    if (settings.showKeyboard) this.drawKeyboard(ctx, geometry, hitLineY, active, settings);
+
+    this.fpsFrames++;
+    if (!this.fpsAt) this.fpsAt = now;
+    if (now - this.fpsAt >= 500) {
+      this.fps = Math.round(this.fpsFrames * 1000 / Math.max(1, now - this.fpsAt));
+      this.fpsFrames = 0; this.fpsAt = now;
+    }
+    if (settings.debug) {
+      const lines = ['time ' + currentTime.toFixed(3) + 's', 'visible ' + visible.length, 'FPS ' + this.fps, 'look-ahead ' + lookAhead.toFixed(1) + 's'];
+      ctx.fillStyle = 'rgba(0,0,0,.62)'; ctx.fillRect(10, 10, 132, 65);
+      ctx.fillStyle = '#d7d6e4'; ctx.font = '11px "JetBrains Mono", monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      lines.forEach((line, i) => ctx.fillText(line, 18, 17 + i * 14));
+    }
+    this.previousTime = currentTime;
+    this.previousTimeline = timeline;
+    this.canvas.dataset.currentTime = currentTime.toFixed(4);
+    this.canvas.dataset.visibleNotes = String(visible.length);
+    this.canvas.dataset.fps = String(this.fps);
+  }
+  render() {
+    return React.createElement('div', {
+      ref: el => { this.host = el; },
+      'data-piano-visualizer': 'true',
+      style: { position: 'relative', width: '100%', height: '100%', minHeight: 'inherit' }
+    }, React.createElement('canvas', {
+      ref: el => { this.canvas = el; if (el) el.__pppVisualizer = this; },
+      className: 'ppp-falling-canvas',
+      'data-piano-visualizer-canvas': 'true',
+      role: 'img',
+      'aria-label': tx('Falling notes aligned to a piano keyboard')
+    }));
+  }
+}
+
 /* The built-in demo ships with a short practice history, so the adaptive loop
    has something real to reason about on a fresh install. An imported score
    starts with no history at all and stays that way until you play it — PPP will
@@ -10140,6 +10846,8 @@ class Component extends DCLogic {
       screen: 'home', theme: 'light',
       playing: false, beat: Score.startQ(score, first.from), tempo: score.tempo,
       hands: 'both', zoom: 1,
+      visualMode: 'sheet', visualSettingsOpen: false,
+      visualSettings: Object.assign({}, PIANO_VISUALIZER_DEFAULTS),
       loop: true, loopFrom: first.from, loopTo: first.to, metro: true, guidance: true,
       practiceMode: 'practice', anchor: null,
       runHit: 0, runTot: 0, wrongNotes: [], lastAcc: 91, drift: -42, laps: 0,
@@ -10189,7 +10897,9 @@ class Component extends DCLogic {
       sharedLinked: null, sharedOpening: null, shareDlg: null,
       /* Piano Basics: where you are in the course, what is done, and the
          working state of the step on screen (see learnVals) */
-      learnLesson: 'keys', learnStep: 0, learnDone: {}, lx: null, learnClock: null, learnNow: 0, learnView: 'levels'
+      learnLesson: 'keys', learnStep: 0, learnDone: {}, lx: null, learnClock: null, learnNow: 0, learnView: 'levels',
+      /* Method Books: the saved course (course.js) and the page's working state */
+      course: window.PPP_COURSE ? window.PPP_COURSE.fresh() : null, courseCat: null, courseLoad: 'idle', courseBook: null, courseSel: null, courseOpening: null
     };
   })();
 
@@ -10406,7 +11116,10 @@ class Component extends DCLogic {
           tempo: S.tempo, loopFrom: S.loopFrom, loopTo: S.loopTo, toggles: S.toggles,
           theme: S.theme, sessions: S.sessions, guidance: S.guidance, skillMs: S.skillMs,
           learnDone: S.learnDone, learnLesson: S.learnLesson, learnStep: S.learnStep,
+          course: S.course,
           sidebarCollapsed: !!S.sidebarCollapsed,
+          visualMode: S.visualMode,
+          visualSettings: S.visualSettings,
           fileName: S.fileName, fileMeta: S.fileMeta,
           /* which song in My Songs this progress belongs to */
           songId: S.songId || 'demo',
@@ -10447,9 +11160,12 @@ class Component extends DCLogic {
 
     const patch = {};
     ['tasks', 'memLevel', 'blindRuns', 'mastered', 'minutes', 'xp', 'streak', 'tempo',
-      'theme', 'sessions', 'guidance', 'skillMs', 'fileName', 'fileMeta', 'learnDone', 'learnLesson', 'learnStep'].forEach(k => {
+      'theme', 'sessions', 'guidance', 'skillMs', 'fileName', 'fileMeta', 'learnDone', 'learnLesson', 'learnStep', 'visualMode'].forEach(k => {
         if (d[k] !== undefined) patch[k] = d[k];
       });
+    if (d.course && window.PPP_COURSE) patch.course = window.PPP_COURSE.norm(d.course);
+    if (d.visualSettings) patch.visualSettings = Object.assign({}, PIANO_VISUALIZER_DEFAULTS, d.visualSettings);
+    if (['sheet', 'falling', 'split'].indexOf(patch.visualMode) < 0) delete patch.visualMode;
     if (d.sidebarCollapsed != null) patch.sidebarCollapsed = !!d.sidebarCollapsed;
     if (d.toggles) patch.toggles = Object.assign({}, this.state.toggles, d.toggles);
     if (d.midiDeviceId) patch.midiDeviceId = d.midiDeviceId;
@@ -11736,7 +12452,7 @@ class Component extends DCLogic {
 
     const patch = { beat: b, runHit: hit, runTot: tot };
     if (live) patch.wrongNotes = this._perf.recentWrong(nowMs());
-    else if (ev.tot) patch.wrongNotes = ev.wrong;
+    else patch.wrongNotes = [];
     const prevWrong = S.wrongNotes || [];
     const nextWrong = patch.wrongNotes;
     if (nextWrong && nextWrong.some(p => prevWrong.indexOf(p) < 0)) this.flashMiss(nextWrong);
@@ -11943,6 +12659,12 @@ class Component extends DCLogic {
     };
 
     this.advanceCoach(S, patch);
+
+    /* A method-book piece played start to finish on a real keyboard fills one
+       of today's circles, as ticking it in the practice book would. */
+    if (result && window.PPP_COURSE && S.score && S.score.source && S.score.source.courseId && !S.loop
+      && S.practiceMode !== 'memory' && from <= Score.first(S.score) && to >= Score.last(S.score))
+      patch.course = window.PPP_COURSE.tick(S.course, window.PPP_COURSE.dayKey(Clock.now()), S.score.source.courseId, 1);
 
     /* The feedback loop: every finished run folds into the history, which is
        what weakness, section state and the next recommendation are read from. */
@@ -12226,13 +12948,43 @@ class Component extends DCLogic {
   }
 
   /* From the bar strip: the first click starts a passage, the second ends it.
-     Picking a passage is choosing to loop it. */
+     A drag across the strip paints the range in one gesture. */
   pickMeasure(m) {
+    if (this._stripDidDrag) { this._stripDidDrag = false; return; }
     this.setState(s => {
       if (s.anchor == null) return { anchor: m, loopFrom: m, loopTo: m, loop: true, beat: Score.startQ(s.score, m) };
       const a = Math.min(s.anchor, m), b = Math.max(s.anchor, m);
       return { anchor: null, loopFrom: a, loopTo: b, loop: true, beat: Score.startQ(s.score, a) };
     });
+  }
+  stripHit(e) {
+    const el = (typeof document !== 'undefined' && document.elementFromPoint)
+      ? document.elementFromPoint(e.clientX, e.clientY) : (e.target || null);
+    const btn = el && el.closest ? (el.closest('[data-m]') || el.closest('[title^="Measure "]')) : null;
+    if (!btn) return null;
+    const n = +(btn.getAttribute('data-m') || ((btn.getAttribute('title') || '').match(/^Measure (\d+)/) || [])[1]);
+    return n > 0 ? n : null;
+  }
+  onStripDown(e) {
+    const m = this.stripHit(e);
+    if (!m || e.button > 0) return;
+    this._stripDrag = { from: m, last: m, moved: false };
+    this._stripDidDrag = false;
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+  }
+  onStripMove(e) {
+    const d = this._stripDrag;
+    if (!d) return;
+    const m = this.stripHit(e);
+    if (!m || m === d.last) return;
+    d.moved = true;
+    d.last = m;
+    this.setLoop(d.from, m);
+  }
+  onStripUp() {
+    const d = this._stripDrag;
+    this._stripDrag = null;
+    if (d && d.moved) this._stripDidDrag = true;
   }
   /* The three ways to use the practice page. Start to finish plays the piece
      through; loop repeats the chosen passage; memorize takes the notes away
@@ -12785,7 +13537,9 @@ class Component extends DCLogic {
       kind: (source && source.kind) || 'musicxml', url: (yt && yt.url) || (source && source.url) || null,
       addedAt: Clock.now(), lastAt: Clock.now(), prog: 0, mem: 0, measures: Score.count(score),
       /* added from Shared Scores: adding it again opens this one */
-      sharedFrom: (source && source.shareId) || undefined
+      sharedFrom: (source && source.shareId) || undefined,
+      /* opened from Method Books: opening that piece again opens this one */
+      courseFrom: (source && source.courseId) || undefined
     });
     lib.current = id;
     if (!this.libraryWrite(lib)) this.storageFull();
@@ -13218,6 +13972,287 @@ class Component extends DCLogic {
       .catch(e => this.patchShareDialog({ busy: null, error: e.message }));
   }
   /* Render values for the Shared Scores page. */
+  /* ============================ method books ============================
+     The academy course (course.js) around the scores in catalog/method/.
+     The course state is saved with the rest and syncs when you sign in; the
+     catalog is fetched the first time the page is opened. */
+  loadCourse() {
+    if (this.state.courseCat || this.state.courseLoad === 'loading') return;
+    this.setState({ courseLoad: 'loading' });
+    fetch('catalog/method/index.json', { cache: 'no-store' })
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(cat => {
+        if (!cat || !Array.isArray(cat.books)) throw new Error('bad catalog');
+        this.setState({ courseCat: cat, courseLoad: 'ready' });
+      })
+      .catch(() => this.setState({ courseLoad: 'error' }));
+  }
+  courseDay() { return window.PPP_COURSE.dayKey(Clock.now()); }
+  setCourse(next) { this.setState({ course: next }, () => this.persist()); }
+  courseBookName(id) {
+    const b = window.PPP_COURSE.book(this.state.courseCat, id);
+    return b ? tx(b.title) : id;
+  }
+  /* "Beyer No. 12", or a piece's own title (a sonatina movement) */
+  coursePieceTitle(id, no) {
+    const C = window.PPP_COURSE, p = C.piece(this.state.courseCat, id, no);
+    if (p && p.title) return p.title;
+    const base = tx('{{book}} No. {{n}}', { book: this.courseBookName(id), n: no });
+    return p && p.name ? base + ' · ' + p.name : base;
+  }
+  coursePieceMeta(id, no) {
+    const p = window.PPP_COURSE.piece(this.state.courseCat, id, no);
+    if (!p) return tx('Not transcribed yet');
+    const key = p.key ? (p.mode === 'minor' ? tx('{{k}} minor', { k: p.key }) : tx('{{k}} major', { k: p.key })) : '';
+    return [tx('{{n}} measures', { n: p.measures }), key, p.time].filter(Boolean).join(' · ');
+  }
+  courseOnShelf(key) {
+    return (this.state.library || []).find(s => s.courseFrom === key) || null;
+  }
+  /* A method-book piece joins My Songs the first time it is practised, so it
+     keeps its own progress like any song; after that it just opens. */
+  openCoursePiece(id, no) {
+    const C = window.PPP_COURSE, cat = this.state.courseCat;
+    const key = C.pieceKey(id, no), b = C.book(cat, id), p = C.piece(cat, id, no);
+    if (!b || !p) return;
+    const have = this.courseOnShelf(key);
+    if (have) return this.openSong(have.id);
+    if (this.state.courseOpening) return;
+    this.setState({ courseOpening: key });
+    const title = this.coursePieceTitle(id, no);
+    /* the scores are kept as .mxl (zipped MusicXML), read the way an upload is */
+    fetch('catalog/method/' + p.file, { cache: 'force-cache' })
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
+      .then(buf => /\.mxl$/i.test(p.file) ? readMxl(buf) : new TextDecoder().decode(buf))
+      .then(xml => {
+        const score = parseMusicXML(xml, title);
+        if (!score || !score.measures.length || !score.notes.some(n => !n.rest)) throw new Error('empty');
+        score.title = title;
+        score.composer = b.composer || score.composer;
+        score.id = 'course:' + key + ':' + Date.now();
+        score.source = { kind: 'course', courseId: key };
+        const source = { kind: 'course', name: title, courseId: key, importedAt: Clock.now(), status: 'retrieved' };
+        this.cancelImport(true);
+        this._file = null; this._yt = null; this._pageImages = null;
+        this.dropRecording();
+        this.shelveSong();
+        this.setState({
+          importSource: source, importReport: null, importKind: null, upload: 'empty', pendingSong: null,
+          fileName: title, fileMeta: [tx(b.title), b.opus].filter(Boolean).join(' · ')
+        });
+        this.adoptScore(score);
+        this.enterSong(score, source, false);
+        this.setState({ courseOpening: null });
+        this.go('player')();
+        this.say(tx('Added {{title}} to My Songs.', { title: title }));
+      })
+      .catch(() => {
+        this.setState({ courseOpening: null });
+        this.say(tx('That piece could not be opened. Try again.'));
+      });
+  }
+  /* filling (or emptying) today's circles by hand */
+  courseSetCount(key, n) {
+    this.setCourse(window.PPP_COURSE.setCount(this.state.course, this.courseDay(), key, n));
+  }
+  coursePass(id, no) {
+    const C = window.PPP_COURSE, cat = this.state.courseCat;
+    let s = C.pass(this.state.course, cat, id, no, this.courseDay());
+    const nx = C.current(s, cat, id);
+    let msg = nx != null ? tx('Passed — next is {{title}}.', { title: this.coursePieceTitle(id, nx) })
+      : tx('{{book}} is finished. Well done!', { book: this.courseBookName(id) });
+    /* the main book finished: the next book on the path takes its place */
+    if (nx == null && s.main === id) {
+      const nb = C.nextBook(id);
+      if (nb && C.book(cat, nb)) {
+        s = C.chooseWithPath(s, cat, nb);
+        msg += ' ' + tx('Next on the path: {{book}}.', { book: this.courseBookName(nb) });
+      }
+    }
+    this.setState({ courseSel: null });
+    this.setCourse(s);
+    this.say(msg);
+  }
+  courseVals() {
+    const S = this.state, C = window.PPP_COURSE, cat = S.courseCat;
+    const day = this.courseDay();
+    const st = C.norm(S.course);
+    if (!cat && S.courseLoad === 'idle') setTimeout(() => this.loadCourse(), 0);
+    const btn = 'padding:8px 14px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-family:inherit;font-size:12.5px;font-weight:500;cursor:pointer;';
+    const primary = 'padding:8px 14px;border-radius:9px;border:0;background:var(--accent);color:#fff;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;';
+    const dateLabel = (() => {
+      try { return new Date(Clock.now()).toLocaleDateString(S.locale || 'en-US', { month: 'long', day: 'numeric', weekday: 'long' }); } catch (e) { return day; }
+    })();
+    const empty = {
+      courseDate: dateLabel, courseTodayNote: '', courseStreak: '', courseStreakStyle: '', courseDays: [],
+      courseHasItems: false, courseItems: [], courseHasNote: true, courseHasAction: false, courseAction: null, courseActionLabel: '',
+      courseRepsOpts: [], courseHowTo: '', courseStages: [], courseBookId: '', courseBookStage: '', courseBookTitle: '',
+      courseBookSub: '', courseBookRoles: [], courseNums: [], courseHasSel: false, courseSelNo: '', courseSelTitle: '',
+      courseSelMeta: '', courseSelActions: [], courseBookSource: ''
+    };
+    if (!cat) {
+      return Object.assign(empty, S.courseLoad === 'error'
+        ? { courseNote: tx('Could not load the method books.'), courseHasAction: true, courseActionLabel: tx('Try again'),
+          courseAction: () => this.setState({ courseLoad: 'idle' }, () => this.loadCourse()) }
+        : { courseNote: tx('Loading the method books…') });
+    }
+
+    /* ---- today ---- */
+    const plan = C.plan(st, cat, day);
+    const roleColor = { warm: 'var(--ink2)', 'new': 'var(--accent)', review: 'var(--good)', side: 'var(--ink2)' };
+    const courseItems = plan.map(it => {
+      const dots = [];
+      for (let i = 1; i <= it.reps; i++) {
+        const on = i <= it.done;
+        dots.push({
+          n: i, pressed: on ? 'true' : 'false',
+          label: tx('Played through {{n}} times', { n: i }),
+          style: `width:24px;height:24px;border-radius:999px;cursor:pointer;padding:0;border:2px solid ${on ? roleColor[it.role] : 'var(--line)'};background:${on ? roleColor[it.role] : 'transparent'};transition:background .15s ease,border-color .15s ease;`,
+          on: () => this.courseSetCount(it.key, i === it.done ? i - 1 : i)
+        });
+      }
+      const full = it.done >= it.reps;
+      const opening = S.courseOpening === it.key;
+      return {
+        key: it.key, role: it.role, roleLabel: C.roleName(it.role),
+        roleStyle: `display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.02em;color:${roleColor[it.role]};background:var(--surface2);`,
+        title: this.coursePieceTitle(it.book, it.no),
+        meta: [it.role === 'new' || it.role === 'review' ? '' : this.courseBookName(it.book), this.coursePieceMeta(it.book, it.no)].filter(Boolean).join(' · '),
+        rowStyle: `display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:14px 16px;border-radius:14px;border:1px solid ${full ? 'var(--good)' : 'var(--line)'};background:var(--bg);`,
+        dots, count: it.done + ' / ' + it.reps,
+        open: () => this.openCoursePiece(it.book, it.no),
+        openLabel: opening ? tx('Opening…') : tx('Practice'),
+        openStyle: it.role === 'new' ? primary : btn,
+        canPass: it.role !== 'review',
+        pass: () => this.coursePass(it.book, it.no),
+        passLabel: tx('Pass'),
+        passHint: tx('Mark this piece passed and move on to the next one'),
+        passStyle: `${btn}${full ? 'border-color:var(--good);color:var(--good);font-weight:600;' : ''}`
+      };
+    });
+    const allFull = plan.length > 0 && plan.every(it => it.done >= it.reps);
+    const midiOn = this.liveMidi();
+    let note = '', act = null;
+    if (!plan.length) {
+      note = tx('Scores for this book are still being prepared. Choose another book below.');
+    }
+    const streakN = C.streak(st, day);
+    const days = C.days(st, day, 14).map(d => {
+      const n = d.total;
+      const bg = !n ? 'var(--surface2)' : n >= st.reps * 2 ? 'var(--accent)' : n >= st.reps ? 'var(--accent-2)' : 'var(--accent-3)';
+      return {
+        day: d.day, label: d.day + ' · ' + tx('{{n}} circles', { n: n }),
+        style: `width:11px;height:11px;border-radius:3px;background:${bg};${d.day === day ? 'outline:1.5px solid var(--accent);outline-offset:1px;' : ''}`
+      };
+    });
+
+    /* ---- the path ---- */
+    const seen = {};
+    const roleOf = id => id === st.main ? 'main' : id === st.side ? 'side' : id === st.warm ? 'warm' : '';
+    const tagName = { main: 'Studying', side: 'Alongside', warm: 'Warm-up' };
+    const viewId = S.courseBook && C.book(cat, S.courseBook) ? S.courseBook : st.main;
+    const courseStages = C.PATH.map(step => {
+      const ids = [step.book].concat(step.with).filter(id => !seen[id] && C.book(cat, id));
+      ids.forEach(id => { seen[id] = true; });
+      const info = C.STAGES[step.stage];
+      return {
+        n: step.stage,
+        label: tx('Stage {{n}}', { n: step.stage }) + ' · ' + tx(info.name),
+        sub: tx(info.sub),
+        style: 'display:flex;flex-direction:column;gap:8px;padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--surface);',
+        books: ids.map(id => {
+          const b = C.book(cat, id), pr = C.progress(st, cat, id), role = roleOf(id), sel = id === viewId;
+          return {
+            id, title: tx(b.title), pressed: sel ? 'true' : 'false',
+            sub: [b.opus, tx(b.about || '')].filter(Boolean).join(' · '),
+            tag: role ? tx(tagName[role]) : '',
+            tagStyle: role ? 'font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--accent-3);color:var(--accent);white-space:nowrap;' : 'display:none;',
+            barStyle: this.bar(pr.pct),
+            count: tx('{{p}} of {{t}} passed', { p: pr.passed, t: pr.total }) + (pr.available < pr.total ? ' · ' + tx('{{a}} scores ready', { a: pr.available }) : ''),
+            style: `display:flex;flex-direction:column;gap:6px;text-align:left;padding:12px;border-radius:12px;cursor:pointer;font-family:inherit;color:var(--ink);border:1px solid ${sel ? 'var(--accent)' : 'var(--line)'};background:${sel ? 'var(--accent-3)' : 'var(--bg)'};`,
+            on: () => this.setState({ courseBook: id, courseSel: null })
+          };
+        })
+      };
+    }).filter(x => x.books.length);
+
+    /* ---- one book ---- */
+    const vb = C.book(cat, viewId);
+    const vstage = C.PATH.find(p => p.book === viewId || p.with.indexOf(viewId) > -1);
+    const vrole = roleOf(viewId);
+    const cur = C.current(st, cat, viewId);
+    const courseBookRoles = [
+      ['main', 'Study this book'], ['side', 'Study alongside'], ['warm', 'Use as warm-up']
+    ].map(([rid, label]) => {
+      const on = vrole === rid;
+      return {
+        id: rid, label: tx(label), pressed: on ? 'true' : 'false',
+        style: `padding:7px 12px;border-radius:9px;font-family:inherit;font-size:12px;font-weight:${on ? 600 : 500};cursor:pointer;border:1px solid ${on ? 'var(--accent)' : 'var(--line)'};background:${on ? 'var(--accent)' : 'var(--bg)'};color:${on ? '#fff' : 'var(--ink)'};`,
+        on: () => {
+          if (on && rid === 'main') return;
+          this.setCourse(rid === 'main' ? C.chooseWithPath(st, cat, viewId) : C.choose(st, rid, on ? null : viewId));
+        }
+      };
+    });
+    const nums = [];
+    const count = vb ? (vb.count || C.numbers(cat, viewId).length) : 0;
+    for (let n = 1; n <= count; n++) {
+      const p = C.piece(cat, viewId, n);
+      const passed = C.isPassed(st, viewId, n);
+      const isCur = n === cur, isSel = S.courseSel === n;
+      const state = !p ? 'missing' : passed ? 'passed' : isCur ? 'current' : 'open';
+      nums.push({
+        no: n, label: String(n), state,
+        hint: !p ? tx('Not transcribed yet') : passed ? tx('Passed on {{date}}', { date: st.passed[viewId][n] }) : isCur ? tx('The piece you are on') : this.coursePieceTitle(viewId, n),
+        style: `height:38px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:12.5px;cursor:pointer;padding:0;` +
+          (state === 'passed' ? 'border:1px solid var(--accent);background:var(--accent);color:#fff;font-weight:600;'
+            : state === 'current' ? 'border:2px solid var(--accent);background:var(--accent-3);color:var(--accent);font-weight:700;'
+              : state === 'missing' ? 'border:1px dashed var(--line);background:transparent;color:var(--ink3);opacity:.6;'
+                : 'border:1px solid var(--line);background:var(--bg);color:var(--ink);') +
+          (isSel ? 'box-shadow:0 0 0 3px var(--accent-2);' : ''),
+        on: () => this.setState({ courseSel: isSel ? null : n })
+      });
+    }
+    const sn = S.courseSel;
+    const sp = sn != null ? C.piece(cat, viewId, sn) : null;
+    const sPassed = sn != null && C.isPassed(st, viewId, sn);
+    const courseSelActions = [];
+    if (sp) {
+      const k = C.pieceKey(viewId, sn);
+      courseSelActions.push({ id: 'open', label: S.courseOpening === k ? tx('Opening…') : tx('Practice'), style: primary, on: () => this.openCoursePiece(viewId, sn) });
+      if (sn !== cur && !sPassed) courseSelActions.push({ id: 'current', label: tx('Start from here'), style: btn, on: () => this.setCourse(C.setCurrent(st, viewId, sn)) });
+      courseSelActions.push(sPassed
+        ? { id: 'unpass', label: tx('Not passed yet'), style: btn, on: () => this.setCourse(C.unpass(st, viewId, sn)) }
+        : { id: 'pass', label: tx('Pass'), style: btn, on: () => this.coursePass(viewId, sn) });
+    }
+    const lic = vb ? ({ pd: 'Public domain', cc0: 'CC0', 'cc-by': 'CC BY 4.0' }[vb.license] || '') : '';
+
+    return Object.assign(empty, {
+      courseTodayNote: !plan.length ? '' : allFull ? tx('Every circle is filled for today. Well played!')
+        : tx('Play each piece through from start to finish and fill a circle every time — {{n}} a piece.', { n: st.reps }),
+      courseStreak: streakN ? tx('{{n}}-day streak', { n: streakN }) : tx('Start a streak today'),
+      courseStreakStyle: `font-size:12px;font-weight:600;padding:5px 11px;border-radius:999px;background:${streakN ? 'var(--accent)' : 'var(--surface2)'};color:${streakN ? '#fff' : 'var(--ink2)'};`,
+      courseDays: days,
+      courseHasItems: plan.length > 0, courseItems,
+      courseHasNote: !!note, courseNote: note, courseHasAction: !!act, courseAction: act ? act.on : null, courseActionLabel: act ? act.label : '',
+      courseRepsOpts: C.REPS.map(n => ({
+        n, label: String(n), pressed: st.reps === n ? 'true' : 'false', style: this.pill(st.reps === n),
+        on: () => this.setCourse(C.setReps(st, n))
+      })),
+      courseHowTo: midiOn ? tx('A whole run on your MIDI keyboard fills a circle by itself.') : tx('Tap a circle after each time through. With a MIDI keyboard, a whole run fills one by itself.'),
+      courseStages,
+      courseBookId: viewId,
+      courseBookStage: vstage ? tx('Stage {{n}}', { n: vstage.stage }) + ' · ' + tx(C.STAGES[vstage.stage].name) : '',
+      courseBookTitle: vb ? [tx(vb.title), vb.opus].filter(Boolean).join(' · ') : '',
+      courseBookSub: vb ? [vb.composer, tx(vb.about || '')].filter(Boolean).join(' · ') : '',
+      courseBookRoles, courseNums: nums,
+      courseHasSel: sn != null, courseSelNo: sn != null ? String(sn) : '',
+      courseSelTitle: sn != null ? this.coursePieceTitle(viewId, sn) : '',
+      courseSelMeta: sn != null ? this.coursePieceMeta(viewId, sn) + (sPassed ? ' · ' + tx('Passed on {{date}}', { date: st.passed[viewId][sn] }) : '') : '',
+      courseSelActions,
+      courseBookSource: vb ? tx('Scores: {{edition}}. {{license}}.', { edition: tx(vb.edition), license: tx(lic) }) : ''
+    });
+  }
   sharedVals() {
     const S = this.state;
     const q = (S.sharedQuery || '').trim();
@@ -13573,6 +14608,57 @@ class Component extends DCLogic {
       paper: this.state.toggles.paper !== false
     }, props));
   }
+  visualTimeline(S) {
+    S = S || this.state;
+    const range = this.range(S), from = range[0], to = range[1];
+    const tempo = +S.tempo || S.score.tempo || 84;
+    const c = this._visualTimeline;
+    if (c && c.score === S.score && c.from === from && c.to === to && c.tempo === tempo) return c.timeline;
+    const timeline = scoreToVisualTimeline(S.score, { from: from, to: to, tempo: tempo });
+    this._visualTimeline = { score: S.score, from: from, to: to, tempo: tempo, timeline: timeline };
+    return timeline;
+  }
+  /* The canvas samples this on every animation frame. During playback it reads
+     the transport anchor directly; the 40ms React playhead state is only a
+     paused/seek fallback. */
+  visualTransportFrame(timeline) {
+    const S = this.state;
+    timeline = timeline || this.visualTimeline(S);
+    const plan = timeline.plan;
+    let soundQ;
+    const tp = this._tp;
+    const seeked = tp && Math.abs((S.beat || 0) - (tp.beat || 0)) > 0.5;
+    if (S.playing && !this.following() && tp && tp.plan === plan && !seeked) {
+      const transportScale = tp.scale || 1;
+      let elapsed = PianoScore.msAt(plan, tp.b0 || 0, transportScale) + Math.max(0, nowMs() - tp.t0);
+      const total = PianoScore.msAt(plan, plan.soundLengthQ || 0, transportScale);
+      if (S.loop && total > 0 && elapsed >= total) elapsed = elapsed % total;
+      soundQ = PianoScore.qAt(plan, elapsed, transportScale);
+    } else {
+      soundQ = PianoScore.soundAtWritten(plan, S.beat || 0);
+    }
+    return {
+      currentTime: PianoScore.msAt(plan, soundQ, timeline.scale || 1) / 1000,
+      soundQ: soundQ,
+      playing: !!(S.playing && !this.following())
+    };
+  }
+  setVisualSetting(key, value) {
+    this.setState(st => ({ visualSettings: Object.assign({}, PIANO_VISUALIZER_DEFAULTS, st.visualSettings || {}, { [key]: value }) }));
+  }
+  pianoVisualizer(timeline) {
+    const S = this.state;
+    timeline = timeline || this.visualTimeline(S);
+    const settings = Object.assign({}, PIANO_VISUALIZER_DEFAULTS, S.visualSettings || {}, {
+      showKeyboard: (S.visualSettings || PIANO_VISUALIZER_DEFAULTS).showKeyboard !== false && S.toggles.keys !== false
+    });
+    return h(PianoVisualizerCanvas, {
+      timeline: timeline,
+      settings: settings,
+      hands: S.hands,
+      getFrame: () => this.visualTransportFrame(timeline)
+    });
+  }
   quizScore() {
     const p = this.state.quizNote;
     if (this._qs && this._qs.p === p) return this._qs.score;
@@ -13773,13 +14859,190 @@ class Component extends DCLogic {
     else if (i >= i1) { i = i1 - 1; state = 'rest'; }
     else if (!moving || Math.abs(evs[i].at - B) < 1e-6) state = 'now';
     else state = evs[i].at - B <= 4 ? 'next' : 'rest';
-    const e = evs[i];
-    return { pose: H.poses[e.pose], fingers: e.fingers, state };
+    const e = evs[i], prev = i > i0 ? evs[i - 1] : null;
+    /* A thumb arriving immediately after a higher finger is the familiar
+       thumb-under transition used in scales. Give that motion its own art. */
+    const thumbUnder = !!(prev && e.fingers.length === 1 && e.fingers[0] === 1 &&
+      prev.fingers.some(f => f >= 2) && e.at - prev.end <= 1.01);
+    return { pose: H.poses[e.pose], fingers: e.fingers, state, thumbUnder };
   }
 
   /* One hand, drawn around its own origin and moved into place, so a change
      of position glides across the keys rather than jumping. */
   handLayer(hand, at, base, KW, H) {
+    const pose = at.pose;
+    const ref = Math.round(pose.x[2]);
+    const g = HandArt.geometry(pose.x.map(v => v - ref), pose.played, hand, KW, H);
+    const act = {};
+    at.fingers.forEach(f => { if (f) act[f] = true; });
+    const look = f => !act[f] ? 'rest' : at.state === 'now' ? 'now' : at.state === 'next' ? 'next' : 'rest';
+    const set = this.handSettings();
+
+    /* Individually illustrated 512px hand poses. Each fingertip anchor is a
+       source-image pixel (thumb..little); the left hand mirrors the complete
+       image, so its anatomy remains coherent even when the hands overlap. */
+    const ART = {
+      neutral:       { file: 'neutral',     tip: [null, [111,176], [199,41], [257,8], [312,46], [363,98]] },
+      wide:          { file: 'wide',        tip: [null, [52,241], [200,49], [266,9], [329,54], [462,93]] },
+      chord:         { file: 'chord',       tip: [null, [47,241], [200,132], [265,8], [337,143], [465,92]] },
+      black:         { file: 'black',       tip: [null, [52,240], [190,58], [266,6], [336,61], [434,144]] },
+      'thumb-under': { file: 'thumb-under', tip: [null, [144,244], [252,88], [320,9], [374,95], [433,173]] },
+      'finger-1':    { file: 'finger-1',    tip: [null, [91,208], [200,45], [258,23], [314,51], [370,99]] },
+      'finger-2':    { file: 'finger-2',    tip: [null, [130,194], [200,8], [265,85], [321,113], [371,145]] },
+      'finger-3':    { file: 'finger-3',    tip: [null, [121,171], [201,61], [257,7], [306,65], [360,105]] },
+      'finger-4':    { file: 'finger-4',    tip: [null, [120,170], [201,62], [260,42], [323,8], [370,100]] },
+      'finger-5':    { file: 'finger-5',    tip: [null, [120,170], [200,79], [260,57], [316,98], [397,61]] },
+      'pair-12':     { file: 'pair-12',     tip: [null, [100,157], [191,6], [261,58], [312,82], [379,106]] },
+      'pair-13':     { file: 'pair-13',     tip: [null, [90,174], [202,72], [258,8], [305,87], [365,117]] },
+      'pair-14':     { file: 'pair-14',     tip: [null, [84,174], [204,61], [263,45], [325,20], [393,89]] },
+      'pair-15':     { file: 'pair-15',     tip: [null, [63,176], [200,38], [255,8], [316,41], [447,125]] },
+      'pair-15-compact-v4': { file: 'pair-15-compact-v4', tip: [null, [123,77], [229,130], [283,135], [333,153], [390,78]] },
+      'pair-15-level-mid-v2': { file: 'pair-15-level-mid-v2', tip: [null, [98,84], [229,132], [283,137], [333,154], [432,87]] },
+      'pair-15-level-wide-v2': { file: 'pair-15-level-wide-v2', tip: [null, [40,75], [229,130], [283,135], [333,153], [480,75]] },
+      'pair-15-thumb-high-v2': { file: 'pair-15-thumb-high-v2', tip: [null, [101,62], [229,130], [283,135], [333,153], [434,87]] },
+      'pair-15-thumb-high-wide-v2': { file: 'pair-15-thumb-high-wide-v2', tip: [null, [79,51], [229,130], [283,135], [333,153], [470,101]] },
+      'pair-15-thumb-low-v2': { file: 'pair-15-thumb-low-v2', tip: [null, [86,105], [229,130], [283,135], [333,153], [436,54]] },
+      'pair-15-thumb-low-wide-v2': { file: 'pair-15-thumb-low-wide-v2', tip: [null, [43,102], [229,130], [283,135], [333,153], [458,53]] },
+      'chord-125-mid-v2': { file: 'chord-125-mid-v2', tip: [null, [96,76], [206,78], [278,141], [327,144], [428,79]] },
+      'chord-135-wide-v2': { file: 'chord-135-wide-v2', tip: [null, [39,55], [220,147], [270,55], [322,149], [479,55]] },
+      'chord-1234-v2': { file: 'chord-1234-v2', tip: [null, [121,182], [200,45], [257,14], [312,44], [358,170]] },
+      'chord-1235-v2': { file: 'chord-1235-v2', tip: [null, [110,92], [185,65], [252,47], [310,148], [393,76]] },
+      'chord-1245-wide-v2': { file: 'chord-1245-wide-v2', tip: [null, [40,74], [211,47], [290,127], [382,68], [480,76]] },
+      'chord-1345-v2': { file: 'chord-1345-v2', tip: [null, [125,181], [202,132], [257,14], [310,44], [362,101]] },
+      'chord-2345-v2': { file: 'chord-2345-v2', tip: [null, [164,227], [201,45], [259,14], [313,44], [360,102]] },
+      'pair-23':     { file: 'pair-23',     tip: [null, [121,167], [204,21], [258,5], [307,87], [368,133]] },
+      'pair-24':     { file: 'pair-24',     tip: [null, [107,159], [204,10], [262,72], [328,10], [381,100]] },
+      'pair-25':     { file: 'pair-25',     tip: [null, [91,175], [191,16], [260,84], [314,100], [390,66]] },
+      'pair-34':     { file: 'pair-34',     tip: [null, [110,178], [197,69], [255,7], [295,24], [367,105]] },
+      'pair-35':     { file: 'pair-35',     tip: [null, [105,183], [200,85], [255,7], [312,98], [417,98]] },
+      'pair-45':     { file: 'pair-45',     tip: [null, [129,176], [199,89], [260,91], [313,10], [388,58]] }
+    };
+    const active = at.state === 'rest' ? [] : [1, 2, 3, 4, 5].filter(f => act[f]);
+    const target = f => g.tip[f - 1];
+    const targetX = active.map(f => target(f)[0]);
+    const span = targetX.length > 1 ? Math.max.apply(null, targetX) - Math.min.apply(null, targetX) : 0;
+    const black = active.some(f => Math.abs(pose.x[f - 1] - Math.round(pose.x[f - 1])) > 0.25);
+    const mask = active.join('');
+    const depth15 = mask === '15' ? target(5)[1] - target(1)[1] : 0;
+    const pair15Kind = depth15 > KW * 0.25
+      ? (span > KW * 5.75 ? 'pair-15-thumb-high-wide-v2' : 'pair-15-thumb-high-v2')
+      : depth15 < -KW * 0.25
+        ? (span > KW * 5.85 ? 'pair-15-thumb-low-wide-v2' : 'pair-15-thumb-low-v2')
+        : span > KW * 5.93 ? 'pair-15-level-wide-v2'
+          : span > KW * 4.63 ? 'pair-15-level-mid-v2' : 'pair-15-compact-v4';
+    const fourKind = {
+      1234: 'chord-1234-v2', 1235: 'chord-1235-v2', 1245: 'chord-1245-wide-v2',
+      1345: 'chord-1345-v2', 2345: 'chord-2345-v2'
+    }[mask];
+    const kind = at.thumbUnder && active.indexOf(1) >= 0 ? 'thumb-under'
+      : active.length === 1 ? 'finger-' + active[0]
+      : active.length === 2 ? (mask === '15' ? pair15Kind : 'pair-' + mask)
+      : active.length === 4 && fourKind ? fourKind
+      : mask === '125' && span > KW * 4.2 ? 'chord-125-mid-v2'
+      : mask === '135' ? (span > KW * 5.5 ? 'chord-135-wide-v2' : 'chord')
+      : span > KW * 4.2 ? 'wide'
+      : black ? 'black' : 'neutral';
+    const art = ART[kind], mirror = hand === 'l', ratio = KW / 34;
+    const local = f => {
+      const p = art.tip[f];
+      return [mirror ? 512 - p[0] : p[0], p[1]];
+    };
+    const fit = active.length ? active : [1, 2, 3, 4, 5];
+    /* All pose files use one physical hand size. Normalise by wrist width,
+       then allow only a tiny uniform correction (never independent x/y
+       stretching) so a fingertip can settle on the centre of its key. */
+    const WRIST = {
+      neutral:173, wide:188, chord:188, black:188, 'thumb-under':149,
+      'finger-1':171, 'finger-2':161, 'finger-3':163, 'finger-4':163, 'finger-5':156,
+      'pair-12':160, 'pair-13':170, 'pair-14':160, 'pair-15':169,
+      'pair-15-compact-v4':146, 'pair-15-level-mid-v2':144, 'pair-15-level-wide-v2':147,
+      'pair-15-thumb-high-v2':146, 'pair-15-thumb-high-wide-v2':146,
+      'pair-15-thumb-low-v2':144, 'pair-15-thumb-low-wide-v2':144,
+      'chord-125-mid-v2':146, 'chord-135-wide-v2':144,
+      'chord-1234-v2':174, 'chord-1235-v2':144, 'chord-1245-wide-v2':148,
+      'chord-1345-v2':175, 'chord-2345-v2':171,
+      'pair-23':167, 'pair-24':161, 'pair-25':154, 'pair-34':172, 'pair-35':173, 'pair-45':158
+    };
+    /* Pose geometry, not resizing, handles nearby, ordinary and wide reaches.
+       Every illustration is normalised to exactly the same displayed wrist
+       width, so switching fingers cannot make either hand grow or shrink. */
+    const scale = 0.46 * ratio * 165 / (WRIST[kind] || 165);
+    const sx = scale, sy = scale;
+    const artX = fit.reduce((sum, f) => sum + target(f)[0] - local(f)[0] * sx, 0) / fit.length;
+    const artY = fit.reduce((sum, f) => sum + target(f)[1] - local(f)[1] * sy, 0) / fit.length;
+    const point = {}, artPoint = {}, artOffset = {};
+    for (let f = 1; f <= 5; f++) {
+      const p = local(f);
+      artPoint[f] = [artX + p[0] * sx, artY + p[1] * sy];
+      const wanted = target(f);
+      const tipGap = Math.hypot(wanted[0] - artPoint[f][0], wanted[1] - artPoint[f][1]);
+      const onBlackKey = Math.abs(pose.x[f - 1] - Math.round(pose.x[f - 1])) > 0.25;
+      /* Once the illustrated fingertip is safely inside its assigned key,
+         put the number on that fingertip instead of forcing it to the key's
+         mathematical centre. A black-key marker must also remain above the
+         end of the black key. */
+      const tipSafe = tipGap <= KW * 0.42 && (!onBlackKey || artPoint[f][1] <= H * 0.62);
+      point[f] = act[f] ? (tipSafe ? artPoint[f] : wanted) : artPoint[f];
+      artOffset[f] = act[f] ? Math.hypot(point[f][0] - artPoint[f][0], point[f][1] - artPoint[f][1]) : 0;
+    }
+    const imageTransform = mirror
+      ? `translate(${artX + 512 * sx} ${artY}) scale(${-sx} ${sy})`
+      : `translate(${artX} ${artY}) scale(${sx} ${sy})`;
+    const skin = h('image', {
+      key: 'art', 'data-hand-art': kind,
+      href: './assets/hands/hand-right-' + art.file + '.png',
+      x: 0, y: 0, width: 512, height: 512, preserveAspectRatio: 'xMidYMid meet',
+      transform: imageTransform,
+      style: { filter: 'saturate(.86) contrast(.96) drop-shadow(0 3px 4px rgba(0,0,0,.28))' }
+    });
+    const marks = [];
+    for (let f = 1; f <= 5; f++) {
+      const st = look(f);
+      if (st === 'rest') continue;
+      marks.push(h('circle', {
+        key: 'o' + f, 'data-finger-outline': f, cx: point[f][0], cy: point[f][1] - 2,
+        r: st === 'now' ? 14 : 13, fill: 'none', stroke: 'var(--accent)',
+        strokeWidth: st === 'now' ? 3 : 2.2,
+        strokeDasharray: st === 'next' ? '5 3' : undefined
+      }));
+    }
+    for (let f = 1; f <= 5; f++) {
+      const st = look(f), px = point[f][0], py = point[f][1] - 2;
+      const now = st === 'now', next = st === 'next';
+      if (set.nums === 'off' || (set.nums === 'now' && st === 'rest')) continue;
+      marks.push(h('g', {
+        key: 'm' + f, 'data-finger': f, 'data-finger-state': st,
+        'data-art-offset': HandArt.r1(artOffset[f])
+      },
+        h('circle', {
+          cx: px, cy: py, r: now ? 10.5 : next ? 9.5 : 7.5,
+          fill: now ? 'var(--accent)' : 'rgba(255,255,255,.92)',
+          stroke: now ? '#fff' : next ? 'var(--accent)' : 'var(--hand-line)', strokeWidth: now || next ? 2 : 1
+        }),
+        h('text', {
+          x: px, y: py + (now ? 4.5 : next ? 4.2 : 3.5), textAnchor: 'middle',
+          fontSize: now ? 13 : next ? 12 : 10, fontWeight: 700,
+          fill: now ? '#fff' : next ? 'var(--accent)' : 'var(--hand-ink)'
+        }, String(f))));
+    }
+    if (set.names) marks.push(h('text', {
+      key: 'name', 'data-hand-name': hand, x: artX + 256 * sx,
+      y: Math.min(H + HandArt.ZONE - 15, artY + 470 * sy),
+      textAnchor: 'middle', fontSize: 11.5, fontWeight: 700, fill: 'rgba(255,255,255,.9)'
+    }, tx(hand === 'l' ? 'Left hand' : 'Right hand')));
+    return h('g', {
+      key: 'hand-' + hand, className: 'ppp-hand', 'data-hand': hand,
+      'data-hand-state': at.state, 'data-hand-pose': kind,
+      'data-hand-scale': scale, 'data-hand-wrist-size': scale * (WRIST[kind] || 165),
+      style: { transform: `translate(${(ref - base) * KW}px, 0px)`, pointerEvents: 'none' }
+    }, h('g', {
+      className: 'ppp-hand-skin', opacity: (100 - set.see) / 100,
+      mask: 'url(#ppp-hand-fade)'
+    }, skin), marks);
+  }
+
+  /* Retained only as a fallback reference while the raster pose set settles. */
+  _vectorHandLayer(hand, at, base, KW, H) {
     const pose = at.pose;
     const ref = Math.round(pose.x[2]);
     const g = HandArt.geometry(pose.x.map(v => v - ref), pose.played, hand, KW, H);
@@ -13957,6 +15220,7 @@ class Component extends DCLogic {
       progress: [tx('Progress'), score.title],
       songs: [tx('My Songs'), tx('{{n}} songs in your library', { n: this.shelfSongs().length })], basics: [tx('Sight Reading'), tx('Remember the Basics')],
       learn: [tx('Piano Basics'), tx('Step by step from Do Re Mi')],
+      course: [tx('Method Books'), tx('Beyer to Czerny, a piece a day')],
       shared: [tx('Shared Scores'), tx('Scores anyone can open')],
       settings: [tx('Settings'), tx('Account · practice · devices')], empty: [tx('My Songs'), tx('Nothing here yet')],
       states: [tx('States'), tx('Loading · error · offline')],
@@ -13969,6 +15233,7 @@ class Component extends DCLogic {
     const navList = [
       ['Home', 'home', 'What to do today'],
       ['Piano Basics', 'learn', 'Step by step from Do Re Mi'],
+      ['Method Books', 'course', 'Beyer to Czerny, a piece a day'],
       ['My Songs', 'songs', 'Your library'],
       ['Shared Scores', 'shared', 'Scores anyone can open'],
       ['Analysis & Plan', 'analysis', 'Hard parts and the plan'],
@@ -14096,8 +15361,9 @@ class Component extends DCLogic {
       const inLoop = mm.number >= S.loopFrom && mm.number <= S.loopTo;
       const mv = learn.views[mm.number] || { attempts: 0, state: 'learning' };
       return {
+        n: String(mm.number),
         title: 'Measure ' + mm.number + (mv.attempts ? ' · ' + STATE_LABEL[mv.state] + ' · ' + R0((mv.recentAcc || 0) * 100) + '%' : ' · not played yet'),
-        style: `flex:1;min-width:3px;height:26px;padding:0;border-radius:4px;cursor:pointer;border:1px solid ${mm.number === cur ? 'var(--accent)' : 'transparent'};background:${inLoop ? 'var(--accent)' : STATE_TONE[mv.state]};opacity:${inLoop ? 1 : mv.attempts ? 0.55 : 0.3};`,
+        style: `flex:1;min-width:3px;height:32px;padding:0;border-radius:4px;cursor:ew-resize;border:1px solid ${mm.number === cur ? 'var(--accent)' : 'transparent'};background:${inLoop ? 'var(--accent)' : STATE_TONE[mv.state]};opacity:${inLoop ? 1 : mv.attempts ? 0.55 : 0.3};`,
         on: () => this.pickMeasure(mm.number)
       };
     });
@@ -14151,6 +15417,9 @@ class Component extends DCLogic {
        has the width for four. Focus used to treat every ≤1024px screen as a
        phone and halved the window on an iPad. */
     const staffBars = (S.focus && typeof window !== 'undefined' && window.innerWidth <= 720) ? 2 : 4;
+    const visualMode = ['sheet', 'falling', 'split'].indexOf(S.visualMode) > -1 ? S.visualMode : 'sheet';
+    const visualSettings = Object.assign({}, PIANO_VISUALIZER_DEFAULTS, S.visualSettings || {});
+    const visualTimeline = sc === 'player' && visualMode !== 'sheet' ? this.visualTimeline(S) : null;
 
     const settingGroups = [
       { title: 'Practice', sub: 'How the coach guides you', rows: [
@@ -14194,7 +15463,7 @@ class Component extends DCLogic {
     const shelf = this.shelfSongs();
     const KIND_LABEL = {
       'built-in': 'Built-in sample', musicxml: 'MusicXML', mxl: 'MusicXML', pdf: 'From a PDF', image: 'From a photo',
-      audio: 'From a recording', video: 'From a video', youtube: 'From YouTube', shared: 'Shared score'
+      audio: 'From a recording', video: 'From a video', youtube: 'From YouTube', shared: 'Shared score', course: 'Method book'
     };
     const songs = shelf.map(s => {
       const isCur = s.id === curId;
@@ -14326,7 +15595,7 @@ class Component extends DCLogic {
       isReview: sc === 'review',
       goUpload: this.go('upload'), goAnalysis: this.go('analysis'), goPlayer: this.go('player'),
       goMemory: this.go('memory'),
-      goProgress: this.go('progress'), goSongs: this.go('songs'), goLearn: this.go('learn'),
+      goProgress: this.go('progress'), goSongs: this.go('songs'), goLearn: this.go('learn'), goCourse: this.go('course'),
       loadSample: () => this.loadSample(),
 
       /* ---- home ---- */
@@ -14465,7 +15734,7 @@ class Component extends DCLogic {
           const mmss = s => Math.floor(s / 60) + ':' + String(R0(s % 60)).padStart(2, '0');
           const kindLabel = {
             'built-in': 'built-in sample', musicxml: 'MusicXML', mxl: 'compressed MusicXML', pdf: 'PDF', image: 'image',
-            audio: 'recording', video: 'video', youtube: 'YouTube'
+            audio: 'recording', video: 'video', youtube: 'YouTube', course: 'method book'
           }[src.kind] || src.kind || 'file';
           const rows = heard
             ? [
@@ -14652,7 +15921,37 @@ class Component extends DCLogic {
           cta: tx('Loop it'), on: this.drill(s.from, s.to)
         }))),
 
-      /* ---- transport ---- */
+      /* ---- transport and learning view ---- */
+      visualMode: visualMode,
+      visualModeTabs: [['Sheet', 'sheet'], ['Falling Notes', 'falling'], ['Split', 'split']]
+        .map(([label, id]) => ({
+          label: tx(label), selected: visualMode === id ? 'true' : 'false',
+          style: this.pill(visualMode === id) + 'padding:6px 11px;font-size:12px;',
+          on: () => this.setState({ visualMode: id, visualSettingsOpen: id === 'sheet' ? false : S.visualSettingsOpen })
+        })),
+      showSheetView: visualMode !== 'falling',
+      showFallingView: visualMode !== 'sheet',
+      showPracticeKeyboard: visualMode === 'sheet',
+      pianoVisualizer: visualTimeline ? this.pianoVisualizer(visualTimeline) : null,
+      showVisualizerControls: visualMode !== 'sheet',
+      toggleVisualizerSettings: () => this.setState(st => ({ visualSettingsOpen: !st.visualSettingsOpen })),
+      visualSettingsBtnStyle: this.chip(!!S.visualSettingsOpen),
+      visualSettingsExpanded: S.visualSettingsOpen ? 'true' : 'false',
+      showVisualizerSettings: visualMode !== 'sheet' && !!S.visualSettingsOpen,
+      visualLookAhead: visualSettings.lookAheadSeconds,
+      visualLookAheadLabel: (+visualSettings.lookAheadSeconds).toFixed(1) + 's',
+      setVisualLookAhead: e => this.setVisualSetting('lookAheadSeconds', clamp(+e.target.value, 2, 8)),
+      toggleVisualRange: () => this.setVisualSetting('keyboardRangeMode', visualSettings.keyboardRangeMode === '88key' ? 'auto' : '88key'),
+      visualRangeLabel: tx(visualSettings.keyboardRangeMode === '88key' ? '88 keys' : 'Auto range'),
+      visualRangeBtnStyle: this.chip(visualSettings.keyboardRangeMode === '88key'),
+      toggleVisualKeyboard: () => this.setVisualSetting('showKeyboard', visualSettings.showKeyboard === false),
+      visualKeyboardBtnStyle: this.chip(visualSettings.showKeyboard !== false),
+      toggleVisualEffects: () => this.setVisualSetting('showHitEffects', !visualSettings.showHitEffects),
+      visualEffectsBtnStyle: this.chip(!!visualSettings.showHitEffects),
+      toggleVisualMeasures: () => this.setVisualSetting('showMeasureLines', !visualSettings.showMeasureLines),
+      visualMeasuresBtnStyle: this.chip(!!visualSettings.showMeasureLines),
+      toggleVisualLabels: () => this.setVisualSetting('showNoteLabels', !visualSettings.showNoteLabels),
+      visualLabelsBtnStyle: this.chip(!!visualSettings.showNoteLabels),
       nowMeasure: tx('Measure {{n}} · beat {{beat}}', { n: cur, beat: 1 + Math.floor(S.beat - Score.startQ(score, cur)) }),
       playLabel: tx(S.playing ? 'Pause' : 'Play'),
       togglePlay: () => this.togglePlay(),
@@ -14690,8 +15989,9 @@ class Component extends DCLogic {
       focusNarrow: S.focus && this.narrowScreen(),
       wholeAttr: S.wholeScore ? 'true' : 'false',
       /* zoom and letter hints only act on the close view */
-      showCloseControls: !S.wholeScore,
-      showHint: S.toggles.hints !== false && (S.wholeScore || follows),
+      showSheetControls: visualMode !== 'falling',
+      showCloseControls: visualMode !== 'falling' && !S.wholeScore,
+      showHint: visualMode !== 'falling' && S.toggles.hints !== false && (S.wholeScore || follows),
       /* One tip at a time. Follow mode wins when it is on: it changes what
          happens under your hands, which matters more than how to pick a bar. */
       hintText: follows && S.anchor == null
@@ -14796,7 +16096,10 @@ class Component extends DCLogic {
       loopFromLabel: String(S.loopFrom), loopToLabel: String(S.loopTo),
       loopFromDown: () => this.nudgeLoop('from', -1), loopFromUp: () => this.nudgeLoop('from', 1),
       loopToDown: () => this.nudgeLoop('to', -1), loopToUp: () => this.nudgeLoop('to', 1),
-      loopHint: tx(S.anchor != null ? 'Now click the last measure of the loop.' : 'Click a measure to start a loop, click again to set its end.'),
+      loopHint: tx(S.anchor != null ? 'Now click the last measure of the loop.' : 'Click a measure to start a loop, click again to set its end, or drag across the strip.'),
+      onStripDown: e => this.onStripDown(e),
+      onStripMove: e => this.onStripMove(e),
+      onStripUp: () => this.onStripUp(),
       measureCells, sectionChips,
 
       /* Blind play means no score at all, not a score with the passage blanked
@@ -15066,7 +16369,7 @@ class Component extends DCLogic {
       query: S.query, setQuery: e => this.setState({ query: e.target.value }), songs,
 
       /* ---- shared scores; their values, and the share dialog's, are added below ---- */
-      isShared: sc === 'shared',
+      isShared: sc === 'shared', isCourse: sc === 'course',
 
       /* ---- sight reading ---- */
       quizQuestion: S.quizDone ? tx('Session complete — {{n}} of 10 correct.', { n: S.quizRight }) : tx('What note is this?'),
@@ -15098,7 +16401,7 @@ class Component extends DCLogic {
       stateTabs: ['Loading', 'Error', 'Offline'].map(label => ({ label: tx(label), style: this.pill(S.stateTab === label), on: () => this.setState({ stateTab: label }) })),
       stateLoading: S.stateTab === 'Loading', stateError: S.stateTab === 'Error', stateOffline: S.stateTab === 'Offline',
       skeletons: [1, 2, 3]
-    }, sc === 'shared' ? this.sharedVals() : null, sc === 'learn' ? this.learnVals() : null, this.shareDialogVals());
+    }, sc === 'shared' ? this.sharedVals() : null, sc === 'learn' ? this.learnVals() : null, sc === 'course' ? this.courseVals() : null, this.shareDialogVals());
   }
 
   /* ============================ piano basics ============================
@@ -15425,7 +16728,7 @@ class Component extends DCLogic {
           n: lv.n, badge: tx('Level {{n}}', { n: lv.n }), title: tx(lv.title), who: tx(lv.who), sub: tx(lv.sub),
           units: lv.units.map(u => ({ label: tx(u.title) })),
           count: tx('{{done}} of {{total}} done', { done: got, total: all }), barStyle: this.bar(got / all * 100, got === all ? 'var(--good)' : 'var(--accent)'),
-          cta: got === all ? tx('Review') : got || cur ? tx('Continue') : tx('Start'),
+          cta: got === all ? tx('Review') : got || (cur && (S.learnStep > 0 || L.li > 1)) ? tx('Continue') : tx('Start'),
           on: () => this.learnLevel(lv.n),
           cardStyle: 'display:flex;flex-direction:column;gap:12px;min-width:0;padding:22px;border-radius:20px;background:var(--surface);box-shadow:var(--shadow);'
             + 'border:' + (cur ? '2px solid var(--accent)' : '1px solid var(--line)') + ';',

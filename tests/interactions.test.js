@@ -297,6 +297,30 @@ const screenTitle = page => page.evaluate(() => {
   step('measure-strip loop select', loopTitle);
   if (!/10.*16/.test(loopTitle || '')) errors.push('measure strip did not set loop 10–16 (got ' + loopTitle + ')');
 
+  await page.evaluate(() => {
+    const strip = document.querySelector('[data-mstrip]');
+    const cells = document.querySelectorAll('button[title^="Measure "]');
+    if (!strip || cells.length < 12) return;
+    const a = cells[4].getBoundingClientRect();
+    const b = cells[11].getBoundingClientRect();
+    const fire = (type, x, y) => strip.dispatchEvent(new PointerEvent(type, {
+      bubbles: true, cancelable: true, composed: true,
+      pointerId: 4, pointerType: 'mouse', isPrimary: true,
+      clientX: x, clientY: y, button: 0,
+      buttons: type === 'pointerup' ? 0 : 1
+    }));
+    fire('pointerdown', a.left + 2, a.top + a.height / 2);
+    fire('pointermove', b.left + 2, b.top + b.height / 2);
+    fire('pointerup', b.left + 2, b.top + b.height / 2);
+  });
+  await sleep(180);
+  const dragTitle = await page.evaluate(() => {
+    const m = document.querySelector('header').innerText.match(/Measures \d+–\d+/);
+    return m ? m[0] : null;
+  });
+  step('measure-strip drag select', dragTitle);
+  if (!/5.*12/.test(dragTitle || '')) errors.push('measure strip drag did not set loop 5–12 (got ' + dragTitle + ')');
+
   /* ---------- 6. progress updates during the flow ---------- */
   await page.evaluate(l => window.__pppTest.nav(l), 'Progress');
   await sleep(200);

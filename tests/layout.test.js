@@ -114,6 +114,7 @@ async function metrics(page) {
 
   await page.evaluate(() => window.__pppTest.nav('Practice'));
   await sleep(400);
+  await page.evaluate(() => { window.__pppNativeRandom = Math.random; Math.random = () => 1; });
   const play = await page.evaluate(async () => {
     const b = document.querySelector('.ppp-playbtn')
       || [...document.querySelectorAll('main button')].find(x => /^Play$/.test((x.innerText || '').trim()));
@@ -128,6 +129,10 @@ async function metrics(page) {
   });
   ok('tablet Play control is large enough to tap', play.height >= 40, JSON.stringify(play));
   ok('tablet Play starts the run', play.label === 'Pause', JSON.stringify(play));
+  await sleep(500);
+  const simulatedWrongKeys = await page.$$eval('.ppp-kbwrap [data-state="wrong"]', els => els.map(e => e.getAttribute('data-midi')));
+  ok('automatic playback never paints written notes as wrong keys', simulatedWrongKeys.length === 0, simulatedWrongKeys.join(', ') || 'none');
+  await page.evaluate(() => { Math.random = window.__pppNativeRandom; delete window.__pppNativeRandom; });
   await page.evaluate(() => {
     const b = [...document.querySelectorAll('main button')].find(x => /^Pause$/.test((x.innerText || '').trim()));
     if (b) b.click();
@@ -145,6 +150,9 @@ async function metrics(page) {
       const nr = now && now.getAttribute('opacity') !== '0' ? now.getBoundingClientRect() : null;
       const kr = kb && kb.getBoundingClientRect();
       const tr = transport && transport.getBoundingClientRect();
+      const ksvg = kb && kb.querySelector('svg');
+      const ksr = ksvg && ksvg.getBoundingClientRect();
+      const split = document.querySelector('[data-kb-split]');
       const vh = window.innerHeight, vw = window.innerWidth;
       const nowInView = !!(nr && sr && nr.top >= sr.top - 8 && nr.bottom <= sr.bottom + 8);
       return {
@@ -158,6 +166,9 @@ async function metrics(page) {
         nowInView,
         kbH: kr ? Math.round(kr.height) : 0,
         kbBot: kr ? Math.round(kr.bottom) : 0,
+        kbSvgH: ksr ? Math.round(ksr.height) : 0,
+        kbClipped: !!(kr && ksr && ksr.bottom > kr.bottom + 6),
+        splitOn: !!(split && getComputedStyle(split).display !== 'none' && split.getBoundingClientRect().height > 4),
         transportBot: tr ? Math.round(tr.bottom) : 0
       };
     });
@@ -218,13 +229,122 @@ async function metrics(page) {
   await sleep(900);
   f = await focusMetrics();
   ok('tablet landscape focus still shows a tall score',
-    f.focus === 'true' && f.staffH > f.kbH && f.staffH >= Math.round(f.vh * 0.55), JSON.stringify(f));
+    f.focus === 'true' && f.staffH > f.kbH && f.staffH >= Math.round(f.vh * 0.45), JSON.stringify(f));
   ok('tablet landscape focus keeps the current bar on the score', f.nowInView, JSON.stringify(f));
   ok('tablet landscape focus fits the keyboard on screen',
     f.kbBot <= f.vh + 8 && f.transportBot <= f.vh + 8, JSON.stringify(f));
   ok('tablet landscape has no empty band under the keyboard',
     f.vh - f.transportBot <= 24, JSON.stringify(f));
+  ok('tablet landscape shows the full keyboard, not a cropped strip',
+    f.kbH >= 160 && f.kbSvgH >= 150 && !f.kbClipped, JSON.stringify(f));
+  ok('tablet landscape has a keyboard resize handle', f.splitOn, JSON.stringify(f));
   await shot(page, 'layout-tablet-focus-landscape.png');
+
+  const kbBefore = f.kbH;
+  await page.evaluate(() => {
+    const split = document.querySelector('[data-kb-split]');
+    if (!split) return;
+    const r = split.getBoundingClientRect();
+    const x = r.left + r.width / 2, y = r.top + r.height / 2;
+    const fire = (type, yy) => split.dispatchEvent(new PointerEvent(type, {
+      bubbles: true, cancelable: true, composed: true,
+      pointerId: 9, pointerType: 'mouse', isPrimary: true,
+      clientX: x, clientY: yy, button: 0,
+      buttons: type === 'pointerup' ? 0 : 1
+    }));
+    fire('pointerdown', y);
+    fire('pointermove', y - 50);
+    fire('pointerup', y - 50);
+  });
+  await sleep(200);
+  f = await focusMetrics();
+  ok('dragging the handle enlarges the keyboard', f.kbH >= kbBefore + 20, JSON.stringify({ kbBefore, kbH: f.kbH }));
+
+  const seeked = await page.evaluate(() => {
+    const svg = document.querySelector('.ppp-staffwrap svg');
+    if (!svg || !svg.__ppp || !svg.__ppp.bars) return { ok: false, why: 'no-bars' };
+    const bar = (svg.__ppp.bars || []).find(b => b.m === 23) || svg.__ppp.bars[1];
+    if (!bar) return { ok: false, why: 'no-bar' };
+    const pt = svg.createSVGPoint();
+    pt.x = bar.x + Math.min(20, bar.w * 0.2);
+    pt.y = bar.y + 40;
+    const s = pt.matrixTransform(svg.getScreenCTM());
+    const fire = type => svg.dispatchEvent(new PointerEvent(type, {
+      bubbles: true, cancelable: true, composed: true,
+      pointerId: 1, pointerType: 'mouse', isPrimary: true,
+      clientX: s.x, clientY: s.y, button: 0,
+      buttons: type === 'pointerdown' ? 1 : 0
+    }));
+    fire('pointerdown');
+    fire('pointerup');
+    return { ok: true, m: bar.m };
+  });
+  await sleep(400);
+  const afterSeek = await page.evaluate(() => {
+    const beatEl = [...document.querySelectorAll('span')].find(e => /^Measure \d+ · beat/.test((e.textContent || '').trim()));
+    const play = [...document.querySelectorAll('button')].find(b => /^(Play|Pause)$/.test((b.textContent || '').trim()));
+    return {
+      beat: beatEl ? beatEl.textContent.trim() : null,
+      play: play ? play.textContent.trim() : null
+    };
+  });
+  ok('focus tap on a bar plays from there',
+    seeked.ok && afterSeek.play === 'Pause' && /^Measure 2[0-8]/.test(afterSeek.beat || ''),
+    JSON.stringify({ seeked, afterSeek }));
+  await page.evaluate(() => {
+    const b = [...document.querySelectorAll('button')].find(x => /^Pause$/.test((x.innerText || '').trim()));
+    if (b) b.click();
+  });
+  await sleep(120);
+
+  const flashed = await page.evaluate(() => {
+    const app = window.PPP && window.PPP.app;
+    if (!app || !app.flashMiss) return { ok: false };
+    app.setState({ loop: true, toggles: Object.assign({}, app.state.toggles, { tellRight: true }) });
+    app.flashMiss([60], 61);
+    return { ok: true };
+  });
+  await sleep(80);
+  const miss = await page.evaluate(() => {
+    const el = document.querySelector('.ppp-miss');
+    if (!el) return { on: false };
+    const s = getComputedStyle(el);
+    return { on: s.opacity !== '0' && el.textContent.trim().length > 0, text: el.textContent.trim() };
+  });
+  ok('a wrong note names the pitch that was owed',
+    flashed.ok && miss.on && /C4/.test(miss.text) && /C#4/.test(miss.text), JSON.stringify(miss));
+
+  const unnamed = await page.evaluate(() => {
+    const app = window.PPP && window.PPP.app;
+    app.setState({ toggles: Object.assign({}, app.state.toggles, { tellRight: false }) });
+    app.flashMiss([60], 61);
+    return true;
+  });
+  await sleep(80);
+  const missOff = await page.evaluate(() => {
+    const el = document.querySelector('.ppp-miss');
+    return el ? el.textContent.trim() : '';
+  });
+  ok('Answer off keeps the miss unnamed',
+    unnamed && missOff === 'Wrong note', 'text=' + missOff);
+
+  const toggleHit = await page.evaluate(() => {
+    const b = [...document.querySelectorAll('button')].find(x => /Answer (on|off)/.test((x.innerText || '').trim()));
+    if (!b) return { ok: false };
+    b.click();
+    return { ok: true, label: b.textContent.trim() };
+  });
+  await sleep(80);
+  const afterToggle = await page.evaluate(() => {
+    const b = [...document.querySelectorAll('button')].find(x => /Answer (on|off)/.test((x.innerText || '').trim()));
+    const app = window.PPP && window.PPP.app;
+    return {
+      label: b ? b.textContent.trim() : '',
+      on: !!(app && app.state.toggles.tellRight !== false)
+    };
+  });
+  ok('Answer on/off toggles from the transport',
+    toggleHit.ok && afterToggle.on === true, JSON.stringify({ toggleHit, afterToggle }));
 
   const hid = await clickFocusLabel('Hide keys');
   await sleep(700);

@@ -40,6 +40,8 @@ with subresource integrity, which `file://` blocks.
 | `Piano Coach App.dc.html` | The app: music model, MusicXML parser, notation renderer, practice engine. |
 | `support.js` | Generated `dc-runtime` — parses `<x-dc>`, renders through React. Do not edit. |
 | `lessons.js` | Piano Basics: the beginner course as data, the checks for each exercise, and the keyboard, staff, rhythm and hand drawings it teaches with. |
+| `course.js` | Method Books: the academy path (Beyer → Czerny 100 → Czerny 30 → Czerny 40, with Hanon, Burgmüller and sonatinas beside them), today's plan, the practice circles, passing and the streak. Pure functions over the saved course state. |
+| `catalog/method/` | The method-book scores as `.mxl`, `index.json` (built by `build.py` from `books.json`), and `src/` — the ABC the Beyer, Czerny 100 and other transcriptions were written in. |
 | `index.html` | Entry point; redirects to the app. |
 | `audio/piano/` | Salamander Grand Piano samples (CC BY 3.0), 30 MP3s, 1.3 MB. See its `README.md`. |
 | `samples/prelude-fragment.musicxml` | A test score — 3/4, G major, chords, rests, a tie, a printed accidental. |
@@ -274,16 +276,30 @@ one tempo marking for the whole piece. The online deploy has no local helper, an
 
 ## Piano Basics
 
-For someone who has never played. The tab under Home (and a link on Home itself) is a course of
-twenty short lessons in six units: the white and black keys, Do, Do Re Mi up to the octave,
-finger numbers, the letter names C D E F G A B, the staff and treble clef, reading Do to high Do,
-the beat, half and whole notes, measures and rests, four first songs (Airplane / Mary Had a
-Little Lamb, School Bell, Twinkle Twinkle, Ode to Joy), sharps and flats, the left hand and bass
-clef, and a first chord.
+From never having touched a piano to chords and accompaniment. The tab under Home (and a link
+on Home itself) opens on a choice of three levels — each saying who it is for, what is in it and
+how far through it you are — with a button straight back to the lesson you were on. Inside a
+lesson, **← All levels** returns there and the course panel switches between levels.
+
+- **Level 1 · First steps** (20 lessons): the white and black keys, Do, Do Re Mi up to the octave,
+  finger numbers, the letter names C D E F G A B, the staff and treble clef, reading Do to high Do,
+  the beat, half and whole notes, measures and rests, four first songs (Airplane / Mary Had a Little
+  Lamb, School Bell, Twinkle Twinkle, Ode to Joy), sharps and flats, the left hand and bass clef,
+  and a first chord.
+- **Level 2 · Scales and chords** (14 lessons): intervals, half and whole steps, the major-scale
+  pattern, G major and F major with their key signatures, A minor, building triads, major and minor
+  chords, chord symbols (C, Am, Dm, G), inversions, eighth notes, dotted notes and ties, 3/4 time,
+  and dynamics, legato/staccato and tempo words.
+- **Level 3 · Chords and accompaniment** (9 lessons): the chords of a key (I–IV–V with Roman
+  numerals), the I–V–vi–IV progression with a bass, G7 resolving to C, diminished/augmented/sus4,
+  broken chords and arpeggios, Alberti bass, waltz and oom-pah, and both hands together, ending on
+  the Ode to Joy with a left-hand bass.
 
 Each lesson is a few steps, one on screen at a time: something to read and hear, then something
 to do — play a sequence with the next key lit and then without it, find every key of a kind,
-answer a quiz, name notes on a staff, tap a rhythm against a count-in, or hold a chord. Next
+answer a quiz (some by ear, with their own Listen), name notes on a staff, tap a rhythm against a
+count-in (four clicks, or three in 3/4; a tied note is not tapped), or hold a chord — and a line
+can have chords in it, which wait for every key before moving on. Next
 waits until the exercise is done; the dots above the card skip ahead for anyone who wants to.
 Every exercise takes the keys on screen, the computer keyboard (A S D F G H J K is Do to high Do,
 W E T Y U the black keys) and a MIDI keyboard alike. On this page those letters and the space bar
@@ -303,6 +319,61 @@ lesson and step you are on and the lessons finished are part of the saved state
 (`learnLesson`, `learnStep`, `learnDone`), so they survive a reload and sync when you sign in.
 A finished lesson is worth 25 XP, once. Every word is in all four languages; the note names
 follow the language (도 레 미, ド レ ミ, Do Re Mi).
+
+## Method Books (교재 진도)
+
+The order a Korean piano academy (학원) teaches in, as a tab under Piano Basics: Beyer first,
+then Czerny 100 with Hanon and Burgmüller beside it, then sonatinas and Czerny 30, then
+Czerny 40. The path is drawn as four stages; a book is chosen as the one you study
+(**Study this book**), one to study alongside (Burgmüller, sonatinas) and one to warm up with
+(Hanon).
+
+**Today's practice** is built from those choices every day: the warm-up piece, the piece you
+are on, the last piece you passed (to keep it in the fingers) and the piece in the book
+alongside. Each has a row of circles — five by default, three or ten if you like — filled one
+at a time as you play it through from start to finish, the way an academy's practice book has
+them. Tap a circle to fill it; tap the last filled one to take it back. With a MIDI keyboard a
+whole run of that piece in Practice fills one by itself. A day with any circle counts toward
+the streak, and the last fourteen days are shown as squares.
+
+**Pass** marks a piece passed and moves the book on to the next number not yet passed; the
+passed piece becomes tomorrow's review. When the book you study is finished, the next book on
+the path takes its place. Below the path, a book's numbers are a grid: passed, the one you are
+on, and any not yet transcribed. A number opens with **Practice**, **Start from here**, and
+**Pass** / **Not passed yet**.
+
+**Practice** opens the piece in the practice screen. It joins My Songs the first time (marked
+*Method book*), so it keeps its own progress, loops and memory like any song; opening it again
+opens that song. The course — the books chosen, where each book is, what was passed and when,
+and the circles of the last 400 days — is part of the saved state (`course`), so it survives a
+reload and syncs when you sign in. `course.js` holds the rules as pure functions, walked in node
+by `tests/course.test.js`.
+
+### The scores
+
+| Book | Numbers | Source |
+| --- | --- | --- |
+| Beyer, Op. 101 | 1–106 | Transcribed for PPP from the Peters edition (Leipzig 1895, rev. Ruthardt) — the pupil's part of the duets. Peters numbers 1–106 as Beyer did; Ruthardt's added 107–109 are left out. |
+| Czerny 100, Op. 599 | 1–100 | Transcribed for PPP from the Schirmer edition (New York 1893, ed. Buonamici). |
+| Hanon, *The Virtuoso Pianist* | 1–20 | PDMX (CC0). |
+| Burgmüller 25, Op. 100 | see `index.json` | PDMX (CC0), and transcribed for PPP from the Schirmer edition (1903, ed. Oesterle). |
+| Sonatinas | Clementi Op. 36 Nos. 1–6, Kuhlau Op. 20 No. 1 and Op. 55 Nos. 1 and 3, Beethoven Anh. 5 Nos. 1–2 | PDMX (CC0), one entry per movement. |
+| Czerny 30, Op. 849 | see `index.json` | Neru Hayashi's public-domain typeset (via PDMX), and transcribed for PPP from the Universal Edition (Vienna, c. 1901). |
+| Czerny 40, Op. 299 | 1–10 | PDMX (CC0). |
+
+Every composition is in the public domain; the scans are public-domain editions from the
+Internet Archive; PDMX is the *Public Domain MusicXML* dataset (Long et al., 2024), limited here
+to scores marked public domain or CC0. Nothing was taken from a commercial catalog.
+
+The transcriptions were made from 600-dpi page images: each piece was written in ABC one printed
+system per line, built to MusicXML with `abc2xml`, checked that every bar of every voice adds up,
+rendered with the same system breaks and compared bar by bar with the page, and then compared
+note by note with an independent Audiveris reading of the same page — every bar where the two
+disagreed was looked at again, enlarged. The ABC is in `catalog/method/src/`. PDMX scores were
+split into one file per piece, cross-staff notes were put back on the staff of the hand that
+plays them (PPP assigns hands by staff), and a voice that overran its bar only because of stray
+trailing rests lost them. `python catalog/method/build.py` zips each score to `.mxl` and writes
+`index.json` with its bars, key and time signature.
 
 ## My Songs
 

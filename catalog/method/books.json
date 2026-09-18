@@ -1,0 +1,231 @@
+{
+ "license": "Every score here is a public-domain composition. Beyer and Czerny 100 were transcribed for PPP from public-domain scans and are released under CC0; the others are community typesets from PDMX (public-domain / CC0 MusicXML from MuseScore).",
+ "books": [
+  {
+   "id": "beyer",
+   "title": "Beyer",
+   "opus": "Op. 101",
+   "composer": "Ferdinand Beyer",
+   "about": "Preparatory School — the first book",
+   "count": 106,
+   "license": "pd",
+   "edition": "transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets"
+  },
+  {
+   "id": "czerny599",
+   "title": "Czerny 100",
+   "opus": "Op. 599",
+   "composer": "Carl Czerny",
+   "about": "Practical Method for Beginners",
+   "count": 100,
+   "license": "pd",
+   "edition": "transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici)"
+  },
+  {
+   "id": "hanon",
+   "title": "Hanon",
+   "opus": "Nos. 1–20",
+   "composer": "Charles-Louis Hanon",
+   "about": "The Virtuoso Pianist, Part I — daily finger exercises",
+   "count": 20,
+   "license": "cc0",
+   "edition": "MuseScore community typesets from the PDMX dataset (CC0)"
+  },
+  {
+   "id": "burgmuller25",
+   "title": "Burgmüller 25",
+   "opus": "Op. 100",
+   "composer": "Friedrich Burgmüller",
+   "about": "25 Easy and Progressive Studies",
+   "count": 25,
+   "license": "cc0",
+   "edition": "MuseScore community typesets from the PDMX dataset (CC0)",
+   "pieces": [
+    {
+     "no": 1,
+     "name": "La candeur"
+    },
+    {
+     "no": 2,
+     "name": "L'arabesque"
+    },
+    {
+     "no": 3,
+     "name": "La pastorale"
+    },
+    {
+     "no": 4,
+     "name": "La petite réunion"
+    },
+    {
+     "no": 6,
+     "name": "Progrès"
+    },
+    {
+     "no": 7,
+     "name": "Le courant limpide"
+    },
+    {
+     "no": 13,
+     "name": "Consolation"
+    },
+    {
+     "no": 15,
+     "name": "Ballade"
+    },
+    {
+     "no": 18,
+     "name": "Inquiétude"
+    },
+    {
+     "no": 21,
+     "name": "L'harmonie des anges"
+    }
+   ]
+  },
+  {
+   "id": "sonatina",
+   "title": "Sonatinas",
+   "opus": "",
+   "composer": "Clementi · Kuhlau · Beethoven",
+   "about": "The sonatina album",
+   "count": 28,
+   "license": "cc0",
+   "edition": "MuseScore community typesets from the PDMX dataset (CC0)",
+   "pieces": [
+    {
+     "no": 1,
+     "title": "Clementi · Sonatina Op. 36 No. 1 · I. Spiritoso"
+    },
+    {
+     "no": 2,
+     "title": "Clementi · Sonatina Op. 36 No. 1 · II. Andante"
+    },
+    {
+     "no": 3,
+     "title": "Clementi · Sonatina Op. 36 No. 1 · III. Vivace"
+    },
+    {
+     "no": 4,
+     "title": "Clementi · Sonatina Op. 36 No. 2 · I. Allegretto"
+    },
+    {
+     "no": 5,
+     "title": "Clementi · Sonatina Op. 36 No. 2 · II. Allegretto"
+    },
+    {
+     "no": 6,
+     "title": "Clementi · Sonatina Op. 36 No. 2 · III. Allegro"
+    },
+    {
+     "no": 7,
+     "title": "Clementi · Sonatina Op. 36 No. 3 · I. Spiritoso"
+    },
+    {
+     "no": 8,
+     "title": "Clementi · Sonatina Op. 36 No. 3 · II. Un poco adagio"
+    },
+    {
+     "no": 9,
+     "title": "Clementi · Sonatina Op. 36 No. 3 · III. Allegro"
+    },
+    {
+     "no": 10,
+     "title": "Clementi · Sonatina Op. 36 No. 4 · I. Con spirito"
+    },
+    {
+     "no": 11,
+     "title": "Clementi · Sonatina Op. 36 No. 4 · II. Andante con espressione"
+    },
+    {
+     "no": 12,
+     "title": "Clementi · Sonatina Op. 36 No. 4 · III. Rondo. Allegro vivace"
+    },
+    {
+     "no": 13,
+     "title": "Clementi · Sonatina Op. 36 No. 5 · I. Presto"
+    },
+    {
+     "no": 14,
+     "title": "Clementi · Sonatina Op. 36 No. 5 · II. Air suisse. Allegro moderato"
+    },
+    {
+     "no": 15,
+     "title": "Clementi · Sonatina Op. 36 No. 5 · III. Rondo. Allegro di molto"
+    },
+    {
+     "no": 16,
+     "title": "Clementi · Sonatina Op. 36 No. 6 · I. Allegro con spirito"
+    },
+    {
+     "no": 17,
+     "title": "Clementi · Sonatina Op. 36 No. 6 · II. Rondo. Allegretto spiritoso"
+    },
+    {
+     "no": 18,
+     "title": "Kuhlau · Sonatina Op. 20 No. 1 · I. Allegro"
+    },
+    {
+     "no": 19,
+     "title": "Kuhlau · Sonatina Op. 20 No. 1 · II. Andante"
+    },
+    {
+     "no": 20,
+     "title": "Kuhlau · Sonatina Op. 20 No. 1 · III. Rondo. Allegro"
+    },
+    {
+     "no": 21,
+     "title": "Kuhlau · Sonatina Op. 55 No. 1 · I. Allegro"
+    },
+    {
+     "no": 22,
+     "title": "Kuhlau · Sonatina Op. 55 No. 1 · II. Vivace"
+    },
+    {
+     "no": 23,
+     "title": "Kuhlau · Sonatina Op. 55 No. 3 · I. Allegro con spirito"
+    },
+    {
+     "no": 24,
+     "title": "Kuhlau · Sonatina Op. 55 No. 3 · II. Allegretto grazioso"
+    },
+    {
+     "no": 25,
+     "title": "Beethoven · Sonatina in G, Anh. 5 No. 1 · I. Moderato"
+    },
+    {
+     "no": 26,
+     "title": "Beethoven · Sonatina in G, Anh. 5 No. 1 · II. Romanze"
+    },
+    {
+     "no": 27,
+     "title": "Beethoven · Sonatina in F, Anh. 5 No. 2 · I. Allegro assai"
+    },
+    {
+     "no": 28,
+     "title": "Beethoven · Sonatina in F, Anh. 5 No. 2 · II. Rondo. Allegro"
+    }
+   ]
+  },
+  {
+   "id": "czerny849",
+   "title": "Czerny 30",
+   "opus": "Op. 849",
+   "composer": "Carl Czerny",
+   "about": "30 Études de mécanisme",
+   "count": 30,
+   "license": "cc0",
+   "edition": "Neru Hayashi's typeset, dedicated to the public domain (via PDMX)"
+  },
+  {
+   "id": "czerny299",
+   "title": "Czerny 40",
+   "opus": "Op. 299",
+   "composer": "Carl Czerny",
+   "about": "The School of Velocity",
+   "count": 40,
+   "license": "cc0",
+   "edition": "MuseScore community typesets from the PDMX dataset (CC0)"
+  }
+ ]
+}

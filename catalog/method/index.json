@@ -1,0 +1,1056 @@
+{
+ "license": "Every score here is a public-domain composition. Beyer and Czerny 100 were transcribed for PPP from public-domain scans and are released under CC0; the others are community typesets from PDMX (public-domain / CC0 MusicXML from MuseScore).",
+ "books": [
+  {
+   "id": "beyer",
+   "title": "Beyer",
+   "opus": "Op. 101",
+   "composer": "Ferdinand Beyer",
+   "about": "Preparatory School — the first book",
+   "count": 106,
+   "license": "pd",
+   "edition": "transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets",
+   "pieces": []
+  },
+  {
+   "id": "czerny599",
+   "title": "Czerny 100",
+   "opus": "Op. 599",
+   "composer": "Carl Czerny",
+   "about": "Practical Method for Beginners",
+   "count": 100,
+   "license": "pd",
+   "edition": "transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici)",
+   "pieces": [
+    {
+     "no": 6,
+     "file": "czerny599/006.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 86
+    }
+   ]
+  },
+  {
+   "id": "hanon",
+   "title": "Hanon",
+   "opus": "Nos. 1–20",
+   "composer": "Charles-Louis Hanon",
+   "about": "The Virtuoso Pianist, Part I — daily finger exercises",
+   "count": 20,
+   "license": "cc0",
+   "edition": "MuseScore community typesets from the PDMX dataset (CC0)",
+   "pieces": [
+    {
+     "no": 1,
+     "file": "hanon/001.mxl",
+     "measures": 30,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 466
+    },
+    {
+     "no": 2,
+     "file": "hanon/002.mxl",
+     "measures": 29,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 450
+    },
+    {
+     "no": 3,
+     "file": "hanon/003.mxl",
+     "measures": 29,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 450
+    },
+    {
+     "no": 4,
+     "file": "hanon/004.mxl",
+     "measures": 29,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 450
+    },
+    {
+     "no": 5,
+     "file": "hanon/005.mxl",
+     "measures": 29,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 450
+    },
+    {
+     "no": 6,
+     "file": "hanon/006.mxl",
+     "measures": 29,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 450
+    },
+    {
+     "no": 7,
+     "file": "hanon/007.mxl",
+     "measures": 29,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 450
+    },
+    {
+     "no": 8,
+     "file": "hanon/008.mxl",
+     "measures": 29,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 450
+    },
+    {
+     "no": 9,
+     "file": "hanon/009.mxl",
+     "measures": 29,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 450
+    },
+    {
+     "no": 10,
+     "file": "hanon/010.mxl",
+     "measures": 29,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 450
+    },
+    {
+     "no": 11,
+     "file": "hanon/011.mxl",
+     "measures": 29,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 450
+    },
+    {
+     "no": 12,
+     "file": "hanon/012.mxl",
+     "measures": 30,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 466
+    },
+    {
+     "no": 13,
+     "file": "hanon/013.mxl",
+     "measures": 29,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 450
+    },
+    {
+     "no": 14,
+     "file": "hanon/014.mxl",
+     "measures": 29,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 450
+    },
+    {
+     "no": 15,
+     "file": "hanon/015.mxl",
+     "measures": 29,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 450
+    },
+    {
+     "no": 16,
+     "file": "hanon/016.mxl",
+     "measures": 29,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 450
+    },
+    {
+     "no": 17,
+     "file": "hanon/017.mxl",
+     "measures": 28,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 434
+    },
+    {
+     "no": 18,
+     "file": "hanon/018.mxl",
+     "measures": 29,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 450
+    },
+    {
+     "no": 19,
+     "file": "hanon/019.mxl",
+     "measures": 29,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 450
+    },
+    {
+     "no": 20,
+     "file": "hanon/020.mxl",
+     "measures": 31,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 484
+    }
+   ]
+  },
+  {
+   "id": "burgmuller25",
+   "title": "Burgmüller 25",
+   "opus": "Op. 100",
+   "composer": "Friedrich Burgmüller",
+   "about": "25 Easy and Progressive Studies",
+   "count": 25,
+   "license": "cc0",
+   "edition": "MuseScore community typesets from the PDMX dataset (CC0)",
+   "pieces": [
+    {
+     "no": 1,
+     "file": "burgmuller25/001.mxl",
+     "name": "La candeur",
+     "measures": 23,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 248
+    },
+    {
+     "no": 2,
+     "file": "burgmuller25/002.mxl",
+     "name": "L'arabesque",
+     "measures": 33,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 285
+    },
+    {
+     "no": 3,
+     "file": "burgmuller25/003.mxl",
+     "name": "La pastorale",
+     "measures": 29,
+     "key": "G",
+     "mode": "major",
+     "time": "6/8",
+     "staves": 2,
+     "notes": 356
+    },
+    {
+     "no": 4,
+     "file": "burgmuller25/004.mxl",
+     "name": "La petite réunion",
+     "measures": 30,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 399
+    },
+    {
+     "no": 6,
+     "file": "burgmuller25/006.mxl",
+     "name": "Progrès",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 214
+    },
+    {
+     "no": 7,
+     "file": "burgmuller25/007.mxl",
+     "name": "Le courant limpide",
+     "measures": 16,
+     "key": "G",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 219
+    },
+    {
+     "no": 13,
+     "file": "burgmuller25/013.mxl",
+     "name": "Consolation",
+     "measures": 27,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 330
+    },
+    {
+     "no": 15,
+     "file": "burgmuller25/015.mxl",
+     "name": "Ballade",
+     "measures": 80,
+     "key": "Eb",
+     "mode": "major",
+     "time": "3/8",
+     "staves": 2,
+     "notes": 582
+    },
+    {
+     "no": 18,
+     "file": "burgmuller25/018.mxl",
+     "name": "Inquiétude",
+     "measures": 31,
+     "key": "G",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 322
+    },
+    {
+     "no": 21,
+     "file": "burgmuller25/021.mxl",
+     "name": "L'harmonie des anges",
+     "measures": 33,
+     "key": "G",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 396
+    }
+   ]
+  },
+  {
+   "id": "sonatina",
+   "title": "Sonatinas",
+   "opus": "",
+   "composer": "Clementi · Kuhlau · Beethoven",
+   "about": "The sonatina album",
+   "count": 28,
+   "license": "cc0",
+   "edition": "MuseScore community typesets from the PDMX dataset (CC0)",
+   "pieces": [
+    {
+     "no": 1,
+     "file": "sonatina/001.mxl",
+     "title": "Clementi · Sonatina Op. 36 No. 1 · I. Spiritoso",
+     "measures": 38,
+     "key": "C",
+     "mode": "major",
+     "time": "2/2",
+     "staves": 2,
+     "notes": 333
+    },
+    {
+     "no": 2,
+     "file": "sonatina/002.mxl",
+     "title": "Clementi · Sonatina Op. 36 No. 1 · II. Andante",
+     "measures": 26,
+     "key": "F",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 332
+    },
+    {
+     "no": 3,
+     "file": "sonatina/003.mxl",
+     "title": "Clementi · Sonatina Op. 36 No. 1 · III. Vivace",
+     "measures": 70,
+     "key": "C",
+     "mode": "major",
+     "time": "3/8",
+     "staves": 2,
+     "notes": 473
+    },
+    {
+     "no": 4,
+     "file": "sonatina/004.mxl",
+     "title": "Clementi · Sonatina Op. 36 No. 2 · I. Allegretto",
+     "measures": 61,
+     "key": "G",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 554
+    },
+    {
+     "no": 5,
+     "file": "sonatina/005.mxl",
+     "title": "Clementi · Sonatina Op. 36 No. 2 · II. Allegretto",
+     "measures": 28,
+     "key": "C",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 253
+    },
+    {
+     "no": 6,
+     "file": "sonatina/006.mxl",
+     "title": "Clementi · Sonatina Op. 36 No. 2 · III. Allegro",
+     "measures": 111,
+     "key": "G",
+     "mode": "major",
+     "time": "3/8",
+     "staves": 2,
+     "notes": 724
+    },
+    {
+     "no": 7,
+     "file": "sonatina/007.mxl",
+     "title": "Clementi · Sonatina Op. 36 No. 3 · I. Spiritoso",
+     "measures": 64,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 1055
+    },
+    {
+     "no": 8,
+     "file": "sonatina/008.mxl",
+     "title": "Clementi · Sonatina Op. 36 No. 3 · II. Un poco adagio",
+     "measures": 16,
+     "key": "G",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 137
+    },
+    {
+     "no": 9,
+     "file": "sonatina/009.mxl",
+     "title": "Clementi · Sonatina Op. 36 No. 3 · III. Allegro",
+     "measures": 82,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 867
+    },
+    {
+     "no": 10,
+     "file": "sonatina/010.mxl",
+     "title": "Clementi · Sonatina Op. 36 No. 4 · I. Con spirito",
+     "measures": 71,
+     "key": "F",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 855
+    },
+    {
+     "no": 11,
+     "file": "sonatina/011.mxl",
+     "title": "Clementi · Sonatina Op. 36 No. 4 · II. Andante con espressione",
+     "measures": 46,
+     "key": "Bb",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 463
+    },
+    {
+     "no": 12,
+     "file": "sonatina/012.mxl",
+     "title": "Clementi · Sonatina Op. 36 No. 4 · III. Rondo. Allegro vivace",
+     "measures": 53,
+     "key": "F",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 730
+    },
+    {
+     "no": 13,
+     "file": "sonatina/013.mxl",
+     "title": "Clementi · Sonatina Op. 36 No. 5 · I. Presto",
+     "measures": 86,
+     "key": "G",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 1354
+    },
+    {
+     "no": 14,
+     "file": "sonatina/014.mxl",
+     "title": "Clementi · Sonatina Op. 36 No. 5 · II. Air suisse. Allegro moderato",
+     "measures": 82,
+     "key": "C",
+     "mode": "major",
+     "time": "3/8",
+     "staves": 2,
+     "notes": 708
+    },
+    {
+     "no": 15,
+     "file": "sonatina/015.mxl",
+     "title": "Clementi · Sonatina Op. 36 No. 5 · III. Rondo. Allegro di molto",
+     "measures": 115,
+     "key": "G",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 961
+    },
+    {
+     "no": 16,
+     "file": "sonatina/016.mxl",
+     "title": "Clementi · Sonatina Op. 36 No. 6 · I. Allegro con spirito",
+     "measures": 92,
+     "key": "D",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 1567
+    },
+    {
+     "no": 17,
+     "file": "sonatina/017.mxl",
+     "title": "Clementi · Sonatina Op. 36 No. 6 · II. Rondo. Allegretto spiritoso",
+     "measures": 65,
+     "key": "D",
+     "mode": "major",
+     "time": "6/8",
+     "staves": 2,
+     "notes": 975
+    },
+    {
+     "no": 18,
+     "file": "sonatina/018.mxl",
+     "title": "Kuhlau · Sonatina Op. 20 No. 1 · I. Allegro",
+     "measures": 80,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 1083
+    },
+    {
+     "no": 19,
+     "file": "sonatina/019.mxl",
+     "title": "Kuhlau · Sonatina Op. 20 No. 1 · II. Andante",
+     "measures": 18,
+     "key": "F",
+     "mode": "major",
+     "time": "6/8",
+     "staves": 2,
+     "notes": 278
+    },
+    {
+     "no": 20,
+     "file": "sonatina/020.mxl",
+     "title": "Kuhlau · Sonatina Op. 20 No. 1 · III. Rondo. Allegro",
+     "measures": 158,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 1776
+    },
+    {
+     "no": 21,
+     "file": "sonatina/021.mxl",
+     "title": "Kuhlau · Sonatina Op. 55 No. 1 · I. Allegro",
+     "measures": 62,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 743
+    },
+    {
+     "no": 22,
+     "file": "sonatina/022.mxl",
+     "title": "Kuhlau · Sonatina Op. 55 No. 1 · II. Vivace",
+     "measures": 117,
+     "key": "C",
+     "mode": "major",
+     "time": "3/8",
+     "staves": 2,
+     "notes": 932
+    },
+    {
+     "no": 23,
+     "file": "sonatina/023.mxl",
+     "title": "Kuhlau · Sonatina Op. 55 No. 3 · I. Allegro con spirito",
+     "measures": 60,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 995
+    },
+    {
+     "no": 24,
+     "file": "sonatina/024.mxl",
+     "title": "Kuhlau · Sonatina Op. 55 No. 3 · II. Allegretto grazioso",
+     "measures": 123,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 1280
+    },
+    {
+     "no": 25,
+     "file": "sonatina/025.mxl",
+     "title": "Beethoven · Sonatina in G, Anh. 5 No. 1 · I. Moderato",
+     "measures": 34,
+     "key": "G",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 348
+    },
+    {
+     "no": 26,
+     "file": "sonatina/026.mxl",
+     "title": "Beethoven · Sonatina in G, Anh. 5 No. 1 · II. Romanze",
+     "measures": 43,
+     "key": "G",
+     "mode": "major",
+     "time": "6/8",
+     "staves": 2,
+     "notes": 379
+    },
+    {
+     "no": 27,
+     "file": "sonatina/027.mxl",
+     "title": "Beethoven · Sonatina in F, Anh. 5 No. 2 · I. Allegro assai",
+     "measures": 71,
+     "key": "F",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 578
+    },
+    {
+     "no": 28,
+     "file": "sonatina/028.mxl",
+     "title": "Beethoven · Sonatina in F, Anh. 5 No. 2 · II. Rondo. Allegro",
+     "measures": 94,
+     "key": "F",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 706
+    }
+   ]
+  },
+  {
+   "id": "czerny849",
+   "title": "Czerny 30",
+   "opus": "Op. 849",
+   "composer": "Carl Czerny",
+   "about": "30 Études de mécanisme",
+   "count": 30,
+   "license": "cc0",
+   "edition": "Neru Hayashi's typeset, dedicated to the public domain (via PDMX)",
+   "pieces": [
+    {
+     "no": 1,
+     "file": "czerny849/001.mxl",
+     "measures": 32,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 578
+    },
+    {
+     "no": 2,
+     "file": "czerny849/002.mxl",
+     "measures": 36,
+     "key": "C",
+     "mode": "major",
+     "time": "2/2",
+     "staves": 2,
+     "notes": 673
+    },
+    {
+     "no": 3,
+     "file": "czerny849/003.mxl",
+     "measures": 26,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 456
+    },
+    {
+     "no": 4,
+     "file": "czerny849/004.mxl",
+     "measures": 24,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 530
+    },
+    {
+     "no": 5,
+     "file": "czerny849/005.mxl",
+     "measures": 24,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 444
+    },
+    {
+     "no": 6,
+     "file": "czerny849/006.mxl",
+     "measures": 31,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 631
+    },
+    {
+     "no": 7,
+     "file": "czerny849/007.mxl",
+     "measures": 32,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 785
+    },
+    {
+     "no": 8,
+     "file": "czerny849/008.mxl",
+     "measures": 26,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 532
+    },
+    {
+     "no": 9,
+     "file": "czerny849/009.mxl",
+     "measures": 24,
+     "key": "F",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 465
+    },
+    {
+     "no": 10,
+     "file": "czerny849/010.mxl",
+     "measures": 24,
+     "key": "F",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 376
+    },
+    {
+     "no": 11,
+     "file": "czerny849/011.mxl",
+     "measures": 20,
+     "key": "G",
+     "mode": "major",
+     "time": "6/8",
+     "staves": 2,
+     "notes": 584
+    },
+    {
+     "no": 12,
+     "file": "czerny849/012.mxl",
+     "measures": 39,
+     "key": "G",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 719
+    },
+    {
+     "no": 13,
+     "file": "czerny849/013.mxl",
+     "measures": 48,
+     "key": "Bb",
+     "mode": "major",
+     "time": "6/8",
+     "staves": 2,
+     "notes": 866
+    },
+    {
+     "no": 14,
+     "file": "czerny849/014.mxl",
+     "measures": 28,
+     "key": "A",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 562
+    },
+    {
+     "no": 15,
+     "file": "czerny849/015.mxl",
+     "measures": 36,
+     "key": "E",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 627
+    },
+    {
+     "no": 16,
+     "file": "czerny849/016.mxl",
+     "measures": 32,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 626
+    },
+    {
+     "no": 17,
+     "file": "czerny849/017.mxl",
+     "measures": 48,
+     "key": "G",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 649
+    },
+    {
+     "no": 18,
+     "file": "czerny849/018.mxl",
+     "measures": 24,
+     "key": "Eb",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 526
+    },
+    {
+     "no": 19,
+     "file": "czerny849/019.mxl",
+     "measures": 48,
+     "key": "Bb",
+     "mode": "major",
+     "time": "3/8",
+     "staves": 2,
+     "notes": 577
+    },
+    {
+     "no": 20,
+     "file": "czerny849/020.mxl",
+     "measures": 24,
+     "key": "F",
+     "mode": "major",
+     "time": "6/8",
+     "staves": 2,
+     "notes": 564
+    },
+    {
+     "no": 21,
+     "file": "czerny849/021.mxl",
+     "measures": 24,
+     "key": "Bb",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 489
+    },
+    {
+     "no": 22,
+     "file": "czerny849/022.mxl",
+     "measures": 31,
+     "key": "E",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 677
+    },
+    {
+     "no": 23,
+     "file": "czerny849/023.mxl",
+     "measures": 24,
+     "key": "A",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 632
+    },
+    {
+     "no": 24,
+     "file": "czerny849/024.mxl",
+     "measures": 32,
+     "key": "D",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 603
+    }
+   ]
+  },
+  {
+   "id": "czerny299",
+   "title": "Czerny 40",
+   "opus": "Op. 299",
+   "composer": "Carl Czerny",
+   "about": "The School of Velocity",
+   "count": 40,
+   "license": "cc0",
+   "edition": "MuseScore community typesets from the PDMX dataset (CC0)",
+   "pieces": [
+    {
+     "no": 1,
+     "file": "czerny299/001.mxl",
+     "measures": 22,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 392
+    },
+    {
+     "no": 2,
+     "file": "czerny299/002.mxl",
+     "measures": 21,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 406
+    },
+    {
+     "no": 3,
+     "file": "czerny299/003.mxl",
+     "measures": 24,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 415
+    },
+    {
+     "no": 4,
+     "file": "czerny299/004.mxl",
+     "measures": 26,
+     "key": "C",
+     "mode": "major",
+     "time": "6/8",
+     "staves": 2,
+     "notes": 377
+    },
+    {
+     "no": 5,
+     "file": "czerny299/005.mxl",
+     "measures": 52,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 1195
+    },
+    {
+     "no": 6,
+     "file": "czerny299/006.mxl",
+     "measures": 32,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 685
+    },
+    {
+     "no": 7,
+     "file": "czerny299/007.mxl",
+     "measures": 45,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 970
+    },
+    {
+     "no": 8,
+     "file": "czerny299/008.mxl",
+     "measures": 55,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 1259
+    },
+    {
+     "no": 9,
+     "file": "czerny299/009.mxl",
+     "measures": 71,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 1464
+    },
+    {
+     "no": 10,
+     "file": "czerny299/010.mxl",
+     "measures": 30,
+     "key": "F",
+     "mode": "major",
+     "time": "6/8",
+     "staves": 2,
+     "notes": 941
+    }
+   ]
+  }
+ ]
+}

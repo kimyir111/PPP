@@ -17,6 +17,8 @@
    ========================================================================== */
 
 const puppeteer = require('puppeteer');
+const fs = require('fs');
+const path = require('path');
 const { preparePage } = require('./boot');
 
 const URL = 'http://127.0.0.1:8777/Piano%20Coach%20App.dc.html';
@@ -62,11 +64,15 @@ const picture = page => page.evaluate(() => {
   };
   const under = state => [...document.querySelectorAll('.ppp-hand [data-finger-state="' + state + '"]')].map(g => {
     const b = g.querySelector('circle').getBoundingClientRect();
-    return { hand: g.closest('.ppp-hand').getAttribute('data-hand'), finger: +g.getAttribute('data-finger'), midi: keyAt(b.left + b.width / 2, b.top + b.height / 2) };
+    return { hand: g.closest('.ppp-hand').getAttribute('data-hand'), finger: +g.getAttribute('data-finger'), midi: keyAt(b.left + b.width / 2, b.top + b.height / 2), artOffset: +g.getAttribute('data-art-offset') };
   });
   const svg = document.querySelector('.ppp-kbwrap svg');
   return {
     hands: [...document.querySelectorAll('.ppp-hand')].map(g => g.getAttribute('data-hand')).sort(),
+    arts: [...document.querySelectorAll('.ppp-hand image[data-hand-art]')].map(img => {
+      const b = img.getBoundingClientRect(), hand = img.closest('.ppp-hand');
+      return { pose: img.getAttribute('data-hand-art'), href: img.getAttribute('href'), transform: img.getAttribute('transform'), width: b.width, height: b.height, wrist: +hand.getAttribute('data-hand-wrist-size') };
+    }),
     expected: [...document.querySelectorAll('.ppp-kbwrap [data-state="expected"]')].map(e => +e.getAttribute('data-midi')).sort((a, b) => a - b),
     now: under('now'),
     viewH: svg ? +svg.getAttribute('viewBox').split(' ')[3] : 0,
@@ -82,6 +88,16 @@ const clickText = (page, re) => page.evaluate(src => {
 }, re.source);
 
 (async () => {
+  const pairMasks = ['12', '13', '14', '15', '23', '24', '25', '34', '35', '45'];
+  const pairAssets = pairMasks.map(mask => path.join(__dirname, '..', 'assets', 'hands', 'hand-right-pair-' + mask + '.png'));
+  ok('every two-finger combination has its own illustrated pose', pairAssets.every(file => fs.existsSync(file) && fs.statSync(file).size > 10000), pairMasks.join(', '));
+  const fourFingerAssets = ['chord-1234-v2', 'chord-1235-v2', 'chord-1245-wide-v2', 'chord-1345-v2', 'chord-2345-v2']
+    .map(name => path.join(__dirname, '..', 'assets', 'hands', 'hand-right-' + name + '.png'));
+  ok('four-finger chords use dedicated illustrated poses', fourFingerAssets.every(file => fs.existsSync(file) && fs.statSync(file).size > 10000), fourFingerAssets.map(file => path.basename(file)).join(', '));
+  const threeFingerAssets = ['chord-125-mid-v2', 'chord-135-wide-v2']
+    .map(name => path.join(__dirname, '..', 'assets', 'hands', 'hand-right-' + name + '.png'));
+  ok('wide three-finger chords use dedicated illustrated poses', threeFingerAssets.every(file => fs.existsSync(file) && fs.statSync(file).size > 10000), threeFingerAssets.map(file => path.basename(file)).join(', '));
+
   const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
   const page = await browser.newPage();
   await page.setViewport({ width: 1440, height: 1000 });
@@ -188,6 +204,37 @@ const clickText = (page, re) => page.evaluate(src => {
   ok('every onset of a piece of wide chords is drawn on its own keys', / 0 off$/.test(drawn.wide), drawn.wide);
   ok('and every onset of the demo', / 0 off$/.test(drawn.demo), drawn.demo);
 
+  console.log('\n── every visible hand shape ──');
+  const shapes = await page.evaluate(() => {
+    const A = window.PPP.HandArt, KW = 34, H = 148;
+    /* Natural five-finger position, mixed black/white keys, and a wide chord.
+       For both hands, visit every one of the 2^5 played/resting combinations. */
+    const positions = [
+      [0, 1, 2, 3, 4],
+      [0, 0.5, 1.5, 2, 3.5],
+      [-2, 0, 2, 4, 6]
+    ];
+    let count = 0, invalid = 0, offKey = 0;
+    ['l', 'r'].forEach(hand => positions.forEach(x => {
+      for (let mask = 0; mask < 32; mask++) {
+        const played = x.map((_, i) => !!(mask & (1 << i)));
+        const g = A.geometry(x, played, hand, KW, H);
+        const fingers = [1, 2, 3, 4, 5].map(f => f === 1
+          ? A.finger(g.thumbRoot, g.thumbBend, g.tip[0], A.WIDTH[0], A.TIP[0])
+          : A.finger(g.root[f], g.bend[f], g.tip[f - 1], A.WIDTH[f - 1], A.TIP[f - 1]));
+        const paths = [A.smooth(g.palm), g.palmEdge].concat(g.web, g.detail)
+          .concat(fingers.flatMap(f => [f.body, f.side, f.nail].concat(f.crease)));
+        if (paths.some(d => !d || /NaN|Infinity|undefined/.test(d))) invalid++;
+        if (g.tip.some((p, i) => Math.abs(p[0] - (x[i] + 0.5) * KW) > 1e-6)) offKey++;
+        count++;
+      }
+    }));
+    return { count, invalid, offKey };
+  });
+  ok('left and right hands render all 192 finger combinations', shapes.count === 192 && shapes.invalid === 0,
+    shapes.count + ' shapes, ' + shapes.invalid + ' invalid');
+  ok('every fingertip stays centred on its assigned key', shapes.offKey === 0, shapes.offKey + ' off-key shapes');
+
   console.log('\n── the whole demo piece ──');
   const demo = await page.evaluate(() => {
     const sc = window.PPP.buildDemoScore();
@@ -229,6 +276,15 @@ const clickText = (page, re) => page.evaluate(src => {
   await sleep(1000);
   const p0 = await picture(page);
   ok('both hands are drawn over the keyboard', p0.hands.join() === 'l,r', p0.hands.join(', '));
+  ok('each hand uses a loaded illustrated pose', p0.arts.length === 2 && p0.arts.every(a => /\/assets\/hands\/hand-right-.+\.png$/.test(a.href) && a.width > 0 && a.height > 0), p0.arts.map(a => a.pose).join(', '));
+  const naturalAspect = p0.arts.every(a => {
+    const m = /scale\((-?[\d.]+) ([\d.]+)\)/.exec(a.transform || '');
+    return m && Math.abs(Math.abs(+m[1]) - Math.abs(+m[2])) < 0.0001;
+  });
+  ok('illustrated hands keep their natural aspect ratio', naturalAspect, p0.arts.map(a => a.transform).join(' | '));
+  const wristSizes = p0.arts.map(a => a.wrist).filter(Boolean);
+  ok('left and right illustrated hands use one physical size', wristSizes.length === 2 && Math.max(...wristSizes) / Math.min(...wristSizes) <= 1.01, wristSizes.map(n => n.toFixed(1)).join(', '));
+  ok('playing markers sit on the illustrated fingertips', p0.now.every(n => n.artOffset <= 8), p0.now.map(n => n.artOffset).join(', '));
   ok('the keyboard grows a strip below the keys for the palms', p0.viewH > 148, 'viewBox height ' + p0.viewH);
   ok('the toggle says the guide is on', p0.button === 'true');
   ok('the finger numbers are explained under the keyboard', p0.legend === true);
@@ -240,7 +296,7 @@ const clickText = (page, re) => page.evaluate(src => {
     if (b) b.click();
   });
   await sleep(1400);
-  let moves = 0, matched = 0, chordSeen = false;
+  let moves = 0, matched = 0, chordSeen = false, maxArtOffset = 0;
   let last = null;
   for (let step = 0; step < 14; step++) {
     const p = await picture(page);
@@ -250,6 +306,7 @@ const clickText = (page, re) => page.evaluate(src => {
     else ok('the fingers marked to play lie on the keys it asks for (step ' + (step + 1) + ')', false,
       'asks for ' + p.expected.join(',') + ', fingers on ' + under.join(','));
     if (p.expected.length > 1) chordSeen = true;
+    p.now.forEach(n => { maxArtOffset = Math.max(maxArtOffset, n.artOffset || 0); });
     if (last && under.join() !== last) moves++;
     last = under.join();
     await page.evaluate(ms => ms.forEach(m => window.__press(m)), p.expected);
@@ -260,6 +317,7 @@ const clickText = (page, re) => page.evaluate(src => {
   ok('at every step the fingers marked to play lie on exactly the keys it asks for', matched >= 10, matched + ' of the steps');
   ok('and they move on as the right keys are played', moves >= 5, moves + ' moves');
   ok('a chord marks one finger per key', chordSeen, chordSeen ? 'seen' : 'no chord in these steps');
+  ok('the markers stay on the drawn fingertips while following', maxArtOffset <= 8, 'maximum offset ' + maxArtOffset.toFixed(1));
 
   console.log('\n── one hand at a time ──');
   await clickText(page, /^(Right|Right hand)$/);

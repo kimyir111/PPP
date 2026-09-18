@@ -389,6 +389,64 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
       fromPixels.systems[0].bars === 4 && fromPixels.measures === 4,
     JSON.stringify(fromPixels.systems) + ' measures=' + fromPixels.measures);
 
+  const bassPixels = await page.evaluate(() => {
+    const c = document.createElement('canvas');
+    c.width = 800; c.height = 360;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 800, 360);
+    ctx.strokeStyle = '#111111'; ctx.lineWidth = 1.4;
+    const gap = 8, treble = 50, bass = 160;
+    const staff = (top) => {
+      for (let i = 0; i < 5; i++) {
+        ctx.beginPath(); ctx.moveTo(50, top + i * gap); ctx.lineTo(750, top + i * gap); ctx.stroke();
+      }
+    };
+    staff(treble); staff(bass);
+    [50, 250, 450, 650, 750].forEach(x => {
+      ctx.beginPath(); ctx.moveTo(x, treble); ctx.lineTo(x, bass + 4 * gap); ctx.stroke();
+    });
+    const ledger = (x, y) => { ctx.beginPath(); ctx.moveTo(x - 10, y); ctx.lineTo(x + 10, y); ctx.stroke(); };
+    const fillHead = (x, y) => { ctx.beginPath(); ctx.ellipse(x, y, 6, 5, 0, 0, Math.PI * 2); ctx.fill(); };
+    const openHead = (x, y) => {
+      ctx.fillStyle = '#111111';
+      ctx.beginPath(); ctx.ellipse(x, y, 7, 5.5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.ellipse(x, y, 3, 2.2, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#111111';
+    };
+    const stemUp = (x, y) => { ctx.beginPath(); ctx.moveTo(x + 6, y); ctx.lineTo(x + 6, y - 3.2 * gap); ctx.stroke(); };
+    ctx.fillStyle = '#111111';
+    const c4 = treble + 5 * gap; /* ledger below treble → C4 */
+    ledger(140, c4); fillHead(140, c4); stemUp(140, c4);
+    const f2 = bass + 4.5 * gap; /* space below G2 → F2 */
+    openHead(140, f2); stemUp(140, f2);
+    const c2 = bass + 6 * gap; /* second ledger below → C2 */
+    ledger(340, bass + 5 * gap); ledger(340, c2);
+    fillHead(340, c2); stemUp(340, c2);
+    const c3 = bass + 2.5 * gap; /* space above B2 → C3 */
+    openHead(340, c3); stemUp(340, c3);
+    fillHead(540, bass + 4 * gap); /* G2 */
+    fillHead(540, treble + 4 * gap); /* E4 */
+    const L = PPP.Import.pdfLayer.fromCanvas(c, 800, 360);
+    const built = PPP.Import.pdfLayer.notate([{ layer: L, width: 800, height: 360 }], 'bass.png');
+    const score = built && built.xml ? PPP.parseMusicXML(built.xml, 'bass.png') : null;
+    const sounding = score ? score.notes.filter(n => !n.rest) : [];
+    return {
+      blobs: L && L.blobs.length,
+      pitches: sounding.map(n => n.staff + ':' + n.hand + ':' + n.p),
+      C4: sounding.some(n => n.p === 'C4'),
+      F2: sounding.some(n => n.p === 'F2' && n.hand === 'l'),
+      C2: sounding.some(n => n.p === 'C2' && n.hand === 'l'),
+      C3: sounding.some(n => n.p === 'C3' && n.hand === 'l'),
+      G2: sounding.some(n => n.p === 'G2' && n.hand === 'l')
+    };
+  });
+  ok('bass ledger and open heads with stems are read as low left-hand notes',
+    bassPixels.F2 && bassPixels.C2 && bassPixels.C3 && bassPixels.G2,
+    JSON.stringify(bassPixels));
+  ok('a ledger below the treble is middle C, not a random low pitch',
+    bassPixels.C4, JSON.stringify(bassPixels.pitches));
+
   const cleanPng = fs.readFileSync(path.join(__dirname, 'fixtures', 'piano-clean.png')).toString('base64');
   const fromPng = await page.evaluate(async b64 => {
     const bin = atob(b64);
@@ -405,14 +463,17 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
     const L = pages[0].layer || {};
     const lay = PPP.Import.pdfLayer.layout(L, 0);
     const built = PPP.Import.pdfLayer.notate(pages, 'piano-clean.png');
+    const sounding = load && load.score ? load.score.notes.filter(n => !n.rest) : [];
     return {
       hl: (L.hl || []).length, blobs: (L.blobs || []).length,
       systems: (lay.systems || []).map(s => s.staves.length),
       notes: built && built.notes, measures: built && built.measures,
       engine: load && load.source && load.source.engine,
-      loadNotes: load && load.score ? load.score.notes.filter(n => !n.rest).length : 0,
+      loadNotes: sounding.length,
       loadStaves: load && load.score && load.score.staves,
-      loadError: load && load.error
+      loadError: load && load.error,
+      hasC2: sounding.some(n => n.p === 'C2' && n.hand === 'l'),
+      hasF2: sounding.some(n => n.p === 'F2' && n.hand === 'l')
     };
   }, cleanPng);
   ok('a clean piano PNG still shows staff lines in the browser',
@@ -423,6 +484,9 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
   ok('Import.load of piano-clean.png without a helper yields a score',
     fromPng.engine === 'pdf' && fromPng.loadStaves >= 2 && fromPng.loadNotes >= 8 && !fromPng.loadError,
     JSON.stringify({ engine: fromPng.engine, staves: fromPng.loadStaves, notes: fromPng.loadNotes, error: fromPng.loadError }));
+  ok('low bass notes on that PNG land in the left hand',
+    fromPng.hasC2 && fromPng.hasF2,
+    JSON.stringify({ C2: fromPng.hasC2, F2: fromPng.hasF2 }));
 
   console.log('\n── a rolled chord ─────────────────────');
   const roll = await page.evaluate(() => {
