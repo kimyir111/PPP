@@ -84,6 +84,28 @@ const ok = (name, cond, detail) => {
   ok('sections derived', r.sections.length >= 1, r.sections.join(' '));
   ok('keyboard range fits the piece', r.kbRange[0] <= 38 && r.kbRange[1] >= 81, r.kbRange.join('..'));
 
+  console.log('\n── vocal line over a piano ──');
+  const vocal = await page.evaluate(() => {
+    const n = (step, oct, staff) => '<note><pitch><step>' + step + '</step><octave>' + oct +
+      '</octave></pitch><duration>4</duration><voice>' + staff + '</voice><type>whole</type><staff>' + staff + '</staff></note>';
+    const xml = '<?xml version="1.0"?><score-partwise version="3.1"><part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list><part id="P1">' +
+      '<measure number="1"><attributes><divisions>1</divisions><staves>3</staves>' +
+      '<clef number="1"><sign>G</sign><line>2</line></clef>' +
+      '<clef number="2"><sign>G</sign><line>2</line></clef>' +
+      '<clef number="3"><sign>F</sign><line>4</line></clef></attributes>' +
+      n('G', 4, 1) + '<backup><duration>4</duration></backup>' +
+      n('B', 4, 2) + '<backup><duration>4</duration></backup>' +
+      n('G', 3, 3) + '</measure></part></score-partwise>';
+    const s = PPP.parseMusicXML(xml, 'vocal-piano.musicxml');
+    const byStaff = {};
+    s.notes.filter(x => !x.rest).forEach(x => { byStaff[x.staff] = x.hand + ':' + x.p; });
+    return { staves: s.staves, hands: byStaff };
+  });
+  ok('a melody staff above the grand staff is three staves', vocal.staves === 3, String(vocal.staves));
+  ok('the melody is shown, not played; the piano is the last two staves',
+    vocal.hands[1] === 'x:G4' && vocal.hands[2] === 'r:B4' && vocal.hands[3] === 'l:G3',
+    JSON.stringify(vocal.hands));
+
   /* ---------- dynamics, form, tempo map, pedals (inline scores) ---------- */
   console.log('\n── sounding plan from MusicXML ──');
   const mx = body => '<?xml version="1.0"?><score-partwise version="3.1"><part-list><score-part id="P1"><part-name>P</part-name></score-part></part-list><part id="P1">' + body + '</part></score-partwise>';

@@ -17,6 +17,8 @@
    ========================================================================== */
 
 const puppeteer = require('puppeteer');
+const fs = require('fs');
+const path = require('path');
 const { preparePage } = require('./boot');
 
 const URL = 'http://127.0.0.1:8777/Piano%20Coach%20App.dc.html';
@@ -269,6 +271,79 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
   ok('segno, coda and the words around them are read from a file, and the "T0 Coda" OCR makes too',
     ['1:segno', '1:tocoda(To Coda)', '2:coda', '2:ds(D.S. al Coda)', '2:fine(Fine)'].every(k => mended.nav.indexOf(k) > -1) && mended.nav.length === 5,
     mended.nav.join(', '));
+
+  console.log('\n── a photo of vocal + piano ───────────');
+  const raster = await page.evaluate(() => {
+    const staffYs = [
+      [706, 701, 696, 692, 687], [627, 622, 617, 611, 606], [559, 554, 548, 543, 537],
+      [456, 451, 446, 442, 437], [377, 372, 367, 361, 356], [309, 304, 298, 293, 287],
+      [206, 201, 197, 192, 187], [128, 122, 117, 112, 106], [59, 54, 48, 43, 38]
+    ];
+    const hl = [];
+    staffYs.forEach(lines => lines.forEach(y => hl.push({ x0: 8, x1: 712, y: y })));
+    const vl = [];
+    [[0, 2], [3, 5], [6, 8]].forEach(pair => {
+      const top = staffYs[pair[0]][0], bot = staffYs[pair[1]][4];
+      [50, 200, 350, 500, 680].forEach(x => vl.push({ x: x, y0: bot, y1: top }));
+    });
+    const blobs = [];
+    [[0, 1, 2], [3, 4, 5], [6, 7, 8]].forEach(triple => {
+      const vocal = staffYs[triple[0]], treble = staffYs[triple[1]], bass = staffYs[triple[2]];
+      [90, 240, 390, 540].forEach(x => {
+        blobs.push({ x0: x, x1: x + 6, y0: vocal[2] - 3, y1: vocal[2] + 3 });
+        blobs.push({ x0: x, x1: x + 6, y0: treble[2] - 3, y1: treble[2] + 3 });
+        blobs.push({ x0: x, x1: x + 6, y0: bass[2] - 3, y1: bass[2] + 3 });
+      });
+    });
+    const L = { w: 720, h: 1018, texts: [], hl: hl, vl: vl, blobs: blobs };
+    const lay = PPP.Import.pdfLayer.layout(L, 0);
+    const built = PPP.Import.pdfLayer.notate([{ layer: L, width: 720, height: 1018 }], 'scan.jpg');
+    const score = built && built.xml ? PPP.parseMusicXML(built.xml, 'scan.jpg') : null;
+    return {
+      systems: (lay.systems || []).map(s => s.staves.length),
+      bars: (lay.systems || []).map(s => s.bars.length),
+      notes: built && built.notes,
+      measures: built && built.measures,
+      staves: score && score.staves,
+      hands: score ? {
+        x: score.notes.filter(n => !n.rest && n.hand === 'x').length,
+        r: score.notes.filter(n => !n.rest && n.hand === 'r').length,
+        l: score.notes.filter(n => !n.rest && n.hand === 'l').length
+      } : null
+    };
+  });
+  ok('uneven staff lines still group into 5-line staves',
+    raster.systems.length === 3 && raster.systems.every(n => n === 3),
+    JSON.stringify(raster.systems));
+  ok('each system has the printed bars', raster.bars.every(n => n >= 3), JSON.stringify(raster.bars));
+  ok('the page notates itself without a helper',
+    raster.notes >= 8 && raster.measures >= 3,
+    'notes=' + raster.notes + ' measures=' + raster.measures);
+  ok('the piano is the last two of three staves',
+    raster.staves === 3 && raster.hands && raster.hands.x > 0 && raster.hands.r > 0 && raster.hands.l > 0,
+    JSON.stringify({ staves: raster.staves, hands: raster.hands }));
+
+  const cleanPng = fs.readFileSync(path.join(__dirname, 'fixtures', 'piano-clean.png')).toString('base64');
+  const fromPng = await page.evaluate(async b64 => {
+    const bin = atob(b64);
+    const u = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    const file = new File([u], 'piano-clean.png', { type: 'image/png' });
+    const pages = await PPP.Import.imageToPage(file);
+    const L = pages[0].layer || {};
+    const lay = PPP.Import.pdfLayer.layout(L, 0);
+    const built = PPP.Import.pdfLayer.notate(pages, 'piano-clean.png');
+    return {
+      hl: (L.hl || []).length, blobs: (L.blobs || []).length,
+      systems: (lay.systems || []).map(s => s.staves.length),
+      notes: built && built.notes, measures: built && built.measures
+    };
+  }, cleanPng);
+  ok('a clean piano PNG still shows staff lines in the browser',
+    fromPng.hl >= 20, 'hl=' + fromPng.hl + ' blobs=' + fromPng.blobs);
+  ok('that PNG notates as a grand staff without a helper',
+    fromPng.systems.some(n => n >= 2) && fromPng.notes >= 8,
+    JSON.stringify(fromPng));
 
   console.log('\n── a rolled chord ─────────────────────');
   const roll = await page.evaluate(() => {

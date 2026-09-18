@@ -181,6 +181,37 @@ async function metrics(page) {
     f.kbBot <= f.vh + 8 && f.transportBot <= f.vh + 8, JSON.stringify(f));
   ok('tablet focus has no empty band under the keyboard',
     f.vh - f.transportBot <= 24, JSON.stringify(f));
+  const pan = await page.evaluate(() => {
+    const wrap = document.querySelector('.ppp-staffwrap');
+    const svg = wrap && wrap.querySelector('svg');
+    const beatEl = [...document.querySelectorAll('span')].find(e => /^Measure \d+ · beat/.test((e.textContent || '').trim()));
+    const before = beatEl ? beatEl.textContent.trim() : '';
+    if (!svg) return { error: 'no svg', before };
+    const r = svg.getBoundingClientRect();
+    const x = r.left + Math.min(48, r.width * 0.2);
+    const y = r.top + Math.min(40, r.height * 0.2);
+    const fire = (type, yy) => svg.dispatchEvent(new PointerEvent(type, {
+      bubbles: true, cancelable: true, composed: true,
+      pointerId: 7, pointerType: 'touch', isPrimary: true,
+      clientX: x, clientY: yy, button: 0,
+      buttons: type === 'pointerup' ? 0 : 1
+    }));
+    fire('pointerdown', y);
+    fire('pointermove', y + 90);
+    fire('pointerup', y + 90);
+    const afterEl = [...document.querySelectorAll('span')].find(e => /^Measure \d+ · beat/.test((e.textContent || '').trim()));
+    return {
+      before,
+      after: afterEl ? afterEl.textContent.trim() : '',
+      canScroll: wrap.scrollHeight > wrap.clientHeight + 4,
+      touchAction: getComputedStyle(svg).touchAction,
+      overflowY: getComputedStyle(wrap).overflowY
+    };
+  });
+  ok('vertical pan on the score does not seek a bar',
+    !pan.error && pan.before === pan.after, JSON.stringify(pan));
+  ok('focused score can scroll vertically',
+    pan.canScroll && /pan-y/.test(pan.touchAction) && /auto|scroll/.test(pan.overflowY), JSON.stringify(pan));
   await shot(page, 'layout-tablet-focus.png');
 
   await page.setViewport({ width: 1024, height: 768 });
