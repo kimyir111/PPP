@@ -6328,13 +6328,14 @@ const Import = {
       throw importError('bad-audio', tx('That file could not be decoded as audio or video.'));
     }
 
-    /* The model is accurate on solo piano but holding fifteen minutes of its
-       spectrogram and recurrent output at once can exhaust a tablet. One
-       minute windows with a two-second overlap keep memory bounded; the
-       middle of each overlap decides which window owns an onset. */
+    /* The model is accurate on solo piano but its recurrent WebGL graph can
+       exhaust an integrated GPU before the whole song is heard. Thirty-second
+       windows are deliberately smaller than the model needs on a desktop so
+       phones and low-memory laptops do not silently fall through to the less
+       precise general model. The middle of each overlap owns the onset. */
     const maxSec = IMPORT_LIMITS.maxAudioMinutes * 60;
     const duration = Math.min(decoded.duration || 0, maxSec);
-    const chunkSec = 60, overlap = 2;
+    const chunkSec = 30, overlap = 2;
     const starts = [];
     for (let at = 0; at < duration; at += chunkSec - overlap) {
       starts.push(at);
@@ -6356,8 +6357,13 @@ const Import = {
         (seq.notes || []).forEach(n => {
           const localOn = +n.startTime || 0;
           if (localOn < lo || localOn >= hi) return;
+          const rawOff = isFinite(+n.endTime) ? +n.endTime : localOn + 0.1;
+          /* An exact one-frame blip is the model reacting to a hammer/pedal
+             transient, not a playable key press. On the regression recording
+             every such 50 ms blip disagreed with the independent piano model. */
+          if (rawOff - localOn < 0.055) return;
           const on = at + localOn;
-          const off = Math.min(duration, at + Math.max(localOn + 0.05, +n.endTime || localOn + 0.1));
+          const off = Math.min(duration, at + Math.max(localOn + 0.05, rawOff));
           const midi = n.pitch | 0;
           if (midi < 21 || midi > 108 || on >= duration) return;
           notes.push({ on: on, off: Math.max(on + 0.05, off), midi: midi,
@@ -6452,15 +6458,20 @@ const Import = {
       onsets.push.apply(onsets, o);
       contours.push.apply(contours, c);
     }, function (p) { if (onPct) onPct(p); });
-    const raw = amt.bp.outputToNotesPoly(frames, onsets, 0.5, 0.3, 5);
+    /* Basic Pitch is only a compatibility fallback here. Its defaults favour
+       recall across arbitrary instruments and turn dense piano overtones into
+       thousands of extra notes. A piano-precision onset threshold removed
+       about a quarter of those false attacks on the failing YouTube fixture. */
+    const raw = amt.bp.outputToNotesPoly(frames, onsets, 0.65, 0.3, 5);
     const timed = amt.bp.noteFramesToTime(amt.bp.addPitchBendsToNoteEvents(contours, raw));
     const notes = timed.map(n => ({
       on: Math.max(0, n.startTimeSeconds),
       off: Math.max(n.startTimeSeconds + 0.05, n.startTimeSeconds + n.durationSeconds),
       midi: n.pitchMidi | 0,
       vel: Math.max(8, Math.min(127, Math.round((n.amplitude || 0.5) * 127)))
-    })).filter(n => n.midi >= 21 && n.midi <= 108);
-    return { notes: notes, duration: mono.duration, engine: 'basic-pitch' };
+    })).filter(n => n.midi >= 21 && n.midi <= 108)
+      .sort((a, b) => a.on - b.on || a.midi - b.midi);
+    return { notes: notes, duration: mono.duration, engine: 'basic-pitch', qualityTier: 'fallback' };
   },
   async transcribeHere(what, onStage, ctl) {
     const stage = (name, detail) => { if (onStage) onStage(name, detail || {}); };
@@ -6505,6 +6516,8 @@ const Import = {
       try {
         heard = await Import.amtNotes(buf, p => stage('transcribe', { pct: p }));
       } catch (e) { throw e || pianoErr; }
+      heard.fallbackFrom = 'onsets-and-frames';
+      heard.fallbackReason = pianoErr && (pianoErr.code || pianoErr.message) || 'unavailable';
     }
     heard.duration = heard.duration || 0;
     return { heard: heard, title: title, audioUrl: audioUrl };
@@ -6726,6 +6739,11 @@ const Import = {
       flag(null, 'length', tx('Only the first {{n}} minutes were transcribed.', { n: IMPORT_LIMITS.maxAudioMinutes }));
     const sparse = stats.notes < 24 || (seconds > 0 && stats.notes / seconds < 0.3);
     if (sparse) flag(null, 'sparse', tx('Very few piano notes were heard. Is the piano clear in this recording?'));
+    const density = seconds > 0 ? stats.notes / seconds : 0;
+    const fallback = heard && heard.engine === 'basic-pitch';
+    const crowded = density > (fallback ? 14 : 20);
+    if (fallback) flag(null, 'fallback', tx('The piano-specific model could not run on this device, so PPP used a less precise fallback. Check pitches and rhythm carefully.'));
+    if (crowded) flag(null, 'dense', tx('The model heard an unusually dense stream of notes ({{n}} per second). Some may be pedal or overtone echoes.', { n: Math.round(density) }));
     const loose = stats.tempoVariation > 0.12;
     if (loose) flag(null, 'tempo', tx('The tempo moves a lot in this performance, so some barlines are PPP’s best guess.'));
     const rough = stats.gridError > 0.1;
@@ -6752,6 +6770,8 @@ const Import = {
     if (rough) confidence -= 0.08;
     if (metre) confidence -= 0.08;
     if (sparse) confidence -= 0.35;
+    if (crowded) confidence -= 0.18;
+    if (fallback) confidence = Math.min(confidence - 0.12, 0.62);
     if (heard && heard.truncated) confidence -= 0.05;
     confidence = Math.max(0, Math.min(1, confidence));
     const level = confidence >= 0.85 ? 'good' : confidence >= 0.55 ? 'fair' : 'poor';
@@ -16175,8 +16195,9 @@ class Component extends DCLogic {
           { k: 'Notes', v: String(sounding.length) },
           { k: 'Tempo', v: score.tempo + ' BPM' },
           { k: 'Time', v: m0.time.beats + '/' + m0.time.beatType },
-          { k: 'Needs a look', v: String((rep.suspectMeasures || []).length) }
+          { k: 'Needs a look', v: String(Math.max((rep.suspectMeasures || []).length, (rep.issues || []).length)) }
         ].concat(src.retrieved ? [{ k: 'Score', v: tx('catalog') }] : [])
+         .concat(src.amt ? [{ k: 'Engine', v: src.engine || src.amt }] : [])
          .concat(src.beatSource === 'audio' ? [{ k: 'Beat', v: tx('from the recording') }] : [])
          .concat(src.quantizer === 'pm2s' ? [{ k: 'Rhythm', v: 'PM2S' }] : []);
         return [

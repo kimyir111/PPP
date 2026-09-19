@@ -883,6 +883,8 @@
     "The notes were heard but could not be turned into a score: {{message}}": "음은 들었지만 악보로 만들지 못했어요: {{message}}",
     "Only the first {{n}} minutes were transcribed.": "앞의 {{n}}분만 받아썼어요.",
     "Very few piano notes were heard. Is the piano clear in this recording?": "피아노 음이 거의 들리지 않았어요. 이 녹음에서 피아노 소리가 잘 들리나요?",
+    "The piano-specific model could not run on this device, so PPP used a less precise fallback. Check pitches and rhythm carefully.": "이 기기에서 피아노 전용 모델을 실행하지 못해 정확도가 낮은 보조 모델을 사용했어요. 음과 리듬을 꼭 확인해 주세요.",
+    "The model heard an unusually dense stream of notes ({{n}} per second). Some may be pedal or overtone echoes.": "모델이 비정상적으로 많은 음을 들었어요(초당 {{n}}개). 일부는 페달이나 배음을 음표로 잘못 들은 것일 수 있어요.",
     "The tempo moves a lot in this performance, so some barlines are PPP’s best guess.": "이 연주는 빠르기가 많이 변해서, 일부 마디선은 PPP의 추측이에요.",
     "Many notes fall between the beats PPP found, so some rhythms are simplified.": "PPP가 찾은 박 사이에 걸친 음이 많아서, 일부 리듬은 단순하게 적었어요.",
     "The metre was hard to hear, so PPP chose {{beats}}/4.": "박자가 잘 안 들려서 PPP가 {{beats}}/4로 정했어요.",

@@ -881,6 +881,8 @@
     "The notes were heard but could not be turned into a score: {{message}}": "音は聴き取れましたが、楽譜にできませんでした：{{message}}",
     "Only the first {{n}} minutes were transcribed.": "最初の{{n}}分だけを採譜しました。",
     "Very few piano notes were heard. Is the piano clear in this recording?": "ピアノの音がほとんど聴き取れませんでした。この録音でピアノははっきり聞こえますか？",
+    "The piano-specific model could not run on this device, so PPP used a less precise fallback. Check pitches and rhythm carefully.": "この端末ではピアノ専用モデルを実行できなかったため、精度の低い代替モデルを使用しました。音程とリズムをよく確認してください。",
+    "The model heard an unusually dense stream of notes ({{n}} per second). Some may be pedal or overtone echoes.": "通常より非常に多くの音符（1秒あたり{{n}}音）が検出されました。一部はペダルや倍音の誤検出かもしれません。",
     "The tempo moves a lot in this performance, so some barlines are PPP’s best guess.": "この演奏はテンポが大きく揺れるので、一部の小節線はPPPの推測です。",
     "Many notes fall between the beats PPP found, so some rhythms are simplified.": "PPPが見つけた拍の間に入る音が多いため、一部のリズムは簡略化しています。",
     "The metre was hard to hear, so PPP chose {{beats}}/4.": "拍子が聴き取りにくかったので、PPPは{{beats}}/4にしました。",

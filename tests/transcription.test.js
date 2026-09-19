@@ -188,6 +188,20 @@ const helperHealth = () => new Promise(resolve => {
     c68.stats.beatsPerBar + '/' + c68.stats.beatType + ', ' + c68.stats.bars + ' bars');
   ok('and the page says beat-type 8', /<beat-type>8<\/beat-type>/.test(c68.xml));
 
+  const compound16 = compound(8);
+  for (let b = 0; b < 8; b++) {
+    const t0 = b * 3;
+    [0.25, 0.75, 1.75, 2.25].forEach((k, i) => compound16.push({
+      beat: t0 + k, len: 0.25, midi: 76 + (i % 2), vel: 66
+    }));
+  }
+  const c68fast = A.toMusicXml({ notes: perform(compound16, { bpm: 90, start: 0.8, jitter: 0.004, seed: 14 }) });
+  ok('fast compound piano keeps written 16ths instead of rounding them to eighths',
+    c68fast.stats.beatsPerBar === 6 && c68fast.stats.beatType === 8 &&
+    (c68fast.xml.match(/<type>16th<\/type>/g) || []).length >= 8,
+    c68fast.stats.beatsPerBar + '/' + c68fast.stats.beatType + ', 16ths ' +
+    (c68fast.xml.match(/<type>16th<\/type>/g) || []).length);
+
   function trips(bars) {
     const ev = [];
     for (let b = 0; b < bars; b++) {
@@ -350,10 +364,14 @@ const helperHealth = () => new Promise(resolve => {
     });
     const rep = PPP.Import.validateTranscription(sc, stats, { duration: 40 });
     const shaky = PPP.Import.validateTranscription(sc, Object.assign({}, stats, { tempoVariation: 0.3, gridError: 0.2 }), { duration: 40 });
+    const fallback = PPP.Import.validateTranscription(sc, stats, { duration: 40, engine: 'basic-pitch' });
+    const dense = PPP.Import.validateTranscription(sc, Object.assign({}, stats, { notes: 900 }), { duration: 40, engine: 'basic-pitch' });
     return {
       measures: sc.measures.length, time: m0.time.beats + '/' + m0.time.beatType, fifths: m0.key.fifths,
       staves: sc.staves, hands: [...new Set(sc.notes.filter(n => !n.rest).map(n => n.hand))].sort().join(''),
-      full: full, level: rep.level, conf: rep.confidence, shaky: shaky.level, shakyKinds: shaky.issues.map(i => i.kind).join(',')
+      full: full, level: rep.level, conf: rep.confidence, shaky: shaky.level, shakyKinds: shaky.issues.map(i => i.kind).join(','),
+      fallbackLevel: fallback.level, fallbackConf: fallback.confidence, fallbackKinds: fallback.issues.map(i => i.kind).join(','),
+      denseLevel: dense.level, denseKinds: dense.issues.map(i => i.kind).join(',')
     };
   }, w.xml, w.stats);
   ok('the parser reads it as written', back.measures === 16 && back.time === '3/4' && back.fifths === 1 && back.staves === 2,
@@ -363,6 +381,11 @@ const helperHealth = () => new Promise(resolve => {
   ok('a clean transcription is trusted, but never fully', back.level === 'good' && back.conf < 1, Math.round(back.conf * 100) + '%');
   ok('a wandering tempo and loose rhythm are said out loud', back.shaky !== 'good' && /tempo/.test(back.shakyKinds) && /rhythm/.test(back.shakyKinds),
     back.shaky + ': ' + back.shakyKinds);
+  ok('the general fallback can never masquerade as a high-confidence piano transcription',
+    back.fallbackLevel !== 'good' && back.fallbackConf <= 0.62 && /fallback/.test(back.fallbackKinds),
+    back.fallbackLevel + ' ' + Math.round(back.fallbackConf * 100) + '%: ' + back.fallbackKinds);
+  ok('an implausibly dense fallback is called out instead of reporting zero checks',
+    back.denseLevel !== 'good' && /dense/.test(back.denseKinds), back.denseLevel + ': ' + back.denseKinds);
 
   const gridBack = await page.evaluate(xml => {
     const sc = PPP.parseMusicXML(xml, 'jig');

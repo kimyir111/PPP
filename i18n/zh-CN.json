@@ -881,6 +881,8 @@
     "The notes were heard but could not be turned into a score: {{message}}": "听到了音符，但没能做成乐谱：{{message}}",
     "Only the first {{n}} minutes were transcribed.": "只扒了前 {{n}} 分钟。",
     "Very few piano notes were heard. Is the piano clear in this recording?": "几乎没听到钢琴音符。这段录音里钢琴清楚吗？",
+    "The piano-specific model could not run on this device, so PPP used a less precise fallback. Check pitches and rhythm carefully.": "此设备无法运行钢琴专用模型，因此 PPP 使用了精度较低的备用模型。请仔细检查音高和节奏。",
+    "The model heard an unusually dense stream of notes ({{n}} per second). Some may be pedal or overtone echoes.": "模型检测到异常密集的音符（每秒 {{n}} 个）。其中一些可能是踏板声或泛音误识别。",
     "The tempo moves a lot in this performance, so some barlines are PPP’s best guess.": "这段演奏速度变化很大，有些小节线是 PPP 的推测。",
     "Many notes fall between the beats PPP found, so some rhythms are simplified.": "很多音落在 PPP 找到的节拍之间，所以部分节奏做了简化。",
     "The metre was hard to hear, so PPP chose {{beats}}/4.": "拍号不太听得出来，PPP 选了 {{beats}}/4。",

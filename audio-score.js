@@ -1009,13 +1009,18 @@
       q = clustered.map(n => {
         const tOn = n.attack != null ? n.attack : n.on;
         const pos = beatPosition(beats, tOn);
-        const eighth = Math.round(pos * 3) / 3;
-        const tick = Math.round(eighth * 36);
-        const endPos = snapEnd(beatPosition(beats, n.off));
-        const endTick = Math.max(tick + 12, Math.round(endPos * 36 / 12) * 12);
+        /* One tracked pulse is a dotted quarter. Quantising it only to its
+           three eighths erased every 16th in fast 6/8 piano (the regression
+           song has many 100--120 ms attacks). Six slots retain both eighths
+           and 16ths without changing ordinary compound-time notation. */
+        const sixteenth = Math.round(pos * 6) / 6;
+        const tick = Math.round(sixteenth * 36);
+        const rawEnd = beatPosition(beats, n.off);
+        const endPos = Math.round(rawEnd * 6) / 6;
+        const endTick = Math.max(tick + 6, Math.round(endPos * 36));
         return {
           midi: n.midi, vel: n.vel, on: n.on, off: n.off, attack: tOn,
-          tick: tick, endTick: endTick, err: Math.abs(pos * 3 - Math.round(pos * 3)) / 3,
+          tick: tick, endTick: endTick, err: Math.abs(pos * 6 - Math.round(pos * 6)) / 6,
           tuplet: false, lenTicks: endTick - tick
         };
       });
@@ -1024,7 +1029,7 @@
         const key = n.attack.toFixed(4);
         if (byAtt[key] == null) byAtt[key] = n.tick;
         else n.tick = byAtt[key];
-        n.endTick = Math.max(n.tick + 12, n.endTick);
+        n.endTick = Math.max(n.tick + 6, n.endTick);
       });
       errSum = q.reduce((s, n) => s + n.err, 0);
     }
@@ -1038,7 +1043,9 @@
       const pulses = (fromDown && fromDown.beats === 4) ? 4 : 2;
       beatsPerBar = pulses === 4 ? 12 : 6;
       beatType = 8;
-      meterContrast = 2;
+      /* With no audio downbeats this is still an inference from note attacks,
+         and fast 4/4 triplets can imitate 6/8. Do not report false certainty. */
+      meterContrast = input.downbeats && input.downbeats.length ? 2 : 1.1;
       origin = 0;
       if (input.downbeats && input.downbeats.length && beatSource === 'audio') {
         origin = Math.round(beatPosition(beats, input.downbeats[0]) * 36);
