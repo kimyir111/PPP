@@ -728,6 +728,8 @@
     "No practice data for this score yet.": "この曲の練習記録はまだありません。",
     "Play through and let PPP find the weak spots.": "一度通して弾くと弱い場所を見つけます。",
     "Focus": "集中モード",
+    "Show lesson steps": "レッスン手順を表示",
+    "Hide lesson steps": "レッスン手順を隠す",
     "Leave focus": "集中モードを終了",
     "Hide keys": "鍵盤を隠す",
     "Show keys": "鍵盤を表示",

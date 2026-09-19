@@ -357,6 +357,74 @@
   .ppp-focus-only { display: none !important; }
   .ppp-shell[data-focus="true"] .ppp-focus-only { display: flex !important; }
 
+  /* ---- Piano Basics lesson focus ----
+     Lessons have no playhead to follow, so this mode gives the lesson itself
+     the whole viewport: the site chrome and the step list leave the screen,
+     while the lesson remains a normal vertically scrollable page. */
+  html:has(.ppp-shell[data-learn-focus="true"]),
+  body:has(.ppp-shell[data-learn-focus="true"]) {
+    overflow: hidden;
+    height: 100%;
+  }
+  .ppp-shell[data-learn-course="false"] [data-learn-coursecol] {
+    display: none !important;
+  }
+  .ppp-shell[data-learn-course="false"] [data-learn][data-learn-course-visible="false"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .ppp-shell[data-learn-focus="true"] {
+    position: fixed; inset: 0;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%; height: 100%;
+    overflow: hidden;
+  }
+  .ppp-shell[data-learn-focus="true"] .ppp-aside,
+  .ppp-shell[data-learn-focus="true"] .ppp-header,
+  .ppp-shell[data-learn-focus="true"] [data-learn-coursecol] {
+    display: none !important;
+  }
+  .ppp-shell[data-learn-focus="true"] .ppp-main {
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+  .ppp-shell[data-learn-focus="true"] .ppp-page {
+    min-height: 0;
+    height: 100%;
+    padding: max(12px, env(safe-area-inset-top, 0px))
+      max(12px, env(safe-area-inset-right, 0px))
+      calc(24px + env(safe-area-inset-bottom, 0px))
+      max(12px, env(safe-area-inset-left, 0px));
+    gap: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .ppp-shell[data-learn-focus="true"] [data-learn] {
+    display: block !important;
+    min-height: 100%;
+  }
+  .ppp-shell[data-learn-focus="true"] [data-learn] > section:first-child {
+    width: min(100%, 1120px);
+    margin: 0 auto;
+  }
+  .ppp-shell[data-learn-focus="true"] [data-learn-course-toggle] {
+    display: none;
+  }
+  .ppp-shell[data-learn-focus="true"] [data-learn-card] {
+    padding: clamp(18px, 3vw, 32px) !important;
+  }
+  .ppp-shell[data-learn-focus="true"] [data-learn-title] {
+    font-size: clamp(32px, 5vw, 48px) !important;
+  }
+  .ppp-learn-view-tools {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin: -2px 0 -4px;
+  }
+
   @keyframes ppp-miss-a {
     0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
     14% { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -515,7 +583,7 @@
   </div>
 </sc-if>
 
-<div data-app="{{ theme }}" ref="{{ rootRef }}" class="ppp-shell" data-focus="{{ focusAttr }}" data-keys="{{ keysAttr }}" data-sidebar-collapsed="{{ sidebarCollapsedAttr }}" data-sidebar-open="{{ sidebarOpenAttr }}" style="background: var(--bg); color: var(--ink); font-family: Figtree, 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', system-ui, sans-serif;{{ kbVar }}">
+<div data-app="{{ theme }}" ref="{{ rootRef }}" class="ppp-shell" data-focus="{{ focusAttr }}" data-learn-focus="{{ learnFocusAttr }}" data-learn-course="{{ learnCourseAttr }}" data-keys="{{ keysAttr }}" data-sidebar-collapsed="{{ sidebarCollapsedAttr }}" data-sidebar-open="{{ sidebarOpenAttr }}" style="background: var(--bg); color: var(--ink); font-family: Figtree, 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', system-ui, sans-serif;{{ kbVar }}">
 
   <button type="button" class="ppp-backdrop" onClick="{{ closeSidebar }}" aria-label="{{ hideSidebarLabel }}"></button>
 
@@ -1740,13 +1808,17 @@
         </sc-if>
 
         <sc-if value="{{ learnInLesson }}" hint-placeholder-val="{{ false }}">
-        <div class="ppp-split" data-learn style="display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 22px; align-items: start;">
+        <div class="ppp-split" data-learn data-learn-course-visible="{{ learnCourseAttr }}" style="display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 22px; align-items: start;">
           <section style="display: flex; flex-direction: column; gap: 16px; min-width: 0;">
             <div>
               <button type="button" onClick="{{ learnToLevels }}" data-learn-to-levels style="display: inline-flex; align-items: center; gap: 6px; margin: 0 0 10px; padding: 0; border: 0; background: transparent; color: var(--ink3); font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;" style-hover="color: var(--accent);">← All levels</button>
               <div style="font-size: 11.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent);">{{ learnKicker }}</div>
               <h1 data-learn-title style="font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: 38px; line-height: 1.08; letter-spacing: -0.01em; margin: 8px 0 6px;">{{ learnTitle }}</h1>
               <p style="margin: 0; font-size: 14px; color: var(--ink2);">{{ learnGoal }}</p>
+              <div class="ppp-learn-view-tools">
+                <button type="button" onClick="{{ learnToggleCourse }}" data-learn-course-toggle style="padding:7px 11px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--ink2);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;">{{ learnCourseLabel }}</button>
+                <button type="button" onClick="{{ learnToggleFocus }}" data-learn-focus-toggle style="padding:7px 11px;border-radius:9px;border:1px solid var(--accent-2);background:var(--accent-3);color:var(--accent);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;">{{ learnFocusLabel }}</button>
+              </div>
             </div>
 
             <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
@@ -1827,7 +1899,7 @@
             </sc-if>
           </section>
 
-          <section style="display: flex; flex-direction: column; gap: 12px;">
+          <section data-learn-coursecol style="display: flex; flex-direction: column; gap: 12px;">
             <div data-learn-course style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 20px;">
               <div role="tablist" style="display: flex; gap: 3px; padding: 3px; border-radius: 11px; background: var(--surface2); margin-bottom: 14px;">
                 <sc-for list="{{ learnLevelTabs }}" as="lt" hint-placeholder-count="3">
@@ -4312,6 +4384,13 @@ class MidiOut {
        same timestamp (later send, same t) and the on never sounds. */
     this._queuedOn = [];
     this._thru = {};
+    /* A piano has one key per pitch, but PPP can have two owners of it:
+       the scheduled score and the player's held key. Keep their lifetimes
+       separate so a score note-off cannot cut off a live note (or vice versa)
+       when both use the same MIDI channel. */
+    this._scoreActive = {};
+    this._deferredScoreOff = {};
+    this._liveHeld = {};
   }
   access() { return this._input ? this._input.access : null; }
   devices() { return this._input && this._input.outputs ? this._input.outputs() : []; }
@@ -4350,18 +4429,40 @@ class MidiOut {
       return true;
     } catch (e) { return false; }
   }
-  noteOn(midi, vel, t) {
+  noteOn(midi, vel, t, source) {
     const m = midi & 127, v = Math.max(1, Math.min(127, vel == null ? 80 : vel | 0));
     const when = (t == null || !isFinite(t)) ? nowMs() : t;
-    this.send([0x90, m, v], t);
+    if ((source || 'score') === 'score' && this._liveHeld[m]) return false;
+    if (!this.send([0x90, m, v], t)) return false;
+    if ((source || 'score') === 'score') this._scoreActive[m] = (this._scoreActive[m] || 0) + 1;
     this._queuedOn.push({ midi: m, t: when });
     if (this._queuedOn.length > 48) {
       const cut = nowMs() - 80;
       this._queuedOn = this._queuedOn.filter(q => q.t > cut);
     }
+    return true;
   }
-  noteOff(midi, t) {
+  noteOff(midi, t, source) {
     const m = midi & 127;
+    if ((source || 'score') !== 'score') { this.send([0x80, m, 0], t); return true; }
+    const active = this._scoreActive[m] || 0;
+    if (!active) return false;
+    this._scoreActive[m] = active - 1;
+    if (this._scoreActive[m] > 0) return true;
+    delete this._scoreActive[m];
+    if (this._liveHeld[m]) {
+      this._deferredScoreOff[m] = (this._deferredScoreOff[m] || 0) + 1;
+      return true;
+    }
+    this.send([0x80, m, 0], t);
+    return true;
+  }
+  liveNoteOn(midi) { this._liveHeld[midi & 127] = true; }
+  liveNoteOff(midi, t) {
+    const m = midi & 127;
+    delete this._liveHeld[m];
+    if (!this._deferredScoreOff[m]) return;
+    delete this._deferredScoreOff[m];
     this.send([0x80, m, 0], t);
   }
   cc(n, v, t) {
@@ -4402,6 +4503,9 @@ class MidiOut {
     this.cc(67, 0, when);
     this.cc(123, 0, when);
     this.cc(120, 0, when);
+    this._scoreActive = {};
+    this._deferredScoreOff = {};
+    this._liveHeld = {};
   }
 }
 
@@ -7229,6 +7333,12 @@ const Coach = {
   }
 };
 
+/* Short written notes remain visibly active under the score playhead for a
+   quarter-beat minimum. The hand guide must use that same visual window or it
+   can jump to the next pitch while the notation is still highlighting this one. */
+const SCORE_HAND_HOLD_Q = 0.25;
+const scoreNoteEnd = (abs, dur) => abs + Math.max(dur || 0, SCORE_HAND_HOLD_Q);
+
 /* ==========================================================================
    FINGERING
 
@@ -7484,7 +7594,20 @@ const Fingering = {
   events(notes, hand) {
     const out = [];
     notes.forEach(n => {
-      if (n.rest || n.hand !== hand || n.tieStop || n.midi == null) return;
+      if (n.rest || n.hand !== hand || n.midi == null) return;
+      if (n.tieStop) {
+        /* A tied continuation is not struck again, but the original finger
+           remains down. Keep that event alive for as long as the tie lasts so
+           the hand cannot jump ahead while the keyboard still shows the held
+           pitch. */
+        for (let j = out.length - 1; j >= 0; j--) {
+          if (!out[j].notes.some(x => x.midi === n.midi)) continue;
+          const hold = out[j].hold || (out[j].hold = {});
+          hold[n.midi] = Math.max(hold[n.midi] || 0, scoreNoteEnd(n.abs, n.dur));
+          break;
+        }
+        return;
+      }
       const last = out[out.length - 1];
       if (last && Math.abs(last.at - n.abs) < 1e-6) {
         if (last.notes.some(x => x.midi === n.midi)) return;   /* the same key twice: one finger */
@@ -7494,7 +7617,7 @@ const Fingering = {
     out.forEach(e => {
       e.notes.sort((a, b) => a.midi - b.midi);
       e.midi = e.notes.map(n => n.midi);
-      e.until = e.notes.map(n => n.abs + Math.max(n.dur || 0, 1e-3));
+      e.until = e.notes.map(n => Math.max(scoreNoteEnd(n.abs, n.dur), (e.hold && e.hold[n.midi]) || 0));
       e.end = Math.max.apply(null, e.until);
       e.fixed = e.notes.map(n => (n.finger >= 1 && n.finger <= 5) ? n.finger : 0);
     });
@@ -9540,6 +9663,7 @@ function makeScoreView(React) {
           t.style.setProperty('paint-order', 'stroke fill');
         }
         t.setAttribute('class', 'ppp-ann');
+        if (o.row != null) t.setAttribute('data-ppp-row', String(o.row));
         t.textContent = String(text);
         ctx.svg.appendChild(t);
         return t;
@@ -9690,7 +9814,7 @@ function makeScoreView(React) {
               allNoteMeta.push({
                 el: g,
                 absStart: meta.abs,
-                absEnd: meta.abs + Math.max(meta.dur, 0.25),
+                absEnd: scoreNoteEnd(meta.abs, meta.dur),
                 midis: meta.midis || [],
                 hand: meta.hand,
                 key: meta.key
@@ -9721,7 +9845,7 @@ function makeScoreView(React) {
             /* just above the top line of the top staff, not above its empty headroom */
             svgLabel(mm.number, {
               x: x + 3, y: TREBLE_Y + rowTop + LINE0 - 9, size: 12, weight: '500',
-              family: "'JetBrains Mono', monospace", stroke: 0.6
+              family: "'JetBrains Mono', monospace", stroke: 0.6, row: r
             });
           }
 
@@ -9729,7 +9853,7 @@ function makeScoreView(React) {
              and pedal marks follow the notes rather than an even grid */
           const noteX = x + bw + PAD;
           const seg = {
-            number: mm.number, x: x + (lineStart ? bw : 0), y: rowTop, w: w - (lineStart ? bw : 0),
+            number: mm.number, row: r, x: x + (lineStart ? bw : 0), y: rowTop, w: w - (lineStart ? bw : 0),
             startQ: mm.startQ, lenQ: mm.lenQ,
             pts: sp.xs.map((xx, j) => [pr.ctxs[j].q, noteX + xx + NOTE_MID])
           };
@@ -9880,7 +10004,7 @@ function makeScoreView(React) {
         const rTop = HEAD_H + c.row * ROW_H;
         const x = Math.max(c.x, (lastEnd[c.row] || -Infinity) + 6);
         const t = svgLabel(c.text, { x: x, y: chordBase[rTop] + (c.sign ? 4 : 0), size: c.size || 13, weight: c.weight || '600',
-          family: c.family || "Figtree, system-ui, sans-serif" });
+          family: c.family || "Figtree, system-ui, sans-serif", row: c.row });
         let wd = c.text.length * 7.5;
         try { wd = t.getComputedTextLength() || wd; } catch (e) {}
         /* a long name at the end of a line is pulled back inside the page */
@@ -9901,7 +10025,7 @@ function makeScoreView(React) {
         if (mk.kind === 'tocoda' || mk.kind === 'fine') {
           let y = sg.y + TREBLE_Y + LINE0 - 6;
           if (barReach[mk.m] != null && isFinite(barReach[mk.m])) y = Math.min(y, barReach[mk.m] - 4);
-          svgLabel(mk.text, { x: x, y: y, size: 13, weight: '700', anchor: 'end' });
+          svgLabel(mk.text, { x: x, y: y, size: 13, weight: '700', anchor: 'end', row: rowOfY(sg.y) });
         } else {
           const below = sg.y + staffY(nStaves - 1) + LINE0 + 40 + (PED_H ? 44 : 22);
           svgLabel(mk.text, { x: x, y: below, size: 13, weight: '700', anchor: 'end' });
@@ -9927,7 +10051,7 @@ function makeScoreView(React) {
         path.setAttribute('class', 'ppp-volta');
         ctx.svg.appendChild(path);
         if (v.label && (v.type === 'BEGIN' || v.type === 'BEGIN_END'))
-          svgLabel(v.label, { x: x0 + 5, y: y + 12, size: 12, weight: '600' });
+          svgLabel(v.label, { x: x0 + 5, y: y + 12, size: 12, weight: '600', row: v.row });
       });
 
       /* "Measures 21–24" means nothing to someone who cannot see which part of
@@ -10124,7 +10248,7 @@ function makeScoreView(React) {
           rows: rowsIdx.map(idxs => idxs.map(i => measures[i].number)),
           tight: prep.map(pr => Math.round(spaceBar(pr, 0).width)),
           begin: measures.map((mm, i) => Math.round(beginW(i, false))),
-          bars: this._map.map(sg => ({ m: sg.number, x: sg.x, y: sg.y, w: sg.w }))
+          bars: this._map.map(sg => ({ m: sg.number, row: sg.row, x: sg.x, y: sg.y, w: sg.w }))
         };
       } catch (e) {}
     }
@@ -10870,7 +10994,11 @@ class Component extends DCLogic {
       minutes: 18, xp: 1240, streak: 7, sessions: [10, 18, 14, 23, 8, 20, 18],
       /* MIDI stays off until the user asks for it: requesting access can
          prompt, and claiming a connection we do not have would be a lie. */
-      toggles: { midi: false, midiOut: false, notify: true, sound: false, notes: true, auto: true, follow: true, paper: true, handGuide: true, handSee: 45, handNums: 'all', handNames: true, keys: true, tellRight: true },
+      /* A real piano usually already has its own sound. Keep PPP's live MIDI
+         monitor off by default so the instrument and the tablet do not layer
+         the same key with a short delay. Silent MIDI controllers can turn it
+         back on in Devices & sound. */
+      toggles: { midi: false, midiOut: false, midiInputSound: false, notify: true, sound: false, notes: true, auto: true, follow: true, paper: true, handGuide: true, handSee: 45, handNums: 'all', handNames: true, keys: true, tellRight: true },
       gateIdx: 0, focus: false,
       /* The whole piece, by default. Four bars at a time and a measure number in
          a sidebar tells you nothing about where you are; you have to see it. */
@@ -10897,7 +11025,7 @@ class Component extends DCLogic {
       sharedLinked: null, sharedOpening: null, shareDlg: null,
       /* Piano Basics: where you are in the course, what is done, and the
          working state of the step on screen (see learnVals) */
-      learnLesson: 'keys', learnStep: 0, learnDone: {}, lx: null, learnClock: null, learnNow: 0, learnView: 'levels',
+      learnLesson: 'keys', learnStep: 0, learnDone: {}, lx: null, learnClock: null, learnNow: 0, learnView: 'levels', learnFocus: false, learnCourseOpen: true,
       /* Method Books: the saved course (course.js) and the page's working state */
       course: window.PPP_COURSE ? window.PPP_COURSE.fresh() : null, courseCat: null, courseLoad: 'idle', courseBook: null, courseSel: null, courseOpening: null
     };
@@ -10936,11 +11064,25 @@ class Component extends DCLogic {
     const w = wrap.getBoundingClientRect();
     const top = (r.top - w.top) + wrap.scrollTop;
     if (this.state.focus) {
-      /* Upcoming bars matter more than the line you just played: pin the
-         current bar near the top so the next system stays on a tablet
-         instead of being clipped under the keyboard. */
-      const pad = Math.min(12, Math.max(4, wrap.clientHeight * 0.03));
-      const want = clamp(top - pad, 0, wrap.scrollHeight - wrap.clientHeight);
+      /* Upcoming bars matter more than the line you just played. The current
+         highlight starts inside a system, though, while chord names and other
+         above-staff markings can sit several pixels higher. Pin the actual
+         visual top of the system so those markings do not disappear under the
+         score toolbar when a tablet advances to the next line. */
+      const pad = Math.min(14, Math.max(8, wrap.clientHeight * 0.035));
+      let visualTop = r.top;
+      const svg = wrap.querySelector('svg');
+      const layout = svg && svg.__ppp;
+      const seg = layout && layout.bars && layout.bars.find(b => b.m === bar);
+      if (svg && seg && seg.row != null) {
+        const rowMarks = svg.querySelectorAll('[data-ppp-row="' + seg.row + '"]');
+        rowMarks.forEach(el => {
+          const er = el.getBoundingClientRect();
+          if (er.width > 0 && er.height > 0) visualTop = Math.min(visualTop, er.top);
+        });
+      }
+      const want = clamp(wrap.scrollTop + (visualTop - w.top) - pad,
+        0, wrap.scrollHeight - wrap.clientHeight);
       if (Math.abs(want - wrap.scrollTop) < 6) return;
       wrap.scrollTo({ top: want, behavior: 'smooth' });
       return;
@@ -11013,6 +11155,7 @@ class Component extends DCLogic {
     };
     this._onFsChange = () => {
       if (!document.fullscreenElement && this.state.focus) this.setState({ focus: false });
+      if (!document.fullscreenElement && this.state.learnFocus) this.setState({ learnFocus: false });
     };
     window.addEventListener('keydown', this._onKey);
     window.addEventListener('resize', this._onResize);
@@ -11411,22 +11554,27 @@ class Component extends DCLogic {
   tone(midi) {
     if (this.midiOutLive()) {
       const t = nowMs();
-      this.midiOutLayer().noteOn(midi, 92, t);
-      this.midiOutLayer().noteOff(midi, t + 900);
+      this.midiOutLayer().noteOn(midi, 100, t, 'manual');
+      this.midiOutLayer().noteOff(midi, t + 900, 'manual');
       return;
     }
     const p = this.piano();
     if (!p.context()) return;
-    p.release(p.strike(midi, null, 92), p.now() + 0.9);
+    p.release(p.strike(midi, null, 100), p.now() + 0.9);
   }
   /* A key on a MIDI keyboard sounds for exactly as long as it is held. */
   keyDown(midi, vel) {
     /* Same piano as MIDI-out: Local Control is on, so the instrument itself
        sounds the strike. A different output gets a same-channel thru. */
     if (this.midiOutLive()) {
+      this.midiOutLayer().liveNoteOn(midi);
       if (!this.midiOutIsAlsoIn()) this.midiOutLayer().thruOn(midi, vel);
       return;
     }
+    /* Most MIDI keyboards in practice are digital pianos with their own
+       speakers. If PPP is only listening for input, do not add a second
+       sampled-piano strike unless the user explicitly enables the monitor. */
+    if (!this.state.toggles.midiInputSound) return;
     const p = this.piano();
     /* a key press is not a click, so it cannot start the sound itself — and
        notes banked while it was stopped would all land at once later */
@@ -11438,6 +11586,7 @@ class Component extends DCLogic {
   keyUp(midi) {
     if (this.midiOutLive()) {
       if (!this.midiOutIsAlsoIn()) this.midiOutLayer().thruOff(midi);
+      this.midiOutLayer().liveNoteOff(midi, nowMs());
       return;
     }
     if (!this._held || !this._held[midi]) return;
@@ -12545,7 +12694,10 @@ class Component extends DCLogic {
                the written dynamic even if a keyboard is plugged in. */
             const vel = this._playAlong ? Math.max(1, Math.round(n.vel * 0.55)) : n.vel;
             if (sendAudio) p.release(p.strike(n.midi, A(t), vel), A(up));
-            if (out) { out.noteOn(n.midi, vel, t); out.noteOff(n.midi, up); }
+            if (out) {
+              const sent = out.noteOn(n.midi, vel, t, 'score');
+              if (sent) out.noteOff(n.midi, up, 'score');
+            }
           }
         }
         if (out) {
@@ -12779,6 +12931,7 @@ class Component extends DCLogic {
     if (e.key === 'Escape' && this.state.shareDlg) { this.closeShareDialog(); return; }
     const t = e.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    if (e.key === 'Escape' && this.state.screen === 'learn' && this.state.learnFocus) { this.toggleLearnFocus(); return; }
     /* On Piano Basics the letter row is a piano (A S D F… from Do) and the
        space bar taps the rhythm, so no practice shortcut fires there. */
     if (this.state.screen === 'learn' && !e.metaKey && !e.ctrlKey && !e.altKey && this.learnKey(e)) return;
@@ -14773,6 +14926,9 @@ class Component extends DCLogic {
        viewBox — keys and hands — stays in view instead of being cropped. */
     const tall = typeof window !== 'undefined' && window.innerHeight >= 700;
     const minW = S.focus ? whites.length * (tall ? 28 : 24) : 0;
+    /* Key names belong to the keyboard surface. Draw them before the hands so
+       a black-key label can never print through a fingertip number. */
+    names.forEach(t => els.push(t));
     /* The hands go over the keys, and their palms into a strip below them. */
     let HT = H;
     if (this.handsOn()) {
@@ -14798,8 +14954,6 @@ class Component extends DCLogic {
         hands.forEach(g => els.push(g));
       }
     }
-    /* key names last, so they read through a hand lying over them */
-    names.forEach(t => els.push(t));
     return h('svg', {
       viewBox: `0 0 ${W} ${HT}`,
       width: '100%',
@@ -14853,18 +15007,22 @@ class Component extends DCLogic {
     };
     const i0 = first(Score.startQ(S.score, from) - 1e-6), i1 = first(Score.endQ(S.score, to) - 1e-6);
     if (i0 >= i1) return null;   /* nothing for this hand in the passage */
-    const B = S.beat, moving = S.playing || this.following();
+    const B = S.beat, moving = S.playing || this.following(), guideAt = this.guideOnset(hand);
     let i = Math.max(i0, first(B - 1e-6)), state;
     if (S.playing && !this.following() && i - 1 >= i0 && B < evs[i - 1].end - 1e-6) { i -= 1; state = 'now'; }
     else if (i >= i1) { i = i1 - 1; state = 'rest'; }
-    else if (!moving || Math.abs(evs[i].at - B) < 1e-6) state = 'now';
-    else state = evs[i].at - B <= 4 ? 'next' : 'rest';
+    else if (Math.abs(evs[i].at - B) < 1e-6) state = 'now';
+    else if (!moving) state = guideAt != null && Math.abs(evs[i].at - guideAt) < 1e-6 ? 'now' : 'rest';
+    else state = evs[i].at - B <= 4 && guideAt != null && Math.abs(evs[i].at - guideAt) < 1e-6 ? 'next' : 'rest';
     const e = evs[i], prev = i > i0 ? evs[i - 1] : null;
+    const fingers = state === 'now' && S.playing && B > e.at + 1e-6
+      ? e.fingers.filter((f, j) => f && B < (e.until[j] || e.end) - 1e-6)
+      : e.fingers;
     /* A thumb arriving immediately after a higher finger is the familiar
        thumb-under transition used in scales. Give that motion its own art. */
     const thumbUnder = !!(prev && e.fingers.length === 1 && e.fingers[0] === 1 &&
       prev.fingers.some(f => f >= 2) && e.at - prev.end <= 1.01);
-    return { pose: H.poses[e.pose], fingers: e.fingers, state, thumbUnder };
+    return { pose: H.poses[e.pose], fingers, state, thumbUnder };
   }
 
   /* One hand, drawn around its own origin and moved into place, so a change
@@ -14898,13 +15056,14 @@ class Component extends DCLogic {
       'pair-15':     { file: 'pair-15',     tip: [null, [63,176], [200,38], [255,8], [316,41], [447,125]] },
       'pair-15-compact-v4': { file: 'pair-15-compact-v4', tip: [null, [123,77], [229,130], [283,135], [333,153], [390,78]] },
       'pair-15-level-mid-v2': { file: 'pair-15-level-mid-v2', tip: [null, [98,84], [229,132], [283,137], [333,154], [432,87]] },
-      'pair-15-level-wide-v2': { file: 'pair-15-level-wide-v2', tip: [null, [40,75], [229,130], [283,135], [333,153], [480,75]] },
+      'pair-15-level-wide-natural-v3': { file: 'pair-15-level-wide-natural-v3', tip: [null, [31,75], [185,99], [254,85], [321,100], [480,78]] },
       'pair-15-thumb-high-v2': { file: 'pair-15-thumb-high-v2', tip: [null, [101,62], [229,130], [283,135], [333,153], [434,87]] },
       'pair-15-thumb-high-wide-v2': { file: 'pair-15-thumb-high-wide-v2', tip: [null, [79,51], [229,130], [283,135], [333,153], [470,101]] },
       'pair-15-thumb-low-v2': { file: 'pair-15-thumb-low-v2', tip: [null, [86,105], [229,130], [283,135], [333,153], [436,54]] },
       'pair-15-thumb-low-wide-v2': { file: 'pair-15-thumb-low-wide-v2', tip: [null, [43,102], [229,130], [283,135], [333,153], [458,53]] },
       'chord-125-mid-v2': { file: 'chord-125-mid-v2', tip: [null, [96,76], [206,78], [278,141], [327,144], [428,79]] },
       'chord-135-wide-v2': { file: 'chord-135-wide-v2', tip: [null, [39,55], [220,147], [270,55], [322,149], [479,55]] },
+      'chord-145-wide-v2': { file: 'chord-145-wide-v2', tip: [null, [31,75], [190,115], [257,112], [378,85], [480,79]] },
       'chord-1234-v2': { file: 'chord-1234-v2', tip: [null, [121,182], [200,45], [257,14], [312,44], [358,170]] },
       'chord-1235-v2': { file: 'chord-1235-v2', tip: [null, [110,92], [185,65], [252,47], [310,148], [393,76]] },
       'chord-1245-wide-v2': { file: 'chord-1245-wide-v2', tip: [null, [40,74], [211,47], [290,127], [382,68], [480,76]] },
@@ -14928,7 +15087,7 @@ class Component extends DCLogic {
       ? (span > KW * 5.75 ? 'pair-15-thumb-high-wide-v2' : 'pair-15-thumb-high-v2')
       : depth15 < -KW * 0.25
         ? (span > KW * 5.85 ? 'pair-15-thumb-low-wide-v2' : 'pair-15-thumb-low-v2')
-        : span > KW * 5.93 ? 'pair-15-level-wide-v2'
+        : span > KW * 5.93 ? 'pair-15-level-wide-natural-v3'
           : span > KW * 4.63 ? 'pair-15-level-mid-v2' : 'pair-15-compact-v4';
     const fourKind = {
       1234: 'chord-1234-v2', 1235: 'chord-1235-v2', 1245: 'chord-1245-wide-v2',
@@ -14940,6 +15099,7 @@ class Component extends DCLogic {
       : active.length === 4 && fourKind ? fourKind
       : mask === '125' && span > KW * 4.2 ? 'chord-125-mid-v2'
       : mask === '135' ? (span > KW * 5.5 ? 'chord-135-wide-v2' : 'chord')
+      : mask === '145' && span > KW * 4.2 ? 'chord-145-wide-v2'
       : span > KW * 4.2 ? 'wide'
       : black ? 'black' : 'neutral';
     const art = ART[kind], mirror = hand === 'l', ratio = KW / 34;
@@ -14955,10 +15115,10 @@ class Component extends DCLogic {
       neutral:173, wide:188, chord:188, black:188, 'thumb-under':149,
       'finger-1':171, 'finger-2':161, 'finger-3':163, 'finger-4':163, 'finger-5':156,
       'pair-12':160, 'pair-13':170, 'pair-14':160, 'pair-15':169,
-      'pair-15-compact-v4':146, 'pair-15-level-mid-v2':144, 'pair-15-level-wide-v2':147,
+      'pair-15-compact-v4':146, 'pair-15-level-mid-v2':144, 'pair-15-level-wide-natural-v3':148,
       'pair-15-thumb-high-v2':146, 'pair-15-thumb-high-wide-v2':146,
       'pair-15-thumb-low-v2':144, 'pair-15-thumb-low-wide-v2':144,
-      'chord-125-mid-v2':146, 'chord-135-wide-v2':144,
+      'chord-125-mid-v2':146, 'chord-135-wide-v2':144, 'chord-145-wide-v2':148,
       'chord-1234-v2':174, 'chord-1235-v2':144, 'chord-1245-wide-v2':148,
       'chord-1345-v2':175, 'chord-2345-v2':171,
       'pair-23':167, 'pair-24':161, 'pair-25':154, 'pair-34':172, 'pair-35':173, 'pair-45':158
@@ -15017,7 +15177,7 @@ class Component extends DCLogic {
         h('circle', {
           cx: px, cy: py, r: now ? 10.5 : next ? 9.5 : 7.5,
           fill: now ? 'var(--accent)' : 'rgba(255,255,255,.92)',
-          stroke: now ? '#fff' : next ? 'var(--accent)' : 'var(--hand-line)', strokeWidth: now || next ? 2 : 1
+          stroke: now ? 'var(--accent-2)' : next ? 'var(--accent)' : 'var(--hand-line)', strokeWidth: now || next ? 2 : 1
         }),
         h('text', {
           x: px, y: py + (now ? 4.5 : next ? 4.2 : 3.5), textAnchor: 'middle',
@@ -15107,7 +15267,7 @@ class Component extends DCLogic {
         h('circle', {
           cx: px, cy: py, r: now ? 10.5 : next ? 9.5 : 7.5,
           fill: now ? 'var(--accent)' : 'rgba(255,255,255,.92)',
-          stroke: now ? '#fff' : next ? 'var(--accent)' : 'var(--hand-line)', strokeWidth: now || next ? 2 : 1
+          stroke: now ? 'var(--accent-2)' : next ? 'var(--accent)' : 'var(--hand-line)', strokeWidth: now || next ? 2 : 1
         }),
         h('text', {
           x: px, y: py + (now ? 4.5 : next ? 4.2 : 3.5), textAnchor: 'middle',
@@ -15129,13 +15289,33 @@ class Component extends DCLogic {
     /* With a device attached, the lit keys are the ones actually being held. */
     if (this.liveMidi()) return S.held || [];
     const [from, to] = this.range(S);
-    if (!S.playing) {
-      const n = this.notesIn(from, to)[0];
-      return n ? [n.midi] : [];
-    }
+    if (!S.playing) return [];
     return this.notesIn(from, to)
-      .filter(n => this.handOk(n, S.hands) && S.beat >= n.abs && S.beat < n.abs + Math.max(n.dur, 0.5))
+      .filter(n => this.handOk(n, S.hands) && S.beat >= n.abs && S.beat < scoreNoteEnd(n.abs, n.dur))
       .map(n => n.midi);
+  }
+  /* The guide onset is per hand. A sustained bass note must not keep the
+     right hand's marker on an older onset while the melody has already moved
+     on; this was the source of the score-bar/hand mismatch on chords with
+     unequal durations. */
+  guideOnset(hand) {
+    const S = this.state;
+    if (this.following()) {
+      const g = this.followGates()[S.gateIdx];
+      return g ? g.b : null;
+    }
+    const [from, to] = this.range(S);
+    const list = this.notesIn(from, to).filter(n => !n.rest && this.handOk(n, S.hands) && (!hand || n.hand === hand));
+    /* During timed playback the score's current note is the guide target. The
+       old implementation always searched strictly after the playhead, so the
+       keyboard circles and hand numbers jumped to the next pitch while the
+       purple score bar was still crossing the current note. Only preview the
+       next onset once there is no visually active note under the bar. */
+    const active = list
+      .filter(x => S.beat >= x.abs - 1e-6 && S.beat < scoreNoteEnd(x.abs, x.dur) - 1e-6)
+      .sort((a, b) => b.abs - a.abs)[0];
+    const n = active || list.find(x => !x.tieStop && x.abs > S.beat + 1e-6);
+    return n ? n.abs : null;
   }
   expected() {
     const S = this.state;
@@ -15144,9 +15324,17 @@ class Component extends DCLogic {
       /* every note still owed at this onset, so a chord shows all of it */
       return g ? g.notes.map(n => n.midi).filter(p => (this._got || []).indexOf(p) < 0) : [];
     }
-    const [from, to] = this.range(S);
-    const nx = this.notesIn(from, to).find(n => n.abs > S.beat && this.handOk(n, S.hands));
-    return nx ? [nx.midi] : [];
+    const [from, to] = this.range(S), notes = this.notesIn(from, to);
+    const hands = S.hands === 'right' ? ['r'] : S.hands === 'left' ? ['l'] : ['l', 'r'];
+    const out = [];
+    hands.forEach(hand => {
+      const at = this.guideOnset(hand);
+      if (at == null) return;
+      notes.forEach(n => {
+        if (!n.rest && !n.tieStop && n.hand === hand && Math.abs(n.abs - at) < 1e-6 && out.indexOf(n.midi) < 0) out.push(n.midi);
+      });
+    });
+    return out;
   }
 
   /* ============================ style helpers ============================ */
@@ -15179,7 +15367,7 @@ class Component extends DCLogic {
   }
   go(s) {
     return () => this.setState(st => {
-      const patch = Object.assign({ playing: false, runHit: 0, runTot: 0, wrongNotes: [], sidebarOpen: false }, this.screenPatch(s));
+      const patch = Object.assign({ playing: false, runHit: 0, runTot: 0, wrongNotes: [], sidebarOpen: false, learnFocus: false }, this.screenPatch(s));
       const [from] = this.range(Object.assign({}, st, patch));
       patch.beat = Score.startQ(st.score, from);
       return patch;
@@ -15428,6 +15616,7 @@ class Component extends DCLogic {
       { title: 'Devices & sound', sub: 'MIDI, metronome and audio', rows: [
         { key: 'midi', label: 'Use MIDI keyboard input', sub: midiSub },
         { key: 'midiOut', label: 'Play score through MIDI piano', sub: midiOutSub },
+        { key: 'midiInputSound', label: 'Play MIDI input through PPP', sub: 'Use PPP samples for live keys; turn off for a piano with its own speakers' },
         { key: 'sound', label: 'Metronome click sound', sub: 'Visual pulse stays on either way' },
         { key: 'notes', label: 'Play note audio while practicing', sub: 'Hear the notes as the playhead passes' }] },
       { title: 'Account', sub: 'Notifications and appearance', rows: [
@@ -16425,6 +16614,18 @@ class Component extends DCLogic {
     if (!this._lxInit || this._lxInit.key !== key) this._lxInit = Object.assign(C.fresh(st), { key });
     return this._lxInit;
   }
+  toggleLearnFocus() {
+    const on = !this.state.learnFocus;
+    /* Ask for fullscreen while the click's user activation is still alive.
+       The CSS focus layout remains useful when a browser declines it. */
+    try {
+      const el = document.documentElement;
+      if (on && el.requestFullscreen) el.requestFullscreen().catch(() => {});
+      else if (!on && document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+    } catch (e) { /* layout-only focus is still useful */ }
+    this.setState({ learnFocus: on });
+  }
+  toggleLearnCourse() { this.setState(st => ({ learnCourseOpen: !st.learnCourseOpen })); }
   learnOpen(id, step) {
     const C = window.PPP_LESSONS;
     const L = C.lesson(id) || C.LESSONS[0];
@@ -16528,17 +16729,21 @@ class Component extends DCLogic {
   }
 
   /* ---- sound: a step's example, a chord, a little fanfare ---- */
+  /* Lesson examples used to sit around MIDI velocity 70–84, noticeably below
+     the main player's mezzo-forte default. Keep their written dynamics but
+     lift the teaching examples into a comfortable listening range. */
+  lessonVelocity(v, fallback) { return Math.min(127, Math.max(1, Math.round((v == null ? fallback : v) + 14))); }
   learnChord(notes) {
     const p = this.piano();
     if (!p.context()) return;
     const t = p.now() + 0.02;
-    notes.forEach(m => p.release(p.strike(m, t, 84), t + 1.8));
+    notes.forEach(m => p.release(p.strike(m, t, this.lessonVelocity(null, 84)), t + 1.8));
   }
   learnCheer() {
     const p = this.piano();
     if (!p.running()) return;
     const t = p.now() + 0.02;
-    [72, 76, 79, 84].forEach((m, i) => p.release(p.strike(m, t + i * 0.085, 70), t + i * 0.085 + (i === 3 ? 0.7 : 0.16)));
+    [72, 76, 79, 84].forEach((m, i) => p.release(p.strike(m, t + i * 0.085, this.lessonVelocity(null, 70)), t + i * 0.085 + (i === 3 ? 0.7 : 0.16)));
   }
   learnListen() {
     const C = window.PPP_LESSONS, st = this.learnStepObj();
@@ -16561,7 +16766,7 @@ class Component extends DCLogic {
       /* a measure of clicks to count in, then the rhythm on Do with the click under it */
       const per = spec.per || st.per || 4;
       count = per;
-      C.sounds(spec.pattern).forEach(n => p.release(p.strike(60, t0 + (count + n.at) * beat, 78), t0 + (count + n.at + n.d * 0.9) * beat));
+      C.sounds(spec.pattern).forEach(n => p.release(p.strike(60, t0 + (count + n.at) * beat, this.lessonVelocity(null, 78)), t0 + (count + n.at + n.d * 0.9) * beat));
       at = count + C.length(spec.pattern);
       for (let b = 0; b < at; b++) p.click(t0 + b * beat, b % per === 0);
     } else {
@@ -16569,7 +16774,7 @@ class Component extends DCLogic {
       const beats = spec.beats || [], vels = spec.vels || [], short = spec.short || [];
       spec.seq.forEach((item, i) => {
         const d = beats[i] || 1, len = short[i] ? Math.min(0.3, d * 0.3) : d * 0.92;
-        C.notesOf(item).forEach(m => p.release(p.strike(m, t0 + at * beat, vels[i] || 82), t0 + (at + len) * beat));
+        C.notesOf(item).forEach(m => p.release(p.strike(m, t0 + at * beat, this.lessonVelocity(vels[i], 82)), t0 + (at + len) * beat));
         at += d;
       });
     }
@@ -16716,7 +16921,13 @@ class Component extends DCLogic {
       learnGoNextLabel: !nx ? tx('Go to My Songs') : nx.level !== L.level ? tx('Start Level {{n}}', { n: nx.level }) : tx('Next lesson'),
       /* the level picker the tab opens on, and the way back to it */
       learnPicker: S.learnView !== 'lesson', learnInLesson: S.learnView === 'lesson',
-      learnToLevels: () => { this.learnStop(); this.setState({ learnView: 'levels' }); },
+      learnToLevels: () => { this.learnStop(); this.setState({ learnView: 'levels', learnFocus: false }); },
+      learnFocusAttr: S.learnFocus ? 'true' : 'false',
+      learnCourseAttr: S.learnCourseOpen === false ? 'false' : 'true',
+      learnToggleFocus: () => this.toggleLearnFocus(),
+      learnToggleCourse: () => this.toggleLearnCourse(),
+      learnFocusLabel: tx(S.learnFocus ? 'Leave focus' : 'Focus'),
+      learnCourseLabel: tx(S.learnCourseOpen === false ? 'Show lesson steps' : 'Hide lesson steps'),
       learnLevelTabs: C.LEVELS.map(lv => ({
         n: lv.n, label: tx('Level {{n}}', { n: lv.n }), on: () => this.learnLevel(lv.n),
         style: `flex:1;padding:7px 6px;border-radius:9px;border:0;cursor:pointer;font-family:inherit;font-size:12px;font-weight:${lv.n === LV.n ? 700 : 500};`
@@ -16761,17 +16972,27 @@ class Component extends DCLogic {
     out.learnQuestionCount = q ? (st.qs.length > 1 ? (lx.qi + 1) + ' / ' + st.qs.length : '')
       : st.kind === 'drill' ? Math.min(lx.n + (lx.right ? 0 : 1), st.count) + ' / ' + st.count : '';
 
+    /* A sequence used to fall back to a row of solfège chips. That is useful
+       as a compact answer hint, but it is not sheet music. Give song/chip
+       steps a real staff even when the lesson data did not explicitly carry
+       a staff config. */
+    const seq = st.seq || [];
+    const scoreSequence = !st.hands && !st.rhythm && seq.length > 0 && (st.chips || st.staff);
+
     /* the picture: hands, a staff or a rhythm */
     let pic = null, paper = true;
     if (st.hands) { pic = C.hands(h); paper = false; }
     else if (st.kind === 'drill') {
       pic = C.staff(h, { clef: st.clef, notes: [lx.note], beats: [4], solo: true,
         states: [lx.right ? 'done' : lx.wrong.length ? 'bad' : null], labels: lx.right ? 'names' : null });
-    } else if (st.staff) {
-      const notes = st.staff.notes || st.seq || [];
+    } else if (st.staff || scoreSequence) {
+      const staffOpts = Object.assign({ clef: 'treble' }, st.staff || {});
+      const notes = staffOpts.notes || seq;
+      const beats = staffOpts.beats || st.beats || (st.listen && st.listen.beats) || [];
+      if (beats.length && staffOpts.time == null) staffOpts.time = 4;
       const states = st.kind === 'play' ? notes.map((m, i) => i < lx.idx ? 'done' : i === lx.idx && !lx.done ? (lx.flash && lx.flash.kind === 'bad' ? 'bad' : 'now') : null)
         : notes.map((m, i) => i === demo ? 'now' : null);
-      pic = C.staff(h, Object.assign({}, st.staff, { notes, beats: st.staff.beats || st.beats, states }));
+      pic = C.staff(h, Object.assign({}, staffOpts, { notes, beats, states }));
     } else if (st.rhythm || st.kind === 'rhythm') {
       const pattern = st.pattern || st.rhythm;
       const run = st.kind === 'rhythm' ? lx.run : null;
@@ -16787,9 +17008,9 @@ class Component extends DCLogic {
     out.learnPicture = pic;
     out.learnPictureBg = paper ? 'var(--paper)' : 'var(--bg)';
 
-    /* the notes of a tune, as names you can follow */
-    const seq = st.seq || [];
-    out.learnHasChips = !!st.chips && seq.length > 0;
+    /* Keep chord symbols such as C–F–G–C alongside the staff; hide only the
+       redundant solfège-note row once the notes are engraved. */
+    out.learnHasChips = !!st.chips && seq.length > 0 && (!scoreSequence || !!st.names);
     out.learnChips = out.learnHasChips ? seq.map((m, i) => {
       const d = (st.beats && st.beats[i]) || (st.listen && st.listen.beats && st.listen.beats[i]) || 1;
       const state = demo === i ? 'now' : st.kind === 'play' ? (i < lx.idx ? 'done' : i === lx.idx && !lx.done ? 'now' : '') : '';
