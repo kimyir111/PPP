@@ -121,19 +121,21 @@ async function importFile(page, file, waitMs) {
 
   const ytCat = await page.evaluate(async () => {
     const oldH = PPP.Import.health, oldT = PPP.Import.youtubeTitle, oldA = PPP.Import.transcribeHere;
+    let browserCalls = 0;
     PPP.Import.health = () => Promise.resolve({ ok: false, remote: true, unreachable: true });
     PPP.Import.youtubeTitle = () => Promise.resolve('Beethoven Fur Elise official audio');
-    PPP.Import.transcribeHere = () => Promise.reject(Object.assign(new Error('skip-amt'), { code: 'skip' }));
+    PPP.Import.transcribeHere = () => { browserCalls++; return Promise.reject(Object.assign(new Error('skip-amt'), { code: 'skip' })); };
     let out;
     try {
       const r = await PPP.Import.loadYoutube('https://www.youtube.com/watch?v=2WfaotSK3mI');
-      out = { title: r.score && r.score.title, engine: r.source && r.source.engine, notes: r.score && r.score.notes.filter(n => !n.rest).length };
+      out = { title: r.score && r.score.title, engine: r.source && r.source.engine,
+        notes: r.score && r.score.notes.filter(n => !n.rest).length, browserCalls: browserCalls };
     } catch (e) { out = { error: e.message }; }
     PPP.Import.health = oldH; PPP.Import.youtubeTitle = oldT; PPP.Import.transcribeHere = oldA;
     return out;
   });
   ok('a YouTube link matching the catalog does not need the local helper',
-    !ytCat.error && ytCat.engine === 'Public-domain catalog' && ytCat.notes > 8,
+    !ytCat.error && ytCat.engine === 'Public-domain catalog' && ytCat.notes > 8 && ytCat.browserCalls === 0,
     JSON.stringify(ytCat));
 
   const ytGen = await page.evaluate(async () => {
@@ -161,8 +163,8 @@ async function importFile(page, file, waitMs) {
   const ytHeard = await page.evaluate(async () => {
     const oldH = PPP.Import.health, oldT = PPP.Import.youtubeTitle, oldA = PPP.Import.transcribeHere;
     PPP.Import.health = () => Promise.resolve({ ok: false, remote: true, unreachable: true });
-    /* a title that would hit the catalog — listen-first must still write the heard notes */
-    PPP.Import.youtubeTitle = () => Promise.resolve('Beethoven Fur Elise official audio');
+    /* an original title outside the catalog must still write the heard notes */
+    PPP.Import.youtubeTitle = () => Promise.resolve('Original piano performance xyzzy');
     const notes = [];
     for (let i = 0; i < 8; i++) notes.push({ on: i * 0.5, off: i * 0.5 + 0.4, midi: 60 + i, vel: 80 });
     PPP.Import.transcribeHere = () => Promise.resolve({
@@ -187,7 +189,7 @@ async function importFile(page, file, waitMs) {
     PPP.Import.health = oldH; PPP.Import.youtubeTitle = oldT; PPP.Import.transcribeHere = oldA;
     return out;
   });
-  ok('enough heard notes become a written score, not a catalog miss',
+  ok('enough heard notes outside the catalog become a written score',
     !ytHeard.error && ytHeard.youtubeId === 'Vyn_63QDW7g' && ytHeard.kind === 'youtube'
       && ytHeard.notes >= 4 && ytHeard.measures >= 1 && ytHeard.transcribed
       && ytHeard.engine !== 'Public-domain catalog' && !ytHeard.retrieved
@@ -195,9 +197,11 @@ async function importFile(page, file, waitMs) {
     JSON.stringify(ytHeard));
 
   const helperPreferred = await page.evaluate(async () => {
-    const oldH = PPP.Import.health, oldRemote = PPP.Import.transcribe, oldBrowser = PPP.Import.transcribeHere;
+    const oldH = PPP.Import.health, oldT = PPP.Import.youtubeTitle,
+      oldRemote = PPP.Import.transcribe, oldBrowser = PPP.Import.transcribeHere;
     let helperCalls = 0, browserCalls = 0;
     PPP.Import.health = () => Promise.resolve({ ok: true, transcriber: true, amt: 'kong' });
+    PPP.Import.youtubeTitle = () => Promise.resolve('Original piano performance xyzzy');
     PPP.Import.transcribe = () => {
       helperCalls++;
       const notes = [];
@@ -213,13 +217,64 @@ async function importFile(page, file, waitMs) {
       const r = await PPP.Import.fromRecording({ url: 'https://youtu.be/Vyn_63QDW7g' });
       out = { helperCalls, browserCalls, amt: r.source && r.source.amt, notes: r.report && r.report.notes };
     } catch (e) { out = { helperCalls, browserCalls, error: e.message }; }
-    PPP.Import.health = oldH; PPP.Import.transcribe = oldRemote; PPP.Import.transcribeHere = oldBrowser;
+    PPP.Import.health = oldH; PPP.Import.youtubeTitle = oldT;
+    PPP.Import.transcribe = oldRemote; PPP.Import.transcribeHere = oldBrowser;
     return out;
   });
   ok('an available piano helper wins over browser Basic Pitch',
     !helperPreferred.error && helperPreferred.helperCalls === 1 && helperPreferred.browserCalls === 0
       && helperPreferred.amt === 'piano-transcription' && helperPreferred.notes >= 4,
     JSON.stringify(helperPreferred));
+
+  const browserPianoPreferred = await page.evaluate(async () => {
+    const oldPiano = PPP.Import.pianoAmtNotes, oldBasic = PPP.Import.amtNotes;
+    let pianoCalls = 0, basicCalls = 0;
+    PPP.Import.pianoAmtNotes = () => {
+      pianoCalls++;
+      return Promise.resolve({
+        notes: [60, 64, 67, 72].map((m, i) => ({ on: i * 0.5, off: i * 0.5 + 0.4, midi: m, vel: 80 })),
+        duration: 2.2, engine: 'onsets-and-frames'
+      });
+    };
+    PPP.Import.amtNotes = () => { basicCalls++; return Promise.reject(new Error('Basic Pitch should not run')); };
+    let out;
+    try {
+      const file = new File([new Uint8Array([1, 2, 3])], 'original-piano.wav', { type: 'audio/wav' });
+      const got = await PPP.Import.transcribeHere({ file: file });
+      out = { pianoCalls: pianoCalls, basicCalls: basicCalls, engine: got.heard && got.heard.engine };
+    } catch (e) { out = { pianoCalls: pianoCalls, basicCalls: basicCalls, error: e.message }; }
+    PPP.Import.pianoAmtNotes = oldPiano; PPP.Import.amtNotes = oldBasic;
+    return out;
+  });
+  ok('the hosted browser uses the piano-specific model before Basic Pitch',
+    !browserPianoPreferred.error && browserPianoPreferred.pianoCalls === 1
+      && browserPianoPreferred.basicCalls === 0 && browserPianoPreferred.engine === 'onsets-and-frames',
+    JSON.stringify(browserPianoPreferred));
+
+  const browserBasicFallback = await page.evaluate(async () => {
+    const oldPiano = PPP.Import.pianoAmtNotes, oldBasic = PPP.Import.amtNotes;
+    let pianoCalls = 0, basicCalls = 0;
+    PPP.Import.pianoAmtNotes = () => { pianoCalls++; return Promise.reject(new Error('no WebGL')); };
+    PPP.Import.amtNotes = () => {
+      basicCalls++;
+      return Promise.resolve({
+        notes: [60, 64, 67, 72].map((m, i) => ({ on: i * 0.5, off: i * 0.5 + 0.4, midi: m, vel: 80 })),
+        duration: 2.2, engine: 'basic-pitch'
+      });
+    };
+    let out;
+    try {
+      const file = new File([new Uint8Array([1, 2, 3])], 'fallback.wav', { type: 'audio/wav' });
+      const got = await PPP.Import.transcribeHere({ file: file });
+      out = { pianoCalls: pianoCalls, basicCalls: basicCalls, engine: got.heard && got.heard.engine };
+    } catch (e) { out = { pianoCalls: pianoCalls, basicCalls: basicCalls, error: e.message }; }
+    PPP.Import.pianoAmtNotes = oldPiano; PPP.Import.amtNotes = oldBasic;
+    return out;
+  });
+  ok('Basic Pitch remains available when the piano model cannot load',
+    !browserBasicFallback.error && browserBasicFallback.pianoCalls === 1
+      && browserBasicFallback.basicCalls === 1 && browserBasicFallback.engine === 'basic-pitch',
+    JSON.stringify(browserBasicFallback));
 
   const ytCopy = await page.content();
   ok('hosted add-sheet copy does not tell you to run npm run omr',

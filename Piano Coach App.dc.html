@@ -6280,9 +6280,107 @@ const Import = {
     return Search.align(xml, opts || {});
   },
 
-  /* Hear notes in this browser (Spotify Basic Pitch). Tablet and computer
-     both generate a score this way; the local helper is a better engine when
-     it is there, not a requirement. */
+  /* Hear notes in this browser. Onsets & Frames is trained specifically for
+     piano and is the quality path on a hosted page where the local
+     Kong/Transkun helper cannot run. Basic Pitch stays as the broad fallback
+     when that larger model cannot load on a device. */
+  pianoAmtLib: null,
+  loadPianoAmt() {
+    if (Import.pianoAmtLib) return Import.pianoAmtLib;
+    const script = (src, ready) => new Promise((resolve, reject) => {
+      if (ready()) return resolve();
+      const s = document.createElement('script');
+      s.src = src; s.async = true;
+      s.onload = () => ready() ? resolve() : reject(new Error('Model library did not initialise.'));
+      s.onerror = () => reject(new Error('Could not load the piano transcription model.'));
+      document.head.appendChild(s);
+    });
+    Import.pianoAmtLib = script(
+      'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.8.6/dist/tf.min.js',
+      () => !!(window.tf && window.tf.version)
+    ).then(() => script(
+      'https://cdn.jsdelivr.net/npm/@magenta/music@1.23.1/es6/transcription.js',
+      () => !!(window.transcription && window.transcription.OnsetsAndFrames)
+    )).then(async () => {
+      const model = new window.transcription.OnsetsAndFrames(
+        'https://storage.googleapis.com/magentadata/js/checkpoints/transcription/onsets_frames_uni'
+      );
+      await model.initialize();
+      return { model: model, tf: window.tf };
+    }).catch(e => {
+      Import.pianoAmtLib = null;       /* a temporary CDN failure may recover */
+      throw e;
+    });
+    return Import.pianoAmtLib;
+  },
+  async pianoAmtNotes(arrayBuf, onPct) {
+    const amt = await Import.loadPianoAmt();
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ac = new AC();
+    let decoded;
+    try {
+      decoded = await new Promise((ok, fail) => {
+        const p = ac.decodeAudioData(arrayBuf.slice(0), ok, fail);
+        if (p && p.then) p.then(ok, fail);
+      });
+    } catch (e) {
+      try { ac.close(); } catch (e2) {}
+      throw importError('bad-audio', tx('That file could not be decoded as audio or video.'));
+    }
+
+    /* The model is accurate on solo piano but holding fifteen minutes of its
+       spectrogram and recurrent output at once can exhaust a tablet. One
+       minute windows with a two-second overlap keep memory bounded; the
+       middle of each overlap decides which window owns an onset. */
+    const maxSec = IMPORT_LIMITS.maxAudioMinutes * 60;
+    const duration = Math.min(decoded.duration || 0, maxSec);
+    const chunkSec = 60, overlap = 2;
+    const starts = [];
+    for (let at = 0; at < duration; at += chunkSec - overlap) {
+      starts.push(at);
+      if (at + chunkSec >= duration) break;
+    }
+    const notes = [];
+    try {
+      for (let ci = 0; ci < starts.length; ci++) {
+        const at = starts[ci], sec = Math.min(chunkSec, duration - at);
+        const frames = Math.max(1, Math.floor(sec * decoded.sampleRate));
+        const clip = ac.createBuffer(decoded.numberOfChannels, frames, decoded.sampleRate);
+        const begin = Math.floor(at * decoded.sampleRate);
+        for (let c = 0; c < decoded.numberOfChannels; c++)
+          clip.getChannelData(c).set(decoded.getChannelData(c).subarray(begin, begin + frames));
+        if (onPct) onPct(Math.round((ci / Math.max(1, starts.length)) * 90));
+        const seq = await amt.model.transcribeFromAudioBuffer(clip);
+        const lo = ci ? overlap / 2 : 0;
+        const hi = ci + 1 < starts.length ? sec - overlap / 2 : Infinity;
+        (seq.notes || []).forEach(n => {
+          const localOn = +n.startTime || 0;
+          if (localOn < lo || localOn >= hi) return;
+          const on = at + localOn;
+          const off = Math.min(duration, at + Math.max(localOn + 0.05, +n.endTime || localOn + 0.1));
+          const midi = n.pitch | 0;
+          if (midi < 21 || midi > 108 || on >= duration) return;
+          notes.push({ on: on, off: Math.max(on + 0.05, off), midi: midi,
+            vel: Math.max(8, Math.min(127, n.velocity == null ? 80 : n.velocity | 0)) });
+        });
+      }
+    } finally {
+      try { ac.close(); } catch (e) {}
+      /* Magenta's old recurrent WebGL graph is reliable for one run, but a
+         second run in the same graph can leave stale tensors on some GPUs.
+         Dispose it after each song. The weights remain in the browser cache,
+         so the next import reloads cleanly without retaining ~60 MB of GPU
+         memory throughout the practice session. */
+      try { amt.model.dispose(); } catch (e) {}
+      if (Import.pianoAmtLib && typeof Import.pianoAmtLib.then === 'function')
+        Import.pianoAmtLib = null;
+    }
+    notes.sort((a, b) => a.on - b.on || a.midi - b.midi);
+    if (onPct) onPct(100);
+    return { notes: notes, duration: duration, engine: 'onsets-and-frames',
+      truncated: decoded.duration > maxSec };
+  },
+
   amtLib: null,
   loadAmt() {
     if (Import.amtLib) return Import.amtLib;
@@ -6393,7 +6491,21 @@ const Import = {
       throw importError('empty', tx('That file is empty.'));
     }
     if (ctl && ctl.cancelled) throw importError('cancelled', tx('Cancelled.'));
-    const heard = await Import.amtNotes(buf, p => stage('transcribe', { pct: p }));
+    let heard = null, pianoErr = null;
+    try {
+      heard = await Import.pianoAmtNotes(buf, p => stage('transcribe', { pct: p }));
+      if (!heard || (heard.notes || []).length < 4) {
+        pianoErr = importError('no-notes', tx('No piano notes were heard in this recording.'));
+        heard = null;
+      }
+    } catch (e) { pianoErr = e; }
+    if (!heard) {
+      /* Phones with too little WebGL memory, blocked model CDNs, and
+         non-piano recordings still get the smaller general model. */
+      try {
+        heard = await Import.amtNotes(buf, p => stage('transcribe', { pct: p }));
+      } catch (e) { throw e || pianoErr; }
+    }
     heard.duration = heard.duration || 0;
     return { heard: heard, title: title, audioUrl: audioUrl };
   },
@@ -6458,6 +6570,7 @@ const Import = {
     stage('check', {});
     const report = Import.validateTranscription(score, built.stats, heard);
     const engineLabel = heard.engine === 'transkun' ? 'Transkun'
+      : heard.engine === 'onsets-and-frames' ? 'Piano Onsets & Frames'
       : heard.engine === 'basic-pitch' ? 'Basic Pitch'
       : heard.engine === 'pm2s' || (heard.grid && heard.grid.engine === 'pm2s') ? 'Piano transcription + PM2S'
         : 'Piano transcription';
@@ -6491,28 +6604,10 @@ const Import = {
     }
     const nameGuess = (what.file ? String(what.file.name).replace(/\.[^.]+$/, '') : '') || '';
 
-    /* The installed helper is the quality path: piano-specific Kong/Transkun,
-       pedal events, and optional audio beat/PM2S data. Browser Basic Pitch is
-       the portability fallback for hosted pages and tablets. Trying it first
-       made any four noisy browser notes bypass the better local engine. */
-    const health = await Import.health();
-    let helperErr = null;
-    if (health.ok && health.transcriber) {
-      try {
-        const got = await Import.transcribe(what, onStage, ctl);
-        const heard = got && got.heard;
-        if (heard && ((heard.engine === 'catalog' && heard.xml) || (heard.notes || []).length >= 4))
-          return Import.finishHeard(got, what, onStage);
-      } catch (e) { helperErr = e; }
-    }
-
-    let generated = null, genErr = null;
-    try {
-      generated = await Import.transcribeHere(what, onStage, ctl);
-    } catch (e) { genErr = e; }
-    if (generated && generated.heard && (generated.heard.notes || []).length >= 4)
-      return Import.finishHeard(generated, what, onStage);
-
+    /* A known engraved score is more exact than notes inferred from sound.
+       The old listen-first order allowed four approximate model notes to
+       bypass an exact catalog match. Search by the YouTube title / filename
+       before spending time on transcription. */
     stage('search', {});
     let query = nameGuess;
     if (what.url) {
@@ -6522,11 +6617,10 @@ const Import = {
     const localHit = await Import.findScore(query);
 
     if (localHit && what.file && !what.url) {
-      /* a named public-domain file: use the catalog score, keep the audio */
       const audioUrl = URL.createObjectURL(what.file);
       let duration = 0;
       try {
-        duration = await new Promise((resolve, reject) => {
+        duration = await new Promise(resolve => {
           const a = new Audio();
           a.preload = 'metadata';
           a.onloadedmetadata = () => resolve(a.duration || 0);
@@ -6583,6 +6677,28 @@ const Import = {
       };
       return { score: score, source: source, report: report, musicxml: xml, recording: null };
     }
+
+    /* The installed helper is the quality path: piano-specific Kong/Transkun,
+       pedal events, and optional audio beat/PM2S data. Browser Basic Pitch is
+       the portability fallback for hosted pages and tablets. Trying it first
+       made any four noisy browser notes bypass the better local engine. */
+    const health = await Import.health();
+    let helperErr = null;
+    if (health.ok && health.transcriber) {
+      try {
+        const got = await Import.transcribe(what, onStage, ctl);
+        const heard = got && got.heard;
+        if (heard && ((heard.engine === 'catalog' && heard.xml) || (heard.notes || []).length >= 4))
+          return Import.finishHeard(got, what, onStage);
+      } catch (e) { helperErr = e; }
+    }
+
+    let generated = null, genErr = null;
+    try {
+      generated = await Import.transcribeHere(what, onStage, ctl);
+    } catch (e) { genErr = e; }
+    if (generated && generated.heard && (generated.heard.notes || []).length >= 4)
+      return Import.finishHeard(generated, what, onStage);
 
     throw genErr || helperErr || importError('no-score',
       tx('PPP could not hear piano notes in that recording.'),
@@ -6783,6 +6899,18 @@ const Import = {
     stage('check', {});
     const report = Import.validate(score, { pageCount: pages.length, pages: (omr && omr.pages) || source.pages,
       missing: source.fromPdf ? source.fromPdf.missing : null });
+    if (source.engine === 'pdf') {
+      /* Spacing between printed symbols is not a duration encoding. The
+         direct browser reader can make a useful draft, but structural checks
+         alone cannot certify its pitches and rhythms. Never present that
+         fallback as a near-perfect recognition. */
+      report.confidence = Math.min(report.confidence, 0.45);
+      report.level = 'poor';
+      report.issues.unshift({ measure: null, kind: 'browser-fallback',
+        message: tx('This is a browser draft; pitches and rhythms need comparison with the original page.') });
+      report.summary = tx('PPP made a draft from the page, but high-quality notation recognition was unavailable.');
+      report.advice = tx('Compare every measure with the original before practising.');
+    }
     source.status = report.level === 'poor' ? 'low-confidence' : 'recognised';
     score.source = source;
     /* page images stay in memory for the review screen; they are never persisted */

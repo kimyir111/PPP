@@ -469,6 +469,8 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
       systems: (lay.systems || []).map(s => s.staves.length),
       notes: built && built.notes, measures: built && built.measures,
       engine: load && load.source && load.source.engine,
+      confidence: load && load.report && load.report.confidence,
+      level: load && load.report && load.report.level,
       loadNotes: sounding.length,
       loadStaves: load && load.score && load.score.staves,
       loadError: load && load.error,
@@ -484,6 +486,9 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
   ok('Import.load of piano-clean.png without a helper yields a score',
     fromPng.engine === 'pdf' && fromPng.loadStaves >= 2 && fromPng.loadNotes >= 8 && !fromPng.loadError,
     JSON.stringify({ engine: fromPng.engine, staves: fromPng.loadStaves, notes: fromPng.loadNotes, error: fromPng.loadError }));
+  ok('the browser PDF draft does not claim high recognition confidence',
+    fromPng.level === 'poor' && fromPng.confidence <= 0.45,
+    JSON.stringify({ level: fromPng.level, confidence: fromPng.confidence }));
   ok('low bass notes on that PNG land in the left hand',
     fromPng.hasC2 && fromPng.hasF2,
     JSON.stringify({ C2: fromPng.hasC2, F2: fromPng.hasF2 }));
