@@ -424,6 +424,20 @@
     gap: 8px;
     margin: -2px 0 -4px;
   }
+  /* Lesson copy and controls need to survive a tablet held at arm's length. */
+  [data-learn-card] > p {
+    font-size: clamp(16px, 1.7vw, 18px) !important;
+    line-height: 1.7 !important;
+  }
+  [data-learn-card] > div:first-child h2 {
+    font-size: clamp(23px, 2.8vw, 30px) !important;
+  }
+  [data-learn-card] [data-learn-feedback] {
+    font-size: 15px !important;
+  }
+  [data-learn-card] button {
+    font-size: 14px !important;
+  }
 
   @keyframes ppp-miss-a {
     0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
@@ -15062,6 +15076,13 @@ class Component extends DCLogic {
       'pair-15-thumb-high-wide-v2': { file: 'pair-15-thumb-high-wide-v2', tip: [null, [79,51], [229,130], [283,135], [333,153], [470,101]] },
       'pair-15-thumb-low-v2': { file: 'pair-15-thumb-low-v2', tip: [null, [86,105], [229,130], [283,135], [333,153], [436,54]] },
       'pair-15-thumb-low-wide-v2': { file: 'pair-15-thumb-low-wide-v2', tip: [null, [43,102], [229,130], [283,135], [333,153], [458,53]] },
+      'chord-123-v2': { file: 'chord-123-v2', tip: [null, [108,188], [200,40], [261,8], [345,115], [418,165]] },
+      'chord-124-v2': { file: 'chord-124-v2', tip: [null, [107,187], [200,42], [255,151], [318,9], [405,150]] },
+      'chord-134-v2': { file: 'chord-134-v2', tip: [null, [102,188], [195,183], [260,11], [322,39], [400,145]] },
+      'chord-234-v2': { file: 'chord-234-v2', tip: [null, [105,240], [198,38], [260,10], [325,42], [410,160]] },
+      'chord-235-v2': { file: 'chord-235-v2', tip: [null, [105,242], [198,40], [260,10], [335,150], [418,86]] },
+      'chord-245-v2': { file: 'chord-245-v2', tip: [null, [105,250], [197,41], [255,145], [320,50], [420,79]] },
+      'chord-345-v2': { file: 'chord-345-v2', tip: [null, [107,235], [200,70], [260,9], [323,35], [410,75]] },
       'chord-125-mid-v2': { file: 'chord-125-mid-v2', tip: [null, [96,76], [206,78], [278,141], [327,144], [428,79]] },
       'chord-135-wide-v2': { file: 'chord-135-wide-v2', tip: [null, [39,55], [220,147], [270,55], [322,149], [479,55]] },
       'chord-145-wide-v2': { file: 'chord-145-wide-v2', tip: [null, [31,75], [190,115], [257,112], [378,85], [480,79]] },
@@ -15094,13 +15115,16 @@ class Component extends DCLogic {
       1234: 'chord-1234-v2', 1235: 'chord-1235-v2', 1245: 'chord-1245-wide-v2',
       1345: 'chord-1345-v2', 2345: 'chord-2345-v2'
     }[mask];
+    const threeKind = {
+      123: 'chord-123-v2', 124: 'chord-124-v2', 125: 'chord-125-mid-v2',
+      134: 'chord-134-v2', 135: 'chord-135-wide-v2', 145: 'chord-145-wide-v2',
+      234: 'chord-234-v2', 235: 'chord-235-v2', 245: 'chord-245-v2', 345: 'chord-345-v2'
+    }[mask];
     const kind = at.thumbUnder && active.indexOf(1) >= 0 ? 'thumb-under'
       : active.length === 1 ? 'finger-' + active[0]
       : active.length === 2 ? (mask === '15' ? pair15Kind : 'pair-' + mask)
       : active.length === 4 && fourKind ? fourKind
-      : mask === '125' && span > KW * 4.2 ? 'chord-125-mid-v2'
-      : mask === '135' ? (span > KW * 5.5 ? 'chord-135-wide-v2' : 'chord')
-      : mask === '145' && span > KW * 4.2 ? 'chord-145-wide-v2'
+      : active.length === 3 && threeKind ? threeKind
       : span > KW * 4.2 ? 'wide'
       : black ? 'black' : 'neutral';
     /* Keep a missing/new pose from turning the whole SVG child into a runtime
@@ -15122,6 +15146,8 @@ class Component extends DCLogic {
       'pair-15-compact-v4':146, 'pair-15-level-mid-v2':144, 'pair-15-level-wide-natural-v3':148,
       'pair-15-thumb-high-v2':146, 'pair-15-thumb-high-wide-v2':146,
       'pair-15-thumb-low-v2':144, 'pair-15-thumb-low-wide-v2':144,
+      'chord-123-v2':165, 'chord-124-v2':165, 'chord-134-v2':165,
+      'chord-234-v2':165, 'chord-235-v2':165, 'chord-245-v2':165, 'chord-345-v2':165,
       'chord-125-mid-v2':146, 'chord-135-wide-v2':144, 'chord-145-wide-v2':148,
       'chord-1234-v2':174, 'chord-1235-v2':144, 'chord-1245-wide-v2':148,
       'chord-1345-v2':175, 'chord-2345-v2':171,
@@ -16995,7 +17021,8 @@ class Component extends DCLogic {
       const staffOpts = Object.assign({ clef: 'treble' }, st.staff || {});
       const notes = staffOpts.notes || seq;
       const beats = staffOpts.beats || st.beats || (st.listen && st.listen.beats) || [];
-      if (beats.length && staffOpts.time == null) staffOpts.time = 4;
+      if (staffOpts.time == null && (beats.length || scoreSequence || (staffOpts.notes && staffOpts.notes.length))) staffOpts.time = 4;
+      if (staffOpts.time) { staffOpts.wrapBars = 4; staffOpts.big = true; }
       const states = st.kind === 'play' ? notes.map((m, i) => i < lx.idx ? 'done' : i === lx.idx && !lx.done ? (lx.flash && lx.flash.kind === 'bad' ? 'bad' : 'now') : null)
         : notes.map((m, i) => i === demo ? 'now' : null);
       pic = C.staff(h, Object.assign({}, staffOpts, { notes, beats, states }));

@@ -100,9 +100,13 @@ const clickText = (page, re) => page.evaluate(src => {
   const fourFingerAssets = ['chord-1234-v2', 'chord-1235-v2', 'chord-1245-wide-v2', 'chord-1345-v2', 'chord-2345-v2']
     .map(name => path.join(__dirname, '..', 'assets', 'hands', 'hand-right-' + name + '.png'));
   ok('four-finger chords use dedicated illustrated poses', fourFingerAssets.every(file => fs.existsSync(file) && fs.statSync(file).size > 10000), fourFingerAssets.map(file => path.basename(file)).join(', '));
-  const threeFingerAssets = ['chord-125-mid-v2', 'chord-135-wide-v2', 'chord-145-wide-v2']
+  const threeFingerAssets = [
+    'chord-123-v2', 'chord-124-v2', 'chord-125-mid-v2', 'chord-134-v2',
+    'chord-135-wide-v2', 'chord-145-wide-v2', 'chord-234-v2', 'chord-235-v2',
+    'chord-245-v2', 'chord-345-v2'
+  ]
     .map(name => path.join(__dirname, '..', 'assets', 'hands', 'hand-right-' + name + '.png'));
-  ok('wide three-finger chords use dedicated illustrated poses', threeFingerAssets.every(file => fs.existsSync(file) && fs.statSync(file).size > 10000), threeFingerAssets.map(file => path.basename(file)).join(', '));
+  ok('every three-finger chord uses a dedicated illustrated pose', threeFingerAssets.every(file => fs.existsSync(file) && fs.statSync(file).size > 10000), threeFingerAssets.map(file => path.basename(file)).join(', '));
   const naturalOctave = path.join(__dirname, '..', 'assets', 'hands', 'hand-right-pair-15-level-wide-natural-v3.png');
   ok('wide octaves use a relaxed five-finger illustration', fs.existsSync(naturalOctave) && fs.statSync(naturalOctave).size > 10000, path.basename(naturalOctave));
 

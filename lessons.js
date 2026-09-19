@@ -1079,8 +1079,10 @@
   var SHARP_PCS = [6, 1, 8, 3, 10], FLAT_PCS = [10, 3, 8, 1, 6];
   var SHARP_POS = [38, 35, 39, 36, 33], FLAT_POS = [34, 37, 33, 36, 32];
   function staff(h, o) {
+    if (o && o.wrapBars && o.time && o.notes && o.notes.length) return staffRows(h, o);
     var clef = o.clef || 'treble', ref = CLEF_REF[clef];
     var big = !!o.big;
+    var LS = big ? 13 : 10;
     var top = big ? 34 : 42, bottom = top + 4 * LS;
     var notes = o.notes || [], beats = o.beats || [];
     var states = o.states || [];
@@ -1095,7 +1097,7 @@
     notes.forEach(function (m, i) {
       var d = beats[i] || 1, chord = Array.isArray(m);
       cols.push({ ms: notesOf(m), d: d, x: x + 8, ni: i });
-      x += (chord ? 40 : 30) + Math.min(4, Math.abs(d)) * 8 + (named ? 10 : 0);
+      x += (chord ? (big ? 48 : 40) : (big ? 36 : 30)) + Math.min(4, Math.abs(d)) * (big ? 9 : 8) + (named ? (big ? 12 : 10) : 0);
       at += Math.abs(d);
       if (o.time && at % per === 0 && i < notes.length - 1) { cols.push({ bar: true, x: x - 6 }); x += 8; }
     });
@@ -1120,7 +1122,7 @@
     }
     if (o.time) {
       [0, 1].forEach(function (k) {
-        els.push(h('text', { key: 'ts' + k, x: x0 + 12, y: top + (k ? 4 : 2) * LS - 1.5, textAnchor: 'middle', fontSize: 21, fontWeight: 700,
+        els.push(h('text', { key: 'ts' + k, x: x0 + 12, y: top + (k ? 4 : 2) * LS - 1.5, textAnchor: 'middle', fontSize: big ? 25 : 21, fontWeight: 700,
           fontFamily: "Georgia, 'Times New Roman', serif", fill: ink }, k ? '4' : String(per)));
       });
     }
@@ -1147,18 +1149,19 @@
         if (p.acc) els.push(p.acc === GLYPH.flat
           ? glyph(h, 'acc' + i + j, GLYPH.flat, c.x - 19 - j * 4, cy - 1.75 * LS, cy + 0.55 * LS, col)
           : glyph(h, 'acc' + i + j, GLYPH.sharp, c.x - 19 - j * 4, cy - 1.4 * LS, cy + 1.4 * LS, col));
-        els.push(noteHead(h, 'n' + i + '_' + j, c.x + side, cy, c.d >= 2, col));
+        els.push(noteHead(h, 'n' + i + '_' + j, c.x + side, cy, c.d >= 2, col, big ? 1.15 : 1));
         if (c.d === 1.5 || c.d === 3) els.push(h('circle', { key: 'dot' + i + j, cx: c.x + 11 + Math.max(0, side), cy: p.d % 2 === 0 ? cy - 3 : cy, r: 1.8, fill: col }));
       });
       if (c.d < 4) {
         var yLo = bottom - lo * LS / 2, yHi = bottom - hi * LS / 2;
-        var sx = up ? c.x + 5.6 : c.x - 5.6, y1 = up ? yLo - 1 : yHi + 1, y2 = up ? yHi - 34 : yLo + 34;
+        var stem = 34 * LS / 10;
+        var sx = up ? c.x + 5.6 : c.x - 5.6, y1 = up ? yLo - 1 : yHi + 1, y2 = up ? yHi - stem : yLo + stem;
         els.push(h('line', { key: 's' + i, x1: sx, x2: sx, y1: y1, y2: y2, stroke: col, strokeWidth: 1.4 }));
         if (c.d === 0.5) els.push(h('path', { key: 'f' + i, d: up ? 'M' + sx + ' ' + y2 + ' q 2 10 9 14' : 'M' + sx + ' ' + y2 + ' q 2 -10 9 -14', stroke: col, strokeWidth: 1.6, fill: 'none' }));
       }
       if (labels) {
         var txt = named ? (o.names[c.ni] ? t(o.names[c.ni]) : '') : c.ms.length === 1 ? (flats ? solFlat(c.ms[0]) : sol(c.ms[0])) : '';
-        if (txt) els.push(h('text', { key: 'nm' + i, x: c.x, y: bottom + 34, textAnchor: 'middle', fontSize: 12, fontWeight: 700, fill: st ? col : 'var(--paper-ink3)' }, txt));
+        if (txt) els.push(h('text', { key: 'nm' + i, x: c.x, y: bottom + (big ? 42 : 34), textAnchor: 'middle', fontSize: big ? 14 : 12, fontWeight: 700, fill: st ? col : 'var(--paper-ink3)' }, txt));
       }
     });
     if (o.time) {
@@ -1167,6 +1170,30 @@
     } else els.push(h('line', { key: 'end', x1: W - 4, x2: W - 4, y1: top, y2: bottom, stroke: lineC, strokeWidth: 1 }));
     return h('svg', { viewBox: '0 0 ' + W + ' ' + H, width: W * (big ? 1.9 : 1.7), 'data-learn-staff': clef, 'data-key': fifths,
       style: { display: 'block', maxWidth: '100%', height: 'auto', margin: '0 auto', fontFamily: "Figtree, 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', system-ui, sans-serif" } }, els);
+  }
+
+  /* Keep beginner music readable on a tablet: a system is at most four
+     measures wide, then the next measures start on a fresh staff row. */
+  function staffRows(h, o) {
+    var notes = o.notes || [], beats = o.beats || [], per = o.time === 3 ? 3 : 4;
+    var maxBars = Math.max(1, o.wrapBars | 0), rows = [], rowNotes = [], rowBeats = [];
+    var beat = 0, bars = 0, eps = 1e-6;
+    notes.forEach(function (m, i) {
+      var d = Math.abs(Number(beats[i] == null ? 1 : beats[i])) || 1;
+      rowNotes.push(m); rowBeats.push(beats[i] == null ? 1 : beats[i]);
+      beat += d;
+      while (beat >= per - eps) { beat -= per; bars++; }
+      if (bars >= maxBars && beat < eps && i < notes.length - 1) {
+        rows.push({ notes: rowNotes, beats: rowBeats });
+        rowNotes = []; rowBeats = []; beat = 0; bars = 0;
+      }
+    });
+    if (rowNotes.length || !rows.length) rows.push({ notes: rowNotes, beats: rowBeats });
+    return h('div', { key: 'staff-rows', 'data-learn-staff-rows': maxBars,
+      style: { display: 'flex', flexDirection: 'column', gap: o.big ? '16px' : '10px', width: '100%' } },
+      rows.map(function (r, i) {
+        return staff(h, Object.assign({}, o, { key: 'staff-row-' + i, wrapBars: 0, notes: r.notes, beats: r.beats }));
+      }));
   }
 
   /* A rhythm on one line, spaced by time so the cursor moves at an even
