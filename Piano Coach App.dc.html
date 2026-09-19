@@ -13738,8 +13738,10 @@ class Component extends DCLogic {
 
       const score = result.score;
       const duration = Math.max(0, +(heard && heard.duration) || +prior.seconds || 0);
-      const savedStart = recording && recording.barStarts && recording.barStarts[0];
-      const start = isFinite(+this.state.lockDownbeat) ? +this.state.lockDownbeat
+      const savedStart = recording && recording.barStarts && recording.barStarts[0] != null
+        ? recording.barStarts[0]
+        : prior.barStarts && prior.barStarts[0];
+      const start = this.state.lockDownbeat != null && isFinite(+this.state.lockDownbeat) ? +this.state.lockDownbeat
         : isFinite(+savedStart) ? +savedStart : 0;
       const aligned = Import.alignReference(score, { duration: duration, start: start });
       if (recording) recording.barStarts = aligned.barStarts;
@@ -16311,7 +16313,7 @@ class Component extends DCLogic {
       rewriteRhythm: () => this.rewriteRhythm(),
       easierArrangement: () => this.easierArrangement(),
       easierLabel: tx('Easier arrangement'),
-      showReferenceScore: !!this._recording,
+      showReferenceScore: !!this._recording || !!(S.importSource && ['youtube', 'audio', 'video'].indexOf(S.importSource.kind) > -1),
       referenceTitle: S.importSource && S.importSource.referenceScore
         ? tx('Reference score is active') : tx('Have the official score? Use it instead of guessing from audio.'),
       referenceHint: S.importSource && S.importSource.referenceScore

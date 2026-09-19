@@ -463,8 +463,10 @@ const helperHealth = () => new Promise(resolve => {
     grounded.bars === 16 && grounded.starts === 17 && Math.abs(grounded.first - 0.8) < 0.001 &&
       Math.abs(grounded.last - grounded.duration) < 0.002 && Math.abs(grounded.stretch - 1.05) < 0.002,
     JSON.stringify(grounded));
-  ok('the recording review offers a reference-score replacement path',
-    /data-reference-score/.test(fs.readFileSync(path.join(__dirname, '..', 'Piano Coach App.dc.html'), 'utf8')));
+  const appSource = fs.readFileSync(path.join(__dirname, '..', 'Piano Coach App.dc.html'), 'utf8');
+  ok('the recording review offers a reference-score replacement path', /data-reference-score/.test(appSource));
+  ok('a saved YouTube score can still be replaced after its temporary audio object is gone',
+    /showReferenceScore:[^\n]+\['youtube', 'audio', 'video'\]/.test(appSource));
   const coverTitle = await page.evaluate(async () => {
     const hit = await PPP.Import.findScore('Gymnopedie No. 1 piano cover Synthesia');
     return hit && hit.entry && hit.entry.id;
