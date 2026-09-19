@@ -2163,6 +2163,21 @@
                 </div>
               </div>
             </sc-if>
+            <sc-if value="{{ showReferenceScore }}" hint-placeholder-val="{{ false }}">
+              <div data-reference-score="1" style="margin-top: 18px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--accent-2); background: var(--accent-3); display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                <div style="flex: 1 1 420px; min-width: 0;">
+                  <div style="font-size: 13px; font-weight: 650; color: var(--ink);">{{ referenceTitle }}</div>
+                  <p style="margin: 5px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--ink2);">{{ referenceHint }}</p>
+                  <sc-if value="{{ hasReferenceError }}" hint-placeholder-val="{{ false }}">
+                    <p style="margin: 6px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--bad);">{{ referenceError }}</p>
+                  </sc-if>
+                </div>
+                <label style="flex: none; padding: 10px 15px; border-radius: 10px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 13px; font-weight: 650; cursor: pointer;">
+                  {{ referenceButton }}
+                  <input type="file" accept=".musicxml,.xml,.mxl,.pdf,image/png,image/jpeg" onChange="{{ useReferenceScore }}" data-reference-file style="display: none;" />
+                </label>
+              </div>
+            </sc-if>
             <div style="display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap;">
               <button onClick="{{ acceptOn }}" style="padding: 12px 20px; border-radius: 11px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;" style-hover="filter: brightness(1.08);">Accept and practise</button>
               <button onClick="{{ retryOn }}" style="padding: 12px 20px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 14px; cursor: pointer;" style-hover="border-color: var(--ink3);">Try again</button>
@@ -6279,6 +6294,33 @@ const Import = {
     if (!Search) return { barStarts: [0], duration: (opts && opts.duration) || 0 };
     return Search.align(xml, opts || {});
   },
+  /* Put an already-written score on top of a recording. The score owns the
+     notes, metre and bar lengths; the recording only supplies its first
+     downbeat and, when close enough, a small global performance stretch. */
+  alignReference(score, opts) {
+    opts = opts || {};
+    const measures = (score && score.measures) || [];
+    const tempo = Math.max(1, +(score && score.tempo) || 72);
+    const start = Math.max(0, +opts.start || 0);
+    if (!measures.length) return { barStarts: [start], duration: +opts.duration || start, tempo: tempo, measures: 0, stretch: 1 };
+    const firstQ = measures[0].startQ || 0;
+    const last = measures[measures.length - 1];
+    const totalQ = Math.max(0.25, (last.startQ || 0) + (last.lenQ || 4) - firstQ);
+    const printedSeconds = totalQ * 60 / tempo;
+    const duration = Math.max(0, +opts.duration || 0);
+    const candidate = duration > start ? (duration - start) / printedSeconds : 1;
+    /* Long intros, repeats that are not written, and applause are not tempo
+       changes. Only absorb the modest drift of a normal performance. */
+    const stretch = candidate >= 0.8 && candidate <= 1.2 ? candidate : 1;
+    const secondPerQ = 60 / tempo * stretch;
+    const barStarts = measures.map(mm => Math.round((start + ((mm.startQ || 0) - firstQ) * secondPerQ) * 1000) / 1000);
+    barStarts.push(Math.round((start + totalQ * secondPerQ) * 1000) / 1000);
+    return {
+      barStarts: barStarts,
+      duration: duration || barStarts[barStarts.length - 1],
+      tempo: tempo, measures: measures.length, stretch: stretch
+    };
+  },
 
   /* Hear notes in this browser. Onsets & Frames is trained specifically for
      piano and is the quality path on a hosted page where the local
@@ -6597,6 +6639,7 @@ const Import = {
       seconds: heard.duration || null, truncated: !!heard.truncated,
       tempo: built.stats.tempo, device: heard.device || null,
       barStarts: built.stats.barStarts,
+      transcriptionVersion: 2,
       amt: heard.engine || null,
       beatSource: built.stats.beatSource,
       quantizer: built.stats.quantizer
@@ -6741,7 +6784,10 @@ const Import = {
     if (sparse) flag(null, 'sparse', tx('Very few piano notes were heard. Is the piano clear in this recording?'));
     const density = seconds > 0 ? stats.notes / seconds : 0;
     const fallback = heard && heard.engine === 'basic-pitch';
-    const crowded = density > (fallback ? 14 : 20);
+    /* Pedalled virtuoso passages are where harmonics and repeated sustains
+       most often turn into convincing but false notes. Treat density as a
+       warning much earlier than the old 20-notes/second ceiling. */
+    const crowded = density > (fallback ? 10 : 14);
     if (fallback) flag(null, 'fallback', tx('The piano-specific model could not run on this device, so PPP used a less precise fallback. Check pitches and rhythm carefully.'));
     if (crowded) flag(null, 'dense', tx('The model heard an unusually dense stream of notes ({{n}} per second). Some may be pedal or overtone echoes.', { n: Math.round(density) }));
     const loose = stats.tempoVariation > 0.12;
@@ -11164,7 +11210,7 @@ class Component extends DCLogic {
       upload: 'done', fileName: 'interstellar-theme.musicxml', fileMeta: 'built-in sample',
       analysis: 'done', analysisStep: ANALYSIS_STEPS.length, analysisPct: 100, parseError: null,
       stageLog: [], importReport: null, importSource: null, importHints: [],
-      reviewPage: 0, reviewFrom: 1,
+      reviewPage: 0, reviewFrom: 1, referenceBusy: false, referenceError: null,
       coachPlan: null, coachSource: 'PPP', coachAi: false, coachBusy: false,
       coachIssues: [], coachNote: '', coachTask: 0, coachReps: 0, coachDone: [],
       seqStep: 1, seqReps: 0,
@@ -13651,6 +13697,7 @@ class Component extends DCLogic {
     const report = Import.validateTranscription(score, built.stats, heard);
     const source = Object.assign({}, S.importSource || {}, {
       tempo: built.stats.tempo, barStarts: built.stats.barStarts,
+      transcriptionVersion: 2,
       status: report.level === 'poor' ? 'low-confidence' : 'transcribed'
     });
     score.source = source;
@@ -13667,6 +13714,88 @@ class Component extends DCLogic {
   }
   easierArrangement() {
     this.rewriteFromHeard({ easy: true });
+  }
+  /* When the publisher/composer supplied notation exists, guessing the notes
+     from sound is the wrong source of truth. Keep the YouTube recording, but
+     replace the inferred notes and rhythm with the uploaded score and align
+     its measure starts to the performance. */
+  async useReferenceScore(e) {
+    const input = e && e.target;
+    const file = input && input.files && input.files[0];
+    try { if (input) input.value = ''; } catch (err) {}
+    if (!file || this.state.referenceBusy) return;
+    const recording = this._recording;
+    const heard = this._heard;
+    const prior = this.state.importSource || {};
+    this.setState({ referenceBusy: true, referenceError: null });
+    this.say(tx('Reading the reference score.'));
+    try {
+      const kind = (await Import.sniff(file)) || Import.kindOf(file);
+      if (!kind || Import.isRecording(kind))
+        throw new Error(tx('Choose a MusicXML, PDF or clear score image, not another recording.'));
+      const result = await Import.load(file, null, { cancelled: false });
+      if (!result || !result.score) throw new Error(tx('That reference score could not be read.'));
+
+      const score = result.score;
+      const duration = Math.max(0, +(heard && heard.duration) || +prior.seconds || 0);
+      const savedStart = recording && recording.barStarts && recording.barStarts[0];
+      const start = isFinite(+this.state.lockDownbeat) ? +this.state.lockDownbeat
+        : isFinite(+savedStart) ? +savedStart : 0;
+      const aligned = Import.alignReference(score, { duration: duration, start: start });
+      if (recording) recording.barStarts = aligned.barStarts;
+      this._recording = recording;
+      this._heard = heard;
+      this._pageImages = result.pageImages || null;
+
+      const refSource = result.source || {};
+      const source = Object.assign({}, prior, {
+        status: 'reference-score', tempo: score.tempo,
+        barStarts: aligned.barStarts, transcriptionVersion: 2,
+        audioEngine: prior.audioEngine || prior.engine || prior.amt || null,
+        referenceScore: {
+          name: file.name, kind: kind,
+          engine: refSource.engine || (kind === 'musicxml' || kind === 'mxl' ? 'MusicXML' : null),
+          pages: refSource.pages || null,
+          importedAt: Clock.now()
+        }
+      });
+      score.source = source;
+      const baseReport = result.report || { confidence: 1, level: 'good', issues: [], suspectMeasures: [] };
+      const report = Object.assign({}, baseReport, {
+        summary: tx('Using {{name}} for the written notes. YouTube is now used only for playback and measure timing.', { name: file.name }),
+        transcribed: false, reference: true,
+        measures: Score.count(score), notes: (score.notes || []).filter(n => !n.rest).length,
+        staves: score.staves, tempo: score.tempo
+      });
+      const m0 = score.measures[0] || { time: { beats: 4, beatType: 4 } };
+      this.adoptScore(score);
+      this.setState({
+        importReport: report, importSource: source,
+        fileName: score.title || file.name,
+        fileMeta: tx('YouTube with reference score'),
+        lockMetre: m0.time.beats + '/' + m0.time.beatType,
+        lockBpm: score.tempo, lockDownbeat: start,
+        reviewPage: 0, reviewFrom: Score.first(score), referenceError: null
+      }, () => {
+        const lib = this.libraryRead();
+        const entry = lib.songs.find(s => s.id === (this.state.songId || 'demo'));
+        if (entry) {
+          entry.title = score.title; entry.composer = score.composer;
+          entry.measures = Score.count(score);
+          if (prior.kind) entry.kind = prior.kind;
+          if (prior.url) entry.url = prior.url;
+          this.libraryWrite(lib);
+        }
+        this.saveNow();
+      });
+      this.say(tx('Reference score applied. The recording no longer decides the notes.'));
+    } catch (err) {
+      const message = (err && err.message) || tx('That reference score could not be read.');
+      this.setState({ referenceError: message });
+      this.say(message);
+    } finally {
+      this.setState({ referenceBusy: false });
+    }
   }
   rewriteFromHeard(extra) {
     const heard = this._heard;
@@ -13699,6 +13828,7 @@ class Component extends DCLogic {
     const report = Import.validateTranscription(score, built.stats, heard);
     const source = Object.assign({}, S.importSource || {}, {
       tempo: built.stats.tempo, barStarts: built.stats.barStarts,
+      transcriptionVersion: 2,
       status: report.level === 'poor' ? 'low-confidence' : 'transcribed',
       easy: !!(extra.easy || S.lockEasy)
     });
@@ -13720,6 +13850,8 @@ class Component extends DCLogic {
     const rec = this._recording;
     const span = this.reviewSpan(S, score);
     const to = Score.step(score, S.reviewFrom, 3);
+    const page = this.reviewPages()[S.reviewPage];
+    const reference = !!(S.importSource && S.importSource.referenceScore);
     const clock = s => Math.floor(s / 60) + ':' + ('0' + Math.floor(s % 60)).slice(-2);
     const note = { fontSize: 12.5, lineHeight: 1.55, color: 'var(--ink2)', margin: 0 };
     if (!rec.url) return h('div', { style: { padding: '34px', textAlign: 'center', color: 'var(--ink3)', fontSize: 13 } },
@@ -13741,7 +13873,16 @@ class Component extends DCLogic {
         }
       }, '▶ ' + tx('Play measures {{from}}–{{to}}', { from: S.reviewFrom, to: to })),
       span ? h('p', { style: note }, tx('In the recording, measure {{n}} starts at {{time}}.', { n: S.reviewFrom, time: clock(span.from) })) : null,
-      h('p', { style: note }, tx('Listen, then compare with the notation beside it. PPP heard the notes; the bars, the hands and the note lengths are its reading of them, and the red measures are where it is least sure.'))
+      h('p', { style: note }, reference
+        ? tx('The uploaded score supplies the notes and rhythm. The recording is used only for playback and measure timing.')
+        : tx('Listen, then compare with the notation beside it. PPP heard the notes; the bars, the hands and the note lengths are its reading of them, and the red measures are where it is least sure.')),
+      page ? h('div', { style: { marginTop: 4, paddingTop: 14, borderTop: '1px solid var(--line)' } },
+        h('div', { style: { marginBottom: 9, fontSize: 12, fontWeight: 650, color: 'var(--ink2)' } },
+          tx('Reference score · page {{n}} of {{total}}', { n: S.reviewPage + 1, total: this.reviewPages().length })),
+        h('img', {
+          src: page.dataUrl, alt: 'Reference score page ' + (S.reviewPage + 1),
+          style: { width: '100%', display: 'block', borderRadius: 8, border: '1px solid var(--line)', background: '#fff' }
+        })) : null
     );
   }
   acceptRecognition() {
@@ -16154,7 +16295,7 @@ class Component extends DCLogic {
       analyzeBarStyle: this.bar(added ? 100 : running ? S.analysisPct : 0, failed ? 'var(--bad)' : 'var(--accent)'),
       analyzeEta: added ? tx('done') : failed ? tx('failed') : running ? R0(S.analysisPct || 0) + '%' : tx('not started'),
       /* ---- recognition review ---- */
-      showRhythmLock: !!(this._recording && this._heard && this._heard.notes),
+      showRhythmLock: !!(this._recording && this._heard && this._heard.notes && !(S.importSource && S.importSource.referenceScore)),
       lockTitle: tx('Fix the beat'),
       lockHint: tx('PPP will rewrite the bars from the notes it already heard.'),
       lockMetreLabel: tx('Time signature'),
@@ -16170,9 +16311,22 @@ class Component extends DCLogic {
       rewriteRhythm: () => this.rewriteRhythm(),
       easierArrangement: () => this.easierArrangement(),
       easierLabel: tx('Easier arrangement'),
-      reviewKicker: this._recording ? tx('Check the transcription') : tx('Check recognition'),
+      showReferenceScore: !!this._recording,
+      referenceTitle: S.importSource && S.importSource.referenceScore
+        ? tx('Reference score is active') : tx('Have the official score? Use it instead of guessing from audio.'),
+      referenceHint: S.importSource && S.importSource.referenceScore
+        ? tx('The uploaded score now owns every note, rhythm and measure. YouTube is kept for listening and timing.')
+        : tx('Add MusicXML for the closest result, or a publisher PDF/photo. PPP will keep this YouTube recording and replace the inferred notation.'),
+      referenceButton: S.referenceBusy ? tx('Reading score…') : S.importSource && S.importSource.referenceScore
+        ? tx('Replace reference score') : tx('Use official score'),
+      useReferenceScore: e => this.useReferenceScore(e),
+      hasReferenceError: !!S.referenceError,
+      referenceError: S.referenceError || '',
+      reviewKicker: S.importSource && S.importSource.referenceScore ? tx('Score-grounded result')
+        : this._recording ? tx('Check the transcription') : tx('Check recognition'),
       reviewTitle: this._recording
-        ? ((S.importReport && S.importReport.level === 'good') ? tx('Written out. Have a listen.')
+        ? (S.importSource && S.importSource.referenceScore ? tx('The uploaded score is now the source of truth.')
+          : (S.importReport && S.importReport.level === 'good') ? tx('Written out. Have a listen.')
           : (S.importReport && S.importReport.level === 'fair') ? tx('Mostly clear — please listen and check.')
             : tx('PPP is unsure about this transcription.'))
         : (S.importReport && S.importReport.level === 'good') ? tx('This looks right.')
@@ -16190,14 +16344,15 @@ class Component extends DCLogic {
         const rep = S.importReport || {};
         const src = S.importSource || {};
         if (this._recording) return [
-          { k: 'Confidence', v: R0((rep.confidence == null ? 1 : rep.confidence) * 100) + '%' },
+          { k: src.referenceScore ? 'Recognition check' : 'Internal check', v: R0((rep.confidence == null ? 1 : rep.confidence) * 100) + '%' },
           { k: 'Measures', v: String(Score.count(score)) },
           { k: 'Notes', v: String(sounding.length) },
           { k: 'Tempo', v: score.tempo + ' BPM' },
           { k: 'Time', v: m0.time.beats + '/' + m0.time.beatType },
           { k: 'Needs a look', v: String(Math.max((rep.suspectMeasures || []).length, (rep.issues || []).length)) }
-        ].concat(src.retrieved ? [{ k: 'Score', v: tx('catalog') }] : [])
-         .concat(src.amt ? [{ k: 'Engine', v: src.engine || src.amt }] : [])
+        ].concat(src.referenceScore ? [{ k: 'Score source', v: src.referenceScore.kind === 'musicxml' || src.referenceScore.kind === 'mxl' ? 'MusicXML' : tx('uploaded score') }] : [])
+         .concat(src.retrieved ? [{ k: 'Score', v: tx('catalog') }] : [])
+         .concat(src.amt && !src.referenceScore ? [{ k: 'Engine', v: src.engine || src.amt }] : [])
          .concat(src.beatSource === 'audio' ? [{ k: 'Beat', v: tx('from the recording') }] : [])
          .concat(src.quantizer === 'pm2s' ? [{ k: 'Rhythm', v: 'PM2S' }] : []);
         return [
@@ -16213,11 +16368,13 @@ class Component extends DCLogic {
       retryOn: () => this.retryRecognition(),
       replaceOn: () => this.replaceSource(),
       replaceLabel: S.importSource && S.importSource.kind === 'youtube' ? tx('Try another link') : tx('Replace the file'),
-      noIssuesLabel: this._recording ? tx('Nothing stood out in the transcription.') : tx('No problems found in the recognised notation.'),
-      hasReviewPages: !this._recording && this.reviewPages().length > 1,
+      noIssuesLabel: S.importSource && S.importSource.referenceScore ? tx('No structural problem was found in the uploaded score.')
+        : this._recording ? tx('Nothing stood out in the transcription.') : tx('No problems found in the recognised notation.'),
+      hasReviewPages: this.reviewPages().length > 1,
       reviewPageLabel: (() => {
-        if (this._recording) return tx('The recording');
         const n = this.reviewPages().length;
+        if (this._recording && n) return tx('Recording + reference score · page {{n}} of {{total}}', { n: S.reviewPage + 1, total: n });
+        if (this._recording) return tx('The recording');
         return n ? tx('Original · page {{n}} of {{total}}', { n: S.reviewPage + 1, total: n }) : tx('Original');
       })(),
       reviewImageEl: (() => {

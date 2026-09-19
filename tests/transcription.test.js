@@ -446,6 +446,25 @@ const helperHealth = () => new Promise(resolve => {
   ok('a catalog title returns the public-domain score', cat.ok && /Gymnop/i.test(cat.title) && cat.retrieved && cat.license === 'CC0', JSON.stringify(cat));
   ok('alignment covers the recording duration', cat.cover && cat.starts > 2, 'starts ' + cat.starts);
   ok('a nonsense title does not match', cat.miss == null, String(cat.miss));
+  const grounded = await page.evaluate(xml => {
+    const score = PPP.parseMusicXML(xml, 'reference.musicxml');
+    const first = score.measures[0];
+    const last = score.measures[score.measures.length - 1];
+    const quarters = last.startQ + last.lenQ - first.startQ;
+    const printed = quarters * 60 / score.tempo;
+    const duration = 0.8 + printed * 1.05;
+    const a = PPP.Import.alignReference(score, { start: 0.8, duration: duration });
+    return {
+      bars: a.measures, starts: a.barStarts.length, first: a.barStarts[0],
+      last: a.barStarts[a.barStarts.length - 1], duration: duration, stretch: a.stretch
+    };
+  }, w.xml);
+  ok('a reference score keeps its written bars and aligns them to the recording',
+    grounded.bars === 16 && grounded.starts === 17 && Math.abs(grounded.first - 0.8) < 0.001 &&
+      Math.abs(grounded.last - grounded.duration) < 0.002 && Math.abs(grounded.stretch - 1.05) < 0.002,
+    JSON.stringify(grounded));
+  ok('the recording review offers a reference-score replacement path',
+    /data-reference-score/.test(fs.readFileSync(path.join(__dirname, '..', 'Piano Coach App.dc.html'), 'utf8')));
   const coverTitle = await page.evaluate(async () => {
     const hit = await PPP.Import.findScore('Gymnopedie No. 1 piano cover Synthesia');
     return hit && hit.entry && hit.entry.id;
