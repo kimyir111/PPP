@@ -202,6 +202,25 @@ const helperHealth = () => new Promise(resolve => {
     c68fast.stats.beatsPerBar + '/' + c68fast.stats.beatType + ', 16ths ' +
     (c68fast.xml.match(/<type>16th<\/type>/g) || []).length);
 
+  /* A strong half-note pulse must not turn fast common time into slow 6/8.
+     This is deliberately dense: the beat tracker first finds ~81 BPM, then
+     the notation layer has to recover the written quarter at ~162. */
+  const fastSimple = [];
+  for (let b = 0; b < 20; b++) {
+    const t0 = b * 4;
+    for (let k = 0; k < 16; k++) fastSimple.push({
+      beat: t0 + k / 4, len: 0.22, midi: 60 + [0, 3, 7, 10][k % 4], vel: k % 8 === 0 ? 78 : 54
+    });
+    for (let k = 0; k < 2; k++) fastSimple.push({ beat: t0 + k * 2, len: 1.8, midi: 36 + (b % 4) * 2, vel: 92 });
+    for (let k = 0; k < 8; k++) fastSimple.push({ beat: t0 + k / 2, len: 0.45, midi: 72 + [0, 2, 3, 7][(b + k) % 4], vel: 70 });
+  }
+  const fast44 = A.toMusicXml({ notes: perform(fastSimple, { bpm: 162, start: 0.33, jitter: 0.002, seed: 21 }) });
+  ok('fast 4/4 is not collapsed into a half-time 6/8 grid',
+    fast44.stats.beatsPerBar === 4 && fast44.stats.beatType === 4 &&
+    Math.abs(fast44.stats.tempo - 162) <= 3 && fast44.stats.tempoAlias === 'x2',
+    fast44.stats.beatsPerBar + '/' + fast44.stats.beatType + ' @ ' + fast44.stats.tempo +
+    ', candidate ' + fast44.stats.tempoAlias);
+
   function trips(bars) {
     const ev = [];
     for (let b = 0; b < bars; b++) {
@@ -282,6 +301,14 @@ const helperHealth = () => new Promise(resolve => {
     c12.stats.beatsPerBar + '/' + c12.stats.beatType + ' source ' + c12.stats.beatSource);
 
   console.log('\n── spelling ──');
+  const dominantHeavyMinor = [];
+  [8, 11, 5, 8, 13, 8, 9].forEach((count, i) => {
+    const pc = [0, 2, 3, 5, 7, 8, 10][i];
+    for (let k = 0; k < count; k++) dominantHeavyMinor.push({ on: k, off: k + 1, midi: 48 + pc, vel: 70 });
+  });
+  const minorKey = A._.estimateKey(dominantHeavyMinor);
+  ok('key signature fit keeps dominant-heavy C minor at three flats',
+    minorKey.fifths === -3 && minorKey.mode === 'minor', minorKey.fifths + ' ' + minorKey.mode);
   const nm = s => s.step + (s.alter > 0 ? '#'.repeat(s.alter) : 'b'.repeat(-s.alter));
   const row = (fifths, mode, tonic) => { const t = A._.spellingTable({ fifths, mode, tonic }); return [...Array(12).keys()].map(pc => nm(t[pc])).join(' '); };
   ok('D major writes C natural, not B sharp', row(2, 'major', 2).split(' ')[0] === 'C', row(2, 'major', 2));

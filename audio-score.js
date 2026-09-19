@@ -261,6 +261,21 @@
     return out;
   }
 
+  /* A beat tracker can lock onto a half-note or dotted-half pulse in dense,
+     fast piano. Keep that stable pulse, but make faster quarter-note
+     hypotheses by interpolating it. The competing grids are compared later
+     in seconds, not in fractions of their differently-sized beats. */
+  function subdivideBeats(beats, factor) {
+    if (!beats || beats.length < 2 || factor < 2) return beats ? beats.slice() : [];
+    const out = [];
+    for (let i = 0; i < beats.length - 1; i++) {
+      const a = beats[i], d = (beats[i + 1] - a) / factor;
+      for (let k = 0; k < factor; k++) out.push(a + d * k);
+    }
+    out.push(beats[beats.length - 1]);
+    return out;
+  }
+
   /* Seconds per written beat (quarter, or dotted quarter in 6/8). */
   function spbLock(lock) {
     const bpm = +lock.bpm;
@@ -404,6 +419,46 @@
     return { q: q, errSum: errSum };
   }
 
+  function gridErrorSeconds(qnotes, beats) {
+    if (!qnotes.length || beats.length < 2) return Infinity;
+    const errors = qnotes.map(n => {
+      const pos = beatPosition(beats, n.attack != null ? n.attack : n.on);
+      return (n.err || 0) * spbAt(beats, pos);
+    }).sort((a, b) => a - b);
+    /* Trim the noisiest tenth: AMT occasionally emits an onset between real
+       notes, and one false note must not decide the tempo octave. */
+    const keep = Math.max(1, Math.floor(errors.length * 0.9));
+    let sum = 0;
+    for (let i = 0; i < keep; i++) sum += errors[i];
+    return sum / keep;
+  }
+
+  function quantizeCompound(notes, beats) {
+    const q = notes.map(n => {
+      const tOn = n.attack != null ? n.attack : n.on;
+      const pos = beatPosition(beats, tOn);
+      const sixteenth = Math.round(pos * 6) / 6;
+      const tick = Math.round(sixteenth * 36);
+      const rawEnd = beatPosition(beats, n.off);
+      const endPos = Math.round(rawEnd * 6) / 6;
+      const endTick = Math.max(tick + 6, Math.round(endPos * 36));
+      return {
+        midi: n.midi, vel: n.vel, on: n.on, off: n.off, attack: tOn,
+        tick: tick, endTick: endTick,
+        err: Math.abs(pos * 6 - Math.round(pos * 6)) / 6,
+        tuplet: false, lenTicks: endTick - tick
+      };
+    });
+    const byAtt = {};
+    q.forEach(n => {
+      const key = n.attack.toFixed(4);
+      if (byAtt[key] == null) byAtt[key] = n.tick;
+      else n.tick = byAtt[key];
+      n.endTick = Math.max(n.tick + 6, n.endTick);
+    });
+    return q;
+  }
+
   /* ------------------------------------------------------- metre & downbeat */
   function accents(qnotes, nBeats, beatTicks) {
     beatTicks = beatTicks || Q;
@@ -492,22 +547,33 @@
         : n.endTick != null ? Math.min(2, (n.endTick - n.tick) / Q) : 0.5;
       h[n.midi % 12] += dur * (0.5 + (n.vel || 64) / 127);
     });
-    let best = { fifths: 0, mode: 'major', tonic: 0, r: -2 }, second = -2;
+    const total = h.reduce((s, x) => s + x, 0) || 1;
+    const scales = {
+      major: [0, 2, 4, 5, 7, 9, 11],
+      minor: [0, 2, 3, 5, 7, 8, 10]
+    };
+    let best = { fifths: 0, mode: 'major', tonic: 0, r: -2, score: -9 }, second = -9;
     for (let t = 0; t < 12; t++) {
       const rot = i => h[(i + t) % 12];
       const hr = h.map((_, i) => rot(i));
       const rM = corr(hr, KK_MAJOR), rm = corr(hr, KK_MINOR);
       [[rM, 'major'], [rm, 'minor']].forEach(([r, mode]) => {
-        if (r > best.r) {
-          second = best.r;
+        const fit = scales[mode].reduce((s, pc) => s + h[(t + pc) % 12], 0) / total;
+        /* Correlation estimates the tonal centre. Diatonic fit estimates the
+           key signature that produces the fewest accidentals on the page.
+           Dense/chromatic piano can stress the dominant enough to fool the
+           first signal alone, so notation needs both. */
+        const score = r + 1.8 * fit;
+        if (score > best.score) {
+          second = best.score;
           const rel = mode === 'major' ? t : (t + 3) % 12;
           let fifths = MAJOR_FIFTHS[rel];
           if (mode === 'minor' && rel === 6) fifths = -6;
-          best = { fifths: fifths, mode: mode, tonic: t, r: r };
-        } else if (r > second) second = r;
+          best = { fifths: fifths, mode: mode, tonic: t, r: r, score: score, diatonicFit: fit };
+        } else if (score > second) second = score;
       });
     }
-    best.margin = best.r - second;
+    best.margin = best.score - second;
     return best;
   }
 
@@ -893,6 +959,8 @@
         rh: q.filter(n => n.staff === 1).length, lh: q.filter(n => n.staff === 2).length,
         quantizer: extra.quantizer || 'heuristic',
         beatSource: extra.beatSource || 'onset',
+        tempoAlias: extra.tempoAlias || null,
+        tempoCandidates: extra.tempoCandidates || [],
         perBar: perBar.map((p, i) => ({
           bar: i + 1, notes: p.n,
           gridError: p.n ? p.err / p.n : 0,
@@ -981,8 +1049,10 @@
       beats = [clustered[0].on, clustered[0].on + 0.5];
     }
 
-    const trip = (lock && lock.grid === '16th') ? {} : tripletBeats(clustered, beats);
+    let trip = (lock && lock.grid === '16th') ? {} : tripletBeats(clustered, beats);
     let { q, errSum } = quantize(clustered, beats, trip);
+    let tempoAlias = null;
+    let tempoCandidates = [];
 
     /* A 6/8 jig's pulse is the dotted quarter. The tracker then sees three
        eighths on each pulse — the same local grid as triplets in 2/4. Bass
@@ -1004,34 +1074,58 @@
       });
       return bassHits >= pulses * 0.4;
     }
+    function tryFastTempo() {
+      const baseBpm = 60 / median(ibiOf(beats));
+      const fastCandidates = [2, 3].filter(factor => {
+        const bpm = baseBpm * factor;
+        return bpm >= 120 && bpm <= MAX_BPM + 1;
+      });
+      if (!fastCandidates.length) return false;
+      const compoundQ = quantizeCompound(clustered, beats);
+      const compoundSeconds = gridErrorSeconds(compoundQ, beats);
+      tempoCandidates.push({ kind: 'compound', bpm: baseBpm, errorMs: compoundSeconds * 1000 });
+      let bestFast = null;
+      fastCandidates.forEach(factor => {
+        const candidateBeats = subdivideBeats(beats, factor);
+        /* A straight grid is deliberately used for choosing the tempo. If
+           tuplets were allowed to choose it, either candidate could overfit. */
+        const straight = quantize(clustered, candidateBeats, {});
+        const seconds = gridErrorSeconds(straight.q, candidateBeats);
+        tempoCandidates.push({ kind: 'simple-x' + factor, bpm: baseBpm * factor, errorMs: seconds * 1000 });
+        if (!bestFast || seconds < bestFast.seconds) {
+          bestFast = { factor: factor, beats: candidateBeats, seconds: seconds };
+        }
+      });
+      if (!bestFast || bestFast.seconds >= compoundSeconds * 0.9) return false;
+      beats = bestFast.beats;
+      trip = tripletBeats(clustered, beats);
+      const fast = quantize(clustered, beats, trip);
+      q = fast.q;
+      errSum = fast.errSum;
+      tempoAlias = 'x' + bestFast.factor;
+      return true;
+    }
+
     let compoundPulse = compoundTactus();
+
+    /* The conservative compound detector above can reject syncopated music,
+       after which the metre scorer may still label the same slow pulse 6/8.
+       Run the tempo-octave comparison in that path as well. */
+    if (!compoundPulse && !lock && !opts.beatsPerBar) {
+      tryFastTempo();
+    }
     if (compoundPulse) {
-      q = clustered.map(n => {
-        const tOn = n.attack != null ? n.attack : n.on;
-        const pos = beatPosition(beats, tOn);
-        /* One tracked pulse is a dotted quarter. Quantising it only to its
-           three eighths erased every 16th in fast 6/8 piano (the regression
-           song has many 100--120 ms attacks). Six slots retain both eighths
-           and 16ths without changing ordinary compound-time notation. */
-        const sixteenth = Math.round(pos * 6) / 6;
-        const tick = Math.round(sixteenth * 36);
-        const rawEnd = beatPosition(beats, n.off);
-        const endPos = Math.round(rawEnd * 6) / 6;
-        const endTick = Math.max(tick + 6, Math.round(endPos * 36));
-        return {
-          midi: n.midi, vel: n.vel, on: n.on, off: n.off, attack: tOn,
-          tick: tick, endTick: endTick, err: Math.abs(pos * 6 - Math.round(pos * 6)) / 6,
-          tuplet: false, lenTicks: endTick - tick
-        };
-      });
-      const byAtt = {};
-      q.forEach(n => {
-        const key = n.attack.toFixed(4);
-        if (byAtt[key] == null) byAtt[key] = n.tick;
-        else n.tick = byAtt[key];
-        n.endTick = Math.max(n.tick + 6, n.endTick);
-      });
+      /* Six slots per dotted-quarter retain compound-time sixteenths. */
+      q = quantizeCompound(clustered, beats);
       errSum = q.reduce((s, n) => s + n.err, 0);
+
+      /* Do not stop at the first plausible 6/8 reading. Fast 4/4 piano often
+         has a strong attack every half note, so a tracker returns ~81 BPM for
+         music written at ~162 and the old code then called it 6/8 at 54 BPM.
+         Compare the compound grid with straight quarter-note grids at 2x and
+         3x the tracked pulse. A real 6/8 performance fits its six slots per
+         pulse better; a half-time 4/4 performance fits eight slots better. */
+      if (!lock && !opts.beatsPerBar && tryFastTempo()) compoundPulse = false;
     }
 
     let beatsPerBar, beatType, origin, meterContrast = 1;
@@ -1085,7 +1179,7 @@
       /* try origin of a 3-beat grouping */
       const origin3 = (mp.m === 3 ? mp.phase : 0) * Q;
       const cv = compoundVsThree(q, origin3, 1);
-      if (cv.s68 > cv.s34 * 1.12 && cv.eighths >= 8) {
+      if (!tempoAlias && cv.s68 > cv.s34 * 1.12 && cv.eighths >= 8) {
         pick = { beats: 6, beatType: 8, phase: Math.round(origin3 / Q) % 3, contrast: (cv.s68 / (cv.s34 || 1)) };
       }
       if (fromDown && beatSource === 'audio') {
@@ -1118,7 +1212,9 @@
       pedals: input.pedals, title: input.title, quantizer: 'heuristic',
       beatSource: beatSource, errSum: errSum, meterContrast: meterContrast,
       ticksPerBeat: compoundPulse ? 36 : Q,
-      tactus: compoundPulse ? 'dotted-quarter' : 'quarter'
+      tactus: compoundPulse ? 'dotted-quarter' : 'quarter',
+      tempoAlias: tempoAlias,
+      tempoCandidates: tempoCandidates
     });
     return result;
   }
