@@ -20,7 +20,7 @@ const http = require('http');
 const { spawnSync } = require('child_process');
 const A = require('../audio-score.js');
 
-const URL = 'http://127.0.0.1:8777/Piano%20Coach%20App.dc.html';
+const URL = (process.env.PPP_TEST_URL || 'http://127.0.0.1:8777').replace(/\/$/, '') + '/Piano%20Coach%20App.dc.html';
 const errors = [];
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const ok = (name, cond, detail) => {
@@ -390,6 +390,10 @@ const helperHealth = () => new Promise(resolve => {
       return Math.abs(end[0] - 3) < 1e-6 && Math.abs(end[1] - 3) < 1e-6;
     });
     const rep = PPP.Import.validateTranscription(sc, stats, { duration: 40 });
+    const ensemble = PPP.Import.validateTranscription(sc, stats, {
+      duration: 40, engine: 'ensemble',
+      ensemble: { models: ['transkun', 'piano-transcription', 'aria-amt'], agreement: 0.94, accepted: stats.notes, uncertain: 2 }
+    });
     const shaky = PPP.Import.validateTranscription(sc, Object.assign({}, stats, { tempoVariation: 0.3, gridError: 0.2 }), { duration: 40 });
     const fallback = PPP.Import.validateTranscription(sc, stats, { duration: 40, engine: 'basic-pitch' });
     const dense = PPP.Import.validateTranscription(sc, Object.assign({}, stats, { notes: 900 }), { duration: 40, engine: 'basic-pitch' });
@@ -397,6 +401,8 @@ const helperHealth = () => new Promise(resolve => {
       measures: sc.measures.length, time: m0.time.beats + '/' + m0.time.beatType, fifths: m0.key.fifths,
       staves: sc.staves, hands: [...new Set(sc.notes.filter(n => !n.rest).map(n => n.hand))].sort().join(''),
       full: full, level: rep.level, conf: rep.confidence, shaky: shaky.level, shakyKinds: shaky.issues.map(i => i.kind).join(','),
+      singleKind: rep.confidenceKind, singleKinds: rep.issues.map(i => i.kind).join(','),
+      ensembleLevel: ensemble.level, ensembleKind: ensemble.confidenceKind, ensembleAgreement: ensemble.modelAgreement,
       fallbackLevel: fallback.level, fallbackConf: fallback.confidence, fallbackKinds: fallback.issues.map(i => i.kind).join(','),
       denseLevel: dense.level, denseKinds: dense.issues.map(i => i.kind).join(',')
     };
@@ -405,7 +411,12 @@ const helperHealth = () => new Promise(resolve => {
     back.measures + ' bars, ' + back.time + ', ' + back.fifths + ' sharp, ' + back.staves + ' staves');
   ok('both hands are playable', back.hands === 'lr', back.hands);
   ok('every bar of every staff adds up', back.full);
-  ok('a clean transcription is trusted, but never fully', back.level === 'good' && back.conf < 1, Math.round(back.conf * 100) + '%');
+  ok('one model is presented as an estimate, not self-certified accuracy',
+    back.level !== 'good' && back.singleKind === 'single-model-estimate' && /single-model/.test(back.singleKinds),
+    back.level + ' ' + Math.round(back.conf * 100) + '%: ' + back.singleKinds);
+  ok('high independent model agreement can support a good result without claiming perfection',
+    back.ensembleLevel === 'good' && back.ensembleKind === 'model-agreement' && back.ensembleAgreement === 0.94,
+    back.ensembleLevel + ': ' + back.ensembleAgreement);
   ok('a wandering tempo and loose rhythm are said out loud', back.shaky !== 'good' && /tempo/.test(back.shakyKinds) && /rhythm/.test(back.shakyKinds),
     back.shaky + ': ' + back.shakyKinds);
   ok('the general fallback can never masquerade as a high-confidence piano transcription',
@@ -463,8 +474,26 @@ const helperHealth = () => new Promise(resolve => {
     grounded.bars === 16 && grounded.starts === 17 && Math.abs(grounded.first - 0.8) < 0.001 &&
       Math.abs(grounded.last - grounded.duration) < 0.002 && Math.abs(grounded.stretch - 1.05) < 0.002,
     JSON.stringify(grounded));
+  const localGrounded = await page.evaluate(xml => {
+    const score = PPP.parseMusicXML(xml, 'rubato-reference.musicxml');
+    const heard = { notes: [] };
+    score.notes.filter(n => !n.rest && !n.tieStop).forEach(n => {
+      const q = n.abs - score.measures[0].startQ;
+      const on = 0.6 + Math.min(q, 24) * 0.6 + Math.max(0, q - 24) * 0.75;
+      heard.notes.push({ on: on, off: on + Math.max(0.08, n.dur * 0.55), midi: n.midi, vel: 70 });
+    });
+    const a = PPP.Import.alignReference(score, { start: 0.6, duration: 33, heard: heard });
+    return { method: a.method, anchors: a.anchors, first: a.barStarts[0], mid: a.barStarts[8], last: a.barStarts[16] };
+  }, w.xml);
+  ok('a reference score follows local performance tempo instead of one global stretch',
+    localGrounded.method === 'note-anchors' && localGrounded.anchors >= 8 &&
+      Math.abs(localGrounded.first - 0.6) < 0.08 && Math.abs(localGrounded.mid - 15) < 0.2 &&
+      Math.abs(localGrounded.last - 33) < 0.35,
+    JSON.stringify(localGrounded));
   const appSource = fs.readFileSync(path.join(__dirname, '..', 'Piano Coach App.dc.html'), 'utf8');
   ok('the recording review offers a reference-score replacement path', /data-reference-score/.test(appSource));
+  ok('recording imports distinguish faithful transcription from playable arrangement',
+    /Solo piano \(faithful transcription\)/.test(appSource) && /Full song \(playable piano arrangement\)/.test(appSource));
   ok('a saved YouTube score can still be replaced after its temporary audio object is gone',
     /showReferenceScore:[^\n]+\['youtube', 'audio', 'video'\]/.test(appSource));
   const coverTitle = await page.evaluate(async () => {
@@ -536,7 +565,7 @@ const helperHealth = () => new Promise(resolve => {
     try {
       await page.screenshot({ path: process.env.PPP_LOCK_SHOT || 'tests/.shots/review-lock.png', fullPage: false });
     } catch (e) {}
-    if (health.amt) ok('health names the AMT engine', health.amt === 'kong' || health.amt === 'transkun', String(health.amt));
+    if (health.amt) ok('health names the AMT engine', ['kong', 'transkun', 'ensemble'].includes(health.amt), String(health.amt));
     if (health.beatThis) {
       const beatLine = await page.evaluate(() => /from the recording/i.test(document.body.innerText));
       ok('a helper with Beat This returns audio beats', beatLine, 'review mentions audio beats');
@@ -545,7 +574,8 @@ const helperHealth = () => new Promise(resolve => {
       const used = await page.evaluate(() => /PM2S/.test(document.body.innerText));
       ok('a helper with PM2S quantized the waltz', used);
     } else console.log('  · PM2S: SKIPPED (not installed)');
-    if (health.amt === 'transkun') ok('Transkun is the AMT engine', true, health.amt);
+    if (health.transkun || (health.amtEngines || []).includes('transkun'))
+      ok('Transkun participates in the AMT result', true, health.amt);
     else console.log('  · Transkun: SKIPPED (Kong remains)');
 
     const played = await page.evaluate(async () => {
@@ -562,7 +592,7 @@ const helperHealth = () => new Promise(resolve => {
       await new Promise(r => setTimeout(r, 500));
       window.__pppTest.nav('My Songs');
       await new Promise(r => setTimeout(r, 500));
-      return [...document.querySelectorAll('[data-song]')].map(c => c.innerText.split('\n').slice(0, 4).join(' · '));
+      return [...document.querySelectorAll('[data-song]')].map(c => c.innerText.split('\n').join(' · '));
     });
     ok('an accepted transcription joins My Songs', shelf.some(s => /ppp-waltz/.test(s) && /recording/i.test(s)), shelf.join(' | '));
     try { fs.unlinkSync(wav); } catch (e) {}

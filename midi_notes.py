@@ -25,7 +25,8 @@ def _write_vlq(n):
 
 
 def read_notes(path):
-    data = open(path, 'rb').read()
+    with open(path, 'rb') as source:
+        data = source.read()
     if data[:4] != b'MThd':
         raise ValueError('not a MIDI file')
     header_len = struct.unpack('>I', data[4:8])[0]
@@ -33,6 +34,7 @@ def read_notes(path):
     tpq = division if division & 0x8000 == 0 else 480
     i = 8 + header_len
     notes = []
+    pedals = []
     tempo = 500000
     tsig = (4, 4)
     for _ in range(ntrks):
@@ -46,6 +48,8 @@ def read_notes(path):
         running = None
         j = 0
         ons = {}
+        pedal_on = {}
+        last_sec = 0.0
         while j < len(chunk):
             dt, j = _vlq(chunk, j)
             t += dt
@@ -83,6 +87,7 @@ def read_notes(path):
             j += 2
             ch = st & 0x0F
             sec = t * tempo / (tpq * 1e6)
+            last_sec = max(last_sec, sec)
             if kind == 0x90 and c > 0:
                 ons.setdefault((ch, a), []).append((sec, c))
             elif kind in (0x80, 0x90):
@@ -90,12 +95,31 @@ def read_notes(path):
                 if stack:
                     on, vel = stack.pop(0)
                     notes.append({'on': on, 'off': max(on + 0.03, sec), 'midi': a, 'vel': vel})
+            elif kind == 0xB0 and a == 64:
+                # Damper pedal (CC64). TransKun writes pedal to MIDI when its
+                # checkpoint supports it; preserving the controller here is
+                # what lets the notation layer distinguish a held chord from
+                # a new attack instead of silently throwing pedal away.
+                if c >= 64 and ch not in pedal_on:
+                    pedal_on[ch] = sec
+                elif c < 64 and ch in pedal_on:
+                    on = pedal_on.pop(ch)
+                    if sec > on:
+                        pedals.append({'on': on, 'off': sec})
+        for on in pedal_on.values():
+            if last_sec > on:
+                pedals.append({'on': on, 'off': last_sec})
     notes.sort(key=lambda n: (n['on'], n['midi']))
+    pedals.sort(key=lambda p: (p['on'], p['off']))
     bpm = round(60e6 / tempo)
-    return {'notes': notes, 'ticksPerQuarter': tpq, 'bpm': bpm, 'beatsPerBar': tsig[0], 'beatType': tsig[1]}
+    return {
+        'notes': notes, 'pedals': pedals,
+        'ticksPerQuarter': tpq, 'bpm': bpm,
+        'beatsPerBar': tsig[0], 'beatType': tsig[1]
+    }
 
 
-def write_notes(path, notes, ticks_per_quarter=480, bpm=120):
+def write_notes(path, notes, ticks_per_quarter=480, bpm=120, pedals=None):
     tempo = int(60e6 / max(30, min(240, bpm)))
     events = []
     events.append((0, bytes([0xFF, 0x51, 0x03]) + struct.pack('>I', tempo)[1:]))
@@ -107,6 +131,11 @@ def write_notes(path, notes, ticks_per_quarter=480, bpm=120):
         vel = max(1, min(127, int(n.get('vel') or 64)))
         events.append((on, bytes([0x90, midi, vel])))
         events.append((off, bytes([0x80, midi, 0])))
+    for p in pedals or []:
+        on = max(0, int(round(float(p['on']) * ticks_per_quarter * bpm / 60)))
+        off = max(on + 1, int(round(float(p['off']) * ticks_per_quarter * bpm / 60)))
+        events.append((on, bytes([0xB0, 64, 127])))
+        events.append((off, bytes([0xB0, 64, 0])))
     events.sort(key=lambda e: e[0])
     body = bytearray()
     last = 0

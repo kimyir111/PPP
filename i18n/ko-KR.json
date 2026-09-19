@@ -1840,6 +1840,20 @@
     "The School of Velocity": "속도의 연습곡",
     "MuseScore community typesets from the PDMX dataset (CC0)": "PDMX 데이터셋에 있는 MuseScore 사용자 입력본(CC0)",
     "Neru Hayashi's typeset, dedicated to the public domain (via PDMX)": "하야시 네루 입력본, 퍼블릭 도메인으로 공개(PDMX)",
-    "Working through Beyer or Czerny? Today's method-book pieces →": "바이엘·체르니 진도 중이라면? 오늘의 교재 연습 →"
+    "Working through Beyer or Czerny? Today's method-book pieces →": "바이엘·체르니 진도 중이라면? 오늘의 교재 연습 →",
+    "Recording type": "녹음 유형",
+    "This changes how recordings and YouTube audio are interpreted.": "녹음 파일과 유튜브 소리를 해석하는 방식이 달라져요.",
+    "Auto / solo piano (faithful)": "자동 / 피아노 독주(원음 채보)",
+    "Solo piano (faithful transcription)": "피아노 독주(원음 그대로 채보)",
+    "Full song (playable piano arrangement)": "전체 곡(연주 가능한 피아노 편곡)",
+    "playable piano arrangement": "연주 가능한 피아노 편곡",
+    "faithful solo-piano transcription": "피아노 독주 원음 채보",
+    "Model agreement": "모델 일치도",
+    "Estimated confidence": "추정 신뢰도",
+    "playable arrangement": "연주 가능한 편곡",
+    "faithful solo piano": "피아노 독주 원음 채보",
+    "Only one piano model was available, so these notes could not be cross-checked by another model.": "피아노 모델 하나만 사용되어 다른 모델과 음을 교차 확인하지 못했어요.",
+    "{{n}} possible notes were rejected because the piano models did not agree.": "피아노 모델끼리 일치하지 않은 후보 음 {{n}}개를 제외했어요.",
+    "Reading notation directly from the vector PDF": "벡터 PDF에서 악보 정보를 직접 읽는 중"
   }
 }

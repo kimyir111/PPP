@@ -123,9 +123,12 @@ they sound and drawn where the page writes them.
 
 ### PDFs are rasterised in the browser
 
-pdf.js renders each page at 300 DPI before anything is sent. Audiveris wants roughly that
-resolution, multi-page becomes explicit, and the review screen gets its page images for free.
-Handing a PDF to Audiveris directly measured worse on the same file.
+When PDFtoMusic Pro is installed (`PPP_PDFTOMUSIC` can point to it), PPP first asks it for
+MusicXML directly from the vector PDF. This avoids throwing away notation geometry in a clean
+publisher export. The PDF is still rendered for side-by-side review. If that path is unavailable
+or fails, pdf.js renders each page at 300 DPI before Audiveris sees it. Audiveris wants roughly
+that resolution, multi-page becomes explicit, and the review screen gets its page images for
+free. Handing a PDF directly to the raster OMR path measured worse on the same file.
 
 ### Recognition is checked, not trusted
 
@@ -175,12 +178,19 @@ YouTube link ─ yt-dlp ─┐                                          local he
                    audio-score.js: beats, metre, key, hands → MusicXML → parseMusicXML() → Score
 ```
 
-### Two halves: the model hears, PPP writes
+### Two halves: the models hear, PPP writes
 
-The model is Kong et al.'s high-resolution piano transcription (ByteDance, Apache-2.0, 2021).
-It reports when each key went down and came up, how hard, and the sustain pedal. It was trained
-on solo piano, and that is what it does best; with a voice or a band it writes whatever it hears
-in the piano's range.
+For solo piano, the helper runs every installed piano AMT engine (TransKun, Kong and optionally
+Aria-AMT). TransKun is the recall floor: another model may refine a matching note's timing, but
+one model cannot delete a note TransKun heard. A note missing from TransKun is added only when
+two independent secondary models agree. The result records per-note model support, rejected
+candidate notes and overall model agreement. Sustain-pedal CC64 events are preserved.
+
+These models report when each key went down and came up, how hard, and the sustain pedal. They
+were trained on solo piano, and that is what they do best. The add screen therefore separates
+**Solo piano (faithful transcription)** from **Full song (playable piano arrangement)**. The
+latter uses a broad audio model and an explicit playable reduction; it is never labelled as an
+exact transcription of a voice/band mix.
 
 It does not hear bars, beats, hands or how a pitch is spelled. `audio-score.js` works those out,
 and each step is a plain heuristic that reports how sure it was:
@@ -202,8 +212,10 @@ melody entering on the second beat of bar 5 — about 1 min 45 s on a CPU.
 
 A transcription always stops at the review screen, with the recording beside the notation:
 **Play measures 5–8** plays exactly those bars from the recording and stops, and the panel says
-where in the recording each bar starts. Confidence never reaches 100% — a transcription is a
-hearing, not the composer's page — and drops for a tempo that wanders, notes that sit between
+where in the recording each bar starts. A multi-model run shows measured **model agreement**;
+a one-model run shows **estimated confidence** and is explicitly marked as not cross-checked.
+Neither is presented as ground-truth accuracy. Confidence never reaches 100% — a transcription
+is a hearing, not the composer's page — and drops for a tempo that wanders, notes that sit between
 the grid lines, a metre with no clear accent, or very few notes; bars with a loose rhythm or a
 sudden change of tempo are marked red. Accepting starts practice on the longest clean stretch,
 as with OMR.
@@ -234,17 +246,31 @@ Optional extras, same venv, weights uncommitted under `tools/`:
 # preferred piano AMT (falls back to Kong if missing)
 tools/transcribe-venv/Scripts/python -m pip install transkun
 
+# optional third opinion: install Aria-AMT in this environment and point
+# PPP_ARIA_AMT_CHECKPOINT at its .safetensors checkpoint
+
 # audio beat/downbeat tracker (falls back to onset tracking if missing)
 tools/transcribe-venv/Scripts/python -m pip install beat-this
 
-# neural rhythm quantization (falls back to PPP's multi-metre snap if missing)
-tools/transcribe-venv/Scripts/python -m pip install git+https://github.com/cheriell/PM2S.git
+# experimental neural rhythm quantization: upstream PM2S targets Python 3.8 /
+# PyTorch 1.12 and is a notebook/repository, not an installable pip package.
+# PPP leaves it off unless a compatible `pm2s` module is provisioned manually.
 ```
 
 A YouTube title or file name is searched against `catalog/` (public-domain / CC0 MusicXML only)
 before anyone transcribes. A confident hit becomes the practice score; the recording is aligned
 to it. A miss goes through AMT as before. The review screen can lock time signature, tempo and
 the first downbeat and rewrite the bars from the notes already heard — it does not listen again.
+
+For repeatable accuracy checks, compare a helper JSON/MIDI result with corrected ground truth:
+
+```sh
+python evaluate_transcription.py ground-truth.mid prediction.json
+```
+
+This reports pitch/onset precision, recall and F1, note-with-offset F1, mean onset error and
+sustain-pedal overlap. Keep a fixed benchmark set when changing a model or quantizer; UI
+confidence is not a substitute for these ground-truth metrics.
 
 ### Limits and what is kept
 

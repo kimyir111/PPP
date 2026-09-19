@@ -114,6 +114,22 @@ function findAudiveris() {
 }
 const AUDIVERIS = findAudiveris();
 
+/* A notation editor's PDF is not a photograph: its glyphs and staff lines are
+   vector objects. PDFtoMusic Pro can recover those objects directly and is a
+   much better first route than raster OMR. It is optional/proprietary and is
+   only used when the owner has installed it on this computer. */
+function findPdfToMusic() {
+  const candidates = [
+    process.env.PPP_PDFTOMUSIC,
+    'C:\\Program Files\\PDFtoMusic Pro\\p2mp.exe',
+    'C:\\Program Files (x86)\\PDFtoMusic Pro\\p2mp.exe',
+    '/usr/bin/p2mp', '/usr/local/bin/p2mp'
+  ].filter(Boolean);
+  for (const c of candidates) { try { if (fs.existsSync(c)) return c; } catch (e) {} }
+  return null;
+}
+const PDFTOMUSIC = findPdfToMusic();
+
 /* ---- minimal .mxl reader (a zip of one MusicXML file) ----
    Read through the central directory rather than walking local headers: a
    writer that streams entries leaves the sizes in the local header at zero and
@@ -201,6 +217,39 @@ function recognisePage(imgPath, outDir) {
           resolve({ ok: false, ms: Date.now() - t0, error: 'The MusicXML Audiveris produced could not be read: ' + e.message });
         }
       });
+  });
+}
+
+function convertVectorPdf(bytes) {
+  return new Promise(resolve => {
+    if (!PDFTOMUSIC) return resolve({ ok: false, code: 'engine-missing', error: 'PDFtoMusic Pro is not installed.' });
+    const work = fs.mkdtempSync(path.join(os.tmpdir(), 'ppp-vector-pdf-'));
+    const source = path.join(work, 'source.pdf');
+    fs.writeFileSync(source, bytes);
+    const t0 = Date.now();
+    execFile(PDFTOMUSIC, [source], {
+      cwd: work, timeout: 5 * 60 * 1000, maxBuffer: 8 * 1024 * 1024, windowsHide: true
+    }, (err, stdout, stderr) => {
+      try {
+        const files = fs.readdirSync(work).filter(f => /\.(mxl|musicxml|xml)$/i.test(f))
+          .map(f => path.join(work, f)).sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+        if (!files.length) {
+          const log = String(stdout || '') + String(stderr || '');
+          return resolve({
+            ok: false, code: /vector|scan|picture/i.test(log) ? 'not-vector' : 'conversion-failed',
+            error: err && err.killed ? 'Vector PDF conversion timed out.'
+              : 'This PDF did not produce MusicXML. It may be a scan, or MusicXML export is not enabled in PDFtoMusic Pro.'
+          });
+        }
+        const file = files[0];
+        const xml = /\.mxl$/i.test(file) ? readMxlSync(file) : fs.readFileSync(file, 'utf8');
+        resolve({ ok: true, musicxml: xml, engine: 'PDFtoMusic Pro', ms: Date.now() - t0 });
+      } catch (e) {
+        resolve({ ok: false, code: 'conversion-failed', error: 'The vector PDF result could not be read: ' + e.message });
+      } finally {
+        try { fs.rmSync(work, { recursive: true, force: true }); } catch (e) {}
+      }
+    });
   });
 }
 
@@ -543,6 +592,22 @@ const CHECKPOINT = (() => {
   try { fs.readdirSync(dir).filter(f => /\.pth$/i.test(f)).forEach(f => found.push(path.join(dir, f))); } catch (e) {}
   return found.filter(Boolean).find(f => { try { return fs.statSync(f).size > 1.6e8; } catch (e) { return false; } }) || null;
 })();
+const ARIA_CHECKPOINT = (() => {
+  const roots = [
+    process.env.PPP_ARIA_AMT_CHECKPOINT,
+    path.join(TOOLS_DIR, 'aria-amt'),
+    path.join(TOOLS_DIR, 'models', 'aria-amt')
+  ].filter(Boolean);
+  for (const root of roots) {
+    try {
+      if (fs.statSync(root).isFile() && /\.safetensors$/i.test(root)) return root;
+      const found = fs.readdirSync(root).filter(f => /\.safetensors$/i.test(f))
+        .map(f => path.join(root, f)).find(f => fs.statSync(f).size > 10 * 1024 * 1024);
+      if (found) return found;
+    } catch (e) {}
+  }
+  return null;
+})();
 
 /* ffmpeg and yt-dlp may be vendored in tools/ or on PATH. Asked once, by
    running them, because a path that exists is not a program that works. */
@@ -552,7 +617,7 @@ function probe(cmd, argv) {
     execFile(cmd, argv, { timeout: 15000, windowsHide: true }, err => resolve(!err));
   });
 }
-const TOOL = { ffmpeg: null, ytdlp: null, transkun: false, beatThis: false, pm2s: false };
+const TOOL = { ffmpeg: null, ytdlp: null, transkun: false, kong: false, aria: false, beatThis: false, pm2s: false };
 function pyHas(mod) {
   if (!PYTHON) return Promise.resolve(false);
   return new Promise(resolve => {
@@ -568,6 +633,8 @@ const toolsReady = (async () => {
   }
   if (PYTHON) {
     TOOL.transkun = await pyHas('transkun');
+    TOOL.kong = await pyHas('piano_transcription_inference');
+    TOOL.aria = !!ARIA_CHECKPOINT && await pyHas('amt');
     TOOL.beatThis = await pyHas('beat_this');
     TOOL.pm2s = await pyHas('pm2s');
   }
@@ -577,16 +644,22 @@ function transcriberStatus() {
   const missing = [];
   if (!TOOL.ffmpeg) missing.push('ffmpeg');
   if (!PYTHON) missing.push('the Python environment in tools/transcribe-venv');
-  const amt = TOOL.transkun ? 'transkun' : (CHECKPOINT ? 'kong' : null);
-  if (!amt) missing.push('Transkun or the Kong piano model checkpoint in tools/piano-transcription');
+  const engines = [];
+  if (TOOL.transkun) engines.push('transkun');
+  if (TOOL.kong && CHECKPOINT) engines.push('kong');
+  if (TOOL.aria && ARIA_CHECKPOINT) engines.push('aria-amt');
+  const amt = engines.length > 1 ? 'ensemble' : (engines[0] || null);
+  if (!amt) missing.push('TransKun, Aria-AMT, or the Kong piano model checkpoint in tools/piano-transcription');
   return {
     ok: !missing.length,
     youtube: !missing.length && !!TOOL.ytdlp,
     amt: amt,
+    engines: engines,
     beatThis: !!TOOL.beatThis,
     pm2s: !!TOOL.pm2s,
     transkun: !!TOOL.transkun,
-    kong: !!CHECKPOINT,
+    kong: !!(TOOL.kong && CHECKPOINT),
+    aria: !!(TOOL.aria && ARIA_CHECKPOINT),
     missing: missing.concat(TOOL.ytdlp ? [] : ['yt-dlp (for YouTube links only)'])
   };
 }
@@ -726,11 +799,15 @@ async function downloadYoutube(job, url) {
 
 async function toWav(job, input) {
   job.stage = 'decode'; job.pct = 0;
-  const out = path.join(job.dir, 'audio.wav');
+  /* Keep a full-band stereo master. TransKun, Aria, beat tracking and future
+     source classification get the information present in the recording;
+     Kong alone receives the 16 kHz mono copy its published model expects. */
+  const out = path.join(job.dir, 'audio-master.wav');
+  const kong = path.join(job.dir, 'audio-kong-16k.wav');
   let total = job.duration || null;
   const r = await run(job, TOOL.ffmpeg, [
     '-hide_banner', '-nostdin', '-y', '-i', input,
-    '-vn', '-ac', '1', '-ar', '16000', '-t', String(TRANSCRIBE.maxSeconds),
+    '-map', '0:a:0', '-vn', '-ac', '2', '-ar', '44100', '-t', String(TRANSCRIBE.maxSeconds),
     '-c:a', 'pcm_s16le', '-f', 'wav', out
   ], {
     timeoutMs: 5 * 60 * 1000,
@@ -748,17 +825,27 @@ async function toWav(job, input) {
     throw Object.assign(new Error(noAudio ? 'That file has no audio track.'
       : 'That file could not be decoded as audio or video.'), { code: noAudio ? 'no-audio' : 'bad-audio' });
   }
-  const seconds = (bytes - 44) / 32000;
+  const seconds = total || Math.max(0, (bytes - 44) / (44100 * 2 * 2));
+  const kr = await run(job, TOOL.ffmpeg, [
+    '-hide_banner', '-nostdin', '-y', '-i', out,
+    '-vn', '-ac', '1', '-ar', '16000',
+    '-c:a', 'pcm_s16le', '-f', 'wav', kong
+  ], { timeoutMs: 5 * 60 * 1000 });
+  let kongBytes = 0;
+  try { kongBytes = fs.statSync(kong).size; } catch (e) {}
+  if (kr.code !== 0 || kongBytes < 16000)
+    throw Object.assign(new Error('PPP could not prepare the piano model audio.'), { code: 'bad-audio' });
   if (total && total > TRANSCRIBE.maxSeconds + 1) job.truncated = true;
   job.duration = total || seconds;
-  return { wav: out, seconds: seconds };
+  return { wav: out, kongWav: kong, seconds: seconds };
 }
 
-async function transcribeWav(job, wav, seconds) {
+async function transcribeWav(job, wav, kongWav, seconds) {
   job.stage = 'transcribe'; job.pct = 0;
   const out = path.join(job.dir, 'notes.json');
-  const argv = [TRANSCRIBE_PY, '--wav', wav, '--out', out, '--engine', 'auto'];
+  const argv = [TRANSCRIBE_PY, '--wav', wav, '--kong-wav', kongWav, '--out', out, '--engine', 'auto'];
   if (CHECKPOINT) argv.push('--checkpoint', CHECKPOINT);
+  if (ARIA_CHECKPOINT) argv.push('--aria-checkpoint', ARIA_CHECKPOINT);
   const r = await run(job, PYTHON, argv, {
     timeoutMs: Math.max(5 * 60 * 1000, seconds * 4000),
     onLine: line => {
@@ -816,7 +903,7 @@ async function runJob(job, source) {
   try {
     await toolsReady;
     const input = source.url ? await downloadYoutube(job, source.url) : source.file;
-    const { wav, seconds } = await toWav(job, input);
+    const { wav, kongWav, seconds } = await toWav(job, input);
     if (job.state !== 'running') return;
 
     const hit = catalogHit(job.title);
@@ -846,11 +933,12 @@ async function runJob(job, source) {
       };
       job.stage = 'done'; job.pct = 1; job.state = 'done';
       try { fs.rmSync(wav, { force: true }); } catch (e) {}
+      try { fs.rmSync(kongWav, { force: true }); } catch (e) {}
       if (source.file) { try { fs.rmSync(source.file, { force: true }); } catch (e) {} }
       return;
     }
 
-    const result = await transcribeWav(job, wav, seconds);
+    const result = await transcribeWav(job, wav, kongWav, seconds);
     if (job.state !== 'running') return;
     const beats = await beatTrackWav(job, wav);
     if (beats) {
@@ -863,12 +951,14 @@ async function runJob(job, source) {
     const grid = await pm2sQuant(job, notesPath);
     if (grid) result.grid = grid;
     result.title = job.title;
+    result.taskMode = source.mode === 'arrange' ? 'piano-arrangement' : 'faithful-transcription';
     result.truncated = job.truncated;
     result.sourceDuration = job.duration;
     result.totalMs = Date.now() - t0;
     job.result = result;
     job.stage = 'done'; job.pct = 1; job.state = 'done';
     try { fs.rmSync(wav, { force: true }); } catch (e) {}
+    try { fs.rmSync(kongWav, { force: true }); } catch (e) {}
     if (source.file) { try { fs.rmSync(source.file, { force: true }); } catch (e) {} }
   } catch (err) {
     fail(job, (err && err.code) || 'failed', (err && err.message) || 'Transcription failed.');
@@ -927,7 +1017,8 @@ async function handleTranscribe(req, res) {
     if (!status.youtube)
       return send(res, 503, { ok: false, code: 'youtube-missing', error: 'yt-dlp is not installed, so PPP cannot download from YouTube. Upload the audio file instead.' });
     const job = newJob('youtube');
-    runJob(job, { url: url });
+    const mode = body && body.mode === 'arrange' ? 'arrange' : body && body.mode === 'solo' ? 'solo' : 'auto';
+    runJob(job, { url: url, mode: mode });
     return send(res, 202, { ok: true, job: job.id });
   }
 
@@ -947,7 +1038,9 @@ async function handleTranscribe(req, res) {
     return send(res, e.code === 'too-large' ? 413 : 400, { ok: false, code: e.code || 'bad-request', error: e.message });
   }
   job.title = decodeURIComponent(rawName).replace(/\.[^.]+$/, '');
-  runJob(job, { file: file });
+  const uploadMode = req.headers['x-ppp-mode'] === 'arrange' ? 'arrange'
+    : req.headers['x-ppp-mode'] === 'solo' ? 'solo' : 'auto';
+  runJob(job, { file: file, mode: uploadMode });
   return send(res, 202, { ok: true, job: job.id });
 }
 
@@ -980,11 +1073,11 @@ function handleJob(req, res, id, sub) {
 
 const server = http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') {
-    if (/^\/transcribe/.test(req.url || '') && !fromLocalPage(req)) { res.writeHead(403); return res.end(); }
+    if (/^\/(transcribe|pdf-vector)/.test(req.url || '') && !fromLocalPage(req)) { res.writeHead(403); return res.end(); }
     res.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, X-PPP-Filename'
+      'Access-Control-Allow-Headers': 'Content-Type, X-PPP-Filename, X-PPP-Mode'
     });
     return res.end();
   }
@@ -996,11 +1089,13 @@ const server = http.createServer(async (req, res) => {
     return send(res, 200, {
       ok: true, service: 'ppp-local', version: 4,
       audiveris: !!AUDIVERIS, audiverisPath: AUDIVERIS || null,
+      pdfToMusic: !!PDFTOMUSIC,
       coach: !!coach,
       coachProvider: coach ? coach.name : null,
       coachModel: coach ? coach.model : null,
       transcriber: tr.ok, youtube: tr.youtube, transcriberMissing: tr.missing,
-      amt: tr.amt || null, transkun: !!tr.transkun, kong: !!tr.kong,
+      amt: tr.amt || null, amtEngines: tr.engines || [],
+      transkun: !!tr.transkun, kong: !!tr.kong, aria: !!tr.aria,
       beatThis: !!tr.beatThis, pm2s: !!tr.pm2s,
       limits: Object.assign({}, LIMITS, {
         audioBytes: TRANSCRIBE.maxUploadBytes, audioSeconds: TRANSCRIBE.maxSeconds
@@ -1009,6 +1104,20 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'POST' && req.url === '/coach') return handleCoach(req, res);
+
+  if (req.method === 'POST' && req.url === '/pdf-vector') {
+    if (!fromLocalPage(req))
+      return send(res, 403, { ok: false, code: 'forbidden', error: 'Vector PDF conversion is only offered to PPP pages on this machine.' });
+    if (!PDFTOMUSIC)
+      return send(res, 503, { ok: false, code: 'engine-missing', error: 'PDFtoMusic Pro is not installed.' });
+    let bytes;
+    try { bytes = await readBody(req, LIMITS.maxTotalBytes); }
+    catch (e) { return send(res, 413, { ok: false, code: 'too-large', error: e.message }); }
+    if (!bytes.length || bytes.subarray(0, 5).toString('ascii') !== '%PDF-')
+      return send(res, 400, { ok: false, code: 'bad-pdf', error: 'That upload is not a PDF.' });
+    const converted = await convertVectorPdf(bytes);
+    return send(res, converted.ok ? 200 : 422, converted);
+  }
 
   if (req.method === 'POST' && req.url === '/transcribe') return handleTranscribe(req, res);
   const jm = /^\/transcribe\/([0-9a-f]{24})(?:\/(audio))?$/.exec(req.url || '');
@@ -1074,6 +1183,8 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, '127.0.0.1', () => {
   console.log('PPP OMR service on http://127.0.0.1:' + PORT);
+  console.log(PDFTOMUSIC ? '  Vector PDF: PDFtoMusic Pro (' + PDFTOMUSIC + ')'
+    : '  Vector PDF: optional PDFtoMusic Pro not found');
   console.log(AUDIVERIS ? '  Audiveris: ' + AUDIVERIS : '  Audiveris: NOT FOUND — /omr will report engine-missing');
   toolsReady.then(() => {
     const tr = transcriberStatus();

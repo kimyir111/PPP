@@ -30,8 +30,8 @@ def main():
         sys.stdout = real
     result = {
         'engine': 'beat-this',
-        'beats': [round(float(t), 4) for t in (beats or [])],
-        'downbeats': [round(float(t), 4) for t in (downbeats or [])]
+        'beats': [round(float(t), 4) for t in ([] if beats is None else beats)],
+        'downbeats': [round(float(t), 4) for t in ([] if downbeats is None else downbeats)]
     }
     with open(a.out, 'w', encoding='utf-8') as f:
         json.dump(result, f)

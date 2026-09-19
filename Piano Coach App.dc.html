@@ -867,6 +867,20 @@
               <p style="margin: 4px 0 0; font-size: 13px; color: var(--ink3);">Each song you add is kept in My Songs, with its own progress.</p>
             </div>
 
+            <div style="border: 1px solid var(--line); border-radius: 14px; background: var(--bg); padding: 14px 16px;">
+              <label style="display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
+                <span style="min-width: 0;">
+                  <span style="display: block; font-size: 13.5px; font-weight: 600;">Recording type</span>
+                  <span style="display: block; font-size: 11.5px; line-height: 1.45; color: var(--ink3); margin-top: 3px;">This changes how recordings and YouTube audio are interpreted.</span>
+                </span>
+                <select value="{{ transcriptionMode }}" onChange="{{ setTranscriptionMode }}" style="min-width: 250px; max-width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font-family: inherit; font-size: 12.5px;">
+                  <option value="auto">Auto / solo piano (faithful)</option>
+                  <option value="solo">Solo piano (faithful transcription)</option>
+                  <option value="arrange">Full song (playable piano arrangement)</option>
+                </select>
+              </label>
+            </div>
+
             <label data-drop-zone class="ppp-drop" style="{{ dropZoneStyle }}" style-hover="border-color: var(--accent); background: var(--accent-3);">
               <div style="width: 54px; height: 54px; margin: 0 auto; border-radius: 15px; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center;">
                 <span style="font-family: 'Noto Music', serif; font-size: 26px; color: var(--accent);">&#119070;</span>
@@ -5925,7 +5939,7 @@ const Import = {
   },
 
   /* ---- PDF → page images, in the browser ---- */
-  async rasterisePdf(file, onStage) {
+  async rasterisePdf(file, onStage, dpi) {
     const pdfjsLib = await loadPdfJs();
     const buf = await file.arrayBuffer();
     let doc;
@@ -5944,7 +5958,7 @@ const Import = {
     for (let i = 1; i <= doc.numPages; i++) {
       if (onStage) onStage('rasterise', { page: i, of: doc.numPages });
       const page = await doc.getPage(i);
-      let scale = IMPORT_LIMITS.dpi / 72;
+      let scale = (dpi || IMPORT_LIMITS.dpi) / 72;
       let vp = page.getViewport({ scale: scale });
       const longest = Math.max(vp.width, vp.height);
       if (longest > IMPORT_LIMITS.maxRasterEdge) {
@@ -6027,6 +6041,25 @@ const Import = {
     return body;
   },
 
+  /* A PDF exported by notation software still contains vector glyphs and
+     lines. When the optional desktop converter is installed, ask it for
+     MusicXML before throwing those semantics away by rasterising for OMR. */
+  async readVectorPdf(file, onStage) {
+    if (onStage) onStage('vectorpdf', { pct: 0 });
+    let res, body;
+    try {
+      res = await fetch(OMR_URL + '/pdf-vector', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/pdf', 'X-PPP-Filename': encodeURIComponent(file.name || 'score.pdf') },
+        body: file
+      });
+      body = await res.json();
+    } catch (e) { return null; }
+    if (!res.ok || !body || !body.ok || !body.musicxml) return null;
+    if (onStage) onStage('vectorpdf', { pct: 1 });
+    return body;
+  },
+
   /* ---- stitch per-page MusicXML into one document ----
      Audiveris numbers every page from 1 because it cannot know what came
      before, so measures are renumbered continuously as pages are appended.
@@ -6060,6 +6093,42 @@ const Import = {
         .forEach(m => { n++; m.setAttribute('number', String(n)); });
     });
     return new XMLSerializer().serializeToString(base);
+  },
+
+  /* ---- a second opinion, measure by measure ----
+     One OMR pass misreads some bars; a denser raster of the same page reads
+     different bars right. Where the first pass flagged a measure the checks
+     found nothing wrong with in the second, take that measure from the second
+     document — the rest is byte-identical, so nothing else can get worse.
+     Both documents must describe the same measure layout. */
+  mergeMeasuresWhereBetter(doc1, doc2, flagged1, flagged2) {
+    if (!doc1 || !doc2 || !flagged1 || !flagged1.size) return null;
+    const parser = new DOMParser();
+    const A = parser.parseFromString(doc1, 'application/xml');
+    const B = parser.parseFromString(doc2, 'application/xml');
+    if (A.querySelector('parsererror') || B.querySelector('parsererror')) return null;
+    const parts1 = [].slice.call(A.documentElement.children).filter(c => c.nodeName === 'part');
+    const parts2 = [].slice.call(B.documentElement.children).filter(c => c.nodeName === 'part');
+    if (!parts1.length || parts1.length !== parts2.length) return null;
+    /* durations only mean the same thing when both passes divided the beat alike */
+    const div = doc => { const m = /<divisions>(\d+)<\/divisions>/.exec(doc); return m ? +m[1] : null; };
+    const d1 = div(doc1), d2 = div(doc2);
+    if (d1 && d2 && d1 !== d2) return null;
+    let used = 0;
+    for (let i = 0; i < parts1.length; i++) {
+      const ma = [].slice.call(parts1[i].children).filter(c => c.nodeName === 'measure');
+      const mb = [].slice.call(parts2[i].children).filter(c => c.nodeName === 'measure');
+      if (ma.length !== mb.length) return null;
+      for (let k = 0; k < ma.length; k++) {
+        const n = +ma[k].getAttribute('number');
+        if (flagged1.has(n) && !flagged2.has(n)) {
+          ma[k].parentNode.replaceChild(A.importNode(mb[k], true), ma[k]);
+          used++;
+        }
+      }
+    }
+    if (!used) return null;
+    return new XMLSerializer().serializeToString(A);
   },
 
   /* ---- is this recognition trustworthy? ----
@@ -6215,11 +6284,12 @@ const Import = {
       res = what.url
         ? await fetch(OMR_URL + '/transcribe', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: what.url })
+          body: JSON.stringify({ url: what.url, mode: what.mode || 'auto' })
         })
         : await fetch(OMR_URL + '/transcribe', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/octet-stream', 'X-PPP-Filename': encodeURIComponent(what.file.name) },
+          headers: { 'Content-Type': 'application/octet-stream', 'X-PPP-Filename': encodeURIComponent(what.file.name),
+            'X-PPP-Mode': what.mode || 'auto' },
           body: what.file
         });
       body = await res.json();
@@ -6295,8 +6365,10 @@ const Import = {
     return Search.align(xml, opts || {});
   },
   /* Put an already-written score on top of a recording. The score owns the
-     notes, metre and bar lengths; the recording only supplies its first
-     downbeat and, when close enough, a small global performance stretch. */
+     notes, metre and bar lengths. Matching score/audio pitches provide local
+     anchors, so rubato and tempo changes do not get flattened into one global
+     stretch. The old global fit remains the safe fallback when the recording
+     has too little usable note evidence. */
   alignReference(score, opts) {
     opts = opts || {};
     const measures = (score && score.measures) || [];
@@ -6313,12 +6385,159 @@ const Import = {
        changes. Only absorb the modest drift of a normal performance. */
     const stretch = candidate >= 0.8 && candidate <= 1.2 ? candidate : 1;
     const secondPerQ = 60 / tempo * stretch;
-    const barStarts = measures.map(mm => Math.round((start + ((mm.startQ || 0) - firstQ) * secondPerQ) * 1000) / 1000);
-    barStarts.push(Math.round((start + totalQ * secondPerQ) * 1000) / 1000);
+    const base = measures.map(mm => start + ((mm.startQ || 0) - firstQ) * secondPerQ);
+    base.push(start + totalQ * secondPerQ);
+    const heard = opts.heard || {};
+
+    /* Notes struck within a few milliseconds are one musical attack. */
+    const groupAudio = notes => {
+      const out = [];
+      (notes || []).filter(n => isFinite(+n.on) && isFinite(+n.midi))
+        .sort((a, b) => (+a.on - +b.on) || (+a.midi - +b.midi)).forEach(n => {
+          let g = out[out.length - 1];
+          if (!g || +n.on - g.on > 0.055) {
+            g = { on: +n.on, pitches: {} };
+            out.push(g);
+          }
+          g.pitches[Math.round(+n.midi)] = true;
+        });
+      return out;
+    };
+    const groupScore = () => {
+      const by = {}, out = [];
+      (score.notes || []).forEach(n => {
+        if (n.rest || n.tieStop || !isFinite(+n.midi)) return;
+        const mm = measures.find(m => m.number === n.m);
+        if (!mm) return;
+        /* Parsed notes already expose their absolute score position. Adding
+           the measure start to n.b again displaced every anchor after bar 1. */
+        const q = isFinite(+n.abs) ? +n.abs - firstQ
+          : (mm.startQ || 0) + (+n.b || 0) - firstQ;
+        const key = q.toFixed(4);
+        if (!by[key]) { by[key] = { q: q, measure: measures.indexOf(mm), pitches: {} }; out.push(by[key]); }
+        by[key].pitches[Math.round(+n.midi)] = true;
+      });
+      return out.sort((a, b) => a.q - b.q);
+    };
+    const audio = groupAudio(heard.notes);
+    const written = groupScore();
+    const offsets = measures.map(() => []);
+    const pointAnchors = [];
+    let lastAudio = -1;
+    if (audio.length && written.length) written.forEach(g => {
+      const predicted = start + g.q * secondPerQ;
+      const windowS = Math.max(0.3, Math.min(1.4, secondPerQ * 2.25));
+      /* Follow the ordered attack sequence, not just the global tempo line.
+         A global time window loses the match halfway through a long ritardando
+         even when every pitch is right. Looking ahead a bounded number of
+         attacks handles rubato, omissions and a short intro without allowing
+         a repeated chorus much later to become the same bar. */
+      const seqStart = Math.max(0, lastAudio + 1);
+      const seqEnd = Math.min(audio.length, seqStart + (lastAudio < 0 ? 64 : 24));
+      let i = seqStart;
+      let best = null, bestIndex = -1, bestShared = 0, bestScore = -Infinity;
+      const wp = Object.keys(g.pitches).map(Number);
+      for (; i < seqEnd; i++) {
+        const ap = audio[i].pitches;
+        let shared = 0;
+        wp.forEach(p => { if (ap[p]) shared++; });
+        if (!shared) continue;
+        const as = Object.keys(ap).length;
+        const union = wp.length + as - shared;
+        const jac = shared / Math.max(1, union);
+        const dt = Math.abs(audio[i].on - predicted);
+        /* A chord agreeing in two notes is a strong anchor. A single melody
+           note needs at least half of both attacks to agree. */
+        if (shared < 2 && jac < 0.5) continue;
+        const skipped = i - seqStart;
+        const rank = shared * 3 + jac * 4 - skipped * 0.12 - Math.min(3, dt / windowS) * 0.05;
+        if (rank > bestScore) {
+          bestScore = rank; best = audio[i]; bestIndex = i; bestShared = shared;
+        }
+      }
+      if (best && offsets[g.measure]) {
+        offsets[g.measure].push(best.on - predicted);
+        pointAnchors.push({ q: g.q, time: best.on, index: g.measure, matches: bestShared });
+        /* One sounding attack is evidence for one written attack. Reusing a
+           repeated pitch made later bars snap to an earlier occurrence. */
+        lastAudio = bestIndex;
+      }
+    });
+    const med = xs => {
+      const a = xs.slice().sort((a, b) => a - b), n = a.length;
+      return n ? (n & 1 ? a[n >> 1] : (a[n / 2 - 1] + a[n / 2]) / 2) : null;
+    };
+    const anchors = [];
+    offsets.forEach((xs, i) => {
+      if (!xs.length) return;
+      const m = med(xs);
+      /* Repeated pitches can nominate a wrong bar. A local offset that is
+         wildly unlike the global fit is evidence to review, not an anchor. */
+      if (isFinite(m) && Math.abs(m) <= Math.max(2.5, totalQ * secondPerQ * 0.08))
+        anchors.push({ index: i, time: base[i] + m, matches: xs.length });
+    });
+
+    /* Beat/downbeat evidence can fill a sparse intro, but never changes the
+       written metre. Each detected point is used only near its predicted bar. */
+    const downs = (heard.downbeats || []).filter(isFinite).slice().sort((a, b) => a - b);
+    if (downs.length) measures.forEach((mm, i) => {
+      if (anchors.some(a => a.index === i)) return;
+      const barSec = (mm.lenQ || 4) * secondPerQ;
+      let best = null, gap = Math.max(0.35, barSec * 0.42);
+      downs.forEach(t => { const d = Math.abs(t - base[i]); if (d < gap) { best = t; gap = d; } });
+      if (best != null) anchors.push({ index: i, time: best, matches: 0, beat: true });
+    });
+    anchors.sort((a, b) => a.index - b.index);
+
+    let fitted = base.slice();
+    const noteAnchors = anchors.filter(a => !a.beat);
+    if (pointAnchors.length >= Math.min(4, written.length)) {
+      const points = pointAnchors.slice().sort((a, b) => a.q - b.q);
+      /* A known recording end is a useful final boundary when it represents a
+         normal performance stretch; unlike an inferred note it cannot be a
+         repeated-pitch mismatch. */
+      if (points[0].q > 0.001) points.unshift({ q: 0, time: start, index: 0, matches: 0 });
+      if (duration > start && stretch !== 1 && points[points.length - 1].q < totalQ - 0.001)
+        points.push({ q: totalQ, time: duration, index: measures.length, matches: 0 });
+      const atQ = q => {
+        let hi = points.findIndex(p => p.q >= q);
+        if (hi < 0) hi = points.length - 1;
+        if (points[hi].q === q) return points[hi].time;
+        const lo = Math.max(0, hi - 1), a = points[lo], b = points[hi];
+        if (a.q === b.q) return a.time;
+        return a.time + (q - a.q) / (b.q - a.q) * (b.time - a.time);
+      };
+      fitted = measures.map(mm => atQ((mm.startQ || 0) - firstQ));
+      fitted.push(atQ(totalQ));
+    } else if (anchors.length >= Math.min(3, measures.length)) {
+      const localOffset = i => {
+        let a = null, b = null;
+        anchors.forEach(x => { if (x.index <= i) a = x; if (b == null && x.index >= i) b = x; });
+        if (a && b && a.index !== b.index) {
+          const f = (i - a.index) / (b.index - a.index);
+          return (a.time - base[a.index]) * (1 - f) + (b.time - base[b.index]) * f;
+        }
+        const x = a || b;
+        return x ? x.time - base[x.index] : 0;
+      };
+      fitted = base.map((t, i) => t + localOffset(Math.min(i, measures.length - 1)));
+      /* A false repeated-note match must never make time run backwards. */
+      for (let i = 1; i < fitted.length; i++) {
+        const printed = Math.max(0.08, (base[i] - base[i - 1]) * 0.35);
+        if (fitted[i] < fitted[i - 1] + printed) fitted[i] = fitted[i - 1] + printed;
+      }
+    }
+    const barStarts = fitted.map(t => Math.round(t * 1000) / 1000);
     return {
       barStarts: barStarts,
       duration: duration || barStarts[barStarts.length - 1],
-      tempo: tempo, measures: measures.length, stretch: stretch
+      tempo: tempo, measures: measures.length, stretch: stretch,
+      method: pointAnchors.length >= Math.min(4, written.length) ? 'note-anchors'
+        : noteAnchors.length >= Math.min(3, measures.length) ? 'note-anchors'
+        : anchors.length >= Math.min(3, measures.length) ? 'beat-anchors' : 'global',
+      anchors: anchors.length,
+      alignmentConfidence: Math.min(1, pointAnchors.reduce((n, a) => n + Math.min(3, a.matches), 0) /
+        Math.max(3, written.length * 1.5))
     };
   },
 
@@ -6545,21 +6764,29 @@ const Import = {
     }
     if (ctl && ctl.cancelled) throw importError('cancelled', tx('Cancelled.'));
     let heard = null, pianoErr = null;
-    try {
-      heard = await Import.pianoAmtNotes(buf, p => stage('transcribe', { pct: p }));
-      if (!heard || (heard.notes || []).length < 4) {
-        pianoErr = importError('no-notes', tx('No piano notes were heard in this recording.'));
-        heard = null;
-      }
-    } catch (e) { pianoErr = e; }
+    if (what.mode !== 'arrange') {
+      try {
+        heard = await Import.pianoAmtNotes(buf, p => stage('transcribe', { pct: p }));
+        if (!heard || (heard.notes || []).length < 4) {
+          pianoErr = importError('no-notes', tx('No piano notes were heard in this recording.'));
+          heard = null;
+        }
+      } catch (e) { pianoErr = e; }
+    }
     if (!heard) {
-      /* Phones with too little WebGL memory, blocked model CDNs, and
-         non-piano recordings still get the smaller general model. */
+      /* Arrangement mode deliberately uses the broad multi-instrument model.
+         In faithful mode this remains a compatibility fallback for devices
+         that cannot load the larger piano model. */
       try {
         heard = await Import.amtNotes(buf, p => stage('transcribe', { pct: p }));
       } catch (e) { throw e || pianoErr; }
-      heard.fallbackFrom = 'onsets-and-frames';
-      heard.fallbackReason = pianoErr && (pianoErr.code || pianoErr.message) || 'unavailable';
+      if (what.mode === 'arrange') {
+        heard.arrangement = true;
+        heard.qualityTier = 'arrangement-source';
+      } else {
+        heard.fallbackFrom = 'onsets-and-frames';
+        heard.fallbackReason = pianoErr && (pianoErr.code || pianoErr.message) || 'unavailable';
+      }
     }
     heard.duration = heard.duration || 0;
     return { heard: heard, title: title, audioUrl: audioUrl };
@@ -6608,7 +6835,7 @@ const Import = {
         notes: heard.notes, pedals: heard.pedals,
         beats: heard.beats, downbeats: heard.downbeats,
         grid: heard.grid, title: title
-      }, { title: title });
+      }, { title: title, easy: what.mode === 'arrange' });
     } catch (e) {
       throw importError(e.code || 'no-notes',
         e.code === 'no-notes' ? tx('No piano notes were heard in this recording.') : e.message,
@@ -6624,7 +6851,9 @@ const Import = {
     score.composer = '';
     stage('check', {});
     const report = Import.validateTranscription(score, built.stats, heard);
-    const engineLabel = heard.engine === 'transkun' ? 'Transkun'
+    const engineLabel = what.mode === 'arrange' ? 'Broad audio model + playable piano reduction'
+      : heard.engine === 'ensemble' ? 'Piano ensemble (' + (((heard.ensemble || {}).models || []).join(' + ') || 'multiple models') + ')'
+      : heard.engine === 'transkun' ? 'Transkun'
       : heard.engine === 'onsets-and-frames' ? 'Piano Onsets & Frames'
       : heard.engine === 'basic-pitch' ? 'Basic Pitch'
       : heard.engine === 'pm2s' || (heard.grid && heard.grid.engine === 'pm2s') ? 'Piano transcription + PM2S'
@@ -6642,7 +6871,11 @@ const Import = {
       transcriptionVersion: 2,
       amt: heard.engine || null,
       beatSource: built.stats.beatSource,
-      quantizer: built.stats.quantizer
+      quantizer: built.stats.quantizer,
+      taskMode: what.mode === 'arrange' ? 'piano-arrangement' : 'faithful-transcription',
+      modelAgreement: heard.ensemble && heard.ensemble.agreement != null ? heard.ensemble.agreement : null,
+      amtModels: heard.ensemble && heard.ensemble.models ? heard.ensemble.models : null,
+      uncertainNotes: heard.ensemble ? heard.ensemble.uncertain : null
     };
     score.source = source;
     return {
@@ -6740,7 +6973,11 @@ const Import = {
        made any four noisy browser notes bypass the better local engine. */
     const health = await Import.health();
     let helperErr = null;
-    if (health.ok && health.transcriber) {
+    /* The installed engines are piano AMT models. They are the right path for
+       faithful solo-piano transcription, but not for pretending that a mixed
+       song can be copied exactly. Arrangement mode uses the broad model and
+       then an explicit playable reduction. */
+    if (what.mode !== 'arrange' && health.ok && health.transcriber) {
       try {
         const got = await Import.transcribe(what, onStage, ctl);
         const heard = got && got.heard;
@@ -6784,11 +7021,18 @@ const Import = {
     if (sparse) flag(null, 'sparse', tx('Very few piano notes were heard. Is the piano clear in this recording?'));
     const density = seconds > 0 ? stats.notes / seconds : 0;
     const fallback = heard && heard.engine === 'basic-pitch';
+    const ensemble = heard && heard.ensemble;
+    const modelCount = ensemble && ensemble.models ? ensemble.models.length : 1;
+    const modelAgreement = ensemble && isFinite(+ensemble.agreement) ? clamp(+ensemble.agreement, 0, 1) : null;
     /* Pedalled virtuoso passages are where harmonics and repeated sustains
        most often turn into convincing but false notes. Treat density as a
        warning much earlier than the old 20-notes/second ceiling. */
     const crowded = density > (fallback ? 10 : 14);
     if (fallback) flag(null, 'fallback', tx('The piano-specific model could not run on this device, so PPP used a less precise fallback. Check pitches and rhythm carefully.'));
+    if (modelCount <= 1 && !fallback)
+      flag(null, 'single-model', tx('Only one piano model was available, so these notes could not be cross-checked by another model.'));
+    if (ensemble && ensemble.uncertain > Math.max(8, ensemble.accepted * 0.08))
+      flag(null, 'model-disagreement', tx('{{n}} possible notes were rejected because the piano models did not agree.', { n: ensemble.uncertain }));
     if (crowded) flag(null, 'dense', tx('The model heard an unusually dense stream of notes ({{n}} per second). Some may be pedal or overtone echoes.', { n: Math.round(density) }));
     const loose = stats.tempoVariation > 0.12;
     if (loose) flag(null, 'tempo', tx('The tempo moves a lot in this performance, so some barlines are PPP’s best guess.'));
@@ -6809,8 +7053,10 @@ const Import = {
         : '{{n}} measures have a loose rhythm or a sudden change of tempo. They are marked in red.', { n: barFlags }) });
 
     const suspectMeasures = Object.keys(suspect).map(Number).sort((a, b) => a - b);
-    /* never quite certain: a transcription is a hearing, not the composer's page */
-    let confidence = 0.92;
+    /* This is explicitly an estimate, not an accuracy claim. With an
+       ensemble its starting point is measured model agreement; a single
+       model cannot honestly certify itself. */
+    let confidence = modelAgreement == null ? 0.82 : Math.min(0.96, 0.56 + modelAgreement * 0.4);
     confidence -= Math.min(0.4, suspectMeasures.length / Math.max(1, measures.length) * 0.8);
     if (loose) confidence -= 0.08;
     if (rough) confidence -= 0.08;
@@ -6849,19 +7095,21 @@ const Import = {
       confidence: confidence, level: level, issues: issues,
       suspectMeasures: suspectMeasures, summary: summary, advice: advice,
       measures: measures.length, notes: sounding.length, staves: score.staves,
-      transcribed: true, tempo: stats.tempo
+      transcribed: true, tempo: stats.tempo,
+      confidenceKind: modelCount > 1 ? 'model-agreement' : 'single-model-estimate',
+      modelAgreement: modelAgreement, modelCount: modelCount
     };
   },
 
-  loadYoutube(url, onStage, ctl) {
+  loadYoutube(url, onStage, ctl, mode) {
     if (onStage) onStage('validate', { name: url });
     if (!Import.youtubeId(url))
       return Promise.reject(importError('bad-url', tx('That is not a link to a YouTube video.'), Import.transcribeHints('bad-url')));
-    return Import.fromRecording({ url: url }, onStage, ctl);
+    return Import.fromRecording({ url: url, mode: mode || 'auto' }, onStage, ctl);
   },
 
   /* ---- the one entry point ---- */
-  async load(file, onStage, ctl) {
+  async load(file, onStage, ctl, mode) {
     const stage = (name, detail) => { if (onStage) onStage(name, detail || {}); };
     const kind = (await Import.sniff(file)) || Import.kindOf(file);
 
@@ -6875,7 +7123,7 @@ const Import = {
           n: Math.round(file.size / 1048576), max: Math.round(IMPORT_LIMITS.maxAudioBytes / 1048576)
         }), Import.transcribeHints('too-large'));
       if (!file.size) throw importError('empty', tx('That file is empty.'));
-      return Import.fromRecording({ file: file }, onStage, ctl);
+      return Import.fromRecording({ file: file, mode: mode || 'auto' }, onStage, ctl);
     }
     if (file.size > IMPORT_LIMITS.maxBytes)
       throw importError('too-large', tx('That file is {{n}} MB; the limit is {{max}} MB.', {
@@ -6911,7 +7159,16 @@ const Import = {
 
     let xml = null, omr = null, recognitionError = null;
     const health = await Import.health();
-    if (health.ok && health.audiveris) {
+    if (kind === 'pdf' && health.ok && health.pdfToMusic) {
+      const vector = await Import.readVectorPdf(file, onStage);
+      if (vector) {
+        xml = vector.musicxml;
+        source.engine = vector.engine || 'vector PDF';
+        source.vectorPdf = true;
+        source.pages = pages.map((_, i) => ({ index: i, ok: true }));
+      }
+    }
+    if (!xml && health.ok && health.audiveris) {
       try {
         omr = await Import.recognise(pages, onStage);
         source.engine = omr.engine;
@@ -6954,17 +7211,57 @@ const Import = {
     }
 
     /* A PDF made by notation software says in its own text and lines what
-       recognition misses: the chord names, 8va brackets, title and tempo. */
+       recognition misses: the chord names, 8va brackets, title and tempo.
+       The layers stay alive until the second-opinion pass below has had its
+       chance to merge — the overlays are per-bar coordinates on the page. */
     if (kind === 'pdf') {
       try {
         source.fromPdf = PdfLayer.apply(score, pages.map(p => p.layer || null), omr ? omr.musicxml : [xml], file.name);
       } catch (e) { /* the recognised score stands as it is */ }
-      pages.forEach(p => { delete p.layer; });
     }
 
     stage('check', {});
-    const report = Import.validate(score, { pageCount: pages.length, pages: (omr && omr.pages) || source.pages,
+    let report = Import.validate(score, { pageCount: pages.length, pages: (omr && omr.pages) || source.pages,
       missing: source.fromPdf ? source.fromPdf.missing : null });
+
+    /* ---- a second opinion, page by page ----
+       One OMR pass misreads a few bars; a denser raster of the same pages
+       reads different bars right. When the checks flag measures and the
+       engine is still there, the pages are read again at a higher DPI and
+       each flagged measure is taken from whichever pass read it cleanly.
+       Everything the first pass got right stays byte-identical. */
+    if (omr && kind === 'pdf' && report.issues.length) {
+      try {
+        stage('reread', {});
+        const dpi2 = Math.round(IMPORT_LIMITS.dpi * 1.17);
+        const pages2 = await Import.rasterisePdf(file, onStage, dpi2);
+        const omr2 = await Import.recognise(pages2, onStage);
+        const xml2 = Import.mergeMusicXml(omr2.musicxml);
+        stage('parse', {});
+        const score2 = parseMusicXML(xml2, file.name);
+        const fromPdf2 = PdfLayer.apply(score2, pages2.map(p => p.layer || null), omr2.musicxml, file.name);
+        pages2.forEach(p => { delete p.layer; });
+        const report2 = Import.validate(score2, { pageCount: pages2.length, pages: omr2.pages, missing: fromPdf2.missing });
+        const flags = rep => new Set((rep.issues || []).filter(i => i.measure != null).map(i => i.measure));
+        const f1 = flags(report), f2 = flags(report2);
+        stage('merge', { pages: pages.length });
+        const mergedXml = Import.mergeMeasuresWhereBetter(xml, xml2, f1, f2);
+        if (mergedXml && mergedXml !== xml) {
+          const scoreM = parseMusicXML(mergedXml, file.name);
+          const fromPdfM = PdfLayer.apply(scoreM, pages.map(p => p.layer || null), omr.musicxml, file.name);
+          const reportM = Import.validate(scoreM, { pageCount: pages.length, pages: omr.pages, missing: fromPdfM.missing });
+          /* adopt only when the merged score is strictly closer to the page */
+          if (reportM.issues.length < report.issues.length) {
+            score = scoreM;
+            source.fromPdf = fromPdfM;
+            report = reportM;
+          }
+        }
+      } catch (e) { /* the first pass stands as it is */ }
+    }
+
+    if (kind === 'pdf') pages.forEach(p => { delete p.layer; });
+
     if (source.engine === 'pdf') {
       /* Spacing between printed symbols is not a duration encoding. The
          direct browser reader can make a useful draft, but structural checks
@@ -11211,6 +11508,7 @@ class Component extends DCLogic {
       analysis: 'done', analysisStep: ANALYSIS_STEPS.length, analysisPct: 100, parseError: null,
       stageLog: [], importReport: null, importSource: null, importHints: [],
       reviewPage: 0, reviewFrom: 1, referenceBusy: false, referenceError: null,
+      transcriptionMode: 'auto',
       coachPlan: null, coachSource: 'PPP', coachAi: false, coachBusy: false,
       coachIssues: [], coachNote: '', coachTask: 0, coachReps: 0, coachDone: [],
       seqStep: 1, seqReps: 0,
@@ -13399,18 +13697,21 @@ class Component extends DCLogic {
     const label = {
       musicxml: 'MusicXML', mxl: 'compressed MusicXML', pdf: 'PDF', image: 'image', audio: 'recording', video: 'video'
     }[kind] || 'unsupported type';
-    this.startImport({ file: f, name: f.name, meta: sizeLabel(f) + ' · ' + tx(label), kind: kind });
+    this.startImport({ file: f, name: f.name, meta: sizeLabel(f) + ' · ' + tx(label), kind: kind,
+      mode: this.state.transcriptionMode || 'auto' });
   }
   addYoutube() {
     const url = String(this.state.ytUrl || '').trim();
     if (!url) return this.setState({ ytError: tx('Paste a YouTube link first.') });
     if (!Import.youtubeId(url)) return this.setState({ ytError: tx('That is not a link to a YouTube video.') });
-    this.startImport({ url: url, name: url, meta: 'YouTube', kind: 'youtube' });
+    this.startImport({ url: url, name: url, meta: 'YouTube', kind: 'youtube',
+      mode: this.state.transcriptionMode || 'auto' });
   }
   startImport(src) {
     this.cancelImport(true);
     this._file = src.file || null;
     this._yt = src.url || null;
+    this._transcriptionMode = src.mode || this.state.transcriptionMode || 'auto';
     this._pageImages = null;
     this.dropRecording();
     /* Freeze the open song before this import touches origin fields. setState
@@ -13472,7 +13773,9 @@ class Component extends DCLogic {
      so before anyone tries rather than after. */
   checkHelper() {
     Import.health().then(hh => this.setState({
-      helper: { ok: !!hh.ok, remote: !!hh.remote, transcriber: !!hh.transcriber, youtube: !!hh.youtube, omr: !!hh.audiveris, amt: hh.amt || null, beatThis: !!hh.beatThis, pm2s: !!hh.pm2s }
+      helper: { ok: !!hh.ok, remote: !!hh.remote, transcriber: !!hh.transcriber, youtube: !!hh.youtube,
+        omr: !!hh.audiveris, pdfToMusic: !!hh.pdfToMusic, amt: hh.amt || null,
+        amtEngines: hh.amtEngines || [], beatThis: !!hh.beatThis, pm2s: !!hh.pm2s }
     }));
   }
   unbindFileDrop() {
@@ -13510,6 +13813,7 @@ class Component extends DCLogic {
     clearTimeout(this._an);
     this.cancelImport(true);
     const file = this._file, yt = this._yt;
+    const mode = this._transcriptionMode || this.state.transcriptionMode || 'auto';
     const recording = !!yt || !!(file && Import.isRecording(Import.kindOf(file)));
     const ctl = this._importCtl = { cancelled: false };
     this.setState({
@@ -13523,7 +13827,9 @@ class Component extends DCLogic {
     const STAGE_LABEL = {
       validate: () => tx(yt ? 'Checking the link' : 'Checking the file'),
       rasterise: d => tx('Rendering page {{page}} of {{of}} at {{dpi}} DPI', { page: d.page, of: d.of, dpi: Import.LIMITS.dpi }),
+      vectorpdf: () => tx('Reading notation directly from the vector PDF'),
       recognise: d => d.of > 1 ? tx('Reading the notation on {{n}} pages', { n: d.of }) : tx('Reading the notation'),
+      reread: d => d && d.of > 1 ? tx('Reading the flagged pages again, closer up', { n: d.of }) : tx('Reading the flagged bars again, closer up'),
       merge: d => tx(d.pages === 1 ? 'Joining {{n}} page' : 'Joining {{n}} pages', { n: d.pages }),
       upload: () => tx('Handing the recording to the local helper'),
       download: d => pct(d) ? tx('Downloading the sound from YouTube — {{pct}}%', { pct: pct(d) }) : tx('Downloading the sound from YouTube'),
@@ -13540,7 +13846,7 @@ class Component extends DCLogic {
     /* where each stage sits on the bar; a stage that reports progress fills its span */
     const SPAN = recording
       ? { validate: [2, 2], search: [3, 4], upload: [3, 6], download: [3, 20], decode: [20, 26], catalog: [26, 30], transcribe: [26, 84], beats: [84, 88], quantize: [88, 92], notate: [92, 92], parse: [95, 95], check: [98, 98] }
-      : { validate: [5, 5], rasterise: [25, 25], recognise: [55, 55], merge: [70, 70], parse: [85, 85], check: [95, 95] };
+      : { validate: [5, 5], rasterise: [25, 25], vectorpdf: [25, 55], recognise: [55, 55], merge: [70, 70], parse: [85, 85], check: [95, 95], reread: [70, 85] };
     const onStage = (name, detail) => {
       if (ctl.cancelled) return;
       detail = detail || {};
@@ -13564,8 +13870,8 @@ class Component extends DCLogic {
       });
     };
 
-    const work = yt ? Import.loadYoutube(yt, onStage, ctl)
-      : file ? Import.load(file, onStage, ctl)
+    const work = yt ? Import.loadYoutube(yt, onStage, ctl, mode)
+      : file ? Import.load(file, onStage, ctl, mode)
         : Promise.resolve({
           score: buildDemoScore(),
           source: { name: 'interstellar-theme.musicxml', kind: 'built-in', importedAt: Clock.now(), status: 'built-in' },
@@ -13743,7 +14049,7 @@ class Component extends DCLogic {
         : prior.barStarts && prior.barStarts[0];
       const start = this.state.lockDownbeat != null && isFinite(+this.state.lockDownbeat) ? +this.state.lockDownbeat
         : isFinite(+savedStart) ? +savedStart : 0;
-      const aligned = Import.alignReference(score, { duration: duration, start: start });
+      const aligned = Import.alignReference(score, { duration: duration, start: start, heard: heard });
       if (recording) recording.barStarts = aligned.barStarts;
       this._recording = recording;
       this._heard = heard;
@@ -13758,6 +14064,9 @@ class Component extends DCLogic {
           name: file.name, kind: kind,
           engine: refSource.engine || (kind === 'musicxml' || kind === 'mxl' ? 'MusicXML' : null),
           pages: refSource.pages || null,
+          alignment: aligned.method || 'global',
+          alignmentAnchors: aligned.anchors || 0,
+          alignmentConfidence: aligned.alignmentConfidence || 0,
           importedAt: Clock.now()
         }
       });
@@ -13962,7 +14271,11 @@ class Component extends DCLogic {
       loopFrom: S.loopFrom, loopTo: S.loopTo, tempo: S.tempo,
       memLevel: S.memLevel, blindRuns: S.blindRuns, mastered: S.mastered,
       fileName: S.fileName, fileMeta: S.fileMeta, importSource: S.importSource,
-      importReport: rep ? { confidence: rep.confidence, level: rep.level, suspectMeasures: rep.suspectMeasures, summary: rep.summary, advice: rep.advice } : null
+      importReport: rep ? {
+        confidence: rep.confidence, level: rep.level, suspectMeasures: rep.suspectMeasures,
+        summary: rep.summary, advice: rep.advice, confidenceKind: rep.confidenceKind,
+        modelAgreement: rep.modelAgreement, modelCount: rep.modelCount
+      } : null
     };
     try { localStorage.setItem(SONG_KEY + id, JSON.stringify(slot)); return true; }
     catch (e) { this.storageFull(); return false; }
@@ -16218,6 +16531,8 @@ class Component extends DCLogic {
         + (S.dragging ? 'var(--accent-3)' : 'var(--bg)') + ';padding:44px 28px;text-align:center;transition:border-color .2s ease, background .2s ease;',
       ytUrl: S.ytUrl || '',
       setYtUrl: e => this.setState({ ytUrl: e.target.value, ytError: null }),
+      transcriptionMode: S.transcriptionMode || 'auto',
+      setTranscriptionMode: e => this.setState({ transcriptionMode: e.target.value || 'auto' }),
       ytKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.addYoutube(); } },
       addYoutube: () => this.addYoutube(),
       hasYtError: !!S.ytError, ytError: S.ytError || '',
@@ -16230,7 +16545,10 @@ class Component extends DCLogic {
         if (!hp.ok) return tx('The local helper is not running — start it with npm run omr.');
         if (!hp.transcriber) return tx('The local helper is running, but transcription is not set up yet (see the README).');
         if (!hp.youtube) return tx('Recordings are ready. YouTube links also need yt-dlp in tools/.');
-        const bits = [hp.amt === 'transkun' ? 'Transkun' : 'Kong'];
+        const engineNames = { transkun: 'TransKun', kong: 'Kong', aria: 'Aria-AMT' };
+        const bits = (hp.amtEngines || []).map(x => engineNames[x] || x);
+        if (!bits.length) bits.push(hp.amt === 'ensemble' ? 'piano ensemble'
+          : hp.amt === 'transkun' ? 'TransKun' : hp.amt === 'aria' ? 'Aria-AMT' : 'Kong');
         if (hp.beatThis) bits.push('Beat This');
         if (hp.pm2s) bits.push('PM2S');
         return tx('Ready — listening with {{engines}}.', { engines: bits.join(', ') });
@@ -16283,7 +16601,15 @@ class Component extends DCLogic {
               ['Notes', String(sounding.length)],
               ['Staves', String(score.staves)]
             ];
-          if (rep.level) rows.push(['Confidence', R0((rep.confidence || 0) * 100) + '% · ' + tx(rep.level)]);
+          if (heard && src.taskMode) rows.push(['Mode', src.taskMode === 'piano-arrangement'
+            ? tx('playable piano arrangement') : tx('faithful solo-piano transcription')]);
+          if (rep.level) {
+            const confLabel = rep.confidenceKind === 'model-agreement' ? 'Model agreement'
+              : rep.confidenceKind === 'single-model-estimate' ? 'Estimated confidence' : 'Confidence';
+            const confValue = rep.confidenceKind === 'model-agreement' && rep.modelAgreement != null
+              ? rep.modelAgreement : rep.confidence;
+            rows.push([confLabel, R0((confValue || 0) * 100) + '% · ' + tx(rep.level)]);
+          }
           return rows.map(([label, meta]) => ({
             label: tx(label), meta: meta,
             dotStyle: dot('var(--good)'), textStyle: txt('var(--ink2)', 400)
@@ -16345,8 +16671,13 @@ class Component extends DCLogic {
       reviewStats: (() => {
         const rep = S.importReport || {};
         const src = S.importSource || {};
+        const confidenceLabel = src.referenceScore ? 'Recognition check'
+          : rep.confidenceKind === 'model-agreement' ? 'Model agreement'
+            : rep.confidenceKind === 'single-model-estimate' ? 'Estimated confidence' : 'Confidence';
+        const confidenceValue = rep.confidenceKind === 'model-agreement' && rep.modelAgreement != null
+          ? rep.modelAgreement : (rep.confidence == null ? 1 : rep.confidence);
         if (this._recording) return [
-          { k: src.referenceScore ? 'Recognition check' : 'Internal check', v: R0((rep.confidence == null ? 1 : rep.confidence) * 100) + '%' },
+          { k: confidenceLabel, v: R0(confidenceValue * 100) + '%' },
           { k: 'Measures', v: String(Score.count(score)) },
           { k: 'Notes', v: String(sounding.length) },
           { k: 'Tempo', v: score.tempo + ' BPM' },
@@ -16354,6 +16685,8 @@ class Component extends DCLogic {
           { k: 'Needs a look', v: String(Math.max((rep.suspectMeasures || []).length, (rep.issues || []).length)) }
         ].concat(src.referenceScore ? [{ k: 'Score source', v: src.referenceScore.kind === 'musicxml' || src.referenceScore.kind === 'mxl' ? 'MusicXML' : tx('uploaded score') }] : [])
          .concat(src.retrieved ? [{ k: 'Score', v: tx('catalog') }] : [])
+         .concat(src.taskMode ? [{ k: 'Mode', v: src.taskMode === 'piano-arrangement'
+           ? tx('playable arrangement') : tx('faithful solo piano') }] : [])
          .concat(src.amt && !src.referenceScore ? [{ k: 'Engine', v: src.engine || src.amt }] : [])
          .concat(src.beatSource === 'audio' ? [{ k: 'Beat', v: tx('from the recording') }] : [])
          .concat(src.quantizer === 'pm2s' ? [{ k: 'Rhythm', v: 'PM2S' }] : []);
@@ -17608,6 +17941,8 @@ class Component extends DCLogic {
     }, 900);
   }
 }
+/* the page layer reader, exposed for the review tools and tests */
+window.PPP.PdfLayer = PdfLayer;
 </script>
 </body>
 </html>

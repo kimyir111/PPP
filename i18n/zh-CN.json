@@ -1838,6 +1838,20 @@
     "The School of Velocity": "快速练习曲",
     "MuseScore community typesets from the PDMX dataset (CC0)": "PDMX数据集中的MuseScore社区录入版（CC0）",
     "Neru Hayashi's typeset, dedicated to the public domain (via PDMX)": "林ねる录入版，已贡献至公有领域（经PDMX）",
-    "Working through Beyer or Czerny? Today's method-book pieces →": "正在练拜厄或车尔尼？今日教程练习 →"
+    "Working through Beyer or Czerny? Today's method-book pieces →": "正在练拜厄或车尔尼？今日教程练习 →",
+    "Recording type": "录音类型",
+    "This changes how recordings and YouTube audio are interpreted.": "这会改变录音文件和YouTube音频的解析方式。",
+    "Auto / solo piano (faithful)": "自动 / 钢琴独奏（忠实）",
+    "Solo piano (faithful transcription)": "钢琴独奏（忠实记谱）",
+    "Full song (playable piano arrangement)": "完整歌曲（可演奏的钢琴改编）",
+    "playable piano arrangement": "可演奏的钢琴改编",
+    "faithful solo-piano transcription": "钢琴独奏忠实记谱",
+    "Model agreement": "模型一致度",
+    "Estimated confidence": "估算置信度",
+    "playable arrangement": "可演奏的改编",
+    "faithful solo piano": "钢琴独奏忠实记谱",
+    "Only one piano model was available, so these notes could not be cross-checked by another model.": "只有一个钢琴模型可用，因此无法用其他模型交叉核对这些音符。",
+    "{{n}} possible notes were rejected because the piano models did not agree.": "由于钢琴模型之间未达成一致，已排除{{n}}个候选音符。",
+    "Reading notation directly from the vector PDF": "正在直接读取矢量PDF中的乐谱信息"
   }
 }
