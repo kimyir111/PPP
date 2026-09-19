@@ -1880,6 +1880,7 @@
                     <button type="button" onClick="{{ b.on }}" data-learn-tool="{{ b.id }}" aria-pressed="{{ b.pressed }}" title="{{ b.hint }}" style="{{ b.style }}">{{ b.label }}</button>
                   </sc-for>
                   <div style="flex: 1;"></div>
+                  <button type="button" onClick="{{ learnRestart }}" data-learn-restart style="{{ learnRestartStyle }}">{{ learnRestartLabel }}</button>
                   <button type="button" onClick="{{ learnBack }}" data-learn-back style="{{ learnBackStyle }}">{{ learnBackLabel }}</button>
                   <button type="button" onClick="{{ learnNext }}" data-learn-next="{{ learnNextState }}" style="{{ learnNextStyle }}">{{ learnNextLabel }}</button>
                 </div>
@@ -15102,7 +15103,10 @@ class Component extends DCLogic {
       : mask === '145' && span > KW * 4.2 ? 'chord-145-wide-v2'
       : span > KW * 4.2 ? 'wide'
       : black ? 'black' : 'neutral';
-    const art = ART[kind], mirror = hand === 'l', ratio = KW / 34;
+    /* Keep a missing/new pose from turning the whole SVG child into a runtime
+       placeholder.  A neutral hand is always a real, shipped asset. */
+    const resolvedKind = ART[kind] ? kind : 'neutral';
+    const art = ART[resolvedKind], mirror = hand === 'l', ratio = KW / 34;
     const local = f => {
       const p = art.tip[f];
       return [mirror ? 512 - p[0] : p[0], p[1]];
@@ -15126,7 +15130,7 @@ class Component extends DCLogic {
     /* Pose geometry, not resizing, handles nearby, ordinary and wide reaches.
        Every illustration is normalised to exactly the same displayed wrist
        width, so switching fingers cannot make either hand grow or shrink. */
-    const scale = 0.46 * ratio * 165 / (WRIST[kind] || 165);
+    const scale = 0.46 * ratio * 165 / (WRIST[resolvedKind] || 165);
     const sx = scale, sy = scale;
     const artX = fit.reduce((sum, f) => sum + target(f)[0] - local(f)[0] * sx, 0) / fit.length;
     const artY = fit.reduce((sum, f) => sum + target(f)[1] - local(f)[1] * sy, 0) / fit.length;
@@ -15149,8 +15153,8 @@ class Component extends DCLogic {
       ? `translate(${artX + 512 * sx} ${artY}) scale(${-sx} ${sy})`
       : `translate(${artX} ${artY}) scale(${sx} ${sy})`;
     const skin = h('image', {
-      key: 'art', 'data-hand-art': kind,
-      href: './assets/hands/hand-right-' + art.file + '.png',
+      key: 'art', 'data-hand-art': resolvedKind,
+      href: './assets/hands/hand-right-' + art.file + '.png?v=hands-2',
       x: 0, y: 0, width: 512, height: 512, preserveAspectRatio: 'xMidYMid meet',
       transform: imageTransform,
       style: { filter: 'saturate(.86) contrast(.96) drop-shadow(0 3px 4px rgba(0,0,0,.28))' }
@@ -15192,8 +15196,8 @@ class Component extends DCLogic {
     }, tx(hand === 'l' ? 'Left hand' : 'Right hand')));
     return h('g', {
       key: 'hand-' + hand, className: 'ppp-hand', 'data-hand': hand,
-      'data-hand-state': at.state, 'data-hand-pose': kind,
-      'data-hand-scale': scale, 'data-hand-wrist-size': scale * (WRIST[kind] || 165),
+      'data-hand-state': at.state, 'data-hand-pose': resolvedKind,
+      'data-hand-scale': scale, 'data-hand-wrist-size': scale * (WRIST[resolvedKind] || 165),
       style: { transform: `translate(${(ref - base) * KW}px, 0px)`, pointerEvents: 'none' }
     }, h('g', {
       className: 'ppp-hand-skin', opacity: (100 - set.see) / 100,
@@ -15243,7 +15247,7 @@ class Component extends DCLogic {
     })));
     fingers.forEach((sh, i) => {
       skin.push(h('path', { key: 'n' + i, d: sh.nail, fill: 'var(--hand-nail)', stroke: 'var(--hand-line)', strokeOpacity: 0.45, strokeWidth: 0.8 }));
-      skin.push(h('path', { key: 'nh' + i, d: sh.nail, fill: 'none', stroke: '#fff', strokeOpacity: 0.28, strokeWidth: 1.1, transform: 'translate(0 -0.7)' }));
+      skin.push(h('path', { key: 'nh' + i, d: sh.nail, fill: 'none', stroke: 'var(--hand-light)', strokeOpacity: 0.22, strokeWidth: 1.1, transform: 'translate(0 -0.7)' }));
       sh.crease.forEach((c, j) => skin.push(h('path', { key: 'c' + i + j, d: c, fill: 'none', stroke: 'var(--hand-line)', strokeOpacity: 0.6, strokeWidth: 1, strokeLinecap: 'round' })));
     });
     const marks = [];
@@ -16665,6 +16669,7 @@ class Component extends DCLogic {
     this.say(tx('Lesson complete!'));
   }
   learnBack() { if (this.state.learnStep > 0) this.learnOpen(this.state.learnLesson, this.state.learnStep - 1); }
+  learnRestart() { this.learnOpen(this.state.learnLesson, this.state.learnStep); }
 
   /* A key, from anywhere. On-screen and computer keys sound here; a MIDI key
      has already sounded through keyDown. */
@@ -16954,6 +16959,7 @@ class Component extends DCLogic {
       learnResumeSub: tx('Level {{lv}} · Lesson {{n}} of {{total}}', { lv: LV.n, n: L.li, total: LV.lessons.length }),
       learnResume: () => { this.learnStop(); this.setState({ learnView: 'lesson' }); },
       learnAgain: () => this.learnOpen(L.id, 0),
+      learnRestart: () => this.learnRestart(),
       learnBack: () => this.learnBack(),
       learnNext: () => this.learnNext()
     };
@@ -17142,6 +17148,8 @@ class Component extends DCLogic {
     out.learnNextLabel = st.kind === 'quiz' && lx.right && !lx.done ? tx('Next question') : si === n - 1 ? tx('Finish lesson') : tx('Next');
     out.learnNextState = ready ? 'ready' : 'locked';
     out.learnNextStyle = btn(true, ready);
+    out.learnRestartLabel = tx('Restart step');
+    out.learnRestartStyle = btn(false);
     out.learnBackLabel = tx('Back');
     out.learnBackStyle = btn(false) + (si === 0 ? 'visibility:hidden;' : '');
     return out;

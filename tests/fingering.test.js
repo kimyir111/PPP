@@ -74,8 +74,14 @@ const picture = page => page.evaluate(() => {
       return { pose: img.getAttribute('data-hand-art'), href: img.getAttribute('href'), transform: img.getAttribute('transform'), width: b.width, height: b.height, wrist: +hand.getAttribute('data-hand-wrist-size') };
     }),
     expected: [...document.querySelectorAll('.ppp-kbwrap [data-state="expected"]')].map(e => +e.getAttribute('data-midi')).sort((a, b) => a - b),
+    sounding: [...document.querySelectorAll('.ppp-kbwrap [data-state="on"]')].map(e => +e.getAttribute('data-midi')).sort((a, b) => a - b),
     now: under('now'),
     viewH: svg ? +svg.getAttribute('viewBox').split(' ')[3] : 0,
+    labelsBelowHands: svg ? (() => {
+      const children = [...svg.children], firstHand = children.findIndex(e => e.classList && e.classList.contains('ppp-hand'));
+      const lastLabel = children.reduce((n, e, i) => e.tagName.toLowerCase() === 'text' && !(e.closest && e.closest('.ppp-hand')) ? i : n, -1);
+      return lastLabel > -1 && firstHand > lastLabel;
+    })() : false,
     button: ([...document.querySelectorAll('main button')].find(b => /Show hands/.test(b.innerText || '')) || { getAttribute: () => null }).getAttribute('aria-pressed'),
     legend: /1 thumb · 2 index · 3 middle · 4 ring · 5 little finger/.test(document.querySelector('main').innerText)
   };
@@ -94,9 +100,11 @@ const clickText = (page, re) => page.evaluate(src => {
   const fourFingerAssets = ['chord-1234-v2', 'chord-1235-v2', 'chord-1245-wide-v2', 'chord-1345-v2', 'chord-2345-v2']
     .map(name => path.join(__dirname, '..', 'assets', 'hands', 'hand-right-' + name + '.png'));
   ok('four-finger chords use dedicated illustrated poses', fourFingerAssets.every(file => fs.existsSync(file) && fs.statSync(file).size > 10000), fourFingerAssets.map(file => path.basename(file)).join(', '));
-  const threeFingerAssets = ['chord-125-mid-v2', 'chord-135-wide-v2']
+  const threeFingerAssets = ['chord-125-mid-v2', 'chord-135-wide-v2', 'chord-145-wide-v2']
     .map(name => path.join(__dirname, '..', 'assets', 'hands', 'hand-right-' + name + '.png'));
   ok('wide three-finger chords use dedicated illustrated poses', threeFingerAssets.every(file => fs.existsSync(file) && fs.statSync(file).size > 10000), threeFingerAssets.map(file => path.basename(file)).join(', '));
+  const naturalOctave = path.join(__dirname, '..', 'assets', 'hands', 'hand-right-pair-15-level-wide-natural-v3.png');
+  ok('wide octaves use a relaxed five-finger illustration', fs.existsSync(naturalOctave) && fs.statSync(naturalOctave).size > 10000, path.basename(naturalOctave));
 
   const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
   const page = await browser.newPage();
@@ -164,6 +172,31 @@ const clickText = (page, re) => page.evaluate(src => {
   ok('in F major the fourth finger rests over B flat, not B', rest.f[3] === 70, 'fingers over ' + rest.f.join(' '));
   ok('in D major the hand around F sharp is D E F# G A', rest.d.join() === '62,64,66,67,69', rest.d.join(' '));
   ok('in C the hand around E is C D E F G', rest.c.join() === '60,62,64,65,67', rest.c.join(' '));
+
+  const tiedFinger = await page.evaluate(() => {
+    const notes = [
+      { abs: 0, dur: 4, midi: 60, hand: 'l', tieStart: true },
+      { abs: 4, dur: 4, midi: 60, hand: 'l', tieStop: true }
+    ];
+    const H = window.PPP.Fingering.plan({ notes, _byNumber: {} }).hands.l;
+    return { events: H.events.length, end: H.events[0].end, until: H.events[0].until[0] };
+  });
+  ok('a finger stays down through a tie instead of jumping to the next note',
+    tiedFinger.events === 1 && tiedFinger.end === 8 && tiedFinger.until === 8,
+    JSON.stringify(tiedFinger));
+  const shortVisualHold = await page.evaluate(() => {
+    const notes = [
+      { abs: 0, dur: 0.125, midi: 64, hand: 'r' },
+      { abs: 0.125, dur: 0.125, midi: 65, hand: 'r' }
+    ];
+    const H = window.PPP.Fingering.plan({ notes, _byNumber: {} }).hands.r;
+    return H.events.map(e => e.end);
+  });
+  ok('short notes keep the hand on the same visual window as the score',
+    shortVisualHold.length === 2 &&
+      Math.abs(shortVisualHold[0] - 0.25) < 1e-6 &&
+      Math.abs(shortVisualHold[1] - 0.375) < 1e-6,
+    shortVisualHold.join(', '));
 
   console.log('\n── the hand is drawn on the keys it plays ──');
   const drawn = await page.evaluate(() => {
@@ -276,7 +309,7 @@ const clickText = (page, re) => page.evaluate(src => {
   await sleep(1000);
   const p0 = await picture(page);
   ok('both hands are drawn over the keyboard', p0.hands.join() === 'l,r', p0.hands.join(', '));
-  ok('each hand uses a loaded illustrated pose', p0.arts.length === 2 && p0.arts.every(a => /\/assets\/hands\/hand-right-.+\.png$/.test(a.href) && a.width > 0 && a.height > 0), p0.arts.map(a => a.pose).join(', '));
+  ok('each hand uses a loaded illustrated pose', p0.arts.length === 2 && p0.arts.every(a => /\/assets\/hands\/hand-right-.+\.png(?:\?.*)?$/.test(a.href) && a.width > 0 && a.height > 0), p0.arts.map(a => a.pose).join(', '));
   const naturalAspect = p0.arts.every(a => {
     const m = /scale\((-?[\d.]+) ([\d.]+)\)/.exec(a.transform || '');
     return m && Math.abs(Math.abs(+m[1]) - Math.abs(+m[2])) < 0.0001;
@@ -285,10 +318,43 @@ const clickText = (page, re) => page.evaluate(src => {
   const wristSizes = p0.arts.map(a => a.wrist).filter(Boolean);
   ok('left and right illustrated hands use one physical size', wristSizes.length === 2 && Math.max(...wristSizes) / Math.min(...wristSizes) <= 1.01, wristSizes.map(n => n.toFixed(1)).join(', '));
   ok('playing markers sit on the illustrated fingertips', p0.now.every(n => n.artOffset <= 8), p0.now.map(n => n.artOffset).join(', '));
+  ok('key names stay below the hand and finger-number layer', p0.labelsBelowHands === true);
   ok('the keyboard grows a strip below the keys for the palms', p0.viewH > 148, 'viewBox height ' + p0.viewH);
   ok('the toggle says the guide is on', p0.button === 'true');
   ok('the finger numbers are explained under the keyboard', p0.legend === true);
   ok('a finger is marked to play', p0.now.length > 0, p0.now.map(n => n.hand + n.finger).join(' '));
+  const pausedKeys = [...new Set(p0.now.map(n => n.midi))].sort((a, b) => a - b);
+  ok('while paused, the keyboard and both hands show the same complete onset',
+    p0.sounding.length === 0 && pausedKeys.join() === p0.expected.join(),
+    'keys ' + p0.expected.join(',') + ', fingers ' + pausedKeys.join(',') + ', sounding ' + p0.sounding.join(','));
+  const overlappingHands = await page.evaluate(() => {
+    let logic = null;
+    for (const el of [...document.querySelectorAll('*')]) {
+      const key = Object.keys(el).find(k => k.indexOf('__reactFiber') === 0);
+      if (!key) continue;
+      let fiber = el[key], depth = 0;
+      while (fiber && depth++ < 60) {
+        const stateNode = fiber.stateNode, candidate = stateNode && stateNode.logic;
+        if (candidate && candidate.state && candidate.state.score && typeof candidate.guideOnset === 'function') { logic = candidate; break; }
+        fiber = fiber.return;
+      }
+      if (logic) break;
+    }
+    if (!logic) return null;
+    const saved = logic.state;
+    logic.state = Object.assign({}, saved, { playing: true, beat: 81.1, hands: 'both' });
+    const sort = a => a.slice().sort((x, y) => x - y);
+    const result = {
+      left: logic.guideOnset('l'), right: logic.guideOnset('r'),
+      expected: sort(logic.expected()), lit: sort(logic.litNotes())
+    };
+    logic.state = saved;
+    return result;
+  });
+  ok('overlapping hand durations keep each hand on its own current onset',
+    !!overlappingHands && overlappingHands.left === 80 && overlappingHands.right === 81 &&
+      overlappingHands.expected.join() === '48,55,81' && overlappingHands.lit.join() === '48,55,81',
+    JSON.stringify(overlappingHands));
 
   console.log('\n── following a MIDI keyboard ──');
   await page.evaluate(() => {

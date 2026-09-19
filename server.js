@@ -328,12 +328,14 @@ function runYtDlp(ytdlp, watch, extraArgs, timeoutMs) {
 }
 
 async function fetchYoutubeAudioFile(parsed) {
-  const hosted = process.env.NODE_ENV === 'production';
+  /* yt-dlp is installed in the hosted build by render.yaml. Prefer it there
+     too; the third-party proxy remains the fallback for blocked datacenter IPs. */
+  const hosted = process.env.PPP_YOUTUBE_PROXY_FIRST === '1';
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ppp-yt-'));
   let lastTail = '';
-  /* Datacenter IPs are bot-walled by YouTube, so hosted PPP uses a proxy.
-     Do not spend the request budget on yt-dlp there — it fails and the
-     client then cannot retry before the proxy cache is warm. */
+  /* Datacenter IPs can be bot-walled by YouTube. Set
+     PPP_YOUTUBE_PROXY_FIRST=1 to use the proxy before yt-dlp; the default
+     tries the installed binary first and falls back to the proxy. */
   if (hosted) {
     try {
       const file = await fetchViaLoaderTo(parsed, dir);
