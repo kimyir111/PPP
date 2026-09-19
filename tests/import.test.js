@@ -194,6 +194,33 @@ async function importFile(page, file, waitMs) {
       && !/could not find a score/i.test(ytHeard.summary || ''),
     JSON.stringify(ytHeard));
 
+  const helperPreferred = await page.evaluate(async () => {
+    const oldH = PPP.Import.health, oldRemote = PPP.Import.transcribe, oldBrowser = PPP.Import.transcribeHere;
+    let helperCalls = 0, browserCalls = 0;
+    PPP.Import.health = () => Promise.resolve({ ok: true, transcriber: true, amt: 'kong' });
+    PPP.Import.transcribe = () => {
+      helperCalls++;
+      const notes = [];
+      for (let i = 0; i < 12; i++) notes.push({ on: i * 0.5, off: i * 0.5 + 0.4, midi: 60 + (i % 5), vel: 80 });
+      return Promise.resolve({
+        heard: { notes: notes, duration: 6.2, engine: 'piano-transcription', device: 'cpu' },
+        title: 'Helper piano', audioUrl: null
+      });
+    };
+    PPP.Import.transcribeHere = () => { browserCalls++; return Promise.reject(new Error('browser should not run')); };
+    let out;
+    try {
+      const r = await PPP.Import.fromRecording({ url: 'https://youtu.be/Vyn_63QDW7g' });
+      out = { helperCalls, browserCalls, amt: r.source && r.source.amt, notes: r.report && r.report.notes };
+    } catch (e) { out = { helperCalls, browserCalls, error: e.message }; }
+    PPP.Import.health = oldH; PPP.Import.transcribe = oldRemote; PPP.Import.transcribeHere = oldBrowser;
+    return out;
+  });
+  ok('an available piano helper wins over browser Basic Pitch',
+    !helperPreferred.error && helperPreferred.helperCalls === 1 && helperPreferred.browserCalls === 0
+      && helperPreferred.amt === 'piano-transcription' && helperPreferred.notes >= 4,
+    JSON.stringify(helperPreferred));
+
   const ytCopy = await page.content();
   ok('hosted add-sheet copy does not tell you to run npm run omr',
     /PPP reads PDFs, recordings and YouTube links here/.test(ytCopy)
@@ -378,9 +405,12 @@ async function importFile(page, file, waitMs) {
           const m = t.match(new RegExp('(?:^|\\n)' + label + '\\s*\\n\\s*([0-9]+)', 'i'));
           return m ? +m[1] : 0;
         };
+        let saved = null;
+        try { saved = JSON.parse(localStorage.getItem('ppp.state.v2')); } catch (e) {}
         return {
           review: /Accept and practise/.test(t),
-          measures: stat('Measures'), notes: stat('Notes'), conf: stat('Confidence')
+          measures: stat('Measures'), notes: stat('Notes'), conf: stat('Confidence'),
+          engine: saved && saved.importSource && saved.importSource.engine
         };
       });
       ok(label + ' reaches the review screen', got.review,
@@ -394,6 +424,7 @@ async function importFile(page, file, waitMs) {
         exact ? got.conf === 100 : got.conf < 100,
         exact ? got.measures + ' measures at ' + got.conf + '% confidence'
           : got.measures + ' measures (expected ' + TRUTH.measures + ') flagged at ' + got.conf + '%');
+      if (label === 'PDF') ok('PDF prefers Audiveris when the helper is available', got.engine === 'Audiveris', String(got.engine));
     }
 
     /* multi-page */

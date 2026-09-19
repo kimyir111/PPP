@@ -6491,6 +6491,21 @@ const Import = {
     }
     const nameGuess = (what.file ? String(what.file.name).replace(/\.[^.]+$/, '') : '') || '';
 
+    /* The installed helper is the quality path: piano-specific Kong/Transkun,
+       pedal events, and optional audio beat/PM2S data. Browser Basic Pitch is
+       the portability fallback for hosted pages and tablets. Trying it first
+       made any four noisy browser notes bypass the better local engine. */
+    const health = await Import.health();
+    let helperErr = null;
+    if (health.ok && health.transcriber) {
+      try {
+        const got = await Import.transcribe(what, onStage, ctl);
+        const heard = got && got.heard;
+        if (heard && ((heard.engine === 'catalog' && heard.xml) || (heard.notes || []).length >= 4))
+          return Import.finishHeard(got, what, onStage);
+      } catch (e) { helperErr = e; }
+    }
+
     let generated = null, genErr = null;
     try {
       generated = await Import.transcribeHere(what, onStage, ctl);
@@ -6569,12 +6584,7 @@ const Import = {
       return { score: score, source: source, report: report, musicxml: xml, recording: null };
     }
 
-    const health = await Import.health();
-    if (health.ok && health.transcriber) {
-      const got = await Import.transcribe(what, onStage, ctl);
-      return Import.finishHeard(got, what, onStage);
-    }
-    throw genErr || importError('no-score',
+    throw genErr || helperErr || importError('no-score',
       tx('PPP could not hear piano notes in that recording.'),
       [tx('Use a clear solo piano recording'), tx('Or add the sheet music as a PDF or MusicXML')]);
   },
@@ -6708,37 +6718,47 @@ const Import = {
     }
 
     /* --- PDF / photo: read on this device, same path as a computer ---
-       A PDF from notation software already says where the notes are. A scan
-       is read from the pixels. The local Audiveris helper is only a fallback
-       when that reading finds too little. */
+       Prefer Audiveris whenever the helper is available. PdfLayer.notate is
+       intentionally only a fallback for a browser that cannot reach the
+       helper: drawing commands in some exported PDFs look like noteheads but
+       do not carry enough musical meaning to recover pitch or duration. A
+       plausible-looking direct result can therefore be much worse than OMR. */
     const pages = kind === 'pdf'
       ? await Import.rasterisePdf(file, onStage)
       : await Import.imageToPage(file);
 
-    let xml = null, omr = null;
-    try {
-      const built = PdfLayer.notate(pages, file.name);
-      if (built && built.notes >= 4 && built.measures >= 1) {
-        xml = built.xml;
-        source.engine = 'pdf';
-        source.pages = pages.map((_, i) => ({ index: i, ok: true }));
-        stage('merge', { pages: pages.length });
-      }
-    } catch (e) { /* fall through to the helper */ }
-
-    if (!xml) {
-      const health = await Import.health();
-      if (health.ok && health.audiveris) {
+    let xml = null, omr = null, recognitionError = null;
+    const health = await Import.health();
+    if (health.ok && health.audiveris) {
+      try {
         omr = await Import.recognise(pages, onStage);
         source.engine = omr.engine;
         source.pages = omr.pages;
         stage('merge', { pages: omr.pages.filter(p => p.ok).length });
         xml = Import.mergeMusicXml(omr.musicxml);
-      } else {
-        throw importError('recognition-failed',
-          tx('PPP could not read notation on that file.'),
-          [tx('Try a clearer scan, or a PDF exported from notation software'), tx('Or upload MusicXML instead')]);
-      }
+      } catch (e) { recognitionError = e; }
+    }
+
+    /* Keep tablet/hosted imports useful when no helper exists. This browser
+       recogniser is also the last-resort path if Audiveris rejects a page;
+       the important quality fix above is that it no longer runs first. */
+    if (!xml) {
+      try {
+        const built = PdfLayer.notate(pages, file.name);
+        if (built && built.notes >= 4 && built.measures >= 1) {
+          xml = built.xml;
+          source.engine = 'pdf';
+          source.pages = pages.map((_, i) => ({ index: i, ok: true }));
+          stage('merge', { pages: pages.length });
+        }
+      } catch (e) { /* report the helper failure or the generic advice below */ }
+    }
+
+    if (!xml) {
+      if (recognitionError) throw recognitionError;
+      throw importError('recognition-failed',
+        tx('PPP could not read notation on that file.'),
+        [tx('Try a clearer scan, or a PDF exported from notation software'), tx('Or upload MusicXML instead')]);
     }
 
     stage('parse', {});
