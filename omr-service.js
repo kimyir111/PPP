@@ -16,7 +16,8 @@
 
      node omr-service.js [--port 8788] [--audiveris <path to Audiveris.exe>]
 
-   Also hosts the AI coach (/coach), so the Anthropic key stays server-side,
+   Also hosts the AI coach (/coach) and safe arrangement planning (/arrange),
+   so the Anthropic key stays server-side,
    and audio transcription (/transcribe): a YouTube link, an MP3 or an MP4 in,
    the notes a piano model hears out. Notation is still PPP's job, in the
    browser, so MusicXML remains the only thing the parser ever reads.
@@ -328,12 +329,32 @@ function coachSchema(z) {
   });
 }
 
+function arrangementSchema(z) {
+  return z.object({
+    level: z.enum(['original', 'beginner', 'intermediate', 'advanced'])
+      .describe('Use the requestedLevel from the context.'),
+    style: z.enum(['balanced', 'melody', 'accompaniment', 'jazz', 'ballad', 'pop', 'waltz', 'bossa', 'cinematic'])
+      .describe('Choose only a style listed in context.allowed.styles.'),
+    maxNotesPerAttack: z.number().int().min(1).max(5)
+      .describe('Must not exceed the limit for the selected level in context.allowed.'),
+    reason: z.string().max(240).describe('One short explanation in the requested language, grounded only in the supplied texture profile.')
+  });
+}
+
 /* One schema, two wire formats. Ollama takes plain JSON Schema, so it is
    derived from the same zod definition rather than written out twice. */
 function coachJsonSchema() {
   const z = zodLib();
   if (!z || typeof z.toJSONSchema !== 'function') return null;
   const s = z.toJSONSchema(coachSchema(z));
+  delete s.$schema;
+  return s;
+}
+
+function arrangementJsonSchema() {
+  const z = zodLib();
+  if (!z || typeof z.toJSONSchema !== 'function') return null;
+  const s = z.toJSONSchema(arrangementSchema(z));
   delete s.$schema;
   return s;
 }
@@ -371,6 +392,20 @@ const COACH_USER = ctx => 'Plan the next practice session from these measurement
   'Write every sentence you return in ' + (ctx.language || 'English') +
   ', including summary, todayGoal, coachNote and every task reason.\n' +
   'Keep coachNote to one sentence.\n\n' +
+  '```json\n' + JSON.stringify(ctx, null, 1) + '\n```';
+
+const ARRANGEMENT_SYSTEM = [
+  'You select safe piano-arrangement parameters inside PPP.',
+  'PPP, not you, applies those parameters to existing recognized notes.',
+  'Never invent, remove, transpose or name pitches. Return parameters only.',
+  'Keep level equal to requestedLevel and obey every limit in allowed.',
+  'Choose only from allowed.styles. Use metre, tempo, attack speed and chord density',
+  'from profile to choose a style; waltz is especially suitable for 3/4, ballad for',
+  'slow sparse music, jazz for chord-rich music, and pop for rhythmically active music.',
+  'The reason must cite only qualitative facts supported by profile and use the requested language.'
+].join('\n');
+
+const ARRANGEMENT_USER = ctx => 'Choose a playable arrangement profile for this recognized piano texture.\n\n' +
   '```json\n' + JSON.stringify(ctx, null, 1) + '\n```';
 
 /* ---- which provider is answering right now ---- */
@@ -506,6 +541,104 @@ async function planWithOllama(ctx) {
     plan: plan,
     usage: { input: j.prompt_eval_count || 0, output: j.eval_count || 0, cacheRead: 0 }
   };
+}
+
+async function arrangeWithAnthropic(ctx) {
+  const { Anthropic, zodOutputFormat, z } = sdk();
+  const client = new Anthropic();
+  const response = await client.messages.parse({
+    model: COACH_MODEL,
+    max_tokens: 2000,
+    system: ARRANGEMENT_SYSTEM,
+    output_config: { effort: 'low', format: zodOutputFormat(arrangementSchema(z)) },
+    messages: [{ role: 'user', content: ARRANGEMENT_USER(ctx) }]
+  });
+  if (response.stop_reason === 'refusal') {
+    const e = new Error('The arranger declined to answer.'); e.code = 'refused'; throw e;
+  }
+  if (!response.parsed_output) {
+    const e = new Error('The arranger did not return a usable profile.'); e.code = 'unparsed'; throw e;
+  }
+  return {
+    plan: response.parsed_output,
+    usage: response.usage ? {
+      input: response.usage.input_tokens, output: response.usage.output_tokens,
+      cacheRead: response.usage.cache_read_input_tokens || 0
+    } : null
+  };
+}
+
+async function arrangeWithOllama(ctx) {
+  const schema = arrangementJsonSchema();
+  if (!schema) {
+    const e = new Error('zod is not installed, so the arrangement schema cannot be built.');
+    e.code = 'unparsed'; throw e;
+  }
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), OLLAMA_TIMEOUT_MS);
+  let r, j;
+  try {
+    r = await fetch(OLLAMA_URL + '/api/chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctl.signal,
+      body: JSON.stringify({
+        model: OLLAMA_MODEL, stream: false, think: false, format: schema,
+        options: { num_ctx: 4096, temperature: 0.2 },
+        messages: [
+          { role: 'system', content: ARRANGEMENT_SYSTEM },
+          { role: 'user', content: ARRANGEMENT_USER(ctx) }
+        ]
+      })
+    });
+    j = await r.json();
+  } catch (err) {
+    const e = new Error(err && err.name === 'AbortError'
+      ? 'Ollama did not answer the arranger in time.'
+      : 'Ollama could not be reached for arranging.');
+    e.code = 'provider-error'; throw e;
+  } finally { clearTimeout(timer); }
+  if (!r.ok) {
+    const e = new Error('Ollama returned ' + r.status + (j && j.error ? ': ' + j.error : '') + '.');
+    e.code = 'provider-error'; throw e;
+  }
+  let plan;
+  try { plan = JSON.parse(j.message.content); } catch (e2) {
+    const e = new Error('Ollama did not return a usable arrangement profile.');
+    e.code = 'unparsed'; throw e;
+  }
+  return { plan: plan, usage: { input: j.prompt_eval_count || 0, output: j.eval_count || 0, cacheRead: 0 } };
+}
+
+async function handleArrange(req, res) {
+  const status = await coachStatus();
+  if (!status) return send(res, 503, { ok: false, code: 'arranger-unavailable', error: coachOffReason() });
+  let payload;
+  try {
+    payload = JSON.parse((await readBody(req, 256 * 1024)).toString('utf8'));
+  } catch (e) {
+    return send(res, 400, { ok: false, code: 'bad-request', error: redact(e.message) });
+  }
+  const ctx = payload && payload.context;
+  if (!ctx || !ctx.profile || !ctx.allowed || !Array.isArray(ctx.allowed.levels))
+    return send(res, 400, { ok: false, code: 'bad-context', error: 'An arrangement context with a measured profile is required.' });
+  const t0 = Date.now();
+  try {
+    const out = status.kind === 'anthropic' ? await arrangeWithAnthropic(ctx) : await arrangeWithOllama(ctx);
+    const plan = out.plan || {};
+    /* The browser validates again, but the service also enforces the selected
+       difficulty so a model cannot silently turn beginner into advanced. */
+    plan.level = ctx.requestedLevel;
+    const cap = ctx.allowed.maxNotesPerAttack && ctx.allowed.maxNotesPerAttack[plan.level];
+    if (cap) plan.maxNotesPerAttack = Math.max(1, Math.min(cap, Math.round(+plan.maxNotesPerAttack || cap)));
+    send(res, 200, {
+      ok: true, plan: plan, provider: status.name, model: status.model,
+      ms: Date.now() - t0, usage: out.usage
+    });
+  } catch (err) {
+    const code = err && err.code ? err.code : 'provider-error';
+    send(res, code === 'refused' || code === 'unparsed' ? 422 : 502, {
+      ok: false, code: code, error: redact(err && err.message ? err.message : 'The arranger failed.')
+    });
+  }
 }
 
 async function handleCoach(req, res) {
@@ -1087,7 +1220,7 @@ const server = http.createServer(async (req, res) => {
     await toolsReady;
     const tr = transcriberStatus();
     return send(res, 200, {
-      ok: true, service: 'ppp-local', version: 4,
+      ok: true, service: 'ppp-local', version: 5,
       audiveris: !!AUDIVERIS, audiverisPath: AUDIVERIS || null,
       pdfToMusic: !!PDFTOMUSIC,
       coach: !!coach,
@@ -1104,6 +1237,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'POST' && req.url === '/coach') return handleCoach(req, res);
+  if (req.method === 'POST' && req.url === '/arrange') return handleArrange(req, res);
 
   if (req.method === 'POST' && req.url === '/pdf-vector') {
     if (!fromLocalPage(req))

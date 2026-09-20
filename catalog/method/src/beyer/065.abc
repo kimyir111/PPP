@@ -1,0 +1,15 @@
+X:1
+T:No. 65
+C:Ferdinand Beyer, Op. 101
+%ppp book=beyer no=65 pages=48
+M:C
+L:1/8
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:C
+[V:1] "^Moderato" c d e f g a b c' | b a g f [ef]2 d2 | c4 e4 | d4 g4 | e d c d [ef]2 g2 | b c' b a g f e d | c8 | g8 |
+[V:2] C,4 E,4 | D,4 G,4 | C, D, E, F, G, A, B, C | B, A, G, F, E, F, D, G, | C,8 | G,8 | E, D, C, D, E, F, G, A, | B, C B, A, G, F, E, D, |
+[V:1] e c d e f g a b | c'8 | c' b a g f e d c | [Bc]2 d2 f [ab] e2 | c' b a g f e d c | [Bc]2 d2 f [ab] e2 | c'2 b a g f e d | c8 |]
+[V:2] C,8 | E, C, D, E, F, G, A, B, | z8 | D C B, A, G, F, E, D, | C,2 E, F, G, A, B, C | D C B, A, G, F, E, D, | C,2 F,, D, F, G, A, B, | C8 |]

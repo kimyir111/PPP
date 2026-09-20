@@ -1,0 +1,17 @@
+X:1
+T:No. 20
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=20 pages=11
+M:C
+L:1/8
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] c2 e2 g2 c'2 | bgab c'2 g2 | e2 e2 e2 g2 | agfe d4 | c2 e2 g2 c'2 |
+[V:2] CGEG CGEG | DGFG CGEG | CGEG CGEG | G,ECE G,DB,D | CGEG CGEG |
+[V:1] bgab c'2 g2 | egc'b agfe | e2 d2 c4 :: d2 d2 d2 f2 | egc'b agfe |
+[V:2] DGFG CGEG | G,ECE G,ECE | G,FB,F CGEG :: B,GDG B,GDG | CGEG CGEG |
+[V:1] d2 d2 d2 f2 | egc'b agfe | fcfa c'ac'a | g2 e2 gfed | fedc e2 d2 | c8 :|
+[V:2] B,GDG B,GDG | CGEG CGEG | CAFA CAFA | CGEG F,DA,D | G,ECE G,FB,F | CGEG C4 :|

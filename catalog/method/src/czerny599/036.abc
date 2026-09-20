@@ -1,0 +1,17 @@
+X:1
+T:No. 36
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=36 pages=18-19
+M:C
+L:1/8
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:C
+[V:1] !p! ^fgag =f2 e2 | ^defe =d2 c2 | ^c2 d2 c2 d2 | ^d2 e2 e4 | ag^fg c'2 g2 |
+[V:2] C,G,E,G, C,G,E,G, | C,G,E,G, C,G,E,G, | B,,G,F,G, B,,G,F,G, | C,G,E,G, C,G,E,G, | C,G,E,G, C,G,E,G, |
+[V:1] =fe^de g2 e2 | =d2 b2 a2 ^f2 | a2 g2 g4 :: =f4 ^cdgf | e2 c'2 g4 |
+[V:2] C,G,E,G, C,G,E,G, | D,B,G,B, D,CA,C | G,DB,D G,4 :: G,DB,D G,DB,D | G,ECE G,ECE |
+[V:1] gfef ^cdgf | e2 c'2 g4 | _b2 b2 b2 b2 | a2 c'2 =bc'af | e2 g2 ^fg=fd | d2 c2 c4 :|
+[V:2] G,DB,D G,DB,D | C,G,E,G, C,G,E,G, | E,CG,C E,CG,C | F,CA,C F,CA,C | G,ECE G,FB,F | CGEG C4 :|

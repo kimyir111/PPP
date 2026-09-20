@@ -1,0 +1,15 @@
+X:1
+T:No. 53
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=53 pages=27
+M:2/4
+L:1/8
+Q:1/4=144
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:Bb
+[V:1] "^Allegro vivace" f b2 f | d f2 d | f e c A | B .d F z | f b2 f | d f2 d | f e c A | !fine!B4 :|
+[V:2] !p! .[B,D]2 .[B,D]2 | .[B,D]2 .[B,D]2 | .[F,CE]2 .[F,CE]2 | .[B,D]2 .[B,D]2 | .[B,D]2 .[B,D]2 | .[B,D]2 .[B,D]2 | .[F,CE]2 .[F,CE]2 | .[B,D]2 .[B,D]2 :|
+[V:1] F A2 c | F B2 d | e c d B | c A F F | F A2 c | B d2 f | =e g b e | .f .f .f .f !D.C.!||
+[V:2] .[F,CE]2 .[F,CE]2 | .[F,B,D]2 .[F,B,D]2 | .[F,A,C]2 .[F,B,D]2 | .[F,A,C]2 .[F,A,C]2 | .[F,CE]2 .[F,CE]2 | .[B,D]2 .[B,D]2 | .[C,G,B,]2 .[C,G,B,]2 | .[F,A,]2 z2 ||

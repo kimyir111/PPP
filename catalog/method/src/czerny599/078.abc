@@ -1,0 +1,15 @@
+X:1
+T:No. 78
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=78 pages=43
+M:C
+L:1/8
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:F
+[V:1] "^Moderato" [fA]4 [gB]2 [fA]2 | f2 e2 d2 e2 & B8 | f2 g/2 f/2 e/2 f/2 [eg]2 [fa]2 & c8 | [cfa]4 [ceg]2 z2 | [bc]3 g [ac]2 [cf]2 | [gA]3 e [fA]2 [dA]2 | [cg]2 e2 f2 [GB]2 | [GBd]4 [Gc]4 |
+[V:2] [F,C]4 [E,C]2 [F,C]2 | [G,C]8 | A,4 G,2 F,2 & C8 | C,2 C2 C,2 z2 | [EG]4 [FA]2 [FA]2 | [CE]4 [DF]2 [DF]2 | [G,E]2 C2 D2 [G,DF]2 | [CF]4 [CE]4 |
+[V:1] [Ec]3 d c2 [Ec]2 | [Fc]3 d c2 [Fc]2 | [Gc]2 e d c2 [Gc]2 | [Ac]2 a2 f4 | [cfa]4 c2 [cfa]2 | [bf]2 a/2 b/2 c'/2 b/2 d2 g2 | [gc]2 f2 c e d e | [gc]4 [cf]4 |
+[V:2] B,6 [B,C]2 | [A,C]6 [A,C]2 | [E,B,C]6 [E,B,C]2 | [A,F,C]8 | [F,C]4 [E,C]2 [E,C]2 | [B,F,D,]4 [B,,G,D,]4 | [A,F,C,]4 [F,,B,G,C,]4 | [E,B,C,]4 [A,F,]4 |

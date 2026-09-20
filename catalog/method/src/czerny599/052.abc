@@ -1,0 +1,15 @@
+X:1
+T:No. 52
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=52 pages=27
+M:2/4
+L:1/8
+Q:1/4=76
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:D
+[V:1] "^Andante" [Fd]3 [Ec] | [Ge]3 [Fd] | [Bg]3 .[Bg] | [Bg] [Af] [Ge] [Fd] | [Ec]3 [Fd] | [Ge]3 [Fd] | [FA] [EG] [EG] [DF] | [DF]2 [CE] z :|
+[V:2] z D,, F,, A,, | z A,,, C,, D,, | z G,,, B,,, G,,, | D,,4 | z A,,, A,, z | z A,,, A,, z | z A,,, C,, D,, | A,, A,,, A,, z :|
+[V:1] |: !p! [A,CE]2 [A,CE] [A,DF] | [A,CG] [EA]2 [EG] | [DF] [DFB] [CEA] [B,D^G] | [CA]2 z2 | z .[A,D] .[A,D] .[A,D] | .[B,DE] .[B,DE] .[B,D^E] .[B,D^E] | [A,DF] .[FA] .[EG] .[G,CE] | [F,D]2 z2 :|
+[V:2] |: z A,, G,, F,, | E,, C,, A,,, C,, | D,, B,,, E,, E,, | A,,, B,,, A,,, =G,,, | F,,,2 F,,,2 | G,,,2 ^G,,,2 | A,,,3 A,, | D,, D, D,, z :|

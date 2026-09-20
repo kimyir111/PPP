@@ -1,0 +1,15 @@
+X:1
+T:No. 5
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=5 pages=4
+M:C
+L:1/4
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] G c e g | f d f d | B B d f | e c e c | G c e g | f d f d | B d B d | c e c2 :|
+[V:2] C2 C2 | G2 G2 | G2 G2 | C2 C2 | C2 C2 | G2 G2 | G2 G2 | C4 :|
+[V:1] |: c f a c' | c' g e c | c f a c' | c' g e c | g c' b a | g e g e | f d f d | c e c2 :|
+[V:2] |: F2 F2 | E2 C2 | F2 F2 | E2 C2 | E2 F2 | E2 C2 | G2 G2 | C4 :|

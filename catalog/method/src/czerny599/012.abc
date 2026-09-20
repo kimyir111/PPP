@@ -1,0 +1,17 @@
+X:1
+T:No. 12
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=12 pages=6
+M:C
+L:1/8
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] c d e f .g2 .g2 | g f e d .c2 .e2 | d e f d .g2 .f2 | e f g e c4 | c d e d c d e f |
+[V:2] [CEG]8 | [CEG]8 | [B,DG]8 | [CEG]8 | [CEG]8 |
+[V:1] g f e d .c2 .e2 | d e f e g f e d | c e g e c4 :|: d e f e g f e d | e f g e .c2 .c2 |
+[V:2] [CEG]8 | [B,FG]8 | [CEG]8 :|: [B,DG]8 | [CEG]8 |
+[V:1] d e f e g f e d | e f g e .c2 .c2 | c d e f g g g g | g f e d c d e c | d e f e g f e d | c e g e c4 :|
+[V:2] [B,DG]8 | [CEG]8 | [CEG]8 | [CEG]8 | [B,FG]4 [B,FG]4 | [CEG]8 :|

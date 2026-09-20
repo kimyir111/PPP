@@ -1,0 +1,17 @@
+X:1
+T:No. 37
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=37 pages=19
+M:6/8
+L:1/8
+Q:3/8=60
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:C
+[V:1] [eg]2 [^d^f] [eg]2 [=d=f] | [ce]2 [B^d] [ce]2 [Ec] | [Fd]2 [E^c] [Fd][Ge][Fd] | [E=c]3 Gce | [eg]2 [^d^f] [eg]2 [ce] |
+[V:2] C,CC C,CC | C,CC C,CC | G,,G,G, G,,G,G, | C,CC C,CC | C,CC C,CC |
+[V:1] [Ge]2 [Ge] [G_Be]2 [G_Be] | [G=Bd]2 [Bg] [A^f][Bg][ca] | [Bg]2 [Bg] [Bg]3 :: [d=f]2 [^ce] [df]2 G | [=ce]2 [B^d] [ce]2 G |
+[V:2] C,CC ^C,^CC | D,DD D,DD | G,DB, G,3 :: B,,G,G, B,,G,G, | C,G,G, C,G,G, |
+[V:1] [d=f]2 [^ce] [df]2 G | [=ce]2 [B^d] [ce]2 [eg] | [fa][ac'][^gb] [ac'][=gb][fa] | [eg][^d^f][eg] [=d=f][eg][df] | [ce][df][ce] [Bd][ce][Bd] | .c.c.c c3 :|
+[V:2] B,,G,G, B,,G,G, | C,CC C,CC | F,CC F,CC | C,CC F,[A,D][A,D] | G,[CE][CE] G,[DF][DF] | [CE][CE][CE] [CE]3 :|

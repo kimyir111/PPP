@@ -1,0 +1,17 @@
+X:1
+T:No. 40
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=40 pages=20
+M:2/4
+L:1/16
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:F
+[V:1] !p! c2fa c'4 | c2fa c'4 | .b2.b2 c'bag | .a2.c'2 f4 | c2fa c'4 |
+[V:2] .F,2.[A,C]2 .[A,C]2.[A,C]2 | .F,2.[A,C]2 .[A,C]2.[A,C]2 | .C,2.[E,B,]2 .[E,B,]2.[E,B,]2 | .F,2.[A,C]2 .[A,C]2.[A,C]2 | .F,2.[A,C]2 .[A,C]2.[A,C]2 |
+[V:1] c2fa c'4 | ge'd'c' =bc'd'b | .c'2.c'2 c'4 :: ._b2.b2 c'bag | a2c'2 a2f2 |
+[V:2] .F,2.[A,C]2 .[A,C]2.[A,C]2 | G,2[CE]2 G,2[DF]2 | .[CE]2.[CE]2 [CE]4 :: [E,G,]2C,2 [E,G,]2C,2 | [F,A,]2C,2 [F,A,]2C,2 |
+[V:1] .e2.e2 gfef | g4 .c2.c2 | c2fa c'4 | d2fb d'4 | c'f'e'd' c'bag | .f2.f2 f4 :|
+[V:2] [G,B,]2C,2 [F,A,]2C,2 | [E,G,]2C,2 [E,G,]2C,2 | .F,2.[A,C]2 .[A,C]2.[A,C]2 | .B,,2.[D,F,]2 .[D,F,]2.[D,F,]2 | .C,2.[F,A,]2 .C,2.[E,B,]2 | .[F,A,]2.[F,A,]2 [F,A,]4 :|

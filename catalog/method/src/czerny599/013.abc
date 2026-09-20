@@ -1,0 +1,17 @@
+X:1
+T:No. 13
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=13 pages=7
+M:C
+L:1/8
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] c e c e g4 | g e g e c4 | d g f g e g d g | e f g e c d c d | e c e c g2 .g2 |
+[V:2] z2 [EG]2 [EG]2 .[EG]2 & C8 | z2 [EG]2 [EG]2 .[EG]2 & C8 | z2 [DG]2 [DG]2 .[DG]2 & B,8 | z2 [EG]2 [EG]2 .[EG]2 & C8 | z2 [EG]2 [EG]2 .[EG]2 & C8 |
+[V:1] e g e g .c2 .c2 | d g g f f e e d | c e c e c4 :|: d g g g g f e d | e g c c c d e c |
+[V:2] z2 [EG]2 [EG]2 .[EG]2 & C8 | z2 [FG]2 [FG]2 .[FG]2 & B,8 | z2 [EG]2 [EG]2 .[EG]2 & C8 :|: z2 [DG]2 [DG]2 .[DG]2 & B,8 | z2 [EG]2 [EG]2 .[EG]2 & C8 |
+[V:1] d g g g g f e d | e g e g c4 | c d c d e f e f | g g g g e g e c | g g g g f g f d | c e c e c4 :|
+[V:2] z2 [DG]2 [DG]2 .[DG]2 & B,8 | z2 [EG]2 [EG]2 .[EG]2 & C8 | z2 [EG]2 [EG]2 .[EG]2 & C8 | z2 [EG]2 [EG]2 .[EG]2 & C8 | z2 [FG]2 [FG]2 .[FG]2 & B,8 | z2 [EG]2 [EG]2 .[EG]2 & C8 :|

@@ -256,6 +256,53 @@ const survey = page => page.evaluate(() => {
   if (staff) await staff.screenshot({ path: path.join(SHOTS, 'engraving-dark-labels.png') });
   else await page.screenshot({ path: path.join(SHOTS, 'engraving-dark-labels.png'), fullPage: false });
 
+  const chordTiePaths = await page.evaluate(async () => {
+    const xml = '<?xml version="1.0"?><score-partwise version="3.1">' +
+      '<part-list><score-part id="P1"><part-name>P</part-name></score-part></part-list><part id="P1">' +
+      '<measure number="1"><attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time>' +
+      '<clef><sign>G</sign><line>2</line></clef></attributes>' +
+      '<note><pitch><step>C</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type>' +
+      '<tie type="start"/><notations><tied type="start"/></notations></note>' +
+      '<note><chord/><pitch><step>E</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>' +
+      '<note><pitch><step>C</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type>' +
+      '<tie type="stop"/><notations><tied type="stop"/></notations></note>' +
+      '<note><chord/><pitch><step>F</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>' +
+      '<note><rest/><duration>2</duration><voice>1</voice><type>half</type></note></measure></part></score-partwise>';
+    const score = PPP.parseMusicXML(xml, 'one-chord-tone-tied.musicxml');
+    await new Promise(resolve => PPP.app.setState({
+      score: score, screen: 'player', beat: 0, playing: false,
+      loop: false, loopFrom: 1, loopTo: 1
+    }, resolve));
+    await new Promise(resolve => setTimeout(resolve, 300));
+    const svg = document.querySelector('.ppp-staffwrap svg');
+    return svg ? svg.querySelectorAll('.vf-stavetie path').length : -1;
+  });
+  ok('a partial chord tie curves only the pitch that actually continues', chordTiePaths === 1,
+    chordTiePaths + ' tie path(s)');
+
+  const inferredTiePaths = await page.evaluate(async () => {
+    const xml = '<?xml version="1.0"?><score-partwise version="3.1">' +
+      '<part-list><score-part id="P1"><part-name>P</part-name></score-part></part-list><part id="P1">' +
+      '<measure number="1"><attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time>' +
+      '<clef><sign>G</sign><line>2</line></clef></attributes>' +
+      '<note><pitch><step>C</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type>' +
+      '<tie type="start"/><notations><tied type="start"/></notations></note>' +
+      '<note><pitch><step>C</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type>' +
+      '<tie type="stop"/><notations><tied type="stop"/></notations></note>' +
+      '<note><rest/><duration>2</duration><voice>1</voice><type>half</type></note></measure></part></score-partwise>';
+    const score = PPP.parseMusicXML(xml, 'inferred-audio.xml');
+    score.source = { kind: 'youtube', status: 'transcribed', amt: 'ensemble', transcriptionVersion: PPP.TRANSCRIPTION_VERSION };
+    await new Promise(resolve => PPP.app.setState({
+      score: score, screen: 'player', beat: 0, playing: false,
+      loop: false, loopFrom: 1, loopTo: 1
+    }, resolve));
+    await new Promise(resolve => setTimeout(resolve, 300));
+    const svg = document.querySelector('.ppp-staffwrap svg');
+    return svg ? svg.querySelectorAll('.vf-stavetie path').length : -1;
+  });
+  ok('audio inference does not present an intra-measure split as written legato',
+    inferredTiePaths === 0, inferredTiePaths + ' tie path(s)');
+
   await page.evaluate(() => { try { localStorage.removeItem('ppp.state.v2'); } catch (e) {} });
 
   await browser.close();

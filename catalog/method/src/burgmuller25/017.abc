@@ -1,0 +1,23 @@
+X:1
+T:No. 17
+C:Friedrich Burgmüller, Op. 100
+%ppp book=burgmuller25 no=17 pages=24
+M:3/8
+L:1/8
+Q:3/8=72
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:F
+[V:1] "^Allegretto" [e g]3- | [e g] g b | [f a]3- | [f a] a d | [e c]3 | c B g |
+[V:2] z C, C, | C2 z | z C, C, | C2 z | z C, C, | C2 z |
+[V:1] |: z c/2 c/2 c/2 a/2 | g c/2 c/2 c/2 g/2 | f a/2 a/2 a/2 d/2 | c/2 e/2 ^d/2 e/2 d/2 c/2 | z c/2 c/2 c/2 a/2 | g g/2 g/2 g/2 e/2 | d g/2 g/2 g/2 d/2 | c B/2 c/2 d/2 c/2 :|
+[V:2] |: [F,A,C] z [F,A,C] | [E,B,C] z [E,B,C] | [F,A,C] z [F,A,C] | [G,B,C]3 | [F,A,C] z [F,A,C] | [G,C,E] z [G,C,E] | [G,B,F] z [G,B,F] | [C,E] z z :|
+[V:1] |: [e g]2 [f a] | [g B]2 [e g] | [B d]2 [A c] | [B d]2 [A c] | [g B]2 [g B] | [f A]2 [f A] | [e g] g/2 ^f/2 g/2 a/2 | B/2 A/2 B/2 =B/2 d/2 c/2 |
+[V:2] |: C,/2 C/2 C/2 C/2 C/2 C/2 | C,/2 C/2 C/2 C/2 C/2 C/2 | C,/2 C/2 C/2 C/2 C/2 C/2 | C,/2 C/2 C/2 C/2 C/2 C/2 | E,/2 C/2 B,/2 C/2 E,/2 C/2 | F,/2 C/2 =B,/2 C/2 F,/2 C/2 | C, z z | z3 |
+[V:1] z c/2 c/2 c/2 a/2 | g c/2 c/2 c/2 g/2 | f a/2 a/2 a/2 d/2 | c/2 e/2 ^d/2 e/2 d/2 c/2 | z c/2 c/2 c/2 a/2 | g g/2 g/2 g/2 d/2 | e e/2 e/2 e/2 c/2 |
+[V:2] [F,A,C] z [F,A,C] | [E,B,C] z [E,B,C] | [F,A,C] z [F,A,C] | [G,B,C]3 | [F,A,C] z [F,A,C] | [E,B,C] z [E,B,C] | [F,B,C] z [F,B,C] |
+[V:1] [1 f2 z :| [2 f a/2 a/2 a/2 c/2 |
+[V:2] [1 [F,A,C]2 z :| [2 [F,A,C]3 |
+[V:1] f c/2 c/2 c/2 f/2 | a f/2 f/2 f/2 a/2 | c a/2 a/2 a/2 c/2 | f'2 z |]
+[V:2] [F,A,C]3 | [F,A,C]3 | [F,A,C]3 | F,2 z |]

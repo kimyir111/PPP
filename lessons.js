@@ -1086,7 +1086,7 @@
     var top = big ? 34 : 42, bottom = top + 4 * LS;
     var notes = o.notes || [], beats = o.beats || [];
     var states = o.states || [];
-    var fifths = o.key | 0, flats = fifths < 0 || !!o.flats;
+    var fifths = (o.sig != null ? o.sig : o.key) | 0, flats = fifths < 0 || !!o.flats;
     var inKey = (fifths > 0 ? SHARP_PCS.slice(0, fifths) : FLAT_PCS.slice(0, -fifths));
     var per = o.time === 3 ? 3 : 4;
     var named = !!o.names, labels = o.labels === 'names' || named;
@@ -1192,7 +1192,11 @@
     return h('div', { key: 'staff-rows', 'data-learn-staff-rows': maxBars,
       style: { display: 'flex', flexDirection: 'column', gap: o.big ? '16px' : '10px', width: '100%' } },
       rows.map(function (r, i) {
-        return staff(h, Object.assign({}, o, { key: 'staff-row-' + i, wrapBars: 0, notes: r.notes, beats: r.beats }));
+        /* React's list key is not the key signature: carry the signature under
+           its own name so wrapping bars never flattens G major to C. */
+        var row = Object.assign({}, o, { key: 'staff-row-' + i, sig: o.key,
+          wrapBars: 0, notes: r.notes, beats: r.beats });
+        return staff(h, row);
       }));
   }
 

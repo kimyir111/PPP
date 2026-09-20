@@ -1,0 +1,23 @@
+X:1
+T:No. 19
+C:Friedrich Burgmüller, Op. 100
+%ppp book=burgmuller25 no=19 pages=26
+M:3/4
+L:1/8
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:A
+[V:1] [Ac]2 [Ac]2 [Ac]2 | [Ac]4 A2 | [Gd]2 [Gd]2 [Ac]2 | [Ac]4 [FB]2 | [Ae]2 [Ae]2 [Ae]2 | e2 d2 A2 & A4 A2 |]
+[V:2] z6 | [CE]2 z4 | [A,E]2 z4 | E6 | [C_G]2 [C_G]2 [C_G]2 | _G2 F2 _F2 & D6 |]
+[V:1] [Ac]4 [GB]2 | A6 | [GB]2 [GB]2 [GB]2 | [AB]6 | [FB]2 [Ac]2 [Ae]2 | [GB]4 [GB]2 |]
+[V:2] E4 [cb]2 | [K:clef=bass] [A,C]6 | E2 B,2 E2 | E2 ^D C ^D2 | E2 A,2 C2 | E4 E2 |]
+[V:1] [_GB]2 [_GB]2 [_Gc]2 | [Fd]4 [Fd]2 | [FA]2 [FA]2 [FB]2 | [Ec]6 | [EAc] z5 & [EAc] [EAc] z4 |]
+[V:2] E2 E2 E2 | B,4 B,2 | D2 D2 D2 | z6 | z A,, C, E, A, C |]
+[V:1] [Ac]4 A2 | [Gd]2 [Gd]2 [Ac]2 | [Ac]4 [GB]2 | e2 e2 e2 & z A _B A _B A |]
+[V:2] E ^D E A, C E | B,2 B,2 A,2 & B, E B, E A, E | E, E E E E E | [^E,,B,,]2 [^E,,B,,]2 [^E,,B,,]2 |]
+[V:1] e2 z4 & e A e d A B | [Ac]4 [GB]2 | A A G A B A | [EA]2 [FA]2 [_GA]2 |]
+[V:2] _G2 F2 _F2 & D6 | E E ^D E E, D | [A,C]2 z4 | C2 D2 E2 & C A, D A, E A, |]
+[V:1] [FA]4 [FA]2 | [_FA]2 [_FA]2 [_FAd]2 | [EAc]4 z2 | [A,C]2 [A,C]2 [A,C]2 | [A,C]4 z2 |]
+[V:2] F,, C,, F,, E,, F,, C,, | F,, E,, F,, C,, _A,,, F,,, | C,,4 z2 | [C,,,G,,,]2 [C,,,G,,,]2 [C,,,G,,,]2 | [C,,,G,,,]4 z2 |]

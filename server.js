@@ -528,7 +528,7 @@ function validScore(s) {
 /* What the list shows: no score, only the preview drawn on its card. */
 function shareCard(row, viewer) {
   return {
-    id: row.id, title: row.title, composer: row.composer, kind: row.kind,
+    id: row.id, title: row.title, composer: row.composer, kind: row.kind, genre: row.genre || '',
     measures: row.measures, owner: row.ownerName, mine: !!(viewer && viewer.id === row.ownerId),
     songKey: viewer && viewer.id === row.ownerId ? row.songKey : undefined,
     listed: !!row.listed, preview: row.preview || null,
@@ -648,6 +648,7 @@ function postgresStore(url) {
           song_key TEXT NOT NULL,
           title TEXT NOT NULL,
           composer TEXT NOT NULL DEFAULT '',
+          genre TEXT NOT NULL DEFAULT '',
           kind TEXT NOT NULL DEFAULT '',
           measures INTEGER NOT NULL DEFAULT 0,
           listed BOOLEAN NOT NULL DEFAULT false,
@@ -658,6 +659,7 @@ function postgresStore(url) {
         );
         CREATE INDEX IF NOT EXISTS ppp_shares_listed ON ppp_shares (listed, updated_at DESC);
         CREATE UNIQUE INDEX IF NOT EXISTS ppp_shares_owner_song ON ppp_shares (owner_id, song_key);
+        ALTER TABLE ppp_shares ADD COLUMN IF NOT EXISTS genre TEXT NOT NULL DEFAULT '';
       `);
     },
     async findByEmail(email) {
@@ -718,14 +720,14 @@ function postgresStore(url) {
     },
     async putShare(row) {
       await q(
-        `INSERT INTO ppp_shares (id, owner_id, owner_name, song_key, title, composer, kind, measures, listed, preview, score, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        `INSERT INTO ppp_shares (id, owner_id, owner_name, song_key, title, composer, genre, kind, measures, listed, preview, score, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
          ON CONFLICT (id) DO UPDATE SET owner_name = EXCLUDED.owner_name, title = EXCLUDED.title,
-           composer = EXCLUDED.composer, kind = EXCLUDED.kind, measures = EXCLUDED.measures,
+           composer = EXCLUDED.composer, genre = EXCLUDED.genre, kind = EXCLUDED.kind, measures = EXCLUDED.measures,
            listed = EXCLUDED.listed, preview = EXCLUDED.preview, score = EXCLUDED.score,
            updated_at = EXCLUDED.updated_at`,
-        [row.id, row.ownerId, row.ownerName, row.songKey, row.title, row.composer, row.kind, row.measures,
-          row.listed, row.preview == null ? null : JSON.stringify(row.preview), JSON.stringify(row.score),
+        [row.id, row.ownerId, row.ownerName, row.songKey, row.title, row.composer, row.genre || '', row.kind,
+          row.measures, row.listed, row.preview == null ? null : JSON.stringify(row.preview), JSON.stringify(row.score),
           row.createdAt, row.updatedAt]
       );
       return row;
@@ -736,10 +738,55 @@ function postgresStore(url) {
   };
 }
 
-const SHARE_COLS = 'id, owner_id AS "ownerId", owner_name AS "ownerName", song_key AS "songKey", title, composer, kind, '
+const SHARE_COLS = 'id, owner_id AS "ownerId", owner_name AS "ownerName", song_key AS "songKey", title, composer, genre, kind, '
   + 'measures, listed, preview, created_at AS "createdAt", updated_at AS "updatedAt"';
 
 const store = process.env.DATABASE_URL ? postgresStore(process.env.DATABASE_URL) : fileStore();
+
+/* ---- the seed library ----
+   One score per genre, so Shared Scores is never an empty shelf and every
+   genre chip has something behind it. They are ordinary listed shares owned
+   by a library account that cannot sign in; the file in catalog/ is built by
+   catalog/build-shared-seeds.js from public-domain scores and short pieces
+   written for PPP. Adding or editing a seed needs no schema change and no
+   migration: an id that is already there is left exactly as it is. */
+const SEED_OWNER = { id: 'ppp-library', name: 'PPP Library', email: 'library@ppp.local' };
+async function seedSharedScores() {
+  let doc = null;
+  try { doc = JSON.parse(fs.readFileSync(path.join(ROOT, 'catalog', 'shared-seeds.json'), 'utf8')); }
+  catch (e) { return; }
+  const seeds = (doc && doc.seeds) || [];
+  if (!seeds.length) return;
+  const owner = Object.assign({}, SEED_OWNER, doc.owner || {});
+  let user = null;
+  try { user = await store.findByEmail(owner.email); } catch (e) { user = null; }
+  if (!user) {
+    try {
+      await store.createUser({
+        id: owner.id, email: owner.email, displayName: owner.name,
+        passwordHash: 'no-sign-in', createdAt: new Date().toISOString()
+      });
+    } catch (e) {
+      if (e && e.code !== 'exists') throw e;
+    }
+    user = await store.findByEmail(owner.email);
+  }
+  if (!user) return;
+  const now = new Date().toISOString();
+  for (const s of seeds) {
+    if (!s || !s.id || !validScore(s.score)) continue;
+    const have = await store.getShare(s.id);
+    if (have) continue;
+    await store.putShare({
+      id: s.id, ownerId: user.id, ownerName: owner.name, songKey: s.songKey || ('seed:' + s.id),
+      title: clipText(s.title, 120), composer: clipText(s.composer, 160), genre: clipText(s.genre, 32),
+      kind: clipText(s.kind || 'seed', 24), measures: s.score.measures.length,
+      listed: true, preview: s.preview || null, score: s.score,
+      createdAt: now, updatedAt: now
+    });
+    console.log('Seeded shared score: ' + s.genre + ' — ' + s.title);
+  }
+}
 
 async function currentUser(req) {
   const token = parseCookies(req)[COOKIE];
@@ -969,7 +1016,7 @@ async function handleShares(req, res, url) {
     const row = {
       id: prev ? prev.id : newShareId(),
       ownerId: user.id, ownerName: user.displayName, songKey: songKey,
-      title: title, composer: clipText(body.composer, 160), kind: clipText(body.kind, 24),
+      title: title, composer: clipText(body.composer, 160), genre: clipText(body.genre, 32), kind: clipText(body.kind, 24),
       measures: body.score.measures.length,
       /* sending a link never takes a posted score down, and never posts one */
       listed: typeof body.listed === 'boolean' ? body.listed : !!(prev && prev.listed),
@@ -1129,9 +1176,43 @@ const server = http.createServer((req, res) => {
   });
 });
 
+/* The local helper (omr-service.js) is what makes PDF/photo recognition and
+   high-quality piano transcription work. Forgetting to start it beside the
+   app is the commonest way recognition silently degrades, so a local dev
+   server starts it too — unless it is already running, or a production
+   server (Render) has no helper to start. */
+const OMR_PORT = Number(process.env.PPP_OMR_PORT) || 8788;
+function startHelperIfMissing() {
+  if (process.env.NODE_ENV === 'production') return;
+  const probe = http.get({ host: '127.0.0.1', port: OMR_PORT, path: '/health', timeout: 2000 }, () => probe.destroy());
+  probe.on('error', () => {});
+  probe.on('timeout', () => probe.destroy());
+  probe.on('close', () => {
+    /* still nothing answered: try to start it once the probe is done */
+    const check = http.get({ host: '127.0.0.1', port: OMR_PORT, path: '/health', timeout: 1500 }, r => {
+      console.log('Local helper already running on http://127.0.0.1:' + OMR_PORT);
+      check.destroy(); r.resume();
+    });
+    check.on('error', () => {
+      const helper = spawn(process.execPath, [path.join(ROOT, 'omr-service.js')], {
+        stdio: ['ignore', 'ignore', 'ignore'], windowsHide: true, detached: false
+      });
+      helper.on('error', e => console.error('Could not start the local helper: ' + e.message));
+      helper.on('exit', (code, signal) => {
+        if (code !== 0 && !signal) console.error('Local helper exited (' + code + '). PDF/recognition runs as a browser draft; start "npm run omr" for high quality.');
+      });
+      console.log('Started the local helper on http://127.0.0.1:' + OMR_PORT);
+    });
+    check.on('timeout', () => check.destroy());
+  });
+}
+
 store.ready().then(() => {
+  seedSharedScores().catch(e => console.error('Seed library skipped:', e.message));
+}).then(() => {
   server.listen(PORT, HOST, () => {
     console.log('PPP listening on http://' + HOST + ':' + PORT);
+    if (HOST === '127.0.0.1' || HOST === 'localhost') startHelperIfMissing();
   });
 }).catch(err => {
   console.error('Store failed to start', err);

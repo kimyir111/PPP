@@ -1,0 +1,15 @@
+X:1
+T:No. 35
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=35 pages=18
+M:C
+L:1/4
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:C
+[V:1] !f! .[EGc] .[EGc] .[EGc] .[Gce] | .[Gce] .[GBd] [GBd]2 | .[GBd] .[GBd] .[GBd] .[Gdf] | .[Gdf] .[Gce] [Gce]2 | .[ce] .[ce] .[ce] .[cea] | .[Bdg] .[Bd] [GB]2 | .[Bd] .[Ac] .[GB] .[DA] | [B,G]4 :|
+[V:2] .C,, .C, .C, .C, | .G,,, .G,, .G,, .G,, | .G,,, .G,, .G,, .G,, | .C,, .C, .C, .C, | .A,,, .A,, .A,, .A,, | .D,, .D, .D, .D, | .D,, .D, .D, .D, | .G,, .G, G,,2 :|
+[V:1] |: !p! .[Gdf] .[Gdf] .[Gdf] .[Gdf] | .[Gdf] .[Gce] [Gce]2 | .[FGBd] .[FGBd] .[FGBd] .[FGBd] | .[FGBd] .[EGc] [EGc]2 | !f! .[FA] .[FAc] .[Acf] .[cfa] | .[ceg] .[ceg] [egc']2 | .[eg] .[df] .[ce] .[Gd] | [Ec]4 :|
+[V:2] |: .B,,, .B,, .B,, .B,, | .C,, .C, .C, .C, | .G,,, .G,, .G,, .G,, | .C,, .C, .C, .C, | .F,,, .F,, .F,, .F,, | .G,,, .G,, .G,, .G,, | .G,,, .G,, .G,, .G,, | .C,, .C, C,,2 :|

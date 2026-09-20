@@ -1,0 +1,17 @@
+X:1
+T:No. 55
+C:Ferdinand Beyer, Op. 101
+%ppp book=beyer no=55 pages=42
+M:C
+L:1/8
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] "^Moderato" !mf! c3 d e3 c | d3 e f3 d | e3 c g3 e | d8 | f3 e d3 g | e3 d c3 e |
+[V:2] CGEG CGEG | B,GDG B,GDG | CGEG CEG z [K:clef=bass] | G,DB,D G,DB,D | G,DB,D G,DB,D | G,ECE G,ECE [K:clef=treble] |
+[V:1] dgfg egdg | c8 |: c3 d c3 f | e3 d c4 | c3 d c3 f | e3 d c4 | c3 d e3 c |
+[V:2] G,4 G4 | CGEG CGEG |: CAFA CAFA | CGEG CGEG | CAFA CAFA | CGEG CGEG | CGEG CGEG |
+[V:1] d3 e f3 d | e3 c g3 e | d8 | f3 e d3 g | e3 d c3 e | dgfg egdg | cege c4 :|
+[V:2] B,GDG B,GDG | CGEG CEG z [K:clef=bass] | G,DB,D G,DB,D | G,DB,D G,DB,D | G,ECE G,ECE [K:clef=treble] | G,4 G4 | CEGE C4 :|

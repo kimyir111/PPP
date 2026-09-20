@@ -1,0 +1,23 @@
+X:1
+T:No. 18
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=18 pages=10
+M:C
+L:1/16
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] cedc dfed egfe dfed | cedc dfed egfe cedc |
+[V:2] .[CEG]4 .[B,DG]4 .[CEG]4 .[B,DG]4 | .[CEG]4 .[B,DG]4 [CEG]8 |
+[V:1] dgdg egeg fgfg dgdg | egeg egeg cgcg cgcg | cedc dfed egfe dfed |
+[V:2] .[B,G]4 .[CG]4 .[DG]4 .[B,G]4 | [CG]8 [EG]8 | .[CEG]4 .[B,DG]4 .[CEG]4 .[B,DG]4 |
+[V:1] cedc dfed egfe cedc | dgdg egeg fgfg dgdg | cege cege c8 :|
+[V:2] .[CEG]4 .[B,DG]4 [CEG]8 | .[B,G]4 .[CG]4 .[DG]4 .[B,G]4 | [CEG]16 :|
+[V:1] |: gfed gfed gfed gfed | efed cdef gcec gcec |
+[V:2] |: [B,DG]8 [B,DG]8 | [CEG]16 |
+[V:1] gfed gfed gfed gfed | efed cdef gcec gcec | egfe dfed cedc dfed |
+[V:2] [B,DG]8 [B,DG]8 | [CEG]16 | .[CEG]4 .[B,DG]4 .[CEG]4 .[B,DG]4 |
+[V:1] egfe dfed cedc egfe | dgeg fgeg dgfg egdg | cgeg cgeg c8 :|
+[V:2] .[CEG]4 .[B,DG]4 [CEG]8 | [B,FG]8 [B,FG]8 | [CEG]16 :|

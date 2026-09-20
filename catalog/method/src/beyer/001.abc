@@ -1,0 +1,23 @@
+X:1
+T:No. 1
+C:Ferdinand Beyer, Op. 101
+%ppp book=beyer no=1 pages=11,13
+M:C
+L:1/4
+Q:1/4=100
+%%score 1
+V:1 clef=treble name="Piano"
+K:C
+[V:1] "^Tempo Moderato"c4 | d4 | e4 | d4 | f4 | e4 | d4 | c4 |]
+[V:1] "^Var. 1"c2 c2 | d2 d2 | e2 e2 | d2 d2 | f2 f2 | e2 e2 | d2 d2 | c4 |]
+[V:1] "^Var. 2"c3 c | d3 d | e3 e | d3 d | f3 d | e3 c | d2 e d | c4 |]
+[V:1] [M:3/4] "^Var. 3"c2 d | e2 c | d2 e | f2 d | e2 c | g2 c | d e d | c3 |]
+[V:1] [M:C] "^Var. 4"c c e2 | d d f2 | e e c2 | d4 | f f d2 | e e c2 | d2 e d | c4 |]
+[V:1] "^Var. 5"c c2 e | d d2 f | e e2 c | d4 | f f2 d | e e2 c | d d e d | c4 |]
+[V:1] "^Var. 6"c d e2 | d e f2 | e d c2 | d4 | d e f2 | e d c2 | d2 e d | c4 |]
+[V:1] "^Var. 7"z c d e | z d e f | z e d c | d4 | z f e d | z e d c | z d e d | c4 |]
+[V:1] [M:3/4] "^Var. 8"c d e | e d c | d e f | f e d | e c g | z c e | d g g | c e c |]
+[V:1] [M:C] "^Var. 9"c c c g | d d d g | e e e c | d d d2 | f d d g | e c c e | d f e d | c e c2 |]
+[V:1] "^Var. 10"c e z c | d f z d | e g z c | d4 | f d z d | e c z c | d d d g | c e c2 |]
+[V:1] "^Var. 11"c d e e | d e f f | e d c c | d4 | d e f f | e d c c | d d e d | c g c2 |]
+[V:1] "^Var. 12"c d e c | d e f d | e c g e | d4 | f e d f | e d c e | d g d e | c e c2 |]

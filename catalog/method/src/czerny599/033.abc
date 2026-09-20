@@ -1,0 +1,19 @@
+X:1
+T:No. 33
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=33 pages=17
+M:C
+L:1/16
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:C
+[V:1] !f! C D E F G F E D C D E F G F E D | C4 [EGc]4 [Gc]8 | G A B c d c B A G A B c d c B A | G4 [GBd]4 [GBd]8 |
+[V:2] C, D, E, F, G, F, E, D, C, D, E, F, G, F, E, D, | C,4 G,4 E,4 C,4 | G,, A,, B,, C, D, C, B,, A,, G,, A,, B,, C, D, C, B,, A,, | G,,4 D,4 B,,4 G,,4 |
+[V:1] c d e f g f e d c d e f g f e d | c4 [egc']4 [egc']8 | c' b a g f e d c g f e d c B A B | c4 e4 c8 :: |
+[V:2] C,, D,, E,, F,, G,, F,, E,, D,, C,, D,, E,, F,, G,, F,, E,, D,, | C,,4 E,,4 G,,4 C,4 | G,,4 [G,C,E,]4 [G,D,F,]4 [G,D,F,]4 | [C,E,]4 G,4 [C,E,]8 :: |
+[V:1] [Bd]8 [Bd]4 [Bd]4 | [df]8 [Bg']4 [df]4 | [ce]8 [ce]4 [ce]4 | [eg]8 [ec']4 [eg]4 |
+[V:2] G, A, B, C D C B, A, z8 | G, A, B, C D C B, A, G,8 | C, D, E, F, G, F, E, D, C,8 | C, D, E, F, G, F, E, D, C,8 |
+[V:1] [fa]8 f4 [fa]4 | [fa]4 [ac']4 [fa]4 [Acf]4 | [Gce]4 [Gce]4 [FGBd]4 [FGBd]4 | [EGc]4 [EGc]4 [EGc]8 :|
+[V:2] F,, G,, A,, B,, C, B,, A,, G,, F,,8 | F,, G,, A,, B,, C, B,, A,, G,, F,,8 | G,,4 G,,4 G,,4 G,,4 | C,,4 C,4 C,,8 :|

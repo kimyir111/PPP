@@ -1,0 +1,17 @@
+X:1
+T:No. 31
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=31 pages=16
+M:3/4
+L:1/8
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] .[ec']2 .[ec']2 .[ec']2 | [ge']6 | .[eg]2 .[ec']2 .[ce]2 | [dg]6 | .[fd']2 .[fd']2 .[fd']2 |
+[V:2] (3CEG(3CEG(3CEG | (3CEG(3CEG(3CEG | (3CEG(3CEG(3CEG | (3B,DG(3B,DG(3B,DG | (3B,DG(3B,DG(3B,DG |
+[V:1] [d'f']6 | .[gb]2 .[bd']2 .[g']2 | [c']6 | .[fa]2 .[ac']2 .[fa]2 | [eg]6 |
+[V:2] (3B,DG(3B,DG(3B,DG | (3G,DF(3G,DF(3G,DF | (3CEG(3CEG(3CEG | (3CFA(3CFA(3CFA | (3CEG(3CEG(3CEG |
+[V:1] .[fa]2 .[ac']2 .[fa]2 | [eg]6 | .[fgd']2 .[fgd']2 .[fgd']2 | [ge']6 | .[d'f']2 .[bd']2 .[gb]2 | [egc']6 :|
+[V:2] (3CFA(3CFA(3CFA | (3CEG(3CEG(3CEG | (3B,DG(3B,DG(3B,DG | (3CEG(3CEG(3CEG | (3G,DF(3G,DF(3G,DF | (3CEG(3CEG(3CEG :|

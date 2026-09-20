@@ -205,6 +205,34 @@ def _normalise_note(note):
     }
 
 
+def _fast_windows(notes, max_gap=0.18):
+    """Return spans containing at least four distinct fast attacks.
+
+    A second model's isolated note is usually an overtone. A coherent stream
+    is different evidence: it is commonly an ornament or run that the primary
+    model thinned out.
+    """
+    slots = []
+    for note in sorted(notes or [], key=lambda n: float(n.get('on', 0))):
+        on = max(0.0, float(note.get('on', 0)))
+        if not slots or on - slots[-1] > 0.008:
+            slots.append(on)
+    windows = []
+    start = 0
+    for i in range(1, len(slots) + 1):
+        gap = slots[i] - slots[i - 1] if i < len(slots) else float('inf')
+        if 0.015 <= gap <= max_gap:
+            continue
+        if i - start >= 4:
+            windows.append((slots[start] - 0.02, slots[i - 1] + 0.02))
+        start = i
+    return windows
+
+
+def _inside_windows(on, windows):
+    return any(a <= on <= b for a, b in windows)
+
+
 def consensus(results, onset_tolerance=0.09):
     """Use the strongest available model as the recall floor, then let other
     models correct its timing and jointly recover notes it missed.
@@ -217,6 +245,12 @@ def consensus(results, onset_tolerance=0.09):
         raise RuntimeError('no transcription model produced a result')
     names = [r['engine'] for r in results]
     primary = max(names, key=lambda n: ENGINE_WEIGHT.get(n, 0.5))
+    fast_windows = {r['engine']: _fast_windows(r.get('notes') or []) for r in results}
+    primary_onsets = sorted({
+        round(float(n.get('on', 0)), 3)
+        for r in results if r['engine'] == primary
+        for n in (r.get('notes') or [])
+    })
     by_pitch = {}
     for r in results:
         engine = r['engine']
@@ -246,6 +280,7 @@ def consensus(results, onset_tolerance=0.09):
 
     accepted = []
     uncertain = []
+    fast_recovered = 0
     model_count = len(results)
     for cluster in clusters:
         items = cluster['items']
@@ -260,7 +295,16 @@ def consensus(results, onset_tolerance=0.09):
             'support': support,
             'models': engines
         }
-        if primary in engines or support >= 2:
+        fast_recovery = False
+        if model_count == 2 and support == 1 and primary not in engines:
+            engine = engines[0]
+            on = out['on']
+            nearby_primary = sum(1 for t in primary_onsets if abs(t - on) <= 0.22)
+            fast_recovery = _inside_windows(on, fast_windows.get(engine, [])) and nearby_primary >= 2
+        if primary in engines or support >= 2 or fast_recovery:
+            if fast_recovery:
+                out['recovered'] = 'fast-run'
+                fast_recovered += 1
             accepted.append(out)
         else:
             uncertain.append(out)
@@ -286,6 +330,7 @@ def consensus(results, onset_tolerance=0.09):
             'models': names, 'primary': primary,
             'agreement': round(agreement, 3),
             'accepted': len(accepted), 'uncertain': len(uncertain),
+            'fastRecovered': fast_recovered,
             'pedalSource': pedal_source
         }
     }

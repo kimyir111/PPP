@@ -1,0 +1,18 @@
+X:1
+T:No. 56
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=56 pages=28-29
+% The whole right hand carries a printed 8va bracket on every system;
+% V:1 is written at sounding pitch (one octave above the printed notes).
+% Form: bars 1-16 (Fine at 16) with repeat, then bars 17-32, D.C. al Fine.
+% Pitch ground: 300/600 dpi scan cross-checked with the OMR reading;
+% the RH chromatic runs and the LH chords were re-read zoomed.
+M:3/8
+L:1/16
+Q:3/8=72
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:F
+[V:1] "^Allegro" a b =b c' ^c' d' | ^d' e' f' ^f' g' ^g' | a'2 b'2 =b'2 | d''4 c''2 | f ^f g ^g a b | =b c' ^c' d' ^d' e' | f'2 g'2 ^g'2 | b'4 a'2 | g' a' g' a' g'2 | c'' d'' c'' d'' c''2 | a' b' a' b' a'2 | f' g' f' g' f'2 | g' a' g' a' g'2 | c' d' c' d' c'2 | f'2 c'2 a2 | f2 z2 z2 !fine! :| g' ^f' f' e' _e' d' | _d' c' =b b a _a | g2 a2 =b2 | c'2 d'2 e'2 | f' e' _e' d' _d' c' | =b b a _a g ^f | f2 g2 a2 | =b2 c'2 d'2 | e' ^d' e' ^d' e'2 | g' ^f' g' ^f' g'2 | d' ^c' d' ^c' d'2 | f' e' f' e' f'2 | =b ^a =b ^a =b2 | d' ^c' d' ^c' d'2 | c'2 d'2 c'2 | b2 a2 g2 !D.C.! ||
+[V:2] F,2 [A,C]2 [A,C]2 | F,2 [A,C]2 [A,C]2 | F,2 [A,C]2 [A,C]2 | F,2 [A,C]2 [A,C]2 | F,2 [A,C]2 [A,C]2 | F,2 [A,C]2 [A,C]2 | F,2 [A,C]2 [A,C]2 | F,2 [A,C]2 [A,C]2 | E,2 [_B,C]2 [_B,C]2 | E,2 [_B,C]2 [_B,C]2 | F,2 [A,C]2 [A,C]2 | F,2 [A,C]2 [A,C]2 | C,2 [E,_B]2 [E,_B]2 | C,2 [E,_B]2 [E,_B]2 | [F,A,]2 [F,A,]2 [F,A,]2 | F,2 z2 z2 :| E,2 [G,C]2 [G,C]2 | E,2 [G,C]2 [G,C]2 | E,2 [G,C]2 [G,C]2 | E,2 [G,C]2 [G,C]2 | D,2 [G,=B,]2 [G,=B,]2 | D,2 [G,=B,]2 [G,=B,]2 | D,2 [G,=B,]2 [G,=B,]2 | D,2 [G,B,]2 [G,B,]2 | C,2 [E,G,]2 [E,G,]2 | C,2 [E,G,]2 [E,G,]2 | F,2 [A,D]2 [A,D]2 | F,2 [A,D]2 [A,D]2 | G,2 [DF]2 [DF]2 | G,2 [=B,F]2 [=B,F]2 | D4 z2 | z6 ||

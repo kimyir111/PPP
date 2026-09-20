@@ -1,0 +1,19 @@
+X:1
+T:No. 49
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=49 pages=25
+M:C
+L:1/16
+Q:1/4=132
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:Bb
+[V:1] "^Allegro" !f! z B c d e f g a b f g a b c' d' e' | f'12 d' f' e' d' | c'2 z2 c'2 z2 c'2 z2 c' e' d' c' | b2 z2 b2 z2 b2 z2 z4 |
+[V:2] [B,DF]2 z2 [B,DF]2 z2 [B,DF]2 z2 [B,DF]2 z2 | [B,DF]2 z2 [B,DF]2 z2 [B,DF]2 z2 [B,DF]2 z2 | [F,A,CE]2 z2 [F,A,CE]2 z2 [F,A,CE]2 z2 [F,A,CE]2 z2 | [B,D]2 z2 [B,DF]2 z2 [B,DF]2 z2 [B,DF]2 z2 |
+[V:1] z B c d e f g a b f g a b c' d' e' | !sfz! f'12 d' f' =e' d' | c'2 z2 a' c'' b' a' g' f' =e' d' c' b a g | f2 z2 f'2 z2 f2 z2 z4 :|
+[V:2] [B,DF]2 z2 [B,DF]2 z2 [B,DF]2 z2 [B,DF]2 z2 | [B,DF]2 z2 [B,DF]2 z2 [B,DF]2 z2 [B,DF]2 z2 [K:clef=treble] | [CFA]2 z2 [CFA]2 z2 [C=EB]2 z2 [CEB]2 z2 | [FA]2 z2 [FA]2 z2 [FA]2 z2 z4 [K:clef=bass] :|
+[V:1] |: !p! z f' g' a' b' c'' d'' e'' .f''2 .f''2 .f''2 .f''2 | .f''2 .e''2 .d''2 .c''2 .b'2 .c''2 .d''2 .b'2 | .c''2 .b'2 .a'2 .g'2 .f'2 .e'2 .d'2 .c'2 | .b2 .c'2 .d'2 .b2 f8 |
+[V:2] |: [A,C_EF]2 z2 [A,CEF]2 z2 [A,CEF]2 z2 [A,CEF]2 z2 | [B,DF]2 z2 [B,DF]2 z2 [B,DF]2 z2 [B,DF]2 z2 | [F,A,E]2 z2 [F,A,E]2 z2 [F,A,E]2 z2 [F,A,E]2 z2 | [B,D]2 z2 [B,D]2 z2 [B,D]2 z2 [B,D]2 z2 |
+[V:1] z f' g' a' b' c'' d'' e'' .f''2 .f''2 .f''2 .f''2 | .f''2 .e''2 .d''2 .c''2 .b'2 .c''2 .d''2 .b'2 | c'' d'' e'' d'' c'' b' a' g' f' e' d' c' b a g a | b2 z2 B2 z2 B2 z2 z4 :|
+[V:2] [A,CEF]2 z2 [A,CEF]2 z2 [A,CEF]2 z2 [A,CEF]2 z2 | [B,DF]2 z2 [B,DF]2 z2 [B,DF]2 z2 [B,DF]2 z2 | [F,CE]2 z2 [F,CE]2 z2 [F,CE]2 z2 [F,CE]2 z2 | [B,D]2 z2 [B,D]2 z2 [B,D]2 z2 z4 :|

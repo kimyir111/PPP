@@ -1,0 +1,13 @@
+X:1
+T:No. 54
+C:Ferdinand Beyer, Op. 101
+%ppp book=beyer no=54 pages=41
+M:2/4
+L:1/8
+Q:1/4=96
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] "^Comodo" !f! c4 | d4 | e4 | d4 | f4 | e4 | d4 | c c' c2 |]
+[V:2] z CEG | z B,DG | z CEG | z G,B,D [K:clef=bass] | z G,B,D | z G,CE | z G,A,B, | C4 |]

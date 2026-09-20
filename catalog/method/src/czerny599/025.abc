@@ -1,0 +1,17 @@
+X:1
+T:No. 25
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=25 pages=13
+M:C
+L:1/8
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] [ceg]2 [ceg]2 [ceg]4 | [egc']2 [egc']2 [egc']4 | [fgb]2 [fgb]2 [fgb]2 [fgb]2 | [egc']4 [eg]4 | [cfa]2 [cfa]2 [cfa]2 [cfa]2 |
+[V:2] [CE]G[CE]G [CE]G[CE]G | [CE]G[CE]G [CE]G[CE]G | [DF]G[DF]G [DF]G[DF]G | [CE]G[CE]G [CE]G[CE]G | [CF]A[CF]A [CF]A[CF]A |
+[V:1] [ceg]4 c'bag | f2 gf e2 ge | d2 [dg]2 [dg]2 z2 :: [dfgb]2 [dfgb]2 [dfgb]2 [dfgb]2 | [egc']4 [ce]2 [eg]2 |
+[V:2] [CE]G[CE]G [CE]G[CE]G | [B,D]G[B,D]G [CE]G[CE]G | [G,B,]D[G,B,]D [G,B,]2 z2 :: [G,D]F[G,D]F [G,D]F[G,D]F | [G,C]E[G,C]E [G,C]E[G,C]E |
+[V:1] [dfgb]2 [dfgb]2 [dfgb]2 [dfgb]2 | [egc']4 [ce]2 [eg]2 | [fa]2 [fac']2 [fac']2 [fac']2 | [egc']4 c'gec | [ce]2 [eg]2 [dg]fed | c2 c2 c2 z2 :|
+[V:2] [G,D]F[G,D]F [G,D]F[G,D]F | [CE]G[CE]G [CE]G[CE]G | [CF]A[CF]A [CF]A[CF]A | [CE]G[CE]G [CE]G[CE]G | [G,C]E[G,C]E [G,B,]F[G,B,]F | [CE]G[CE]G [CE]2 z2 :|

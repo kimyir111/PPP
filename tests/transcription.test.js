@@ -173,6 +173,33 @@ const helperHealth = () => new Promise(resolve => {
   const rcChords = (rcBar.match(/<chord\/>/g) || []).length;
   ok('a rolled chord is written as one attack', rcChords >= 2, rcChords + ' chord marks in bar 1');
 
+  const fastAttacks = A._.clusterNotes(Array.from({ length: 8 }, (_, i) => ({
+    on: 1 + i * 0.04, off: 1.03 + i * 0.04, midi: 72 + (i % 5), vel: 72
+  }))).map(n => n.attack.toFixed(3));
+  ok('a 32nd-note run is not collapsed into rolled chords',
+    new Set(fastAttacks).size === 8, new Set(fastAttacks).size + ' attacks of 8');
+
+  const fastChordRun = A._.clusterNotes(Array.from({ length: 4 }, (_, i) => [
+    { on: 2 + i * 0.04, off: 2.03 + i * 0.04, midi: 60 + i, vel: 72 },
+    { on: 2 + i * 0.04, off: 2.03 + i * 0.04, midi: 67 + i, vel: 72 }
+  ]).flat());
+  const fastChordAttacks = new Set(fastChordRun.map(n => n.attack.toFixed(3)));
+  ok('real chords inside a fast run remain chords',
+    fastChordAttacks.size === 4 && fastChordRun.length === 8,
+    fastChordAttacks.size + ' attacks holding ' + fastChordRun.length + ' notes');
+
+  const trueBeats = Array.from({ length: 33 }, (_, i) => 0.4 + i * 0.5);
+  const brokenBeats = [];
+  trueBeats.forEach((t, i) => {
+    if (i !== 24) brokenBeats.push(t);
+    if (i >= 8 && i < 16) brokenBeats.push(t + 0.25);
+  });
+  const repairedBeats = A._.stabilizeBeats(brokenBeats);
+  const repairedGaps = repairedBeats.slice(1).map((t, i) => t - repairedBeats[i]);
+  ok('temporary half/double-beat tracker switches are repaired',
+    repairedBeats.length === trueBeats.length && Math.max(...repairedGaps) / Math.min(...repairedGaps) < 1.2 && repairedBeats._repairs >= 9,
+    repairedBeats.length + ' beats, repairs ' + repairedBeats._repairs);
+
   function compound(bars) {
     const ev = [];
     for (let b = 0; b < bars; b++) {
@@ -255,6 +282,21 @@ const helperHealth = () => new Promise(resolve => {
     inj.stats.beatsPerBar === 3 && inj.stats.beatSource === 'audio' && Math.abs(inj.stats.barStarts[0] - 0.4) < 0.05,
     inj.stats.beatsPerBar + '/' + inj.stats.beatType + ' source ' + inj.stats.beatSource + ' bar0 ' + inj.stats.barStarts[0]);
 
+  /* A downbeat detector may miss the opening bar and report the next one a
+     few milliseconds late. That still establishes bar phase only: it must
+     not shift the score by one 1/24-quarter tick or invent a pickup bar. */
+  const fastSpb = 60 / 176;
+  const fastNotes = perform(alberti(8), { bpm: 176, start: 0.4, jitter: 0, seed: 8 });
+  const fastBeats = [], lateDownbeats = [];
+  for (let i = 0; i < 40; i++) fastBeats.push(0.4 + i * fastSpb);
+  for (let i = 1; i < 8; i++) lateDownbeats.push(0.4 + (i * 4 + 0.04) * fastSpb);
+  const phased = A.toMusicXml({ notes: fastNotes, beats: fastBeats, downbeats: lateDownbeats });
+  const phasedFirst = phased.xml.split('<measure ')[1] || '';
+  ok('a slightly late later downbeat stays on the beat and does not add a pickup bar',
+    phased.stats.beatsPerBar === 4 && phased.stats.bars === 8 &&
+    /<staff>2<\/staff>/.test((phasedFirst.split('<backup>')[1] || '').split('</note>')[0]),
+    phased.stats.bars + ' bars, bar0 ' + phased.stats.barStarts[0]);
+
   const grid = { ticksPerQuarter: 24, beatsPerBar: 6, beatType: 8, bpm: 60, notes: [] };
   for (let bar = 0; bar < 4; bar++) {
     const o = bar * 72;
@@ -284,6 +326,31 @@ const helperHealth = () => new Promise(resolve => {
   ok('simplify keeps the top and the bass of a chord',
     hiLo.some(n => n.midi === 72) && hiLo.some(n => n.midi === 48) && !hiLo.some(n => n.midi === 60),
     hiLo.map(n => n.midi).join(','));
+
+  const arrangedBeginner = A.toMusicXml({ notes: thick }, { arrangement: { level: 'beginner', style: 'balanced' } });
+  const arrangedIntermediate = A.toMusicXml({ notes: thick }, { arrangement: { level: 'intermediate', style: 'balanced' } });
+  const arrangedAdvanced = A.toMusicXml({ notes: thick }, { arrangement: { level: 'advanced', style: 'balanced' } });
+  ok('arrangement levels add detail progressively',
+    arrangedBeginner.stats.notes < arrangedIntermediate.stats.notes &&
+      arrangedIntermediate.stats.notes < arrangedAdvanced.stats.notes && arrangedAdvanced.stats.notes < full.stats.notes,
+    [arrangedBeginner.stats.notes, arrangedIntermediate.stats.notes, arrangedAdvanced.stats.notes, full.stats.notes].join(' < '));
+  ok('arranging does not re-detect a different beat or metre',
+    arrangedBeginner.stats.tempo === full.stats.tempo &&
+      arrangedBeginner.stats.beatsPerBar === full.stats.beatsPerBar &&
+      arrangedBeginner.stats.beatType === full.stats.beatType,
+    arrangedBeginner.stats.beatsPerBar + '/' + arrangedBeginner.stats.beatType + ' @ ' + arrangedBeginner.stats.tempo);
+  const inputPitches = new Set(thick.map(n => n.midi));
+  const aiPlan = A.recommendArrangement(thick, 'intermediate');
+  const arrangedNotes = A.arrangeNotes(thick, Object.assign({}, aiPlan.plan, { source: 'ai' }));
+  ok('AI arrangement parameters cannot invent pitches',
+    arrangedNotes.every(n => inputPitches.has(n.midi)) && aiPlan.plan.level === 'intermediate',
+    arrangedNotes.length + ' selected notes, ' + aiPlan.plan.style);
+  const melodyFocus = A.arrangeNotes(thick, { level: 'advanced', style: 'melody' });
+  const accompanimentFocus = A.arrangeNotes(thick, { level: 'intermediate', style: 'accompaniment' });
+  ok('texture choices produce different playable reductions',
+    melodyFocus.length < arrangedAdvanced.stats.notes &&
+      accompanimentFocus.some(n => n.midi === 55) && !arrangedNotes.some(n => n.midi === 55),
+    'melody ' + melodyFocus.length + ', accompaniment keeps low harmony');
 
   ok('a 12/8 lock writes compound twelve',
     locked12.stats.beatsPerBar === 12 && locked12.stats.beatType === 8 && /<beat-type>8<\/beat-type>/.test(locked12.xml) && /<beats>12<\/beats>/.test(locked12.xml),
@@ -330,6 +397,38 @@ const helperHealth = () => new Promise(resolve => {
   ok('an off-beat note never hides a beat', ![[6, 36], [18, 30], [12, 54], [30, 42]].some(([p, l]) => crosses(p, l, 96)));
   ok('a whole bar is one whole note', A._.pieces(0, 96, 96).join() === '96');
   ok('three beats from the downbeat are a dotted half', A._.pieces(0, 72, 72).join() === '72');
+
+  /* Audio cannot tell a composer's phrase slurs from pedal and room decay.
+     Preserve the observed key-up and avoid manufacturing tied fragments for
+     a short exact value merely because it crosses a beat. */
+  ok('a short exact note value is not split into fake legato ties',
+    A._.notePieces(18, 9, 96, 24).join() === '9', A._.notePieces(18, 9, 96, 24).join('+'));
+  ok('ordinary values stay one note in 4/4 instead of becoming fake ties',
+    A._.notePieces(18, 24, 96, 24).join() === '24' &&
+    A._.notePieces(12, 48, 96, 24).join() === '48',
+    A._.notePieces(18, 24, 96, 24).join('+') + ', ' + A._.notePieces(12, 48, 96, 24).join('+'));
+  ok('compound-time beat crossings remain explicitly readable',
+    A._.notePieces(30, 12, 72, 36).length > 1,
+    A._.notePieces(30, 12, 72, 36).join('+'));
+  const articulationGrid = {
+    ticksPerQuarter: 24, beatsPerBar: 4, beatType: 4, bpm: 176,
+    notes: [
+      { midi: 72, tick: 18, endTick: 27, vel: 70, staff: 1 },
+      { midi: 74, tick: 30, endTick: 36, vel: 70, staff: 1 },
+      { midi: 76, tick: 42, endTick: 48, vel: 70, staff: 1 },
+      { midi: 77, tick: 54, endTick: 60, vel: 70, staff: 1 },
+      { midi: 48, tick: 0, endTick: 6, vel: 60, staff: 2 },
+      { midi: 50, tick: 12, endTick: 18, vel: 60, staff: 2 },
+      { midi: 52, tick: 24, endTick: 30, vel: 60, staff: 2 },
+      { midi: 53, tick: 36, endTick: 42, vel: 60, staff: 2 }
+    ]
+  };
+  const articulated = A.toMusicXml({ grid: articulationGrid, pedals: [{ on: 0, off: 1.2 }] });
+  const artificialTies = (articulated.xml.match(/<tie type=/g) || []).length;
+  const leftStaff = (articulated.xml.split('<backup>')[1] || '');
+  ok('pedal and short release gaps do not lengthen written notes',
+    artificialTies === 0 && /<duration>6<\/duration><voice>5<\/voice>[\s\S]*?<rest\/><duration>6<\/duration>/.test(leftStaff),
+    'ties ' + artificialTies);
 
   console.log('\n── honest failure ──');
   let nothing = null;
@@ -397,6 +496,25 @@ const helperHealth = () => new Promise(resolve => {
     const shaky = PPP.Import.validateTranscription(sc, Object.assign({}, stats, { tempoVariation: 0.3, gridError: 0.2 }), { duration: 40 });
     const fallback = PPP.Import.validateTranscription(sc, stats, { duration: 40, engine: 'basic-pitch' });
     const dense = PPP.Import.validateTranscription(sc, Object.assign({}, stats, { notes: 900 }), { duration: 40, engine: 'basic-pitch' });
+    const noisyBars = Object.assign({}, stats, {
+      beatSource: 'audio', barStarts: [0, 1, 2, 3],
+      perBar: [
+        { bar: 1, notes: 20, gridError: 0.18, stretch: 1.0 },
+        { bar: 2, notes: 20, gridError: 0.27, stretch: 1.0 }
+      ]
+    });
+    const barReview = PPP.Import.validateTranscription(sc, noisyBars, { duration: 40 });
+    const lockedReview = PPP.Import.validateTranscription(sc, Object.assign({}, noisyBars, { beatSource: 'lock' }), { duration: 40 });
+    const legacyScore = JSON.parse(JSON.stringify(sc));
+    legacyScore.source = { kind: 'youtube', status: 'transcribed', amt: 'ensemble', transcriptionVersion: 2 };
+    const migrated = PPP.migrateSavedTranscription(legacyScore, legacyScore.source, {
+      level: 'fair', confidence: 0.8, suspectMeasures: [1, 2, 5],
+      summary: 'old red bars', advice: 'old advice', issues: [{ kind: 'bars' }, { kind: 'dense' }]
+    });
+    const packedScore = PPP.packScore(sc);
+    const unpackedScore = PPP.unpackScore(JSON.parse(JSON.stringify(packedScore)));
+    const rawScoreSize = JSON.stringify(Object.assign({}, sc, { _byNumber: undefined })).length;
+    const packedScoreSize = JSON.stringify(packedScore).length;
     return {
       measures: sc.measures.length, time: m0.time.beats + '/' + m0.time.beatType, fifths: m0.key.fifths,
       staves: sc.staves, hands: [...new Set(sc.notes.filter(n => !n.rest).map(n => n.hand))].sort().join(''),
@@ -404,7 +522,16 @@ const helperHealth = () => new Promise(resolve => {
       singleKind: rep.confidenceKind, singleKinds: rep.issues.map(i => i.kind).join(','),
       ensembleLevel: ensemble.level, ensembleKind: ensemble.confidenceKind, ensembleAgreement: ensemble.modelAgreement,
       fallbackLevel: fallback.level, fallbackConf: fallback.confidence, fallbackKinds: fallback.issues.map(i => i.kind).join(','),
-      denseLevel: dense.level, denseKinds: dense.issues.map(i => i.kind).join(',')
+      denseLevel: dense.level, denseKinds: dense.issues.map(i => i.kind).join(','),
+      reviewedBars: barReview.suspectMeasures.join(','), lockedBars: lockedReview.suspectMeasures.join(','),
+      migratedVersion: migrated.source.transcriptionVersion,
+      migratedBars: migrated.report.suspectMeasures.join(','),
+      migratedKinds: migrated.report.issues.map(i => i.kind).join(','),
+      migratedSummary: migrated.report.summary,
+      packedRatio: packedScoreSize / rawScoreSize,
+      rawNotes: sc.notes.length,
+      unpackedNotes: unpackedScore.notes.length,
+      unpackedPitch: unpackedScore.notes.find(n => !n.rest).p
     };
   }, w.xml, w.stats);
   ok('the parser reads it as written', back.measures === 16 && back.time === '3/4' && back.fifths === 1 && back.staves === 2,
@@ -424,6 +551,16 @@ const helperHealth = () => new Promise(resolve => {
     back.fallbackLevel + ' ' + Math.round(back.fallbackConf * 100) + '%: ' + back.fallbackKinds);
   ok('an implausibly dense fallback is called out instead of reporting zero checks',
     back.denseLevel !== 'good' && /dense/.test(back.denseKinds), back.denseLevel + ': ' + back.denseKinds);
+  ok('performance timing alone never paints notation measures red',
+    back.reviewedBars === '', back.reviewedBars);
+  ok('a rhythm the player explicitly locked is not marked red against the old performance grid',
+    back.lockedBars === '', back.lockedBars);
+  ok('saved transcriptions discard red bars produced by the retired validator',
+    back.migratedVersion === 7 && back.migratedBars === '' && back.migratedKinds === 'dense' && back.migratedSummary == null,
+    JSON.stringify({ version: back.migratedVersion, bars: back.migratedBars, kinds: back.migratedKinds }));
+  ok('large saved scores use compact note rows and unpack without losing notes',
+    back.packedRatio < 0.65 && back.unpackedNotes === back.rawNotes && !!back.unpackedPitch,
+    Math.round(back.packedRatio * 100) + '% size, ' + back.unpackedNotes + ' notes');
 
   const gridBack = await page.evaluate(xml => {
     const sc = PPP.parseMusicXML(xml, 'jig');
@@ -492,6 +629,9 @@ const helperHealth = () => new Promise(resolve => {
     JSON.stringify(localGrounded));
   const appSource = fs.readFileSync(path.join(__dirname, '..', 'Piano Coach App.dc.html'), 'utf8');
   ok('the recording review offers a reference-score replacement path', /data-reference-score/.test(appSource));
+  ok('the recording review offers level, texture and AI arrangement controls',
+    /data-arrangement-level/.test(appSource) && /data-arrangement-style/.test(appSource) &&
+      /option value="jazz"/.test(appSource) && /data-ai-arrangement/.test(appSource));
   ok('recording imports distinguish faithful transcription from playable arrangement',
     /Solo piano \(faithful transcription\)/.test(appSource) && /Full song \(playable piano arrangement\)/.test(appSource));
   ok('a saved YouTube score can still be replaced after its temporary audio object is gone',
@@ -562,6 +702,43 @@ const helperHealth = () => new Promise(resolve => {
     await sleep(800);
     const afterLock = await page.evaluate(() => !!document.querySelector('[data-recording]'));
     ok('rewrite rebuilds notation from the notes already heard', afterLock);
+    await page.select('[data-arrangement-level]', 'beginner');
+    await page.select('[data-arrangement-style]', 'melody');
+    await page.click('[data-apply-arrangement]');
+    await sleep(900);
+    const beginnerCount = await page.evaluate(() => {
+      const t = (document.querySelector('main') || document.body).innerText;
+      const m = t.match(/(?:^|\n)Notes\s*\n\s*([0-9]+)/i);
+      return m ? +m[1] : 0;
+    });
+    ok('a beginner arrangement is applied without transcribing again',
+      beginnerCount > 0 && beginnerCount < r.notes, beginnerCount + ' notes from ' + r.notes);
+    await page.select('[data-arrangement-level]', 'original');
+    await page.click('[data-apply-arrangement]');
+    await sleep(900);
+    const restoredCount = await page.evaluate(() => {
+      const t = (document.querySelector('main') || document.body).innerText;
+      const m = t.match(/(?:^|\n)Notes\s*\n\s*([0-9]+)/i);
+      return m ? +m[1] : 0;
+    });
+    ok('the original transcription can be restored', restoredCount === r.notes,
+      restoredCount + ' notes restored');
+    await page.select('[data-arrangement-level]', 'intermediate');
+    await page.select('[data-arrangement-style]', 'jazz');
+    await page.click('[data-apply-arrangement]');
+    await sleep(900);
+    const jazzReview = await page.evaluate(() => ({
+      style: (((window.PPP.app.state.importSource || {}).arrangement || {}).style || ''),
+      notes: window.PPP.app.state.score.notes.filter(n => !n.rest).length,
+      measures: window.PPP.Score.count(window.PPP.app.state.score)
+    }));
+    ok('a rich style can be applied before accepting the transcription',
+      jazzReview.style === 'jazz' && jazzReview.notes > 0 && jazzReview.measures === r.measures,
+      JSON.stringify(jazzReview));
+    await page.select('[data-arrangement-level]', 'original');
+    await page.select('[data-arrangement-style]', 'balanced');
+    await page.click('[data-apply-arrangement]');
+    await sleep(800);
     try {
       await page.screenshot({ path: process.env.PPP_LOCK_SHOT || 'tests/.shots/review-lock.png', fullPage: false });
     } catch (e) {}

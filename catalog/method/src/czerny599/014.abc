@@ -1,0 +1,17 @@
+X:1
+T:No. 14
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=14 pages=7
+M:C
+L:1/8
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] .[ce]2 .[ce]2 .[ce]2 .[ce]2 | [eg]4 [ce]4 | .[df]2 .[df]2 .[df]2 .[df]2 | [ce]8 | .[ce]2 .[ce]2 .[ce]2 .[ce]2 |
+[V:2] C G E G C G E G | C G E G C G E G | B, G D G B, G D G | C G E G C G E G | C G E G C G E G |
+[V:1] [eg]4 [ce]4 | .d2 .d2 .d2 .d2 | c8 :|: .[df]2 .[df]2 .[df]2 .[df]2 | [ce]4 [eg]4 |
+[V:2] C G E G C G E G | B, G F G B, G F G | C G E G C G E G :|: B, G D G B, G D G | C G E G C G E G |
+[V:1] .[df]2 .[df]2 .[df]2 .[df]2 | [ce]8 | [ce]2 [eg]2 .[eg]2 .[eg]2 | [eg]2 [ce]2 [eg]2 [ce]2 | .d2 .d2 .d2 .d2 | c8 :|
+[V:2] B, G D G B, G D G | C G E G C G E G | C G E G C G E G | C G E G C G E G | B, G F G B, G F G | C G E G C G E G :|

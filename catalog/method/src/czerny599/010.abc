@@ -1,0 +1,13 @@
+X:1
+T:No. 10
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=10 pages=5
+M:C
+L:1/4
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] [egc']2 [egc']2 | [ceg]2 [ceg]2 | [dgb]2 [dgb]2 | [egc']4 :|: [cfa]2 [cfa]2 | [ceg]4 | [Bdf]2 [Bdf]2 | [Gce]4 | [GBd]2 [GBd]2 | [Gce]2 [Gce]2 | [df]2 [Bd]2 | c4 :|
+[V:2] [CEG]2 [CEG]2 | [CEG]2 [CEG]2 | [G,DF]2 [G,DF]2 | [CE]4 :|: [CFA]2 [CFA]2 | [CEG]4 | [G,DF]2 [G,DF]2 | [CE]4 | [G,D]2 [G,D]2 | [CE]2 [CE]2 | [G,B,D]2 [G,DF]2 | [CE]4 :|

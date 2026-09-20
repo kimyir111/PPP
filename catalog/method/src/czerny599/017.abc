@@ -1,0 +1,17 @@
+X:1
+T:No. 17
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=17 pages=9
+M:C
+L:1/8
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] c d c d [ce] [df] [ce] [df] | [eg] [df] [eg] [df] .[ce]2 .[ce]2 | [df] [eg] [df] [eg] .[df]2 .[df]2 | [ce] [df] [ce] [df] .[ce]2 .[ce]2 | c d c d [ce] [df] [ce] [df] |
+[V:2] [CEG]8 | [CEG]8 | [B,DG]8 | [CEG]8 | [CEG]8 |
+[V:1] [eg] [df] [eg] [df] .[ce]2 .[ce]2 | [eg] .[df] .[df] .[df] [df] e f d | c e g e c4 :|: .[df] .[df] .[df] .[df] [eg] [df] [eg] [df] | [ce] [df] [ce] [df] [eg] c [eg] c |
+[V:2] [CEG]8 | [B,DG]8 | [CEG]8 :|: [B,DG]8 | [CEG]8 |
+[V:1] .[df] .[df] .[df] .[df] [eg] [df] [eg] [df] | [ce] [df] [ce] [df] [eg]4 | [eg] [df] [ce] [df] [eg] [df] [ce] [df] | [eg] [df] [ce] [df] [eg] c [eg] c | [eg] .[df] .[df] .[df] [df] e f d | c e g e c4 :|
+[V:2] [B,DG]8 | [CEG]8 | [CEG]8 | [CEG]8 | [B,DG]4 [B,DG]4 | [CEG]8 :|

@@ -1,0 +1,17 @@
+X:1
+T:No. 23
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=23 pages=12-13
+M:6/8
+L:1/8
+Q:3/8=60
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] c2 e g2 c' | c'2 a f2 a | g2 e c2 e | d2 .d d3 | c2 e g2 c' |
+[V:2] CEG CEG | CFA CFA | CEG CEG | B,FG B,FG | CEG CEG |
+[V:1] c'2 a f2 a | g2 e gfd | c2 .c c3 :: def fed | efg g3 |
+[V:2] CFA CFA | CEG B,FG | CEG CEG :: B,DG B,DG | CEG CEG |
+[V:1] def fed | efg g3 | c2 e g2 c' | c'ba gfe | g2 e f2 d | c2 .c c3 :|
+[V:2] B,DG B,DG | CEG CEG | CEG CEG | CEG CEG | G,CE G,B,F | CEG C3 :|

@@ -1,0 +1,17 @@
+X:1
+T:No. 45
+C:Ferdinand Beyer, Op. 101
+%ppp book=beyer no=45 pages=38
+M:C
+L:1/8
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] "^Moderato" cdcdefef | gfgfeded | c8 | g8 |
+[V:2] C8 | G8 | CDCDEFEF | GFGFEDED |
+[V:1] cdcdefef | gfgfeded | cdcdefef | gfgfeded | c4 e4 | g4 e4 |
+[V:2] CDCDEFEF | GFGFEDED | CDCDEFEF | GFGFEDED | CEGECEGE | CEGECEGE |
+[V:1] cegecege | cegecege | c2 e2 g2 e2 | cegecege | cdefgfed | cege c4 |]
+[V:2] C4 E4 | G4 E4 | CEGECEGE | C2 E2 G2 E2 | CDEFGFED | CEGE C4 |]

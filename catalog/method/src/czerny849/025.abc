@@ -1,0 +1,37 @@
+X:1
+T:No. 25
+C:Carl Czerny, Op. 849
+%ppp book=czerny849 no=25 pages=46-47
+M:C
+L:1/16
+Q:1/4=138
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:D
+[V:1] "^Allegro en galop." a'f'd'a f'd'a f d'a fd a fdA | fAdA eAcA dfAd fad'f'|]
+[V:2] [DFA]4 z4 [DFA]4 z4 | [A,DF]4 [A,EG]4 [DF]4 z4|]
+[V:1] a f d A f d A F d' a f d a f d A | fAdA e4A4c4 | C E A C E A C e A c e a c e a c'|]
+[V:2] [D,F,A,]4 z4 [D,F,A,]4 z4 | [A,,DF]8 [A,,EG]8 | [A,,CE,]16|]
+[V:1] e g b e' g b e' g' B e g b e g b e' | d' e' d' c' b a g f e f e f e d c B|]
+[V:2] [B,,D,E,^G,]16 | [^G,,B,,E,]16|]
+[V:1] a' f' d' a f' d' a f d' a f d a f d A | a e' c' a e c' a e c a e c A e c A|]
+[V:2] [A,,CE,]16 | [C,E,A,]8 A,8|]
+[V:1] f a f d A f d A f d' a f d a f d | c e c e a e c' e b e d' e g' e b e|]
+[V:2] [D,F,A]8 [D,F,A]8 | [E,A,C]8 [E,G,B,D]8|]
+[V:1] a4 e4 a4 e' c' a e | d e B e d e B e d e B e d e B e | c e a c' e' c' a e c e a c' e' c' a e|]
+[V:2] [A,C]8 E,8 | [^G,B]4 E,4 [^G,B]4 E,4 | [A,C]4 E,4 [A,C]4 E,4|]
+[V:1] d e B e d e B e d e B e d e B e | c e a c' e' c' a e c e a c' e' c' a e|]
+[V:2] [^G,B]4 E,4 [^G,B]4 E,4 | [A,C]8 [A,CE]8|]
+[V:1] f d e f g a b c' d' e' f' e' g f e d | g e c A g e c A g e c A g e c A|]
+[V:2] [A,DF]8 [A,DF]4 [A,DF]4 | [C,E,G]16|]
+[V:1] g e c A e A c e f A d f g A e g | a f d A f d A F d' a f d a f d A|]
+[V:2] z16 | f4 d4 A4 F4|]
+[V:1] f A d A e A c A d f A d f a d' f' | a' f' d' a f' d' a f d' a f d a f d A|]
+[V:2] D4 [A,G]4 [D,F]4 z4 | f4 d4 A4 F4|]
+[V:1] f A A d e A c A d A B c d e f g | a f d A f d A F d A F D A F D A,|]
+[V:2] D4 [A,G]4 [D,F]4 z4 | [D,F,A,]8 [D,F]8|]
+[V:1] F A, D A, E A, C A, D F A, D F A D F | a d f a d' f' a d' f' A d f a d f a|]
+[V:2] [A,,DF]4 [A,,EG]4 [D,F]4 z4 | [A,,DF]4 A,4 D4 F4|]
+[V:1] c d e f g a b c' d'8|]
+[V:2] [A,,F]4 [A,,EG]4 [D,F]4 z4|]

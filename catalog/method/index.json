@@ -10,7 +10,658 @@
    "count": 106,
    "license": "pd",
    "edition": "transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets",
-   "pieces": []
+   "pieces": [
+    {
+     "no": 1,
+     "file": "beyer/001.mxl",
+     "measures": 104,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 1,
+     "notes": 268
+    },
+    {
+     "no": 2,
+     "file": "beyer/002.mxl",
+     "measures": 144,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 1,
+     "notes": 291
+    },
+    {
+     "no": 3,
+     "file": "beyer/003.mxl",
+     "measures": 10,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 18
+    },
+    {
+     "no": 4,
+     "file": "beyer/004.mxl",
+     "measures": 8,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 26
+    },
+    {
+     "no": 5,
+     "file": "beyer/005.mxl",
+     "measures": 8,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 30
+    },
+    {
+     "no": 6,
+     "file": "beyer/006.mxl",
+     "measures": 12,
+     "key": "C",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 38
+    },
+    {
+     "no": 7,
+     "file": "beyer/007.mxl",
+     "measures": 8,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 51
+    },
+    {
+     "no": 8,
+     "file": "beyer/008.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 81
+    },
+    {
+     "no": 9,
+     "file": "beyer/009.mxl",
+     "measures": 32,
+     "key": "C",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 128
+    },
+    {
+     "no": 10,
+     "file": "beyer/010.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 86
+    },
+    {
+     "no": 11,
+     "file": "beyer/011.mxl",
+     "measures": 24,
+     "key": "C",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 90
+    },
+    {
+     "no": 12,
+     "file": "beyer/012.mxl",
+     "measures": 8,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 38
+    },
+    {
+     "no": 13,
+     "file": "beyer/013.mxl",
+     "measures": 8,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 38
+    },
+    {
+     "no": 14,
+     "file": "beyer/014.mxl",
+     "measures": 8,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 46
+    },
+    {
+     "no": 15,
+     "file": "beyer/015.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 84
+    },
+    {
+     "no": 16,
+     "file": "beyer/016.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 53
+    },
+    {
+     "no": 17,
+     "file": "beyer/017.mxl",
+     "measures": 24,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 121
+    },
+    {
+     "no": 18,
+     "file": "beyer/018.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 78
+    },
+    {
+     "no": 19,
+     "file": "beyer/019.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 84
+    },
+    {
+     "no": 20,
+     "file": "beyer/020.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 94
+    },
+    {
+     "no": 21,
+     "file": "beyer/021.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 93
+    },
+    {
+     "no": 22,
+     "file": "beyer/022.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 101
+    },
+    {
+     "no": 23,
+     "file": "beyer/023.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 84
+    },
+    {
+     "no": 24,
+     "file": "beyer/024.mxl",
+     "measures": 12,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 79
+    },
+    {
+     "no": 25,
+     "file": "beyer/025.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 83
+    },
+    {
+     "no": 26,
+     "file": "beyer/026.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 87
+    },
+    {
+     "no": 27,
+     "file": "beyer/027.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 94
+    },
+    {
+     "no": 28,
+     "file": "beyer/028.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 95
+    },
+    {
+     "no": 29,
+     "file": "beyer/029.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 78
+    },
+    {
+     "no": 30,
+     "file": "beyer/030.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 94
+    },
+    {
+     "no": 31,
+     "file": "beyer/031.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 110
+    },
+    {
+     "no": 32,
+     "file": "beyer/032.mxl",
+     "measures": 24,
+     "key": "C",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 98
+    },
+    {
+     "no": 33,
+     "file": "beyer/033.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 86
+    },
+    {
+     "no": 34,
+     "file": "beyer/034.mxl",
+     "measures": 24,
+     "key": "C",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 104
+    },
+    {
+     "no": 35,
+     "file": "beyer/035.mxl",
+     "measures": 20,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 102
+    },
+    {
+     "no": 36,
+     "file": "beyer/036.mxl",
+     "measures": 20,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 105
+    },
+    {
+     "no": 37,
+     "file": "beyer/037.mxl",
+     "measures": 24,
+     "key": "C",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 102
+    },
+    {
+     "no": 38,
+     "file": "beyer/038.mxl",
+     "measures": 12,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 81
+    },
+    {
+     "no": 39,
+     "file": "beyer/039.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 95
+    },
+    {
+     "no": 40,
+     "file": "beyer/040.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 122
+    },
+    {
+     "no": 41,
+     "file": "beyer/041.mxl",
+     "measures": 20,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 148
+    },
+    {
+     "no": 42,
+     "file": "beyer/042.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 80
+    },
+    {
+     "no": 43,
+     "file": "beyer/043.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 98
+    },
+    {
+     "no": 44,
+     "file": "beyer/044.mxl",
+     "measures": 38,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 194
+    },
+    {
+     "no": 45,
+     "file": "beyer/045.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 190
+    },
+    {
+     "no": 46,
+     "file": "beyer/046.mxl",
+     "measures": 17,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 173
+    },
+    {
+     "no": 47,
+     "file": "beyer/047.mxl",
+     "measures": 12,
+     "key": "C",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 99
+    },
+    {
+     "no": 48,
+     "file": "beyer/048.mxl",
+     "measures": 17,
+     "key": "C",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 92
+    },
+    {
+     "no": 49,
+     "file": "beyer/049.mxl",
+     "measures": 17,
+     "key": "C",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 99
+    },
+    {
+     "no": 50,
+     "file": "beyer/050.mxl",
+     "measures": 20,
+     "key": "C",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 177
+    },
+    {
+     "no": 51,
+     "file": "beyer/051.mxl",
+     "measures": 13,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 133
+    },
+    {
+     "no": 52,
+     "file": "beyer/052.mxl",
+     "measures": 17,
+     "key": "C",
+     "mode": "major",
+     "time": "6/8",
+     "staves": 2,
+     "notes": 151
+    },
+    {
+     "no": 53,
+     "file": "beyer/053.mxl",
+     "measures": 8,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 42
+    },
+    {
+     "no": 54,
+     "file": "beyer/054.mxl",
+     "measures": 8,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 32
+    },
+    {
+     "no": 55,
+     "file": "beyer/055.mxl",
+     "measures": 20,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 221
+    },
+    {
+     "no": 56,
+     "file": "beyer/056.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 128
+    },
+    {
+     "no": 57,
+     "file": "beyer/057.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 101
+    },
+    {
+     "no": 58,
+     "file": "beyer/058.mxl",
+     "measures": 13,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 98
+    },
+    {
+     "no": 59,
+     "file": "beyer/059.mxl",
+     "measures": 32,
+     "key": "C",
+     "mode": "major",
+     "time": "3/8",
+     "staves": 2,
+     "notes": 155
+    },
+    {
+     "no": 60,
+     "file": "beyer/060.mxl",
+     "measures": 24,
+     "key": "C",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 146
+    },
+    {
+     "no": 61,
+     "file": "beyer/061.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 115
+    },
+    {
+     "no": 64,
+     "file": "beyer/064.mxl",
+     "measures": 18,
+     "key": "G",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 110
+    },
+    {
+     "no": 65,
+     "file": "beyer/065.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 161
+    },
+    {
+     "no": 66,
+     "file": "beyer/066.mxl",
+     "measures": 20,
+     "key": "C",
+     "mode": "major",
+     "time": "6/8",
+     "staves": 2,
+     "notes": 175
+    },
+    {
+     "no": 67,
+     "file": "beyer/067.mxl",
+     "measures": 18,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 119
+    }
+   ]
   },
   {
    "id": "czerny599",
@@ -23,6 +674,56 @@
    "edition": "transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici)",
    "pieces": [
     {
+     "no": 1,
+     "file": "czerny599/001.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 51
+    },
+    {
+     "no": 2,
+     "file": "czerny599/002.mxl",
+     "measures": 32,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 111
+    },
+    {
+     "no": 3,
+     "file": "czerny599/003.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 50
+    },
+    {
+     "no": 4,
+     "file": "czerny599/004.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 53
+    },
+    {
+     "no": 5,
+     "file": "czerny599/005.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 92
+    },
+    {
      "no": 6,
      "file": "czerny599/006.mxl",
      "measures": 16,
@@ -31,6 +732,506 @@
      "time": "4/4",
      "staves": 2,
      "notes": 86
+    },
+    {
+     "no": 7,
+     "file": "czerny599/007.mxl",
+     "measures": 8,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 37
+    },
+    {
+     "no": 8,
+     "file": "czerny599/008.mxl",
+     "measures": 12,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 54
+    },
+    {
+     "no": 9,
+     "file": "czerny599/009.mxl",
+     "measures": 8,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 51
+    },
+    {
+     "no": 10,
+     "file": "czerny599/010.mxl",
+     "measures": 12,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 109
+    },
+    {
+     "no": 11,
+     "file": "czerny599/011.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 116
+    },
+    {
+     "no": 12,
+     "file": "czerny599/012.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 158
+    },
+    {
+     "no": 13,
+     "file": "czerny599/013.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 221
+    },
+    {
+     "no": 14,
+     "file": "czerny599/014.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 210
+    },
+    {
+     "no": 15,
+     "file": "czerny599/015.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 272
+    },
+    {
+     "no": 16,
+     "file": "czerny599/016.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 281
+    },
+    {
+     "no": 17,
+     "file": "czerny599/017.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 245
+    },
+    {
+     "no": 18,
+     "file": "czerny599/018.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 355
+    },
+    {
+     "no": 19,
+     "file": "czerny599/019.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 178
+    },
+    {
+     "no": 20,
+     "file": "czerny599/020.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 210
+    },
+    {
+     "no": 21,
+     "file": "czerny599/021.mxl",
+     "measures": 32,
+     "key": "C",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 270
+    },
+    {
+     "no": 22,
+     "file": "czerny599/022.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 189
+    },
+    {
+     "no": 23,
+     "file": "czerny599/023.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "6/8",
+     "staves": 2,
+     "notes": 162
+    },
+    {
+     "no": 24,
+     "file": "czerny599/024.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "6/8",
+     "staves": 2,
+     "notes": 204
+    },
+    {
+     "no": 25,
+     "file": "czerny599/025.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 325
+    },
+    {
+     "no": 26,
+     "file": "czerny599/026.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "3/8",
+     "staves": 2,
+     "notes": 156
+    },
+    {
+     "no": 27,
+     "file": "czerny599/027.mxl",
+     "measures": 8,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 186
+    },
+    {
+     "no": 28,
+     "file": "czerny599/028.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 196
+    },
+    {
+     "no": 29,
+     "file": "czerny599/029.mxl",
+     "measures": 24,
+     "key": "C",
+     "mode": "major",
+     "time": "6/8",
+     "staves": 2,
+     "notes": 334
+    },
+    {
+     "no": 30,
+     "file": "czerny599/030.mxl",
+     "measures": 24,
+     "key": "C",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 272
+    },
+    {
+     "no": 31,
+     "file": "czerny599/031.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 210
+    },
+    {
+     "no": 32,
+     "file": "czerny599/032.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 177
+    },
+    {
+     "no": 33,
+     "file": "czerny599/033.mxl",
+     "measures": 17,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 283
+    },
+    {
+     "no": 34,
+     "file": "czerny599/034.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "6/8",
+     "staves": 2,
+     "notes": 232
+    },
+    {
+     "no": 35,
+     "file": "czerny599/035.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 207
+    },
+    {
+     "no": 36,
+     "file": "czerny599/036.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 198
+    },
+    {
+     "no": 37,
+     "file": "czerny599/037.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "6/8",
+     "staves": 2,
+     "notes": 237
+    },
+    {
+     "no": 38,
+     "file": "czerny599/038.mxl",
+     "measures": 16,
+     "key": "C",
+     "mode": "major",
+     "time": "6/8",
+     "staves": 2,
+     "notes": 231
+    },
+    {
+     "no": 39,
+     "file": "czerny599/039.mxl",
+     "measures": 16,
+     "key": "G",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 203
+    },
+    {
+     "no": 40,
+     "file": "czerny599/040.mxl",
+     "measures": 16,
+     "key": "F",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 178
+    },
+    {
+     "no": 41,
+     "file": "czerny599/041.mxl",
+     "measures": 32,
+     "key": "G",
+     "mode": "major",
+     "time": "3/8",
+     "staves": 2,
+     "notes": 269
+    },
+    {
+     "no": 42,
+     "file": "czerny599/042.mxl",
+     "measures": 16,
+     "key": "F",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 146
+    },
+    {
+     "no": 44,
+     "file": "czerny599/044.mxl",
+     "measures": 17,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 305
+    },
+    {
+     "no": 45,
+     "file": "czerny599/045.mxl",
+     "measures": 32,
+     "key": "G",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 292
+    },
+    {
+     "no": 46,
+     "file": "czerny599/046.mxl",
+     "measures": 33,
+     "key": "F",
+     "mode": "major",
+     "time": "3/8",
+     "staves": 2,
+     "notes": 343
+    },
+    {
+     "no": 47,
+     "file": "czerny599/047.mxl",
+     "measures": 17,
+     "key": "F",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 144
+    },
+    {
+     "no": 48,
+     "file": "czerny599/048.mxl",
+     "measures": 16,
+     "key": "Bb",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 177
+    },
+    {
+     "no": 49,
+     "file": "czerny599/049.mxl",
+     "measures": 16,
+     "key": "Bb",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 323
+    },
+    {
+     "no": 50,
+     "file": "czerny599/050.mxl",
+     "measures": 16,
+     "key": "D",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 172
+    },
+    {
+     "no": 51,
+     "file": "czerny599/051.mxl",
+     "measures": 16,
+     "key": "D",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 248
+    },
+    {
+     "no": 52,
+     "file": "czerny599/052.mxl",
+     "measures": 16,
+     "key": "D",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 143
+    },
+    {
+     "no": 53,
+     "file": "czerny599/053.mxl",
+     "measures": 16,
+     "key": "Bb",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 130
+    },
+    {
+     "no": 54,
+     "file": "czerny599/054.mxl",
+     "measures": 19,
+     "key": "Bb",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 206
+    },
+    {
+     "no": 55,
+     "file": "czerny599/055.mxl",
+     "measures": 25,
+     "key": "G",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 254
+    },
+    {
+     "no": 56,
+     "file": "czerny599/056.mxl",
+     "measures": 32,
+     "key": "F",
+     "mode": "major",
+     "time": "3/8",
+     "staves": 2,
+     "notes": 288
+    },
+    {
+     "no": 78,
+     "file": "czerny599/078.mxl",
+     "measures": 16,
+     "key": "F",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 179
     }
    ]
   },
@@ -301,6 +1502,16 @@
      "notes": 399
     },
     {
+     "no": 5,
+     "file": "burgmuller25/005.mxl",
+     "measures": 17,
+     "key": "F",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 208
+    },
+    {
      "no": 6,
      "file": "burgmuller25/006.mxl",
      "name": "Progrès",
@@ -345,6 +1556,26 @@
      "notes": 582
     },
     {
+     "no": 16,
+     "file": "burgmuller25/016.mxl",
+     "measures": 18,
+     "key": "G",
+     "mode": "minor",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 271
+    },
+    {
+     "no": 17,
+     "file": "burgmuller25/017.mxl",
+     "measures": 35,
+     "key": "F",
+     "mode": "major",
+     "time": "3/8",
+     "staves": 2,
+     "notes": 290
+    },
+    {
      "no": 18,
      "file": "burgmuller25/018.mxl",
      "name": "Inquiétude",
@@ -356,6 +1587,16 @@
      "notes": 322
     },
     {
+     "no": 19,
+     "file": "burgmuller25/019.mxl",
+     "measures": 30,
+     "key": "A",
+     "mode": "major",
+     "time": "3/4",
+     "staves": 2,
+     "notes": 260
+    },
+    {
      "no": 21,
      "file": "burgmuller25/021.mxl",
      "name": "L'harmonie des anges",
@@ -365,6 +1606,16 @@
      "time": "4/4",
      "staves": 2,
      "notes": 396
+    },
+    {
+     "no": 23,
+     "file": "burgmuller25/023.mxl",
+     "measures": 38,
+     "key": "Eb",
+     "mode": "major",
+     "time": "6/8",
+     "staves": 2,
+     "notes": 665
     }
    ]
   },
@@ -937,6 +2188,46 @@
      "time": "4/4",
      "staves": 2,
      "notes": 603
+    },
+    {
+     "no": 25,
+     "file": "czerny849/025.mxl",
+     "measures": 27,
+     "key": "D",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 545
+    },
+    {
+     "no": 26,
+     "file": "czerny849/026.mxl",
+     "measures": 52,
+     "key": "C",
+     "mode": "major",
+     "time": "2/4",
+     "staves": 2,
+     "notes": 702
+    },
+    {
+     "no": 27,
+     "file": "czerny849/027.mxl",
+     "measures": 33,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 564
+    },
+    {
+     "no": 30,
+     "file": "czerny849/030.mxl",
+     "measures": 25,
+     "key": "C",
+     "mode": "major",
+     "time": "4/4",
+     "staves": 2,
+     "notes": 717
     }
    ]
   },

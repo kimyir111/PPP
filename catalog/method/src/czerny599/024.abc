@@ -1,0 +1,17 @@
+X:1
+T:No. 24
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=24 pages=13
+M:6/8
+L:1/8
+Q:3/8=60
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] [ce][df][eg] .[eg].[eg].[eg] | [ce][df][eg] .[eg].[eg].[eg] | [fa][gb][ac'] [ac'][gb][fa] | [eg]3 [ce]3 | [ce][df][eg] .[eg].[eg].[eg] |
+[V:2] [CEG]6 | [CEG]6 | [CFA]6 | [CEG]6 | [CEG]6 |
+[V:1] [ce][df][eg] .[eg].[eg].[eg] | [df]gf [ce]ge | .d.d.d d3 :: .[Bd].g.g .[Bd].g.g | .[ce].g.g .[ce].g.g |
+[V:2] [CEG]6 | [B,DG]3 [CEG]3 | [G,B,D]6 :: G3 G3 | [CG]3 [CG]3 |
+[V:1] .[df].g.g .[df].g.g | .[ce].g.g .[eg].c'.c' | [ac'][gb][fa] [ac'][gb][fa] | [eg][df][ce] [eg][df][ce] | [df]ag fed | .c.c.e .c3 :|
+[V:2] [B,G]3 [B,G]3 | [CG]6 | [CFA]3 [CFA]3 | [CEG]3 [CEG]3 | [G,B,F]3 [G,B,F]3 | [CE]3 [CE]3 :|

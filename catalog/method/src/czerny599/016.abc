@@ -1,0 +1,19 @@
+X:1
+T:No. 16
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=16 pages=8-9
+M:C
+L:1/16
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] cdef .g4 cdef .g4 | gfed .c4 gfed .c4 | defe .d4 defe .d4 | efgf .e4 e8 |
+[V:2] z4 .[EG]4 .[EG]4 .[EG]4 & C16 | z4 .[EG]4 .[EG]4 .[EG]4 & C16 | z4 .[DG]4 .[DG]4 .[DG]4 & B,16 | z4 .[EG]4 .[EG]4 .[EG]4 & C16 |
+[V:1] cdef .g4 gfed .c4 | gfed .c4 gfed .c4 | defe .d4 defe .d4 | cded .c4 c8 :|
+[V:2] z4 .[EG]4 .[EG]4 .[EG]4 & C16 | z4 .[EG]4 .[EG]4 .[EG]4 & C16 | z4 .[FG]4 .[FG]4 .[FG]4 & B,16 | z4 .[EG]4 .[EG]4 .[EG]4 & C16 :|
+[V:1] |: defg .f4 defg .f4 | efed .c4 efed .c4 | defg .f4 defg .f4 | efed .c4 efed .c4 |
+[V:2] |: z4 .[DG]4 .[DG]4 .[DG]4 & B,16 | z4 .[EG]4 .[EG]4 .[EG]4 & C16 | z4 .[DG]4 .[DG]4 .[DG]4 & B,16 | z4 .[EG]4 .[EG]4 .[EG]4 & C16 |
+[V:1] cdef gfed cdef gfed | cdef gfed cdef gece | gfed gfed gfed gfed | cdef gege c8 :|
+[V:2] z4 .[EG]4 .[EG]4 .[EG]4 & C16 | z4 .[EG]4 .[EG]4 .[EG]4 & C16 | z4 .[FG]4 .[FG]4 .[FG]4 & B,16 | z4 .[EG]4 .[EG]4 .[EG]4 & C16 :|

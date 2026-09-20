@@ -1,0 +1,31 @@
+X:1
+T:No. 23
+C:Friedrich Burgmüller, Op. 100
+%ppp book=burgmuller25 no=23 pages=33-34
+M:6/8
+L:1/8
+Q:3/8=126
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:Eb
+[V:1] "^Molto agitato, quasi presto" z6 | z2 z [FA]3 | [EG]3 [DF]3 |
+[V:2] B,, B, B, B, B, B, | B,, B, B, B, B, B, | B,, B, B, B, B, B, |
+[V:1] z2 z [Ac]3 | [GB]3 [FA]3 | z2 z [Af]3 | [Ge]3 [Fd]3 |
+[V:2] B,, B, B, B, B, B, | B,, B, B, B, B, B, | B,, B, B, B, B, B, | B,, B, B, B, B, B, |
+[V:1] z3 [Bg]3 | |: [Ge][Ge][Ge][Ge][Gd][Gc] | [GB][GB][GB][GB][Gc]d | [Ge][Ge][Ge][Ge][Gd][Ge] |
+[V:2] B,, B, B, B, B, B, | [E,B,][E,B,][E,B,][E,B,][E,B,][E,B,] | [E,B,][E,B,][E,B,][E,B,][E,B,][E,B,] | [E,B,][E,B,][E,B,][E,B,][E,B,][E,B,] |
+[V:1] =e3 z A A | [Ge][Ge][Ge][Ge][Gd][Gc] | [GB][GB][GB][GB][Gc][Gd] | [Ge][Gd][Ge][Bg]2[Af] |
+[V:2] [D,B,][D,B,][D,B,][D,B,][D,B,][D,B,] | [E,B,][E,B,][E,B,][E,B,][E,B,][E,B,] | [E,B,][E,B,][E,B,][E,B,][E,B,][E,B,] | [E,B,][E,B,][E,B,] B, B, B, |
+[V:1] e6 & G G G G G G :| |: [Gce][Gce][Gce][Gce][Gce][Gce] | [Gcd][Gcd][Gcd][G=Bd][G=Bd][G=Bd] |
+[V:2] [E,B,][E,B,][E,B,][E,B,][E,B,][E,B,] :| |: z C,, E,, G,, C, E, | G,3 G,,3 |
+[V:1] [GBd][GBd][GB][GBd][GBd][GBd] | [G=Ad][G=Ad][G=Ad][^FAd][^FAd][^FAd] | [F=Ad][F=Ad][F=Ad][F=Ad][F=Ad][F=Ad] | [EBd][EBd][EBd][GBd][GBd][GBd] |
+[V:2] z G,, B,, D, G, B, | D3 D,3 | z D, E, F, E, D, | G,3 E,3 |
+[V:1] [F=Ad][F=Ad][F=Ad][=EA^c][=EA^c][=EA^c] | [F=Ad][F=Ad][F=Ad][FAd][FAd][FAd] | [Ge][Ge][Ge][Ge][Gd][Gc] | [GB][GB][GB][GB][Gc][Gd] |
+[V:2] A,3 A,,3 | D,3 B,,3 | E,, [E,B,][E,B,][E,B,][E,B,][E,B,] | [E,B,][E,B,][E,B,][E,B,][E,B,][E,B,] |
+[V:1] [Ge][Ge][Ge][Ge][Gd][Ge] | =e3 z A A | [Ge][Ge][Ge][Ge][Gd][Gc] | [GB][GB][GB][GB][Gc][Gd] |
+[V:2] [E,B,][E,B,][E,B,][E,B,][E,B,][E,B,] | [D,B,][D,B,][D,B,][D,B,][D,B,][D,B,] | [E,B,][E,B,][E,B,][E,B,][E,B,][E,B,] | [E,B,][E,B,][E,B,][E,B,][E,B,][E,B,] |
+[V:1] [Ge][Gd][Ge][Bg]2[Af] | e6 & G G G G G G :| | B6 & E E E E E E | B6 & D D D D D D |
+[V:2] [E,B,][E,B,][E,B,] B, B, B, | [E,B,][E,B,][E,B,][E,B,][E,B,][E,B,] :| | [G,B,][G,B,][G,B,][G,B,][G,B,][G,B,] | [F,B,][F,B,][F,B,][F,B,][F,B,][F,B,] |
+[V:1] A6 & D D D D D D | [EG][EG][EG][EG] E2 | E2 G2 E2 | z6 |
+[V:2] [F,B,][F,B,][F,B,][F,B,][F,B,][F,B,] | [E,B,][E,B,][E,B,][E,B,][E,B,][E,B,] | E,2 B,2 E,2 | E,,6 |

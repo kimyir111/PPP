@@ -86,19 +86,20 @@ const FAKE_EMBED = '<!doctype html><title>player</title><body style="background:
     await page.goto('http://127.0.0.1:8777/health', { waitUntil: 'load' });
     const id = await page.evaluate(kind => {
       const st = JSON.parse(localStorage.getItem('ppp.state.v2'));
+      const slotKey = 'ppp.song.v1.' + st.songId;
+      const slot = JSON.parse(localStorage.getItem(slotKey) || 'null') || {};
+      const score = st.score || slot.score;
       const url = kind === 'youtube' ? 'https://www.youtube.com/watch?v=oU5jRnpJqM4' : null;
       const barStarts = [2, 4, 6, 8, 10, 12, 14, 16, 18];      /* eight bars, two seconds each, from 0:02 */
       st.importSource = Object.assign({}, st.importSource, { kind: kind, url: url, youtubeId: kind === 'youtube' ? 'oU5jRnpJqM4' : null, barStarts: barStarts });
-      if (st.score) st.score.source = Object.assign({}, st.score.source || {}, { kind: kind, url: url, youtubeId: kind === 'youtube' ? 'oU5jRnpJqM4' : null, barStarts: barStarts });
+      if (score) score.source = Object.assign({}, score.source || {}, { kind: kind, url: url, youtubeId: kind === 'youtube' ? 'oU5jRnpJqM4' : null, barStarts: barStarts });
       localStorage.setItem('ppp.state.v2', JSON.stringify(st));
       const lib = JSON.parse(localStorage.getItem('ppp.library.v1') || '{"songs":[]}');
       const entry = (lib.songs || []).find(s => s.id === st.songId);
       if (entry) { entry.kind = kind; entry.url = url; localStorage.setItem('ppp.library.v1', JSON.stringify(lib)); }
-      const slotKey = 'ppp.song.v1.' + st.songId;
       try {
-        const slot = JSON.parse(localStorage.getItem(slotKey) || 'null') || {};
         slot.importSource = st.importSource;
-        if (st.score) slot.score = st.score;
+        if (score) slot.score = score;
         localStorage.setItem(slotKey, JSON.stringify(slot));
       } catch (e) {}
       return st.songId;
@@ -186,10 +187,10 @@ const FAKE_EMBED = '<!doctype html><title>player</title><body style="background:
   const pair = await page.evaluate(() => {
     const st = JSON.parse(localStorage.getItem('ppp.state.v2'));
     const lib = JSON.parse(localStorage.getItem('ppp.library.v1') || '{"songs":[]}');
-    const score = st.score;
     const idA = st.songId;
     const idB = 'song-vidb';
     const slotA = JSON.parse(localStorage.getItem('ppp.song.v1.' + idA) || 'null') || {};
+    const score = st.score || slotA.score;
     const srcA = { kind: 'youtube', url: 'https://www.youtube.com/watch?v=oU5jRnpJqM4', youtubeId: 'oU5jRnpJqM4', barStarts: [2, 4, 6, 8, 10, 12, 14, 16, 18] };
     const srcB = { kind: 'youtube', url: 'https://www.youtube.com/watch?v=2WfaotSK3mI', youtubeId: '2WfaotSK3mI', barStarts: [2, 4, 6, 8, 10, 12, 14, 16, 18] };
     /* leftover from a later import: session source points at B while this song is A */
@@ -233,15 +234,17 @@ const FAKE_EMBED = '<!doctype html><title>player</title><body style="background:
   await page.goto('http://127.0.0.1:8777/health', { waitUntil: 'load' });
   await page.evaluate(id => {
     const st = JSON.parse(localStorage.getItem('ppp.state.v2'));
+    const slotKey = 'ppp.song.v1.' + id;
+    const slot = JSON.parse(localStorage.getItem(slotKey) || 'null') || {};
+    const score = st.score || slot.score;
     const src = { kind: 'youtube', url: null, youtubeId: null, barStarts: [2, 4, 6, 8, 10, 12, 14, 16, 18] };
     st.songId = id;
     st.importSource = src;
-    if (st.score) st.score.source = Object.assign({}, st.score.source || {}, src);
+    if (score) score.source = Object.assign({}, score.source || {}, src);
     localStorage.setItem('ppp.state.v2', JSON.stringify(st));
-    const slot = JSON.parse(localStorage.getItem('ppp.song.v1.' + id) || 'null') || {};
     slot.importSource = src;
-    if (st.score) slot.score = st.score;
-    localStorage.setItem('ppp.song.v1.' + id, JSON.stringify(slot));
+    if (score) slot.score = score;
+    localStorage.setItem(slotKey, JSON.stringify(slot));
     const lib = JSON.parse(localStorage.getItem('ppp.library.v1') || '{"songs":[]}');
     lib.current = id;
     const entry = (lib.songs || []).find(s => s.id === id);
@@ -268,11 +271,13 @@ const FAKE_EMBED = '<!doctype html><title>player</title><body style="background:
   const savedYt = await page.evaluate(() => {
     const v = document.querySelector('[data-video]');
     const st = JSON.parse(localStorage.getItem('ppp.state.v2') || 'null');
+    const slot = st && JSON.parse(localStorage.getItem('ppp.song.v1.' + st.songId) || 'null');
+    const score = st && (st.score || (slot && slot.score));
     return {
       iframe: (v && v.querySelector('iframe') || {}).src || null,
       href: (v && v.querySelector('a') || {}).href || null,
       stored: st && st.importSource && st.importSource.url,
-      score: st && st.score && st.score.source && st.score.source.url
+      score: score && score.source && score.source.url
     };
   });
   ok('saving the link embeds that video and keeps it on the score',

@@ -1,0 +1,19 @@
+X:1
+T:No. 61
+C:Ferdinand Beyer, Op. 101
+%ppp book=beyer no=61 pages=44
+M:C
+L:1/8
+Q:1/4=120
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:C
+[V:1] "^Allegro moderato" b3 d' b4 | g3 a b4 | c'3 b a4 | b3 a g4 |
+[V:2] G,2 D2 D2 B,2 | G,2 D2 B,2 D2 | G,2 D2 D2 C2 | G,2 D2 B,2 D2 |
+[V:1] b3 c' d'3 b | g3 a b3 g | c'3 b a4 | g8 |
+[V:2] G,2 D2 B,2 D2 | G,2 D2 B,2 D2 | G,2 D2 D2 C2 | G,2 D2 B,2 D2 |
+[V:1] a3 b c'3 a | b3 g d'3 b | a3 b c'3 a | b3 g d'4 |
+[V:2] G,2 D2 D2 C2 | G,2 D2 B,2 D2 | G,2 D2 C2 D2 | G,2 D2 B,2 D2 |
+[V:1] b3 c' d'3 b | g3 a b3 g | c'3 b a4 | g4 g'2 z2 |
+[V:2] G,2 D2 B,2 D2 | G,2 D2 B,2 D2 | G,2 D2 D2 C2 | B,2 D2 G,2 z2 |]

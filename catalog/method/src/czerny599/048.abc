@@ -1,0 +1,15 @@
+X:1
+T:No. 48
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=48 pages=25
+M:2/4
+L:1/8
+Q:1/4=112
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:Bb
+[V:1] "^Allegretto" !p! [df] [Bd] .[Bd] .[Bd] | [df] [Bd] .[Bd] .[Bd] | .[df] .[Bd] .[df] .[Bd] | [cf] e [ce]2 | .[ec'] .[ec'] [ec']2 | .[db] .[db] [db]2 | .[ca] .[cf] .[cg] .[ca] | .[db] .B !fine!B2 :|
+[V:2] [B,F]3 .[B,F] | [B,F]3 .[B,F] | .[B,F]2 .[B,F]2 | .[A,F]2 [A,F]2 | [A,F]3 .[A,F] | [B,F]3 .[B,F] | [F,CE]2 .[F,CE]2 | [B,D]2 z2 :|
+[V:1] !f! [Ac] f [cf] a | [c=eb]3 .[ceg] | [c=e] g [eg] c' | [ac']3 .[fa] | [Ac] f [cf] a | [c=eb]3 .[ceg] | =e c' .c' .e | g f _e c !D.C.!||
+[V:2] [F,A,C]2 [F,A,C]2 | .[C,G,B,] .[C,G,B,] [C,G,B,]2 | [C,G,B,]2 [C,G,B,]2 | .[F,A,] .[F,A,] [F,A,]2 | [F,A,C]2 [F,A,C]2 | .[C,G,B,] .[C,G,B,] [C,G,B,]2 | [C,G,B,]2 [C,G,B,]2 | [F,A,]2 z2 ||

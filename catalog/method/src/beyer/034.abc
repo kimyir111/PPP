@@ -1,0 +1,15 @@
+X:1
+T:No. 34
+C:Ferdinand Beyer, Op. 101
+%ppp book=beyer no=34 pages=31
+M:3/4
+L:1/4
+Q:1/4=76
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] "^Andante" g b d' | a3 | g b d' | a3 | g b d' | d' c' a | g b a | g3 |: a d' c' | b3 | c' a c' |
+[V:2] G B d | A3 | G B d | A3 | G B d | d c A | G B A | G3 |: A d c | B3 | c A c |
+[V:1] b3 | a d' c' | b3 | g b a | d'3 | g b d' | a3 | g b d' | a3 | g b d' | d' c' a | g b a | g3 :|
+[V:2] B3 | A d c | B3 | G B A | d3 | G B d | A3 | G B d | A3 | G B d | d c A | G B A | G3 :|

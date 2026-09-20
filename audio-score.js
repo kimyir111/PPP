@@ -43,7 +43,11 @@
     return (notes || [])
       .filter(n => n && isFinite(n.on) && isFinite(n.off) && n.midi >= 21 && n.midi <= 108)
       .filter(n => (n.vel == null ? 64 : n.vel) >= 8)
-      .map(n => ({ on: Math.max(0, +n.on), off: Math.max(+n.on + 0.03, +n.off), midi: n.midi | 0, vel: n.vel == null ? 64 : +n.vel }))
+      .map(n => {
+        const out = { on: Math.max(0, +n.on), off: Math.max(+n.on + 0.03, +n.off), midi: n.midi | 0, vel: n.vel == null ? 64 : +n.vel };
+        if (n._arrangeId != null) out._arrangeId = n._arrangeId;
+        return out;
+      })
       .sort((a, b) => a.on - b.on || a.midi - b.midi);
   }
 
@@ -53,38 +57,162 @@
      "piano accompaniment" of a simple song is otherwise written denser than
      the page in the video. */
   function simplifyNotes(notes) {
-    const src = clusterNotes(clean(notes), CLUSTER_S);
-    const out = [];
+    return arrangeNotes(notes, { level: 'beginner', style: 'balanced' });
+  }
+
+  const ARRANGEMENT_LIMITS = { original: 99, beginner: 2, intermediate: 3, advanced: 5 };
+  const ARRANGEMENT_STYLES = ['balanced', 'melody', 'accompaniment'];
+
+  /* The model may choose a profile, but it never gets to invent pitches. This
+     normalizer is the hard boundary shared by local and AI-assisted arranging. */
+  function normaliseArrangement(spec) {
+    if (typeof spec === 'string') spec = { level: spec };
+    spec = spec || {};
+    let level = String(spec.level || 'intermediate').toLowerCase();
+    if (level === 'easy') level = 'beginner';
+    if (!Object.prototype.hasOwnProperty.call(ARRANGEMENT_LIMITS, level)) level = 'intermediate';
+    let style = String(spec.style || 'balanced').toLowerCase();
+    if (ARRANGEMENT_STYLES.indexOf(style) < 0) style = 'balanced';
+    const ceiling = ARRANGEMENT_LIMITS[level];
+    const requested = isFinite(+spec.maxNotesPerAttack) ? Math.round(+spec.maxNotesPerAttack) : ceiling;
+    return {
+      level: level,
+      style: style,
+      maxNotesPerAttack: level === 'original' ? 99 : clamp(requested, 1, ceiling),
+      reason: String(spec.reason || '').slice(0, 240),
+      source: spec.source === 'ai' ? 'ai' : 'local'
+    };
+  }
+
+  function attackGroups(notes) {
+    const groups = [];
     let i = 0;
-    while (i < src.length) {
-      const t0 = src[i].attack != null ? src[i].attack : src[i].on;
+    while (i < notes.length) {
+      const t0 = notes[i].attack != null ? notes[i].attack : notes[i].on;
       let j = i + 1;
-      while (j < src.length) {
-        const t = src[j].attack != null ? src[j].attack : src[j].on;
-        if (t - t0 > CLUSTER_S) break;
+      while (j < notes.length) {
+        const t = notes[j].attack != null ? notes[j].attack : notes[j].on;
+        if (Math.abs(t - t0) > 0.004) break;
         j++;
       }
-      const g = src.slice(i, j);
-      let hi = g[0], lo = g[0];
-      g.forEach(n => {
-        if (n.midi > hi.midi) hi = n;
-        if (n.midi < lo.midi) lo = n;
-      });
-      out.push(Object.assign({}, hi));
-      if (lo.midi <= hi.midi - 5) out.push(Object.assign({}, lo));
+      groups.push(notes.slice(i, j));
       i = j;
     }
+    return groups;
+  }
+
+  function arrangementProfile(notes) {
+    const src = clusterNotes(clean(notes), CLUSTER_S);
+    const groups = attackGroups(src);
+    const attacks = groups.map(g => g[0].attack != null ? g[0].attack : g[0].on);
+    const gaps = attacks.slice(1).map((t, i) => t - attacks[i]).filter(x => x > 0.004);
+    const sizes = groups.map(g => g.length);
+    const pitches = src.map(n => n.midi);
+    const start = src.length ? src[0].on : 0;
+    const end = src.reduce((m, n) => Math.max(m, n.off), start);
+    const rapid = gaps.filter(g => g < 0.16).length;
+    return {
+      notes: src.length,
+      attacks: groups.length,
+      seconds: Math.round((end - start) * 10) / 10,
+      notesPerSecond: Math.round(src.length / Math.max(1, end - start) * 10) / 10,
+      averageNotesPerAttack: Math.round(src.length / Math.max(1, groups.length) * 100) / 100,
+      peakNotesPerAttack: sizes.length ? Math.max.apply(null, sizes) : 0,
+      rapidAttackRatio: Math.round(rapid / Math.max(1, gaps.length) * 100) / 100,
+      pitchSpan: pitches.length ? Math.max.apply(null, pitches) - Math.min.apply(null, pitches) : 0
+    };
+  }
+
+  function recommendArrangement(notes, target) {
+    const profile = arrangementProfile(notes);
+    const plan = normaliseArrangement({ level: target || 'intermediate' });
+    if (profile.rapidAttackRatio >= 0.4) plan.style = 'melody';
+    else if (profile.averageNotesPerAttack >= 2.3) plan.style = 'balanced';
+    else if (profile.pitchSpan >= 42) plan.style = 'accompaniment';
+    plan.reason = profile.rapidAttackRatio >= 0.4
+      ? 'Fast passages were detected, so the melodic line is protected while chord density is reduced.'
+      : profile.averageNotesPerAttack >= 2.3
+        ? 'Dense chords were detected, so outer voices are kept and inner voices are limited.'
+        : 'The texture is already clear, so only simultaneous-note density is limited.';
+    return { plan: plan, profile: profile };
+  }
+
+  /* Select notes from each performed attack. Timing and pitch are never
+     generated: an arrangement is always a verifiable subset of what was heard. */
+  function arrangeNotes(notes, spec) {
+    const plan = normaliseArrangement(spec);
+    const src = clusterNotes(clean(notes), CLUSTER_S);
+    if (plan.level === 'original') return src.map(n => Object.assign({}, n));
+    const out = [];
+    attackGroups(src).forEach(group => {
+      const g = group.slice().sort((a, b) => a.midi - b.midi);
+      const groupLimit = plan.style === 'melody' ? Math.min(2, plan.maxNotesPerAttack) : plan.maxNotesPerAttack;
+      if (g.length <= groupLimit) {
+        g.forEach(n => out.push(Object.assign({}, n)));
+        return;
+      }
+      const chosen = [], used = new Set();
+      const take = n => {
+        if (!n || used.has(n.midi) || chosen.length >= groupLimit) return;
+        used.add(n.midi); chosen.push(n);
+      };
+      const lo = g[0], hi = g[g.length - 1];
+      if (plan.style === 'melody') {
+        take(hi);
+        if (hi.midi - lo.midi >= 7) take(lo);
+      } else if (plan.style === 'accompaniment') {
+        take(lo); take(hi);
+        const targets = [lo.midi + 7, lo.midi + 12, lo.midi + 16];
+        targets.forEach(p => take(g.reduce((best, n) => Math.abs(n.midi - p) < Math.abs(best.midi - p) ? n : best, g[0])));
+      } else {
+        take(lo); take(hi);
+      }
+      /* Fill any remaining capacity with evenly spaced inner voices. */
+      while (chosen.length < groupLimit && used.size < g.length) {
+        let best = null, distance = -1;
+        g.forEach(n => {
+          if (used.has(n.midi)) return;
+          const d = chosen.length ? Math.min.apply(null, chosen.map(c => Math.abs(c.midi - n.midi))) : 0;
+          if (d > distance) { best = n; distance = d; }
+        });
+        take(best);
+      }
+      chosen.sort((a, b) => a.midi - b.midi).forEach(n => out.push(Object.assign({}, n)));
+    });
     return out.sort((a, b) => a.on - b.on || a.midi - b.midi);
   }
 
   function clusterNotes(notes, window) {
     window = window == null ? CLUSTER_S : window;
     const out = notes.map(n => Object.assign({}, n));
+    /* Four or more evenly-spaced attacks inside the rolled-chord window are a
+       run/trill, not one very wide chord. A fixed 50 ms grouping window used
+       to collapse 32nd-note passages at fast tempi into simultaneous notes. */
+    const slotOf = [], slots = [];
+    out.forEach((n, i) => {
+      if (!slots.length || n.on - slots[slots.length - 1] > 0.004) slots.push(n.on);
+      slotOf[i] = slots.length - 1;
+    });
+    const rapid = new Set();
+    let run = null;
+    for (let s = 1; s <= slots.length; s++) {
+      const gap = s < slots.length ? slots[s] - slots[s - 1] : Infinity;
+      if (gap >= 0.012 && gap <= window * 1.2) {
+        if (run == null) run = s - 1;
+      } else {
+        if (run != null && s - run >= 4) for (let k = run; k < s; k++) rapid.add(k);
+        run = null;
+      }
+    }
     let i = 0;
     while (i < out.length) {
       const t0 = out[i].on;
       let j = i + 1;
-      while (j < out.length && out[j].on - t0 <= window) j++;
+      while (j < out.length && out[j].on - t0 <= window) {
+        /* Notes from the same onset slot remain a chord even inside a run. */
+        if (slotOf[j] !== slotOf[i] && (rapid.has(slotOf[i]) || rapid.has(slotOf[j]))) break;
+        j++;
+      }
       let sum = 0;
       for (let k = i; k < j; k++) sum += out[k].on;
       const attack = sum / (j - i);
@@ -245,6 +373,57 @@
     const d = [];
     for (let i = 1; i < beats.length; i++) d.push(beats[i] - beats[i - 1]);
     return d;
+  }
+
+  /* Beat trackers occasionally switch to eighth-note pulses for a fast run,
+     then back to quarters, or miss a pulse in a quiet bar. Repair those tempo
+     octave slips before they become compressed/expanded notation. Gradual
+     rubato remains: only half/double-beat mistakes are added/removed, while a
+     median + slew-limited interval curve suppresses one-beat tempo jumps. */
+  function stabilizeBeats(input) {
+    const raw = (input || []).filter(Number.isFinite).slice().sort((a, b) => a - b)
+      .filter((t, i, a) => !i || t - a[i - 1] > 0.02);
+    if (raw.length < 4) return raw;
+    const base = median(ibiOf(raw));
+    if (!(base > 0)) return raw;
+    const repaired = [raw[0]];
+    let target = base, skipped = 0, inserted = 0;
+    for (let i = 1; i < raw.length; i++) {
+      const t = raw[i], gap = t - repaired[repaired.length - 1];
+      /* A pulse near half the established interval is a subdivision. */
+      if (gap < target * 0.62) { skipped++; continue; }
+      /* A gap near two or three intervals means the tracker missed beats. */
+      if (gap > target * 1.62) {
+        const n = Math.max(2, Math.min(4, Math.round(gap / target)));
+        const step = gap / n;
+        if (Math.abs(step - target) <= target * 0.24) {
+          for (let k = 1; k < n; k++) repaired.push(repaired[repaired.length - 1] + step);
+          inserted += n - 1;
+        }
+      }
+      const acceptedGap = t - repaired[repaired.length - 1];
+      repaired.push(t);
+      if (acceptedGap >= base * 0.68 && acceptedGap <= base * 1.42)
+        target = target * 0.88 + acceptedGap * 0.12;
+    }
+    if (repaired.length < 4) return raw;
+
+    const gaps = ibiOf(repaired);
+    const local = gaps.map((_, i) => median(gaps.slice(Math.max(0, i - 2), Math.min(gaps.length, i + 3))));
+    const smooth = [];
+    let prev = median(local) || base;
+    local.forEach(v => {
+      prev = clamp(v, prev * 0.86, prev * 1.16);
+      smooth.push(prev);
+    });
+    const fitted = [repaired[0]];
+    smooth.forEach(v => fitted.push(fitted[fitted.length - 1] + v));
+    const fittedSpan = fitted[fitted.length - 1] - fitted[0];
+    const realSpan = repaired[repaired.length - 1] - repaired[0];
+    const scale = fittedSpan > 0 ? realSpan / fittedSpan : 1;
+    for (let i = 1; i < fitted.length; i++) fitted[i] = fitted[0] + (fitted[i] - fitted[0]) * scale;
+    fitted._repairs = skipped + inserted;
+    return fitted;
   }
 
   function foldFastBeats(beats, env, notes, onsets, last) {
@@ -684,6 +863,30 @@
     return null;
   }
 
+  /* Ordinary written values, excluding the three values that mean a triplet
+     only when the detector explicitly marked the event as one. */
+  const STRAIGHT_VALUES = [96, 72, 48, 36, 24, 18, 12, 9, 6, 3, 2, 1];
+
+  /* A recording gives us key-up time, not the composer's choice between a
+     tied syncopation and an articulated note followed by space. Inside a
+     simple-time bar prefer the nearest single readable value. This keeps
+     release noise from being engraved as a chain of invented ties. We do not
+     touch notes that really cross a bar line: those ties carry structural
+     information and must remain. */
+  function readableEnd(start, end, next, bar, beat, isTuplet) {
+    if (beat !== Q || end <= start) return end;
+    const local = ((start % bar) + bar) % bar;
+    const boundary = start + (bar - local);
+    if (end >= boundary - 1e-6) return end;
+    const room = Math.min(boundary - start, next === Infinity ? Infinity : next - start);
+    const values = isTuplet ? STRAIGHT_VALUES.concat([16, 8, 4]) : STRAIGHT_VALUES;
+    const allowed = values.filter(v => v <= room && v < bar);
+    if (!allowed.length) return end;
+    const len = end - start;
+    allowed.sort((a, b) => Math.abs(a - len) - Math.abs(b - len) || a - b);
+    return start + allowed[0];
+  }
+
   /* A length in ticks, broken into values a player can read: nothing
      crosses a beat unless it starts on one. beat is 24 (quarter) or 36 (6/8). */
   function pieces(pos, len, bar, beat) {
@@ -714,11 +917,21 @@
     return out;
   }
 
+  /* In simple time an exact ordinary value is clearer as one symbol even when
+     its tail crosses a beat line. The general pieces() routine remains strict
+     for rests, compound metre and real bar crossings. */
+  function notePieces(pos, len, bar, beat) {
+    beat = beat || Q;
+    if (len > 0 && pos + len <= bar && TYPES[len] && !tupletOf(len) &&
+        (beat === Q || (len <= beat && TYPES[len][1]))) return [len];
+    return pieces(pos, len, bar, beat);
+  }
+
   function esc(s) {
     return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
   }
 
-  function staffEvents(notes, staff, pedalHeld) {
+  function staffEvents(notes, staff, bar, beat, allowBarTies) {
     const mine = notes.filter(n => n.staff === staff);
     const byTick = {};
     const onsets = [];
@@ -731,12 +944,31 @@
     onsets.forEach((t, i) => {
       const next = i + 1 < onsets.length ? onsets[i + 1] : Infinity;
       const ns = byTick[t].sort((a, b) => a.midi - b.midi);
-      let end = Math.max.apply(null, ns.map(n => n.endTick));
+      /* A chord has one written value. Use the lower median release so one
+         ringing overtone cannot lengthen every chord tone. Do not fill the
+         space before the next attack: a small key-up gap is articulation, and
+         sustain-pedal time belongs to the Ped. mark, not to a printed tie. */
+      const ends = ns.map(n => n.endTick).sort((a, b) => a - b);
+      let end = ends[Math.floor((ends.length - 1) / 2)];
       if (next !== Infinity && end < next) {
-        const gap = next - end;
-        if (gap < Q || pedalHeld(end, next)) end = next;
+        const span = next - t, gap = next - end;
+        const local = ((t % bar) + bar) % bar;
+        /* Close only a tiny release gap, and only if doing so remains one
+           symbol. This cleans up detector jitter without manufacturing a tie. */
+        if (gap <= Math.max(1, Math.round(span * 0.2)) &&
+            notePieces(local, span, bar, beat).length === 1) end = next;
       }
       end = Math.min(end, next);
+      /* A key-up inferred from audio is not evidence that the composer wrote
+         a tie over the next bar line. Room/pedal decay routinely crosses that
+         line and used to turn almost every bar into fake legato notation.
+         A symbolic PM2S grid does carry written durations, so keep its real
+         cross-bar ties. */
+      if (!allowBarTies) {
+        const local = ((t % bar) + bar) % bar;
+        end = Math.min(end, t + (bar - local));
+      }
+      end = readableEnd(t, end, next, bar, beat, ns.some(n => n.tuplet));
       if (end <= t) end = Math.min(t + 6, next);
       events.push({ start: t, end: end, notes: ns, tuplet: ns.some(n => n.tuplet) });
     });
@@ -802,7 +1034,7 @@
         const s = ev.start - barStart, e = ev.end - barStart;
         if (s > cursor) rest(cursor, s);
         let pos = s;
-        const parts = pieces(s, e - s, bar, beatTicks);
+        const parts = notePieces(s, e - s, bar, beatTicks);
         const anyTuplet = ev.tuplet || parts.some(v => tupletOf(v));
         parts.forEach((v, pi2) => {
           emitPedalsUpTo(pos + v, pos);
@@ -908,10 +1140,10 @@
       else pedals.push({ tick: Math.max(0, h[0]), type: 'start' });
       pedals.push({ tick: Math.min(bars * bar - 1, h[1]), type: 'stop' });
     });
-    const pedalHeld = (a, b) => held.some(h => h[0] <= a && h[1] >= b);
-
-    const events1 = staffEvents(q, 1, pedalHeld);
-    const events2 = staffEvents(q, 2, pedalHeld);
+    const notationBeat = beatType >= 8 && beatsPerBar % 3 === 0 ? Q * 3 / 2 : Q;
+    const allowBarTies = extra.quantizer === 'pm2s';
+    const events1 = staffEvents(q, 1, bar, notationBeat, allowBarTies);
+    const events2 = staffEvents(q, 2, bar, notationBeat, allowBarTies);
 
     const title = (opts.title || extra.title || 'Transcribed recording').trim() || 'Transcribed recording';
     const ibi = ibiOf(beats);
@@ -961,6 +1193,9 @@
         beatSource: extra.beatSource || 'onset',
         tempoAlias: extra.tempoAlias || null,
         tempoCandidates: extra.tempoCandidates || [],
+        beatRepairs: extra.beatRepairs || 0,
+        arrangement: extra.arrangement || null,
+        originalNotes: extra.originalNotes || notes.length,
         perBar: perBar.map((p, i) => ({
           bar: i + 1, notes: p.n,
           gridError: p.n ? p.err / p.n : 0,
@@ -976,7 +1211,7 @@
     if (raw.length < 4) noNotes();
     const tpq = g.ticksPerQuarter || g.ticksPerBeat || Q;
     const scale = Q / tpq;
-    const q = raw.map(n => {
+    let q = raw.map(n => {
       const tick = Math.round(n.tick * scale);
       const endTick = Math.round((n.endTick != null ? n.endTick : n.tick + tpq) * scale);
       return {
@@ -989,16 +1224,25 @@
     q.forEach(n => {
       if ((n.endTick - n.tick) === 8 || (n.endTick - n.tick) === 4) n.tuplet = true;
     });
-    const notes = q.map(n => ({
+    let notes = q.map((n, i) => ({
       midi: n.midi, vel: n.vel,
       on: n.on != null ? n.on : n.tick / Q,
-      off: n.off != null ? n.off : n.endTick / Q
+      off: n.off != null ? n.off : n.endTick / Q,
+      _arrangeId: i
     }));
+    const arrangement = opts.arrangement || (opts.easy ? { level: 'beginner', style: 'balanced' } : null);
+    const arrangementPlan = arrangement ? normaliseArrangement(arrangement) : null;
+    const originalNotes = notes.length;
+    if (arrangementPlan && arrangementPlan.level !== 'original') {
+      const kept = new Set(arrangeNotes(notes, arrangementPlan).map(n => n._arrangeId));
+      q = q.filter((n, i) => kept.has(i));
+      notes = notes.filter(n => kept.has(n._arrangeId));
+    }
     const beatsPerBar = g.beatsPerBar || g.beats || 4;
     const beatType = g.beatType || 4;
     const barQ = beatsPerBar * (4 / beatType);
     const last = notes.reduce((m, n) => Math.max(m, n.off), 0);
-    let beats = (input.beats && input.beats.length >= 2) ? input.beats.slice() : null;
+    let beats = (input.beats && input.beats.length >= 2) ? stabilizeBeats(input.beats) : null;
     if (!beats) {
       const spq = g.bpm ? 60 / (beatType >= 8 && beatsPerBar % 3 === 0 ? g.bpm * 1.5 : g.bpm) : 0.5;
       beats = [];
@@ -1008,7 +1252,8 @@
     return finish(q, notes, beats, opts, {
       beatsPerBar: beatsPerBar, beatType: beatType, origin: 0, bpm: g.bpm,
       pedals: input.pedals, title: input.title, quantizer: 'pm2s',
-      beatSource: input.beats ? 'audio' : 'grid', errSum: 0, meterContrast: 2
+      beatSource: input.beats ? 'audio' : 'grid', errSum: 0, meterContrast: 2,
+      arrangement: arrangementPlan, originalNotes: originalNotes
     });
   }
 
@@ -1017,22 +1262,30 @@
     opts = opts || {};
     if (input && input.grid && input.grid.notes && input.grid.notes.length) return fromGrid(input, opts);
 
-    const notes = opts.easy ? simplifyNotes(input.notes) : clean(input.notes);
+    const timingNotes = clean(input.notes);
+    const arrangement = opts.arrangement || (opts.easy ? { level: 'beginner', style: 'balanced' } : null);
+    const arrangementPlan = arrangement ? normaliseArrangement(arrangement) : null;
+    const notes = arrangementPlan && arrangementPlan.level !== 'original'
+      ? arrangeNotes(timingNotes, arrangementPlan) : timingNotes;
     if (notes.length < 4) noNotes();
     const clustered = clusterNotes(notes, CLUSTER_S);
-    const last = clustered.reduce((m, n) => Math.max(m, n.off), 0);
-    const env = envelope(clustered, Math.ceil((last + 1) * FPS));
+    /* Arrangement must not change the detected tempo or metre. Analyse the
+       original performance, then write only the selected voices. */
+    const timingClustered = clusterNotes(timingNotes, CLUSTER_S);
+    const last = timingClustered.reduce((m, n) => Math.max(m, n.off), 0);
+    const env = envelope(timingClustered, Math.ceil((last + 1) * FPS));
     const onsets = [];
-    clustered.forEach(n => { if (!onsets.length || n.attack - onsets[onsets.length - 1] > 0.03) onsets.push(n.attack); });
+    timingClustered.forEach(n => { if (!onsets.length || n.attack - onsets[onsets.length - 1] > 0.03) onsets.push(n.attack); });
 
     const lock = opts.lock || null;
-    let beats, beatSource = 'onset';
+    let beats, beatSource = 'onset', beatRepairs = 0;
 
     if (lock && (lock.bpm || lock.firstDownbeat != null) && (lock.beats || lock.beatsPerBar)) {
       beats = beatsFromLock(lock, clustered);
       beatSource = 'lock';
     } else if (input.beats && input.beats.length >= 2) {
-      beats = input.beats.slice().sort((a, b) => a - b);
+      beats = stabilizeBeats(input.beats);
+      beatRepairs = beats._repairs || 0;
       beats = extendBeats(alignStart(beats, clustered[0].on), clustered[0].on, last, onsets);
       beatSource = 'audio';
     } else {
@@ -1044,6 +1297,8 @@
       }
       beats = extendBeats(alignStart(beats, clustered[0].on), clustered[0].on, last, onsets);
       beats = foldFastBeats(beats, env, clustered, onsets, last);
+      beats = stabilizeBeats(beats);
+      beatRepairs = beats._repairs || 0;
     }
     if (beats.length < 2) {
       beats = [clustered[0].on, clustered[0].on + 0.5];
@@ -1142,7 +1397,9 @@
       meterContrast = input.downbeats && input.downbeats.length ? 2 : 1.1;
       origin = 0;
       if (input.downbeats && input.downbeats.length && beatSource === 'audio') {
-        origin = Math.round(beatPosition(beats, input.downbeats[0]) * 36);
+        /* A detected downbeat can be a few milliseconds away from the beat
+           track. It chooses the bar phase, not a new 1/36-beat notation grid. */
+        origin = Math.round(beatPosition(beats, input.downbeats[0])) * 36;
       }
       const bar = pulses * 36;
       const firstTick = Math.min.apply(null, q.map(n => n.tick));
@@ -1154,7 +1411,11 @@
       const bar = Math.round(beatsPerBar * (4 / beatType) * Q);
       /* origin: first downbeat maps to tick 0 of a bar */
       if (lock.firstDownbeat != null && isFinite(+lock.firstDownbeat)) {
-        origin = Math.round(beatPosition(beats, +lock.firstDownbeat) * Q);
+        /* The lock's downbeat chooses a whole written beat. Keeping the raw
+           detector fraction here shifted every note by one tiny tick (for
+           example 3.958 instead of 0), creating a false pickup bar and many
+           tied fragments. */
+        origin = Math.round(beatPosition(beats, +lock.firstDownbeat)) * Q;
       } else {
         origin = 0;
         const firstTick = Math.min.apply(null, q.map(n => n.tick));
@@ -1199,7 +1460,7 @@
       if (beatType === 4) origin = (pick.phase || 0) * Q;
       else origin = 0;
       if (input.downbeats && input.downbeats.length && beatSource === 'audio') {
-        origin = Math.round(beatPosition(beats, input.downbeats[0]) * Q);
+        origin = Math.round(beatPosition(beats, input.downbeats[0])) * Q;
       }
       while (origin > firstTick) origin -= bar;
       while (origin + bar <= firstTick) origin += bar;
@@ -1214,14 +1475,21 @@
       ticksPerBeat: compoundPulse ? 36 : Q,
       tactus: compoundPulse ? 'dotted-quarter' : 'quarter',
       tempoAlias: tempoAlias,
-      tempoCandidates: tempoCandidates
+      tempoCandidates: tempoCandidates,
+      beatRepairs: beatRepairs,
+      arrangement: arrangementPlan,
+      originalNotes: timingNotes.length
     });
     return result;
   }
 
   const api = {
     toMusicXml: toMusicXml,
-    _: { estimateKey, spellingTable, spell, pieces, snap: snap16, beatPosition, meterAndPhase, centreSplit, clusterNotes, simplifyNotes, SUB, Q }
+    arrangeNotes: arrangeNotes,
+    arrangementProfile: arrangementProfile,
+    recommendArrangement: recommendArrangement,
+    normaliseArrangement: normaliseArrangement,
+    _: { estimateKey, spellingTable, spell, pieces, notePieces, snap: snap16, beatPosition, stabilizeBeats, meterAndPhase, centreSplit, clusterNotes, simplifyNotes, arrangeNotes, arrangementProfile, recommendArrangement, normaliseArrangement, SUB, Q }
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (global) global.PPPAudioScore = api;

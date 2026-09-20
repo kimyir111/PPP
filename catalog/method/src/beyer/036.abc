@@ -1,0 +1,15 @@
+X:1
+T:No. 36
+C:Ferdinand Beyer, Op. 101
+%ppp book=beyer no=36 pages=32
+M:C
+L:1/4
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] c e d c | d f e d | e g e c | d4 | c e d c | d f e d | e c d g | c3 c |: d4 | e c g e |
+[V:2] C4 | B,4 | C4 | B, D B, G, | C4 | B,4 | C2 B, G, | C G, C2 |: B, D B, G, | C4 |
+[V:1] d4 | e g f d | c e d c | d f e d | e c g e | d4 | c e d c | d f e d | e c d g | c4 :|
+[V:2] B, D B, G, | C2 D B, | C4 | B,4 | C4 | B, D B, G, | C4 | B,4 | C2 B, G, | C G, C2 :|

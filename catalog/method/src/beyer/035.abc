@@ -1,0 +1,15 @@
+X:1
+T:No. 35
+C:Ferdinand Beyer, Op. 101
+%ppp book=beyer no=35 pages=32
+M:C
+L:1/4
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] "^Moderato" c d e f | d e f g | f e d c | d4 | c d e f | d e f g | f e d e | c3 c |: d e f g |
+[V:2] C4 | B,4 | C4 | B, D B, G, | C4 | B,4 | C2 G,2 | C G, C2 |: B,4 |
+[V:1] f e d c | d e f g | f e d2 | c d e f | d e f g | f e d c | d4 | c d e f | d e f g | f e d e | c4 :|
+[V:2] C4 | B,4 | C2 B, G, | C4 | B,4 | C4 | B, D B, G, | C4 | B,4 | C2 G,2 | C G, C2 :|

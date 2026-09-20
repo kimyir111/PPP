@@ -1,0 +1,21 @@
+X:1
+T:No. 16
+C:Friedrich Burgmüller, Op. 100
+%ppp book=burgmuller25 no=16 pages=23
+M:4/4
+L:1/8
+Q:1/4=126
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:Gm
+[V:1] |: "^Allegro moderato" d4- d c B A | G4- G d g f | e4- e e d c | d4- d z z2 |
+[V:2] G,/2 B,/2 G,/2 B,/2 D/2 B,/2 D/2 B,/2 G, z z2 | G,/2 B,/2 G,/2 B,/2 D/2 B,/2 D/2 B,/2 G, z z2 | C/2 E/2 C/2 E/2 G/2 E/2 G/2 E/2 C z z2 | G,/2 B,/2 G,/2 B,/2 D/2 B,/2 D/2 B,/2 G, D E D |
+[V:1] A/2 c/2 A/2 c/2 d/2 c/2 d/2 c/2 A z z2 | G/2 B/2 G/2 B/2 d/2 B/2 d/2 B/2 G z D G | B A g =e ^c A G E | [1 G/2 B/2 d/2 B/2 G/2 z/2 z z d ^c d :| [2 G/2 B/2 d/2 B/2 G/2 z/2 z z4 |
+[V:2] ^F,4-^F, D E D | G,4-G, B, z2 | z8 | [1 [G,B,]2 z/2 ^c/2 d/2 B/2 G z z2 :| [2 [G,B,]2 z2 z4 |
+[V:1] |: [c e][c d][c e][c d][c e][c d][c e][c d] | d g f e d d e =e | [e g][e f][e g][e f][e g][e f][e g][e f] | f b a g f b c d |
+[V:2] [^A,,C,][^A,,C,][^A,,C,][^A,,C,][^A,,C,][^A,,C,][^A,,C,][^A,,C,] | [B,,D,]4-[B,,D,] z z2 | [K:clef=treble] [Ac][Ac][Ac][Ac][Ac][Ac][Ac][Ac] | [Bd]4-[Bd] z z2 |
+[V:1] d'3 a b3 g | ^f3 a g3 d | f e d c B G d ^F |
+[V:2] ^d/2 f/2 ^d/2 f/2 ^d z e/2 g/2 e/2 g/2 e z | f/2 g/2 f/2 a/2 f g/2 b/2 g/2 b/2 g/2 b/2 g/2 b/2 z | [K:clef=bass] C2 D E D z [D,,C]2 |
+[V:1] [1 G/2 B/2 d/2 B/2 G/2 z/2 z z d ^c d :| [2 G/2 B/2 d/2 B/2 G/2 z/2 z z4 |]
+[V:2] [1 [G,B,]2 z/2 ^c/2 d/2 B/2 G z z2 :| [2 [G,B,]2 z/2 ^c/2 d/2 B/2 G z z2 |]

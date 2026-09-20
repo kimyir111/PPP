@@ -1,0 +1,17 @@
+X:1
+T:No. 39
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=39 pages=20
+M:C
+L:1/8
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:G
+[V:1] !p! .g2 .g2 .f2 .f2 | .g2 .g2 .a2 .a2 | bd'c'b agfg | abaf d4 | .g2 .g2 .f2 .f2 |
+[V:2] G,DB,D A,DCD | G,DB,D F,DA,D | G,DB,D G,DB,D | D,A,F,A, D,A,F,A, | G,DB,D A,DCD |
+[V:1] .g2 .g2 .a2 .a2 | bd'bg fc'af | .g2 .g2 g4 :: .g2 .g2 gfga | .f2 .a2 d'4 |
+[V:2] G,DB,D F,DA,D | G,DB,D D,CA,C | G,DB,D G,4 :: ^C,A,E,A, ^C,A,E,A, | D,A,F,A, D,A,F,A, |
+[V:1] .^c'2 .^c'2 ^c'ab^c' | d'8 | .=c'2 .c'2 c'e'd'c' | bd'c'b ac'ba | gbag fagf | .g2 .g2 g4 :|
+[V:2] E,A,G,A, E,A,G,A, | D,A,F,A, D,A,F,A, | F,DA,D F,DA,D | G,DB,D C,A,E,A, | D,B,G,B, D,CA,C | G,DB,D G,4 :|

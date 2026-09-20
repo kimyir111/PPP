@@ -1,0 +1,28 @@
+X:1
+T:No. 2
+C:Ferdinand Beyer, Op. 101
+%ppp book=beyer no=2 pages=15,17
+M:C
+L:1/4
+Q:1/4=100
+%%score 1
+V:1 clef=treble name="Piano"
+K:C
+[V:1] "^Moderato"G4 | B4 | A4 | B4 | G4 | B4 | A4 | G4 ||
+[V:1] A4 | B4 | A4 | B4 | G4 | B4 | A4 | G4 |]
+[V:1] "^Var. 1"G2 G2 | B2 B2 | A2 A2 | B4 | G2 G2 | B2 B2 | A2 A2 | G4 ||
+[V:1] A2 A2 | B2 G2 | A2 A2 | B4 | G2 G2 | B2 B2 | A2 A2 | G4 |]
+[V:1] "^Var. 2"G3 A | B3 G | A3 A | B4 | G3 A | B3 G | A2 B A | G4 ||
+[V:1] A3 A | B2 G2 | A3 A | B3 A | G3 A | B3 G | A2 B A | G4 |]
+[V:1] [M:3/4] "^Var. 3"G A B | B A G | A A A | B3 | G A B | B A G | A A A | G3 ||
+[V:1] A A A | B2 G | A A A | B3 | G A B | B A G | A A A | G3 |]
+[V:1] [M:2/4] "^Var. 4"G G | B2 | A A | B A | G G | B2 | A A | G2 ||
+[V:1] A A | B G | A A | B A | G G | B2 | A A | G2 |]
+[V:1] [M:3/4] "^Var. 5"G B B | G B B | A G A | B3 | G B B | G B B | A B A | G3 ||
+[V:1] |: A A A | B2 A | G A B | A3 | G B B | G B B | A B A | G3 :|
+[V:1] [M:C] "^Var. 6"G2 d2 | B2 d2 | A2 d2 | B4 | G2 d2 | B2 d2 | A2 d2 | G4 ||
+[V:1] A2 d2 | B2 G2 | A2 d2 | B4 | G2 d2 | B2 d2 | A2 d2 | G4 |]
+[V:1] "^Var. 7"G d2 B | G d2 B | A d2 c | B4 | G d2 B | G d2 B | A d c A | G4 ||
+[V:1] A d2 c | B2 d2 | A d2 c | B4 | G d2 B | G d2 B | A d c A | G4 |]
+[V:1] [M:3/4] "^Var. 8"G d d | B d d | A d d | B2 d | G d d | B d d | c A d | G2 z ||
+[V:1] |: c d c | B d d | A d c | B2 d | G d d | B d d | c A d | G2 z :|

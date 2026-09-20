@@ -1,0 +1,15 @@
+X:1
+T:No. 27
+C:Ferdinand Beyer, Op. 101
+%ppp book=beyer no=27 pages=28
+M:C
+L:1/4
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] c d e d | c4 | d e f e | d4 | e f g f | e4 | d e f d | c4 ||
+[V:2] E2 G2 | E F G E | F2 D2 | F E D G | C2 E2 | G E G E | F E D G | E F G C ||
+[V:1] |: d e f e | d4 | e f g f | e c e d | c d e d | c4 | d e f d | c e c2 :|
+[V:2] |: F2 D2 | F E D G | C2 E2 | G3 F | E2 G2 | E F G E | F E D G | E G C2 :|

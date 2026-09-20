@@ -1,0 +1,17 @@
+X:1
+T:No. 10
+C:Ferdinand Beyer, Op. 101
+%ppp book=beyer no=10 pages=23
+M:C
+L:1/4
+Q:1/4=96
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] "^Comodo"g e e2 | f d d2 | c d e f | g g g2 |
+[V:2] G2 G2 | G2 G2 | G2 G2 | G G G G |
+[V:1] g e e2 | f d d2 | c e g g | e4 | d d d d | d e f2 |
+[V:2] G2 G2 | G2 G2 | G2 G2 | G G G G | G2 G2 | z G G G |
+[V:1] e e e e | e f g2 | g e e2 | f d d2 | c e g g | c4 |]
+[V:2] G2 G2 | z G G G | G2 G2 | G2 G2 | G2 G2 | G4 |]

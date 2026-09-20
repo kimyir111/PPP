@@ -1,0 +1,19 @@
+X:1
+T:No. 29
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=29 pages=15
+M:6/8
+L:1/8
+Q:3/8=60
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] g'2 f' e'2 d' | c'2 e' c'2 g | b2 d' b2 g | c'2 g c'2 e' | g'2 f' e'2 d' | c'2 e' c'2 g |
+[V:2] G,[B,F][B,F] G,[B,F][B,F] | C[EG][EG] C[EG][EG] | G,[DF][DF] G,[DF][DF] | C[EG][EG] C[EG][EG] | G,[B,F][B,F] G,[B,F][B,F] | C[EG][EG] C[EG][EG] |
+[V:1] b2 d' b2 g | c'c'c' c'3 :: d'g'b' d''d''d'' | d''c''b' a'3 | d'a'c'' c''c''c'' | c''b'a' g'3 |
+[V:2] G,[DF][DF] G,[DF][DF] | [CE][CE][CE] [CE]3 :: G[Bd][Bd] G[Bd][Bd] | D[Ac][Ac] D[Ac][Ac] | D[Ac][Ac] D[Ac][Ac] | G[Bd][Bd] G[Bd][Bd] |
+[V:1] d'g'b' d''d''d'' | d''c''b' a'3 | d'a'c'' c''b'a' | g'g'g' g'g'g' | g'2 f' e'2 d' | c'2 e' c'2 g |
+[V:2] G[Bd][Bd] G[Bd][Bd] | D[Ac][Ac] D[Ac][Ac] | D[Ac][Ac] D[Ac][Ac] | [GB]6 | G,[B,F][B,F] G,[B,F][B,F] | C[EG][EG] C[EG][EG] |
+[V:1] b2 d' b2 g | c'2 g c'2 e' | g'2 f' e'2 d' | c'2 e' c'2 g | b2 d' b2 g | c'c'c' c'3 :|
+[V:2] G,[DF][DF] G,[DF][DF] | C[EG][EG] C[EG][EG] | G,[B,F][B,F] G,[B,F][B,F] | C[EG][EG] C[EG][EG] | G,[DF][DF] G,[DF][DF] | [CE][CE][CE] [CE]3 :|

@@ -1,0 +1,15 @@
+X:1
+T:No. 42
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=42 pages=21
+M:3/4
+L:1/4
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:F
+[V:1] !p! "^dolce" .[Ac] .[Ac] .[Ac] | [Ac]2 [FA] | [ca] [Bg] [Af] | [Af]2 [Ge] | [Bg] [GB] .[GB] | [FA] [Af] .[Af] | .[Ge] [Ge] [Fd] | [Ec]3 :|
+[V:2] .F,, .A,, .C, | F, F,,2 | F, E, F, | C, C2 | E, C .C & E,3 | F, C .C & F,3 | .[G,C] [G,C] [G,=B,] | C G, C, :|
+[V:1] |: .[Ge] .[Ge] .[Ge] | [cf] [eg] [fa] | [gb] [gb] [fa] | [fa]2 [eg] | [fa] [cg] [fa] | [fb] [fac'] [f_ad'] | [f=ac'] [ca] [Bg] | [Af]3 :|
+[V:2] |: .[_B,C] .[B,C] .[B,C] | [A,C] [G,C] [F,C] | [E,C] [E,C] [F,C] | C, C2 | F E _E | D C =B, | C [CF] [CE] | F C F, :|

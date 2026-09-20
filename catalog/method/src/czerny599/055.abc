@@ -1,0 +1,17 @@
+X:1
+T:No. 55
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=55 pages=28
+% Bars 6-8 carry a printed 8va bracket (right end of system 1 onto system 2),
+% written here at sounding pitch (one octave higher).
+% Pitch ground comes from the 300/600 dpi scan cross-checked with the OMR reading;
+% a few bars of the B section (13-16) are chordal and were re-checked zoomed.
+M:2/4
+L:1/16
+Q:1/4=112
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:G
+[V:1] "^Allegretto" d2 |: g3 d b3 a | g4 a g ^f g | a3 d c'3 b | a4 b a g a | b2 d2 g a b c' | d' e' ^f' g' a' b' c'' d'' | c''3 a' g'3 ^f' | g'6 z2 :: a3 d' ^f'3 a' | g'4 a ^g a ^g | e'6 z2 | ^f'4 d ^c d ^c | d e ^f g a b ^b d' | [b d']2 [g b]2 [e g]4 | [d ^f]2 ^f2 [e g]2 [^c e]2 | d2 e d ^c d e ^f | g3 d b3 a | g4 a g ^f g | a3 d b4 | a4 b a ^g a | b2 g a b c' d' ^f' | g' d' c' b b4 | d'2 b a g ^f a ^f | g6 z2 |]
+[V:2] z2 |: [G,B,]2 D2 [G,B,]2 D2 | [G,B,]2 D2 [G,B,]2 D2 | [^F,A,]2 D2 [^F,A,]2 D2 | [^F,A,]2 D2 [^F,A,]2 D2 | [G,B,]2 D2 [G,B,]2 D2 | [G,B,]4 D2 D2 | [D,A,]2 C2 [D,A,]2 C2 | [G,B,]2 D2 [G,B,]2 D2 :: [^F,A,]2 D2 [^F,A,]2 D2 | [E,A,]2 ^C2 [E,A,]2 ^C2 | [^C,E,]2 A,2 [^C,E,]2 A,2 | [D,^F,]2 A,2 [D,^F,]2 A,2 | ^F,2 [A,D]2 A,2 [A,D]2 | G,2 [B,E]2 [B,E]2 [B,E]2 | A,2 [D^F]2 A,2 [EG]2 | [D^F]4 D4 | [G,B,]2 D2 [G,B,]2 D2 | [G,B,]2 D2 [G,B,]2 D2 | [^F,A,]2 D2 [^F,A,]2 D2 | [^F,A,]2 D2 [^F,A,]2 D2 | [G,B,]2 D2 [G,B,]2 D2 | [G,B,]4 [C,E]4 | [D,G,B,]4 [D,A,C]4 | [G,B,]4 D,2 G,,2 |]

@@ -1,0 +1,17 @@
+X:1
+T:No. 59
+C:Ferdinand Beyer, Op. 101
+%ppp book=beyer no=59 pages=43
+M:3/8
+L:1/8
+Q:1/4=112
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] "^Allegretto" e2 d | e2 f | g2 f | e2 c | d2 e | f2 g | e3 | c3 | e2 d | e2 f |
+[V:2] "legato" C E G | C E G | B, D G | C E G | B, D G | B, D G | C E G | C E G | C E G | C E G |
+[V:1] g2 f | e2 c | d e f | B c d | c2 e | c c e | f d B | c2 e | f d B | c2 c |
+[V:2] B, D G | C E G | F E D | G3 | C E G | C2 z | e g b | e a c' | e g b | e a c' |
+[V:1] e2 d | c d e | d d e | g f d | e2 d | e2 f | g2 f | e2 c | d e f | B c d | c2 e | c3 |]
+[V:2] e a c' | [K:clef=bass] G, C E | G,3 | G2 z | E,, G,, B,, | E,, G,, B,, | D,, F,, B,, | F,, G,, B,, | A,, G,, F,, | B,,3 | E,, G,, B,, | E,,2 z |]

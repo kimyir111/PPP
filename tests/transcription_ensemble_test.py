@@ -46,6 +46,43 @@ class TranscriptionEnsembleTest(unittest.TestCase):
         self.assertEqual(merged['notes'][0]['midi'], 72)
         self.assertEqual(merged['notes'][0]['support'], 2)
 
+    def test_secondary_fast_run_recovers_primary_misses(self):
+        merged = transcribe.consensus([
+            {
+                'engine': 'transkun',
+                'notes': [
+                    {'on': 1.00, 'off': 1.07, 'midi': 72, 'vel': 70},
+                    {'on': 1.16, 'off': 1.23, 'midi': 74, 'vel': 70},
+                    {'on': 1.32, 'off': 1.39, 'midi': 76, 'vel': 70},
+                ], 'pedals': []
+            },
+            {
+                'engine': 'piano-transcription',
+                'notes': [
+                    {'on': 1.00, 'off': 1.06, 'midi': 72, 'vel': 68},
+                    {'on': 1.08, 'off': 1.14, 'midi': 73, 'vel': 68},
+                    {'on': 1.16, 'off': 1.22, 'midi': 74, 'vel': 68},
+                    {'on': 1.24, 'off': 1.30, 'midi': 75, 'vel': 68},
+                    {'on': 1.32, 'off': 1.38, 'midi': 76, 'vel': 68},
+                ], 'pedals': []
+            },
+        ])
+        recovered = [n for n in merged['notes'] if n.get('recovered') == 'fast-run']
+        self.assertEqual([n['midi'] for n in recovered], [73, 75])
+        self.assertEqual(merged['ensemble']['fastRecovered'], 2)
+
+    def test_isolated_secondary_note_is_still_rejected(self):
+        merged = transcribe.consensus([
+            {'engine': 'transkun', 'notes': [
+                {'on': 1.0, 'off': 1.3, 'midi': 60, 'vel': 70},
+                {'on': 1.2, 'off': 1.4, 'midi': 64, 'vel': 70},
+            ], 'pedals': []},
+            {'engine': 'piano-transcription', 'notes': [
+                {'on': 1.1, 'off': 1.4, 'midi': 91, 'vel': 30},
+            ], 'pedals': []},
+        ])
+        self.assertNotIn(91, [n['midi'] for n in merged['notes']])
+
     def test_midi_reader_keeps_damper_pedal(self):
         handle = tempfile.NamedTemporaryFile(suffix='.mid', delete=False)
         handle.close()

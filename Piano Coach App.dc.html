@@ -6,7 +6,7 @@
 <meta name="google" content="notranslate">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%231b1a18'/%3E%3Crect x='9' y='13' width='4' height='11' rx='2' fill='%23fffefc'/%3E%3Crect x='14' y='7' width='4' height='17' rx='2' fill='%237c5cd6'/%3E%3Crect x='19' y='16' width='4' height='8' rx='2' fill='%23fffefc'/%3E%3C/svg%3E">
 <script src="./i18n.js"></script>
-<script src="./audio-score.js"></script>
+<script src="./audio-score.js?v=8"></script>
 <script src="./score-search.js"></script>
 <script src="./support.js"></script>
 <script src="./lessons.js"></script>
@@ -1572,6 +1572,7 @@
                   </div>
                   <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 6px;">
                     <span style="font-size: 11.5px; color: var(--ink3);">{{ s.last }}</span>
+                    <button onClick="{{ s.arrange }}" data-arrange-song="{{ s.id }}" style="padding:8px 11px;border-radius:9px;font-family:inherit;font-size:12px;cursor:pointer;border:1px solid var(--accent-2);background:var(--accent-3);color:var(--accent);">{{ s.arrangeLabel }}</button>
                     <sc-if value="{{ s.canRemove }}" hint-placeholder-val="{{ false }}">
                       <button onClick="{{ s.remove }}" data-remove-song="{{ s.id }}" style="{{ s.removeStyle }}">{{ s.removeLabel }}</button>
                     </sc-if>
@@ -1589,6 +1590,54 @@
               <span style="font-size: 12px; color: var(--ink3); max-width: 200px; text-align: center;">MusicXML, PDF, a photo, or a recording — MP3, MP4 or a YouTube link</span>
             </button>
           </div>
+          <sc-if value="{{ showSongArranger }}" hint-placeholder-val="{{ false }}">
+            <div data-song-arranger-overlay="1" style="position: fixed; inset: 0; z-index: 80; background: rgba(10,10,10,.55); backdrop-filter: blur(4px); display: grid; place-items: center; padding: 20px;">
+              <section data-song-arranger="1" style="width: min(620px, 100%); max-height: calc(100vh - 40px); overflow-y: auto; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); box-shadow: 0 22px 70px rgba(0,0,0,.3); padding: 24px; display: flex; flex-direction: column; gap: 18px;">
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                  <div style="width: 34px; height: 34px; flex: none; border-radius: 10px; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 750; font-size: 12px;">ARR</div>
+                  <div style="min-width: 0; flex: 1;">
+                    <h2 style="margin: 0; font-size: 18px; letter-spacing: -0.01em;">{{ songArrangeTitle }}</h2>
+                    <p data-no-i18n="1" style="margin: 5px 0 0; color: var(--ink2); font-size: 13px; overflow-wrap: anywhere;">{{ songArrangeSong }}</p>
+                  </div>
+                  <button onClick="{{ closeSongArranger }}" aria-label="{{ closeLabel }}" style="width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); cursor: pointer; font-size: 18px;">×</button>
+                </div>
+                <p style="margin: 0; color: var(--ink2); font-size: 13px; line-height: 1.55;">{{ songArrangeHint }}</p>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px;">
+                  <label style="font-size: 12px; color: var(--ink3);">{{ arrangementLevelLabel }}
+                    <select value="{{ songArrangeLevel }}" onChange="{{ setSongArrangeLevel }}" data-song-arrange-level style="display:block;width:100%;margin-top:6px;padding:10px 11px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-family:inherit;">
+                      <option value="beginner">{{ arrangementBeginner }}</option>
+                      <option value="intermediate">{{ arrangementIntermediate }}</option>
+                      <option value="advanced">{{ arrangementAdvanced }}</option>
+                      <option value="original">{{ arrangementOriginal }}</option>
+                    </select>
+                  </label>
+                  <label style="font-size: 12px; color: var(--ink3);">{{ arrangementStyleLabel }}
+                    <select value="{{ songArrangeStyle }}" onChange="{{ setSongArrangeStyle }}" data-song-arrange-style style="display:block;width:100%;margin-top:6px;padding:10px 11px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-family:inherit;">
+                      <option value="balanced">{{ arrangementBalanced }}</option>
+                      <option value="jazz">{{ arrangementJazz }}</option>
+                      <option value="ballad">{{ arrangementBallad }}</option>
+                      <option value="pop">{{ arrangementPop }}</option>
+                      <option value="waltz">{{ arrangementWaltz }}</option>
+                      <option value="bossa">{{ arrangementBossa }}</option>
+                      <option value="cinematic">{{ arrangementCinematic }}</option>
+                    </select>
+                  </label>
+                </div>
+                <div style="border: 1px solid var(--line); border-radius: 12px; background: var(--bg); padding: 12px 14px; color: var(--ink2); font-size: 12.5px; line-height: 1.55;">{{ songArrangeStyleHint }}</div>
+                <label style="font-size: 12px; color: var(--ink3);">{{ arrangementCopyTitleLabel }}
+                  <input type="text" value="{{ songArrangeCopyTitle }}" onChange="{{ setSongArrangeCopyTitle }}" data-song-arrange-title style="display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:10px 11px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-family:inherit;" />
+                </label>
+                <sc-if value="{{ hasSongArrangeStatus }}" hint-placeholder-val="{{ false }}">
+                  <p style="margin:0;color:var(--ink3);font-size:12.5px;line-height:1.5;">{{ songArrangeStatus }}</p>
+                </sc-if>
+                <div style="display:flex;gap:9px;justify-content:flex-end;flex-wrap:wrap;">
+                  <button onClick="{{ closeSongArranger }}" style="padding:10px 15px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink2);font-family:inherit;cursor:pointer;">{{ cancelLabel }}</button>
+                  <button onClick="{{ aiSongArrangement }}" data-ai-song-arrangement style="padding:10px 15px;border-radius:10px;border:1px solid var(--accent);background:var(--surface);color:var(--accent);font-family:inherit;font-weight:650;cursor:pointer;">{{ songArrangeAiLabel }}</button>
+                  <button onClick="{{ createSongArrangement }}" data-create-song-arrangement style="padding:10px 16px;border-radius:10px;border:0;background:var(--accent);color:#fff;font-family:inherit;font-weight:650;cursor:pointer;">{{ songArrangeCreateLabel }}</button>
+                </div>
+              </section>
+            </div>
+          </sc-if>
         </div>
       </sc-if>
 
@@ -2173,7 +2222,41 @@
                     <input type="number" min="0" step="0.01" value="{{ lockDownbeat }}" onChange="{{ setLockDownbeat }}" data-lock-downbeat style="display: block; margin-top: 5px; width: 88px; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px;" />
                   </label>
                   <button onClick="{{ rewriteRhythm }}" data-lock-rewrite style="padding: 10px 14px; border-radius: 10px; border: 0; background: var(--ink); color: var(--surface); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">{{ lockRewrite }}</button>
-                  <button onClick="{{ easierArrangement }}" data-easier style="padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">{{ easierLabel }}</button>
+                </div>
+                <div data-arrangement="1" style="margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 9px;">
+                  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="font-size: 13px; font-weight: 650;">{{ arrangementTitle }}</span>
+                    <span style="font-size: 11px; padding: 3px 7px; border-radius: 999px; background: var(--accent-3); color: var(--accent);">{{ arrangementBadge }}</span>
+                  </div>
+                  <p style="margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--ink2);">{{ arrangementHint }}</p>
+                  <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
+                    <label style="font-size: 12px; color: var(--ink3);">{{ arrangementLevelLabel }}
+                      <select value="{{ arrangementLevel }}" onChange="{{ setArrangementLevel }}" data-arrangement-level style="display: block; margin-top: 5px; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px;">
+                        <option value="original">{{ arrangementOriginal }}</option>
+                        <option value="beginner">{{ arrangementBeginner }}</option>
+                        <option value="intermediate">{{ arrangementIntermediate }}</option>
+                        <option value="advanced">{{ arrangementAdvanced }}</option>
+                      </select>
+                    </label>
+                    <label style="font-size: 12px; color: var(--ink3);">{{ arrangementStyleLabel }}
+                      <select value="{{ arrangementStyle }}" onChange="{{ setArrangementStyle }}" data-arrangement-style style="display: block; margin-top: 5px; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px;">
+                        <option value="balanced">{{ arrangementBalanced }}</option>
+                        <option value="melody">{{ arrangementMelody }}</option>
+                        <option value="accompaniment">{{ arrangementAccompaniment }}</option>
+                        <option value="jazz">{{ arrangementJazz }}</option>
+                        <option value="ballad">{{ arrangementBallad }}</option>
+                        <option value="pop">{{ arrangementPop }}</option>
+                        <option value="waltz">{{ arrangementWaltz }}</option>
+                        <option value="bossa">{{ arrangementBossa }}</option>
+                        <option value="cinematic">{{ arrangementCinematic }}</option>
+                      </select>
+                    </label>
+                    <button onClick="{{ applyArrangement }}" data-easier data-apply-arrangement style="padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">{{ arrangementApply }}</button>
+                    <button onClick="{{ aiArrangement }}" data-ai-arrangement style="padding: 10px 14px; border-radius: 10px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 13px; font-weight: 650; cursor: pointer;">{{ arrangementAi }}</button>
+                  </div>
+                  <sc-if value="{{ hasArrangementStatus }}" hint-placeholder-val="{{ false }}">
+                    <p style="margin: 0; font-size: 12px; line-height: 1.45; color: var(--ink3);">{{ arrangementStatus }}</p>
+                  </sc-if>
                 </div>
               </div>
             </sc-if>
@@ -2383,9 +2466,10 @@ const PIANO = {
   /* Fallback when a score has no dynamic marks (mezzo-forte). */
   velocity: 80,
   maxVoices: 72,
-  /* How far ahead notes are committed to the audio clock. A frame that stalls
-     for less than this costs the sound nothing. */
-  lookaheadMs: 400
+  /* Keep enough music on the audio thread to survive an expensive engraving,
+     scroll or React commit. Future voices do not count against maxVoices (see
+     prune), so a wider window protects timing without stealing queued notes. */
+  lookaheadMs: 1800
 };
 
 /* Where the hammer lands in a recording. MP3 decoders disagree about the
@@ -3137,7 +3221,10 @@ class PianoPlayer {
     if (!ac || midi == null || !isFinite(midi)) return null;
     const now = ac.currentTime;
     const t = when == null || when < now ? now : when;
-    this.prune(now);
+    /* Reserve polyphony at the time this note will sound. Counting every node
+       already queued would make a dense passage silence its own first notes
+       before their start time. */
+    this.prune(now, t);
     const v = Math.max(0.05, Math.min(1, (vel == null ? 90 : vel) / 127));
     const out = ac.createGain();
     const tone = ac.createBiquadFilter();
@@ -3244,10 +3331,14 @@ class PianoPlayer {
     this.cancelAfter(now);
     this.voices.forEach(v => this.release(v, now, tau == null ? 0.06 : tau));
   }
-  prune(now) {
-    if (this.voices.length < 24) return;
-    this.voices = this.voices.filter(v => v.end > now);
-    while (this.voices.length > PIANO.maxVoices) this.release(this.voices.shift(), now, 0.02);
+  prune(now, at) {
+    if (this.voices.length >= 24) this.voices = this.voices.filter(v => v.end > now);
+    const t = at == null ? now : at;
+    /* AudioBufferSourceNodes scheduled for later are cheap and, crucially, are
+       not polyphony yet. Steal only voices that overlap the new strike. Leave
+       one slot because prune() runs immediately before that strike is added. */
+    const active = this.voices.filter(v => v.midi >= 0 && v.t <= t && v.off > t && v.end > t);
+    while (active.length >= PIANO.maxVoices) this.release(active.shift(), t, 0.02);
   }
 }
 
@@ -3326,6 +3417,76 @@ const Q_TYPE = [[4, 'whole'], [2, 'half'], [1, 'quarter'], [0.5, 'eighth'], [0.2
 function typeFromQ(q) {
   for (let i = 0; i < Q_TYPE.length; i++) if (q >= Q_TYPE[i][0] - 1e-6) return Q_TYPE[i][1];
   return '32nd';
+}
+
+/* Saved audio transcriptions contain the score that was generated at the
+   time, not the raw model notes. Keep a version on both fresh and restored
+   scores so notation fixes can retire stale review flags without asking the
+   player to download and transcribe the recording again. */
+const TRANSCRIPTION_VERSION = 7;
+function inferredAudioNotation(scoreOrSource) {
+  const src = scoreOrSource && scoreOrSource.source ? scoreOrSource.source : (scoreOrSource || {});
+  return !!(!src.referenceScore && !src.retrieved &&
+    (src.transcriptionVersion || src.amt || src.taskMode ||
+      /transcription|transkun|ensemble/i.test(src.engine || '')));
+}
+function migrateSavedTranscription(score, source, report) {
+  const scoreSource = (score && score.source) || {};
+  const src = Object.assign({}, scoreSource, source || {});
+  const versions = [src.transcriptionVersion, scoreSource.transcriptionVersion]
+    .map(Number).filter(v => v > 0);
+  const legacy = inferredAudioNotation(src) && versions.length &&
+    Math.min.apply(null, versions) < TRANSCRIPTION_VERSION;
+  if (!legacy) return { score: score, source: source, report: report, changed: false };
+
+  const nextSource = Object.assign({}, src, { transcriptionVersion: TRANSCRIPTION_VERSION });
+  if (score) score.source = Object.assign({}, scoreSource, nextSource);
+  let nextReport = report;
+  if (report) {
+    const hadBars = !!((report.suspectMeasures || []).length);
+    nextReport = Object.assign({}, report, {
+      suspectMeasures: [],
+      issues: (report.issues || []).filter(i => i && i.kind !== 'bar' && i.kind !== 'bars'),
+      /* The old sentence and advice contain the old red-bar count. They cannot
+         be trusted after the review algorithm changes. */
+      summary: hadBars ? null : report.summary,
+      advice: hadBars ? null : report.advice
+    });
+  }
+  return { score: score, source: nextSource, report: nextReport, changed: true };
+}
+
+/* Note objects repeat the same 20-odd property names thousands of times. A
+   long transcription can therefore exceed localStorage even though its
+   musical data is modest. Slots keep one key dictionary and compact value
+   rows; unpacking restores the exact score shape before Score.finalize(). */
+function packScore(score) {
+  if (!score || !Array.isArray(score.notes) || score._packedNoteKeys) return score;
+  const keys = [];
+  const seen = {};
+  score.notes.forEach(n => Object.keys(n || {}).forEach(k => {
+    if (k === 'abs' || seen[k]) return;
+    seen[k] = true; keys.push(k);
+  }));
+  const notes = score.notes.map(n => {
+    const row = keys.map(k => n[k] === undefined ? null : n[k]);
+    while (row.length && row[row.length - 1] == null) row.pop();
+    return row;
+  });
+  return Object.assign({}, score, { _byNumber: undefined, _packedNoteKeys: keys, notes: notes });
+}
+function unpackScore(stored) {
+  if (!stored || !Array.isArray(stored.notes) || !Array.isArray(stored._packedNoteKeys)) return stored;
+  const keys = stored._packedNoteKeys;
+  const score = Object.assign({}, stored);
+  score.notes = stored.notes.map(row => {
+    const n = {};
+    (row || []).forEach((v, i) => { if (v != null && keys[i]) n[keys[i]] = v; });
+    return n;
+  });
+  delete score._packedNoteKeys;
+  delete score._byNumber;
+  return score;
 }
 
 const KEY_MAJOR = ['Cb', 'Gb', 'Db', 'Ab', 'Eb', 'Bb', 'F', 'C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#'];
@@ -6868,10 +7029,11 @@ const Import = {
       seconds: heard.duration || null, truncated: !!heard.truncated,
       tempo: built.stats.tempo, device: heard.device || null,
       barStarts: built.stats.barStarts,
-      transcriptionVersion: 2,
+      transcriptionVersion: TRANSCRIPTION_VERSION,
       amt: heard.engine || null,
       beatSource: built.stats.beatSource,
       quantizer: built.stats.quantizer,
+      beatRepairs: built.stats.beatRepairs || 0,
       taskMode: what.mode === 'arrange' ? 'piano-arrangement' : 'faithful-transcription',
       modelAgreement: heard.ensemble && heard.ensemble.agreement != null ? heard.ensemble.agreement : null,
       amtModels: heard.ensemble && heard.ensemble.models ? heard.ensemble.models : null,
@@ -7034,23 +7196,21 @@ const Import = {
     if (ensemble && ensemble.uncertain > Math.max(8, ensemble.accepted * 0.08))
       flag(null, 'model-disagreement', tx('{{n}} possible notes were rejected because the piano models did not agree.', { n: ensemble.uncertain }));
     if (crowded) flag(null, 'dense', tx('The model heard an unusually dense stream of notes ({{n}} per second). Some may be pedal or overtone echoes.', { n: Math.round(density) }));
-    const loose = stats.tempoVariation > 0.12;
+    const rhythmLocked = stats.beatSource === 'lock';
+    const loose = !rhythmLocked && stats.tempoVariation > 0.12;
     if (loose) flag(null, 'tempo', tx('The tempo moves a lot in this performance, so some barlines are PPP’s best guess.'));
-    const rough = stats.gridError > 0.1;
+    const rough = !rhythmLocked && stats.gridError > 0.1;
     if (rough) flag(null, 'rhythm', tx('Many notes fall between the beats PPP found, so some rhythms are simplified.'));
     const metre = stats.meterContrast < 1.15;
     if (metre) flag(null, 'time', tx('The metre was hard to hear, so PPP chose {{beats}}/{{beatType}}.', { beats: stats.beatsPerBar, beatType: stats.beatType || 4 }));
 
-    let barFlags = 0;
-    stats.perBar.forEach(b => {
-      const mm = measures[b.bar - 1];
-      if (!mm) return;
-      if ((b.notes >= 3 && b.gridError > 0.16) || b.stretch > 1.4 || (b.notes && b.stretch < 0.65)) { flag(mm.number, 'bar'); barFlags++; }
-    });
-    if (barFlags)
-      issues.push({ measure: null, kind: 'bars', message: tx(barFlags === 1
-        ? '{{n}} measure has a loose rhythm or a sudden change of tempo. It is marked in red.'
-        : '{{n}} measures have a loose rhythm or a sudden change of tempo. They are marked in red.', { n: barFlags }) });
+    /* Per-bar onset deviation measures how the pianist performed, not whether
+       the note model heard a bar correctly. Fast rolls and rubato made this
+       paint perfectly valid measures red (seven in the real 176-BPM fixture).
+       Keep the global tempo/rhythm notice above, but reserve red measures for
+       evidence that can actually identify wrong notation. The current audio
+       ensemble does not provide per-measure model disagreement, so it is more
+       honest to mark none than to invent certainty from expressive timing. */
 
     const suspectMeasures = Object.keys(suspect).map(Number).sort((a, b) => a - b);
     /* This is explicitly an estimate, not an accuracy claim. With an
@@ -8526,6 +8686,201 @@ const HandArt = {
   }
 };
 
+/* ============================================================================
+   SCORE ARRANGER
+
+   Library arrangements work from notation, not the original recording. The
+   melody and each measure's pitch collection stay the source of truth; style
+   engines may create a new accompaniment, but never overwrite the source song.
+   ========================================================================== */
+const ScoreArranger = (() => {
+  const LEVEL_CAP = { original: 8, beginner: 2, intermediate: 3, advanced: 5 };
+  const STYLES = ['balanced', 'jazz', 'ballad', 'pop', 'waltz', 'bossa', 'cinematic'];
+  const sounding = score => (score.notes || []).filter(n => !n.rest && n.midi != null && n.hand !== 'x');
+  const key = n => String(n.m) + ':' + (+n.b || 0).toFixed(5);
+  const clone = value => JSON.parse(JSON.stringify(value));
+  const unique = xs => Array.from(new Set(xs));
+  const norm = opts => {
+    opts = opts || {};
+    const level = Object.prototype.hasOwnProperty.call(LEVEL_CAP, opts.level) ? opts.level : 'intermediate';
+    const style = STYLES.indexOf(opts.style) > -1 ? opts.style : 'balanced';
+    return { level: level, style: style, cap: LEVEL_CAP[level], source: opts.source === 'ai' ? 'ai' : 'local' };
+  };
+  const note = (m, b, dur, midi, staff, hand, voice) => ({
+    m: m, b: Math.max(0, Math.round(b * 1000) / 1000), dur: Math.max(0.125, Math.round(dur * 1000) / 1000),
+    midi: midi, p: midiName(midi), staff: staff, hand: hand,
+    voice: voice || (hand === 'l' ? 5 : 1), type: typeFromQ(dur), dots: 0, chord: false
+  });
+  function groupByAttack(notes) {
+    const map = new Map();
+    notes.forEach(n => { const k = key(n); if (!map.has(k)) map.set(k, []); map.get(k).push(n); });
+    return Array.from(map.values()).sort((a, b) => a[0].m - b[0].m || a[0].b - b[0].b);
+  }
+  function selectVoices(group, cap) {
+    const g = group.slice().sort((a, b) => a.midi - b.midi);
+    if (g.length <= cap) return g;
+    const out = [], used = new Set();
+    const take = n => { if (n && !used.has(n.midi) && out.length < cap) { used.add(n.midi); out.push(n); } };
+    take(g[0]); take(g[g.length - 1]);
+    while (out.length < cap && used.size < g.length) {
+      let best = null, distance = -1;
+      g.forEach(n => {
+        if (used.has(n.midi)) return;
+        const d = Math.min.apply(null, out.map(x => Math.abs(x.midi - n.midi)));
+        if (d > distance) { best = n; distance = d; }
+      });
+      take(best);
+    }
+    return out;
+  }
+  function cleanCopied(n) {
+    const out = Object.assign({}, n);
+    delete out.abs; delete out.finger; delete out.slurStart; delete out.slurStop;
+    delete out.tieStart; delete out.tieStop; delete out.tupletStart; delete out.tupletStop;
+    out.chord = false;
+    return out;
+  }
+  function melody(score, level, scaleByMeasure) {
+    const cap = level === 'original' ? 3 : level === 'advanced' ? 2 : 1;
+    const out = [];
+    groupByAttack(sounding(score)).forEach(g => {
+      const right = g.filter(n => n.hand === 'r' || n.staff === 1);
+      const pool = right.length ? right : g;
+      pool.slice().sort((a, b) => b.midi - a.midi).slice(0, cap).forEach(n => {
+        const x = cleanCopied(n);
+        if (scaleByMeasure && scaleByMeasure[n.m] != null) {
+          x.b *= scaleByMeasure[n.m]; x.dur *= scaleByMeasure[n.m];
+          x.type = typeFromQ(x.dur);
+        }
+        x.staff = 1; x.hand = 'r'; x.voice = 1;
+        out.push(x);
+      });
+    });
+    return out;
+  }
+  function harmony(score, measure) {
+    const ns = sounding(score).filter(n => n.m === measure.number);
+    if (!ns.length) return { root: 48, third: 4, pcs: [0, 4, 7] };
+    let root = Math.min.apply(null, ns.map(n => n.midi));
+    while (root > 50) root -= 12;
+    while (root < 36) root += 12;
+    const pcs = unique(ns.map(n => ((n.midi - root) % 12 + 12) % 12));
+    const third = pcs.indexOf(3) > -1 && pcs.indexOf(4) < 0 ? 3 : 4;
+    return { root: root, third: third, pcs: pcs };
+  }
+  function chordPitches(h, level, jazz) {
+    const n = level === 'beginner' ? 2 : level === 'intermediate' ? 3 : level === 'advanced' ? 4 : 5;
+    const intervals = jazz ? [h.third, 7, 10, 14, 17] : [h.third, 7, 12, 16, 19];
+    let base = h.root + 12;
+    while (base < 52) base += 12;
+    while (base > 64) base -= 12;
+    return intervals.slice(0, n).map(i => base + i);
+  }
+  function atPattern(out, m, len, times, pitches, dur, staff, hand) {
+    times.filter(t => t >= 0 && t < len - 0.03).forEach((t, i) => {
+      const ps = typeof pitches === 'function' ? pitches(i, t) : pitches;
+      (Array.isArray(ps) ? ps : [ps]).forEach(p => out.push(note(m.number, t, Math.min(dur, len - t), p, staff, hand)));
+    });
+  }
+  function styled(score, plan, measures) {
+    const scale = {};
+    if (plan.style === 'waltz') score.measures.forEach(m => { scale[m.number] = 3 / Math.max(0.25, m.lenQ); });
+    const out = melody(score, plan.level, plan.style === 'waltz' ? scale : null);
+    measures.forEach(m => {
+      const len = m.lenQ, h = harmony(score, m), root = h.root;
+      if (plan.style === 'jazz') {
+        atPattern(out, m, len, [0, len / 2], (i) => root + (i % 2 ? 7 : 0), 0.7, 2, 'l');
+        atPattern(out, m, len, [0.5, 1.5, 2.5, 3.5], chordPitches(h, plan.level, true), 0.55, 1, 'r');
+      } else if (plan.style === 'ballad') {
+        const step = plan.level === 'beginner' ? 1 : 0.5;
+        const times = []; for (let t = 0; t < len - 0.03; t += step) times.push(t);
+        const seq = [root, root + 7, root + 12 + h.third, root + 19];
+        atPattern(out, m, len, times, i => seq[i % seq.length], step * 0.9, 2, 'l');
+      } else if (plan.style === 'pop') {
+        atPattern(out, m, len, [0, len / 2], i => [root + (i % 2 ? 7 : 0), root + 12], 0.7, 2, 'l');
+        atPattern(out, m, len, [1, 3], chordPitches(h, plan.level, false), 0.75, 2, 'l');
+      } else if (plan.style === 'waltz') {
+        atPattern(out, m, len, [0], [root, root + 12], 0.8, 2, 'l');
+        atPattern(out, m, len, [1, 2], chordPitches(h, plan.level, false), 0.72, 2, 'l');
+      } else if (plan.style === 'bossa') {
+        atPattern(out, m, len, [0, 1.5, 2, 3.5], i => root + (i % 2 ? 7 : 0), 0.45, 2, 'l');
+        atPattern(out, m, len, [0.5, 1.5, 2.5, 3.5], chordPitches(h, plan.level, true), 0.42, 1, 'r');
+      } else if (plan.style === 'cinematic') {
+        atPattern(out, m, len, [0, len / 2], [root, root + 12], Math.min(1.8, len / 2), 2, 'l');
+        const times = []; for (let t = 0; t < len - 0.03; t += 1) times.push(t);
+        const seq = [root + 12, root + 19, root + 24, root + 19];
+        atPattern(out, m, len, times, i => seq[i % seq.length], 0.85, 2, 'l');
+      }
+    });
+    return out;
+  }
+  function finalizeNotes(notes) {
+    const seen = new Set();
+    const out = notes.filter(n => n && n.midi >= 21 && n.midi <= 108).filter(n => {
+      const k = [n.m, (+n.b).toFixed(4), n.midi, n.staff].join(':');
+      if (seen.has(k)) return false; seen.add(k); return true;
+    }).sort((a, b) => a.m - b.m || a.b - b.b || a.staff - b.staff || a.midi - b.midi);
+    const prior = {};
+    out.forEach(n => {
+      const k = n.m + ':' + (+n.b).toFixed(4) + ':' + n.staff;
+      n.chord = !!prior[k]; prior[k] = true;
+      n.dur = Math.max(0.125, n.dur || 0.5); n.type = typeFromQ(n.dur);
+    });
+    return out;
+  }
+  function profile(score) {
+    const ns = sounding(score), groups = groupByAttack(ns);
+    const sizes = groups.map(g => g.length);
+    const gaps = [];
+    groups.forEach((g, i) => {
+      if (!i) return;
+      const a = score._byNumber[g[0].m], b = score._byNumber[groups[i - 1][0].m];
+      const now = (a ? a.startQ : 0) + g[0].b, prev = (b ? b.startQ : 0) + groups[i - 1][0].b;
+      if (now > prev) gaps.push(now - prev);
+    });
+    return {
+      notes: ns.length, measures: Score.count(score), tempo: score.tempo,
+      averageNotesPerAttack: Math.round(ns.length / Math.max(1, groups.length) * 100) / 100,
+      peakNotesPerAttack: sizes.length ? Math.max.apply(null, sizes) : 0,
+      rapidAttackRatio: Math.round(gaps.filter(g => g < 0.35).length / Math.max(1, gaps.length) * 100) / 100,
+      metre: score.measures[0] ? score.measures[0].time.beats + '/' + score.measures[0].time.beatType : '4/4'
+    };
+  }
+  function recommend(score, level) {
+    const p = profile(score);
+    let style = p.metre === '3/4' ? 'waltz'
+      : p.averageNotesPerAttack >= 2.4 ? 'jazz'
+        : p.tempo <= 82 ? 'ballad' : p.rapidAttackRatio >= 0.38 ? 'pop' : 'cinematic';
+    return { level: norm({ level: level }).level, style: style, source: 'local', profile: p };
+  }
+  function arrange(score, opts) {
+    const plan = norm(opts), base = clone(score);
+    delete base._byNumber; delete base.lengthQ;
+    const measures = base.measures || [];
+    if (plan.style === 'waltz') measures.forEach(m => {
+      m.time = { beats: 3, beatType: 4 }; m.lenQ = 3;
+    });
+    let notes;
+    if (plan.style === 'balanced') {
+      notes = [];
+      groupByAttack(sounding(score)).forEach(g => selectVoices(g, plan.cap).forEach(n => notes.push(cleanCopied(n))));
+    } else notes = styled(score, plan, measures);
+    base.notes = finalizeNotes(notes);
+    base.staves = 2;
+    base.title = opts && opts.title ? opts.title : score.title;
+    base.composer = score.composer || '';
+    base.id = 'arrangement:' + Date.now() + ':' + Math.random().toString(36).slice(2, 7);
+    base.sections = null; base.seeds = null;
+    const oldSource = score.source && typeof score.source === 'object' ? score.source : { kind: score.source || 'score' };
+    base.source = Object.assign({}, oldSource, {
+      kind: 'arrangement', parentTitle: score.title,
+      arrangement: { level: plan.level, style: plan.style, source: plan.source }
+    });
+    return Score.finalize(base);
+  }
+  return { levels: Object.keys(LEVEL_CAP), styles: STYLES.slice(), norm, profile, recommend, arrange };
+})();
+
 /* The music layer is deliberately reachable from outside the component: it is
    the seam a future OMR or MIDI importer plugs into, and it makes a parsed
    score inspectable from the console. Anything here must stay
@@ -8548,7 +8903,9 @@ window.PPP = {
   MidiInput, MidiOut, PerformanceEngine, TIMING_DEFAULTS, DYN_VEL, PEDAL_CC,
   Learning, LEARN, STATE_TONE, STATE_LABEL, seedDemoHistory,
   Memory, MEMORY, MEM_LABEL, MEM_TONE, HINTS, Clock, onsetKey,
-  Import, IMPORT_LIMITS, OMR_URL, ScoreSearch: (typeof window !== 'undefined' ? window.PPPScoreSearch : null),
+  Import, IMPORT_LIMITS, OMR_URL, TRANSCRIPTION_VERSION, inferredAudioNotation, migrateSavedTranscription,
+  packScore, unpackScore, ScoreArranger,
+  ScoreSearch: (typeof window !== 'undefined' ? window.PPPScoreSearch : null),
   Coach, COACH, Fingering, HandArt, tx: tx
 };
 /* ============================================================================
@@ -9836,7 +10193,8 @@ function makeScoreView(React) {
       const p = this.props;
       return [
         p.score.id, p.startM, p.count, p.grand !== false, p.numbers !== false,
-        p.clefs !== false, !!p.guidance, p.theme, p.mW, p.zoom, p.fluid, p.perRow || 0, p.paper !== false, p.chords !== false, p.staves || 0, p.heading === true, p.marks !== false, (p.weak || []).join(','), p.notesKey || ''
+        p.clefs !== false, !!p.guidance, p.theme, p.mW, p.zoom, p.fluid, p.perRow || 0, p.paper !== false, p.chords !== false, p.staves || 0, p.heading === true, p.marks !== false, (p.weak || []).join(','), p.notesKey || '',
+        inferredAudioNotation(p.score)
       ].join('|');
     }
 
@@ -9866,6 +10224,7 @@ function makeScoreView(React) {
       const VF = window.Vex.Flow;
       const p = this.props;
       const score = p.score;
+      const inferredTies = inferredAudioNotation(score);
       const el = this.el;
       el.innerHTML = '';
       this._noteEls = [];
@@ -10332,8 +10691,9 @@ function makeScoreView(React) {
               if (!meta.rest && meta.sn) {
                 const ck = b.staffNo + ':' + (b.voiceNo || 1);
                 (chains[ck] = chains[ck] || []).push({
-                  sn: meta.sn, stave: stave, row: r,
-                  tieStart: meta.tieStart, tieStop: meta.tieStop,
+                  sn: meta.sn, stave: stave, row: r, measure: mm.number,
+                  midis: meta.midis || [],
+                  tieStarts: meta.tieStarts || [], tieStops: meta.tieStops || [],
                   slurStart: meta.slurStart, slurStop: meta.slurStop
                 });
               }
@@ -10403,9 +10763,26 @@ function makeScoreView(React) {
         for (let i = 0; i < seq.length - 1; i++) {
           const a = seq[i], bn = seq[i + 1];
           if (a.row !== bn.row) continue;
+          /* Audio reveals that a key stayed down, but it cannot reveal that a
+             composer wrote an intra-measure tie. Old transcriptions split
+             ordinary releases on every beat and produced hundreds of fake
+             legato arcs. Keep only structural bar-to-bar ties for inferred
+             notation. Uploaded/reference scores retain every written tie. */
+          if (inferredTies && a.measure === bn.measure) continue;
           try {
-            if (a.tieStart && bn.tieStop)
-              new VF.StaveTie({ first_note: a.sn, last_note: bn.sn }).setContext(ctx).draw();
+            /* Tie only pitches that continue on both sides. Treating a chord as
+               one boolean tied every head when just one note continued. */
+            const first = [], last = [];
+            a.tieStarts.forEach(midi => {
+              const ai = a.midis.indexOf(midi), bi = bn.midis.indexOf(midi);
+              if (ai > -1 && bi > -1 && bn.tieStops.indexOf(midi) > -1) {
+                first.push(ai); last.push(bi);
+              }
+            });
+            if (first.length) new VF.StaveTie({
+              first_note: a.sn, last_note: bn.sn,
+              first_indices: first, last_indices: last
+            }).setContext(ctx).draw();
           } catch (e) { /* a tie that VexFlow cannot place is not worth failing over */ }
         }
         /* a slur runs from its start to the next stop in the same voice */
@@ -10872,7 +11249,8 @@ function makeScoreView(React) {
           key: onsetKey(head.m, g.b, head.staff),
           /* kept so ties and slurs can be drawn between the real objects */
           sn: sn,
-          tieStart: g.notes.some(n => n.tieStart), tieStop: g.notes.some(n => n.tieStop),
+          tieStarts: heads.filter(n => n.tieStart).map(n => n.midi),
+          tieStops: heads.filter(n => n.tieStop).map(n => n.midi),
           slurStart: g.notes.some(n => n.slurStart), slurStop: g.notes.some(n => n.slurStop)
         });
         /* a note shorter than the gap to the next one: hold the rest of the gap */
@@ -11470,6 +11848,11 @@ function openingBars(full, n) {
     sections: [{ id: 's1', from: ms[0].number, to: ms[ms.length - 1].number }], _byNumber: undefined
   });
 }
+/* The genres the seed library fills: one shared score behind each, so the
+   chips are a shelf to browse rather than a search. A genre with nothing in
+   it is never offered. */
+const SHARE_GENRES = ['Classical', 'Pop', 'Jazz', 'Hymn', 'New Age', 'OST', 'Game'];
+
 /* ?share=<id> — the link a shared score is sent as. */
 function sharedParam() {
   try {
@@ -11508,6 +11891,9 @@ class Component extends DCLogic {
       analysis: 'done', analysisStep: ANALYSIS_STEPS.length, analysisPct: 100, parseError: null,
       stageLog: [], importReport: null, importSource: null, importHints: [],
       reviewPage: 0, reviewFrom: 1, referenceBusy: false, referenceError: null,
+      arrangementLevel: 'intermediate', arrangementStyle: 'balanced',
+      arrangementBusy: false, arrangementStatus: '',
+      songArrange: null,
       transcriptionMode: 'auto',
       coachPlan: null, coachSource: 'PPP', coachAi: false, coachBusy: false,
       coachIssues: [], coachNote: '', coachTask: 0, coachReps: 0, coachDone: [],
@@ -11805,11 +12191,9 @@ class Component extends DCLogic {
             advice: S.importReport.advice
           } : null
         };
-        /* Keep an imported score so a reload does not lose the upload. The demo
-           is rebuilt from code instead. */
-        if (S.score && S.score.id !== 'demo') {
-          payload.score = Object.assign({}, S.score, { _byNumber: undefined });
-        }
+        /* The score itself lives once in its song slot. The old duplicate here
+           doubled storage use and made large transcriptions disappear after a
+           reload. Legacy payload.score is still read below for migration. */
         localStorage.setItem(STORE_KEY, JSON.stringify(payload));
         this.pushProgress();
       } catch (e) {
@@ -11844,17 +12228,22 @@ class Component extends DCLogic {
     if (d.history && d.history.byMeasure) patch.history = d.history;
     /* Memory levels, strengths and review dates outlive the session. */
     if (d.memory && d.memory.sections) patch.memory = d.memory;
-    if (d.importSource) patch.importSource = d.importSource;
-    if (d.importReport) patch.importReport = d.importReport;
+    const restoredSlot = d.songId && d.songId !== 'demo' ? this.readSong(d.songId) : null;
+    if (d.importSource || (restoredSlot && restoredSlot.importSource))
+      patch.importSource = d.importSource || restoredSlot.importSource;
+    if (d.importReport || (restoredSlot && restoredSlot.importReport))
+      patch.importReport = d.importReport || restoredSlot.importReport;
     /* Re-attach to the device the user chose last time, but only because they
        had already turned MIDI on. */
     if (d.toggles && d.toggles.midi) setTimeout(() => this.connectMidi(d.midiDeviceId), 0);
     if (d.toggles && d.toggles.midiOut) setTimeout(() => this.connectMidiOut(d.midiOutDeviceId), 0);
 
     let score = this.state.score;
-    if (d.score && d.score.measures && d.score.measures.length) {
+    const storedScore = (d.score && d.score.measures && d.score.measures.length)
+      ? d.score : (restoredSlot && restoredSlot.score);
+    if (storedScore && storedScore.measures && storedScore.measures.length) {
       try {
-        score = Score.finalize(d.score);
+        score = Score.finalize(unpackScore(storedScore));
         patch.score = score;
         this._kbRange = Score.keyRange(score);
       } catch (e) { score = this.state.score; }
@@ -11873,7 +12262,7 @@ class Component extends DCLogic {
        snapshot taken while another import was running can have lost it. */
     {
       const id = d.songId || 'demo';
-      const slot = this.readSong(id);
+      const slot = restoredSlot || this.readSong(id);
       const entry = this.libraryRead().songs.find(s => s.id === id);
       const vs = Import.songVideo(
         (score && score.source) || (slot && slot.score && slot.score.source),
@@ -11886,6 +12275,15 @@ class Component extends DCLogic {
         });
       } else if (!patch.importSource && slot && slot.importSource) {
         patch.importSource = slot.importSource;
+      }
+    }
+    {
+      const migrated = migrateSavedTranscription(score, patch.importSource, patch.importReport);
+      if (migrated.changed) {
+        score = migrated.score;
+        patch.score = score;
+        patch.importSource = migrated.source;
+        patch.importReport = migrated.report;
       }
     }
     this.setState(patch);
@@ -12621,8 +13019,9 @@ class Component extends DCLogic {
      It records which notes you got, and nothing else. You are setting the
      pace, so "late" has no meaning here: no timing is written, and a passage
      played this way never counts as evidence that you can play it at tempo. */
-  following() {
-    return this.liveMidi() && this.state.toggles.follow !== false;
+  following(state) {
+    const S = state || this.state;
+    return this.liveMidi() && S.toggles.follow !== false;
   }
 
   /* Every onset in the loop range, hand-filtered, in playing order — sounding
@@ -13170,8 +13569,8 @@ class Component extends DCLogic {
   /* Put everything due in the next moment on the audio clock, at the time it
      is due. Runs every tick, and places each note exactly once: the window
      starts where the last one ended. */
-  schedule(now) {
-    const tp = this._tp, p = this._piano, S = this.state;
+  schedule(now, state) {
+    const tp = this._tp, p = this._piano, S = state || this.state;
     if (!tp) return;
     const midiOk = this.midiOutLive();
     const audioOk = !!(p && p.running());
@@ -13192,7 +13591,7 @@ class Component extends DCLogic {
     const A = ms => (tp.clock != null ? tp.clock : 0) + ms / 1000;
     /* Follow mode is the player making the notes. Clock Play is the score
        being heard — including when a keyboard is plugged in. */
-    const scoreSound = S.toggles.notes && !this.following();
+    const scoreSound = S.toggles.notes && !this.following(S);
     const sendMidi = midiOk && scoreSound;
     const sendAudio = audioOk && scoreSound && !midiOk;
     const clicks = audioOk && S.metro && S.toggles.sound;
@@ -13515,16 +13914,22 @@ class Component extends DCLogic {
     if (s.playing) { this.stopTransport(); this.setState({ playing: false }); return; }
     /* Play means hear the piece. Follow parks the playhead and waits, so
        leave it for the Follow toggle and run the clock here. */
+    let playState = s;
     if (this.following()) {
-      this.setState({ toggles: Object.assign({}, s.toggles, { follow: false }) });
+      const toggles = Object.assign({}, s.toggles, { follow: false });
+      playState = Object.assign({}, s, { toggles: toggles });
+      this.setState({ toggles: toggles });
     }
-    const [from, to] = this.range(this.state);
+    const [from, to] = this.range(playState);
     const startB = Score.startQ(s.score, from), endB = Score.endQ(s.score, to);
     const b = s.beat < startB || s.beat >= endB ? startB : s.beat;
     this._last = nowMs();
     /* the performance engine expects the first note when it is heard */
-    const heard = this.startTransport(s, b);
+    const heard = this.startTransport(playState, b);
     if (this.liveMidi()) this.beginRun(s, b, heard); else this._sim = this.newSim();
+    /* Queue the downbeat before setState can trigger an expensive score/UI
+       commit. The interval remains responsible for extending the horizon. */
+    this.schedule(nowMs(), playState);
     this.setState({ playing: true, beat: b, runHit: 0, runTot: 0, wrongNotes: [], held: [] });
   }
   /* Start (or jump) playback at beat q and run to the end of the current
@@ -13555,6 +13960,7 @@ class Component extends DCLogic {
     this._last = nowMs();
     const heard = this.startTransport(s, b);
     if (this.liveMidi()) this.beginRun(s, b, heard); else this._sim = this.newSim();
+    this.schedule(nowMs());
     this.setState({ playing: true, beat: b, runHit: 0, runTot: 0, wrongNotes: [], held: [] });
   }
 
@@ -13893,6 +14299,8 @@ class Component extends DCLogic {
         lockMetre: m0.time.beats + '/' + m0.time.beatType,
         lockBpm: (r.source && r.source.tempo) || r.score.tempo || 80,
         lockDownbeat: (r.recording && r.recording.barStarts && r.recording.barStarts[0]) || 0,
+        arrangementLevel: 'intermediate', arrangementStyle: 'balanced',
+        arrangementBusy: false, arrangementStatus: '',
         stageLog: st.stageLog.map(x => Object.assign({}, x, { done: true })),
         importReport: r.report, importSource: r.source, analysisPct: 100,
         fileName: yt ? r.score.title : st.fileName
@@ -13984,12 +14392,15 @@ class Component extends DCLogic {
       bpm: +S.lockBpm || S.score.tempo || 80,
       firstDownbeat: S.lockDownbeat == null ? 0 : +S.lockDownbeat
     };
+    const arrangement = (S.importSource && S.importSource.arrangement) || null;
+    if (arrangement && ScoreArranger.styles.indexOf(arrangement.style) > -1 && arrangement.style !== 'balanced')
+      return this.applyRichReviewArrangement(arrangement, S.arrangementStatus || '');
     let built;
     try {
       built = window.PPPAudioScore.toMusicXml({
         notes: heard.notes, pedals: heard.pedals,
         beats: heard.beats, downbeats: heard.downbeats
-      }, { title: S.score.title, lock: lock, easy: !!S.lockEasy });
+      }, { title: S.score.title, lock: lock, arrangement: arrangement });
     } catch (e) {
       this.say((e && e.message) || tx('The rhythm could not be rewritten.'));
       return;
@@ -14003,7 +14414,11 @@ class Component extends DCLogic {
     const report = Import.validateTranscription(score, built.stats, heard);
     const source = Object.assign({}, S.importSource || {}, {
       tempo: built.stats.tempo, barStarts: built.stats.barStarts,
-      transcriptionVersion: 2,
+      beatRepairs: built.stats.beatRepairs || 0,
+      arrangement: built.stats.arrangement || arrangement,
+      arrangementOriginalNotes: built.stats.originalNotes || built.stats.notes,
+      arrangementNotes: built.stats.notes,
+      transcriptionVersion: TRANSCRIPTION_VERSION,
       status: report.level === 'poor' ? 'low-confidence' : 'transcribed'
     });
     score.source = source;
@@ -14019,7 +14434,120 @@ class Component extends DCLogic {
     this.say(tx('Rewrote the rhythm as {{metre}} at {{tempo}} BPM.', { metre: lock.beats + '/' + lock.beatType, tempo: lock.bpm }));
   }
   easierArrangement() {
-    this.rewriteFromHeard({ easy: true });
+    this.rewriteFromHeard({ arrangement: { level: 'beginner', style: 'balanced' } });
+  }
+  applyArrangement() {
+    const S = this.state;
+    if (S.arrangementBusy) return;
+    const plan = {
+      level: S.arrangementLevel || 'intermediate',
+      style: S.arrangementStyle || 'balanced',
+      source: 'local'
+    };
+    if (ScoreArranger.styles.indexOf(plan.style) > -1 && plan.style !== 'balanced')
+      return this.applyRichReviewArrangement(plan);
+    this.rewriteFromHeard({ arrangement: plan });
+  }
+  applyRichReviewArrangement(plan, arrangementStatus) {
+    const heard = this._heard, S = this.state, A = window.PPPAudioScore;
+    if (!heard || !heard.notes || !A) return;
+    const parts = String(S.lockMetre || '4/4').split('/');
+    const lock = {
+      beats: parseInt(parts[0], 10) || 4, beatType: parseInt(parts[1], 10) || 4,
+      bpm: +S.lockBpm || S.score.tempo || 80,
+      firstDownbeat: S.lockDownbeat == null ? 0 : +S.lockDownbeat
+    };
+    let built, base, arranged;
+    try {
+      built = A.toMusicXml({
+        notes: heard.notes, pedals: heard.pedals,
+        beats: heard.beats, downbeats: heard.downbeats
+      }, { title: S.score.title, lock: lock });
+      base = parseMusicXML(built.xml, S.score.title);
+      base.composer = S.score.composer || '';
+      arranged = ScoreArranger.arrange(base, {
+        level: plan.level, style: plan.style, source: plan.source, title: S.score.title
+      });
+    } catch (e) {
+      this.say((e && e.message) || tx('The arrangement could not be created.'));
+      this.setState({ arrangementBusy: false });
+      return;
+    }
+    arranged.composer = base.composer;
+    const source = Object.assign({}, S.importSource || {}, {
+      tempo: arranged.tempo, barStarts: built.stats.barStarts,
+      arrangement: { level: plan.level, style: plan.style, source: plan.source || 'local' },
+      arrangementOriginalNotes: built.stats.notes,
+      arrangementNotes: arranged.notes.filter(n => !n.rest).length
+    });
+    arranged.source = source;
+    if (this._recording) this._recording.barStarts = built.stats.barStarts;
+    const report = Object.assign({}, S.importReport || {}, {
+      measures: Score.count(arranged), notes: source.arrangementNotes,
+      staves: arranged.staves, tempo: arranged.tempo
+    });
+    this.adoptScore(arranged);
+    this.setState({
+      importReport: report, importSource: source,
+      arrangementLevel: plan.level, arrangementStyle: plan.style,
+      arrangementBusy: false, arrangementStatus: arrangementStatus || '',
+      reviewFrom: Score.first(arranged)
+    });
+    this.say(tx('Created a {{level}} {{style}} arrangement.', {
+      level: tx(plan.level), style: this.arrangementStyleName(plan.style)
+    }));
+  }
+  async aiArrangement() {
+    const heard = this._heard;
+    const A = window.PPPAudioScore;
+    if (!heard || !heard.notes || !A || this.state.arrangementBusy) return;
+    const target = this.state.arrangementLevel || 'intermediate';
+    const fallback = A.recommendArrangement(heard.notes, target);
+    let plan = fallback.plan;
+    let provider = 'PPP';
+    this.setState({ arrangementBusy: true, arrangementStatus: tx('Analysing the score texture…') });
+    try {
+      const context = {
+        language: (window.PPP_I18N && window.PPP_I18N.getLocale && window.PPP_I18N.getLocale()) || 'en',
+        title: this.state.score.title,
+        tempo: this.state.score.tempo,
+        requestedLevel: target,
+        profile: fallback.profile,
+        allowed: {
+          levels: ['original', 'beginner', 'intermediate', 'advanced'],
+          styles: ['balanced', 'melody', 'accompaniment'].concat(ScoreArranger.styles.filter(s => s !== 'balanced')),
+          maxNotesPerAttack: { beginner: 2, intermediate: 3, advanced: 5 }
+        }
+      };
+      const response = await fetch(COACH_URL + '/arrange', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context: context })
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok || !(body && body.ok && body.plan)) throw new Error(body && body.error || 'AI unavailable');
+      plan = ScoreArranger.styles.indexOf(body.plan.style) > -1 && body.plan.style !== 'balanced'
+        ? { level: target, style: body.plan.style, source: 'ai', reason: body.plan.reason || '' }
+        : A.normaliseArrangement(Object.assign({}, body.plan, { level: target, source: 'ai' }));
+      provider = body.provider || 'AI';
+    } catch (e) {
+      plan = A.normaliseArrangement(Object.assign({}, plan, { source: 'local' }));
+    }
+    const reason = plan.reason ? tx(plan.reason) : tx('The playable texture was adjusted.');
+    const styleLabel = ScoreArranger.styles.indexOf(plan.style) > -1 && plan.style !== 'balanced'
+      ? this.arrangementStyleName(plan.style)
+      : tx({ balanced: 'Balanced piano', melody: 'Melody focus', accompaniment: 'Accompaniment focus' }[plan.style] || 'Balanced piano');
+    const status = plan.source === 'ai'
+      ? tx('{{provider}} analysed the texture and chose {{level}} · {{style}}.', {
+        provider: provider, level: tx(plan.level), style: styleLabel
+      })
+      : tx('AI was unavailable, so PPP applied a checked automatic arrangement: {{reason}}', { reason: reason });
+    this.setState({
+      arrangementBusy: false, arrangementLevel: plan.level,
+      arrangementStyle: plan.style, arrangementStatus: status
+    });
+    if (ScoreArranger.styles.indexOf(plan.style) > -1 && plan.style !== 'balanced')
+      this.applyRichReviewArrangement(plan, status);
+    else this.rewriteFromHeard({ arrangement: plan, arrangementStatus: status });
   }
   /* When the publisher/composer supplied notation exists, guessing the notes
      from sound is the wrong source of truth. Keep the YouTube recording, but
@@ -14058,7 +14586,7 @@ class Component extends DCLogic {
       const refSource = result.source || {};
       const source = Object.assign({}, prior, {
         status: 'reference-score', tempo: score.tempo,
-        barStarts: aligned.barStarts, transcriptionVersion: 2,
+        barStarts: aligned.barStarts, transcriptionVersion: TRANSCRIPTION_VERSION,
         audioEngine: prior.audioEngine || prior.engine || prior.amt || null,
         referenceScore: {
           name: file.name, kind: kind,
@@ -14120,12 +14648,14 @@ class Component extends DCLogic {
       bpm: +S.lockBpm || S.score.tempo || 80,
       firstDownbeat: S.lockDownbeat == null ? 0 : +S.lockDownbeat
     };
+    const arrangement = extra.arrangement || (extra.easy ? { level: 'beginner', style: 'balanced' }
+      : (S.importSource && S.importSource.arrangement) || null);
     let built;
     try {
       built = window.PPPAudioScore.toMusicXml({
         notes: heard.notes, pedals: heard.pedals,
         beats: heard.beats, downbeats: heard.downbeats
-      }, { title: S.score.title, lock: extra.easy ? null : lock, easy: !!extra.easy || !!S.lockEasy });
+      }, { title: S.score.title, lock: lock, arrangement: arrangement });
     } catch (e) {
       this.say((e && e.message) || tx('The rhythm could not be rewritten.'));
       return;
@@ -14139,9 +14669,13 @@ class Component extends DCLogic {
     const report = Import.validateTranscription(score, built.stats, heard);
     const source = Object.assign({}, S.importSource || {}, {
       tempo: built.stats.tempo, barStarts: built.stats.barStarts,
-      transcriptionVersion: 2,
+      beatRepairs: built.stats.beatRepairs || 0,
+      transcriptionVersion: TRANSCRIPTION_VERSION,
       status: report.level === 'poor' ? 'low-confidence' : 'transcribed',
-      easy: !!(extra.easy || S.lockEasy)
+      easy: !!(arrangement && arrangement.level === 'beginner'),
+      arrangement: built.stats.arrangement || null,
+      arrangementOriginalNotes: built.stats.originalNotes || built.stats.notes,
+      arrangementNotes: built.stats.notes
     });
     score.source = source;
     if (this._recording) this._recording.barStarts = built.stats.barStarts;
@@ -14149,13 +14683,24 @@ class Component extends DCLogic {
     const m0 = score.measures[0] || { time: { beats: lock.beats, beatType: lock.beatType } };
     this.setState({
       importReport: report, importSource: source, lockEasy: !!source.easy,
+      arrangementLevel: source.arrangement ? source.arrangement.level : 'original',
+      arrangementStyle: source.arrangement ? source.arrangement.style : 'balanced',
+      arrangementStatus: extra.arrangementStatus || '',
       lockMetre: m0.time.beats + '/' + m0.time.beatType,
       lockBpm: built.stats.tempo,
       reviewFrom: Score.first(score)
     });
-    this.say(extra.easy
-      ? tx('Wrote an easier arrangement — melody and bass, inner notes dropped.')
-      : tx('Rewrote the rhythm as {{metre}} at {{tempo}} BPM.', { metre: lock.beats + '/' + lock.beatType, tempo: lock.bpm }));
+    if (arrangement) {
+      const before = built.stats.originalNotes || built.stats.notes;
+      const after = built.stats.notes;
+      this.say(arrangement.level === 'original'
+        ? tx('Restored the original transcription.')
+        : tx('Created a {{level}} arrangement: {{before}} notes → {{after}} notes.', {
+          level: tx(arrangement.level), before: before, after: after
+        }));
+    } else {
+      this.say(tx('Rewrote the rhythm as {{metre}} at {{tempo}} BPM.', { metre: lock.beats + '/' + lock.beatType, tempo: lock.bpm }));
+    }
   }
   recordingPanel(S, score) {
     const rec = this._recording;
@@ -14258,7 +14803,23 @@ class Component extends DCLogic {
     return true;
   }
   readSong(id) {
-    try { return JSON.parse(localStorage.getItem(SONG_KEY + id) || 'null'); } catch (e) { return null; }
+    try {
+      const key = SONG_KEY + id;
+      const raw = localStorage.getItem(key);
+      const data = JSON.parse(raw || 'null');
+      /* Compact older object-per-note slots when they are first touched. A
+         replacement is smaller than the existing value, so this also works
+         when storage is already at its quota. */
+      if (data && data.score && Array.isArray(data.score.notes) && !data.score._packedNoteKeys) {
+        const next = Object.assign({}, data, { score: packScore(data.score) });
+        const json = JSON.stringify(next);
+        if (!raw || json.length < raw.length) {
+          try { localStorage.setItem(key, json); } catch (e) { /* read still succeeds */ }
+        }
+        return next;
+      }
+      return data;
+    } catch (e) { return null; }
   }
   /* The open song, score and progress, into its own slot. */
   writeSlot() {
@@ -14266,7 +14827,7 @@ class Component extends DCLogic {
     const id = S.songId || 'demo';
     const rep = S.importReport;
     const slot = {
-      score: S.score.id === 'demo' ? null : Object.assign({}, S.score, { _byNumber: undefined }),
+      score: S.score.id === 'demo' ? null : packScore(S.score),
       secs: S.secs, history: S.history, memory: S.memory,
       loopFrom: S.loopFrom, loopTo: S.loopTo, tempo: S.tempo,
       memLevel: S.memLevel, blindRuns: S.blindRuns, mastered: S.mastered,
@@ -14289,10 +14850,12 @@ class Component extends DCLogic {
      just opened, is written straight away — its slot and the saved state —
      so closing or reloading the page a second later cannot lose it. */
   saveNow() {
-    this.writeSlot();
     clearTimeout(this._save);
     this._persistDue = null;
+    /* First remove the historical duplicate score from the global snapshot;
+       that frees room before a newly imported large score writes its slot. */
     this.writeState();
+    this.writeSlot();
   }
   /* Put the song you are on back on the shelf, progress and all. */
   shelveSong() {
@@ -14348,7 +14911,7 @@ class Component extends DCLogic {
     let score = null;
     if (id === 'demo') score = buildDemoScore();
     else if (data && data.score && data.score.measures && data.score.measures.length) {
-      try { score = Score.finalize(data.score); } catch (e) { score = null; }
+      try { score = Score.finalize(unpackScore(data.score)); } catch (e) { score = null; }
     }
     if (!score) {
       /* nothing behind the card: take it off rather than fail again next time */
@@ -14376,6 +14939,10 @@ class Component extends DCLogic {
       score.source = Object.assign({}, score.source || {}, { kind: (score.source && score.source.kind) || 'youtube', url: vs0.url, youtubeId: vs0.id });
       if (card && card.kind === 'youtube') card.url = vs0.url;
     }
+    const migrated = migrateSavedTranscription(score, importSource, data ? data.importReport || null : null);
+    score = migrated.score;
+    importSource = migrated.source || importSource;
+    const importReport = migrated.report;
     this.setState({
       score: score, secs: secs,
       history: data && data.history && data.history.byMeasure ? data.history : (id === 'demo' ? seedDemoHistory(score) : Learning.empty()),
@@ -14385,7 +14952,7 @@ class Component extends DCLogic {
       memLevel: data ? data.memLevel || 0 : 0, blindRuns: data ? data.blindRuns || 0 : 0, mastered: !!(data && data.mastered),
       fileName: (data && data.fileName) || (id === 'demo' ? 'interstellar-theme.musicxml' : score.title),
       fileMeta: (data && data.fileMeta) || (id === 'demo' ? 'built-in sample' : ''),
-      importSource: importSource, importReport: data ? data.importReport || null : null,
+      importSource: importSource, importReport: importReport,
       playing: false, hands: 'both', practiceMode: 'practice', seqStep: 0, seqReps: 0, memReveal: false,
       laps: 0, runHit: 0, runTot: 0, wrongNotes: [], lastAcc: 0,
       coachPlan: null, coachTask: 0, coachReps: 0, coachDone: [],
@@ -14429,7 +14996,7 @@ class Component extends DCLogic {
       if (id === 'demo') sc = buildDemoScore();
       else {
         const d = this.readSong(id);
-        const full = d && d.score;
+        const full = d && d.score && unpackScore(d.score);
         if (full && full.measures && full.measures.length) sc = Score.finalize(openingBars(full, 2));
       }
     } catch (e) { sc = null; }
@@ -14444,6 +15011,157 @@ class Component extends DCLogic {
     if (min < 60 * 24) return tx('{{n}} h ago', { n: Math.round(min / 60) });
     const days = Math.round(min / 1440);
     return days <= 1 ? tx('Yesterday') : tx('{{n}} days ago', { n: days });
+  }
+  arrangementStyleName(style) {
+    return tx({
+      balanced: 'Balanced piano', jazz: 'Jazz', ballad: 'Ballad', pop: 'Pop piano',
+      waltz: 'Waltz', bossa: 'Bossa nova', cinematic: 'Cinematic'
+    }[style] || 'Balanced piano');
+  }
+  arrangementStyleHint(style) {
+    return tx({
+      balanced: 'Keeps the written rhythm and melody while limiting thick chords for the selected level.',
+      jazz: 'Keeps the melody and adds syncopated bass with seventh and ninth chord voicings.',
+      ballad: 'Keeps the melody over a flowing broken-chord accompaniment.',
+      pop: 'Builds a clear melody over octave bass and off-beat chord pulses.',
+      waltz: 'Rewrites each measure in 3/4 with bass on beat one and chords on beats two and three.',
+      bossa: 'Uses alternating bass and light syncopated jazz chords.',
+      cinematic: 'Adds open fifths, octave bass and wide arpeggios for a spacious sound.'
+    }[style] || 'Keeps the written rhythm and melody while limiting thick chords for the selected level.');
+  }
+  arrangementCopyTitle(title, style) {
+    return tx('{{title}} · {{style}} arrangement', { title: title, style: this.arrangementStyleName(style) });
+  }
+  openSongArranger(id) {
+    const card = this.shelfSongs().find(s => s.id === id);
+    const title = id === (this.state.songId || 'demo') ? this.state.score.title : card && card.title;
+    if (!title) return;
+    const style = 'balanced';
+    this.setState({
+      songArrange: {
+        songId: id, songTitle: title, level: 'intermediate', style: style,
+        copyTitle: this.arrangementCopyTitle(title, style), autoTitle: true,
+        busy: false, status: ''
+      },
+      armedRemove: null
+    });
+  }
+  closeSongArranger() {
+    if (this.state.songArrange && this.state.songArrange.busy) return;
+    this.setState({ songArrange: null });
+  }
+  patchSongArranger(patch) {
+    this.setState(st => st.songArrange ? { songArrange: Object.assign({}, st.songArrange, patch) } : null);
+  }
+  setSongArrangeStyle(style) {
+    this.setState(st => {
+      const d = st.songArrange;
+      if (!d) return null;
+      return { songArrange: Object.assign({}, d, {
+        style: style,
+        copyTitle: d.autoTitle ? this.arrangementCopyTitle(d.songTitle, style) : d.copyTitle,
+        status: ''
+      }) };
+    });
+  }
+  scoreForArrangement(id) {
+    let raw = null;
+    if (id === (this.state.songId || 'demo')) raw = this.state.score;
+    else if (id === 'demo') raw = buildDemoScore();
+    else {
+      const slot = this.readSong(id);
+      raw = slot && slot.score ? unpackScore(slot.score) : null;
+    }
+    if (!raw || !raw.measures || !raw.measures.length) return null;
+    const packed = packScore(raw);
+    return Score.finalize(unpackScore(JSON.parse(JSON.stringify(packed))));
+  }
+  saveSongArrangement(plan, provider) {
+    const d = this.state.songArrange;
+    if (!d) return false;
+    const sourceScore = this.scoreForArrangement(d.songId);
+    if (!sourceScore) {
+      this.patchSongArranger({ busy: false, status: tx('That song could not be opened.') });
+      return false;
+    }
+    plan = ScoreArranger.norm(Object.assign({}, plan || {}, { source: provider ? 'ai' : (plan && plan.source) }));
+    const title = (d.autoTitle ? this.arrangementCopyTitle(d.songTitle, plan.style) : String(d.copyTitle || '').trim())
+      || this.arrangementCopyTitle(d.songTitle, plan.style);
+    let arranged;
+    try {
+      arranged = ScoreArranger.arrange(sourceScore, Object.assign({}, plan, { title: title }));
+    } catch (e) {
+      this.patchSongArranger({ busy: false, status: (e && e.message) || tx('The arrangement could not be created.') });
+      return false;
+    }
+    const id = 'song-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const source = Object.assign({}, arranged.source || {}, {
+      kind: 'arrangement', parentSongId: d.songId, parentTitle: sourceScore.title,
+      provider: provider || 'PPP', createdAt: Clock.now()
+    });
+    arranged.source = source;
+    arranged.composer = [sourceScore.composer, tx('PPP {{style}} arrangement', { style: this.arrangementStyleName(plan.style) })]
+      .filter(Boolean).join(' · ');
+    const first = arranged.sections[0] || { from: Score.first(arranged), to: Score.last(arranged) };
+    const slot = {
+      score: packScore(arranged), secs: seedSecs(arranged), history: Learning.empty(), memory: Memory.empty(),
+      loopFrom: first.from, loopTo: first.to, tempo: arranged.tempo,
+      memLevel: 0, blindRuns: 0, mastered: false,
+      fileName: title, fileMeta: tx('Arrangement from My Songs'), importSource: source, importReport: null
+    };
+    try { localStorage.setItem(SONG_KEY + id, JSON.stringify(slot)); }
+    catch (e) { this.storageFull(); this.patchSongArranger({ busy: false }); return false; }
+    const lib = this.libraryRead();
+    lib.songs.unshift({
+      id: id, title: arranged.title, composer: arranged.composer, kind: 'arrangement',
+      addedAt: Clock.now(), lastAt: null, prog: 0, mem: 0, measures: Score.count(arranged),
+      arrangedFrom: d.songId, arrangement: source.arrangement
+    });
+    if (!this.libraryWrite(lib)) {
+      try { localStorage.removeItem(SONG_KEY + id); } catch (e) {}
+      this.storageFull(); this.patchSongArranger({ busy: false }); return false;
+    }
+    if (this._thumbs) delete this._thumbs[id];
+    this.setState({ songArrange: null });
+    this.say(tx('Saved {{title}} as a new song. The original was not changed.', { title: arranged.title }));
+    return true;
+  }
+  createSongArrangement() {
+    const d = this.state.songArrange;
+    if (!d || d.busy) return;
+    this.saveSongArrangement({ level: d.level, style: d.style, source: 'local' });
+  }
+  async aiSongArrangement() {
+    const d = this.state.songArrange;
+    if (!d || d.busy) return;
+    const score = this.scoreForArrangement(d.songId);
+    if (!score) return this.patchSongArranger({ status: tx('That song could not be opened.') });
+    const local = ScoreArranger.recommend(score, d.level);
+    let plan = local, provider = null;
+    this.patchSongArranger({ busy: true, status: tx('AI is analysing the melody, harmony and rhythm…') });
+    try {
+      const context = {
+        language: (window.PPP_I18N && window.PPP_I18N.getLocale && window.PPP_I18N.getLocale()) || 'en',
+        title: score.title, tempo: score.tempo, requestedLevel: d.level, profile: local.profile,
+        allowed: {
+          levels: ScoreArranger.levels,
+          styles: ScoreArranger.styles,
+          maxNotesPerAttack: { beginner: 2, intermediate: 3, advanced: 5, original: 5 }
+        }
+      };
+      const response = await fetch(COACH_URL + '/arrange', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context: context })
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok || !(body && body.ok && body.plan)) throw new Error(body && body.error || 'AI unavailable');
+      if (ScoreArranger.styles.indexOf(body.plan.style) < 0) throw new Error('Unsupported style');
+      plan = ScoreArranger.norm({ level: d.level, style: body.plan.style, source: 'ai' });
+      provider = body.provider || 'AI';
+    } catch (e) {
+      plan = ScoreArranger.norm(local);
+    }
+    this.saveSongArrangement(plan, provider);
   }
   /* Removing asks twice; the sample cannot be removed. */
   askRemoveSong(id) {
@@ -14499,7 +15217,7 @@ class Component extends DCLogic {
     const S = this.state;
     const cur = songId === (S.songId || 'demo');
     const d = cur ? null : this.readSong(songId);
-    const score = cur ? S.score : d && d.score;
+    const score = cur ? S.score : d && d.score && unpackScore(d.score);
     if (songId === 'demo' || !score || score.id === 'demo' || !score.measures || !score.measures.length || !Array.isArray(score.notes)) return null;
     const src = score.source && typeof score.source === 'object' ? score.source : {};
     const yt = src.kind === 'youtube' ? Import.youtubeWatch(src.url || src.youtubeId) : null;
@@ -14520,10 +15238,11 @@ class Component extends DCLogic {
     if (!score) return Promise.reject(new Error(tx('That song could not be shared.')));
     const preview = openingBars(score, 2);
     delete preview.source; delete preview.seeds;
+    const card = this.shelfSongs().find(s => s.id === songId) || {};
     const body = JSON.stringify({
       songKey: songId, title: score.title,
       composer: score.composer === 'Unknown' ? '' : score.composer || '',
-      kind: (this.shelfSongs().find(s => s.id === songId) || {}).kind || '',
+      genre: card.genre || '', kind: card.kind || '',
       listed: listed, score: score, preview: preview
     });
     if (new Blob([body]).size > 4 * 1024 * 1024) return Promise.reject(new Error(tx('That score is too large to share.')));
@@ -14649,8 +15368,8 @@ class Component extends DCLogic {
         score: th, staves: th.staves, startM: Score.first(th), count: big ? 4 : 2, mW: big ? 170 : 150,
         numbers: false, guidance: false, fluid: true, grand: th.staves > 1
       }) : null,
-      badge: x.mine ? tx(x.listed ? 'Yours · posted' : 'Yours · link only') : '',
-      badgeStyle: this.nowBadgeStyle(!!x.mine),
+      badge: x.genre ? tx(x.genre) : x.mine ? tx(x.listed ? 'Yours · posted' : 'Yours · link only') : '',
+      badgeStyle: this.nowBadgeStyle(!!x.mine || !!x.genre),
       titleStyle: `font-size:${big ? 21 : 15}px;font-weight:600;letter-spacing:-0.01em;margin-top:${x.mine ? 8 : 0}px;`,
       cardStyle: 'border:1px solid var(--line);box-shadow:var(--shadow);border-radius:18px;background:var(--surface);overflow:hidden;display:flex;flex-direction:column;transition:transform .18s ease;',
       openLabel: opening ? tx('Adding…') : have ? tx('Open') : tx('Add to My Songs'),
@@ -15050,8 +15769,11 @@ class Component extends DCLogic {
     const q = (S.sharedQuery || '').trim();
     const ql = q.toLowerCase();
     const list = S.sharedList || [];
-    const shown = list.filter(x => !ql || (x.title + ' ' + (x.composer || '') + ' ' + x.owner).toLowerCase().indexOf(ql) > -1);
-    const mine = S.sharedFilter === 'Mine';
+    const filter = S.sharedFilter || 'All';
+    const mine = filter === 'Mine';
+    const genre = SHARE_GENRES.indexOf(filter) > -1 ? filter : null;
+    const shown = list.filter(x => (!genre || (x.genre || '') === genre)
+      && (!ql || (x.title + ' ' + (x.composer || '') + ' ' + x.owner).toLowerCase().indexOf(ql) > -1));
     const L = S.sharedLinked;
     const linked = L && L.state === 'ready' ? this.sharedCard(L, true) : null;
     /* one line that says why the grid is empty, and what to do about it */
@@ -15066,10 +15788,16 @@ class Component extends DCLogic {
     else if (!list.length) {
       note = tx(mine ? 'You have not shared a score yet. Share one from My Songs.' : 'Nothing has been shared yet. Share one of your songs from My Songs.');
       act = { label: tx('Go to My Songs'), on: this.go('songs') };
-    } else if (!shown.length) note = tx('No shared score matches “{{q}}”.', { q: q });
+    } else if (!shown.length) note = tx(genre ? 'No shared score in {{genre}}.' : 'No shared score matches “{{q}}”.',
+      genre ? { genre: tx(genre) } : { q: q });
+    /* All, then the genres that actually have a score behind them, then yours */
+    const present = SHARE_GENRES.filter(g => list.some(x => (x.genre || '') === g));
+    const chips = [['All', tx('All')]]
+      .concat(present.map(g => [g, tx(g)]))
+      .concat([['Mine', tx('Shared by me')]]);
     return {
-      sharedFilters: [['All', 'All'], ['Mine', 'Shared by me']].map(([id, label]) => ({
-        label: tx(label), style: this.pill((S.sharedFilter || 'All') === id), on: () => this.setSharedFilter(id)
+      sharedFilters: chips.map(([id, label]) => ({
+        label: label, style: this.pill(filter === id), on: () => this.setSharedFilter(id)
       })),
       sharedQuery: S.sharedQuery || '', setSharedQuery: e => this.setState({ sharedQuery: e.target.value }),
       sharedCards: shown.map(x => this.sharedCard(x)),
@@ -15314,6 +16042,9 @@ class Component extends DCLogic {
      there was a library becomes its first song rather than being lost. */
   restoreLibrary(d) {
     const lib = this.libraryRead();
+    /* One pass releases space held by old verbose scores before a new long
+       transcription needs a slot. It never drops a song or its progress. */
+    lib.songs.forEach(s => this.readSong(s.id));
     let id = d && d.songId;
     const sc = d && d.score && d.score.measures && d.score.measures.length ? d.score : null;
     if (sc && (!id || id === 'demo')) id = 'song-' + Date.now().toString(36);
@@ -16306,7 +17037,8 @@ class Component extends DCLogic {
     const shelf = this.shelfSongs();
     const KIND_LABEL = {
       'built-in': 'Built-in sample', musicxml: 'MusicXML', mxl: 'MusicXML', pdf: 'From a PDF', image: 'From a photo',
-      audio: 'From a recording', video: 'From a video', youtube: 'From YouTube', shared: 'Shared score', course: 'Method book'
+      audio: 'From a recording', video: 'From a video', youtube: 'From YouTube', shared: 'Shared score', course: 'Method book',
+      arrangement: 'Arrangement'
     };
     const songs = shelf.map(s => {
       const isCur = s.id === curId;
@@ -16341,6 +17073,8 @@ class Component extends DCLogic {
           }) : null,
           openLabel: x.isCur ? tx('Continue') : tx('Open'),
           on: () => this.openSong(x.s.id),
+          arrangeLabel: tx('Arrange'),
+          arrange: () => this.openSongArranger(x.s.id),
           canRemove: x.s.id !== 'demo',
           removeLabel: armed ? tx('Remove?') : tx('Remove'),
           removeStyle: 'padding:8px 11px;border-radius:9px;font-family:inherit;font-size:12px;cursor:pointer;border:1px solid '
@@ -16354,6 +17088,7 @@ class Component extends DCLogic {
           share: () => this.openShareDialog({ songId: x.s.id, title: x.title })
         };
       });
+    const songArrange = S.songArrange || {};
 
     const running = S.analysis === 'running', failed = S.analysis === 'error';
     /* the add page reports on what was added on this visit, not on whatever
@@ -16639,6 +17374,29 @@ class Component extends DCLogic {
       rewriteRhythm: () => this.rewriteRhythm(),
       easierArrangement: () => this.easierArrangement(),
       easierLabel: tx('Easier arrangement'),
+      arrangementTitle: tx('Arrange this score'),
+      arrangementBadge: tx('non-destructive'),
+      arrangementHint: tx('Choose a playing level and texture. The original timing and melody stay available.'),
+      arrangementLevelLabel: tx('Difficulty'),
+      arrangementStyleLabel: tx('Texture'),
+      arrangementLevel: S.arrangementLevel || 'intermediate',
+      arrangementStyle: S.arrangementStyle || 'balanced',
+      arrangementOriginal: tx('Original transcription'),
+      arrangementBeginner: tx('Beginner'),
+      arrangementIntermediate: tx('Intermediate'),
+      arrangementAdvanced: tx('Advanced'),
+      arrangementBalanced: tx('Balanced piano'),
+      arrangementMelody: tx('Melody focus'),
+      arrangementAccompaniment: tx('Accompaniment focus'),
+      arrangementApply: tx('Apply arrangement'),
+      arrangementAi: S.arrangementBusy ? tx('AI is arranging…') : tx('AI custom arrangement'),
+      arrangementBusy: !!S.arrangementBusy,
+      arrangementStatus: S.arrangementStatus || '',
+      hasArrangementStatus: !!S.arrangementStatus,
+      setArrangementLevel: e => this.setState({ arrangementLevel: e.target.value }),
+      setArrangementStyle: e => this.setState({ arrangementStyle: e.target.value }),
+      applyArrangement: () => this.applyArrangement(),
+      aiArrangement: () => this.aiArrangement(),
       showReferenceScore: !!this._recording || !!(S.importSource && ['youtube', 'audio', 'video'].indexOf(S.importSource.kind) > -1),
       referenceTitle: S.importSource && S.importSource.referenceScore
         ? tx('Reference score is active') : tx('Have the official score? Use it instead of guessing from audio.'),
@@ -16682,7 +17440,9 @@ class Component extends DCLogic {
           { k: 'Notes', v: String(sounding.length) },
           { k: 'Tempo', v: score.tempo + ' BPM' },
           { k: 'Time', v: m0.time.beats + '/' + m0.time.beatType },
-          { k: 'Needs a look', v: String(Math.max((rep.suspectMeasures || []).length, (rep.issues || []).length)) }
+          /* Global tempo/rhythm notices remain below the score, but they are
+             not red measures. This counter must agree with the red strip. */
+          { k: 'Needs a look', v: String((rep.suspectMeasures || []).length) }
         ].concat(src.referenceScore ? [{ k: 'Score source', v: src.referenceScore.kind === 'musicxml' || src.referenceScore.kind === 'mxl' ? 'MusicXML' : tx('uploaded score') }] : [])
          .concat(src.retrieved ? [{ k: 'Score', v: tx('catalog') }] : [])
          .concat(src.taskMode ? [{ k: 'Mode', v: src.taskMode === 'piano-arrangement'
@@ -17247,6 +18007,27 @@ class Component extends DCLogic {
         label: tx(label), style: this.pill(S.filter === label), on: () => this.setState({ filter: label })
       })),
       query: S.query, setQuery: e => this.setState({ query: e.target.value }), songs,
+      showSongArranger: !!S.songArrange,
+      songArrangeTitle: tx('Create an arrangement'),
+      songArrangeSong: songArrange.songTitle || '',
+      songArrangeHint: tx('A new song will be created in My Songs. The original score and its practice progress will not be changed.'),
+      songArrangeLevel: songArrange.level || 'intermediate',
+      songArrangeStyle: songArrange.style || 'balanced',
+      songArrangeStyleHint: this.arrangementStyleHint(songArrange.style || 'balanced'),
+      songArrangeCopyTitle: songArrange.copyTitle || '',
+      arrangementCopyTitleLabel: tx('New song title'),
+      arrangementJazz: tx('Jazz'), arrangementBallad: tx('Ballad'), arrangementPop: tx('Pop piano'),
+      arrangementWaltz: tx('Waltz'), arrangementBossa: tx('Bossa nova'), arrangementCinematic: tx('Cinematic'),
+      songArrangeStatus: songArrange.status || '', hasSongArrangeStatus: !!songArrange.status,
+      songArrangeCreateLabel: songArrange.busy ? tx('Creating…') : tx('Create new song'),
+      songArrangeAiLabel: songArrange.busy ? tx('AI is arranging…') : tx('AI custom arrangement'),
+      closeLabel: tx('Close'), cancelLabel: tx('Cancel'),
+      closeSongArranger: () => this.closeSongArranger(),
+      setSongArrangeLevel: e => this.patchSongArranger({ level: e.target.value, status: '' }),
+      setSongArrangeStyle: e => this.setSongArrangeStyle(e.target.value),
+      setSongArrangeCopyTitle: e => this.patchSongArranger({ copyTitle: e.target.value, autoTitle: false }),
+      createSongArrangement: () => this.createSongArrangement(),
+      aiSongArrangement: () => this.aiSongArrangement(),
 
       /* ---- shared scores; their values, and the share dialog's, are added below ---- */
       isShared: sc === 'shared', isCourse: sc === 'course',

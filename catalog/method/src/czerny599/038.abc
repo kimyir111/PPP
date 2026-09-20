@@ -1,0 +1,17 @@
+X:1
+T:No. 38
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=38 pages=19
+M:6/8
+L:1/8
+Q:3/8=60
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:C
+[V:1] "^dolce" .g.c'.d' ^d'2 e' | .g.c'=d' ^d'2 e' | ^c'2 =d' ^f'2 g' | [e'g']3 [c'e']3 | .g.c'.d' ^d'2 e' |
+[V:2] .C.[EG].[EG] .C.[EG].[EG] | .C.[EG].[EG] .C.[EG].[EG] | .G,.[B,F].[B,F] .G,.[B,F].[B,F] | [K:clef=treble] .C.[EG].[EG] .C.[EG].[EG] | .C.[EG].[EG] .C.[EG].[EG] |
+[V:1] .g.c'=d' ^d'2 e' | =d'g'b d'c'a | gdb g3 :: _a2 g =a2 g | ge'c' g3 |
+[V:2] .C.[EG].[EG] .C.[EG].[EG] | .D.[GB].[GB] .D.[^Fc].[Fc] | .[GB].[GB].[GB] .[GB]3 :: .B,.[D=F].[DF] .B,.[DF].[DF] | .C.[EG].[EG] .C.[EG].[EG] |
+[V:1] _a2 g =a2 g | ge'c' g3 | .c'.b._b .b.b.b | ^g2 a ac'f | e=gc dfB | cGe c3 :|
+[V:2] B,[DF][DF] B,[DF][DF] | C[EG][EG] C[EG][EG] | [K:clef=bass] .E,.[G,C].[G,C] .E,.[G,C].[G,C] | .F,.[A,C].[A,C] .F,.[A,C].[A,C] | .G,.[CE].[CE] .G,.[DF].[DF] | .[CE].[CE].[CE] [CE]3 :|

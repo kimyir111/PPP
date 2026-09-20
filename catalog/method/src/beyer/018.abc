@@ -1,0 +1,15 @@
+X:1
+T:No. 18
+C:Ferdinand Beyer, Op. 101
+%ppp book=beyer no=18 pages=25
+M:3/4
+L:1/4
+Q:1/4=112
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] "^Allegretto" c d e | e d c | d e d | c g g | c d e | e d c | d e d | c3 ||
+[V:2] [EG]3 | [EG]3 | [FG]3 | [EG]3 | [EG]3 | [EG]3 | [FG]3 | E G C ||
+[V:1] |: d e d | c g g | d e d | c g g | c d e | e d c | d e d | c3 :|
+[V:2] |: [FG]3 | [EG]3 | [FG]3 | [EG]3 | z3 | G F E | F G F | E G C :|

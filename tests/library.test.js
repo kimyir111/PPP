@@ -72,6 +72,74 @@ const ok = (name, cond, detail) => {
   ok('and it is the one open', prelude && prelude.current && !c1.find(c => c.id === 'demo').current);
   ok('the practice page is on it', /Prelude/.test(await title()));
 
+  console.log('\n── arranging from My Songs ──');
+  await cards();
+  const arrangerUnit = await page.evaluate(() => {
+    const original = window.PPP.buildDemoScore();
+    const before = JSON.stringify(window.PPP.packScore(original));
+    const styles = ['jazz', 'ballad', 'pop', 'waltz', 'bossa', 'cinematic'];
+    const made = styles.map(style => {
+      const score = window.PPP.ScoreArranger.arrange(original, { level: 'intermediate', style, title: style });
+      return { style, notes: score.notes.filter(n => !n.rest).length, time: score.measures[0].time.beats + '/' + score.measures[0].time.beatType };
+    });
+    return { made, unchanged: before === JSON.stringify(window.PPP.packScore(original)) };
+  });
+  ok('all requested style engines create playable notation',
+    arrangerUnit.made.every(x => x.notes > 0) && arrangerUnit.made.find(x => x.style === 'waltz').time === '3/4',
+    JSON.stringify(arrangerUnit.made));
+  ok('style generation never mutates the source score', arrangerUnit.unchanged);
+  await page.evaluate(id => document.querySelector('[data-arrange-song="' + id + '"]').click(), prelude.id);
+  await sleep(250);
+  const arrangerUi = await page.evaluate(() => ({
+    open: !!document.querySelector('[data-song-arranger]'),
+    levels: [...document.querySelectorAll('[data-song-arrange-level] option')].map(x => x.value),
+    styles: [...document.querySelectorAll('[data-song-arrange-style] option')].map(x => x.value)
+  }));
+  ok('a song card opens difficulty and style arrangement controls',
+    arrangerUi.open && arrangerUi.levels.includes('beginner') &&
+      ['jazz', 'ballad', 'pop', 'waltz', 'bossa', 'cinematic'].every(x => arrangerUi.styles.includes(x)),
+    JSON.stringify(arrangerUi));
+  await page.select('[data-song-arrange-level]', 'beginner');
+  await page.select('[data-song-arrange-style]', 'jazz');
+  await page.click('[data-create-song-arrangement]');
+  await sleep(500);
+  const arrangedShelf = await cards();
+  const jazzCopy = arrangedShelf.find(c => c.id !== 'demo' && c.id !== prelude.id);
+  const arrangedStored = await page.evaluate(ids => {
+    const original = JSON.parse(localStorage.getItem('ppp.song.v1.' + ids.original) || 'null');
+    const copy = JSON.parse(localStorage.getItem('ppp.song.v1.' + ids.copy) || 'null');
+    const unpack = window.PPP.unpackScore;
+    return {
+      originalNotes: original && unpack(original.score).notes.length,
+      copyNotes: copy && unpack(copy.score).notes.length,
+      style: copy && copy.importSource && copy.importSource.arrangement && copy.importSource.arrangement.style,
+      parent: copy && copy.importSource && copy.importSource.parentSongId
+    };
+  }, { original: prelude.id, copy: jazzCopy && jazzCopy.id });
+  ok('the arrangement is saved as a separate song linked to its original',
+    arrangedShelf.length === 3 && jazzCopy && /Jazz/i.test(jazzCopy.title) &&
+      arrangedStored.style === 'jazz' && arrangedStored.parent === prelude.id &&
+      arrangedStored.originalNotes > 0 && arrangedStored.copyNotes > 0,
+    JSON.stringify(arrangedStored));
+  await page.evaluate(id => document.querySelector('[data-open-song="' + id + '"]').click(), jazzCopy.id);
+  await sleep(500);
+  const arrangedOpen = await page.evaluate(() => ({
+    title: window.PPP.app.state.score.title,
+    style: (((window.PPP.app.state.score.source || {}).arrangement || {}).style || ''),
+    notes: window.PPP.app.state.score.notes.filter(n => !n.rest).length
+  }));
+  ok('the arranged copy opens as a playable score',
+    /Jazz/i.test(arrangedOpen.title) && arrangedOpen.style === 'jazz' && arrangedOpen.notes > 0,
+    JSON.stringify(arrangedOpen));
+  await cards();
+  await page.evaluate(id => document.querySelector('[data-open-song="' + id + '"]').click(), prelude.id);
+  await sleep(300);
+  await cards();
+  await page.evaluate(id => document.querySelector('[data-remove-song="' + id + '"]').click(), jazzCopy.id);
+  await page.evaluate(id => document.querySelector('[data-remove-song="' + id + '"]').click(), jazzCopy.id);
+  await sleep(300);
+  ok('removing the arranged copy leaves the original song', (await cards()).some(c => c.id === prelude.id));
+
   console.log('\n── each song keeps its own progress ──');
   await setTempo(52);
   await cards();

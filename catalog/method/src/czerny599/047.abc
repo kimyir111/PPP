@@ -1,0 +1,15 @@
+X:1
+T:No. 47
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=47 pages=24
+M:3/4
+L:1/8
+Q:1/4=132
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:F
+[V:1] "^Allegro" "^dolce" c3 f a f | c3 A F d | c3 _B G d | c4 A2 | c3 f a f | e3 g d' c' | b f d' b g b | z6 :: |
+[V:2] F,2 [A,C]2 [A,C]2 | F,2 [A,C]2 [A,C]2 | E,2 [G,C]2 [G,C]2 | F,2 [A,C]2 [A,C]2 | F,2 [A,C]2 [A,C]2 | G,2 [C,E]2 [C,E]2 | G,2 [D,F]2 [D,F]2 | [C,E]2 [C,E]2 [C,E]2 :: |
+[V:1] c _b g3 c | [Dc]2 f3 c | c e g _b d' c' | c'4 a2 | [Dc] _b g3 c | [Dc]2 f3 c' | c' _b g e c e | f2 z4 :|
+[V:2] E,2 [G,C]2 [G,C]2 | F,2 [A,C]2 [A,C]2 | C,2 [E,G,B,]2 [E,G,B,]2 | F,2 [A,C]2 [A,C]2 | E,2 [G,C]2 [G,C]2 | F,2 [A,C]2 [A,C]2 | C,2 [G,B,]2 [G,B,]2 | [F,A,]2 [F,A,]2 [F,A,]2 :|

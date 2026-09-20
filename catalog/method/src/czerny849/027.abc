@@ -1,0 +1,33 @@
+X:1
+T:No. 27
+C:Carl Czerny, Op. 849
+%ppp book=czerny849 no=27 pages=50-51
+M:4/4
+L:1/16
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:C
+[V:1] _E c _A c _E c _A c _e z _E _d _B _d _E _d | _B _d _e z _E c _A c _E c _A c _E c _A c | _E c _A c _e _a _e z _E _d _B _d _E _d _B _d|]
+[V:2] G, z _A, z _A, z _A, z G, z _E, z _A, z G, z | _A, G, z z _B, z _B, z _E, z z _E, z _E, z _E, | z _E, z _E, z _E, z _E, z _E, z _E, z _A,, z _A,,|]
+[V:1] _e z _E c _A c _E c _A c _e z _E _B G _B | _E _B G _B _E _B G _B _E _B G _B _e _b _e z | _E _d _B _d _E _d _B _d _e' z _E c _A c _E c|]
+[V:2] z _B,, z z z G, z _A, z _A, z _A, G, z z _E, | z _B, _A, z _D C z z _E, _E, z z _A, z z [_A,,C,] | _E, [_B,,_D,] [_E,G,] [C,_E,] _A, [_D,F,] _B, C _A, C _E, C _A, C _E, _D|]
+[V:1] _A c c' _a _E _d _B _d _E _d _B _d _e' z _E c | _A c _E c _A c c' _a _E _B G _B _E _B G _B | D _B _A _B D _B _A _B g _b f _b _E _B G _B|]
+[V:2] _B, _D _E, _D _B, _D _A,, _E, C, _E, _A,, _E, C, _E, _A,, z | z z z z z z z z z z z z z z z z | z z z z z z z z z z z z z z z z|]
+[V:1] _E _B G _B _e z _E z z _d' G, _E _B, _E z G, | _E _B, _E G, _E _B, _E G, _E _B, _E _d' c' _d' _e' c' | _A, _E C _E z _E _E C _A, _E C _E _A, _E C _E|]
+[V:2] z z z z z z z z z z z z z z z z | z z z z z z z z z z z z z z z z | z z z z z z z z z z z z z z z z|]
+[V:1] c' b c' _d' _b z G, _E _D _E _A, _E C _E G, _E | _D _E _a z _A, _E C _E _a _a g _b _a g _B, _E | _D _E _B, _E _D _E _B, _E _D _E _B, _E _D _E _d' z|]
+[V:2] z z z z z z z z z z z z z z z z | z z z z z z z z z z z z z z z z | z z z z z z z z z z z z z z z z|]
+[V:1] G, _E _B, _E G, _E _B, _E G, _E _B, _E G, _E _B, _E | _d' f' _e' _d' c' z _A, _E C _E _A, _E C _E _A, _E | C _E _A, _E C _E c' _e' c' _a g z _B, G _E G|]
+[V:2] z z z z z z z z z z z z z z z z | z z z z z z z z z z z z z z z z | z z z z z z z z z z z z z z z z|]
+[V:1] _B, F D F _B, _A D _A _B, G _E G _a g _a f | _e f _e [_EG] d _d c _B _A G _A _B G _E G _B | _d _E c _A c _E c _A c _e z _E _d _d _B _e|]
+[V:2] z z z z z z z z z z z z z z z z | z z z z z z z z z z z z z z z z | z z z z z z z z z z z z z z z z|]
+[V:1] _d z _d _B _E c _A c _E c _A c _E c _A c | _E c _A c _e _a _e z _E _d _B _d _E _B _d _e | _d _E c _A c z _E c _A c _e z _E _B G _B|]
+[V:2] z z z z z z z z z z z z z z z z | z z z z z z z z z z z z z z z z | z z z z z z z z z z z z z z z z|]
+[V:1] _E _B G _B _E _B G _B _E _B G _B _e _b _e z | _E c _A c _E c _A c _E _d G _d c' z _E _d | G _d _b z _E c _A c _E c _A c F _d _A _d|]
+[V:2] z z z z z z z z z z z z z z z z | z z z z z z z z z z z z z z z z | z z z z z z z z z z z z z z z z|]
+[V:1] z F _d _A _d f z _E c _A c _E c _A c _e | z _E _B G _B _E _B G _B _d z C _A _E _A C | _A _E _A _E C _D _E F G _A _B c z c _d _e|]
+[V:2] z z z z z z z z z z z z z z z z | z z z z z z z z z z z z z z z z | z z z z z z z z z z z z z z z z|]
+[V:1] f g _a _b c' _d _e f g _a _b c' _d' _e' _d' c' | _b _a g f _e _d' _b _b _a g f _e _d c z [_ac'] | _e' z _E z [_B_d] [_eg] z _A z z z z z z z z|]
+[V:2] z z z z z z z z z z z z z z z z | z z z z z z z z z z z z z z z z | z z z z z z z z z z z z z z z z|]

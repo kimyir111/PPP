@@ -1,0 +1,13 @@
+X:1
+T:No. 12
+C:Ferdinand Beyer, Op. 101
+%ppp book=beyer no=12 pages=24
+M:C
+L:1/4
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] "^Moderato" c d e f | g f e d | c d e f | g f e d | c d e f | g f e d | e c e d | c4 |]
+[V:2] C4 | G4 | C4 | G4 | C4 | G4 | C2 G2 | C4 |]

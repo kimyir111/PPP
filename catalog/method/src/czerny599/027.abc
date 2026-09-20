@@ -1,0 +1,17 @@
+X:1
+T:No. 27
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=27 pages=14
+M:C
+L:1/16
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=treble
+K:C
+[V:1] cGAB cGAB cGAB cdef | gcde fgab c'2[eg]2 [eg]2[eg]2 |
+[V:2] [CE]4 [CE]4 [CE]4 [CE]4 | [CE]4 [CE]4 [CE]4 [CE]4 |
+[V:1] f2[fd']2 [fd']2[fd']2 e2[ec']2 [ec']2[ec']2 | d2[dgb]2 [dgb]2[dgb]2 [egc']8 :: GABc dcBA GABc d4 |
+[V:2] [B,G]4 [B,G]4 [CG]4 [CG]4 | [G,DF]4 [G,DF]4 [CE]4 [CE]4 :: [G,B,DF]4 [G,B,DF]4 [G,B,DF]4 [G,B,DF]4 |
+[V:1] cdef gfed cdef g4 | fede f4 edcd e4 | d2ba gfed c8 :|
+[V:2] [G,CE]4 [G,CE]4 [G,CE]4 [G,CE]4 | [G,B,D]4 [G,B,D]4 [G,CE]4 [G,CE]4 | [G,B,F]4 [G,B,F]4 [CE]4 [CE]4 :|

@@ -1,0 +1,20 @@
+X:1
+T:No. 54
+C:Carl Czerny, Op. 599
+%ppp book=czerny599 no=54 pages=27
+% The print repeats mid-bar: bar 8 (2.5 beats) :||: upbeat C6, and bar 16 (2.5 beats) :||.
+% Written here as 1st/2nd endings that hold the upbeat, so every bar is complete
+% and the notes played are exactly the printed ones.
+M:3/4
+L:1/16
+Q:1/4=100
+%%score {1 2}
+V:1 clef=treble name="Piano"
+V:2 clef=bass
+K:Bb
+[V:1] "^Moderato" f2 |: g f =e f d6 f2 | f _e d e c6 e2 | d2 f2 B2 B2 c B A B | d4 c4 z2 f2 |
+[V:2] z2 |: x2 F2 D2 F2 D2 F2 & B,12 | x2 F2 C2 F2 C2 F2 & A,12 | x2 F2 D2 F2 D2 F2 & B,12 | B,2 D2 A,2 C2 A,2 C2 & F,12 |
+[V:1] g f =e f d6 f2 | f _e d e c6 e2 | d2 [db]2 [ca]2 [Bg]2 [Af]2 [G=e]2 |[1 [Bg]4 [Af]4 z2 f2 :|[2 [Bg]4 [Af]4 z2 !f! c'2 |: c' d' c' a f2 .f'2 .f'2 .f'2 | f'3 d' b6 d'2 |
+[V:2] x2 F2 D2 F2 D2 F2 & B,12 | x2 F2 C2 F2 C2 F2 & A,12 | .B,4 .C4 .C,4 |[1 C,4 F,4 z4 :|[2 C,4 F,4 z4 |: E2 F2 E2 F2 E2 F2 & A,12 | D2 F2 D2 F2 D2 F2 & B,12 |
+[V:1] c' d' c' a f2 .f'2 .f'2 .f'2 | f'3 d' b6 f2 | !p! g f =e f b6 d2 | .c2 .d2 ._e2 .f2 ^f2 g2 | =f2 [fd']2 [ec']2 [db]2 [ec']2 [ca]2 |[1 [ec']4 [db]4 z2 c'2 :|[2 [ec']4 [db]4 z2 |]
+[V:2] E2 F2 E2 F2 E2 F2 & A,12 | D2 F2 D2 F2 D2 F2 & B,12 | F,2 B,2 F,2 B,2 F,2 B,2 & D,12 | G,2 C2 G,2 C2 G,2 C2 & E,12 | .F,4 .F,4 .F,,4 |[1 F,,4 B,,4 z4 :|[2 F,,4 B,,4 z2 |]
