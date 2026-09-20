@@ -6296,15 +6296,42 @@ const Import = {
   mergeMusicXml(docs) {
     const usable = docs.filter(Boolean);
     if (!usable.length) throw importError('recognition-failed', tx('No page produced any notation.'));
-    if (usable.length === 1) return usable[0];
 
     const parser = new DOMParser();
-    const base = parser.parseFromString(usable[0], 'application/xml');
+    /* Audiveris occasionally emits a broken closing tag in a lyric/direction
+       label (for example ``...?/words>``).  DOMParser then reports the whole
+       page as malformed, and the old merge silently dropped that page.  Keep
+       this recovery deliberately narrow: repair only a words element whose
+       closing tag is missing its opening ``<`` and retry normal XML parsing.
+       Notes, durations and measure structure are not rewritten. */
+    const repairAudiverisXml = raw => String(raw).replace(
+      /(<words\b[^>]*>)(.*?)(?:<\/words>|\/words>)/gs,
+      '$1$2</words>'
+    );
+    const parsePage = raw => {
+      let doc = parser.parseFromString(raw, 'application/xml');
+      if (!doc.querySelector('parsererror')) return doc;
+      const repaired = repairAudiverisXml(raw);
+      if (repaired === raw) return doc;
+      doc = parser.parseFromString(repaired, 'application/xml');
+      return doc;
+    };
+
+    if (usable.length === 1) {
+      const single = parsePage(usable[0]);
+      if (single.querySelector('parsererror')) throw importError('bad-musicxml', tx('The recognised MusicXML was malformed.'));
+      /* Serialising the repaired document is necessary for a one-page PDF;
+         returning the original string here would re-introduce the malformed
+         closing tag after the recovery above. */
+      return new XMLSerializer().serializeToString(single);
+    }
+
+    const base = parsePage(usable[0]);
     if (base.querySelector('parsererror')) throw importError('bad-musicxml', tx('The recognised MusicXML was malformed.'));
     const baseParts = [].slice.call(base.documentElement.children).filter(c => c.nodeName === 'part');
 
     for (let i = 1; i < usable.length; i++) {
-      const doc = parser.parseFromString(usable[i], 'application/xml');
+      const doc = parsePage(usable[i]);
       if (doc.querySelector('parsererror')) continue;
       const parts = [].slice.call(doc.documentElement.children).filter(c => c.nodeName === 'part');
       parts.forEach((part, pi) => {

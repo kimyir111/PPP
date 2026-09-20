@@ -90,13 +90,29 @@ def load_musicxml(path: str) -> Dict[str, Any]:
         # A piano score's parts are independent staves.  Measure positions are
         # shared, so each part starts at the same absolute base.
         part_base = 0.0
+        # MusicXML attributes are stateful.  ``divisions`` and ``time`` are
+        # normally written only when they change; resetting them to defaults
+        # on every measure turns a multi-measure score into a wildly stretched
+        # timeline and makes a useful golden comparison look like a total
+        # transcription failure.
+        divisions = 1.0
+        current_beats = 4.0
+        current_beat_type = 4.0
         for measure in _tag(part, 'measure'):
             measure_count = max(measure_count, int(measure.attrib.get('number', measure_count + 1) or measure_count + 1))
             attrs = _child(measure, 'attributes')
-            divisions = _number(_child(attrs, 'divisions') if attrs is not None else None, 1.0)
+            if attrs is not None:
+                next_divisions = _number(_child(attrs, 'divisions'), divisions)
+                if next_divisions > 0:
+                    divisions = next_divisions
             time = _child(attrs, 'time') if attrs is not None else None
-            beats = _number(_child(time, 'beats') if time is not None else None, 0.0)
-            beat_type = _number(_child(time, 'beat-type') if time is not None else None, 4.0)
+            if time is not None:
+                next_beats = _number(_child(time, 'beats'), current_beats)
+                next_beat_type = _number(_child(time, 'beat-type'), current_beat_type)
+                if next_beats > 0 and next_beat_type > 0:
+                    current_beats, current_beat_type = next_beats, next_beat_type
+            beats = current_beats
+            beat_type = current_beat_type
             measure_hint = beats * 4.0 / beat_type if beats and beat_type else 0.0
             cursor = 0.0
             max_cursor = 0.0

@@ -408,6 +408,24 @@ async function importFile(page, file, waitMs) {
   ok('measure numbers continue across pages', merged.numbers === '1,2,3,4,5,6,7,8,9', merged.numbers);
   ok('page order is preserved', merged.pitches === 'CCCDDEEEE', merged.pitches);
 
+  const recoveredMalformedPage = await page.evaluate(() => {
+    const page = closing => '<?xml version="1.0"?><score-partwise version="4.0"><part-list><score-part id="P1"><part-name>P</part-name></score-part></part-list><part id="P1"><measure number="1"><attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes><direction><direction-type><words default-y="1">label' + closing + '</direction-type></direction><note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note></measure></part></score-partwise>';
+    const malformed = page('?/words>');
+    const clean = page('</words>');
+    const out = PPP.Import.mergeMusicXml([clean, malformed]);
+    const doc = new DOMParser().parseFromString(out, 'application/xml');
+    const single = new DOMParser().parseFromString(PPP.Import.mergeMusicXml([malformed]), 'application/xml');
+    return {
+      parserError: !!doc.querySelector('parsererror'),
+      measures: doc.querySelectorAll('part > measure').length,
+      words: doc.querySelectorAll('words').length,
+      singleWords: single.querySelectorAll('words').length
+    };
+  });
+  ok('a malformed Audiveris words tag does not discard its page',
+    !recoveredMalformedPage.parserError && recoveredMalformedPage.measures === 2 && recoveredMalformedPage.words === 2 && recoveredMalformedPage.singleWords === 1,
+    JSON.stringify(recoveredMalformedPage));
+
   /* ============ MusicXML still imports (no regression) ============ */
   console.log('\n── MusicXML import still works ──');
   const xmlRes = await importFile(page, path.join(__dirname, '..', 'samples', 'prelude-fragment.musicxml'), 30000);
