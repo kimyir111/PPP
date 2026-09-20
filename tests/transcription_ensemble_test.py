@@ -97,6 +97,32 @@ class TranscriptionEnsembleTest(unittest.TestCase):
         self.assertEqual([n['midi'] for n in recovered], [62, 65])
         self.assertEqual(merged['ensemble']['fastRecovered'], 2)
 
+    def test_secondary_run_is_recovered_when_primary_misses_the_middle(self):
+        merged = transcribe.consensus([
+            {
+                'engine': 'transkun',
+                'notes': [
+                    {'on': 1.00, 'off': 1.08, 'midi': 55, 'vel': 70},
+                    {'on': 1.90, 'off': 2.00, 'midi': 60, 'vel': 70},
+                ], 'pedals': []
+            },
+            {
+                'engine': 'piano-transcription',
+                'notes': [
+                    {'on': 1.00, 'off': 1.07, 'midi': 55, 'vel': 68},
+                    {'on': 1.20, 'off': 1.27, 'midi': 72, 'vel': 68},
+                    {'on': 1.28, 'off': 1.35, 'midi': 74, 'vel': 68},
+                    {'on': 1.36, 'off': 1.43, 'midi': 76, 'vel': 68},
+                    {'on': 1.44, 'off': 1.51, 'midi': 77, 'vel': 68},
+                    {'on': 1.52, 'off': 1.59, 'midi': 79, 'vel': 68},
+                    {'on': 1.90, 'off': 1.97, 'midi': 60, 'vel': 68},
+                ], 'pedals': []
+            },
+        ])
+        recovered = [n for n in merged['notes'] if n.get('recovered') == 'fast-run']
+        self.assertEqual([n['midi'] for n in recovered], [72, 74, 76, 77, 79])
+        self.assertEqual(merged['ensemble']['fastRecovered'], 5)
+
     def test_isolated_secondary_note_is_still_rejected(self):
         merged = transcribe.consensus([
             {'engine': 'transkun', 'notes': [

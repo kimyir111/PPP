@@ -235,6 +235,24 @@ def _inside_windows(on, windows):
     return any(a <= on <= b for a, b in windows)
 
 
+def _fast_recovery_allowed(on, windows, primary_onsets):
+    """Allow a coherent secondary run when the primary thinned or skipped it."""
+    for start, end in windows:
+        if not (start <= on <= end):
+            continue
+        nearby = sum(1 for t in primary_onsets if abs(t - on) <= 0.22)
+        if nearby >= 2:
+            return True
+        # If the primary missed the whole ornament, require context on both
+        # sides.  This keeps a long overtone/room-resonance stream rejected.
+        width = end - start
+        before = any(start - 0.45 <= t < start for t in primary_onsets)
+        after = any(end < t <= end + 0.45 for t in primary_onsets)
+        if width >= 0.24 and before and after:
+            return True
+    return False
+
+
 def consensus(results, onset_tolerance=0.09):
     """Use the strongest available model as the recall floor, then let other
     models correct its timing and jointly recover notes it missed.
@@ -301,8 +319,7 @@ def consensus(results, onset_tolerance=0.09):
         if model_count == 2 and support == 1 and primary not in engines:
             engine = engines[0]
             on = out['on']
-            nearby_primary = sum(1 for t in primary_onsets if abs(t - on) <= 0.22)
-            fast_recovery = _inside_windows(on, fast_windows.get(engine, [])) and nearby_primary >= 2
+            fast_recovery = _fast_recovery_allowed(on, fast_windows.get(engine, []), primary_onsets)
         if primary in engines or support >= 2 or fast_recovery:
             if fast_recovery:
                 out['recovered'] = 'fast-run'
