@@ -33,3 +33,24 @@ compared in seconds using the existing note and pedal metrics. Do not mix the
 two timebases in one case. The report includes pitch/onset F1, offset F1,
 mean onset error, measure count and reference tempo; thresholds are optional
 and belong in the private manifest.
+
+For a real recording-vs-score case, a helper JSON result can be compared
+directly with the official MusicXML. Set `alignment` to `tempo` (constant
+tempo) or `prediction-beats` (use the helper's returned `beats` array, which
+preserves rubato):
+
+```json
+{
+  "name": "looping-the-rooms-recording",
+  "reference": "looping-the-rooms.musicxml",
+  "prediction": "looping-the-rooms.helper.json",
+  "alignment": "prediction-beats",
+  "beatOffset": 0,
+  "minF1": 0.85,
+  "maxOnsetErrorMs": 55
+}
+```
+
+The PDF remains the visual source of truth; export it to MusicXML (or use the
+PPP review's official-score import) before adding it to the manifest. Keep the
+PDF, audio and helper output outside the repository.

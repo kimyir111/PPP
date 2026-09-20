@@ -157,7 +157,101 @@ def load_any(path: str) -> Dict[str, Any]:
         return load_musicxml(path)
     result = load_events(path)
     result['timebase'] = 'seconds'
+    # Keep timing metadata from a helper JSON without making the generic
+    # evaluator depend on the helper's schema.
+    if ext == '.json':
+        with open(path, 'r', encoding='utf-8') as handle:
+            raw = json.load(handle)
+        if isinstance(raw, dict):
+            for key in ('beats', 'downbeats', 'tempo', 'duration', 'firstDownbeat'):
+                if key in raw:
+                    result[key] = raw[key]
     return result
+
+
+def _finite_number(value: Any) -> float | None:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) else None
+
+
+def _map_with_beats(value: float, beats: Sequence[float], offset: float = 0.0) -> float:
+    """Map quarter-beat coordinates onto an observed beat-time sequence."""
+    if len(beats) < 2:
+        raise ValueError('beat alignment needs at least two predicted beats')
+    position = value + offset
+    index = math.floor(position)
+    fraction = position - index
+    if index < 0:
+        step = beats[1] - beats[0]
+        return beats[0] + position * step
+    if index >= len(beats) - 1:
+        step = beats[-1] - beats[-2]
+        return beats[-1] + (position - (len(beats) - 1)) * step
+    return beats[index] + fraction * (beats[index + 1] - beats[index])
+
+
+def _map_events(events: Sequence[Dict[str, Any]], mapper) -> List[Dict[str, Any]]:
+    mapped = []
+    for note in events:
+        mapped.append({
+            'midi': int(note['midi']),
+            'on': mapper(float(note['on'])),
+            'off': mapper(float(note['off'])),
+        })
+    return mapped
+
+
+def _map_intervals(events: Sequence[Dict[str, Any]], mapper) -> List[Dict[str, Any]]:
+    return [{'on': mapper(float(event['on'])), 'off': mapper(float(event['off']))} for event in events]
+
+
+def _align_timebases(reference: Dict[str, Any], prediction: Dict[str, Any], case: Dict[str, Any]):
+    """Return both event sets in seconds for score-vs-recording cases.
+
+    A private golden case can compare an official MusicXML score (quarter
+    beats) directly with helper JSON (seconds).  Fixed tempo is reproducible;
+    ``alignment: prediction-beats`` uses the beat times returned by Beat This
+    and therefore preserves rubato and local tempo changes.
+    """
+    ref_base = reference.get('timebase')
+    pred_base = prediction.get('timebase')
+    if ref_base == pred_base:
+        return reference, prediction
+    if {ref_base, pred_base} != {'quarter-beats', 'seconds'}:
+        raise ValueError(f"{case.get('name', 'case')}: unsupported timebase pair {ref_base}/{pred_base}")
+
+    if ref_base == 'quarter-beats':
+        score, recording = reference, prediction
+        invert = False
+    else:
+        score, recording = prediction, reference
+        invert = True
+
+    alignment = str(case.get('alignment', 'tempo')).lower()
+    if alignment in {'prediction-beats', 'beats', 'beat-grid'}:
+        beats = [_finite_number(value) for value in recording.get('beats', [])]
+        beats = sorted(set(value for value in beats if value is not None))
+        mapper = lambda value: _map_with_beats(value, beats, float(case.get('beatOffset', 0.0)))
+    else:
+        tempo = _finite_number(case.get('tempo')) or _finite_number(score.get('tempo'))
+        if not tempo or tempo <= 0:
+            raise ValueError(f"{case.get('name', 'case')}: tempo is required for quarter-beat/seconds comparison")
+        start = _finite_number(case.get('startSeconds'))
+        if start is None:
+            start = _finite_number(recording.get('firstDownbeat')) or 0.0
+        scale = 60.0 / tempo
+        mapper = lambda value: start + value * scale
+
+    mapped_score = dict(score)
+    mapped_score['notes'] = _map_events(score.get('notes', []), mapper)
+    mapped_score['pedals'] = _map_intervals(score.get('pedals', []), mapper) if score.get('pedals') else []
+    mapped_score['timebase'] = 'seconds'
+    if invert:
+        return recording, mapped_score
+    return mapped_score, recording
 
 
 def run_case(case: Dict[str, Any], root: str) -> Dict[str, Any]:
@@ -165,8 +259,7 @@ def run_case(case: Dict[str, Any], root: str) -> Dict[str, Any]:
     prediction_path = os.path.abspath(os.path.join(root, case['prediction']))
     reference = load_any(reference_path)
     prediction = load_any(prediction_path)
-    if reference.get('timebase') != prediction.get('timebase'):
-        raise ValueError(f"{case.get('name', reference_path)}: reference/prediction timebases differ")
+    reference, prediction = _align_timebases(reference, prediction, case)
     metrics = evaluate(
         reference, prediction,
         onset_tolerance=max(0.0, float(case.get('onsetMs', 50.0)) / 1000.0),
@@ -206,6 +299,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             minimum = case.get('minF1')
             if minimum is not None and f1 < float(minimum):
                 failures.append(f"{result['name']}: F1 {f1:.3f} < {float(minimum):.3f}")
+            minimum_offset = case.get('minOffsetF1')
+            if minimum_offset is not None and result['metrics']['offset_f1'] < float(minimum_offset):
+                failures.append(f"{result['name']}: offset F1 {result['metrics']['offset_f1']:.3f} < {float(minimum_offset):.3f}")
+            maximum_onset = case.get('maxOnsetErrorMs')
+            onset_error = result['metrics'].get('mean_onset_error_ms')
+            if maximum_onset is not None and (onset_error is None or onset_error > float(maximum_onset)):
+                failures.append(f"{result['name']}: onset error {onset_error}ms > {float(maximum_onset):.3f}ms")
             if result.get('measureCountOk') is False:
                 failures.append(f"{result['name']}: reference measure count differs from expected")
             if result.get('tempoOk') is False:
