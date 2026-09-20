@@ -25,8 +25,8 @@
   'use strict';
 
   const FPS = 100;            /* onset envelope frames per second */
-  const Q = 24;               /* ticks per quarter: 16ths (6) and triplet 8ths (8) */
-  const SUB = 4;              /* 16ths per quarter, for tests and binary snap */
+  const Q = 24;               /* ticks per quarter: 16ths (6), 32nds (3), triplet 8ths (8) */
+  const SUB = 4;              /* ordinary 16ths per quarter */
   const MIN_BPM = 40, MAX_BPM = 200;
   const CLUSTER_S = 0.05;     /* rolled-chord window, seconds */
 
@@ -197,7 +197,10 @@
     let run = null;
     for (let s = 1; s <= slots.length; s++) {
       const gap = s < slots.length ? slots[s] - slots[s - 1] : Infinity;
-      if (gap >= 0.012 && gap <= window * 1.2) {
+      /* At 120 BPM a 32nd note is about 62.5 ms apart.  The old 1.2
+         multiplier (60 ms for the 50 ms chord window) classified those first
+         attacks as a rolled chord before quantization could see the run. */
+      if (gap >= 0.012 && gap <= window * 1.5) {
         if (run == null) run = s - 1;
       } else {
         if (run != null && s - run >= 4) for (let k = run; k < s; k++) rapid.add(k);
@@ -213,6 +216,11 @@
         if (slotOf[j] !== slotOf[i] && (rapid.has(slotOf[i]) || rapid.has(slotOf[j]))) break;
         j++;
       }
+      /* A rolled chord can span a few more milliseconds than the nominal
+         window. Extend only a short, non-run group; fast scalar passages are
+         protected by the rapid-slot set above. */
+      while (j < out.length && j - i < 4 && out[j].on - t0 <= window * 1.35 &&
+        !rapid.has(slotOf[i]) && !rapid.has(slotOf[j])) j++;
       let sum = 0;
       for (let k = i; k < j; k++) sum += out[k].on;
       const attack = sum / (j - i);
@@ -486,18 +494,42 @@
 
   /* -------------------------------------------------------------- snap */
   const LEVEL_COST_16 = [0, 0.025, 0.06, 0.08];
-  function snap16(pos, spb) {
+  /* Snap an onset to a straight subdivision.  Older versions only considered
+     sixteenth notes, so a genuine 32nd-note run was silently collapsed into
+     pairs of sixteenths.  Keep the readable-value penalty, but let a finer
+     grid win when it explains the measured onset materially better. */
+  function snapStraight(pos, spb, subdivisions) {
+    subdivisions = subdivisions === 8 ? 8 : 4;
     const k = Math.floor(pos);
     const f = pos - k;
     spb = spb || 0.6;
     let best = 0, bestCost = Infinity;
-    for (let s = 0; s <= SUB; s++) {
-      const c = s / SUB;
-      const level = s % SUB === 0 ? 0 : s % 2 === 0 ? 1 : 2;
-      const cost = Math.abs(f - c) * spb + LEVEL_COST_16[level];
+    for (let s = 0; s <= subdivisions; s++) {
+      const c = s / subdivisions;
+      const level = s === 0 || s === subdivisions ? 0 : (s % 2 === 0 ? 1 : 2);
+      /* A fine grid is deliberately a little more expensive even when its
+         point is exact: at an ordinary 16th the coarse spelling is clearer. */
+      const finePenalty = subdivisions === 8 && s > 0 && s < subdivisions ? 0.035 : 0;
+      const cost = Math.abs(f - c) * spb + (subdivisions === 4 ? LEVEL_COST_16[level] : finePenalty);
       if (cost < bestCost) { bestCost = cost; best = s; }
     }
-    return { frac: best / SUB, err: Math.abs(f - best / SUB), kind: '16th' };
+    const frac = best / subdivisions;
+    return {
+      frac: frac, err: Math.abs(f - frac),
+      kind: subdivisions === 8 ? '32nd' : '16th',
+      subdivision: subdivisions, cost: bestCost
+    };
+  }
+
+  function snap16(pos, spb) { return snapStraight(pos, spb, 4); }
+
+  /* Choose between a readable 16th and a necessary 32nd.  The small
+     complexity penalty prevents jitter from turning every ordinary 16th into
+     a 32nd, while a real fast run wins because its 16th error is much larger. */
+  function snapStraightBest(pos, spb) {
+    const coarse = snapStraight(pos, spb, 4);
+    const fine = snapStraight(pos, spb, 8);
+    return fine.cost + 1e-6 < coarse.cost ? fine : coarse;
   }
 
   function snapTriplet(pos, spb) {
@@ -518,14 +550,18 @@
     return beats[k + 1] - beats[k];
   }
 
-  function snapEnd(pos) {
+  function snapEnd(pos, subdivisions) {
     const k = Math.floor(pos);
     const f = pos - k;
     let best = 0, bestCost = Infinity;
-    [0, 0.5, 1].forEach(c => {
-      const cost = Math.abs(f - c) + (c === 0.5 ? 0.12 : 0);
+    const steps = subdivisions === 8 ? 8 : 4;
+    for (let s = 0; s <= steps; s++) {
+      const c = s / steps;
+      /* Releases are noisier than attacks: favour a half-beat/beat ending,
+         but still permit a real 32nd duration in a fast passage. */
+      const cost = Math.abs(f - c) + (c !== 0 && c !== 0.5 && c !== 1 ? 0.08 : c === 0.5 ? 0.12 : 0);
       if (cost < bestCost) { bestCost = cost; best = c; }
-    });
+    }
     return k + best;
   }
 
@@ -564,8 +600,8 @@
       const pos = beatPosition(beats, tOn);
       const k = Math.floor(pos + 1e-9);
       const useTrip = !!(trip && trip[k]);
-      const a = useTrip ? snapTriplet(pos, spbAt(beats, pos)) : snap16(pos, spbAt(beats, pos));
-      const endPos = snapEnd(beatPosition(beats, n.off));
+      const a = useTrip ? snapTriplet(pos, spbAt(beats, pos)) : snapStraightBest(pos, spbAt(beats, pos));
+      const endPos = snapEnd(beatPosition(beats, n.off), useTrip ? 4 : a.subdivision);
       errSum += a.err;
       const startQ = k + a.frac;
       let tick = Math.round(startQ * Q);
@@ -576,12 +612,14 @@
         tick = base + Math.round((tick - base) / 8) * 8;
         endTick = Math.max(tick + 8, base + Math.round((endTick - base) / 8) * 8);
       } else {
-        tick = Math.round(tick / 6) * 6;
-        endTick = Math.max(tick + 6, Math.round(endTick / 6) * 6);
+        const unit = a.subdivision === 8 ? 3 : 6;
+        tick = Math.round(tick / unit) * unit;
+        endTick = Math.max(tick + unit, Math.round(endTick / unit) * unit);
       }
       return {
         midi: n.midi, vel: n.vel, on: n.on, off: n.off, attack: tOn,
         tick: tick, endTick: endTick, err: a.err, tuplet: useTrip,
+        subdivision: useTrip ? 3 : (a.subdivision || 4),
         lenTicks: Math.max(1, endTick - tick)
       };
     });
@@ -591,7 +629,7 @@
       const key = n.attack.toFixed(4);
       if (byAtt[key] == null) byAtt[key] = n.tick;
       else n.tick = byAtt[key];
-      n.endTick = Math.max(n.tick + (n.tuplet ? 8 : 6), n.endTick);
+      n.endTick = Math.max(n.tick + (n.tuplet ? 8 : n.subdivision >= 8 ? 3 : 6), n.endTick);
       n.lenTicks = n.endTick - n.tick;
       q[i] = n;
     });
@@ -616,15 +654,22 @@
     const q = notes.map(n => {
       const tOn = n.attack != null ? n.attack : n.on;
       const pos = beatPosition(beats, tOn);
-      const sixteenth = Math.round(pos * 6) / 6;
-      const tick = Math.round(sixteenth * 36);
+      const coarse = Math.round(pos * 6) / 6;
+      const fine = Math.round(pos * 12) / 12;
+      const spb = spbAt(beats, pos);
+      const coarseCost = Math.abs(pos - coarse) * spb;
+      const fineCost = Math.abs(pos - fine) * spb + 0.012;
+      const useFine = fineCost + 1e-6 < coarseCost;
+      const subdivision = useFine ? 12 : 6;
+      const snapped = useFine ? fine : coarse;
+      const tick = Math.round(snapped * 36);
       const rawEnd = beatPosition(beats, n.off);
-      const endPos = Math.round(rawEnd * 6) / 6;
-      const endTick = Math.max(tick + 6, Math.round(endPos * 36));
+      const endPos = snapEnd(rawEnd, useFine ? 8 : 4);
+      const endTick = Math.max(tick + (useFine ? 3 : 6), Math.round(endPos * 36));
       return {
         midi: n.midi, vel: n.vel, on: n.on, off: n.off, attack: tOn,
         tick: tick, endTick: endTick,
-        err: Math.abs(pos * 6 - Math.round(pos * 6)) / 6,
+        err: Math.abs(pos - snapped), subdivision: subdivision,
         tuplet: false, lenTicks: endTick - tick
       };
     });
@@ -633,7 +678,7 @@
       const key = n.attack.toFixed(4);
       if (byAtt[key] == null) byAtt[key] = n.tick;
       else n.tick = byAtt[key];
-      n.endTick = Math.max(n.tick + 6, n.endTick);
+      n.endTick = Math.max(n.tick + (n.subdivision >= 12 ? 3 : 6), n.endTick);
     });
     return q;
   }

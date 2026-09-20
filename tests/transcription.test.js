@@ -179,6 +179,32 @@ const helperHealth = () => new Promise(resolve => {
   ok('a 32nd-note run is not collapsed into rolled chords',
     new Set(fastAttacks).size === 8, new Set(fastAttacks).size + ' attacks of 8');
 
+  /* At 120 BPM a 32nd is 62.5 ms apart. It must survive both attack
+     clustering and the notation grid instead of becoming paired 16ths. */
+  const thirtySeconds = [];
+  for (let i = 0; i < 32; i++) thirtySeconds.push({
+    on: i * 0.0625, off: i * 0.0625 + 0.045, midi: 72 + (i % 7), vel: 72
+  });
+  const fast32 = A.toMusicXml({ notes: thirtySeconds }, {
+    lock: { beats: 4, beatType: 4, bpm: 120, firstDownbeat: 0 }
+  });
+  ok('a fast scalar run is engraved with 32nds when the audio supports them',
+    fast32.stats.bars === 1 && (fast32.xml.match(/<type>32nd<\/type>/g) || []).length >= 24,
+    fast32.stats.bars + ' bars, ' + (fast32.xml.match(/<type>32nd<\/type>/g) || []).length + ' 32nds');
+
+  /* At the 176 BPM used by many anime openings a 32nd is only 42.6 ms apart,
+     so it is inside the old 50 ms rolled-chord window. The run detector must
+     still keep every attack independent at that speed. */
+  const highTempo32 = Array.from({ length: 32 }, (_, i) => ({
+    on: i * 60 / 176 / 8, off: i * 60 / 176 / 8 + 0.024, midi: 60 + (i % 9), vel: 72
+  }));
+  const highFast32 = A.toMusicXml({ notes: highTempo32 }, {
+    lock: { beats: 4, beatType: 4, bpm: 176, firstDownbeat: 0 }
+  });
+  ok('32nds stay separate at a 176 BPM performance tempo',
+    highFast32.stats.bars === 1 && (highFast32.xml.match(/<type>32nd<\/type>/g) || []).length >= 24,
+    highFast32.stats.bars + ' bars, ' + (highFast32.xml.match(/<type>32nd<\/type>/g) || []).length + ' 32nds');
+
   const fastChordRun = A._.clusterNotes(Array.from({ length: 4 }, (_, i) => [
     { on: 2 + i * 0.04, off: 2.03 + i * 0.04, midi: 60 + i, vel: 72 },
     { on: 2 + i * 0.04, off: 2.03 + i * 0.04, midi: 67 + i, vel: 72 }
@@ -574,6 +600,36 @@ const helperHealth = () => new Promise(resolve => {
     return { time: m0.time.beats + '/' + m0.time.beatType, measures: sc.measures.length, tuplets: trips };
   }, g.xml);
   ok('the parser keeps 6/8 from the grid', gridBack.time === '6/8' && gridBack.measures === 4, gridBack.time + ', ' + gridBack.measures + ' bars');
+
+  const ottavaBack = await page.evaluate(() => {
+    const xml = `<?xml version="1.0"?><score-partwise version="3.1">
+      <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+      <part id="P1"><measure number="1">
+        <attributes><divisions>1</divisions><key><fifths>0</fifths><mode>major</mode></key>
+          <time><beats>4</beats><beat-type>4</beat-type></time><staves>1</staves>
+          <clef number="1"><sign>G</sign><line>2</line></clef></attributes>
+        <direction placement="above"><direction-type><octave-shift type="up" size="8"/></direction-type><staff>1</staff></direction>
+        <note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+        <direction placement="above"><direction-type><octave-shift type="stop" size="8"/></direction-type><staff>1</staff></direction>
+      </measure></part></score-partwise>`;
+    const score = PPP.parseMusicXML(xml, 'ottava.musicxml');
+    const note = score.notes.find(n => !n.rest);
+    const plan = PPP.PianoScore.of(score);
+    return {
+      written: note.writtenP,
+      sounding: note.p,
+      writtenMidi: note.writtenMidi,
+      soundingMidi: note.soundingMidi,
+      shift: note.ottavaShift,
+      strike: plan.strikes[0] && plan.strikes[0].midi,
+      ranges: score.ottavas.length
+    };
+  });
+  ok('8va keeps written and sounding pitches separate',
+    ottavaBack.written === 'C4' && ottavaBack.sounding === 'C5' &&
+      ottavaBack.writtenMidi === 60 && ottavaBack.soundingMidi === 72 &&
+      ottavaBack.shift === 12 && ottavaBack.strike === 72 && ottavaBack.ranges === 1,
+    JSON.stringify(ottavaBack));
 
   const tripBack = await page.evaluate(xml => {
     const sc = PPP.parseMusicXML(xml, 'trips');

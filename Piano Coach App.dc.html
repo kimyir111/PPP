@@ -2846,7 +2846,8 @@ const PianoScore = {
         });
         const upQ = q + (upWritten - n.abs);
         out.push({
-          midi: n.midi, vel: this.velocity(plan, n, n.abs), q: q, upQ: upQ,
+          midi: n.soundingMidi != null ? n.soundingMidi : n.midi,
+          vel: this.velocity(plan, n, n.abs), q: q, upQ: upQ,
           hand: n.hand, m: n.m, abs: n.abs, note: n, visit: v
         });
       });
@@ -3397,6 +3398,22 @@ function pitchName(step, alter, octave) {
   const a = alter > 0 ? '#'.repeat(alter) : alter < 0 ? 'b'.repeat(-alter) : '';
   return step + a + octave;
 }
+/* Keep the pitch written on the page separate from the pitch that should
+   sound.  An octave-shift is a notation instruction, not a reason to mutate
+   the source note in-place. */
+function shiftPitchOctave(p, semitones) {
+  const m = PITCH_RE.exec(p || '');
+  if (!m || !isFinite(semitones) || Math.abs(semitones) < 1e-9) return p;
+  const octaves = Math.round(semitones / 12);
+  return m[1] + m[2] + (+m[3] + octaves);
+}
+function ottavaSemitones(ov) {
+  if (!ov) return 0;
+  if (isFinite(+ov.semitones)) return +ov.semitones;
+  const size = +ov.size || 8;
+  const octaves = size >= 15 ? 2 : 1;
+  return (ov.dir > 0 ? 1 : -1) * 12 * octaves;
+}
 /* VexFlow wants 'e/5' — and its own accidental modifier, so strip ours off the key. */
 function vexKey(p) {
   const m = PITCH_RE.exec(p || '');
@@ -3518,10 +3535,36 @@ const Score = {
     });
     score.lengthQ = q;
     score._byNumber = byNumber;
+    const ottavas = Array.isArray(score.ottavas) ? score.ottavas : [];
+    const shiftAt = n => {
+      const staff = n.staff || 1;
+      const at = (byNumber[n.m] ? byNumber[n.m].startQ : 0) + (+n.b || 0);
+      let best = 0, bestStart = -Infinity;
+      ottavas.forEach(ov => {
+        const os = byNumber[ov.m], oe = byNumber[ov.endM];
+        if (!os || !oe) return;
+        if (ov.staff != null && (+ov.staff || 1) !== staff) return;
+        const a = os.startQ + (+ov.b || 0), z = oe.startQ + (+ov.endB || 0);
+        if (at < a - 1e-6 || at >= z - 1e-6 || a < bestStart) return;
+        best = ottavaSemitones(ov); bestStart = a;
+      });
+      return best;
+    };
     score.notes.forEach(n => {
       const mm = byNumber[n.m];
       n.abs = (mm ? mm.startQ : 0) + n.b;
       if (n.midi == null && n.p) n.midi = pitchToMidi(n.p);
+      if (!n.rest && n.midi != null && n.soundingMidi == null) {
+        n.writtenP = n.writtenP || n.p;
+        n.writtenMidi = n.writtenMidi == null ? n.midi : n.writtenMidi;
+        const shift = shiftAt(n);
+        n.ottavaShift = shift;
+        n.soundingMidi = n.writtenMidi + shift;
+        n.midi = n.soundingMidi;
+        if (n.writtenP) n.p = shiftPitchOctave(n.writtenP, shift);
+      } else if (!n.rest && n.midi != null) {
+        n.midi = n.soundingMidi;
+      }
     });
     score.notes.sort((a, b) => a.abs - b.abs || (a.staff || 1) - (b.staff || 1));
     if (!score.sections || !score.sections.length) score.sections = Score.deriveSections(score);
@@ -4006,17 +4049,27 @@ function parseMusicXML(xmlText, name) {
             if (oct) {
               const t = oct.getAttribute('type');
               const size = parseInt(oct.getAttribute('size') || '8', 10) || 8;
+              const octNumber = oct.getAttribute('number') || null;
               if (t === 'up' || t === 'down') {
-                /* MusicXML says which way the printed notes move; "down" is the
-                   8va above, because the notes are written an octave lower. */
+                /* MusicXML's direction is the sounding shift: up is 8va/15ma
+                   and down is 8vb/15mb. Keep that separate from written pitch. */
                 const onStaff = parseInt(txt(el, 'staff', ''), 10);
+                const octaves = size >= 15 ? 2 : 1;
                 ottavas.push({ m: number, b: atB, endM: null, endB: null,
-                  size: size, dir: t === 'down' ? 1 : -1,
-                  staff: isFinite(onStaff) ? staffBase + onStaff : null });
+                  size: size, dir: t === 'up' ? 1 : -1,
+                  semitones: (t === 'up' ? 1 : -1) * 12 * octaves,
+                  staff: isFinite(onStaff) ? staffBase + onStaff : null, number: octNumber });
               } else if (t === 'stop') {
+                const stopStaff = parseInt(txt(el, 'staff', ''), 10);
+                const stopGlobalStaff = isFinite(stopStaff) ? staffBase + stopStaff : null;
+                let found = -1;
                 for (let i = ottavas.length - 1; i >= 0; i--) {
-                  if (ottavas[i].endM == null) { ottavas[i].endM = number; ottavas[i].endB = atB; break; }
+                  if (ottavas[i].endM != null) continue;
+                  if (octNumber && ottavas[i].number && ottavas[i].number !== octNumber) continue;
+                  if (stopGlobalStaff != null && ottavas[i].staff != null && ottavas[i].staff !== stopGlobalStaff) continue;
+                  found = i; break;
                 }
+                if (found >= 0) { ottavas[found].endM = number; ottavas[found].endB = atB; }
               }
             }
           }
@@ -9351,7 +9404,14 @@ const PdfLayer = {
         if (below > 0 && below < 35 && (!where || below < where.d)) where = { sys: sys, staff: k, dir: -1, d: below };
       }));
       if (!where) return;
-      out.push({ x0: x0, x1: r.x1, y: r.y, sys: where.sys, staff: where.staff, dir: where.dir });
+      /* Text is a stronger direction cue than line placement. A scan can put
+         an 8vb label just above the staff when the lower ledger area is tight;
+         preserve an explicit 8va/8vb or 15ma/15mb instruction when present. */
+      const label = said.map(t => t.s.trim().toLowerCase()).join(' ');
+      const size = /15(?:ma|mb)/.test(label) ? 15 : 8;
+      const dir = /(?:8vb|15mb)/.test(label) ? -1 : /(?:8va|15ma)/.test(label) ? 1 : where.dir;
+      out.push({ x0: x0, x1: r.x1, y: r.y, sys: where.sys, staff: where.staff,
+        dir: dir, size: size, semitones: dir * 12 * (size >= 15 ? 2 : 1) });
     });
     return out;
   },
@@ -9972,9 +10032,15 @@ const PdfLayer = {
     };
     const xOf = (b, n) => { const mm = byNo[b.m]; return (n.dx != null && mm && mm.w) ? b.x0 + (n.dx / mm.w) * (b.x1 - b.x0) : null; };
     const setAlter = (n, alter) => {
-      const r = PITCH_RE.exec(n.p);
-      n.p = r[1] + (alter > 0 ? '#'.repeat(alter) : alter < 0 ? 'b'.repeat(-alter) : '') + r[3];
+      const base = n.writtenP || n.p;
+      const r = PITCH_RE.exec(base);
+      if (!r) return;
+      const written = r[1] + (alter > 0 ? '#'.repeat(alter) : alter < 0 ? 'b'.repeat(-alter) : '') + r[3];
+      n.writtenP = written;
+      n.writtenMidi = pitchToMidi(written);
+      n.p = shiftPitchOctave(written, n.ottavaShift || 0);
       n.midi = pitchToMidi(n.p);
+      n.soundingMidi = n.midi;
     };
     out.phantoms = 0; out.accidentals = 0; out.arpeggios = 0;
     const gone = new Set();
@@ -10149,13 +10215,19 @@ const PdfLayer = {
         if (clash) return;
         score.notes.forEach(n => {
           if (!onStaff(n) || n.abs < a - 1e-6 || n.abs > z + 1e-6) return;
-          const m = PITCH_RE.exec(n.p);
+          const written = n.writtenP || n.p;
+          const m = PITCH_RE.exec(written);
           if (!m) return;
-          n.p = m[1] + m[2] + (+m[3] + o.dir);
+          n.writtenP = written;
+          n.writtenMidi = pitchToMidi(written);
+          n.ottavaShift = o.semitones != null ? o.semitones : o.dir * 12 * (o.size >= 15 ? 2 : 1);
+          n.p = shiftPitchOctave(written, n.ottavaShift);
           n.midi = pitchToMidi(n.p);
+          n.soundingMidi = n.midi;
         });
         score.ottavas.push({ m: firstN.n.m, b: firstN.n.b, endM: lastN.n.m, endB: lastN.n.b + 0.001,
-          size: 8, dir: o.dir, staff: staffNo });
+          size: o.size || 8, dir: o.dir,
+          semitones: o.semitones != null ? o.semitones : o.dir * 12 * (o.size >= 15 ? 2 : 1), staff: staffNo });
         out.ottavas++;
       });
     });
@@ -10437,14 +10509,17 @@ function makeScoreView(React) {
          are drawn where they sound. */
       const ottRanges = (p.marks !== false ? (score.ottavas || []) : []).filter(ov => ov.endM != null).map(ov => ({
         staff: ov.staff || (ov.dir > 0 ? pianoTop + 1 : pianoTop + 2),
-        a: Score.startQ(score, ov.m) + (ov.b || 0), z: Score.startQ(score, ov.endM) + (ov.endB || 0), dir: ov.dir
+        a: Score.startQ(score, ov.m) + (ov.b || 0), z: Score.startQ(score, ov.endM) + (ov.endB || 0),
+        dir: ov.dir, shift: ottavaSemitones(ov)
       }));
       const written = n => {
+        /* MusicXML/PDF import records the exact written pitch here. Prefer it
+           over reverse arithmetic so enharmonic spelling survives 8va. */
+        if (p.marks !== false && n && n.writtenP) return n.writtenP;
         for (let i = 0; i < ottRanges.length; i++) {
           const o = ottRanges[i];
           if ((n.staff || 1) !== o.staff || n.abs < o.a - 1e-6 || n.abs >= o.z) continue;
-          const pm = PITCH_RE.exec(n.p || '');
-          return pm ? pm[1] + pm[2] + (+pm[3] - o.dir) : n.p;
+          return shiftPitchOctave(n.p, -o.shift);
         }
         return n.p;
       };
@@ -10924,7 +10999,8 @@ function makeScoreView(React) {
             rowOttava[ry] = Math.min(rowOttava[ry] == null ? Infinity : rowOttava[ry], y);
             return y;
           };
-          const name = ov.dir > 0 ? '8va' : '8vb';
+          const shift = ottavaSemitones(ov);
+          const name = Math.abs(shift) >= 24 ? (shift > 0 ? '15ma' : '15mb') : (shift > 0 ? '8va' : '8vb');
           const rows = Object.keys(rowSpan).map(Number).filter(ry => ry >= a.y && ry <= z.y).sort((u, v) => u - v);
           rows.forEach((ry, i) => {
             const first = i === 0, last = i === rows.length - 1;
