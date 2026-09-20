@@ -253,6 +253,46 @@ def _fast_recovery_allowed(on, windows, primary_onsets):
     return False
 
 
+def _candidate_regions(notes, max_gap=0.22):
+    """Summarise contiguous secondary-only candidates for review.
+
+    ``uncertainNotes`` remains the lossless list.  Regions make it possible
+    for the score layer (or a later human review) to request a local retry
+    without treating every isolated overtone as a real note.  This is
+    deliberately diagnostic: it never changes the accepted note stream.
+    """
+    ordered = sorted(notes or [], key=lambda n: (float(n.get('on', 0)), int(n.get('midi', 0))))
+    regions = []
+    current = []
+    last_on = None
+    for note in ordered:
+        on = float(note.get('on', 0))
+        if current and last_on is not None and on - last_on > max_gap:
+            regions.append(current)
+            current = []
+        current.append(note)
+        last_on = on
+    if current:
+        regions.append(current)
+    out = []
+    for items in regions:
+        if len(items) < 2:
+            continue
+        onsets = [float(n.get('on', 0)) for n in items]
+        pitches = [int(n.get('midi', 0)) for n in items]
+        models = sorted({m for n in items for m in (n.get('models') or [])})
+        out.append({
+            'start': round(min(onsets), 4),
+            'end': round(max(onsets), 4),
+            'count': len(items),
+            'pitchMin': min(pitches),
+            'pitchMax': max(pitches),
+            'models': models,
+            'reason': 'model-disagreement'
+        })
+    return out
+
+
 def consensus(results, onset_tolerance=0.09):
     """Use the strongest available model as the recall floor, then let other
     models correct its timing and jointly recover notes it missed.
@@ -332,6 +372,7 @@ def consensus(results, onset_tolerance=0.09):
     accepted.sort(key=lambda n: (n['on'], n['midi']))
     uncertain.sort(key=lambda n: (n['on'], n['midi']))
     agreement = (_median([n['support'] / model_count for n in accepted]) if accepted else 0.0)
+    candidate_regions = _candidate_regions(uncertain)
 
     # Pedal is continuous control data, so majority-voting individual edges is
     # brittle. Prefer the most trusted model that actually emitted CC64.
@@ -351,6 +392,8 @@ def consensus(results, onset_tolerance=0.09):
             'agreement': round(agreement, 3),
             'accepted': len(accepted), 'uncertain': len(uncertain),
             'fastRecovered': fast_recovered,
+            'candidatePolicy': 'primary-floor+cross-model-agreement+bracketed-fast-run',
+            'candidateRegions': candidate_regions,
             'pedalSource': pedal_source
         }
     }

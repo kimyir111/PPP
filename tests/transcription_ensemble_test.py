@@ -135,6 +135,25 @@ class TranscriptionEnsembleTest(unittest.TestCase):
         ])
         self.assertNotIn(91, [n['midi'] for n in merged['notes']])
 
+    def test_secondary_candidates_are_preserved_as_regions_without_accepting_them(self):
+        merged = transcribe.consensus([
+            {'engine': 'transkun', 'notes': [
+                {'on': 1.0, 'off': 1.3, 'midi': 60, 'vel': 70},
+            ], 'pedals': []},
+            {'engine': 'piano-transcription', 'notes': [
+                {'on': 1.10, 'off': 1.2, 'midi': 72, 'vel': 60},
+                {'on': 1.22, 'off': 1.3, 'midi': 74, 'vel': 62},
+            ], 'pedals': []},
+        ])
+        self.assertNotIn(72, [n['midi'] for n in merged['notes']])
+        self.assertEqual(merged['ensemble']['candidatePolicy'],
+                         'primary-floor+cross-model-agreement+bracketed-fast-run')
+        self.assertEqual(len(merged['ensemble']['candidateRegions']), 1)
+        region = merged['ensemble']['candidateRegions'][0]
+        self.assertEqual(region['count'], 2)
+        self.assertEqual(region['pitchMin'], 72)
+        self.assertEqual(region['pitchMax'], 74)
+
     def test_midi_reader_keeps_damper_pedal(self):
         handle = tempfile.NamedTemporaryFile(suffix='.mid', delete=False)
         handle.close()

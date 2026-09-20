@@ -7135,7 +7135,10 @@ const Import = {
       taskMode: what.mode === 'arrange' ? 'piano-arrangement' : 'faithful-transcription',
       modelAgreement: heard.ensemble && heard.ensemble.agreement != null ? heard.ensemble.agreement : null,
       amtModels: heard.ensemble && heard.ensemble.models ? heard.ensemble.models : null,
-      uncertainNotes: heard.ensemble ? heard.ensemble.uncertain : null
+      uncertainNotes: heard.ensemble ? heard.ensemble.uncertain : null,
+      candidatePolicy: heard.ensemble && heard.ensemble.candidatePolicy || null,
+      candidateRegions: heard.ensemble && Array.isArray(heard.ensemble.candidateRegions)
+        ? heard.ensemble.candidateRegions : []
     };
     score.source = source;
     return {
