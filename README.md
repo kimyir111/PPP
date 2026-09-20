@@ -271,8 +271,10 @@ tools/transcribe-venv/Scripts/python -m pip install -r requirements-transcriptio
 The helper reports `amt: ensemble` and the worker records `device: cuda` when
 TransKun and the Kong piano model both run on the GPU. A public Render Free
 instance is deliberately not made to download these multi-gigabyte CUDA
-packages; point `PPP_HELPER_URL` at a GPU helper instead of silently treating
-the browser fallback as an equivalent transcription engine.
+packages. Set the optional `PPP_HELPER_URL` environment variable in the Render
+dashboard to a private HTTPS helper running the pinned CUDA environment; leaving
+it unset keeps the local helper path, and a missing remote helper is labelled as
+a browser draft rather than presented as an equivalent transcription engine.
 
 Beat This now reports an inter-beat stability score with each transcription.
 When that score is low (for example, a dense passage made the tracker jump to

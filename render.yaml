@@ -16,6 +16,11 @@ services:
         value: "1"
       - key: PPP_TRANSCRIBE_PYTHON
         value: .arranger-venv/bin/python
+      # Render Free intentionally does not download the CUDA AMT models. Set
+      # this in the Render dashboard to the private HTTPS URL of the GPU
+      # transcription helper; leaving it blank keeps the local helper path.
+      - key: PPP_HELPER_URL
+        sync: false
       - key: SESSION_SECRET
         generateValue: true
       - key: DATABASE_URL

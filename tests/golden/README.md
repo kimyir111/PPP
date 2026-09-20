@@ -29,8 +29,9 @@ python tests/golden_benchmark.py C:/private/ppp-golden/manifest.json
 ```
 
 MusicXML/MXL cases are compared in quarter-beat units. MIDI/JSON cases are
-compared in seconds using the existing note and pedal metrics. Do not mix the
-two timebases in one case. The report includes pitch/onset F1, offset F1,
+compared in seconds using the existing note and pedal metrics. If a case mixes
+quarter-beat reference notation with a seconds-based helper result, declare an
+`alignment` strategy as shown below. The report includes pitch/onset F1, offset F1,
 mean onset error, measure count and reference tempo; thresholds are optional
 and belong in the private manifest.
 
