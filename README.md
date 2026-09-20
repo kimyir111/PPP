@@ -257,6 +257,23 @@ tools/transcribe-venv/Scripts/python -m pip install beat-this
 # PPP leaves it off unless a compatible `pm2s` module is provisioned manually.
 ```
 
+For a CUDA machine, install the transcription dependencies from
+`requirements-transcription.txt` after choosing a PyTorch wheel that matches
+the installed driver. For the CUDA 12.8 wheels used by the development GPU:
+
+```sh
+tools/transcribe-venv/Scripts/python -m pip install --upgrade \
+  --index-url https://download.pytorch.org/whl/cu128 \
+  torch==2.11.0+cu128 torchaudio==2.11.0+cu128
+tools/transcribe-venv/Scripts/python -m pip install -r requirements-transcription.txt
+```
+
+The helper reports `amt: ensemble` and the worker records `device: cuda` when
+TransKun and the Kong piano model both run on the GPU. A public Render Free
+instance is deliberately not made to download these multi-gigabyte CUDA
+packages; point `PPP_HELPER_URL` at a GPU helper instead of silently treating
+the browser fallback as an equivalent transcription engine.
+
 A YouTube title or file name is searched against `catalog/` (public-domain / CC0 MusicXML only)
 before anyone transcribes. A confident hit becomes the practice score; the recording is aligned
 to it. A miss goes through AMT as before. The review screen can lock time signature, tempo and
