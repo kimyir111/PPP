@@ -14616,19 +14616,30 @@ class Component extends DCLogic {
   }
   applyArrangement() {
     const S = this.state;
-    if (S.arrangementBusy) return;
     const plan = {
       level: S.arrangementLevel || 'intermediate',
       style: S.arrangementStyle || 'balanced',
       source: 'local'
     };
+    /* Arrangement requests are latest-wins. A cold music21 helper can take
+       longer than the review controls remain visible; ignoring a click while
+       it is busy leaves the screen showing the previous style. Incrementing a
+       revision lets the newest request run and makes older responses harmless
+       when they eventually return. */
+    const revision = (this._arrangementRevision || 0) + 1;
+    this._arrangementRevision = revision;
     if (ScoreArranger.styles.indexOf(plan.style) > -1 && plan.style !== 'balanced')
-      return this.applyRichReviewArrangement(plan);
+      return this.applyRichReviewArrangement(plan, '', revision);
+    this.setState({ arrangementBusy: false });
     this.rewriteFromHeard({ arrangement: plan });
   }
-  async applyRichReviewArrangement(plan, arrangementStatus) {
+  async applyRichReviewArrangement(plan, arrangementStatus, requestRevision) {
     const heard = this._heard, S = this.state, A = window.PPPAudioScore;
     if (!heard || !heard.notes || !A) return;
+    const revision = requestRevision != null
+      ? requestRevision
+      : ((this._arrangementRevision || 0) + 1);
+    this._arrangementRevision = revision;
     this.setState({ arrangementBusy: true, arrangementStatus: tx('Planning harmony and connecting the chord voicings across the whole score…') });
     const parts = String(S.lockMetre || '4/4').split('/');
     const lock = {
@@ -14655,10 +14666,12 @@ class Component extends DCLogic {
         if (arranged.source && arranged.source.arrangement) arranged.source.arrangement.engine = 'browser-fallback';
       }
     } catch (e) {
+      if (revision !== this._arrangementRevision) return;
       this.say((e && e.message) || tx('The arrangement could not be created.'));
       this.setState({ arrangementBusy: false });
       return;
     }
+    if (revision !== this._arrangementRevision) return;
     arranged.composer = base.composer;
     const source = Object.assign({}, S.importSource || {}, {
       tempo: arranged.tempo, barStarts: built.stats.barStarts,
