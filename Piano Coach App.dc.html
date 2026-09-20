@@ -6842,21 +6842,40 @@ const Import = {
           clip.getChannelData(c).set(decoded.getChannelData(c).subarray(begin, begin + frames));
         if (onPct) onPct(Math.round((ci / Math.max(1, starts.length)) * 90));
         const seq = await amt.model.transcribeFromAudioBuffer(clip);
+        /* A fixed 55 ms gate erased real 32nd notes at the tempos this app
+           targets (162 BPM => about 46 ms per 32nd). Build a tiny onset index
+           so short events are rejected only when they are isolated transients;
+           a short note beside another onset is a fast run or a chord and must
+           reach the rhythm quantizer. */
+        const seqNotes = seq.notes || [];
+        const onsetCounts = {};
+        seqNotes.forEach(x => { const t = +x.startTime; if (isFinite(t)) { const k = Math.round(t * 1000); onsetCounts[k] = (onsetCounts[k] || 0) + 1; } });
+        const onsetTimes = seqNotes.map(x => +x.startTime).filter(isFinite).sort((a, b) => a - b);
+        const hasNearbyOnset = t => {
+          if ((onsetCounts[Math.round(t * 1000)] || 0) > 1) return true;
+          let lo = 0, hi = onsetTimes.length;
+          while (lo < hi) { const mid = (lo + hi) >> 1; if (onsetTimes[mid] < t) lo = mid + 1; else hi = mid; }
+          return (lo < onsetTimes.length && onsetTimes[lo] - t > 0.001 && onsetTimes[lo] - t <= 0.12) ||
+            (lo > 0 && t - onsetTimes[lo - 1] > 0.001 && t - onsetTimes[lo - 1] <= 0.12);
+        };
         const lo = ci ? overlap / 2 : 0;
         const hi = ci + 1 < starts.length ? sec - overlap / 2 : Infinity;
-        (seq.notes || []).forEach(n => {
+        seqNotes.forEach(n => {
           const localOn = +n.startTime || 0;
           if (localOn < lo || localOn >= hi) return;
           const rawOff = isFinite(+n.endTime) ? +n.endTime : localOn + 0.1;
-          /* An exact one-frame blip is the model reacting to a hammer/pedal
-             transient, not a playable key press. On the regression recording
-             every such 50 ms blip disagreed with the independent piano model. */
-          if (rawOff - localOn < 0.055) return;
+          const rawDuration = rawOff - localOn;
+          /* Keep a hard floor for one-frame noise, but do not throw away a
+             32nd/64th in a passage. The neighbouring-onset check also keeps
+             rolled chords whose individual model events are very short. */
+          const shortEvent = rawDuration < 0.055;
+          if (shortEvent && (rawDuration < 0.022 || !hasNearbyOnset(localOn))) return;
           const on = at + localOn;
-          const off = Math.min(duration, at + Math.max(localOn + 0.05, rawOff));
+          const minRelease = 0.022;
+          const off = Math.min(duration, at + Math.max(localOn + minRelease, rawOff));
           const midi = n.pitch | 0;
           if (midi < 21 || midi > 108 || on >= duration) return;
-          notes.push({ on: on, off: Math.max(on + 0.05, off), midi: midi,
+          notes.push({ on: on, off: Math.max(on + minRelease, off), midi: midi,
             vel: Math.max(8, Math.min(127, n.velocity == null ? 80 : n.velocity | 0)) });
         });
       }
