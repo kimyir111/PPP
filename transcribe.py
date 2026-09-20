@@ -205,12 +205,14 @@ def _normalise_note(note):
     }
 
 
-def _fast_windows(notes, max_gap=0.18):
-    """Return spans containing at least four distinct fast attacks.
+def _fast_windows(notes, max_gap=0.18, min_attacks=3):
+    """Return spans containing a short, dense run of attacks.
 
     A second model's isolated note is usually an overtone. A coherent stream
     is different evidence: it is commonly an ornament or run that the primary
-    model thinned out.
+    model thinned out. Three attacks are enough to establish that pattern;
+    requiring four made short 16th/32nd-note figures disappear at phrase
+    boundaries.
     """
     slots = []
     for note in sorted(notes or [], key=lambda n: float(n.get('on', 0))):
@@ -223,7 +225,7 @@ def _fast_windows(notes, max_gap=0.18):
         gap = slots[i] - slots[i - 1] if i < len(slots) else float('inf')
         if 0.015 <= gap <= max_gap:
             continue
-        if i - start >= 4:
+        if i - start >= min_attacks:
             windows.append((slots[start] - 0.02, slots[i - 1] + 0.02))
         start = i
     return windows
