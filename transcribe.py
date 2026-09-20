@@ -258,8 +258,9 @@ def consensus(results, onset_tolerance=0.09):
     models correct its timing and jointly recover notes it missed.
 
     A plain union adds every model's overtones; a strict intersection deletes
-    real ornaments. This rule never adds a secondary-only note unless at least
-    two independent secondary models agree on pitch and onset.
+    real ornaments. A secondary-only note normally needs independent model
+    agreement; a longer fast run may also be recovered when primary notes
+    bracket the run, which is stronger evidence than an isolated overtone.
     """
     if not results:
         raise RuntimeError('no transcription model produced a result')
