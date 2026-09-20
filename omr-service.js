@@ -865,18 +865,23 @@ const toolsReady = (async () => {
 })();
 
 function transcriberStatus() {
-  const missing = [];
-  if (!TOOL.ffmpeg) missing.push('ffmpeg');
-  if (!PYTHON) missing.push('the Python environment in tools/transcribe-venv');
+  /* Audio files and YouTube links do not have the same prerequisites.
+     yt-dlp is only a downloader for the latter; making it part of `ok`
+     silently disabled the local piano AMT for valid file uploads on machines
+     that had ffmpeg + the models but no YouTube tooling. */
+  const coreMissing = [];
+  if (!TOOL.ffmpeg) coreMissing.push('ffmpeg');
+  if (!PYTHON) coreMissing.push('the Python environment in tools/transcribe-venv');
   const engines = [];
   if (TOOL.transkun) engines.push('transkun');
   if (TOOL.kong && CHECKPOINT) engines.push('kong');
   if (TOOL.aria && ARIA_CHECKPOINT) engines.push('aria-amt');
   const amt = engines.length > 1 ? 'ensemble' : (engines[0] || null);
-  if (!amt) missing.push('TransKun, Aria-AMT, or the Kong piano model checkpoint in tools/piano-transcription');
+  if (!amt) coreMissing.push('TransKun, Aria-AMT, or the Kong piano model checkpoint in tools/piano-transcription');
+  const optionalMissing = TOOL.ytdlp ? [] : ['yt-dlp (for YouTube links only)'];
   return {
-    ok: !missing.length,
-    youtube: !missing.length && !!TOOL.ytdlp,
+    ok: !coreMissing.length,
+    youtube: !coreMissing.length && !!TOOL.ytdlp,
     amt: amt,
     engines: engines,
     beatThis: !!TOOL.beatThis,
@@ -884,7 +889,9 @@ function transcriberStatus() {
     transkun: !!TOOL.transkun,
     kong: !!(TOOL.kong && CHECKPOINT),
     aria: !!(TOOL.aria && ARIA_CHECKPOINT),
-    missing: missing.concat(TOOL.ytdlp ? [] : ['yt-dlp (for YouTube links only)'])
+    missing: coreMissing.concat(optionalMissing),
+    coreMissing: coreMissing,
+    optionalMissing: optionalMissing
   };
 }
 
