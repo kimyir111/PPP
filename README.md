@@ -274,6 +274,13 @@ instance is deliberately not made to download these multi-gigabyte CUDA
 packages; point `PPP_HELPER_URL` at a GPU helper instead of silently treating
 the browser fallback as an equivalent transcription engine.
 
+Beat This now reports an inter-beat stability score with each transcription.
+When that score is low (for example, a dense passage made the tracker jump to
+half-time or subdivisions), PPP discards that beat grid and rebuilds the grid
+from the piano attacks. The review records `beatSource: onset` and
+`beatFallback: onset` so a recovered rhythm is visible rather than presented
+as a confident audio-beat result.
+
 A YouTube title or file name is searched against `catalog/` (public-domain / CC0 MusicXML only)
 before anyone transcribes. A confident hit becomes the practice score; the recording is aligned
 to it. A miss goes through AMT as before. The review screen can lock time signature, tempo and

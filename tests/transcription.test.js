@@ -308,6 +308,11 @@ const helperHealth = () => new Promise(resolve => {
     inj.stats.beatsPerBar === 3 && inj.stats.beatSource === 'audio' && Math.abs(inj.stats.barStarts[0] - 0.4) < 0.05,
     inj.stats.beatsPerBar + '/' + inj.stats.beatType + ' source ' + inj.stats.beatSource + ' bar0 ' + inj.stats.barStarts[0]);
 
+  const unstableAudio = A.toMusicXml({ notes: notes4, beats: beats, downbeats: downs, beatConfidence: 0.18 });
+  ok('an unstable audio grid falls back to the note-onset grid',
+    unstableAudio.stats.beatSource === 'onset' && unstableAudio.stats.beatFallback === 'onset',
+    unstableAudio.stats.beatSource + ' fallback ' + unstableAudio.stats.beatFallback);
+
   /* A downbeat detector may miss the opening bar and report the next one a
      few milliseconds late. That still establishes bar phase only: it must
      not shift the score by one 1/24-quarter tick or invent a pickup bar. */

@@ -1239,6 +1239,8 @@
         tempoAlias: extra.tempoAlias || null,
         tempoCandidates: extra.tempoCandidates || [],
         beatRepairs: extra.beatRepairs || 0,
+        beatConfidence: extra.beatConfidence == null ? null : +extra.beatConfidence,
+        beatFallback: extra.beatFallback || null,
         arrangement: extra.arrangement || null,
         originalNotes: extra.originalNotes || notes.length,
         perBar: perBar.map((p, i) => ({
@@ -1324,16 +1326,22 @@
 
     const lock = opts.lock || null;
     let beats, beatSource = 'onset', beatRepairs = 0;
+    const suppliedBeatConfidence = input.beatConfidence == null ? null : +input.beatConfidence;
+    const audioGridUsable = input.beats && input.beats.length >= 2 &&
+      (suppliedBeatConfidence == null || !isFinite(suppliedBeatConfidence) || suppliedBeatConfidence >= 0.42);
+    let beatFallback = null;
 
     if (lock && (lock.bpm || lock.firstDownbeat != null) && (lock.beats || lock.beatsPerBar)) {
       beats = beatsFromLock(lock, clustered);
       beatSource = 'lock';
-    } else if (input.beats && input.beats.length >= 2) {
+    } else if (audioGridUsable) {
       beats = stabilizeBeats(input.beats);
       beatRepairs = beats._repairs || 0;
       beats = extendBeats(alignStart(beats, clustered[0].on), clustered[0].on, last, onsets);
       beatSource = 'audio';
     } else {
+      if (input.beats && input.beats.length >= 2 && suppliedBeatConfidence != null &&
+          isFinite(suppliedBeatConfidence) && suppliedBeatConfidence < 0.42) beatFallback = 'onset';
       let period = estimatePeriod(env);
       beats = trackBeats(env, period, localPeriods(env, period));
       if (beats.length < 4) {
@@ -1522,6 +1530,8 @@
       tempoAlias: tempoAlias,
       tempoCandidates: tempoCandidates,
       beatRepairs: beatRepairs,
+      beatConfidence: suppliedBeatConfidence,
+      beatFallback: beatFallback,
       arrangement: arrangementPlan,
       originalNotes: timingNotes.length
     });

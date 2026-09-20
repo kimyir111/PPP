@@ -7090,6 +7090,7 @@ const Import = {
       built = window.PPPAudioScore.toMusicXml({
         notes: heard.notes, pedals: heard.pedals,
         beats: heard.beats, downbeats: heard.downbeats,
+        beatConfidence: heard.beatConfidence,
         grid: heard.grid, title: title
       }, { title: title, easy: what.mode === 'arrange' });
     } catch (e) {
@@ -7127,6 +7128,8 @@ const Import = {
       transcriptionVersion: TRANSCRIPTION_VERSION,
       amt: heard.engine || null,
       beatSource: built.stats.beatSource,
+      beatConfidence: built.stats.beatConfidence,
+      beatFallback: built.stats.beatFallback || null,
       quantizer: built.stats.quantizer,
       beatRepairs: built.stats.beatRepairs || 0,
       taskMode: what.mode === 'arrange' ? 'piano-arrangement' : 'faithful-transcription',
@@ -7294,6 +7297,8 @@ const Import = {
       flag(null, 'model-disagreement', tx('{{n}} possible notes were rejected because the piano models did not agree.', { n: ensemble.uncertain }));
     if (crowded) flag(null, 'dense', tx('The model heard an unusually dense stream of notes ({{n}} per second). Some may be pedal or overtone echoes.', { n: Math.round(density) }));
     const rhythmLocked = stats.beatSource === 'lock';
+    if (stats.beatFallback === 'onset')
+      flag(null, 'beat-fallback', tx('The audio beat tracker was unstable, so PPP rebuilt the rhythm grid from piano attacks.'));
     const loose = !rhythmLocked && stats.tempoVariation > 0.12;
     if (loose) flag(null, 'tempo', tx('The tempo moves a lot in this performance, so some barlines are PPP’s best guess.'));
     const rough = !rhythmLocked && stats.gridError > 0.1;

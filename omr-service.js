@@ -1176,6 +1176,9 @@ async function runJob(job, source) {
       result.beats = beats.beats;
       result.downbeats = beats.downbeats;
       result.beatEngine = beats.engine;
+      result.beatConfidence = beats.confidence;
+      result.beatIbiCv = beats.ibiCv;
+      result.beatIbiMedian = beats.ibiMedian;
     }
     const notesPath = path.join(job.dir, 'notes.json');
     try { fs.writeFileSync(notesPath, JSON.stringify(result)); } catch (e) {}
