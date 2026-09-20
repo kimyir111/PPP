@@ -85,8 +85,10 @@ const ok = (name, cond, detail) => {
     return { made, unchanged: before === JSON.stringify(window.PPP.packScore(original)) };
   });
   ok('all requested style engines create playable notation',
-    arrangerUnit.made.every(x => x.notes > 0) && arrangerUnit.made.find(x => x.style === 'waltz').time === '3/4',
+    arrangerUnit.made.every(x => x.notes > 0) && arrangerUnit.made.every(x => x.time === arrangerUnit.made[0].time),
     JSON.stringify(arrangerUnit.made));
+  ok('style generation preserves the written metre instead of forcing waltz to 3/4',
+    arrangerUnit.made.find(x => x.style === 'waltz').time === '4/4', arrangerUnit.made.find(x => x.style === 'waltz').time);
   ok('style generation never mutates the source score', arrangerUnit.unchanged);
   await page.evaluate(id => document.querySelector('[data-arrange-song="' + id + '"]').click(), prelude.id);
   await sleep(250);

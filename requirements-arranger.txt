@@ -1,0 +1,3 @@
+# Optional theory backend used by arrange_score.py for key and chord analysis.
+# The arranger has a deterministic standard-library fallback when unavailable.
+music21==10.5.0

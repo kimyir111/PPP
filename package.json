@@ -8,6 +8,7 @@
     "serve": "node server.js",
     "test": "node tests/import.test.js && node tests/memory.test.js && node tests/learning.test.js && node tests/midi.test.js && node tests/playback-scheduler.test.js && node tests/musicxml.test.js && node tests/falling-notes.test.js && node tests/interactions.test.js && node tests/import-and-persistence.test.js && node tests/coach.test.js && node tests/i18n-and-auth.test.js && node tests/follow.test.js && node tests/layout.test.js && node tests/alignment.test.js && node tests/engraving.test.js && node tests/pdf-layer.test.js && node tests/library.test.js && node tests/transcription.test.js && node tests/score-search.test.js && node tests/fingering.test.js && node tests/video.test.js && node tests/auth-ui.test.js && node tests/share.test.js && node tests/lessons.test.js && node tests/hymns-share.test.js && node tests/course.test.js",
     "test:transcription-core": "python tests/transcription_ensemble_test.py && python tests/evaluation_test.py",
+    "test:arranger": "python tests/arranger_test.py",
     "omr": "node omr-service.js",
     "fixtures": "node tests/fixtures/make-fixtures.js"
   },

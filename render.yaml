@@ -4,14 +4,18 @@ services:
     runtime: node
     plan: free
     region: singapore
-    buildCommand: npm install --omit=dev && curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o tools/yt-dlp && chmod +x tools/yt-dlp
-    startCommand: node server.js
+    buildCommand: npm install --omit=dev && python3 -m venv .arranger-venv && .arranger-venv/bin/pip install --disable-pip-version-check -r requirements-arranger.txt && mkdir -p tools && curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o tools/yt-dlp && chmod +x tools/yt-dlp
+    startCommand: sh -c 'node omr-service.js --port 8788 >/tmp/ppp-omr.log 2>&1 & exec node server.js'
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
       - key: COOKIE_SECURE
         value: "true"
+      - key: PPP_HELPER
+        value: "1"
+      - key: PPP_TRANSCRIBE_PYTHON
+        value: .arranger-venv/bin/python
       - key: SESSION_SECRET
         generateValue: true
       - key: DATABASE_URL

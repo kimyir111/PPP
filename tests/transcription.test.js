@@ -495,6 +495,7 @@ const helperHealth = () => new Promise(resolve => {
     });
     const shaky = PPP.Import.validateTranscription(sc, Object.assign({}, stats, { tempoVariation: 0.3, gridError: 0.2 }), { duration: 40 });
     const fallback = PPP.Import.validateTranscription(sc, stats, { duration: 40, engine: 'basic-pitch' });
+    const browserPiano = PPP.Import.validateTranscription(sc, stats, { duration: 40, engine: 'onsets-and-frames' });
     const dense = PPP.Import.validateTranscription(sc, Object.assign({}, stats, { notes: 900 }), { duration: 40, engine: 'basic-pitch' });
     const noisyBars = Object.assign({}, stats, {
       beatSource: 'audio', barStarts: [0, 1, 2, 3],
@@ -522,6 +523,7 @@ const helperHealth = () => new Promise(resolve => {
       singleKind: rep.confidenceKind, singleKinds: rep.issues.map(i => i.kind).join(','),
       ensembleLevel: ensemble.level, ensembleKind: ensemble.confidenceKind, ensembleAgreement: ensemble.modelAgreement,
       fallbackLevel: fallback.level, fallbackConf: fallback.confidence, fallbackKinds: fallback.issues.map(i => i.kind).join(','),
+      browserPianoLevel: browserPiano.level, browserPianoConf: browserPiano.confidence, browserPianoKinds: browserPiano.issues.map(i => i.kind).join(','),
       denseLevel: dense.level, denseKinds: dense.issues.map(i => i.kind).join(','),
       reviewedBars: barReview.suspectMeasures.join(','), lockedBars: lockedReview.suspectMeasures.join(','),
       migratedVersion: migrated.source.transcriptionVersion,
@@ -549,6 +551,9 @@ const helperHealth = () => new Promise(resolve => {
   ok('the general fallback can never masquerade as a high-confidence piano transcription',
     back.fallbackLevel !== 'good' && back.fallbackConf <= 0.62 && /fallback/.test(back.fallbackKinds),
     back.fallbackLevel + ' ' + Math.round(back.fallbackConf * 100) + '%: ' + back.fallbackKinds);
+  ok('a browser-only Onsets & Frames draft is also never presented as a trusted local transcription',
+    back.browserPianoLevel !== 'good' && back.browserPianoConf <= 0.62 && /fallback/.test(back.browserPianoKinds),
+    back.browserPianoLevel + ' ' + Math.round(back.browserPianoConf * 100) + '%: ' + back.browserPianoKinds);
   ok('an implausibly dense fallback is called out instead of reporting zero checks',
     back.denseLevel !== 'good' && /dense/.test(back.denseKinds), back.denseLevel + ': ' + back.denseKinds);
   ok('performance timing alone never paints notation measures red',

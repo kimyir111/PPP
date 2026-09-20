@@ -241,14 +241,16 @@ async function importFile(page, file, waitMs) {
     try {
       const file = new File([new Uint8Array([1, 2, 3])], 'original-piano.wav', { type: 'audio/wav' });
       const got = await PPP.Import.transcribeHere({ file: file });
-      out = { pianoCalls: pianoCalls, basicCalls: basicCalls, engine: got.heard && got.heard.engine };
+      out = { pianoCalls: pianoCalls, basicCalls: basicCalls, engine: got.heard && got.heard.engine,
+        tier: got.heard && got.heard.qualityTier };
     } catch (e) { out = { pianoCalls: pianoCalls, basicCalls: basicCalls, error: e.message }; }
     PPP.Import.pianoAmtNotes = oldPiano; PPP.Import.amtNotes = oldBasic;
     return out;
   });
   ok('the hosted browser uses the piano-specific model before Basic Pitch',
     !browserPianoPreferred.error && browserPianoPreferred.pianoCalls === 1
-      && browserPianoPreferred.basicCalls === 0 && browserPianoPreferred.engine === 'onsets-and-frames',
+      && browserPianoPreferred.basicCalls === 0 && browserPianoPreferred.engine === 'onsets-and-frames'
+      && browserPianoPreferred.tier === 'browser-fallback',
     JSON.stringify(browserPianoPreferred));
 
   const browserBasicFallback = await page.evaluate(async () => {

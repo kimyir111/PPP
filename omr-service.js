@@ -16,7 +16,8 @@
 
      node omr-service.js [--port 8788] [--audiveris <path to Audiveris.exe>]
 
-   Also hosts the AI coach (/coach) and safe arrangement planning (/arrange),
+   Also hosts the AI coach (/coach), safe arrangement planning (/arrange), and
+   phrase-aware notation arrangement (/arrange-score),
    so the Anthropic key stays server-side,
    and audio transcription (/transcribe): a YouTube link, an MP3 or an MP4 in,
    the notes a piano model hears out. Notation is still PPP's job, in the
@@ -641,6 +642,94 @@ async function handleArrange(req, res) {
   }
 }
 
+/* The LLM endpoint above chooses a safe style profile; it does not write
+   music. /arrange-score is the notation engine. It plans harmony across the
+   whole piece, then voice-leads and textures it in Python. Keeping the two
+   jobs separate makes ordinary (non-AI) arranging just as musical and keeps
+   model prose out of the score data. */
+function runScoreArranger(payload) {
+  return new Promise((resolve, reject) => {
+    if (!PYTHON || !fs.existsSync(ARRANGE_PY)) {
+      const e = new Error('The harmonic arrangement engine is not installed.');
+      e.code = 'engine-missing'; reject(e); return;
+    }
+    const child = spawn(PYTHON, [ARRANGE_PY], {
+      cwd: __dirname, windowsHide: true,
+      env: Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' })
+    });
+    let stdout = '', stderr = '', settled = false;
+    const finish = (err, value) => {
+      if (settled) return;
+      settled = true; clearTimeout(timer);
+      if (err) reject(err); else resolve(value);
+    };
+    const timer = setTimeout(() => {
+      try { child.kill(); } catch (e) {}
+      const err = new Error('The harmonic arrangement took too long.');
+      err.code = 'timeout'; finish(err);
+    }, 180000);
+    child.stdout.on('data', chunk => {
+      stdout += chunk.toString('utf8');
+      if (Buffer.byteLength(stdout) > 24 * 1024 * 1024) {
+        try { child.kill(); } catch (e) {}
+        const err = new Error('The arranged score is too large.');
+        err.code = 'too-large'; finish(err);
+      }
+    });
+    child.stderr.on('data', chunk => { stderr = (stderr + chunk.toString('utf8')).slice(-4000); });
+    child.on('error', err => { err.code = err.code || 'engine-error'; finish(err); });
+    child.on('close', code => {
+      if (settled) return;
+      let body;
+      try { body = JSON.parse(stdout); } catch (e) {
+        const err = new Error('The harmonic arranger returned invalid data' + (stderr ? ': ' + stderr.trim() : '.'));
+        err.code = 'engine-error'; finish(err); return;
+      }
+      if (code !== 0 || !body || !body.ok || !Array.isArray(body.notes)) {
+        const err = new Error(body && body.error ? body.error : 'The harmonic arranger failed.');
+        err.code = 'arrangement-failed'; finish(err); return;
+      }
+      finish(null, body);
+    });
+    child.stdin.on('error', err => { err.code = err.code || 'engine-error'; finish(err); });
+    child.stdin.end(JSON.stringify(payload));
+  });
+}
+
+async function handleArrangeScore(req, res) {
+  if (!fromLocalPage(req))
+    return send(res, 403, { ok: false, code: 'forbidden', error: 'Score arrangement is only offered to PPP pages on this machine.' });
+  let payload;
+  try {
+    payload = JSON.parse((await readBody(req, 16 * 1024 * 1024)).toString('utf8'));
+  } catch (e) {
+    return send(res, /exceeds/.test(e.message) ? 413 : 400, { ok: false, code: 'bad-request', error: redact(e.message) });
+  }
+  const score = payload && payload.score;
+  const arrangement = payload && payload.arrangement;
+  const levels = ['original', 'beginner', 'intermediate', 'advanced'];
+  const styles = ['balanced', 'jazz', 'ballad', 'pop', 'waltz', 'bossa', 'cinematic'];
+  if (!score || !Array.isArray(score.measures) || !Array.isArray(score.notes) ||
+      !arrangement || levels.indexOf(arrangement.level) < 0 || styles.indexOf(arrangement.style) < 0) {
+    return send(res, 400, { ok: false, code: 'bad-score', error: 'A score and a supported arrangement level/style are required.' });
+  }
+  if (score.measures.length > 2000 || score.notes.length > 50000)
+    return send(res, 413, { ok: false, code: 'too-large', error: 'That score is too large to arrange safely.' });
+  const t0 = Date.now();
+  try {
+    const out = await runScoreArranger({ score: score, arrangement: arrangement });
+    return send(res, 200, {
+      ok: true, notes: out.notes, analysis: out.analysis || {},
+      provider: out.analysis && out.analysis.engine || 'harmonic-dp', ms: Date.now() - t0
+    });
+  } catch (err) {
+    const code = err && err.code || 'engine-error';
+    return send(res, code === 'engine-missing' ? 503 : code === 'too-large' ? 413 : 422, {
+      ok: false, code: code, error: redact(err && err.message || 'The harmonic arranger failed.')
+    });
+  }
+}
+
 async function handleCoach(req, res) {
   const status = await coachStatus();
   if (!status) return send(res, 503, { ok: false, code: 'coach-unavailable', error: coachOffReason() });
@@ -710,6 +799,7 @@ const TOOLS_DIR = path.join(__dirname, 'tools');
 const TRANSCRIBE_PY = path.join(__dirname, 'transcribe.py');
 const BEAT_PY = path.join(__dirname, 'beat_track.py');
 const PM2S_PY = path.join(__dirname, 'pm2s_quant.py');
+const ARRANGE_PY = path.join(__dirname, 'arrange_score.py');
 const CATALOG_DIR = path.join(__dirname, 'catalog');
 const PYTHON = firstExisting([
   process.env.PPP_TRANSCRIBE_PYTHON,
@@ -750,7 +840,7 @@ function probe(cmd, argv) {
     execFile(cmd, argv, { timeout: 15000, windowsHide: true }, err => resolve(!err));
   });
 }
-const TOOL = { ffmpeg: null, ytdlp: null, transkun: false, kong: false, aria: false, beatThis: false, pm2s: false };
+const TOOL = { ffmpeg: null, ytdlp: null, transkun: false, kong: false, aria: false, beatThis: false, pm2s: false, music21: false };
 function pyHas(mod) {
   if (!PYTHON) return Promise.resolve(false);
   return new Promise(resolve => {
@@ -770,6 +860,7 @@ const toolsReady = (async () => {
     TOOL.aria = !!ARIA_CHECKPOINT && await pyHas('amt');
     TOOL.beatThis = await pyHas('beat_this');
     TOOL.pm2s = await pyHas('pm2s');
+    TOOL.music21 = await pyHas('music21');
   }
 })();
 
@@ -1206,7 +1297,7 @@ function handleJob(req, res, id, sub) {
 
 const server = http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') {
-    if (/^\/(transcribe|pdf-vector)/.test(req.url || '') && !fromLocalPage(req)) { res.writeHead(403); return res.end(); }
+    if (/^\/(transcribe|pdf-vector|arrange-score)/.test(req.url || '') && !fromLocalPage(req)) { res.writeHead(403); return res.end(); }
     res.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
@@ -1226,6 +1317,8 @@ const server = http.createServer(async (req, res) => {
       coach: !!coach,
       coachProvider: coach ? coach.name : null,
       coachModel: coach ? coach.model : null,
+      arranger: !!(PYTHON && fs.existsSync(ARRANGE_PY)),
+      arrangerEngine: TOOL.music21 ? 'music21-hybrid' : 'harmonic-dp',
       transcriber: tr.ok, youtube: tr.youtube, transcriberMissing: tr.missing,
       amt: tr.amt || null, amtEngines: tr.engines || [],
       transkun: !!tr.transkun, kong: !!tr.kong, aria: !!tr.aria,
@@ -1238,6 +1331,7 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'POST' && req.url === '/coach') return handleCoach(req, res);
   if (req.method === 'POST' && req.url === '/arrange') return handleArrange(req, res);
+  if (req.method === 'POST' && req.url === '/arrange-score') return handleArrangeScore(req, res);
 
   if (req.method === 'POST' && req.url === '/pdf-vector') {
     if (!fromLocalPage(req))

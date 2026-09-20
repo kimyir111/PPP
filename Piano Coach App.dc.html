@@ -6099,6 +6099,21 @@ const Import = {
       .catch(() => ({ ok: false, unreachable: true }));
   },
 
+  /* `npm start` starts the local helper in parallel with the page. On a fast
+     click immediately after launch, the old one-shot health probe could race
+     that startup and silently choose the browser model. Wait a few seconds
+     only for a local, unreachable helper; a remote/no-helper deployment still
+     proceeds immediately with its clearly-labelled browser draft. */
+  async readyPianoHelper() {
+    let health = await Import.health();
+    const mayBeStarting = () => LOCAL_HELPER && !health.ok && !!health.unreachable && !health.remote;
+    for (let attempt = 0; attempt < 10 && mayBeStarting(); attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 350));
+      health = await Import.health();
+    }
+    return health;
+  },
+
   /* ---- PDF → page images, in the browser ---- */
   async rasterisePdf(file, onStage, dpi) {
     const pdfjsLib = await loadPdfJs();
@@ -6805,7 +6820,11 @@ const Import = {
     }
     notes.sort((a, b) => a.on - b.on || a.midi - b.midi);
     if (onPct) onPct(100);
+    /* This is useful when PPP is hosted or the local helper is still absent,
+       but it is one browser model, not the local piano-model ensemble. Never
+       allow the review screen to present it as cross-checked transcription. */
     return { notes: notes, duration: duration, engine: 'onsets-and-frames',
+      qualityTier: 'browser-fallback', fallbackFrom: 'local-piano-ensemble',
       truncated: decoded.duration > maxSec };
   },
 
@@ -6928,6 +6947,10 @@ const Import = {
     if (what.mode !== 'arrange') {
       try {
         heard = await Import.pianoAmtNotes(buf, p => stage('transcribe', { pct: p }));
+        if (heard && heard.engine === 'onsets-and-frames') {
+          heard.qualityTier = heard.qualityTier || 'browser-fallback';
+          heard.fallbackFrom = heard.fallbackFrom || 'local-piano-ensemble';
+        }
         if (!heard || (heard.notes || []).length < 4) {
           pianoErr = importError('no-notes', tx('No piano notes were heard in this recording.'));
           heard = null;
@@ -7133,7 +7156,7 @@ const Import = {
        pedal events, and optional audio beat/PM2S data. Browser Basic Pitch is
        the portability fallback for hosted pages and tablets. Trying it first
        made any four noisy browser notes bypass the better local engine. */
-    const health = await Import.health();
+    const health = await Import.readyPianoHelper();
     let helperErr = null;
     /* The installed engines are piano AMT models. They are the right path for
        faithful solo-piano transcription, but not for pretending that a mixed
@@ -7182,7 +7205,9 @@ const Import = {
     const sparse = stats.notes < 24 || (seconds > 0 && stats.notes / seconds < 0.3);
     if (sparse) flag(null, 'sparse', tx('Very few piano notes were heard. Is the piano clear in this recording?'));
     const density = seconds > 0 ? stats.notes / seconds : 0;
-    const fallback = heard && heard.engine === 'basic-pitch';
+    const browserFallback = heard && (heard.qualityTier === 'browser-fallback' ||
+      heard.engine === 'onsets-and-frames' || heard.engine === 'basic-pitch');
+    const fallback = browserFallback;
     const ensemble = heard && heard.ensemble;
     const modelCount = ensemble && ensemble.models ? ensemble.models.length : 1;
     const modelAgreement = ensemble && isFinite(+ensemble.agreement) ? clamp(+ensemble.agreement, 0, 1) : null;
@@ -8783,9 +8808,10 @@ const ScoreArranger = (() => {
     });
   }
   function styled(score, plan, measures) {
-    const scale = {};
-    if (plan.style === 'waltz') score.measures.forEach(m => { scale[m.number] = 3 / Math.max(0.25, m.lenQ); });
-    const out = melody(score, plan.level, plan.style === 'waltz' ? scale : null);
+    /* A texture choice must never rewrite the source metre. The service-side
+       arranger handles triple-pulse voicing while retaining every bar length;
+       this local fallback follows the same invariant. */
+    const out = melody(score, plan.level, null);
     measures.forEach(m => {
       const len = m.lenQ, h = harmony(score, m), root = h.root;
       if (plan.style === 'jazz') {
@@ -8857,9 +8883,6 @@ const ScoreArranger = (() => {
     const plan = norm(opts), base = clone(score);
     delete base._byNumber; delete base.lengthQ;
     const measures = base.measures || [];
-    if (plan.style === 'waltz') measures.forEach(m => {
-      m.time = { beats: 3, beatType: 4 }; m.lenQ = 3;
-    });
     let notes;
     if (plan.style === 'balanced') {
       notes = [];
@@ -8878,7 +8901,59 @@ const ScoreArranger = (() => {
     });
     return Score.finalize(base);
   }
-  return { levels: Object.keys(LEVEL_CAP), styles: STYLES.slice(), norm, profile, recommend, arrange };
+  function wireScore(score) {
+    return {
+      title: score.title || '', tempo: score.tempo || 80, staves: score.staves || 2,
+      measures: (score.measures || []).map(m => {
+        const x = clone(m); delete x.index; delete x.startQ; return x;
+      }),
+      notes: sounding(score).map(n => {
+        const x = cleanCopied(n); delete x.abs; return x;
+      }),
+      sections: clone(score.sections || [])
+    };
+  }
+  function fromEngine(score, body, opts) {
+    if (!body || !Array.isArray(body.notes) || !body.notes.length) throw new Error(tx('The arrangement engine returned no playable notes.'));
+    const plan = norm(opts), base = clone(score);
+    delete base._byNumber; delete base.lengthQ;
+    base.notes = finalizeNotes(body.notes);
+    base.staves = 2;
+    base.title = opts && opts.title ? opts.title : score.title;
+    base.composer = score.composer || '';
+    base.id = 'arrangement:' + Date.now() + ':' + Math.random().toString(36).slice(2, 7);
+    base.sections = null; base.seeds = null;
+    const oldSource = score.source && typeof score.source === 'object' ? score.source : { kind: score.source || 'score' };
+    base.source = Object.assign({}, oldSource, {
+      kind: 'arrangement', parentTitle: score.title,
+      arrangement: {
+        level: plan.level, style: plan.style, source: plan.source,
+        engine: body.provider || (body.analysis && body.analysis.engine) || 'harmonic-dp',
+        analysis: body.analysis || null
+      }
+    });
+    return Score.finalize(base);
+  }
+  async function arrangeWithService(score, opts) {
+    const plan = norm(opts), ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = ctl ? setTimeout(() => ctl.abort(), 180000) : null;
+    let response, body;
+    try {
+      response = await fetch(COACH_URL + '/arrange-score', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        signal: ctl ? ctl.signal : undefined,
+        body: JSON.stringify({ score: wireScore(score), arrangement: { level: plan.level, style: plan.style } })
+      });
+      body = await response.json().catch(() => null);
+    } finally { if (timer) clearTimeout(timer); }
+    if (!response || !response.ok || !(body && body.ok))
+      throw new Error(body && body.error || tx('The harmonic arrangement engine is unavailable.'));
+    return fromEngine(score, body, Object.assign({}, opts, plan));
+  }
+  return {
+    levels: Object.keys(LEVEL_CAP), styles: STYLES.slice(), norm, profile, recommend,
+    arrange, arrangeWithService, fromEngine, wireScore
+  };
 })();
 
 /* The music layer is deliberately reachable from outside the component: it is
@@ -14448,9 +14523,10 @@ class Component extends DCLogic {
       return this.applyRichReviewArrangement(plan);
     this.rewriteFromHeard({ arrangement: plan });
   }
-  applyRichReviewArrangement(plan, arrangementStatus) {
+  async applyRichReviewArrangement(plan, arrangementStatus) {
     const heard = this._heard, S = this.state, A = window.PPPAudioScore;
     if (!heard || !heard.notes || !A) return;
+    this.setState({ arrangementBusy: true, arrangementStatus: tx('Planning harmony and connecting the chord voicings across the whole score…') });
     const parts = String(S.lockMetre || '4/4').split('/');
     const lock = {
       beats: parseInt(parts[0], 10) || 4, beatType: parseInt(parts[1], 10) || 4,
@@ -14465,9 +14541,16 @@ class Component extends DCLogic {
       }, { title: S.score.title, lock: lock });
       base = parseMusicXML(built.xml, S.score.title);
       base.composer = S.score.composer || '';
-      arranged = ScoreArranger.arrange(base, {
-        level: plan.level, style: plan.style, source: plan.source, title: S.score.title
-      });
+      try {
+        arranged = await ScoreArranger.arrangeWithService(base, {
+          level: plan.level, style: plan.style, source: plan.source, title: S.score.title
+        });
+      } catch (engineError) {
+        arranged = ScoreArranger.arrange(base, {
+          level: plan.level, style: plan.style, source: plan.source, title: S.score.title
+        });
+        if (arranged.source && arranged.source.arrangement) arranged.source.arrangement.engine = 'browser-fallback';
+      }
     } catch (e) {
       this.say((e && e.message) || tx('The arrangement could not be created.'));
       this.setState({ arrangementBusy: false });
@@ -14476,7 +14559,9 @@ class Component extends DCLogic {
     arranged.composer = base.composer;
     const source = Object.assign({}, S.importSource || {}, {
       tempo: arranged.tempo, barStarts: built.stats.barStarts,
-      arrangement: { level: plan.level, style: plan.style, source: plan.source || 'local' },
+      arrangement: Object.assign({}, arranged.source && arranged.source.arrangement || {}, {
+        level: plan.level, style: plan.style, source: plan.source || 'local'
+      }),
       arrangementOriginalNotes: built.stats.notes,
       arrangementNotes: arranged.notes.filter(n => !n.rest).length
     });
@@ -15076,7 +15161,7 @@ class Component extends DCLogic {
     const packed = packScore(raw);
     return Score.finalize(unpackScore(JSON.parse(JSON.stringify(packed))));
   }
-  saveSongArrangement(plan, provider) {
+  async saveSongArrangement(plan, provider) {
     const d = this.state.songArrange;
     if (!d) return false;
     const sourceScore = this.scoreForArrangement(d.songId);
@@ -15087,17 +15172,26 @@ class Component extends DCLogic {
     plan = ScoreArranger.norm(Object.assign({}, plan || {}, { source: provider ? 'ai' : (plan && plan.source) }));
     const title = (d.autoTitle ? this.arrangementCopyTitle(d.songTitle, plan.style) : String(d.copyTitle || '').trim())
       || this.arrangementCopyTitle(d.songTitle, plan.style);
-    let arranged;
+    let arranged, usedFallback = false;
+    this.patchSongArranger({ busy: true, status: tx('Planning harmony and connecting the chord voicings across the whole score…') });
     try {
-      arranged = ScoreArranger.arrange(sourceScore, Object.assign({}, plan, { title: title }));
+      arranged = await ScoreArranger.arrangeWithService(sourceScore, Object.assign({}, plan, { title: title }));
     } catch (e) {
-      this.patchSongArranger({ busy: false, status: (e && e.message) || tx('The arrangement could not be created.') });
-      return false;
+      /* Static/offline builds still get a playable result. Mark it explicitly;
+         a running local helper always uses the phrase-aware engine above. */
+      try {
+        arranged = ScoreArranger.arrange(sourceScore, Object.assign({}, plan, { title: title }));
+        usedFallback = true;
+        if (arranged.source && arranged.source.arrangement) arranged.source.arrangement.engine = 'browser-fallback';
+      } catch (fallbackError) {
+        this.patchSongArranger({ busy: false, status: (fallbackError && fallbackError.message) || (e && e.message) || tx('The arrangement could not be created.') });
+        return false;
+      }
     }
     const id = 'song-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     const source = Object.assign({}, arranged.source || {}, {
       kind: 'arrangement', parentSongId: d.songId, parentTitle: sourceScore.title,
-      provider: provider || 'PPP', createdAt: Clock.now()
+      provider: provider || (usedFallback ? 'PPP browser fallback' : 'PPP harmonic arranger'), createdAt: Clock.now()
     });
     arranged.source = source;
     arranged.composer = [sourceScore.composer, tx('PPP {{style}} arrangement', { style: this.arrangementStyleName(plan.style) })]
@@ -15126,10 +15220,10 @@ class Component extends DCLogic {
     this.say(tx('Saved {{title}} as a new song. The original was not changed.', { title: arranged.title }));
     return true;
   }
-  createSongArrangement() {
+  async createSongArrangement() {
     const d = this.state.songArrange;
     if (!d || d.busy) return;
-    this.saveSongArrangement({ level: d.level, style: d.style, source: 'local' });
+    await this.saveSongArrangement({ level: d.level, style: d.style, source: 'local' });
   }
   async aiSongArrangement() {
     const d = this.state.songArrange;
@@ -15161,7 +15255,7 @@ class Component extends DCLogic {
     } catch (e) {
       plan = ScoreArranger.norm(local);
     }
-    this.saveSongArrangement(plan, provider);
+    await this.saveSongArrangement(plan, provider);
   }
   /* Removing asks twice; the sample cannot be removed. */
   askRemoveSong(id) {
@@ -17413,7 +17507,9 @@ class Component extends DCLogic {
       reviewTitle: this._recording
         ? (S.importSource && S.importSource.referenceScore ? tx('The uploaded score is now the source of truth.')
           : (S.importReport && S.importReport.level === 'good') ? tx('Written out. Have a listen.')
-          : (S.importReport && S.importReport.level === 'fair') ? tx('Mostly clear — please listen and check.')
+          : (S.importReport && S.importReport.issues && S.importReport.issues.some(x => x && x.kind === 'fallback'))
+            ? tx('PPP is unsure about this transcription.')
+            : (S.importReport && S.importReport.level === 'fair') ? tx('Mostly clear — please listen and check.')
             : tx('PPP is unsure about this transcription.'))
         : (S.importReport && S.importReport.level === 'good') ? tx('This looks right.')
           : (S.importReport && S.importReport.level === 'fair') ? tx('Mostly read — please check.')
