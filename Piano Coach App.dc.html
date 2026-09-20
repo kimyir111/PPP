@@ -15272,15 +15272,28 @@ class Component extends DCLogic {
     plan = ScoreArranger.norm(Object.assign({}, plan || {}, { source: provider ? 'ai' : (plan && plan.source) }));
     const title = (d.autoTitle ? this.arrangementCopyTitle(d.songTitle, plan.style) : String(d.copyTitle || '').trim())
       || this.arrangementCopyTitle(d.songTitle, plan.style);
-    let arranged, usedFallback = false;
+    let arranged, usedFallback = false, lateService = null;
     this.patchSongArranger({ busy: true, status: tx('Planning harmony and connecting the chord voicings across the whole score…') });
+    const arrangeOpts = Object.assign({}, plan, { title: title });
     try {
-      arranged = await ScoreArranger.arrangeWithService(sourceScore, Object.assign({}, plan, { title: title }));
+      /* Do not make My Songs depend on a cold helper or a slow music21 start.
+         Save a deterministic playable copy promptly, while allowing a late
+         phrase-aware service result to upgrade that same copy in place. */
+      const service = ScoreArranger.arrangeWithService(sourceScore, arrangeOpts);
+      const timeout = new Promise(resolve => setTimeout(() => resolve(null), 350));
+      const first = await Promise.race([service.then(value => ({ value })).catch(error => ({ error })), timeout]);
+      if (first && first.value) arranged = first.value;
+      else {
+        arranged = ScoreArranger.arrange(sourceScore, arrangeOpts);
+        usedFallback = true;
+        lateService = service;
+        if (arranged.source && arranged.source.arrangement) arranged.source.arrangement.engine = 'browser-fallback';
+      }
     } catch (e) {
       /* Static/offline builds still get a playable result. Mark it explicitly;
-         a running local helper always uses the phrase-aware engine above. */
+         a running local helper normally uses the phrase-aware engine above. */
       try {
-        arranged = ScoreArranger.arrange(sourceScore, Object.assign({}, plan, { title: title }));
+        arranged = ScoreArranger.arrange(sourceScore, arrangeOpts);
         usedFallback = true;
         if (arranged.source && arranged.source.arrangement) arranged.source.arrangement.engine = 'browser-fallback';
       } catch (fallbackError) {
@@ -15318,6 +15331,34 @@ class Component extends DCLogic {
     if (this._thumbs) delete this._thumbs[id];
     this.setState({ songArrange: null });
     this.say(tx('Saved {{title}} as a new song. The original was not changed.', { title: arranged.title }));
+    if (lateService) {
+      lateService.then(upgraded => {
+        if (!upgraded || !localStorage.getItem(SONG_KEY + id)) return;
+        const upgradedSource = Object.assign({}, upgraded.source || {}, {
+          kind: 'arrangement', parentSongId: d.songId, parentTitle: sourceScore.title,
+          provider: provider || 'PPP harmonic arranger', createdAt: source.createdAt
+        });
+        upgraded.source = upgradedSource;
+        upgraded.composer = [sourceScore.composer, tx('PPP {{style}} arrangement', { style: this.arrangementStyleName(plan.style) })]
+          .filter(Boolean).join(' 쨌 ');
+        const upFirst = upgraded.sections[0] || { from: Score.first(upgraded), to: Score.last(upgraded) };
+        const upSlot = {
+          score: packScore(upgraded), secs: seedSecs(upgraded), history: Learning.empty(), memory: Memory.empty(),
+          loopFrom: upFirst.from, loopTo: upFirst.to, tempo: upgraded.tempo,
+          memLevel: 0, blindRuns: 0, mastered: false,
+          fileName: title, fileMeta: tx('Arrangement from My Songs'), importSource: upgradedSource, importReport: null
+        };
+        localStorage.setItem(SONG_KEY + id, JSON.stringify(upSlot));
+        const upgradedLib = this.libraryRead();
+        const entry = upgradedLib.songs.find(song => song.id === id);
+        if (entry) {
+          entry.title = upgraded.title; entry.composer = upgraded.composer;
+          entry.measures = Score.count(upgraded); entry.arrangement = upgradedSource.arrangement;
+          this.libraryWrite(upgradedLib);
+        }
+        if (this._thumbs) delete this._thumbs[id];
+      }).catch(() => {});
+    }
     return true;
   }
   async createSongArrangement() {
