@@ -8,3 +8,11 @@ data/*.json
 .env
 .env.*
 !.env.example
+
+# G0 benchmark outputs and caches (tests/bench/README.md). Committed corpus,
+# suites, baselines and golden files are not under these paths.
+tests/bench/out/
+tests/bench/.cache/
+__pycache__/
+# Local experiments; holds copyrighted audio and PDFs that must never be committed.
+tmp/
