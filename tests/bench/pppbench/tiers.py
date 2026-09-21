@@ -149,30 +149,139 @@ def conformance(args) -> int:
 
 
 # ----------------------------------------------------------------- T1-O
-def omr_live(args) -> int:
-    helper = "http://127.0.0.1:8788/health"
-    if not _http_ok(args.base_url.rstrip("/") + "/"):
-        return _skip(f"the app server is not reachable at {args.base_url} (run `npm start`)", args.require_env)
-    if not _http_ok(helper):
-        return _skip("the local helper is not running at 127.0.0.1:8788 (run `npm run omr` with Audiveris set up)",
-                     args.require_env)
-    return _skip("OMR live scoring is not implemented in G0 yet: tests/bench/README.md (OMR live) records the procedure",
-                 args.require_env)
+OMR_HELPER = "http://127.0.0.1:8788/health"
+
+
+def omr_flags(sa, pred, suspects) -> Dict[str, Any]:
+    """Precision/recall of the app's suspect bars against bars that are really wrong.
+
+    A prediction bar is wrong when it is not aligned to a reference bar or aligned with S < 1."""
+    aligned = {p: sim for _, p, sim in sa.measure_pairs}
+    wrong = {j for j in range(len(pred.measures)) if aligned.get(j, 0.0) < 1.0}
+    number_to_index = {m.number: m.index for m in pred.measures}
+    flagged = {number_to_index[str(x)] for x in suspects if str(x) in number_to_index}
+    hit = len(flagged & wrong)
+    return {"omr.flag.precision": hit / len(flagged) if flagged else None,
+            "omr.flag.recall": hit / len(wrong) if wrong else None,
+            "omr.wrong_measures": float(len(wrong)), "omr.flagged_measures": float(len(flagged))}
+
+
+def _fmt(v) -> str:
+    return f"{v:.3f}" if isinstance(v, float) else str(v)
+
+
+def omr_live(args, suite=None) -> int:
+    import platform
+    import sys
+    import time
+    from datetime import datetime, timezone
+    from . import VERSIONS, aggregate, compare, evaluate, projection, report
+    base = (getattr(args, "base_url", None) or "http://127.0.0.1:8777").rstrip("/")
+    require = getattr(args, "require_env", False)
+    if not _http_ok(base + "/"):
+        return _skip(f"the app server is not reachable at {base} (run `npm start`)", require)
+    try:
+        with urllib.request.urlopen(OMR_HELPER, timeout=3) as r:
+            health = json.loads(r.read().decode("utf-8"))
+    except Exception:
+        return _skip("the local helper is not running at 127.0.0.1:8788 (run `npm run omr`)", require)
+    if not (health.get("audiveris") or health.get("pdfToMusic")):
+        return _skip("the helper has no OMR engine (Audiveris or PDFtoMusic Pro)", require)
+    node = stages.node_binary()
+    reason = _puppeteer_available(node)
+    if reason:
+        return _skip(reason, require)
+    suite = suite or suite_mod.load_suite("omr-live")
+    entry = corpus.by_id(corpus.load_corpus())[suite["reference"]]
+    ref = corpus.read_reference(entry)
+    key = corpus.expected_key(entry, ref)
+    expected = {"qpm": corpus.expected_qpm(entry, ref), "time": list(corpus.expected_time(entry, ref)),
+                "key": {"fifths": key["fifths"], "mode": key["mode"]}, "measures": len(ref.measures), "bar_starts": []}
+    t0 = time.perf_counter()
+    with tempfile.TemporaryDirectory(prefix="pppbench-omr-") as tmp:
+        fin, fout = os.path.join(tmp, "in.jsonl"), os.path.join(tmp, "out.jsonl")
+        with open(fin, "w", encoding="utf-8", newline="\n") as h:
+            for c in suite["cases"]:
+                h.write(json.dumps({"id": c["id"], "path": os.path.join(util.repo_root(), c["fixture"]),
+                                    "type": c["type"]}) + "\n")
+        r = subprocess.run([node, os.path.join(NODE_DIR, "omr-live.js"), "--in", fin, "--out", fout, "--base", base],
+                           capture_output=True)
+        if r.returncode != 0:
+            msg = r.stderr.decode("utf-8", "replace").strip().splitlines()
+            return _skip("the app page did not run OMR: " + (msg[-1] if msg else f"exit {r.returncode}"), require)
+        rows_in = {}
+        for line in util.read_text(fout).splitlines():
+            if line.strip():
+                row = json.loads(line)
+                rows_in[row["id"]] = row
+    cases, timing = [], {}
+    for c in suite["cases"]:
+        row = rows_in[c["id"]]
+        timing[c["id"]] = row.get("ms")
+        rec = {"id": c["id"], "key": suite_mod.case_key(c["id"]),
+               "tags": ["set:omr", "input:" + c["type"].split("/")[-1]], "status": "ok", "error_code": None,
+               "metrics": {}, "counts": {}, "predicted": None,
+               "expected": {k: expected[k] for k in ("qpm", "time", "key", "measures")}}
+        if not row["ok"]:
+            rec.update(status="error", error_code="OMR_" + str(row.get("code") or "exception").upper().replace("-", "_"),
+                       error=(row.get("error") or "")[:300])
+        else:
+            util.dump_json({"projection": row["projection"], "report": row["report"], "engine": row.get("engine")},
+                           os.path.join(util.bench_root(), "out", suite["name"], "cases", rec["key"] + ".app-score.json"))
+            pred = projection.canonical_from_projection(row["projection"])
+            m, counts, predicted, sa = evaluate.evaluate_symbolic(ref, pred, expected)
+            m.update(omr_flags(sa, pred, row["report"]["suspectMeasures"]))
+            m["omr.confidence"] = row["report"]["confidence"]
+            predicted = dict(predicted, engine=row.get("engine"), level=row["report"]["level"], pages=row.get("pages"))
+            rec.update(metrics=m, counts=counts, predicted=predicted)
+        cases.append(rec)
+    cases.sort(key=lambda x: x["id"])
+    results = {"schema": "ppp.bench-results/1", "suite": suite["name"], "suite_sha256": suite_mod.suite_sha256(suite),
+               "lock_sha256": None, "versions": dict(VERSIONS), "filtered": False,
+               "aggregates": aggregate.aggregate(cases), "cases": cases}
+    out = os.path.join(util.bench_root(), "out", suite["name"])
+    util.dump_json(results, os.path.join(out, "results.json"))
+    app = os.path.join(util.repo_root(), "Piano Coach App.dc.html")
+    run = {"started_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "git_sha": util.git_sha(),
+           "git_dirty": util.git_dirty(), "audio_score_path": "audio-score.js",
+           "audio_score_sha256": util.content_sha256(stages.default_audio_score()),
+           "app_sha256": util.content_sha256(app),
+           "helper": {k: health.get(k) for k in ("version", "audiveris", "pdfToMusic")},
+           "node": None, "python": platform.python_version(), "platform": sys.platform, "cases": len(cases),
+           "timing": {"total_s": round(time.perf_counter() - t0, 3), "per_case_ms": timing}}
+    util.dump_json(run, os.path.join(out, "run.json"))
+    base_line = compare.load_baseline(suite)
+    verdict = compare.compare(results, base_line, suite.get("gate") or {}) if base_line else None
+    report.write_summary(results, run, verdict, base_line, os.path.join(out, "summary.md"))
+    shown = ("notes.symbolic.f1", "omr.measure_alignment_rate", "struct.measures.count_exact",
+             "omr.flag.precision", "omr.flag.recall", "sqi")
+    for c in cases:
+        if c["status"] != "ok":
+            print(f"{c['id']:22} error {c['error_code']}")
+            continue
+        m = c["metrics"]
+        print(f"{c['id']:22} " + " ".join(f"{k.split('.', 1)[-1]}={_fmt(m.get(k))}" for k in shown))
+    print(f"omr-live: {len(cases)} cases in {run['timing']['total_s']} s · {util.rel(os.path.join(out, 'summary.md'))}")
+    if verdict:
+        print(compare.format_verdict(verdict))
+        return verdict.exit_code
+    return 0
 
 
 # ----------------------------------------------------------------- T2
 def record_replay(args) -> int:
     helper = "http://127.0.0.1:8788/health"
-    if not _http_ok(helper):
-        return _skip("the local helper is not running at 127.0.0.1:8788 (npm run omr, with transcription set up)",
-                     args.require_env)
+    require = getattr(args, "require_env", False)
     try:
         with urllib.request.urlopen(helper, timeout=3) as r:
             health = json.loads(r.read().decode("utf-8"))
     except Exception:
-        health = {}
-    if not (health.get("transcribe") or health.get("transcriber") or health.get("transcription")):
-        return _skip("the helper has no transcriber configured (README: Making a score from a recording)",
-                     args.require_env)
-    return _skip("replay recording needs tools/render_piano.py (Salamander samples + ffmpeg) in the transcribe venv; "
-                 "not implemented in G0 — procedure in tests/bench/README.md (Replay)", args.require_env)
+        return _skip("the local helper is not running at 127.0.0.1:8788 (npm run omr, with transcription set up)", require)
+    if not health.get("transcriber"):
+        return _skip("the helper has no transcriber configured (README: Making a score from a recording)", require)
+    venv = os.environ.get("PPP_TRANSCRIBE_PYTHON") or os.path.join(util.repo_root(), "tools", "transcribe-venv", "Scripts", "python.exe")
+    if not os.path.exists(venv):
+        return _skip(f"no transcribe venv python at {venv} (set PPP_TRANSCRIBE_PYTHON); it renders the WAVs", require)
+    import sys
+    tool = os.path.join(util.bench_root(), "tools", "record_replay.py")
+    return subprocess.run([sys.executable, tool, "--venv-python", venv]).returncode

@@ -1,0 +1,62 @@
+# G0 score-quality benchmark (tests/bench/README.md).
+# The fast job is the regression gate on every push/PR; the slow job (full
+# suite, gate sensitivity) runs nightly or by hand so it never slows a PR.
+# No npm install: the benchmark needs only Node and the Python standard library.
+name: bench
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '17 18 * * *'
+  workflow_dispatch:
+
+jobs:
+  gate:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }          # same major as the recorded baseline
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: python -m unittest discover -s tests/bench/unit -t tests/bench
+      - run: python tests/bench/run.py golden
+      - run: python tests/bench/run.py lint-corpus
+      - run: python tests/bench/run.py run --suite smoke
+      - run: python tests/bench/run.py check --suite smoke
+      - run: python tests/bench/run.py run --suite core
+      - run: python tests/bench/run.py check --suite core
+      - run: npm run test:transcription-core && npm run test:arranger
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-core
+          path: |
+            tests/bench/out/core/summary.md
+            tests/bench/out/core/results.json
+            tests/bench/out/core/run.json
+
+  nightly:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: python tests/bench/run.py mutation-check
+      - run: python tests/bench/run.py run --suite full
+      - run: python tests/bench/run.py check --suite full
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-full
+          path: |
+            tests/bench/out/full/summary.md
+            tests/bench/out/full/run.json
+            tests/bench/out/mutation/mutation-report.json

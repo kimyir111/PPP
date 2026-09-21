@@ -249,6 +249,10 @@ def candidate_files(tracked: set) -> List[Dict[str, Any]]:
         elif f.startswith("catalog/") and f.count("/") == 1 and f.endswith(".musicxml"):
             name = os.path.basename(f)[:-9]
             out.append({"id": f"catalog/{name}", "path": f, "set": "catalog", "license": "CC0 (catalog/index.json)"})
+        elif f.startswith("tests/bench/corpus/omr/") and f.endswith(".musicxml"):
+            name = os.path.basename(f)[:-9]
+            out.append({"id": f"omr/{name}", "path": f, "set": "omr",
+                        "license": "PPP's own OMR fixture (tests/fixtures/make-fixtures.js, truth.json)"})
         elif f == "samples/prelude-fragment.musicxml":
             out.append({"id": "samples/prelude-fragment", "path": f, "set": "samples",
                         "license": "PPP's own sample score (samples/)"})

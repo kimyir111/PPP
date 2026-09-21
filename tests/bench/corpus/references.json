@@ -3916,6 +3916,16 @@
    "path": "tests/bench/corpus/micro/M24-block-chords.musicxml",
    "set": "micro",
    "sha256": "b8bdf18977486f83e048285291004354fb79b9ac2d777738ef62119693bff60c"
+  },
+  {
+   "expect": {},
+   "holdout": false,
+   "id": "omr/piano-test-score",
+   "license": "PPP's own OMR fixture (tests/fixtures/make-fixtures.js, truth.json)",
+   "note": "",
+   "path": "tests/bench/corpus/omr/piano-test-score.musicxml",
+   "set": "omr",
+   "sha256": "bd77237129374828ddcb985927be18982dde8de386bb3ed328c1c0dcb5a197c7"
   }
  ],
  "schema": "ppp.bench-corpus/1"

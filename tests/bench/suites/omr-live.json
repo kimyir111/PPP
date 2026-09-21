@@ -1,0 +1,64 @@
+{
+ "cases": [
+  {
+   "fixture": "tests/fixtures/piano-clean.pdf",
+   "id": "piano-clean.pdf",
+   "type": "application/pdf"
+  },
+  {
+   "fixture": "tests/fixtures/piano-clean.png",
+   "id": "piano-clean.png",
+   "type": "image/png"
+  },
+  {
+   "fixture": "tests/fixtures/piano-clean.jpg",
+   "id": "piano-clean.jpg",
+   "type": "image/jpeg"
+  },
+  {
+   "fixture": "tests/fixtures/piano-multipage.pdf",
+   "id": "piano-multipage.pdf",
+   "type": "application/pdf"
+  }
+ ],
+ "description": "T1-O: PDF/PNG/JPG fixtures through the app's Import.load (Audiveris via the local helper), scored against truth.json",
+ "gate": {
+  "case_fail_drop": 10.0,
+  "case_warn_drop": 2.0,
+  "metrics": {
+   "notation.duration.accuracy": {
+    "dir": "up",
+    "tol": -0.003
+   },
+   "notes.symbolic.f1": {
+    "dir": "up",
+    "tol": -0.002
+   },
+   "omr.measure_alignment_rate": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "sqi": {
+    "dir": "up",
+    "tol": -0.3
+   },
+   "struct.key.fifths_exact": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "struct.time_sig.exact": {
+    "dir": "up",
+    "tol": -0.005
+   }
+  },
+  "tag_guards": {
+   "metric": "sqi",
+   "min_delta": -1.0,
+   "tags": []
+  }
+ },
+ "kind": "omr-live",
+ "name": "omr-live",
+ "reference": "omr/piano-test-score",
+ "schema": "ppp.bench-suite/1"
+}

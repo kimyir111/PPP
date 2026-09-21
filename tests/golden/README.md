@@ -55,3 +55,10 @@ preserves rubato):
 The PDF remains the visual source of truth; export it to MusicXML (or use the
 PPP review's official-score import) before adding it to the manifest. Keep the
 PDF, audio and helper output outside the repository.
+
+The G0 benchmark runs the same manifest with `python tests/bench/run.py legacy --manifest
+C:/private/ppp-golden/manifest.json`. The note metrics are those of `golden_benchmark.py`
+unchanged; its output names MusicXML-vs-MusicXML tolerances in quarter beats rather than "ms",
+and results stay next to the manifest, outside the repository. For recordings and official
+scores with the full notation metrics and a baseline, use a private suite
+(`run.py run --suite-file ...`, `tests/bench/README.md`).

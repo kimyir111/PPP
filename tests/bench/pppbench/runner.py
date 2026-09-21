@@ -129,6 +129,9 @@ def run_suite(suite: Dict[str, Any], *, audio_score: Optional[str] = None, out_d
 def cli_run(args) -> int:
     from . import compare, report
     suite = suite_mod.load_suite(args.suite or args.suite_file)
+    if suite.get("kind") == "omr-live":
+        from . import tiers
+        return tiers.omr_live(args, suite)
     if suite.get("kind") != "synthetic-notation":
         from . import private
         return private.run_private(suite, args)

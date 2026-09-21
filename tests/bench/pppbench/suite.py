@@ -240,7 +240,7 @@ def select_references(refs: List[corpus.RefEntry]) -> Dict[str, Any]:
     c24 = _fnv_sorted(ids(lambda e: e.book == "czerny599" and info[e.id]["time"] == (2, 4)))[0]
     son = _fnv_sorted(ids(lambda e: e.book == "sonatina"))[0]
     smoke += [h_non44, h_flat, c24, son]
-    full = sorted(e.id for e in refs)
+    full = sorted(e.id for e in refs if e.set != "omr")  # omr references are scored by omr-live only
     return {"smoke": sorted(smoke), "core": core, "amt": amt_subset, "rubato": rubato_subset, "full": full}
 
 
