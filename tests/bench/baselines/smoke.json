@@ -1,0 +1,7868 @@
+{
+ "aggregates": {
+  "all": {
+   "cases": 32,
+   "errors": {
+    "by_code": {},
+    "count": 0
+   },
+   "notation.duration.accuracy": {
+    "mean": 0.885984,
+    "n": 32
+   },
+   "notation.hand.accuracy": {
+    "mean": 0.952152,
+    "n": 32
+   },
+   "notation.ioi.accuracy": {
+    "mean": 0.983495,
+    "n": 32
+   },
+   "notation.ioi.accuracy_strict": {
+    "mean": 0.983495,
+    "n": 32
+   },
+   "notation.metrical_scale": {
+    "mean": 1.0,
+    "n": 32
+   },
+   "notation.onset_pos.accuracy": {
+    "mean": 0.597004,
+    "n": 32
+   },
+   "notation.spelling.accuracy": {
+    "mean": 0.999845,
+    "n": 28
+   },
+   "notation.ties.extra_per_100": {
+    "mean": 5.566414,
+    "n": 32
+   },
+   "notation.tuplets.f1": {
+    "mean": 0.614458,
+    "n": 3
+   },
+   "notes.identity.f1": {
+    "mean": 0.97659,
+    "n": 32
+   },
+   "notes.identity.precision": {
+    "mean": 0.980594,
+    "n": 32
+   },
+   "notes.identity.precision_micro": {
+    "mean": 0.95164,
+    "n": 32
+   },
+   "notes.identity.recall": {
+    "mean": 0.972742,
+    "n": 32
+   },
+   "notes.identity.recall_micro": {
+    "mean": 0.94316,
+    "n": 32
+   },
+   "notes.input_fidelity.f1": {
+    "mean": 0.976351,
+    "n": 32
+   },
+   "notes.onset.f1_50ms": {
+    "mean": 0.952955,
+    "n": 32
+   },
+   "notes.timing.median_abs_ms": {
+    "mean": 1.143901,
+    "n": 32
+   },
+   "read.accidentals_per_note": {
+    "mean": 0.012706,
+    "n": 32
+   },
+   "read.accidentals_per_note.delta": {
+    "mean": 0.002366,
+    "n": 32
+   },
+   "read.bar_integrity": {
+    "mean": 1.0,
+    "n": 32
+   },
+   "read.bar_integrity.delta": {
+    "mean": 0.0,
+    "n": 32
+   },
+   "read.max_chord_size": {
+    "mean": 2.65625,
+    "n": 32
+   },
+   "read.max_chord_size.delta": {
+    "mean": 0.34375,
+    "n": 32
+   },
+   "read.over_span_rate": {
+    "mean": 0.002232,
+    "n": 32
+   },
+   "read.over_span_rate.delta": {
+    "mean": -0.004085,
+    "n": 32
+   },
+   "read.rests_per_measure": {
+    "mean": 1.227101,
+    "n": 32
+   },
+   "read.rests_per_measure.delta": {
+    "mean": 1.122225,
+    "n": 32
+   },
+   "read.short_notes_rate": {
+    "mean": 0.041926,
+    "n": 32
+   },
+   "read.short_notes_rate.delta": {
+    "mean": 0.004889,
+    "n": 32
+   },
+   "read.ties_per_note": {
+    "mean": 0.037669,
+    "n": 32
+   },
+   "read.ties_per_note.delta": {
+    "mean": 0.031549,
+    "n": 32
+   },
+   "read.tuplets_per_note": {
+    "mean": 0.053884,
+    "n": 32
+   },
+   "read.tuplets_per_note.delta": {
+    "mean": -0.003809,
+    "n": 32
+   },
+   "sqi": {
+    "mean": 89.701564,
+    "n": 32
+   },
+   "struct.downbeat.f1": {
+    "mean": 0.664809,
+    "n": 32
+   },
+   "struct.key.fifths_exact": {
+    "mean": 1.0,
+    "n": 28
+   },
+   "struct.key.mirex": {
+    "mean": 1.0,
+    "n": 26
+   },
+   "struct.measures.count_exact": {
+    "mean": 0.625,
+    "n": 32
+   },
+   "struct.measures.count_ratio": {
+    "mean": 0.980947,
+    "n": 32
+   },
+   "struct.tempo.mark_consistent": {
+    "mean": 0.71875,
+    "n": 32
+   },
+   "struct.tempo.metrical_ok": {
+    "mean": 1.0,
+    "n": 32
+   },
+   "struct.tempo.ok_effective": {
+    "mean": 0.71875,
+    "n": 32
+   },
+   "struct.tempo.ok_written": {
+    "mean": 1.0,
+    "n": 32
+   },
+   "struct.tempo.ratio_effective": {
+    "mean": 0.906445,
+    "n": 32
+   },
+   "struct.time_sig.exact": {
+    "mean": 0.71875,
+    "n": 32
+   },
+   "struct.time_sig.score": {
+    "mean": 0.773438,
+    "n": 32
+   }
+  },
+  "by_tag": {
+   "beats:none": {
+    "cases": 16,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.903332,
+     "n": 16
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.952173,
+     "n": 16
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.333269,
+     "n": 16
+    },
+    "notation.spelling.accuracy": {
+     "mean": 0.999816,
+     "n": 14
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 10.444081,
+     "n": 16
+    },
+    "notation.tuplets.f1": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "notes.identity.f1": {
+     "mean": 0.956929,
+     "n": 16
+    },
+    "notes.identity.precision": {
+     "mean": 0.961189,
+     "n": 16
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.903257,
+     "n": 16
+    },
+    "notes.identity.recall": {
+     "mean": 0.95283,
+     "n": 16
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.89499,
+     "n": 16
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.956929,
+     "n": 16
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.920292,
+     "n": 16
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 2.189014,
+     "n": 16
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.014628,
+     "n": 16
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.004288,
+     "n": 16
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "read.max_chord_size": {
+     "mean": 2.6875,
+     "n": 16
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.375,
+     "n": 16
+    },
+    "read.over_span_rate": {
+     "mean": 0.002232,
+     "n": 16
+    },
+    "read.over_span_rate.delta": {
+     "mean": -0.004085,
+     "n": 16
+    },
+    "read.rests_per_measure": {
+     "mean": 1.306466,
+     "n": 16
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 1.20159,
+     "n": 16
+    },
+    "read.short_notes_rate": {
+     "mean": 0.045736,
+     "n": 16
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.008699,
+     "n": 16
+    },
+    "read.ties_per_note": {
+     "mean": 0.068724,
+     "n": 16
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.062604,
+     "n": 16
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.057598,
+     "n": 16
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": -9.4e-05,
+     "n": 16
+    },
+    "sqi": {
+     "mean": 85.568907,
+     "n": 16
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.401416,
+     "n": 16
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 14
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 13
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.375,
+     "n": 16
+    },
+    "struct.measures.count_ratio": {
+     "mean": 1.002553,
+     "n": 16
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.625,
+     "n": 16
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.625,
+     "n": 16
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.874974,
+     "n": 16
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.5625,
+     "n": 16
+    },
+    "struct.time_sig.score": {
+     "mean": 0.671875,
+     "n": 16
+    }
+   },
+   "beats:oracle": {
+    "cases": 16,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.868635,
+     "n": 16
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.95213,
+     "n": 16
+    },
+    "notation.ioi.accuracy": {
+     "mean": 0.96699,
+     "n": 16
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 0.96699,
+     "n": 16
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.860739,
+     "n": 16
+    },
+    "notation.spelling.accuracy": {
+     "mean": 0.999874,
+     "n": 14
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 0.688747,
+     "n": 16
+    },
+    "notation.tuplets.f1": {
+     "mean": 0.421687,
+     "n": 2
+    },
+    "notes.identity.f1": {
+     "mean": 0.996252,
+     "n": 16
+    },
+    "notes.identity.precision": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "notes.identity.precision_micro": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "notes.identity.recall": {
+     "mean": 0.992654,
+     "n": 16
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.991329,
+     "n": 16
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.995773,
+     "n": 16
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.985618,
+     "n": 16
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 0.098789,
+     "n": 16
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.010784,
+     "n": 16
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.000444,
+     "n": 16
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "read.max_chord_size": {
+     "mean": 2.625,
+     "n": 16
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.3125,
+     "n": 16
+    },
+    "read.over_span_rate": {
+     "mean": 0.002232,
+     "n": 16
+    },
+    "read.over_span_rate.delta": {
+     "mean": -0.004085,
+     "n": 16
+    },
+    "read.rests_per_measure": {
+     "mean": 1.147737,
+     "n": 16
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 1.042861,
+     "n": 16
+    },
+    "read.short_notes_rate": {
+     "mean": 0.038115,
+     "n": 16
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.001078,
+     "n": 16
+    },
+    "read.ties_per_note": {
+     "mean": 0.006614,
+     "n": 16
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.000494,
+     "n": 16
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.050169,
+     "n": 16
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": -0.007523,
+     "n": 16
+    },
+    "sqi": {
+     "mean": 93.83422,
+     "n": 16
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.928202,
+     "n": 16
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 14
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 13
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.875,
+     "n": 16
+    },
+    "struct.measures.count_ratio": {
+     "mean": 0.959342,
+     "n": 16
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.8125,
+     "n": 16
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.8125,
+     "n": 16
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.937917,
+     "n": 16
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.875,
+     "n": 16
+    },
+    "struct.time_sig.score": {
+     "mean": 0.875,
+     "n": 16
+    }
+   },
+   "book:czerny599": {
+    "cases": 2,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.884398,
+     "n": 2
+    },
+    "notation.hand.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.056661,
+     "n": 2
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 4.532905,
+     "n": 2
+    },
+    "notes.identity.f1": {
+     "mean": 0.991573,
+     "n": 2
+    },
+    "notes.identity.precision": {
+     "mean": 0.991573,
+     "n": 2
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.991573,
+     "n": 2
+    },
+    "notes.identity.recall": {
+     "mean": 0.991573,
+     "n": 2
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.991573,
+     "n": 2
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.991573,
+     "n": 2
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.991573,
+     "n": 2
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.005376,
+     "n": 2
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": -0.00586,
+     "n": 2
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.max_chord_size": {
+     "mean": 2.5,
+     "n": 2
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.5,
+     "n": 2
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.rests_per_measure": {
+     "mean": 1.954545,
+     "n": 2
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 1.954545,
+     "n": 2
+    },
+    "read.short_notes_rate": {
+     "mean": 0.043011,
+     "n": 2
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.043011,
+     "n": 2
+    },
+    "read.ties_per_note": {
+     "mean": 0.043011,
+     "n": 2
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.043011,
+     "n": 2
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "sqi": {
+     "mean": 74.242055,
+     "n": 2
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.444444,
+     "n": 2
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "struct.measures.count_ratio": {
+     "mean": 0.6875,
+     "n": 2
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.67,
+     "n": 2
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "struct.time_sig.score": {
+     "mean": 0.0,
+     "n": 2
+    }
+   },
+   "book:sonatina": {
+    "cases": 2,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.702647,
+     "n": 2
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.945671,
+     "n": 2
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.019101,
+     "n": 2
+    },
+    "notation.spelling.accuracy": {
+     "mean": 0.997833,
+     "n": 2
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 3.262787,
+     "n": 2
+    },
+    "notes.identity.f1": {
+     "mean": 0.843034,
+     "n": 2
+    },
+    "notes.identity.precision": {
+     "mean": 0.843034,
+     "n": 2
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.843034,
+     "n": 2
+    },
+    "notes.identity.recall": {
+     "mean": 0.843034,
+     "n": 2
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.843034,
+     "n": 2
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.843034,
+     "n": 2
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.843034,
+     "n": 2
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.05729,
+     "n": 2
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": -0.019768,
+     "n": 2
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.max_chord_size": {
+     "mean": 3.0,
+     "n": 2
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.rests_per_measure": {
+     "mean": 5.336658,
+     "n": 2
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 4.519756,
+     "n": 2
+    },
+    "read.short_notes_rate": {
+     "mean": 0.134414,
+     "n": 2
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.134414,
+     "n": 2
+    },
+    "read.ties_per_note": {
+     "mean": 0.045127,
+     "n": 2
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.038122,
+     "n": 2
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "sqi": {
+     "mean": 68.524027,
+     "n": 2
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.40678,
+     "n": 2
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "struct.measures.count_ratio": {
+     "mean": 0.669014,
+     "n": 2
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.67,
+     "n": 2
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "struct.time_sig.score": {
+     "mean": 0.0,
+     "n": 2
+    }
+   },
+   "feature:dense-chords": {
+    "cases": 6,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.918468,
+     "n": 6
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.906749,
+     "n": 6
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.833333,
+     "n": 6
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 5.100182,
+     "n": 6
+    },
+    "notes.identity.f1": {
+     "mean": 0.987761,
+     "n": 6
+    },
+    "notes.identity.precision": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "notes.identity.precision_micro": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "notes.identity.recall": {
+     "mean": 0.975976,
+     "n": 6
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.974026,
+     "n": 6
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.986484,
+     "n": 6
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.980365,
+     "n": 6
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 0.583333,
+     "n": 6
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.024652,
+     "n": 6
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.021162,
+     "n": 6
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "read.max_chord_size": {
+     "mean": 3.333333,
+     "n": 6
+    },
+    "read.max_chord_size.delta": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "read.over_span_rate.delta": {
+     "mean": -0.023589,
+     "n": 6
+    },
+    "read.rests_per_measure": {
+     "mean": 0.318015,
+     "n": 6
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 0.318015,
+     "n": 6
+    },
+    "read.short_notes_rate": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "read.ties_per_note": {
+     "mean": 0.039052,
+     "n": 6
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.039052,
+     "n": 6
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "sqi": {
+     "mean": 93.302824,
+     "n": 6
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.833333,
+     "n": 6
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.833333,
+     "n": 6
+    },
+    "struct.measures.count_ratio": {
+     "mean": 0.990196,
+     "n": 6
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.833333,
+     "n": 6
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.833333,
+     "n": 6
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.943264,
+     "n": 6
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.833333,
+     "n": 6
+    },
+    "struct.time_sig.score": {
+     "mean": 0.875,
+     "n": 6
+    }
+   },
+   "feature:fast-runs": {
+    "cases": 2,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.87963,
+     "n": 2
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.981481,
+     "n": 2
+    },
+    "notation.ioi.accuracy": {
+     "mean": 0.852941,
+     "n": 2
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 0.852941,
+     "n": 2
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.425926,
+     "n": 2
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "notation.tuplets.f1": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "notes.identity.f1": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notes.identity.precision": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notes.identity.precision_micro": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notes.identity.recall": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notes.identity.recall_micro": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.787037,
+     "n": 2
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.max_chord_size": {
+     "mean": 4.0,
+     "n": 2
+    },
+    "read.max_chord_size.delta": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.rests_per_measure": {
+     "mean": 1.083333,
+     "n": 2
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 1.083333,
+     "n": 2
+    },
+    "read.short_notes_rate": {
+     "mean": 0.481481,
+     "n": 2
+    },
+    "read.short_notes_rate.delta": {
+     "mean": -0.111111,
+     "n": 2
+    },
+    "read.ties_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.064815,
+     "n": 2
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.064815,
+     "n": 2
+    },
+    "sqi": {
+     "mean": 89.929194,
+     "n": 2
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.5,
+     "n": 2
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.5,
+     "n": 2
+    },
+    "struct.measures.count_ratio": {
+     "mean": 1.25,
+     "n": 2
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.time_sig.exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.time_sig.score": {
+     "mean": 1.0,
+     "n": 2
+    }
+   },
+   "feature:pickup": {
+    "cases": 8,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.919208,
+     "n": 8
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.852681,
+     "n": 8
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 8
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 8
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 8
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.639583,
+     "n": 8
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 11.860851,
+     "n": 8
+    },
+    "notes.identity.f1": {
+     "mean": 0.985007,
+     "n": 8
+    },
+    "notes.identity.precision": {
+     "mean": 1.0,
+     "n": 8
+    },
+    "notes.identity.precision_micro": {
+     "mean": 1.0,
+     "n": 8
+    },
+    "notes.identity.recall": {
+     "mean": 0.970618,
+     "n": 8
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.967857,
+     "n": 8
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.984049,
+     "n": 8
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.965312,
+     "n": 8
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 1.138889,
+     "n": 8
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.018489,
+     "n": 8
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.015871,
+     "n": 8
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 8
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "read.max_chord_size": {
+     "mean": 3.0,
+     "n": 8
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.75,
+     "n": 8
+    },
+    "read.over_span_rate": {
+     "mean": 0.008929,
+     "n": 8
+    },
+    "read.over_span_rate.delta": {
+     "mean": -0.016339,
+     "n": 8
+    },
+    "read.rests_per_measure": {
+     "mean": 0.697092,
+     "n": 8
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 0.638065,
+     "n": 8
+    },
+    "read.short_notes_rate": {
+     "mean": 0.002976,
+     "n": 8
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.002976,
+     "n": 8
+    },
+    "read.ties_per_note": {
+     "mean": 0.078202,
+     "n": 8
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.078202,
+     "n": 8
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "sqi": {
+     "mean": 89.348934,
+     "n": 8
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.660714,
+     "n": 8
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.75,
+     "n": 8
+    },
+    "struct.measures.count_ratio": {
+     "mean": 0.964869,
+     "n": 8
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.75,
+     "n": 8
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 8
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.75,
+     "n": 8
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 8
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.917083,
+     "n": 8
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.625,
+     "n": 8
+    },
+    "struct.time_sig.score": {
+     "mean": 0.75,
+     "n": 8
+    }
+   },
+   "feature:ties": {
+    "cases": 4,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.790633,
+     "n": 4
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.972835,
+     "n": 4
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.259551,
+     "n": 4
+    },
+    "notation.spelling.accuracy": {
+     "mean": 0.998916,
+     "n": 4
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 1.631393,
+     "n": 4
+    },
+    "notes.identity.f1": {
+     "mean": 0.909017,
+     "n": 4
+    },
+    "notes.identity.precision": {
+     "mean": 0.909017,
+     "n": 4
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.859351,
+     "n": 4
+    },
+    "notes.identity.recall": {
+     "mean": 0.909017,
+     "n": 4
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.859351,
+     "n": 4
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.909017,
+     "n": 4
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.902767,
+     "n": 4
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.028645,
+     "n": 4
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": -0.009884,
+     "n": 4
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.max_chord_size": {
+     "mean": 3.0,
+     "n": 4
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.rests_per_measure": {
+     "mean": 3.345412,
+     "n": 4
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 2.936962,
+     "n": 4
+    },
+    "read.short_notes_rate": {
+     "mean": 0.067207,
+     "n": 4
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.067207,
+     "n": 4
+    },
+    "read.ties_per_note": {
+     "mean": 0.022564,
+     "n": 4
+    },
+    "read.ties_per_note.delta": {
+     "mean": -0.026394,
+     "n": 4
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "sqi": {
+     "mean": 80.905106,
+     "n": 4
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.45339,
+     "n": 4
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.25,
+     "n": 4
+    },
+    "struct.measures.count_ratio": {
+     "mean": 0.865757,
+     "n": 4
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.5,
+     "n": 4
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.5,
+     "n": 4
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.835,
+     "n": 4
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.5,
+     "n": 4
+    },
+    "struct.time_sig.score": {
+     "mean": 0.5,
+     "n": 4
+    }
+   },
+   "feature:tuplets": {
+    "cases": 2,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.875,
+     "n": 2
+    },
+    "notation.hand.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ioi.accuracy": {
+     "mean": 0.882979,
+     "n": 2
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 0.882979,
+     "n": 2
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.423077,
+     "n": 2
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "notation.tuplets.f1": {
+     "mean": 0.921687,
+     "n": 2
+    },
+    "notes.identity.f1": {
+     "mean": 0.917476,
+     "n": 2
+    },
+    "notes.identity.precision": {
+     "mean": 0.921569,
+     "n": 2
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.92233,
+     "n": 2
+    },
+    "notes.identity.recall": {
+     "mean": 0.913462,
+     "n": 2
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.913462,
+     "n": 2
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.917476,
+     "n": 2
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.898058,
+     "n": 2
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.max_chord_size": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.rests_per_measure": {
+     "mean": 1.55,
+     "n": 2
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 1.55,
+     "n": 2
+    },
+    "read.short_notes_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.ties_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.797323,
+     "n": 2
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": -0.125754,
+     "n": 2
+    },
+    "sqi": {
+     "mean": 88.989858,
+     "n": 2
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.5,
+     "n": 2
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.5,
+     "n": 2
+    },
+    "struct.measures.count_ratio": {
+     "mean": 1.125,
+     "n": 2
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.time_sig.exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.time_sig.score": {
+     "mean": 1.0,
+     "n": 2
+    }
+   },
+   "key:-1": {
+    "cases": 6,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.862348,
+     "n": 6
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.98189,
+     "n": 6
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.211365,
+     "n": 6
+    },
+    "notation.spelling.accuracy": {
+     "mean": 0.999278,
+     "n": 6
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 2.598564,
+     "n": 6
+    },
+    "notes.identity.f1": {
+     "mean": 0.944869,
+     "n": 6
+    },
+    "notes.identity.precision": {
+     "mean": 0.944869,
+     "n": 6
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.887578,
+     "n": 6
+    },
+    "notes.identity.recall": {
+     "mean": 0.944869,
+     "n": 6
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.887578,
+     "n": 6
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.944869,
+     "n": 6
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.933758,
+     "n": 6
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 0.685185,
+     "n": 6
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.020889,
+     "n": 6
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": -0.008543,
+     "n": 6
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "read.max_chord_size": {
+     "mean": 2.5,
+     "n": 6
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.166667,
+     "n": 6
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "read.rests_per_measure": {
+     "mean": 2.562676,
+     "n": 6
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 2.253339,
+     "n": 6
+    },
+    "read.short_notes_rate": {
+     "mean": 0.059142,
+     "n": 6
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.059142,
+     "n": 6
+    },
+    "read.ties_per_note": {
+     "mean": 0.029379,
+     "n": 6
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.027044,
+     "n": 6
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "sqi": {
+     "mean": 78.616472,
+     "n": 6
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.498027,
+     "n": 6
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.166667,
+     "n": 6
+    },
+    "struct.measures.count_ratio": {
+     "mean": 0.748468,
+     "n": 6
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.333333,
+     "n": 6
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.333333,
+     "n": 6
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.78,
+     "n": 6
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.166667,
+     "n": 6
+    },
+    "struct.time_sig.score": {
+     "mean": 0.25,
+     "n": 6
+    }
+   },
+   "key:-3": {
+    "cases": 2,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.931907,
+     "n": 2
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.840467,
+     "n": 2
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "notes.identity.f1": {
+     "mean": 0.984674,
+     "n": 2
+    },
+    "notes.identity.precision": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notes.identity.precision_micro": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notes.identity.recall": {
+     "mean": 0.969811,
+     "n": 2
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.969811,
+     "n": 2
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.980843,
+     "n": 2
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.97318,
+     "n": 2
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.035019,
+     "n": 2
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.035019,
+     "n": 2
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.max_chord_size": {
+     "mean": 3.0,
+     "n": 2
+    },
+    "read.max_chord_size.delta": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.over_span_rate.delta": {
+     "mean": -0.05036,
+     "n": 2
+    },
+    "read.rests_per_measure": {
+     "mean": 0.382353,
+     "n": 2
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 0.382353,
+     "n": 2
+    },
+    "read.short_notes_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.ties_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "sqi": {
+     "mean": 96.961438,
+     "n": 2
+    },
+    "struct.downbeat.f1": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.measures.count_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.measures.count_ratio": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.time_sig.exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.time_sig.score": {
+     "mean": 1.0,
+     "n": 2
+    }
+   },
+   "key:-5": {
+    "cases": 2,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.hand.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.5,
+     "n": 2
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "notes.identity.f1": {
+     "mean": 0.975,
+     "n": 2
+    },
+    "notes.identity.precision": {
+     "mean": 0.975,
+     "n": 2
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.975,
+     "n": 2
+    },
+    "notes.identity.recall": {
+     "mean": 0.975,
+     "n": 2
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.975,
+     "n": 2
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.975,
+     "n": 2
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.96875,
+     "n": 2
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 0.842105,
+     "n": 2
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.max_chord_size": {
+     "mean": 3.0,
+     "n": 2
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.rests_per_measure": {
+     "mean": 0.222222,
+     "n": 2
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 0.222222,
+     "n": 2
+    },
+    "read.short_notes_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.ties_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "sqi": {
+     "mean": 94.5,
+     "n": 2
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.5,
+     "n": 2
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.5,
+     "n": 2
+    },
+    "struct.measures.count_ratio": {
+     "mean": 1.0625,
+     "n": 2
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.time_sig.exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.time_sig.score": {
+     "mean": 1.0,
+     "n": 2
+    }
+   },
+   "key:0": {
+    "cases": 12,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.884789,
+     "n": 12
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.979672,
+     "n": 12
+    },
+    "notation.ioi.accuracy": {
+     "mean": 0.955987,
+     "n": 12
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 0.955987,
+     "n": 12
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.569661,
+     "n": 12
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 0.0,
+     "n": 12
+    },
+    "notation.tuplets.f1": {
+     "mean": 0.614458,
+     "n": 3
+    },
+    "notes.identity.f1": {
+     "mean": 0.979302,
+     "n": 12
+    },
+    "notes.identity.precision": {
+     "mean": 0.979984,
+     "n": 12
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.983815,
+     "n": 12
+    },
+    "notes.identity.recall": {
+     "mean": 0.978632,
+     "n": 12
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.982679,
+     "n": 12
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.979302,
+     "n": 12
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.930445,
+     "n": 12
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 1.331349,
+     "n": 12
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.011111,
+     "n": 12
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.0,
+     "n": 12
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 12
+    },
+    "read.max_chord_size": {
+     "mean": 2.5,
+     "n": 12
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.333333,
+     "n": 12
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 12
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.0,
+     "n": 12
+    },
+    "read.rests_per_measure": {
+     "mean": 1.055304,
+     "n": 12
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 1.055304,
+     "n": 12
+    },
+    "read.short_notes_rate": {
+     "mean": 0.080247,
+     "n": 12
+    },
+    "read.short_notes_rate.delta": {
+     "mean": -0.018519,
+     "n": 12
+    },
+    "read.ties_per_note": {
+     "mean": 0.0,
+     "n": 12
+    },
+    "read.ties_per_note.delta": {
+     "mean": -0.015152,
+     "n": 12
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.14369,
+     "n": 12
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": -0.010157,
+     "n": 12
+    },
+    "sqi": {
+     "mean": 92.630326,
+     "n": 12
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.607143,
+     "n": 12
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.583333,
+     "n": 12
+    },
+    "struct.measures.count_ratio": {
+     "mean": 1.069444,
+     "n": 12
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.916667,
+     "n": 12
+    },
+    "struct.time_sig.score": {
+     "mean": 0.958333,
+     "n": 12
+    }
+   },
+   "key:1": {
+    "cases": 6,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.808185,
+     "n": 6
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.896825,
+     "n": 6
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.833333,
+     "n": 6
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 10.714286,
+     "n": 6
+    },
+    "notes.identity.f1": {
+     "mean": 0.992248,
+     "n": 6
+    },
+    "notes.identity.precision": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "notes.identity.precision_micro": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "notes.identity.recall": {
+     "mean": 0.984848,
+     "n": 6
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.992537,
+     "n": 6
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.992248,
+     "n": 6
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.984496,
+     "n": 6
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 1.416667,
+     "n": 6
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "read.max_chord_size": {
+     "mean": 2.333333,
+     "n": 6
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "read.over_span_rate": {
+     "mean": 0.011905,
+     "n": 6
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.001804,
+     "n": 6
+    },
+    "read.rests_per_measure": {
+     "mean": 1.270833,
+     "n": 6
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 1.229167,
+     "n": 6
+    },
+    "read.short_notes_rate": {
+     "mean": 0.003968,
+     "n": 6
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.003968,
+     "n": 6
+    },
+    "read.ties_per_note": {
+     "mean": 0.065217,
+     "n": 6
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.065217,
+     "n": 6
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "sqi": {
+     "mean": 91.478394,
+     "n": 6
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.833333,
+     "n": 6
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "struct.measures.count_exact": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "struct.measures.count_ratio": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.5,
+     "n": 6
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.5,
+     "n": 6
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.831597,
+     "n": 6
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.833333,
+     "n": 6
+    },
+    "struct.time_sig.score": {
+     "mean": 0.875,
+     "n": 6
+    }
+   },
+   "key:2": {
+    "cases": 4,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.961749,
+     "n": 4
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.939891,
+     "n": 4
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.75,
+     "n": 4
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 24.562038,
+     "n": 4
+    },
+    "notes.identity.f1": {
+     "mean": 0.989305,
+     "n": 4
+    },
+    "notes.identity.precision": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notes.identity.precision_micro": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notes.identity.recall": {
+     "mean": 0.979058,
+     "n": 4
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.964444,
+     "n": 4
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.989305,
+     "n": 4
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.983957,
+     "n": 4
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 1.583333,
+     "n": 4
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.019469,
+     "n": 4
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.014233,
+     "n": 4
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.max_chord_size": {
+     "mean": 3.5,
+     "n": 4
+    },
+    "read.max_chord_size.delta": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.over_span_rate.delta": {
+     "mean": -0.010204,
+     "n": 4
+    },
+    "read.rests_per_measure": {
+     "mean": 0.598346,
+     "n": 4
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 0.285846,
+     "n": 4
+    },
+    "read.short_notes_rate": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.ties_per_note": {
+     "mean": 0.159455,
+     "n": 4
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.159455,
+     "n": 4
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "sqi": {
+     "mean": 88.848517,
+     "n": 4
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.75,
+     "n": 4
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.75,
+     "n": 4
+    },
+    "struct.measures.count_ratio": {
+     "mean": 0.985294,
+     "n": 4
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.5,
+     "n": 4
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.5,
+     "n": 4
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.834167,
+     "n": 4
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.5,
+     "n": 4
+    },
+    "struct.time_sig.score": {
+     "mean": 0.625,
+     "n": 4
+    }
+   },
+   "metre-class:compound-duple": {
+    "cases": 2,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.703125,
+     "n": 2
+    },
+    "notation.hand.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "notes.identity.f1": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notes.identity.precision": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notes.identity.precision_micro": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notes.identity.recall": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notes.identity.recall_micro": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.max_chord_size": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.rests_per_measure": {
+     "mean": 2.375,
+     "n": 2
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 2.375,
+     "n": 2
+    },
+    "read.short_notes_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.ties_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "sqi": {
+     "mean": 92.03125,
+     "n": 2
+    },
+    "struct.downbeat.f1": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.measures.count_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.measures.count_ratio": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.666667,
+     "n": 2
+    },
+    "struct.time_sig.exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.time_sig.score": {
+     "mean": 1.0,
+     "n": 2
+    }
+   },
+   "metre-class:simple-duple": {
+    "cases": 4,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.793523,
+     "n": 4
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.972835,
+     "n": 4
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.037881,
+     "n": 4
+    },
+    "notation.spelling.accuracy": {
+     "mean": 0.998916,
+     "n": 4
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 3.897846,
+     "n": 4
+    },
+    "notes.identity.f1": {
+     "mean": 0.917303,
+     "n": 4
+    },
+    "notes.identity.precision": {
+     "mean": 0.917303,
+     "n": 4
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.878523,
+     "n": 4
+    },
+    "notes.identity.recall": {
+     "mean": 0.917303,
+     "n": 4
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.878523,
+     "n": 4
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.917303,
+     "n": 4
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.917303,
+     "n": 4
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.031333,
+     "n": 4
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": -0.012814,
+     "n": 4
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.max_chord_size": {
+     "mean": 2.75,
+     "n": 4
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.25,
+     "n": 4
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.rests_per_measure": {
+     "mean": 3.645602,
+     "n": 4
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 3.237151,
+     "n": 4
+    },
+    "read.short_notes_rate": {
+     "mean": 0.088713,
+     "n": 4
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.088713,
+     "n": 4
+    },
+    "read.ties_per_note": {
+     "mean": 0.044069,
+     "n": 4
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.040566,
+     "n": 4
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "sqi": {
+     "mean": 71.383041,
+     "n": 4
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.425612,
+     "n": 4
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "struct.measures.count_ratio": {
+     "mean": 0.678257,
+     "n": 4
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.67,
+     "n": 4
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "struct.time_sig.score": {
+     "mean": 0.0,
+     "n": 4
+    }
+   },
+   "metre-class:simple-quadruple": {
+    "cases": 14,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.893983,
+     "n": 14
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.959786,
+     "n": 14
+    },
+    "notation.ioi.accuracy": {
+     "mean": 0.962274,
+     "n": 14
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 0.962274,
+     "n": 14
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 14
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.621286,
+     "n": 14
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 0.0,
+     "n": 14
+    },
+    "notation.tuplets.f1": {
+     "mean": 0.614458,
+     "n": 3
+    },
+    "notes.identity.f1": {
+     "mean": 0.978879,
+     "n": 14
+    },
+    "notes.identity.precision": {
+     "mean": 0.981653,
+     "n": 14
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.988724,
+     "n": 14
+    },
+    "notes.identity.recall": {
+     "mean": 0.976182,
+     "n": 14
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.977019,
+     "n": 14
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.978331,
+     "n": 14
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.938039,
+     "n": 14
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 0.690029,
+     "n": 14
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.005003,
+     "n": 14
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.005003,
+     "n": 14
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 14
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 14
+    },
+    "read.max_chord_size": {
+     "mean": 2.714286,
+     "n": 14
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.428571,
+     "n": 14
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 14
+    },
+    "read.over_span_rate.delta": {
+     "mean": -0.007194,
+     "n": 14
+    },
+    "read.rests_per_measure": {
+     "mean": 0.939894,
+     "n": 14
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 0.939894,
+     "n": 14
+    },
+    "read.short_notes_rate": {
+     "mean": 0.068783,
+     "n": 14
+    },
+    "read.short_notes_rate.delta": {
+     "mean": -0.015873,
+     "n": 14
+    },
+    "read.ties_per_note": {
+     "mean": 0.0,
+     "n": 14
+    },
+    "read.ties_per_note.delta": {
+     "mean": -0.012987,
+     "n": 14
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.123163,
+     "n": 14
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": -0.008706,
+     "n": 14
+    },
+    "sqi": {
+     "mean": 93.508498,
+     "n": 14
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.642857,
+     "n": 14
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.642857,
+     "n": 14
+    },
+    "struct.measures.count_ratio": {
+     "mean": 1.077381,
+     "n": 14
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 1.0,
+     "n": 14
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 14
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 1.0,
+     "n": 14
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 14
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 1.0,
+     "n": 14
+    },
+    "struct.time_sig.exact": {
+     "mean": 1.0,
+     "n": 14
+    },
+    "struct.time_sig.score": {
+     "mean": 1.0,
+     "n": 14
+    }
+   },
+   "metre-class:simple-triple": {
+    "cases": 12,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.937947,
+     "n": 12
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.928376,
+     "n": 12
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.687883,
+     "n": 12
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 10
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 13.544489,
+     "n": 12
+    },
+    "notes.identity.f1": {
+     "mean": 0.989781,
+     "n": 12
+    },
+    "notes.identity.precision": {
+     "mean": 0.997222,
+     "n": 12
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.998145,
+     "n": 12
+    },
+    "notes.identity.recall": {
+     "mean": 0.982666,
+     "n": 12
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.979964,
+     "n": 12
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.989781,
+     "n": 12
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.9744,
+     "n": 12
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 2.24537,
+     "n": 12
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.017601,
+     "n": 12
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.004744,
+     "n": 12
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 12
+    },
+    "read.max_chord_size": {
+     "mean": 2.833333,
+     "n": 12
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.333333,
+     "n": 12
+    },
+    "read.over_span_rate": {
+     "mean": 0.005952,
+     "n": 12
+    },
+    "read.over_span_rate.delta": {
+     "mean": -0.002499,
+     "n": 12
+    },
+    "read.rests_per_measure": {
+     "mean": 0.564693,
+     "n": 12
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 0.421175,
+     "n": 12
+    },
+    "read.short_notes_rate": {
+     "mean": 0.001984,
+     "n": 12
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.001984,
+     "n": 12
+    },
+    "read.ties_per_note": {
+     "mean": 0.08576,
+     "n": 12
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.08576,
+     "n": 12
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 12
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 12
+    },
+    "sqi": {
+     "mean": 90.978035,
+     "n": 12
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.714286,
+     "n": 12
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 10
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 10
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.75,
+     "n": 12
+    },
+    "struct.measures.count_ratio": {
+     "mean": 0.966163,
+     "n": 12
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.75,
+     "n": 12
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.75,
+     "n": 12
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.916076,
+     "n": 12
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.583333,
+     "n": 12
+    },
+    "struct.time_sig.score": {
+     "mean": 0.729167,
+     "n": 12
+    }
+   },
+   "metre:2/4": {
+    "cases": 4,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.793523,
+     "n": 4
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.972835,
+     "n": 4
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.037881,
+     "n": 4
+    },
+    "notation.spelling.accuracy": {
+     "mean": 0.998916,
+     "n": 4
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 3.897846,
+     "n": 4
+    },
+    "notes.identity.f1": {
+     "mean": 0.917303,
+     "n": 4
+    },
+    "notes.identity.precision": {
+     "mean": 0.917303,
+     "n": 4
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.878523,
+     "n": 4
+    },
+    "notes.identity.recall": {
+     "mean": 0.917303,
+     "n": 4
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.878523,
+     "n": 4
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.917303,
+     "n": 4
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.917303,
+     "n": 4
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.031333,
+     "n": 4
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": -0.012814,
+     "n": 4
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.max_chord_size": {
+     "mean": 2.75,
+     "n": 4
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.25,
+     "n": 4
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.rests_per_measure": {
+     "mean": 3.645602,
+     "n": 4
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 3.237151,
+     "n": 4
+    },
+    "read.short_notes_rate": {
+     "mean": 0.088713,
+     "n": 4
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.088713,
+     "n": 4
+    },
+    "read.ties_per_note": {
+     "mean": 0.044069,
+     "n": 4
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.040566,
+     "n": 4
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "sqi": {
+     "mean": 71.383041,
+     "n": 4
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.425612,
+     "n": 4
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "struct.measures.count_ratio": {
+     "mean": 0.678257,
+     "n": 4
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.67,
+     "n": 4
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "struct.time_sig.score": {
+     "mean": 0.0,
+     "n": 4
+    }
+   },
+   "metre:3/4": {
+    "cases": 12,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.937947,
+     "n": 12
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.928376,
+     "n": 12
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.687883,
+     "n": 12
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 10
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 13.544489,
+     "n": 12
+    },
+    "notes.identity.f1": {
+     "mean": 0.989781,
+     "n": 12
+    },
+    "notes.identity.precision": {
+     "mean": 0.997222,
+     "n": 12
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.998145,
+     "n": 12
+    },
+    "notes.identity.recall": {
+     "mean": 0.982666,
+     "n": 12
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.979964,
+     "n": 12
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.989781,
+     "n": 12
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.9744,
+     "n": 12
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 2.24537,
+     "n": 12
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.017601,
+     "n": 12
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.004744,
+     "n": 12
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 12
+    },
+    "read.max_chord_size": {
+     "mean": 2.833333,
+     "n": 12
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.333333,
+     "n": 12
+    },
+    "read.over_span_rate": {
+     "mean": 0.005952,
+     "n": 12
+    },
+    "read.over_span_rate.delta": {
+     "mean": -0.002499,
+     "n": 12
+    },
+    "read.rests_per_measure": {
+     "mean": 0.564693,
+     "n": 12
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 0.421175,
+     "n": 12
+    },
+    "read.short_notes_rate": {
+     "mean": 0.001984,
+     "n": 12
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.001984,
+     "n": 12
+    },
+    "read.ties_per_note": {
+     "mean": 0.08576,
+     "n": 12
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.08576,
+     "n": 12
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 12
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 12
+    },
+    "sqi": {
+     "mean": 90.978035,
+     "n": 12
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.714286,
+     "n": 12
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 10
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 10
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.75,
+     "n": 12
+    },
+    "struct.measures.count_ratio": {
+     "mean": 0.966163,
+     "n": 12
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.75,
+     "n": 12
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.75,
+     "n": 12
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.916076,
+     "n": 12
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.583333,
+     "n": 12
+    },
+    "struct.time_sig.score": {
+     "mean": 0.729167,
+     "n": 12
+    }
+   },
+   "metre:4/4": {
+    "cases": 14,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.893983,
+     "n": 14
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.959786,
+     "n": 14
+    },
+    "notation.ioi.accuracy": {
+     "mean": 0.962274,
+     "n": 14
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 0.962274,
+     "n": 14
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 14
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.621286,
+     "n": 14
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 0.0,
+     "n": 14
+    },
+    "notation.tuplets.f1": {
+     "mean": 0.614458,
+     "n": 3
+    },
+    "notes.identity.f1": {
+     "mean": 0.978879,
+     "n": 14
+    },
+    "notes.identity.precision": {
+     "mean": 0.981653,
+     "n": 14
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.988724,
+     "n": 14
+    },
+    "notes.identity.recall": {
+     "mean": 0.976182,
+     "n": 14
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.977019,
+     "n": 14
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.978331,
+     "n": 14
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.938039,
+     "n": 14
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 0.690029,
+     "n": 14
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.005003,
+     "n": 14
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.005003,
+     "n": 14
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 14
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 14
+    },
+    "read.max_chord_size": {
+     "mean": 2.714286,
+     "n": 14
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.428571,
+     "n": 14
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 14
+    },
+    "read.over_span_rate.delta": {
+     "mean": -0.007194,
+     "n": 14
+    },
+    "read.rests_per_measure": {
+     "mean": 0.939894,
+     "n": 14
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 0.939894,
+     "n": 14
+    },
+    "read.short_notes_rate": {
+     "mean": 0.068783,
+     "n": 14
+    },
+    "read.short_notes_rate.delta": {
+     "mean": -0.015873,
+     "n": 14
+    },
+    "read.ties_per_note": {
+     "mean": 0.0,
+     "n": 14
+    },
+    "read.ties_per_note.delta": {
+     "mean": -0.012987,
+     "n": 14
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.123163,
+     "n": 14
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": -0.008706,
+     "n": 14
+    },
+    "sqi": {
+     "mean": 93.508498,
+     "n": 14
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.642857,
+     "n": 14
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 12
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.642857,
+     "n": 14
+    },
+    "struct.measures.count_ratio": {
+     "mean": 1.077381,
+     "n": 14
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 1.0,
+     "n": 14
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 14
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 1.0,
+     "n": 14
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 14
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 1.0,
+     "n": 14
+    },
+    "struct.time_sig.exact": {
+     "mean": 1.0,
+     "n": 14
+    },
+    "struct.time_sig.score": {
+     "mean": 1.0,
+     "n": 14
+    }
+   },
+   "metre:6/8": {
+    "cases": 2,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.703125,
+     "n": 2
+    },
+    "notation.hand.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "notes.identity.f1": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notes.identity.precision": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notes.identity.precision_micro": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notes.identity.recall": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notes.identity.recall_micro": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.max_chord_size": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.rests_per_measure": {
+     "mean": 2.375,
+     "n": 2
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 2.375,
+     "n": 2
+    },
+    "read.short_notes_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.ties_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "sqi": {
+     "mean": 92.03125,
+     "n": 2
+    },
+    "struct.downbeat.f1": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.measures.count_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.measures.count_ratio": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.666667,
+     "n": 2
+    },
+    "struct.time_sig.exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.time_sig.score": {
+     "mean": 1.0,
+     "n": 2
+    }
+   },
+   "mode:major": {
+    "cases": 28,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.892167,
+     "n": 28
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.949197,
+     "n": 28
+    },
+    "notation.ioi.accuracy": {
+     "mean": 0.981137,
+     "n": 28
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 0.981137,
+     "n": 28
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 28
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.640286,
+     "n": 28
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 24
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 6.12856,
+     "n": 28
+    },
+    "notation.tuplets.f1": {
+     "mean": 0.614458,
+     "n": 3
+    },
+    "notes.identity.f1": {
+     "mean": 0.985648,
+     "n": 28
+    },
+    "notes.identity.precision": {
+     "mean": 0.990224,
+     "n": 28
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.993359,
+     "n": 28
+    },
+    "notes.identity.recall": {
+     "mean": 0.98125,
+     "n": 28
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.980676,
+     "n": 28
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.985375,
+     "n": 28
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.960422,
+     "n": 28
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 1.021602,
+     "n": 28
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.005667,
+     "n": 28
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.004116,
+     "n": 28
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 28
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 28
+    },
+    "read.max_chord_size": {
+     "mean": 2.678571,
+     "n": 28
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.392857,
+     "n": 28
+    },
+    "read.over_span_rate": {
+     "mean": 0.002551,
+     "n": 28
+    },
+    "read.over_span_rate.delta": {
+     "mean": -0.004668,
+     "n": 28
+    },
+    "read.rests_per_measure": {
+     "mean": 0.995701,
+     "n": 28
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 0.934193,
+     "n": 28
+    },
+    "read.short_notes_rate": {
+     "mean": 0.038314,
+     "n": 28
+    },
+    "read.short_notes_rate.delta": {
+     "mean": -0.004014,
+     "n": 28
+    },
+    "read.ties_per_note": {
+     "mean": 0.039827,
+     "n": 28
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.033333,
+     "n": 28
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.061581,
+     "n": 28
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": -0.004353,
+     "n": 28
+    },
+    "sqi": {
+     "mean": 91.001221,
+     "n": 28
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.684807,
+     "n": 28
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 24
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 24
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.678571,
+     "n": 28
+    },
+    "struct.measures.count_ratio": {
+     "mean": 1.006332,
+     "n": 28
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.75,
+     "n": 28
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 28
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.75,
+     "n": 28
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 28
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.916652,
+     "n": 28
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.785714,
+     "n": 28
+    },
+    "struct.time_sig.score": {
+     "mean": 0.830357,
+     "n": 28
+    }
+   },
+   "mode:minor": {
+    "cases": 2,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.982759,
+     "n": 2
+    },
+    "notation.hand.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.568966,
+     "n": 2
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "notes.identity.f1": {
+     "mean": 0.983333,
+     "n": 2
+    },
+    "notes.identity.precision": {
+     "mean": 0.983333,
+     "n": 2
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.983333,
+     "n": 2
+    },
+    "notes.identity.recall": {
+     "mean": 0.983333,
+     "n": 2
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.983333,
+     "n": 2
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.983333,
+     "n": 2
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.958333,
+     "n": 2
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 4.0,
+     "n": 2
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.066667,
+     "n": 2
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.max_chord_size": {
+     "mean": 2.0,
+     "n": 2
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.rests_per_measure": {
+     "mean": 0.357143,
+     "n": 2
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 0.357143,
+     "n": 2
+    },
+    "read.short_notes_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.ties_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "sqi": {
+     "mean": 92.683908,
+     "n": 2
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.642857,
+     "n": 2
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.5,
+     "n": 2
+    },
+    "struct.measures.count_ratio": {
+     "mean": 0.9375,
+     "n": 2
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.5,
+     "n": 2
+    },
+    "struct.time_sig.score": {
+     "mean": 0.75,
+     "n": 2
+    }
+   },
+   "mode:unknown": {
+    "cases": 2,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.702647,
+     "n": 2
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.945671,
+     "n": 2
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.019101,
+     "n": 2
+    },
+    "notation.spelling.accuracy": {
+     "mean": 0.997833,
+     "n": 2
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 3.262787,
+     "n": 2
+    },
+    "notes.identity.f1": {
+     "mean": 0.843034,
+     "n": 2
+    },
+    "notes.identity.precision": {
+     "mean": 0.843034,
+     "n": 2
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.843034,
+     "n": 2
+    },
+    "notes.identity.recall": {
+     "mean": 0.843034,
+     "n": 2
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.843034,
+     "n": 2
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.843034,
+     "n": 2
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.843034,
+     "n": 2
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.05729,
+     "n": 2
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": -0.019768,
+     "n": 2
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.max_chord_size": {
+     "mean": 3.0,
+     "n": 2
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.rests_per_measure": {
+     "mean": 5.336658,
+     "n": 2
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 4.519756,
+     "n": 2
+    },
+    "read.short_notes_rate": {
+     "mean": 0.134414,
+     "n": 2
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.134414,
+     "n": 2
+    },
+    "read.ties_per_note": {
+     "mean": 0.045127,
+     "n": 2
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.038122,
+     "n": 2
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "sqi": {
+     "mean": 68.524027,
+     "n": 2
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.40678,
+     "n": 2
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "struct.measures.count_ratio": {
+     "mean": 0.669014,
+     "n": 2
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.67,
+     "n": 2
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "struct.time_sig.score": {
+     "mean": 0.0,
+     "n": 2
+    }
+   },
+   "profile:deadpan": {
+    "cases": 16,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.903332,
+     "n": 16
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.952173,
+     "n": 16
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.333269,
+     "n": 16
+    },
+    "notation.spelling.accuracy": {
+     "mean": 0.999816,
+     "n": 14
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 10.444081,
+     "n": 16
+    },
+    "notation.tuplets.f1": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "notes.identity.f1": {
+     "mean": 0.956929,
+     "n": 16
+    },
+    "notes.identity.precision": {
+     "mean": 0.961189,
+     "n": 16
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.903257,
+     "n": 16
+    },
+    "notes.identity.recall": {
+     "mean": 0.95283,
+     "n": 16
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.89499,
+     "n": 16
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.956929,
+     "n": 16
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.920292,
+     "n": 16
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 2.189014,
+     "n": 16
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.014628,
+     "n": 16
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.004288,
+     "n": 16
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "read.max_chord_size": {
+     "mean": 2.6875,
+     "n": 16
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.375,
+     "n": 16
+    },
+    "read.over_span_rate": {
+     "mean": 0.002232,
+     "n": 16
+    },
+    "read.over_span_rate.delta": {
+     "mean": -0.004085,
+     "n": 16
+    },
+    "read.rests_per_measure": {
+     "mean": 1.306466,
+     "n": 16
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 1.20159,
+     "n": 16
+    },
+    "read.short_notes_rate": {
+     "mean": 0.045736,
+     "n": 16
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.008699,
+     "n": 16
+    },
+    "read.ties_per_note": {
+     "mean": 0.068724,
+     "n": 16
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.062604,
+     "n": 16
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.057598,
+     "n": 16
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": -9.4e-05,
+     "n": 16
+    },
+    "sqi": {
+     "mean": 85.568907,
+     "n": 16
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.401416,
+     "n": 16
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 14
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 13
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.375,
+     "n": 16
+    },
+    "struct.measures.count_ratio": {
+     "mean": 1.002553,
+     "n": 16
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.625,
+     "n": 16
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.625,
+     "n": 16
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.874974,
+     "n": 16
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.5625,
+     "n": 16
+    },
+    "struct.time_sig.score": {
+     "mean": 0.671875,
+     "n": 16
+    }
+   },
+   "profile:human": {
+    "cases": 16,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.868635,
+     "n": 16
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.95213,
+     "n": 16
+    },
+    "notation.ioi.accuracy": {
+     "mean": 0.96699,
+     "n": 16
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 0.96699,
+     "n": 16
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.860739,
+     "n": 16
+    },
+    "notation.spelling.accuracy": {
+     "mean": 0.999874,
+     "n": 14
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 0.688747,
+     "n": 16
+    },
+    "notation.tuplets.f1": {
+     "mean": 0.421687,
+     "n": 2
+    },
+    "notes.identity.f1": {
+     "mean": 0.996252,
+     "n": 16
+    },
+    "notes.identity.precision": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "notes.identity.precision_micro": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "notes.identity.recall": {
+     "mean": 0.992654,
+     "n": 16
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.991329,
+     "n": 16
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.995773,
+     "n": 16
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.985618,
+     "n": 16
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 0.098789,
+     "n": 16
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.010784,
+     "n": 16
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.000444,
+     "n": 16
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "read.max_chord_size": {
+     "mean": 2.625,
+     "n": 16
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.3125,
+     "n": 16
+    },
+    "read.over_span_rate": {
+     "mean": 0.002232,
+     "n": 16
+    },
+    "read.over_span_rate.delta": {
+     "mean": -0.004085,
+     "n": 16
+    },
+    "read.rests_per_measure": {
+     "mean": 1.147737,
+     "n": 16
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 1.042861,
+     "n": 16
+    },
+    "read.short_notes_rate": {
+     "mean": 0.038115,
+     "n": 16
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.001078,
+     "n": 16
+    },
+    "read.ties_per_note": {
+     "mean": 0.006614,
+     "n": 16
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.000494,
+     "n": 16
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.050169,
+     "n": 16
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": -0.007523,
+     "n": 16
+    },
+    "sqi": {
+     "mean": 93.83422,
+     "n": 16
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.928202,
+     "n": 16
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 14
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 13
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.875,
+     "n": 16
+    },
+    "struct.measures.count_ratio": {
+     "mean": 0.959342,
+     "n": 16
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.8125,
+     "n": 16
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.8125,
+     "n": 16
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.937917,
+     "n": 16
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.875,
+     "n": 16
+    },
+    "struct.time_sig.score": {
+     "mean": 0.875,
+     "n": 16
+    }
+   },
+   "seed:1": {
+    "cases": 32,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.885984,
+     "n": 32
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.952152,
+     "n": 32
+    },
+    "notation.ioi.accuracy": {
+     "mean": 0.983495,
+     "n": 32
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 0.983495,
+     "n": 32
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 32
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.597004,
+     "n": 32
+    },
+    "notation.spelling.accuracy": {
+     "mean": 0.999845,
+     "n": 28
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 5.566414,
+     "n": 32
+    },
+    "notation.tuplets.f1": {
+     "mean": 0.614458,
+     "n": 3
+    },
+    "notes.identity.f1": {
+     "mean": 0.97659,
+     "n": 32
+    },
+    "notes.identity.precision": {
+     "mean": 0.980594,
+     "n": 32
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.95164,
+     "n": 32
+    },
+    "notes.identity.recall": {
+     "mean": 0.972742,
+     "n": 32
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.94316,
+     "n": 32
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.976351,
+     "n": 32
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.952955,
+     "n": 32
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 1.143901,
+     "n": 32
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.012706,
+     "n": 32
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.002366,
+     "n": 32
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 32
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 32
+    },
+    "read.max_chord_size": {
+     "mean": 2.65625,
+     "n": 32
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.34375,
+     "n": 32
+    },
+    "read.over_span_rate": {
+     "mean": 0.002232,
+     "n": 32
+    },
+    "read.over_span_rate.delta": {
+     "mean": -0.004085,
+     "n": 32
+    },
+    "read.rests_per_measure": {
+     "mean": 1.227101,
+     "n": 32
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 1.122225,
+     "n": 32
+    },
+    "read.short_notes_rate": {
+     "mean": 0.041926,
+     "n": 32
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.004889,
+     "n": 32
+    },
+    "read.ties_per_note": {
+     "mean": 0.037669,
+     "n": 32
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.031549,
+     "n": 32
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.053884,
+     "n": 32
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": -0.003809,
+     "n": 32
+    },
+    "sqi": {
+     "mean": 89.701564,
+     "n": 32
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.664809,
+     "n": 32
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 28
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 26
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.625,
+     "n": 32
+    },
+    "struct.measures.count_ratio": {
+     "mean": 0.980947,
+     "n": 32
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.71875,
+     "n": 32
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 32
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.71875,
+     "n": 32
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 32
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.906445,
+     "n": 32
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.71875,
+     "n": 32
+    },
+    "struct.time_sig.score": {
+     "mean": 0.773438,
+     "n": 32
+    }
+   },
+   "set:catalog": {
+    "cases": 4,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.910714,
+     "n": 4
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.845238,
+     "n": 4
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.75,
+     "n": 4
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 32.983193,
+     "n": 4
+    },
+    "notes.identity.f1": {
+     "mean": 0.988372,
+     "n": 4
+    },
+    "notes.identity.precision": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notes.identity.precision_micro": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notes.identity.recall": {
+     "mean": 0.977273,
+     "n": 4
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.974359,
+     "n": 4
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.988372,
+     "n": 4
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.976744,
+     "n": 4
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 2.833333,
+     "n": 4
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.max_chord_size": {
+     "mean": 3.0,
+     "n": 4
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.over_span_rate": {
+     "mean": 0.017857,
+     "n": 4
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.002706,
+     "n": 4
+    },
+    "read.rests_per_measure": {
+     "mean": 1.03125,
+     "n": 4
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 0.65625,
+     "n": 4
+    },
+    "read.short_notes_rate": {
+     "mean": 0.005952,
+     "n": 4
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.005952,
+     "n": 4
+    },
+    "read.ties_per_note": {
+     "mean": 0.198703,
+     "n": 4
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.198703,
+     "n": 4
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "sqi": {
+     "mean": 88.576966,
+     "n": 4
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.75,
+     "n": 4
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.measures.count_exact": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.measures.count_ratio": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.5,
+     "n": 4
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.5,
+     "n": 4
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.833333,
+     "n": 4
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.5,
+     "n": 4
+    },
+    "struct.time_sig.score": {
+     "mean": 0.625,
+     "n": 4
+    }
+   },
+   "set:hymns": {
+    "cases": 4,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.927702,
+     "n": 4
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.860124,
+     "n": 4
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.75,
+     "n": 4
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 7.650273,
+     "n": 4
+    },
+    "notes.identity.f1": {
+     "mean": 0.981642,
+     "n": 4
+    },
+    "notes.identity.precision": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notes.identity.precision_micro": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notes.identity.recall": {
+     "mean": 0.963963,
+     "n": 4
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.964912,
+     "n": 4
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.979726,
+     "n": 4
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.970547,
+     "n": 4
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.036978,
+     "n": 4
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.031743,
+     "n": 4
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.max_chord_size": {
+     "mean": 3.5,
+     "n": 4
+    },
+    "read.max_chord_size.delta": {
+     "mean": 1.5,
+     "n": 4
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.over_span_rate.delta": {
+     "mean": -0.035384,
+     "n": 4
+    },
+    "read.rests_per_measure": {
+     "mean": 0.477022,
+     "n": 4
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 0.477022,
+     "n": 4
+    },
+    "read.short_notes_rate": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.ties_per_note": {
+     "mean": 0.058577,
+     "n": 4
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.058577,
+     "n": 4
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "sqi": {
+     "mean": 90.454236,
+     "n": 4
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.75,
+     "n": 4
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.75,
+     "n": 4
+    },
+    "struct.measures.count_ratio": {
+     "mean": 0.985294,
+     "n": 4
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.75,
+     "n": 4
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.75,
+     "n": 4
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.9175,
+     "n": 4
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.75,
+     "n": 4
+    },
+    "struct.time_sig.score": {
+     "mean": 0.8125,
+     "n": 4
+    }
+   },
+   "set:method": {
+    "cases": 4,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.793523,
+     "n": 4
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.972835,
+     "n": 4
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.037881,
+     "n": 4
+    },
+    "notation.spelling.accuracy": {
+     "mean": 0.998916,
+     "n": 4
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 3.897846,
+     "n": 4
+    },
+    "notes.identity.f1": {
+     "mean": 0.917303,
+     "n": 4
+    },
+    "notes.identity.precision": {
+     "mean": 0.917303,
+     "n": 4
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.878523,
+     "n": 4
+    },
+    "notes.identity.recall": {
+     "mean": 0.917303,
+     "n": 4
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.878523,
+     "n": 4
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.917303,
+     "n": 4
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.917303,
+     "n": 4
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.031333,
+     "n": 4
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": -0.012814,
+     "n": 4
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.max_chord_size": {
+     "mean": 2.75,
+     "n": 4
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.25,
+     "n": 4
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.rests_per_measure": {
+     "mean": 3.645602,
+     "n": 4
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 3.237151,
+     "n": 4
+    },
+    "read.short_notes_rate": {
+     "mean": 0.088713,
+     "n": 4
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.088713,
+     "n": 4
+    },
+    "read.ties_per_note": {
+     "mean": 0.044069,
+     "n": 4
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.040566,
+     "n": 4
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "sqi": {
+     "mean": 71.383041,
+     "n": 4
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.425612,
+     "n": 4
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "struct.measures.count_ratio": {
+     "mean": 0.678257,
+     "n": 4
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.67,
+     "n": 4
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "struct.time_sig.score": {
+     "mean": 0.0,
+     "n": 4
+    }
+   },
+   "set:micro": {
+    "cases": 20,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.891186,
+     "n": 20
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.987803,
+     "n": 20
+    },
+    "notation.ioi.accuracy": {
+     "mean": 0.973592,
+     "n": 20
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 0.973592,
+     "n": 20
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.64763,
+     "n": 20
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "notation.tuplets.f1": {
+     "mean": 0.614458,
+     "n": 3
+    },
+    "notes.identity.f1": {
+     "mean": 0.985081,
+     "n": 20
+    },
+    "notes.identity.precision": {
+     "mean": 0.98549,
+     "n": 20
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.988701,
+     "n": 20
+    },
+    "notes.identity.recall": {
+     "mean": 0.984679,
+     "n": 20
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.98808,
+     "n": 20
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.985081,
+     "n": 20
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.951809,
+     "n": 20
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 1.263576,
+     "n": 20
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.006667,
+     "n": 20
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "read.max_chord_size": {
+     "mean": 2.4,
+     "n": 20
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.2,
+     "n": 20
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "read.rests_per_measure": {
+     "mean": 0.932587,
+     "n": 20
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 0.921476,
+     "n": 20
+    },
+    "read.short_notes_rate": {
+     "mean": 0.048148,
+     "n": 20
+    },
+    "read.short_notes_rate.delta": {
+     "mean": -0.011111,
+     "n": 20
+    },
+    "read.ties_per_note": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "read.ties_per_note.delta": {
+     "mean": -0.009091,
+     "n": 20
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.086214,
+     "n": 20
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": -0.006094,
+     "n": 20
+    },
+    "sqi": {
+     "mean": 93.439654,
+     "n": 20
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.678571,
+     "n": 20
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.65,
+     "n": 20
+    },
+    "struct.measures.count_ratio": {
+     "mean": 1.036806,
+     "n": 20
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.9,
+     "n": 20
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.9,
+     "n": 20
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.966146,
+     "n": 20
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.9,
+     "n": 20
+    },
+    "struct.time_sig.score": {
+     "mean": 0.95,
+     "n": 20
+    }
+   },
+   "size:l": {
+    "cases": 2,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.702647,
+     "n": 2
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.945671,
+     "n": 2
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.019101,
+     "n": 2
+    },
+    "notation.spelling.accuracy": {
+     "mean": 0.997833,
+     "n": 2
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 3.262787,
+     "n": 2
+    },
+    "notes.identity.f1": {
+     "mean": 0.843034,
+     "n": 2
+    },
+    "notes.identity.precision": {
+     "mean": 0.843034,
+     "n": 2
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.843034,
+     "n": 2
+    },
+    "notes.identity.recall": {
+     "mean": 0.843034,
+     "n": 2
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.843034,
+     "n": 2
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.843034,
+     "n": 2
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.843034,
+     "n": 2
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.05729,
+     "n": 2
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": -0.019768,
+     "n": 2
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.max_chord_size": {
+     "mean": 3.0,
+     "n": 2
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.rests_per_measure": {
+     "mean": 5.336658,
+     "n": 2
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 4.519756,
+     "n": 2
+    },
+    "read.short_notes_rate": {
+     "mean": 0.134414,
+     "n": 2
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.134414,
+     "n": 2
+    },
+    "read.ties_per_note": {
+     "mean": 0.045127,
+     "n": 2
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.038122,
+     "n": 2
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "sqi": {
+     "mean": 68.524027,
+     "n": 2
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.40678,
+     "n": 2
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "struct.measures.count_ratio": {
+     "mean": 0.669014,
+     "n": 2
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.67,
+     "n": 2
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "struct.time_sig.score": {
+     "mean": 0.0,
+     "n": 2
+    }
+   },
+   "size:m": {
+    "cases": 10,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.914782,
+     "n": 10
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.94405,
+     "n": 10
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 10
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 1.0,
+     "n": 10
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 10
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.611332,
+     "n": 10
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 3.96669,
+     "n": 10
+    },
+    "notes.identity.f1": {
+     "mean": 0.990971,
+     "n": 10
+    },
+    "notes.identity.precision": {
+     "mean": 0.998315,
+     "n": 10
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.998346,
+     "n": 10
+    },
+    "notes.identity.recall": {
+     "mean": 0.9839,
+     "n": 10
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.98104,
+     "n": 10
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.990205,
+     "n": 10
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.981882,
+     "n": 10
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 0.664286,
+     "n": 10
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.015867,
+     "n": 10
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.011525,
+     "n": 10
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 10
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 10
+    },
+    "read.max_chord_size": {
+     "mean": 2.7,
+     "n": 10
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.7,
+     "n": 10
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 10
+    },
+    "read.over_span_rate.delta": {
+     "mean": -0.014154,
+     "n": 10
+    },
+    "read.rests_per_measure": {
+     "mean": 0.754154,
+     "n": 10
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 0.754154,
+     "n": 10
+    },
+    "read.short_notes_rate": {
+     "mean": 0.008602,
+     "n": 10
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.008602,
+     "n": 10
+    },
+    "read.ties_per_note": {
+     "mean": 0.032033,
+     "n": 10
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.032033,
+     "n": 10
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 10
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 10
+    },
+    "sqi": {
+     "mean": 89.698322,
+     "n": 10
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.688889,
+     "n": 10
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.6,
+     "n": 10
+    },
+    "struct.measures.count_ratio": {
+     "mean": 0.939951,
+     "n": 10
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.7,
+     "n": 10
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 10
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.7,
+     "n": 10
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 10
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.899958,
+     "n": 10
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.7,
+     "n": 10
+    },
+    "struct.time_sig.score": {
+     "mean": 0.725,
+     "n": 10
+    }
+   },
+   "size:s": {
+    "cases": 20,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.889918,
+     "n": 20
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.956851,
+     "n": 20
+    },
+    "notation.ioi.accuracy": {
+     "mean": 0.973592,
+     "n": 20
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 0.973592,
+     "n": 20
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.64763,
+     "n": 20
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 6.596639,
+     "n": 20
+    },
+    "notation.tuplets.f1": {
+     "mean": 0.614458,
+     "n": 3
+    },
+    "notes.identity.f1": {
+     "mean": 0.982755,
+     "n": 20
+    },
+    "notes.identity.precision": {
+     "mean": 0.98549,
+     "n": 20
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.984576,
+     "n": 20
+    },
+    "notes.identity.recall": {
+     "mean": 0.980134,
+     "n": 20
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.980375,
+     "n": 20
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.982755,
+     "n": 20
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.949483,
+     "n": 20
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 1.498099,
+     "n": 20
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.006667,
+     "n": 20
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "read.max_chord_size": {
+     "mean": 2.6,
+     "n": 20
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.2,
+     "n": 20
+    },
+    "read.over_span_rate": {
+     "mean": 0.003571,
+     "n": 20
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.000541,
+     "n": 20
+    },
+    "read.rests_per_measure": {
+     "mean": 1.052619,
+     "n": 20
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 0.966508,
+     "n": 20
+    },
+    "read.short_notes_rate": {
+     "mean": 0.049339,
+     "n": 20
+    },
+    "read.short_notes_rate.delta": {
+     "mean": -0.009921,
+     "n": 20
+    },
+    "read.ties_per_note": {
+     "mean": 0.039741,
+     "n": 20
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.03065,
+     "n": 20
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.086214,
+     "n": 20
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": -0.006094,
+     "n": 20
+    },
+    "sqi": {
+     "mean": 91.820938,
+     "n": 20
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.678571,
+     "n": 20
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.7,
+     "n": 20
+    },
+    "struct.measures.count_ratio": {
+     "mean": 1.032639,
+     "n": 20
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.8,
+     "n": 20
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.8,
+     "n": 20
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.933333,
+     "n": 20
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.8,
+     "n": 20
+    },
+    "struct.time_sig.score": {
+     "mean": 0.875,
+     "n": 20
+    }
+   },
+   "staves:2": {
+    "cases": 32,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.885984,
+     "n": 32
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.952152,
+     "n": 32
+    },
+    "notation.ioi.accuracy": {
+     "mean": 0.983495,
+     "n": 32
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 0.983495,
+     "n": 32
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 32
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.597004,
+     "n": 32
+    },
+    "notation.spelling.accuracy": {
+     "mean": 0.999845,
+     "n": 28
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 5.566414,
+     "n": 32
+    },
+    "notation.tuplets.f1": {
+     "mean": 0.614458,
+     "n": 3
+    },
+    "notes.identity.f1": {
+     "mean": 0.97659,
+     "n": 32
+    },
+    "notes.identity.precision": {
+     "mean": 0.980594,
+     "n": 32
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.95164,
+     "n": 32
+    },
+    "notes.identity.recall": {
+     "mean": 0.972742,
+     "n": 32
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.94316,
+     "n": 32
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 0.976351,
+     "n": 32
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.952955,
+     "n": 32
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 1.143901,
+     "n": 32
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.012706,
+     "n": 32
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.002366,
+     "n": 32
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 32
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 32
+    },
+    "read.max_chord_size": {
+     "mean": 2.65625,
+     "n": 32
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.34375,
+     "n": 32
+    },
+    "read.over_span_rate": {
+     "mean": 0.002232,
+     "n": 32
+    },
+    "read.over_span_rate.delta": {
+     "mean": -0.004085,
+     "n": 32
+    },
+    "read.rests_per_measure": {
+     "mean": 1.227101,
+     "n": 32
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 1.122225,
+     "n": 32
+    },
+    "read.short_notes_rate": {
+     "mean": 0.041926,
+     "n": 32
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.004889,
+     "n": 32
+    },
+    "read.ties_per_note": {
+     "mean": 0.037669,
+     "n": 32
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.031549,
+     "n": 32
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.053884,
+     "n": 32
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": -0.003809,
+     "n": 32
+    },
+    "sqi": {
+     "mean": 89.701564,
+     "n": 32
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.664809,
+     "n": 32
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 28
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 26
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.625,
+     "n": 32
+    },
+    "struct.measures.count_ratio": {
+     "mean": 0.980947,
+     "n": 32
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 0.71875,
+     "n": 32
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 32
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.71875,
+     "n": 32
+    },
+    "struct.tempo.ok_written": {
+     "mean": 1.0,
+     "n": 32
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 0.906445,
+     "n": 32
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.71875,
+     "n": 32
+    },
+    "struct.time_sig.score": {
+     "mean": 0.773438,
+     "n": 32
+    }
+   }
+  }
+ },
+ "anchor": {
+  "aggregates_all": {
+   "notation.duration.accuracy": {
+    "mean": 0.885984,
+    "n": 32
+   },
+   "notation.hand.accuracy": {
+    "mean": 0.952152,
+    "n": 32
+   },
+   "notation.ioi.accuracy": {
+    "mean": 0.983495,
+    "n": 32
+   },
+   "notation.ioi.accuracy_strict": {
+    "mean": 0.983495,
+    "n": 32
+   },
+   "notation.metrical_scale": {
+    "mean": 1.0,
+    "n": 32
+   },
+   "notation.onset_pos.accuracy": {
+    "mean": 0.597004,
+    "n": 32
+   },
+   "notation.spelling.accuracy": {
+    "mean": 0.999845,
+    "n": 28
+   },
+   "notation.ties.extra_per_100": {
+    "mean": 5.566414,
+    "n": 32
+   },
+   "notation.tuplets.f1": {
+    "mean": 0.614458,
+    "n": 3
+   },
+   "notes.identity.f1": {
+    "mean": 0.97659,
+    "n": 32
+   },
+   "notes.identity.precision": {
+    "mean": 0.980594,
+    "n": 32
+   },
+   "notes.identity.precision_micro": {
+    "mean": 0.95164,
+    "n": 32
+   },
+   "notes.identity.recall": {
+    "mean": 0.972742,
+    "n": 32
+   },
+   "notes.identity.recall_micro": {
+    "mean": 0.94316,
+    "n": 32
+   },
+   "notes.input_fidelity.f1": {
+    "mean": 0.976351,
+    "n": 32
+   },
+   "notes.onset.f1_50ms": {
+    "mean": 0.952955,
+    "n": 32
+   },
+   "notes.timing.median_abs_ms": {
+    "mean": 1.143901,
+    "n": 32
+   },
+   "read.accidentals_per_note": {
+    "mean": 0.012706,
+    "n": 32
+   },
+   "read.accidentals_per_note.delta": {
+    "mean": 0.002366,
+    "n": 32
+   },
+   "read.bar_integrity": {
+    "mean": 1.0,
+    "n": 32
+   },
+   "read.bar_integrity.delta": {
+    "mean": 0.0,
+    "n": 32
+   },
+   "read.max_chord_size": {
+    "mean": 2.65625,
+    "n": 32
+   },
+   "read.max_chord_size.delta": {
+    "mean": 0.34375,
+    "n": 32
+   },
+   "read.over_span_rate": {
+    "mean": 0.002232,
+    "n": 32
+   },
+   "read.over_span_rate.delta": {
+    "mean": -0.004085,
+    "n": 32
+   },
+   "read.rests_per_measure": {
+    "mean": 1.227101,
+    "n": 32
+   },
+   "read.rests_per_measure.delta": {
+    "mean": 1.122225,
+    "n": 32
+   },
+   "read.short_notes_rate": {
+    "mean": 0.041926,
+    "n": 32
+   },
+   "read.short_notes_rate.delta": {
+    "mean": 0.004889,
+    "n": 32
+   },
+   "read.ties_per_note": {
+    "mean": 0.037669,
+    "n": 32
+   },
+   "read.ties_per_note.delta": {
+    "mean": 0.031549,
+    "n": 32
+   },
+   "read.tuplets_per_note": {
+    "mean": 0.053884,
+    "n": 32
+   },
+   "read.tuplets_per_note.delta": {
+    "mean": -0.003809,
+    "n": 32
+   },
+   "sqi": {
+    "mean": 89.701564,
+    "n": 32
+   },
+   "struct.downbeat.f1": {
+    "mean": 0.664809,
+    "n": 32
+   },
+   "struct.key.fifths_exact": {
+    "mean": 1.0,
+    "n": 28
+   },
+   "struct.key.mirex": {
+    "mean": 1.0,
+    "n": 26
+   },
+   "struct.measures.count_exact": {
+    "mean": 0.625,
+    "n": 32
+   },
+   "struct.measures.count_ratio": {
+    "mean": 0.980947,
+    "n": 32
+   },
+   "struct.tempo.mark_consistent": {
+    "mean": 0.71875,
+    "n": 32
+   },
+   "struct.tempo.metrical_ok": {
+    "mean": 1.0,
+    "n": 32
+   },
+   "struct.tempo.ok_effective": {
+    "mean": 0.71875,
+    "n": 32
+   },
+   "struct.tempo.ok_written": {
+    "mean": 1.0,
+    "n": 32
+   },
+   "struct.tempo.ratio_effective": {
+    "mean": 0.906445,
+    "n": 32
+   },
+   "struct.time_sig.exact": {
+    "mean": 0.71875,
+    "n": 32
+   },
+   "struct.time_sig.score": {
+    "mean": 0.773438,
+    "n": 32
+   }
+  },
+  "date": "2026-09-21",
+  "git_sha": "135624c055ef3a7d1e537f1b0437648c9e832031"
+ },
+ "cases": {
+  "catalog/gymnopedie-1|deadpan|none|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 1.0,
+    "notation.hand.accuracy": 1.0,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 0.0,
+    "struct.time_sig.score": 0.25
+   },
+   "sqi": 87.5,
+   "status": "ok"
+  },
+  "catalog/gymnopedie-1|human|oracle|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 1.0,
+    "notation.hand.accuracy": 1.0,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 100.0,
+   "status": "ok"
+  },
+  "catalog/happy-birthday|deadpan|none|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 0.714286,
+    "notation.hand.accuracy": 0.690476,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 0.0,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 0.976744,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 0.0,
+    "struct.time_sig.score": 0.25
+   },
+   "sqi": 71.082503,
+   "status": "ok"
+  },
+  "catalog/happy-birthday|human|oracle|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 0.928571,
+    "notation.hand.accuracy": 0.690476,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 0.976744,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 95.72536,
+   "status": "ok"
+  },
+  "hymns/i-know-whom|deadpan|none|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 0.945525,
+    "notation.hand.accuracy": 0.840467,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.spelling.accuracy": null,
+    "notes.identity.f1": 0.984674,
+    "struct.key.fifths_exact": null,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 97.121657,
+   "status": "ok"
+  },
+  "hymns/i-know-whom|human|oracle|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 0.918288,
+    "notation.hand.accuracy": 0.840467,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.spelling.accuracy": null,
+    "notes.identity.f1": 0.984674,
+    "struct.key.fifths_exact": null,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 96.801218,
+   "status": "ok"
+  },
+  "hymns/we-gather-together|deadpan|none|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 0.934426,
+    "notation.hand.accuracy": 0.879781,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 0.0,
+    "notation.spelling.accuracy": null,
+    "notes.identity.f1": 0.97861,
+    "struct.key.fifths_exact": null,
+    "struct.tempo.ok_effective": 0.0,
+    "struct.time_sig.score": 0.25
+   },
+   "sqi": 70.840316,
+   "status": "ok"
+  },
+  "hymns/we-gather-together|human|oracle|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 0.912568,
+    "notation.hand.accuracy": 0.879781,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.spelling.accuracy": null,
+    "notes.identity.f1": 0.97861,
+    "struct.key.fifths_exact": null,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 97.053753,
+   "status": "ok"
+  },
+  "method/czerny599/040|deadpan|none|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 0.948571,
+    "notation.hand.accuracy": 1.0,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 0.057143,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 0.983146,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 0.0,
+    "struct.time_sig.score": 0.0
+   },
+   "sqi": 74.720064,
+   "status": "ok"
+  },
+  "method/czerny599/040|human|oracle|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 0.820225,
+    "notation.hand.accuracy": 1.0,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 0.05618,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 0.0,
+    "struct.time_sig.score": 0.0
+   },
+   "sqi": 73.764045,
+   "status": "ok"
+  },
+  "method/sonatina/027|deadpan|none|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 0.678663,
+    "notation.hand.accuracy": 0.946015,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 0.020566,
+    "notation.spelling.accuracy": 0.997429,
+    "notes.identity.f1": 0.686067,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 0.0,
+    "struct.time_sig.score": 0.0
+   },
+   "sqi": 65.160929,
+   "status": "ok"
+  },
+  "method/sonatina/027|human|oracle|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 0.726631,
+    "notation.hand.accuracy": 0.945326,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 0.017637,
+    "notation.spelling.accuracy": 0.998236,
+    "notes.identity.f1": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 0.0,
+    "struct.time_sig.score": 0.0
+   },
+   "sqi": 71.887125,
+   "status": "ok"
+  },
+  "micro/M01-waltz-3-4|deadpan|none|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 0.9,
+    "notation.hand.accuracy": 1.0,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 99.0,
+   "status": "ok"
+  },
+  "micro/M01-waltz-3-4|human|oracle|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 0.9,
+    "notation.hand.accuracy": 1.0,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 99.0,
+   "status": "ok"
+  },
+  "micro/M02-alberti-4-4|deadpan|none|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 1.0,
+    "notation.hand.accuracy": 1.0,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 0.0,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 90.0,
+   "status": "ok"
+  },
+  "micro/M02-alberti-4-4|human|oracle|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 0.868217,
+    "notation.hand.accuracy": 1.0,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 98.682171,
+   "status": "ok"
+  },
+  "micro/M03-jig-6-8|deadpan|none|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 0.75,
+    "notation.hand.accuracy": 1.0,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 0.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 92.5,
+   "status": "ok"
+  },
+  "micro/M03-jig-6-8|human|oracle|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 0.65625,
+    "notation.hand.accuracy": 1.0,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 0.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 91.5625,
+   "status": "ok"
+  },
+  "micro/M04-triplets-4-4|deadpan|none|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 1.0,
+    "notation.hand.accuracy": 1.0,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 0.0,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 0.834951,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 86.699029,
+   "status": "ok"
+  },
+  "micro/M04-triplets-4-4|human|oracle|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 0.75,
+    "notation.hand.accuracy": 1.0,
+    "notation.ioi.accuracy": 0.765957,
+    "notation.onset_pos.accuracy": 0.846154,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 91.280687,
+   "status": "ok"
+  },
+  "micro/M05-32nds-120|deadpan|none|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 0.962963,
+    "notation.hand.accuracy": 0.981481,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 0.0,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 89.444444,
+   "status": "ok"
+  },
+  "micro/M05-32nds-120|human|oracle|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 0.796296,
+    "notation.hand.accuracy": 0.981481,
+    "notation.ioi.accuracy": 0.705882,
+    "notation.onset_pos.accuracy": 0.851852,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 90.413943,
+   "status": "ok"
+  },
+  "micro/M07-pickup-3-4|deadpan|none|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 1.0,
+    "notation.hand.accuracy": 1.0,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 0.116667,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.time_sig.score": 0.5
+   },
+   "sqi": 86.166667,
+   "status": "ok"
+  },
+  "micro/M07-pickup-3-4|human|oracle|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 1.0,
+    "notation.hand.accuracy": 1.0,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 100.0,
+   "status": "ok"
+  },
+  "micro/M09-syncopation-ties|deadpan|none|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 0.894737,
+    "notation.hand.accuracy": 1.0,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 0.0,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 0.95,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 87.947368,
+   "status": "ok"
+  },
+  "micro/M09-syncopation-ties|human|oracle|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 0.8625,
+    "notation.hand.accuracy": 1.0,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 98.625,
+   "status": "ok"
+  },
+  "micro/M11-harmonic-minor|deadpan|none|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 0.965517,
+    "notation.hand.accuracy": 1.0,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 0.137931,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 0.966667,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.time_sig.score": 0.5
+   },
+   "sqi": 85.367816,
+   "status": "ok"
+  },
+  "micro/M11-harmonic-minor|human|oracle|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 1.0,
+    "notation.hand.accuracy": 1.0,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 100.0,
+   "status": "ok"
+  },
+  "micro/M12-flats-db|deadpan|none|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 1.0,
+    "notation.hand.accuracy": 1.0,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 0.0,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 0.95,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 89.0,
+   "status": "ok"
+  },
+  "micro/M12-flats-db|human|oracle|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 1.0,
+    "notation.hand.accuracy": 1.0,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 100.0,
+   "status": "ok"
+  },
+  "micro/M14-melody-in-bass|deadpan|none|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 0.758621,
+    "notation.hand.accuracy": 0.896552,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 96.551724,
+   "status": "ok"
+  },
+  "micro/M14-melody-in-bass|human|oracle|s1": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 0.758621,
+    "notation.hand.accuracy": 0.896552,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.spelling.accuracy": 1.0,
+    "notes.identity.f1": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 96.551724,
+   "status": "ok"
+  }
+ },
+ "history": [
+  {
+   "audio_score_sha256": "559a1f40fb73416bc72d671d894251f7c3263110fa10780559047f6f22009288",
+   "date": "2026-09-21",
+   "git_sha": "135624c055ef3a7d1e537f1b0437648c9e832031",
+   "reason": "G0 initial baseline",
+   "sqi_all": 89.701564
+  }
+ ],
+ "lock_sha256": "b990cda1469a607787838cd99d604a738eb4918b4f1814fd0152bd16f4951cc8",
+ "recorded": {
+  "audio_score_sha256": "559a1f40fb73416bc72d671d894251f7c3263110fa10780559047f6f22009288",
+  "date": "2026-09-21",
+  "git_dirty": false,
+  "git_sha": "135624c055ef3a7d1e537f1b0437648c9e832031",
+  "node": "v24.17.0",
+  "platform": "win32",
+  "python": "3.13.5"
+ },
+ "schema": "ppp.bench-baseline/1",
+ "suite": "smoke",
+ "suite_sha256": "56c893242287e92945e3c5e541c5ae7e2bee8b966c95dcf5438afd0e7399119d",
+ "versions": {
+  "generator": "perform/1",
+  "metrics": "metrics/1",
+  "reader": "reader/1",
+  "sqi": "sqi/1"
+ }
+}

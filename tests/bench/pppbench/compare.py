@@ -184,8 +184,12 @@ def baseline_from_results(results: Dict[str, Any], run: Dict[str, Any], *, reaso
         "anchor": anchor, "aggregates": results["aggregates"], "history": history,
     }
     if not full:
+        # per case: what the case checks and the "main cause" column read (the SQI components)
+        from .metrics.composite import SQI_S_WEIGHTS, SQI_WEIGHTS
+        keep = set(SQI_WEIGHTS) | set(SQI_S_WEIGHTS)
         base["cases"] = {c["id"]: {"status": c["status"], "error_code": c["error_code"],
-                                   "sqi": (c["metrics"] or {}).get("sqi"), "metrics": c["metrics"]}
+                                   "sqi": (c["metrics"] or {}).get("sqi"),
+                                   "metrics": {k: v for k, v in (c["metrics"] or {}).items() if k in keep}}
                          for c in results["cases"]}
     return base
 

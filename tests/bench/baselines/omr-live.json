@@ -1,0 +1,1089 @@
+{
+ "aggregates": {
+  "all": {
+   "cases": 4,
+   "errors": {
+    "by_code": {},
+    "count": 0
+   },
+   "notation.duration.accuracy": {
+    "mean": 1.0,
+    "n": 4
+   },
+   "notation.hand.accuracy": {
+    "mean": 0.25,
+    "n": 4
+   },
+   "notation.ioi.accuracy": {
+    "mean": 1.0,
+    "n": 1
+   },
+   "notation.metrical_scale": {
+    "mean": 1.0,
+    "n": 4
+   },
+   "notation.onset_pos.accuracy": {
+    "mean": 0.875,
+    "n": 4
+   },
+   "notation.spelling.accuracy": {
+    "mean": 1.0,
+    "n": 4
+   },
+   "notation.ties.extra_per_100": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "notes.identity.precision_micro": {
+    "mean": 0.829787,
+    "n": 4
+   },
+   "notes.identity.recall_micro": {
+    "mean": 0.40625,
+    "n": 4
+   },
+   "notes.symbolic.f1": {
+    "mean": 0.534574,
+    "n": 4
+   },
+   "notes.symbolic.precision": {
+    "mean": 0.913043,
+    "n": 4
+   },
+   "notes.symbolic.recall": {
+    "mean": 0.40625,
+    "n": 4
+   },
+   "omr.confidence": {
+    "mean": 0.95,
+    "n": 4
+   },
+   "omr.flag.recall": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "omr.flagged_measures": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "omr.measure_alignment_rate": {
+    "mean": 1.0,
+    "n": 4
+   },
+   "omr.wrong_measures": {
+    "mean": 10.0,
+    "n": 4
+   },
+   "read.accidentals_per_note": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.accidentals_per_note.delta": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.bar_integrity": {
+    "mean": 1.0,
+    "n": 4
+   },
+   "read.bar_integrity.delta": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.max_chord_size": {
+    "mean": 1.0,
+    "n": 4
+   },
+   "read.max_chord_size.delta": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.over_span_rate": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.over_span_rate.delta": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.rests_per_measure": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.rests_per_measure.delta": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.short_notes_rate": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.short_notes_rate.delta": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.ties_per_note": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.ties_per_note.delta": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.tuplets_per_note": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.tuplets_per_note.delta": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "sqi": {
+    "mean": 74.335106,
+    "n": 4
+   },
+   "struct.key.fifths_exact": {
+    "mean": 1.0,
+    "n": 4
+   },
+   "struct.key.mirex": {
+    "mean": 1.0,
+    "n": 4
+   },
+   "struct.measures.count_exact": {
+    "mean": 0.75,
+    "n": 4
+   },
+   "struct.measures.count_ratio": {
+    "mean": 1.25,
+    "n": 4
+   },
+   "struct.time_sig.exact": {
+    "mean": 1.0,
+    "n": 4
+   },
+   "struct.time_sig.score": {
+    "mean": 1.0,
+    "n": 4
+   }
+  },
+  "by_tag": {
+   "input:jpeg": {
+    "cases": 1,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "notes.identity.precision_micro": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.333333,
+     "n": 1
+    },
+    "notes.symbolic.f1": {
+     "mean": 0.5,
+     "n": 1
+    },
+    "notes.symbolic.precision": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "notes.symbolic.recall": {
+     "mean": 0.333333,
+     "n": 1
+    },
+    "omr.confidence": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "omr.flag.recall": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "omr.flagged_measures": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "omr.measure_alignment_rate": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "omr.wrong_measures": {
+     "mean": 8.0,
+     "n": 1
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.max_chord_size": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.rests_per_measure": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.short_notes_rate": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.ties_per_note": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "sqi": {
+     "mean": 72.5,
+     "n": 1
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "struct.measures.count_exact": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "struct.measures.count_ratio": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "struct.time_sig.exact": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "struct.time_sig.score": {
+     "mean": 1.0,
+     "n": 1
+    }
+   },
+   "input:pdf": {
+    "cases": 2,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.5,
+     "n": 2
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.75,
+     "n": 2
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.741935,
+     "n": 2
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.479167,
+     "n": 2
+    },
+    "notes.symbolic.f1": {
+     "mean": 0.569149,
+     "n": 2
+    },
+    "notes.symbolic.precision": {
+     "mean": 0.826087,
+     "n": 2
+    },
+    "notes.symbolic.recall": {
+     "mean": 0.479167,
+     "n": 2
+    },
+    "omr.confidence": {
+     "mean": 0.9,
+     "n": 2
+    },
+    "omr.flag.recall": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "omr.flagged_measures": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "omr.measure_alignment_rate": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "omr.wrong_measures": {
+     "mean": 12.0,
+     "n": 2
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.max_chord_size": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.rests_per_measure": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.short_notes_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.ties_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "sqi": {
+     "mean": 76.170213,
+     "n": 2
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.5,
+     "n": 2
+    },
+    "struct.measures.count_ratio": {
+     "mean": 1.5,
+     "n": 2
+    },
+    "struct.time_sig.exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.time_sig.score": {
+     "mean": 1.0,
+     "n": 2
+    }
+   },
+   "input:png": {
+    "cases": 1,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "notes.identity.precision_micro": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.333333,
+     "n": 1
+    },
+    "notes.symbolic.f1": {
+     "mean": 0.5,
+     "n": 1
+    },
+    "notes.symbolic.precision": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "notes.symbolic.recall": {
+     "mean": 0.333333,
+     "n": 1
+    },
+    "omr.confidence": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "omr.flag.recall": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "omr.flagged_measures": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "omr.measure_alignment_rate": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "omr.wrong_measures": {
+     "mean": 8.0,
+     "n": 1
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.max_chord_size": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.rests_per_measure": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.short_notes_rate": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.ties_per_note": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "sqi": {
+     "mean": 72.5,
+     "n": 1
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "struct.measures.count_exact": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "struct.measures.count_ratio": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "struct.time_sig.exact": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "struct.time_sig.score": {
+     "mean": 1.0,
+     "n": 1
+    }
+   },
+   "set:omr": {
+    "cases": 4,
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.duration.accuracy": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.25,
+     "n": 4
+    },
+    "notation.ioi.accuracy": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "notation.metrical_scale": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.875,
+     "n": 4
+    },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.829787,
+     "n": 4
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.40625,
+     "n": 4
+    },
+    "notes.symbolic.f1": {
+     "mean": 0.534574,
+     "n": 4
+    },
+    "notes.symbolic.precision": {
+     "mean": 0.913043,
+     "n": 4
+    },
+    "notes.symbolic.recall": {
+     "mean": 0.40625,
+     "n": 4
+    },
+    "omr.confidence": {
+     "mean": 0.95,
+     "n": 4
+    },
+    "omr.flag.recall": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "omr.flagged_measures": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "omr.measure_alignment_rate": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "omr.wrong_measures": {
+     "mean": 10.0,
+     "n": 4
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.max_chord_size": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "read.max_chord_size.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.over_span_rate.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.rests_per_measure": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.short_notes_rate": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.ties_per_note": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "sqi": {
+     "mean": 74.335106,
+     "n": 4
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.75,
+     "n": 4
+    },
+    "struct.measures.count_ratio": {
+     "mean": 1.25,
+     "n": 4
+    },
+    "struct.time_sig.exact": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.time_sig.score": {
+     "mean": 1.0,
+     "n": 4
+    }
+   }
+  }
+ },
+ "anchor": {
+  "aggregates_all": {
+   "notation.duration.accuracy": {
+    "mean": 1.0,
+    "n": 4
+   },
+   "notation.hand.accuracy": {
+    "mean": 0.25,
+    "n": 4
+   },
+   "notation.ioi.accuracy": {
+    "mean": 1.0,
+    "n": 1
+   },
+   "notation.metrical_scale": {
+    "mean": 1.0,
+    "n": 4
+   },
+   "notation.onset_pos.accuracy": {
+    "mean": 0.875,
+    "n": 4
+   },
+   "notation.spelling.accuracy": {
+    "mean": 1.0,
+    "n": 4
+   },
+   "notation.ties.extra_per_100": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "notes.identity.precision_micro": {
+    "mean": 0.829787,
+    "n": 4
+   },
+   "notes.identity.recall_micro": {
+    "mean": 0.40625,
+    "n": 4
+   },
+   "notes.symbolic.f1": {
+    "mean": 0.534574,
+    "n": 4
+   },
+   "notes.symbolic.precision": {
+    "mean": 0.913043,
+    "n": 4
+   },
+   "notes.symbolic.recall": {
+    "mean": 0.40625,
+    "n": 4
+   },
+   "omr.confidence": {
+    "mean": 0.95,
+    "n": 4
+   },
+   "omr.flag.recall": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "omr.flagged_measures": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "omr.measure_alignment_rate": {
+    "mean": 1.0,
+    "n": 4
+   },
+   "omr.wrong_measures": {
+    "mean": 10.0,
+    "n": 4
+   },
+   "read.accidentals_per_note": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.accidentals_per_note.delta": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.bar_integrity": {
+    "mean": 1.0,
+    "n": 4
+   },
+   "read.bar_integrity.delta": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.max_chord_size": {
+    "mean": 1.0,
+    "n": 4
+   },
+   "read.max_chord_size.delta": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.over_span_rate": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.over_span_rate.delta": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.rests_per_measure": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.rests_per_measure.delta": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.short_notes_rate": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.short_notes_rate.delta": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.ties_per_note": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.ties_per_note.delta": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.tuplets_per_note": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "read.tuplets_per_note.delta": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "sqi": {
+    "mean": 74.335106,
+    "n": 4
+   },
+   "struct.key.fifths_exact": {
+    "mean": 1.0,
+    "n": 4
+   },
+   "struct.key.mirex": {
+    "mean": 1.0,
+    "n": 4
+   },
+   "struct.measures.count_exact": {
+    "mean": 0.75,
+    "n": 4
+   },
+   "struct.measures.count_ratio": {
+    "mean": 1.25,
+    "n": 4
+   },
+   "struct.time_sig.exact": {
+    "mean": 1.0,
+    "n": 4
+   },
+   "struct.time_sig.score": {
+    "mean": 1.0,
+    "n": 4
+   }
+  },
+  "date": "2026-09-21",
+  "git_sha": "135624c055ef3a7d1e537f1b0437648c9e832031"
+ },
+ "cases": {
+  "piano-clean.jpg": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 1.0,
+    "notation.hand.accuracy": 0.0,
+    "notation.ioi.accuracy": null,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.spelling.accuracy": 1.0,
+    "notes.symbolic.f1": 0.5,
+    "struct.key.fifths_exact": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 72.5,
+   "status": "ok"
+  },
+  "piano-clean.pdf": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 1.0,
+    "notation.hand.accuracy": 1.0,
+    "notation.ioi.accuracy": 1.0,
+    "notation.onset_pos.accuracy": 0.5,
+    "notation.spelling.accuracy": 1.0,
+    "notes.symbolic.f1": 0.638298,
+    "struct.key.fifths_exact": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 79.840426,
+   "status": "ok"
+  },
+  "piano-clean.png": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 1.0,
+    "notation.hand.accuracy": 0.0,
+    "notation.ioi.accuracy": null,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.spelling.accuracy": 1.0,
+    "notes.symbolic.f1": 0.5,
+    "struct.key.fifths_exact": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 72.5,
+   "status": "ok"
+  },
+  "piano-multipage.pdf": {
+   "error_code": null,
+   "metrics": {
+    "notation.duration.accuracy": 1.0,
+    "notation.hand.accuracy": 0.0,
+    "notation.ioi.accuracy": null,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.spelling.accuracy": 1.0,
+    "notes.symbolic.f1": 0.5,
+    "struct.key.fifths_exact": 1.0,
+    "struct.time_sig.score": 1.0
+   },
+   "sqi": 72.5,
+   "status": "ok"
+  }
+ },
+ "history": [
+  {
+   "audio_score_sha256": "559a1f40fb73416bc72d671d894251f7c3263110fa10780559047f6f22009288",
+   "date": "2026-09-21",
+   "git_sha": "135624c055ef3a7d1e537f1b0437648c9e832031",
+   "reason": "G0 initial baseline (Audiveris via helper v5)",
+   "sqi_all": 74.335106
+  }
+ ],
+ "lock_sha256": null,
+ "recorded": {
+  "audio_score_sha256": "559a1f40fb73416bc72d671d894251f7c3263110fa10780559047f6f22009288",
+  "date": "2026-09-21",
+  "git_dirty": false,
+  "git_sha": "135624c055ef3a7d1e537f1b0437648c9e832031",
+  "node": null,
+  "platform": "win32",
+  "python": "3.13.5"
+ },
+ "schema": "ppp.bench-baseline/1",
+ "suite": "omr-live",
+ "suite_sha256": "efc9b9a1ab4fa06713b843329b2a8dfa258c84ea89793bff85c9ea8fb4b83e7e",
+ "versions": {
+  "generator": "perform/1",
+  "metrics": "metrics/1",
+  "reader": "reader/1",
+  "sqi": "sqi/1"
+ }
+}
