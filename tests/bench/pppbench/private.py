@@ -15,7 +15,7 @@ import platform
 import sys
 import time
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from . import VERSIONS, aggregate, corpus, evaluate, musicxml, stages, suite as suite_mod, util
 from .perform import Performance

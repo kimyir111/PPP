@@ -5,8 +5,6 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, List, Optional
 
-from . import util
-
 HEADLINE = ["sqi", "notes.identity.f1", "notes.onset.f1_50ms", "notation.ioi.accuracy", "notation.onset_pos.accuracy",
             "notation.duration.accuracy", "notation.hand.accuracy", "notation.spelling.accuracy",
             "notation.ties.extra_per_100", "struct.time_sig.exact", "struct.time_sig.score", "struct.key.fifths_exact",
@@ -25,6 +23,11 @@ def _m(agg: Dict[str, Any], k: str) -> Optional[float]:
 
 def _f(x: Optional[float], nd: int = 4) -> str:
     return "–" if x is None else f"{x:.{nd}f}"
+
+
+def _cell(text: str) -> str:
+    """A case id inside a Markdown table: GitHub splits cells on | even inside code spans."""
+    return text.replace("|", "\\|")
 
 
 def _d(x: Optional[float], nd: int = 4) -> str:
@@ -92,6 +95,7 @@ def write_summary(results: Dict[str, Any], run: Dict[str, Any], verdict, baselin
     L.append("")
     if verdict is None or not verdict.case_deltas:
         L.append("No case changed its SQI." if verdict else "No baseline.")
+        L.append("")
     else:
         deltas = [d for d in verdict.case_deltas if reveal_holdout or not d["holdout"]]
         for title2, rows in (("Down", deltas[:10]), ("Up", sorted(deltas, key=lambda x: (-x["delta"], x["id"]))[:10])):
@@ -103,7 +107,7 @@ def write_summary(results: Dict[str, Any], run: Dict[str, Any], verdict, baselin
             L.append("| case | Δ SQI | SQI | main cause | output |")
             L.append("| --- | --- | --- | --- | --- |")
             for r in rows:
-                L.append(f"| `{r['id']}` | {r['delta']:+.2f} | {r['sqi']:.2f} | {r['cause'] or '–'} | `cases/{r['key']}.musicxml` |")
+                L.append(f"| `{_cell(r['id'])}` | {r['delta']:+.2f} | {r['sqi']:.2f} | {r['cause'] or '–'} | `cases/{r['key']}.musicxml` |")
             L.append("")
     L.append("## Lowest SQI cases")
     L.append("")
@@ -113,7 +117,7 @@ def write_summary(results: Dict[str, Any], run: Dict[str, Any], verdict, baselin
     L.append("| --- | --- | --- | --- | --- |")
     for c in low:
         e, p = c["expected"], c["predicted"]
-        L.append(f"| `{c['id']}` | {c['metrics']['sqi']:.2f} | {e['time'][0]}/{e['time'][1]} → {p['time'][0]}/{p['time'][1]} | "
+        L.append(f"| `{_cell(c['id'])}` | {c['metrics']['sqi']:.2f} | {e['time'][0]}/{e['time'][1]} → {p['time'][0]}/{p['time'][1]} | "
                  f"{e['key']['fifths']} → {p['key']['fifths']} | `cases/{c['key']}.musicxml` |")
     L.append("")
     L.append("## Errors")
@@ -128,7 +132,7 @@ def write_summary(results: Dict[str, Any], run: Dict[str, Any], verdict, baselin
         for c in errs:
             by.setdefault(c["error_code"], []).append(c["id"])
         for code, ids in sorted(by.items()):
-            L.append(f"| {code} | {len(ids)} | `{ids[0]}` |")
+            L.append(f"| {code} | {len(ids)} | `{_cell(ids[0])}` |")
     L.append("")
     L.append("## Hold-out (aggregate only)")
     L.append("")

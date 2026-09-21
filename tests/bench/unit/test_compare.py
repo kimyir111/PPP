@@ -1,4 +1,3 @@
-import copy
 import unittest
 
 from pppbench import compare, suite as suite_mod

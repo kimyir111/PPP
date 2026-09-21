@@ -2,7 +2,7 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 상태 | **설계 완료 · 구현 전** |
+| 상태 | **구현 완료 (2026-09-22)** · 브랜치 `g0-quality-foundation` (main 미병합, push 안 함) · 결과와 미완 항목은 [§16](#16-구현-결과-2026-09-22) |
 | 작성일 | 2026-09-21 |
 | 기준 커밋 | `718bdf3` (main). `audio-score.js` sha256 `559a1f40fb73416bc72d671d894251f7c3263110fa10780559047f6f22009288` |
 | 읽는 사람 | 이 문서만 읽고 G0을 구현할 다음 Claude 세션, 그리고 리뷰하는 사용자 |
@@ -30,6 +30,7 @@
 - [13. 이번 Goal에서 절대 건드리지 않을 범위](#13-이번-goal에서-절대-건드리지-않을-범위)
 - [14. 조사 중 발견한 품질 이슈 (고치지 말고 기록만)](#14-조사-중-발견한-품질-이슈-고치지-말고-기록만)
 - [15. 부록](#15-부록)
+- [16. 구현 결과 (2026-09-22)](#16-구현-결과-2026-09-22)
 
 ---
 
@@ -1649,3 +1650,109 @@ python tests/bench/run.py run --suite-file C:/private/ppp-bench/private.json
 - [ ] 사용자에게 `tmp/` gitignore와 CI push 여부를 물었다 (답을 기다리는 동안 Step 1–10 진행).
 - [ ] Step 1부터 순서대로 진행하고, Step마다 체크포인트 통과 후 커밋한다 (자기 파일만 stage).
 - [ ] 끝나면 §11 A1–A16을 실행해 acceptance record를 쓰고, §14 이슈가 첫 baseline에서 어떻게 드러나는지 적었다.
+
+---
+
+## 16. 구현 결과 (2026-09-22)
+
+구현 세션이 채운 절이다. 위 §0–§15는 설계 원문 그대로 두었다. 설계와 다르게 결정한 것은 §16.3에 모았다.
+
+### 16.1 무엇이 만들어졌나
+
+- **브랜치** `g0-quality-foundation`. `main`에서 갈라졌고 **병합과 push는 하지 않았다** (사용자 결정 사항).
+  - 여러 세션이 `D:/PPP`를 함께 쓰므로 별도 git worktree(`D:/PPP-g0`)에서 작업했다. 그래서 다른 세션의 미커밋 파일(`catalog/method/index.json`, untracked `.mxl` 약 120개)은 한 번도 stage되지 않았다.
+- **새 파일은 모두 `tests/bench/` 아래에 있다** (§3.5 레이아웃).
+  - 코어 `pppbench/`: reader, canonical, corpus/lint, perform, timemap, align, metrics 5종, suite/lock, runner, aggregate, compare, report, golden, mutation, legacy, private, tiers, projection
+  - `node/`: notate.js, conformance.js, omr-live.js
+  - `tools/`: make_micro.py, make_omr_reference.py, render_piano.py, record_replay.py
+  - 데이터: 코퍼스(참조 299개, micro 24곡 포함), suite 8개와 lock, baseline 5개, golden 14케이스, replay fixture 6개
+  - 단위 테스트 122개, `README.md`
+- **기존 파일 수정은 §5 목록 그대로다.**
+  - `package.json`: scripts 4개 추가, `test:transcription-core`에 beat_track 편입
+  - `.gitignore`
+  - `tests/beat_track_test.py`: sys.path 2줄
+  - `tests/README.md`, `tests/golden/README.md`, `README.md`
+  - 추가로 `.github/workflows/bench.yml`을 만들었다 (§4의 P1 항목, push 안 함).
+  - `audio-score.js`, `Piano Coach App.dc.html`, `catalog/**`, 의존성은 변경 0이다.
+
+### 16.2 Acceptance criteria 결과
+
+모두 개발 PC(Windows 11, Node v24.17.0, Python 3.13.5, cp949)에서 확인했다. 자세한 기록은 `tests/bench/README.md` 끝 "G0 acceptance record".
+
+| # | 결과 | 근거 |
+| --- | --- | --- |
+| A1 | **충족** | `npm run test:bench`: 단위 122개 + golden 14/14, 10.3 s. 네트워크·브라우저·GPU 없음 (T1 SKIPPED 경로만 로컬 포트를 시도한다). |
+| A2 | **충족** | `PYTHONIOENCODING`/`PYTHONUTF8` 없이 `sys.stdout.encoding == cp949`인 상태에서 `list`, `run --suite smoke`가 한글·em dash를 출력하고 exit 0. 같은 환경에서 일반 `print('찬송가 — ok')`는 `UnicodeEncodeError`가 난다. 단위 테스트 `test_cli_prints_korean_on_a_cp949_console`. |
+| A3 | **충족** | `lint-corpus`: 참조 299개 (micro 24), error 0, warning 56 (L9 mode 누락). 모두 커밋된 파일이고 license가 있다. `excluded.json` 52개: L5 octave-shift 29개, L8 마디 무결성 23개. |
+| A4 | **충족** | smoke 0.5 s, core 15.1 s, full 108 s (`run.json` timing). |
+| A5 | **충족** | core 2회 실행 `results.json` sha256 동일 (`69a83d55…`). **Linux에서도 바이트 동일**: Docker `node:24-bookworm`(Node 24.21, Python 3.11)의 LF clean checkout에서 core·smoke·replay의 sha256이 Windows와 같다. omr-live도 2회 동일. |
+| A6 | **충족** | baseline 5개 커밋 (smoke, core, full.aggregates, omr-live, replay-public). 변경 없는 트리에서 5개 suite `check` 모두 PASS (exit 0). |
+| A7 | **충족** | `mutation-check`: HANDS, KEY, DUR, METRE, PHASE 모두 REGRESSION (exit 1), 지정 metric이 실패 목록에 있다. NOOP은 PASS이고 `results.json` sha256 동일. 수치는 `tests/bench/README.md` 표. CLI로도 확인했다: MUT-KEY 사본으로 `run` 후 `check` → exit 1. |
+| A8 | **충족** | `golden` 14/14. expected 1바이트 변조 시 마디 단위 diff 출력, exit 1. 복원 후 통과. |
+| A9 | **충족** | `test_suite_lock.py`: 생성 입력 1바이트 변경(monkeypatch)이 `INPUT_DRIFT` exit 2를 낸다. |
+| A10 | **충족** | `test:transcription-core` 16개 통과 (beat_track 3개 포함), `test:arranger` 3개 통과. `legacy --manifest tests/golden/manifest.example.json`의 note metric이 `golden_benchmark.py`와 같다 (단위 테스트로 고정). |
+| A11 | **충족** | summary.md: 판정, 헤드라인(baseline Δ, anchor Δ), tag 표, 상·하위 변화 케이스 10개(원인 metric, 산출물 경로), 최저 SQI 10개, 오류, holdout 집계. |
+| A12 | **충족** | `git diff --stat 663d463..g0-quality-foundation`에서 `tests/bench/` 밖의 변경은 §5 목록 6개 + `.github/workflows/bench.yml` + `docs/`뿐. `audio-score.js`와 앱 HTML 변경 0. |
+| A13 | **충족** | dependencies, devDependencies, requirements 무변경. |
+| A14 | **충족** | conformance 224/224 동일: core 참조 141개, samples 4개, octave-shift 제외 파일 29개, core 예측 XML 50개. 비교가 형식적이지 않은지는 음정 1개 변경·다른 파일 교차 대입으로 불일치가 잡히는 것을 확인했다. |
+| A15 | **충족** | T1-O omr-live 4케이스 metric과 `omr.flag.*` 기록, baseline 커밋. T2: helper(TransKun+Kong 앙상블, Beat This)로 **6곡을 녹화**해 `replay/`에 커밋하고 `replay-public` baseline을 기록했다. |
+| A16 | **충족** | `samples/chords-sample`을 README 절차대로 추가했다: lint → (relock 전 run: INPUT_DRIFT) → relock → check: SUITE_CHANGED → update-baseline → PASS. 끝난 뒤 되돌렸다. |
+| P2 | **미실시** | Step 14 (arrangement invariants)는 하지 않았다. G0 완료 조건에는 들지 않는다. |
+
+### 16.3 설계와 다르게 한 것, 구현 중 정한 것
+
+1. **줄바꿈 정규화 해시.** `core.autocrlf=true`라서 텍스트 악보가 Windows에서는 CRLF, Linux에서는 LF로 checkout된다. 그래서 참조 sha256과 SUT sha256을 "CRLF를 LF로 읽은 내용"으로 계산한다 (`util.content_sha256`). `tests/bench/.gitattributes`로 벤치 파일 자체는 LF를 유지한다.
+2. **lint L12 (신규).** 조표가 요구하는 `<alter>`를 음표가 따르지 않는 참조가 대상이다. 조표 영향 음 3개 이상 중 20% 미만이면 해당한다.
+   - 해당 참조는 key·spelling metric(`struct.key.fifths_exact`, `struct.key.mirex`, `notation.spelling.accuracy`)을 `expect.skip_metrics`로 제외한다. 리듬·박자·손 채점은 유지한다.
+   - 찬송가 88곡 중 78곡이 해당한다 (§16.5 I10). 설계 D10("논란 있는 정답은 제외")을 metric 단위로 적용한 것이다. 참조 전체를 빼면 찬송가 metre 커버리지를 잃는다.
+3. **core 크기.**
+   - reference 141개, 케이스 523개. 설계 추정은 148개, 약 544개였다.
+   - §6.5 할당 규칙을 그대로 적용한 결과다. holdout 제외와 책별 할당 상한 때문에 줄었다.
+4. **`metre-class:compound-single`.** 3/8은 §6.7 규칙(beat-type 8, beats % 3 == 0, 그룹 수 = 1)대로 compound이지만 목록에 이름이 없어서 이 이름을 붙였다. 5/4 등은 `irregular`.
+5. **`struct.time_sig.score`의 "regrouped".** 정의("beat 단위와 종류가 같고 마디당 박 수만 다름") 그대로 3/4↔4/4, 2/4↔3/4도 0.5를 받는다. 예시(2/4↔4/4 등)보다 넓다.
+6. **정렬 동점.** §8.3 DP 목적함수 Σ(W−|Δ|)는 "느슨한 두 쌍"보다 "아주 가까운 한 쌍"을 고를 수 있다. 설계대로 두었고, 단위 테스트에 명시했다.
+7. **baseline의 케이스 행.** 케이스별 metric은 SQI 구성 metric만 저장한다 (gate가 읽는 것이 SQI와 그 구성뿐이다). core baseline이 1.1 MB에서 0.47 MB로 줄었다.
+8. **`omr` set.**
+   - `corpus/omr/piano-test-score.musicxml`은 `truth.json`에서 생성한다. references.json에 set `omr`로 등록하지만 `full`에는 넣지 않고 omr-live만 쓴다.
+   - OMR 결과는 반환 MusicXML이 아니라 **페이지 안의 Score를 직접 projection**한다 (I4 때문).
+9. **conformance 대상 추가.** 설계 대상에 octave-shift 제외 파일 29개를 더했다. 참조에서는 빼도, reader의 ottava 규칙은 앱과 일치해야 하기 때문이다.
+10. **.gitignore.**
+    - 사용자 지시에 따라 `tmp/`를 추가했다 (저작권 자료 보호).
+    - 루트의 `tools/` 규칙이 `tests/bench/tools/`까지 숨겨서, `!tests/bench/tools/` 예외를 넣었다. 첫 커밋에서 이 때문에 `make_micro.py`가 빠졌고, 발견 후 바로 커밋했다.
+11. **CI.** `.github/workflows/bench.yml`을 만들었다.
+    - gate job (push/PR): unit, golden, lint, smoke, core, 기존 Python 테스트
+    - nightly/수동 job: mutation-check, full
+    - 무거운 작업은 분리했다. **push하지 않았으므로 아직 동작하지 않는다.** Linux 결정론은 Docker로 미리 확인했다 (A5).
+12. **T1/T2 환경 경로.** worktree에는 `node_modules`와 transcribe venv가 없어 환경 변수로 연결했다: `PPP_BENCH_NODE_MODULES`(puppeteer), `PPP_TRANSCRIBE_PYTHON`(render).
+
+### 16.4 §14 이슈가 첫 baseline에서 드러나는 방식
+
+core 기준 (케이스 523개).
+
+| # | 드러난 수치 |
+| --- | --- |
+| I1 | 6/8·12/8·3/8로 쓴 출력 177개 전부 `struct.tempo.mark_consistent` = 0. 그 177개에서 `ok_effective` 0.04 vs `ok_written` 0.84. 전체로는 `ok_effective` 0.549 vs `ok_written` 0.818. simple 박자 출력은 `mark_consistent` 1.0. |
+| I2 | 틀린 박자 222개 중 140개가 "→6/8" (2/4→6/8 76, 3/4→6/8 20, 3/8→6/8 16, 4/4→6/8 10). `time_sig.exact`는 simple-duple 0.07, simple-triple 0.60, simple-quadruple 0.95. 가짜 붙임줄은 박자가 틀린 케이스 7.4/100음, 맞은 케이스 1.9/100음. Gymnopédie onset 경로는 identity F1 1.0인데 6/8, 가짜 붙임줄 67.6/100음. |
+| I3 | octave-shift 참조 29개 제외 (L5). conformance로 reader가 앱의 해석을 그대로 재현하는 것은 확인했다. 해석 자체의 옳고 그름은 이후 goal에서 청취·시각 비교로 확인해야 한다. |
+| I4 | omr-live는 Score를 직접 projection한다. 반환 `musicxml` 경로는 측정하지 않았다. |
+| I5 | `struct.key.fifths_exact` 0.887 (skip 제외 n=382). czerny849 0.52. full에서 Beyer 8·9가 C major → G major (0 → 1). |
+| I6 | `notation.hand.accuracy` 0.885. beyer 0.74, hanon 0.72. Beyer 9는 0.391 (설계 probe 0.39와 일치). |
+| I7 | M24 (온음표 화음) onset 경로 `notation.ioi.accuracy` 0.00, oracle beats는 1.00. `feature:low-information` 0.78 (전체 0.90). |
+| I8 | `legacy` 명령은 기존 metric을 그대로 내고, 단위를 quarter-beats로 바로잡은 이름을 쓴다. 기존 reader는 그대로 두었다. |
+| I9 | **수정함** (§5 범위). `test:transcription-core`에 편입. |
+
+### 16.5 구현 중 새로 발견한 품질 이슈 (고치지 않음)
+
+| # | 이슈 | 근거 | 드러나는 metric |
+| --- | --- | --- | --- |
+| I10 | **찬송가 78곡(C장조 외 전부)의 음이 조표를 따르지 않는다.** `catalog/hymns/abc-to-musicxml.js`가 ABC의 명시적 임시표만 `<alter>`로 쓰고 `K:` 조표를 적용하지 않는다. 그래서 앱이 이 찬송가들을 **틀린 음으로 재생·표시**한다. 예: Amazing Grace(G major)에 F#이 하나도 없고 `<alter>`가 0개다. | pitch class 분포, 원본 파일 grep | lint L12. 해당 참조는 key·spelling metric을 skip한다. 고치면 sha256이 바뀌어 L2 error가 나므로 재등록 시 skip을 뺀다. |
+| I11 | **OMR로 읽은 피아노 악보에서 오른손이 연주 대상이 아니다.** Audiveris가 2-staff 피아노를 1-staff part 2개("Voice" + 다른 part)로 내보낸다. 앱의 손 규칙(2-staff part가 없으면 마지막 part가 피아노)이 높은음자리표 staff를 `x`(연주 안 함), 낮은음자리표 staff를 `r`로 둔다. fixture 4개 모두에서 나타났다. | omr-live projection: `1x` 32개, `2r` 16개 | omr-live `notes.symbolic.f1` 0.50 (PNG/JPG/multipage), `notation.hand.accuracy` |
+| I12 | PDF fixture(`piano-clean.pdf`)가 8마디가 아니라 16마디로 인식되고, confidence 0.8인데 의심 마디 표시가 0개다. | omr-live | `struct.measures.count_exact` 0, `omr.flag.recall` 0 |
+| I13 | 5/4(M21)는 4/4로 쓰인다 (미지원, 설계에서 예상한 것). | core M21 3케이스 모두 4/4 | `metre:5/4` |
+
+### 16.6 남은 일 (G0 범위 안에서 미완)
+
+- **P2 Step 14** (arrangement invariants): 미실시.
+- **main 병합과 push**: 사용자 결정. push하면 CI가 켜진다.
+- **replay fixture 재녹화 정책**: GPU 추론은 결정론적이지 않다. fixture는 녹화 시점에 고정했다. 모델이나 helper를 바꾸면 의도적으로 다시 녹화하고 `replay-public` baseline을 다시 기록해야 한다 (README Replay 절).
+- **worktree에서 `npm test` 실행 시 주의**: `tests/transcription.test.js`의 "venv transkun console script" 검사가 worktree에서는 실패한다. `tools/transcribe-venv`가 git 밖(ignored)이라 worktree에 없기 때문이며, `PPP_TRANSCRIBE_PYTHON`을 지정하면 통과한다. 코드 회귀가 아니다 (§16.2 기존 회귀 테스트 기록 참조).

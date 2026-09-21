@@ -1,6 +1,5 @@
 import os
 import unittest
-from fractions import Fraction
 
 from pppbench import musicxml, util
 

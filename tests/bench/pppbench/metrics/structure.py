@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from fractions import Fraction
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Dict, Optional, Sequence, Tuple
 
 METRICAL_RATIOS = (1.0, 2.0, 0.5, 3.0, 1 / 3, 1.5, 2 / 3)
 

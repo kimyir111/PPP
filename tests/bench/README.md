@@ -294,4 +294,30 @@ out/, .cache/     outputs and scratch (git-ignored)
 
 ## G0 acceptance record
 
-Filled in from the actual runs; see the end of this file.
+Run on 2026-09-22 on the development PC: Windows 11, cp949 console, Node v24.17.0, Python 3.13.5,
+`audio-score.js` content sha256 `559a1f40…`. Branch `g0-quality-foundation`. Criteria from
+`docs/GOALS/G00_QUALITY_FOUNDATION.md` §11; the full write-up is in §16 there.
+
+| # | command | result |
+| --- | --- | --- |
+| A1 | `npm run test:bench` | 122 unit tests OK + golden 14/14, 10.3 s, no network/browser/GPU |
+| A2 | `run.py list`, `run --suite smoke` with `sys.stdout.encoding == cp949`, no `PYTHONIOENCODING`/`PYTHONUTF8` | Korean and em dashes printed, exit 0. A plain `print` of the same text raises `UnicodeEncodeError` there. |
+| A3 | `run.py lint-corpus` | 299 references (24 micro), 0 errors, 56 warnings (L9); 52 excluded: 29 octave-shift (L5), 23 broken bars (L8) |
+| A4 | `run.json` timing | smoke 0.5 s · core 15.1 s · full 108 s |
+| A5 | core twice + sha256 | identical (`69a83d55…`). Also identical on Linux: `node:24-bookworm` in Docker, clean LF checkout, core/smoke/replay sha256 equal to Windows. |
+| A6 | `check` on an unchanged tree | smoke, core, full, omr-live, replay-public: PASS, exit 0 |
+| A7 | `run.py mutation-check` | 5 × REGRESSION with the named metric failing, no-op PASS with identical `results.json` (table above). Through the CLI too: `run --audio-score <MUT-KEY copy>` then `check` exits 1, and `update-baseline` refuses that run. |
+| A8 | `run.py golden`; one expected byte changed | 14/14; the tampered file gives a per-bar diff and exit 1; restored → 14/14 |
+| A9 | `unit/test_suite_lock.py` | a one-byte input change (monkeypatched generator) → `INPUT_DRIFT`, exit 2 |
+| A10 | `npm run test:transcription-core`, `npm run test:arranger`, `legacy --manifest tests/golden/manifest.example.json` | 16 (incl. `beat_track_test.py`) and 3 tests OK; legacy note metrics equal `golden_benchmark.py`'s |
+| A11 | `out/core/summary.md` | verdict, headline Δ vs baseline and anchor, per-tag table, 10 largest case changes with cause and output path, lowest cases, errors, hold-out aggregate |
+| A12 | `git diff --stat 663d463..` | outside `tests/bench/`: only the §5 files, `.github/workflows/bench.yml` and `docs/`; `audio-score.js` and the app unchanged |
+| A13 | diff of `package.json` dependencies and requirements files | unchanged |
+| A14 | `run.py conformance` (app server + puppeteer) | 224/224 identical: core references, samples, the 29 octave-shift files, 50 predictions. Planted differences are caught. |
+| A15 | `run --suite omr-live`; `record-replay` | OMR: 4 cases through the app's `Import.load` + Audiveris, deterministic twice, baseline committed. Replay: 6 fixtures recorded with the helper's TransKun+Kong ensemble and Beat This, baseline committed. |
+| A16 | adding `samples/chords-sample` by this README | lint OK → stale lock: `INPUT_DRIFT` → relock → `SUITE_CHANGED` → update-baseline → PASS; then reverted |
+| P2 | Step 14, arrangement invariants | **not done** |
+
+Baseline headline (core, 523 cases): SQI 81.74 · identity F1 0.980 · time signature exact 0.576 ·
+key 0.887 · tempo as played ±4 % 0.549 (printed mark 0.818) · hands 0.885 · onset position 0.510 ·
+duration 0.747 · false ties 4.25 per 100 notes · bar integrity 1.000.

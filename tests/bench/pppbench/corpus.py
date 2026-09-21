@@ -5,7 +5,6 @@ from __future__ import annotations
 import os
 from collections import Counter
 from dataclasses import dataclass, field
-from fractions import Fraction
 from typing import Any, Dict, List, Optional, Tuple
 
 from . import musicxml, util

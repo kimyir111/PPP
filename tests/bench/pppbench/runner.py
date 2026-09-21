@@ -8,7 +8,7 @@ import shutil
 import sys
 import time
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from . import VERSIONS, aggregate, corpus, evaluate, perform, stages, suite as suite_mod, util
 
@@ -123,6 +123,9 @@ def run_suite(suite: Dict[str, Any], *, audio_score: Optional[str] = None, out_d
         print(f"{suite['name']}: {len(cases)} cases, {run['errors']} errors in {run['timing']['total_s']} s "
               f"(generate {run['timing']['generate_s']}, notate {run['timing']['notate_s']}, metrics {run['timing']['metrics_s']})")
         print(f"results: {util.rel(os.path.join(out, 'results.json')) if out.startswith(util.repo_root()) else out}")
+    # hand back exactly what results.json holds (6-decimal floats), so an in-process compare
+    # sees the same numbers as `check` reading the file
+    results = util.load_json_text(util.dumps_json(results))
     return {"results": results, "run": run, "out": out, "reveal_holdout": reveal_holdout}
 
 

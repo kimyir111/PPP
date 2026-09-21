@@ -16,6 +16,7 @@ from . import stages, suite as suite_mod, util
 
 BASELINE_DIR = os.path.join(util.bench_root(), "baselines")
 EPS = 1e-9
+ROUNDING = 1e-6  # results and baselines keep 6 decimals; smaller case differences are not changes
 
 
 @dataclass
@@ -91,7 +92,7 @@ def compare(results: Dict[str, Any], baseline: Optional[Dict[str, Any]], gate: D
         if s_new is None or s_old is None:
             continue
         d = s_new - s_old
-        if abs(d) > EPS:
+        if abs(d) > ROUNDING:
             v.case_deltas.append({"id": c["id"], "key": c["key"], "delta": d, "sqi": s_new, "holdout": hidden,
                                   "cause": _cause(c["metrics"], b.get("metrics") or {})})
         if d <= -fail_drop + EPS:

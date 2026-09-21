@@ -1,7 +1,7 @@
 import unittest
 
 from pppbench.metrics import composite, readability
-from unit.helpers import canon, measure, note, rest
+from unit.helpers import canon, measure, note
 
 
 class Readability(unittest.TestCase):

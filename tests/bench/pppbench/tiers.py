@@ -13,7 +13,6 @@ import subprocess
 import tempfile
 import urllib.request
 from collections import Counter
-from fractions import Fraction
 from typing import Any, Dict, List, Optional, Tuple
 
 from . import corpus, musicxml, stages, suite as suite_mod, util
