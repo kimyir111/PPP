@@ -1690,6 +1690,7 @@ python tests/bench/run.py run --suite-file C:/private/ppp-bench/private.json
 | A7 | **충족** | `mutation-check`: HANDS, KEY, DUR, METRE, PHASE 모두 REGRESSION (exit 1), 지정 metric이 실패 목록에 있다. NOOP은 PASS이고 `results.json` sha256 동일. 수치는 `tests/bench/README.md` 표. CLI로도 확인했다: MUT-KEY 사본으로 `run` 후 `check` → exit 1. |
 | A8 | **충족** | `golden` 14/14. expected 1바이트 변조 시 마디 단위 diff 출력, exit 1. 복원 후 통과. |
 | A9 | **충족** | `test_suite_lock.py`: 생성 입력 1바이트 변경(monkeypatch)이 `INPUT_DRIFT` exit 2를 낸다. |
+| 회귀 | **통과** | `npm test` 26개 suite: 변경 전 1,056 check 전부 통과. 변경 후(브랜치) 전부 통과. 단 두 suite는 worktree 환경 차이를 맞춰 다시 돌렸다: `transcription.test.js`는 `PPP_TRANSCRIBE_PYTHON`(venv가 worktree에 없음), `course.test.js`는 브랜치를 서빙하는 서버(D:/PPP의 index.json에 다른 세션의 미커밋 변경이 있음). 코드 원인 실패 0. |
 | A10 | **충족** | `test:transcription-core` 16개 통과 (beat_track 3개 포함), `test:arranger` 3개 통과. `legacy --manifest tests/golden/manifest.example.json`의 note metric이 `golden_benchmark.py`와 같다 (단위 테스트로 고정). |
 | A11 | **충족** | summary.md: 판정, 헤드라인(baseline Δ, anchor Δ), tag 표, 상·하위 변화 케이스 10개(원인 metric, 산출물 경로), 최저 SQI 10개, 오류, holdout 집계. |
 | A12 | **충족** | `git diff --stat 663d463..g0-quality-foundation`에서 `tests/bench/` 밖의 변경은 §5 목록 6개 + `.github/workflows/bench.yml` + `docs/`뿐. `audio-score.js`와 앱 HTML 변경 0. |
