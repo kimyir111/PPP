@@ -1,0 +1,317 @@
+{
+ "excluded": [
+  {
+   "id": "hymns/all-glory-laud",
+   "path": "catalog/hymns/all-glory-laud.musicxml",
+   "reason": "reference bar integrity below 100%: 1 underfull",
+   "rule": "L8"
+  },
+  {
+   "id": "hymns/awake-my-soul",
+   "path": "catalog/hymns/awake-my-soul.musicxml",
+   "reason": "reference bar integrity below 100%: 8 overfull",
+   "rule": "L8"
+  },
+  {
+   "id": "hymns/be-still-my-soul",
+   "path": "catalog/hymns/be-still-my-soul.musicxml",
+   "reason": "reference bar integrity below 100%: 1 underfull",
+   "rule": "L8"
+  },
+  {
+   "id": "hymns/for-all-the-saints",
+   "path": "catalog/hymns/for-all-the-saints.musicxml",
+   "reason": "reference bar integrity below 100%: 16 overfull",
+   "rule": "L8"
+  },
+  {
+   "id": "hymns/i-need-thee",
+   "path": "catalog/hymns/i-need-thee.musicxml",
+   "reason": "reference bar integrity below 100%: 1 underfull",
+   "rule": "L8"
+  },
+  {
+   "id": "hymns/in-the-bleak-midwinter",
+   "path": "catalog/hymns/in-the-bleak-midwinter.musicxml",
+   "reason": "reference bar integrity below 100%: 1 overfull",
+   "rule": "L8"
+  },
+  {
+   "id": "hymns/lo-how-a-rose",
+   "path": "catalog/hymns/lo-how-a-rose.musicxml",
+   "reason": "reference bar integrity below 100%: 7 overfull",
+   "rule": "L8"
+  },
+  {
+   "id": "hymns/mighty-fortress",
+   "path": "catalog/hymns/mighty-fortress.musicxml",
+   "reason": "reference bar integrity below 100%: 9 overfull",
+   "rule": "L8"
+  },
+  {
+   "id": "hymns/now-thank-we-all",
+   "path": "catalog/hymns/now-thank-we-all.musicxml",
+   "reason": "reference bar integrity below 100%: 1 overfull",
+   "rule": "L8"
+  },
+  {
+   "id": "hymns/o-the-deep-deep-love",
+   "path": "catalog/hymns/o-the-deep-deep-love.musicxml",
+   "reason": "reference bar integrity below 100%: 13 overfull",
+   "rule": "L8"
+  },
+  {
+   "id": "hymns/old-hundredth-praise",
+   "path": "catalog/hymns/old-hundredth-praise.musicxml",
+   "reason": "reference bar integrity below 100%: 8 overfull",
+   "rule": "L8"
+  },
+  {
+   "id": "hymns/the-strife-is-oer",
+   "path": "catalog/hymns/the-strife-is-oer.musicxml",
+   "reason": "reference bar integrity below 100%: 6 overfull",
+   "rule": "L8"
+  },
+  {
+   "id": "method/burgmuller25/015",
+   "path": "catalog/method/burgmuller25/015.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/burgmuller25/021",
+   "path": "catalog/method/burgmuller25/021.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny299/001",
+   "path": "catalog/method/czerny299/001.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny299/002",
+   "path": "catalog/method/czerny299/002.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny299/003",
+   "path": "catalog/method/czerny299/003.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny299/004",
+   "path": "catalog/method/czerny299/004.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny299/005",
+   "path": "catalog/method/czerny299/005.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny299/006",
+   "path": "catalog/method/czerny299/006.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny299/007",
+   "path": "catalog/method/czerny299/007.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny299/008",
+   "path": "catalog/method/czerny299/008.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny299/009",
+   "path": "catalog/method/czerny299/009.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny599/033",
+   "path": "catalog/method/czerny599/033.mxl",
+   "reason": "reference bar integrity below 100%: 1 empty",
+   "rule": "L8"
+  },
+  {
+   "id": "method/czerny599/044",
+   "path": "catalog/method/czerny599/044.mxl",
+   "reason": "reference bar integrity below 100%: 1 empty",
+   "rule": "L8"
+  },
+  {
+   "id": "method/czerny599/046",
+   "path": "catalog/method/czerny599/046.mxl",
+   "reason": "reference bar integrity below 100%: 1 empty",
+   "rule": "L8"
+  },
+  {
+   "id": "method/czerny599/047",
+   "path": "catalog/method/czerny599/047.mxl",
+   "reason": "reference bar integrity below 100%: 1 empty",
+   "rule": "L8"
+  },
+  {
+   "id": "method/czerny849/006",
+   "path": "catalog/method/czerny849/006.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny849/008",
+   "path": "catalog/method/czerny849/008.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny849/009",
+   "path": "catalog/method/czerny849/009.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny849/011",
+   "path": "catalog/method/czerny849/011.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny849/012",
+   "path": "catalog/method/czerny849/012.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny849/014",
+   "path": "catalog/method/czerny849/014.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny849/015",
+   "path": "catalog/method/czerny849/015.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny849/016",
+   "path": "catalog/method/czerny849/016.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny849/017",
+   "path": "catalog/method/czerny849/017.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny849/018",
+   "path": "catalog/method/czerny849/018.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny849/019",
+   "path": "catalog/method/czerny849/019.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny849/020",
+   "path": "catalog/method/czerny849/020.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny849/021",
+   "path": "catalog/method/czerny849/021.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny849/022",
+   "path": "catalog/method/czerny849/022.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny849/023",
+   "path": "catalog/method/czerny849/023.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/czerny849/024",
+   "path": "catalog/method/czerny849/024.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/sonatina/004",
+   "path": "catalog/method/sonatina/004.mxl",
+   "reason": "reference bar integrity below 100%: 2 underfull",
+   "rule": "L8"
+  },
+  {
+   "id": "method/sonatina/013",
+   "path": "catalog/method/sonatina/013.mxl",
+   "reason": "reference bar integrity below 100%: 2 underfull",
+   "rule": "L8"
+  },
+  {
+   "id": "method/sonatina/016",
+   "path": "catalog/method/sonatina/016.mxl",
+   "reason": "reference bar integrity below 100%: 2 underfull",
+   "rule": "L8"
+  },
+  {
+   "id": "method/sonatina/018",
+   "path": "catalog/method/sonatina/018.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3)",
+   "rule": "L5"
+  },
+  {
+   "id": "method/sonatina/019",
+   "path": "catalog/method/sonatina/019.mxl",
+   "reason": "reference bar integrity below 100%: 2 underfull",
+   "rule": "L8"
+  },
+  {
+   "id": "method/sonatina/020",
+   "path": "catalog/method/sonatina/020.mxl",
+   "reason": "reference bar integrity below 100%: 1 underfull",
+   "rule": "L8"
+  },
+  {
+   "id": "method/sonatina/022",
+   "path": "catalog/method/sonatina/022.mxl",
+   "reason": "octave-shift semantics unresolved (§14 I3); reference bar integrity below 100%: 1 underfull",
+   "rule": "L5"
+  },
+  {
+   "id": "method/sonatina/023",
+   "path": "catalog/method/sonatina/023.mxl",
+   "reason": "reference bar integrity below 100%: 1 underfull",
+   "rule": "L8"
+  },
+  {
+   "id": "method/sonatina/024",
+   "path": "catalog/method/sonatina/024.mxl",
+   "reason": "reference bar integrity below 100%: 1 underfull",
+   "rule": "L8"
+  }
+ ],
+ "schema": "ppp.bench-excluded/1"
+}

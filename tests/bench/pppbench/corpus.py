@@ -141,6 +141,31 @@ def derived_tags(entry: RefEntry, canon) -> List[str]:
 
 
 # ----------------------------------------------------------------- lint
+SHARP_ORDER = "FCGDAEB"
+KEY_METRICS = ["struct.key.fifths_exact", "struct.key.mirex", "notation.spelling.accuracy"]
+
+
+def key_signature_fit(canon) -> Tuple[int, Optional[float]]:
+    """(notes on signature-altered steps, share of them carrying the signature's alter).
+
+    A low share means the file's pitches ignore its own key signature (MusicXML
+    pitch must carry <alter>; the app does not apply the signature to it)."""
+    f = canon.measures[0].fifths
+    if f == 0:
+        return 0, None
+    steps = SHARP_ORDER[:f] if f > 0 else SHARP_ORDER[::-1][:-f]
+    want = 1 if f > 0 else -1
+    affected = [n for n in canon.notes if n.step in steps]
+    if not affected:
+        return 0, None
+    return len(affected), sum(1 for n in affected if n.alter == want) / len(affected)
+
+
+def keysig_contradicted(canon) -> bool:
+    n, fit = key_signature_fit(canon)
+    return n >= 3 and fit is not None and fit < 0.2
+
+
 def exclusion_reasons(canon) -> List[Tuple[str, str]]:
     out = []
     if canon.diagnostics.get("octave_shift"):
@@ -172,7 +197,7 @@ def lint(entries: List[RefEntry], tracked: Optional[set] = None) -> List[LintIss
             continue
         if e.path not in tracked:
             issues.append(LintIssue("L1", "error", e.id, f"{e.path} is not committed to git"))
-        if util.sha256_file(e.abspath) != e.sha256:
+        if util.content_sha256(e.abspath) != e.sha256:
             issues.append(LintIssue("L2", "error", e.id, "sha256 changed: the reference was edited; re-register and rebaseline"))
         try:
             canon = read_reference(e)
@@ -187,6 +212,9 @@ def lint(entries: List[RefEntry], tracked: Optional[set] = None) -> List[LintIss
             issues.append(LintIssue(rule, "error", e.id, reason + " — must be in excluded.json, not references.json"))
         if canon.diagnostics["parts"] > 1 and canon.staves < 2:
             issues.append(LintIssue("L7", "warning", e.id, "several parts and no two-staff piano part"))
+        if keysig_contradicted(canon) and not set(KEY_METRICS) <= set(e.expect.get("skip_metrics") or []):
+            issues.append(LintIssue("L12", "error", e.id, "notes ignore the key signature; key/spelling truth is wrong — "
+                                    "add expect.skip_metrics " + ", ".join(KEY_METRICS)))
         if not canon.measures[0].mode_explicit and not (e.expect.get("key") or {}).get("mode"):
             issues.append(LintIssue("L9", "warning", e.id, "no <mode> and no expect.key.mode (struct.key.mirex will be null)"))
     return issues
@@ -250,9 +278,15 @@ def init_registry(micro_expect: Dict[str, Dict[str, Any]], manual_expect: Dict[s
                                    else DEFAULT_TEMPO.get(c.get("book"), 100))
         expect.update(manual_expect.get(c["id"], {}))
         note = notes.get(c["id"], "")
+        if keysig_contradicted(canon):
+            expect["skip_metrics"] = list(KEY_METRICS)
+            n, fit = key_signature_fit(canon)
+            note = ((note + " ") if note else "") + (
+                f"Data defect: {n} notes on key-signature steps, {fit:.0%} carry the signature's alter, so PPP plays "
+                "them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.")
         if not canon.effective_qpm and not note:
             note = f"No tempo in the file; the benchmark performs it at {expect['tempo_qpm']} qpm (a benchmark choice)."
-        refs.append(RefEntry(id=c["id"], path=c["path"], sha256=util.sha256_file(path), set=c["set"],
+        refs.append(RefEntry(id=c["id"], path=c["path"], sha256=util.content_sha256(path), set=c["set"],
                              license=c["license"], book=c.get("book"), expect=expect,
                              holdout=holdout_for(c["set"], c["id"]), note=note))
     return refs, excluded

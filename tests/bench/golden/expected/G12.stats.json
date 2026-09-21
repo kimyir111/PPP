@@ -1,0 +1,17 @@
+{
+ "arrangement.level": "beginner",
+ "arrangement.style": "balanced",
+ "bars": 13,
+ "beatFallback": null,
+ "beatSource": "onset",
+ "beatType": 4,
+ "beatsPerBar": 4,
+ "key.fifths": 0,
+ "key.mode": "major",
+ "lh": 96,
+ "notes": 129,
+ "quantizer": "heuristic",
+ "rh": 33,
+ "tempo": 112,
+ "tempoAlias": null
+}

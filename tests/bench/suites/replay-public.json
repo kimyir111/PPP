@@ -1,0 +1,87 @@
+{
+ "align": {
+  "window_s": 0.3
+ },
+ "description": "Recorded helper /transcribe results on rendered licence-clean references (T0-R, §6.8); empty until recorded",
+ "fixtures": "replay",
+ "gate": {
+  "case_fail_drop": 10.0,
+  "case_warn_drop": 2.0,
+  "metrics": {
+   "notation.duration.accuracy": {
+    "dir": "up",
+    "tol": -0.003
+   },
+   "notation.hand.accuracy": {
+    "dir": "up",
+    "tol": -0.003
+   },
+   "notation.ioi.accuracy": {
+    "dir": "up",
+    "tol": -0.003
+   },
+   "notation.onset_pos.accuracy": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "notation.spelling.accuracy": {
+    "dir": "up",
+    "tol": -0.003
+   },
+   "notation.ties.extra_per_100": {
+    "dir": "down",
+    "tol": 0.5
+   },
+   "notes.identity.f1": {
+    "dir": "up",
+    "tol": -0.002
+   },
+   "notes.onset.f1_50ms": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "read.bar_integrity": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "sqi": {
+    "dir": "up",
+    "tol": -0.3
+   },
+   "struct.downbeat.f1": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "struct.key.fifths_exact": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "struct.tempo.ok_effective": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "struct.time_sig.exact": {
+    "dir": "up",
+    "tol": -0.005
+   }
+  },
+  "tag_guards": {
+   "metric": "sqi",
+   "min_delta": -1.0,
+   "tags": [
+    "set:micro",
+    "set:hymns",
+    "set:method",
+    "set:catalog",
+    "profile:deadpan",
+    "profile:human",
+    "profile:amt",
+    "beats:none",
+    "beats:oracle"
+   ]
+  }
+ },
+ "kind": "replay",
+ "name": "replay-public",
+ "schema": "ppp.bench-suite/1"
+}

@@ -1,0 +1,243 @@
+{
+ "align": {
+  "window_s": 0.3
+ },
+ "description": "Gate sensitivity check (§9.5): core references × deadpan/onset",
+ "gate": {
+  "case_fail_drop": 10.0,
+  "case_warn_drop": 2.0,
+  "metrics": {
+   "notation.duration.accuracy": {
+    "dir": "up",
+    "tol": -0.003
+   },
+   "notation.hand.accuracy": {
+    "dir": "up",
+    "tol": -0.003
+   },
+   "notation.ioi.accuracy": {
+    "dir": "up",
+    "tol": -0.003
+   },
+   "notation.onset_pos.accuracy": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "notation.spelling.accuracy": {
+    "dir": "up",
+    "tol": -0.003
+   },
+   "notation.ties.extra_per_100": {
+    "dir": "down",
+    "tol": 0.5
+   },
+   "notes.identity.f1": {
+    "dir": "up",
+    "tol": -0.002
+   },
+   "notes.onset.f1_50ms": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "read.bar_integrity": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "sqi": {
+    "dir": "up",
+    "tol": -0.3
+   },
+   "struct.downbeat.f1": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "struct.key.fifths_exact": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "struct.tempo.ok_effective": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "struct.time_sig.exact": {
+    "dir": "up",
+    "tol": -0.005
+   }
+  },
+  "tag_guards": {
+   "metric": "sqi",
+   "min_delta": -1.0,
+   "tags": [
+    "set:micro",
+    "set:hymns",
+    "set:method",
+    "set:catalog",
+    "profile:deadpan",
+    "profile:human",
+    "profile:amt",
+    "beats:none",
+    "beats:oracle"
+   ]
+  }
+ },
+ "kind": "synthetic-notation",
+ "matrix": [
+  {
+   "beats": "none",
+   "profile": "deadpan",
+   "seeds": [
+    1
+   ]
+  }
+ ],
+ "name": "mutation",
+ "references": [
+  "catalog/fur-elise",
+  "catalog/gymnopedie-1",
+  "catalog/happy-birthday",
+  "hymns/all-hail-the-power",
+  "hymns/angels-we-have-heard",
+  "hymns/beneath-the-cross",
+  "hymns/blessed-assurance",
+  "hymns/come-holy-spirit",
+  "hymns/come-thou-fount",
+  "hymns/come-thou-long",
+  "hymns/go-to-dark-gethsemane",
+  "hymns/god-rest-ye-merry",
+  "hymns/god-will-take-care",
+  "hymns/hark-the-voice",
+  "hymns/holy-holy-holy",
+  "hymns/how-firm-a-foundation",
+  "hymns/hyfrydol-alleluia",
+  "hymns/i-am-jesus-little-lamb",
+  "hymns/i-know-whom",
+  "hymns/immortal-invisible",
+  "hymns/jesus-christ-is-risen",
+  "hymns/jesus-is-all-the-world",
+  "hymns/jesus-shall-reign",
+  "hymns/joy-to-the-world",
+  "hymns/joyful-joyful",
+  "hymns/lamp-of-our-feet",
+  "hymns/lo-he-comes",
+  "hymns/midnight-clear",
+  "hymns/my-faith-looks-up",
+  "hymns/my-hope-is-built",
+  "hymns/nearer-my-god",
+  "hymns/no-not-one",
+  "hymns/o-holy-spirit-enter",
+  "hymns/pass-me-not",
+  "hymns/rescue-the-perishing",
+  "hymns/silent-night",
+  "hymns/take-my-life",
+  "hymns/the-churchs-one-foundation",
+  "hymns/the-lords-my-shepherd",
+  "hymns/to-god-be-the-glory",
+  "hymns/under-his-wings",
+  "hymns/we-gather-together",
+  "hymns/what-child-is-this",
+  "method/beyer/016",
+  "method/beyer/025",
+  "method/beyer/027",
+  "method/beyer/028",
+  "method/beyer/029",
+  "method/beyer/031",
+  "method/beyer/032",
+  "method/beyer/033",
+  "method/beyer/034",
+  "method/beyer/035",
+  "method/beyer/036",
+  "method/beyer/037",
+  "method/beyer/052",
+  "method/beyer/053",
+  "method/beyer/059",
+  "method/beyer/067",
+  "method/burgmuller25/001",
+  "method/burgmuller25/002",
+  "method/burgmuller25/003",
+  "method/burgmuller25/004",
+  "method/burgmuller25/005",
+  "method/burgmuller25/006",
+  "method/burgmuller25/016",
+  "method/burgmuller25/018",
+  "method/burgmuller25/019",
+  "method/burgmuller25/023",
+  "method/czerny299/010",
+  "method/czerny599/021",
+  "method/czerny599/022",
+  "method/czerny599/023",
+  "method/czerny599/024",
+  "method/czerny599/026",
+  "method/czerny599/027",
+  "method/czerny599/030",
+  "method/czerny599/034",
+  "method/czerny599/035",
+  "method/czerny599/036",
+  "method/czerny599/037",
+  "method/czerny599/040",
+  "method/czerny599/042",
+  "method/czerny599/045",
+  "method/czerny599/048",
+  "method/czerny599/049",
+  "method/czerny849/001",
+  "method/czerny849/002",
+  "method/czerny849/005",
+  "method/czerny849/007",
+  "method/czerny849/013",
+  "method/czerny849/025",
+  "method/czerny849/026",
+  "method/czerny849/030",
+  "method/hanon/001",
+  "method/hanon/002",
+  "method/hanon/004",
+  "method/hanon/005",
+  "method/hanon/007",
+  "method/hanon/008",
+  "method/hanon/009",
+  "method/hanon/020",
+  "method/sonatina/002",
+  "method/sonatina/003",
+  "method/sonatina/006",
+  "method/sonatina/008",
+  "method/sonatina/009",
+  "method/sonatina/010",
+  "method/sonatina/012",
+  "method/sonatina/014",
+  "method/sonatina/017",
+  "method/sonatina/021",
+  "method/sonatina/025",
+  "method/sonatina/026",
+  "method/sonatina/027",
+  "method/sonatina/028",
+  "micro/M01-waltz-3-4",
+  "micro/M02-alberti-4-4",
+  "micro/M03-jig-6-8",
+  "micro/M04-triplets-4-4",
+  "micro/M05-32nds-120",
+  "micro/M06-32nds-176",
+  "micro/M07-pickup-3-4",
+  "micro/M08-pickup-4-4",
+  "micro/M09-syncopation-ties",
+  "micro/M10-dotted",
+  "micro/M11-harmonic-minor",
+  "micro/M12-flats-db",
+  "micro/M13-sharps-chromatic",
+  "micro/M14-melody-in-bass",
+  "micro/M15-wide-chords",
+  "micro/M16-long-notes-rests",
+  "micro/M17-march-2-4",
+  "micro/M18-alla-breve",
+  "micro/M19-fast-3-8",
+  "micro/M20-compound-12-8",
+  "micro/M21-five-four",
+  "micro/M22-tempo-change",
+  "micro/M23-repeated-notes",
+  "micro/M24-block-chords",
+  "samples/prelude-fragment"
+ ],
+ "schema": "ppp.bench-suite/1",
+ "stage": {
+  "name": "notate",
+  "opts": {}
+ },
+ "subsets": {}
+}

@@ -43,6 +43,19 @@ def sha256_file(path: str) -> str:
         return sha256_bytes(handle.read())
 
 
+def normalise_eol(data: bytes) -> bytes:
+    return data.replace(b"\r\n", b"\n")
+
+
+def content_sha256(path: str) -> str:
+    """sha256 of a file with CRLF read as LF.
+
+    Git on Windows (core.autocrlf) checks text scores out with CRLF and Linux
+    with LF; hashing the normalised bytes gives one pin for both."""
+    with open(path, "rb") as handle:
+        return sha256_bytes(normalise_eol(handle.read()))
+
+
 def fnv1a32(text: str) -> int:
     h = 2166136261
     for byte in text.encode("utf-8"):
@@ -149,3 +162,17 @@ def git_dirty() -> bool | None:
         return bool(git("status", "--porcelain", "--untracked-files=no").strip())
     except RuntimeError:
         return None
+
+
+def load_json_text(text: str) -> Any:
+    return json.loads(text)
+
+
+def read_text(path: str) -> str:
+    with open(path, encoding="utf-8") as handle:
+        return handle.read()
+
+
+def write_bytes(path: str, data: bytes) -> None:
+    with open(path, "wb") as handle:
+        handle.write(data)

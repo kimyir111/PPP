@@ -18,7 +18,7 @@ from fractions import Fraction
 from typing import Any, Dict, List, Optional, Tuple
 
 from .canonical import CanonicalScore, Measure, Note, Rest, Sounding, TempoMark
-from .util import sha256_bytes
+from .util import normalise_eol, sha256_bytes
 
 STEP_SEMI = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
 UNIT_Q = {"breve": 8, "whole": 4, "half": 2, "quarter": 1, "eighth": Fraction(1, 2),
@@ -407,7 +407,7 @@ def read_score(src: Any, *, source_path: Optional[str] = None) -> CanonicalScore
     printed_qpm = next((float(mk["qpm"]) for mk in marks if mk["kind"] == "metronome"), None)
 
     canon = CanonicalScore(
-        title=title, source_path=source_path, source_sha256=sha256_bytes(data),
+        title=title, source_path=source_path, source_sha256=sha256_bytes(normalise_eol(data)),
         effective_qpm=float(first_tempo) if first_tempo is not None else None,
         sound_qpm=sound_qpm, printed_qpm=printed_qpm, marks=tempo_marks,
         staves=max(1, min(max_staff_seen, 4)), piano_part=piano_part,

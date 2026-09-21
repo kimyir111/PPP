@@ -1,0 +1,3922 @@
+{
+ "references": [
+  {
+   "expect": {
+    "key": {
+     "fifths": 0,
+     "mode": "minor"
+    }
+   },
+   "holdout": false,
+   "id": "catalog/fur-elise",
+   "license": "CC0 (catalog/index.json)",
+   "note": "No <mode> in the file (reads as major); the piece is in A minor.",
+   "path": "catalog/fur-elise.musicxml",
+   "set": "catalog",
+   "sha256": "f769a8d4827193185f8bf9f8daa1b17c96a496b48bc4c3dbaa8030ba353e2659"
+  },
+  {
+   "expect": {},
+   "holdout": false,
+   "id": "catalog/gymnopedie-1",
+   "license": "CC0 (catalog/index.json)",
+   "note": "",
+   "path": "catalog/gymnopedie-1.musicxml",
+   "set": "catalog",
+   "sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
+  },
+  {
+   "expect": {},
+   "holdout": false,
+   "id": "catalog/happy-birthday",
+   "license": "CC0 (catalog/index.json)",
+   "note": "",
+   "path": "catalog/happy-birthday.musicxml",
+   "set": "catalog",
+   "sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/all-creatures",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 65 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/all-creatures.musicxml",
+   "set": "hymns",
+   "sha256": "2fffb6da34955d50922c793dea1dd10edb58deeb78c2eefcb909f71c79ad7c3d"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/all-hail-the-power",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 15 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/all-hail-the-power.musicxml",
+   "set": "hymns",
+   "sha256": "d9419f6f4505a204f2036f7626cb8b4369c6e6978c95c0c3f38c5936c862f65f"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/all-praise-to-thee",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 8 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/all-praise-to-thee.musicxml",
+   "set": "hymns",
+   "sha256": "19e7a13281eee721c2869b34d43cad8588bad521fc64cb63ff67b454ad6deeb4"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": true,
+   "id": "hymns/amazing-grace",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 3 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/amazing-grace.musicxml",
+   "set": "hymns",
+   "sha256": "a573c63e44f81a2ebeaaaacf21c6e1321cded78d915eecd013a33fd4cdf04c3b"
+  },
+  {
+   "expect": {},
+   "holdout": true,
+   "id": "hymns/angels-from-the-realms",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "",
+   "path": "catalog/hymns/angels-from-the-realms.musicxml",
+   "set": "hymns",
+   "sha256": "ad600d6df0722ae9d806517fef3ebcc4539a073fb913b9236d289d49ae5690a2"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/angels-we-have-heard",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 23 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/angels-we-have-heard.musicxml",
+   "set": "hymns",
+   "sha256": "a1f7f7b9716fe7bcae7c3ca62626c857b26b17723418faf3f3925fd9c2fd5cc5"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/as-with-gladness",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 15 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/as-with-gladness.musicxml",
+   "set": "hymns",
+   "sha256": "bdeefd5078b622ff30765caf3eea23210922eea05988196cdf096e3d852fe4a2"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/away-in-a-manger",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 19 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/away-in-a-manger.musicxml",
+   "set": "hymns",
+   "sha256": "78be8ff2d657ed97b310afe13ce418bd792b63b45917063505dbdf61c72cf837"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/be-thou-my-vision",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 109 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/be-thou-my-vision.musicxml",
+   "set": "hymns",
+   "sha256": "b343a76c8e9b8de834d8cc74e750fdf31a334f4db127b130eb97051037cbc61f"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/beautiful-savior",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 96 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/beautiful-savior.musicxml",
+   "set": "hymns",
+   "sha256": "d1afac43c3f17cff197808bae287642cae71ff52a17f9b437517127038555ad4"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/beneath-the-cross",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 183 notes on key-signature steps, 1% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/beneath-the-cross.musicxml",
+   "set": "hymns",
+   "sha256": "4b52a862ad61b5069fc32b5238344d78776491a47975d2c0c6db4bc259cc12a6"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/blessed-assurance",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 52 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/blessed-assurance.musicxml",
+   "set": "hymns",
+   "sha256": "78efa66a3f336be042b393d082cc68703900780c63106394a8f000cbf8a56a89"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": true,
+   "id": "hymns/blest-be-the-tie",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 15 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/blest-be-the-tie.musicxml",
+   "set": "hymns",
+   "sha256": "6ac73de7aa0a46a4a8528fee422087d7d03aa988664c7d4077c6c68cc5a30460"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/breathe-on-me",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 52 notes on key-signature steps, 2% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/breathe-on-me.musicxml",
+   "set": "hymns",
+   "sha256": "aef6e0ef315257c1d9124f5768fbb9adf54894fc57a8f824611f57953077b6dd"
+  },
+  {
+   "expect": {},
+   "holdout": false,
+   "id": "hymns/christ-arose",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "",
+   "path": "catalog/hymns/christ-arose.musicxml",
+   "set": "hymns",
+   "sha256": "bf390fff2f43c8100d718cfb61635791fbcf1cddf44d686ed9e1e20db578f1fc"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/christ-the-lord-is-risen",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 26 notes on key-signature steps, 4% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/christ-the-lord-is-risen.musicxml",
+   "set": "hymns",
+   "sha256": "a0919cdde8c8d8f9082c1d18b31e4be1fd0fadebeeb8e032b26768d2f72a6265"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/come-holy-spirit",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 39 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/come-holy-spirit.musicxml",
+   "set": "hymns",
+   "sha256": "89dac546b6d3a3c8ad33c4b31f33797692137be4867f53f89f3abc8a438a3024"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/come-thou-fount",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 162 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/come-thou-fount.musicxml",
+   "set": "hymns",
+   "sha256": "12d1731332944adda7ce761732f43170462610ed47886e0cfaa67bfe578a8633"
+  },
+  {
+   "expect": {},
+   "holdout": false,
+   "id": "hymns/come-thou-long",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "",
+   "path": "catalog/hymns/come-thou-long.musicxml",
+   "set": "hymns",
+   "sha256": "293cafb6be163edcbdd3433b65baf1376be0c8bffd893a7a7b436d8213a497c9"
+  },
+  {
+   "expect": {},
+   "holdout": false,
+   "id": "hymns/come-ye-disconsolate",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "",
+   "path": "catalog/hymns/come-ye-disconsolate.musicxml",
+   "set": "hymns",
+   "sha256": "d87cc263ea8736f5c90264d0382a0b621b817df14449810b4923a20a0cab269f"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/crown-him",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 42 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/crown-him.musicxml",
+   "set": "hymns",
+   "sha256": "b61da9807fc2009920328638b6d3c54368f6d25a007728050d483e2c0dab6cd6"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": true,
+   "id": "hymns/faith-of-our-fathers",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 12 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/faith-of-our-fathers.musicxml",
+   "set": "hymns",
+   "sha256": "aaf57c10b4a1cc5c7cff532c34adb9e43cfc7ce9b4b4e8064db2e3779ec49bc2"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": true,
+   "id": "hymns/first-noel",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 63 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/first-noel.musicxml",
+   "set": "hymns",
+   "sha256": "a748ae94c71355361c248ad82694a4d7e70dc6aff999973fdcd4f0901d5fe22c"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/for-the-beauty",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 15 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/for-the-beauty.musicxml",
+   "set": "hymns",
+   "sha256": "38e7cdae44358cacf84148646f22b16208c015f5a439931acd7cce136c705f4c"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/glorious-things",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 33 notes on key-signature steps, 3% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/glorious-things.musicxml",
+   "set": "hymns",
+   "sha256": "fba79272c5691c88691866295665fde4df5dab6921d4fc451b9a15602e8e40e4"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/go-to-dark-gethsemane",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 104 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/go-to-dark-gethsemane.musicxml",
+   "set": "hymns",
+   "sha256": "228d6faf7d24db74915ba0cc28d71aed6b462ff558428b9d46fa97419c9dd4e7"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/god-rest-ye-merry",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 23 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/god-rest-ye-merry.musicxml",
+   "set": "hymns",
+   "sha256": "25b6d11c1ab98ca13cb2e3be4b1efad503a67c26e42486b33a9a440cf5cbefb3"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/god-will-take-care",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 90 notes on key-signature steps, 2% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/god-will-take-care.musicxml",
+   "set": "hymns",
+   "sha256": "3de7bc3ee24ccac0cb5de02af06d415985833b30f702e50c746b51e26930438f"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": true,
+   "id": "hymns/guide-me",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 16 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/guide-me.musicxml",
+   "set": "hymns",
+   "sha256": "6ec21df301fb840a745f56e01e5d266a025a38155c44981ef42068887756be39"
+  },
+  {
+   "expect": {},
+   "holdout": true,
+   "id": "hymns/hallelujah-what-a-savior",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "",
+   "path": "catalog/hymns/hallelujah-what-a-savior.musicxml",
+   "set": "hymns",
+   "sha256": "8e5b81082ae01f012a56132283eb54afaf11e14a3d54e89e7b895ec7b19245d3"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/hark-the-herald",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 34 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/hark-the-herald.musicxml",
+   "set": "hymns",
+   "sha256": "07eae7708ce235886a2eb87bdef320910b63c256250832a492eb4895df1cc236"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/hark-the-voice",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 19 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/hark-the-voice.musicxml",
+   "set": "hymns",
+   "sha256": "641f1a9f81aa046025eee2b98e8cd6bf7782e875bf2c8321de119bf40378643c"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": true,
+   "id": "hymns/he-leadeth-me",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 60 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/he-leadeth-me.musicxml",
+   "set": "hymns",
+   "sha256": "a9321528f7731f0398f95b0eaf4274572218dee3dd52506757faa45da8ae9c63"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": true,
+   "id": "hymns/holy-god-we-praise",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 19 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/holy-god-we-praise.musicxml",
+   "set": "hymns",
+   "sha256": "8a9daddfe2467971157bd5306e3f65a7fcb9a7336b5510303f0e8fa92d858897"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/holy-holy-holy",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 43 notes on key-signature steps, 2% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/holy-holy-holy.musicxml",
+   "set": "hymns",
+   "sha256": "c50d6ba77fc80e38684f02f19b08646b87b5e3d1204b6fb6fe8e14369863dc9d"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/hosanna-loud",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 86 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/hosanna-loud.musicxml",
+   "set": "hymns",
+   "sha256": "8a6dd5810eae43e8e48bc882055f7b22176fcc6a0ea4f31df998e133a852689c"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/how-firm-a-foundation",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 132 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/how-firm-a-foundation.musicxml",
+   "set": "hymns",
+   "sha256": "e0d7391b14226669dbfed9ac6dce4293308ae2ad79920158748bcaafe9dfdbc2"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/hyfrydol-alleluia",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 29 notes on key-signature steps, 3% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/hyfrydol-alleluia.musicxml",
+   "set": "hymns",
+   "sha256": "dcd6d510f1bf3eb34d7c50c3fbb6992b479f467b8e037f677ba60c9b08e2f3e9"
+  },
+  {
+   "expect": {},
+   "holdout": false,
+   "id": "hymns/i-am-jesus-little-lamb",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "",
+   "path": "catalog/hymns/i-am-jesus-little-lamb.musicxml",
+   "set": "hymns",
+   "sha256": "e87397d0c527491e747e3e24d78ce2921db44a140c20de9fd045279c70a6e26f"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/i-know-that-my-redeemer",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 34 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/i-know-that-my-redeemer.musicxml",
+   "set": "hymns",
+   "sha256": "ff19bea5df2e4c4a94a30645efd247e34d13ddaed8d2805788a31806291e556e"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/i-know-whom",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 186 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/i-know-whom.musicxml",
+   "set": "hymns",
+   "sha256": "41521cf8a2621e5cd7c0db4ae971e9bb10326efe09955006bbbf3ef446efe587"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/immortal-invisible",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 12 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/immortal-invisible.musicxml",
+   "set": "hymns",
+   "sha256": "60ee63c8fa138b7063f9a96eec0dce19e2f1516cf17d4c4b8f7755b827023b33"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/it-is-well",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 176 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/it-is-well.musicxml",
+   "set": "hymns",
+   "sha256": "8eb5f47ffd53c00d86562a7170fb88e8443584abcc97fdb46c68c39e36786f87"
+  },
+  {
+   "expect": {},
+   "holdout": false,
+   "id": "hymns/jesus-christ-is-risen",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "",
+   "path": "catalog/hymns/jesus-christ-is-risen.musicxml",
+   "set": "hymns",
+   "sha256": "44afb25e658c94de6af37fea078462789f695a3410731f92e26eb3e3d51355ab"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/jesus-is-all-the-world",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 171 notes on key-signature steps, 2% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/jesus-is-all-the-world.musicxml",
+   "set": "hymns",
+   "sha256": "6b3f2c33e9dcf138bbede86ede158c1bdf4a2e57a4813bb0b09681a978642320"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/jesus-loves-me",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 130 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/jesus-loves-me.musicxml",
+   "set": "hymns",
+   "sha256": "bfedf2d008c1452f3ee08b813408a86d4a98011a73054c782b415edba137259f"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/jesus-shall-reign",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 99 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/jesus-shall-reign.musicxml",
+   "set": "hymns",
+   "sha256": "4d2ea8f3393c7fac7f516d1dd7b1c01ff2ae58b684324f3ba68109a537aed6ce"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/joy-to-the-world",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 43 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/joy-to-the-world.musicxml",
+   "set": "hymns",
+   "sha256": "aa73fc44da36da6f6ec01cdcd1f7425e4059469d1df524c2ceffa471d51525b1"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/joyful-joyful",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 21 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/joyful-joyful.musicxml",
+   "set": "hymns",
+   "sha256": "41df4924c5cf298c032543cccab0a4b3f70e3875667722e96b8d8e47a74756f2"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/lamp-of-our-feet",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 7 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/lamp-of-our-feet.musicxml",
+   "set": "hymns",
+   "sha256": "70779ec9a745a99e555b4acf9d311eaeaf07758f32087e24bfbe7a289ced2c7c"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": true,
+   "id": "hymns/let-all-mortal-flesh",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 10 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/let-all-mortal-flesh.musicxml",
+   "set": "hymns",
+   "sha256": "4d1c090c5b6a69ffaca8201a35df4737e51447e4522e8d4217cd97286530e770"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/lo-he-comes",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 29 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/lo-he-comes.musicxml",
+   "set": "hymns",
+   "sha256": "0cd408fee4aa8293ba8e1392f610d1a0835d2293dde32dc981dede3291747931"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/midnight-clear",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 87 notes on key-signature steps, 1% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/midnight-clear.musicxml",
+   "set": "hymns",
+   "sha256": "3d4a1402440a5c141e5abddc4e678a1e70665b5599cb4e66c2c5a0a7f9f0d12f"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/more-love-to-thee",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 123 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/more-love-to-thee.musicxml",
+   "set": "hymns",
+   "sha256": "280ad71cfa177f8fdb920f65bdd0619605d597f42826926d11547a6889a1e472"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/my-faith-looks-up",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 34 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/my-faith-looks-up.musicxml",
+   "set": "hymns",
+   "sha256": "1e0a55ee3b64116c94ee11dd230329401cae5dc913e3e825dd3e4f8a3780479d"
+  },
+  {
+   "expect": {},
+   "holdout": false,
+   "id": "hymns/my-hope-is-built",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "",
+   "path": "catalog/hymns/my-hope-is-built.musicxml",
+   "set": "hymns",
+   "sha256": "bad1d533aa640976909217efbb8e93fcd09ea1d61f4119262259751910715c5a"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/my-saviors-love",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 198 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/my-saviors-love.musicxml",
+   "set": "hymns",
+   "sha256": "7d5b64c9baf4b3c63c526981e8032ac29cb392e06fe3a8210de06315c4c45d2f"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/nearer-my-god",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 9 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/nearer-my-god.musicxml",
+   "set": "hymns",
+   "sha256": "3cce59ade3d4038c83289fae2f5a97a5051e57ef4395719da2dafe08672b7506"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/no-not-one",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 21 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/no-not-one.musicxml",
+   "set": "hymns",
+   "sha256": "e93aad86c0f08d1b56b24db05135182f5c098707ee393eb9af240ae54c1ed78c"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/o-come-all-ye-faithful",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 25 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/o-come-all-ye-faithful.musicxml",
+   "set": "hymns",
+   "sha256": "3ecec21951cc8ab6eb7518ca1af05beceabbbf97cbda5e40372dc7b3bacee5e6"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/o-come-emmanuel",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 18 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/o-come-emmanuel.musicxml",
+   "set": "hymns",
+   "sha256": "448f41eee308474eafebedfd1937d8989a9047bf78f9d36c56df8446fb074aee"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": true,
+   "id": "hymns/o-for-a-thousand",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 85 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/o-for-a-thousand.musicxml",
+   "set": "hymns",
+   "sha256": "45764b6ec194f23814776a5903c7e9bb84f7da2eb23e7d4a3cd5622ef163b129"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/o-holy-spirit-enter",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 167 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/o-holy-spirit-enter.musicxml",
+   "set": "hymns",
+   "sha256": "522049faa0b4d69133d4289cad9b252235f276dd6c07754c22775a1ee012a6c6"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": true,
+   "id": "hymns/o-little-town",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 28 notes on key-signature steps, 4% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/o-little-town.musicxml",
+   "set": "hymns",
+   "sha256": "b472ffd596fa606f3220f3ebc5d0ba7a09d62acb317de4d15be6c3f82cad3d14"
+  },
+  {
+   "expect": {},
+   "holdout": false,
+   "id": "hymns/o-sacred-head",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "",
+   "path": "catalog/hymns/o-sacred-head.musicxml",
+   "set": "hymns",
+   "sha256": "44890506f9c504ba30f732f269b2252595ed91eab3dca9daf7612863984e2d34"
+  },
+  {
+   "expect": {},
+   "holdout": false,
+   "id": "hymns/our-god-our-help",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "",
+   "path": "catalog/hymns/our-god-our-help.musicxml",
+   "set": "hymns",
+   "sha256": "3777b3e0c6e93199efea8545de02f647b6b83ccc8a491660043e0aa852512286"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/pass-me-not",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 149 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/pass-me-not.musicxml",
+   "set": "hymns",
+   "sha256": "0629deb823d635421c8744e4e73eac084a4066603c7f6675559de086cf5a0363"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": true,
+   "id": "hymns/praise-my-soul",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 100 notes on key-signature steps, 1% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/praise-my-soul.musicxml",
+   "set": "hymns",
+   "sha256": "652ebbe7513fb5d3e7939854332922e7c8e3edb9dd693c423c7e06c4d7a14ff1"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": true,
+   "id": "hymns/praise-to-the-lord",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 22 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/praise-to-the-lord.musicxml",
+   "set": "hymns",
+   "sha256": "85e7fefe923ff6978a636015fa7fce9eae7d0e34d8902dcf65bae4e65e32a999"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/rescue-the-perishing",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 105 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/rescue-the-perishing.musicxml",
+   "set": "hymns",
+   "sha256": "6f2ff4d275c3951a07e30d636e0b62da9f7c0e90d303ec3dc351cf1f47c68e81"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/rock-of-ages",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 65 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/rock-of-ages.musicxml",
+   "set": "hymns",
+   "sha256": "526c53604b5d2d3bf027c5a0abd20faa46be31b1c83be4e3519452bb6d15f39b"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/savior-like-a-shepherd",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 176 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/savior-like-a-shepherd.musicxml",
+   "set": "hymns",
+   "sha256": "e271457d73c1965549fdf4f45508b068a586c5c890fb96141b6fbcc82f08f79c"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/silent-night",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 81 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/silent-night.musicxml",
+   "set": "hymns",
+   "sha256": "82d6a3d6953b98ebe0e1d93bdfcd0590a82c4f502cd235444eb6388c92240d84"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/stricken-smitten",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 56 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/stricken-smitten.musicxml",
+   "set": "hymns",
+   "sha256": "2da7ec9861975cb0044f3ea28bea79adf4b4976e4e9a3fb71b416a1a147f1a0d"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/take-my-life",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 16 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/take-my-life.musicxml",
+   "set": "hymns",
+   "sha256": "2d314b524c6effa9092e0477036b2e1aa57a693be9fd52b0ca0134f695581850"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": true,
+   "id": "hymns/take-up-thy-cross",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 11 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/take-up-thy-cross.musicxml",
+   "set": "hymns",
+   "sha256": "48db5c2d3ca911dfcd654bc46d08c1b979c9bc20b34933286bd2e690f1c41d20"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/the-churchs-one-foundation",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 43 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/the-churchs-one-foundation.musicxml",
+   "set": "hymns",
+   "sha256": "7bf265a97e864287f3dfe06e2a3b5d39283b7466ecff812207505f1600776369"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/the-lords-my-shepherd",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 44 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/the-lords-my-shepherd.musicxml",
+   "set": "hymns",
+   "sha256": "eddf4dfe146c746c8f1c7eb53229931550a0529af367ba121958d74cff349f4f"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": true,
+   "id": "hymns/the-love-of-god",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 303 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/the-love-of-god.musicxml",
+   "set": "hymns",
+   "sha256": "25e5d3f4789472cff2c6ed45d2e505a1acab3f20ea3109fe5140f3eb076ef84e"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": true,
+   "id": "hymns/the-old-rugged-cross",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 162 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/the-old-rugged-cross.musicxml",
+   "set": "hymns",
+   "sha256": "f9bbb02734ea9a95d1416fcb2801f72bbdf6b7ccefe1d43ba2b991780ffeb486"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/to-god-be-the-glory",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 273 notes on key-signature steps, 1% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/to-god-be-the-glory.musicxml",
+   "set": "hymns",
+   "sha256": "d829c95f5b21ea0e6d172b74cc45ec984357ae2406100a3c070ffea35f416cb3"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/under-his-wings",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 237 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/under-his-wings.musicxml",
+   "set": "hymns",
+   "sha256": "6c85edfa576a5a51fa2093a619ede5654a399a9ab21123e9ff5f420467b01405"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/we-gather-together",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 38 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/we-gather-together.musicxml",
+   "set": "hymns",
+   "sha256": "3b4c372d3f5bb03e67873976aa3b1a672f00f58bdea4994a68bb7cbf77d9e51f"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": true,
+   "id": "hymns/what-a-friend",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 23 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/what-a-friend.musicxml",
+   "set": "hymns",
+   "sha256": "48c23c9a38e0d51e2abcaf9c426a9ea812a39834334ab37906f902e033b4c5ea"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/what-child-is-this",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 38 notes on key-signature steps, 5% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/what-child-is-this.musicxml",
+   "set": "hymns",
+   "sha256": "76931b6d3836e44a45ca17cbddaef33874bff55bdd097189f749b06d1432fcbc"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/when-i-survey",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 10 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/when-i-survey.musicxml",
+   "set": "hymns",
+   "sha256": "39ce6a8b9a59b0023eb658191ef0991dae31502984c9e7031a274d35abf4b958"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": false,
+   "id": "hymns/when-the-roll",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 288 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/when-the-roll.musicxml",
+   "set": "hymns",
+   "sha256": "6ce01ac635b597eb6bc6cf38742615a896d6cd38e7a61d1b1a7afda79e202007"
+  },
+  {
+   "expect": {
+    "skip_metrics": [
+     "struct.key.fifths_exact",
+     "struct.key.mirex",
+     "notation.spelling.accuracy"
+    ]
+   },
+   "holdout": true,
+   "id": "hymns/where-he-leads-me",
+   "license": "Public domain — Open Hymnal Project tune, reduced to two-staff piano for PPP (catalog/hymns/README.md)",
+   "note": "Data defect: 28 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "path": "catalog/hymns/where-he-leads-me.musicxml",
+   "set": "hymns",
+   "sha256": "76d4887221b320dafed1266f62019305d976d8f9f3e189c41175d9542450aa71"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/001",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/001.mxl",
+   "set": "method",
+   "sha256": "ee6f63256bed9c96858c154e16ee6e5498865abac8739f549ecc5b3b2cbaf0db"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/002",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/002.mxl",
+   "set": "method",
+   "sha256": "2076326c91da924dc7bb6feb90a01a46029e0b1b937e7f21202f73483b51dc05"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": true,
+   "id": "method/beyer/003",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/003.mxl",
+   "set": "method",
+   "sha256": "5dea4cf3d8293b5bbbe08d03c5a55aeb8dd3aba61dde47b9b252c597da6ec13e"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": true,
+   "id": "method/beyer/004",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/004.mxl",
+   "set": "method",
+   "sha256": "d2e03d18e81f6dcff9099ded7d9ce5ad658e02dbd0a760997985b1ec0c3cef36"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/005",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/005.mxl",
+   "set": "method",
+   "sha256": "0acda95f9bc0bc769b3dd1342547c22c3230442daa9cfcb4ce43edbb54ce7b43"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/006",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/006.mxl",
+   "set": "method",
+   "sha256": "33f3c813a78344c6c1dbbf19586f53be7ac51da0a5e988fc0df302a34531469e"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/007",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/007.mxl",
+   "set": "method",
+   "sha256": "0317f0fcc1912ea8023e013d16a6b7754983c7095ed3f6758f539368fd1d7b33"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/008",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/008.mxl",
+   "set": "method",
+   "sha256": "8da403cef3691f6dbca190ee783e8394c0b19847614c4991da5b71e0ee2eb4b3"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/009",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/009.mxl",
+   "set": "method",
+   "sha256": "6469134a90d6ef87ead597b366737ddf114c169c098c1bdefd232aace6a38f1c"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/010",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/010.mxl",
+   "set": "method",
+   "sha256": "dcb2da716246ad647685eb68f8a899c1558a1c08ee44f3e93a1a480aa385d983"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": true,
+   "id": "method/beyer/011",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/011.mxl",
+   "set": "method",
+   "sha256": "fc68fe962a3d0da4952a87dd4084b84469110fe502ad8c1a2c455fc01af45518"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/012",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/012.mxl",
+   "set": "method",
+   "sha256": "388a17de2478175617dd210b93d98776cad6f7fb7df281d449764d0b3f82f184"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/013",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/013.mxl",
+   "set": "method",
+   "sha256": "a342104f66e8234a541130406d88b9590546a3571de4c66aa683f730752b6754"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/014",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/014.mxl",
+   "set": "method",
+   "sha256": "7eb9b7a5e3f64bf5b856c01b58205b610a04a8782503b0f8d850f1829245e605"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/015",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/015.mxl",
+   "set": "method",
+   "sha256": "09de6085824ff4d4f18ce7178d4a35c30fda05ae113194dd52c178dd9844d895"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/016",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/016.mxl",
+   "set": "method",
+   "sha256": "486e3d5a2e51f529ab0cac638fe56b61adc979c917b1b7f2df9b99d463af0e4d"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/017",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/017.mxl",
+   "set": "method",
+   "sha256": "72449cf0024e0e06184ab83b4d1ea15e7b2806d080a4396475a9bc3fb0fe69ad"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/018",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/018.mxl",
+   "set": "method",
+   "sha256": "e374d4e8bf6accbad3feff5d7dbadd95a6375d4657b02a55f940741f105b05d9"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/019",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/019.mxl",
+   "set": "method",
+   "sha256": "46392c477b65b5154d8fe08c6918bef7ec960d5877a6adc8aefa669e670c9126"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/020",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/020.mxl",
+   "set": "method",
+   "sha256": "86670f84cb502175b2a7c11853cc0150be8e9337b76fe2d966c93ffdfbaf585e"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": true,
+   "id": "method/beyer/021",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/021.mxl",
+   "set": "method",
+   "sha256": "3638c431ea38dbf40ad2a42251e46205d468175651a8532269f323858ee5a2ee"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/022",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/022.mxl",
+   "set": "method",
+   "sha256": "a88462a7f1d24b512c3fee575d59887499b44ff50fe47bb90d183ea0662087f0"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/023",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/023.mxl",
+   "set": "method",
+   "sha256": "56682ed273d09859f21e0e06b8ce1d4211ce1ed081f01ad740e773274b41604b"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/024",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/024.mxl",
+   "set": "method",
+   "sha256": "c70edc7a1a739a9fca8df1a67f26ab08c5fbdf6ba4d2f29645ec468f386925c0"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/025",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/025.mxl",
+   "set": "method",
+   "sha256": "8b10978b278af0f66f907e6dec53a91c5532a36b42197c99936440b95dd27683"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": true,
+   "id": "method/beyer/026",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/026.mxl",
+   "set": "method",
+   "sha256": "9e84975c2731de1b579119807545baac7842d3ea57ee8ae92963469c477a9711"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/027",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/027.mxl",
+   "set": "method",
+   "sha256": "c834cfa0203b9db35dfc376675d96986108fc944a16c2e4be2009d6129e77e98"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/028",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/028.mxl",
+   "set": "method",
+   "sha256": "dc07aefd13a5bd4c46abf3afbf03ad5f70db648150473a08e66ca161a2b96cce"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/029",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/029.mxl",
+   "set": "method",
+   "sha256": "d277166d6b38a31ea701a2f6da8f450d2feaebc1389aa197818f336b5195b2ca"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": true,
+   "id": "method/beyer/030",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/030.mxl",
+   "set": "method",
+   "sha256": "2b2b775b9cafc474db8766fb17f7a9b7cdc49016a9f96e6414be6c9d60cfc054"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/031",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/031.mxl",
+   "set": "method",
+   "sha256": "29cd49d05f1fd79eacb964795ac06b1b0a1e59c0ca0e287d6d45dbc219b20d9a"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/032",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/032.mxl",
+   "set": "method",
+   "sha256": "56878db5562e7f6d4f820eaf30a171ccab81cbdfffb18dad2d7fb51c8d800561"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/033",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/033.mxl",
+   "set": "method",
+   "sha256": "a23540dd68112f2be19db9cb2a73b1039bb7ec075a63a287bbbfeaa89f46c52f"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/034",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/034.mxl",
+   "set": "method",
+   "sha256": "3b1f3c7428011db7e9fd16af11db4ada0e50206439bb212c87c1e0c7832a7ed5"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/035",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/035.mxl",
+   "set": "method",
+   "sha256": "91fc2660b7b2370c66e05b72135187eea5aa6e21d41e5edd39fa9cd3d736d4b3"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/036",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/036.mxl",
+   "set": "method",
+   "sha256": "3871b187ff9621298bc788ec96e0a9ca1f34b2464af3ffe78c1656c63976a56b"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/037",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/037.mxl",
+   "set": "method",
+   "sha256": "bae41722ab39d7a4a6a67429d6f6dd25446f3b73a03a99c38a01099f7e3f41ba"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/038",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/038.mxl",
+   "set": "method",
+   "sha256": "99c38e887b6b3e47c2ecfd9858d2e5ef83d7060d1213f676de1fab5a1885480e"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/039",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/039.mxl",
+   "set": "method",
+   "sha256": "ab5bf821bc816d0fc888d5fb1081c0967bac13d6156e17c38fca926564461d12"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": true,
+   "id": "method/beyer/040",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/040.mxl",
+   "set": "method",
+   "sha256": "8274d635e67a1c8264c7c415651dd2c2d0f97a14c86ea69f94be6901fe3264d8"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/041",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/041.mxl",
+   "set": "method",
+   "sha256": "627c84ebe4097fc78435971a8e4ff29299447efd0f1bb11814e6b3551845f9d9"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/042",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/042.mxl",
+   "set": "method",
+   "sha256": "4020095ede9906f8ff2681e1eae192811bc7fc8cc1e49c8970d3b606d79748bf"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/043",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/043.mxl",
+   "set": "method",
+   "sha256": "50450f91e793c09d105f4157251f5240f70b5742df919351cf7c795c28b5e922"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/044",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/044.mxl",
+   "set": "method",
+   "sha256": "de1134410f67d5e3e07fed5d638af23228e2db978408b8bcc853915661c9b9e3"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/045",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/045.mxl",
+   "set": "method",
+   "sha256": "158050440a97625c21c86af7c6dec665dad21b77d996fddea388d7d4fd79ac16"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/046",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/046.mxl",
+   "set": "method",
+   "sha256": "4f0924af7d91f8178c66910a3726470e84aee47f266319ac936cb24566b3bd11"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": true,
+   "id": "method/beyer/047",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/047.mxl",
+   "set": "method",
+   "sha256": "98a95ae7a8f1431f5ae422ba87c68eafb088b44c3d669472cf2408b159377677"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/048",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/048.mxl",
+   "set": "method",
+   "sha256": "adebdd88da5338190eff5933207b927005378bc9e018a3d9f16136f1be77080a"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/049",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/049.mxl",
+   "set": "method",
+   "sha256": "5666e4ffa7b476124c4dd59ae3da208b6d94c0864a8a9500593f03c22a87241c"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/050",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/050.mxl",
+   "set": "method",
+   "sha256": "563f1747965a9cf21f5c42051bb61ad43c769e292b32c247fa808b947f77ffed"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": true,
+   "id": "method/beyer/051",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/051.mxl",
+   "set": "method",
+   "sha256": "87da441b468c69553ebcc31643baf9c9c92f83db1f811ea1b673a2865c1e51e0"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/052",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/052.mxl",
+   "set": "method",
+   "sha256": "a10464ed521802b7055ed82e5ea58f20e332388c1f335d083e8bb4bb7505f35a"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/053",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/053.mxl",
+   "set": "method",
+   "sha256": "d28b0eecc5c3de4bbb2f36c0b480da270e9abab1abcb325e8a77b231af2fcc02"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": true,
+   "id": "method/beyer/054",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/054.mxl",
+   "set": "method",
+   "sha256": "81c5b287d23acb1e08992cf9bc1cad2c967b3ee3d61777f8e5dba4bed95485c9"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/055",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/055.mxl",
+   "set": "method",
+   "sha256": "f00d9aa99d24bc95cf72989a025fee1978bd8b60607cc352e0585fce86132c43"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/056",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/056.mxl",
+   "set": "method",
+   "sha256": "fd2efb2bb144c31fb273235f1cb0094820f3c87cbaa54804166ea576db24838b"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/057",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/057.mxl",
+   "set": "method",
+   "sha256": "dfb695e59571e392380b901a5c79ee28f5a21b9f20b4c3a41c8f0e39c4bfffc0"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/058",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/058.mxl",
+   "set": "method",
+   "sha256": "c2d1ed7acf22bf9505f7fb6c4d34ed55d67dad630025e738eb33df84571d90d5"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/059",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/059.mxl",
+   "set": "method",
+   "sha256": "45e6f44c79a322eaba2c462fa3d42aff8c563c9dc3a54d6cab37549114c0dc27"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/060",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/060.mxl",
+   "set": "method",
+   "sha256": "e0650dbcb8f5b4a9f20def4c92a8935b44fe6700ec0ef5d6f5793d97f3680247"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/061",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/061.mxl",
+   "set": "method",
+   "sha256": "73055f451cddead2bdd62b62e08261633728506b8b517dcf06803c7e2060ed85"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/064",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/064.mxl",
+   "set": "method",
+   "sha256": "e7f344d944f6bfe595d37454df9e32866f06954f272ec1baad46da0c2786449c"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/065",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/065.mxl",
+   "set": "method",
+   "sha256": "2104aeb7c57bd0ff8971599e04a8f3516367fd4a195479eb54015cd6174bc913"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": true,
+   "id": "method/beyer/066",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/066.mxl",
+   "set": "method",
+   "sha256": "f674bb6a9628b7baa4501a234117698be4527f4a238c4f7d931068a251833544"
+  },
+  {
+   "book": "beyer",
+   "expect": {},
+   "holdout": false,
+   "id": "method/beyer/067",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/beyer/067.mxl",
+   "set": "method",
+   "sha256": "a9a116fdf99bd4e1e4c508373fd5a03cd0d54415f9133155c10a16e64c1c437d"
+  },
+  {
+   "book": "burgmuller25",
+   "expect": {},
+   "holdout": false,
+   "id": "method/burgmuller25/001",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/burgmuller25/001.mxl",
+   "set": "method",
+   "sha256": "02463d6e3fa3f67b94a3794a65cbfc5e5d754558061b7a540e1937bd4fc110fd"
+  },
+  {
+   "book": "burgmuller25",
+   "expect": {},
+   "holdout": false,
+   "id": "method/burgmuller25/002",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/burgmuller25/002.mxl",
+   "set": "method",
+   "sha256": "d9e809660670057cc97a27c636f368cd922ded158e7a4c464b56304cdbe2a833"
+  },
+  {
+   "book": "burgmuller25",
+   "expect": {},
+   "holdout": false,
+   "id": "method/burgmuller25/003",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/burgmuller25/003.mxl",
+   "set": "method",
+   "sha256": "9f8e0cb0de9b1a3255664eaa4b5c6df9e4750a6e855647ad1ff42e68fc342462"
+  },
+  {
+   "book": "burgmuller25",
+   "expect": {},
+   "holdout": false,
+   "id": "method/burgmuller25/004",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/burgmuller25/004.mxl",
+   "set": "method",
+   "sha256": "8adc6e05d4a88d2542619589b847354a0f58feb672927a5e4436a0373fad2eb4"
+  },
+  {
+   "book": "burgmuller25",
+   "expect": {},
+   "holdout": false,
+   "id": "method/burgmuller25/005",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/burgmuller25/005.mxl",
+   "set": "method",
+   "sha256": "e9d8eac6a6dea29e420ad33bcb77a593651170a5ef42a1c1d2e6610ed29f4fe2"
+  },
+  {
+   "book": "burgmuller25",
+   "expect": {},
+   "holdout": false,
+   "id": "method/burgmuller25/006",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/burgmuller25/006.mxl",
+   "set": "method",
+   "sha256": "8770a88f0d49b477d0e64410b3cd244a0066d4b99cb8eee7d0fa2327b7740e90"
+  },
+  {
+   "book": "burgmuller25",
+   "expect": {},
+   "holdout": true,
+   "id": "method/burgmuller25/007",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/burgmuller25/007.mxl",
+   "set": "method",
+   "sha256": "2d71fad5d6b7b3aedcac4ea9aad60d387ec784e8b107ffc2f336ccde8b691918"
+  },
+  {
+   "book": "burgmuller25",
+   "expect": {},
+   "holdout": false,
+   "id": "method/burgmuller25/013",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/burgmuller25/013.mxl",
+   "set": "method",
+   "sha256": "a458a58c5771ffd054a7f796a1fe1936bdac23a532927e6e3a29752dfd5d5381"
+  },
+  {
+   "book": "burgmuller25",
+   "expect": {},
+   "holdout": false,
+   "id": "method/burgmuller25/016",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/burgmuller25/016.mxl",
+   "set": "method",
+   "sha256": "df36b014c9dc5891b4f41f9f59edf04e4ee45ea14b11fe7efe70710ae4849e74"
+  },
+  {
+   "book": "burgmuller25",
+   "expect": {},
+   "holdout": true,
+   "id": "method/burgmuller25/017",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/burgmuller25/017.mxl",
+   "set": "method",
+   "sha256": "a011be35f148dc297557f974c02bbdbecdf75b81f2f90beb45788342e4cb040c"
+  },
+  {
+   "book": "burgmuller25",
+   "expect": {},
+   "holdout": false,
+   "id": "method/burgmuller25/018",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/burgmuller25/018.mxl",
+   "set": "method",
+   "sha256": "2ae5b89d4c86a9857ac08428e669f67ddb7c79b24e528cae6d5b3d1caa5f8a81"
+  },
+  {
+   "book": "burgmuller25",
+   "expect": {},
+   "holdout": false,
+   "id": "method/burgmuller25/019",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/burgmuller25/019.mxl",
+   "set": "method",
+   "sha256": "1e18374256b086aa53c1f4af94a47ef5bb076271f8b7cb2986c428d2d2fd7b50"
+  },
+  {
+   "book": "burgmuller25",
+   "expect": {},
+   "holdout": false,
+   "id": "method/burgmuller25/023",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/burgmuller25/023.mxl",
+   "set": "method",
+   "sha256": "c5aef652ceccf87fb2962aba69d6d40bae2be4f51d2c715dc4c218b25e1db659"
+  },
+  {
+   "book": "czerny299",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny299/010",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny299/010.mxl",
+   "set": "method",
+   "sha256": "a4d3ac4f32d0a63513e5d3e9efd4b36847418ffca1457e37e231cc6fd0769810"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/001",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/001.mxl",
+   "set": "method",
+   "sha256": "0b3bfc8ce1d7280155f706a3cfd4be69cc6a4b7eed52a73e2de9dcfd4062f0d8"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/002",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/002.mxl",
+   "set": "method",
+   "sha256": "a2eee9fe6be96d29980b2e8923322939ac8505a645d03a5e41625da212dedaf3"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/003",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/003.mxl",
+   "set": "method",
+   "sha256": "1d36eca9b1aa80553dcfb6e4427c52a954d63dcc51c08fe72190be3c01967f8a"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/004",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/004.mxl",
+   "set": "method",
+   "sha256": "abd107f4c616f397f3e3b4bd7fe8978fd1a1dce8da7edc260b2ab25064335af8"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/005",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/005.mxl",
+   "set": "method",
+   "sha256": "abd416edf7c4dc79b8dda689e3f0196fdcfa80f5b6d54e80b1ee2f6c9ba45cee"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/006",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/006.mxl",
+   "set": "method",
+   "sha256": "020748c5203213cc911418dddd9b279964f8c360b958f248fb43794fe1acd09f"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": true,
+   "id": "method/czerny599/007",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/007.mxl",
+   "set": "method",
+   "sha256": "608aaa32e211dc7e9d391a31306b391031aad4d87317993b9beca298a90f143e"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/008",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/008.mxl",
+   "set": "method",
+   "sha256": "d7c05a86250154191b21c0985abe9c98ee741353922fd3b5c7cb6459d449108b"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/009",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/009.mxl",
+   "set": "method",
+   "sha256": "90052cc2a633d2ae1e1169d323bceb70ed557708dc6be23b5a5bef1aa8431b54"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/010",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/010.mxl",
+   "set": "method",
+   "sha256": "29def8b1a502ae9de65d1b6aeb03e4ec7758cf12a15535624852f92a62950ef0"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": true,
+   "id": "method/czerny599/011",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/011.mxl",
+   "set": "method",
+   "sha256": "8fef1a6af10b67657866e5ada63356641490c89b9a11ea0f4472bee7a528912d"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/012",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/012.mxl",
+   "set": "method",
+   "sha256": "edd696f3ee4b8ecce13cd87e745d9d9d215a40aaa2fa3fb5e8f1d4cce246a27b"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/013",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/013.mxl",
+   "set": "method",
+   "sha256": "0a9514bcd2fa7e9e36ced2a1d788432c1efcfd629bc601b509377f7ce58cb1e4"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/014",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/014.mxl",
+   "set": "method",
+   "sha256": "da8650b9f64833906f456aebcf65edb6455ba77b5897af5094b03bee76be4303"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/015",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/015.mxl",
+   "set": "method",
+   "sha256": "d12523265cbee52fc16bc0a6a7d71c40fc49603660fb33ab7078fbe75df7ddcb"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": true,
+   "id": "method/czerny599/016",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/016.mxl",
+   "set": "method",
+   "sha256": "beab33b62a58d4236a6740de6fdd801995f7d1f455f689de62787e169d86beb4"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/017",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/017.mxl",
+   "set": "method",
+   "sha256": "1ac28e2e9d814eac760fffa30002021e0e83d04b74033b2fc80eacdc7c1f2b79"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/018",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/018.mxl",
+   "set": "method",
+   "sha256": "928701d74dd17a1ee86ccac9529dbe63d08a6f865c72a6f27bb38ecef11bbef4"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/019",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/019.mxl",
+   "set": "method",
+   "sha256": "c908e7cc4d4defcfb3c5514f3d4fdd4a66f5a6e9ae5c86ac20b38f391314a78b"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": true,
+   "id": "method/czerny599/020",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/020.mxl",
+   "set": "method",
+   "sha256": "df050f52412dcf5794ed8a565f90128d96c762325b423ee25ee82ddaea3631a9"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/021",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/021.mxl",
+   "set": "method",
+   "sha256": "942ee463bcdcd323dff1c095169de060f742fc259fab8506cc7011778ce33e7d"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/022",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/022.mxl",
+   "set": "method",
+   "sha256": "a086ca0f163cc4bb85881cc661d1f2390eb50cee9d2783ac50acfcdedd28298f"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/023",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/023.mxl",
+   "set": "method",
+   "sha256": "b89e0b7905d326140886339bb3ef64a79b8b00c4af095ca6d9b111b6618ebafb"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/024",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/024.mxl",
+   "set": "method",
+   "sha256": "c861977d2773c5f408d86b10a6d7210e78ae1263a4177ef43771ac9a263741ed"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": true,
+   "id": "method/czerny599/025",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/025.mxl",
+   "set": "method",
+   "sha256": "454878be8cfccb630ea260c87dae931b80c1ca90fc1cbc26be1695a525a86f2f"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/026",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/026.mxl",
+   "set": "method",
+   "sha256": "40f2e306e2ab6009341675f4a4314634632b3fb6597a558569fcfbefff003824"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/027",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/027.mxl",
+   "set": "method",
+   "sha256": "78d42e33e006a3dd69ca52e2b17b07a4b827142a967e3622e43ec7fec5725534"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/028",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/028.mxl",
+   "set": "method",
+   "sha256": "8f3eaefa2d067bf848aad908eeacb95cbf411f31aad629e7aa8d689eff173a29"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/029",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/029.mxl",
+   "set": "method",
+   "sha256": "5eaecbc4bf87eb0b5d5c73032030bacf6acd23e2ff0cd7ee37ac16dc86208349"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/030",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/030.mxl",
+   "set": "method",
+   "sha256": "3d7a198f2d995be0b76deb35de354b9746e7f897f473b0b92be17d6878d7623f"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": true,
+   "id": "method/czerny599/031",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/031.mxl",
+   "set": "method",
+   "sha256": "4591dd28652b6cec7f73533e5643120ad612e15a8a786673b1c94844c3746e88"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/032",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/032.mxl",
+   "set": "method",
+   "sha256": "357d24aeabfbadbc4983715492d0d056b1d1578629a365df44ffecbf3493a970"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/034",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/034.mxl",
+   "set": "method",
+   "sha256": "a098bc978c903337d49926c21d14c0b8a65f172a465e9e90ac9577dc1034f226"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/035",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/035.mxl",
+   "set": "method",
+   "sha256": "8676a9feace41a8db8aebd85084fa05404e7e808cfe84ca3470ec587b130a3b9"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/036",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/036.mxl",
+   "set": "method",
+   "sha256": "de6e581978135a709a510a0c42a4560032f94d3f0c38ad72204d9308e508f3ea"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/037",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/037.mxl",
+   "set": "method",
+   "sha256": "17b43362b4e4dcd71e3a62d22b7f8a6f05ea5633e54b56a82f8c83f7ea9def08"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/038",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/038.mxl",
+   "set": "method",
+   "sha256": "c3d7fb37d8329fbace31cba230a4fceb9800ac677ce9ab904d931868b2ec90d1"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/039",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/039.mxl",
+   "set": "method",
+   "sha256": "373df382c82cec39d2d14c40f16b37e0bf7014e86a4b48b52a04a6f8ea7fe597"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/040",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/040.mxl",
+   "set": "method",
+   "sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": true,
+   "id": "method/czerny599/041",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/041.mxl",
+   "set": "method",
+   "sha256": "c6246f0cd601c6e00071088d323e209a4a529d696ce49beaa538d97ba1c13e28"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/042",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/042.mxl",
+   "set": "method",
+   "sha256": "6393e6f224a2b109c6793d35569729261cf763511446af029df28275bb42ff4e"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/045",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/045.mxl",
+   "set": "method",
+   "sha256": "1ccceb4d5be2d323e0b73001dfefe1755282752fb0f959743fc57a8b809d0a40"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/048",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/048.mxl",
+   "set": "method",
+   "sha256": "5d02c1653d29fec1e69924921ee4b08d15b559cf9ab3b13713e4c503e96aaa89"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/049",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/049.mxl",
+   "set": "method",
+   "sha256": "042770975a6b771f7879bc1a2c5f95eafa5f596c7b17841222d7876aab37567a"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/050",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/050.mxl",
+   "set": "method",
+   "sha256": "df0e20bbc2e7d83325253ef01bd180eaf28ee8e1f52bf5a1d091b186e3f52b8d"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/051",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/051.mxl",
+   "set": "method",
+   "sha256": "570a9ac79cf3bff8a0fdd1d6a55cb712121ff61c4f27263608f6b268ed11799f"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/052",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/052.mxl",
+   "set": "method",
+   "sha256": "beef7eaf937a76aedc7f2e2e8c58796f6c72d573eb4c98ccfd8467a491bee201"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": true,
+   "id": "method/czerny599/053",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/053.mxl",
+   "set": "method",
+   "sha256": "0e6eb520a5593f28915492b069dc4516337eb20e33122ae80bac345b7549c45e"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/054",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/054.mxl",
+   "set": "method",
+   "sha256": "72ea01b5a398cee2e82b3c4098bfe31791d4f2a7e77beb64d83c9cd58d0372e1"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/055",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/055.mxl",
+   "set": "method",
+   "sha256": "c81a5813739bd713eb481cafada449a12f8525075d0b5510f433ea2580465d0d"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": true,
+   "id": "method/czerny599/056",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/056.mxl",
+   "set": "method",
+   "sha256": "70af5eed97a7357c4b279afc21e696b8f9ee41efcb12a59e94cd3558299fdc7a"
+  },
+  {
+   "book": "czerny599",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny599/078",
+   "license": "CC0 transcription for PPP — transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny599/078.mxl",
+   "set": "method",
+   "sha256": "9603dd5e6c53975edffe4cce0abd8b6b7eca7b484291d6f0a904364976076d6b"
+  },
+  {
+   "book": "czerny849",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny849/001",
+   "license": "PD/CC0 community typeset (PDMX) — Neru Hayashi's typeset, dedicated to the public domain (via PDMX) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny849/001.mxl",
+   "set": "method",
+   "sha256": "302add4d3e497f0371daf6776c51252f1d7d18189c59e42aa3e8642bf4374164"
+  },
+  {
+   "book": "czerny849",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny849/002",
+   "license": "PD/CC0 community typeset (PDMX) — Neru Hayashi's typeset, dedicated to the public domain (via PDMX) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny849/002.mxl",
+   "set": "method",
+   "sha256": "b37116cc2a4d093b8bcd0d40a82121d690d82ae454e7c88ee26eddf9e52c949e"
+  },
+  {
+   "book": "czerny849",
+   "expect": {},
+   "holdout": true,
+   "id": "method/czerny849/003",
+   "license": "PD/CC0 community typeset (PDMX) — Neru Hayashi's typeset, dedicated to the public domain (via PDMX) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny849/003.mxl",
+   "set": "method",
+   "sha256": "d84dbb4ff6034a5b1c327e0cf5f2b6fe7961ee71bfcf66dcd787fa57c9a9eb05"
+  },
+  {
+   "book": "czerny849",
+   "expect": {},
+   "holdout": true,
+   "id": "method/czerny849/004",
+   "license": "PD/CC0 community typeset (PDMX) — Neru Hayashi's typeset, dedicated to the public domain (via PDMX) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny849/004.mxl",
+   "set": "method",
+   "sha256": "b8dcd8164d1d1a48e7f0c4c83edb9ace427fd17bd8e113b0e2186e4ccf769348"
+  },
+  {
+   "book": "czerny849",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny849/005",
+   "license": "PD/CC0 community typeset (PDMX) — Neru Hayashi's typeset, dedicated to the public domain (via PDMX) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny849/005.mxl",
+   "set": "method",
+   "sha256": "5427f762b8d709be18221d1c4b4cc21cfe0489cda10afe27d974b570cd6a393b"
+  },
+  {
+   "book": "czerny849",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny849/007",
+   "license": "PD/CC0 community typeset (PDMX) — Neru Hayashi's typeset, dedicated to the public domain (via PDMX) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny849/007.mxl",
+   "set": "method",
+   "sha256": "e08e13ecaaa891bb35278e748f50aa3f06f5d92e885570961775c1b5a69f5a46"
+  },
+  {
+   "book": "czerny849",
+   "expect": {},
+   "holdout": true,
+   "id": "method/czerny849/010",
+   "license": "PD/CC0 community typeset (PDMX) — Neru Hayashi's typeset, dedicated to the public domain (via PDMX) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny849/010.mxl",
+   "set": "method",
+   "sha256": "ade7a27d4738b94c88a21a7ab79caa740b1c7c99e2ef039408eaece154924402"
+  },
+  {
+   "book": "czerny849",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny849/013",
+   "license": "PD/CC0 community typeset (PDMX) — Neru Hayashi's typeset, dedicated to the public domain (via PDMX) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny849/013.mxl",
+   "set": "method",
+   "sha256": "9a398d50dccdc57da42dbdb97f0ed725e7e7bd0bbe70a026a526866c1c1abd50"
+  },
+  {
+   "book": "czerny849",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny849/025",
+   "license": "PD/CC0 community typeset (PDMX) — Neru Hayashi's typeset, dedicated to the public domain (via PDMX) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny849/025.mxl",
+   "set": "method",
+   "sha256": "fea50285bf3caedf9232d852aedbbccf75e2de07e0a49159266c3a05bfb8766c"
+  },
+  {
+   "book": "czerny849",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny849/026",
+   "license": "PD/CC0 community typeset (PDMX) — Neru Hayashi's typeset, dedicated to the public domain (via PDMX) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny849/026.mxl",
+   "set": "method",
+   "sha256": "ee071505b3f840be7b34bbabd2280b1d4aa71f180a73186ac4d2fa41b7684d3f"
+  },
+  {
+   "book": "czerny849",
+   "expect": {},
+   "holdout": true,
+   "id": "method/czerny849/027",
+   "license": "PD/CC0 community typeset (PDMX) — Neru Hayashi's typeset, dedicated to the public domain (via PDMX) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny849/027.mxl",
+   "set": "method",
+   "sha256": "3e0494f38bd12128a82659988f412837aaf1f33c17636c5f4ce5116934fe64d7"
+  },
+  {
+   "book": "czerny849",
+   "expect": {},
+   "holdout": false,
+   "id": "method/czerny849/030",
+   "license": "PD/CC0 community typeset (PDMX) — Neru Hayashi's typeset, dedicated to the public domain (via PDMX) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/czerny849/030.mxl",
+   "set": "method",
+   "sha256": "c3c9d706b7ea8071edf572f704a35d610891a4fca16196761bb169dc44463643"
+  },
+  {
+   "book": "hanon",
+   "expect": {},
+   "holdout": false,
+   "id": "method/hanon/001",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/hanon/001.mxl",
+   "set": "method",
+   "sha256": "c8c6581e03f18fd90f5514a9c4e218e6974cd81f07200273d4647aea0d28cdde"
+  },
+  {
+   "book": "hanon",
+   "expect": {
+    "tempo_qpm": 108
+   },
+   "holdout": false,
+   "id": "method/hanon/002",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "No tempo in the file; the benchmark performs it at 108 qpm (a benchmark choice).",
+   "path": "catalog/method/hanon/002.mxl",
+   "set": "method",
+   "sha256": "c9986d3b5c031e8890fcd262f9773d648ddaa681724a5d494105b6b8f9007b10"
+  },
+  {
+   "book": "hanon",
+   "expect": {
+    "tempo_qpm": 108
+   },
+   "holdout": true,
+   "id": "method/hanon/003",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "No tempo in the file; the benchmark performs it at 108 qpm (a benchmark choice).",
+   "path": "catalog/method/hanon/003.mxl",
+   "set": "method",
+   "sha256": "b3fc3faf244f1a38374c2744b23eb50ab0fe7dfe3ddaf9acd4cc3775aa39c21a"
+  },
+  {
+   "book": "hanon",
+   "expect": {
+    "tempo_qpm": 108
+   },
+   "holdout": false,
+   "id": "method/hanon/004",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "No tempo in the file; the benchmark performs it at 108 qpm (a benchmark choice).",
+   "path": "catalog/method/hanon/004.mxl",
+   "set": "method",
+   "sha256": "df325c896e06722466612e4553363dc0784da4300023e5d65c6aca9c06447b64"
+  },
+  {
+   "book": "hanon",
+   "expect": {
+    "tempo_qpm": 108
+   },
+   "holdout": false,
+   "id": "method/hanon/005",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "No tempo in the file; the benchmark performs it at 108 qpm (a benchmark choice).",
+   "path": "catalog/method/hanon/005.mxl",
+   "set": "method",
+   "sha256": "98c63eab3855db91b107a45302a40588612ff85865582c2efe459a4fb5937925"
+  },
+  {
+   "book": "hanon",
+   "expect": {
+    "tempo_qpm": 108
+   },
+   "holdout": true,
+   "id": "method/hanon/006",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "No tempo in the file; the benchmark performs it at 108 qpm (a benchmark choice).",
+   "path": "catalog/method/hanon/006.mxl",
+   "set": "method",
+   "sha256": "f0b53f7e5af383ca30e79d2b8d1653ec4a7b310da1cc29ef2cfe19fd5121286a"
+  },
+  {
+   "book": "hanon",
+   "expect": {
+    "tempo_qpm": 108
+   },
+   "holdout": false,
+   "id": "method/hanon/007",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "No tempo in the file; the benchmark performs it at 108 qpm (a benchmark choice).",
+   "path": "catalog/method/hanon/007.mxl",
+   "set": "method",
+   "sha256": "c3ab15c17851508c53be254999966b319ccde56ba0b3046c8e7e0320f12ec3c2"
+  },
+  {
+   "book": "hanon",
+   "expect": {
+    "tempo_qpm": 108
+   },
+   "holdout": false,
+   "id": "method/hanon/008",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "No tempo in the file; the benchmark performs it at 108 qpm (a benchmark choice).",
+   "path": "catalog/method/hanon/008.mxl",
+   "set": "method",
+   "sha256": "132c293ea69731489411e720fc0e31b79cc7b7500b1cad1ffa3a452cc88b6c50"
+  },
+  {
+   "book": "hanon",
+   "expect": {
+    "tempo_qpm": 108
+   },
+   "holdout": false,
+   "id": "method/hanon/009",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "No tempo in the file; the benchmark performs it at 108 qpm (a benchmark choice).",
+   "path": "catalog/method/hanon/009.mxl",
+   "set": "method",
+   "sha256": "95bb42235fe7539fe6918e37cb21de3372b2568d6ac9b42f2bebb4c8e1a783a6"
+  },
+  {
+   "book": "hanon",
+   "expect": {
+    "tempo_qpm": 108
+   },
+   "holdout": false,
+   "id": "method/hanon/010",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "No tempo in the file; the benchmark performs it at 108 qpm (a benchmark choice).",
+   "path": "catalog/method/hanon/010.mxl",
+   "set": "method",
+   "sha256": "bc247267ffacec0acc3071fe7952a5a39817566fad4c73e0be6bc0aeb043b478"
+  },
+  {
+   "book": "hanon",
+   "expect": {
+    "tempo_qpm": 108
+   },
+   "holdout": false,
+   "id": "method/hanon/011",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "No tempo in the file; the benchmark performs it at 108 qpm (a benchmark choice).",
+   "path": "catalog/method/hanon/011.mxl",
+   "set": "method",
+   "sha256": "9e21154dbd1d853533208da9f7cdacdfd62dba199b3a8c31039d3ada61c85a3d"
+  },
+  {
+   "book": "hanon",
+   "expect": {
+    "tempo_qpm": 108
+   },
+   "holdout": true,
+   "id": "method/hanon/012",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "No tempo in the file; the benchmark performs it at 108 qpm (a benchmark choice).",
+   "path": "catalog/method/hanon/012.mxl",
+   "set": "method",
+   "sha256": "14cca739512a20c5f7ac049612d2395c98284ab11ea3e5e44556b5f34af1d265"
+  },
+  {
+   "book": "hanon",
+   "expect": {
+    "tempo_qpm": 108
+   },
+   "holdout": false,
+   "id": "method/hanon/013",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "No tempo in the file; the benchmark performs it at 108 qpm (a benchmark choice).",
+   "path": "catalog/method/hanon/013.mxl",
+   "set": "method",
+   "sha256": "bcd306465eb3bbc34bb61a320e31f03e599c011733926c638a819960840b36dc"
+  },
+  {
+   "book": "hanon",
+   "expect": {
+    "tempo_qpm": 108
+   },
+   "holdout": false,
+   "id": "method/hanon/014",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "No tempo in the file; the benchmark performs it at 108 qpm (a benchmark choice).",
+   "path": "catalog/method/hanon/014.mxl",
+   "set": "method",
+   "sha256": "2d8dba8bbc766c5441ba7dd4e694524611a6565d6669d296275c1a77f602c10c"
+  },
+  {
+   "book": "hanon",
+   "expect": {
+    "tempo_qpm": 108
+   },
+   "holdout": false,
+   "id": "method/hanon/015",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "No tempo in the file; the benchmark performs it at 108 qpm (a benchmark choice).",
+   "path": "catalog/method/hanon/015.mxl",
+   "set": "method",
+   "sha256": "4bdfb33397cf5bd0e261b943c39b4f4a03c11b14b85b5b032ac9b0ea3fd81bcf"
+  },
+  {
+   "book": "hanon",
+   "expect": {
+    "tempo_qpm": 108
+   },
+   "holdout": false,
+   "id": "method/hanon/016",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "No tempo in the file; the benchmark performs it at 108 qpm (a benchmark choice).",
+   "path": "catalog/method/hanon/016.mxl",
+   "set": "method",
+   "sha256": "939d4c1f1d9878db4c5b61d7146a3aaf645f54821838a1a0b8809ad41c4f0d2d"
+  },
+  {
+   "book": "hanon",
+   "expect": {
+    "tempo_qpm": 108
+   },
+   "holdout": false,
+   "id": "method/hanon/017",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "No tempo in the file; the benchmark performs it at 108 qpm (a benchmark choice).",
+   "path": "catalog/method/hanon/017.mxl",
+   "set": "method",
+   "sha256": "19e2d9327caa62c56bbec6dc266b83c914d8ed65f23b8fa78d99854dcff8683d"
+  },
+  {
+   "book": "hanon",
+   "expect": {
+    "tempo_qpm": 108
+   },
+   "holdout": false,
+   "id": "method/hanon/018",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "No tempo in the file; the benchmark performs it at 108 qpm (a benchmark choice).",
+   "path": "catalog/method/hanon/018.mxl",
+   "set": "method",
+   "sha256": "5d693c29e28a25659e08c4522ff302244490ce8384b091823d1a7d1d3ff3c689"
+  },
+  {
+   "book": "hanon",
+   "expect": {
+    "tempo_qpm": 108
+   },
+   "holdout": true,
+   "id": "method/hanon/019",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "No tempo in the file; the benchmark performs it at 108 qpm (a benchmark choice).",
+   "path": "catalog/method/hanon/019.mxl",
+   "set": "method",
+   "sha256": "0964eef03bff3f62ba0eb96ffc0abe1629900deac84ea0f47174cfcab693b860"
+  },
+  {
+   "book": "hanon",
+   "expect": {
+    "tempo_qpm": 108
+   },
+   "holdout": false,
+   "id": "method/hanon/020",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "No tempo in the file; the benchmark performs it at 108 qpm (a benchmark choice).",
+   "path": "catalog/method/hanon/020.mxl",
+   "set": "method",
+   "sha256": "fe215688218cf43dfa30c1519a0399727cc2417cd9b6843bd230c3eba3af5b1d"
+  },
+  {
+   "book": "sonatina",
+   "expect": {},
+   "holdout": false,
+   "id": "method/sonatina/001",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/sonatina/001.mxl",
+   "set": "method",
+   "sha256": "54f5935c763070cfaef45235e2a098bf913e6d2697ecae2a367a949de5dc1680"
+  },
+  {
+   "book": "sonatina",
+   "expect": {},
+   "holdout": false,
+   "id": "method/sonatina/002",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/sonatina/002.mxl",
+   "set": "method",
+   "sha256": "522e3509e91dddd6eae008447228c3fec0b644a3a1f1f1b1e46f8a525e67f14a"
+  },
+  {
+   "book": "sonatina",
+   "expect": {},
+   "holdout": false,
+   "id": "method/sonatina/003",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/sonatina/003.mxl",
+   "set": "method",
+   "sha256": "fe44d09c2c78b76b5bdd5bbed7ef7a8f84cb9c5afd30c129d6ae0a015d2bbfdb"
+  },
+  {
+   "book": "sonatina",
+   "expect": {},
+   "holdout": true,
+   "id": "method/sonatina/005",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/sonatina/005.mxl",
+   "set": "method",
+   "sha256": "4d4a7da053ecfc85e2f0f806df96626f9ec2ee4b90c9dd1869e381c8409feab0"
+  },
+  {
+   "book": "sonatina",
+   "expect": {},
+   "holdout": false,
+   "id": "method/sonatina/006",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/sonatina/006.mxl",
+   "set": "method",
+   "sha256": "8ceade7f5739f8b19a6d56b04a9848af6a83c52dbce1ab1879b14a7e199a8596"
+  },
+  {
+   "book": "sonatina",
+   "expect": {
+    "tempo_qpm": 100
+   },
+   "holdout": false,
+   "id": "method/sonatina/007",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "No tempo in the file; the benchmark performs it at 100 qpm (a benchmark choice).",
+   "path": "catalog/method/sonatina/007.mxl",
+   "set": "method",
+   "sha256": "b4bb7aa77e11de5e0ed07eff030c1851b6fd89c96e9363359fe9e76dd6ff4eec"
+  },
+  {
+   "book": "sonatina",
+   "expect": {},
+   "holdout": false,
+   "id": "method/sonatina/008",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/sonatina/008.mxl",
+   "set": "method",
+   "sha256": "5d1a9265141652d2cd384230bc1433be6ecdfe5c0b13b8c83cf551062c9e44c9"
+  },
+  {
+   "book": "sonatina",
+   "expect": {},
+   "holdout": false,
+   "id": "method/sonatina/009",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/sonatina/009.mxl",
+   "set": "method",
+   "sha256": "54a82d996f7d675e5c75c601ba7378261aeafda7a1dd46e57f9c906f1f0c7fe9"
+  },
+  {
+   "book": "sonatina",
+   "expect": {},
+   "holdout": false,
+   "id": "method/sonatina/010",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/sonatina/010.mxl",
+   "set": "method",
+   "sha256": "79ef0942030acc887f16dc8fd18d7fb4a5635acc919b4c31b6947b0158f7fbd5"
+  },
+  {
+   "book": "sonatina",
+   "expect": {},
+   "holdout": true,
+   "id": "method/sonatina/011",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/sonatina/011.mxl",
+   "set": "method",
+   "sha256": "bb915729b8924757747fba2091501f0759928181a3f32c480d7a1dff480251b8"
+  },
+  {
+   "book": "sonatina",
+   "expect": {},
+   "holdout": false,
+   "id": "method/sonatina/012",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/sonatina/012.mxl",
+   "set": "method",
+   "sha256": "142a548fad83cc061f64da7cb8ea6c5f5f619f95be0059632e9abc71bd554a3b"
+  },
+  {
+   "book": "sonatina",
+   "expect": {},
+   "holdout": false,
+   "id": "method/sonatina/014",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/sonatina/014.mxl",
+   "set": "method",
+   "sha256": "ffc2f04a5cb66d0da85fda7125cb0ffe8417508206b7a03f94f6198b9c24b683"
+  },
+  {
+   "book": "sonatina",
+   "expect": {},
+   "holdout": false,
+   "id": "method/sonatina/015",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/sonatina/015.mxl",
+   "set": "method",
+   "sha256": "8952209a5df1056750a3ba7a12d457c15c097d7f81adcac295745d76e0fe1980"
+  },
+  {
+   "book": "sonatina",
+   "expect": {},
+   "holdout": false,
+   "id": "method/sonatina/017",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/sonatina/017.mxl",
+   "set": "method",
+   "sha256": "a26f6a4b07e92e12e29ebc34b082b81f5647412dce1e1d7be8a8a4b398cc1b49"
+  },
+  {
+   "book": "sonatina",
+   "expect": {},
+   "holdout": false,
+   "id": "method/sonatina/021",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/sonatina/021.mxl",
+   "set": "method",
+   "sha256": "0741cee4dbc9c6a8229e475964e8fcfbf51911e23a94eb9f18bcddd722e46800"
+  },
+  {
+   "book": "sonatina",
+   "expect": {},
+   "holdout": false,
+   "id": "method/sonatina/025",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/sonatina/025.mxl",
+   "set": "method",
+   "sha256": "1a49a672964763a03823a1372ef506c88ba469ceba4c79bab3c02163df9c0d05"
+  },
+  {
+   "book": "sonatina",
+   "expect": {
+    "tempo_qpm": 120
+   },
+   "holdout": false,
+   "id": "method/sonatina/026",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "No tempo in the file; the benchmark performs it at 120 qpm (a benchmark choice).",
+   "path": "catalog/method/sonatina/026.mxl",
+   "set": "method",
+   "sha256": "e683c1d3bb8d7b8641906a4af181f6b10e9c2b5e44bf694935c8a34c2dda6aa7"
+  },
+  {
+   "book": "sonatina",
+   "expect": {},
+   "holdout": false,
+   "id": "method/sonatina/027",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/sonatina/027.mxl",
+   "set": "method",
+   "sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
+  },
+  {
+   "book": "sonatina",
+   "expect": {},
+   "holdout": false,
+   "id": "method/sonatina/028",
+   "license": "PD/CC0 community typeset (PDMX) — MuseScore community typesets from the PDMX dataset (CC0) (catalog/method/index.json)",
+   "note": "",
+   "path": "catalog/method/sonatina/028.mxl",
+   "set": "method",
+   "sha256": "0072b82c8a461f1841618570b3226fa16b690416c896a5edcff7285d03facd15"
+  },
+  {
+   "expect": {},
+   "holdout": false,
+   "id": "samples/prelude-fragment",
+   "license": "PPP's own sample score (samples/)",
+   "note": "",
+   "path": "samples/prelude-fragment.musicxml",
+   "set": "samples",
+   "sha256": "7d68240714c731a827448aa58185c58aea15b9c739c15d8d7bd100efea8a5913"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": 1,
+     "mode": "major"
+    },
+    "tempo_qpm": 96,
+    "time": [
+     3,
+     4
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M01-waltz-3-4",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "",
+   "path": "tests/bench/corpus/micro/M01-waltz-3-4.musicxml",
+   "set": "micro",
+   "sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": 0,
+     "mode": "major"
+    },
+    "tempo_qpm": 112,
+    "time": [
+     4,
+     4
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M02-alberti-4-4",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "",
+   "path": "tests/bench/corpus/micro/M02-alberti-4-4.musicxml",
+   "set": "micro",
+   "sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": 1,
+     "mode": "major"
+    },
+    "tempo_qpm": 90,
+    "time": [
+     6,
+     8
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M03-jig-6-8",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "",
+   "path": "tests/bench/corpus/micro/M03-jig-6-8.musicxml",
+   "set": "micro",
+   "sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": 0,
+     "mode": "major"
+    },
+    "tempo_qpm": 100,
+    "time": [
+     4,
+     4
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M04-triplets-4-4",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "",
+   "path": "tests/bench/corpus/micro/M04-triplets-4-4.musicxml",
+   "set": "micro",
+   "sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": 0,
+     "mode": "major"
+    },
+    "tempo_qpm": 120,
+    "time": [
+     4,
+     4
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M05-32nds-120",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "",
+   "path": "tests/bench/corpus/micro/M05-32nds-120.musicxml",
+   "set": "micro",
+   "sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": 0,
+     "mode": "major"
+    },
+    "tempo_qpm": 176,
+    "time": [
+     4,
+     4
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M06-32nds-176",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "",
+   "path": "tests/bench/corpus/micro/M06-32nds-176.musicxml",
+   "set": "micro",
+   "sha256": "0ef2b8c3583ff7ff57a1705c679917b670c90fdfa04c5b73a46c956aade0b522"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": -1,
+     "mode": "major"
+    },
+    "tempo_qpm": 108,
+    "time": [
+     3,
+     4
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M07-pickup-3-4",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "",
+   "path": "tests/bench/corpus/micro/M07-pickup-3-4.musicxml",
+   "set": "micro",
+   "sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": 2,
+     "mode": "major"
+    },
+    "tempo_qpm": 96,
+    "time": [
+     4,
+     4
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M08-pickup-4-4",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "",
+   "path": "tests/bench/corpus/micro/M08-pickup-4-4.musicxml",
+   "set": "micro",
+   "sha256": "5535e3fca8be8702a15c955c9778b0bbd5ba7cbfa0064c9e03bdac70be2371d6"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": 0,
+     "mode": "major"
+    },
+    "tempo_qpm": 100,
+    "time": [
+     4,
+     4
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M09-syncopation-ties",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "",
+   "path": "tests/bench/corpus/micro/M09-syncopation-ties.musicxml",
+   "set": "micro",
+   "sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": -2,
+     "mode": "major"
+    },
+    "tempo_qpm": 92,
+    "time": [
+     4,
+     4
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M10-dotted",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "",
+   "path": "tests/bench/corpus/micro/M10-dotted.musicxml",
+   "set": "micro",
+   "sha256": "c492ffd50e9792199368de1e3875e04e37bbe559710391025e05ae3363230546"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": 0,
+     "mode": "minor"
+    },
+    "tempo_qpm": 84,
+    "time": [
+     3,
+     4
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M11-harmonic-minor",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "",
+   "path": "tests/bench/corpus/micro/M11-harmonic-minor.musicxml",
+   "set": "micro",
+   "sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": -5,
+     "mode": "major"
+    },
+    "tempo_qpm": 76,
+    "time": [
+     4,
+     4
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M12-flats-db",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "",
+   "path": "tests/bench/corpus/micro/M12-flats-db.musicxml",
+   "set": "micro",
+   "sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": 4,
+     "mode": "major"
+    },
+    "tempo_qpm": 100,
+    "time": [
+     4,
+     4
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M13-sharps-chromatic",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "",
+   "path": "tests/bench/corpus/micro/M13-sharps-chromatic.musicxml",
+   "set": "micro",
+   "sha256": "f9b6832e7860f333398a4295a1c2e801c3dc4058475d142cc4cb1fe9fa92f5b8"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": 0,
+     "mode": "major"
+    },
+    "tempo_qpm": 90,
+    "time": [
+     4,
+     4
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M14-melody-in-bass",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "",
+   "path": "tests/bench/corpus/micro/M14-melody-in-bass.musicxml",
+   "set": "micro",
+   "sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": 1,
+     "mode": "major"
+    },
+    "tempo_qpm": 72,
+    "time": [
+     4,
+     4
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M15-wide-chords",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "",
+   "path": "tests/bench/corpus/micro/M15-wide-chords.musicxml",
+   "set": "micro",
+   "sha256": "a30597236725b84802daa9e9c11bd57928631c14a362b495d853ef449be80c88"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": -1,
+     "mode": "major"
+    },
+    "tempo_qpm": 80,
+    "time": [
+     4,
+     4
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M16-long-notes-rests",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "",
+   "path": "tests/bench/corpus/micro/M16-long-notes-rests.musicxml",
+   "set": "micro",
+   "sha256": "41ef7ad0bd2b8dca61db85c27917cd29de4e38a8f325d1116f928768aadc4d01"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": 0,
+     "mode": "major"
+    },
+    "tempo_qpm": 116,
+    "time": [
+     2,
+     4
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M17-march-2-4",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "",
+   "path": "tests/bench/corpus/micro/M17-march-2-4.musicxml",
+   "set": "micro",
+   "sha256": "97fee0da3be86edfeb652e0b240ce285ebb5e4a8ee689f62baf2c25908670a04"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": 1,
+     "mode": "major"
+    },
+    "tempo_qpm": 144,
+    "time": [
+     2,
+     2
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M18-alla-breve",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "",
+   "path": "tests/bench/corpus/micro/M18-alla-breve.musicxml",
+   "set": "micro",
+   "sha256": "45ca99a1c07a07ab5532dc3b0b52e5767432c64e894c381bfd62977789dd6121"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": -1,
+     "mode": "minor"
+    },
+    "tempo_qpm": 92,
+    "time": [
+     3,
+     8
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M19-fast-3-8",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "",
+   "path": "tests/bench/corpus/micro/M19-fast-3-8.musicxml",
+   "set": "micro",
+   "sha256": "d855ef7dde656f3d9cd43cf08149f14cb1955a4dd2d4bec86ac0f3627f50631d"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": -3,
+     "mode": "major"
+    },
+    "tempo_qpm": 99,
+    "time": [
+     12,
+     8
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M20-compound-12-8",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "",
+   "path": "tests/bench/corpus/micro/M20-compound-12-8.musicxml",
+   "set": "micro",
+   "sha256": "d15acc5c30128e2cbb9f3dfa4f3775ad93418b3903c4051df99ac77bd8dd5903"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": 0,
+     "mode": "minor"
+    },
+    "tempo_qpm": 100,
+    "time": [
+     5,
+     4
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M21-five-four",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "5/4 is not a metre toMusicXml can write today; kept to track it (§6.4).",
+   "path": "tests/bench/corpus/micro/M21-five-four.musicxml",
+   "set": "micro",
+   "sha256": "d617097c51e74a8588ea52784577d5505f928e2456fef44cc36878ad4e1ad6bc"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": 0,
+     "mode": "major"
+    },
+    "tempo_qpm": 120,
+    "time": [
+     4,
+     4
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M22-tempo-change",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "120 qpm, then 80 from bar 5; expect.tempo_qpm is the opening tempo.",
+   "path": "tests/bench/corpus/micro/M22-tempo-change.musicxml",
+   "set": "micro",
+   "sha256": "5acc11ae930eec34635589b56b0e6980811d6ec23302d9ae56fede56a5052566"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": 0,
+     "mode": "major"
+    },
+    "tempo_qpm": 132,
+    "time": [
+     4,
+     4
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M23-repeated-notes",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "",
+   "path": "tests/bench/corpus/micro/M23-repeated-notes.musicxml",
+   "set": "micro",
+   "sha256": "9d979f9d256151c2e939c95759953c26ffdc3538535582b4680bbf7b5200c125"
+  },
+  {
+   "expect": {
+    "key": {
+     "fifths": 1,
+     "mode": "major"
+    },
+    "tempo_qpm": 60,
+    "time": [
+     4,
+     4
+    ]
+   },
+   "holdout": false,
+   "id": "micro/M24-block-chords",
+   "license": "CC0 1.0 — written for PPP's benchmark (tests/bench/tools/make_micro.py)",
+   "note": "",
+   "path": "tests/bench/corpus/micro/M24-block-chords.musicxml",
+   "set": "micro",
+   "sha256": "b8bdf18977486f83e048285291004354fb79b9ac2d777738ef62119693bff60c"
+  }
+ ],
+ "schema": "ppp.bench-corpus/1"
+}

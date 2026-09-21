@@ -1,0 +1,3 @@
+# Keep benchmark files byte-identical on Windows and Linux (golden XML, JSON, lock files).
+* text=auto eol=lf
+*.mxl binary

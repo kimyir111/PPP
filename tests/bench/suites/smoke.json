@@ -1,0 +1,124 @@
+{
+ "align": {
+  "window_s": 0.3
+ },
+ "description": "Quick pre-commit check: 16 references × deadpan/onset and human/oracle beats",
+ "gate": {
+  "case_fail_drop": 10.0,
+  "case_warn_drop": 2.0,
+  "metrics": {
+   "notation.duration.accuracy": {
+    "dir": "up",
+    "tol": -0.01
+   },
+   "notation.hand.accuracy": {
+    "dir": "up",
+    "tol": -0.01
+   },
+   "notation.ioi.accuracy": {
+    "dir": "up",
+    "tol": -0.01
+   },
+   "notation.onset_pos.accuracy": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "notation.spelling.accuracy": {
+    "dir": "up",
+    "tol": -0.01
+   },
+   "notation.ties.extra_per_100": {
+    "dir": "down",
+    "tol": 2.0
+   },
+   "notes.identity.f1": {
+    "dir": "up",
+    "tol": -0.01
+   },
+   "notes.onset.f1_50ms": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "read.bar_integrity": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "sqi": {
+    "dir": "up",
+    "tol": -1.0
+   },
+   "struct.downbeat.f1": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "struct.key.fifths_exact": {
+    "dir": "up",
+    "tol": -0.04
+   },
+   "struct.tempo.ok_effective": {
+    "dir": "up",
+    "tol": -0.04
+   },
+   "struct.time_sig.exact": {
+    "dir": "up",
+    "tol": -0.04
+   }
+  },
+  "tag_guards": {
+   "metric": "sqi",
+   "min_delta": -2.0,
+   "tags": [
+    "set:micro",
+    "set:hymns",
+    "set:method",
+    "set:catalog",
+    "profile:deadpan",
+    "profile:human",
+    "beats:none",
+    "beats:oracle"
+   ]
+  }
+ },
+ "kind": "synthetic-notation",
+ "matrix": [
+  {
+   "beats": "none",
+   "profile": "deadpan",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "oracle",
+   "profile": "human",
+   "seeds": [
+    1
+   ]
+  }
+ ],
+ "name": "smoke",
+ "references": [
+  "catalog/gymnopedie-1",
+  "catalog/happy-birthday",
+  "hymns/i-know-whom",
+  "hymns/we-gather-together",
+  "method/czerny599/040",
+  "method/sonatina/027",
+  "micro/M01-waltz-3-4",
+  "micro/M02-alberti-4-4",
+  "micro/M03-jig-6-8",
+  "micro/M04-triplets-4-4",
+  "micro/M05-32nds-120",
+  "micro/M07-pickup-3-4",
+  "micro/M09-syncopation-ties",
+  "micro/M11-harmonic-minor",
+  "micro/M12-flats-db",
+  "micro/M14-melody-in-bass"
+ ],
+ "schema": "ppp.bench-suite/1",
+ "stage": {
+  "name": "notate",
+  "opts": {}
+ },
+ "subsets": {}
+}
