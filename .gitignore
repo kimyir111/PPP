@@ -12,6 +12,8 @@ data/*.json
 # G0 benchmark outputs and caches (tests/bench/README.md). Committed corpus,
 # suites, baselines and golden files are not under these paths.
 tests/bench/out/
+# the root "tools/" rule above is for the vendored helpers; the benchmark's own tools are source
+!tests/bench/tools/
 tests/bench/.cache/
 __pycache__/
 # Local experiments; holds copyrighted audio and PDFs that must never be committed.
