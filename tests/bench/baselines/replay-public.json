@@ -19,7 +19,7 @@
     "n": 6
    },
    "critical.beat_placement": {
-    "mean": 0.666667,
+    "mean": 0.5,
     "n": 6
    },
    "critical.hands": {
@@ -31,7 +31,7 @@
     "n": 5
    },
    "critical.meter": {
-    "mean": 0.833333,
+    "mean": 0.666667,
     "n": 6
    },
    "critical.note_values": {
@@ -47,7 +47,7 @@
     "n": 6
    },
    "critical.structure": {
-    "mean": 1.0,
+    "mean": 0.5,
     "n": 6
    },
    "errors": {
@@ -79,15 +79,15 @@
     "n": 6
    },
    "notation.duration.accuracy": {
-    "mean": 0.733164,
+    "mean": 0.714934,
     "n": 6
    },
    "notation.duration.accuracy_ref": {
-    "mean": 0.717876,
+    "mean": 0.699646,
     "n": 6
    },
    "notation.duration.page_accuracy": {
-    "mean": 0.733164,
+    "mean": 0.714934,
     "n": 6
    },
    "notation.hand.accuracy": {
@@ -99,15 +99,15 @@
     "n": 6
    },
    "notation.ioi.accuracy": {
-    "mean": 0.957895,
+    "mean": 0.933072,
     "n": 6
    },
    "notation.ioi.accuracy_strict": {
-    "mean": 0.833333,
+    "mean": 0.666667,
     "n": 6
    },
    "notation.metrical_scale": {
-    "mean": 0.944444,
+    "mean": 0.861111,
     "n": 6
    },
    "notation.note_shape.consistency": {
@@ -127,19 +127,19 @@
     "n": 6
    },
    "notation.onset_pos.accuracy": {
-    "mean": 0.669251,
+    "mean": 0.507792,
     "n": 6
    },
    "notation.onset_pos.accuracy_ref": {
-    "mean": 0.657289,
+    "mean": 0.495831,
     "n": 6
    },
    "notation.pedal.false_per_min": {
-    "mean": 27.824687,
+    "mean": 30.217547,
     "n": 6
    },
    "notation.pedal.marks": {
-    "mean": 13.0,
+    "mean": 13.666667,
     "n": 6
    },
    "notation.spelling.accuracy": {
@@ -183,11 +183,11 @@
     "n": 6
    },
    "notes.onset.f1_50ms": {
-    "mean": 0.97787,
+    "mean": 0.972662,
     "n": 6
    },
    "notes.timing.median_abs_ms": {
-    "mean": 10.855556,
+    "mean": 10.3,
     "n": 6
    },
    "read.accidentals_per_note": {
@@ -239,19 +239,19 @@
     "n": 6
    },
    "read.rests_per_measure": {
-    "mean": 1.555556,
+    "mean": 1.565972,
     "n": 6
    },
    "read.rests_per_measure.delta": {
-    "mean": 1.451389,
+    "mean": 1.461806,
     "n": 6
    },
    "read.short_notes_rate": {
-    "mean": 0.015152,
+    "mean": 0.030777,
     "n": 6
    },
    "read.short_notes_rate.delta": {
-    "mean": 0.015152,
+    "mean": 0.030777,
     "n": 6
    },
    "read.ties_per_note": {
@@ -271,11 +271,11 @@
     "n": 6
    },
    "sqi": {
-    "mean": 85.552929,
+    "mean": 81.450535,
     "n": 6
    },
    "struct.downbeat.f1": {
-    "mean": 0.777778,
+    "mean": 0.722222,
     "n": 6
    },
    "struct.form.order_exact": {
@@ -307,11 +307,11 @@
     "n": 6
    },
    "struct.measures.count_exact": {
-    "mean": 0.666667,
+    "mean": 0.5,
     "n": 6
    },
    "struct.measures.count_ratio": {
-    "mean": 1.156863,
+    "mean": 1.323529,
     "n": 6
    },
    "struct.measures.extra_empty_edge": {
@@ -323,7 +323,7 @@
     "n": 6
    },
    "struct.tempo.mark_consistent": {
-    "mean": 0.666667,
+    "mean": 0.833333,
     "n": 6
    },
    "struct.tempo.marks_written": {
@@ -339,7 +339,7 @@
     "n": 6
    },
    "struct.tempo.ok_written": {
-    "mean": 0.833333,
+    "mean": 0.666667,
     "n": 6
    },
    "struct.tempo.present": {
@@ -347,23 +347,23 @@
     "n": 6
    },
    "struct.tempo.ratio_effective": {
-    "mean": 0.942956,
+    "mean": 1.161475,
     "n": 6
    },
    "struct.tempo.timeline_accuracy": {
-    "mean": 0.833333,
+    "mean": 0.666667,
     "n": 6
    },
    "struct.time_sig.exact": {
-    "mean": 0.833333,
+    "mean": 0.666667,
     "n": 6
    },
    "struct.time_sig.score": {
-    "mean": 0.833333,
+    "mean": 0.708333,
     "n": 6
    },
    "struct.time_sig.timeline_accuracy": {
-    "mean": 0.833333,
+    "mean": 0.666667,
     "n": 6
    },
    "usable": {
@@ -391,7 +391,7 @@
      "n": 6
     },
     "critical.beat_placement": {
-     "mean": 0.666667,
+     "mean": 0.5,
      "n": 6
     },
     "critical.hands": {
@@ -403,7 +403,7 @@
      "n": 5
     },
     "critical.meter": {
-     "mean": 0.833333,
+     "mean": 0.666667,
      "n": 6
     },
     "critical.note_values": {
@@ -419,7 +419,7 @@
      "n": 6
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.5,
      "n": 6
     },
     "errors": {
@@ -451,15 +451,15 @@
      "n": 6
     },
     "notation.duration.accuracy": {
-     "mean": 0.733164,
+     "mean": 0.714934,
      "n": 6
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.717876,
+     "mean": 0.699646,
      "n": 6
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.733164,
+     "mean": 0.714934,
      "n": 6
     },
     "notation.hand.accuracy": {
@@ -471,15 +471,15 @@
      "n": 6
     },
     "notation.ioi.accuracy": {
-     "mean": 0.957895,
+     "mean": 0.933072,
      "n": 6
     },
     "notation.ioi.accuracy_strict": {
-     "mean": 0.833333,
+     "mean": 0.666667,
      "n": 6
     },
     "notation.metrical_scale": {
-     "mean": 0.944444,
+     "mean": 0.861111,
      "n": 6
     },
     "notation.note_shape.consistency": {
@@ -499,19 +499,19 @@
      "n": 6
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.669251,
+     "mean": 0.507792,
      "n": 6
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.657289,
+     "mean": 0.495831,
      "n": 6
     },
     "notation.pedal.false_per_min": {
-     "mean": 27.824687,
+     "mean": 30.217547,
      "n": 6
     },
     "notation.pedal.marks": {
-     "mean": 13.0,
+     "mean": 13.666667,
      "n": 6
     },
     "notation.spelling.accuracy": {
@@ -555,11 +555,11 @@
      "n": 6
     },
     "notes.onset.f1_50ms": {
-     "mean": 0.97787,
+     "mean": 0.972662,
      "n": 6
     },
     "notes.timing.median_abs_ms": {
-     "mean": 10.855556,
+     "mean": 10.3,
      "n": 6
     },
     "read.accidentals_per_note": {
@@ -611,19 +611,19 @@
      "n": 6
     },
     "read.rests_per_measure": {
-     "mean": 1.555556,
+     "mean": 1.565972,
      "n": 6
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.451389,
+     "mean": 1.461806,
      "n": 6
     },
     "read.short_notes_rate": {
-     "mean": 0.015152,
+     "mean": 0.030777,
      "n": 6
     },
     "read.short_notes_rate.delta": {
-     "mean": 0.015152,
+     "mean": 0.030777,
      "n": 6
     },
     "read.ties_per_note": {
@@ -643,11 +643,11 @@
      "n": 6
     },
     "sqi": {
-     "mean": 85.552929,
+     "mean": 81.450535,
      "n": 6
     },
     "struct.downbeat.f1": {
-     "mean": 0.777778,
+     "mean": 0.722222,
      "n": 6
     },
     "struct.form.order_exact": {
@@ -679,11 +679,11 @@
      "n": 6
     },
     "struct.measures.count_exact": {
-     "mean": 0.666667,
+     "mean": 0.5,
      "n": 6
     },
     "struct.measures.count_ratio": {
-     "mean": 1.156863,
+     "mean": 1.323529,
      "n": 6
     },
     "struct.measures.extra_empty_edge": {
@@ -695,7 +695,7 @@
      "n": 6
     },
     "struct.tempo.mark_consistent": {
-     "mean": 0.666667,
+     "mean": 0.833333,
      "n": 6
     },
     "struct.tempo.marks_written": {
@@ -711,7 +711,7 @@
      "n": 6
     },
     "struct.tempo.ok_written": {
-     "mean": 0.833333,
+     "mean": 0.666667,
      "n": 6
     },
     "struct.tempo.present": {
@@ -719,23 +719,23 @@
      "n": 6
     },
     "struct.tempo.ratio_effective": {
-     "mean": 0.942956,
+     "mean": 1.161475,
      "n": 6
     },
     "struct.tempo.timeline_accuracy": {
-     "mean": 0.833333,
+     "mean": 0.666667,
      "n": 6
     },
     "struct.time_sig.exact": {
-     "mean": 0.833333,
+     "mean": 0.666667,
      "n": 6
     },
     "struct.time_sig.score": {
-     "mean": 0.833333,
+     "mean": 0.708333,
      "n": 6
     },
     "struct.time_sig.timeline_accuracy": {
-     "mean": 0.833333,
+     "mean": 0.666667,
      "n": 6
     },
     "usable": {
@@ -762,7 +762,7 @@
      "n": 6
     },
     "critical.beat_placement": {
-     "mean": 0.666667,
+     "mean": 0.5,
      "n": 6
     },
     "critical.hands": {
@@ -774,7 +774,7 @@
      "n": 5
     },
     "critical.meter": {
-     "mean": 0.833333,
+     "mean": 0.666667,
      "n": 6
     },
     "critical.note_values": {
@@ -790,7 +790,7 @@
      "n": 6
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.5,
      "n": 6
     },
     "errors": {
@@ -822,15 +822,15 @@
      "n": 6
     },
     "notation.duration.accuracy": {
-     "mean": 0.733164,
+     "mean": 0.714934,
      "n": 6
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.717876,
+     "mean": 0.699646,
      "n": 6
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.733164,
+     "mean": 0.714934,
      "n": 6
     },
     "notation.hand.accuracy": {
@@ -842,15 +842,15 @@
      "n": 6
     },
     "notation.ioi.accuracy": {
-     "mean": 0.957895,
+     "mean": 0.933072,
      "n": 6
     },
     "notation.ioi.accuracy_strict": {
-     "mean": 0.833333,
+     "mean": 0.666667,
      "n": 6
     },
     "notation.metrical_scale": {
-     "mean": 0.944444,
+     "mean": 0.861111,
      "n": 6
     },
     "notation.note_shape.consistency": {
@@ -870,19 +870,19 @@
      "n": 6
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.669251,
+     "mean": 0.507792,
      "n": 6
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.657289,
+     "mean": 0.495831,
      "n": 6
     },
     "notation.pedal.false_per_min": {
-     "mean": 27.824687,
+     "mean": 30.217547,
      "n": 6
     },
     "notation.pedal.marks": {
-     "mean": 13.0,
+     "mean": 13.666667,
      "n": 6
     },
     "notation.spelling.accuracy": {
@@ -926,11 +926,11 @@
      "n": 6
     },
     "notes.onset.f1_50ms": {
-     "mean": 0.97787,
+     "mean": 0.972662,
      "n": 6
     },
     "notes.timing.median_abs_ms": {
-     "mean": 10.855556,
+     "mean": 10.3,
      "n": 6
     },
     "read.accidentals_per_note": {
@@ -982,19 +982,19 @@
      "n": 6
     },
     "read.rests_per_measure": {
-     "mean": 1.555556,
+     "mean": 1.565972,
      "n": 6
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.451389,
+     "mean": 1.461806,
      "n": 6
     },
     "read.short_notes_rate": {
-     "mean": 0.015152,
+     "mean": 0.030777,
      "n": 6
     },
     "read.short_notes_rate.delta": {
-     "mean": 0.015152,
+     "mean": 0.030777,
      "n": 6
     },
     "read.ties_per_note": {
@@ -1014,11 +1014,11 @@
      "n": 6
     },
     "sqi": {
-     "mean": 85.552929,
+     "mean": 81.450535,
      "n": 6
     },
     "struct.downbeat.f1": {
-     "mean": 0.777778,
+     "mean": 0.722222,
      "n": 6
     },
     "struct.form.order_exact": {
@@ -1050,11 +1050,11 @@
      "n": 6
     },
     "struct.measures.count_exact": {
-     "mean": 0.666667,
+     "mean": 0.5,
      "n": 6
     },
     "struct.measures.count_ratio": {
-     "mean": 1.156863,
+     "mean": 1.323529,
      "n": 6
     },
     "struct.measures.extra_empty_edge": {
@@ -1066,7 +1066,7 @@
      "n": 6
     },
     "struct.tempo.mark_consistent": {
-     "mean": 0.666667,
+     "mean": 0.833333,
      "n": 6
     },
     "struct.tempo.marks_written": {
@@ -1082,7 +1082,7 @@
      "n": 6
     },
     "struct.tempo.ok_written": {
-     "mean": 0.833333,
+     "mean": 0.666667,
      "n": 6
     },
     "struct.tempo.present": {
@@ -1090,23 +1090,23 @@
      "n": 6
     },
     "struct.tempo.ratio_effective": {
-     "mean": 0.942956,
+     "mean": 1.161475,
      "n": 6
     },
     "struct.tempo.timeline_accuracy": {
-     "mean": 0.833333,
+     "mean": 0.666667,
      "n": 6
     },
     "struct.time_sig.exact": {
-     "mean": 0.833333,
+     "mean": 0.666667,
      "n": 6
     },
     "struct.time_sig.score": {
-     "mean": 0.833333,
+     "mean": 0.708333,
      "n": 6
     },
     "struct.time_sig.timeline_accuracy": {
-     "mean": 0.833333,
+     "mean": 0.666667,
      "n": 6
     },
     "usable": {
@@ -1135,7 +1135,7 @@
     "n": 6
    },
    "critical.beat_placement": {
-    "mean": 0.666667,
+    "mean": 0.5,
     "n": 6
    },
    "critical.hands": {
@@ -1147,7 +1147,7 @@
     "n": 5
    },
    "critical.meter": {
-    "mean": 0.833333,
+    "mean": 0.666667,
     "n": 6
    },
    "critical.note_values": {
@@ -1163,7 +1163,7 @@
     "n": 6
    },
    "critical.structure": {
-    "mean": 1.0,
+    "mean": 0.5,
     "n": 6
    },
    "notation.accidentals.courtesy_per_100": {
@@ -1191,15 +1191,15 @@
     "n": 6
    },
    "notation.duration.accuracy": {
-    "mean": 0.733164,
+    "mean": 0.714934,
     "n": 6
    },
    "notation.duration.accuracy_ref": {
-    "mean": 0.717876,
+    "mean": 0.699646,
     "n": 6
    },
    "notation.duration.page_accuracy": {
-    "mean": 0.733164,
+    "mean": 0.714934,
     "n": 6
    },
    "notation.hand.accuracy": {
@@ -1211,15 +1211,15 @@
     "n": 6
    },
    "notation.ioi.accuracy": {
-    "mean": 0.957895,
+    "mean": 0.933072,
     "n": 6
    },
    "notation.ioi.accuracy_strict": {
-    "mean": 0.833333,
+    "mean": 0.666667,
     "n": 6
    },
    "notation.metrical_scale": {
-    "mean": 0.944444,
+    "mean": 0.861111,
     "n": 6
    },
    "notation.note_shape.consistency": {
@@ -1239,19 +1239,19 @@
     "n": 6
    },
    "notation.onset_pos.accuracy": {
-    "mean": 0.669251,
+    "mean": 0.507792,
     "n": 6
    },
    "notation.onset_pos.accuracy_ref": {
-    "mean": 0.657289,
+    "mean": 0.495831,
     "n": 6
    },
    "notation.pedal.false_per_min": {
-    "mean": 27.824687,
+    "mean": 30.217547,
     "n": 6
    },
    "notation.pedal.marks": {
-    "mean": 13.0,
+    "mean": 13.666667,
     "n": 6
    },
    "notation.spelling.accuracy": {
@@ -1295,11 +1295,11 @@
     "n": 6
    },
    "notes.onset.f1_50ms": {
-    "mean": 0.97787,
+    "mean": 0.972662,
     "n": 6
    },
    "notes.timing.median_abs_ms": {
-    "mean": 10.855556,
+    "mean": 10.3,
     "n": 6
    },
    "read.accidentals_per_note": {
@@ -1351,19 +1351,19 @@
     "n": 6
    },
    "read.rests_per_measure": {
-    "mean": 1.555556,
+    "mean": 1.565972,
     "n": 6
    },
    "read.rests_per_measure.delta": {
-    "mean": 1.451389,
+    "mean": 1.461806,
     "n": 6
    },
    "read.short_notes_rate": {
-    "mean": 0.015152,
+    "mean": 0.030777,
     "n": 6
    },
    "read.short_notes_rate.delta": {
-    "mean": 0.015152,
+    "mean": 0.030777,
     "n": 6
    },
    "read.ties_per_note": {
@@ -1383,11 +1383,11 @@
     "n": 6
    },
    "sqi": {
-    "mean": 85.552929,
+    "mean": 81.450535,
     "n": 6
    },
    "struct.downbeat.f1": {
-    "mean": 0.777778,
+    "mean": 0.722222,
     "n": 6
    },
    "struct.form.order_exact": {
@@ -1419,11 +1419,11 @@
     "n": 6
    },
    "struct.measures.count_exact": {
-    "mean": 0.666667,
+    "mean": 0.5,
     "n": 6
    },
    "struct.measures.count_ratio": {
-    "mean": 1.156863,
+    "mean": 1.323529,
     "n": 6
    },
    "struct.measures.extra_empty_edge": {
@@ -1435,7 +1435,7 @@
     "n": 6
    },
    "struct.tempo.mark_consistent": {
-    "mean": 0.666667,
+    "mean": 0.833333,
     "n": 6
    },
    "struct.tempo.marks_written": {
@@ -1451,7 +1451,7 @@
     "n": 6
    },
    "struct.tempo.ok_written": {
-    "mean": 0.833333,
+    "mean": 0.666667,
     "n": 6
    },
    "struct.tempo.present": {
@@ -1459,23 +1459,23 @@
     "n": 6
    },
    "struct.tempo.ratio_effective": {
-    "mean": 0.942956,
+    "mean": 1.161475,
     "n": 6
    },
    "struct.tempo.timeline_accuracy": {
-    "mean": 0.833333,
+    "mean": 0.666667,
     "n": 6
    },
    "struct.time_sig.exact": {
-    "mean": 0.833333,
+    "mean": 0.666667,
     "n": 6
    },
    "struct.time_sig.score": {
-    "mean": 0.833333,
+    "mean": 0.708333,
     "n": 6
    },
    "struct.time_sig.timeline_accuracy": {
-    "mean": 0.833333,
+    "mean": 0.666667,
     "n": 6
    },
    "usable": {
@@ -1484,10 +1484,10 @@
    }
   },
   "date": "2026-09-22",
-  "git_sha": "6dedc519d0f1e19ddf44340b66f405ad8baa34c1",
+  "git_sha": "4f2b8d04aa9b0e29f9190b790e20c7e5b62666b7",
   "versions": {
    "generator": "perform/2",
-   "metrics": "metrics/5",
+   "metrics": "metrics/6",
    "reader": "reader/4",
    "sqi": "sqi/2"
   }
@@ -1564,7 +1564,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.699454,
@@ -1666,7 +1666,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "f276f1a291de532c",
+   "semantic": "f6ef2acf9704db87",
    "sqi": 92.575758,
    "status": "ok"
   },
@@ -1682,7 +1682,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 0.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.488372,
@@ -1733,59 +1733,59 @@
    "error_code": null,
    "metrics": {
     "critical.accidentals": 1.0,
-    "critical.beat_placement": 1.0,
+    "critical.beat_placement": 0.0,
     "critical.hands": 1.0,
     "critical.key": 1.0,
-    "critical.meter": 1.0,
+    "critical.meter": 0.0,
     "critical.note_values": 0.0,
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.75,
-    "notation.duration.accuracy_ref": 0.75,
-    "notation.duration.page_accuracy": 0.75,
+    "notation.duration.accuracy": 0.640625,
+    "notation.duration.accuracy_ref": 0.640625,
+    "notation.duration.page_accuracy": 0.640625,
     "notation.hand.accuracy": 1.0,
     "notation.hand.accuracy_ref": 1.0,
-    "notation.ioi.accuracy": 1.0,
+    "notation.ioi.accuracy": 0.851064,
     "notation.note_shape.consistency": 1.0,
-    "notation.onset_pos.accuracy": 1.0,
-    "notation.onset_pos.accuracy_ref": 1.0,
+    "notation.onset_pos.accuracy": 0.03125,
+    "notation.onset_pos.accuracy_ref": 0.03125,
     "notation.pedal.f1": null,
-    "notation.pedal.false_per_min": 7.178579,
+    "notation.pedal.false_per_min": 21.535737,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 0.0,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
     "notes.identity.f1": 1.0,
-    "notes.onset.f1_50ms": 1.0,
+    "notes.onset.f1_50ms": 0.96875,
     "read.bar_completeness": 1.0,
     "read.bar_integrity": 1.0,
     "read.ledger_lines.heavy_rate": 0.0,
-    "sqi": 87.5,
-    "struct.downbeat.f1": 1.0,
+    "sqi": 62.885638,
+    "struct.downbeat.f1": 0.666667,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
-    "struct.measures.count_exact": 1.0,
+    "struct.measures.count_exact": 0.0,
     "struct.measures.extra_empty_edge": 0.0,
     "struct.stats_consistent": 1.0,
     "struct.tempo.ok_effective": 0.0,
-    "struct.tempo.ok_written": 1.0,
+    "struct.tempo.ok_written": 0.0,
     "struct.tempo.present": 1.0,
-    "struct.tempo.timeline_accuracy": 1.0,
-    "struct.time_sig.exact": 1.0,
-    "struct.time_sig.score": 1.0,
-    "struct.time_sig.timeline_accuracy": 1.0,
+    "struct.tempo.timeline_accuracy": 0.0,
+    "struct.time_sig.exact": 0.0,
+    "struct.time_sig.score": 0.25,
+    "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "af834c62fc9a845c",
-   "sqi": 87.5,
+   "semantic": "13641c257162311d",
+   "sqi": 62.885638,
    "status": "ok"
   },
   "replay/samples/prelude-fragment|salamander-v1|human|s1": {
@@ -1902,6 +1902,18 @@
    "git_sha": "6dedc519d0f1e19ddf44340b66f405ad8baa34c1",
    "reason": "reader/4 + metrics/5 (G00 §21 last fixer): play order in critical.structure; every stored metric identical on the 6 replay fixtures",
    "sqi_all": 85.552929,
+   "usable_all": 0.166667
+  },
+  {
+   "date": "2026-09-22",
+   "event": "versions {'generator': 'perform/2', 'metrics': 'metrics/5', 'reader': 'reader/4', 'sqi': 'sqi/2'} -> {'generator': 'perform/2', 'metrics': 'metrics/6', 'reader': 'reader/4', 'sqi': 'sqi/2'}; new anchor, earlier numbers are not comparable"
+  },
+  {
+   "audio_score_sha256": "78bd76e55bcca6b238e25e3e1fdf17469d0afd19cf4fcaf1ec6c48f35f050011",
+   "date": "2026-09-22",
+   "git_sha": "4f2b8d04aa9b0e29f9190b790e20c7e5b62666b7",
+   "reason": "metrics/6 (PF-M1/PF-M2 structure gates); clean branch's replay-public baseline was never recorded against this branch's own (main-matching) production code",
+   "sqi_all": 81.450535,
    "usable_all": 0.166667
   }
  ],
@@ -2260,10 +2272,10 @@
  },
  "lock_sha256": "5823f4e9cf884ca1ad9f3c204651d4e53cd9037198346198ca3b1e03c01990ed",
  "recorded": {
-  "audio_score_sha256": "559a1f40fb73416bc72d671d894251f7c3263110fa10780559047f6f22009288",
+  "audio_score_sha256": "78bd76e55bcca6b238e25e3e1fdf17469d0afd19cf4fcaf1ec6c48f35f050011",
   "date": "2026-09-22",
-  "git_dirty": true,
-  "git_sha": "6dedc519d0f1e19ddf44340b66f405ad8baa34c1",
+  "git_dirty": false,
+  "git_sha": "4f2b8d04aa9b0e29f9190b790e20c7e5b62666b7",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"
@@ -2273,7 +2285,7 @@
  "suite_sha256": "aacf07ec04e0ec14b7d9736baea394ca41ff6b0b82cdf9f3e12ae90e6a4d4b45",
  "versions": {
   "generator": "perform/2",
-  "metrics": "metrics/5",
+  "metrics": "metrics/6",
   "reader": "reader/4",
   "sqi": "sqi/2"
  }
