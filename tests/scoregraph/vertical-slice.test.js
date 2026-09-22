@@ -171,3 +171,10 @@ test('in the browser, audio-score.js uses the PPPScoreGraph the scripts before i
   old.job = ctx.job;
   assert.throws(() => vm.runInContext('(() => { const d = JSON.parse(job); return PPPAudioScore.toMusicXml(d.input, d.opts); })()', old), /reload the page/);
 });
+
+test('the app HTML differs from the G1 base commit only by the added script tags (A43)', () => {
+  const diff = execFileSync('git', ['diff', '--no-color', '-U0', 'aff7080', '--', 'Piano Coach App.dc.html'], { cwd: REPO, encoding: 'utf8' });
+  const changed = diff.split('\n').filter(l => /^[-+]/.test(l) && !/^(---|\+\+\+) /.test(l)).map(l => l.replace(/\r$/, ''));
+  assert.ok(changed.length > 0);
+  changed.forEach(l => assert.match(l, /^\+<script src="\.\/scoregraph\/[\w-]+\.js\?v=\d+"><\/script>$/));
+});

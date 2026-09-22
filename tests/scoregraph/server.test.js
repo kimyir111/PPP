@@ -55,7 +55,7 @@ test('a running server answers GET /scoregraph/<file>.js with the file (A44)', a
       child.on('exit', code => { clearTimeout(timer); reject(new Error('the server exited (' + code + '): ' + out)); });
     });
     for (const f of FILES) {
-      const r = await get(port, '/scoregraph/' + f + '?v=9');
+      const r = await get(port, '/scoregraph/' + f + '?v=8');
       assert.equal(r.status, 200, f);
       assert.match(r.type, /javascript/, f);
       assert.equal(r.body, fs.readFileSync(path.join(REPO, 'scoregraph', f), 'utf8'), f);
