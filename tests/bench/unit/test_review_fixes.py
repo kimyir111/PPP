@@ -120,7 +120,8 @@ class DimensionsTheGateUsedToMiss(unittest.TestCase):
 
     def test_an_empty_bar_added_at_the_end(self):
         e, c, p, row = case("micro/M01-waltz-3-4")
-        extra = ('<measure number="99"><note><rest measure="yes"/><duration>72</duration><voice>1</voice>'
+        div = int(re.search(r"<divisions>(\d+)</divisions>", row["xml"]).group(1))   # the file's own (G1: the fewest)
+        extra = (f'<measure number="99"><note><rest measure="yes"/><duration>{3 * div}</duration><voice>1</voice>'
                  '<staff>1</staff></note></measure></part>')
         bs = row["stats"]["barStarts"]
         stats = dict(row["stats"], bars=row["stats"]["bars"] + 1, barStarts=bs + [bs[-1] + (bs[-1] - bs[-2])])
