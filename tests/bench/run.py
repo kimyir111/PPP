@@ -15,6 +15,7 @@
     python tests/bench/run.py legacy --manifest PATH
     python tests/bench/run.py correctness                       # reader vs independent MusicXML fixtures (T0, CI)
     python tests/bench/run.py known-defects                     # catalogue defects PPP ships (measured, not fixed)
+    python tests/bench/run.py sg-roundtrip                      # MusicXML -> ScoreGraph -> MusicXML over the corpus (G1)
     python tests/bench/run.py conformance [--require-env]       # parser parity with the app (T1)
     python tests/bench/run.py omr-live [--require-env]
     python tests/bench/run.py record-replay [--require-env]
@@ -144,6 +145,11 @@ def cmd_known(args) -> int:
     return 0
 
 
+def cmd_sg_roundtrip(args) -> int:
+    from pppbench import sg_roundtrip
+    return sg_roundtrip.cli(args)
+
+
 def cmd_env_tier(name):
     def run(args) -> int:
         from pppbench import tiers
@@ -193,6 +199,7 @@ def main(argv=None) -> int:
     sub.add_parser("mutation-check").set_defaults(fn=cmd_mutation)
     sub.add_parser("correctness").set_defaults(fn=cmd_correctness)
     sub.add_parser("known-defects").set_defaults(fn=cmd_known)
+    sub.add_parser("sg-roundtrip").set_defaults(fn=cmd_sg_roundtrip)
     p = sub.add_parser("ab")
     p.add_argument("--suite", required=True)
     p.add_argument("--a", default="git:HEAD")

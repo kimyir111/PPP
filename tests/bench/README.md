@@ -38,6 +38,7 @@ python tests/bench/run.py ab --suite core --a git:HEAD --b worktree   # what did
 python tests/bench/run.py golden                      # semantic + byte snapshots
 python tests/bench/run.py correctness                 # the reader against independent MusicXML fixtures
 python tests/bench/run.py known-defects               # catalogue defects PPP ships (measured, not fixed)
+python tests/bench/run.py sg-roundtrip                # every committed MusicXML through ScoreGraph and back (G1)
 python tests/bench/run.py mutation-check              # proves the gate catches 34 planted regressions
 python tests/bench/run.py update-baseline --suite core --reason "..."
 python tests/bench/run.py relock --suite core --reason "..."
@@ -381,6 +382,27 @@ library beside it (`scoregraph/`, docs/GOALS/G01 §15.4), so the bench treats th
 - `notate.js` reports its module closure, and the run stops with `SUT_MODULE_OUTSIDE` or
   `SUT_MODULE_UNDECLARED` when the SUT loads a module outside the snapshot: an A/B or a mutant would
   otherwise mix two versions without saying so (`unit/test_sut_snapshot.py`).
+
+## ScoreGraph round trip (`sg-roundtrip`, G1)
+
+`python tests/bench/run.py sg-roundtrip` takes every committed MusicXML under `catalog/`, `samples/`,
+`tests/bench/corpus/` and `tests/fixtures/` (369 files at G1) through `MusicXML -> ScoreGraph -> MusicXML
+-> ScoreGraph` (`node/sg-roundtrip.js`; Python opens `.mxl`) and requires of each (docs/GOALS/G01 §16.2):
+
+- **L1** the app sees the same music: `semantic.classify` of the G0 projections of the original and the
+  round-tripped file (this reader, reader/4) finds no change;
+- **L1+** the same notation: `pppbench/notation_inventory.py` reads what the file prints beyond what the app
+  reads (slurs, dynamics, wedges, articulations, ornaments, fermatas, fingerings, arpeggios, chord symbols,
+  lyrics, words, rehearsal marks, grace notes, beams, stems, octave shifts, pedals, tuplet brackets, bar lines,
+  repeats, endings, part names, title, composer, transposition, ties) and both inventories are equal; its
+  docstring lists what it leaves out on purpose and why;
+- **L2** the graph is a fixed point (the source's input name and hash aside);
+- **play order** the graph's `time.unroll` is `canonical.app_play_order()` bar for bar (A17).
+
+Files that may fail are in `tests/scoregraph/roundtrip-allowlist.json` (at most three, each with its reason
+and a fixture that reproduces the difference; the command checks the fixture still fails). The import
+reports every element it does not map; the command prints the totals. Output:
+`out/sg-roundtrip/report.json`.
 
 ## Changing the SUT: the loop for later goals
 
