@@ -2,7 +2,7 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 상태 | **구현 → 독립 리뷰 → fixer → 최종 리뷰 → 최종 fixer (2026-09-22)** · 브랜치 `g0-quality-foundation` (main 미병합, push 안 함) · 구현 결과 [§16](#16-구현-결과-2026-09-22) · 독립 리뷰 판정 READY_FOR_FIXER ([§17](#17-independent-review-2026-09-22)) · fixer 판정 NEEDS_ANOTHER_REVIEW ([§18](#18-fixer-기록-2026-09-22)) · 최종 독립 리뷰 판정 NEEDS_FIX ([§19](#19-final-independent-review-2026-09-22)) · 최종 fixer 판정 **READY_FOR_SHORT_REVIEW** ([§20](#20-final-fixer-기록-2026-09-22); merge 전 로컬 main `d82bb71`은 사용자 결정) |
+| 상태 | **구현 → 독립 리뷰 → fixer → 최종 리뷰 → 최종 fixer → 짧은 최종 리뷰 (2026-09-22)** · 브랜치 `g0-quality-foundation` (main 미병합) · 구현 결과 [§16](#16-구현-결과-2026-09-22) · 독립 리뷰 판정 READY_FOR_FIXER ([§17](#17-independent-review-2026-09-22)) · fixer 판정 NEEDS_ANOTHER_REVIEW ([§18](#18-fixer-기록-2026-09-22)) · 최종 독립 리뷰 판정 NEEDS_FIX ([§19](#19-final-independent-review-2026-09-22)) · 최종 fixer 판정 READY_FOR_SHORT_REVIEW ([§20](#20-final-fixer-기록-2026-09-22)) · 짧은 최종 리뷰 판정 **NEEDS_FIX** (MAJOR 2: 반복 기호 미측정, implicit 예외, [§21](#21-short-final-review-2026-09-22); merge 전 로컬 main `d82bb71`은 사용자 결정) |
 | 작성일 | 2026-09-21 |
 | 기준 커밋 | `718bdf3` (main). `audio-score.js` sha256 `559a1f40fb73416bc72d671d894251f7c3263110fa10780559047f6f22009288` |
 | 읽는 사람 | 이 문서만 읽고 G0을 구현할 다음 Claude 세션, 그리고 리뷰하는 사용자 |
@@ -35,6 +35,7 @@
 - [18. Fixer 기록 (2026-09-22)](#18-fixer-기록-2026-09-22)
 - [19. Final Independent Review (2026-09-22)](#19-final-independent-review-2026-09-22)
 - [20. Final Fixer 기록 (2026-09-22)](#20-final-fixer-기록-2026-09-22)
+- [21. Short Final Review (2026-09-22)](#21-short-final-review-2026-09-22)
 
 ---
 
@@ -3273,3 +3274,232 @@ known failure(`known-defects/2`, 329파일):
   2. sequence 임계(0.95)
   3. golden 구조/음악 분류 규칙(§20.5)
   4. 새 known failure 두 종의 규칙(split bar 예외)
+
+---
+
+## 21. Short Final Review (2026-09-22)
+
+§17–§20에 참여하지 않은 짧은 최종 리뷰 세션이 썼다. 질문은 하나다: **"G0 benchmark를 G1 이후의 품질 심판으로 써도 되는가?"** 전체를 다시 설계하지 않고, 최종 fixer가 고친 것(F1, F2, F3, PredTime, usable 음가)과 새로운 merge-blocking 구멍만 확인했다. §20의 "RESOLVED"는 출발점으로만 썼다. 아래 판정은 모두 이 세션이 직접 실행하거나 코드·데이터·앱으로 확인한 것이다.
+
+- **대상**: `D:/PPP-g0`, 브랜치 `g0-quality-foundation` @ `6eae767`(이 세션이 최종 fixer의 미커밋 작업을 고정한 커밋, §21.1).
+- **이 세션이 바꾼 것**: 이 절, 문서 머리의 상태 줄과 목차, 새 review 전용 스크립트 `tests/bench/review/short_review.py`.
+- **바꾸지 않은 것**: 프로덕션 코드, benchmark 기준·허용치·임계(0.95, 0.80)·baseline·golden, 기존 review 스크립트의 기대값. `D:/PPP`는 읽기만 했다(`node_modules`의 puppeteer). `d82bb71`, main, G1은 건드리지 않았다.
+
+### 21.0 판정
+
+**`NEEDS_FIX`** — BLOCKER 0, **MAJOR 2**, MINOR 2, OPTIONAL 5.
+
+- F1·PredTime·usable 음가는 확인되었다. mutation-check 31/31, final_review 10/10, adversarial 25/0, final_oracle 4 OK, 결정론(core `289c51d2…`), production diff 0도 재현했다.
+- 그러나 새 공격 두 개가 "사용자에게는 명백히 망가진 악보인데 benchmark는 PASS"를 만들었다(§21.8).
+  - **S-M1** 앱이 재생 순서를 바꾸는 반복 기호를 benchmark가 전혀 읽지 않는다. core·smoke·robust의 `results.json`이 byte 단위로 같고, golden은 **SERIALIZATION_ONLY**로 분류한다.
+  - **S-M2** 예측이 `implicit="yes"`를 달면 스스로 불완전 마디 검사를 끈다. §17 B1과 같은 종류(예측이 검사 적용 여부를 정함)다.
+- 둘 다 G1(writer 재구성)이 새로 쓸 수 있는 필드다. 고칠 범위는 작다(§21.14).
+
+### 21.1 방법, 환경, Git
+
+| 항목 | 내용 |
+| --- | --- |
+| 시작 점검 | `pwd` = `/d/PPP-g0`, toplevel `D:/PPP-g0`, 브랜치 `g0-quality-foundation`. 미커밋 수정 64, 미추적 신규(펼쳐서) 68 |
+| Fixer 커밋 | 허용 경로(`tests/bench/`, `docs/`, `.github/`, `package.json`)만 stage했다. staged 132파일을 경로 규칙과 금지 패턴(pycache, catalog, tmp, 프로덕션 파일)으로 검사해 0건을 확인하고 `6eae767 fix: finalize G0 benchmark semantic quality gates`로 커밋했다. 가장 큰 파일은 baseline JSON과 golden semantic snapshot이다 |
+| 남긴 것 | `tests/README.md`(문서 2줄: smoke 44, test:bench 설명). 허용 경로 밖이라 stage하지 않았다. 미커밋으로 남아 있다(사용자 결정) |
+| `CLAUDE.md` | 두 worktree 어디에도 없다(§17 O1, §19 m9와 같음) |
+| 환경 | Windows 11(cp949), Python 3.13.5, Node 24. T1은 워크트리 서버를 8799에 잠시 띄우고 끝나고 종료했다. puppeteer는 `D:/PPP/node_modules`(읽기만) |
+| 앱 확인 | `Piano Coach App.dc.html`의 `parseMusicXML`(마디·implicit·barline·tie·tuplet·clef·손), `Score.form`, `PianoScore.build`, 렌더러의 tuplet·반복 barline 처리를 코드로 읽었다. S-M1과 S-m1은 워크트리 서버의 앱에서 `PPP.parseMusicXML`/`PPP.PianoScore.of`로 직접 재현했다 |
+
+### 21.2 F1 — 곡 전체 템포·박자표·조표: **VERIFIED**
+
+- **전체 timeline을 읽는다.** reader는 모든 `<sound tempo>`(direction 안과 마디 직속)와 metronome을 위치와 함께 읽고(`musicxml.py` 276–305), 마디별 time·fifths를 part 0에서 기록한다. `struct.*.timeline_accuracy`는 짝지어진 음마다 예측 마디의 time·fifths와 앱 템포 맵(`app_tempo_timeline`, 같은 위치는 나중 것)을 정답과 비교한다. stats는 쓰지 않는다.
+- **mutation**(이 세션 실행): FIN-TEMPO-HALVED-MIDWAY(`critical.playback_tempo` 0.497 → 0), FIN-METRE-TAIL(`critical.meter` 0.515 → 0), FIN-KEY-TAIL(`critical.key` 0.898 → 0) 모두 REGRESSION이다. 새 SR-KEY-LAST-TWO-BARS(마지막 두 마디만)도 core REGRESSION, usable −7.2 pt다.
+- **임계 0.95**: 적절하다.
+  - 너무 관대하지 않다: 마지막 두 마디의 손상도 잡힌다(짧은 곡에서는 5 %를 넘고, aggregate 허용치 −0.005가 나머지를 잡는다).
+  - 너무 엄격하지 않다: 이상적 출력 4가지 조판(final_oracle)에서 만점이다. 16마디 곡에서는 변화 표시가 한 마디만 어긋나도 실패하지만, 그것은 한 마디가 틀린 조·박자·템포로 읽힌다는 뜻이다(O2).
+- **인쇄 템포 sequence**: 곡 중간의 인쇄 메트로놈은 판정하지 않는다. 앱이 그것을 그리지 않고(`score.tempos`는 `tempoMap`에만 쓰인다) 재생은 판정되므로 구멍이 아니다. SR-PRINTED-TEMPO-MIDWAY(대조군)는 PASS이고 golden SEMANTIC_CHANGE다(O3).
+
+### 21.3 F2 — 음가·구조: **PARTIALLY VERIFIED** (S-M1, S-M2)
+
+요청된 항목은 모두 읽고 있고, 요청된 harmful mutation은 모두 잡힌다.
+
+| 항목 | 근거 |
+| --- | --- |
+| `<type>`, `<dot>`, tuplet, 인쇄 음가 | `note_shape.consistency`(허용치 0), `duration.page_accuracy`. FIN-DOTS-DROPPED, FIN-NOTE-TYPE-SHORTER REGRESSION. 앱은 tuplet을 `<time-modification>`으로 그리고(App 11505–11516) reader도 그것을 읽는다. `<tuplet>` 괄호만 빼는 것은 앱에서 무해하다 |
+| 소리 음가 | `duration.accuracy`. FIN-LONG-NOTES-HALVED REGRESSION |
+| 마디 번호 | `measure_numbers.valid`, `app_onset_accuracy`. FIN-BAR-NUMBERS-RESTART/-SKIP/-SWAP(중복, 순서 바뀜) REGRESSION |
+| 마디 완결 | `read.bar_completeness`. FIN-TRAILING-RESTS-SHORT, 새 SR-RH-RESTS-SHORT(대조군) REGRESSION. **단 implicit 예외로 끌 수 있다(S-M2)** |
+| 쉼표 길이 | FIN-TRAILING-RESTS-SHORT, FIN-REST-TYPE-LONGER REGRESSION |
+| clef | FIN-BASS-STAFF-TREBLE-CLEF, 새 SR-RH-ALTO-CLEF REGRESSION. 둘 다 aggregate `read.ledger_lines.heavy_rate` 하나로만 잡히고 usable은 그대로다(O4) |
+| 보표 배정 | MUT-HANDS, FIX-HIGH-NOTES-LEFT-HAND REGRESSION. `<staves>` 누락(앱이 왼손을 cue 보표로 바꿈)도 core REGRESSION이다(identity, usable −18.1 pt) |
+| **마디 순서(연주 순서)** | **읽지 않는다.** 앱의 재생 순서는 마디 번호가 아니라 반복 기호·volta로 정해진다(`Score.form`). benchmark reader는 `<barline>`을 읽지 않는다 → S-M1 |
+
+### 21.4 F3 — golden 분류: **PARTIALLY VERIFIED** (S-M1, S-m1)
+
+- 이 세션이 G15로 직접 확인했다.
+  - 공백·줄바꿈, 속성 순서·따옴표, `<x/>` ↔ `<x></x>`, voice 번호(5 → 2): SERIALIZATION_ONLY(같은 음악).
+  - 점 하나 제거, type 하나 변경, 쉼표 type 변경: SEMANTIC_CHANGE.
+  - clef 변경, 왼손 음 하나를 1보표로, 마디 번호 변경: STRUCTURAL_CHANGE.
+  - 페달 direction의 `<staff>`만 바꾸면 SERIALIZATION_ONLY다. 앱과 reader 모두 그 값을 쓰지 않으므로 옳다.
+- **틀린 곳 1 (S-M1)**: 반복 기호는 projection에 없다. SR-SPURIOUS-REPEAT는 16 SERIALIZATION_ONLY다(앱은 재생을 1.5배로 늘린다).
+- **틀린 곳 2 (S-m1)**: 어느 보표가 손인지(`<staves>`, piano part)는 projection에 없다. `<staves>`를 빼면 앱이 왼손 112음을 hand x(표시만 하고 연주·연습하지 않음)로 바꾸는데 golden은 17 SERIALIZATION_ONLY다. metric gate가 잡으므로 MINOR다.
+
+### 21.5 PredTime: **VERIFIED**
+
+- `extend_beats`가 첫·끝 박 간격으로 박 격자를 barStarts 범위까지 늘린다. 마디 시작·끝을 박 좌표로 옮기고 그 안에서 보간한다. SUT의 `tickToSec`(등간격 박, 박 사이 선형, 바깥 외삽)과 같은 모델이다.
+- 이 세션의 수치 검사(scratch, 오차 0.0):
+  - 첫 박보다 1.5박 앞서 시작해 끝 박 뒤 3.5박까지 가는 4/4 두 마디, 마디선이 박 사이(반 박 위상)
+  - 격자 안에서 두 배 빨라지는 둘째 마디
+  - 첫 추적 박 이전의 1박 pickup
+- 정답 쪽(`RefTime`)은 연주기의 TimeMap을 그대로 쓴다. 이상적 입력에서 부당한 timing 벌점이 없다: final_oracle as-is 141, pickup-bar 20, mode-flip 104, tempo-mark 141 모두 만점(카탈로그 결함으로 설명되는 곳 제외), adversarial oracle 141곡 만점.
+
+### 21.6 Usable / 음가 0.80: **VERIFIED_ACCEPTABLE**
+
+- **계산**: 두 조건(`duration.accuracy`, `duration.page_accuracy` ≥ 0.80)이 `critical.note_values`로 AND된다. core 553 중 usable 100(18.1 %), 음가 gate만 실패한 unusable은 43이다.
+- **표본**(예측 MusicXML을 정답과 같은 위치·음높이로 직접 대조):
+
+| 케이스 | 판정 | 음가 | 실제 상태 |
+| --- | --- | --- | --- |
+| hymns/come-holy-spirit, deadpan | usable | 0.804 | 418음 중 82음이 짧다(2분 → 4분 37, 4분 → 8분 20). 위치는 모두 맞다. 마디당 쉼표 0.27(정답 0.27) |
+| 같은 곡, human | unusable | 0.785 | 같은 오류 + 8분 → 16분 8. 마디당 쉼표 0.49. 경계 사례다(임계라면 어디에나 있다) |
+| czerny599/030, amt | unusable | 0.379 | 8분이 16분 + 쉼표로 91음. 마디당 쉼표 5.67(정답 0.71). 명백히 쓸 수 없다 |
+| czerny599/049, human/onset | unusable | 0.192 | §19의 표본. 옳게 unusable이다 |
+| czerny599/027, human | usable | 0.817 | 16분 → 32분 21음. 마디당 쉼표 4.0(정답 0). 관대한 편이다(O1) |
+| micro/M23, human | unusable | 0.786 | 16분 → 32분 24음, 마디당 쉼표 6.0 |
+
+- **baseline을 예쁘게 만들려고 정한 임계가 아니다.**
+  - usable을 25.9 %에서 18.1 %로 낮췄다.
+  - 0.80 부근에 분포의 틈이 없다: min(음가, 페이지 음가)가 [0.70, 0.75) 38건, [0.75, 0.80) 43건, [0.80, 0.85) 37건, [0.85, 0.90) 50건이다.
+  - 임계는 hands와 같은 1/5 원칙에서 왔다.
+- 명백히 잘못된 usable 판정은 찾지 못했다. 합성 릴리스 모델 의존성(§20.7)은 M11 trigger에 들어 있다.
+
+### 21.7 반복 / 불완전 마디 규칙: **NOT ACCEPTABLE** (S-M2, S-m2)
+
+`bar_completeness_detail`(`metrics/readability.py` 132–164)은 세 가지를 예외로 둔다.
+
+1. 첫 마디와 끝 마디.
+2. **어느 위치든** `implicit="yes"`인 마디.
+3. 이웃한 짧은 두 마디의 내용 합이 박자표 길이인 경우("반복에서 나뉜 두 반 마디").
+
+- **정상 반복의 false positive는 없다.** known failure `incomplete_bars` 10파일·38마디를 원문과 대조했다. 모두 실제 결함이었다.
+  - 예: for-all-the-saints 17–20마디는 1보표가 4박, 2보표가 12박이다.
+  - 예: now-thank-we-all 6·11마디는 반복 기호 없는 반 마디다.
+  - 이상적 출력(final_oracle)에도 거짓 실패가 없다.
+- **그러나 실제 불완전 마디를 숨긴다.**
+  - (2) 예외는 예측이 붙인 속성 하나로 켜진다. 앱은 implicit 마디의 길이를 내용으로 잡을 뿐 채우지 않으므로 짧은 보표를 그대로 그린다. SR-IMPLICIT-MASKS-SHORT-BARS가 core·smoke·robust를 통과한다(S-M2). 같은 결함에서 implicit만 뺀 대조군은 REGRESSION이다(usable −2.0 pt).
+  - (3) 예외는 실제 반복 기호를 확인하지 않는다. reader가 `<barline>`을 읽지 않기 때문이다. 4/4 참조 4곡에서 끝에서 두 번째 마디 한가운데에 마디선을 넣어(반복 기호 없음, 박자표 그대로) 두 반 마디로 만들어도, `bar_completeness`·`bar_integrity`·`critical.structure`·usable은 모두 1이다. aggregate `struct.measures.count_exact`(1 → 0)와 `onset_pos`(1 → 0.91–0.94)만 떨어진다(S-m2).
+
+### 21.8 새 공격 테스트
+
+`python tests/bench/review/short_review.py` (약 4분). 각 mutation은 `audio-score.js`의 사본에만 적용하고 core·smoke·robust를 커밋된 baseline과 비교했다. golden도 돌렸다. 앱에서의 효과는 코드와 앱 실행으로 확인했다.
+
+| mutation | 영역 | 사용자가 받는 것 | core | smoke / robust | golden | 결론 |
+| --- | --- | --- | --- | --- | --- | --- |
+| SR-SPURIOUS-REPEAT | 구조·연주 순서 | 가운데 마디 끝에 도돌이표. **앱 확인**(G01): visits 16 → 24, 재생 길이 48 → 72 quarters, 타건 160 → 240. 앞 절반이 두 번 연주되고 도돌이표가 그려진다 | **PASS, results.json byte 동일** | PASS (동일) / PASS (동일) | **16 SERIALIZATION_ONLY**, 1 ok | **MAJOR S-M1** |
+| SR-IMPLICIT-MASKS-SHORT-BARS | 마디 완결 | 긴 쉼표로 끝나는 오른손 마디가 한 박 짧다. 안쪽 마디에 implicit | **PASS** (Δ 0) | PASS / PASS | 16 STRUCTURAL_CHANGE | **MAJOR S-M2** |
+| SR-RH-RESTS-SHORT | 마디 완결(대조군) | 같은 결함, implicit 없음 | REGRESSION (`bar_completeness`, `critical.structure`, usable −2.0 pt) | REGRESSION / REGRESSION | 5 SEMANTIC | 잡힘 |
+| SR-RH-ALTO-CLEF | clef | 오른손 보표가 알토 clef | REGRESSION (`heavy_rate`만) | REGRESSION / REGRESSION | 17 STRUCTURAL | 잡힘(O4) |
+| SR-KEY-LAST-TWO-BARS | 조표 sequence | 마지막 두 마디만 5도 옆 조표, 음높이는 임시표로 맞춤 | REGRESSION (`critical.key`, usable −7.2 pt) | REGRESSION / REGRESSION | 16 SEMANTIC | 잡힘 |
+| SR-PRINTED-TEMPO-MIDWAY | 인쇄 템포(대조군) | 가운데에 틀린 인쇄 메트로놈 + 같은 위치의 `<sound>`로 재생 유지. 앱은 템포 표시를 그리지 않으므로 앱에서 보이거나 들리는 변화가 없다 | PASS | PASS / PASS | 17 SEMANTIC | 무해(O3) |
+| SR-NO-STAVES | 보표 구조(대조군) | `<staves>` 없음. **앱 확인**: 왼손 112음이 hand x(cue: 표시만, 연주·연습 안 함) | REGRESSION (identity, usable −18.1 pt) | REGRESSION / REGRESSION | **17 SERIALIZATION_ONLY** | gate는 잡음, golden 틀림(S-m1) |
+
+- 이 세션은 SR-PRINTED-TEMPO-MIDWAY를 처음에 REGRESSION으로 기대했다. 앱이 곡 중간 템포 표시를 그리지 않는다는 것(렌더링 코드 없음, `score.tempos`는 `tempoMap`에만 쓰임)을 확인한 뒤 대조군(PASS 기대)으로 고쳤다. benchmark 기준은 바꾸지 않았다.
+- 앱에서 무해해서 공격에서 뺀 후보:
+  - `<tied>`만 제거: 앱은 `<tie>`로 타이를 읽는다(App 4191).
+  - `<tuplet>` 괄호만 제거: 앱은 `<time-modification>`으로 셋잇단을 그린다.
+- `short_review.py`는 S-M1·S-M2·S-m1이 남아 있는 동안 exit 1이다. CI에는 넣지 않았다. fixer가 고친 뒤 `mutation-check`에 편입하기를 권한다(§21.14).
+
+### 21.9 테스트 (이 세션이 실행, Windows)
+
+| # | 항목 | 결과 |
+| --- | --- | --- |
+| 1 | final_review | 10/10 OK (335 s) |
+| 2 | final_oracle | 4 OK, 0 GAP |
+| 3 | adversarial | 25 OK, 0 GAP (285 s) |
+| 4 | mutation-check | 31/31: harmful 30 모두 REGRESSION, no-op `results.json` byte 동일 (210 s) |
+| 5 | smoke / core / robust | run + check PASS. sha `a837acbe…` / `289c51d2…` / `a1d9364f…` = §20.11 |
+| 6 | full | run + check PASS (4,976 케이스). sha `aae27ccf…` = §20.11 |
+| 7 | golden | 17/17 identical |
+| 8 | correctness | 13/13 (앱 해석이 다른 2개는 문서화된 octave-shift) |
+| 9 | parser parity (T1) | 258/258 (워크트리 서버 8799, 15 s) |
+| 10 | unit | 179 OK |
+| 11 | short_review (새) | 7종 중 4종 OK(대조군 RH-RESTS-SHORT·KEY-LAST-TWO-BARS·PRINTED-TEMPO-MIDWAY, ALTO-CLEF), GAP 3종(SPURIOUS-REPEAT, IMPLICIT-MASKS-SHORT-BARS, NO-STAVES의 golden 라벨) |
+| 12 | 결정론 | core `results.json` sha가 §20.11과 같다. mutation-check no-op이 byte 동일하다 |
+
+`npm test`, omr-live, transcription-core, arranger, Linux Docker는 다시 돌리지 않았다. 이 세션은 프로덕션 코드를 바꾸지 않았고, §20.12의 결과가 같은 커밋 내용에 대한 것이다.
+
+### 21.10 범위 감사: production diff **0**
+
+- `git diff 663d463..6eae767`(merge-base, 브랜치 전체)에서 다음 경로의 변경은 0건이다: `audio-score.js`, `server.js`, `Piano Coach App.dc.html`, `index.html`, `omr-service.js`, `catalog/`, `transcribe.py`, `arrange_score.py`, `beat_track.py`, `midi_notes.py`, `pm2s_quant.py`, `evaluate_transcription.py`, 그 밖의 앱 JS.
+- `tests/bench`·`docs` 밖의 변경은 `.github/workflows/bench.yml`, `.gitignore`, `README.md`, `package.json`(scripts), `tests/README.md`, `tests/beat_track_test.py`(import 수정), `tests/golden/README.md`뿐이다.
+- `audio-score.js` sha256(EOL 정규화)은 `559a1f40…`로 문서와 같다. 작업 트리에도 프로덕션 변경이 없다.
+
+### 21.11 M11: **BLOCKED_ACCEPTABLE**
+
+`tests/bench/README.md`("When real recordings are required")와 `docs/CURRENT_STATE.md`에 trigger가 명시되어 있다.
+
+- **다음을 바꾸는 첫 Goal을 시작하기 전에**: onset, beat, tempo, metre 추론, 그리고 키 릴리스를 음가로 바꾸는 규칙(duration/release).
+- **필요한 것**: 라이선스가 확인된 실제 사람 연주 최소 3곡(단순 2박, 단순 3박, 겹박자). 마디 시작을 귀로 확인하고, `replay-public` `input:recorded`에 넣어 baseline에 기록한다.
+- **예외**: writer, ScoreGraph, engraving만 바꾸는 Goal은 이 조건이 필요 없다. 이번 리뷰의 merge blocker도 아니다.
+
+### 21.12 Findings
+
+#### BLOCKER
+
+없다(G0 브랜치 기준). 로컬 `main`의 `d82bb71`은 §19.18 BLOCKER-M 그대로 merge 전 사용자 결정이다. 이 세션은 건드리지 않았다.
+
+#### MAJOR
+
+**S-M1. 반복 기호·volta를 읽지 않는다. 앱은 그것으로 재생 순서와 페이지를 바꾸는데, metric·gate·golden 모두 보지 못한다.**
+
+- **앱**: `parseMusicXML`이 part 0의 `<barline>`에서 `<repeat>`와 `<ending>`을 읽는다(App 4131–4157, `measureInfo.bar`). `PianoScore.build`는 `Score.form`(App 3677–3721)의 visits로 타건, 템포 맵, 페달을 만든다(App 2584–2598). 렌더러는 반복 barline과 volta 괄호를 그린다(App 10520, 10787–10836).
+- **benchmark**: `musicxml.read_score`는 `<barline>`을 건너뛴다. canonical, metric, `semantic.projection` 어디에도 없다. 연주기도 참조를 반복 없이 연주한다. 그래서 불완전 마디 규칙은 반복을 내용 합으로 추측한다(S-m2).
+- **증거**: SR-SPURIOUS-REPEAT. 앱에서 재생이 1.5배가 되는데 core·smoke·robust `results.json`이 원본과 byte 단위로 같고, golden은 16 SERIALIZATION_ONLY다. §19 F2·F3와 같은 종류(앱이 쓰는 필드를 benchmark가 읽지 않음)다.
+- **G1에 미치는 영향**: writer나 ScoreGraph가 반복을 쓰기 시작하거나 잘못 쓰면 gate가 보지 못한다. golden은 "형식만 바뀜"이라고 인증한다.
+- **수정 방향** (fixer가 정한다. 이 세션은 기준을 정하지 않는다):
+  1. reader(reader/4)가 앱처럼 part 0의 repeat(forward/backward, times)와 ending을 마디에 읽는다. `conformance`가 그것을 비교한다.
+  2. `semantic.projection`의 structure에 마디별 반복·volta를 넣는다.
+  3. 예측의 연주 순서(앱 규칙의 visits)가 정답의 연주 순서와 같은지 판정하는 metric을 만들고 `critical.structure`에 넣는다(허용치 0). 정답 쪽의 연주 순서를 어떻게 정할지(참조의 반복을 펼칠지, 연주기가 반복 없이 연주하는 현재 방식을 유지하고 "반복 기호 없음"을 정답으로 볼지)는 문서에 결정과 이유를 적는다.
+  4. SR-SPURIOUS-REPEAT를 `mutation-check`에 넣는다.
+
+**S-M2. `implicit="yes"`가 어느 위치에서든 불완전 마디 검사를 끈다. 예측이 스스로 검사 적용 여부를 정한다.**
+
+- **코드**: `readability.bar_completeness_detail`의 `if i in (0, last) or m.implicit: continue`. `bar_integrity`는 implicit 예외를 첫·끝 마디로만 제한한다(`m.implicit and m.index in (0, last)`). completeness만 모든 위치에 적용한다.
+- **앱**: implicit 마디의 길이를 내용으로 둘 뿐이다(App 4263). 보표를 채우지 않으므로 짧은 보표가 그대로 그려진다.
+- **증거**: SR-IMPLICIT-MASKS-SHORT-BARS core·smoke·robust PASS. 대조군 SR-RH-RESTS-SHORT는 REGRESSION(usable −2.0 pt)이다.
+- **수정 방향**: 예측 쪽에서 implicit 예외를 첫 마디(pickup)와 끝 마디(보완 마디)로 제한한다. 안쪽 마디의 implicit 자체도 구조 결함으로 센다(참조 쪽 예외가 필요하면 참조에만 적용). SR-IMPLICIT-MASKS-SHORT-BARS를 `mutation-check`에 넣는다.
+
+#### MINOR
+
+| # | 내용 | 수정 |
+| --- | --- | --- |
+| S-m1 | golden projection에 어느 보표가 손인지(`<staves>`, piano part, hand)가 없다. `<staves>`를 빼면 앱이 왼손 전체를 cue(hand x)로 바꾸는데 17 SERIALIZATION_ONLY다. metric gate는 잡는다(core REGRESSION, usable −18.1 pt) | projection structure에 음마다 hand(또는 part별 staves 수와 piano part)를 넣는다 |
+| S-m2 | 반 마디 예외가 실제 반복 기호를 확인하지 않는다. 늦은 위치에서 한 마디를 둘로 쪼갠 예측이 usable로 남는다(4/4 참조 4곡). aggregate `count_exact`·`onset_pos`가 체계적 회귀는 잡는다 | S-M1의 reader 확장 뒤, 예측 쪽 반 마디 예외를 반복 기호가 있는 곳으로 제한한다 |
+
+#### OPTIONAL
+
+- O1. usable이 쉼표 남발을 보지 않는다. czerny599/027 human은 음가 0.817로 usable이지만 마디당 쉼표가 4.0이다(정답 0). `read.rests_per_measure`의 delta를 진단에 보여 줄 수 있다.
+- O2. sequence 임계 0.95는 16마디 곡에서 변화 표시가 한 마디만 어긋나도 실패다. 의도된 엄격함이지만 README에 예시를 적으면 좋다.
+- O3. 곡 중간의 인쇄 템포만 틀린 출력은 앱에서 보이지 않으므로 gate 밖이 맞다. 다른 MusicXML 프로그램으로 내보내면 보인다. golden은 SEMANTIC_CHANGE로 알린다.
+- O4. clef는 aggregate `read.ledger_lines.heavy_rate` 하나로만 판정되고 usable에 들어가지 않는다. 정답과 다른 clef(보표별)를 직접 세는 metric을 G4 전에 고려할 수 있다.
+- O5. `CLAUDE.md`가 없다(사용자 결정). `tests/README.md` 문서 변경 2줄이 미커밋이다(허용 경로 밖이라 이 세션은 stage하지 않았다).
+
+### 21.13 최종 판정: **`NEEDS_FIX`**
+
+| READY_TO_MERGE 조건 | 결과 |
+| --- | --- |
+| BLOCKER 0 | 충족 |
+| MAJOR 0 | **불충족** (S-M1, S-M2) |
+| F1 VERIFIED | 충족 |
+| F2 VERIFIED | **부분**: 요청된 mutation 7종은 모두 잡힌다. 연주 순서(S-M1)와 마디 완결의 implicit 예외(S-M2)가 남았다 |
+| F3 VERIFIED | **부분**: 요청된 예는 모두 옳다. 반복 기호(S-M1)와 손 보표(S-m1)가 SERIALIZATION_ONLY로 분류된다 |
+| PredTime VERIFIED | 충족 |
+| usable rule ACCEPTABLE | 충족 (VERIFIED_ACCEPTABLE) |
+| repeat rule ACCEPTABLE | **불충족** (S-M2, S-m2) |
+| 새 공격에서 major hole 없음 | **불충족** (2건) |
+| production diff 0 | 충족 |
+| M11 BLOCKED_ACCEPTABLE | 충족 |
+
+### 21.14 다음 fixer의 완료 조건
+
+1. S-M2(작다) → S-M1(reader/4, projection, 연주 순서 metric) → S-m2 → S-m1 순서로 고친다.
+2. METRICS/READER 버전을 올리고 relock, 재기준화, golden bless를 한다. 사유를 기록한다.
+3. `short_review.py`가 exit 0이어야 한다. 기대값은 바꾸지 않는다. SR-SPURIOUS-REPEAT와 SR-IMPLICIT-MASKS-SHORT-BARS를 `mutation-check`에 넣는다.
+4. 이 절의 매트릭스(§21.9)를 다시 통과해야 한다. final_oracle에서 반복 기호가 있는 참조가 이상적 출력으로 만점인지도 확인한다.
+5. 이 절을 짧게 다시 검토한다. 다른 영역은 다시 열 필요가 없다. F1, PredTime, usable, M11, 범위, 결정론은 이 리뷰에서 확인되었다.
