@@ -1,0 +1,208 @@
+{
+ "input": {
+  "grid": {
+   "beatType": 8,
+   "beatsPerBar": 6,
+   "bpm": 60,
+   "notes": [
+    {
+     "endTick": 36,
+     "midi": 43,
+     "tick": 0,
+     "vel": 80
+    },
+    {
+     "endTick": 72,
+     "midi": 47,
+     "tick": 36,
+     "vel": 70
+    },
+    {
+     "endTick": 12,
+     "midi": 67,
+     "tick": 0,
+     "vel": 60
+    },
+    {
+     "endTick": 24,
+     "midi": 67,
+     "tick": 12,
+     "vel": 60
+    },
+    {
+     "endTick": 36,
+     "midi": 67,
+     "tick": 24,
+     "vel": 60
+    },
+    {
+     "endTick": 48,
+     "midi": 67,
+     "tick": 36,
+     "vel": 60
+    },
+    {
+     "endTick": 60,
+     "midi": 67,
+     "tick": 48,
+     "vel": 60
+    },
+    {
+     "endTick": 72,
+     "midi": 67,
+     "tick": 60,
+     "vel": 60
+    },
+    {
+     "endTick": 108,
+     "midi": 43,
+     "tick": 72,
+     "vel": 80
+    },
+    {
+     "endTick": 144,
+     "midi": 47,
+     "tick": 108,
+     "vel": 70
+    },
+    {
+     "endTick": 84,
+     "midi": 67,
+     "tick": 72,
+     "vel": 60
+    },
+    {
+     "endTick": 96,
+     "midi": 67,
+     "tick": 84,
+     "vel": 60
+    },
+    {
+     "endTick": 108,
+     "midi": 67,
+     "tick": 96,
+     "vel": 60
+    },
+    {
+     "endTick": 120,
+     "midi": 67,
+     "tick": 108,
+     "vel": 60
+    },
+    {
+     "endTick": 132,
+     "midi": 67,
+     "tick": 120,
+     "vel": 60
+    },
+    {
+     "endTick": 144,
+     "midi": 67,
+     "tick": 132,
+     "vel": 60
+    },
+    {
+     "endTick": 180,
+     "midi": 43,
+     "tick": 144,
+     "vel": 80
+    },
+    {
+     "endTick": 216,
+     "midi": 47,
+     "tick": 180,
+     "vel": 70
+    },
+    {
+     "endTick": 156,
+     "midi": 67,
+     "tick": 144,
+     "vel": 60
+    },
+    {
+     "endTick": 168,
+     "midi": 67,
+     "tick": 156,
+     "vel": 60
+    },
+    {
+     "endTick": 180,
+     "midi": 67,
+     "tick": 168,
+     "vel": 60
+    },
+    {
+     "endTick": 192,
+     "midi": 67,
+     "tick": 180,
+     "vel": 60
+    },
+    {
+     "endTick": 204,
+     "midi": 67,
+     "tick": 192,
+     "vel": 60
+    },
+    {
+     "endTick": 216,
+     "midi": 67,
+     "tick": 204,
+     "vel": 60
+    },
+    {
+     "endTick": 252,
+     "midi": 43,
+     "tick": 216,
+     "vel": 80
+    },
+    {
+     "endTick": 288,
+     "midi": 47,
+     "tick": 252,
+     "vel": 70
+    },
+    {
+     "endTick": 228,
+     "midi": 67,
+     "tick": 216,
+     "vel": 60
+    },
+    {
+     "endTick": 240,
+     "midi": 67,
+     "tick": 228,
+     "vel": 60
+    },
+    {
+     "endTick": 252,
+     "midi": 67,
+     "tick": 240,
+     "vel": 60
+    },
+    {
+     "endTick": 264,
+     "midi": 67,
+     "tick": 252,
+     "vel": 60
+    },
+    {
+     "endTick": 276,
+     "midi": 67,
+     "tick": 264,
+     "vel": 60
+    },
+    {
+     "endTick": 288,
+     "midi": 67,
+     "tick": 276,
+     "vel": 60
+    }
+   ],
+   "ticksPerQuarter": 24
+  }
+ },
+ "opts": {
+  "title": "Grid"
+ },
+ "source": "grid:pm2s-6-8"
+}

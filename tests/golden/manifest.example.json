@@ -1,0 +1,12 @@
+{
+  "cases": [
+    {
+      "name": "sample-score-self-check",
+      "reference": "../../samples/prelude-fragment.musicxml",
+      "prediction": "../../samples/prelude-fragment.musicxml",
+      "expectedMeasures": 8,
+      "expectedTempo": 72,
+      "minF1": 1.0
+    }
+  ]
+}

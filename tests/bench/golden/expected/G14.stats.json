@@ -1,0 +1,17 @@
+{
+ "arrangement.level": null,
+ "arrangement.style": null,
+ "bars": 4,
+ "beatFallback": null,
+ "beatSource": "grid",
+ "beatType": 8,
+ "beatsPerBar": 6,
+ "key.fifths": 1,
+ "key.mode": "major",
+ "lh": 8,
+ "notes": 32,
+ "quantizer": "pm2s",
+ "rh": 24,
+ "tempo": 60,
+ "tempoAlias": null
+}

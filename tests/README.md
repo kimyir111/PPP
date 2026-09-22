@@ -79,3 +79,18 @@ asserts the live call count is exactly 1 both before and after driving the UI, s
 re-plan cannot go unnoticed. Both coach suites read the panel scoped to the `PPP Coach` section
 on the player screen, because Home carries its own "Measures 21–24" recommendation button and
 clicking that one would prove nothing.
+
+## Quality benchmark (tests/bench)
+
+Score quality — what PPP writes when it turns a performance into notation — is measured without
+a browser, against licence-clean reference scores, with a committed baseline and a regression
+gate:
+
+```sh
+npm run bench:smoke     # 44 cases, a few seconds
+npm run bench           # the core gate: run + check against the baseline (exit 1 on a regression)
+npm run bench:full      # every reference, hold-out included (nightly / manual)
+npm run test:bench      # the benchmark's own unit tests, golden snapshots and musical-correctness fixtures
+```
+
+See [`tests/bench/README.md`](bench/README.md).

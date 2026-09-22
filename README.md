@@ -46,6 +46,7 @@ with subresource integrity, which `file://` blocks.
 | `audio/piano/` | Salamander Grand Piano samples (CC BY 3.0), 30 MP3s, 1.3 MB. See its `README.md`. |
 | `samples/prelude-fragment.musicxml` | A test score — 3/4, G major, chords, rests, a tie, a printed accidental. |
 | `tests/` | Browser tests and fixtures. See `tests/README.md`. |
+| `tests/bench/` | Score-quality benchmark and regression gate (Python stdlib + Node, no browser). See `tests/bench/README.md`. |
 | `omr-service.js` | The local helper: OMR (page images in, MusicXML out), audio transcription jobs (a recording or a YouTube link in, notes out) and the coach endpoint. Holds the API key. |
 | `transcribe.py` | Runs the piano transcription model over a WAV for the helper. Notes and pedal out, as JSON. |
 | `audio-score.js` | Notes heard in a recording → beats, metre, key, hands → MusicXML. Browser and Node, no dependencies. |
@@ -271,6 +272,9 @@ python evaluate_transcription.py ground-truth.mid prediction.json
 This reports pitch/onset precision, recall and F1, note-with-offset F1, mean onset error and
 sustain-pedal overlap. Keep a fixed benchmark set when changing a model or quantizer; UI
 confidence is not a substitute for these ground-truth metrics.
+
+The notation itself — metre, key, tempo, note values, hands, spelling, ties — is measured with
+`npm run bench` against licence-clean reference scores (`tests/bench/README.md`).
 
 ### Limits and what is kept
 

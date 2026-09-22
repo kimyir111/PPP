@@ -1,0 +1,1103 @@
+{
+  "schema": "ppp.bench-correctness/1",
+  "written_by": "independent fixture author (spec-derived, no reader consulted)",
+  "conventions": "All positions and durations are in quarter notes, written as exact fraction strings (\"0\", \"1/2\", \"3/2\", \"6\"): a note's length is <duration> divided by the <divisions> in force at that point. onset_q counts from the start of the first measure in the file (0). A measure's len_q is its content length (the furthest point the <duration>/<backup>/<forward> cursor reaches), so an implicit pickup measure is only as long as what it contains. \"sounding\" lists key presses: two notes are joined into one entry (dur_q = the sum) only when one carries <tie type=\"start\"/> and the next note of the same pitch carries <tie type=\"stop\"/> and starts exactly when the first ends; a <tied>-only connection, or a tie start with no matching tie stop, does not join. Chord notes are separate entries with the same onset; rests are not listed; grace notes take no time, are not listed, and are counted in grace_notes. midi = (octave + 1) * 12 + step semitone (C0 D2 E4 F5 G7 A9 B11) + alter, taken from <pitch> exactly as written, because MusicXML pitch data is the sounding pitch: the key signature, <accidental> and <octave-shift> never change it. step and alter are as written in <pitch> (alter 0 when absent); staff is the note's <staff> value (1 when absent). Entries are sorted by (onset_q, staff, midi). time is the first <time> as [beats, beat-type]; key is the first <key>, with mode null when it has no <mode>. tempo.sound_qpm is the first <sound tempo> value (already quarter notes per minute); tempo.printed_qpm is the first <metronome> converted to quarter notes per minute (per-minute times the beat-unit length in quarters, dots included); tempo.marks_qpm lists every <metronome> and every <sound tempo> in document order, both converted to quarter notes per minute (within one <direction> the metronome in <direction-type> comes before its <sound>); null or [] when there are none.",
+  "fixtures": [
+    {
+      "id": "C01-ties",
+      "file": "C01-ties.musicxml",
+      "about": "Sound ties inside a bar, across a barline, and on both notes of a chord merge into single key presses.",
+      "spec": "<tie type=\"start\"/> / <tie type=\"stop\"/> on <note> is the sounding tie (the matching <notations><tied/> is its notation); a note with tie start is held through the next same-pitch note that has tie stop, so the pair is one press lasting the sum of both <duration>s, including across a barline. A <chord/> note shares the onset of the previous note and carries its own tie, so each chord tone joins its own successor.",
+      "expect": {
+        "time": [
+          4,
+          4
+        ],
+        "key": {
+          "fifths": 0,
+          "mode": "major"
+        },
+        "measures": [
+          {
+            "len_q": "4",
+            "implicit": false
+          },
+          {
+            "len_q": "4",
+            "implicit": false
+          },
+          {
+            "len_q": "4",
+            "implicit": false
+          }
+        ],
+        "sounding": [
+          {
+            "midi": 64,
+            "step": "E",
+            "alter": 0,
+            "onset_q": "0",
+            "dur_q": "2",
+            "staff": 1
+          },
+          {
+            "midi": 67,
+            "step": "G",
+            "alter": 0,
+            "onset_q": "2",
+            "dur_q": "3",
+            "staff": 1
+          },
+          {
+            "midi": 62,
+            "step": "D",
+            "alter": 0,
+            "onset_q": "6",
+            "dur_q": "3",
+            "staff": 1
+          },
+          {
+            "midi": 65,
+            "step": "F",
+            "alter": 0,
+            "onset_q": "6",
+            "dur_q": "3",
+            "staff": 1
+          },
+          {
+            "midi": 60,
+            "step": "C",
+            "alter": 0,
+            "onset_q": "9",
+            "dur_q": "3",
+            "staff": 1
+          }
+        ],
+        "grace_notes": 0,
+        "tempo": {
+          "sound_qpm": null,
+          "printed_qpm": null,
+          "marks_qpm": []
+        }
+      }
+    },
+    {
+      "id": "C02-tie-sound-vs-notation",
+      "file": "C02-tie-sound-vs-notation.musicxml",
+      "about": "A tie start with no tie stop, and a tied-only (notation) connection, both stay two separate presses; a correct tie in bar 3 is the control.",
+      "spec": "The <tie> element indicates sound and the <tied> element (in <notations>) indicates notation only. A sounding tie needs <tie type=\"start\"/> on one note and <tie type=\"stop\"/> on the following same-pitch note; an unterminated tie start does not extend the note, and <tied> without <tie> does not change playback.",
+      "expect": {
+        "time": [
+          4,
+          4
+        ],
+        "key": {
+          "fifths": 0,
+          "mode": "major"
+        },
+        "measures": [
+          {
+            "len_q": "4",
+            "implicit": false
+          },
+          {
+            "len_q": "4",
+            "implicit": false
+          },
+          {
+            "len_q": "4",
+            "implicit": false
+          }
+        ],
+        "sounding": [
+          {
+            "midi": 69,
+            "step": "A",
+            "alter": 0,
+            "onset_q": "0",
+            "dur_q": "2",
+            "staff": 1
+          },
+          {
+            "midi": 69,
+            "step": "A",
+            "alter": 0,
+            "onset_q": "2",
+            "dur_q": "2",
+            "staff": 1
+          },
+          {
+            "midi": 72,
+            "step": "C",
+            "alter": 0,
+            "onset_q": "4",
+            "dur_q": "2",
+            "staff": 1
+          },
+          {
+            "midi": 72,
+            "step": "C",
+            "alter": 0,
+            "onset_q": "6",
+            "dur_q": "2",
+            "staff": 1
+          },
+          {
+            "midi": 76,
+            "step": "E",
+            "alter": 0,
+            "onset_q": "8",
+            "dur_q": "4",
+            "staff": 1
+          }
+        ],
+        "grace_notes": 0,
+        "tempo": {
+          "sound_qpm": null,
+          "printed_qpm": null,
+          "marks_qpm": []
+        }
+      }
+    },
+    {
+      "id": "C03-enharmonic-spelling",
+      "file": "C03-enharmonic-spelling.musicxml",
+      "about": "Enharmonic spellings (F#/Gb, E#, Cb, double sharp, double flat, B#3) keep their own step/alter while mapping to the right MIDI numbers.",
+      "spec": "<pitch> = <step> + <alter> (chromatic alteration in semitones: 1 sharp, -1 flat, 2 double sharp, -2 double flat) + <octave>, where octave 4 begins at middle C and the octave number belongs to the written step letter, so B#3 sounds as middle C (60) and Cb5 as B4 (71). Spelling is preserved: F#4 and Gb4 share MIDI 66 but differ in step/alter.",
+      "expect": {
+        "time": [
+          4,
+          4
+        ],
+        "key": {
+          "fifths": 0,
+          "mode": "major"
+        },
+        "measures": [
+          {
+            "len_q": "4",
+            "implicit": false
+          },
+          {
+            "len_q": "4",
+            "implicit": false
+          }
+        ],
+        "sounding": [
+          {
+            "midi": 66,
+            "step": "F",
+            "alter": 1,
+            "onset_q": "0",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 66,
+            "step": "G",
+            "alter": -1,
+            "onset_q": "1",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 65,
+            "step": "E",
+            "alter": 1,
+            "onset_q": "2",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 71,
+            "step": "C",
+            "alter": -1,
+            "onset_q": "3",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 67,
+            "step": "F",
+            "alter": 2,
+            "onset_q": "4",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 69,
+            "step": "B",
+            "alter": -2,
+            "onset_q": "5",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 60,
+            "step": "B",
+            "alter": 1,
+            "onset_q": "6",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 60,
+            "step": "C",
+            "alter": 0,
+            "onset_q": "7",
+            "dur_q": "1",
+            "staff": 1
+          }
+        ],
+        "grace_notes": 0,
+        "tempo": {
+          "sound_qpm": null,
+          "printed_qpm": null,
+          "marks_qpm": []
+        }
+      }
+    },
+    {
+      "id": "C04-alter-vs-accidental",
+      "file": "C04-alter-vs-accidental.musicxml",
+      "about": "Pitch comes only from <pitch>/<alter>: neither the G major key signature nor a displayed <accidental> changes it.",
+      "spec": "<pitch> is the sounding pitch and <alter> must be written for every altered note even when the alteration comes from the key signature; <key> affects display only, so an F with no <alter> under fifths 1 is F natural (65). <accidental> is the printed accidental and is display only, so C5 with <accidental>sharp</accidental> and no <alter> is C natural (72). F with <alter>1</alter> and no <accidental> is F#4 (66).",
+      "expect": {
+        "time": [
+          4,
+          4
+        ],
+        "key": {
+          "fifths": 1,
+          "mode": "major"
+        },
+        "measures": [
+          {
+            "len_q": "4",
+            "implicit": false
+          }
+        ],
+        "sounding": [
+          {
+            "midi": 65,
+            "step": "F",
+            "alter": 0,
+            "onset_q": "0",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 72,
+            "step": "C",
+            "alter": 0,
+            "onset_q": "1",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 66,
+            "step": "F",
+            "alter": 1,
+            "onset_q": "2",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 67,
+            "step": "G",
+            "alter": 0,
+            "onset_q": "3",
+            "dur_q": "1",
+            "staff": 1
+          }
+        ],
+        "grace_notes": 0,
+        "tempo": {
+          "sound_qpm": null,
+          "printed_qpm": null,
+          "marks_qpm": []
+        }
+      }
+    },
+    {
+      "id": "C05-mode-minor",
+      "file": "C05-mode-minor.musicxml",
+      "about": "An explicit <mode>minor</mode> with fifths 0 is reported as A minor, not C major.",
+      "spec": "<key> holds <fifths> (sharps positive, flats negative) and an optional <mode>; <fifths>0</fifths> with <mode>minor</mode> is A minor. The key does not alter pitch data, so the raised G# is written with <alter>1</alter>.",
+      "expect": {
+        "time": [
+          4,
+          4
+        ],
+        "key": {
+          "fifths": 0,
+          "mode": "minor"
+        },
+        "measures": [
+          {
+            "len_q": "4",
+            "implicit": false
+          },
+          {
+            "len_q": "4",
+            "implicit": false
+          }
+        ],
+        "sounding": [
+          {
+            "midi": 69,
+            "step": "A",
+            "alter": 0,
+            "onset_q": "0",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 71,
+            "step": "B",
+            "alter": 0,
+            "onset_q": "1",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 72,
+            "step": "C",
+            "alter": 0,
+            "onset_q": "2",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 74,
+            "step": "D",
+            "alter": 0,
+            "onset_q": "3",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 76,
+            "step": "E",
+            "alter": 0,
+            "onset_q": "4",
+            "dur_q": "2",
+            "staff": 1
+          },
+          {
+            "midi": 68,
+            "step": "G",
+            "alter": 1,
+            "onset_q": "6",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 69,
+            "step": "A",
+            "alter": 0,
+            "onset_q": "7",
+            "dur_q": "1",
+            "staff": 1
+          }
+        ],
+        "grace_notes": 0,
+        "tempo": {
+          "sound_qpm": null,
+          "printed_qpm": null,
+          "marks_qpm": []
+        }
+      }
+    },
+    {
+      "id": "C06-mode-absent",
+      "file": "C06-mode-absent.musicxml",
+      "about": "A <key> with no <mode> leaves the mode unspecified (null), not an invented \"major\".",
+      "spec": "<mode> is optional inside <key>; when it is absent the file does not state a mode, so key.mode is null while fifths is still 0.",
+      "expect": {
+        "time": [
+          3,
+          4
+        ],
+        "key": {
+          "fifths": 0,
+          "mode": null
+        },
+        "measures": [
+          {
+            "len_q": "3",
+            "implicit": false
+          },
+          {
+            "len_q": "3",
+            "implicit": false
+          }
+        ],
+        "sounding": [
+          {
+            "midi": 60,
+            "step": "C",
+            "alter": 0,
+            "onset_q": "0",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 64,
+            "step": "E",
+            "alter": 0,
+            "onset_q": "1",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 67,
+            "step": "G",
+            "alter": 0,
+            "onset_q": "2",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 72,
+            "step": "C",
+            "alter": 0,
+            "onset_q": "3",
+            "dur_q": "3",
+            "staff": 1
+          }
+        ],
+        "grace_notes": 0,
+        "tempo": {
+          "sound_qpm": null,
+          "printed_qpm": null,
+          "marks_qpm": []
+        }
+      }
+    },
+    {
+      "id": "C07-grace",
+      "file": "C07-grace.musicxml",
+      "about": "Grace notes (plain, slashed, and a two-note group) take no time, so principal and later notes keep their normal onsets.",
+      "spec": "A <note> containing <grace/> has no <duration> and does not advance the time position in the measure; slash=\"yes\" (acciaccatura) only changes how it is drawn. Grace notes are therefore not placed on the timeline here and are only counted.",
+      "expect": {
+        "time": [
+          4,
+          4
+        ],
+        "key": {
+          "fifths": 0,
+          "mode": "major"
+        },
+        "measures": [
+          {
+            "len_q": "4",
+            "implicit": false
+          },
+          {
+            "len_q": "4",
+            "implicit": false
+          }
+        ],
+        "sounding": [
+          {
+            "midi": 72,
+            "step": "C",
+            "alter": 0,
+            "onset_q": "0",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 76,
+            "step": "E",
+            "alter": 0,
+            "onset_q": "1",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 67,
+            "step": "G",
+            "alter": 0,
+            "onset_q": "2",
+            "dur_q": "2",
+            "staff": 1
+          },
+          {
+            "midi": 74,
+            "step": "D",
+            "alter": 0,
+            "onset_q": "4",
+            "dur_q": "2",
+            "staff": 1
+          },
+          {
+            "midi": 72,
+            "step": "C",
+            "alter": 0,
+            "onset_q": "6",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 71,
+            "step": "B",
+            "alter": 0,
+            "onset_q": "7",
+            "dur_q": "1",
+            "staff": 1
+          }
+        ],
+        "grace_notes": 4,
+        "tempo": {
+          "sound_qpm": null,
+          "printed_qpm": null,
+          "marks_qpm": []
+        }
+      }
+    },
+    {
+      "id": "C08-pickup",
+      "file": "C08-pickup.musicxml",
+      "about": "An implicit pickup measure is as long as its content (one quarter), so the following full 3/4 bars start at quarter 1 and quarter 4.",
+      "spec": "<measure implicit=\"yes\"> marks a measure whose number is not shown or counted, such as a pickup; time positions come from note <duration>s, not from <time>, so the pickup measure lasts one quarter and the next measure starts right after it.",
+      "expect": {
+        "time": [
+          3,
+          4
+        ],
+        "key": {
+          "fifths": 0,
+          "mode": "major"
+        },
+        "measures": [
+          {
+            "len_q": "1",
+            "implicit": true
+          },
+          {
+            "len_q": "3",
+            "implicit": false
+          },
+          {
+            "len_q": "3",
+            "implicit": false
+          }
+        ],
+        "sounding": [
+          {
+            "midi": 67,
+            "step": "G",
+            "alter": 0,
+            "onset_q": "0",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 72,
+            "step": "C",
+            "alter": 0,
+            "onset_q": "1",
+            "dur_q": "2",
+            "staff": 1
+          },
+          {
+            "midi": 71,
+            "step": "B",
+            "alter": 0,
+            "onset_q": "3",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 72,
+            "step": "C",
+            "alter": 0,
+            "onset_q": "4",
+            "dur_q": "3",
+            "staff": 1
+          }
+        ],
+        "grace_notes": 0,
+        "tempo": {
+          "sound_qpm": null,
+          "printed_qpm": null,
+          "marks_qpm": []
+        }
+      }
+    },
+    {
+      "id": "C09-tempo",
+      "file": "C09-tempo.musicxml",
+      "about": "In 6/8, a printed dotted-quarter = 60 is 90 quarters per minute, matching <sound tempo=\"90\"/>; a later quarter = 120 mark is 120 either way.",
+      "spec": "<sound tempo> is always in quarter notes per minute, whatever the time signature. <metronome> is the printed mark: <beat-unit>quarter</beat-unit> plus <beat-unit-dot/> is a dotted quarter (3/2 quarter), so <per-minute>60</per-minute> is 60 x 3/2 = 90 quarter notes per minute. A 6/8 measure is 6 eighths = 3 quarters long.",
+      "expect": {
+        "time": [
+          6,
+          8
+        ],
+        "key": {
+          "fifths": 0,
+          "mode": "major"
+        },
+        "measures": [
+          {
+            "len_q": "3",
+            "implicit": false
+          },
+          {
+            "len_q": "3",
+            "implicit": false
+          }
+        ],
+        "sounding": [
+          {
+            "midi": 72,
+            "step": "C",
+            "alter": 0,
+            "onset_q": "0",
+            "dur_q": "3/2",
+            "staff": 1
+          },
+          {
+            "midi": 76,
+            "step": "E",
+            "alter": 0,
+            "onset_q": "3/2",
+            "dur_q": "3/2",
+            "staff": 1
+          },
+          {
+            "midi": 67,
+            "step": "G",
+            "alter": 0,
+            "onset_q": "3",
+            "dur_q": "1/2",
+            "staff": 1
+          },
+          {
+            "midi": 69,
+            "step": "A",
+            "alter": 0,
+            "onset_q": "7/2",
+            "dur_q": "1/2",
+            "staff": 1
+          },
+          {
+            "midi": 71,
+            "step": "B",
+            "alter": 0,
+            "onset_q": "4",
+            "dur_q": "1/2",
+            "staff": 1
+          },
+          {
+            "midi": 72,
+            "step": "C",
+            "alter": 0,
+            "onset_q": "9/2",
+            "dur_q": "3/2",
+            "staff": 1
+          }
+        ],
+        "grace_notes": 0,
+        "tempo": {
+          "sound_qpm": 90,
+          "printed_qpm": 90,
+          "marks_qpm": [
+            90,
+            90,
+            120,
+            120
+          ]
+        }
+      }
+    },
+    {
+      "id": "C10-octave-shift-8va",
+      "file": "C10-octave-shift-8va.musicxml",
+      "about": "Notes under an 8va span (octave-shift type=\"down\") are already written at their true sounding pitch and must not be transposed.",
+      "spec": "<octave-shift> is a notation direction: \"The octave-shift type indicates if the notes are shifted up or down from their true pitched values because of printing difficulty. Thus a treble clef line noted with 8va will be indicated with an octave-shift down from the pitch data indicated in the notes.\" <pitch> inside the span already holds the true sounding pitch (G6 = 91 ... D7 = 98); octave-shift never changes pitch data.",
+      "expect": {
+        "time": [
+          4,
+          4
+        ],
+        "key": {
+          "fifths": 0,
+          "mode": "major"
+        },
+        "measures": [
+          {
+            "len_q": "4",
+            "implicit": false
+          },
+          {
+            "len_q": "4",
+            "implicit": false
+          }
+        ],
+        "sounding": [
+          {
+            "midi": 72,
+            "step": "C",
+            "alter": 0,
+            "onset_q": "0",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 91,
+            "step": "G",
+            "alter": 0,
+            "onset_q": "1",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 93,
+            "step": "A",
+            "alter": 0,
+            "onset_q": "2",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 95,
+            "step": "B",
+            "alter": 0,
+            "onset_q": "3",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 96,
+            "step": "C",
+            "alter": 0,
+            "onset_q": "4",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 98,
+            "step": "D",
+            "alter": 0,
+            "onset_q": "5",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 76,
+            "step": "E",
+            "alter": 0,
+            "onset_q": "6",
+            "dur_q": "2",
+            "staff": 1
+          }
+        ],
+        "grace_notes": 0,
+        "tempo": {
+          "sound_qpm": null,
+          "printed_qpm": null,
+          "marks_qpm": []
+        }
+      }
+    },
+    {
+      "id": "C11-octave-shift-8vb",
+      "file": "C11-octave-shift-8vb.musicxml",
+      "about": "Notes under an 8vb span on a bass staff (octave-shift type=\"up\") are already written at their true sounding pitch and must not be transposed.",
+      "spec": "<octave-shift> only records that the notes are printed shifted from their true pitched values; for ottava bassa the print is shifted up from the pitch data, hence type=\"up\". <pitch> inside the span already holds the true sounding pitch (F1 = 29 ... C1 = 24); octave-shift never changes pitch data.",
+      "expect": {
+        "time": [
+          4,
+          4
+        ],
+        "key": {
+          "fifths": 0,
+          "mode": "major"
+        },
+        "measures": [
+          {
+            "len_q": "4",
+            "implicit": false
+          },
+          {
+            "len_q": "4",
+            "implicit": false
+          }
+        ],
+        "sounding": [
+          {
+            "midi": 48,
+            "step": "C",
+            "alter": 0,
+            "onset_q": "0",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 29,
+            "step": "F",
+            "alter": 0,
+            "onset_q": "1",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 28,
+            "step": "E",
+            "alter": 0,
+            "onset_q": "2",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 26,
+            "step": "D",
+            "alter": 0,
+            "onset_q": "3",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 24,
+            "step": "C",
+            "alter": 0,
+            "onset_q": "4",
+            "dur_q": "2",
+            "staff": 1
+          },
+          {
+            "midi": 43,
+            "step": "G",
+            "alter": 0,
+            "onset_q": "6",
+            "dur_q": "2",
+            "staff": 1
+          }
+        ],
+        "grace_notes": 0,
+        "tempo": {
+          "sound_qpm": null,
+          "printed_qpm": null,
+          "marks_qpm": []
+        }
+      }
+    },
+    {
+      "id": "C12-voices-backup-forward",
+      "file": "C12-voices-backup-forward.musicxml",
+      "about": "Onsets across two staves and three voices built with <chord/>, <backup>, <forward> and a <divisions> change from 2 to 4 in bar 2.",
+      "spec": "Each measure has a time cursor: a <note> advances it by its <duration> (a <chord/> note starts at the previous note's onset and does not advance it again), <backup> moves it back and <forward> moves it ahead without sounding anything. All durations are in the current <divisions> per quarter note, which <attributes><divisions> can change from one measure to the next. <staff> puts the note on a staff; voices are independent lines.",
+      "expect": {
+        "time": [
+          4,
+          4
+        ],
+        "key": {
+          "fifths": 0,
+          "mode": "major"
+        },
+        "measures": [
+          {
+            "len_q": "4",
+            "implicit": false
+          },
+          {
+            "len_q": "4",
+            "implicit": false
+          }
+        ],
+        "sounding": [
+          {
+            "midi": 67,
+            "step": "G",
+            "alter": 0,
+            "onset_q": "0",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 72,
+            "step": "C",
+            "alter": 0,
+            "onset_q": "0",
+            "dur_q": "2",
+            "staff": 1
+          },
+          {
+            "midi": 76,
+            "step": "E",
+            "alter": 0,
+            "onset_q": "0",
+            "dur_q": "2",
+            "staff": 1
+          },
+          {
+            "midi": 48,
+            "step": "C",
+            "alter": 0,
+            "onset_q": "0",
+            "dur_q": "4",
+            "staff": 2
+          },
+          {
+            "midi": 74,
+            "step": "D",
+            "alter": 0,
+            "onset_q": "2",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 65,
+            "step": "F",
+            "alter": 0,
+            "onset_q": "3",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 72,
+            "step": "C",
+            "alter": 0,
+            "onset_q": "3",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 71,
+            "step": "B",
+            "alter": 0,
+            "onset_q": "4",
+            "dur_q": "1/2",
+            "staff": 1
+          },
+          {
+            "midi": 72,
+            "step": "C",
+            "alter": 0,
+            "onset_q": "9/2",
+            "dur_q": "1/2",
+            "staff": 1
+          },
+          {
+            "midi": 74,
+            "step": "D",
+            "alter": 0,
+            "onset_q": "5",
+            "dur_q": "2",
+            "staff": 1
+          },
+          {
+            "midi": 43,
+            "step": "G",
+            "alter": 0,
+            "onset_q": "5",
+            "dur_q": "2",
+            "staff": 2
+          },
+          {
+            "midi": 47,
+            "step": "B",
+            "alter": 0,
+            "onset_q": "5",
+            "dur_q": "2",
+            "staff": 2
+          },
+          {
+            "midi": 43,
+            "step": "G",
+            "alter": 0,
+            "onset_q": "7",
+            "dur_q": "1",
+            "staff": 2
+          }
+        ],
+        "grace_notes": 0,
+        "tempo": {
+          "sound_qpm": null,
+          "printed_qpm": null,
+          "marks_qpm": []
+        }
+      }
+    },
+    {
+      "id": "C13-tie-not-adjacent",
+      "file": "C13-tie-not-adjacent.musicxml",
+      "author": "G0 fixer, hand-derived from the specification after the independent set was written (covers a reader defect the set did not)",
+      "about": "A tie start whose tie-stop note does not begin where the tied note ends (a note or a rest in between) joins nothing.",
+      "spec": "<tie> links a note to the next note of the same pitch that continues its sound; a <tie type=\"stop\"/> on a later note that does not start where the tied note ends continues nothing, so each note is its own key press.",
+      "expect": {
+        "time": [
+          2,
+          4
+        ],
+        "key": {
+          "fifths": 1,
+          "mode": "major"
+        },
+        "measures": [
+          {
+            "len_q": "2",
+            "implicit": false
+          },
+          {
+            "len_q": "2",
+            "implicit": false
+          }
+        ],
+        "sounding": [
+          {
+            "midi": 67,
+            "step": "G",
+            "alter": 0,
+            "onset_q": "0",
+            "dur_q": "1/2",
+            "staff": 1
+          },
+          {
+            "midi": 66,
+            "step": "F",
+            "alter": 1,
+            "onset_q": "1/2",
+            "dur_q": "1/2",
+            "staff": 1
+          },
+          {
+            "midi": 67,
+            "step": "G",
+            "alter": 0,
+            "onset_q": "1",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 76,
+            "step": "E",
+            "alter": 0,
+            "onset_q": "2",
+            "dur_q": "1",
+            "staff": 1
+          },
+          {
+            "midi": 76,
+            "step": "E",
+            "alter": 0,
+            "onset_q": "7/2",
+            "dur_q": "1/2",
+            "staff": 1
+          }
+        ],
+        "grace_notes": 0,
+        "tempo": {
+          "sound_qpm": null,
+          "printed_qpm": null,
+          "marks_qpm": []
+        }
+      }
+    }
+  ]
+}
