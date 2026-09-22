@@ -2,7 +2,7 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 상태 | **구현 완료 (2026-09-22)** · 브랜치 `g0-quality-foundation` (main 미병합, push 안 함) · 결과와 미완 항목은 [§16](#16-구현-결과-2026-09-22) · 독립 리뷰 판정 **READY_FOR_FIXER** ([§17](#17-independent-review-2026-09-22)) |
+| 상태 | **구현 → 독립 리뷰 → fixer → 최종 리뷰 → 최종 fixer (2026-09-22)** · 브랜치 `g0-quality-foundation` (main 미병합, push 안 함) · 구현 결과 [§16](#16-구현-결과-2026-09-22) · 독립 리뷰 판정 READY_FOR_FIXER ([§17](#17-independent-review-2026-09-22)) · fixer 판정 NEEDS_ANOTHER_REVIEW ([§18](#18-fixer-기록-2026-09-22)) · 최종 독립 리뷰 판정 NEEDS_FIX ([§19](#19-final-independent-review-2026-09-22)) · 최종 fixer 판정 **READY_FOR_SHORT_REVIEW** ([§20](#20-final-fixer-기록-2026-09-22); merge 전 로컬 main `d82bb71`은 사용자 결정) |
 | 작성일 | 2026-09-21 |
 | 기준 커밋 | `718bdf3` (main). `audio-score.js` sha256 `559a1f40fb73416bc72d671d894251f7c3263110fa10780559047f6f22009288` |
 | 읽는 사람 | 이 문서만 읽고 G0을 구현할 다음 Claude 세션, 그리고 리뷰하는 사용자 |
@@ -32,6 +32,9 @@
 - [15. 부록](#15-부록)
 - [16. 구현 결과 (2026-09-22)](#16-구현-결과-2026-09-22)
 - [17. Independent Review (2026-09-22)](#17-independent-review-2026-09-22)
+- [18. Fixer 기록 (2026-09-22)](#18-fixer-기록-2026-09-22)
+- [19. Final Independent Review (2026-09-22)](#19-final-independent-review-2026-09-22)
+- [20. Final Fixer 기록 (2026-09-22)](#20-final-fixer-기록-2026-09-22)
 
 ---
 
@@ -1814,7 +1817,7 @@ G0 구현에 참여하지 않은 리뷰 세션이 작성했다. §16과 README�
 
 ### 17.3 BLOCKER
 
-#### B1. null을 "해당 없음"으로 처리해서, 출력에서 정보를 지우는 회귀가 "개선"으로 판정된다
+#### B1. null을 "해당 없음"으로 처리해서, 출력에서 정보를 지우는 회귀가 "개선"으로 판정된다 — **RESOLVED** ([§18.2](#182-blocker와-major-처리) B1)
 
 - **문제**: 예측 악보에 템포 표기가 없으면 `struct.tempo.ok_effective`와 `ok_written`이 null이 된다.
   - `compare.compare`는 aggregate가 null로 바뀌면 경고(`now null`)만 낸다.
@@ -1844,7 +1847,7 @@ G0 구현에 참여하지 않은 리뷰 세션이 작성했다. §16과 README�
 
 ### 17.4 MAJOR
 
-#### M1. 박자표와 시간 격자를 악보(XML)가 아니라 SUT의 자기 보고(`stats`)에서 읽는다
+#### M1. 박자표와 시간 격자를 악보(XML)가 아니라 SUT의 자기 보고(`stats`)에서 읽는다 — **RESOLVED** ([§18.2](#182-blocker와-major-처리) M1)
 
 - **문제**:
   - `structure.predicted_time`(`metrics/structure.py:70-74`)와 `evaluate.predicted_summary`(`evaluate.py:27-32`)는 `stats.beatsPerBar/beatType`를 우선 쓴다.
@@ -1863,7 +1866,7 @@ G0 구현에 참여하지 않은 리뷰 세션이 작성했다. §16과 README�
   - stats는 계약 검사로만 쓴다. 신규 `struct.stats_consistent`에서 stats와 XML의 박자·마디 수가 다르면 case error로 처리한다.
   - `test_degradation`을 XML만 바꾸는 형태로 고친다.
 
-#### M2. SQI 81.7은 사용자 체감 품질을 크게 과대평가한다
+#### M2. SQI 81.7은 사용자 체감 품질을 크게 과대평가한다 — **RESOLVED** ([§18.2](#182-blocker와-major-처리) M2)
 
 - **문제**:
   - 가중치 40%가 거의 포화된 두 지표에 걸려 있다. identity F1(평균 0.980)과 IOI accuracy(0.897)다. IOI는 ×2·×½·×3/2 같은 metrical 배율을 정답으로 인정한다.
@@ -1897,7 +1900,7 @@ G0 구현에 참여하지 않은 리뷰 세션이 작성했다. §16과 README�
      - 재생 템포와 박자표의 비중을 높이거나 곱셈형으로 결합한다.
   3. CURRENT_STATE와 README의 헤드라인을 교체한다.
 
-#### M3. gate가 음악 범주 하나에 국한된 체계적 오류를 통과시킨다
+#### M3. gate가 음악 범주 하나에 국한된 체계적 오류를 통과시킨다 — **RESOLVED** ([§18.2](#182-blocker와-major-처리) M3)
 
 - **문제**:
   - gate가 보는 것은 aggregate 평균, `set/profile/beats` 태그의 SQI, 케이스 SQI −10점뿐이다.
@@ -1920,7 +1923,7 @@ G0 구현에 참여하지 않은 리뷰 세션이 작성했다. §16과 README�
   3. 케이스 단위 metric 가드: key, time_sig, tempo, spelling이 1→0으로 뒤집힌 케이스 수에 허용치를 둔다.
   4. smoke에 amt·rubato 행을 추가한다 (m3).
 
-#### M4. 사용자에게 보이는 출력 차원 다수가 어떤 층에서도 측정되지 않는다
+#### M4. 사용자에게 보이는 출력 차원 다수가 어떤 층에서도 측정되지 않는다 — **RESOLVED** ([§18.2](#182-blocker와-major-처리) M4)
 
 - **문제**: 페달, 표시 임시표(`<accidental>`), 마디 수, 쉼표, voice, clef는 metric이 없거나 gate 밖이다. golden 입력 14개는 모두 `pedals: []`이고, 합성 입력도 항상 `pedals: []`다(`perform.py:213-214`).
 - **증거**:
@@ -1942,7 +1945,7 @@ G0 구현에 참여하지 않은 리뷰 세션이 작성했다. §16과 README�
   3. 합성 pedal 프로파일을 추가하고 golden에 pedal 입력 케이스를 넣는다.
   4. replay의 가짜 페달 비율을 측정한다.
 
-#### M5. pickup 관례가 현재 toMusicXml 출력에 묶여, 올바른 조판을 벌점 처리한다
+#### M5. pickup 관례가 현재 toMusicXml 출력에 묶여, 올바른 조판을 벌점 처리한다 — **RESOLVED** ([§18.2](#182-blocker와-major-처리) M5)
 
 - **문제**:
   - `notation.onset_pos`는 정답 첫 마디가 implicit이면 pickup 음을 오른쪽 정렬(`sig − len`)해서 비교한다(`metrics/notation.py:80`). 예측이 pickup을 "앞 쉼표가 있는 꽉 찬 마디"로 쓴다고 가정하는 것이다.
@@ -1960,7 +1963,7 @@ G0 구현에 참여하지 않은 리뷰 세션이 작성했다. §16과 README�
   - downbeat에서 예측 implicit 마디의 시작을 뺀다.
   - "정답을 예측으로 넣으면 만점"인 오라클 검사를 unit test로 고정한다.
 
-#### M6. conformance 224/224는 채점에 쓰는 reader 계층의 parity를 보장하지 않는다
+#### M6. conformance 224/224는 채점에 쓰는 reader 계층의 parity를 보장하지 않는다 — **RESOLVED** ([§18.2](#182-blocker와-major-처리) M6)
 
 - **문제**:
   - `tiers.compare_projection`(`tiers.py:77-98`)이 비교하는 것은 마디(수·시작·길이·박자·fifths), **적힌** 음(마디·위치·길이·소리 음높이·손), 반올림 템포, staff 수다.
@@ -1984,7 +1987,7 @@ G0 구현에 참여하지 않은 리뷰 세션이 작성했다. §16과 README�
   - R14 fallback을 앱 규칙에 맞추거나 차이를 문서화한다.
   - 문서에서 parity와 musical correctness를 구분해서 적는다.
 
-#### M7. golden diff 보고기가 마디 수가 바뀌는 변경에서 크래시하고, "이전" metric을 새 stats로 계산한다
+#### M7. golden diff 보고기가 마디 수가 바뀌는 변경에서 크래시하고, "이전" metric을 새 stats로 계산한다 — **RESOLVED** ([§18.2](#182-blocker와-major-처리) M7)
 
 - **문제**: `golden.py:171`은 `_metrics(case, expected, row["stats"])`로 **이전** XML을 **현재 실행의** stats와 함께 평가한다. expected에는 barStarts와 beats가 저장되지 않는다(`STATS_KEYS`). 그래서 마디 수가 바뀌면 before 쪽이 `STATS_SHAPE` 오류 dict가 되고, `before[k] != after[k]`에서 `KeyError`가 난다.
 - **증거**:
@@ -1999,7 +2002,7 @@ G0 구현에 참여하지 않은 리뷰 세션이 작성했다. §16과 README�
   - `_metrics` 오류를 정상 출력으로 처리한다.
   - 크래시를 재현하는 unit test를 둔다.
 
-#### M8. 알려진 카탈로그 결함이 벤치마크 출력 어디에도 측정되지 않고, 규모도 과소 기록되었다
+#### M8. 알려진 카탈로그 결함이 벤치마크 출력 어디에도 측정되지 않고, 규모도 과소 기록되었다 — **RESOLVED** ([§18.2](#182-blocker와-major-처리) M8)
 
 - **문제**: 찬송가 조표 무시(I10)는 문서에만 있다. L12는 `skip_metrics`만 있으면 **통과**하는 규칙이라, 결함을 승인하고 침묵시킨다. 구현자가 발견하지 못한 결함도 있다.
 - **증거**:
@@ -2022,7 +2025,7 @@ G0 구현에 참여하지 않은 리뷰 세션이 작성했다. §16과 README�
   2. I10 수치를 89/100으로 정정하고, 붙임줄·임시표 결함을 §14와 CURRENT_STATE에 추가한다.
   3. (O4) 벤치마크 쪽에서 조표와 tie stop을 적용한 파생 참조를 만든다.
 
-#### M9. octave-shift 29곡 제외가 가능성 높은 프로덕션 버그를 가리고, 가장 어려운 곡을 빼서 headline을 올린다
+#### M9. octave-shift 29곡 제외가 가능성 높은 프로덕션 버그를 가리고, 가장 어려운 곡을 빼서 headline을 올린다 — **RESOLVED** ([§18.2](#182-blocker와-major-처리) M9)
 
 - **문제**: D10에 따라 "해석 미확정"으로 제외했다. 그러나 저장소 데이터만으로 해석을 상당히 판정할 수 있고, 제외 대상이 특정 난이도 층에 몰려 있다.
 - **증거**:
@@ -2048,7 +2051,7 @@ G0 구현에 참여하지 않은 리뷰 세션이 작성했다. §16과 README�
   2. 앱 해석과 표준 해석의 차이를 M8의 결함 목록에 넣는다.
   3. I3을 "데이터상 강하게 시사됨, 앱에서 한 번 들어 보거나 보고 확정"으로 갱신한다.
 
-#### M10. "라이선스-클린" 주장이 저장소 증거와 맞지 않는다
+#### M10. "라이선스-클린" 주장이 저장소 증거와 맞지 않는다 — **RESOLVED** ([§18.2](#182-blocker와-major-처리) M10)
 
 - **문제**:
   - registry의 license 문구는 파일 증거가 아니라 책 단위 규칙으로 생성된다(`corpus.py:242-247`).
@@ -2071,7 +2074,7 @@ G0 구현에 참여하지 않은 리뷰 세션이 작성했다. §16과 README�
   - 9개의 표기를 정정한다.
   - Mutopia 219와 230의 라이선스를 확인한다.
 
-#### M11. 과적합 방어가 설계 주장만큼 작동하지 않는다: holdout과 replay가 같은 합성 연주기에서 나온다
+#### M11. 과적합 방어가 설계 주장만큼 작동하지 않는다: holdout과 replay가 같은 합성 연주기에서 나온다 — **BLOCKED** ([§18.2](#182-blocker와-major-처리) M11)
 
 - **문제**: R3 대응으로 holdout, replay, private suite를 제시했지만 실제 사람 연주 데이터가 하나도 없다.
   - holdout은 같은 생성기를 쓴다(seed만 11, 12).
@@ -2163,3 +2166,1110 @@ G0 구현에 참여하지 않은 리뷰 세션이 작성했다. §16과 README�
 **`READY_FOR_FIXER`**
 
 재현성, 결정론, 범위 준수, 도구 완성도는 merge 수준이다. 그러나 이 benchmark가 G1–G6의 "좋아졌나/나빠졌나"를 판정하는 기준이 되려면 B1과 MAJOR를 먼저 고쳐야 한다. B1은 사용자 가시 회귀를 개선으로 인증한다. M1과 M4는 결과가 byte-identical한 맹점이다. M2는 과대평가된 헤드라인이다. M8과 M9는 결함과 어려운 곡이 보이지 않게 되는 문제다.
+
+### 17.10 Fixer 처리 상태 (2026-09-22)
+
+fixer가 리뷰 커밋 `b1d817b`에서 리뷰어의 스크립트를 다시 돌려 지적을 먼저 재현했다(**1 OK, 13 GAP**, §17.1과 같은 수치). 그 뒤 처리했다. 근거와 수치는 §18에 있다.
+
+| # | 상태 | 근거 |
+| --- | --- | --- |
+| B1 | RESOLVED | ADV-NO-TEMPO: core·smoke REGRESSION (core 진단점수 −5.71; mutation suite에서 `critical.playback_tempo` 0.503→0) |
+| M1 | RESOLVED | ADV-XML-METRE: REGRESSION (`struct.time_sig.exact`, `critical.meter`, `struct.stats_consistent`). MusicXML은 그대로 두고 마디 시각만 늦춘 FIX-STATS-LATE-BARS도 REGRESSION |
+| M2 | RESOLVED | 헤드라인을 usable-score rate(critical gate 9개)로 바꿨다: core 25.9 %. `sqi/2`는 진단 지표다. adversarial `sqi` OK |
+| M3 | RESOLVED | micro·subgroup·critical flip 가드 추가. ADV-MINOR-LEADING-TONE: core·smoke REGRESSION |
+| M4 | RESOLVED | 마디 수, 빈 마디, 필요한 임시표, 페달 metric과 gate 추가. ADV-NO-PEDAL, ADV-NO-ACCIDENTAL, ADV-EXTRA-BAR, FIX-NO-NATURALS 모두 REGRESSION. replay 페달은 연주 기준으로 채점(`metrics/3`) |
+| M5 | RESOLVED | 이상적 예측이 core 141곡(pickup 44곡) 모든 metric에서 만점 |
+| M6 | RESOLVED | 독립 correctness fixture 13/13, parser parity 258/258, 망가진 reader 3종 검출 |
+| M7 | RESOLVED | golden이 크래시하지 않는다. semantic·byte·timing 스냅숏 분리 |
+| M8 | RESOLVED | known-failure 감사가 매 실행 `results.json`과 `summary.md`에 정확한 수치를 기록한다. 찬송가 89/100. 마디 내 임시표는 21→18로 정정(§18.2) |
+| M9 | RESOLVED | 정답은 MusicXML 표준으로 읽는다. 19곡 복귀. 앱 해석은 KNOWN_FAILURE(30파일·2,229음). fixture C10/C11 |
+| M10 | RESOLVED | `corpus/provenance.json`에 저장소 증거만 기록. 15곡 격리(P1) |
+| M11 | **BLOCKED** | 라이선스가 확인된 실제 사람 연주가 저장소에 없다. 완화책: robust suite(CI gate), `input:recorded` 경로 준비 |
+| m1 | RESOLVED | 파일 content sha로 lock한다. suite sha는 순서와 무관하다. replay 입력도 lock한다. adversarial `lock` OK |
+| m2 | RESOLVED | `check`가 `STALE_RESULTS`를 낸다 |
+| m3 | RESOLVED | smoke 44케이스(amt·rubato·pedal 행). ADV·FIX 12종 모두 smoke REGRESSION |
+| m4 | RESOLVED | ×2 regroup만 부분점수를 받는다(3/4↔4/4 = 0) |
+| m5 | RESOLVED / 꾸밈음 연주 프로파일은 REJECTED | L13과 known failure 4파일. 꾸밈음은 KNOWN_LIMITATION(17파일·244음). private suite의 반복 전개를 문서화. 프로파일을 거절한 사유는 §18.3 |
+| m6 | RESOLVED / "git 없으면 SKIPPED"는 REJECTED | git이 없으면 `ERROR NEEDS_GIT`(exit 2)를 낸다. 사유는 §18.3 |
+| m7 | RESOLVED | Linux 결정론 절차를 README에 넣었다. 5개 suite sha가 OS 간 동일 |
+| m8 | RESOLVED | 서로 다른 파일 4쌍(pickup, tie, 찬송가, 꾸밈음)에서 legacy와 `golden_benchmark.py`가 같은 값을 낸다(F1 0.983/0.25/0.168/0.824) |
+| m9 | RESOLVED | `list`가 `baseline_path_for`를 쓴다 |
+| m10 | RESOLVED / 케이스 행 분리는 REJECTED | full이 hold-out 집계를 가드한다. 사유는 §18.3 |
+| m11 | **BLOCKED** | `PredTime`의 균등 박 가정을 고치려면 SUT가 박의 q 위치를 내보내야 한다. 이는 프로덕션 변경이다(§18.3) |
+| m12 | RESOLVED | harmful mutation 17종(허용치 근처 SQI −0.01 포함, pedal 경로). 모두 검출 |
+| m13 | RESOLVED | golden 17개(교재 2/4, amt, rubato, pedal). semantic과 byte 분리 |
+| O1 | REJECTED | 저장소 전체 세션 지침(`CLAUDE.md`)은 사용자가 정한다. CURRENT_STATE가 그 역할을 한다 |
+| O2 | REJECTED (G0) | 두 번째 stage가 생기는 G2에서 설계한다 |
+| O3 | RESOLVED (pedal) / 나머지 REJECTED (G0) | canonical에 pedal을 추가했다. beam·clef·voice 등은 G4–G6에서 metric과 함께 넣는다 |
+| O4 | REJECTED (G0) | 파생 참조는 core 약 30 %의 정답을 바꾼다. 카탈로그 수정과 함께 하고, 그 전까지 결함은 known failure로 센다 |
+| O5 | RESOLVED | summary 태그 표에 `mode:`, `feature:`, `size:`, `input:` 추가 |
+
+## 18. Fixer 기록 (2026-09-22)
+
+§17의 BLOCKER와 MAJOR를 처리한 fixer 세션의 기록이다.
+- **대상**: `D:/PPP-g0`, 브랜치 `g0-quality-foundation` @ `b1d817b` + 미커밋 변경.
+- **바꾸지 않은 것**:
+  - 프로덕션 파일(`audio-score.js`, `Piano Coach App.dc.html`, `server.js`, `omr-service.js`, `catalog/`)은 바꾸지 않았다. `git diff 663d463`에서 `tests/` 밖의 JS·HTML·Python 변경은 0이다.
+  - `D:/PPP`는 수정하지 않았다. `node_modules`와 transcribe venv를 읽기만 했다.
+  - 커밋, merge, push를 하지 않았다. G1은 시작하지 않았다.
+
+### 18.0 판정
+
+**`NEEDS_ANOTHER_REVIEW`**
+
+1. **M11이 BLOCKED다.** 실제 사람 연주가 없다. "합성 연주기에 과적합" 위험은 robust suite로 줄였지만 측정하지는 못했다.
+2. **변경이 크다.**
+   - 버전: reader/2, metrics/3, sqi/2, perform/2, gate/2
+   - 새 모듈: critical, pedal, semantic, correctness, known_defects, provenance
+   - 새 suite: robust
+   - adversarial의 판정 기준 일부(`sqi`, `data`, `oracle` 구성)는 fixer가 썼다. 따라서 fixer가 아닌 리뷰어가 그 기준이 리뷰 의도보다 약하지 않은지 확인해야 한다.
+3. **fixer 자신의 결함을 6건 찾아 고쳤다**(§18.4). 최종 점검에서 찾은 것이다. 같은 종류가 더 남았는지 독립 리뷰가 봐야 한다.
+
+재현성, 결정론(Windows·Linux 5개 suite byte 동일), 완료 검증 14항목(§18.7)은 모두 통과했다.
+
+### 18.1 방법과 환경
+
+| 항목 | 내용 |
+| --- | --- |
+| 재현 | 리뷰 커밋 `b1d817b`를 별도 clone에 풀고 리뷰어의 `adversarial.py`를 그대로 돌렸다. **1 OK, 13 GAP**으로 리뷰와 같은 수치가 나왔다: ADV-NO-TEMPO SQI +1.46 PASS, ADV-XML-METRE·ADV-NO-PEDAL `results.json` byte 동일, ADV-EXTRA-BAR에서 golden `KeyError`, 찬송가 89/100·붙임줄 101·임시표 21, 라이선스 근거 없음 6. 각 수정은 이 재현을 출발점으로 했다 |
+| Windows | Windows 11(cp949), Python 3.13.5, Node 24.17.0 |
+| Linux | Docker `node:24-bookworm`(Python 3.11.2, Node 24.21.0), `--network none`. worktree 스냅숏 커밋을 LF로 clone해서 CI gate 단계와 full을 실행했다. 스냅숏은 worktree 846개 파일과 CRLF=LF 기준으로 동일함을 확인했다 |
+| T1 | g0 worktree 서버를 8799에 띄웠다(`PPP_BENCH_NODE_MODULES=D:/PPP/node_modules`). omr-live는 로컬 helper(8788, Audiveris)를 썼다 |
+| `npm test` | 8777은 다른 세션의 서버가 쓰고 있었다. 그래서 worktree 서버(8799)를 쓰고, node `-r` preload가 테스트 소스를 불러올 때 `127.0.0.1:8777`을 `8799`로 바꾸게 했다(파일은 바꾸지 않음). `transcription.test.js`는 `PPP_TRANSCRIBE_PYTHON`을 역슬래시 경로로 줘야 통과한다. 이 검사는 경로 문자열을 그대로 비교한다 |
+
+### 18.2 BLOCKER와 MAJOR 처리
+
+#### B1 — RESOLVED
+
+- **수정**
+  - 정답에 값이 있는데 예측에 없으면 0으로 채점한다. 대상: 템포 5종(`present`, `ok_effective`, `ok_written`, `mark_consistent`, `metrical_ok`), 표기 metric의 `_ref` 변형, 필요한 임시표.
+  - metric을 적용할지는 정답(참조·입력)만으로 정한다. 예측에 따라 null이 되는 metric이 없다. `notation.tuplets.f1`은 정답에 셋잇단이 있을 때만 쓰고, 대신 `notation.tuplets.false_per_100`을 추가했다.
+  - gate: 값이 있던 gated metric이 null이 되거나 `n`이 줄면 FAIL이다(aggregate, case, subgroup 모두).
+  - 진단점수는 예측 쪽 null로 재정규화하지 않는다.
+- **증거**
+  - ADV-NO-TEMPO: core REGRESSION(진단점수 −5.71). FAIL 목록: `struct.tempo.present`·`ok_effective`·`ok_written`(값이 0으로 채점되므로 null도, coverage 실패도 아니다), `struct.stats_consistent`, `critical.playback_tempo`, `critical.structure`, `usable`, micro 가드, critical flip. mutation suite에서 `critical.playback_tempo`와 `struct.tempo.ok_effective`가 0.5029→0. smoke REGRESSION, replay exit 1.
+  - unit: `MissingOutputIsNeverAnImprovement`, `test_missing_output_is_a_regression_not_na`.
+
+#### M1 — RESOLVED
+
+- **수정**
+  - 예측 박자표는 예측 MusicXML의 `primary_time()`에서 읽는다.
+  - stats는 계약 검사에만 쓴다. `struct.stats_consistent`(마디 수·박자·템포가 XML과 같은가)이고, 이는 `critical.structure`의 일부다.
+  - `test_degradation`은 XML만 바꾼다.
+- **리뷰 권고와 다른 점**: 불일치를 case error 대신 critical gate 실패로 처리한다. case error로 빼면 그 케이스의 다른 metric이 모두 사라져 coverage 규칙과 충돌한다. gate 실패는 그 케이스를 unusable로 만든다.
+- **증거**
+  - ADV-XML-METRE: core REGRESSION(진단점수 −4.83; mutation suite에서 `time_sig.exact` 0.5146→0.0175).
+  - FIX-STATS-LATE-BARS(XML 그대로, 마디 시각만 한 박 늦음): core REGRESSION(−40.84). golden에서도 17개 모두 SEMANTIC CHANGE.
+
+#### M2 — RESOLVED
+
+- **수정**
+  - release 헤드라인을 usable-score rate로 바꿨다. 적용되는 critical gate를 모두 통과한 케이스의 비율이다. gate는 9개다:
+    - meter: 박자표 정답
+    - playback_tempo: 앱이 재생하는 템포 ±4 %
+    - beat_placement: 음의 90 % 이상이 맞는 마디·박
+    - pitch_integrity: identity F1 ≥ 0.95
+    - key: 조표
+    - hands: 80 % 이상
+    - structure
+    - accidentals: 필요한 임시표 전부
+    - pedal: 연주에 페달이 있으면 F1 ≥ 0.5
+  - 임계와 사용자 관점의 사유는 `metrics/critical.py`와 README에 있다.
+  - `sqi/2`는 진단 지표다. 가중치는 identity .20, onset_pos_ref .15, ioi .10, duration_ref .10, time_sig .10, 재생 템포 .10, key .10, hand_ref .10, spelling_ref .05이다. `_ref`는 분모가 정답 음이라 짝 없는 음은 오답이다.
+  - `summary.md` 순서: 판정 → usable과 gate 표 → "진단점수는 높지만 unusable" 목록 → metric.
+- **증거** — adversarial `sqi` OK:
+  - 리뷰의 4대 실패 중 하나라도 있는 케이스 가운데 usable은 0이다.
+  - usable 케이스 가운데 리뷰의 엄격 규칙을 어기는 것은 0이다. usable 25.9 %는 리뷰 규칙(현재 데이터에서 32.2 %)보다 엄격하다.
+  - 4대 실패가 3개 이상인 187케이스의 최고 진단점수는 70.9로, 평균 76.77보다 낮다.
+  - 진단점수가 평균 이상인데 unusable인 153케이스를 summary가 보여 준다.
+
+#### M3 — RESOLVED
+
+- **수정**(gate/2)
+  - micro 가드: micro 케이스의 가드 metric이 조금이라도 떨어지면 FAIL이다.
+  - subgroup: `set: book: profile: beats: metre-class: mode: feature: size:` 태그 중 두 실행 모두 15케이스 이상인 그룹. 허용치는 rate max(0.02, 1/n), 0–1 평균 max(0.01, 0.25/n), 진단점수 1.0이다.
+  - critical flip: 한 gate에서 pass→fail 케이스가 core 2개, smoke 1개를 넘으면 FAIL이다.
+  - smoke에 amt·rubato·pedal 행을 추가했다.
+- **증거**: ADV-MINOR-LEADING-TONE은 진단점수가 −0.01뿐인데도 core REGRESSION이다(`micro:notation.spelling.accuracy`, `tag:mode:minor`, `tag:metre-class:compound-single`). smoke도 REGRESSION이다.
+
+#### M4 — RESOLVED
+
+- **수정**
+  - `struct.measures.count_exact`와 `extra_empty_edge`(허용 0, `critical.structure`)를 gate에 넣었다.
+  - `notation.accidentals.required_recall`: 표준 조판 규칙으로 페이지에 필요한 임시표가 인쇄되었는지 본다(독자가 믿는 음 모델). `critical.accidentals`와 연결된다.
+  - pedal:
+    - canonical에 pedal을 추가했다.
+    - `pedal` 연주 프로파일: core 30, full 518케이스.
+    - `notation.pedal.f1`과 `critical.pedal`을 추가했다.
+    - golden G15를 추가했다.
+  - **metrics/3**(최종 점검에서 추가): replay의 페달 정답은 연주다. helper의 페달은 AMT의 추측일 뿐이다. rendered fixture는 renderer가 음만 받으므로 페달이 없고, `f0e1a86`의 연주기도 `pedals: []`를 하드코딩했다. 실제 녹음은 누가 적지 않는 한 모른다(채점 안 함). `notation.pedal.false_per_min`(연주에 없는 페달 변경/분)을 gate한다.
+- **증거**
+  - 다음 mutation이 모두 core·smoke REGRESSION이다:
+    - ADV-NO-PEDAL: `pedal.f1` 0.9777→0
+    - ADV-NO-ACCIDENTAL: `required_recall` 1.0→0.3977
+    - ADV-EXTRA-BAR: `extra_empty_edge` 0→0.9825
+    - FIX-NO-NATURALS
+  - replay: 6개 fixture의 연주에는 페달이 없다. helper가 5개에서 48번의 페달을 보고했고, `toMusicXml`이 페달 표시 78개를 썼다(27.8/분). metrics/2는 AMT 추측을 정답으로 채점해 `critical.pedal` 0.8을 냈다. 그 상태라면 가짜 페달을 지우는 SUT 개선을 REGRESSION으로 판정했을 것이다.
+  - unit: `ReplayPedalIsScoredAgainstThePerformance`.
+- **남은 것**: 쉼표·voice·clef에는 metric이 없다(O3, G4).
+
+#### M5 — RESOLVED
+
+- **수정**
+  - `onset_pos`의 오른쪽 정렬은 정답 첫 마디가 implicit이고 예측은 아닐 때만 한다.
+  - downbeat에서 예측 implicit 마디의 시작을 뺀다.
+- **증거**
+  - unit `PickupsAreNotPunished`: implicit pickup과 쉼표로 채운 전체 마디가 둘 다 만점이다.
+  - adversarial oracle: 이상적 예측이 core 141곡(pickup 44곡)의 모든 metric에서 만점이다.
+- **oracle 검사 구성 변경**
+  - 참조 파일을 그대로 예측으로 넣으면 16곡이 만점이 아니다. 8곡은 템포가 없어 연주 템포를 알릴 수 없다(B1). 8곡은 octave-shift를 PPP가 한 옥타브 틀리게 읽는다(M9). 둘 다 실제 결함이다.
+  - 그래서 검사는 이상적 출력을 만든다(같은 소리 음, octave-shift 없음, 연주 템포 명시). 모든 metric에서 만점을 요구하는 것은 그대로다.
+  - 원본 파일이 바로 그 이유로 만점이 아니어야 한다는 검사 2개를 추가했다(8/8, 8/8).
+
+#### M6 — RESOLVED
+
+- **수정**: parity와 correctness를 분리했다.
+  - `corpus/correctness/` C01–C13: MusicXML 명세에서 손으로 기대값을 쓴 fixture다. C01–C12는 이 reader와 앱 parser를 보지 않은 작성자가 썼다. C13(인접하지 않은 tie)은 그 세트가 다루지 않은 reader 결함을 위해 fixer가 명세에서 유도해 추가했고, `expected.json`에 그렇게 표시했다. 내용: 붙임줄, 철자, alter vs accidental, mode, 꾸밈음, pickup, 템포 단위, 8va/8vb, voice/backup/forward, 인접하지 않은 tie.
+  - `run.py correctness`는 T0이고 CI에서 돈다.
+  - T1 conformance는 앱 플레이어가 누르는 건반(`PianoScore.ties`의 struck/hold), 철자(`writtenP`), mode, tuplet까지 비교한다.
+  - R14 fallback을 없앴다. 인접한 stop만 잇는다. 앱과 명세가 같은 규칙이다(C13).
+  - 이름은 "parser parity"다.
+- **증거**
+  - correctness 13/13. 앱 읽기는 C10·C11에서 명세와 다르고, known failure로 기록한다.
+  - parity 258/258.
+  - 붙임줄 미병합, 샵→플랫, 전부 minor로 망가뜨린 reader가 각각 217, 112, 36/258이다(`--conformance` OK ×3). correctness도 같은 3종을 브라우저 없이 잡는다.
+
+#### M7 — RESOLVED
+
+- **수정**
+  - golden expected에 byte(`.musicxml`), semantic(음악), stats, timing(barStarts·beats)을 따로 저장한다.
+  - "이전" metric은 저장된 timing으로 계산한다.
+  - 케이스마다 예외를 격리한다.
+  - 라벨: `ok` / `SERIALIZATION-ONLY` / `SEMANTIC CHANGE` / `FAIL`. 케이스는 17개다.
+- **최종 점검에서 찾은 공백**: timing을 저장만 하고 비교하지 않았다. 그래서 악보는 같고 마디 시각만 한 박 늦은 출력(FIX-STATS-LATE-BARS)이 17/17 identical이었다. timing 비교를 넣어 0/17 SEMANTIC CHANGE가 되었다. unit `test_bar_times_alone_are_a_semantic_change`.
+- **증거**
+  - ADV-EXTRA-BAR: 0/17 SEMANTIC CHANGE(크래시 없음).
+  - ADV-GLOBAL-TEMPO: 13/17.
+  - unit `test_structural_change_is_a_semantic_change_not_a_crash`.
+
+#### M8 — RESOLVED
+
+- **수정**
+  - `known_defects.py`가 커밋된 catalog·samples 점수 329개를 매 실행 감사한다.
+  - 결과는 `results.json`의 `known_failures`와 `summary.md`의 "Known production failures"에 들어간다.
+  - 수가 늘면 gate FAIL이다.
+  - L12 skip은 유지한다. 결함은 세어서 보여 준다.
+
+  | 결함 | 파일 | 규모 |
+  | --- | --- | --- |
+  | 조표 무시 (`key_signature_playback`) | 92 (찬송가 89/100, czerny849 1, samples 2) | 6,119음 |
+  | stop 없는 tie (`tie_without_stop`) | 16 (찬송가 10) | 121개 (찬송가 101) |
+  | 마디 내 임시표 미지속 (`bar_accidental_not_carried`) | 10 (찬송가) | 18음 |
+  | 앱의 octave-shift 해석 (`octave_shift_playback`) | 30 | 2,229음 |
+  | 마디 무결성 (`bar_integrity`) | 24 | 88마디 |
+  | 자체 템포 표기 불일치 (`tempo_marks_disagree`) | 4 | – |
+  | 꾸밈음 누락 (`grace_notes_dropped`, KNOWN_LIMITATION) | 17 | 244음 |
+  | 인쇄 임시표 오류 (`wrong_printed_accidental`) | 0 | – |
+
+- **리뷰 수치 정정**: 마디 내 임시표 21 → **18**.
+  - 리뷰는 문서 순서로 셌다. 그래서 voice 2 음이 나중에 인쇄된 voice 1 임시표보다 먼저 울리는데도 셌다. i-am-jesus-little-lamb 6·8마디, mighty-fortress 1·3마디의 4음이다.
+  - 반대로 what-child-is-this 13마디의 1음은 놓쳤다.
+  - 페이지를 읽는 순서(시간 순, 보표별)로 세면 18이다.
+  - adversarial 검사를 이 방식의 독립 raw-XML 카운터로 바꿨다. 파일 수와 음 수 모두 정확 일치를 요구한다. 전에는 0이 아니기만 하면 통과했다.
+- catalog는 고치지 않았다(범위 밖).
+
+#### M9 — RESOLVED
+
+- **수정**
+  - 정답은 MusicXML 표준으로 읽는다(`REFERENCE_OTTAVA = "standard"`). 예측과 parity는 앱 방식으로 읽는다.
+  - L5 제외를 폐지해 29곡 중 19곡이 참조로 돌아왔다. 나머지 10곡은 P1 9곡(czerny299), L8 1곡이다.
+  - `feature:ottava` 태그: core 34케이스, full 272케이스. subgroup 가드 대상이다.
+  - 앱 해석은 KNOWN_FAILURE `octave_shift_playback`(30파일·2,229음)이다.
+  - correctness C10(8va)/C11(8vb)에 앱 읽기가 명세와 다르다고 기록했다.
+  - summary의 "What the benchmark leaves out"에 czerny299 격리를 표시한다.
+- **증거**
+  - 독립 검사: 8va 경계 146곳의 선율 간격 중앙값이 표준 읽기 3반음, 앱 읽기 10반음이다.
+  - oracle: octave-shift core 참조 8/8이 앱 읽기에서 음 identity를 잃는다.
+  - `feature:ottava`의 usable은 14.7 %(core 전체 25.9 %)다. 가장 어려운 층이 다시 측정된다.
+- 앱 parser는 고치지 않았다.
+
+#### M10 — RESOLVED
+
+- **수정**
+  - `corpus/provenance.json`을 `tools/make_provenance.py`가 만들고, CI가 `--check`로 확인한다. 커밋된 점수마다 저장소 안의 증거만 기록한다: 파일 `<rights>`, catalog `index.json`·`books.json`, 찬송가 `sources`. 추측으로 채운 곳은 없다.
+  - lint L14: provenance가 없거나 증거가 없으면 error이고, `excluded.json`의 P1로 격리한다.
+  - 라이선스 문구는 provenance에서 생성한다. PPP 전사 9곡의 표기를 정정했다.
+- **격리 15곡**: burgmuller25 001·002·004·007·018, czerny299 001–010. Mutopia 219·230은 저장소 안에 PD 근거가 없어 격리했다(오프라인 확인 불가, 추측하지 않음).
+- **증거**: adversarial `licence` OK. 증거 없는 등록 참조 0, PDMX로 잘못 표기된 PPP 전사 0이다.
+
+#### M11 — BLOCKED
+
+- **막힌 이유**: 라이선스가 확인된 실제 사람 연주 녹음이 저장소에 없다. 만들려면 연주자가 필요하다. 가짜 데이터로 대신하지 않았다.
+- **완화**
+  1. `robust` suite(CI gate): 두 번째 생성기 계열 `human-alt`다. 다운비트 강세, 멜로디·베이스 강조, 롤이 없고, 지터는 삼각분포다. core 참조 × onset/oracle = 282케이스이고 usable은 28.4 %다.
+  2. replay 케이스에 `input:rendered`와 `input:recorded` 태그를 붙인다. 녹음 tier는 `record_replay.py --recording --reference --bar-starts --performer --license`로 바로 채울 수 있다. WAV는 커밋하지 않고 sha만 남긴다.
+  3. README와 summary에 "hold-out은 생성기 과적합을 막지 못한다"고 적었다.
+- **해제 조건**: 사용자나 동의한 연주자가 등록 참조를 1곡 이상 녹음하고, 마디 시작 시각을 귀로 확인해 fixture로 추가한다. 그 뒤 `update-baseline --suite replay-public`을 실행한다. G1에서 onset 경로 휴리스틱을 조정하기 전에 하는 것이 좋다.
+
+### 18.3 거절하거나 막힌 MINOR·OPTIONAL의 사유
+
+- **m5 꾸밈음 연주 프로파일 (REJECTED, G0)**: 정답 reader와 앱이 모두 꾸밈음을 버린다(KNOWN_LIMITATION). 그래서 연주에 꾸밈음을 넣으면, SUT가 그 음을 옳게 받아 적어도 "없는 음"으로 채점된다. 꾸밈음 채점 규칙을 정하는 Goal(G4)에서 함께 넣는다.
+- **m6 "git이 없으면 L1 SKIPPED" (REJECTED)**: L1은 "커밋된 파일만 정답"을 지키는 규칙이다. git이 없을 때 조용히 건너뛰면 그 보장이 사라진다. 대신 `run`, `lint-corpus`, `known-defects`가 `ERROR NEEDS_GIT`(exit 2)로 멈추고 이유를 말한다(unit `test_without_git_is_an_explicit_error`, README).
+- **m10 hold-out 케이스 행 분리 (REJECTED)**:
+  - `check`의 케이스 규칙(오류, critical flip, −10점)은 hold-out 케이스에도 적용되어야 한다. 행을 빼면 hold-out 케이스 단위 회귀가 보이지 않는다.
+  - `summary.md`는 `--reveal-holdout` 없이는 hold-out 케이스 id를 보이지 않는다. `check` 메시지도 "(hold-out case)"로 가린다.
+  - 집계 가드는 추가했다: `full` gate의 `holdout` subgroup, 832케이스, usable 2점.
+- **m11 `PredTime`의 균등 박 가정 (BLOCKED)**:
+  - 고치려면 SUT가 박의 q 위치를 stats로 내보내야 한다. 이는 `audio-score.js` 변경이라 G0 범위 밖이다.
+  - 현재 SUT는 마디 안에서 박을 균등하게 쓴다. oracle 검사가 141곡에서 만점이라 지금 수치에는 영향이 없다.
+  - SUT가 불균등 박(5/8, 7/8, 8분 pickup의 6/8)을 쓰기 시작하는 Goal에서 stats 계약과 함께 고친다.
+- **O1–O4**: §17.10 표의 사유.
+
+### 18.4 최종 점검에서 찾은 fixer 자신의 결함 (모두 수정, unit test 포함)
+
+1. **golden이 마디 시각 변화를 보지 못했다**(M7 항목). timing 비교를 추가했다.
+2. **suite 파일의 gate가 코드와 달랐다.** 실제로 적용되는 gate는 `suites/*.json`에 있다. 그런데 `notation.tuplets.false_per_100`이 코드의 gate에만 있고 suite 파일에는 없었다. `select-core`로 재생성했다. unit `SuiteGatesMatchTheCode`가 7개 suite의 gate를 코드와 대조한다.
+3. **replay-public과 omr-live가 gate/1 형식이었다.** usable과 critical gate 집계를 비교하지 않았고, flip 한도는 기본값 2로 6케이스의 1/3이었다. fixture gate로 바꿨다: gate/2, flip 0, smoke 허용치. omr-live는 `notes.symbolic.f1`과 `omr.measure_alignment_rate`를 유지한다. replay-public의 설명("empty until recorded")도 사실대로 고쳤다.
+4. **replay 페달을 AMT 추측으로 채점했다**(M4 항목). metrics/3.
+5. **adversarial의 찬송가 임시표 검사가 "0이 아님"만 확인했다.** README가 말한 "같은 수치"보다 약했다. 정확 일치로 바꿨다(M8 항목).
+6. **oracle 검사가 GAP이었다**(M5 항목). 원인은 B1·M9의 올바른 수정이 드러낸 실제 결함이었다. 검사를 약화하지 않고 이상적 출력을 만들도록 고쳤고, 원본 파일을 잡는 검사 2개를 추가했다.
+
+### 18.5 수치 (baseline, metrics/3, audio-score.js `559a1f40…`)
+
+| suite | 케이스 | usable | 진단점수(sqi/2) | 비고 |
+| --- | --- | --- | --- | --- |
+| smoke | 44 | 47.7 % | 86.74 | |
+| core | 553 | **25.9 %** | 76.77 | 진단점수 평균 이상인데 unusable 153 |
+| robust | 282 | 28.4 % | 76.48 | human-alt 생성기 |
+| full | 4,144 + hold-out 832 | 25.0 % (hold-out 27.3 %) | 78.51 (hold-out 76.47) | |
+| replay-public | 6 | 16.7 % | 85.55 | 가짜 페달 27.8/분 |
+| omr-live | 4 | 0 % | 53.32 | 오른손 소실(§14-11), PDF 16마디(§14-12) |
+
+core critical gate 통과율:
+
+| gate | 통과율 | 적용 케이스 | 실패 |
+| --- | --- | --- | --- |
+| meter | 57.7 % | 553 | 234 |
+| playback_tempo | 53.9 % | 553 | 255 |
+| beat_placement | 45.2 % | 553 | 303 |
+| pitch_integrity | 92.4 % | 553 | 42 |
+| key | 89.4 % | 405 | 43 |
+| hands | 81.6 % | 553 | 102 |
+| structure | 100 % | 553 | 0 |
+| accidentals | 100 % | 553 | 0 |
+| pedal | 96.7 % | 30 | 1 |
+
+그룹별로 보면 다음과 같다.
+- 겹박자 103케이스와 단순 2박자 114케이스는 usable이 0이다. 4/4는 46.5 %다.
+- 책별: Hanon 0 %, Czerny 849 8.5 %, Burgmüller 10.3 %, Beyer 13.8 %, 찬송가 43.9 %.
+- 틀린 박자 234건 중 146건이 "→ 6/8"이다.
+
+§17의 SQI 81.74(sqi/1, 523케이스)와 지금 수치는 **비교할 수 없다**. 정의(버전), 케이스(553), 참조(격리와 복귀)가 모두 바뀌었다. baseline history에 버전 전환이 기록되어 있다.
+
+제외는 39개다: L8(마디 무결성) 24개, P1(라이선스 증거 없음) 15개. 모두 `summary.md`의 "What the benchmark leaves out"와 known failure에 나온다.
+
+### 18.6 결정론과 성능
+
+- **같은 OS에서 반복**: core 2회 실행의 `results.json`이 byte 동일하다. Windows와 Linux 모두 `b03fe8fb…`다.
+- **OS 간(Windows 11 ↔ Docker Linux offline)**: 5개 suite의 `results.json` sha256이 같다.
+
+  | suite | sha256 |
+  | --- | --- |
+  | smoke | `850fce21…` |
+  | core | `b03fe8fb…` |
+  | robust | `5bd772e9…` |
+  | replay-public | `62a85956…` |
+  | full | `d7ffdf9d…` |
+
+  metrics/2 상태에서도 같은 검사로 5개 모두 동일했다.
+- **실행 시간**(Windows, 다른 작업이 없을 때):
+
+  | 작업 | 시간 |
+  | --- | --- |
+  | smoke | 1 s |
+  | core | 14 s (동시 작업이 있으면 18 s) |
+  | robust | 8 s |
+  | full | 137 s (Linux Docker 153–164 s) |
+  | unit 153 | 11 s |
+  | golden | < 1 s |
+  | mutation-check | 103 s (19회 실행, 다른 작업과 동시) |
+  | adversarial | 약 4–5분 (offline 전체) |
+  | omr-live | 52 s |
+
+### 18.7 완료 검증
+
+| # | 항목 | 결과 |
+| --- | --- | --- |
+| 1 | adversarial | offline **25 OK, 0 GAP**. `--only lock --conformance` **4 OK** |
+| 2 | smoke | PASS (Windows·Linux) |
+| 3 | core | PASS (Windows·Linux, 2회 동일) |
+| 4 | full | PASS (4,976케이스, Windows·Linux 동일) |
+| 5 | golden | 17/17 identical. mutant에서 크래시 없음 |
+| 6 | parser correctness / conformance | 13/13 / 258/258 |
+| 7 | unit | 153 OK (Windows, Linux) |
+| 8 | transcription-core | 16 OK (Windows, Linux의 plain Python) |
+| 9 | arranger | 3 OK (Windows, Linux) |
+| 10 | `npm test` | 26/26 suite 통과 (§18.1의 포트·경로 조건) |
+| 11 | `py_compile` | bench `.py` 59개 OK |
+| 12 | `node --check` | `node/*.js` 3개 OK |
+| 13 | CI 정적 검토 | 아래 참조 |
+| 14 | git diff 검토 | 아래 참조 |
+
+**13. CI 정적 검토**
+- gate 단계(unit, golden, lint, provenance, correctness, smoke·core·robust run+check, replay-public, transcription-core, arranger)가 `npm install` 없이 plain Python에서 돈다. Docker Linux에서 같은 단계가 통과했다.
+- nightly는 mutation-check, full run+check, adversarial이다.
+- T1(conformance, omr-live)은 서버·네트워크·helper가 필요해서 CI에 없다. 수동 실행이다.
+- 브랜치를 push하기 전에는 CI가 켜지지 않는다.
+
+**14. git diff 검토**
+- 변경은 `tests/bench/`, `docs/`, `.github/workflows/bench.yml`, `package.json`(`test:bench`에 correctness 추가)뿐이다. G0 구현 때부터의 `.gitignore`, `README.md`, `tests/README.md`, `tests/golden/README.md`, `tests/beat_track_test.py` 변경도 있다.
+- 프로덕션 JS·HTML·Python과 `catalog/`는 0이다.
+
+### 18.8 다음 리뷰에 요청하는 것
+
+1. fixer가 쓴 adversarial 판정 기준(`sqi`, `data`, `oracle`의 이상적 출력 구성)이 리뷰 의도보다 약하지 않은가.
+2. critical gate 임계(±4 %, 0.90, 0.95, 0.80, 0.5)와 "하나라도 실패하면 unusable" 규칙이 사용자 관점에서 타당한가.
+3. metrics/3의 replay 페달 정답 규칙(rendered = 없음, 녹음 = 모름).
+4. gate/2의 허용치(core 0.005, subgroup max(0.02, 1/n), flip 2/1/0)가 개선을 회귀로 부르지 않으면서 회귀를 놓치지 않는가.
+5. M11 해제 계획, m11(BLOCKED)의 위험.
+
+### 18.9 결론
+
+**`NEEDS_ANOTHER_REVIEW`**
+
+리뷰가 막으라고 한 것은 모두 막았다. 사용자 가시 회귀 12종(리뷰 7 + fixer 5)은 모두 core·smoke REGRESSION이다. 정보를 지우는 회귀는 개선이 될 수 없다. 헤드라인은 현재의 낮은 품질(usable 25.9 %)을 숨기지 않는다. 알려진 결함과 제외는 매 실행 숫자로 나온다.
+
+그러나 다음 두 가지 때문에 merge 전에 한 번 더 독립 리뷰를 권한다:
+- M11이 BLOCKED다.
+- fixer가 자기 기준으로 자기 수정을 검증한 부분이 크다.
+
+## 19. Final Independent Review (2026-09-22)
+
+§17(리뷰)·§18(fixer)에 참여하지 않은 최종 리뷰 세션이 썼다. §17·§18·README의 "RESOLVED"는 출발점으로만 썼다. 아래 판정은 모두 이 세션이 직접 실행하거나 코드·데이터로 확인한 것이다.
+
+- **대상**: `D:/PPP-g0`, 브랜치 `g0-quality-foundation` @ `b1d817b` + fixer의 미커밋 변경.
+- **이 세션이 바꾼 것**: 이 절, 문서 머리의 상태 줄과 목차, `tests/bench/review/final_review.py`·`final_oracle.py`(새 검사 스크립트), `tests/bench/review/README.md`의 한 절.
+- **바꾸지 않은 것**: 프로덕션 코드, benchmark 기준·허용치·baseline·golden, `adversarial.py`의 기대값. 커밋·merge·push는 하지 않았고 G1도 시작하지 않았다.
+- **`D:/PPP`**: 읽기만 했다(`node_modules`, Audiveris 실행 파일, merge 시뮬레이션용 clone). 이 세션의 `npm test`가 워크트리의 gitignore된 `data/*.json`(런타임 저장소)을 갱신했다. fixer 때와 같다.
+
+### 19.0 판정
+
+**`NEEDS_FIX`**
+
+1. **새 MAJOR 3건** (F1–F3, §19.18). 앱이 그리거나 재생하는 MusicXML 요소 가운데 benchmark가 읽지 않는 것이 남아 있다.
+   - 이 세션이 설계한 사용자 가시 회귀 10종 중 **7종이 core·smoke·robust·replay gate를 모두 통과**했다. 1종은 더 잡혔지만 우연이었고, 목표한 결함 자체는 측정되지 않았다.
+   - 그중 3종은 `results.json`이 원본과 byte-identical이었고, golden은 이를 **`SERIALIZATION-ONLY`**("same music, different bytes")로 표시했다.
+   - 다음 Goal(G1, writer 재구성)이 바로 이 필드들을 다시 쓴다.
+2. **M4는 PARTIALLY_RESOLVED**다. B1·M1–M3·M5–M10은 VERIFIED_RESOLVED이고, M11은 BLOCKED_ACCEPTABLE이다.
+3. **merge 선행 조건(BLOCKER-M)**: 로컬 `main`의 `d82bb71`이 지금 merge 대상으로 부적합하다(§19.18). G0 브랜치의 결함은 아니다.
+
+재현성, 결정론(Windows·Linux byte 동일), 범위 준수, provenance, known failure 노출, usable 헤드라인과 진단점수의 분리는 merge 수준이다. 고칠 범위는 작다(§19.19).
+
+### 19.1 방법과 환경
+
+| 항목 | 한 것 |
+| --- | --- |
+| Windows | Windows 11(cp949), Python 3.13.5, Node 24.17.0. T0 전부, T1(parity·omr-live), `npm test` (§19.16) |
+| Linux | 워크트리 상태 그대로(추적 파일 + 무시되지 않은 미추적 파일, 848개)를 scratch 저장소에 커밋했다. Docker `node:24-bookworm`(Python 3.11.2, Node 24.21.0), `--network none`에서 LF clone해 CI gate job 전 단계와 nightly(mutation-check, full, adversarial)를 실행했다 |
+| T1 | 워크트리 서버를 8799·8777에 잠시 띄웠다(끝나고 종료). puppeteer는 `D:/PPP/node_modules`, Audiveris는 `PPP_AUDIVERIS=D:\PPP\tools\audiveris\Audiveris\Audiveris.exe`(읽기만) |
+| 새 검사 | `final_review.py`(새 mutation 10종), `final_oracle.py`(다르게 조판한 정답). scratchpad 스크립트: critical gate 독립 재계산, usable 표본 추출, provenance 교차검사, PredTime 편향 측정, main merge 시뮬레이션, 역순 열거 결정론 |
+| 커밋 구분 | 리뷰어 커밋 `b1d817b`에는 §17, `review/adversarial.py`, `review/README.md`만 있다. **fixer 커밋은 없다**: §18의 변경(수정 59, 신규 68파일)은 모두 미커밋이다. baseline 6개의 `recorded.git_sha`는 `b1d817b`(dirty)다 |
+| `CLAUDE.md` | 두 worktree와 git 이력 어디에도 없다(§17 O1과 같음) |
+
+### 19.2 B1·M1–M11 재검증
+
+| # | 판정 | 근거 (이 세션이 확인) |
+| --- | --- | --- |
+| B1 | **VERIFIED_RESOLVED** | ADV-NO-TEMPO는 core·smoke REGRESSION이다(mutation-check에서 `critical.playback_tempo` 0.5029→0). 코드: 정답에 값이 있으면 예측 누락은 0점(`metrics/structure.py:136-146`), gated metric이 null이 되거나 n이 줄면 FAIL(`compare.py:134-136, 169-175`), 진단점수 재정규화는 정답 쪽 null에만 한다. 새 mutation 10종에서도 null로 이득을 본 경우는 없다 |
+| M1 | **VERIFIED_RESOLVED** | 박자표는 예측 XML의 `primary_time()`으로 읽고, stats는 `struct.stats_consistent`로만 쓴다. ADV-XML-METRE, FIX-STATS-LATE-BARS는 REGRESSION이다. 단 "주된 박자 하나"만 본다 → F1 |
+| M2 | **VERIFIED_RESOLVED** | 헤드라인은 usable이고 진단점수는 별도다. 독립 재계산과 일치한다(§19.6). summary가 "진단점수는 평균 이상인데 unusable" 153건을 보여 준다. 남은 것: m2(음가) |
+| M3 | **VERIFIED_RESOLVED** | ADV-MINOR-LEADING-TONE(진단점수 −0.01)은 REGRESSION이다(micro, tag). 새 FINAL-TOP-REGISTER-OCTAVE-DOWN(A6 이상만, 일부 곡만)도 core·robust REGRESSION이다(flip, tag) |
+| M4 | **PARTIALLY_RESOLVED** | 페달, 필요한 임시표, 마디 수, 가장자리 빈 마디는 이제 gate된다. ADV-NO-PEDAL/-NO-ACCIDENTAL/-EXTRA-BAR, FIX-NO-NATURALS, 새 FINAL-PEDAL-HELD-TO-BARLINE이 모두 REGRESSION이다. 그러나 앱이 쓰는 출력 가운데 음표 모양(`<type>`/`<dot>`), 마디 번호, 두 번째 이후의 템포·박자표·조표, clef, 쉼표 길이는 어떤 gate에도 없다(F1, F2, F3) |
+| M5 | **VERIFIED_RESOLVED** | adversarial oracle 141곡(pickup 44곡) 만점을 재현했다. 독립 oracle에서 pickup을 "앞에 쉼표가 있는 꽉 찬 첫 마디"로 다시 조판해도 위치·박자·마디·downbeat는 만점이다. 남는 오차는 PredTime 탓이다(m1) |
+| M6 | **VERIFIED_RESOLVED** | correctness 13/13, parity 258/258을 이 세션의 서버로 재현했다. parity와 correctness는 문서, CLI 출력, `report.json`(`"kind": "parser parity (not correctness)"`)에서 모두 구분된다. 망가진 reader 3종을 correctness가 브라우저 없이 잡는다. 단 마디 번호 규칙은 비교 대상이 아니다(F2) |
+| M7 | **VERIFIED_RESOLVED** | mutant 12개(깨진 XML, 예외 포함)에서 golden이 크래시하지 않았다. 깨진 XML은 17 FAIL, 예외는 16 FAIL로 보고하고 exit 1이다. 단 semantic과 byte를 가르는 기준이 일부 필드에서 틀렸다(F3, §17 m13) |
+| M8 | **VERIFIED_RESOLVED** | 매 실행 `results.json`·`summary.md`에 known failure 7종이 나온다. adversarial의 독립 카운터와 정확히 일치한다(찬송가 89/100, tie 10곡 101개, 마디 내 임시표 10곡 18음) |
+| M9 | **VERIFIED_RESOLVED** | 정답은 표준 해석으로 읽고, octave-shift 19곡이 돌아왔다. `feature:ottava` 34케이스의 usable은 14.7 %다. 앱의 해석은 KNOWN_FAILURE(30파일·2,229음)이고 C10·C11이 고정한다 |
+| M10 | **VERIFIED_RESOLVED** | §19.8 |
+| M11 | **BLOCKED_ACCEPTABLE** | §19.12 |
+
+§18.3의 m11(PredTime의 균등 박 가정)은 "BLOCKED, 지금 수치에는 영향이 없다"고 했다. **사실이 아니다.** MINOR m1로 다시 분류한다.
+
+### 19.3 Benchmark 속이기: 새 mutation 10종
+
+`python tests/bench/review/final_review.py` (약 5분). 각 mutation은 `audio-score.js`의 사본에만 적용했다. 적용 후 golden 입력 17개의 출력에 실제로 나타나는지도 확인했다: 점 132→15, 템포 표시 17→34, `<time>` 17→34, `<key>` 17→34, 낮은음자리표 17→0, 서로 다른 마디 번호 161→66, 임시표 27→1,734.
+
+| mutation | 범주 | 사용자가 받는 것 | core | smoke | robust | golden | replay |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| FINAL-DOTS-DROPPED | 리듬·표기 | 점음표가 모두 점 없이 그려진다(앱은 `<type>`/`<dot>`로 그린다). 재생은 같다 | PASS, results.json **byte-identical** | PASS | PASS | **9 SERIALIZATION-ONLY**, 8 ok | PASS |
+| FINAL-TEMPO-HALVED-MIDWAY | 템포 | 가운데 마디부터 절반 속도로 표시·재생된다(앱의 `tempoMap`/`msAt`은 모든 템포 표시를 재생한다) | PASS (Δ 0) | PASS | PASS | 17 SEMANTIC CHANGE | PASS |
+| FINAL-METRE-TAIL | 박자·부분 손상 | 마지막 1/3이 틀린 박자표다(3/4→6/8, 4/4→8/8) | PASS (Δ 0) | PASS | PASS | 17 SEMANTIC | PASS |
+| FINAL-KEY-TAIL | 조성·부분 손상 | 마지막 1/3이 5도 옆 조표다. 임시표로 음높이는 맞춘다 | PASS (Δ 0) | PASS | PASS | 17 SEMANTIC | PASS |
+| FINAL-BASS-STAFF-TREBLE-CLEF | 손·보표 | 왼손 보표가 높은음자리표다(왼손이 덧줄 위에 적힌다) | PASS, **byte-identical** | PASS | PASS | **17 SERIALIZATION-ONLY** | PASS |
+| FINAL-BAR-NUMBERS-RESTART | 구조(앱 parity) | 마디 번호가 1 2 3 4 1 2 …로 반복된다. 앱은 번호로 마디를 찾으므로 번호가 같은 마디들을 한 자리에 겹친다. **앱 parser로 확인했다**: G01의 160음은 서로 다른 시작 위치가 48개에서 12개로 줄고, 모두 마지막 네 마디에 쌓인다 | PASS, **byte-identical** | PASS | PASS | **15 SERIALIZATION-ONLY** | PASS |
+| FINAL-ACCIDENTAL-ON-EVERY-NOTE | 표기·가독성 | 모든 음에 임시표가 붙는다 | PASS (Δ 0) | PASS | PASS | 17 SEMANTIC | PASS |
+| FINAL-TRAILING-RESTS-SHORT | 리듬·구조 | 끝 쉼표가 한 박 짧아져 그 보표의 마디가 맞지 않는다 | REGRESSION이지만 **우연**이다. `rest()`가 페달 표시도 내보내서 pedal 케이스 5개의 페달 위치가 바뀌었다(tag `book:beyer`의 `pedal.f1`). 쉼표 결함 자체는 아무 metric도 보지 않는다 | REGRESSION(같은 이유) | PASS | 7 **SERIALIZATION-ONLY** | PASS |
+| FINAL-PEDAL-HELD-TO-BARLINE | 페달(대조군) | 페달을 떼는 위치가 모두 마디 끝이 된다 | REGRESSION (`pedal.f1`, `false_per_min`, micro) | PASS | PASS | 1 SEMANTIC | PASS |
+| FINAL-TOP-REGISTER-OCTAVE-DOWN | 음높이·일부 그룹 | A6 이상의 음이 한 옥타브 낮게 적힌다 | REGRESSION (flip `pitch_integrity`, usable −1.3 pt) | PASS | REGRESSION | ok (입력에 그 음역이 없다) | PASS |
+
+해석:
+
+- 잡힌 것은 기존 metric이 이미 재는 차원이다(음높이, 페달 시각). 놓친 7종은 모두 **앱은 쓰는데 benchmark는 읽지 않는 MusicXML 요소**다: `<type>`/`<dot>`, `<measure number>`, 첫 번째 이후의 `<sound tempo>`·metronome·`<time>`·`<key>`, `<clef>`, `<rest>` 길이, 불필요한 `<accidental>`.
+- golden은 템포·박자표·조표·임시표 변경을 SEMANTIC CHANGE로 보여 준다. 그러나 G1처럼 출력이 의도적으로 바뀌는 Goal에서는 모든 케이스가 바뀌어 한꺼번에 bless된다. README도 품질 판정은 metric gate의 일이라고 적었다.
+- 점·clef·마디 번호·쉼표 변경은 golden이 **"same music, different bytes"**로 표시한다. README 절차("the label tells a musical change from a serialisation one")를 따르면 그대로 bless된다. §17 B1과 같은 종류의 잘못된 보증이다. 다른 점은 회귀를 "개선"이 아니라 "형식만 바뀜"으로 인증한다는 것뿐이다.
+
+### 19.4 Diagnostic score (sqi/2 = 76.77)
+
+- **usable과 분리되어 있다.** summary 순서는 판정 → usable과 gate 표 → "Diagnostic score high but unusable" 목록 → metric이다. 이 목록은 153건이고 상위 10건을 이름으로 보여 준다(예: Beyer 025·027·031, beneath-the-cross는 진단 95–97인데 hands 0.73–0.76). release 판정에 진단점수를 쓰는 코드는 없다. compare는 케이스 −10점 규칙과 aggregate 허용치 0.30에만 쓴다.
+- **치명 실패를 가리지 않는다.** 리뷰의 4대 실패 중 3개 이상인 187케이스의 최고 진단점수는 70.9로 평균보다 낮다(adversarial `sqi` 재현).
+- **null이 유리하게 작용하지 않는다.** 가중 평균에서 빠지는 것은 정답 쪽 null(`skip_metrics`, 1-staff 참조, 셋잇단 없는 참조)뿐이다.
+- **부분 그룹 퇴행을 평균이 숨기지 않는다.** subgroup 가드가 있다(M3). 단 가드는 측정하는 차원에만 작동한다(F1–F3).
+
+### 19.5 Usable score rate (core 25.9 %)
+
+- **계산**: 553/553 케이스에서 `usable == all(적용되는 gate)`다. 각 gate를 원시 metric에 임계로 다시 적용해도 불일치가 0이다.
+- **너무 강한가**: 대표 사례를 직접 읽었다.
+  - hands만 실패한 35케이스(Beyer 025 0.759 등)는 음의 1/4 가까이가 다른 손 보표에 있다. 손 따로 연습이 깨진다.
+  - 박자 실패 234건 중 146건이 →6/8이다. 템포 실패 255건 중 172건이 ×2/3(겹박자 템포 단위 버그, §14 이슈 1)이다.
+  - 임계는 둥근 값이고 사용자 관점의 사유가 적혀 있다. 현재 분포 바로 밑에 맞춘 흔적은 없다. structure와 accidentals는 지금 100 %라 가드 역할만 한다.
+- **중복**: 가장 흔한 조합은 meter+tempo+beat_placement(111건)다. 원인 하나(6/8 오독)가 gate 셋을 떨어뜨린다. usable은 AND라 이중 계산이 아니다. gate별 통과율 표가 원인별이 아니라 증상별이라는 점만 유의하면 된다.
+- **너무 약한 곳: 음가(note value)는 gate가 아니다.** usable 143건 중 43건(30 %)의 `duration.accuracy`가 0.80 미만이다.
+  - 표본 `method/czerny599/049`, human, onset 경로: usable이고 진단점수 86.6이다. 음·마디 위치·박자·조·템포는 맞다. 그러나 음가 정확도는 0.19다.
+  - 오른손 16분음표가 32분음표 + 32분쉼표로, 왼손 8분 화음이 16분음표 + 쉼표로 적혔다. 마디당 쉼표가 8.9개다(정답 5.25).
+  - 연주는 할 수 있지만 "쓸 수 있는 악보"라고 부르기에는 관대하다 → m2. aggregate `notation.duration.accuracy`는 gate되므로 이 차원의 회귀는 여전히 잡힌다.
+
+### 19.6 Critical gate 독립 재계산
+
+pppbench의 reader와 metric을 쓰지 않는 별도 스크립트(ElementTree)로 `out/core/cases/*.musicxml`과 정답 파일을 직접 읽었다.
+
+| gate | 독립 재계산 | 보고값 | 케이스 일치 |
+| --- | --- | --- | --- |
+| meter | 57.69 % (553) | 57.69 % | 553/553 |
+| playback_tempo | 53.89 % (553) | 53.89 % | 553/553 |
+| key | 89.38 % (405) | 89.38 % | 405/405 |
+| beat_placement | 45.21 % (553) | 45.21 % | 임계 재적용 불일치 0 |
+
+- 정답 쪽 `expected`는 파일 내용과 일치했다. 다른 곳은 템포 표시가 없는 8곡(hanon 7곡, sonatina/026)의 `expect.tempo_qpm`뿐이다. 합성 연주도 그 템포로 하므로 옳다.
+- SUT의 `stats`는 critical gate의 값에 쓰이지 않는다. 박자, 템포, 조, 손, 위치는 모두 예측 XML에서 온다. stats는 초 단위 매칭에 필요한 마디 시각과 `stats_consistent`에만 쓰인다. 단 그 시각 계산(PredTime)에 편향이 있다(m1).
+
+### 19.7 Known failures
+
+매 `run`의 `results.json`(`known_failures`, `exclusions`)과 `summary.md`의 두 절에 항상 나온다.
+
+- 찬송가 조표 무시 89/89(C장조가 아닌 찬송가 전부), 6,119음
+- octave-shift 30파일, 2,229음
+- 끝나지 않는 tie 16파일, 121개
+- 마디 내 임시표 미지속 10곡, 18음
+- bar integrity 24파일, 88마디
+- 템포 표기 불일치 4파일
+- 꾸밈음 17파일, 244음(KNOWN_LIMITATION)
+- 제외 39 = L8 24 + P1 15(격리 목록은 이름까지)
+- key·spelling skip 78곡 = core 148/553케이스, 그리고 그 production 영향
+
+제외와 skip은 usable과 진단점수를 올리는 쪽으로 작용한다. 그러나 숨겨지지는 않는다. 수가 늘면 `check`가 FAIL한다. merge 시뮬레이션에서 실제로 FAIL했다(§19.18).
+
+### 19.8 Reference provenance
+
+- 후보 파일 351개: trusted 336, unverified 15. 등록 참조 312개가 모두 trusted이고, 라이선스 문구는 provenance에서 나온다(불일치 0).
+- **격리 15개는 `excluded.json`의 P1 15개와 정확히 같다**: burgmuller25 001·002·004·007·018, czerny299 001–010. 어떤 suite에도 없다(core·smoke·full·robust·mutation, golden 원천, replay fixture 6개의 참조, omr).
+- 신뢰 근거:
+  - PPP 전사 130개: 파일 `<rights>`에 "Transcribed for PPP"
+  - 파일의 PD 문구 53개: Mutopia 3, PianoXML 30, hanon 20
+  - 저장소 메타데이터 127개: 찬송가 100(index.json·sources.js), catalog 3(index.json), czerny849 24(books.json이 파일에 적힌 조판자 Neru Hayashi를 이름으로 가리킨다)
+  - 생성 25개, PPP 자작 1개
+  - "file-statement인데 PD 문구가 없는 파일": 0
+- **추측한 라이선스는 없다.** 책 단위의 "PDMX (CC0)" 주장만 있는 파일은 모두 격리되었다. replay fixture의 렌더러 샘플(Salamander, CC BY 3.0)은 fixture 메타데이터에 적혀 있다.
+
+문제 없음.
+
+### 19.9 Pickup·musical oracle
+
+- adversarial oracle 3종을 재현했다(OK×3).
+- 그러나 fixer의 oracle은 SQI 구성 metric만 확인하고, **usable과 critical gate는 확인하지 않는다.**
+  - `final_oracle.py`로 확인하면 정답 파일 그대로를 예측으로 넣었을 때 37곡이 `critical.accidentals` 실패로 unusable이다.
+  - 37곡은 모두 찬송가다. 36곡은 key_signature_playback, 1곡(my-hope-is-built)은 bar_accidental_not_carried 결함이다. 페이지 자체가 필요한 임시표를 빠뜨렸다.
+  - benchmark는 옳다. 그 파일은 이상적인 출력이 아니다. 검사가 이 사실을 명시하지 않았을 뿐이다 → m3.
+- 같은 음악을 다르게 조판한 정답:
+  - **pickup을 앞에 쉼표가 있는 꽉 찬 첫 마디로**(PPP 방식), 20곡: 위치·박자·마디·downbeat 만점. 5곡에서 identity 0.98, 1곡에서 위치 0.993이 나왔다. 원인은 PredTime이다. 박을 외삽하는 PredTime으로 다시 채점하면 모두 만점이다(m1).
+  - **mode 반전**(`<mode>` major↔minor), 104곡: 모든 gate와 진단점수가 그대로다. 조표만 채점하고 mode는 MIREX 점수에만 쓴다.
+  - **템포를 인쇄 metronome 표시로만**(겹박자는 점4분 단위, `<sound>` 없음), 141곡: 그대로다.
+  - **tie, 꾸밈음, 임시표**: 정답 파일 자체에 이것들이 있는 곡이 포함되어 있고 만점이다(찬송가 결함 제외). correctness C01·C02·C07·C13이 규칙을 고정한다.
+
+oracle 자체의 결함은 없다. 단 m1과 m3이 있다.
+
+### 19.10 Golden
+
+- 17개다. byte(`.musicxml`), semantic(`.semantic.json`), stats, timing이 분리되어 있고 라벨은 셋이다. 깨진 XML과 예외에서도 크래시하지 않는다(§19.2 M7).
+- A(형식만 바뀜) / B(음악 의미 바뀜) / C(직렬화 불안정)의 구분은 **틀리는 경우가 있다.**
+  - `semantic.projection`(`semantic.py:4-7`)은 note type을 형식으로 보고 버린다. 점, clef, 쉼표, 마디 번호는 아예 담지 않는다.
+  - 앱은 이것들을 쓴다: `<type>`→`VF_TYPE[head.type]`(App 4203, 11413), `<dot>`(App 4204, 11444), clef(App 3987–3998), 마디 번호(App 3958–3960, 4261, `byNumber` 3534).
+  - 그래서 B가 A로 표시된다: FINAL-DOTS-DROPPED 9, FINAL-BASS-STAFF-TREBLE-CLEF 17, FINAL-BAR-NUMBERS-RESTART 15, FINAL-TRAILING-RESTS-SHORT 7케이스 → F3.
+- voice 번호를 형식으로 보는 것은 맞다. 앱은 stem 방향 말고는 voice를 쓰지 않는다.
+
+### 19.11 Parser correctness
+
+parity(258/258)와 correctness(13/13)는 모든 층에서 분리되어 있다.
+
+- 문서: README "Parser parity is not correctness"
+- CLI 출력: "Parity is not correctness — see `run.py correctness`"
+- machine-readable: `conformance/report.json`의 kind가 "parser parity (not correctness)"이고, `correctness/report.json`은 별도 파일이다.
+
+correctness fixture의 규약은 명세에서 쓰였고, C13은 fixer가 추가했다고 표시되어 있다. 작성자가 독립적이었는지는 검증할 수 없다. 문제 없음. 마디 번호 규칙은 둘 다 다루지 않는다(F2).
+
+### 19.12 M11: 실제 사람 연주 holdout
+
+판단: **BLOCKED_ACCEPTABLE**
+
+- **G0 merge의 선행 조건은 아니다.**
+  - G0의 핵심 측정 대상은 `toMusicXml`의 표기 단계다. 입력(음·박)이 같으면 출력도 같다. 따라서 표기·조판·writer를 바꾸는 Goal을 판정하는 데 실제 녹음이 꼭 필요하지는 않다.
+  - benchmark는 이 한계를 숨기지 않는다: README의 "How far from synthetic" 표, summary의 hold-out 문구, 비어 있는 replay `input:recorded`.
+  - 가짜 데이터는 없다. replay 6개는 모두 `input:rendered`이고, 렌더 프로파일과 렌더러가 fixture에 적혀 있다.
+- **robust suite는 독립 생성기가 아니다.**
+  - `human-alt`는 같은 `perform()`의 매개변수 변형이다: 강세·보이싱·롤을 끄고, 지터를 삼각분포로, 릴리스를 30–120 ms로 바꿨다.
+  - 공유하는 것: TimeMap(메트로놈 템포, drift 0), 박 격자, 음 집합(악보 그대로), 릴리스 모델, 시작 시각 규칙. rubato도 없다.
+  - 강세 단서에 대한 과적합(§17 M11의 증거)은 잡는다. 그러나 박·박자·템포 추론 휴리스틱이 "악보대로 정확한 연주"에 과적합되는 것은 잡지 못한다.
+  - README의 "a second generator family with none of the main family's cues"는 과장이다 → m5.
+- **결론**: 실제 녹음은 onset 경로의 박·템포·박자 추론을 바꾸는 첫 Goal을 **시작하기 전**에 필요하다(§19.20 ④). G0 merge나 writer 쪽 Goal의 선행 조건은 아니다.
+
+### 19.13 결정론
+
+| 조건 | 결과 |
+| --- | --- |
+| 같은 명령 반복(core 2회) | byte 동일 `b03fe8fb…` |
+| 다른 cwd(`tests/bench/unit`에서 `../run.py`) | 동일 |
+| listdir·glob·git 파일 목록·suite 참조 순서를 모두 역순으로 | smoke `850fce21…`, core `b03fe8fb…`로 동일 |
+| Linux Docker offline, LF clone, 다른 절대 경로(`/w`), Python 3.11.2, Node 24.21.0 | smoke `850fce21…`, core `b03fe8fb…`, robust `5bd772e9…`, replay-public `62a85956…`, full `d7ffdf9d…`. 5개 모두 Windows와 동일하고 §18.6의 값과도 같다 |
+| references.json 자체의 순서를 바꾸면 | `exclusions.skipped_metrics.ids`의 순서만 바뀐다. 환경이 아니라 커밋된 입력이다(o1) |
+
+시간과 환경은 `run.json`에만 있고 `results.json`에는 없다.
+
+### 19.14 CI
+
+fresh runner 관점의 정적 검토에 위의 Linux 실행을 더했다.
+
+- **통과한 것**:
+  - 848파일 스냅숏의 LF clone에서 gate job의 모든 step과 nightly의 3 step이 통과했다(adversarial 25 OK, 211 s).
+  - 업로드 대상 artifact 경로 10개가 모두 생성된다. 실행 뒤 `git status`는 깨끗했다.
+  - local-only fixture가 없다. 모든 입력이 커밋 대상이고, `.cache`와 `out`만 생성된다.
+  - Windows 경로 하드코딩이 없다. venv·로컬 서버에 의존하지 않는다(T1·T2는 CI 밖).
+  - exit code: `run`은 0, `check`는 0/1/2, `run --suite replay-public`은 판정으로 끝난다. smoke check가 실패하면 그 step이 실패해 job이 빨개진다. nightly의 full check와 adversarial(GAP이 하나라도 있으면 exit 1)도 전파된다.
+  - 시간: gate 약 1분, nightly 약 8분(Docker). 제한은 20분과 45분이다.
+- **주의할 것**:
+  - 트리거는 `push: branches: [main]`과 `pull_request`뿐이다. **브랜치만 push하면 아무것도 돌지 않는다**(PR을 열어야 gate가 돈다). `schedule`은 기본 브랜치에서만 돈다. CURRENT_STATE의 "not active until the branch is pushed"는 부정확하다 → m7.
+  - CI는 Linux + Python 3.13이다. 이 세션은 Windows + 3.13과 Linux + 3.11만 확인했다.
+  - **GitHub Actions 실제 실행은 검증하지 못했다**(push 금지).
+  - fixer의 변경이 미커밋이다. 새 모듈(`correctness.py`, `known_defects.py`, `metrics/critical.py`, `metrics/pedal.py`, `semantic.py`), `corpus/correctness/`, `provenance.json`, golden의 `.semantic`·`.timing` 34개와 G15–G17, `robust` suite·baseline 가운데 하나라도 커밋에서 빠지면 CI가 깨진다 → m6.
+
+### 19.15 범위
+
+`git diff 663d463`(커밋 + 워크트리)과 미추적 파일을 확인했다.
+
+- 프로덕션 파일 변경 0: `audio-score.js`, `server.js`, 앱 HTML, `omr-service.js`, `transcribe.py`, `beat_track.py`, `arrange_score.py`, `pm2s_quant.py`, `catalog/`, `i18n/`, lockfile, Dockerfile, render.yaml.
+- `tests/bench`·`docs` 밖의 변경: workflow, `.gitignore`, `package.json` scripts, README 3개(문서), `tests/beat_track_test.py`(sys.path 2줄)뿐이다.
+
+G0은 benchmark 인프라 범위를 넘지 않았다.
+
+### 19.16 테스트 매트릭스 (이 세션이 실행)
+
+| 항목 | 결과 | 시간 |
+| --- | --- | --- |
+| unit | 153 OK (Windows), 153 OK (Linux 3.11) | 13.5 s / 7 s |
+| golden | 17/17 identical (두 OS) | 0.3 s |
+| correctness | 13/13. 앱의 편차는 C10·C11(문서화됨) | 0.1 s |
+| lint-corpus | 참조 312, error 0, warning 70, 제외 39 | 1.9 s |
+| `make_provenance.py --check` | 일치 | 0.2 s |
+| smoke run + check | PASS, usable 47.7 %, 진단 86.74 | 0.9 s |
+| core run + check | PASS ×2(다른 cwd 포함), 25.9 % / 76.77 | 13.2 s |
+| robust run + check | PASS, 28.4 % / 76.48 | 7.2 s |
+| full run + check | PASS, 4,976케이스, 25.0 %(hold-out 27.3 %) / 78.51 | 109 s (Linux 146 s) |
+| replay-public | PASS, 16.7 % / 85.55 | 0.3 s |
+| mutation-check | PASS: 17종 모두 REGRESSION, no-op byte 동일 | 77 s (Linux 84 s) |
+| adversarial | 25 OK, 0 GAP | 179 s (Linux 211 s) |
+| `ab --suite core --a git:HEAD --b worktree` | PASS | 29 s |
+| parser parity (T1) | 258/258 | 9.9 s |
+| omr-live (T1) | PASS, 4케이스, 평균 진단 53.32 | 60 s |
+| transcription-core | 16 OK (8+2+3+3) | 1.7 s |
+| arranger | 3 OK | 0.5 s |
+| `npm test` | 26/26 suite 통과, 확인 1,025개, 실패 0. 워크트리 helper에 Audiveris와 transcriber가 없어 "OMR pipeline"과 "recording → score through the UI" 절은 스스로 SKIPPED | 수 분 |
+| `py_compile` | 62/62 (bench `.py` + `beat_track_test.py`) | |
+| `node --check` | 3/3 (`node/*.js`) | |
+| record-replay (T2) | **실행하지 않음**: 실제 녹음, GPU, transcribe venv가 필요하고 새로 녹음할 데이터가 없다 | |
+
+### 19.17 문서 일관성
+
+README, CURRENT_STATE, §18, `results.json`을 대조했다.
+
+- **일치하는 것**:
+  - usable과 진단점수(6개 suite), gate 통과율, 그룹 수치(겹박자 103·단순 2박자 114케이스 usable 0, 4/4 46.5 %, 책별 수치)
+  - →6/8 146/234, 2/4→6/8 77. 겹박자 출력 189, `mark_consistent` 0.00, `ok_effective` 0.03, `ok_written` 0.81
+  - known failure 7종, 제외 39(L8 24, P1 15), 참조 312(full 311), 케이스 수
+  - 버전: reader/2, metrics/3, sqi/2, perform/2. gate/2는 suite 파일에 있다
+  - 실행 시간(대략)
+- **불일치 (m8)**:
+  - README 41행 "16 planted regressions"와 140행·CURRENT_STATE·mutation-check의 17.
+  - `tests/README.md`: smoke가 "32 cases"(실제 44)이고, `test:bench` 설명에 correctness가 없다.
+  - `suites/golden.json` description: "14 fixed inputs"(실제 17).
+  - G00 목차에 §18이 없었다(이 세션이 §18·§19를 추가했다).
+  - §18.3의 m11 "지금 수치에는 영향이 없다" → m1이 반박한다.
+  - CURRENT_STATE의 CI 문구 → m7.
+
+### 19.18 Findings
+
+#### BLOCKER
+
+없다(G0 브랜치의 benchmark 결함 기준).
+
+#### BLOCKER-M: merge 선행 조건 (G0 브랜치 밖) — **BLOCKED_NOT_ACCEPTABLE** (merge 전 사용자 결정, 이 세션 범위 밖, [§20.2](#202-19-findings-처리-상태))
+
+**로컬 `main`의 `d82bb71`**(2026-09-22 14:54, "fix: harden G0 quality benchmark after independent review")은 이름과 달리 benchmark 변경을 하나도 담고 있지 않다. `D:/PPP`에서 `git add -A`로 휩쓸려 들어간 190파일이다.
+
+- `tmp/` 약 50파일. G00 §1.5와 CURRENT_STATE가 "저작권 자료, 절대 커밋 금지"라고 한 폴더다: gurenka·looping-rooms 오디오(m4a, wav), 공식 악보 PDF의 페이지 렌더(lulu-official, looping-rooms, piano-poem), Audiveris 산출물.
+- `__pycache__/*.pyc` 10개, `_oh-sheet-compare` gitlink(`.gitmodules` 없음).
+- 다른 세션 작업인 `catalog/method` 신규 124파일과 `index.json` 수정.
+
+push되지는 않았다: `origin/main`은 `e0d8b23`이고 로컬 `main`이 14커밋 앞서 있다.
+
+merge 시뮬레이션: scratch clone에 G0 스냅숏을 커밋하고 `origin/main`(= `d82bb71`)을 merge했다. 텍스트 충돌은 없었지만 **G0 gate가 빨개졌다**.
+
+- `make_provenance.py --check`가 stale(exit 1)이다. unit 1개도 같은 이유로 FAIL한다.
+- smoke·core check가 REGRESSION이다. known failure가 늘었다: bar_integrity 24→25, 꾸밈음 17→19파일, key_signature_playback 92→93.
+
+benchmark는 옳게 동작했다. 새 카탈로그 파일에 실제로 결함이 있다. 결론:
+- 지금 main에 merge하면 첫 CI가 실패한다.
+- main을 push하면 저작권 자료가 공개된다.
+
+이 커밋을 어떻게 처리할지(되돌리기, 분리)는 사용자가 정한다. G0의 `.gitignore`(`tmp/`, `__pycache__/`)가 main에 먼저 있었다면 막을 수 있었던 사고다.
+
+#### MAJOR
+
+**F1. 템포·박자표·조표를 값 하나로만 채점한다. 곡 중간의 표시는 앱이 재생하고 그리는데도 gate 밖이다.** — **RESOLVED** ([§20.3](#203-f1-곡-전체의-템포박자표조표))
+
+- **코드**:
+  - `critical.playback_tempo`는 첫 템포 표시만 본다(`musicxml.py` `first_tempo`, 445–453행).
+  - `critical.meter`는 마디 길이로 가중한 최빈 박자다(`canonical.primary_time`).
+  - `critical.key`는 첫 마디의 조표다(`metrics/structure.py:125`).
+  - reader는 모든 표시를 읽는다(`canon.marks`, 마디별 time·fifths). 그러나 어떤 metric도 쓰지 않는다.
+- **앱**: `tempoMap`(App 2761–2792)과 `msAt`(App 2868–2882)이 모든 `<sound tempo>`와 metronome 표시를 재생 시간에 적분한다. 마디별 time과 key는 `measureInfo`로 그린다.
+- **증거**: FINAL-TEMPO-HALVED-MIDWAY, FINAL-METRE-TAIL, FINAL-KEY-TAIL이 core·smoke·robust·replay를 모두 통과했다. 진단점수와 usable의 Δ는 0이다.
+- **영향**:
+  - G1(writer 재구성)이나 템포 변화·전조를 검출하는 Goal에서, 곡 뒷부분의 틀린 템포·박자표·조표가 통과한다.
+  - 반대로 SUT가 정답의 템포 변화를 옳게 쓰게 되어도(정답의 템포 변화는 `reference_marks`로 연주된다) 개선이 보이지 않는다.
+- **수정**:
+  1. `critical.playback_tempo`: 앱의 템포 맵으로 계산한 재생 시각이 연주와 ±4 % 안에 드는 정답 음(또는 박)의 비율로 판정한다.
+  2. meter·key: 마디별로 판정한다. 정답 마디에 대응하는 예측 마디의 time·fifths가 모두 맞아야 한다.
+  3. `stats_consistent`에 마디별 검사를 넣는다.
+  4. METRICS_VERSION을 올리고 재기준화한다.
+
+**F2. 앱이 쓰는 표기 필드 가운데 음표 모양(`<type>`/`<dot>`)과 마디 번호를 어떤 metric도 읽지 않는다.** — **RESOLVED** ([§20.4](#204-f2-음표-모양마디-번호쉼표clef))
+
+- **앱**: 음표 모양은 `<type>`과 `<dot>`로 그리고(App 4203–4204, 11413, 11444), 재생은 `<duration>`으로 한다. 마디는 번호로 찾는다(App 3958–3960 `number`, 4261 `measureInfo[number]`, 3534 `byNumber`).
+- **benchmark**: 음가는 `<duration>`만 본다(`notation.duration.*`). 마디는 문서 순서의 index로 센다(`musicxml.py:207, 344`). reader는 `duplicate_measure_numbers`를 계산하지만(215–216행) 예측에는 쓰지 않는다. 참조의 lint L6에만 쓴다.
+- **증거**: FINAL-DOTS-DROPPED와 FINAL-BAR-NUMBERS-RESTART에서 core `results.json`이 원본과 byte-identical이었다. 앱 parser로 마디가 무너지는 것을 확인했다(§19.3).
+- **수정**:
+  1. `notation.glyph_consistent`를 만든다: `<type>`+`<dot>`(+`<time-modification>`)이 `<duration>`과 맞는 음·쉼표의 비율.
+  2. 마디 번호가 유일하지 않거나 증가하지 않으면 실패로 한다.
+  3. 1과 2를 `critical.structure`에 넣는다(허용치 0).
+  4. parity(`node/conformance.js`, `tiers.compare_projection`)에서 type, dots, 마디 번호를 비교한다.
+
+**F3. golden의 "형식만 바뀜" 판정이 앱이 그리는 필드에 대해 틀렸다.** — **RESOLVED** ([§20.5](#205-f3-golden-분류))
+
+- `semantic.projection`이 note type과 점을 형식으로 보고 버리고, clef·쉼표·마디 번호를 담지 않는다.
+- 그래서 점 누락 9, 왼손 높은음자리표 17, 마디 번호 15, 쉼표 7케이스가 "SERIALIZATION-ONLY — same music, different bytes"로 표시된다. README는 이 라벨을 "never as a musical change"라고 설명한다. §17 m13이 바란 것과 반대다.
+- G1은 writer를 다시 쓰므로 byte golden은 전부 바뀐다. 라벨이 "형식만"이라고 말하면 곧바로 bless 절차로 간다.
+- **수정**:
+  1. projection에 type·dots, 쉼표(마디·위치·길이·보표), 마디별 clef, 마디 번호를 넣는다.
+  2. golden을 다시 bless한다(사유 기록).
+  3. 새 mutation 4종이 SEMANTIC CHANGE가 되는지 unit test로 고정한다.
+
+#### MINOR
+
+처리 상태는 [§20.2](#202-19-findings-처리-상태)에 있다.
+
+| # | 내용 | 수정 |
+| --- | --- | --- |
+| m1 | **PredTime의 균등 박 가정(§18.3 m11)은 지금 수치를 바꾼다.** 예측의 첫 마디나 끝 마디에서 `stats.beats`가 모자라면(pickup을 꽉 찬 마디로 쓰거나 onset 경로일 때) 음 시각을 늦게 보간한다. golden G05(3/4 pickup, oracle 박)에서 185 ms 늦고, 4/4의 한 박 pickup이 느린 템포면 매칭 창 300 ms를 넘는다. 박 목록을 SUT의 `tickToSec`처럼 첫 박·끝 박 간격으로 늘려 core를 다시 계산하면 553케이스 중 43개가 바뀐다: identity F1 +0.0019(gate 허용치 0.002 수준), `critical.pitch_integrity` 2케이스 추가 통과. usable은 그대로다. SUT를 바꾸지 않고 benchmark에서 고칠 수 있으므로 BLOCKED가 아니다 | PredTime이 barStarts 범위까지 박을 외삽한다. METRICS_VERSION 상향 |
+| m2 | usable이 음가를 보지 않는다. usable 143건 중 43건의 음가 정확도가 0.80 미만이다(czerny599/049 human/onset 0.19) | 음가 gate(예: `duration.accuracy` ≥ 0.80)를 넣거나, 헤드라인 정의에 "음가는 판정하지 않는다"를 명시 |
+| m3 | fixer의 oracle 검사가 usable과 critical gate를 확인하지 않는다. 확인하면 찬송가 37곡(카탈로그 결함)이 자기 자신에 대해 unusable이다 | oracle 검사에 usable과 critical.*를 넣고, 결함 파일은 known failure를 근거로 명시적으로 제외 |
+| m4 | 불필요한 임시표 남발이 gate 밖이다(FINAL-ACCIDENTAL-ON-EVERY-NOTE core PASS). `read.accidentals_per_note.delta`는 계산만 한다 | 100음당 courtesy 임시표에 aggregate·subgroup 허용치(G4 전까지는 느슨하게) |
+| m5 | robust는 독립 생성기가 아니라 같은 `perform()`의 매개변수 변형이다(§19.12) | README·CURRENT_STATE 문구 정정. 진짜 두 번째 계열(악구 rubato, 손 사이의 비동기, 종지 ritardando, 아티큘레이션 다양성)은 M11 후속과 함께 |
+| m6 | fixer의 변경 전체가 미커밋이다(수정 59, 신규 68). baseline의 `recorded.git_sha`는 `b1d817b`(dirty)다 | `tests/bench`, `docs`, `.github`, `package.json`을 `git add -A`로 한 커밋에 넣는다. 부분 커밋은 CI를 깬다 |
+| m7 | CI 트리거: 브랜치 push만으로는 돌지 않는다(PR이나 main에서만). nightly는 기본 브랜치에서만 돈다. GitHub에서 실행해 보지 못했다 | CURRENT_STATE 정정. PR에서 gate를 확인하고, merge 후 `workflow_dispatch`로 nightly를 한 번 돌린다 |
+| m8 | 문서 불일치(§19.17) | 정정 |
+| m9 | `CLAUDE.md`가 없다(요청된 읽기 대상) | 사용자 결정(§17 O1) |
+
+#### OPTIONAL
+
+처리 상태는 [§20.2](#202-19-findings-처리-상태)에 있다.
+
+- o1. `exclusions.skipped_metrics.ids`를 정렬한다. references.json의 순서가 바뀌어도 byte가 같아진다.
+- o2. golden이 일반 예외를 "toMusicXml threw None"으로 출력한다.
+- o3. F1–F3을 고친 뒤 `final_review.py`의 mutation을 `mutation-check`에 넣어 회귀 테스트로 고정한다.
+- o4. `struct.tempo.ok_written`은 `<sound tempo>`만 있고 인쇄 표시가 없는 올바른 출력에 0을 준다. 의도된 가독성 채점이지만 문서화를 권한다.
+
+#### §18.8 요청에 대한 답
+
+1. **fixer가 쓴 adversarial 판정 기준**: `sqi`와 `data`는 리뷰의 의도보다 약하지 않다. `sqi`는 이 세션의 독립 재계산과 일치했고, `data`는 정확히 일치를 요구한다. `oracle`의 이상적 출력 구성은 타당하다. 단 usable과 critical gate를 확인하지 않는다(m3).
+2. **critical gate 임계와 "하나라도 실패하면 unusable" 규칙**: 타당하다(§19.5). 빠진 것은 음가다(m2).
+3. **metrics/3의 replay 페달 정답 규칙**: 동의한다. renderer는 음만 받으므로 rendered fixture의 연주에는 페달이 없다. AMT의 추측을 정답으로 쓰면 틀린다.
+4. **gate/2 허용치**: 측정하는 차원에서는 회귀를 놓치지 않았다. 새 mutation 3종이 잡혔고, usable −1.3 pt도 잡혔다. 한 gate에서 2케이스까지의 flip은 설계상 허용이다. 개선을 회귀로 부른 예는 이번에 보지 못했다(개선 방향 실험은 m1의 PredTime 외삽뿐이고, 그것은 IMPROVED 쪽이다).
+5. **M11과 m11**: §19.12, m1.
+
+### 19.19 최종 판정
+
+**`NEEDS_FIX`**
+
+READY_TO_MERGE 조건과 대조한 결과:
+
+| 조건 | 결과 |
+| --- | --- |
+| 새 BLOCKER 없음 | 충족(benchmark 기준). merge 선행 조건 BLOCKER-M은 별도 |
+| 해결되지 않은 MAJOR 없음 | **불충족**: F1–F3, M4 부분 해결 |
+| M11이 BLOCKED_ACCEPTABLE | 충족 |
+| 실제 품질 회귀를 의미 있게 탐지 | 부분 충족. 재는 차원(음높이, 위치, 첫 박자표·템포·조표, 손, 페달, 필요한 임시표, 마디 수)은 강하게 탐지한다(기존 17종 + 새 3종). 앱이 쓰는 MusicXML 필드 일부는 전혀 보지 않는다(새 7종 통과) |
+| 기존 production 동작을 숨기지 않음 | 충족. known failure, 제외, skip이 매 실행 보인다 |
+| 테스트와 재현성 | 충족. Windows·Linux byte 동일, 매트릭스 통과 |
+
+고칠 범위는 작다. F1–F3은 reader가 이미 읽고 있는 값(`marks`, 마디별 time·key, type·dots, 마디 번호)을 metric과 semantic projection에 연결하는 일이다.
+
+순서:
+1. F2 → F3 → F1 → m1
+2. m6(커밋), m8(문서)
+3. 버전을 올리고 relock·재기준화·golden bless(사유 기록)
+4. `final_review.py`로 확인: 놓친 7종과 우연히 잡힌 쉼표 mutation이 각자의 목표 metric으로 core REGRESSION이 되고, 적어도 golden SEMANTIC CHANGE가 되어야 한다
+5. 이 절을 짧게 다시 검토
+
+### 19.20 네 가지 질문에 대한 답
+
+1. **main merge 가능 여부: 지금은 불가.**
+   - (a) G0 브랜치에 MAJOR F1–F3이 남아 있다.
+   - (b) 로컬 `main`에 `d82bb71`이 있다(저작권 `tmp/`, pyc, gitlink, 다른 세션의 카탈로그 124파일). merge하면 G0 gate가 첫 실행부터 실패하고, main을 push하면 저작권 자료가 공개된다.
+   - 순서: 사용자가 `d82bb71`을 처리한다 → fixer 변경을 커밋한다(m6) → F1–F3을 고친다 → 짧게 재리뷰한다(`final_review.py`, adversarial, 매트릭스) → merge.
+2. **push 후 GitHub Actions에서 반드시 확인할 것** (PR을 열어야 gate가 돈다):
+   - gate job의 모든 step이 초록인지, 총 시간(로컬 합계 약 1분, 제한 20분).
+   - smoke·core·robust·replay의 `results.json` sha256이 로컬과 같은지. Linux + Python 3.13 조합은 아직 확인되지 않았다. artifact의 core `results.json`으로 확인한다.
+   - artifact `bench-core`에 파일 6개가 모두 있는지.
+   - `npm run test:transcription-core`와 `test:arranger`가 러너의 plain Python에서 통과하는지.
+   - 실패가 전파되는지: 회귀를 일부러 넣은 임시 PR 하나(예: mutant를 `audio-score.js`에 적용)로 gate가 빨개지는지 한 번 확인하고 닫는다.
+   - merge 후 `workflow_dispatch`로 nightly를 한 번 돌린다: mutation-check PASS, full check PASS, adversarial GAP 0, artifact `bench-full`.
+3. **G1을 시작하기 전에 할 일**: 1번의 순서 전부.
+   - 특히 G1이 writer나 ScoreGraph를 바꾸는 Goal이라면 F1–F3과 m1을 **G1 전에** 고쳐야 한다. G1이 바꾸는 바로 그 필드를 benchmark가 보지 못하고, golden은 그 변경을 "형식만"이라고 부른다.
+   - G1의 첫 커밋 전에 고친 benchmark로 `npm run bench`가 PASS해야 하고, baseline이 새 버전으로 기록되어 있어야 한다.
+4. **M11 실제 사람 녹음의 기한**: onset 경로의 박·템포·박자 추론을 바꾸는 **첫 Goal을 시작하기 전**.
+   - 해당하는 것: CURRENT_STATE 이슈 2(6/8 쏠림) 수정, 빠른 템포 ×2/×3 판정, 겹박자 판정, beat confidence 임계, onset tracker 조정. transcription이나 beat tracking을 다루는 audio Goal도 같다.
+   - 그 Goal의 착수 조건:
+     - `replay-public`의 `input:recorded`에 라이선스가 확인된 실제 연주가 **3곡 이상** 있다(단순 2박자, 3박자, 겹박자 각 1곡 이상).
+     - 마디 시작 시각을 귀로 확인했다.
+     - `update-baseline --suite replay-public`으로 기록했다.
+     - 그 Goal의 보고에 이 tier의 Δ가 들어간다.
+   - writer와 조판만 바꾸는 Goal은 이 조건 없이 시작할 수 있다.
+   - 녹음이 들어오기 전에는 `beats:none`·`profile:human` 태그의 개선을 "실제 연주에서의 개선"으로 보고하지 않는다.
+
+## 20. Final Fixer 기록 (2026-09-22)
+
+§19(최종 독립 리뷰)의 F1, F2, F3, PredTime(m1), usable-음가(m2)를 처리한 최종 fixer 세션의 기록이다.
+
+- **대상**: `D:/PPP-g0`, 브랜치 `g0-quality-foundation` @ `b1d817b` + 미커밋 변경. 시작할 때 pwd와 브랜치를 확인했다.
+- **바꾼 것**: benchmark evaluator·metric·gate·golden 분류기·reader, 단위 테스트, 리뷰 스크립트, 문서, CI workflow(nightly 두 단계), baseline·lock·golden 재기록(사유 기록).
+- **바꾸지 않은 것**: `audio-score.js`, `server.js`, 앱 HTML, `omr-service.js`, `catalog/`, transcription·arrangement·OMR 코드. `D:/PPP`는 읽기만 했다(`node_modules`, Audiveris 실행 파일, transcribe venv 경로). `d82bb71`은 건드리지 않았다. 커밋·merge·push·G1 없음.
+- **기대값을 낮추거나 허용치를 넓힌 곳은 없다.** `adversarial.py`의 기대값은 그대로다. 허용치는 새 metric에 대해서만 새로 정했고 대부분 0이다.
+
+### 20.0 판정
+
+**`READY_FOR_SHORT_REVIEW`**
+
+- F1, F2, F3, m1, m2가 해결되었고 각각 unit test와 mutation으로 고정되었다. §19의 MINOR·OPTIONAL도 m6·m9를 빼고 처리했다(§20.2).
+- 새 mutation 13종을 포함한 harmful mutation 30종이 모두 자기 metric을 이름으로 대며 REGRESSION이다. §19의 mutation 10종은 10/10, 다르게 조판한 정답 검사는 4/4 OK다.
+- merge 선행 조건 두 가지는 이 세션의 범위 밖이라 남아 있다. 로컬 `main`의 `d82bb71`(사용자 결정)과 미커밋 상태(커밋 금지 지시, m6)다.
+- 짧은 재리뷰를 권하는 이유: 새 metric과 gate가 usable 헤드라인을 25.9 %에서 18.1 %로 바꿨다. 그 정의(특히 음가 gate와 그 합성 연주 의존성, §20.7)를 사람이 한 번 확인해야 한다.
+
+### 20.1 방법과 환경
+
+| 항목 | 내용 |
+| --- | --- |
+| 시작 점검 | `pwd` = `/d/PPP-g0`, 브랜치 `g0-quality-foundation`, `git status`: 수정 59, 미추적 70(§19의 스크립트 2개 포함). `CLAUDE.md`는 없다 |
+| 앱 확인 | 워크트리 서버(8799)에서 puppeteer(`D:/PPP/node_modules`, 읽기만)로 `PPP.parseMusicXML`과 `PPP.PianoScore.of(...).tempoMap`/`msAt`을 직접 호출해 템포 모델을 확인했다(§20.3). 렌더러가 `<type>`/`<dot>`/clef를 쓰는 곳, `parseMusicXML`의 마디 번호 규칙은 코드로 확인했다 |
+| 데이터 확인 | 커밋된 354개 악보의 마디 번호, 모양 불일치, 보표 채움, 곡 중간 박자·조·템포 변화, registry override를 새 metric을 넣기 전에 스캔했다(§20.4, §20.7) |
+| Windows | Windows 11(cp949), Python 3.13.5, Node 24.17.0 |
+| Linux | Docker `node:24-bookworm`(Python 3.11.2, Node 24.21.0), `--network none`. 최종 워크트리 스냅숏을 LF로 clone해 CI gate job 전체와 nightly(mutation-check, full, adversarial, final_review, final_oracle)를 실행했다 |
+| T1 | 워크트리 서버 8777 + 워크트리 helper에 `PPP_AUDIVERIS`로 `D:/PPP`의 Audiveris 실행 파일을 지정했다(읽기만, OMR 작업 파일은 OS temp). parser parity, omr-live, `npm test`(`NODE_PATH=D:/PPP/node_modules`). 끝나고 모두 종료했다 |
+
+### 20.2 §19 findings 처리 상태
+
+| finding | 상태 | 근거 |
+| --- | --- | --- |
+| BLOCKER-M (로컬 `main` `d82bb71`) | **BLOCKED_NOT_ACCEPTABLE** (merge 전) | 이 세션의 범위 밖이다("d82bb71 정리는 이번 세션 범위가 아니다"). G0 브랜치 자체의 결함은 아니지만, 그대로 merge하면 첫 CI가 실패하고 main을 push하면 저작권 자료가 공개된다(§19.18). 사용자가 처리한 뒤 merge한다 |
+| F1 템포·박자표·조표를 첫 값으로만 채점 | **RESOLVED** | §20.3 |
+| F2 음표 모양·마디 번호를 읽지 않음 | **RESOLVED** | §20.4 |
+| F3 golden이 앱이 그리는 필드를 "형식"으로 분류 | **RESOLVED** | §20.5 |
+| §17 M4 (§19에서 PARTIALLY_RESOLVED) | **RESOLVED** (범위 명시) | §19가 나열한 차원(음표 모양, 마디 번호, 두 번째 이후 템포·박자표·조표, clef, 쉼표 길이, 불필요한 임시표)이 모두 metric과 gate로 들어갔다. voice·beam·stem은 metric이 없다. golden은 voice 구조 변화를 STRUCTURAL_CHANGE로 잡는다. G4 범위로 문서화했다 |
+| m1 PredTime 균등 박 가정 | **RESOLVED** | §20.6 |
+| m2 usable이 음가를 보지 않음 | **RESOLVED** | §20.7 |
+| m3 oracle이 usable·critical을 확인하지 않음 | **RESOLVED** | `final_oracle.py`가 critical gate, usable, 새 metric 전부를 확인한다. 참조 파일 자체에 결함이 있으면, 그 결함이 설명하는 metric에서만 만점 미달을 허용한다(`EXPLAINS`). 4 OK. `adversarial.py`의 oracle은 바꾸지 않았다 |
+| m4 불필요한 임시표 | **RESOLVED** | `notation.accidentals.courtesy_per_100`(↓, aggregate 허용치 0.5). FIN-ACCIDENTAL-ON-EVERY-NOTE는 REGRESSION이다 |
+| m5 robust는 독립 생성기가 아님 | **RESOLVED** (문서) | README·CURRENT_STATE에서 "같은 연주기의 매개변수 변형"으로 정정했다. 독립 계열은 M11 후속 |
+| m6 fixer 변경 미커밋 | **BLOCKED_ACCEPTABLE** | 이 세션은 커밋이 금지되어 있다. 사용자의 다음 단계: `git add -A tests/bench docs .github package.json` 한 번. 부분 커밋은 CI를 깬다(새 모듈, golden `.semantic/.timing`, correctness fixture, robust suite가 미추적이다) |
+| m7 CI 트리거 문구, GitHub 미실행 | **RESOLVED** (문서) / 실행은 BLOCKED_ACCEPTABLE | CURRENT_STATE·README 정정(PR 또는 main push에서 gate, schedule은 기본 브랜치). GitHub 실행은 push 금지로 미검증(§20.14) |
+| m8 문서 불일치 | **RESOLVED** | "16 planted" → 30, `tests/README.md`의 smoke 44·test:bench 설명, `suites/golden.json` 설명, G00 목차, §18.3 m11 주장(§20.6) |
+| m9 `CLAUDE.md` 없음 | **REJECTED** | 저장소 세션 지침은 사용자가 정한다(§17 O1과 같음) |
+| o1 `skipped_metrics.ids` 순서 | **RESOLVED** | 정렬한다(`runner.exclusions_summary`) |
+| o2 golden "threw None" | **RESOLVED** | "threw an exception"으로 표시 |
+| o3 final_review mutation을 mutation-check에 | **RESOLVED** | FIN-* 13종(§20.8) |
+| o4 `ok_written`의 의미 | **RESOLVED** (문서) | README metric 표에 적었다 |
+| M11 실제 사람 연주 | **BLOCKED_ACCEPTABLE** | §20.13. 가짜 녹음은 만들지 않았다 |
+
+### 20.3 F1: 곡 전체의 템포·박자표·조표
+
+- **앱을 먼저 확인했다.** 워크트리 서버에서 `PPP.PianoScore.of(score).tempoMap`을 직접 읽었다.
+  - 재생은 `tempoMap`/`msAt`이 모든 템포 표시를 따른다. 가운데부터 절반 속도로 바꾼 mutant는 둘째 절반을 1.25 s/4분음표(48 qpm)로 재생했다.
+  - 같은 위치에서는 나중에 읽힌 표시가 이긴다. direction 안에서 metronome이 `<sound>` 뒤다.
+  - 그래서 SUT의 6/8 출력(`<sound tempo="60">` + 점4분 = 60)은 **재생 90 qpm(맞음)**, `Score.tempo` 60(연습 템포·메트로놈·템포 %, 2/3)이다. CURRENT_STATE 이슈 1의 "2/3 속도로 재생"은 `Score.tempo`에만 맞는 말이었다. 정정했다.
+- **metric** (`metrics/structure.py`, 예측 MusicXML에서만 읽고 stats는 쓰지 않는다). 짝지어진 음마다 판정한다:
+  - `struct.tempo.timeline_accuracy`: 앱 재생기의 템포 맵(`app_tempo_timeline`: 모든 표시, 같은 위치는 나중 것, 첫 표시 전은 `Score.tempo`)이 그 음에서 연주 템포(연주기의 템포 맵, rubato drift 제외)의 ±4 % 안인 비율.
+  - `struct.time_sig.timeline_accuracy`: 그 음이 있는 예측 마디의 박자표가 정답 마디의 것과 같은 비율.
+  - `struct.key.timeline_accuracy`: 조표에 대해 같은 것. registry가 조를 믿지 않는 곡(`skip_metrics`)에서는 함께 빠진다(`evaluate.SKIP_WITH`).
+  - registry override(`expect.time`/`key`)는 정답에 박자·조가 하나뿐일 때만 모든 마디에 적용한다.
+- **gate**:
+  - `critical.meter` = 첫 박자표 정확 **그리고** sequence ≥ 0.95.
+  - `critical.playback_tempo` = `Score.tempo` ±4 % **그리고** 재생 sequence ≥ 0.95.
+  - `critical.key` = 첫 조표 **그리고** sequence ≥ 0.95.
+  - 0.95 = "음 20개 중 1개까지": 변화 표시가 한 마디 안팎 어긋난 정도(`critical.SEQUENCE_MIN`, 이유는 코드와 README에 있다).
+  - aggregate 허용치 −0.005, subgroup 평균, micro guard.
+- **증거**:
+  - FIN-TEMPO-HALVED-MIDWAY → `struct.tempo.timeline_accuracy`, `critical.playback_tempo` REGRESSION.
+  - FIN-METRE-TAIL → `struct.time_sig.timeline_accuracy`, `critical.meter`.
+  - FIN-KEY-TAIL(임시표로 음높이는 맞춘 판) → `struct.key.timeline_accuracy`, `critical.key`.
+  - unit `WholeScoreSequences` 7개.
+- **baseline에서 바뀐 판정은 모두 실제다.**
+  - 이전에는 템포가 맞다고 채점되던 6케이스가 틀렸다(sonatina/002 ×3, hanon/007, 찬송가 2곡): SUT가 박자를 겹박자로 잘못 읽어 `<sound tempo>`가 우연히 맞지만, 재생기는 점4분 표시를 따라 1.5배로 재생한다(모두 이미 meter 실패라 usable은 그대로).
+  - burgmuller25/015(C → E♭ 전조)는 SUT가 조표 하나만 써서 음의 27 %가 틀린 조표 아래 읽힌다.
+  - micro M22(120 → 80)는 SUT가 평균 템포 하나를 써서 모든 음이 틀린 템포다.
+
+### 20.4 F2: 음표 모양·마디 번호·쉼표·clef
+
+앱이 읽는 방식 그대로 읽는다. reader/3이 clef, 앱이 쓰는 마디 번호(`parseInt` 또는 순번), 쉼표의 type·dots·tuplet을 읽는다.
+
+| metric | 무엇 | gate |
+| --- | --- | --- |
+| `notation.note_shape.consistency` | 음표·쉼표의 인쇄 모양(type — 없으면 앱의 `typeFromQ` —, dots, tuplet)이 길이와 맞는 비율. 마디 전체 온쉼표는 예외 | aggregate 허용치 0, micro guard |
+| `notation.duration.page_accuracy` | 페이지가 보여 주는 음가(묶인 조각들의 모양 합)가 음악의 음가와 같은 음의 비율 | `critical.note_values`(§20.7) |
+| `struct.measure_numbers.valid` | 마디 번호가 0 또는 1부터 1씩 증가(반복·건너뜀·순서 바뀜 = 0). 커밋된 354개 악보가 모두 그렇다 | `critical.structure` |
+| `struct.measure_numbers.app_onset_accuracy` | 앱이 번호로 마디를 찾아 음을 놓는 위치(`CanonicalScore.app_bar_starts`: 같은 번호는 한 자리)가 MusicXML의 위치와 같은 음의 비율 | `critical.structure` |
+| `read.bar_completeness` | 모든 보표가 마디를 채우는가(첫·끝 마디, implicit, 반복에서 나뉜 두 반 마디는 예외) | `critical.structure` |
+| `read.ledger_lines.heavy_rate` ↓ | clef에서 덧줄 4개 이상이 필요한 음의 비율(앱 규칙: F=bass, C=alto, 그 밖=treble, 기본 1보표 treble·2보표 bass) | aggregate 허용치 0.005 |
+
+- **증거**:
+  - FIN-DOTS-DROPPED, FIN-NOTE-TYPE-SHORTER, FIN-REST-TYPE-LONGER → `note_shape.consistency`.
+  - FIN-BAR-NUMBERS-RESTART → `app_onset_accuracy`.
+  - FIN-BAR-NUMBERS-SKIP/-SWAP → `measure_numbers.valid`.
+  - FIN-TRAILING-RESTS-SHORT → `bar_completeness`.
+  - FIN-BASS-STAFF-TREBLE-CLEF → `ledger_lines.heavy_rate`.
+  - unit `NoteShapesBarsAndNumbers` 7개.
+- **parser parity** (`node/conformance.js`, `tiers.compare_projection`)가 마디 번호, 음표·쉼표 모양(type, dots, 쉼표 tuplet)까지 비교한다. 258/258이다.
+  - 점을 무시하는 reader는 89/258, 마디를 순번으로 매기는 reader는 254/258로 잡힌다(pickup이 0번인 4곡).
+- **known failure 3종 추가**(`known-defects/2`):
+  - `note_shape_mismatch` 4파일·8개: Für Elise 2마디(4분음표가 점8분으로 그려짐), 찬송가 2곡의 6박 온음표(점 없음), burgmuller25/019.
+  - `incomplete_bars` 10파일·38마디.
+  - `bar_numbering` 0.
+- **SUT에서 새로 드러난 결함**(이슈 19): 셋잇단 안의 쉼표를 `<time-modification>` 없이 4분쉼표로, 1틱 쉼표를 64분쉼표로 쓴다. core 107케이스에 하나 이상 있다(consistency 0.991).
+
+### 20.5 F3: golden 분류
+
+- **projection** (`semantic.py`, schema `ppp.bench-semantic/2`)을 둘로 나눴다:
+  - **structure**: 마디(앱 번호, 길이, implicit), 보표 수, clef, 각 음표·쉼표의 보표와 voice 자리(voice 번호는 마디·보표마다 등장 순서로 다시 매겨 형식으로 둔다).
+  - **music**: 마디별 박자·조, 템포 표시, 음표(위치, 길이, 음높이, 철자, type, dots, tie, tuplet, 임시표), 쉼표(위치, 길이, type, dots, tuplet), 페달.
+- **라벨**: `STRUCTURAL_CHANGE` > `SEMANTIC_CHANGE` > `SERIALIZATION_ONLY`(구조·음악·stats·마디 시각이 모두 같을 때만). 음높이만 바뀐 경우는 구조 변화로 올라가지 않는다(같은 음이 다른 보표·voice로 옮긴 경우만 구조).
+- 저장된 snapshot의 schema가 다르면 `FAIL`로 알리고, bless 로그는 "MusicXML bytes unchanged"를 케이스마다 적는다. 17개 모두 bytes unchanged로 재bless했다.
+- **증거**(unit `GoldenClassification`, G15 입력):
+  - 서식·voice 번호 → SERIALIZATION_ONLY.
+  - 점 제거, type 변경, 쉼표 type 변경 → SEMANTIC_CHANGE.
+  - clef 교체, 마디 번호 중복, 왼손 음 하나를 오른손 보표로 → STRUCTURAL_CHANGE.
+  - final_review mutation 10종 중 어느 것도 SERIALIZATION_ONLY가 아니다.
+
+### 20.6 PredTime (§19 m1)
+
+- **원인**: 예측 쪽 시간 모델이 SUT와 달랐다.
+  - SUT는 박을 악보에서 등간격으로 두고, 박 사이를 시간에 대해 선형으로, 첫·끝 박 바깥은 그 간격으로 외삽한다(`tickToSec`).
+  - reader/2의 PredTime은 추적된 박 중 마디 안에 든 것만 마디에 고르게 폈다. 그래서 첫 박보다 앞서 시작하는 마디(꽉 찬 첫 마디로 쓴 pickup)나 끝 박 뒤로 이어지는 마디에서는 박이 모자라 음이 최대 한 박 늦게 놓였다.
+  - 정답 쪽(연주기의 TimeMap)에는 이런 비대칭이 없다.
+- **수정** (`timemap.PredTime`, `extend_beats`): 박 격자를 SUT처럼 barStarts 범위까지 외삽한다. 마디 시작·끝을 박 좌표로 옮기고, 위치를 박 좌표에서 보간해 시간으로 되돌린다. 마디선이 박 사이에 있어도(위상) 정확하다.
+- **효과**: identity F1 0.9812 → 0.9832, `critical.pitch_integrity` 2케이스 추가 통과. 리뷰가 측정한 43케이스의 변화와 같은 방향·크기다.
+- **고정**:
+  - unit `PredTimeFollowsTheSutBeatModel` 4개: 첫 박 전의 꽉 찬 첫 마디, 박 사이의 마디선, `extend_beats`, golden G05의 pickup 음이 자기 박(1.75 s)에 놓임.
+  - `final_oracle.py`의 pickup-bar 변형이 만점이다(리뷰 때는 5곡 identity 0.98).
+- §18.3의 "BLOCKED, 지금 수치에 영향 없음"은 사실이 아니었다. SUT 변경 없이 benchmark 안에서 고쳤다.
+
+### 20.7 Usable: 음가
+
+- **gate** `critical.note_values`: 짝지어진 음의 80 % 이상이 음악의 음가를 가져야 한다. **재생되는 대로**(`notation.duration.accuracy`, `<duration>`)와 **보이는 대로**(`notation.duration.page_accuracy`, 인쇄 모양) 둘 다다.
+- **근거**:
+  - 위치(0.90)보다 느슨하다. 음가가 틀려도 음은 연주되는 자리에 있기 때문이다.
+  - 5개 중 1개를 넘으면 대부분의 마디가 음악과 다른 리듬을 보여 주거나 재생한다. 이것이 "심각하게 틀린" 상태다.
+  - hands gate와 같은 1/5 수준이다.
+  - 다른 임계로 baseline을 비교하지 않았다. 원칙에서 정하고 그 효과를 보고한다.
+- **처음 설계와 바꾼 점**: "모든 모양이 길이와 맞아야 한다(1.0)"는 usable 판정에서 뺐다. SUT가 셋잇단 쉼표 하나를 잘못 써도 곡 전체가 unusable이 되어 다른 gate보다 훨씬 엄격했기 때문이다. 대신 독자가 실제로 읽는 음가(모양)를 같은 80 % 규칙에 넣었다. 모양 불일치 자체는 허용치 0의 회귀 metric으로 남았다.
+- **효과**:
+  - core usable 25.9 % → 18.1 %. 음가 gate 통과 49.4 %.
+  - czerny599/049 human/onset(리뷰의 표본, 음가 0.19)은 이제 unusable이다. unit `UsableNeedsTheRightNoteValues`.
+- **중요한 관찰**: 음가 gate의 통과율은 합성 연주기의 릴리스 모델에 크게 좌우된다.
+  - deadpan(40 ms 일찍 뗌) 72 %, human(20–80 ms) 51 %, human-alt(30–120 ms) 18 %, AMT(릴리스 ±15 % 잡음) 5 %.
+  - robust usable은 6.0 %다(음가 gate 없이는 28.4 %).
+  - SUT가 키를 뗀 시각을 음가로 적기 때문이다(이슈 18). 사용자에게는 실제로 틀린 악보다.
+  - 그러나 이 릴리스 모델들은 실제 연주로 검증되지 않았다. 그래서 M11의 trigger에 "음가(릴리스) 추론을 바꾸는 Goal"을 넣었다(§20.13).
+
+### 20.8 새 adversarial mutation (`mutation-check`에 편입, 총 30 + no-op)
+
+| id | 범주 | 잡는 metric |
+| --- | --- | --- |
+| FIN-TEMPO-HALVED-MIDWAY | 곡 중간 템포 | `struct.tempo.timeline_accuracy`, `critical.playback_tempo` |
+| FIN-METRE-TAIL | 후반 박자표 | `struct.time_sig.timeline_accuracy`, `critical.meter` |
+| FIN-KEY-TAIL | 후반 조표(임시표는 맞춤) | `struct.key.timeline_accuracy`, `critical.key` |
+| FIN-DOTS-DROPPED | 점 제거 | `notation.note_shape.consistency`, `notation.duration.page_accuracy` |
+| FIN-NOTE-TYPE-SHORTER | type 변경 | 같은 둘 |
+| FIN-LONG-NOTES-HALVED | 음가(길이) 변형 | `notation.duration.accuracy`, `critical.note_values` |
+| FIN-BAR-NUMBERS-RESTART | 마디 번호 반복 | `struct.measure_numbers.app_onset_accuracy`, `critical.structure` |
+| FIN-BAR-NUMBERS-SKIP | 마디 번호 건너뜀 | `struct.measure_numbers.valid` |
+| FIN-BAR-NUMBERS-SWAP | 마디 번호 순서 바뀜 | `struct.measure_numbers.valid` |
+| FIN-BASS-STAFF-TREBLE-CLEF | clef·보표 | `read.ledger_lines.heavy_rate` |
+| FIN-TRAILING-RESTS-SHORT | 쉼표 길이 | `read.bar_completeness`, `critical.structure` |
+| FIN-REST-TYPE-LONGER | 쉼표 모양 | `notation.note_shape.consistency` |
+| FIN-ACCIDENTAL-ON-EVERY-NOTE | 표기 가독성 | `notation.accidentals.courtesy_per_100` |
+
+`mutation-check`: **31/31** — harmful 30종이 모두 REGRESSION이고 각자 기대한 metric을 이름으로 대며, no-op은 `results.json`이 byte 동일하다. Windows 194 s(다른 작업과 동시), Linux 186 s.
+
+`final_review.py`(리뷰가 쓴 10종, 이제 목표 metric을 요구하고 exit 1): **10/10** — 모두 core REGRESSION이고 각자 목표 metric을 이름으로 댄다.
+
+| mutation | core | smoke | robust | replay | golden |
+| --- | --- | --- | --- | --- | --- |
+| FINAL-DOTS-DROPPED | REGRESSION | REGRESSION | REGRESSION | REGRESSION | 9 SEMANTIC_CHANGE, 8 ok |
+| FINAL-TEMPO-HALVED-MIDWAY | REGRESSION | REGRESSION | REGRESSION | REGRESSION | 17 SEMANTIC_CHANGE |
+| FINAL-METRE-TAIL | REGRESSION | REGRESSION | REGRESSION | REGRESSION | 17 SEMANTIC_CHANGE |
+| FINAL-KEY-TAIL | REGRESSION | REGRESSION | REGRESSION | REGRESSION | 17 SEMANTIC_CHANGE |
+| FINAL-BASS-STAFF-TREBLE-CLEF | REGRESSION | REGRESSION | REGRESSION | REGRESSION | 17 STRUCTURAL_CHANGE |
+| FINAL-BAR-NUMBERS-RESTART | REGRESSION | REGRESSION | REGRESSION | REGRESSION | 15 STRUCTURAL_CHANGE, 2 ok (4마디 이하) |
+| FINAL-ACCIDENTAL-ON-EVERY-NOTE | REGRESSION | REGRESSION | REGRESSION | REGRESSION | 17 SEMANTIC_CHANGE |
+| FINAL-TRAILING-RESTS-SHORT | REGRESSION | REGRESSION | REGRESSION | REGRESSION | 7 SEMANTIC_CHANGE, 10 ok |
+| FINAL-PEDAL-HELD-TO-BARLINE | REGRESSION | PASS | PASS | PASS | 1 SEMANTIC_CHANGE, 16 ok |
+| FINAL-TOP-REGISTER-OCTAVE-DOWN | REGRESSION | PASS | REGRESSION | PASS | 17 ok |
+
+- 리뷰 때 SERIALIZATION-ONLY였던 점·clef·마디 번호·쉼표 mutant는 이제 SEMANTIC_CHANGE 또는 STRUCTURAL_CHANGE다.
+- 마지막 두 행의 PASS:
+  - 페달: robust와 replay에는 페달 연주가 없다. smoke에는 페달 케이스 4개가 있지만, 합성 페달 연주기가 원래 마디선 20 ms 앞에서 페달을 떼므로 해제를 마디 끝으로 옮겨도 거의 변하지 않는다. 그 변화는 smoke의 ×4 허용치 안이다. core는 micro guard와 거짓 페달률로 잡는다.
+  - A6 이상: smoke와 replay에는 그 음역이 없다.
+  - golden `ok`도 같은 이유다(그 입력에서 출력이 바뀌지 않는다).
+
+### 20.9 이번 세션이 찾은 추가 결함 (모두 수정)
+
+1. **내가 만든 쉼표 모양 metric이 셋잇단 쉼표를 오판했다.** 캐논 `Rest`가 `<time-modification>`을 담지 않아 burgmuller25/007 같은 파일의 셋잇단 8분쉼표(1/3박)를 "길이와 다른 모양"으로 셌다(처음 감사 10파일·77개). `Rest.tuplet`을 추가했고 4파일·8개가 되었다. 이는 첫 raw-XML 스캔의 결과와 같다. baseline 기록 전에 고쳤다.
+2. **replay-public·omr-live가 반올림 안 된 결과를 6자리 baseline과 비교했다.** synthetic runner는 JSON을 한 번 거쳐 비교하지만 `private.run_private`와 `tiers.omr_live`는 그러지 않았다. 허용치 0인 metric에서 1e-7의 반올림 잔차가 회귀가 될 수 있었다(실제로는 "+0.000000 improvement"로 드러났다). 두 경로 모두 고쳤다. unit `FixtureSuitesCompareWhatTheyWrite`.
+3. **앱 템포 모델**(§20.3): 이슈 1의 서술을 정정했다.
+4. **내 oracle 스크립트의 구성 오류 두 개**: 타입 없는 쉼표와 모든 템포 표시 제거. 벤치마크가 옳게 잡은 것을 확인하고 구성을 고쳤다.
+
+### 20.10 수치 (baseline: metrics/4, reader/3, gate/3, sqi/2; audio-score.js `559a1f40…`)
+
+| suite | 케이스 | usable | 진단점수 | 비고 |
+| --- | --- | --- | --- | --- |
+| smoke | 44 | 38.6 % | 86.91 | |
+| core | 553 | **18.1 %** | 76.86 | 진단점수 평균 이상인데 unusable 199 |
+| robust | 282 | 6.0 % | 76.55 | 음가 gate 17.7 % (§20.7) |
+| full | 4,144 + hold-out 832 | 18.0 % (hold-out 23.2 %) | 78.60 (hold-out 76.55) | |
+| replay-public | 6 | 16.7 % | 85.55 | |
+| omr-live | 4 | 0 % | 53.32 | |
+
+core critical gate:
+
+| gate | 통과율 | 적용 | 실패 |
+| --- | --- | --- | --- |
+| meter | 57.7 % | 553 | 234 |
+| playback_tempo | 52.8 % | 553 | 261 |
+| beat_placement | 45.2 % | 553 | 303 |
+| note_values (신규) | 49.4 % | 553 | 280 |
+| pitch_integrity | 92.8 % | 553 | 40 |
+| key | 88.6 % | 405 | 46 |
+| hands | 81.6 % | 553 | 102 |
+| structure | 100 % | 553 | 0 |
+| accidentals | 100 % | 553 | 0 |
+| pedal | 96.7 % | 30 | 1 |
+
+새 metric(core 평균):
+- sequence: 박자 0.577, 조 0.892, 재생 템포 0.807(`Score.tempo` 0.539)
+- 음가: 0.739, 페이지 음가 0.739
+- 모양 일치 0.991
+- 마디 완결 1.000, 마디 번호 1.000 / 1.000
+- 덧줄 4개 이상 0.008, courtesy 임시표 0.0/100음
+- identity F1 0.983
+
+known failure(`known-defects/2`, 329파일):
+- key_signature_playback 92파일·6,119음, tie_without_stop 16·121, bar_accidental_not_carried 10·18, octave_shift_playback 30·2,229, bar_integrity 24·88마디, tempo_marks_disagree 4, grace_notes_dropped 17·244(KNOWN_LIMITATION)
+- 신규: note_shape_mismatch 4·8, incomplete_bars 10·38마디, bar_numbering 0
+- 제외는 39(L8 24, P1 15). 격리 15는 그대로다.
+
+§18.5와의 차이는 버전(metrics/3 → /4, reader/2 → /3)과 정의 때문이다. baseline history에 전환이 기록되어 있다. 입력(lock의 case별 sha)은 바뀌지 않았다. relock은 reader 버전 필드뿐이다.
+
+### 20.11 결정론과 성능
+
+| 조건 | smoke | core | robust | replay-public | full |
+| --- | --- | --- | --- | --- | --- |
+| Windows | `a837acbe…` | `289c51d2…` | `a1d9364f…` | `cf590f1f…` | `aae27ccf…` |
+| Windows, 다른 cwd(`tests/bench/unit`) | | `289c51d2…` | | | |
+| Windows, listdir·glob·git 목록·suite 참조 역순 | `a837acbe…` | `289c51d2…` | | | |
+| Linux Docker offline, LF clone, `/w` | `a837acbe…` | `289c51d2…` | `a1d9364f…` | `cf590f1f…` | `aae27ccf…` |
+
+- 시간과 환경은 `run.json`에만 있다.
+- 코드·데이터에 로컬 절대 경로가 없다. grep 결과는 문서의 예시 경로뿐이다.
+- 실행 시간(Windows): smoke 0.9 s, core 16 s(다른 cwd, 부하 중 20 s), robust 8.7 s, full 131–175 s(부하에 따라), mutation-check 194 s(30+1 변형), final_review 286 s, adversarial 268 s, final_oracle 약 5 s, unit 12 s.
+
+### 20.12 완료 검증
+
+| # | 항목 | Windows | Linux (Docker) |
+| --- | --- | --- | --- |
+| 1 | final_review | 10/10 OK | 10/10 (285 s) |
+| 2 | final_oracle | 4 OK, 0 GAP | 4 OK (9 s) |
+| 3 | adversarial | 25 OK, 0 GAP (268 s). `--only lock --conformance` 4 OK | 25 OK, 0 GAP (255 s) |
+| 4 | mutation-check | 31/31 | 31/31 (186 s) |
+| 5 | smoke / core / robust | run + check PASS | run + check PASS (20 s / 11 s) |
+| 6 | full | run + check PASS (4,976) | run + check PASS (181 s) |
+| 7 | golden | 17/17 identical | 17/17 |
+| 8 | correctness | 13/13 | 13/13 |
+| 9 | parser parity (T1) | 258/258. 점을 무시하는 reader 89/258, 마디를 순번으로 매기는 reader 254/258 | – (서버·네트워크 필요) |
+| 10 | omr-live (T1) | PASS, 4케이스, 47.7 s | – (Audiveris 필요) |
+| 11 | unit | 179 OK | 179 OK |
+| 12 | transcription-core | 16 OK | 16 OK (plain Python) |
+| 13 | arranger | 3 OK | 3 OK |
+| 14 | `npm test` | 26/26 suite, 확인 1,041개, 실패 0. "recording → score through the UI"만 transcriber가 없어 스스로 SKIPPED | – |
+| 15 | `py_compile` | 63/63 (bench `.py` + `beat_track_test.py`) | |
+| 16 | `node --check` | 3/3 (`node/*.js`) | |
+| 17 | lint / provenance | 0 error / 일치 | 0 error / 일치; 업로드 artifact 11개 경로 모두 생성, 실행 뒤 추적 파일 변경 0, 로컬 절대 경로 grep 0 |
+| 18 | 범위 | `git diff 663d463`에서 프로덕션 파일 변경 0. `tests/bench`·`docs` 밖은 workflow(nightly 2단계 추가), `package.json` scripts, `.gitignore`, README 3개, `beat_track_test.py`뿐 | |
+| 19 | 로컬 절대 경로 의존 | 없음(코드·suite·baseline·fixture) | clone 경로 `/w`에서 동일 결과 |
+| 20 | record-replay (T2) | 실행 안 함: 실제 녹음, GPU, 새 데이터가 필요하다 | |
+
+### 20.13 M11: 실제 사람 연주
+
+**BLOCKED_ACCEPTABLE.** 가짜 "실제 녹음"은 만들지 않았다. `replay-public`의 `input:recorded`는 비어 있다.
+
+**trigger 조건**(README, CURRENT_STATE에도 같은 문구가 있다): onset·beat·tempo·meter 추론 production logic을 바꾸는 첫 Goal을 시작하기 전에, 라이선스가 확인된 실제 사람 연주 **최소 3곡**(단순 2박, 3박, 겹박자)을 귀로 확인한 마디 시작과 함께 녹음해 baseline에 넣어야 한다.
+
+이번 세션의 증거(§20.7)에 따라 **키 릴리스를 음가로 바꾸는 규칙을 바꾸는 Goal에도** 같은 조건을 건다. writer·ScoreGraph·engraving만 바꾸는 Goal에는 M11이 G0 merge를 막지 않는다.
+
+### 20.14 남은 것
+
+- 로컬 `main`의 `d82bb71` 처리(사용자). 미커밋 변경의 커밋(사용자, 한 커밋).
+- GitHub Actions에서의 첫 실행은 미검증이다(push 금지). 확인할 것은 §19.20 ②에 더해 다음이다:
+  - nightly의 `final_review.py`와 `final_oracle.py`가 exit 0이다.
+  - Linux + Python 3.13에서 results sha가 이 절의 값과 같다.
+- voice·beam·stem은 metric이 없다(G4). 음가 판정은 합성 릴리스 모델에 의존한다(M11).
+- `adversarial.py`의 oracle은 SQI 구성 metric만 본다(원래대로 두었다). 더 강한 검사는 `final_oracle.py`에 있다.
+
+### 20.15 결론
+
+**`READY_FOR_SHORT_REVIEW`**
+
+- §19가 요구한 F1·F2·F3·PredTime·usable-음가를 benchmark 안에서 고쳤다. 새 mutation 13종과 unit test 26개로 고정했다.
+- 앱이 그리거나 재생하는 MusicXML 필드 가운데 리뷰가 찾은 것은 이제 모두 metric이 읽는다: 음표·쉼표 모양, 마디 번호, 곡 전체의 템포·박자표·조표, clef, 쉼표 길이, 불필요한 임시표. golden은 이런 변화를 형식으로 부르지 않는다.
+- 헤드라인은 더 정직해졌다(core usable 25.9 % → 18.1 %). 음가 gate가 합성 연주의 릴리스 모델에 민감하다는 사실은 문서와 M11 trigger에 반영했다.
+- 남은 merge 선행 조건은 이 세션의 권한 밖이다: 로컬 `main`의 `d82bb71`, 한 번의 커밋.
+- 짧은 재리뷰에서 볼 것:
+  1. 음가 gate의 임계(0.80)와 그 합성 연주 의존성(§20.7)
+  2. sequence 임계(0.95)
+  3. golden 구조/음악 분류 규칙(§20.5)
+  4. 새 known failure 두 종의 규칙(split bar 예외)

@@ -18,7 +18,16 @@ PROFILES: Dict[str, Dict[str, Any]] = {
     "human": {"jitter": 0.015, "drift": 0.0, "period": 14, "gap": (0.02, 0.08), "vel_noise": 8, "roll_p": 0.25, "amt": False, "accent": True},
     "rubato": {"jitter": 0.025, "drift": 0.10, "period": 14, "gap": (0.02, 0.08), "vel_noise": 8, "roll_p": 0.25, "amt": False, "accent": True},
     "amt": {"jitter": 0.020, "drift": 0.04, "period": 14, "gap": (0.02, 0.10), "vel_noise": 12, "roll_p": 0.25, "amt": True, "accent": True},
+    # `human` plus the sustain pedal: down just after every downbeat, up just before the next (§17 M4)
+    "pedal": {"jitter": 0.015, "drift": 0.0, "period": 14, "gap": (0.02, 0.08), "vel_noise": 8, "roll_p": 0.25, "amt": False, "accent": True,
+              "pedal": True},
+    # A second generator family for robustness (§17 M11): none of the cues the main family gives —
+    # no downbeat accent, no louder melody or bass, no rolled chords — and a triangular timing error.
+    # It is not real playing; it exists so that a change tuned to one generator's habits shows up.
+    "human-alt": {"jitter": 0.020, "drift": 0.0, "period": 14, "gap": (0.03, 0.12), "vel_noise": 10, "roll_p": 0.0, "amt": False,
+                  "accent": False, "voicing": False, "jitter_shape": "triangular", "base_vel": 70},
 }
+PEDAL_DOWN_S, PEDAL_UP_S = 0.05, 0.02   # pedal-profile offsets after a downbeat / before the next
 
 BEAT_PROFILES: Dict[str, Dict[str, Any]] = {
     "none": None,
@@ -158,15 +167,21 @@ def perform(canon, ref_id: str, profile: str, beats: str, seed: int, *, expect: 
         nominal_on = tm.sec(s.onset_q)
         nominal_off = tm.sec(s.onset_q + s.dur_q)
         # 2) per note: jitter, release gap, velocity noise, then AMT errors
-        jitter = rng.uniform(-prof["jitter"], prof["jitter"]) if prof["jitter"] else 0.0
+        if not prof["jitter"]:
+            jitter = 0.0
+        elif prof.get("jitter_shape") == "triangular":   # sum of two uniforms: most errors small, few large
+            jitter = (rng.uniform(-prof["jitter"], prof["jitter"]) + rng.uniform(-prof["jitter"], prof["jitter"])) / 2
+        else:
+            jitter = rng.uniform(-prof["jitter"], prof["jitter"])
         gap = rng.uniform(*prof["gap"]) if prof["gap"][0] != prof["gap"][1] else prof["gap"][0]
         vnoise = rng.uniform(-prof["vel_noise"], prof["vel_noise"]) if prof["vel_noise"] else 0.0
         on = nominal_on + jitter + roll.get(s.id, 0.0)
         off = max(on + 0.05, nominal_off - gap)
-        top = s.hand == "r" and s.midi == max(x.midi for x in g)
-        bottom = s.hand == "l" and s.midi == min(x.midi for x in g)
+        voicing = prof.get("voicing", True)
+        top = voicing and s.hand == "r" and s.midi == max(x.midi for x in g)
+        bottom = voicing and s.hand == "l" and s.midi == min(x.midi for x in g)
         accent = prof["accent"] and s.onset_q in first_beat
-        vel = 64 + 12 * top + 6 * bottom + 6 * accent + vnoise
+        vel = prof.get("base_vel", 64) + 12 * top + 6 * bottom + 6 * accent + vnoise
         vel = int(_floor(min(110.0, max(20.0, vel)) + 0.5))
         drop = False
         ghost = None
@@ -210,8 +225,16 @@ def perform(canon, ref_id: str, profile: str, beats: str, seed: int, *, expect: 
             last_by_pitch[n["midi"]] = n
         notes = merged
 
+    pedals: List[Dict[str, float]] = []
+    if prof.get("pedal"):
+        for m in measures:
+            if m.implicit and m.index == 0:
+                continue
+            down, up = tm.sec(m.start_q) + PEDAL_DOWN_S, tm.sec(m.start_q + m.len_q) - PEDAL_UP_S
+            if up > down:
+                pedals.append({"on": round_t(down), "off": round_t(up)})
     inp: Dict[str, Any] = {"notes": [{"on": n["on"], "off": n["off"], "midi": n["midi"], "vel": n["vel"]} for n in notes],
-                           "pedals": [], "title": "bench"}
+                           "pedals": pedals, "title": "bench"}
     truth = [n["_truth"] for n in notes]
 
     # beat information

@@ -2,76 +2,208 @@
 
 This directory measures **how good the sheet music PPP writes is**, with numbers that are
 reproducible and do not need anyone to look at a score. It does not make the scores better.
-Its job is to tell an improvement from a regression. Design: `docs/GOALS/G00_QUALITY_FOUNDATION.md`.
+Its job is to say "worse" whenever a user would get a worse score, and never to call a real
+improvement a regression. Design: `docs/GOALS/G00_QUALITY_FOUNDATION.md` (§17 and §19 are the
+independent reviews, §18 and §20 the fixes they led to).
 
 What it measures: mainly `audio-score.js` `toMusicXml()`, the one function every
 recording-to-score path goes through (helper ensemble, browser model, arrange mode). It also has a
-live OMR tier and a replay tier for recorded AMT output.
+live OMR tier, a replay tier for real model output, and an audit of the catalogue PPP ships.
 
 How: each licence-clean **reference score** in the repository is played by a deterministic
-**synthetic performer** (exact, human, rubato, AMT-like errors, with or without beat information).
-The performance goes through `toMusicXml()`. The score that comes out is read back by the same rules
-the app uses (`parseMusicXML`) and compared with the reference. Notes are matched in seconds and
-scored in notation terms: metre, key, tempo, bar positions, note values, hands, spelling, false
-ties, tuplets and bar integrity.
+**synthetic performer** (exact, human, rubato, AMT-like errors, sustain pedal, with or without beat
+information). The performance goes through `toMusicXml()`. The MusicXML that comes out — the
+artifact the user gets — is read back and compared with the reference: notes are matched in
+seconds and scored in notation terms.
 
-Requirements: Python ≥ 3.10 (standard library only) and Node (any recent version; the baseline was
-recorded with v24). No npm install, no browser, no network, no GPU.
+Requirements: Python ≥ 3.10 (standard library only), Node (the baseline was recorded with v24) and
+a git checkout with the `git` executable: only committed files are truth, so `run`, `lint-corpus` and
+`known-defects` read `git ls-files` and stop with `ERROR NEEDS_GIT` (exit 2) without it. No npm
+install, no browser, no network, no GPU.
 
 ## Commands
 
 ```sh
-npm run bench:smoke          # 32 cases, < 1 s: run + check against the baseline
-npm run bench                # core gate, 523 cases, ~15 s: run + check (exit 1 on a regression)
-npm run bench:full           # every reference incl. hold-out, 4,172 cases (nightly / manual)
-npm run test:bench           # the benchmark's own unit tests + golden snapshots
+npm run bench:smoke          # 44 cases, ~1 s: run + check against the baseline
+npm run bench                # core gate, 553 cases, ~20 s: run + check (exit 1 on a regression)
+npm run bench:full           # every reference incl. hold-out, 4,976 cases (nightly / manual, ~2-3 min)
+npm run test:bench           # unit tests + golden snapshots + musical correctness
 
 python tests/bench/run.py list                        # corpus, suites, baselines
 python tests/bench/run.py lint-corpus                 # check the reference registry
 python tests/bench/run.py run   --suite core          # writes tests/bench/out/core/
 python tests/bench/run.py check --suite core          # exit 0 PASS · 1 REGRESSION · 2 ERROR
+python tests/bench/run.py run   --suite robust        # a variant of the synthetic performer (see Tiers)
 python tests/bench/run.py ab --suite core --a git:HEAD --b worktree   # what did my change do?
-python tests/bench/run.py golden                      # exact-output snapshots
-python tests/bench/run.py mutation-check              # proves the gate catches real regressions
+python tests/bench/run.py golden                      # semantic + byte snapshots
+python tests/bench/run.py correctness                 # the reader against independent MusicXML fixtures
+python tests/bench/run.py known-defects               # catalogue defects PPP ships (measured, not fixed)
+python tests/bench/run.py mutation-check              # proves the gate catches 30 planted regressions
 python tests/bench/run.py update-baseline --suite core --reason "..."
 python tests/bench/run.py relock --suite core --reason "..."
+python tests/bench/tools/make_provenance.py [--check] # licence evidence manifest
 python tests/bench/run.py legacy --manifest PATH      # a tests/golden_benchmark.py manifest
 python tests/bench/run.py run --suite-file PATH       # a private suite (outputs stay beside it)
-python tests/bench/run.py conformance                 # T1: reader vs the app's parseMusicXML
-python tests/bench/run.py run --suite omr-live        # T1: PDF/PNG/JPG through the app's OMR import
+python tests/bench/run.py conformance                 # T1: parser parity with the app
+python tests/bench/run.py omr-live                    # T1: PDF/PNG/JPG through the app's OMR import
 python tests/bench/run.py record-replay               # T2: record helper /transcribe fixtures
 python tests/bench/run.py run --suite replay-public   # replay recorded helper results
+python tests/bench/review/adversarial.py              # the independent review's checks (nightly)
+python tests/bench/review/final_review.py             # the final review's mutations (nightly)
+python tests/bench/review/final_oracle.py             # correct outputs engraved differently (nightly)
 ```
 
 Every command prints UTF-8 even on a cp949 console, with no `PYTHONIOENCODING` needed.
 
-## The two layers of regression protection
+## What a result says
 
-1. **Metric gate** (`run` + `check`). A new `results.json` is compared with the committed
-   baseline (`baselines/<suite>.json`) at three levels:
-   - each aggregate metric, against its own tolerance;
-   - each tag group (`set:hymns`, `profile:amt`, `beats:none`, …), so one group's gain cannot hide
-     another group's loss;
-   - each case: a case that errors now, or loses ≥ 10 SQI points, fails.
+Three layers, in this order of importance:
 
-   The tolerances live in the suite file's `gate` block, so changing one shows up in review.
-2. **Golden snapshots** (`golden`). Fourteen fixed inputs, including the lock, arrangement and
-   PM2S-grid paths, must produce **byte-identical** MusicXML and the same key stats fields. A
-   change that leaves every metric alone still shows up here. The output is a per-bar diff with
-   the metric changes.
+1. **Usable-score rate** — the release headline. A case is *usable* when every **critical gate**
+   that applies to it passes. One failed gate makes a score unusable however good its other numbers
+   are. The gates and why (`pppbench/metrics/critical.py`):
 
-`mutation-check` shows the gate is not decorative. It copies `audio-score.js`, plants five known
-regressions and one no-op, and requires each regression to fail on the metric it damages and the
-no-op to pass with a byte-identical `results.json`. Last result:
+   | gate | passes when | why |
+   | --- | --- | --- |
+   | `critical.meter` | the main time signature (read from the MusicXML) is exact, and ≥ 95 % of notes sit in bars whose time signature is the music's | every bar is read in it |
+   | `critical.playback_tempo` | the app's score tempo (`<sound tempo>` first: practice tempo, metronome, tempo %) is within ±4 %, and the player's tempo map (every mark, `PianoScore.tempoMap`) is within ±4 % for ≥ 95 % of notes; missing = fail | practice and playback |
+   | `critical.beat_placement` | ≥ 90 % of kept notes in the right bar and position | what a reader reads |
+   | `critical.note_values` | ≥ 80 % of kept notes have the music's value, both as played (`<duration>`) and as printed (`<type>`, `<dot>`, tuplet) | the written rhythm |
+   | `critical.pitch_integrity` | identity F1 ≥ 0.95 against the music | wrong or missing notes |
+   | `critical.key` | the first key signature is exact, and ≥ 95 % of notes are read under the music's key signature (n/a when the registry cannot trust the key) | unmarked notes' pitch |
+   | `critical.hands` | ≥ 80 % of notes on the right hand (n/a for one-staff references) | PPP practises hands separately |
+   | `critical.structure` | no overfull, underfull or incomplete bar (every staff fills its bar), no empty bar added at an end, bar numbers counting up by one, stats that describe the MusicXML | structure; the app finds bars by number |
+   | `critical.accidentals` | every accidental the page needs is printed, and none names another pitch | the reader's pitch |
+   | `critical.pedal` | when the performance used the pedal, ≥ half its changes are written | sustain in playback |
 
-| mutation | what it breaks | verdict | metric that failed (baseline → mutant) |
-| --- | --- | --- | --- |
-| MUT-HANDS | hand split at middle C | REGRESSION | `notation.hand.accuracy` 0.888 → 0.833 |
-| MUT-KEY | key always C major | REGRESSION | `struct.key.fifths_exact` 0.895 → 0.619 |
-| MUT-DUR | every note one 16th long | REGRESSION | `notation.duration.accuracy` 0.838 → 0.182 |
-| MUT-METRE | metre always 2/4 | REGRESSION | `struct.time_sig.exact` 0.489 → 0.199 |
-| MUT-PHASE | bar phase one beat late | REGRESSION | `notation.onset_pos.accuracy` 0.373 → 0.128, `struct.downbeat.f1` 0.543 → 0.245 |
-| MUT-NOOP | a comment | PASS | identical `results.json` |
+   The thresholds were set from what a player needs, not fitted to current results
+   (`pppbench/metrics/critical.py` gives each reason). The 95 % for tempo, metre and key sequences
+   is "at most 1 note in 20 under the wrong mark": a change written about a bar away from the music's.
+   The 80 % for note values is less strict than positions (90 %) because a wrong value leaves the
+   note where it is played; past 1 in 5 wrong values, most bars show another rhythm than the music.
+   **Note values depend on articulation**: the SUT writes how long a key was held, so the synthetic
+   performers' release models decide much of this gate (core 49 % pass; `robust`, whose performer
+   releases 30–120 ms early, 18 %). Those release models are not checked against real playing (see "How far
+   from synthetic the inputs are" below): a change to how PPP turns releases into note values needs real recordings.
+2. **Critical-gate pass rates** and the other metrics below, per case and per tag.
+3. **Diagnostic score** (`sqi`, version `sqi/2`): a continuous 0–100 trend line. It is not a
+   verdict — `summary.md` lists the cases whose diagnostic score is at or above the mean yet fail a
+   critical gate (199 in core at the metrics/4 baseline). Weights and reasons are in
+   `pppbench/metrics/composite.py`: identity 0.20, bar position 0.15, rhythm 0.10, note values 0.10,
+   metre 0.10, playback tempo 0.10, key 0.10, hands 0.10, spelling 0.05. The position, value, hand and
+   spelling components count against every reference note, so a lost note also counts as unplaced.
+
+**Missing output is never "not applicable".** A metric is null only when the truth makes it not
+apply (a reference without tempo, a one-staff reference, a key the registry marks as untrustworthy,
+a performance without pedal, a reference without tuplets). When the reference has a tempo and the
+prediction writes none, the tempo metrics are 0. Whether a metric applies never depends on what
+the prediction wrote, so removing a spurious element cannot look like lost coverage.
+
+**Everything the user sees is read from the MusicXML.** The SUT's `stats` are used only for what
+the MusicXML cannot say (where each bar falls in the recording) and are checked against it
+(`struct.stats_consistent`). Positions become seconds with the SUT's own beat model: beats evenly
+spaced in the score, time linear between beats, the grid extended past the first and last beat at
+their interval (as `audio-score.js` `tickToSec` does), so a pickup written as a full bar is timed
+right (G00 §19 m1).
+
+**Read the way the app reads.** Where the app uses a field, the benchmark reads it the same way:
+the note glyph from `<type>`/`<dot>`, bars by number, every tempo mark for the player's timeline
+(`PianoScore.tempoMap`: at one position the mark read last wins) and the first one for the score
+tempo, the clef in force per staff.
+
+The main metrics (↑ better unless marked ↓; `…_ref` variants count against reference notes):
+
+| metric | question it answers |
+| --- | --- |
+| `notes.identity.f1` | Are the notes that were played in the score at all (±300 ms, per pitch)? |
+| `notation.ioi.accuracy` | Is the rhythm between successive onsets written right (allowing a consistent ×2/×½/×3 reading)? |
+| `notation.onset_pos.accuracy` | Is each note in the right bar at the right beat? A pickup written as an implicit bar or as a full bar with rests are both right. |
+| `notation.duration.accuracy` | Are note values right as the app plays them (`<duration>`, ties merged)? |
+| `notation.duration.page_accuracy` | Are note values right as the page shows them (the printed type, dots and tuplet of every tied piece)? |
+| `notation.note_shape.consistency` | Does every printed note and rest shape say how long it lasts? The app draws `<type>`/`<dot>` and plays `<duration>`. |
+| `struct.tempo.timeline_accuracy` / `struct.time_sig.timeline_accuracy` / `struct.key.timeline_accuracy` | Over the whole score, note by note: played at the right tempo (the app player's tempo map), read under the right time signature, under the right key signature? A change in the wrong place, or a wrong one late in the piece, counts. |
+| `struct.measure_numbers.valid` / `.app_onset_accuracy` | Do bar numbers count up by one? Where does the app put each note, given that it finds bars by number (repeated numbers lay bars over each other)? |
+| `read.bar_completeness` | Does every staff fill every bar (first/last, implicit and repeat-split bars excepted)? |
+| `read.ledger_lines.heavy_rate` ↓ | Notes that need four or more ledger lines under the clef in force (a wrong clef shows here). |
+| `notation.accidentals.courtesy_per_100` ↓ | Printed accidentals the page does not need, per 100 notes (clutter). |
+| `notation.hand.accuracy` | Right hand on the treble staff, left on the bass? |
+| `notation.spelling.accuracy` | F♯ vs G♭? |
+| `notation.accidentals.required_recall` | Are the accidentals the page needs printed (standard engraving rules)? |
+| `notation.pedal.f1` / `notation.pedal.false_per_min` ↓ | Are the performer's pedal changes written (performances that used the pedal) / pedal changes written that the performer never made, per minute. Truth is the performance: in replay the helper's pedal is the AMT's guess, not truth (rendered fixtures have no pedal; a real recording's pedal is unknown and not scored). |
+| `notation.ties.extra_per_100` ↓ | False ties per 100 notes (the 6/8-for-3/4 symptom). |
+| `notation.tuplets.f1` / `notation.tuplets.false_per_100` ↓ | Tuplets kept (references with tuplets) / tuplets invented. |
+| `struct.time_sig.exact` / `.score` | Metre right (score: 2/4↔4/4 = 0.5, 3/4↔6/8 = 0.25, 3/4↔4/4 = 0). |
+| `struct.key.fifths_exact` | Key signature right. |
+| `struct.tempo.ok_effective` / `ok_written` / `present` | The app's score tempo (first mark: practice tempo, metronome, tempo %) within ±4 % / the printed metronome mark within ±4 % — a right `<sound tempo>` with no printed mark scores 0 here, as the page shows no tempo / any tempo written. |
+| `struct.measures.extra_empty_edge` ↓ | Empty bars added at the start or end. |
+| `struct.stats_consistent` | Do the SUT's stats describe its own MusicXML (bars, metre, tempo)? |
+| `struct.downbeat.f1` | Do bar lines fall where the performance's bars start (±70 ms)? |
+| `read.bar_integrity` | Share of bars that are neither overfull nor badly underfull. |
+
+## The gate (`check`, gate/3)
+
+`check` compares `results.json` with the committed baseline (`baselines/<suite>.json`). Any FAIL is
+a REGRESSION (exit 1). The tolerances live in the suite file's `gate` block, so changing one shows
+up in review. In a deterministic suite every change is real: a tolerance is the size of trade-off a
+change may make without a new baseline.
+
+- **Aggregate metrics**, including `usable` and each critical gate's rate (core: 0.005 ≈ 2–3 cases).
+  Zero tolerance where any change is a defect: bar integrity and completeness, bar numbers, printed
+  shapes that contradict their length, empty edge bars, stats that disagree with the MusicXML.
+- **Coverage**: a gated metric that had a value (in a case or in an aggregate) and now has none fails.
+- **Critical flips**: more than `case_flip_max` cases (core 2, smoke 1) going from pass to fail on
+  one critical gate fail, even if as many others improve.
+- **Micro guard**: each micro piece isolates one question, so any drop on any guarded metric of a
+  micro case fails, with no tolerance.
+- **Subgroups**: every tag under `set: book: profile: beats: metre-class: mode: feature: size:` with
+  at least `min_cases` (core 15) cases in both runs is checked on its own: a rate may drop by
+  max(0.02, 1/n) (one case flipping), a 0–1 mean by max(0.01, 0.25/n), the diagnostic score by 1.0.
+  Smaller groups are covered by the case rules above. `full` also guards the `holdout` aggregate
+  the same way (832 cases, so a 2-point usable-rate drop): a change that helps the open references
+  and costs the unseen ones is the overfitting the hold-out exists to show.
+- **Cases**: a case that errors, or loses 10 diagnostic points.
+- **Known failures**: a catalogue defect count that grows fails; one that shrinks is an improvement.
+- `check` refuses results produced by an `audio-score.js` that has changed since (`STALE_RESULTS`).
+
+`mutation-check` proves the gate works: it plants 30 regressions in a copy of `audio-score.js` —
+the 5 original ones (hands, key, durations, metre, bar phase), the 7 from the independent review
+(tempo mark dropped, printed metre changed without the stats, an extra empty bar, no printed
+accidentals, a global-tempo quantiser, no pedal marks, minor-key leading tones spelled flat), 5
+added by its fixer (high notes on the left hand, no triplets, no natural signs, the last bar cut,
+bar times a beat late) and 13 from the final review (G00 §19-§20: a tempo change to half speed
+midway, a wrong metre or key signature in the last third, dots dropped, note types one value short,
+long notes written at half length, bar numbers restarting, skipping or swapped, the bass staff in
+treble clef, trailing rests a beat short, rests typed one value long, an accidental on every note)
+— and requires each to be a REGRESSION naming its metric, and a no-op to leave `results.json`
+byte-identical. gate/1 missed six of the review's seven; gate/2 missed seven of the final review's
+ten.
+
+## Golden snapshots
+
+Seventeen fixed inputs (including the lock, arrangement, PM2S-grid, pedal, AMT-error and rubato
+paths, a method-book piece in 2/4). Each has two snapshots with different jobs:
+
+- **semantic** (`expected/<key>.semantic.json`, schema `ppp.bench-semantic/2`): the score's
+  *structure* — bars with the numbers the app finds them by, staves, clefs, which staff and voice
+  each note and rest is in — and its *music* — metre and key per bar, tempo marks, notes (position,
+  value, pitch, spelling, printed type and dots, ties, tuplets, printed accidentals), rests
+  (position, value, printed type and dots, tuplet), pedal marks; plus the stats the app reads, and
+  the bar and beat times (`.timing.json`) it syncs the recording to the score with. A difference
+  comes with a per-bar diff, the first shifted bar time, and the metric changes (the "before"
+  metrics use the stored bar times).
+- **byte** (`expected/<key>.musicxml`): serialisation stability and determinism.
+
+Labels, most severe first: **STRUCTURAL_CHANGE** (bars, bar numbers, staves, clefs, a note or rest
+moved to another staff or voice), **SEMANTIC_CHANGE** (the music, stats or bar times, in an unchanged
+frame), **SERIALIZATION_ONLY** (different bytes; same structure, music, stats and times: element
+order, whitespace, voice numbering). A dot removed, a note type or rest changed, a clef swapped, a
+note moved to the other staff or a bar renumbered is never SERIALIZATION_ONLY (unit
+`test_final_review_fixes.GoldenClassification`). When a writer is rewritten (G1), only
+SERIALIZATION_ONLY may be blessed as formatting; every other label is a change of the music to judge.
+
+Both need `golden --bless --reason` to be accepted. One case failing — or its report crashing —
+never stops the others. Musical regressions outside these cases are the metric gate's job: every
+core case carries a semantic digest, and `check` reports how many cases now write different music.
 
 ## Reading the results
 
@@ -79,136 +211,171 @@ no-op to pass with a byte-identical `results.json`. Last result:
 
 | file | what |
 | --- | --- |
-| `summary.md` | **Start here.** Verdict, headline metrics with Δ against the baseline and against the first (anchor) baseline, a per-tag table, the cases that moved most, the lowest cases, errors, and hold-out aggregates. |
-| `results.json` | Every case's metrics. **Byte-identical** for the same code and inputs (checked by A5). |
+| `summary.md` | **Start here.** Verdict; usable-score rate and critical gates; "diagnostic high but unusable" cases; headline metrics with Δ against the baseline and the anchor; per-tag table; **known production failures**; **what the benchmark leaves out**; largest changes; lowest cases; errors; hold-out aggregate. |
+| `results.json` | Every case's metrics, plus `known_failures` and `exclusions`. **Byte-identical** for the same code and inputs. |
 | `run.json` | Environment and timing (not deterministic, so kept separate). |
-| `cases/<key>.musicxml` | What PPP wrote for that case. Open it in the app (Add Sheet Music → MusicXML) to look at it. `index.json` maps keys to case ids. |
+| `cases/<key>.musicxml` | What PPP wrote for that case. Open it in the app (Add Sheet Music → MusicXML). |
 
 Case id: `<reference>|<profile>|<beats>|s<seed>`, e.g. `hymns/amazing-grace|human|oracle|s1`.
+Profiles: `deadpan` (exact), `human` (±15 ms, varied releases, rolled chords), `rubato` (±10 % drift),
+`amt` (human plus dropped notes, ghost octaves, merged repeats, offset noise), `pedal` (human plus a
+legato pedal each bar), `human-alt` (the robustness family below). Beats: `none` (the onset tracker),
+`oracle` (perfect Beat This), `oracle-noisy` (±20 ms, 5 % missing), `lowconf` (confidence 0.3).
 
-- **Profiles**:
-  - `deadpan`: exact timing.
-  - `human`: ±15 ms jitter, varied releases, rolled chords.
-  - `rubato`: ±10 % tempo drift.
-  - `amt`: `human` plus AMT-like errors (≈4 % dropped notes, ghost octaves, merged repeats,
-    offset noise).
-- **Beats**:
-  - `none`: the onset tracker.
-  - `oracle`: a perfect Beat This (beats + downbeats, confidence 0.9).
-  - `oracle-noisy`: ±20 ms, 5 % missing.
-  - `lowconf`: confidence 0.3, which takes the fallback path.
+## Known production failures (measured, not fixed)
 
-The main metrics (full definitions in G00 §8.4; ↑ better unless marked ↓):
+`run.py known-defects`, every `results.json` and every `summary.md` count the defects in the
+catalogue PPP ships (every committed score under `catalog/` and `samples/`, reference or not). G0
+does not fix them; `check` fails when a count grows. At the G0 baseline:
 
-| metric | question it answers |
-| --- | --- |
-| `notes.identity.f1` | Are the notes that were played in the score at all (±300 ms, per pitch)? |
-| `notation.ioi.accuracy` | Is the rhythm between successive onsets written right (allowing a consistent ×2/×½/×3 tempo reading)? |
-| `notation.onset_pos.accuracy` | Is each note in the right bar at the right beat (strict)? |
-| `notation.duration.accuracy` | Are note values right (ties merged)? |
-| `notation.hand.accuracy` | Right hand on the treble staff, left on the bass? |
-| `notation.spelling.accuracy` | F♯ vs G♭? |
-| `notation.ties.extra_per_100` ↓ | False ties per 100 notes (the 6/8-for-3/4 symptom). |
-| `struct.time_sig.exact` / `.score` | Metre right (score gives partial credit: 2/4↔4/4 = 0.5, 3/4↔6/8 = 0.25). |
-| `struct.key.fifths_exact` | Key signature right. |
-| `struct.tempo.ok_effective` | Is the tempo **the app plays** (`<sound tempo>` first) within ±4 %? |
-| `struct.tempo.ok_written` | Is the **printed** metronome mark within ±4 %? |
-| `struct.downbeat.f1` | Do bar lines fall where the performance's bars start (±70 ms)? |
-| `read.bar_integrity` | Share of bars that are neither overfull nor badly underfull. |
-| `sqi` | 0–100 weighted summary (G00 §8.5). A dashboard number; the gate never relies on it alone. |
+| class | files | items | cause / impact |
+| --- | --- | --- | --- |
+| `key_signature_playback` | 92 (hymns 89 of 89 non-C, czerny849 1, samples 2) | 6,119 notes | the page shows the key signature, the note has no `<alter>`: PPP plays another note than it shows (hymn converter) |
+| `tie_without_stop` | 16 (hymns 10) | 121 ties | tied notes are struck again |
+| `bar_accidental_not_carried` | 10 hymns | 18 notes | an accidental earlier in the bar is not applied |
+| `octave_shift_playback` | 30 | 2,229 notes | the app reads 8va the opposite way to MusicXML: these passages very likely play an octave low |
+| `bar_integrity` | 24 | 88 bars | overfull/underfull/empty bars |
+| `tempo_marks_disagree` | 4 | 4 files | `<sound tempo>` and the printed mark differ |
+| `grace_notes_dropped` (limitation) | 17 | 244 notes | parseMusicXML skips grace notes |
+| `note_shape_mismatch` | 4 (Für Elise, 2 hymns, Burgmüller 19) | 8 notes/rests | the printed type/dots say another length than `<duration>`: the page shows another rhythm than the app plays |
+| `incomplete_bars` | 10 | 38 bars | a staff stops before the bar ends (stricter than `bar_integrity`) |
+| `bar_numbering` | 0 | – | every committed score numbers its bars 0/1, 2, 3, … |
 
 ## The corpus
 
-`corpus/references.json` lists every reference, with its sha256 and licence. Only files committed
-to git are used; files other sessions are still writing are ignored. Sets:
+`corpus/references.json` lists every reference, with its sha256 and licence;
+`corpus/provenance.json` (built by `tools/make_provenance.py`) says for every candidate file where it
+comes from, its original identifier, its licence status and the repository evidence for it, whether
+PPP generated or transcribed it, and whether it is trusted. Only repository evidence counts (the
+file's `<rights>`/`<software>`, a per-file catalogue entry, a book statement naming the file's own
+typesetter); nothing is guessed. Untrusted files are **quarantined** (rule P1) from every suite.
 
-| set | files | source |
+| set | registered | source |
 | --- | --- | --- |
-| `micro` | 24 | `corpus/micro/`, written for the benchmark by `tools/make_micro.py` (CC0). Each one isolates one question (pickup, 6/8, triplets, ties, D♭ spelling, melody in the bass, 5/4, a tempo change, …). |
-| `catalog` | 3 | `catalog/*.musicxml` (CC0) |
-| `samples` | 1 | `samples/prelude-fragment.musicxml` |
-| `hymns` | 88 | `catalog/hymns` (Open Hymnal, public domain) |
-| `method` | 182 | `catalog/method` (Beyer and Czerny 100: CC0 transcriptions; others PDMX PD/CC0) |
+| `micro` | 24 | `corpus/micro/`, written for the benchmark by `tools/make_micro.py` (CC0) |
+| `catalog` | 3 | `catalog/*.musicxml` (CC0 per `catalog/index.json`) |
+| `samples` | 1 | `samples/prelude-fragment.musicxml` (hand-written for PPP) |
+| `hymns` | 88 | `catalog/hymns` (Open Hymnal, public domain, per-hymn source in `sources.js`) |
+| `method` | 195 | `catalog/method`: PPP transcriptions (Beyer, Czerny 100, some Burgmüller and Czerny 849), files stating public domain (Hanon, Sonatina/PianoXML, Mutopia), Neru Hayashi's Czerny 849 |
 | `omr` | 1 | `corpus/omr/`, generated from `tests/fixtures/truth.json` (the OMR suite only) |
 
-`corpus/excluded.json` lists what is left out and why:
-- **L5**: 29 files with `<octave-shift>`. The app's 8va reading is disputed (G00 §14 I3).
-- **L8**: 23 files whose own bars are overfull or underfull.
+`corpus/excluded.json` lists what is left out: **P1** 15 files with no licence evidence (all 10 of
+Czerny 299, 5 Burgmüller — their quality is therefore not measured); **L8** 24 files whose own bars
+are broken. Octave-shift scores are **not** excluded: references are read the MusicXML way
+(`<pitch>` is the sounding pitch) and carry `feature:ottava`; the app's different reading is the
+known failure above. The 78 registered hymns whose notes contradict their key signature skip the key
+and spelling metrics (`expect.skip_metrics`, lint L12); `summary.md` says how many cases that is and
+names the known failure it comes from.
 
-**Hold-out.** About one in five hymns and method pieces (`fnv1a32(id) % 5 == 0`) is hold-out.
-Those pieces are only in `full` (seeds 11 and 12), and reports show only their aggregate.
-When tuning a heuristic, do not look at hold-out cases (`--reveal-holdout` exists for
-debugging, not for tuning); report the hold-out aggregate change with the PR.
-
-**Known reference defects handled in `expect`.** 78 hymns (every hymn not in C) write their
-notes without the key signature's `<alter>`. Amazing Grace, for example, has F♮ throughout. PPP
-therefore plays them with wrong notes (G00 §14 I10). Their key and spelling "truth" is wrong, so
-those references carry `expect.skip_metrics` for `struct.key.fifths_exact`, `struct.key.mirex` and
-`notation.spelling.accuracy`. Rhythm, metre and hands still count. `lint-corpus` rule L12 keeps this
-honest: a reference whose notes contradict its signature must skip those metrics. When the
-hymns are fixed, their sha256 changes, lint fails with L2, and they are re-registered without the
-skip.
+**Hold-out.** About one in five hymns and method pieces (`fnv1a32(id) % 5 == 0`) is hold-out, only
+in `full` (seeds 11 and 12), reported as an aggregate. Hold-out uses the same generator: it shows
+generalisation to unseen pieces, not to real playing.
 
 ### Adding a reference
 
-1. Commit the MusicXML (lint rule L1: only committed files count). Licence-clean only: public
-   domain, CC0, or written by PPP.
-2. Add an entry to `corpus/references.json`:
-   `{"id": "method/beyer/107", "path": "catalog/method/beyer/107.mxl", "sha256": "<see below>", "set": "method", "book": "beyer", "license": "...", "expect": {}, "holdout": <rule>, "note": ""}`.
-   - Hash: `python -c "import sys; sys.path.insert(0,'tests/bench'); from pppbench import util; print(util.content_sha256('catalog/method/beyer/107.mxl'))"`.
-     CRLF is read as LF, so the pin is the same on Windows and Linux.
-   - `holdout`: `true` for hymns/method when `fnv1a32(id) % 5 == 0`
-     (`from pppbench import corpus; corpus.holdout_for("method", id)`).
-     Decide it once and never change it.
-   - `expect` needs `tempo_qpm` if the file has no tempo. Add `key.mode` if the file lacks
-     `<mode>` and you know it. Add `skip_metrics` if part of the file's truth is wrong.
-3. `python tests/bench/run.py lint-corpus` must report 0 errors. Octave-shift files and files with
-   broken bars belong in `excluded.json` instead.
-4. Put the id into the suite's `references` list (suites never pick files up by themselves),
-   then `relock --suite <s> --reason "add ..."`, `run --suite <s>`, and
-   `update-baseline --suite <s> --reason "add ..."`. Commit the reference, registry, suite,
-   lock and baseline together.
+1. Commit the MusicXML (lint L1: only committed files count). Licence-clean only, with evidence in
+   the repository (its `<rights>`, or a catalogue entry). Rerun `python tests/bench/tools/make_provenance.py`
+   and check the file comes out trusted.
+2. Add an entry to `corpus/references.json` (or rebuild with `lint-corpus --init`, which keeps
+   hand-made `expect` entries in `pppbench/registry_notes.py`):
+   `{"id": "method/beyer/107", "path": "catalog/method/beyer/107.mxl", "sha256": "<content_sha256>", "set": "method", "book": "beyer", "license": "...", "expect": {}, "holdout": <rule>, "note": ""}`.
+   Hash: `python -c "import sys; sys.path.insert(0,'tests/bench'); from pppbench import util; print(util.content_sha256('catalog/method/beyer/107.mxl'))"`.
+3. `python tests/bench/run.py lint-corpus` must report 0 errors.
+4. Put the id into the suite's `references`, then `relock --suite <s> --reason "add ..."`,
+   `run --suite <s>`, `update-baseline --suite <s> --reason "add ..."`. Commit them together.
 
-(`lint-corpus --init` rebuilds the whole registry from the committed files. It is for a full
-re-registration, and it rewrites hand-made `expect` entries unless they are in
-`pppbench/registry_notes.py`.)
-
-## Suites
+## Suites and tiers
 
 | suite | cases | use |
 | --- | --- | --- |
-| `smoke` | 32 (16 references × 2) | before a commit |
-| `core` | 523 (141 references × deadpan/none, human/none, human/oracle + 60 amt + 40 rubato) | **the CI gate** |
-| `full` | 4,172 (298 references × 7 profiles × 2 seeds; hold-out seeds 11, 12) | nightly, hold-out report |
-| `mutation` | 141 | `mutation-check` only |
-| `golden` | 14 snapshots | `golden` |
+| `smoke` | 44 (16 references × 2 + 4 each with AMT errors, rubato and pedal) | before a commit |
+| `core` | 553 (141 references × 3 main profiles + 60 amt + 40 rubato + 30 pedal) | **the CI gate** |
+| `robust` | 282 (the core references × `human-alt`, onset path and oracle beats) | CI gate |
+| `full` | 4,976 (311 references × 8 profiles × 2 seeds; hold-out seeds 11, 12) | nightly, hold-out |
+| `mutation` | 171 | `mutation-check` only |
+| `golden` | 17 snapshots | `golden` |
+| `replay-public` | 6 fixtures | CI gate (needs only Node) |
 | `omr-live` | 4 fixtures | T1, needs the app server + helper with Audiveris |
-| `replay-public` | recorded fixtures in `replay/` | T0-R, needs only Node to replay |
 
-Each synthetic suite has a `<suite>.lock.json` with the sha256 of every generated input. `run`
-regenerates the inputs and refuses with **`INPUT_DRIFT`** (exit 2) if one byte differs. That
-catches a change to the generator, the reader or a reference that would otherwise quietly move
-every number.
+**How far from synthetic the inputs are** (§17 M11):
+- `core`, `smoke`, `full`: the synthetic performer.
+- `robust`: the same performer with the main family's cues switched off (no downbeat accent, no
+  louder melody or bass, no rolled chords), a triangular timing error and earlier releases (30–120 ms).
+  It shares the tempo map (no rubato), the beat grid, the notes as written and the release model's
+  shape, so it is a parameter variant, not an independent performer. A change tuned to the main
+  performer's velocity cues shows up as a difference between `core` and `robust`; note values differ
+  most (release timing).
+- `replay-public`, `input:rendered`: the synthetic performer rendered with real piano samples and
+  sent through the real helper (TransKun + Kong, Beat This): real model and beat-tracker errors,
+  synthetic playing.
+- `replay-public`, `input:recorded`: a real person playing a licence-clean reference. **None exists
+  yet (BLOCKED on recordings).** To add one: record yourself (or a consenting performer) playing a
+  registered reference, write the bar start times (bars + 1 values, checked by ear) to a JSON file,
+  then `python tests/bench/tools/record_replay.py --recording take.wav --reference <id>
+  --bar-starts bars.json --performer "<name>" --license "CC0 1.0, recorded for PPP"`, then
+  `update-baseline --suite replay-public`. The WAV is never committed, only its sha256.
+- **When real recordings are required (M11, G00 §20):** before the first Goal that changes how PPP
+  infers onsets, beats, tempo or metre — or how it turns key releases into note values — at least
+  three licence-clean real performances (simple duple, simple triple, compound metre) with bar
+  starts checked by ear must be in `replay-public` (`input:recorded`) and baselined, and that Goal
+  reports its Δ there. Goals that change only the writer, ScoreGraph or engraving do not need them.
+
+| tier | command | needs | without it |
+| --- | --- | --- | --- |
+| T0 synthetic, golden, correctness | `run`, `check`, `golden`, `correctness`, `mutation-check` | Python + Node + git | – |
+| T0-R replay | `run --suite replay-public` | Node | – (fixtures are committed) |
+| T1-C parser parity | `conformance` | `npm start`, network (the page loads React/Babel from unpkg), puppeteer | `SKIPPED: <reason>`, exit 0 (`--require-env` → 2) |
+| T1-O OMR live | `omr-live` | the above + `npm run omr` with Audiveris | SKIPPED |
+| T2 replay recording | `record-replay` | the helper with transcription, the transcribe venv (numpy), ffmpeg | SKIPPED |
+
+puppeteer is found in the repository's `node_modules` or in `PPP_BENCH_NODE_MODULES` (for example a
+git worktree without its own `node_modules`). The transcribe venv's python is found at
+`tools/transcribe-venv/Scripts/python.exe` or in `PPP_TRANSCRIBE_PYTHON`.
+
+**Checking Linux determinism** (`results.json` must be byte-identical across operating systems; CI
+runs on Linux, most development on Windows). With Docker and an LF checkout of the commit to test:
+
+```sh
+git clone -c core.autocrlf=false --branch <branch> <repo> /tmp/lf && cd /tmp/lf
+docker run --rm --network none -v "$PWD:/src:ro" node:24-bookworm sh -c '
+  git config --global --add safe.directory "*" && git clone -q -c core.autocrlf=false /src /w && cd /w &&
+  for s in smoke core robust replay-public full; do python3 tests/bench/run.py run --suite $s >/dev/null;
+    python3 tests/bench/run.py check --suite $s | tail -1; sha256sum tests/bench/out/$s/results.json; done'
+```
+
+Compare each sha256 with the same suites run on the development machine. At G0 (2026-09-22) all five
+matched between Windows 11 (Python 3.13.5, Node 24.17) and `node:24-bookworm` offline (Python 3.11.2,
+Node 24.21). `run.json` holds timing and the environment and is expected to differ.
+
+**Parser parity is not correctness.**
+- `correctness` (T0, CI) reads `corpus/correctness/*.musicxml` — thirteen small files whose expected
+  meaning (ties, spelling, alter vs accidental, mode, grace notes, pickup, tempo units, octave-shift,
+  voices/backup/forward, a tie whose stop is not adjacent) was written by hand from the MusicXML
+  specification. C01–C12 are by an author who did not look at this reader or the app parser; C13
+  was added later by the G0 fixer from the specification, and `expected.json` says so. References must read correctly; the app's reading may
+  depart only where documented (octave-shift, fixtures C10 and C11), and that departure is a known
+  failure.
+- `conformance` (T1) checks the reader against the app's own `parseMusicXML` and player: bars
+  and their numbers, written notes, spelling, key mode, tuplets, printed shapes of notes and rests
+  (type and dots), and the key presses the app's player makes after joining ties
+  (`PianoScore.ties`). A rule both get wrong passes parity; that is what `correctness` is for.
 
 ## Changing the SUT: the loop for later goals
 
-1. Before you start: `npm run bench` must PASS. Pick the metric and tag you are going after
-   (for example `struct.time_sig.exact` on `metre-class:simple-duple`).
-2. While working: `python tests/bench/run.py ab --suite core --a git:HEAD --b worktree` shows what
-   your working copy changed, per metric and per case, with no baseline involved.
+1. Before you start: `npm run bench` must PASS. Pick the gate and tag you are going after (for
+   example `critical.meter` on `metre-class:simple-duple`).
+2. While working: `python tests/bench/run.py ab --suite core --a git:HEAD --b worktree` shows what your
+   working copy changed, per metric, per critical gate and per case, with no baseline involved.
 3. When done:
-   1. `run --suite core` and `check`;
+   1. `run --suite core` and `check`; `run --suite robust` and `check`;
    2. `run --suite full` for the hold-out aggregate;
-   3. `golden` (and `golden --bless --reason "..."` if the output change is intended);
-   4. `update-baseline --suite smoke|core --reason "..."`;
+   3. `golden` (and `golden --bless --reason "..."` if the output change is intended; the label
+      tells a musical change from a serialisation one);
+   4. `update-baseline --suite smoke|core|robust --reason "..."`;
    5. put the SUT change, baselines and golden files in **one commit** whose message gives the
-      headline Δ (e.g. `core SQI 81.7→83.0; time_sig.exact +0.04; hymns SQI −0.3`).
+      headline Δ (e.g. `core usable 25.9→28.1 %; critical.meter +0.04; hymns usable −0.6`).
 4. Never raise a tolerance to make a regression pass. Tolerance changes are suite-file diffs and
    get reviewed like code.
-
-`update-baseline` refuses to run if `audio-score.js` changed after the run, or if the run used
-another SUT. The first baseline is kept as the `anchor`, so drift across many small updates stays
-visible in every summary.
 
 ## Private suites (copyrighted recordings and official scores)
 
@@ -222,55 +389,25 @@ Keep them outside the repository. A suite file there, e.g. `C:/private/ppp-bench
   {"id": "lulu-official-omr", "kind": "prediction-file", "reference": "lulu.musicxml", "prediction": "lulu.omr.musicxml"}]}
 ```
 
-- `replay` cases put a saved helper `/transcribe` result through `toMusicXml`.
-  `reference_bar_starts` gives the bar starts in seconds (bars + 1 values, checked by a person).
-- `prediction-file` cases score an existing MusicXML (for example OMR output) with bar-level
-  alignment.
-- Run with `run --suite-file C:/private/ppp-bench/private.json`. Outputs go to `out/` and the
-  baseline to `baseline.json` beside the suite file. Writing them inside the repository is refused
-  (`PRIVATE_OUTPUT_IN_REPO`).
-- The older manifest format still works: `legacy --manifest ...` runs
-  `tests/golden_benchmark.py`'s own comparison and reports quarter-beat tolerances as quarter
-  beats.
-
-## Tiers and environments
-
-| tier | command | needs | without it |
-| --- | --- | --- | --- |
-| T0 synthetic + golden | `run`, `check`, `golden`, `mutation-check` | Python + Node | – |
-| T1-C conformance | `conformance` | `npm start`, network (the page loads React/Babel from unpkg), puppeteer | `SKIPPED: <reason>`, exit 0 (`--require-env` → 2) |
-| T1-O OMR live | `run --suite omr-live` | the above + `npm run omr` with Audiveris | SKIPPED |
-| T2 replay recording | `record-replay` | the helper with transcription (TransKun/Kong/Beat This), the transcribe venv (numpy, for `tools/render_piano.py`), ffmpeg | SKIPPED |
-| T0-R replay | `run --suite replay-public` | Node | – (fixtures are committed) |
-
-puppeteer is found in the repository's `node_modules` or in `PPP_BENCH_NODE_MODULES` (for
-example a git worktree without its own `node_modules`). The transcribe venv's python is found
-at `tools/transcribe-venv/Scripts/python.exe` or in `PPP_TRANSCRIBE_PYTHON`.
-
-**Conformance** runs the app's own `PPP.parseMusicXML` in the real page on every core reference,
-every sample, the 29 octave-shift files and 50 of the SUT's predictions, then compares bars
-(start, length, metre, key), notes (bar, beat, value, sounding pitch, hand), tempo and staff
-count with this reader. A difference means the benchmark no longer measures what PPP shows:
-fix `pppbench/musicxml.py`, never the app.
-
-**Replay.** `record-replay` renders a reference's performance to WAV with the Salamander samples
-(CC BY 3.0; WAVs are never committed). It sends the WAV to the helper's `/transcribe` as a file
-upload named `ppp-bench-<key>.wav` (so the catalog search cannot answer it) and saves the
-helper's result with the truth and provenance in `replay/<key>.json`. Replaying a fixture is
-deterministic. Recording is not: GPU inference and model versions vary. Re-record deliberately,
-then rebaseline `replay-public`.
+- `replay` cases put a saved helper `/transcribe` result through `toMusicXml`. The reference must be
+  the score as played: expand repeats, and remember grace notes are not scored.
+- `prediction-file` cases score an existing MusicXML (for example OMR output) with bar-level alignment.
+- Run with `run --suite-file ...`. Outputs and the baseline stay beside the suite file; writing them
+  inside the repository is refused (`PRIVATE_OUTPUT_IN_REPO`). The input files are hashed into the
+  lock, so an edited fixture is INPUT_DRIFT, not a change blamed on the SUT.
 
 ## Common errors
 
 | code | meaning | what to do |
 | --- | --- | --- |
-| `INPUT_DRIFT` | A generated input differs from the lock, or the baseline was recorded against another lock. | If you changed the generator, reader or a reference on purpose: `relock --reason`, then `update-baseline --reason`. Otherwise find what changed. |
-| `VERSION_MISMATCH` | `READER_VERSION`/`METRICS_VERSION`/`SQI_VERSION`/`GENERATOR_VERSION` differ from the baseline's. | Rebaseline. Bump the version whenever you change a definition (`pppbench/__init__.py`). |
-| `SUITE_CHANGED` | The suite's references or matrix changed. | Relock and rebaseline with a reason. (Gate tolerances are not part of this hash.) |
+| `INPUT_DRIFT` | A generated input or a reference file differs from the lock, or the baseline was recorded against another lock. | If you changed the generator, reader or a reference on purpose: `relock --reason`, then `update-baseline --reason`. Otherwise find what changed. |
+| `VERSION_MISMATCH` | `READER_VERSION`/`METRICS_VERSION`/`SQI_VERSION`/`GENERATOR_VERSION` differ from the baseline's. | Rebaseline (a new anchor starts). Bump the version whenever you change a definition. |
+| `SUITE_CHANGED` | The suite's reference set or matrix changed (order does not matter). | Relock and rebaseline with a reason. |
+| `STALE_RESULTS` | `audio-score.js` changed after the run. | Run again. |
 | `NO_BASELINE` | No baseline for the suite yet. | `update-baseline`. |
-| `STATS_SHAPE` | `toMusicXml`'s `stats.barStarts` no longer has bars + 1 values. | The SUT's stats contract changed: update `pppbench/timemap.py`, do not guess. |
-| `MUTATION_ANCHOR_MISSING` | A mutation's search string is no longer in `audio-score.js` exactly once. | Update the anchor in `pppbench/mutation.py` to an equivalent line. |
-| `NOTATE_NO_NOTES`, `NOTATE_…` | `toMusicXml` threw for that case. | A new one is a regression; look at the case. |
+| `STATS_SHAPE` | `toMusicXml`'s `stats.barStarts` no longer has bars + 1 values. | The SUT's stats contract changed: update `pppbench/timemap.py`. |
+| `MUTATION_ANCHOR_MISSING` | A mutation's search string is no longer in `audio-score.js` exactly once. | Update the anchor in `pppbench/mutation.py`. |
+| `NOTATE_NO_NOTES`, `NOTATE_…` | `toMusicXml` threw for that case. | A new one is a regression. |
 | `FILTERED_RUN` | `--filter` runs cannot be checked or baselined. | Run the whole suite. |
 
 ## Layout
@@ -278,46 +415,25 @@ then rebaseline `replay-public`.
 ```
 run.py            CLI
 pppbench/         reader (musicxml.py), canonical score, corpus + lint, perform (synthetic
-                  performer), timemap, align, metrics/, suite + locks, runner, aggregate,
-                  compare (gate), report, golden, mutation, legacy, private (replay/prediction
-                  files), tiers (T1/T2), projection (app Score -> canonical)
+                  performer), timemap, align, metrics/ (structure, notes, notation, readability,
+                  pedal, critical, composite), semantic, suite + locks, runner, aggregate, compare
+                  (gate), report, golden, mutation, correctness, known_defects, legacy, private,
+                  tiers (T1/T2), projection
 node/             notate.js (SUT adapter), conformance.js, omr-live.js (puppeteer, T1 only)
-tools/            make_micro.py, make_omr_reference.py, render_piano.py, record_replay.py
-corpus/           references.json, excluded.json, micro/, omr/
+tools/            make_micro.py, make_provenance.py, make_omr_reference.py, render_piano.py, record_replay.py
+corpus/           references.json, excluded.json, provenance.json, micro/, omr/, correctness/
 suites/           suite definitions and input locks
 baselines/        committed baselines (full: aggregates only)
-golden/           inputs/, expected/, BLESS_LOG.md
+golden/           inputs/, expected/ (.musicxml, .stats.json, .semantic.json, .timing.json), BLESS_LOG.md
 replay/           recorded helper results (T0-R)
+review/           the independent review's adversarial checks (not part of test:bench; nightly in CI)
 unit/             unit tests (python -m unittest discover -s tests/bench/unit -t tests/bench)
 out/, .cache/     outputs and scratch (git-ignored)
 ```
 
 ## G0 acceptance record
 
-Run on 2026-09-22 on the development PC: Windows 11, cp949 console, Node v24.17.0, Python 3.13.5,
-`audio-score.js` content sha256 `559a1f40…`. Branch `g0-quality-foundation`. Criteria from
-`docs/GOALS/G00_QUALITY_FOUNDATION.md` §11; the full write-up is in §16 there.
-
-| # | command | result |
-| --- | --- | --- |
-| A1 | `npm run test:bench` | 122 unit tests OK + golden 14/14, 10.3 s, no network/browser/GPU |
-| A2 | `run.py list`, `run --suite smoke` with `sys.stdout.encoding == cp949`, no `PYTHONIOENCODING`/`PYTHONUTF8` | Korean and em dashes printed, exit 0. A plain `print` of the same text raises `UnicodeEncodeError` there. |
-| A3 | `run.py lint-corpus` | 299 references (24 micro), 0 errors, 56 warnings (L9); 52 excluded: 29 octave-shift (L5), 23 broken bars (L8) |
-| A4 | `run.json` timing | smoke 0.5 s · core 15.1 s · full 108 s |
-| A5 | core twice + sha256 | identical (`69a83d55…`). Also identical on Linux: `node:24-bookworm` in Docker, clean LF checkout, core/smoke/replay sha256 equal to Windows. |
-| A6 | `check` on an unchanged tree | smoke, core, full, omr-live, replay-public: PASS, exit 0 |
-| A7 | `run.py mutation-check` | 5 × REGRESSION with the named metric failing, no-op PASS with identical `results.json` (table above). Through the CLI too: `run --audio-score <MUT-KEY copy>` then `check` exits 1, and `update-baseline` refuses that run. |
-| A8 | `run.py golden`; one expected byte changed | 14/14; the tampered file gives a per-bar diff and exit 1; restored → 14/14 |
-| A9 | `unit/test_suite_lock.py` | a one-byte input change (monkeypatched generator) → `INPUT_DRIFT`, exit 2 |
-| A10 | `npm run test:transcription-core`, `npm run test:arranger`, `legacy --manifest tests/golden/manifest.example.json` | 16 (incl. `beat_track_test.py`) and 3 tests OK; legacy note metrics equal `golden_benchmark.py`'s |
-| A11 | `out/core/summary.md` | verdict, headline Δ vs baseline and anchor, per-tag table, 10 largest case changes with cause and output path, lowest cases, errors, hold-out aggregate |
-| A12 | `git diff --stat 663d463..` | outside `tests/bench/`: only the §5 files, `.github/workflows/bench.yml` and `docs/`; `audio-score.js` and the app unchanged |
-| A13 | diff of `package.json` dependencies and requirements files | unchanged |
-| A14 | `run.py conformance` (app server + puppeteer) | 224/224 identical: core references, samples, the 29 octave-shift files, 50 predictions. Planted differences are caught. |
-| A15 | `run --suite omr-live`; `record-replay` | OMR: 4 cases through the app's `Import.load` + Audiveris, deterministic twice, baseline committed. Replay: 6 fixtures recorded with the helper's TransKun+Kong ensemble and Beat This, baseline committed. |
-| A16 | adding `samples/chords-sample` by this README | lint OK → stale lock: `INPUT_DRIFT` → relock → `SUITE_CHANGED` → update-baseline → PASS; then reverted |
-| P2 | Step 14, arrangement invariants | **not done** |
-
-Baseline headline (core, 523 cases): SQI 81.74 · identity F1 0.980 · time signature exact 0.576 ·
-key 0.887 · tempo as played ±4 % 0.549 (printed mark 0.818) · hands 0.885 · onset position 0.510 ·
-duration 0.747 · false ties 4.25 per 100 notes · bar integrity 1.000.
+The original record (2026-09-22, gate/1) is in G00 §16. After the independent review (§17) the
+benchmark was fixed and re-verified; that record, with every measurement, is G00 §18. The final
+independent review (§19) found what the app draws or plays that the gate still did not read; the
+fixes and their measurements (metrics/4, reader/3, gate/3) are G00 §20.

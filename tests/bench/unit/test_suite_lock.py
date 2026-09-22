@@ -13,10 +13,12 @@ class SuiteAndLock(unittest.TestCase):
         self.smoke = suite_mod.load_suite("smoke")
 
     def test_case_counts(self):
-        self.assertEqual(len(suite_mod.expand(self.smoke, self.refs)), 16 * 2)
+        sub = self.smoke["subsets"]
+        self.assertEqual(len(suite_mod.expand(self.smoke, self.refs)),
+                         16 * 2 + len(sub["smoke-amt"]) + len(sub["smoke-rubato"]) + len(sub["smoke-pedal"]))
         core = suite_mod.load_suite("core")
         n = len(core["references"])
-        expected = 3 * n + len(core["subsets"]["amt-subset"]) + len(core["subsets"]["rubato-subset"])
+        expected = 3 * n + sum(len(core["subsets"][k]) for k in ("amt-subset", "rubato-subset", "pedal-subset"))
         self.assertEqual(len(suite_mod.expand(core, self.refs)), expected)
         full = suite_mod.load_suite("full")
         cases = suite_mod.expand(full, self.refs)

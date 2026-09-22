@@ -29,23 +29,67 @@ def out_dir_for(suite: Dict[str, Any]) -> str:
 
 
 def generate(suite: Dict[str, Any], refs: Optional[List[corpus.RefEntry]] = None, filter_: Optional[str] = None):
-    """Expand cases and build their synthetic performances. Returns (cases, lock rows, perfs)."""
+    """Expand cases and build their synthetic performances. Returns (cases, lock rows, perfs).
+
+    The lock row's reference_sha256 is the hash of the reference file as it is now, not the value
+    registered in references.json, so an edited reference stops `run` with INPUT_DRIFT even when
+    the edit leaves the performance unchanged (a key signature, a spelling) (§17 m1)."""
     refs = refs if refs is not None else corpus.load_corpus()
     by = corpus.by_id(refs)
     cases = suite_mod.expand(suite, refs)
     if filter_:
         cases = [c for c in cases if filter_ in c.id]
-    rows, perfs = [], {}
+    rows, perfs, file_sha = [], {}, {}
     for c in cases:
         entry = by[c.ref_id]
+        if entry.path not in file_sha:
+            file_sha[entry.path] = util.content_sha256(entry.abspath)
         canon = corpus.read_reference(entry)
         c.tags = corpus.derived_tags(entry, canon) + [f"profile:{c.profile}", f"beats:{c.beats}", f"seed:{c.seed}"] + \
             (["holdout"] if c.holdout else [])
         p = perform.perform(canon, c.ref_id, c.profile, c.beats, c.seed, expect=entry.expect,
                             case_opts=c.opts, opt_name=c.opt_name)
         perfs[c.id] = p
-        rows.append({"id": c.id, "reference_sha256": entry.sha256, "input_sha256": suite_mod.input_sha256(p.input, p.opts)})
+        rows.append({"id": c.id, "reference_sha256": file_sha[entry.path],
+                     "input_sha256": suite_mod.input_sha256(p.input, p.opts)})
     return cases, rows, perfs
+
+
+def exclusions_summary(refs: Optional[List[corpus.RefEntry]] = None) -> Dict[str, Any]:
+    """What the benchmark leaves out, why, and how much of each collection that is (§17 M8, M9)."""
+    from collections import Counter, defaultdict
+    from . import known_defects
+    refs = refs if refs is not None else corpus.load_corpus()
+    excluded = util.load_json(corpus.EXCLUDED)["excluded"]
+    reasons = {"L6": "duplicate measure numbers", "L8": "the reference's own bars are overfull, underfull or empty",
+               "P1": "quarantined: no licence evidence in the repository"}
+    by_rule: Dict[str, Any] = {}
+    for x in excluded:
+        r = by_rule.setdefault(x["rule"], {"count": 0, "why": reasons.get(x["rule"], x["rule"]), "ids": []})
+        r["count"] += 1
+        r["ids"].append(x["id"])
+    skipped = [r for r in refs if r.expect.get("skip_metrics")]
+    cov: Dict[str, Dict[str, int]] = defaultdict(lambda: Counter())
+    for c in corpus.candidate_files(util.tracked_files()):
+        col = known_defects.collection(c["path"]) if not c["path"].startswith("tests/") else c["set"]
+        cov[col]["committed"] += 1
+    for r in refs:
+        col = known_defects.collection(r.path) if not r.path.startswith("tests/") else r.set
+        cov[col]["registered"] += 1
+        cov[col]["hold-out"] += int(r.holdout)
+    for x in excluded:
+        col = known_defects.collection(x["path"]) if not x["path"].startswith("tests/") else x["id"].split("/")[0]
+        cov[col]["excluded " + x["rule"]] += 1
+    return {
+        "excluded_references": dict(sorted(by_rule.items())),
+        "skipped_metrics": {
+            "references": len(skipped),
+            "metrics": sorted({m for r in skipped for m in r.expect["skip_metrics"]}),
+            "why": "the file's notes contradict its own key signature, so its key and spelling truth is wrong",
+            "production_impact": "known failure key_signature_playback: these scores play wrong notes in PPP",
+            "ids": sorted(r.id for r in skipped)},   # sorted: the registry's order must not change results.json
+        "coverage_by_collection": {k: dict(sorted(v.items())) for k, v in sorted(cov.items())},
+    }
 
 
 def run_suite(suite: Dict[str, Any], *, audio_score: Optional[str] = None, out_dir: Optional[str] = None,
@@ -90,10 +134,12 @@ def run_suite(suite: Dict[str, Any], *, audio_score: Optional[str] = None, out_d
         artifacts[c.key] = (c.id, row, rec)
     t_met = time.perf_counter()
 
+    from . import known_defects
     results = {
         "schema": "ppp.bench-results/1", "suite": suite["name"], "suite_sha256": suite_mod.suite_sha256(suite),
         "lock_sha256": util.content_sha256(lock_file) if lock else None, "versions": dict(VERSIONS),
-        "filtered": bool(filter_), "aggregates": aggregate.aggregate(results_cases), "cases": results_cases,
+        "filtered": bool(filter_), "aggregates": aggregate.aggregate(results_cases),
+        "known_failures": known_defects.audit(), "exclusions": exclusions_summary(refs), "cases": results_cases,
     }
     out = out_dir or out_dir_for(suite)
     if os.path.isdir(os.path.join(out, "cases")):
@@ -182,7 +228,8 @@ def cli_ab(args) -> int:
     except RunError as exc:
         print(f"ERROR {exc}")
         return 2
-    pseudo = compare.baseline_from_results(ra["results"], ra["run"], reason=f"A/B side a ({args.a})")
+    pseudo = compare.baseline_from_results(ra["results"], ra["run"], reason=f"A/B side a ({args.a})",
+                                           gate=suite.get("gate"))
     verdict = compare.compare(rb["results"], pseudo, suite.get("gate") or {})
     path = os.path.join(base, "ab-summary.md")
     report.write_summary(rb["results"], rb["run"], verdict, pseudo, path,

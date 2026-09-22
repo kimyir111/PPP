@@ -2,83 +2,235 @@
  "align": {
   "window_s": 0.3
  },
- "description": "Recorded helper /transcribe results on rendered licence-clean references (T0-R, §6.8); empty until recorded",
+ "description": "Recorded helper /transcribe results (TransKun + Kong, Beat This) on licence-clean references rendered from the synthetic performer with real piano samples (T0-R, §6.8); input:recorded (a real person playing) is empty until someone records one (§17 M11)",
  "fixtures": "replay",
  "gate": {
   "case_fail_drop": 10.0,
+  "case_flip_max": 0,
   "case_warn_drop": 2.0,
   "metrics": {
+   "critical.accidentals": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "critical.beat_placement": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "critical.hands": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "critical.key": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "critical.meter": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "critical.note_values": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "critical.pedal": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "critical.pitch_integrity": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "critical.playback_tempo": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "critical.structure": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "notation.accidentals.courtesy_per_100": {
+    "dir": "down",
+    "tol": 2.0
+   },
+   "notation.accidentals.required_recall": {
+    "dir": "up",
+    "tol": -0.008
+   },
    "notation.duration.accuracy": {
     "dir": "up",
-    "tol": -0.003
+    "tol": -0.012
+   },
+   "notation.duration.page_accuracy": {
+    "dir": "up",
+    "tol": -0.012
    },
    "notation.hand.accuracy": {
     "dir": "up",
-    "tol": -0.003
+    "tol": -0.012
    },
    "notation.ioi.accuracy": {
     "dir": "up",
-    "tol": -0.003
+    "tol": -0.012
+   },
+   "notation.note_shape.consistency": {
+    "dir": "up",
+    "tol": 0.0
    },
    "notation.onset_pos.accuracy": {
     "dir": "up",
-    "tol": -0.005
+    "tol": -0.02
+   },
+   "notation.onset_pos.accuracy_ref": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "notation.pedal.f1": {
+    "dir": "up",
+    "tol": -0.04
+   },
+   "notation.pedal.false_per_min": {
+    "dir": "down",
+    "tol": 0.2
    },
    "notation.spelling.accuracy": {
     "dir": "up",
-    "tol": -0.003
+    "tol": -0.012
    },
    "notation.ties.extra_per_100": {
     "dir": "down",
-    "tol": 0.5
+    "tol": 2.0
+   },
+   "notation.tuplets.f1": {
+    "dir": "up",
+    "tol": -0.04
+   },
+   "notation.tuplets.false_per_100": {
+    "dir": "down",
+    "tol": 2.0
    },
    "notes.identity.f1": {
     "dir": "up",
-    "tol": -0.002
+    "tol": -0.008
    },
    "notes.onset.f1_50ms": {
     "dir": "up",
-    "tol": -0.005
+    "tol": -0.02
+   },
+   "read.bar_completeness": {
+    "dir": "up",
+    "tol": 0.0
    },
    "read.bar_integrity": {
     "dir": "up",
     "tol": 0.0
    },
+   "read.ledger_lines.heavy_rate": {
+    "dir": "down",
+    "tol": 0.02
+   },
    "sqi": {
     "dir": "up",
-    "tol": -0.3
+    "tol": -1.2
    },
    "struct.downbeat.f1": {
     "dir": "up",
-    "tol": -0.005
+    "tol": -0.02
    },
    "struct.key.fifths_exact": {
     "dir": "up",
-    "tol": -0.005
+    "tol": -0.02
+   },
+   "struct.key.timeline_accuracy": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "struct.measure_numbers.app_onset_accuracy": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "struct.measure_numbers.valid": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "struct.measures.count_exact": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "struct.measures.extra_empty_edge": {
+    "dir": "down",
+    "tol": 0.0
+   },
+   "struct.stats_consistent": {
+    "dir": "up",
+    "tol": 0.0
    },
    "struct.tempo.ok_effective": {
     "dir": "up",
-    "tol": -0.005
+    "tol": -0.02
+   },
+   "struct.tempo.ok_written": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "struct.tempo.present": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "struct.tempo.timeline_accuracy": {
+    "dir": "up",
+    "tol": -0.02
    },
    "struct.time_sig.exact": {
     "dir": "up",
-    "tol": -0.005
+    "tol": -0.02
+   },
+   "struct.time_sig.timeline_accuracy": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "usable": {
+    "dir": "up",
+    "tol": -0.02
    }
   },
-  "tag_guards": {
-   "metric": "sqi",
-   "min_delta": -1.0,
-   "tags": [
-    "set:micro",
-    "set:hymns",
-    "set:method",
-    "set:catalog",
-    "profile:deadpan",
-    "profile:human",
-    "profile:amt",
-    "beats:none",
-    "beats:oracle"
-   ]
+  "subgroups": {
+   "mean_abs": 0.01,
+   "mean_per_case": 0.25,
+   "metrics": {
+    "critical.accidentals": "rate",
+    "critical.beat_placement": "rate",
+    "critical.hands": "rate",
+    "critical.key": "rate",
+    "critical.meter": "rate",
+    "critical.note_values": "rate",
+    "critical.pedal": "rate",
+    "critical.pitch_integrity": "rate",
+    "critical.playback_tempo": "rate",
+    "critical.structure": "rate",
+    "notation.accidentals.required_recall": "mean",
+    "notation.duration.accuracy": "mean",
+    "notation.duration.page_accuracy": "mean",
+    "notation.hand.accuracy": "mean",
+    "notation.ioi.accuracy": "mean",
+    "notation.note_shape.consistency": "mean",
+    "notation.onset_pos.accuracy": "mean",
+    "notation.pedal.f1": "mean",
+    "notation.spelling.accuracy": "mean",
+    "notes.identity.f1": "mean",
+    "sqi": "sqi",
+    "struct.key.fifths_exact": "rate",
+    "struct.key.timeline_accuracy": "mean",
+    "struct.tempo.ok_effective": "rate",
+    "struct.tempo.timeline_accuracy": "mean",
+    "struct.time_sig.exact": "rate",
+    "struct.time_sig.timeline_accuracy": "mean",
+    "usable": "rate"
+   },
+   "min_cases": 1,
+   "prefixes": [],
+   "rate_abs": 0.02,
+   "sqi_abs": 1.0
   }
  },
  "kind": "replay",

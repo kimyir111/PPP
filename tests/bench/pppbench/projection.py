@@ -25,10 +25,12 @@ def canonical_from_projection(proj: Dict[str, Any]) -> CanonicalScore:
     for i, m in enumerate(proj["measures"]):
         sig = Fraction(m["time"][0] * 4, m["time"][1])
         len_q = _q(m["lenQ"])
-        measures.append(Measure(i, str(m["number"]), _q(m["startQ"]), len_q,
+        num = m.get("number")
+        measures.append(Measure(i, str(num), _q(m["startQ"]), len_q,
                                 implicit=(i == 0 or i == len(proj["measures"]) - 1) and len_q < sig,
                                 time=(int(m["time"][0]), int(m["time"][1])), fifths=int(m["fifths"]),
-                                mode=m.get("mode") or "major", mode_explicit=True))
+                                mode=m.get("mode") or "major", mode_explicit=True,
+                                app_number=int(num) if isinstance(num, (int, float)) or str(num).lstrip("-").isdigit() else i + 1))
     notes, rests = [], []
     for n in proj["notes"]:
         if n.get("m") is None:
@@ -37,7 +39,9 @@ def canonical_from_projection(proj: Dict[str, Any]) -> CanonicalScore:
         pos, dur = _q(n["b"]), _q(n["dur"])
         onset = measures[mi].start_q + pos
         if n.get("rest") or n.get("midi") is None:
-            rests.append(Rest(mi, pos, onset, dur, int(n.get("staff") or 1), int(n.get("voice") or 1), False))
+            tm = n.get("tm")
+            rests.append(Rest(mi, pos, onset, dur, int(n.get("staff") or 1), int(n.get("voice") or 1), False,
+                              n.get("type"), int(n.get("dots") or 0), (int(tm["a"]), int(tm["n"])) if tm else None))
             continue
         mt = PITCH_RE.match(n.get("p") or "")
         if mt:

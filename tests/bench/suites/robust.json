@@ -1,0 +1,411 @@
+{
+ "align": {
+  "window_s": 0.3
+ },
+ "description": "A second generator family (human-alt: no accents, no voicing, no rolls, triangular timing) on the core references: catches tuning to the main generator's habits (§17 M11)",
+ "gate": {
+  "case_fail_drop": 10.0,
+  "case_flip_max": 2,
+  "case_warn_drop": 2.0,
+  "metrics": {
+   "critical.accidentals": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "critical.beat_placement": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "critical.hands": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "critical.key": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "critical.meter": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "critical.note_values": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "critical.pedal": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "critical.pitch_integrity": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "critical.playback_tempo": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "critical.structure": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "notation.accidentals.courtesy_per_100": {
+    "dir": "down",
+    "tol": 0.5
+   },
+   "notation.accidentals.required_recall": {
+    "dir": "up",
+    "tol": -0.002
+   },
+   "notation.duration.accuracy": {
+    "dir": "up",
+    "tol": -0.003
+   },
+   "notation.duration.page_accuracy": {
+    "dir": "up",
+    "tol": -0.003
+   },
+   "notation.hand.accuracy": {
+    "dir": "up",
+    "tol": -0.003
+   },
+   "notation.ioi.accuracy": {
+    "dir": "up",
+    "tol": -0.003
+   },
+   "notation.note_shape.consistency": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "notation.onset_pos.accuracy": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "notation.onset_pos.accuracy_ref": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "notation.pedal.f1": {
+    "dir": "up",
+    "tol": -0.01
+   },
+   "notation.pedal.false_per_min": {
+    "dir": "down",
+    "tol": 0.05
+   },
+   "notation.spelling.accuracy": {
+    "dir": "up",
+    "tol": -0.003
+   },
+   "notation.ties.extra_per_100": {
+    "dir": "down",
+    "tol": 0.5
+   },
+   "notation.tuplets.f1": {
+    "dir": "up",
+    "tol": -0.01
+   },
+   "notation.tuplets.false_per_100": {
+    "dir": "down",
+    "tol": 0.5
+   },
+   "notes.identity.f1": {
+    "dir": "up",
+    "tol": -0.002
+   },
+   "notes.onset.f1_50ms": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "read.bar_completeness": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "read.bar_integrity": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "read.ledger_lines.heavy_rate": {
+    "dir": "down",
+    "tol": 0.005
+   },
+   "sqi": {
+    "dir": "up",
+    "tol": -0.3
+   },
+   "struct.downbeat.f1": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "struct.key.fifths_exact": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "struct.key.timeline_accuracy": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "struct.measure_numbers.app_onset_accuracy": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "struct.measure_numbers.valid": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "struct.measures.count_exact": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "struct.measures.extra_empty_edge": {
+    "dir": "down",
+    "tol": 0.0
+   },
+   "struct.stats_consistent": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "struct.tempo.ok_effective": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "struct.tempo.ok_written": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "struct.tempo.present": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "struct.tempo.timeline_accuracy": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "struct.time_sig.exact": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "struct.time_sig.timeline_accuracy": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "usable": {
+    "dir": "up",
+    "tol": -0.005
+   }
+  },
+  "subgroups": {
+   "mean_abs": 0.01,
+   "mean_per_case": 0.25,
+   "metrics": {
+    "critical.accidentals": "rate",
+    "critical.beat_placement": "rate",
+    "critical.hands": "rate",
+    "critical.key": "rate",
+    "critical.meter": "rate",
+    "critical.note_values": "rate",
+    "critical.pedal": "rate",
+    "critical.pitch_integrity": "rate",
+    "critical.playback_tempo": "rate",
+    "critical.structure": "rate",
+    "notation.accidentals.required_recall": "mean",
+    "notation.duration.accuracy": "mean",
+    "notation.duration.page_accuracy": "mean",
+    "notation.hand.accuracy": "mean",
+    "notation.ioi.accuracy": "mean",
+    "notation.note_shape.consistency": "mean",
+    "notation.onset_pos.accuracy": "mean",
+    "notation.pedal.f1": "mean",
+    "notation.spelling.accuracy": "mean",
+    "notes.identity.f1": "mean",
+    "sqi": "sqi",
+    "struct.key.fifths_exact": "rate",
+    "struct.key.timeline_accuracy": "mean",
+    "struct.tempo.ok_effective": "rate",
+    "struct.tempo.timeline_accuracy": "mean",
+    "struct.time_sig.exact": "rate",
+    "struct.time_sig.timeline_accuracy": "mean",
+    "usable": "rate"
+   },
+   "min_cases": 15,
+   "prefixes": [
+    "set:",
+    "book:",
+    "profile:",
+    "beats:",
+    "metre-class:",
+    "mode:",
+    "feature:",
+    "size:"
+   ],
+   "rate_abs": 0.02,
+   "sqi_abs": 1.0
+  }
+ },
+ "kind": "synthetic-notation",
+ "matrix": [
+  {
+   "beats": "none",
+   "profile": "human-alt",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "oracle",
+   "profile": "human-alt",
+   "seeds": [
+    1
+   ]
+  }
+ ],
+ "name": "robust",
+ "references": [
+  "catalog/fur-elise",
+  "catalog/gymnopedie-1",
+  "catalog/happy-birthday",
+  "hymns/all-hail-the-power",
+  "hymns/angels-we-have-heard",
+  "hymns/beneath-the-cross",
+  "hymns/blessed-assurance",
+  "hymns/come-holy-spirit",
+  "hymns/come-thou-fount",
+  "hymns/come-thou-long",
+  "hymns/go-to-dark-gethsemane",
+  "hymns/god-rest-ye-merry",
+  "hymns/god-will-take-care",
+  "hymns/hark-the-voice",
+  "hymns/holy-holy-holy",
+  "hymns/how-firm-a-foundation",
+  "hymns/hyfrydol-alleluia",
+  "hymns/i-am-jesus-little-lamb",
+  "hymns/i-know-whom",
+  "hymns/immortal-invisible",
+  "hymns/jesus-christ-is-risen",
+  "hymns/jesus-is-all-the-world",
+  "hymns/jesus-shall-reign",
+  "hymns/joy-to-the-world",
+  "hymns/joyful-joyful",
+  "hymns/lamp-of-our-feet",
+  "hymns/lo-he-comes",
+  "hymns/midnight-clear",
+  "hymns/my-faith-looks-up",
+  "hymns/my-hope-is-built",
+  "hymns/nearer-my-god",
+  "hymns/no-not-one",
+  "hymns/o-holy-spirit-enter",
+  "hymns/pass-me-not",
+  "hymns/rescue-the-perishing",
+  "hymns/silent-night",
+  "hymns/take-my-life",
+  "hymns/the-churchs-one-foundation",
+  "hymns/the-lords-my-shepherd",
+  "hymns/to-god-be-the-glory",
+  "hymns/under-his-wings",
+  "hymns/we-gather-together",
+  "hymns/what-child-is-this",
+  "method/beyer/016",
+  "method/beyer/025",
+  "method/beyer/027",
+  "method/beyer/028",
+  "method/beyer/029",
+  "method/beyer/031",
+  "method/beyer/032",
+  "method/beyer/033",
+  "method/beyer/034",
+  "method/beyer/035",
+  "method/beyer/036",
+  "method/beyer/037",
+  "method/beyer/052",
+  "method/beyer/053",
+  "method/beyer/059",
+  "method/beyer/067",
+  "method/burgmuller25/003",
+  "method/burgmuller25/005",
+  "method/burgmuller25/006",
+  "method/burgmuller25/013",
+  "method/burgmuller25/015",
+  "method/burgmuller25/016",
+  "method/burgmuller25/019",
+  "method/burgmuller25/021",
+  "method/burgmuller25/023",
+  "method/czerny599/021",
+  "method/czerny599/022",
+  "method/czerny599/023",
+  "method/czerny599/024",
+  "method/czerny599/026",
+  "method/czerny599/027",
+  "method/czerny599/030",
+  "method/czerny599/034",
+  "method/czerny599/035",
+  "method/czerny599/036",
+  "method/czerny599/037",
+  "method/czerny599/040",
+  "method/czerny599/042",
+  "method/czerny599/045",
+  "method/czerny599/048",
+  "method/czerny599/049",
+  "method/czerny849/001",
+  "method/czerny849/002",
+  "method/czerny849/005",
+  "method/czerny849/006",
+  "method/czerny849/007",
+  "method/czerny849/008",
+  "method/czerny849/011",
+  "method/czerny849/013",
+  "method/czerny849/019",
+  "method/czerny849/020",
+  "method/hanon/001",
+  "method/hanon/002",
+  "method/hanon/004",
+  "method/hanon/005",
+  "method/hanon/007",
+  "method/hanon/008",
+  "method/hanon/009",
+  "method/hanon/020",
+  "method/sonatina/002",
+  "method/sonatina/003",
+  "method/sonatina/006",
+  "method/sonatina/009",
+  "method/sonatina/010",
+  "method/sonatina/012",
+  "method/sonatina/014",
+  "method/sonatina/017",
+  "method/sonatina/018",
+  "method/sonatina/021",
+  "method/sonatina/025",
+  "method/sonatina/026",
+  "method/sonatina/027",
+  "method/sonatina/028",
+  "micro/M01-waltz-3-4",
+  "micro/M02-alberti-4-4",
+  "micro/M03-jig-6-8",
+  "micro/M04-triplets-4-4",
+  "micro/M05-32nds-120",
+  "micro/M06-32nds-176",
+  "micro/M07-pickup-3-4",
+  "micro/M08-pickup-4-4",
+  "micro/M09-syncopation-ties",
+  "micro/M10-dotted",
+  "micro/M11-harmonic-minor",
+  "micro/M12-flats-db",
+  "micro/M13-sharps-chromatic",
+  "micro/M14-melody-in-bass",
+  "micro/M15-wide-chords",
+  "micro/M16-long-notes-rests",
+  "micro/M17-march-2-4",
+  "micro/M18-alla-breve",
+  "micro/M19-fast-3-8",
+  "micro/M20-compound-12-8",
+  "micro/M21-five-four",
+  "micro/M22-tempo-change",
+  "micro/M23-repeated-notes",
+  "micro/M24-block-chords",
+  "samples/prelude-fragment"
+ ],
+ "schema": "ppp.bench-suite/1",
+ "stage": {
+  "name": "notate",
+  "opts": {}
+ },
+ "subsets": {}
+}

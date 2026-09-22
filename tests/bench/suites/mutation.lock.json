@@ -46,6 +46,11 @@
    "reference_sha256": "12d1731332944adda7ce761732f43170462610ed47886e0cfaa67bfe578a8633"
   },
   {
+   "id": "hymns/come-thou-fount|pedal|oracle|s1",
+   "input_sha256": "d03628e18820d56385e2741b89a0f3dfe570372aa7d0bde663678bcb1620085b",
+   "reference_sha256": "12d1731332944adda7ce761732f43170462610ed47886e0cfaa67bfe578a8633"
+  },
+  {
    "id": "hymns/come-thou-long|deadpan|none|s1",
    "input_sha256": "67574ed97ee7991760a16c0f24fffd9315736f76003774d6b147cb6bb50215c9",
    "reference_sha256": "293cafb6be163edcbdd3433b65baf1376be0c8bffd893a7a7b436d8213a497c9"
@@ -71,8 +76,18 @@
    "reference_sha256": "641f1a9f81aa046025eee2b98e8cd6bf7782e875bf2c8321de119bf40378643c"
   },
   {
+   "id": "hymns/hark-the-voice|pedal|oracle|s1",
+   "input_sha256": "9c8c7ce2b31fa5f5f764aee4fce6d85e6fe34c1f635809248e38065aee1b5ef4",
+   "reference_sha256": "641f1a9f81aa046025eee2b98e8cd6bf7782e875bf2c8321de119bf40378643c"
+  },
+  {
    "id": "hymns/holy-holy-holy|deadpan|none|s1",
    "input_sha256": "2e53392d6d308b6a66c95c74205cbf3e57656dd3328dc779f646e855fd188228",
+   "reference_sha256": "c50d6ba77fc80e38684f02f19b08646b87b5e3d1204b6fb6fe8e14369863dc9d"
+  },
+  {
+   "id": "hymns/holy-holy-holy|pedal|oracle|s1",
+   "input_sha256": "fcba6557d46f936fca64cb7dffd7bf33a0f7ea4f81af8b8efdaac871beab9698",
    "reference_sha256": "c50d6ba77fc80e38684f02f19b08646b87b5e3d1204b6fb6fe8e14369863dc9d"
   },
   {
@@ -83,6 +98,11 @@
   {
    "id": "hymns/hyfrydol-alleluia|deadpan|none|s1",
    "input_sha256": "edbdd093272dc59207734c9eed3c0f38d24193456c361bfa189e0358dce36d28",
+   "reference_sha256": "dcd6d510f1bf3eb34d7c50c3fbb6992b479f467b8e037f677ba60c9b08e2f3e9"
+  },
+  {
+   "id": "hymns/hyfrydol-alleluia|pedal|oracle|s1",
+   "input_sha256": "12c7724130c9ed4aec82320150228daacffe96bc85eea64aa1fd25494aa14edc",
    "reference_sha256": "dcd6d510f1bf3eb34d7c50c3fbb6992b479f467b8e037f677ba60c9b08e2f3e9"
   },
   {
@@ -128,6 +148,11 @@
   {
    "id": "hymns/lamp-of-our-feet|deadpan|none|s1",
    "input_sha256": "cc229ddeec014d5619e1e07a7821cec8ff663ea52b6ce8ecea21dca6605a134d",
+   "reference_sha256": "70779ec9a745a99e555b4acf9d311eaeaf07758f32087e24bfbe7a289ced2c7c"
+  },
+  {
+   "id": "hymns/lamp-of-our-feet|pedal|oracle|s1",
+   "input_sha256": "b004f7ce432d03323cc04206181cf20576d93a15443ced4885f1330c10ac432f",
    "reference_sha256": "70779ec9a745a99e555b4acf9d311eaeaf07758f32087e24bfbe7a289ced2c7c"
   },
   {
@@ -196,6 +221,11 @@
    "reference_sha256": "eddf4dfe146c746c8f1c7eb53229931550a0529af367ba121958d74cff349f4f"
   },
   {
+   "id": "hymns/the-lords-my-shepherd|pedal|oracle|s1",
+   "input_sha256": "ed66a88d4849dc9caa755de8802e420fcbaea9ece5b31e77bb643445ade519e8",
+   "reference_sha256": "eddf4dfe146c746c8f1c7eb53229931550a0529af367ba121958d74cff349f4f"
+  },
+  {
    "id": "hymns/to-god-be-the-glory|deadpan|none|s1",
    "input_sha256": "10c32ccce1195b586624f0b0ed1c99d7886d42db23c9cd5857ed0cfa8fa2f553",
    "reference_sha256": "d829c95f5b21ea0e6d172b74cc45ec984357ae2406100a3c070ffea35f416cb3"
@@ -208,6 +238,11 @@
   {
    "id": "hymns/we-gather-together|deadpan|none|s1",
    "input_sha256": "30269bfa037ee84d28dacfdeae081a1c3cc0350464a9373e39a79ea09910060c",
+   "reference_sha256": "3b4c372d3f5bb03e67873976aa3b1a672f00f58bdea4994a68bb7cbf77d9e51f"
+  },
+  {
+   "id": "hymns/we-gather-together|pedal|oracle|s1",
+   "input_sha256": "11579acac55fd64e62a4a48e3788e87c3cd3e242442a4f829b439065f2e756c0",
    "reference_sha256": "3b4c372d3f5bb03e67873976aa3b1a672f00f58bdea4994a68bb7cbf77d9e51f"
   },
   {
@@ -236,8 +271,18 @@
    "reference_sha256": "dc07aefd13a5bd4c46abf3afbf03ad5f70db648150473a08e66ca161a2b96cce"
   },
   {
+   "id": "method/beyer/028|pedal|oracle|s1",
+   "input_sha256": "57f2a8688548d94c1923c0083964218c1e17dc970539db2da865f0abe39f6243",
+   "reference_sha256": "dc07aefd13a5bd4c46abf3afbf03ad5f70db648150473a08e66ca161a2b96cce"
+  },
+  {
    "id": "method/beyer/029|deadpan|none|s1",
    "input_sha256": "7575cc80398c0f8c2a18919eaf7d736b4cf674166bf86b824800153e5255fbcd",
+   "reference_sha256": "d277166d6b38a31ea701a2f6da8f450d2feaebc1389aa197818f336b5195b2ca"
+  },
+  {
+   "id": "method/beyer/029|pedal|oracle|s1",
+   "input_sha256": "ce31deaf71fbd38689cea59be44f00b53448ab5e13c2f7dd8ad5a620c06514e4",
    "reference_sha256": "d277166d6b38a31ea701a2f6da8f450d2feaebc1389aa197818f336b5195b2ca"
   },
   {
@@ -296,24 +341,9 @@
    "reference_sha256": "a9a116fdf99bd4e1e4c508373fd5a03cd0d54415f9133155c10a16e64c1c437d"
   },
   {
-   "id": "method/burgmuller25/001|deadpan|none|s1",
-   "input_sha256": "1671bd46f0bdff3b38e6699cc20b4034fefbcd9ce39535d73c5f808f2a078766",
-   "reference_sha256": "02463d6e3fa3f67b94a3794a65cbfc5e5d754558061b7a540e1937bd4fc110fd"
-  },
-  {
-   "id": "method/burgmuller25/002|deadpan|none|s1",
-   "input_sha256": "a3eabbe22cafbbb870ab348b74c56746acaf36f47f058287c74c562d3d685f12",
-   "reference_sha256": "d9e809660670057cc97a27c636f368cd922ded158e7a4c464b56304cdbe2a833"
-  },
-  {
    "id": "method/burgmuller25/003|deadpan|none|s1",
    "input_sha256": "55e1b3ae8c0bcbe9107b790630f12fff46c610df8ff68dcb814fca9e6cc30807",
    "reference_sha256": "9f8e0cb0de9b1a3255664eaa4b5c6df9e4750a6e855647ad1ff42e68fc342462"
-  },
-  {
-   "id": "method/burgmuller25/004|deadpan|none|s1",
-   "input_sha256": "4cbfb3858301e024b612d7b402023b9ec4d59b6d87044178e09fb1d1df8d0a9d",
-   "reference_sha256": "8adc6e05d4a88d2542619589b847354a0f58feb672927a5e4436a0373fad2eb4"
   },
   {
    "id": "method/burgmuller25/005|deadpan|none|s1",
@@ -326,14 +356,19 @@
    "reference_sha256": "8770a88f0d49b477d0e64410b3cd244a0066d4b99cb8eee7d0fa2327b7740e90"
   },
   {
+   "id": "method/burgmuller25/013|deadpan|none|s1",
+   "input_sha256": "e7d7611280115635274bca41a6487ca3bdb583ac3ad7621503e6381e0bd6d911",
+   "reference_sha256": "a458a58c5771ffd054a7f796a1fe1936bdac23a532927e6e3a29752dfd5d5381"
+  },
+  {
+   "id": "method/burgmuller25/015|deadpan|none|s1",
+   "input_sha256": "407861c3f6fc50a1fe441267609100e260ec150a8c3dae4171e4ab1c2bc060fc",
+   "reference_sha256": "6048e56e991223ff1f7ab015de33c1e64ac5f0faa3c65050517c9843695befc0"
+  },
+  {
    "id": "method/burgmuller25/016|deadpan|none|s1",
    "input_sha256": "2d72994411cd78f33d3a0f178ddcce7cb8e1fe9e524a8328ac6d466ebe76f699",
    "reference_sha256": "df36b014c9dc5891b4f41f9f59edf04e4ee45ea14b11fe7efe70710ae4849e74"
-  },
-  {
-   "id": "method/burgmuller25/018|deadpan|none|s1",
-   "input_sha256": "fbce07e9202d946d440c2c9de7a31efc15a129b5e9f99e7edaa88a9a20aad0ea",
-   "reference_sha256": "2ae5b89d4c86a9857ac08428e669f67ddb7c79b24e528cae6d5b3d1caa5f8a81"
   },
   {
    "id": "method/burgmuller25/019|deadpan|none|s1",
@@ -341,14 +376,14 @@
    "reference_sha256": "1e18374256b086aa53c1f4af94a47ef5bb076271f8b7cb2986c428d2d2fd7b50"
   },
   {
+   "id": "method/burgmuller25/021|deadpan|none|s1",
+   "input_sha256": "6055fa0c2bbbcd8114a38452e65bea72b889649b46404ed5a2bcee77bb1a4a74",
+   "reference_sha256": "8192a18aba25e9a5ebca2d3959fbe6a30c5d45abcff26eb8c3f34697a333275e"
+  },
+  {
    "id": "method/burgmuller25/023|deadpan|none|s1",
    "input_sha256": "39fa4b41d6a29dd7b15f7a8543b61bd9307e17b0929b1f8d6a75e8c7354d2ad2",
    "reference_sha256": "c5aef652ceccf87fb2962aba69d6d40bae2be4f51d2c715dc4c218b25e1db659"
-  },
-  {
-   "id": "method/czerny299/010|deadpan|none|s1",
-   "input_sha256": "adb4705a3e987eb080a8a3809feb37f89e06bb5196196091e4053e42ca2a97e6",
-   "reference_sha256": "a4d3ac4f32d0a63513e5d3e9efd4b36847418ffca1457e37e231cc6fd0769810"
   },
   {
    "id": "method/czerny599/021|deadpan|none|s1",
@@ -436,8 +471,18 @@
    "reference_sha256": "302add4d3e497f0371daf6776c51252f1d7d18189c59e42aa3e8642bf4374164"
   },
   {
+   "id": "method/czerny849/001|pedal|oracle|s1",
+   "input_sha256": "970b4a841eefb1309ee1f50061b3f16a245ff86970dd2319188713238c03afd5",
+   "reference_sha256": "302add4d3e497f0371daf6776c51252f1d7d18189c59e42aa3e8642bf4374164"
+  },
+  {
    "id": "method/czerny849/002|deadpan|none|s1",
    "input_sha256": "6bd4ea2113aff55da6aa1fc759f41e3b43844ce2dda32d5220fdd5cc6e61961d",
+   "reference_sha256": "b37116cc2a4d093b8bcd0d40a82121d690d82ae454e7c88ee26eddf9e52c949e"
+  },
+  {
+   "id": "method/czerny849/002|pedal|oracle|s1",
+   "input_sha256": "53af1960c654e3128fefaa64f3ab565971846853b4940b15d1bdd65e947f3a62",
    "reference_sha256": "b37116cc2a4d093b8bcd0d40a82121d690d82ae454e7c88ee26eddf9e52c949e"
   },
   {
@@ -446,9 +491,49 @@
    "reference_sha256": "5427f762b8d709be18221d1c4b4cc21cfe0489cda10afe27d974b570cd6a393b"
   },
   {
+   "id": "method/czerny849/005|pedal|oracle|s1",
+   "input_sha256": "15e2a5e889ac6ff10bdbccfd947ffc9c892bc034514dbc0ecd021d96e6ad3e52",
+   "reference_sha256": "5427f762b8d709be18221d1c4b4cc21cfe0489cda10afe27d974b570cd6a393b"
+  },
+  {
+   "id": "method/czerny849/006|deadpan|none|s1",
+   "input_sha256": "45a0a180a0eebcc6f170aa60dbafd6209215f9ec42cf007fde09bee8d80ca090",
+   "reference_sha256": "9a027c47a2a9b94e642c73986cd022c01315024a311d555ee756e27de1086623"
+  },
+  {
+   "id": "method/czerny849/006|pedal|oracle|s1",
+   "input_sha256": "78136fe9286a017b6826eb81d3ff97d28f532c635fc1a3d82ea7037c4456c8fe",
+   "reference_sha256": "9a027c47a2a9b94e642c73986cd022c01315024a311d555ee756e27de1086623"
+  },
+  {
    "id": "method/czerny849/007|deadpan|none|s1",
    "input_sha256": "7fc39369122f01578a788fdb96dec47d16dc67fdeb3e1990322dc70a88118c4e",
    "reference_sha256": "e08e13ecaaa891bb35278e748f50aa3f06f5d92e885570961775c1b5a69f5a46"
+  },
+  {
+   "id": "method/czerny849/007|pedal|oracle|s1",
+   "input_sha256": "2d41a5a20c65dc67d394ff29f9c58febbfde36ab5179cdc7ee2137ca8d4dfe57",
+   "reference_sha256": "e08e13ecaaa891bb35278e748f50aa3f06f5d92e885570961775c1b5a69f5a46"
+  },
+  {
+   "id": "method/czerny849/008|deadpan|none|s1",
+   "input_sha256": "17373b0041303a8b581870379b40df87d2e822804bf28006a439feaf4ecbe40d",
+   "reference_sha256": "c5c9111ec19bfb3f030d47f1994c1edb92e659200a7f95ad9ef9ad9611c627c2"
+  },
+  {
+   "id": "method/czerny849/008|pedal|oracle|s1",
+   "input_sha256": "3881cdea94d3a63e853b441038711494368b7d981f3a9d6f7e730761426c9ed1",
+   "reference_sha256": "c5c9111ec19bfb3f030d47f1994c1edb92e659200a7f95ad9ef9ad9611c627c2"
+  },
+  {
+   "id": "method/czerny849/011|deadpan|none|s1",
+   "input_sha256": "7928e88557a26148c289cdb110c287b7f7565fd962654cd205383d125ea236e2",
+   "reference_sha256": "26c75db747518c3aaa692ab99e637989fe1b8a33ae61e5e2df27e009d6207a67"
+  },
+  {
+   "id": "method/czerny849/011|pedal|oracle|s1",
+   "input_sha256": "1d0dfd7ef8ad9ba50fc20fe41b5fb09b7a597ed45cb4666c162f5c5f4edb9ea9",
+   "reference_sha256": "26c75db747518c3aaa692ab99e637989fe1b8a33ae61e5e2df27e009d6207a67"
   },
   {
    "id": "method/czerny849/013|deadpan|none|s1",
@@ -456,19 +541,29 @@
    "reference_sha256": "9a398d50dccdc57da42dbdb97f0ed725e7e7bd0bbe70a026a526866c1c1abd50"
   },
   {
-   "id": "method/czerny849/025|deadpan|none|s1",
-   "input_sha256": "e48391c17b66f8f01cab5dd66afff4809dfe0905a723090b32de5091e61ca6ed",
-   "reference_sha256": "fea50285bf3caedf9232d852aedbbccf75e2de07e0a49159266c3a05bfb8766c"
+   "id": "method/czerny849/013|pedal|oracle|s1",
+   "input_sha256": "bf92e2a25155d23c3365ec3bc53b4709bab76d73984954b74b18d0c8bb0834f2",
+   "reference_sha256": "9a398d50dccdc57da42dbdb97f0ed725e7e7bd0bbe70a026a526866c1c1abd50"
   },
   {
-   "id": "method/czerny849/026|deadpan|none|s1",
-   "input_sha256": "43c1f70429d33b02da03e4efbc84fb1f8e4fedc567fc895cab85f2faa626816c",
-   "reference_sha256": "ee071505b3f840be7b34bbabd2280b1d4aa71f180a73186ac4d2fa41b7684d3f"
+   "id": "method/czerny849/019|deadpan|none|s1",
+   "input_sha256": "653ba03754748964f5483ec9e3109c1f6933201cdea534e755be830752a57f46",
+   "reference_sha256": "8d2755fae8fc7de928b5f312f8e8a47cbc043ccb161edbf7cd6a0d93cc854524"
   },
   {
-   "id": "method/czerny849/030|deadpan|none|s1",
-   "input_sha256": "e3f49f2615a2d119a0d5c77dbbfaf136d9e7f2ca455a722f5dfffd11d8f859df",
-   "reference_sha256": "c3c9d706b7ea8071edf572f704a35d610891a4fca16196761bb169dc44463643"
+   "id": "method/czerny849/019|pedal|oracle|s1",
+   "input_sha256": "3f9ae1286fe0a33245e762067097557eb680015bf213b70d757906792ecd4d02",
+   "reference_sha256": "8d2755fae8fc7de928b5f312f8e8a47cbc043ccb161edbf7cd6a0d93cc854524"
+  },
+  {
+   "id": "method/czerny849/020|deadpan|none|s1",
+   "input_sha256": "8a3703b1f33753f915d69d086e2588c7502bd7a096cbf6ec920437bef4d32dff",
+   "reference_sha256": "053c6a88af4d8aa04ba0b5fedba8761d35b1c83646739226c66b485a5260259f"
+  },
+  {
+   "id": "method/czerny849/020|pedal|oracle|s1",
+   "input_sha256": "52a7be7b91ab119854cd12b3e4ff8185a8c74ec6e35bcd8e24b59f48edb66e4b",
+   "reference_sha256": "053c6a88af4d8aa04ba0b5fedba8761d35b1c83646739226c66b485a5260259f"
   },
   {
    "id": "method/hanon/001|deadpan|none|s1",
@@ -526,18 +621,13 @@
    "reference_sha256": "8ceade7f5739f8b19a6d56b04a9848af6a83c52dbce1ab1879b14a7e199a8596"
   },
   {
-   "id": "method/sonatina/008|deadpan|none|s1",
-   "input_sha256": "90186d1e60c0cd924991ee81d66bd23202d110427dc0869d1b68ccb436a04652",
-   "reference_sha256": "5d1a9265141652d2cd384230bc1433be6ecdfe5c0b13b8c83cf551062c9e44c9"
-  },
-  {
    "id": "method/sonatina/009|deadpan|none|s1",
    "input_sha256": "63d1b3fca23563b8c406753631f800d9b3499855e9e57eab62d4d3c6b28df190",
    "reference_sha256": "54a82d996f7d675e5c75c601ba7378261aeafda7a1dd46e57f9c906f1f0c7fe9"
   },
   {
    "id": "method/sonatina/010|deadpan|none|s1",
-   "input_sha256": "c29307faedb741588ba11ad8d978fe0dc2295546ae1276c893c88b85da1d7e59",
+   "input_sha256": "8743508b7e93cb12668edc805e5db6e689be275462d12f327c25477499f130e3",
    "reference_sha256": "79ef0942030acc887f16dc8fd18d7fb4a5635acc919b4c31b6947b0158f7fbd5"
   },
   {
@@ -547,7 +637,7 @@
   },
   {
    "id": "method/sonatina/014|deadpan|none|s1",
-   "input_sha256": "b4e6850396271888ab62f8bc48220ea9c40b06b0a7c37a1d3cb4a094479eb56c",
+   "input_sha256": "0238cd881a195a8c1e8dd174ac46e518d60f2661231bad69004c1a4c6a3c7adf",
    "reference_sha256": "ffc2f04a5cb66d0da85fda7125cb0ffe8417508206b7a03f94f6198b9c24b683"
   },
   {
@@ -556,13 +646,28 @@
    "reference_sha256": "a26f6a4b07e92e12e29ebc34b082b81f5647412dce1e1d7be8a8a4b398cc1b49"
   },
   {
+   "id": "method/sonatina/018|deadpan|none|s1",
+   "input_sha256": "0c9f449b32dac81c96a9fd5aac144aa99d28488f59621ff777400e4490b31b03",
+   "reference_sha256": "6ef1bebd219019b3ce9b480c48e8334d84ead655662e5cdc45f013ec070065b4"
+  },
+  {
    "id": "method/sonatina/021|deadpan|none|s1",
    "input_sha256": "55345633c2cb68cd12b7685f1ffdcd9cc6ad8f3951725d8f702e4882e17c64a7",
    "reference_sha256": "0741cee4dbc9c6a8229e475964e8fcfbf51911e23a94eb9f18bcddd722e46800"
   },
   {
+   "id": "method/sonatina/021|pedal|oracle|s1",
+   "input_sha256": "05310627fc04826bf3854639273d09741bcf6f9288a0ceaf55657a8d9168212a",
+   "reference_sha256": "0741cee4dbc9c6a8229e475964e8fcfbf51911e23a94eb9f18bcddd722e46800"
+  },
+  {
    "id": "method/sonatina/025|deadpan|none|s1",
-   "input_sha256": "b30c949fb765fcf6dbb32de6d6a2ace4f85d1a8f4301c1fd5590fc1f94fc3c6c",
+   "input_sha256": "456d6be74f0070709afe9547a6e7a50cea3fb27db4e12f677a8663060677827f",
+   "reference_sha256": "1a49a672964763a03823a1372ef506c88ba469ceba4c79bab3c02163df9c0d05"
+  },
+  {
+   "id": "method/sonatina/025|pedal|oracle|s1",
+   "input_sha256": "766536097ffc4a56cab700d266bbb0ed730f77bf19208fe1cc37b9c772bd6b96",
    "reference_sha256": "1a49a672964763a03823a1372ef506c88ba469ceba4c79bab3c02163df9c0d05"
   },
   {
@@ -571,13 +676,28 @@
    "reference_sha256": "e683c1d3bb8d7b8641906a4af181f6b10e9c2b5e44bf694935c8a34c2dda6aa7"
   },
   {
+   "id": "method/sonatina/026|pedal|oracle|s1",
+   "input_sha256": "e185d99351616ee8e1ab0732b95c7360a62b1297f053a9f770dff3e035ee0e18",
+   "reference_sha256": "e683c1d3bb8d7b8641906a4af181f6b10e9c2b5e44bf694935c8a34c2dda6aa7"
+  },
+  {
    "id": "method/sonatina/027|deadpan|none|s1",
    "input_sha256": "150c0e258ef715faafebabc2b088fdd67d1a4e040c33a793078ef5df54388982",
    "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
   },
   {
+   "id": "method/sonatina/027|pedal|oracle|s1",
+   "input_sha256": "524cbd15b6f3acd4f3ab737240a42248c232c4f040436592f7d2f5eac282cfde",
+   "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
+  },
+  {
    "id": "method/sonatina/028|deadpan|none|s1",
    "input_sha256": "a8bc9b84ddb301f723ef9978d995c34bd6885834e95efd42e3551de6059bdf96",
+   "reference_sha256": "0072b82c8a461f1841618570b3226fa16b690416c896a5edcff7285d03facd15"
+  },
+  {
+   "id": "method/sonatina/028|pedal|oracle|s1",
+   "input_sha256": "673b458eaa02756aadeaa4f89d7e2b04095b777032eef0270b93638593c1c956",
    "reference_sha256": "0072b82c8a461f1841618570b3226fa16b690416c896a5edcff7285d03facd15"
   },
   {
@@ -616,13 +736,28 @@
    "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
   },
   {
+   "id": "micro/M07-pickup-3-4|pedal|oracle|s1",
+   "input_sha256": "ef3363c52732d47a3d06a1ee6594b7f2eacf9ac0d30c8bdf010cb867beb20fbf",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
    "id": "micro/M08-pickup-4-4|deadpan|none|s1",
    "input_sha256": "2ce0c199acff8e79b50a00ce577c67dd469c5be1dbd9e45bafcc8b6ced91aa6b",
    "reference_sha256": "5535e3fca8be8702a15c955c9778b0bbd5ba7cbfa0064c9e03bdac70be2371d6"
   },
   {
+   "id": "micro/M08-pickup-4-4|pedal|oracle|s1",
+   "input_sha256": "130b5494a819c949df132ebec9bb444944cc1248bca36ef18c4ce1e6dec546e8",
+   "reference_sha256": "5535e3fca8be8702a15c955c9778b0bbd5ba7cbfa0064c9e03bdac70be2371d6"
+  },
+  {
    "id": "micro/M09-syncopation-ties|deadpan|none|s1",
    "input_sha256": "23a5307e0159c483472b85d1a39a08aac11275fec2cb648f7b9900607adafff8",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
+   "id": "micro/M09-syncopation-ties|pedal|oracle|s1",
+   "input_sha256": "b8832fc6526066e9c9a6c1af34c80e11c6a28aa3c89b5d5c914236ae2b98b7df",
    "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
   },
   {
@@ -636,6 +771,11 @@
    "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
   },
   {
+   "id": "micro/M11-harmonic-minor|pedal|oracle|s1",
+   "input_sha256": "c2508de8a0cafd625da86d0dc142d507bea007046b2ea25592a900288932a1b4",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
    "id": "micro/M12-flats-db|deadpan|none|s1",
    "input_sha256": "c63321ccbd85294b4d4e4c36dc4241b47ac8f9b9c10a8a677aafddaa2a174676",
    "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
@@ -643,6 +783,11 @@
   {
    "id": "micro/M13-sharps-chromatic|deadpan|none|s1",
    "input_sha256": "a8953f340909f1746c0e44dc2b55f1b797d3c59d100b1b0368b56da023027e61",
+   "reference_sha256": "f9b6832e7860f333398a4295a1c2e801c3dc4058475d142cc4cb1fe9fa92f5b8"
+  },
+  {
+   "id": "micro/M13-sharps-chromatic|pedal|oracle|s1",
+   "input_sha256": "5e45b997038e9941f3c9c966f9d5113023060a32de6a60dc49306db70cc7c2dd",
    "reference_sha256": "f9b6832e7860f333398a4295a1c2e801c3dc4058475d142cc4cb1fe9fa92f5b8"
   },
   {
@@ -691,6 +836,11 @@
    "reference_sha256": "5acc11ae930eec34635589b56b0e6980811d6ec23302d9ae56fede56a5052566"
   },
   {
+   "id": "micro/M22-tempo-change|pedal|oracle|s1",
+   "input_sha256": "8eb8b6e2fe90f278fdd4e78f2ef9622dbbba924fefc1886baab41ce3888a78ec",
+   "reference_sha256": "5acc11ae930eec34635589b56b0e6980811d6ec23302d9ae56fede56a5052566"
+  },
+  {
    "id": "micro/M23-repeated-notes|deadpan|none|s1",
    "input_sha256": "50dc5e69031319b17e5632f58c8a787f1e7a9db16af2e1659bf2d75e72f11c22",
    "reference_sha256": "9d979f9d256151c2e939c95759953c26ffdc3538535582b4680bbf7b5200c125"
@@ -702,12 +852,12 @@
   },
   {
    "id": "samples/prelude-fragment|deadpan|none|s1",
-   "input_sha256": "fba8bf29650259cd6299e27c8310b2963e583e154d3aa5d9447a23ba85196c03",
+   "input_sha256": "2c8f8982c92b486f5bbc1e8bbc6581e075f92c3228300f452d78ab9e660bb5ec",
    "reference_sha256": "7d68240714c731a827448aa58185c58aea15b9c739c15d8d7bd100efea8a5913"
   }
  ],
- "generator": "perform/1",
- "reader": "reader/1",
+ "generator": "perform/2",
+ "reader": "reader/3",
  "schema": "ppp.bench-lock/1",
- "suite_sha256": "fbf32455a5ed00f87397075aa81ba3e661ec29f6218a2ecb53cfb80506b00573"
+ "suite_sha256": "88e7d71c94f2e3a5ad831d8380a98be4d4433dce7c6cda356076fceae2b0ea42"
 }

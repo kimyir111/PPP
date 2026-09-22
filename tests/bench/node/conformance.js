@@ -38,12 +38,22 @@ const outPath = arg('--out');
           const s = window.PPP.parseMusicXML(xml, id);
           const index = {};
           s.measures.forEach((m, i) => { index[m.number] = i; });
+          /* what the app's player strikes and holds: PianoScore.ties is the rule playback uses */
+          const plan = window.PPP.PianoScore.ties(s);
           return {
             id: id, ok: true, tempo: s.tempo, staves: s.staves,
             measures: s.measures.map(m => ({ number: m.number, startQ: m.startQ, lenQ: m.lenQ,
-              time: [m.time.beats, m.time.beatType], fifths: m.key.fifths })),
+              time: [m.time.beats, m.time.beatType], fifths: m.key.fifths, mode: m.key.mode })),
             notes: s.notes.filter(n => !n.rest && n.midi != null).map(n => ({
-              m: index[n.m], b: n.b, dur: n.dur, midi: n.midi, hand: n.hand, staff: n.staff }))
+              /* the written spelling: under an ottava the app keeps it in writtenP and shifts p */
+              m: index[n.m], b: n.b, dur: n.dur, midi: n.midi, hand: n.hand, staff: n.staff, p: n.writtenP || n.p || null,
+              tm: n.tm ? [n.tm.a, n.tm.n] : null,
+              /* the printed shape the renderer draws (VF_TYPE[type], dots) */
+              type: n.type || null, dots: n.dots || 0,
+              struck: !(n.tieStop && plan.cont.has(n)),
+              hold: plan.hold.has(n) ? plan.hold.get(n) : n.dur })),
+            rests: s.notes.filter(n => n.rest).map(n => ({ m: index[n.m], b: n.b, dur: n.dur, staff: n.staff,
+              type: n.type || null, dots: n.dots || 0, tm: n.tm ? [n.tm.a, n.tm.n] : null }))
           };
         } catch (e) {
           return { id: id, ok: false, error: String(e && e.message || e) };

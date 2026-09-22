@@ -81,9 +81,21 @@
    "input_literal": "tests/transcription.test.js PM2S-shaped grid: 4 bars of 6/8, ticksPerQuarter 24 (golden.pm2s_grid_input)",
    "key": "G14",
    "source": "grid:pm2s-6-8"
+  },
+  {
+   "key": "G15",
+   "source": "micro/M02-alberti-4-4|pedal|oracle|s1"
+  },
+  {
+   "key": "G16",
+   "source": "method/czerny599/040|amt|oracle-noisy|s1"
+  },
+  {
+   "key": "G17",
+   "source": "hymns/we-gather-together|rubato|oracle|s1"
   }
  ],
- "description": "Exact toMusicXml output for 14 fixed inputs (§7); lock, arrangement and PM2S-grid paths included",
+ "description": "Exact toMusicXml output for 17 fixed inputs (§7); lock, arrangement, PM2S-grid, pedal, AMT-error and rubato paths included",
  "name": "golden",
  "schema": "ppp.bench-golden/1"
 }

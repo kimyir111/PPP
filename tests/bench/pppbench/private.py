@@ -15,7 +15,7 @@ import platform
 import sys
 import time
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from . import VERSIONS, aggregate, corpus, evaluate, musicxml, stages, suite as suite_mod, util
 from .perform import Performance
@@ -40,6 +40,16 @@ def _expected(canon, expect: Dict[str, Any], bar_starts: List[float]) -> Dict[st
             "bar_starts": [bar_starts[i] for i, m in enumerate(canon.measures) if not m.implicit]}
 
 
+def replay_truth_pedals(fx: Dict[str, Any]) -> Optional[List[Dict[str, Any]]]:
+    """What the performer's foot did in a replay fixture: its ``truth.pedals`` when recorded; none for
+    a rendered fixture (render_piano.py is given notes only, so the audio has no pedal; the six
+    fixtures recorded at f0e1a86 also came from a performer that hard-coded ``pedals: []``); unknown
+    (None) for a real recording nobody annotated. The helper's own pedal is the AMT's guess, not truth."""
+    if "pedals" in fx.get("truth", {}):
+        return fx["truth"]["pedals"]
+    return None if fx.get("recording") else []
+
+
 def load_cases(suite: Dict[str, Any]) -> List[Dict[str, Any]]:
     base = os.path.dirname(suite["_path"])
     if suite.get("fixtures") == "replay":
@@ -49,22 +59,30 @@ def load_cases(suite: Dict[str, Any]) -> List[Dict[str, Any]]:
             fx = util.load_json(path)
             entry = refs[fx["reference"]]
             cases.append({"id": fx["id"], "kind": "replay", "reference_path": entry.abspath, "expect": entry.expect,
+                          "input_files": [path, entry.abspath],
                           "bar_starts": fx["truth"]["bar_starts_s"], "helper_result": fx["helper_result"],
                           "truth_notes": fx["truth"].get("notes"), "reference_sha256": fx.get("reference_sha256"),
-                          "entry_sha256": entry.sha256})
+                          "truth_pedals": replay_truth_pedals(fx), "entry_sha256": entry.sha256,
+                          # rendered: synthetic playing through real models; recorded: a real person (§17 M11)
+                          "input_kind": "recorded" if fx.get("recording") else "rendered"})
         return cases
     out = []
     for c in suite.get("cases", []):
         kind = c.get("kind") or suite.get("kind")
         row = {"id": c["id"], "kind": kind, "reference_path": os.path.join(base, c["reference"]),
-               "expect": c.get("expect") or {}}
+               "expect": c.get("expect") or {}, "input_files": [os.path.join(base, c["reference"])]}
         if kind == "replay":
             bs = c["reference_bar_starts"]
             row["bar_starts"] = util.load_json(os.path.join(base, bs)) if isinstance(bs, str) else bs
             row["helper_result"] = util.load_json(os.path.join(base, c["helper_result"]))
             row["truth_notes"] = None
+            row["truth_pedals"] = c.get("truth_pedals")   # the performer's pedal if the suite states it, else unknown
+            row["input_files"].append(os.path.join(base, c["helper_result"]))
+            if isinstance(bs, str):
+                row["input_files"].append(os.path.join(base, bs))
         else:
             row["prediction_path"] = os.path.join(base, c["prediction"])
+            row["input_files"].append(row["prediction_path"])
         out.append(row)
     return out
 
@@ -85,7 +103,7 @@ def run_private(suite: Dict[str, Any], args) -> int:
     t0 = time.perf_counter()
     jobs, perfs, canons = [], {}, {}
     for c in cases:
-        canon = musicxml.read_score(c["reference_path"])
+        canon = musicxml.read_score(c["reference_path"], ottava=corpus.REFERENCE_OTTAVA)   # truth is the music
         canons[c["id"]] = canon
         if c["kind"] == "replay":
             try:
@@ -104,7 +122,8 @@ def run_private(suite: Dict[str, Any], args) -> int:
     rows = []
     for c in cases:
         canon = canons[c["id"]]
-        rec = {"id": c["id"], "key": suite_mod.case_key(c["id"]), "tags": [f"kind:{c['kind']}"], "status": "ok",
+        rec = {"id": c["id"], "key": suite_mod.case_key(c["id"]),
+               "tags": [f"kind:{c['kind']}"] + ([f"input:{c['input_kind']}"] if c.get("input_kind") else []), "status": "ok",
                "error_code": None, "metrics": {}, "counts": {}, "predicted": None,
                "expected": None}
         try:
@@ -114,7 +133,8 @@ def run_private(suite: Dict[str, Any], args) -> int:
                 p = perfs[c["id"]]
                 rec["expected"] = {k: p.expected[k] for k in ("qpm", "time", "key", "measures")}
                 m, counts, pred = evaluate.evaluate_timed(canon, p, notated["results"][c["id"]],
-                                                          skip_metrics=c["expect"].get("skip_metrics", ()))
+                                                          skip_metrics=c["expect"].get("skip_metrics", ()),
+                                                          truth_pedals=c.get("truth_pedals"))
                 if c.get("truth_notes"):
                     sys.path.insert(0, util.repo_root())
                     from evaluate_transcription import evaluate as amt_eval  # unchanged, imported
@@ -133,10 +153,18 @@ def run_private(suite: Dict[str, Any], args) -> int:
             rec.update(status="error", error_code=getattr(exc, "code", "ERROR"), error=str(exc)[:300])
         rows.append(rec)
     rows.sort(key=lambda r: r["id"])
+    from . import known_defects
+    # the inputs are files, not generated: their hashes are the lock, so an edited fixture is
+    # INPUT_DRIFT against the baseline instead of a change blamed on the SUT (§17 m1)
+    lock = util.sha256_bytes(util.dumps_json(sorted(
+        [c["id"], [util.content_sha256(f) for f in c.get("input_files", [])]] for c in cases)).encode("utf-8"))
     results = {"schema": "ppp.bench-results/1", "suite": suite["name"], "suite_sha256": suite_mod.suite_sha256(suite),
-               "lock_sha256": None, "versions": dict(VERSIONS), "filtered": False,
-               "aggregates": aggregate.aggregate(rows), "cases": rows}
+               "lock_sha256": lock, "versions": dict(VERSIONS), "filtered": False,
+               "aggregates": aggregate.aggregate(rows), "known_failures": known_defects.audit(), "cases": rows}
     util.dump_json(results, os.path.join(out, "results.json"))
+    # compare exactly what results.json holds (6-decimal floats), as `check` and the baseline do: an
+    # unrounded value 1e-7 below its rounded baseline would be a regression on a zero-tolerance metric
+    results = util.load_json_text(util.dumps_json(results))
     run = {"started_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "git_sha": util.git_sha(),
            "git_dirty": util.git_dirty(), "audio_score_path": sut, "audio_score_sha256": util.content_sha256(sut),
            "node": notated["meta"].get("node"), "python": platform.python_version(), "platform": sys.platform,

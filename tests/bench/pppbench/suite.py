@@ -12,52 +12,100 @@ from . import GENERATOR_VERSION, READER_VERSION, corpus, util
 SUITES_DIR = os.path.join(util.bench_root(), "suites")
 CASE_FIELDS = ("kind", "stage", "references", "matrix", "subsets", "align", "holdout_seeds", "cases", "fixtures")
 
-GATE_CORE = {
-    "metrics": {
-        "sqi": {"dir": "up", "tol": -0.30},
-        "notes.identity.f1": {"dir": "up", "tol": -0.002},
-        "notes.onset.f1_50ms": {"dir": "up", "tol": -0.005},
-        "notation.ioi.accuracy": {"dir": "up", "tol": -0.003},
-        "notation.onset_pos.accuracy": {"dir": "up", "tol": -0.005},
-        "notation.duration.accuracy": {"dir": "up", "tol": -0.003},
-        "notation.hand.accuracy": {"dir": "up", "tol": -0.003},
-        "notation.spelling.accuracy": {"dir": "up", "tol": -0.003},
-        "notation.ties.extra_per_100": {"dir": "down", "tol": 0.5},
-        "struct.time_sig.exact": {"dir": "up", "tol": -0.005},
-        "struct.key.fifths_exact": {"dir": "up", "tol": -0.005},
-        "struct.tempo.ok_effective": {"dir": "up", "tol": -0.005},
-        "struct.downbeat.f1": {"dir": "up", "tol": -0.005},
+CRITICAL_KEYS = ["usable", "critical.meter", "critical.playback_tempo", "critical.beat_placement",
+                 "critical.note_values", "critical.pitch_integrity", "critical.key", "critical.hands",
+                 "critical.structure", "critical.accidentals", "critical.pedal"]
+
+
+def _gate(scale: float, flip_max: int, prefixes, min_cases: int) -> Dict[str, Any]:
+    """gate/3 (docs/GOALS/G00 §9.3, §17, §19). ``scale`` widens every aggregate tolerance for small suites.
+
+    Aggregate tolerances: in a deterministic suite every change is real; a tolerance is the size of
+    trade-off a change may make without a new baseline (about 2-3 cases of core). Zero where any
+    change is a defect (bar integrity, missing tempo, stats that disagree with the MusicXML, empty
+    edge bars, and since §19: printed shapes that contradict their length, incomplete bars, bar
+    numbers)."""
+    up = lambda tol: {"dir": "up", "tol": round(tol * scale, 6)}      # noqa: E731
+    down = lambda tol: {"dir": "down", "tol": round(tol * scale, 6)}  # noqa: E731
+    metrics = {k: up(-0.005) for k in CRITICAL_KEYS}
+    metrics.update({
+        "sqi": up(-0.30),
+        "notes.identity.f1": up(-0.002),
+        "notes.onset.f1_50ms": up(-0.005),
+        "notation.ioi.accuracy": up(-0.003),
+        "notation.onset_pos.accuracy": up(-0.005),
+        "notation.onset_pos.accuracy_ref": up(-0.005),
+        "notation.duration.accuracy": up(-0.003),
+        "notation.duration.page_accuracy": up(-0.003),
+        "notation.hand.accuracy": up(-0.003),
+        "notation.spelling.accuracy": up(-0.003),
+        "notation.ties.extra_per_100": down(0.5),
+        "notation.tuplets.f1": up(-0.01),
+        "notation.tuplets.false_per_100": down(0.5),
+        "notation.accidentals.required_recall": up(-0.002),
+        "notation.pedal.f1": up(-0.01),
+        "notation.pedal.false_per_min": down(0.05),
+        "struct.time_sig.exact": up(-0.005),
+        "struct.key.fifths_exact": up(-0.005),
+        "struct.tempo.ok_effective": up(-0.005),
+        "struct.tempo.ok_written": up(-0.005),
+        "struct.tempo.present": {"dir": "up", "tol": 0.0},
+        "struct.stats_consistent": {"dir": "up", "tol": 0.0},
+        "struct.measures.count_exact": up(-0.005),
+        "struct.measures.extra_empty_edge": {"dir": "down", "tol": 0.0},
+        "struct.downbeat.f1": up(-0.005),
         "read.bar_integrity": {"dir": "up", "tol": 0.0},
-    },
-    "tag_guards": {"metric": "sqi", "min_delta": -1.0,
-                   "tags": ["set:micro", "set:hymns", "set:method", "set:catalog", "profile:deadpan", "profile:human",
-                            "profile:amt", "beats:none", "beats:oracle"]},
-    "case_fail_drop": 10.0,
-    "case_warn_drop": 2.0,
-}
-GATE_SMOKE = {
-    "metrics": {
-        "sqi": {"dir": "up", "tol": -1.0},
-        "notes.identity.f1": {"dir": "up", "tol": -0.01},
-        "notes.onset.f1_50ms": {"dir": "up", "tol": -0.02},
-        "notation.ioi.accuracy": {"dir": "up", "tol": -0.01},
-        "notation.onset_pos.accuracy": {"dir": "up", "tol": -0.02},
-        "notation.duration.accuracy": {"dir": "up", "tol": -0.01},
-        "notation.hand.accuracy": {"dir": "up", "tol": -0.01},
-        "notation.spelling.accuracy": {"dir": "up", "tol": -0.01},
-        "notation.ties.extra_per_100": {"dir": "down", "tol": 2.0},
-        "struct.time_sig.exact": {"dir": "up", "tol": -0.04},
-        "struct.key.fifths_exact": {"dir": "up", "tol": -0.04},
-        "struct.tempo.ok_effective": {"dir": "up", "tol": -0.04},
-        "struct.downbeat.f1": {"dir": "up", "tol": -0.02},
-        "read.bar_integrity": {"dir": "up", "tol": 0.0},
-    },
-    "tag_guards": {"metric": "sqi", "min_delta": -2.0,
-                   "tags": ["set:micro", "set:hymns", "set:method", "set:catalog", "profile:deadpan", "profile:human",
-                            "beats:none", "beats:oracle"]},
-    "case_fail_drop": 10.0,
-    "case_warn_drop": 2.0,
-}
+        # §19: the whole-score sequences, the printed note shapes, complete bars, bar numbers, clefs, clutter
+        "struct.time_sig.timeline_accuracy": up(-0.005),
+        "struct.key.timeline_accuracy": up(-0.005),
+        "struct.tempo.timeline_accuracy": up(-0.005),
+        "notation.note_shape.consistency": {"dir": "up", "tol": 0.0},
+        "read.bar_completeness": {"dir": "up", "tol": 0.0},
+        "struct.measure_numbers.valid": {"dir": "up", "tol": 0.0},
+        "struct.measure_numbers.app_onset_accuracy": {"dir": "up", "tol": 0.0},
+        "read.ledger_lines.heavy_rate": down(0.005),
+        "notation.accidentals.courtesy_per_100": down(0.5),
+    })
+    sub = {k: "rate" for k in CRITICAL_KEYS}
+    sub.update({"sqi": "sqi", "struct.time_sig.exact": "rate", "struct.key.fifths_exact": "rate",
+                "struct.tempo.ok_effective": "rate", "notes.identity.f1": "mean", "notation.ioi.accuracy": "mean",
+                "notation.onset_pos.accuracy": "mean", "notation.duration.accuracy": "mean",
+                "notation.hand.accuracy": "mean", "notation.spelling.accuracy": "mean",
+                "notation.accidentals.required_recall": "mean", "notation.pedal.f1": "mean",
+                "struct.time_sig.timeline_accuracy": "mean", "struct.key.timeline_accuracy": "mean",
+                "struct.tempo.timeline_accuracy": "mean", "notation.note_shape.consistency": "mean",
+                "notation.duration.page_accuracy": "mean"})
+    return {
+        "metrics": metrics,
+        "subgroups": {"prefixes": list(prefixes), "min_cases": min_cases, "metrics": sub,
+                      "sqi_abs": 1.0, "rate_abs": 0.02, "mean_abs": 0.01, "mean_per_case": 0.25},
+        "case_fail_drop": 10.0,
+        "case_warn_drop": 2.0,
+        "case_flip_max": flip_max,
+    }
+
+
+SUBGROUP_PREFIXES = ["set:", "book:", "profile:", "beats:", "metre-class:", "mode:", "feature:", "size:"]
+GATE_CORE = _gate(1.0, 2, SUBGROUP_PREFIXES, 15)
+GATE_SMOKE = _gate(4.0, 1, ["set:", "profile:", "beats:"], 8)
+# full also guards the hold-out aggregate (§17 m10): a change that helps the open references and
+# costs the unseen ones is the overfitting the hold-out exists to show
+GATE_FULL = _gate(1.0, 2, SUBGROUP_PREFIXES + ["holdout"], 15)
+
+
+def _fixture_gate(extra: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """A suite of a few fixed, recorded inputs (replay-public, omr-live). Every case is a real input
+    through real models, so one case that passed a critical gate and now fails it is a regression
+    (flip limit 0); the aggregate tolerances are smoke's."""
+    g = _gate(4.0, 0, [], 1)
+    g["metrics"].update(extra or {})
+    return g
+
+
+GATE_REPLAY = _fixture_gate()
+GATE_OMR = _fixture_gate({"notes.symbolic.f1": {"dir": "up", "tol": -0.008},
+                          "omr.measure_alignment_rate": {"dir": "up", "tol": -0.02}})
+FIXTURE_SUITES = {"replay-public": GATE_REPLAY, "omr-live": GATE_OMR}   # hand-written suites; select-core sets their gate
 
 
 @dataclass
@@ -108,7 +156,14 @@ def is_private(suite: Dict[str, Any]) -> bool:
 
 
 def suite_sha256(suite: Dict[str, Any]) -> str:
-    return util.sha256_bytes(util.dumps_json({k: suite.get(k) for k in CASE_FIELDS}).encode("utf-8"))
+    """Hash of what decides the cases. Reference and subset lists are sets: their order does not
+    change a single case, so it does not change the hash either (§17 m1)."""
+    fields = {k: suite.get(k) for k in CASE_FIELDS}
+    if isinstance(fields.get("references"), list):
+        fields["references"] = sorted(fields["references"])
+    if isinstance(fields.get("subsets"), dict):
+        fields["subsets"] = {k: sorted(v) for k, v in fields["subsets"].items()}
+    return util.sha256_bytes(util.dumps_json(fields).encode("utf-8"))
 
 
 def lock_path(suite: Dict[str, Any]) -> str:
@@ -230,6 +285,8 @@ def select_references(refs: List[corpus.RefEntry]) -> Dict[str, Any]:
     core = sorted(core)
     non_micro = _fnv_sorted([i for i in core if not i.startswith("micro/")])
     amt_subset, rubato_subset = sorted(non_micro[:60]), sorted(non_micro[60:100])
+    # a separate ordering, so the pedal cases are not the amt or rubato ones again
+    pedal_subset = sorted(sorted(core, key=lambda i: (util.fnv1a32("pedal|" + i), i))[:30])
 
     smoke = [f"micro/{m}" for m in ("M01-waltz-3-4", "M02-alberti-4-4", "M03-jig-6-8", "M04-triplets-4-4",
                                      "M05-32nds-120", "M07-pickup-3-4", "M09-syncopation-ties",
@@ -240,36 +297,58 @@ def select_references(refs: List[corpus.RefEntry]) -> Dict[str, Any]:
     c24 = _fnv_sorted(ids(lambda e: e.book == "czerny599" and info[e.id]["time"] == (2, 4)))[0]
     son = _fnv_sorted(ids(lambda e: e.book == "sonatina"))[0]
     smoke += [h_non44, h_flat, c24, son]
+    smoke = sorted(smoke)
+    smoke_varied = sorted(smoke, key=lambda i: (util.fnv1a32("smoke|" + i), i))
     full = sorted(e.id for e in refs if e.set != "omr")  # omr references are scored by omr-live only
-    return {"smoke": sorted(smoke), "core": core, "amt": amt_subset, "rubato": rubato_subset, "full": full}
+    return {"smoke": smoke, "core": core, "amt": amt_subset, "rubato": rubato_subset, "pedal": pedal_subset,
+            "smoke-amt": sorted(smoke_varied[:4]), "smoke-rubato": sorted(smoke_varied[4:8]),
+            "smoke-pedal": sorted(smoke_varied[8:12]), "full": full}
 
 
 def suite_templates(sel: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
     base = {"schema": "ppp.bench-suite/1", "kind": "synthetic-notation", "stage": {"name": "notate", "opts": {}},
             "align": {"window_s": 0.30}}
     return {
-        "smoke": dict(base, name="smoke", description="Quick pre-commit check: 16 references × deadpan/onset and human/oracle beats",
+        "smoke": dict(base, name="smoke", description="Quick pre-commit check: 16 references × deadpan/onset and human/oracle, "
+                                                      "plus 4 each with AMT errors, rubato and the pedal",
                       references=sel["smoke"],
                       matrix=[{"profile": "deadpan", "beats": "none", "seeds": [1]},
-                              {"profile": "human", "beats": "oracle", "seeds": [1]}],
-                      subsets={}, gate=GATE_SMOKE),
-        "core": dict(base, name="core", description=f"CI gate: {len(sel['core'])} stratified references × 3 main profiles + AMT/rubato subsets",
+                              {"profile": "human", "beats": "oracle", "seeds": [1]},
+                              {"profile": "amt", "beats": "oracle-noisy", "seeds": [1], "subset": "smoke-amt"},
+                              {"profile": "rubato", "beats": "oracle", "seeds": [1], "subset": "smoke-rubato"},
+                              {"profile": "pedal", "beats": "oracle", "seeds": [1], "subset": "smoke-pedal"}],
+                      subsets={"smoke-amt": sel["smoke-amt"], "smoke-rubato": sel["smoke-rubato"],
+                               "smoke-pedal": sel["smoke-pedal"]}, gate=GATE_SMOKE),
+        "core": dict(base, name="core", description=f"CI gate: {len(sel['core'])} stratified references × 3 main profiles "
+                                                    "+ AMT/rubato/pedal subsets",
                      references=sel["core"],
                      matrix=[{"profile": "deadpan", "beats": "none", "seeds": [1]},
                              {"profile": "human", "beats": "none", "seeds": [1]},
                              {"profile": "human", "beats": "oracle", "seeds": [1]},
                              {"profile": "amt", "beats": "oracle-noisy", "seeds": [1], "subset": "amt-subset"},
-                             {"profile": "rubato", "beats": "oracle", "seeds": [1], "subset": "rubato-subset"}],
-                     subsets={"amt-subset": sel["amt"], "rubato-subset": sel["rubato"]}, gate=GATE_CORE),
+                             {"profile": "rubato", "beats": "oracle", "seeds": [1], "subset": "rubato-subset"},
+                             {"profile": "pedal", "beats": "oracle", "seeds": [1], "subset": "pedal-subset"}],
+                     subsets={"amt-subset": sel["amt"], "rubato-subset": sel["rubato"], "pedal-subset": sel["pedal"]},
+                     gate=GATE_CORE),
         "full": dict(base, name="full", description="Nightly/manual: every lint-clean reference, hold-out included (seeds 11, 12)",
                      references=sel["full"], holdout_seeds=[11, 12],
                      matrix=[{"profile": p, "beats": b, "seeds": [1, 2]} for p, b in
                              (("deadpan", "none"), ("human", "none"), ("human", "oracle"), ("rubato", "oracle"),
-                              ("amt", "oracle-noisy"), ("amt", "none"), ("human", "lowconf"))],
-                     subsets={}, gate=GATE_CORE),
-        "mutation": dict(base, name="mutation", description="Gate sensitivity check (§9.5): core references × deadpan/onset",
-                         references=sel["core"], matrix=[{"profile": "deadpan", "beats": "none", "seeds": [1]}],
-                         subsets={}, gate=GATE_CORE),
+                              ("amt", "oracle-noisy"), ("amt", "none"), ("human", "lowconf"), ("pedal", "oracle"))],
+                     subsets={}, gate=GATE_FULL),
+        "robust": dict(base, name="robust",
+                       description="A second generator family (human-alt: no accents, no voicing, no rolls, triangular "
+                                   "timing) on the core references: catches tuning to the main generator's habits (§17 M11)",
+                       references=sel["core"],
+                       matrix=[{"profile": "human-alt", "beats": "none", "seeds": [1]},
+                               {"profile": "human-alt", "beats": "oracle", "seeds": [1]}],
+                       subsets={}, gate=GATE_CORE),
+        "mutation": dict(base, name="mutation", description="Gate sensitivity check (§9.5): core references × deadpan/onset "
+                                                            "+ the pedal subset",
+                         references=sel["core"], matrix=[{"profile": "deadpan", "beats": "none", "seeds": [1]},
+                                                         {"profile": "pedal", "beats": "oracle", "seeds": [1],
+                                                          "subset": "pedal-subset"}],
+                         subsets={"pedal-subset": sel["pedal"]}, gate=GATE_CORE),
     }
 
 
@@ -279,3 +358,9 @@ def select_and_write() -> None:
     for name, s in suite_templates(sel).items():
         util.dump_json(s, os.path.join(SUITES_DIR, name + ".json"))
         print(f"wrote suites/{name}.json: {len(s['references'])} references")
+    for name, gate in FIXTURE_SUITES.items():
+        path = os.path.join(SUITES_DIR, name + ".json")
+        s = util.load_json(path)
+        s["gate"] = gate
+        util.dump_json(s, path)
+        print(f"wrote suites/{name}.json: gate only (its cases are fixtures)")

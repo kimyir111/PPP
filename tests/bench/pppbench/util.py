@@ -146,8 +146,18 @@ def is_tracked(path: str) -> bool:
         return False
 
 
+class NeedsGit(RuntimeError):
+    code = "NEEDS_GIT"
+
+
 def tracked_files() -> set:
-    return set(git("ls-files", "-z").split("\0")) - {""}
+    """Committed files. Only committed files are truth (lint L1), so the corpus, lint and the
+    known-failure audit need a git checkout; without one this is an explicit error, not a skip (§17 m6)."""
+    try:
+        return set(git("ls-files", "-z").split("\0")) - {""}
+    except (RuntimeError, OSError) as exc:
+        raise NeedsGit("the benchmark scores committed files only (lint L1) and needs a git checkout "
+                       f"and the git executable: {exc}") from exc
 
 
 def git_sha() -> str | None:

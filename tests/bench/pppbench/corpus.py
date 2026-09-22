@@ -12,6 +12,11 @@ from . import musicxml, util
 CORPUS_DIR = os.path.join(util.bench_root(), "corpus")
 REFERENCES = os.path.join(CORPUS_DIR, "references.json")
 EXCLUDED = os.path.join(CORPUS_DIR, "excluded.json")
+PROVENANCE = os.path.join(CORPUS_DIR, "provenance.json")   # tools/make_provenance.py (§17 M10)
+
+# References are the music, so they are read the MusicXML way: <pitch> is the sounding pitch even
+# under an octave-shift. Predictions and parser parity keep the app's reading (musicxml.OTTAVA_MODES).
+REFERENCE_OTTAVA = "standard"
 SETS = ("micro", "catalog", "samples", "hymns", "method", "omr")
 SET_LABELS = {"micro": "micro (G0 benchmark pieces)", "catalog": "catalog (CC0)", "samples": "samples",
               "hymns": "hymns (찬송가, Open Hymnal)", "method": "method books (교재)", "omr": "omr fixtures"}
@@ -77,8 +82,17 @@ _canon_cache: Dict[Tuple[str, str], Any] = {}
 def read_reference(entry: RefEntry):
     key = (entry.path, entry.sha256)
     if key not in _canon_cache:
-        _canon_cache[key] = musicxml.read_score(entry.abspath, source_path=entry.path)
+        _canon_cache[key] = musicxml.read_score(entry.abspath, source_path=entry.path, ottava=REFERENCE_OTTAVA)
     return _canon_cache[key]
+
+
+_prov_cache: Dict[str, Dict[str, Any]] = {}
+
+
+def provenance() -> Dict[str, Dict[str, Any]]:
+    if not _prov_cache and os.path.exists(PROVENANCE):
+        _prov_cache.update({e["id"]: e for e in util.load_json(PROVENANCE)["entries"]})
+    return _prov_cache
 
 
 # ----------------------------------------------------------------- expectations
@@ -127,6 +141,8 @@ def derived_tags(entry: RefEntry, canon) -> List[str]:
         tags.append("feature:ties")
     if len({round(m.qpm, 3) for m in canon.marks}) > 1:
         tags.append("feature:tempo-change")
+    if canon.diagnostics.get("octave_shift"):
+        tags.append("feature:ottava")
     if groups and sum(groups.values()) / len(groups) >= 3:
         tags.append("feature:dense-chords")
     qpm = expected_qpm(entry, canon) or 100
@@ -165,10 +181,17 @@ def keysig_contradicted(canon) -> bool:
     return n >= 3 and fit is not None and fit < 0.2
 
 
+def tempo_marks_disagree(canon) -> bool:
+    """The file's own <sound tempo> and printed metronome differ (L13)."""
+    sq, pq = canon.sound_qpm, canon.printed_qpm
+    return bool(sq and pq and abs(sq - pq) > 0.01 * pq)
+
+
 def exclusion_reasons(canon) -> List[Tuple[str, str]]:
+    """Why a score cannot be ground truth. Octave-shift is no longer one: references are read the
+    MusicXML way (REFERENCE_OTTAVA) and the app's different reading is tracked as a known failure
+    (known_defects.py, §17 M9)."""
     out = []
-    if canon.diagnostics.get("octave_shift"):
-        out.append(("L5", "octave-shift semantics unresolved (§14 I3)"))
     if canon.diagnostics.get("duplicate_measure_numbers"):
         out.append(("L6", "duplicate measure numbers"))
     bi = canon.diagnostics["bar_integrity"]
@@ -216,6 +239,16 @@ def lint(entries: List[RefEntry], tracked: Optional[set] = None) -> List[LintIss
                                     "add expect.skip_metrics " + ", ".join(KEY_METRICS)))
         if not canon.measures[0].mode_explicit and not (e.expect.get("key") or {}).get("mode"):
             issues.append(LintIssue("L9", "warning", e.id, "no <mode> and no expect.key.mode (struct.key.mirex will be null)"))
+        if tempo_marks_disagree(canon):
+            issues.append(LintIssue("L13", "warning", e.id,
+                                    f"the file's <sound tempo> {canon.sound_qpm:g} and metronome {canon.printed_qpm:g} disagree; "
+                                    "the truth is the sound tempo (what the app plays) and the difference is a known data defect"))
+        prov = provenance().get(e.id)
+        if prov is None:
+            issues.append(LintIssue("L14", "error", e.id, "no entry in corpus/provenance.json (run tools/make_provenance.py)"))
+        elif not prov.get("trusted"):
+            issues.append(LintIssue("L14", "error", e.id, "licence not evidenced in the repository (quarantined): "
+                                    + str(prov.get("quarantine_reason"))))
     return issues
 
 
@@ -262,10 +295,17 @@ def init_registry(micro_expect: Dict[str, Dict[str, Any]], manual_expect: Dict[s
                   notes: Dict[str, str]) -> Tuple[List[RefEntry], List[Dict[str, str]]]:
     """Build references.json/excluded.json from the committed files (run once; later edits are by hand)."""
     tracked = util.tracked_files()
+    prov = provenance()
     refs, excluded = [], []
     for c in candidate_files(tracked):
         path = os.path.join(util.repo_root(), c["path"])
-        canon = musicxml.read_score(path, source_path=c["path"])
+        p = prov.get(c["id"])
+        if p is None or not p.get("trusted"):
+            excluded.append({"id": c["id"], "path": c["path"], "rule": "P1",
+                             "reason": "quarantined: " + ((p or {}).get("quarantine_reason") or "no provenance entry")})
+            continue
+        c = dict(c, license=f"{p['license']} — {p['source']}")
+        canon = musicxml.read_score(path, source_path=c["path"], ottava=REFERENCE_OTTAVA)
         reasons = exclusion_reasons(canon)
         if reasons:
             excluded.append({"id": c["id"], "path": c["path"], "rule": reasons[0][0],

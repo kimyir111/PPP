@@ -19,9 +19,14 @@ class ReaderOnRepositoryFiles(unittest.TestCase):
         self.assertEqual(c.effective_qpm, 72.0)
         self.assertEqual(c.app_qpm, 72)
         self.assertEqual(len(c.notes), 38)
-        # one tie joins two written notes into one key press
-        self.assertEqual(len(c.sounding), 37)
-        self.assertEqual(sum(1 for s in c.sounding if s.pieces == 2), 1)
+        # The file's only tie (E5, bars 6-7) stops a beat after the tied note ends: MusicXML and the
+        # app's player (PianoScore.ties) strike the stop note again, and so does the reader since
+        # reader/2 (§17 M6). known_defects lists it under tie_without_stop.
+        tied = [n for n in c.notes if n.tie_start or n.tie_stop]
+        self.assertEqual([(n.midi, n.tie_start, n.tie_stop) for n in tied], [(76, True, False), (76, False, True)])
+        self.assertNotEqual(tied[0].onset_q + tied[0].dur_q, tied[1].onset_q)
+        self.assertEqual(len(c.sounding), 38)
+        self.assertEqual(sum(1 for s in c.sounding if s.pieces > 1), 0)
         self.assertEqual(c.staves, 2)
 
     def test_mxl(self):

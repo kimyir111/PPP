@@ -51,11 +51,15 @@ class DegradedOutput(unittest.TestCase):
         self.assertEqual(bad["notes.identity.f1"], self.good["notes.identity.f1"])
 
     def test_wrong_time_signature_and_key(self):
+        # §17 M1: only the MusicXML changes (the SUT's stats still say 3/4). The metre the user sees
+        # is the one in the MusicXML, so this must fail, and the stats must be caught disagreeing.
         xml = self.row["xml"].replace("<beats>3</beats>", "<beats>6</beats>").replace("<beat-type>4</beat-type>", "<beat-type>8</beat-type>")
-        stats = dict(self.row["stats"], beatsPerBar=6, beatType=8)
-        bad = evaluate.evaluate_timed(self.c, self.p, dict(self.row, xml=xml, stats=stats))[0]
+        bad = evaluate.evaluate_timed(self.c, self.p, dict(self.row, xml=xml))[0]
         self.assertEqual(bad["struct.time_sig.exact"], 0.0)
         self.assertEqual(bad["struct.time_sig.score"], 0.25)
+        self.assertEqual(bad["struct.stats_consistent"], 0.0)
+        self.assertEqual(bad["critical.meter"], 0.0)
+        self.assertEqual(bad["usable"], 0.0)
         xml = self.row["xml"].replace("<fifths>1</fifths>", "<fifths>-2</fifths>")
         self.assertEqual(metrics(self.c, self.p, self.row, xml)["struct.key.fifths_exact"], 0.0)
 

@@ -1,12 +1,15 @@
 import unittest
 
 from pppbench.metrics import structure as S
+from unit.helpers import canon, measure, note
 
 
 class TimeSignatureScore(unittest.TestCase):
     def test_four_grades(self):
         self.assertEqual(S.time_sig_score((3, 4), (3, 4)), 1.0)
         self.assertEqual(S.time_sig_score((4, 4), (2, 4)), 0.5)    # regrouped quarters
+        self.assertEqual(S.time_sig_score((3, 4), (4, 4)), 0.0)    # not a regrouping (§17 m4)
+        self.assertEqual(S.time_sig_score((2, 4), (3, 4)), 0.0)
         self.assertEqual(S.time_sig_score((6, 8), (3, 8)), 0.5)    # regrouped dotted quarters
         self.assertEqual(S.time_sig_score((12, 8), (6, 8)), 0.5)
         self.assertEqual(S.time_sig_score((6, 8), (3, 4)), 0.25)   # same bar, other beat
@@ -40,10 +43,15 @@ class Tempo(unittest.TestCase):
         p.effective_qpm = sound if sound is not None else printed
 
         class M:
-            fifths, mode = 0, "major"
+            fifths, mode, implicit, app_number, time = 0, "major", False, 1, (3, 4)
         p.measures = [M()]
         p.primary_time = lambda: (3, 4)
-        return {"pred": p, "expected": {"time": [3, 4], "key": {"fifths": 0, "mode": "major"}, "measures": 1, "qpm": qpm},
+        p.played = lambda: []
+        p.notes, p.marks, p.app_qpm = [], [], int((p.effective_qpm or 84) + 0.5)
+        p.app_bar_starts = lambda: {1: 0}
+        ref = canon([measure(note("C", 5, 3), number=1)], time=(3, 4), staves=1)
+        return {"pred": p, "ref": ref, "expected": {"time": [3, 4], "key": {"fifths": 0, "mode": "major"}, "measures": 1,
+                                                    "qpm": qpm},
                 "kind": "T", "stats": {"beatsPerBar": 3, "beatType": 4}, "perf": None}
 
     def test_the_6_8_sound_tempo_mismatch_is_visible(self):
@@ -64,8 +72,20 @@ class Tempo(unittest.TestCase):
         self.assertEqual(m["struct.tempo.metrical_ok"], 0.0)
         m = S.compute(self.ctx(sound=74.0, printed=None))
         self.assertEqual(m["struct.tempo.ok_effective"], 1.0)
-        self.assertIsNone(m["struct.tempo.ok_written"])
-        self.assertIsNone(m["struct.tempo.mark_consistent"])
+        # the reference has a tempo, so a missing printed mark is missing output, not "n/a" (§17 B1)
+        self.assertEqual(m["struct.tempo.ok_written"], 0.0)
+        self.assertEqual(m["struct.tempo.mark_consistent"], 0.0)
+
+    def test_missing_tempo_is_zero_not_null(self):
+        # §17 B1: a score that writes no tempo plays at the app's default 84 qpm; that is a failure
+        m = S.compute(self.ctx(sound=None, printed=None))
+        for k in ("struct.tempo.present", "struct.tempo.ok_effective", "struct.tempo.ok_written",
+                  "struct.tempo.mark_consistent", "struct.tempo.metrical_ok"):
+            self.assertEqual(m[k], 0.0, k)
+        # only a reference without any tempo makes the tempo metrics not applicable
+        c = self.ctx(sound=None, printed=None)
+        c["expected"]["qpm"] = None
+        self.assertIsNone(S.compute(c)["struct.tempo.ok_effective"])
 
 
 class Downbeats(unittest.TestCase):

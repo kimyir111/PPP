@@ -27,14 +27,17 @@ class Measure:
     fifths: int
     mode: str
     mode_explicit: bool
+    # the bar number as the app keys it: parseInt(number), or the bar's position in its part when that
+    # is not a number (parseMusicXML). Bars with the same app number are laid over each other.
+    app_number: Optional[int] = None
 
     @property
     def sig_q(self) -> Fraction:
         return Fraction(self.time[0] * 4, self.time[1])
 
     def to_json(self) -> Dict[str, Any]:
-        return {"index": self.index, "number": self.number, "start_q": self.start_q, "len_q": self.len_q,
-                "implicit": self.implicit, "time": list(self.time),
+        return {"index": self.index, "number": self.number, "app_number": self.app_number, "start_q": self.start_q,
+                "len_q": self.len_q, "implicit": self.implicit, "time": list(self.time),
                 "key": {"fifths": self.fifths, "mode": self.mode, "mode_explicit": self.mode_explicit}}
 
 
@@ -77,6 +80,21 @@ class Rest:
     staff: int
     voice: int
     measure_rest: bool
+    type: Optional[str] = None   # the printed rest (<type>); None when the file has none
+    dots: int = 0
+    tuplet: Optional[Tuple[int, int]] = None   # <time-modification>: a rest inside a triplet is a triplet rest
+
+    def to_json(self) -> Dict[str, Any]:
+        return dict(self.__dict__)
+
+
+@dataclass
+class ClefMark:
+    """A clef as the app reads it: ``kind`` is treble, bass or alto (parseMusicXML ignores the line)."""
+    measure: int
+    pos_q: Fraction
+    staff: int
+    kind: str
 
     def to_json(self) -> Dict[str, Any]:
         return dict(self.__dict__)
@@ -115,6 +133,18 @@ class TempoMark:
 
 
 @dataclass
+class PedalMark:
+    """A damper-pedal mark as the app reads it (``<pedal type>`` or ``<sound damper-pedal>``)."""
+    measure: int
+    pos_q: Fraction
+    onset_q: Fraction
+    type: str  # "start" | "stop" | "change"
+
+    def to_json(self) -> Dict[str, Any]:
+        return dict(self.__dict__)
+
+
+@dataclass
 class CanonicalScore:
     title: str
     source_path: Optional[str]
@@ -130,11 +160,36 @@ class CanonicalScore:
     rests: List[Rest]
     sounding: List[Sounding]
     diagnostics: Dict[str, Any] = field(default_factory=dict)
+    pedals: List[PedalMark] = field(default_factory=list)
+    clefs: List[ClefMark] = field(default_factory=list)
 
     @property
     def app_qpm(self) -> int:
         v = self.effective_qpm or 84
         return int(v + 0.5) if v >= 0 else -int(-v + 0.5)
+
+    def clef_at(self, staff: int, measure: int, pos_q: Fraction) -> str:
+        """The clef in force for a note (clefs carry over bar lines); the app's default is treble on the
+        first staff and bass below it."""
+        kind = "treble" if staff == 1 else "bass"
+        for c in self.clefs:   # document order within a staff is time order
+            if c.staff == staff and (c.measure, c.pos_q) <= (measure, pos_q):
+                kind = c.kind
+        return kind
+
+    def app_bar_starts(self) -> Dict[int, Fraction]:
+        """Where the app puts each bar number (Score.finalize over parseMusicXML's measureInfo): bars are
+        keyed by number, so two bars with one number share one entry — the later bar's length, and the
+        start of its last occurrence. Notes of either bar are placed from there."""
+        length: Dict[int, Fraction] = {}
+        for m in self.measures:
+            length[m.app_number] = m.len_q
+        start: Dict[int, Fraction] = {}
+        q = Fraction(0)
+        for m in self.measures:
+            start[m.app_number] = q
+            q += length[m.app_number]
+        return start
 
     @property
     def end_q(self) -> Fraction:
@@ -177,5 +232,7 @@ class CanonicalScore:
             "notes": [n.to_json() for n in self.notes],
             "rests": [r.to_json() for r in self.rests],
             "sounding": [s.to_json() for s in self.sounding],
+            "pedals": [p.to_json() for p in self.pedals],
+            "clefs": [c.to_json() for c in self.clefs],
             "diagnostics": self.diagnostics,
         }

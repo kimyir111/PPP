@@ -4,7 +4,7 @@ import sys
 from contextlib import redirect_stdout
 import unittest
 
-from pppbench import corpus, util
+from pppbench import corpus, musicxml, util
 from unit.helpers import canon, measure, note
 
 sys.path.insert(0, os.path.join(util.bench_root(), "tools"))
@@ -22,13 +22,45 @@ class CorpusRegistry(unittest.TestCase):
         self.assertEqual(sum(1 for r in self.refs if r.set == "micro"), 24)
         self.assertTrue(all(r.license.strip() for r in self.refs))
 
-    def test_octave_shift_files_are_excluded_with_a_reason(self):
+    def test_octave_shift_scores_are_measured_not_hidden(self):
+        # §17 M9: they are references again, read the MusicXML way, tagged, and the app's different
+        # reading is a known failure; only a missing licence or broken bars keep a score out
         ex = util.load_json(corpus.EXCLUDED)["excluded"]
-        l5 = [x for x in ex if x["rule"] == "L5"]
-        self.assertGreater(len(l5), 20)
-        self.assertTrue(all("octave-shift" in x["reason"] for x in l5))
+        self.assertEqual({x["rule"] for x in ex} - {"L6", "L8", "P1"}, set())
         ids = {r.id for r in self.refs}
         self.assertFalse(ids & {x["id"] for x in ex})
+        ottava = [r for r in self.refs if corpus.read_reference(r).diagnostics.get("octave_shift")]
+        self.assertGreaterEqual(len(ottava), 19)
+        for r in ottava:
+            c = corpus.read_reference(r)
+            self.assertIn("feature:ottava", corpus.derived_tags(r, c))
+            self.assertEqual(c.diagnostics["ottava_mode"], "standard")
+        app = musicxml.read_score(ottava[0].abspath, ottava="app")
+        std = corpus.read_reference(ottava[0])
+        self.assertGreater(app.diagnostics["ottava_shifted_notes"], 0)
+        self.assertNotEqual([n.midi for n in app.notes], [n.midi for n in std.notes])
+
+    def test_every_reference_has_repository_licence_evidence(self):
+        # §17 M10: the manifest is rebuilt from repository evidence only; untrusted files are quarantined
+        sys.path.insert(0, os.path.join(util.bench_root(), "tools"))
+        import make_provenance
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(make_provenance.main(["--check"]), 0)
+        prov = corpus.provenance()
+        for r in self.refs:
+            self.assertTrue(prov[r.id]["trusted"], r.id)
+            self.assertTrue(prov[r.id]["evidence"] or prov[r.id]["license_status"] == "generated", r.id)
+            if "PDMX" in r.license:
+                self.assertFalse(prov[r.id]["transcribed_by_ppp"], r.id)
+        quarantined = {x["id"] for x in util.load_json(corpus.EXCLUDED)["excluded"] if x["rule"] == "P1"}
+        self.assertEqual(quarantined, {i for i, e in prov.items() if not e["trusted"]})
+        self.assertIn("method/czerny299/010", quarantined)       # no <rights>, generic book claim only
+        self.assertIn("method/burgmuller25/004", quarantined)    # a Mutopia id without a licence
+        self.assertEqual(prov["method/burgmuller25/016"]["transcribed_by_ppp"], True)
+
+    def test_lint_flags_a_file_whose_tempo_marks_disagree(self):
+        rules = {(i.rule, i.ref) for i in corpus.lint(self.refs)}
+        self.assertIn(("L13", "method/hanon/001"), rules)
 
     def test_micro_files_match_their_generator(self):
         with redirect_stdout(io.StringIO()):

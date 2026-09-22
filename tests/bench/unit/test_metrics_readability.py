@@ -41,14 +41,18 @@ class Composite(unittest.TestCase):
     def test_nulls_are_renormalised(self):
         full = {k: 1.0 for k in composite.SQI_WEIGHTS}
         self.assertAlmostEqual(composite.sqi(full), 100.0)
-        m = dict(full, **{"notation.hand.accuracy": None, "notes.identity.f1": 0.0})
-        # hands (0.10) dropped; identity (0.20) scores 0 -> 100 * 0.70 / 0.90
+        self.assertAlmostEqual(sum(composite.SQI_WEIGHTS.values()), 1.0)
+        # a component that does not apply (hands on a one-staff reference, 0.10) is left out;
+        # a component the prediction fails (identity 0.20) counts as 0 -> 100 * 0.70 / 0.90
+        m = dict(full, **{"notation.hand.accuracy_ref": None, "notes.identity.f1": 0.0})
         self.assertAlmostEqual(composite.sqi(m), 100 * 0.70 / 0.90)
 
     def test_too_few_components_is_null(self):
-        m = {"notes.identity.f1": 1.0, "notation.ioi.accuracy": 1.0}   # 0.40 of the weight
+        m = {"notes.identity.f1": 1.0, "notation.ioi.accuracy": 1.0}   # 0.30 of the weight
         self.assertIsNone(composite.sqi(m))
-        m["notation.duration.accuracy"] = 1.0                          # 0.50
+        m["notation.onset_pos.accuracy_ref"] = 1.0                     # 0.45
+        self.assertIsNone(composite.sqi(m))
+        m["notation.duration.accuracy_ref"] = 1.0                      # 0.55
         self.assertEqual(composite.sqi(m), 100.0)
 
     def test_symbolic(self):

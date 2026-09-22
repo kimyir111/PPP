@@ -17,8 +17,33 @@ import xml.etree.ElementTree as ET
 from fractions import Fraction
 from typing import Any, Dict, List, Optional, Tuple
 
-from .canonical import CanonicalScore, Measure, Note, Rest, Sounding, TempoMark
+from .canonical import CanonicalScore, ClefMark, Measure, Note, PedalMark, Rest, Sounding, TempoMark
 from .util import normalise_eol, sha256_bytes
+
+# How <octave-shift> is read.
+#   "app":      the app's reading (parseMusicXML): <pitch> is the written note, type="up" adds 12,
+#               type="down" subtracts 12. Used for predictions and for T1-C parser parity.
+#   "standard": MusicXML's reading: <pitch> is the sounding pitch and octave-shift only changes how it
+#               is printed ("a treble clef line noted with 8va will be indicated with an octave-shift
+#               down from the pitch data"). Used for reference scores: their truth is the music, not
+#               the app's reading of it (G00 §17 M9). The difference is tracked as a known failure.
+OTTAVA_MODES = ("app", "standard")
+
+
+def pedal_sound_value(raw: Optional[str]) -> Optional[int]:
+    """``pedalSoundValue`` in the app: <sound damper-pedal> as 0-127."""
+    if raw is None or raw == "":
+        return None
+    if raw == "yes":
+        return 127
+    if raw == "no":
+        return 0
+    v = js_float(raw)
+    if v is None:
+        return None
+    if v <= 1:
+        return int(v * 127 + Fraction(1, 2)) if v >= 0 else 0
+    return max(0, min(127, int(v + Fraction(1, 2))))
 
 STEP_SEMI = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
 UNIT_Q = {"breve": 8, "whole": 4, "half": 2, "quarter": 1, "eighth": Fraction(1, 2),
@@ -108,8 +133,10 @@ def read_bytes(path: str) -> bytes:
 
 
 # ----------------------------------------------------------------- reader
-def read_score(src: Any, *, source_path: Optional[str] = None) -> CanonicalScore:
-    """``src`` is a file path, XML bytes or XML text."""
+def read_score(src: Any, *, source_path: Optional[str] = None, ottava: str = "app") -> CanonicalScore:
+    """``src`` is a file path, XML bytes or XML text. ``ottava`` is "app" or "standard" (OTTAVA_MODES)."""
+    if ottava not in OTTAVA_MODES:
+        raise ValueError(f"ottava must be one of {OTTAVA_MODES}")
     if isinstance(src, str) and not src.lstrip().startswith("<") and os.path.exists(src):
         source_path = source_path or src
         data = read_bytes(src)
@@ -163,6 +190,8 @@ def read_score(src: Any, *, source_path: Optional[str] = None) -> CanonicalScore
     raw_notes: List[Dict[str, Any]] = []   # notes and rests, app order
     marks: List[Dict[str, Any]] = []
     ottavas: List[Dict[str, Any]] = []
+    pedal_raw: List[Dict[str, Any]] = []   # damper pedal marks, app order
+    clef_raw: List[Dict[str, Any]] = []    # clefs, document order (parseMusicXML: sign F bass, C alto, else treble)
     grid: List[Dict[str, Any]] = []        # part 0 measures
     part_span: List[Tuple[int, int]] = []
     staff_base = 0
@@ -210,10 +239,18 @@ def read_score(src: Any, *, source_path: Optional[str] = None) -> CanonicalScore
                     st = js_int(_txt(el, "staves", ""))
                     if st is not None and st > 0:
                         part_staves = st
+                    for cl in _all(el, "clef"):
+                        sign = _txt(cl, "sign", "G")
+                        kind = "bass" if sign == "F" else "alto" if sign == "C" else "percussion" if sign == "percussion" else "treble"
+                        clef_raw.append({"m": m_idx, "b": cursor, "staff": staff_base + (js_int(cl.attrib.get("number") or "1") or 1),
+                                         "kind": kind})
                     continue
                 if tag == "direction":
                     at = cursor + (_num(el, "offset", Fraction(0)) or Fraction(0)) / divisions
                     if part_idx == guess:
+                        ped = _first(el, "pedal")
+                        if ped is not None and ped.attrib.get("type") in ("start", "stop", "change"):
+                            pedal_raw.append({"m": m_idx, "b": at, "type": ped.attrib["type"]})
                         oct_el = _first(el, "octave-shift")
                         if oct_el is not None:
                             ty = oct_el.attrib.get("type")
@@ -243,6 +280,10 @@ def read_score(src: Any, *, source_path: Optional[str] = None) -> CanonicalScore
                             marks.append({"m": m_idx, "b": at, "qpm": t2, "kind": "sound"})
                             if first_tempo is None:
                                 first_tempo = t2
+                        dv = pedal_sound_value(snd.attrib.get("damper-pedal"))
+                        if dv is not None:
+                            pedal_raw.append({"m": m_idx, "b": at,
+                                              "type": "stop" if dv <= 0 else "change" if dv < 127 else "start"})
                     met = _first(el, "metronome")
                     per = _first(met, "per-minute") if met is not None else None
                     if per is not None:
@@ -324,8 +365,8 @@ def read_score(src: Any, *, source_path: Optional[str] = None) -> CanonicalScore
                     len_q = content
                 else:
                     len_q = content if content > sig + EPS else sig
-                grid.append({"number": raw_no if raw_no is not None else str(number), "len_q": len_q,
-                             "implicit": implicit, "time": time, "fifths": fifths, "mode": mode,
+                grid.append({"number": raw_no if raw_no is not None else str(number), "app_number": number,
+                             "len_q": len_q, "implicit": implicit, "time": time, "fifths": fifths, "mode": mode,
                              "mode_explicit": mode_explicit})
         part_span.append((staff_base, max(part_staves, 1)))
         staff_base += max(part_staves, 1)
@@ -337,7 +378,7 @@ def read_score(src: Any, *, source_path: Optional[str] = None) -> CanonicalScore
     q = Fraction(0)
     for i, g in enumerate(grid):
         measures.append(Measure(i, g["number"], q, g["len_q"], g["implicit"], g["time"],
-                                g["fifths"], g["mode"], g["mode_explicit"]))
+                                g["fifths"], g["mode"], g["mode_explicit"], app_number=g["app_number"]))
         q += g["len_q"]
 
     def start_of(m_idx: int) -> Fraction:
@@ -376,13 +417,15 @@ def read_score(src: Any, *, source_path: Optional[str] = None) -> CanonicalScore
 
     notes: List[Note] = []
     rests: List[Rest] = []
+    diag["ottava_shifted_notes"] = 0   # notes whose app reading differs from MusicXML's (see OTTAVA_MODES)
     for n in raw_notes:
         if n["m"] >= len(measures):
             diag["orphan_notes"] += 1
             continue
         onset_q = start_of(n["m"]) + n["b"]
         if n["rest"]:
-            rests.append(Rest(n["m"], n["b"], onset_q, n["dur"], n["staff"], n["voice"], n["measure_rest"]))
+            rests.append(Rest(n["m"], n["b"], onset_q, n["dur"], n["staff"], n["voice"], n["measure_rest"],
+                              n["type"], n["dots"], n["tuplet"]))
             continue
         if n["pitch"] is None:
             diag["unpitched"] += 1
@@ -392,7 +435,10 @@ def read_score(src: Any, *, source_path: Optional[str] = None) -> CanonicalScore
             diag["unpitched"] += 1
             continue
         written = (octave + 1) * 12 + STEP_SEMI[step] + alter
-        midi = written + (shift_at(n["staff"], onset_q) if closed else 0)
+        app_shift = shift_at(n["staff"], onset_q) if closed else 0
+        if app_shift:
+            diag["ottava_shifted_notes"] += 1
+        midi = written + (app_shift if ottava == "app" else 0)
         notes.append(Note(len(notes), n["m"], n["b"], onset_q, n["dur"], midi, written, step, alter, octave,
                           n["staff"], n["hand"], n["voice"], n["chord"], n["tie_start"], n["tie_stop"],
                           n["tuplet"], n["type"], n["dots"], n["accidental"], n["cue"]))
@@ -406,30 +452,38 @@ def read_score(src: Any, *, source_path: Optional[str] = None) -> CanonicalScore
     sound_qpm = next((float(mk["qpm"]) for mk in marks if mk["kind"] == "sound"), None)
     printed_qpm = next((float(mk["qpm"]) for mk in marks if mk["kind"] == "metronome"), None)
 
+    pedals = sorted((PedalMark(p["m"], p["b"], start_of(p["m"]) + p["b"], p["type"])
+                     for p in pedal_raw if p["m"] < len(measures)), key=lambda p: p.onset_q)  # stable: document order at equal onsets
+    diag["ottava_mode"] = ottava
+    clefs = [ClefMark(c["m"], c["b"], c["staff"], c["kind"]) for c in clef_raw if c["m"] < len(measures)]
     canon = CanonicalScore(
         title=title, source_path=source_path, source_sha256=sha256_bytes(normalise_eol(data)),
         effective_qpm=float(first_tempo) if first_tempo is not None else None,
         sound_qpm=sound_qpm, printed_qpm=printed_qpm, marks=tempo_marks,
         staves=max(1, min(max_staff_seen, 4)), piano_part=piano_part,
-        measures=measures, notes=notes, rests=rests, sounding=sounding, diagnostics=diag)
+        measures=measures, notes=notes, rests=rests, sounding=sounding, diagnostics=diag, pedals=pedals, clefs=clefs)
     from .metrics.readability import bar_integrity_detail
     diag["bar_integrity"] = bar_integrity_detail(canon)
     return canon
 
 
 def merge_ties(notes: List[Note]) -> List[Sounding]:
-    """Tie pieces -> key presses (R14)."""
+    """Tie pieces -> key presses (R14).
+
+    A tie-stop note continues an open chain of the same pitch only where that chain ends — the
+    app's rule (``PianoScore.ties``: the stop note must sit at ``abs + dur`` of the tied note) and
+    MusicXML's. reader/1 also joined a stop to any open chain of that pitch, which turned a tie that
+    skips notes or lands after a gap (samples/prelude-fragment bar 6-7) into one long held note
+    while the app strikes twice (§17 M6)."""
     order = sorted(notes, key=lambda n: (n.onset_q, n.staff, n.id))
     chains: List[Dict[str, Any]] = []
     for n in order:
         target = None
         if n.tie_stop:
-            open_same = [c for c in chains if c["open"] and c["midi"] == n.midi]
-            exact = [c for c in open_same if c["staff"] == n.staff and abs(c["end"] - n.onset_q) <= EPS]
-            if exact:
-                target = exact[-1]
-            elif open_same:
-                target = open_same[-1]
+            adjacent = [c for c in chains if c["open"] and c["midi"] == n.midi and abs(c["end"] - n.onset_q) <= EPS]
+            same_staff = [c for c in adjacent if c["staff"] == n.staff]
+            if same_staff or adjacent:
+                target = (same_staff or adjacent)[-1]
         if target is None:
             target = {"first": n, "notes": [], "midi": n.midi, "staff": n.staff, "dur": Fraction(0),
                       "end": n.onset_q, "open": False, "tuplet": False}

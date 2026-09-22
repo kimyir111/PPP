@@ -42,6 +42,14 @@ class UtilTest(unittest.TestCase):
         self.assertIn("smoke", text)
         self.assertIn("찬송가", text)  # a Korean line, printed without PYTHONIOENCODING
 
+    def test_without_git_is_an_explicit_error(self):
+        # §17 m6: only committed files are truth, so no git is an ERROR (exit 2), not a traceback or a skip
+        env = dict(os.environ, GIT_DIR=os.path.join(util.bench_root(), "out", "no-such-git-dir"), PYTHONIOENCODING="utf-8")
+        out = subprocess.run([sys.executable, RUN, "lint-corpus"], env=env, capture_output=True)
+        self.assertEqual(out.returncode, 2, out.stderr.decode("utf-8", "replace"))
+        self.assertIn("ERROR NEEDS_GIT", out.stdout.decode("utf-8"))
+        self.assertNotIn("Traceback", out.stderr.decode("utf-8", "replace"))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -13,7 +13,9 @@
     python tests/bench/run.py mutation-check
     python tests/bench/run.py ab --suite core --a git:HEAD --b worktree
     python tests/bench/run.py legacy --manifest PATH
-    python tests/bench/run.py conformance [--require-env]
+    python tests/bench/run.py correctness                       # reader vs independent MusicXML fixtures (T0, CI)
+    python tests/bench/run.py known-defects                     # catalogue defects PPP ships (measured, not fixed)
+    python tests/bench/run.py conformance [--require-env]       # parser parity with the app (T1)
     python tests/bench/run.py omr-live [--require-env]
     python tests/bench/run.py record-replay [--require-env]
 """
@@ -48,7 +50,10 @@ def cmd_list(args) -> int:
             info = suite_mod.describe(s, refs)
         except Exception as exc:  # a broken suite file is still listed
             info = f"unreadable: {exc}"
-        base = "baseline" if os.path.exists(compare.baseline_path(name)) else "no baseline"
+        try:
+            base = "baseline" if os.path.exists(compare.baseline_path_for(suite_mod.load_suite(name))) else "no baseline"
+        except Exception:
+            base = "no baseline"
         print(f"  {name:16} {info} · {base}")
     return 0
 
@@ -69,8 +74,10 @@ def cmd_lint(args) -> int:
         print(i)
     errors = [i for i in issues if i.level == "error"]
     excluded = util.load_json(corpus.EXCLUDED)["excluded"]
+    from collections import Counter
+    rules = ", ".join(f"{k} {v}" for k, v in sorted(Counter(x["rule"] for x in excluded).items()))
     print(f"lint: {len(refs)} references, {len(errors)} errors, {len(issues) - len(errors)} warnings, "
-          f"{len(excluded)} excluded ({sum(1 for x in excluded if x['rule'] == 'L5')} octave-shift)")
+          f"{len(excluded)} excluded ({rules}; P1 = no licence evidence, L8 = broken bars)")
     return 1 if errors else 0
 
 
@@ -120,6 +127,23 @@ def cmd_legacy(args) -> int:
     return legacy.cli_legacy(args)
 
 
+def cmd_correctness(args) -> int:
+    from pppbench import correctness
+    return correctness.cli(args)
+
+
+def cmd_known(args) -> int:
+    from pppbench import known_defects
+    kf = known_defects.audit()
+    print(f"known production failures in {kf['files_scanned']} committed catalogue/sample scores (not fixed in G0):")
+    for cid, c in kf["classes"].items():
+        cols = ", ".join(f"{k} {v}/{c['in_scope_by_collection'].get(k, 0)}" for k, v in c["by_collection"].items())
+        print(f"  {c['status']:16} {cid:30} {c['files_affected']:3}/{c['files_in_scope']:3} files, {c['items']:5} {c['unit']}"
+              + (f"  ({cols})" if cols else ""))
+    util.dump_json(kf, os.path.join(util.bench_root(), "out", "known-defects", "report.json"))
+    return 0
+
+
 def cmd_env_tier(name):
     def run(args) -> int:
         from pppbench import tiers
@@ -167,6 +191,8 @@ def main(argv=None) -> int:
     p.add_argument("--audio-score")
     p.set_defaults(fn=cmd_golden)
     sub.add_parser("mutation-check").set_defaults(fn=cmd_mutation)
+    sub.add_parser("correctness").set_defaults(fn=cmd_correctness)
+    sub.add_parser("known-defects").set_defaults(fn=cmd_known)
     p = sub.add_parser("ab")
     p.add_argument("--suite", required=True)
     p.add_argument("--a", default="git:HEAD")
@@ -182,7 +208,11 @@ def main(argv=None) -> int:
         p.add_argument("--base-url", default="http://localhost:8777")
         p.set_defaults(fn=cmd_env_tier(tier))
     args = ap.parse_args(argv)
-    return args.fn(args)
+    try:
+        return args.fn(args)
+    except util.NeedsGit as exc:
+        print(f"ERROR {exc.code}: {exc}")
+        return 2
 
 
 if __name__ == "__main__":

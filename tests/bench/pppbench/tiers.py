@@ -59,10 +59,17 @@ def conformance_targets(max_predictions: int = 50) -> List[Tuple[str, bytes]]:
         targets.append((rid, musicxml.read_bytes(e.abspath)))
     for p in sorted(glob.glob(os.path.join(util.repo_root(), "samples", "*.musicxml"))):
         targets.append(("samples-file/" + os.path.basename(p), musicxml.read_bytes(p)))
-    # octave-shift files are excluded as references, but the reader's ottava rule must still match the app
+    # scores that are not core references are still read by the app: excluded/quarantined catalogue
+    # files, every octave-shift reference, and the independent correctness fixtures
+    core_ids = set(core["references"])
     for x in util.load_json(corpus.EXCLUDED)["excluded"]:
-        if x["rule"] == "L5":
-            targets.append(("excluded/" + x["id"], musicxml.read_bytes(os.path.join(util.repo_root(), x["path"]))))
+        targets.append(("excluded/" + x["id"], musicxml.read_bytes(os.path.join(util.repo_root(), x["path"]))))
+    for rid, e in sorted(refs.items()):
+        if rid not in core_ids and corpus.read_reference(e).diagnostics.get("octave_shift"):
+            targets.append(("ottava/" + rid, musicxml.read_bytes(e.abspath)))
+    from . import correctness
+    for p in sorted(glob.glob(os.path.join(correctness.DIR, "*.musicxml"))):
+        targets.append(("correctness/" + os.path.basename(p), musicxml.read_bytes(p)))
     cases_dir = os.path.join(util.bench_root(), "out", "core", "cases")
     index = os.path.join(util.bench_root(), "out", "core", "index.json")
     if os.path.exists(index):
@@ -74,23 +81,65 @@ def conformance_targets(max_predictions: int = 50) -> List[Tuple[str, bytes]]:
     return targets
 
 
+def _pitch_name(step: str, alter: int, octave: int) -> str:
+    return step + ("#" * alter if alter > 0 else "b" * -alter) + str(octave)
+
+
+def _multiset_diff(label: str, mine: Counter, theirs: Counter) -> List[str]:
+    if mine == theirs:
+        return []
+    only_me, only_app = mine - theirs, theirs - mine
+    return [f"{label} differ: {sum(only_me.values())} only in reader (e.g. {list(only_me)[:2]}), "
+            f"{sum(only_app.values())} only in app (e.g. {list(only_app)[:2]})"]
+
+
 def compare_projection(canon, app: Dict[str, Any]) -> List[str]:
+    """Parser parity: the reader against the app's own reading of the same file (§17 M6).
+
+    Compared: bars (count, number as the app keys it, start, length, metre, key and mode), written
+    notes (bar, position, value, sounding pitch, hand), spelling (the app's pitch name), tuplets, the
+    printed shapes of notes and rests (type — or the app's typeFromQ — and dots, §19 F2), the key
+    presses the app's player makes (PianoScore.ties: struck notes and how long they are held) against
+    the reader's tie-merged ``sounding``, tempo and staff count. Parity is not correctness: a rule both
+    get wrong passes here; musical correctness is `run.py correctness`."""
     diffs = []
     if len(canon.measures) != len(app["measures"]):
         diffs.append(f"measures {len(canon.measures)} vs app {len(app['measures'])}")
+    nums, app_nums = [m.app_number for m in canon.measures], [a.get("number") for a in app["measures"]]
+    if nums != app_nums:
+        diffs.append(f"bar numbers {nums[:6]} vs app {app_nums[:6]}")
     for m, a in zip(canon.measures, app["measures"]):
         if abs(float(m.start_q) - a["startQ"]) > 1e-6 or abs(float(m.len_q) - a["lenQ"]) > 1e-6:
             diffs.append(f"measure {m.index}: start/len {float(m.start_q)}/{float(m.len_q)} vs app {a['startQ']}/{a['lenQ']}")
         if list(m.time) != a["time"] or m.fifths != a["fifths"]:
             diffs.append(f"measure {m.index}: time/key {m.time}/{m.fifths} vs app {a['time']}/{a['fifths']}")
+        if "mode" in a and m.mode != a["mode"]:
+            diffs.append(f"measure {m.index}: mode {m.mode} vs app {a['mode']}")
         if len(diffs) > 5:
             break
-    mine = Counter((n.measure, round(float(n.pos_q), 6), round(float(n.dur_q), 6), n.midi, n.hand) for n in canon.notes)
-    theirs = Counter((n["m"], round(n["b"], 6), round(n["dur"], 6), n["midi"], n["hand"]) for n in app["notes"])
-    if mine != theirs:
-        only_me, only_app = mine - theirs, theirs - mine
-        diffs.append(f"notes differ: {sum(only_me.values())} only in reader (e.g. {list(only_me)[:2]}), "
-                     f"{sum(only_app.values())} only in app (e.g. {list(only_app)[:2]})")
+    r6 = lambda x: round(float(x), 6)  # noqa: E731
+    diffs += _multiset_diff("notes", Counter((n.measure, r6(n.pos_q), r6(n.dur_q), n.midi, n.hand) for n in canon.notes),
+                            Counter((n["m"], r6(n["b"]), r6(n["dur"]), n["midi"], n["hand"]) for n in app["notes"]))
+    if app["notes"] and "p" in app["notes"][0]:
+        diffs += _multiset_diff("spellings",
+                                Counter((n.measure, r6(n.pos_q), _pitch_name(n.step, n.alter, n.octave)) for n in canon.notes),
+                                Counter((n["m"], r6(n["b"]), n["p"]) for n in app["notes"]))
+        diffs += _multiset_diff("tuplets",
+                                Counter((n.measure, r6(n.pos_q), n.midi, tuple(n.tuplet) if n.tuplet else None) for n in canon.notes),
+                                Counter((n["m"], r6(n["b"]), n["midi"], tuple(n["tm"]) if n["tm"] else None) for n in app["notes"]))
+        diffs += _multiset_diff("key presses (tie merging)",
+                                Counter((s.measure, r6(s.pos_q), r6(s.dur_q), s.midi) for s in canon.sounding),
+                                Counter((n["m"], r6(n["b"]), r6(n["hold"]), n["midi"]) for n in app["notes"] if n["struck"]))
+    if app["notes"] and "type" in app["notes"][0]:
+        from .metrics.readability import app_type
+        diffs += _multiset_diff("note shapes",
+                                Counter((n.measure, r6(n.pos_q), n.midi, app_type(n.type, n.dur_q), n.dots) for n in canon.notes),
+                                Counter((n["m"], r6(n["b"]), n["midi"], n["type"], n["dots"]) for n in app["notes"]))
+        diffs += _multiset_diff("rests",
+                                Counter((r.measure, r6(r.pos_q), r6(r.dur_q), r.staff, app_type(r.type, r.dur_q), r.dots,
+                                         tuple(r.tuplet) if r.tuplet else None) for r in canon.rests),
+                                Counter((r["m"], r6(r["b"]), r6(r["dur"]), r["staff"], r["type"], r["dots"],
+                                         tuple(r["tm"]) if r.get("tm") else None) for r in app.get("rests", [])))
     if canon.app_qpm != app["tempo"]:
         diffs.append(f"tempo {canon.app_qpm} vs app {app['tempo']}")
     if canon.staves != app["staves"]:
@@ -142,8 +191,10 @@ def conformance(args) -> int:
         if diffs:
             print(f"MISMATCH {tid}: " + " | ".join(diffs[:3]))
     out = os.path.join(util.bench_root(), "out", "conformance", "report.json")
-    util.dump_json({"schema": "ppp.bench-conformance/1", "targets": len(rows), "mismatches": bad, "rows": rows}, out)
-    print(f"conformance: {len(rows) - bad}/{len(rows)} identical (reader vs app parseMusicXML) · {util.rel(out)}")
+    util.dump_json({"schema": "ppp.bench-conformance/2", "kind": "parser parity (not correctness)",
+                    "targets": len(rows), "mismatches": bad, "rows": rows}, out)
+    print(f"parser parity: {len(rows) - bad}/{len(rows)} identical (reader vs the app's parseMusicXML and player ties). "
+          f"Parity is not correctness — see `run.py correctness`. · {util.rel(out)}")
     return 1 if bad else 0
 
 
@@ -235,11 +286,15 @@ def omr_live(args, suite=None) -> int:
             rec.update(metrics=m, counts=counts, predicted=predicted)
         cases.append(rec)
     cases.sort(key=lambda x: x["id"])
+    from . import known_defects
+    lock = util.sha256_bytes(util.dumps_json(sorted(
+        [c["id"], util.content_sha256(os.path.join(util.repo_root(), c["fixture"]))] for c in suite["cases"])).encode("utf-8"))
     results = {"schema": "ppp.bench-results/1", "suite": suite["name"], "suite_sha256": suite_mod.suite_sha256(suite),
-               "lock_sha256": None, "versions": dict(VERSIONS), "filtered": False,
-               "aggregates": aggregate.aggregate(cases), "cases": cases}
+               "lock_sha256": lock, "versions": dict(VERSIONS), "filtered": False,
+               "aggregates": aggregate.aggregate(cases), "known_failures": known_defects.audit(), "cases": cases}
     out = os.path.join(util.bench_root(), "out", suite["name"])
     util.dump_json(results, os.path.join(out, "results.json"))
+    results = util.load_json_text(util.dumps_json(results))   # compare what results.json holds (see private.py)
     app = os.path.join(util.repo_root(), "Piano Coach App.dc.html")
     run = {"started_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "git_sha": util.git_sha(),
            "git_dirty": util.git_dirty(), "audio_score_path": "audio-score.js",

@@ -1,7 +1,27 @@
-"""Golden snapshots: exact toMusicXml output for fixed inputs (docs/GOALS/G00 §7).
+"""Golden snapshots: fixed inputs, exact outputs (docs/GOALS/G00 §7, §17 M7, §19 F3).
+
+Two layers per case, with different jobs:
+* **semantic snapshot** (``expected/<key>.semantic.json``, pppbench/semantic.py): the score's
+  *structure* — bars and their numbers, staves, clefs, which staff and voice each note and rest is
+  in — and its *music* — metre, key, tempo marks, notes (position, length, pitch, spelling, printed
+  shape, ties, tuplets, printed accidentals), rests (position, length, printed shape), pedal marks —
+  plus the stats the app reads and the bar and beat times it syncs the recording with.
+* **byte snapshot** (``expected/<key>.musicxml``): serialisation stability and determinism.
+
+Labels, most severe first:
+* ``STRUCTURAL_CHANGE`` — the frame changed: bars (count, number, length), staves, clefs, a note or
+  rest moved to another staff or voice.
+* ``SEMANTIC_CHANGE`` — the music changed (or the bar and beat times), in an unchanged frame.
+* ``SERIALIZATION_ONLY`` — different bytes, the same structure, music, stats and times: formatting,
+  element or attribute order, voice numbering. The only change a writer rewrite may bless as such.
+* ``ok`` — identical; ``FAIL`` — no output, an unreadable output, or no snapshot.
+
+All but ``ok`` need a bless to be accepted (exit 1 until then). Musical regressions outside these
+few cases are the metric gate's job (every core case carries a semantic digest and every metric).
+One case failing, even crashing, never stops the others.
 
     run.py golden                     compare against golden/expected (exit 1 on any difference)
-    run.py golden --init              write golden/inputs from the generator (once), then expected
+    run.py golden --init              write inputs for cases that have none yet, then expected
     run.py golden --bless --reason R  accept the current output; logs to golden/BLESS_LOG.md
 """
 
@@ -10,14 +30,16 @@ from __future__ import annotations
 import difflib
 import os
 import re
+import traceback
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-from . import corpus, evaluate, perform, stages, suite as suite_mod, util
+from . import corpus, evaluate, musicxml, perform, semantic, stages, suite as suite_mod, util
 
 GOLDEN_DIR = os.path.join(util.bench_root(), "golden")
 STATS_KEYS = ["bars", "beatsPerBar", "beatType", "tempo", "key.fifths", "key.mode", "notes", "rh", "lh", "beatSource",
               "quantizer", "tempoAlias", "beatFallback", "arrangement.level", "arrangement.style"]
+
 
 # tests/transcription.test.js: "a PM2S-shaped grid becomes 6/8 MusicXML"
 def pm2s_grid_input() -> Dict[str, Any]:
@@ -35,6 +57,11 @@ def _paths(key: str) -> Tuple[str, str, str]:
     return (os.path.join(GOLDEN_DIR, "inputs", key + ".json"),
             os.path.join(GOLDEN_DIR, "expected", key + ".musicxml"),
             os.path.join(GOLDEN_DIR, "expected", key + ".stats.json"))
+
+
+def _extra_paths(key: str) -> Tuple[str, str]:
+    return (os.path.join(GOLDEN_DIR, "expected", key + ".semantic.json"),
+            os.path.join(GOLDEN_DIR, "expected", key + ".timing.json"))
 
 
 def stats_subset(stats: Dict[str, Any]) -> Dict[str, Any]:
@@ -62,9 +89,14 @@ def _perf_for(case: Dict[str, Any]):
                                          case_opts=case.get("opts"), opt_name=case.get("opt_name"))
 
 
-def init_inputs(suite: Dict[str, Any]) -> None:
+def init_inputs(suite: Dict[str, Any]) -> List[str]:
+    """Write inputs for cases that have none. Existing inputs are never regenerated: they are the
+    fixed half of the snapshot, whatever the generator does later."""
+    written = []
     for case in suite["cases"]:
         ip, _, _ = _paths(case["key"])
+        if os.path.exists(ip):
+            continue
         if case["source"] == "grid:pm2s-6-8":
             data = pm2s_grid_input()
         else:
@@ -72,15 +104,24 @@ def init_inputs(suite: Dict[str, Any]) -> None:
             data = {"input": p.input, "opts": p.opts}
         data["source"] = case["source"]
         util.dump_json(data, ip)
+        written.append(case["key"])
+    return written
 
 
 def _measure_blocks(xml: str) -> Dict[str, str]:
-    return {m.group(1): m.group(0) for m in re.finditer(r'<measure number="([^"]+)">.*?</measure>', xml, re.S)}
+    """Measure blocks by number; a repeated number gets "#2", "#3" (the app would lay those bars over each other)."""
+    out: Dict[str, str] = {}
+    seen: Dict[str, int] = {}
+    for m in re.finditer(r'<measure number="([^"]+)"[^>]*>.*?</measure>', xml, re.S):
+        k = m.group(1)
+        seen[k] = seen.get(k, 0) + 1
+        out[k if seen[k] == 1 else f"{k}#{seen[k]}"] = m.group(0)
+    return out
 
 
 def xml_diff(expected: str, actual: str, max_measures: int = 3) -> List[str]:
     e, a = _measure_blocks(expected), _measure_blocks(actual)
-    keys = sorted(set(e) | set(a), key=lambda k: (int(k) if k.isdigit() else 1 << 30, k))
+    keys = sorted(set(e) | set(a), key=lambda k: (int(k.split("#")[0]) if k.split("#")[0].isdigit() else 1 << 30, k))
     out, shown = [], 0
     head_e, head_a = expected.split("<measure ", 1)[0], actual.split("<measure ", 1)[0]
     if head_e != head_a:
@@ -99,17 +140,95 @@ def xml_diff(expected: str, actual: str, max_measures: int = 3) -> List[str]:
     return out
 
 
-def _metrics(case, xml: str, stats: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    entry, canon, p = _perf_for(case)
-    if p is None:
-        return None
+def _semantic_doc(xml: str, stats: Dict[str, Any]) -> Dict[str, Any]:
+    return {"schema": semantic.SCHEMA, "score": semantic.projection(musicxml.read_score(xml)), "stats": stats_subset(stats)}
+
+
+def _metrics(case, xml: str, stats: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """A few metrics of one output against its reference; {"error": ...} instead of raising."""
     try:
+        entry, canon, p = _perf_for(case)
+        if p is None:
+            return {}
+        if not stats or "barStarts" not in stats:
+            return {"error": "no timing stored for this output"}
         m, _, _ = evaluate.evaluate_timed(canon, p, {"ok": True, "xml": xml, "stats": stats},
                                           skip_metrics=entry.expect.get("skip_metrics", ()))
     except evaluate.CaseError as exc:
         return {"error": exc.code}
-    return {k: m.get(k) for k in ("notes.identity.f1", "struct.time_sig.exact", "struct.key.fifths_exact",
-                                  "notation.hand.accuracy", "notation.duration.accuracy", "sqi")}
+    except Exception as exc:  # the metric report must never take the golden check down
+        return {"error": f"{type(exc).__name__}: {exc}"}
+    return {k: m.get(k) for k in ("usable", "notes.identity.f1", "struct.time_sig.exact", "struct.time_sig.timeline_accuracy",
+                                  "struct.key.fifths_exact", "struct.key.timeline_accuracy", "struct.tempo.ok_effective",
+                                  "struct.tempo.timeline_accuracy", "notation.hand.accuracy", "notation.duration.accuracy",
+                                  "notation.note_shape.consistency", "read.bar_completeness",
+                                  "struct.measure_numbers.app_onset_accuracy", "struct.measures.extra_empty_edge",
+                                  "notation.pedal.f1", "sqi")}
+
+
+def _write_expected(key: str, xml: str, stats: Dict[str, Any]) -> None:
+    _, xp, sp = _paths(key)
+    semp, tp = _extra_paths(key)
+    os.makedirs(os.path.dirname(xp), exist_ok=True)
+    with open(xp, "w", encoding="utf-8", newline="\n") as handle:
+        handle.write(xml)
+    util.dump_json(stats_subset(stats), sp)
+    util.dump_json(_semantic_doc(xml, stats), semp)
+    util.dump_json({"barStarts": stats.get("barStarts"), "beats": stats.get("beats")}, tp)
+
+
+LABELS = ("ok", "SERIALIZATION_ONLY", "SEMANTIC_CHANGE", "STRUCTURAL_CHANGE", "FAIL")
+
+
+def _check_case(case, row) -> Tuple[str, List[str]]:
+    """(label, report lines). label: one of LABELS."""
+    key = case["key"]
+    _, xp, sp = _paths(key)
+    semp, tp = _extra_paths(key)
+    if not row.get("ok"):
+        return "FAIL", [f"toMusicXml threw {row.get('code') or 'an exception'}: {row.get('error')}"]
+    missing = [os.path.basename(p) for p in (xp, sp, semp, tp) if not os.path.exists(p)]
+    if missing:
+        return "FAIL", [f"no expected snapshot ({', '.join(missing)}); run `golden --init` or `--bless`"]
+    xml = row["xml"].replace("\r\n", "\n")
+    expected = util.read_text(xp).replace("\r\n", "\n")
+    exp_sem = util.load_json(semp)
+    if exp_sem.get("schema") != semantic.SCHEMA:
+        return "FAIL", [f"{os.path.basename(semp)} has schema {exp_sem.get('schema')!r}, the reader writes {semantic.SCHEMA}: "
+                        "rebless with `golden --bless --reason \"...\"` after checking the byte snapshots are unchanged"]
+    try:
+        act_sem = util.load_json_text(util.dumps_json(_semantic_doc(xml, row["stats"])))
+    except musicxml.ReaderError as exc:
+        return "FAIL", [f"the output is not readable MusicXML ({exc.code}): {exc}"]
+    # the bar and beat times are output too: the app syncs the recording to the score with them
+    exp_time = util.load_json(tp)
+    act_time = util.load_json_text(util.dumps_json({"barStarts": row["stats"].get("barStarts"),
+                                                    "beats": row["stats"].get("beats")}))
+    if expected == xml and exp_sem == act_sem and exp_time == act_time:
+        return "ok", []
+    label, lines = semantic.classify(exp_sem["score"], act_sem["score"])
+    stat_lines = [f"stats.{k}: {exp_sem['stats'].get(k)!r} -> {act_sem['stats'].get(k)!r}"
+                  for k in sorted(set(exp_sem["stats"]) | set(act_sem["stats"])) if exp_sem["stats"].get(k) != act_sem["stats"].get(k)]
+    for k in ("barStarts", "beats"):
+        a, b = exp_time.get(k) or [], act_time.get(k) or []
+        if a != b:
+            i = next((j for j, (x, y) in enumerate(zip(a, b)) if x != y), min(len(a), len(b)))
+            stat_lines.append(f"stats.{k}: {len(a)} -> {len(b)} values, first difference at [{i}]: "
+                              f"{a[i] if i < len(a) else '-'} -> {b[i] if i < len(b) else '-'} s")
+    if label is None and not stat_lines:
+        lines = ["same structure, music, stats and bar times; different bytes (element order, whitespace, formatting)"]
+        lines += ["    " + x for x in xml_diff(expected, xml)[:12]]
+        return "SERIALIZATION_ONLY", lines
+    label = label or "SEMANTIC_CHANGE"      # stats or bar times alone: what the app syncs and reads changed
+    lines = lines + stat_lines
+    before = _metrics(case, expected, exp_time)
+    after = _metrics(case, xml, row["stats"])
+    for k in sorted(set(before) | set(after)):
+        if before.get(k) != after.get(k):
+            lines.append(f"metric {k}: {before.get(k)} -> {after.get(k)}")
+    lines.append("first differing bars of the MusicXML:")
+    lines += ["    " + x for x in xml_diff(expected, xml)[:24]]
+    return label, lines
 
 
 def run_golden(init: bool = False, bless: bool = False, reason: Optional[str] = None,
@@ -118,9 +237,10 @@ def run_golden(init: bool = False, bless: bool = False, reason: Optional[str] = 
     if bless and not reason:
         print("ERROR: --bless needs --reason \"why the output changed\"")
         return 2
+    new_inputs: List[str] = []
     if init:
-        init_inputs(suite)
-        print(f"wrote {len(suite['cases'])} golden inputs")
+        new_inputs = init_inputs(suite)
+        print(f"wrote {len(new_inputs)} new golden input(s): {', '.join(new_inputs) or 'none'}")
     jobs = []
     for case in suite["cases"]:
         ip, _, _ = _paths(case["key"])
@@ -130,49 +250,40 @@ def run_golden(init: bool = False, bless: bool = False, reason: Optional[str] = 
         data = util.load_json(ip)
         jobs.append({"id": case["key"], "input": data["input"], "opts": data.get("opts") or {}})
     res = stages.notate_batch(jobs, audio_score=audio_score)["results"]
-    changed, failures = [], 0
+    counts: Dict[str, int] = {}
+    changed: List[str] = []
+    added: List[str] = []
     for case in suite["cases"]:
         key = case["key"]
-        _, xp, sp = _paths(key)
         row = res[key]
-        if not row.get("ok"):
-            print(f"{key} FAIL: toMusicXml threw {row.get('code')}: {row.get('error')}")
-            failures += 1
-            continue
-        xml = row["xml"].replace("\r\n", "\n")
-        sub = stats_subset(row["stats"])
         if init or bless:
-            old = util.read_text(xp).replace("\r\n", "\n") if os.path.exists(xp) else None
-            old_stats = util.load_json(sp) if os.path.exists(sp) else None
-            if old != xml or old_stats != util.load_json_text(util.dumps_json(sub)):
-                changed.append(key)
-            os.makedirs(os.path.dirname(xp), exist_ok=True)
-            with open(xp, "w", encoding="utf-8", newline="\n") as handle:
-                handle.write(xml)
-            util.dump_json(sub, sp)
+            if not row.get("ok"):
+                print(f"{key} FAIL: toMusicXml threw {row.get('code')}: {row.get('error')}")
+                counts["FAIL"] = counts.get("FAIL", 0) + 1
+                continue
+            _, xp, _ = _paths(key)
+            semp, _ = _extra_paths(key)
+            old_schema = os.path.exists(semp) and util.load_json(semp).get("schema") != semantic.SCHEMA
+            label, _ = _check_case(case, row) if os.path.exists(xp) and not old_schema else ("new", [])
+            if old_schema:
+                same_bytes = util.read_text(xp).replace("\r\n", "\n") == row["xml"].replace("\r\n", "\n")
+                changed.append(f"{key} (semantic snapshot -> {semantic.SCHEMA}; MusicXML bytes "
+                               f"{'unchanged' if same_bytes else 'CHANGED'})")
+            elif label == "new" or key in new_inputs:
+                added.append(key)
+            elif label != "ok":
+                changed.append(f"{key} ({label})")
+            _write_expected(key, row["xml"].replace("\r\n", "\n"), row["stats"])
             continue
-        if not os.path.exists(xp):
-            print(f"{key} FAIL: no expected output; run `golden --init`")
-            failures += 1
-            continue
-        expected = util.read_text(xp).replace("\r\n", "\n")
-        exp_stats = util.load_json(sp)
-        cur_stats = util.load_json_text(util.dumps_json(sub))
-        if expected == xml and exp_stats == cur_stats:
-            print(f"{key} ok   {case['source']}")
-            continue
-        failures += 1
-        print(f"{key} DIFF {case['source']}")
-        for line in xml_diff(expected, xml):
+        try:
+            label, lines = _check_case(case, row)
+        except Exception as exc:  # a broken report is a failure of this case, never of the whole run
+            label, lines = "FAIL", [f"golden check crashed: {type(exc).__name__}: {exc}"] + \
+                traceback.format_exc().strip().splitlines()[-3:]
+        counts[label] = counts.get(label, 0) + 1
+        print(f"{key} {label:18} {case['source']}")
+        for line in lines:
             print("    " + line)
-        for k in STATS_KEYS:
-            if exp_stats.get(k) != cur_stats.get(k):
-                print(f"    stats.{k}: {exp_stats.get(k)!r} -> {cur_stats.get(k)!r}")
-        before, after = _metrics(case, expected, row["stats"]), _metrics(case, xml, row["stats"])
-        if before and after:
-            for k in before:
-                if before[k] != after[k]:
-                    print(f"    metric {k}: {before[k]} -> {after[k]}")
     if init or bless:
         log = os.path.join(GOLDEN_DIR, "BLESS_LOG.md")
         exists = os.path.exists(log)
@@ -181,8 +292,12 @@ def run_golden(init: bool = False, bless: bool = False, reason: Optional[str] = 
                 handle.write("# Golden bless log\n\nEvery accepted change to tests/bench/golden/expected. "
                              "Bless in the same commit as the SUT change that caused it.\n\n")
             handle.write(f"- {datetime.now(timezone.utc).date().isoformat()} · {(util.git_sha() or '?')[:10]} · "
-                         f"{'init' if init else 'bless'}: {reason or 'initial snapshots'} · changed: {', '.join(changed) or 'none'}\n")
-        print(f"golden: {'initialised' if init else 'blessed'} {len(suite['cases'])} cases; changed: {', '.join(changed) or 'none'}")
-        return 0
-    print(f"golden: {len(suite['cases']) - failures}/{len(suite['cases'])} identical")
-    return 1 if failures else 0
+                         f"{'init' if init else 'bless'}: {reason or 'initial snapshots'} · changed: {', '.join(changed) or 'none'}"
+                         + (f" · new: {', '.join(added)}" if added else "") + "\n")
+        print(f"golden: {'initialised' if init else 'blessed'} {len(suite['cases'])} cases; changed: {', '.join(changed) or 'none'}"
+              + (f"; new: {', '.join(added)}" if added else ""))
+        return 1 if counts.get("FAIL") else 0
+    ok = counts.get("ok", 0)
+    print(f"golden: {ok}/{len(suite['cases'])} identical" +
+          "".join(f" · {v} {k}" for k, v in sorted(counts.items()) if k != "ok"))
+    return 0 if ok == len(suite["cases"]) else 1

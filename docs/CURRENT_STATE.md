@@ -1,94 +1,167 @@
 # PPP — current state
 
-Updated 2026-09-22, at the end of G0 (Quality Foundation). Read this first in a new session, then
-the current goal's spec in `docs/GOALS/`.
+Updated 2026-09-22, at the end of G0 (Quality Foundation): implemented, reviewed, fixed, reviewed
+again and fixed again. Read this first in a new session, then the current goal's spec in `docs/GOALS/`.
 
 ## Where things are
 
 | | |
 | --- | --- |
-| Goals | Numbered specs in `docs/GOALS/`. **G0 is implemented**. `G00_QUALITY_FOUNDATION.md` §16 has the result and what is still open. |
-| G0 code | Branch `g0-quality-foundation`. It was developed in a separate worktree (`D:/PPP-g0`) so the shared `D:/PPP` tree and other sessions' uncommitted files stayed untouched. **Not merged to `main`, not pushed.** |
+| Goals | Numbered specs in `docs/GOALS/`. **G0 is implemented (§16), independently reviewed (§17), fixed (§18), finally reviewed (§19) and fixed again (§20)**. `G00_QUALITY_FOUNDATION.md` §20 has the result, what is still open and the verdict. |
+| G0 code | Branch `g0-quality-foundation`, worktree `D:/PPP-g0` (so the shared `D:/PPP` tree and other sessions' files stay untouched). **Not merged to `main`, not pushed. Everything after the review commit `b1d817b` is uncommitted** (the fixers' work, §18 and §20): commit it in one `git add -A` of `tests/bench`, `docs`, `.github`, `package.json` — a partial commit breaks CI. |
+| `main` | **Local `main` is `d82bb71`, which must not be pushed.** Despite its message ("harden G0 quality benchmark") it holds no benchmark code: it is a `git add -A` sweep of `D:/PPP` with copyrighted `tmp/` audio and score renders, `__pycache__`, a `_oh-sheet-compare` gitlink and another session's 124 `catalog/method` files (G00 §19.18). It is not pushed (`origin/main` is `e0d8b23`). The user decides how to undo it before G0 is merged. |
 | App | `Piano Coach App.dc.html` (single file, ~19k lines), `audio-score.js` (recording → MusicXML), `omr-service.js` (local helper, 127.0.0.1:8788), `server.js` (port 8777). Deploy: Render, manual (`render deploys create …`; a push does not deploy). |
-| Tests | `npm test` (26 browser suites; needs `npm start`, network, puppeteer), `npm run test:transcription-core` (16, now including `beat_track_test.py`), `npm run test:arranger` (3), `npm run test:bench` (122 + 14 golden snapshots). |
-| CI | `.github/workflows/bench.yml` exists on the branch: a gate job on push/PR, and full + mutation-check nightly. It is **not active** until the branch is pushed. That needs the user's OK. |
+| Tests | `npm test` (26 browser suites; needs `npm start`, network, puppeteer), `npm run test:transcription-core` (16, including `beat_track_test.py`), `npm run test:arranger` (3), `npm run test:bench` (179 unit tests + 17 golden snapshots + 13 correctness fixtures). |
+| CI | `.github/workflows/bench.yml`: a gate job (unit, golden, lint, provenance, correctness, smoke/core/robust run + check, replay-public, transcription-core, arranger) and a nightly job (mutation-check, full, the reviews' `adversarial.py`, `final_review.py`, `final_oracle.py`). The gate runs on a **pull request** or a push to `main`; pushing the branch alone runs nothing. The nightly schedule runs only from the default branch (after the merge; `workflow_dispatch` runs it by hand). Not yet run on GitHub. |
 
 ## Measuring score quality (G0)
 
 ```sh
-npm run bench:smoke     # < 1 s
-npm run bench           # core gate: 523 cases, ~15 s, exit 1 on a regression
+npm run bench:smoke     # ~1 s
+npm run bench           # core gate: 553 cases, ~16 s, exit 1 on a regression
 python tests/bench/run.py ab --suite core --a git:HEAD --b worktree   # what did my change do?
 ```
 
-Everything is in `tests/bench/README.md`: metrics, corpus, the baseline update procedure,
-private suites, and environment tiers.
+Everything is in `tests/bench/README.md`: critical gates, metrics, corpus, the baseline update
+procedure, private suites, and environment tiers.
 
-### Baseline at G0 (audio-score.js sha256 559a1f40…, content hash with CRLF read as LF)
+**Read the usable-score rate first.** A score is *usable* when it passes every critical gate that
+applies: the right metre (the main one, and for 19 in 20 notes the one in force), the app's score
+tempo within ±4 % and its player's tempo map within ±4 % for 19 in 20 notes, at least 90 % of notes
+in the right bar and beat, at least 80 % of notes with the right value as played and as printed, at
+most ~5 % of notes missing or invented, the right key signature (first and for 19 in 20 notes), at
+least 80 % of notes on the right hand, no broken, incomplete or added bars and bar numbers counting
+up by one, every needed accidental printed, pedal written when it was used. The diagnostic score
+(`sqi/2`) is a trend line, not a verdict: 199 core cases score above its mean and are still unusable.
 
-| suite | cases | SQI | notable |
-| --- | --- | --- | --- |
-| smoke | 32 | 89.70 | |
-| core | 523 | 81.74 | identity F1 0.980 · time sig exact 0.576 · key 0.887 · tempo played ±4 % 0.549 (printed 0.818) · hands 0.885 · onset position 0.510 · duration 0.747 · false ties 4.25 / 100 notes |
-| full | 4,172 (714 hold-out) | 82.67 (hold-out 80.13) | |
-| omr-live | 4 | 74.34 | symbolic F1 0.50–0.64: the OMR'd right hand is not playable (issue 11) |
-| replay-public | 6 recorded AMT results | 88.42 | |
+### Baseline (metrics/4, reader/3, gate/3; audio-score.js sha256 559a1f40…, CRLF read as LF)
 
-- Results are byte-identical run to run.
-- They are also byte-identical between Windows and Linux (checked in a `node:24` Docker container).
-- The mutation check proves the gate catches five planted regressions.
+| suite | cases | usable | diagnostic | notes |
+| --- | --- | --- | --- | --- |
+| smoke | 44 | 38.6 % | 86.91 | |
+| core | 553 | **18.1 %** | 76.86 | gates: meter 57.7 % · playback tempo 52.8 % · beat placement 45.2 % · note values 49.4 % · pitch integrity 92.8 % · key 88.6 % · hands 81.6 % · structure 100 % · accidentals 100 % · pedal 96.7 % |
+| robust | 282 | 6.0 % | 76.55 | the performer with its cues off and releases 30–120 ms early: note values pass 17.7 % |
+| full | 4,144 open + 832 hold-out | 18.0 % (hold-out 23.2 %) | 78.60 (hold-out 76.55) | |
+| replay-public | 6 rendered AMT results | 16.7 % | 85.55 | |
+| omr-live | 4 | 0 % | 53.32 | the OMR'd right hand is not playable (issue 11) |
+
+Without the note-value gate core would be 25.9 % usable and robust 28.4 %: the gate added in §20
+removes the scores whose note values are mostly wrong (issue 18).
+
+By group in core: every compound-metre piece (103 cases) and every simple-duple piece (114) is
+unusable; 4/4 pieces are usable 31.6 % of the time, 3/4 30.5 %. By book: Hanon 0 %, Czerny 849 0 %,
+Burgmüller 3.4 %, Sonatina 9.8 %, Beyer 10.8 %, Czerny 599 12.5 %, hymns 33.5 %.
+
+- Results are byte-identical run to run, from another working directory, with file enumeration
+  reversed, and between Windows and Linux (`node:24-bookworm`, offline). Procedure in `tests/bench/README.md`.
+- `mutation-check` plants 30 regressions (5 original, 7 from the first review, 5 from its fixer, 13
+  from the final review) and proves each is a REGRESSION on its metric; the review scripts
+  (`tests/bench/review/`) check the benchmark itself.
+- Golden labels a change `STRUCTURAL_CHANGE`, `SEMANTIC_CHANGE` or `SERIALIZATION_ONLY`; only the
+  last is formatting. A dot, note type, rest, clef, staff or bar number never counts as formatting.
+
+### What the benchmark leaves out, and why
+
+- 24 catalogue scores with broken bars (L8) are excluded; they are counted as a known failure.
+- 15 method-book scores are **quarantined** (P1): their files carry no public-domain or CC0
+  statement (all 10 of Czerny 299, Burgmüller 1, 2, 4, 7 and 18). `tests/bench/corpus/provenance.json`
+  records the evidence for every committed score; nothing is filled in by guess.
+- **No real human performance exists in the repository** (M11, BLOCKED_ACCEPTABLE). `replay-public`
+  is the synthetic performer rendered with real piano samples; the `input:recorded` tier is ready and
+  empty. **Before the first Goal that changes how PPP infers onsets, beats, tempo or metre — or how it
+  turns key releases into note values — at least three licence-clean real performances (simple
+  duple, simple triple, compound metre) with bar starts checked by ear must be recorded and
+  baselined** (procedure in `tests/bench/README.md`). Goals that change only the writer, ScoreGraph
+  or engraving do not need them.
 
 ## Known quality issues (measured, not fixed)
 
-Numbered as in G0 §14 (1–9 from the design, 10–12 found while implementing). Each is visible in
-the baseline, and each belongs to a later goal.
+Numbered as in G0 §14. Each is visible in the baseline or in the known-failure section of every
+`summary.md`, and each belongs to a later goal.
 
-1. **6/8 `<sound tempo>` is written in dotted-quarter units.** Every compound-metre transcription
-   plays at 2/3 speed. In core: 177 compound outputs, `mark_consistent` 0.00, `ok_effective` 0.04
-   against `ok_written` 0.84.
-2. **Metres are pulled towards 6/8.** 140 of 222 wrong metres in core are "→ 6/8" (2/4→6/8 alone:
-   76). Simple-duple `time_sig.exact` is 0.07. Wrong-metre cases carry 7.4 false ties per 100
-   notes, against 1.9.
-3. **`octave-shift` reading is suspect** (the app treats `type="up"` as +12). 29 references are
-   excluded until someone checks it.
+1. **6/8 `<sound tempo>` is written in dotted-quarter units.** The app has two tempi: the score
+   tempo (`Score.tempo`: practice tempo, metronome, tempo %) is the `<sound tempo>`, 2/3 of the
+   performed tempo; the player's timeline (`PianoScore.tempoMap`) follows the dotted-quarter
+   metronome mark written at the same place, which is right (checked in the app, G00 §20). In core:
+   189 compound outputs, score tempo right 0.03, player timeline right 0.81. None of the 103
+   compound-metre cases is usable.
+2. **Metres are pulled towards 6/8.** 146 of 234 wrong metres in core are "→ 6/8" (2/4→6/8 alone:
+   77). Simple-duple `time_sig.exact` is 0.05. Where the metre is misread as compound, the player
+   plays 1.5× too fast even when the score tempo happens to be right (sonatina/002, hanon/007).
+3. **The app plays 8va passages an octave off.** MusicXML's `<pitch>` is the sounding pitch; the app
+   shifts it again. 30 committed scores, 2,229 notes. The benchmark reads references the MusicXML
+   way (19 of the 29 method-book files are references again) and fixtures C10/C11 pin the rule.
 4. `Import.load` returns the first-pass MusicXML even when it adopted the re-recognised merge.
-5. **Key estimation.** Key signature 0.887 in core; Czerny 30 0.52; Beyer 8 and 9 come out in G
-   instead of C.
-6. **Hand split.** 0.885 in core; Beyer 0.74, Hanon 0.72; Beyer 9 is 0.39.
+5. **Key estimation.** Key gate 88.6 % in core; Sonatina 0.74, Czerny 849 0.77, Beyer 0.82. A piece
+   that changes key (Burgmüller 15, C → E♭) gets one key signature for the whole piece.
+6. **Hand split.** Hands gate 81.6 % in core (hand accuracy 0.888); Beyer 0.74, Hanon 0.72.
 7. **Low-information input** (whole-note chords, M24): rhythm accuracy 0.00 on the onset path.
 8. `tests/golden_benchmark.py` reads differently from the app (pickups, ties, grace notes, tempo)
    and labels quarter beats as "ms". Kept as it is; the new `legacy` command relabels its output.
 9. `tests/beat_track_test.py` was orphaned. **Fixed in G0** (sys.path).
-10. **(new) 78 of 88 hymns play wrong notes.** `catalog/hymns/abc-to-musicxml.js` writes `<alter>`
-    only for explicit ABC accidentals and ignores the key signature. Every hymn not in C is
-    affected; Amazing Grace in G has no F♯ at all. The benchmark skips key and spelling metrics
-    for these hymns (lint L12).
-11. **(new) An OMR'd piano score loses its right hand.** Audiveris exports two single-staff parts
+10. **89 of 100 hymns play wrong notes (6,119 notes).** `catalog/hymns/abc-to-musicxml.js` writes
+    `<alter>` only for explicit ABC accidentals and ignores the key signature: every hymn not in C
+    is affected; Amazing Grace in G has no F♯ at all. The same converter also writes tie starts with
+    no stop (10 hymns, 101 ties replayed as separate notes; 16 files and 121 ties in the whole
+    catalogue) and drops accidentals that should carry through the bar (18 notes in 10 hymns). The
+    benchmark skips key and spelling metrics for these hymns and counts all three defects.
+11. **An OMR'd piano score loses its right hand.** Audiveris exports two single-staff parts
     (the first named "Voice"). The app's hand rule then marks the treble staff `x` (shown, not
     played) and the bass `r`. Seen on all four OMR fixtures.
-12. **(new) The PDF OMR fixture comes back with 16 bars instead of 8** at confidence 0.8, with no
+12. **The PDF OMR fixture comes back with 16 bars instead of 8** at confidence 0.8, with no
     suspect bars flagged (`omr.flag.recall` 0).
-13. **(new, expected) 5/4 is written as 4/4** (micro M21). The metre is not supported yet.
+13. **(expected) 5/4 is written as 4/4** (micro M21). The metre is not supported yet.
+14. **Catalogue bar integrity**: 24 files with overfull, underfull or empty bars (88 bars):
+    hymns 12, Sonatina 8, Czerny 599 4. By the stricter rule (every staff fills its bar), 10 files
+    and 38 bars (`incomplete_bars`).
+15. **Self-contradicting tempo marks**: 4 method-book files whose `<sound tempo>` and printed
+    metronome disagree (lint L13). The app's score tempo follows one, its player the other.
+16. **Grace notes are dropped** by `parseMusicXML` (a known limitation): 17 files, 244 notes.
+17. **PPP writes the AMT's invented pedal into the score.** The six replay fixtures were played with
+    no pedal; the helper reports 48 pedal presses on five of them and `toMusicXml` writes 78 pedal
+    marks from them: 27.8 false pedal changes per minute in replay-public.
+18. **(new, §20) PPP writes key releases as note values.** A legato note released early becomes a
+    shorter note and a rest (Czerny 599/49: 16ths written as 32nd + 32nd rest, 8.9 rests a bar
+    against 5.25). Note-value accuracy averages 0.739 per core case; the note-value gate passes
+    49.4 % of core cases (deadpan 72 %, human 51 %, AMT 5 %) and 17.7 % of `robust`. Czerny 849 4 %,
+    Hanon 0 %. The size of this depends on the synthetic release models, which no real recording
+    has checked yet (M11).
+19. **(new, §20) Printed shapes that contradict their length.** `toMusicXml` writes rests inside
+    triplets without `<time-modification>` (a 2/3-beat rest drawn as a quarter rest) and leftover
+    one-tick rests as 64ths: 107 core cases have at least one (`note_shape.consistency` 0.991). In
+    the catalogue, 4 files and 8 notes (Für Elise bar 2: a quarter drawn as a dotted eighth; two
+    hymns with undotted whole notes lasting six beats; `note_shape_mismatch`).
 
 ## Working in this repository
 
 - Several Claude sessions share `D:/PPP`. Say which files you will touch before large edits, and
   never stage another session's files. At G0 time, `catalog/method/index.json` and ~120 untracked
-  `catalog/method/**/*.mxl` belonged to another session's work.
-- `.gitignore` now ignores `tmp/` (copyrighted experiments), `__pycache__/`, and
+  `catalog/method/**/*.mxl` belonged to another session's work (now swept into local `main`, above).
+- `.gitignore` on the G0 branch ignores `tmp/` (copyrighted experiments), `__pycache__/`, and
   `tests/bench/out/` and `.cache/`. The root `tools/` rule would also hide `tests/bench/tools/`,
   so a negation keeps that directory tracked.
 - `core.autocrlf` is on. Text files are CRLF in the Windows working tree, so the benchmark hashes
   references with CRLF read as LF, and `tests/bench/.gitattributes` keeps its own files LF.
 - On Windows (cp949), Python `print` of non-ASCII crashes unless stdout is UTF-8. The benchmark
-  CLI reconfigures stdio itself. Bash heredocs can mangle backslashes in inline Python.
+  CLI reconfigures stdio itself. Bash heredocs can mangle backslashes and fail on mixed quotes.
 - A git worktree without its own `node_modules` can use `PPP_BENCH_NODE_MODULES=D:/PPP/node_modules`
-  for the T1 tiers. `PPP_TRANSCRIBE_PYTHON` points at the transcribe venv for replay recording.
+  for the T1 tiers (and `NODE_PATH=D:/PPP/node_modules` for `npm test`). `PPP_TRANSCRIBE_PYTHON` points
+  at the transcribe venv; `PPP_AUDIVERIS=D:\PPP\tools\audiveris\Audiveris\Audiveris.exe` gives the
+  worktree's helper an OMR engine for `omr-live`.
+- `npm test` hardcodes port 8777. To test a worktree while another session's server holds 8777,
+  run the worktree's server on another port and load a `-r` preload that rewrites the port in the
+  test sources (G00 §18 records how).
 
 ## Next
 
-- Merge `g0-quality-foundation` into `main`, and push to turn on CI (the user decides).
-- Later goals should target the measured issues above: 1 and 2 (compound tempo and the 6/8 pull)
-  are the largest by count, 10 and 11 the largest per user. Follow the loop in
-  `tests/bench/README.md` ("Changing the SUT") and report the core and hold-out Δ.
-- G0 leftovers: Step 14 (arrangement invariants) was not done; see G00 §16.
+- The user decides: what to do with local `main`'s `d82bb71`; committing the G0 work in one commit;
+  merging `g0-quality-foundation` into `main` and opening the PR that turns on CI. G00 §20 gives the
+  verdict and what to check on GitHub.
+- Before any Goal that changes onset, beat, tempo, metre or note-value (release) inference: record
+  the real performances above (M11).
+- Later goals should target the measured issues above: 1, 2 and 18 decide most of the unusable
+  cases (every compound-metre and simple-duple case; half of the rest on note values); 3, 10 and 11
+  are the largest per user. Follow the loop in `tests/bench/README.md` ("Changing the SUT") and
+  report the core, robust and hold-out usable-rate Δ.
+- G0 leftovers: Step 14 (arrangement invariants) was not done; see G00 §16.6 and §18.7. Voices,
+  beams and stems have no metric yet (golden labels a voice change STRUCTURAL_CHANGE); G4.
