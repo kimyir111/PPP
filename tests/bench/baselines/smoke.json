@@ -39,7 +39,7 @@
     "n": 44
    },
    "critical.structure": {
-    "mean": 1.0,
+    "mean": 0.681818,
     "n": 44
    },
    "errors": {
@@ -415,7 +415,7 @@
      "n": 16
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.375,
      "n": 16
     },
     "errors": {
@@ -782,7 +782,7 @@
      "n": 24
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.916667,
      "n": 24
     },
     "errors": {
@@ -1157,7 +1157,7 @@
      "n": 4
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.5,
      "n": 4
     },
     "errors": {
@@ -1516,7 +1516,7 @@
      "n": 3
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.0,
      "n": 3
     },
     "errors": {
@@ -1875,7 +1875,7 @@
      "n": 2
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.0,
      "n": 2
     },
     "errors": {
@@ -2230,7 +2230,7 @@
      "n": 8
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.875,
      "n": 8
     },
     "errors": {
@@ -2589,7 +2589,7 @@
      "n": 3
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.666667,
      "n": 3
     },
     "errors": {
@@ -2952,7 +2952,7 @@
      "n": 11
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.818182,
      "n": 11
     },
     "errors": {
@@ -3327,7 +3327,7 @@
      "n": 5
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.4,
      "n": 5
     },
     "errors": {
@@ -3698,7 +3698,7 @@
      "n": 2
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.5,
      "n": 2
     },
     "errors": {
@@ -4065,7 +4065,7 @@
      "n": 8
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.25,
      "n": 8
     },
     "errors": {
@@ -4771,7 +4771,7 @@
      "n": 3
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.666667,
      "n": 3
     },
     "errors": {
@@ -5134,7 +5134,7 @@
      "n": 16
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.6875,
      "n": 16
     },
     "errors": {
@@ -5509,7 +5509,7 @@
      "n": 9
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.888889,
      "n": 9
     },
     "errors": {
@@ -5868,7 +5868,7 @@
      "n": 6
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.833333,
      "n": 6
     },
     "errors": {
@@ -6227,7 +6227,7 @@
      "n": 3
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.666667,
      "n": 3
     },
     "errors": {
@@ -6586,7 +6586,7 @@
      "n": 5
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.0,
      "n": 5
     },
     "errors": {
@@ -6949,7 +6949,7 @@
      "n": 18
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.722222,
      "n": 18
     },
     "errors": {
@@ -7328,7 +7328,7 @@
      "n": 18
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.833333,
      "n": 18
     },
     "errors": {
@@ -7699,7 +7699,7 @@
      "n": 5
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.0,
      "n": 5
     },
     "errors": {
@@ -8062,7 +8062,7 @@
      "n": 18
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.833333,
      "n": 18
     },
     "errors": {
@@ -8437,7 +8437,7 @@
      "n": 18
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.722222,
      "n": 18
     },
     "errors": {
@@ -8812,7 +8812,7 @@
      "n": 3
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.666667,
      "n": 3
     },
     "errors": {
@@ -9175,7 +9175,7 @@
      "n": 39
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.717949,
      "n": 39
     },
     "errors": {
@@ -9554,7 +9554,7 @@
      "n": 3
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.666667,
      "n": 3
     },
     "errors": {
@@ -9925,7 +9925,7 @@
      "n": 2
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.0,
      "n": 2
     },
     "errors": {
@@ -10280,7 +10280,7 @@
      "n": 4
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.5,
      "n": 4
     },
     "errors": {
@@ -10639,7 +10639,7 @@
      "n": 16
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.375,
      "n": 16
     },
     "errors": {
@@ -11002,7 +11002,7 @@
      "n": 16
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.875,
      "n": 16
     },
     "errors": {
@@ -12103,7 +12103,7 @@
      "n": 44
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.681818,
      "n": 44
     },
     "errors": {
@@ -12833,7 +12833,7 @@
      "n": 5
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.8,
      "n": 5
     },
     "errors": {
@@ -13172,7 +13172,7 @@
      "n": 5
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.0,
      "n": 5
     },
     "errors": {
@@ -13535,7 +13535,7 @@
      "n": 28
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.714286,
      "n": 28
     },
     "errors": {
@@ -13910,7 +13910,7 @@
      "n": 2
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.0,
      "n": 2
     },
     "errors": {
@@ -14265,7 +14265,7 @@
      "n": 13
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.615385,
      "n": 13
     },
     "errors": {
@@ -14628,7 +14628,7 @@
      "n": 29
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.758621,
      "n": 29
     },
     "errors": {
@@ -15007,7 +15007,7 @@
      "n": 44
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.681818,
      "n": 44
     },
     "errors": {
@@ -15388,7 +15388,7 @@
     "n": 44
    },
    "critical.structure": {
-    "mean": 1.0,
+    "mean": 0.681818,
     "n": 44
    },
    "notation.accidentals.courtesy_per_100": {
@@ -15725,10 +15725,10 @@
    }
   },
   "date": "2026-09-22",
-  "git_sha": "6dedc519d0f1e19ddf44340b66f405ad8baa34c1",
+  "git_sha": "151541749368b131df2e5176cc61f5d2cb10779c",
   "versions": {
    "generator": "perform/2",
-   "metrics": "metrics/5",
+   "metrics": "metrics/6",
    "reader": "reader/4",
    "sqi": "sqi/2"
   }
@@ -16218,7 +16218,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.934426,
@@ -16395,7 +16395,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.481928,
@@ -16454,7 +16454,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.948571,
@@ -16513,7 +16513,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.820225,
@@ -16572,7 +16572,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 0.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.678663,
@@ -16631,7 +16631,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.726631,
@@ -16867,7 +16867,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 1.0,
@@ -16985,7 +16985,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.387097,
@@ -17162,7 +17162,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 0.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.977778,
@@ -17280,7 +17280,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.962963,
@@ -17457,7 +17457,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 1.0,
@@ -17634,7 +17634,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.9,
@@ -17811,7 +17811,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.966667,
@@ -17988,7 +17988,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 1.0,
@@ -18386,6 +18386,18 @@
    "reason": "reader/4 + metrics/5 (G00 §21 last fixer): repeat signs read, play order (struct.form.order_exact) in critical.structure, implicit and unmarked half bars no longer excuse a short bar. SUT output and every existing metric identical (1,879 cases compared); known failure incomplete_bars 10 files/38 bars -> 12/42 (2 hymns split a bar with no bar-line mark)",
    "sqi_all": 86.907085,
    "usable_all": 0.386364
+  },
+  {
+   "date": "2026-09-22",
+   "event": "versions {'generator': 'perform/2', 'metrics': 'metrics/5', 'reader': 'reader/4', 'sqi': 'sqi/2'} -> {'generator': 'perform/2', 'metrics': 'metrics/6', 'reader': 'reader/4', 'sqi': 'sqi/2'}; new anchor, earlier numbers are not comparable"
+  },
+  {
+   "audio_score_sha256": "559a1f40fb73416bc72d671d894251f7c3263110fa10780559047f6f22009288",
+   "date": "2026-09-22",
+   "git_sha": "151541749368b131df2e5176cc61f5d2cb10779c",
+   "reason": "G0 PF-M1/PF-M2 (final pass review §22): a lone forward repeat no longer excuses a fake split, a short first/last bar is excused only where the truth is short the same way, struct.measures.count_exact joins critical.structure (metrics/6). No real-corpus number moves (ab PASS vs git:HEAD).",
+   "sqi_all": 86.907085,
+   "usable_all": 0.386364
   }
  ],
  "known_failures": {
@@ -18746,7 +18758,7 @@
   "audio_score_sha256": "559a1f40fb73416bc72d671d894251f7c3263110fa10780559047f6f22009288",
   "date": "2026-09-22",
   "git_dirty": true,
-  "git_sha": "6dedc519d0f1e19ddf44340b66f405ad8baa34c1",
+  "git_sha": "151541749368b131df2e5176cc61f5d2cb10779c",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"
@@ -18756,7 +18768,7 @@
  "suite_sha256": "54a3d1680d1570b7d508f7697404c0182f94799b614320150af16a569a0e6cc7",
  "versions": {
   "generator": "perform/2",
-  "metrics": "metrics/5",
+  "metrics": "metrics/6",
   "reader": "reader/4",
   "sqi": "sqi/2"
  }

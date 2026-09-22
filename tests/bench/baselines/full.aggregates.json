@@ -39,7 +39,7 @@
     "n": 4144
    },
    "critical.structure": {
-    "mean": 1.0,
+    "mean": 0.620656,
     "n": 4144
    },
    "errors": {
@@ -375,7 +375,7 @@
     "n": 4144
    },
    "usable": {
-    "mean": 0.180019,
+    "mean": 0.179054,
     "n": 4144
    }
   },
@@ -415,7 +415,7 @@
      "n": 518
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.482625,
      "n": 518
     },
     "errors": {
@@ -778,7 +778,7 @@
      "n": 1554
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.488417,
      "n": 1554
     },
     "errors": {
@@ -1102,7 +1102,7 @@
      "n": 1554
     },
     "usable": {
-     "mean": 0.11583,
+     "mean": 0.113256,
      "n": 1554
     }
    },
@@ -1145,7 +1145,7 @@
      "n": 1554
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.762548,
      "n": 1554
     },
     "errors": {
@@ -1520,7 +1520,7 @@
      "n": 518
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.72973,
      "n": 518
     },
     "errors": {
@@ -1887,7 +1887,7 @@
      "n": 864
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.769676,
      "n": 864
     },
     "errors": {
@@ -2262,7 +2262,7 @@
      "n": 144
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.673611,
      "n": 144
     },
     "errors": {
@@ -2641,7 +2641,7 @@
      "n": 688
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.659884,
      "n": 688
     },
     "errors": {
@@ -2977,7 +2977,7 @@
      "n": 688
     },
     "usable": {
-     "mean": 0.281977,
+     "mean": 0.276163,
      "n": 688
     }
    },
@@ -3020,7 +3020,7 @@
      "n": 352
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.605114,
      "n": 352
     },
     "errors": {
@@ -3399,7 +3399,7 @@
      "n": 256
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.050781,
      "n": 256
     },
     "errors": {
@@ -3770,7 +3770,7 @@
      "n": 288
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.427083,
      "n": 288
     },
     "errors": {
@@ -4145,7 +4145,7 @@
      "n": 1152
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.682292,
      "n": 1152
     },
     "errors": {
@@ -4520,7 +4520,7 @@
      "n": 592
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.584459,
      "n": 592
     },
     "errors": {
@@ -4899,7 +4899,7 @@
      "n": 176
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.460227,
      "n": 176
     },
     "errors": {
@@ -5274,7 +5274,7 @@
      "n": 272
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.625,
      "n": 272
     },
     "errors": {
@@ -5649,7 +5649,7 @@
      "n": 1248
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.690705,
      "n": 1248
     },
     "errors": {
@@ -6024,7 +6024,7 @@
      "n": 32
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.0625,
      "n": 32
     },
     "errors": {
@@ -6399,7 +6399,7 @@
      "n": 256
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.457031,
      "n": 256
     },
     "errors": {
@@ -6778,7 +6778,7 @@
      "n": 208
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.4375,
      "n": 208
     },
     "errors": {
@@ -7114,7 +7114,7 @@
      "n": 208
     },
     "usable": {
-     "mean": 0.019231,
+     "mean": 0.009615,
      "n": 208
     }
    },
@@ -7157,7 +7157,7 @@
      "n": 832
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.564904,
      "n": 832
     },
     "errors": {
@@ -7493,7 +7493,7 @@
      "n": 832
     },
     "usable": {
-     "mean": 0.231971,
+     "mean": 0.229567,
      "n": 832
     }
    },
@@ -7536,7 +7536,7 @@
      "n": 336
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.505952,
      "n": 336
     },
     "errors": {
@@ -7915,7 +7915,7 @@
      "n": 240
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.529167,
      "n": 240
     },
     "errors": {
@@ -8294,7 +8294,7 @@
      "n": 208
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.668269,
      "n": 208
     },
     "errors": {
@@ -8665,7 +8665,7 @@
      "n": 128
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.867188,
      "n": 128
     },
     "errors": {
@@ -9020,7 +9020,7 @@
      "n": 64
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.640625,
      "n": 64
     },
     "errors": {
@@ -9395,7 +9395,7 @@
      "n": 2208
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.619565,
      "n": 2208
     },
     "errors": {
@@ -9731,7 +9731,7 @@
      "n": 2208
     },
     "usable": {
-     "mean": 0.143116,
+     "mean": 0.141304,
      "n": 2208
     }
    },
@@ -9774,7 +9774,7 @@
      "n": 576
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.649306,
      "n": 576
     },
     "errors": {
@@ -10153,7 +10153,7 @@
      "n": 304
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.588816,
      "n": 304
     },
     "errors": {
@@ -10528,7 +10528,7 @@
      "n": 48
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.833333,
      "n": 48
     },
     "errors": {
@@ -10903,7 +10903,7 @@
      "n": 32
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.71875,
      "n": 32
     },
     "errors": {
@@ -11278,7 +11278,7 @@
      "n": 288
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.555556,
      "n": 288
     },
     "errors": {
@@ -11657,7 +11657,7 @@
      "n": 16
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.375,
      "n": 16
     },
     "errors": {
@@ -12032,7 +12032,7 @@
      "n": 144
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.298611,
      "n": 144
     },
     "errors": {
@@ -12407,7 +12407,7 @@
      "n": 16
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.0625,
      "n": 16
     },
     "errors": {
@@ -12762,7 +12762,7 @@
      "n": 96
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.041667,
      "n": 96
     },
     "errors": {
@@ -13137,7 +13137,7 @@
      "n": 720
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.229167,
      "n": 720
     },
     "errors": {
@@ -13516,7 +13516,7 @@
      "n": 2176
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.776654,
      "n": 2176
     },
     "errors": {
@@ -13852,7 +13852,7 @@
      "n": 2176
     },
     "usable": {
-     "mean": 0.278033,
+     "mean": 0.276195,
      "n": 2176
     }
    },
@@ -13895,7 +13895,7 @@
      "n": 688
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.731105,
      "n": 688
     },
     "errors": {
@@ -14274,7 +14274,7 @@
      "n": 16
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.375,
      "n": 16
     },
     "errors": {
@@ -14649,7 +14649,7 @@
      "n": 80
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.6,
      "n": 80
     },
     "errors": {
@@ -15028,7 +15028,7 @@
      "n": 640
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.182812,
      "n": 640
     },
     "errors": {
@@ -15403,7 +15403,7 @@
      "n": 16
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.375,
      "n": 16
     },
     "errors": {
@@ -15758,7 +15758,7 @@
      "n": 672
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.739583,
      "n": 672
     },
     "errors": {
@@ -16137,7 +16137,7 @@
      "n": 144
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.298611,
      "n": 144
     },
     "errors": {
@@ -16516,7 +16516,7 @@
      "n": 2176
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.776654,
      "n": 2176
     },
     "errors": {
@@ -16852,7 +16852,7 @@
      "n": 2176
     },
     "usable": {
-     "mean": 0.278033,
+     "mean": 0.276195,
      "n": 2176
     }
    },
@@ -16895,7 +16895,7 @@
      "n": 16
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.0,
      "n": 16
     },
     "errors": {
@@ -17266,7 +17266,7 @@
      "n": 80
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.05,
      "n": 80
     },
     "errors": {
@@ -17621,7 +17621,7 @@
      "n": 288
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.555556,
      "n": 288
     },
     "errors": {
@@ -17996,7 +17996,7 @@
      "n": 16
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.0625,
      "n": 16
     },
     "errors": {
@@ -18351,7 +18351,7 @@
      "n": 3136
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.693878,
      "n": 3136
     },
     "errors": {
@@ -18687,7 +18687,7 @@
      "n": 3136
     },
     "usable": {
-     "mean": 0.227997,
+     "mean": 0.226722,
      "n": 3136
     }
    },
@@ -18730,7 +18730,7 @@
      "n": 80
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.35,
      "n": 80
     },
     "errors": {
@@ -19105,7 +19105,7 @@
      "n": 928
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.396552,
      "n": 928
     },
     "errors": {
@@ -19476,7 +19476,7 @@
      "n": 1036
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.63417,
      "n": 1036
     },
     "errors": {
@@ -19839,7 +19839,7 @@
      "n": 518
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.432432,
      "n": 518
     },
     "errors": {
@@ -20163,7 +20163,7 @@
      "n": 518
     },
     "usable": {
-     "mean": 0.181467,
+     "mean": 0.173745,
      "n": 518
     }
    },
@@ -20202,7 +20202,7 @@
      "n": 1554
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.584299,
      "n": 1554
     },
     "errors": {
@@ -20569,7 +20569,7 @@
      "n": 518
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.776062,
      "n": 518
     },
     "errors": {
@@ -20944,7 +20944,7 @@
      "n": 518
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.735521,
      "n": 518
     },
     "errors": {
@@ -21311,7 +21311,7 @@
      "n": 2072
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.621139,
      "n": 2072
     },
     "errors": {
@@ -21647,7 +21647,7 @@
      "n": 2072
     },
     "usable": {
-     "mean": 0.180985,
+     "mean": 0.180019,
      "n": 2072
     }
    },
@@ -21690,7 +21690,7 @@
      "n": 2072
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.620174,
      "n": 2072
     },
     "errors": {
@@ -22026,7 +22026,7 @@
      "n": 2072
     },
     "usable": {
-     "mean": 0.179054,
+     "mean": 0.178089,
      "n": 2072
     }
    },
@@ -22069,7 +22069,7 @@
      "n": 48
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.8125,
      "n": 48
     },
     "errors": {
@@ -22444,7 +22444,7 @@
      "n": 1104
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.690217,
      "n": 1104
     },
     "errors": {
@@ -22819,7 +22819,7 @@
      "n": 2592
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.603781,
      "n": 2592
     },
     "errors": {
@@ -23155,7 +23155,7 @@
      "n": 2592
     },
     "usable": {
-     "mean": 0.114969,
+     "mean": 0.113426,
      "n": 2592
     }
    },
@@ -23198,7 +23198,7 @@
      "n": 384
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.497396,
      "n": 384
     },
     "errors": {
@@ -23577,7 +23577,7 @@
      "n": 16
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.9375,
      "n": 16
     },
     "errors": {
@@ -23952,7 +23952,7 @@
      "n": 864
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.371528,
      "n": 864
     },
     "errors": {
@@ -24331,7 +24331,7 @@
      "n": 2352
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.681548,
      "n": 2352
     },
     "errors": {
@@ -24667,7 +24667,7 @@
      "n": 2352
     },
     "usable": {
-     "mean": 0.252976,
+     "mean": 0.251276,
      "n": 2352
     }
    },
@@ -24710,7 +24710,7 @@
      "n": 928
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.698276,
      "n": 928
     },
     "errors": {
@@ -25085,7 +25085,7 @@
      "n": 32
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.0,
      "n": 32
     },
     "errors": {
@@ -25452,7 +25452,7 @@
      "n": 4112
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.625486,
      "n": 4112
     },
     "errors": {
@@ -25788,7 +25788,7 @@
      "n": 4112
     },
     "usable": {
-     "mean": 0.18142,
+     "mean": 0.180447,
      "n": 4112
     }
    }
@@ -25833,7 +25833,7 @@
     "n": 4144
    },
    "critical.structure": {
-    "mean": 1.0,
+    "mean": 0.620656,
     "n": 4144
    },
    "notation.accidentals.courtesy_per_100": {
@@ -26165,15 +26165,15 @@
     "n": 4144
    },
    "usable": {
-    "mean": 0.180019,
+    "mean": 0.179054,
     "n": 4144
    }
   },
   "date": "2026-09-22",
-  "git_sha": "6dedc519d0f1e19ddf44340b66f405ad8baa34c1",
+  "git_sha": "151541749368b131df2e5176cc61f5d2cb10779c",
   "versions": {
    "generator": "perform/2",
-   "metrics": "metrics/5",
+   "metrics": "metrics/6",
    "reader": "reader/4",
    "sqi": "sqi/2"
   }
@@ -26233,6 +26233,18 @@
    "reason": "reader/4 + metrics/5 (G00 §21 last fixer): repeat signs read, play order (struct.form.order_exact) in critical.structure, implicit and unmarked half bars no longer excuse a short bar. Every existing aggregate identical (all groups, hold-out included); known failure incomplete_bars 10 files/38 bars -> 12/42",
    "sqi_all": 78.597213,
    "usable_all": 0.180019
+  },
+  {
+   "date": "2026-09-22",
+   "event": "versions {'generator': 'perform/2', 'metrics': 'metrics/5', 'reader': 'reader/4', 'sqi': 'sqi/2'} -> {'generator': 'perform/2', 'metrics': 'metrics/6', 'reader': 'reader/4', 'sqi': 'sqi/2'}; new anchor, earlier numbers are not comparable"
+  },
+  {
+   "audio_score_sha256": "559a1f40fb73416bc72d671d894251f7c3263110fa10780559047f6f22009288",
+   "date": "2026-09-22",
+   "git_sha": "151541749368b131df2e5176cc61f5d2cb10779c",
+   "reason": "G0 PF-M1/PF-M2 (final pass review §22): a lone forward repeat no longer excuses a fake split, a short first/last bar is excused only where the truth is short the same way, struct.measures.count_exact joins critical.structure (metrics/6). No real-corpus number moves (ab PASS vs git:HEAD, 4976 cases).",
+   "sqi_all": 78.597213,
+   "usable_all": 0.179054
   }
  ],
  "known_failures": {
@@ -26593,7 +26605,7 @@
   "audio_score_sha256": "559a1f40fb73416bc72d671d894251f7c3263110fa10780559047f6f22009288",
   "date": "2026-09-22",
   "git_dirty": true,
-  "git_sha": "6dedc519d0f1e19ddf44340b66f405ad8baa34c1",
+  "git_sha": "151541749368b131df2e5176cc61f5d2cb10779c",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"
@@ -26603,7 +26615,7 @@
  "suite_sha256": "b7b09e5eac520780cc8f84b1657a741fad096344e9c811c5d2f72c4a96a44b97",
  "versions": {
   "generator": "perform/2",
-  "metrics": "metrics/5",
+  "metrics": "metrics/6",
   "reader": "reader/4",
   "sqi": "sqi/2"
  }

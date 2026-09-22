@@ -7,10 +7,13 @@ compares each copy against the original run as a temporary baseline. Every
 harmful mutation must be a REGRESSION that names its metric; the no-op
 mutation must PASS with a byte-identical results.json.
 
-34 harmful mutations: 5 original, 7 from the independent review (§17), 5 from
-its fixer (§18), 13 from the final review and its fixer (§19-§20), and 4 from
+37 harmful mutations: 5 original, 7 from the independent review (§17), 5 from
+its fixer (§18), 13 from the final review and its fixer (§19-§20), 4 from
 the short final review and the last fixer (§21: a spurious repeat sign, short
-bars marked implicit, a bar split without a repeat, no <staves>): what the app
+bars marked implicit, a bar split without a repeat, no <staves>), and 3 from
+the final pass review and the last fixer (§22: a fake split excused by a lone
+forward repeat that cannot fire, a short last bar excused by position alone,
+a bar dropped outright with no measure-count gate to catch it): what the app
 draws or plays that the gate used to miss.
 """
 
@@ -77,6 +80,59 @@ FAKE_SPLIT_EDITS = [
     ("notes: notes.length, bars: bars, beatsPerBar: beatsPerBar,",
      "notes: notes.length, bars: bars + (mdl.splitAt != null ? 1 : 0), beatsPerBar: beatsPerBar,")]
 NO_STAVES_EDITS = [("<staves>2</staves>", "")]
+# G00 §22 last fixer: the same fake split as FAKE_SPLIT_EDITS, but its second half opens with a lone
+# forward repeat that no backward repeat anywhere in the file ever consumes (PF-M1)
+FORWARD_REPEAT_ONLY_EDITS = [
+    ("    out.push('</part></score-partwise>');\n    return out.join('\\n');",
+     r"""    out.push('</part></score-partwise>');
+    /* mutation: the second-to-last bar split in two, the second half opening with a lone forward
+       repeat no backward repeat in the file ever consumes (no repeat sign otherwise, same metre) */
+    const sk = out.indexOf('<measure number="' + (bars - 1) + '">');
+    if (bars >= 3 && sk > 0 && out[sk + 2].indexOf('<backup>') === 0 && out[sk + 4] === '</measure>') {
+      const cut = xml => {
+        const items = xml.match(/<note>.*?<\/note>|<direction\b.*?<\/direction>/g) || [];
+        const on = [], ends = new Set();
+        let cur = 0, lastStart = 0;
+        items.forEach(it => {
+          if (it.indexOf('<note>') !== 0) { on.push(cur); return; }
+          if (it.indexOf('<chord/>') >= 0) { on.push(lastStart); return; }
+          on.push(cur); lastStart = cur; cur += +/<duration>(\d+)<\/duration>/.exec(it)[1]; ends.add(cur);
+        });
+        return { items: items, on: on, ends: ends };
+      };
+      const A = cut(out[sk + 1]), B = cut(out[sk + 3]);
+      let p = -1;
+      A.ends.forEach(t => { if (t > 0 && t < bar && B.ends.has(t) && (p < 0 || Math.abs(t - bar / 2) < Math.abs(p - bar / 2))) p = t; });
+      if (p > 0) {
+        const part = (S, first) => S.items.filter((it, i) => (S.on[i] < p) === first).join('');
+        const FORWARD = '<barline location="left"><bar-style>heavy-light</bar-style><repeat direction="forward"/></barline>';
+        out.splice(sk, 5,
+          '<measure number="' + (bars - 1) + '">', part(A, true), '<backup><duration>' + p + '</duration></backup>', part(B, true), '</measure>',
+          '<measure number="' + bars + '">', FORWARD, part(A, false), '<backup><duration>' + (bar - p) + '</duration></backup>', part(B, false), '</measure>');
+        out[out.indexOf('<measure number="' + bars + '">', sk + 10)] = '<measure number="' + (bars + 1) + '">';
+        model.splitAt = p;
+      }
+    }
+    return out.join('\n');"""),
+    ("    const xml = buildXml({\n      title: title, key: key, beatsPerBar: beatsPerBar, beatType: beatType, bpm: roundBpm,\n"
+     "      bars: bars, events1: events1, events2: events2, pedals: pedals, table: table\n    });",
+     "    const mdl = {\n      title: title, key: key, beatsPerBar: beatsPerBar, beatType: beatType, bpm: roundBpm,\n"
+     "      bars: bars, events1: events1, events2: events2, pedals: pedals, table: table\n    };\n    const xml = buildXml(mdl);"),
+    ("    const errSum = extra.errSum || q.reduce((s, n) => s + (n.err || 0), 0);",
+     "    const errSum = extra.errSum || q.reduce((s, n) => s + (n.err || 0), 0);\n"
+     "    if (mdl.splitAt != null) barStarts.splice(bars - 1, 0, Math.round(tickToSec((bars - 2) * bar + mdl.splitAt) * 1000) / 1000);"),
+    ("notes: notes.length, bars: bars, beatsPerBar: beatsPerBar,",
+     "notes: notes.length, bars: bars + (mdl.splitAt != null ? 1 : 0), beatsPerBar: beatsPerBar,")]
+# G00 §22 last fixer: only the final bar's trailing rest loses a beat (every other bar is full); the bar
+# count matches the reference exactly, so only bar_completeness's edge exemption can catch it (PF-M2)
+TRUNCATED_LAST_MEASURE_EDITS = [
+    ("      if (cursor < bar) rest(cursor, bar);",
+     "      if (cursor < bar) rest(cursor, bar - (barIdx === bars - 1 && bar - cursor >= 2 * beatTicks ? beatTicks : 0));")]
+# G00 §22 last fixer: the file's last written bar is dropped outright (one fewer measure than the
+# reference, stats and barStarts follow); only struct.measures.count_exact catches a bare count mismatch (PF-M2)
+DROPPED_LAST_MEASURE_EDITS = [
+    ("    const bars = Math.max(1, Math.floor(lastOnset / bar) + 1);",
+     "    const bars = Math.max(1, Math.floor(lastOnset / bar));")]
 
 MUTATIONS: List[Dict[str, Any]] = [
     {"id": "MUT-HANDS",
@@ -218,6 +274,17 @@ MUTATIONS: List[Dict[str, Any]] = [
     {"id": "SR-NO-STAVES",                # no <staves>: the app shows the left hand and never plays it
      "replacements": NO_STAVES_EDITS,
      "expect": "REGRESSION", "metrics": ["notes.identity.f1", "critical.pitch_integrity"]},
+    # --- from the G00 §22 final pass review and the last fixer: excused() no longer trusts a repeat
+    # mark that could not fire, and a short or missing edge bar is no longer excused by position alone ---
+    {"id": "PF-FORWARD-REPEAT-ONLY-EXCUSE",  # a lone forward repeat (no backward repeat anywhere) on a fake split
+     "replacements": FORWARD_REPEAT_ONLY_EDITS,
+     "expect": "REGRESSION", "metrics": ["read.bar_completeness", "critical.structure"]},
+    {"id": "PF-TRUNCATED-LAST-MEASURE",   # only the last bar's trailing rest short; bar count unchanged
+     "replacements": TRUNCATED_LAST_MEASURE_EDITS,
+     "expect": "REGRESSION", "metrics": ["read.bar_completeness", "critical.structure"]},
+    {"id": "PF-DROPPED-LAST-MEASURE",     # the file's last bar is missing outright (one fewer than the reference)
+     "replacements": DROPPED_LAST_MEASURE_EDITS,
+     "expect": "REGRESSION", "metrics": ["struct.measures.count_exact", "critical.structure"]},
     {"id": "MUT-NOOP",
      "find": "  const api = {",
      "replace": "  /* noop mutation */\n  const api = {",

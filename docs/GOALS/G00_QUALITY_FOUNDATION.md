@@ -3731,3 +3731,71 @@ FORWARD = '<barline location="left"><bar-style>heavy-light</bar-style><repeat di
 3. 두 수정 모두 `bar_completeness`/`critical.structure` 관련 golden·suite·baseline을 relock·재기준화해야 한다(S-M1/S-M2 때와 같은 순서: METRICS/READER 버전 올리고, 사유 기록).
 4. PF-M1·PF-M2를 `mutation-check`와 `short_review.py`(또는 새 스크립트)에 회귀로 추가한다. 이 절의 재현 스크립트(22.6.1, 22.6.2)를 출발점으로 쓸 수 있다(그 자체는 커밋되지 않았다).
 5. 고치고 나서 이 절(§22)을 다시 짧게 검토한다. §21.15와 22.2–22.5는 다시 열 필요가 없다(이미 VERIFIED_RESOLVED).
+
+### 22.9 마지막 fixer (2026-09-22): PF-M1 = **RESOLVED**, PF-M2 = **RESOLVED**
+
+**대상**: `D:/PPP-g0`, 브랜치 `g0-quality-foundation`. `D:/PPP`(main)는 건드리지 않았다. merge, main push, G1 없음. §22.8이 요구한 PF-M1·PF-M2 두 건만 고쳤다 — MINOR/OPTIONAL 사냥, benchmark 기능 확장, production 코드 변경 없음.
+
+#### 22.9.1 PF-M1 수정: `readability.py`
+
+`bar_completeness_detail`의 예측 쪽 `excused()`가 `repeat_boundary(canon, j)` 대신 새 `_excusing_repeat_boundary(canon, j)`를 본다(`repeat_boundary` 자체는 건드리지 않았다 — truth 쪽의 두 호출(§21 설계, S-m2)은 그대로 존재-여부만 본다). `_excusing_repeat_boundary`는 backward repeat(`repeatEnd`)·ending-close(`endingEnd`)·ending-start(`endingType=="start"`)는 §22.8.1이 정한 "최소" 기준대로 그대로 두고, forward repeat(`repeatStart`)만 새 `_forward_repeat_effective(canon, i)`로 좁힌다: 그 바로 다음 마디부터 파일 끝까지 어딘가에 `repeatEnd`가 있어야 한다(파일 앞쪽의 무관한 repeat pair를 빌려 쓰는 우회를 막기 위해 "그 이후" 범위로 제한했다 — 앞쪽에 있는 backward repeat는 이 forward repeat를 절대 소비할 수 없다). backward repeat는 앱의 `app_play_order`가 forward repeat 없이도 항상 처음(또는 스택 top)으로 되돌아가므로(§21 S-M1 설계 그대로) 무조건 실효로 남긴다.
+
+#### 22.9.2 PF-M2 수정: `readability.py` + `critical.py`
+
+**A (측 gate)**: `critical.py`의 `critical.structure`에 `("struct.measures.count_exact", ">=", 1.0)`를 추가했다. 이 메트릭은 `structure.py:255`에 이미 `len(pred.measures) == exp["measures"]`로 존재했으나(§22.6.2가 지적한 대로) 한 번도 gate에 들어간 적이 없었다. `order_exact`는 건드리지 않았다.
+
+**B (edge 면제)**: `bar_completeness_detail`이 첫/마지막 마디를 "무조건" 건너뛰던 것을, `truth`가 주어졌을 때만 `edge_excused(i)`로 좁혔다: truth의 같은 자리(첫 마디는 truth의 첫 마디, 마지막 마디는 truth의 마지막 마디) content 길이와 `SHAPE_TOL` 이내로 일치할 때만 면제한다(길이가 같으면 꽉 찬 마디끼리도, 진짜 pickup/complement끼리도 그대로 면제되어 기존 결과가 보존된다). `truth`가 없는 경로(참조·카탈로그 자기 검증)는 손대지 않아 무조건 면제 그대로다. `same_bars`가 아니면(마디 수가 다르면) edge 면제 자체가 없다 — 그 경우는 A의 `count_exact`가 이미 잡는다.
+
+버전: `METRICS_VERSION` `metrics/5` → **`metrics/6`**(`pppbench/__init__.py`에 사유 기록). `READER_VERSION`은 안 바꿨다(리더 파싱 자체는 그대로).
+
+#### 22.9.3 검증: 새 공격 재현 (합성 스코어, `evaluate.evaluate_symbolic` 실제 gate 경로)
+
+| 케이스 | `read.bar_completeness`(또는 `bad`) | `critical.structure` | `usable` |
+| --- | --- | --- | --- |
+| PF-M1: 매달린 forward repeat만(backward 없음), 가짜 split | bad 2건 | 0.0 | 0.0 |
+| 대조: 정상 forward+backward 쌍, 같은 split | bad 0건 | — | — (split 정상 면제) |
+| 대조: `truth=None`(참조 자기 검증)은 그대로 무조건 면제 | bad 0건 | — | — |
+| PF-M2 공격: 결함 마디 + 꼬리 자르기(결함이 새 "마지막 마디") | bad 1건(더 이상 면제 안 됨) | 0.0 | 0.0 |
+| PF-M2 대조 B: 결함 없이 마디 수만 -2 | `struct.measures.count_exact` 0.0 | 0.0 | 0.0 |
+| PF-M2 변형: 마디 수는 그대로, 마지막 마디만 짧게(edge 전용) | bad 1건, `count_exact`는 1.0(정상) | 0.0(bar_completeness로) | 0.0 |
+| 대조: 정상 pickup + 정상 complementary ending(참조와 동일) | bad 0건 | 1.0 | 1.0 |
+| 대조: 참조와 완전히 동일한 구조 | bad 0건 | 1.0 | 1.0 |
+
+#### 22.9.4 회귀 테스트 추가
+
+`mutation.py`에 3건 추가(37 harmful, 기존 34 + 3):
+
+- `PF-FORWARD-REPEAT-ONLY-EXCUSE`: SR-FAKE-SPLIT-BAR와 같은 가짜 split, 뒷반에 매달린 forward repeat 하나만(파일 전체에 backward repeat 없음). `read.bar_completeness`, `critical.structure` 기대.
+- `PF-TRUNCATED-LAST-MEASURE`: 마지막 마디만 trailing rest 한 박 짧게(다른 마디는 전부 정상, 마디 수는 참조와 동일). `read.bar_completeness`, `critical.structure` 기대.
+- `PF-DROPPED-LAST-MEASURE`: 파일의 마지막 마디를 통째로 뺐다(참조보다 한 마디 적음; stats·barStarts도 같이 줄어 서로 모순되지 않는다 — `struct.stats_consistent`가 아니라 `struct.measures.count_exact`가 잡도록 의도적으로 일관되게 만들었다). `struct.measures.count_exact`, `critical.structure` 기대.
+
+세 건 모두 `mutation-check`에서 REGRESSION으로 기대한 메트릭이 실제로 움직이는 것을 확인했다(MUT-NOOP은 여전히 byte-identical). `short_review.py`의 `MUTATIONS`에도 같은 3건을 추가했다(11/11 캐치, reference repeats 4그룹도 그대로 139/139, 62/62, 49/49, 62/62).
+
+#### 22.9.5 테스트 결과 (전부 이 세션에서 독립 재실행)
+
+| # | 항목 | 결과 |
+| --- | --- | --- |
+| 1 | unit | `python -m unittest discover -s tests/bench/unit -t tests/bench`: **196 OK**(변화 없음) |
+| 2 | mutation-check | **37/37**: harmful 37종(신규 3종 포함) 전부 자기 metric으로 REGRESSION, MUT-NOOP byte-identical |
+| 3 | short_review | **11/11** 캐치(신규 3종 포함), reference repeats 4그룹 기대대로, gaps: none |
+| 4 | final_review | **10/10** 자기 metric으로 REGRESSION |
+| 5 | final_oracle | **5/5 OK, 0 GAP**: as-is 141, pickup-bar 20, mode-flip 104, tempo-mark 141, no-repeats 62 — §21.15와 수치 동일 |
+| 6 | adversarial | offline **25 OK, 0 GAP** + `--only lock --conformance`(워크트리 서버 8777) **4 OK, 0 GAP** |
+| 7 | smoke/core/robust | `ab --a git:HEAD --b worktree`: **PASS**(수치 이동 0), `run`+`update-baseline`+`check`: **PASS**(usable smoke 38.6 %, core 18.08 %, robust 6.03 % — §21.15와 동일) |
+| 8 | golden | **17/17 identical** |
+| 9 | correctness | **13/13**(octave-shift 2건은 문서화된 KNOWN_DEVIATION) |
+| 10 | parity(conformance, T1) | 워크트리 서버 8777, `PPP_BENCH_NODE_MODULES=D:/PPP/node_modules`: **258/258 identical** |
+| 11 | known-defects | `incomplete_bars` **12/329 files, 42 bars**(§21.15와 동일 — `truth=None` 경로 불변 확인) |
+| 12 | full | `ab --a git:HEAD --b worktree`: **PASS**(4,976 케이스, 수치 이동 0), `run`+`update-baseline`+`check`: **PASS**(usable 17.9 %, 진단 78.60 — §21.15와 동일) |
+| 13 | lint-corpus / py_compile | 0 errors(경고 70) / `tests/bench`의 Python 전부 통과 |
+
+모든 suite에서 실제 corpus 수치(usable, diagnostic, 게이트별 통과율)가 §21.15가 보고한 값과 정확히 같다 — PF-M1/PF-M2는 둘 다 인위적 공격에서만 발현되고, 현재 SUT가 실제로 내는 출력(반복 기호 없음, split 없음, 마디 수 항상 일치)에는 영향이 없다.
+
+#### 22.9.6 범위 감사
+
+- `git diff <이 절 시작 커밋> --stat`: `tests/bench/**`와 `docs/`만. production(`Piano Coach App.dc.html`, `audio-score.js`, `server.js`, `omr-service.js`), `catalog/`, `tmp/`, `__pycache__` 0건.
+- `tests/README.md`의 미커밋 2줄은 이번에도 허용 경로 밖이라 건드리지 않았다.
+
+#### 22.9.7 최종 판정: **READY_FOR_MERGE_CHECK**
+
+BLOCKER 0, MAJOR 0(PF-M1·PF-M2 둘 다 RESOLVED, 새 구멍 없음), 기존 regression suite 전부 통과, production diff 0. 다음 단계는 PR/merge 판단(사용자 결정) — G1은 시작하지 않는다.

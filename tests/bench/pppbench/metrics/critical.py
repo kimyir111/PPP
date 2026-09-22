@@ -49,15 +49,17 @@ GATES = {
     "critical.hands": ([("notation.hand.accuracy", ">=", 0.80)],
                        "PPP practises hands separately; more than 1 in 5 notes on the wrong hand breaks that."),
     "critical.structure": ([("read.bar_integrity", ">=", 1.0), ("struct.measures.extra_empty_edge", "<=", 0.0),
+                            ("struct.measures.count_exact", ">=", 1.0),
                             ("struct.stats_consistent", ">=", 1.0), ("read.bar_completeness", ">=", 1.0),
                             ("struct.measure_numbers.valid", ">=", 1.0),
                             ("struct.measure_numbers.app_onset_accuracy", ">=", 1.0),
                             ("struct.form.order_exact", ">=", 1.0)],
                            "No overfull, underfull or incomplete bar (every staff fills its bar; a short bar only as a "
                            "pickup, its complement or half of a bar split at a repeat), no empty bar added at either end, "
-                           "bar numbers that count up by one (the app finds bars by number), the app plays the bars in "
-                           "the music's order (no repeat sign added, moved or changed), and stats that describe the "
-                           "MusicXML they came with."),
+                           "the same number of written bars as the music (G00 PF-M2: a dropped or added bar is a "
+                           "structural change even where play order does not move), bar numbers that count up by one "
+                           "(the app finds bars by number), the app plays the bars in the music's order (no repeat sign "
+                           "added, moved or changed), and stats that describe the MusicXML they came with."),
     "critical.accidentals": ([("notation.accidentals.required_recall", ">=", 1.0)],
                              "Every accidental the page needs is printed; a missing one is a wrong note for the reader."),
     "critical.pedal": ([("notation.pedal.f1", ">=", 0.5)],

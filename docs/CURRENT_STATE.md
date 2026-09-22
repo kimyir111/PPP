@@ -1,14 +1,15 @@
 # PPP — current state
 
 Updated 2026-09-22, at the end of G0 (Quality Foundation): implemented, reviewed, fixed, reviewed
-again, fixed again, short-reviewed and fixed a last time (repeats, implicit bars). Read this first in a
-new session, then the current goal's spec in `docs/GOALS/`.
+again, fixed again, short-reviewed and fixed a last time (repeats, implicit bars), final-pass reviewed
+(two new MAJOR: a repeat mark that cannot fire, a truncated edge bar) and fixed a last time again. Read
+this first in a new session, then the current goal's spec in `docs/GOALS/`.
 
 ## Where things are
 
 | | |
 | --- | --- |
-| Goals | Numbered specs in `docs/GOALS/`. **G0 is implemented (§16), independently reviewed (§17), fixed (§18), finally reviewed (§19), fixed again (§20), short-reviewed (§21, NEEDS_FIX: two MAJOR) and fixed a last time (§21.15)**. `G00_QUALITY_FOUNDATION.md` §21.15 has the last result, what is still open and the verdict. |
+| Goals | Numbered specs in `docs/GOALS/`. **G0 is implemented (§16), independently reviewed (§17), fixed (§18), finally reviewed (§19), fixed again (§20), short-reviewed (§21, NEEDS_FIX: two MAJOR) and fixed a last time (§21.15), final-pass reviewed (§22, NEEDS_FIX: two new MAJOR, PF-M1/PF-M2) and fixed a last time again (§22.9)**. `G00_QUALITY_FOUNDATION.md` §22.9 has the last result, what is still open (nothing) and the verdict (**READY_FOR_MERGE_CHECK**). |
 | G0 code | Branch `g0-quality-foundation`, worktree `D:/PPP-g0` (so the shared `D:/PPP` tree and other sessions' files stay untouched). Committed and pushed to `origin/g0-quality-foundation` (no PR yet). **Not merged to `main`.** `tests/README.md` has a two-line doc change from an earlier session that is outside the allowed paths and left uncommitted (user decision). |
 | `main` | **Local `main` is `d82bb71`, which must not be pushed.** Despite its message ("harden G0 quality benchmark") it holds no benchmark code: it is a `git add -A` sweep of `D:/PPP` with copyrighted `tmp/` audio and score renders, `__pycache__`, a `_oh-sheet-compare` gitlink and another session's 124 `catalog/method` files (G00 §19.18). It is not pushed (`origin/main` is `e0d8b23`). The user decides how to undo it before G0 is merged. |
 | App | `Piano Coach App.dc.html` (single file, ~19k lines), `audio-score.js` (recording → MusicXML), `omr-service.js` (local helper, 127.0.0.1:8788), `server.js` (port 8777). Deploy: Render, manual (`render deploys create …`; a push does not deploy). |
@@ -36,10 +37,11 @@ up by one, the bars played in the music's order (no repeat sign added, moved or 
 needed accidental printed, pedal written when it was used. The diagnostic score
 (`sqi/2`) is a trend line, not a verdict: 199 core cases score above its mean and are still unusable.
 
-### Baseline (metrics/5, reader/4, gate/3; audio-score.js sha256 559a1f40…, CRLF read as LF)
+### Baseline (metrics/6, reader/4, gate/3; audio-score.js sha256 559a1f40…, CRLF read as LF)
 
-metrics/5 and reader/4 (G00 §21.15) changed no number below: the SUT writes no repeat sign, no split bar
-and no inner implicit bar, so every stored metric of every case is what it was at metrics/4.
+metrics/5, metrics/6 and reader/4 (G00 §21.15, §22.9) changed no number below: the SUT writes no repeat
+sign, no split bar, no inner implicit bar and always the reference's own bar count, so every stored
+metric of every case is what it was at metrics/4.
 
 | suite | cases | usable | diagnostic | notes |
 | --- | --- | --- | --- | --- |
@@ -59,20 +61,29 @@ Burgmüller 3.4 %, Sonatina 9.8 %, Beyer 10.8 %, Czerny 599 12.5 %, hymns 33.5 %
 
 - Results are byte-identical run to run, from another working directory, with file enumeration
   reversed, and between Windows and Linux (`node:24-bookworm`, offline). Procedure in `tests/bench/README.md`.
-- `mutation-check` plants 34 regressions (5 original, 7 from the first review, 5 from its fixer, 13
+- `mutation-check` plants 37 regressions (5 original, 7 from the first review, 5 from its fixer, 13
   from the final review, 4 from the short review: a spurious repeat sign, short bars marked
-  `implicit="yes"`, a bar split without a repeat, no `<staves>`) and proves each is a REGRESSION on
-  its metric; the review scripts (`tests/bench/review/`) check the benchmark itself.
+  `implicit="yes"`, a bar split without a repeat, no `<staves>`; 3 from the final pass review and its
+  last fixer, G00 §22.9: a fake split excused by a forward repeat that cannot fire, a truncated last
+  bar excused by position alone, a bar dropped outright with no measure-count gate to catch it) and
+  proves each is a REGRESSION on its metric; the review scripts (`tests/bench/review/`) check the
+  benchmark itself.
 - Golden labels a change `STRUCTURAL_CHANGE`, `SEMANTIC_CHANGE` or `SERIALIZATION_ONLY`; only the
   last is formatting. A dot, note type, rest, clef, staff, bar number, repeat sign or ending, or which
   staff is which hand never counts as formatting.
 - **Repeats.** The benchmark reads repeat signs and endings the way the app does and compares the
   app's play order (`struct.form.order_exact`, in `critical.structure`). The synthetic performer takes
   no repeat, so against a performance a score is right with no repeat sign at all or with exactly the
-  reference's; against a score (OMR, prediction files) only the reference's play order is right.
+  reference's; against a score (OMR, prediction files) only the reference's play order is right. A
+  prediction's own lone forward repeat excuses a split only where a backward repeat could actually
+  consume it (G00 §22.9 PF-M1) — one with no backward repeat anywhere after it in the file never fires
+  and excuses nothing.
 - **Short bars.** Only a pickup, its complement, or the two halves of a bar split at a repeat sign or
   ending are excused (in a prediction: a repeat it writes, which the play-order gate judges, or the
-  reference's own split). A prediction's `implicit="yes"` or double bar line excuses nothing.
+  reference's own split). A prediction's `implicit="yes"` or double bar line excuses nothing. A
+  prediction's own first or last bar being short excuses nothing either, unless the truth is short the
+  same way there too (G00 §22.9 PF-M2) — critical.structure also gates on `struct.measures.count_exact`
+  (the same written bar count as the truth), independent of play order.
 
 ### What the benchmark leaves out, and why
 
@@ -170,9 +181,10 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
 
 ## Next
 
-- A short final review of G00 §21.15 (the last fixer's verdict is READY_FOR_FINAL_REVIEW). Then the
-  user decides: what to do with local `main`'s `d82bb71`; merging `g0-quality-foundation` into `main`
-  and opening the PR that turns on CI. G00 §20 says what to check on GitHub. Do not start G1 before.
+- G0's benchmark work is done (G00 §22.9: READY_FOR_MERGE_CHECK, BLOCKER 0, MAJOR 0, production diff 0).
+  The user decides: what to do with local `main`'s `d82bb71`; merging `g0-quality-foundation` into
+  `main` and opening the PR that turns on CI. G00 §20 says what to check on GitHub. Do not start G1
+  before.
 - Before any Goal that changes onset, beat, tempo, metre or note-value (release) inference: record
   the real performances above (M11).
 - Later goals should target the measured issues above: 1, 2 and 18 decide most of the unusable

@@ -27,6 +27,17 @@ Added by the last fixer (G00 §21.15; the mutations and expectations above are u
 
 - SR-FAKE-SPLIT-BAR: the second-to-last bar split in two halves where no note crosses, with no repeat
   sign and the same metre (S-m2). stats.bars and barStarts follow the file, so only the split is wrong.
+
+Added by the final pass review and the last fixer (G00 §22 PF-M1, PF-M2):
+
+- PF-FORWARD-REPEAT-ONLY-EXCUSE: SR-FAKE-SPLIT-BAR's split, but its second half opens with a lone
+  forward repeat that no backward repeat anywhere in the file ever consumes — it never fires in
+  ``app_play_order`` and must not excuse the split by itself.
+- PF-TRUNCATED-LAST-MEASURE: only the file's last bar loses a beat of trailing rest (every other bar
+  stays full); the bar count still matches the reference, so only the edge-bar exemption is wrong.
+- PF-DROPPED-LAST-MEASURE: the file's last written bar is missing outright, one fewer measure than the
+  reference, with stats and barStarts following the shorter file — only ``struct.measures.count_exact``
+  catches a bare count mismatch.
 - Reference repeats (second part): on every core reference, the ideal output (final_oracle's) with a
   fake repeat after the middle bar, and, where the reference has repeats, its first backward repeat
   removed, moved a bar later, or taken three times. Each must fail the play-order gate against the
@@ -122,6 +133,22 @@ MUTATIONS = {
         "the second-to-last bar drawn as two half bars with no repeat sign between them",
         "REGRESSION",
         mutation.FAKE_SPLIT_EDITS),
+    "PF-FORWARD-REPEAT-ONLY-EXCUSE": (
+        "measure structure (fake split excused by a repeat that cannot fire)",
+        "the same fake split as SR-FAKE-SPLIT-BAR, but its second half opens with a lone forward repeat "
+        "no backward repeat in the file ever consumes",
+        "REGRESSION",
+        mutation.FORWARD_REPEAT_ONLY_EDITS),
+    "PF-TRUNCATED-LAST-MEASURE": (
+        "measure completeness (edge bar)",
+        "only the file's last bar loses a beat of trailing rest; the bar count still matches the reference",
+        "REGRESSION",
+        mutation.TRUNCATED_LAST_MEASURE_EDITS),
+    "PF-DROPPED-LAST-MEASURE": (
+        "measure count",
+        "the file's last written bar is missing outright: one fewer measure than the reference",
+        "REGRESSION",
+        mutation.DROPPED_LAST_MEASURE_EDITS),
 }
 
 

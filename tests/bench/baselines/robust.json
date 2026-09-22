@@ -35,7 +35,7 @@
     "n": 282
    },
    "critical.structure": {
-    "mean": 1.0,
+    "mean": 0.56383,
     "n": 282
    },
    "errors": {
@@ -399,7 +399,7 @@
      "n": 141
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.404255,
      "n": 141
     },
     "errors": {
@@ -762,7 +762,7 @@
      "n": 141
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.723404,
      "n": 141
     },
     "errors": {
@@ -1125,7 +1125,7 @@
      "n": 32
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.71875,
      "n": 32
     },
     "errors": {
@@ -1484,7 +1484,7 @@
      "n": 18
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.666667,
      "n": 18
     },
     "errors": {
@@ -1847,7 +1847,7 @@
      "n": 32
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.5625,
      "n": 32
     },
     "errors": {
@@ -2206,7 +2206,7 @@
      "n": 20
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.4,
      "n": 20
     },
     "errors": {
@@ -2565,7 +2565,7 @@
      "n": 16
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.0625,
      "n": 16
     },
     "errors": {
@@ -2920,7 +2920,7 @@
      "n": 28
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.357143,
      "n": 28
     },
     "errors": {
@@ -3279,7 +3279,7 @@
      "n": 86
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.686047,
      "n": 86
     },
     "errors": {
@@ -3638,7 +3638,7 @@
      "n": 56
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.464286,
      "n": 56
     },
     "errors": {
@@ -4001,7 +4001,7 @@
      "n": 6
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.666667,
      "n": 6
     },
     "errors": {
@@ -4360,7 +4360,7 @@
      "n": 16
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.5,
      "n": 16
     },
     "errors": {
@@ -4719,7 +4719,7 @@
      "n": 88
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.681818,
      "n": 88
     },
     "errors": {
@@ -5078,7 +5078,7 @@
      "n": 4
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.0,
      "n": 4
     },
     "errors": {
@@ -5437,7 +5437,7 @@
      "n": 28
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.464286,
      "n": 28
     },
     "errors": {
@@ -5800,7 +5800,7 @@
      "n": 20
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.4,
      "n": 20
     },
     "errors": {
@@ -6163,7 +6163,7 @@
      "n": 30
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.4,
      "n": 30
     },
     "errors": {
@@ -6526,7 +6526,7 @@
      "n": 20
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.65,
      "n": 20
     },
     "errors": {
@@ -6889,7 +6889,7 @@
      "n": 16
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.5625,
      "n": 16
     },
     "errors": {
@@ -7244,7 +7244,7 @@
      "n": 8
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.875,
      "n": 8
     },
     "errors": {
@@ -7583,7 +7583,7 @@
      "n": 6
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.5,
      "n": 6
     },
     "errors": {
@@ -7942,7 +7942,7 @@
      "n": 128
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.523438,
      "n": 128
     },
     "errors": {
@@ -8305,7 +8305,7 @@
      "n": 48
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.666667,
      "n": 48
     },
     "errors": {
@@ -8668,7 +8668,7 @@
      "n": 22
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.590909,
      "n": 22
     },
     "errors": {
@@ -9386,7 +9386,7 @@
      "n": 2
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.5,
      "n": 2
     },
     "errors": {
@@ -9745,7 +9745,7 @@
      "n": 32
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.59375,
      "n": 32
     },
     "errors": {
@@ -10108,7 +10108,7 @@
      "n": 2
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.5,
      "n": 2
     },
     "errors": {
@@ -10467,7 +10467,7 @@
      "n": 18
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.111111,
      "n": 18
     },
     "errors": {
@@ -10826,7 +10826,7 @@
      "n": 2
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.0,
      "n": 2
     },
     "errors": {
@@ -11165,7 +11165,7 @@
      "n": 6
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.0,
      "n": 6
     },
     "errors": {
@@ -11524,7 +11524,7 @@
      "n": 56
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.196429,
      "n": 56
     },
     "errors": {
@@ -11887,7 +11887,7 @@
      "n": 110
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.754545,
      "n": 110
     },
     "errors": {
@@ -12250,7 +12250,7 @@
      "n": 56
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.767857,
      "n": 56
     },
     "errors": {
@@ -12613,7 +12613,7 @@
      "n": 2
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.5,
      "n": 2
     },
     "errors": {
@@ -12972,7 +12972,7 @@
      "n": 8
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.625,
      "n": 8
     },
     "errors": {
@@ -13335,7 +13335,7 @@
      "n": 48
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.125,
      "n": 48
     },
     "errors": {
@@ -13694,7 +13694,7 @@
      "n": 2
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.5,
      "n": 2
     },
     "errors": {
@@ -14033,7 +14033,7 @@
      "n": 54
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.777778,
      "n": 54
     },
     "errors": {
@@ -14396,7 +14396,7 @@
      "n": 18
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.111111,
      "n": 18
     },
     "errors": {
@@ -14759,7 +14759,7 @@
      "n": 110
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.754545,
      "n": 110
     },
     "errors": {
@@ -15122,7 +15122,7 @@
      "n": 2
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.0,
      "n": 2
     },
     "errors": {
@@ -15477,7 +15477,7 @@
      "n": 4
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.0,
      "n": 4
     },
     "errors": {
@@ -15816,7 +15816,7 @@
      "n": 32
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.59375,
      "n": 32
     },
     "errors": {
@@ -16175,7 +16175,7 @@
      "n": 2
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.0,
      "n": 2
     },
     "errors": {
@@ -16514,7 +16514,7 @@
      "n": 198
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.656566,
      "n": 198
     },
     "errors": {
@@ -16877,7 +16877,7 @@
      "n": 10
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.4,
      "n": 10
     },
     "errors": {
@@ -17236,7 +17236,7 @@
      "n": 74
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.337838,
      "n": 74
     },
     "errors": {
@@ -17595,7 +17595,7 @@
      "n": 282
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.56383,
      "n": 282
     },
     "errors": {
@@ -17958,7 +17958,7 @@
      "n": 282
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.56383,
      "n": 282
     },
     "errors": {
@@ -18321,7 +18321,7 @@
      "n": 6
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.833333,
      "n": 6
     },
     "errors": {
@@ -18680,7 +18680,7 @@
      "n": 80
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.7,
      "n": 80
     },
     "errors": {
@@ -19039,7 +19039,7 @@
      "n": 146
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.493151,
      "n": 146
     },
     "errors": {
@@ -19402,7 +19402,7 @@
      "n": 48
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.5,
      "n": 48
     },
     "errors": {
@@ -20124,7 +20124,7 @@
      "n": 64
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.28125,
      "n": 64
     },
     "errors": {
@@ -20487,7 +20487,7 @@
      "n": 158
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.658228,
      "n": 158
     },
     "errors": {
@@ -20850,7 +20850,7 @@
      "n": 60
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.616667,
      "n": 60
     },
     "errors": {
@@ -21213,7 +21213,7 @@
      "n": 282
     },
     "critical.structure": {
-     "mean": 1.0,
+     "mean": 0.56383,
      "n": 282
     },
     "errors": {
@@ -21578,7 +21578,7 @@
     "n": 282
    },
    "critical.structure": {
-    "mean": 1.0,
+    "mean": 0.56383,
     "n": 282
    },
    "notation.accidentals.courtesy_per_100": {
@@ -21903,10 +21903,10 @@
    }
   },
   "date": "2026-09-22",
-  "git_sha": "6dedc519d0f1e19ddf44340b66f405ad8baa34c1",
+  "git_sha": "151541749368b131df2e5176cc61f5d2cb10779c",
   "versions": {
    "generator": "perform/2",
-   "metrics": "metrics/5",
+   "metrics": "metrics/6",
    "reader": "reader/4",
    "sqi": "sqi/2"
   }
@@ -21983,7 +21983,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.722222,
@@ -22632,7 +22632,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.719298,
@@ -22691,7 +22691,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.477193,
@@ -22868,7 +22868,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.857759,
@@ -22986,7 +22986,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.57619,
@@ -23104,7 +23104,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.865031,
@@ -23222,7 +23222,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.746032,
@@ -23458,7 +23458,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.744589,
@@ -24166,7 +24166,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.594286,
@@ -24284,7 +24284,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.523438,
@@ -24402,7 +24402,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.782609,
@@ -24638,7 +24638,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.652406,
@@ -24697,7 +24697,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.73262,
@@ -24756,7 +24756,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.699153,
@@ -24992,7 +24992,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.746429,
@@ -25110,7 +25110,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.608163,
@@ -25169,7 +25169,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.689796,
@@ -25464,7 +25464,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.477778,
@@ -25523,7 +25523,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.672222,
@@ -25700,7 +25700,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.810036,
@@ -25936,7 +25936,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.577689,
@@ -26408,7 +26408,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.884793,
@@ -26644,7 +26644,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.730104,
@@ -26703,7 +26703,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.716263,
@@ -26762,7 +26762,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.63388,
@@ -27116,7 +27116,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.927711,
@@ -27824,7 +27824,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.27907,
@@ -28414,7 +28414,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.0,
@@ -28532,7 +28532,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.47619,
@@ -28591,7 +28591,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.547619,
@@ -28650,7 +28650,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.246753,
@@ -28709,7 +28709,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.668831,
@@ -28768,7 +28768,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.521008,
@@ -28827,7 +28827,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.453782,
@@ -29004,7 +29004,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.201923,
@@ -29122,7 +29122,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.422535,
@@ -29240,7 +29240,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 0.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.432143,
@@ -29358,7 +29358,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.400697,
@@ -29417,7 +29417,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.388502,
@@ -29830,7 +29830,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.136842,
@@ -29948,7 +29948,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.607407,
@@ -30066,7 +30066,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.455026,
@@ -30125,7 +30125,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.486772,
@@ -30302,7 +30302,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.843137,
@@ -30420,7 +30420,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.25641,
@@ -30479,7 +30479,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.666667,
@@ -30538,7 +30538,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.586022,
@@ -31010,7 +31010,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.515152,
@@ -31246,7 +31246,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.606742,
@@ -31305,7 +31305,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.466292,
@@ -31364,7 +31364,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.930556,
@@ -31482,7 +31482,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.325342,
@@ -31541,7 +31541,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.506849,
@@ -31600,7 +31600,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.423729,
@@ -31836,7 +31836,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.0,
@@ -31954,7 +31954,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 0.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.0,
@@ -32013,7 +32013,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 0.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.0,
@@ -32072,7 +32072,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.308559,
@@ -32131,7 +32131,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.317568,
@@ -32426,7 +32426,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.505639,
@@ -32544,7 +32544,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.34103,
@@ -32603,7 +32603,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.339254,
@@ -32662,7 +32662,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.028951,
@@ -32780,7 +32780,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.442623,
@@ -32898,7 +32898,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.330341,
@@ -32957,7 +32957,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.520646,
@@ -33016,7 +33016,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.339056,
@@ -33075,7 +33075,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.538627,
@@ -33134,7 +33134,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.397778,
@@ -33193,7 +33193,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.542222,
@@ -33252,7 +33252,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.524444,
@@ -33311,7 +33311,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.546667,
@@ -33370,7 +33370,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.537778,
@@ -33429,7 +33429,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.555556,
@@ -33488,7 +33488,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.553333,
@@ -33547,7 +33547,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.56,
@@ -33665,7 +33665,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.524444,
@@ -33724,7 +33724,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.082222,
@@ -33783,7 +33783,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.56,
@@ -33842,7 +33842,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.440083,
@@ -33901,7 +33901,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.533058,
@@ -33960,7 +33960,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.638037,
@@ -34019,7 +34019,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.503067,
@@ -34078,7 +34078,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.600423,
@@ -34137,7 +34137,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.560254,
@@ -34196,7 +34196,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.376731,
@@ -34255,7 +34255,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.65651,
@@ -34314,7 +34314,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.352941,
@@ -34373,7 +34373,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.350634,
@@ -34550,7 +34550,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.238356,
@@ -34609,7 +34609,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.152055,
@@ -34668,7 +34668,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.650456,
@@ -34727,7 +34727,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.74772,
@@ -34786,7 +34786,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.18038,
@@ -34845,7 +34845,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.57384,
@@ -35376,7 +35376,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.514991,
@@ -35435,7 +35435,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.545293,
@@ -35494,7 +35494,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.356633,
@@ -35553,7 +35553,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.49786,
@@ -35730,7 +35730,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.426357,
@@ -36084,7 +36084,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.814815,
@@ -36202,7 +36202,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.703704,
@@ -36320,7 +36320,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.6,
@@ -36438,7 +36438,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 1.0,
@@ -36556,7 +36556,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.775,
@@ -36674,7 +36674,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.863636,
@@ -36792,7 +36792,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 1.0,
@@ -36910,7 +36910,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 1.0,
@@ -37028,7 +37028,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.784483,
@@ -37264,7 +37264,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.928571,
@@ -37382,7 +37382,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 1.0,
@@ -37500,7 +37500,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.427083,
@@ -37559,7 +37559,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.447917,
@@ -37618,7 +37618,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.916667,
@@ -37736,7 +37736,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.65625,
@@ -37795,7 +37795,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.5625,
@@ -37854,7 +37854,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.546875,
@@ -37972,7 +37972,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.761905,
@@ -38031,7 +38031,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.714286,
@@ -38090,7 +38090,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.0375,
@@ -38149,7 +38149,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.375,
@@ -38208,7 +38208,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.5625,
@@ -38326,7 +38326,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.0,
@@ -38593,6 +38593,26 @@
    "date": "2026-09-22",
    "git_sha": "6dedc519d0f1e19ddf44340b66f405ad8baa34c1",
    "reason": "reader/4 + metrics/5 (G00 §21 last fixer): repeat signs read, play order (struct.form.order_exact) in critical.structure, implicit and unmarked half bars no longer excuse a short bar. SUT output and every existing metric identical (1,879 cases compared); known failure incomplete_bars 10 files/38 bars -> 12/42 (2 hymns split a bar with no bar-line mark)",
+   "sqi_all": 76.550304,
+   "usable_all": 0.060284
+  },
+  {
+   "audio_score_sha256": "559a1f40fb73416bc72d671d894251f7c3263110fa10780559047f6f22009288",
+   "date": "2026-09-22",
+   "git_sha": "6dedc519d0f1e19ddf44340b66f405ad8baa34c1",
+   "reason": "G0 PF-M1/PF-M2 (final pass review §22): a lone forward repeat no longer excuses a fake split, a short first/last bar is excused only where the truth is short the same way, struct.measures.count_exact joins critical.structure (metrics/6). No real-corpus number moves (ab PASS vs git:HEAD).",
+   "sqi_all": 76.550304,
+   "usable_all": 0.060284
+  },
+  {
+   "date": "2026-09-22",
+   "event": "versions {'generator': 'perform/2', 'metrics': 'metrics/5', 'reader': 'reader/4', 'sqi': 'sqi/2'} -> {'generator': 'perform/2', 'metrics': 'metrics/6', 'reader': 'reader/4', 'sqi': 'sqi/2'}; new anchor, earlier numbers are not comparable"
+  },
+  {
+   "audio_score_sha256": "559a1f40fb73416bc72d671d894251f7c3263110fa10780559047f6f22009288",
+   "date": "2026-09-22",
+   "git_sha": "151541749368b131df2e5176cc61f5d2cb10779c",
+   "reason": "G0 PF-M1/PF-M2 (final pass review §22): a lone forward repeat no longer excuses a fake split, a short first/last bar is excused only where the truth is short the same way, struct.measures.count_exact joins critical.structure (metrics/6). No real-corpus number moves (ab PASS vs git:HEAD).",
    "sqi_all": 76.550304,
    "usable_all": 0.060284
   }
@@ -38955,7 +38975,7 @@
   "audio_score_sha256": "559a1f40fb73416bc72d671d894251f7c3263110fa10780559047f6f22009288",
   "date": "2026-09-22",
   "git_dirty": true,
-  "git_sha": "6dedc519d0f1e19ddf44340b66f405ad8baa34c1",
+  "git_sha": "151541749368b131df2e5176cc61f5d2cb10779c",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"
@@ -38965,7 +38985,7 @@
  "suite_sha256": "e6f751ea6d3330a890ddbce22c6a704249b9573e51fb9b51997bad7e027d8076",
  "versions": {
   "generator": "perform/2",
-  "metrics": "metrics/5",
+  "metrics": "metrics/6",
   "reader": "reader/4",
   "sqi": "sqi/2"
  }

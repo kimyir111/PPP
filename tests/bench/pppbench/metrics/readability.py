@@ -156,6 +156,22 @@ def section_boundary(canon, i: int) -> bool:
     return canon.measures[i].bar.get("style") in SECTION_STYLES
 
 
+def _forward_repeat_effective(canon, i: int) -> bool:
+    """Whether a forward repeat opening at bar ``i + 1`` could ever be taken. ``app_play_order`` only
+    fires it when some later backward repeat consumes it off the app's stack; with none after it in the
+    file it sits there unconsumed and never changes play order (G00 PF-M1)."""
+    return any(m.bar.get("repeatEnd") for m in canon.measures[i + 1:])
+
+
+def _excusing_repeat_boundary(canon, i: int) -> bool:
+    """``repeat_boundary``, narrowed for excusing a prediction's own split (G00 PF-M1): a lone forward
+    repeat with no backward repeat anywhere after it in the file never affects ``app_play_order``, so it
+    must not excuse anything by itself — only a mark that could actually fire does."""
+    a, b = canon.measures[i].bar, canon.measures[i + 1].bar
+    forward_ok = bool(b.get("repeatStart")) and _forward_repeat_effective(canon, i)
+    return bool(a.get("repeatEnd") or a.get("endingEnd") or forward_ok or b.get("endingType") == "start")
+
+
 def bar_completeness_detail(canon, truth=None) -> Dict[str, Any]:
     """Does every staff fill every bar? Each staff's notes and rests must reach the end of the bar's
     content, and that must be the whole bar — except where a short bar is normal engraving: the first
@@ -169,37 +185,58 @@ def bar_completeness_detail(canon, truth=None) -> Dict[str, Any]:
     * ``truth`` None — ``canon`` is a reference or a catalogue score: a repeat sign or an ending between
       the halves, or a double or final bar line after the first (a section ends: "Fine").
     * ``truth`` given — ``canon`` is a prediction judged against it: a repeat sign or an ending the
-      prediction writes between the halves (the play-order gate judges those: one the music does not
-      have fails it), or the truth splitting the same bar the same way, where the truth's own split is
+      prediction writes between the halves, where that mark could actually fire in ``app_play_order``
+      (a lone forward repeat with no backward repeat anywhere after it in the file excuses nothing,
+      G00 PF-M1), or the truth splitting the same bar the same way, where the truth's own split is
       excused. A double bar line the prediction writes excuses nothing, nor does ``implicit="yes"``:
       it only tells the app to take a bar's length from its content, and a prediction marking an inner
-      bar implicit would switch this check off by its own metadata (S-M2)."""
+      bar implicit would switch this check off by its own metadata (S-M2).
+
+    What excuses the first or last bar being short — a pickup or its complement — the same way (G00
+    PF-M2): with no ``truth``, always (a reference or catalogue score is trusted). Judged against a
+    truth, only where the truth's own edge bar is short by the same amount; being the prediction's own
+    first or last bar, by itself, excuses nothing (a prediction can always make its last bar short by
+    cutting the file there). A prediction whose bar count does not match the truth's is caught instead
+    by ``struct.measures.count_exact`` (``critical.structure``), never by this exemption."""
     ends, staves, content = _bar_contents(canon)
     ms = canon.measures
     last = len(ms) - 1
     if truth is None:
         def excused(j: int) -> bool:
             return repeat_boundary(canon, j) or section_boundary(canon, j)
+
+        def edge_excused(_i: int) -> bool:
+            return True
     else:
         t_content = _bar_contents(truth)[2]
         same_bars = len(truth.measures) == len(ms)
 
         def excused(j: int) -> bool:
-            if repeat_boundary(canon, j):
+            if _excusing_repeat_boundary(canon, j):
                 return True
             return (same_bars and abs(t_content[j] - content[j]) <= SHAPE_TOL
                     and abs(t_content[j + 1] - content[j + 1]) <= SHAPE_TOL
                     and (repeat_boundary(truth, j) or section_boundary(truth, j)))
+
+        def edge_excused(i: int) -> bool:
+            if not same_bars:
+                return False
+            ti = 0 if i == 0 else len(truth.measures) - 1
+            return abs(t_content[ti] - content[i]) <= SHAPE_TOL
     checked, bad = 0, []
     for m in ms:
         i = m.index
         if i in (0, last):
-            continue
+            if edge_excused(i):
+                continue
         checked += 1
         if any(ends.get((i, s)) is None or ends[(i, s)] < content[i] - SHAPE_TOL for s in staves):
             bad.append({"bar": i + 1, "kind": "staff short"})
             continue
         if content[i] >= m.sig_q - SHAPE_TOL:
+            continue
+        if i in (0, last):
+            bad.append({"bar": i + 1, "kind": "bar short"})
             continue
         split = (i > 0 and abs(content[i - 1] + content[i] - m.sig_q) <= SHAPE_TOL and excused(i - 1)) or \
                 (i < last and abs(content[i] + content[i + 1] - m.sig_q) <= SHAPE_TOL and excused(i))
