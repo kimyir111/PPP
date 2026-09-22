@@ -1,0 +1,9 @@
+{
+ "about": "a measure that lasts 0",
+ "spec": "G01 §13.2 E-DURATION",
+ "expect": {
+  "errors": [
+   "E-DURATION"
+  ]
+ }
+}

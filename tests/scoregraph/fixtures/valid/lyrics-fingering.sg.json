@@ -1,0 +1,45 @@
+{
+  "scoregraph_version": 1,
+  "id": "fx-lyrics",
+  "rev": 0,
+  "nextId": 14,
+  "meta": {"title":"Lyrics and fingering"},
+  "timeline": {
+    "measures": [
+      {"id":"m6","number":"1","dur":"1"}
+    ],
+    "meters": [
+      {"id":"mt7","m":"m6","beats":[4],"beatType":4}
+    ]
+  },
+  "parts": [
+    {
+      "id": "p2",
+      "name": "Piano",
+      "instrument": {"kind":"piano","family":"keyboard"},
+      "staves": [
+        {"id":"st3","limb":"RH"},
+        {"id":"st4","limb":"LH"}
+      ],
+      "voices": [
+        {"id":"v5","staff":"st3","label":"1"}
+      ],
+      "clefs": [
+        {"id":"c8","staff":"st3","m":"m6","at":"0","sign":"G"},
+        {"id":"c9","staff":"st4","m":"m6","at":"0","sign":"F"}
+      ],
+      "events": [
+        {"id":"e10","kind":"note","m":"m6","at":"0","dur":"1/2","voice":"v5","staff":"st3","display":{"type":"half"},"heads":[{"id":"h11","pitch":{"step":"C","oct":5},"fingering":[{"f":"1"}]}],"lyrics":[{"text":"A","syllabic":"begin"},{"verse":2,"text":"Glo","syllabic":"begin"}]},
+        {"id":"e12","kind":"note","m":"m6","at":"1/2","dur":"1/2","voice":"v5","staff":"st3","display":{"type":"half"},"heads":[{"id":"h13","pitch":{"step":"E","oct":5},"fingering":[{"f":"3"},{"f":"1","subst":true},{"f":"2","alt":true,"placement":"below"}]}],"lyrics":[{"text":"men","syllabic":"end","extend":true},{"verse":2,"text":"ria","syllabic":"end"}]}
+      ],
+      "directions": [],
+      "spanners": []
+    }
+  ],
+  "provenance": {
+    "sources": [
+      {"id":"sr1","kind":"user"}
+    ],
+    "default": {"src":"sr1","op":"edited"}
+  }
+}

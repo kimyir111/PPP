@@ -1,0 +1,9 @@
+{
+ "about": "the bass staff has no clef",
+ "spec": "G01 §13.2 W-CLEF-MISSING",
+ "expect": {
+  "warnings": {
+   "W-CLEF-MISSING": 1
+  }
+ }
+}

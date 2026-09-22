@@ -1,0 +1,9 @@
+{
+ "about": "a forward repeat no backward repeat ever goes back to (G0 PF-M1)",
+ "spec": "G01 §13.2 W-REPEAT-DANGLING",
+ "expect": {
+  "warnings": {
+   "W-REPEAT-DANGLING": 1
+  }
+ }
+}

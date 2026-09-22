@@ -1,0 +1,9 @@
+{
+ "about": "a note that lasts 0 and is not a grace note",
+ "spec": "G01 §13.2 E-DURATION",
+ "expect": {
+  "errors": [
+   "E-DURATION"
+  ]
+ }
+}

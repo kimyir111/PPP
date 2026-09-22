@@ -1,0 +1,7 @@
+{
+ "about": "8va over the treble staff and 15mb under the bass: pitches stay at concert, the ottava only moves the display (§5.10)",
+ "spec": "G01 §5.10, §7.2, A20",
+ "expect": {
+  "warnings": {}
+ }
+}

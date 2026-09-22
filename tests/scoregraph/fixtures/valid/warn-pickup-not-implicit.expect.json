@@ -1,0 +1,9 @@
+{
+ "about": "a short first measure not marked implicit, with a full last measure: nothing completes it (§6.3, A16)",
+ "spec": "G01 §6.3, A16",
+ "expect": {
+  "warnings": {
+   "W-MEASURE-LENGTH": 1
+  }
+ }
+}

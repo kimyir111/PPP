@@ -1,0 +1,9 @@
+{
+ "about": "a position with a denominator 1 (\"0/1\")",
+ "spec": "G01 §13.2 E-RATIONAL",
+ "expect": {
+  "errors": [
+   "E-RATIONAL"
+  ]
+ }
+}

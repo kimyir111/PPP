@@ -1,0 +1,57 @@
+{
+  "scoregraph_version": 1,
+  "id": "fx-directions",
+  "rev": 0,
+  "nextId": 26,
+  "meta": {"title":"Directions"},
+  "timeline": {
+    "measures": [
+      {"id":"m6","number":"1","dur":"1"}
+    ],
+    "meters": [
+      {"id":"mt7","m":"m6","beats":[4],"beatType":4}
+    ]
+  },
+  "parts": [
+    {
+      "id": "p2",
+      "name": "Piano",
+      "instrument": {"kind":"piano","family":"keyboard"},
+      "staves": [
+        {"id":"st3","limb":"RH"},
+        {"id":"st4","limb":"LH"}
+      ],
+      "voices": [
+        {"id":"v5","staff":"st3","label":"1"}
+      ],
+      "clefs": [
+        {"id":"c8","staff":"st3","m":"m6","at":"0","sign":"G"},
+        {"id":"c9","staff":"st4","m":"m6","at":"0","sign":"F"}
+      ],
+      "events": [
+        {"id":"e10","kind":"note","m":"m6","at":"0","dur":"1/4","voice":"v5","staff":"st3","display":{"type":"quarter"},"heads":[{"id":"h11","pitch":{"step":"C","oct":5}}],"arts":["staccato","accent"]},
+        {"id":"e12","kind":"note","m":"m6","at":"1/4","dur":"1/4","voice":"v5","staff":"st3","display":{"type":"quarter"},"heads":[{"id":"h13","pitch":{"step":"D","oct":5}}],"orn":[{"type":"trill","acc":"sharp"}]},
+        {"id":"e14","kind":"note","m":"m6","at":"1/2","dur":"1/4","voice":"v5","staff":"st3","display":{"type":"quarter"},"heads":[{"id":"h15","pitch":{"step":"E","oct":5}}],"arts":["marcato"]},
+        {"id":"e16","kind":"note","m":"m6","at":"3/4","dur":"1/4","voice":"v5","staff":"st3","display":{"type":"quarter"},"heads":[{"id":"h17","pitch":{"step":"C","oct":5}}],"fermata":{}}
+      ],
+      "directions": [
+        {"id":"d22","kind":"chord","m":"m6","at":"0","root":{"step":"C"},"chordKind":"major-seventh","bass":{"step":"E"},"text":"Cmaj7/E"},
+        {"id":"d21","kind":"rehearsal","m":"m6","at":"0","text":"A"},
+        {"id":"d18","kind":"dynamic","m":"m6","at":"0","staff":"st3","placement":"below","value":"p"},
+        {"id":"d20","kind":"words","m":"m6","at":"0","staff":"st3","placement":"above","text":"dolce"},
+        {"id":"d23","kind":"chord","m":"m6","at":"1/2","root":{"step":"F","alter":1},"chordKind":"dominant","degrees":[{"value":9,"alter":-1,"type":"add"}]},
+        {"id":"d19","kind":"dynamic","m":"m6","at":"3/4","event":"e16","value":"other","text":"sffz possible"}
+      ],
+      "spanners": [
+        {"id":"s25","type":"slur","from":"e10","to":"e12","placement":"above"},
+        {"id":"s24","type":"wedge","kind":"crescendo","from":{"m":"m6","at":"0"},"to":{"m":"m6","at":"3/4"},"staff":"st3","placement":"below"}
+      ]
+    }
+  ],
+  "provenance": {
+    "sources": [
+      {"id":"sr1","kind":"user"}
+    ],
+    "default": {"src":"sr1","op":"edited"}
+  }
+}

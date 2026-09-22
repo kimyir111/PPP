@@ -1,0 +1,9 @@
+{
+ "about": "a beat type that is not a power of two (4/3)",
+ "spec": "G01 §13.2 E-METER",
+ "expect": {
+  "errors": [
+   "E-METER"
+  ]
+ }
+}

@@ -12,6 +12,7 @@
     "bench:smoke": "python tests/bench/run.py run --suite smoke && python tests/bench/run.py check --suite smoke",
     "bench:full": "python tests/bench/run.py run --suite full",
     "test:bench": "python -m unittest discover -s tests/bench/unit -t tests/bench && python tests/bench/run.py golden && python tests/bench/run.py correctness",
+    "test:scoregraph": "node --test \"tests/scoregraph/**/*.test.js\"",
     "test:arranger": "python tests/arranger_test.py",
     "omr": "node omr-service.js",
     "fixtures": "node tests/fixtures/make-fixtures.js"

@@ -1,0 +1,9 @@
+{
+ "about": "eight sharps",
+ "spec": "G01 §13.2 E-KEY",
+ "expect": {
+  "errors": [
+   "E-KEY"
+  ]
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "about": "Four MusicXML voices become four part-wide ScoreGraph voices, each with its home staff; the round trip keeps what the app reads, the notation and the graph (G01 §8.1, A21).",
+ "spec": "G01 Appendix A: one part voice per voice number, its home staff the staff of its first event.",
+ "expect": {
+  "voices": [{"label": "1", "staff": 1}, {"label": "2", "staff": 1}, {"label": "5", "staff": 2}, {"label": "6", "staff": 2}],
+  "roundtrip": ["L1", "L1+", "L2"],
+  "errors": []
+ }
+}

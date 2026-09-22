@@ -1,0 +1,7 @@
+{
+ "about": "one 4/4 bar: triplet eighths, a 5:4 of sixteenths, a 6:4 of sixteenths, and a 5:4 with a 3:2 of 32nds inside (§6.5)",
+ "spec": "G01 §6.5, A3",
+ "expect": {
+  "warnings": {}
+ }
+}

@@ -1,0 +1,7 @@
+{
+ "about": "Appendix C.1 with the drum part of C.2: kit of 8, two voices, all four limbs, a two-head hit, a flam, a render performance",
+ "spec": "G01 §9, Appendix C.2, A25",
+ "expect": {
+  "warnings": {}
+ }
+}

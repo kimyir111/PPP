@@ -1,0 +1,9 @@
+{
+ "about": "two ties leave one head",
+ "spec": "G01 §13.2 E-TIE-CHAIN",
+ "expect": {
+  "errors": [
+   "E-TIE-CHAIN"
+  ]
+ }
+}

@@ -1,0 +1,70 @@
+{
+  "scoregraph_version": 1,
+  "id": "fx-anchors",
+  "rev": 0,
+  "nextId": 24,
+  "meta": {"title":"Anchors"},
+  "timeline": {
+    "measures": [
+      {"id":"m6","number":"1","dur":"1"},
+      {"id":"m7","number":"2","dur":"1"},
+      {"id":"m8","number":"3","dur":"1"}
+    ],
+    "meters": [
+      {"id":"mt9","m":"m6","beats":[4],"beatType":4}
+    ],
+    "tempos": [
+      {"id":"tp10","m":"m6","at":"0","qpm":"120"}
+    ]
+  },
+  "parts": [
+    {
+      "id": "p2",
+      "name": "Piano",
+      "instrument": {"kind":"piano","family":"keyboard"},
+      "staves": [
+        {"id":"st3","limb":"RH"},
+        {"id":"st4","limb":"LH"}
+      ],
+      "voices": [
+        {"id":"v5","staff":"st3","label":"1"}
+      ],
+      "clefs": [
+        {"id":"c11","staff":"st3","m":"m6","at":"0","sign":"G"},
+        {"id":"c12","staff":"st4","m":"m6","at":"0","sign":"F"}
+      ],
+      "events": [
+        {"id":"e13","kind":"note","m":"m6","at":"0","dur":"1","voice":"v5","staff":"st3","display":{"type":"whole"},"heads":[{"id":"h14","pitch":{"step":"C","oct":5}}]},
+        {"id":"e15","kind":"note","m":"m7","at":"0","dur":"1","voice":"v5","staff":"st3","display":{"type":"whole"},"heads":[{"id":"h16","pitch":{"step":"E","oct":5}}]},
+        {"id":"e17","kind":"note","m":"m8","at":"0","dur":"1","voice":"v5","staff":"st3","display":{"type":"whole"},"heads":[{"id":"h18","pitch":{"step":"G","oct":5}}]}
+      ],
+      "directions": [],
+      "spanners": []
+    }
+  ],
+  "performances": [
+    {
+      "id": "pf20",
+      "kind": "take",
+      "src": "sr19",
+      "notes": [
+        {"id":"pn21","on":2000000,"off":3900000,"vel":64,"midi":72,"link":"h14"},
+        {"id":"pn22","on":4100000,"off":6000000,"vel":64,"midi":76,"link":"h16"},
+        {"id":"pn23","on":6050000,"off":7950000,"vel":64,"midi":79,"link":"h18"}
+      ],
+      "anchors": [
+        {"m":"m6","k":1,"at":"0","us":2000000,"kind":"bar"},
+        {"m":"m7","k":1,"at":"0","us":4000000,"kind":"bar"},
+        {"m":"m8","k":1,"at":"0","us":6100000,"kind":"bar"},
+        {"m":"m8","k":1,"at":"1","us":8200000,"kind":"bar"}
+      ]
+    }
+  ],
+  "provenance": {
+    "sources": [
+      {"id":"sr1","kind":"user"},
+      {"id":"sr19","kind":"midi-input","note":"a student take"}
+    ],
+    "default": {"src":"sr1","op":"edited"}
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "scoregraph_version": 1,
+  "id": "fx-cross",
+  "rev": 0,
+  "nextId": 24,
+  "meta": {"title":"Cross staff"},
+  "timeline": {
+    "measures": [
+      {"id":"m8","number":"1","dur":"1"}
+    ],
+    "meters": [
+      {"id":"mt9","m":"m8","beats":[4],"beatType":4}
+    ]
+  },
+  "parts": [
+    {
+      "id": "p2",
+      "name": "Piano",
+      "instrument": {"kind":"piano","family":"keyboard"},
+      "staves": [
+        {"id":"st3","limb":"RH"},
+        {"id":"st4","limb":"LH"}
+      ],
+      "voices": [
+        {"id":"v5","staff":"st3","label":"1"},
+        {"id":"v6","staff":"st4","label":"5"},
+        {"id":"v7","staff":"st3","label":"2","limb":"LH"}
+      ],
+      "clefs": [
+        {"id":"c10","staff":"st3","m":"m8","at":"0","sign":"G"},
+        {"id":"c11","staff":"st4","m":"m8","at":"0","sign":"F"}
+      ],
+      "events": [
+        {"id":"e12","kind":"note","m":"m8","at":"0","dur":"1/4","voice":"v5","staff":"st3","display":{"type":"quarter"},"heads":[{"id":"h14","pitch":{"step":"G","oct":3},"staff":"st4"},{"id":"h13","pitch":{"step":"C","oct":5}}]},
+        {"id":"e15","kind":"note","m":"m8","at":"1/4","dur":"1/4","voice":"v5","staff":"st4","display":{"type":"quarter"},"heads":[{"id":"h16","pitch":{"step":"A","oct":3}}]},
+        {"id":"e17","kind":"note","m":"m8","at":"1/2","dur":"1/2","voice":"v5","staff":"st3","display":{"type":"half"},"heads":[{"id":"h18","pitch":{"step":"E","oct":5},"limb":"LH"}]},
+        {"id":"e19","kind":"note","m":"m8","at":"0","dur":"1","voice":"v6","staff":"st4","display":{"type":"whole"},"heads":[{"id":"h20","pitch":{"step":"C","oct":3}}]},
+        {"id":"e21","kind":"note","m":"m8","at":"0","dur":"1","voice":"v7","staff":"st3","display":{"type":"whole","stem":"down"},"heads":[{"id":"h22","pitch":{"step":"E","oct":4}}]}
+      ],
+      "directions": [],
+      "spanners": [
+        {"id":"s23","type":"arpeggio","heads":["h13","h14","h20"],"dir":"up"}
+      ]
+    }
+  ],
+  "provenance": {
+    "sources": [
+      {"id":"sr1","kind":"user"}
+    ],
+    "default": {"src":"sr1","op":"edited"}
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "scoregraph_version": 1,
+  "id": "fx-prov",
+  "rev": 0,
+  "nextId": 13,
+  "meta": {},
+  "timeline": {
+    "measures": [
+      {"id":"m6","number":"1","dur":"1","prov":{"op":"edited","conf":0.5}}
+    ],
+    "meters": [
+      {"id":"mt7","m":"m6","beats":[4],"beatType":4}
+    ]
+  },
+  "parts": [
+    {
+      "id": "p3",
+      "instrument": {"kind":"piano","family":"keyboard"},
+      "staves": [
+        {"id":"st4","limb":"RH"}
+      ],
+      "voices": [
+        {"id":"v5","staff":"st4","label":"1"}
+      ],
+      "clefs": [
+        {"id":"c8","staff":"st4","m":"m6","at":"0","sign":"G"}
+      ],
+      "events": [
+        {"id":"e9","kind":"note","m":"m6","at":"0","dur":"1/2","voice":"v5","staff":"st4","display":{"type":"half"},"heads":[{"id":"h10","pitch":{"step":"C","oct":5},"prov":{"asp":{"pitch":{"op":"repaired","conf":0.8}}}}],"prov":{"src":"sr2","conf":0.9}},
+        {"id":"e11","kind":"note","m":"m6","at":"1/2","dur":"1/2","voice":"v5","staff":"st4","display":{"type":"half"},"heads":[{"id":"h12","pitch":{"step":"D","oct":5}}]}
+      ],
+      "directions": [],
+      "spanners": [],
+      "prov": {"op":"inferred"}
+    }
+  ],
+  "provenance": {
+    "sources": [
+      {"id":"sr1","kind":"musicxml","input":{"name":"scan.musicxml"}},
+      {"id":"sr2","kind":"amt","tool":"transkun"}
+    ],
+    "default": {"src":"sr1","op":"imported"}
+  }
+}

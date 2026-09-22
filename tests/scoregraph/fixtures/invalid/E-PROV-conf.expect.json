@@ -1,0 +1,9 @@
+{
+ "about": "a confidence with four decimals",
+ "spec": "G01 §13.2 E-PROV",
+ "expect": {
+  "errors": [
+   "E-PROV"
+  ]
+ }
+}

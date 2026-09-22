@@ -1,0 +1,7 @@
+{
+ "about": "a take with four bar anchors (µs) and linked notes whose expressive offsets derive from them (§6.9)",
+ "spec": "G01 §5.11, §6.9, A18",
+ "expect": {
+  "warnings": {}
+ }
+}

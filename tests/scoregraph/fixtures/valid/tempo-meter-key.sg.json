@@ -1,0 +1,63 @@
+{
+  "scoregraph_version": 1,
+  "id": "fx-tmk",
+  "rev": 0,
+  "nextId": 33,
+  "meta": {"title":"Tempo, metre, key"},
+  "timeline": {
+    "measures": [
+      {"id":"m6","number":"1","dur":"1"},
+      {"id":"m7","number":"2","dur":"1"},
+      {"id":"m8","number":"3","dur":"3/4"},
+      {"id":"m9","number":"4","dur":"5/8"}
+    ],
+    "meters": [
+      {"id":"mt10","m":"m6","beats":[4],"beatType":4},
+      {"id":"mt11","m":"m8","beats":[6],"beatType":8},
+      {"id":"mt12","m":"m9","beats":[3,2],"beatType":8}
+    ],
+    "keys": [
+      {"id":"ky13","m":"m6","at":"0","fifths":1,"mode":"major"},
+      {"id":"ky14","m":"m7","at":"1/2","fifths":-3,"mode":"major"}
+    ],
+    "tempos": [
+      {"id":"tp15","m":"m6","at":"0","qpm":"60","mark":{"unit":"quarter","perMinute":"60"}},
+      {"id":"tp16","m":"m7","at":"1/2","qpm":"90","mark":{"unit":"quarter","perMinute":"90"}}
+    ]
+  },
+  "parts": [
+    {
+      "id": "p2",
+      "name": "Piano",
+      "instrument": {"kind":"piano","family":"keyboard"},
+      "staves": [
+        {"id":"st3","limb":"RH"},
+        {"id":"st4","limb":"LH"}
+      ],
+      "voices": [
+        {"id":"v5","staff":"st3","label":"1"}
+      ],
+      "clefs": [
+        {"id":"c17","staff":"st3","m":"m6","at":"0","sign":"G"},
+        {"id":"c18","staff":"st4","m":"m6","at":"0","sign":"F"}
+      ],
+      "events": [
+        {"id":"e19","kind":"note","m":"m6","at":"0","dur":"1","voice":"v5","staff":"st3","display":{"type":"whole"},"heads":[{"id":"h20","pitch":{"step":"G","oct":4}}]},
+        {"id":"e21","kind":"note","m":"m7","at":"0","dur":"1/2","voice":"v5","staff":"st3","display":{"type":"half"},"heads":[{"id":"h22","pitch":{"step":"D","oct":5}}]},
+        {"id":"e23","kind":"note","m":"m7","at":"1/2","dur":"1/2","voice":"v5","staff":"st3","display":{"type":"half"},"heads":[{"id":"h24","pitch":{"step":"E","alter":-1,"oct":5}}]},
+        {"id":"e25","kind":"note","m":"m8","at":"0","dur":"3/8","voice":"v5","staff":"st3","display":{"type":"quarter","dots":1},"heads":[{"id":"h26","pitch":{"step":"G","oct":4}}]},
+        {"id":"e27","kind":"note","m":"m8","at":"3/8","dur":"3/8","voice":"v5","staff":"st3","display":{"type":"quarter","dots":1},"heads":[{"id":"h28","pitch":{"step":"B","alter":-1,"oct":4}}]},
+        {"id":"e29","kind":"note","m":"m9","at":"0","dur":"3/8","voice":"v5","staff":"st3","display":{"type":"quarter","dots":1},"heads":[{"id":"h30","pitch":{"step":"E","alter":-1,"oct":5}}]},
+        {"id":"e31","kind":"note","m":"m9","at":"3/8","dur":"1/4","voice":"v5","staff":"st3","display":{"type":"quarter"},"heads":[{"id":"h32","pitch":{"step":"E","alter":-1,"oct":4}}]}
+      ],
+      "directions": [],
+      "spanners": []
+    }
+  ],
+  "provenance": {
+    "sources": [
+      {"id":"sr1","kind":"user"}
+    ],
+    "default": {"src":"sr1","op":"edited"}
+  }
+}

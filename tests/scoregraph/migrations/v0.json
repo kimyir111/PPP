@@ -1,0 +1,22 @@
+{
+ "about": "A document of a pretend version 0 for the migration test (G01 §14.4, A13): no version 0 exists; the test registers a v0 -> v1 migration that renames the pretend field 'tempo' of the root into a TempoEvent. IDs must be kept.",
+ "scoregraph_version": 0,
+ "id": "fx-migrate",
+ "rev": 3,
+ "nextId": 12,
+ "meta": {"title": "Migrated"},
+ "tempo": 90,
+ "timeline": {
+  "measures": [{"id": "m1", "number": "1", "dur": "1"}],
+  "meters": [{"id": "mt2", "m": "m1", "beats": [4], "beatType": 4}]
+ },
+ "parts": [{
+  "id": "p3", "instrument": {"kind": "piano", "family": "keyboard"},
+  "staves": [{"id": "st4", "limb": "RH"}],
+  "voices": [{"id": "v5", "staff": "st4", "label": "1"}],
+  "clefs": [{"id": "c6", "staff": "st4", "m": "m1", "at": "0", "sign": "G"}],
+  "events": [{"id": "e7", "kind": "note", "m": "m1", "at": "0", "dur": "1", "voice": "v5", "staff": "st4", "display": {"type": "whole"}, "heads": [{"id": "h8", "pitch": {"step": "C", "oct": 5}}]}],
+  "directions": [], "spanners": []
+ }],
+ "provenance": {"sources": [{"id": "sr9", "kind": "user"}], "default": {"src": "sr9", "op": "edited"}}
+}

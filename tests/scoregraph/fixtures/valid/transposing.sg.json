@@ -1,0 +1,65 @@
+{
+  "scoregraph_version": 1,
+  "id": "fx-transposing",
+  "rev": 0,
+  "nextId": 19,
+  "meta": {"title":"Transposing"},
+  "timeline": {
+    "measures": [
+      {"id":"m8","number":"1","dur":"1"}
+    ],
+    "meters": [
+      {"id":"mt9","m":"m8","beats":[4],"beatType":4}
+    ],
+    "keys": [
+      {"id":"ky10","m":"m8","at":"0","fifths":-2,"mode":"major"}
+    ]
+  },
+  "parts": [
+    {
+      "id": "p2",
+      "name": "Clarinet in Bb",
+      "instrument": {"kind":"clarinet","family":"wind","transpose":{"chromatic":-2,"diatonic":-1}},
+      "staves": [
+        {"id":"st3"}
+      ],
+      "voices": [
+        {"id":"v4","staff":"st3","label":"1"}
+      ],
+      "clefs": [
+        {"id":"c11","staff":"st3","m":"m8","at":"0","sign":"G"}
+      ],
+      "events": [
+        {"id":"e13","kind":"note","m":"m8","at":"0","dur":"1/2","voice":"v4","staff":"st3","display":{"type":"half"},"heads":[{"id":"h14","pitch":{"step":"B","alter":-1,"oct":4}}]},
+        {"id":"e15","kind":"note","m":"m8","at":"1/2","dur":"1/2","voice":"v4","staff":"st3","display":{"type":"half"},"heads":[{"id":"h16","pitch":{"step":"F","oct":5}}]}
+      ],
+      "directions": [],
+      "spanners": []
+    },
+    {
+      "id": "p5",
+      "name": "Bass",
+      "instrument": {"kind":"electric-bass","family":"plucked","transpose":{"chromatic":0,"diatonic":0,"octave":-1}},
+      "staves": [
+        {"id":"st6"}
+      ],
+      "voices": [
+        {"id":"v7","staff":"st6","label":"1"}
+      ],
+      "clefs": [
+        {"id":"c12","staff":"st6","m":"m8","at":"0","sign":"F"}
+      ],
+      "events": [
+        {"id":"e17","kind":"note","m":"m8","at":"0","dur":"1","voice":"v7","staff":"st6","display":{"type":"whole"},"heads":[{"id":"h18","pitch":{"step":"B","alter":-1,"oct":1}}]}
+      ],
+      "directions": [],
+      "spanners": []
+    }
+  ],
+  "provenance": {
+    "sources": [
+      {"id":"sr1","kind":"user"}
+    ],
+    "default": {"src":"sr1","op":"edited"}
+  }
+}

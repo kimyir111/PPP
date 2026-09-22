@@ -1,0 +1,9 @@
+{
+ "about": "a note on a staff of another part",
+ "spec": "G01 §13.2 E-VOICE-STAFF",
+ "expect": {
+  "errors": [
+   "E-VOICE-STAFF"
+  ]
+ }
+}

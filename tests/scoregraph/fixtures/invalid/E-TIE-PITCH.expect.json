@@ -1,0 +1,9 @@
+{
+ "about": "a complete tie from C5 to D5",
+ "spec": "G01 §13.2 E-TIE-PITCH",
+ "expect": {
+  "errors": [
+   "E-TIE-PITCH"
+  ]
+ }
+}

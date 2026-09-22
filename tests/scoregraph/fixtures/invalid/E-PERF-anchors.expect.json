@@ -1,0 +1,9 @@
+{
+ "about": "anchors that go back in time",
+ "spec": "G01 §13.2 E-PERF",
+ "expect": {
+  "errors": [
+   "E-PERF"
+  ]
+ }
+}

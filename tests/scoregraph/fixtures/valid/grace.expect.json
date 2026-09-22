@@ -1,0 +1,7 @@
+{
+ "about": "two grace notes (the first slashed) before a main note, at the main note's position with duration 0 (§7.5)",
+ "spec": "G01 §7.5, A23",
+ "expect": {
+  "warnings": {}
+ }
+}

@@ -1,0 +1,15 @@
+{
+ "about": "An event written on another staff than its voice's, a chord head on the other staff, an arpeggio over both staves (G01 §8.3, §8.5, A21, A24).",
+ "spec": "G01 §8.3: event.staff is where the event is written, voice.staff its home; a chord note on another staff is head.staff. Appendix A: arpeggiate marks at one onset make one Arpeggio spanner.",
+ "expect": {
+  "events": [
+   {"voice": "1", "at": "0", "staff": 1, "heads": [{"pitch": "G3", "staff": 2, "limb": "LH"}, {"pitch": "C5", "staff": 1, "limb": "RH"}]},
+   {"voice": "1", "at": "1/4", "staff": 2, "heads": [{"pitch": "A3", "limb": "LH"}]},
+   {"voice": "1", "at": "1/2", "staff": 1, "heads": [{"pitch": "E5", "limb": "RH"}]},
+   {"voice": "5", "at": "0", "staff": 2, "heads": [{"pitch": "C3", "limb": "LH"}]}
+  ],
+  "arpeggio": {"heads": 3, "dir": "up"},
+  "roundtrip": ["L1", "L1+", "L2"],
+  "errors": []
+ }
+}

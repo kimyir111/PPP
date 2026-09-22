@@ -1,0 +1,7 @@
+{
+ "about": "dynamics (in the staff and on a note), words, a rehearsal mark, chord symbols, a crescendo, a slur, articulations, ornaments and a fermata",
+ "spec": "G01 §5.6, §5.8, §5.10",
+ "expect": {
+  "warnings": {}
+ }
+}

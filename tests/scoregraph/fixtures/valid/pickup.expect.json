@@ -1,0 +1,7 @@
+{
+ "about": "3/4 with an implicit quarter pickup and a two-beat last measure that completes it (§6.3, §6.4)",
+ "spec": "G01 §6.3, A16",
+ "expect": {
+  "warnings": {}
+ }
+}

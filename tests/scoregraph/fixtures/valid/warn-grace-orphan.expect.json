@@ -1,0 +1,9 @@
+{
+ "about": "a grace note after the last note of a measure, with no main note",
+ "spec": "G01 §13.2 W-GRACE-ORPHAN",
+ "expect": {
+  "warnings": {
+   "W-GRACE-ORPHAN": 1
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "about": "a tuplet ratio 0:2",
+ "spec": "G01 §13.2 E-TUPLET",
+ "expect": {
+  "errors": [
+   "E-TUPLET"
+  ]
+ }
+}

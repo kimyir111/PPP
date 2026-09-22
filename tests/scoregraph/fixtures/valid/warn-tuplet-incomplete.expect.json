@@ -1,0 +1,9 @@
+{
+ "about": "a triplet-eighth bracket holding two of its three notes (and a rest of the rest of the beat). The two triplet eighths are printed right (1/8 x 2/3 = 1/12); the 1/12 rest has no printed value.",
+ "spec": "G01 §13.2 W-TUPLET-INCOMPLETE",
+ "expect": {
+  "warnings": {
+   "W-TUPLET-INCOMPLETE": 1
+  }
+ }
+}

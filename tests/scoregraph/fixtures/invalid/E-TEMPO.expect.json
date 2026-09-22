@@ -1,0 +1,9 @@
+{
+ "about": "a tempo of 0 quarters a minute",
+ "spec": "G01 §13.2 E-TEMPO",
+ "expect": {
+  "errors": [
+   "E-TEMPO"
+  ]
+ }
+}

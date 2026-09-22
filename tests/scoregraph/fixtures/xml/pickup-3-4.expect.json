@@ -1,0 +1,9 @@
+{
+ "about": "A 3/4 pickup: measure lengths, the pickup note on the third beat, and no measure-length warning (G01 §6.3, §6.4, A16).",
+ "spec": "G01 §6.3: an implicit measure with content lasts its content; the first short measure and a last measure that add up to the time signature need no warning. §6.4: a short first measure is counted back from its bar line, so its one quarter is beat 3 (index 2).",
+ "expect": {
+  "measureDurations": ["1/4", "3/4", "3/4", "1/2"],
+  "pickupBeat": 2,
+  "warnings": {}
+ }
+}

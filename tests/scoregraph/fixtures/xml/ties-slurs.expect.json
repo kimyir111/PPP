@@ -1,0 +1,10 @@
+{
+ "about": "Complete ties as Tie spanners with both ends, an open tie kept open, slurs paired by number (G01 §5.10, Appendix A, A22).",
+ "spec": "G01 Appendix A: a tie start pairs with a stop of the same part, staff and sounding pitch that begins where the tied note ends; unpaired, it stays an open tie (W-TIE-OPEN). Slurs pair by number; the export numbers them again.",
+ "expect": {
+  "ties": {"complete": 3, "openStart": 1, "openStop": 0},
+  "slurs": 3,
+  "warnings": {"W-TIE-OPEN": 1},
+  "roundtrip": ["L1", "L1+", "L2"]
+ }
+}

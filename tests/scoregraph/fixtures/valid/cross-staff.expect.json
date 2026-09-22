@@ -1,0 +1,7 @@
+{
+ "about": "a treble voice writing one event on the bass staff, a chord with one head on the other staff, an arpeggio over both staves, and limbs from staff, voice and head (§8.2, §8.3)",
+ "spec": "G01 §8, A21, A24",
+ "expect": {
+  "warnings": {}
+ }
+}

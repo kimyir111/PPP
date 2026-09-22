@@ -1,0 +1,9 @@
+{
+ "about": "qpm 120 under a printed dotted quarter = 120 (180 quarters: issue 1)",
+ "spec": "G01 §13.2 W-TEMPO-MARK-MISMATCH",
+ "expect": {
+  "warnings": {
+   "W-TEMPO-MARK-MISMATCH": 1
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "about": "no scoregraph_version at all",
+ "spec": "G01 §13.2 E-VERSION",
+ "expect": {
+  "errors": [
+   "E-VERSION"
+  ]
+ }
+}

@@ -1,0 +1,25 @@
+{
+ "about": "Seconds and microseconds of twelve positions as the score is written, the metre and the key in force (G01 §6.4, §6.6, §6.8, A15).",
+ "spec": "G01 §6.8: seconds = sum of dW x 4 x 60 / qpm; micros rounds half up once. Bar 1 is 4 quarters at 60 = 4 s; bar 2's first two quarters at 60 = 2 s; its third at 90 = 2/3 s: bar 2 at 3/4 = 20/3 s = 6,666,667 us. Bar 3 (6/8, 3 quarters) lasts 2 s at 90; bar 4 (3+2/8, 5/2 quarters) 5/3 s.",
+ "expect": {
+  "positions": [
+   {"m": 0, "at": "0", "seconds": "0", "micros": 0},
+   {"m": 0, "at": "1/4", "seconds": "1", "micros": 1000000},
+   {"m": 0, "at": "1/2", "seconds": "2", "micros": 2000000},
+   {"m": 0, "at": "3/4", "seconds": "3", "micros": 3000000},
+   {"m": 1, "at": "0", "seconds": "4", "micros": 4000000},
+   {"m": 1, "at": "1/4", "seconds": "5", "micros": 5000000},
+   {"m": 1, "at": "1/2", "seconds": "6", "micros": 6000000},
+   {"m": 1, "at": "3/4", "seconds": "20/3", "micros": 6666667},
+   {"m": 2, "at": "0", "seconds": "22/3", "micros": 7333333},
+   {"m": 2, "at": "3/8", "seconds": "25/3", "micros": 8333333},
+   {"m": 3, "at": "0", "seconds": "28/3", "micros": 9333333},
+   {"m": 3, "at": "5/8", "seconds": "11", "micros": 11000000}
+  ],
+  "defaultQpm": 84,
+  "meters": [{"m": 0, "beats": [4], "beatType": 4}, {"m": 1, "beats": [4], "beatType": 4}, {"m": 2, "beats": [6], "beatType": 8}, {"m": 3, "beats": [3, 2], "beatType": 8}],
+  "keys": [{"m": 0, "at": "0", "fifths": 1}, {"m": 1, "at": "0", "fifths": 1}, {"m": 1, "at": "1/4", "fifths": -3}, {"m": 2, "at": "0", "fifths": -3}],
+  "measureDurations": ["1", "1", "3/4", "5/8"],
+  "warnings": {}
+ }
+}

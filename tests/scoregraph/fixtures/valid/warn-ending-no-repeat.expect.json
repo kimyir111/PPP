@@ -1,0 +1,9 @@
+{
+ "about": "a first ending with no backward repeat at its end",
+ "spec": "G01 §13.2 W-ENDING-NO-REPEAT",
+ "expect": {
+  "warnings": {
+   "W-ENDING-NO-REPEAT": 1
+  }
+ }
+}

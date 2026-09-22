@@ -1,0 +1,7 @@
+{
+ "about": "a passage repeated three times, then a [1, 2] ending and a [3] ending after a second repeat (§6.7)",
+ "spec": "G01 §6.7, A17",
+ "expect": {
+  "warnings": {}
+ }
+}

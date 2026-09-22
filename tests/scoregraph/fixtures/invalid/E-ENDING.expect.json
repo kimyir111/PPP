@@ -1,0 +1,9 @@
+{
+ "about": "an ending with no numbers",
+ "spec": "G01 §13.2 E-ENDING",
+ "expect": {
+  "errors": [
+   "E-ENDING"
+  ]
+ }
+}

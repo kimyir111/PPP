@@ -1,0 +1,16 @@
+{
+ "about": "Durations of nested tuplets as exact rationals of a whole note (W), and each tuplet's members adding up to its nominal length (G01 §6.5, A3).",
+ "spec": "G01 §6.5: a triplet eighth is 1/8 x 2/3 = 1/12; a 5:4 sixteenth 1/16 x 4/5 = 1/20; a 6:4 sixteenth 1/16 x 4/6 = 1/24; a 3:2 32nd inside 5:4 is 1/32 x 2/3 x 4/5 = 1/60.",
+ "expect": {
+  "durations": ["1/12", "1/12", "1/12", "1/20", "1/20", "1/20", "1/20", "1/20", "1/24", "1/24", "1/24", "1/24", "1/24", "1/24",
+                "1/20", "1/20", "1/60", "1/60", "1/60", "1/20", "1/20"],
+  "tuplets": [
+   {"actual": 3, "normal": 2, "members": 3, "sum": "1/4", "nominal": "1/4"},
+   {"actual": 5, "normal": 4, "members": 5, "sum": "1/4", "nominal": "1/4"},
+   {"actual": 6, "normal": 4, "members": 6, "sum": "1/4", "nominal": "1/4"},
+   {"actual": 5, "normal": 4, "members": 7, "sum": "1/4", "nominal": "1/4"},
+   {"actual": 3, "normal": 2, "members": 3, "sum": "1/20", "nominal": "1/20", "nested": true}
+  ],
+  "warnings": {}
+ }
+}

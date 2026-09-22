@@ -1,0 +1,11 @@
+{
+ "about": "A grand staff round trip: two staves, one voice each, chords as one event with several heads, the right hand on the upper staff (G01 §7.6, §8.1, §8.2, A21, A24).",
+ "spec": "G01 §7.6: a chord is one event with several heads; §8.2: limbOf(head) = head.limb ?? voice.limb ?? staff.limb with staff 1 RH, staff 2 LH.",
+ "expect": {
+  "voices": [{"label": "1", "staff": 1}, {"label": "5", "staff": 2}],
+  "chords": 2,
+  "limbs": {"1": "RH", "2": "LH"},
+  "roundtrip": ["L1", "L1+", "L2"],
+  "errors": []
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "about": "an arpeggio over heads at two onsets",
+ "spec": "G01 §13.2 E-ARPEGGIO",
+ "expect": {
+  "errors": [
+   "E-ARPEGGIO"
+  ]
+ }
+}

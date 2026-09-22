@@ -1,0 +1,9 @@
+{
+ "about": "a half note printed as a quarter (issue 19)",
+ "spec": "G01 §13.2 W-DISPLAY-DURATION",
+ "expect": {
+  "warnings": {
+   "W-DISPLAY-DURATION": 1
+  }
+ }
+}

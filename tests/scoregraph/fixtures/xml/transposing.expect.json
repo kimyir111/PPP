@@ -1,0 +1,16 @@
+{
+ "about": "Concert pitch stored, written pitch and MIDI derived, for a B-flat clarinet and an octave-transposing bass (G01 §7.2, A19).",
+ "spec": "G01 §7.2: the graph stores the concert spelling; written = concert moved back by the transposition (diatonic -(d + 7 octave), chromatic -(c + 12 octave)); MIDI = 12 (oct + 1) + pc + alter. The printed key of a transposing part is derived: written fifths = concert fifths - (7c - 12d).",
+ "expect": {
+  "heads": [
+   {"part": 0, "concert": "C5", "written": "D5", "midi": 72},
+   {"part": 0, "concert": "D5", "written": "E5", "midi": 74},
+   {"part": 0, "concert": "E5", "written": "F#5", "midi": 76},
+   {"part": 0, "concert": "Bb4", "written": "C5", "midi": 70},
+   {"part": 1, "concert": "Bb1", "written": "Bb2", "midi": 34},
+   {"part": 1, "concert": "F2", "written": "F3", "midi": 41}
+  ],
+  "concertKey": -2,
+  "writtenKeys": [0, -2]
+ }
+}

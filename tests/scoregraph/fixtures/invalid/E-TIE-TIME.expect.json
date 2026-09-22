@@ -1,0 +1,9 @@
+{
+ "about": "a complete tie to a note that does not start where the tied note ends",
+ "spec": "G01 §13.2 E-TIE-TIME",
+ "expect": {
+  "errors": [
+   "E-TIE-TIME"
+  ]
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "about": "G##9 sounds MIDI 129",
+ "spec": "G01 §13.2 E-PITCH-RANGE",
+ "expect": {
+  "errors": [
+   "E-PITCH-RANGE"
+  ]
+ }
+}

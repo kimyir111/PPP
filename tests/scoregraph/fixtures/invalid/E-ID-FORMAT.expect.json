@@ -1,0 +1,9 @@
+{
+ "about": "an ID whose prefix is not its kind's (\"dx31\" for a direction)",
+ "spec": "G01 §13.2 E-ID-FORMAT",
+ "expect": {
+  "errors": [
+   "E-ID-FORMAT"
+  ]
+ }
+}

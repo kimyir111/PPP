@@ -1,0 +1,9 @@
+{
+ "about": "a backward repeat on a left bar line",
+ "spec": "G01 §13.2 E-REPEAT",
+ "expect": {
+  "errors": [
+   "E-REPEAT"
+  ]
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "about": "a duration that is not reduced (\"4/4\")",
+ "spec": "G01 §13.2 E-RATIONAL",
+ "expect": {
+  "errors": [
+   "E-RATIONAL"
+  ]
+ }
+}

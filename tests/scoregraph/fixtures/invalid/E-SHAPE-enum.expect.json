@@ -1,0 +1,9 @@
+{
+ "about": "an enum value the schema does not have (a clef sign \"X\")",
+ "spec": "G01 §13.2 E-SHAPE",
+ "expect": {
+  "errors": [
+   "E-SHAPE"
+  ]
+ }
+}

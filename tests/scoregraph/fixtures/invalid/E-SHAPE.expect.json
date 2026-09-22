@@ -1,0 +1,9 @@
+{
+ "about": "a field the schema does not have (event.color)",
+ "spec": "G01 §13.2 E-SHAPE",
+ "expect": {
+  "errors": [
+   "E-SHAPE"
+  ]
+ }
+}
