@@ -101,8 +101,14 @@ MUTATIONS = {
         "tempo sequence (printed, control)",
         "a printed metronome mark at half tempo in the middle bar; the app neither draws it nor plays it",
         "PASS",
-        [M.sg_tempo_at("Math.floor(bars / 2)", "(compound ? scoreGraph().rational.format(scoreGraph().rational.make(bpm * 3, 2)) : String(bpm))",
-                       "String(Math.round(bpm / 2))")]),
+        # two tempo events, as the G0 edit wrote two directions: the mark alone (no qpm, so no <sound>), then
+        # empty words with the sound at the tempo already in force
+        [M.sg_insert("    if (Math.floor(bars / 2) > 0) {\n"
+                     "      b.tempo({ m: mid[Math.floor(bars / 2)], at: '0', mark: { unit: 'quarter', perMinute: String(Math.round(bpm / 2)) }, "
+                     "display: [{ part: part.id, staff: st[1], placement: 'above' }] });\n"
+                     "      b.tempo({ m: mid[Math.floor(bars / 2)], at: '0', qpm: compound ? R.format(R.make(bpm * 3, 2)) : String(bpm), "
+                     "mark: { text: '' }, display: [{ part: part.id, staff: st[1] }] });\n"
+                     "    }")]),
     "SR-KEY-LAST-TWO-BARS": (
         "key sequence (threshold)",
         "the last two bars under a key signature one fifth away; accidentals keep every pitch right",
