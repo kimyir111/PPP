@@ -186,6 +186,21 @@ class RepositorySut(unittest.TestCase):
         self.assertTrue(set(run["sut_modules"]) <= set(run["sut_files"]))
         self.assertEqual(r["run"]["audio_score_sha256"], util.content_sha256(entry))   # the G0 field is kept
 
+    def test_ab_runs_a_fixture_suite_through_its_own_runner(self):
+        # replay-public has fixtures, not references: each side runs as `run --suite replay-public` would (G01 A36)
+        import io
+        import types
+        from contextlib import redirect_stdout
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            code = runner.cli_ab(types.SimpleNamespace(suite="replay-public", a="worktree", b="worktree"))
+        self.assertEqual(code, 0, buf.getvalue())
+        base = runner.out_dir_for(suite_mod.load_suite("replay-public"))
+        a, b = (util.load_json(os.path.join(base, side, "results.json")) for side in ("ab-a", "ab-b"))
+        self.assertEqual(len(b["cases"]), 6)
+        self.assertEqual([(c["id"], c["metrics"]) for c in a["cases"]], [(c["id"], c["metrics"]) for c in b["cases"]])
+        self.assertIn("verdict: PASS", buf.getvalue())
+
     def test_check_calls_results_stale_after_a_library_edit(self):
         with tempfile.TemporaryDirectory() as tmp:
             entry = make_sut(tmp)

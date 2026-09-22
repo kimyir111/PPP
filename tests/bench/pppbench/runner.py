@@ -215,14 +215,32 @@ def resolve_sut(spec: str, name: str) -> str:
     return os.path.abspath(spec)
 
 
+def _fixture_side(suite: Dict[str, Any], sut: str, out: str) -> Dict[str, Any]:
+    """One side of an A/B on a fixture suite (replay-public, omr-live, a private suite): the suite's own
+    runner, whose results.json and run.json the comparison then reads."""
+    import contextlib
+    import io
+    import types
+    from . import private
+    with contextlib.redirect_stdout(io.StringIO()):          # its verdict is against the stored baseline, not the other side
+        private.run_private(suite, types.SimpleNamespace(audio_score=sut, out=out))
+    return {"results": util.load_json(os.path.join(out, "results.json")), "run": util.load_json(os.path.join(out, "run.json"))}
+
+
 def cli_ab(args) -> int:
     from . import compare, report
     suite = suite_mod.load_suite(args.suite)
     a_path, b_path = resolve_sut(args.a, "a"), resolve_sut(args.b, "b")
     base = out_dir_for(suite)
     try:
-        ra = run_suite(suite, audio_score=a_path, out_dir=os.path.join(base, "ab-a"), write_cases=False)
-        rb = run_suite(suite, audio_score=b_path, out_dir=os.path.join(base, "ab-b"))
+        if "references" in suite:
+            ra = run_suite(suite, audio_score=a_path, out_dir=os.path.join(base, "ab-a"), write_cases=False)
+            rb = run_suite(suite, audio_score=b_path, out_dir=os.path.join(base, "ab-b"))
+        else:
+            ra = _fixture_side(suite, a_path, os.path.join(base, "ab-a"))
+            rb = _fixture_side(suite, b_path, os.path.join(base, "ab-b"))
+            print(f"{suite['name']}: {len(rb['results']['cases'])} cases, "
+                  f"{sum(c['status'] == 'error' for c in rb['results']['cases'])} errors on side b")
     except RunError as exc:
         print(f"ERROR {exc}")
         return 2
