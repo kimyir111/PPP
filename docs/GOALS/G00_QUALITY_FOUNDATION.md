@@ -2,7 +2,7 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 상태 | **구현 → 독립 리뷰 → fixer → 최종 리뷰 → 최종 fixer → 짧은 최종 리뷰 → last fixer (2026-09-22)** · 브랜치 `g0-quality-foundation` (main 미병합) · 구현 결과 [§16](#16-구현-결과-2026-09-22) · 독립 리뷰 판정 READY_FOR_FIXER ([§17](#17-independent-review-2026-09-22)) · fixer 판정 NEEDS_ANOTHER_REVIEW ([§18](#18-fixer-기록-2026-09-22)) · 최종 독립 리뷰 판정 NEEDS_FIX ([§19](#19-final-independent-review-2026-09-22)) · 최종 fixer 판정 READY_FOR_SHORT_REVIEW ([§20](#20-final-fixer-기록-2026-09-22)) · 짧은 최종 리뷰 판정 NEEDS_FIX (MAJOR 2: 반복 기호 미측정, implicit 예외, [§21](#21-short-final-review-2026-09-22)) · last fixer 판정 **READY_FOR_FINAL_REVIEW** (S-M1·S-M2·S-m1·S-m2 해결, [§21.15](#2115-last-fixer-기록-2026-09-22); merge 전 로컬 main `d82bb71`은 사용자 결정) |
+| 상태 | **구현 → 독립 리뷰 → fixer → 최종 리뷰 → 최종 fixer → 짧은 최종 리뷰 → last fixer → Final Pass Review (2026-09-22)** · 브랜치 `g0-quality-foundation` (main 미병합) · 구현 결과 [§16](#16-구현-결과-2026-09-22) · 독립 리뷰 판정 READY_FOR_FIXER ([§17](#17-independent-review-2026-09-22)) · fixer 판정 NEEDS_ANOTHER_REVIEW ([§18](#18-fixer-기록-2026-09-22)) · 최종 독립 리뷰 판정 NEEDS_FIX ([§19](#19-final-independent-review-2026-09-22)) · 최종 fixer 판정 READY_FOR_SHORT_REVIEW ([§20](#20-final-fixer-기록-2026-09-22)) · 짧은 최종 리뷰 판정 NEEDS_FIX (MAJOR 2: 반복 기호 미측정, implicit 예외, [§21](#21-short-final-review-2026-09-22)) · last fixer 판정 READY_FOR_FINAL_REVIEW (S-M1·S-M2·S-m1·S-m2 해결, [§21.15](#2115-last-fixer-기록-2026-09-22)) · **Final Pass Review 판정 NEEDS_FIX** (S-M1·S-M2는 VERIFIED_RESOLVED이나 새 공격 2건이 새 MAJOR — PF-M1 매달린 forward repeat, PF-M2 꼬리 자르기로 마지막 마디 위장, [§22](#22-final-pass-review-2026-09-22); merge 전 로컬 main `d82bb71`은 사용자 결정) |
 | 작성일 | 2026-09-21 |
 | 기준 커밋 | `718bdf3` (main). `audio-score.js` sha256 `559a1f40fb73416bc72d671d894251f7c3263110fa10780559047f6f22009288` |
 | 읽는 사람 | 이 문서만 읽고 G0을 구현할 다음 Claude 세션, 그리고 리뷰하는 사용자 |
@@ -36,6 +36,7 @@
 - [19. Final Independent Review (2026-09-22)](#19-final-independent-review-2026-09-22)
 - [20. Final Fixer 기록 (2026-09-22)](#20-final-fixer-기록-2026-09-22)
 - [21. Short Final Review (2026-09-22)](#21-short-final-review-2026-09-22)
+- [22. Final Pass Review (2026-09-22)](#22-final-pass-review-2026-09-22)
 
 ---
 
@@ -3606,3 +3607,127 @@ known failure(`known-defects/2`, 329파일):
 1. §21.15.2의 T 규칙(반복 없음 또는 참조와 같은 연주 순서)이 받아들일 만한지.
 2. §21.15.3의 예측 쪽 분할 예외(참조의 같은 분할)가 새 구멍을 만들지 않는지.
 3. 카탈로그 known failure +2파일(두 찬송가)이 실제 결함인지.
+
+---
+
+## 22. Final Pass Review (2026-09-22)
+
+**목적**: §21.15의 MAJOR 2건(S-M1, S-M2)이 실제로 해결됐는지 독립적으로 확인하고, G0를 PR/CI 단계로 넘겨도 되는지 판정한다. 전체 G0의 재감사가 아니다. F1, PredTime, usable 음가, M11, 범위, 결정론은 다시 열지 않았다(§21.15가 이미 확인).
+
+- **대상**: `D:/PPP-g0`, 브랜치 `g0-quality-foundation`, 시작 및 종료 커밋 `e36b14c`(이 리뷰는 코드를 바꾸지 않았다). `D:/PPP`(main)는 건드리지 않았다. merge, main push, G1 없음.
+- **읽는 사람**: 다음 fixer 세션과, PR을 검토하는 사용자.
+
+### 22.1 판정: **`NEEDS_FIX`**
+
+§21.15의 last fixer 판정(READY_FOR_FINAL_REVIEW)과 다르다. S-M1·S-M2·S-m1·S-m2 자체는 리뷰가 요청한 mutation·reference 변형 전부에서 VERIFIED_RESOLVED다(아래 22.2–22.4). 문제는 §5가 요구한 "이번 수정을 우회하는 새 공격 2개"에서 나왔다: 둘 다 새 **MAJOR** 구멍이다(22.6). 그래서 BLOCKER 0 · MAJOR 0 조건을 충족하지 못한다.
+
+| READY_TO_MERGE 조건 | 결과 |
+| --- | --- |
+| BLOCKER 0 | 충족 |
+| MAJOR 0 | **불충족** — 새 공격 2건 모두 MAJOR (PF-M1, PF-M2, §22.6) |
+| S-M1 VERIFIED_RESOLVED | 충족 (§22.2) |
+| S-M2 VERIFIED_RESOLVED | 충족 (§22.3) |
+| MINOR 2건(S-m1, S-m2) 해결 | 충족 (§22.4) |
+| 새 공격에서 MAJOR hole 없음 | **불충족** (§22.6) |
+| 기존 regression suite 통과 | 충족 (§22.5, 11개 전부) |
+| production 변경 0 | 충족 (§22.7) |
+
+### 22.2 S-M1(반복 기호) 재확인: **VERIFIED_RESOLVED**
+
+코드를 직접 읽어 앱과 대조했다(재실행이 아니라 라인 단위 비교):
+
+- `read_barline`(`tests/bench/pppbench/musicxml.py:117-146`)이 앱의 `barMarks` 파싱(`Piano Coach App.dc.html:4139-4157`)과 분기·기본값(`times` 기본 2, `style`은 오른쪽만, ending 라벨 정규식)까지 동일하다.
+- `CanonicalScore.app_play_order`(`tests/bench/pppbench/canonical.py:199-249`)가 앱의 `Score.form`(`Piano Coach App.dc.html:3685-3721`)과 스택·`taken`·`passAt` 갱신 순서, guard 8000 조건까지 줄 단위로 같다.
+- `semantic.structure_diff`(`tests/bench/pppbench/semantic.py:112-142`)가 `bars`(barline 포함)·`play_order`·`hands`를 비교해 STRUCTURAL_CHANGE로 분류한다(SERIALIZATION_ONLY 아님).
+
+독립 재실행(§22.5)에서 SR-SPURIOUS-REPEAT, REF-FAKE-MIDDLE-REPEAT(139/139), REF-REMOVE-REPEAT(62/62), REF-MOVE-REPEAT(49/49), REF-REPEAT-TIMES(62/62) 전부 §21.15가 보고한 그대로 재현됐다.
+
+### 22.3 S-M2(implicit 예외) 재확인: **VERIFIED_RESOLVED**
+
+`readability.bar_completeness_detail`(`tests/bench/pppbench/metrics/readability.py:159-208`)의 `excused()`에 `implicit`가 전혀 없다(전체 `pppbench/` grep: `implicit`는 pickup·downbeat 관련 다른 파일에만 남아 있고, 이 함수와 `bar_integrity_detail`의 inner-bar 로직에는 없다). 안쪽 마디의 `implicit="yes"`는 이제 아무것도 봐주지 않는다. `bar_integrity_detail`(§S-M2 이전부터 있던 별개의, 더 느슨한 metric)은 여전히 `m.index in (0, last)`만 면제하며 이는 정상 pickup 규칙이지 예측이 조작할 수 있는 구멍이 아니다(22.6.2가 이 경계를 다른 방향에서 공격해 실제로 뚫는다).
+
+독립 재실행에서 SR-IMPLICIT-MASKS-SHORT-BARS, SR-RH-RESTS-SHORT(대조군) 모두 §21.15가 보고한 수치 그대로 REGRESSION이었다.
+
+### 22.4 MINOR 2건 재확인: **VERIFIED_RESOLVED**
+
+- **S-m1 (`<staves>`)**: `semantic.projection`의 `hands`가 `canon.notes`의 `(staff, hand)` 집합에서 나온다(`semantic.py:64`). `<staves>` 제거로 `hand`가 `l`→`x`로 바뀌면 `structure_diff`가 잡는다(`semantic.py:128-130`). 독립 재실행에서 SR-NO-STAVES의 golden이 **17 STRUCTURAL_CHANGE**였다(§21의 SERIALIZATION_ONLY가 아니다).
+- **S-m2 (가짜 반 마디)**: `excused()`의 truth 분기(`readability.py:187-192`)가 `same_bars`(마디 수 일치) AND 두 반의 길이가 truth와 일치 AND truth 쪽에 실제 repeat/section 경계가 있을 때만 truth의 분할을 빌려준다. 예측이 스스로 쓴 겹세로줄은 아무것도 보지 않는다. 독립 재실행에서 SR-FAKE-SPLIT-BAR가 REGRESSION(`read.bar_completeness` 1→0.864)이었다.
+  - **단, `excused()`의 다른 분기(예측 자신의 `repeat_boundary`)는 `same_bars`를 요구하지 않는다** — 이것이 22.6.1의 공격이 파고든 자리다.
+
+### 22.5 회귀 스위트: 11개 전부 재실행, 전부 PASS
+
+§5가 요구한 항목을 전부 독립적으로(이 리뷰의 새 셸에서) 재실행했다. full·robust는 재실행하지 않았다(관련 코드 불변, §21.15가 이미 통과).
+
+| # | 항목 | 결과 |
+| --- | --- | --- |
+| 1 | unit | `python -m unittest discover -s tests/bench/unit -t tests/bench`: **196 OK** |
+| 2 | golden | `run.py golden`: **17/17 identical** |
+| 3 | correctness | `run.py correctness`: **13/13**(octave-shift 2건은 문서화된 KNOWN_DEVIATION) |
+| 4 | smoke | run+check: **44 cases, 0 errors, PASS** |
+| 5 | core | run+check: **553 cases, 0 errors, PASS**, usable **18.1 %**(`0.1808`) |
+| 6 | mutation-check | **35/35**: harmful 34종 전부 자기 metric으로 REGRESSION(SR-SPURIOUS-REPEAT, SR-IMPLICIT-MASKS-SHORT-BARS, SR-FAKE-SPLIT-BAR, SR-NO-STAVES 포함), MUT-NOOP는 `results.json` byte 동일 |
+| 7 | short_review | **8/8** mutation + reference repeats 4그룹(139/139, 62/62, 49/49, 62/62) 기대대로, gaps: none |
+| 8 | final_review | **10/10** 자기 metric으로 REGRESSION, golden SEMANTIC/STRUCTURAL_CHANGE(SERIALIZATION_ONLY 없음) |
+| 9 | final_oracle | **5/5 OK, 0 GAP**: as-is 141, pickup-bar 20, mode-flip 104, tempo-mark 141, no-repeats 62 |
+| 10 | adversarial | offline **25 OK, 0 GAP** + `--only lock --conformance`(워크트리 서버 8777) **4 OK, 0 GAP** |
+| 11 | parity(conformance) | 워크트리 서버 8777, `PPP_BENCH_NODE_MODULES=D:/PPP/node_modules`: **258/258 identical** |
+
+모든 수치가 §21.15.6이 보고한 값과 정확히 일치한다(재현됨, 새 회귀 없음).
+
+### 22.6 새 공격 2건: 둘 다 **MAJOR**
+
+§4가 요구한 대로, 기존 mutation을 복사하지 않고 이번 수정(S-M1의 `read_barline`/`app_play_order`, S-M2의 `excused()`)을 정면으로 겨눈 새 공격을 반복 계열 1개, incomplete/implicit 계열 1개 설계했다. 둘 다 `tests/bench/pppbench`를 직접 호출하는 독립 스크립트로(코드 수정 없이, `audio-score.js`도 건드리지 않고) 재현했고, 실제 gate 경로(`evaluate.evaluate_symbolic` → 내부 `_finish` → `critical.gates`)로 확인했다(수동으로 gate를 다시 계산하지 않음 — 처음에 그렇게 해서 `notes.symbolic.f1`→`notes.identity.f1`별칭이 빠진 오탐을 한 번 냈고, `evaluate.py:40-49`의 `_finish`를 그대로 거치는 값으로 정정했다).
+
+#### 22.6.1 PF-M1(반복 계열) — 매달린 forward repeat가 가짜 분할을 완전히 숨긴다
+
+**가설**: `excused()`의 예측 쪽 분기(`readability.py:187-189`, `if repeat_boundary(canon, j): return True`)는 `canon`(예측)에 repeat/ending 표시가 있는지만 보고, 그 표시가 **실제로 재생에 영향을 주는지는 전혀 확인하지 않는다**. `app_play_order`(`canonical.py:199-249`)를 보면 forward repeat(`repeatStart`)는 스택에 인덱스를 넣기만 할 뿐, 그 뒤에 그것을 소비하는 backward repeat(`repeatEnd`)가 한 번도 나오지 않으면 재생 순서에 **아무 영향도 주지 않는다**(스택에 남아 있다가 버려짐). 즉 backward repeat가 하나도 없는 악보에 forward repeat 표시만 하나 덧붙이면, `struct.form.order_exact`는 절대 이를 보지 못한다. §21.15.2의 설계 문서(§21.15.2, "연주 순서 gate가 판정한다: 참조에 없으면 그쪽에서 실패")는 backward repeat/ending에는 맞지만 — lone forward repeat에는 **틀렸다**.
+
+**재현**(`tests/bench` 루트에서 실행, 4/4박 40마디 합성 악보, 반복 없음):
+
+```python
+from pppbench import evaluate, musicxml
+from unit.helpers import measure, note, score_xml
+FORWARD = '<barline location="left"><bar-style>heavy-light</bar-style><repeat direction="forward"/></barline>'
+# 끝에서 셋째 마디를 반으로 쪼개고, 뒷반에 forward repeat만 하나 붙인다(뒤에 그걸 닫는 backward repeat는 전혀 없다)
+```
+
+40마디 중 끝에서 셋째 마디(index 37)를 반으로 쪼개 41마디로 만들고, 뒷반에 `FORWARD`만 붙였다:
+
+| metric | 결과 |
+| --- | --- |
+| `pred.app_play_order()` | `[0, 1, …, 40]` (자기 마디를 순서대로 한 번씩 — forward repeat는 완전히 무효) |
+| `read.bar_completeness` | **1.0**(가짜 분할이 완전히 면제됨) |
+| `struct.form.order_exact` | **1.0**(재생 순서에 아무 영향이 없으므로) |
+| `notation.onset_pos.accuracy` | 0.949(40마디 중 1마디 근처의 밀림 — 10 % 문턱 밑) |
+| `critical.structure` | **1.0** |
+| **`usable`** | **1.0** |
+
+정상적으로(같은 결함을 반복 표시 없이 넣으면) `read.bar_completeness`가 즉시 `bad: [{"kind": "bar short"}]`를 내고 `usable`은 0이 된다(§21.15.6 SR-FAKE-SPLIT-BAR가 이를 보여준다). 매달린 forward repeat 하나가 이 게이트 전체를 무효화한다.
+
+#### 22.6.2 PF-M2(incomplete/implicit 계열) — 꼬리를 자르면 짧은 마디가 "마지막 마디"가 된다
+
+**가설**: `bar_completeness_detail`의 완결성 검사는 `if i in (0, last): continue`(`readability.py:196-197`)로 파일의 **첫·마지막 마디를 무조건** 건너뛴다. 이는 진짜 pickup/보완 마디를 위한 규칙이지만, "마지막"은 순전히 예측 자신이 낸 마디 목록의 인덱스일 뿐 참조와 대조하지 않는다. 예측이 실제 결함이 있는 안쪽 마디 뒤를 통째로 잘라내면, 그 마디가 예측 파일의 새 "마지막 마디"가 되어 검사가 면제된다. 게다가 `critical.structure`의 gate 목록(`critical.py:51-60`)에는 `struct.measures.count_exact`(예측·참조 마디 수 일치)가 **없다**(git 이력 전체에서 `critical.py`에 이 metric이 들어간 적이 없다 — §19 M4/§20 기록의 "gate에 넣었다"는 서술은 `extra_empty_edge`에는 해당하지만 `count_exact`에는 해당하지 않는, 이번 리뷰가 새로 발견한 **문서-코드 불일치**다). symbolic 평가에서 pitch 무결성은 `notes.symbolic.f1`로 대체되는데(`evaluate.py:46-47`), 이는 전체 대비 비율이라 파일 끝에서 두 마디를 잘라내는 정도는 40마디 기준 0.95 문턱을 넘지 못한다.
+
+**재현**: 40마디 합성 악보, 끝에서 셋째 마디(index 37)의 오른손에 진짜 결함(박자 하나가 짧은 trailing rest, SR-RH-RESTS-SHORT와 같은 모양)을 주고, 대조군·공격을 비교했다.
+
+| 케이스 | 예측 마디 수 | 결함 마디가 예측의 "마지막"인가 | `read.bar_completeness` | `critical.structure` | `usable` |
+| --- | --- | --- | --- | --- | --- |
+| A. 결함만(자르지 않음) | 40 | 아니오 | 0.974 | 0.0 | **0.0**(정상 탐지, 대조군) |
+| B. 자르기만(결함 없음) | 38 | – | 1.0 | 1.0 | **1.0**(마디 수 불일치 자체가 gate 밖) |
+| **공격. 결함 + 자르기** | 38 | **예** | **1.0** | **1.0** | **1.0** |
+
+같은 결함이 A에서는 100 % 잡히고(허용치 0인 gate라 마디 위치·곡 길이와 무관하게 항상 잡힌다), 꼬리를 2마디 자르는 것만으로 완전히 사라진다. B는 이 문제가 S-M2가 새로 만든 것이 아니라 `struct.measures.count_exact`가 애초에 한 번도 gate에 들어간 적이 없다는, 더 근본적인 사전 존재 결함임을 보여준다 — 하지만 "예측이 실제 결함을 정당화 없이 usable로 남긴다"는 S-M2가 막으려던 바로 그 결과이므로 이번 리뷰의 범위 안이다.
+
+### 22.7 범위 감사
+
+- `git diff 6dedc51 e36b14c --stat`: 60 파일, 전부 `tests/bench/**` 또는 `docs/`(§21.15.7과 동일하게 재확인). `audio-score.js`, `Piano Coach App.dc.html`, `server.js`, `omr-service.js`, `catalog/` 0건.
+- 이 리뷰는 코드를 전혀 바꾸지 않았다(공격 재현은 `tests/bench` 루트에서 임시 스크립트로, 저장소 밖 scratchpad에만 저장). `git status`에는 이 리뷰가 만든 변경이 없다.
+- `tests/README.md`의 미커밋 2줄(§21의 O5, §21.15.7)은 이번에도 그대로 남아 있다 — 이전 세션들과 같은 이유로(허용 경로 밖) 이 세션도 건드리지 않았다.
+
+### 22.8 다음 fixer의 완료 조건
+
+1. **PF-M1**: `readability.excused()`의 예측 쪽 `repeat_boundary(canon, j)` 분기가 "표시가 있다"가 아니라 "그 표시가 `app_play_order`에 실제 영향을 준다"(또는 최소한 대응하는 backward repeat/ending-close가 파일 안에 존재한다)를 요구하도록 좁힌다. truth 쪽 분기(같은 `same_bars` + `t_content` 대조)를 예측 쪽에도 일관되게 적용하는 방법도 검토한다.
+2. **PF-M2**: `critical.structure`(또는 별개의 gate)에 예측·참조의 마디 수가 (반복 기호로 설명되지 않는 한) 일치해야 한다는 조건을 추가한다. §21.15.2가 `struct.form.order_exact`를 "반복이 없으면 마디 수 무관"으로 설계로 정한 것과 충돌하지 않도록, order_exact 자체를 건드리지 말고 **별도의** 마디-수 일치 gate로 넣는다(과거 §19 M4/§20이 이미 이렇게 하려 했다고 기록했으나 실제로는 반영되지 않았다 — git 이력에 `struct.measures.count_exact`가 `critical.py`에 들어간 적이 없다).
+3. 두 수정 모두 `bar_completeness`/`critical.structure` 관련 golden·suite·baseline을 relock·재기준화해야 한다(S-M1/S-M2 때와 같은 순서: METRICS/READER 버전 올리고, 사유 기록).
+4. PF-M1·PF-M2를 `mutation-check`와 `short_review.py`(또는 새 스크립트)에 회귀로 추가한다. 이 절의 재현 스크립트(22.6.1, 22.6.2)를 출발점으로 쓸 수 있다(그 자체는 커밋되지 않았다).
+5. 고치고 나서 이 절(§22)을 다시 짧게 검토한다. §21.15와 22.2–22.5는 다시 열 필요가 없다(이미 VERIFIED_RESOLVED).
