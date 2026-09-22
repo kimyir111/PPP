@@ -1143,6 +1143,179 @@
     return out.join('\n');
   }
 
+  /* ------------------------------------------------------------ ScoreGraph */
+  /* The same score as a ScoreGraph (docs/GOALS/G01 §15.3): buildXml's musical decisions — bars, note pieces
+     and the ties between them, rest pieces, triplet values, printed accidentals, pedal marks — as a canonical,
+     validated graph whose MusicXML reads back as the same music. What was heard (onsets and releases in µs,
+     velocities, the pedal, bar times) stays in the graph's performance layer instead of being dropped. */
+  const SCOREGRAPH_VERSION = '1.0.0';
+  let scoreGraphLib = null;
+  function scoreGraph() {
+    if (!scoreGraphLib) {
+      const lib = typeof module === 'object' && module.exports ? require('./scoregraph/index.js') : global && global.PPPScoreGraph;
+      if (!lib) throw new Error('PPPScoreGraph is not loaded: scoregraph/*.js must come before audio-score.js');
+      if (lib.version !== SCOREGRAPH_VERSION)
+        throw new Error('scoregraph ' + lib.version + ' does not match audio-score.js (' + SCOREGRAPH_VERSION + '): reload the page');
+      scoreGraphLib = lib;
+    }
+    return scoreGraphLib;
+  }
+  const ACCIDENTAL_NAME = { '-2': 'flat-flat', '-1': 'flat', '0': 'natural', '1': 'sharp', '2': 'double-sharp' };
+
+  /* heard: {notes: [{on, off, midi, vel, staff, tick}] (every note after clean; staff and tick once placed),
+     pedals: [{on, off}], barSeconds: [bars + 1 times]} */
+  function buildGraph(model, heard) {
+    const SG = scoreGraph(), R = SG.rational;
+    const { title, key, beatsPerBar, beatType, bpm, bars, events1, events2, pedals, table } = model;
+    const beatTicks = beatType >= 8 && beatsPerBar % 3 === 0 ? Q * 3 / 2 : Q;
+    const bar = Math.round(beatsPerBar * (4 / beatType) * Q);
+    const W = t => R.format(R.make(t, Q * 4));            /* ticks (Q a quarter) as whole notes */
+    const b = SG.builder({ id: model.scoreId || 'sg-audio', meta: { title: title } });
+    const src = b.source({ kind: 'audio-score', tool: 'audio-score.js', params: model.params || {} });
+    b.setDefault({ src: src.id, op: 'inferred' });
+    const part = b.part({ name: 'Piano', instrument: { kind: 'piano', family: 'keyboard' } });
+    const st = [null, b.staff(part, { limb: 'RH' }).id, b.staff(part, { limb: 'LH' }).id];
+    const voice = [null, b.voice(part, { staff: st[1], label: '1' }).id, b.voice(part, { staff: st[2], label: '5' }).id];
+    const mid = [];
+    for (let i = 0; i < bars; i++) mid.push(b.measure({ number: String(i + 1), dur: W(bar) }).id);
+    b.meter({ m: mid[0], beats: [beatsPerBar], beatType: beatType });
+    b.key({ m: mid[0], at: '0', fifths: key.fifths, mode: key.mode });
+    const compound = beatType >= 8 && beatsPerBar % 3 === 0;
+    /* issue 1 kept as it is: a compound tempo plays bpm quarters a minute but prints dotted quarter = bpm */
+    const mark = compound ? { unit: 'quarter', dots: 1, perMinute: String(bpm) } : { unit: 'quarter', perMinute: String(bpm) };
+    b.tempo({ m: mid[0], at: '0', qpm: String(bpm), mark: mark, display: [{ part: part.id, staff: st[1], placement: 'above' }] });
+    b.clef(part, { staff: st[1], m: mid[0], at: '0', sign: 'G' });
+    b.clef(part, { staff: st[2], m: mid[0], at: '0', sign: 'F' });
+
+    const perBar = events => {
+      const buckets = [];
+      for (let i = 0; i < bars; i++) buckets.push([]);
+      events.forEach(e => {
+        let s = e.start;
+        while (s < e.end) {
+          const i = Math.floor(s / bar);
+          if (i >= bars) break;
+          const stop = Math.min(e.end, (i + 1) * bar);
+          buckets[i].push({ start: s, end: stop, notes: e.notes, tuplet: e.tuplet, tieIn: s > e.start, tieOut: stop < e.end });
+          s = stop;
+        }
+      });
+      return buckets;
+    };
+    const b1 = perBar(events1), b2 = perBar(events2);
+    const ties = [], tuplets = [];
+    const pendingTie = [null, new Map(), new Map()];      /* staff -> midi -> the head its tie continues from */
+    const headOf = new Map();                              /* staff|onset tick|midi -> the head of the event's first piece */
+
+    const writeStaff = (list, staff, barIdx) => {
+      const barStart = barIdx * bar;
+      const m = mid[barIdx];
+      let cursor = 0;
+      const state = keyAlters(key.fifths);             /* read only here */
+      const accState = {};
+      const rest = (from, to) => {
+        const full = from === 0 && to === bar;
+        pieces(from, to - from, bar, beatTicks).forEach(v => {
+          /* issue 19 kept as it is: a rest inside a triplet is printed with its plain value */
+          const t = full ? (TYPES[bar] || TYPES[v] || ['whole', 0]) : (TYPES[v] || ['16th', 0]);
+          const display = { type: t[0] };
+          if (t[1]) display.dots = t[1];
+          if (full) display.measureRest = true;
+          b.event(part, { kind: 'rest', m: m, at: W(from), dur: W(v), voice: voice[staff], staff: st[staff], display: display });
+          from += v;
+        });
+      };
+      list.forEach(ev => {
+        const s = ev.start - barStart, e = ev.end - barStart;
+        if (s > cursor) rest(cursor, s);
+        let pos = s;
+        const parts = notePieces(s, e - s, bar, beatTicks);
+        const anyTuplet = ev.tuplet || parts.some(v => tupletOf(v));
+        parts.forEach((v, pi2) => {
+          const tu = tupletOf(v);
+          const t = tu ? [tu.type, 0] : (TYPES[v] || ['16th', 0]);
+          const tieStop = pi2 > 0 || ev.tieIn, tieStart = pi2 < parts.length - 1 || ev.tieOut;
+          const display = { type: t[0] };
+          if (t[1]) display.dots = t[1];
+          const heads = ev.notes.map(n => {
+            const sp = spell(n.midi, table);
+            const k = sp.step + sp.octave;
+            const current = k in accState ? accState[k] : state[sp.step];
+            const head = { pitch: sp.alter ? { step: sp.step, alter: sp.alter, oct: sp.octave } : { step: sp.step, oct: sp.octave } };
+            if (sp.alter !== current && !tieStop) head.acc = { type: ACCIDENTAL_NAME[sp.alter] };
+            accState[k] = sp.alter;
+            return head;
+          });
+          const event = b.event(part, { kind: 'note', m: m, at: W(pos), dur: W(v), voice: voice[staff], staff: st[staff], display: display, heads: heads });
+          ev.notes.forEach((n, ci) => {
+            const id = event.heads[ci].id;
+            if (tieStop) {
+              const from = pendingTie[staff].get(n.midi);
+              ties.push(from ? { from: from, to: id } : { to: id });
+              pendingTie[staff].delete(n.midi);
+            }
+            if (tieStart) pendingTie[staff].set(n.midi, id);
+            if (pi2 === 0 && !ev.tieIn) headOf.set(staff + '|' + ev.start + '|' + n.midi, id);
+          });
+          /* a triplet value is one tuplet of its own piece; the bracket shows where buildXml draws one */
+          if (tu) tuplets.push({ events: [event.id], printed: !!(anyTuplet && (pi2 === 0 || pi2 === parts.length - 1)) });
+          pos += v;
+        });
+        cursor = e;
+      });
+      if (bar > cursor) rest(cursor, bar);
+    };
+    for (let i = 0; i < bars; i++) {
+      writeStaff(b1[i], 1, i);
+      writeStaff(b2[i], 2, i);
+    }
+    [1, 2].forEach(s => pendingTie[s].forEach(from => ties.push({ from: from })));
+    ties.forEach(t => b.spanner(part, Object.assign({ type: 'tie' }, t)));
+    tuplets.forEach(t => {
+      const x = { type: 'tuplet', events: t.events, actual: 3, normal: 2 };
+      if (!t.printed) x.printed = false;
+      b.spanner(part, x);
+    });
+    /* the pedal marks as written: start, change... stop */
+    const at = tick => ({ m: mid[Math.floor(tick / bar)], at: W(tick % bar) });
+    let open = null;
+    const close = () => {
+      const x = { type: 'pedal', pedal: 'damper', from: open.from, mark: { line: false } };
+      if (open.to) x.to = open.to;
+      if (open.changes.length) x.changes = open.changes;
+      b.spanner(part, x);
+      open = null;
+    };
+    pedals.forEach(p => {
+      if (p.type === 'start') { if (open) close(); open = { from: at(p.tick), changes: [] }; }
+      else if (p.type === 'change') { if (open) open.changes.push(at(p.tick)); else open = { from: at(p.tick), changes: [] }; }
+      else if (open) { open.to = at(p.tick); close(); }
+    });
+    if (open) close();
+
+    /* what was heard: every note after clean (a note the arrangement left out has no head), the pedal, and
+       where each bar started in the recording (a bar that starts before the recording has no anchor) */
+    if (heard) {
+      const pf = b.performance({ kind: 'source', src: src.id });
+      heard.notes.forEach(n => {
+        const x = { on: R.secondsToMicros(n.on), off: R.secondsToMicros(n.off), vel: Math.max(1, Math.min(127, Math.round(n.vel))), midi: n.midi };
+        const link = n.staff ? headOf.get(n.staff + '|' + n.tick + '|' + n.midi) : null;
+        if (link) x.link = link;
+        b.perfNote(pf, x);
+      });
+      (heard.pedals || []).forEach(p => {
+        if (!(isFinite(p.on) && isFinite(p.off) && p.on >= 0 && p.off > p.on)) return;
+        const on = R.secondsToMicros(+p.on), off = R.secondsToMicros(+p.off);
+        if (off > on) b.perfPedal(pf, { pedal: 'damper', on: on, off: off });
+      });
+      (heard.barSeconds || []).forEach((sec, i) => {
+        if (!(sec >= 0)) return;
+        b.anchor(pf, { m: mid[Math.min(i, bars - 1)], k: 1, at: i < bars ? '0' : W(bar), us: R.secondsToMicros(sec), kind: 'bar' });
+      });
+    }
+    return b.finish();
+  }
+
   function noNotes() {
     const e = new Error('No piano notes were heard in this recording.');
     e.code = 'no-notes';
@@ -1224,7 +1397,7 @@
     const medBar = median(perBar.map(p => p.sec));
     const errSum = extra.errSum || q.reduce((s, n) => s + (n.err || 0), 0);
 
-    return {
+    const result = {
       xml: xml,
       stats: {
         notes: notes.length, bars: bars, beatsPerBar: beatsPerBar, beatType: beatType, tempo: roundBpm,
@@ -1248,6 +1421,37 @@
         }))
       }
     };
+
+    /* The same score as a ScoreGraph, on request (G01 §15.3 shadow): its graph, its issues and the MusicXML it
+       writes, beside the MusicXML above. */
+    if (opts.scoreGraph) {
+      const model = {
+        title: title, key: key, beatsPerBar: beatsPerBar, beatType: beatType, bpm: roundBpm,
+        bars: bars, events1: events1, events2: events2, pedals: pedals, table: table,
+        scoreId: opts.scoreId, params: { beatSource: result.stats.beatSource, quantizer: result.stats.quantizer }
+      };
+      if (extra.tempoAlias) model.params.tempoAlias = extra.tempoAlias;
+      if (extra.arrangement) model.params.arrangement = extra.arrangement;
+      /* where each heard note was written: the placed note with the same onset, release and pitch */
+      const placed = new Map();
+      q.forEach(n => {
+        const k = n.on + '|' + n.off + '|' + n.midi;
+        if (!placed.has(k)) placed.set(k, []);
+        placed.get(k).push(n);
+      });
+      const heardNotes = (extra.heard || []).map(n => {
+        const list = placed.get(n.on + '|' + n.off + '|' + n.midi);
+        const p = list && list.length ? list.shift() : null;
+        return { on: n.on, off: n.off, midi: n.midi, vel: n.vel, staff: p ? p.staff : 0, tick: p ? p.tick : 0 };
+      });
+      const barSeconds = [];
+      for (let b = 0; b <= bars; b++) barSeconds.push(tickToSec(b * bar));
+      const built = buildGraph(model, { notes: heardNotes, pedals: extra.pedals || [], barSeconds: barSeconds });
+      result.graph = built.graph;
+      result.graphIssues = built.issues;
+      result.graphXml = scoreGraph().musicxml.export(built.graph, { software: 'PPP audio transcription' }).xml;
+    }
+    return result;
   }
 
   function fromGrid(input, opts) {
@@ -1296,6 +1500,7 @@
     }
     return finish(q, notes, beats, opts, {
       beatsPerBar: beatsPerBar, beatType: beatType, origin: 0, bpm: g.bpm,
+      heard: raw.filter(n => n.on != null && n.off != null).map(n => ({ on: n.on, off: n.off, midi: n.midi | 0, vel: n.vel == null ? 64 : +n.vel })),
       pedals: input.pedals, title: input.title, quantizer: 'pm2s',
       beatSource: input.beats ? 'audio' : 'grid', errSum: 0, meterContrast: 2,
       arrangement: arrangementPlan, originalNotes: originalNotes
@@ -1514,7 +1719,7 @@
     let bpm;
     if (lock && lock.bpm) bpm = +lock.bpm;
     const result = finish(q, clustered, beats, opts, {
-      beatsPerBar: beatsPerBar, beatType: beatType, origin: origin, bpm: bpm,
+      beatsPerBar: beatsPerBar, beatType: beatType, origin: origin, bpm: bpm, heard: timingNotes,
       pedals: input.pedals, title: input.title, quantizer: 'heuristic',
       beatSource: beatSource, errSum: errSum, meterContrast: meterContrast,
       ticksPerBeat: compoundPulse ? 36 : Q,
