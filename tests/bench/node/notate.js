@@ -7,7 +7,13 @@
    {"id", "ok": true, "xml", "stats", "ms"} or {"id", "ok": false, "error",
    "code", "ms"}, in input order, followed by one {"meta": {...}} line.
    One failing case never stops the batch. No Date or Math.random here:
-   the output (except "ms") is a pure function of the input and the SUT. */
+   the output (except "ms") is a pure function of the input and the SUT.
+
+   The meta line also names every module Node loaded for the SUT
+   (sut_modules, relative to the SUT's directory) and any it loaded from
+   outside that directory (sut_outside): the SUT is audio-score.js plus the
+   scoregraph/ library beside it (docs/GOALS/G01 §15.4), and the bench
+   refuses a run whose module closure leaves its snapshot. */
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -44,5 +50,12 @@ for (const line of lines) {
   fs.writeSync(out, JSON.stringify(row) + '\n');
 }
 const sha = crypto.createHash('sha256').update(fs.readFileSync(sut)).digest('hex');
-fs.writeSync(out, JSON.stringify({ meta: { audio_score_path: sut, audio_score_sha256: sha, node: process.version } }) + '\n');
+/* Collected after every job: a module the SUT requires lazily is in the closure too. */
+const sutDir = path.dirname(sut);
+const loaded = Object.keys(require.cache).filter(f => path.resolve(f) !== path.resolve(__filename));
+const inside = f => { const r = path.relative(sutDir, f); return r && !r.startsWith('..') && !path.isAbsolute(r); };
+const sutModules = loaded.filter(inside).map(f => path.relative(sutDir, f).split(path.sep).join('/')).sort();
+const sutOutside = loaded.filter(f => !inside(f)).sort();
+fs.writeSync(out, JSON.stringify({ meta: { audio_score_path: sut, audio_score_sha256: sha, node: process.version,
+  sut_modules: sutModules, sut_outside: sutOutside } }) + '\n');
 fs.closeSync(out);

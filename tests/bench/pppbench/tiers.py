@@ -15,7 +15,7 @@ import urllib.request
 from collections import Counter
 from typing import Any, Dict, List, Optional, Tuple
 
-from . import corpus, musicxml, stages, suite as suite_mod, util
+from . import corpus, musicxml, stages, suite as suite_mod, sut as sut_mod, util
 
 NODE_DIR = os.path.join(util.bench_root(), "node")
 
@@ -305,6 +305,7 @@ def omr_live(args, suite=None) -> int:
     run = {"started_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "git_sha": util.git_sha(),
            "git_dirty": util.git_dirty(), "audio_score_path": "audio-score.js",
            "audio_score_sha256": util.content_sha256(stages.default_audio_score()),
+           **sut_mod.describe(stages.default_audio_score()),
            "app_sha256": util.content_sha256(app),
            "helper": {k: health.get(k) for k in ("version", "audiveris", "pdfToMusic")},
            "node": None, "python": platform.python_version(), "platform": sys.platform, "cases": len(cases),

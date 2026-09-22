@@ -28,7 +28,7 @@ from collections import Counter
 BENCH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BENCH)
 
-from pppbench import compare, golden, private, runner, stages, suite as suite_mod, util  # noqa: E402
+from pppbench import compare, golden, private, runner, stages, suite as suite_mod, sut as sut_mod, util  # noqa: E402
 
 util.setup_stdio()
 OUT = os.path.join(BENCH, "out", "final-review")
@@ -115,17 +115,11 @@ MUTATIONS = {
 
 
 def write_mutant(name: str) -> str:
-    src = util.normalise_eol(open(stages.default_audio_score(), "rb").read()).decode("utf-8")
-    for find, repl in MUTATIONS[name][2]:
-        n = src.count(find)
-        if n != 1:
-            raise RuntimeError(f"{name}: anchor found {n} times: {find[:60]}")
-        src = src.replace(find, repl)
-    path = os.path.join(OUT, "mutants", name + ".js")
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8", newline="\n") as h:
-        h.write(src)
-    return path
+    """A copy of the SUT snapshot (audio-score.js + scoregraph/, pppbench/sut.py) with the edits applied."""
+    try:
+        return sut_mod.write_mutant_dir(os.path.join(OUT, "mutants", name), {sut_mod.ENTRY: MUTATIONS[name][2]}, label=name)
+    except sut_mod.SutError as exc:
+        raise RuntimeError(str(exc)) from exc
 
 
 def gate(name: str, sut: str, tag: str):

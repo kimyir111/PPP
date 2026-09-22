@@ -35,7 +35,7 @@ BENCH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BENCH)
 
 from pppbench import (compare, corpus, evaluate, golden, musicxml, perform, private, runner,  # noqa: E402
-                      stages, suite as suite_mod, util)
+                      stages, suite as suite_mod, sut as sut_mod, util)
 
 util.setup_stdio()
 REPO = util.repo_root()
@@ -92,16 +92,12 @@ MUTATIONS = {
 
 
 def write_mutant(mid: str) -> str:
+    """A copy of the SUT snapshot (audio-score.js + scoregraph/, pppbench/sut.py) with one edit."""
     find, repl = MUTATIONS[mid]
-    src = util.normalise_eol(open(stages.default_audio_score(), "rb").read()).decode("utf-8")
-    n = src.count(find)
-    if n != 1:
-        raise RuntimeError(f"{mid}: anchor found {n} times; audio-score.js changed, update this review script")
-    path = os.path.join(OUT, "mutants", mid + ".js")
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8", newline="\n") as h:
-        h.write(src.replace(find, repl))
-    return path
+    try:
+        return sut_mod.write_mutant_dir(os.path.join(OUT, "mutants", mid), {sut_mod.ENTRY: [(find, repl)]}, label=mid)
+    except sut_mod.SutError as exc:
+        raise RuntimeError(f"{exc}; audio-score.js changed, update this review script") from exc
 
 
 def gate(name: str, sut: str, tag: str):

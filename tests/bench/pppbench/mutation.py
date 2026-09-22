@@ -1,8 +1,10 @@
 """Gate sensitivity check (docs/GOALS/G00 §9.5).
 
-Copies audio-score.js to .cache/mutations/, applies each mutation's exact
-string replacement (``find``/``replace``, or several ``replacements`` in
-order), runs the ``mutation`` suite on the original and on each copy, and
+Copies the SUT snapshot (audio-score.js and scoregraph/, pppbench/sut.py) to
+.cache/mutations/<id>/, applies each mutation's exact string replacement
+(``find``/``replace``, or several ``replacements`` in order) to its ``file``
+(default audio-score.js; a scoregraph/ module since G1, G01 §15.4), runs the
+``mutation`` suite on the original and on each copy, and
 compares each copy against the original run as a temporary baseline. Every
 harmful mutation must be a REGRESSION that names its metric; the no-op
 mutation must PASS with a byte-identical results.json.
@@ -22,7 +24,7 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, List
 
-from . import compare, runner, stages, suite as suite_mod, util
+from . import compare, runner, stages, suite as suite_mod, sut as sut_mod, util
 
 BAR_LOOP = "      out.push(writeStaff(b1[b], 1, 1, b));"          # buildXml's per-bar loop
 TAIL = "(b > 0 && b === Math.floor(bars * 2 / 3))"             # two thirds of the way in (fewer than half the bars follow)
@@ -303,25 +305,29 @@ def edits(mut: Dict[str, Any]) -> List[tuple]:
     return list(mut["replacements"]) if "replacements" in mut else [(mut["find"], mut["replace"])]
 
 
+def target(mut: Dict[str, Any]) -> str:
+    """The SUT file a mutation edits, relative to the SUT directory."""
+    return mut.get("file", sut_mod.ENTRY)
+
+
 def apply_mutation(source: str, mut: Dict[str, Any]) -> str:
     for find, replace in edits(mut):
         n = source.count(find)
         if n != 1:
-            raise AnchorMissing(f"{mut['id']}: anchor found {n} times (must be exactly once). audio-score.js changed; "
+            raise AnchorMissing(f"{mut['id']}: anchor found {n} times (must be exactly once). {target(mut)} changed; "
                                 "update the anchor in tests/bench/pppbench/mutation.py")
         source = source.replace(find, replace)
     return source
 
 
 def write_mutant(mut: Dict[str, Any], sut: str) -> str:
-    with open(sut, "rb") as handle:
-        source = util.normalise_eol(handle.read()).decode("utf-8")
-    text = apply_mutation(source, mut)
-    path = os.path.join(MUT_DIR, mut["id"] + ".js")
-    os.makedirs(MUT_DIR, exist_ok=True)
-    with open(path, "w", encoding="utf-8", newline="\n") as handle:
-        handle.write(text)
-    return path
+    """A copy of the whole SUT snapshot of ``sut`` in .cache/mutations/<id>/ with the mutation applied to
+    its target file. Returns the copy's entry (audio-score.js) path."""
+    try:
+        return sut_mod.write_mutant_dir(os.path.join(MUT_DIR, mut["id"]), {target(mut): edits(mut)},
+                                        entry=sut, label=mut["id"])
+    except sut_mod.SutError as exc:
+        raise AnchorMissing(f"{exc}. Update the anchor in tests/bench/pppbench/mutation.py") from exc
 
 
 def run_mutation_check(mutations=None, suite_name: str = "mutation") -> int:

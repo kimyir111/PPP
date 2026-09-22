@@ -164,9 +164,9 @@ change may make without a new baseline.
   and costs the unseen ones is the overfitting the hold-out exists to show.
 - **Cases**: a case that errors, or loses 10 diagnostic points.
 - **Known failures**: a catalogue defect count that grows fails; one that shrinks is an improvement.
-- `check` refuses results produced by an `audio-score.js` that has changed since (`STALE_RESULTS`).
+- `check` refuses results produced by an `audio-score.js` or `scoregraph/` that has changed since (`STALE_RESULTS`).
 
-`mutation-check` proves the gate works: it plants 30 regressions in a copy of `audio-score.js` —
+`mutation-check` proves the gate works: it plants 37 regressions in a copy of the SUT (see "The SUT" below) —
 the 5 original ones (hands, key, durations, metre, bar phase), the 7 from the independent review
 (tempo mark dropped, printed metre changed without the stats, an extra empty bar, no printed
 accidentals, a global-tempo quantiser, no pedal marks, minor-key leading tones spelled flat), 5
@@ -365,6 +365,23 @@ Node 24.21). `run.json` holds timing and the environment and is expected to diff
   (type and dots), and the key presses the app's player makes after joining ties
   (`PianoScore.ties`). A rule both get wrong passes parity; that is what `correctness` is for.
 
+## The SUT
+
+Until G1 the system under test was one file, `audio-score.js`. From G1 it also loads the ScoreGraph
+library beside it (`scoregraph/`, docs/GOALS/G01 §15.4), so the bench treats the SUT as a **snapshot**:
+`audio-score.js` plus every `*.js` under `scoregraph/`, at the same relative paths
+(`pppbench/sut.py`). Nothing else of the repository is copied.
+
+- `ab --a git:<rev>` extracts the revision's whole snapshot into `.cache/ab/a/` (a revision before G1
+  simply has no `scoregraph/`), so each side runs its own library, never the working tree's.
+- `mutation-check` and the review scripts copy the whole snapshot into `.cache/mutations/<id>/` and
+  edit one file; a mutation's `file` names it (default `audio-score.js`).
+- `run.json` records `sut_sha256` (the snapshot's paths and content hashes, CRLF read as LF),
+  `sut_files` and `sut_modules`, the modules Node actually loaded. `audio_score_sha256` stays as in G0.
+- `notate.js` reports its module closure, and the run stops with `SUT_MODULE_OUTSIDE` or
+  `SUT_MODULE_UNDECLARED` when the SUT loads a module outside the snapshot: an A/B or a mutant would
+  otherwise mix two versions without saying so (`unit/test_sut_snapshot.py`).
+
 ## Changing the SUT: the loop for later goals
 
 1. Before you start: `npm run bench` must PASS. Pick the gate and tag you are going after (for
@@ -408,7 +425,8 @@ Keep them outside the repository. A suite file there, e.g. `C:/private/ppp-bench
 | `INPUT_DRIFT` | A generated input or a reference file differs from the lock, or the baseline was recorded against another lock. | If you changed the generator, reader or a reference on purpose: `relock --reason`, then `update-baseline --reason`. Otherwise find what changed. |
 | `VERSION_MISMATCH` | `READER_VERSION`/`METRICS_VERSION`/`SQI_VERSION`/`GENERATOR_VERSION` differ from the baseline's. | Rebaseline (a new anchor starts). Bump the version whenever you change a definition. |
 | `SUITE_CHANGED` | The suite's reference set or matrix changed (order does not matter). | Relock and rebaseline with a reason. |
-| `STALE_RESULTS` | `audio-score.js` changed after the run. | Run again. |
+| `STALE_RESULTS` | `audio-score.js` or a `scoregraph/` module changed after the run. | Run again. |
+| `SUT_MODULE_OUTSIDE`, `SUT_MODULE_UNDECLARED` | The SUT loaded a module outside its snapshot (see "The SUT"). | Add the module's directory to `pppbench/sut.py` `SUT_TREES`. |
 | `NO_BASELINE` | No baseline for the suite yet. | `update-baseline`. |
 | `STATS_SHAPE` | `toMusicXml`'s `stats.barStarts` no longer has bars + 1 values. | The SUT's stats contract changed: update `pppbench/timemap.py`. |
 | `MUTATION_ANCHOR_MISSING` | A mutation's search string is no longer in `audio-score.js` exactly once. | Update the anchor in `pppbench/mutation.py`. |

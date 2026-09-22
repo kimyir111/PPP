@@ -89,8 +89,10 @@ class Golden(unittest.TestCase):
 
 class Mutation(unittest.TestCase):
     def test_every_anchor_occurs_exactly_once(self):
-        src = util.normalise_eol(util.read_text(stages.default_audio_score()).encode("utf-8")).decode("utf-8")
+        root = os.path.dirname(stages.default_audio_score())
         for m in mutation.MUTATIONS:
+            with open(os.path.join(root, *mutation.target(m).split("/")), "rb") as handle:
+                src = util.normalise_eol(handle.read()).decode("utf-8")
             for find, _ in mutation.edits(m):
                 self.assertEqual(src.count(find), 1, m["id"])
             self.assertNotEqual(mutation.apply_mutation(src, m), src)

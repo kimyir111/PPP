@@ -10,7 +10,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from . import VERSIONS, aggregate, corpus, evaluate, perform, stages, suite as suite_mod, util
+from . import VERSIONS, aggregate, corpus, evaluate, perform, stages, suite as suite_mod, sut as sut_mod, util
 
 OUT_DIR = os.path.join(util.bench_root(), "out")
 CACHE_DIR = os.path.join(util.bench_root(), ".cache")
@@ -158,7 +158,8 @@ def run_suite(suite: Dict[str, Any], *, audio_score: Optional[str] = None, out_d
     finished = datetime.now(timezone.utc).isoformat(timespec="seconds")
     run = {"started_at": started, "finished_at": finished, "git_sha": util.git_sha(), "git_dirty": util.git_dirty(),
            "audio_score_path": util.rel(sut) if sut.startswith(util.repo_root()) else sut,
-           "audio_score_sha256": util.content_sha256(sut), "node": notated["meta"].get("node"),
+           "audio_score_sha256": util.content_sha256(sut), **sut_mod.describe(sut),
+           "sut_modules": notated["meta"].get("sut_modules"), "node": notated["meta"].get("node"),
            "python": platform.python_version(), "platform": sys.platform, "argv": sys.argv[1:],
            "cases": len(cases), "errors": sum(1 for r in results_cases if r["status"] == "error"),
            "timing": {"total_s": round(time.perf_counter() - t0, 3), "generate_s": round(t_gen - t0, 3),
@@ -201,17 +202,14 @@ def cli_run(args) -> int:
 
 
 def resolve_sut(spec: str, name: str) -> str:
-    """``git:<rev>``, ``worktree`` or a file path -> a path to an audio-score.js."""
+    """``git:<rev>``, ``worktree`` or a file path -> a path to an audio-score.js.
+
+    ``git:<rev>`` extracts the revision's whole SUT snapshot (audio-score.js and scoregraph/, pppbench/sut.py)
+    into ``.cache/ab/<name>/`` so each side runs its own library, never the working tree's (G01 §15.4)."""
     if spec == "worktree":
         return stages.default_audio_score()
     if spec.startswith("git:"):
-        rev = spec[4:]
-        data = util.git("show", f"{rev}:audio-score.js")
-        path = os.path.join(CACHE_DIR, "ab", f"{name}.js")
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w", encoding="utf-8", newline="\n") as handle:
-            handle.write(data)
-        return path
+        return sut_mod.extract_git(spec[4:], os.path.join(CACHE_DIR, "ab", name))
     if not os.path.exists(spec):
         raise FileNotFoundError(spec)
     return os.path.abspath(spec)
