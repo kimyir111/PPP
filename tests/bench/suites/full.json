@@ -1,0 +1,640 @@
+{
+ "align": {
+  "window_s": 0.3
+ },
+ "description": "Nightly/manual: every lint-clean reference, hold-out included (seeds 11, 12)",
+ "gate": {
+  "case_fail_drop": 10.0,
+  "case_flip_max": 2,
+  "case_warn_drop": 2.0,
+  "metrics": {
+   "critical.accidentals": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "critical.beat_placement": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "critical.hands": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "critical.key": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "critical.meter": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "critical.note_values": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "critical.pedal": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "critical.pitch_integrity": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "critical.playback_tempo": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "critical.structure": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "notation.accidentals.courtesy_per_100": {
+    "dir": "down",
+    "tol": 0.5
+   },
+   "notation.accidentals.required_recall": {
+    "dir": "up",
+    "tol": -0.002
+   },
+   "notation.duration.accuracy": {
+    "dir": "up",
+    "tol": -0.003
+   },
+   "notation.duration.page_accuracy": {
+    "dir": "up",
+    "tol": -0.003
+   },
+   "notation.hand.accuracy": {
+    "dir": "up",
+    "tol": -0.003
+   },
+   "notation.ioi.accuracy": {
+    "dir": "up",
+    "tol": -0.003
+   },
+   "notation.note_shape.consistency": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "notation.onset_pos.accuracy": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "notation.onset_pos.accuracy_ref": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "notation.pedal.f1": {
+    "dir": "up",
+    "tol": -0.01
+   },
+   "notation.pedal.false_per_min": {
+    "dir": "down",
+    "tol": 0.05
+   },
+   "notation.spelling.accuracy": {
+    "dir": "up",
+    "tol": -0.003
+   },
+   "notation.ties.extra_per_100": {
+    "dir": "down",
+    "tol": 0.5
+   },
+   "notation.tuplets.f1": {
+    "dir": "up",
+    "tol": -0.01
+   },
+   "notation.tuplets.false_per_100": {
+    "dir": "down",
+    "tol": 0.5
+   },
+   "notes.identity.f1": {
+    "dir": "up",
+    "tol": -0.002
+   },
+   "notes.onset.f1_50ms": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "read.bar_completeness": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "read.bar_integrity": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "read.ledger_lines.heavy_rate": {
+    "dir": "down",
+    "tol": 0.005
+   },
+   "sqi": {
+    "dir": "up",
+    "tol": -0.3
+   },
+   "struct.downbeat.f1": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "struct.form.order_exact": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "struct.key.fifths_exact": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "struct.key.timeline_accuracy": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "struct.measure_numbers.app_onset_accuracy": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "struct.measure_numbers.valid": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "struct.measures.count_exact": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "struct.measures.extra_empty_edge": {
+    "dir": "down",
+    "tol": 0.0
+   },
+   "struct.stats_consistent": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "struct.tempo.ok_effective": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "struct.tempo.ok_written": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "struct.tempo.present": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "struct.tempo.timeline_accuracy": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "struct.time_sig.exact": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "struct.time_sig.timeline_accuracy": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "usable": {
+    "dir": "up",
+    "tol": -0.005
+   }
+  },
+  "subgroups": {
+   "mean_abs": 0.01,
+   "mean_per_case": 0.25,
+   "metrics": {
+    "critical.accidentals": "rate",
+    "critical.beat_placement": "rate",
+    "critical.hands": "rate",
+    "critical.key": "rate",
+    "critical.meter": "rate",
+    "critical.note_values": "rate",
+    "critical.pedal": "rate",
+    "critical.pitch_integrity": "rate",
+    "critical.playback_tempo": "rate",
+    "critical.structure": "rate",
+    "notation.accidentals.required_recall": "mean",
+    "notation.duration.accuracy": "mean",
+    "notation.duration.page_accuracy": "mean",
+    "notation.hand.accuracy": "mean",
+    "notation.ioi.accuracy": "mean",
+    "notation.note_shape.consistency": "mean",
+    "notation.onset_pos.accuracy": "mean",
+    "notation.pedal.f1": "mean",
+    "notation.spelling.accuracy": "mean",
+    "notes.identity.f1": "mean",
+    "sqi": "sqi",
+    "struct.key.fifths_exact": "rate",
+    "struct.key.timeline_accuracy": "mean",
+    "struct.tempo.ok_effective": "rate",
+    "struct.tempo.timeline_accuracy": "mean",
+    "struct.time_sig.exact": "rate",
+    "struct.time_sig.timeline_accuracy": "mean",
+    "usable": "rate"
+   },
+   "min_cases": 15,
+   "prefixes": [
+    "set:",
+    "book:",
+    "profile:",
+    "beats:",
+    "metre-class:",
+    "mode:",
+    "feature:",
+    "size:",
+    "holdout"
+   ],
+   "rate_abs": 0.02,
+   "sqi_abs": 1.0
+  }
+ },
+ "holdout_seeds": [
+  11,
+  12
+ ],
+ "kind": "synthetic-notation",
+ "matrix": [
+  {
+   "beats": "none",
+   "profile": "deadpan",
+   "seeds": [
+    1,
+    2
+   ]
+  },
+  {
+   "beats": "none",
+   "profile": "human",
+   "seeds": [
+    1,
+    2
+   ]
+  },
+  {
+   "beats": "oracle",
+   "profile": "human",
+   "seeds": [
+    1,
+    2
+   ]
+  },
+  {
+   "beats": "oracle",
+   "profile": "rubato",
+   "seeds": [
+    1,
+    2
+   ]
+  },
+  {
+   "beats": "oracle-noisy",
+   "profile": "amt",
+   "seeds": [
+    1,
+    2
+   ]
+  },
+  {
+   "beats": "none",
+   "profile": "amt",
+   "seeds": [
+    1,
+    2
+   ]
+  },
+  {
+   "beats": "lowconf",
+   "profile": "human",
+   "seeds": [
+    1,
+    2
+   ]
+  },
+  {
+   "beats": "oracle",
+   "profile": "pedal",
+   "seeds": [
+    1,
+    2
+   ]
+  }
+ ],
+ "name": "full",
+ "references": [
+  "catalog/fur-elise",
+  "catalog/gymnopedie-1",
+  "catalog/happy-birthday",
+  "hymns/all-creatures",
+  "hymns/all-hail-the-power",
+  "hymns/all-praise-to-thee",
+  "hymns/amazing-grace",
+  "hymns/angels-from-the-realms",
+  "hymns/angels-we-have-heard",
+  "hymns/as-with-gladness",
+  "hymns/away-in-a-manger",
+  "hymns/be-thou-my-vision",
+  "hymns/beautiful-savior",
+  "hymns/beneath-the-cross",
+  "hymns/blessed-assurance",
+  "hymns/blest-be-the-tie",
+  "hymns/breathe-on-me",
+  "hymns/christ-arose",
+  "hymns/christ-the-lord-is-risen",
+  "hymns/come-holy-spirit",
+  "hymns/come-thou-fount",
+  "hymns/come-thou-long",
+  "hymns/come-ye-disconsolate",
+  "hymns/crown-him",
+  "hymns/faith-of-our-fathers",
+  "hymns/first-noel",
+  "hymns/for-the-beauty",
+  "hymns/glorious-things",
+  "hymns/go-to-dark-gethsemane",
+  "hymns/god-rest-ye-merry",
+  "hymns/god-will-take-care",
+  "hymns/guide-me",
+  "hymns/hallelujah-what-a-savior",
+  "hymns/hark-the-herald",
+  "hymns/hark-the-voice",
+  "hymns/he-leadeth-me",
+  "hymns/holy-god-we-praise",
+  "hymns/holy-holy-holy",
+  "hymns/hosanna-loud",
+  "hymns/how-firm-a-foundation",
+  "hymns/hyfrydol-alleluia",
+  "hymns/i-am-jesus-little-lamb",
+  "hymns/i-know-that-my-redeemer",
+  "hymns/i-know-whom",
+  "hymns/immortal-invisible",
+  "hymns/it-is-well",
+  "hymns/jesus-christ-is-risen",
+  "hymns/jesus-is-all-the-world",
+  "hymns/jesus-loves-me",
+  "hymns/jesus-shall-reign",
+  "hymns/joy-to-the-world",
+  "hymns/joyful-joyful",
+  "hymns/lamp-of-our-feet",
+  "hymns/let-all-mortal-flesh",
+  "hymns/lo-he-comes",
+  "hymns/midnight-clear",
+  "hymns/more-love-to-thee",
+  "hymns/my-faith-looks-up",
+  "hymns/my-hope-is-built",
+  "hymns/my-saviors-love",
+  "hymns/nearer-my-god",
+  "hymns/no-not-one",
+  "hymns/o-come-all-ye-faithful",
+  "hymns/o-come-emmanuel",
+  "hymns/o-for-a-thousand",
+  "hymns/o-holy-spirit-enter",
+  "hymns/o-little-town",
+  "hymns/o-sacred-head",
+  "hymns/our-god-our-help",
+  "hymns/pass-me-not",
+  "hymns/praise-my-soul",
+  "hymns/praise-to-the-lord",
+  "hymns/rescue-the-perishing",
+  "hymns/rock-of-ages",
+  "hymns/savior-like-a-shepherd",
+  "hymns/silent-night",
+  "hymns/stricken-smitten",
+  "hymns/take-my-life",
+  "hymns/take-up-thy-cross",
+  "hymns/the-churchs-one-foundation",
+  "hymns/the-lords-my-shepherd",
+  "hymns/the-love-of-god",
+  "hymns/the-old-rugged-cross",
+  "hymns/to-god-be-the-glory",
+  "hymns/under-his-wings",
+  "hymns/we-gather-together",
+  "hymns/what-a-friend",
+  "hymns/what-child-is-this",
+  "hymns/when-i-survey",
+  "hymns/when-the-roll",
+  "hymns/where-he-leads-me",
+  "method/beyer/001",
+  "method/beyer/002",
+  "method/beyer/003",
+  "method/beyer/004",
+  "method/beyer/005",
+  "method/beyer/006",
+  "method/beyer/007",
+  "method/beyer/008",
+  "method/beyer/009",
+  "method/beyer/010",
+  "method/beyer/011",
+  "method/beyer/012",
+  "method/beyer/013",
+  "method/beyer/014",
+  "method/beyer/015",
+  "method/beyer/016",
+  "method/beyer/017",
+  "method/beyer/018",
+  "method/beyer/019",
+  "method/beyer/020",
+  "method/beyer/021",
+  "method/beyer/022",
+  "method/beyer/023",
+  "method/beyer/024",
+  "method/beyer/025",
+  "method/beyer/026",
+  "method/beyer/027",
+  "method/beyer/028",
+  "method/beyer/029",
+  "method/beyer/030",
+  "method/beyer/031",
+  "method/beyer/032",
+  "method/beyer/033",
+  "method/beyer/034",
+  "method/beyer/035",
+  "method/beyer/036",
+  "method/beyer/037",
+  "method/beyer/038",
+  "method/beyer/039",
+  "method/beyer/040",
+  "method/beyer/041",
+  "method/beyer/042",
+  "method/beyer/043",
+  "method/beyer/044",
+  "method/beyer/045",
+  "method/beyer/046",
+  "method/beyer/047",
+  "method/beyer/048",
+  "method/beyer/049",
+  "method/beyer/050",
+  "method/beyer/051",
+  "method/beyer/052",
+  "method/beyer/053",
+  "method/beyer/054",
+  "method/beyer/055",
+  "method/beyer/056",
+  "method/beyer/057",
+  "method/beyer/058",
+  "method/beyer/059",
+  "method/beyer/060",
+  "method/beyer/061",
+  "method/beyer/064",
+  "method/beyer/065",
+  "method/beyer/066",
+  "method/beyer/067",
+  "method/burgmuller25/003",
+  "method/burgmuller25/005",
+  "method/burgmuller25/006",
+  "method/burgmuller25/013",
+  "method/burgmuller25/015",
+  "method/burgmuller25/016",
+  "method/burgmuller25/017",
+  "method/burgmuller25/019",
+  "method/burgmuller25/021",
+  "method/burgmuller25/023",
+  "method/czerny599/001",
+  "method/czerny599/002",
+  "method/czerny599/003",
+  "method/czerny599/004",
+  "method/czerny599/005",
+  "method/czerny599/006",
+  "method/czerny599/007",
+  "method/czerny599/008",
+  "method/czerny599/009",
+  "method/czerny599/010",
+  "method/czerny599/011",
+  "method/czerny599/012",
+  "method/czerny599/013",
+  "method/czerny599/014",
+  "method/czerny599/015",
+  "method/czerny599/016",
+  "method/czerny599/017",
+  "method/czerny599/018",
+  "method/czerny599/019",
+  "method/czerny599/020",
+  "method/czerny599/021",
+  "method/czerny599/022",
+  "method/czerny599/023",
+  "method/czerny599/024",
+  "method/czerny599/025",
+  "method/czerny599/026",
+  "method/czerny599/027",
+  "method/czerny599/028",
+  "method/czerny599/029",
+  "method/czerny599/030",
+  "method/czerny599/031",
+  "method/czerny599/032",
+  "method/czerny599/034",
+  "method/czerny599/035",
+  "method/czerny599/036",
+  "method/czerny599/037",
+  "method/czerny599/038",
+  "method/czerny599/039",
+  "method/czerny599/040",
+  "method/czerny599/041",
+  "method/czerny599/042",
+  "method/czerny599/045",
+  "method/czerny599/048",
+  "method/czerny599/049",
+  "method/czerny599/050",
+  "method/czerny599/051",
+  "method/czerny599/052",
+  "method/czerny599/053",
+  "method/czerny599/054",
+  "method/czerny599/055",
+  "method/czerny599/056",
+  "method/czerny599/078",
+  "method/czerny849/001",
+  "method/czerny849/002",
+  "method/czerny849/003",
+  "method/czerny849/004",
+  "method/czerny849/005",
+  "method/czerny849/006",
+  "method/czerny849/007",
+  "method/czerny849/008",
+  "method/czerny849/009",
+  "method/czerny849/010",
+  "method/czerny849/011",
+  "method/czerny849/012",
+  "method/czerny849/013",
+  "method/czerny849/014",
+  "method/czerny849/015",
+  "method/czerny849/016",
+  "method/czerny849/017",
+  "method/czerny849/018",
+  "method/czerny849/019",
+  "method/czerny849/020",
+  "method/czerny849/021",
+  "method/czerny849/022",
+  "method/czerny849/023",
+  "method/czerny849/024",
+  "method/czerny849/025",
+  "method/czerny849/026",
+  "method/czerny849/027",
+  "method/czerny849/030",
+  "method/hanon/001",
+  "method/hanon/002",
+  "method/hanon/003",
+  "method/hanon/004",
+  "method/hanon/005",
+  "method/hanon/006",
+  "method/hanon/007",
+  "method/hanon/008",
+  "method/hanon/009",
+  "method/hanon/010",
+  "method/hanon/011",
+  "method/hanon/012",
+  "method/hanon/013",
+  "method/hanon/014",
+  "method/hanon/015",
+  "method/hanon/016",
+  "method/hanon/017",
+  "method/hanon/018",
+  "method/hanon/019",
+  "method/hanon/020",
+  "method/sonatina/001",
+  "method/sonatina/002",
+  "method/sonatina/003",
+  "method/sonatina/005",
+  "method/sonatina/006",
+  "method/sonatina/007",
+  "method/sonatina/008",
+  "method/sonatina/009",
+  "method/sonatina/010",
+  "method/sonatina/011",
+  "method/sonatina/012",
+  "method/sonatina/014",
+  "method/sonatina/015",
+  "method/sonatina/017",
+  "method/sonatina/018",
+  "method/sonatina/021",
+  "method/sonatina/025",
+  "method/sonatina/026",
+  "method/sonatina/027",
+  "method/sonatina/028",
+  "micro/M01-waltz-3-4",
+  "micro/M02-alberti-4-4",
+  "micro/M03-jig-6-8",
+  "micro/M04-triplets-4-4",
+  "micro/M05-32nds-120",
+  "micro/M06-32nds-176",
+  "micro/M07-pickup-3-4",
+  "micro/M08-pickup-4-4",
+  "micro/M09-syncopation-ties",
+  "micro/M10-dotted",
+  "micro/M11-harmonic-minor",
+  "micro/M12-flats-db",
+  "micro/M13-sharps-chromatic",
+  "micro/M14-melody-in-bass",
+  "micro/M15-wide-chords",
+  "micro/M16-long-notes-rests",
+  "micro/M17-march-2-4",
+  "micro/M18-alla-breve",
+  "micro/M19-fast-3-8",
+  "micro/M20-compound-12-8",
+  "micro/M21-five-four",
+  "micro/M22-tempo-change",
+  "micro/M23-repeated-notes",
+  "micro/M24-block-chords",
+  "samples/prelude-fragment"
+ ],
+ "schema": "ppp.bench-suite/1",
+ "stage": {
+  "name": "notate",
+  "opts": {}
+ },
+ "subsets": {}
+}

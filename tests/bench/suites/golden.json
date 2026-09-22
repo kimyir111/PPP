@@ -1,0 +1,101 @@
+{
+ "cases": [
+  {
+   "key": "G01",
+   "source": "micro/M01-waltz-3-4|deadpan|none|s1"
+  },
+  {
+   "key": "G02",
+   "source": "micro/M03-jig-6-8|deadpan|none|s1"
+  },
+  {
+   "key": "G03",
+   "source": "micro/M04-triplets-4-4|deadpan|none|s1"
+  },
+  {
+   "key": "G04",
+   "opt_name": "lock",
+   "opts": {
+    "lock": {
+     "beatType": 4,
+     "beats": 4,
+     "bpm": 120,
+     "firstDownbeat": "<start_s>"
+    }
+   },
+   "source": "micro/M05-32nds-120|deadpan|none|s1"
+  },
+  {
+   "key": "G05",
+   "source": "micro/M07-pickup-3-4|human|oracle|s1"
+  },
+  {
+   "key": "G06",
+   "source": "micro/M09-syncopation-ties|deadpan|none|s1"
+  },
+  {
+   "key": "G07",
+   "source": "micro/M11-harmonic-minor|human|none|s1"
+  },
+  {
+   "key": "G08",
+   "source": "micro/M13-sharps-chromatic|deadpan|oracle|s1"
+  },
+  {
+   "key": "G09",
+   "source": "micro/M15-wide-chords|deadpan|none|s1"
+  },
+  {
+   "key": "G10",
+   "source": "catalog/gymnopedie-1|human|oracle|s1"
+  },
+  {
+   "key": "G11",
+   "source": "hymns/all-hail-the-power|deadpan|none|s1"
+  },
+  {
+   "key": "G12",
+   "opt_name": "arrange-beginner",
+   "opts": {
+    "arrangement": {
+     "level": "beginner",
+     "style": "balanced"
+    }
+   },
+   "source": "micro/M02-alberti-4-4|deadpan|none|s1"
+  },
+  {
+   "key": "G13",
+   "opt_name": "lock",
+   "opts": {
+    "lock": {
+     "beatType": 8,
+     "beats": 6,
+     "bpm": 60,
+     "firstDownbeat": "<start_s>"
+    }
+   },
+   "source": "micro/M03-jig-6-8|human|none|s1"
+  },
+  {
+   "input_literal": "tests/transcription.test.js PM2S-shaped grid: 4 bars of 6/8, ticksPerQuarter 24 (golden.pm2s_grid_input)",
+   "key": "G14",
+   "source": "grid:pm2s-6-8"
+  },
+  {
+   "key": "G15",
+   "source": "micro/M02-alberti-4-4|pedal|oracle|s1"
+  },
+  {
+   "key": "G16",
+   "source": "method/czerny599/040|amt|oracle-noisy|s1"
+  },
+  {
+   "key": "G17",
+   "source": "hymns/we-gather-together|rubato|oracle|s1"
+  }
+ ],
+ "description": "Exact toMusicXml output for 17 fixed inputs (§7); lock, arrangement, PM2S-grid, pedal, AMT-error and rubato paths included",
+ "name": "golden",
+ "schema": "ppp.bench-golden/1"
+}

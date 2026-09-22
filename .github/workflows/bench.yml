@@ -1,0 +1,75 @@
+# G0 score-quality benchmark (tests/bench/README.md).
+# The gate job is the regression gate on every push/PR; the nightly job (full suite, gate
+# sensitivity, the independent review's adversarial checks) runs on a schedule or by hand.
+# No npm install: the benchmark needs only Node, the Python standard library and git.
+name: bench
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '17 18 * * *'
+  workflow_dispatch:
+
+jobs:
+  gate:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }          # same major as the recorded baseline
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: python -m unittest discover -s tests/bench/unit -t tests/bench
+      - run: python tests/bench/run.py golden
+      - run: python tests/bench/run.py lint-corpus
+      - run: python tests/bench/tools/make_provenance.py --check
+      - run: python tests/bench/run.py correctness
+      - run: python tests/bench/run.py run --suite smoke
+      - run: python tests/bench/run.py check --suite smoke
+      - run: python tests/bench/run.py run --suite core
+      - run: python tests/bench/run.py check --suite core
+      - run: python tests/bench/run.py run --suite robust
+      - run: python tests/bench/run.py check --suite robust
+      - run: python tests/bench/run.py run --suite replay-public   # exits with the replay verdict
+      - run: npm run test:transcription-core && npm run test:arranger
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-core
+          path: |
+            tests/bench/out/core/summary.md
+            tests/bench/out/core/results.json
+            tests/bench/out/core/run.json
+            tests/bench/out/robust/summary.md
+            tests/bench/out/replay-public/summary.md
+            tests/bench/out/correctness/report.json
+
+  nightly:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: python tests/bench/run.py mutation-check
+      - run: python tests/bench/run.py run --suite full
+      - run: python tests/bench/run.py check --suite full
+      - run: python tests/bench/review/adversarial.py     # the review's checks; exit 1 on any GAP
+      - run: python tests/bench/review/final_review.py    # the final review's mutations (G00 §19-§20); exit 1 on a gap
+      - run: python tests/bench/review/final_oracle.py    # correct outputs engraved differently score perfectly
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-full
+          path: |
+            tests/bench/out/full/summary.md
+            tests/bench/out/full/run.json
+            tests/bench/out/mutation/mutation-report.json
+            tests/bench/out/review/adversarial-report.json
+            tests/bench/out/final-review/final-review-report.json

@@ -1,0 +1,228 @@
+{
+ "cases": [
+  {
+   "id": "catalog/gymnopedie-1|amt|oracle-noisy|s1",
+   "input_sha256": "0f44b356d0fe61d7835e9576281aadfb3dc78c4eaa337ede0b04d9396e500dba",
+   "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
+  },
+  {
+   "id": "catalog/gymnopedie-1|deadpan|none|s1",
+   "input_sha256": "a223cd96564aa1a7469d6d94f9a3c49f5511a5492456558316ac62e67eec6815",
+   "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
+  },
+  {
+   "id": "catalog/gymnopedie-1|human|oracle|s1",
+   "input_sha256": "5257b0bf91200d01113695030e3ebdca4ad9aefbab1110a2b4519958779ca215",
+   "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
+  },
+  {
+   "id": "catalog/happy-birthday|deadpan|none|s1",
+   "input_sha256": "5ed6e784332b795a182cd769fc582ceb3c3ae0cc222414e402a5aa00698c6f88",
+   "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
+  },
+  {
+   "id": "catalog/happy-birthday|human|oracle|s1",
+   "input_sha256": "19ed6062dbf22bafaa408641bce2a3af37bf1b5ff7b4625c6344662e5d316952",
+   "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
+  },
+  {
+   "id": "catalog/happy-birthday|rubato|oracle|s1",
+   "input_sha256": "de48af607ad1ca0b99c39bbe0bea19855f447879a6e41e175bb547749b2ad7d9",
+   "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
+  },
+  {
+   "id": "hymns/i-know-whom|deadpan|none|s1",
+   "input_sha256": "85a45a67bd2d310d3bfc3f661f1042f2b29a41dcd72cc092260148622106a220",
+   "reference_sha256": "41521cf8a2621e5cd7c0db4ae971e9bb10326efe09955006bbbf3ef446efe587"
+  },
+  {
+   "id": "hymns/i-know-whom|human|oracle|s1",
+   "input_sha256": "d733aa7faf041fa7489289174882d755c4a61fa2ff175a22ca22db75ecedb04b",
+   "reference_sha256": "41521cf8a2621e5cd7c0db4ae971e9bb10326efe09955006bbbf3ef446efe587"
+  },
+  {
+   "id": "hymns/we-gather-together|deadpan|none|s1",
+   "input_sha256": "30269bfa037ee84d28dacfdeae081a1c3cc0350464a9373e39a79ea09910060c",
+   "reference_sha256": "3b4c372d3f5bb03e67873976aa3b1a672f00f58bdea4994a68bb7cbf77d9e51f"
+  },
+  {
+   "id": "hymns/we-gather-together|human|oracle|s1",
+   "input_sha256": "293612748ed4d79eb7ebeb51319f772b8f4c430a08a734ef94041b9c5a455fc4",
+   "reference_sha256": "3b4c372d3f5bb03e67873976aa3b1a672f00f58bdea4994a68bb7cbf77d9e51f"
+  },
+  {
+   "id": "hymns/we-gather-together|rubato|oracle|s1",
+   "input_sha256": "2794d34dfc704a8ecafa193b8bf3aa086132d953245c5d82a0cb1feea8714cb9",
+   "reference_sha256": "3b4c372d3f5bb03e67873976aa3b1a672f00f58bdea4994a68bb7cbf77d9e51f"
+  },
+  {
+   "id": "method/czerny599/040|amt|oracle-noisy|s1",
+   "input_sha256": "2c49e7d398e0f9c74199a0850989b9d377dcd089701dc4bfd40eedef7d97dae5",
+   "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
+  },
+  {
+   "id": "method/czerny599/040|deadpan|none|s1",
+   "input_sha256": "330766e7928b396a8dceac1370620298472c3a55c4e21b0ccecd78eaf028a9a3",
+   "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
+  },
+  {
+   "id": "method/czerny599/040|human|oracle|s1",
+   "input_sha256": "411d2ce9c21e6b4673a2a9b5d7477ae1d0c287d745c01267f03da2e6efa9b346",
+   "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
+  },
+  {
+   "id": "method/sonatina/027|deadpan|none|s1",
+   "input_sha256": "150c0e258ef715faafebabc2b088fdd67d1a4e040c33a793078ef5df54388982",
+   "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
+  },
+  {
+   "id": "method/sonatina/027|human|oracle|s1",
+   "input_sha256": "3cacc205627f728abf1b9ffbdf168f2875d28ed23b6fee6553957855f83ddb1a",
+   "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
+  },
+  {
+   "id": "micro/M01-waltz-3-4|amt|oracle-noisy|s1",
+   "input_sha256": "9b2f423ed8da2bb12123d7b7282d23492ba87a483cd3ee7bb9f140d6a30600dc",
+   "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
+   "id": "micro/M01-waltz-3-4|deadpan|none|s1",
+   "input_sha256": "660e0c0ab6aee5c09b8ce1d45d729da367cc940cbabdd35f08857563c7fe2f54",
+   "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
+   "id": "micro/M01-waltz-3-4|human|oracle|s1",
+   "input_sha256": "06d1d330ebfff269fc5e87e6b0b5fb76ec5682c5037cfefeffd7c70598eabe76",
+   "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
+   "id": "micro/M02-alberti-4-4|deadpan|none|s1",
+   "input_sha256": "6ca936bf771c6b5cec4e739069f50b62fc302784b59b29da1320842cf4f5238e",
+   "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
+  },
+  {
+   "id": "micro/M02-alberti-4-4|human|oracle|s1",
+   "input_sha256": "6f7c5f649282c4339ae013b82bfbcfbd4a36729b0b8d52fcb39c09ed848b48a9",
+   "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
+  },
+  {
+   "id": "micro/M03-jig-6-8|amt|oracle-noisy|s1",
+   "input_sha256": "2eccc3312f2797cdab3a2d0c6d9768d8b491a44cf6210cb0158448d08ab2725c",
+   "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
+   "id": "micro/M03-jig-6-8|deadpan|none|s1",
+   "input_sha256": "0d6e43b3ee3e41be2ecb8df45b89f49fa6cc02ba30c97b2290ead10b1543de68",
+   "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
+   "id": "micro/M03-jig-6-8|human|oracle|s1",
+   "input_sha256": "ce5984d8508d3cc7935fe34054c796c627e2a1629d4f5f49aa5fab8d4fb4cf58",
+   "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
+   "id": "micro/M04-triplets-4-4|deadpan|none|s1",
+   "input_sha256": "02330e7b64528d809af5a7ac30d314d68817ee8e23c3ec5a5cc073000613d303",
+   "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
+  },
+  {
+   "id": "micro/M04-triplets-4-4|human|oracle|s1",
+   "input_sha256": "261d0d12f387c9b2b853f81b2f6c0c4739ca7701e847ea4762a10f72bcee5bf7",
+   "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
+  },
+  {
+   "id": "micro/M05-32nds-120|deadpan|none|s1",
+   "input_sha256": "94e7d3cce470d76d35709763a9ef34589184a2532f960b0c19a07a98899699e7",
+   "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
+   "id": "micro/M05-32nds-120|human|oracle|s1",
+   "input_sha256": "9630be94b54fa0c84e42a645b04741cd20297942c6ccf6a0c2b6e534f9b721c3",
+   "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
+   "id": "micro/M05-32nds-120|rubato|oracle|s1",
+   "input_sha256": "3ed057811498aba373b1de22170aac8fdcdfdc308ff3fe4255b50e47b48a0bf2",
+   "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
+   "id": "micro/M07-pickup-3-4|deadpan|none|s1",
+   "input_sha256": "a7f95c447166a46e34ebaecfe2198550756153ef72fcfd53d4f1e21315e865d2",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
+   "id": "micro/M07-pickup-3-4|human|oracle|s1",
+   "input_sha256": "cb401d74754caffc551f7ec9b0d08eaace3f2966d34ae2a876af3fb35dd519c2",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
+   "id": "micro/M07-pickup-3-4|pedal|oracle|s1",
+   "input_sha256": "ef3363c52732d47a3d06a1ee6594b7f2eacf9ac0d30c8bdf010cb867beb20fbf",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
+   "id": "micro/M09-syncopation-ties|deadpan|none|s1",
+   "input_sha256": "23a5307e0159c483472b85d1a39a08aac11275fec2cb648f7b9900607adafff8",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
+   "id": "micro/M09-syncopation-ties|human|oracle|s1",
+   "input_sha256": "49f99707a9b8038e26ac4dacb2546d08a043ce1fab700320adf32e5e1f3bc8f5",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
+   "id": "micro/M09-syncopation-ties|pedal|oracle|s1",
+   "input_sha256": "b8832fc6526066e9c9a6c1af34c80e11c6a28aa3c89b5d5c914236ae2b98b7df",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
+   "id": "micro/M11-harmonic-minor|deadpan|none|s1",
+   "input_sha256": "ce7e0a97df28d24f610a217648cdd61168ff84544db9ac296d2298447205621a",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
+   "id": "micro/M11-harmonic-minor|human|oracle|s1",
+   "input_sha256": "3cd78ef78cc1d90c959fdd10fcefcb424d121d5644e2a5336143badc2a541f71",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
+   "id": "micro/M11-harmonic-minor|pedal|oracle|s1",
+   "input_sha256": "c2508de8a0cafd625da86d0dc142d507bea007046b2ea25592a900288932a1b4",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
+   "id": "micro/M12-flats-db|deadpan|none|s1",
+   "input_sha256": "c63321ccbd85294b4d4e4c36dc4241b47ac8f9b9c10a8a677aafddaa2a174676",
+   "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
+   "id": "micro/M12-flats-db|human|oracle|s1",
+   "input_sha256": "78787d8ec67b3078af6c7e3bce0bd7c8ef4adde5ec7e32353bde3d2a0e94560d",
+   "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
+   "id": "micro/M12-flats-db|rubato|oracle|s1",
+   "input_sha256": "0167d80380bb09bbba88b63c18541419b214cfc16a5e913cb9596d5ad8275b40",
+   "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
+   "id": "micro/M14-melody-in-bass|deadpan|none|s1",
+   "input_sha256": "32a4c9f23562733f60b10e5eea6cc594528161b76e728d23d8323fe3ce654962",
+   "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  },
+  {
+   "id": "micro/M14-melody-in-bass|human|oracle|s1",
+   "input_sha256": "0c234218d88a7ad459456fcc61185fd5658b29bedd7e561c0506182568342a3a",
+   "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  },
+  {
+   "id": "micro/M14-melody-in-bass|pedal|oracle|s1",
+   "input_sha256": "413cfc163bdc106a1a29a8d86f319dea733c7c810225f3e86762d4a537b19023",
+   "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  }
+ ],
+ "generator": "perform/2",
+ "reader": "reader/4",
+ "schema": "ppp.bench-lock/1",
+ "suite_sha256": "54a3d1680d1570b7d508f7697404c0182f94799b614320150af16a569a0e6cc7"
+}

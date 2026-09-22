@@ -1,0 +1,17 @@
+{
+ "arrangement.level": null,
+ "arrangement.style": null,
+ "bars": 12,
+ "beatFallback": null,
+ "beatSource": "audio",
+ "beatType": 4,
+ "beatsPerBar": 4,
+ "key.fifths": 0,
+ "key.mode": "major",
+ "lh": 96,
+ "notes": 129,
+ "quantizer": "heuristic",
+ "rh": 33,
+ "tempo": 112,
+ "tempoAlias": null
+}
