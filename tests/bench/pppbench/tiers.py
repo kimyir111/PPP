@@ -96,7 +96,8 @@ def _multiset_diff(label: str, mine: Counter, theirs: Counter) -> List[str]:
 def compare_projection(canon, app: Dict[str, Any]) -> List[str]:
     """Parser parity: the reader against the app's own reading of the same file (§17 M6).
 
-    Compared: bars (count, number as the app keys it, start, length, metre, key and mode), written
+    Compared: bars (count, number as the app keys it, start, length, metre, key and mode, repeat signs,
+    endings and bar-line style), the order the app plays the bars in (``Score.form``, §21 S-M1), written
     notes (bar, position, value, sounding pitch, hand), spelling (the app's pitch name), tuplets, the
     printed shapes of notes and rests (type — or the app's typeFromQ — and dots, §19 F2), the key
     presses the app's player makes (PianoScore.ties: struck notes and how long they are held) against
@@ -115,8 +116,13 @@ def compare_projection(canon, app: Dict[str, Any]) -> List[str]:
             diffs.append(f"measure {m.index}: time/key {m.time}/{m.fifths} vs app {a['time']}/{a['fifths']}")
         if "mode" in a and m.mode != a["mode"]:
             diffs.append(f"measure {m.index}: mode {m.mode} vs app {a['mode']}")
+        if "bar" in a and m.bar != (a["bar"] or {}):
+            diffs.append(f"measure {m.index}: repeats/endings {m.bar} vs app {a['bar']}")
         if len(diffs) > 5:
             break
+    mine = canon.app_play_order() if "visits" in app else None
+    if mine is not None and mine != app["visits"]:
+        diffs.append(f"play order: {len(mine)} bars {mine[:12]} vs app {len(app['visits'])} {app['visits'][:12]}")
     r6 = lambda x: round(float(x), 6)  # noqa: E731
     diffs += _multiset_diff("notes", Counter((n.measure, r6(n.pos_q), r6(n.dur_q), n.midi, n.hand) for n in canon.notes),
                             Counter((n["m"], r6(n["b"]), r6(n["dur"]), n["midi"], n["hand"]) for n in app["notes"]))

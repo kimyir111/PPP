@@ -38,7 +38,7 @@ python tests/bench/run.py ab --suite core --a git:HEAD --b worktree   # what did
 python tests/bench/run.py golden                      # semantic + byte snapshots
 python tests/bench/run.py correctness                 # the reader against independent MusicXML fixtures
 python tests/bench/run.py known-defects               # catalogue defects PPP ships (measured, not fixed)
-python tests/bench/run.py mutation-check              # proves the gate catches 30 planted regressions
+python tests/bench/run.py mutation-check              # proves the gate catches 34 planted regressions
 python tests/bench/run.py update-baseline --suite core --reason "..."
 python tests/bench/run.py relock --suite core --reason "..."
 python tests/bench/tools/make_provenance.py [--check] # licence evidence manifest
@@ -72,7 +72,7 @@ Three layers, in this order of importance:
    | `critical.pitch_integrity` | identity F1 ≥ 0.95 against the music | wrong or missing notes |
    | `critical.key` | the first key signature is exact, and ≥ 95 % of notes are read under the music's key signature (n/a when the registry cannot trust the key) | unmarked notes' pitch |
    | `critical.hands` | ≥ 80 % of notes on the right hand (n/a for one-staff references) | PPP practises hands separately |
-   | `critical.structure` | no overfull, underfull or incomplete bar (every staff fills its bar), no empty bar added at an end, bar numbers counting up by one, stats that describe the MusicXML | structure; the app finds bars by number |
+   | `critical.structure` | no overfull, underfull or incomplete bar (every staff fills its bar; a short bar only as a pickup, its complement or half of a bar split at a repeat), no empty bar added at an end, bar numbers counting up by one, the app plays the bars in the music's order (no repeat sign added, moved or changed), stats that describe the MusicXML | structure; the app finds bars by number and plays repeats |
    | `critical.accidentals` | every accidental the page needs is printed, and none names another pitch | the reader's pitch |
    | `critical.pedal` | when the performance used the pedal, ≥ half its changes are written | sustain in playback |
 
@@ -123,7 +123,8 @@ The main metrics (↑ better unless marked ↓; `…_ref` variants count against
 | `notation.note_shape.consistency` | Does every printed note and rest shape say how long it lasts? The app draws `<type>`/`<dot>` and plays `<duration>`. |
 | `struct.tempo.timeline_accuracy` / `struct.time_sig.timeline_accuracy` / `struct.key.timeline_accuracy` | Over the whole score, note by note: played at the right tempo (the app player's tempo map), read under the right time signature, under the right key signature? A change in the wrong place, or a wrong one late in the piece, counts. |
 | `struct.measure_numbers.valid` / `.app_onset_accuracy` | Do bar numbers count up by one? Where does the app put each note, given that it finds bars by number (repeated numbers lay bars over each other)? |
-| `read.bar_completeness` | Does every staff fill every bar (first/last, implicit and repeat-split bars excepted)? |
+| `read.bar_completeness` | Does every staff fill every bar? Excepted: the first and last bar (pickup, complement) and the two halves of a bar split at a repeat sign or ending — in a prediction only where it writes that repeat (judged by `struct.form.order_exact`) or where the reference splits the same bar; in a reference also at a double or final bar line ("Fine"). Never `implicit="yes"`: a prediction cannot excuse its own short bar (G00 §21). |
+| `struct.form.order_exact` | Does the app play the bars in the music's order? The app expands repeat signs and endings (`Score.form`) into what it plays. Against a performance (which takes no repeat) the score may have no repeat at all or exactly the reference's repeats; against a score (OMR, prediction files) only the reference's. `plays_per_bar` (diagnostic): bars played per bar written. |
 | `read.ledger_lines.heavy_rate` ↓ | Notes that need four or more ledger lines under the clef in force (a wrong clef shows here). |
 | `notation.accidentals.courtesy_per_100` ↓ | Printed accidentals the page does not need, per 100 notes (clutter). |
 | `notation.hand.accuracy` | Right hand on the treble staff, left on the bass? |
@@ -170,22 +171,25 @@ the 5 original ones (hands, key, durations, metre, bar phase), the 7 from the in
 (tempo mark dropped, printed metre changed without the stats, an extra empty bar, no printed
 accidentals, a global-tempo quantiser, no pedal marks, minor-key leading tones spelled flat), 5
 added by its fixer (high notes on the left hand, no triplets, no natural signs, the last bar cut,
-bar times a beat late) and 13 from the final review (G00 §19-§20: a tempo change to half speed
+bar times a beat late), 13 from the final review (G00 §19-§20: a tempo change to half speed
 midway, a wrong metre or key signature in the last third, dots dropped, note types one value short,
 long notes written at half length, bar numbers restarting, skipping or swapped, the bass staff in
 treble clef, trailing rests a beat short, rests typed one value long, an accidental on every note)
-— and requires each to be a REGRESSION naming its metric, and a no-op to leave `results.json`
-byte-identical. gate/1 missed six of the review's seven; gate/2 missed seven of the final review's
-ten.
+and 4 from the short final review (G00 §21: a repeat sign after the middle bar, short right-hand
+bars marked `implicit="yes"`, a bar split in two with no repeat sign, no `<staves>`) — and requires
+each to be a REGRESSION naming its metric, and a no-op to leave `results.json` byte-identical.
+gate/1 missed six of the review's seven; gate/2 missed seven of the final review's ten; gate/3 at
+metrics/4 missed the repeat, the implicit bars and the split bar.
 
 ## Golden snapshots
 
 Seventeen fixed inputs (including the lock, arrangement, PM2S-grid, pedal, AMT-error and rubato
 paths, a method-book piece in 2/4). Each has two snapshots with different jobs:
 
-- **semantic** (`expected/<key>.semantic.json`, schema `ppp.bench-semantic/2`): the score's
-  *structure* — bars with the numbers the app finds them by, staves, clefs, which staff and voice
-  each note and rest is in — and its *music* — metre and key per bar, tempo marks, notes (position,
+- **semantic** (`expected/<key>.semantic.json`, schema `ppp.bench-semantic/3`): the score's
+  *structure* — bars with the numbers the app finds them by, their repeat signs, endings and bar-line
+  style, the order the app plays the bars in, staves, which staff is which hand (or shown and never
+  played), clefs, which staff and voice each note and rest is in — and its *music* — metre and key per bar, tempo marks, notes (position,
   value, pitch, spelling, printed type and dots, ties, tuplets, printed accidentals), rests
   (position, value, printed type and dots, tuplet), pedal marks; plus the stats the app reads, and
   the bar and beat times (`.timing.json`) it syncs the recording to the score with. A difference
@@ -193,12 +197,13 @@ paths, a method-book piece in 2/4). Each has two snapshots with different jobs:
   metrics use the stored bar times).
 - **byte** (`expected/<key>.musicxml`): serialisation stability and determinism.
 
-Labels, most severe first: **STRUCTURAL_CHANGE** (bars, bar numbers, staves, clefs, a note or rest
-moved to another staff or voice), **SEMANTIC_CHANGE** (the music, stats or bar times, in an unchanged
+Labels, most severe first: **STRUCTURAL_CHANGE** (bars, bar numbers, repeat signs and endings, the
+play order, staves, hands, clefs, a note or rest moved to another staff or voice), **SEMANTIC_CHANGE** (the music, stats or bar times, in an unchanged
 frame), **SERIALIZATION_ONLY** (different bytes; same structure, music, stats and times: element
 order, whitespace, voice numbering). A dot removed, a note type or rest changed, a clef swapped, a
-note moved to the other staff or a bar renumbered is never SERIALIZATION_ONLY (unit
-`test_final_review_fixes.GoldenClassification`). When a writer is rewritten (G1), only
+note moved to the other staff, a bar renumbered, a repeat sign added, removed or moved, or
+`<staves>` dropped is never SERIALIZATION_ONLY (unit `test_final_review_fixes.GoldenClassification`,
+`test_short_review_fixes`). When a writer is rewritten (G1), only
 SERIALIZATION_ONLY may be blessed as formatting; every other label is a change of the music to judge.
 
 Both need `golden --bless --reason` to be accepted. One case failing — or its report crashing —
@@ -238,7 +243,7 @@ does not fix them; `check` fails when a count grows. At the G0 baseline:
 | `tempo_marks_disagree` | 4 | 4 files | `<sound tempo>` and the printed mark differ |
 | `grace_notes_dropped` (limitation) | 17 | 244 notes | parseMusicXML skips grace notes |
 | `note_shape_mismatch` | 4 (Für Elise, 2 hymns, Burgmüller 19) | 8 notes/rests | the printed type/dots say another length than `<duration>`: the page shows another rhythm than the app plays |
-| `incomplete_bars` | 10 | 38 bars | a staff stops before the bar ends (stricter than `bar_integrity`) |
+| `incomplete_bars` | 12 | 42 bars | a staff stops before the bar ends, or a bar is short with nothing to split it (not a pickup, its complement, or half of a bar split at a repeat sign, an ending or a double/final bar line); stricter than `bar_integrity`. 2 of the 12 since G00 §21: two hymns split a bar with no bar-line mark |
 | `bar_numbering` | 0 | – | every committed score numbers its bars 0/1, 2, 3, … |
 
 ## The corpus

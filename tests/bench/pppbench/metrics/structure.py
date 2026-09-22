@@ -1,4 +1,4 @@
-"""Structure: metre, key, tempo, bar count, bar numbers, downbeats (docs/GOALS/G00 §8.4, §17, §19).
+"""Structure: metre, key, tempo, bar count, bar numbers, play order, downbeats (docs/GOALS/G00 §8.4, §17, §19, §21).
 
 Everything the user sees is read from the predicted MusicXML itself. The SUT's ``stats`` are used
 only for what the MusicXML cannot say (where each bar falls in the recording) and are checked
@@ -183,6 +183,33 @@ def measure_numbers(pred) -> Dict[str, Optional[float]]:
             "struct.measure_numbers.app_onset_accuracy": ok / len(notes) if notes else 1.0}
 
 
+def play_order(ctx) -> Dict[str, Optional[float]]:
+    """Does the app play the prediction's bars in the music's order (G00 §21 S-M1)? The app expands repeat
+    signs and first/second endings (``Score.form``) into what it strikes, its tempo map and its pedal, so a
+    repeat sign that should not be there plays a passage twice, and one missing or moved plays another
+    piece. ``order_exact`` compares the prediction's play order (``app_play_order``) with the truth's:
+
+    * **performed input** (``kind`` T): the performance plays every written bar of the reference once, in
+      order — the synthetic performer takes no repeat, and a recorded reference is "the score as played".
+      Two notations of it are right: no repeat sign at all (the app plays every bar once, as performed),
+      or the reference's own repeat signs and endings on the same bars (the piece as printed; the play
+      order is then the reference's). Anything else is wrong: a repeat the reference does not have, one
+      moved to another bar, another number of times, some of the reference's repeats kept and others
+      dropped. The SUT hears no repeat it was not played, so leaving them all out is never penalised.
+    * **a score read from a score** (``kind`` S: OMR, prediction files): the reference's play order only;
+      without repeats on either side, every bar once.
+
+    ``plays_per_bar`` (diagnostic): bars played per bar written, 1 without repeats."""
+    pred, ref = ctx["pred"], ctx["ref"]
+    pv, rv = pred.app_play_order(), ref.app_play_order()
+    pred_once = pv == list(range(len(pred.measures)))
+    ref_once = rv == list(range(len(ref.measures)))
+    as_printed = len(pred.measures) == len(ref.measures) and pv == rv
+    ok = as_printed or (pred_once and (ctx["kind"] == "T" or ref_once))
+    return {"struct.form.order_exact": float(ok),
+            "struct.form.plays_per_bar": len(pv) / len(pred.measures) if pred.measures else None}
+
+
 def empty_edges(canon) -> Tuple[int, int]:
     """(leading, trailing) bars without a played note."""
     has = [False] * len(canon.measures)
@@ -261,4 +288,5 @@ def compute(ctx) -> Dict[str, Optional[float]]:
             out["struct.downbeat.f1"] = None
     out.update(sequences(ctx))
     out.update(measure_numbers(pred))
+    out.update(play_order(ctx))
     return out

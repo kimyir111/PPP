@@ -1,17 +1,18 @@
 # PPP — current state
 
 Updated 2026-09-22, at the end of G0 (Quality Foundation): implemented, reviewed, fixed, reviewed
-again and fixed again. Read this first in a new session, then the current goal's spec in `docs/GOALS/`.
+again, fixed again, short-reviewed and fixed a last time (repeats, implicit bars). Read this first in a
+new session, then the current goal's spec in `docs/GOALS/`.
 
 ## Where things are
 
 | | |
 | --- | --- |
-| Goals | Numbered specs in `docs/GOALS/`. **G0 is implemented (§16), independently reviewed (§17), fixed (§18), finally reviewed (§19) and fixed again (§20)**. `G00_QUALITY_FOUNDATION.md` §20 has the result, what is still open and the verdict. |
-| G0 code | Branch `g0-quality-foundation`, worktree `D:/PPP-g0` (so the shared `D:/PPP` tree and other sessions' files stay untouched). **Not merged to `main`, not pushed. Everything after the review commit `b1d817b` is uncommitted** (the fixers' work, §18 and §20): commit it in one `git add -A` of `tests/bench`, `docs`, `.github`, `package.json` — a partial commit breaks CI. |
+| Goals | Numbered specs in `docs/GOALS/`. **G0 is implemented (§16), independently reviewed (§17), fixed (§18), finally reviewed (§19), fixed again (§20), short-reviewed (§21, NEEDS_FIX: two MAJOR) and fixed a last time (§21.15)**. `G00_QUALITY_FOUNDATION.md` §21.15 has the last result, what is still open and the verdict. |
+| G0 code | Branch `g0-quality-foundation`, worktree `D:/PPP-g0` (so the shared `D:/PPP` tree and other sessions' files stay untouched). Committed and pushed to `origin/g0-quality-foundation` (no PR yet). **Not merged to `main`.** `tests/README.md` has a two-line doc change from an earlier session that is outside the allowed paths and left uncommitted (user decision). |
 | `main` | **Local `main` is `d82bb71`, which must not be pushed.** Despite its message ("harden G0 quality benchmark") it holds no benchmark code: it is a `git add -A` sweep of `D:/PPP` with copyrighted `tmp/` audio and score renders, `__pycache__`, a `_oh-sheet-compare` gitlink and another session's 124 `catalog/method` files (G00 §19.18). It is not pushed (`origin/main` is `e0d8b23`). The user decides how to undo it before G0 is merged. |
 | App | `Piano Coach App.dc.html` (single file, ~19k lines), `audio-score.js` (recording → MusicXML), `omr-service.js` (local helper, 127.0.0.1:8788), `server.js` (port 8777). Deploy: Render, manual (`render deploys create …`; a push does not deploy). |
-| Tests | `npm test` (26 browser suites; needs `npm start`, network, puppeteer), `npm run test:transcription-core` (16, including `beat_track_test.py`), `npm run test:arranger` (3), `npm run test:bench` (179 unit tests + 17 golden snapshots + 13 correctness fixtures). |
+| Tests | `npm test` (26 browser suites; needs `npm start`, network, puppeteer), `npm run test:transcription-core` (16, including `beat_track_test.py`), `npm run test:arranger` (3), `npm run test:bench` (196 unit tests + 17 golden snapshots + 13 correctness fixtures). |
 | CI | `.github/workflows/bench.yml`: a gate job (unit, golden, lint, provenance, correctness, smoke/core/robust run + check, replay-public, transcription-core, arranger) and a nightly job (mutation-check, full, the reviews' `adversarial.py`, `final_review.py`, `final_oracle.py`). The gate runs on a **pull request** or a push to `main`; pushing the branch alone runs nothing. The nightly schedule runs only from the default branch (after the merge; `workflow_dispatch` runs it by hand). Not yet run on GitHub. |
 
 ## Measuring score quality (G0)
@@ -31,10 +32,14 @@ tempo within ±4 % and its player's tempo map within ±4 % for 19 in 20 notes, a
 in the right bar and beat, at least 80 % of notes with the right value as played and as printed, at
 most ~5 % of notes missing or invented, the right key signature (first and for 19 in 20 notes), at
 least 80 % of notes on the right hand, no broken, incomplete or added bars and bar numbers counting
-up by one, every needed accidental printed, pedal written when it was used. The diagnostic score
+up by one, the bars played in the music's order (no repeat sign added, moved or changed), every
+needed accidental printed, pedal written when it was used. The diagnostic score
 (`sqi/2`) is a trend line, not a verdict: 199 core cases score above its mean and are still unusable.
 
-### Baseline (metrics/4, reader/3, gate/3; audio-score.js sha256 559a1f40…, CRLF read as LF)
+### Baseline (metrics/5, reader/4, gate/3; audio-score.js sha256 559a1f40…, CRLF read as LF)
+
+metrics/5 and reader/4 (G00 §21.15) changed no number below: the SUT writes no repeat sign, no split bar
+and no inner implicit bar, so every stored metric of every case is what it was at metrics/4.
 
 | suite | cases | usable | diagnostic | notes |
 | --- | --- | --- | --- | --- |
@@ -54,11 +59,20 @@ Burgmüller 3.4 %, Sonatina 9.8 %, Beyer 10.8 %, Czerny 599 12.5 %, hymns 33.5 %
 
 - Results are byte-identical run to run, from another working directory, with file enumeration
   reversed, and between Windows and Linux (`node:24-bookworm`, offline). Procedure in `tests/bench/README.md`.
-- `mutation-check` plants 30 regressions (5 original, 7 from the first review, 5 from its fixer, 13
-  from the final review) and proves each is a REGRESSION on its metric; the review scripts
-  (`tests/bench/review/`) check the benchmark itself.
+- `mutation-check` plants 34 regressions (5 original, 7 from the first review, 5 from its fixer, 13
+  from the final review, 4 from the short review: a spurious repeat sign, short bars marked
+  `implicit="yes"`, a bar split without a repeat, no `<staves>`) and proves each is a REGRESSION on
+  its metric; the review scripts (`tests/bench/review/`) check the benchmark itself.
 - Golden labels a change `STRUCTURAL_CHANGE`, `SEMANTIC_CHANGE` or `SERIALIZATION_ONLY`; only the
-  last is formatting. A dot, note type, rest, clef, staff or bar number never counts as formatting.
+  last is formatting. A dot, note type, rest, clef, staff, bar number, repeat sign or ending, or which
+  staff is which hand never counts as formatting.
+- **Repeats.** The benchmark reads repeat signs and endings the way the app does and compares the
+  app's play order (`struct.form.order_exact`, in `critical.structure`). The synthetic performer takes
+  no repeat, so against a performance a score is right with no repeat sign at all or with exactly the
+  reference's; against a score (OMR, prediction files) only the reference's play order is right.
+- **Short bars.** Only a pickup, its complement, or the two halves of a bar split at a repeat sign or
+  ending are excused (in a prediction: a repeat it writes, which the play-order gate judges, or the
+  reference's own split). A prediction's `implicit="yes"` or double bar line excuses nothing.
 
 ### What the benchmark leaves out, and why
 
@@ -112,8 +126,10 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
     suspect bars flagged (`omr.flag.recall` 0).
 13. **(expected) 5/4 is written as 4/4** (micro M21). The metre is not supported yet.
 14. **Catalogue bar integrity**: 24 files with overfull, underfull or empty bars (88 bars):
-    hymns 12, Sonatina 8, Czerny 599 4. By the stricter rule (every staff fills its bar), 10 files
-    and 38 bars (`incomplete_bars`).
+    hymns 12, Sonatina 8, Czerny 599 4. By the stricter rule (every staff fills its bar; a short bar
+    only as a pickup, its complement or half of a bar split at a repeat sign, an ending or a double or
+    final bar line), 12 files and 42 bars (`incomplete_bars`). Two of them since G00 §21.15: All Glory,
+    Laud and Honor and I Need Thee Every Hour split a bar in two with no bar-line mark.
 15. **Self-contradicting tempo marks**: 4 method-book files whose `<sound tempo>` and printed
     metronome disagree (lint L13). The app's score tempo follows one, its player the other.
 16. **Grace notes are dropped** by `parseMusicXML` (a known limitation): 17 files, 244 notes.
@@ -154,9 +170,9 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
 
 ## Next
 
-- The user decides: what to do with local `main`'s `d82bb71`; committing the G0 work in one commit;
-  merging `g0-quality-foundation` into `main` and opening the PR that turns on CI. G00 §20 gives the
-  verdict and what to check on GitHub.
+- A short final review of G00 §21.15 (the last fixer's verdict is READY_FOR_FINAL_REVIEW). Then the
+  user decides: what to do with local `main`'s `d82bb71`; merging `g0-quality-foundation` into `main`
+  and opening the PR that turns on CI. G00 §20 says what to check on GitHub. Do not start G1 before.
 - Before any Goal that changes onset, beat, tempo, metre or note-value (release) inference: record
   the real performances above (M11).
 - Later goals should target the measured issues above: 1, 2 and 18 decide most of the unusable

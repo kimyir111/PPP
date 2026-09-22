@@ -30,7 +30,8 @@ def canonical_from_projection(proj: Dict[str, Any]) -> CanonicalScore:
                                 implicit=(i == 0 or i == len(proj["measures"]) - 1) and len_q < sig,
                                 time=(int(m["time"][0]), int(m["time"][1])), fifths=int(m["fifths"]),
                                 mode=m.get("mode") or "major", mode_explicit=True,
-                                app_number=int(num) if isinstance(num, (int, float)) or str(num).lstrip("-").isdigit() else i + 1))
+                                app_number=int(num) if isinstance(num, (int, float)) or str(num).lstrip("-").isdigit() else i + 1,
+                                bar=dict(m.get("bar") or {})))
     notes, rests = [], []
     for n in proj["notes"]:
         if n.get("m") is None:

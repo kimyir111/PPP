@@ -95,3 +95,29 @@ python tests/bench/review/final_oracle.py     # the same music engraved differen
   hymns that ignore their key signature, on the printed-accidental gate); anything else is a GAP.
   At the review the pickup-as-full-bar variant lost pitch identity on five pieces (PredTime, §19
   m1); after the fix: **4 OK, 0 GAP**.
+
+## Short final review (G00 §21) and the last fixer (§21.15)
+
+```sh
+python tests/bench/review/short_review.py              # 8 user-visible mutations + repeat variants of every core reference (~5 min)
+python tests/bench/review/short_review.py --only repeats   # only the repeat variants (~20 s)
+```
+
+- The review found two holes: a repeat sign the benchmark never read (the app plays a passage twice;
+  core `results.json` byte-identical, golden SERIALIZATION_ONLY) and a prediction's `implicit="yes"`
+  switching the complete-bar check off. The last fixer read repeats and endings (reader/4), put the
+  app's play order in `critical.structure` (`struct.form.order_exact`), stopped `implicit` and
+  unmarked half bars from excusing a short bar, and gave golden the repeat marks, the play order and
+  the hands (semantic/3). The review's seven mutations and expectations are unchanged.
+- Added: `SR-FAKE-SPLIT-BAR` (a bar split in two with no repeat sign), and a second part that writes
+  the ideal output of every core reference with a fake repeat after the middle bar, and — where the
+  reference has repeats — its first backward repeat removed, moved a bar later or taken three times.
+  Each must fail the play-order gate against the performance and against the printed score, and
+  golden must call it STRUCTURAL_CHANGE. Two outcomes are right by design and counted apart:
+  removing a reference's only repeat leaves a score the app plays bar by bar once, as the benchmark
+  performed it (still wrong against the printed score and in golden); `times="3"` on a repeat inside
+  a first ending does not change what the app plays (golden only).
+- `final_oracle.py` gained a fifth variant, `no-repeats` (the score as performed), and checks
+  `struct.form.order_exact`.
+- `SR-SPURIOUS-REPEAT`, `SR-IMPLICIT-MASKS-SHORT-BARS`, `SR-FAKE-SPLIT-BAR` and `SR-NO-STAVES` are in
+  `mutation-check`.

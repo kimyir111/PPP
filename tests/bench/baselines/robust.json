@@ -270,6 +270,14 @@
     "mean": 0.710708,
     "n": 282
    },
+   "struct.form.order_exact": {
+    "mean": 1.0,
+    "n": 282
+   },
+   "struct.form.plays_per_bar": {
+    "mean": 1.0,
+    "n": 282
+   },
    "struct.key.fifths_exact": {
     "mean": 0.9,
     "n": 210
@@ -624,6 +632,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.562803,
+     "n": 141
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 141
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 141
     },
     "struct.key.fifths_exact": {
@@ -981,6 +997,14 @@
      "mean": 0.858613,
      "n": 141
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 141
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 141
+    },
     "struct.key.fifths_exact": {
      "mean": 0.904762,
      "n": 105
@@ -1330,6 +1354,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.802217,
+     "n": 32
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 32
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 32
     },
     "struct.key.fifths_exact": {
@@ -1687,6 +1719,14 @@
      "mean": 0.812463,
      "n": 18
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 18
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 18
+    },
     "struct.key.fifths_exact": {
      "mean": 1.0,
      "n": 18
@@ -2036,6 +2076,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.719396,
+     "n": 32
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 32
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 32
     },
     "struct.key.fifths_exact": {
@@ -2393,6 +2441,14 @@
      "mean": 0.651351,
      "n": 20
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 20
+    },
     "struct.key.fifths_exact": {
      "mean": 0.75,
      "n": 20
@@ -2738,6 +2794,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.386569,
+     "n": 16
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 16
     },
     "struct.key.fifths_exact": {
@@ -3091,6 +3155,14 @@
      "mean": 0.724211,
      "n": 28
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 28
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 28
+    },
     "struct.key.fifths_exact": {
      "mean": 0.714286,
      "n": 28
@@ -3436,6 +3508,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.761978,
+     "n": 86
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 86
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 86
     },
     "struct.key.fifths_exact": {
@@ -3793,6 +3873,14 @@
      "mean": 0.703068,
      "n": 56
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 56
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 56
+    },
     "struct.key.fifths_exact": {
      "mean": 0.788462,
      "n": 52
@@ -4142,6 +4230,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.792271,
+     "n": 6
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 6
     },
     "struct.key.fifths_exact": {
@@ -4499,6 +4595,14 @@
      "mean": 0.771978,
      "n": 16
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 16
+    },
     "struct.key.fifths_exact": {
      "mean": 0.8125,
      "n": 16
@@ -4844,6 +4948,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.764068,
+     "n": 88
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 88
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 88
     },
     "struct.key.fifths_exact": {
@@ -5195,6 +5307,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.242632,
+     "n": 4
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 4
     },
     "struct.key.fifths_exact": {
@@ -5552,6 +5672,14 @@
      "mean": 0.743183,
      "n": 28
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 28
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 28
+    },
     "struct.key.fifths_exact": {
      "mean": 0.821429,
      "n": 28
@@ -5905,6 +6033,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.700243,
+     "n": 20
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 20
     },
     "struct.key.fifths_exact": {
@@ -6262,6 +6398,14 @@
      "mean": 0.68865,
      "n": 30
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 30
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 30
+    },
     "struct.key.fifths_exact": {
      "mean": 0.875,
      "n": 24
@@ -6617,6 +6761,14 @@
      "mean": 0.765564,
      "n": 20
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 20
+    },
     "struct.key.fifths_exact": {
      "mean": 0.666667,
      "n": 12
@@ -6968,6 +7120,14 @@
      "mean": 0.759914,
      "n": 16
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 16
+    },
     "struct.key.fifths_exact": {
      "mean": 1.0,
      "n": 6
@@ -7307,6 +7467,14 @@
      "mean": 0.94269,
      "n": 8
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 8
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 8
+    },
     "struct.measure_numbers.app_onset_accuracy": {
      "mean": 1.0,
      "n": 8
@@ -7644,6 +7812,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.712766,
+     "n": 6
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 6
     },
     "struct.key.fifths_exact": {
@@ -8001,6 +8177,14 @@
      "mean": 0.667444,
      "n": 128
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 128
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 128
+    },
     "struct.key.fifths_exact": {
      "mean": 0.921875,
      "n": 128
@@ -8356,6 +8540,14 @@
      "mean": 0.750485,
      "n": 48
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 48
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 48
+    },
     "struct.key.fifths_exact": {
      "mean": 0.928571,
      "n": 28
@@ -8705,6 +8897,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.728002,
+     "n": 22
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 22
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 22
     },
     "struct.key.fifths_exact": {
@@ -9058,6 +9258,14 @@
      "mean": 1.0,
      "n": 2
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 2
+    },
     "struct.key.fifths_exact": {
      "mean": 1.0,
      "n": 2
@@ -9407,6 +9615,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.5,
+     "n": 2
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 2
     },
     "struct.key.fifths_exact": {
@@ -9764,6 +9980,14 @@
      "mean": 0.823717,
      "n": 32
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 32
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 32
+    },
     "struct.key.fifths_exact": {
      "mean": 0.807692,
      "n": 26
@@ -10113,6 +10337,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.833333,
+     "n": 2
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 2
     },
     "struct.key.fifths_exact": {
@@ -10470,6 +10702,14 @@
      "mean": 0.592071,
      "n": 18
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 18
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 18
+    },
     "struct.key.fifths_exact": {
      "mean": 0.888889,
      "n": 18
@@ -10809,6 +11049,14 @@
      "mean": 0.405128,
      "n": 2
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 2
+    },
     "struct.measure_numbers.app_onset_accuracy": {
      "mean": 1.0,
      "n": 2
@@ -11146,6 +11394,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.414387,
+     "n": 6
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 6
     },
     "struct.key.fifths_exact": {
@@ -11503,6 +11759,14 @@
      "mean": 0.497034,
      "n": 56
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 56
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 56
+    },
     "struct.key.fifths_exact": {
      "mean": 0.92,
      "n": 50
@@ -11856,6 +12120,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.788697,
+     "n": 110
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 110
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 110
     },
     "struct.key.fifths_exact": {
@@ -12213,6 +12485,14 @@
      "mean": 0.783028,
      "n": 56
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 56
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 56
+    },
     "struct.key.fifths_exact": {
      "mean": 0.833333,
      "n": 36
@@ -12562,6 +12842,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.833333,
+     "n": 2
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 2
     },
     "struct.key.fifths_exact": {
@@ -12919,6 +13207,14 @@
      "mean": 0.716935,
      "n": 8
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 8
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 8
+    },
     "struct.key.fifths_exact": {
      "mean": 1.0,
      "n": 4
@@ -13274,6 +13570,14 @@
      "mean": 0.460383,
      "n": 48
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 48
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 48
+    },
     "struct.key.fifths_exact": {
      "mean": 0.913043,
      "n": 46
@@ -13611,6 +13915,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.5,
+     "n": 2
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 2
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -13954,6 +14266,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.793511,
+     "n": 54
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 54
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 54
     },
     "struct.key.fifths_exact": {
@@ -14311,6 +14631,14 @@
      "mean": 0.592071,
      "n": 18
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 18
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 18
+    },
     "struct.key.fifths_exact": {
      "mean": 0.888889,
      "n": 18
@@ -14666,6 +14994,14 @@
      "mean": 0.788697,
      "n": 110
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 110
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 110
+    },
     "struct.key.fifths_exact": {
      "mean": 0.947368,
      "n": 76
@@ -15017,6 +15353,14 @@
      "mean": 0.285714,
      "n": 2
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 2
+    },
     "struct.key.fifths_exact": {
      "mean": 1.0,
      "n": 2
@@ -15354,6 +15698,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.478723,
+     "n": 4
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 4
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -15699,6 +16051,14 @@
      "mean": 0.823717,
      "n": 32
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 32
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 32
+    },
     "struct.key.fifths_exact": {
      "mean": 0.807692,
      "n": 26
@@ -16036,6 +16396,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.405128,
+     "n": 2
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 2
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -16379,6 +16747,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.741604,
+     "n": 198
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 198
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 198
     },
     "struct.key.fifths_exact": {
@@ -16730,6 +17106,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.603175,
+     "n": 10
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 10
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 10
     },
     "struct.key.fifths_exact": {
@@ -17087,6 +17471,14 @@
      "mean": 0.642572,
      "n": 74
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 74
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 74
+    },
     "struct.key.fifths_exact": {
      "mean": 0.824324,
      "n": 74
@@ -17436,6 +17828,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.710708,
+     "n": 282
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 282
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 282
     },
     "struct.key.fifths_exact": {
@@ -17793,6 +18193,14 @@
      "mean": 0.710708,
      "n": 282
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 282
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 282
+    },
     "struct.key.fifths_exact": {
      "mean": 0.9,
      "n": 210
@@ -18144,6 +18552,14 @@
      "mean": 0.65873,
      "n": 6
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 6
+    },
     "struct.key.fifths_exact": {
      "mean": 1.0,
      "n": 6
@@ -18493,6 +18909,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.78054,
+     "n": 80
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 80
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 80
     },
     "struct.key.fifths_exact": {
@@ -18850,6 +19274,14 @@
      "mean": 0.70415,
      "n": 146
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 146
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 146
+    },
     "struct.key.fifths_exact": {
      "mean": 0.856164,
      "n": 146
@@ -19205,6 +19637,14 @@
      "mean": 0.608711,
      "n": 48
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 48
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 48
+    },
     "struct.key.fifths_exact": {
      "mean": 1.0,
      "n": 48
@@ -19553,6 +19993,14 @@
      "n": 2
     },
     "struct.downbeat.f1": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.form.plays_per_bar": {
      "mean": 1.0,
      "n": 2
     },
@@ -19911,6 +20359,14 @@
      "mean": 0.614703,
      "n": 64
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 64
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 64
+    },
     "struct.key.fifths_exact": {
      "mean": 0.790323,
      "n": 62
@@ -20264,6 +20720,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.752684,
+     "n": 158
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 158
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 158
     },
     "struct.key.fifths_exact": {
@@ -20621,6 +21085,14 @@
      "mean": 0.702577,
      "n": 60
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 60
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 60
+    },
     "struct.key.fifths_exact": {
      "mean": 0.966667,
      "n": 60
@@ -20976,6 +21448,14 @@
      "mean": 0.710708,
      "n": 282
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 282
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 282
+    },
     "struct.key.fifths_exact": {
      "mean": 0.9,
      "n": 210
@@ -21329,6 +21809,14 @@
     "mean": 0.710708,
     "n": 282
    },
+   "struct.form.order_exact": {
+    "mean": 1.0,
+    "n": 282
+   },
+   "struct.form.plays_per_bar": {
+    "mean": 1.0,
+    "n": 282
+   },
    "struct.key.fifths_exact": {
     "mean": 0.9,
     "n": 210
@@ -21415,11 +21903,11 @@
    }
   },
   "date": "2026-09-22",
-  "git_sha": "b1d817bb9527e397f4934303886280fe25b97146",
+  "git_sha": "6dedc519d0f1e19ddf44340b66f405ad8baa34c1",
   "versions": {
    "generator": "perform/2",
-   "metrics": "metrics/4",
-   "reader": "reader/3",
+   "metrics": "metrics/5",
+   "reader": "reader/4",
    "sqi": "sqi/2"
   }
  },
@@ -21462,6 +21950,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 61.666667,
     "struct.downbeat.f1": 0.285714,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -21478,7 +21967,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "dfd4d364a0d7a46c",
+   "semantic": "9c1c74d8dd372786",
    "sqi": 61.666667,
    "status": "ok"
   },
@@ -21520,6 +22009,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 68.888889,
     "struct.downbeat.f1": 0.666667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -21536,7 +22026,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "b6e18c175808ca16",
+   "semantic": "7158ade0b03146cf",
    "sqi": 68.888889,
    "status": "ok"
   },
@@ -21578,6 +22068,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 82.5,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -21594,7 +22085,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "b3c0d02eb26b2127",
+   "semantic": "b04a6e4b80707c4e",
    "sqi": 82.5,
    "status": "ok"
   },
@@ -21636,6 +22127,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 100.0,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -21652,7 +22144,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "23e8a5c811592ca0",
+   "semantic": "4ab1e08f37c6aa6d",
    "sqi": 100.0,
    "status": "ok"
   },
@@ -21694,6 +22186,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 59.534884,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -21710,7 +22203,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "43e8a4957ed5441f",
+   "semantic": "cb663d77e0fc797f",
    "sqi": 59.534884,
    "status": "ok"
   },
@@ -21752,6 +22245,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 93.171247,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -21768,7 +22262,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "897b6cfe42088086",
+   "semantic": "2c7dde4c154c7cc4",
    "sqi": 93.171247,
    "status": "ok"
   },
@@ -21810,6 +22304,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 92.021601,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -21826,7 +22321,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "53623d66b2c69fa2",
+   "semantic": "6b3a9e31da9a347f",
    "sqi": 92.021601,
    "status": "ok"
   },
@@ -21868,6 +22363,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 91.336883,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -21884,7 +22380,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "53d7ea32ff9a6dce",
+   "semantic": "4a3c0d9fa93c4419",
    "sqi": 91.336883,
    "status": "ok"
   },
@@ -21926,6 +22422,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 90.580008,
     "struct.downbeat.f1": 0.97561,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -21942,7 +22439,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "7dac5b05985d9fa7",
+   "semantic": "206e7a805c56f304",
    "sqi": 90.580008,
    "status": "ok"
   },
@@ -21984,6 +22481,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 90.623102,
     "struct.downbeat.f1": 0.97561,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -22000,7 +22498,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "a6fee90a9f53e395",
+   "semantic": "cc9e1f4bd0d085ec",
    "sqi": 90.623102,
    "status": "ok"
   },
@@ -22042,6 +22540,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 93.882589,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -22058,7 +22557,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "0fd3c77022337b58",
+   "semantic": "ad14780592178f90",
    "sqi": 93.882589,
    "status": "ok"
   },
@@ -22100,6 +22599,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 94.295385,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -22116,7 +22616,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "17ca92f929eaf317",
+   "semantic": "d969b823a5ba43f6",
    "sqi": 94.295385,
    "status": "ok"
   },
@@ -22158,6 +22658,7 @@
     "read.ledger_lines.heavy_rate": 0.003509,
     "sqi": 52.776595,
     "struct.downbeat.f1": 0.4,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -22174,7 +22675,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "c6aa03f7ea8d354b",
+   "semantic": "4ff01d07fe108998",
    "sqi": 52.776595,
    "status": "ok"
   },
@@ -22216,6 +22717,7 @@
     "read.ledger_lines.heavy_rate": 0.003509,
     "sqi": 50.48006,
     "struct.downbeat.f1": 0.410256,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -22232,7 +22734,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "0d6bdcf54490b302",
+   "semantic": "e096a24017299493",
    "sqi": 50.48006,
    "status": "ok"
   },
@@ -22274,6 +22776,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 91.98318,
     "struct.downbeat.f1": 0.986301,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -22290,7 +22793,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "ac4e7ef87d03e6d7",
+   "semantic": "cc0a2f2f2320eca6",
    "sqi": 91.98318,
    "status": "ok"
   },
@@ -22332,6 +22835,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 91.034025,
     "struct.downbeat.f1": 0.986301,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -22348,7 +22852,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "0726a9f21952b69a",
+   "semantic": "adb675a0c5fb7b97",
    "sqi": 91.034025,
    "status": "ok"
   },
@@ -22390,6 +22894,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 66.681666,
     "struct.downbeat.f1": 0.285714,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -22406,7 +22911,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "a9a987011681ad9e",
+   "semantic": "852294b892e5f7f3",
    "sqi": 66.681666,
    "status": "ok"
   },
@@ -22448,6 +22953,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 92.612039,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -22464,7 +22970,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "afc50eb68f49f94d",
+   "semantic": "4dd06e6a106c5686",
    "sqi": 92.612039,
    "status": "ok"
   },
@@ -22506,6 +23012,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 72.16967,
     "struct.downbeat.f1": 0.680851,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -22522,7 +23029,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "7739637fda180549",
+   "semantic": "8500c1228ae2d9bb",
    "sqi": 72.16967,
    "status": "ok"
   },
@@ -22564,6 +23071,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 90.705706,
     "struct.downbeat.f1": 0.984127,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -22580,7 +23088,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "b3ec4ea6c81f1e94",
+   "semantic": "3293f4bcb7a9d7bf",
    "sqi": 90.705706,
    "status": "ok"
   },
@@ -22622,6 +23130,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 76.637074,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -22638,7 +23147,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "663150e5eb171915",
+   "semantic": "b76283735dcea747",
    "sqi": 76.637074,
    "status": "ok"
   },
@@ -22680,6 +23189,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 94.632201,
     "struct.downbeat.f1": 0.956522,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -22696,7 +23206,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "1d0219f76adecf5b",
+   "semantic": "abe9e8d29baa9c16",
    "sqi": 94.632201,
    "status": "ok"
   },
@@ -22738,6 +23248,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 52.957704,
     "struct.downbeat.f1": 0.387097,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -22754,7 +23265,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "7c8d3c78e1409c62",
+   "semantic": "40fa56691eac0bf8",
    "sqi": 52.957704,
    "status": "ok"
   },
@@ -22796,6 +23307,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 86.77034,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -22812,7 +23324,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "feddf3a5bc13c7a3",
+   "semantic": "d5a8fcd14c606694",
    "sqi": 86.77034,
    "status": "ok"
   },
@@ -22854,6 +23366,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 80.384977,
     "struct.downbeat.f1": 0.967742,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -22870,7 +23383,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "d0b2fdd551fdab65",
+   "semantic": "57e30b1a8560c8af",
    "sqi": 80.384977,
    "status": "ok"
   },
@@ -22912,6 +23425,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 80.334048,
     "struct.downbeat.f1": 0.967742,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -22928,7 +23442,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "1527e090f799775a",
+   "semantic": "f57087d0fbefa04e",
    "sqi": 80.334048,
    "status": "ok"
   },
@@ -22970,6 +23484,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 76.360923,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -22986,7 +23501,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "8f30b34cb25cc4e6",
+   "semantic": "6674f3bd31f15518",
    "sqi": 76.360923,
    "status": "ok"
   },
@@ -23028,6 +23543,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 92.719698,
     "struct.downbeat.f1": 0.967742,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -23044,7 +23560,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "c23880500a3ebe1f",
+   "semantic": "c61f8e7c5cbdd025",
    "sqi": 92.719698,
    "status": "ok"
   },
@@ -23086,6 +23602,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 93.181968,
     "struct.downbeat.f1": 0.967742,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -23102,7 +23619,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "72dae105a1b501f2",
+   "semantic": "7faa5ec426fa7146",
    "sqi": 93.181968,
    "status": "ok"
   },
@@ -23144,6 +23661,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 93.189085,
     "struct.downbeat.f1": 0.967742,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -23160,7 +23678,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "6581dc91ddb56d34",
+   "semantic": "3c01a4a171cd9ca5",
    "sqi": 93.189085,
    "status": "ok"
   },
@@ -23202,6 +23720,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 84.203179,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -23218,7 +23737,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "b6ea86d3756bec1b",
+   "semantic": "3b473530798e69f4",
    "sqi": 84.203179,
    "status": "ok"
   },
@@ -23260,6 +23779,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 60.787514,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -23276,7 +23796,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "614e1bae2956f915",
+   "semantic": "79b3d498c7c73b7a",
    "sqi": 60.787514,
    "status": "ok"
   },
@@ -23318,6 +23838,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 90.675888,
     "struct.downbeat.f1": 0.984127,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -23334,7 +23855,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "a04ae23ee471b85c",
+   "semantic": "83ab6f931a9c2986",
    "sqi": 90.675888,
    "status": "ok"
   },
@@ -23376,6 +23897,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 90.866873,
     "struct.downbeat.f1": 0.984127,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -23392,7 +23914,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "912262270040e0ec",
+   "semantic": "60fdb2ff3f13393e",
    "sqi": 90.866873,
    "status": "ok"
   },
@@ -23434,6 +23956,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 92.555439,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -23450,7 +23973,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "9e3bb76d2a5515e9",
+   "semantic": "b27fa12ce5162766",
    "sqi": 92.555439,
    "status": "ok"
   },
@@ -23492,6 +24015,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 92.393277,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -23508,7 +24032,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "98164c40073436aa",
+   "semantic": "dc2a01e37117a2cb",
    "sqi": 92.393277,
    "status": "ok"
   },
@@ -23550,6 +24074,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 93.157709,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -23566,7 +24091,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "7ec74334809edfd9",
+   "semantic": "686aefc64c02499b",
    "sqi": 93.157709,
    "status": "ok"
   },
@@ -23608,6 +24133,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 93.335289,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -23624,7 +24150,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "359b313361cbf7aa",
+   "semantic": "192ae128d59debb9",
    "sqi": 93.335289,
    "status": "ok"
   },
@@ -23666,6 +24192,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 64.537881,
     "struct.downbeat.f1": 0.285714,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -23682,7 +24209,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "fcae6b9e5fc0e741",
+   "semantic": "75e2b004dd362d28",
    "sqi": 64.537881,
    "status": "ok"
   },
@@ -23724,6 +24251,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 90.485593,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -23740,7 +24268,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "53920c52c44c2f5a",
+   "semantic": "157144a76d276038",
    "sqi": 90.485593,
    "status": "ok"
   },
@@ -23782,6 +24310,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 77.812347,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -23798,7 +24327,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "43969da8e7140fe5",
+   "semantic": "9a911bc6c40bedfb",
    "sqi": 77.812347,
    "status": "ok"
   },
@@ -23840,6 +24369,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 91.458964,
     "struct.downbeat.f1": 0.967742,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -23856,7 +24386,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "24f547456ef7586b",
+   "semantic": "1145155947eef1a7",
    "sqi": 91.458964,
    "status": "ok"
   },
@@ -23898,6 +24428,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 66.244916,
     "struct.downbeat.f1": 0.638298,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -23914,7 +24445,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "75422be10994157d",
+   "semantic": "5d8fd0630c0f316f",
    "sqi": 66.244916,
    "status": "ok"
   },
@@ -23956,6 +24487,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 83.159836,
     "struct.downbeat.f1": 0.967742,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -23972,7 +24504,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "efa503ccd5b2c0f6",
+   "semantic": "e2034417f81b4041",
    "sqi": 83.159836,
    "status": "ok"
   },
@@ -24014,6 +24546,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 83.075466,
     "struct.downbeat.f1": 0.967742,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -24030,7 +24563,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "16c83ca04465c85d",
+   "semantic": "b0972a3c9d7f293d",
    "sqi": 83.075466,
    "status": "ok"
   },
@@ -24072,6 +24605,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 61.403639,
     "struct.downbeat.f1": 0.967742,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -24088,7 +24622,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "717e83ac97ac4fe7",
+   "semantic": "07b8c670cb65e1ea",
    "sqi": 61.403639,
    "status": "ok"
   },
@@ -24130,6 +24664,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 53.357877,
     "struct.downbeat.f1": 0.387097,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -24146,7 +24681,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "b7c0eb43a1c985e0",
+   "semantic": "b73bd7a7dff89312",
    "sqi": 53.357877,
    "status": "ok"
   },
@@ -24188,6 +24723,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 54.085591,
     "struct.downbeat.f1": 0.4,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -24204,7 +24740,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "4304cf096c074adf",
+   "semantic": "7fd65789b1ca2347",
    "sqi": 54.085591,
    "status": "ok"
   },
@@ -24246,6 +24782,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 75.507708,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -24262,7 +24799,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "7d774bcc6124db64",
+   "semantic": "fdf4d091d26d3682",
    "sqi": 75.507708,
    "status": "ok"
   },
@@ -24304,6 +24841,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 90.687973,
     "struct.downbeat.f1": 0.967742,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -24320,7 +24858,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "513ab528d3ddd81f",
+   "semantic": "29f07c1f028f1511",
    "sqi": 90.687973,
    "status": "ok"
   },
@@ -24362,6 +24900,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 89.766547,
     "struct.downbeat.f1": 0.962963,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -24378,7 +24917,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "cd77765b72f67d5b",
+   "semantic": "eba49dc3f8d7579f",
    "sqi": 89.766547,
    "status": "ok"
   },
@@ -24420,6 +24959,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 90.179343,
     "struct.downbeat.f1": 0.962963,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -24436,7 +24976,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "633c7f0ddba7cd7e",
+   "semantic": "88800abf4dde9454",
    "sqi": 90.179343,
    "status": "ok"
   },
@@ -24478,6 +25018,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 65.086816,
     "struct.downbeat.f1": 0.684211,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -24494,7 +25035,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "93d27f464d20f360",
+   "semantic": "3fe866e683f49f75",
    "sqi": 65.086816,
    "status": "ok"
   },
@@ -24536,6 +25077,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 90.163145,
     "struct.downbeat.f1": 0.980392,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -24552,7 +25094,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "713a9333c8bfd47e",
+   "semantic": "65bcc6a901fbc2e3",
    "sqi": 90.163145,
    "status": "ok"
   },
@@ -24594,6 +25136,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 54.998092,
     "struct.downbeat.f1": 0.666667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -24610,7 +25153,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "28cb72800ec3fa11",
+   "semantic": "af05c54ff083f1f4",
    "sqi": 54.998092,
    "status": "ok"
   },
@@ -24652,6 +25195,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 80.015076,
     "struct.downbeat.f1": 0.9375,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -24668,7 +25212,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "a46680d545a6123a",
+   "semantic": "7860f235745ea3f0",
    "sqi": 80.015076,
    "status": "ok"
   },
@@ -24710,6 +25254,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 94.792462,
     "struct.downbeat.f1": 0.962963,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -24726,7 +25271,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "5bce4f527083835b",
+   "semantic": "883699e342c0d170",
    "sqi": 94.792462,
    "status": "ok"
   },
@@ -24768,6 +25313,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 95.169536,
     "struct.downbeat.f1": 0.962963,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -24784,7 +25330,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "da101e3cfc48684d",
+   "semantic": "ca54ff41aae35422",
    "sqi": 95.169536,
    "status": "ok"
   },
@@ -24826,6 +25372,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 91.26266,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -24842,7 +25389,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "f4177720422de90b",
+   "semantic": "d967fe79441fcdce",
    "sqi": 91.26266,
    "status": "ok"
   },
@@ -24884,6 +25431,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 91.413414,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -24900,7 +25448,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "6f55ab22fa830a59",
+   "semantic": "3392a16bd335efe1",
    "sqi": 91.413414,
    "status": "ok"
   },
@@ -24942,6 +25490,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 46.117586,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -24958,7 +25507,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "b4a690b2144a6434",
+   "semantic": "e7e5df0957ade5a2",
    "sqi": 46.117586,
    "status": "ok"
   },
@@ -25000,6 +25549,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 53.693968,
     "struct.downbeat.f1": 0.638298,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -25016,7 +25566,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "4f54d17604013409",
+   "semantic": "f8b0c03a21718933",
    "sqi": 53.693968,
    "status": "ok"
   },
@@ -25058,6 +25608,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 92.179487,
     "struct.downbeat.f1": 0.967742,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -25074,7 +25625,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "4559f4c90826e144",
+   "semantic": "8fceb100b8adf754",
    "sqi": 92.179487,
    "status": "ok"
   },
@@ -25116,6 +25667,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 91.907994,
     "struct.downbeat.f1": 0.967742,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -25132,7 +25684,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "5ce3aa980c7ba6ac",
+   "semantic": "2a4acbf0095aea74",
    "sqi": 91.907994,
    "status": "ok"
   },
@@ -25174,6 +25726,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 67.062326,
     "struct.downbeat.f1": 0.666667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -25190,7 +25743,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "89f2495703b88688",
+   "semantic": "0f0d5101a62315fb",
    "sqi": 67.062326,
    "status": "ok"
   },
@@ -25232,6 +25785,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 92.385647,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -25248,7 +25802,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "3b1cdd13bdf0db47",
+   "semantic": "1f66efa42958d54d",
    "sqi": 92.385647,
    "status": "ok"
   },
@@ -25290,6 +25844,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 95.306309,
     "struct.downbeat.f1": 0.967742,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -25306,7 +25861,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "e45e0470a947c17b",
+   "semantic": "34c19b29e845fa5f",
    "sqi": 95.306309,
    "status": "ok"
   },
@@ -25348,6 +25903,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 95.428223,
     "struct.downbeat.f1": 0.967742,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -25364,7 +25920,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "d94ceaad8f208bec",
+   "semantic": "1d972ba1ee1680a4",
    "sqi": 95.428223,
    "status": "ok"
   },
@@ -25406,6 +25962,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 75.490103,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -25422,7 +25979,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "ed12acc9949048e6",
+   "semantic": "6a0e4f0f738ae273",
    "sqi": 75.490103,
    "status": "ok"
   },
@@ -25464,6 +26021,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 93.720729,
     "struct.downbeat.f1": 0.956522,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -25480,7 +26038,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "788632693310c633",
+   "semantic": "9e7a9e7276d0cf97",
    "sqi": 93.720729,
    "status": "ok"
   },
@@ -25522,6 +26080,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 39.202568,
     "struct.downbeat.f1": 0.636364,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -25538,7 +26097,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "f2e4b7ee2f285957",
+   "semantic": "dc1b0e895a351960",
    "sqi": 39.202568,
    "status": "ok"
   },
@@ -25580,6 +26139,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 95.475944,
     "struct.downbeat.f1": 0.956522,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -25596,7 +26156,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "5bfd9f0a5d6ec8ff",
+   "semantic": "9af89a2a4450fd81",
    "sqi": 95.475944,
    "status": "ok"
   },
@@ -25638,6 +26198,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 67.83668,
     "struct.downbeat.f1": 0.967742,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -25654,7 +26215,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "5f8731755393bcbb",
+   "semantic": "c27db7a84f259c6f",
    "sqi": 67.83668,
    "status": "ok"
   },
@@ -25696,6 +26257,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 88.943946,
     "struct.downbeat.f1": 0.967742,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -25712,7 +26274,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "2e4cc18dc56a2164",
+   "semantic": "0899708058e083b3",
    "sqi": 88.943946,
    "status": "ok"
   },
@@ -25754,6 +26316,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 92.242259,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -25770,7 +26333,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "28eaa57d6b658eb2",
+   "semantic": "009bbb1de5a1181d",
    "sqi": 92.242259,
    "status": "ok"
   },
@@ -25812,6 +26375,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 90.319182,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -25828,7 +26392,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "e9940dd91e5a92cb",
+   "semantic": "b535da0b0e19c2d6",
    "sqi": 90.319182,
    "status": "ok"
   },
@@ -25870,6 +26434,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 57.822494,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -25886,7 +26451,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "aeedbb0da4478d6d",
+   "semantic": "a59a552dd1b76b47",
    "sqi": 57.822494,
    "status": "ok"
   },
@@ -25928,6 +26493,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 59.65256,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -25944,7 +26510,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "63256bd646eb87cb",
+   "semantic": "21ace3f22ddd387f",
    "sqi": 59.65256,
    "status": "ok"
   },
@@ -25986,6 +26552,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 91.967706,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -26002,7 +26569,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "5757f8f95c4e1b55",
+   "semantic": "1c7e2cd95239c3ba",
    "sqi": 91.967706,
    "status": "ok"
   },
@@ -26044,6 +26611,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 91.422747,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -26060,7 +26628,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "8e2ae1b542427154",
+   "semantic": "96a8b73c04f4a03a",
    "sqi": 91.422747,
    "status": "ok"
   },
@@ -26102,6 +26670,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 70.720409,
     "struct.downbeat.f1": 0.638298,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -26118,7 +26687,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "cc7f433e95eb22cf",
+   "semantic": "2553678358773a41",
    "sqi": 70.720409,
    "status": "ok"
   },
@@ -26160,6 +26729,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 53.550833,
     "struct.downbeat.f1": 0.638298,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -26176,7 +26746,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "45158f9dfd467872",
+   "semantic": "1476ad4518dbe3ff",
    "sqi": 53.550833,
    "status": "ok"
   },
@@ -26218,6 +26788,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 54.793894,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -26234,7 +26805,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "6fe2a7532fde7e9c",
+   "semantic": "d9963a571e478a04",
    "sqi": 54.793894,
    "status": "ok"
   },
@@ -26276,6 +26847,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 92.967593,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -26292,7 +26864,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "b2c3e6762ae6aa30",
+   "semantic": "9de1ec7a57853f52",
    "sqi": 92.967593,
    "status": "ok"
   },
@@ -26334,6 +26906,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 55.612688,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -26350,7 +26923,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "cdb6d07abf8fa076",
+   "semantic": "f9638d3dbfac7c29",
    "sqi": 55.612688,
    "status": "ok"
   },
@@ -26392,6 +26965,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 91.563101,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -26408,7 +26982,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "3a525c02665cc62e",
+   "semantic": "8c6767dc6efc424a",
    "sqi": 91.563101,
    "status": "ok"
   },
@@ -26450,6 +27024,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 68.188679,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -26466,7 +27041,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "fc15dd21b226623c",
+   "semantic": "c8130d8fedbe1925",
    "sqi": 68.188679,
    "status": "ok"
   },
@@ -26508,6 +27083,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 93.584906,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -26524,7 +27100,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "1e7d5971c668f206",
+   "semantic": "5d48f72a380830a6",
    "sqi": 93.584906,
    "status": "ok"
   },
@@ -26566,6 +27142,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 72.951807,
     "struct.downbeat.f1": 0.285714,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -26582,7 +27159,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "b2502647df4f6c8a",
+   "semantic": "f7c09656debec5d7",
    "sqi": 72.951807,
    "status": "ok"
   },
@@ -26624,6 +27201,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 95.542169,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -26640,7 +27218,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "a989eda24414bde2",
+   "semantic": "bde74e4d6cc053d2",
    "sqi": 95.542169,
    "status": "ok"
   },
@@ -26682,6 +27260,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 95.851064,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -26698,7 +27277,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "153568ba55abf9c5",
+   "semantic": "d1e1e7d4eda44276",
    "sqi": 95.851064,
    "status": "ok"
   },
@@ -26740,6 +27319,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 93.829787,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -26756,7 +27336,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "589438e3e030f07a",
+   "semantic": "8b07db5b7047cada",
    "sqi": 93.829787,
    "status": "ok"
   },
@@ -26798,6 +27378,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 91.052632,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -26814,7 +27395,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "2cb1253f0af17ffe",
+   "semantic": "a6a769b1b7de23ba",
    "sqi": 91.052632,
    "status": "ok"
   },
@@ -26856,6 +27437,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 92.736842,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -26872,7 +27454,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "895d75c351e30fd2",
+   "semantic": "9d098523c053240d",
    "sqi": 92.736842,
    "status": "ok"
   },
@@ -26914,6 +27496,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 90.0,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -26930,7 +27513,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "415ac7c8973cd46c",
+   "semantic": "2be28ad174a75e1f",
    "sqi": 90.0,
    "status": "ok"
   },
@@ -26972,6 +27555,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 91.818182,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -26988,7 +27572,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "def0bae4eb97c398",
+   "semantic": "c1faa5f92bc58ec1",
    "sqi": 91.818182,
    "status": "ok"
   },
@@ -27030,6 +27614,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 94.0,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -27046,7 +27631,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "e71059b21351ae3b",
+   "semantic": "09b760114378fa33",
    "sqi": 94.0,
    "status": "ok"
   },
@@ -27088,6 +27673,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 93.0,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -27104,7 +27690,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "5bf9e67acf08cfed",
+   "semantic": "cf91796059db7949",
    "sqi": 93.0,
    "status": "ok"
   },
@@ -27146,6 +27732,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 95.0,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -27162,7 +27749,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "caa39d0703a21d60",
+   "semantic": "35c4f962c3a4b887",
    "sqi": 95.0,
    "status": "ok"
   },
@@ -27204,6 +27791,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 95.0,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -27220,7 +27808,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "caa39d0703a21d60",
+   "semantic": "35c4f962c3a4b887",
    "sqi": 95.0,
    "status": "ok"
   },
@@ -27262,6 +27850,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 53.837209,
     "struct.downbeat.f1": 0.285714,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 0.0,
     "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -27278,7 +27867,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "89f6fb1d0b7feb6e",
+   "semantic": "d2d6631ee894016f",
    "sqi": 53.837209,
    "status": "ok"
   },
@@ -27320,6 +27909,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 80.581395,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 0.0,
     "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -27336,7 +27926,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "d2bb6ef4bdf2c88f",
+   "semantic": "55f910e98c06d125",
    "sqi": 80.581395,
    "status": "ok"
   },
@@ -27378,6 +27968,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 85.0,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 0.0,
     "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -27394,7 +27985,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "e0ad3af1f927d21b",
+   "semantic": "ea42df999504a584",
    "sqi": 85.0,
    "status": "ok"
   },
@@ -27436,6 +28027,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 85.0,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 0.0,
     "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -27452,7 +28044,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "e0ad3af1f927d21b",
+   "semantic": "ea42df999504a584",
    "sqi": 85.0,
    "status": "ok"
   },
@@ -27494,6 +28086,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 97.843137,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -27510,7 +28103,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "752bcca000f9e2f3",
+   "semantic": "b05c36bd2986f125",
    "sqi": 97.843137,
    "status": "ok"
   },
@@ -27552,6 +28145,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 97.352941,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -27568,7 +28162,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "fdac4cf036625e1c",
+   "semantic": "eb06603521def4af",
    "sqi": 97.352941,
    "status": "ok"
   },
@@ -27610,6 +28204,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 97.809524,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -27626,7 +28221,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "7ae27a99120411f1",
+   "semantic": "97f2b19582d9f13c",
    "sqi": 97.809524,
    "status": "ok"
   },
@@ -27668,6 +28263,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 98.095238,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -27684,7 +28280,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "11f4f77b2e0edbef",
+   "semantic": "174f51ddebfc14f3",
    "sqi": 98.095238,
    "status": "ok"
   },
@@ -27726,6 +28322,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 84.877796,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 0.0,
     "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -27742,7 +28339,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "bc36e7db42bef751",
+   "semantic": "6db8b6553a0ebb93",
    "sqi": 84.877796,
    "status": "ok"
   },
@@ -27784,6 +28381,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 85.490196,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 0.0,
     "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -27800,7 +28398,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "b8600de644bbf92e",
+   "semantic": "7b3fd46d8aa021c6",
    "sqi": 85.490196,
    "status": "ok"
   },
@@ -27842,6 +28440,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 41.291391,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -27858,7 +28457,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "4fad98d3e0321f2f",
+   "semantic": "b20d5d15ec54031e",
    "sqi": 41.291391,
    "status": "ok"
   },
@@ -27900,6 +28499,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 56.766004,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -27916,7 +28516,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "e07f8003963e3592",
+   "semantic": "8e69f0a037d69c7c",
    "sqi": 56.766004,
    "status": "ok"
   },
@@ -27958,6 +28558,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 61.190476,
     "struct.downbeat.f1": 0.428571,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -27974,7 +28575,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "409852eead4a06bd",
+   "semantic": "f8b1ad5496f4c943",
    "sqi": 61.190476,
    "status": "ok"
   },
@@ -28016,6 +28617,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 61.904762,
     "struct.downbeat.f1": 0.428571,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -28032,7 +28634,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "f530ffb761f69728",
+   "semantic": "5c70678ed628682f",
    "sqi": 61.904762,
    "status": "ok"
   },
@@ -28074,6 +28676,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 58.720221,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -28090,7 +28693,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "dedfb83dcf331e5d",
+   "semantic": "20e707d8ac854176",
    "sqi": 58.720221,
    "status": "ok"
   },
@@ -28132,6 +28735,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 56.386888,
     "struct.downbeat.f1": 0.4,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -28148,7 +28752,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "e85533a749914db9",
+   "semantic": "11473d26e68ba151",
    "sqi": 56.386888,
    "status": "ok"
   },
@@ -28190,6 +28794,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 58.697479,
     "struct.downbeat.f1": 0.428571,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -28206,7 +28811,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "33a87a7dfb6d707b",
+   "semantic": "c0347fe611e969f7",
    "sqi": 58.697479,
    "status": "ok"
   },
@@ -28248,6 +28853,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 58.02521,
     "struct.downbeat.f1": 0.413793,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -28264,7 +28870,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "95d0b1e31f3724f4",
+   "semantic": "e30c1bf2ae043acf",
    "sqi": 58.02521,
    "status": "ok"
   },
@@ -28306,6 +28912,7 @@
     "read.ledger_lines.heavy_rate": 0.002874,
     "sqi": 84.118497,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -28322,7 +28929,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "bbdd01c68b4eece8",
+   "semantic": "11ab08ca8aa40da9",
    "sqi": 84.118497,
    "status": "ok"
   },
@@ -28364,6 +28971,7 @@
     "read.ledger_lines.heavy_rate": 0.005731,
     "sqi": 84.378613,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -28380,7 +28988,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "aa139d00666d86e8",
+   "semantic": "a2f7d1889528b6de",
    "sqi": 84.378613,
    "status": "ok"
   },
@@ -28422,6 +29030,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 65.856643,
     "struct.downbeat.f1": 0.372093,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -28438,7 +29047,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "226f3155dd6e0d22",
+   "semantic": "b4739dac2f2f4d30",
    "sqi": 65.856643,
    "status": "ok"
   },
@@ -28480,6 +29089,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 94.903846,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -28496,7 +29106,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "dad72ec600934af4",
+   "semantic": "b8439c5976cffc95",
    "sqi": 94.903846,
    "status": "ok"
   },
@@ -28538,6 +29148,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 60.212112,
     "struct.downbeat.f1": 0.315789,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -28554,7 +29165,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "c4a2b7da5fc2a4d8",
+   "semantic": "f4dfb097683b406c",
    "sqi": 60.212112,
    "status": "ok"
   },
@@ -28596,6 +29207,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 93.873239,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -28612,7 +29224,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "aa61d4a7497495de",
+   "semantic": "6b86fe0558c66346",
    "sqi": 93.873239,
    "status": "ok"
   },
@@ -28654,6 +29266,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 53.863126,
     "struct.downbeat.f1": 0.4,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -28670,7 +29283,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "78d37441e260dd28",
+   "semantic": "e33ea5f730fd0aa1",
    "sqi": 53.863126,
    "status": "ok"
   },
@@ -28712,6 +29325,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 85.463736,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -28728,7 +29342,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "7c35bffef861ec3f",
+   "semantic": "99d52efb5ae42e34",
    "sqi": 85.463736,
    "status": "ok"
   },
@@ -28770,6 +29384,7 @@
     "read.ledger_lines.heavy_rate": 0.006885,
     "sqi": 62.905191,
     "struct.downbeat.f1": 0.672269,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 0.726481,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -28786,7 +29401,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "4fca7d79ef68c5d7",
+   "semantic": "5699651523e421ee",
    "sqi": 62.905191,
    "status": "ok"
   },
@@ -28828,6 +29443,7 @@
     "read.ledger_lines.heavy_rate": 0.006908,
     "sqi": 62.874564,
     "struct.downbeat.f1": 0.672269,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 0.726481,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -28844,7 +29460,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "5ee2c884253cb0da",
+   "semantic": "291699e40e8f872e",
    "sqi": 62.874564,
    "status": "ok"
   },
@@ -28886,6 +29502,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 81.833982,
     "struct.downbeat.f1": 0.888889,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -28902,7 +29519,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "cef58207516350d3",
+   "semantic": "1e4a03dccbb2f9f7",
    "sqi": 81.833982,
    "status": "ok"
   },
@@ -28944,6 +29561,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 90.287283,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -28960,7 +29578,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "2ce21e7907015921",
+   "semantic": "172f51d871318c69",
    "sqi": 90.287283,
    "status": "ok"
   },
@@ -29002,6 +29620,7 @@
     "read.ledger_lines.heavy_rate": 0.060241,
     "sqi": 91.569528,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -29018,7 +29637,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "61b2037c64b2d52b",
+   "semantic": "71e78ec82b8b9b1a",
    "sqi": 91.569528,
    "status": "ok"
   },
@@ -29060,6 +29679,7 @@
     "read.ledger_lines.heavy_rate": 0.060241,
     "sqi": 90.548549,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -29076,7 +29696,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "adfaec190762f785",
+   "semantic": "a57d8a4dbf4d40f6",
    "sqi": 90.548549,
    "status": "ok"
   },
@@ -29118,6 +29738,7 @@
     "read.ledger_lines.heavy_rate": 0.015306,
     "sqi": 85.1787,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -29134,7 +29755,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "e594d5e09da2fe3b",
+   "semantic": "57ec3c288ccde509",
    "sqi": 85.1787,
    "status": "ok"
   },
@@ -29176,6 +29797,7 @@
     "read.ledger_lines.heavy_rate": 0.015424,
     "sqi": 87.158281,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -29192,7 +29814,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "3170cb4eddbde681",
+   "semantic": "136bbd0666acd92f",
    "sqi": 87.158281,
    "status": "ok"
   },
@@ -29234,6 +29856,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 64.829849,
     "struct.downbeat.f1": 0.30303,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -29250,7 +29873,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "583340008c50bff7",
+   "semantic": "463c51afb726f300",
    "sqi": 64.829849,
    "status": "ok"
   },
@@ -29292,6 +29915,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 80.962406,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -29308,7 +29932,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "855f4917fe3b831e",
+   "semantic": "fec03371af1bfa48",
    "sqi": 80.962406,
    "status": "ok"
   },
@@ -29350,6 +29974,7 @@
     "read.ledger_lines.heavy_rate": 0.007407,
     "sqi": 71.611111,
     "struct.downbeat.f1": 0.285714,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -29366,7 +29991,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "3166712c80f1a9e8",
+   "semantic": "7394cd6ae6095b47",
    "sqi": 71.611111,
    "status": "ok"
   },
@@ -29408,6 +30033,7 @@
     "read.ledger_lines.heavy_rate": 0.007407,
     "sqi": 96.481481,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -29424,7 +30050,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "d890d5b4c8ba45a1",
+   "semantic": "37741355d23bdac4",
    "sqi": 96.481481,
    "status": "ok"
   },
@@ -29466,6 +30092,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 59.550265,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -29482,7 +30109,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "3347c726c74a50f1",
+   "semantic": "8ea380ecc7d13032",
    "sqi": 59.550265,
    "status": "ok"
   },
@@ -29524,6 +30151,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 61.058201,
     "struct.downbeat.f1": 0.444444,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -29540,7 +30168,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "566a80623686c132",
+   "semantic": "223cfb400d5c3dd8",
    "sqi": 61.058201,
    "status": "ok"
   },
@@ -29582,6 +30210,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 88.08642,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -29598,7 +30227,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "6d5d5119be8b3aa6",
+   "semantic": "04fa30138e1b6d7c",
    "sqi": 88.08642,
    "status": "ok"
   },
@@ -29640,6 +30269,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 65.637196,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -29656,7 +30286,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "ec1af156694dda10",
+   "semantic": "8854edaeb7155c2f",
    "sqi": 65.637196,
    "status": "ok"
   },
@@ -29698,6 +30328,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 61.042089,
     "struct.downbeat.f1": 0.666667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -29714,7 +30345,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "9ed677a4bb1bbe7b",
+   "semantic": "b59caf2ce48884b9",
    "sqi": 61.042089,
    "status": "ok"
   },
@@ -29756,6 +30387,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 65.576403,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -29772,7 +30404,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "4b1e185197a28601",
+   "semantic": "2114c3dfea0f868c",
    "sqi": 65.576403,
    "status": "ok"
   },
@@ -29814,6 +30446,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 54.10121,
     "struct.downbeat.f1": 0.285714,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -29830,7 +30463,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "1845d5225a84d6d1",
+   "semantic": "1f31de5ba7049334",
    "sqi": 54.10121,
    "status": "ok"
   },
@@ -29872,6 +30505,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 68.012821,
     "struct.downbeat.f1": 0.666667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -29888,7 +30522,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "103b150e2a4ec161",
+   "semantic": "a7be8a2897d3f93f",
    "sqi": 68.012821,
    "status": "ok"
   },
@@ -29930,6 +30564,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 80.591398,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -29946,7 +30581,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "4c98e234854ab706",
+   "semantic": "aceef5577e771668",
    "sqi": 80.591398,
    "status": "ok"
   },
@@ -29988,6 +30623,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 96.236559,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -30004,7 +30640,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "a791b15c95f5f51e",
+   "semantic": "d31d05746b54eed3",
    "sqi": 96.236559,
    "status": "ok"
   },
@@ -30046,6 +30682,7 @@
     "read.ledger_lines.heavy_rate": 0.037415,
     "sqi": 77.941176,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -30062,7 +30699,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "2bb6323650c03eae",
+   "semantic": "fe94e3637c71ab1b",
    "sqi": 77.941176,
    "status": "ok"
   },
@@ -30104,6 +30741,7 @@
     "read.ledger_lines.heavy_rate": 0.040441,
     "sqi": 95.220588,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -30120,7 +30758,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "19ceb04868002bfe",
+   "semantic": "9d277be1005f68bd",
    "sqi": 95.220588,
    "status": "ok"
   },
@@ -30162,6 +30800,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 85.474138,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -30178,7 +30817,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "addcf5fc023735b8",
+   "semantic": "328c86371638076c",
    "sqi": 85.474138,
    "status": "ok"
   },
@@ -30220,6 +30859,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 84.87069,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -30236,7 +30876,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "1683aa36b3f96236",
+   "semantic": "2b1e190ef184b5bc",
    "sqi": 84.87069,
    "status": "ok"
   },
@@ -30278,6 +30918,7 @@
     "read.ledger_lines.heavy_rate": 0.004831,
     "sqi": 95.89372,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -30294,7 +30935,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "a80e712118b7f9d7",
+   "semantic": "baf7ae95656f50d0",
    "sqi": 95.89372,
    "status": "ok"
   },
@@ -30336,6 +30977,7 @@
     "read.ledger_lines.heavy_rate": 0.004831,
     "sqi": 97.777778,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -30352,7 +30994,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "bb09c8403fbafae0",
+   "semantic": "f02d7114cb99d809",
    "sqi": 97.777778,
    "status": "ok"
   },
@@ -30394,6 +31036,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 79.47888,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -30410,7 +31053,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "daf5fa66bb6eccf7",
+   "semantic": "b61fe40ae2173ea5",
    "sqi": 79.47888,
    "status": "ok"
   },
@@ -30452,6 +31095,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 96.540404,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -30468,7 +31112,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "16f8fe3ee90d89a8",
+   "semantic": "0a5ec08ad38fb164",
    "sqi": 96.540404,
    "status": "ok"
   },
@@ -30510,6 +31154,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 81.023091,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -30526,7 +31171,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "416413e984c66475",
+   "semantic": "54e8e8232ff83056",
    "sqi": 81.023091,
    "status": "ok"
   },
@@ -30568,6 +31213,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 84.683544,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -30584,7 +31230,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "8f514c2e208e4691",
+   "semantic": "ef48d3a333101225",
    "sqi": 84.683544,
    "status": "ok"
   },
@@ -30626,6 +31272,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 61.910112,
     "struct.downbeat.f1": 0.444444,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -30642,7 +31289,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "265f23276be5942e",
+   "semantic": "a6eee4f6ffaff0ea",
    "sqi": 61.910112,
    "status": "ok"
   },
@@ -30684,6 +31331,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 60.505618,
     "struct.downbeat.f1": 0.444444,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -30700,7 +31348,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "d3317e3c048beef5",
+   "semantic": "8fe6e897b1c2b14f",
    "sqi": 60.505618,
    "status": "ok"
   },
@@ -30742,6 +31390,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 74.862069,
     "struct.downbeat.f1": 0.285714,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -30758,7 +31407,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "71de582508954d8f",
+   "semantic": "d73fdbf141875623",
    "sqi": 74.862069,
    "status": "ok"
   },
@@ -30800,6 +31449,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 95.957959,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -30816,7 +31466,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "e437ad225f92769e",
+   "semantic": "c6268f28d7aa9f3b",
    "sqi": 95.957959,
    "status": "ok"
   },
@@ -30858,6 +31508,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 56.956833,
     "struct.downbeat.f1": 0.415094,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -30874,7 +31525,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "5b90614e4e8e023e",
+   "semantic": "d59c17a84aae9367",
    "sqi": 56.956833,
    "status": "ok"
   },
@@ -30916,6 +31567,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 59.760274,
     "struct.downbeat.f1": 0.415094,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -30932,7 +31584,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "240ecbc10cb5e03d",
+   "semantic": "2c1cc105d68a8fcb",
    "sqi": 59.760274,
    "status": "ok"
   },
@@ -30974,6 +31626,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 65.282486,
     "struct.downbeat.f1": 0.666667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 0.0,
     "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -30990,7 +31643,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "70e673cda138b1d3",
+   "semantic": "1f8181df1eadab2a",
    "sqi": 65.282486,
    "status": "ok"
   },
@@ -31032,6 +31685,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 85.536723,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 0.0,
     "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -31048,7 +31702,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "540040557a3eadf2",
+   "semantic": "7c5f09853ab1a568",
    "sqi": 85.536723,
    "status": "ok"
   },
@@ -31090,6 +31744,7 @@
     "read.ledger_lines.heavy_rate": 0.182663,
     "sqi": 88.260382,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -31106,7 +31761,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "685b58faaac59983",
+   "semantic": "96241c6da24c7def",
    "sqi": 88.260382,
    "status": "ok"
   },
@@ -31148,6 +31803,7 @@
     "read.ledger_lines.heavy_rate": 0.182663,
     "sqi": 92.105263,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -31164,7 +31820,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "bb62f204ea618c5d",
+   "semantic": "e2932998ffce932e",
    "sqi": 92.105263,
    "status": "ok"
   },
@@ -31206,6 +31862,7 @@
     "read.ledger_lines.heavy_rate": 0.022018,
     "sqi": 43.004123,
     "struct.downbeat.f1": 0.407407,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -31222,7 +31879,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "7bb6d738fd0cd2af",
+   "semantic": "e56e8cabd6d74ca9",
    "sqi": 43.004123,
    "status": "ok"
   },
@@ -31264,6 +31921,7 @@
     "read.ledger_lines.heavy_rate": 0.022263,
     "sqi": 79.172685,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -31280,7 +31938,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "a26a1bd421680c8a",
+   "semantic": "28c8e54e2e8ff3cc",
    "sqi": 79.172685,
    "status": "ok"
   },
@@ -31322,6 +31980,7 @@
     "read.ledger_lines.heavy_rate": 0.012433,
     "sqi": 40.226697,
     "struct.downbeat.f1": 0.4,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -31338,7 +31997,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "1809915820b23ba2",
+   "semantic": "580d7af7cd84aa1f",
    "sqi": 40.226697,
    "status": "ok"
   },
@@ -31380,6 +32039,7 @@
     "read.ledger_lines.heavy_rate": 0.012433,
     "sqi": 40.186629,
     "struct.downbeat.f1": 0.4,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -31396,7 +32056,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "2d6d0ef147aeae0d",
+   "semantic": "a76943a791923431",
    "sqi": 40.186629,
    "status": "ok"
   },
@@ -31438,6 +32098,7 @@
     "read.ledger_lines.heavy_rate": 0.011161,
     "sqi": 50.412257,
     "struct.downbeat.f1": 0.4,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -31454,7 +32115,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "0dce610809d30e9a",
+   "semantic": "2e19d2f5ddb7496e",
    "sqi": 50.412257,
    "status": "ok"
   },
@@ -31496,6 +32157,7 @@
     "read.ledger_lines.heavy_rate": 0.011161,
     "sqi": 50.558685,
     "struct.downbeat.f1": 0.4,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -31512,7 +32174,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "bc23d2013227643b",
+   "semantic": "023159f7794c5ae5",
    "sqi": 50.558685,
    "status": "ok"
   },
@@ -31554,6 +32216,7 @@
     "read.ledger_lines.heavy_rate": 0.102007,
     "sqi": 91.206243,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -31570,7 +32233,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "7dc7a05c3abf577a",
+   "semantic": "ac89f7d50cf5b5a6",
    "sqi": 91.206243,
    "status": "ok"
   },
@@ -31612,6 +32275,7 @@
     "read.ledger_lines.heavy_rate": 0.102007,
     "sqi": 91.412265,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -31628,7 +32292,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "244a6e2a4a7161bb",
+   "semantic": "17c5bb5389019fd9",
    "sqi": 91.412265,
    "status": "ok"
   },
@@ -31670,6 +32334,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 77.478011,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 0.0,
     "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -31686,7 +32351,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "216056545d1c0648",
+   "semantic": "22e8980f9804563d",
    "sqi": 77.478011,
    "status": "ok"
   },
@@ -31728,6 +32393,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 76.995708,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 0.0,
     "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -31744,7 +32410,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "4b28338dead1cd87",
+   "semantic": "f7e5fc0412822b0e",
    "sqi": 76.995708,
    "status": "ok"
   },
@@ -31786,6 +32452,7 @@
     "read.ledger_lines.heavy_rate": 0.101504,
     "sqi": 62.627551,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -31802,7 +32469,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "d45b7c95e7f40642",
+   "semantic": "e7c3b76808734452",
    "sqi": 62.627551,
    "status": "ok"
   },
@@ -31844,6 +32511,7 @@
     "read.ledger_lines.heavy_rate": 0.101504,
     "sqi": 66.13319,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -31860,7 +32528,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "219ee37f903267d3",
+   "semantic": "977df08e6154e05c",
    "sqi": 66.13319,
    "status": "ok"
   },
@@ -31902,6 +32570,7 @@
     "read.ledger_lines.heavy_rate": 0.079505,
     "sqi": 50.648979,
     "struct.downbeat.f1": 0.352941,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -31918,7 +32587,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "05e47877292a7fea",
+   "semantic": "fe279336e4804a52",
    "sqi": 50.648979,
    "status": "ok"
   },
@@ -31960,6 +32629,7 @@
     "read.ledger_lines.heavy_rate": 0.063934,
     "sqi": 61.797892,
     "struct.downbeat.f1": 0.666667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -31976,7 +32646,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "7736daa65519f750",
+   "semantic": "d505d0876283c26d",
    "sqi": 61.797892,
    "status": "ok"
   },
@@ -32018,6 +32688,7 @@
     "read.ledger_lines.heavy_rate": 0.034982,
     "sqi": 34.750228,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 0.0,
     "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -32034,7 +32705,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "dd697762549bc643",
+   "semantic": "d00c6598a4de6e65",
    "sqi": 34.750228,
    "status": "ok"
   },
@@ -32076,6 +32747,7 @@
     "read.ledger_lines.heavy_rate": 0.035885,
     "sqi": 37.24693,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 0.0,
     "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -32092,7 +32764,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "e34e074d737c2acd",
+   "semantic": "2b50fbfa8ff557d3",
    "sqi": 37.24693,
    "status": "ok"
   },
@@ -32134,6 +32806,7 @@
     "read.ledger_lines.heavy_rate": 0.067395,
     "sqi": 56.044539,
     "struct.downbeat.f1": 0.666667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -32150,7 +32823,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "7a0439536a3f2ffd",
+   "semantic": "b4cc6802981a6d75",
    "sqi": 56.044539,
    "status": "ok"
   },
@@ -32192,6 +32865,7 @@
     "read.ledger_lines.heavy_rate": 0.067395,
     "sqi": 58.573055,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -32208,7 +32882,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "18529774d184e401",
+   "semantic": "a2ca7166c23062fd",
    "sqi": 58.573055,
    "status": "ok"
   },
@@ -32250,6 +32924,7 @@
     "read.ledger_lines.heavy_rate": 0.095153,
     "sqi": 47.089938,
     "struct.downbeat.f1": 0.666667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 0.0,
     "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -32266,7 +32941,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "7d87841c6679c082",
+   "semantic": "e3d7645fb841fa09",
    "sqi": 47.089938,
    "status": "ok"
   },
@@ -32308,6 +32983,7 @@
     "read.ledger_lines.heavy_rate": 0.102819,
     "sqi": 67.62222,
     "struct.downbeat.f1": 0.666667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -32324,7 +33000,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "ded94a5f902db2dc",
+   "semantic": "932b0a3ababf9870",
    "sqi": 67.62222,
    "status": "ok"
   },
@@ -32366,6 +33042,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 52.280968,
     "struct.downbeat.f1": 0.36,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -32382,7 +33059,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "fdd479efec733e0b",
+   "semantic": "fa21f6ccd029eb59",
    "sqi": 52.280968,
    "status": "ok"
   },
@@ -32424,6 +33101,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 58.304721,
     "struct.downbeat.f1": 0.4,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -32440,7 +33118,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "5e91f83444086255",
+   "semantic": "1c20d7f35a11803d",
    "sqi": 58.304721,
    "status": "ok"
   },
@@ -32482,6 +33160,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 53.052381,
     "struct.downbeat.f1": 0.416667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -32498,7 +33177,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "a98142e02d192793",
+   "semantic": "a31f1c71b9dc6b7b",
    "sqi": 53.052381,
    "status": "ok"
   },
@@ -32540,6 +33219,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 58.444444,
     "struct.downbeat.f1": 0.416667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -32556,7 +33236,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "d13aada525c60058",
+   "semantic": "8727940252a6fa2d",
    "sqi": 58.444444,
    "status": "ok"
   },
@@ -32598,6 +33278,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 56.304762,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -32614,7 +33295,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "8b7d06f0964b2857",
+   "semantic": "0f7a350be9efd99a",
    "sqi": 56.304762,
    "status": "ok"
   },
@@ -32656,6 +33337,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 58.488889,
     "struct.downbeat.f1": 0.416667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -32672,7 +33354,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "5ce94fee3cf16855",
+   "semantic": "fa489a6cfb46e821",
    "sqi": 58.488889,
    "status": "ok"
   },
@@ -32714,6 +33396,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 56.882143,
     "struct.downbeat.f1": 0.416667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -32730,7 +33413,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "a6d84d3c30efae2a",
+   "semantic": "d61cd8f4fd8f5e59",
    "sqi": 56.882143,
    "status": "ok"
   },
@@ -32772,6 +33455,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 58.577778,
     "struct.downbeat.f1": 0.416667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -32788,7 +33472,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "04a0ea5909a3689e",
+   "semantic": "919ac80ea1ad6c32",
    "sqi": 58.577778,
    "status": "ok"
   },
@@ -32830,6 +33514,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 58.022222,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -32846,7 +33531,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "c12e062e3cc4f626",
+   "semantic": "a5c26743483f9979",
    "sqi": 58.022222,
    "status": "ok"
   },
@@ -32888,6 +33573,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 58.622222,
     "struct.downbeat.f1": 0.416667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -32904,7 +33590,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "64709146f55df5fd",
+   "semantic": "f900f89997098908",
    "sqi": 58.622222,
    "status": "ok"
   },
@@ -32946,6 +33632,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 61.569444,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -32962,7 +33649,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "9375b6abe1687194",
+   "semantic": "4c84c58ba369016a",
    "sqi": 61.569444,
    "status": "ok"
   },
@@ -33004,6 +33691,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 58.266667,
     "struct.downbeat.f1": 0.416667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -33020,7 +33708,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "e319030d56e90170",
+   "semantic": "7149f749fcba8642",
    "sqi": 58.266667,
    "status": "ok"
   },
@@ -33062,6 +33750,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 63.23254,
     "struct.downbeat.f1": 0.245614,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -33078,7 +33767,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "4ebd97b2487720bf",
+   "semantic": "a584ebf832377024",
    "sqi": 63.23254,
    "status": "ok"
   },
@@ -33120,6 +33809,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 58.622222,
     "struct.downbeat.f1": 0.416667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -33136,7 +33826,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "e5945346ed7f3fd6",
+   "semantic": "c9ecc5362aa5641a",
    "sqi": 58.622222,
    "status": "ok"
   },
@@ -33178,6 +33868,7 @@
     "read.ledger_lines.heavy_rate": 0.059671,
     "sqi": 54.203168,
     "struct.downbeat.f1": 0.423077,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -33194,7 +33885,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "b82decf5bb5b17cd",
+   "semantic": "6b69b255e8c4e662",
    "sqi": 54.203168,
    "status": "ok"
   },
@@ -33236,6 +33927,7 @@
     "read.ledger_lines.heavy_rate": 0.059917,
     "sqi": 56.549587,
     "struct.downbeat.f1": 0.423077,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -33252,7 +33944,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "a9e0697b9fdc527d",
+   "semantic": "097f7130a1b0015d",
    "sqi": 56.549587,
    "status": "ok"
   },
@@ -33294,6 +33986,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 70.46878,
     "struct.downbeat.f1": 0.369231,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -33310,7 +34003,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "e3d1571a00808b04",
+   "semantic": "35406437aab546cc",
    "sqi": 70.46878,
    "status": "ok"
   },
@@ -33352,6 +34045,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 72.407975,
     "struct.downbeat.f1": 0.4,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -33368,7 +34062,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "5c3529c4c1424c42",
+   "semantic": "5b16feb8f5b21be3",
    "sqi": 72.407975,
    "status": "ok"
   },
@@ -33410,6 +34104,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 66.046512,
     "struct.downbeat.f1": 0.666667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -33426,7 +34121,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "b986d1f6ae9de01e",
+   "semantic": "fe20432f982b2d3a",
    "sqi": 66.046512,
    "status": "ok"
   },
@@ -33468,6 +34163,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 65.64482,
     "struct.downbeat.f1": 0.666667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -33484,7 +34180,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "c08bfc8e32b0d5e3",
+   "semantic": "56a26bef50d6d9cc",
    "sqi": 65.64482,
    "status": "ok"
   },
@@ -33526,6 +34222,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 39.770961,
     "struct.downbeat.f1": 0.670659,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 0.0,
     "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -33542,7 +34239,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "7d0caf967012f655",
+   "semantic": "706f8d679d452a42",
    "sqi": 39.770961,
    "status": "ok"
   },
@@ -33584,6 +34281,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 56.17036,
     "struct.downbeat.f1": 0.670659,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 0.0,
     "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -33600,7 +34298,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "a984e4ab8de449cf",
+   "semantic": "a968f3015bf1dbab",
    "sqi": 56.17036,
    "status": "ok"
   },
@@ -33642,6 +34340,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 58.176563,
     "struct.downbeat.f1": 0.408759,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -33658,7 +34357,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "ff9648ddd075a5c0",
+   "semantic": "e38f82653bdf0bac",
    "sqi": 58.176563,
    "status": "ok"
   },
@@ -33700,6 +34399,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 58.235294,
     "struct.downbeat.f1": 0.408759,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -33716,7 +34416,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "e5e06fc26cede154",
+   "semantic": "fddb79ee6f5c918f",
    "sqi": 58.235294,
    "status": "ok"
   },
@@ -33758,6 +34458,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 70.991278,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -33774,7 +34475,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "bc006438c342ba79",
+   "semantic": "c005ff3c3228d5f0",
    "sqi": 70.991278,
    "status": "ok"
   },
@@ -33816,6 +34517,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 93.912281,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -33832,7 +34534,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "8596cfb5eea3664c",
+   "semantic": "66b68bc320678ce5",
    "sqi": 93.912281,
    "status": "ok"
   },
@@ -33874,6 +34576,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 49.679922,
     "struct.downbeat.f1": 0.826923,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 0.0,
     "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -33890,7 +34593,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "828e940d972bf2af",
+   "semantic": "847f581954aad794",
    "sqi": 49.679922,
    "status": "ok"
   },
@@ -33932,6 +34635,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 35.662665,
     "struct.downbeat.f1": 0.413793,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 0.0,
     "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -33948,7 +34652,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "a52e3993337f3ef9",
+   "semantic": "aa64cf872bf88ea4",
    "sqi": 35.662665,
    "status": "ok"
   },
@@ -33990,6 +34694,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 65.481518,
     "struct.downbeat.f1": 0.666667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -34006,7 +34711,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "9fe50e82282ef5f0",
+   "semantic": "cba2ed18569d9975",
    "sqi": 65.481518,
    "status": "ok"
   },
@@ -34048,6 +34753,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 66.445373,
     "struct.downbeat.f1": 0.666667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -34064,7 +34770,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "1fa2481eb888e2a1",
+   "semantic": "e10e8b15fb1695ea",
    "sqi": 66.445373,
    "status": "ok"
   },
@@ -34106,6 +34812,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 61.580889,
     "struct.downbeat.f1": 0.890625,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 0.0,
     "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -34122,7 +34829,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "da278f64c86947f2",
+   "semantic": "0726eb37f1989024",
    "sqi": 61.580889,
    "status": "ok"
   },
@@ -34164,6 +34871,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 74.028694,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 0.0,
     "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -34180,7 +34888,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "831d6fd66c6a6c50",
+   "semantic": "9d79bf4b41f11b54",
    "sqi": 74.028694,
    "status": "ok"
   },
@@ -34222,6 +34930,7 @@
     "read.ledger_lines.heavy_rate": 0.005592,
     "sqi": 69.378017,
     "struct.downbeat.f1": 0.9875,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 0.0,
     "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -34238,7 +34947,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "68a610d9a4c66d64",
+   "semantic": "11ae8b5e718aaae0",
    "sqi": 69.378017,
    "status": "ok"
   },
@@ -34280,6 +34989,7 @@
     "read.ledger_lines.heavy_rate": 0.005607,
     "sqi": 81.980845,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 0.0,
     "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -34296,7 +35006,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "362a33bc1b13931c",
+   "semantic": "655f0ec13f2cfa2e",
    "sqi": 81.980845,
    "status": "ok"
   },
@@ -34338,6 +35048,7 @@
     "read.ledger_lines.heavy_rate": 0.008075,
     "sqi": 88.645377,
     "struct.downbeat.f1": 0.935484,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -34354,7 +35065,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "4ccbeb8fbf115f5c",
+   "semantic": "1bc8956aa81650d9",
    "sqi": 88.645377,
    "status": "ok"
   },
@@ -34396,6 +35107,7 @@
     "read.ledger_lines.heavy_rate": 0.008075,
     "sqi": 93.008075,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -34412,7 +35124,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "b80f9723fb947c42",
+   "semantic": "8c5403146d5a0c33",
    "sqi": 93.008075,
    "status": "ok"
   },
@@ -34454,6 +35166,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 97.735294,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -34470,7 +35183,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "23c3096c74eb82d4",
+   "semantic": "2979250912dcb6bc",
    "sqi": 97.735294,
    "status": "ok"
   },
@@ -34512,6 +35225,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 97.470588,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -34528,7 +35242,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "b1b23d11839222b5",
+   "semantic": "8b552479f887d947",
    "sqi": 97.470588,
    "status": "ok"
   },
@@ -34570,6 +35284,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 82.905212,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -34586,7 +35301,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "f360922eaf59bf8d",
+   "semantic": "6edaa052457d3df2",
    "sqi": 82.905212,
    "status": "ok"
   },
@@ -34628,6 +35343,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 83.238482,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -34644,7 +35360,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "f6fa7e27ba9314d1",
+   "semantic": "f31c660df5c791c4",
    "sqi": 83.238482,
    "status": "ok"
   },
@@ -34686,6 +35402,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 58.733669,
     "struct.downbeat.f1": 0.40678,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -34702,7 +35419,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "5f33c7f282d23a7a",
+   "semantic": "090bccbf07dccf6d",
    "sqi": 58.733669,
    "status": "ok"
   },
@@ -34744,6 +35461,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 59.876543,
     "struct.downbeat.f1": 0.40678,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -34760,7 +35478,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "b5974bceb26d638b",
+   "semantic": "6fdfa23ab75b9bce",
    "sqi": 59.876543,
    "status": "ok"
   },
@@ -34802,6 +35520,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 57.398411,
     "struct.downbeat.f1": 0.407643,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -34818,7 +35537,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "1ab5ce9e6bfdc2cc",
+   "semantic": "d8ca669e90915713",
    "sqi": 57.398411,
    "status": "ok"
   },
@@ -34860,6 +35579,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 60.0,
     "struct.downbeat.f1": 0.407643,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -34876,7 +35596,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "f2cfd0ea2d199ffa",
+   "semantic": "55db24493cc97739",
    "sqi": 60.0,
    "status": "ok"
   },
@@ -34918,6 +35638,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 97.0625,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -34934,7 +35655,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "3acc5d6fb9add759",
+   "semantic": "9dcc98d881916a76",
    "sqi": 97.0625,
    "status": "ok"
   },
@@ -34976,6 +35697,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 98.125,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -34992,7 +35714,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "a2ee384c8304c61a",
+   "semantic": "a97357fa2bb89acf",
    "sqi": 98.125,
    "status": "ok"
   },
@@ -35034,6 +35756,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 77.684619,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -35050,7 +35773,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "3f0a70348e39590b",
+   "semantic": "e9fa67ab02f4ea3f",
    "sqi": 77.684619,
    "status": "ok"
   },
@@ -35092,6 +35815,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 95.503876,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -35108,7 +35832,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "8fefdd46185d8706",
+   "semantic": "08608726978ad87a",
    "sqi": 95.503876,
    "status": "ok"
   },
@@ -35150,6 +35874,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 87.65625,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -35166,7 +35891,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "ad008899009e5959",
+   "semantic": "090609d069c7f951",
    "sqi": 87.65625,
    "status": "ok"
   },
@@ -35208,6 +35933,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 85.78125,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -35224,7 +35950,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "3ec0d3220c36b86f",
+   "semantic": "f809710944692baf",
    "sqi": 85.78125,
    "status": "ok"
   },
@@ -35266,6 +35992,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 86.878069,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -35282,7 +36009,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "417f62ee8fa2f77e",
+   "semantic": "7c197262b195728c",
    "sqi": 86.878069,
    "status": "ok"
   },
@@ -35324,6 +36051,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 84.558501,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -35340,7 +36068,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "215b03ce42a08256",
+   "semantic": "ff416ea3d222edcc",
    "sqi": 84.558501,
    "status": "ok"
   },
@@ -35382,6 +36110,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 81.786492,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -35398,7 +36127,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "a1bbe51fbdf85033",
+   "semantic": "05d3adf92a17e3fb",
    "sqi": 81.786492,
    "status": "ok"
   },
@@ -35440,6 +36169,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 95.844227,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -35456,7 +36186,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "e183a29fa0e77be7",
+   "semantic": "328b29fce2d97d86",
    "sqi": 95.844227,
    "status": "ok"
   },
@@ -35498,6 +36228,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 81.263617,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -35514,7 +36245,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "325cafef278269d6",
+   "semantic": "550f72c961e9c8df",
    "sqi": 81.263617,
    "status": "ok"
   },
@@ -35556,6 +36287,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 92.772331,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -35572,7 +36304,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "6e1b13b3d2a7ba88",
+   "semantic": "07a0b8bc39239bc1",
    "sqi": 92.772331,
    "status": "ok"
   },
@@ -35614,6 +36346,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 72.75,
     "struct.downbeat.f1": 0.285714,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -35630,7 +36363,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "966e1dfbb55a0779",
+   "semantic": "7aa06ee5c8a49cb0",
    "sqi": 72.75,
    "status": "ok"
   },
@@ -35672,6 +36405,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 95.0,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -35688,7 +36422,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "3daaa46745d5a064",
+   "semantic": "0f94a745bfb461e5",
    "sqi": 95.0,
    "status": "ok"
   },
@@ -35730,6 +36464,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 75.508475,
     "struct.downbeat.f1": 0.666667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -35746,7 +36481,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "b60e096c60e58fa2",
+   "semantic": "d03d514ff32b02fe",
    "sqi": 75.508475,
    "status": "ok"
   },
@@ -35788,6 +36523,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 99.491525,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -35804,7 +36540,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "8a69205880c2f2a4",
+   "semantic": "6f17c81cc8747056",
    "sqi": 99.491525,
    "status": "ok"
   },
@@ -35846,6 +36582,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 82.75,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -35862,7 +36599,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "6e1fea343d1f040d",
+   "semantic": "29858c12663312d2",
    "sqi": 82.75,
    "status": "ok"
   },
@@ -35904,6 +36641,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 98.375,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -35920,7 +36658,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "aa07394fe018ba09",
+   "semantic": "32ac28505679f5a2",
    "sqi": 98.375,
    "status": "ok"
   },
@@ -35962,6 +36700,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 83.636364,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -35978,7 +36717,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "fe49a00e3d234561",
+   "semantic": "cbd209a3f204c55f",
    "sqi": 83.636364,
    "status": "ok"
   },
@@ -36020,6 +36759,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 97.272727,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -36036,7 +36776,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "53ab95ac4b6d1dbf",
+   "semantic": "eaf50ad84a07dd67",
    "sqi": 97.272727,
    "status": "ok"
   },
@@ -36078,6 +36818,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 76.5,
     "struct.downbeat.f1": 0.285714,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -36094,7 +36835,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "573383312c8efac8",
+   "semantic": "200c4681933fec40",
    "sqi": 76.5,
    "status": "ok"
   },
@@ -36136,6 +36877,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 99.666667,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -36152,7 +36894,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "03c582d84162db24",
+   "semantic": "aa27ab7907fa710c",
    "sqi": 99.666667,
    "status": "ok"
   },
@@ -36194,6 +36936,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 85.0,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -36210,7 +36953,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "2000760526cf44cf",
+   "semantic": "c4c42ce0f7267a8e",
    "sqi": 85.0,
    "status": "ok"
   },
@@ -36252,6 +36995,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 100.0,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -36268,7 +37012,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "b949263b3d433d16",
+   "semantic": "fad321fb305f1419",
    "sqi": 100.0,
    "status": "ok"
   },
@@ -36310,6 +37054,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 82.801724,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -36326,7 +37071,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "53888e1ef944d7a0",
+   "semantic": "10ae73dff5a167fe",
    "sqi": 82.801724,
    "status": "ok"
   },
@@ -36368,6 +37113,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 97.887931,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -36384,7 +37130,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "cba4f63716770b2c",
+   "semantic": "edb327aa4eae5ed2",
    "sqi": 97.887931,
    "status": "ok"
   },
@@ -36426,6 +37172,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 95.517241,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -36442,7 +37189,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "eaf470f6104b498b",
+   "semantic": "12d61f41a3c97d43",
    "sqi": 95.517241,
    "status": "ok"
   },
@@ -36484,6 +37231,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 95.689655,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -36500,7 +37248,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "bb3668ca3e6e82d1",
+   "semantic": "79675f8b5a44a827",
    "sqi": 95.689655,
    "status": "ok"
   },
@@ -36542,6 +37290,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 83.571429,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -36558,7 +37307,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "f73dff83a035377c",
+   "semantic": "671d8984913cead7",
    "sqi": 83.571429,
    "status": "ok"
   },
@@ -36600,6 +37349,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 98.571429,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -36616,7 +37366,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "9904c07e8319b3f5",
+   "semantic": "07d660b2251310d4",
    "sqi": 98.571429,
    "status": "ok"
   },
@@ -36658,6 +37408,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 77.0,
     "struct.downbeat.f1": 0.666667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -36674,7 +37425,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "739cf553cef57200",
+   "semantic": "ea2c108b1816fe83",
    "sqi": 77.0,
    "status": "ok"
   },
@@ -36716,6 +37467,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 100.0,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -36732,7 +37484,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "cfb84a7f9aacb729",
+   "semantic": "8aa9bd81245044d4",
    "sqi": 100.0,
    "status": "ok"
   },
@@ -36774,6 +37526,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 59.270833,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -36790,7 +37543,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "0ba97990b11b2ae8",
+   "semantic": "61bc5e9050a218cf",
    "sqi": 59.270833,
    "status": "ok"
   },
@@ -36832,6 +37585,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 60.572917,
     "struct.downbeat.f1": 0.444444,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -36848,7 +37602,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "ceb116fc33c70336",
+   "semantic": "a732acb69610128c",
    "sqi": 60.572917,
    "status": "ok"
   },
@@ -36890,6 +37644,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 67.291667,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -36906,7 +37661,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "064d52d06afbaa3e",
+   "semantic": "7e7e0e339e53f04c",
    "sqi": 67.291667,
    "status": "ok"
   },
@@ -36948,6 +37703,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 69.166667,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -36964,7 +37720,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "f3d75ae4f9d453b3",
+   "semantic": "9b6cf1b3fcc7d5bf",
    "sqi": 69.166667,
    "status": "ok"
   },
@@ -37006,6 +37762,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 67.5,
     "struct.downbeat.f1": 0.666667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -37022,7 +37779,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "a0693e376d00df49",
+   "semantic": "4708ee559422be2c",
    "sqi": 67.5,
    "status": "ok"
   },
@@ -37064,6 +37821,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 66.5625,
     "struct.downbeat.f1": 0.666667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -37080,7 +37838,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "0316e6cf523b83b7",
+   "semantic": "8b48f293ff503e35",
    "sqi": 66.5625,
    "status": "ok"
   },
@@ -37122,6 +37880,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 67.34375,
     "struct.downbeat.f1": 0.666667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -37138,7 +37897,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "41561614862a214c",
+   "semantic": "4699ade7cdc35ac3",
    "sqi": 67.34375,
    "status": "ok"
   },
@@ -37180,6 +37939,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 85.78125,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -37196,7 +37956,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "b236d1ec2eb3d32f",
+   "semantic": "7c867582728e32e6",
    "sqi": 85.78125,
    "status": "ok"
   },
@@ -37238,6 +37998,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 74.761905,
     "struct.downbeat.f1": 0.285714,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -37254,7 +38015,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "7aba033830f0f704",
+   "semantic": "04ecbad73ecfb266",
    "sqi": 74.761905,
    "status": "ok"
   },
@@ -37296,6 +38057,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 74.285714,
     "struct.downbeat.f1": 0.285714,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -37312,7 +38074,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "3966c2d9cb7ee9bd",
+   "semantic": "322f66fc7a312f05",
    "sqi": 74.285714,
    "status": "ok"
   },
@@ -37354,6 +38116,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 57.092742,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -37370,7 +38133,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "cc4ecfe9f1a884ef",
+   "semantic": "fab0154d9220abc0",
    "sqi": 57.092742,
    "status": "ok"
   },
@@ -37412,6 +38175,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 58.824597,
     "struct.downbeat.f1": 0.210526,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -37428,7 +38192,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "86d794d90f2848e7",
+   "semantic": "771aef5261e158af",
    "sqi": 58.824597,
    "status": "ok"
   },
@@ -37470,6 +38234,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 80.30754,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -37486,7 +38251,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "a374688c58340f87",
+   "semantic": "a62baf7a8c4d799a",
    "sqi": 80.30754,
    "status": "ok"
   },
@@ -37528,6 +38293,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 95.446429,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -37544,7 +38310,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "b55776c5e33930f5",
+   "semantic": "a16292f6bb34327d",
    "sqi": 95.446429,
    "status": "ok"
   },
@@ -37586,6 +38352,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 45.0,
     "struct.downbeat.f1": 0.086957,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -37602,7 +38369,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "8b2cbb59e5b1be37",
+   "semantic": "ce604be9afc15e41",
    "sqi": 45.0,
    "status": "ok"
   },
@@ -37644,6 +38411,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 100.0,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -37660,7 +38428,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "60da74090120a76f",
+   "semantic": "44ec3a24d0e1ae1b",
    "sqi": 100.0,
    "status": "ok"
   },
@@ -37702,6 +38470,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 82.236842,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -37718,7 +38487,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "db26884e3a29a12f",
+   "semantic": "705fe5c57f1d6e69",
    "sqi": 82.236842,
    "status": "ok"
   },
@@ -37760,6 +38529,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 99.736842,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -37776,7 +38546,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "a65aafa9db6fdf78",
+   "semantic": "03fa3529a566d8bc",
    "sqi": 99.736842,
    "status": "ok"
   }
@@ -37811,6 +38581,18 @@
    "date": "2026-09-22",
    "git_sha": "b1d817bb9527e397f4934303886280fe25b97146",
    "reason": "metrics/4 + reader/3 (G00 §19-§20: tempo, metre and key over the whole score; printed note shapes and note values in usable; complete bars; bar numbers; clefs; PredTime on the SUT's own beat model); audio-score.js unchanged",
+   "sqi_all": 76.550304,
+   "usable_all": 0.060284
+  },
+  {
+   "date": "2026-09-22",
+   "event": "versions {'generator': 'perform/2', 'metrics': 'metrics/4', 'reader': 'reader/3', 'sqi': 'sqi/2'} -> {'generator': 'perform/2', 'metrics': 'metrics/5', 'reader': 'reader/4', 'sqi': 'sqi/2'}; new anchor, earlier numbers are not comparable"
+  },
+  {
+   "audio_score_sha256": "559a1f40fb73416bc72d671d894251f7c3263110fa10780559047f6f22009288",
+   "date": "2026-09-22",
+   "git_sha": "6dedc519d0f1e19ddf44340b66f405ad8baa34c1",
+   "reason": "reader/4 + metrics/5 (G00 §21 last fixer): repeat signs read, play order (struct.form.order_exact) in critical.structure, implicit and unmarked half bars no longer excuse a short bar. SUT output and every existing metric identical (1,879 cases compared); known failure incomplete_bars 10 files/38 bars -> 12/42 (2 hymns split a bar with no bar-line mark)",
    "sqi_all": 76.550304,
    "usable_all": 0.060284
   }
@@ -37940,20 +38722,20 @@
    },
    "incomplete_bars": {
     "by_collection": {
-     "hymns": 5,
+     "hymns": 7,
      "method/czerny599": 4,
      "method/sonatina": 1
     },
     "examples": [
+     "catalog/hymns/all-glory-laud.musicxml",
      "catalog/hymns/for-all-the-saints.musicxml",
+     "catalog/hymns/i-need-thee.musicxml",
      "catalog/hymns/in-the-bleak-midwinter.musicxml",
-     "catalog/hymns/now-thank-we-all.musicxml",
-     "catalog/hymns/o-the-deep-deep-love.musicxml",
-     "catalog/hymns/the-strife-is-oer.musicxml"
+     "catalog/hymns/now-thank-we-all.musicxml"
     ],
-    "files_affected": 10,
+    "files_affected": 12,
     "files_in_scope": 329,
-    "impact": "A staff's notes and rests stop before the bar ends (not a pickup, its complement or a bar split at a repeat): the app draws the bar short. Stricter than bar_integrity, the app's own check.",
+    "impact": "A staff's notes and rests stop before the bar ends, or a bar is short (not a pickup, its complement, or half of a bar split at a repeat sign, an ending or a double/final bar line): the app draws the bar short. Stricter than bar_integrity, the app's own check.",
     "in_scope_by_collection": {
      "catalog": 3,
      "hymns": 100,
@@ -37966,7 +38748,7 @@
      "method/sonatina": 28,
      "samples": 4
     },
-    "items": 38,
+    "items": 42,
     "status": "KNOWN_FAILURE",
     "title": "Bars a staff does not fill",
     "unit": "bars"
@@ -38166,14 +38948,14 @@
   },
   "files_scanned": 329,
   "scope": "committed scores under catalog/ and samples/",
-  "version": "known-defects/2"
+  "version": "known-defects/3"
  },
- "lock_sha256": "e411d2082e7c703bfc6e1e9ae3eb5f7371cc4ccc6015d288f15c6e364b775675",
+ "lock_sha256": "cb46f988b0ccca74ad765082f5c1db8b1363047fe28e6bf9230910070f95efb9",
  "recorded": {
   "audio_score_sha256": "559a1f40fb73416bc72d671d894251f7c3263110fa10780559047f6f22009288",
   "date": "2026-09-22",
   "git_dirty": true,
-  "git_sha": "b1d817bb9527e397f4934303886280fe25b97146",
+  "git_sha": "6dedc519d0f1e19ddf44340b66f405ad8baa34c1",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"
@@ -38183,8 +38965,8 @@
  "suite_sha256": "e6f751ea6d3330a890ddbce22c6a704249b9573e51fb9b51997bad7e027d8076",
  "versions": {
   "generator": "perform/2",
-  "metrics": "metrics/4",
-  "reader": "reader/3",
+  "metrics": "metrics/5",
+  "reader": "reader/4",
   "sqi": "sqi/2"
  }
 }

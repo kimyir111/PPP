@@ -1,5 +1,5 @@
 {
- "schema": "ppp.bench-semantic/2",
+ "schema": "ppp.bench-semantic/3",
  "score": {
   "music": {
    "measures": [
@@ -2727,94 +2727,109 @@
     }
    ]
   },
-  "schema": "ppp.bench-semantic/2",
+  "schema": "ppp.bench-semantic/3",
   "structure": {
    "bars": [
     {
+     "barline": {},
      "i": 0,
      "implicit": false,
      "len": "4",
      "number": 1
     },
     {
+     "barline": {},
      "i": 1,
      "implicit": false,
      "len": "4",
      "number": 2
     },
     {
+     "barline": {},
      "i": 2,
      "implicit": false,
      "len": "4",
      "number": 3
     },
     {
+     "barline": {},
      "i": 3,
      "implicit": false,
      "len": "4",
      "number": 4
     },
     {
+     "barline": {},
      "i": 4,
      "implicit": false,
      "len": "4",
      "number": 5
     },
     {
+     "barline": {},
      "i": 5,
      "implicit": false,
      "len": "4",
      "number": 6
     },
     {
+     "barline": {},
      "i": 6,
      "implicit": false,
      "len": "4",
      "number": 7
     },
     {
+     "barline": {},
      "i": 7,
      "implicit": false,
      "len": "4",
      "number": 8
     },
     {
+     "barline": {},
      "i": 8,
      "implicit": false,
      "len": "4",
      "number": 9
     },
     {
+     "barline": {},
      "i": 9,
      "implicit": false,
      "len": "4",
      "number": 10
     },
     {
+     "barline": {},
      "i": 10,
      "implicit": false,
      "len": "4",
      "number": 11
     },
     {
+     "barline": {},
      "i": 11,
      "implicit": false,
      "len": "4",
      "number": 12
     },
     {
+     "barline": {},
      "i": 12,
      "implicit": false,
      "len": "4",
      "number": 13
     },
     {
+     "barline": {},
      "i": 13,
      "implicit": false,
      "len": "4",
      "number": 14
     },
     {
+     "barline": {},
      "i": 14,
      "implicit": false,
      "len": "4",
@@ -2835,6 +2850,17 @@
      "bass"
     ]
    ],
+   "hands": [
+    [
+     1,
+     "r"
+    ],
+    [
+     2,
+     "l"
+    ]
+   ],
+   "piano_part": 0,
    "placement": [
     [
      0,
@@ -4131,6 +4157,23 @@
      2,
      1
     ]
+   ],
+   "play_order": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14
    ],
    "staves": 2
   }

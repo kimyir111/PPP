@@ -128,14 +128,12 @@ def note_shape_detail(canon) -> Dict[str, Any]:
     return {"checked": checked, "bad": bad, "examples": examples}
 
 
-# ----------------------------------------------------------------- complete bars (G00 §19 F2, rests)
-def bar_completeness_detail(canon) -> Dict[str, Any]:
-    """Does every staff fill every bar? Each staff's notes and rests must reach the end of the bar's
-    content, and that must be the whole bar — except where a short bar is normal engraving: the first
-    and last bar (a pickup and its complement), a bar the file marks implicit, and the two halves of a
-    bar split at a repeat (together one whole bar). A trailing rest that is too short leaves a staff's
-    bar incomplete; the app draws it short. Stricter than ``bar_integrity`` (the app's own validation,
-    which accepts a bar down to half its length)."""
+# ----------------------------------------------------------------- complete bars (G00 §19 F2, §21 S-M2, S-m2)
+SECTION_STYLES = ("light-light", "light-heavy", "heavy-light", "heavy-heavy")   # double and final bar lines
+
+
+def _bar_contents(canon):
+    """(where each staff's notes and rests end in each bar, the staves, each bar's content length)."""
     ends: Dict[tuple, Fraction] = {}
     for it in list(canon.notes) + list(canon.rests):
         k = (it.measure, it.staff)
@@ -143,13 +141,59 @@ def bar_completeness_detail(canon) -> Dict[str, Any]:
         if k not in ends or e > ends[k]:
             ends[k] = e
     staves = sorted({k[1] for k in ends})
+    content = [max((ends.get((m.index, s), Fraction(0)) for s in staves), default=Fraction(0)) for m in canon.measures]
+    return ends, staves, content
+
+
+def repeat_boundary(canon, i: int) -> bool:
+    """A repeat sign or a first/second-ending boundary between bar i and bar i + 1, as the app reads them."""
+    a, b = canon.measures[i].bar, canon.measures[i + 1].bar
+    return bool(a.get("repeatEnd") or a.get("endingEnd") or b.get("repeatStart") or b.get("endingType") == "start")
+
+
+def section_boundary(canon, i: int) -> bool:
+    """A double or final bar line ends bar i (a section ends there, as at "Fine")."""
+    return canon.measures[i].bar.get("style") in SECTION_STYLES
+
+
+def bar_completeness_detail(canon, truth=None) -> Dict[str, Any]:
+    """Does every staff fill every bar? Each staff's notes and rests must reach the end of the bar's
+    content, and that must be the whole bar — except where a short bar is normal engraving: the first
+    and last bar (a pickup and its complement), and the two halves of one bar split where the music is
+    split (together one whole bar). A trailing rest that is too short leaves a staff's bar incomplete;
+    the app draws it short. Stricter than ``bar_integrity`` (the app's own validation, which accepts a
+    bar down to half its length).
+
+    What excuses a split, so that no file excuses itself by a mark nothing else checks (G00 §21):
+
+    * ``truth`` None — ``canon`` is a reference or a catalogue score: a repeat sign or an ending between
+      the halves, or a double or final bar line after the first (a section ends: "Fine").
+    * ``truth`` given — ``canon`` is a prediction judged against it: a repeat sign or an ending the
+      prediction writes between the halves (the play-order gate judges those: one the music does not
+      have fails it), or the truth splitting the same bar the same way, where the truth's own split is
+      excused. A double bar line the prediction writes excuses nothing, nor does ``implicit="yes"``:
+      it only tells the app to take a bar's length from its content, and a prediction marking an inner
+      bar implicit would switch this check off by its own metadata (S-M2)."""
+    ends, staves, content = _bar_contents(canon)
     ms = canon.measures
     last = len(ms) - 1
-    content = [max((ends.get((m.index, s), Fraction(0)) for s in staves), default=Fraction(0)) for m in ms]
+    if truth is None:
+        def excused(j: int) -> bool:
+            return repeat_boundary(canon, j) or section_boundary(canon, j)
+    else:
+        t_content = _bar_contents(truth)[2]
+        same_bars = len(truth.measures) == len(ms)
+
+        def excused(j: int) -> bool:
+            if repeat_boundary(canon, j):
+                return True
+            return (same_bars and abs(t_content[j] - content[j]) <= SHAPE_TOL
+                    and abs(t_content[j + 1] - content[j + 1]) <= SHAPE_TOL
+                    and (repeat_boundary(truth, j) or section_boundary(truth, j)))
     checked, bad = 0, []
     for m in ms:
         i = m.index
-        if i in (0, last) or m.implicit:
+        if i in (0, last):
             continue
         checked += 1
         if any(ends.get((i, s)) is None or ends[(i, s)] < content[i] - SHAPE_TOL for s in staves):
@@ -157,8 +201,8 @@ def bar_completeness_detail(canon) -> Dict[str, Any]:
             continue
         if content[i] >= m.sig_q - SHAPE_TOL:
             continue
-        split = (i > 0 and abs(content[i - 1] + content[i] - m.sig_q) <= SHAPE_TOL) or \
-                (i < last and abs(content[i] + content[i + 1] - m.sig_q) <= SHAPE_TOL)
+        split = (i > 0 and abs(content[i - 1] + content[i] - m.sig_q) <= SHAPE_TOL and excused(i - 1)) or \
+                (i < last and abs(content[i] + content[i + 1] - m.sig_q) <= SHAPE_TOL and excused(i))
         if not split:
             bad.append({"bar": i + 1, "kind": "bar short"})
     return {"checked": checked, "bad": bad}
@@ -183,14 +227,15 @@ def ledger_lines(canon, n) -> int:
     return 0
 
 
-def readability(canon) -> Dict[str, Optional[float]]:
+def readability(canon, truth=None) -> Dict[str, Optional[float]]:
+    """``truth``: the reference a prediction is judged against (None for a reference itself)."""
     notes = canon.notes
     n = len(notes)
     bi = bar_integrity_detail(canon)
     groups = _hand_groups(canon)
     acc = accidental_needs(canon)
     shapes = note_shape_detail(canon)
-    bc = bar_completeness_detail(canon)
+    bc = bar_completeness_detail(canon, truth)
     struck = sum(1 for x in notes if not x.tie_stop)
     return {
         # share of the accidentals the score needs that it prints; 1 when it needs none (nothing is
@@ -217,7 +262,7 @@ def readability(canon) -> Dict[str, Optional[float]]:
 
 
 def compute(ctx) -> Dict[str, Optional[float]]:
-    pred = readability(ctx["pred"])
+    pred = readability(ctx["pred"], truth=ctx["ref"])
     ref = ctx.get("ref_readability") or readability(ctx["ref"])
     out = dict(pred)
     for k, v in pred.items():

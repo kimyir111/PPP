@@ -49,6 +49,7 @@ class Tempo(unittest.TestCase):
         p.played = lambda: []
         p.notes, p.marks, p.app_qpm = [], [], int((p.effective_qpm or 84) + 0.5)
         p.app_bar_starts = lambda: {1: 0}
+        p.app_play_order = lambda: [0]
         ref = canon([measure(note("C", 5, 3), number=1)], time=(3, 4), staves=1)
         return {"pred": p, "ref": ref, "expected": {"time": [3, 4], "key": {"fifths": 0, "mode": "major"}, "measures": 1,
                                                     "qpm": qpm},

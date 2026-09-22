@@ -55,7 +55,7 @@ const base = arg('--base', 'http://127.0.0.1:8777');
             projection: {
               title: s.title, tempo: s.tempo, staves: s.staves,
               measures: s.measures.map(m => ({ number: String(m.number), startQ: m.startQ, lenQ: m.lenQ,
-                time: [m.time.beats, m.time.beatType], fifths: m.key.fifths, mode: m.key.mode })),
+                time: [m.time.beats, m.time.beatType], fifths: m.key.fifths, mode: m.key.mode, bar: m.bar || null })),
               notes: s.notes.map(n => ({ m: index[n.m], b: n.b, dur: n.dur, midi: n.midi, writtenMidi: n.writtenMidi,
                 p: n.writtenP || n.p || null, staff: n.staff, hand: n.hand, voice: n.voice, rest: !!n.rest,
                 chord: !!n.chord, tieStart: !!n.tieStart, tieStop: !!n.tieStop, tm: n.tm || null,

@@ -155,9 +155,15 @@ class NoteShapesBarsAndNumbers(unittest.TestCase):
                    measure(note("E", 5, 4), note("C", 3, 4, staff=2), number=3, rh_len=4)])
         self.assertEqual(readability.bar_completeness_detail(c)["bad"], [{"bar": 2, "kind": "staff short"}])
         # the two halves of a bar split at a repeat are one whole bar
-        split = canon([measure(note("C", 5, 4), number=1), measure(note("D", 5, 2), number=2),
+        repeat = '<barline location="right"><bar-style>light-heavy</bar-style><repeat direction="backward"/></barline>'
+        split = canon([measure(note("C", 5, 4), number=1), measure(note("D", 5, 2) + repeat, number=2),
                        measure(note("E", 5, 2), number=3), measure(note("F", 5, 4), number=4)], staves=1)
         self.assertEqual(readability.bar_completeness_detail(split)["bad"], [])
+        # ... but not without one (G00 §21 S-m2: two short bars are not a split because they add up)
+        fake = canon([measure(note("C", 5, 4), number=1), measure(note("D", 5, 2), number=2),
+                      measure(note("E", 5, 2), number=3), measure(note("F", 5, 4), number=4)], staves=1)
+        self.assertEqual(readability.bar_completeness_detail(fake)["bad"],
+                         [{"bar": 2, "kind": "bar short"}, {"bar": 3, "kind": "bar short"}])
 
     def test_bass_staff_in_treble_clef(self):
         xml = self.row["xml"].replace('<clef number="2"><sign>F</sign><line>4</line></clef>',

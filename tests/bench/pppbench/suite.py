@@ -63,6 +63,8 @@ def _gate(scale: float, flip_max: int, prefixes, min_cases: int) -> Dict[str, An
         "read.bar_completeness": {"dir": "up", "tol": 0.0},
         "struct.measure_numbers.valid": {"dir": "up", "tol": 0.0},
         "struct.measure_numbers.app_onset_accuracy": {"dir": "up", "tol": 0.0},
+        # §21: the app's play order (repeat signs and endings)
+        "struct.form.order_exact": {"dir": "up", "tol": 0.0},
         "read.ledger_lines.heavy_rate": down(0.005),
         "notation.accidentals.courtesy_per_100": down(0.5),
     })

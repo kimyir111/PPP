@@ -30,6 +30,10 @@ class Measure:
     # the bar number as the app keys it: parseInt(number), or the bar's position in its part when that
     # is not a number (parseMusicXML). Bars with the same app number are laid over each other.
     app_number: Optional[int] = None
+    # the bar's repeat signs, endings and right bar-line style as parseMusicXML reads them from part 0
+    # (``measureInfo.bar``, same keys): repeatStart, repeatEnd (times), style, endingNos, endingType,
+    # ending (the printed label), endingEnd. Empty when the bar has none.
+    bar: Dict[str, Any] = field(default_factory=dict)
 
     @property
     def sig_q(self) -> Fraction:
@@ -38,7 +42,8 @@ class Measure:
     def to_json(self) -> Dict[str, Any]:
         return {"index": self.index, "number": self.number, "app_number": self.app_number, "start_q": self.start_q,
                 "len_q": self.len_q, "implicit": self.implicit, "time": list(self.time),
-                "key": {"fifths": self.fifths, "mode": self.mode, "mode_explicit": self.mode_explicit}}
+                "key": {"fifths": self.fifths, "mode": self.mode, "mode_explicit": self.mode_explicit},
+                "bar": dict(self.bar)}
 
 
 @dataclass
@@ -190,6 +195,58 @@ class CanonicalScore:
             start[m.app_number] = q
             q += length[m.app_number]
         return start
+
+    def app_play_order(self) -> List[int]:
+        """The bars in the order the app's player plays them (``Score.form`` over the whole score, which
+        ``PianoScore.build`` turns into strikes, the tempo map and the pedal): repeat signs and first and
+        second endings expanded, each bar once where there are none. Bar indices, not numbers.
+
+        A port of the app's rule, quirks included (G00 §21 S-M1): the bars are the app's, keyed by number,
+        so bars that share a number share the later one's marks; a backward repeat with no forward repeat
+        of its own goes back to the last forward repeat still on the app's stack, else to the first bar."""
+        ms = self.measures
+        if not ms:
+            return []
+        last_of: Dict[Optional[int], int] = {}
+        for m in ms:
+            last_of[m.app_number] = m.index
+        bars = [ms[last_of[m.app_number]].bar for m in ms]
+        i0, i1 = last_of[ms[0].app_number], last_of[ms[-1].app_number]
+        visits: List[int] = []
+        start_stack: List[int] = []
+        taken: Dict[int, int] = {}
+        pass_at: Dict[int, int] = {}
+        open_ending: Optional[List[int]] = None
+        i, guard = i0, 0
+        while i0 <= i <= i1 and guard < 8000:
+            guard += 1
+            bar = bars[i]
+            if bar.get("repeatStart"):
+                start_stack.append(i)
+            if bar.get("endingNos") and (bar.get("endingType") == "start" or bar.get("ending")):
+                open_ending = list(bar["endingNos"])
+            now = pass_at.get(start_stack[-1] if start_stack else i0) or 1
+            skip = bool(open_ending) and now not in open_ending
+            if not skip:
+                visits.append(i)
+            if bar.get("endingEnd"):
+                open_ending = None
+            if not skip and bar.get("repeatEnd"):
+                times = bar["repeatEnd"] if bar["repeatEnd"] > 0 else 2
+                taken[i] = taken.get(i, 0) + 1
+                if taken[i] < times:
+                    start = start_stack[-1] if start_stack else i0
+                    for k in [k for k in taken if start < k < i]:     # nested repeats inside this one start over
+                        del taken[k]
+                    for k in [k for k in pass_at if k > start]:
+                        del pass_at[k]
+                    pass_at[start] = (pass_at.get(start) or 1) + 1
+                    i = start
+                    continue
+                if start_stack:
+                    start_stack.pop()
+            i += 1
+        return visits
 
     @property
     def end_q(self) -> Fraction:

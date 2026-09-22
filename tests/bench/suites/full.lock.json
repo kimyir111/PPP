@@ -24882,7 +24882,7 @@
   }
  ],
  "generator": "perform/2",
- "reader": "reader/3",
+ "reader": "reader/4",
  "schema": "ppp.bench-lock/1",
  "suite_sha256": "b7b09e5eac520780cc8f84b1657a741fad096344e9c811c5d2f72c4a96a44b97"
 }

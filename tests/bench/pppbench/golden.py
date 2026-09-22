@@ -2,15 +2,15 @@
 
 Two layers per case, with different jobs:
 * **semantic snapshot** (``expected/<key>.semantic.json``, pppbench/semantic.py): the score's
-  *structure* — bars and their numbers, staves, clefs, which staff and voice each note and rest is
-  in — and its *music* — metre, key, tempo marks, notes (position, length, pitch, spelling, printed
+  *structure* — bars, their numbers and repeat signs, the order the app plays them in, staves, which
+  staff is which hand, clefs, which staff and voice each note and rest is in — and its *music* — metre, key, tempo marks, notes (position, length, pitch, spelling, printed
   shape, ties, tuplets, printed accidentals), rests (position, length, printed shape), pedal marks —
   plus the stats the app reads and the bar and beat times it syncs the recording with.
 * **byte snapshot** (``expected/<key>.musicxml``): serialisation stability and determinism.
 
 Labels, most severe first:
-* ``STRUCTURAL_CHANGE`` — the frame changed: bars (count, number, length), staves, clefs, a note or
-  rest moved to another staff or voice.
+* ``STRUCTURAL_CHANGE`` — the frame changed: bars (count, number, length, repeat signs, endings), the
+  play order, staves, hands, clefs, a note or rest moved to another staff or voice.
 * ``SEMANTIC_CHANGE`` — the music changed (or the bar and beat times), in an unchanged frame.
 * ``SERIALIZATION_ONLY`` — different bytes, the same structure, music, stats and times: formatting,
   element or attribute order, voice numbering. The only change a writer rewrite may bless as such.

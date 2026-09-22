@@ -7,9 +7,11 @@ compares each copy against the original run as a temporary baseline. Every
 harmful mutation must be a REGRESSION that names its metric; the no-op
 mutation must PASS with a byte-identical results.json.
 
-30 harmful mutations: 5 original, 7 from the independent review (§17), 5 from
-its fixer (§18), and 13 from the final review and its fixer (§19-§20): what the
-app draws or plays that the gate used to miss.
+34 harmful mutations: 5 original, 7 from the independent review (§17), 5 from
+its fixer (§18), 13 from the final review and its fixer (§19-§20), and 4 from
+the short final review and the last fixer (§21: a spurious repeat sign, short
+bars marked implicit, a bar split without a repeat, no <staves>): what the app
+draws or plays that the gate used to miss.
 """
 
 from __future__ import annotations
@@ -21,6 +23,60 @@ from . import compare, runner, stages, suite as suite_mod, util
 
 BAR_LOOP = "      out.push(writeStaff(b1[b], 1, 1, b));"          # buildXml's per-bar loop
 TAIL = "(b > 0 && b === Math.floor(bars * 2 / 3))"             # two thirds of the way in (fewer than half the bars follow)
+
+# G00 §21 short review: a backward repeat sign after the middle bar (the app plays the first half twice)
+SPURIOUS_REPEAT_EDITS = [
+    ("      out.push('</measure>');",
+     "      if (b > 0 && b === Math.floor(bars / 2) - 1) out.push('<barline location=\"right\"><bar-style>light-heavy"
+     "</bar-style><repeat direction=\"backward\"/></barline>');\n      out.push('</measure>');")]
+# ... the right hand's trailing rest a beat short, and every inner bar marked implicit="yes"
+IMPLICIT_SHORT_EDITS = [
+    ("""      out.push('<measure number="' + (b + 1) + '">');""",
+     """      out.push('<measure number="' + (b + 1) + '"' + (b > 0 && b < bars - 1 ? ' implicit="yes"' : '') + '>');"""),
+    ("      if (cursor < bar) rest(cursor, bar);",
+     "      if (cursor < bar) rest(cursor, bar - (staff === 1 && bar - cursor >= 2 * beatTicks ? beatTicks : 0));")]
+# G00 §21 last fixer: the second-to-last bar split in two where no note or rest of either staff crosses, with
+# no repeat sign and no change of time signature (two short bars; stats.bars and barStarts follow the file)
+FAKE_SPLIT_EDITS = [
+    ("    out.push('</part></score-partwise>');\n    return out.join('\\n');",
+     r"""    out.push('</part></score-partwise>');
+    /* mutation: the second-to-last bar split in two (no repeat sign, same metre) */
+    const sk = out.indexOf('<measure number="' + (bars - 1) + '">');
+    if (bars >= 3 && sk > 0 && out[sk + 2].indexOf('<backup>') === 0 && out[sk + 4] === '</measure>') {
+      const cut = xml => {
+        const items = xml.match(/<note>.*?<\/note>|<direction\b.*?<\/direction>/g) || [];
+        const on = [], ends = new Set();
+        let cur = 0, lastStart = 0;
+        items.forEach(it => {
+          if (it.indexOf('<note>') !== 0) { on.push(cur); return; }
+          if (it.indexOf('<chord/>') >= 0) { on.push(lastStart); return; }
+          on.push(cur); lastStart = cur; cur += +/<duration>(\d+)<\/duration>/.exec(it)[1]; ends.add(cur);
+        });
+        return { items: items, on: on, ends: ends };
+      };
+      const A = cut(out[sk + 1]), B = cut(out[sk + 3]);
+      let p = -1;
+      A.ends.forEach(t => { if (t > 0 && t < bar && B.ends.has(t) && (p < 0 || Math.abs(t - bar / 2) < Math.abs(p - bar / 2))) p = t; });
+      if (p > 0) {
+        const part = (S, first) => S.items.filter((it, i) => (S.on[i] < p) === first).join('');
+        out.splice(sk, 5,
+          '<measure number="' + (bars - 1) + '">', part(A, true), '<backup><duration>' + p + '</duration></backup>', part(B, true), '</measure>',
+          '<measure number="' + bars + '">', part(A, false), '<backup><duration>' + (bar - p) + '</duration></backup>', part(B, false), '</measure>');
+        out[out.indexOf('<measure number="' + bars + '">', sk + 10)] = '<measure number="' + (bars + 1) + '">';
+        model.splitAt = p;
+      }
+    }
+    return out.join('\n');"""),
+    ("    const xml = buildXml({\n      title: title, key: key, beatsPerBar: beatsPerBar, beatType: beatType, bpm: roundBpm,\n"
+     "      bars: bars, events1: events1, events2: events2, pedals: pedals, table: table\n    });",
+     "    const mdl = {\n      title: title, key: key, beatsPerBar: beatsPerBar, beatType: beatType, bpm: roundBpm,\n"
+     "      bars: bars, events1: events1, events2: events2, pedals: pedals, table: table\n    };\n    const xml = buildXml(mdl);"),
+    ("    const errSum = extra.errSum || q.reduce((s, n) => s + (n.err || 0), 0);",
+     "    const errSum = extra.errSum || q.reduce((s, n) => s + (n.err || 0), 0);\n"
+     "    if (mdl.splitAt != null) barStarts.splice(bars - 1, 0, Math.round(tickToSec((bars - 2) * bar + mdl.splitAt) * 1000) / 1000);"),
+    ("notes: notes.length, bars: bars, beatsPerBar: beatsPerBar,",
+     "notes: notes.length, bars: bars + (mdl.splitAt != null ? 1 : 0), beatsPerBar: beatsPerBar,")]
+NO_STAVES_EDITS = [("<staves>2</staves>", "")]
 
 MUTATIONS: List[Dict[str, Any]] = [
     {"id": "MUT-HANDS",
@@ -149,6 +205,19 @@ MUTATIONS: List[Dict[str, Any]] = [
      "find": "            if (sp.alter !== current && !tieStop) {",
      "replace": "            if (!tieStop) {",
      "expect": "REGRESSION", "metrics": ["notation.accidentals.courtesy_per_100"]},
+    # --- from the short final review (G00 §21) and the last fixer: repeats, implicit bars, split bars, staves ---
+    {"id": "SR-SPURIOUS-REPEAT",          # a repeat sign after the middle bar: the app plays the first half twice
+     "replacements": SPURIOUS_REPEAT_EDITS,
+     "expect": "REGRESSION", "metrics": ["struct.form.order_exact", "critical.structure"]},
+    {"id": "SR-IMPLICIT-MASKS-SHORT-BARS",  # short right-hand bars the prediction marks implicit="yes"
+     "replacements": IMPLICIT_SHORT_EDITS,
+     "expect": "REGRESSION", "metrics": ["read.bar_completeness", "critical.structure"]},
+    {"id": "SR-FAKE-SPLIT-BAR",           # a bar split in two halves with no repeat sign
+     "replacements": FAKE_SPLIT_EDITS,
+     "expect": "REGRESSION", "metrics": ["read.bar_completeness", "critical.structure"]},
+    {"id": "SR-NO-STAVES",                # no <staves>: the app shows the left hand and never plays it
+     "replacements": NO_STAVES_EDITS,
+     "expect": "REGRESSION", "metrics": ["notes.identity.f1", "critical.pitch_integrity"]},
     {"id": "MUT-NOOP",
      "find": "  const api = {",
      "replace": "  /* noop mutation */\n  const api = {",

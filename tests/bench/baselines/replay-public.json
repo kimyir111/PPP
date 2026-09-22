@@ -278,6 +278,14 @@
     "mean": 0.777778,
     "n": 6
    },
+   "struct.form.order_exact": {
+    "mean": 1.0,
+    "n": 6
+   },
+   "struct.form.plays_per_bar": {
+    "mean": 1.0,
+    "n": 6
+   },
    "struct.key.fifths_exact": {
     "mean": 1.0,
     "n": 5
@@ -640,6 +648,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.777778,
+     "n": 6
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 6
     },
     "struct.key.fifths_exact": {
@@ -1005,6 +1021,14 @@
      "mean": 0.777778,
      "n": 6
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 6
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 6
+    },
     "struct.key.fifths_exact": {
      "mean": 1.0,
      "n": 5
@@ -1366,6 +1390,14 @@
     "mean": 0.777778,
     "n": 6
    },
+   "struct.form.order_exact": {
+    "mean": 1.0,
+    "n": 6
+   },
+   "struct.form.plays_per_bar": {
+    "mean": 1.0,
+    "n": 6
+   },
    "struct.key.fifths_exact": {
     "mean": 1.0,
     "n": 5
@@ -1452,11 +1484,11 @@
    }
   },
   "date": "2026-09-22",
-  "git_sha": "b1d817bb9527e397f4934303886280fe25b97146",
+  "git_sha": "6dedc519d0f1e19ddf44340b66f405ad8baa34c1",
   "versions": {
    "generator": "perform/2",
-   "metrics": "metrics/4",
-   "reader": "reader/3",
+   "metrics": "metrics/5",
+   "reader": "reader/4",
    "sqi": "sqi/2"
   }
  },
@@ -1499,6 +1531,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 93.39852,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -1515,7 +1548,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "767d27e54f38c622",
+   "semantic": "2333be255081f299",
    "sqi": 93.39852,
    "status": "ok"
   },
@@ -1557,6 +1590,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 76.121274,
     "struct.downbeat.f1": 0.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": null,
     "struct.key.timeline_accuracy": null,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -1573,7 +1607,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "2a9b1a727e3b67c7",
+   "semantic": "c6400f0373e9d18c",
    "sqi": 76.121274,
    "status": "ok"
   },
@@ -1615,6 +1649,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 92.575758,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -1631,7 +1666,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "0c7986743dd5c998",
+   "semantic": "f276f1a291de532c",
    "sqi": 92.575758,
    "status": "ok"
   },
@@ -1673,6 +1708,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 66.3536,
     "struct.downbeat.f1": 0.666667,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -1689,7 +1725,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "3beb654b3f96c8d4",
+   "semantic": "daafa2157e8f13cb",
    "sqi": 66.3536,
    "status": "ok"
   },
@@ -1731,6 +1767,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 87.5,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -1747,7 +1784,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "dcc7216f000a0da9",
+   "semantic": "af834c62fc9a845c",
    "sqi": 87.5,
    "status": "ok"
   },
@@ -1789,6 +1826,7 @@
     "read.ledger_lines.heavy_rate": 0.0,
     "sqi": 97.368421,
     "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
@@ -1805,7 +1843,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "936f2f474da9f878",
+   "semantic": "dfdef657466a0e7f",
    "sqi": 97.368421,
    "status": "ok"
   }
@@ -1851,6 +1889,18 @@
    "date": "2026-09-22",
    "git_sha": "b1d817bb9527e397f4934303886280fe25b97146",
    "reason": "metrics/4 + reader/3 (G00 §19-§20: tempo, metre and key over the whole score; printed note shapes and note values in usable; complete bars; bar numbers; clefs; PredTime on the SUT's own beat model); audio-score.js unchanged",
+   "sqi_all": 85.552929,
+   "usable_all": 0.166667
+  },
+  {
+   "date": "2026-09-22",
+   "event": "versions {'generator': 'perform/2', 'metrics': 'metrics/4', 'reader': 'reader/3', 'sqi': 'sqi/2'} -> {'generator': 'perform/2', 'metrics': 'metrics/5', 'reader': 'reader/4', 'sqi': 'sqi/2'}; new anchor, earlier numbers are not comparable"
+  },
+  {
+   "audio_score_sha256": "559a1f40fb73416bc72d671d894251f7c3263110fa10780559047f6f22009288",
+   "date": "2026-09-22",
+   "git_sha": "6dedc519d0f1e19ddf44340b66f405ad8baa34c1",
+   "reason": "reader/4 + metrics/5 (G00 §21 last fixer): play order in critical.structure; every stored metric identical on the 6 replay fixtures",
    "sqi_all": 85.552929,
    "usable_all": 0.166667
   }
@@ -1980,20 +2030,20 @@
    },
    "incomplete_bars": {
     "by_collection": {
-     "hymns": 5,
+     "hymns": 7,
      "method/czerny599": 4,
      "method/sonatina": 1
     },
     "examples": [
+     "catalog/hymns/all-glory-laud.musicxml",
      "catalog/hymns/for-all-the-saints.musicxml",
+     "catalog/hymns/i-need-thee.musicxml",
      "catalog/hymns/in-the-bleak-midwinter.musicxml",
-     "catalog/hymns/now-thank-we-all.musicxml",
-     "catalog/hymns/o-the-deep-deep-love.musicxml",
-     "catalog/hymns/the-strife-is-oer.musicxml"
+     "catalog/hymns/now-thank-we-all.musicxml"
     ],
-    "files_affected": 10,
+    "files_affected": 12,
     "files_in_scope": 329,
-    "impact": "A staff's notes and rests stop before the bar ends (not a pickup, its complement or a bar split at a repeat): the app draws the bar short. Stricter than bar_integrity, the app's own check.",
+    "impact": "A staff's notes and rests stop before the bar ends, or a bar is short (not a pickup, its complement, or half of a bar split at a repeat sign, an ending or a double/final bar line): the app draws the bar short. Stricter than bar_integrity, the app's own check.",
     "in_scope_by_collection": {
      "catalog": 3,
      "hymns": 100,
@@ -2006,7 +2056,7 @@
      "method/sonatina": 28,
      "samples": 4
     },
-    "items": 38,
+    "items": 42,
     "status": "KNOWN_FAILURE",
     "title": "Bars a staff does not fill",
     "unit": "bars"
@@ -2206,14 +2256,14 @@
   },
   "files_scanned": 329,
   "scope": "committed scores under catalog/ and samples/",
-  "version": "known-defects/2"
+  "version": "known-defects/3"
  },
  "lock_sha256": "5823f4e9cf884ca1ad9f3c204651d4e53cd9037198346198ca3b1e03c01990ed",
  "recorded": {
   "audio_score_sha256": "559a1f40fb73416bc72d671d894251f7c3263110fa10780559047f6f22009288",
   "date": "2026-09-22",
   "git_dirty": true,
-  "git_sha": "b1d817bb9527e397f4934303886280fe25b97146",
+  "git_sha": "6dedc519d0f1e19ddf44340b66f405ad8baa34c1",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"
@@ -2223,8 +2273,8 @@
  "suite_sha256": "aacf07ec04e0ec14b7d9736baea394ca41ff6b0b82cdf9f3e12ae90e6a4d4b45",
  "versions": {
   "generator": "perform/2",
-  "metrics": "metrics/4",
-  "reader": "reader/3",
+  "metrics": "metrics/5",
+  "reader": "reader/4",
   "sqi": "sqi/2"
  }
 }

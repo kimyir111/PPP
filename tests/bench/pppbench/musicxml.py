@@ -4,8 +4,9 @@ The rules copy ``parseMusicXML()`` and ``Score.finalize`` in
 ``Piano Coach App.dc.html`` (docs/GOALS/G00 §8.2, R1-R22) so the benchmark
 measures what PPP shows and plays, not a textbook reading of MusicXML:
 grace notes skipped, a pickup bar as long as its content, part 0 defining the
-bar grid, the first tempo (a ``<sound>`` before a ``<metronome>``), ottavas
-applied the app's way, and hands from the piano part's last two staves.
+bar grid and its repeat signs and endings, the first tempo (a ``<sound>`` before
+a ``<metronome>``), ottavas applied the app's way, and hands from the piano
+part's last two staves.
 """
 
 from __future__ import annotations
@@ -101,6 +102,48 @@ def _txt(el: ET.Element, name: str, default: Optional[str]) -> Optional[str]:
 def _num(el: ET.Element, name: str, default: Optional[Fraction]) -> Optional[Fraction]:
     v = js_float(_txt(el, name, ""))
     return v if v is not None else default
+
+
+def parse_ending_numbers(attr: Optional[str], text: str) -> List[int]:
+    """``parseEndingNumbers``: the numbers of a first/second ending, from number="1, 2" or its text."""
+    def nums(s: Optional[str]) -> List[int]:
+        return [int(x) for x in re.split(r"[^0-9]+", s or "") if x and int(x) > 0]
+    return nums(attr) or nums(text)
+
+
+_ENDING_LABEL = re.compile(r"[0-9.,\s]+")
+
+
+def read_barline(el: ET.Element, marks: Dict[str, Any]) -> None:
+    """One <barline> of part 0 into the bar's marks, as parseMusicXML does (``barMarks``): a repeat sign,
+    the right bar line's style, a first or second ending. Later barlines of the bar overwrite earlier ones."""
+    left = (el.attrib.get("location") or "right") == "left"
+    rep = _first(el, "repeat")
+    if rep is not None:
+        if rep.attrib.get("direction") == "forward":
+            marks["repeatStart"] = True
+        else:
+            marks["repeatEnd"] = js_int(rep.attrib.get("times") or "2") or 2
+    style = _txt(el, "bar-style", "")
+    if style and not left:
+        marks["style"] = style
+    end = _first(el, "ending")
+    if end is not None:
+        ty = end.attrib.get("type")
+        said = "".join(end.itertext()).strip()
+        nos = parse_ending_numbers(end.attrib.get("number"), said)
+        if ty == "start":
+            marks["endingNos"] = nos or [1]
+            marks["endingType"] = "start"
+            marks["ending"] = said if _ENDING_LABEL.fullmatch(said) else " ".join(f"{x}." for x in marks["endingNos"])
+        if ty == "stop":                       # closes the bracket with a hook
+            marks["endingEnd"] = "stop"
+            marks.setdefault("endingType", "stop")
+        if ty == "discontinue":                # leaves it open
+            marks["endingEnd"] = "open"
+            marks.setdefault("endingType", "discontinue")
+        if nos and "endingNos" not in marks:
+            marks["endingNos"] = nos
 
 
 def _strip_ns(root: ET.Element) -> None:
@@ -219,8 +262,13 @@ def read_score(src: Any, *, source_path: Optional[str] = None, ottava: str = "ap
             cursor = Fraction(0)
             max_cursor = Fraction(0)
             last_onset = Fraction(0)
+            bar_marks: Dict[str, Any] = {}
             for el in m_el:
                 tag = el.tag
+                if tag == "barline":
+                    if part_idx == 0:        # the app reads repeats and endings from the first part only
+                        read_barline(el, bar_marks)
+                    continue
                 if tag == "attributes":
                     d = _num(el, "divisions", None)
                     if d and d > 0:
@@ -367,7 +415,7 @@ def read_score(src: Any, *, source_path: Optional[str] = None, ottava: str = "ap
                     len_q = content if content > sig + EPS else sig
                 grid.append({"number": raw_no if raw_no is not None else str(number), "app_number": number,
                              "len_q": len_q, "implicit": implicit, "time": time, "fifths": fifths, "mode": mode,
-                             "mode_explicit": mode_explicit})
+                             "mode_explicit": mode_explicit, "bar": bar_marks})
         part_span.append((staff_base, max(part_staves, 1)))
         staff_base += max(part_staves, 1)
 
@@ -378,7 +426,7 @@ def read_score(src: Any, *, source_path: Optional[str] = None, ottava: str = "ap
     q = Fraction(0)
     for i, g in enumerate(grid):
         measures.append(Measure(i, g["number"], q, g["len_q"], g["implicit"], g["time"],
-                                g["fifths"], g["mode"], g["mode_explicit"], app_number=g["app_number"]))
+                                g["fifths"], g["mode"], g["mode_explicit"], app_number=g["app_number"], bar=g["bar"]))
         q += g["len_q"]
 
     def start_of(m_idx: int) -> Fraction:

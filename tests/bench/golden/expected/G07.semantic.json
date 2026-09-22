@@ -1,5 +1,5 @@
 {
- "schema": "ppp.bench-semantic/2",
+ "schema": "ppp.bench-semantic/3",
  "score": {
   "music": {
    "measures": [
@@ -970,46 +970,53 @@
     }
    ]
   },
-  "schema": "ppp.bench-semantic/2",
+  "schema": "ppp.bench-semantic/3",
   "structure": {
    "bars": [
     {
+     "barline": {},
      "i": 0,
      "implicit": false,
      "len": "4",
      "number": 1
     },
     {
+     "barline": {},
      "i": 1,
      "implicit": false,
      "len": "4",
      "number": 2
     },
     {
+     "barline": {},
      "i": 2,
      "implicit": false,
      "len": "4",
      "number": 3
     },
     {
+     "barline": {},
      "i": 3,
      "implicit": false,
      "len": "4",
      "number": 4
     },
     {
+     "barline": {},
      "i": 4,
      "implicit": false,
      "len": "4",
      "number": 5
     },
     {
+     "barline": {},
      "i": 5,
      "implicit": false,
      "len": "4",
      "number": 6
     },
     {
+     "barline": {},
      "i": 6,
      "implicit": false,
      "len": "4",
@@ -1030,6 +1037,17 @@
      "bass"
     ]
    ],
+   "hands": [
+    [
+     1,
+     "r"
+    ],
+    [
+     2,
+     "l"
+    ]
+   ],
+   "piano_part": 0,
    "placement": [
     [
      0,
@@ -1486,6 +1504,15 @@
      2,
      1
     ]
+   ],
+   "play_order": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
    ],
    "staves": 2
   }

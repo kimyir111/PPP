@@ -4,8 +4,8 @@
 
      node tests/bench/node/conformance.js --in files.jsonl --out app.jsonl [--base http://127.0.0.1:8777]
 
-   Input line: {"id", "xml"}. Output line: {"id", "ok", "measures", "notes",
-   "tempo", "staves"} or {"id", "ok": false, "error"}. Needs `npm start`,
+   Input line: {"id", "xml"}. Output line: {"id", "ok", "measures", "visits",
+   "notes", "rests", "tempo", "staves"} or {"id", "ok": false, "error"}. Needs `npm start`,
    network access for the page's CDN scripts, and puppeteer (resolved from the
    repository's node_modules or PPP_BENCH_NODE_MODULES). */
 'use strict';
@@ -43,7 +43,11 @@ const outPath = arg('--out');
           return {
             id: id, ok: true, tempo: s.tempo, staves: s.staves,
             measures: s.measures.map(m => ({ number: m.number, startQ: m.startQ, lenQ: m.lenQ,
-              time: [m.time.beats, m.time.beatType], fifths: m.key.fifths, mode: m.key.mode })),
+              time: [m.time.beats, m.time.beatType], fifths: m.key.fifths, mode: m.key.mode,
+              /* repeat signs, endings and bar-line style (measureInfo.bar) */
+              bar: m.bar || null })),
+            /* the order the player plays the bars in: repeats and endings expanded (Score.form) */
+            visits: window.PPP.Score.form(s).map(v => v.index),
             notes: s.notes.filter(n => !n.rest && n.midi != null).map(n => ({
               /* the written spelling: under an ottava the app keeps it in writtenP and shifts p */
               m: index[n.m], b: n.b, dur: n.dur, midi: n.midi, hand: n.hand, staff: n.staff, p: n.writtenP || n.p || null,

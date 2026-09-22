@@ -20,7 +20,9 @@ from .metrics.readability import (ACCIDENTAL_ALTER, bar_completeness_detail, bar
                                   signature_alters)
 from .metrics.structure import measure_numbers
 
-AUDIT_VERSION = "known-defects/2"   # /2: note shapes, incomplete bars, bar numbering (G00 §19 F2)
+AUDIT_VERSION = "known-defects/3"   # /2: note shapes, incomplete bars, bar numbering (G00 §19 F2)
+                                    # /3: a bar split in two is excused only at a repeat sign, an ending or a
+                                    #     double/final bar line (G00 §21 S-m2)
 CACHE = os.path.join(util.bench_root(), ".cache", "known-defects.json")
 
 
@@ -156,8 +158,9 @@ CLASSES = [
      "The app draws a note from <type> and <dot> and plays its <duration>; where they disagree the page shows another "
      "rhythm than the app plays (e.g. an undotted whole note that lasts six beats)."),
     ("incomplete_bars", "Bars a staff does not fill", "incomplete_bars", "bars", lambda a: a["bars"] > 0,
-     "A staff's notes and rests stop before the bar ends (not a pickup, its complement or a bar split at a repeat): "
-     "the app draws the bar short. Stricter than bar_integrity, the app's own check."),
+     "A staff's notes and rests stop before the bar ends, or a bar is short (not a pickup, its complement, or half of "
+     "a bar split at a repeat sign, an ending or a double/final bar line): the app draws the bar short. Stricter "
+     "than bar_integrity, the app's own check."),
     ("bar_numbering", "Bar numbers that do not count up by one", "bar_numbering_wrong", "files", lambda a: a["bars"] > 0,
      "The app finds bars by number: a repeated number lays bars over each other, a skipped or reordered one shows "
      "wrong bar numbers."),

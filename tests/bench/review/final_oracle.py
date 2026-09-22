@@ -9,6 +9,8 @@ the diagnostic score or the metrics they use:
   pickup-bar  a pickup written as a full first bar that starts with typed rests (PPP's own style)
   mode-flip   <mode> written as the other mode (the key signature is what the reader sees)
   tempo-mark  every tempo only as a printed metronome mark (the <sound tempo>s removed)
+  no-repeats  every repeat sign and ending removed: the score as the benchmark performs it (each bar once;
+              added by the last fixer, G00 §21.15, with struct.form.order_exact among the checked metrics)
 
 The checked metrics include the critical gates and the usable verdict (G00 §19 m3). A reference file is
 not the ideal output where the catalogue itself is wrong; a metric below perfect is accepted only when
@@ -40,7 +42,7 @@ KEYS = ["usable", "sqi", "notes.identity.f1", "notation.onset_pos.accuracy", "no
         "struct.time_sig.timeline_accuracy", "struct.key.fifths_exact", "struct.key.timeline_accuracy",
         "struct.tempo.ok_effective", "struct.tempo.timeline_accuracy", "struct.downbeat.f1", "struct.measures.count_exact",
         "struct.measures.extra_empty_edge", "struct.measure_numbers.valid", "struct.measure_numbers.app_onset_accuracy",
-        "notation.accidentals.required_recall", "read.bar_integrity", "read.bar_completeness"] + \
+        "notation.accidentals.required_recall", "read.bar_integrity", "read.bar_completeness", "struct.form.order_exact"] + \
     [k for k in __import__("pppbench.metrics.critical", fromlist=["GATES"]).GATES]
 
 # A reference file is not the ideal output where the catalogue PPP ships is itself wrong, and the benchmark
@@ -144,7 +146,7 @@ def tempo_mark_only(xml: str, qpm: float, compound: bool) -> str:
 def main() -> int:
     refs = corpus.by_id(corpus.load_corpus())
     s = suite_mod.load_suite("core")
-    below = {v: Counter() for v in ("as-is", "pickup-bar", "mode-flip", "tempo-mark")}
+    below = {v: Counter() for v in ("as-is", "pickup-bar", "mode-flip", "tempo-mark", "no-repeats")}
     explained = {v: Counter() for v in below}
     tried = Counter()
     examples = {}
@@ -170,6 +172,9 @@ def main() -> int:
         if mf is not None:
             variants["mode-flip"] = (mf, bar_starts)
         variants["tempo-mark"] = (tempo_mark_only(ideal, qpm, compound), bar_starts)
+        if re.search(r"<repeat\b|<ending\b", ideal):
+            variants["no-repeats"] = (re.sub(r"<repeat\b[^>]*/>|<ending\b[^>]*/>|<ending\b[^>]*>.*?</ending>", "", ideal,
+                                             flags=re.S), bar_starts)
         for name, (xml, bs) in variants.items():
             tried[name] += 1
             stats = {"barStarts": bs, "beats": list(p.input["beats"]), "beatsPerBar": t[0], "beatType": t[1]}

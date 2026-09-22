@@ -286,6 +286,14 @@
     "mean": 0.753571,
     "n": 4144
    },
+   "struct.form.order_exact": {
+    "mean": 1.0,
+    "n": 4144
+   },
+   "struct.form.plays_per_bar": {
+    "mean": 1.0,
+    "n": 4144
+   },
    "struct.key.fifths_exact": {
     "mean": 0.85827,
     "n": 3168
@@ -642,6 +650,14 @@
      "mean": 0.649832,
      "n": 518
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 518
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 518
+    },
     "struct.key.fifths_exact": {
      "mean": 0.861111,
      "n": 396
@@ -995,6 +1011,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.625973,
+     "n": 1554
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 1554
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 1554
     },
     "struct.key.fifths_exact": {
@@ -1368,6 +1392,14 @@
      "mean": 0.883737,
      "n": 1554
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 1554
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 1554
+    },
     "struct.key.fifths_exact": {
      "mean": 0.861953,
      "n": 1188
@@ -1721,6 +1753,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.849603,
+     "n": 518
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 518
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 518
     },
     "struct.key.fifths_exact": {
@@ -2088,6 +2128,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.857378,
+     "n": 864
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 864
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 864
     },
     "struct.key.fifths_exact": {
@@ -2461,6 +2509,14 @@
      "mean": 0.843043,
      "n": 144
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 144
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 144
+    },
     "struct.key.fifths_exact": {
      "mean": 1.0,
      "n": 144
@@ -2830,6 +2886,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.809281,
+     "n": 688
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 688
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 688
     },
     "struct.key.fifths_exact": {
@@ -3203,6 +3267,14 @@
      "mean": 0.740736,
      "n": 352
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 352
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 352
+    },
     "struct.key.fifths_exact": {
      "mean": 0.690341,
      "n": 352
@@ -3568,6 +3640,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.387988,
+     "n": 256
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 256
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 256
     },
     "struct.key.fifths_exact": {
@@ -3937,6 +4017,14 @@
      "mean": 0.725029,
      "n": 288
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 288
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 288
+    },
     "struct.key.fifths_exact": {
      "mean": 0.732639,
      "n": 288
@@ -4298,6 +4386,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.765701,
+     "n": 1152
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 1152
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 1152
     },
     "struct.key.fifths_exact": {
@@ -4671,6 +4767,14 @@
      "mean": 0.746385,
      "n": 592
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 592
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 592
+    },
     "struct.key.fifths_exact": {
      "mean": 0.7875,
      "n": 560
@@ -5036,6 +5140,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.800238,
+     "n": 176
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 176
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 176
     },
     "struct.key.fifths_exact": {
@@ -5409,6 +5521,14 @@
      "mean": 0.775875,
      "n": 272
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 272
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 272
+    },
     "struct.key.fifths_exact": {
      "mean": 0.783088,
      "n": 272
@@ -5770,6 +5890,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.761756,
+     "n": 1248
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 1248
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 1248
     },
     "struct.key.fifths_exact": {
@@ -6137,6 +6265,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.280973,
+     "n": 32
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 32
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 32
     },
     "struct.key.fifths_exact": {
@@ -6510,6 +6646,14 @@
      "mean": 0.721202,
      "n": 256
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 256
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 256
+    },
     "struct.key.fifths_exact": {
      "mean": 0.785156,
      "n": 256
@@ -6879,6 +7023,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.705048,
+     "n": 208
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 208
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 208
     },
     "struct.key.fifths_exact": {
@@ -7252,6 +7404,14 @@
      "mean": 0.716444,
      "n": 832
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 832
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 832
+    },
     "struct.key.fifths_exact": {
      "mean": 0.832143,
      "n": 560
@@ -7621,6 +7781,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.695941,
+     "n": 336
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 336
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 336
     },
     "struct.key.fifths_exact": {
@@ -7994,6 +8162,14 @@
      "mean": 0.67517,
      "n": 240
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 240
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 240
+    },
     "struct.key.fifths_exact": {
      "mean": 0.75,
      "n": 128
@@ -8361,6 +8537,14 @@
      "mean": 0.80238,
      "n": 208
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 208
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 208
+    },
     "struct.key.fifths_exact": {
      "mean": 1.0,
      "n": 64
@@ -8716,6 +8900,14 @@
      "mean": 0.912899,
      "n": 128
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 128
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 128
+    },
     "struct.measure_numbers.app_onset_accuracy": {
      "mean": 1.0,
      "n": 128
@@ -9069,6 +9261,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.806663,
+     "n": 64
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 64
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 64
     },
     "struct.key.fifths_exact": {
@@ -9442,6 +9642,14 @@
      "mean": 0.754142,
      "n": 2208
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 2208
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 2208
+    },
     "struct.key.fifths_exact": {
      "mean": 0.865489,
      "n": 2208
@@ -9813,6 +10021,14 @@
      "mean": 0.759331,
      "n": 576
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 576
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 576
+    },
     "struct.key.fifths_exact": {
      "mean": 0.860119,
      "n": 336
@@ -10178,6 +10394,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.739853,
+     "n": 304
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 304
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 304
     },
     "struct.key.fifths_exact": {
@@ -10547,6 +10771,14 @@
      "mean": 0.865861,
      "n": 48
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 48
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 48
+    },
     "struct.key.fifths_exact": {
      "mean": 1.0,
      "n": 48
@@ -10912,6 +11144,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.704657,
+     "n": 32
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 32
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 32
     },
     "struct.key.fifths_exact": {
@@ -11285,6 +11525,14 @@
      "mean": 0.817137,
      "n": 288
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 288
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 288
+    },
     "struct.key.fifths_exact": {
      "mean": 0.8375,
      "n": 240
@@ -11650,6 +11898,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.666667,
+     "n": 16
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 16
     },
     "struct.key.fifths_exact": {
@@ -12023,6 +12279,14 @@
      "mean": 0.63204,
      "n": 144
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 144
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 144
+    },
     "struct.key.fifths_exact": {
      "mean": 0.909722,
      "n": 144
@@ -12378,6 +12642,14 @@
      "mean": 0.455143,
      "n": 16
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 16
+    },
     "struct.measure_numbers.app_onset_accuracy": {
      "mean": 1.0,
      "n": 16
@@ -12731,6 +13003,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.465606,
+     "n": 96
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 96
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 96
     },
     "struct.key.fifths_exact": {
@@ -13104,6 +13384,14 @@
      "mean": 0.527801,
      "n": 720
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 720
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 720
+    },
     "struct.key.fifths_exact": {
      "mean": 0.875,
      "n": 672
@@ -13473,6 +13761,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.827285,
+     "n": 2176
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 2176
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 2176
     },
     "struct.key.fifths_exact": {
@@ -13846,6 +14142,14 @@
      "mean": 0.804667,
      "n": 688
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 688
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 688
+    },
     "struct.key.fifths_exact": {
      "mean": 0.802419,
      "n": 496
@@ -14211,6 +14515,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.666667,
+     "n": 16
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 16
     },
     "struct.key.fifths_exact": {
@@ -14584,6 +14896,14 @@
      "mean": 0.733411,
      "n": 80
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 80
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 80
+    },
     "struct.key.fifths_exact": {
      "mean": 1.0,
      "n": 48
@@ -14955,6 +15275,14 @@
      "mean": 0.5021,
      "n": 640
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 640
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 640
+    },
     "struct.key.fifths_exact": {
      "mean": 0.865385,
      "n": 624
@@ -15308,6 +15636,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.502294,
+     "n": 16
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 16
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -15667,6 +16003,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.811866,
+     "n": 672
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 672
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 672
     },
     "struct.key.fifths_exact": {
@@ -16040,6 +16384,14 @@
      "mean": 0.63204,
      "n": 144
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 144
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 144
+    },
     "struct.key.fifths_exact": {
      "mean": 0.909722,
      "n": 144
@@ -16411,6 +16763,14 @@
      "mean": 0.827285,
      "n": 2176
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 2176
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 2176
+    },
     "struct.key.fifths_exact": {
      "mean": 0.864268,
      "n": 1584
@@ -16778,6 +17138,14 @@
      "mean": 0.285714,
      "n": 16
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 16
+    },
     "struct.key.fifths_exact": {
      "mean": 1.0,
      "n": 16
@@ -17131,6 +17499,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.501584,
+     "n": 80
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 80
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 80
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -17492,6 +17868,14 @@
      "mean": 0.817137,
      "n": 288
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 288
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 288
+    },
     "struct.key.fifths_exact": {
      "mean": 0.8375,
      "n": 240
@@ -17845,6 +18229,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.455143,
+     "n": 16
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 16
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -18204,6 +18596,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.790051,
+     "n": 3136
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 3136
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 3136
     },
     "struct.key.fifths_exact": {
@@ -18571,6 +18971,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.537937,
+     "n": 80
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 80
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 80
     },
     "struct.key.fifths_exact": {
@@ -18944,6 +19352,14 @@
      "mean": 0.648881,
      "n": 928
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 928
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 928
+    },
     "struct.key.fifths_exact": {
      "mean": 0.834052,
      "n": 928
@@ -19293,6 +19709,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.7469,
+     "n": 1036
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 1036
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 1036
     },
     "struct.key.fifths_exact": {
@@ -19650,6 +20074,14 @@
      "mean": 0.582724,
      "n": 518
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 518
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 518
+    },
     "struct.key.fifths_exact": {
      "mean": 0.863636,
      "n": 396
@@ -20003,6 +20435,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.728945,
+     "n": 1554
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 1554
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 1554
     },
     "struct.key.fifths_exact": {
@@ -20376,6 +20816,14 @@
      "mean": 0.887678,
      "n": 518
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 518
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 518
+    },
     "struct.key.fifths_exact": {
      "mean": 0.866162,
      "n": 396
@@ -20729,6 +21177,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.877527,
+     "n": 518
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 518
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 518
     },
     "struct.key.fifths_exact": {
@@ -21102,6 +21558,14 @@
      "mean": 0.753658,
      "n": 2072
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 2072
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 2072
+    },
     "struct.key.fifths_exact": {
      "mean": 0.857323,
      "n": 1584
@@ -21473,6 +21937,14 @@
      "mean": 0.753483,
      "n": 2072
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 2072
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 2072
+    },
     "struct.key.fifths_exact": {
      "mean": 0.859217,
      "n": 1584
@@ -21840,6 +22312,14 @@
      "mean": 0.640212,
      "n": 48
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 48
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 48
+    },
     "struct.key.fifths_exact": {
      "mean": 1.0,
      "n": 48
@@ -22205,6 +22685,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.769759,
+     "n": 1104
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 1104
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 1104
     },
     "struct.key.fifths_exact": {
@@ -22578,6 +23066,14 @@
      "mean": 0.76691,
      "n": 2592
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 2592
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 2592
+    },
     "struct.key.fifths_exact": {
      "mean": 0.827546,
      "n": 2592
@@ -22949,6 +23445,14 @@
      "mean": 0.621682,
      "n": 384
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 384
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 384
+    },
     "struct.key.fifths_exact": {
      "mean": 0.997396,
      "n": 384
@@ -23314,6 +23818,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.980978,
+     "n": 16
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 16
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 16
     },
     "struct.key.fifths_exact": {
@@ -23687,6 +24199,14 @@
      "mean": 0.630361,
      "n": 864
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 864
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 864
+    },
     "struct.key.fifths_exact": {
      "mean": 0.78066,
      "n": 848
@@ -24056,6 +24576,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.784192,
+     "n": 2352
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 2352
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 2352
     },
     "struct.key.fifths_exact": {
@@ -24429,6 +24957,14 @@
      "mean": 0.790673,
      "n": 928
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 928
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 928
+    },
     "struct.key.fifths_exact": {
      "mean": 0.860991,
      "n": 928
@@ -24782,6 +25318,14 @@
     },
     "struct.downbeat.f1": {
      "mean": 0.716192,
+     "n": 32
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 32
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
      "n": 32
     },
     "struct.key.fifths_exact": {
@@ -25155,6 +25699,14 @@
      "mean": 0.753861,
      "n": 4112
     },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 4112
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 4112
+    },
     "struct.key.fifths_exact": {
      "mean": 0.862564,
      "n": 3136
@@ -25524,6 +26076,14 @@
     "mean": 0.753571,
     "n": 4144
    },
+   "struct.form.order_exact": {
+    "mean": 1.0,
+    "n": 4144
+   },
+   "struct.form.plays_per_bar": {
+    "mean": 1.0,
+    "n": 4144
+   },
    "struct.key.fifths_exact": {
     "mean": 0.85827,
     "n": 3168
@@ -25610,11 +26170,11 @@
    }
   },
   "date": "2026-09-22",
-  "git_sha": "b1d817bb9527e397f4934303886280fe25b97146",
+  "git_sha": "6dedc519d0f1e19ddf44340b66f405ad8baa34c1",
   "versions": {
    "generator": "perform/2",
-   "metrics": "metrics/4",
-   "reader": "reader/3",
+   "metrics": "metrics/5",
+   "reader": "reader/4",
    "sqi": "sqi/2"
   }
  },
@@ -25659,6 +26219,18 @@
    "date": "2026-09-22",
    "git_sha": "b1d817bb9527e397f4934303886280fe25b97146",
    "reason": "metrics/4 + reader/3 (G00 §19-§20: tempo, metre and key over the whole score; printed note shapes and note values in usable; complete bars; bar numbers; clefs; PredTime on the SUT's own beat model); audio-score.js unchanged",
+   "sqi_all": 78.597213,
+   "usable_all": 0.180019
+  },
+  {
+   "date": "2026-09-22",
+   "event": "versions {'generator': 'perform/2', 'metrics': 'metrics/4', 'reader': 'reader/3', 'sqi': 'sqi/2'} -> {'generator': 'perform/2', 'metrics': 'metrics/5', 'reader': 'reader/4', 'sqi': 'sqi/2'}; new anchor, earlier numbers are not comparable"
+  },
+  {
+   "audio_score_sha256": "559a1f40fb73416bc72d671d894251f7c3263110fa10780559047f6f22009288",
+   "date": "2026-09-22",
+   "git_sha": "6dedc519d0f1e19ddf44340b66f405ad8baa34c1",
+   "reason": "reader/4 + metrics/5 (G00 §21 last fixer): repeat signs read, play order (struct.form.order_exact) in critical.structure, implicit and unmarked half bars no longer excuse a short bar. Every existing aggregate identical (all groups, hold-out included); known failure incomplete_bars 10 files/38 bars -> 12/42",
    "sqi_all": 78.597213,
    "usable_all": 0.180019
   }
@@ -25788,20 +26360,20 @@
    },
    "incomplete_bars": {
     "by_collection": {
-     "hymns": 5,
+     "hymns": 7,
      "method/czerny599": 4,
      "method/sonatina": 1
     },
     "examples": [
+     "catalog/hymns/all-glory-laud.musicxml",
      "catalog/hymns/for-all-the-saints.musicxml",
+     "catalog/hymns/i-need-thee.musicxml",
      "catalog/hymns/in-the-bleak-midwinter.musicxml",
-     "catalog/hymns/now-thank-we-all.musicxml",
-     "catalog/hymns/o-the-deep-deep-love.musicxml",
-     "catalog/hymns/the-strife-is-oer.musicxml"
+     "catalog/hymns/now-thank-we-all.musicxml"
     ],
-    "files_affected": 10,
+    "files_affected": 12,
     "files_in_scope": 329,
-    "impact": "A staff's notes and rests stop before the bar ends (not a pickup, its complement or a bar split at a repeat): the app draws the bar short. Stricter than bar_integrity, the app's own check.",
+    "impact": "A staff's notes and rests stop before the bar ends, or a bar is short (not a pickup, its complement, or half of a bar split at a repeat sign, an ending or a double/final bar line): the app draws the bar short. Stricter than bar_integrity, the app's own check.",
     "in_scope_by_collection": {
      "catalog": 3,
      "hymns": 100,
@@ -25814,7 +26386,7 @@
      "method/sonatina": 28,
      "samples": 4
     },
-    "items": 38,
+    "items": 42,
     "status": "KNOWN_FAILURE",
     "title": "Bars a staff does not fill",
     "unit": "bars"
@@ -26014,14 +26586,14 @@
   },
   "files_scanned": 329,
   "scope": "committed scores under catalog/ and samples/",
-  "version": "known-defects/2"
+  "version": "known-defects/3"
  },
- "lock_sha256": "57a38f5400e4dfd5c0bd18c1a9cb8238dc54b2ae974aa872f21eea35d36dfa50",
+ "lock_sha256": "55e4683858f31c900cf401e695fe94d27a1d5cb9e24b4be950b2b57786972d7e",
  "recorded": {
   "audio_score_sha256": "559a1f40fb73416bc72d671d894251f7c3263110fa10780559047f6f22009288",
   "date": "2026-09-22",
   "git_dirty": true,
-  "git_sha": "b1d817bb9527e397f4934303886280fe25b97146",
+  "git_sha": "6dedc519d0f1e19ddf44340b66f405ad8baa34c1",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"
@@ -26031,8 +26603,8 @@
  "suite_sha256": "b7b09e5eac520780cc8f84b1657a741fad096344e9c811c5d2f72c4a96a44b97",
  "versions": {
   "generator": "perform/2",
-  "metrics": "metrics/4",
-  "reader": "reader/3",
+  "metrics": "metrics/5",
+  "reader": "reader/4",
   "sqi": "sqi/2"
  }
 }

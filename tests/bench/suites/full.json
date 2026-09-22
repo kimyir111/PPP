@@ -136,6 +136,10 @@
     "dir": "up",
     "tol": -0.005
    },
+   "struct.form.order_exact": {
+    "dir": "up",
+    "tol": 0.0
+   },
    "struct.key.fifths_exact": {
     "dir": "up",
     "tol": -0.005

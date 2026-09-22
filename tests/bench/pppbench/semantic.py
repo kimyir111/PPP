@@ -4,7 +4,9 @@
 parts:
 
 * **structure** — the frame the music is written in: the bars (count, number as the app keys it,
-  length, pickup), the staves, the clefs, which staff and which voice each note and rest is in.
+  length, pickup, repeat signs, first/second endings and bar-line style), the order the app plays them
+  in, the staves, which staff is which hand (or shown and never played), the clefs, which staff and
+  which voice each note and rest is in.
 * **music** — what is written in it: metre and key signature per bar, tempo marks, notes (position,
   length, pitch, spelling, printed shape — type and dots —, ties, tuplets, printed accidentals),
   rests (position, length, printed shape), pedal marks.
@@ -13,7 +15,9 @@ Only formatting is left out: element order inside a note, whitespace, attribute 
 given to voices (voices are compared by their content, in the order they appear), stem directions
 the app recomputes. reader/2's projection also dropped note types, dots, clefs, rests and bar
 numbers; the app draws all of them, so a dot removed or a clef swapped was labelled "same music"
-(§19 F3).
+(§19 F3). semantic/2 still dropped repeat signs (the app plays a passage twice for one) and which staff
+is which hand (without <staves> the app shows the left hand and never plays it): both were labelled
+SERIALIZATION_ONLY (§21 S-M1, S-m1).
 
 ``classify(expected, actual)`` says which part changed: ``STRUCTURAL_CHANGE`` when the frame
 changed (with or without music changes), ``SEMANTIC_CHANGE`` when only the music did, ``None``
@@ -28,7 +32,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from . import util
 
-SCHEMA = "ppp.bench-semantic/2"
+SCHEMA = "ppp.bench-semantic/3"
 
 
 def _q(x) -> str:
@@ -51,9 +55,14 @@ def projection(canon) -> Dict[str, Any]:
     return {
         "schema": SCHEMA,
         "structure": {
-            "bars": [{"i": m.index, "number": m.app_number, "len": _q(m.len_q), "implicit": m.implicit}
-                     for m in canon.measures],
+            "bars": [{"i": m.index, "number": m.app_number, "len": _q(m.len_q), "implicit": m.implicit,
+                      "barline": dict(sorted(m.bar.items()))} for m in canon.measures],
+            # the bars in the order the app plays them: repeats and endings expanded
+            "play_order": canon.app_play_order(),
             "staves": canon.staves,
+            # which staff each hand plays ("x": shown, never played); the piano part the app picked
+            "hands": sorted({(n.staff, n.hand) for n in canon.notes}),
+            "piano_part": canon.piano_part,
             "clefs": [[c.measure, _q(c.pos_q), c.staff, c.kind] for c in canon.clefs],
             # where each note and rest sits, keyed by what it is: [bar, position, pitch or "rest", staff, voice slot]
             "placement": sorted([[n.measure, _q(n.pos_q), n.midi, n.staff, slot[(n.measure, n.staff, n.voice)]]
@@ -111,8 +120,14 @@ def structure_diff(expected: Dict[str, Any], actual: Dict[str, Any]) -> List[str
                 out.append(f"bar {a['i'] + 1}: {a} -> {b}")
                 if len(out) > 6:
                     break
+    if es["play_order"] != as_["play_order"]:
+        out.append(f"play order: {len(es['play_order'])} bars played -> {len(as_['play_order'])} "
+                   f"(repeat signs or endings changed; first bars played {es['play_order'][:12]} -> {as_['play_order'][:12]})")
     if es["staves"] != as_["staves"]:
         out.append(f"staves: {es['staves']} -> {as_['staves']}")
+    if es["hands"] != as_["hands"] or es["piano_part"] != as_["piano_part"]:
+        out.append(f"hands by staff (x: shown, not played): {es['hands']} -> {as_['hands']}; "
+                   f"piano part {es['piano_part']} -> {as_['piano_part']}")
     if es["clefs"] != as_["clefs"]:
         out.append(f"clefs: {es['clefs'][:4]} -> {as_['clefs'][:4]}")
     moved = _placement_moved(es["placement"], as_["placement"])
@@ -159,7 +174,8 @@ def classify(expected: Dict[str, Any], actual: Dict[str, Any]) -> Tuple[Optional
     """(label, lines): STRUCTURAL_CHANGE, SEMANTIC_CHANGE or None (the same music)."""
     expected, actual = _norm(expected), _norm(actual)
     # a placement row also changes when a note's pitch or position changes; that is music, so the frame
-    # counts as changed only for bars, staves, clefs, items that moved staff or voice, or the voice layout
+    # counts as changed only for bars (repeats included), the play order, staves, hands, clefs, items that
+    # moved staff or voice, or the voice layout
     s = structure_diff(expected, actual) if expected["structure"] != actual["structure"] else []
     m = music_diff(expected, actual) if expected["music"] != actual["music"] else []
     if expected["music"] != actual["music"] and not m:
