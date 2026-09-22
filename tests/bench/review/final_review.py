@@ -28,14 +28,14 @@ from collections import Counter
 BENCH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BENCH)
 
-from pppbench import compare, golden, private, runner, stages, suite as suite_mod, sut as sut_mod, util  # noqa: E402
+from pppbench import compare, golden, mutation, private, runner, stages, suite as suite_mod, sut as sut_mod, util  # noqa: E402
 
 util.setup_stdio()
 OUT = os.path.join(BENCH, "out", "final-review")
 
-# Anchors shared by several mutations: the per-bar loop of buildXml.
-BAR_LOOP = "      out.push(writeStaff(b1[b], 1, 1, b));"
-TAIL = "(b > 0 && b === Math.floor(bars * 2 / 3))"   # the last third of the bars (fewer than half)
+# G1: the MusicXML is written from the ScoreGraph since the flip (G01 §15.3); each writer defect below is made
+# in buildGraph with the same edit as the gate's mutation (pppbench/mutation.py), so it says the same thing.
+M = mutation
 
 # name -> (category, what the user gets, [(find, replace), ...])
 # After the fix (G00 §20) each must be a core REGRESSION that names TARGET[name] among its failed
@@ -56,51 +56,36 @@ MUTATIONS = {
     "FINAL-DOTS-DROPPED": (
         "rhythm / notation",
         "every dotted note is printed without its dot (the app draws glyphs from <type>/<dot>); playback unchanged",
-        [("""'</voice><type>' + t[0] + '</type>' + (t[1] ? '<dot/>' : '') + tm + acc +""",
-          """'</voice><type>' + t[0] + '</type>' + tm + acc +""")]),
+        M.DOTS_DROPPED_EDITS),
     "FINAL-TEMPO-HALVED-MIDWAY": (
         "tempo",
         "a printed and played tempo change to half speed at the middle bar (the app's tempoMap plays every mark)",
-        [(BAR_LOOP,
-          "      if (b > 0 && b === Math.floor(bars / 2)) out.push('<direction placement=\"above\"><direction-type>"
-          "<metronome><beat-unit>quarter</beat-unit><per-minute>' + Math.round(bpm / 2) + '</per-minute></metronome>"
-          "</direction-type><staff>1</staff><sound tempo=\"' + Math.round(bpm / 2) + '\"/></direction>');\n" + BAR_LOOP)]),
+        M.TEMPO_HALVED_MIDWAY_EDITS),
     "FINAL-METRE-TAIL": (
         "meter / partial corruption",
         "from two thirds of the way in, a time-signature change to a wrong metre of the same bar length (3/4->6/8, 4/4->8/8)",
-        [(BAR_LOOP,
-          "      if " + TAIL + " out.push('<attributes><time><beats>' + (beatsPerBar * 2) + '</beats><beat-type>' + "
-          "(beatType * 2) + '</beat-type></time></attributes>');\n" + BAR_LOOP)]),
+        M.METRE_TAIL_EDITS),
     "FINAL-KEY-TAIL": (
         "key / partial corruption",
         "from two thirds of the way in, a key-signature change one fifth away; accidentals follow the printed key, "
         "so every pitch still reads right, under the wrong key signature",
-        [(BAR_LOOP,
-          "      if " + TAIL + " out.push('<attributes><key><fifths>' + (key.fifths >= 6 ? key.fifths - 1 : key.fifths + 1) + "
-          "'</fifths><mode>' + key.mode + '</mode></key></attributes>');\n" + BAR_LOOP),
-         ("      const state = Object.assign({}, keyAlters(key.fifths));",
-          "      const tailKey = barIdx > 0 && barIdx >= Math.floor(bars * 2 / 3) && Math.floor(bars * 2 / 3) > 0;\n"
-          "      const state = Object.assign({}, keyAlters(tailKey ? (key.fifths >= 6 ? key.fifths - 1 : key.fifths + 1) : key.fifths));")]),
+        M.KEY_TAIL_EDITS),
     "FINAL-BASS-STAFF-TREBLE-CLEF": (
         "hand / staff notation",
         "the left-hand staff is written in treble clef (pitches right, the left hand sits on ledger lines)",
-        [("""<clef number="2"><sign>F</sign><line>4</line></clef>""",
-          """<clef number="2"><sign>G</sign><line>2</line></clef>""")]),
+        M.BASS_STAFF_TREBLE_CLEF_EDITS),
     "FINAL-BAR-NUMBERS-RESTART": (
         "structural (app parity)",
         "bar numbers restart every 4 bars (1 2 3 4 1 2 ...); the app keys bars by number, so bars 1, 5, 9 ... collapse",
-        [("""      out.push('<measure number="' + (b + 1) + '">');""",
-          """      out.push('<measure number="' + (b % 4 + 1) + '">');""")]),
+        M.BAR_NUMBERS_RESTART_EDITS),
     "FINAL-ACCIDENTAL-ON-EVERY-NOTE": (
         "notation / readability",
         "a sharp, flat or natural is printed on every non-tied note (pitch right, page cluttered)",
-        [("""            if (sp.alter !== current && !tieStop) {""",
-          """            if (!tieStop) {""")]),
+        M.ACCIDENTAL_ON_EVERY_NOTE_EDITS),
     "FINAL-TRAILING-RESTS-SHORT": (
         "rhythm / structure",
         "a trailing rest of two beats or more loses its last beat: that staff's bar no longer adds up",
-        [("""      if (cursor < bar) rest(cursor, bar);""",
-          """      if (cursor < bar) rest(cursor, bar - (bar - cursor >= 2 * beatTicks ? beatTicks : 0));""")]),
+        M.TRAILING_RESTS_SHORT_EDITS),
     "FINAL-PEDAL-HELD-TO-BARLINE": (
         "articulation / pedal (control)",
         "every pedal release is written at the end of its bar instead of where the foot came up",
@@ -109,8 +94,7 @@ MUTATIONS = {
     "FINAL-TOP-REGISTER-OCTAVE-DOWN": (
         "pitch / subgroup-only",
         "notes from A6 (MIDI 93) up are written an octave low (a range clamp); only high-register pieces change",
-        [("""            const sp = spell(n.midi, table);""",
-          """            const sp = spell(n.midi >= 93 ? n.midi - 12 : n.midi, table);""")]),
+        [(M.SG_SPELL, "            const sp = spell(n.midi >= 93 ? n.midi - 12 : n.midi, table), k = sp.step + sp.octave;")]),
 }
 
 

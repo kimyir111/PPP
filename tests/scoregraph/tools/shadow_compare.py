@@ -4,7 +4,8 @@
     python tests/scoregraph/tools/shadow_compare.py [--suite golden|smoke|core|robust|replay-public|full ...]
 
 For every input of the suites named (default: golden, smoke, core, robust, replay-public), toMusicXml runs
-once with the legacy writer and once with the ScoreGraph writer. The two MusicXML files must read back into
+once with the legacy writer (opts.legacyWriter) and once with the ScoreGraph writer (the default since the
+G1 flip; opts.scoreGraph before it). The two MusicXML files must read back into
 the same canonical score (every field the reader produces, the source hash aside) - stronger than the
 semantic projection - and the graph must have no ERROR. Exit 0 when every case agrees.
 """
@@ -36,9 +37,10 @@ for (const job of jobs) {
   let row;
   try {
     const legacy = A.toMusicXml(job.input, Object.assign({}, job.opts, { legacyWriter: true }));
+    /* before the flip the graph's file came as graphXml on request; after it, it is the xml */
     const sg = A.toMusicXml(job.input, Object.assign({}, job.opts, { scoreGraph: true }));
     const errors = (sg.graphIssues || []).filter(i => i.severity === 'ERROR').length;
-    row = { id: job.id, ok: true, legacy: legacy.xml, sg: sg.graphXml || null, statsSame: JSON.stringify(legacy.stats) === JSON.stringify(sg.stats),
+    row = { id: job.id, ok: true, legacy: legacy.xml, sg: sg.graphXml || (sg.graph ? sg.xml : null), statsSame: JSON.stringify(legacy.stats) === JSON.stringify(sg.stats),
             errors: errors, hasGraph: !!sg.graph, warnings: (sg.graphIssues || []).filter(i => i.severity === 'WARNING').map(i => i.code) };
   } catch (e) {
     row = { id: job.id, ok: false, code: e.code || null, error: String(e && e.stack || e).slice(0, 2000) };

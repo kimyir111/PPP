@@ -34,7 +34,7 @@ from collections import Counter
 BENCH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BENCH)
 
-from pppbench import (compare, corpus, evaluate, golden, musicxml, perform, private, runner,  # noqa: E402
+from pppbench import (compare, corpus, evaluate, golden, musicxml, mutation, perform, private, runner,  # noqa: E402
                       stages, suite as suite_mod, sut as sut_mod, util)
 
 util.setup_stdio()
@@ -50,19 +50,16 @@ def report(check: str, ok: bool, detail: str) -> None:
 
 # --------------------------------------------------------------------------- 1. SUT mutations
 # Each is a user-visible regression the CI gate should call a REGRESSION on the metric layer.
+# G1: the MusicXML is written from the ScoreGraph since the flip (G01 §15.3); a writer defect is made in
+# buildGraph, with the same edit as the gate's mutation of the same id (pppbench/mutation.py).
+_GATE = {m["id"]: mutation.edits(m)[0] for m in mutation.MUTATIONS}
 MUTATIONS = {
-    "ADV-NO-TEMPO": (  # the app then plays at its default 84 qpm (Score.tempo = round(tempo || 84))
-        """        out.push('<direction placement="above"><direction-type>' + metro + '</direction-type><staff>1</staff><sound tempo="' + bpm + '"/></direction>');""",
-        """        /* review mutation: tempo marks dropped */"""),
-    "ADV-XML-METRE": (  # printed metre 3/4 -> 6/8, 4/4 -> 8/8 (same bar length); stats unchanged
-        """'</mode></key><time><beats>' + beatsPerBar + '</beats><beat-type>' + beatType + '</beat-type></time><staves>2</staves>'""",
-        """'</mode></key><time><beats>' + (beatsPerBar * 2) + '</beats><beat-type>' + (beatType * 2) + '</beat-type></time><staves>2</staves>'"""),
+    "ADV-NO-TEMPO": _GATE["ADV-NO-TEMPO"],  # the app then plays at its default 84 qpm (Score.tempo = round(tempo || 84))
+    "ADV-XML-METRE": _GATE["ADV-XML-METRE"],  # printed metre 3/4 -> 6/8, 4/4 -> 8/8 (same bar length); stats unchanged
     "ADV-EXTRA-BAR": (  # an empty bar after the last note of every transcription
         """    const bars = Math.max(1, Math.floor(lastOnset / bar) + 1);""",
         """    const bars = Math.max(1, Math.floor(lastOnset / bar) + 2);"""),
-    "ADV-NO-ACCIDENTAL": (  # the app draws accidentals only from <accidental>: a C# in C major shows as C
-        """              acc = '<accidental>' + ({ '-2': 'flat-flat', '-1': 'flat', '0': 'natural', '1': 'sharp', '2': 'double-sharp' }[sp.alter]) + '</accidental>';""",
-        """              acc = '';"""),
+    "ADV-NO-ACCIDENTAL": _GATE["ADV-NO-ACCIDENTAL"],  # the app draws accidentals only from <accidental>: a C# in C major shows as C
     "ADV-GLOBAL-TEMPO": (  # quantisation ignores local beat times (breaks rubato/drift only)
         """    return lo + (t - beats[lo]) / (beats[lo + 1] - beats[lo]);\n  }\n\n  function ibiOf(beats) {""",
         """    return (t - beats[0]) / ((beats[beats.length - 1] - beats[0]) / (beats.length - 1));\n  }\n\n  function ibiOf(beats) {"""),
@@ -79,9 +76,7 @@ MUTATIONS = {
     "FIX-NO-TRIPLETS": (  # triplet detection off: only pieces with tuplets change
         """      if (e3 * 1.02 < e16 && (off16 >= 2 || (fs.length % 3 === 0 && fs.length >= 3))) flags[+k] = true;""",
         """      if (false) flags[+k] = true;"""),
-    "FIX-NO-NATURALS": (  # natural signs are never printed; sharps and flats still are
-        """            if (sp.alter !== current && !tieStop) {""",
-        """            if (sp.alter !== current && !tieStop && sp.alter !== 0) {"""),
+    "FIX-NO-NATURALS": _GATE["FIX-NO-NATURALS"],  # natural signs are never printed; sharps and flats still are
     "FIX-DROP-LAST-BAR": (  # the bar holding the last onset is cut off
         """    const bars = Math.max(1, Math.floor(lastOnset / bar) + 1);""",
         """    const bars = Math.max(1, Math.floor(lastOnset / bar));"""),

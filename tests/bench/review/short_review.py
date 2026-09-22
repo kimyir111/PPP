@@ -71,11 +71,9 @@ from pppbench import corpus, evaluate, musicxml, mutation, perform, semantic, st
 util.setup_stdio()
 fr.OUT = os.path.join(fr.BENCH, "out", "short-review")
 
-BAR_LOOP = fr.BAR_LOOP
-MEASURE_OPEN = """      out.push('<measure number="' + (b + 1) + '">');"""
-TRAILING_REST = "      if (cursor < bar) rest(cursor, bar);"
-RH_SHORT = ("      if (cursor < bar) rest(cursor, bar - (staff === 1 && bar - cursor >= 2 * beatTicks ? beatTicks : 0));")
-LAST_TWO = "(b > 0 && b === bars - 2)"
+# G1: the MusicXML is written from the ScoreGraph since the flip (G01 §15.3); each writer defect below is made
+# in buildGraph (or, for <staves>, the exporter) with the edits of pppbench/mutation.py: the same defect.
+M = mutation
 
 # name -> (area, what the user gets, expected core status, [(find, replace), ...])
 MUTATIONS = {
@@ -83,51 +81,38 @@ MUTATIONS = {
         "measure structure / sounding order",
         "a repeat sign after the middle bar: the app plays the first half twice",
         "REGRESSION",
-        [("      out.push('</measure>');",
-          "      if (b > 0 && b === Math.floor(bars / 2) - 1) out.push('<barline location=\"right\"><bar-style>light-heavy"
-          "</bar-style><repeat direction=\"backward\"/></barline>');\n      out.push('</measure>');")]),
+        M.SPURIOUS_REPEAT_EDITS),
     "SR-IMPLICIT-MASKS-SHORT-BARS": (
         "measure completeness",
         "right-hand bars a beat short wherever the bar ends in a long rest; inner bars flagged implicit",
         "REGRESSION",
-        [(MEASURE_OPEN,
-          """      out.push('<measure number="' + (b + 1) + '"' + (b > 0 && b < bars - 1 ? ' implicit="yes"' : '') + '>');"""),
-         (TRAILING_REST, RH_SHORT)]),
+        M.IMPLICIT_SHORT_EDITS),
     "SR-RH-RESTS-SHORT": (
         "measure completeness (control)",
         "right-hand bars a beat short wherever the bar ends in a long rest",
         "REGRESSION",
-        [(TRAILING_REST, RH_SHORT)]),
+        [M.RH_RESTS_SHORT]),
     "SR-RH-ALTO-CLEF": (
         "clef",
         "the right-hand staff in alto clef: every right-hand note reads a different pitch",
         "REGRESSION",
-        [("""<clef number="1"><sign>G</sign><line>2</line></clef>""",
-          """<clef number="1"><sign>C</sign><line>3</line></clef>""")]),
+        [(M.SG_CLEF_RH, "    b.clef(part, { staff: st[1], m: mid[0], at: '0', sign: 'C' });")]),
     "SR-PRINTED-TEMPO-MIDWAY": (
         "tempo sequence (printed, control)",
         "a printed metronome mark at half tempo in the middle bar; the app neither draws it nor plays it",
         "PASS",
-        [(BAR_LOOP,
-          "      if (b > 0 && b === Math.floor(bars / 2)) out.push('<direction placement=\"above\"><direction-type>"
-          "<metronome><beat-unit>quarter</beat-unit><per-minute>' + Math.round(bpm / 2) + '</per-minute></metronome>"
-          "</direction-type><staff>1</staff></direction><direction><direction-type><words/></direction-type>"
-          "<staff>1</staff><sound tempo=\"' + (compound ? bpm * 1.5 : bpm) + '\"/></direction>');\n" + BAR_LOOP)]),
+        [M.sg_tempo_at("Math.floor(bars / 2)", "(compound ? scoreGraph().rational.format(scoreGraph().rational.make(bpm * 3, 2)) : String(bpm))",
+                       "String(Math.round(bpm / 2))")]),
     "SR-KEY-LAST-TWO-BARS": (
         "key sequence (threshold)",
         "the last two bars under a key signature one fifth away; accidentals keep every pitch right",
         "REGRESSION",
-        [(BAR_LOOP,
-          "      if " + LAST_TWO + " out.push('<attributes><key><fifths>' + (key.fifths >= 6 ? key.fifths - 1 : key.fifths + 1)"
-          " + '</fifths><mode>' + key.mode + '</mode></key></attributes>');\n" + BAR_LOOP),
-         ("      const state = Object.assign({}, keyAlters(key.fifths));",
-          "      const tailKey = barIdx > 0 && barIdx >= bars - 2;\n"
-          "      const state = Object.assign({}, keyAlters(tailKey ? (key.fifths >= 6 ? key.fifths - 1 : key.fifths + 1) : key.fifths));")]),
+        M.sg_key_from("barIdx > 0 && barIdx >= bars - 2", "bars - 2")),
     "SR-NO-STAVES": (
         "staff structure (control)",
         "no <staves>: the app reads the left-hand staff as a cue staff and never plays it",
         "REGRESSION",
-        [("<staves>2</staves>", "")]),
+        {M.EXPORTER: M.NO_STAVES_EDITS}),
     "SR-FAKE-SPLIT-BAR": (
         "measure structure (split without a repeat)",
         "the second-to-last bar drawn as two half bars with no repeat sign between them",
@@ -155,8 +140,9 @@ MUTATIONS = {
 def write_mutant(name: str) -> str:
     """A copy of the SUT snapshot (audio-score.js + scoregraph/, pppbench/sut.py) with the edits applied."""
     try:
-        return sut_mod.write_mutant_dir(os.path.join(fr.OUT, "mutants", name), {sut_mod.ENTRY: MUTATIONS[name][3]},
-                                        label=name)
+        edits = MUTATIONS[name][3]     # [(find, replace), ...] in audio-score.js, or {SUT file: [...]}
+        return sut_mod.write_mutant_dir(os.path.join(fr.OUT, "mutants", name),
+                                        edits if isinstance(edits, dict) else {sut_mod.ENTRY: edits}, label=name)
     except sut_mod.SutError as exc:
         raise RuntimeError(str(exc)) from exc
 

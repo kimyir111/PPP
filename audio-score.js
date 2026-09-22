@@ -1235,11 +1235,9 @@
           const tu = tupletOf(v);
           const t = tu ? [tu.type, 0] : (TYPES[v] || ['16th', 0]);
           const tieStop = pi2 > 0 || ev.tieIn, tieStart = pi2 < parts.length - 1 || ev.tieOut;
-          const display = { type: t[0] };
-          if (t[1]) display.dots = t[1];
+          const display = t[1] ? { type: t[0], dots: t[1] } : { type: t[0] };
           const heads = ev.notes.map(n => {
-            const sp = spell(n.midi, table);
-            const k = sp.step + sp.octave;
+            const sp = spell(n.midi, table), k = sp.step + sp.octave;
             const current = k in accState ? accState[k] : state[sp.step];
             const head = { pitch: sp.alter ? { step: sp.step, alter: sp.alter, oct: sp.octave } : { step: sp.step, oct: sp.octave } };
             if (sp.alter !== current && !tieStop) head.acc = { type: ACCIDENTAL_NAME[sp.alter] };
@@ -1298,7 +1296,12 @@
     if (heard) {
       const pf = b.performance({ kind: 'source', src: src.id });
       heard.notes.forEach(n => {
-        const x = { on: R.secondsToMicros(n.on), off: R.secondsToMicros(n.off), vel: Math.max(1, Math.min(127, Math.round(n.vel))), midi: n.midi };
+        /* a time that is not a number, before the recording or no longer than its start is not a performance */
+        if (!(isFinite(n.on) && isFinite(n.off) && +n.on >= 0 && +n.off > +n.on)) return;
+        const on = R.secondsToMicros(+n.on), off = R.secondsToMicros(+n.off);
+        if (!(off > on)) return;
+        const vel = isFinite(n.vel) ? Math.max(1, Math.min(127, Math.round(+n.vel))) : 64;
+        const x = { on: on, off: off, vel: vel, midi: n.midi };
         const link = n.staff ? headOf.get(n.staff + '|' + n.tick + '|' + n.midi) : null;
         if (link) x.link = link;
         b.perfNote(pf, x);
@@ -1308,9 +1311,13 @@
         const on = R.secondsToMicros(+p.on), off = R.secondsToMicros(+p.off);
         if (off > on) b.perfPedal(pf, { pedal: 'damper', on: on, off: off });
       });
+      let lastUs = -1;
       (heard.barSeconds || []).forEach((sec, i) => {
-        if (!(sec >= 0)) return;
-        b.anchor(pf, { m: mid[Math.min(i, bars - 1)], k: 1, at: i < bars ? '0' : W(bar), us: R.secondsToMicros(sec), kind: 'bar' });
+        if (!(isFinite(sec) && sec >= 0)) return;
+        const us = R.secondsToMicros(sec);
+        if (us <= lastUs) return;                          /* anchors increase strictly (E-PERF) */
+        lastUs = us;
+        b.anchor(pf, { m: mid[Math.min(i, bars - 1)], k: 1, at: i < bars ? '0' : W(bar), us: us, kind: 'bar' });
       });
     }
     return b.finish();
@@ -1373,10 +1380,10 @@
         : (beatType >= 8 && beatsPerBar % 3 === 0 ? 60 / (qIbi * 1.5) : 60 / qIbi);
     }
     const roundBpm = Math.round(clamp(bpm, 30, 240));
-    const xml = buildXml({
+    const model = {
       title: title, key: key, beatsPerBar: beatsPerBar, beatType: beatType, bpm: roundBpm,
       bars: bars, events1: events1, events2: events2, pedals: pedals, table: table
-    });
+    };
 
     const tickToSec = tick => {
       const pos = (tick + origin) / ticksPerBeat;
@@ -1398,7 +1405,7 @@
     const errSum = extra.errSum || q.reduce((s, n) => s + (n.err || 0), 0);
 
     const result = {
-      xml: xml,
+      xml: null,
       stats: {
         notes: notes.length, bars: bars, beatsPerBar: beatsPerBar, beatType: beatType, tempo: roundBpm,
         key: key, keyMargin: key.margin, meterContrast: extra.meterContrast || 1,
@@ -1422,35 +1429,35 @@
       }
     };
 
-    /* The same score as a ScoreGraph, on request (G01 §15.3 shadow): its graph, its issues and the MusicXML it
-       writes, beside the MusicXML above. */
-    if (opts.scoreGraph) {
-      const model = {
-        title: title, key: key, beatsPerBar: beatsPerBar, beatType: beatType, bpm: roundBpm,
-        bars: bars, events1: events1, events2: events2, pedals: pedals, table: table,
-        scoreId: opts.scoreId, params: { beatSource: result.stats.beatSource, quantizer: result.stats.quantizer }
-      };
-      if (extra.tempoAlias) model.params.tempoAlias = extra.tempoAlias;
-      if (extra.arrangement) model.params.arrangement = extra.arrangement;
-      /* where each heard note was written: the placed note with the same onset, release and pitch */
-      const placed = new Map();
-      q.forEach(n => {
-        const k = n.on + '|' + n.off + '|' + n.midi;
-        if (!placed.has(k)) placed.set(k, []);
-        placed.get(k).push(n);
-      });
-      const heardNotes = (extra.heard || []).map(n => {
-        const list = placed.get(n.on + '|' + n.off + '|' + n.midi);
-        const p = list && list.length ? list.shift() : null;
-        return { on: n.on, off: n.off, midi: n.midi, vel: n.vel, staff: p ? p.staff : 0, tick: p ? p.tick : 0 };
-      });
-      const barSeconds = [];
-      for (let b = 0; b <= bars; b++) barSeconds.push(tickToSec(b * bar));
-      const built = buildGraph(model, { notes: heardNotes, pedals: extra.pedals || [], barSeconds: barSeconds });
-      result.graph = built.graph;
-      result.graphIssues = built.issues;
-      result.graphXml = scoreGraph().musicxml.export(built.graph, { software: 'PPP audio transcription' }).xml;
+    /* The MusicXML is written from the score as a ScoreGraph (docs/GOALS/G01 §15.3): the graph, its issues
+       (warnings and notes; an error throws) and the file its exporter writes. opts.legacyWriter keeps the
+       G0 writer, buildXml, for one release as the way back; it does not load the ScoreGraph library. */
+    if (opts.legacyWriter) {
+      result.xml = buildXml(model);
+      return result;
     }
+    model.scoreId = opts.scoreId;
+    model.params = { beatSource: result.stats.beatSource, quantizer: result.stats.quantizer };
+    if (extra.tempoAlias) model.params.tempoAlias = extra.tempoAlias;
+    if (extra.arrangement) model.params.arrangement = extra.arrangement;
+    /* where each heard note was written: the placed note with the same onset, release and pitch */
+    const placed = new Map();
+    q.forEach(n => {
+      const k = n.on + '|' + n.off + '|' + n.midi;
+      if (!placed.has(k)) placed.set(k, []);
+      placed.get(k).push(n);
+    });
+    const heardNotes = (extra.heard || []).map(n => {
+      const list = placed.get(n.on + '|' + n.off + '|' + n.midi);
+      const p = list && list.length ? list.shift() : null;
+      return { on: n.on, off: n.off, midi: n.midi, vel: n.vel, staff: p ? p.staff : 0, tick: p ? p.tick : 0 };
+    });
+    const barSeconds = [];
+    for (let b = 0; b <= bars; b++) barSeconds.push(tickToSec(b * bar));
+    const built = buildGraph(model, { notes: heardNotes, pedals: extra.pedals || [], barSeconds: barSeconds });
+    result.xml = scoreGraph().musicxml.export(built.graph, { software: 'PPP audio transcription' }).xml;
+    result.graph = built.graph;
+    result.graphIssues = built.issues;
     return result;
   }
 
