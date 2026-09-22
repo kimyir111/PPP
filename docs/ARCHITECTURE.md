@@ -1,6 +1,7 @@
 # PPP — Architecture
 
-2026-09-22 G1 Architect 세션이 처음 만든 문서다. **현재 구조**(`aff7080` 기준, 코드로 확인함)와 **목표 구조**(G1 설계, 아직 구현되지 않음)를 나눠 적는다.
+2026-09-22 G1 Architect 세션이 처음 만든 문서다. **현재 구조**(`aff7080` 기준, 코드로 확인함)와 **목표 구조**(G1 설계)를 나눠 적는다.
+2026-09-23 G1 구현으로 목표 구조의 S0–S2가 들어왔다 (§2 끝의 "G1 구현 후", G01 §24).
 
 - 자세한 근거는 `docs/GOALS/G01_SCOREGRAPH.md` §2와 §15에 있다.
 - 결정의 이유는 `docs/DECISIONS.md`에 있다.
@@ -10,7 +11,7 @@
 | 구성 요소 | 파일 | 역할 |
 | --- | --- | --- |
 | 앱 | `Piano Coach App.dc.html` (~19k줄, 단일 파일) | 음악 모델(`Score`), `parseMusicXML`, Import(OMR·녹음), VexFlow 렌더러, 재생(`PianoScore`), 연습·follow·코치·운지, 편곡기. React와 Babel을 unpkg에서 런타임에 로드한다. |
-| 녹음 → 악보 | `audio-score.js` (UMD, 의존성 없음) | `toMusicXml(heard, opts)` → `{xml, stats}`. 모든 녹음 경로가 이곳으로 모인다. |
+| 녹음 → 악보 | `audio-score.js` (UMD, 의존성 없음) | `toMusicXml(heard, opts)` → `{xml, stats}`. 모든 녹음 경로가 이곳으로 모인다. (G1 이후: `{xml, stats, graph, graphIssues}`, 아래 §2 끝) |
 | 서버 | `server.js` (8777) | 정적 서빙(`tests`, `tools`, `data` 등은 차단), 로그인, 진도, 공유 API |
 | 로컬 helper | `omr-service.js` (127.0.0.1:8788) | OMR(Audiveris), 전사(`transcribe.py`, `beat_track.py`), 코치, 편곡(`arrange_score.py`) |
 | 품질 측정 | `tests/bench/` (G0) | 앱-parity MusicXML reader, 합성 연주, metric, gate, golden, mutation |
@@ -31,7 +32,7 @@ MusicXML 업로드 / 카탈로그 / 교재 ────────────�
 
 **현재 구조의 한계** (G01 §3): 정본 표현이 없다. 연주와 기보가 섞이거나 버려진다. 시간이 float다. 음에 ID가 없다. 저장 형식에 버전이 없다.
 
-## 2. 목표 구조 (G1 설계, 미구현)
+## 2. 목표 구조 (G1 설계)
 
 ```
             producers                          canonical                    projections
@@ -57,7 +58,7 @@ MusicXML 업로드 / 카탈로그 / 교재 ────────────�
 - 경계에서 검증한다.
 - Strangler 방식으로 경계를 하나씩 옮긴다.
 
-### 모듈 배치 (계획)
+### 모듈 배치 (G1에서 구현됨)
 
 ```
 scoregraph/            UMD, 의존성 없음, 브라우저와 Node 공용 (server.js가 서빙함)
@@ -82,8 +83,23 @@ tests/bench/           + sg-roundtrip 명령, 다중 파일 SUT(audio-score.js +
 | S7 | G7+ | SongGraph, planner, 드럼 |
 | S8 | – | `parseMusicXML`, `buildXml`, `packScore` 제거 |
 
+### G1 구현 후 (2026-09-23, 브랜치 `g1-scoregraph`)
+
+- **S0–S1 완료.** `scoregraph/` 라이브러리(13개 파일), validator, canonical JSON, MusicXML import/export. 코퍼스 369개 파일이 `sg-roundtrip`의 L1, L1+, L2와 재생 순서를 통과한다 (allowlist 2개).
+- **S2 완료.** `toMusicXml`은 `buildGraph`로 ScoreGraph를 만들고, ScoreGraph exporter가 쓴 MusicXML을 돌려준다. 반환값은 `{xml, stats, graph, graphIssues}`다. 들은 음, 페달, 마디 시각은 `source` performance 층에 있다. `opts.legacyWriter`는 G0 writer(`buildXml`)를 한 릴리스 동안 남긴 되돌리기 경로다.
+- 앱은 `scoregraph/*.js`를 `audio-score.js` **앞에** 로드한다 (`?v=8`). `audio-score.js`는 버전이 다른 라이브러리를 거절한다.
+- 그 밖의 소비자(앱 import, 저장, 렌더러, 재생, 편곡)는 아직 MusicXML 문자열과 legacy `Score`를 쓴다. S3부터는 G2 이후다.
+
+```
+heard notes (초) ─► toMusicXml ─► buildGraph ─► ScoreGraph ─► musicxml.export ─► MusicXML ─► (이하 §1과 같음)
+                                                  │ graph, graphIssues도 반환 (앱은 아직 쓰지 않음)
+                                     opts.legacyWriter ─► buildXml ─► MusicXML (되돌리기 경로)
+```
+
 ## 3. 품질 측정의 자리
 
 - G0 benchmark는 `toMusicXml`이 쓴 MusicXML을 앱 parity 규칙으로 읽어 평가한다.
 - G1 이후에도 평가 대상은 **MusicXML artifact**다. 그래서 G0의 baseline, gate, golden이 그대로 유효하다.
-- SUT는 `audio-score.js` 한 파일에서 `audio-score.js`와 `scoregraph/`로 넓어진다 (G01 §15.4).
+- SUT는 `audio-score.js` 한 파일에서 `audio-score.js`와 `scoregraph/`로 넓어졌다 (G01 §15.4, G1 Step 7의 첫 커밋).
+- G0 golden의 MusicXML 바이트는 G1 flip에서 `SERIALIZATION_ONLY`로 bless했다 (MusicXML 4.0, 최소 divisions, XSD 순서). 의미·stats·마디 시각은 17개 모두 같다.
+- ScoreGraph 자체는 `tests/scoregraph/`(node --test, SG golden)와 `sg-roundtrip`이 잰다.

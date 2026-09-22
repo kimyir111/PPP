@@ -1,20 +1,21 @@
 # PPP — current state
 
-Updated 2026-09-22, at the end of G0 (Quality Foundation): implemented, reviewed, fixed, reviewed
-again, fixed again, short-reviewed and fixed a last time (repeats, implicit bars), final-pass reviewed
-(two new MAJOR: a repeat mark that cannot fire, a truncated edge bar) and fixed a last time again. Read
-this first in a new session, then the current goal's spec in `docs/GOALS/`.
+Updated 2026-09-23, at the end of the G1 (ScoreGraph) implementation, on branch `g1-scoregraph`
+(worktree `D:/PPP-g1`). G0 (Quality Foundation) was implemented, reviewed and fixed several times
+before (2026-09-22). Read this first in a new session, then the current goal's spec in `docs/GOALS/`.
 
 ## Where things are
 
 | | |
 | --- | --- |
 | Goals | Numbered specs in `docs/GOALS/`. **G0 is implemented (§16), independently reviewed (§17), fixed (§18), finally reviewed (§19), fixed again (§20), short-reviewed (§21, NEEDS_FIX: two MAJOR) and fixed a last time (§21.15), final-pass reviewed (§22, NEEDS_FIX: two new MAJOR, PF-M1/PF-M2) and fixed a last time again (§22.9)**. `G00_QUALITY_FOUNDATION.md` §22.9 has the last result, what is still open (nothing) and the verdict (**READY_FOR_MERGE_CHECK**). |
+| G1 | **Implemented, COMPLETE** (`docs/GOALS/G01_SCOREGRAPH.md` §24: A1–A46, deviations, risks). Branch `g1-scoregraph`, worktree `D:/PPP-g1`, on `aff7080` (the G0 commit); pushed to `origin/g1-scoregraph`, **not merged**, no PR. G2 not started. `toMusicXml` now writes its MusicXML from a ScoreGraph (`scoregraph/`); `opts.legacyWriter` is the way back for one release. |
 | G0 code | Branch `g0-quality-foundation`, worktree `D:/PPP-g0` (so the shared `D:/PPP` tree and other sessions' files stay untouched). Committed and pushed to `origin/g0-quality-foundation` (no PR yet). **Not merged to `main`.** `tests/README.md` has a two-line doc change from an earlier session that is outside the allowed paths and left uncommitted (user decision). |
 | `main` | **Local `main` is `d82bb71`, which must not be pushed.** Despite its message ("harden G0 quality benchmark") it holds no benchmark code: it is a `git add -A` sweep of `D:/PPP` with copyrighted `tmp/` audio and score renders, `__pycache__`, a `_oh-sheet-compare` gitlink and another session's 124 `catalog/method` files (G00 §19.18). It is not pushed (`origin/main` is `e0d8b23`). The user decides how to undo it before G0 is merged. |
-| App | `Piano Coach App.dc.html` (single file, ~19k lines), `audio-score.js` (recording → MusicXML), `omr-service.js` (local helper, 127.0.0.1:8788), `server.js` (port 8777). Deploy: Render, manual (`render deploys create …`; a push does not deploy). |
-| Tests | `npm test` (26 browser suites; needs `npm start`, network, puppeteer), `npm run test:transcription-core` (16, including `beat_track_test.py`), `npm run test:arranger` (3), `npm run test:bench` (196 unit tests + 17 golden snapshots + 13 correctness fixtures). |
-| CI | `.github/workflows/bench.yml`: a gate job (unit, golden, lint, provenance, correctness, smoke/core/robust run + check, replay-public, transcription-core, arranger) and a nightly job (mutation-check, full, the reviews' `adversarial.py`, `final_review.py`, `final_oracle.py`). The gate runs on a **pull request** or a push to `main`; pushing the branch alone runs nothing. The nightly schedule runs only from the default branch (after the merge; `workflow_dispatch` runs it by hand). Not yet run on GitHub. |
+| App | `Piano Coach App.dc.html` (single file, ~19k lines), `audio-score.js` (recording → MusicXML; on the G1 branch through `scoregraph/`, which the page loads before it), `omr-service.js` (local helper, 127.0.0.1:8788), `server.js` (port 8777). Deploy: Render, manual (`render deploys create …`; a push does not deploy). |
+| ScoreGraph (G1 branch) | `scoregraph/` (13 UMD files, no dependencies; `scoregraph/README.md`): versioned plain-JSON canonical score, validator (31 errors, 14 warnings, 7 notes), canonical JSON, time and performance layers, MusicXML import and export. Every committed MusicXML (369 files) goes through it and back (`run.py sg-roundtrip`): 367 unchanged, 2 with a documented difference (allowlisted; a closing ending bracket and a wedge that were never opened). Nothing but `toMusicXml` uses it yet; the app's import, storage, renderer and player move in G2 onwards. |
+| Tests | `npm test` (26 browser suites; needs `npm start`, network, puppeteer), `npm run test:transcription-core` (16, including `beat_track_test.py`), `npm run test:arranger` (3), `npm run test:bench` (221 unit tests + 17 golden snapshots + 13 correctness fixtures), `npm run test:scoregraph` (71 node tests, G1). |
+| CI | `.github/workflows/bench.yml`: a gate job (unit, `test:scoregraph` and `sg-roundtrip` since G1, golden, lint, provenance, correctness, smoke/core/robust run + check, replay-public, transcription-core, arranger) and a nightly job (mutation-check, full, the reviews' `adversarial.py`, `final_review.py`, `final_oracle.py`). The gate runs on a **pull request** or a push to `main`; pushing the branch alone runs nothing. The nightly schedule runs only from the default branch (after the merge; `workflow_dispatch` runs it by hand). Not yet run on GitHub. |
 
 ## Measuring score quality (G0)
 
@@ -22,6 +23,7 @@ this first in a new session, then the current goal's spec in `docs/GOALS/`.
 npm run bench:smoke     # ~1 s
 npm run bench           # core gate: 553 cases, ~16 s, exit 1 on a regression
 python tests/bench/run.py ab --suite core --a git:HEAD --b worktree   # what did my change do?
+npm run test:scoregraph && python tests/bench/run.py sg-roundtrip      # the ScoreGraph (G1)
 ```
 
 Everything is in `tests/bench/README.md`: critical gates, metrics, corpus, the baseline update
@@ -43,6 +45,14 @@ metrics/5, metrics/6 and reader/4 (G00 §21.15, §22.9) changed no number below:
 sign, no split bar, no inner implicit bar and always the reference's own bar count, so every stored
 metric of every case is what it was at metrics/4.
 
+**G1 changes no number either**: `ab --a git:aff7080 --b worktree` gives every case of core, robust,
+smoke and replay-public the same status, metrics and semantic projection (`ab_identical.py`); so does full (4,976 cases).
+**But the stored baselines were recorded from `audio-score.js` `559a1f40…` (the G0 branch), and
+`aff7080` carries main's later `audio-score.js` (`78bd76e5…`, commits `e0d8b23`, `72549cb`)** (G01 §23
+F7). Core, robust, smoke and replay-public still PASS against them; `check --suite full` does not
+(REGRESSION on 12 subgroup gates, 20 improvements; usable 0.179 → 0.201), at `aff7080` exactly as at
+G1. Rebaselining is the user's decision; the numbers in this table are the stored ones.
+
 | suite | cases | usable | diagnostic | notes |
 | --- | --- | --- | --- | --- |
 | smoke | 44 | 38.6 % | 86.91 | |
@@ -61,13 +71,15 @@ Burgmüller 3.4 %, Sonatina 9.8 %, Beyer 10.8 %, Czerny 599 12.5 %, hymns 33.5 %
 
 - Results are byte-identical run to run, from another working directory, with file enumeration
   reversed, and between Windows and Linux (`node:24-bookworm`, offline). Procedure in `tests/bench/README.md`.
-- `mutation-check` plants 37 regressions (5 original, 7 from the first review, 5 from its fixer, 13
+- `mutation-check` plants 40 regressions (5 original, 7 from the first review, 5 from its fixer, 13
   from the final review, 4 from the short review: a spurious repeat sign, short bars marked
   `implicit="yes"`, a bar split without a repeat, no `<staves>`; 3 from the final pass review and its
   last fixer, G00 §22.9: a fake split excused by a forward repeat that cannot fire, a truncated last
-  bar excused by position alone, a bar dropped outright with no measure-count gate to catch it) and
-  proves each is a REGRESSION on its metric; the review scripts (`tests/bench/review/`) check the
-  benchmark itself.
+  bar excused by position alone, a bar dropped outright with no measure-count gate to catch it; 3 in
+  the ScoreGraph exporter, G1: no `<dot/>`, no `<time-modification>`, clefs swapped) and proves each
+  is a REGRESSION on its metric; the review scripts (`tests/bench/review/`) check the benchmark
+  itself. Since the G1 flip the writer mutations make their defect in `buildGraph` (the same defect
+  in the file), and the review scripts share those edits.
 - Golden labels a change `STRUCTURAL_CHANGE`, `SEMANTIC_CHANGE` or `SERIALIZATION_ONLY`; only the
   last is formatting. A dot, note type, rest, clef, staff, bar number, repeat sign or ending, or which
   staff is which hand never counts as formatting.
@@ -158,6 +170,11 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
     one-tick rests as 64ths: 107 core cases have at least one (`note_shape.consistency` 0.991). In
     the catalogue, 4 files and 8 notes (Für Elise bar 2: a quarter drawn as a dotted eighth; two
     hymns with undotted whole notes lasting six beats; `note_shape_mismatch`).
+20. **(new, G1) A triplet bracket per piece.** `toMusicXml` opens and closes a `<tuplet>` bracket on
+    every triplet piece (a one-note bracket) instead of one per group of three. The ScoreGraph carries
+    it as it is and warns (`W-TUPLET-INCOMPLETE`: 47 in golden G03, 8,144 in core). The same graph
+    warnings also count issue 1 (`W-TEMPO-MARK-MISMATCH`, 189 core cases) and issue 19
+    (`W-DISPLAY-DURATION`, 2,647 events in core). G3.
 
 ## Working in this repository
 
@@ -181,10 +198,15 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
 
 ## Next
 
+- **G1 is implemented on `g1-scoregraph`** (COMPLETE; G01 §24). The user decides: review, then merge
+  after G0 (the branch sits on `aff7080`, G0's commit). G01 §24.5 lists what a reviewer should look at
+  (a ScoreGraph error now throws from `toMusicXml`; the MusicXML bytes are 4.0 with minimal
+  divisions; the mutation and review anchors moved to `buildGraph`). Do not start G2 before.
+- The full-suite baseline (and the others) predate main's `audio-score.js` changes (F7): decide on a
+  rebaseline at `aff7080` before relying on `check --suite full`.
 - G0's benchmark work is done (G00 §22.9: READY_FOR_MERGE_CHECK, BLOCKER 0, MAJOR 0, production diff 0).
   The user decides: what to do with local `main`'s `d82bb71`; merging `g0-quality-foundation` into
-  `main` and opening the PR that turns on CI. G00 §20 says what to check on GitHub. Do not start G1
-  before.
+  `main` and opening the PR that turns on CI. G00 §20 says what to check on GitHub.
 - Before any Goal that changes onset, beat, tempo, metre or note-value (release) inference: record
   the real performances above (M11).
 - Later goals should target the measured issues above: 1, 2 and 18 decide most of the unusable
@@ -193,3 +215,6 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
   report the core, robust and hold-out usable-rate Δ.
 - G0 leftovers: Step 14 (arrangement invariants) was not done; see G00 §16.6 and §18.7. Voices,
   beams and stems have no metric yet (golden labels a voice change STRUCTURAL_CHANGE); G4.
+- G1 leftovers for G2: remove `buildXml` and `opts.legacyWriter` after one release (with
+  `tests/scoregraph/tools/shadow_compare.py`); the app's import, storage and renderer onto the graph
+  (G01 §15.2 S3, Appendix B).

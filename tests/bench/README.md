@@ -34,12 +34,12 @@ python tests/bench/run.py lint-corpus                 # check the reference regi
 python tests/bench/run.py run   --suite core          # writes tests/bench/out/core/
 python tests/bench/run.py check --suite core          # exit 0 PASS · 1 REGRESSION · 2 ERROR
 python tests/bench/run.py run   --suite robust        # a variant of the synthetic performer (see Tiers)
-python tests/bench/run.py ab --suite core --a git:HEAD --b worktree   # what did my change do?
+python tests/bench/run.py ab --suite core --a git:HEAD --b worktree   # what did my change do? (any suite, fixture suites too)
 python tests/bench/run.py golden                      # semantic + byte snapshots
 python tests/bench/run.py correctness                 # the reader against independent MusicXML fixtures
 python tests/bench/run.py known-defects               # catalogue defects PPP ships (measured, not fixed)
 python tests/bench/run.py sg-roundtrip                # every committed MusicXML through ScoreGraph and back (G1)
-python tests/bench/run.py mutation-check              # proves the gate catches 34 planted regressions
+python tests/bench/run.py mutation-check              # proves the gate catches 40 planted regressions
 python tests/bench/run.py update-baseline --suite core --reason "..."
 python tests/bench/run.py relock --suite core --reason "..."
 python tests/bench/tools/make_provenance.py [--check] # licence evidence manifest
@@ -177,10 +177,20 @@ midway, a wrong metre or key signature in the last third, dots dropped, note typ
 long notes written at half length, bar numbers restarting, skipping or swapped, the bass staff in
 treble clef, trailing rests a beat short, rests typed one value long, an accidental on every note)
 and 4 from the short final review (G00 §21: a repeat sign after the middle bar, short right-hand
-bars marked `implicit="yes"`, a bar split in two with no repeat sign, no `<staves>`) — and requires
-each to be a REGRESSION naming its metric, and a no-op to leave `results.json` byte-identical.
+bars marked `implicit="yes"`, a bar split in two with no repeat sign, no `<staves>`), 3 from the final
+pass review (G00 §22: a fake split excused by a forward repeat that cannot fire, a truncated last bar,
+a bar dropped outright) and 3 in the ScoreGraph exporter (G01 A38: no `<dot/>`, no
+`<time-modification>`, treble and bass clefs swapped) — and requires each to be a REGRESSION naming
+its metric, and a no-op to leave `results.json` byte-identical.
 gate/1 missed six of the review's seven; gate/2 missed seven of the final review's ten; gate/3 at
 metrics/4 missed the repeat, the implicit bars and the split bar.
+
+**Since G1** `toMusicXml` writes its MusicXML from a ScoreGraph (`buildGraph`, then the ScoreGraph
+exporter; `buildXml` stays behind `opts.legacyWriter`, which the bench never sets). The writer
+mutations therefore make their defect in `buildGraph` — the same defect in the file as before: the
+same printed tempo, metre, key, dots, bar numbers, clef, rests, accidentals, repeat sign, implicit bars
+or split bar — and `<staves>` is dropped in the exporter. The review scripts use the same edits
+(`pppbench/mutation.py`'s `SG_*` anchors and edit lists).
 
 ## Golden snapshots
 
@@ -374,7 +384,10 @@ library beside it (`scoregraph/`, docs/GOALS/G01 §15.4), so the bench treats th
 (`pppbench/sut.py`). Nothing else of the repository is copied.
 
 - `ab --a git:<rev>` extracts the revision's whole snapshot into `.cache/ab/a/` (a revision before G1
-  simply has no `scoregraph/`), so each side runs its own library, never the working tree's.
+  simply has no `scoregraph/`), so each side runs its own library, never the working tree's. A fixture
+  suite (`replay-public`, `omr-live`, a private suite) runs each side through its own runner.
+  `tests/scoregraph/tools/ab_identical.py --suite S` then requires every case of the two sides to have
+  the same status, metrics and semantic projection (stricter than the verdict).
 - `mutation-check` and the review scripts copy the whole snapshot into `.cache/mutations/<id>/` and
   edit one file; a mutation's `file` names it (default `audio-score.js`).
 - `run.json` records `sut_sha256` (the snapshot's paths and content hashes, CRLF read as LF),

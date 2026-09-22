@@ -2,7 +2,7 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 상태 | **설계 완료 (Architect 세션, 2026-09-22) · 구현 전.** 이 세션은 production 코드를 바꾸지 않았다. |
+| 상태 | 설계 완료 (Architect 세션, 2026-09-22). **구현 COMPLETE (Implementer 세션, 2026-09-23): §24.** production switch(flip)를 했다. |
 | 작업 위치 | `D:/PPP-g1`, 브랜치 `g1-scoregraph`. `D:/PPP`는 건드리지 않는다. |
 | 기준 커밋 | `aff7080` (G0: Quality Foundation, `origin/main` `e0d8b23` 위). `audio-score.js` content sha256(CRLF를 LF로 읽음) `78bd76e5…` |
 | 기준 측정 | 이 세션이 `aff7080`에서 직접 실행했다. `run --suite core`: 553 cases, 0 errors. `check --suite core`: **PASS** (SQI 76.86). `golden`: **17/17 identical**. |
@@ -38,6 +38,7 @@
 - [21. Architecture Decisions (tradeoff)](#21-architecture-decisions-tradeoff)
 - [22. 사용자 결정이 필요한 사항](#22-사용자-결정이-필요한-사항)
 - [23. 조사 중 발견한 이슈 (고치지 않음)](#23-조사-중-발견한-이슈-고치지-않음)
+- [24. 구현 기록](#24-구현-기록-g1-implementer-2026-09-23)
 - [부록 A. MusicXML ↔ ScoreGraph 대응표](#부록-a-musicxml--scoregraph-대응표)
 - [부록 B. Legacy Score adapter 계약 (G2 준비)](#부록-b-legacy-score-adapter-계약-g2-준비)
 - [부록 C. 예시 (피아노, 드럼)](#부록-c-예시-피아노-드럼)
@@ -1924,6 +1925,116 @@ G1에서 **하지 않는다**. 각각 이후 Goal의 일이다.
 | F7 | G0 baseline 파일의 `audio_score_sha256`(`559a1f40…`, `718bdf3`의 파일)이 이 브랜치의 `audio-score.js`(`78bd76e5…`)와 다르다. `718bdf3`은 이 브랜치의 조상이 아니다. 결과는 재현된다 (이 세션: core PASS, golden 17/17). | `baselines/core.json`, `git merge-base` | G1 Step 0 기록 |
 | F8 | `PianoScore.of`는 score 객체 identity로 캐시한다. `PdfLayer.apply` 같은 제자리 변경은 캐시를 무효화하지 않는다. | App 2566–2579, 9986–10284 | G2 (불변 그래프가 해결) |
 | F9 | `parseMusicXML`은 셈여림, 템포, `sound`를 **모든 part**에서 읽는다. 그래서 여러 part 파일에서 같은 표기가 중복된다. | App 4076–4120 | G2 |
+
+---
+
+## 24. 구현 기록 (G1 Implementer, 2026-09-23)
+
+### 24.1 판정
+
+**COMPLETE** — 브랜치 `g1-scoregraph`(최종 커밋은 이 기록을 담은 커밋), 기준 커밋 `aff7080`. production switch(Step 7 flip)를 했다. 전환 조건 여섯 가지가 모두 성립했다: G0 core PASS, golden semantics PASS(17 SERIALIZATION_ONLY, 의미 변화 0), A/B 의미 차이 0(core·robust·smoke·replay-public 케이스별 동일), validator PASS(golden 17, core 553, full 4,976 그래프 ERROR 0), 결정론(두 프로세스 바이트 동일), 되돌리기 경로(`opts.legacyWriter`).
+
+| 커밋 | 내용 |
+| --- | --- |
+| `cce3366` | 설계 문서 (G01, ARCHITECTURE, DECISIONS) |
+| `0fda0fe` | bench SUT = `audio-score.js` + `scoregraph/**` 스냅샷 (A39, Step 7.1을 먼저) |
+| `d71343b` | `scoregraph/` 라이브러리, validator, canonical JSON, MusicXML import/export, node 테스트와 fixture |
+| `db21e88` | `sg-roundtrip` (코퍼스 369개 파일) |
+| `bf02544` | shadow: `buildGraph`를 `buildXml` 옆에 (production 불변, golden 17/17 identical) |
+| `a2e8907` | **flip**: MusicXML을 ScoreGraph exporter가 쓴다. golden bless, mutation 재고정과 새 mutant 3종, SG golden, vertical-slice·server 테스트, 앱 script 태그 |
+| `ecf6e3d` | `ab`가 fixture suite를 돌린다. `ab_identical.py` |
+| `6833c31` | CI gate에 `test:scoregraph`, `sg-roundtrip` |
+| `63dbb3f` | script 태그 `?v=8` (앱 HTML diff = script 태그 추가 13줄) |
+| `8bc0cb8` | 리뷰 대조군 SR-PRINTED-TEMPO-MIDWAY를 G0 edit처럼 템포 event 둘로 (§24.3) |
+| `647be56` | `tests/transcription.test.js`: MusicXML 바이트에 기대던 검사 하나를 파일의 divisions로 읽는다 |
+| `1c891f6` | bench 단위 테스트 셋: SUT 파일을 텍스트로 고치던 곳을 파일의 divisions로 |
+| (이 기록) | 이 기록, CURRENT_STATE, ARCHITECTURE, DECISIONS, README |
+
+### 24.2 Acceptance (A1–A46)
+
+PASS는 아래 테스트나 명령이 실제로 통과했다는 뜻이다. 모든 node 테스트는 `npm run test:scoregraph`, Python 테스트는 `npm run test:bench`의 unittest에 들어 있다.
+
+| # | 결과 | 근거 (테스트 / 명령) |
+| --- | --- | --- |
+| A1 | PASS | `browser-load.test.js`: require 적재, bare `vm` 컨텍스트에서 `PPPScoreGraph`, `package.json` 의존성이 `aff7080`과 바이트 동일 |
+| A2 | PASS | `rational.test.js`: 정규화·사칙·비교·파싱·overflow, LCG 10,000쌍 |
+| A3 | PASS | `musicxml.test.js`(tuplets-nested dur·멤버 합), `serialize.test.js`(소수점 정규식) |
+| A4 | PASS | `schema.test.js`: `ENTITY_KINDS` 21개와 prefix |
+| A5 | PASS | `validate.test.js`: ERROR 31종 모두 `fixtures/invalid/`(40개)에, 각각 sidecar와 같은 ERROR 집합 |
+| A6 | PASS | `validate.test.js`: WARNING 14종 모두 `warn-*` fixture |
+| A7 | PASS | `validate.test.js`: `fixtures/valid/` 34개, ERROR 0, sidecar와 같은 WARNING 집합 |
+| A8 | PASS | `validate.test.js`: 세 번 검증, 배열을 섞어 parse해도 issue 목록 동일 |
+| A9 | PASS | `validate.test.js`: 2,000마디·40,000 head·tie·slur, 5초 이내 (로컬 0.73 s) |
+| A10 | PASS | `serialize.test.js`: 커밋된 모든 `.sg.json`(SG golden 17개 포함) `serialize(parse(s)) === s`, 테스트 중 그래프 왕복 |
+| A11 | PASS | `determinism.test.js`, `vertical-slice.test.js`(두 프로세스, 키 순서 섞기, LF·끝 줄바꿈 하나·BOM 없음) |
+| A12 | PASS | `serialize.test.js`: canonical lint |
+| A13 | PASS | `serialize.test.js`: 버전 없음·2는 E-VERSION, 테스트 migration v0→v1 체인과 ID 보존 |
+| A14 | PASS | `unit/test_scoregraph_interop.py`: `json`과 `Fraction`만으로 읽기, 마디 길이·마디별 내용 |
+| A15 | PASS | `time.test.js`: 12개 위치의 `seconds`·`micros`(20/3 s → 6,666,667 µs), `meterAt`, `keyAt` |
+| A16 | PASS | `time.test.js`: pickup-3-4 (`1/4, 3/4, …, 1/2`, 3박째, W-MEASURE-LENGTH 유무) |
+| A17 | PASS | `time.test.js`(반복 fixture 6개) + `sg-roundtrip` 재생 순서 369/369 |
+| A18 | PASS | `time.test.js`: `fromUs(toUs(p))` 100점 1µs 이내, 순증가 아닌 anchor E-PERF |
+| A19 | PASS | `musicxml.test.js`: C03, C04, transposing |
+| A20 | PASS | `musicxml.test.js`: C10, C11 (concert 그대로, shift ±1, 표시 옥타브) |
+| A21 | PASS | `musicxml.test.js` + `unit/test_scoregraph_roundtrip.py` (C12, voices-4, grand-staff, cross-staff) |
+| A22 | PASS | `musicxml.test.js` + `unit/test_scoregraph_roundtrip.py`: 코퍼스 **369개 전체**에서 W-TIE-OPEN = 원문의 짝 없는 `<tie>` 수 (설계는 11개 파일) |
+| A23 | PASS | `musicxml.test.js`: C07 grace (`dur "0"`, order, slash), L2, projection 불변 |
+| A24 | PASS | `musicxml.test.js`: piano-marks (limbOf, 상속 순서, 페달·운지·arpeggio) |
+| A25 | PASS | `musicxml.test.js`: `valid/drums-with-piano.sg.json` |
+| A26 | PASS | `musicxml.test.js`: IMPORT-UNSUPPORTED-UNPITCHED, EXPORT-UNSUPPORTED-PERC |
+| A27 | PASS | `time.test.js`: `resolveSpan`/`spanOf`, 주석 밖 `songgraph` 0건 |
+| A28 | PASS | `prov.test.js`(6조합, import source 1개) + `vertical-slice.test.js`(`toMusicXml` 그래프: `audio-score` source, 기본 `op: inferred`, 엔티티별 prov 0) |
+| A29 | PASS | `prov.test.js`: I-PROV-REDUNDANT |
+| A30 | PASS | `determinism.test.js`: 두 프로세스 import 바이트 동일 |
+| A31 | PASS | `ops.test.js`: updateHead, removeEvents, replaceRegion(3–4마디), E-REGION-BOUNDARY |
+| A32 | PASS | `sg-roundtrip`: 369개 파일, allowlist 밖 367개 L1 통과, exit 0 (18.7 s) |
+| A33 | PASS | 같은 명령: 367개 L1+·L2 통과 |
+| A34 | PASS | allowlist 2개(burgmuller25/016 ENDING-STOP-WITHOUT-START, sonatina/014 WEDGE-UNPAIRED), 각 재현 fixture가 같은 차이를 낸다 |
+| A35 | PASS | `musicxml.test.js`: `dropped`에 figured-bass, print, credit |
+| A36 | PASS | `ab --a git:aff7080 --b worktree`: core 553, robust 282, smoke 44, replay-public 6 모두 PASS, `semantic changes` 줄 없음. `ab_identical.py` 네 suite 케이스별 동일 (exit 0). `bench:full` 4,976 cases, case error 0. `ab --suite full`(4,976)도 PASS, 케이스별 동일. |
+| A37 | PASS | `run.py golden`: 17개 SERIALIZATION_ONLY, `BLESS_LOG.md`에 "G1: MusicXML written by the ScoreGraph exporter". SEMANTIC·STRUCTURAL 0. bless 뒤 17/17 identical |
+| A38 | PASS | `npm run test:bench` 통과. `mutation-check` PASS: 해로운 mutant 40개 모두 자기 metric의 REGRESSION, no-op 동일. 새 exporter mutant 3종(SG-EXPORT-NO-DOT, SG-EXPORT-NO-TIME-MODIFICATION, SG-EXPORT-CLEF-SWAP) 포함 |
+| A39 | PASS | `unit/test_sut_snapshot.py` (sut_sha256, `git:HEAD` 스냅샷, mutant 사본의 `scoregraph/`) |
+| A40 | PASS | `vertical-slice.test.js`: golden 17개 ERROR 0, canonical 바이트 = `tests/scoregraph/golden/<key>.sg.json`, WARNING·INFO 개수 = `<key>.issues.json`. core 553: `graph_check.py --suite core`(`notate.js --emit-graph`, results 불변) ERROR 0 |
+| A41 | PASS (d는 §24.3 편차) | `vertical-slice.test.js`: 들은 음이 있는 16개 케이스(G14는 grid 입력). (a) clean 후 음마다 PerfNote 하나, µs는 §6.10을 테스트 안에서 따로 계산 (b) tie `to`가 아닌 head 모두 링크 (c) 링크 midi = head 실음 (d) 녹음 안의 마디선마다 anchor, `stats.barStarts`와 0.5 ms 이내 |
+| A42 | PASS | (a) `vertical-slice.test.js`: W-TEMPO-MARK-MISMATCH는 겹박자 4개 케이스에만 하나씩 (b) `unit/test_scoregraph_vertical.py`: golden MusicXML에서 따로 센 수 = W-DISPLAY-DURATION (합 1, G03) |
+| A43 | PASS | `npm test` 26개 suite를 하나씩: 기준 `aff7080` 25/26, G1 25/26, 같은 집합 (같은 PC, 같은 `node_modules`, 서버 8777). 둘 다 실패하는 `transcription.test.js`는 양쪽 모두 `tools/` venv의 console script 검사 하나로만 실패한다(환경). `PPP_TRANSCRIBE_PYTHON`으로 venv를 주면 녹음 → 악보 UI 경로가 양쪽에서 같게 통과한다 (G1 3회, 기준 2회). G1 첫 실행에서 "rich style" 검사가 한 번 실패했으나(900 ms `sleep` 뒤의 상태 확인) 다시 나지 않았고, 같은 경로를 페이지에서 직접 돌리면 두 writer 모두 같은 결과다. MusicXML 바이트에 기대던 검사 하나는 고쳤다(`647be56`). 앱 HTML diff = `scoregraph/` script 태그 추가 13줄뿐(`vertical-slice.test.js`가 `aff7080`과 비교). 브라우저 경로는 `vertical-slice.test.js`가 `vm`에서 앱의 script 순서대로 적재해 Node와 같은 XML을 확인 |
+| A44 | PASS | `server.test.js`: `BLOCKED`에 scoregraph 없음, `.dockerignore` 규칙 없음, `COPY . .`, 띄운 서버에서 `GET /scoregraph/<13개>.js` 200과 같은 내용 |
+| A45 | PASS (설정) | `bench.yml` gate job에 두 단계, `fetch-depth: 0`(A1의 `aff7080` 비교). GitHub에서는 아직 돌지 않았다 (PR이 없다) |
+| A46 | PASS | production 경로 diff: `audio-score.js`, `Piano Coach App.dc.html`(script 13줄), `scoregraph/**`, `package.json`(`test:scoregraph` 한 줄). 그 밖에 `.gitignore`(`tests/scoregraph/tools/` 추적). `server.js`, `omr-service.js`, Python 파이프라인 변경 0. 시간: `test:scoregraph` 2.8 s (≤60), `sg-roundtrip` 18.7 s (≤120), `npm run bench` 24.3 s (≤90) |
+
+### 24.3 설계와 다르게 하거나 설계가 열어 둔 것을 정한 점
+
+- **자동 fallback 없음 (G1-D13).** ScoreGraph 경로의 오류(빌드 ERROR, export 거절, 버전 불일치)는 `toMusicXml`에서 throw한다. 앱의 호출부는 모두 try/catch로 오류를 보여 준다. 몰래 `buildXml`로 되돌아가면 mutant와 회귀가 bench에서 숨는다. bench 입력 5,878개에서 throw 0건.
+- **`buildXml`의 결함을 그대로 옮겼다 (G1-D14).** 이슈 1 → W-TEMPO-MARK-MISMATCH, 이슈 19 → W-DISPLAY-DURATION. 추가로 발견: `buildXml`은 셋잇단 **조각마다** 괄호를 따로 연다(한 음짜리 괄호). 그래프는 조각마다 Tuplet 하나로 이것을 담고 W-TUPLET-INCOMPLETE를 낸다 (golden G03 47개, core 8,144개). 고치는 것은 G3.
+- **A41 (d) anchor (G1-D15).** 설계는 "anchor 수 = 마디 수 + 1"이다. 그러나 µs는 0 이상이다(§6.10, E-PERF). 녹음 시작 전에 놓인 마디선(`tickToSec` < 0: golden G03, G06, G09에서 첫 마디선 하나씩, core 553개 중 33개)에는 anchor를 두지 않는다. 테스트는 녹음 안의 마디선마다 anchor가 있고 앞의 것에는 없음을 확인한다. 같은 이유로 grid 입력의 잘못된 시각(NaN, 음수, `off ≤ on`)은 PerfNote가 되지 않는다.
+- **mutation 재고정 (G1-D16).** flip 뒤 `buildXml`은 기본 경로가 아니므로, 그것을 겨냥한 G0 mutant는 아무것도 바꾸지 못한다. 같은 결함을 `buildGraph`에 만들도록 다시 고정했다 (`pppbench/mutation.py`의 `SG_*`; 템포·박자·조표·점·음표 종류·마디 번호·음자리표·쉼표·임시표·반복 기호·implicit·가짜 분할). `<staves>` 누락은 exporter에 둔다. 가짜 분할(SR-FAKE-SPLIT-BAR, PF-FORWARD-REPEAT-ONLY-EXCUSE)은 export 직전 그래프 변환으로 같은 파일을 만든다. 리뷰 스크립트(`adversarial.py`, `final_review.py`, `short_review.py`)도 같은 edit를 쓴다. 기대 결과와 metric은 하나도 바꾸지 않았다.
+- **`ab`와 fixture suite (G1-D18).** G0의 `ab`는 합성 suite만 돌렸다. A36이 replay-public을 요구하므로 fixture suite는 그 suite의 runner로 양쪽을 돌리게 했다.
+- **A42 (b) 세는 단위.** W-DISPLAY-DURATION은 event마다 하나다. XML 검사기는 `<chord/>` 음을 다시 세지 않는다 (화음 = event 하나). grace는 duration이 없다.
+- **script 태그 `?v=8`.** R10은 "같은 `?v=` 값을 함께 올린다"고 한다. `server.js`는 `.js`를 `Cache-Control: no-store`로 보내므로 브라우저에 옛 `audio-score.js`가 남지 않고, 버전 확인이 불일치를 막는다. 그래서 `audio-score.js` 태그는 그대로 두고 새 태그에 같은 `?v=8`을 붙였다 (A43: diff는 추가 줄뿐).
+- **MusicXML 바이트에 기대던 테스트.** G0 단위 테스트 셋(`test_degradation`, `test_golden_mutation`, `test_review_fixes`)과 앱 테스트 하나(`transcription.test.js`)는 `toMusicXml` 출력을 divisions 24를 가정한 텍스트로 고치거나 찾았다. exporter는 가장 작은 divisions를 쓰므로 하나는 실패했고 둘은 뜻이 약해진 채 통과했다. 모두 파일의 `<divisions>`를 읽도록 고쳤다 (검사하는 뜻은 같다). flip 직후 단위 테스트 전체를 돌리지 않아 늦게 찾았다.
+- **`opts.legacyWriter`의 반환값**은 `{xml, stats}`다 (graph 없음). 라이브러리를 적재하지 않는다 (테스트가 `require.cache`로 확인). 라이브러리에 문제가 생겨도 되돌릴 수 있게 하기 위해서다.
+- 라이브러리 구현 중 정한 점(chord symbol `chordKind`, grace만 `at == dur` 허용 밖, 빈 객체 유지, Tie = `<tie>`, import ID 순서, `ext.musicxml.beam`, `W-IMPORT-*` 보고 코드, inventory 정규화)은 `scoregraph/README.md`와 `tests/bench/pppbench/notation_inventory.py` docstring에 있다 (G1-D17).
+
+### 24.4 측정
+
+| | 값 |
+| --- | --- |
+| shadow 비교 (`shadow_compare.py`: legacy 파일과 SG 파일을 G0 reader로 읽은 canonical score 전체) | golden 17, smoke 44, robust 282, replay-public 6, core 553, full 4,976: **5,878/5,878 동일** |
+| 앱의 실제 `parseMusicXML` (브라우저 페이지, puppeteer) | golden 17개 입력에서 두 writer 파일이 만드는 legacy `Score` 객체가 **17/17 동일** (`id`의 시각 제외). 편곡 경로(`lock` + `arrangeWithService`, jazz)도 두 writer에서 같은 결과 |
+| `test:scoregraph` · `test:bench` | 71/71 · 단위 221 OK, golden 17/17, correctness 13/13 |
+| 그래프 WARNING (core 553) | W-DISPLAY-DURATION 2,647, W-TEMPO-MARK-MISMATCH 189, W-TUPLET-INCOMPLETE 8,144 (모두 writer의 기존 결함, §24.3) |
+| `notate` 시간 (core 553) | `aff7080` 2.4 s → G1 7.8 s (케이스당 약 10 ms 늘어남: 빌드, 검증, export) |
+| `check --suite full` (저장된 baseline 대비) | REGRESSION 12, 개선 20. **G1 이전부터다**: baseline은 `559a1f40…`(G0 브랜치)의 `audio-score.js`로 기록됐고, `aff7080`에는 `e0d8b23`·`72549cb`가 바꾼 `audio-score.js`(`78bd76e5…`)가 있다 (§23 F7). `ab --suite full`의 양쪽(`aff7080`, G1) 결과를 저장된 baseline과 비교하면 **둘 다** REGRESSION이다. G1과 무관함을 확인했다. |
+
+### 24.5 리뷰어가 볼 위험
+
+- **예외 경로가 새로 생겼다.** 전에는 `buildXml`이 무엇이든 문자열을 냈다. 이제 그래프 ERROR는 throw한다. bench 입력 5,878개에서 0건이지만 실제 녹음의 드문 입력은 모른다. 되돌리기는 `opts.legacyWriter`(앱 호출부 한 줄) 또는 revert다.
+- **출력 바이트가 바뀌었다.** MusicXML 4.0, 최소 divisions, XSD 순서다. G0 reader로는 bench 입력 5,878개 모두 같은 음악이고, 앱의 실제 `parseMusicXML`로는 golden 17개(같은 `Score`)와 `npm test`(A43)를 확인했다. conformance 티어(T1)는 이번에 돌리지 않았다. 외부 도구로 내보내는 경로가 있다면 한 번 열어 볼 것.
+- **mutation과 리뷰 스크립트를 다시 고정했다.** 뜻은 같게 했지만(같은 결함, 같은 기대), G0 리뷰어가 쓴 edit 문자열 자체는 바뀌었다. mutation-check는 PASS다. 리뷰 스크립트 결과: `adversarial.py` 모든 항목 OK, `final_review.py` 10/10, `final_oracle.py` OK, `short_review.py` 11/11. 단, SR-PRINTED-TEMPO-MIDWAY(대조군)는 처음 재고정에서 메트로놈 표시와 `<sound>`를 한 `<direction>`으로 합쳐 뜻이 달라졌다(앱 플레이어가 반 속도로 재생). 원래처럼 템포 event 둘로 고쳤다(`8bc0cb8`). FINAL-TOP-REGISTER-OCTAVE-DOWN은 이제 일부 케이스에서 오류(case:error)도 낸다: 한 옥타브 내린 음이 같은 화음의 음과 같은 음높이가 되면(예: B5와 B6 → B5 둘) validator가 E-HEADS로 그래프를 거절하기 때문이다 (core 7케이스). 목표 metric은 여전히 잡힌다.
+- **녹음 UI 테스트의 고정 `sleep`.** `transcription.test.js`의 "rich style" 검사는 편곡 서비스 호출 뒤 900 ms만 기다린다. G1 첫 실행에서 한 번 실패했고 다시 나지 않았다. `toMusicXml`이 케이스당 약 10 ms 느려진 만큼 여유가 준다.
+- **full baseline 불일치(F7)** 는 G1과 무관하지만, nightly의 `check --suite full`은 G1 이전부터 실패한다. rebaseline은 사용자 결정이다.
+- **`buildXml`은 한 릴리스 뒤 G2에서 지운다** (§15.3). 그때 legacy 경로 테스트와 shadow 도구도 정리한다.
 
 ---
 
