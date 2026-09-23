@@ -1,0 +1,9 @@
+{
+ "about": "a staff reference that names a voice (the wrong kind)",
+ "spec": "G01 §13.2 E-REF-MISSING",
+ "expect": {
+  "errors": [
+   "E-REF-MISSING"
+  ]
+ }
+}

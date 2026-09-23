@@ -1,0 +1,44 @@
+{
+ "about": "A damper pedal with a change, fingerings (single and a 3-1 substitution) and an arpeggio over both hands survive the round trip (G01 §8.4, §8.5, A24).",
+ "spec": "G01 §5.10 Pedal {from, to, changes}; §5.7 head.fingering in order with subst; §5.10 Arpeggio over heads of one onset on both staves.",
+ "expect": {
+  "pedal": {
+   "from": [
+    0,
+    "0"
+   ],
+   "changes": [
+    [
+     0,
+     "1/2"
+    ]
+   ],
+   "to": [
+    1,
+    "1"
+   ],
+   "line": true
+  },
+  "fingerings": [
+   [
+    "1"
+   ],
+   [
+    "3",
+    "1 (subst)"
+   ],
+   [
+    "2"
+   ]
+  ],
+  "arpeggio": {
+   "heads": 4
+  },
+  "roundtrip": [
+   "L1",
+   "L1+",
+   "L2"
+  ],
+  "note": "Measures are given by index (0 = the first)."
+ }
+}

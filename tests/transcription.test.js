@@ -452,8 +452,10 @@ const helperHealth = () => new Promise(resolve => {
   const articulated = A.toMusicXml({ grid: articulationGrid, pedals: [{ on: 0, off: 1.2 }] });
   const artificialTies = (articulated.xml.match(/<tie type=/g) || []).length;
   const leftStaff = (articulated.xml.split('<backup>')[1] || '');
+  /* a sixteenth in the file's own divisions (24 a quarter from buildXml; the ScoreGraph exporter writes the fewest) */
+  const sixteenth = +((/<divisions>(\d+)<\/divisions>/.exec(articulated.xml) || [])[1]) / 4;
   ok('pedal and short release gaps do not lengthen written notes',
-    artificialTies === 0 && /<duration>6<\/duration><voice>5<\/voice>[\s\S]*?<rest\/><duration>6<\/duration>/.test(leftStaff),
+    artificialTies === 0 && new RegExp('<duration>' + sixteenth + '</duration><voice>5</voice>[\\s\\S]*?<rest/><duration>' + sixteenth + '</duration>').test(leftStaff),
     'ties ' + artificialTies);
 
   console.log('\n── honest failure ──');

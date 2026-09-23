@@ -1,0 +1,7 @@
+{
+ "about": "two sections, one inside the other, and a phrase that names voices of one part (§5.9)",
+ "spec": "G01 §5.9, §10",
+ "expect": {
+  "warnings": {}
+ }
+}

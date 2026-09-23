@@ -1,0 +1,9 @@
+{
+ "about": "the number 11 used twice (clef c11 and direction d11)",
+ "spec": "G01 §13.2 E-ID-DUPLICATE",
+ "expect": {
+  "errors": [
+   "E-ID-DUPLICATE"
+  ]
+ }
+}

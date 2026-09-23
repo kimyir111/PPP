@@ -1,0 +1,9 @@
+{
+ "about": "a performed D5 linked to a written C5",
+ "spec": "G01 §13.2 W-PERF-LINK-PITCH",
+ "expect": {
+  "warnings": {
+   "W-PERF-LINK-PITCH": 1
+  }
+ }
+}

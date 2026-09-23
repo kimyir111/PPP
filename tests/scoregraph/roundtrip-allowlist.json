@@ -1,0 +1,17 @@
+{
+  "about": "Committed MusicXML files that may fail `python tests/bench/run.py sg-roundtrip` (docs/GOALS/G01 §16.2, A34): at most three, each with the reason and a minimal fixture that reproduces the same difference. sg-roundtrip checks that each fixture still fails.",
+  "files": [
+    {
+      "path": "catalog/method/burgmuller25/016.mxl",
+      "reason": "ENDING-STOP-WITHOUT-START",
+      "detail": "Bar 16 closes a second-ending bracket (<ending number=\"2\" type=\"stop\"/>) that never opens. The app records the stop on the bar (endingNos [2], endingEnd 'stop'), so the G0 projection of the bar changes (L1 STRUCTURAL_CHANGE, and L1+ loses the ending row). A ScoreGraph Ending has both ends (G01 §5.4); the import reports the orphan stop as dropped ('ending (stop without start)'). The play order is the same: a stop alone opens nothing.",
+      "fixture": "tests/scoregraph/fixtures/xml/ending-stop-without-start.musicxml"
+    },
+    {
+      "path": "catalog/method/sonatina/014.mxl",
+      "reason": "WEDGE-UNPAIRED",
+      "detail": "Bar 75 stops a wedge that never started and bar 76 starts a diminuendo that never stops. A ScoreGraph Wedge has both ends (G01 §5.10); the import reports both marks as dropped ('wedge (stop without start)', 'wedge (unclosed)'). The app does not read wedges, so what it shows and plays is the same (L1 passes); only the notation inventory loses the two marks (L1+).",
+      "fixture": "tests/scoregraph/fixtures/xml/wedge-unpaired.musicxml"
+    }
+  ]
+}

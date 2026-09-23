@@ -1,0 +1,7 @@
+{
+ "about": "experimental fields under registered-style namespaces on the root and an event (§5.13)",
+ "spec": "G01 §5.13",
+ "expect": {
+  "warnings": {}
+ }
+}

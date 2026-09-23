@@ -1,0 +1,9 @@
+{
+ "about": "the same pitch twice in one chord",
+ "spec": "G01 §13.2 E-HEADS",
+ "expect": {
+  "errors": [
+   "E-HEADS"
+  ]
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "about": "two ottavas overlapping on the treble staff",
+ "spec": "G01 §13.2 W-OTTAVA-OVERLAP",
+ "expect": {
+  "warnings": {
+   "W-OTTAVA-OVERLAP": 1
+  }
+ }
+}

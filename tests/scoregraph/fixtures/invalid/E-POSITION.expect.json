@@ -1,0 +1,9 @@
+{
+ "about": "a note at the end of its measure (at == dur)",
+ "spec": "G01 §13.2 E-POSITION",
+ "expect": {
+  "errors": [
+   "E-POSITION"
+  ]
+ }
+}

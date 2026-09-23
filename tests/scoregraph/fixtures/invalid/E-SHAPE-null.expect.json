@@ -1,0 +1,9 @@
+{
+ "about": "null instead of leaving a field out",
+ "spec": "G01 §13.2 E-SHAPE",
+ "expect": {
+  "errors": [
+   "E-SHAPE"
+  ]
+ }
+}

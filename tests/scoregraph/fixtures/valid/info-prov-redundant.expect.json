@@ -1,0 +1,7 @@
+{
+ "about": "an event whose prov repeats the default it inherits anyway (§11.6, A29)",
+ "spec": "G01 §11.6, A29",
+ "expect": {
+  "warnings": {}
+ }
+}

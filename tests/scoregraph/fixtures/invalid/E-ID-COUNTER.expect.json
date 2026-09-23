@@ -1,0 +1,9 @@
+{
+ "about": "nextId 10 while IDs go up to 23",
+ "spec": "G01 §13.2 E-ID-COUNTER",
+ "expect": {
+  "errors": [
+   "E-ID-COUNTER"
+  ]
+ }
+}

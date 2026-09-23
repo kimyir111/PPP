@@ -1,0 +1,9 @@
+{
+ "about": "an event in a voice that does not exist (v99)",
+ "spec": "G01 §13.2 E-REF-MISSING",
+ "expect": {
+  "errors": [
+   "E-REF-MISSING"
+  ]
+ }
+}

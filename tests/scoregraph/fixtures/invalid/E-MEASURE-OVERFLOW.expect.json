@@ -1,0 +1,9 @@
+{
+ "about": "a note that runs past its bar line",
+ "spec": "G01 §13.2 E-MEASURE-OVERFLOW",
+ "expect": {
+  "errors": [
+   "E-MEASURE-OVERFLOW"
+  ]
+ }
+}

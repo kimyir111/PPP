@@ -70,8 +70,12 @@ class DegradedOutput(unittest.TestCase):
         self.assertEqual(bad["struct.tempo.mark_consistent"], 0.0)
 
     def test_shortened_durations(self):
-        xml = self.row["xml"].replace("<duration>72</duration>", "<duration>24</duration>").replace(
+        # every dotted half becomes a quarter, in the file's own divisions (24 a quarter from buildXml; the
+        # ScoreGraph exporter writes the fewest, G1)
+        div = int(re.search(r"<divisions>(\d+)</divisions>", self.row["xml"]).group(1))
+        xml = self.row["xml"].replace(f"<duration>{3 * div}</duration>", f"<duration>{div}</duration>").replace(
             "<type>half</type><dot/>", "<type>quarter</type>")
+        self.assertNotEqual(xml, self.row["xml"], "the edit must change the file")
         bad = metrics(self.c, self.p, self.row, xml)
         self.assertLess(bad["notation.duration.accuracy"], self.good["notation.duration.accuracy"])
 

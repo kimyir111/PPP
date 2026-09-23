@@ -1,0 +1,9 @@
+{
+ "about": "two notes of one voice that overlap",
+ "spec": "G01 §13.2 E-VOICE-OVERLAP",
+ "expect": {
+  "errors": [
+   "E-VOICE-OVERLAP"
+  ]
+ }
+}

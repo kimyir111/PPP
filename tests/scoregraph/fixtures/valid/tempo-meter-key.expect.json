@@ -1,0 +1,7 @@
+{
+ "about": "4/4 at qpm 60, qpm 90 from the third beat of bar 2 (§6.8 example), a key change from G to E-flat in the middle of bar 2, then 6/8 and 3+2/8",
+ "spec": "G01 §6.4, §6.6, §6.8, A15",
+ "expect": {
+  "warnings": {}
+ }
+}

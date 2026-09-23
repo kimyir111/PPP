@@ -1,0 +1,2 @@
+# Keep ScoreGraph fixtures and golden files byte-identical on Windows and Linux (canonical JSON is LF, G01 §14.1).
+* text=auto eol=lf

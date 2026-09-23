@@ -1,0 +1,9 @@
+{
+ "about": "a second part's event in the first part's voice v9",
+ "spec": "G01 §13.2 E-REF-SCOPE",
+ "expect": {
+  "errors": [
+   "E-REF-SCOPE"
+  ]
+ }
+}

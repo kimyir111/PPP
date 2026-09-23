@@ -1,0 +1,9 @@
+{
+ "about": "a damper pedal pressed and never released",
+ "spec": "G01 §13.2 W-PEDAL-OPEN",
+ "expect": {
+  "warnings": {
+   "W-PEDAL-OPEN": 1
+  }
+ }
+}

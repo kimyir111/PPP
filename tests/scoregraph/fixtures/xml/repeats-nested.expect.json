@@ -1,0 +1,20 @@
+{
+ "about": "a repeat of bars 2-3 inside a repeat of bars 1-4",
+ "spec": "G01 \u00a76.7 (the app's Score.form rule, G0 canonical.app_play_order)",
+ "expect": {
+  "unroll": [
+   0,
+   1,
+   2,
+   1,
+   2,
+   3,
+   1,
+   2,
+   1,
+   2,
+   3,
+   4
+  ]
+ }
+}

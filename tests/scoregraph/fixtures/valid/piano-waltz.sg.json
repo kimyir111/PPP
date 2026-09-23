@@ -1,0 +1,94 @@
+{
+  "scoregraph_version": 1,
+  "id": "sg-example-waltz",
+  "rev": 0,
+  "nextId": 54,
+  "meta": {"title":"Example Waltz","composer":"PPP"},
+  "timeline": {
+    "measures": [
+      {"id":"m7","number":"0","dur":"1/4","implicit":true},
+      {"id":"m8","number":"1","dur":"3/4","barline":{"left":{"style":"heavy-light","repeat":"forward"}}},
+      {"id":"m9","number":"2","dur":"3/4","barline":{"right":{"style":"light-heavy","repeat":"backward"}}},
+      {"id":"m10","number":"3","dur":"1/2","barline":{"right":{"style":"light-heavy"}}}
+    ],
+    "meters": [
+      {"id":"mt11","m":"m7","beats":[3],"beatType":4}
+    ],
+    "keys": [
+      {"id":"ky12","m":"m7","at":"0","fifths":1,"mode":"major"}
+    ],
+    "tempos": [
+      {"id":"tp13","m":"m7","at":"0","qpm":"96","mark":{"unit":"quarter","perMinute":"96"}}
+    ],
+    "endings": [
+      {"id":"en14","numbers":[1],"from":"m9","to":"m9"},
+      {"id":"en15","numbers":[2],"from":"m10","to":"m10","open":true}
+    ]
+  },
+  "parts": [
+    {
+      "id": "p2",
+      "name": "Piano",
+      "instrument": {"kind":"piano","family":"keyboard","midi":{"program":1}},
+      "staves": [
+        {"id":"st3","limb":"RH"},
+        {"id":"st4","limb":"LH"}
+      ],
+      "voices": [
+        {"id":"v5","staff":"st3","label":"1"},
+        {"id":"v6","staff":"st4","label":"5"}
+      ],
+      "clefs": [
+        {"id":"c16","staff":"st3","m":"m7","at":"0","sign":"G"},
+        {"id":"c17","staff":"st4","m":"m7","at":"0","sign":"F"}
+      ],
+      "events": [
+        {"id":"e18","kind":"note","m":"m7","at":"0","dur":"1/4","voice":"v5","staff":"st3","display":{"type":"quarter"},"heads":[{"id":"h19","pitch":{"step":"D","oct":5}}]},
+        {"id":"e20","kind":"rest","m":"m7","at":"0","dur":"1/4","voice":"v6","staff":"st4","display":{"type":"quarter"}},
+        {"id":"e21","kind":"note","m":"m8","at":"0","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h22","pitch":{"step":"B","oct":4}}]},
+        {"id":"e23","kind":"note","m":"m8","at":"1/12","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h24","pitch":{"step":"C","oct":5}}]},
+        {"id":"e25","kind":"note","m":"m8","at":"1/6","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h26","pitch":{"step":"D","oct":5}}]},
+        {"id":"e27","kind":"note","m":"m8","at":"1/4","dur":"1/2","voice":"v5","staff":"st3","display":{"type":"half"},"heads":[{"id":"h28","pitch":{"step":"G","oct":5}}]},
+        {"id":"e29","kind":"note","m":"m8","at":"0","dur":"3/4","voice":"v6","staff":"st4","display":{"type":"half","dots":1},"heads":[{"id":"h30","pitch":{"step":"G","oct":2}},{"id":"h31","pitch":{"step":"D","oct":3}}]},
+        {"id":"e32","kind":"note","m":"m9","at":"0","dur":"1/4","voice":"v5","staff":"st3","display":{"type":"quarter"},"heads":[{"id":"h33","pitch":{"step":"G","oct":5}}]},
+        {"id":"e34","kind":"note","m":"m9","at":"1/4","dur":"1/4","voice":"v5","staff":"st3","display":{"type":"quarter"},"heads":[{"id":"h35","pitch":{"step":"F","alter":1,"oct":5}}]},
+        {"id":"e36","kind":"note","m":"m9","at":"1/2","dur":"1/4","voice":"v5","staff":"st3","display":{"type":"quarter"},"heads":[{"id":"h37","pitch":{"step":"E","oct":5}}]},
+        {"id":"e38","kind":"note","m":"m9","at":"0","dur":"3/4","voice":"v6","staff":"st4","display":{"type":"half","dots":1},"heads":[{"id":"h39","pitch":{"step":"C","oct":3}},{"id":"h40","pitch":{"step":"G","oct":3}}]},
+        {"id":"e41","kind":"note","m":"m10","at":"0","dur":"1/2","voice":"v5","staff":"st3","display":{"type":"half"},"heads":[{"id":"h42","pitch":{"step":"G","oct":5}}]},
+        {"id":"e43","kind":"note","m":"m10","at":"0","dur":"1/2","voice":"v6","staff":"st4","display":{"type":"half"},"heads":[{"id":"h44","pitch":{"step":"G","oct":2}}]}
+      ],
+      "directions": [
+        {"id":"d45","kind":"dynamic","m":"m8","at":"0","staff":"st3","placement":"below","value":"p"}
+      ],
+      "spanners": [
+        {"id":"s49","type":"pedal","pedal":"damper","from":{"m":"m8","at":"0"},"to":{"m":"m10","at":"1/2"},"changes":[{"m":"m9","at":"0"}]},
+        {"id":"s48","type":"slur","from":"e21","to":"e32"},
+        {"id":"s46","type":"tuplet","events":["e21","e23","e25"],"actual":3,"normal":2,"unit":{"type":"eighth"}},
+        {"id":"s47","type":"tie","from":"h28","to":"h33"}
+      ]
+    }
+  ],
+  "performances": [
+    {
+      "id": "pf51",
+      "kind": "take",
+      "src": "sr50",
+      "notes": [
+        {"id":"pn52","on":1000000,"off":1580000,"vel":58,"midi":74,"link":"h19"},
+        {"id":"pn53","on":1631000,"off":1830000,"vel":62,"midi":71,"link":"h22"}
+      ],
+      "anchors": [
+        {"m":"m7","k":1,"at":"0","us":1000000,"kind":"bar"},
+        {"m":"m8","k":1,"at":"0","us":1625000,"kind":"bar"},
+        {"m":"m9","k":1,"at":"0","us":3500000,"kind":"bar"}
+      ]
+    }
+  ],
+  "provenance": {
+    "sources": [
+      {"id":"sr1","kind":"musicxml","input":{"name":"example-waltz.musicxml"}},
+      {"id":"sr50","kind":"midi-input","note":"student take"}
+    ],
+    "default": {"src":"sr1","op":"imported"}
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "scoregraph_version": 1,
+  "id": "fx-tuplets",
+  "rev": 0,
+  "nextId": 57,
+  "meta": {"title":"Tuplets"},
+  "timeline": {
+    "measures": [
+      {"id":"m6","number":"1","dur":"1"}
+    ],
+    "meters": [
+      {"id":"mt7","m":"m6","beats":[4],"beatType":4}
+    ]
+  },
+  "parts": [
+    {
+      "id": "p2",
+      "name": "Piano",
+      "instrument": {"kind":"piano","family":"keyboard"},
+      "staves": [
+        {"id":"st3","limb":"RH"},
+        {"id":"st4","limb":"LH"}
+      ],
+      "voices": [
+        {"id":"v5","staff":"st3","label":"1"}
+      ],
+      "clefs": [
+        {"id":"c8","staff":"st3","m":"m6","at":"0","sign":"G"},
+        {"id":"c9","staff":"st4","m":"m6","at":"0","sign":"F"}
+      ],
+      "events": [
+        {"id":"e10","kind":"note","m":"m6","at":"0","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h11","pitch":{"step":"C","oct":5}}]},
+        {"id":"e12","kind":"note","m":"m6","at":"1/12","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h13","pitch":{"step":"D","oct":5}}]},
+        {"id":"e14","kind":"note","m":"m6","at":"1/6","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h15","pitch":{"step":"E","oct":5}}]},
+        {"id":"e17","kind":"note","m":"m6","at":"1/4","dur":"1/20","voice":"v5","staff":"st3","display":{"type":"16th"},"heads":[{"id":"h18","pitch":{"step":"C","oct":5}}]},
+        {"id":"e19","kind":"note","m":"m6","at":"3/10","dur":"1/20","voice":"v5","staff":"st3","display":{"type":"16th"},"heads":[{"id":"h20","pitch":{"step":"D","oct":5}}]},
+        {"id":"e21","kind":"note","m":"m6","at":"7/20","dur":"1/20","voice":"v5","staff":"st3","display":{"type":"16th"},"heads":[{"id":"h22","pitch":{"step":"E","oct":5}}]},
+        {"id":"e23","kind":"note","m":"m6","at":"2/5","dur":"1/20","voice":"v5","staff":"st3","display":{"type":"16th"},"heads":[{"id":"h24","pitch":{"step":"F","oct":5}}]},
+        {"id":"e25","kind":"note","m":"m6","at":"9/20","dur":"1/20","voice":"v5","staff":"st3","display":{"type":"16th"},"heads":[{"id":"h26","pitch":{"step":"G","oct":5}}]},
+        {"id":"e28","kind":"note","m":"m6","at":"1/2","dur":"1/24","voice":"v5","staff":"st3","display":{"type":"16th"},"heads":[{"id":"h29","pitch":{"step":"C","oct":5}}]},
+        {"id":"e30","kind":"note","m":"m6","at":"13/24","dur":"1/24","voice":"v5","staff":"st3","display":{"type":"16th"},"heads":[{"id":"h31","pitch":{"step":"D","oct":5}}]},
+        {"id":"e32","kind":"note","m":"m6","at":"7/12","dur":"1/24","voice":"v5","staff":"st3","display":{"type":"16th"},"heads":[{"id":"h33","pitch":{"step":"E","oct":5}}]},
+        {"id":"e34","kind":"note","m":"m6","at":"5/8","dur":"1/24","voice":"v5","staff":"st3","display":{"type":"16th"},"heads":[{"id":"h35","pitch":{"step":"F","oct":5}}]},
+        {"id":"e36","kind":"note","m":"m6","at":"2/3","dur":"1/24","voice":"v5","staff":"st3","display":{"type":"16th"},"heads":[{"id":"h37","pitch":{"step":"G","oct":5}}]},
+        {"id":"e38","kind":"note","m":"m6","at":"17/24","dur":"1/24","voice":"v5","staff":"st3","display":{"type":"16th"},"heads":[{"id":"h39","pitch":{"step":"A","oct":5}}]},
+        {"id":"e41","kind":"note","m":"m6","at":"3/4","dur":"1/20","voice":"v5","staff":"st3","display":{"type":"16th"},"heads":[{"id":"h42","pitch":{"step":"C","oct":6}}]},
+        {"id":"e43","kind":"note","m":"m6","at":"4/5","dur":"1/20","voice":"v5","staff":"st3","display":{"type":"16th"},"heads":[{"id":"h44","pitch":{"step":"D","oct":6}}]},
+        {"id":"e45","kind":"note","m":"m6","at":"17/20","dur":"1/60","voice":"v5","staff":"st3","display":{"type":"32nd"},"heads":[{"id":"h46","pitch":{"step":"E","oct":6}}]},
+        {"id":"e47","kind":"note","m":"m6","at":"13/15","dur":"1/60","voice":"v5","staff":"st3","display":{"type":"32nd"},"heads":[{"id":"h48","pitch":{"step":"F","oct":6}}]},
+        {"id":"e49","kind":"note","m":"m6","at":"53/60","dur":"1/60","voice":"v5","staff":"st3","display":{"type":"32nd"},"heads":[{"id":"h50","pitch":{"step":"G","oct":6}}]},
+        {"id":"e51","kind":"note","m":"m6","at":"9/10","dur":"1/20","voice":"v5","staff":"st3","display":{"type":"16th"},"heads":[{"id":"h52","pitch":{"step":"A","oct":6}}]},
+        {"id":"e53","kind":"note","m":"m6","at":"19/20","dur":"1/20","voice":"v5","staff":"st3","display":{"type":"16th"},"heads":[{"id":"h54","pitch":{"step":"B","oct":6}}]}
+      ],
+      "directions": [],
+      "spanners": [
+        {"id":"s16","type":"tuplet","events":["e10","e12","e14"],"actual":3,"normal":2,"unit":{"type":"eighth"}},
+        {"id":"s27","type":"tuplet","events":["e17","e19","e21","e23","e25"],"actual":5,"normal":4,"unit":{"type":"16th"}},
+        {"id":"s40","type":"tuplet","events":["e28","e30","e32","e34","e36","e38"],"actual":6,"normal":4,"unit":{"type":"16th"}},
+        {"id":"s55","type":"tuplet","events":["e41","e43","e45","e47","e49","e51","e53"],"actual":5,"normal":4,"unit":{"type":"16th"}},
+        {"id":"s56","type":"tuplet","events":["e45","e47","e49"],"actual":3,"normal":2,"unit":{"type":"32nd"},"parent":"s55"}
+      ]
+    }
+  ],
+  "provenance": {
+    "sources": [
+      {"id":"sr1","kind":"user"}
+    ],
+    "default": {"src":"sr1","op":"edited"}
+  }
+}

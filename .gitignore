@@ -14,6 +14,8 @@ data/*.json
 tests/bench/out/
 # the root "tools/" rule above is for the vendored helpers; the benchmark's own tools are source
 !tests/bench/tools/
+# ... and so are the ScoreGraph tests' (fixture generators, the A/B comparison, G01)
+!tests/scoregraph/tools/
 tests/bench/.cache/
 __pycache__/
 # Local experiments; holds copyrighted audio and PDFs that must never be committed.

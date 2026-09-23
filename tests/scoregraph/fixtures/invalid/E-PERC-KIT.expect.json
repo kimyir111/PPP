@@ -1,0 +1,9 @@
+{
+ "about": "a percussion event in a part without a kit",
+ "spec": "G01 §13.2 E-PERC-KIT",
+ "expect": {
+  "errors": [
+   "E-PERC-KIT"
+  ]
+ }
+}

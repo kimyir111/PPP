@@ -1,0 +1,9 @@
+{
+ "about": "a performed note released before it is pressed",
+ "spec": "G01 §13.2 E-PERF",
+ "expect": {
+  "errors": [
+   "E-PERF"
+  ]
+ }
+}

@@ -1,0 +1,52 @@
+{
+  "scoregraph_version": 1,
+  "id": "fx-ottava",
+  "rev": 0,
+  "nextId": 22,
+  "meta": {"title":"Ottava"},
+  "timeline": {
+    "measures": [
+      {"id":"m7","number":"1","dur":"1"},
+      {"id":"m8","number":"2","dur":"1"}
+    ],
+    "meters": [
+      {"id":"mt9","m":"m7","beats":[4],"beatType":4}
+    ]
+  },
+  "parts": [
+    {
+      "id": "p2",
+      "name": "Piano",
+      "instrument": {"kind":"piano","family":"keyboard"},
+      "staves": [
+        {"id":"st3","limb":"RH"},
+        {"id":"st4","limb":"LH"}
+      ],
+      "voices": [
+        {"id":"v5","staff":"st3","label":"1"},
+        {"id":"v6","staff":"st4","label":"5"}
+      ],
+      "clefs": [
+        {"id":"c10","staff":"st3","m":"m7","at":"0","sign":"G"},
+        {"id":"c11","staff":"st4","m":"m7","at":"0","sign":"F"}
+      ],
+      "events": [
+        {"id":"e12","kind":"note","m":"m7","at":"0","dur":"1","voice":"v5","staff":"st3","display":{"type":"whole"},"heads":[{"id":"h13","pitch":{"step":"C","oct":7}}]},
+        {"id":"e16","kind":"note","m":"m7","at":"0","dur":"1","voice":"v6","staff":"st4","display":{"type":"whole"},"heads":[{"id":"h17","pitch":{"step":"C","oct":1}}]},
+        {"id":"e14","kind":"note","m":"m8","at":"0","dur":"1","voice":"v5","staff":"st3","display":{"type":"whole"},"heads":[{"id":"h15","pitch":{"step":"C","oct":6}}]},
+        {"id":"e18","kind":"note","m":"m8","at":"0","dur":"1","voice":"v6","staff":"st4","display":{"type":"whole"},"heads":[{"id":"h19","pitch":{"step":"C","oct":2}}]}
+      ],
+      "directions": [],
+      "spanners": [
+        {"id":"s20","type":"ottava","staff":"st3","shift":1,"from":{"m":"m7","at":"0"},"to":{"m":"m8","at":"0"}},
+        {"id":"s21","type":"ottava","staff":"st4","shift":-2,"from":{"m":"m7","at":"0"},"to":{"m":"m8","at":"0"}}
+      ]
+    }
+  ],
+  "provenance": {
+    "sources": [
+      {"id":"sr1","kind":"user"}
+    ],
+    "default": {"src":"sr1","op":"edited"}
+  }
+}

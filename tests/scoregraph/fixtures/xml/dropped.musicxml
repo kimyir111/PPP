@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Elements the import does not map (G01 Appendix A, A35): page layout (<defaults>), a <credit>, a <print>
+     with only system layout, and a <figured-bass>. The import must name each of them in report.dropped. -->
+<score-partwise version="4.0">
+  <defaults><scaling><millimeters>7</millimeters><tenths>40</tenths></scaling></defaults>
+  <credit page="1"><credit-words default-x="600" default-y="1500">A title on the page</credit-words></credit>
+  <part-list><score-part id="P1"><part-name>Continuo</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <print><system-layout><system-margins><left-margin>0</left-margin><right-margin>0</right-margin></system-margins></system-layout></print>
+      <attributes><divisions>1</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>F</sign><line>4</line></clef></attributes>
+      <figured-bass><figure><figure-number>6</figure-number></figure></figured-bass>
+      <note><pitch><step>C</step><octave>3</octave></pitch><duration>4</duration><voice>1</voice><type>whole</type></note>
+    </measure>
+  </part>
+</score-partwise>

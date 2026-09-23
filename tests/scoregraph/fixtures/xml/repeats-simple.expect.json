@@ -1,0 +1,13 @@
+{
+ "about": "bars 1-2 between a forward and a backward repeat, then bar 3",
+ "spec": "G01 \u00a76.7 (the app's Score.form rule, G0 canonical.app_play_order)",
+ "expect": {
+  "unroll": [
+   0,
+   1,
+   0,
+   1,
+   2
+  ]
+ }
+}

@@ -1,0 +1,7 @@
+{
+ "about": "a B-flat clarinet (sounds a tone below its page) and an electric bass (an octave below), pitches stored at concert (§7.2)",
+ "spec": "G01 §7.2, §9.1, A19",
+ "expect": {
+  "warnings": {}
+ }
+}

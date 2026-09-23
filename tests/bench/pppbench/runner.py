@@ -10,7 +10,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from . import VERSIONS, aggregate, corpus, evaluate, perform, stages, suite as suite_mod, util
+from . import VERSIONS, aggregate, corpus, evaluate, perform, stages, suite as suite_mod, sut as sut_mod, util
 
 OUT_DIR = os.path.join(util.bench_root(), "out")
 CACHE_DIR = os.path.join(util.bench_root(), ".cache")
@@ -158,7 +158,8 @@ def run_suite(suite: Dict[str, Any], *, audio_score: Optional[str] = None, out_d
     finished = datetime.now(timezone.utc).isoformat(timespec="seconds")
     run = {"started_at": started, "finished_at": finished, "git_sha": util.git_sha(), "git_dirty": util.git_dirty(),
            "audio_score_path": util.rel(sut) if sut.startswith(util.repo_root()) else sut,
-           "audio_score_sha256": util.content_sha256(sut), "node": notated["meta"].get("node"),
+           "audio_score_sha256": util.content_sha256(sut), **sut_mod.describe(sut),
+           "sut_modules": notated["meta"].get("sut_modules"), "node": notated["meta"].get("node"),
            "python": platform.python_version(), "platform": sys.platform, "argv": sys.argv[1:],
            "cases": len(cases), "errors": sum(1 for r in results_cases if r["status"] == "error"),
            "timing": {"total_s": round(time.perf_counter() - t0, 3), "generate_s": round(t_gen - t0, 3),
@@ -201,20 +202,29 @@ def cli_run(args) -> int:
 
 
 def resolve_sut(spec: str, name: str) -> str:
-    """``git:<rev>``, ``worktree`` or a file path -> a path to an audio-score.js."""
+    """``git:<rev>``, ``worktree`` or a file path -> a path to an audio-score.js.
+
+    ``git:<rev>`` extracts the revision's whole SUT snapshot (audio-score.js and scoregraph/, pppbench/sut.py)
+    into ``.cache/ab/<name>/`` so each side runs its own library, never the working tree's (G01 §15.4)."""
     if spec == "worktree":
         return stages.default_audio_score()
     if spec.startswith("git:"):
-        rev = spec[4:]
-        data = util.git("show", f"{rev}:audio-score.js")
-        path = os.path.join(CACHE_DIR, "ab", f"{name}.js")
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w", encoding="utf-8", newline="\n") as handle:
-            handle.write(data)
-        return path
+        return sut_mod.extract_git(spec[4:], os.path.join(CACHE_DIR, "ab", name))
     if not os.path.exists(spec):
         raise FileNotFoundError(spec)
     return os.path.abspath(spec)
+
+
+def _fixture_side(suite: Dict[str, Any], sut: str, out: str) -> Dict[str, Any]:
+    """One side of an A/B on a fixture suite (replay-public, omr-live, a private suite): the suite's own
+    runner, whose results.json and run.json the comparison then reads."""
+    import contextlib
+    import io
+    import types
+    from . import private
+    with contextlib.redirect_stdout(io.StringIO()):          # its verdict is against the stored baseline, not the other side
+        private.run_private(suite, types.SimpleNamespace(audio_score=sut, out=out))
+    return {"results": util.load_json(os.path.join(out, "results.json")), "run": util.load_json(os.path.join(out, "run.json"))}
 
 
 def cli_ab(args) -> int:
@@ -223,8 +233,14 @@ def cli_ab(args) -> int:
     a_path, b_path = resolve_sut(args.a, "a"), resolve_sut(args.b, "b")
     base = out_dir_for(suite)
     try:
-        ra = run_suite(suite, audio_score=a_path, out_dir=os.path.join(base, "ab-a"), write_cases=False)
-        rb = run_suite(suite, audio_score=b_path, out_dir=os.path.join(base, "ab-b"))
+        if "references" in suite:
+            ra = run_suite(suite, audio_score=a_path, out_dir=os.path.join(base, "ab-a"), write_cases=False)
+            rb = run_suite(suite, audio_score=b_path, out_dir=os.path.join(base, "ab-b"))
+        else:
+            ra = _fixture_side(suite, a_path, os.path.join(base, "ab-a"))
+            rb = _fixture_side(suite, b_path, os.path.join(base, "ab-b"))
+            print(f"{suite['name']}: {len(rb['results']['cases'])} cases, "
+                  f"{sum(c['status'] == 'error' for c in rb['results']['cases'])} errors on side b")
     except RunError as exc:
         print(f"ERROR {exc}")
         return 2

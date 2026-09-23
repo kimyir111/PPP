@@ -1,0 +1,7 @@
+{
+ "about": "a damper pedal with two changes and a printed line, a sostenuto pedal, a soft pedal shown only in sound, and the performed pedals (§8.4)",
+ "spec": "G01 §5.10, §8.4",
+ "expect": {
+  "warnings": {}
+ }
+}

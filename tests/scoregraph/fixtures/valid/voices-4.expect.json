@@ -1,0 +1,7 @@
+{
+ "about": "two voices on each staff of a grand staff, each filling the bar",
+ "spec": "G01 §8.1, A21",
+ "expect": {
+  "warnings": {}
+ }
+}

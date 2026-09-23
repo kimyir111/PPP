@@ -1,0 +1,9 @@
+{
+ "about": "a first bar repeated 200 times: 201 visits of 2 measures (limit 2 x 64)",
+ "spec": "G01 §13.2 E-UNROLL-RUNAWAY",
+ "expect": {
+  "errors": [
+   "E-UNROLL-RUNAWAY"
+  ]
+ }
+}

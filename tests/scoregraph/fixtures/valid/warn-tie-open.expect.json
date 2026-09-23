@@ -1,0 +1,9 @@
+{
+ "about": "a tie with only its start (a converter that wrote no stop, issue 10)",
+ "spec": "G01 §13.2 W-TIE-OPEN",
+ "expect": {
+  "warnings": {
+   "W-TIE-OPEN": 1
+  }
+ }
+}

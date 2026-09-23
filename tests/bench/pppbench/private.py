@@ -17,7 +17,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from . import VERSIONS, aggregate, corpus, evaluate, musicxml, stages, suite as suite_mod, util
+from . import VERSIONS, aggregate, corpus, evaluate, musicxml, stages, suite as suite_mod, sut as sut_mod, util
 from .perform import Performance
 from .timemap import BarStartTimeMap, StatsShapeError
 
@@ -167,6 +167,7 @@ def run_private(suite: Dict[str, Any], args) -> int:
     results = util.load_json_text(util.dumps_json(results))
     run = {"started_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "git_sha": util.git_sha(),
            "git_dirty": util.git_dirty(), "audio_score_path": sut, "audio_score_sha256": util.content_sha256(sut),
+           **sut_mod.describe(sut), "sut_modules": notated["meta"].get("sut_modules"),
            "node": notated["meta"].get("node"), "python": platform.python_version(), "platform": sys.platform,
            "cases": len(rows), "timing": {"total_s": round(time.perf_counter() - t0, 3)}}
     util.dump_json(run, os.path.join(out, "run.json"))

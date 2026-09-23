@@ -1,0 +1,9 @@
+{
+ "about": "a wedge that ends before it starts",
+ "spec": "G01 §13.2 E-SPAN-ORDER",
+ "expect": {
+  "errors": [
+   "E-SPAN-ORDER"
+  ]
+ }
+}

@@ -1,0 +1,7 @@
+{
+ "about": "two sources, a default, and prov on a part, an event, a head (with an aspect) and a measure: the §11.2 resolution order",
+ "spec": "G01 §11, A28",
+ "expect": {
+  "warnings": {}
+ }
+}

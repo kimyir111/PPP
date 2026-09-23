@@ -1,0 +1,9 @@
+{
+ "about": "a default provenance naming a source that does not exist",
+ "spec": "G01 §13.2 E-PROV",
+ "expect": {
+  "errors": [
+   "E-PROV"
+  ]
+ }
+}

@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 from typing import Any, Dict, List, Optional
 
-from . import util
+from . import sut as sut_mod, util
 
 NOTATE_JS = os.path.join(util.bench_root(), "node", "notate.js")
 
@@ -56,4 +56,8 @@ def notate_batch(jobs: List[Dict[str, Any]], *, audio_score: Optional[str] = Non
                     results[row["id"]] = row
     if len(results) != len(jobs):
         raise StageError(f"notate.js returned {len(results)} rows for {len(jobs)} jobs")
+    try:
+        sut_mod.check_closure(meta, sut)
+    except sut_mod.SutError as exc:
+        raise StageError(str(exc)) from exc
     return {"results": results, "meta": meta}

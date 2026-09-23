@@ -1,0 +1,48 @@
+{
+  "scoregraph_version": 1,
+  "id": "fx-pickup",
+  "rev": 0,
+  "nextId": 18,
+  "meta": {"title":"Pickup"},
+  "timeline": {
+    "measures": [
+      {"id":"m6","number":"0","dur":"1/4","implicit":true},
+      {"id":"m7","number":"1","dur":"3/4"},
+      {"id":"m8","number":"2","dur":"1/2"}
+    ],
+    "meters": [
+      {"id":"mt9","m":"m6","beats":[3],"beatType":4}
+    ]
+  },
+  "parts": [
+    {
+      "id": "p2",
+      "name": "Piano",
+      "instrument": {"kind":"piano","family":"keyboard"},
+      "staves": [
+        {"id":"st3","limb":"RH"},
+        {"id":"st4","limb":"LH"}
+      ],
+      "voices": [
+        {"id":"v5","staff":"st3","label":"1"}
+      ],
+      "clefs": [
+        {"id":"c10","staff":"st3","m":"m6","at":"0","sign":"G"},
+        {"id":"c11","staff":"st4","m":"m6","at":"0","sign":"F"}
+      ],
+      "events": [
+        {"id":"e12","kind":"note","m":"m6","at":"0","dur":"1/4","voice":"v5","staff":"st3","display":{"type":"quarter"},"heads":[{"id":"h13","pitch":{"step":"D","oct":5}}]},
+        {"id":"e14","kind":"note","m":"m7","at":"0","dur":"3/4","voice":"v5","staff":"st3","display":{"type":"half","dots":1},"heads":[{"id":"h15","pitch":{"step":"G","oct":5}}]},
+        {"id":"e16","kind":"note","m":"m8","at":"0","dur":"1/2","voice":"v5","staff":"st3","display":{"type":"half"},"heads":[{"id":"h17","pitch":{"step":"G","oct":4}}]}
+      ],
+      "directions": [],
+      "spanners": []
+    }
+  ],
+  "provenance": {
+    "sources": [
+      {"id":"sr1","kind":"user"}
+    ],
+    "default": {"src":"sr1","op":"edited"}
+  }
+}

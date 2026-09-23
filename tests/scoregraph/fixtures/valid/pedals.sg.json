@@ -1,0 +1,61 @@
+{
+  "scoregraph_version": 1,
+  "id": "fx-pedals",
+  "rev": 0,
+  "nextId": 21,
+  "meta": {"title":"Pedals"},
+  "timeline": {
+    "measures": [
+      {"id":"m6","number":"1","dur":"1"},
+      {"id":"m7","number":"2","dur":"1"}
+    ],
+    "meters": [
+      {"id":"mt8","m":"m6","beats":[4],"beatType":4}
+    ]
+  },
+  "parts": [
+    {
+      "id": "p2",
+      "name": "Piano",
+      "instrument": {"kind":"piano","family":"keyboard"},
+      "staves": [
+        {"id":"st3","limb":"RH"},
+        {"id":"st4","limb":"LH"}
+      ],
+      "voices": [
+        {"id":"v5","staff":"st4","label":"5"}
+      ],
+      "clefs": [
+        {"id":"c9","staff":"st3","m":"m6","at":"0","sign":"G"},
+        {"id":"c10","staff":"st4","m":"m6","at":"0","sign":"F"}
+      ],
+      "events": [
+        {"id":"e11","kind":"note","m":"m6","at":"0","dur":"1","voice":"v5","staff":"st4","display":{"type":"whole"},"heads":[{"id":"h12","pitch":{"step":"C","oct":3}}]},
+        {"id":"e13","kind":"note","m":"m7","at":"0","dur":"1","voice":"v5","staff":"st4","display":{"type":"whole"},"heads":[{"id":"h14","pitch":{"step":"C","oct":3}}]}
+      ],
+      "directions": [],
+      "spanners": [
+        {"id":"s15","type":"pedal","pedal":"damper","from":{"m":"m6","at":"0"},"to":{"m":"m7","at":"1"},"changes":[{"m":"m6","at":"1/2"},{"m":"m7","at":"0"}],"mark":{"line":true}},
+        {"id":"s17","type":"pedal","pedal":"soft","from":{"m":"m6","at":"0"},"to":{"m":"m7","at":"1"},"soundOnly":true,"depth":100},
+        {"id":"s16","type":"pedal","pedal":"sostenuto","from":{"m":"m7","at":"0"},"to":{"m":"m7","at":"1/2"},"text":"Sost. Ped."}
+      ]
+    }
+  ],
+  "performances": [
+    {
+      "id": "pf18",
+      "kind": "source",
+      "notes": [],
+      "pedals": [
+        {"id":"pp19","pedal":"damper","on":0,"off":1950000},
+        {"id":"pp20","pedal":"damper","on":2000000,"off":3950000,"depth":90}
+      ]
+    }
+  ],
+  "provenance": {
+    "sources": [
+      {"id":"sr1","kind":"user"}
+    ],
+    "default": {"src":"sr1","op":"edited"}
+  }
+}

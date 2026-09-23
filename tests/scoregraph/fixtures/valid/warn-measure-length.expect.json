@@ -1,0 +1,9 @@
+{
+ "about": "a second 4/4 measure that lasts 3/4, not implicit and not a pickup complement",
+ "spec": "G01 §13.2 W-MEASURE-LENGTH",
+ "expect": {
+  "warnings": {
+   "W-MEASURE-LENGTH": 1
+  }
+ }
+}

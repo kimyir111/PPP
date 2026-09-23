@@ -34,11 +34,12 @@ python tests/bench/run.py lint-corpus                 # check the reference regi
 python tests/bench/run.py run   --suite core          # writes tests/bench/out/core/
 python tests/bench/run.py check --suite core          # exit 0 PASS · 1 REGRESSION · 2 ERROR
 python tests/bench/run.py run   --suite robust        # a variant of the synthetic performer (see Tiers)
-python tests/bench/run.py ab --suite core --a git:HEAD --b worktree   # what did my change do?
+python tests/bench/run.py ab --suite core --a git:HEAD --b worktree   # what did my change do? (any suite, fixture suites too)
 python tests/bench/run.py golden                      # semantic + byte snapshots
 python tests/bench/run.py correctness                 # the reader against independent MusicXML fixtures
 python tests/bench/run.py known-defects               # catalogue defects PPP ships (measured, not fixed)
-python tests/bench/run.py mutation-check              # proves the gate catches 34 planted regressions
+python tests/bench/run.py sg-roundtrip                # every committed MusicXML through ScoreGraph and back (G1)
+python tests/bench/run.py mutation-check              # proves the gate catches 40 planted regressions
 python tests/bench/run.py update-baseline --suite core --reason "..."
 python tests/bench/run.py relock --suite core --reason "..."
 python tests/bench/tools/make_provenance.py [--check] # licence evidence manifest
@@ -164,9 +165,9 @@ change may make without a new baseline.
   and costs the unseen ones is the overfitting the hold-out exists to show.
 - **Cases**: a case that errors, or loses 10 diagnostic points.
 - **Known failures**: a catalogue defect count that grows fails; one that shrinks is an improvement.
-- `check` refuses results produced by an `audio-score.js` that has changed since (`STALE_RESULTS`).
+- `check` refuses results produced by an `audio-score.js` or `scoregraph/` that has changed since (`STALE_RESULTS`).
 
-`mutation-check` proves the gate works: it plants 30 regressions in a copy of `audio-score.js` —
+`mutation-check` proves the gate works: it plants 37 regressions in a copy of the SUT (see "The SUT" below) —
 the 5 original ones (hands, key, durations, metre, bar phase), the 7 from the independent review
 (tempo mark dropped, printed metre changed without the stats, an extra empty bar, no printed
 accidentals, a global-tempo quantiser, no pedal marks, minor-key leading tones spelled flat), 5
@@ -176,10 +177,20 @@ midway, a wrong metre or key signature in the last third, dots dropped, note typ
 long notes written at half length, bar numbers restarting, skipping or swapped, the bass staff in
 treble clef, trailing rests a beat short, rests typed one value long, an accidental on every note)
 and 4 from the short final review (G00 §21: a repeat sign after the middle bar, short right-hand
-bars marked `implicit="yes"`, a bar split in two with no repeat sign, no `<staves>`) — and requires
-each to be a REGRESSION naming its metric, and a no-op to leave `results.json` byte-identical.
+bars marked `implicit="yes"`, a bar split in two with no repeat sign, no `<staves>`), 3 from the final
+pass review (G00 §22: a fake split excused by a forward repeat that cannot fire, a truncated last bar,
+a bar dropped outright) and 3 in the ScoreGraph exporter (G01 A38: no `<dot/>`, no
+`<time-modification>`, treble and bass clefs swapped) — and requires each to be a REGRESSION naming
+its metric, and a no-op to leave `results.json` byte-identical.
 gate/1 missed six of the review's seven; gate/2 missed seven of the final review's ten; gate/3 at
 metrics/4 missed the repeat, the implicit bars and the split bar.
+
+**Since G1** `toMusicXml` writes its MusicXML from a ScoreGraph (`buildGraph`, then the ScoreGraph
+exporter; `buildXml` stays behind `opts.legacyWriter`, which the bench never sets). The writer
+mutations therefore make their defect in `buildGraph` — the same defect in the file as before: the
+same printed tempo, metre, key, dots, bar numbers, clef, rests, accidentals, repeat sign, implicit bars
+or split bar — and `<staves>` is dropped in the exporter. The review scripts use the same edits
+(`pppbench/mutation.py`'s `SG_*` anchors and edit lists).
 
 ## Golden snapshots
 
@@ -365,6 +376,47 @@ Node 24.21). `run.json` holds timing and the environment and is expected to diff
   (type and dots), and the key presses the app's player makes after joining ties
   (`PianoScore.ties`). A rule both get wrong passes parity; that is what `correctness` is for.
 
+## The SUT
+
+Until G1 the system under test was one file, `audio-score.js`. From G1 it also loads the ScoreGraph
+library beside it (`scoregraph/`, docs/GOALS/G01 §15.4), so the bench treats the SUT as a **snapshot**:
+`audio-score.js` plus every `*.js` under `scoregraph/`, at the same relative paths
+(`pppbench/sut.py`). Nothing else of the repository is copied.
+
+- `ab --a git:<rev>` extracts the revision's whole snapshot into `.cache/ab/a/` (a revision before G1
+  simply has no `scoregraph/`), so each side runs its own library, never the working tree's. A fixture
+  suite (`replay-public`, `omr-live`, a private suite) runs each side through its own runner.
+  `tests/scoregraph/tools/ab_identical.py --suite S` then requires every case of the two sides to have
+  the same status, metrics and semantic projection (stricter than the verdict).
+- `mutation-check` and the review scripts copy the whole snapshot into `.cache/mutations/<id>/` and
+  edit one file; a mutation's `file` names it (default `audio-score.js`).
+- `run.json` records `sut_sha256` (the snapshot's paths and content hashes, CRLF read as LF),
+  `sut_files` and `sut_modules`, the modules Node actually loaded. `audio_score_sha256` stays as in G0.
+- `notate.js` reports its module closure, and the run stops with `SUT_MODULE_OUTSIDE` or
+  `SUT_MODULE_UNDECLARED` when the SUT loads a module outside the snapshot: an A/B or a mutant would
+  otherwise mix two versions without saying so (`unit/test_sut_snapshot.py`).
+
+## ScoreGraph round trip (`sg-roundtrip`, G1)
+
+`python tests/bench/run.py sg-roundtrip` takes every committed MusicXML under `catalog/`, `samples/`,
+`tests/bench/corpus/` and `tests/fixtures/` (369 files at G1) through `MusicXML -> ScoreGraph -> MusicXML
+-> ScoreGraph` (`node/sg-roundtrip.js`; Python opens `.mxl`) and requires of each (docs/GOALS/G01 §16.2):
+
+- **L1** the app sees the same music: `semantic.classify` of the G0 projections of the original and the
+  round-tripped file (this reader, reader/4) finds no change;
+- **L1+** the same notation: `pppbench/notation_inventory.py` reads what the file prints beyond what the app
+  reads (slurs, dynamics, wedges, articulations, ornaments, fermatas, fingerings, arpeggios, chord symbols,
+  lyrics, words, rehearsal marks, grace notes, beams, stems, octave shifts, pedals, tuplet brackets, bar lines,
+  repeats, endings, part names, title, composer, transposition, ties) and both inventories are equal; its
+  docstring lists what it leaves out on purpose and why;
+- **L2** the graph is a fixed point (the source's input name and hash aside);
+- **play order** the graph's `time.unroll` is `canonical.app_play_order()` bar for bar (A17).
+
+Files that may fail are in `tests/scoregraph/roundtrip-allowlist.json` (at most three, each with its reason
+and a fixture that reproduces the difference; the command checks the fixture still fails). The import
+reports every element it does not map; the command prints the totals. Output:
+`out/sg-roundtrip/report.json`.
+
 ## Changing the SUT: the loop for later goals
 
 1. Before you start: `npm run bench` must PASS. Pick the gate and tag you are going after (for
@@ -408,7 +460,8 @@ Keep them outside the repository. A suite file there, e.g. `C:/private/ppp-bench
 | `INPUT_DRIFT` | A generated input or a reference file differs from the lock, or the baseline was recorded against another lock. | If you changed the generator, reader or a reference on purpose: `relock --reason`, then `update-baseline --reason`. Otherwise find what changed. |
 | `VERSION_MISMATCH` | `READER_VERSION`/`METRICS_VERSION`/`SQI_VERSION`/`GENERATOR_VERSION` differ from the baseline's. | Rebaseline (a new anchor starts). Bump the version whenever you change a definition. |
 | `SUITE_CHANGED` | The suite's reference set or matrix changed (order does not matter). | Relock and rebaseline with a reason. |
-| `STALE_RESULTS` | `audio-score.js` changed after the run. | Run again. |
+| `STALE_RESULTS` | `audio-score.js` or a `scoregraph/` module changed after the run. | Run again. |
+| `SUT_MODULE_OUTSIDE`, `SUT_MODULE_UNDECLARED` | The SUT loaded a module outside its snapshot (see "The SUT"). | Add the module's directory to `pppbench/sut.py` `SUT_TREES`. |
 | `NO_BASELINE` | No baseline for the suite yet. | `update-baseline`. |
 | `STATS_SHAPE` | `toMusicXml`'s `stats.barStarts` no longer has bars + 1 values. | The SUT's stats contract changed: update `pppbench/timemap.py`. |
 | `MUTATION_ANCHOR_MISSING` | A mutation's search string is no longer in `audio-score.js` exactly once. | Update the anchor in `pppbench/mutation.py`. |

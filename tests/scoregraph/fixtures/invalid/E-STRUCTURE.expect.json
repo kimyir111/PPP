@@ -1,0 +1,9 @@
+{
+ "about": "a section that ends before it starts",
+ "spec": "G01 §13.2 E-STRUCTURE",
+ "expect": {
+  "errors": [
+   "E-STRUCTURE"
+  ]
+ }
+}

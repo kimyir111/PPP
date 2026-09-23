@@ -1,0 +1,9 @@
+{
+ "about": "a note with no heads",
+ "spec": "G01 §13.2 E-HEADS",
+ "expect": {
+  "errors": [
+   "E-HEADS"
+  ]
+ }
+}

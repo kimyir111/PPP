@@ -18,11 +18,14 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }                 # the ScoreGraph tests compare package.json with the G1 base commit
       - uses: actions/setup-node@v4
         with: { node-version: '24' }          # same major as the recorded baseline
       - uses: actions/setup-python@v5
         with: { python-version: '3.13' }
       - run: python -m unittest discover -s tests/bench/unit -t tests/bench
+      - run: npm run test:scoregraph                 # the ScoreGraph library and the graphs toMusicXml writes from (G01)
+      - run: python tests/bench/run.py sg-roundtrip  # every committed MusicXML through ScoreGraph and back (G01)
       - run: python tests/bench/run.py golden
       - run: python tests/bench/run.py lint-corpus
       - run: python tests/bench/tools/make_provenance.py --check

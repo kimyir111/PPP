@@ -1,5 +1,6 @@
 import io
 import os
+import re
 import unittest
 from contextlib import redirect_stdout
 
@@ -27,7 +28,8 @@ class Golden(unittest.TestCase):
         case = {"key": "G01", "source": "micro/M01-waltz-3-4|deadpan|none|s1"}
         row = self._row("G01")
         self.assertEqual(golden._check_case(case, row)[0], "ok")
-        extra = ('<measure number="99"><note><rest measure="yes"/><duration>72</duration><voice>1</voice><staff>1</staff>'
+        div = int(re.search(r"<divisions>(\d+)</divisions>", row["xml"]).group(1))   # the file's own (G1: the fewest)
+        extra = (f'<measure number="99"><note><rest measure="yes"/><duration>{3 * div}</duration><voice>1</voice><staff>1</staff>'
                  '</note></measure></part>')
         stats = dict(row["stats"], bars=row["stats"]["bars"] + 1,
                      barStarts=row["stats"]["barStarts"] + [row["stats"]["barStarts"][-1] + 1.0])
@@ -89,8 +91,10 @@ class Golden(unittest.TestCase):
 
 class Mutation(unittest.TestCase):
     def test_every_anchor_occurs_exactly_once(self):
-        src = util.normalise_eol(util.read_text(stages.default_audio_score()).encode("utf-8")).decode("utf-8")
+        root = os.path.dirname(stages.default_audio_score())
         for m in mutation.MUTATIONS:
+            with open(os.path.join(root, *mutation.target(m).split("/")), "rb") as handle:
+                src = util.normalise_eol(handle.read()).decode("utf-8")
             for find, _ in mutation.edits(m):
                 self.assertEqual(src.count(find), 1, m["id"])
             self.assertNotEqual(mutation.apply_mutation(src, m), src)

@@ -1,0 +1,44 @@
+{
+  "scoregraph_version": 1,
+  "id": "fx-migrate",
+  "rev": 3,
+  "nextId": 13,
+  "meta": {"title":"Migrated"},
+  "timeline": {
+    "measures": [
+      {"id":"m1","number":"1","dur":"1"}
+    ],
+    "meters": [
+      {"id":"mt2","m":"m1","beats":[4],"beatType":4}
+    ],
+    "tempos": [
+      {"id":"tp12","m":"m1","at":"0","qpm":"90"}
+    ]
+  },
+  "parts": [
+    {
+      "id": "p3",
+      "instrument": {"kind":"piano","family":"keyboard"},
+      "staves": [
+        {"id":"st4","limb":"RH"}
+      ],
+      "voices": [
+        {"id":"v5","staff":"st4","label":"1"}
+      ],
+      "clefs": [
+        {"id":"c6","staff":"st4","m":"m1","at":"0","sign":"G"}
+      ],
+      "events": [
+        {"id":"e7","kind":"note","m":"m1","at":"0","dur":"1","voice":"v5","staff":"st4","display":{"type":"whole"},"heads":[{"id":"h8","pitch":{"step":"C","oct":5}}]}
+      ],
+      "directions": [],
+      "spanners": []
+    }
+  ],
+  "provenance": {
+    "sources": [
+      {"id":"sr9","kind":"user"}
+    ],
+    "default": {"src":"sr9","op":"edited"}
+  }
+}

@@ -28,7 +28,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from . import stages, suite as suite_mod, util
+from . import stages, suite as suite_mod, sut as sut_mod, util
 from .metrics.critical import GATES as CRITICAL_GATES
 
 BASELINE_DIR = os.path.join(util.bench_root(), "baselines")
@@ -342,6 +342,9 @@ def stale_reason(run: Dict[str, Any]) -> Optional[str]:
         return f"the SUT {sut} of the last run no longer exists"
     if util.content_sha256(sut_abs) != run.get("audio_score_sha256"):
         return f"{os.path.basename(sut_abs)} changed after the run"
+    # G1: the SUT is a snapshot (audio-score.js + scoregraph/); a run.json from before G1 has no sut_sha256
+    if run.get("sut_sha256") is not None and sut_mod.sut_sha256(sut_abs) != run["sut_sha256"]:
+        return f"the SUT snapshot ({', '.join(sut_mod.SUT_TREES)}/ beside {os.path.basename(sut_abs)}) changed after the run"
     return None
 
 

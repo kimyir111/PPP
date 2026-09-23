@@ -1,0 +1,9 @@
+{
+ "about": "C#5 and Db5 in one chord",
+ "spec": "G01 §13.2 W-HEAD-UNISON",
+ "expect": {
+  "warnings": {
+   "W-HEAD-UNISON": 1
+  }
+ }
+}

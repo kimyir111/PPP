@@ -1,0 +1,9 @@
+{
+ "about": "a slur with only its end",
+ "spec": "G01 §13.2 W-SLUR-OPEN",
+ "expect": {
+  "warnings": {
+   "W-SLUR-OPEN": 1
+  }
+ }
+}
