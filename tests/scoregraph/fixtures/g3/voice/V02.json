@@ -1,0 +1,22 @@
+{
+ "about": "a second voice with only rests in a measure has no events there (it is not needed)",
+ "spec": "G03 §8.2 V02",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "E5:w | E5:w",
+  "rh2": "C5:w | r:w",
+  "lh": "C3:w | C3:w"
+ },
+ "passes": [
+  "staff",
+  "voice",
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "rh": "E5:w | E5:w // C5:w | "
+ }
+}

@@ -1,0 +1,23 @@
+{
+ "about": "a note P2 must move (a left-hand chord of 16 semitones) onto a staff where it would overlap goes to the second voice of that staff , with rests you can see around it: never an E-VOICE-OVERLAP",
+ "spec": "G03 §8.2 V05",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "C6:q D6:q E6:q F6:q",
+  "lh": "C3:h C3+E5:h"
+ },
+ "passes": [
+  "staff",
+  "voice",
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "rh": "C6:q D6:q E6:q F6:q // r:h E5:h",
+  "lh": "C3:h C3:h",
+  "voices": 3
+ }
+}

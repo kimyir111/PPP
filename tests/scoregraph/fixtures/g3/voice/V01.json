@@ -1,0 +1,22 @@
+{
+ "about": "a second voice with a gap: the gap becomes a rest you can see",
+ "spec": "G03 §8.2 V01",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "E5:q E5:q E5:q E5:q",
+  "rh2": "C5:h r:8=1/4 r:8=1/4",
+  "lh": "C3:w"
+ },
+ "passes": [
+  "staff",
+  "voice",
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "rh": "E5:q E5:q E5:q E5:q // C5:h r:h"
+ }
+}

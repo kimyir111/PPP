@@ -11,7 +11,8 @@
    Codes: w h q 8 16 32 64, a dot per "."; inside a 3:2 group a value lasts 2/3 of its printed value.
 
    mk(spec) builds a frozen, validated graph (one part, a voice per staff: label "1" on the upper staff,
-   "5" on the lower, like audio-score). render(graph) gives back the same language, one string per staff. */
+   "5" on the lower, like audio-score; rh2 and lh2 add second voices "2" and "6"). render(graph) gives back the same
+   language, one string per staff, a staff's voices joined by " // ". */
 'use strict';
 const { SG } = require('./helpers.js');
 const R = SG.rational;
@@ -79,11 +80,16 @@ function mk(spec) {
   const lines = [spec.rh, spec.lh].filter(x => x !== undefined);
   const staves = lines.map((_, i) => b.staff(part, { limb: i === 0 ? 'RH' : 'LH' }).id);
   const voices = lines.map((_, i) => b.voice(part, { staff: staves[i], label: i === 0 ? '1' : '5' }).id);
+  /* second voices: rh2 on the upper staff (label 2), lh2 on the lower (label 6), written after the first ones */
+  [['rh2', 0, '2'], ['lh2', 1, '6']].forEach(([k, si, label]) => {
+    if (spec[k] === undefined) return;
+    lines.push(spec[k]); staves.push(staves[si]); voices.push(b.voice(part, { staff: staves[si], label: label }).id);
+  });
   const ms = durs.map((d, i) => b.measure(Object.assign({ number: String(i + 1), dur: R.format(d) }, spec.implicitFirst && i === 0 ? { implicit: true } : {})).id);
   b.meter(Object.assign({ m: ms[0], beats: [time[0]], beatType: time[1] }, spec.groups ? { groups: spec.groups } : {}));
   if (spec.key !== null) b.key({ m: ms[0], at: '0', fifths: (spec.key || {}).fifths || 0, mode: (spec.key || {}).mode || 'major' });
   b.tempo({ m: ms[0], at: '0', qpm: '120' });
-  staves.forEach((st, i) => b.clef(part, { staff: st, m: ms[0], at: '0', sign: i === 0 ? 'G' : 'F' }));
+  Array.from(new Set(staves)).forEach((st, i) => b.clef(part, { staff: st, m: ms[0], at: '0', sign: i === 0 ? 'G' : 'F' }));
   const perf = spec.perf ? b.performance({ kind: 'source', src: src.id }) : null;
   const ties = [], tupl = [], linked = [];
   lines.forEach((line, si) => {
