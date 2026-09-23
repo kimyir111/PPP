@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| 상태 | 설계 (Architect, 2026-09-23) · **구현 COMPLETE (2026-09-23): §24** · **독립 리뷰 READY_TO_PR (2026-09-23): §25** (BLOCKER 0, MAJOR 1, MINOR 5). MAJOR R1(transposing·미분음이 울리는 음을 바꿈)은 merge 전 사용자 결정 D7이 필요하다 |
+| 상태 | 설계 (Architect) · **구현 COMPLETE: §24** · **독립 리뷰: §25** (BLOCKER 0, MAJOR 1, MINOR 5) · **D7 해결 (2026-09-23): §26** → **BLOCKER 0, MAJOR 0**. MINOR는 R3·R6 조치 완료, R2 판정 기록, R4·R5 권고로 남아 merge를 막지 않는다 |
 | 기준 커밋 | `origin/main` = `00081cc` (G1 follow-up PR #3까지 merge됨) |
 | 브랜치 / worktree | `g2-import` / `D:/PPP-g2` |
 | 선행 | G0 Quality Foundation (CLOSED), G1 ScoreGraph (CLOSED) |
@@ -41,6 +41,7 @@
 - [23. 문서 hygiene](#23-문서-hygiene)
 - [24. 구현 기록](#24-구현-기록-g2-implementer-2026-09-23) · [D3와 flip](#248-d3-결정과-그-구현-2026-09-23)
 - [25. 독립 리뷰](#25-독립-리뷰-independent-review-2026-09-23)
+- [26. D7 — 적히는 음과 울리는 음](#26-d7--적히는-음과-울리는-음-2026-09-23)
 - [부록 A. 이 세션의 측정 기록](#부록-a-이-세션의-측정-기록)
 
 ---
@@ -1432,6 +1433,8 @@ awkward case도 직접 확인했다: 같은 음 겹침은 FIFO로 짝지어지�
 
 ### 25.2 R1 (MAJOR) — 울리는 음을 바꾸는 차이가 `chord-head-order`로 들어가 있었다
 
+> **해결됨 (2026-09-23): §26.** 사용자가 D7을 결정했고 그대로 구현됐다. 아래는 당시의 기록이다.
+
 allowlist의 23개 파일 중 **2개는 chord 순서 문제가 아니라 울리는 음이 다르다**. 그런데 둘 다 `chord-head-order`로 적혀 있었고, 그 사유의 설명은 "nothing here changes which notes sound"였다.
 
 | 파일 | 앱이 울리는 음 | 그래프가 울리는 음 |
@@ -1513,8 +1516,76 @@ MINOR로 두는 이유: 바뀌는 것은 스스로 "It is not a model, and it is
 
 ### 25.10 merge 전에 남은 일
 
-1. **D7 결정** — transposing part에서 written을 울릴지 sounding을 울릴지, 미분음을 어느 쪽으로 반올림할지(R1). 지금은 written 조표에 sounding 음높이라 자기모순이고 경고가 없다. **이것만이 merge를 막는 항목이다.**
+1. ~~**D7 결정**~~ — **끝났다 (§26)**: graph는 concert, 화면은 written, 소리는 concert.
 2. 음이 4개 미만인 `.mid`의 오류 메시지를 사실대로 바꾸고 한계를 문서화한다 (R4).
 3. `shadow --check`와 `app-import-check`를 nightly CI에 붙일지 정한다 (R5).
 
-1번은 결정이 필요하고, 2·3번은 merge를 막지 않는다.
+1번은 §26으로 닫혔다. 2·3번은 merge를 막지 않는다.
+
+---
+
+## 26. D7 — 적히는 음과 울리는 음 (2026-09-23)
+
+§25의 MAJOR R1을 닫는다.
+
+### 26.1 결정 (사용자, D7)
+
+레이어마다 말하는 음높이를 정한다. "written이냐 sounding이냐" 중 하나를 고르는 것이 아니다.
+
+| 레이어 | 음높이 |
+| --- | --- |
+| **canonical ScoreGraph** | concert(울리는) 음. `<transpose>`는 metadata로 보존하고, written은 **파생값**이다 |
+| **notation / UI** | transposing part는 **written pitch와 written key**로 표시한다 |
+| **playback / sound** | concert 음 |
+
+즉 Bb 악기가 C로 적혀 있으면 — graph는 Bb, 화면은 C, 소리는 Bb다.
+G1의 concert-pitch canonical 구조(G01 §7.2)를 그대로 유지한다.
+
+### 26.2 무엇이 틀려 있었나
+
+graph는 concert, projection도 concert, 그런데 조표만 written이었다. 화면에 C major 조표를 두고 음은 장2도 아래로 그려, **어느 쪽도 아닌 악보**가 나왔다. 경고도 없었다.
+
+### 26.3 무엇을 고쳤나 (production 3파일)
+
+1. **`scoregraph/legacy-score.js`** — transpose가 있는 part의 음에만 `writtenP`/`writtenMidi`를 붙인다(`P.written`으로 파생). `p`/`midi`는 concert 그대로다. transpose가 없는 part에는 **아무것도 붙이지 않으므로** 피아노 Score는 이전과 바이트 단위로 같다.
+2. **`Piano Coach App.dc.html`의 `Score.finalize`** — 8va를 "적힌 음"이 아니라 **"울리는 음"에 더한다**(`n.writtenMidi + shift` → `n.midi + shift`), 그리고 옥타브를 옮기는 철자도 울리는 쪽이다. `writtenP`/`writtenMidi`가 없을 때 — 이 변경 이전의 **모든** Score — 두 값은 같으므로 이 줄은 no-op이다.
+3. **`scoregraph/musicxml-import.js` + `import.js`** — `report.normalized`를 처음으로 채운다. A13이 요구했는데 아무도 쓰지 않던 배열이다. 지금 두 항목이 들어간다: `concert-pitch`(transposing part를 concert로 저장했다), `microtone`(미분음을 반음으로 반올림했다).
+
+앱에는 이미 `writtenP`(sheet가 읽는다, App 10659)와 `soundingMidi`(player가 읽는다, App 2866)가 8va용으로 있었다. D7은 **새 source of truth를 만들지 않고 그 배관에 얹었다**.
+
+임시기호는 **적힌 윗자를 따른다**. 클라리넷 fixture의 셋째 음은 그래프에서 `pitch = E5`, `acc = sharp`다 — E에 샤프가 붙은 것처럼 보이지만, `acc`는 G1 설계대로 **인쇄된 임시기호**이고 인쇄되는 음은 F#5다. 렌더러는 `writtenP`로 F#5을 그리므로 화면은 파일과 같다.
+
+### 26.4 각 소비자가 읽는 음
+
+| 소비자 | 읽는 값 | 음높이 |
+| --- | --- | --- |
+| 악보 렌더러 (App 10659 `written()`) | `writtenP` | **written** |
+| PianoScore → 재생 (App 2866) | `soundingMidi` | concert |
+| falling notes / 건반 (App 2998 `strike.midi`) | plan의 strike | concert |
+| 연습 음높이 매칭 (App 4945) | `n.midi` | concert |
+| leap 추정 (App 3665 `deriveSections`) | `n.midi` | concert |
+| `Coach.structural` (App 7916) | `n.midi` | concert |
+| `Fingering.events` (App 8523) | `n.midi` | concert |
+
+렌더러 하나만 written을 읽고 나머지는 전부 concert다. 운지·leap·난이도가 concert인 것은 의도다 — PPP는 피아노로 친다. 화면에 무엇이 적혀 있든 **사람이 누르는 건반은 울리는 음**이고, 운지는 그 건반의 것이다. transpose=0인 PPP의 실제 워크플로에서는 written == concert라 이 구분이 보이지 않는다.
+
+### 26.5 미분음
+
+canonical JSON의 기보 쪽은 float를 담지 않는다(G01 §14.2, A3). 그래서:
+
+- **exact value는 graph에 남는다** — `head.ext['musicxml.microtone'].alter`에 파일이 쓴 **텍스트 그대로**(`"0.5"`). export가 그대로 되쓴다.
+- 기보 pitch의 `alter`는 0에서 먼 쪽으로 반올림한 정수다.
+- **조용히 넘어가지 않는다**: `W-IMPORT-MICROTONE` 경고, ImportReport의 `normalized`에 `microtone` 항목, 그리고 projection된 음에 `approx: 'microtone'` 표시.
+
+이 Goal에서 quarter-tone 조판이나 오디오 엔진은 만들지 않는다.
+
+### 26.6 shadow allowlist
+
+`transposing`과 `microtone-quarter-sharp`은 **allowlist에 남는다**. 둘 다 `parseMusicXML`과 다른 음을 울리고, 그것이 **의도**이기 때문이다 — 옛 reader는 transposing part에서 적힌 음을 그대로 울렸고 그것은 그냥 틀렸다. 차이는 `notes.set`으로 나오고 `chord-head-order`로는 절대 들어가지 않는다(§25.2의 가드). 사유 본문을 "미결"에서 "D7으로 결정됨"으로 고쳤다.
+
+`chord-head-order`의 17개 파일은 이번 변경의 영향을 받지 않는다. 카탈로그에는 transposing part도 미분음도 없다.
+
+### 26.7 테스트
+
+- `tests/scoregraph/pitch-layers.test.js` (**CI에서 돈다**) — A: Bb 클라리넷 + 옥타브 베이스의 graph/written/sound. B: 피아노 파일은 `writtenP`·`writtenMidi`·`soundingMidi`를 **얻지 않는다**. B2: fixture 29개 + 카탈로그 5개에서 written pitch는 **transpose가 있을 때만** 나타난다. C: 미분음의 exact 보존과 `approx` 표시. C2: `normalized`가 일어난 것만 정확히 적는다.
+- `tests/scoregraph/tools/pitch-layers-check.js` (로컬, 다른 두 page 검사와 같은 취급) — 실제 페이지에서 sheet가 written을 그리고 player가 concert를 울리는지, 피아노 파일과 8va 파일이 그대로인지, 되돌리기가 영향을 받지 않는지.

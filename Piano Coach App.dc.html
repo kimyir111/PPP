@@ -3576,9 +3576,13 @@ const Score = {
         n.writtenMidi = n.writtenMidi == null ? n.midi : n.writtenMidi;
         const shift = shiftAt(n);
         n.ottavaShift = shift;
-        n.soundingMidi = n.writtenMidi + shift;
+        /* `p`/`midi` are the pitch that sounds before any 8va, and `writtenP`/`writtenMidi` are what
+           is printed. They are the same note unless the part transposes, where the graph import
+           fills both in (G02 §26): a B-flat clarinet is printed a tone above what it sounds. So the
+           8va is added to what sounds, not to what is printed. */
+        n.soundingMidi = n.midi + shift;
         n.midi = n.soundingMidi;
-        if (n.writtenP) n.p = shiftPitchOctave(n.writtenP, shift);
+        if (n.p) n.p = shiftPitchOctave(n.p, shift);
       } else if (!n.rest && n.midi != null) {
         n.midi = n.soundingMidi;
       }

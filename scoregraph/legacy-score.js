@@ -220,6 +220,13 @@
         const n = parseInt(v.label, 10);
         return [v.id, isFinite(n) ? n : i + 1];
       }));
+      /* D7. The graph holds the pitch that sounds; a transposing part is printed somewhere else.
+         `p` and `midi` stay concert, because that is what every sound-making consumer reads, and
+         the printed pitch goes in `writtenP`/`writtenMidi`, which is where the sheet renderer
+         already looks (App 10659) and where the app's own octave-shift handling puts it. A piano
+         does not transpose, so nothing below fires for it and its Score is untouched. */
+      const tr = part.instrument && part.instrument.transpose;
+      const transposes = !!(tr && (tr.chromatic || tr.diatonic || tr.octave));
       part.events.forEach(e => {
         const mi = mIndex.get(e.m);
         if (mi === undefined) return;
@@ -274,6 +281,14 @@
             finger: h.fingering && h.fingering.length ? intOr(h.fingering[0].f) : undefined,
             sgHead: h.id
           });
+          if (transposes && h.pitch) {
+            const w = P.written(h.pitch, tr);
+            n.writtenP = pitchName(w);
+            n.writtenMidi = P.midi(w);
+          }
+          /* the file said a quarter-tone and the Score has no way to say one: the exact value is in
+             the graph (head.ext), and the note it projects to is marked as the approximation it is */
+          if (h.ext && h.ext['musicxml.microtone']) n.approx = 'microtone';
           if (arpHeads.has(h.id)) n.arp = true;
           if (hi === 0 && accent) n.accent = true;
           if (hi === 0 && marcato) n.marcato = true;

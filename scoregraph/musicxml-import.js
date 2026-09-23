@@ -106,7 +106,7 @@
 
   function importMusicXml(text, opts) {
     opts = opts || {};
-    const report = { issues: [], dropped: {} };
+    const report = { issues: [], dropped: {}, normalized: [] };
     const fail = (code, message) => ({ ok: false, code: code, message: message, report: report });
     let tree;
     try { tree = X.parse(text); } catch (e) { return fail('IMPORT-BAD-XML', e.message); }
@@ -134,6 +134,11 @@
     const txt = (el, name) => { const k = kid(el, name); return k ? k.text.trim() : undefined; };
     const issue = (code, message) => report.issues.push({ code: code, severity: 'WARNING', message: message });
     const drop = name => { report.dropped[name] = (report.dropped[name] || 0) + 1; };
+    /* A13: a change the graph made to say the file at all, named once however often it happened.
+       Nothing may alter a value without appearing here. */
+    const normalize = (what, detail) => {
+      if (!report.normalized.some(n => n.what === what)) report.normalized.push({ what: what, detail: detail });
+    };
     let docIndex = 0;
 
     /* -------------------------------------------------------------- header */
@@ -337,6 +342,10 @@
             const t = { chromatic: jsInt(txt(tr, 'chromatic')) || 0, diatonic: jsInt(txt(tr, 'diatonic')) || 0 };
             const oc = jsInt(txt(tr, 'octave-change'));
             if (oc) t.octave = oc;
+            /* D7: <pitch> is what is printed; the graph stores what sounds, and the printed
+               pitch and key are derived back from <transpose> (G01 §7.2). */
+            if (t.chromatic || t.diatonic || t.octave)
+              normalize('concert-pitch', 'a transposing part is stored at concert pitch; the written pitch and key are derived from <transpose>');
             if (!part.transpose) part.transpose = t;
             else if (JSON.stringify(part.transpose) !== JSON.stringify(t)) drop('transpose (a change)');
           }
@@ -417,6 +426,7 @@
                 ' is written as ' + alter + '; the file\'s value is kept in ext');
               /* the file's own text, not a parsed number: the notation side of a graph holds no floats
                  (G01 §14.2), and the text is what a round trip has to give back */
+              normalize('microtone', 'a microtonal <alter> is rounded to a whole semitone for the notation pitch; the value the file wrote is kept in head ext and written back on export');
               head.ext = { 'musicxml.microtone': { alter: String(alterT).trim() } };
             }
             const accEl = kid(n, 'accidental');
