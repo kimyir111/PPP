@@ -67,7 +67,9 @@ function parseLine(line, measureDurs) {
 }
 
 /* spec: {time: [4, 4], durs?: ['1', …], key?: {fifths, mode}, op?: 'inferred'|'imported'|'edited', rh: '…', lh?: '…',
-          perf?: true (a source performance with a note linked to every sounding head), id?} */
+          perf?: true (a source performance with a note linked to every sounding head), id?,
+          heard?: [W length or null, …] (with perf: how long each sounding note was held, in the order the lines give
+          them, a chord's heads alike; default its tie-merged written length less a millisecond)} */
 function mk(spec) {
   const time = spec.time || [4, 4];
   const bar = R.make(time[0], time[1]);
@@ -94,6 +96,7 @@ function mk(spec) {
   Array.from(new Set(staves)).forEach((st, i) => b.clef(part, { staff: st, m: ms[0], at: '0', sign: i === 0 ? 'G' : 'F' }));
   const perf = spec.perf ? b.performance({ kind: 'source', src: src.id }) : null;
   const ties = [], tupl = [], linked = [];
+  let noteNo = 0;
   lines.forEach((line, si) => {
     const { items, groups } = parseLine(line, durs);
     let pending = null;
@@ -105,7 +108,11 @@ function mk(spec) {
       if (it.kind === 'note') {
         const start = !pending;
         if (pending) ev.heads.forEach(h => { const from = pending.find(f => SG.pitch.midi(f.pitch) === SG.pitch.midi(h.pitch)); if (from) ties.push({ from: from.id, to: h.id }); });
-        if (start) ev.heads.forEach(h => linked.push({ h: h, m: it.m, at: it.at, dur: it.dur }));
+        if (start) { const k = spec.heard ? noteNo++ : 0; ev.heads.forEach(h => linked.push({ h: h, m: it.m, at: it.at, dur: it.dur, heard: spec.heard ? spec.heard[k] : null })); }
+        else linked.filter(l => pending && pending.some(f => l.h.id === f.id || l.tail === f.id)).forEach(l => {
+          const nh = ev.heads.find(h => SG.pitch.midi(h.pitch) === SG.pitch.midi(l.h.pitch));
+          if (nh) { l.dur = R.add(l.dur, it.dur); l.tail = nh.id; }
+        });
         pending = it.tie ? ev.heads : null;
       }
     });
@@ -124,7 +131,8 @@ function mk(spec) {
     durs.forEach((d, i) => { starts.push(R.add(starts[i], d)); });
     linked.forEach(l => {
       const w = R.add(starts[l.m], l.at);
-      const on = Math.round(R.toNumber(w) * 2000000), off = on + Math.round(R.toNumber(l.dur) * 2000000) - 1000;
+      const on = Math.round(R.toNumber(w) * 2000000);
+      const off = l.heard ? on + Math.round(R.toNumber(R.parse(l.heard)) * 2000000) : on + Math.round(R.toNumber(l.dur) * 2000000) - 1000;
       b.perfNote(perf, { on: on, off: Math.max(on + 1, off), vel: 64, midi: SG.pitch.midi(l.h.pitch), link: l.h.id });
     });
   }

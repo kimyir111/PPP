@@ -97,7 +97,7 @@
   /* ------------------------------------------------------------ the passes, in §5.3 order */
   function passList(opts) {
     const all = [
-      Pstaff.staff, Pvoice.voice, Prhythm.regularize, Prhythm.rhythm, Ptuplet.tuplet, Pspell.spell, Pbeam.beam,
+      Pstaff.staff, Pvoice.voice, Prhythm.perfVoices, Prhythm.regularize, Prhythm.rhythm, Ptuplet.tuplet, Pspell.spell, Pbeam.beam,
       Pmarks.marks, Pstaff.ottava
     ].filter(Boolean);
     return all.filter(p => {

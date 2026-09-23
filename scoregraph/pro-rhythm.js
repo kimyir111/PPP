@@ -23,9 +23,9 @@
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports)
-    module.exports = factory(require('./rational.js'), require('./schema.js'), require('./pitch.js'), require('./ops.js'), require('./meter-grid.js'));
-  else { const M = root.PPPScoreGraphModules = root.PPPScoreGraphModules || {}; M.proRhythm = factory(M.rational, M.schema, M.pitch, M.ops, M.meterGrid); }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (R, S, P, O, MG) {
+    module.exports = factory(require('./rational.js'), require('./schema.js'), require('./pitch.js'), require('./ops.js'), require('./meter-grid.js'), require('./time.js'));
+  else { const M = root.PPPScoreGraphModules = root.PPPScoreGraphModules || {}; M.proRhythm = factory(M.rational, M.schema, M.pitch, M.ops, M.meterGrid, M.time); }
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (R, S, P, O, MG, T) {
   'use strict';
 
   const U = MG.U;
@@ -383,13 +383,246 @@
     void tieOut;
   }
 
-  /* R-reg (G3b, §6.4): off by default (D1). Implemented in Step 14. */
+  /* ------------------------------------------------------------ R-reg (G3b, §6.4) */
+  /* R-reg moves where a note's notated length ends, never where it starts, so that the voice-measure is written with
+     fewer, plainer symbols: cost = the R-repr cost of the writing + λ · Σ |end' − end| / IOI, subject to
+       C1 the onset stays;  C2 end' ≤ the next onset of the voice (and the measure's end);
+       C3 |end' − end| ≤ max(1/32 W, 0.35 · IOI);  C4 end' never earlier than the heard release, when it moves earlier;
+       C5 a note released within half its IOI keeps its rest (a clear detachment: staccato is §12.3's opt, not this).
+     The heard release is the linked PerfNote's `off`, read through the performance's time map. A note with no linked
+     PerfNote, or whose tied end leaves the measure, is left as written. Only the last piece of a note moves; the rests
+     after it are written again; R-repr (the next pass) rewrites the pieces.
+
+     OFF by default and in production until three real recordings (simple duple, simple triple, compound) are the
+     baseline λ is set on (D1, M11): λ = 1 below is a placeholder no benchmark has chosen, and the pass has been run on
+     synthetic fixtures only (tests/scoregraph/g3-regularize.test.js). */
+  const REG = Object.freeze({ LAMBDA: 1, BUDGET_MIN: U / 32, BUDGET_IOI: 0.35, DETACHED: 0.5 });
+
+  /* how long each linked head was held, in W, by the first performance's time map */
+  function heardLengths(g) {
+    const out = new Map();
+    const perf = (g.performances || [])[0];
+    if (!perf) return out;
+    let map;
+    /* a graph without a tempo mark is read at 120 quarters a minute (the tempo map needs a default) */
+    try { map = T.perfTimeMap(g, perf.id, { defaultQpm: 120 }); } catch (e) { return out; }
+    perf.notes.forEach(pn => {
+      if (pn.link === undefined || !(pn.off > pn.on)) return;
+      try { out.set(pn.link, R.sub(T.playbackW(g, map.fromUs(pn.off)), T.playbackW(g, map.fromUs(pn.on)))); } catch (e) { /* off the map */ }
+    });
+    return out;
+  }
+
+  /* the cheapest writing's cost of [a, b) as a note (tied pieces) or a rest, in regions computed with the new point */
+  function stretchCost(gr, points, a, b, kind) {
+    if (b <= a) return 0;
+    const w = writeSegment(gr, regions(gr, points), { kind: kind, s: a, e: b });
+    return w ? w.cost : Infinity;
+  }
+
   const regularize = Object.freeze({
     name: 'regularize',
     g3b: true,
     may: ['sound', 'rests', 'pieces', 'tuplets', 'beams', 'acc'],
-    run(g, ctx) { void ctx; return { graph: g, idMap: {}, changes: [] }; }
+    run(g, ctx) {
+      const changes = [];
+      const heard = heardLengths(g);
+      if (!heard.size) return { graph: g, idMap: {}, changes: changes };
+      const res = O.edit(g, d => {
+        const batch = [];
+        g.parts.forEach(part => {
+          const tieOut = new Map(), tieIn = new Map(), evOfHead = new Map();
+          part.events.forEach(e => (e.heads || []).forEach(h => evOfHead.set(h.id, e)));
+          part.spanners.forEach(sp => { if (sp.type === 'tie' && sp.from !== undefined && sp.to !== undefined) { tieOut.set(sp.from, sp.to); tieIn.set(sp.to, sp.from); } });
+          const vms = new Map();
+          part.events.forEach(e => {
+            if (e.grace) return;
+            const k = e.voice + '|' + e.m;
+            if (!vms.has(k)) vms.set(k, { voice: e.voice, m: e.m, evs: [] });
+            vms.get(k).evs.push(e);
+          });
+          vms.forEach(vm => {
+            if (ctx.skip.has(vm.m)) return;
+            vm.evs.sort((a, b) => R.cmp(R.parse(a.at), R.parse(b.at)));
+            if (ctx.perm.events(part, vm.evs, 'rhythm') !== 'rewrite') return;
+            const gr = ctx.grid(g, vm.m);
+            if (!gr) return;
+            /* tuplets and tied pieces are R-repr's and P5's to write again; a voice-measure with any tuplet is left */
+            if (part.spanners.some(sp => sp.type === 'tuplet' && sp.events.some(id => vm.evs.some(e => e.id === id)))) return;
+            const segs = segments(part, vm.evs, tieOut, tieIn, evOfHead);
+            if (!segs || segs === 'off-grid') return;
+            const inside = new Set(vm.evs.map(e => e.id));
+            const points = new Set();
+            segs.forEach(sg => { points.add(sg.s); points.add(sg.e); });
+            const ends = new Map();                     /* segment index -> its new end */
+            segs.forEach((sg, i) => {
+              if (sg.kind !== 'note') return;
+              const last = sg.events[sg.events.length - 1];
+              /* a tie leaving the voice-measure: the note goes on elsewhere */
+              if (last.heads.some(h => { const to = tieOut.get(h.id); return to !== undefined && !inside.has((evOfHead.get(to) || {}).id); })) return;
+              let nxt = gr.durU;
+              for (let j = i + 1; j < segs.length; j++) if (segs[j].kind === 'note') { nxt = segs[j].s; break; }
+              const ioi = nxt - sg.s;
+              const lens = sg.events[0].heads.map(h => heard.get(h.id)).filter(Boolean);
+              if (ioi <= 0 || !lens.length) return;
+              /* a chord is held as long as its longest head */
+              const held = Math.round(Math.max.apply(null, lens.map(x => R.toNumber(x))) * U);
+              const heardEnd = sg.s + held;
+              const budget = Math.max(REG.BUDGET_MIN, Math.floor(REG.BUDGET_IOI * ioi));
+              const detached = held <= REG.DETACHED * ioi;
+              const lastStart = toU(last.at);
+              const cost = e2 => {
+                const pts = new Set(points);
+                pts.delete(sg.e);
+                pts.add(e2);
+                return stretchCost(gr, pts, sg.s, e2, 'note') + stretchCost(gr, pts, e2, nxt, 'rest') +
+                  Math.round(REG.LAMBDA * 1000 * Math.abs(e2 - sg.e) / ioi);
+              };
+              let best = sg.e, bestCost = cost(sg.e);
+              /* candidate ends on the binary grid of the measure (a voice-measure with tuplets is not R-reg's) */
+              const lo = Math.max(lastStart + BIN_STEP, sg.e - budget), hi = Math.min(nxt, sg.e + budget);
+              for (let e2 = Math.ceil((lo + gr.off) / BIN_STEP) * BIN_STEP - gr.off; e2 <= hi; e2 += BIN_STEP) {
+                if (e2 === sg.e) continue;
+                if (e2 < sg.e && e2 < heardEnd) continue;          /* C4 */
+                if (e2 > sg.e && detached) continue;               /* C5 */
+                const c = cost(e2);
+                if (c < bestCost) { best = e2; bestCost = c; }
+              }
+              if (best !== sg.e) ends.set(i, { from: sg.e, to: best, nxt: nxt });
+            });
+            if (!ends.size) return;
+            /* the plan: every event kept, the last piece of a moved note to its new end, the rests after it written again */
+            const fmt = x => MG.fromU(x);
+            const plan = [];
+            const dropRests = [];
+            ends.forEach(x => dropRests.push([Math.min(x.from, x.to), x.nxt]));
+            const inGap = e => e.kind === 'rest' && dropRests.some(([a, b]) => toU(e.at) >= a && toU(e.at) < b);
+            const newRests = [];
+            ends.forEach(x => {
+              if (x.to >= x.nxt) return;
+              const pts = new Set(points);
+              pts.delete(x.from);
+              pts.add(x.to);
+              const w = writeSegment(gr, regions(gr, pts), { kind: 'rest', s: x.to, e: x.nxt });
+              (w ? w.syms : [{ s: x.to, e: x.nxt, type: null }]).forEach(sy => newRests.push({ kind: 'rest', at: fmt(sy.s), dur: fmt(sy.e - sy.s),
+                display: sy.type ? (sy.dots ? { type: sy.type, dots: sy.dots } : { type: sy.type }) : undefined, g3: true }));
+            });
+            const lastOf = new Map();
+            ends.forEach((x, i) => { const sg = segs[i]; lastOf.set(sg.events[sg.events.length - 1].id, x.to); });
+            vm.evs.forEach(e => {
+              if (inGap(e)) return;
+              const p = d.keepPlan(d.event(e.id));
+              if (lastOf.has(e.id)) {
+                const len = lastOf.get(e.id) - toU(e.at);
+                p.dur = fmt(len);
+                const v = MG.BINARY.find(b => b.len === len);
+                p.display = v ? (v.dots ? { type: v.type, dots: v.dots } : { type: v.type }) : e.display;
+                p.g3 = true;
+              }
+              plan.push(p);
+            });
+            newRests.forEach(r => plan.push(r));
+            plan.sort((a, b) => R.cmp(R.parse(a.at), R.parse(b.at)));
+            batch.push({ voice: vm.voice, m: vm.m, plan: plan });
+          });
+        });
+        const out = d.retimeBatch(batch);
+        batch.forEach((it, k) => {
+          out[k].forEach((id, i) => { if (it.plan[i].g3) d.markProv(d.event(id), ['rhythm', 'display']); });
+          changes.push({ pass: 'regularize', kind: 'release', ids: out[k], m: it.m });
+        });
+      }, { validate: false, source: ctx.source });
+      return { graph: res.graph, idMap: res.idMap, changes: changes };
+    }
   });
 
-  return Object.freeze({ rhythm, regularize, segments, regions, write, writeSegment, currentCost, rewrite, sameWriting, TRIPLET });
+  /* ------------------------------------------------------------ voices from the performance (G3b, §8.3) */
+  /* A chord has one length, so a note held under the notes after it is written short: the writer cut it at the next
+     onset. The performance says how long it was held. A note of a staff's first voice held past two or more later
+     onsets of that voice, all of them shorter, goes to the staff's second voice (label 2 or 6) with the one value
+     nearest what was heard (within R-reg's budget, max(1/32 W, 0.35 × held)), where the second voice has nothing
+     else in the measure. Its IDs stay; both voices' rests are written again. At most two voices a staff; nothing
+     added or removed. OFF by default and in production until M11 (D1), like R-reg; synthetic fixtures only. */
+  const FIRST = { '1': '2', '5': '6' };
+  const perfVoices = Object.freeze({
+    name: 'perf-voices',
+    g3b: true,
+    may: ['place', 'sound', 'rests', 'pieces', 'tuplets', 'beams', 'acc'],
+    run(g, ctx) {
+      const changes = [];
+      const heard = heardLengths(g);
+      if (!heard.size) return { graph: g, idMap: {}, changes: changes };
+      const res = O.edit(g, d => {
+        g.parts.forEach((gpart, pi) => {
+          const part = d.doc.parts[pi];
+          const tieOut = new Map(), tieIn = new Map(), evOfHead = new Map();
+          gpart.events.forEach(e => (e.heads || []).forEach(h => evOfHead.set(h.id, e)));
+          gpart.spanners.forEach(sp => { if (sp.type === 'tie' && sp.from !== undefined && sp.to !== undefined) { tieOut.set(sp.from, sp.to); tieIn.set(sp.to, sp.from); } });
+          const tupled = new Set();
+          gpart.spanners.forEach(sp => { if (sp.type === 'tuplet') sp.events.forEach(id => tupled.add(id)); });
+          gpart.voices.forEach(v1 => {
+            const label2 = FIRST[v1.label];
+            if (!label2) return;
+            const existing = gpart.voices.find(x => x.staff === v1.staff && x.label === label2);
+            g.timeline.measures.forEach(meas => {
+              if (ctx.skip.has(meas.id)) return;
+              const evs = gpart.events.filter(e => e.voice === v1.id && e.m === meas.id && !e.grace)
+                .sort((a, b) => R.cmp(R.parse(a.at), R.parse(b.at)));
+              if (!evs.length || evs.some(e => tupled.has(e.id)) || ctx.perm.events(gpart, evs, 'voice') !== 'rewrite') return;
+              if (existing && gpart.events.some(e => e.voice === existing.id && e.m === meas.id)) return;
+              const gr = ctx.grid(g, meas.id);
+              if (!gr) return;
+              const segs = segments(gpart, evs, tieOut, tieIn, evOfHead);
+              if (!segs || segs === 'off-grid') return;
+              const notes = segs.filter(sg => sg.kind === 'note');
+              /* the first such note of the measure (one a measure: the second voice is then taken) */
+              for (const sg of notes) {
+                const e = sg.events[0];
+                if (sg.events.length !== 1 || e.heads.some(h => tieOut.has(h.id) || tieIn.has(h.id))) continue;
+                const lens = e.heads.map(h => heard.get(h.id));
+                if (lens.some(x => !x)) continue;
+                const held = Math.round(Math.min.apply(null, lens.map(x => R.toNumber(x))) * U);
+                const later = notes.filter(x => x.s > sg.s);
+                if (later.length < 2 || !(sg.s + held > later[1].s)) continue;
+                const budget = Math.max(U / 32, Math.floor(0.35 * held));
+                const room = gr.durU - sg.s;
+                const v = MG.BINARY.filter(b => b.len <= room && Math.abs(b.len - held) <= budget)
+                  .sort((a, b) => Math.abs(a.len - held) - Math.abs(b.len - held) || a.dots - b.dots)[0];
+                if (!v || v.len <= sg.e - sg.s) continue;
+                /* the notes under it are shorter, and one symbol writes it where it starts */
+                if (later.some(x => x.s < sg.s + v.len && x.e - x.s >= v.len)) continue;
+                const w = writeSegment(gr, regions(gr, new Set([sg.s, sg.s + v.len])), { kind: 'note', s: sg.s, e: sg.s + v.len });
+                if (!w || w.syms.length !== 1) continue;
+                /* move it, then write both voices' measures again */
+                const v2 = existing ? existing.id : (gpart.voices.some(x => x.staff === v1.staff && x.label === label2) ? null : d.addVoice(v1.staff, label2, part));
+                if (!v2) return;
+                d.moveEvent(e.id, v2, v1.staff);
+                const restsOf = (a, b) => {
+                  if (b <= a) return [];
+                  const rw = writeSegment(gr, regions(gr, new Set([a, b])), { kind: 'rest', s: a, e: b });
+                  return (rw ? rw.syms : [{ s: a, e: b, type: 'quarter', dots: 0 }]).map(sy => ({ kind: 'rest', at: MG.fromU(sy.s), dur: MG.fromU(sy.e - sy.s),
+                    display: sy.dots ? { type: sy.type, dots: sy.dots } : { type: sy.type } }));
+                };
+                const moved = d.keepPlan(d.event(e.id));
+                moved.dur = MG.fromU(v.len);
+                moved.display = v.dots ? { type: v.type, dots: v.dots } : { type: v.type };
+                moved.g3 = true;
+                const plan2 = restsOf(0, sg.s).concat([moved], restsOf(sg.s + v.len, gr.durU));
+                /* the first voice keeps everything else; the span the note leaves becomes rests (any rests after it stay) */
+                const rest1 = d.voiceMeasure(v1.id, meas.id).filter(x => x.id !== e.id).map(x => d.keepPlan(x));
+                const plan1 = rest1.concat(restsOf(sg.s, sg.e)).sort((a, b) => R.cmp(R.parse(a.at), R.parse(b.at)));
+                const out = d.retimeBatch([{ voice: v2, m: meas.id, plan: plan2 }, { voice: v1.id, m: meas.id, plan: plan1 }]);
+                out[0].forEach((id, i) => { if (plan2[i].g3) d.markProv(d.event(id), ['rhythm', 'display']); });
+                changes.push({ pass: 'perf-voices', kind: 'second-voice', ids: [e.id], m: meas.id });
+                break;
+              }
+            });
+          });
+        });
+      }, { validate: false, source: ctx.source });
+      return { graph: res.graph, idMap: res.idMap, changes: changes };
+    }
+  });
+
+  return Object.freeze({ rhythm, regularize, perfVoices, segments, regions, write, writeSegment, currentCost, rewrite, sameWriting, TRIPLET, REG, heardLengths });
 });
