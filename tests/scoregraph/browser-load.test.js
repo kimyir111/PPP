@@ -10,7 +10,7 @@ const { REPO, SG, xml } = require('./helpers.js');
 
 /* the order the app's HTML loads them in (index.js last) */
 const ORDER = ['rational', 'schema', 'pitch', 'time', 'serialize', 'validate', 'build', 'prov', 'ops', 'xml',
-  'musicxml-import', 'musicxml-export', 'index'];
+  'musicxml-import', 'musicxml-export', 'midi-file', 'midi-import', 'legacy-score', 'import', 'index'];
 
 test('the script order names every scoregraph file', () => {
   const files = fs.readdirSync(path.join(REPO, 'scoregraph')).filter(f => f.endsWith('.js')).map(f => f.slice(0, -3)).sort();
@@ -24,7 +24,7 @@ test('loaded as scripts in a bare context they leave a working PPPScoreGraph glo
   const B = ctx.PPPScoreGraph;
   assert.ok(B, 'PPPScoreGraph is defined');
   assert.equal(B.version, SG.version);
-  assert.equal(B.SCOREGRAPH_VERSION, 1);
+  assert.equal(B.SCOREGRAPH_VERSION, 2);
   /* the browser build gives the same bytes as the Node one */
   const r = B.musicxml.import(xml('grand-staff'), { scoreId: 'browser' });
   assert.equal(r.ok, true);

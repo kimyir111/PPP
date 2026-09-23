@@ -218,12 +218,34 @@ test('a piano part and a drum part share one timeline and validate: kit of 8, tw
   assert.equal(g.timeline.measures.length, 4);
 });
 
-test('percussion is refused without an exception: <unpitched> on import, perc events on export (A26)', () => {
-  const r = SG.musicxml.import(xml('unpitched'));
-  assert.deepEqual([r.ok, r.code], [false, 'IMPORT-UNSUPPORTED-UNPITCHED']);
-  const g = SG.parse(read(path.join(FIX, 'valid', 'drums-with-piano.sg.json')));
-  const x = SG.musicxml.export(g);
-  assert.deepEqual([x.ok, x.code], [false, 'EXPORT-UNSUPPORTED-PERC']);
+test('percussion comes in as perc events with the kit the file names, and goes back out (A7, G02 §17)', () => {
+  const r = importXml(xml('unpitched'));
+  const part = r.graph.parts[0];
+  assert.equal(part.instrument.family, 'percussion');
+  assert.equal(part.staves[0].kind, 'percussion');
+  assert.deepEqual(part.instrument.kit.items,
+    [{ key: 'bass-drum', name: 'Bass Drum', pos: { step: 'F', oct: 4 } }]);
+  assert.deepEqual(part.events.map(e => e.kind), ['perc']);
+  assert.deepEqual(part.events[0].heads.map(h => [h.inst, h.pos.step + h.pos.oct]), [['bass-drum', 'F4']]);
+  assert.deepEqual(r.report.dropped, {}, 'nothing of a drum part is dropped');
+  assert.equal(SG.validate(r.graph).ok, true);
+  /* and back: the kit piece becomes a <score-instrument> the note points at again */
+  const x = SG.musicxml.export(r.graph);
+  assert.equal(x.ok, true, x.message);
+  assert.match(x.xml, /<unpitched><display-step>F<\/display-step><display-octave>4<\/display-octave><\/unpitched>/);
+  assert.match(x.xml, /<instrument id="P1-I1"\/>/);
+  const back = importXml(x.xml);
+  assert.deepEqual(back.graph.parts[0].instrument.kit.items, part.instrument.kit.items);
+  assert.deepEqual(back.graph.parts[0].events.map(e => e.kind), ['perc']);
+  /* a piano and a drum part in one graph write and read back the same way */
+  const both = SG.parse(read(path.join(FIX, 'valid', 'drums-with-piano.sg.json')));
+  const bx = SG.musicxml.export(both);
+  assert.equal(bx.ok, true, bx.message);
+  const bback = importXml(bx.xml);
+  assert.deepEqual(bback.graph.parts.map(p => p.instrument.family), both.parts.map(p => p.instrument.family));
+});
+
+test('a file that is not score-partwise XML is refused as a value, never as an exception', () => {
   assert.deepEqual([SG.musicxml.import('<score-timewise/>').code, SG.musicxml.import('<nope').code], ['IMPORT-TIMEWISE', 'IMPORT-BAD-XML']);
 });
 
@@ -242,4 +264,52 @@ test('the XML reader refuses what a MusicXML file must not have: entities, unclo
   assert.throws(() => X.parse('<a/>junk'), e => e.code === 'bad-xml');
   assert.equal(X.parse('<a x="1 &amp; 2">&#233;&#x41;<![CDATA[<b>]]></a>').root.text, 'éA<b>');
   assert.equal(X.parse('<a x="1 &amp; 2"/>').root.attrs.x, '1 & 2');
+});
+
+/* Writing a part used to scan every event once per measure, so export was O(measures x events): 467 ms
+   at 16,000 heads, 2,120 ms at 36,000, 8,142 ms at 72,000. The corpus maximum is 1,776 heads, so nothing
+   in G1 could see it; a real sonata movement can be ten times that (G02 §15.2, A30). */
+function synthetic(bars) {
+  const b = SG.builder({ id: 'scale', source: { kind: 'generator' } });
+  const p = b.part({ instrument: { kind: 'piano', family: 'keyboard' } });
+  const st1 = b.staff(p, { limb: 'RH' }).id, st2 = b.staff(p, { limb: 'LH' }).id;
+  const v1 = b.voice(p, { staff: st1, label: '1' }).id, v2 = b.voice(p, { staff: st2, label: '5' }).id;
+  for (let i = 0; i < bars; i++) {
+    const m = b.measure({ number: String(i + 1), dur: '1' }).id;
+    if (i === 0) {
+      b.meter({ m: m, beats: [4], beatType: 4 });
+      b.clef(p, { staff: st1, m: m, at: '0', sign: 'G' }); b.clef(p, { staff: st2, m: m, at: '0', sign: 'F' });
+      b.tempo({ m: m, at: '0', qpm: '120' });
+      b.key({ m: m, at: '0', fifths: 0 });
+    }
+    for (let k = 0; k < 4; k++) {
+      const at = SG.rational.format(SG.rational.make(k, 4));
+      b.event(p, { kind: 'note', m: m, at: at, dur: '1/4', voice: v1, staff: st1, display: { type: 'quarter' },
+        heads: [{ pitch: { step: 'C', oct: 5 } }, { pitch: { step: 'E', oct: 5 } }] });
+    }
+    for (let k = 0; k < 2; k++) {
+      const at = SG.rational.format(SG.rational.make(k, 2));
+      b.event(p, { kind: 'note', m: m, at: at, dur: '1/2', voice: v2, staff: st2, display: { type: 'half' },
+        heads: [{ pitch: { step: 'C', oct: 3 } }] });
+    }
+  }
+  return b.finish().graph;
+}
+
+test('export grows with the score, not with its square (A30)', () => {
+  const small = synthetic(1600), large = synthetic(3600);   /* 16,000 and 36,000 heads */
+  const heads = g => g.parts[0].events.reduce((s, e) => s + e.heads.length, 0);
+  assert.equal(heads(small), 16000);
+  assert.equal(heads(large), 36000);
+  const ms = g => {
+    const t0 = process.hrtime.bigint();
+    const x = SG.musicxml.export(g);
+    assert.equal(x.ok, true, x.message);
+    return Number(process.hrtime.bigint() - t0) / 1e6;
+  };
+  ms(small);                                                 /* warm up, so the first call is not the slow one */
+  const a = ms(small), b = ms(large);
+  assert.ok(b < 1500, 'writing 36,000 heads took ' + b.toFixed(0) + ' ms');
+  /* 2.25x the heads: quadratic would be about 5x the time, linear about 2.25x */
+  assert.ok(b / a < 3.0, '36,000 heads took ' + (b / a).toFixed(1) + 'x the time of 16,000 (' + a.toFixed(0) + ' -> ' + b.toFixed(0) + ' ms)');
 });

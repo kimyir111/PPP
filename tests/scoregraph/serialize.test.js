@@ -73,20 +73,20 @@ test('the canonical text passes the lint: first key, no null, no empty optional 
 
 test('an entity array element is a single line; containers put one member per line', () => {
   const s = SG.serialize(SG.parse(read(path.join(FIX, 'valid', 'piano-waltz.sg.json'))));
-  assert.match(s, /^\{\n  "scoregraph_version": 1,\n  "id": "sg-example-waltz",\n/);
+  assert.match(s, /^\{\n  "scoregraph_version": 2,\n  "id": "sg-example-waltz",\n/);
   assert.match(s, /\n    "measures": \[\n      \{"id":"m7","number":"0","dur":"1\/4","implicit":true\},\n/);
   assert.match(s, /\n      "directions": \[\n        \{"id":"d45"/);
 });
 
 test('a version that is missing, not an integer or newer than the code is refused with E-VERSION (A13)', () => {
   const g = JSON.parse(read(path.join(FIX, 'valid', 'piano-waltz.sg.json')));
-  const bad = [undefined, '1', 1.5, 2, 99];
+  const bad = [undefined, '2', 1.5, 3, 99];
   bad.forEach(v => {
     const d = Object.assign({}, g);
     if (v === undefined) delete d.scoregraph_version; else d.scoregraph_version = v;
     assert.throws(() => SG.parse(JSON.stringify(d)), e => e.code === 'E-VERSION', String(v));
   });
-  /* an older version with no migration registered is refused too (v1 is the first version) */
+  /* an older version with no migration registered is refused too: v1 has a step, v0 does not */
   assert.throws(() => SG.parse(read(path.join(__dirname, 'migrations', 'v0.json'))), e => e.code === 'E-VERSION');
 });
 
@@ -102,12 +102,22 @@ test('a registered migration chain upgrades a document step by step and keeps it
     return out;
   };
   const text = read(path.join(__dirname, 'migrations', 'v0.json'));
-  const g = SG.parse(text, { migrations: { 0: v0to1 } });
+  /* one step on its own: stopping at 1 shows what v0 -> v1 alone produces */
+  const g = SG.parse(text, { migrations: { 0: v0to1 }, current: 1 });
   const expected = read(path.join(__dirname, 'migrations', 'v1.sg.json'));
   assert.equal(SG.serialize(g), expected);
   const ids = s => (s.match(/"id":\s*"[a-z]+\d+"/g) || []).map(x => x.replace(/\s/g, '')).sort();
   const before = ids(text), after = ids(expected);
   before.forEach(id => assert.ok(after.includes(id), id + ' kept'));
+  /* and the registered chain carries the same document the rest of the way (G02 §18: 1 -> 2 relabels) */
+  const full = SG.parse(text, { migrations: { 0: v0to1, 1: SG.MIGRATIONS[1] } });
+  assert.equal(full.scoregraph_version, 2);
+  assert.equal(SG.serialize(full), expected.replace('"scoregraph_version": 1', '"scoregraph_version": 2'));
+  /* the real table has the 1 -> 2 step, so a committed v1 document migrates with no options at all */
+  const v1 = JSON.parse(expected);
+  const v2 = SG.migrate(v1);
+  assert.equal(v2.scoregraph_version, 2);
+  assert.deepEqual(Object.assign({}, v2, { scoregraph_version: 1 }), v1);
   /* a chain of two steps (the pretend versions 1 -> 2 -> 3 with the current version raised for the test) */
   const step = n => doc => Object.assign({}, doc, { scoregraph_version: n + 1, ext: Object.assign({}, doc.ext, { ['test.step' + n]: n }) });
   const up = SG.migrate(JSON.parse(expected), { current: 3, migrations: { 1: step(1), 2: step(2) } });

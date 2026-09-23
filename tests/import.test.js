@@ -285,7 +285,9 @@ async function importFile(page, file, waitMs) {
     'helper note wiring');
   ok('YouTube links are recognised in every usual form', kinds.yt.every(id => id === '2WfaotSK3mI'), kinds.yt.join(','));
   ok('anything that is not one YouTube video is refused', kinds.notYt.every(id => id === null), kinds.notYt.join(','));
-  ok('unsupported types are refused up front', kinds.midi === null && kinds.junk === null);
+  /* G2 reads MIDI: the notes and their times are the file's, the notation is PPP's (G02 D3) */
+  ok('a MIDI file is recognised, and a text file is still refused', kinds.midi === 'midi' && kinds.junk === null,
+    'midi=' + kinds.midi + ' junk=' + kinds.junk);
   ok('only pictures go through OMR', kinds.omrPdf && kinds.omrImg && !kinds.omrXml);
 
   console.log('\n── tablet file picker ──');

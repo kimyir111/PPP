@@ -209,6 +209,9 @@
         sortBy(pf.notes, x => [isObj(x) && Number.isInteger(x.on) ? x.on : Infinity, isObj(x) && x.midi !== undefined ? 0 : 1,
           isObj(x) && Number.isInteger(x.midi) ? x.midi : 0, isObj(x) && typeof x.inst === 'string' ? x.inst : '', num(x && x.id)]);
         sortBy(pf.pedals, x => [isObj(x) && Number.isInteger(x.on) ? x.on : Infinity, num(x && x.id)]);
+        sortBy(pf.controls, x => [isObj(x) && Number.isInteger(x.us) ? x.us : Infinity,
+          isObj(x) && Number.isInteger(x.track) ? x.track : -1, isObj(x) && Number.isInteger(x.channel) ? x.channel : -1,
+          isObj(x) && Number.isInteger(x.cc) ? x.cc : -1, num(x && x.id)]);
         sortBy(pf.anchors, x => {
           const vi = isObj(x) ? order.get(x.m + '|' + x.k) : undefined;
           return [vi === undefined ? Infinity : vi, ratKey(x && x.at), mIdx(x && x.m), isObj(x) && Number.isInteger(x.k) ? x.k : 0];
@@ -238,7 +241,7 @@
     Timeline: { measures: ['e'], meters: ['e'], keys: ['e'], tempos: ['e'], endings: ['e'], jumps: ['e'] },
     Part: { staves: ['e'], voices: ['e'], clefs: ['e'], events: ['e'], directions: ['e'], spanners: ['e'] },
     Structure: { sections: ['e'], phrases: ['e'] },
-    Performance: { notes: ['e'], pedals: ['e'], anchors: ['e'] },
+    Performance: { notes: ['e'], pedals: ['e'], controls: ['e'], anchors: ['e'] },
     Provenance: { sources: ['e'], flags: ['e'] }
   };
   function layoutContainer(obj, shape, ind) {
@@ -266,8 +269,13 @@
   }
 
   /* ------------------------------------------------------ versions (§14.4) */
-  /* MIGRATIONS[v]: doc_v -> doc_{v+1}, pure JSON -> JSON. Empty: v1 is the first version. */
-  const MIGRATIONS = Object.freeze({});
+  /* MIGRATIONS[v]: doc_v -> doc_{v+1}, pure JSON -> JSON. v1 is the first version.
+     1 -> 2 (G02 §18): every v2 addition is an optional field, so a v1 document is already a valid v2
+     one and the step only relabels it. Written out rather than left implicit so that migrate() keeps
+     refusing a version it has no step for. */
+  const MIGRATIONS = Object.freeze({
+    1: doc => Object.assign({}, doc, { scoregraph_version: 2 })
+  });
   function migrate(doc, opts) {
     const current = opts && opts.current != null ? opts.current : S.SCOREGRAPH_VERSION;
     const table = (opts && opts.migrations) || MIGRATIONS;

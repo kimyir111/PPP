@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A score that states no time signature anywhere. G1 refused it; G2 assumes 4/4, prints
+     nothing, and reports W-IMPORT-METER-ASSUMED (G02 s6.3, A8). -->
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Chant</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1"><attributes><divisions>2</divisions><key><fifths>0</fifths></key><clef><sign>G</sign><line>2</line></clef></attributes><note><pitch><step>C</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type></note><note><pitch><step>D</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type></note><note><pitch><step>E</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type></note><note><pitch><step>F</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type></note></measure>
+  </part>
+</score-partwise>

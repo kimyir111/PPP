@@ -76,7 +76,7 @@ tests/bench/           + sg-roundtrip 명령, 다중 파일 SUT(audio-score.js +
 | --- | --- | --- |
 | S0–S1 | G1 | 라이브러리와 코퍼스 round-trip (production 영향 없음) |
 | **S2** | **G1** | **`toMusicXml` writer가 ScoreGraph를 거친다** (G0으로 음악적 차이 0을 증명) |
-| S3 | G2 | 앱 import가 ScoreGraph를 거치고, legacy adapter가 Score를 만든다. 곡 기록에 그래프를 저장한다 |
+| **S3** | **G2** | **완료** — 앱 import가 ScoreGraph를 거치고 legacy adapter가 Score를 만든다. MIDI가 새 producer로 들어왔다. 곡 기록에 그래프를 저장하는 것만 보류 (G02 §24.10) |
 | S4 | G2–G3 | 리뷰 재작성이 그래프를 직접 채택한다 |
 | S5 | G4–G5 | 렌더러와 재생이 ScoreGraph를 읽는다 |
 | S6 | G5–G7 | 편곡 입출력 |
@@ -95,6 +95,25 @@ heard notes (초) ─► toMusicXml ─► buildGraph ─► ScoreGraph ─► m
                                                   │ graph, graphIssues도 반환 (앱은 아직 쓰지 않음)
                                      opts.legacyWriter ─► buildXml ─► MusicXML (되돌리기 경로)
 ```
+
+### G2 구현 후 (2026-09-23, 브랜치 `g2-import`)
+
+G2는 **producer 쪽 경계**를 연다. 전문과 근거는 `docs/GOALS/G02_SCORE_IMPORT.md`.
+
+```
+ bytes ─► Import Adapter ─┬─► musicxml-import.js (넓힘) ──┐
+ (.musicxml/.mxl/.mid)    │                                ├─► ScoreGraph ─► ImportReport
+                          └─► midi-file.js ─► RawMidi ─────┘         │
+                              midi-import.js  (신규, 무손실)          ▼
+                                                            toLegacyScore ─► 앱 Score
+```
+
+- 새 파일은 셋뿐이다: `scoregraph/import.js`(container·encoding·format), `scoregraph/midi-file.js`(SMF → RawMidi), `scoregraph/midi-import.js`(RawMidi → 그래프). 전부 `scoregraph/` 안이라 G1의 다중 파일 SUT 스냅샷에 자동으로 들어간다.
+- **MIDI는 연주지 악보가 아니다**: 무손실 performance 층 + `op:'inferred'`로 표시한 최소 기보 skeleton까지만 만든다. 리듬 양자화·성부 분리·손 배정은 G3다.
+- **import 경계는 throw하지 않는다** (G2-D3). 파일 하나의 결함이 서비스를 죽이지 않는다.
+- schema는 `scoregraph_version` **2**다 (MIDI track·channel, 일반 CC, barline fermata, glissando, multiple-rest).
+- **S3 완료.** 사람이 여는 파일은 그래프를 거쳐 `legacy-score.js`의 `toScore`가 앱 `Score`로 만든다. `parseMusicXML`은 `PPP.legacyImport`로 한 릴리스 남는 되돌리기 경로다. 앱이 스스로 만든 XML(녹음·편곡·OMR)은 아직 옛 경로이고, 그것이 S4/S5다.
+- `.mid`가 열린다: 무손실 performance + `audio-score.js`의 기존 quantizer가 만든 **inferred** 기보. 세 곳에서 추론임을 말한다 (G02 §24.8).
 
 ## 3. 품질 측정의 자리
 

@@ -1,5 +1,5 @@
 /* ============================================================================
-   PPP ScoreGraph — schema v1 as data (docs/GOALS/G01 §5, §14.2)
+   PPP ScoreGraph — the schema as data (docs/GOALS/G01 §5, §14.2; v2 in G02 §18)
 
    Every entity and every nested value object is a shape: an ordered list of
    fields. The order is the canonical key order of the serializer (§14.2); the
@@ -18,7 +18,11 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (R) {
   'use strict';
 
-  const SCOREGRAPH_VERSION = 1;
+  /* 2 (G02 §18): a performance note names its MIDI track and channel, a performance carries the raw
+     controller stream, a bar line can hold a fermata, a glissando is a spanner, a measure can be part of
+     a multi-measure rest, and ext reaches KeyEvent, TempoEvent and Staff. Every addition is optional, so
+     a v1 document migrates by relabelling (serialize.js MIGRATIONS[1]). */
+  const SCOREGRAPH_VERSION = 2;
 
   const NOTE_TYPES = ['maxima', 'long', 'breve', 'whole', 'half', 'quarter', 'eighth', '16th', '32nd', '64th',
     '128th', '256th', '512th', '1024th'];
@@ -110,21 +114,24 @@
     Timeline: [f('measures', T.arr(T.obj('Measure'), 1), req), f('meters', T.arr(T.obj('MeterEvent')), req),
       f('keys', T.arr(T.obj('KeyEvent'))), f('tempos', T.arr(T.obj('TempoEvent'))),
       f('endings', T.arr(T.obj('Ending'))), f('jumps', T.arr(T.obj('Jump')))],
+    /* multiRest: this measure opens a multi-measure rest of that many measures. The measures are all
+       still here (MusicXML keeps them); only how they are printed changes (v2, G02 §18 S6). */
     Measure: [f('id', T.id('m'), req), f('number', T.str(), req), f('dur', T.rat(), req),
-      f('implicit', T.bool(), { def: false }), f('barline', T.obj('BarlinePair')), f('layout', T.obj('Layout')),
-      f('prov', T.obj('ProvRef')), f('ext', T.ext())],
+      f('implicit', T.bool(), { def: false }), f('multiRest', T.int(2)), f('barline', T.obj('BarlinePair')),
+      f('layout', T.obj('Layout')), f('prov', T.obj('ProvRef')), f('ext', T.ext())],
     BarlinePair: [f('left', T.obj('Barline')), f('right', T.obj('Barline'))],
-    /* times: E-REPEAT, not E-SHAPE, below 2 */
-    Barline: [f('style', T.en(BAR_STYLES)), f('repeat', T.en(['forward', 'backward'])), f('times', T.int())],
+    /* times: E-REPEAT, not E-SHAPE, below 2. fermata: a pause written over the bar line itself (v2) */
+    Barline: [f('style', T.en(BAR_STYLES)), f('repeat', T.en(['forward', 'backward'])), f('times', T.int()),
+      f('fermata', T.obj('Fermata'))],
     Layout: [f('newSystem', T.bool(), { def: false }), f('newPage', T.bool(), { def: false }), f('width', T.num3(0))],
     MeterEvent: [f('id', T.id('mt'), req), f('m', T.ref(['m']), req), f('beats', T.arr(T.int(1), 1), req),
       f('beatType', T.int(), req), f('symbol', T.en(['common', 'cut', 'single-number', 'normal'])),
       f('groups', T.arr(T.rat())), f('hidden', T.bool(), { def: false })],
     KeyEvent: [f('id', T.id('ky'), req), f('m', T.ref(['m']), req), f('at', T.rat(), req), f('fifths', T.int(), req),
-      f('mode', T.en(MODES)), f('scope', T.obj('KeyScope')), f('hidden', T.bool(), { def: false })],
+      f('mode', T.en(MODES)), f('scope', T.obj('KeyScope')), f('hidden', T.bool(), { def: false }), f('ext', T.ext())],
     KeyScope: [f('part', T.ref(['p']), req), f('staff', T.ref(['st']))],
     TempoEvent: [f('id', T.id('tp'), req), f('m', T.ref(['m']), req), f('at', T.rat(), req), f('qpm', T.rat()),
-      f('mark', T.obj('TempoMark')), f('display', T.arr(T.obj('Display')))],
+      f('mark', T.obj('TempoMark')), f('display', T.arr(T.obj('Display'))), f('ext', T.ext())],
     TempoMark: [f('unit', T.en(NOTE_TYPES)), f('dots', T.int(1, 4)), f('perMinute', T.rat()), f('text', T.str()),
       f('parens', T.bool(), { def: false })],
     Ending: [f('id', T.id('en'), req), f('numbers', T.arr(T.int()), req), f('text', T.str()),
@@ -149,7 +156,7 @@
     KitItem: [f('key', T.str(KIT_KEY_RE), req), f('name', T.str()), f('gm', T.int(27, 87)),
       f('pos', T.obj('StepOct'), req), f('notehead', T.en(NOTEHEADS)), f('stem', T.en(['up', 'down']))],
     Staff: [f('id', T.id('st'), req), f('kind', T.en(['standard', 'percussion', 'tab']), { def: 'standard' }),
-      f('lines', T.int(0, 10), { def: 5 }), f('limb', T.en(LIMBS))],
+      f('lines', T.int(0, 10), { def: 5 }), f('limb', T.en(LIMBS)), f('ext', T.ext())],
     Voice: [f('id', T.id('v'), req), f('staff', T.ref(['st']), req), f('label', T.str()), f('limb', T.en(LIMBS))],
     /* line's default depends on sign (serialize.js CLEF_LINE) */
     Clef: [f('id', T.id('c'), req), f('staff', T.ref(['st']), req), f('m', T.ref(['m']), req), f('at', T.rat(), req),
@@ -207,14 +214,14 @@
 
     /* --- spanners (tagged union on type) */
     Spanner: [f('id', T.id('s'), req),
-      f('type', T.en(['tie', 'slur', 'tuplet', 'beam', 'wedge', 'pedal', 'ottava', 'arpeggio']), req),
-      /* tie and slur name their ends by ID; wedge, pedal and ottava by position (validate.js SPANNER_FIELDS) */
+      f('type', T.en(['tie', 'slur', 'tuplet', 'beam', 'wedge', 'pedal', 'ottava', 'arpeggio', 'gliss']), req),
+      /* tie, slur and gliss name their ends by ID; wedge, pedal and ottava by position (validate.js SPANNER_FIELDS) */
       f('kind', T.en(['crescendo', 'diminuendo']), { req: true, only: ['wedge'] }),
       f('pedal', T.en(['damper', 'sostenuto', 'soft']), { req: true, only: ['pedal'] }),
       f('staff', T.ref(['st']), { only: ['wedge', 'ottava'] }),
       f('shift', T.ints([-3, -2, -1, 1, 2, 3]), { req: true, only: ['ottava'] }),
-      f('from', null, { only: ['tie', 'slur', 'wedge', 'pedal', 'ottava'] }),
-      f('to', null, { only: ['tie', 'slur', 'wedge', 'pedal', 'ottava'] }),
+      f('from', null, { only: ['tie', 'slur', 'wedge', 'pedal', 'ottava', 'gliss'] }),
+      f('to', null, { only: ['tie', 'slur', 'wedge', 'pedal', 'ottava', 'gliss'] }),
       f('changes', T.arr(T.obj(POS)), { only: ['pedal'] }),
       f('events', T.arr(T.ref(['e'])), { only: ['tuplet', 'beam'] }),
       f('heads', T.arr(T.ref(['h'])), { only: ['arpeggio'] }),
@@ -222,10 +229,13 @@
       f('actual', T.int(), { req: true, only: ['tuplet'] }), f('normal', T.int(), { req: true, only: ['tuplet'] }),
       f('unit', T.obj('TupletUnit'), { only: ['tuplet'] }), f('parent', T.ref(['s']), { only: ['tuplet'] }),
       f('show', T.obj('TupletShow'), { only: ['tuplet'] }), f('printed', T.bool(), { def: true, only: ['tuplet'] }),
-      f('placement', T.en(PLACEMENTS), { only: ['slur', 'wedge'] }),
-      f('line', T.en(['solid', 'dashed', 'dotted']), { only: ['slur'] }),
+      f('placement', T.en(PLACEMENTS), { only: ['slur', 'wedge', 'gliss'] }),
+      /* MusicXML line-type; wavy is what a glissando usually draws */
+      f('line', T.en(['solid', 'dashed', 'dotted', 'wavy']), { only: ['slur', 'gliss'] }),
+      /* a slide is continuous, a glissando steps through the scale; MusicXML writes them as two elements */
+      f('slide', T.bool(), { def: false, only: ['gliss'] }),
       f('niente', T.bool(), { def: false, only: ['wedge'] }),
-      f('mark', T.obj('PedalMark'), { only: ['pedal'] }), f('text', T.str(), { only: ['pedal'] }),
+      f('mark', T.obj('PedalMark'), { only: ['pedal'] }), f('text', T.str(), { only: ['pedal', 'gliss'] }),
       f('soundOnly', T.bool(), { def: false, only: ['pedal'] }), f('depth', T.int(1, 127), { only: ['pedal'] }),
       f('dir', T.en(['up', 'down']), { only: ['arpeggio'] }), f('non', T.bool(), { def: false, only: ['arpeggio'] }),
       f('prov', T.obj('ProvRef')), f('ext', T.ext())],
@@ -246,10 +256,16 @@
     /* --- performances */
     Performance: [f('id', T.id('pf'), req), f('kind', T.en(['source', 'take', 'render']), req), f('src', T.ref(['sr'])),
       f('label', T.str()), f('notes', T.arr(T.obj('PerfNote')), req), f('pedals', T.arr(T.obj('PerfPedal'))),
-      f('anchors', T.arr(T.obj('Anchor')))],
+      f('controls', T.arr(T.obj('PerfControl'))), f('anchors', T.arr(T.obj('Anchor')))],
+    /* track and channel are where the note came from, not what it means: a MIDI file states them and a
+       round trip has to give them back (v2, G02 S18 S1). track is the 0-based chunk order. */
     PerfNote: [f('id', T.id('pn'), req), f('on', T.int(), req), f('off', T.int(), req), f('vel', T.int(), req),
-      f('midi', T.int(0, 127)), f('inst', T.str(KIT_KEY_RE)), f('part', T.ref(['p'])), f('link', T.ref(['h'])),
-      f('conf', T.conf())],
+      f('midi', T.int(0, 127)), f('inst', T.str(KIT_KEY_RE)), f('part', T.ref(['p'])), f('track', T.int(0)),
+      f('channel', T.int(1, 16)), f('link', T.ref(['h'])), f('conf', T.conf())],
+    /* The raw controller stream (v2, G02 S18 S2). A PerfPedal is the musical reading of CC 64/66/67;
+       this is what the file actually said, for every controller, and it is what MIDI export writes. */
+    PerfControl: [f('id', T.id('pc'), req), f('cc', T.int(0, 127), req), f('us', T.int(), req),
+      f('value', T.int(0, 127), req), f('channel', T.int(1, 16)), f('track', T.int(0))],
     PerfPedal: [f('id', T.id('pp'), req), f('pedal', T.en(['damper', 'sostenuto', 'soft']), req), f('on', T.int(), req),
       f('off', T.int(), req), f('depth', T.int(1, 127))],
     Anchor: [f('m', T.ref(['m']), req), f('k', T.int(1), req), f('at', T.rat(), req), f('us', T.int(), req),
@@ -269,7 +285,8 @@
 
   /* The types of the ends of each spanner type (§5.10). */
   const SPANNER_ENDS = {
-    tie: T.ref(['h']), slur: T.ref(['e']), wedge: T.obj(POS), pedal: T.obj(POS), ottava: T.obj(POS)
+    tie: T.ref(['h']), slur: T.ref(['e']), wedge: T.obj(POS), pedal: T.obj(POS), ottava: T.obj(POS),
+    gliss: T.ref(['h'])
   };
   /* Canonical field order per spanner type: id, type, the §5.10 table's order, prov, ext. One merged list
      cannot serve all types (a wedge's staff follows its ends, an ottava's precedes its shift). */
@@ -281,12 +298,13 @@
     wedge: ['kind', 'from', 'to', 'staff', 'placement', 'niente'],
     pedal: ['pedal', 'from', 'to', 'changes', 'mark', 'text', 'soundOnly', 'depth'],
     ottava: ['staff', 'shift', 'from', 'to'],
-    arpeggio: ['heads', 'dir', 'non']
+    arpeggio: ['heads', 'dir', 'non'],
+    gliss: ['from', 'to', 'slide', 'line', 'text', 'placement']
   };
   /* Required fields per spanner type beyond id and type. */
   const SPANNER_REQUIRED = {
     tuplet: ['events', 'actual', 'normal'], beam: ['events'], wedge: ['kind', 'from', 'to'], pedal: ['pedal', 'from'],
-    ottava: ['staff', 'shift', 'from', 'to'], arpeggio: ['heads'], tie: [], slur: []
+    ottava: ['staff', 'shift', 'from', 'to'], arpeggio: ['heads'], tie: [], slur: [], gliss: ['from', 'to']
   };
 
   /* The 21 entities, their ID prefixes and owners (§5.14, A4). */
@@ -297,14 +315,16 @@
     ['Event', 'e', 'part.events'], ['Head', 'h', 'event.heads'], ['Direction', 'd', 'part.directions'],
     ['Spanner', 's', 'part.spanners'], ['Section', 'sc', 'structure.sections'], ['Phrase', 'ph', 'structure.phrases'],
     ['Performance', 'pf', 'performances'], ['PerfNote', 'pn', 'performance.notes'],
-    ['PerfPedal', 'pp', 'performance.pedals'], ['Source', 'sr', 'provenance.sources'], ['Flag', 'fl', 'provenance.flags']
+    ['PerfPedal', 'pp', 'performance.pedals'], ['PerfControl', 'pc', 'performance.controls'],
+    ['Source', 'sr', 'provenance.sources'], ['Flag', 'fl', 'provenance.flags']
   ].map(([name, prefix, owner]) => Object.freeze({ name: name, prefix: prefix, owner: owner })));
   const PREFIX_OF = {};
   const KIND_OF_PREFIX = {};
   ENTITY_KINDS.forEach(k => { PREFIX_OF[k.name] = k.prefix; KIND_OF_PREFIX[k.prefix] = k.name; });
 
   /* Where ext may appear (§5.13). */
-  const EXT_HOSTS = ['ScoreGraph', 'Part', 'Event', 'Head', 'Measure', 'Spanner', 'Direction'];
+  const EXT_HOSTS = ['ScoreGraph', 'Part', 'Event', 'Head', 'Measure', 'Spanner', 'Direction',
+    'KeyEvent', 'TempoEvent', 'Staff'];
 
   /* ------------------------------------------------------------- helpers */
   function idPrefix(id) {

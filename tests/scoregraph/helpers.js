@@ -25,13 +25,17 @@ const codes = (issues, severity) => {
   return out;
 };
 const pitchName = p => p.step + (p.alter === 1 ? '#' : p.alter === -1 ? 'b' : p.alter === 2 ? '##' : p.alter === -2 ? 'bb' : '') + p.oct;
-/* all .sg.json files committed under tests/scoregraph */
+/* Every .sg.json committed under tests/scoregraph, except migrations/: those are documents of an
+   older version on purpose, so serialize(parse(s)) raises them rather than reproducing them. The
+   migration test in serialize.test.js is what checks them. */
 function allSgJson() {
   const out = [];
+  const skip = path.join(__dirname, 'migrations');
   (function walk(d) {
     fs.readdirSync(d, { withFileTypes: true }).forEach(e => {
       const p = path.join(d, e.name);
-      if (e.isDirectory()) walk(p); else if (e.name.endsWith('.sg.json')) out.push(p);
+      if (e.isDirectory()) { if (p !== skip) walk(p); }
+      else if (e.name.endsWith('.sg.json')) out.push(p);
     });
   })(__dirname);
   return out.sort();

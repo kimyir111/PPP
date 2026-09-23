@@ -46,6 +46,9 @@
       .map(n => {
         const out = { on: Math.max(0, +n.on), off: Math.max(+n.on + 0.03, +n.off), midi: n.midi | 0, vel: n.vel == null ? 64 : +n.vel };
         if (n._arrangeId != null) out._arrangeId = n._arrangeId;
+        /* where the note came from, when the source states it (a MIDI file does) */
+        if (Number.isInteger(n.track)) out.track = n.track;
+        if (Number.isInteger(n.channel)) out.channel = n.channel;
         return out;
       })
       .sort((a, b) => a.on - b.on || a.midi - b.midi);
@@ -1148,7 +1151,7 @@
      and the ties between them, rest pieces, triplet values, printed accidentals, pedal marks — as a canonical,
      validated graph whose MusicXML reads back as the same music. What was heard (onsets and releases in µs,
      velocities, the pedal, bar times) stays in the graph's performance layer instead of being dropped. */
-  const SCOREGRAPH_VERSION = '1.0.0';
+  const SCOREGRAPH_VERSION = '1.1.0';
   let scoreGraphLib = null;
   function scoreGraph() {
     if (!scoreGraphLib) {
@@ -1171,7 +1174,10 @@
     const bar = Math.round(beatsPerBar * (4 / beatType) * Q);
     const W = t => R.format(R.make(t, Q * 4));            /* ticks (Q a quarter) as whole notes */
     const b = SG.builder({ id: model.scoreId || 'sg-audio', meta: { title: title } });
-    const src = b.source({ kind: 'audio-score', tool: 'audio-score.js', params: model.params || {} });
+    /* what the notes came from, which is not always a microphone: a MIDI file says so (G02 §7.6) */
+    const srcDraft = { kind: model.sourceKind || 'audio-score', tool: 'audio-score.js', params: model.params || {} };
+    if (model.sourceInput) srcDraft.input = model.sourceInput;
+    const src = b.source(srcDraft);
     b.setDefault({ src: src.id, op: 'inferred' });
     const part = b.part({ name: 'Piano', instrument: { kind: 'piano', family: 'keyboard' } });
     const st = [null, b.staff(part, { limb: 'RH' }).id, b.staff(part, { limb: 'LH' }).id];
@@ -1302,6 +1308,9 @@
         if (!(off > on)) return;
         const vel = isFinite(n.vel) ? Math.max(1, Math.min(127, Math.round(+n.vel))) : 64;
         const x = { on: on, off: off, vel: vel, midi: n.midi };
+        /* a MIDI file states which track and channel a note came from; a microphone does not */
+        if (Number.isInteger(n.track)) x.track = n.track;
+        if (Number.isInteger(n.channel)) x.channel = n.channel;
         const link = n.staff ? headOf.get(n.staff + '|' + n.tick + '|' + n.midi) : null;
         if (link) x.link = link;
         b.perfNote(pf, x);
@@ -1310,6 +1319,14 @@
         if (!(isFinite(p.on) && isFinite(p.off) && p.on >= 0 && p.off > p.on)) return;
         const on = R.secondsToMicros(+p.on), off = R.secondsToMicros(+p.off);
         if (off > on) b.perfPedal(pf, { pedal: 'damper', on: on, off: off });
+      });
+      /* the controller stream, when the source had one (a MIDI file does, a recording does not) */
+      (heard.controls || []).forEach(c => {
+        if (!(isFinite(c.us) && c.us >= 0 && c.cc >= 0 && c.cc <= 127 && c.value >= 0 && c.value <= 127)) return;
+        const x = { cc: c.cc | 0, us: Math.round(c.us), value: c.value | 0 };
+        if (Number.isInteger(c.channel)) x.channel = c.channel;
+        if (Number.isInteger(c.track)) x.track = c.track;
+        b.perfControl(pf, x);
       });
       let lastUs = -1;
       (heard.barSeconds || []).forEach((sec, i) => {
@@ -1443,6 +1460,8 @@
       return result;
     }
     model.scoreId = opts.scoreId;
+    if (opts.sourceKind) model.sourceKind = opts.sourceKind;
+    if (opts.sourceInput) model.sourceInput = opts.sourceInput;
     model.params = { beatSource: result.stats.beatSource, quantizer: result.stats.quantizer };
     if (extra.tempoAlias) model.params.tempoAlias = extra.tempoAlias;
     if (extra.arrangement) model.params.arrangement = extra.arrangement;
@@ -1456,11 +1475,15 @@
     const heardNotes = (extra.heard || []).map(n => {
       const list = placed.get(n.on + '|' + n.off + '|' + n.midi);
       const p = list && list.length ? list.shift() : null;
-      return { on: n.on, off: n.off, midi: n.midi, vel: n.vel, staff: p ? p.staff : 0, tick: p ? p.tick : 0 };
+      const out = { on: n.on, off: n.off, midi: n.midi, vel: n.vel, staff: p ? p.staff : 0, tick: p ? p.tick : 0 };
+      if (Number.isInteger(n.track)) out.track = n.track;
+      if (Number.isInteger(n.channel)) out.channel = n.channel;
+      return out;
     });
     const barSeconds = [];
     for (let b = 0; b <= bars; b++) barSeconds.push(tickToSec(b * bar));
-    const built = buildGraph(model, { notes: heardNotes, pedals: extra.pedals || [], barSeconds: barSeconds });
+    const built = buildGraph(model, { notes: heardNotes, pedals: extra.pedals || [],
+      controls: extra.controls || [], barSeconds: barSeconds });
     result.xml = scoreGraph().musicxml.export(built.graph, { software: 'PPP audio transcription' }).xml;
     result.graph = built.graph;
     result.graphIssues = built.issues;
@@ -1514,7 +1537,7 @@
     return finish(q, notes, beats, opts, {
       beatsPerBar: beatsPerBar, beatType: beatType, origin: 0, bpm: g.bpm,
       heard: raw.filter(n => n.on != null && n.off != null).map(n => ({ on: n.on, off: n.off, midi: n.midi | 0, vel: n.vel == null ? 64 : +n.vel })),
-      pedals: input.pedals, title: input.title, quantizer: 'pm2s',
+      pedals: input.pedals, controls: input.controls, title: input.title, quantizer: 'pm2s',
       beatSource: input.beats ? 'audio' : 'grid', errSum: 0, meterContrast: 2,
       arrangement: arrangementPlan, originalNotes: originalNotes
     });
@@ -1733,7 +1756,7 @@
     if (lock && lock.bpm) bpm = +lock.bpm;
     const result = finish(q, clustered, beats, opts, {
       beatsPerBar: beatsPerBar, beatType: beatType, origin: origin, bpm: bpm, heard: timingNotes,
-      pedals: input.pedals, title: input.title, quantizer: 'heuristic',
+      pedals: input.pedals, controls: input.controls, title: input.title, quantizer: 'heuristic',
       beatSource: beatSource, errSum: errSum, meterContrast: meterContrast,
       ticksPerBeat: compoundPulse ? 36 : Q,
       tactus: compoundPulse ? 'dotted-quarter' : 'quarter',
@@ -1746,8 +1769,83 @@
     return result;
   }
 
+  /* --------------------------------------------------------------- MIDI ---
+     A MIDI file is a recording of key presses, so it comes in the same door as
+     one: what it states goes to the performance layer exactly, and the notation
+     is worked out by the quantizer this file already has - the one G0 measures
+     (docs/GOALS/G02 §7.6, decision D3). No new rhythm, voice or hand work here.
+
+     fromMidi(bytes, opts) -> what toMusicXml returns, plus `midi`:
+       {xml, stats, graph, graphIssues, midi: {raw, report, notes, dropped}}
+
+     The graph's notation is inferred and says so: its source is this file, its
+     default provenance is `inferred`, and legacy.toScore marks the Score
+     `sgFrom.inferred`. The performance layer is the file's own facts - every
+     note with its track and channel, the pedals, the whole controller stream -
+     and nothing here rewrites them to suit the notation (D3 point 5). */
+  function fromMidi(bytes, opts) {
+    opts = opts || {};
+    const SG = scoreGraph();
+    const read = SG.midi.read(bytes, opts);
+    if (!read.ok) { const e = new Error(read.code + ': ' + read.message); e.code = read.code; e.report = read.report; throw e; }
+    const raw = read.raw;
+    if (!raw.notes.length) { const e = new Error('the MIDI file holds no note'); e.code = 'MIDI-NO-NOTES'; throw e; }
+    const us = raw.usAt;
+    const sec = t => us(t) / 1e6;
+
+    const notes = raw.notes.filter(n => us(n.offTick) > us(n.onTick)).map(n => ({
+      on: sec(n.onTick), off: sec(n.offTick), midi: n.midi,
+      vel: Math.max(1, Math.min(127, n.onVel)), track: n.track, channel: n.channel
+    }));
+    /* the damper, read as spans the way the pedal is everywhere else in PPP */
+    const pedals = [];
+    const down = new Map();
+    raw.controls.forEach(c => {
+      if (c.cc !== 64) return;
+      const key = c.track + '|' + c.channel;
+      if (c.value >= 64) { if (!down.has(key)) down.set(key, sec(c.tick)); }
+      else if (down.has(key)) { const on = down.get(key); down.delete(key); if (sec(c.tick) > on) pedals.push({ on: on, off: sec(c.tick) }); }
+    });
+    const endSec = sec(raw.endTick);
+    down.forEach(on => { if (endSec > on) pedals.push({ on: on, off: endSec }); });
+    pedals.sort((a, b) => a.on - b.on);
+    const controls = raw.controls.map(c => ({ cc: c.cc, us: us(c.tick), value: c.value, channel: c.channel, track: c.track }));
+
+    /* The beat grid is the file's own, not a guess: one tempo and one metre make a lock, and a tempo
+       that moves gives the beat times the map computes. Both are paths audio-score already had. */
+    const input = { notes: notes, pedals: pedals, controls: controls, title: opts.title || midiTitle(raw) };
+    const one = raw.tempoMap.length <= 1 && raw.meterMap.length <= 1;
+    const met = raw.meterMap[0] || { num: 4, den: 4 };
+    const upq = raw.tempoMap.length ? raw.tempoMap[0].usPerQuarter : 500000;
+    const o = Object.assign({}, opts, { sourceKind: 'midi-file' });
+    if (opts.sourceName || opts.sourceSha256) {
+      o.sourceInput = {};
+      if (opts.sourceName) o.sourceInput.name = opts.sourceName;
+      if (opts.sourceSha256) o.sourceInput.sha256 = opts.sourceSha256;
+    }
+    if (raw.division.kind === 'ppq' && one) {
+      o.lock = { bpm: 60000000 / upq, beatsPerBar: met.num, beatType: met.den, firstDownbeat: 0 };
+    } else if (raw.division.kind === 'ppq') {
+      const ppq = raw.division.ppq;
+      const beats = [];
+      for (let k = 0; k * ppq <= raw.endTick + ppq; k++) beats.push(sec(k * ppq));
+      input.beats = beats;
+    }
+    const result = toMusicXml(input, o);
+    result.midi = { raw: raw, report: read.report, notes: raw.notes.length, kept: notes.length,
+      dropped: raw.notes.length - notes.length };
+    return result;
+  }
+  function midiTitle(raw) {
+    const first = raw.tracks[0];
+    if (raw.tracks.length > 1 && first && first.name) return first.name;
+    const named = raw.tracks.find(t => t.name);
+    return named ? named.name : 'MIDI file';
+  }
+
   const api = {
     toMusicXml: toMusicXml,
+    fromMidi: fromMidi,
     arrangeNotes: arrangeNotes,
     arrangementProfile: arrangementProfile,
     recommendArrangement: recommendArrangement,

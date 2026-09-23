@@ -13,8 +13,8 @@ musicxml-export, index`.
 
 | call | returns | |
 | --- | --- | --- |
-| `version` | `'1.0.0'` | the library's own version; `audio-score.js` checks it |
-| `SCOREGRAPH_VERSION` | `1` | the schema's version (`scoregraph_version`) |
+| `version` | `'1.1.0'` | the library's own version; `audio-score.js` checks it |
+| `SCOREGRAPH_VERSION` | `2` | the schema's version (`scoregraph_version`); v1 documents migrate on `parse` |
 | `builder({id, meta, source, default})` | a builder | `.measure() .meter() .key() .tempo() .ending() .jump() .part() .staff() .voice() .clef() .event() .direction() .spanner() .performance() .perfNote() .perfPedal() .anchor() .flag() .id(prefix)`, then `.finish()` → `{graph, issues}` (canonical, validated, frozen; throws `BuildError` on an ERROR) |
 | `validate(graph)` | `{ok, issues}` | issues `{code, severity, message, ids?, at?}`, sorted; `CODES` lists every code |
 | `serialize(graph)` / `parse(text, {migrations?, current?})` | text / frozen graph | canonical JSON (§14); `parse` refuses an unknown version (`E-VERSION`) and migrates older ones |

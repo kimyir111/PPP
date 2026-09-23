@@ -16,6 +16,16 @@ from pppbench import stages, util
 
 FIX = os.path.join(util.repo_root(), "tests", "scoregraph", "fixtures", "valid")
 
+
+def schema_version():
+    """SCOREGRAPH_VERSION as scoregraph/schema.js states it, so this test cannot go stale."""
+    import re
+    path = os.path.join(util.repo_root(), "scoregraph", "schema.js")
+    with open(path, encoding="utf-8") as h:
+        m = re.search(r"const SCOREGRAPH_VERSION = (\d+)", h.read())
+    assert m, "scoregraph/schema.js no longer states SCOREGRAPH_VERSION"
+    return int(m.group(1))
+
 JS = r"""
 const SG = require(process.argv[1]);
 const fs = require('fs');
@@ -57,7 +67,7 @@ class ScoreGraphInterop(unittest.TestCase):
         for f in files():
             with open(f, encoding="utf-8") as h:
                 doc = json.load(h)
-            self.assertEqual(doc["scoregraph_version"], 1)
+            self.assertEqual(doc["scoregraph_version"], schema_version())
             dur = {m["id"]: Fraction(m["dur"]) for m in doc["timeline"]["measures"]}
             by = defaultdict(list)
             for part in doc["parts"]:

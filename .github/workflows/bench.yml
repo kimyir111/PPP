@@ -1,7 +1,9 @@
 # G0 score-quality benchmark (tests/bench/README.md).
 # The gate job is the regression gate on every push/PR; the nightly job (full suite, gate
 # sensitivity, the independent review's adversarial checks) runs on a schedule or by hand.
-# No npm install: the benchmark needs only Node, the Python standard library and git.
+# No npm install: the benchmark needs only Node, the Python standard library and git. The two checks
+# that drive the real page - tests/scoregraph/tools/shadow-legacy.js --check and app-import-check.js
+# (G02 §14) - need puppeteer and `npm start`, so they run locally, like T1-C conformance.
 name: bench
 on:
   push:
@@ -26,6 +28,7 @@ jobs:
       - run: python -m unittest discover -s tests/bench/unit -t tests/bench
       - run: npm run test:scoregraph                 # the ScoreGraph library and the graphs toMusicXml writes from (G01)
       - run: python tests/bench/run.py sg-roundtrip  # every committed MusicXML through ScoreGraph and back (G01)
+      - run: node tests/scoregraph/tools/make-midi-fixtures.js --check   # the committed MIDI bytes are the generator's (G02)
       - run: python tests/bench/run.py golden
       - run: python tests/bench/run.py lint-corpus
       - run: python tests/bench/tools/make_provenance.py --check

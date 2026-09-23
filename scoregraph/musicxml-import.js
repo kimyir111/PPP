@@ -35,7 +35,9 @@
     'IMPORT-UNSUPPORTED', 'IMPORT-INVALID']);
   /* Report-only codes: the importer had to change the source to represent it (§13.2 W-IMPORT-*). */
   const REPORT_CODES = Object.freeze(['W-IMPORT-CHORD-SPLIT', 'W-IMPORT-BACKUP-CLAMP', 'W-IMPORT-METER-MIDMEASURE',
-    'W-IMPORT-REPEAT-MOVED', 'W-IMPORT-VOICE-SPLIT', 'W-IMPORT-UNPAIRED']);
+    'W-IMPORT-REPEAT-MOVED', 'W-IMPORT-VOICE-SPLIT', 'W-IMPORT-UNPAIRED',
+    /* G02: what used to refuse the whole file, and what the graph rounds (§6.3) */
+    'W-IMPORT-METER-ASSUMED', 'W-IMPORT-MICROTONE', 'W-IMPORT-PERC-KIT']);
 
   class ImportError extends Error {
     constructor(code, message) { super(code + ': ' + message); this.code = code; }
@@ -62,6 +64,35 @@
     return m ? Number(m[1]) : null;
   }
   const yes = v => v === 'yes';
+  /* A kit key out of an instrument name: KIT_KEY_RE is /^[a-z][a-z0-9-]*$/ (G02 §17). */
+  function kitKey(name) {
+    const k = String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    return /^[a-z]/.test(k) ? k : '';
+  }
+  /* The marks one <dynamics> element prints. It is one statement - "play this loudly" - however many
+     glyphs it uses, so the graph keeps one Direction for it and the rest of the glyphs beside it
+     (G02 §14.3): the app reads the first and would read two separate <direction> elements as two. */
+  function dynamicsIn(el, use) {
+    const out = [];
+    el.kids.forEach(k => {
+      const value = k.name === 'other-dynamics' ? 'other' : k.name;
+      if (!DYNAMIC_SET.has(value)) return;
+      use(k);
+      const one = { value: value };
+      if (value === 'other') one.text = k.text;
+      out.push(one);
+    });
+    return out;
+  }
+
+  /* <fermata> wherever it sits: on a note's notations, or on a bar line (v2, G02 §18 S4). */
+  function readFermata(f) {
+    const out = {};
+    const shape = f.text.trim();
+    if (shape && ['normal', 'angled', 'square'].indexOf(shape) >= 0) out.shape = shape;
+    if (f.attrs.type === 'inverted') out.inverted = true;
+    return out;
+  }
   const ARTICULATION_OF = { 'staccato': 'staccato', 'staccatissimo': 'staccatissimo', 'tenuto': 'tenuto', 'accent': 'accent',
     'strong-accent': 'marcato', 'spiccato': 'spiccato', 'stress': 'stress', 'unstress': 'unstress',
     'detached-legato': 'detached-legato', 'breath-mark': 'breath-mark', 'caesura': 'caesura' };
@@ -71,20 +102,17 @@
   const JUMP_SOUND = { dacapo: 'dacapo', dalsegno: 'dalsegno', fine: 'fine', tocoda: 'tocoda', segno: 'segno', coda: 'coda' };
   const SOUND_MAPPED = new Set(['tempo', 'damper-pedal', 'soft-pedal', 'sostenuto-pedal', 'dacapo', 'dalsegno', 'fine', 'tocoda', 'segno', 'coda']);
   const BEAM_LEVELS = { 'eighth': 1, '16th': 2, '32nd': 3, '64th': 4, '128th': 5, '256th': 6, '512th': 7, '1024th': 8 };
-  const SPANNER_SUBORDER = { tuplet: 0, beam: 1, slur: 2, tie: 3, arpeggio: 4, wedge: 5, pedal: 6, ottava: 7 };
+  const SPANNER_SUBORDER = { tuplet: 0, beam: 1, slur: 2, tie: 3, arpeggio: 4, wedge: 5, pedal: 6, ottava: 7, gliss: 8 };
 
   function importMusicXml(text, opts) {
     opts = opts || {};
-    const report = { issues: [], dropped: {} };
+    const report = { issues: [], dropped: {}, normalized: [] };
     const fail = (code, message) => ({ ok: false, code: code, message: message, report: report });
     let tree;
     try { tree = X.parse(text); } catch (e) { return fail('IMPORT-BAD-XML', e.message); }
     const root = X.localNames(tree.root);
     if (root.name === 'score-timewise') return fail('IMPORT-TIMEWISE', 'score-timewise is not read (convert it to score-partwise)');
     if (root.name !== 'score-partwise') return fail('IMPORT-BAD-XML', 'the root element is <' + root.name + '>');
-    let unpitched = false;
-    (function scan(el) { if (el.name === 'unpitched') unpitched = true; else el.kids.forEach(scan); })(root);
-    if (unpitched) return fail('IMPORT-UNSUPPORTED-UNPITCHED', 'percussion notes (<unpitched>) are not imported in G1');
     try {
       const graph = readScore(root, opts, report);
       return { ok: true, graph: graph, report: report };
@@ -106,6 +134,11 @@
     const txt = (el, name) => { const k = kid(el, name); return k ? k.text.trim() : undefined; };
     const issue = (code, message) => report.issues.push({ code: code, severity: 'WARNING', message: message });
     const drop = name => { report.dropped[name] = (report.dropped[name] || 0) + 1; };
+    /* A13: a change the graph made to say the file at all, named once however often it happened.
+       Nothing may alter a value without appearing here. */
+    const normalize = (what, detail) => {
+      if (!report.normalized.some(n => n.what === what)) report.normalized.push({ what: what, detail: detail });
+    };
     let docIndex = 0;
 
     /* -------------------------------------------------------------- header */
@@ -138,16 +171,26 @@
       const info = {};
       const pn = kid(sp, 'part-name'); if (pn && pn.text.trim()) info.name = pn.text.trim();
       const pa = kid(sp, 'part-abbreviation'); if (pa && pa.text.trim()) info.abbr = pa.text.trim();
-      const si = sp.kids.find(k => k.name === 'score-instrument');
-      if (si) { use(si); const iname = kid(si, 'instrument-name'); if (iname && iname.text.trim()) info.instrumentName = iname.text.trim(); }
-      const mi = sp.kids.find(k => k.name === 'midi-instrument');
-      if (mi) {
+      /* every <score-instrument>, not only the first: a drum part names one per kit piece (G02 §17) */
+      info.instruments = new Map();
+      sp.kids.filter(k => k.name === 'score-instrument').forEach(si => {
+        use(si);
+        const iname = kid(si, 'instrument-name');
+        const rec2 = { id: si.attrs.id, name: iname && iname.text.trim() ? iname.text.trim() : undefined };
+        info.instruments.set(si.attrs.id, rec2);
+        if (info.instrumentName === undefined && rec2.name) info.instrumentName = rec2.name;
+      });
+      sp.kids.filter(k => k.name === 'midi-instrument').forEach(mi => {
         use(mi);
         const ch = jsInt(txt(mi, 'midi-channel')), pr = jsInt(txt(mi, 'midi-program'));
-        info.midi = {};
-        if (pr >= 1 && pr <= 128) info.midi.program = pr;
-        if (ch >= 1 && ch <= 16) info.midi.channel = ch;
-      }
+        const un = jsInt(txt(mi, 'midi-unpitched'));
+        const rec2 = info.instruments.get(mi.attrs.id);
+        if (rec2 && un != null) rec2.gm = un;          /* 1-based note number of the kit piece */
+        if (!info.midi) info.midi = {};
+        if (pr >= 1 && pr <= 128 && info.midi.program === undefined) info.midi.program = pr;
+        if (ch >= 1 && ch <= 16 && info.midi.channel === undefined) info.midi.channel = ch;
+      });
+      if (info.midi && !Object.keys(info.midi).length) delete info.midi;
       info.used = true;
       partInfo.set(sp.attrs.id, info);
     });
@@ -176,12 +219,13 @@
     partEls.forEach((partEl, pi) => {
       const info = partInfo.get(partEl.attrs.id) || {};
       const part = { pi: pi, info: info, staves: 1, maxStaff: 1, transpose: null, voices: [], voiceByKey: new Map(),
-        clefs: [], events: [], directions: [], ties: [], slurs: [], tuplets: [], beams: [], wedges: [], pedals: [],
+        clefs: [], events: [], directions: [], ties: [], slurs: [], gliss: [], tuplets: [], beams: [], wedges: [], pedals: [],
         ottavas: [], arps: [] };
       parts.push(part);
       let divisions = R.ONE;
       const toW = durText => { const d = jsFloatRat(durText); return d ? R.div(d, R.mul(divisions, R.make(4))) : R.ZERO; };
       const openSlurs = new Map(), openWedges = new Map(), openPedals = [], openOttavas = new Map();
+      const openGliss = new Map();
       const openBrackets = new Map();          /* voice key -> [bracket] (innermost last) */
       const openBeams = new Map();             /* voice key -> beam draft */
       let pendingMeter = null;
@@ -248,14 +292,22 @@
               beatType = bt;
               beats = beats.concat(parts2);
             });
-            if (!okT) { used.delete(t); bs.concat(bts).forEach(x => used.delete(x)); return; }
-            const meter = { beats: beats, beatType: beatType };
+            /* <senza-misura> is a <time> with no beats: music without a metre. The graph has no way to
+               say so, and MusicXML keeps the measures, so the measure holds whatever is written in it
+               and the fact is kept on the meter (G02 6.3). Anything else without beats is unreadable. */
+            const senza = kid(t, 'senza-misura');
+            if (!okT && !senza) { used.delete(t); bs.concat(bts).forEach(x => used.delete(x)); return; }
+            const meter = !okT && senza ? { beats: [4], beatType: 4, hidden: true, senza: true }
+              : { beats: beats, beatType: beatType };
             if (t.attrs.symbol) meter.symbol = t.attrs.symbol;
             if (t.attrs['print-object'] === 'no') meter.hidden = true;
             if (pi !== 0) {
               let mine = null;
               for (let i = mi; i >= 0 && !mine; i--) mine = meterAt[i] || null;
               if (mine && JSON.stringify(mine.beats) === JSON.stringify(beats) && mine.beatType === beatType) return;
+              /* a part after the first states a metre the score does not have yet: better than none at
+                 all (a vocal line above the piano often carries it). Otherwise it is the first part's. */
+              if (!mine && !meterAt[mi]) { meterAt[mi] = meter; return; }
               drop('time (another part\'s)');
               return;
             }
@@ -266,6 +318,14 @@
           });
           const st = kid(a, 'staves');
           if (st) { const n = jsInt(st.text); if (n >= 1) part.staves = Math.max(part.staves, n); }
+          /* <measure-style><multiple-rest>: the measures are all still here, this is how they print (v2) */
+          kidsN(a, 'measure-style').forEach(ms => {
+            const mr = kid(ms, 'multiple-rest');
+            if (!mr) { used.delete(ms); return; }
+            const n = jsInt(mr.text);
+            if (!(n >= 2)) { used.delete(ms); used.delete(mr); return; }
+            if (pi === 0) rec.multiRest = n; else drop('measure-style (another part\'s)');
+          });
           kidsN(a, 'clef').forEach(c => {
             const sign = txt(c, 'sign');
             if (['G', 'F', 'C', 'percussion', 'TAB', 'none'].indexOf(sign) < 0) { used.delete(c); return; }
@@ -282,6 +342,10 @@
             const t = { chromatic: jsInt(txt(tr, 'chromatic')) || 0, diatonic: jsInt(txt(tr, 'diatonic')) || 0 };
             const oc = jsInt(txt(tr, 'octave-change'));
             if (oc) t.octave = oc;
+            /* D7: <pitch> is what is printed; the graph stores what sounds, and the printed
+               pitch and key are derived back from <transpose> (G01 §7.2). */
+            if (t.chromatic || t.diatonic || t.octave)
+              normalize('concert-pitch', 'a transposing part is stored at concert pitch; the written pitch and key are derived from <transpose>');
             if (!part.transpose) part.transpose = t;
             else if (JSON.stringify(part.transpose) !== JSON.stringify(t)) drop('transpose (a change)');
           }
@@ -319,14 +383,52 @@
           const doc = docIndex++;
           /* the head (a pitched note) */
           let head = null;
-          if (!restEl && pitchEl) {
+          const unpitchedEl = kid(n, 'unpitched');
+          if (!restEl && !pitchEl && unpitchedEl) {
+            /* a percussion note: what it is comes from <instrument>, where it sits from <unpitched> */
+            const step = txt(unpitchedEl, 'display-step'), oct = jsInt(txt(unpitchedEl, 'display-octave'));
+            if (S.STEPS.indexOf(step) < 0 || oct == null) throw new ImportError('IMPORT-UNSUPPORTED', 'an <unpitched> without a valid display step or octave');
+            const instEl = kid(n, 'instrument');
+            const pos = { step: step, oct: oct };
+            head = { perc: true, instId: instEl ? instEl.attrs.id : null, pos: pos, staffNo: staffNo, doc: doc };
+            part.hasPerc = true;
+            const nh = kid(n, 'notehead');
+            if (nh) {
+              const shape = nh.text.trim(), o = {};
+              if (S.NOTEHEADS.indexOf(shape) >= 0) o.shape = shape;
+              else if (shape) drop('notehead ' + shape);
+              if (nh.attrs.filled !== undefined) o.filled = yes(nh.attrs.filled);
+              if (yes(nh.attrs.parentheses)) o.paren = true;
+              if (Object.keys(o).length) head.notehead = o;
+            }
+          } else if (!restEl && pitchEl) {
             const step = txt(pitchEl, 'step'), alterT = txt(pitchEl, 'alter'), oct = jsInt(txt(pitchEl, 'octave'));
-            const alter = alterT == null ? 0 : Number(alterT);
-            if (!Number.isInteger(alter)) throw new ImportError('IMPORT-UNSUPPORTED', 'a microtonal <alter> ' + alterT + ' (G1 stores whole semitones)');
+            const exact = alterT == null ? 0 : Number(alterT);
+            if (!isFinite(exact)) throw new ImportError('IMPORT-UNSUPPORTED', 'an <alter> that is not a number: ' + alterT);
+            /* The graph stores whole semitones (G01 §18 keeps microtones out of scope). A quarter tone is
+               not a reason to refuse the file: round to the nearest semitone, say so, and keep what the
+               file said on the head so nothing is lost silently (G02 §6.3). */
+            let alter = exact;
+            let microtone = null;
+            if (!Number.isInteger(exact)) {
+              alter = Math.round(exact);
+              /* round half away from zero, so +0.5 is a sharp and -0.5 a flat rather than both a natural */
+              if (Math.abs(exact - Math.trunc(exact)) === 0.5) alter = Math.trunc(exact) + Math.sign(exact);
+              microtone = exact;
+            }
             if (S.STEPS.indexOf(step) < 0 || oct == null) throw new ImportError('IMPORT-UNSUPPORTED', 'a pitch without a valid step or octave');
+            if (alter < -3 || alter > 3) throw new ImportError('IMPORT-UNSUPPORTED', 'an <alter> of ' + alterT + ' is beyond three semitones');
             const written = { step: step, oct: oct };
             if (alter) written.alter = alter;
             head = { pitch: P.concert(written, part.transpose), staffNo: staffNo, doc: doc };
+            if (microtone !== null) {
+              issue('W-IMPORT-MICROTONE', 'a microtonal <alter> ' + alterT + ' in measure ' + rec.number +
+                ' is written as ' + alter + '; the file\'s value is kept in ext');
+              /* the file's own text, not a parsed number: the notation side of a graph holds no floats
+                 (G01 §14.2), and the text is what a round trip has to give back */
+              normalize('microtone', 'a microtonal <alter> is rounded to a whole semitone for the notation pitch; the value the file wrote is kept in head ext and written back on export');
+              head.ext = { 'musicxml.microtone': { alter: String(alterT).trim() } };
+            }
             const accEl = kid(n, 'accidental');
             if (accEl) {
               const type = accEl.text.trim();
@@ -389,8 +491,10 @@
           const grace = !!graceEl;
           const onset = chordEl && lastEvent ? lastEvent.at : cursor;
           let ev = null;
-          const samePitch = h => h.pitch.step === head.pitch.step && (h.pitch.alter || 0) === (head.pitch.alter || 0) && h.pitch.oct === head.pitch.oct;
-          if (chordEl && lastEvent && lastEvent.kind === 'note' && head && lastEvent.grace === grace) {
+          const samePitch = h => (head.perc
+            ? h.perc && h.instId === head.instId && h.pos.step === head.pos.step && h.pos.oct === head.pos.oct
+            : !h.perc && h.pitch.step === head.pitch.step && (h.pitch.alter || 0) === (head.pitch.alter || 0) && h.pitch.oct === head.pitch.oct);
+          if (chordEl && lastEvent && (lastEvent.kind === 'note' || lastEvent.kind === 'perc') && head && lastEvent.grace === grace) {
             if (R.eq(lastEvent.dur, dur) && !lastEvent.heads.some(samePitch)) ev = lastEvent;
             else if (R.eq(lastEvent.dur, dur)) {
               issue('W-IMPORT-CHORD-SPLIT', 'a chord in measure ' + rec.number + ' has the same pitch twice: the second goes to its own voice');
@@ -403,7 +507,7 @@
           function newEvent(avoid) {
             const at = onset;
             const voice = voiceFor(label, staffNo, at, dur, grace, avoid);
-            const e = { kind: head ? 'note' : 'rest', mi: mi, at: at, dur: dur, voice: voice, staffNo: staffNo, heads: [],
+            const e = { kind: head ? (head.perc ? 'perc' : 'note') : 'rest', mi: mi, at: at, dur: dur, voice: voice, staffNo: staffNo, heads: [],
               grace: grace, doc: doc, part: pi, arts: [], orn: [], lyrics: [], pi: pi };
             if (!grace) voice.spans.push({ mi: mi, a: at, b: R.add(at, dur) });
             if (!voice.events.length) voice.homeStaff = staffNo;
@@ -482,21 +586,16 @@
           });
           nk('fermata').forEach((f, i) => {
             if (i > 0 || ev.fermata) { used.delete(f); return; }
-            const shape = f.text.trim();
-            ev.fermata = {};
-            if (shape && ['normal', 'angled', 'square'].indexOf(shape) >= 0) ev.fermata.shape = shape;
-            if (f.attrs.type === 'inverted') ev.fermata.inverted = true;
+            ev.fermata = readFermata(f);
           });
           nk('dynamics').forEach(d => {
-            d.kids.forEach(k => {
-              const value = k.name === 'other-dynamics' ? 'other' : k.name;
-              if (!DYNAMIC_SET.has(value)) return;
-              use(k);
-              const dir = { kind: 'dynamic', mi: mi, at: ev.at, staffNo: staffNo, value: value, event: ev, doc: docIndex++ };
-              if (value === 'other') dir.text = k.text;
-              if (d.attrs.placement === 'above' || d.attrs.placement === 'below') dir.placement = d.attrs.placement;
-              part.directions.push(dir);
-            });
+            const marks = dynamicsIn(d, use);
+            if (!marks.length) return;
+            const dir = { kind: 'dynamic', mi: mi, at: ev.at, staffNo: staffNo, value: marks[0].value, event: ev, doc: docIndex++ };
+            if (marks[0].value === 'other') dir.text = marks[0].text;
+            if (marks.length > 1) dir.ext = { 'musicxml.dynamics': { more: marks.slice(1) } };
+            if (d.attrs.placement === 'above' || d.attrs.placement === 'below') dir.placement = d.attrs.placement;
+            part.directions.push(dir);
           });
           nk('slur').forEach(s => {
             const num = s.attrs.number || '1';
@@ -511,6 +610,28 @@
               else part.slurs.push({ to: ev, doc: doc });
             }
           });
+          /* glissando and slide: a line from one head to another (v2, G02 §18 S5). A slide is drawn
+             continuous and a glissando steps through the scale; MusicXML writes them as two elements.
+             Both ends are required, so an unpaired mark is reported and dropped, as a wedge is. */
+          ['glissando', 'slide'].forEach(tag => nk(tag).forEach(gl => {
+            if (!head) { used.delete(gl); return; }
+            const num = tag + '|' + (gl.attrs.number || '1');
+            if (gl.attrs.type === 'start') {
+              if (openGliss.has(num)) {
+                issue('W-IMPORT-UNPAIRED', 'a ' + tag + ' in measure ' + rec.number + ' starts before the previous one stops; the earlier one is dropped');
+                drop(tag + ' (unclosed)');
+              }
+              const g = { from: head, doc: doc, slide: tag === 'slide' };
+              const said = gl.text.trim();
+              if (said) g.text = said;
+              if (['solid', 'dashed', 'dotted', 'wavy'].indexOf(gl.attrs['line-type']) >= 0) g.line = gl.attrs['line-type'];
+              if (gl.attrs.placement === 'above' || gl.attrs.placement === 'below') g.placement = gl.attrs.placement;
+              openGliss.set(num, g);
+            } else if (gl.attrs.type === 'stop') {
+              if (openGliss.has(num)) { const g = openGliss.get(num); g.to = head; part.gliss.push(g); openGliss.delete(num); }
+              else { issue('W-IMPORT-UNPAIRED', 'a ' + tag + ' stop in measure ' + rec.number + ' has no start; dropped'); drop(tag + ' (stop without start)'); }
+            } else used.delete(gl);
+          }));
           const vkey = ev.voice.doc;
           nk('tuplet').forEach(t => {
             const num = t.attrs.number || '1';
@@ -646,16 +767,16 @@
                 use(k);
                 part.directions.push(Object.assign({ kind: 'rehearsal', text: k.text }, base, { doc: docIndex++ }));
                 break;
-              case 'dynamics':
-                k.kids.forEach(x => {
-                  const value = x.name === 'other-dynamics' ? 'other' : x.name;
-                  if (!DYNAMIC_SET.has(value)) return;
-                  use(k); use(x);
-                  const dd = Object.assign({ kind: 'dynamic', value: value }, base, { doc: docIndex++ });
-                  if (value === 'other') dd.text = x.text;
-                  part.directions.push(dd);
-                });
+              case 'dynamics': {
+                const marks = dynamicsIn(k, use);
+                if (!marks.length) break;
+                use(k);
+                const dd = Object.assign({ kind: 'dynamic', value: marks[0].value }, base, { doc: docIndex++ });
+                if (marks[0].value === 'other') dd.text = marks[0].text;
+                if (marks.length > 1) dd.ext = { 'musicxml.dynamics': { more: marks.slice(1) } };
+                part.directions.push(dd);
                 break;
+              }
               case 'wedge': {
                 const num = k.attrs.number || '1';
                 if (k.attrs.type === 'crescendo' || k.attrs.type === 'diminuendo') {
@@ -702,7 +823,10 @@
                   use(k);
                   const oct = size >= 22 ? 3 : size >= 15 ? 2 : 1;
                   if (openOttavas.has(key)) { issue('W-IMPORT-UNPAIRED', 'an octave shift in measure ' + rec.number + ' starts before the previous one stops; the earlier one is dropped'); drop('octave-shift (unclosed)'); }
-                  openOttavas.set(key, { shift: t === 'down' ? oct : -oct, size: size, from: { mi: mi, at: at }, staffNo: staffNo || 1, doc: doc });
+                  /* an Ottava names a staff; MusicXML lets the direction leave it out, and the app then
+                     reads the shift on every staff of the part. Which it was is kept (G02 §14.3). */
+                  openOttavas.set(key, { shift: t === 'down' ? oct : -oct, size: size, from: { mi: mi, at: at },
+                    staffNo: staffNo || 1, saidStaff: !!staffNo, doc: doc });
                 } else if (t === 'stop') {
                   use(k);
                   const o = openOttavas.get(key);
@@ -744,7 +868,17 @@
         /* <sound>: tempo (measure-level only; a direction's tempo is read with its mark), pedals, and the
            attributes the graph does not keep (reported) */
         function readSound(s, at, staffNo, placement, printedPedal) {
-          Object.keys(s.attrs).forEach(a => { if (!SOUND_MAPPED.has(a)) drop('sound@' + a); });
+          /* A <sound> says what a player does, and the graph models only some of it. The rest is kept
+             on the measure with its position, so the app's playback still hears it and a round trip
+             gives it back (G02 §6.2). Only the first part's: the app reads it from every part, and
+             reproducing that duplication is the legacy adapter's job, not the graph's. */
+          const rest = {};
+          Object.keys(s.attrs).sort().forEach(a => { if (!SOUND_MAPPED.has(a)) rest[a] = s.attrs[a]; });
+          if (Object.keys(rest).length && pi === 0) {
+            /* not which staff it hung from: MusicXML has no way to write a bare <sound> with a staff,
+               and nothing reads it - the printed direction beside it keeps its own staff */
+            (rec.sound = rec.sound || []).push({ at: R.format(at), attrs: rest });
+          } else Object.keys(rest).forEach(a => drop('sound@' + a));
           if (staffNo === null && placement === null && s.attrs.tempo !== undefined) {
             const q = jsFloatRat(s.attrs.tempo);
             if (q && R.sign(q) > 0) tempoDrafts.push({ pi: pi, mi: mi, at: at, qpm: q, doc: docIndex++ });
@@ -784,6 +918,9 @@
             out.repeat = rep.attrs.direction === 'forward' ? 'forward' : 'backward';
             if (out.repeat === 'backward' && rep.attrs.times !== undefined) { const t = jsInt(rep.attrs.times); if (t >= 2) out.times = t; }
           }
+          /* a pause written over the bar line itself: the first one, the way an event keeps its first (v2) */
+          const bf = kid(b, 'fermata');
+          if (bf) out.fermata = readFermata(bf);
           const end = kid(b, 'ending');
           if (pi !== 0) return;       /* the timeline's bar lines come from the first part */
           let target = loc;
@@ -818,6 +955,7 @@
       /* close what the part left open */
       openSlurs.forEach(sl => part.slurs.push(sl));
       openWedges.forEach(() => { issue('W-IMPORT-UNPAIRED', 'a wedge never stops; dropped'); drop('wedge (unclosed)'); });
+      openGliss.forEach((g, k) => { issue('W-IMPORT-UNPAIRED', 'a ' + k.split('|')[0] + ' never stops; dropped'); drop(k.split('|')[0] + ' (unclosed)'); });
       openPedals.forEach(p => part.pedals.push(p));
       openOttavas.forEach(() => { issue('W-IMPORT-UNPAIRED', 'an octave shift never stops; dropped'); drop('octave-shift (unclosed)'); });
       openBeams.forEach(b => part.beams.push(b));
@@ -831,7 +969,12 @@
     });
 
     /* ------------------------------------------------------ measure lengths */
-    if (!meterAt[0]) throw new ImportError('IMPORT-UNSUPPORTED', 'the first measure has no time signature');
+    /* A file with no time signature anywhere is still a score (a cadenza, chant, a fragment). Assume
+       what every notation program assumes, say so, and print nothing (G02 6.3, A8). */
+    if (!meterAt[0]) {
+      issue('W-IMPORT-METER-ASSUMED', 'the score states no time signature; 4/4 is assumed and not printed');
+      meterAt[0] = { beats: [4], beatType: 4, hidden: true, assumed: true };
+    }
     let meter = null;
     const durs = timeline.map((rec, mi) => {
       if (meterAt[mi]) meter = meterAt[mi];
@@ -857,8 +1000,12 @@
       const info = part.info;
       const nStaves = Math.max(part.staves, part.maxStaff);
       const name = (info.name || '') + ' ' + (info.instrumentName || '');
-      const piano = /piano|pno|klavier|keyboard/i.test(name) || nStaves >= 2;
-      const instrument = { kind: piano ? 'piano' : 'unknown', family: piano ? 'keyboard' : 'other' };
+      const piano = !part.hasPerc && (/piano|pno|klavier|keyboard/i.test(name) || nStaves >= 2);
+      const drums = part.hasPerc && /drum|kit|set/i.test(name + ' ' + (info.instrumentName || ''));
+      const instrument = part.hasPerc
+        ? { kind: drums ? 'drumset' : 'percussion', family: 'percussion' }
+        : { kind: piano ? 'piano' : 'unknown', family: piano ? 'keyboard' : 'other' };
+      if (part.hasPerc) instrument.kit = { items: buildKit(part, info) };
       if (info.instrumentName) instrument.name = info.instrumentName;
       if (info.midi && Object.keys(info.midi).length) instrument.midi = info.midi;
       if (part.transpose) instrument.transpose = part.transpose;
@@ -874,6 +1021,7 @@
       part.staffIds = [];
       for (let s = 1; s <= part.nStaves; s++) {
         const st = { };
+        if (part.sg.instrument.family === 'percussion') st.kind = 'percussion';
         if (part.sg.instrument.kind === 'piano' && part.nStaves === 2) st.limb = s === 1 ? 'RH' : 'LH';
         part.staffIds.push(b.staff(part.sg, st).id);
       }
@@ -885,12 +1033,59 @@
         v.id = b.voice(part.sg, x).id;
       });
     });
+    /* The kit a percussion part plays (G02 §17). One item per thing struck, named by the file's
+       <score-instrument> where a note points at one and by where it sits on the staff where it does
+       not. Each perc head is stamped with its key here, so nothing is inferred later. */
+    function buildKit(part, info) {
+      const byKey = new Map();
+      const keyOfInst = new Map();
+      const heads = [];
+      part.events.forEach(e => e.heads.forEach(h => { if (h.perc) heads.push(h); }));
+      const unique = base => {
+        let k = base || 'item', n = 2;
+        while (byKey.has(k) && byKey.get(k).from !== base) { k = base + '-' + n; n++; }
+        return k;
+      };
+      heads.forEach(h => {
+        const named = h.instId != null && info.instruments && info.instruments.get(h.instId);
+        let key = keyOfInst.get(h.instId);
+        if (key === undefined) {
+          const base = named ? kitKey(named.name) || kitKey(h.instId) : '';
+          key = unique(base || 'pos-' + h.pos.step.toLowerCase() + h.pos.oct);
+          if (h.instId != null) keyOfInst.set(h.instId, key);
+        }
+        h.kitKey = key;
+        if (!byKey.has(key)) {
+          const item = { key: key, pos: h.pos, from: named ? kitKey(named.name) : '' };
+          if (named && named.name) item.name = named.name;
+          if (named && named.gm >= 27 && named.gm <= 87) item.gm = named.gm;
+          if (h.notehead && h.notehead.shape) item.notehead = h.notehead.shape;
+          byKey.set(key, item);
+        }
+      });
+      if (!byKey.size) {
+        issue('W-IMPORT-PERC-KIT', 'a percussion part with no struck note keeps an empty kit placeholder');
+        byKey.set('unknown', { key: 'unknown', pos: { step: 'C', oct: 5 }, from: '' });
+      }
+      return Array.from(byKey.values()).map(it => { const o = Object.assign({}, it); delete o.from; return o; });
+    }
+
     const staffId = (part, no) => part.staffIds[(no || 1) - 1];
     const mid = [];
     const at = x => R.format(x);
     timeline.forEach((rec, mi) => {
       const m = { number: rec.number, dur: R.format(durs[mi]) };
       if (rec.implicit) m.implicit = true;
+      if (rec.multiRest >= 2) m.multiRest = rec.multiRest;
+      if (rec.sound && rec.sound.length) {
+        /* by position, so a file that writes a mid-measure sound before the one at the bar line reads
+           back as the same graph (the export writes them in order) */
+        rec.sound.sort((x, y) => R.cmp(R.parse(x.at), R.parse(y.at)));
+        m.ext = Object.assign({}, m.ext, { 'musicxml.sound': rec.sound });
+      }
+      /* the metre the graph cannot state: music written without one, and the 4/4 we put there instead */
+      if (meterAt[mi] && (meterAt[mi].senza || meterAt[mi].assumed))
+        m.ext = Object.assign({}, m.ext, { 'musicxml.no-metre': { reason: meterAt[mi].senza ? 'senza-misura' : 'absent' } });
       const bl = {};
       ['left', 'right'].forEach(side => { if (rec.barline[side] && Object.keys(rec.barline[side]).length) bl[side] = rec.barline[side]; });
       if (Object.keys(bl).length) m.barline = bl;
@@ -991,7 +1186,10 @@
     const STEP_ORDER = { C: 0, D: 1, E: 2, F: 3, G: 4, A: 5, B: 6 };
     parts.forEach(part => {
       const vIndex = new Map(part.voices.map((v, i) => [v, i]));
-      part.events.forEach(e => e.heads.sort((a, c) => P.midi(a.pitch) - P.midi(c.pitch) || STEP_ORDER[a.pitch.step] - STEP_ORDER[c.pitch.step] || a.doc - c.doc));
+      /* a chord's heads read low to high; a percussion head has no pitch, so it sorts by where it sits */
+      const low = h => (h.perc ? h.pos.oct * 7 + STEP_ORDER[h.pos.step] : P.midi(h.pitch));
+      const step = h => STEP_ORDER[(h.perc ? h.pos : h.pitch).step];
+      part.events.forEach(e => e.heads.sort((a, c) => low(a) - low(c) || step(a) - step(c) || a.doc - c.doc));
       part.events.sort(byKey(e => e.mi, e => vIndex.get(e.voice), e => e.at, e => (e.grace ? 0 : 1), e => (e.graceInfo ? e.graceInfo.order : 0)));
     });
     parts.forEach(part => part.events.forEach(e => {
@@ -1000,14 +1198,20 @@
       if (e.grace) x.grace = e.graceInfo;
       if (e.cue) x.cue = true;
       if (Object.keys(e.display).length) x.display = e.display;
-      if (e.kind === 'note') {
+      if (e.kind === 'note' || e.kind === 'perc') {
         x.heads = e.heads.map(h => {
+          if (h.perc) {
+            const hp = { inst: h.kitKey, pos: h.pos };
+            if (h.notehead) hp.notehead = h.notehead;
+            return hp;
+          }
           const hx = { pitch: h.pitch };
           if (h.staffNo !== e.staffNo) hx.staff = staffId(part, h.staffNo);
           if (h.acc) hx.acc = h.acc;
           if (h.notehead) hx.notehead = h.notehead;
           if (h.fingering) hx.fingering = h.fingering;
           if (h.tech) hx.tech = h.tech;
+          if (h.ext) hx.ext = h.ext;
           return hx;
         });
       }
@@ -1029,7 +1233,11 @@
       }
       if (d.event) x.event = d.event.id;
       if (d.placement) x.placement = d.placement;
-      if (d.kind === 'dynamic') { x.value = d.value; if (d.text !== undefined) x.text = d.text; }
+      if (d.kind === 'dynamic') {
+        x.value = d.value;
+        if (d.text !== undefined) x.text = d.text;
+        if (d.ext) x.ext = d.ext;          /* the other glyphs the same <dynamics> element printed */
+      }
       if (d.kind === 'words' || d.kind === 'rehearsal') x.text = d.text;
       if (d.kind === 'chord') {
         x.root = d.root; x.chordKind = d.chordKind;
@@ -1161,6 +1369,15 @@
         const e0 = sl.from || sl.to;
         drafts.push({ type: 'slur', doc: sl.doc, pos: evPos(e0), anchor: S.idNumber(e0.id), x: x });
       });
+      /* glissandi and slides: both ends are heads */
+      part.gliss.forEach(g => {
+        const x = { type: 'gliss', from: g.from.id, to: g.to.id };
+        if (g.slide) x.slide = true;
+        if (g.line) x.line = g.line;
+        if (g.text) x.text = g.text;
+        if (g.placement) x.placement = g.placement;
+        drafts.push({ type: 'gliss', doc: g.doc, pos: evPos(g.from.event), anchor: S.idNumber(g.from.id), x: x });
+      });
       /* arpeggios: the marked heads at one onset (and number) */
       const arpGroups = new Map();
       part.arps.forEach(a => {
@@ -1195,7 +1412,9 @@
         drafts.push({ type: 'pedal', doc: p.doc, pos: posOf(p.from.mi, p.from.at), anchor: 0, x: x });
       });
       part.ottavas.forEach(o => {
-        drafts.push({ type: 'ottava', doc: o.doc, pos: posOf(o.from.mi, o.from.at), anchor: o.staffNo, x: { type: 'ottava', staff: staffId(part, o.staffNo), shift: o.shift, from: pos(o.from), to: pos(o.to) } });
+        const ox = { type: 'ottava', staff: staffId(part, o.staffNo), shift: o.shift, from: pos(o.from), to: pos(o.to) };
+        if (!o.saidStaff) ox.ext = { 'musicxml.ottava': { staff: 'assumed' } };
+        drafts.push({ type: 'ottava', doc: o.doc, pos: posOf(o.from.mi, o.from.at), anchor: o.staffNo, x: ox });
       });
       drafts.sort((p, q) => R.cmp(p.pos, q.pos) || SPANNER_SUBORDER[p.type] - SPANNER_SUBORDER[q.type] || p.anchor - q.anchor ||
         (p.depth || 0) - (q.depth || 0) || p.doc - q.doc);

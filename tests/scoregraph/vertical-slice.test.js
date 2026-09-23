@@ -212,9 +212,45 @@ test('in the browser, audio-score.js uses the PPPScoreGraph the scripts before i
   assert.throws(() => vm.runInContext('(() => { const d = JSON.parse(job); return PPPAudioScore.toMusicXml(d.input, d.opts); })()', old), /reload the page/);
 });
 
-test('the app HTML differs from the G1 base commit only by the added script tags (A43)', () => {
-  const diff = execFileSync('git', ['diff', '--no-color', '-U0', 'aff7080', '--', 'Piano Coach App.dc.html'], { cwd: REPO, encoding: 'utf8' });
-  const changed = diff.split('\n').filter(l => /^[-+]/.test(l) && !/^(---|\+\+\+) /.test(l)).map(l => l.replace(/\r$/, ''));
-  assert.ok(changed.length > 0);
-  changed.forEach(l => assert.match(l, /^\+<script src="\.\/scoregraph\/[\w-]+\.js\?v=\d+"><\/script>$/));
+/* G1 could say the app changed only by its script tags, because nothing in it used the graph yet.
+   G2 moves the import boundary onto the graph, so the app does change - and what has to hold now is
+   that the change is the boundary and nothing else: a file a person opens is read by the graph, and
+   parseMusicXML survives only as the way back (G02 §14.2, A34). */
+test('a file a person opens is read through the graph, and parseMusicXML is only the way back (A34)', () => {
+  const html = fs.readFileSync(path.join(REPO, 'Piano Coach App.dc.html'), 'utf8');
+  const body = (from, to) => {
+    const i = html.indexOf(from);
+    assert.ok(i > 0, 'the app still has ' + JSON.stringify(from));
+    const j = html.indexOf(to, i);
+    return html.slice(i, j > 0 ? j : i + 4000);
+  };
+  /* the file picker's own path */
+  const picked = body('async function scoreFromFile(file)', '\n/* =====');
+  assert.match(picked, /PPPScoreGraph\.legacy\.toScore/, 'scoreFromFile builds the Score from the graph');
+  assert.match(picked, /importToGraph\(/, 'through the one door');
+  (picked.match(/parseMusicXML\(/g) || []).forEach(() => {
+    assert.match(picked, /if \(LEGACY_IMPORT[\s\S]*parseMusicXML\(/, 'and only reaches the old reader behind LEGACY_IMPORT');
+  });
+  /* and the entry point the import screen calls */
+  const load = body("if (kind === 'musicxml' || kind === 'mxl' || kind === 'midi')", 'PDF / photo');
+  assert.match(load, /PPPScoreGraph\.legacy\.toScore/);
+  assert.match(load, /if \(LEGACY_IMPORT && kind !== 'midi'\)/, 'with the same way back');
+  assert.match(load, /graph: got\.graph/, 'and the graph comes back with the import');
+  /* but never on `source`: that object is written whole into localStorage (G02 §24.10) */
+  assert.doesNotMatch(load, /source\.graph\s*=/, 'the graph does not ride on the object that gets saved');
+  assert.match(load, /source\.importReport = Import\.summariseGraph/, 'only a summary of it does');
+
+  /* the way back is a switch a person can flip, not a fallback the code takes on its own */
+  assert.match(html, /let LEGACY_IMPORT = false;/);
+  assert.doesNotMatch(picked, /catch[\s\S]{0,120}parseMusicXML/, 'never a silent fallback');
+});
+
+test('the app loads every scoregraph file, in order, before audio-score.js (A43)', () => {
+  const html = fs.readFileSync(path.join(REPO, 'Piano Coach App.dc.html'), 'utf8');
+  const srcs = [...html.matchAll(/<script src="\.\/((?:scoregraph\/[\w-]+|audio-score)\.js)\?v=[^"]*"><\/script>/g)].map(m => m[1]);
+  const i = srcs.indexOf('audio-score.js');
+  assert.ok(i > 0);
+  assert.deepEqual(srcs.slice(0, i).slice().sort(),
+    fs.readdirSync(path.join(REPO, 'scoregraph')).filter(f => f.endsWith('.js')).map(f => 'scoregraph/' + f).sort());
+  assert.equal(srcs[i - 1], 'scoregraph/index.js', 'index.js assembles the rest, so it comes last');
 });

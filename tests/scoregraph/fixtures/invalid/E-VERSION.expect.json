@@ -1,5 +1,5 @@
 {
- "about": "a scoregraph_version this code does not know (2)",
+ "about": "a version 1 document that reached the validator without being migrated",
  "spec": "G01 §13.2 E-VERSION",
  "expect": {
   "errors": [
