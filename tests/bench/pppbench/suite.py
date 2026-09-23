@@ -93,6 +93,20 @@ GATE_SMOKE = _gate(4.0, 1, ["set:", "profile:", "beats:"], 8)
 # full also guards the hold-out aggregate (§17 m10): a change that helps the open references and
 # costs the unseen ones is the overfitting the hold-out exists to show
 GATE_FULL = _gate(1.0, 2, SUBGROUP_PREFIXES + ["holdout"], 15)
+# mutation-check (G00 §9.5) also reads the G3 notation-quality metrics its G3 mutations must regress (G03 §20.5,
+# A37); core gets them only when G3 flips on and they enter its baseline (§20.4)
+NQ_GATE = {
+    "nq.beam.boundary_ok": {"dir": "up", "tol": -0.005},
+    "nq.beam.coverage": {"dir": "up", "tol": -0.01},
+    "nq.rhythm.hidden_beat_rate": {"dir": "down", "tol": 0.005},
+    "nq.shape.tm_missing": {"dir": "down", "tol": 0.05},
+    "nq.spell.context_odd": {"dir": "down", "tol": 0.05},
+    "nq.tie.mergeable_rate": {"dir": "down", "tol": 0.005},
+    "nq.tuplet.group_complete": {"dir": "up", "tol": -0.005},
+    "nq.tuplet.one_note_rate": {"dir": "down", "tol": 0.005},
+}
+GATE_MUTATION = _gate(1.0, 2, SUBGROUP_PREFIXES, 15)
+GATE_MUTATION["metrics"].update(NQ_GATE)
 
 
 def _fixture_gate(extra: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

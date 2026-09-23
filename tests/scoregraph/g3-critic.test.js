@@ -3,7 +3,7 @@
    fake pass that declares only what it is allowed to change and then breaks something else. */
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { SG } = require('./helpers.js');
+const { SG, codes } = require('./helpers.js');
 const { mk } = require('./g3-helpers.js');
 const Pro = SG.pro;
 
@@ -70,6 +70,22 @@ test('the critic catches each of the 12 planted violations, and strict mode thro
     assert.ok(r.report.fallback || r.report.rollbacks.length, what + ': reported');
     assert.ok(r.report.issues.some(x => x.code === 'N-G3-ROLLBACK'), what + ': N-G3-ROLLBACK');
   });
+});
+
+/* A7b: a one-tick move always leaves a length no value prints (W-DISPLAY-DURATION), so the validation behind the
+   critic would catch it even if the fingerprint missed it. An onset a 16th late with the gap a rest prints cleanly:
+   only the fingerprint sees it (G03 §20.5 (7); g3-mutation.test.js plants a critic that reads positions to the beat) */
+const LATE_16TH = ['an onset a 16th late, every value printable', ['pieces', 'rests'], doc => {
+  const d = note(doc, 'D');
+  d.at = '5/16'; d.dur = '3/16'; d.display = { type: 'eighth', dots: 1 };
+  P(doc).events.push({ id: 'e' + doc.nextId++, kind: 'rest', m: d.m, at: '1/4', dur: '1/16', voice: d.voice, staff: d.staff, display: { type: '16th' } });
+}];
+test('A7b: an onset moved by a printable value is for the critic alone to catch', () => {
+  const [what, may, edit] = LATE_16TH;
+  const pass = fake('plant-late-16th', may, edit);
+  const g = base();
+  assert.deepEqual(codes(SG.validate(pass.run(g, {}).graph).issues, 'WARNING'), {}, 'the planted graph prints cleanly');
+  assert.throws(() => Pro.professionalize(g, { strict: true, passList: [pass] }), e => e.code === 'E-G3-CRITIC', what);
 });
 
 test('a pass that keeps its promise passes the critic', () => {

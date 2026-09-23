@@ -235,7 +235,7 @@ class SuiteGatesMatchTheCode(unittest.TestCase):
     def test_committed_gates(self):
         import json
         want = {"smoke": suite_mod.GATE_SMOKE, "core": suite_mod.GATE_CORE, "robust": suite_mod.GATE_CORE,
-                "mutation": suite_mod.GATE_CORE, "full": suite_mod.GATE_FULL,
+                "mutation": suite_mod.GATE_MUTATION, "full": suite_mod.GATE_FULL,
                 "replay-public": suite_mod.GATE_REPLAY, "omr-live": suite_mod.GATE_OMR}
         for name, gate in want.items():
             self.assertEqual(suite_mod.load_suite(name)["gate"], json.loads(json.dumps(gate)), name)
