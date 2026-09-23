@@ -96,6 +96,8 @@ heard notes (초) ─► toMusicXml ─► buildGraph ─► ScoreGraph ─► m
                                      opts.legacyWriter ─► buildXml ─► MusicXML (되돌리기 경로)
 ```
 
+- **G3 (브랜치 `g3-score-intelligence`, G03 §27, 미병합)**: `buildGraph`와 exporter 사이에 graph → graph pass 층 `professionalize()`(`scoregraph/pro*.js`, `meter-grid.js`)가 들어간다. 순서 staff → voice → (G3b perf-voices → regularize) → rhythm → tuplet → spell → beam → marks → (ottava), critic이 pass마다 보존 규칙을 검사한다. `toMusicXml(opts.professional)`: `'off'`(기본) · `'shadow'`(돌리고 report만) · `'on'`(G3 그래프를 export). 반환값에 `proReport`. flip 전까지 기본 `'off'`.
+
 ### G2 구현 후 (2026-09-23, 브랜치 `g2-import`)
 
 G2는 **producer 쪽 경계**를 연다. 전문과 근거는 `docs/GOALS/G02_SCORE_IMPORT.md`.

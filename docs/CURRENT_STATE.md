@@ -1,7 +1,8 @@
 # PPP — current state
 
-Updated 2026-09-23, on `main`. G0 (Quality Foundation), G1 (ScoreGraph) and G2 (Score Import)
-are all merged and closed; `origin/main` is `cc0da79`. G3 has not started.
+Updated 2026-09-24, on `g3-score-intelligence`. G0 (Quality Foundation), G1 (ScoreGraph) and G2 (Score Import)
+are all merged and closed; `origin/main` is `cc509e2`. **G3 is implemented on its branch, not merged, not
+switched on** (G03 §27): G3a is done but its flip is blocked on a conflict inside the design that the user decides.
 Read this first in a new session, then the current goal's spec in `docs/GOALS/`.
 
 ## Where things are
@@ -9,13 +10,14 @@ Read this first in a new session, then the current goal's spec in `docs/GOALS/`.
 | | |
 | --- | --- |
 | Goals | Numbered specs in `docs/GOALS/`. **G0 is merged and closed** — implemented (§16), reviewed and fixed through six passes (§17–§22.9), then merged as PR #1 (`aff7080`). `G00_QUALITY_FOUNDATION.md` §22.9 has the last result and what is still open (nothing). |
+| G3 | **Implemented on `g3-score-intelligence` (`D:/PPP-g3`), not merged, no PR** (G03 §27). `professionalize()` (a graph → graph pass pipeline: hands and staves, voices, rhythm representation, logical tuplets — G1 F1 fixed —, keys by region, spelling and accidentals, beams, marks, behind a critic that rolls back any change a pass may not make) runs in `toMusicXml` when `opts.professional` is `'on'`; **the default is still `'off'`**. Core with G3 on: usable +1.27 pt, hand accuracy 0.888 → 0.921, one-note brackets 100 % → 0, unneeded ties 0.43 → 0.01, beams 0 → 98.5 %, every critical gate case kept. The flip waits on G03 §27.4 (two G3-gate lines conflict with R17/H7; four amt micro cases on full). G3b (release → value, second voices from the performance) and the automatic 8va are built and **off**. The human review set (A36) is built for the user to judge. |
 | G1 | **Merged and closed.** Implemented (§24), independently reviewed (§25: READY_TO_PR, BLOCKER 0, MAJOR 0), merged as PR #2 (`aa77d2e`), then the follow-up PR #3 (`00081cc`, §26) closed findings F2 and F3. F1 (tuplet bracket grouping) is left for G3 on purpose. `toMusicXml` writes its MusicXML from a ScoreGraph (`scoregraph/`); `opts.legacyWriter` is the way back for one release. |
 | G2 | **Merged and closed.** Implemented (§24), independently reviewed (§25), the one MAJOR it found closed by §26 (D7), merged as PR #4 (`cc0da79`) with BLOCKER 0 and MAJOR 0. Schema is version 2. **The app's import boundary is on the graph** — a file a person opens becomes a ScoreGraph and the Score is a projection of it; `PPP.legacyImport = true` is the way back for one release. **`.mid` opens**: its notes, times and controllers exactly as the file states them, its notation worked out by audio-score's existing quantizer and marked inferred in three places (D3). The MusicXML importer no longer refuses a whole file for an `<unpitched>` note, a missing time signature or a quarter tone. **A transposing part is printed where it is written and sounds where it sounds** (D7, §26). Transcription is unchanged: core 553/553 identical to `00081cc`. |
 | G0 code | On `main` since PR #1, which came from the clean branch `g0-quality-foundation-clean` (worktree `D:/PPP-g0-clean`). The older `g0-quality-foundation` branch and its `D:/PPP-g0` worktree are contaminated with other sessions' production changes — **never merge or edit those**. `tests/README.md` there has a two-line doc change left uncommitted on purpose (outside the allowed paths). |
 | `main` | **Local `main` is `d82bb71`, which must not be pushed.** Despite its message ("harden G0 quality benchmark") it holds no benchmark code: it is a `git add -A` sweep of `D:/PPP` with copyrighted `tmp/` audio and score renders, `__pycache__`, a `_oh-sheet-compare` gitlink and another session's 124 `catalog/method` files (G00 §19.18). It is not pushed, and `origin/main` (`00081cc`) does not contain it. The user decides how to undo it. |
 | App | `Piano Coach App.dc.html` (single file, ~19k lines), `audio-score.js` (recording → MusicXML; on the G1 branch through `scoregraph/`, which the page loads before it), `omr-service.js` (local helper, 127.0.0.1:8788), `server.js` (port 8777). Deploy: Render, manual (`render deploys create …`; a push does not deploy). |
 | ScoreGraph | `scoregraph/` (17 UMD files, no dependencies; `scoregraph/README.md`): versioned plain-JSON canonical score, validator (31 errors, 14 warnings, 7 notes), canonical JSON, time and performance layers, MusicXML import and export. Every committed MusicXML (369 files) goes through it and back (`run.py sg-roundtrip`): 367 unchanged, 2 with a documented difference (allowlisted; a closing ending bracket and a wedge that were never opened). Since G2 the app's import is on it too: a file a person opens becomes a graph and the Score is a projection (`legacy-score.js`). Storage, renderer and player still read the legacy `Score`; they move in G4–G5. |
-| Tests | `npm test` (26 browser suites; needs `npm start`, network, puppeteer), `npm run test:transcription-core` (16, including `beat_track_test.py`), `npm run test:arranger` (3), `npm run test:bench` (221 unit tests + 17 golden snapshots + 13 correctness fixtures), `npm run test:scoregraph` (132 node tests, G1–G2). |
+| Tests | `npm test` (26 browser suites; needs `npm start`, network, puppeteer), `npm run test:transcription-core` (16, including `beat_track_test.py`), `npm run test:arranger` (3), `npm run test:bench` (221 unit tests + 17 golden snapshots + 13 correctness fixtures), `npm run test:scoregraph` (132 node tests, G1–G2; 199 on the G3 branch), `npm run test:scoregraph:perf` (G3 A39, run alone). |
 | CI | `.github/workflows/bench.yml`: a gate job (unit, `test:scoregraph` and `sg-roundtrip` since G1, golden, lint, provenance, correctness, smoke/core/robust run + check, replay-public, transcription-core, arranger) and a nightly job (mutation-check, full, the reviews' `adversarial.py`, `final_review.py`, `final_oracle.py`). The gate runs on a **pull request** or a push to `main`; pushing the branch alone runs nothing. The nightly schedule runs only from the default branch (`workflow_dispatch` runs it by hand). The gate has run on GitHub for PR #2, PR #3 and PR #4 and passed every time, and on `main` at `cc0da79`. |
 
 ## Measuring score quality (G0)
@@ -219,10 +221,12 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
   (**F1** — the app draws fewer brackets; **G3 owns tuplet engraving**, see issue 20 above), and
   F4–F8 (§25.3), none of them reachable today.
 - **G3 (score intelligence) design is approved** (`docs/GOALS/G03_SCORE_INTELLIGENCE.md`; designed 2026-09-23, decisions D1–D8 accepted 2026-09-24, §22.1): a graph → graph pass pipeline. G3a (tuplet grouping/F1, rhythm representation, hands, spelling, accidentals, beams) is ready to implement. G3b (release → note value, second voices from the performance) and the automatic 8va pass are built **default OFF**: G3b goes on in production only after three real recordings (duple, triple, compound) are baselined, 8va only after issue 3 is fixed. Ownership: G3 notation/spelling/hands, G4 engraving, G5 fingering.
-- **G3 (score intelligence) implementation has not started.** Its branch and worktree exist and are empty of work:
-  `g3-score-intelligence` in `D:/PPP-g3`, branched from `main` with G2 in it. It inherits G1 F1, the rhythm,
-  voice and hand inference that G2 deliberately did not write (§24.8, G2-D5), and the notation
-  quality issues numbered above.
+- **G3 is implemented on `g3-score-intelligence` (`D:/PPP-g3`), 20 commits over the design, pushed, no PR**
+  (G03 §27). Open, in order: (1) the user decides G03 §27.4 — the G3 gate asks for `nq.shape.tm_missing == 0`
+  and `nq.tie.mergeable_rate == 0`, which R17 (one-tick residues are R-reg's) and H7 (double dots) make
+  impossible for G3a; the flip (`PROFESSIONAL_DEFAULT = 'on'`, `golden --bless --g3`, `nq.*` into the core
+  gate and baseline) follows that decision; (2) an independent review before any merge; (3) the human review
+  (`run.py human-set`, MuseScore 4, A36); (4) G3b's λ after the three real recordings (M11).
 - The full-suite baseline (and the others) predate main's `audio-score.js` changes (F7): decide on a
   rebaseline at `aff7080` before relying on `check --suite full`.
 - G0 is merged (PR #1, `aff7080`) and CI is on. The one thing still open from G0 is what to do with

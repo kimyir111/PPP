@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| 상태 | **설계 승인 (Architect closeout, 2026-09-24)**. 사용자 결정 D1–D8 **Accepted** (§22.1). 구현 시작 전 — G3 Implementer가 Step 0부터 시작한다. G3b와 자동 8va는 구현하되 **default OFF** |
+| 상태 | **구현 PARTIAL (G3 Implementer, 2026-09-24, §27)**. G3a 구현 완료, **flip BLOCKED** — §20.4 G3 gate 2줄이 R17·H7과 충돌 (§27.4, 사용자 결정 필요). G3b·자동 8va 구현, **default OFF**. human review(A36) 사용자 대기. 설계 승인: Architect closeout 2026-09-24, D1–D8 Accepted (§22.1) |
 | 기준 커밋 | `origin/main` = `cc509e2` (G2 closeout + Windows mutation fix) |
 | 브랜치 / worktree | `g3-score-intelligence` / `D:/PPP-g3` |
 | 선행 | G0 Quality Foundation, G1 ScoreGraph, G2 Score Import — 모두 CLOSED |
@@ -1149,6 +1149,125 @@ G3에서 **하지 않는다**.
 | K7 | 여러 세션이 `D:/PPP`를 공유 | G3는 `D:/PPP-g3`에서만. `D:/PPP`와 `d82bb71`은 건드리지 않는다 |
 | K8 | 앱 렌더러가 G3 beam·tuplet을 다시 결정해 사용자는 차이를 일부만 본다 | D4. human review는 외부 판각기. 렌더러 전환은 G4 |
 | K9 | human review 표본이 작다 (1명·20개) | 결과에 명시, `nq.ned`와의 일치도 보고, G3b에서 반복 |
+
+---
+
+## 27. 구현 기록 (G3 Implementer, 2026-09-24)
+
+브랜치 `g3-score-intelligence` (worktree `D:/PPP-g3`), 설계 `209f166` 위 20 commit, 전부 push. PR·merge 없음. `PROFESSIONAL_DEFAULT`는 **`'off'`** 그대로다 — flip하지 않았다 (§27.4).
+
+### 27.1 상태
+
+| | 상태 | 요약 |
+| --- | --- | --- |
+| **G3 전체** | **PARTIAL** | G3a 구현 완료, flip은 설계 내부 충돌로 BLOCKED (§27.4). G3b 구현, 기본 off. human review는 사용자 대기 |
+| **G3a** | 구현 완료 · flip BLOCKED | P2 staff/hand·clef, P3 voice, P4 R-repr, P5 tuplet(F1), P6 조·철자·임시표, P7 beam, P8 marks, critic. `toMusicXml` `opts.professional` off/shadow/on. G3 gate 8줄 중 6줄 PASS, `tm_missing`·`mergeable` 2줄 FAIL (§27.4) |
+| **G3b** | 구현 · 기본 OFF | `regularize`(R-reg, §6.4) + `perf-voices`(§8.3), `opts.g3b`로만. λ = 1은 자리표시(M11이 정한다). 합성 fixture만, baseline 승인 없음 |
+| 자동 8va | 구현 · 기본 OFF (D2) | `opts.ottava` |
+
+### 27.2 Commit
+
+| Step | commit | |
+| --- | --- | --- |
+| 1 | `460aa0c` | meter-grid, `W-BEAM-SHAPE`·`W-TUPLET-DISPLAY`, `ext['ppp.g3']` |
+| 0 | `8023610` | `tests/bench/tools/notation_audit.py` + 단위 테스트; `evaluate.ref_readability` id() 캐시 버그 수정 (base에서도 순서 의존 실패) |
+| 2 | `9164f64` | ops (Draft 트랜잭션), E1–E10 fixture |
+| 3 | `bec0280` | `professionalize`, critic (fingerprint·rollback·strict) |
+| §20 | `421feb1` | reader/5, `nq.*`, `check --g3` |
+| 4 | `c628768` | P5 논리 tuplet (F1) |
+| 5 | `049d71e` | P4 R-repr |
+| 6 | `a936381` | toMusicXml off/shadow/on, 첫 core A/B |
+| 7 | `bec55ba` | P2 손·staff·clef, 자동 8va(off) |
+| 8 | `221070e` | P3 성부 |
+| 9 | `260bc3a` | P6 조(구간)·철자·임시표 |
+| 10 | `1b87451` | P7 beam |
+| 11 | `bb2827b` | P8 marks |
+| perf | `9dea44c` | A39: 2,000마디 40k head 40 s → 1.6 s, 출력 동일 |
+| — | `5fefa67` | compound 박 안 셋잇단, lone bass ≠ 선율 |
+| 12 | `a104a36` | G3 mutation 6+no-op, A7b, `validate-preds.js --g3` |
+| — | `8322599` | robust·full A/B에서 나온 수정 (clef·조·손) |
+| 13 | `2ee0699` | `golden --g3` (A35), MIDI 경로 (A40) — **flip 없음** |
+| 14 | `62042ed` | G3b, 기본 off |
+| 15 | `0bacc0c` | human review set |
+
+### 27.3 A1–A40
+
+| # | 결과 | 근거 |
+| --- | --- | --- |
+| A1 | PASS | `test:scoregraph` 199/199 (132 + G3 67) |
+| A2 | PASS | sg-roundtrip L1 368, L1+ 367, L2 369, play order 369 |
+| A3 | PASS | `g3-preserve` (core·golden strict, performance 바이트 동일); MIDI는 A40 |
+| A4 | PASS | 두 번·자식 프로세스·다른 CWD 바이트 동일 |
+| A5 | PASS | core·golden, 코퍼스 369 force, fixture 전부 |
+| A6 | PASS | strict 전 케이스 critic 위반·ERROR 0 |
+| A7 | PASS | 심은 위반 12종 + **A7b** (§27.5 d) |
+| A8 | PASS | 코퍼스 369 rewrite 모드 변경 0 |
+| A9 | PARTIAL | `W-TUPLET-INCOMPLETE` 8,144 → 139, `W-DISPLAY-DURATION` 2,647 → 279, 새 경고 0, `W-BEAM-SHAPE`·`W-TUPLET-DISPLAY` 0. 남은 것은 26 케이스의 R17 1-tick 계열 (§27.4) |
+| A10 | PARTIAL | F1 해소: 1-음 괄호 0, 논리 그룹 전부 그려짐 (전 0개). 앱은 32분 셋잇단 그룹을 둘로 나눠 그림 (79 그룹 → 84 괄호) — 렌더러는 G4 (D4) |
+| A11 | PASS | T01–T10 |
+| A12 | PARTIAL | `tm_missing` 2,647 → 279 (26 케이스, R17 계열) |
+| A13 | PASS | T09 + core 표본 왕복 |
+| A14 | PASS | core 553 케이스별 duration·onset_pos·ioi·notes.*·note_values·beat_placement 정확히 동일 (최신 코드) |
+| A15 | PARTIAL | `mergeable_rate` 0.426 → 0.014 (17 케이스; H7 겹점·partial chord·R17·셋잇단 위치를 metric이 이진 길이로만 봄) |
+| A16 | PASS | R01–R28 |
+| A17 | PARTIAL | `hidden_beat_rate` 0.0174 → 0.0176: 작가가 고른 한 음가는 쪼개지 않는다 (§27.5 a) |
+| A18 | PASS | R22 |
+| A19 | PARTIAL (설계대로) | 기본 off에서 A14 성립; on 판정은 M11 뒤. 합성: core 553 throw·fallback·rollback 0, 마디당 쉼표 3.03 → 2.20, 32분 이하 9.2 % → 6.3 % (참고치, gate 아님) |
+| A20 | PASS | `hand.accuracy` 0.888 → 0.921, hands gate +50 / −0, Beyer 032 0.50 → 1.0 |
+| A21 | PASS | `over_span_rate` 0.00236 → 0.00234, G3가 만든 폭 > 14·> 5음 0 (DP 불가 비용) |
+| A22 | PASS | H01–H11 |
+| A23 | PASS | V01–V06 + core: 겹침 0, staff당 ≤ 2성부 |
+| A24 | PASS (core·full) | core: 철자·key gate 케이스별 퇴행 0. full: 3 케이스 key gate 퇴행이 있었고 수정 (§27.5 c) |
+| A25 | PASS | S01–S13 |
+| A26 | PASS | 이조 part 철자·소리 불변 |
+| A27 | PASS | `critical.accidentals` 100 %, `acc.redundant_rate` 0, courtesy_per_100 0 → 0.25 (gate +0.5) |
+| A28 | PASS | B01–B12, core `boundary_ok` 1.0, `coverage` 0.985 |
+| A29 | PASS | imported beam 불변 |
+| A30 | PASS | M01–M06 |
+| A31 | PASS | G3가 만든 dynamic·wedge·slur·art·fingering 0 |
+| A32 | PASS | `critical.pedal` 퇴행 0 |
+| A33 | PASS | `test:bench` 265 unit, golden 17/17 (G3 off), 기존 metric 불변 (reader/5 READS_AS) |
+| A34 | **BLOCKED** | G0 gate: smoke·core·robust·replay-public PASS, full REGRESSION (amt micro 4건, §27.4). usable Δ: core +1.27 pt, robust +1.42, full +3.67, hold-out +0.96. G3 gate FAIL 2줄 |
+| A35 | PASS (dry run) | `golden --g3`: 17 중 14 변경, 전부 허용 범주. bless는 flip 때 |
+| A36 | PENDING | 세트·도구 완성 (`human-set --build/--pairs/--score`). 렌더링·판정은 사용자 (D7) |
+| A37 | PASS | mutation-check 48/48 (G0 40 + G3 6 REGRESSION, no-op 둘 바이트 동일) + `g3-mutation.test.js` (§20.5 (7)(8)) |
+| A38 | PASS | 26 suite: G3 off·on 모두 25/26, 같은 집합 (transcription은 venv 환경 실패, 양쪽 동일) |
+| A39 | PASS | 단독 1.6 s (`npm run test:scoregraph:perf`), core suite 시간 +20 % |
+| A40 | PASS | m27·m18·m19로 확인; A40이 지목한 M13·M14·M10은 4음 미만이라 열리지 않는다 (G2 R4, G3 on·off 동일) |
+
+### 27.4 flip이 막힌 이유 — 설계 안의 충돌 (사용자 결정 필요)
+
+§20.4 G3 gate는 `nq.shape.tm_missing == 0`과 `nq.tie.mergeable_rate == 0`을 요구한다. 설계의 다른 규칙이 이것을 불가능하게 한다:
+
+1. **tm_missing 279 (26 케이스)**: 389/424개 event가 한 구간에 이진·셋잇단 격자점이 섞인 frozen region에 있다 (예: 40, 42 U — 1/96 W 간격). **R17**("1-tick 잔여 쉼표 — R-repr는 그대로 둔다, R-reg와 짝")이 바로 이것을 G3b에 넘긴다. 나머지 35개는 frozen 이웃에 잘린 셋잇단 조각. onset·길이 불변(G3a)으로는 중첩 tuplet 없이 쓸 수 없다.
+2. **mergeable 17 케이스**: (a) H7 — 박에서 시작하지도 박을 채우지도 않는 겹점 (6/8의 `16.~8`); (b) partial chord tie; (c) R17 frozen; (d) 셋잇단 위치의 조각을 metric이 이진 길이로만 판정. G3가 합칠 수 있는데 안 한 것은 없다.
+
+**full의 amt micro 4건** (micro는 하락 0 허용): M04·M15×2 `hand.accuracy` (오른손 4음 화음 안의 옥타브, 잡음 음), M20 `note_shape` 0.9266 → 0.9259 — 불일치 수는 8 → 8 그대로, G3가 조각을 합쳐 분모가 줄었다. 옥타브 항을 바꾼 두 변형(bare octave만; 한 손이 묶음 전체를 칠 때 면제)은 core hymns·M14에서 더 잃어 되돌렸다.
+
+**선택지** (사용자): (A) gate를 "G3a가 쓴 구간에서" 0으로 해석하고 R17 계열을 허용 목록으로 (설계 문구 "(G3a가 만든 출력에서)"와 R17을 합치는 해석); (B) G3b(M11 뒤)까지 flip 보류; (C) micro 4건은 amt 프로파일의 micro no-drop 규칙 예외로 기록. 이 결정 없이 flip·golden bless·nq baseline을 하지 않았다. flip은 `audio-score.js` 한 줄 + `golden --bless --g3` + `update-baseline`이다.
+
+### 27.5 설계와 다르게 한 것 (증거와 함께)
+
+a. **작가가 고른 한 음가는 쪼개지 않는다** (R-repr `rewrite`): 규칙대로면 core `ties.extra_per_100` 4.24 → 5.19 (gate +0.5 초과). 규칙 위반만인 값은 조각 수가 늘지 않을 때만 다시 쓴다 → 4.24 → 2.66. R07b, A17 PARTIAL의 원인.
+b. **compound 박 안 셋잇단** (§7.3의 구간 격자 그대로): 설계 초판 구현은 compound 박 전체를 frozen으로 두었다. 8분 단위 16분 셋잇단 + 같은 박 두 8분 위의 3:2 8분, P5는 점4분 박을 넘지 않는다. tm_missing 657 → 415 (그래프 기준), 셋잇단 tie 356 → 75. R25–R28.
+c. **한 5도 조 전환은 조표를 바꾸지 않는다** (§10.2 보완): 소나티네 딸림조 구간에 조표를 주자 full key gate 3 케이스 퇴행 (A24). 판각 관례대로 임시표로 쓴다. C → E♭(S06)은 유지. S13.
+d. **A7b**: 1-tick onset 이동은 항상 인쇄 불가능한 길이를 남겨 validator가 잡는다 — critic fingerprint를 시험하지 못한다. 16분 늦은 인쇄 가능한 이동을 추가; mutation (7)은 박 단위로만 위치를 읽는 critic.
+e. **clef 규칙 보강** (§9.3): "덧줄 ≥ 4 한 마디 이상"만으로는 오른손 아래 옥타브를 치는 왼손(B4 G4 D5, reference는 treble)이 bass clef에 남아 robust `heavy_rate`가 gate 초과. 한 음이라도 ≥ 4이고 다른 clef가 모든 음을 < 4로 받으면 바꾸고, 양쪽 다 읽히는 마디는 구간을 끊지 않는다. H09.
+f. **손 DP**: 가중치는 §9.2가 허용한 대로 core로 정함 (0.888 → 0.921). 추가: 선율 항은 앞 묶음의 왼손에 더 가까운 lone bass(M16, H10)나 오른손이 아직 누르는 음 아래의 화음(Gymnopédie, H11)에는 적용하지 않는다 — DP 상태(a, sa)만 읽어 정확·idempotent.
+g. **철자 line speller는 기본 off** (`opts.spelling`): 켜면 core 철자 몇 케이스 퇴행. 조 구간 + 표 철자 + 화음 수직 규칙이 기본.
+h. **A35 허용 범주에 페달 한 형태 추가**: P8(§12)이 release와 1박 안의 다음 press를 change 하나로 쓴다 (G15). 그 외 페달 차이는 거절.
+i. **human set의 "교재 6종"**: 적격(신뢰·PPP 비전사·비생성) reference는 40개, 교재 4종 + catalog. hymns·micro는 PPP 생성. 출처 6곳이 아니라 가능한 5곳에 고르게.
+j. **E8'** (Gymnopédie 6/8 m5): 기대 "변화 없음" — 작가 값 규칙으로 반마디는 유지, `8.~16`은 `4`로 (조각이 줄어듦).
+k. **perf 테스트**: `node --test`는 파일을 병렬로 돌려 시간이 약 2배 (CPU 시간도). 2 s 판정은 단독 실행 `npm run test:scoregraph:perf`에서, suite 안에서는 기록만.
+
+### 27.6 Reviewer가 먼저 볼 것
+
+1. §27.4의 gate 충돌 판단이 맞는가 — 특히 R17 계열 분류 (`residual2.js` 방식: 구간 격자 혼합).
+2. 성능 변경의 구조적 공유 (`ops.edit(validate:false)`가 바뀌지 않은 event를 입력의 frozen 객체로 돌려줌, critic의 event 단위 memo). core 553 + fixture 253에서 출력 동일(ID 번호 제외)을 확인했지만 불변성 가정이 깨지면 조용히 틀린다.
+3. 손 DP의 비대칭 규칙들 (§27.5 f)과 full amt micro 퇴행.
+4. `golden --g3`와 mutation G3 그룹의 base edit(`G3_ON`) — flip 뒤에는 `G3_ON = []`로 바꿔야 한다.
+5. G3b λ = 1과 perf-voices의 보수적 조건 — M11 전에는 아무 수치도 승인하지 않았다.
+6. `mk(spec.heard)` 기본 release가 "첫 조각 길이"에서 "tie 전체 길이"로 바뀌었다 (테스트 도우미만).
 
 ---
 
