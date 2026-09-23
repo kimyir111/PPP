@@ -153,7 +153,25 @@ F['m25-truncated-track'] = (() => {
   return good.subarray(0, good.length - 6);      /* the last events are cut off mid-track */
 })();
 
-fs.mkdirSync(OUT, { recursive: true });
 const names = Object.keys(F).sort();
-names.forEach(n => fs.writeFileSync(path.join(OUT, n + '.mid'), Buffer.from(F[n])));
-process.stdout.write(names.length + ' MIDI fixtures written to ' + path.relative(process.cwd(), OUT) + '\n');
+if (process.argv.includes('--check')) {
+  /* the committed bytes are what this file produces, and CI says so rather than trusting it */
+  const wrong = [];
+  names.forEach(n => {
+    const at = path.join(OUT, n + '.mid');
+    if (!fs.existsSync(at)) { wrong.push(n + ': missing'); return; }
+    if (!Buffer.from(F[n]).equals(fs.readFileSync(at))) wrong.push(n + ': differs');
+  });
+  fs.readdirSync(OUT).filter(f => f.endsWith('.mid') && names.indexOf(f.slice(0, -4)) < 0)
+    .forEach(f => wrong.push(f + ': not made by this file'));
+  if (wrong.length) {
+    process.stderr.write('the committed MIDI fixtures are not what this file writes:\n  ' + wrong.join('\n  ') +
+      '\nrun node tests/scoregraph/tools/make-midi-fixtures.js and commit the diff\n');
+    process.exit(1);
+  }
+  process.stdout.write(names.length + ' MIDI fixtures are byte for byte what this file writes\n');
+} else {
+  fs.mkdirSync(OUT, { recursive: true });
+  names.forEach(n => fs.writeFileSync(path.join(OUT, n + '.mid'), Buffer.from(F[n])));
+  process.stdout.write(names.length + ' MIDI fixtures written to ' + path.relative(process.cwd(), OUT) + '\n');
+}
