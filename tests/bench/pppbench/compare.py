@@ -28,7 +28,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from . import stages, suite as suite_mod, sut as sut_mod, util
+from . import stages, suite as suite_mod, sut as sut_mod, util, versions_compatible
 from .metrics.critical import GATES as CRITICAL_GATES
 
 BASELINE_DIR = os.path.join(util.bench_root(), "baselines")
@@ -101,7 +101,7 @@ def compare(results: Dict[str, Any], baseline: Optional[Dict[str, Any]], gate: D
         v.status = "ERROR"
         v.errors.append("NO_BASELINE: record one with update-baseline")
         return v
-    if results.get("versions") != baseline.get("versions"):
+    if not versions_compatible(results.get("versions"), baseline.get("versions")):
         v.errors.append(f"VERSION_MISMATCH: results {results.get('versions')} vs baseline {baseline.get('versions')} — "
                         "rerecord the baseline (update-baseline) for the new versions")
     if results.get("suite_sha256") != baseline.get("suite_sha256"):
@@ -364,6 +364,12 @@ def cli_check(args) -> int:
     from . import report
     from .runner import out_dir_for
     report.write_summary(results, run, v, base, os.path.join(out_dir_for(suite), "summary.md"))
+    if getattr(args, "g3", False):
+        from . import g3gate
+        lines = g3gate.evaluate(results, base)
+        print(g3gate.format_lines(lines))
+        if v.exit_code == 0 and not all(ok for _, ok, _ in lines):
+            return 1
     return v.exit_code
 
 

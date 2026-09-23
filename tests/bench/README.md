@@ -142,6 +142,40 @@ The main metrics (↑ better unless marked ↓; `…_ref` variants count against
 | `struct.downbeat.f1` | Do bar lines fall where the performance's bars start (±70 ms)? |
 | `read.bar_integrity` | Share of bars that are neither overfull nor badly underfull. |
 
+**Notation quality (`nq.*`, G03 §20.3; informational).** reader/5 also reads what the page prints that G0
+never read — tuplet brackets and their members, primary beams (`pppbench/notation_read.py`, attached as
+`CanonicalScore.notation`; not serialised, changes no reader/4 value). The `nq.*` metrics are computed the
+same way on the prediction and on the reference (`nq.X.delta` = prediction − reference). They enter no
+critical gate, no diagnostic score and no usable rate, and `check` ignores them (they are not in any
+suite's `gate` block); the G3 gate below reads three. `tests/bench/tools/notation_audit.py` (G3 Step 0)
+uses the same definitions, so a file's audit numbers and its `nq.*` values agree.
+
+| metric | question it answers |
+| --- | --- |
+| `nq.tuplet.group_complete` | Printed tuplet brackets whose members' printed values add up to *actual* × unit (the `<normal-type>`, else any plain value that makes it so). |
+| `nq.tuplet.one_note_rate` ↓ | Brackets over a single event (G1 F1, issue 20). |
+| `nq.shape.tm_missing` ↓ | Events whose length is a triplet length but carry no `<time-modification>` (a count; issue 19). |
+| `nq.tie.mergeable_rate` ↓ | Ties one symbol could replace: the joined span lies inside one beat and is one value with at most two dots. |
+| `nq.rhythm.hidden_beat_rate` ↓ | Pitched events hiding a beat the G03 §6.3 S table does not allow (simple metre: from off a beat over a beat, or over the middle of 4/4 from a beat; compound: over a dotted-quarter beat unless from a beat to its group's end). |
+| `nq.rest.per_measure_delta` ↓ | Rests per bar, prediction − reference. |
+| `nq.rhythm.short_rate_delta` ↓ | Share of 32nd-or-shorter note elements, prediction − reference. |
+| `nq.voice.poly_recall` | Reference piano staff-bars with two or more voices whose aligned prediction staff-bar has two or more too. |
+| `nq.beam.coverage` | Beamable events (printed eighth or shorter, two or more in one voice's primary beam group, G03 §11.2) under a primary beam. |
+| `nq.beam.boundary_ok` | Primary beams inside one beam group of one bar. |
+| `nq.acc.redundant_rate` ↓ | Printed accidentals neither needed (key signature and the bar's state per staff, step and octave) nor a G03 §10.3 courtesy, per note. |
+| `nq.spell.context_odd` ↓ | E♯, B♯, C♭, F♭ the key signature does not contain, per 1000 notes. |
+| `nq.spell.mixed_bar_rate` ↓ | Staff-bars printing both sharp- and flat-type accidentals. |
+| `nq.range.ledger4_rate` ↓ | Notes four or more ledger lines off their staff, per 1000 notes. |
+| `nq.ned` ↓ | Notation edit distance: per bar and piano staff, the events' symbols (rest or note, type, dots, tie start, in a bracket) in voice then time order; Levenshtein distance of the prediction's bar (shifted by the bars the matched notes agree on) to the reference's, summed, / reference symbols. A proxy: an equally good engraving that differs from the reference counts as distance. |
+
+Before G3 changes any notation (core SQI 76.862396, the SUT of `cc509e2` in behaviour), core means: one-note brackets 1.0 (113 cases with brackets), triplet
+lengths without time-modification 2,647 (107 cases), mergeable ties 0.426 (reference 0), hidden beats
+0.017 (0.005), two-voice recall 0, beam coverage 0 (reference 0.50), `nq.ned` 0.81.
+
+**Reader versions.** reader/5 only adds what it reads, so `pppbench.READS_AS` lets its results be checked
+against baselines and locks recorded with reader/4 (every core case's 50,323 metric values were compared
+before and after: identical). A reader change to any existing value is a new version with no such entry.
+
 ## The gate (`check`, gate/3)
 
 `check` compares `results.json` with the committed baseline (`baselines/<suite>.json`). Any FAIL is
@@ -166,6 +200,11 @@ change may make without a new baseline.
 - **Cases**: a case that errors, or loses 10 diagnostic points.
 - **Known failures**: a catalogue defect count that grows fails; one that shrinks is an improvement.
 - `check` refuses results produced by an `audio-score.js` or `scoregraph/` that has changed since (`STALE_RESULTS`).
+- **`check --g3`** adds the G3 gate (G03 §20.4, `pppbench/g3gate.py`): no case loses a critical gate the
+  baseline passed; `nq.tuplet.one_note_rate`, `nq.shape.tm_missing` and `nq.tie.mergeable_rate` are 0 in
+  every case; `notation.hand.accuracy` averages at least 0.90 and no case's hands gate, key gate or
+  spelling accuracy regresses. Exit: check's own code when it is not 0, else 1 when a G3 line fails,
+  else 0. Without `--g3` nothing changes. It fails at the G3 "before" SUT, as it should.
 
 `mutation-check` proves the gate works: it plants 37 regressions in a copy of the SUT (see "The SUT" below) —
 the 5 original ones (hands, key, durations, metre, bar phase), the 7 from the independent review

@@ -167,6 +167,9 @@ class CanonicalScore:
     diagnostics: Dict[str, Any] = field(default_factory=dict)
     pedals: List[PedalMark] = field(default_factory=list)
     clefs: List[ClefMark] = field(default_factory=list)
+    # reader/5 (G03 §20.2): what the file prints, element by element, with its tuplet brackets and primary
+    # beams (pppbench.notation_read). Read-only addition: not serialised, not compared, used by nq.* only.
+    notation: Optional[Dict[str, Any]] = field(default=None, compare=False, repr=False)
 
     @property
     def app_qpm(self) -> int:

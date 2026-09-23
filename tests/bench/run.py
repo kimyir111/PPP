@@ -7,6 +7,7 @@
     python tests/bench/run.py run   --suite smoke|core|full|mutation [--audio-score PATH] [--filter S] [--reveal-holdout]
     python tests/bench/run.py run   --suite-file PATH           # private suite, outputs beside it
     python tests/bench/run.py check --suite core                # exit 0 PASS, 1 REGRESSION, 2 ERROR
+    python tests/bench/run.py check --suite core --g3           # + the G3 gate (G03 §20.4): exit 1 when it fails
     python tests/bench/run.py update-baseline --suite core --reason "..."
     python tests/bench/run.py relock --suite core --reason "..."
     python tests/bench/run.py golden [--init | --bless --reason "..."]
@@ -179,6 +180,7 @@ def main(argv=None) -> int:
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--suite")
     g.add_argument("--suite-file")
+    p.add_argument("--g3", action="store_true", help="also judge the G3 gate (G03 §20.4); exit 1 when it fails")
     p.set_defaults(fn=cmd_check)
     p = sub.add_parser("update-baseline")
     g = p.add_mutually_exclusive_group(required=True)

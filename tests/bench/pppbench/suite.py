@@ -7,7 +7,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from . import GENERATOR_VERSION, READER_VERSION, corpus, util
+from . import GENERATOR_VERSION, READER_VERSION, corpus, util, version_compatible
 
 SUITES_DIR = os.path.join(util.bench_root(), "suites")
 CASE_FIELDS = ("kind", "stage", "references", "matrix", "subsets", "align", "holdout_seeds", "cases", "fixtures")
@@ -222,7 +222,7 @@ def verify_lock(suite: Dict[str, Any], rows: List[Dict[str, str]], lock: Optiona
     if lock.get("suite_sha256") != suite_sha256(suite):
         drifts.append("suite definition changed since the lock was written")
     for k, v in (("generator", GENERATOR_VERSION), ("reader", READER_VERSION)):
-        if lock.get(k) != v:
+        if not version_compatible(k, v, lock.get(k)):
             drifts.append(f"{k} version {lock.get(k)} in the lock, {v} now")
     locked = {c["id"]: c for c in lock.get("cases", [])}
     now = {r["id"]: r for r in rows}

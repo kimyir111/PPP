@@ -105,7 +105,6 @@ import argparse
 import json
 import os
 import sys
-import xml.etree.ElementTree as ET
 from fractions import Fraction
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -113,15 +112,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 
 from pppbench import musicxml, util  # noqa: E402
+from pppbench import notation_read as NR  # noqa: E402
 
-STEP_IDX = {"C": 0, "D": 1, "E": 2, "F": 3, "G": 4, "A": 5, "B": 6}
-STEP_SEMI = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
-SHORT_TYPES = {"32nd", "64th", "128th", "256th", "512th", "1024th"}
-SHARP_ACC = {"sharp", "double-sharp", "sharp-sharp"}
-FLAT_ACC = {"flat", "flat-flat"}
-SHARP_ORDER = ["F", "C", "G", "D", "A", "E", "B"]
-# (top line, bottom line) as diatonic index oct*7 + step
-CLEF_LINES = {("G", 2): (38, 30), ("F", 4): (26, 18), ("C", 3): (32, 24), ("C", 4): (30, 22)}
+# The reading and its helpers live in pppbench.notation_read (reader/5): the nq.* metrics use the same code.
+STEP_IDX, STEP_SEMI, SHORT_TYPES = NR.STEP_IDX, NR.STEP_SEMI, NR.SHORT_TYPES
+SHARP_ACC, FLAT_ACC, SHARP_ORDER, CLEF_LINES = NR.SHARP_ACC, NR.FLAT_ACC, NR.SHARP_ORDER, NR.CLEF_LINES
 
 # Every metric: key, label, (numerator, denominator or "" for a sum, scale).
 METRICS: List[Tuple[str, str, Tuple[str, str, float]]] = [
@@ -165,201 +160,16 @@ BREAKDOWN = ["rests_per_bar", "short_share", "tie_same_beat"]
 
 
 # ----------------------------------------------------------------- parsing
-def _i(text: Optional[str], default: int) -> int:
-    v = musicxml.js_int(text)
-    return default if v is None else v
-
-
-def _txt(el: Optional[ET.Element], name: str) -> Optional[str]:
-    if el is None:
-        return None
-    x = el.find(name)
-    return x.text.strip() if x is not None and x.text is not None else None
-
-
-def beat_len(time: Tuple[int, int]) -> Fraction:
-    beats, beat_type = time
-    if beat_type >= 8 and beats % 3 == 0:
-        return Fraction(3 * 4, beat_type)   # dotted quarter (in 6/8)
-    return Fraction(4, beat_type)
-
-
-def is_compound(time: Tuple[int, int]) -> bool:
-    return time[1] >= 8 and time[0] % 3 == 0
-
-
-def key_alter(fifths: int, step: str) -> int:
-    if fifths > 0 and step in SHARP_ORDER[:fifths]:
-        return 1
-    if fifths < 0 and step in SHARP_ORDER[::-1][:-fifths]:
-        return -1
-    return 0
-
-
-def ledger_lines(step: str, octave: int, clef: Tuple[str, int]) -> int:
-    top, bottom = CLEF_LINES.get(clef, CLEF_LINES[("G", 2)])
-    d = octave * 7 + STEP_IDX[step]
-    if d >= top + 2:
-        return (d - top) // 2
-    if d <= bottom - 2:
-        return (bottom - d) // 2
-    return 0
+beat_len, is_compound, key_alter, ledger_lines = NR.beat_len, NR.is_compound, NR.key_alter, NR.ledger_lines
+single_symbol, tie_chains, _dyadic, _midi = NR.single_symbol, NR.tie_chains, NR.dyadic, NR.midi_of
 
 
 def parse(data: bytes) -> Dict[str, Any]:
-    """One MusicXML file -> {measures, events, notes, counts}."""
-    root = ET.fromstring(data)
-    musicxml._strip_ns(root)
-    parts = [c for c in root if c.tag == "part"]
-    counts = {k: 0 for k in ("octave", "pedal", "dynamics", "wedge", "slur", "artic")}
-    for el in root.iter("octave-shift"):
-        if el.attrib.get("type") in ("up", "down"):
-            counts["octave"] += 1
-    for el in root.iter("pedal"):
-        if el.attrib.get("type") in ("start", "change"):
-            counts["pedal"] += 1
-    counts["dynamics"] = sum(1 for _ in root.iter("dynamics"))
-    for el in root.iter("wedge"):
-        if el.attrib.get("type") in ("crescendo", "diminuendo"):
-            counts["wedge"] += 1
-    for note in root.iter("note"):
-        if note.find("grace") is not None:
-            continue
-        for el in note.iter("slur"):
-            if el.attrib.get("type") == "start":
-                counts["slur"] += 1
-        for el in note.iter("articulations"):
-            counts["artic"] += len(list(el))
-
-    measures: List[Dict[str, Any]] = []        # bars of part 0
-    elems: List[Dict[str, Any]] = []           # every non-grace note element
-    staff_base = 0
-    piano_upper = piano_lower = None
-    for p_idx, part in enumerate(parts):
-        divisions = Fraction(1)
-        time = (4, 4)
-        fifths = 0
-        staves = 1
-        clefs: Dict[int, Tuple[str, int]] = {}
-        start = Fraction(0)
-        for m_idx, m_el in enumerate(c for c in part if c.tag == "measure"):
-            cursor = Fraction(0)
-            max_cursor = Fraction(0)
-            last_onset = Fraction(0)
-            for el in m_el:
-                tag = el.tag
-                if tag == "attributes":
-                    d = musicxml.js_float(_txt(el, "divisions"))
-                    if d and d > 0:
-                        divisions = d
-                    t = el.find("time")
-                    if t is not None:
-                        b, bt = _i(_txt(t, "beats"), 4), _i(_txt(t, "beat-type"), 4)
-                        if b > 0 and bt > 0:
-                            time = (b, bt)
-                    k = el.find("key")
-                    if k is not None:
-                        fifths = _i(_txt(k, "fifths"), 0)
-                    st = _i(_txt(el, "staves"), 0)
-                    if st > 0:
-                        staves = st
-                    for cl in el.findall("clef"):
-                        clefs[_i(cl.attrib.get("number"), 1)] = (_txt(cl, "sign") or "G", _i(_txt(cl, "line"), 2))
-                    continue
-                if tag == "backup":
-                    cursor = max(Fraction(0), cursor - (musicxml.js_float(_txt(el, "duration")) or 0) / divisions)
-                    continue
-                if tag == "forward":
-                    cursor += (musicxml.js_float(_txt(el, "duration")) or 0) / divisions
-                    max_cursor = max(max_cursor, cursor)
-                    continue
-                if tag != "note" or el.find("grace") is not None:
-                    continue
-                chord = el.find("chord") is not None
-                dur = (musicxml.js_float(_txt(el, "duration")) or Fraction(0)) / divisions
-                onset = last_onset if chord else cursor
-                staff = _i(_txt(el, "staff"), 1)
-                pit = el.find("pitch")
-                pitch = None
-                if pit is not None:
-                    pitch = (_txt(pit, "step") or "C", _i(_txt(pit, "alter"), 0), _i(_txt(pit, "octave"), 4))
-                tm = el.find("time-modification")
-                has_tm = False
-                if tm is not None:
-                    a, n = _i(_txt(tm, "actual-notes"), 0), _i(_txt(tm, "normal-notes"), 0)
-                    has_tm = a > 0 and n > 0 and a != n
-                notations = el.findall("notations")
-                tup = [t.attrib.get("type") for nt in notations for t in nt.findall("tuplet")]
-                ties = [t.attrib.get("type") for t in el.findall("tie")]
-                acc = _txt(el, "accidental")
-                elems.append({
-                    "part": p_idx, "m": m_idx, "abs": start + onset, "at": onset, "dur": dur,
-                    "staff": staff, "gstaff": staff_base + staff, "voice": _txt(el, "voice") or "1",
-                    "chord": chord, "rest": el.find("rest") is not None, "pitch": pitch,
-                    "type": _txt(el, "type"), "tm": has_tm, "tup_start": tup.count("start"),
-                    "tup_stop": tup.count("stop"), "tie_start": "start" in ties, "tie_stop": "stop" in ties,
-                    "beam": el.find("beam") is not None, "stem": el.find("stem") is not None, "acc": acc,
-                    "time": time, "fifths": fifths, "clef": clefs.get(staff, ("G", 2) if staff == 1 else ("F", 4)),
-                })
-                if not chord:
-                    last_onset = cursor
-                    cursor += dur
-                max_cursor = max(max_cursor, cursor)
-            nominal = Fraction(time[0] * 4, time[1])
-            implicit = m_el.attrib.get("implicit") == "yes"
-            length = max_cursor if implicit and max_cursor > 0 else max(nominal, max_cursor)
-            if p_idx == 0:
-                measures.append({"time": time, "len": length, "nominal": nominal})
-            start += length
-        if staves >= 2 and piano_upper is None:
-            piano_upper, piano_lower = staff_base + 1, staff_base + 2
-        staff_base += max(staves, 1)
-    return {"measures": measures, "elems": elems, "counts": counts,
-            "piano": (piano_upper, piano_lower), "time": measures[0]["time"] if measures else (4, 4)}
+    """One MusicXML file -> {measures, elems, counts, …} (pppbench.notation_read.read_root)."""
+    return NR.read_root(NR.read_bytes_root(data))
 
 
 # ----------------------------------------------------------------- counting
-def _dyadic(x: Fraction) -> bool:
-    d = x.denominator
-    return d & (d - 1) == 0
-
-
-def single_symbol(length: Fraction) -> bool:
-    """Is a length in quarters one plain note value with at most two dots?"""
-    for k in range(-8, 5):
-        base = Fraction(2) ** k
-        if length in (base, base * Fraction(3, 2), base * Fraction(7, 4)):
-            return True
-    return False
-
-
-def _midi(pitch: Tuple[str, int, int]) -> int:
-    step, alter, octave = pitch
-    return (octave + 1) * 12 + STEP_SEMI[step] + alter
-
-
-def tie_chains(pitched: List[Dict[str, Any]], app_rule: bool = False) -> List[Dict[str, Any]]:
-    """Pitched notes -> chains, in (onset, staff) order. See the module docstring for the two rules."""
-    chains: List[Dict[str, Any]] = []
-    for e in sorted(pitched, key=lambda e: (e["abs"], e["gstaff"])):
-        midi = _midi(e["pitch"])
-        target = None
-        if e["tie_stop"]:
-            if app_rule:
-                adj = [ch for ch in chains if ch["open"] and ch["midi"] == midi and ch["end"] == e["abs"]]
-                adj = [ch for ch in adj if ch["staff"] == e["gstaff"]] or adj
-            else:
-                adj = [ch for ch in chains if ch["open"] and ch["midi"] == midi and ch["staff"] == e["gstaff"]]
-            target = adj[-1] if adj else None
-        if target is None:
-            target = {"midi": midi, "staff": e["gstaff"], "notes": [], "end": e["abs"], "open": False}
-            chains.append(target)
-        target["notes"].append(e)
-        target["end"] = e["abs"] + e["dur"]
-        target["open"] = e["tie_start"]
-    return chains
-
-
 def count(data: bytes) -> Dict[str, int]:
     """The numerators and denominators of every metric for one file."""
     f = parse(data)
