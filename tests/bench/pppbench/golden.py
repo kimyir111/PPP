@@ -231,8 +231,99 @@ def _check_case(case, row) -> Tuple[str, List[str]]:
     return label, lines
 
 
+# ------------------------------------------------------------------ G3 (docs/GOALS/G03 §20.6, A35)
+# What G3a may change in a golden snapshot: how the music is written, never what it is. A bless with --g3 refuses a
+# case whose difference reaches past these (tests/bench/golden/BLESS_LOG.md says the same).
+G3_ALLOWED = ("tuplet brackets", "note and rest shapes (type, dots, tie merges)", "beams", "printed accidentals",
+              "spelling and key signatures", "staff and voice of a note", "clefs", "rests",
+              "a pedal release and the next press less than a beat apart written as one change at the press (P8, §12)")
+G3_FIXED = ("bars (count, numbers, lengths, pickups, repeats)", "the app's play order", "metre", "tempo marks",
+            "pedal marks", "the sounding notes (onset, pitch, tie-merged length)", "stats and bar and beat times")
+
+
+def _sounding(sem: Dict[str, Any]) -> "Counter":
+    """The tie-merged sounding notes of a semantic snapshot: Counter of (onset, midi, length), in quarters."""
+    from collections import Counter
+    from fractions import Fraction
+    starts, acc = [], Fraction(0)
+    for b in sem["structure"]["bars"]:
+        starts.append(acc)
+        acc += Fraction(b["len"])
+    rows = sorted(((starts[r[0]] + Fraction(r[1]), r[3], Fraction(r[2]), bool(r[6]), bool(r[7])) for r in sem["music"]["notes"]),
+                  key=lambda x: (x[0], x[1]))
+    done, open_ = [], {}
+    for on, midi, dur, t_start, t_stop in rows:
+        chain = None
+        if t_stop:
+            cand = [c for c in open_.get(midi, []) if c[0] + c[2] == on]
+            chain = cand[-1] if cand else None
+        if chain is None:
+            chain = [on, midi, Fraction(0)]
+            done.append(chain)
+        else:
+            open_[midi].remove(chain)
+        chain[2] += dur
+        if t_start:
+            open_.setdefault(midi, []).append(chain)
+    return Counter((str(c[0]), c[1], str(c[2])) for c in done)
+
+
+def _pedals_joined(sem: Dict[str, Any]) -> List[List[str]]:
+    """The snapshot's pedal marks with every release followed by a press less than a beat later written as one change at
+    the press (what G3's P8 does, G03 §12), as [bar, position, type] strings."""
+    from fractions import Fraction
+    starts, acc = [], Fraction(0)
+    for b in sem["structure"]["bars"]:
+        starts.append(acc)
+        acc += Fraction(b["len"])
+    beat = {}
+    for m in sem["music"]["measures"]:
+        n, bt = m["time"]
+        beat[m["i"]] = Fraction(4, bt) * (3 if bt >= 8 and n % 3 == 0 else 1)
+    marks = [[p[0], str(p[1]), p[2]] for p in sem["music"]["pedals"]]
+    out, i = [], 0
+    while i < len(marks):
+        cur = marks[i]
+        nxt = marks[i + 1] if i + 1 < len(marks) else None
+        if cur[2] == "stop" and nxt and nxt[2] == "start":
+            gap = (starts[nxt[0]] + Fraction(nxt[1])) - (starts[cur[0]] + Fraction(cur[1]))
+            if Fraction(0) <= gap < beat.get(cur[0], Fraction(1)):
+                out.append([str(nxt[0]), nxt[1], "change"])
+                i += 2
+                continue
+        out.append([str(cur[0]), cur[1], cur[2]])
+        i += 1
+    return out
+
+
+def g3_difference(exp_sem: Dict[str, Any], act_sem: Dict[str, Any], exp_time: Dict[str, Any],
+                  act_time: Dict[str, Any]) -> List[str]:
+    """What differs between two snapshots outside G3_ALLOWED ([] when G3a may make the change)."""
+    e, a = exp_sem["score"], act_sem["score"]
+    out = []
+    for k in ("bars", "play_order", "staves", "piano_part"):
+        if e["structure"].get(k) != a["structure"].get(k):
+            out.append(f"structure.{k} changed")
+    if [m["time"] for m in e["music"]["measures"]] != [m["time"] for m in a["music"]["measures"]]:
+        out.append("metre changed")
+    if e["music"]["tempo"] != a["music"]["tempo"]:
+        out.append("music.tempo changed")
+    if e["music"]["pedals"] != a["music"]["pedals"] and _pedals_joined(e) != [list(map(str, x)) for x in a["music"]["pedals"]]:
+        out.append("music.pedals changed (beyond a release and press joined into one change)")
+    se, sa = _sounding(e), _sounding(a)
+    if se != sa:
+        gone, new = sorted((se - sa).elements()), sorted((sa - se).elements())
+        out.append(f"sounding notes changed: {len(gone)} only in expected, {len(new)} only in actual"
+                   + (f", e.g. {gone[:2]} / {new[:2]}" if gone or new else ""))
+    if exp_sem.get("stats") != act_sem.get("stats"):
+        out.append("stats changed")
+    if exp_time != act_time:
+        out.append("bar or beat times changed")
+    return out
+
+
 def run_golden(init: bool = False, bless: bool = False, reason: Optional[str] = None,
-               audio_score: Optional[str] = None) -> int:
+               audio_score: Optional[str] = None, g3: bool = False) -> int:
     suite = util.load_json(os.path.join(suite_mod.SUITES_DIR, "golden.json"))
     if bless and not reason:
         print("ERROR: --bless needs --reason \"why the output changed\"")
@@ -250,6 +341,31 @@ def run_golden(init: bool = False, bless: bool = False, reason: Optional[str] = 
         data = util.load_json(ip)
         jobs.append({"id": case["key"], "input": data["input"], "opts": data.get("opts") or {}})
     res = stages.notate_batch(jobs, audio_score=audio_score)["results"]
+    if g3:
+        # G3 (A35): every case's difference must be one G3a may make; a bless with --g3 writes nothing otherwise
+        outside = 0
+        for case in suite["cases"]:
+            key, row = case["key"], res[case["key"]]
+            _, xp, _ = _paths(key)
+            semp, tp = _extra_paths(key)
+            if not row.get("ok"):
+                print(f"{key} G3_OUTSIDE toMusicXml threw {row.get('code')}: {row.get('error')}")
+                outside += 1
+                continue
+            xml = row["xml"].replace("\r\n", "\n")
+            if xml == util.read_text(xp).replace("\r\n", "\n"):
+                print(f"{key} ok")
+                continue
+            act_sem = util.load_json_text(util.dumps_json(_semantic_doc(xml, row["stats"])))
+            act_time = util.load_json_text(util.dumps_json({"barStarts": row["stats"].get("barStarts"), "beats": row["stats"].get("beats")}))
+            diff = g3_difference(util.load_json(semp), act_sem, util.load_json(tp), act_time)
+            print(f"{key} {'G3_OUTSIDE' if diff else 'G3_ALLOWED'}")
+            for line in diff:
+                print("    " + line)
+            outside += 1 if diff else 0
+        print(f"golden --g3: {outside} case(s) outside what G3a may change ({', '.join(G3_ALLOWED)})")
+        if outside or not bless:
+            return 1 if outside else 0
     counts: Dict[str, int] = {}
     changed: List[str] = []
     added: List[str] = []

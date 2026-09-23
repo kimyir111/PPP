@@ -10,7 +10,7 @@
     python tests/bench/run.py check --suite core --g3           # + the G3 gate (G03 §20.4): exit 1 when it fails
     python tests/bench/run.py update-baseline --suite core --reason "..."
     python tests/bench/run.py relock --suite core --reason "..."
-    python tests/bench/run.py golden [--init | --bless --reason "..."]
+    python tests/bench/run.py golden [--init | --bless --reason "..."] [--g3]
     python tests/bench/run.py mutation-check
     python tests/bench/run.py ab --suite core --a git:HEAD --b worktree
     python tests/bench/run.py legacy --manifest PATH
@@ -111,7 +111,8 @@ def cmd_relock(args) -> int:
 
 def cmd_golden(args) -> int:
     from pppbench import golden
-    return golden.run_golden(init=args.init, bless=args.bless, reason=args.reason, audio_score=args.audio_score)
+    return golden.run_golden(init=args.init, bless=args.bless, reason=args.reason, audio_score=args.audio_score,
+                             g3=args.g3)
 
 
 def cmd_mutation(args) -> int:
@@ -197,6 +198,8 @@ def main(argv=None) -> int:
     p.add_argument("--bless", action="store_true")
     p.add_argument("--reason")
     p.add_argument("--audio-score")
+    p.add_argument("--g3", action="store_true",
+                   help="G3 (G03 A35): check every difference is one G3a may make; with --bless, bless only then")
     p.set_defaults(fn=cmd_golden)
     sub.add_parser("mutation-check").set_defaults(fn=cmd_mutation)
     sub.add_parser("correctness").set_defaults(fn=cmd_correctness)
