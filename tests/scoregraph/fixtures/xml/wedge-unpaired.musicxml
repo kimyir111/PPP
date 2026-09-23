@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- A wedge stop with no start (measure 1) and a diminuendo that never stops (measure 2), as in
-     catalog/method/sonatina/014.mxl bars 75-76. A ScoreGraph Wedge has both ends, so the import drops both
-     marks and reports them; the app does not read wedges (L1 passes), the notation inventory loses them (L1+). -->
+     catalog/method/sonatina/014.mxl bars 76-77. A ScoreGraph Wedge has both ends, so the import drops both
+     marks and reports them. L1 passes because the G0 projection carries no wedges, not because they do not
+     matter: the app does read them and plays an unclosed one to the end of the piece. The notation inventory
+     is what sees the loss (L1+). -->
 <score-partwise version="4.0">
   <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
   <part id="P1">

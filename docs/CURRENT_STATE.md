@@ -198,12 +198,15 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
 
 ## Next
 
-- **G1 is implemented and reviewed on `g1-scoregraph`** (§24 record, §25 independent review:
-  READY_TO_PR, BLOCKER 0, MAJOR 0). **PR #2 is open; merging is the user's call.** The review's open
-  findings, none merge-blocking: tuplet bracket grouping changes for split triplet pieces (the app
-  draws fewer brackets; G3 owns tuplet engraving), a pedal with a missing or non-numeric time now
-  throws where `buildXml` dropped it (one guard fixes it), and the `sonatina/014` allowlist entry
-  says the app ignores wedges when it does not. Do not start G2 before the merge.
+- **G1 is merged and closed.** PR #2 squashed onto `main` as `aa77d2e` (§24 record, §25 independent
+  review: READY_TO_PR, BLOCKER 0, MAJOR 0), and the follow-up PR (§26) closed the two findings worth
+  a code or documentation change: a pedal whose press or release is not a number is now dropped where
+  the other unusable pedals are dropped, instead of throwing the whole transcription away (F2), and
+  the `sonatina/014` allowlist entry no longer claims the app ignores wedges — it reads them and
+  plays them; L1 passes only because the G0 projection carries no wedges (F3). **Left open on
+  purpose:** tuplet bracket grouping for split triplet pieces (F1 — the app draws fewer brackets;
+  G3 owns tuplet engraving, see issue 20 above), and F4–F8 (§25.3), none of them reachable today.
+  G2 has not started.
 - The full-suite baseline (and the others) predate main's `audio-score.js` changes (F7): decide on a
   rebaseline at `aff7080` before relying on `check --suite full`.
 - G0's benchmark work is done (G00 §22.9: READY_FOR_MERGE_CHECK, BLOCKER 0, MAJOR 0, production diff 0).

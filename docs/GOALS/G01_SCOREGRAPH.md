@@ -40,6 +40,7 @@
 - [23. 조사 중 발견한 이슈 (고치지 않음)](#23-조사-중-발견한-이슈-고치지-않음)
 - [24. 구현 기록](#24-구현-기록-g1-implementer-2026-09-23)
 - [25. 독립 리뷰](#25-독립-리뷰-independent-review-2026-09-23)
+- [26. 리뷰 후속 수정](#26-리뷰-후속-수정-follow-up-2026-09-23)
 - [부록 A. MusicXML ↔ ScoreGraph 대응표](#부록-a-musicxml--scoregraph-대응표)
 - [부록 B. Legacy Score adapter 계약 (G2 준비)](#부록-b-legacy-score-adapter-계약-g2-준비)
 - [부록 C. 예시 (피아노, 드럼)](#부록-c-예시-피아노-드럼)
@@ -2126,6 +2127,98 @@ G0 reader, ScoreGraph 라이브러리, 구현자의 `shadow_compare.py`를 **쓰
 | G0 regression 없음 | ✅ |
 
 **결론: READY_TO_PR.** F1–F3은 PR 뒤 별도 커밋이나 G2/G3에서 다루면 된다. F1은 G3(잇단음 표기), F2는 한 줄 가드, F3은 문서 수정이다.
+
+---
+
+## 26. 리뷰 후속 수정 (Follow-up, 2026-09-23)
+
+| 항목 | 값 |
+| --- | --- |
+| 대상 | PR #2 merge 후 `origin/main` (`aa77d2e`), 브랜치 `g1-scoregraph-hotfix` |
+| 범위 | §25의 **F2와 F3만**. production 코드 변경은 `audio-score.js` 한 줄(가드)뿐이고, 음악적 의미는 바뀌지 않는다 |
+| 하지 않은 것 | F1(잇단음 괄호)은 **G3**에 그대로 남긴다. F4–F8도 이번에 건드리지 않는다. 무관한 리팩터 없음 |
+
+### 26.1 F2 — 숫자가 아닌 페달 시간 (해결)
+
+**리뷰가 제안한 위치가 실제 원인이 아니다.** 리뷰는 "`buildGraph`의 페달 위치 계산에 `isFinite` 가드 한 줄"을 제안했지만, 재현해 보면 원인은 그보다 한 단계 앞이다.
+
+`finish()`가 들어온 페달을 tick으로 옮기는 곳에서 쓸 수 없는 페달을 거르는 검사가 이미 세 개 있다:
+
+```js
+const a = Math.round(beatPosition(beats, p.on) * Q) - origin;
+const b = Math.round(snapEnd(beatPosition(beats, p.off)) * Q) - origin;
+if (b - a < 6 || b <= 0 || a >= bars * bar) return;     // NaN과의 비교는 전부 false
+```
+
+`p.on`이나 `p.off`가 숫자가 아니면 `a`나 `b`가 `NaN`이 되는데, **NaN과의 비교는 세 검사 모두 false**여서 그대로 통과한다. 그래서 `model.pedals`에 `{tick: NaN}` 마크가 생기고, 그 뒤에 두 writer가 각자 다르게 깨진다:
+
+- **ScoreGraph writer**: `buildGraph`의 `at(tick)` → `R.make(NaN, ...)` → `rational parts must be integers`로 **전사 전체가 throw**.
+- **G0 writer(`buildXml`)**: `pedalsHere` 필터가 NaN을 다시 걸러 내지만 **한쪽 마크만** 걸러 낸다. `{on: 1}`(off 없음)이면 start는 유한 tick이라 살아남아 **짝 없는 `<pedal type="start">`** 가 파일에 남는다. 리뷰가 "`buildXml`은 조용히 버렸다"고 본 것은 양쪽이 모두 NaN인 경우에 한해서만 맞다.
+
+`buildGraph`에만 가드를 두면 ScoreGraph writer는 살아나지만 `{on: 1}`에서 **끝나지 않는 pedal spanner**(`to` 없는 spanner)가 그래프에 남고, G0 writer의 짝 없는 마크도 그대로다. 즉 쓸 수 없는 입력이 악보에 "곡 끝까지 페달을 밟고 있었다"는 **없던 사실**로 바뀐다. 그래서 가드를 **원인 자리**인 `finish()`의 그 필터에 넣었다.
+
+```js
+if (isNaN(a) || isNaN(b) || b - a < 6 || b <= 0 || a >= bars * bar) return;
+```
+
+- `clean()`이 음에 적용하는 정책(G00 §1.2, "시간이 유한한 숫자가 아니면 음이 아니다")을 페달에 그대로 적용한 것이다. 옆줄 세 개와 같은 자리, 같은 방식(조용히 버림)이므로 새 정책을 만들지 않는다.
+- **`isFinite`가 아니라 `isNaN`인 이유**: `isFinite`로 막으면 지금 **정상 동작하는** 입력까지 바뀐다. `{on: 1, off: Infinity}`(끝까지 밟고 있던 페달)는 두 writer 모두 이미 마지막 tick으로 clamp해서 제대로 쓰고 있고, `{on: null}`은 `null → 0`으로 시각 0의 페달이 된다. `isNaN`은 **쓸 수 없는 것만** 거른다. `{on: Infinity}`는 `a >= bars * bar`가 이미 거른다.
+- 결과: 깨진 페달이 섞여 들어와도 **그 페달이 없었을 때와 바이트 단위로 같은 악보**가 나온다 (그래프도 `.sg.json` 단위로 동일). 두 writer가 같은 목록을 본다.
+
+**회귀 테스트**: `tests/scoregraph/vertical-slice.test.js` — "a pedal whose press or release is not a number is dropped, not written and not thrown on (§26 F2)". 유일하게 페달이 있는 golden 입력 `G15`에 깨진 페달을 하나씩 섞는다.
+
+| 넣은 값 | 기대 |
+| --- | --- |
+| `{on:1}`, `{off:3}`, `{}`, `{on:undefined, off:undefined}` | 버린다 — xml·graph가 baseline과 동일, legacy도 동일 |
+| `{on:NaN, off:3}`, `{on:1, off:NaN}`, `{on:NaN, off:NaN}` | 〃 |
+| `{on:'abc', off:3}`, `{on:1, off:'abc'}` | 〃 |
+| `{on:Infinity, off:3}`, `{on:Infinity, off:Infinity}` | 〃 (원래부터 범위 검사가 거른다) |
+| `{on:1, off:Infinity}`, `{on:null, off:3}` | **유지** — 마크가 두 개(양 끝) 늘고, legacy도 같다 |
+| 페달이 전부 깨진 녹음 | 페달 없는 악보와 동일, `<pedal>` 0개 |
+| 17개 golden 전체 | `.sg.json` 바이트 동일 (기존 A40 테스트가 지킨다) |
+
+가드를 빼면 이 테스트는 `rational parts must be integers`로 실패한다(확인함).
+
+### 26.2 F3 — allowlist 설명 (해결)
+
+`tests/scoregraph/roundtrip-allowlist.json`의 `sonatina/014` 항목과 재현 fixture(`fixtures/xml/wedge-unpaired.musicxml`)의 주석이 "앱은 wedge를 읽지 않는다"고 적었다. **사실이 아니다.**
+
+- 앱은 `parseMusicXML`에서 `<wedge>`를 읽어 `score.wedges`에 담고(App 4094–4098), 재생 세기를 그것으로 만든다(App 2705–2731).
+- **시작 없는 stop**은 앱도 무시한다(App 2710의 `&& open`). **끝나지 않은 wedge**는 `score.lengthQ`, 즉 **곡 끝까지** 적용된다(App 2715).
+
+L1이 통과하는 진짜 이유는 **G0 projection(`semantic/3`)이 dynamics와 wedge를 담지 않기 때문**이다 — 구조와 음(음높이·위치·길이·박자·조표·템포·tie·잇단음·임시표·페달)만 본다. 손실을 보는 것은 notation inventory(L1+)다. allowlist 자체는 여전히 정당하다(원본 결함이고, Wedge가 양 끝을 요구하는 것은 §5.10 설계이며 import가 보고한다).
+
+같은 문장의 **마디 번호도 고쳤다**. 원본 `catalog/method/sonatina/014.mxl`을 직접 열어 확인한 `<wedge>`는 네 개다:
+
+| `<measure number>` | wedge |
+| --- | --- |
+| 60 | `crescendo` → `stop` (정상 쌍) |
+| 76 | `stop` (시작 없음) |
+| 77 | `diminuendo` (끝나지 않음) |
+
+allowlist와 fixture 주석이 적은 "bars 75-76"은 `sg-roundtrip` 리포트가 찍는 **0-based 마디 인덱스**(`(0, 75, 'wedge', …)`)를 그대로 옮긴 것이다. 같은 파일의 burgmuller 항목은 `<measure number>`(16)로 적혀 있어 두 항목의 기준이 서로 달랐다. `<measure number>` 쪽으로 통일해 **76-77**로 고쳤다 — §25.2가 적은 번호가 이것이다.
+
+**G1 production은 import 경로를 쓰지 않으므로 지금 들리는 차이는 없다.** G2에서 import가 그래프로 옮겨가면 이 두 마크의 손실은 실제로 들리는 차이가 되므로, 그때 이 항목을 다시 봐야 한다 — allowlist 본문에 그렇게 적어 두었다.
+
+### 26.3 F1 — 잇단음 괄호 (G3로 이월, 고치지 않음)
+
+쪼개진 잇단음의 괄호 묶음 변화(§25.3 F1)는 **이번 hotfix에서 고치지 않았다.** 기보(engraving) 결정이고, 사라지는 괄호 자체가 원래 틀린 표기이며, 올바른 묶음 규칙은 잇단음 표기 전체와 함께 정해야 하기 때문이다. **G3(notation quality)의 follow-up**으로 남는다. 기록 위치: §24.3(G1-D14), §25.3 F1, §25.5, `docs/CURRENT_STATE.md`.
+
+### 26.4 검증
+
+| 명령 | 결과 |
+| --- | --- |
+| `npm run test:scoregraph` | 72/72 (새 회귀 테스트 1개 포함) |
+| `python tests/bench/run.py golden` | 17/17 identical |
+| `python -m unittest discover -s tests/bench/unit -t tests/bench` | 221 OK |
+| `bench:smoke` (`run` + `check`) | PASS |
+| `bench` (core) | PASS |
+| `mutation-check` | PASS |
+| `sg-roundtrip` | 367/369 + allowlist 2, play_order 369/369 |
+| `ab --suite smoke --a git:aff7080 --b worktree` + `ab_identical` | 44/44 동일 |
+| `npm test` | 기준(`aa77d2e`)과 같은 통과 집합 |
+
+**production musical semantics 변화 0**: golden 17개가 바이트 동일하고, A/B가 44/44 동일하며, 정상 페달 입력에서 `<pedal>` 마크 수와 위치가 그대로다.
 
 ---
 
