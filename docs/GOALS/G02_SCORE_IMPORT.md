@@ -39,6 +39,7 @@
 - [21. Out of Scope](#21-out-of-scope)
 - [22. 사용자 결정이 필요한 사항](#22-사용자-결정이-필요한-사항)
 - [23. 문서 hygiene](#23-문서-hygiene)
+- [24. 구현 기록](#24-구현-기록-g2-implementer-2026-09-23)
 - [부록 A. 이 세션의 측정 기록](#부록-a-이-세션의-측정-기록)
 
 ---
@@ -161,7 +162,7 @@ Goal이 **아닌** 것: 악보를 예쁘게 만드는 일, 리듬을 똑똑하�
 | C3 | 미분음 `<alter>0.5` | **파일 전체 거절** `IMPORT-UNSUPPORTED` | 치명 |
 | C4 | `<fermata>` in `<barline>` | 조용히 버림 (코퍼스에 10건) | 높음 |
 | C5 | `<glissando>` / `<slide>` | 버림 — Spanner type에 없음 | 높음 |
-| C6 | `<measure-style>` / `<multiple-rest>` | 버림 — 여러 빈 마디가 한 마디로 | 높음 |
+| C6 | `<measure-style>` / `<multiple-rest>` | 버림 — 인쇄 방식을 잃는다 (마디 수는 남는다, §24.2) | 중간 |
 | C7 | `<dashes>` | 버림 (코퍼스 354건) — `rit.` 같은 지시의 연장선 | 중간 |
 | C8 | `<wavy-line>` (trill 연장) | 버림 | 중간 |
 | C9 | `<part-group>` (대괄호·중괄호) | 버림 | 중간 |
@@ -316,7 +317,7 @@ G1의 DP를 잇는다. 번호는 G2 고유다.
 | **barline fermata** | **DROPPED (10건)** | **LOSSLESS** | schema 변경 필요 (§18-S4) |
 | **unpitched / percussion** | **UNSUPPORTED (전체 거절)** | **LOSSLESS** | schema는 이미 가능 (§17) |
 | **glissando / slide** | **DROPPED** | **LOSSLESS** | schema 변경 필요 (§18-S5) |
-| **multiple-rest** | **DROPPED (마디 수가 틀어진다)** | **EXT 또는 LOSSLESS** | §18-S6 |
+| **multiple-rest** | **DROPPED (인쇄 방식만 잊는다 — §24.2)** | **LOSSLESS** | §18-S6 |
 | **microtone `<alter>`** | **UNSUPPORTED (전체 거절)** | **WARNING + 반올림** | §6.3 |
 | **part-group** | **DROPPED** | **EXT** | 표시용 괄호. core에 넣을 이유 없음 |
 | figured-bass | DROPPED | DROPPED | G1 §18에서 제외. report에는 남는다 |
@@ -340,7 +341,7 @@ G1의 DP를 잇는다. 번호는 G2 고유다.
 `SG.import(bytes, {name})`가 판별한다.
 
 1. `MThd`로 시작 → SMF (§7)
-2. `PK\x03\x04` → zip. `META-INF/container.xml`의 `rootfile[full-path]`를 따른다. **지금 bench와 앱은 둘 다 container.xml을 읽지 않고 "첫 xml 엔트리"를 고른다** — 여러 rootfile이 있는 .mxl에서 틀린다.
+2. `PK\x03\x04` → zip. `META-INF/container.xml`의 `rootfile[full-path]`를 따른다. ~~지금 bench와 앱은 둘 다 container.xml을 읽지 않는다~~ → **§24.2에서 정정: 앱(`readMxl`, App 4409–4414)은 읽는다.** 읽지 않는 것은 bench의 Python과 Architect 세션의 조사 스크립트였다. `import.js`는 읽고, 어느 쪽으로 골랐는지 `source.container.chosenBy`에 남긴다.
 3. 그 밖 → 텍스트. BOM 제거, `<?xml encoding=...>` 존중, UTF-16 지원.
 4. 압축 폭탄 방어: 압축 해제 상한(기본 64 MB)과 엔트리 수 상한.
 
@@ -893,7 +894,7 @@ kit는 **파일에서 만든다** (추론하지 않는다): `<score-instrument>`
 | **S3** | 연주 전용 그래프가 불가능 (`parts` ≥ 1, `measures` ≥ 1 필수) | M1 | 설계상 옳을 수도 있다 — ScoreGraph는 *Score*Graph다 | **변경하지 않는다.** §7.5의 skeleton으로 푼다 |
 | **S4** | `<barline>`의 fermata를 담을 곳이 없다 | X21 (+ 코퍼스 10건) | `Fermata`는 `Event`에만 있다. 마디선 위의 늘임표는 event가 아니다. `Measure.ext`로 담으면 export가 되살릴 수 있지만 **L1+ inventory가 core 필드로 비교**하므로 ext는 비교에서 빠진다 | `Barline`에 optional `fermata` |
 | **S5** | glissando / slide Spanner가 없다 | X22 | 두 head를 잇는 1차 표기다. `ext`에 넣으면 `ops.replaceRegion` 같은 편집 연산이 참조 무결성을 지켜 주지 못한다 (ext 안의 ID는 검증되지 않는다) | `Spanner.type`에 `gliss` 추가 |
-| **S6** | multiple-rest를 담을 곳이 없다 | X23 | 지금은 마디 수 자체가 틀어진다 — **의미 손실**이지 표시 손실이 아니다 | `Measure`에 optional `multiRest` |
+| **S6** | multiple-rest를 담을 곳이 없다 | X23 | ~~마디 수 자체가 틀어진다~~ → **§24.2에서 정정**: 마디 수는 남고 인쇄 방식만 사라진다. core에 넣는 이유는 **`notation_inventory`가 core 필드만 비교**하기 때문이다 — ext는 L1+에 보이지 않는다 | `Measure`에 optional `multiRest` |
 | S7 | 미분음 `alter` | X25 | G1 §18에서 명시적으로 범위 밖 | **변경하지 않는다.** 반올림 + ext 보존 (§6.3) |
 | S8 | `part-group` | X28 | 순수 표시 정보. 음악 의미 없음 | **변경하지 않는다.** `ScoreGraph.ext`로 보존 |
 | S9 | `dashes`, `wavy-line`, `sound@dynamics`, `part-group` | X27, X28 | 표시/연주 힌트. 참조 무결성이 필요 없고, 붙일 host(Direction·Event·Measure·ScoreGraph)가 있다 | **변경하지 않는다.** `ext`로 보존 |
@@ -1090,6 +1091,107 @@ D1은 Step 2를 막으므로 **구현 시작 전에 답이 필요하다.** D2–
 | F4–F8 (G01 §25.3) | 도달 불가. G2에서 다루지 않는다. 단 **F8(캐시 identity)** 은 M3에서 자연히 사라진다 |
 | `buildXml`·`opts.legacyWriter` 제거 | G1 leftover. **G2와 섞지 않는다** (§21) |
 | full baseline 재고정 (F7) | D6 |
+
+---
+
+## 24. 구현 기록 (G2 Implementer, 2026-09-23)
+
+| 항목 | 값 |
+| --- | --- |
+| 브랜치 / worktree | `g2-import` / `D:/PPP-g2`, 기준 `origin/main` = `00081cc` |
+| 판정 | **PARTIAL** — Step 0–10 완료, Step 11–14(앱 migration) 미착수 |
+| 사용자 결정 | **D1 APPROVED** (schema v2, 5건 + ext host 확대). D2–D6은 아직 열려 있고, **D3이 `.mid`의 앱 동작을 막는다** |
+| production 변경 | `scoregraph/` (신규 3, 수정 5), `audio-score.js` 1줄(라이브러리 버전), 앱 HTML `<script>` 3줄 |
+| 전사 품질 | **변화 0** — `ab --suite core --a git:00081cc --b worktree` 553/553 케이스 동일 (A28) |
+
+### 24.1 한 일
+
+| Step | 결과 |
+| --- | --- |
+| 0 baseline / 문서 hygiene | §23의 stale 9곳 수정, G2 행 추가 |
+| 1 import contracts | **`scoregraph/import.js`** — format 판별, container, encoding, 통합 ImportReport |
+| 2 schema v2 | S1·S2·S4·S5·S6 + ext host 3개 + `MIGRATIONS[1]`. 커밋된 `.sg.json` 51개가 **각각 한 줄만** 바뀜 |
+| 3 파일 전체 거절 제거 | C1 unpitched, C2 박자표 없음, C3 미분음 — **셋 다 제거** |
+| 4 새로 담는 것 | C4 barline fermata, C5 glissando/slide, C6 multiple-rest |
+| 5 fixture | MusicXML 10개 신규, MIDI 28개 신규, node 테스트 3파일 |
+| 6 export 선형화 | 72,000 head 8,142 ms → **557 ms** |
+| 7 SMF reader | **`scoregraph/midi-file.js`** — RawMidi, 무손실 |
+| 8 MIDI → graph | **`scoregraph/midi-import.js`** — performance 층 + inferred skeleton |
+| 9 MIDI fidelity | 28/28 파일이 µs 오차 0으로 왕복 |
+| 10 mutation | importer 변이 15종, 전부 탐지 |
+| **11–14 앱 migration** | **하지 않음** (§24.4) |
+
+### 24.2 설계가 틀렸던 두 곳 (실행으로 확인)
+
+| 설계의 주장 | 사실 |
+| --- | --- |
+| §18-S6: multiple-rest를 버리면 **"마디 수가 틀어진다 — 의미 손실"** | **틀렸다.** MusicXML은 마디를 전부 유지한다. 4마디 fixture를 넣으면 import 후에도 4마디다(확인함). 잃는 것은 **인쇄 방식뿐**이다. core 필드로 넣은 이유는 그대로 유효하다 — `notation_inventory`가 core 필드만 비교하므로 ext로는 L1+에 보이지 않는다 |
+| §6.4: "지금 bench와 앱은 **둘 다** container.xml을 읽지 않고 첫 xml 엔트리를 고른다" | **앱은 읽는다** (`readMxl`, App 4409–4414). 틀린 것은 bench의 Python과 Architect 세션의 조사 스크립트였다. `import.js`는 읽고, `chosenBy`로 어느 쪽이었는지 보고한다 |
+
+### 24.3 설계와 다르게 하거나 설계가 열어 둔 것을 정한 점
+
+| ID | 결정 |
+| --- | --- |
+| G2-I1 | **미분음은 문자열로 보존한다.** `ext['musicxml.microtone'].alter`에 파일의 원문(`"0.5"`)을 넣는다. 숫자로 넣으면 기보 쪽 canonical JSON에 float가 생겨 G01 §14.2를 깬다 — **기존 테스트가 잡았다** |
+| G2-I2 | **`<key><cancel>`과 `key-octave`는 ext로도 못 담는다.** `KeyEvent`가 ext host가 아니다. 둘 다 조표 *인쇄 방식*이고 앞 조표에서 유도되므로 DROPPED 유지 + report (§18 S10) |
+| G2-I3 | **barline fermata는 하나만 담는다.** 코퍼스의 5건은 한 마디선에 upright+inverted 두 개 — 대보표에 한 번 찍는 늘임표를 두 번 그린 것이다. Event의 "첫 fermata만" 규칙과 같고, 둘째는 report에 남는다 |
+| G2-I4 | **MIDI 기보화(`notate`)는 넣지 않았다.** D3가 열려 있다. `midi-import.js`는 연주 + skeleton까지만 만든다 |
+| G2-I5 | **MIDI writer는 1 tick = 1 µs 격자로 쓴다.** 연주 층이 µs이므로 더 성긴 격자는 반올림한다. 그 대신 파일의 인쇄 템포는 의미가 없어진다 — 측정 도구이지 기능이 아니다 (§21) |
+| G2-I6 | **importer mutation은 G0 harness가 아니라 node 테스트로 잰다.** G0 mutation은 transcription 벤치를 돌리는데, 그 벤치는 MusicXML을 **Python reader**로 읽지 이 importer로 읽지 않는다. 구조적으로 도달 불가다 |
+| G2-I7 | **MIDI fixture는 자체 byte writer로 만든다.** `midi-file.js`가 만든 fixture는 `midi-file.js`가 자기 출력을 잘못 읽는 것을 잡을 수 없다 |
+| G2-I8 | `import.js`는 **async**다. 브라우저의 inflate(`DecompressionStream`)가 async라서다. Node는 `zlib`를 동기로 쓰므로 이미 settle된 promise가 온다 |
+
+### 24.4 하지 않은 것과 그 이유
+
+| 항목 | 이유 |
+| --- | --- |
+| **Step 11–14: 앱 import 경계 이동** (`toLegacyScore`, shadow, A/B, flip) | 가장 크고 가장 위험한 조각이다. 부록 B의 25개 필드 대응을 구현하고 369개 코퍼스에서 `parseMusicXML`과 차이 0을 증명한 뒤에야 flip할 수 있다. 절반만 한 migration은 안 한 것보다 나쁘다. **다음 세션의 일**이다 |
+| **`.mid`를 앱에서 여는 것** | **D3이 막는다.** 기본이 "연주만"(악보가 안 보인다)인지 "기보까지"(추론을 원본으로 오해할 수 있다)인지는 제품 결정이다 |
+| `dashes`(354), `sound@dynamics`(856), `part-group`(6), `wavy-line`(6)를 ext로 보존 | §6.2는 EXT로 계획했다. 전부 **표시 힌트**이고 전부 report에 이름과 수로 남는다. 담으려면 exporter의 mark 배치 기계를 건드려야 해서, 앱 migration보다 뒤에 둘 일이다 |
+| `run.py import-report` / `midi-roundtrip` bench 명령 | 같은 내용을 node 테스트(`import.test.js`, `midi.test.js`)가 이미 잰다. bench 명령은 Python 쪽 배선이고 지금 가치가 낮다 |
+| L1++ / L3 (넓힌 notation inventory, concert pitch) | fixture는 만들었고 L2 고정점으로 확인했다. `notation_inventory.py`를 넓히는 것은 Python 쪽 일이다 |
+| F1 tuplet bracket | **G3.** 건드리지 않았다 |
+
+### 24.5 측정
+
+| 명령 | 결과 |
+| --- | --- |
+| `npm run test:scoregraph` | **125/125** (G1은 72) |
+| `npm run test:bench` | 단위 **221/221** · golden **17/17 identical** · correctness 13/13 |
+| `npm run bench:smoke` | PASS |
+| `ab --suite core --a git:00081cc --b worktree` + `ab_identical` | **553/553 동일** (A28) |
+| `sg-roundtrip` | 367/369, L1 368 · L1+ 367 · **L2 369** · play_order 369 |
+| `node tools/make-midi-fixtures.js --check` | 28/28 바이트 동일 |
+| export 36,000 head | 2,120 ms → **259 ms** (A30: 비율 2.54 < 3.0) |
+| MIDI 20,000 음 import | 85 ms |
+
+### 24.6 Acceptance Criteria 대조
+
+| | A# | 결과 |
+| --- | --- | --- |
+| 기반 | A1 A2 A3 A4 A5 A6 | **PASS** |
+| MusicXML | A7 A8 A9 A10 A11 A14 A17 A18 | **PASS** |
+| | A12 A13 | **PASS** (node 테스트로. `run.py import-report`는 만들지 않음 — §24.4) |
+| | A15 | **부분** — transpose fixture와 mutation은 있고, L3를 `sg-roundtrip`에 넣지 않았다 |
+| | A16 | **PASS** (단, 전제가 틀렸다 — §24.2) |
+| MIDI | A19 A20 A21 A22 A23 A24 A25 A26 A27 A29 | **PASS** |
+| | A28 | **PASS** — core 553/553 동일 |
+| 성능 | A30 | **PASS** |
+| | A31 | **미측정** — 저장 형식을 아직 쓰지 않는다 (Step 13) |
+| 앱 | A32–A38 | **미착수** (§24.4) |
+| 회귀 | A39 A41 | **PASS** |
+| | A40 | **미착수** — allowlist는 아직 파일 단위다 (G1 F6) |
+
+**42개 중 30개 PASS, 1개 부분, 11개 미착수.**
+
+### 24.7 리뷰어가 볼 위험
+
+1. **schema v2는 되돌리기 어렵다.** 51개 `.sg.json`과 golden 17개가 다시 찍혔다. 각 파일이 한 줄만 바뀐 것이 v2가 순수 추가임의 증거다 — 그 증거부터 확인할 것.
+2. **`import.js`가 async다.** 앱이 이것을 쓰기 시작하면 import 경로 전체가 async가 된다. `scoreFromFile`은 이미 async이므로 맞물리지만, 다른 호출자는 확인해야 한다.
+3. **MIDI skeleton은 악보가 아니다.** `op: 'inferred'`와 `W-MIDI-SKELETON`이 그렇게 말하지만, 소비자가 무시하면 추론된 격자를 작곡가의 것으로 보여 줄 수 있다. D3이 이것을 결정한다.
+4. **percussion export는 새 코드다.** 코퍼스에 `<unpitched>`가 0건이라 회귀 코퍼스가 없다. `unpitched.musicxml`과 `drums-with-piano.sg.json` 두 fixture가 전부다.
+5. **`Barline.fermata`는 한 마디선에 하나뿐이다.** 대보표의 두 번째 늘임표는 report로만 남는다 (G2-I3).
+6. **`prov`를 `{op}`만으로 둔 것**(§12.3)은 `I-PROV-REDUNDANT`를 피하려는 것이다. `src`는 default에서 상속된다 — `provOf`가 그렇게 동작함을 테스트가 확인한다 (A27).
 
 ---
 
