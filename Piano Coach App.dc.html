@@ -4406,23 +4406,90 @@ function findCentral(dv, u8, wanted) {
   return null;
 }
 
+/* ==========================================================================
+   THE IMPORT BOUNDARY  (docs/GOALS/G02 §14, G01 §15.2 S3)
+
+   Everything a person opens becomes a ScoreGraph first, and the Score the rest
+   of the app reads is a projection of it. The graph is what gets stored, so a
+   later Goal can improve how a file is read without re-reading the file.
+
+   `PPP.legacyImport = true` puts parseMusicXML back for one release, the way
+   `opts.legacyWriter` kept buildXml. It is the way back, not a fallback: an
+   import that fails, fails, and says why (G2-D3).
+
+   A MIDI file is a performance, not a score. Its notes, pedals and controllers
+   go into the graph exactly as the file states them; the note values, staves
+   and voices you see are worked out by the quantizer audio-score.js already had
+   - the one G0 measures - and the graph says so (`sgFrom.inferred`), so nothing
+   downstream can mistake the grid for the composer's (decision D3).
+   ========================================================================== */
+let LEGACY_IMPORT = false;
+const scoreIdFor = name => ('f-' + String(name || 'score').replace(/[^A-Za-z0-9._:-]+/g, '-')).slice(0, 64);
+
+async function importToGraph(bytes, name, kind) {
+  if (kind === 'midi') {
+    let r;
+    try { r = PPPAudioScore.fromMidi(bytes, { scoreId: scoreIdFor(name), sourceName: name, title: null }); }
+    catch (err) {
+      const e = new Error(midiMessage(err, name));
+      e.soft = true; e.code = err.code || 'MIDI-UNREADABLE';
+      throw e;
+    }
+    return { graph: r.graph, report: r.midi.report, midi: r.midi, stats: r.stats };
+  }
+  const r = await PPPScoreGraph.importFile(bytes, { name: name, scoreId: scoreIdFor(name) });
+  if (!r.ok) {
+    const e = new Error(readerMessage(r.code, name, r.message));
+    e.soft = true; e.code = r.code; e.report = r.report;
+    throw e;
+  }
+  return { graph: r.graph, report: r.report };
+}
+function midiMessage(err, name) {
+  if (err.code === 'MIDI-NOT-A-FILE') return tx('That is not a MIDI file.');
+  if (err.code === 'MIDI-TRUNCATED' || err.code === 'MIDI-BAD-HEADER') return tx('This MIDI file is damaged and PPP cannot read it.');
+  if (err.code === 'MIDI-NO-NOTES' || err.code === 'no-notes') return tx('This MIDI file has no notes to read.');
+  return (name || 'that file') + ': ' + String(err.message || err);
+}
+function readerMessage(code, name, detail) {
+  if (code === 'IMPORT-TIMEWISE') return tx('This is a score-timewise file. Re-export it as score-partwise MusicXML.');
+  if (code === 'IMPORT-BAD-XML') return tx('That file is not valid XML.');
+  if (code === 'IMPORT-EMPTY') return tx('That file is empty.');
+  if (code === 'IMPORT-BAD-ARCHIVE' || code === 'IMPORT-NO-SCORE') return tx('Could not read this .mxl archive.');
+  return (name || 'that file') + ': ' + detail;
+}
+
+/* MusicXML PPP already holds as text - a catalogue piece, a method book - through the same reader.
+   Synchronous, because the text is in hand: no caller's signature changes (G02 §14.2). */
+function scoreFromXml(xml, name) {
+  if (LEGACY_IMPORT) return parseMusicXML(xml, name);
+  const r = PPPScoreGraph.musicxml.import(xml, { scoreId: scoreIdFor(name), sourceName: name });
+  if (!r.ok) {
+    const e = new Error(readerMessage(r.code, name, r.message));
+    e.soft = true; e.code = r.code;
+    throw e;
+  }
+  return Score.finalize(PPPScoreGraph.legacy.toScore(r.graph, { name: name }));
+}
+
 /* Read whatever the user picked and turn it into a Score. */
 async function scoreFromFile(file) {
   const lower = (file.name || '').toLowerCase();
-  if (/\.mxl$/.test(lower)) {
-    const xml = await readMxl(await file.arrayBuffer());
+  const kind = /\.mxl$/.test(lower) ? 'mxl'
+    : /\.(xml|musicxml)$/.test(lower) ? 'musicxml'
+      : /\.(mid|midi)$/.test(lower) ? 'midi' : null;
+  if (!kind) {
+    const e = new Error('PPP cannot read ' + (file.name || 'that file') + ' yet. Sheet music scans need OMR, which is not built. Upload MusicXML (.musicxml, .xml or .mxl) or MIDI (.mid).');
+    e.soft = true;
+    throw e;
+  }
+  if (LEGACY_IMPORT && kind !== 'midi') {
+    const xml = kind === 'mxl' ? await readMxl(await file.arrayBuffer()) : await file.text();
     return parseMusicXML(xml, file.name);
   }
-  if (/\.(xml|musicxml)$/.test(lower)) {
-    return parseMusicXML(await file.text(), file.name);
-  }
-  if (/\.(mid|midi)$/.test(lower)) {
-    const e = new Error('MIDI import is not built yet — export MusicXML (.musicxml or .mxl) instead.');
-    e.soft = true; throw e;
-  }
-  const e = new Error('PPP cannot read ' + (file.name || 'that file') + ' yet. Sheet music scans need OMR, which is not built. Upload MusicXML (.musicxml, .xml or .mxl).');
-  e.soft = true;
-  throw e;
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const got = await importToGraph(bytes, file.name, kind);
+  return Score.finalize(PPPScoreGraph.legacy.toScore(got.graph, { name: file.name }));
 }
 
 /* ============================================================================
@@ -6081,6 +6148,7 @@ const Import = {
     const t = (file && file.type || '').toLowerCase();
     if (/\.mxl$/.test(n) || t === 'application/vnd.recordare.musicxml') return 'mxl';
     if (/\.(musicxml|xml)$/.test(n) || t === 'application/vnd.recordare.musicxml+xml') return 'musicxml';
+    if (/\.(mid|midi)$/.test(n) || t === 'audio/midi' || t === 'audio/x-midi') return 'midi';
     if (/\.pdf$/.test(n) || t === 'application/pdf' || t === 'application/x-pdf' || t === 'application/acrobat') return 'pdf';
     if (/\.(png|jpe?g|webp)$/.test(n) || /^image\/(png|jpe?g|webp)$/.test(t)) return 'image';
     if (AUDIO_RE.test(n) || /^audio\//.test(t)) return 'audio';
@@ -6094,6 +6162,7 @@ const Import = {
     if (!file || typeof file.slice !== 'function') return Promise.resolve(named);
     return file.slice(0, 16).arrayBuffer().then(buf => {
       const u = new Uint8Array(buf);
+      if (u.length >= 4 && u[0] === 0x4D && u[1] === 0x54 && u[2] === 0x68 && u[3] === 0x64) return 'midi';
       if (u.length >= 4 && u[0] === 0x25 && u[1] === 0x50 && u[2] === 0x44 && u[3] === 0x46) return 'pdf';
       if (u.length >= 3 && u[0] === 0x89 && u[1] === 0x50 && u[2] === 0x4E) return 'image';
       if (u.length >= 2 && u[0] === 0xFF && u[1] === 0xD8) return 'image';
@@ -6105,6 +6174,21 @@ const Import = {
       if (/<\?xml|score-partwise|score-timewise/.test(s)) return 'musicxml';
       return named;
     }).catch(() => named);
+  },
+  /* What an import kept and what it could not (G02 §11). The graph's own report, reduced to the
+     handful of things worth putting in front of a person. */
+  summariseGraph(got) {
+    const rep = got.report || {};
+    const dropped = Object.keys(rep.dropped || {}).map(k => ({ what: k, count: rep.dropped[k] }));
+    return {
+      format: rep.format || (got.midi ? 'midi' : null),
+      inferredNotation: PPPScoreGraph.legacy.inferredNotation(got.graph),
+      counts: rep.counts || null,
+      dropped: dropped,
+      preserved: rep.preserved || [],
+      warnings: (rep.issues || []).map(i => ({ code: i.code, message: i.message })),
+      midi: got.midi ? { notes: got.midi.notes, kept: got.midi.kept, dropped: got.midi.dropped } : null
+    };
   },
   needsOmr(kind) { return kind === 'pdf' || kind === 'image'; },
   isRecording(kind) { return kind === 'audio' || kind === 'video' || kind === 'youtube'; },
@@ -7194,7 +7278,7 @@ const Import = {
       const xml = localHit.entry.xml;
       const aligned = Import.alignScore(xml, { duration: duration });
       stage('parse', {});
-      const score = parseMusicXML(xml, localHit.entry.title);
+      const score = scoreFromXml(xml, localHit.entry.title);
       if (localHit.entry.composer) score.composer = localHit.entry.composer;
       const source = {
         name: what.file.name, kind: Import.kindOf(what.file),
@@ -7218,7 +7302,7 @@ const Import = {
       const xml = localHit.entry.xml;
       const aligned = Import.alignScore(xml, {});
       stage('parse', {});
-      const score = parseMusicXML(xml, localHit.entry.title);
+      const score = scoreFromXml(xml, localHit.entry.title);
       if (localHit.entry.composer) score.composer = localHit.entry.composer;
       const yt = Import.youtubeWatch(what.url);
       const source = {
@@ -7390,7 +7474,7 @@ const Import = {
     stage('validate', { name: file.name, bytes: file.size });
     if (!kind)
       throw importError('unsupported', tx('PPP cannot read {{name}}.', { name: file.name || tx('that file') }),
-        [tx('Supported: MusicXML (.musicxml, .xml, .mxl), PDF, PNG, JPG, and recordings: MP3, WAV, M4A, MP4')]);
+        [tx('Supported: MusicXML (.musicxml, .xml, .mxl), MIDI (.mid), PDF, PNG, JPG, and recordings: MP3, WAV, M4A, MP4')]);
     if (Import.isRecording(kind)) {
       if (file.size > IMPORT_LIMITS.maxAudioBytes)
         throw importError('too-large', tx('That file is {{n}} MB; the limit is {{max}} MB.', {
@@ -7410,13 +7494,31 @@ const Import = {
       importedAt: Clock.now(), engine: null, pages: null, status: 'pending'
     };
 
-    /* --- the two in-browser routes --- */
-    if (kind === 'musicxml' || kind === 'mxl') {
+    /* --- the three in-browser routes --- */
+    if (kind === 'musicxml' || kind === 'mxl' || kind === 'midi') {
       stage('parse', {});
-      const xml = kind === 'mxl' ? await readMxl(await file.arrayBuffer()) : await file.text();
-      const score = parseMusicXML(xml, file.name);
+      if (LEGACY_IMPORT && kind !== 'midi') {
+        const xml = kind === 'mxl' ? await readMxl(await file.arrayBuffer()) : await file.text();
+        const score = parseMusicXML(xml, file.name);
+        source.status = 'parsed';
+        const report = Import.validate(score, { pageCount: 0 });
+        return { score: score, source: source, report: Object.assign(report, { confidence: 1, level: 'good', advice: null, summary: null }) };
+      }
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const got = await importToGraph(bytes, file.name, kind);
+      const score = Score.finalize(PPPScoreGraph.legacy.toScore(got.graph, { name: file.name }));
       source.status = 'parsed';
+      source.graph = got.graph;
+      source.importReport = Import.summariseGraph(got);
       const report = Import.validate(score, { pageCount: 0 });
+      if (kind === 'midi') {
+        /* the notes and their times are the file's; the notation is PPP's reading of them */
+        return { score: score, source: source, report: Object.assign(report, {
+          confidence: 0.8, level: 'fair', inferredNotation: true,
+          summary: tx('The notes and their timing are exactly what the MIDI file says. The bar lines, note values, staves and voices are PPP\u2019s reading of them, not the composer\u2019s.'),
+          advice: [tx('Check the rhythm and the hand split before you practise from it.')]
+        }) };
+      }
       /* a file that says what it contains is trusted; validation only advises */
       return { score: score, source: source, report: Object.assign(report, { confidence: 1, level: 'good', advice: null, summary: null }) };
     }
@@ -9050,7 +9152,10 @@ const ScoreArranger = (() => {
    score inspectable from the console. Anything here must stay
    source-agnostic — no practice state, no rendering. */
 window.PPP = {
-  Score, parseMusicXML, readMxl, scoreFromFile, buildDemoScore,
+  Score, parseMusicXML, readMxl, scoreFromFile, scoreFromXml, buildDemoScore,
+  importToGraph,
+  get legacyImport() { return LEGACY_IMPORT; },
+  set legacyImport(v) { LEGACY_IMPORT = !!v; },
   pitchToMidi, midiToFreq, keyName, vexKey,
   PIANO, PianoSamples, PianoScore, PianoPlayer,
   PianoVisual: {
@@ -15742,7 +15847,7 @@ class Component extends DCLogic {
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
       .then(buf => /\.mxl$/i.test(p.file) ? readMxl(buf) : new TextDecoder().decode(buf))
       .then(xml => {
-        const score = parseMusicXML(xml, title);
+        const score = scoreFromXml(xml, title);
         if (!score || !score.measures.length || !score.notes.some(n => !n.rest)) throw new Error('empty');
         score.title = title;
         score.composer = b.composer || score.composer;

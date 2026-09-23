@@ -146,6 +146,18 @@ F['m23-track-names'] = file(1, Q, [
   track([[0, trackName('Left Hand')], [0, noteOn(2, 48, 60)], [Q, noteOff(2, 48)]])]);
 F['m24-offset-start'] = file(0, Q, [track([[0, tempo(500000)], [0, meter(4, 2)],
   [Q * 6, noteOn(1, 60, 80)], [Q * 7, noteOff(1, 60)]])]);
+/* M27: enough notes for the quantizer to have something to read - audio-score needs four, and a
+   file a person would actually open has hundreds. Twenty quarter notes, a pedal held across them,
+   and an expression controller, so the whole performance layer is exercised (G02 D3). */
+F['m27-twenty-notes'] = (() => {
+  const ev = [[0, tempo(500000)], [0, meter(4, 2)], [0, cc(1, 64, 127)]];
+  for (let i = 0; i < 20; i++) {
+    ev.push([i * Q, noteOn(1, 60 + (i % 8), 80)]);
+    ev.push([i * Q + Q - 10, noteOff(1, 60 + (i % 8))]);
+  }
+  ev.push([20 * Q, cc(1, 64, 0)], [20 * Q, cc(1, 11, 90)]);
+  return file(0, Q, [track(ev)]);
+})();
 F['m26-no-meter-no-tempo'] = file(0, Q, [track([[0, noteOn(1, 60, 80)], [Q, noteOff(1, 60)],
   [Q * 2, noteOn(1, 62, 80)], [Q * 3, noteOff(1, 62)]])]);
 F['m25-truncated-track'] = (() => {
