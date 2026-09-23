@@ -1,0 +1,17 @@
+{
+ "about": "§19 E08b: PPP output for catalog/gymnopedie-1|deadpan|none|s1, printed bars 5",
+ "spec": "G03 §19",
+ "case": "catalog/gymnopedie-1|deadpan|none|s1",
+ "bars": [
+  5,
+  5
+ ],
+ "reference": "catalog/gymnopedie-1.musicxml",
+ "before": [
+  "F#5:h E5:8.~ E5:16",
+  "G2:q D3+F#3+B3:8~ D3+F#3+B3:q."
+ ],
+ "expect": {
+  "g3a": "a quarter written 8.~16 in a 6/8 that should be 3/4: correct for 6/8 (H4), so G3 leaves it; the metre is issue 2, not G3"
+ }
+}

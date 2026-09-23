@@ -1,0 +1,105 @@
+{
+  "scoregraph_version": 2,
+  "id": "sg-audio-slice",
+  "rev": 0,
+  "nextId": 1629,
+  "meta": {"title":"bench"},
+  "timeline": {
+    "measures": [
+      {"id":"m9","number":"3","dur":"1"}
+    ],
+    "meters": [
+      {"id":"mt40","m":"m9","beats":[4],"beatType":4}
+    ],
+    "keys": [
+      {"id":"ky41","m":"m9","at":"0","fifths":1,"mode":"major"}
+    ],
+    "tempos": [
+      {"id":"tp42","m":"m9","at":"0","qpm":"130","mark":{"unit":"quarter","perMinute":"130"},"display":[{"part":"p2","staff":"st3","placement":"above"}]}
+    ]
+  },
+  "parts": [
+    {
+      "id": "p2",
+      "name": "Piano",
+      "instrument": {"kind":"piano","family":"keyboard"},
+      "staves": [
+        {"id":"st3","limb":"RH"},
+        {"id":"st4","limb":"LH"}
+      ],
+      "voices": [
+        {"id":"v5","staff":"st3","label":"1"},
+        {"id":"v6","staff":"st4","label":"5"}
+      ],
+      "clefs": [
+        {"id":"c43","staff":"st3","m":"m9","at":"0","sign":"G"},
+        {"id":"c44","staff":"st4","m":"m9","at":"0","sign":"F"}
+      ],
+      "events": [
+        {"id":"e99","kind":"rest","m":"m9","at":"0","dur":"1/6","voice":"v5","staff":"st3","display":{"type":"quarter"}},
+        {"id":"e100","kind":"note","m":"m9","at":"1/6","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h101","pitch":{"step":"E","oct":4}}]},
+        {"id":"e102","kind":"note","m":"m9","at":"1/4","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h103","pitch":{"step":"E","oct":5}}]},
+        {"id":"e104","kind":"note","m":"m9","at":"1/3","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h105","pitch":{"step":"C","oct":5}}]},
+        {"id":"e106","kind":"note","m":"m9","at":"5/12","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h107","pitch":{"step":"G","oct":4}}]},
+        {"id":"e108","kind":"rest","m":"m9","at":"1/2","dur":"1/6","voice":"v5","staff":"st3","display":{"type":"quarter"}},
+        {"id":"e109","kind":"note","m":"m9","at":"2/3","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h110","pitch":{"step":"E","oct":4}}]},
+        {"id":"e111","kind":"note","m":"m9","at":"3/4","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h112","pitch":{"step":"G","oct":5}}]},
+        {"id":"e113","kind":"note","m":"m9","at":"5/6","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h114","pitch":{"step":"E","oct":5}}]},
+        {"id":"e115","kind":"note","m":"m9","at":"11/12","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h116","pitch":{"step":"C","oct":5}}]},
+        {"id":"e117","kind":"note","m":"m9","at":"0","dur":"1/12","voice":"v6","staff":"st4","display":{"type":"eighth"},"heads":[{"id":"h118","pitch":{"step":"G","oct":3}}]},
+        {"id":"e119","kind":"note","m":"m9","at":"1/12","dur":"1/12","voice":"v6","staff":"st4","display":{"type":"eighth"},"heads":[{"id":"h120","pitch":{"step":"C","oct":4}}]},
+        {"id":"e121","kind":"rest","m":"m9","at":"1/6","dur":"1/12","voice":"v6","staff":"st4","display":{"type":"eighth"}},
+        {"id":"e122","kind":"rest","m":"m9","at":"1/4","dur":"1/4","voice":"v6","staff":"st4","display":{"type":"quarter"}},
+        {"id":"e123","kind":"note","m":"m9","at":"1/2","dur":"1/12","voice":"v6","staff":"st4","display":{"type":"eighth"},"heads":[{"id":"h124","pitch":{"step":"G","oct":3}}]},
+        {"id":"e125","kind":"note","m":"m9","at":"7/12","dur":"1/12","voice":"v6","staff":"st4","display":{"type":"eighth"},"heads":[{"id":"h126","pitch":{"step":"C","oct":4}}]},
+        {"id":"e127","kind":"rest","m":"m9","at":"2/3","dur":"1/12","voice":"v6","staff":"st4","display":{"type":"eighth"}},
+        {"id":"e128","kind":"rest","m":"m9","at":"3/4","dur":"1/4","voice":"v6","staff":"st4","display":{"type":"quarter"}}
+      ],
+      "directions": [],
+      "spanners": [
+        {"id":"s960","type":"tuplet","events":["e117"],"actual":3,"normal":2},
+        {"id":"s961","type":"tuplet","events":["e119"],"actual":3,"normal":2},
+        {"id":"s952","type":"tuplet","events":["e100"],"actual":3,"normal":2},
+        {"id":"s953","type":"tuplet","events":["e102"],"actual":3,"normal":2},
+        {"id":"s954","type":"tuplet","events":["e104"],"actual":3,"normal":2},
+        {"id":"s955","type":"tuplet","events":["e106"],"actual":3,"normal":2},
+        {"id":"s962","type":"tuplet","events":["e123"],"actual":3,"normal":2},
+        {"id":"s963","type":"tuplet","events":["e125"],"actual":3,"normal":2},
+        {"id":"s956","type":"tuplet","events":["e109"],"actual":3,"normal":2},
+        {"id":"s957","type":"tuplet","events":["e111"],"actual":3,"normal":2},
+        {"id":"s958","type":"tuplet","events":["e113"],"actual":3,"normal":2},
+        {"id":"s959","type":"tuplet","events":["e115"],"actual":3,"normal":2}
+      ]
+    }
+  ],
+  "performances": [
+    {
+      "id": "pf1239",
+      "kind": "source",
+      "src": "sr1",
+      "notes": [
+        {"id":"pn1264","on":5692300,"off":5806200,"vel":70,"midi":55,"link":"h118"},
+        {"id":"pn1265","on":5846200,"off":5960000,"vel":70,"midi":60,"link":"h120"},
+        {"id":"pn1266","on":6000000,"off":6113800,"vel":70,"midi":64,"link":"h101"},
+        {"id":"pn1267","on":6153800,"off":6267700,"vel":76,"midi":76,"link":"h103"},
+        {"id":"pn1268","on":6307700,"off":6421500,"vel":76,"midi":72,"link":"h105"},
+        {"id":"pn1269","on":6461500,"off":6575400,"vel":76,"midi":67,"link":"h107"},
+        {"id":"pn1270","on":6615400,"off":6729200,"vel":70,"midi":55,"link":"h124"},
+        {"id":"pn1271","on":6769200,"off":6883100,"vel":70,"midi":60,"link":"h126"},
+        {"id":"pn1272","on":6923100,"off":7036900,"vel":70,"midi":64,"link":"h110"},
+        {"id":"pn1273","on":7076900,"off":7190800,"vel":76,"midi":79,"link":"h112"},
+        {"id":"pn1274","on":7230800,"off":7344600,"vel":76,"midi":76,"link":"h114"},
+        {"id":"pn1275","on":7384600,"off":7498500,"vel":76,"midi":72,"link":"h116"}
+      ],
+      "anchors": [
+        {"m":"m9","k":1,"at":"0","us":5691940,"kind":"bar"}
+      ]
+    }
+  ],
+  "provenance": {
+    "sources": [
+      {"id":"sr1","kind":"audio-score","tool":"audio-score.js","params":{"beatSource":"onset","quantizer":"heuristic"}}
+    ],
+    "default": {"src":"sr1","op":"inferred"}
+  }
+}

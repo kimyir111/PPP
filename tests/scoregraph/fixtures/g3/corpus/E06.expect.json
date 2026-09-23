@@ -1,0 +1,17 @@
+{
+ "about": "§19 E06: PPP output for method/beyer/032|human|oracle|s1, printed bars 1-2",
+ "spec": "G03 §19",
+ "case": "method/beyer/032|human|oracle|s1",
+ "bars": [
+  1,
+  2
+ ],
+ "reference": "catalog/method/beyer/032.mxl",
+ "before": [
+  "D5+D6:q C5+C6:q B4+B5:q | A4+A5:h.",
+  "r:h. | r:h."
+ ],
+ "expect": {
+  "g3a": "wrong hand (parallel octaves): the octave pairs are split between the hands, RH upper and LH lower"
+ }
+}

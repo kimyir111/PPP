@@ -1,0 +1,121 @@
+{
+  "scoregraph_version": 2,
+  "id": "sg-audio-slice",
+  "rev": 0,
+  "nextId": 2077,
+  "meta": {"title":"bench"},
+  "timeline": {
+    "measures": [
+      {"id":"m17","number":"11","dur":"1"}
+    ],
+    "meters": [
+      {"id":"mt39","m":"m17","beats":[4],"beatType":4}
+    ],
+    "keys": [
+      {"id":"ky40","m":"m17","at":"0","fifths":0,"mode":"major"}
+    ],
+    "tempos": [
+      {"id":"tp41","m":"m17","at":"0","qpm":"200","mark":{"unit":"quarter","perMinute":"200"},"display":[{"part":"p2","staff":"st3","placement":"above"}]}
+    ]
+  },
+  "parts": [
+    {
+      "id": "p2",
+      "name": "Piano",
+      "instrument": {"kind":"piano","family":"keyboard"},
+      "staves": [
+        {"id":"st3","limb":"RH"},
+        {"id":"st4","limb":"LH"}
+      ],
+      "voices": [
+        {"id":"v5","staff":"st3","label":"1"},
+        {"id":"v6","staff":"st4","label":"5"}
+      ],
+      "clefs": [
+        {"id":"c42","staff":"st3","m":"m17","at":"0","sign":"G"},
+        {"id":"c43","staff":"st4","m":"m17","at":"0","sign":"F"}
+      ],
+      "events": [
+        {"id":"e449","kind":"note","m":"m17","at":"0","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h450","pitch":{"step":"G","oct":5}}]},
+        {"id":"e451","kind":"note","m":"m17","at":"1/12","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h452","pitch":{"step":"D","oct":5}}]},
+        {"id":"e453","kind":"note","m":"m17","at":"1/6","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h454","pitch":{"step":"E","oct":5}}]},
+        {"id":"e455","kind":"note","m":"m17","at":"1/4","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h456","pitch":{"step":"F","oct":5}}]},
+        {"id":"e457","kind":"note","m":"m17","at":"1/3","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h458","pitch":{"step":"E","oct":5}}]},
+        {"id":"e459","kind":"note","m":"m17","at":"5/12","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h460","pitch":{"step":"D","oct":5}}]},
+        {"id":"e461","kind":"note","m":"m17","at":"1/2","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h462","pitch":{"step":"G","oct":5}}]},
+        {"id":"e463","kind":"note","m":"m17","at":"7/12","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h464","pitch":{"step":"D","oct":5}}]},
+        {"id":"e465","kind":"note","m":"m17","at":"2/3","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h466","pitch":{"step":"E","oct":5}}]},
+        {"id":"e467","kind":"note","m":"m17","at":"3/4","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h468","pitch":{"step":"F","oct":5}}]},
+        {"id":"e469","kind":"note","m":"m17","at":"5/6","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h470","pitch":{"step":"E","oct":5}}]},
+        {"id":"e471","kind":"note","m":"m17","at":"11/12","dur":"1/12","voice":"v5","staff":"st3","display":{"type":"eighth"},"heads":[{"id":"h472","pitch":{"step":"D","oct":5}}]},
+        {"id":"e473","kind":"note","m":"m17","at":"0","dur":"1/6","voice":"v6","staff":"st4","display":{"type":"quarter"},"heads":[{"id":"h474","pitch":{"step":"B","oct":3}}]},
+        {"id":"e475","kind":"rest","m":"m17","at":"1/6","dur":"1/12","voice":"v6","staff":"st4","display":{"type":"eighth"}},
+        {"id":"e476","kind":"note","m":"m17","at":"1/4","dur":"1/6","voice":"v6","staff":"st4","display":{"type":"quarter"},"heads":[{"id":"h477","pitch":{"step":"D","oct":4}},{"id":"h478","pitch":{"step":"G","oct":4}}]},
+        {"id":"e479","kind":"rest","m":"m17","at":"5/12","dur":"1/12","voice":"v6","staff":"st4","display":{"type":"eighth"}},
+        {"id":"e480","kind":"note","m":"m17","at":"1/2","dur":"1/6","voice":"v6","staff":"st4","display":{"type":"quarter"},"heads":[{"id":"h481","pitch":{"step":"D","oct":4}},{"id":"h482","pitch":{"step":"G","oct":4}}]},
+        {"id":"e483","kind":"rest","m":"m17","at":"2/3","dur":"1/12","voice":"v6","staff":"st4","display":{"type":"eighth"}},
+        {"id":"e484","kind":"note","m":"m17","at":"3/4","dur":"1/6","voice":"v6","staff":"st4","display":{"type":"quarter"},"heads":[{"id":"h485","pitch":{"step":"D","oct":4}},{"id":"h486","pitch":{"step":"G","oct":4}}]},
+        {"id":"e487","kind":"rest","m":"m17","at":"11/12","dur":"1/12","voice":"v6","staff":"st4","display":{"type":"eighth"}}
+      ],
+      "directions": [],
+      "spanners": [
+        {"id":"s1369","type":"tuplet","events":["e449"],"actual":3,"normal":2},
+        {"id":"s1381","type":"tuplet","events":["e473"],"actual":3,"normal":2},
+        {"id":"s1370","type":"tuplet","events":["e451"],"actual":3,"normal":2},
+        {"id":"s1371","type":"tuplet","events":["e453"],"actual":3,"normal":2},
+        {"id":"s1372","type":"tuplet","events":["e455"],"actual":3,"normal":2},
+        {"id":"s1382","type":"tuplet","events":["e476"],"actual":3,"normal":2},
+        {"id":"s1373","type":"tuplet","events":["e457"],"actual":3,"normal":2},
+        {"id":"s1374","type":"tuplet","events":["e459"],"actual":3,"normal":2},
+        {"id":"s1375","type":"tuplet","events":["e461"],"actual":3,"normal":2},
+        {"id":"s1383","type":"tuplet","events":["e480"],"actual":3,"normal":2},
+        {"id":"s1376","type":"tuplet","events":["e463"],"actual":3,"normal":2},
+        {"id":"s1377","type":"tuplet","events":["e465"],"actual":3,"normal":2},
+        {"id":"s1378","type":"tuplet","events":["e467"],"actual":3,"normal":2},
+        {"id":"s1384","type":"tuplet","events":["e484"],"actual":3,"normal":2},
+        {"id":"s1379","type":"tuplet","events":["e469"],"actual":3,"normal":2},
+        {"id":"s1380","type":"tuplet","events":["e471"],"actual":3,"normal":2}
+      ]
+    }
+  ],
+  "performances": [
+    {
+      "id": "pf1498",
+      "kind": "source",
+      "src": "sr1",
+      "notes": [
+        {"id":"pn1679","on":13744400,"off":14299900,"vel":82,"midi":79,"link":"h450"},
+        {"id":"pn1680","on":13754300,"off":13993700,"vel":78,"midi":59,"link":"h474"},
+        {"id":"pn1681","on":13755500,"off":13805500,"vel":88,"midi":79,"link":"h450"},
+        {"id":"pn1682","on":13760100,"off":14871800,"vel":80,"midi":59,"link":"h474"},
+        {"id":"pn1683","on":13864200,"off":13924500,"vel":69,"midi":74,"link":"h452"},
+        {"id":"pn1684","on":13957300,"off":14007300,"vel":83,"midi":76,"link":"h454"},
+        {"id":"pn1685","on":14045400,"off":14308400,"vel":69,"midi":67,"link":"h478"},
+        {"id":"pn1686","on":14058200,"off":14280900,"vel":72,"midi":62,"link":"h477"},
+        {"id":"pn1687","on":14059500,"off":14113200,"vel":83,"midi":77,"link":"h456"},
+        {"id":"pn1688","on":14152300,"off":14208500,"vel":69,"midi":76,"link":"h458"},
+        {"id":"pn1689","on":14247000,"off":14297000,"vel":77,"midi":74,"link":"h460"},
+        {"id":"pn1690","on":14342000,"off":14428300,"vel":78,"midi":79,"link":"h462"},
+        {"id":"pn1691","on":14354000,"off":14604000,"vel":75,"midi":62,"link":"h481"},
+        {"id":"pn1692","on":14361600,"off":14584000,"vel":68,"midi":67,"link":"h482"},
+        {"id":"pn1693","on":14362100,"off":14921000,"vel":81,"midi":79,"link":"h462"},
+        {"id":"pn1694","on":14437000,"off":14524500,"vel":75,"midi":74,"link":"h464"},
+        {"id":"pn1695","on":14547900,"off":14618300,"vel":75,"midi":76,"link":"h466"},
+        {"id":"pn1696","on":14655100,"off":14888200,"vel":76,"midi":62,"link":"h485"},
+        {"id":"pn1697","on":14658700,"off":14923200,"vel":58,"midi":67,"link":"h486"},
+        {"id":"pn1698","on":14658700,"off":14708700,"vel":75,"midi":77,"link":"h468"},
+        {"id":"pn1699","on":14755400,"off":14812300,"vel":71,"midi":76,"link":"h470"},
+        {"id":"pn1700","on":14849700,"off":14899700,"vel":69,"midi":74,"link":"h472"}
+      ],
+      "anchors": [
+        {"m":"m17","k":1,"at":"0","us":13750000,"kind":"bar"}
+      ]
+    }
+  ],
+  "provenance": {
+    "sources": [
+      {"id":"sr1","kind":"audio-score","tool":"audio-score.js","params":{"beatSource":"audio","quantizer":"heuristic"}}
+    ],
+    "default": {"src":"sr1","op":"inferred"}
+  }
+}

@@ -1,0 +1,17 @@
+{
+ "about": "§19 E04: PPP output for method/czerny849/001|human|oracle|s1, printed bars 11",
+ "spec": "G03 §19",
+ "case": "method/czerny849/001|human|oracle|s1",
+ "bars": [
+  11,
+  11
+ ],
+ "reference": "catalog/method/czerny849/001.mxl",
+ "before": [
+  "3[G5:8] 3[D5:8] 3[E5:8] 3[F5:8] 3[E5:8] 3[D5:8] 3[G5:8] 3[D5:8] 3[E5:8] 3[F5:8] 3[E5:8] 3[D5:8]",
+  "3[B3:q] r:8=1/12 3[D4+G4:q] r:8=1/12 3[D4+G4:q] r:8=1/12 3[D4+G4:q] r:8=1/12"
+ ],
+ "expect": {
+  "g3a": "one-note brackets (F1): 12 brackets become one per beat group; LH quarter-triplet + triplet-eighth rest as one group"
+ }
+}
