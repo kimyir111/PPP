@@ -70,7 +70,10 @@ const ok = (what, cond, detail) => {
           measures: sc.measures.length, notes: sc.notes.length, sounding: sc.notes.filter(n => !n.rest).length,
           title: sc.title, tempo: sc.tempo, staves: sc.staves,
           sgFrom: sc.sgFrom || null,
-          hasGraph: !!(out.source && out.source.graph),
+          hasGraph: !!out.graph,
+          /* the graph must not ride on `source`: that object is written whole into localStorage */
+          graphOnSource: !!(out.source && out.source.graph),
+          sourceBytes: JSON.stringify(out.source).length,
           report: out.report ? { level: out.report.level, inferredNotation: !!out.report.inferredNotation,
             summary: out.report.summary ? out.report.summary.slice(0, 60) : null } : null,
           importReport: out.source && out.source.importReport
@@ -85,7 +88,9 @@ const ok = (what, cond, detail) => {
     if (!r.ok) { ok('imports', false, r.error); continue; }
     ok('sniffed as ' + c.kind, r.kind === c.kind, 'got ' + r.kind);
     ok('has bars and notes', r.measures > 0 && r.sounding > 0, r.measures + ' bars, ' + r.sounding + ' sounding');
-    ok('the graph is kept on the import', r.hasGraph);
+    ok('the graph comes back with the import', r.hasGraph);
+    ok('and does not ride on `source`, which is saved whole', !r.graphOnSource && r.sourceBytes < 20000,
+      'source is ' + r.sourceBytes + ' bytes');
     ok('the report names the format', r.importReport && r.importReport.format === c.kind, JSON.stringify(r.importReport));
     if (c.kind === 'midi') {
       ok('the Score says its notation is inferred', r.sgFrom && r.sgFrom.inferred === true, JSON.stringify(r.sgFrom));

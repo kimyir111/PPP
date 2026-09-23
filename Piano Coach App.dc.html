@@ -6186,7 +6186,8 @@ const Import = {
       counts: rep.counts || null,
       dropped: dropped,
       preserved: rep.preserved || [],
-      warnings: (rep.issues || []).map(i => ({ code: i.code, message: i.message })),
+      /* the first few warnings, by code: a person does not read forty of them, and this is saved */
+      warnings: (rep.issues || []).slice(0, 12).map(i => ({ code: i.code, message: i.message })),
       midi: got.midi ? { notes: got.midi.notes, kept: got.midi.kept, dropped: got.midi.dropped } : null
     };
   },
@@ -7508,19 +7509,21 @@ const Import = {
       const got = await importToGraph(bytes, file.name, kind);
       const score = Score.finalize(PPPScoreGraph.legacy.toScore(got.graph, { name: file.name }));
       source.status = 'parsed';
-      source.graph = got.graph;
+      /* what the import kept and what it could not, small enough to save with the song.
+         The graph itself travels beside the source, not on it: `importSource` is written whole
+         into localStorage, and a score's graph is hundreds of kilobytes (G02 §14.4). */
       source.importReport = Import.summariseGraph(got);
       const report = Import.validate(score, { pageCount: 0 });
       if (kind === 'midi') {
         /* the notes and their times are the file's; the notation is PPP's reading of them */
-        return { score: score, source: source, report: Object.assign(report, {
+        return { score: score, source: source, graph: got.graph, report: Object.assign(report, {
           confidence: 0.8, level: 'fair', inferredNotation: true,
           summary: tx('The notes and their timing are exactly what the MIDI file says. The bar lines, note values, staves and voices are PPP\u2019s reading of them, not the composer\u2019s.'),
           advice: [tx('Check the rhythm and the hand split before you practise from it.')]
         }) };
       }
       /* a file that says what it contains is trusted; validation only advises */
-      return { score: score, source: source, report: Object.assign(report, { confidence: 1, level: 'good', advice: null, summary: null }) };
+      return { score: score, source: source, graph: got.graph, report: Object.assign(report, { confidence: 1, level: 'good', advice: null, summary: null }) };
     }
 
     /* --- PDF / photo: read on this device, same path as a computer ---

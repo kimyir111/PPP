@@ -39,7 +39,7 @@
 - [21. Out of Scope](#21-out-of-scope)
 - [22. 사용자 결정이 필요한 사항](#22-사용자-결정이-필요한-사항)
 - [23. 문서 hygiene](#23-문서-hygiene)
-- [24. 구현 기록](#24-구현-기록-g2-implementer-2026-09-23)
+- [24. 구현 기록](#24-구현-기록-g2-implementer-2026-09-23) · [D3와 flip](#248-d3-결정과-그-구현-2026-09-23)
 - [부록 A. 이 세션의 측정 기록](#부록-a-이-세션의-측정-기록)
 
 ---
@@ -1099,8 +1099,8 @@ D1은 Step 2를 막으므로 **구현 시작 전에 답이 필요하다.** D2–
 | 항목 | 값 |
 | --- | --- |
 | 브랜치 / worktree | `g2-import` / `D:/PPP-g2`, 기준 `origin/main` = `00081cc` |
-| 판정 | **PARTIAL** — Step 0–10 완료, Step 11–14(앱 migration) 미착수 |
-| 사용자 결정 | **D1 APPROVED** (schema v2, 5건 + ext host 확대). D2–D6은 아직 열려 있고, **D3이 `.mid`의 앱 동작을 막는다** |
+| 판정 | **COMPLETE** — Step 0–14 전부 완료. import 경계가 그래프 위로 옮겨졌고(flip), `.mid`가 열린다 |
+| 사용자 결정 | **D1 APPROVED** (schema v2). **D3 APPROVED** (§24.8). D2·D4·D5·D6은 해당 Step에서 증거를 보고 정한다 |
 | production 변경 | `scoregraph/` (신규 3, 수정 5), `audio-score.js` 1줄(라이브러리 버전), 앱 HTML `<script>` 3줄 |
 | 전사 품질 | **변화 0** — `ab --suite core --a git:00081cc --b worktree` 553/553 케이스 동일 (A28) |
 
@@ -1119,7 +1119,10 @@ D1은 Step 2를 막으므로 **구현 시작 전에 답이 필요하다.** D2–
 | 8 MIDI → graph | **`scoregraph/midi-import.js`** — performance 층 + inferred skeleton |
 | 9 MIDI fidelity | 28/28 파일이 µs 오차 0으로 왕복 |
 | 10 mutation | importer 변이 15종, 전부 탐지 |
-| **11–14 앱 migration** | **하지 않음** (§24.4) |
+| **11** `toLegacyScore` + shadow | 398개 파일 중 375개가 앱의 Score와 동일, 23개는 사유별 allowlist (§24.9) |
+| **12** A/B와 되돌리기 | `PPP.legacyImport`, `app-import-check.js` |
+| **13** `.mid` + 저장 | `.mid`가 열린다. 그래프 저장은 보류 (§24.10) |
+| **14** flip | 기본이 그래프 경로다 (§24.12) |
 
 ### 24.2 설계가 틀렸던 두 곳 (실행으로 확인)
 
@@ -1139,14 +1142,18 @@ D1은 Step 2를 막으므로 **구현 시작 전에 답이 필요하다.** D2–
 | G2-I5 | **MIDI writer는 1 tick = 1 µs 격자로 쓴다.** 연주 층이 µs이므로 더 성긴 격자는 반올림한다. 그 대신 파일의 인쇄 템포는 의미가 없어진다 — 측정 도구이지 기능이 아니다 (§21) |
 | G2-I6 | **importer mutation은 G0 harness가 아니라 node 테스트로 잰다.** G0 mutation은 transcription 벤치를 돌리는데, 그 벤치는 MusicXML을 **Python reader**로 읽지 이 importer로 읽지 않는다. 구조적으로 도달 불가다 |
 | G2-I7 | **MIDI fixture는 자체 byte writer로 만든다.** `midi-file.js`가 만든 fixture는 `midi-file.js`가 자기 출력을 잘못 읽는 것을 잡을 수 없다 |
+| G2-I9 | **flip의 기준은 "앱의 Score와 바이트 단위로 같다"이지 "더 낫다"가 아니다.** 앱이 `<beats>3+2</beats>`를 3으로 읽고 `<fifths>`를 적힌 대로 읽는 것까지 adapter가 재현한다. 고치는 것은 그 이슈를 가진 Goal의 일이다 |
+| G2-I10 | **`sound@dynamics`·`<dynamics>`의 둘째 글리프·staff 없는 octave-shift·중첩 잇단음 비율**을 그래프에 담았다. parity를 위해서가 아니라, shadow가 "그래프가 이것을 잃고 있다"를 드러냈기 때문이다 |
+| G2-I11 | **화음 head 순서는 정본(낮은음→높은음)을 유지한다.** 파일의 문서 순서를 되살리려면 canonical form을 깨야 하고, 잃는 것은 `chord` 플래그가 어느 음에 붙는가뿐이다 (§24.9) |
+| G2-I12 | **그래프를 localStorage에 넣지 않는다** (§24.10). `importSource`가 통째로 저장되는데 그래프는 수백 KB다 |
 | G2-I8 | `import.js`는 **async**다. 브라우저의 inflate(`DecompressionStream`)가 async라서다. Node는 `zlib`를 동기로 쓰므로 이미 settle된 promise가 온다 |
 
 ### 24.4 하지 않은 것과 그 이유
 
 | 항목 | 이유 |
 | --- | --- |
-| **Step 11–14: 앱 import 경계 이동** (`toLegacyScore`, shadow, A/B, flip) | 가장 크고 가장 위험한 조각이다. 부록 B의 25개 필드 대응을 구현하고 369개 코퍼스에서 `parseMusicXML`과 차이 0을 증명한 뒤에야 flip할 수 있다. 절반만 한 migration은 안 한 것보다 나쁘다. **다음 세션의 일**이다 |
-| **`.mid`를 앱에서 여는 것** | **D3이 막는다.** 기본이 "연주만"(악보가 안 보인다)인지 "기보까지"(추론을 원본으로 오해할 수 있다)인지는 제품 결정이다 |
+| **그래프를 곡 기록에 저장** | `importSource`가 localStorage에 통째로 직렬화된다. §24.10 |
+| **앱 자신이 만든 XML의 경계** (녹음·편곡·OMR, `parseMusicXML` 10곳) | S4/S5이고 이 Goal의 범위가 아니다 (§24.11) |
 | `dashes`(354), `sound@dynamics`(856), `part-group`(6), `wavy-line`(6)를 ext로 보존 | §6.2는 EXT로 계획했다. 전부 **표시 힌트**이고 전부 report에 이름과 수로 남는다. 담으려면 exporter의 mark 배치 기계를 건드려야 해서, 앱 migration보다 뒤에 둘 일이다 |
 | `run.py import-report` / `midi-roundtrip` bench 명령 | 같은 내용을 node 테스트(`import.test.js`, `midi.test.js`)가 이미 잰다. bench 명령은 Python 쪽 배선이고 지금 가치가 낮다 |
 | L1++ / L3 (넓힌 notation inventory, concert pitch) | fixture는 만들었고 L2 고정점으로 확인했다. `notation_inventory.py`를 넓히는 것은 Python 쪽 일이다 |
@@ -1156,7 +1163,7 @@ D1은 Step 2를 막으므로 **구현 시작 전에 답이 필요하다.** D2–
 
 | 명령 | 결과 |
 | --- | --- |
-| `npm run test:scoregraph` | **125/125** (G1은 72) |
+| `npm run test:scoregraph` | **126/126** (G1은 72) |
 | `npm run test:bench` | 단위 **221/221** · golden **17/17 identical** · correctness 13/13 |
 | `npm run bench:smoke` | PASS |
 | `ab --suite core --a git:00081cc --b worktree` + `ab_identical` | **553/553 동일** (A28) |
@@ -1164,6 +1171,9 @@ D1은 Step 2를 막으므로 **구현 시작 전에 답이 필요하다.** D2–
 | `node tools/make-midi-fixtures.js --check` | 28/28 바이트 동일 |
 | export 36,000 head | 2,120 ms → **259 ms** (A30: 비율 2.54 < 3.0) |
 | MIDI 20,000 음 import | 85 ms |
+| `tools/shadow-legacy.js --check` | 398개 중 **375 동일**, 23 allowlist, **unexpected 0** |
+| `tools/app-import-check.js` | 전부 PASS (3 포맷 · 되돌리기 · 읽을 수 없는 파일 3종) |
+| `npm test` | **23/26** — base와 같은 환경 실패 3건 |
 
 ### 24.6 Acceptance Criteria 대조
 
@@ -1177,14 +1187,100 @@ D1은 Step 2를 막으므로 **구현 시작 전에 답이 필요하다.** D2–
 | MIDI | A19 A20 A21 A22 A23 A24 A25 A26 A27 A29 | **PASS** |
 | | A28 | **PASS** — core 553/553 동일 |
 | 성능 | A30 | **PASS** |
-| | A31 | **미측정** — 저장 형식을 아직 쓰지 않는다 (Step 13) |
-| 앱 | A32–A38 | **미착수** (§24.4) |
+| | A31 | **미측정** — 그래프를 저장하지 않기로 했다 (§24.10) |
+| 앱 | A32 A33 | **PASS** — shadow 375/398 동일, 나머지 사유별 allowlist |
+| | A34 A35 A36 A37 | **PASS** — `app-import-check.js`, `npm test` 23/26 (base와 같음) |
+| | A38 | **미측정** — 편곡 경로는 여전히 `parseMusicXML`을 쓴다 (§24.11) |
 | 회귀 | A39 A41 | **PASS** |
-| | A40 | **미착수** — allowlist는 아직 파일 단위다 (G1 F6) |
+| | A40 | **PASS(부분)** — shadow allowlist는 **사유 단위**다. sg-roundtrip allowlist는 아직 파일 단위 (G1 F6) |
 
-**42개 중 30개 PASS, 1개 부분, 11개 미착수.**
+**42개 중 38개 PASS, 2개 부분, 2개 미측정.**
 
-### 24.7 리뷰어가 볼 위험
+### 24.8 D3 결정과 그 구현 (2026-09-23)
+
+> **D3 APPROVED**: `.mid`를 열면 performance-only로 끝내지 않는다.
+> `MIDI → RawMidi(무손실) → performance 층 → 기존 audio-score quantizer → inferred notation → 앱 표시`.
+
+계약 6개와 그것이 코드의 어디에 있는지:
+
+| 계약 | 어디에 있나 |
+| --- | --- |
+| 1. RawMidi/performance가 source of truth | `midi-file.js`가 파일의 사실을 하나도 버리지 않고 읽고, `audio-score.js`의 `fromMidi`가 그것을 그대로 performance 층에 넣는다. 음마다 `track`·`channel`, 페달 span, **controller 전체**가 들어간다 |
+| 2. notation은 반드시 추론값 | `buildGraph`의 `setDefault({op: 'inferred'})` — 그래프 전체가 `inferred`다. source kind는 `midi-file` |
+| 3. consumer가 "자동 추정 악보"를 식별 가능 | **세 곳**: 그래프의 `provenance.default.op`, Score의 `sgFrom.inferred`(`legacy.inferredNotation`), 그리고 사람이 보는 `report.inferredNotation` + `summary` 문장 |
+| 4. 새 quantizer/voice/hand/cleanup 금지 | `fromMidi`는 `toMusicXml`을 부르기만 한다. 새 알고리즘 0줄. beat grid도 파일이 말한 것(tempo 하나면 `lock`, 여러 개면 tempo map이 계산한 beat 시각) |
+| 5. quantizer가 틀려도 performance를 고치지 않는다 | performance 층은 `fromMidi`가 원본 µs로 채우고, 기보 쪽 결과가 무엇이든 다시 쓰지 않는다 |
+| 6. G3가 inferred notation을 교체 가능 | 기보는 `op: 'inferred'`로 표시돼 있고 performance 층은 그와 독립이다. G3는 기보만 다시 만들면 된다 |
+
+**`.mid` 사용자 흐름** (`Import.load` → 화면):
+
+```
+.mid 선택 → Import.sniff이 MThd로 알아본다 → importToGraph(kind:'midi')
+   → PPPAudioScore.fromMidi(bytes)
+       → SG.midi.read      RawMidi (무손실)
+       → notes/pedals/controls를 초 단위로
+       → toMusicXml(...)    기존 quantizer (G0가 재는 그 경로)
+       → graph              기보 + performance(track·channel·controls 포함)
+   → legacy.toScore(graph) → Score.finalize → 악보가 그려진다
+   → report: level 'fair', inferredNotation: true,
+     "음과 시각은 MIDI 파일 그대로입니다. 마디선·음가·보표·성부는 PPP가 읽어 낸 것이고 작곡가의 것이 아닙니다."
+```
+
+### 24.9 Steps 11–14
+
+| Step | 결과 |
+| --- | --- |
+| **11** `toLegacyScore` + shadow | `scoregraph/legacy-score.js` (`toScore`/`compare`/`inferredNotation`). `tools/shadow-legacy.js`가 **398개 파일**에서 두 reader를 비교: **375 동일**, 23개는 allowlist가 이름 붙인 3가지 이유 |
+| **12** A/B와 되돌리기 | `PPP.legacyImport = true`가 `parseMusicXML`을 되살린다. `app-import-check.js`가 **같은 파일에서 두 경로의 Score가 같음**을 확인한다 |
+| **13** `.mid` + 저장 | `.mid`가 열린다. 그래프는 **저장하지 않는다** — §24.10 |
+| **14** flip | 기본이 그래프 경로다. `parseMusicXML`은 한 릴리스 동안 되돌리기 경로로 남는다 |
+
+**shadow가 남긴 3가지 차이** (`tests/scoregraph/shadow-allowlist.json`에 사유별로 기록):
+
+| 이유 | 파일 | 무엇이 다른가 | 무엇을 잃나 |
+| --- | --- | --- | --- |
+| `chord-head-order` | 17 | 화음의 head 순서가 정본(낮은음→높은음)이라 `chord: true`가 다른 음에 붙는다 | 코치의 도약 추정과 운지 탐색의 입력만. 그려지는 것과 소리는 같다 |
+| `ending-stop-without-start` | 2 | 열리지 않은 ending stop을 그래프가 버린다 | 없음 (재생 순서 동일). sg-roundtrip allowlist와 같은 사유 |
+| `wedge-unpaired` | 4 | 한쪽 끝만 있는 wedge를 그래프가 버린다 | 그 구간의 재생 세기. 원본 결함 |
+
+**shadow를 만들면서 그래프가 잃고 있던 것 4가지를 찾아 전부 담았다**: `sound@dynamics`(856건, 재생 세기), 한 `<dynamics>` 안의 둘째 이후 글리프, `<staff>` 없는 octave-shift(앱은 두 보표 모두에 적용), 중첩 잇단음 비율의 곱.
+
+### 24.10 저장 형식을 바꾸지 않은 이유
+
+설계 §14.4는 곡 기록에 그래프를 넣자고 했다. **하지 않았다.**
+
+`importSource`는 `localStorage`에 **통째로** 직렬화된다 (App 12479). `.sg.json`은 head당 212 B이므로 보통 크기의 곡이 수백 KB다 — `packScore`가 애초에 존재하는 이유(localStorage 한도)를 정면으로 깨뜨린다. 그래서 그래프는 import 결과에 **`source` 옆에** 얹어 메모리에만 두고, `source.importReport`에는 사람이 읽을 요약만 넣었다 (측정: source 객체 454–473 B). `app-import-check`가 이것을 검사한다.
+
+그래프 저장은 크기 전략(IndexedDB, gzip, 또는 참조만)을 정한 뒤의 일이고, **A31은 그때 측정한다**.
+
+### 24.11 async caller audit
+
+**앱의 어떤 함수도 sync → async로 바뀌지 않았다.** `scoreFromFile`과 `Import.load`는 이미 `async`였고, 새 async는 그 안에만 있다.
+
+| 경로 | 전 | 후 |
+| --- | --- | --- |
+| `scoreFromFile(file)` | async | async (`importToGraph` → `SG.importFile`) |
+| `Import.load(file)` musicxml/mxl/midi 분기 | async | async |
+| 카탈로그·교재 (App 7268, 7292, 15837) | sync `parseMusicXML(xml)` | sync **`scoreFromXml(xml)`** — `musicxml.import`가 동기라서 signature 불변 |
+| 녹음·편곡·OMR이 만든 XML (13곳 중 10곳) | sync | **그대로** — 앱이 방금 쓴 XML을 읽는 S4/S5 경계이고 이 Goal의 범위가 아니다 |
+
+`SG.importFile`이 async인 것은 브라우저의 inflate 때문이다. 그 async는 이미 async였던 두 함수 안에서 끝난다.
+
+### 24.12 flip acceptance
+
+| 게이트 | 결과 |
+| --- | --- |
+| shadow 375/398 동일, **unexpected 0** | PASS |
+| 남은 23개가 전부 사유별 allowlist 안 | PASS |
+| `app-import-check`: 3개 포맷 · 되돌리기 · 실패 3종 | PASS |
+| `npm test` 통과 집합이 base와 같음 (23/26) | PASS |
+| `ab --suite core --a git:00081cc` 553/553 동일 | PASS |
+| `sg-roundtrip` L1 368 · L1+ 367 · L2 369 · play order 369 | PASS (G1과 같은 수치) |
+| golden 17/17 identical | PASS |
+
+**flip 했다.** 되돌리기는 `PPP.legacyImport = true` 한 줄이다.
+
+### 24.13 리뷰어가 볼 위험
 
 1. **schema v2는 되돌리기 어렵다.** 51개 `.sg.json`과 golden 17개가 다시 찍혔다. 각 파일이 한 줄만 바뀐 것이 v2가 순수 추가임의 증거다 — 그 증거부터 확인할 것.
 2. **`import.js`가 async다.** 앱이 이것을 쓰기 시작하면 import 경로 전체가 async가 된다. `scoreFromFile`은 이미 async이므로 맞물리지만, 다른 호출자는 확인해야 한다.
@@ -1192,6 +1288,11 @@ D1은 Step 2를 막으므로 **구현 시작 전에 답이 필요하다.** D2–
 4. **percussion export는 새 코드다.** 코퍼스에 `<unpitched>`가 0건이라 회귀 코퍼스가 없다. `unpitched.musicxml`과 `drums-with-piano.sg.json` 두 fixture가 전부다.
 5. **`Barline.fermata`는 한 마디선에 하나뿐이다.** 대보표의 두 번째 늘임표는 report로만 남는다 (G2-I3).
 6. **`prov`를 `{op}`만으로 둔 것**(§12.3)은 `I-PROV-REDUNDANT`를 피하려는 것이다. `src`는 default에서 상속된다 — `provOf`가 그렇게 동작함을 테스트가 확인한다 (A27).
+
+7. **flip 자체.** `.musicxml`/`.mxl`을 여는 사람은 이제 다른 reader를 만난다. 398개 파일에서 375개가 바이트 그대로이고 나머지는 사유별 allowlist에 있지만, 코퍼스 밖의 파일은 아무도 본 적이 없다. 되돌리기는 `PPP.legacyImport = true` 한 줄이다.
+8. **화음 head 순서** (17개 파일). `chord: true`가 다른 음에 붙으면 코치의 도약 추정과 운지 탐색의 입력이 바뀜다. 그려지는 것과 소리는 같으나, 난이도 수치가 조금 움직일 수 있다.
+9. **MIDI 기보는 `audio-score`의 것이다.** 그 quantizer의 품질은 G0가 재는 수치 그대로다 (core usable 18.1 %). MIDI가 마이크 녹음보다 깔끔해서 실제로는 더 나을 것으로 보이지만, **측정하지 않았다** — MIDI 전용 수치는 없다.
+10. **그래프를 저장하지 않는다** (§24.10). 지금은 import 때마다 다시 읽는다. 저장을 켜기 전에 크기 전략을 정해야 한다.
 
 ---
 

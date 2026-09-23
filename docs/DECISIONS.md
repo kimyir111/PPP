@@ -60,9 +60,9 @@
 | G1-D17 | Tie는 `<tie>`(소리 나는 tie)다. `<tied>`만 있는 음은 보고하고 담지 않는다. Chord symbol의 종류 필드는 `chordKind`다. 빈 객체(`fermata: {}`)는 canonical 형식에 남긴다 | §5.8 `kind` | `scoregraph/README.md` |
 | G1-D18 | `ab`는 fixture suite(replay-public 등)를 각 suite의 runner로 돌린다. `ab_identical.py`가 케이스별 동일성을 따로 확인한다 | replay-public A/B 생략 | §24.3 (A36) |
 
-## G2 — Score Import (Proposed, 2026-09-23, 설계만)
+## G2 — Score Import (Accepted, 2026-09-23, 브랜치 `g2-import`에서 구현)
 
-전문은 `docs/GOALS/G02_SCORE_IMPORT.md`에 있다. **구현 전이므로 전부 Proposed다.**
+전문은 `docs/GOALS/G02_SCORE_IMPORT.md`, 구현 기록은 그 §24에 있다. 설계(D1–D10)는 그대로 구현했고, D11–D14는 구현 중에 정한 것이다.
 
 | ID | 결정 | 버린 대안 | 근거 |
 | --- | --- | --- | --- |
@@ -76,3 +76,7 @@
 | G2-D8 | 앱 import 전환은 **shadow → A/B → flip** 3단계다 (G1 `opts.legacyWriter`와 같은 모양) | 한 번에 교체 | §14.2 |
 | G2-D9 | fidelity는 byte 동일성이 아니라 **semantic projection**(MusicXML)과 **canonical event projection**(MIDI)으로 잰다 | byte 비교, parse 성공률 | §9 |
 | G2-D10 | percussion은 **표현과 왕복까지만** 연다. 드럼 편곡·렌더링·재생은 열지 않는다 | G2에서 드럼 전체 | §17 |
+| G2-D11 | **`.mid`는 연주만으로 끝내지 않는다**: 무손실 performance + 기존 audio-score quantizer가 만든 **inferred** 기보를 함께 낸다. 새 quantizer/성부/손 배정 코드는 0줄 | performance만 (악보가 안 보인다), 새 양자화기 | §24.8 (사용자 결정 D3) |
+| G2-D12 | 추론된 기보임을 **세 곳**에서 말한다: 그래프 `provenance.default.op`, Score `sgFrom.inferred`, 사람이 보는 import report | 한 곳에만 | §24.8 |
+| G2-D13 | 앱 import 경계를 **flip**한다. `parseMusicXML`은 `PPP.legacyImport`로 한 릴리스 남긴다 (G1 `opts.legacyWriter`와 같은 모양). 되돌리기는 스위치이지 예외 시 자동 fallback이 아니다 | 자동 fallback, 영구 병행 | §24.12 |
+| G2-D14 | **그래프를 곡 기록에 저장하지 않는다.** `importSource`가 localStorage에 통째로 들어가고 그래프는 수백 KB다. 크기 전략을 정한 뒤의 일 | 설계 §14.4대로 바로 저장 | §24.10 |

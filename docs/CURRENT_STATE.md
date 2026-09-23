@@ -10,12 +10,12 @@ Read this first in a new session, then the current goal's spec in `docs/GOALS/`.
 | --- | --- |
 | Goals | Numbered specs in `docs/GOALS/`. **G0 is merged and closed** — implemented (§16), reviewed and fixed through six passes (§17–§22.9), then merged as PR #1 (`aff7080`). `G00_QUALITY_FOUNDATION.md` §22.9 has the last result and what is still open (nothing). |
 | G1 | **Merged and closed.** Implemented (§24), independently reviewed (§25: READY_TO_PR, BLOCKER 0, MAJOR 0), merged as PR #2 (`aa77d2e`), then the follow-up PR #3 (`00081cc`, §26) closed findings F2 and F3. F1 (tuplet bracket grouping) is left for G3 on purpose. `toMusicXml` writes its MusicXML from a ScoreGraph (`scoregraph/`); `opts.legacyWriter` is the way back for one release. |
-| G2 | **In progress** on branch `g2-import` (worktree `D:/PPP-g2`); design in `G02_SCORE_IMPORT.md`, implementation record in its §24. **Steps 0–10 done, 11–14 (the app's import boundary) not started.** Schema is now version 2. The MusicXML importer no longer refuses a whole file for an `<unpitched>` note, a missing time signature or a quarter tone; MIDI files import into the performance layer with an inferred notation skeleton (`scoregraph/midi-file.js`, `midi-import.js`); every format comes through one door (`scoregraph/import.js`) and returns one ImportReport. Transcription is unchanged: core 553/553 identical to `00081cc`. |
+| G2 | **Steps 0–14 done** on branch `g2-import` (worktree `D:/PPP-g2`); design in `G02_SCORE_IMPORT.md`, implementation record in its §24, not merged. Schema is version 2. **The app's import boundary is on the graph** — a file a person opens becomes a ScoreGraph and the Score is a projection of it; `PPP.legacyImport = true` is the way back for one release. **`.mid` opens**: its notes, times and controllers exactly as the file states them, its notation worked out by audio-score's existing quantizer and marked inferred in three places (D3). The MusicXML importer no longer refuses a whole file for an `<unpitched>` note, a missing time signature or a quarter tone. Transcription is unchanged: core 553/553 identical to `00081cc`. |
 | G0 code | On `main` since PR #1, which came from the clean branch `g0-quality-foundation-clean` (worktree `D:/PPP-g0-clean`). The older `g0-quality-foundation` branch and its `D:/PPP-g0` worktree are contaminated with other sessions' production changes — **never merge or edit those**. `tests/README.md` there has a two-line doc change left uncommitted on purpose (outside the allowed paths). |
 | `main` | **Local `main` is `d82bb71`, which must not be pushed.** Despite its message ("harden G0 quality benchmark") it holds no benchmark code: it is a `git add -A` sweep of `D:/PPP` with copyrighted `tmp/` audio and score renders, `__pycache__`, a `_oh-sheet-compare` gitlink and another session's 124 `catalog/method` files (G00 §19.18). It is not pushed, and `origin/main` (`00081cc`) does not contain it. The user decides how to undo it. |
 | App | `Piano Coach App.dc.html` (single file, ~19k lines), `audio-score.js` (recording → MusicXML; on the G1 branch through `scoregraph/`, which the page loads before it), `omr-service.js` (local helper, 127.0.0.1:8788), `server.js` (port 8777). Deploy: Render, manual (`render deploys create …`; a push does not deploy). |
 | ScoreGraph | `scoregraph/` (13 UMD files, no dependencies; `scoregraph/README.md`): versioned plain-JSON canonical score, validator (31 errors, 14 warnings, 7 notes), canonical JSON, time and performance layers, MusicXML import and export. Every committed MusicXML (369 files) goes through it and back (`run.py sg-roundtrip`): 367 unchanged, 2 with a documented difference (allowlisted; a closing ending bracket and a wedge that were never opened). Nothing but `toMusicXml` uses it yet; the app's import, storage, renderer and player move in G2 onwards. |
-| Tests | `npm test` (26 browser suites; needs `npm start`, network, puppeteer), `npm run test:transcription-core` (16, including `beat_track_test.py`), `npm run test:arranger` (3), `npm run test:bench` (221 unit tests + 17 golden snapshots + 13 correctness fixtures), `npm run test:scoregraph` (125 node tests, G1–G2). |
+| Tests | `npm test` (26 browser suites; needs `npm start`, network, puppeteer), `npm run test:transcription-core` (16, including `beat_track_test.py`), `npm run test:arranger` (3), `npm run test:bench` (221 unit tests + 17 golden snapshots + 13 correctness fixtures), `npm run test:scoregraph` (126 node tests, G1–G2). |
 | CI | `.github/workflows/bench.yml`: a gate job (unit, `test:scoregraph` and `sg-roundtrip` since G1, golden, lint, provenance, correctness, smoke/core/robust run + check, replay-public, transcription-core, arranger) and a nightly job (mutation-check, full, the reviews' `adversarial.py`, `final_review.py`, `final_oracle.py`). The gate runs on a **pull request** or a push to `main`; pushing the branch alone runs nothing. The nightly schedule runs only from the default branch (`workflow_dispatch` runs it by hand). The gate has run on GitHub for PR #2 and PR #3 and passed both times. |
 
 ## Measuring score quality (G0)
@@ -199,12 +199,13 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
 
 ## Next
 
-- **G2 is the current Goal**: `docs/GOALS/G02_SCORE_IMPORT.md`. Steps 0–10 are done (§24). What is
-  left is the app: `toLegacyScore`, the shadow comparison against `parseMusicXML`, the A/B and the
-  flip (Steps 11–14, Appendix B of G01), and storing the graph with a version. **Decision D3 blocks
-  opening a `.mid` in the app**: whether that shows a performance with no score, or runs the
-  existing quantizer to get a readable one and says the rhythm is a guess. Do not pull G3 notation
-  work into it.
+- **G2 is the current Goal** and its 15 steps are done (`G02_SCORE_IMPORT.md` §24): schema v2, a
+  MusicXML importer that no longer refuses whole files, MIDI, one import door with one report, the
+  legacy Score adapter, and the flip. Not merged, no PR. What is left open on purpose: storing the
+  graph with a song (§24.10 — `importSource` goes into localStorage whole), the arrangement path's
+  own reader (A38), and decisions D2, D4, D5 and D6, each to be made at the Step that needs it.
+  Two checks run locally rather than in CI because they need puppeteer and `npm start`:
+  `node tests/scoregraph/tools/shadow-legacy.js --check` and `app-import-check.js`.
 - **G1 is merged and closed** (PR #2 `aa77d2e`, follow-up PR #3 `00081cc`). §26 records the two
   findings it closed. **Left open on purpose:** tuplet bracket grouping for split triplet pieces
   (F1 — the app draws fewer brackets; G3 owns tuplet engraving, see issue 20 above), and F4–F8
