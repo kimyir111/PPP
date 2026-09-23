@@ -12,6 +12,7 @@
     python tests/bench/run.py relock --suite core --reason "..."
     python tests/bench/run.py golden [--init | --bless --reason "..."] [--g3]
     python tests/bench/run.py mutation-check
+    python tests/bench/run.py human-set --build | --pairs | --score FILE
     python tests/bench/run.py ab --suite core --a git:HEAD --b worktree
     python tests/bench/run.py legacy --manifest PATH
     python tests/bench/run.py correctness                       # reader vs independent MusicXML fixtures (T0, CI)
@@ -109,6 +110,18 @@ def cmd_relock(args) -> int:
     return suite_mod.cli_relock(args)
 
 
+def cmd_human_set(args) -> int:
+    from pppbench import human_set
+    if args.build:
+        return human_set.build(audio_score=args.audio_score)
+    if args.pairs:
+        return human_set.pairs()
+    if args.score:
+        return human_set.score(args.score)
+    print("human-set: give --build, --pairs or --score FILE")
+    return 2
+
+
 def cmd_golden(args) -> int:
     from pppbench import golden
     return golden.run_golden(init=args.init, bless=args.bless, reason=args.reason, audio_score=args.audio_score,
@@ -202,6 +215,12 @@ def main(argv=None) -> int:
                    help="G3 (G03 A35): check every difference is one G3a may make; with --bless, bless only then")
     p.set_defaults(fn=cmd_golden)
     sub.add_parser("mutation-check").set_defaults(fn=cmd_mutation)
+    p = sub.add_parser("human-set", help="the G3 human review set (G03 §21, A36)")
+    p.add_argument("--build", action="store_true")
+    p.add_argument("--pairs", action="store_true")
+    p.add_argument("--score")
+    p.add_argument("--audio-score")
+    p.set_defaults(fn=cmd_human_set)
     sub.add_parser("correctness").set_defaults(fn=cmd_correctness)
     sub.add_parser("known-defects").set_defaults(fn=cmd_known)
     sub.add_parser("sg-roundtrip").set_defaults(fn=cmd_sg_roundtrip)

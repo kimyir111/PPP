@@ -1,0 +1,30 @@
+{
+ "bar_offset": 0,
+ "bar_offset_note": "A and B come from oracle beats: their bars are assumed to be the reference's",
+ "bars": [
+  1,
+  8
+ ],
+ "case": "catalog/gymnopedie-1|human|oracle|s1",
+ "commit": "62042edeb6",
+ "id": "HG05",
+ "ned": {
+  "A": 0.2,
+  "B": 0.24
+ },
+ "reference": "catalog/gymnopedie-1.musicxml",
+ "renderer": null,
+ "schema": "ppp.g3-human-excerpt/1",
+ "sha256": {
+  "A": "e985fdc057fc8abb96233ff166ba12805e6fb2b615e04f839a3f93d9c3d6f7b4",
+  "B": "03038a7753aa2f0bee0904c51569df722b55d028adda1abd317e9149c51a661c",
+  "C": "eb14537314085490767f47f8ef0a7c851ee65cdeac60f6d7fb884d4d10894555"
+ },
+ "source": "catalog",
+ "stratum": "simple-triple",
+ "versions": {
+  "A": "recording path, G3 off",
+  "B": "recording path, G3a on",
+  "C": "the reference"
+ }
+}

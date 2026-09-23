@@ -1,0 +1,30 @@
+{
+ "bar_offset": 0,
+ "bar_offset_note": "A and B come from oracle beats: their bars are assumed to be the reference's",
+ "bars": [
+  9,
+  16
+ ],
+ "case": "method/sonatina/009|human|oracle|s1",
+ "commit": "62042edeb6",
+ "id": "HG04",
+ "ned": {
+  "A": 1.421053,
+  "B": 1.394737
+ },
+ "reference": "catalog/method/sonatina/009.mxl",
+ "renderer": null,
+ "schema": "ppp.g3-human-excerpt/1",
+ "sha256": {
+  "A": "53c0db94cc7e39cc9ec7c3798d50e3ce1e519e1e117bcf517e1c026eafdd2d64",
+  "B": "4a3b3ea8fe90124be3f1edac8cd99576cce45a1fc9514a74e3fd1fad3f2a7f9e",
+  "C": "d8a66ec915c564155747f2d6a262ec0cbbea457e3fd57bc9b97cbc42682966fd"
+ },
+ "source": "sonatina",
+ "stratum": "simple-duple",
+ "versions": {
+  "A": "recording path, G3 off",
+  "B": "recording path, G3a on",
+  "C": "the reference"
+ }
+}

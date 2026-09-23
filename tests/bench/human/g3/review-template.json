@@ -1,0 +1,574 @@
+{
+ "absolute": [
+  {
+   "give": null,
+   "id": "HG13",
+   "score": null,
+   "version": "C"
+  },
+  {
+   "give": null,
+   "id": "HG20",
+   "score": null,
+   "version": "C"
+  },
+  {
+   "give": null,
+   "id": "HG19",
+   "score": null,
+   "version": "B"
+  },
+  {
+   "give": null,
+   "id": "HG10",
+   "score": null,
+   "version": "C"
+  },
+  {
+   "give": null,
+   "id": "HG11",
+   "score": null,
+   "version": "C"
+  },
+  {
+   "give": null,
+   "id": "HG01",
+   "score": null,
+   "version": "B"
+  },
+  {
+   "give": null,
+   "id": "HG06",
+   "score": null,
+   "version": "B"
+  },
+  {
+   "give": null,
+   "id": "HG19",
+   "score": null,
+   "version": "C"
+  },
+  {
+   "give": null,
+   "id": "HG06",
+   "score": null,
+   "version": "C"
+  },
+  {
+   "give": null,
+   "id": "HG04",
+   "score": null,
+   "version": "B"
+  },
+  {
+   "give": null,
+   "id": "HG05",
+   "score": null,
+   "version": "C"
+  },
+  {
+   "give": null,
+   "id": "HG08",
+   "score": null,
+   "version": "C"
+  },
+  {
+   "give": null,
+   "id": "HG04",
+   "score": null,
+   "version": "C"
+  },
+  {
+   "give": null,
+   "id": "HG02",
+   "score": null,
+   "version": "B"
+  },
+  {
+   "give": null,
+   "id": "HG10",
+   "score": null,
+   "version": "B"
+  },
+  {
+   "give": null,
+   "id": "HG13",
+   "score": null,
+   "version": "B"
+  },
+  {
+   "give": null,
+   "id": "HG18",
+   "score": null,
+   "version": "C"
+  },
+  {
+   "give": null,
+   "id": "HG02",
+   "score": null,
+   "version": "C"
+  },
+  {
+   "give": null,
+   "id": "HG14",
+   "score": null,
+   "version": "B"
+  },
+  {
+   "give": null,
+   "id": "HG07",
+   "score": null,
+   "version": "B"
+  },
+  {
+   "give": null,
+   "id": "HG12",
+   "score": null,
+   "version": "B"
+  },
+  {
+   "give": null,
+   "id": "HG03",
+   "score": null,
+   "version": "C"
+  },
+  {
+   "give": null,
+   "id": "HG09",
+   "score": null,
+   "version": "C"
+  },
+  {
+   "give": null,
+   "id": "HG01",
+   "score": null,
+   "version": "C"
+  },
+  {
+   "give": null,
+   "id": "HG05",
+   "score": null,
+   "version": "B"
+  },
+  {
+   "give": null,
+   "id": "HG20",
+   "score": null,
+   "version": "B"
+  },
+  {
+   "give": null,
+   "id": "HG07",
+   "score": null,
+   "version": "C"
+  },
+  {
+   "give": null,
+   "id": "HG18",
+   "score": null,
+   "version": "B"
+  },
+  {
+   "give": null,
+   "id": "HG15",
+   "score": null,
+   "version": "B"
+  },
+  {
+   "give": null,
+   "id": "HG17",
+   "score": null,
+   "version": "C"
+  },
+  {
+   "give": null,
+   "id": "HG14",
+   "score": null,
+   "version": "C"
+  },
+  {
+   "give": null,
+   "id": "HG16",
+   "score": null,
+   "version": "C"
+  },
+  {
+   "give": null,
+   "id": "HG17",
+   "score": null,
+   "version": "B"
+  },
+  {
+   "give": null,
+   "id": "HG08",
+   "score": null,
+   "version": "B"
+  },
+  {
+   "give": null,
+   "id": "HG15",
+   "score": null,
+   "version": "C"
+  },
+  {
+   "give": null,
+   "id": "HG09",
+   "score": null,
+   "version": "B"
+  },
+  {
+   "give": null,
+   "id": "HG03",
+   "score": null,
+   "version": "B"
+  },
+  {
+   "give": null,
+   "id": "HG11",
+   "score": null,
+   "version": "B"
+  },
+  {
+   "give": null,
+   "id": "HG16",
+   "score": null,
+   "version": "B"
+  },
+  {
+   "give": null,
+   "id": "HG12",
+   "score": null,
+   "version": "C"
+  }
+ ],
+ "absolute_A": [
+  {
+   "give": null,
+   "id": "HG03",
+   "score": null,
+   "version": "A"
+  },
+  {
+   "give": null,
+   "id": "HG10",
+   "score": null,
+   "version": "A"
+  },
+  {
+   "give": null,
+   "id": "HG20",
+   "score": null,
+   "version": "A"
+  },
+  {
+   "give": null,
+   "id": "HG08",
+   "score": null,
+   "version": "A"
+  },
+  {
+   "give": null,
+   "id": "HG02",
+   "score": null,
+   "version": "A"
+  },
+  {
+   "give": null,
+   "id": "HG11",
+   "score": null,
+   "version": "A"
+  },
+  {
+   "give": null,
+   "id": "HG13",
+   "score": null,
+   "version": "A"
+  },
+  {
+   "give": null,
+   "id": "HG06",
+   "score": null,
+   "version": "A"
+  },
+  {
+   "give": null,
+   "id": "HG09",
+   "score": null,
+   "version": "A"
+  },
+  {
+   "give": null,
+   "id": "HG12",
+   "score": null,
+   "version": "A"
+  },
+  {
+   "give": null,
+   "id": "HG19",
+   "score": null,
+   "version": "A"
+  },
+  {
+   "give": null,
+   "id": "HG07",
+   "score": null,
+   "version": "A"
+  },
+  {
+   "give": null,
+   "id": "HG16",
+   "score": null,
+   "version": "A"
+  },
+  {
+   "give": null,
+   "id": "HG17",
+   "score": null,
+   "version": "A"
+  },
+  {
+   "give": null,
+   "id": "HG01",
+   "score": null,
+   "version": "A"
+  },
+  {
+   "give": null,
+   "id": "HG18",
+   "score": null,
+   "version": "A"
+  },
+  {
+   "give": null,
+   "id": "HG15",
+   "score": null,
+   "version": "A"
+  },
+  {
+   "give": null,
+   "id": "HG05",
+   "score": null,
+   "version": "A"
+  },
+  {
+   "give": null,
+   "id": "HG04",
+   "score": null,
+   "version": "A"
+  },
+  {
+   "give": null,
+   "id": "HG14",
+   "score": null,
+   "version": "A"
+  }
+ ],
+ "commit": "62042edeb6",
+ "date": "",
+ "instructions": "pairs: for each axis write left, same or right (which reads better); absolute: give is yes, fix or no (could a piano teacher hand this to a pupil?) and score 1-5. Render every file with the same engraver (MuseScore 4). Write your role, never your name.",
+ "pairs": [
+  {
+   "id": "HG01",
+   "left": "A",
+   "note": "",
+   "overall": null,
+   "rhythm": null,
+   "right": "B",
+   "spelling": null,
+   "voices": null
+  },
+  {
+   "id": "HG02",
+   "left": "B",
+   "note": "",
+   "overall": null,
+   "rhythm": null,
+   "right": "A",
+   "spelling": null,
+   "voices": null
+  },
+  {
+   "id": "HG03",
+   "left": "B",
+   "note": "",
+   "overall": null,
+   "rhythm": null,
+   "right": "A",
+   "spelling": null,
+   "voices": null
+  },
+  {
+   "id": "HG04",
+   "left": "B",
+   "note": "",
+   "overall": null,
+   "rhythm": null,
+   "right": "A",
+   "spelling": null,
+   "voices": null
+  },
+  {
+   "id": "HG05",
+   "left": "A",
+   "note": "",
+   "overall": null,
+   "rhythm": null,
+   "right": "B",
+   "spelling": null,
+   "voices": null
+  },
+  {
+   "id": "HG06",
+   "left": "B",
+   "note": "",
+   "overall": null,
+   "rhythm": null,
+   "right": "A",
+   "spelling": null,
+   "voices": null
+  },
+  {
+   "id": "HG07",
+   "left": "B",
+   "note": "",
+   "overall": null,
+   "rhythm": null,
+   "right": "A",
+   "spelling": null,
+   "voices": null
+  },
+  {
+   "id": "HG08",
+   "left": "A",
+   "note": "",
+   "overall": null,
+   "rhythm": null,
+   "right": "B",
+   "spelling": null,
+   "voices": null
+  },
+  {
+   "id": "HG09",
+   "left": "A",
+   "note": "",
+   "overall": null,
+   "rhythm": null,
+   "right": "B",
+   "spelling": null,
+   "voices": null
+  },
+  {
+   "id": "HG10",
+   "left": "A",
+   "note": "",
+   "overall": null,
+   "rhythm": null,
+   "right": "B",
+   "spelling": null,
+   "voices": null
+  },
+  {
+   "id": "HG11",
+   "left": "B",
+   "note": "",
+   "overall": null,
+   "rhythm": null,
+   "right": "A",
+   "spelling": null,
+   "voices": null
+  },
+  {
+   "id": "HG12",
+   "left": "B",
+   "note": "",
+   "overall": null,
+   "rhythm": null,
+   "right": "A",
+   "spelling": null,
+   "voices": null
+  },
+  {
+   "id": "HG13",
+   "left": "B",
+   "note": "",
+   "overall": null,
+   "rhythm": null,
+   "right": "A",
+   "spelling": null,
+   "voices": null
+  },
+  {
+   "id": "HG14",
+   "left": "B",
+   "note": "",
+   "overall": null,
+   "rhythm": null,
+   "right": "A",
+   "spelling": null,
+   "voices": null
+  },
+  {
+   "id": "HG15",
+   "left": "A",
+   "note": "",
+   "overall": null,
+   "rhythm": null,
+   "right": "B",
+   "spelling": null,
+   "voices": null
+  },
+  {
+   "id": "HG16",
+   "left": "A",
+   "note": "",
+   "overall": null,
+   "rhythm": null,
+   "right": "B",
+   "spelling": null,
+   "voices": null
+  },
+  {
+   "id": "HG17",
+   "left": "A",
+   "note": "",
+   "overall": null,
+   "rhythm": null,
+   "right": "B",
+   "spelling": null,
+   "voices": null
+  },
+  {
+   "id": "HG18",
+   "left": "A",
+   "note": "",
+   "overall": null,
+   "rhythm": null,
+   "right": "B",
+   "spelling": null,
+   "voices": null
+  },
+  {
+   "id": "HG19",
+   "left": "B",
+   "note": "",
+   "overall": null,
+   "rhythm": null,
+   "right": "A",
+   "spelling": null,
+   "voices": null
+  },
+  {
+   "id": "HG20",
+   "left": "A",
+   "note": "",
+   "overall": null,
+   "rhythm": null,
+   "right": "B",
+   "spelling": null,
+   "voices": null
+  }
+ ],
+ "renderer": "",
+ "reviewer_role": "",
+ "schema": "ppp.g3-human-review/1"
+}

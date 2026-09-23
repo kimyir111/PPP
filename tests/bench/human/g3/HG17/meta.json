@@ -1,0 +1,30 @@
+{
+ "bar_offset": 0,
+ "bar_offset_note": "A and B come from oracle beats: their bars are assumed to be the reference's",
+ "bars": [
+  5,
+  12
+ ],
+ "case": "method/burgmuller25/013|human|oracle|s1",
+ "commit": "62042edeb6",
+ "id": "HG17",
+ "ned": {
+  "A": 1.361702,
+  "B": 1.351064
+ },
+ "reference": "catalog/method/burgmuller25/013.mxl",
+ "renderer": null,
+ "schema": "ppp.g3-human-excerpt/1",
+ "sha256": {
+  "A": "1a3a06387a27849bae074f7737333f1eec6551f21f347c6eb01d6e5fc0492e02",
+  "B": "229026fdfc87362334e8734f1edb6236125a93d320d15732f94c037eeeb3fadc",
+  "C": "0505bc1d9b4a1136b273c2b3bf07ee7906ccee74dc9d76e8cec7b60dc54d65aa"
+ },
+ "source": "burgmuller25",
+ "stratum": "two-voice",
+ "versions": {
+  "A": "recording path, G3 off",
+  "B": "recording path, G3a on",
+  "C": "the reference"
+ }
+}

@@ -1,0 +1,350 @@
+{
+ "absolute": [
+  {
+   "id": "HG13",
+   "version": "C"
+  },
+  {
+   "id": "HG20",
+   "version": "C"
+  },
+  {
+   "id": "HG19",
+   "version": "B"
+  },
+  {
+   "id": "HG10",
+   "version": "C"
+  },
+  {
+   "id": "HG11",
+   "version": "C"
+  },
+  {
+   "id": "HG01",
+   "version": "B"
+  },
+  {
+   "id": "HG06",
+   "version": "B"
+  },
+  {
+   "id": "HG19",
+   "version": "C"
+  },
+  {
+   "id": "HG06",
+   "version": "C"
+  },
+  {
+   "id": "HG04",
+   "version": "B"
+  },
+  {
+   "id": "HG05",
+   "version": "C"
+  },
+  {
+   "id": "HG08",
+   "version": "C"
+  },
+  {
+   "id": "HG04",
+   "version": "C"
+  },
+  {
+   "id": "HG02",
+   "version": "B"
+  },
+  {
+   "id": "HG10",
+   "version": "B"
+  },
+  {
+   "id": "HG13",
+   "version": "B"
+  },
+  {
+   "id": "HG18",
+   "version": "C"
+  },
+  {
+   "id": "HG02",
+   "version": "C"
+  },
+  {
+   "id": "HG14",
+   "version": "B"
+  },
+  {
+   "id": "HG07",
+   "version": "B"
+  },
+  {
+   "id": "HG12",
+   "version": "B"
+  },
+  {
+   "id": "HG03",
+   "version": "C"
+  },
+  {
+   "id": "HG09",
+   "version": "C"
+  },
+  {
+   "id": "HG01",
+   "version": "C"
+  },
+  {
+   "id": "HG05",
+   "version": "B"
+  },
+  {
+   "id": "HG20",
+   "version": "B"
+  },
+  {
+   "id": "HG07",
+   "version": "C"
+  },
+  {
+   "id": "HG18",
+   "version": "B"
+  },
+  {
+   "id": "HG15",
+   "version": "B"
+  },
+  {
+   "id": "HG17",
+   "version": "C"
+  },
+  {
+   "id": "HG14",
+   "version": "C"
+  },
+  {
+   "id": "HG16",
+   "version": "C"
+  },
+  {
+   "id": "HG17",
+   "version": "B"
+  },
+  {
+   "id": "HG08",
+   "version": "B"
+  },
+  {
+   "id": "HG15",
+   "version": "C"
+  },
+  {
+   "id": "HG09",
+   "version": "B"
+  },
+  {
+   "id": "HG03",
+   "version": "B"
+  },
+  {
+   "id": "HG11",
+   "version": "B"
+  },
+  {
+   "id": "HG16",
+   "version": "B"
+  },
+  {
+   "id": "HG12",
+   "version": "C"
+  }
+ ],
+ "absolute_A": [
+  {
+   "id": "HG03",
+   "version": "A"
+  },
+  {
+   "id": "HG10",
+   "version": "A"
+  },
+  {
+   "id": "HG20",
+   "version": "A"
+  },
+  {
+   "id": "HG08",
+   "version": "A"
+  },
+  {
+   "id": "HG02",
+   "version": "A"
+  },
+  {
+   "id": "HG11",
+   "version": "A"
+  },
+  {
+   "id": "HG13",
+   "version": "A"
+  },
+  {
+   "id": "HG06",
+   "version": "A"
+  },
+  {
+   "id": "HG09",
+   "version": "A"
+  },
+  {
+   "id": "HG12",
+   "version": "A"
+  },
+  {
+   "id": "HG19",
+   "version": "A"
+  },
+  {
+   "id": "HG07",
+   "version": "A"
+  },
+  {
+   "id": "HG16",
+   "version": "A"
+  },
+  {
+   "id": "HG17",
+   "version": "A"
+  },
+  {
+   "id": "HG01",
+   "version": "A"
+  },
+  {
+   "id": "HG18",
+   "version": "A"
+  },
+  {
+   "id": "HG15",
+   "version": "A"
+  },
+  {
+   "id": "HG05",
+   "version": "A"
+  },
+  {
+   "id": "HG04",
+   "version": "A"
+  },
+  {
+   "id": "HG14",
+   "version": "A"
+  }
+ ],
+ "pairs": [
+  {
+   "id": "HG01",
+   "left": "A",
+   "right": "B"
+  },
+  {
+   "id": "HG02",
+   "left": "B",
+   "right": "A"
+  },
+  {
+   "id": "HG03",
+   "left": "B",
+   "right": "A"
+  },
+  {
+   "id": "HG04",
+   "left": "B",
+   "right": "A"
+  },
+  {
+   "id": "HG05",
+   "left": "A",
+   "right": "B"
+  },
+  {
+   "id": "HG06",
+   "left": "B",
+   "right": "A"
+  },
+  {
+   "id": "HG07",
+   "left": "B",
+   "right": "A"
+  },
+  {
+   "id": "HG08",
+   "left": "A",
+   "right": "B"
+  },
+  {
+   "id": "HG09",
+   "left": "A",
+   "right": "B"
+  },
+  {
+   "id": "HG10",
+   "left": "A",
+   "right": "B"
+  },
+  {
+   "id": "HG11",
+   "left": "B",
+   "right": "A"
+  },
+  {
+   "id": "HG12",
+   "left": "B",
+   "right": "A"
+  },
+  {
+   "id": "HG13",
+   "left": "B",
+   "right": "A"
+  },
+  {
+   "id": "HG14",
+   "left": "B",
+   "right": "A"
+  },
+  {
+   "id": "HG15",
+   "left": "A",
+   "right": "B"
+  },
+  {
+   "id": "HG16",
+   "left": "A",
+   "right": "B"
+  },
+  {
+   "id": "HG17",
+   "left": "A",
+   "right": "B"
+  },
+  {
+   "id": "HG18",
+   "left": "A",
+   "right": "B"
+  },
+  {
+   "id": "HG19",
+   "left": "B",
+   "right": "A"
+  },
+  {
+   "id": "HG20",
+   "left": "A",
+   "right": "B"
+  }
+ ],
+ "schema": "ppp.g3-human-pairs/1",
+ "seed": 20260924
+}

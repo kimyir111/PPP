@@ -1,0 +1,30 @@
+{
+ "bar_offset": 0,
+ "bar_offset_note": "A and B come from oracle beats: their bars are assumed to be the reference's",
+ "bars": [
+  1,
+  8
+ ],
+ "case": "method/czerny849/011|human|oracle|s1",
+ "commit": "62042edeb6",
+ "id": "HG10",
+ "ned": {
+  "A": 0.92093,
+  "B": 0.916279
+ },
+ "reference": "catalog/method/czerny849/011.mxl",
+ "renderer": null,
+ "schema": "ppp.g3-human-excerpt/1",
+ "sha256": {
+  "A": "12cfd8f0eab3c8a2c7d3debcc7336486cc25c80c59f313fd5109b7978483e3f1",
+  "B": "2cc3c0cadc429da9459152e5717572813aa3219b8d6255988c401624f5daa982",
+  "C": "bd25d93e3ba603dac36e88fb426145b36c465b6ee41c1edf7295338823eae4cc"
+ },
+ "source": "czerny849",
+ "stratum": "compound",
+ "versions": {
+  "A": "recording path, G3 off",
+  "B": "recording path, G3a on",
+  "C": "the reference"
+ }
+}
