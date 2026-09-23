@@ -1,0 +1,19 @@
+{
+ "about": "an imported bar is never rewritten (rewrite mode)",
+ "spec": "G03 §6.3 R24",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "C5:8~ C5:8 D5:q E5:h",
+  "op": "imported"
+ },
+ "passes": [
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "same": true
+ }
+}

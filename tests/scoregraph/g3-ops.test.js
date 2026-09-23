@@ -88,7 +88,7 @@ test('retimeVoiceMeasure: reused pieces keep IDs, ties in and out follow the not
   assert.equal(SG.validate(r.graph).ok, true);
 });
 
-test('retimeVoiceMeasure: a slur keeps its ends on the pieces that start and end where it did; tuplets over the region retire', () => {
+test('retimeVoiceMeasure: a slur keeps its ends on the pieces that start and end where it did; a tuplet stays while its members stay, and retires when one moves', () => {
   const g0 = mk({ rh: '3e[C5:8 D5:8 E5:8] F5:q G5:h' });
   const doc = JSON.parse(SG.serialize(g0));
   const evs = doc.parts[0].events.filter(e => e.kind === 'note');
@@ -99,10 +99,16 @@ test('retimeVoiceMeasure: a slur keeps its ends on the pieces that start and end
   const keep = e => ({ reuse: e.id, kind: 'note', at: e.at, dur: e.dur, display: e.display, heads: e.heads.map(h => ({ reuse: h.id })) });
   const plan = evs.map(keep);
   const r = O.edit(g, d => d.retimeVoiceMeasure(v, m, plan));
-  assert.equal(part(r.graph).spanners.filter(s => s.type === 'tuplet').length, 0);
+  assert.equal(part(r.graph).spanners.filter(s => s.type === 'tuplet').length, 1, 'no member moved: the tuplet stays');
   const slur = part(r.graph).spanners.find(s => s.type === 'slur');
   assert.equal(slur.from, evs[0].id);
   assert.equal(slur.to, evs[3].id);
+  /* D5 now lasts two triplet eighths and E5 is gone: a member moved, the tuplet retires */
+  const plan2 = plan.slice();
+  plan2[1] = Object.assign({}, plan[1], { dur: '1/6', display: { type: 'quarter' } });
+  plan2.splice(2, 1);
+  const r2 = O.edit(g, d => d.retimeVoiceMeasure(v, m, plan2));
+  assert.equal(part(r2.graph).spanners.filter(s => s.type === 'tuplet').length, 0, 'a member moved: the tuplet retires');
 });
 
 test('moveHeads: a chord keeps its ID; the moved heads keep theirs in a new event on the other staff (§9.2)', () => {

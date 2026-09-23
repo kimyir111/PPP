@@ -1,0 +1,18 @@
+{
+ "about": "an already clean bar: the same graph object comes back",
+ "spec": "G03 §6.3 R23",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "C5:q D5:q E5:h"
+ },
+ "passes": [
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "same": true
+ }
+}

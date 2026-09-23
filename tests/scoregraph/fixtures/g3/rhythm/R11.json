@@ -1,0 +1,18 @@
+{
+ "about": "12/8: two dotted quarters tied inside a group are a dotted half",
+ "spec": "G03 §6.3 R11",
+ "input": {
+  "time": [
+   12,
+   8
+  ],
+  "rh": "C5:q.~ C5:q. D5:h."
+ },
+ "passes": [
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "rh": "C5:h. D5:h."
+ }
+}

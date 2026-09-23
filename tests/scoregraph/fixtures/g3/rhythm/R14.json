@@ -1,0 +1,22 @@
+{
+ "about": "3/4 with a pickup: its grid lines up with the end of the bar (the pickup is beat 3)",
+ "spec": "G03 §6.3 R14",
+ "input": {
+  "time": [
+   3,
+   4
+  ],
+  "durs": [
+   "1/4",
+   "3/4"
+  ],
+  "rh": "C5:8~ C5:8 | D5:h."
+ },
+ "passes": [
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "rh": "C5:q | D5:h."
+ }
+}

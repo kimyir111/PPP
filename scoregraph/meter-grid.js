@@ -178,7 +178,10 @@
       /* H4's exception: from a beat to the end of its group (6/8 dotted half, 12/8 dotted half on a group) */
       const gi = gr.groups.filter(b => b <= x).pop();
       const gEnd = gr.groups.find(b => b > x) || gr.nomU;
-      return onBeat(gr, s) && e + gr.off === gEnd && gi !== undefined;
+      if (onBeat(gr, s) && e + gr.off === gEnd && gi !== undefined) return true;
+      /* 9/8 is three beats like 3/4: a dotted half on beats 1-2 or 2-3 ("2 4" and "4 2", §6.3) */
+      const beat = gr.beats[1] - gr.beats[0];
+      return gr.n === 9 && onBeat(gr, s) && len === 2 * beat && (x === 0 || x === beat);
     }
     if (gr.additive) return false;
     const n = gr.n, bt = gr.beatType;

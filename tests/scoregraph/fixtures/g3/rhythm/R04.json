@@ -1,0 +1,18 @@
+{
+ "about": "4/4: a double dot from a beat that does not reach the middle (H7); a double-dotted half from beat 1 would hide the middle and is not in the S table",
+ "spec": "G03 §6.3 R04",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "C5:q~ C5:8~ C5:16 D5:16 E5:h"
+ },
+ "passes": [
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "rh": "C5:q.. D5:16 E5:h"
+ }
+}

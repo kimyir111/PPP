@@ -59,6 +59,24 @@
     return out;
   }
 
+  /* Every note event -> the span of the tied note it is a piece of (its first head's tie chain): {s, en} in W. */
+  function chains(part, starts) {
+    const evOfHead = new Map(), tieOut = new Map(), tieIn = new Map();
+    part.events.forEach(e => (e.heads || []).forEach(h => evOfHead.set(h.id, e)));
+    part.spanners.forEach(s => { if (s.type === 'tie' && s.from !== undefined && s.to !== undefined) { tieOut.set(s.from, s.to); tieIn.set(s.to, s.from); } });
+    const out = new Map();
+    const w = e => R.add(starts.get(e.m), R.parse(e.at));
+    part.events.forEach(e => {
+      if (e.kind !== 'note' || !e.heads || !e.heads.length || e.grace) return;
+      let h = e.heads[0].id, first = e, last = e, k = 0;
+      while (tieIn.has(h) && k++ < 10000) { h = tieIn.get(h); first = evOfHead.get(h) || first; }
+      h = e.heads[0].id; k = 0;
+      while (tieOut.has(h) && k++ < 10000) { h = tieOut.get(h); last = evOfHead.get(h) || last; }
+      out.set(e.id, { s: w(first), en: R.add(w(last), R.parse(last.dur)) });
+    });
+    return out;
+  }
+
   /* A fingerprint: component -> {key -> value} where key names what the value belongs to (a measure when it can). */
   function fingerprint(g) {
     const starts = new Map();
@@ -106,13 +124,17 @@
       });
       const evById = new Map(part.events.map(e => [e.id, e]));
       const evW = id => { const e = evById.get(id); return e ? F(R.add(starts.get(e.m), R.parse(e.at))) : '?'; };
-      const evEndW = id => { const e = evById.get(id); return e ? F(R.add(R.add(starts.get(e.m), R.parse(e.at)), R.parse(e.dur))) : '?'; };
+      /* a slur's ends are the sounding notes it joins: where the tied note it starts on begins, where the tied note it
+         ends on stops (G03 §12.2: splitting or merging the pieces of a tied note does not move a slur) */
+      const chainOf = chains(part, starts);
+      const noteStartW = id => { const c = chainOf.get(id); return c ? F(c.s) : evW(id); };
+      const noteEndW = id => { const c = chainOf.get(id); return c ? F(c.en) : '?'; };
       const posW = p => (p ? F(R.add(starts.get(p.m), R.parse(p.at))) : '-');
       const mOfEv = id => { const e = evById.get(id); return e ? e.m : 'global'; };
       part.spanners.forEach(s => {
         if (s.type === 'tuplet') put('tuplets', mOfEv(s.events[0]), [s.events.map(evW).join(','), s.events.map(id => (evById.get(id) || {}).voice).join(','), s.actual, s.normal, JSON.stringify(s.unit || null), s.printed === false ? 'hidden' : ''].join('|'));
         else if (s.type === 'beam') put('beams', mOfEv(s.events[0]), [s.events.map(evW).join(','), JSON.stringify((s.breaks || []).map(b => [evW(b.after), b.level]))].join('|'));
-        else if (s.type === 'slur') put('marks', s.from !== undefined ? mOfEv(s.from) : mOfEv(s.to), ['slur', s.from !== undefined ? evW(s.from) : '-', s.to !== undefined ? evEndW(s.to) : '-', s.placement || '', s.line || ''].join('|'));
+        else if (s.type === 'slur') put('marks', 'global', ['slur', s.from !== undefined ? noteStartW(s.from) : '-', s.to !== undefined ? noteEndW(s.to) : '-', s.placement || '', s.line || ''].join('|'));
         else if (s.type === 'wedge') put('marks', s.from.m, ['wedge', s.kind, posW(s.from), posW(s.to)].join('|'));
         else if (s.type === 'pedal') put('pedal', s.from.m, [s.pedal, posW(s.from), posW(s.to), (s.changes || []).map(posW).join(','), JSON.stringify(s.mark || null)].join('|'));
         else if (s.type === 'ottava') put('ottava', s.from.m, [s.staff, s.shift, posW(s.from), posW(s.to)].join('|'));

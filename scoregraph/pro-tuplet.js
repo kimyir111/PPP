@@ -53,7 +53,9 @@
   /* Tile runs of triplet pieces with spans (§7.3). evs: the voice-measure; off: the pickup offset (integer of 1/U).
      Returns {groups: [{events, unit}], loose: [event IDs no span holds]}. */
   function tile(evs, off) {
-    const pieces = evs.map(e => ({ e: e, s: MG.toU(e.at), en: MG.toU(R.format(R.add(R.parse(e.at), R.parse(e.dur)))), t: tripletPiece(e) }));
+    /* base: the undotted value of the printed type (integer of 1/U), what the renderer measures a bracket by */
+    const base = e => { const v = e.display && e.display.type ? S.NOTE_TYPE_VALUE[e.display.type] : null; return v ? v.n * U / v.d : 0; };
+    const pieces = evs.map(e => ({ e: e, s: MG.toU(e.at), en: MG.toU(R.format(R.add(R.parse(e.at), R.parse(e.dur)))), t: tripletPiece(e), base: base(e) }));
     const runs = [];
     let cur = null;
     pieces.forEach(p => {
@@ -62,27 +64,37 @@
     });
     const groups = [], loose = [];
     runs.forEach(run => {
-      let best = null;
-      SPANS.forEach(sp => {
-        /* every span [k·len, (k+1)·len) of the measure frame the run's pieces fill exactly */
-        const got = [];
-        let i = 0;
-        while (i < run.length) {
+      /* best[i]: the best tiling of run[i..]: most pieces held, then the preferred spans (a beat before a half-beat
+         before a half bar: SPANS order), then fewest groups */
+      const n = run.length;
+      const best = new Array(n + 1).fill(null);
+      best[n] = { held: 0, pen: 0, groups: 0, step: null };
+      const better = (a, b) => !b || a.held > b.held || (a.held === b.held && (a.pen < b.pen || (a.pen === b.pen && a.groups < b.groups)));
+      for (let i = n - 1; i >= 0; i--) {
+        let cand = { held: best[i + 1].held, pen: best[i + 1].pen, groups: best[i + 1].groups, step: { skip: true } };
+        SPANS.forEach((sp, rank) => {
           const x = run[i].s + off;
-          if (x % sp.len !== 0) { i++; continue; }
-          let j = i, end = x + sp.len;
-          while (j < run.length && run[j].en + off <= end) j++;
-          if (j > i && run[j - 1].en + off === end) { got.push({ from: i, to: j }); i = j; } else i++;
-        }
-        const n = got.reduce((s, x) => s + x.to - x.from, 0);
-        if (n && (!best || n > best.n)) best = { n: n, got: got, unit: sp.unit };
-      });
-      const held = new Set();
-      if (best) best.got.forEach(x => {
-        groups.push({ events: run.slice(x.from, x.to).map(p => p.e.id), unit: best.unit });
-        for (let k = x.from; k < x.to; k++) held.add(k);
-      });
-      run.forEach((p, k) => { if (!held.has(k)) loose.push(p.e.id); });
+          if (x % sp.len !== 0) return;
+          const end = x + sp.len;
+          let j = i;
+          while (j < n && run[j].en + off <= end) j++;
+          if (j === i || run[j - 1].en + off !== end) return;
+          const rest = best[j];
+          /* a span whose unit is longer than its shortest member is one the app's renderer splits (it closes a bracket
+             once `normal` times the shortest value it has seen has gone by): prefer the span the members' values fit */
+          const shortest = Math.min.apply(null, run.slice(i, j).map(p => p.base));
+          const fits = shortest >= sp.len / 2 ? 0 : 3;
+          const c = { held: rest.held + (j - i), pen: rest.pen + rank + fits, groups: rest.groups + 1, step: { to: j, unit: sp.unit } };
+          if (better(c, cand)) cand = c;
+        });
+        best[i] = cand;
+      }
+      for (let i = 0; i < n;) {
+        const st = best[i].step;
+        if (st.skip) { loose.push(run[i].e.id); i++; continue; }
+        groups.push({ events: run.slice(i, st.to).map(p => p.e.id), unit: st.unit });
+        i = st.to;
+      }
     });
     return { groups: groups, loose: loose };
   }
@@ -129,6 +141,9 @@
               if (s.events.every(id => loneSet.has(id))) {
                 const out = { events: s.events, actual: s.actual, normal: s.normal };
                 ['unit', 'show', 'printed', 'prov'].forEach(k => { if (s[k] !== undefined) out[k] = s[k]; });
+                /* a loose piece keeps its ratio (its length stays right, issue 19) but a bracket over one note is what
+                   G3 exists to remove (issue 20): the tuplet stays, unprinted */
+                if (s.events.length === 1 && out.printed !== false) { out.printed = false; out.prov = { src: d.source() }; }
                 plan.push(out);
               }
             });

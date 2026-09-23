@@ -1,0 +1,23 @@
+{
+ "about": "a one-tick rest (1/96, issue 19) is on no grid G3 writes: R-repr leaves the beat as it is (R-reg is G3b); read as a triplet 64th, no tuplet span holds it either",
+ "spec": "G03 §6.3 R17",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "C5:q=23/96 r:64=1/96 D5:q E5:h"
+ },
+ "passes": [
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "rh": "C5:q=23/96 r:64=1/96 D5:q E5:h",
+  "same": true,
+  "issues": {
+   "N-RHYTHM-UNREPRESENTABLE": 1,
+   "N-TUPLET-UNGROUPABLE": 1
+  }
+ }
+}

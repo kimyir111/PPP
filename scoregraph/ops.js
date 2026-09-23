@@ -274,12 +274,14 @@
       this.srcId = src.id;
       return src.id;
     }
-    /* entity.prov.asp[aspect] = {src: G3, op} for each aspect (G03 §17). */
+    /* entity.prov.asp[aspect] = {src: G3} for each aspect (G03 §17). The op is written only when it is not the
+       one the entity inherits: a rewritten inferred entity stays inferred (only the source is G3); what G3 fills
+       into an imported score is 'generated'. */
     markProv(entity, aspects, op) {
       const src = this.source();
       entity.prov = entity.prov || {};
       entity.prov.asp = entity.prov.asp || {};
-      aspects.forEach(a => { entity.prov.asp[a] = { src: src, op: op || 'inferred' }; });
+      aspects.forEach(a => { entity.prov.asp[a] = op ? { src: src, op: op } : { src: src }; });
     }
     retire(id, to) { this.idMap[id] = to === undefined ? null : to; }
 
@@ -434,6 +436,9 @@
       };
       const oldHeadIds = new Set();
       old.forEach(e => (e.heads || []).forEach(h => oldHeadIds.add(h.id)));
+      /* the old events the plan retires or moves (another start or length) */
+      const moved = new Set(goneEvents);
+      pieces.forEach(x => { const o = oldInfo.get(x.e.id); if (o && (!R.eq(o.s, x.s) || !R.eq(o.en, x.en))) moved.add(x.e.id); });
       /* spanners */
       const retiredSp = new Set();
       part.spanners = part.spanners.filter(sp => {
@@ -445,7 +450,8 @@
           return true;
         }
         if (sp.type === 'tuplet' || sp.type === 'beam') {
-          if (sp.events.some(id => oldIds.has(id))) { retiredSp.add(sp.id); return false; }
+          /* a group over events the plan keeps where they were stays; one over a moved or retired event goes */
+          if (sp.events.some(id => moved.has(id))) { retiredSp.add(sp.id); return false; }
           return true;
         }
         if (sp.type === 'slur') {

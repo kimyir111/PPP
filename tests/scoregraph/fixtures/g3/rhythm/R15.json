@@ -1,0 +1,19 @@
+{
+ "about": "a tie over the bar line stays; each bar is written on its own",
+ "spec": "G03 §6.3 R15",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "r:h C5:h~ | C5:q D5:h."
+ },
+ "passes": [
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "rh": "r:h C5:h~ | C5:q D5:h.",
+  "same": true
+ }
+}

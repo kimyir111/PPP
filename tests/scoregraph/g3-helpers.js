@@ -103,6 +103,11 @@ function mk(spec) {
     });
     groups.forEach(gr => tupl.push(Object.assign({ type: 'tuplet', events: gr.items.map(i => i.id), actual: 3, normal: 2 }, gr.unit ? { unit: { type: gr.unit } } : {})));
   });
+  /* grace notes: [{staff: 0|1, bar, at, pitch, type}], before the main note at that position */
+  (spec.graces || []).forEach(x => {
+    b.event(part, { kind: 'note', m: ms[x.bar || 0], at: x.at, dur: '0', voice: voices[x.staff || 0], staff: staves[x.staff || 0],
+      grace: { order: 1, slash: true }, display: { type: x.type || 'eighth' }, heads: [{ pitch: parsePitch(x.pitch) }] });
+  });
   ties.forEach(t => b.spanner(part, Object.assign({ type: 'tie' }, t)));
   tupl.forEach(t => b.spanner(part, t));
   if (perf) {

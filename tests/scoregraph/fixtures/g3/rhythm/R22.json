@@ -1,0 +1,21 @@
+{
+ "about": "a septuplet piece (1/28) is on no grid: nothing changes, N-RHYTHM-UNREPRESENTABLE",
+ "spec": "G03 §6.3 R22",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "C5:16=1/28 D5:16=1/28 E5:16=1/28 F5:16=1/28 G5:16=1/28 A5:16=1/28 B5:16=1/28 r:h."
+ },
+ "passes": [
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "same": true,
+  "issues": {
+   "N-RHYTHM-UNREPRESENTABLE": 1
+  }
+ }
+}
