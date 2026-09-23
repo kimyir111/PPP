@@ -27,7 +27,10 @@ function mutant(file, find, replace) {
   roots.push(dir);
   fs.readdirSync(SRC).filter(f => f.endsWith('.js')).forEach(f => fs.copyFileSync(path.join(SRC, f), path.join(dir, f)));
   const at = path.join(dir, file);
-  const before = fs.readFileSync(at, 'utf8');
+  /* The anchors below are written with \n. Git hands a Windows checkout the same files with \r\n
+     (core.autocrlf), which would make every multi-line anchor miss, so the copy is read as lines
+     and joined back with \n. What runs is the same JavaScript either way. */
+  const before = fs.readFileSync(at, 'utf8').split('\r\n').join('\n');
   const count = before.split(find).length - 1;
   assert.equal(count, 1, file + ': the anchor ' + JSON.stringify(find.slice(0, 60)) + ' matches ' + count + ' times, not once');
   fs.writeFileSync(at, before.replace(find, replace));
