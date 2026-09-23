@@ -66,4 +66,5 @@ use (`I-EXT`). Registered:
 | namespace | on | value | meaning |
 | --- | --- | --- | --- |
 | `musicxml.beam` | Beam spanner | `{levels: n}` | the source wrote only the first `n` beam levels (for example only the primary beam over sixteenths); the export writes no deeper level. Set by the MusicXML import only when the source wrote fewer levels than the note values imply. |
+| `ppp.g3` | Event | `{was: {dur, display}}` | G3's own audit trail (docs/GOALS/G03 §18.1–18.2): what a G3b pass (R-reg, off by default) changed a notated length from. Holds no ID (an ID inside `ext` is never checked, G02 §18 S5). Nothing reads it back; G3a writes nothing here. |
 | `test.*` | anywhere | any JSON | reserved for test fixtures |

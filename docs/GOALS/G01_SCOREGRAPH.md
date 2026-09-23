@@ -585,6 +585,8 @@ ScoreGraph                                    (루트, 소유자)
 
 ### 5.7 Head
 
+> **2026-09-24, G03 D3 (Accepted)**: 이 절이 G4에 둔 자동 임시표·표시(`derive.display`)의 **semantics**(어떤 head에 `acc`가 있나, courtesy인가, event의 type/dots)는 G3로 옮겨졌다. 배치(좌표)만 G4다. `docs/GOALS/G03_SCORE_INTELLIGENCE.md` §3.5, §22.1.
+
 **PitchedHead** — prefix `h`. 소유자는 NoteEvent다.
 
 | 필드 | 타입 | 필수 | 기본 | 설명 |
@@ -971,6 +973,8 @@ roundHalfUp(n/d) = floor((2n + d) / (2d))     # n ≥ 0, BigInt 산술
 
 ### 8.2 손 배정 (RH/LH)
 
+> **2026-09-24, G03 D3 (Accepted)**: 손(limb)·staff 배정은 G3다. G5에는 운지와 더 깊은 물리적 playability만 남는다. `docs/GOALS/G03_SCORE_INTELLIGENCE.md` §3.5, §9, §22.1.
+
 `limbOf(head) = head.limb ?? voice.limb ?? staff.limb ?? undefined`
 
 | 상황 | 표현 |
@@ -1324,6 +1328,8 @@ Issue = { code: string, severity: 'ERROR'|'WARNING'|'INFO', message: string,
 
 ### 13.3 ERROR와 WARNING을 가른 기준
 
+> **2026-09-24, G03 D3 (Accepted)**: 이 절이 G4에 둔 임시표·표시 semantics는 G3로 옮겨졌다 (배치만 G4). G03 §3.5, §22.1.
+
 - **ERROR**: 시간 모델(길이, 위치, 겹침, 넘침), 참조, ID, 형식, 그리고 **재생 의미를 정할 수 없는** 상태(tie 양 끝의 음이 다름).
 - **WARNING**: 인쇄 표시의 모순(W-DISPLAY-DURATION), 열린 tie와 slur, 불규칙 마디, 모순된 템포 표기. 모두 **실제 파일과 현재 writer가 만드는 상태**다.
   - DP6(충실함)에 따라 그대로 담아야 G0 parity와 round-trip이 가능하다.
@@ -1380,6 +1386,8 @@ Issue = { code: string, severity: 'ERROR'|'WARNING'|'INFO', message: string,
 예시는 부록 C에 있다.
 
 ### 14.3 exporter와 "표시 없음"
+
+> **2026-09-24, G03 D3 (Accepted)**: 표시 음가·임시표를 채우는 일(semantics)은 G3, 배치는 G4다. G03 §3.5, §22.1.
 
 `display`, `acc`, `beam`, `stem`이 없으면 MusicXML exporter는 그 요소를 **쓰지 않는다** (`<type>` 없는 `<note>`).
 
