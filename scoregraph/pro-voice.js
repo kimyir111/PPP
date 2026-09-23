@@ -31,6 +31,7 @@
     run(g, ctx) {
       const changes = [];
       const res = O.edit(g, d => {
+        const drop = [], refill = [], after = [];
         g.parts.forEach((gpart, pi) => {
           if (!PS.handsOf(gpart)) return;
           gpart.voices.forEach(v => {
@@ -46,22 +47,25 @@
               d.reindex(); d.touch();
               changes.push({ pass: 'voice', kind: 'drop-voice', ids: [v.id] });
             };
-            if (!evs.length) { dropIfEmpty(); return; }
+            if (!evs.length) { after.push(dropIfEmpty); return; }
             const byM = new Map();
             evs.forEach(e => { if (!byM.has(e.m)) byM.set(e.m, []); byM.get(e.m).push(e); });
             byM.forEach((list, m) => {
               if (ctx.skip.has(m)) return;
               const notes = list.filter(e => e.kind === 'note' && !e.grace);
               if (!notes.length) {
-                list.forEach(e => d.removeEvent(e.id));
+                list.forEach(e => drop.push(e.id));
                 changes.push({ pass: 'voice', kind: 'drop-rests', ids: list.map(e => e.id), m: m });
                 return;
               }
-              if (d.refillRests(v.id, m, (a, b) => PS.restPieces(d, m, a, b))) changes.push({ pass: 'voice', kind: 'fill', ids: list.map(e => e.id), m: m });
+              refill.push({ voice: v.id, m: m, restPieces: (a, b) => PS.restPieces(d, m, a, b), ids: list.map(e => e.id) });
             });
-            dropIfEmpty();
+            after.push(dropIfEmpty);
           });
         });
+        d.removeEvents(drop);
+        if (d.refillRestsBatch(refill)) refill.forEach(it => { if (it.changed) changes.push({ pass: 'voice', kind: 'fill', ids: it.ids, m: it.m }); });
+        after.forEach(f => f());
       }, { validate: false, source: ctx.source });
       return { graph: res.graph, idMap: res.idMap, changes: changes };
     }

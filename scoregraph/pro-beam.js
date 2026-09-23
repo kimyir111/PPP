@@ -82,11 +82,12 @@
     run(g, ctx) {
       const changes = [];
       const res = O.edit(g, d => {
+        const batch = [];
         g.parts.forEach(part => {
           const tupOf = new Map();
           part.spanners.forEach(s => { if (s.type === 'tuplet' && s.printed !== false) s.events.forEach(id => tupOf.set(id, s.id)); });
-          const beamed = new Set();
-          part.spanners.forEach(s => { if (s.type === 'beam') s.events.forEach(id => beamed.add(id)); });
+          const beamed = new Set(), beamByKey = new Map();
+          part.spanners.forEach(s => { if (s.type === 'beam') { s.events.forEach(id => beamed.add(id)); beamByKey.set(s.events.join(), s); } });
           const vms = new Map();
           part.events.forEach(e => {
             if (e.grace) return;
@@ -106,14 +107,11 @@
             const src = d.source();
             want.forEach(x => { x.prov = right === 'fill' ? { src: src, op: 'generated' } : { src: src }; });
             /* a beam that is already there keeps its provenance */
-            part.spanners.forEach(s => {
-              if (s.type !== 'beam') return;
-              const w = want.find(x => x.events.join() === s.events.join());
-              if (w) { if (s.prov) w.prov = s.prov; else delete w.prov; }
-            });
-            if (d.setBeams(vm.voice, vm.m, want)) changes.push({ pass: 'beam', kind: 'beam', ids: vm.evs.map(e => e.id), m: vm.m });
+            want.forEach(w => { const s = beamByKey.get(w.events.join()); if (s) { if (s.prov) w.prov = s.prov; else delete w.prov; } });
+            batch.push({ voice: vm.voice, m: vm.m, groups: want, change: { pass: 'beam', kind: 'beam', ids: vm.evs.map(e => e.id), m: vm.m } });
           });
         });
+        if (batch.length && d.setGroupsBatch('beam', batch)) batch.forEach(it => { if (it.changed) changes.push(it.change); });
       }, { validate: false, source: ctx.source });
       return { graph: res.graph, idMap: res.idMap, changes: changes };
     }

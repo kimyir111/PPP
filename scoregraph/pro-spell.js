@@ -49,7 +49,25 @@
     part.spanners.forEach(s => { if (s.type === 'tie' && s.from !== undefined && s.to !== undefined) { tieIn.add(s.to); tieFrom.set(s.to, s.from); } });
     const ms = g.timeline.measures;
     const mIdx = new Map(ms.map((m, i) => [m.id, i]));
-    const keyOf = (m, staff) => { const k = T.keyAt(g, { m: m, at: '0' }, part.id, staff); return k ? k.fifths : 0; };
+    /* the key in force at the start of each measure, per staff: time.keyAt's rule (the latest key at or before the
+       measure's start; at one position a staff key beats a part key beats a global one), read once from the key list */
+    const keyCache = new Map();
+    const keysByM = new Map();
+    (g.timeline.keys || []).forEach(k => { const i = mIdx.get(k.m); if (i === undefined) return; if (!keysByM.has(i)) keysByM.set(i, []); keysByM.get(i).push(k); });
+    const rank = (k, staff) => (!k.scope ? 0 : k.scope.part !== part.id ? -1 : !k.scope.staff ? 1 : k.scope.staff === staff ? 2 : -1);
+    part.staves.forEach(st => {
+      let cur = null;
+      ms.forEach((m, i) => {
+        /* keys at this measure's start apply now; later in the measure, from the next one */
+        const here = (keysByM.get(i) || []).filter(k => rank(k, st.id) >= 0);
+        const atStart = here.filter(k => R.isZero(R.parse(k.at))).sort((a, b) => rank(b, st.id) - rank(a, st.id));
+        if (atStart.length) cur = atStart[0];
+        keyCache.set(m.id + '|' + st.id, cur ? cur.fifths : 0);
+        const later = here.filter(k => !R.isZero(R.parse(k.at))).sort((a, b) => R.cmp(R.parse(a.at), R.parse(b.at)) || rank(a, st.id) - rank(b, st.id));
+        if (later.length) cur = later[later.length - 1];
+      });
+    });
+    const keyOf = (m, staff) => (keyCache.has(m + '|' + staff) ? keyCache.get(m + '|' + staff) : 0);
     part.staves.forEach(st => {
       /* the heads of this staff, per measure, in time order (grace notes before their main note) */
       const byM = ms.map(() => []);

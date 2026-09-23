@@ -106,6 +106,7 @@
     run(g, ctx) {
       const changes = [];
       const res = O.edit(g, d => {
+        const batch = [];
         g.parts.forEach(part => {
           const tupsOf = new Map();
           part.spanners.forEach(s => { if (s.type === 'tuplet') s.events.forEach(id => { if (!tupsOf.has(id)) tupsOf.set(id, []); tupsOf.get(id).push(s); }); });
@@ -132,7 +133,7 @@
                 if (!s.unit && gg) { out.unit = { type: gg.unit }; out.prov = { src: d.source(), op: 'generated' }; }
                 return out;
               });
-              if (d.setTuplets(vm.voice, vm.m, plan)) changes.push({ pass: 'tuplet', kind: 'fill-unit', ids: mine.map(s => s.id), m: vm.m });
+              batch.push({ voice: vm.voice, m: vm.m, groups: plan, change: { pass: 'tuplet', kind: 'fill-unit', ids: mine.map(s => s.id), m: vm.m } });
               return;
             }
             const loneSet = new Set(loose);
@@ -151,10 +152,11 @@
             /* a new group gets G3's source (its op stays the input's: inferred) */
             const known = new Set(mine.map(s => s.events.join()));
             plan.forEach(x => { if (!known.has(x.events.join())) x.prov = { src: d.source() }; else { const s = mine.find(t => t.events.join() === x.events.join()); if (s.prov) x.prov = s.prov; } });
-            if (d.setTuplets(vm.voice, vm.m, plan)) changes.push({ pass: 'tuplet', kind: 'group', ids: vm.evs.map(e => e.id), m: vm.m });
+            if (plan.length || mine.length) batch.push({ voice: vm.voice, m: vm.m, groups: plan, change: { pass: 'tuplet', kind: 'group', ids: vm.evs.map(e => e.id), m: vm.m } });
             if (loose.length) ctx.issue('N-TUPLET-UNGROUPABLE', loose.length + ' triplet piece(s) of voice ' + vm.voice + ' fill no whole tuplet span', { m: vm.m, voice: vm.voice });
           });
         });
+        if (batch.length && d.setGroupsBatch('tuplet', batch)) batch.forEach(it => { if (it.changed) changes.push(it.change); });
       }, { validate: false, source: ctx.source });
       return { graph: res.graph, idMap: res.idMap, changes: changes };
     }

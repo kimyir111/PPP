@@ -359,8 +359,12 @@
       }
       return SPANNER_BY_NAME[tag];
     }
-    return all.filter(fd => !fd.only || fd.only.indexOf(tag) >= 0);
+    /* one list per shape and tag (shared: callers only read it) */
+    const k = shapeName + '|' + tag;
+    if (!FIELDS_BY_TAG[k]) FIELDS_BY_TAG[k] = all.filter(fd => !fd.only || fd.only.indexOf(tag) >= 0);
+    return FIELDS_BY_TAG[k];
   }
+  const FIELDS_BY_TAG = {};
   /* A field's type, resolving the spanner ends that depend on the type. */
   function fieldType(shapeName, fd, value) {
     if (fd.type) return fd.type;

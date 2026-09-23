@@ -43,7 +43,19 @@
       this.issues = issues || [];
     }
   }
-  const clone = g => JSON.parse(JSON.stringify(g));
+  /* a deep copy of plain JSON data, as JSON.parse(JSON.stringify(g)) makes it (an undefined field is left out, an
+     undefined array element becomes null), without the text in between */
+  function clone(v) {
+    if (v === null || typeof v !== 'object') return v;
+    if (Array.isArray(v)) {
+      const n = v.length, a = new Array(n);
+      for (let i = 0; i < n; i++) { const x = v[i]; a[i] = x === undefined || typeof x === 'function' ? null : clone(x); }
+      return a;
+    }
+    const o = {};
+    for (const k of Object.keys(v)) { const x = v[k]; if (x !== undefined && typeof x !== 'function') o[k] = clone(x); }
+    return o;
+  }
   function finish(doc, idMap) {
     doc.rev = (doc.rev || 0) + 1;
     try {
@@ -218,6 +230,9 @@
      mark about the note's length or its end goes to the last. */
   const END_ARTS = ['tenuto', 'breath-mark', 'caesura'];
   const isObj = x => !!x && typeof x === 'object' && !Array.isArray(x);
+  /* the JSON of a frozen object, made once */
+  const JSONS = new WeakMap();
+  const jsonOf = o => { let j = JSONS.get(o); if (j === undefined) { j = JSON.stringify(o); JSONS.set(o, j); } return j; };
   const sameJson = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
   /* A private, mutable copy of a graph and the changes made to it. Every method keeps the graph's ID rules
@@ -226,6 +241,10 @@
     constructor(g, opts) {
       this.g0 = g;
       this.doc = clone(g);
+      /* each copied event -> the frozen (canonical) event it is a copy of: one the edit leaves as it was is handed back
+         as that event (edit), so an edit costs what it changes, not the whole graph */
+      this.origEvent = new Map();
+      if (Object.isFrozen(g) && Array.isArray(g.parts)) g.parts.forEach((p, pi) => (p.events || []).forEach((e, ei) => this.origEvent.set(this.doc.parts[pi].events[ei], e)));
       this.opts = opts || {};
       this.idMap = {};
       this.changed = false;
@@ -238,6 +257,7 @@
       this.reindex();
     }
     reindex() {
+      this.vmIndex = null; this.tieIndex = null;
       this.ev = new Map(); this.hd = new Map(); this.vc = new Map();
       this.doc.parts.forEach(part => {
         part.voices.forEach(v => this.vc.set(v.id, { v: v, part: part }));
@@ -248,6 +268,32 @@
       });
     }
     touch() { this.changed = true; }
+    /* the frozen event of the input a copied event still equals, or null */
+    unchanged(v) {
+      const o = this.origEvent.get(v);
+      return o && JSON.stringify(v) === jsonOf(o) ? o : null;
+    }
+    /* incremental index upkeep for the ops that add, move or drop one event (a full reindex per op would make a pass
+       that moves many notes quadratic) */
+    vmKey(e) { return e.voice + '|' + e.m; }
+    vmAdd(e) {
+      if (!this.vmIndex || isObj(e.grace)) return;
+      const k = this.vmKey(e);
+      if (!this.vmIndex.has(k)) this.vmIndex.set(k, []);
+      this.vmIndex.get(k).push(e);
+    }
+    vmRemove(e, key) {
+      if (!this.vmIndex || isObj(e.grace)) return;
+      const list = this.vmIndex.get(key || this.vmKey(e));
+      if (!list) return;
+      const i = list.indexOf(e);
+      if (i >= 0) list.splice(i, 1);
+    }
+    indexEvent(e, part) {
+      this.ev.set(e.id, { e: e, part: part });
+      (e.heads || []).forEach(h => this.hd.set(h.id, { h: h, e: e, part: part }));
+      this.vmAdd(e);
+    }
     newId(prefix) { const id = prefix + this.doc.nextId; this.doc.nextId += 1; return id; }
     event(id) { const x = this.ev.get(id); if (!x) throw new OpError('E-OP-TARGET', 'no event ' + id); return x.e; }
     head(id) { const x = this.hd.get(id); if (!x) throw new OpError('E-OP-TARGET', 'no head ' + id); return x.h; }
@@ -259,9 +305,27 @@
     endW(e) { return R.add(this.startW(e), R.parse(e.dur)); }
     /* the non-grace events of a voice in a measure, in time order */
     voiceMeasure(voiceId, m) {
-      const part = this.partOfVoice(voiceId);
-      return part.events.filter(e => e.voice === voiceId && e.m === m && !isObj(e.grace))
+      this.partOfVoice(voiceId);
+      if (!this.vmIndex) {
+        /* built once, and again only after the events changed (reindex) */
+        this.vmIndex = new Map();
+        this.doc.parts.forEach(part => part.events.forEach(e => {
+          if (isObj(e.grace)) return;
+          const k = e.voice + '|' + e.m;
+          if (!this.vmIndex.has(k)) this.vmIndex.set(k, []);
+          this.vmIndex.get(k).push(e);
+        }));
+      }
+      return (this.vmIndex.get(voiceId + '|' + m) || []).slice()
         .sort((a, b) => R.cmp(R.parse(a.at), R.parse(b.at)) || S.idNumber(a.id) - S.idNumber(b.id));
+    }
+    /* the complete ties: from head -> to head (built once, again only after a change) */
+    ties() {
+      if (!this.tieIndex) {
+        this.tieIndex = new Map();
+        this.doc.parts.forEach(part => part.spanners.forEach(sp => { if (sp.type === 'tie' && sp.from !== undefined && sp.to !== undefined) this.tieIndex.set(sp.from, sp.to); }));
+      }
+      return this.tieIndex;
     }
     /* The G3 source, registered the first time a pass records provenance (G03 §17). */
     source() {
@@ -370,128 +434,147 @@
        arts?, orn?, fermata?, lyrics?, hidden?, staff?}. A reused event or head keeps its ID and every field the plan
        does not set; a new one takes the next ID. Ties, slurs, directions, arpeggios and glissandi that reach into
        the region follow the notes: an end at a note's start goes to the piece that starts there, an end at a note's
-       end to the piece that ends there. Tuplets and beams over the region's old events are retired (the passes that
-       own them group the new pieces). Grace events are left where they are. A head a performance links to may not
-       be retired: the performance layer never changes (G03 I5). */
-    retimeVoiceMeasure(voiceId, m, plan) {
-      const part = this.partOfVoice(voiceId);
-      const staffOfVoice = this.voice(voiceId).staff;
-      const old = this.voiceMeasure(voiceId, m);
-      const oldIds = new Set(old.map(e => e.id));
-      const mStart = this.mStart.get(m);
-      const oldInfo = new Map(old.map(e => [e.id, { s: R.parse(e.at), en: R.add(R.parse(e.at), R.parse(e.dur)), kind: e.kind,
-        heads: (e.heads || []).map(h => ({ id: h.id, midi: h.pitch ? P.midi(h.pitch) : h.inst })) }]));
-      const seen = new Set();
-      const pieces = plan.map(p => {
-        let e;
-        if (p.reuse !== undefined) {
-          if (!oldIds.has(p.reuse) || seen.has(p.reuse)) throw new OpError('E-OP-TARGET', 'the plan reuses ' + p.reuse + ', not an event of the region (or twice)');
-          seen.add(p.reuse);
-          e = this.event(p.reuse);
-          if (e.kind !== p.kind) throw new OpError('E-OP-TARGET', 'the plan turns ' + e.kind + ' ' + e.id + ' into a ' + p.kind);
-        } else {
-          e = { id: this.newId('e'), kind: p.kind, m: m, voice: voiceId, staff: p.staff || staffOfVoice };
-        }
-        e.at = p.at; e.dur = p.dur;
-        if (p.display) e.display = JSON.parse(JSON.stringify(p.display)); else delete e.display;
-        ['arts', 'orn', 'fermata', 'lyrics'].forEach(k => { if (p[k] !== undefined && p[k] !== null && !(Array.isArray(p[k]) && !p[k].length)) e[k] = JSON.parse(JSON.stringify(p[k])); else delete e[k]; });
-        if (p.hidden) e.hidden = true; else if (p.hidden === false) delete e.hidden;
-        if (p.kind === 'note' || p.kind === 'perc') {
-          const oldHeads = new Map((e.heads || []).map(h => [h.id, h]));
-          e.heads = p.heads.map(hp => {
-            if (hp.reuse !== undefined) {
-              const h = this.hd.get(hp.reuse);
-              if (!h) throw new OpError('E-OP-TARGET', 'no head ' + hp.reuse);
-              if (hp.pitch && h.h.pitch && P.midi(hp.pitch) !== P.midi(h.h.pitch)) throw new OpError('E-OP-TARGET', 'the plan changes the pitch of ' + hp.reuse);
-              return h.h;
-            }
-            const nh = { id: this.newId('h') };
-            if (hp.pitch) nh.pitch = JSON.parse(JSON.stringify(hp.pitch));
-            const like = hp.like !== undefined ? this.hd.get(hp.like) : null;
-            if (like) ['staff', 'notehead', 'limb', 'prov', 'inst', 'pos', 'stroke'].forEach(k => { if (like.h[k] !== undefined && nh[k] === undefined) nh[k] = JSON.parse(JSON.stringify(like.h[k])); });
-            return nh;
-          });
-          void oldHeads;
-        } else delete e.heads;
-        return { p: p, e: e, s: R.parse(p.at), en: R.add(R.parse(p.at), R.parse(p.dur)) };
+       end to the piece that ends there. Tuplets and beams over an event the plan moves or retires are retired (the
+       passes that own them group the new pieces). Grace events are left where they are. A head a performance links to
+       may not be retired: the performance layer never changes (G03 I5). */
+    retimeVoiceMeasure(voiceId, m, plan) { return this.retimeBatch([{ voice: voiceId, m: m, plan: plan }])[0]; }
+
+    /* Many voice-measures at once, in one sweep over the events, spanners and directions of the parts they are in
+       (one voice-measure at a time would sweep them each time). items: [{voice, m, plan}], voice-measures distinct.
+       Returns, per item, the IDs of its events in plan order. */
+    retimeBatch(items) {
+      if (!items.length) return [];
+      const oldInfo = new Map();                    /* old event ID -> {s, en, item, heads: [{id, midi}]} */
+      const headItem = new Map();                   /* old head ID -> {item, midi, info} */
+      const done = [];
+      items.forEach(item => {
+        const part = this.partOfVoice(item.voice);
+        const staffOfVoice = this.voice(item.voice).staff;
+        const old = this.voiceMeasure(item.voice, item.m);
+        item.part = part;
+        item.oldIds = new Set(old.map(e => e.id));
+        old.forEach(e => {
+          const info = { s: R.parse(e.at), en: R.add(R.parse(e.at), R.parse(e.dur)), item: item, heads: (e.heads || []).map(h => ({ id: h.id, midi: h.pitch ? P.midi(h.pitch) : h.inst })) };
+          oldInfo.set(e.id, info);
+          info.heads.forEach(h => headItem.set(h.id, { item: item, midi: h.midi, info: info }));
+        });
+        const seen = new Set();
+        item.pieces = item.plan.map(p => {
+          let e;
+          if (p.reuse !== undefined) {
+            if (!item.oldIds.has(p.reuse) || seen.has(p.reuse)) throw new OpError('E-OP-TARGET', 'the plan reuses ' + p.reuse + ', not an event of the region (or twice)');
+            seen.add(p.reuse);
+            e = this.event(p.reuse);
+            if (e.kind !== p.kind) throw new OpError('E-OP-TARGET', 'the plan turns ' + e.kind + ' ' + e.id + ' into a ' + p.kind);
+          } else {
+            e = { id: this.newId('e'), kind: p.kind, m: item.m, voice: item.voice, staff: p.staff || staffOfVoice };
+          }
+          e.at = p.at; e.dur = p.dur;
+          if (p.display) e.display = JSON.parse(JSON.stringify(p.display)); else delete e.display;
+          ['arts', 'orn', 'fermata', 'lyrics'].forEach(k => { if (p[k] !== undefined && p[k] !== null && !(Array.isArray(p[k]) && !p[k].length)) e[k] = JSON.parse(JSON.stringify(p[k])); else delete e[k]; });
+          if (p.hidden) e.hidden = true; else if (p.hidden === false) delete e.hidden;
+          if (p.kind === 'note' || p.kind === 'perc') {
+            e.heads = p.heads.map(hp => {
+              if (hp.reuse !== undefined) {
+                const h = this.hd.get(hp.reuse);
+                if (!h) throw new OpError('E-OP-TARGET', 'no head ' + hp.reuse);
+                if (hp.pitch && h.h.pitch && P.midi(hp.pitch) !== P.midi(h.h.pitch)) throw new OpError('E-OP-TARGET', 'the plan changes the pitch of ' + hp.reuse);
+                return h.h;
+              }
+              const nh = { id: this.newId('h') };
+              if (hp.pitch) nh.pitch = JSON.parse(JSON.stringify(hp.pitch));
+              const like = hp.like !== undefined ? this.hd.get(hp.like) : null;
+              if (like) ['staff', 'notehead', 'limb', 'prov', 'inst', 'pos', 'stroke'].forEach(k => { if (like.h[k] !== undefined && nh[k] === undefined) nh[k] = JSON.parse(JSON.stringify(like.h[k])); });
+              return nh;
+            });
+          } else delete e.heads;
+          return { p: p, e: e, s: R.parse(p.at), en: R.add(R.parse(p.at), R.parse(p.dur)) };
+        });
+        item.seen = seen;
+        const keptHeads = new Set();
+        item.pieces.forEach(x => (x.e.heads || []).forEach(h => keptHeads.add(h.id)));
+        item.goneEvents = old.filter(e => !seen.has(e.id)).map(e => e.id);
+        item.goneHeads = [];
+        old.forEach(e => (e.heads || []).forEach(h => { if (!keptHeads.has(h.id)) item.goneHeads.push(h.id); }));
+        this.assertUnlinked(item.goneHeads);
+        /* the old events the plan retires or moves (another start or length) */
+        item.moved = new Set(item.goneEvents);
+        item.pieces.forEach(x => { const o = oldInfo.get(x.e.id); if (o && (!R.eq(o.s, x.s) || !R.eq(o.en, x.en))) item.moved.add(x.e.id); });
+        done.push(item);
       });
-      const keptHeads = new Set();
-      pieces.forEach(x => (x.e.heads || []).forEach(h => keptHeads.add(h.id)));
-      const goneEvents = old.filter(e => !seen.has(e.id)).map(e => e.id);
-      const goneHeads = [];
-      old.forEach(e => (e.heads || []).forEach(h => { if (!keptHeads.has(h.id)) goneHeads.push(h.id); }));
-      this.assertUnlinked(goneHeads);
       /* where an old event's start and end are now, and an old head's */
-      const covering = (w, atEnd) => pieces.find(x => atEnd ? (R.lt(x.s, w) && R.le(w, x.en)) : (R.le(x.s, w) && R.lt(w, x.en)));
-      const startEvent = id => { const o = oldInfo.get(id); const x = covering(o.s, false); return x ? x.e.id : undefined; };
-      const endEvent = id => { const o = oldInfo.get(id); const x = covering(o.en, true); return x ? x.e.id : undefined; };
+      const covering = (item, w, atEnd) => item.pieces.find(x => atEnd ? (R.lt(x.s, w) && R.le(w, x.en)) : (R.le(x.s, w) && R.lt(w, x.en)));
+      const startEvent = id => { const o = oldInfo.get(id); const x = covering(o.item, o.s, false); return x ? x.e.id : undefined; };
+      const endEvent = id => { const o = oldInfo.get(id); const x = covering(o.item, o.en, true); return x ? x.e.id : undefined; };
       const headAt = (hid, atEnd) => {
-        let o = null, midi = null;
-        oldInfo.forEach(info => info.heads.forEach(h => { if (h.id === hid) { o = info; midi = h.midi; } }));
+        const o = headItem.get(hid);
         if (!o) return hid;
-        const x = covering(atEnd ? o.en : o.s, atEnd);
+        const x = covering(o.item, atEnd ? o.info.en : o.info.s, atEnd);
         if (!x || !x.e.heads) return undefined;
-        const h = x.e.heads.find(y => (y.pitch ? P.midi(y.pitch) : y.inst) === midi);
+        const h = x.e.heads.find(y => (y.pitch ? P.midi(y.pitch) : y.inst) === o.midi);
         return h ? h.id : undefined;
       };
-      const oldHeadIds = new Set();
-      old.forEach(e => (e.heads || []).forEach(h => oldHeadIds.add(h.id)));
-      /* the old events the plan retires or moves (another start or length) */
-      const moved = new Set(goneEvents);
-      pieces.forEach(x => { const o = oldInfo.get(x.e.id); if (o && (!R.eq(o.s, x.s) || !R.eq(o.en, x.en))) moved.add(x.e.id); });
-      /* spanners */
-      const retiredSp = new Set();
-      part.spanners = part.spanners.filter(sp => {
-        if (sp.type === 'tie') {
-          const fIn = sp.from !== undefined && oldHeadIds.has(sp.from), tIn = sp.to !== undefined && oldHeadIds.has(sp.to);
-          if (fIn && tIn) { retiredSp.add(sp.id); return false; }
-          if (fIn) { const n = headAt(sp.from, true); if (n === undefined) { retiredSp.add(sp.id); return false; } sp.from = n; }
-          if (tIn) { const n = headAt(sp.to, false); if (n === undefined) { retiredSp.add(sp.id); return false; } sp.to = n; }
+      const moved = new Set();
+      items.forEach(item => item.moved.forEach(id => moved.add(id)));
+      const parts = Array.from(new Set(items.map(it => it.part)));
+      parts.forEach(part => {
+        /* spanners */
+        const retiredSp = new Set();
+        part.spanners = part.spanners.filter(sp => {
+          if (sp.type === 'tie') {
+            const fIn = sp.from !== undefined && headItem.has(sp.from), tIn = sp.to !== undefined && headItem.has(sp.to);
+            if (fIn && tIn && headItem.get(sp.from).item === headItem.get(sp.to).item) { retiredSp.add(sp.id); return false; }
+            if (fIn) { const n = headAt(sp.from, true); if (n === undefined) { retiredSp.add(sp.id); return false; } sp.from = n; }
+            if (tIn) { const n = headAt(sp.to, false); if (n === undefined) { retiredSp.add(sp.id); return false; } sp.to = n; }
+            return true;
+          }
+          if (sp.type === 'tuplet' || sp.type === 'beam') {
+            /* a group over events the plan keeps where they were stays; one over a moved or retired event goes */
+            if (sp.events.some(id => moved.has(id))) { retiredSp.add(sp.id); return false; }
+            return true;
+          }
+          if (sp.type === 'slur') {
+            if (sp.from !== undefined && oldInfo.has(sp.from)) sp.from = startEvent(sp.from);
+            if (sp.to !== undefined && oldInfo.has(sp.to)) sp.to = endEvent(sp.to);
+            if (sp.from === undefined && sp.to === undefined) { retiredSp.add(sp.id); return false; }
+            return true;
+          }
+          if (sp.type === 'arpeggio') { sp.heads = sp.heads.map(h => (headItem.has(h) ? headAt(h, false) : h)).filter(Boolean); return true; }
+          if (sp.type === 'gliss') {
+            if (headItem.has(sp.from)) sp.from = headAt(sp.from, true);
+            if (headItem.has(sp.to)) sp.to = headAt(sp.to, false);
+            return true;
+          }
           return true;
-        }
-        if (sp.type === 'tuplet' || sp.type === 'beam') {
-          /* a group over events the plan keeps where they were stays; one over a moved or retired event goes */
-          if (sp.events.some(id => moved.has(id))) { retiredSp.add(sp.id); return false; }
-          return true;
-        }
-        if (sp.type === 'slur') {
-          if (sp.from !== undefined && oldIds.has(sp.from)) sp.from = startEvent(sp.from);
-          if (sp.to !== undefined && oldIds.has(sp.to)) sp.to = endEvent(sp.to);
-          if (sp.from === undefined && sp.to === undefined) { retiredSp.add(sp.id); return false; }
-          return true;
-        }
-        if (sp.type === 'arpeggio') { sp.heads = sp.heads.map(h => (oldHeadIds.has(h) ? headAt(h, false) : h)).filter(Boolean); return true; }
-        if (sp.type === 'gliss') {
-          if (oldHeadIds.has(sp.from)) sp.from = headAt(sp.from, true);
-          if (oldHeadIds.has(sp.to)) sp.to = headAt(sp.to, false);
-          return true;
-        }
-        return true;
-      });
-      part.spanners.forEach(sp => { if (sp.type === 'tuplet' && retiredSp.has(sp.parent)) delete sp.parent; });
-      retiredSp.forEach(id => this.retire(id));
-      /* the plan's own ties */
-      const notes = pieces.filter(x => x.e.kind === 'note');
-      notes.forEach((x, i) => {
-        if (!x.p.tieNext) return;
-        const y = notes[i + 1];
-        if (!y || !R.eq(x.en, y.s)) throw new OpError('E-OP-TARGET', 'the plan ties ' + x.e.id + ' to nothing that starts where it ends');
-        x.e.heads.forEach(h => {
-          const to = y.e.heads.find(z => P.midi(z.pitch) === P.midi(h.pitch));
-          if (to) part.spanners.push({ id: this.newId('s'), type: 'tie', from: h.id, to: to.id });
         });
+        if (retiredSp.size) part.spanners.forEach(sp => { if (sp.type === 'tuplet' && retiredSp.has(sp.parent)) delete sp.parent; });
+        retiredSp.forEach(id => this.retire(id));
+        part.directions.forEach(d => { if (d.event !== undefined && oldInfo.has(d.event)) { const n = startEvent(d.event); if (n) d.event = n; else delete d.event; } });
+        /* the events */
+        const drop = new Set();
+        items.forEach(item => { if (item.part === part) item.goneEvents.forEach(id => drop.add(id)); });
+        if (drop.size) part.events = part.events.filter(e => !drop.has(e.id));
+        items.forEach(item => { if (item.part === part) item.pieces.forEach(x => { if (!item.seen.has(x.e.id)) part.events.push(x.e); }); });
       });
-      part.directions.forEach(d => { if (d.event !== undefined && oldIds.has(d.event)) { const n = startEvent(d.event); if (n) d.event = n; else delete d.event; } });
-      /* the events */
-      part.events = part.events.filter(e => !oldIds.has(e.id) || seen.has(e.id));
-      pieces.forEach(x => { if (!seen.has(x.e.id)) part.events.push(x.e); });
-      goneEvents.forEach(id => this.retire(id, startEvent(id)));
-      goneHeads.forEach(id => this.retire(id, headAt(id, false)));
+      /* the plans' own ties */
+      items.forEach(item => {
+        const notes = item.pieces.filter(x => x.e.kind === 'note');
+        notes.forEach((x, i) => {
+          if (!x.p.tieNext) return;
+          const y = notes[i + 1];
+          if (!y || !R.eq(x.en, y.s)) throw new OpError('E-OP-TARGET', 'the plan ties ' + x.e.id + ' to nothing that starts where it ends');
+          x.e.heads.forEach(h => {
+            const to = y.e.heads.find(z => P.midi(z.pitch) === P.midi(h.pitch));
+            if (to) item.part.spanners.push({ id: this.newId('s'), type: 'tie', from: h.id, to: to.id });
+          });
+        });
+        item.goneEvents.forEach(id => this.retire(id, startEvent(id)));
+        item.goneHeads.forEach(id => this.retire(id, headAt(id, false)));
+      });
       this.fixFlags();
       this.reindex();
       this.touch();
-      void mStart;
-      return pieces.map(x => x.e.id);
+      return items.map(item => item.pieces.map(x => x.e.id));
     }
 
     /* Move an event to another voice (and that voice's staff). Its ID and its heads' IDs stay. */
@@ -499,15 +582,18 @@
       const e = this.event(eventId);
       const st = staffId || this.voice(voiceId).staff;
       if (e.voice === voiceId && e.staff === st) return;
+      const oldKey = this.vmKey(e);
       e.voice = voiceId; e.staff = st;
       (e.heads || []).forEach(h => { if (h.staff === st) delete h.staff; });
+      this.vmRemove(e, oldKey); this.vmAdd(e);
       const part = this.partOfEvent(eventId);
       /* a tuplet or beam may not span two voices: the event leaves them (their pass groups it again) */
-      part.spanners = part.spanners.filter(sp => {
-        if ((sp.type === 'tuplet' || sp.type === 'beam') && sp.events.indexOf(eventId) >= 0) { this.retire(sp.id); return false; }
-        return true;
-      });
-      this.reindex();
+      if (part.spanners.some(sp => (sp.type === 'tuplet' || sp.type === 'beam') && sp.events.indexOf(eventId) >= 0)) {
+        part.spanners = part.spanners.filter(sp => {
+          if ((sp.type === 'tuplet' || sp.type === 'beam') && sp.events.indexOf(eventId) >= 0) { this.retire(sp.id); return false; }
+          return true;
+        });
+      }
       this.touch();
     }
 
@@ -526,7 +612,7 @@
       moving.forEach(h => { if (h.staff === st) delete h.staff; });
       e.heads = e.heads.filter(h => !move.has(h.id));
       part.events.push(ne);
-      this.reindex();
+      this.indexEvent(ne, part);
       this.touch();
       return ne.id;
     }
@@ -546,7 +632,10 @@
       moving.forEach(h => { if (h.staff === b.staff) delete h.staff; });
       b.heads = b.heads.concat(moving);
       a.heads = a.heads.filter(h => !move.has(h.id));
+      moving.forEach(h => this.hd.set(h.id, { h: h, e: b, part: part }));
       if (!a.heads.length) {
+        this.vmRemove(a);
+        this.ev.delete(a.id);
         part.events = part.events.filter(e => e.id !== a.id);
         part.spanners.forEach(sp => {
           if (sp.type === 'slur') { if (sp.from === a.id) sp.from = b.id; if (sp.to === a.id) sp.to = b.id; }
@@ -556,13 +645,23 @@
         this.dropEmptySpanners(part);
         this.retire(a.id, b.id);
       }
-      this.reindex();
       this.touch();
     }
 
     /* The rests of a voice in a measure, again: every stretch no note of the voice covers becomes rests (each piece
        from restPieces(from, to) -> [{at, dur, display}]); rest IDs are reused in time order. Notes may not overlap. */
-    refillRests(voiceId, m, restPieces) {
+    refillRests(voiceId, m, restPieces) { return this.refillRestsBatch([{ voice: voiceId, m: m, restPieces: restPieces }]); }
+    /* Many voice-measures at once (one retime for all of them): items [{voice, m, restPieces}]; it.changed says
+       whether an item's rests changed. */
+    refillRestsBatch(items) {
+      const plans = [];
+      items.forEach(it => { const plan = this.restPlan(it.voice, it.m, it.restPieces); it.changed = !!plan; if (plan) plans.push({ voice: it.voice, m: it.m, plan: plan }); });
+      if (!plans.length) return false;
+      this.retimeBatch(plans);
+      return true;
+    }
+    /* the plan refillRests would give a voice-measure, or null when it would change nothing */
+    restPlan(voiceId, m, restPieces) {
       const evs = this.voiceMeasure(voiceId, m);
       const notes = evs.filter(e => e.kind !== 'rest'), rests = evs.filter(e => e.kind === 'rest');
       const mdur = R.parse(this.doc.timeline.measures[this.mIdx.get(m)].dur);
@@ -596,25 +695,23 @@
       plan.forEach(p => { if (p.kind === 'rest' && p.reuse === undefined && spare.length) p.reuse = spare.shift(); });
       const before = JSON.stringify(evs.map(e => [e.id, e.kind, e.at, e.dur, e.display]));
       const after = JSON.stringify(plan.map(p => [p.reuse, p.kind, p.at, p.dur, p.display]));
-      if (before === after) return false;
-      this.retimeVoiceMeasure(voiceId, m, plan);
-      return true;
+      return before === after ? null : plan;
     }
     /* a plan entry that keeps an event exactly as it is */
     keepPlan(e) {
       const p = { reuse: e.id, kind: e.kind, at: e.at, dur: e.dur, display: e.display, arts: e.arts, orn: e.orn, fermata: e.fermata, lyrics: e.lyrics, hidden: e.hidden };
       if (e.heads) p.heads = e.heads.map(h => ({ reuse: h.id }));
-      const part = this.partOfEvent(e.id);
-      p.tieNext = e.kind === 'note' && part.spanners.some(sp => sp.type === 'tie' && sp.to !== undefined && e.heads.some(h => h.id === sp.from) &&
-        this.hd.has(sp.to) && this.hd.get(sp.to).e.voice === e.voice && this.hd.get(sp.to).e.m === e.m);
+      const ties = this.ties();
+      p.tieNext = e.kind === 'note' && e.heads.some(h => { const to = ties.get(h.id); const x = to !== undefined && this.hd.get(to); return !!x && x.e.voice === e.voice && x.e.m === e.m; });
       return p;
     }
     /* Remove an event (a whole-measure rest a voice no longer needs). */
-    removeEvent(eventId) {
-      const e = this.event(eventId);
-      const idMap = this.idMap;
-      dropEvents(this.doc, [eventId], idMap, []);
-      void e;
+    removeEvent(eventId) { this.removeEvents([eventId]); }
+    /* Remove events, in one sweep. */
+    removeEvents(ids) {
+      if (!ids.length) return;
+      ids.forEach(id => this.event(id));
+      dropEvents(this.doc, ids, this.idMap, []);
       this.reindex();
       this.touch();
     }
@@ -624,7 +721,7 @@
       const v = { id: this.newId('v'), staff: staffId };
       if (label !== undefined) v.label = label;
       part.voices.push(v);
-      this.reindex();
+      this.vc.set(v.id, { v: v, part: part });
       this.touch();
       return v.id;
     }
@@ -633,7 +730,7 @@
       const e = Object.assign({ id: this.newId('e') }, JSON.parse(JSON.stringify(x)));
       if (e.heads) e.heads = e.heads.map(h => Object.assign({ id: this.newId('h') }, h));
       part.events.push(e);
-      this.reindex();
+      this.indexEvent(e, part);
       this.touch();
       return e.id;
     }
@@ -641,13 +738,44 @@
     /* The tuplets of a voice in a measure (G03 §7): groups [{events, actual, normal, unit?, printed?, show?}]. A
        spanner whose members are the same events keeps its ID (§5.5); the rest are retired or new. Returns whether
        anything changed. Only spanners wholly inside the voice-measure are touched. */
-    setTuplets(voiceId, m, groups) { return this.setGroups('tuplet', voiceId, m, groups, ['actual', 'normal', 'unit', 'parent', 'show', 'printed']); }
+    setTuplets(voiceId, m, groups) { return this.setGroupsBatch('tuplet', [{ voice: voiceId, m: m, groups: groups }]); }
     /* The beams of a voice in a measure (G03 §11): groups [{events, breaks?}]. Same rules. */
-    setBeams(voiceId, m, groups) { return this.setGroups('beam', voiceId, m, groups, ['breaks']); }
-    setGroups(type, voiceId, m, groups, fields) {
-      const part = this.partOfVoice(voiceId);
-      const inside = new Set(part.events.filter(e => e.voice === voiceId && e.m === m).map(e => e.id));
-      const current = part.spanners.filter(sp => sp.type === type && sp.events.length && sp.events.every(id => inside.has(id)));
+    setBeams(voiceId, m, groups) { return this.setGroupsBatch('beam', [{ voice: voiceId, m: m, groups: groups }]); }
+    /* Many voice-measures at once: items [{voice, m, groups}]; one sweep over each part's spanners. */
+    setGroupsBatch(type, items) {
+      const fields = type === 'tuplet' ? ['actual', 'normal', 'unit', 'parent', 'show', 'printed'] : ['breaks'];
+      let changed = false;
+      const byPart = new Map();
+      items.forEach(it => {
+        const part = this.partOfVoice(it.voice);
+        if (!byPart.has(part)) byPart.set(part, []);
+        byPart.get(part).push(it);
+      });
+      byPart.forEach((list, part) => {
+        /* the voice-measure every event is in, for the items of this part */
+        const vmOf = new Map();
+        const itemOf = new Map(list.map((it, i) => [it.voice + '|' + it.m, i]));
+        part.events.forEach(e => { const i = itemOf.get(e.voice + '|' + e.m); if (i !== undefined) vmOf.set(e.id, i); });
+        const current = list.map(() => []);
+        part.spanners.forEach(sp => {
+          if (sp.type !== type || !sp.events.length) return;
+          const i = vmOf.get(sp.events[0]);
+          if (i !== undefined && sp.events.every(id => vmOf.get(id) === i)) current[i].push(sp);
+        });
+        const drop = new Set();
+        /* it.changed: whether this voice-measure's groups changed */
+        list.forEach((it, i) => { it.changed = this.setGroupsIn(type, part, current[i], it.groups, fields, drop); if (it.changed) changed = true; });
+        if (drop.size) {
+          part.spanners = part.spanners.filter(sp => !drop.has(sp.id));
+          part.spanners.forEach(sp => { if (sp.type === 'tuplet' && drop.has(sp.parent)) delete sp.parent; });
+          drop.forEach(id => this.retire(id));
+          changed = true;
+        }
+      });
+      if (changed) this.touch();
+      return changed;
+    }
+    setGroupsIn(type, part, current, groups, fields, drop) {
       const key = evs => evs.join(',');
       const byKey = new Map(current.map(sp => [key(sp.events), sp]));
       let changed = false;
@@ -670,15 +798,7 @@
           changed = true;
         }
       });
-      const drop = current.filter(sp => !keep.has(sp.id));
-      if (drop.length) {
-        const ids = new Set(drop.map(sp => sp.id));
-        part.spanners = part.spanners.filter(sp => !ids.has(sp.id));
-        part.spanners.forEach(sp => { if (sp.type === 'tuplet' && ids.has(sp.parent)) delete sp.parent; });
-        drop.forEach(sp => this.retire(sp.id));
-        changed = true;
-      }
-      if (changed) this.touch();
+      current.forEach(sp => { if (!keep.has(sp.id)) { drop.add(sp.id); changed = true; } });
       return changed;
     }
 
@@ -771,10 +891,12 @@
     /* The performance layer never changes: a head it links to may not go (G03 I5, R4). */
     assertUnlinked(headIds) {
       if (!headIds.length) return;
-      const gone = new Set(headIds);
-      (this.doc.performances || []).forEach(pf => pf.notes.forEach(pn => {
-        if (pn.link !== undefined && gone.has(pn.link)) throw new OpError('E-OP-TARGET', 'head ' + pn.link + ' is linked from performance note ' + pn.id + ' and may not be retired');
-      }));
+      if (!this.linked) {
+        /* the performance layer never changes: its links are read once */
+        this.linked = new Map();
+        (this.doc.performances || []).forEach(pf => pf.notes.forEach(pn => { if (pn.link !== undefined) this.linked.set(pn.link, pn.id); }));
+      }
+      headIds.forEach(h => { if (this.linked.has(h)) throw new OpError('E-OP-TARGET', 'head ' + h + ' is linked from performance note ' + this.linked.get(h) + ' and may not be retired'); });
     }
     dropEmptySpanners(part) {
       part.spanners = part.spanners.filter(sp => {
@@ -802,7 +924,7 @@
     if (!d.changed) return { graph: g, idMap: {}, issues: [], changed: false, result: out };
     d.doc.rev = (d.doc.rev || 0) + 1;
     if (opts.validate === false) {
-      const graph = Z.deepFreeze(Z.canonicalize(d.doc));
+      const graph = Z.deepFreeze(Z.canonicalize(d.doc, { reuse: v => d.unchanged(v) }));
       return { graph: graph, idMap: d.idMap, issues: [], changed: true, result: out };
     }
     try {

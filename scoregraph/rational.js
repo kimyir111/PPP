@@ -97,8 +97,18 @@
   function toNumber(a) { return a.n / a.d; }
 
   /* ----------------------------------------------------------- text form */
+  /* check's answers, per text (a score repeats the same few values) */
+  const CHECKED = new Map();
   function check(text) {
     if (typeof text !== 'string') return 'is not a string';
+    const known = CHECKED.get(text);
+    if (known !== undefined) return known;
+    if (CHECKED.size > 50000) CHECKED.clear();
+    const why = checkFresh(text);
+    CHECKED.set(text, why);
+    return why;
+  }
+  function checkFresh(text) {
     const m = RAT_RE.exec(text);
     if (!m) return 'is not of the form n or n/d';
     const n = Number(m[1]), d = m[2] ? Number(m[2].slice(1)) : 1;

@@ -42,7 +42,7 @@
   const END_ARTS = ['tenuto', 'breath-mark', 'caesura'];
 
   /* The sounding notes of a part: every head that no tie enters starts one, its length runs through the ties. */
-  function soundOf(g, part, starts) {
+  function soundOf(g, part, starts, posOf) {
     const evOfHead = new Map(), tieOut = new Map(), tieIn = new Set();
     part.events.forEach(e => (e.heads || []).forEach(h => evOfHead.set(h.id, e)));
     part.spanners.forEach(s => { if (s.type === 'tie' && s.from !== undefined && s.to !== undefined) { tieOut.set(s.from, s.to); tieIn.add(s.to); } });
@@ -53,21 +53,23 @@
         if (tieIn.has(h.id)) return;
         let len = R.parse(e.dur), cur = h.id, guard = 0;
         while (tieOut.has(cur) && guard++ < 10000) { cur = tieOut.get(cur); const x = evOfHead.get(cur); if (!x) break; len = R.add(len, R.parse(x.dur)); }
-        out.push({ e: e, h: h, on: R.add(starts.get(e.m), R.parse(e.at)), len: len, midi: P.midi(h.pitch) });
+        out.push({ e: e, h: h, on: posOf ? posOf(e.m, e.at) : R.add(starts.get(e.m), R.parse(e.at)), len: len, midi: P.midi(h.pitch) });
       });
     });
     return out;
   }
 
   /* Every note event -> the span of the tied note it is a piece of (its first head's tie chain): {s, en} in W. */
-  function chains(part, starts) {
+  function chains(part, starts, posOf) {
     const evOfHead = new Map(), tieOut = new Map(), tieIn = new Map();
     part.events.forEach(e => (e.heads || []).forEach(h => evOfHead.set(h.id, e)));
     part.spanners.forEach(s => { if (s.type === 'tie' && s.from !== undefined && s.to !== undefined) { tieOut.set(s.from, s.to); tieIn.set(s.to, s.from); } });
     const out = new Map();
-    const w = e => R.add(starts.get(e.m), R.parse(e.at));
+    const w = e => (posOf ? posOf(e.m, e.at) : R.add(starts.get(e.m), R.parse(e.at)));
     part.events.forEach(e => {
       if (e.kind !== 'note' || !e.heads || !e.heads.length || e.grace) return;
+      /* an untied note is its own span */
+      if (!tieIn.has(e.heads[0].id) && !tieOut.has(e.heads[0].id)) { out.set(e.id, { s: w(e), en: R.add(w(e), R.parse(e.dur)) }); return; }
       let h = e.heads[0].id, first = e, last = e, k = 0;
       while (tieIn.has(h) && k++ < 10000) { h = tieIn.get(h); first = evOfHead.get(h) || first; }
       h = e.heads[0].id; k = 0;
@@ -77,27 +79,54 @@
     return out;
   }
 
+  /* An event's own entries: [component, value, component, value, ...] (all keyed by its measure). */
+  const EVENT_ITEMS = new WeakMap();
+  function eventItems(e, posOf, F) {
+    const out = [];
+    const put = (c, val) => { out.push(c, val); };
+    put('pieces', [e.voice, e.kind, e.at, e.dur, JSON.stringify(e.display || {}), e.grace ? 'g' : ''].join('|'));
+    (e.heads || []).forEach(h => {
+      if (h.acc) put('acc', [e.at, h.pitch ? P.midi(h.pitch) : h.inst, JSON.stringify(h.acc)].join('|'));
+      (h.fingering || []).forEach(fg => put('marks', ['fingering', e.at, h.pitch ? P.midi(h.pitch) : '', JSON.stringify(fg)].join('|')));
+    });
+    /* an onset mark sits where its note starts; a mark about the note's length or end (tenuto, breath mark,
+       caesura, fermata) where it ends, so splitting a note and moving the mark to the last piece keeps it (§12.2) */
+    if (e.arts || e.orn || e.fermata || e.lyrics) {
+      const onW = F(posOf(e.m, e.at)), endW = F(R.add(posOf(e.m, e.at), R.parse(e.dur)));
+      (e.arts || []).forEach(a => put('marks', ['art', a, END_ARTS.indexOf(a) >= 0 ? 'end ' + endW : onW].join('|')));
+      (e.orn || []).forEach(o => put('marks', ['orn', JSON.stringify(o), onW].join('|')));
+      if (e.fermata) put('marks', ['fermata', 'end ' + endW, JSON.stringify(e.fermata)].join('|'));
+      (e.lyrics || []).forEach(l => put('marks', ['lyric', JSON.stringify(l), onW].join('|')));
+    }
+    return out;
+  }
+
   /* A fingerprint: component -> {key -> value} where key names what the value belongs to (a measure when it can). */
   function fingerprint(g) {
     const starts = new Map();
     let acc = R.ZERO;
     g.timeline.measures.forEach(m => { starts.set(m.id, acc); acc = R.add(acc, R.parse(m.dur)); });
+    /* a position (measure, offset) in W, and as text, read once each (a score repeats the same offsets) */
+    const posCache = new Map(), textCache = new Map();
+    const posOf = (m, at) => { const k = m + '@' + at; let v = posCache.get(k); if (!v) { v = R.add(starts.get(m), R.parse(at)); posCache.set(k, v); } return v; };
+    const F = r => { const k = r.n + '/' + r.d; let v = textCache.get(k); if (v === undefined) { v = R.format(r); textCache.set(k, v); } return v; };
     const fp = {};
     COMPONENTS.forEach(c => { fp[c] = new Map(); });
-    const put = (c, key, val) => { const m = fp[c]; m.set(key, (m.has(key) ? m.get(key) + '\n' : '') + val); };
+    const put = (c, key, val) => { const m = fp[c]; const prev = m.get(key); m.set(key, prev === undefined ? val : prev + '\n' + val); };
     g.parts.forEach(part => {
-      soundOf(g, part, starts).forEach(n => {
+      soundOf(g, part, starts, posOf).forEach(n => {
         const k = n.e.m;
-        put('sound', k, [part.id, F(n.on), n.midi, F(n.len)].join('|'));
-        put('onsets', k, [part.id, F(n.on), n.midi].join('|'));
-        put('place', k, [F(n.on), n.midi, n.e.staff, n.e.voice].join('|'));
-        put('spelling', k, [F(n.on), n.midi, n.h.pitch.step, n.h.pitch.alter || 0, n.h.pitch.oct].join('|'));
+        const on = F(n.on);
+        put('sound', k, part.id + '|' + on + '|' + n.midi + '|' + F(n.len));
+        put('onsets', k, part.id + '|' + on + '|' + n.midi);
+        put('place', k, on + '|' + n.midi + '|' + n.e.staff + '|' + n.e.voice);
+        put('spelling', k, on + '|' + n.midi + '|' + n.h.pitch.step + '|' + (n.h.pitch.alter || 0) + '|' + n.h.pitch.oct);
       });
       /* rests per voice as merged intervals */
       const byVoice = new Map();
       part.events.forEach(e => {
         if (e.kind !== 'rest' || e.grace) return;
-        const s = R.add(starts.get(e.m), R.parse(e.at));
+        const s = posOf(e.m, e.at);
         if (!byVoice.has(e.voice)) byVoice.set(e.voice, []);
         byVoice.get(e.voice).push([s, R.add(s, R.parse(e.dur)), e.m]);
       });
@@ -109,27 +138,25 @@
       });
       part.events.forEach(e => {
         const k = e.m;
-        put('pieces', k, [e.voice, e.kind, e.at, e.dur, JSON.stringify(e.display || {}), e.grace ? 'g' : ''].join('|'));
-        (e.heads || []).forEach(h => {
-          if (h.acc) put('acc', k, [e.at, h.pitch ? P.midi(h.pitch) : h.inst, JSON.stringify(h.acc)].join('|'));
-          (h.fingering || []).forEach(fg => put('marks', k, ['fingering', e.at, h.pitch ? P.midi(h.pitch) : '', JSON.stringify(fg)].join('|')));
-        });
-        /* an onset mark sits where its note starts; a mark about the note's length or end (tenuto, breath mark,
-           caesura, fermata) where it ends, so splitting a note and moving the mark to the last piece keeps it (§12.2) */
-        const onW = F(R.add(starts.get(e.m), R.parse(e.at))), endW = F(R.add(R.add(starts.get(e.m), R.parse(e.at)), R.parse(e.dur)));
-        (e.arts || []).forEach(a => put('marks', k, ['art', a, END_ARTS.indexOf(a) >= 0 ? 'end ' + endW : onW].join('|')));
-        (e.orn || []).forEach(o => put('marks', k, ['orn', JSON.stringify(o), onW].join('|')));
-        if (e.fermata) put('marks', k, ['fermata', 'end ' + endW, JSON.stringify(e.fermata)].join('|'));
-        (e.lyrics || []).forEach(l => put('marks', k, ['lyric', JSON.stringify(l), F(R.add(starts.get(e.m), R.parse(e.at)))].join('|')));
+        /* what an event gives depends on it and where its measure starts: a frozen event (the same object from one
+           graph to the next when an edit left it alone) is read once */
+        const startW = F(starts.get(k));
+        let items = Object.isFrozen(e) ? EVENT_ITEMS.get(e) : undefined;
+        if (!items || items.startW !== startW) {
+          items = eventItems(e, posOf, F);
+          items.startW = startW;
+          if (Object.isFrozen(e)) EVENT_ITEMS.set(e, items);
+        }
+        for (let i = 0; i < items.length; i += 2) put(items[i], k, items[i + 1]);
       });
       const evById = new Map(part.events.map(e => [e.id, e]));
-      const evW = id => { const e = evById.get(id); return e ? F(R.add(starts.get(e.m), R.parse(e.at))) : '?'; };
+      const evW = id => { const e = evById.get(id); return e ? F(posOf(e.m, e.at)) : '?'; };
       /* a slur's ends are the sounding notes it joins: where the tied note it starts on begins, where the tied note it
          ends on stops (G03 §12.2: splitting or merging the pieces of a tied note does not move a slur) */
-      const chainOf = chains(part, starts);
+      const chainOf = chains(part, starts, posOf);
       const noteStartW = id => { const c = chainOf.get(id); return c ? F(c.s) : evW(id); };
       const noteEndW = id => { const c = chainOf.get(id); return c ? F(c.en) : '?'; };
-      const posW = p => (p ? F(R.add(starts.get(p.m), R.parse(p.at))) : '-');
+      const posW = p => (p ? F(posOf(p.m, p.at)) : '-');
       const mOfEv = id => { const e = evById.get(id); return e ? e.m : 'global'; };
       part.spanners.forEach(s => {
         if (s.type === 'tuplet') put('tuplets', mOfEv(s.events[0]), [s.events.map(evW).join(','), s.events.map(id => (evById.get(id) || {}).voice).join(','), s.actual, s.normal, JSON.stringify(s.unit || null), s.printed === false ? 'hidden' : ''].join('|'));
@@ -160,14 +187,11 @@
     const out = [];
     (comps || COMPONENTS).forEach(c => {
       if (c === 'errors') return;
-      const keys = new Set(Array.from(a[c].keys()).concat(Array.from(b[c].keys())));
+      const A = a[c], B = b[c];
       const where = [];
-      keys.forEach(k => {
-        const x = a[c].get(k), y = b[c].get(k);
-        if (x === y) return;
-        if (x !== undefined && y !== undefined && x.split('\n').sort().join('\n') === y.split('\n').sort().join('\n')) return;
-        where.push(k);
-      });
+      const same = (x, y) => x === y || (x !== undefined && y !== undefined && x.length === y.length && x.split('\n').sort().join('\n') === y.split('\n').sort().join('\n'));
+      A.forEach((x, k) => { if (!same(x, B.get(k))) where.push(k); });
+      B.forEach((y, k) => { if (!A.has(k)) where.push(k); });
       if (where.length) out.push({ component: c, where: where.sort() });
     });
     return out;
@@ -190,8 +214,10 @@
   function validation(g, input) {
     const res = V.validate(g);
     const errors = res.issues.filter(i => i.severity === 'ERROR');
-    const before = new Set((input ? V.validate(input).issues : []).map(issueKey));
-    const bad = res.issues.filter(i => G3_WARNINGS.indexOf(i.code) >= 0 && !before.has(issueKey(i)));
+    /* the input is read only when the result has a G3 warning at all */
+    const mine = res.issues.filter(i => G3_WARNINGS.indexOf(i.code) >= 0);
+    const before = new Set((input && mine.length ? V.validate(input).issues : []).map(issueKey));
+    const bad = mine.filter(i => !before.has(issueKey(i)));
     return { errors: errors, g3warnings: bad, issues: res.issues };
   }
 

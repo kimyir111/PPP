@@ -136,7 +136,23 @@
   /* ------------------------------------------------------------ the DP */
   /* The cheapest writing of [s, e) (one stretch of one region kind), pieces after the first tied (notes) or not.
      Returns {cost, syms: [{s, e, type, dots, tuplet}]} or null when nothing fits. */
+  /* write() depends on the grid only through its metre and pickup: its answers are kept per grid signature (a score
+     repeats the same stretches measure after measure) */
+  const SIGS = new WeakMap(), WRITES = new Map();
+  const sigOf = gr => {
+    if (!SIGS.has(gr)) SIGS.set(gr, JSON.stringify([gr.n, gr.beatType, gr.compound, gr.additive, gr.sub, gr.beats, gr.groups, gr.nomU, gr.durU, gr.off]));
+    return SIGS.get(gr);
+  };
   function write(gr, reg, s, e, kind, firstTied) {
+    const key = sigOf(gr) + '|' + reg.kind + '|' + reg.s + '|' + reg.e + '|' + s + '|' + e + '|' + kind + '|' + !!firstTied;
+    if (!WRITES.has(key)) {
+      if (WRITES.size > 100000) WRITES.clear();
+      WRITES.set(key, writeFresh(gr, reg, s, e, kind, firstTied));
+    }
+    const w = WRITES.get(key);
+    return w && { cost: w.cost, syms: w.syms.map(x => Object.assign({}, x)) };
+  }
+  function writeFresh(gr, reg, s, e, kind, firstTied) {
     const step = reg.kind === 'triplet' ? TRI_STEP : BIN_STEP;
     /* inside a triplet region every value is shorter than the region (a value filling it would be binary) */
     const syms = reg.kind === 'triplet' ? TRIPLET.filter(t => t.len < reg.e - reg.s) : MG.BINARY;
@@ -249,6 +265,7 @@
     run(g, ctx) {
       const changes = [];
       const res = O.edit(g, d => {
+        const batch = [];
         g.parts.forEach(part => {
           const tieOut = new Map(), tieIn = new Map(), evOfHead = new Map();
           part.events.forEach(e => (e.heads || []).forEach(h => evOfHead.set(h.id, e)));
@@ -309,10 +326,14 @@
             });
             if (frozen.length || stuck) ctx.issue('N-RHYTHM-UNREPRESENTABLE', stuck + ' segment(s) of voice ' + vm.voice + ' kept as written: a boundary is on no binary or triplet grid', { m: vm.m, voice: vm.voice });
             if (!changed) return;
-            const ids = d.retimeVoiceMeasure(vm.voice, vm.m, plan);
-            ids.forEach((id, i) => { if (plan[i].g3) d.markProv(d.event(id), ['rhythm', 'display']); });
-            changes.push({ pass: 'rhythm', kind: 'retime', ids: ids, m: vm.m });
+            batch.push({ voice: vm.voice, m: vm.m, plan: plan });
           });
+        });
+        /* every rewritten voice-measure in one sweep (ops retimeBatch) */
+        const out = d.retimeBatch(batch);
+        batch.forEach((it, k) => {
+          out[k].forEach((id, i) => { if (it.plan[i].g3) d.markProv(d.event(id), ['rhythm', 'display']); });
+          changes.push({ pass: 'rhythm', kind: 'retime', ids: out[k], m: it.m });
         });
       }, { validate: false, source: ctx.source });
       return { graph: res.graph, idMap: res.idMap, changes: changes };

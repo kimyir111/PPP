@@ -247,15 +247,26 @@
       second[st] = found ? found.id : d.addVoice(st, label, d.partOfVoice(primary(st)));
       return second[st];
     };
-    /* where each voice has notes: [s, e) ScorePos intervals, updated as notes arrive */
+    /* where each voice has notes, per measure (an event never leaves its measure): [s, e) ScorePos intervals, updated
+       as notes arrive */
     const busy = new Map();
     const W0 = e => R.add(d.mStart.get(e.m), R.parse(e.at));
     const span = e => [W0(e), R.add(W0(e), R.parse(e.dur))];
-    const noteSpans = v => {
-      if (!busy.has(v)) busy.set(v, d.doc.parts.find(p => p === d.partOfVoice(v)).events.filter(e => e.voice === v && e.kind === 'note' && !e.grace).map(e => ({ id: e.id, s: span(e) })));
-      return busy.get(v);
+    const noteSpans = (v, m) => {
+      if (!busy.has(v)) {
+        const byM = new Map();
+        d.doc.parts.find(p => p === d.partOfVoice(v)).events.forEach(e => {
+          if (e.voice !== v || e.kind !== 'note' || e.grace) return;
+          if (!byM.has(e.m)) byM.set(e.m, []);
+          byM.get(e.m).push({ id: e.id, s: span(e) });
+        });
+        busy.set(v, byM);
+      }
+      const byM = busy.get(v);
+      if (!byM.has(m)) byM.set(m, []);
+      return byM.get(m);
     };
-    const overlaps = (v, sp, self) => noteSpans(v).some(x => x.id !== self && R.lt(x.s[0], sp[1]) && R.lt(sp[0], x.s[1]));
+    const overlaps = (v, m, sp, self) => noteSpans(v, m).some(x => x.id !== self && R.lt(x.s[0], sp[1]) && R.lt(sp[0], x.s[1]));
     Array.from(byEvent.values()).sort((a, b) => R.cmp(W0(a.e), W0(b.e)) || (a.e.id < b.e.id ? -1 : 1)).forEach(mv => {
       const e = d.event(mv.e.id);
       const all = mv.heads.length === e.heads.length;
@@ -270,7 +281,7 @@
         const from = e.voice;
         const all = mv.heads.length === e.heads.length;
         d.joinHeads(e.id, mv.heads, mate.id);
-        if (all) { const left = noteSpans(from), i = left.findIndex(x => x.id === e.id); if (i >= 0) left.splice(i, 1); }
+        if (all) { const left = noteSpans(from, e.m), i = left.findIndex(x => x.id === e.id); if (i >= 0) left.splice(i, 1); }
         d.markProv(d.event(mate.id), ['staff']);
         touched.add(from + '|' + e.m); touched.add(v + '|' + e.m);
         changes.push({ pass: 'staff', kind: 'join', ids: [mate.id], m: e.m });
@@ -278,35 +289,32 @@
       }
       /* a triplet note among plain notes of the voice's beat (or a plain one among triplets) could not be grouped
          there: it goes to the second voice, where it has the beat to itself */
-      if (overlaps(v, sp, all ? e.id : null) || clashes(d, v, e)) v = secondVoice(mv.to);
-      if (overlaps(v, sp, all ? e.id : null)) { ctx.issue('N-HAND-OVERLAP', 'a note at ' + e.m + '@' + e.at + ' would overlap both voices of the other staff: left where it is', { m: e.m }); return; }
+      if (overlaps(v, e.m, sp, all ? e.id : null) || clashes(d, v, e)) v = secondVoice(mv.to);
+      if (overlaps(v, e.m, sp, all ? e.id : null)) { ctx.issue('N-HAND-OVERLAP', 'a note at ' + e.m + '@' + e.at + ' would overlap both voices of the other staff: left where it is', { m: e.m }); return; }
       const from = e.voice;
       let id;
       if (all) {
         d.moveEvent(e.id, v, mv.to);
         id = e.id;
-        const left = noteSpans(from), i = left.findIndex(x => x.id === e.id);
+        const left = noteSpans(from, e.m), i = left.findIndex(x => x.id === e.id);
         if (i >= 0) left.splice(i, 1);
       } else id = d.moveHeads(e.id, mv.heads, v, mv.to);
-      noteSpans(v).push({ id: id, s: sp });
+      noteSpans(v, e.m).push({ id: id, s: sp });
       d.markProv(d.event(id), ['staff']);
       touched.add(from + '|' + e.m); touched.add(v + '|' + e.m);
       changes.push({ pass: 'staff', kind: all ? 'move' : 'split', ids: [id], m: e.m });
     });
-    /* the rests of every voice-measure a note left or arrived in */
+    /* the rests of every voice-measure a note left or arrived in (one sweep for all of them) */
+    const drop = [], refill = [];
     Array.from(touched).sort().forEach(k => {
       const [v, m] = k.split('|');
       const isSecond = !part.voices.some(x => x.id === v && (x.label === '1' || x.label === '5'));
       const has = d.voiceMeasure(v, m).some(e => e.kind === 'note');
-      if (isSecond && !has) { d.voiceMeasure(v, m).forEach(e => d.removeEvent(e.id)); return; }
-      d.refillRests(v, m, (a, b) => restPieces(d, m, a, b));
-      if (!has && !isSecond && !d.voiceMeasure(v, m).length) {
-        /* a first voice left with nothing: one whole-measure rest */
-        const mdur = d.doc.timeline.measures[d.mIdx.get(m)].dur;
-        d.addEvent(d.partOfVoice(v), { kind: 'rest', m: m, at: '0', dur: mdur, voice: v, staff: d.voice(v).staff,
-          display: Object.assign(valueOf(R.parse(mdur)), { measureRest: true }) });
-      }
+      if (isSecond && !has) { d.voiceMeasure(v, m).forEach(e => drop.push(e.id)); return; }
+      refill.push({ voice: v, m: m, restPieces: (a, b) => restPieces(d, m, a, b) });
     });
+    d.removeEvents(drop);
+    d.refillRestsBatch(refill);
   }
 
   /* Would an event sit in a beat of a voice where the other notes are of the other kind (triplet against plain)? */
@@ -328,7 +336,10 @@
      that fit, every rest printed as what it lasts (a triplet length as its triplet value, which P5 then groups).
      R-repr rewrites them afterwards; this only has to be a right start. */
   function restPieces(d, m, a, b) {
-    const gr = MG.grid(d.doc, m);
+    /* the timeline never changes in a G3 draft: one grid per measure, read from the frozen input (its lookups are cached) */
+    if (!d.gridCache) d.gridCache = new Map();
+    if (!d.gridCache.has(m)) d.gridCache.set(m, MG.grid(d.g0, m));
+    const gr = d.gridCache.get(m);
     const A = MG.toU(a), B = MG.toU(b);
     if (!gr || A === null || B === null) return [{ at: a, dur: R.format(R.sub(R.parse(b), R.parse(a))), display: valueOf(R.sub(R.parse(b), R.parse(a))) }];
     const bounds = gr.beats.map(x => x - gr.off).filter(x => x > A && x < B).concat([B]);
@@ -379,9 +390,14 @@
          turned by this pass on an earlier run: then the stretch it covers is read against the staff's own) */
       const home = st.limb === 'RH' ? 'G' : st.limb === 'LH' ? 'F' : own[0].sign, other = home === 'G' ? 'F' : 'G';
       if (own[0].sign !== home) return;
+      const byM = new Map();
+      part.events.forEach(e => {
+        if (e.staff !== st.id || e.kind !== 'note' || e.grace) return;
+        if (!byM.has(e.m)) byM.set(e.m, []);
+        e.heads.forEach(h => { if (h.pitch && (!h.staff || h.staff === st.id)) byM.get(e.m).push(h); });
+      });
       const far = ms.map(m => {
-        const heads = [];
-        part.events.forEach(e => { if (e.m === m.id && e.staff === st.id && e.kind === 'note' && !e.grace) e.heads.forEach(h => { if (h.pitch && (!h.staff || h.staff === st.id)) heads.push(h); }); });
+        const heads = byM.get(m.id) || [];
         return heads.length > 0 && !ctx.skip.has(m.id) && heads.every(h => ledgers(h.pitch, home) >= W.LEDGER_MIN && ledgers(h.pitch, other) < ledgers(h.pitch, home));
       });
       for (let i = 0; i < ms.length;) {
