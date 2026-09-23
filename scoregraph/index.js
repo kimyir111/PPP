@@ -8,7 +8,8 @@
 
    Browser order: rational, schema, pitch, time, serialize, validate, build,
    prov, ops, xml, musicxml-import, musicxml-export, midi-file, midi-import,
-   legacy-score, import, meter-grid, index.
+   legacy-score, import, meter-grid, pro-critic, pro-staff, pro-voice, pro-rhythm,
+   pro-tuplet, pro-spell, pro-beam, pro-marks, pro, index.
    ========================================================================== */
 (function (root, factory) {
   'use strict';
@@ -30,6 +31,7 @@
   const midiFile = get('midi-file'), midiImport = get('midi-import'), imp = get('import');
   const legacy = get('legacy-score');
   const meterGrid = get('meter-grid');
+  const pro = get('pro');
 
   /* The library's own version, checked by audio-score.js so a cached old script never runs with a new one
      (G01 §19 R10). It changes with any change to these files' behaviour; SCOREGRAPH_VERSION is the schema's. */
@@ -51,6 +53,9 @@
     importFile: imp.importFile, sniff: imp.sniff,
     legacy: legacy,
     meterGrid: meterGrid,
+    /* G3 (docs/GOALS/G03): the notation pipeline */
+    pro: pro,
+    professionalize: pro.professionalize,
     midi: Object.freeze({ import: midiImport.importMidi, export: midiImport.exportMidi,
       read: midiFile.readMidi, write: midiFile.writeMidi, projection: midiFile.projection,
       IMPORT_CODES: midiImport.CODES, FILE_CODES: midiFile.CODES, GM_DRUM: midiImport.GM_DRUM })
