@@ -235,8 +235,10 @@
         } else if (s.type === 'ottava') {
           const size = OTTAVA_SIZE[Math.abs(s.shift)];
           const pl = s.shift > 0 ? ' placement="above"' : ' placement="below"';
-          addMark(s.from.m, s.from.at, 6, S.idNumber(s.id), s.staff, null, dirXml(pl, '<octave-shift type="' + (s.shift > 0 ? 'down' : 'up') + '" size="' + size + '" number="' + num('octave', s, 'start') + '"/>'));
-          addMark(s.to.m, s.to.at, 1, S.idNumber(s.id), s.staff, null, dirXml(pl, '<octave-shift type="stop" size="' + size + '" number="' + num('octave', s, 'stop') + '"/>'));
+          /* a shift the file wrote without a staff is written back without one */
+          const oStaff = s.ext && s.ext['musicxml.ottava'] && s.ext['musicxml.ottava'].staff === 'assumed' ? null : s.staff;
+          addMark(s.from.m, s.from.at, 6, S.idNumber(s.id), oStaff, null, dirXml(pl, '<octave-shift type="' + (s.shift > 0 ? 'down' : 'up') + '" size="' + size + '" number="' + num('octave', s, 'start') + '"/>'));
+          addMark(s.to.m, s.to.at, 1, S.idNumber(s.id), oStaff, null, dirXml(pl, '<octave-shift type="stop" size="' + size + '" number="' + num('octave', s, 'stop') + '"/>'));
         }
       });
       (tl.tempos || []).forEach(t => {
@@ -264,6 +266,15 @@
           const snd = '<sound ' + j.kind + '="' + value + '"/>';
           if (j.text === undefined) { addMark(j.m, j.at, 4, S.idNumber(j.id), d.staff || null, null, snd, 'sound'); return; }
           addMark(j.m, j.at, 4, S.idNumber(j.id), d.staff || null, null, { pl: pl, types: ['<words>' + esc(j.text) + '</words>'], sound: snd });
+        });
+      });
+      /* the <sound> attributes the graph does not model, back where the file had them (G02 §6.2) */
+      if (pi === 0) measures.forEach(m => {
+        const list = m.ext && m.ext['musicxml.sound'];
+        if (!list) return;
+        list.forEach((one, i) => {
+          const attrs = Object.keys(one.attrs).sort().map(k => ' ' + k + '="' + esc(String(one.attrs[k])) + '"').join('');
+          addMark(m.id, one.at, 3, 900000 + i, null, null, '<sound' + attrs + '/>', 'sound');
         });
       });
       part.directions.forEach(d => {
@@ -557,7 +568,12 @@
     }
 
     function dirXml(pl, type) { return '<direction' + pl + '><direction-type>' + type + '</direction-type></direction>'; }
-    function dynXml(d) { return d.value === 'other' ? '<other-dynamics>' + esc(d.text || '') + '</other-dynamics>' : '<' + d.value + '/>'; }
+    function dynGlyph(m) { return m.value === 'other' ? '<other-dynamics>' + esc(m.text || '') + '</other-dynamics>' : '<' + m.value + '/>'; }
+    /* one <dynamics> element, with every glyph it printed (G02 §14.3) */
+    function dynXml(d) {
+      const more = d.ext && d.ext['musicxml.dynamics'] ? d.ext['musicxml.dynamics'].more || [] : [];
+      return [dynGlyph(d)].concat(more.map(dynGlyph)).join('');
+    }
     function harmonyXml(d, pl) {
       return '<harmony' + pl + '><root><root-step>' + d.root.step + '</root-step>' + (d.root.alter ? '<root-alter>' + d.root.alter + '</root-alter>' : '') + '</root>' +
         '<kind' + (d.text !== undefined ? ' text="' + attr(d.text) + '"' : '') + '>' + esc(d.chordKind) + '</kind>' +

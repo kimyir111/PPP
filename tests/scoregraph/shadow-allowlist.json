@@ -1,0 +1,102 @@
+{
+  "about": "Files where the graph's Score is not byte-for-byte the app's parseMusicXML Score (docs/GOALS/G02 §14.3, A32, A33). `node tests/scoregraph/tools/shadow-legacy.js --check` fails on any file not listed here, and on any listed file whose difference is not the one named. Three reasons, all of them understood; nothing here changes which notes sound, when, or for how long.",
+  "reasons": {
+    "chord-head-order": "A chord is one event with several heads, and the graph orders them low to high (canonical form, G01 §14.2). The app keeps the order the file wrote them in and marks every note but the first `chord: true`. Where a file writes a chord top down, the flag lands on a different note of the same chord. Nothing reads it except the leap estimate the coach and the fingering search use (App 3665, 7811); what is drawn and what is played are the same set of notes at the same time.",
+    "ending-stop-without-start": "A second-ending bracket that closes without opening. A ScoreGraph Ending has both ends (G01 §5.4), so the import reports the orphan and drops it; the app records it on the bar. The play order is the same - a stop alone opens nothing. Already allowlisted for the corpus round trip (tests/scoregraph/roundtrip-allowlist.json).",
+    "wedge-unpaired": "A crescendo or diminuendo with one end missing. A ScoreGraph Wedge has both ends (G01 §5.10), so the import reports it and drops it; the app keeps the single end and ramps from or to it. Already allowlisted for the corpus round trip."
+  },
+  "files": [
+    {
+      "path": "catalog/hymns/the-lords-my-shepherd.musicxml",
+      "reason": "chord-head-order"
+    },
+    {
+      "path": "catalog/method/burgmuller25/005.mxl",
+      "reason": "chord-head-order"
+    },
+    {
+      "path": "catalog/method/burgmuller25/016.mxl",
+      "reason": "ending-stop-without-start"
+    },
+    {
+      "path": "catalog/method/burgmuller25/017.mxl",
+      "reason": "chord-head-order"
+    },
+    {
+      "path": "catalog/method/czerny599/030.mxl",
+      "reason": "chord-head-order"
+    },
+    {
+      "path": "catalog/method/czerny599/031.mxl",
+      "reason": "chord-head-order"
+    },
+    {
+      "path": "catalog/method/czerny599/033.mxl",
+      "reason": "chord-head-order"
+    },
+    {
+      "path": "catalog/method/czerny599/046.mxl",
+      "reason": "chord-head-order"
+    },
+    {
+      "path": "catalog/method/czerny599/078.mxl",
+      "reason": "chord-head-order"
+    },
+    {
+      "path": "catalog/method/czerny849/002.mxl",
+      "reason": "chord-head-order"
+    },
+    {
+      "path": "catalog/method/czerny849/005.mxl",
+      "reason": "chord-head-order"
+    },
+    {
+      "path": "catalog/method/czerny849/025.mxl",
+      "reason": "chord-head-order"
+    },
+    {
+      "path": "catalog/method/czerny849/030.mxl",
+      "reason": "chord-head-order"
+    },
+    {
+      "path": "catalog/method/sonatina/002.mxl",
+      "reason": "chord-head-order"
+    },
+    {
+      "path": "catalog/method/sonatina/014.mxl",
+      "reason": "wedge-unpaired"
+    },
+    {
+      "path": "catalog/method/sonatina/026.mxl",
+      "reason": "wedge-unpaired"
+    },
+    {
+      "path": "catalog/method/sonatina/027.mxl",
+      "reason": "wedge-unpaired"
+    },
+    {
+      "path": "tests/scoregraph/fixtures/xml/cross-staff.musicxml",
+      "reason": "chord-head-order"
+    },
+    {
+      "path": "tests/scoregraph/fixtures/xml/ending-stop-without-start.musicxml",
+      "reason": "ending-stop-without-start"
+    },
+    {
+      "path": "tests/scoregraph/fixtures/xml/microtone-quarter-sharp.musicxml",
+      "reason": "chord-head-order"
+    },
+    {
+      "path": "tests/scoregraph/fixtures/xml/ties-slurs.musicxml",
+      "reason": "chord-head-order"
+    },
+    {
+      "path": "tests/scoregraph/fixtures/xml/transposing.musicxml",
+      "reason": "chord-head-order"
+    },
+    {
+      "path": "tests/scoregraph/fixtures/xml/wedge-unpaired.musicxml",
+      "reason": "wedge-unpaired"
+    }
+  ]
+}

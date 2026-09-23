@@ -69,6 +69,22 @@
     const k = String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
     return /^[a-z]/.test(k) ? k : '';
   }
+  /* The marks one <dynamics> element prints. It is one statement - "play this loudly" - however many
+     glyphs it uses, so the graph keeps one Direction for it and the rest of the glyphs beside it
+     (G02 §14.3): the app reads the first and would read two separate <direction> elements as two. */
+  function dynamicsIn(el, use) {
+    const out = [];
+    el.kids.forEach(k => {
+      const value = k.name === 'other-dynamics' ? 'other' : k.name;
+      if (!DYNAMIC_SET.has(value)) return;
+      use(k);
+      const one = { value: value };
+      if (value === 'other') one.text = k.text;
+      out.push(one);
+    });
+    return out;
+  }
+
   /* <fermata> wherever it sits: on a note's notations, or on a bar line (v2, G02 §18 S4). */
   function readFermata(f) {
     const out = {};
@@ -563,15 +579,13 @@
             ev.fermata = readFermata(f);
           });
           nk('dynamics').forEach(d => {
-            d.kids.forEach(k => {
-              const value = k.name === 'other-dynamics' ? 'other' : k.name;
-              if (!DYNAMIC_SET.has(value)) return;
-              use(k);
-              const dir = { kind: 'dynamic', mi: mi, at: ev.at, staffNo: staffNo, value: value, event: ev, doc: docIndex++ };
-              if (value === 'other') dir.text = k.text;
-              if (d.attrs.placement === 'above' || d.attrs.placement === 'below') dir.placement = d.attrs.placement;
-              part.directions.push(dir);
-            });
+            const marks = dynamicsIn(d, use);
+            if (!marks.length) return;
+            const dir = { kind: 'dynamic', mi: mi, at: ev.at, staffNo: staffNo, value: marks[0].value, event: ev, doc: docIndex++ };
+            if (marks[0].value === 'other') dir.text = marks[0].text;
+            if (marks.length > 1) dir.ext = { 'musicxml.dynamics': { more: marks.slice(1) } };
+            if (d.attrs.placement === 'above' || d.attrs.placement === 'below') dir.placement = d.attrs.placement;
+            part.directions.push(dir);
           });
           nk('slur').forEach(s => {
             const num = s.attrs.number || '1';
@@ -743,16 +757,16 @@
                 use(k);
                 part.directions.push(Object.assign({ kind: 'rehearsal', text: k.text }, base, { doc: docIndex++ }));
                 break;
-              case 'dynamics':
-                k.kids.forEach(x => {
-                  const value = x.name === 'other-dynamics' ? 'other' : x.name;
-                  if (!DYNAMIC_SET.has(value)) return;
-                  use(k); use(x);
-                  const dd = Object.assign({ kind: 'dynamic', value: value }, base, { doc: docIndex++ });
-                  if (value === 'other') dd.text = x.text;
-                  part.directions.push(dd);
-                });
+              case 'dynamics': {
+                const marks = dynamicsIn(k, use);
+                if (!marks.length) break;
+                use(k);
+                const dd = Object.assign({ kind: 'dynamic', value: marks[0].value }, base, { doc: docIndex++ });
+                if (marks[0].value === 'other') dd.text = marks[0].text;
+                if (marks.length > 1) dd.ext = { 'musicxml.dynamics': { more: marks.slice(1) } };
+                part.directions.push(dd);
                 break;
+              }
               case 'wedge': {
                 const num = k.attrs.number || '1';
                 if (k.attrs.type === 'crescendo' || k.attrs.type === 'diminuendo') {
@@ -799,7 +813,10 @@
                   use(k);
                   const oct = size >= 22 ? 3 : size >= 15 ? 2 : 1;
                   if (openOttavas.has(key)) { issue('W-IMPORT-UNPAIRED', 'an octave shift in measure ' + rec.number + ' starts before the previous one stops; the earlier one is dropped'); drop('octave-shift (unclosed)'); }
-                  openOttavas.set(key, { shift: t === 'down' ? oct : -oct, size: size, from: { mi: mi, at: at }, staffNo: staffNo || 1, doc: doc });
+                  /* an Ottava names a staff; MusicXML lets the direction leave it out, and the app then
+                     reads the shift on every staff of the part. Which it was is kept (G02 §14.3). */
+                  openOttavas.set(key, { shift: t === 'down' ? oct : -oct, size: size, from: { mi: mi, at: at },
+                    staffNo: staffNo || 1, saidStaff: !!staffNo, doc: doc });
                 } else if (t === 'stop') {
                   use(k);
                   const o = openOttavas.get(key);
@@ -841,7 +858,17 @@
         /* <sound>: tempo (measure-level only; a direction's tempo is read with its mark), pedals, and the
            attributes the graph does not keep (reported) */
         function readSound(s, at, staffNo, placement, printedPedal) {
-          Object.keys(s.attrs).forEach(a => { if (!SOUND_MAPPED.has(a)) drop('sound@' + a); });
+          /* A <sound> says what a player does, and the graph models only some of it. The rest is kept
+             on the measure with its position, so the app's playback still hears it and a round trip
+             gives it back (G02 §6.2). Only the first part's: the app reads it from every part, and
+             reproducing that duplication is the legacy adapter's job, not the graph's. */
+          const rest = {};
+          Object.keys(s.attrs).sort().forEach(a => { if (!SOUND_MAPPED.has(a)) rest[a] = s.attrs[a]; });
+          if (Object.keys(rest).length && pi === 0) {
+            /* not which staff it hung from: MusicXML has no way to write a bare <sound> with a staff,
+               and nothing reads it - the printed direction beside it keeps its own staff */
+            (rec.sound = rec.sound || []).push({ at: R.format(at), attrs: rest });
+          } else Object.keys(rest).forEach(a => drop('sound@' + a));
           if (staffNo === null && placement === null && s.attrs.tempo !== undefined) {
             const q = jsFloatRat(s.attrs.tempo);
             if (q && R.sign(q) > 0) tempoDrafts.push({ pi: pi, mi: mi, at: at, qpm: q, doc: docIndex++ });
@@ -1040,6 +1067,12 @@
       const m = { number: rec.number, dur: R.format(durs[mi]) };
       if (rec.implicit) m.implicit = true;
       if (rec.multiRest >= 2) m.multiRest = rec.multiRest;
+      if (rec.sound && rec.sound.length) {
+        /* by position, so a file that writes a mid-measure sound before the one at the bar line reads
+           back as the same graph (the export writes them in order) */
+        rec.sound.sort((x, y) => R.cmp(R.parse(x.at), R.parse(y.at)));
+        m.ext = Object.assign({}, m.ext, { 'musicxml.sound': rec.sound });
+      }
       /* the metre the graph cannot state: music written without one, and the 4/4 we put there instead */
       if (meterAt[mi] && (meterAt[mi].senza || meterAt[mi].assumed))
         m.ext = Object.assign({}, m.ext, { 'musicxml.no-metre': { reason: meterAt[mi].senza ? 'senza-misura' : 'absent' } });
@@ -1190,7 +1223,11 @@
       }
       if (d.event) x.event = d.event.id;
       if (d.placement) x.placement = d.placement;
-      if (d.kind === 'dynamic') { x.value = d.value; if (d.text !== undefined) x.text = d.text; }
+      if (d.kind === 'dynamic') {
+        x.value = d.value;
+        if (d.text !== undefined) x.text = d.text;
+        if (d.ext) x.ext = d.ext;          /* the other glyphs the same <dynamics> element printed */
+      }
       if (d.kind === 'words' || d.kind === 'rehearsal') x.text = d.text;
       if (d.kind === 'chord') {
         x.root = d.root; x.chordKind = d.chordKind;
@@ -1365,7 +1402,9 @@
         drafts.push({ type: 'pedal', doc: p.doc, pos: posOf(p.from.mi, p.from.at), anchor: 0, x: x });
       });
       part.ottavas.forEach(o => {
-        drafts.push({ type: 'ottava', doc: o.doc, pos: posOf(o.from.mi, o.from.at), anchor: o.staffNo, x: { type: 'ottava', staff: staffId(part, o.staffNo), shift: o.shift, from: pos(o.from), to: pos(o.to) } });
+        const ox = { type: 'ottava', staff: staffId(part, o.staffNo), shift: o.shift, from: pos(o.from), to: pos(o.to) };
+        if (!o.saidStaff) ox.ext = { 'musicxml.ottava': { staff: 'assumed' } };
+        drafts.push({ type: 'ottava', doc: o.doc, pos: posOf(o.from.mi, o.from.at), anchor: o.staffNo, x: ox });
       });
       drafts.sort((p, q) => R.cmp(p.pos, q.pos) || SPANNER_SUBORDER[p.type] - SPANNER_SUBORDER[q.type] || p.anchor - q.anchor ||
         (p.depth || 0) - (q.depth || 0) || p.doc - q.doc);

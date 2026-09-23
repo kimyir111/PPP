@@ -8,7 +8,7 @@
 
    Browser order: rational, schema, pitch, time, serialize, validate, build,
    prov, ops, xml, musicxml-import, musicxml-export, midi-file, midi-import,
-   import, index.
+   legacy-score, import, index.
    ========================================================================== */
 (function (root, factory) {
   'use strict';
@@ -28,6 +28,7 @@
   const serialize = get('serialize'), validate = get('validate'), build = get('build'), prov = get('prov');
   const ops = get('ops'), xml = get('xml'), mxlImport = get('musicxml-import'), mxlExport = get('musicxml-export');
   const midiFile = get('midi-file'), midiImport = get('midi-import'), imp = get('import');
+  const legacy = get('legacy-score');
 
   /* The library's own version, checked by audio-score.js so a cached old script never runs with a new one
      (G01 §19 R10). It changes with any change to these files' behaviour; SCOREGRAPH_VERSION is the schema's. */
@@ -47,6 +48,7 @@
     musicxml: Object.freeze({ import: mxlImport.importMusicXml, export: mxlExport.exportMusicXml,
       IMPORT_CODES: mxlImport.CODES, EXPORT_CODES: mxlExport.CODES }),
     importFile: imp.importFile, sniff: imp.sniff,
+    legacy: legacy,
     midi: Object.freeze({ import: midiImport.importMidi, export: midiImport.exportMidi,
       read: midiFile.readMidi, write: midiFile.writeMidi, projection: midiFile.projection,
       IMPORT_CODES: midiImport.CODES, FILE_CODES: midiFile.CODES, GM_DRUM: midiImport.GM_DRUM })
