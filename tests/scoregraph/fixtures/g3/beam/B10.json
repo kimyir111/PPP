@@ -1,0 +1,22 @@
+{
+ "about": "an eighth and two 16ths: one beam, no break (the break is between two notes shorter than an eighth)",
+ "spec": "G03 §11.3 B10",
+ "input": {
+  "time": [
+   2,
+   4
+  ],
+  "rh": "C5:8 D5:16 E5:16 F5:q"
+ },
+ "passes": [
+  "tuplet",
+  "beam"
+ ],
+ "expect": {
+  "beams": [
+   [
+    "C5 D5 E5"
+   ]
+  ]
+ }
+}

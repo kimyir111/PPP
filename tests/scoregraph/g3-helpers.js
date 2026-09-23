@@ -272,4 +272,24 @@ function accs(g, staffIdx) {
   return out;
 }
 
-module.exports = { mk, render, parseLine, pitchText, parsePitch, headIndex, runSpec, specGraph, appBrackets, accs, PASS_NAMES };
+/* The beams of a staff, per measure: [['C5 D5 / E5 F5', …], …], each beam its notes' top pitches ('r' for a rest), a
+   '/' where the beams below the eighth break. */
+function beams(g, staffIdx) {
+  const p = g.parts[0], st = p.staves[staffIdx].id;
+  const mi = new Map(g.timeline.measures.map((m, i) => [m.id, i]));
+  const ev = new Map(p.events.map(e => [e.id, e]));
+  const out = g.timeline.measures.map(() => []);
+  p.spanners.filter(s => s.type === 'beam' && ev.get(s.events[0]).staff === st)
+    .sort((a, b) => mi.get(ev.get(a.events[0]).m) - mi.get(ev.get(b.events[0]).m) || R.cmp(R.parse(ev.get(a.events[0]).at), R.parse(ev.get(b.events[0]).at)))
+    .forEach(s => {
+      const br = new Set((s.breaks || []).map(b => b.after));
+      out[mi.get(ev.get(s.events[0]).m)].push(s.events.map(id => {
+        const e = ev.get(id);
+        const t = e.kind === 'rest' ? 'r' : pitchText(e.heads[e.heads.length - 1].pitch);
+        return t + (br.has(id) ? ' /' : '');
+      }).join(' '));
+    });
+  return out;
+}
+
+module.exports = { mk, render, parseLine, pitchText, parsePitch, headIndex, runSpec, specGraph, appBrackets, accs, beams, PASS_NAMES };

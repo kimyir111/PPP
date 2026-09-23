@@ -1,0 +1,19 @@
+{
+ "about": "an imported score keeps its beams (none here: rewrite mode adds none)",
+ "spec": "G03 §11.3 B11",
+ "input": {
+  "time": [
+   2,
+   4
+  ],
+  "rh": "C5:8 D5:8 E5:8 F5:8",
+  "op": "imported"
+ },
+ "passes": [
+  "tuplet",
+  "beam"
+ ],
+ "expect": {
+  "same": true
+ }
+}

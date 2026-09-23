@@ -78,7 +78,8 @@
           const end = x + sp.len;
           let j = i;
           while (j < n && run[j].en + off <= end) j++;
-          if (j === i || run[j - 1].en + off !== end) return;
+          /* a span one note fills is no tuplet (that note is a plain value) */
+          if (j - i < 2 || run[j - 1].en + off !== end) return;
           const rest = best[j];
           /* a span whose unit is longer than its shortest member is one the app's renderer splits (it closes a bracket
              once `normal` times the shortest value it has seen has gone by): prefer the span the members' values fit */

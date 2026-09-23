@@ -1,0 +1,23 @@
+{
+ "about": "6/8: eighths beamed by the dotted quarter",
+ "spec": "G03 §11.3 B06",
+ "input": {
+  "time": [
+   6,
+   8
+  ],
+  "rh": "C5:8 D5:8 E5:8 F5:8 G5:8 A5:8"
+ },
+ "passes": [
+  "tuplet",
+  "beam"
+ ],
+ "expect": {
+  "beams": [
+   [
+    "C5 D5 E5",
+    "F5 G5 A5"
+   ]
+  ]
+ }
+}

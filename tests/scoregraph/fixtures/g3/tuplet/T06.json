@@ -6,5 +6,8 @@
  },
  "expect": {
   "same": true
- }
+ },
+ "passes": [
+  "tuplet"
+ ]
 }

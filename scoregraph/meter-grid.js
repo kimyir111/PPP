@@ -215,7 +215,9 @@
     if (s < 0 || e > gr.durU || e <= s) return false;                        /* H2 */
     if ((sym.dots || 0) > 2) return false;                                    /* H7 */
     const lvS = levelOf(gr, s);
-    if (sym.dots === 2 && lvS > LEVEL.BEAT) return false;                     /* H7: a double dot starts on a beat */
+    /* H7: a double dot only where the value fits the beat hierarchy: from a beat, or completing a beat (it ends on the
+       next beat line without crossing one) */
+    if (sym.dots === 2 && lvS > LEVEL.BEAT && !(levelOf(gr, e) <= LEVEL.BEAT && !interior(gr, s, e, LEVEL.BEAT).length)) return false;
     const len = e - s;
     const measureRest = kind === 'rest' && s === 0 && e === gr.durU;
     if (measureRest) return true;

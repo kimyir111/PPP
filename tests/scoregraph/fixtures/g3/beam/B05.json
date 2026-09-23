@@ -1,0 +1,22 @@
+{
+ "about": "3/8: the whole measure is one beam",
+ "spec": "G03 §11.3 B05",
+ "input": {
+  "time": [
+   3,
+   8
+  ],
+  "rh": "C5:8 D5:8 E5:8"
+ },
+ "passes": [
+  "tuplet",
+  "beam"
+ ],
+ "expect": {
+  "beams": [
+   [
+    "C5 D5 E5"
+   ]
+  ]
+ }
+}

@@ -96,7 +96,11 @@
     for (let x = -off; x < dur; x += Q) {
       const a = x, b = x + Q, xs = inside(Math.max(0, a), Math.min(dur, b));
       if (binary(xs)) { push(a, b, 'binary'); continue; }
-      if (a >= 0 && b <= dur && triplet(xs, a)) { push(a, b, 'triplet', 'eighth'); continue; }
+      /* a half with no triplet point in it stays binary, the other half a 16th triplet (an eighth then three triplet
+         16ths, not a triplet dotted eighth under a bracket over the beat) */
+      const mid = x + Q / 2;
+      const firstPlain = binary(inside(Math.max(0, a), mid)), secondPlain = binary(inside(mid, Math.min(dur, b)));
+      if (a >= 0 && b <= dur && triplet(xs, a) && !(xs.indexOf(mid) >= 0 && (firstPlain || secondPlain))) { push(a, b, 'triplet', 'eighth'); continue; }
       /* two halves, each binary or a 16th triplet */
       const h = x + Q / 2;
       [[a, h], [h, b]].forEach(([p, q]) => {
