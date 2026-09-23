@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- A drum part with <unpitched> notes: G1 does not import percussion from MusicXML (G01 §9.2, A26). -->
+<!-- A drum part with <unpitched> notes. G1 refused the whole file; G2 reads it as a perc event whose
+     head names the kit piece the <instrument> points at and where it sits on the staff (G02 §17, A7). -->
 <score-partwise version="4.0">
   <part-list><score-part id="P1"><part-name>Drum Set</part-name><score-instrument id="P1-I36"><instrument-name>Bass Drum</instrument-name></score-instrument></score-part></part-list>
   <part id="P1">

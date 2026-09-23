@@ -20,7 +20,9 @@
    bare sounds, which cannot take an offset, step back with <backup> and
    <forward>).
 
-   G1: a graph with percussion events is refused (EXPORT-UNSUPPORTED-PERC).
+   Percussion (G02 §17): a perc head writes <unpitched> at the kit item's staff
+   position and an <instrument> pointing at the <score-instrument> the part list
+   wrote for that kit piece.
    ========================================================================== */
 (function (root, factory) {
   'use strict';
@@ -34,7 +36,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (R, S, P, T, X, V) {
   'use strict';
 
-  const CODES = Object.freeze(['EXPORT-UNSUPPORTED-PERC', 'EXPORT-INVALID']);
+  const CODES = Object.freeze(['EXPORT-INVALID']);
   const ART_TAG = { staccato: 'staccato', staccatissimo: 'staccatissimo', tenuto: 'tenuto', accent: 'accent',
     marcato: 'strong-accent', spiccato: 'spiccato', stress: 'stress', unstress: 'unstress',
     'detached-legato': 'detached-legato', 'breath-mark': 'breath-mark', caesura: 'caesura' };
@@ -44,11 +46,11 @@
   const OTTAVA_SIZE = { 1: 8, 2: 15, 3: 22 };
   const esc = X.esc, attr = X.attr;
   const lcm = (a, b) => a / R.gcd(a, b) * b;
+  /* <fermata>: on a note's notations, or on a bar line (G02 §18 S4) */
+  const fermataXml = f => '<fermata type="' + (f.inverted ? 'inverted' : 'upright') + '">' + (f.shape || '') + '</fermata>';
 
   function exportMusicXml(g, opts) {
     opts = opts || {};
-    if (g.parts.some(p => p.events.some(e => e.kind === 'perc')))
-      return { ok: false, code: 'EXPORT-UNSUPPORTED-PERC', message: 'percussion parts are not written to MusicXML in G1' };
     const check = V.validate(g);
     if (!check.ok) return { ok: false, code: 'EXPORT-INVALID', message: 'the graph has errors: ' + check.issues.filter(i => i.severity === 'ERROR').slice(0, 3).map(i => i.code + ' ' + i.message).join('; ') };
     return { ok: true, xml: write(g, opts) };
@@ -81,10 +83,24 @@
       let x = '<score-part id="' + pid + '"><part-name>' + esc(p.name || '') + '</part-name>';
       if (p.abbr !== undefined) x += '<part-abbreviation>' + esc(p.abbr) + '</part-abbreviation>';
       const inst = p.instrument;
-      if (inst.name !== undefined) x += '<score-instrument id="' + pid + '-I1"><instrument-name>' + esc(inst.name) + '</instrument-name></score-instrument>';
-      if (inst.midi && (inst.midi.channel !== undefined || inst.midi.program !== undefined)) {
-        x += '<midi-instrument id="' + pid + '-I1">' + (inst.midi.channel !== undefined ? '<midi-channel>' + inst.midi.channel + '</midi-channel>' : '') +
-          (inst.midi.program !== undefined ? '<midi-program>' + inst.midi.program + '</midi-program>' : '') + '</midi-instrument>';
+      const kit = inst.kit && inst.kit.items ? inst.kit.items : null;
+      if (kit) {
+        /* one <score-instrument> per kit piece, in kit order, so a percussion note can name what it hits */
+        kit.forEach((it, i) => {
+          x += '<score-instrument id="' + pid + '-I' + (i + 1) + '"><instrument-name>' +
+            esc(it.name !== undefined ? it.name : it.key) + '</instrument-name></score-instrument>';
+        });
+        kit.forEach((it, i) => {
+          const ch = inst.midi && inst.midi.channel !== undefined ? inst.midi.channel : 10;
+          x += '<midi-instrument id="' + pid + '-I' + (i + 1) + '"><midi-channel>' + ch + '</midi-channel>' +
+            (it.gm !== undefined ? '<midi-unpitched>' + it.gm + '</midi-unpitched>' : '') + '</midi-instrument>';
+        });
+      } else {
+        if (inst.name !== undefined) x += '<score-instrument id="' + pid + '-I1"><instrument-name>' + esc(inst.name) + '</instrument-name></score-instrument>';
+        if (inst.midi && (inst.midi.channel !== undefined || inst.midi.program !== undefined)) {
+          x += '<midi-instrument id="' + pid + '-I1">' + (inst.midi.channel !== undefined ? '<midi-channel>' + inst.midi.channel + '</midi-channel>' : '') +
+            (inst.midi.program !== undefined ? '<midi-program>' + inst.midi.program + '</midi-program>' : '') + '</midi-instrument>';
+        }
       }
       out.push(x + '</score-part>');
     });
@@ -106,6 +122,9 @@
 
     function writePart(part, pi) {
       const tr = part.instrument.transpose;
+      /* which <score-instrument> each kit piece became, in the order the part list wrote them */
+      const kitItems = (part.instrument.kit && part.instrument.kit.items) || [];
+      const kitIndex = new Map(kitItems.map((it, i) => [it.key, i]));
       const staffNo = new Map(part.staves.map((s, i) => [s.id, i + 1]));
       const multiStaff = part.staves.length > 1;
       const voiceLabel = new Map(part.voices.map((v, i) => [v.id, v.label !== undefined ? v.label : String(i + 1)]));
@@ -255,7 +274,7 @@
           const l = bl.left || {};
           out.push('<barline location="left">' + (l.style ? '<bar-style>' + l.style + '</bar-style>' : '') +
             startEndings.map(en => '<ending number="' + en.numbers.join(', ') + '" type="start">' + (en.text !== undefined ? esc(en.text) : '') + '</ending>').join('') +
-            (l.repeat ? '<repeat direction="' + l.repeat + '"/>' : '') + '</barline>');
+            (l.repeat ? '<repeat direction="' + l.repeat + '"/>' : '') + (l.fermata ? fermataXml(l.fermata) : '') + '</barline>');
         }
         /* measure-start attributes */
         const at0 = [];
@@ -269,6 +288,7 @@
         if (mt) at0.push('<time' + (mt.symbol ? ' symbol="' + mt.symbol + '"' : '') + (mt.hidden ? ' print-object="no"' : '') + '>' +
           '<beats>' + mt.beats.join('+') + '</beats><beat-type>' + mt.beatType + '</beat-type></time>');
         if (mi === 0 && multiStaff) at0.push('<staves>' + part.staves.length + '</staves>');
+        if (pi === 0 && m.multiRest !== undefined) at0.push('<measure-style><multiple-rest>' + m.multiRest + '</multiple-rest></measure-style>');
         /* in ID order (import gives clefs at one position their document order; the app lists clefs in document order) */
         part.clefs.filter(c => c.m === m.id && Q(c.at).n === 0).sort((x, y) => S.idNumber(x.id) - S.idNumber(y.id)).forEach(c => at0.push(clefXml(c)));
         if (mi === 0 && tr) at0.push('<transpose>' + (tr.diatonic ? '<diatonic>' + tr.diatonic + '</diatonic>' : '<diatonic>0</diatonic>') +
@@ -349,7 +369,8 @@
           const r = bl.right || {};
           out.push('<barline location="right">' + (r.style ? '<bar-style>' + r.style + '</bar-style>' : '') +
             endEndings.map(en => '<ending number="' + en.numbers.join(', ') + '" type="' + (en.open ? 'discontinue' : 'stop') + '"/>').join('') +
-            (r.repeat ? '<repeat direction="' + r.repeat + '"' + (r.repeat === 'backward' && r.times !== undefined ? ' times="' + r.times + '"' : '') + '/>' : '') + '</barline>');
+            (r.repeat ? '<repeat direction="' + r.repeat + '"' + (r.repeat === 'backward' && r.times !== undefined ? ' times="' + r.times + '"' : '') + '/>' : '') +
+            (r.fermata ? fermataXml(r.fermata) : '') + '</barline>');
         }
         out.push('</measure>');
       });
@@ -390,8 +411,20 @@
         heads.forEach((h, hi) => {
           const staffId = h.staff || e.staff;
           const c = common(staffId);
-          const w = P.written(h.pitch, tr);
-          const pitch = '<pitch><step>' + w.step + '</step>' + (w.alter ? '<alter>' + w.alter + '</alter>' : '') + '<octave>' + w.oct + '</octave></pitch>';
+          let pitch;
+          let instXml = '';
+          if (h.inst !== undefined) {
+            /* percussion: which kit piece it is, and where it sits. A head may leave the position to the
+               kit (§5.7), so the kit item is what says where it goes on the staff (G02 §17). */
+            const ki = kitIndex.get(h.inst);
+            const pos = h.pos || (ki !== undefined ? kitItems[ki].pos : null);
+            if (!pos) return;                           /* E-PERC-KIT would have caught this already */
+            pitch = '<unpitched><display-step>' + pos.step + '</display-step><display-octave>' + pos.oct + '</display-octave></unpitched>';
+            if (ki !== undefined) instXml = '<instrument id="P' + (pi + 1) + '-I' + (ki + 1) + '"/>';
+          } else {
+            const w = P.written(h.pitch, tr);
+            pitch = '<pitch><step>' + w.step + '</step>' + (w.alter ? '<alter>' + w.alter + '</alter>' : '') + '<octave>' + w.oct + '</octave></pitch>';
+          }
           const tIn = headIn.get(h.id), tOut = headOut.get(h.id);
           const ties = e.cue ? '' : (tIn ? '<tie type="stop"/>' : '') + (tOut ? '<tie type="start"/>' : '');
           const acc = h.acc ? '<accidental' + (h.acc.cautionary ? ' cautionary="yes"' : '') + (h.acc.editorial ? ' editorial="yes"' : '') +
@@ -410,7 +443,7 @@
           if (tech.length) nots.push('<technical>' + tech.join('') + '</technical>');
           const arp = arpOf.get(h.id);
           if (arp) nots.push(arp.non ? '<non-arpeggiate type="' + (h.id === arp.heads[0] ? 'bottom' : 'top') + '"/>' : '<arpeggiate' + (arp.dir ? ' direction="' + arp.dir + '"' : '') + '/>');
-          out.push('<note' + noteAttrs + '>' + graceXml + (e.cue ? '<cue/>' : '') + (hi > 0 ? '<chord/>' : '') + pitch + durXml + ties + c.pre + acc + tmXml + stemXml + nh + c.staff +
+          out.push('<note' + noteAttrs + '>' + graceXml + (e.cue ? '<cue/>' : '') + (hi > 0 ? '<chord/>' : '') + pitch + durXml + ties + instXml + c.pre + acc + tmXml + stemXml + nh + c.staff +
             (hi === 0 ? beamXml : '') + (nots.length ? '<notations>' + nots.join('') + '</notations>' : '') + (hi === 0 ? lyricXml : '') + '</note>');
         });
       }
@@ -432,7 +465,7 @@
           (o.acc !== undefined ? '<accidental-mark>' + esc(o.acc) + '</accidental-mark>' : '')).join('') + '</ornaments>');
         if (e.arts && e.arts.length) x.push('<articulations>' + e.arts.map(a => '<' + ART_TAG[a] + '/>').join('') + '</articulations>');
         (notationDynamics.get(e.id) || []).forEach(d => x.push('<dynamics' + (d.placement ? ' placement="' + d.placement + '"' : '') + '>' + dynXml(d) + '</dynamics>'));
-        if (e.fermata) x.push('<fermata type="' + (e.fermata.inverted ? 'inverted' : 'upright') + '">' + (e.fermata.shape || '') + '</fermata>');
+        if (e.fermata) x.push(fermataXml(e.fermata));
         return x.join('');
       }
       /* beams: level 1 from the Beam's members; deeper levels from each note's value, broken where the Beam says,

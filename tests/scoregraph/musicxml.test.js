@@ -218,12 +218,34 @@ test('a piano part and a drum part share one timeline and validate: kit of 8, tw
   assert.equal(g.timeline.measures.length, 4);
 });
 
-test('percussion is refused without an exception: <unpitched> on import, perc events on export (A26)', () => {
-  const r = SG.musicxml.import(xml('unpitched'));
-  assert.deepEqual([r.ok, r.code], [false, 'IMPORT-UNSUPPORTED-UNPITCHED']);
-  const g = SG.parse(read(path.join(FIX, 'valid', 'drums-with-piano.sg.json')));
-  const x = SG.musicxml.export(g);
-  assert.deepEqual([x.ok, x.code], [false, 'EXPORT-UNSUPPORTED-PERC']);
+test('percussion comes in as perc events with the kit the file names, and goes back out (A7, G02 §17)', () => {
+  const r = importXml(xml('unpitched'));
+  const part = r.graph.parts[0];
+  assert.equal(part.instrument.family, 'percussion');
+  assert.equal(part.staves[0].kind, 'percussion');
+  assert.deepEqual(part.instrument.kit.items,
+    [{ key: 'bass-drum', name: 'Bass Drum', pos: { step: 'F', oct: 4 } }]);
+  assert.deepEqual(part.events.map(e => e.kind), ['perc']);
+  assert.deepEqual(part.events[0].heads.map(h => [h.inst, h.pos.step + h.pos.oct]), [['bass-drum', 'F4']]);
+  assert.deepEqual(r.report.dropped, {}, 'nothing of a drum part is dropped');
+  assert.equal(SG.validate(r.graph).ok, true);
+  /* and back: the kit piece becomes a <score-instrument> the note points at again */
+  const x = SG.musicxml.export(r.graph);
+  assert.equal(x.ok, true, x.message);
+  assert.match(x.xml, /<unpitched><display-step>F<\/display-step><display-octave>4<\/display-octave><\/unpitched>/);
+  assert.match(x.xml, /<instrument id="P1-I1"\/>/);
+  const back = importXml(x.xml);
+  assert.deepEqual(back.graph.parts[0].instrument.kit.items, part.instrument.kit.items);
+  assert.deepEqual(back.graph.parts[0].events.map(e => e.kind), ['perc']);
+  /* a piano and a drum part in one graph write and read back the same way */
+  const both = SG.parse(read(path.join(FIX, 'valid', 'drums-with-piano.sg.json')));
+  const bx = SG.musicxml.export(both);
+  assert.equal(bx.ok, true, bx.message);
+  const bback = importXml(bx.xml);
+  assert.deepEqual(bback.graph.parts.map(p => p.instrument.family), both.parts.map(p => p.instrument.family));
+});
+
+test('a file that is not score-partwise XML is refused as a value, never as an exception', () => {
   assert.deepEqual([SG.musicxml.import('<score-timewise/>').code, SG.musicxml.import('<nope').code], ['IMPORT-TIMEWISE', 'IMPORT-BAD-XML']);
 });
 
