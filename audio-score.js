@@ -1354,7 +1354,13 @@
       const pp = beatPosition(beats, p.on);
       const a = Math.round(pp * Q) - origin;
       const b = Math.round(snapEnd(beatPosition(beats, p.off)) * Q) - origin;
-      if (b - a < 6 || b <= 0 || a >= bars * bar) return;
+      /* A press or release that is not a number leaves no position to write the mark at, the same way
+         clean() drops a note whose times are not finite. The three range tests beside it cannot see
+         that — every comparison against NaN is false — so it has to be asked for. Without it the pedal
+         reached the writers with a NaN tick: the ScoreGraph writer threw the whole score away and the
+         G0 writer left an unpaired <pedal> mark. A press with no release (off Infinity) is not this:
+         it is finite once clamped and still lasts to the last tick (G01 §26 F2). */
+      if (isNaN(a) || isNaN(b) || b - a < 6 || b <= 0 || a >= bars * bar) return;
       held.push([a, b]);
     });
     held.sort((x, y) => x[0] - y[0]);

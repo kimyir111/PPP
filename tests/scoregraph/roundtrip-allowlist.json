@@ -10,7 +10,7 @@
     {
       "path": "catalog/method/sonatina/014.mxl",
       "reason": "WEDGE-UNPAIRED",
-      "detail": "Bar 75 stops a wedge that never started and bar 76 starts a diminuendo that never stops. A ScoreGraph Wedge has both ends (G01 §5.10); the import reports both marks as dropped ('wedge (stop without start)', 'wedge (unclosed)'). The app does not read wedges, so what it shows and plays is the same (L1 passes); only the notation inventory loses the two marks (L1+).",
+      "detail": "Bar 76 stops a wedge that never started and bar 77 starts a diminuendo that never stops. A ScoreGraph Wedge has both ends (G01 §5.10); the import reports both marks as dropped ('wedge (stop without start)', 'wedge (unclosed)'). L1 passes because the G0 projection (semantic/3) carries no dynamics or wedges — not because the marks do not matter: the app reads <wedge> and builds its playback intensity from it, and a diminuendo that never stops is ramped to the end of the piece. Only the notation inventory sees the loss (L1+). G1 production never imports MusicXML, so nothing sounds different today; when import moves onto the graph this becomes audible and the entry has to be looked at again (G01 §26, F3).",
       "fixture": "tests/scoregraph/fixtures/xml/wedge-unpaired.musicxml"
     }
   ]

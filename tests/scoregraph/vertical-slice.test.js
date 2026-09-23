@@ -149,6 +149,46 @@ test('opts.legacyWriter is the way back: the G0 writer, the same stats, no graph
   assert.equal(loaded, 'false');
 });
 
+test('a pedal whose press or release is not a number is dropped, not written and not thrown on (§26 F2)', () => {
+  const d = input('G15');                                /* the one golden input that has a pedal */
+  const opts = extra => Object.assign({}, d.opts, extra);
+  const base = run('G15'), baseLegacy = A.toMusicXml(d.input, opts({ legacyWriter: true }));
+  const marks = xml => (xml.match(/<pedal /g) || []).length;
+  assert.ok(marks(base.xml) > 0 && marks(base.xml) % 2 === 0, 'the untouched input writes paired pedal marks');
+  assert.ok(base.graph.parts[0].spanners.some(s => s.type === 'pedal'), 'and pedal spanners in the graph');
+
+  /* Every shape a producer can hand over with a time that is not a number. The score must be the one it
+     would have been without that pedal — the writers never see a NaN tick, which threw the whole score
+     away in the exporter ("rational parts must be integers") and left an unpaired mark in the G0 writer. */
+  [{ on: 1 }, { off: 3 }, {}, { on: NaN, off: 3 }, { on: 1, off: NaN }, { on: NaN, off: NaN },
+   { on: 'abc', off: 3 }, { on: 1, off: 'abc' }, { on: undefined, off: undefined },
+   { on: Infinity, off: 3 }, { on: Infinity, off: Infinity }].forEach(bad => {
+    const why = JSON.stringify(bad, (k, v) => (typeof v === 'number' && !isFinite(v) ? String(v) : v));
+    const withBad = Object.assign({}, d.input, { pedals: d.input.pedals.concat([bad]) });
+    const r = A.toMusicXml(withBad, opts());
+    assert.equal(r.xml, base.xml, why + ': the score is the one without it');
+    assert.equal(SG.serialize(r.graph), SG.serialize(base.graph), why + ': and so is the graph');
+    assert.deepEqual(r.graphIssues.filter(i => i.severity === 'ERROR'), [], why);
+    assert.equal(A.toMusicXml(withBad, opts({ legacyWriter: true })).xml, baseLegacy.xml,
+      why + ': the way back writes no unpaired mark either');
+  });
+
+  /* A press that is never released is not a broken time: it still sounds, to the last tick of the score.
+     null is a time, zero, as it has always been. Both keep writing the pair they wrote before. */
+  [{ on: 1, off: Infinity }, { on: null, off: 3 }].forEach(good => {
+    const why = JSON.stringify(good, (k, v) => (typeof v === 'number' && !isFinite(v) ? String(v) : v));
+    const withIt = Object.assign({}, d.input, { pedals: d.input.pedals.concat([good]) });
+    assert.equal(marks(A.toMusicXml(withIt, opts()).xml), marks(base.xml) + 2, why + ': one more pedal, both ends');
+    assert.equal(marks(A.toMusicXml(withIt, opts({ legacyWriter: true })).xml), marks(base.xml) + 2, why + ': the same way back');
+  });
+
+  /* and a recording whose pedal track is nothing but broken times is still a score */
+  const onlyBad = A.toMusicXml(Object.assign({}, d.input, { pedals: [{ on: NaN, off: NaN }, { on: 2 }] }), opts());
+  const noPedal = A.toMusicXml(Object.assign({}, d.input, { pedals: [] }), opts());
+  assert.equal(onlyBad.xml, noPedal.xml);
+  assert.equal(marks(onlyBad.xml), 0);
+});
+
 test('in the browser, audio-score.js uses the PPPScoreGraph the scripts before it left (A43)', () => {
   const html = fs.readFileSync(path.join(REPO, 'Piano Coach App.dc.html'), 'utf8');
   const srcs = [...html.matchAll(/<script src="\.\/((?:scoregraph\/[\w-]+|audio-score)\.js)\?v=[^"]*"><\/script>/g)].map(m => m[1]);
