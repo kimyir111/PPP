@@ -235,7 +235,10 @@ test('a file a person opens is read through the graph, and parseMusicXML is only
   const load = body("if (kind === 'musicxml' || kind === 'mxl' || kind === 'midi')", 'PDF / photo');
   assert.match(load, /PPPScoreGraph\.legacy\.toScore/);
   assert.match(load, /if \(LEGACY_IMPORT && kind !== 'midi'\)/, 'with the same way back');
-  assert.match(load, /source\.graph = got\.graph/, 'and the graph is kept, not thrown away');
+  assert.match(load, /graph: got\.graph/, 'and the graph comes back with the import');
+  /* but never on `source`: that object is written whole into localStorage (G02 §24.10) */
+  assert.doesNotMatch(load, /source\.graph\s*=/, 'the graph does not ride on the object that gets saved');
+  assert.match(load, /source\.importReport = Import\.summariseGraph/, 'only a summary of it does');
 
   /* the way back is a switch a person can flip, not a fallback the code takes on its own */
   assert.match(html, /let LEGACY_IMPORT = false;/);
