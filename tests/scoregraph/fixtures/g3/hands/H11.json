@@ -1,0 +1,21 @@
+{
+ "about": "a left-hand chord under a melody note the right hand still holds (Gymnopedie m13): the chord keeps its top note",
+ "spec": "G03 §9.4 H11",
+ "input": {
+  "time": [
+   3,
+   4
+  ],
+  "rh": "A4:h.",
+  "lh": "G2:q D3+F#3+B3:h"
+ },
+ "passes": [
+  "staff",
+  "voice",
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "same": true
+ }
+}

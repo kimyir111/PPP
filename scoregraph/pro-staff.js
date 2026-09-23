@@ -117,7 +117,10 @@
       const topA = a.notes.length - 1 >= sa ? 'RH' : 'LH', topB = b.notes.length - 1 >= sb ? 'RH' : 'LH';
       const la = centre(a.notes.slice(0, sa)), ra = centre(a.notes.slice(sa)), top = b.notes[b.notes.length - 1].midi;
       const bassLine = la !== null && ra !== null && Math.abs(top - la) < Math.abs(top - ra);
-      if (topA === 'RH' && topB === 'LH' && !bassLine) c += W.MELODY;
+      /* nor is it the melody's when the right hand's note before is still sounding: the melody is held there while the
+         left hand plays under it (Gymnopedie's A4 over the chord, §24 record) */
+      const held = a.notes.slice(sa).some(x => x.endQ > b.q + 1e-9);
+      if (topA === 'RH' && topB === 'LH' && !bassLine && !held) c += W.MELODY;
       /* a triplet figure of one beat stays in one hand */
       if (a.beat === b.beat && a.triplet && b.triplet && a.notes.length === 1 && b.notes.length === 1 && topA !== topB) c += W.TUPLET;
       return c;
@@ -211,6 +214,7 @@
           });
           const groups = Array.from(byOnset.values()).sort((a, b) => R.cmp(a[0].w, b[0].w)).map(ns => {
             ns.sort((a, b) => a.midi - b.midi || (a.staff === 'LH' ? -1 : 1));
+            ns.forEach(x => { x.endQ = R.toNumber(x.pieces.reduce((acc, p) => R.add(acc, R.parse(p.e.dur)), x.w)) * 4; });
             const e = ns[0].e, gr = ctx.grid(g, e.m);
             const beat = gr ? e.m + ':' + MG.beatIndex(gr, MG.toU(e.at) + gr.off) : e.m;
             /* a triplet note: its onset or its (tie-merged) end on a triplet point (the same before and after R-repr) */
@@ -401,14 +405,28 @@
         if (!byM.has(e.m)) byM.set(e.m, []);
         e.heads.forEach(h => { if (h.pitch && (!h.staff || h.staff === st.id)) byM.get(e.m).push(h); });
       });
-      const far = ms.map(m => {
+      /* a measure reads better in the other clef when every note is 4 or more ledger lines off in this one (§9.3), or
+         when one is and the other clef holds every note within fewer than 4 and with fewer lines in all (§24 record: a
+         left hand playing an octave under the right, B4 G4 D5 under a bass clef, the reference in treble; the §9.3 rule
+         alone never changed it, and G0's heavy-ledger rate rose past its gate on robust) */
+      /* 'far': the measure wants the other clef; 'either': no note of it is 4 or more lines off in either clef (an
+         empty one too), so it goes on in whichever clef is in force rather than changing back for one measure */
+      const state = ms.map(m => {
         const heads = byM.get(m.id) || [];
-        return heads.length > 0 && !ctx.skip.has(m.id) && heads.every(h => ledgers(h.pitch, home) >= W.LEDGER_MIN && ledgers(h.pitch, other) < ledgers(h.pitch, home));
+        if (ctx.skip.has(m.id)) return 'home';
+        if (!heads.length) return 'either';
+        const cur = heads.map(h => ledgers(h.pitch, home)), alt = heads.map(h => ledgers(h.pitch, other));
+        if (heads.every((h, k) => cur[k] >= W.LEDGER_MIN && alt[k] < cur[k])) return 'far';
+        const heavy = cur.filter(x => x >= W.LEDGER_MIN).length;
+        const sum = xs => xs.reduce((a, b) => a + b, 0);
+        if (heavy > 0 && alt.every(x => x < W.LEDGER_MIN) && sum(alt) < sum(cur)) return 'far';
+        return heavy === 0 && alt.every(x => x < W.LEDGER_MIN) ? 'either' : 'home';
       });
       for (let i = 0; i < ms.length;) {
-        if (!far[i]) { i++; continue; }
-        let j = i;
-        while (j + 1 < ms.length && far[j + 1]) j++;
+        if (state[i] !== 'far') { i++; continue; }
+        /* the run: from a far measure over far and either ones, ending at its last far measure */
+        let j = i, k = i;
+        while (k + 1 < ms.length && state[k + 1] !== 'home') { k++; if (state[k] === 'far') j = k; }
         /* from the first measure on: the opening clef itself becomes the other one */
         if (i === 0) { const c = part.clefs.find(x => x.id === own[0].id); c.sign = other; delete c.line; d.touch(); }
         else d.addClef(part, { staff: st.id, m: ms[i].id, at: '0', sign: other });

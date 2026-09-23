@@ -22,7 +22,7 @@ const heads = g => {
 };
 
 test('A22: every H fixture gives exactly its sidecar; heads keep their IDs; the music is the same', () => {
-  assert.equal(specs.length, 8);
+  assert.equal(specs.length, 11);
   const failures = [];
   specs.forEach(f => {
     try {

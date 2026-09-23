@@ -1,0 +1,22 @@
+{
+ "about": "a modulation one fifth away (C to its dominant G for 12 bars) keeps the signature: an engraver writes a closely related key with accidentals (§24 record: the dominant sections of sonatinas given their own signature cost G0 key gates on full)",
+ "spec": "G03 §10.4 S13",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "C5:q E5:q G5:q C6:q | F5:q A5:q C6:q A5:q | G5:q B5:q D6:q B5:q | C5:q E5:q G5:q E5:q | C5:q E5:q G5:q C6:q | F5:q A5:q C6:q A5:q | G5:q B5:q D6:q B5:q | C5:q E5:q G5:q E5:q | G5:q B5:q D6:q G6:q | C6:q E6:q G6:q E6:q | D6:q F#6:q A6:q F#6:q | G5:q B5:q D6:q B5:q | G5:q B5:q D6:q G6:q | C6:q E6:q G6:q E6:q | D6:q F#6:q A6:q F#6:q | G5:q B5:q D6:q B5:q | G5:q B5:q D6:q G6:q | C6:q E6:q G6:q E6:q | D6:q F#6:q A6:q F#6:q | G5:q B5:q D6:q B5:q | C5:q E5:q G5:q C6:q | F5:q A5:q C6:q A5:q | G5:q B5:q D6:q B5:q | C5:q E5:q G5:q E5:q"
+ },
+ "passes": [
+  "spell"
+ ],
+ "expect": {
+  "keys": [
+   [
+    1,
+    0
+   ]
+  ]
+ }
+}

@@ -1,4 +1,4 @@
-"""Writes tests/scoregraph/fixtures/g3/spell/S01-S12 (docs/GOALS/G03 §10.4): keys, spelling and printed accidentals,
+"""Writes tests/scoregraph/fixtures/g3/spell/S01-S13 (docs/GOALS/G03 §10.4): keys, spelling and printed accidentals,
 in the tests/scoregraph/g3-helpers.js language. The input spells notes the way audio-score's key table does (so a sharp
 or flat the fixture shows is the writer's). Expectations are written by hand from §10.2-10.3 as implemented in
 scoregraph/pro-spell.js, never computed by running G3. "accs" lists the upper staff's printed accidentals per measure,
@@ -67,4 +67,10 @@ w('S11', 'an imported score keeps its spelling and accidentals (rewrite mode)',
 w('S12', 'the line speller is off by default: the same bar keeps the spelling of the key table',
   {"time": [4, 4], "rh": "C5:8 C#5:8 D5:8 Eb5:8 E5:h"},
   {"rh": "C5:8 C#5:8 D5:8 Eb5:8 E5:h"})
+G8 = ['G5:q B5:q D6:q G6:q', 'C6:q E6:q G6:q E6:q', 'D6:q F#6:q A6:q F#6:q', 'G5:q B5:q D6:q B5:q']
+w('S13', 'a modulation one fifth away (C to its dominant G for 12 bars) keeps the signature: an engraver writes a closely '
+    'related key with accidentals (§24 record: the dominant sections of sonatinas given their own signature cost G0 key '
+    'gates on full)',
+  {"time": [4, 4], "rh": " | ".join(C8 + C8 + G8 + G8 + G8 + C8)},
+  {"keys": [[1, 0]]}, {"passes": ["spell"]})
 print(len(os.listdir(D)))

@@ -171,7 +171,7 @@
   }
   const KEY_W = Object.freeze({ WINDOW: 8, HOP: 4, MIN: 4, CHANGE: 1.5, FIFTH: 0.5 });
   /* The key of every measure by windows and a Viterbi (§10.2), or null when the piece is too short to have regions.
-     A change costs 1.5 plus 0.5 a fifth, a key lasts at least 4 measures. Scores are rounded to thousandths so no
+     A change costs 1.5 plus 0.5 a fifth, a key lasts at least 4 measures, a change of one fifth is not written. Scores are rounded to thousandths so no
      float decides a tie. */
   function regionKeys(g, part, opening) {
     const ms = g.timeline.measures, n = ms.length;
@@ -243,7 +243,11 @@
       if (keyOfM[i].fifths === keyOfM[i - 1].fifths) continue;
       let j2 = i;
       while (j2 < n && keyOfM[j2].fifths === keyOfM[i].fifths) j2++;
-      if (j2 - i < KEY_W.MIN) for (let x = i; x < j2; x++) keyOfM[x] = keyOfM[i - 1];
+      /* a region one fifth from the signature in force (the dominant or subdominant side) keeps that signature: an
+         engraver writes a closely related modulation with accidentals (§24 record: sonata expositions given the
+         dominant's signature cost G0's key gate three cases on full, A24) */
+      const df = Math.abs(keyOfM[i].fifths - keyOfM[i - 1].fifths);
+      if (j2 - i < KEY_W.MIN || Math.min(12 - df, df) === 1) for (let x = i; x < j2; x++) keyOfM[x] = keyOfM[i - 1];
     }
     return keyOfM;
   }

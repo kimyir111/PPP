@@ -1,4 +1,4 @@
-"""Writes tests/scoregraph/fixtures/g3/hands/H01-H08 (docs/GOALS/G03 §9.4): input bars and the hands, staves and clefs
+"""Writes tests/scoregraph/fixtures/g3/hands/H01-H11 (docs/GOALS/G03 §9.4): input bars and the hands, staves and clefs
 G3's P2 must give them, in the tests/scoregraph/g3-helpers.js language. Written by hand from the §9.2 costs (as fixed
 in scoregraph/pro-staff.js), never computed by running G3.
 
@@ -48,5 +48,17 @@ w('H07', 'a right-hand scale that dips below middle C stays in the right hand (t
   {"same": True})
 w('H08', 'an imported score keeps its hands (rewrite mode)',
   {"time": [3, 4], "rh": "D5+D6:q C5+C6:q B4+B5:q | A4+A5:h.", "lh": "r:h. | r:h.", "op": "imported"},
+  {"same": True})
+w('H09', 'the left hand playing an octave under the right (Beyer 033, written in the right hand): one hand each, and the left '
+    'hand in a treble clef while its notes sit 3 to 5 ledger lines above the bass staff and none would in treble (§24 record: '
+    'the §9.3 rule alone never changed this clef, the reference is in treble); back to bass for the bass line',
+  {"time": [3, 4], "rh": "B5+B4:q G5+G4:q D6+D5:q | B5+B4:h. | C5:h.", "lh": "r:h. | r:h. | C3:h."},
+  {"rh": "B5:q G5:q D6:q | B5:h. | C5:h.", "lh": "B4:q G4:q D5:q | B4:h. | C3:h.", "clefs": ["RH m1 G", "LH m1 G", "LH m3 F"]})
+w('H10', 'a lone bass note while the right hand rests (micro M16): it stays in the left hand, the melody term does not pull '
+    'it up (it is nearer where the left hand played)',
+  {"time": [4, 4], "rh": "C5:h r:h | r:w", "lh": "F2:w | Bb2:w"},
+  {"same": True})
+w('H11', 'a left-hand chord under a melody note the right hand still holds (Gymnopedie m13): the chord keeps its top note',
+  {"time": [3, 4], "rh": "A4:h.", "lh": "G2:q D3+F#3+B3:h"},
   {"same": True})
 print(len(os.listdir(D)))
