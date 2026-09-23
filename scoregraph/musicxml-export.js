@@ -258,6 +258,32 @@
         addMark(d.m, d.at, 5, S.idNumber(d.id), d.staff || null, d.voice || null, { pl: pl, types: [type], sound: '' });
       });
 
+      /* Group by measure once. Scanning every event, clef and key for each measure made writing a part
+         O(measures x events): invisible at the corpus maximum of 1,776 heads, eight seconds at 72,000
+         (G02 §15.2, A30). The order within each group is the graph's, so the bytes do not move. */
+      const evsByMeasure = new Map();
+      part.events.forEach(e => {
+        let list = evsByMeasure.get(e.m);
+        if (!list) { list = []; evsByMeasure.set(e.m, list); }
+        list.push(e);
+      });
+      const clefsByMeasure = new Map();
+      part.clefs.forEach(c => {
+        if (Q(c.at).n !== 0) return;                    /* a clef inside the measure is a mark, not an attribute */
+        let list = clefsByMeasure.get(c.m);
+        if (!list) { list = []; clefsByMeasure.set(c.m, list); }
+        list.push(c);
+      });
+      clefsByMeasure.forEach(list => list.sort((x, y) => S.idNumber(x.id) - S.idNumber(y.id)));
+      const keysByMeasure = new Map();
+      (tl.keys || []).forEach(k => {
+        if (Q(k.at).n !== 0) return;
+        if (k.scope && k.scope.part !== part.id) return;
+        let list = keysByMeasure.get(k.m);
+        if (!list) { list = []; keysByMeasure.set(k.m, list); }
+        list.push(k);
+      });
+
       const partStart = out.length;
       out.push('<part id="P' + (pi + 1) + '">');
       measures.forEach((m, mi) => {
@@ -279,24 +305,20 @@
         /* measure-start attributes */
         const at0 = [];
         if (mi === 0) at0.push('<divisions>' + div + '</divisions>');
-        (tl.keys || []).forEach(k => {
-          if (k.m !== m.id || Q(k.at).n !== 0) return;
-          if (k.scope && k.scope.part !== part.id) return;
-          at0.push(keyXml(k));
-        });
+        (keysByMeasure.get(m.id) || []).forEach(k => at0.push(keyXml(k)));
         const mt = metersAt.get(m.id);
         if (mt) at0.push('<time' + (mt.symbol ? ' symbol="' + mt.symbol + '"' : '') + (mt.hidden ? ' print-object="no"' : '') + '>' +
           '<beats>' + mt.beats.join('+') + '</beats><beat-type>' + mt.beatType + '</beat-type></time>');
         if (mi === 0 && multiStaff) at0.push('<staves>' + part.staves.length + '</staves>');
         if (pi === 0 && m.multiRest !== undefined) at0.push('<measure-style><multiple-rest>' + m.multiRest + '</multiple-rest></measure-style>');
         /* in ID order (import gives clefs at one position their document order; the app lists clefs in document order) */
-        part.clefs.filter(c => c.m === m.id && Q(c.at).n === 0).sort((x, y) => S.idNumber(x.id) - S.idNumber(y.id)).forEach(c => at0.push(clefXml(c)));
+        (clefsByMeasure.get(m.id) || []).forEach(c => at0.push(clefXml(c)));
         if (mi === 0 && tr) at0.push('<transpose>' + (tr.diatonic ? '<diatonic>' + tr.diatonic + '</diatonic>' : '<diatonic>0</diatonic>') +
           '<chromatic>' + tr.chromatic + '</chromatic>' + (tr.octave ? '<octave-change>' + tr.octave + '</octave-change>' : '') + '</transpose>');
         if (at0.length) out.push('<attributes>' + at0.join('') + '</attributes>');
 
         /* the voices of this measure, in part order */
-        const evs = part.events.filter(e => e.m === m.id);
+        const evs = evsByMeasure.get(m.id) || [];
         const byVoice = new Map();
         evs.forEach(e => { if (!byVoice.has(e.voice)) byVoice.set(e.voice, []); byVoice.get(e.voice).push(e); });
         const streams = Array.from(byVoice.keys()).sort((a, b) => voiceOrder.get(a) - voiceOrder.get(b))
