@@ -48,6 +48,15 @@
   const lcm = (a, b) => a / R.gcd(a, b) * b;
   /* <fermata>: on a note's notations, or on a bar line (G02 §18 S4) */
   const fermataXml = f => '<fermata type="' + (f.inverted ? 'inverted' : 'upright') + '">' + (f.shape || '') + '</fermata>';
+  /* MusicXML pairs a glissando by number; one at a time needs only number 1 */
+  function add(map, id, xml) { if (!map.has(id)) map.set(id, []); map.get(id).push(xml); }
+  function nextGlissNumber(map, s) {
+    for (let n = 1; n <= 6; n++) {
+      const used = (map.get(s.from) || []).concat(map.get(s.to) || []).some(x => x.indexOf('number="' + n + '"') >= 0);
+      if (!used) return n;
+    }
+    return 1;
+  }
 
   function exportMusicXml(g, opts) {
     opts = opts || {};
@@ -163,6 +172,16 @@
       });
       /* slurs, wedges and octave shifts are numbered after the part is written (numberMarks) */
       const evById = new Map(part.events.map(e => [e.id, e]));
+      /* glissando and slide: both ends are heads, and the start carries how it is drawn (G02 §18 S5) */
+      const glissOn = new Map();
+      part.spanners.filter(s => s.type === 'gliss').forEach(s => {
+        const tag = s.slide ? 'slide' : 'glissando';
+        const num = nextGlissNumber(glissOn, s);
+        add(glissOn, s.from, '<' + tag + ' type="start" number="' + num + '"' +
+          (s.line ? ' line-type="' + s.line + '"' : '') + (s.placement ? ' placement="' + s.placement + '"' : '') + '>' +
+          (s.text !== undefined ? esc(s.text) : '') + '</' + tag + '>');
+        add(glissOn, s.to, '<' + tag + ' type="stop" number="' + num + '"/>');
+      });
       part.spanners.filter(s => s.type === 'slur').forEach(s => {
         if (s.from) { if (!slurStarts.has(s.from)) slurStarts.set(s.from, []); slurStarts.get(s.from).push(s); }
         if (s.to) { if (!slurStops.has(s.to)) slurStops.set(s.to, []); slurStops.get(s.to).push(s); }
@@ -307,7 +326,12 @@
         if (mi === 0) at0.push('<divisions>' + div + '</divisions>');
         (keysByMeasure.get(m.id) || []).forEach(k => at0.push(keyXml(k)));
         const mt = metersAt.get(m.id);
-        if (mt) at0.push('<time' + (mt.symbol ? ' symbol="' + mt.symbol + '"' : '') + (mt.hidden ? ' print-object="no"' : '') + '>' +
+        /* The graph has no way to say "no metre", so the import kept the fact on the measure. Writing it
+           back is what makes the round trip a fixed point, and keeps the file's own meaning (G02 §6.3). */
+        const noMetre = m.ext && m.ext['musicxml.no-metre'] ? m.ext['musicxml.no-metre'].reason : null;
+        if (mt && noMetre === 'senza-misura') at0.push('<time><senza-misura/></time>');
+        else if (mt && noMetre === 'absent') void 0;
+        else if (mt) at0.push('<time' + (mt.symbol ? ' symbol="' + mt.symbol + '"' : '') + (mt.hidden ? ' print-object="no"' : '') + '>' +
           '<beats>' + mt.beats.join('+') + '</beats><beat-type>' + mt.beatType + '</beat-type></time>');
         if (mi === 0 && multiStaff) at0.push('<staves>' + part.staves.length + '</staves>');
         if (pi === 0 && m.multiRest !== undefined) at0.push('<measure-style><multiple-rest>' + m.multiRest + '</multiple-rest></measure-style>');
@@ -445,7 +469,10 @@
             if (ki !== undefined) instXml = '<instrument id="P' + (pi + 1) + '-I' + (ki + 1) + '"/>';
           } else {
             const w = P.written(h.pitch, tr);
-            pitch = '<pitch><step>' + w.step + '</step>' + (w.alter ? '<alter>' + w.alter + '</alter>' : '') + '<octave>' + w.oct + '</octave></pitch>';
+            /* the graph rounded a quarter tone to a semitone and kept what the file said; give it back */
+            const micro = h.ext && h.ext['musicxml.microtone'] ? String(h.ext['musicxml.microtone'].alter) : undefined;
+            const alter = micro !== undefined && /^[+-]?(\d+\.?\d*|\.\d+)$/.test(micro) ? micro : w.alter;
+            pitch = '<pitch><step>' + w.step + '</step>' + (alter ? '<alter>' + alter + '</alter>' : '') + '<octave>' + w.oct + '</octave></pitch>';
           }
           const tIn = headIn.get(h.id), tOut = headOut.get(h.id);
           const ties = e.cue ? '' : (tIn ? '<tie type="stop"/>' : '') + (tOut ? '<tie type="start"/>' : '');
@@ -463,6 +490,7 @@
           if (h.tech && h.tech.string !== undefined) tech.push('<string>' + h.tech.string + '</string>');
           if (h.tech && h.tech.fret !== undefined) tech.push('<fret>' + h.tech.fret + '</fret>');
           if (tech.length) nots.push('<technical>' + tech.join('') + '</technical>');
+          (glissOn.get(h.id) || []).forEach(x => nots.push(x));
           const arp = arpOf.get(h.id);
           if (arp) nots.push(arp.non ? '<non-arpeggiate type="' + (h.id === arp.heads[0] ? 'bottom' : 'top') + '"/>' : '<arpeggiate' + (arp.dir ? ' direction="' + arp.dir + '"' : '') + '/>');
           out.push('<note' + noteAttrs + '>' + graceXml + (e.cue ? '<cue/>' : '') + (hi > 0 ? '<chord/>' : '') + pitch + durXml + ties + instXml + c.pre + acc + tmXml + stemXml + nh + c.staff +

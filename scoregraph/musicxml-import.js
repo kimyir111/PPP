@@ -399,7 +399,9 @@
             if (microtone !== null) {
               issue('W-IMPORT-MICROTONE', 'a microtonal <alter> ' + alterT + ' in measure ' + rec.number +
                 ' is written as ' + alter + '; the file\'s value is kept in ext');
-              head.ext = { 'musicxml.microtone': { alter: microtone } };
+              /* the file's own text, not a parsed number: the notation side of a graph holds no floats
+                 (G01 §14.2), and the text is what a round trip has to give back */
+              head.ext = { 'musicxml.microtone': { alter: String(alterT).trim() } };
             }
             const accEl = kid(n, 'accidental');
             if (accEl) {

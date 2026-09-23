@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Four empty measures printed as one multi-measure rest. The measures themselves always
+     survived import; what was lost is how they print (G02 s18 S6, A16). -->
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1"><attributes><divisions>2</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef><measure-style><multiple-rest>4</multiple-rest></measure-style></attributes><note><rest measure="yes"/><duration>8</duration><voice>1</voice></note></measure>
+    <measure number="2"><note><rest measure="yes"/><duration>8</duration><voice>1</voice></note></measure>
+    <measure number="3"><note><rest measure="yes"/><duration>8</duration><voice>1</voice></note></measure>
+    <measure number="4"><note><rest measure="yes"/><duration>8</duration><voice>1</voice></note></measure>
+    <measure number="5"><note><pitch><step>C</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type></note><note><pitch><step>C</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type></note><note><pitch><step>C</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type></note><note><pitch><step>C</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type></note></measure>
+  </part>
+</score-partwise>

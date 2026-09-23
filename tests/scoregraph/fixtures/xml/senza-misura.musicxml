@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Music written without a metre. G1 refused the whole file for this; G2 keeps the measure
+     as written, assumes 4/4 so the graph has something to measure against, and says so
+     on the measure (G02 s6.3, A8). -->
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Cadenza</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1"><attributes><divisions>2</divisions><key><fifths>0</fifths></key><time><senza-misura/></time><clef><sign>G</sign><line>2</line></clef></attributes><note><pitch><step>C</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type></note><note><pitch><step>D</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type></note><note><pitch><step>E</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type></note><note><pitch><step>F</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type></note></measure>
+  </part>
+</score-partwise>

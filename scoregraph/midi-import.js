@@ -175,7 +175,8 @@
     const sr = b.source(src);
     /* What the file says is imported; the grid below is ours, and says so (§12.3, DP3). */
     b.setDefault({ src: sr.id, op: 'imported' });
-    const INFERRED = { src: sr.id, op: 'inferred' };
+    /* only the op: the source is the file either way, and repeating it is I-PROV-REDUNDANT */
+    const INFERRED = { op: 'inferred' };
 
     const measures = bars.map((bar, i) => b.measure({ number: String(i + 1), dur: R.format(bar.dur), prov: INFERRED }).id);
     meters.forEach((met, i) => {

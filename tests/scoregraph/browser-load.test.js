@@ -10,7 +10,7 @@ const { REPO, SG, xml } = require('./helpers.js');
 
 /* the order the app's HTML loads them in (index.js last) */
 const ORDER = ['rational', 'schema', 'pitch', 'time', 'serialize', 'validate', 'build', 'prov', 'ops', 'xml',
-  'musicxml-import', 'musicxml-export', 'midi-file', 'midi-import', 'index'];
+  'musicxml-import', 'musicxml-export', 'midi-file', 'midi-import', 'import', 'index'];
 
 test('the script order names every scoregraph file', () => {
   const files = fs.readdirSync(path.join(REPO, 'scoregraph')).filter(f => f.endsWith('.js')).map(f => f.slice(0, -3)).sort();
