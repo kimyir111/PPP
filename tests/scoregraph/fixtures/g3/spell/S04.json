@@ -1,0 +1,32 @@
+{
+ "about": "a diminished seventh chord keeps its spelling (its thirds are all minor: the exception)",
+ "spec": "G03 §10.4 S04",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "key": {
+   "fifths": -3,
+   "mode": "minor"
+  },
+  "rh": "B3+D4+F4+Ab4:w"
+ },
+ "passes": [
+  "spell"
+ ],
+ "expect": {
+  "rh": "B3+D4+F4+Ab4:w",
+  "accs": [
+   [
+    "natural",
+    "",
+    "",
+    ""
+   ]
+  ]
+ },
+ "opts": {
+  "spelling": true
+ }
+}

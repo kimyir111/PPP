@@ -1,0 +1,26 @@
+{
+ "about": "courtesy (c): a tie brought F# over the bar line; the F later in that measure carries a courtesy natural",
+ "spec": "G03 §10.4 S10",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "C5:h F#4:h~ | F#4:h F4:h"
+ },
+ "passes": [
+  "spell"
+ ],
+ "expect": {
+  "accs": [
+   [
+    "",
+    "sharp"
+   ],
+   [
+    "",
+    "(natural)"
+   ]
+  ]
+ }
+}

@@ -1,0 +1,34 @@
+{
+ "about": "courtesy (b): after a key change that takes the sharp off F, the first F gets a courtesy natural",
+ "spec": "G03 §10.4 S09",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "key": {
+   "fifths": 1
+  },
+  "keys": [
+   {
+    "bar": 1,
+    "fifths": 0
+   }
+  ],
+  "rh": "F#4:w | F4:h F4:h"
+ },
+ "passes": [
+  "spell"
+ ],
+ "expect": {
+  "accs": [
+   [
+    ""
+   ],
+   [
+    "(natural)",
+    ""
+   ]
+  ]
+ }
+}

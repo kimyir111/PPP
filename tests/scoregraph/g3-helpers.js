@@ -88,6 +88,8 @@ function mk(spec) {
   const ms = durs.map((d, i) => b.measure(Object.assign({ number: String(i + 1), dur: R.format(d) }, spec.implicitFirst && i === 0 ? { implicit: true } : {})).id);
   b.meter(Object.assign({ m: ms[0], beats: [time[0]], beatType: time[1] }, spec.groups ? { groups: spec.groups } : {}));
   if (spec.key !== null) b.key({ m: ms[0], at: '0', fifths: (spec.key || {}).fifths || 0, mode: (spec.key || {}).mode || 'major' });
+  /* more key signatures: [{bar (0-based), fifths, mode}] */
+  (spec.keys || []).forEach(k => b.key({ m: ms[k.bar], at: '0', fifths: k.fifths, mode: k.mode || 'major' }));
   b.tempo({ m: ms[0], at: '0', qpm: '120' });
   Array.from(new Set(staves)).forEach((st, i) => b.clef(part, { staff: st, m: ms[0], at: '0', sign: i === 0 ? 'G' : 'F' }));
   const perf = spec.perf ? b.performance({ kind: 'source', src: src.id }) : null;
@@ -256,4 +258,18 @@ function appBrackets(xmlText) {
   return count;
 }
 
-module.exports = { mk, render, parseLine, pitchText, parsePitch, headIndex, runSpec, specGraph, appBrackets, PASS_NAMES };
+/* The printed accidentals of a staff's heads, per measure, in time order and lowest head first: [['', 'sharp',
+   '(natural)' …], …] ('' none, a cautionary one in brackets). */
+function accs(g, staffIdx) {
+  const p = g.parts[0], st = p.staves[staffIdx].id;
+  const mi = new Map(g.timeline.measures.map((m, i) => [m.id, i]));
+  const out = g.timeline.measures.map(() => []);
+  p.events.filter(e => e.kind === 'note' && e.staff === st && !e.grace)
+    .sort((a, b) => mi.get(a.m) - mi.get(b.m) || R.cmp(R.parse(a.at), R.parse(b.at)))
+    .forEach(e => e.heads.slice().sort((a, b) => SG.pitch.midi(a.pitch) - SG.pitch.midi(b.pitch)).forEach(h => {
+      out[mi.get(e.m)].push(!h.acc ? '' : h.acc.cautionary ? '(' + h.acc.type + ')' : h.acc.type);
+    }));
+  return out;
+}
+
+module.exports = { mk, render, parseLine, pitchText, parsePitch, headIndex, runSpec, specGraph, appBrackets, accs, PASS_NAMES };

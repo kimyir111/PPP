@@ -1,0 +1,28 @@
+{
+ "about": "the Neapolitan sixth in C: a C# under F is a diminished fourth inside the chord, so it is Db",
+ "spec": "G03 §10.4 S05",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "F4+C#5:h E4+C5:h"
+ },
+ "passes": [
+  "spell"
+ ],
+ "expect": {
+  "rh": "F4+Db5:h E4+C5:h",
+  "accs": [
+   [
+    "",
+    "flat",
+    "",
+    ""
+   ]
+  ]
+ },
+ "opts": {
+  "spelling": true
+ }
+}

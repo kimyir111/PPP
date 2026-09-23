@@ -1,0 +1,29 @@
+{
+ "about": "a falling chromatic passing note by step is lowered: D C# C becomes D Db C",
+ "spec": "G03 §10.4 S02",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "E5:8 Eb5:8 D5:8 C#5:8 C5:h"
+ },
+ "passes": [
+  "spell"
+ ],
+ "expect": {
+  "rh": "E5:8 Eb5:8 D5:8 Db5:8 C5:h",
+  "accs": [
+   [
+    "",
+    "flat",
+    "",
+    "flat",
+    ""
+   ]
+  ]
+ },
+ "opts": {
+  "spelling": true
+ }
+}

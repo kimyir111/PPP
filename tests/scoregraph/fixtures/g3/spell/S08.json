@@ -1,0 +1,24 @@
+{
+ "about": "courtesy (a): the measure after an F#, its F carries a courtesy natural",
+ "spec": "G03 §10.4 S08",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "F#4:w | F4:w"
+ },
+ "passes": [
+  "spell"
+ ],
+ "expect": {
+  "accs": [
+   [
+    "sharp"
+   ],
+   [
+    "(natural)"
+   ]
+  ]
+ }
+}
