@@ -2,7 +2,7 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 상태 | 설계 완료 (Architect 세션, 2026-09-22). **구현 COMPLETE (Implementer 세션, 2026-09-23): §24.** production switch(flip)를 했다. |
+| 상태 | 설계 완료 (2026-09-22) · **구현 COMPLETE (2026-09-23): §24** · **독립 리뷰 READY_TO_PR (2026-09-23): §25** (BLOCKER 0, MAJOR 0, MINOR 5, OPTIONAL 3). |
 | 작업 위치 | `D:/PPP-g1`, 브랜치 `g1-scoregraph`. `D:/PPP`는 건드리지 않는다. |
 | 기준 커밋 | `aff7080` (G0: Quality Foundation, `origin/main` `e0d8b23` 위). `audio-score.js` content sha256(CRLF를 LF로 읽음) `78bd76e5…` |
 | 기준 측정 | 이 세션이 `aff7080`에서 직접 실행했다. `run --suite core`: 553 cases, 0 errors. `check --suite core`: **PASS** (SQI 76.86). `golden`: **17/17 identical**. |
@@ -39,6 +39,7 @@
 - [22. 사용자 결정이 필요한 사항](#22-사용자-결정이-필요한-사항)
 - [23. 조사 중 발견한 이슈 (고치지 않음)](#23-조사-중-발견한-이슈-고치지-않음)
 - [24. 구현 기록](#24-구현-기록-g1-implementer-2026-09-23)
+- [25. 독립 리뷰](#25-독립-리뷰-independent-review-2026-09-23)
 - [부록 A. MusicXML ↔ ScoreGraph 대응표](#부록-a-musicxml--scoregraph-대응표)
 - [부록 B. Legacy Score adapter 계약 (G2 준비)](#부록-b-legacy-score-adapter-계약-g2-준비)
 - [부록 C. 예시 (피아노, 드럼)](#부록-c-예시-피아노-드럼)
@@ -2035,6 +2036,96 @@ PASS는 아래 테스트나 명령이 실제로 통과했다는 뜻이다. 모�
 - **녹음 UI 테스트의 고정 `sleep`.** `transcription.test.js`의 "rich style" 검사는 편곡 서비스 호출 뒤 900 ms만 기다린다. G1 첫 실행에서 한 번 실패했고 다시 나지 않았다. `toMusicXml`이 케이스당 약 10 ms 느려진 만큼 여유가 준다.
 - **full baseline 불일치(F7)** 는 G1과 무관하지만, nightly의 `check --suite full`은 G1 이전부터 실패한다. rebaseline은 사용자 결정이다.
 - **`buildXml`은 한 릴리스 뒤 G2에서 지운다** (§15.3). 그때 legacy 경로 테스트와 shadow 도구도 정리한다.
+
+---
+
+## 25. 독립 리뷰 (Independent Review, 2026-09-23)
+
+| 항목 | 값 |
+| --- | --- |
+| 판정 | **READY_TO_PR** — BLOCKER 0, MAJOR 0, MINOR 5, OPTIONAL 3 |
+| 대상 | 브랜치 `g1-scoregraph`, 커밋 `d65d81f` (기준 `aff7080` = `origin/main`) |
+| 방법 | 구현 기록(§24)의 수치를 믿지 않고 리뷰어가 자기 도구로 다시 측정했다. 코드는 고치지 않았다 (이 절만 추가). |
+
+### 25.1 리뷰가 쓴 도구 (구현자의 도구와 겹치지 않는다)
+
+G0 reader, ScoreGraph 라이브러리, 구현자의 `shadow_compare.py`를 **쓰지 않는다**. reader와 writer가 같은 결함을 공유하면 차이가 숨기 때문이다.
+
+- **음악 모델 비교**: MusicXML을 `xml.etree`로 직접 읽어 음높이·시작 위치·길이·성부·보표·박자·조표·템포·마디 번호·implicit·반복·volta·임시표·페달(offset 반영)·tie·잇단음 괄호·clef·staves를 뽑아 두 writer의 파일을 비교한다. divisions, `<offset>`, 요소 순서, MusicXML 버전, `<identification>`만 정규화한다.
+- **도구의 민감도 자체 검증**: 한 번에 하나씩 24종을 일부러 틀리게 만들어(음높이, 옥타브, 길이, 시작 위치, 음표 종류, 점, time-modification, 성부, 보표, staves, clef, 박자, 조표, 템포, 메트로놈, tie, tied, 마디 번호, implicit, 마디 삭제, 반복, volta, 페달 삭제/이동, 화음 해체, 음표/쉼표 삭제) 전부 감지되는 것을 확인한 뒤에 썼다.
+- **경계 입력**: 손으로 만든 36개(빈 입력, 중복 온셋, 음역 밖, vel 0/200/null, 10음 클러스터, 30초 음, 32분음 연속, 한 손 전부, 삼연음, 잘못된 페달, 뒤섞인 beats, 못갖춘 시작, lock 5/4·7/8·6/8·12/8·bpm 30/240, 편곡, 600음, grid 6종)과 시드 fuzz 400개.
+- **SUT 폐쇄성**: 리뷰어가 직접 만든 ScoreGraph exporter 결함 3종(`<alter>` 부호 반전, 마디 번호 +1, 보표 1↔2 교체)을 스냅샷 사본에 심어 벤치가 잡는지 본다.
+- **mutation 재고정**: 재고정된 23종을 각각 심어 파일이 실제로 어떻게 달라지는지 본다.
+- **F7**: full suite를 기준 커밋의 SUT와 작업 트리 SUT로 각각 돌려 저장된 baseline과 비교한다.
+
+### 25.2 항목별 결과
+
+| # | 리뷰 항목 | 결과 | 근거 |
+| --- | --- | --- | --- |
+| §2 | production flip의 음악적 동일성 | **VERIFIED** (잇단음 괄호 1건 제외, F1) | 리뷰 도구로 golden 17 · smoke 44 · replay-public 6 · core 553 · robust 282 · full 4,976 = **5,878 케이스**를 비교했다. 음높이·시작·길이·박자·템포·조표·보표·손·성부·마디 구조·반복/volta·임시표·페달·tie: **전부 동일**. `stats`도 전 케이스 동일. 잇단음 괄호만 358 케이스에서 다르다 (F1) |
+| §3 | ERROR → throw 경로 | **VERIFIED** (F2 제외) | 5,878 + 436(경계·fuzz) 케이스에서 그래프 ERROR 0, 한쪽만 실패 1건(F2). ERROR는 `finish()`에서 throw하므로 "throw 0건 = ERROR 0건"이다. 정상 입력에서 false-positive 없음. `legacyWriter`는 모든 비교에서 옛 파일을 냈고 라이브러리를 적재하지 않는다 |
+| §4 | 표현 검증 | **VERIFIED** | 동작으로 확인: 템포를 2배로 해도 기보 위치·길이 불변, 울리는 시각만 절반 · anchor를 1초 옮겨도 기보 불변, 연주 시간 맵만 이동 · 재생 순서는 저장되지 않고 `unroll`이 만든다 · 화음 = head 여럿인 event 하나 · head는 철자만 저장하고 MIDI는 파생 · 손은 staff→voice→head 상속 · `updateHead`가 ID 유지·`rev`+1·원본 불변 · 8va는 ottava spanner이고 표시 옥타브는 파생 · 커밋된 `.sg.json` 52개 전부 `serialize(parse(s)) === s` · `scoregraph_version: 2`는 E-VERSION. 기보(유리수)와 연주(µs)가 만나는 곳은 `time.js`, `validate.js`, `audio-score.js`의 변환 지점뿐이다 |
+| §5 | piano/drum 확장성 | **VERIFIED** | 피아노는 **part 하나 + staff 둘(limb RH/LH)** 이다 (손별 part 아님). `drums-with-piano` fixture는 피아노와 drumset이 timeline을 공유하고 limb 4종(RH/LH/RF/LF)을 쓰며 ERROR 0으로 검증된다. instrument kind에 keyboard/percussion/plucked(기타·베이스)가 있다. G1은 percussion을 export에서 명시적으로 거절한다(설계대로) |
+| §6 | 코퍼스 round-trip 369 | **VERIFIED** (F3 제외) | 369개 중 367개가 L1·L1+·L2·재생 순서를 통과, 2개는 allowlist. allowlist 2건을 원본 파일까지 열어 확인했다 (아래) |
+| §7 | benchmark SUT 확장 | **VERIFIED** | SUT 스냅샷 = 14개 파일(`audio-score.js` + scoregraph 13). 리뷰어가 심은 exporter 결함 3종이 **전부** 잡혔다: golden이 SEMANTIC/STRUCTURAL(12·18·18건), smoke gate가 REGRESSION. scoregraph가 SUT 밖이었다면 사본이 작업 트리 라이브러리를 계속 써서 통과했을 것이다 |
+| §8 | mutation 재고정 | **VERIFIED** | 재고정·신규 23종을 심어 파일 차이를 직접 봤다: 전부 이름 그대로의 음악 결함을 만든다(템포 제거, 박자 2배, 조표/박자 꼬리 변경, 점 제거, 음표 종류 단축, 마디 번호 restart/skip/swap, 저음보 높은음자리표, 꼬리 쉼표 단축, 쉼표 종류 연장, 임시표 전부/제거, 반복 기호, implicit, `<staves>` 제거, 가짜 분할(마디 16→17), alto clef, 마지막 두 마디 조표, exporter 3종). `SR-PRINTED-TEMPO-MIDWAY`(대조군)은 고쳐진 형태가 맞다: **소리 없는** 메트로놈 표시(48)와 **원래 템포(95)를 가진 별도 `<sound>`** 두 지시로 나온다 |
+| §9 | A/B 결과 | **VERIFIED** | 리뷰어가 `ab --a git:aff7080 --b worktree`를 다시 돌렸다. side a는 파일 1개(scoregraph 0), side b는 14개 — 각자 자기 라이브러리를 쓴다(작업 트리 공유 아님). `ab_identical` 44/44 동일. 다만 A/B는 양쪽을 같은 reader로 읽으므로 reader가 안 읽는 것은 못 본다 — F1이 그 경로로 빠져나갔다. 리뷰의 독립 비교가 그 구멍을 메운다 |
+| §10 | full baseline F7 | **pre-existing (A)** | full suite를 **기준 커밋 SUT**와 **작업 트리 SUT**로 각각 돌렸다: usable 0.2013 / sqi 79.671로 **완전히 같고**, baseline 대비 실패하는 gate 줄도 **32개로 동일**(한쪽에만 있는 줄 0). G1이 악화시킨 것이 아니다. rebaseline은 하지 않았다 |
+| §11 | 잇단음 warning | **기존 결함 + 새 변화 1건** | W-TUPLET-INCOMPLETE(core 8,144)는 `buildXml`이 원래 조각마다 괄호를 여는 것을 정직하게 보고한 것이다. 다만 **쪼개진 잇단음에서 괄호 묶음이 바뀐다**(F1) |
+| §12 | 성능 | **VERIFIED, 문제 없음** | 같은 입력에서 legacy 대 ScoreGraph: 100음 7.3→19.4 ms, 400음 19→43 ms, 1,600음 72→256 ms, 3,200음(1,007마디) 142→634 ms. golden 17개 평균 +2.4 ms/케이스. 전사 1회당 한 번 드는 비용이고 AMT 자체가 수 초다 |
+| §13–14 | 테스트 | **모두 통과** | §25.4 |
+| §15 | scope | **VERIFIED** | `origin/main..HEAD` 305 파일: tests 282, scoregraph 14, docs 4, 앱 HTML 1(script 13줄), `package.json` 1(script 한 줄), `audio-score.js` 1, `.gitignore` 1, CI 1. `tmp/`·`__pycache__`·catalog·OMR·transcription·`server.js`·Python 파이프라인 변경 **0** |
+
+**allowlist 2건 (§6)**
+
+- `catalog/method/burgmuller25/016.mxl` — 원본을 열어 보면 ending 괄호가 마디마다 **두 번씩** 적혀 있고(8·17·18마디는 start/stop이 각각 두 벌), 9마디만 두 번째 stop이 없으며 16마디에 짝 없는 stop이 하나 떠 있다. 즉 **원본 결함**이다. import는 그 떠 있는 stop을 `dropped`에 보고하고 버린다. 재생 순서는 그대로다(`sg-roundtrip`의 play_order 369/369). **정당하다.**
+- `catalog/method/sonatina/014.mxl` — 60마디에 crescendo와 그 stop이 있고, 76마디에 **시작 없는 stop**, 77마디에 **끝나지 않는 diminuendo**가 있다. 원본 결함이 맞고, ScoreGraph의 Wedge가 양 끝을 요구하는 것은 설계(§5.10)이며 import가 보고한다. **정당하다.** 다만 이 항목의 설명 문장은 틀렸다 (F3)
+
+### 25.3 발견
+
+**BLOCKER 0 · MAJOR 0**
+
+| # | 등급 | 발견 |
+| --- | --- | --- |
+| F1 | MINOR | **쪼개진 잇단음의 괄호 묶음이 바뀐다.** `buildXml`은 한 event가 여러 조각으로 쪼개지면 첫 조각에 `<tuplet type="start">`, 마지막 조각에 `stop`을 찍어 **괄호 하나**로 묶었다. buildGraph는 조각마다 Tuplet을 따로 만들어 **조각마다 start+stop**을 찍는다. 영향: core 37/553(6.7 %), robust 17/282(6.0 %), full 304/4,976(6.1 %), golden·smoke·replay 0. 앱은 `<tuplet>` start/stop을 읽고(App 4245) 묶음이 **2개 이상일 때만** 괄호를 그리므로(App 11472), 묶여 있던 괄호가 사라진다 — `method/czerny849/020`에서 앱이 그리던 괄호 29개 → 0개. 소리·길이·time-modification은 그대로다. G0 gate는 `<tuplet>` start/stop을 읽지 않아(reader는 time-modification 비율만 읽는다) 이 변화를 **볼 수 없다**. 사라지는 괄호 자체가 원래 틀린 표기(셋잇단 3음이 아니라 tie로 묶인 2조각 위의 "3")여서 merge blocker로 보지 않는다. §24.3의 "`buildXml`은 조각마다 괄호를 따로 연다 … 그래프가 그대로 담는다"는 **쪼개진 경우에 한해 사실과 다르다** |
+| F2 | MINOR | **시간이 숫자가 아닌 페달이 들어오면 새 writer가 죽는다.** `{on: 1}`(off 없음, 녹음이 끝날 때까지 밟고 있던 페달), `{on: NaN}`, `{off: NaN}`, `{on: 없음}` 중 하나라도 있으면 `toMusicXml`이 `rational parts must be integers`로 throw한다. `buildXml`은 같은 입력에서 그 페달만 조용히 버리고 악보를 냈다 (`finish()`의 페달 필터는 NaN 비교가 전부 false라 통과시키고, `buildXml`의 `pedalsHere` 필터가 다시 NaN을 걸렀다). 현재 출하되는 생산자로는 재현되지 않는다: Python helper는 `midi_notes.py`에서 걸린 페달을 녹음 끝 시각으로 닫고, 브라우저 fallback(`basic-pitch`)은 페달을 내지 않는다. 그러나 앱은 helper JSON의 `pedals`를 검사 없이 그대로 넘긴다. 고치려면 `buildGraph`의 페달 위치 계산에 연주 층에 이미 있는 것과 같은 `isFinite` 가드 한 줄이면 된다 |
+| F3 | MINOR | **allowlist 설명이 틀렸다.** `sonatina/014` 항목은 "앱은 wedge를 읽지 않으므로 보이고 들리는 것은 같다"고 적었다. 앱은 `parseMusicXML`에서 `<wedge>`를 읽고(App 4098) 재생 세기를 그것으로 만든다(App 2705–2731). 특히 **끝나지 않은 diminuendo는 곡 끝까지 적용된다**(App 2715). G1 production은 import 경로를 쓰지 않으므로 지금 영향은 없지만, G2에서 import가 그래프로 옮겨가면 실제로 들리는 차이가 된다. 근거 문장을 고쳐야 한다 |
+| F4 | MINOR | **exporter의 거절을 확인하지 않는다.** `result.xml = scoreGraph().musicxml.export(...).xml` 은 `{ok:false}`를 검사하지 않는다. 거절되면 `xml`이 `undefined`가 되어 앱이 나중에 엉뚱한 곳에서 실패한다. 지금은 도달 불가다(피아노 그래프는 perc가 없고, 잘못된 그래프는 `finish()`가 먼저 throw). throw로 바꾸는 편이 낫다 |
+| F5 | MINOR | **쓰기 비용이 2.3–4.5배다.** 100음 7.3→19.4 ms, 3,200음 142→634 ms로 규모가 커질수록 배수도 커진다. 지금은 문제가 아니지만(전사당 1회), 아주 긴 녹음에서 더 벌어질 수 있다 |
+| F6 | OPTIONAL | round-trip allowlist는 **파일 단위**다. allowlist에 오른 파일이 나중에 **다른** 차이를 얻어도 통과한다(재현 fixture는 원래 차이만 확인한다). 사유 단위로 막는 편이 안전하다 |
+| F7 | OPTIONAL | `ab_identical.py`는 `predicted.semantic`만 비교하고 `predicted`의 나머지(bars, key, tempo, pedal_marks)는 보지 않는다. 또 양쪽 케이스가 0개여도 "all the same"으로 통과한다(최소 케이스 수 확인이 없다) |
+| F8 | OPTIONAL | `transcription.test.js`의 "rich style" 검사는 편곡 서비스 호출 뒤 **900 ms 고정 대기**다. 서비스 왕복이 약 600 ms여서 여유가 얇다(구현 세션에서 1회 실패, 재현 3회 없음). 조건 대기로 바꾸는 편이 안전하다 — 다만 UI 대수술은 하지 말 것 |
+
+### 25.4 리뷰어가 직접 돌린 결과 (커밋 `d65d81f`)
+
+| 명령 | 결과 |
+| --- | --- |
+| `npm run test:scoregraph` | 71/71, 2.8 s |
+| `npm run test:bench` | 단위 221 OK · golden **17/17 identical** · correctness 13/13 |
+| `npm run bench` (core) | **PASS**, 21 s |
+| `run --suite robust` + `check` | **PASS** |
+| `run --suite replay-public` + `check` | **PASS** |
+| `ab --suite smoke --a git:aff7080 --b worktree` + `ab_identical` | **PASS**, 44/44 케이스 동일 |
+| `mutation-check` | **PASS** — 해로운 40종 전부 잡히고 no-op은 바이트 동일 |
+| `sg-roundtrip` | 369개 중 367개 전 레벨 통과, 2개 allowlist, play_order 369/369, 14.1 s |
+| `run --suite full` (기준 SUT와 작업 트리 SUT) | 각각 4,976 케이스 0 error, 수치 동일, baseline 대비 같은 32줄 실패 (§10) |
+| `npm test` (26 suite 개별 실행) | HEAD 23/26 · 기준 커밋 `aff7080`도 **23/26, 실패 내용까지 동일**(FPS 10, layout 2건, transkun venv 검사) → 환경 문제이고 G1과 무관. 통과 집합은 기준과 같다 |
+| 리뷰 자체 비교 | 5,878 케이스 음악 동일(F1 제외) · 경계·fuzz 436개 중 한쪽만 실패 1건(F2) |
+
+### 25.5 merge 조건 대조
+
+| 조건 | 판정 |
+| --- | --- |
+| BLOCKER 0 / MAJOR 0 | ✅ |
+| production flip 의미 동일 | ✅ (5,878 케이스; 잇단음 괄호 F1은 인쇄 표기, 소리·구조 불변) |
+| ERROR/throw 경로 허용 가능 | ✅ (정상 입력 false-positive 0; F2는 출하 생산자로 도달 불가) |
+| allowlist 2건 정당 | ✅ (둘 다 원본 결함, 설명 문장만 F3) |
+| SUT multi-file coverage | ✅ (리뷰어가 심은 결함 3종 모두 탐지) |
+| A/B 정상 | ✅ (각 side가 자기 라이브러리, 케이스별 동일) |
+| full baseline 실패가 pre-existing | ✅ (기준 커밋에서도 같은 32줄) |
+| G0 regression 없음 | ✅ |
+
+**결론: READY_TO_PR.** F1–F3은 PR 뒤 별도 커밋이나 G2/G3에서 다루면 된다. F1은 G3(잇단음 표기), F2는 한 줄 가드, F3은 문서 수정이다.
 
 ---
 
