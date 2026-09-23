@@ -520,7 +520,8 @@
       if (!moving.length || moving.length === e.heads.length) throw new OpError('E-OP-TARGET', 'moveHeads moves some heads of ' + eventId + ', not none or all');
       const st = staffId || this.voice(voiceId).staff;
       const ne = { id: this.newId('e'), kind: e.kind, m: e.m, at: e.at, dur: e.dur, voice: voiceId, staff: st };
-      ['hidden', 'cue', 'display', 'arts', 'orn', 'fermata', 'prov'].forEach(k => { if (e[k] !== undefined) ne[k] = JSON.parse(JSON.stringify(e[k])); });
+      /* the chord's marks (articulations, ornaments, a fermata) stay with the chord: a mark is written once (G03 I6) */
+      ['hidden', 'cue', 'display', 'prov'].forEach(k => { if (e[k] !== undefined) ne[k] = JSON.parse(JSON.stringify(e[k])); });
       ne.heads = moving;
       moving.forEach(h => { if (h.staff === st) delete h.staff; });
       e.heads = e.heads.filter(h => !move.has(h.id));
@@ -528,6 +529,35 @@
       this.reindex();
       this.touch();
       return ne.id;
+    }
+
+    /* Move heads of one note into another note that starts and lasts the same (and prints the same value), making it a
+       chord: the heads keep their IDs; a note left with no heads retires into the one it joined. */
+    joinHeads(fromId, headIds, toId) {
+      const a = this.event(fromId), b = this.event(toId), part = this.partOfEvent(fromId);
+      if (a.kind !== 'note' || b.kind !== 'note' || a.m !== b.m || a.at !== b.at || a.dur !== b.dur || !sameJson(a.display, b.display) || a.grace || b.grace)
+        throw new OpError('E-OP-TARGET', 'joinHeads needs two notes with the same start, length and printed value');
+      if (headIds.length === a.heads.length && (a.arts || a.orn || a.fermata || a.lyrics))
+        throw new OpError('E-OP-TARGET', 'joinHeads would lose the marks of ' + fromId);
+      const move = new Set(headIds);
+      const moving = a.heads.filter(h => move.has(h.id));
+      const there = new Set(b.heads.map(h => (h.pitch ? P.midi(h.pitch) : h.inst)));
+      if (moving.some(h => there.has(h.pitch ? P.midi(h.pitch) : h.inst))) throw new OpError('E-OP-TARGET', 'joinHeads would put one pitch twice in ' + toId);
+      moving.forEach(h => { if (h.staff === b.staff) delete h.staff; });
+      b.heads = b.heads.concat(moving);
+      a.heads = a.heads.filter(h => !move.has(h.id));
+      if (!a.heads.length) {
+        part.events = part.events.filter(e => e.id !== a.id);
+        part.spanners.forEach(sp => {
+          if (sp.type === 'slur') { if (sp.from === a.id) sp.from = b.id; if (sp.to === a.id) sp.to = b.id; }
+          if ((sp.type === 'tuplet' || sp.type === 'beam') && sp.events.indexOf(a.id) >= 0) sp.events = sp.events.filter(x => x !== a.id);
+        });
+        part.directions.forEach(dd => { if (dd.event === a.id) dd.event = b.id; });
+        this.dropEmptySpanners(part);
+        this.retire(a.id, b.id);
+      }
+      this.reindex();
+      this.touch();
     }
 
     /* The rests of a voice in a measure, again: every stretch no note of the voice covers becomes rests (each piece
@@ -538,8 +568,20 @@
       const mdur = R.parse(this.doc.timeline.measures[this.mIdx.get(m)].dur);
       const plan = [];
       let cur = R.ZERO;
-      const restIds = rests.map(e => e.id);
-      const addRests = (a, b) => { restPieces(R.format(a), R.format(b)).forEach(x => plan.push({ reuse: restIds.length ? restIds.shift() : undefined, kind: 'rest', at: x.at, dur: x.dur, display: x.display })); };
+      /* a gap is filled by the rests already inside it, kept as they are, and new rests for what they leave */
+      const keptRests = new Set();
+      const addRests = (a, b) => {
+        let x = a;
+        rests.filter(r => { const rs = R.parse(r.at), re = R.add(rs, R.parse(r.dur)); return R.ge(rs, a) && R.le(re, b); })
+          .forEach(r => {
+            const rs = R.parse(r.at);
+            if (R.lt(x, rs)) fresh(x, rs);
+            plan.push(this.keepPlan(r)); keptRests.add(r.id);
+            x = R.add(rs, R.parse(r.dur));
+          });
+        if (R.lt(x, b)) fresh(x, b);
+      };
+      const fresh = (a, b) => { restPieces(R.format(a), R.format(b)).forEach(x => plan.push({ kind: 'rest', at: x.at, dur: x.dur, display: x.display })); };
       notes.forEach(e => {
         const s = R.parse(e.at);
         if (R.lt(s, cur)) throw new OpError('E-OP-TARGET', 'notes of ' + voiceId + ' overlap in ' + m);
@@ -547,11 +589,11 @@
         plan.push(this.keepPlan(e));
         cur = R.add(s, R.parse(e.dur));
       });
-      if (R.lt(cur, mdur) && notes.length) addRests(cur, mdur);
-      if (!notes.length) {
-        /* a voice with nothing but rests: its own first voice keeps a whole-measure rest; another voice leaves */
-        rests.forEach(e => { plan.push(this.keepPlan(e)); });
-      }
+      /* the rest of the measure; a voice left with no note at all is rests from its start to its end */
+      if (R.lt(cur, mdur)) addRests(cur, mdur);
+      /* rests no gap keeps go; their IDs are not reused for new pieces (a kept rest keeps its own) */
+      const spare = rests.filter(r => !keptRests.has(r.id)).map(r => r.id);
+      plan.forEach(p => { if (p.kind === 'rest' && p.reuse === undefined && spare.length) p.reuse = spare.shift(); });
       const before = JSON.stringify(evs.map(e => [e.id, e.kind, e.at, e.dur, e.display]));
       const after = JSON.stringify(plan.map(p => [p.reuse, p.kind, p.at, p.dur, p.display]));
       if (before === after) return false;

@@ -1,0 +1,22 @@
+{
+ "about": "an imported score keeps its hands (rewrite mode)",
+ "spec": "G03 §9.4 H08",
+ "input": {
+  "time": [
+   3,
+   4
+  ],
+  "rh": "D5+D6:q C5+C6:q B4+B5:q | A4+A5:h.",
+  "lh": "r:h. | r:h.",
+  "op": "imported"
+ },
+ "passes": [
+  "staff",
+  "voice",
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "same": true
+ }
+}

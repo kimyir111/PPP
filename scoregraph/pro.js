@@ -163,7 +163,7 @@
     for (const pass of (opts.passList || passList(opts))) {
       const tp = Date.now();
       ctx.perm = permission(cur, opts.mode);
-      ctx.skip = new Set();
+      ctx.skip = new Set(opts._skip || []);
       let r;
       try { r = pass.run(cur, ctx); } catch (e) {
         if (opts.strict) throw e;
@@ -179,9 +179,9 @@
         const where = new Set();
         v.forEach(x => x.where.forEach(w => where.add(w)));
         if (where.has('global')) return fail('pass ' + pass.name + ' changed ' + v.map(x => x.component).join(', ') + ' outside any measure', v);
-        ctx.skip = where;
+        ctx.skip = new Set(Array.from(where).concat(opts._skip || []));
         try { r = pass.run(cur, ctx); } catch (e) { return fail('pass ' + pass.name + ' threw on its second run: ' + e.message); }
-        ctx.skip = new Set();
+        ctx.skip = new Set(opts._skip || []);
         fp = C.fingerprint(r.graph);
         const v2 = C.check(fpCur, fp, pass.may);
         if (v2.length) return fail('pass ' + pass.name + ' changed ' + v2.map(x => x.component).join(', ') + ' even without the measures it broke', v2);
@@ -204,7 +204,16 @@
       if (val.errors.length) return fail('the result has ' + val.errors.length + ' ERROR(s): ' + val.errors.slice(0, 3).map(i => i.code + ' ' + i.message).join('; '));
       if (val.g3warnings.length) {
         if (opts.strict) throw new CriticError('validate', [{ component: 'warnings', where: val.g3warnings.slice(0, 20).map(i => i.code + ' ' + (i.ids || []).join(',')) }]);
-        val.g3warnings.forEach(i => report.issues.push({ code: 'N-G3-WARNING', message: 'G3 left ' + i.code + ': ' + i.message }));
+        /* §15.3.3: the measures G3 left a notation warning in are handed back (every pass leaves them as they came), once;
+           a warning outside any measure, or one that stays, gives back the whole input */
+        const where = new Set(val.g3warnings.map(i => i.at && i.at.m).filter(Boolean));
+        if (opts._rerun || where.size < new Set(val.g3warnings.map(i => i.at && i.at.m)).size || !where.size)
+          return fail('G3 left ' + val.g3warnings.length + ' notation warning(s): ' + val.g3warnings.slice(0, 3).map(i => i.code + ' ' + i.message).join('; '));
+        const again = professionalize(g, Object.assign({}, opts, { _rerun: true, _skip: Array.from(where).concat(opts._skip || []) }));
+        again.report.rollbacks.push({ pass: 'all', measures: Array.from(where).sort(), components: ['warnings'] });
+        again.report.issues.push({ code: 'N-G3-ROLLBACK', message: 'measures ' + Array.from(where).sort().join(', ') + ' left as they came: G3 would have left ' +
+          val.g3warnings.map(i => i.code).join(', ') + ' there' });
+        return again;
       }
     }
     report.ms = Date.now() - t0;

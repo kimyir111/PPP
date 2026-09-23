@@ -29,7 +29,10 @@ test('A11: every T fixture gives exactly its sidecar (members, ratio, unit, pare
 test('T09 / A13: export then import gives back the same tuplets (members, ratios, units, parents)', () => {
   const shape = g => {
     const p = g.parts[0];
-    const at = new Map(p.events.map(e => [e.id, e.m + '@' + e.at + '/' + e.voice]));
+    /* members by measure index, position and the voice's place among the part's voices (IDs differ after an import) */
+    const mi = new Map(g.timeline.measures.map((m, i) => [m.id, i]));
+    const vi = new Map(p.voices.map((v, i) => [v.id, i]));
+    const at = new Map(p.events.map(e => [e.id, mi.get(e.m) + '@' + e.at + '/V' + vi.get(e.voice)]));
     const byId = new Map(p.spanners.filter(s => s.type === 'tuplet').map(s => [s.id, s]));
     /* a printed tuplet by its members; an unprinted one (no <tuplet> marks: MusicXML does not say where it starts and
        stops) by the ratio each of its events carries */
@@ -44,9 +47,7 @@ test('T09 / A13: export then import gives back the same tuplets (members, ratios
     assert.equal(x.ok, true, label);
     const back = SG.musicxml.import(x.xml, { scoreId: 'rt' });
     assert.equal(back.ok, true, label);
-    /* the importer names voices by their MusicXML number; compare by position and voice order */
-    const norm = gg => { const vs = gg.parts[0].voices.map(v => v.id); return shape(gg).map(s => vs.reduce((t, v, i) => t.split('/' + v).join('/V' + i), s)); };
-    assert.deepEqual(norm(back.graph), norm(g), label);
+    assert.deepEqual(shape(back.graph), shape(g), label);
   };
   specs.forEach(f => check(runSpec(JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8'))).output, f));
   const rows = D.recorded(['core']).filter(r => r.graph.parts[0].spanners.some(s => s.type === 'tuplet'));

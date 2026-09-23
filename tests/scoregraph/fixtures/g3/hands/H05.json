@@ -1,0 +1,22 @@
+{
+ "about": "the hands never cross: a left-hand note above a right-hand note at one onset goes up, into the chord of the right hand chord (moving one note costs less than swapping two)",
+ "spec": "G03 §9.4 H05",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "C4:h C4:h",
+  "lh": "E4:h C3:h"
+ },
+ "passes": [
+  "staff",
+  "voice",
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "rh": "C4+E4:h C4:h",
+  "lh": "r:h C3:h"
+ }
+}

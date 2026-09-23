@@ -1,0 +1,22 @@
+{
+ "about": "a triplet arpeggio split between the hands (Burgmuller 021, E3): the left hand keeps its figure",
+ "spec": "G03 §9.4 H03",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "r:q=1/6 3[E4:8] 3[E5:8] 3[C5:8] 3[G4:8] r:h",
+  "lh": "3[G3:8] 3[C4:8] r:8=1/12 r:q r:h"
+ },
+ "passes": [
+  "staff",
+  "voice",
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "rh": "r:q 3e[E5:8 C5:8 G4:8] r:h",
+  "lh": "3e[G3:8 C4:8 E4:8] r:q r:h"
+ }
+}

@@ -1,0 +1,22 @@
+{
+ "about": "a chord wider than one hand (19 semitones) with the left hand free: split where each hand holds a playable chord and no octave (G4 and G5 in one hand would be one)",
+ "spec": "G03 §9.4 H04",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "C4+E4+G4+C5+E5+G5:w",
+  "lh": "r:w"
+ },
+ "passes": [
+  "staff",
+  "voice",
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "rh": "C5+E5+G5:w",
+  "lh": "C4+E4+G4:w"
+ }
+}
