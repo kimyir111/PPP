@@ -1,4 +1,4 @@
-"""Writes tests/scoregraph/fixtures/g3/rhythm/R01-R24 (docs/GOALS/G03 §6.3): the input bars and the writing G3's
+"""Writes tests/scoregraph/fixtures/g3/rhythm/R01-R28 (docs/GOALS/G03 §6.3): the input bars and the writing G3's
 R-repr must give them, in the tests/scoregraph/g3-helpers.js language. The expectations are written by hand from
 the rules (H1-H8, the S table, the §6.2 cost), never computed by running G3.
 
@@ -44,4 +44,8 @@ w('R21', 'a grace note stays before its main note while the notes around it are 
 w('R22', 'a septuplet piece (1/28) is on no grid: nothing changes, N-RHYTHM-UNREPRESENTABLE', {"time": [4, 4], "rh": "C5:16=1/28 D5:16=1/28 E5:16=1/28 F5:16=1/28 G5:16=1/28 A5:16=1/28 B5:16=1/28 r:h."}, {"same": True, "issues": {"N-RHYTHM-UNREPRESENTABLE": 1}})
 w('R23', 'an already clean bar: the same graph object comes back', {"time": [4, 4], "rh": "C5:q D5:q E5:h"}, {"same": True})
 w('R24', 'an imported bar is never rewritten (rewrite mode)', {"time": [4, 4], "rh": "C5:8~ C5:8 D5:q E5:h", "op": "imported"}, {"same": True})
+w('R25', '6/8: three 16th-triplet pieces inside one eighth of a dotted beat are one 3:2 group, unit 16th (§7.3: a span starts where the beat hierarchy has a point)', {"time": [6, 8], "rh": "C5:8 3[D5:16] 3[E5:16] 3[F5:16] G5:8 A5:q."}, {"rh": "C5:8 3s[D5:16 E5:16 F5:16] G5:8 A5:q.", "warnings": {}})
+w('R26', '6/8: triplet eighths across the dotted-quarter beat are never one bracket over the beat: each eighth of it is a 16th triplet, the note over the beat tied there (H4)', {"time": [6, 8], "rh": "C5:q 3[D5:8] 3[E5:8] 3[F5:8] r:8 r:8"}, {"rh": "C5:q 3s[D5:8 E5:16~] 3s[E5:16 F5:8] r:q", "warnings": {}})
+w('R27', '6/8: a rest inside a 16th triplet (issue 19 in a compound metre): written as a triplet rest and grouped', {"time": [6, 8], "rh": "C5:8 3[D5:16] 3[E5:16] r:16=1/24 G5:8 A5:q."}, {"rh": "C5:8 3s[D5:16 E5:16 r:16] G5:8 A5:q.", "warnings": {}})
+w('R28', '9/8: a 16th triplet in the second eighth of beat 2', {"time": [9, 8], "rh": "C5:q. D5:8 3[E5:16] 3[F5:16] 3[G5:16] A5:8 B5:q."}, {"rh": "C5:q. D5:8 3s[E5:16 F5:16 G5:16] A5:8 B5:q.", "warnings": {}})
 print(len(os.listdir(D)))

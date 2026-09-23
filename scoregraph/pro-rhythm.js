@@ -88,9 +88,28 @@
     const out = [];
     const push = (a, b, kind, unit) => { a = Math.max(0, a); b = Math.min(dur, b); if (b > a) out.push({ s: a, e: b, kind: kind, unit: unit }); };
     if (!simple) {
-      /* compound and additive metres: a beat is binary or frozen (no 3:2 inside a dotted beat) */
+      /* compound and additive metres: a beat is binary; or, in eighths (x/8), each eighth of it binary or a 16th
+         triplet (§7.3: a span starts only where the hierarchy has a point; no 3:2 across a dotted beat); else frozen */
       const bounds = gr.beats.map(x => x - off).concat([gr.nomU - off]);
-      for (let i = 0; i + 1 < bounds.length; i++) push(bounds[i], bounds[i + 1], binary(inside(Math.max(0, bounds[i]), Math.min(dur, bounds[i + 1]))) ? 'binary' : 'frozen');
+      for (let i = 0; i + 1 < bounds.length; i++) {
+        const a = bounds[i], b = bounds[i + 1];
+        if (binary(inside(Math.max(0, a), Math.min(dur, b)))) { push(a, b, 'binary'); continue; }
+        if (gr.sub !== U / 8 || (b - a) % gr.sub !== 0) { push(a, b, 'frozen'); continue; }
+        const first = out.length;
+        for (let p = a; p < b; p += gr.sub) {
+          const q = p + gr.sub, ys = inside(Math.max(0, p), Math.min(dur, q));
+          if (binary(ys)) push(p, q, 'binary');
+          else if (p >= 0 && q <= dur && triplet(ys, p)) push(p, q, 'triplet', '16th');
+          else push(p, q, 'frozen');
+        }
+        /* two eighths of one beat that a note crosses, every point on the triplet-eighth grid of the pair: one 3:2 of
+           eighths over them (a triplet eighth over the middle is one value, not two tied triplet 16ths) */
+        for (let k = first; k + 1 < out.length; k++) {
+          const x = out[k], y = out[k + 1];
+          if (x.kind === 'triplet' && y.kind === 'triplet' && x.unit === '16th' && y.unit === '16th' && x.e === y.s && pts.indexOf(x.e) < 0 &&
+              inside(x.s, y.e).every(p => (p - x.s) % (2 * gr.sub / 3) === 0)) out.splice(k, 2, { s: x.s, e: y.e, kind: 'triplet', unit: 'eighth' });
+        }
+      }
       return merge(out);
     }
     for (let x = -off; x < dur; x += Q) {

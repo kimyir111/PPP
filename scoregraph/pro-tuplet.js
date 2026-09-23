@@ -52,7 +52,7 @@
 
   /* Tile runs of triplet pieces with spans (§7.3). evs: the voice-measure; off: the pickup offset (integer of 1/U).
      Returns {groups: [{events, unit}], loose: [event IDs no span holds]}. */
-  function tile(evs, off) {
+  function tile(evs, off, beats) {
     /* base: the undotted value of the printed type (integer of 1/U), what the renderer measures a bracket by */
     const base = e => { const v = e.display && e.display.type ? S.NOTE_TYPE_VALUE[e.display.type] : null; return v ? v.n * U / v.d : 0; };
     const pieces = evs.map(e => ({ e: e, s: MG.toU(e.at), en: MG.toU(R.format(R.add(R.parse(e.at), R.parse(e.dur)))), t: tripletPiece(e), base: base(e) }));
@@ -74,8 +74,13 @@
         let cand = { held: best[i + 1].held, pen: best[i + 1].pen, groups: best[i + 1].groups, step: { skip: true } };
         SPANS.forEach((sp, rank) => {
           const x = run[i].s + off;
-          if (x % sp.len !== 0) return;
           const end = x + sp.len;
+          if (beats) {
+            /* a compound or additive metre: a span starts on an eighth of its (dotted) beat and stays inside the beat */
+            let bs = 0;
+            beats.forEach(bt => { if (bt <= x) bs = bt; });
+            if ((x - bs) % (U / 8) !== 0 || beats.some(bt => bt > x && bt < end)) return;
+          } else if (x % sp.len !== 0) return;
           let j = i;
           while (j < n && run[j].en + off <= end) j++;
           /* a span one note fills is no tuplet (that note is a plain value) */
@@ -123,7 +128,7 @@
             if (mine.some(s => s.parent !== undefined || s.actual !== 3 || s.normal !== 2 || s.events.some(id => !inside.has(id)) ||
               mine.some(t => t !== s && t.parent === s.id))) return;
             if (mine.some(s => ctx.perm.spanner(part, s) === 'none' && right !== 'rewrite')) return;
-            const { groups, loose } = tile(vm.evs, gr.off);
+            const { groups, loose } = tile(vm.evs, gr.off, gr.compound || gr.additive ? gr.beats : null);
             if (right === 'fill') {
               /* an imported score: only a missing unit is filled in, on a tuplet that already is a whole group */
               const plan = mine.map(s => {

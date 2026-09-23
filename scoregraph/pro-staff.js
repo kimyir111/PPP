@@ -12,7 +12,8 @@
      count     more than 5 notes in a hand cannot be played
      move      150 × the distance each hand's centre moves from where it last
                played, less the reach the time since gives it (6 semitones a beat)
-     melody    1500 when the top note leaves the hand that had the last top note (E7)
+     melody    1500 when the top note leaves the hand that had the last top note (E7),
+               unless both hands played the notes before and it is nearer the left hand's
      octave    1500 when one hand takes both notes of an octave (E6)
      ledger    300 per note 4 or more ledger lines off both clefs
      tuplet    1500 when a triplet figure of one beat changes hands (E2, E3)
@@ -110,9 +111,13 @@
       /* a hand moving costs by the distance from where it last played, less the reach the time since gives it */
       if (cl !== null && last.l !== null) c += Math.round(W.MOVE * Math.max(0, Math.abs(cl - last.l) - Math.max(0, b.q - last.lq) * W.REACH));
       if (cr !== null && last.r !== null) c += Math.round(W.MOVE * Math.max(0, Math.abs(cr - last.r) - Math.max(0, b.q - last.rq) * W.REACH));
-      /* the top note stays in the hand that had the last top note */
+      /* the top note stays in the hand that had the last top note, unless the notes before had both hands and it is
+         nearer the left hand's: then it is the bass going on while the right hand rests (M16), not the melody. Read
+         from the state before (a, sa) only, not the carried centres, so the DP stays exact and G3 idempotent (A5). */
       const topA = a.notes.length - 1 >= sa ? 'RH' : 'LH', topB = b.notes.length - 1 >= sb ? 'RH' : 'LH';
-      if (topA === 'RH' && topB === 'LH') c += W.MELODY;
+      const la = centre(a.notes.slice(0, sa)), ra = centre(a.notes.slice(sa)), top = b.notes[b.notes.length - 1].midi;
+      const bassLine = la !== null && ra !== null && Math.abs(top - la) < Math.abs(top - ra);
+      if (topA === 'RH' && topB === 'LH' && !bassLine) c += W.MELODY;
       /* a triplet figure of one beat stays in one hand */
       if (a.beat === b.beat && a.triplet && b.triplet && a.notes.length === 1 && b.notes.length === 1 && topA !== topB) c += W.TUPLET;
       return c;
