@@ -150,7 +150,6 @@
     const fp0 = C.fingerprint(g);
     let cur = g, fpCur = fp0;
     const idMap = {};
-    const touched = new Set();
     const compose = m => {
       Object.keys(idMap).forEach(k => { if (idMap[k] !== null && idMap[k] in m) idMap[k] = m[idMap[k]]; });
       Object.keys(m).forEach(k => { if (!(k in idMap)) idMap[k] = m[k]; });
@@ -190,7 +189,6 @@
         report.issues.push({ code: 'N-G3-ROLLBACK', message: 'pass ' + pass.name + ' left measures ' + Array.from(where).sort().join(', ') + ' as they were (it changed ' + v.map(x => x.component).join(', ') + ')' });
         entry.changed = r.graph !== cur;
       }
-      (r.changes || []).forEach(ch => (ch.ids || []).forEach(id => touched.add(id)));
       compose(r.idMap || {});
       cur = r.graph; fpCur = fp;
       entry.ms = Date.now() - tp;
@@ -200,7 +198,7 @@
       const fixed = C.FIXED.concat(opts.g3b ? [] : ['sound']);
       const v = C.diff(fp0, fpCur, fixed);
       if (v.length) return fail('the result differs from the input in ' + v.map(x => x.component).join(', '), v);
-      const val = C.validation(cur, touched);
+      const val = C.validation(cur, g);
       if (val.errors.length) return fail('the result has ' + val.errors.length + ' ERROR(s): ' + val.errors.slice(0, 3).map(i => i.code + ' ' + i.message).join('; '));
       if (val.g3warnings.length) {
         if (opts.strict) throw new CriticError('validate', [{ component: 'warnings', where: val.g3warnings.slice(0, 20).map(i => i.code + ' ' + (i.ids || []).join(',')) }]);

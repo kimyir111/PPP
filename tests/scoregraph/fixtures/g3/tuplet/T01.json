@@ -1,0 +1,18 @@
+{
+ "about": "three triplet eighths, one spanner per piece (what audio-score writes today): one spanner, three members, unit eighth",
+ "spec": "G03 §7.4 T01",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "3[C5:8] 3[D5:8] 3[E5:8] r:q r:h"
+ },
+ "passes": [
+  "tuplet"
+ ],
+ "expect": {
+  "rh": "3e[C5:8 D5:8 E5:8] r:q r:h",
+  "warnings": {}
+ }
+}

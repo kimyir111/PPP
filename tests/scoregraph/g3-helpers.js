@@ -124,7 +124,13 @@ function render(g, opts) {
   const part = g.parts[0];
   const tieOut = new Set(part.spanners.filter(s => s.type === 'tie' && s.from && s.to).map(s => s.from));
   const tupOf = new Map();
-  part.spanners.filter(s => s.type === 'tuplet').forEach(t => t.events.forEach(id => tupOf.set(id, t)));
+  const tups = part.spanners.filter(s => s.type === 'tuplet');
+  const tupById = new Map(tups.map(t => [t.id, t]));
+  const depth = t => { let d = 0, p = t; while (p && p.parent !== undefined && d < 16) { p = tupById.get(p.parent); d++; } return d; };
+  tups.forEach(t => t.events.forEach(id => { if (!tupOf.has(id)) tupOf.set(id, []); tupOf.get(id).push(t); }));
+  /* the ratio a tuplet stands for with its parents: [actual product, normal product] */
+  const chain = t => { let a = 1, n = 1, x = t, k = 0; while (x && k++ < 16) { a *= x.actual; n *= x.normal; x = x.parent !== undefined ? tupById.get(x.parent) : null; } return [a, n]; };
+  const mark = t => (t.actual === 3 && t.normal === 2 ? '3' : t.actual + ':' + t.normal) + (t.unit ? UNIT_CODE[t.unit.type] || t.unit.type : '') + '[';
   const mIdx = new Map(g.timeline.measures.map((m, i) => [m.id, i]));
   const out = [];
   part.staves.forEach(st => {
@@ -135,17 +141,19 @@ function render(g, opts) {
       const bars = g.timeline.measures.map(() => []);
       let open = null;
       evs.forEach(e => {
-        const t = tupOf.get(e.id);
+        const ts = (tupOf.get(e.id) || []).slice().sort((a, b) => depth(a) - depth(b));
+        const inner = ts.length ? ts[ts.length - 1] : null;
         let s = '';
-        if (t && t.events[0] === e.id) s += '3' + (t.unit ? UNIT_CODE[t.unit.type] || '?' : '') + '[';
+        ts.forEach(t => { if (t.events[0] === e.id) s += mark(t); });
         const d = e.display || {};
         s += e.kind === 'rest' ? 'r' : e.heads.map(h => pitchText(h.pitch)).join('+');
         s += ':' + (d.type ? TYPE_CODE[d.type] || d.type : '?') + '.'.repeat(d.dots || 0);
         const shown = d.type ? SG.schema.noteValue(d.type, d.dots) : null;
-        const expectDur = shown && t ? R.mul(shown, R.make(t.normal, t.actual)) : shown;
+        const ratio = inner ? chain(inner) : null;
+        const expectDur = shown && ratio ? R.mul(shown, R.make(ratio[1], ratio[0])) : shown;
         if (!expectDur || !R.eq(expectDur, R.parse(e.dur))) s += '=' + e.dur;
         if (e.kind === 'note' && e.heads.some(h => tieOut.has(h.id))) s += '~';
-        if (t && t.events[t.events.length - 1] === e.id) s += ']';
+        ts.slice().reverse().forEach(t => { if (t.events[t.events.length - 1] === e.id) s += ']'; });
         bars[mIdx.get(e.m)].push(s);
         void open;
       });
@@ -163,4 +171,78 @@ function headIndex(g) {
   return out;
 }
 
-module.exports = { mk, render, parseLine, pitchText, parsePitch, headIndex };
+/* Run a fixture spec ({input: {…mk spec} | {musicxml: path under fixtures/}, passes?: [names], mode?, opts?}):
+   {input, output, report}. With passes, only those G3 passes run. */
+const PASS_NAMES = ['staff', 'voice', 'rhythm', 'tuplet', 'spell', 'beam', 'marks'];
+function specGraph(spec) {
+  if (spec.input.musicxml) {
+    const fs = require('fs'), path = require('path');
+    const text = fs.readFileSync(path.join(__dirname, 'fixtures', spec.input.musicxml), 'utf8');
+    const r = SG.musicxml.import(text, { scoreId: 'fixture' });
+    if (!r.ok) throw new Error('import failed: ' + r.code);
+    return r.graph;
+  }
+  return mk(spec.input);
+}
+function runSpec(spec, extra) {
+  const input = specGraph(spec);
+  const opts = Object.assign({ strict: true }, spec.opts || {}, extra || {});
+  if (spec.mode) opts.mode = spec.mode;
+  if (spec.passes) { opts.passes = {}; PASS_NAMES.forEach(n => { opts.passes[n] = spec.passes.indexOf(n) >= 0; }); }
+  const r = SG.professionalize(input, opts);
+  return { input: input, output: r.graph, report: r.report };
+}
+
+/* The tuplet brackets the app draws for a MusicXML file: the grouping rule of buildVoice in Piano Coach App.dc.html
+   (a group runs until a <tuplet type="start"> opens another, a stop closes it, or its notes fill the time they stand
+   for; a group of one note gets no bracket), replayed on the file per part, measure and voice. */
+function appBrackets(xmlText) {
+  const doc = SG.xml.parse(xmlText).root;
+  const kids = (n, name) => n.kids.filter(k => k.name === name);
+  const kid = (n, name) => n.kids.find(k => k.name === name);
+  const txt = (n, name, d) => { const k = n && kid(n, name); return k ? k.text.trim() : d; };
+  const TYPE_Q = { whole: 4, half: 2, quarter: 1, eighth: 0.5, '16th': 0.25, '32nd': 0.125, '64th': 0.0625 };
+  let count = 0, divisions = 1;
+  kids(doc, 'part').forEach(part => {
+    kids(part, 'measure').forEach(meas => {
+      const voices = new Map();
+      let cursor = 0, last = 0;
+      meas.kids.forEach(el => {
+        if (el.name === 'attributes') { const d = txt(el, 'divisions', null); if (d) divisions = Number(d); return; }
+        if (el.name === 'backup') { cursor -= Number(txt(el, 'duration', '0')) / divisions; return; }
+        if (el.name === 'forward') { cursor += Number(txt(el, 'duration', '0')) / divisions; return; }
+        if (el.name !== 'note' || kid(el, 'grace')) return;
+        const dur = Number(txt(el, 'duration', '0')) / divisions;
+        if (kid(el, 'chord')) return;
+        const tmEl = kid(el, 'time-modification');
+        const tm = tmEl ? { a: Number(txt(tmEl, 'actual-notes', '0')), n: Number(txt(tmEl, 'normal-notes', '0')) } : null;
+        const nots = kids(el, 'notations').reduce((a, n) => a.concat(kids(n, 'tuplet')), []);
+        const v = txt(el, 'voice', '1') + '|' + txt(el, 'staff', '1');
+        if (!voices.has(v)) voices.set(v, []);
+        voices.get(v).push({ b: cursor, next: cursor + dur, tm: tm && tm.a > 0 && tm.n > 0 && tm.a !== tm.n ? tm : null, type: txt(el, 'type', null),
+          start: nots.some(t => t.attrs.type === 'start'), stop: nots.some(t => t.attrs.type === 'stop') });
+        last = cursor; cursor += dur;
+      });
+      void last;
+      voices.forEach(drawn => {
+        let tr = [], trFrom = 0, trTm = null, trUnit = 1;
+        const close = () => { if (tr.length > 1 && trTm) count++; tr = []; trTm = null; trUnit = 1; };
+        drawn.forEach(d => {
+          const tm = d.tm;
+          if (!tm || (trTm && (tm.a !== trTm.a || tm.n !== trTm.n)) || d.start) close();
+          if (!tm) return;
+          if (!tr.length) { trFrom = d.b; trTm = tm; }
+          tr.push(d);
+          const unit = TYPE_Q[d.type] || 0.5;
+          trUnit = tr.length === 1 ? unit : Math.min(trUnit, unit);
+          const filled = d.next - trFrom >= trTm.n * trUnit - 0.02;
+          if (d.stop || filled) close();
+        });
+        close();
+      });
+    });
+  });
+  return count;
+}
+
+module.exports = { mk, render, parseLine, pitchText, parsePitch, headIndex, runSpec, specGraph, appBrackets, PASS_NAMES };

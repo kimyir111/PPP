@@ -36,6 +36,10 @@ function fixtures() {
       const p = path.join(d, e.name);
       if (e.isDirectory()) walk(p);
       else if (e.name.endsWith('.sg.json')) out.push({ path: path.relative(root, p).replace(/\\/g, '/'), graph: SG.parse(fs.readFileSync(p, 'utf8')) });
+      else if (e.name.endsWith('.json') && !e.name.endsWith('.expect.json')) {
+        const spec = JSON.parse(fs.readFileSync(p, 'utf8'));
+        if (spec.input) out.push({ path: path.relative(root, p).replace(/\\/g, '/'), graph: require('./g3-helpers.js').specGraph(spec) });
+      }
     });
   })(root);
   return out.sort((a, b) => (a.path < b.path ? -1 : 1));

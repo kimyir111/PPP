@@ -160,14 +160,18 @@
     return diff(before, after, comps);
   }
 
-  /* ERROR codes of a graph, and the G3-specific warnings (§15.3.2) on the entities in `touched`. */
-  function validation(g, touched) {
+  /* The notation warnings G3 must never leave behind (§15.3.2). */
+  const G3_WARNINGS = ['W-TUPLET-INCOMPLETE', 'W-DISPLAY-DURATION', 'W-BEAM-SHAPE', 'W-TUPLET-DISPLAY'];
+  const issueKey = i => i.code + '|' + (i.ids || []).slice().sort().join(',');
+  /* ERROR codes of a graph, and the G3 warnings it has that its input did not (by code and IDs): a warning G3 found
+     and could not fix stays the input's; one G3 made is a violation. */
+  function validation(g, input) {
     const res = V.validate(g);
     const errors = res.issues.filter(i => i.severity === 'ERROR');
-    const bad = res.issues.filter(i => (i.code === 'W-TUPLET-INCOMPLETE' || i.code === 'W-DISPLAY-DURATION' || i.code === 'W-BEAM-SHAPE' ||
-      i.code === 'W-TUPLET-DISPLAY') && touched && (i.ids || []).some(id => touched.has(id)));
+    const before = new Set((input ? V.validate(input).issues : []).map(issueKey));
+    const bad = res.issues.filter(i => G3_WARNINGS.indexOf(i.code) >= 0 && !before.has(issueKey(i)));
     return { errors: errors, g3warnings: bad, issues: res.issues };
   }
 
-  return Object.freeze({ COMPONENTS, FIXED, fingerprint, diff, check, validation, soundOf });
+  return Object.freeze({ COMPONENTS, FIXED, G3_WARNINGS, fingerprint, diff, check, validation, soundOf });
 });

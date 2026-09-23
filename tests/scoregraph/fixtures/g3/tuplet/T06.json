@@ -1,0 +1,10 @@
+{
+ "about": "an imported 5:4 holding a 3:2 (and a 3:2 and a 6:4 beside it): imported tuplets are kept, parent and all",
+ "spec": "G03 §7.4 T06, §14.1",
+ "input": {
+  "musicxml": "xml/tuplets-nested.musicxml"
+ },
+ "expect": {
+  "same": true
+ }
+}

@@ -1,0 +1,18 @@
+{
+ "about": "three triplet quarters over a half: one group with unit quarter",
+ "spec": "G03 §7.4 T05",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "3[C5:q] 3[D5:q] 3[E5:q] r:h"
+ },
+ "passes": [
+  "tuplet"
+ ],
+ "expect": {
+  "rh": "3q[C5:q D5:q E5:q] r:h",
+  "warnings": {}
+ }
+}
