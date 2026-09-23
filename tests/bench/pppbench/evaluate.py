@@ -8,7 +8,10 @@ from . import align, musicxml, semantic
 from .metrics import composite, critical, notation, notes, pedal, readability, structure
 from .timemap import PredTime, StatsShapeError
 
-_ref_read_cache: Dict[int, Dict[str, Optional[float]]] = {}
+# id(ref) -> (ref, its readability). The entry holds the reference itself: an id is only unique while its
+# object lives, and a reference read afresh for each case (private.py, the replay fixtures) is freed after
+# the case, so a later reference could take its id and be handed its readability (G03 §24 record).
+_ref_read_cache: Dict[int, Tuple[Any, Dict[str, Optional[float]]]] = {}
 
 
 class CaseError(Exception):
@@ -19,9 +22,10 @@ class CaseError(Exception):
 
 def ref_readability(ref) -> Dict[str, Optional[float]]:
     key = id(ref)
-    if key not in _ref_read_cache:
-        _ref_read_cache[key] = readability.readability(ref)
-    return _ref_read_cache[key]
+    hit = _ref_read_cache.get(key)
+    if hit is None or hit[0] is not ref:
+        hit = _ref_read_cache[key] = (ref, readability.readability(ref))
+    return hit[1]
 
 
 def predicted_summary(pred, stats: Optional[Dict[str, Any]]) -> Dict[str, Any]:
