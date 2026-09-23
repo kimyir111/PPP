@@ -855,6 +855,10 @@
       arr(pf.pedals).forEach(pp => {
         if (ok(pp) && (pp.on < 0 || pp.off <= pp.on)) add('E-PERF', 'performance pedal ' + pp.id + ' has on ' + pp.on + ', off ' + pp.off, [pp.id]);
       });
+      /* the raw controller stream (v2): a point in time, not a span, so only the time can be wrong */
+      arr(pf.controls).forEach(pc => {
+        if (ok(pc) && pc.us < 0) add('E-PERF', 'performance control ' + pc.id + ' is at a negative time', [pc.id]);
+      });
       const anchors = arr(pf.anchors).filter(ok);
       let anchorsOk = true;
       anchors.forEach(a => {

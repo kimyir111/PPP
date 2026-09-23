@@ -89,6 +89,7 @@
       },
       perfNote(perf, x) { const o = withId('pn', x); perf.notes.push(o); return o; },
       perfPedal(perf, x) { const o = withId('pp', x); (perf.pedals = perf.pedals || []).push(o); return o; },
+      perfControl(perf, x) { const o = withId('pc', x); (perf.controls = perf.controls || []).push(o); return o; },
       anchor(perf, x) { (perf.anchors = perf.anchors || []).push(x); return x; },
       flag(x) { const o = withId('fl', x); doc.provenance.flags.push(o); return o; },
       /* The finished graph (validated, canonical, frozen). The builder must not be used afterwards. */

@@ -24,7 +24,7 @@ test('loaded as scripts in a bare context they leave a working PPPScoreGraph glo
   const B = ctx.PPPScoreGraph;
   assert.ok(B, 'PPPScoreGraph is defined');
   assert.equal(B.version, SG.version);
-  assert.equal(B.SCOREGRAPH_VERSION, 1);
+  assert.equal(B.SCOREGRAPH_VERSION, 2);
   /* the browser build gives the same bytes as the Node one */
   const r = B.musicxml.import(xml('grand-staff'), { scoreId: 'browser' });
   assert.equal(r.ok, true);

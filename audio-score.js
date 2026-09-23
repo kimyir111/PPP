@@ -1148,7 +1148,7 @@
      and the ties between them, rest pieces, triplet values, printed accidentals, pedal marks — as a canonical,
      validated graph whose MusicXML reads back as the same music. What was heard (onsets and releases in µs,
      velocities, the pedal, bar times) stays in the graph's performance layer instead of being dropped. */
-  const SCOREGRAPH_VERSION = '1.0.0';
+  const SCOREGRAPH_VERSION = '1.1.0';
   let scoreGraphLib = null;
   function scoreGraph() {
     if (!scoreGraphLib) {

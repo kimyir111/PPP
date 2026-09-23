@@ -29,7 +29,7 @@
 
   /* The library's own version, checked by audio-score.js so a cached old script never runs with a new one
      (G01 §19 R10). It changes with any change to these files' behaviour; SCOREGRAPH_VERSION is the schema's. */
-  const version = '1.0.0';
+  const version = '1.1.0';
 
   return Object.freeze({
     version: version,
@@ -39,7 +39,8 @@
     builder: build.builder, seal: build.seal, BuildError: build.BuildError,
     validate: validate.validate, CODES: validate.CODES,
     canonicalize: serialize.canonicalize, serialize: serialize.serialize, parse: serialize.parse,
-    migrate: serialize.migrate, fingerprint: serialize.fingerprint, scoreRef: serialize.scoreRef,
+    migrate: serialize.migrate, MIGRATIONS: serialize.MIGRATIONS,
+    fingerprint: serialize.fingerprint, scoreRef: serialize.scoreRef,
     deepEqual: serialize.deepEqual, deepFreeze: serialize.deepFreeze,
     musicxml: Object.freeze({ import: mxlImport.importMusicXml, export: mxlExport.exportMusicXml,
       IMPORT_CODES: mxlImport.CODES, EXPORT_CODES: mxlExport.CODES })

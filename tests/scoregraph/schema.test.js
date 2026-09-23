@@ -13,12 +13,13 @@ const EXPECTED = [
   ['Event', 'e', 'part.events'], ['Head', 'h', 'event.heads'], ['Direction', 'd', 'part.directions'],
   ['Spanner', 's', 'part.spanners'], ['Section', 'sc', 'structure.sections'], ['Phrase', 'ph', 'structure.phrases'],
   ['Performance', 'pf', 'performances'], ['PerfNote', 'pn', 'performance.notes'], ['PerfPedal', 'pp', 'performance.pedals'],
+  ['PerfControl', 'pc', 'performance.controls'],
   ['Source', 'sr', 'provenance.sources'], ['Flag', 'fl', 'provenance.flags']
 ];
 
-test('ENTITY_KINDS is the 21 entities of §5.14 with their prefixes and owners (A4)', () => {
+test('ENTITY_KINDS is the 22 entities of §5.14 and G02 §18 with their prefixes and owners (A4)', () => {
   assert.deepEqual(SG.ENTITY_KINDS.map(k => [k.name, k.prefix, k.owner]), EXPECTED);
-  assert.equal(new Set(SG.ENTITY_KINDS.map(k => k.prefix)).size, 21);
+  assert.equal(new Set(SG.ENTITY_KINDS.map(k => k.prefix)).size, 22);
 });
 
 test('every prefix fits the ID pattern and the ID helpers read it back', () => {
