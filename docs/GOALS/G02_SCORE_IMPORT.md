@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| 상태 | **설계 (Architect, 2026-09-23)**. 구현 전. production 코드 변경 0 |
+| 상태 | 설계 (Architect, 2026-09-23) · **구현 COMPLETE (2026-09-23): §24** · **독립 리뷰 READY_TO_PR (2026-09-23): §25** (BLOCKER 0, MAJOR 1, MINOR 5). MAJOR R1(transposing·미분음이 울리는 음을 바꿈)은 merge 전 사용자 결정 D7이 필요하다 |
 | 기준 커밋 | `origin/main` = `00081cc` (G1 follow-up PR #3까지 merge됨) |
 | 브랜치 / worktree | `g2-import` / `D:/PPP-g2` |
 | 선행 | G0 Quality Foundation (CLOSED), G1 ScoreGraph (CLOSED) |
@@ -40,6 +40,7 @@
 - [22. 사용자 결정이 필요한 사항](#22-사용자-결정이-필요한-사항)
 - [23. 문서 hygiene](#23-문서-hygiene)
 - [24. 구현 기록](#24-구현-기록-g2-implementer-2026-09-23) · [D3와 flip](#248-d3-결정과-그-구현-2026-09-23)
+- [25. 독립 리뷰](#25-독립-리뷰-independent-review-2026-09-23)
 - [부록 A. 이 세션의 측정 기록](#부록-a-이-세션의-측정-기록)
 
 ---
@@ -1399,3 +1400,121 @@ G2의 EXT 정책은 이 규약(`musicxml.<무엇>`)을 잇는다.
 ---
 
 *G2 Architect 세션, 2026-09-23. 이 문서는 설계다. 구현은 시작하지 않았고 production 코드는 한 줄도 바뀌지 않았다.*
+
+---
+
+## 25. 독립 리뷰 (Independent Review, 2026-09-23)
+
+대상 `g2-import` `bf337e5`, worktree `D:/PPP-g2`. 구현자의 PASS 표를 근거로 쓰지 않고, 주장마다 직접 재현했다.
+이 절이 쓰는 스크립트는 리뷰가 새로 쓴 것이고, 구현자의 도구(`legacy.compare`, `app-import-check.js`)를 근거로 삼은 곳은 없다.
+
+**판정: `READY_TO_PR` — BLOCKER 0, MAJOR 1, MINOR 5.**
+MAJOR 1건(R1)은 **merge 전에 사용자 결정이 필요**하다. 코드가 깨진 것이 아니라, 울리는 음을 바꾸는 동작이 기록 없이 들어가 있었다는 문제다.
+
+### 25.1 직접 재현한 주장
+
+| 주장 | 재현 방법 | 결과 |
+| --- | --- | --- |
+| schema v2는 저장된 그래프의 한 줄만 바꿨다 | `git show --numstat 0a6955c -- '*.sg.json'` | 51 files, 51+/51−. 바뀐 줄은 전부 `scoregraph_version` |
+| v2는 순수 추가다 | base(`00081cc`)와 HEAD의 SHAPES·enum·SPANNER 표를 필드 단위로 비교 | 추가 18, 제거 0, required 변경 0, default 변경 0, 정렬 변경 0. type 변경 2건은 enum 확장(`gliss`, `wavy`) |
+| migration은 의미를 바꾸지 않는다 | 커밋된 51개 그래프를 v1로 되돌려 다시 parse | 51개 전부 **커밋된 v2 바이트와 동일**. 두 번 돌려도 같음. v0·v3은 `E-VERSION` |
+| v2 추가분은 실제 파일에서 도달 가능하다 | fermata·gliss·multiRest·track/channel·controls·ext host 17개 검사 | 전부 통과. validator는 `multiRest=1`, `cc=200`, `channel=17`, 한쪽만 있는 gliss를 여전히 거절 |
+| .musicxml/.mxl/.mid가 실제 사용자 경로로 열린다 | 진짜 `File`을 만들어 `PPP.Import.load` | 4/4 그래프 경유(`sgFrom`), source 273–473 B, 그래프는 `source`에 실리지 않음 |
+| `PPP.legacyImport = true`가 옛 경로로 돌아간다 | 리뷰가 새로 쓴 **엄격 비교**(모든 멤버, 완화 없음) | 3/3 동일. 차이는 `id`(타임스탬프·접두사)와 adapter가 **더하는** `sgHead`뿐 |
+| 오류 시 자동 legacy fallback이 없다 | 옛 reader는 읽고 그래프는 거절하는 파일(`<step>H</step>`)을 넣음 | fallback 없음. `IMPORT-UNSUPPORTED` soft error로 보고 |
+| shadow 398 / 375 identical / 23 allowlisted | `shadow-legacy.js` 전량 재실행 | **398, 375, 23, unexpected 0** — 숫자 그대로 재현 |
+| 새 차이가 생기면 실패한다 | allowlist에서 파일을 빼고 / 사유를 바꿔 실행 | 둘 다 `unexpected`로 실패 |
+| MIDI가 파일이 말한 것을 잃지 않는다 | 29개 fixture read→write→read, µs·velocity·track·channel·controller | 29/29 동일 |
+| SMPTE가 맞다 | 25 fps × 40 subframe = 1000 tick/s를 직접 계산 | tick 1000 = 1.000000 s. 정확 |
+| 새 rhythm 알고리즘이 없다 | `audio-score.js` `fromMidi` 정독 | tick→초 변환 뒤 기존 `toMusicXml`을 `lock` 또는 `beats`로 호출. 새 알고리즘 없음 |
+
+awkward case도 직접 확인했다: 같은 음 겹침은 FIFO로 짝지어지고(`[60,0,480],[60,240,960]`), velocity 0 note-on은 note-off이며, 짝 없는 note-on은 `W-MIDI-NOTE-UNCLOSED`, 잘린 track은 `W-MIDI-TRACK-SHORT`로 살아남는다. running status·SysEx·format 0/2 모두 읽힌다.
+
+### 25.2 R1 (MAJOR) — 울리는 음을 바꾸는 차이가 `chord-head-order`로 들어가 있었다
+
+allowlist의 23개 파일 중 **2개는 chord 순서 문제가 아니라 울리는 음이 다르다**. 그런데 둘 다 `chord-head-order`로 적혀 있었고, 그 사유의 설명은 "nothing here changes which notes sound"였다.
+
+| 파일 | 앱이 울리는 음 | 그래프가 울리는 음 |
+| --- | --- | --- |
+| `microtone-quarter-sharp.musicxml` | C4/60, E4/64 | C#4/61, Eb4/63 |
+| `transposing.musicxml` (Bb 클라리넷) | D5/74, E5/76, F#5/78, C5/72 | C5/72, D5/74, E5/76, Bb4/70 (장2도 아래) |
+|   〃 (옥타브 아래 베이스) | Bb2/46, F3/53 | Bb1/34, F2/41 (옥타브 아래) |
+
+원인은 `legacy-score.js`의 `cmpList`였다. 두 목록이 index에서 어긋나면 **원인을 가리지 않고 전부 `.order`로 보고**하고 곧장 return했다. 그래서 "같은 음을 다른 순서로"와 "다른 음"이 한 이름으로 합쳐졌고, chord 순서를 봐주는 사유가 음높이 변화까지 덮었다. A40이 요구하는 "같은 파일이 다른 차이를 얻으면 실패한다"가 이 지점에서 성립하지 않았다.
+
+- `transposing`: MusicXML `<pitch>`는 **written**이다. 그래프는 울리는 음을 담고, `parseMusicXML`은 written을 그대로 울린다. 게다가 adapter는 **조표만** written으로 되돌린다(`legacy-score.js:152`). 결과 Score는 written 조표 + sounding 음높이라 **자기모순**이고, **경고가 하나도 나오지 않는다**.
+- `microtone`: 그래프는 0에서 먼 쪽으로 반올림하고 `W-IMPORT-MICROTONE`으로 말한다(경고는 있다). 앱은 0쪽으로 버린다.
+
+**영향 범위는 fixture 2개뿐이다.** 카탈로그 103개 `.musicxml`과 코퍼스 398개 중 `<transpose>`나 미분음을 가진 파일은 없어, 지금 사용자에게 보이는 곡은 하나도 바뀌지 않는다. 그래서 BLOCKER가 아니다. 다만 사용자가 관악기가 섞인 악보를 올리면 바로 닿는 경로다.
+
+이 커밋이 고친 것 — **가드를 더 엄격하게** 만들었다. 동작은 바꾸지 않았다.
+
+1. `cmpList`가 두 목록이 서로의 순열인지 확인한다. 순열이면 `.order`, 아니면 새 이름 `.set`으로 보고한다.
+2. 두 파일에 각자의 사유(`microtone-rounded`, `transpose-sounds`)를 주고, 설명에 **울리는 음이 달라진다고 그대로 적었다**. 두 사유는 `notes.set`만 허용한다.
+3. `chord-head-order`는 이제 `notes.set`을 받지 못한다. 되돌려 놓고 실행하면 `allowed for chord-head-order, but also differs in notes.set`으로 실패한다(확인함).
+
+**남은 결정(D7)**: transposing part에서 무엇을 울릴 것인가. (a) written을 울린다 — 옛 동작과 parity, (b) sounding을 울리고 조표도 sounding으로 맞춘다 — 음악적으로 맞음, (c) 지금처럼 두되 경고와 문서를 붙인다. 미분음 반올림 방향도 같이 정해야 한다. **리뷰는 이 결정을 대신하지 않았다.**
+
+### 25.3 R2 (MINOR) — chord head order 판정: **울리는 음에 대해 semantic-neutral, 전체로는 MINOR**
+
+`chord:true`가 어디 붙는지 추적하고, 17개 파일을 두 reader로 읽어 소비자마다 결과를 비교했다.
+
+- **울리는 음은 같다.** 17개 전부 (마디, 박, 음높이, 길이) 다중집합이 동일하다. 렌더·재생·저장에 차이가 없다.
+- **그러나 보이는 것이 바뀐다.** 플래그는 leap 추정이 어떤 음을 잇는지를 정한다. `Score.deriveSections`(App 3665)의 난이도 점수·표시 사유·`hard` 표시와, `Coach.structural`(App 7916)의 `widestLeapSemitones`·traits가 달라진다. 카탈로그 6개 파일에서 실제로 달라졌다.
+  - `czerny599/078`: m1–8이 hard **false→true**, m9–16이 **true→false**, 사유가 "Large left-hand jump"→"Repeated chord changes", trait에서 "wide hand jumps"가 사라진다.
+  - `czerny599/033`: leap 12→8, 사유가 "Large left-hand jump"→"Syncopated rhythm".
+- **운지는 영향을 받지 않는다.** `Fingering.events`가 event마다 음높이로 정렬한다(App 8523). allowlist가 "the fingering search"를 근거로 든 것은 틀렸다 — 본문을 고쳤다.
+- 나머지 두 소비자(App 5414, 5788)는 "이 마디에 chord가 있나"만 묻는다. 플래그 개수는 양쪽이 같으므로 중립이다.
+
+MINOR로 두는 이유: 바뀌는 것은 스스로 "It is not a model, and it is not claiming to be one"이라고 적은 heuristic이고, 그래프 쪽 순서(낮은음부터)가 **편곡기가 이미 쓰는 규칙과 같다**(`finalizeNotes`, App 9042는 음높이로 정렬한 뒤 플래그를 다시 매긴다). 파일이 화음을 위에서 썼는지 아래에서 썼는지에 따라 난이도 표시가 달라지던 것이 사라지므로, 새 동작이 오히려 일관적이다.
+
+### 25.4 R3 (MINOR) — `wedge-unpaired`가 쓰지도 않는 필드를 허용하고 있었다
+
+`REASON_FIELDS['wedge-unpaired']`가 `notes.order`, `notes.chord`, `dynamics`, `dynamics.length`까지 허용했다. 그러나 그 사유의 세 파일(`sonatina/014, 026, 027`)은 `wedges`와 `wedges.length`에서만 다르다. 즉 그 파일들에서 화음 순서나 dynamics가 바뀌어도 아무도 모른다. 사유 단위 allowlist의 뜻에 어긋난다.
+허용 필드를 실제로 쓰는 2개로 줄였고, 그대로 통과한다.
+
+### 25.5 R4 (MINOR) — 음이 4개 미만인 `.mid`는 열리지 않고, 메시지가 사실과 다르다
+
+`audio-score.js:1556`의 `if (notes.length < 4) noNotes();` 때문에 음이 셋 이하인 MIDI는 악보가 되지 않는다. M 픽스처 29개 중 **26개가 여기 걸린다**(성공하는 것은 음이 4·9·20개인 m18·m19·m27뿐). 사용자에게는 `This MIDI file has no notes to read.`가 뜨는데, 파일에는 음이 있다.
+
+회귀는 아니다 — G2 전에는 `.mid`가 아예 거절당했다. 문턱을 낮추려면 새 quantizer가 필요하고 그것은 G2에서 금지다. **메시지를 사실대로 바꾸고(예: 음이 너무 적어 박자를 잡을 수 없다) 이 한계를 문서에 적는 일**만 남는다. 이 커밋은 동작을 건드리지 않았다.
+
+### 25.6 R5 (MINOR) — A32/A33의 근거가 CI에 없다
+
+`shadow-legacy.js --check`와 `app-import-check.js`는 의도적으로 CI에서 빠져 있다(`bench.yml` 5행, puppeteer와 `npm start`가 필요해서 T1-C conformance와 같은 취급). 두 검사가 A32·A33의 **유일한** 근거이므로, merge 뒤 누군가 adapter를 건드리면 로컬에서 돌리는 사람이 없는 한 잡히지 않는다. `ubuntu-latest`에는 Chrome이 있으므로 nightly job에 붙이는 것을 권한다. 결정 사항이라 이 커밋에서는 바꾸지 않았다.
+
+### 25.7 R6 (MINOR, 문서) — 상태 행이 설계 시점 그대로였다
+
+머리말이 "**설계 (Architect)**. 구현 전. production 코드 변경 0"으로 남아 있었다. §24가 구현을 기록한 뒤에도 고쳐지지 않았다. 이 커밋에서 고쳤다.
+
+### 25.8 남은 A 항목의 disposition
+
+| | 구현자 기록 | 리뷰 판정 | 근거 |
+| --- | --- | --- | --- |
+| **A15** | 부분 | **L3는 PASS, parity는 R1로 이관** | `transposing`·`ottava-8va-8vb`를 import→export→import 했을 때 울리는 음높이 다중집합이 보존된다(직접 측정). 그래프 안에서는 맞다. 깨진 것은 adapter parity 쪽이고 그것이 R1이다 |
+| **A31** | 미측정 | **PASS (측정함)** | 카탈로그 `.musicxml` 103개: 합계 **1.148×**, 중앙값 1.156×, 1.2× 초과 2개(둘 다 1.21×), gzip **0.100×**. 1.2× 초과가 몰린 곳은 고정 오버헤드가 큰 작은 fixture다(29개 중 18개). 그래프를 저장하지 않기로 했으므로(§24.10) production에는 무의미하지만, 이제 미지수는 아니다 |
+| **A38** | 미측정 | **해당 없음 — S4로 이월** | 전제를 확인했다. 녹음·OMR·편곡·리듬 재작성은 여전히 `parseMusicXML`을 직접 부른다(App 7160, 7205, 7585, 7620, 7629, 14704, 14762, 14969). 그래프를 거치지 않으므로 이중 옥타브 이동이 일어날 경로가 없다. 그 경로가 그래프로 옮겨가는 Goal에서 측정해야 한다 |
+| **A40** | PASS(부분) | **shadow는 이 커밋 이후 PASS** | 고치기 전에는 사유 단위가 아니었다 — R1(사유가 다른 차이를 덮었다)과 R3(쓰지 않는 필드를 허용했다). `.set`/`.order` 분리와 허용 필드 축소로 성립한다. `sg-roundtrip` allowlist가 파일 단위인 것은 G1 F6 그대로이고 바뀐 것이 없다 |
+
+### 25.9 회귀 (전부 리뷰가 직접 실행)
+
+| 검사 | 결과 |
+| --- | --- |
+| `npm run test:scoregraph` | **126/126 pass** (adapter 수정 뒤 재실행) |
+| `run.py sg-roundtrip` | 369개 중 367 pass, 2 allowlisted. L1 368/369, L1+ 367/369, L2 369/369, play order 369/369 — **A1대로 G2 전후 동일** |
+| `make-midi-fixtures.js --check` | 29개 fixture 바이트 동일 |
+| `run.py golden` | 17/17 identical |
+| `run.py correctness` | 13/13 |
+| `run.py lint-corpus` | 0 errors (warning 70, 기존과 같음) |
+| `make_provenance.py --check` | 일치 |
+| `shadow-legacy.js --check` | 398 / 375 identical / 23 사유별 / **unexpected 0** |
+| `app-import-check.js` | 전부 pass — `.mid`에서 음 손실 0, 추론 표시 3곳, 되돌리기 동일 |
+| `npm test` | 1건 실패: `the requestAnimationFrame renderer stays near display rate — 10 FPS`. **base(`00081cc`)에서 같은 테스트가 똑같이 실패한다**(별도 worktree에서 확인). 환경 문제이고 G2 회귀가 아니다 |
+
+### 25.10 merge 전에 남은 일
+
+1. **D7 결정** — transposing part에서 written을 울릴지 sounding을 울릴지, 미분음을 어느 쪽으로 반올림할지(R1). 지금은 written 조표에 sounding 음높이라 자기모순이고 경고가 없다. **이것만이 merge를 막는 항목이다.**
+2. 음이 4개 미만인 `.mid`의 오류 메시지를 사실대로 바꾸고 한계를 문서화한다 (R4).
+3. `shadow --check`와 `app-import-check`를 nightly CI에 붙일지 정한다 (R5).
+
+1번은 결정이 필요하고, 2·3번은 merge를 막지 않는다.

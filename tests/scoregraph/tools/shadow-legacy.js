@@ -42,7 +42,9 @@ const allowed = new Map(ALLOW.files.map(f => [f.path, f.reason]));
 const REASON_FIELDS = {
   'chord-head-order': ['notes.order', 'notes.chord'],
   'ending-stop-without-start': ['measures.bar'],
-  'wedge-unpaired': ['wedges', 'wedges.length', 'dynamics', 'dynamics.length', 'notes.order', 'notes.chord']
+  'wedge-unpaired': ['wedges', 'wedges.length'],
+  'microtone-rounded': ['notes.set'],
+  'transpose-sounds': ['notes.set']
 };
 
 /* every committed MusicXML, the way sg-roundtrip finds them */

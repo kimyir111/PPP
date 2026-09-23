@@ -505,7 +505,21 @@
     if (A.length !== B.length) { say(name + '.length', A.length + ' vs ' + B.length); return; }
     for (let i = 0; i < A.length; i++) {
       const x = A[i], y = B[i];
-      if (key(x) !== key(y)) { say(name + '.order', 'at ' + i + ': ' + key(x) + ' vs ' + key(y)); return; }
+      if (key(x) !== key(y)) {
+        /* Two lists can disagree at an index for two very different reasons: the same things in a
+           different order, or different things. Saying `.order` for both would let a reason that
+           excuses a reordering quietly excuse a changed note as well (G02 A40), so they are told
+           apart here and a changed set is its own finding. */
+        const ka = A.map(key).sort(), kb = B.map(key).sort();
+        if (ka.join(' ') === kb.join(' ')) {
+          say(name + '.order', 'at ' + i + ': ' + key(x) + ' vs ' + key(y));
+        } else {
+          const onlyA = ka.filter(v => kb.indexOf(v) < 0), onlyB = kb.filter(v => ka.indexOf(v) < 0);
+          say(name + '.set', 'only the app has ' + (onlyA.slice(0, 3).join(', ') || 'nothing') +
+            '; only the graph has ' + (onlyB.slice(0, 3).join(', ') || 'nothing'));
+        }
+        return;
+      }
       for (const f of scalars) {
         const u = norm(x[f]), v = norm(y[f]);
         if (u !== v) { say(name + '.' + f, 'at ' + i + ' (' + key(x) + '): ' + u + ' vs ' + v); return; }
