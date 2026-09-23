@@ -218,7 +218,8 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
   findings it closed. **Left open on purpose:** tuplet bracket grouping for split triplet pieces
   (**F1** — the app draws fewer brackets; **G3 owns tuplet engraving**, see issue 20 above), and
   F4–F8 (§25.3), none of them reachable today.
-- **G3 (score intelligence) has not started.** Its branch and worktree exist and are empty of work:
+- **G3 (score intelligence) design is approved** (`docs/GOALS/G03_SCORE_INTELLIGENCE.md`; designed 2026-09-23, decisions D1–D8 accepted 2026-09-24, §22.1): a graph → graph pass pipeline. G3a (tuplet grouping/F1, rhythm representation, hands, spelling, accidentals, beams) is ready to implement. G3b (release → note value, second voices from the performance) and the automatic 8va pass are built **default OFF**: G3b goes on in production only after three real recordings (duple, triple, compound) are baselined, 8va only after issue 3 is fixed. Ownership: G3 notation/spelling/hands, G4 engraving, G5 fingering.
+- **G3 (score intelligence) implementation has not started.** Its branch and worktree exist and are empty of work:
   `g3-score-intelligence` in `D:/PPP-g3`, branched from `main` with G2 in it. It inherits G1 F1, the rhythm,
   voice and hand inference that G2 deliberately did not write (§24.8, G2-D5), and the notation
   quality issues numbered above.
