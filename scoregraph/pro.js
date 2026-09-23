@@ -194,11 +194,13 @@
       entry.ms = Date.now() - tp;
     }
     /* the whole run against the input: what no pass may change (and the notated lengths unless G3b ran) */
+    let issues = null;
     if (cur !== g) {
       const fixed = C.FIXED.concat(opts.g3b ? [] : ['sound']);
       const v = C.diff(fp0, fpCur, fixed);
       if (v.length) return fail('the result differs from the input in ' + v.map(x => x.component).join(', '), v);
       const val = C.validation(cur, g);
+      issues = val.issues;
       if (val.errors.length) return fail('the result has ' + val.errors.length + ' ERROR(s): ' + val.errors.slice(0, 3).map(i => i.code + ' ' + i.message).join('; '));
       if (val.g3warnings.length) {
         if (opts.strict) throw new CriticError('validate', [{ component: 'warnings', where: val.g3warnings.slice(0, 20).map(i => i.code + ' ' + (i.ids || []).join(',')) }]);
@@ -206,7 +208,8 @@
       }
     }
     report.ms = Date.now() - t0;
-    return { graph: cur, report: report, idMap: idMap };
+    /* issues: the validator's issues of the result (null when it is the input) */
+    return { graph: cur, report: report, idMap: idMap, issues: issues };
   }
 
   return Object.freeze({ VERSION, SOURCE, MODES, CriticError, professionalize, permission, opOf, right, passList, proxy });

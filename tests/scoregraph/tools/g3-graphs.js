@@ -2,7 +2,8 @@
 
      const { jobs, graphs, slice } = require('./g3-graphs.js');
      jobs('core')                      the suite's toMusicXml inputs (tests/scoregraph/tools/g3_jobs.py writes them)
-     graphs('core', {filter, opts})    [{id, graph, stats}] from audio-score.js toMusicXml, in suite order
+     graphs('core', {filter, opts})    [{id, graph, stats}] from audio-score.js toMusicXml, in suite order: the graph
+                                       before G3 (professional 'off') unless opts says otherwise
      slice(graph, from, to)            measures from..to (0-based, inclusive) as a graph of their own
 
    The inputs are generated once into tests/bench/out/g3/ (gitignored) and reused. */
@@ -31,7 +32,8 @@ function graphs(suite, o) {
   jobs(suite).forEach(j => {
     if (o.filter && !o.filter(j.id)) return;
     let r;
-    try { r = A.toMusicXml(j.input, Object.assign({}, j.opts || {}, o.opts || {})); } catch (e) { out.push({ id: j.id, error: e.code || e.message }); return; }
+    /* the graph as audio-score builds it, before G3 (whatever toMusicXml's default), unless o.opts asks otherwise */
+    try { r = A.toMusicXml(j.input, Object.assign({}, j.opts || {}, { professional: 'off' }, o.opts || {})); } catch (e) { out.push({ id: j.id, error: e.code || e.message }); return; }
     out.push({ id: j.id, graph: r.graph, stats: r.stats, pro: r.proReport, xml: o.xml ? r.xml : undefined });
   });
   return out;

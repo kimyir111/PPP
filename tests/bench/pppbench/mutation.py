@@ -45,7 +45,8 @@ SG_REST_TYPE = "          const t = full ? (TYPES[bar] || TYPES[v] || ['whole', 
 SG_NOTE_DISPLAY = "          const display = t[1] ? { type: t[0], dots: t[1] } : { type: t[0] };"
 SG_ACCIDENTAL = "            if (sp.alter !== current && !tieStop) head.acc = { type: ACCIDENTAL_NAME[sp.alter] };"
 SG_SPELL = "            const sp = spell(n.midi, table), k = sp.step + sp.octave;"
-SG_EXPORT = "    result.xml = scoreGraph().musicxml.export(built.graph, { software: 'PPP audio transcription' }).xml;"
+# G03 Step 6: toMusicXml exports `graph` (the built graph, or G3's when opts.professional is 'on')
+SG_EXPORT = "    result.xml = scoreGraph().musicxml.export(graph, { software: 'PPP audio transcription' }).xml;"
 EXPORTER = "scoregraph/musicxml-export.js"
 SG_STAVES = "        if (mi === 0 && multiStaff) at0.push('<staves>' + part.staves.length + '</staves>');"
 TAIL_BAR = "Math.floor(bars * 2 / 3)"                                 # two thirds of the way in (fewer than half the bars follow)
@@ -104,9 +105,9 @@ def _split_edits(forward: bool) -> list:
     repeat no backward repeat anywhere in the file ever consumes (G00 §22, PF-M1)."""
     left = ("\n        N.barline = { left: { style: 'heavy-light', repeat: 'forward' } };" if forward else "")
     code = r"""    /* mutation: the second-to-last bar split in two (no repeat sign, same metre) */
-    let splitGraph = built.graph;
+    let splitGraph = graph;
     if (bars >= 3) {
-      const Rm = scoreGraph().rational, g = JSON.parse(JSON.stringify(built.graph)), ms = g.timeline.measures, M = ms[bars - 2], P = g.parts[0];
+      const Rm = scoreGraph().rational, g = JSON.parse(JSON.stringify(graph)), ms = g.timeline.measures, M = ms[bars - 2], P = g.parts[0];
       const ends = v => new Set(P.events.filter(e => e.m === M.id && e.voice === v).map(e => Rm.format(Rm.add(Rm.parse(e.at), Rm.parse(e.dur)))));
       const A = ends(P.voices[0].id), B = ends(P.voices[1].id), len = Rm.toNumber(Rm.parse(M.dur));
       let p = null;

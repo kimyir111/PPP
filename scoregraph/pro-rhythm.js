@@ -183,34 +183,50 @@
     return { cost: cost, syms: parts };
   }
 
-  /* The cost of the segment as it is written now, or Infinity when a piece breaks a rule or sits across a region. */
+  /* The segment as it is written now: {cost, broken}. broken is 'shape' when a piece's printed value is not its
+     length, it has none, or it sits across a region or in a frozen one (it must be rewritten); 'rule' when every
+     piece is a right value in the right region but a note hides a beat the grid rules keep visible (H4, H5, the S
+     table); null when it is a writing the grid allows. cost is the §6.2 cost (Infinity for 'shape'). */
   function currentCost(gr, regs, seg) {
-    let cost = 0;
+    let cost = 0, broken = null;
     const regOf = (a, b) => regs.find(r => r.s <= a && b <= r.e);
     for (let i = 0; i < seg.events.length; i++) {
       const e = seg.events[i];
       const d = e.display;
-      if (!d || !d.type) return Infinity;
+      if (!d || !d.type) return { cost: Infinity, broken: 'shape' };
       const a = toU(e.at), b = toU(R.format(R.add(R.parse(e.at), R.parse(e.dur))));
       const r = regOf(a, b);
-      if (!r || r.kind === 'frozen') return Infinity;
+      if (!r || r.kind === 'frozen') return { cost: Infinity, broken: 'shape' };
       const v = S.noteValue(d.type, d.dots);
       const len = b - a;
       const vU = v.n * U / v.d;
-      if (d.dots > 2) return Infinity;
+      if (d.dots > 2) return { cost: Infinity, broken: 'shape' };
       let sym;
       if (r.kind === 'binary') {
-        if (vU !== len) return Infinity;
+        if (vU !== len) return { cost: Infinity, broken: 'shape' };
         sym = { type: d.type, dots: d.dots || 0 };
-        if (!(seg.kind === 'rest' && d.measureRest && a === 0 && b === gr.durU) && !MG.symbolOk(gr, a, b, sym, seg.kind)) return Infinity;
+        if (!(seg.kind === 'rest' && d.measureRest && a === 0 && b === gr.durU) && !MG.symbolOk(gr, a, b, sym, seg.kind)) {
+          if (seg.kind === 'rest') return { cost: Infinity, broken: 'shape' };
+          broken = 'rule';
+        }
       } else {
-        if (vU * 2 !== len * 3 || (d.dots || 0) > 1) return Infinity;
+        if (vU * 2 !== len * 3 || (d.dots || 0) > 1) return { cost: Infinity, broken: 'shape' };
         sym = { type: d.type, dots: d.dots || 0, tuplet: true, len: len };
       }
       cost += MG.symbolCost(gr, a, b, sym, seg.kind === 'note' && i > 0);
     }
     if (seg.kind === 'rest' && seg.events.length > 1 && MG.levelOf(gr, seg.s) > MG.LEVEL.BEAT) cost += C.REST_SPLIT_OFF_BEAT;
-    return cost;
+    return { cost: cost, broken: broken };
+  }
+
+  /* Rewrite the segment? A wrong shape always; a writing the grid allows when the best one costs less; a note that
+     hides a beat only when the best writing has no more pieces than it: G3a never splits a value the writer chose
+     into more tied pieces just to show a beat (§24 record: doing so raised G0 notation.ties.extra_per_100 past its
+     gate; the beat rules still govern every writing G3 makes itself). */
+  function rewrite(now, w, seg) {
+    if (now.broken === 'shape') return true;
+    if (now.broken === 'rule') return w.syms.length <= seg.events.length;
+    return w.cost < now.cost;
   }
 
   /* The same writing as the events already have? */
@@ -283,7 +299,7 @@
               const w = writeSegment(gr, regs, sg);
               if (!w) { stuck++; keep(); return; }
               const now = currentCost(gr, regs, sg);
-              if (sameWriting(sg, w.syms) || now <= w.cost) { keep(); return; }
+              if (sameWriting(sg, w.syms) || !rewrite(now, w, sg)) { keep(); return; }
               changed = true;
               writePlan(d, plan, sg, w.syms, gr, tieOut);
             });
@@ -331,5 +347,5 @@
     run(g, ctx) { void ctx; return { graph: g, idMap: {}, changes: [] }; }
   });
 
-  return Object.freeze({ rhythm, regularize, segments, regions, write, writeSegment, currentCost, TRIPLET });
+  return Object.freeze({ rhythm, regularize, segments, regions, write, writeSegment, currentCost, rewrite, sameWriting, TRIPLET });
 });

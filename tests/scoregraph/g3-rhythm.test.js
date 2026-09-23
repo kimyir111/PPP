@@ -13,7 +13,12 @@ const specs = fs.readdirSync(DIR).filter(f => f.endsWith('.json')).sort();
 
 test('A16: every R fixture gives exactly its sidecar, and keeps onsets, tied lengths and rests', () => {
   assert.ok(specs.length >= 24, specs.length + ' fixtures');
-  specs.forEach(f => {
+  const failures = [];
+  specs.forEach(f => { try { one(f); } catch (e) { failures.push(f + ': ' + e.message.split(/\r?\n/).slice(0, 6).join(' ')); } });
+  assert.deepEqual(failures, []);
+});
+function one(f) {
+  {
     const spec = JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8'));
     const r = runSpec(spec);
     const ex = spec.expect;
@@ -25,8 +30,8 @@ test('A16: every R fixture gives exactly its sidecar, and keeps onsets, tied len
     /* R-repr keeps every onset, every tie-merged length and every stretch of rest (I2, I8, I9) */
     const v = C.diff(C.fingerprint(r.input), C.fingerprint(r.output), ['sound', 'onsets', 'rests', 'marks', 'perf', 'timeline']);
     assert.deepEqual(v, [], f);
-  });
-});
+  }
+}
 
 test('A18: an unrepresentable piece leaves the graph as it was and says so once', () => {
   const r = runSpec(JSON.parse(fs.readFileSync(path.join(DIR, 'R22.json'), 'utf8')));

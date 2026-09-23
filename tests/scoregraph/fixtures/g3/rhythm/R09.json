@@ -1,12 +1,12 @@
 {
- "about": "6/8: an off-beat dotted quarter hides the second dotted-quarter beat: it is tied there (H4)",
+ "about": "6/8: a note over the dotted-quarter beat, written in pieces one of which hides the beat: rewritten to show it (H4)",
  "spec": "G03 §6.3 R09",
  "input": {
   "time": [
    6,
    8
   ],
-  "rh": "C5:8 D5:q. E5:q"
+  "rh": "C5:8 D5:16~ D5:16~ D5:q E5:q"
  },
  "passes": [
   "rhythm",
