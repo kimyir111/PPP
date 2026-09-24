@@ -4,9 +4,10 @@ Updated 2026-09-24, on `main`. G0 (Quality Foundation), G1 (ScoreGraph) and G2 (
 and closed. **G3 is merged as PARTIAL / DEFERRED** (PR #7, `c5474c2`; G03 §31): implemented, reviewed and fixed,
 but its blind human review (A36) failed (§30), so every part of it stays **off** — G3a, G3b, the automatic 8va
 and the pedal join — and nothing a user sees changed. `origin/main` is `c5474c2` plus the docs-only closeout that
-records it. **The next active goal is G4 Professional Engraving** (worktree `D:/PPP-g4`, branch
-`g4-professional-engraving`); its design and implementation have not started. Read this first in a new session,
-then the current goal's spec in `docs/GOALS/`.
+records it. **The active goal is G4 Professional Engraving** (worktree `D:/PPP-g4`, branch
+`g4-professional-engraving`): its design is written (`docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md`, Architect
+2026-09-24) and waits on four user decisions (G4-U1–U4, G04 §29); implementation has not started. Read this first
+in a new session, then the current goal's spec in `docs/GOALS/`.
 
 ## Where things are
 
@@ -14,6 +15,7 @@ then the current goal's spec in `docs/GOALS/`.
 | --- | --- |
 | Goals | Numbered specs in `docs/GOALS/`. **G0 is merged and closed** — implemented (§16), reviewed and fixed through six passes (§17–§22.9), then merged as PR #1 (`aff7080`). `G00_QUALITY_FOUNDATION.md` §22.9 has the last result and what is still open (nothing). |
 | G3 | **PARTIAL / DEFERRED — not COMPLETE** (G03 §31, DECISIONS G3-U9). **Merged to `main` switched off** as PR #7 (`c5474c2`, a squash of `g3-score-intelligence` `966a053`; the branch and `D:/PPP-g3` are kept). `professionalize()` (a graph → graph pass pipeline behind a critic) runs in `toMusicXml` only when `opts.professional` is `'shadow'` or `'on'`; **the default is `'off'` and nothing passes it**, so G3 changes nothing a user sees — G3 off is byte-identical to the pre-G3 `main`, `cc509e2` (§31.2). G3a's other acceptance criteria are PASS or PARTIAL by design (§29.9), but it **failed the blind human review A36** (§30); G3b waits on M11; 8va on issue 3; the pedal join on the app's `change` playback. Reopening: §31.5. |
+| G4 | **Designed, not implemented** (G04, 2026-09-24). No code, flag, schema or golden changed. The audit found the renderer never reads the ScoreGraph: `legacy-score.js` `toScore` drops every beam (11,808 beams in the 357 committed scores), grace notes, most articulations and the tuplet display options; the renderer draws no dynamics, hairpins, articulations or printed fingering, invents its own beams and tuplet marks, hides inferred ties within a bar, and drops ties and slurs across a line break. Recommended: keep VexFlow 4.2.3 (vendored) under a PPP engraving layer — ScoreGraph → NotationPlan (with a fidelity ledger) → EngravedScore → SVG, with the same layout code in Node (CI benchmark) and the browser; `legacy.fromScore` so a saved song always has a graph; renderer switch `PPP.renderer` defaulting to `'legacy'` until G4f. Stages G4a–G4f (G04 §27). |
 | G1 | **Merged and closed.** Implemented (§24), independently reviewed (§25: READY_TO_PR, BLOCKER 0, MAJOR 0), merged as PR #2 (`aa77d2e`), then the follow-up PR #3 (`00081cc`, §26) closed findings F2 and F3. F1 (tuplet bracket grouping) is left for G3 on purpose. `toMusicXml` writes its MusicXML from a ScoreGraph (`scoregraph/`); `opts.legacyWriter` is the way back for one release. |
 | G2 | **Merged and closed.** Implemented (§24), independently reviewed (§25), the one MAJOR it found closed by §26 (D7), merged as PR #4 (`cc0da79`) with BLOCKER 0 and MAJOR 0. Schema is version 2. **The app's import boundary is on the graph** — a file a person opens becomes a ScoreGraph and the Score is a projection of it; `PPP.legacyImport = true` is the way back for one release. **`.mid` opens**: its notes, times and controllers exactly as the file states them, its notation worked out by audio-score's existing quantizer and marked inferred in three places (D3). The MusicXML importer no longer refuses a whole file for an `<unpitched>` note, a missing time signature or a quarter tone. **A transposing part is printed where it is written and sounds where it sounds** (D7, §26). Transcription is unchanged: core 553/553 identical to `00081cc`. |
 | G0 code | On `main` since PR #1, which came from the clean branch `g0-quality-foundation-clean` (worktree `D:/PPP-g0-clean`). The older `g0-quality-foundation` branch and its `D:/PPP-g0` worktree are contaminated with other sessions' production changes — **never merge or edit those**. `tests/README.md` there has a two-line doc change left uncommitted on purpose (outside the allowed paths). |
@@ -204,9 +206,13 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
 
 ## Next
 
-- **Next active goal: G4 Professional Engraving — not started.** Worktree `D:/PPP-g4`, branch
-  `g4-professional-engraving`, starting at `main`. No spec, design or code yet; it begins with an Architect
-  session. What G3 left for it is recorded in G03 §30–§31 and DECISIONS G3-D3, G3-D4 and G3-U10.
+- **Active goal: G4 Professional Engraving — designed, not implemented.** Worktree `D:/PPP-g4`, branch
+  `g4-professional-engraving`, based on `55d1bd5`. Spec: `docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md` (Architect,
+  2026-09-24); decisions G4-D1–D12 are Proposed in `docs/DECISIONS.md`. **Next: the user answers G4-U1–U4** (G04 §29 —
+  whether to store the render graph beside a song, how to show G3-off inferred ties and one-note tuplets, print scope,
+  screen line breaking), **then a G4a Implementer** (render source, `legacy.fromScore`, NotationPlan and ledger; no
+  visible change). Production keeps the legacy renderer until G4f. What G3 left for G4 is in G03 §30–§31 and DECISIONS
+  G3-D3, G3-D4 and G3-U10.
 - **G2 is merged and closed** (PR #4, `cc0da79`): schema v2, a MusicXML importer that no longer
   refuses whole files, MIDI, one import door with one report, the legacy Score adapter, the flip,
   and D7's written/sounding split. The independent review (§25) found BLOCKER 0 and one MAJOR, which

@@ -148,3 +148,31 @@ G3-U4대로 기록하고 올린다. 설계 결정 D1–D8은 바꾸지 않았다
 | G3-U8 | A36 1차 평가는 사용자 지시로 **앱 렌더러**(ScoreView·VexFlow, dev 페이지 `?devReview=g3`)에서 했다 — D7(a) MuseScore 4의 예외, 이 평가에만. 앱은 파일의 beam·tuplet 괄호를 스스로 다시 정하므로 G3a의 beam(3,305 대 G3 off 0)은 판정되지 않았다. 쉼표·음가·셋잇단 값·staff·성부는 파일 그대로 그린다. dev 도구는 로컬 브랜치 `g3-dev-review-tool`에만 두고 main에 넣지 않는다. 재평가의 렌더러는 다시 사용자 결정 | §30.2: 진 6 발췌에서 앱이 그린 쉼표 수 = 파일 `<rest>` 수; 결과 A36 FAIL (§30.1) |
 | G3-U9 | **G3를 PARTIAL / DEFERRED로 닫는다** (COMPLETE 아님). M11 실제 연주 녹음은 지금 하지 않는다. G3a는 A36 FAIL로 OFF, G3b·자동 8va·`pedalJoin` OFF. G3 off에서 출력이 main과 같은 feature-gated 인프라는 main에 넣어도 된다. 다음 Goal로 간다 | 사용자 2026-09-24; G03 §31 |
 | G3-U10 | 다음 A36 재평가는 **PPP 앱 렌더러**로 한다 — 실제 PPP 사용자가 보는 결과가 합격 대상 (D7(a)와 G3-U8의 "재평가 렌더러는 다시 결정"을 대체). 앱이 못 그리는 beam 모양·보임과 일부 tuplet 판각은 G4 범위이고, G3 구조 metric·테스트로 따로 검증한다. MuseScore 설치를 요구하지 않는다. 재평가 전에 발췌를 `CLEAN_INPUT` / `UPSTREAM_ERROR`(녹음 경로의 박자·조가 참조와 다름)로 미리 나눠 따로도 보고하되, 결과를 본 뒤 빼지 않고 전체 판정에서도 빼지 않는다. **구현 안 함** (재평가 때) | 사용자 2026-09-24; G03 §31.5 |
+
+## G4 — Professional Engraving (Proposed, 2026-09-24, 설계; 구현 전)
+
+전문은 `docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md`. Architect 세션이 저장소 증거로 정한 것이다. 사용자 결정 G4-U1–U4(§29)가 남아 있고, 그 답에 따라 D2·D5의 일부가 확정된다.
+
+| ID | 결정 | 버린 대안 | 근거 |
+| --- | --- | --- | --- |
+| G4-D1 | **VexFlow 4.2.3 유지(vendoring) + PPP 판각 층.** VexFlow는 glyph·음표 단위 formatter·drawer. 간격·줄바꿈·충돌·곡선·페이지는 PPP. 엔진 독립 경계는 NotationPlan (Verovio 재평가 조건 §7.3) | VexFlow 5 재작성, 화면 VexFlow + 인쇄 외부 판각기, Verovio 단일 엔진, OSMD | §7 |
+| G4-D2 | **렌더러 입력은 ScoreGraph.** RenderSource: live → refetch → store(U1) → `legacy.fromScore`. `agree`(G2 `legacy.compare`)와 link(sgHead / join key)로 Score와의 일치를 확인, 실패하면 fromScore | Score를 계속 입력으로, Score에 판각 곁표 | §8.2 |
+| G4-D3 | beam은 성부-마디에 그래프 beam이 있으면 그것만, 없을 때만 `pro-beam.js` `groups`(순수 함수)로 파생하고 ledger에 `derived` | 문자 그대로 충실(깃발만), 렌더러 자체 규칙 유지 | §11 |
+| G4-D4 | tuplet은 그래프의 `show`·`printed`·`parent`대로. 시간을 다시 해석하지 않는다. 1-음 tuplet은 U2 | 렌더러 휴리스틱 유지 | §12 |
+| G4-D5 | 모든 그래프 tie(부분 화음·세로줄·system 넘김)와 그래프 짝대로의 slur. 추론 악보 마디 안 tie는 U2 | 줄 넘김 곡선 버림, start/stop 다시 짝짓기 | §13 |
+| G4-D6 | 다성부 stem은 `display.stem`, 없으면 그래프 성부 순서. 렌더러는 손·staff·성부를 정하지 않는다 | 평균 음높이 | §14 |
+| G4-D7 | 명시적 중간 표현 둘: **NotationPlan**(좌표 없음 + fidelity ledger)과 **EngravedScore**(staff-space 기하, 그래프 ID). schema 변경 없음 | IR 없이 바로 그리기, render tree 추가, schema v3 | §8 |
+| G4-D8 | 음악 기호는 전부 SMuFL glyph(Bravura via VexFlow), 글자 폭은 커밋한 metric 표. DOM 측정·Unicode 음악 글자 없음 | 시스템 글꼴, DOM 측정 | §18 |
+| G4-D9 | `PPP.renderer`('legacy' 기본 \| 'engrave') 스위치, production은 곡 단위 fallback을 세고, 테스트는 strict | 한 번에 교체, 조용한 fallback | §25 |
+| G4-D10 | G4는 G3를 요구하지 않는다: G3 flag를 읽지 않고 `professionalize`를 부르지 않는다. G3a·G3b 그래프는 그대로 그린다 | G3a flip을 G4의 전제로 | §26 |
+| G4-D11 | 가로 간격은 spring(`u·Δ^0.65`)–rod 모델, system마다 정확히 폭 맞춤. 화면은 줄당 N마디, 인쇄는 밀도 DP | 시간 비례, VexFlow Formatter에 맡김 | §9, §15 |
+| G4-D12 | 벤치마크 4층: L1 ledger, L2 기하, L3 기하 snapshot (Node, CI), L4 milestone 사람 평가 2회 | 매 변경 사람 평가, 픽셀 snapshot을 CI에 | §21 |
+
+**사용자 결정 대기 (G04 §29)**
+
+| ID | 질문 | 권고 |
+| --- | --- | --- |
+| G4-U1 | 들여온 곡의 렌더 그래프를 다시 불러온 뒤에도 쓰게 저장할 것인가 | A: gzip 그래프를 IndexedDB에 캐시로 (이 기기) |
+| G4-U2 | G3 off 추론 기보: 마디 안 tie를 숨길 것인가, 1-음 tuplet을 어떻게 보일 것인가 | A: tie는 그림, 한 tuplet을 이루는 1-음 사슬은 숫자 하나로 (표시만) |
+| G4-U3 | 인쇄·PDF 범위 | A: 브라우저 인쇄(벡터 PDF), 외부 판각기·PDF 라이브러리 없음 |
+| G4-U4 | 화면 줄바꿈 | A: 줄당 N마디(4/2) 유지 + 외톨이 줄 방지. 인쇄는 밀도 DP |

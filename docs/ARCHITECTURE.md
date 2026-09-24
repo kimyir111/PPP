@@ -117,6 +117,21 @@ G2는 **producer 쪽 경계**를 연다. 전문과 근거는 `docs/GOALS/G02_SCO
 - **S3 완료.** 사람이 여는 파일은 그래프를 거쳐 `legacy-score.js`의 `toScore`가 앱 `Score`로 만든다. `parseMusicXML`은 `PPP.legacyImport`로 한 릴리스 남는 되돌리기 경로다. 앱이 스스로 만든 XML(녹음·편곡·OMR)은 아직 옛 경로이고, 그것이 S4/S5다.
 - `.mid`가 열린다: 무손실 performance + `audio-score.js`의 기존 quantizer가 만든 **inferred** 기보. 세 곳에서 추론임을 말한다 (G02 §24.8).
 
+### G4 설계 (Proposed, 2026-09-24, 브랜치 `g4-professional-engraving`, 미구현)
+
+G4는 **S5의 렌더러 부분**이다: 렌더러가 legacy `Score` 대신 ScoreGraph를 읽는다. 재생·연습 판정은 Score에 남는다 (G5 이후). 전문과 근거는 `docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md`.
+
+```
+ RenderSource: live 그래프 │ course·카탈로그 다시 읽기 │ 저장된 그래프(G4-U1) │ legacy.fromScore(Score)
+        ▼  (agree = legacy.compare로 Score와 일치 확인, link = sgHead / join key)
+ ScoreGraph ─► engrave.plan ─► NotationPlan + fidelity ledger   (좌표 없음, 엔진 독립)
+            ─► engrave.layout ─► EngravedScore + PracticeMap   (staff-space 기하, DOM 없음, Node = 브라우저)
+            ─► engrave.svg ─► 화면 SVG │ 인쇄용 페이지 SVG
+```
+
+- VexFlow 4.2.3을 `vendor/`에 고정하고 glyph·음표 단위 formatter로만 쓴다. 간격·줄바꿈·충돌·곡선·페이지는 `engrave/`(UMD, 앱 파일 밖)가 소유한다 (G4-D1).
+- 옛 렌더러는 `PPP.renderer = 'legacy'`(기본)로 남는다. G4f에서 flip하고 한 릴리스 뒤 제거한다.
+
 ## 3. 품질 측정의 자리
 
 - G0 benchmark는 `toMusicXml`이 쓴 MusicXML을 앱 parity 규칙으로 읽어 평가한다.
