@@ -1,0 +1,832 @@
+{
+ "absolute": [
+  {
+   "file": "E08-Z",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E07-Y",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E01-Y",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E04-Z",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E20-Y",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E02-X",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E16-Y",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E19-Z",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E15-Z",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E09-Z",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E11-X",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E19-X",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E13-Z",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E02-Y",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E06-Z",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E07-Z",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E04-X",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E12-Z",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E01-Z",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E12-Y",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E18-Y",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E13-Y",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E10-Y",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E08-Y",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E16-X",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E15-Y",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E03-X",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E04-Y",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E05-Y",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E14-Y",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E09-X",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E18-X",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E05-X",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E19-Y",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E20-X",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E10-Z",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E05-Z",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E17-X",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E20-Z",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E14-Z",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E07-X",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E01-X",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E06-Y",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E12-X",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E02-Z",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E09-Y",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E11-Y",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E18-Z",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E06-X",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E14-X",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E15-X",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E17-Z",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E16-Z",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E13-X",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E10-X",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E03-Y",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E11-Z",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E17-Y",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E03-Z",
+   "give": null,
+   "score": null
+  },
+  {
+   "file": "E08-X",
+   "give": null,
+   "score": null
+  }
+ ],
+ "commit": "1c030f23b1",
+ "date": "",
+ "excerpts": [
+  {
+   "id": "E01",
+   "note": "",
+   "rank": {
+    "overall": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "rhythm": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "spelling": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "voices": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    }
+   }
+  },
+  {
+   "id": "E02",
+   "note": "",
+   "rank": {
+    "overall": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "rhythm": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "spelling": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "voices": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    }
+   }
+  },
+  {
+   "id": "E03",
+   "note": "",
+   "rank": {
+    "overall": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "rhythm": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "spelling": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "voices": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    }
+   }
+  },
+  {
+   "id": "E04",
+   "note": "",
+   "rank": {
+    "overall": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "rhythm": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "spelling": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "voices": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    }
+   }
+  },
+  {
+   "id": "E05",
+   "note": "",
+   "rank": {
+    "overall": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "rhythm": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "spelling": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "voices": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    }
+   }
+  },
+  {
+   "id": "E06",
+   "note": "",
+   "rank": {
+    "overall": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "rhythm": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "spelling": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "voices": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    }
+   }
+  },
+  {
+   "id": "E07",
+   "note": "",
+   "rank": {
+    "overall": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "rhythm": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "spelling": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "voices": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    }
+   }
+  },
+  {
+   "id": "E08",
+   "note": "",
+   "rank": {
+    "overall": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "rhythm": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "spelling": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "voices": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    }
+   }
+  },
+  {
+   "id": "E09",
+   "note": "",
+   "rank": {
+    "overall": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "rhythm": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "spelling": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "voices": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    }
+   }
+  },
+  {
+   "id": "E10",
+   "note": "",
+   "rank": {
+    "overall": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "rhythm": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "spelling": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "voices": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    }
+   }
+  },
+  {
+   "id": "E11",
+   "note": "",
+   "rank": {
+    "overall": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "rhythm": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "spelling": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "voices": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    }
+   }
+  },
+  {
+   "id": "E12",
+   "note": "",
+   "rank": {
+    "overall": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "rhythm": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "spelling": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "voices": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    }
+   }
+  },
+  {
+   "id": "E13",
+   "note": "",
+   "rank": {
+    "overall": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "rhythm": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "spelling": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "voices": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    }
+   }
+  },
+  {
+   "id": "E14",
+   "note": "",
+   "rank": {
+    "overall": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "rhythm": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "spelling": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "voices": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    }
+   }
+  },
+  {
+   "id": "E15",
+   "note": "",
+   "rank": {
+    "overall": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "rhythm": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "spelling": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "voices": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    }
+   }
+  },
+  {
+   "id": "E16",
+   "note": "",
+   "rank": {
+    "overall": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "rhythm": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "spelling": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "voices": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    }
+   }
+  },
+  {
+   "id": "E17",
+   "note": "",
+   "rank": {
+    "overall": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "rhythm": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "spelling": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "voices": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    }
+   }
+  },
+  {
+   "id": "E18",
+   "note": "",
+   "rank": {
+    "overall": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "rhythm": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "spelling": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "voices": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    }
+   }
+  },
+  {
+   "id": "E19",
+   "note": "",
+   "rank": {
+    "overall": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "rhythm": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "spelling": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "voices": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    }
+   }
+  },
+  {
+   "id": "E20",
+   "note": "",
+   "rank": {
+    "overall": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "rhythm": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "spelling": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    },
+    "voices": {
+     "X": null,
+     "Y": null,
+     "Z": null
+    }
+   }
+  }
+ ],
+ "instructions": "Render every file of tests/bench/human/g3 with the same engraver (MuseScore 4), not the app. excerpts: for each excerpt rank its three versions X, Y, Z on each axis, 1 best (equal ranks for equal quality). absolute: for each file on its own, give is yes, fix or no (could a piano teacher hand this to a pupil, as it is or after small fixes?) and score 1-5. Write your role, never your name. Do not open tests/bench/human/g3-key before the review is filed.",
+ "renderer": "",
+ "reviewer_role": "",
+ "schema": "ppp.g3-human-review/2"
+}
