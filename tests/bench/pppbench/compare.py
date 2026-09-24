@@ -10,7 +10,9 @@ What a regression is (gate/2):
 * **Critical flips**: more than ``case_flip_max`` cases going from pass to fail on one critical
   gate, even when as many others go the other way (§17 M2).
 * **Micro guard**: a micro piece isolates one question, so any drop on any guarded metric of a
-  micro case fails, with no tolerance (§17 M3).
+  micro case fails, with no tolerance (§17 M3). A guarded ratio whose denominator is the number of
+  symbols written is judged by its defect count instead (``MICRO_BY_COUNT``): merging two tied pieces
+  into one symbol shrinks the denominator and moves the ratio with no defect added (G03 §28 m4, M20).
 * An aggregate metric beyond its tolerance, including ``usable`` and every critical gate's rate.
 * **Subgroups** (§17 M3): every tag with a prefix in ``subgroups.prefixes`` and at least
   ``min_cases`` cases in both runs is checked on its own. Tolerances follow the group size so that
@@ -42,6 +44,8 @@ MICRO_GUARD = ["notes.identity.f1", "notation.onset_pos.accuracy", "notation.dur
                "struct.time_sig.timeline_accuracy", "struct.key.timeline_accuracy", "struct.tempo.timeline_accuracy",
                "notation.note_shape.consistency", "notation.duration.page_accuracy", "read.bar_completeness", "struct.measure_numbers.valid",
                "struct.measure_numbers.app_onset_accuracy"] + CRITICAL
+# guarded ratio -> the count of defects it is 1 - count / symbols of: a micro case fails when the count rises
+MICRO_BY_COUNT = {"notation.note_shape.consistency": "notation.note_shape.mismatches"}
 
 
 @dataclass
@@ -143,6 +147,12 @@ def compare(results: Dict[str, Any], baseline: Optional[Dict[str, Any]], gate: D
         if "set:micro" in c["tags"]:
             for k in MICRO_GUARD:
                 a, bb = cm.get(k), bm.get(k)
+                count = MICRO_BY_COUNT.get(k)
+                if count and cm.get(count) is not None and bm.get(count) is not None:
+                    if cm[count] > bm[count] + ROUNDING:
+                        _fail(v, f"micro case {label}: {count} {bm[count]:g} -> {cm[count]:g} ({k} {bb:.4f} -> "
+                                 f"{a:.4f}; micro pieces allow no new defect)", f"micro:{k}")
+                    continue
                 if bb is not None and a is not None and a < bb - ROUNDING:
                     _fail(v, f"micro case {label}: {k} {bb:.4f} -> {a:.4f} (micro pieces allow no drop)", f"micro:{k}")
         s_new, s_old = cm.get("sqi"), b.get("sqi")
@@ -282,7 +292,7 @@ def format_verdict(v: Verdict) -> str:
 
 def case_row_keys(gate: Optional[Dict[str, Any]] = None) -> set:
     from .metrics.composite import SQI_S_WEIGHTS, SQI_WEIGHTS
-    keep = set(SQI_WEIGHTS) | set(SQI_S_WEIGHTS) | set(CRITICAL) | set(MICRO_GUARD) | {"sqi"}
+    keep = set(SQI_WEIGHTS) | set(SQI_S_WEIGHTS) | set(CRITICAL) | set(MICRO_GUARD) | set(MICRO_BY_COUNT.values()) | {"sqi"}
     if gate:
         keep |= set((gate.get("metrics") or {}).keys())
     return keep
@@ -366,7 +376,7 @@ def cli_check(args) -> int:
     report.write_summary(results, run, v, base, os.path.join(out_dir_for(suite), "summary.md"))
     if getattr(args, "g3", False):
         from . import g3gate
-        lines = g3gate.evaluate(results, base)
+        lines = g3gate.evaluate(results, base, g3gate.load_r17(suite["name"]))
         print(g3gate.format_lines(lines))
         if v.exit_code == 0 and not all(ok for _, ok, _ in lines):
             return 1

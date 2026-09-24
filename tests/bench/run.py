@@ -8,6 +8,7 @@
     python tests/bench/run.py run   --suite-file PATH           # private suite, outputs beside it
     python tests/bench/run.py check --suite core                # exit 0 PASS, 1 REGRESSION, 2 ERROR
     python tests/bench/run.py check --suite core --g3           # + the G3 gate (G03 §20.4): exit 1 when it fails
+    python tests/bench/run.py g3-r17 --suite core --reason "..."   # record the G3 gate's per-case R17 baseline (§29 M6)
     python tests/bench/run.py update-baseline --suite core --reason "..."
     python tests/bench/run.py relock --suite core --reason "..."
     python tests/bench/run.py golden [--init | --bless --reason "..."] [--g3]
@@ -98,6 +99,25 @@ def cmd_run(args) -> int:
 def cmd_check(args) -> int:
     from pppbench import compare
     return compare.cli_check(args)
+
+
+def cmd_g3_r17(args) -> int:
+    from pppbench import compare, g3gate, suite as suite_mod
+    suite = suite_mod.load_suite(args.suite)
+    results, run = compare._load_last(suite)
+    if results is None:
+        print(f"ERROR NO_RESULTS: run `python tests/bench/run.py run --suite {suite['name']}` (G3 on) first")
+        return 2
+    if results.get("filtered"):
+        print("ERROR FILTERED_RUN: a --filter run cannot become the R17 baseline")
+        return 2
+    why = compare.stale_reason(run or {})
+    if why:
+        print(f"ERROR STALE_RESULTS: {why}; run the suite again first")
+        return 2
+    ok, msg = g3gate.record_r17(results, run, suite["name"], args.reason)
+    print(("recorded " if ok else "ERROR R17_REFUSED: ") + msg)
+    return 0 if ok else 2
 
 
 def cmd_update(args) -> int:
@@ -196,6 +216,10 @@ def main(argv=None) -> int:
     g.add_argument("--suite-file")
     p.add_argument("--g3", action="store_true", help="also judge the G3 gate (G03 §20.4); exit 1 when it fails")
     p.set_defaults(fn=cmd_check)
+    p = sub.add_parser("g3-r17", help="record the G3 gate's per-case R17 baseline from the last run (G03 §29 M6)")
+    p.add_argument("--suite", required=True)
+    p.add_argument("--reason", required=True)
+    p.set_defaults(fn=cmd_g3_r17)
     p = sub.add_parser("update-baseline")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--suite")

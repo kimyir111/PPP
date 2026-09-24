@@ -104,6 +104,11 @@ NQ_GATE = {
     "nq.tie.mergeable_rate": {"dir": "down", "tol": 0.005},
     "nq.tuplet.group_complete": {"dir": "up", "tol": -0.005},
     "nq.tuplet.one_note_rate": {"dir": "down", "tol": 0.005},
+    # the reason split (G03 §29 M6): the residuals G3a must not leave, and R17, which it leaves to G3b but must not add to
+    "nq.shape.tm_missing.unexpected": {"dir": "down", "tol": 0.0},
+    "nq.shape.tm_missing.r17": {"dir": "down", "tol": 0.0},
+    "nq.tuplet.one_note.unexpected": {"dir": "down", "tol": 0.0},
+    "nq.tie.mergeable.defect": {"dir": "down", "tol": 0.0},
 }
 GATE_MUTATION = _gate(1.0, 2, SUBGROUP_PREFIXES, 15)
 GATE_MUTATION["metrics"].update(NQ_GATE)

@@ -1,0 +1,75 @@
+{
+ "cases": {
+  "hymns/silent-night|human-alt|none|s1": {
+   "one": 3,
+   "tie": 0,
+   "tm": 6
+  },
+  "method/burgmuller25/005|human-alt|none|s1": {
+   "one": 2,
+   "tie": 2,
+   "tm": 19
+  },
+  "method/burgmuller25/006|human-alt|none|s1": {
+   "one": 2,
+   "tie": 0,
+   "tm": 3
+  },
+  "method/czerny849/011|human-alt|none|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/hanon/008|human-alt|none|s1": {
+   "one": 3,
+   "tie": 0,
+   "tm": 6
+  },
+  "method/hanon/009|human-alt|none|s1": {
+   "one": 16,
+   "tie": 0,
+   "tm": 29
+  },
+  "method/sonatina/006|human-alt|none|s1": {
+   "one": 22,
+   "tie": 0,
+   "tm": 46
+  },
+  "method/sonatina/010|human-alt|none|s1": {
+   "one": 2,
+   "tie": 6,
+   "tm": 4
+  },
+  "method/sonatina/012|human-alt|none|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 4
+  },
+  "method/sonatina/017|human-alt|none|s1": {
+   "one": 4,
+   "tie": 0,
+   "tm": 9
+  },
+  "method/sonatina/026|human-alt|none|s1": {
+   "one": 0,
+   "tie": 5,
+   "tm": 6
+  }
+ },
+ "git_sha": "1c030f23b1a4ba2956b966473860b19a5bcce943",
+ "holdout": {
+  "one": 0,
+  "tie": 0,
+  "tm": 0
+ },
+ "reason": "G3 Fixer (G03 §29): the per-case R17 residuals of G3a on robust, recorded from the final Fixer run (U-1); hold-out cases pooled",
+ "recorded_at": "2026-09-24T06:16:44+00:00",
+ "schema": "ppp.bench-g3-r17/1",
+ "suite": "robust",
+ "sut_sha256": "213778cde7572e5fb458abce949bdca032f835215be226eaa6911d1ebb47035f",
+ "totals": {
+  "one": 56,
+  "tie": 13,
+  "tm": 134
+ }
+}

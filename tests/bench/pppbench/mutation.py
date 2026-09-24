@@ -21,7 +21,8 @@ buildXml to buildGraph (the same defects; the MusicXML is written from the
 ScoreGraph since the G1 flip) and added 3 in the ScoreGraph exporter (G01 A38:
 no <dot/>, no <time-modification>, treble and bass clefs swapped).
 
-G3 (docs/GOALS/G03 §20.5, A37) adds 6 mutations of its own passes and a no-op control, run as their own group:
+G3 (docs/GOALS/G03 §20.5, A37; §29 M3, M6) adds 7 mutations of its own passes and input and a no-op control, run as
+their own group:
 G3 is off by default until its flip, so the group's original and every one of its mutants first turn it on
 (``base: G3_ON``) and each mutant is judged against that G3-on original. They must regress the nq.* metric
 (or the G0 metric) the pass exists for. The critic and the imported-slur mutations of §20.5 (7, 8) cannot
@@ -168,28 +169,40 @@ G3_MUTATIONS: List[Dict[str, Any]] = [
      "base": "g3", "file": PRO + "tuplet.js",
      "find": "    if (!e.display || !e.display.type) return false;",
      "replace": "    if (!e.display || !e.display.type || e.kind === 'rest') return false;",
-     "expect": "REGRESSION", "metrics": ["nq.shape.tm_missing"]},
+     # the reason split sees what the pass is for: these are not R17 residuals (§29 M6 proof 2)
+     "expect": "REGRESSION", "metrics": ["nq.shape.tm_missing.unexpected"]},
     {"id": "G3-TIES-IN-BEAT",           # (3) R-repr keeps every writing the grid allows: ties inside a beat come back
      "base": "g3", "file": PRO + "rhythm.js",
      "find": "    return w.cost < now.cost;",
      "replace": "    return false;",
-     "expect": "REGRESSION", "metrics": ["nq.tie.mergeable_rate", "notation.ties.extra_per_100"]},
+     # ties one legal symbol could replace: mergeable defects, not ties an H6/H7 rule requires (§29 M6 proof 1)
+     "expect": "REGRESSION", "metrics": ["nq.tie.mergeable.defect"]},
     {"id": "G3-BEAM-ACROSS-BEATS",      # (4) one beam group per measure: beams run over the beat boundaries
      "base": "g3", "file": PRO + "beam.js",
      "find": "    const spans = MG.beamGroups(gr);",
      "replace": "    const spans = [[-100000, 100000]];",
      "expect": "REGRESSION", "metrics": ["nq.beam.boundary_ok"]},
-    {"id": "G3-SPELL-STATIC",           # (5) no keys by region: every note spelled by the writer's one static table.
-     # Few pieces modulate, so the suite means move less than their tolerance; the sonatinas that do (G03 E5, E9)
-     # lose their key timeline as a subgroup
+    {"id": "G3-ACC-BAR-STATE",          # (5) the accidental plan forgets what the bar already printed: a note after an
+     # accidental of its step reads the key signature again, so the natural back is lost (and a repeat is printed).
+     # Replaces G3-SPELL-STATIC (keys by region off), which changed nothing: no recording in the suite modulates for
+     # the one-fifth rule (G03 §28 M3)
      "base": "g3", "file": PRO + "spell.js",
-     "find": "          if (ctx.opts.regionKeys !== false) regionPass(g, d, gpart, part, ctx, changes);",
-     "replace": "          if (false) regionPass(g, d, gpart, part, ctx, changes);",
-     "expect": "REGRESSION", "metrics": ["tag:book:sonatina"]},
-    {"id": "G3-HANDS-NO-MELODY",        # (6) the hand DP's melody term is 0
+     "find": "          const prevailing = state.has(k) ? state.get(k) : sig[p.step];",
+     "replace": "          const prevailing = sig[p.step];",
+     "expect": "REGRESSION", "metrics": ["critical.accidentals", "notation.accidentals.required_recall"]},
+    {"id": "G3-R17-GROW",               # (6b) the tiny release gap before a triplet onset is no longer closed: more
+     # one-tick releases reach G3, which keeps them as written (R17, G3b's). Nothing G3a should have written, so only
+     # the R17 count sees it: R17 is left to G3b but must not grow (§29 M6 proof 3, U-1)
+     "base": "g3",
+     "find": "        if (gap <= Math.max(1, Math.round(span * 0.2)) &&",
+     "replace": "        if (!ns.some(n => n.tuplet) && gap <= Math.max(1, Math.round(span * 0.2)) &&",
+     "expect": "REGRESSION", "metrics": ["nq.shape.tm_missing.r17"]},
+    {"id": "G3-HANDS-NO-KEEP",          # (6) the hand DP's keep term is 0: the staff the writer chose counts for nothing.
+     # Replaces G3-HANDS-NO-MELODY, which the fixed hand model (G03 §29 M1: keep, keepWhereNotBetter, the fixed point)
+     # left inside tolerance: hand accuracy 0.9187 -> 0.9159 on the mutation suite, a dead mutation (§29 M3)
      "base": "g3", "file": PRO + "staff.js",
-     "find": "MOVE: 150, MELODY: 1500,",
-     "replace": "MOVE: 150, MELODY: 0,",
+     "find": "TUPLET: 1500, KEEP: 900,",
+     "replace": "TUPLET: 1500, KEEP: 0,",
      "expect": "REGRESSION", "metrics": ["notation.hand.accuracy"]},
     {"id": "G3-NOOP",                   # the G3 group's control: a comment, and nothing moves
      "base": "g3", "file": PRO + "rhythm.js",

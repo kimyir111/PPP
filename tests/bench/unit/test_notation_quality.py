@@ -3,7 +3,7 @@
 import unittest
 from fractions import Fraction
 
-from pppbench import READS_AS, g3gate, musicxml, version_compatible, versions_compatible
+from pppbench import READS_AS, musicxml, version_compatible, versions_compatible
 from pppbench.metrics import notation_quality as NQ
 from unit import test_notation_audit as A   # its score/note/rest builders (module attribute: its tests run once)
 
@@ -162,27 +162,7 @@ class NotationQuality(unittest.TestCase):
         self.assertAlmostEqual(v["nq.range.ledger4_rate"], 1000 / 4)
 
 
-class G3Gate(unittest.TestCase):
-    def results(self, **m):
-        base = {"nq.tuplet.one_note_rate": 0.0, "nq.shape.tm_missing": 0.0, "nq.tie.mergeable_rate": 0.0,
-                "notation.hand.accuracy": 0.95, "critical.hands": 1.0, "critical.key": 1.0,
-                "notation.spelling.accuracy": 1.0}
-        base.update(m)
-        return {"cases": [{"id": "x", "status": "ok", "metrics": base}]}
-
-    def baseline(self):
-        return {"cases": {"x": {"metrics": {"critical.hands": 1.0, "critical.key": 1.0, "notation.spelling.accuracy": 1.0}}}}
-
-    def test_a_clean_run_passes(self):
-        self.assertTrue(all(ok for _, ok, _ in g3gate.evaluate(self.results(), self.baseline())))
-
-    def test_each_line_fails_on_its_own(self):
-        for bad in ({"nq.tuplet.one_note_rate": 1.0}, {"nq.shape.tm_missing": 3.0}, {"nq.tie.mergeable_rate": 0.4},
-                    {"notation.hand.accuracy": 0.88}, {"critical.hands": 0.0}, {"critical.key": 0.0},
-                    {"notation.spelling.accuracy": 0.9}):
-            lines = g3gate.evaluate(self.results(**bad), self.baseline())
-            self.assertFalse(all(ok for _, ok, _ in lines), bad)
-            self.assertIn("G3 gate: FAIL", g3gate.format_lines(lines))
+# the G3 gate's tests (reason-aware since G03 §29 M6) are test_notation_reasons.py's
 
 
 if __name__ == "__main__":

@@ -35,6 +35,16 @@ Appendix A-2 with, so a file's nq value and its audit numbers agree.
                              Levenshtein distance of the prediction's bar (shifted by the bars the matched
                              notes say) to the reference's, summed / reference symbols
 
+Why each residual is there (G03 §28 M6, U-1/U-2; pppbench.notation_reasons), prediction only, counts:
+
+  nq.shape.tm_missing.r17 / .unexpected      tm_missing split: R17 (G3b's to fix) / every other reason
+  nq.tuplet.one_note.r17 / .unexpected       one-note tuplets, split the same way: a bracket over one event, and a
+                                             time-modified event under no bracket (one whose bracket is hidden)
+  nq.tie.mergeable.defect                    mergeable ties one legal symbol G3a would write could replace
+  nq.tie.mergeable.required_h6 / .required_h7 / .required_beat_split / .partial_chord / .cross_voice / .r17
+                                             mergeable ties merging would break a rule for (H6, H7, H4/H5 with the
+                                             pickup offset), a chord only partly tied (U-2), two voices, or R17
+
 A metric with nothing to measure (no bracket, no tie, no beam …) is None.
 """
 
@@ -45,6 +55,7 @@ from fractions import Fraction
 from typing import Any, Dict, List, Optional, Tuple
 
 from .. import notation_read as NR
+from .. import notation_reasons as RS
 
 EPS = Fraction(1, 10 ** 6)
 PLAIN_Q = [Fraction(2) ** k for k in range(-8, 4)]      # 1/256 … 8 quarters
@@ -53,7 +64,15 @@ PLAIN_Q = [Fraction(2) ** k for k in range(-8, 4)]      # 1/256 … 8 quarters
 PAIRED = ("nq.tuplet.group_complete", "nq.tuplet.one_note_rate", "nq.shape.tm_missing", "nq.tie.mergeable_rate",
           "nq.rhythm.hidden_beat_rate", "nq.beam.coverage", "nq.beam.boundary_ok", "nq.acc.redundant_rate",
           "nq.spell.context_odd", "nq.spell.mixed_bar_rate", "nq.range.ledger4_rate")
-IDS = PAIRED + ("nq.rest.per_measure_delta", "nq.rhythm.short_rate_delta", "nq.voice.poly_recall", "nq.ned")
+# the reason split (prediction only): metric id -> notation_reasons key
+REASONS = {"nq.shape.tm_missing.r17": "tm.r17", "nq.shape.tm_missing.unexpected": "tm.unexpected",
+           "nq.tuplet.one_note.r17": "one.r17", "nq.tuplet.one_note.unexpected": "one.unexpected",
+           "nq.tie.mergeable.defect": "tie.MERGEABLE_DEFECT", "nq.tie.mergeable.required_h6": "tie.REQUIRED_H6",
+           "nq.tie.mergeable.required_h7": "tie.REQUIRED_H7",
+           "nq.tie.mergeable.required_beat_split": "tie.REQUIRED_BEAT_SPLIT",
+           "nq.tie.mergeable.partial_chord": "tie.PARTIAL_CHORD_REQUIRED", "nq.tie.mergeable.cross_voice": "tie.CROSS_VOICE",
+           "nq.tie.mergeable.r17": "tie.R17_DEFER_G3B"}
+IDS = PAIRED + ("nq.rest.per_measure_delta", "nq.rhythm.short_rate_delta", "nq.voice.poly_recall", "nq.ned") + tuple(REASONS)
 
 
 def _rate(num: int, den: int, scale: float = 1.0) -> Optional[float]:
@@ -268,6 +287,7 @@ def file_stats(canon) -> Optional[Dict[str, Any]]:
                                                        ("r" if e["rest"] else "n", e["type"], e["dots"], tie, i in in_bracket)))
     out["poly_bars"] = {k for k, v in voices.items() if len(v) >= 2}
     out["symbols"] = {k: [s[3] for s in sorted(v, key=lambda s: (_voice_key(s[0]), s[1], s[2]))] for k, v in symbols.items()}
+    out["reasons"] = RS.reasons(nt)
     return out
 
 
@@ -346,6 +366,7 @@ def values(st: Dict[str, Any]) -> Dict[str, Optional[float]]:
         "nq.spell.context_odd": _rate(st["odd_spell"], st["notes"], 1000.0),
         "nq.spell.mixed_bar_rate": _rate(st["mixed"], st["staff_bars"]),
         "nq.range.ledger4_rate": _rate(st["ledger4"], st["notes"], 1000.0),
+        **{k: float(st["reasons"][r]) for k, r in REASONS.items()},
     }
 
 
@@ -390,6 +411,8 @@ def compare(pst: Dict[str, Any], rst: Dict[str, Any], offset: int) -> Dict[str, 
         total += len(seq)
         dist += levenshtein(pst["symbols"].get((m + offset, h), []), seq)
     out["nq.ned"] = dist / total if total else None
+    for k in REASONS:
+        out[k] = pv[k]
     return out
 
 
