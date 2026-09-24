@@ -1,0 +1,832 @@
+{
+  "absolute": [
+    {
+      "file": "E08-Z",
+      "give": "no",
+      "score": 3
+    },
+    {
+      "file": "E07-Y",
+      "give": "fix",
+      "score": 4
+    },
+    {
+      "file": "E01-Y",
+      "give": "no",
+      "score": 2
+    },
+    {
+      "file": "E04-Z",
+      "give": "no",
+      "score": 3
+    },
+    {
+      "file": "E20-Y",
+      "give": "fix",
+      "score": 3
+    },
+    {
+      "file": "E02-X",
+      "give": "yes",
+      "score": 4
+    },
+    {
+      "file": "E16-Y",
+      "give": "no",
+      "score": 2
+    },
+    {
+      "file": "E19-Z",
+      "give": "no",
+      "score": 3
+    },
+    {
+      "file": "E15-Z",
+      "give": "fix",
+      "score": 4
+    },
+    {
+      "file": "E09-Z",
+      "give": "fix",
+      "score": 3
+    },
+    {
+      "file": "E11-X",
+      "give": "no",
+      "score": 2
+    },
+    {
+      "file": "E19-X",
+      "give": "fix",
+      "score": 3
+    },
+    {
+      "file": "E13-Z",
+      "give": "no",
+      "score": 3
+    },
+    {
+      "file": "E02-Y",
+      "give": "no",
+      "score": 2
+    },
+    {
+      "file": "E06-Z",
+      "give": "fix",
+      "score": 4
+    },
+    {
+      "file": "E07-Z",
+      "give": "no",
+      "score": 3
+    },
+    {
+      "file": "E04-X",
+      "give": "no",
+      "score": 3
+    },
+    {
+      "file": "E12-Z",
+      "give": "yes",
+      "score": 4
+    },
+    {
+      "file": "E01-Z",
+      "give": "fix",
+      "score": 3
+    },
+    {
+      "file": "E12-Y",
+      "give": "fix",
+      "score": 3
+    },
+    {
+      "file": "E18-Y",
+      "give": "yes",
+      "score": 4
+    },
+    {
+      "file": "E13-Y",
+      "give": "no",
+      "score": 2
+    },
+    {
+      "file": "E10-Y",
+      "give": "fix",
+      "score": 3
+    },
+    {
+      "file": "E08-Y",
+      "give": "no",
+      "score": 2
+    },
+    {
+      "file": "E16-X",
+      "give": "no",
+      "score": 2
+    },
+    {
+      "file": "E15-Y",
+      "give": "fix",
+      "score": 3
+    },
+    {
+      "file": "E03-X",
+      "give": "no",
+      "score": 3
+    },
+    {
+      "file": "E04-Y",
+      "give": "no",
+      "score": 2
+    },
+    {
+      "file": "E05-Y",
+      "give": "fix",
+      "score": 3
+    },
+    {
+      "file": "E14-Y",
+      "give": "fix",
+      "score": 3
+    },
+    {
+      "file": "E09-X",
+      "give": "fix",
+      "score": 3
+    },
+    {
+      "file": "E18-X",
+      "give": "yes",
+      "score": 4
+    },
+    {
+      "file": "E05-X",
+      "give": "fix",
+      "score": 3
+    },
+    {
+      "file": "E19-Y",
+      "give": "fix",
+      "score": 2
+    },
+    {
+      "file": "E20-X",
+      "give": "yes",
+      "score": 4
+    },
+    {
+      "file": "E10-Z",
+      "give": "fix",
+      "score": 4
+    },
+    {
+      "file": "E05-Z",
+      "give": "fix",
+      "score": 3
+    },
+    {
+      "file": "E17-X",
+      "give": "no",
+      "score": 2
+    },
+    {
+      "file": "E20-Z",
+      "give": "fix",
+      "score": 4
+    },
+    {
+      "file": "E14-Z",
+      "give": "fix",
+      "score": 3
+    },
+    {
+      "file": "E07-X",
+      "give": "fix",
+      "score": 3
+    },
+    {
+      "file": "E01-X",
+      "give": "yes",
+      "score": 5
+    },
+    {
+      "file": "E06-Y",
+      "give": "fix",
+      "score": 2
+    },
+    {
+      "file": "E12-X",
+      "give": "fix",
+      "score": 2
+    },
+    {
+      "file": "E02-Z",
+      "give": "no",
+      "score": 2
+    },
+    {
+      "file": "E09-Y",
+      "give": "fix",
+      "score": 3
+    },
+    {
+      "file": "E11-Y",
+      "give": "fix",
+      "score": 3
+    },
+    {
+      "file": "E18-Z",
+      "give": "yes",
+      "score": 4
+    },
+    {
+      "file": "E06-X",
+      "give": "fix",
+      "score": 3
+    },
+    {
+      "file": "E14-X",
+      "give": "fix",
+      "score": 3
+    },
+    {
+      "file": "E15-X",
+      "give": "fix",
+      "score": 3
+    },
+    {
+      "file": "E17-Z",
+      "give": "fix",
+      "score": 3
+    },
+    {
+      "file": "E16-Z",
+      "give": "fix",
+      "score": 4
+    },
+    {
+      "file": "E13-X",
+      "give": "yes",
+      "score": 4
+    },
+    {
+      "file": "E10-X",
+      "give": "fix",
+      "score": 3
+    },
+    {
+      "file": "E03-Y",
+      "give": "fix",
+      "score": 4
+    },
+    {
+      "file": "E11-Z",
+      "give": "fix",
+      "score": 4
+    },
+    {
+      "file": "E17-Y",
+      "give": "no",
+      "score": 3
+    },
+    {
+      "file": "E03-Z",
+      "give": "no",
+      "score": 2
+    },
+    {
+      "file": "E08-X",
+      "give": "no",
+      "score": 1
+    }
+  ],
+  "commit": "1c030f23b1",
+  "date": "2026-09-24",
+  "excerpts": [
+    {
+      "id": "E01",
+      "note": "",
+      "rank": {
+        "overall": {
+          "X": 1,
+          "Y": 3,
+          "Z": 2
+        },
+        "rhythm": {
+          "X": 1,
+          "Y": 3,
+          "Z": 3
+        },
+        "spelling": {
+          "X": 1,
+          "Y": 2,
+          "Z": 2
+        },
+        "voices": {
+          "X": 1,
+          "Y": 3,
+          "Z": 3
+        }
+      }
+    },
+    {
+      "id": "E02",
+      "note": "x: 꽤 괜찮긴함  Y: 쉼표 이상함 Z : 쉼표 쓸데없이 껴있고 읽기 힘든 쉼표임",
+      "rank": {
+        "overall": {
+          "X": 1,
+          "Y": 3,
+          "Z": 3
+        },
+        "rhythm": {
+          "X": 2,
+          "Y": 3,
+          "Z": 3
+        },
+        "spelling": {
+          "X": 2,
+          "Y": 2,
+          "Z": 2
+        },
+        "voices": {
+          "X": 1,
+          "Y": 2,
+          "Z": 2
+        }
+      }
+    },
+    {
+      "id": "E03",
+      "note": "x : 쉼표 이상함 y : 자연스러움 근데 아래 낮은음 바뀌는 부분 조금 어색함 z : 쉼표와 빠르게 3박자가 이상함",
+      "rank": {
+        "overall": {
+          "X": 3,
+          "Y": 1,
+          "Z": 2
+        },
+        "rhythm": {
+          "X": 3,
+          "Y": 1,
+          "Z": 3
+        },
+        "spelling": {
+          "X": 2,
+          "Y": 2,
+          "Z": 2
+        },
+        "voices": {
+          "X": 3,
+          "Y": 1,
+          "Z": 2
+        }
+      }
+    },
+    {
+      "id": "E04",
+      "note": "x: 마지막 마디나 두번째 줄 마디처럼 꼬리 부분 그리는거 이상함 Y : 쉼표 표시만 개선하면 쓸만할지도 근데 4개씩 음표 동시에 한 손 누르는건 좀 너무 어려워  음 높이가 너무 높게까지 올라가 Z: Y랑 비슷함 근데 쉼표 더 이상함 음 높이가 너무 높게까지 올라가",
+      "rank": {
+        "overall": {
+          "X": 3,
+          "Y": 3,
+          "Z": 3
+        },
+        "rhythm": {
+          "X": 2,
+          "Y": 3,
+          "Z": 3
+        },
+        "spelling": {
+          "X": 3,
+          "Y": 3,
+          "Z": 3
+        },
+        "voices": {
+          "X": 2,
+          "Y": 3,
+          "Z": 3
+        }
+      }
+    },
+    {
+      "id": "E05",
+      "note": "X : 되돌이표 이상하고 위치 어긋나있음 Y: 낮은음의 첫 마디 음표시가 아쉬움 Z: 마지막 마디 음표 꼬리 표시 이상함, 낮은음의 첫 마디 음표시가 아쉬움 , 마지막 마디 손 음표 세팅 이상함",
+      "rank": {
+        "overall": {
+          "X": 2,
+          "Y": 3,
+          "Z": 3
+        },
+        "rhythm": {
+          "X": 2,
+          "Y": 2,
+          "Z": 2
+        },
+        "spelling": {
+          "X": 3,
+          "Y": 1,
+          "Z": 2
+        },
+        "voices": {
+          "X": 2,
+          "Y": 3,
+          "Z": 3
+        }
+      }
+    },
+    {
+      "id": "E06",
+      "note": "Z: 연음만 좀 개선하면 좋을듯",
+      "rank": {
+        "overall": {
+          "X": 3,
+          "Y": 3,
+          "Z": 2
+        },
+        "rhythm": {
+          "X": 2,
+          "Y": 2,
+          "Z": 1
+        },
+        "spelling": {
+          "X": 2,
+          "Y": 2,
+          "Z": 1
+        },
+        "voices": {
+          "X": 2,
+          "Y": 2,
+          "Z": 1
+        }
+      }
+    },
+    {
+      "id": "E07",
+      "note": "Y: 쉼표 개선 필요 Z: 낮은음 치기 힘든 악보임 이상함",
+      "rank": {
+        "overall": {
+          "X": 3,
+          "Y": 1,
+          "Z": 3
+        },
+        "rhythm": {
+          "X": 2,
+          "Y": 1,
+          "Z": 3
+        },
+        "spelling": {
+          "X": 2,
+          "Y": 1,
+          "Z": 2
+        },
+        "voices": {
+          "X": 3,
+          "Y": 2,
+          "Z": 3
+        }
+      }
+    },
+    {
+      "id": "E08",
+      "note": "",
+      "rank": {
+        "overall": {
+          "X": 3,
+          "Y": 3,
+          "Z": 3
+        },
+        "rhythm": {
+          "X": 3,
+          "Y": 3,
+          "Z": 3
+        },
+        "spelling": {
+          "X": 3,
+          "Y": 3,
+          "Z": 3
+        },
+        "voices": {
+          "X": 3,
+          "Y": 3,
+          "Z": 3
+        }
+      }
+    },
+    {
+      "id": "E09",
+      "note": "",
+      "rank": {
+        "overall": {
+          "X": 2,
+          "Y": 2,
+          "Z": 2
+        },
+        "rhythm": {
+          "X": 2,
+          "Y": 3,
+          "Z": 3
+        },
+        "spelling": {
+          "X": 2,
+          "Y": 2,
+          "Z": 2
+        },
+        "voices": {
+          "X": 2,
+          "Y": 2,
+          "Z": 2
+        }
+      }
+    },
+    {
+      "id": "E10",
+      "note": "X: 박자 표시 이상해 Y: 쉼표 이상해 Z: 마지막 마디의 음 표시 이상함 ",
+      "rank": {
+        "overall": {
+          "X": 3,
+          "Y": 3,
+          "Z": 3
+        },
+        "rhythm": {
+          "X": 3,
+          "Y": 3,
+          "Z": 3
+        },
+        "spelling": {
+          "X": 3,
+          "Y": 2,
+          "Z": 3
+        },
+        "voices": {
+          "X": 2,
+          "Y": 3,
+          "Z": 2
+        }
+      }
+    },
+    {
+      "id": "E11",
+      "note": "X: 6번쨰 마디 손 이상함, 쉼표 이상함 Y : 쉼표 이상하고 쉼표 박자가 너무 이상해 Z : 낮은음이 마지막에 왜 뜬끔없이 있는진 모르겠지만 전반적으로는 무난한듯 박자가 조금 어려워보임",
+      "rank": {
+        "overall": {
+          "X": 2,
+          "Y": 3,
+          "Z": 1
+        },
+        "rhythm": {
+          "X": 2,
+          "Y": 3,
+          "Z": 1
+        },
+        "spelling": {
+          "X": 2,
+          "Y": 2,
+          "Z": 2
+        },
+        "voices": {
+          "X": 3,
+          "Y": 3,
+          "Z": 2
+        }
+      }
+    },
+    {
+      "id": "E12",
+      "note": "X Y 쉼표 이상함 Z 좋은듯",
+      "rank": {
+        "overall": {
+          "X": 2,
+          "Y": 3,
+          "Z": 1
+        },
+        "rhythm": {
+          "X": 2,
+          "Y": 2,
+          "Z": 1
+        },
+        "spelling": {
+          "X": 2,
+          "Y": 2,
+          "Z": 1
+        },
+        "voices": {
+          "X": 2,
+          "Y": 2,
+          "Z": 1
+        }
+      }
+    },
+    {
+      "id": "E13",
+      "note": "",
+      "rank": {
+        "overall": {
+          "X": 1,
+          "Y": 3,
+          "Z": 2
+        },
+        "rhythm": {
+          "X": 1,
+          "Y": 3,
+          "Z": 3
+        },
+        "spelling": {
+          "X": 1,
+          "Y": 2,
+          "Z": 2
+        },
+        "voices": {
+          "X": 1,
+          "Y": 2,
+          "Z": 2
+        }
+      }
+    },
+    {
+      "id": "E14",
+      "note": "Y, Z: 쉼표와 음길이 이상함 X: 마지막 8번째 마디 낮은음 손 이상함",
+      "rank": {
+        "overall": {
+          "X": 2,
+          "Y": 2,
+          "Z": 2
+        },
+        "rhythm": {
+          "X": 2,
+          "Y": 2,
+          "Z": 2
+        },
+        "spelling": {
+          "X": 2,
+          "Y": 2,
+          "Z": 2
+        },
+        "voices": {
+          "X": 2,
+          "Y": 2,
+          "Z": 2
+        }
+      }
+    },
+    {
+      "id": "E15",
+      "note": "",
+      "rank": {
+        "overall": {
+          "X": 2,
+          "Y": 2,
+          "Z": 1
+        },
+        "rhythm": {
+          "X": 2,
+          "Y": 3,
+          "Z": 1
+        },
+        "spelling": {
+          "X": 2,
+          "Y": 2,
+          "Z": 1
+        },
+        "voices": {
+          "X": 2,
+          "Y": 2,
+          "Z": 1
+        }
+      }
+    },
+    {
+      "id": "E16",
+      "note": "",
+      "rank": {
+        "overall": {
+          "X": 3,
+          "Y": 3,
+          "Z": 2
+        },
+        "rhythm": {
+          "X": 3,
+          "Y": 3,
+          "Z": 2
+        },
+        "spelling": {
+          "X": 3,
+          "Y": 3,
+          "Z": 2
+        },
+        "voices": {
+          "X": 3,
+          "Y": 3,
+          "Z": 2
+        }
+      }
+    },
+    {
+      "id": "E17",
+      "note": "",
+      "rank": {
+        "overall": {
+          "X": 3,
+          "Y": 2,
+          "Z": 2
+        },
+        "rhythm": {
+          "X": 3,
+          "Y": 2,
+          "Z": 2
+        },
+        "spelling": {
+          "X": 3,
+          "Y": 2,
+          "Z": 3
+        },
+        "voices": {
+          "X": 3,
+          "Y": 2,
+          "Z": 2
+        }
+      }
+    },
+    {
+      "id": "E18",
+      "note": "낮은음 손이 좀 힘들긴한데 정상적인 악보같음",
+      "rank": {
+        "overall": {
+          "X": 1,
+          "Y": 1,
+          "Z": 1
+        },
+        "rhythm": {
+          "X": 1,
+          "Y": 1,
+          "Z": 1
+        },
+        "spelling": {
+          "X": 1,
+          "Y": 1,
+          "Z": 1
+        },
+        "voices": {
+          "X": 2,
+          "Y": 2,
+          "Z": 2
+        }
+      }
+    },
+    {
+      "id": "E19",
+      "note": "Z: 왜 음표가 두개씩 이어져있지",
+      "rank": {
+        "overall": {
+          "X": 2,
+          "Y": 2,
+          "Z": 2
+        },
+        "rhythm": {
+          "X": 2,
+          "Y": 2,
+          "Z": 2
+        },
+        "spelling": {
+          "X": 2,
+          "Y": 2,
+          "Z": 2
+        },
+        "voices": {
+          "X": 2,
+          "Y": 2,
+          "Z": 2
+        }
+      }
+    },
+    {
+      "id": "E20",
+      "note": "",
+      "rank": {
+        "overall": {
+          "X": 1,
+          "Y": 2,
+          "Z": 2
+        },
+        "rhythm": {
+          "X": 1,
+          "Y": 2,
+          "Z": 2
+        },
+        "spelling": {
+          "X": 2,
+          "Y": 2,
+          "Z": 2
+        },
+        "voices": {
+          "X": 3,
+          "Y": 2,
+          "Z": 2
+        }
+      }
+    }
+  ],
+  "instructions": "Render every file of tests/bench/human/g3 with the same engraver (MuseScore 4), not the app. excerpts: for each excerpt rank its three versions X, Y, Z on each axis, 1 best (equal ranks for equal quality). absolute: for each file on its own, give is yes, fix or no (could a piano teacher hand this to a pupil, as it is or after small fixes?) and score 1-5. Write your role, never your name. Do not open tests/bench/human/g3-key before the review is filed.",
+  "renderer": "",
+  "reviewer_role": "",
+  "schema": "ppp.g3-human-review/2"
+}

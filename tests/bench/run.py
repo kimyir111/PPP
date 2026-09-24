@@ -7,10 +7,13 @@
     python tests/bench/run.py run   --suite smoke|core|full|mutation [--audio-score PATH] [--filter S] [--reveal-holdout]
     python tests/bench/run.py run   --suite-file PATH           # private suite, outputs beside it
     python tests/bench/run.py check --suite core                # exit 0 PASS, 1 REGRESSION, 2 ERROR
+    python tests/bench/run.py check --suite core --g3           # + the G3 gate (G03 §20.4): exit 1 when it fails
+    python tests/bench/run.py g3-r17 --suite core --reason "..."   # record the G3 gate's per-case R17 baseline (§29 M6)
     python tests/bench/run.py update-baseline --suite core --reason "..."
     python tests/bench/run.py relock --suite core --reason "..."
-    python tests/bench/run.py golden [--init | --bless --reason "..."]
+    python tests/bench/run.py golden [--init | --bless --reason "..."] [--g3]
     python tests/bench/run.py mutation-check
+    python tests/bench/run.py human-set --build | --pairs | --score FILE
     python tests/bench/run.py ab --suite core --a git:HEAD --b worktree
     python tests/bench/run.py legacy --manifest PATH
     python tests/bench/run.py correctness                       # reader vs independent MusicXML fixtures (T0, CI)
@@ -98,6 +101,25 @@ def cmd_check(args) -> int:
     return compare.cli_check(args)
 
 
+def cmd_g3_r17(args) -> int:
+    from pppbench import compare, g3gate, suite as suite_mod
+    suite = suite_mod.load_suite(args.suite)
+    results, run = compare._load_last(suite)
+    if results is None:
+        print(f"ERROR NO_RESULTS: run `python tests/bench/run.py run --suite {suite['name']}` (G3 on) first")
+        return 2
+    if results.get("filtered"):
+        print("ERROR FILTERED_RUN: a --filter run cannot become the R17 baseline")
+        return 2
+    why = compare.stale_reason(run or {})
+    if why:
+        print(f"ERROR STALE_RESULTS: {why}; run the suite again first")
+        return 2
+    ok, msg = g3gate.record_r17(results, run, suite["name"], args.reason)
+    print(("recorded " if ok else "ERROR R17_REFUSED: ") + msg)
+    return 0 if ok else 2
+
+
 def cmd_update(args) -> int:
     from pppbench import compare
     return compare.cli_update_baseline(args)
@@ -108,9 +130,22 @@ def cmd_relock(args) -> int:
     return suite_mod.cli_relock(args)
 
 
+def cmd_human_set(args) -> int:
+    from pppbench import human_set
+    if args.build:
+        return human_set.build(audio_score=args.audio_score)
+    if args.pairs:
+        return human_set.pairs()
+    if args.score:
+        return human_set.score(args.score)
+    print("human-set: give --build, --pairs or --score FILE")
+    return 2
+
+
 def cmd_golden(args) -> int:
     from pppbench import golden
-    return golden.run_golden(init=args.init, bless=args.bless, reason=args.reason, audio_score=args.audio_score)
+    return golden.run_golden(init=args.init, bless=args.bless, reason=args.reason, audio_score=args.audio_score,
+                             g3=args.g3)
 
 
 def cmd_mutation(args) -> int:
@@ -179,7 +214,12 @@ def main(argv=None) -> int:
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--suite")
     g.add_argument("--suite-file")
+    p.add_argument("--g3", action="store_true", help="also judge the G3 gate (G03 §20.4); exit 1 when it fails")
     p.set_defaults(fn=cmd_check)
+    p = sub.add_parser("g3-r17", help="record the G3 gate's per-case R17 baseline from the last run (G03 §29 M6)")
+    p.add_argument("--suite", required=True)
+    p.add_argument("--reason", required=True)
+    p.set_defaults(fn=cmd_g3_r17)
     p = sub.add_parser("update-baseline")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--suite")
@@ -195,8 +235,16 @@ def main(argv=None) -> int:
     p.add_argument("--bless", action="store_true")
     p.add_argument("--reason")
     p.add_argument("--audio-score")
+    p.add_argument("--g3", action="store_true",
+                   help="G3 (G03 A35): check every difference is one G3a may make; with --bless, bless only then")
     p.set_defaults(fn=cmd_golden)
     sub.add_parser("mutation-check").set_defaults(fn=cmd_mutation)
+    p = sub.add_parser("human-set", help="the G3 human review set (G03 §21, A36)")
+    p.add_argument("--build", action="store_true")
+    p.add_argument("--pairs", action="store_true")
+    p.add_argument("--score")
+    p.add_argument("--audio-score")
+    p.set_defaults(fn=cmd_human_set)
     sub.add_parser("correctness").set_defaults(fn=cmd_correctness)
     sub.add_parser("known-defects").set_defaults(fn=cmd_known)
     sub.add_parser("sg-roundtrip").set_defaults(fn=cmd_sg_roundtrip)

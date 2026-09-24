@@ -1,0 +1,18 @@
+{
+ "about": "4/4: two eighths tied inside one beat are one quarter",
+ "spec": "G03 §6.3 R01",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "C5:8~ C5:8 D5:q E5:h"
+ },
+ "passes": [
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "rh": "C5:q D5:q E5:h"
+ }
+}

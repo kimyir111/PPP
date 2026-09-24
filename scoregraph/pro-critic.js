@@ -1,0 +1,257 @@
+/* ============================================================================
+   PPP ScoreGraph — G3's critic: what a notation pass may not change
+   (docs/GOALS/G03 §15, §16)
+
+   fingerprint(g) cuts a graph into components. Each G3 pass declares which
+   components it may change (pass.may); check(before, after, may) compares
+   the rest and names every difference, with the measures it is in when it
+   has one. The critic never trusts a pass: it looks at the graphs.
+
+     sound      [(part, onset ScorePos, MIDI, tie-merged notated length)] per
+                sounding note — I1, I2, I8, I10
+     onsets     the same without the length — I1, I2, I10 (never declared)
+     place      each sounding note's staff and voice
+     rests      per voice, the union of its rest time — I9
+     pieces     per voice-measure, its events (kind, at, dur, display)
+     tuplets    tuplet spanners as member lists and ratios
+     beams      beam spanners as member lists and breaks
+     spelling   each sounding note's written name;  acc  its printed accidental
+     keys       key signatures — I11;  clefs, ottava
+     timeline   measures, lengths, metres, tempos, endings, jumps, bar lines — I3
+     play       the play order (time.unroll) — I4
+     perf       the performance layer, byte for byte — I5
+     marks      slurs, dynamics, wedges, articulations, ornaments, fermatas,
+                fingering, lyrics, arpeggios: (kind, onset) — I6
+     pedal      pedal marks
+     xties      ties whose two notes are in different voices or staves (a tie is one note: G03 §28 m1)
+     errors     the validator's ERROR codes — I7
+   ========================================================================== */
+(function (root, factory) {
+  'use strict';
+  if (typeof module === 'object' && module.exports)
+    module.exports = factory(require('./rational.js'), require('./pitch.js'), require('./time.js'), require('./validate.js'));
+  else { const M = root.PPPScoreGraphModules = root.PPPScoreGraphModules || {}; M.proCritic = factory(M.rational, M.pitch, M.time, M.validate); }
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (R, P, T, V) {
+  'use strict';
+
+  const COMPONENTS = ['sound', 'onsets', 'place', 'rests', 'pieces', 'tuplets', 'beams', 'spelling', 'acc', 'keys', 'clefs',
+    'ottava', 'timeline', 'play', 'perf', 'marks', 'pedal', 'xties', 'errors'];
+  /* components no pass may ever declare */
+  const FIXED = ['onsets', 'timeline', 'play', 'perf', 'marks', 'xties', 'errors'];
+
+  const F = r => R.format(r);
+  const END_ARTS = ['tenuto', 'breath-mark', 'caesura'];
+
+  /* The sounding notes of a part: every head that no tie enters starts one, its length runs through the ties. */
+  function soundOf(g, part, starts, posOf) {
+    const evOfHead = new Map(), tieOut = new Map(), tieIn = new Set();
+    part.events.forEach(e => (e.heads || []).forEach(h => evOfHead.set(h.id, e)));
+    part.spanners.forEach(s => { if (s.type === 'tie' && s.from !== undefined && s.to !== undefined) { tieOut.set(s.from, s.to); tieIn.add(s.to); } });
+    const out = [];
+    part.events.forEach(e => {
+      if (e.kind !== 'note' || e.grace) return;
+      e.heads.forEach(h => {
+        if (tieIn.has(h.id)) return;
+        let len = R.parse(e.dur), cur = h.id, guard = 0;
+        while (tieOut.has(cur) && guard++ < 10000) { cur = tieOut.get(cur); const x = evOfHead.get(cur); if (!x) break; len = R.add(len, R.parse(x.dur)); }
+        out.push({ e: e, h: h, on: posOf ? posOf(e.m, e.at) : R.add(starts.get(e.m), R.parse(e.at)), len: len, midi: P.midi(h.pitch) });
+      });
+    });
+    return out;
+  }
+
+  /* Every note event -> the span of the tied note it is a piece of (its first head's tie chain): {s, en} in W. */
+  function chains(part, starts, posOf) {
+    const evOfHead = new Map(), tieOut = new Map(), tieIn = new Map();
+    part.events.forEach(e => (e.heads || []).forEach(h => evOfHead.set(h.id, e)));
+    part.spanners.forEach(s => { if (s.type === 'tie' && s.from !== undefined && s.to !== undefined) { tieOut.set(s.from, s.to); tieIn.set(s.to, s.from); } });
+    const out = new Map();
+    const w = e => (posOf ? posOf(e.m, e.at) : R.add(starts.get(e.m), R.parse(e.at)));
+    part.events.forEach(e => {
+      if (e.kind !== 'note' || !e.heads || !e.heads.length || e.grace) return;
+      /* an untied note is its own span */
+      if (!tieIn.has(e.heads[0].id) && !tieOut.has(e.heads[0].id)) { out.set(e.id, { s: w(e), en: R.add(w(e), R.parse(e.dur)) }); return; }
+      let h = e.heads[0].id, first = e, last = e, k = 0;
+      while (tieIn.has(h) && k++ < 10000) { h = tieIn.get(h); first = evOfHead.get(h) || first; }
+      h = e.heads[0].id; k = 0;
+      while (tieOut.has(h) && k++ < 10000) { h = tieOut.get(h); last = evOfHead.get(h) || last; }
+      out.set(e.id, { s: w(first), en: R.add(w(last), R.parse(last.dur)) });
+    });
+    return out;
+  }
+
+  /* An event's own entries: [component, value, component, value, ...] (all keyed by its measure). */
+  const EVENT_ITEMS = new WeakMap();
+  function eventItems(e, posOf, F) {
+    const out = [];
+    const put = (c, val) => { out.push(c, val); };
+    put('pieces', [e.voice, e.kind, e.at, e.dur, JSON.stringify(e.display || {}), e.grace ? 'g' : ''].join('|'));
+    (e.heads || []).forEach(h => {
+      if (h.acc) put('acc', [e.at, h.pitch ? P.midi(h.pitch) : h.inst, JSON.stringify(h.acc)].join('|'));
+      (h.fingering || []).forEach(fg => put('marks', ['fingering', e.at, h.pitch ? P.midi(h.pitch) : '', JSON.stringify(fg)].join('|')));
+    });
+    /* an onset mark sits where its note starts; a mark about the note's length or end (tenuto, breath mark,
+       caesura, fermata) where it ends, so splitting a note and moving the mark to the last piece keeps it (§12.2) */
+    if (e.arts || e.orn || e.fermata || e.lyrics) {
+      const onW = F(posOf(e.m, e.at)), endW = F(R.add(posOf(e.m, e.at), R.parse(e.dur)));
+      (e.arts || []).forEach(a => put('marks', ['art', a, END_ARTS.indexOf(a) >= 0 ? 'end ' + endW : onW].join('|')));
+      (e.orn || []).forEach(o => put('marks', ['orn', JSON.stringify(o), onW].join('|')));
+      if (e.fermata) put('marks', ['fermata', 'end ' + endW, JSON.stringify(e.fermata)].join('|'));
+      (e.lyrics || []).forEach(l => put('marks', ['lyric', JSON.stringify(l), onW].join('|')));
+    }
+    return out;
+  }
+
+  /* A fingerprint: component -> {key -> value} where key names what the value belongs to (a measure when it can). */
+  function fingerprint(g) {
+    const starts = new Map();
+    let acc = R.ZERO;
+    g.timeline.measures.forEach(m => { starts.set(m.id, acc); acc = R.add(acc, R.parse(m.dur)); });
+    /* a position (measure, offset) in W, and as text, read once each (a score repeats the same offsets) */
+    const posCache = new Map(), textCache = new Map();
+    const posOf = (m, at) => { const k = m + '@' + at; let v = posCache.get(k); if (!v) { v = R.add(starts.get(m), R.parse(at)); posCache.set(k, v); } return v; };
+    const F = r => { const k = r.n + '/' + r.d; let v = textCache.get(k); if (v === undefined) { v = R.format(r); textCache.set(k, v); } return v; };
+    const fp = {};
+    COMPONENTS.forEach(c => { fp[c] = new Map(); });
+    const put = (c, key, val) => { const m = fp[c]; const prev = m.get(key); m.set(key, prev === undefined ? val : prev + '\n' + val); };
+    g.parts.forEach(part => {
+      soundOf(g, part, starts, posOf).forEach(n => {
+        const k = n.e.m;
+        const on = F(n.on);
+        put('sound', k, part.id + '|' + on + '|' + n.midi + '|' + F(n.len));
+        put('onsets', k, part.id + '|' + on + '|' + n.midi);
+        put('place', k, on + '|' + n.midi + '|' + n.e.staff + '|' + n.e.voice);
+        put('spelling', k, on + '|' + n.midi + '|' + n.h.pitch.step + '|' + (n.h.pitch.alter || 0) + '|' + n.h.pitch.oct);
+      });
+      /* rests per voice as merged intervals */
+      const byVoice = new Map();
+      part.events.forEach(e => {
+        if (e.kind !== 'rest' || e.grace) return;
+        const s = posOf(e.m, e.at);
+        if (!byVoice.has(e.voice)) byVoice.set(e.voice, []);
+        byVoice.get(e.voice).push([s, R.add(s, R.parse(e.dur)), e.m]);
+      });
+      byVoice.forEach((list, v) => {
+        list.sort((a, b) => R.cmp(a[0], b[0]));
+        const merged = [];
+        list.forEach(x => { const last = merged[merged.length - 1]; if (last && R.eq(last[1], x[0])) last[1] = x[1]; else merged.push([x[0], x[1], x[2]]); });
+        merged.forEach(x => put('rests', x[2], v + '|' + F(x[0]) + '-' + F(x[1])));
+      });
+      part.events.forEach(e => {
+        const k = e.m;
+        /* what an event gives depends on it and where its measure starts: a frozen event (the same object from one
+           graph to the next when an edit left it alone) is read once */
+        const startW = F(starts.get(k));
+        let items = Object.isFrozen(e) ? EVENT_ITEMS.get(e) : undefined;
+        if (!items || items.startW !== startW) {
+          items = eventItems(e, posOf, F);
+          items.startW = startW;
+          if (Object.isFrozen(e)) EVENT_ITEMS.set(e, items);
+        }
+        for (let i = 0; i < items.length; i += 2) put(items[i], k, items[i + 1]);
+      });
+      const evById = new Map(part.events.map(e => [e.id, e]));
+      const evW = id => { const e = evById.get(id); return e ? F(posOf(e.m, e.at)) : '?'; };
+      /* a slur's ends are the sounding notes it joins: where the tied note it starts on begins, where the tied note it
+         ends on stops (G03 §12.2: splitting or merging the pieces of a tied note does not move a slur) */
+      const chainOf = chains(part, starts, posOf);
+      const noteStartW = id => { const c = chainOf.get(id); return c ? F(c.s) : evW(id); };
+      const noteEndW = id => { const c = chainOf.get(id); return c ? F(c.en) : '?'; };
+      const posW = p => (p ? F(posOf(p.m, p.at)) : '-');
+      const mOfEv = id => { const e = evById.get(id); return e ? e.m : 'global'; };
+      part.spanners.forEach(s => {
+        if (s.type === 'tuplet') put('tuplets', mOfEv(s.events[0]), [s.events.map(evW).join(','), s.events.map(id => (evById.get(id) || {}).voice).join(','), s.actual, s.normal, JSON.stringify(s.unit || null), s.printed === false ? 'hidden' : ''].join('|'));
+        else if (s.type === 'beam') put('beams', mOfEv(s.events[0]), [s.events.map(evW).join(','), JSON.stringify((s.breaks || []).map(b => [evW(b.after), b.level]))].join('|'));
+        else if (s.type === 'slur') put('marks', 'global', ['slur', s.from !== undefined ? noteStartW(s.from) : '-', s.to !== undefined ? noteEndW(s.to) : '-', s.placement || '', s.line || ''].join('|'));
+        else if (s.type === 'wedge') put('marks', s.from.m, ['wedge', s.kind, posW(s.from), posW(s.to)].join('|'));
+        else if (s.type === 'pedal') put('pedal', s.from.m, [s.pedal, posW(s.from), posW(s.to), (s.changes || []).map(posW).join(','), JSON.stringify(s.mark || null)].join('|'));
+        else if (s.type === 'ottava') put('ottava', s.from.m, [s.staff, s.shift, posW(s.from), posW(s.to)].join('|'));
+        else if (s.type === 'arpeggio') put('marks', 'global', ['arpeggio', s.heads.length, s.dir || ''].join('|'));
+        else if (s.type === 'gliss') put('marks', 'global', ['gliss', s.slide ? 'slide' : ''].join('|'));
+      });
+      part.directions.forEach(d => put('marks', d.m, ['dir', d.kind, posW(d), d.value || d.text || d.chordKind || '', d.staff || ''].join('|')));
+      /* a tie from one voice (or staff) to another: which note it joins, where */
+      const evOfHead = new Map();
+      part.events.forEach(e => (e.heads || []).forEach(h => evOfHead.set(h.id, e)));
+      part.spanners.forEach(s => {
+        if (s.type !== 'tie' || s.from === undefined || s.to === undefined) return;
+        const a = evOfHead.get(s.from), b = evOfHead.get(s.to);
+        if (a && b && (a.voice !== b.voice || a.staff !== b.staff)) put('xties', a.m, F(posOf(a.m, a.at)) + '|' + F(posOf(b.m, b.at)));
+      });
+      part.clefs.forEach(c => put('clefs', c.m, [c.staff, c.at, c.sign, c.line || '', c.octave || 0].join('|')));
+    });
+    (g.timeline.keys || []).forEach(k => put('keys', k.m, [k.at, k.fifths, k.mode || '', JSON.stringify(k.scope || null)].join('|')));
+    const tl = g.timeline;
+    put('timeline', 'global', JSON.stringify([tl.measures.map(m => [m.id, m.dur, m.implicit || false, m.barline || null, m.number]), tl.meters, tl.tempos || [], tl.endings || [], tl.jumps || []]));
+    let play;
+    try { play = JSON.stringify(T.unroll(g).map(v => v.m + '|' + v.k)); } catch (e) { play = 'E:' + (e.code || e.message); }
+    put('play', 'global', play);
+    /* a graph is canonical (sorted, schema key order), so its JSON is its bytes */
+    put('perf', 'global', JSON.stringify(g.performances || []));
+    return fp;
+  }
+
+  /* The components that differ, each with the keys (measures, or 'global') where they do. */
+  function diff(a, b, comps) {
+    const out = [];
+    (comps || COMPONENTS).forEach(c => {
+      if (c === 'errors') return;
+      const A = a[c], B = b[c];
+      const where = [];
+      const same = (x, y) => x === y || (x !== undefined && y !== undefined && x.length === y.length && x.split('\n').sort().join('\n') === y.split('\n').sort().join('\n'));
+      A.forEach((x, k) => { if (!same(x, B.get(k))) where.push(k); });
+      B.forEach((y, k) => { if (!A.has(k)) where.push(k); });
+      if (where.length) out.push({ component: c, where: where.sort() });
+    });
+    return out;
+  }
+
+  /* What a pass changed that it may not: [{component, where}] (empty when the pass kept its promise).
+     may: the components the pass declares; a length change inside the R-reg budget is checked by the pass itself. */
+  function check(before, after, may) {
+    const allowed = new Set(may || []);
+    FIXED.forEach(c => allowed.delete(c));
+    const comps = COMPONENTS.filter(c => !allowed.has(c));
+    return diff(before, after, comps);
+  }
+
+  /* The notation warnings G3 must never leave behind (§15.3.2). */
+  const G3_WARNINGS = ['W-TUPLET-INCOMPLETE', 'W-DISPLAY-DURATION', 'W-BEAM-SHAPE', 'W-TUPLET-DISPLAY'];
+  const issueKey = i => i.code + '|' + (i.ids || []).slice().sort().join(',');
+  /* What an issue is about, as text: every entity its IDs name, and for a tuplet or a beam its member events too. */
+  function aboutOf(g) {
+    const ent = new Map();
+    g.parts.forEach(p => { p.events.forEach(e => ent.set(e.id, e)); p.spanners.forEach(s => ent.set(s.id, s)); });
+    /* what these warnings are about is an event's time and printed shape (its length against its printed value, a
+       bracket's cover, a beam's members), not its heads: a head the staff pass moves off a chord leaves the warning the
+       writer's (full: the writer's one-note tuplet over a chord a hand gave one note of) */
+    const shape = e => (e ? JSON.stringify([e.kind, e.m, e.voice, e.at, e.dur, e.display || null, e.grace || null]) : 'null');
+    const text = id => {
+      const x = ent.get(id);
+      if (!x) return '?';
+      if (Array.isArray(x.events)) return JSON.stringify(x) + x.events.map(m => shape(ent.get(m))).join('');
+      return shape(x);
+    };
+    return i => (i.ids || []).slice().sort().map(text).join('\n');
+  }
+  /* ERROR codes of a graph, and the G3 warnings it has that its input did not: a warning G3 found and could not fix
+     stays the input's only when the input had it (code and IDs) about the very same things (the entities it names are
+     unchanged). A warning on an event G3 wrote again under its old ID is G3's (G03 §28 M2: matching by ID alone let a
+     rewritten piece that no tuplet can hold pass as the writer's). */
+  function validation(g, input) {
+    const res = V.validate(g);
+    const errors = res.issues.filter(i => i.severity === 'ERROR');
+    /* the input is read only when the result has a G3 warning at all */
+    const mine = res.issues.filter(i => G3_WARNINGS.indexOf(i.code) >= 0);
+    let bad = mine;
+    if (input && mine.length) {
+      const nowAbout = aboutOf(g), thenAbout = aboutOf(input);
+      const before = new Map();
+      V.validate(input).issues.forEach(i => { if (G3_WARNINGS.indexOf(i.code) >= 0) before.set(issueKey(i), thenAbout(i)); });
+      bad = mine.filter(i => before.get(issueKey(i)) !== nowAbout(i));
+    }
+    return { errors: errors, g3warnings: bad, issues: res.issues };
+  }
+
+  return Object.freeze({ COMPONENTS, FIXED, G3_WARNINGS, fingerprint, diff, check, validation, soundOf });
+});

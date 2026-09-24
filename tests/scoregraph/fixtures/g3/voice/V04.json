@@ -1,0 +1,23 @@
+{
+ "about": "an imported score with two voices on a staff that never overlap keeps them (the editor meant them)",
+ "spec": "G03 §8.2 V04",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "E5:h r:h",
+  "rh2": "r:h C5:h",
+  "lh": "C3:w",
+  "op": "imported"
+ },
+ "passes": [
+  "staff",
+  "voice",
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "same": true
+ }
+}

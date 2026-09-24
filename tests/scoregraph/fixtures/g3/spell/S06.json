@@ -1,0 +1,27 @@
+{
+ "about": "a piece that goes from C to Eb major (Burgmuller 15 kind): a key signature where the new key starts and its notes spelled in it (G#5 of the C table becomes Ab5)",
+ "spec": "G03 §10.4 S06",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "C5:q E5:q G5:q C6:q | F5:q A5:q C6:q A5:q | G5:q B5:q D6:q B5:q | C5:q E5:q G5:q E5:q | C5:q E5:q G5:q C6:q | F5:q A5:q C6:q A5:q | G5:q B5:q D6:q B5:q | C5:q E5:q G5:q E5:q | Eb5:q G5:q Bb5:q Eb6:q | G#5:q C6:q Eb6:q C6:q | Bb5:q D6:q F6:q D6:q | Eb5:q G5:q Bb5:q G5:q | Eb5:q G5:q Bb5:q Eb6:q | G#5:q C6:q Eb6:q C6:q | Bb5:q D6:q F6:q D6:q | Eb5:q G5:q Bb5:q G5:q | Eb5:q G5:q Bb5:q Eb6:q | G#5:q C6:q Eb6:q C6:q | Bb5:q D6:q F6:q D6:q | Eb5:q G5:q Bb5:q G5:q"
+ },
+ "passes": [
+  "spell"
+ ],
+ "expect": {
+  "bar10": "Ab5:q C6:q Eb6:q C6:q",
+  "keys": [
+   [
+    1,
+    0
+   ],
+   [
+    9,
+    -3
+   ]
+  ]
+ }
+}

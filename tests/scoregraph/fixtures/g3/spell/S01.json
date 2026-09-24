@@ -1,0 +1,29 @@
+{
+ "about": "a rising chromatic passing note by step is raised: D Eb E becomes D D# E (the writer spells pitch class 3 of C major Eb)",
+ "spec": "G03 §10.4 S01",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "C5:8 C#5:8 D5:8 Eb5:8 E5:h"
+ },
+ "passes": [
+  "spell"
+ ],
+ "expect": {
+  "rh": "C5:8 C#5:8 D5:8 D#5:8 E5:h",
+  "accs": [
+   [
+    "",
+    "sharp",
+    "",
+    "sharp",
+    ""
+   ]
+  ]
+ },
+ "opts": {
+  "spelling": true
+ }
+}

@@ -20,6 +20,14 @@ draws or plays that the gate used to miss. G1 moved the writer mutations from
 buildXml to buildGraph (the same defects; the MusicXML is written from the
 ScoreGraph since the G1 flip) and added 3 in the ScoreGraph exporter (G01 A38:
 no <dot/>, no <time-modification>, treble and bass clefs swapped).
+
+G3 (docs/GOALS/G03 §20.5, A37; §29 M3, M6) adds 7 mutations of its own passes and input and a no-op control, run as
+their own group:
+G3 is off by default until its flip, so the group's original and every one of its mutants first turn it on
+(``base: G3_ON``) and each mutant is judged against that G3-on original. They must regress the nq.* metric
+(or the G0 metric) the pass exists for. The critic and the imported-slur mutations of §20.5 (7, 8) cannot
+be seen by a transcription benchmark (it has no imported file, and the critic hands back a safe input), so
+they are tests/scoregraph/g3-mutation.test.js's.
 """
 
 from __future__ import annotations
@@ -45,7 +53,8 @@ SG_REST_TYPE = "          const t = full ? (TYPES[bar] || TYPES[v] || ['whole', 
 SG_NOTE_DISPLAY = "          const display = t[1] ? { type: t[0], dots: t[1] } : { type: t[0] };"
 SG_ACCIDENTAL = "            if (sp.alter !== current && !tieStop) head.acc = { type: ACCIDENTAL_NAME[sp.alter] };"
 SG_SPELL = "            const sp = spell(n.midi, table), k = sp.step + sp.octave;"
-SG_EXPORT = "    result.xml = scoreGraph().musicxml.export(built.graph, { software: 'PPP audio transcription' }).xml;"
+# G03 Step 6: toMusicXml exports `graph` (the built graph, or G3's when opts.professional is 'on')
+SG_EXPORT = "    result.xml = scoreGraph().musicxml.export(graph, { software: 'PPP audio transcription' }).xml;"
 EXPORTER = "scoregraph/musicxml-export.js"
 SG_STAVES = "        if (mi === 0 && multiStaff) at0.push('<staves>' + part.staves.length + '</staves>');"
 TAIL_BAR = "Math.floor(bars * 2 / 3)"                                 # two thirds of the way in (fewer than half the bars follow)
@@ -104,9 +113,9 @@ def _split_edits(forward: bool) -> list:
     repeat no backward repeat anywhere in the file ever consumes (G00 §22, PF-M1)."""
     left = ("\n        N.barline = { left: { style: 'heavy-light', repeat: 'forward' } };" if forward else "")
     code = r"""    /* mutation: the second-to-last bar split in two (no repeat sign, same metre) */
-    let splitGraph = built.graph;
+    let splitGraph = graph;
     if (bars >= 3) {
-      const Rm = scoreGraph().rational, g = JSON.parse(JSON.stringify(built.graph)), ms = g.timeline.measures, M = ms[bars - 2], P = g.parts[0];
+      const Rm = scoreGraph().rational, g = JSON.parse(JSON.stringify(graph)), ms = g.timeline.measures, M = ms[bars - 2], P = g.parts[0];
       const ends = v => new Set(P.events.filter(e => e.m === M.id && e.voice === v).map(e => Rm.format(Rm.add(Rm.parse(e.at), Rm.parse(e.dur)))));
       const A = ends(P.voices[0].id), B = ends(P.voices[1].id), len = Rm.toNumber(Rm.parse(M.dur));
       let p = null;
@@ -145,6 +154,63 @@ TRUNCATED_LAST_MEASURE_EDITS = [sg_rest_short("barIdx === bars - 1 && ")]
 DROPPED_LAST_MEASURE_EDITS = [
     ("    const bars = Math.max(1, Math.floor(lastOnset / bar) + 1);",
      "    const bars = Math.max(1, Math.floor(lastOnset / bar));")]
+
+# G3 (G03 §20.5): what turns G3 on for the group's original and mutants (empty once G3 is on by default)
+G3_ON = [("  const PROFESSIONAL_DEFAULT = 'off';", "  const PROFESSIONAL_DEFAULT = 'on';")]
+PRO = "scoregraph/pro-"
+
+G3_MUTATIONS: List[Dict[str, Any]] = [
+    {"id": "G3-F1-PIECE-BRACKETS",      # (1) a bracket over every triplet piece again (G1 F1)
+     "base": "g3", "file": PRO + "tuplet.js",
+     "find": "            const plan = groups.map(x => ({ events: x.events, actual: 3, normal: 2, unit: { type: x.unit } }));",
+     "replace": "            const plan = groups.reduce((a, x) => a.concat(x.events.map(id => ({ events: [id], actual: 3, normal: 2, unit: { type: x.unit } }))), []);",
+     "expect": "REGRESSION", "metrics": ["nq.tuplet.one_note_rate"]},
+    {"id": "G3-TRIPLET-REST-NO-TM",     # (2) a rest is never a triplet piece: it gets no time-modification (issue 19)
+     "base": "g3", "file": PRO + "tuplet.js",
+     "find": "    if (!e.display || !e.display.type) return false;",
+     "replace": "    if (!e.display || !e.display.type || e.kind === 'rest') return false;",
+     # the reason split sees what the pass is for: these are not R17 residuals (§29 M6 proof 2)
+     "expect": "REGRESSION", "metrics": ["nq.shape.tm_missing.unexpected"]},
+    {"id": "G3-TIES-IN-BEAT",           # (3) R-repr keeps every writing the grid allows: ties inside a beat come back
+     "base": "g3", "file": PRO + "rhythm.js",
+     "find": "    return w.cost < now.cost;",
+     "replace": "    return false;",
+     # ties one legal symbol could replace: mergeable defects, not ties an H6/H7 rule requires (§29 M6 proof 1)
+     "expect": "REGRESSION", "metrics": ["nq.tie.mergeable.defect"]},
+    {"id": "G3-BEAM-ACROSS-BEATS",      # (4) one beam group per measure: beams run over the beat boundaries
+     "base": "g3", "file": PRO + "beam.js",
+     "find": "    const spans = MG.beamGroups(gr);",
+     "replace": "    const spans = [[-100000, 100000]];",
+     "expect": "REGRESSION", "metrics": ["nq.beam.boundary_ok"]},
+    {"id": "G3-ACC-BAR-STATE",          # (5) the accidental plan forgets what the bar already printed: a note after an
+     # accidental of its step reads the key signature again, so the natural back is lost (and a repeat is printed).
+     # Replaces G3-SPELL-STATIC (keys by region off), which changed nothing: no recording in the suite modulates for
+     # the one-fifth rule (G03 §28 M3)
+     "base": "g3", "file": PRO + "spell.js",
+     "find": "          const prevailing = state.has(k) ? state.get(k) : sig[p.step];",
+     "replace": "          const prevailing = sig[p.step];",
+     "expect": "REGRESSION", "metrics": ["critical.accidentals", "notation.accidentals.required_recall"]},
+    {"id": "G3-R17-GROW",               # (6b) the tiny release gap before a triplet onset is no longer closed: more
+     # one-tick releases reach G3, which keeps them as written (R17, G3b's). Nothing G3a should have written, so only
+     # the R17 count sees it: R17 is left to G3b but must not grow (§29 M6 proof 3, U-1)
+     "base": "g3",
+     "find": "        if (gap <= Math.max(1, Math.round(span * 0.2)) &&",
+     "replace": "        if (!ns.some(n => n.tuplet) && gap <= Math.max(1, Math.round(span * 0.2)) &&",
+     "expect": "REGRESSION", "metrics": ["nq.shape.tm_missing.r17"]},
+    {"id": "G3-HANDS-NO-KEEP",          # (6) the hand DP's keep term is 0: the staff the writer chose counts for nothing.
+     # Replaces G3-HANDS-NO-MELODY, which the fixed hand model (G03 §29 M1: keep, keepWhereNotBetter, the fixed point)
+     # left inside tolerance: hand accuracy 0.9187 -> 0.9159 on the mutation suite, a dead mutation (§29 M3)
+     "base": "g3", "file": PRO + "staff.js",
+     "find": "TUPLET: 1500, KEEP: 900,",
+     "replace": "TUPLET: 1500, KEEP: 0,",
+     "expect": "REGRESSION", "metrics": ["notation.hand.accuracy"]},
+    {"id": "G3-NOOP",                   # the G3 group's control: a comment, and nothing moves
+     "base": "g3", "file": PRO + "rhythm.js",
+     "find": "    return w.cost < now.cost;",
+     "replace": "    /* noop mutation */\n    return w.cost < now.cost;",
+     "expect": "PASS", "metrics": []},
+]
+BASES: Dict[str, List[tuple]] = {"g3": G3_ON}
 
 MUTATIONS: List[Dict[str, Any]] = [
     {"id": "MUT-HANDS",
@@ -302,6 +368,8 @@ MUTATIONS: List[Dict[str, Any]] = [
      "replace": "  /* noop mutation */\n  const api = {",
      "expect": "PASS", "metrics": []},
 ]
+# the G3 group goes before the plain no-op, which stays last (the unit tests read it as MUTATIONS[-1])
+MUTATIONS = MUTATIONS[:-1] + G3_MUTATIONS + MUTATIONS[-1:]
 
 MUT_DIR = os.path.join(runner.CACHE_DIR, "mutations")
 
@@ -330,12 +398,22 @@ def apply_mutation(source: str, mut: Dict[str, Any]) -> str:
     return source
 
 
+def all_edits(mut: Dict[str, Any]) -> Dict[str, List[tuple]]:
+    """{file: edits}: the group's base edits (G3_ON for base "g3") first, then the mutation's own."""
+    out: Dict[str, List[tuple]] = {}
+    if mut.get("base"):
+        out.setdefault(sut_mod.ENTRY, []).extend(BASES[mut["base"]])
+    if mut.get("id", "").endswith("-ORIGINAL"):
+        return out
+    out.setdefault(target(mut), []).extend(edits(mut))
+    return out
+
+
 def write_mutant(mut: Dict[str, Any], sut: str) -> str:
-    """A copy of the whole SUT snapshot of ``sut`` in .cache/mutations/<id>/ with the mutation applied to
-    its target file. Returns the copy's entry (audio-score.js) path."""
+    """A copy of the whole SUT snapshot of ``sut`` in .cache/mutations/<id>/ with the mutation (and its group's
+    base edits) applied. Returns the copy's entry (audio-score.js) path."""
     try:
-        return sut_mod.write_mutant_dir(os.path.join(MUT_DIR, mut["id"]), {target(mut): edits(mut)},
-                                        entry=sut, label=mut["id"])
+        return sut_mod.write_mutant_dir(os.path.join(MUT_DIR, mut["id"]), all_edits(mut), entry=sut, label=mut["id"])
     except sut_mod.SutError as exc:
         raise AnchorMissing(f"{exc}. Update the anchor in tests/bench/pppbench/mutation.py") from exc
 
@@ -351,11 +429,25 @@ def run_mutation_check(mutations=None, suite_name: str = "mutation") -> int:
         print(f"ERROR {AnchorMissing.code}: {exc}")
         return 2
     out_root = os.path.join(runner.OUT_DIR, "mutation")
-    orig = runner.run_suite(suite, audio_score=sut, out_dir=os.path.join(out_root, "original"), write_cases=False, quiet=True)
-    base = compare.baseline_from_results(orig["results"], orig["run"], reason="mutation-check original", gate=gate)
-    orig_sha = util.sha256_file(os.path.join(orig["out"], "results.json"))
+    # one original per group: the SUT as it is, and for a base (G3 on) the SUT with the base edits alone
+    originals: Dict[str, Any] = {}
+    for key in sorted({m.get("base") or "" for m in mutations}):
+        if key:
+            try:
+                entry = write_mutant({"id": key.upper() + "-ORIGINAL", "base": key}, sut)
+            except AnchorMissing as exc:
+                print(f"ERROR {AnchorMissing.code}: {exc}")
+                return 2
+        else:
+            entry = sut
+        orig = runner.run_suite(suite, audio_score=entry, out_dir=os.path.join(out_root, "original" + ("-" + key if key else "")),
+                                write_cases=False, quiet=True)
+        originals[key] = (compare.baseline_from_results(orig["results"], orig["run"], reason="mutation-check original", gate=gate),
+                          util.sha256_file(os.path.join(orig["out"], "results.json")))
+    orig_sha = originals[""][1] if "" in originals else None
     rows, ok_all = [], True
     for m in mutations:
+        base, orig_sha = originals[m.get("base") or ""]
         r = runner.run_suite(suite, audio_score=paths[m["id"]], out_dir=os.path.join(out_root, m["id"]),
                              write_cases=False, quiet=True)
         v = compare.compare(r["results"], base, gate)
@@ -370,14 +462,15 @@ def run_mutation_check(mutations=None, suite_name: str = "mutation") -> int:
         rows.append({"id": m["id"], "expect": m["expect"], "status": v.status, "exit": v.exit_code, "ok": passed,
                      "expected_metrics": m["metrics"], "failed_metrics": v.failed_metrics,
                      "identical_results": sha == orig_sha, "moved": moved})
-        print(f"{m['id']:10} expect {m['expect']:10} got {v.status:10} exit {v.exit_code} "
+        print(f"{m['id']:22} expect {m['expect']:10} got {v.status:10} exit {v.exit_code} "
               f"{'OK ' if passed else 'BAD'} failed={','.join(v.failed_metrics) or '-'}"
               + (f" identical_results={sha == orig_sha}" if m["expect"] == "PASS" else ""))
         for k in m["metrics"]:
             if k in moved:
                 print(f"{'':12}{k}: {moved[k][0]:.4f} -> {moved[k][1]:.4f}")
     util.dump_json({"schema": "ppp.bench-mutation/1", "suite": suite_name,
-                    "original_results_sha256": orig_sha, "mutations": rows}, os.path.join(out_root, "mutation-report.json"))
+                    "original_results_sha256": {k or "plain": v[1] for k, v in originals.items()}, "mutations": rows},
+                   os.path.join(out_root, "mutation-report.json"))
     print(f"mutation-check: {'PASS' if ok_all else 'FAIL'} — every harmful mutation caught, the no-op identical"
           if ok_all else "mutation-check: FAIL — see above")
     return 0 if ok_all else 1

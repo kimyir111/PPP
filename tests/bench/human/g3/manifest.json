@@ -1,0 +1,321 @@
+{
+ "bars": 8,
+ "commit": "1c030f23b1",
+ "excerpts": [
+  "E01",
+  "E02",
+  "E03",
+  "E04",
+  "E05",
+  "E06",
+  "E07",
+  "E08",
+  "E09",
+  "E10",
+  "E11",
+  "E12",
+  "E13",
+  "E14",
+  "E15",
+  "E16",
+  "E17",
+  "E18",
+  "E19",
+  "E20"
+ ],
+ "files": [
+  {
+   "file": "E01-X.musicxml",
+   "sha256": "d9da34b8d6583732cbe4abb7d56f2dd9c666e82152eb68f1dc52069d3ae95521"
+  },
+  {
+   "file": "E01-Y.musicxml",
+   "sha256": "2838fed1922f739b494ba9d5779b63a26088e84045da566eb90e85bfef533012"
+  },
+  {
+   "file": "E01-Z.musicxml",
+   "sha256": "8cfe123baf3048b322f3507435607d33fa7823784fc422f89e1526cfb5b56a98"
+  },
+  {
+   "file": "E02-X.musicxml",
+   "sha256": "c3b2ed347e8e70a20a08b25005baceebbf83c9618588ca624e4e9bfc8770463c"
+  },
+  {
+   "file": "E02-Y.musicxml",
+   "sha256": "3fdf5afc3c00ef5c3be6edecb9759c5439b3aa0baec13b7669ea3315b3409d78"
+  },
+  {
+   "file": "E02-Z.musicxml",
+   "sha256": "1769bab3a81a0ec6361b837914e440eaae3a86447f8d7383d4f0638be6a8852c"
+  },
+  {
+   "file": "E03-X.musicxml",
+   "sha256": "3ba700ed8746d548814b94c6e12ed145c2ff2fd74d98ad6eacdcf5bebe44e176"
+  },
+  {
+   "file": "E03-Y.musicxml",
+   "sha256": "b869065a1ac4b103aa212d85f50a082f23dd81d3136abc878756493e6e4d2f7d"
+  },
+  {
+   "file": "E03-Z.musicxml",
+   "sha256": "46c36a4eba748b1b6ca9025c713db3d4bf19754fa9a71715f4910ef872458952"
+  },
+  {
+   "file": "E04-X.musicxml",
+   "sha256": "6a8a08a0d24fe945d301718702698e2b8535d8297d65b0bb6751424bec4e8398"
+  },
+  {
+   "file": "E04-Y.musicxml",
+   "sha256": "8fd34fe81ab9a1b6c6381b0796dff40001a66e6ee00a377654cea56d57fcb421"
+  },
+  {
+   "file": "E04-Z.musicxml",
+   "sha256": "d4d8cece4aac289d73ec2f519b2f020eac2be141c0f03ff8bf60436cdad48070"
+  },
+  {
+   "file": "E05-X.musicxml",
+   "sha256": "bd2c04adb23bfa0682b68a212dd031815d8fbed72289c124e12f72ae56c9aae4"
+  },
+  {
+   "file": "E05-Y.musicxml",
+   "sha256": "4522f443d5006756eb4287a011b98ffc7182f7a72e4ab48ecb93fd978f4244d8"
+  },
+  {
+   "file": "E05-Z.musicxml",
+   "sha256": "6421edefce8c2973c7c8cdec9deff45754b3fe3b80356a2e862909fe06c5cbf1"
+  },
+  {
+   "file": "E06-X.musicxml",
+   "sha256": "f8a03f7a083c65f37bdf1fc9b7fce9b1a21b87a36d96763b5f5241cd477bf534"
+  },
+  {
+   "file": "E06-Y.musicxml",
+   "sha256": "4e422e4086c56f113dfe06e9abcc0b7b8370cc3f856cba022eefc99f132f30c1"
+  },
+  {
+   "file": "E06-Z.musicxml",
+   "sha256": "496d610de6d199d331a02bb307ec936c04fea97f8d1af9e9b0fe43115f97ac96"
+  },
+  {
+   "file": "E07-X.musicxml",
+   "sha256": "5f33715e3086e0447dc0927404ed2ee64bd4374de37f0d2a27311b307a183c86"
+  },
+  {
+   "file": "E07-Y.musicxml",
+   "sha256": "ba5bb53eb94267156ed8e13790b3bf4b60264c7bc7539858aecf326d0c68c1f6"
+  },
+  {
+   "file": "E07-Z.musicxml",
+   "sha256": "bc9187a302677f0e189ee0a138b9585b8bd192c332ab3ba01d1e1a0b9374555f"
+  },
+  {
+   "file": "E08-X.musicxml",
+   "sha256": "a2b349f334f16793fedd457861ec7799b236e3f7b86de9774001452086d06dbb"
+  },
+  {
+   "file": "E08-Y.musicxml",
+   "sha256": "e7aa4a1712a969f11fc4355b5bcb81979cdefd164e1a1beef3ac42da2bd198e9"
+  },
+  {
+   "file": "E08-Z.musicxml",
+   "sha256": "224abe94da61bc2a5e46f26a35ae03f658d1c24ed80efd9f90104c7f9a4c6d30"
+  },
+  {
+   "file": "E09-X.musicxml",
+   "sha256": "ef6cadaccd7447244a233111503c83df705215c40ce9cff85a97b24a46224184"
+  },
+  {
+   "file": "E09-Y.musicxml",
+   "sha256": "1266d6d840770b2783cb8cab95d0a0b69090327a0e2573936ac008dc14bcb564"
+  },
+  {
+   "file": "E09-Z.musicxml",
+   "sha256": "f73f1aff8b6c859afb523a305d231083a9490bca15d53d8d5ab0e864d6db217d"
+  },
+  {
+   "file": "E10-X.musicxml",
+   "sha256": "1862dbe34b3f4f207355d04c4d06831677ef2386cc0dd61e17efc06c41a5b827"
+  },
+  {
+   "file": "E10-Y.musicxml",
+   "sha256": "ed13383f71ef972bc961b8b62328ec1760fd6691b19cbbbe1504c6c688717a1d"
+  },
+  {
+   "file": "E10-Z.musicxml",
+   "sha256": "0fd8cc0e36899801bbf35fba42281b0754943f79b08a083527ff8e82e3ab5e9f"
+  },
+  {
+   "file": "E11-X.musicxml",
+   "sha256": "793251e2706f7199515354e0503a966ff14f2c63cff54ddcc363578b03d89c78"
+  },
+  {
+   "file": "E11-Y.musicxml",
+   "sha256": "5904f5f765696ff17a8285a48f4a77977334aa4cd3007f3c329f17a3eff4a4d1"
+  },
+  {
+   "file": "E11-Z.musicxml",
+   "sha256": "6a5d7eb2d0e78f40779ef3fad89cbc383a07b08b00eb94b880f0cdb62243a20c"
+  },
+  {
+   "file": "E12-X.musicxml",
+   "sha256": "94562b67484123cff363ac588d1a4828eaea3901c0aa1513593ef308e96422d5"
+  },
+  {
+   "file": "E12-Y.musicxml",
+   "sha256": "8a05cca1211c7fa81f793db5e5b01c29bda5c8ff22c2bf32c0e492e7a514c2ce"
+  },
+  {
+   "file": "E12-Z.musicxml",
+   "sha256": "b417761a1985c7db36b16f411c3ab1ace321c2b94236c50bf4f4c496811b9bab"
+  },
+  {
+   "file": "E13-X.musicxml",
+   "sha256": "a41905d3f02c665cd9d15fa788ec5ee5b8409b8aa6de60186eb1c3ef134230d8"
+  },
+  {
+   "file": "E13-Y.musicxml",
+   "sha256": "f407607756c7953396d683731f9bfedcbec6eafb1fa5e618773a3b63e5ec5119"
+  },
+  {
+   "file": "E13-Z.musicxml",
+   "sha256": "9ff0b13e19cee0d2a42157827155f862763c0615e3b2ae41dbd1be2a7870c296"
+  },
+  {
+   "file": "E14-X.musicxml",
+   "sha256": "29ab9eaa608380cf079338adf2618b37018884811837dc2b6c87dfd72a86a8de"
+  },
+  {
+   "file": "E14-Y.musicxml",
+   "sha256": "39225415c8c29f45854f243b2c39adaa62b4115dee773b8d9c415dbc69e00e05"
+  },
+  {
+   "file": "E14-Z.musicxml",
+   "sha256": "97a9b4dabb6cb86f6d9d2aba936abe74ccd9ee4284fa94321ce76deb83abfc64"
+  },
+  {
+   "file": "E15-X.musicxml",
+   "sha256": "3dc21e878ddad24edb70155cc49475ba9c3cd5b8131703bdf631ef845f93f1cc"
+  },
+  {
+   "file": "E15-Y.musicxml",
+   "sha256": "46137776e2895888efa956b9f882e330365fc87cc4c735e3a02ddc109d3982f9"
+  },
+  {
+   "file": "E15-Z.musicxml",
+   "sha256": "7c611eca3b6cc1a2636cfb73208e6cedfd0f87105d5ecf27c0c8ce0481ad2c70"
+  },
+  {
+   "file": "E16-X.musicxml",
+   "sha256": "fceb06dd3438ef979791d9ec3b5dcb3d07462eeeb3fc2f98721036284bda87f6"
+  },
+  {
+   "file": "E16-Y.musicxml",
+   "sha256": "eb37e98e57e86f2f6e611c5e4065e48dda711fedc73b9d24882f1124898e2428"
+  },
+  {
+   "file": "E16-Z.musicxml",
+   "sha256": "d85ff65ce0247b76c97b000cbd3639307c42caebd34b5daba1e0a4974609ce25"
+  },
+  {
+   "file": "E17-X.musicxml",
+   "sha256": "884b13608b172dbccdeb879e8adee844222bd2e15a7713b9c3490d1f442dd324"
+  },
+  {
+   "file": "E17-Y.musicxml",
+   "sha256": "3c0dc7b76000180d2906a091b6ba0ce0a9eec6461bb929614c795870eba73063"
+  },
+  {
+   "file": "E17-Z.musicxml",
+   "sha256": "39bdfb1f828a7c9abcd9159a7f2911b494f7d4ab9b0c00a4de409addbf241113"
+  },
+  {
+   "file": "E18-X.musicxml",
+   "sha256": "f496876b73bba64e6aa4c2f701c3b11b34137a3be65107916b47b6ef36e3042f"
+  },
+  {
+   "file": "E18-Y.musicxml",
+   "sha256": "f32243354c09e6e36a19cee5b76ad8229b4ef83513ef447e87dc8c82587f4aeb"
+  },
+  {
+   "file": "E18-Z.musicxml",
+   "sha256": "99e3e38ddd762f1dc9b377d61429183bf427983a6e19daa55b546ec0e8b6bb0d"
+  },
+  {
+   "file": "E19-X.musicxml",
+   "sha256": "22e94993cd8a5200607c317f221ca9ea386fddc840a678569b6064fa19b2a11e"
+  },
+  {
+   "file": "E19-Y.musicxml",
+   "sha256": "d7f77adb9033060e1c3d9d3c34af695ac04d6ea266e09af65bcde0ddffeb0d4c"
+  },
+  {
+   "file": "E19-Z.musicxml",
+   "sha256": "cd25649b49af625ac0efa1fca8299ba7659450231c801ab3961654a9aae7c56d"
+  },
+  {
+   "file": "E20-X.musicxml",
+   "sha256": "c0e5593f7f712074620b9a7832894aa43356df0dd602d9df02b62234395c7ff3"
+  },
+  {
+   "file": "E20-Y.musicxml",
+   "sha256": "4f2963aa9bfdc550e9a8c709839980e3596cbac59637a05c83c43fd0f72043c6"
+  },
+  {
+   "file": "E20-Z.musicxml",
+   "sha256": "c1be8564a7006f55d1fbfef37b78bf422c406085933cf7b80ff008e68f8e5816"
+  }
+ ],
+ "licence": "every excerpt is of a public-domain or CC0 work; the answer key names each source and licence",
+ "normalized": {
+  "bars": "renumbered 1-8",
+  "part_list": "each score-part keeps only its part-name, set to Piano",
+  "parts": "ids P1, P2 … in order",
+  "removed_attributes": [
+   "default-x",
+   "default-y",
+   "relative-x",
+   "relative-y",
+   "color",
+   "font-family",
+   "font-size",
+   "font-style",
+   "font-weight"
+  ],
+  "removed_from_measures": [
+   "print",
+   "direction",
+   "harmony",
+   "figured-bass",
+   "sound",
+   "listening",
+   "grouping",
+   "link",
+   "bookmark",
+   "the width attribute"
+  ],
+  "removed_from_notes": [
+   "lyric",
+   "play",
+   "listen",
+   "notehead-text",
+   "instrument",
+   "every <notations> child but tied and tuplet"
+  ],
+  "removed_header": [
+   "work",
+   "movement-number",
+   "movement-title",
+   "identification",
+   "defaults",
+   "credit"
+  ],
+  "title": "the file's opaque label (E01-X)"
+ },
+ "schema": "ppp.g3-human-set/2",
+ "seed": 20260924,
+ "versions_per_excerpt": [
+  "X",
+  "Y",
+  "Z"
+ ]
+}

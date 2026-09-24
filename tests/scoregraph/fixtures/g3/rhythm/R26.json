@@ -1,0 +1,19 @@
+{
+ "about": "6/8: triplet eighths across the dotted-quarter beat are never one bracket over the beat: each eighth of it is a 16th triplet, the note over the beat tied there (H4)",
+ "spec": "G03 §6.3 R26",
+ "input": {
+  "time": [
+   6,
+   8
+  ],
+  "rh": "C5:q 3[D5:8] 3[E5:8] 3[F5:8] r:8 r:8"
+ },
+ "passes": [
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "rh": "C5:q 3s[D5:8 E5:16~] 3s[E5:16 F5:8] r:q",
+  "warnings": {}
+ }
+}

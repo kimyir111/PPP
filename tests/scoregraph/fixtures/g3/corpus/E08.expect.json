@@ -1,0 +1,17 @@
+{
+ "about": "§19 E08: PPP output for method/burgmuller25/023|human|oracle|s1, printed bars 37",
+ "spec": "G03 §19",
+ "case": "method/burgmuller25/023|human|oracle|s1",
+ "bars": [
+  37,
+  37
+ ],
+ "reference": "catalog/method/burgmuller25/023.mxl",
+ "before": [
+  "Eb4:8. r:16 Bb3+G4:8~ Bb3+G4:16~ Bb3+G4:32 r:32 Eb4:8.~ Eb4:16",
+  "Eb3:8. r:8. r:8 Eb3:8.~ Eb3:16"
+ ],
+ "expect": {
+  "g3a": "needless tie in 6/8: 8~16~32 becomes the shortest writing that shows the dotted-quarter beat; the metre is not changed"
+ }
+}

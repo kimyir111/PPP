@@ -1,0 +1,21 @@
+{
+ "about": "a right-hand scale that dips below middle C stays in the right hand (the melody would change hands)",
+ "spec": "G03 §9.4 H07",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "E4:8 D4:8 C4:8 B3:8 C4:h",
+  "lh": "C3:w"
+ },
+ "passes": [
+  "staff",
+  "voice",
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "same": true
+ }
+}

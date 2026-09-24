@@ -1,0 +1,21 @@
+{
+ "about": "right-hand octave chords over a left-hand bass: the chord stays whole (G03 §28 M1: C4 was split off into the left hand)",
+ "spec": "G03 §28 M1 (review regression)",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "C4+E4+G4+C5:q C4+E4+G4+C5:q C4+E4+G4+C5:h",
+  "lh": "C3:w"
+ },
+ "passes": [
+  "staff",
+  "voice",
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "same": true
+ }
+}

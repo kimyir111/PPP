@@ -7,7 +7,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from . import GENERATOR_VERSION, READER_VERSION, corpus, util
+from . import GENERATOR_VERSION, READER_VERSION, corpus, util, version_compatible
 
 SUITES_DIR = os.path.join(util.bench_root(), "suites")
 CASE_FIELDS = ("kind", "stage", "references", "matrix", "subsets", "align", "holdout_seeds", "cases", "fixtures")
@@ -93,6 +93,25 @@ GATE_SMOKE = _gate(4.0, 1, ["set:", "profile:", "beats:"], 8)
 # full also guards the hold-out aggregate (§17 m10): a change that helps the open references and
 # costs the unseen ones is the overfitting the hold-out exists to show
 GATE_FULL = _gate(1.0, 2, SUBGROUP_PREFIXES + ["holdout"], 15)
+# mutation-check (G00 §9.5) also reads the G3 notation-quality metrics its G3 mutations must regress (G03 §20.5,
+# A37); core gets them only when G3 flips on and they enter its baseline (§20.4)
+NQ_GATE = {
+    "nq.beam.boundary_ok": {"dir": "up", "tol": -0.005},
+    "nq.beam.coverage": {"dir": "up", "tol": -0.01},
+    "nq.rhythm.hidden_beat_rate": {"dir": "down", "tol": 0.005},
+    "nq.shape.tm_missing": {"dir": "down", "tol": 0.05},
+    "nq.spell.context_odd": {"dir": "down", "tol": 0.05},
+    "nq.tie.mergeable_rate": {"dir": "down", "tol": 0.005},
+    "nq.tuplet.group_complete": {"dir": "up", "tol": -0.005},
+    "nq.tuplet.one_note_rate": {"dir": "down", "tol": 0.005},
+    # the reason split (G03 §29 M6): the residuals G3a must not leave, and R17, which it leaves to G3b but must not add to
+    "nq.shape.tm_missing.unexpected": {"dir": "down", "tol": 0.0},
+    "nq.shape.tm_missing.r17": {"dir": "down", "tol": 0.0},
+    "nq.tuplet.one_note.unexpected": {"dir": "down", "tol": 0.0},
+    "nq.tie.mergeable.defect": {"dir": "down", "tol": 0.0},
+}
+GATE_MUTATION = _gate(1.0, 2, SUBGROUP_PREFIXES, 15)
+GATE_MUTATION["metrics"].update(NQ_GATE)
 
 
 def _fixture_gate(extra: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -222,7 +241,7 @@ def verify_lock(suite: Dict[str, Any], rows: List[Dict[str, str]], lock: Optiona
     if lock.get("suite_sha256") != suite_sha256(suite):
         drifts.append("suite definition changed since the lock was written")
     for k, v in (("generator", GENERATOR_VERSION), ("reader", READER_VERSION)):
-        if lock.get(k) != v:
+        if not version_compatible(k, v, lock.get(k)):
             drifts.append(f"{k} version {lock.get(k)} in the lock, {v} now")
     locked = {c["id"]: c for c in lock.get("cases", [])}
     now = {r["id"]: r for r in rows}

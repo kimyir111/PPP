@@ -1,0 +1,28 @@
+{
+ "about": "a left hand high for a whole measure under a higher right hand keeps its notes (no hand can take them) and takes a treble clef for that measure",
+ "spec": "G03 §9.4 H06",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "C6:w | G6:w | C6:w",
+  "lh": "C3:w | C5+E5:w | C3:w"
+ },
+ "passes": [
+  "staff",
+  "voice",
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "rh": "C6:w | G6:w | C6:w",
+  "lh": "C3:w | C5+E5:w | C3:w",
+  "clefs": [
+   "RH m1 G",
+   "LH m1 F",
+   "LH m2 G",
+   "LH m3 F"
+  ]
+ }
+}

@@ -116,6 +116,54 @@
     "dir": "up",
     "tol": -0.005
    },
+   "nq.beam.boundary_ok": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "nq.beam.coverage": {
+    "dir": "up",
+    "tol": -0.01
+   },
+   "nq.rhythm.hidden_beat_rate": {
+    "dir": "down",
+    "tol": 0.005
+   },
+   "nq.shape.tm_missing": {
+    "dir": "down",
+    "tol": 0.05
+   },
+   "nq.shape.tm_missing.r17": {
+    "dir": "down",
+    "tol": 0.0
+   },
+   "nq.shape.tm_missing.unexpected": {
+    "dir": "down",
+    "tol": 0.0
+   },
+   "nq.spell.context_odd": {
+    "dir": "down",
+    "tol": 0.05
+   },
+   "nq.tie.mergeable.defect": {
+    "dir": "down",
+    "tol": 0.0
+   },
+   "nq.tie.mergeable_rate": {
+    "dir": "down",
+    "tol": 0.005
+   },
+   "nq.tuplet.group_complete": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "nq.tuplet.one_note.unexpected": {
+    "dir": "down",
+    "tol": 0.0
+   },
+   "nq.tuplet.one_note_rate": {
+    "dir": "down",
+    "tol": 0.005
+   },
    "read.bar_completeness": {
     "dir": "up",
     "tol": 0.0

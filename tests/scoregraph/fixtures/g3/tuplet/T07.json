@@ -1,0 +1,14 @@
+{
+ "about": "the same file forced through the rewrite (mode force): a 6:4 is not reinterpreted as two 3:2, a nested tuplet is not touched",
+ "spec": "G03 §7.4 T07",
+ "input": {
+  "musicxml": "xml/tuplets-nested.musicxml"
+ },
+ "mode": "force",
+ "expect": {
+  "same": true
+ },
+ "passes": [
+  "tuplet"
+ ]
+}

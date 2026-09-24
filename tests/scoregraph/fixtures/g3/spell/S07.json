@@ -1,0 +1,27 @@
+{
+ "about": "a tie over the bar line: the tied note needs no accidental and changes nothing; the next F# needs its sharp again, and the F after it a natural",
+ "spec": "G03 §10.4 S07",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "C5:h F#4:h~ | F#4:q F#4:q F4:h"
+ },
+ "passes": [
+  "spell"
+ ],
+ "expect": {
+  "accs": [
+   [
+    "",
+    "sharp"
+   ],
+   [
+    "",
+    "sharp",
+    "natural"
+   ]
+  ]
+ }
+}

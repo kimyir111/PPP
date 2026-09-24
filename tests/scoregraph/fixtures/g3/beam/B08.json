@@ -1,0 +1,22 @@
+{
+ "about": "a rest breaks the beam; one note alone has none",
+ "spec": "G03 §11.3 B08",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "C5:8 r:8 E5:8 F5:8 G5:q A5:q"
+ },
+ "passes": [
+  "tuplet",
+  "beam"
+ ],
+ "expect": {
+  "beams": [
+   [
+    "E5 F5"
+   ]
+  ]
+ }
+}

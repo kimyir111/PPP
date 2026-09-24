@@ -82,3 +82,69 @@
 | G2-D14 | **그래프를 곡 기록에 저장하지 않는다.** `importSource`가 localStorage에 통째로 들어가고 그래프는 수백 KB다. 크기 전략을 정한 뒤의 일 | 설계 §14.4대로 바로 저장 | §24.10 |
 | G2-D15 | **적히는 음과 울리는 음을 나눈다** (리뷰가 올린 D7). canonical 그래프는 concert 음을 담고, notation/UI는 written pitch·written key로 표시하며, 소리를 내는 소비자는 concert를 쓴다. written은 파생값이다 | 그래프를 written으로 바꾸기, 화면까지 concert로 두기 | §26 (§25 R1) |
 | G2-D16 | 미분음은 **exact value를 ext에 남기고** 기보 pitch만 반올림하며, 그 근사를 경고·`normalized`·음의 `approx` 세 곳에서 말한다. 조용한 반올림은 금지 | schema에 분수 alter 추가(v3), 그냥 반올림 | §26.5 |
+
+## G3 — Professional Score Intelligence (Accepted, 2026-09-24, 설계 승인; 구현 2026-09-24, G03 §27)
+
+전문은 `docs/GOALS/G03_SCORE_INTELLIGENCE.md`. 2026-09-23 설계, 2026-09-24 사용자가 설계와 결정 D1–D8을 승인했다 (G03 §22.1). 여기서 Accepted는 **설계 승인**이다 — acceptance criteria(A1–A40)는 구현 뒤에 판정한다.
+
+| ID | 결정 | 버린 대안 | 근거 |
+| --- | --- | --- | --- |
+| G3-D1 | G3는 `buildGraph`와 exporter 사이의 **graph → graph pass pipeline** (`professionalize`)이다. pass마다 독립 테스트·idempotent | `audio-score.js` writer를 고쳐 쓰기, giant pass 하나 | §5 |
+| G3-D2 | Rhythm은 **R-repr**(onset·tie-merged 길이 정확 보존, 표현만)과 **R-reg**(release→음가 정규화)로 나눈다. R-reg는 M11 대상이라 **G3b**, 기본 off | 한 층으로, 가장 가까운 격자 snap | §6, §3.3 |
+| G3-D3 | G1 F1: **논리 tuplet 하나 = Tuplet spanner 하나**. tie 조각·쉼표도 멤버, start/stop은 파생, continue는 멤버십, 중첩은 `parent`. schema 변경 없음 | 조각 괄호 합치기, UI에서 숨기기 | §7 |
+| G3-D4 | `provOf(...).op`가 pass의 권한이다: inferred는 다시 쓰고, imported는 보존(선택 `fill`), edited는 절대 안 건드린다 | 모든 입력에 같은 정리 | §14 |
+| G3-D5 | Preservation fingerprint(I1–I11) + critic, 위반 시 마디 단위 rollback과 report (테스트는 strict throw) | 규칙을 믿고 검사 없음, 위반 시 전체 throw | §15 |
+| G3-D6 | **schema v2 유지**: ops 추가, `ext['ppp.g3']`, WARNING 2개(`W-BEAM-SHAPE`, `W-TUPLET-DISPLAY`)만 | v3 bump | §18 |
+| G3-D7 | G0는 **확장만**: reader/5(tuplet·beam 읽기), `nq.*` metric, G3 flip gate. 새 critical gate 없음 | usable 정의 변경 | §20 |
+| G3-D8 | dynamics·slur 추론, 운지 생성, ottava 기본값, 앱 렌더러 전환은 G3에서 하지 않는다 | G3에 포함 | §12, §13, D2, D4, D6 |
+
+**사용자 결정 (2026-09-24, G03 §22.1)**
+
+| ID | 결정 |
+| --- | --- |
+| G3-U1 (D1) | G3a 지금 구현. G3b는 구현하되 default OFF. R-reg와 real second-voice recovery는 duple·triple·compound 실제 human recording 3곡 baseline 뒤에만 production enable |
+| G3-U2 (D2) | 자동 8va pass는 구현하되 default OFF. ottava 재생 문제(이슈 3) 해결 전 production 생성 금지 |
+| G3-U3 (D3) | 소유권: G3 = note shape·리듬 표기, 임시표·철자, staff·hand 배정 / G4 = engraving·layout·geometry / G5 = fingering과 깊은 physical playability. G01 §5.7·§13.3·§14.3·§8.2의 해당 배정을 대체한다 |
+| G3-U4 (D4–D8) | Architect 권고 기본값을 수용한다. 구현 증거가 반대를 보이면 기록하고 사용자에게 올린다 |
+
+### G3 구현 중 결정 (증거와 함께, G03 §27.5) — Implementer, 2026-09-24
+
+G3-U4대로 기록하고 올린다. 설계 결정 D1–D8은 바꾸지 않았다.
+
+| ID | 결정 | 증거 |
+| --- | --- | --- |
+| G3-I1 | R-repr는 작가가 고른 한 음가를 규칙 위반만으로는 더 많은 tie 조각으로 쪼개지 않는다 | 규칙대로면 core `ties.extra_per_100` 4.24 → 5.19 (gate +0.5 초과); 이 규칙으로 2.66 |
+| G3-I2 | compound 박 안의 셋잇단은 8분 단위 16분 셋잇단과 같은 박 두 8분 위의 3:2로 쓴다; P5는 점4분 박을 넘지 않는다 | §7.3의 구간 격자; core tm_missing 657 → 415, 셋잇단 tie 356 → 75 |
+| G3-I3 | 한 5도 떨어진 조 구간은 조표를 바꾸지 않는다 (임시표로) | 딸림조 조표가 full key gate 3 케이스 퇴행 (A24) |
+| G3-I4 | clef 전환: 한 음이 ≥ 4 덧줄이고 다른 clef가 모든 음을 < 4로 받으면; 양쪽에서 읽히는 마디는 구간을 잇는다 | §9.3 규칙만으로는 robust `heavy_rate` gate 초과 (Beyer 033 왼손 B4 G4 D5) |
+| G3-I5 | 손 DP 선율 항: 앞 묶음 왼손에 가까운 lone bass, 오른손이 아직 누르는 음 아래의 화음에는 적용하지 않는다 (DP 상태만 읽음) | M16 micro 퇴행, full catalog subgroup 퇴행 |
+| G3-I6 | 철자 line speller는 기본 off | 켜면 core 철자 퇴행 케이스 |
+| G3-I7 | golden G3 허용 범주에 "release와 1박 안 press를 change 하나로" (P8) | G15 |
+| G3-I8 | A39 2 s 판정은 단독 실행 (`test:scoregraph:perf`); 병렬 suite 안에서는 기록만 | 병렬 실행은 wall·CPU 시간 모두 약 2배 |
+| G3-I9 | **flip 보류**: G3 gate의 `tm_missing == 0`·`mergeable == 0`이 R17·H7과 충돌 | G03 §27.4 — 사용자 결정 (G3-U5로 해소) |
+
+**사용자 결정 (2026-09-24, 독립 리뷰 G03 §28.9 뒤; 영구)**
+
+| ID | 결정 |
+| --- | --- |
+| G3-U5 (U-1) | mergeable tie는 **한 기호로 합치는 것이 H6·H7 아래 합법이고 G3a 가독성 정책이 허용할 때만** 결함(`MERGEABLE_DEFECT`)이다. 나머지는 이유별로 따로 센다: `REQUIRED_H6`, `REQUIRED_H7`, `REQUIRED_BEAT_SPLIT`, `PARTIAL_CHORD_REQUIRED`, `R17_DEFER_G3B`, 그 밖의 명시적 이유. 파일 allowlist·전역 threshold 완화·이유 이름으로 결함 숨기기 금지. **R17은 케이스별 baseline을 고정**하고, R17 residual을 baseline보다 늘리는 변경은 FAIL |
+| G3-U6 (U-2) | 부분 화음 tie(화음의 일부 머리만 다음 음으로 이어짐)는 mergeable 결함에서 빼되 `PARTIAL_CHORD_REQUIRED`로 **따로 세어 보고**한다. G3a는 울리는 것을 바꿔서 이것을 풀지 않는다 |
+| G3-U7 (U-3) | P8 페달 합치기(release + 1박 안 press → `change`)는 **기본 OFF** — professionalize 기본값과 shadow 포함. 명시적 실험 옵션(`opts.pedalJoin`)으로만. 앱의 `change` 재생 수정은 G3 범위 밖. G3 off/on(기본)에서 앱이 재생하는 페달 이벤트가 같아야 한다 (B1 회귀 fixture). G3-I7을 대체한다 |
+
+### G3 Fixer 결정 (증거와 함께, G03 §29) — Fixer, 2026-09-24
+
+| ID | 결정 | 증거 |
+| --- | --- | --- |
+| G3-F1 | gate의 residual 분류는 G3 내부가 아니라 **출력 MusicXML**(reader/5 층)에서 한다 (`pppbench/notation_reasons.py`): 성부-마디 창이 이진·셋잇단 격자 중 하나로 설명되지 않고, 한 격자를 고를 때 어긋난 점이 전부 1 tick 안의 release면 R17. 괄호 없는 time-modification 음(인쇄되지 않은 1-음 tuplet)도 1-음 tuplet으로 센다 | core: `tm_missing` 291 = R17 291, 1-음 150 = R17 150, mergeable 93 = H7 58 + H6 30 + R17 5, 결함 0 (§29) |
+| G3-F2 | 손 DP의 옥타브 항은 **겹친 선**(나머지가 울리지 않는 맨 옥타브가 3번 이상 연속)에만; 손 위치는 "마지막 자리"와 "머물러 온 자리"(느린 평균, 작가가 그 손에 둔 음 뒤에만) 중 가까운 쪽; 한 음씩 번갈아 치는 음형은 선율 항 면제; 작가의 손이 DP보다 비싸지 않은 구간은 작가 것을 둔다; 결과는 자기 모델의 **고정점**(작가 손으로 다시 읽어도 같은 선택) | 리뷰의 M04·M15×2 회복, Czerny 849/027 human Eb4 43 → 3; P(P(g)) core 553·full 동일 (§29.4) |
+| G3-F3 | micro no-drop은 기호 수가 분모인 비율(`note_shape.consistency`)을 **불일치 수**로 판정한다 (`MICRO_BY_COUNT`) | M20: 불일치 8 → 8, 분모 109 → 108 |
+| G3-F4 | 구간 조 추론은 살아 있는 코드지만 녹음 corpus에서는 발동하지 않는다 — 억지로 조 변경을 만들지 않는다. mutation은 살아 있는 임시표 경로(`G3-ACC-BAR-STATE`)로 | core 441 중 2, full 4,165 중 14 케이스만 조 변경 제안, 전부 한 5도(G3-I3로 임시표); S06 fixture가 실제 전조를 증명 |
+| G3-F5 | 사람 평가 세트는 블라인드: 불투명 라벨(E01-X…), 판본 순서 무작위(seed), 머리·표지·마크 정규화, 열쇠는 `tests/bench/human/g3-key/` 분리 | §29.8 |
+
+### G3 A36 (사람 평가, 2026-09-24, G03 §30)
+
+| ID | 결정 | 증거 |
+| --- | --- | --- |
+| G3-U8 | A36 1차 평가는 사용자 지시로 **앱 렌더러**(ScoreView·VexFlow, dev 페이지 `?devReview=g3`)에서 했다 — D7(a) MuseScore 4의 예외, 이 평가에만. 앱은 파일의 beam·tuplet 괄호를 스스로 다시 정하므로 G3a의 beam(3,305 대 G3 off 0)은 판정되지 않았다. 쉼표·음가·셋잇단 값·staff·성부는 파일 그대로 그린다. dev 도구는 로컬 브랜치 `g3-dev-review-tool`에만 두고 main에 넣지 않는다. 재평가의 렌더러는 다시 사용자 결정 | §30.2: 진 6 발췌에서 앱이 그린 쉼표 수 = 파일 `<rest>` 수; 결과 A36 FAIL (§30.1) |
+| G3-U9 | **G3를 PARTIAL / DEFERRED로 닫는다** (COMPLETE 아님). M11 실제 연주 녹음은 지금 하지 않는다. G3a는 A36 FAIL로 OFF, G3b·자동 8va·`pedalJoin` OFF. G3 off에서 출력이 main과 같은 feature-gated 인프라는 main에 넣어도 된다. 다음 Goal로 간다 | 사용자 2026-09-24; G03 §31 |
+| G3-U10 | 다음 A36 재평가는 **PPP 앱 렌더러**로 한다 — 실제 PPP 사용자가 보는 결과가 합격 대상 (D7(a)와 G3-U8의 "재평가 렌더러는 다시 결정"을 대체). 앱이 못 그리는 beam 모양·보임과 일부 tuplet 판각은 G4 범위이고, G3 구조 metric·테스트로 따로 검증한다. MuseScore 설치를 요구하지 않는다. 재평가 전에 발췌를 `CLEAN_INPUT` / `UPSTREAM_ERROR`(녹음 경로의 박자·조가 참조와 다름)로 미리 나눠 따로도 보고하되, 결과를 본 뒤 빼지 않고 전체 판정에서도 빼지 않는다. **구현 안 함** (재평가 때) | 사용자 2026-09-24; G03 §31.5 |

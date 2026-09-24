@@ -1,0 +1,637 @@
+{
+ "commit": "1c030f23b1",
+ "excerpts": [
+  {
+   "bar_offset": 0,
+   "bar_offset_note": "the recording-path versions come from oracle beats: their bars are assumed to be the reference's",
+   "bars_in_reference": [
+    1,
+    8
+   ],
+   "case": "method/hanon/001|human|oracle|s1",
+   "id": "E01",
+   "licence": "Public Domain",
+   "ned": {
+    "A": 1.015625,
+    "B": 1.09375
+   },
+   "provenance": "community typeset; catalog/method/books.json says: MuseScore community typesets from the PDMX dataset (CC0) (no per-file identifier)",
+   "reference": "catalog/method/hanon/001.mxl",
+   "sha256": {
+    "X": "d9da34b8d6583732cbe4abb7d56f2dd9c666e82152eb68f1dc52069d3ae95521",
+    "Y": "2838fed1922f739b494ba9d5779b63a26088e84045da566eb90e85bfef533012",
+    "Z": "8cfe123baf3048b322f3507435607d33fa7823784fc422f89e1526cfb5b56a98"
+   },
+   "source": "hanon",
+   "stratum": "simple-duple",
+   "versions": {
+    "X": "C",
+    "Y": "A",
+    "Z": "B"
+   }
+  },
+  {
+   "bar_offset": 0,
+   "bar_offset_note": "the recording-path versions come from oracle beats: their bars are assumed to be the reference's",
+   "bars_in_reference": [
+    1,
+    8
+   ],
+   "case": "method/sonatina/002|human|oracle|s1",
+   "id": "E02",
+   "licence": "Public Domain (PianoXML typeset)",
+   "ned": {
+    "A": 1.122449,
+    "B": 1.132653
+   },
+   "provenance": "PianoXML typeset (named in the file; the book-level note says PDMX)",
+   "reference": "catalog/method/sonatina/002.mxl",
+   "sha256": {
+    "X": "c3b2ed347e8e70a20a08b25005baceebbf83c9618588ca624e4e9bfc8770463c",
+    "Y": "3fdf5afc3c00ef5c3be6edecb9759c5439b3aa0baec13b7669ea3315b3409d78",
+    "Z": "1769bab3a81a0ec6361b837914e440eaae3a86447f8d7383d4f0638be6a8852c"
+   },
+   "source": "sonatina",
+   "stratum": "simple-triple",
+   "versions": {
+    "X": "C",
+    "Y": "B",
+    "Z": "A"
+   }
+  },
+  {
+   "bar_offset": 0,
+   "bar_offset_note": "the recording-path versions come from oracle beats: their bars are assumed to be the reference's",
+   "bars_in_reference": [
+    5,
+    12
+   ],
+   "case": "method/czerny849/013|human|oracle|s1",
+   "id": "E03",
+   "licence": "dedicated to the public domain (catalog/method/books.json, names the same typesetter)",
+   "ned": {
+    "A": 1.111888,
+    "B": 1.104895
+   },
+   "provenance": "Neru Hayashi's typeset (named in the file), via PDMX per catalog/method/books.json",
+   "reference": "catalog/method/czerny849/013.mxl",
+   "sha256": {
+    "X": "3ba700ed8746d548814b94c6e12ed145c2ff2fd74d98ad6eacdcf5bebe44e176",
+    "Y": "b869065a1ac4b103aa212d85f50a082f23dd81d3136abc878756493e6e4d2f7d",
+    "Z": "46c36a4eba748b1b6ca9025c713db3d4bf19754fa9a71715f4910ef872458952"
+   },
+   "source": "czerny849",
+   "stratum": "compound",
+   "versions": {
+    "X": "A",
+    "Y": "C",
+    "Z": "B"
+   }
+  },
+  {
+   "bar_offset": 0,
+   "bar_offset_note": "the recording-path versions come from oracle beats: their bars are assumed to be the reference's",
+   "bars_in_reference": [
+    9,
+    16
+   ],
+   "case": "method/czerny849/020|human|oracle|s1",
+   "id": "E04",
+   "licence": "dedicated to the public domain (catalog/method/books.json, names the same typesetter)",
+   "ned": {
+    "A": 1.016484,
+    "B": 1.0
+   },
+   "provenance": "Neru Hayashi's typeset (named in the file), via PDMX per catalog/method/books.json",
+   "reference": "catalog/method/czerny849/020.mxl",
+   "sha256": {
+    "X": "6a8a08a0d24fe945d301718702698e2b8535d8297d65b0bb6751424bec4e8398",
+    "Y": "8fd34fe81ab9a1b6c6381b0796dff40001a66e6ee00a377654cea56d57fcb421",
+    "Z": "d4d8cece4aac289d73ec2f519b2f020eac2be141c0f03ff8bf60436cdad48070"
+   },
+   "source": "czerny849",
+   "stratum": "chromatic",
+   "versions": {
+    "X": "C",
+    "Y": "B",
+    "Z": "A"
+   }
+  },
+  {
+   "bar_offset": 0,
+   "bar_offset_note": "the recording-path versions come from oracle beats: their bars are assumed to be the reference's",
+   "bars_in_reference": [
+    5,
+    12
+   ],
+   "case": "method/burgmuller25/013|human|oracle|s1",
+   "id": "E05",
+   "licence": "by Mutopia-2013/01/12-224 - public domain",
+   "ned": {
+    "A": 1.361702,
+    "B": 1.404255
+   },
+   "provenance": "Mutopia Project",
+   "reference": "catalog/method/burgmuller25/013.mxl",
+   "sha256": {
+    "X": "bd2c04adb23bfa0682b68a212dd031815d8fbed72289c124e12f72ae56c9aae4",
+    "Y": "4522f443d5006756eb4287a011b98ffc7182f7a72e4ab48ecb93fd978f4244d8",
+    "Z": "6421edefce8c2973c7c8cdec9deff45754b3fe3b80356a2e862909fe06c5cbf1"
+   },
+   "source": "burgmuller25",
+   "stratum": "two-voice",
+   "versions": {
+    "X": "C",
+    "Y": "A",
+    "Z": "B"
+   }
+  },
+  {
+   "bar_offset": 0,
+   "bar_offset_note": "the recording-path versions come from oracle beats: their bars are assumed to be the reference's",
+   "bars_in_reference": [
+    17,
+    24
+   ],
+   "case": "method/burgmuller25/021|human|oracle|s1",
+   "id": "E06",
+   "licence": "Public Domain (PianoXML typeset)",
+   "ned": {
+    "A": 0.693548,
+    "B": 0.459677
+   },
+   "provenance": "PianoXML typeset (named in the file; the book-level note says PDMX)",
+   "reference": "catalog/method/burgmuller25/021.mxl",
+   "sha256": {
+    "X": "f8a03f7a083c65f37bdf1fc9b7fce9b1a21b87a36d96763b5f5241cd477bf534",
+    "Y": "4e422e4086c56f113dfe06e9abcc0b7b8370cc3f856cba022eefc99f132f30c1",
+    "Z": "496d610de6d199d331a02bb307ec936c04fea97f8d1af9e9b0fe43115f97ac96"
+   },
+   "source": "burgmuller25",
+   "stratum": "tuplets",
+   "versions": {
+    "X": "A",
+    "Y": "B",
+    "Z": "C"
+   }
+  },
+  {
+   "bar_offset": 0,
+   "bar_offset_note": "the recording-path versions come from oracle beats: their bars are assumed to be the reference's",
+   "bars_in_reference": [
+    9,
+    16
+   ],
+   "case": "method/sonatina/009|human|oracle|s1",
+   "id": "E07",
+   "licence": "Public Domain (PianoXML typeset)",
+   "ned": {
+    "A": 1.421053,
+    "B": 1.394737
+   },
+   "provenance": "PianoXML typeset (named in the file; the book-level note says PDMX)",
+   "reference": "catalog/method/sonatina/009.mxl",
+   "sha256": {
+    "X": "5f33715e3086e0447dc0927404ed2ee64bd4374de37f0d2a27311b307a183c86",
+    "Y": "ba5bb53eb94267156ed8e13790b3bf4b60264c7bc7539858aecf326d0c68c1f6",
+    "Z": "bc9187a302677f0e189ee0a138b9585b8bd192c332ab3ba01d1e1a0b9374555f"
+   },
+   "source": "sonatina",
+   "stratum": "simple-duple",
+   "versions": {
+    "X": "A",
+    "Y": "C",
+    "Z": "B"
+   }
+  },
+  {
+   "bar_offset": 0,
+   "bar_offset_note": "the recording-path versions come from oracle beats: their bars are assumed to be the reference's",
+   "bars_in_reference": [
+    1,
+    8
+   ],
+   "case": "method/czerny849/011|human|oracle|s1",
+   "id": "E08",
+   "licence": "dedicated to the public domain (catalog/method/books.json, names the same typesetter)",
+   "ned": {
+    "A": 0.92093,
+    "B": 0.916279
+   },
+   "provenance": "Neru Hayashi's typeset (named in the file), via PDMX per catalog/method/books.json",
+   "reference": "catalog/method/czerny849/011.mxl",
+   "sha256": {
+    "X": "a2b349f334f16793fedd457861ec7799b236e3f7b86de9774001452086d06dbb",
+    "Y": "e7aa4a1712a969f11fc4355b5bcb81979cdefd164e1a1beef3ac42da2bd198e9",
+    "Z": "224abe94da61bc2a5e46f26a35ae03f658d1c24ed80efd9f90104c7f9a4c6d30"
+   },
+   "source": "czerny849",
+   "stratum": "compound",
+   "versions": {
+    "X": "A",
+    "Y": "C",
+    "Z": "B"
+   }
+  },
+  {
+   "bar_offset": 0,
+   "bar_offset_note": "the recording-path versions come from oracle beats: their bars are assumed to be the reference's",
+   "bars_in_reference": [
+    5,
+    12
+   ],
+   "case": "method/czerny849/007|human|oracle|s1",
+   "id": "E09",
+   "licence": "dedicated to the public domain (catalog/method/books.json, names the same typesetter)",
+   "ned": {
+    "A": 0.656863,
+    "B": 0.656863
+   },
+   "provenance": "Neru Hayashi's typeset (named in the file), via PDMX per catalog/method/books.json",
+   "reference": "catalog/method/czerny849/007.mxl",
+   "sha256": {
+    "X": "ef6cadaccd7447244a233111503c83df705215c40ce9cff85a97b24a46224184",
+    "Y": "1266d6d840770b2783cb8cab95d0a0b69090327a0e2573936ac008dc14bcb564",
+    "Z": "f73f1aff8b6c859afb523a305d231083a9490bca15d53d8d5ab0e864d6db217d"
+   },
+   "source": "czerny849",
+   "stratum": "two-voice",
+   "versions": {
+    "X": "C",
+    "Y": "A",
+    "Z": "B"
+   }
+  },
+  {
+   "bar_offset": 0,
+   "bar_offset_note": "the recording-path versions come from oracle beats: their bars are assumed to be the reference's",
+   "bars_in_reference": [
+    9,
+    16
+   ],
+   "case": "method/burgmuller25/003|human|oracle|s1",
+   "id": "E10",
+   "licence": "by Mutopia-2013/01/12-218 - public domain",
+   "ned": {
+    "A": 0.897059,
+    "B": 0.926471
+   },
+   "provenance": "Mutopia Project",
+   "reference": "catalog/method/burgmuller25/003.mxl",
+   "sha256": {
+    "X": "1862dbe34b3f4f207355d04c4d06831677ef2386cc0dd61e17efc06c41a5b827",
+    "Y": "ed13383f71ef972bc961b8b62328ec1760fd6691b19cbbbe1504c6c688717a1d",
+    "Z": "0fd8cc0e36899801bbf35fba42281b0754943f79b08a083527ff8e82e3ab5e9f"
+   },
+   "source": "burgmuller25",
+   "stratum": "compound",
+   "versions": {
+    "X": "B",
+    "Y": "A",
+    "Z": "C"
+   }
+  },
+  {
+   "bar_offset": 0,
+   "bar_offset_note": "the recording-path versions come from oracle beats: their bars are assumed to be the reference's",
+   "bars_in_reference": [
+    61,
+    68
+   ],
+   "case": "method/sonatina/010|human|oracle|s1",
+   "id": "E11",
+   "licence": "Public Domain (PianoXML typeset)",
+   "ned": {
+    "A": 0.727273,
+    "B": 0.571429
+   },
+   "provenance": "PianoXML typeset (named in the file; the book-level note says PDMX)",
+   "reference": "catalog/method/sonatina/010.mxl",
+   "sha256": {
+    "X": "793251e2706f7199515354e0503a966ff14f2c63cff54ddcc363578b03d89c78",
+    "Y": "5904f5f765696ff17a8285a48f4a77977334aa4cd3007f3c329f17a3eff4a4d1",
+    "Z": "6a5d7eb2d0e78f40779ef3fad89cbc383a07b08b00eb94b880f0cdb62243a20c"
+   },
+   "source": "sonatina",
+   "stratum": "simple-triple",
+   "versions": {
+    "X": "A",
+    "Y": "B",
+    "Z": "C"
+   }
+  },
+  {
+   "bar_offset": 0,
+   "bar_offset_note": "the recording-path versions come from oracle beats: their bars are assumed to be the reference's",
+   "bars_in_reference": [
+    29,
+    36
+   ],
+   "case": "method/burgmuller25/015|human|oracle|s1",
+   "id": "E12",
+   "licence": "Public Domain (PianoXML typeset)",
+   "ned": {
+    "A": 2.702703,
+    "B": 3.135135
+   },
+   "provenance": "PianoXML typeset (named in the file; the book-level note says PDMX)",
+   "reference": "catalog/method/burgmuller25/015.mxl",
+   "sha256": {
+    "X": "94562b67484123cff363ac588d1a4828eaea3901c0aa1513593ef308e96422d5",
+    "Y": "8a05cca1211c7fa81f793db5e5b01c29bda5c8ff22c2bf32c0e492e7a514c2ce",
+    "Z": "b417761a1985c7db36b16f411c3ab1ace321c2b94236c50bf4f4c496811b9bab"
+   },
+   "source": "burgmuller25",
+   "stratum": "compound",
+   "versions": {
+    "X": "A",
+    "Y": "B",
+    "Z": "C"
+   }
+  },
+  {
+   "bar_offset": 0,
+   "bar_offset_note": "the recording-path versions come from oracle beats: their bars are assumed to be the reference's",
+   "bars_in_reference": [
+    17,
+    24
+   ],
+   "case": "method/sonatina/012|human|oracle|s1",
+   "id": "E13",
+   "licence": "Public Domain (PianoXML typeset)",
+   "ned": {
+    "A": 1.898438,
+    "B": 1.929688
+   },
+   "provenance": "PianoXML typeset (named in the file; the book-level note says PDMX)",
+   "reference": "catalog/method/sonatina/012.mxl",
+   "sha256": {
+    "X": "a41905d3f02c665cd9d15fa788ec5ee5b8409b8aa6de60186eb1c3ef134230d8",
+    "Y": "f407607756c7953396d683731f9bfedcbec6eafb1fa5e618773a3b63e5ec5119",
+    "Z": "9ff0b13e19cee0d2a42157827155f862763c0615e3b2ae41dbd1be2a7870c296"
+   },
+   "source": "sonatina",
+   "stratum": "tuplets",
+   "versions": {
+    "X": "C",
+    "Y": "B",
+    "Z": "A"
+   }
+  },
+  {
+   "bar_offset": 0,
+   "bar_offset_note": "the recording-path versions come from oracle beats: their bars are assumed to be the reference's",
+   "bars_in_reference": [
+    1,
+    8
+   ],
+   "case": "catalog/happy-birthday|human|oracle|s1",
+   "id": "E14",
+   "licence": "CC0",
+   "ned": {
+    "A": 0.264706,
+    "B": 0.294118
+   },
+   "provenance": "PPP public-domain catalog (Traditional, Happy Birthday)",
+   "reference": "catalog/happy-birthday.musicxml",
+   "sha256": {
+    "X": "29ab9eaa608380cf079338adf2618b37018884811837dc2b6c87dfd72a86a8de",
+    "Y": "39225415c8c29f45854f243b2c39adaa62b4115dee773b8d9c415dbc69e00e05",
+    "Z": "97a9b4dabb6cb86f6d9d2aba936abe74ccd9ee4284fa94321ce76deb83abfc64"
+   },
+   "source": "catalog",
+   "stratum": "simple-triple",
+   "versions": {
+    "X": "C",
+    "Y": "B",
+    "Z": "A"
+   }
+  },
+  {
+   "bar_offset": 0,
+   "bar_offset_note": "the recording-path versions come from oracle beats: their bars are assumed to be the reference's",
+   "bars_in_reference": [
+    21,
+    28
+   ],
+   "case": "method/sonatina/018|human|oracle|s1",
+   "id": "E15",
+   "licence": "Public Domain (PianoXML typeset)",
+   "ned": {
+    "A": 0.62931,
+    "B": 0.637931
+   },
+   "provenance": "PianoXML typeset (named in the file; the book-level note says PDMX)",
+   "reference": "catalog/method/sonatina/018.mxl",
+   "sha256": {
+    "X": "3dc21e878ddad24edb70155cc49475ba9c3cd5b8131703bdf631ef845f93f1cc",
+    "Y": "46137776e2895888efa956b9f882e330365fc87cc4c735e3a02ddc109d3982f9",
+    "Z": "7c611eca3b6cc1a2636cfb73208e6cedfd0f87105d5ecf27c0c8ce0481ad2c70"
+   },
+   "source": "sonatina",
+   "stratum": "chromatic",
+   "versions": {
+    "X": "A",
+    "Y": "B",
+    "Z": "C"
+   }
+  },
+  {
+   "bar_offset": 0,
+   "bar_offset_note": "the recording-path versions come from oracle beats: their bars are assumed to be the reference's",
+   "bars_in_reference": [
+    5,
+    12
+   ],
+   "case": "method/czerny849/002|human|oracle|s1",
+   "id": "E16",
+   "licence": "dedicated to the public domain (catalog/method/books.json, names the same typesetter)",
+   "ned": {
+    "A": 1.485714,
+    "B": 1.548571
+   },
+   "provenance": "Neru Hayashi's typeset (named in the file), via PDMX per catalog/method/books.json",
+   "reference": "catalog/method/czerny849/002.mxl",
+   "sha256": {
+    "X": "fceb06dd3438ef979791d9ec3b5dcb3d07462eeeb3fc2f98721036284bda87f6",
+    "Y": "eb37e98e57e86f2f6e611c5e4065e48dda711fedc73b9d24882f1124898e2428",
+    "Z": "d85ff65ce0247b76c97b000cbd3639307c42caebd34b5daba1e0a4974609ce25"
+   },
+   "source": "czerny849",
+   "stratum": "tuplets",
+   "versions": {
+    "X": "B",
+    "Y": "A",
+    "Z": "C"
+   }
+  },
+  {
+   "bar_offset": 0,
+   "bar_offset_note": "the recording-path versions come from oracle beats: their bars are assumed to be the reference's",
+   "bars_in_reference": [
+    13,
+    20
+   ],
+   "case": "method/czerny849/001|human|oracle|s1",
+   "id": "E17",
+   "licence": "dedicated to the public domain (catalog/method/books.json, names the same typesetter)",
+   "ned": {
+    "A": 0.985185,
+    "B": 0.97037
+   },
+   "provenance": "Neru Hayashi's typeset (named in the file), via PDMX per catalog/method/books.json",
+   "reference": "catalog/method/czerny849/001.mxl",
+   "sha256": {
+    "X": "884b13608b172dbccdeb879e8adee844222bd2e15a7713b9c3490d1f442dd324",
+    "Y": "3c0dc7b76000180d2906a091b6ba0ce0a9eec6461bb929614c795870eba73063",
+    "Z": "39bdfb1f828a7c9abcd9159a7f2911b494f7d4ab9b0c00a4de409addbf241113"
+   },
+   "source": "czerny849",
+   "stratum": "simple-duple",
+   "versions": {
+    "X": "B",
+    "Y": "C",
+    "Z": "A"
+   }
+  },
+  {
+   "bar_offset": 0,
+   "bar_offset_note": "the recording-path versions come from oracle beats: their bars are assumed to be the reference's",
+   "bars_in_reference": [
+    1,
+    8
+   ],
+   "case": "catalog/gymnopedie-1|human|oracle|s1",
+   "id": "E18",
+   "licence": "CC0",
+   "ned": {
+    "A": 0.2,
+    "B": 0.2
+   },
+   "provenance": "PPP public-domain catalog (Erik Satie, Gymnopédie No. 1)",
+   "reference": "catalog/gymnopedie-1.musicxml",
+   "sha256": {
+    "X": "f496876b73bba64e6aa4c2f701c3b11b34137a3be65107916b47b6ef36e3042f",
+    "Y": "f32243354c09e6e36a19cee5b76ad8229b4ef83513ef447e87dc8c82587f4aeb",
+    "Z": "99e3e38ddd762f1dc9b377d61429183bf427983a6e19daa55b546ec0e8b6bb0d"
+   },
+   "source": "catalog",
+   "stratum": "simple-triple",
+   "versions": {
+    "X": "C",
+    "Y": "A",
+    "Z": "B"
+   }
+  },
+  {
+   "bar_offset": 0,
+   "bar_offset_note": "the recording-path versions come from oracle beats: their bars are assumed to be the reference's",
+   "bars_in_reference": [
+    49,
+    56
+   ],
+   "case": "method/sonatina/017|human|oracle|s1",
+   "id": "E19",
+   "licence": "Public Domain (PianoXML typeset)",
+   "ned": {
+    "A": 0.54918,
+    "B": 0.54918
+   },
+   "provenance": "PianoXML typeset (named in the file; the book-level note says PDMX)",
+   "reference": "catalog/method/sonatina/017.mxl",
+   "sha256": {
+    "X": "22e94993cd8a5200607c317f221ca9ea386fddc840a678569b6064fa19b2a11e",
+    "Y": "d7f77adb9033060e1c3d9d3c34af695ac04d6ea266e09af65bcde0ddffeb0d4c",
+    "Z": "cd25649b49af625ac0efa1fca8299ba7659450231c801ab3961654a9aae7c56d"
+   },
+   "source": "sonatina",
+   "stratum": "two-voice",
+   "versions": {
+    "X": "A",
+    "Y": "B",
+    "Z": "C"
+   }
+  },
+  {
+   "bar_offset": 0,
+   "bar_offset_note": "the recording-path versions come from oracle beats: their bars are assumed to be the reference's",
+   "bars_in_reference": [
+    9,
+    16
+   ],
+   "case": "method/burgmuller25/006|human|oracle|s1",
+   "id": "E20",
+   "licence": "public domain - Mutopia-2013/01/12-215",
+   "ned": {
+    "A": 0.790123,
+    "B": 0.839506
+   },
+   "provenance": "Mutopia Project",
+   "reference": "catalog/method/burgmuller25/006.mxl",
+   "sha256": {
+    "X": "c0e5593f7f712074620b9a7832894aa43356df0dd602d9df02b62234395c7ff3",
+    "Y": "4f2963aa9bfdc550e9a8c709839980e3596cbac59637a05c83c43fd0f72043c6",
+    "Z": "c1be8564a7006f55d1fbfef37b78bf422c406085933cf7b80ff008e68f8e5816"
+   },
+   "source": "burgmuller25",
+   "stratum": "simple-duple",
+   "versions": {
+    "X": "C",
+    "Y": "A",
+    "Z": "B"
+   }
+  }
+ ],
+ "meaning": {
+  "A": "recording path, G3 off",
+  "B": "recording path, G3a on",
+  "C": "the reference"
+ },
+ "normalized": {
+  "bars": "renumbered 1-8",
+  "part_list": "each score-part keeps only its part-name, set to Piano",
+  "parts": "ids P1, P2 … in order",
+  "removed_attributes": [
+   "default-x",
+   "default-y",
+   "relative-x",
+   "relative-y",
+   "color",
+   "font-family",
+   "font-size",
+   "font-style",
+   "font-weight"
+  ],
+  "removed_from_measures": [
+   "print",
+   "direction",
+   "harmony",
+   "figured-bass",
+   "sound",
+   "listening",
+   "grouping",
+   "link",
+   "bookmark",
+   "the width attribute"
+  ],
+  "removed_from_notes": [
+   "lyric",
+   "play",
+   "listen",
+   "notehead-text",
+   "instrument",
+   "every <notations> child but tied and tuplet"
+  ],
+  "removed_header": [
+   "work",
+   "movement-number",
+   "movement-title",
+   "identification",
+   "defaults",
+   "credit"
+  ],
+  "title": "the file's opaque label (E01-X)"
+ },
+ "schema": "ppp.g3-human-key/1",
+ "seed": 20260924
+}

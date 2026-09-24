@@ -1,0 +1,24 @@
+{
+ "about": "7/8 grouped 2+2+3",
+ "spec": "G03 §11.3 B07",
+ "input": {
+  "time": [
+   7,
+   8
+  ],
+  "rh": "C5:8 D5:8 E5:8 F5:8 G5:8 A5:8 B5:8"
+ },
+ "passes": [
+  "tuplet",
+  "beam"
+ ],
+ "expect": {
+  "beams": [
+   [
+    "C5 D5",
+    "E5 F5",
+    "G5 A5 B5"
+   ]
+  ]
+ }
+}

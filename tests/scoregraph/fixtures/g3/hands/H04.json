@@ -1,0 +1,22 @@
+{
+ "about": "a chord wider than one hand (19 semitones) with the left hand free: split so each hand holds a playable chord, moving as few notes as it can (an octave inside a hand's chord is idiomatic: G03 §28 M1 dropped the rule that forbade it)",
+ "spec": "G03 §9.4 H04",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "C4+E4+G4+C5+E5+G5:w",
+  "lh": "r:w"
+ },
+ "passes": [
+  "staff",
+  "voice",
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "rh": "G4+C5+E5+G5:w",
+  "lh": "C4+E4:w"
+ }
+}

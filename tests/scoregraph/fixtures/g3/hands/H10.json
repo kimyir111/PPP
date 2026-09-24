@@ -1,0 +1,21 @@
+{
+ "about": "a lone bass note while the right hand rests (micro M16): it stays in the left hand, the melody term does not pull it up (it is nearer where the left hand played)",
+ "spec": "G03 §9.4 H10",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "C5:h r:h | r:w",
+  "lh": "F2:w | Bb2:w"
+ },
+ "passes": [
+  "staff",
+  "voice",
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "same": true
+ }
+}

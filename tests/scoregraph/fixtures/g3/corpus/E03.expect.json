@@ -1,0 +1,17 @@
+{
+ "about": "§19 E03: PPP output for method/burgmuller25/021|deadpan|none|s1, printed bars 3",
+ "spec": "G03 §19",
+ "case": "method/burgmuller25/021|deadpan|none|s1",
+ "bars": [
+  3,
+  3
+ ],
+ "reference": "catalog/method/burgmuller25/021.mxl",
+ "before": [
+  "r:q=1/6 3[E4:8] 3[E5:8] 3[C5:8] 3[G4:8] r:q=1/6 3[E4:8] 3[G5:8] 3[E5:8] 3[C5:8]",
+  "3[G3:8] 3[C4:8] r:8=1/12 r:q 3[G3:8] 3[C4:8] r:8=1/12 r:q"
+ ],
+ "expect": {
+  "g3a": "triplet rest shapes and hands: one bracket per triplet group, every rest printed at its length"
+ }
+}

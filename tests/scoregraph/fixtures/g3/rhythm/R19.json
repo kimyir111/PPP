@@ -1,0 +1,19 @@
+{
+ "about": "a triplet quarter written as two tied triplet eighths: one triplet quarter",
+ "spec": "G03 §6.3 R19",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "3[C5:8~] 3[C5:8] 3[D5:8] r:q r:h"
+ },
+ "passes": [
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "rh": "3e[C5:q D5:8] r:q r:h",
+  "warnings": {}
+ }
+}

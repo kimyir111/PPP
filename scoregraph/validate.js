@@ -30,7 +30,7 @@
     'E-REPEAT', 'E-UNROLL-RUNAWAY', 'E-ARPEGGIO', 'E-PERC-KIT', 'E-PITCH-RANGE', 'E-STRUCTURE', 'E-PERF', 'E-PROV'];
   const WARNINGS = ['W-MEASURE-LENGTH', 'W-DISPLAY-DURATION', 'W-TUPLET-INCOMPLETE', 'W-TIE-OPEN', 'W-SLUR-OPEN',
     'W-PEDAL-OPEN', 'W-TEMPO-MARK-MISMATCH', 'W-CLEF-MISSING', 'W-OTTAVA-OVERLAP', 'W-HEAD-UNISON', 'W-GRACE-ORPHAN',
-    'W-REPEAT-DANGLING', 'W-ENDING-NO-REPEAT', 'W-PERF-LINK-PITCH'];
+    'W-REPEAT-DANGLING', 'W-ENDING-NO-REPEAT', 'W-PERF-LINK-PITCH', 'W-BEAM-SHAPE', 'W-TUPLET-DISPLAY'];
   const INFOS = ['I-VOICE-GAP', 'I-NO-TEMPO', 'I-NO-KEY', 'I-JUMP-IGNORED', 'I-LIMB-UNSET', 'I-PROV-REDUNDANT', 'I-EXT'];
   const CODES = Object.freeze(ERRORS.concat(WARNINGS, INFOS));
   const SEVERITY = {};
@@ -657,6 +657,49 @@
         const want = R.mul(R.mul(R.make(t.normal), unit), parentRatio);
         const sum = members.reduce((s, e) => R.add(s, R.parse(e.dur)), R.ZERO);
         if (!R.eq(sum, want)) add('W-TUPLET-INCOMPLETE', 'tuplet ' + t.id + ' holds ' + R.format(sum) + ' of its ' + R.format(want), [t.id], loc(pi, members[0]));
+      });
+      /* W-TUPLET-DISPLAY (G03 §18.2): a tuplet that states its unit, with a member printed with no value or with a
+         value longer than the whole bracket (actual × unit): the printed shapes contradict the ratio */
+      tuplets.forEach(t => {
+        if (broken.has(t) || !isObj(t.unit)) return;
+        const unit = S.noteValue(t.unit.type, t.unit.dots);
+        if (!unit) return;
+        const span = R.mul(R.make(t.actual), unit);
+        const members = arr(t.events).map(id => eventById.get(id)).filter(e => ok(e) && !isObj(e.grace));
+        const bad = members.find(e => {
+          if (!isObj(e.display) || !e.display.type) return true;
+          const v = S.noteValue(e.display.type, e.display.dots);
+          return !v || R.gt(v, span);
+        });
+        if (bad) add('W-TUPLET-DISPLAY', 'tuplet ' + t.id + ' (' + t.actual + ':' + t.normal + ' ' + t.unit.type + ') has member ' + bad.id +
+          (isObj(bad.display) && bad.display.type ? ' printed as ' + bad.display.type + ', longer than the bracket' : ' with no printed value'), [t.id, bad.id], loc(pi, bad));
+      });
+      /* W-BEAM-SHAPE (G03 §11.2): a beam over events of more than one voice, out of time order, skipping an event of
+         its voice, or holding a quarter note or longer. Grace-note beams are judged among grace notes. */
+      arr(part.spanners).forEach(s => {
+        if (!ok(s) || s.type !== 'beam') return;
+        const evs = arr(s.events).map(id => eventById.get(id));
+        if (evs.length < 2 || evs.some(e => !ok(e))) return;
+        let why = null;
+        const grace = evs.map(e => isObj(e.grace));
+        if (evs.some(e => e.voice !== evs[0].voice)) why = 'spans more than one voice';
+        else if (grace.some(x => x !== grace[0])) why = 'mixes grace and main notes';
+        else if (evs.some(e => isObj(e.display) && e.display.type && S.NOTE_TYPES.indexOf(e.display.type) <= S.NOTE_TYPES.indexOf('quarter')))
+          why = 'holds a quarter note or longer';
+        else if (!grace[0]) {
+          /* a beam may pass over rests (a file writes no <beam> on them); it may not skip a note of its voice */
+          const idx = evs.map(e => seqIndex.get(e));
+          if (idx.some(i => i === undefined)) return;
+          const seq = voiceSeq.get(evs[0].voice);
+          for (let i = 1; i < idx.length && !why; i++) {
+            if (idx[i] <= idx[i - 1]) why = 'is not in time order';
+            else for (let k = idx[i - 1] + 1; k < idx[i] && !why; k++) if (seq[k].kind !== 'rest') why = 'skips event ' + seq[k].id + ' of its voice';
+          }
+        } else {
+          const ws = evs.map(evStart);
+          for (let i = 1; i < ws.length && !why; i++) if (ws[i] && ws[i - 1] && R.lt(ws[i], ws[i - 1])) why = 'is not in time order';
+        }
+        if (why) add('W-BEAM-SHAPE', 'beam ' + s.id + ' ' + why, [s.id], loc(pi, evs[0]));
       });
       /* printed shapes against durations (issue 19) */
       arr(part.events).forEach(e => {

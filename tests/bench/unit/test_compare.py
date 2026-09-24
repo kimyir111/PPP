@@ -100,6 +100,27 @@ class Gate(unittest.TestCase):
         v = compare.compare(worse, bm, dict(GATE, case_flip_max=5))
         self.assertIn("micro:notation.spelling.accuracy", v.failed_metrics)
 
+    def test_micro_note_shape_is_judged_by_its_mismatch_count(self):
+        # G03 §28 m4 (micro M20): one tie piece merged, 8 mismatches of 109 symbols -> 8 of 108: the ratio falls, no
+        # defect was added; a ninth mismatch fails
+        micro = copy.deepcopy(results())
+        micro["cases"][0]["tags"] = ["set:micro"]
+        micro["cases"][0]["metrics"].update({"notation.note_shape.consistency": 1 - 8 / 109, "notation.note_shape.mismatches": 8.0})
+        bm = base_of(micro)
+        merged = copy.deepcopy(micro)
+        merged["cases"][0]["metrics"].update({"notation.note_shape.consistency": 1 - 8 / 108})
+        self.assertEqual(compare.compare(merged, bm, GATE).status, "PASS")
+        worse = copy.deepcopy(micro)
+        worse["cases"][0]["metrics"].update({"notation.note_shape.consistency": 1 - 9 / 109, "notation.note_shape.mismatches": 9.0})
+        self.assertIn("micro:notation.note_shape.consistency", compare.compare(worse, bm, GATE).failed_metrics)
+        # without the count (an old baseline) the ratio rule stands
+        old = copy.deepcopy(micro)
+        del old["cases"][0]["metrics"]["notation.note_shape.mismatches"]
+        bo = base_of(old)
+        merged_old = copy.deepcopy(merged)
+        del merged_old["cases"][0]["metrics"]["notation.note_shape.mismatches"]
+        self.assertIn("micro:notation.note_shape.consistency", compare.compare(merged_old, bo, GATE).failed_metrics)
+
     def test_known_failures_may_shrink_but_not_grow(self):
         kf = lambda n: {"classes": {"tie_without_stop": {"items": n, "files_affected": 1, "unit": "ties"}}}  # noqa: E731
         r = results()

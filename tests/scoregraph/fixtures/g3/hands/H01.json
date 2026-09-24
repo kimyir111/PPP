@@ -1,0 +1,27 @@
+{
+ "about": "parallel octaves written as right-hand octaves (Beyer 032, E6): one hand each, the left hand in a treble clef while every note is 4 or more ledger lines above the bass staff",
+ "spec": "G03 §9.4 H01",
+ "input": {
+  "time": [
+   3,
+   4
+  ],
+  "rh": "D5+D6:q C5+C6:q B4+B5:q | A4+A5:h.",
+  "lh": "r:h. | r:h."
+ },
+ "passes": [
+  "staff",
+  "voice",
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "rh": "D6:q C6:q B5:q | A5:h.",
+  "lh": "D5:q C5:q B4:q | A4:h.",
+  "clefs": [
+   "RH m1 G",
+   "LH m1 G",
+   "LH m2 F"
+  ]
+ }
+}

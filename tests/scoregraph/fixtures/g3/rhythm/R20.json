@@ -1,0 +1,15 @@
+{
+ "about": "5:4 and a 3:2 inside it, forced (an imported file): kept",
+ "spec": "G03 §6.3 R20",
+ "input": {
+  "musicxml": "xml/tuplets-nested.musicxml"
+ },
+ "passes": [
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "same": true
+ },
+ "mode": "force"
+}

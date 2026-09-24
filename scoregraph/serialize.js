@@ -47,7 +47,8 @@
   function deepFreeze(o) {
     if (o && typeof o === 'object' && !Object.isFrozen(o)) {
       Object.freeze(o);
-      Object.keys(o).forEach(k => deepFreeze(o[k]));
+      if (Array.isArray(o)) for (let i = 0; i < o.length; i++) deepFreeze(o[i]);
+      else for (const k of Object.keys(o)) deepFreeze(o[k]);
     }
     return o;
   }
@@ -95,19 +96,33 @@
   }
   function canonObj(shapeName, v, env) {
     if (!isObj(v)) return v;
-    if (shapeName === 'Event') env = Object.assign({}, env, { eventStaff: v.staff });
+    if (shapeName === 'Event') {
+      /* an event the caller knows is the same as one of a canonical graph is that one (see canonicalize's reuse) */
+      if (env.reuse) { const same = env.reuse(v); if (same) return same; }
+      env = { firstPart: env.firstPart, eventStaff: v.staff, reuse: env.reuse };
+    }
     const fields = S.fieldsOf(shapeName, v);
-    const out = {}, known = new Set();
-    fields.forEach(fd => {
-      known.add(fd.name);
-      if (!Object.prototype.hasOwnProperty.call(v, fd.name) || v[fd.name] === undefined) return;
+    /* the object's own keys in schema order (an object sets few of its shape's many fields), then the unknown ones sorted */
+    const order = fieldOrder(fields);
+    const mine = [], unknown = [];
+    Object.keys(v).forEach(k => { if (order.has(k)) mine.push(k); else unknown.push(k); });
+    mine.sort((a, b) => order.get(a) - order.get(b));
+    const out = {};
+    mine.forEach(k => {
+      if (v[k] === undefined) return;
+      const fd = fields[order.get(k)];
       const type = S.fieldType(shapeName, fd, v);
-      const val = canonValue(type, v[fd.name], env);
+      const val = canonValue(type, v[k], env);
       if (isDefault(shapeName, fd, val, v, env, type)) return;
-      out[fd.name] = val;
+      out[k] = val;
     });
-    Object.keys(v).filter(k => !known.has(k)).sort().forEach(k => { out[k] = v[k]; });
+    unknown.sort().forEach(k => { out[k] = v[k]; });
     return out;
+  }
+  const ORDERS = new WeakMap();
+  function fieldOrder(fields) {
+    if (!ORDERS.has(fields)) ORDERS.set(fields, new Map(fields.map((fd, i) => [fd.name, i])));
+    return ORDERS.get(fields);
   }
 
   /* ------------------------------------------------------- array order */
@@ -130,8 +145,10 @@
   }
   function sortBy(arr, keyOf) {
     if (!Array.isArray(arr)) return;
-    const keyed = arr.map(x => ({ x: x, k: keyOf(x).concat([JSON.stringify(x)]) }));
-    keyed.sort((a, b) => cmpTuple(a.k, b.k));
+    /* the JSON text breaks a tie of the keys (made only for the elements that tie) */
+    const keyed = arr.map(x => ({ x: x, k: keyOf(x), j: null }));
+    const text = e => (e.j === null ? (e.j = JSON.stringify(e.x)) : e.j);
+    keyed.sort((a, b) => cmpTuple(a.k, b.k) || (text(a) < text(b) ? -1 : text(a) > text(b) ? 1 : 0));
     keyed.forEach((e, i) => { arr[i] = e.x; });
   }
   const num = id => { const n = typeof id === 'string' ? S.idNumber(id) : null; return n === null ? Infinity : n; };
@@ -166,6 +183,8 @@
       events.forEach(e => {
         if (!isObj(e)) return;
         evById.set(e.id, e);
+        /* a reused event (frozen) is canonical already */
+        if (Object.isFrozen(e)) { if (Array.isArray(e.heads)) e.heads.forEach(h => { if (isObj(h)) evOfHead.set(h.id, e); }); return; }
         if (Array.isArray(e.heads)) {
           e.heads.forEach(h => { if (isObj(h)) evOfHead.set(h.id, e); });
           sortBy(e.heads, h => {
@@ -227,11 +246,13 @@
     return doc;
   }
 
-  /* The canonical form of a document (a new object; the input is not changed). */
-  function canonicalize(doc) {
+  /* The canonical form of a document (a new object; the input is not changed). opts.reuse(event): an event of a
+     canonical, frozen graph that is the same as this one (the caller vouches), which the result then holds instead of a
+     new copy; or null. ops.edit uses it for the events an edit left as they were. */
+  function canonicalize(doc, opts) {
     if (!isObj(doc)) return doc;
     const firstPart = Array.isArray(doc.parts) && isObj(doc.parts[0]) ? doc.parts[0].id : undefined;
-    return sortArrays(canonObj('ScoreGraph', doc, { firstPart: firstPart }));
+    return sortArrays(canonObj('ScoreGraph', doc, { firstPart: firstPart, reuse: (opts && opts.reuse) || null }));
   }
 
   /* ------------------------------------------------------------ text form */

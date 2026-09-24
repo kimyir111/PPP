@@ -1,0 +1,9 @@
+{
+ "about": "a beam over the two half notes of the first measure: a beam holds eighths or shorter (G03 §11.2)",
+ "spec": "G01 §13.2 W-BEAM-SHAPE",
+ "expect": {
+  "warnings": {
+   "W-BEAM-SHAPE": 1
+  }
+ }
+}

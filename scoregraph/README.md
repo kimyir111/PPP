@@ -13,7 +13,7 @@ musicxml-export, index`.
 
 | call | returns | |
 | --- | --- | --- |
-| `version` | `'1.1.0'` | the library's own version; `audio-score.js` checks it |
+| `version` | `'1.2.0'` | the library's own version; `audio-score.js` checks it |
 | `SCOREGRAPH_VERSION` | `2` | the schema's version (`scoregraph_version`); v1 documents migrate on `parse` |
 | `builder({id, meta, source, default})` | a builder | `.measure() .meter() .key() .tempo() .ending() .jump() .part() .staff() .voice() .clef() .event() .direction() .spanner() .performance() .perfNote() .perfPedal() .anchor() .flag() .id(prefix)`, then `.finish()` → `{graph, issues}` (canonical, validated, frozen; throws `BuildError` on an ERROR) |
 | `validate(graph)` | `{ok, issues}` | issues `{code, severity, message, ids?, at?}`, sorted; `CODES` lists every code |
@@ -66,4 +66,5 @@ use (`I-EXT`). Registered:
 | namespace | on | value | meaning |
 | --- | --- | --- | --- |
 | `musicxml.beam` | Beam spanner | `{levels: n}` | the source wrote only the first `n` beam levels (for example only the primary beam over sixteenths); the export writes no deeper level. Set by the MusicXML import only when the source wrote fewer levels than the note values imply. |
+| `ppp.g3` | Event | `{was: {dur, display}}` | G3's own audit trail (docs/GOALS/G03 §18.1–18.2): what a G3b pass (R-reg, off by default) changed a notated length from. Holds no ID (an ID inside `ext` is never checked, G02 §18 S5). Nothing reads it back; G3a writes nothing here. |
 | `test.*` | anywhere | any JSON | reserved for test fixtures |

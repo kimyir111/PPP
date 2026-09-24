@@ -2,6 +2,17 @@
 
 Every accepted change to tests/bench/golden/expected. Bless in the same commit as the SUT change that caused it.
 
+**G3 (docs/GOALS/G03 §20.6, A35).** When G3 turns on, the snapshots are blessed with `run.py golden --bless --g3 --reason "..."`,
+which writes nothing unless every case's difference is one G3a may make:
+
+- may change: tuplet brackets; note and rest shapes (type, dots, tie merges); beams; printed accidentals; spelling and
+  key signatures; the staff and voice of a note; clefs; rests;
+- may not change: the bars (count, numbers, lengths, pickups, repeats); the app's play order; the metre; tempo marks;
+  pedal marks (the app plays a pedal change without lifting the damper, so P8's join is off: G03 §28 B1, G3-U7);
+  the sounding notes (onset, pitch, tie-merged length); stats and bar and beat times.
+
+`run.py golden --g3` is the same check without writing (`pppbench/golden.py` `G3_ALLOWED`, `g3_difference`).
+
 - 2026-09-21 · 9d5c9fe6ff · init: initial snapshots · changed: G01, G02, G03, G04, G05, G06, G07, G08, G09, G10, G11, G12, G13, G14
 - 2026-09-21 · b1d817bb95 · init: G0 fixer: semantic and timing snapshots for every case; new cases G15 (pedal), G16 (czerny599 2/4, AMT errors), G17 (rubato) · changed: none (G01–G14 byte and stats snapshots unchanged; semantic and timing snapshots added) · new: G15, G16, G17
 - 2026-09-22 · b1d817bb95 · bless: semantic snapshot schema ppp.bench-semantic/2 (G00 §19 F3): structure (bar numbers, clefs, staff and voice placement) and music (note types and dots, rests) split; toMusicXml output unchanged · changed: G01 (semantic snapshot -> ppp.bench-semantic/2; MusicXML bytes unchanged), G02 (semantic snapshot -> ppp.bench-semantic/2; MusicXML bytes unchanged), G03 (semantic snapshot -> ppp.bench-semantic/2; MusicXML bytes unchanged), G04 (semantic snapshot -> ppp.bench-semantic/2; MusicXML bytes unchanged), G05 (semantic snapshot -> ppp.bench-semantic/2; MusicXML bytes unchanged), G06 (semantic snapshot -> ppp.bench-semantic/2; MusicXML bytes unchanged), G07 (semantic snapshot -> ppp.bench-semantic/2; MusicXML bytes unchanged), G08 (semantic snapshot -> ppp.bench-semantic/2; MusicXML bytes unchanged), G09 (semantic snapshot -> ppp.bench-semantic/2; MusicXML bytes unchanged), G10 (semantic snapshot -> ppp.bench-semantic/2; MusicXML bytes unchanged), G11 (semantic snapshot -> ppp.bench-semantic/2; MusicXML bytes unchanged), G12 (semantic snapshot -> ppp.bench-semantic/2; MusicXML bytes unchanged), G13 (semantic snapshot -> ppp.bench-semantic/2; MusicXML bytes unchanged), G14 (semantic snapshot -> ppp.bench-semantic/2; MusicXML bytes unchanged), G15 (semantic snapshot -> ppp.bench-semantic/2; MusicXML bytes unchanged), G16 (semantic snapshot -> ppp.bench-semantic/2; MusicXML bytes unchanged), G17 (semantic snapshot -> ppp.bench-semantic/2; MusicXML bytes unchanged)

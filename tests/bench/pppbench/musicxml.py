@@ -512,6 +512,9 @@ def read_score(src: Any, *, source_path: Optional[str] = None, ottava: str = "ap
         measures=measures, notes=notes, rests=rests, sounding=sounding, diagnostics=diag, pedals=pedals, clefs=clefs)
     from .metrics.readability import bar_integrity_detail
     diag["bar_integrity"] = bar_integrity_detail(canon)
+    # reader/5: the printed notation layer (tuplet brackets, beams, types …), read-only (G03 §20.2)
+    from .notation_read import read_root
+    canon.notation = read_root(root)
     return canon
 
 

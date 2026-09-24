@@ -1,0 +1,975 @@
+{
+ "cases": {
+  "hymns/all-creatures|amt|oracle-noisy|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "hymns/angels-we-have-heard|amt|oracle-noisy|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "hymns/christ-arose|amt|none|s1": {
+   "one": 2,
+   "tie": 0,
+   "tm": 2
+  },
+  "hymns/come-holy-spirit|amt|oracle-noisy|s2": {
+   "one": 3,
+   "tie": 0,
+   "tm": 6
+  },
+  "hymns/come-thou-fount|amt|oracle-noisy|s1": {
+   "one": 4,
+   "tie": 0,
+   "tm": 8
+  },
+  "hymns/hosanna-loud|amt|oracle-noisy|s2": {
+   "one": 2,
+   "tie": 0,
+   "tm": 4
+  },
+  "hymns/how-firm-a-foundation|amt|oracle-noisy|s1": {
+   "one": 7,
+   "tie": 0,
+   "tm": 14
+  },
+  "hymns/how-firm-a-foundation|amt|oracle-noisy|s2": {
+   "one": 6,
+   "tie": 0,
+   "tm": 12
+  },
+  "hymns/hyfrydol-alleluia|amt|oracle-noisy|s2": {
+   "one": 2,
+   "tie": 0,
+   "tm": 4
+  },
+  "hymns/i-know-whom|amt|oracle-noisy|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 1
+  },
+  "hymns/jesus-shall-reign|amt|oracle-noisy|s2": {
+   "one": 1,
+   "tie": 4,
+   "tm": 4
+  },
+  "hymns/lo-he-comes|amt|none|s1": {
+   "one": 2,
+   "tie": 0,
+   "tm": 4
+  },
+  "hymns/lo-he-comes|amt|oracle-noisy|s2": {
+   "one": 4,
+   "tie": 0,
+   "tm": 8
+  },
+  "hymns/savior-like-a-shepherd|amt|oracle-noisy|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "hymns/silent-night|amt|oracle-noisy|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 7
+  },
+  "hymns/silent-night|amt|oracle-noisy|s2": {
+   "one": 2,
+   "tie": 0,
+   "tm": 3
+  },
+  "hymns/silent-night|rubato|oracle|s1": {
+   "one": 4,
+   "tie": 0,
+   "tm": 7
+  },
+  "hymns/silent-night|rubato|oracle|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 1
+  },
+  "hymns/take-my-life|amt|none|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "hymns/the-lords-my-shepherd|amt|oracle-noisy|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "hymns/to-god-be-the-glory|amt|oracle-noisy|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "hymns/what-child-is-this|deadpan|none|s1": {
+   "one": 2,
+   "tie": 0,
+   "tm": 5
+  },
+  "hymns/what-child-is-this|deadpan|none|s2": {
+   "one": 2,
+   "tie": 0,
+   "tm": 5
+  },
+  "hymns/what-child-is-this|human|none|s1": {
+   "one": 2,
+   "tie": 0,
+   "tm": 4
+  },
+  "hymns/what-child-is-this|human|none|s2": {
+   "one": 4,
+   "tie": 0,
+   "tm": 8
+  },
+  "method/beyer/046|amt|none|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/beyer/048|amt|oracle-noisy|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/beyer/052|amt|none|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 1
+  },
+  "method/beyer/052|amt|oracle-noisy|s1": {
+   "one": 2,
+   "tie": 0,
+   "tm": 6
+  },
+  "method/beyer/052|amt|oracle-noisy|s2": {
+   "one": 3,
+   "tie": 0,
+   "tm": 6
+  },
+  "method/beyer/052|rubato|oracle|s1": {
+   "one": 3,
+   "tie": 0,
+   "tm": 5
+  },
+  "method/beyer/052|rubato|oracle|s2": {
+   "one": 4,
+   "tie": 0,
+   "tm": 8
+  },
+  "method/beyer/059|amt|oracle-noisy|s1": {
+   "one": 3,
+   "tie": 0,
+   "tm": 3
+  },
+  "method/beyer/059|amt|oracle-noisy|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 1
+  },
+  "method/beyer/059|rubato|oracle|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 1
+  },
+  "method/beyer/059|rubato|oracle|s2": {
+   "one": 2,
+   "tie": 0,
+   "tm": 4
+  },
+  "method/beyer/060|amt|none|s1": {
+   "one": 2,
+   "tie": 0,
+   "tm": 4
+  },
+  "method/beyer/061|amt|none|s1": {
+   "one": 3,
+   "tie": 0,
+   "tm": 3
+  },
+  "method/beyer/061|amt|oracle-noisy|s1": {
+   "one": 2,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/burgmuller25/003|amt|oracle-noisy|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/burgmuller25/005|amt|none|s2": {
+   "one": 1,
+   "tie": 2,
+   "tm": 2
+  },
+  "method/burgmuller25/006|deadpan|none|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 1
+  },
+  "method/burgmuller25/006|deadpan|none|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 1
+  },
+  "method/burgmuller25/006|human|none|s1": {
+   "one": 2,
+   "tie": 0,
+   "tm": 3
+  },
+  "method/burgmuller25/006|human|none|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 1
+  },
+  "method/burgmuller25/013|amt|none|s1": {
+   "one": 4,
+   "tie": 0,
+   "tm": 9
+  },
+  "method/burgmuller25/013|amt|oracle-noisy|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/burgmuller25/015|amt|none|s1": {
+   "one": 15,
+   "tie": 7,
+   "tm": 35
+  },
+  "method/burgmuller25/015|amt|none|s2": {
+   "one": 4,
+   "tie": 0,
+   "tm": 9
+  },
+  "method/burgmuller25/015|amt|oracle-noisy|s1": {
+   "one": 20,
+   "tie": 3,
+   "tm": 73
+  },
+  "method/burgmuller25/015|amt|oracle-noisy|s2": {
+   "one": 6,
+   "tie": 0,
+   "tm": 17
+  },
+  "method/burgmuller25/015|human|none|s1": {
+   "one": 4,
+   "tie": 0,
+   "tm": 9
+  },
+  "method/burgmuller25/015|rubato|oracle|s1": {
+   "one": 29,
+   "tie": 20,
+   "tm": 85
+  },
+  "method/burgmuller25/015|rubato|oracle|s2": {
+   "one": 24,
+   "tie": 12,
+   "tm": 64
+  },
+  "method/burgmuller25/023|amt|none|s1": {
+   "one": 15,
+   "tie": 0,
+   "tm": 41
+  },
+  "method/burgmuller25/023|amt|none|s2": {
+   "one": 7,
+   "tie": 0,
+   "tm": 17
+  },
+  "method/burgmuller25/023|amt|oracle-noisy|s1": {
+   "one": 40,
+   "tie": 2,
+   "tm": 71
+  },
+  "method/burgmuller25/023|amt|oracle-noisy|s2": {
+   "one": 10,
+   "tie": 2,
+   "tm": 33
+  },
+  "method/burgmuller25/023|human|none|s1": {
+   "one": 2,
+   "tie": 0,
+   "tm": 7
+  },
+  "method/burgmuller25/023|human|none|s2": {
+   "one": 35,
+   "tie": 7,
+   "tm": 80
+  },
+  "method/burgmuller25/023|rubato|oracle|s1": {
+   "one": 15,
+   "tie": 2,
+   "tm": 33
+  },
+  "method/burgmuller25/023|rubato|oracle|s2": {
+   "one": 20,
+   "tie": 0,
+   "tm": 31
+  },
+  "method/czerny599/012|amt|none|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/czerny599/015|amt|none|s1": {
+   "one": 2,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/czerny599/015|amt|none|s2": {
+   "one": 2,
+   "tie": 0,
+   "tm": 4
+  },
+  "method/czerny599/015|amt|oracle-noisy|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 1
+  },
+  "method/czerny599/015|human|none|s1": {
+   "one": 2,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/czerny599/015|human|none|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 1
+  },
+  "method/czerny599/026|amt|oracle-noisy|s2": {
+   "one": 3,
+   "tie": 0,
+   "tm": 5
+  },
+  "method/czerny599/034|amt|oracle-noisy|s1": {
+   "one": 7,
+   "tie": 0,
+   "tm": 14
+  },
+  "method/czerny599/034|amt|oracle-noisy|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/czerny599/050|amt|oracle-noisy|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 3
+  },
+  "method/czerny599/051|amt|oracle-noisy|s2": {
+   "one": 14,
+   "tie": 0,
+   "tm": 28
+  },
+  "method/czerny849/005|amt|none|s2": {
+   "one": 4,
+   "tie": 0,
+   "tm": 4
+  },
+  "method/czerny849/006|amt|none|s1": {
+   "one": 4,
+   "tie": 0,
+   "tm": 8
+  },
+  "method/czerny849/006|amt|oracle-noisy|s1": {
+   "one": 8,
+   "tie": 0,
+   "tm": 16
+  },
+  "method/czerny849/006|amt|oracle-noisy|s2": {
+   "one": 4,
+   "tie": 0,
+   "tm": 8
+  },
+  "method/czerny849/007|amt|none|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/czerny849/007|amt|oracle-noisy|s1": {
+   "one": 10,
+   "tie": 0,
+   "tm": 23
+  },
+  "method/czerny849/008|human|none|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/czerny849/008|rubato|oracle|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/czerny849/011|amt|none|s2": {
+   "one": 2,
+   "tie": 0,
+   "tm": 11
+  },
+  "method/czerny849/011|amt|oracle-noisy|s1": {
+   "one": 2,
+   "tie": 0,
+   "tm": 4
+  },
+  "method/czerny849/011|human|lowconf|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/czerny849/011|human|none|s2": {
+   "one": 2,
+   "tie": 0,
+   "tm": 14
+  },
+  "method/czerny849/011|rubato|oracle|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/czerny849/013|amt|oracle-noisy|s1": {
+   "one": 3,
+   "tie": 0,
+   "tm": 5
+  },
+  "method/czerny849/013|amt|oracle-noisy|s2": {
+   "one": 4,
+   "tie": 0,
+   "tm": 7
+  },
+  "method/czerny849/013|rubato|oracle|s1": {
+   "one": 6,
+   "tie": 0,
+   "tm": 13
+  },
+  "method/czerny849/013|rubato|oracle|s2": {
+   "one": 6,
+   "tie": 0,
+   "tm": 10
+  },
+  "method/czerny849/016|amt|none|s1": {
+   "one": 2,
+   "tie": 0,
+   "tm": 3
+  },
+  "method/czerny849/017|human|none|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/czerny849/018|amt|oracle-noisy|s2": {
+   "one": 28,
+   "tie": 0,
+   "tm": 54
+  },
+  "method/czerny849/019|rubato|oracle|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/czerny849/019|rubato|oracle|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/czerny849/020|rubato|oracle|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/czerny849/022|deadpan|none|s1": {
+   "one": 3,
+   "tie": 0,
+   "tm": 4
+  },
+  "method/czerny849/022|deadpan|none|s2": {
+   "one": 3,
+   "tie": 0,
+   "tm": 4
+  },
+  "method/czerny849/022|human|none|s2": {
+   "one": 2,
+   "tie": 0,
+   "tm": 4
+  },
+  "method/czerny849/023|deadpan|none|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/czerny849/023|deadpan|none|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/czerny849/023|human|none|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/czerny849/024|amt|none|s2": {
+   "one": 2,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/czerny849/024|deadpan|none|s1": {
+   "one": 2,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/czerny849/024|deadpan|none|s2": {
+   "one": 2,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/czerny849/025|amt|oracle-noisy|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/czerny849/026|amt|none|s1": {
+   "one": 53,
+   "tie": 0,
+   "tm": 139
+  },
+  "method/czerny849/026|human|none|s1": {
+   "one": 25,
+   "tie": 0,
+   "tm": 53
+  },
+  "method/czerny849/026|human|none|s2": {
+   "one": 5,
+   "tie": 0,
+   "tm": 15
+  },
+  "method/czerny849/030|amt|none|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/czerny849/030|amt|none|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 1
+  },
+  "method/hanon/001|amt|none|s2": {
+   "one": 9,
+   "tie": 0,
+   "tm": 14
+  },
+  "method/hanon/002|amt|none|s2": {
+   "one": 16,
+   "tie": 0,
+   "tm": 32
+  },
+  "method/hanon/004|amt|none|s2": {
+   "one": 4,
+   "tie": 0,
+   "tm": 6
+  },
+  "method/hanon/007|human|none|s1": {
+   "one": 23,
+   "tie": 0,
+   "tm": 41
+  },
+  "method/hanon/007|human|none|s2": {
+   "one": 18,
+   "tie": 0,
+   "tm": 36
+  },
+  "method/hanon/009|amt|none|s1": {
+   "one": 16,
+   "tie": 0,
+   "tm": 41
+  },
+  "method/hanon/013|amt|none|s2": {
+   "one": 16,
+   "tie": 0,
+   "tm": 26
+  },
+  "method/hanon/014|amt|none|s2": {
+   "one": 18,
+   "tie": 0,
+   "tm": 36
+  },
+  "method/hanon/015|amt|none|s1": {
+   "one": 10,
+   "tie": 0,
+   "tm": 20
+  },
+  "method/hanon/016|amt|oracle-noisy|s1": {
+   "one": 22,
+   "tie": 0,
+   "tm": 44
+  },
+  "method/hanon/017|amt|none|s1": {
+   "one": 21,
+   "tie": 0,
+   "tm": 37
+  },
+  "method/hanon/017|amt|oracle-noisy|s1": {
+   "one": 17,
+   "tie": 0,
+   "tm": 32
+  },
+  "method/hanon/018|amt|none|s1": {
+   "one": 35,
+   "tie": 0,
+   "tm": 68
+  },
+  "method/sonatina/001|amt|none|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 3
+  },
+  "method/sonatina/001|amt|none|s2": {
+   "one": 2,
+   "tie": 0,
+   "tm": 4
+  },
+  "method/sonatina/001|amt|oracle-noisy|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/sonatina/001|amt|oracle-noisy|s2": {
+   "one": 2,
+   "tie": 0,
+   "tm": 5
+  },
+  "method/sonatina/001|human|none|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/sonatina/003|amt|oracle-noisy|s1": {
+   "one": 6,
+   "tie": 0,
+   "tm": 14
+  },
+  "method/sonatina/003|amt|oracle-noisy|s2": {
+   "one": 11,
+   "tie": 0,
+   "tm": 20
+  },
+  "method/sonatina/003|human|none|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/sonatina/003|human|none|s2": {
+   "one": 15,
+   "tie": 0,
+   "tm": 30
+  },
+  "method/sonatina/003|rubato|oracle|s1": {
+   "one": 10,
+   "tie": 0,
+   "tm": 17
+  },
+  "method/sonatina/003|rubato|oracle|s2": {
+   "one": 11,
+   "tie": 0,
+   "tm": 20
+  },
+  "method/sonatina/006|amt|none|s1": {
+   "one": 4,
+   "tie": 0,
+   "tm": 7
+  },
+  "method/sonatina/006|amt|oracle-noisy|s1": {
+   "one": 6,
+   "tie": 0,
+   "tm": 12
+  },
+  "method/sonatina/006|amt|oracle-noisy|s2": {
+   "one": 8,
+   "tie": 0,
+   "tm": 21
+  },
+  "method/sonatina/006|human|none|s2": {
+   "one": 2,
+   "tie": 0,
+   "tm": 4
+  },
+  "method/sonatina/006|rubato|oracle|s1": {
+   "one": 12,
+   "tie": 0,
+   "tm": 25
+  },
+  "method/sonatina/006|rubato|oracle|s2": {
+   "one": 10,
+   "tie": 0,
+   "tm": 14
+  },
+  "method/sonatina/007|amt|none|s2": {
+   "one": 2,
+   "tie": 0,
+   "tm": 4
+  },
+  "method/sonatina/007|amt|oracle-noisy|s1": {
+   "one": 8,
+   "tie": 0,
+   "tm": 37
+  },
+  "method/sonatina/007|amt|oracle-noisy|s2": {
+   "one": 6,
+   "tie": 0,
+   "tm": 20
+  },
+  "method/sonatina/009|amt|none|s2": {
+   "one": 29,
+   "tie": 0,
+   "tm": 82
+  },
+  "method/sonatina/009|amt|oracle-noisy|s2": {
+   "one": 2,
+   "tie": 0,
+   "tm": 3
+  },
+  "method/sonatina/010|amt|none|s1": {
+   "one": 4,
+   "tie": 4,
+   "tm": 8
+  },
+  "method/sonatina/010|amt|oracle-noisy|s1": {
+   "one": 29,
+   "tie": 1,
+   "tm": 75
+  },
+  "method/sonatina/010|amt|oracle-noisy|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 3
+  },
+  "method/sonatina/012|amt|oracle-noisy|s1": {
+   "one": 2,
+   "tie": 0,
+   "tm": 4
+  },
+  "method/sonatina/012|amt|oracle-noisy|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/sonatina/012|rubato|oracle|s1": {
+   "one": 2,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/sonatina/014|amt|none|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 3
+  },
+  "method/sonatina/014|amt|oracle-noisy|s1": {
+   "one": 6,
+   "tie": 0,
+   "tm": 13
+  },
+  "method/sonatina/014|amt|oracle-noisy|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/sonatina/014|rubato|oracle|s1": {
+   "one": 6,
+   "tie": 0,
+   "tm": 14
+  },
+  "method/sonatina/014|rubato|oracle|s2": {
+   "one": 7,
+   "tie": 0,
+   "tm": 16
+  },
+  "method/sonatina/015|amt|none|s2": {
+   "one": 6,
+   "tie": 0,
+   "tm": 15
+  },
+  "method/sonatina/015|amt|oracle-noisy|s1": {
+   "one": 4,
+   "tie": 0,
+   "tm": 11
+  },
+  "method/sonatina/015|amt|oracle-noisy|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/sonatina/017|amt|oracle-noisy|s1": {
+   "one": 12,
+   "tie": 0,
+   "tm": 24
+  },
+  "method/sonatina/017|amt|oracle-noisy|s2": {
+   "one": 10,
+   "tie": 0,
+   "tm": 23
+  },
+  "method/sonatina/017|rubato|oracle|s1": {
+   "one": 8,
+   "tie": 0,
+   "tm": 12
+  },
+  "method/sonatina/017|rubato|oracle|s2": {
+   "one": 6,
+   "tie": 0,
+   "tm": 14
+  },
+  "method/sonatina/018|amt|none|s2": {
+   "one": 4,
+   "tie": 0,
+   "tm": 9
+  },
+  "method/sonatina/018|amt|oracle-noisy|s1": {
+   "one": 11,
+   "tie": 0,
+   "tm": 29
+  },
+  "method/sonatina/021|amt|none|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/sonatina/021|amt|oracle-noisy|s1": {
+   "one": 3,
+   "tie": 0,
+   "tm": 7
+  },
+  "method/sonatina/026|amt|oracle-noisy|s1": {
+   "one": 7,
+   "tie": 0,
+   "tm": 13
+  },
+  "method/sonatina/026|amt|oracle-noisy|s2": {
+   "one": 15,
+   "tie": 0,
+   "tm": 35
+  },
+  "method/sonatina/026|human|lowconf|s1": {
+   "one": 0,
+   "tie": 1,
+   "tm": 3
+  },
+  "method/sonatina/026|human|none|s1": {
+   "one": 0,
+   "tie": 2,
+   "tm": 6
+  },
+  "method/sonatina/026|human|none|s2": {
+   "one": 12,
+   "tie": 0,
+   "tm": 24
+  },
+  "method/sonatina/026|pedal|oracle|s1": {
+   "one": 0,
+   "tie": 1,
+   "tm": 3
+  },
+  "method/sonatina/026|rubato|oracle|s1": {
+   "one": 6,
+   "tie": 0,
+   "tm": 14
+  },
+  "method/sonatina/026|rubato|oracle|s2": {
+   "one": 2,
+   "tie": 0,
+   "tm": 5
+  },
+  "method/sonatina/027|amt|oracle-noisy|s1": {
+   "one": 4,
+   "tie": 0,
+   "tm": 11
+  },
+  "method/sonatina/028|amt|oracle-noisy|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/sonatina/028|human|none|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/sonatina/028|human|none|s2": {
+   "one": 3,
+   "tie": 0,
+   "tm": 5
+  },
+  "micro/M03-jig-6-8|rubato|oracle|s2": {
+   "one": 2,
+   "tie": 0,
+   "tm": 3
+  },
+  "micro/M04-triplets-4-4|amt|none|s2": {
+   "one": 2,
+   "tie": 0,
+   "tm": 4
+  },
+  "micro/M04-triplets-4-4|amt|oracle-noisy|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 1
+  },
+  "micro/M04-triplets-4-4|rubato|oracle|s2": {
+   "one": 2,
+   "tie": 0,
+   "tm": 4
+  },
+  "micro/M10-dotted|amt|oracle-noisy|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 1
+  },
+  "micro/M13-sharps-chromatic|amt|none|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 1
+  },
+  "micro/M17-march-2-4|amt|oracle-noisy|s1": {
+   "one": 3,
+   "tie": 0,
+   "tm": 5
+  },
+  "micro/M20-compound-12-8|amt|oracle-noisy|s1": {
+   "one": 3,
+   "tie": 0,
+   "tm": 8
+  },
+  "micro/M20-compound-12-8|rubato|oracle|s1": {
+   "one": 3,
+   "tie": 0,
+   "tm": 6
+  },
+  "micro/M20-compound-12-8|rubato|oracle|s2": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "micro/M22-tempo-change|amt|oracle-noisy|s1": {
+   "one": 2,
+   "tie": 0,
+   "tm": 7
+  }
+ },
+ "git_sha": "1c030f23b1a4ba2956b966473860b19a5bcce943",
+ "holdout": {
+  "one": 234,
+  "tie": 13,
+  "tm": 479
+ },
+ "reason": "G3 Fixer (G03 §29): the per-case R17 residuals of G3a on full, recorded from the final Fixer run (U-1); hold-out cases pooled",
+ "recorded_at": "2026-09-24T06:16:45+00:00",
+ "schema": "ppp.bench-g3-r17/1",
+ "suite": "full",
+ "sut_sha256": "213778cde7572e5fb458abce949bdca032f835215be226eaa6911d1ebb47035f",
+ "totals": {
+  "one": 1384,
+  "tie": 83,
+  "tm": 3006
+ }
+}

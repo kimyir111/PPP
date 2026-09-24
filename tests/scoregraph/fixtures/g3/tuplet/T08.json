@@ -1,0 +1,21 @@
+{
+ "about": "triplet pieces that start a 16th after the beat: no span holds them; they are left exactly as written, one-note brackets included (G03 §7.4 T08 'no change'; §28 M5), N-TUPLET-UNGROUPABLE",
+ "spec": "G03 §7.4 T08",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "r:16 3[C5:8] 3[D5:8] 3[E5:8] r:8. r:h"
+ },
+ "passes": [
+  "tuplet"
+ ],
+ "expect": {
+  "same": true,
+  "unprinted": 0,
+  "issues": {
+   "N-TUPLET-UNGROUPABLE": 1
+  }
+ }
+}

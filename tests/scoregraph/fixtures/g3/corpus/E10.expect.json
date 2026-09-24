@@ -1,0 +1,17 @@
+{
+ "about": "§19 E10: PPP output for method/burgmuller25/003|human|oracle|s1, printed bars 28",
+ "spec": "G03 §19",
+ "case": "method/burgmuller25/003|human|oracle|s1",
+ "bars": [
+  28,
+  28
+ ],
+ "reference": "catalog/method/burgmuller25/003.mxl",
+ "before": [
+  "r:8 B4:8 D5:8 G5:16. r:32 B5:16 r:16 D6:8",
+  "G3+B3+D4+G4:q~ G3+B3+D4+G4:32 r:16. G3+B3+D4:q~ G3+B3+D4:32 r:16."
+ ],
+ "expect": {
+  "g3a": "compound rests and ties in 6/8: rests shown inside the beat; the lengths kept"
+ }
+}

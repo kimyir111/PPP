@@ -1151,7 +1151,9 @@
      and the ties between them, rest pieces, triplet values, printed accidentals, pedal marks — as a canonical,
      validated graph whose MusicXML reads back as the same music. What was heard (onsets and releases in µs,
      velocities, the pedal, bar times) stays in the graph's performance layer instead of being dropped. */
-  const SCOREGRAPH_VERSION = '1.1.0';
+  const SCOREGRAPH_VERSION = '1.2.0';
+  /* G3 in toMusicXml: 'off' | 'shadow' | 'on' (opts.professional overrides it). Off until the G3a flip (G03 Step 13). */
+  const PROFESSIONAL_DEFAULT = 'off';
   let scoreGraphLib = null;
   function scoreGraph() {
     if (!scoreGraphLib) {
@@ -1484,9 +1486,19 @@
     for (let b = 0; b <= bars; b++) barSeconds.push(tickToSec(b * bar));
     const built = buildGraph(model, { notes: heardNotes, pedals: extra.pedals || [],
       controls: extra.controls || [], barSeconds: barSeconds });
-    result.xml = scoreGraph().musicxml.export(built.graph, { software: 'PPP audio transcription' }).xml;
-    result.graph = built.graph;
-    result.graphIssues = built.issues;
+    let graph = built.graph, graphIssues = built.issues;
+    /* G3 (docs/GOALS/G03 §5.1): the notation passes between the graph and the file. 'off' writes the graph as
+       built; 'shadow' runs G3 and reports what it would change (proReport) but writes the graph as built; 'on'
+       writes G3's graph. The report never goes into stats (the benchmark's snapshots). */
+    const professional = opts.professional || PROFESSIONAL_DEFAULT;
+    if (professional === 'shadow' || professional === 'on') {
+      const pro = scoreGraph().professionalize(graph, opts.professionalOptions || {});
+      result.proReport = pro.report;
+      if (professional === 'on' && pro.graph !== graph) { graph = pro.graph; graphIssues = pro.issues; }
+    }
+    result.xml = scoreGraph().musicxml.export(graph, { software: 'PPP audio transcription' }).xml;
+    result.graph = graph;
+    result.graphIssues = graphIssues;
     return result;
   }
 

@@ -1,0 +1,18 @@
+{
+ "about": "3/4: \"8 4 4 8\" is not allowed: a quarter G3 writes from the half-beat is tied at the beat (the writer wrote D5 as four 16ths)",
+ "spec": "G03 §6.3 R07",
+ "input": {
+  "time": [
+   3,
+   4
+  ],
+  "rh": "C5:8 D5:16~ D5:16~ D5:16~ D5:16 E5:q F5:8"
+ },
+ "passes": [
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "rh": "C5:8 D5:8~ D5:8 E5:q F5:8"
+ }
+}

@@ -1,0 +1,150 @@
+{
+ "cases": {
+  "hymns/come-thou-fount|amt|oracle-noisy|s1": {
+   "one": 4,
+   "tie": 0,
+   "tm": 8
+  },
+  "hymns/how-firm-a-foundation|amt|oracle-noisy|s1": {
+   "one": 7,
+   "tie": 0,
+   "tm": 14
+  },
+  "hymns/silent-night|rubato|oracle|s1": {
+   "one": 4,
+   "tie": 0,
+   "tm": 7
+  },
+  "hymns/what-child-is-this|deadpan|none|s1": {
+   "one": 2,
+   "tie": 0,
+   "tm": 5
+  },
+  "hymns/what-child-is-this|human|none|s1": {
+   "one": 2,
+   "tie": 0,
+   "tm": 4
+  },
+  "method/beyer/052|rubato|oracle|s1": {
+   "one": 3,
+   "tie": 0,
+   "tm": 5
+  },
+  "method/beyer/059|rubato|oracle|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 1
+  },
+  "method/burgmuller25/006|deadpan|none|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 1
+  },
+  "method/burgmuller25/006|human|none|s1": {
+   "one": 2,
+   "tie": 0,
+   "tm": 3
+  },
+  "method/burgmuller25/015|human|none|s1": {
+   "one": 4,
+   "tie": 0,
+   "tm": 9
+  },
+  "method/burgmuller25/023|amt|oracle-noisy|s1": {
+   "one": 40,
+   "tie": 2,
+   "tm": 71
+  },
+  "method/burgmuller25/023|human|none|s1": {
+   "one": 2,
+   "tie": 0,
+   "tm": 7
+  },
+  "method/czerny599/034|amt|oracle-noisy|s1": {
+   "one": 7,
+   "tie": 0,
+   "tm": 14
+  },
+  "method/czerny849/008|human|none|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/czerny849/008|rubato|oracle|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/hanon/007|human|none|s1": {
+   "one": 23,
+   "tie": 0,
+   "tm": 41
+  },
+  "method/sonatina/003|human|none|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/sonatina/003|rubato|oracle|s1": {
+   "one": 10,
+   "tie": 0,
+   "tm": 17
+  },
+  "method/sonatina/006|rubato|oracle|s1": {
+   "one": 12,
+   "tie": 0,
+   "tm": 25
+  },
+  "method/sonatina/012|rubato|oracle|s1": {
+   "one": 2,
+   "tie": 0,
+   "tm": 2
+  },
+  "method/sonatina/014|rubato|oracle|s1": {
+   "one": 6,
+   "tie": 0,
+   "tm": 14
+  },
+  "method/sonatina/017|rubato|oracle|s1": {
+   "one": 8,
+   "tie": 0,
+   "tm": 12
+  },
+  "method/sonatina/026|human|none|s1": {
+   "one": 0,
+   "tie": 2,
+   "tm": 6
+  },
+  "method/sonatina/026|pedal|oracle|s1": {
+   "one": 0,
+   "tie": 1,
+   "tm": 3
+  },
+  "method/sonatina/026|rubato|oracle|s1": {
+   "one": 6,
+   "tie": 0,
+   "tm": 14
+  },
+  "method/sonatina/028|human|none|s1": {
+   "one": 1,
+   "tie": 0,
+   "tm": 2
+  }
+ },
+ "git_sha": "1c030f23b1a4ba2956b966473860b19a5bcce943",
+ "holdout": {
+  "one": 0,
+  "tie": 0,
+  "tm": 0
+ },
+ "reason": "G3 Fixer (G03 §29): the per-case R17 residuals of G3a on core, recorded from the final Fixer run (U-1); hold-out cases pooled",
+ "recorded_at": "2026-09-24T06:16:44+00:00",
+ "schema": "ppp.bench-g3-r17/1",
+ "suite": "core",
+ "sut_sha256": "213778cde7572e5fb458abce949bdca032f835215be226eaa6911d1ebb47035f",
+ "totals": {
+  "one": 150,
+  "tie": 5,
+  "tm": 291
+ }
+}

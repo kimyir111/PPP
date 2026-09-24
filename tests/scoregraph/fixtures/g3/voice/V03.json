@@ -1,0 +1,23 @@
+{
+ "about": "a second voice with only rests anywhere goes",
+ "spec": "G03 §8.2 V03",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "E5:w",
+  "rh2": "r:w",
+  "lh": "C3:w"
+ },
+ "passes": [
+  "staff",
+  "voice",
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "rh": "E5:w",
+  "voices": 2
+ }
+}

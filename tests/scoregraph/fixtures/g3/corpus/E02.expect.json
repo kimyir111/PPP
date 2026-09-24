@@ -1,0 +1,17 @@
+{
+ "about": "§19 E02: PPP output for method/czerny849/001|human|oracle|s1, printed bars 17",
+ "spec": "G03 §19",
+ "case": "method/czerny849/001|human|oracle|s1",
+ "bars": [
+  17,
+  17
+ ],
+ "reference": "catalog/method/czerny849/001.mxl",
+ "before": [
+  "r:16 r:32 D5:32 r:32 C5:16 r:32 r:16 r:32 C5:16 D5:16 r:32 r:8=1/12 3[C5:8] 3[D5:8] r:8=1/12 3[C5:8] 3[D5:8]",
+  "G3+G4:16 r:8. D4+B4:16 r:8. 3[F4+B4:8] r:q=1/6 3[D4+B4:8] r:q=1/6"
+ ],
+ "expect": {
+  "g3a": "rests and broken tuplets and hands: one bracket per beat of triplets, rests inside triplets carry the ratio (no W-DISPLAY-DURATION), no one-note bracket"
+ }
+}

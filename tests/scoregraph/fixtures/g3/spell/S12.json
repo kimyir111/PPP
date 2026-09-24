@@ -1,0 +1,17 @@
+{
+ "about": "the line speller is off by default: the same bar keeps the spelling of the key table",
+ "spec": "G03 §10.4 S12",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "C5:8 C#5:8 D5:8 Eb5:8 E5:h"
+ },
+ "passes": [
+  "spell"
+ ],
+ "expect": {
+  "rh": "C5:8 C#5:8 D5:8 Eb5:8 E5:h"
+ }
+}

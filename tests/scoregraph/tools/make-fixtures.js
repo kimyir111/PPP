@@ -173,7 +173,18 @@ const warn = [
   ['W-REPEAT-DANGLING', 'a forward repeat no backward repeat ever goes back to (G0 PF-M1)', g => { measure(g, 'm2').barline = { left: { style: 'heavy-light', repeat: 'forward' } }; }],
   ['W-ENDING-NO-REPEAT', 'a first ending with no backward repeat at its end', g => { g.timeline.endings = [{ id: 'en31', numbers: [1], from: 'm2', to: 'm2' }]; g.nextId = 32; }],
   ['W-PERF-LINK-PITCH', 'a performed D5 linked to a written C5', g => {
-    g.performances = [{ id: 'pf31', kind: 'take', notes: [{ id: 'pn32', on: 0, off: 900000, vel: 64, midi: 74, link: 'h14' }] }]; g.nextId = 33; }]
+    g.performances = [{ id: 'pf31', kind: 'take', notes: [{ id: 'pn32', on: 0, off: 900000, vel: 64, midi: 74, link: 'h14' }] }]; g.nextId = 33; }],
+  /* G3 (G03 §18.2) */
+  ['W-BEAM-SHAPE', 'a beam over the two half notes of the first measure: a beam holds eighths or shorter (G03 §11.2)', g => {
+    P(g).spanners.push({ id: 's31', type: 'beam', events: ['e13', 'e15'] }); g.nextId = 32; }],
+  ['W-TUPLET-DISPLAY', 'a triplet-eighth bracket (3 × 1/8) whose one member is printed as a half note, longer than the bracket (G03 §18.2)', g => {
+    P(g).events = P(g).events.filter(e => e.id !== 'e20');
+    P(g).events.push(
+      { id: 'e31', kind: 'note', m: 'm2', at: '0', dur: '1/12', voice: 'v9', staff: 'st7', display: { type: 'half' }, heads: [{ id: 'h32', pitch: { step: 'C', oct: 5 } }] },
+      { id: 'e33', kind: 'note', m: 'm2', at: '1/12', dur: '1/6', voice: 'v9', staff: 'st7', display: { type: 'quarter' }, heads: [{ id: 'h34', pitch: { step: 'D', oct: 5 } }] },
+      { id: 'e35', kind: 'rest', m: 'm2', at: '1/4', dur: '3/4', voice: 'v9', staff: 'st7', display: { type: 'half', dots: 1 } });
+    P(g).spanners.push({ id: 's36', type: 'tuplet', events: ['e31', 'e33'], actual: 3, normal: 2, unit: { type: 'eighth' } });
+    g.nextId = 37; }]
 ];
 warn.forEach(([code, about, edit]) => {
   const g = base();
@@ -185,6 +196,13 @@ warn.forEach(([code, about, edit]) => {
   const f = path.join(ROOT, 'valid', 'warn-tuplet-incomplete.expect.json');
   const x = JSON.parse(fs.readFileSync(f, 'utf8'));
   x.about += '. The two triplet eighths are printed right (1/8 x 2/3 = 1/12); the 1/12 rest has no printed value.';
+  fs.writeFileSync(f, JSON.stringify(x, null, 1) + '\n');
+}
+{
+  const f = path.join(ROOT, 'valid', 'warn-tuplet-display.expect.json');
+  const x = JSON.parse(fs.readFileSync(f, 'utf8'));
+  x.about += '. The half note also lasts 1/12, not its printed 1/3: W-DISPLAY-DURATION too.';
+  x.expect.warnings = { 'W-DISPLAY-DURATION': 1, 'W-TUPLET-DISPLAY': 1 };
   fs.writeFileSync(f, JSON.stringify(x, null, 1) + '\n');
 }
 

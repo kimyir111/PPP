@@ -1,0 +1,22 @@
+{
+ "about": "a beam passes over a 16th rest between two of its notes (PPP writes many; G03 §24 record)",
+ "spec": "G03 §11.3 B12",
+ "input": {
+  "time": [
+   2,
+   4
+  ],
+  "rh": "C5:16 r:16 D5:16 E5:16 F5:q"
+ },
+ "passes": [
+  "tuplet",
+  "beam"
+ ],
+ "expect": {
+  "beams": [
+   [
+    "C5 / D5 E5"
+   ]
+  ]
+ }
+}

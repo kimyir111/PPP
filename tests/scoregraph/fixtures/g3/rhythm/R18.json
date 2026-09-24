@@ -1,0 +1,19 @@
+{
+ "about": "a rest inside a triplet (issue 19): written as a triplet rest and grouped",
+ "spec": "G03 §6.3 R18",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "3[C5:8] 3[D5:8] r:8=1/12 r:q r:h"
+ },
+ "passes": [
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "rh": "3e[C5:8 D5:8 r:8] r:q r:h",
+  "warnings": {}
+ }
+}

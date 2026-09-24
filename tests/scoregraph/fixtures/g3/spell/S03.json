@@ -1,0 +1,33 @@
+{
+ "about": "the leading note of F# minor is E#, and stays E# (harmonic minor, not a stray spelling)",
+ "spec": "G03 §10.4 S03",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "key": {
+   "fifths": 3,
+   "mode": "minor"
+  },
+  "rh": "F#4:8 G#4:8 A4:8 E#4:8 F#4:h"
+ },
+ "passes": [
+  "spell"
+ ],
+ "expect": {
+  "rh": "F#4:8 G#4:8 A4:8 E#4:8 F#4:h",
+  "accs": [
+   [
+    "",
+    "",
+    "",
+    "sharp",
+    ""
+   ]
+  ]
+ },
+ "opts": {
+  "spelling": true
+ }
+}

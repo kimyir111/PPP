@@ -1,0 +1,23 @@
+{
+ "about": "a triplet is one beam; four 16ths share the primary beam and break the secondary one at the eighth",
+ "spec": "G03 §11.3 B09",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "3e[C5:8 D5:8 E5:8] F5:16 G5:16 A5:16 B5:16 C6:h"
+ },
+ "passes": [
+  "tuplet",
+  "beam"
+ ],
+ "expect": {
+  "beams": [
+   [
+    "C5 D5 E5",
+    "F5 G5 / A5 B5"
+   ]
+  ]
+ }
+}
