@@ -1,13 +1,15 @@
 /* ============================================================================
-   PPP engrave — which SMuFL glyph draws what (docs/GOALS/G04 §18.2)
+   PPP engrave — which SMuFL glyph draws each ornament (docs/GOALS/G04 §18.2)
 
-   The plan names the glyph each mark needs by its SMuFL name, so the plan stays
-   engine-independent (SMuFL is the standard, not VexFlow). The pinned font data
-   (vendor/vexflow-4.2.3.js, Bravura subset) does not hold every SMuFL glyph:
-   a mark whose glyph is missing is still drawn, with the substitute named
-   here, and the plan says so (status drawn, code substitute-glyph, diagnostic
-   MISSING_GLYPH) - G04 §18.2. tests/engrave/glyphs.test.js checks this table
-   against the vendored file, both ways.
+   The plan names the glyph an ornament needs by its SMuFL name, so the plan
+   stays engine-independent (SMuFL is the standard, not VexFlow). The pinned
+   font data (vendor/vexflow-4.2.3.js, Bravura subset) does not hold every
+   SMuFL glyph. An ornament of the schema whose glyph is missing is deferred
+   (code ornament-glyph, user decision G4-U5): what to draw instead is a G4d
+   decision about marks, not a G4a one. An ornament the schema does not know is
+   unsupported (the audit fails). tests/engrave/glyphs.test.js checks the table
+   against the vendored file, both ways. This table decides a disposition; it
+   draws nothing.
    ========================================================================== */
 (function (root, factory) {
   'use strict';
@@ -28,20 +30,13 @@
     'schleifer': 'ornamentSchleifer'
   });
 
-  /* SMuFL glyphs above that the pinned font data lacks, and what is drawn instead: another glyph of the font,
-     or 'text' (a short word, drawn by the layout's text metrics). VexFlow itself draws an inverted turn with the
-     slashed turn. */
-  const MISSING = Object.freeze({
-    ornamentTurnInverted: 'ornamentTurnSlash',
-    ornamentShake3: 'ornamentShortTrill',
-    ornamentSchleifer: 'text'
-  });
+  /* the SMuFL glyphs above that the pinned font data lacks (checked against the vendored file) */
+  const MISSING = Object.freeze(['ornamentTurnInverted', 'ornamentShake3', 'ornamentSchleifer']);
 
-  /* -> {glyph, substitute|null} */
+  /* -> {known, glyph, missing} */
   function ornament(type) {
-    const glyph = ORNAMENT[type] || null;
-    if (!glyph) return { glyph: null, substitute: 'text' };
-    return { glyph: glyph, substitute: MISSING[glyph] || null };
+    const glyph = Object.prototype.hasOwnProperty.call(ORNAMENT, type) ? ORNAMENT[type] : null;
+    return { known: !!glyph, glyph: glyph, missing: !!glyph && MISSING.indexOf(glyph) >= 0 };
   }
 
   return Object.freeze({ ORNAMENT, MISSING, ornament });

@@ -14,7 +14,8 @@ const L = E.ledger;
 const clone = p => JSON.parse(JSON.stringify(p));
 
 test('the three readings are independent: expected() reads the graph only, consumed() the plan output only', () => {
-  const src = fs.readFileSync(path.join(REPO, 'engrave', 'ledger.js'), 'utf8');
+  /* CRLF normalised: a Windows checkout must read the same function bodies */
+  const src = fs.readFileSync(path.join(REPO, 'engrave', 'ledger.js'), 'utf8').replace(/\r\n/g, '\n');
   assert.doesNotMatch(src, /require\(['"]\.\/plan/, 'ledger.js does not load the plan');
   assert.doesNotMatch(src, /PPPEngraveModules\.plan|M\.plan\b/);
   const body = name => { const i = src.indexOf('function ' + name + '('); const j = src.indexOf('\n  }\n', i); return src.slice(i, j); };
@@ -44,9 +45,32 @@ test('"this graph states N of kind X; the plan draws, derives, merges, suppresse
   });
 });
 
-test('A1: deferred is G04\'s allow-list and nothing else', () => {
-  assert.deepEqual(L.DEFERRED_ALLOWED.slice().sort(), ['cross-staff-beam', 'cross-staff-chord', 'grace-after', 'nested-3', 'stem-double', 'tab']);
+test('A1: deferred is G04\'s allow-list and the two codes the user approved, nothing else', () => {
+  /* §21.1: cross-staff chord and beam, tab, a third nesting level, grace-after, stem double; G4-U5: title-block (G4e),
+     ornament-glyph (G4d, a schema ornament only) */
+  assert.deepEqual(L.DEFERRED_ALLOWED.slice().sort(), ['cross-staff-beam', 'cross-staff-chord', 'grace-after', 'nested-3', 'ornament-glyph',
+    'stem-double', 'tab', 'title-block']);
   assert.deepEqual(L.STATUS.slice(), ['drawn', 'derived', 'merged', 'suppressed', 'deferred', 'projected-loss']);
+  assert.equal(L.STATUS.indexOf(L.UNSUPPORTED), -1, 'unsupported is not a disposition: it always fails');
+});
+
+test('A1: every deferred code the plan emits over the whole test corpus, both modes, is on the allow-list', async () => {
+  const { corpusGraphs, goldenGraphs, g3aGraphs } = require('./helpers.js');
+  const all = (await corpusGraphs()).concat(goldenGraphs(), g3aGraphs());
+  const seen = {};
+  all.forEach(([k, g]) => ['screen', 'print'].forEach(mode => E.plan(g, { mode: mode }).ledger.forEach(en => {
+    if (en.status === 'deferred') seen[en.code] = (seen[en.code] || 0) + 1;
+    assert.notEqual(en.status, L.UNSUPPORTED, k + ' ' + en.ref);
+  })));
+  Object.keys(seen).forEach(c => assert.ok(L.DEFERRED_ALLOWED.indexOf(c) >= 0, c + ' is not an allowed deferral'));
+  assert.ok(seen['title-block'] > 0, 'print mode defers the title area beyond title and composer: ' + JSON.stringify(seen));
+  /* a code outside the list fails the audit */
+  const g = all[0][1];
+  const p = E.plan(g);
+  const q = JSON.parse(JSON.stringify(p));
+  const en = q.ledger.find(x => x.kind === 'measure');
+  en.status = 'deferred'; en.code = 'renderer-cannot';
+  assert.ok(E.audit(g, q).unapproved.length === 1);
 });
 
 /* ---------------------------------------------------------------- one defect at a time */

@@ -52,16 +52,23 @@
   /* ledger statuses (G04 §8.3, A1). 'merged' with code 'merged-for-display' is G4-U2's display-only grouping;
      'projected-loss' names what a graph rebuilt from a legacy Score could not hold (G04 §8.3, information). */
   const STATUS = Object.freeze(['drawn', 'derived', 'merged', 'suppressed', 'deferred', 'projected-loss']);
+  /* Not a disposition: what the plan met and does not know (a spanner type, an ornament the schema does not have).
+     It is named, with a diagnostic, and it always fails the audit - never deferred, never passed in silence (G4-U5). */
+  const UNSUPPORTED = 'unsupported';
 
-  /* The codes each status may carry. deferred is G04 A1's allow-list exactly; anything else is an unapproved
-     code and fails the audit, so a new way of not drawing something cannot appear unreviewed. */
+  /* The codes each status may carry. deferred is G04 A1's allow-list (§21.1) and the two the user approved
+     (G4-U5): title-block (the printed title area beyond title and composer, G4e) and ornament-glyph (a schema
+     ornament whose SMuFL glyph the pinned font lacks, G4d). Any other code fails the audit (unapproved), so a new
+     way of not drawing something cannot appear unreviewed. */
   const CODES = Object.freeze({
-    drawn: Object.freeze(['open', 'one-note', 'substitute-glyph', 'playback-tempo']),
+    drawn: Object.freeze(['open', 'one-note', 'playback-tempo']),
     derived: Object.freeze(['part-states-no-beams']),
     merged: Object.freeze(['merged-for-display']),
     suppressed: Object.freeze(['hidden', 'hidden-event', 'printed-false', 'show-none', 'sound-only', 'config-off', 'clef-none',
       'analysis-only', 'screen-draws-each-bar', 'source-break-not-honored', 'print-only', 'single-part']),
-    deferred: Object.freeze(['cross-staff-chord', 'cross-staff-beam', 'tab', 'nested-3', 'grace-after', 'stem-double'])
+    deferred: Object.freeze(['cross-staff-chord', 'cross-staff-beam', 'tab', 'nested-3', 'grace-after', 'stem-double',
+      'title-block', 'ornament-glyph']),
+    unsupported: Object.freeze(['unknown-spanner', 'unknown-ornament'])
   });
   const DEFERRED_ALLOWED = CODES.deferred;
 
@@ -334,12 +341,14 @@
     const exp = expected(g), out = consumed(plan);
     const seen = new Map();
     const duplicate = [], invented = [], kindMismatch = [], missing = [], altered = [], badStatus = [], unapproved = [], uncoded = [];
+    const unsupported = [];
     const own = r => r.indexOf('d:') === 0 || r.indexOf('p:') === 0;
     const ledgered = new Set();
     (plan.ledger || []).forEach(en => {
       if (seen.has(en.ref)) duplicate.push(en.ref);
       seen.set(en.ref, en);
       ledgered.add(en.ref);
+      if (en.status === UNSUPPORTED) { unsupported.push(en.ref + ' ' + (en.code || '?')); return; }
       if (STATUS.indexOf(en.status) < 0) { badStatus.push(en.ref); return; }
       if (en.status === 'projected-loss') { if (en.ref.indexOf('p:') !== 0) invented.push(en.ref); if (!en.code) uncoded.push(en.ref); return; }
       if (en.status !== 'drawn' && !en.code) uncoded.push(en.ref);
@@ -372,7 +381,7 @@
     silent.forEach(r => bump(exp.get(r).kind, 'silent'));
     const codes = {};
     seen.forEach(en => { if (en.code) { const c = en.kind + ':' + en.status + ':' + en.code; codes[c] = (codes[c] || 0) + 1; } });
-    const problems = { silent, invented, duplicate, kindMismatch, missing, altered, orphan, badStatus, unapproved, uncoded };
+    const problems = { silent, invented, duplicate, kindMismatch, missing, altered, orphan, badStatus, unapproved, uncoded, unsupported };
     return Object.assign({
       ok: Object.keys(problems).every(k => problems[k].length === 0),
       inventory: exp.size, entries: seen.size, output: out.size,
@@ -380,5 +389,5 @@
     }, problems);
   }
 
-  return Object.freeze({ STATUS, CODES, DEFERRED_ALLOWED, ref, META_FIELDS, CLEF_LINE, sig, expected, inventory, consumed, audit });
+  return Object.freeze({ STATUS, UNSUPPORTED, CODES, DEFERRED_ALLOWED, ref, META_FIELDS, CLEF_LINE, sig, expected, inventory, consumed, audit });
 });

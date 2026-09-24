@@ -80,5 +80,22 @@ function withPositions(score) {
 
 const scoreOf = (g, name) => withPositions(SG.legacy.toScore(g, { name: name || 'test', id: 'test:' + (name || g.id) }));
 
+/* Score.finalize, taken from the app itself (G04 A48): the Score a person's import leaves in the app is
+   finalize(toScore(graph)) - the 8va move, soundingMidi, writtenP / writtenMidi and the note order (position, then
+   staff) are the app's. Its helpers come with it; deriveSections (practice sections) is not music a Score projects. */
+let finalizeFn = null;
+function appFinalize() {
+  if (finalizeFn) return finalizeFn;
+  const html = read(path.join(REPO, 'Piano Coach App.dc.html')).replace(/\r\n/g, '\n');
+  const line = name => { const m = new RegExp('^const ' + name + ' = .*$', 'm').exec(html); if (!m) throw new Error(name); return m[0] + '\n'; };
+  const fn = name => { const i = html.indexOf('\nfunction ' + name + '('); if (i < 0) throw new Error(name); return html.slice(i + 1, html.indexOf('\n}\n', i) + 2); };
+  const a = html.indexOf('\n  finalize(score) {'), z = html.indexOf('\n  },\n  measure(score, number)', a);
+  if (a < 0 || z < a) throw new Error('Score.finalize is not where it was');
+  const body = line('STEP_SEMI') + line('PITCH_RE') + fn('pitchToMidi') + fn('shiftPitchOctave') + fn('ottavaSemitones') +
+    'const Score = { deriveSections: () => [],' + html.slice(a, z) + '\n  } };\nreturn s => Score.finalize(s);';
+  finalizeFn = new Function(body)();
+  return finalizeFn;
+}
+
 module.exports = { REPO, SG, E, FIX, read, json, holdoutPaths, corpusFiles, graphOf, corpusGraphs, goldenGraphs, g3aGraphs, storedScores,
-  withPositions, scoreOf };
+  withPositions, scoreOf, appFinalize };

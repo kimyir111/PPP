@@ -32,6 +32,7 @@ function mk(spec) {
     if (x.grace) e.grace = { order: 1, slash: true };
     if (x.hidden) e.hidden = true;
     if (!x.rest) e.heads = [{ pitch: x.pitch || { step: 'C', oct: 5 } }];
+    if (!x.rest && x.headStaff !== undefined) e.heads.push({ pitch: { step: 'C', oct: 3 }, staff: st[x.headStaff].id });
     return b.event(part, e);
   });
   /* nestedUnder: [i, j] - an outer tuplet over events i..j that the one-note tuplets name as their parent */
@@ -170,6 +171,15 @@ test('A4: tuplets are shown as the graph states them - show, printed:false, nest
   /* the nested fixture keeps its nesting */
   const nested = E.plan(await graphOf('tests/scoregraph/fixtures/xml/tuplets-nested.musicxml'));
   assert.ok(nested.tuplets.some(t => t.parent), 'a nested tuplet names its parent');
+  /* a stated placement is kept (no corpus file states one) */
+  const placed = E.plan(mk({ events: triplets(3, 0, k => (k === 0 ? { tuplet: { show: { number: 'actual', placement: 'below' } } } : {})) }));
+  assert.equal(placed.tuplets.find(t => t.source === 'graph' && t.placement).placement, 'below');
+  /* the bracket default (§12.1): no bracket when the tuplet's notes are exactly a beam, a bracket otherwise */
+  const threeEighths = [0, 1, 2].map(k => ({ at: R.format(R.make(k, 12)), dur: '1/12' }));
+  const beamed = E.plan(mk({ events: threeEighths, groups: [[0, 2]], beams: [[0, 2]] }));
+  assert.equal(beamed.tuplets[0].bracket, false, 'a tuplet that is exactly a beam: the number alone');
+  const flagged = E.plan(mk({ events: threeEighths.concat([{ at: '1/4', dur: '1/8' }, { at: '3/8', dur: '1/8' }]), groups: [[0, 2]], beams: [[3, 4]] }));
+  assert.equal(flagged.tuplets[0].bracket, true, 'a tuplet whose notes are not a beam (the part beams elsewhere): a bracket');
 });
 
 test('G4-U2 B: adjacent one-note tuplets are shown as one group when every condition holds', () => {
@@ -215,11 +225,50 @@ test('G4-U2 B: when any condition fails, each one-note tuplet is drawn as the gr
   none('an unprinted tuplet of three in the same voice-measure', { events: triplets(3, 0).concat(triplets(3, 6, () => ({ tuplet: null }))), unprintedGroups: [[3, 5]] });
   none('across a bar line', { bars: [{ dur: '1' }, { dur: '1' }],
     events: [{ at: '5/6', dur: '1/12', tuplet: {} }, { at: '11/12', dur: '1/12', tuplet: {} }, { m: 1, at: '0', dur: '1/12', tuplet: {} }] });
-  /* a slur over the whole group, and all members in one graph beam, are no boundary */
+  /* nesting the voice-measure rule does not already stop: the first triplet a one-note tuplet inside another one-note
+     tuplet, then two plain ones - without the nesting condition the inner one would merge with the other two */
+  {
+    const b = SG.builder({ id: 'nest1', meta: {} });
+    const src = b.source({ kind: 'user' });
+    b.setDefault({ src: src.id });
+    const m = b.measure({ number: '1', dur: '1' });
+    b.meter({ m: m.id, beats: [4], beatType: 4 });
+    const part = b.part({ instrument: { kind: 'piano', family: 'keyboard' } });
+    const st = b.staff(part, {});
+    const v = b.voice(part, { staff: st.id, label: '1' });
+    b.clef(part, { staff: st.id, m: m.id, at: '0', sign: 'G' });
+    const evs = [0, 1, 2].map(k => b.event(part, { kind: 'note', m: m.id, at: R.format(R.make(k, 12)), dur: '1/12', voice: v.id, staff: st.id,
+      display: { type: 'eighth' }, heads: [{ pitch: { step: 'C', oct: 5 } }] }));
+    const outer = b.spanner(part, { type: 'tuplet', events: [evs[0].id], actual: 3, normal: 2 });
+    b.spanner(part, { type: 'tuplet', events: [evs[0].id], actual: 3, normal: 2, parent: outer.id });
+    evs.slice(1).forEach(e => b.spanner(part, { type: 'tuplet', events: [e.id], actual: 3, normal: 2 }));
+    const g = b.finish().graph;
+    const p = E.plan(g);
+    assert.equal(mergedOf(p).length, 0, 'a nested one-note tuplet is not merged');
+    assert.ok(E.audit(g, p).ok);
+  }
+  /* the final review's counterexample (G4-U2 B): six one-note triplets, graph beams [0,1] [2,3] [4,5] - never [0,1,2] [3,4,5] */
+  none('graph beams [0,1] [2,3] [4,5] across the would-be groups', { events: triplets(6, 0), beams: [[0, 1], [2, 3], [4, 5]] });
+  none('a graph beam crossing the group edge ([0..3])', { events: triplets(6, 0), beams: [[0, 3]] });
+  none('one graph beam over two would-be groups ([0..5]): ambiguous', { events: triplets(6, 0), beams: [[0, 5]] });
+  none('a graph beam over part of the group ([1,2])', { events: triplets(3, 0), beams: [[1, 2]] });
+  none('unbeamed triplets in a part that beams elsewhere: the file chose flags', {
+    events: triplets(3, 0).concat([{ at: '1/4', dur: '1/8' }, { at: '3/8', dur: '1/8' }]), beams: [[3, 4]] });
+  none('the same stated number on every member', { events: triplets(3, 0, () => ({ tuplet: { show: { number: 'actual' } } })) });
+  none('a member with a head on the other staff', { events: triplets(3, 0, k => (k === 1 ? { headStaff: 1 } : {})) });
+  /* the graph's own beams at each counterexample are untouched and drawn */
+  const cx = mk({ events: triplets(6, 0), beams: [[0, 1], [2, 3], [4, 5]] });
+  const pcx = E.plan(cx);
+  assert.deepEqual(pcx.beams.filter(b => b.source === 'graph').map(b => b.events.length), [2, 2, 2]);
+  assert.equal(pcx.tuplets.filter(t => t.source === 'graph').length, 6, 'six one-note tuplets drawn as the graph states them');
+  assert.ok(E.audit(cx, pcx).ok);
+  /* a slur over the whole group, and one graph beam over exactly the group, are no boundary */
   assert.equal(mergedOf(E.plan(mk({ events: triplets(3, 0), slurs: [[0, 2]] }))).length, 1, 'a slur over the whole group');
   const inBeam = E.plan(mk({ events: triplets(3, 0), beams: [[0, 2]] }));
-  assert.equal(mergedOf(inBeam).length, 1, 'all in one beam');
+  assert.equal(mergedOf(inBeam).length, 1, 'one beam over exactly the group');
   assert.equal(mergedOf(inBeam)[0].bracket, false, 'and the beam shows the group: the number alone');
+  const two = E.plan(mk({ events: triplets(6, 0), beams: [[0, 2], [3, 5]] }));
+  assert.deepEqual(mergedOf(two).map(t => t.events.length), [3, 3], 'two beams, each exactly a group: two groups');
   /* and the option turns it off */
   assert.equal(mergedOf(E.plan(mk({ events: triplets(3, 0) }), { oneNoteTupletMerge: false })).length, 0);
 });
@@ -284,16 +333,20 @@ test('stems follow the graph\'s voice order, never the pitch; a stated stem wins
   const v1 = g.parts[0].voices[0].id, v2 = g.parts[0].voices[1].id;
   assert.equal(p.events.find(e => e.voice === v1).stem, 'up');
   assert.equal(p.events.find(e => e.voice === v2).stem, 'down');
-  /* the plan never puts a head on another staff than the graph's */
-  for (const [rel, gg] of (await corpusGraphs()).slice(0, 80)) {
+  /* the plan never puts a head on another staff than the graph's, and a stem the graph states is the stem drawn -
+     over the whole corpus (the first 80 graphs state no stem at all: the final review found this check empty) */
+  let stated = 0, heads = 0;
+  for (const [rel, gg] of await corpusGraphs()) {
     const pp = E.plan(gg);
-    const heads = new Map(); gg.parts.forEach(pt => pt.events.forEach(e => (e.heads || []).forEach(h => heads.set(h.id, h.staff || e.staff))));
-    pp.events.forEach(e => e.heads.forEach(h => assert.equal(h.staff, heads.get(h.id), rel)));
+    const staffOf = new Map(), src = new Map();
+    gg.parts.forEach(pt => pt.events.forEach(e => { src.set(e.id, e); (e.heads || []).forEach(h => staffOf.set(h.id, h.staff || e.staff)); }));
+    pp.events.forEach(e => e.heads.forEach(h => { heads++; assert.equal(h.staff, staffOf.get(h.id), rel); }));
     pp.events.forEach(e => {
-      const src = gg.parts.flatMap(pt => pt.events).find(x => x.id === e.id);
-      if (src.display && (src.display.stem === 'up' || src.display.stem === 'down')) assert.equal(e.stem, src.display.stem, rel);
+      const d = src.get(e.id).display;
+      if (d && (d.stem === 'up' || d.stem === 'down' || d.stem === 'none')) { stated++; assert.equal(e.stem, d.stem, rel + ' ' + e.id); }
     });
   }
+  assert.ok(stated > 10000 && heads > 50000, stated + ' stated stems, ' + heads + ' heads checked');
 });
 
 test('A46: the plan needs no G3 - G3-off and G3a graphs plan alike, and engrave/ never runs a G3 pass', () => {

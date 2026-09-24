@@ -22,9 +22,14 @@
      - the members fill exactly one tuplet (normal x unit), starting on a
        multiple of that length from the bar line, in a measure that is not a
        pickup, and there are at least two of them
-     - no semantic boundary inside the group: the members are all in one beam
-       of the graph or all in none, no slur starts or ends strictly inside it,
-       and no clef or key changes inside it
+     - no semantic boundary inside the group or across its edges:
+         in a part that states beams, one graph beam holds exactly the
+         group's notes (a beam crossing an edge, a beam over part of the
+         group, a beam over two groups, or unbeamed notes the file chose to
+         flag are all a boundary or ambiguous - no merge); in a part with no
+         graph beam there is no beam to cross;
+         no slur starts or ends strictly inside it;
+         no clef or key changes inside it; no head of a member on another staff
    The group is a display object ('d:tuplet:<first event>'); the ledger records
    each member as merged, code 'merged-for-display'.
    ========================================================================== */
@@ -56,16 +61,26 @@
           s.events.forEach(id => { const e = events.get(id); if (e) multiInVm.add(e.voice + '|' + e.m); });
         });
         /* the boundaries a display group may not cross: the graph's beams, slur ends, clef and key changes */
-        const beamOf = new Map();
-        part.spanners.forEach(s => { if (s.type === 'beam') (s.events || []).forEach(id => beamOf.set(id, s.id)); });
+        const beamOf = new Map(), beamEvents = new Map();
+        part.spanners.forEach(s => {
+          if (s.type !== 'beam') return;
+          beamEvents.set(s.id, (s.events || []).join(' '));
+          (s.events || []).forEach(id => beamOf.set(id, s.id));
+        });
+        const partBeams = beamEvents.size > 0;
         const slurFrom = new Set(), slurTo = new Set();
         part.spanners.forEach(s => { if (s.type === 'slur') { if (s.from) slurFrom.add(s.from); if (s.to) slurTo.add(s.to); } });
         const changesIn = (m, staff, a, z) =>
           part.clefs.some(c => c.m === m && c.staff === staff && R.lt(a, R.parse(c.at)) && R.lt(R.parse(c.at), z)) ||
           (g.timeline.keys || []).some(k => k.m === m && R.lt(a, R.parse(k.at)) && R.lt(R.parse(k.at), z));
         const boundaryInside = members => {
-          const b0 = beamOf.get(members[0].e.id) || null;
-          if (members.some(x => (beamOf.get(x.e.id) || null) !== b0)) return true;
+          /* G4-U2 B: in a part that beams, only a beam over exactly these notes proves one visual group */
+          if (partBeams) {
+            const b0 = beamOf.get(members[0].e.id);
+            if (!b0 || members.some(x => beamOf.get(x.e.id) !== b0)) return true;
+            if (beamEvents.get(b0) !== members.map(x => x.e.id).join(' ')) return true;
+          }
+          if (members.some(x => (x.e.heads || []).some(h => h.staff !== undefined && h.staff !== x.e.staff))) return true;
           if (members.some((x, k) => (k > 0 && slurFrom.has(x.e.id)) || (k < members.length - 1 && slurTo.has(x.e.id)))) return true;
           const last = members[members.length - 1];
           return changesIn(members[0].e.m, members[0].e.staff, members[0].at, R.add(last.at, last.dur));

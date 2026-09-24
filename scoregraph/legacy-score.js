@@ -941,9 +941,21 @@
     const round = x => Math.round((+x || 0) * 1e6);
     const groups = [];
     const bySlot = new Map();
+    /* Score.finalize sorts notes by position and then staff, so the note a chord starts with (chord: false) can come
+       after its other notes - a chord across the staves of a part. The chord is found by its slot, not by that order:
+       a chord note whose first note is still to come opens the group, and the first note joins it in front. */
+    const slotOf = x => x.m + '|' + round(x.b) + '|' + (x.voice || 1) + '|' + round(x.dur);
+    const leads = new Set();
+    notes0.forEach(x => { if (!x.rest && !x.chord) leads.add(slotOf(x)); });
     notes0.forEach(x => {
-      const slot = x.m + '|' + round(x.b) + '|' + (x.voice || 1) + '|' + round(x.dur);
-      if (!x.rest && x.chord && bySlot.has(slot)) { bySlot.get(slot).notes.push(x); return; }
+      const slot = slotOf(x);
+      const open = bySlot.get(slot);
+      if (!x.rest && x.chord && open) { open.notes.push(x); return; }
+      if (!x.rest && x.chord && leads.has(slot)) {
+        const g = { notes: [x], first: x._i, waiting: true };
+        groups.push(g); bySlot.set(slot, g); return;
+      }
+      if (!x.rest && !x.chord && open && open.waiting) { open.notes.unshift(x); open.waiting = false; return; }
       if (!x.rest && x.chord) note('chord-without-first-note', x.m + ':' + x.b);
       const g = { notes: [x], first: x._i };
       groups.push(g);
@@ -1062,8 +1074,11 @@
       });
     }
     {
-      /* slurs: in each (staff, voice) chain a stop closes the earliest open start, then a start opens (the legacy
-         renderer's pairing, App 11097: the Score keeps the ends of a slur, not which ends belong together) */
+      /* slurs: the Score keeps the ends of a slur, not which ends belong together, so they are paired by a rule
+         (op inferred) - the one the app draws them with today (legacy renderer, App 11138): in each (staff, voice)
+         chain a slur runs from its start to the next stop. Two starts before one stop both end there; a stop no
+         start reaches, or a start with no stop after it, is kept as an open end and named. A chord's slur end is on
+         any note of it (App 11605). */
       const chains = new Map();
       events.forEach(g => {
         const k = g.part + '|' + (g.notes[0].staff || 1) + '|' + g.label;
@@ -1071,16 +1086,18 @@
         chains.get(k).push(g);
       });
       chains.forEach(list => {
-        const open = [];
-        list.forEach(g => {
-          const x0 = g.notes[0];
-          if (x0.slurStop) {
-            if (open.length) b.spanner(parts[g.part], { type: 'slur', from: open.shift().ent.id, to: g.ent.id, prov: byRule() });
-            else { b.spanner(parts[g.part], { type: 'slur', to: g.ent.id, prov: byRule() }); note('slur-open-end', x0.m); }
-          }
-          if (x0.slurStart) open.push(g);
+        const starts = g => g.notes.some(x => x.slurStart), stops = g => g.notes.some(x => x.slurStop);
+        const reached = new Set();
+        list.forEach((g, i) => {
+          if (!starts(g)) return;
+          let j = i + 1;
+          while (j < list.length && !stops(list[j])) j++;
+          if (j < list.length) { b.spanner(parts[g.part], { type: 'slur', from: g.ent.id, to: list[j].ent.id, prov: byRule() }); reached.add(j); }
+          else { b.spanner(parts[g.part], { type: 'slur', from: g.ent.id, prov: byRule() }); note('slur-open-start', g.notes[0].m); }
         });
-        open.forEach(g => { b.spanner(parts[g.part], { type: 'slur', from: g.ent.id, prov: byRule() }); note('slur-open-start', g.notes[0].m); });
+        list.forEach((g, j) => {
+          if (stops(g) && !reached.has(j)) { b.spanner(parts[g.part], { type: 'slur', to: g.ent.id, prov: byRule() }); note('slur-open-end', g.notes[0].m); }
+        });
       });
     }
     {

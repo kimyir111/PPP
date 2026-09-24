@@ -134,7 +134,7 @@ test('P5: fromScore keeps what the Score states apart from what it had to infer'
   const burg = L.fromScore(scoreOf(await require('./helpers.js').graphOf('catalog/method/burgmuller25/015.mxl'), 'b15')).graph;
   assert.equal(burg.provenance.default.op, 'imported');
   const slurs = burg.parts.flatMap(p => p.spanners.filter(s => s.type === 'slur'));
-  assert.ok(slurs.length > 0 && slurs.every(s => s.prov && s.prov.op === 'inferred'), slurs.length + ' slurs, paired by the old renderer\'s rule');
+  assert.ok(slurs.length > 0 && slurs.every(s => s.prov && s.prov.op === 'inferred'), slurs.length + ' slurs, paired by the legacy renderer\'s rule (start to next stop)');
   assert.ok(E.plan(burg).slurs.every(s => s.inferred));
   /* a run of time-modified notes with no tuplet mark (E04's fourth triplet) is grouped by the importer's rule */
   const e04 = L.fromScore(scoreOf(await require('./helpers.js').graphOf('tests/engrave/fixtures/e/E04-tuplet-show.musicxml'), 'e04')).graph;
@@ -186,4 +186,53 @@ test('a Score the graph refuses in part loses only that part, and names it', () 
   assert.ok(SG.validate(fr.graph).ok);
   const ag = L.agree(x, fr.graph);
   assert.deepEqual(ag.diffs.map(d => d.field.split('.')[0]), ['wedges'], 'and only the hairpin differs');
+});
+
+/* The final review: fromScore paired slurs first-in-first-out, which is not the pairing the app draws. The Score keeps
+   only the ends; the rebuilt graph pairs them the way the legacy renderer does (a start runs to the next stop in its
+   staff and voice, App 11138), marks each slur inferred, and names an end no pair reaches. */
+test('slurs are paired as the app draws them: a start runs to the next stop; two starts can share a stop; a lone stop stays an open end', () => {
+  const src = storedScores().find(([f]) => f === 'graph-fur-elise.score.json')[1].score;
+  const s = JSON.parse(JSON.stringify(src));
+  const chain = s.notes.filter(n => !n.rest && (n.staff || 1) === 1 && (n.voice || 1) === 1 && !n.chord).slice(0, 4);
+  assert.equal(chain.length, 4);
+  s.notes.forEach(n => { delete n.slurStart; delete n.slurStop; });
+  /* A start, B start, C stop, D stop */
+  chain[0].slurStart = true; chain[1].slurStart = true; chain[2].slurStop = true; chain[3].slurStop = true;
+  const fr = L.fromScore(s);
+  assert.ok(fr.ok);
+  /* each Score note's graph event, through link() */
+  const lk = L.link(s, fr.graph);
+  assert.ok(lk.ok);
+  const [A, B, C, D] = chain.map(n => lk.byNote[s.notes.indexOf(n)].event);
+  const slurs = fr.graph.parts.flatMap(p => p.spanners.filter(x => x.type === 'slur')).map(x => [x.from || null, x.to || null]);
+  assert.deepEqual(slurs.slice().sort(), [[A, C], [B, C], [null, D]].sort(), 'A-C and B-C (both to the next stop), D an open end');
+  assert.ok(fr.unsupported.some(u => u.code === 'slur-open-end'));
+  assert.ok(fr.graph.parts.flatMap(p => p.spanners.filter(x => x.type === 'slur')).every(x => x.prov && x.prov.op === 'inferred'));
+  /* and the Score still comes back: which ends there are is what the Score states */
+  const back = L.toScore(fr.graph);
+  const ends = sc => sc.notes.filter(n => n.slurStart || n.slurStop).map(n => n.m + '|' + n.b + '|' + !!n.slurStart + '|' + !!n.slurStop).sort();
+  assert.deepEqual(ends(back), ends(s));
+});
+
+/* A chord across the staves of a part, as the app holds it: Score.finalize sorts by position and then staff, so the
+   chord's first note (chord: false) can come after the others. The rebuilt graph must still hold one event with a head
+   on each staff - as the file's own graph does - not two events with a voice overlap (G04 §32.13). */
+test('a chord across the staves, in the order the app keeps it, is rebuilt as the one event the file has', async () => {
+  const { appFinalize, graphOf } = require('./helpers.js');
+  const finalize = appFinalize();
+  for (const rel of ['tests/scoregraph/fixtures/xml/cross-staff.musicxml', 'tests/engrave/fixtures/e/E26-cross-staff.musicxml']) {
+    const g = await graphOf(rel);
+    const cross = g.parts.flatMap(p => p.events).filter(e => (e.heads || []).some(h => h.staff !== undefined && h.staff !== e.staff));
+    assert.ok(cross.length > 0, rel + ' has a chord across the staves');
+    const s = finalize(L.toScore(g, { name: 'x', id: 'x' }));
+    const fr = L.fromScore(s);
+    assert.ok(fr.ok);
+    const codes = fr.unsupported.map(u => u.code);
+    assert.ok(codes.indexOf('chord-without-first-note') < 0 && codes.indexOf('voice-overlap') < 0, rel + ': ' + codes.join(','));
+    const rebuilt = fr.graph.parts.flatMap(p => p.events);
+    assert.equal(rebuilt.length, g.parts.flatMap(p => p.events).length, rel + ': as many events as the file');
+    assert.equal(rebuilt.filter(e => (e.heads || []).some(h => h.staff !== undefined && h.staff !== e.staff)).length, cross.length,
+      rel + ': the chord keeps its head on the other staff');
+  }
 });

@@ -192,18 +192,23 @@
     /* The kept graph, when it is this Score's and still states its music. A record kept under this library and hash
        version, of this schema, was found to agree when kept and its music hash is the Score's: that is enough, and
        link() checks every note. Otherwise - another library, another hash, a migrated schema - agree() decides again,
-       and a graph that still agrees is kept again under this library. */
+       and a graph that still agrees is kept again under this library.
+       A record that is not this Score's - another Score under the key, the music since changed, a graph that no
+       longer agrees - is not used, and it is not deleted either: the Score asked about may be one the song has not
+       saved (a review-screen arrangement), and the song's own graph must outlive that question (final review,
+       G4-U1). The next save of the song replaces it; one that cannot be read at all (store.get) or whose notes no
+       longer link is dropped. */
     async function fromStore(key, score, hash, diagnostics) {
       const r = await store.get(key);
       if (!r.ok) { if (r.code !== 'missing') diagnostics.push({ code: 'STORE_' + r.code.toUpperCase().replace(/-/g, '_') }); return null; }
       const rec = r.record;
-      if (rec.scoreId !== score.id) { diagnostics.push({ code: 'STORE_OTHER_SCORE' }); await store.del(key); return null; }
+      if (rec.scoreId !== score.id) { diagnostics.push({ code: 'STORE_OTHER_SCORE' }); return null; }
       const sameRules = rec.agreeLib === SG.version && rec.hashV === HASH_VERSION && !r.migrated;
-      if (sameRules && rec.scoreHash !== hash) { diagnostics.push({ code: 'STORE_STALE' }); await store.del(key); return null; }
+      if (sameRules && rec.scoreHash !== hash) { diagnostics.push({ code: 'STORE_STALE' }); return null; }
       let ag = { ok: true, diffs: [], info: [] };
       if (!sameRules) {
         ag = L.agree(score, r.graph);
-        if (!ag.ok) { diagnostics.push({ code: 'STORE_INCOMPATIBLE', detail: ag.diffs[0] || null }); await store.del(key); return null; }
+        if (!ag.ok) { diagnostics.push({ code: 'STORE_INCOMPATIBLE', detail: ag.diffs[0] || null }); return null; }
         stats.revalidated++;
         diagnostics.push({ code: 'STORE_REVALIDATED', detail: { lib: rec.agreeLib, hashV: rec.hashV, migrated: !!r.migrated } });
         await store.put(key, r.graph, { via: 'revalidated', scoreId: score.id, scoreHash: hash, hashV: HASH_VERSION, agreeLib: SG.version,

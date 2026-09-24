@@ -73,9 +73,11 @@
       const v = g.meta && g.meta[f];
       if (v === undefined || v === '') return;
       meta[f] = v;
+      /* the screen heading shows title and composer only; on a printed page the rest of the title area waits for
+         G4e (deferred title-block, G4-U5: §15.5 names only title, composer and the first tempo) */
       const always = f === 'title' || f === 'composer';
-      put({ ref: L.ref.meta(f), kind: 'meta', status: always || print ? 'drawn' : 'suppressed', code: always || print ? undefined : 'print-only',
-        plan: 'meta' });
+      put({ ref: L.ref.meta(f), kind: 'meta', status: always ? 'drawn' : print ? 'deferred' : 'suppressed',
+        code: always ? undefined : print ? 'title-block' : 'print-only', plan: 'meta' });
     });
 
     const measures = tl.measures.map((m, i) => {
@@ -234,11 +236,18 @@
         const v = voiceById.get(e.voice);
         if (v && v.staff !== e.staff) sub(L.ref.eventStaff(e.id), 'cross-staff-event');
         (e.arts || []).forEach((a, i) => sub(L.ref.art(e.id, i), 'articulation'));
+        /* an ornament of the schema whose glyph the pinned font lacks waits for G4d (deferred ornament-glyph, G4-U5);
+           one the schema does not know is unsupported - named, and the audit fails */
         const orn = (e.orn || []).map((o, i) => {
           const gl = GL.ornament(o.type);
-          if (gl.substitute) diag('MISSING_GLYPH', [e.id], o.type + ': ' + (gl.glyph || 'no glyph') + ' -> ' + gl.substitute);
-          sub(L.ref.orn(e.id, i), 'ornament', gl.substitute ? ['drawn', 'substitute-glyph'] : null);
-          return Object.assign(cp(o), { glyph: gl.glyph, substitute: gl.substitute });
+          if (!gl.known) {
+            diag('UNSUPPORTED_ORNAMENT', [e.id], String(o.type));
+            put({ ref: L.ref.orn(e.id, i), kind: 'ornament', status: L.UNSUPPORTED, code: 'unknown-ornament', plan: e.id });
+          } else {
+            if (gl.missing) diag('MISSING_GLYPH', [e.id], o.type + ': ' + gl.glyph);
+            sub(L.ref.orn(e.id, i), 'ornament', gl.missing ? ['deferred', 'ornament-glyph'] : null);
+          }
+          return Object.assign(cp(o), { glyph: gl.glyph, deferred: gl.missing ? 'ornament-glyph' : null });
         });
         if (e.fermata !== undefined) sub(L.ref.fermata(e.id), 'fermata');
         (e.lyrics || []).forEach((l, i) => sub(L.ref.lyric(e.id, i), 'lyric'));
@@ -316,8 +325,10 @@
           lines.push({ id: s.id, kind: 'arpeggio', heads: (s.heads || []).slice(), dir: s.dir || null, non: !!s.non });
           put({ ref: s.id, kind: 'arpeggio', status: 'drawn', plan: s.id });
         } else {
-          /* no such type in a valid graph; if one appears the audit refuses the code, so it cannot pass unseen */
-          put({ ref: s.id, kind: s.type, status: 'deferred', code: 'unknown-spanner' });
+          /* no such type in a valid graph. If one appears it is unsupported - named, never deferred - and the audit
+             fails (G4-U5): an unknown meaning is not let through in silence */
+          diag('UNSUPPORTED_SPANNER', [s.id], String(s.type));
+          put({ ref: s.id, kind: s.type, status: L.UNSUPPORTED, code: 'unknown-spanner' });
         }
       });
     });
