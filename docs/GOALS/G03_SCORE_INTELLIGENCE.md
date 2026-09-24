@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| 상태 | **구현 PARTIAL (G3 Implementer, 2026-09-24, §27)**. G3a 구현 완료, **flip BLOCKED** — §20.4 G3 gate 2줄이 R17·H7과 충돌 (§27.4, 사용자 결정 필요). G3b·자동 8va 구현, **default OFF**. human review(A36) 사용자 대기. 설계 승인: Architect closeout 2026-09-24, D1–D8 Accepted (§22.1) |
+| 상태 | **독립 리뷰 NEEDS_FIX (G3 Reviewer, 2026-09-24, §28)** — BLOCKER 1 (G3a on이면 앱이 페달을 떼지 않음), MAJOR 6, MINOR 5, OPTIONAL 5. 음악 보존은 독립 검증으로 통과. 구현 PARTIAL (§27): G3a 구현, flip 안 함, G3b·자동 8va default OFF. human review(A36) 사용자 대기 — 세트 블라인드화 먼저 (M4). 설계 승인: Architect closeout 2026-09-24, D1–D8 Accepted (§22.1) |
 | 기준 커밋 | `origin/main` = `cc509e2` (G2 closeout + Windows mutation fix) |
 | 브랜치 / worktree | `g3-score-intelligence` / `D:/PPP-g3` |
 | 선행 | G0 Quality Foundation, G1 ScoreGraph, G2 Score Import — 모두 CLOSED |
@@ -1268,6 +1268,204 @@ k. **perf 테스트**: `node --test`는 파일을 병렬로 돌려 시간이 약
 4. `golden --g3`와 mutation G3 그룹의 base edit(`G3_ON`) — flip 뒤에는 `G3_ON = []`로 바꿔야 한다.
 5. G3b λ = 1과 perf-voices의 보수적 조건 — M11 전에는 아무 수치도 승인하지 않았다.
 6. `mk(spec.heard)` 기본 release가 "첫 조각 길이"에서 "tie 전체 길이"로 바뀌었다 (테스트 도우미만).
+
+---
+
+## 28. 독립 리뷰 (G3 Reviewer, 2026-09-24)
+
+`D:/PPP-g3`, `g3-score-intelligence` @ `bc1f7b4` (clean, `origin/g3-score-intelligence`와 같음). 기준 `origin/main` = `cc509e2`. 코드는 한 줄도 고치지 않았다 — 이 절과 `CURRENT_STATE.md`만 쓴다. `D:/PPP`, `main`, G4는 건드리지 않았다.
+
+### 28.1 판정
+
+**NEEDS_FIX** — BLOCKER 1, MAJOR 6, MINOR 5, OPTIONAL 5.
+
+G3a의 음악 보존은 독립 검증으로 확인됐다 (§28.3). 그러나 flip하면 **앱이 페달이 있는 모든 녹음 악보를 페달을 한 번도 떼지 않고 재생한다** (B1). 손 DP는 흔한 피아노 짜임에서 병적인 배정을 한다 (M1). A6·A37은 HEAD에서 FAIL이다 (M2, M3). human review 세트는 블라인드가 아니다 (M4). 승인된 "R17만 분리" 방향은 `tm_missing`에는 맞지만 `mergeable`에는 모자란다 (M6). A36 사람 평가 전 flip 금지, G3b는 M11 전 OFF, 자동 8va OFF — 셋 다 지금 코드에서 지켜지고 있다.
+
+### 28.2 방법 — 구현자 결과를 쓰지 않고 다시 잰 것
+
+- **SUT 세 개** (scratchpad, 저장소 밖): base = `git:cc509e2`, off = `git:bc1f7b4`, on = off에서 `PROFESSIONAL_DEFAULT = 'on'` 한 줄만 바꾼 것. smoke·core·robust·replay-public·full을 셋 다 `run --out`으로 돌리고, 판정은 `compare.compare`에 base를 pseudo-baseline으로 넣어 냈다 (`ab`와 같은 방식, 저장된 오래된 baseline을 쓰지 않음).
+- **독립 도구** (저장소 코드를 쓰지 않음, scratchpad): MusicXML을 명세에서 직접 읽는 파서(울리는 음 = (part, onset, 실제 MIDI, tie로 합친 길이), onset별 음, 마디·박자·템포·반복·표기·꾸밈음·페달·조표); 그래프 투영(critic과 별개로 tie를 따라 울리는 음 계산, performance 바이트, 입력 불변·deep freeze·공유 객체 변경 시도, P(P(g)), 두 번 실행); residual 분류기(아래 §28.4); 음표별 손 비교(G0 정렬로 짝지은 참조 음의 손, off vs on); 앱 `Playback.pedal/pedalUp/strikes` 규칙을 그대로 재현한 페달 재생 모델.
+
+### 28.3 음악 보존 (G3a) — 통과
+
+| 무엇 | 어디서 | 결과 |
+| --- | --- | --- |
+| 울리는 음 (tie 합친 길이·onset·실제 MIDI), onset별 음 다중집합, 마디 수·길이, 박자, 템포(`<sound tempo>`·metronome), 반복·volta, 꾸밈음, slur·dynamics·wedge·articulation·fermata·fingering·lyric·octave-shift | MusicXML, 독립 파서, off vs on — smoke 44 + core 553 + robust 282 + full 4,976 (full만 울리는 음 1,280,721개) | **전부 동일** |
+| performance 층 바이트, timeline(마디·박자·템포·ending·jump), 조표, 입력 그래프 불변·deep freeze | 그래프, core 553 + robust 282 + full 4,976 | 전부 동일 / 조표 변경 **0건** |
+| 재생 순서 | 반복이 있는 입력은 import 경로(기본 G3 미적용)뿐. corpus 369 force 모드는 `g3-preserve`·`sg-roundtrip` | 동일 |
+| 이조 part | `transposing.musicxml` rewrite·fill·force | 불변 |
+| 미분음 | `microtone-quarter-sharp.musicxml` rewrite·fill | 불변 (force는 m3) |
+| **페달 (앱 재생)** | 앱 규칙 재현 | **B1 — 바뀐다** |
+
+보존 검사에서 나온 유일한 이상은 cross-voice tie (m1): 음 하나의 tie 조각이 서로 다른 성부로 간다. 앱 **재생**은 tie를 MIDI+위치로 이어서 소리는 같다 (App 2643–2658). 그러나 렌더러는 (staff, voice) 사슬 안에서만 tie를 그려 (App 10866) 화면에는 다시 치는 음으로 보인다.
+
+### 28.4 R17 gate 충돌 — 판정
+
+**충돌은 실제다. 그러나 승인된 "R17만 분리"로는 gate가 정직하게 통과하지 않는다.**
+
+분류기 (독립, 저장소 코드 미사용): residual마다 그 성부-마디를 경계점(음 시작, tie로 합친 음 끝, 쉼표 구간 끝)으로 자르고, U = 192/온음표에서 창(단순 박자: 박, 그 외: 8분)이 이진 격자(3의 배수)와 셋잇단 32분 격자(4의 배수) 중 하나로만 설명되지 않으면 MIXED. 한 격자를 골랐을 때 어긋난 점이 **전부 release**(onset이 아닌 음 끝·쉼표 시작)이고 격자에서 1 tick(2 U) 이내면 **R17** — release를 옮기는 것(R-reg, G3b)으로만 고칠 수 있다. onset이 어긋나면 ONSET(G3 밖). 자기 창은 깨끗하지만 같은 셋잇단 창을 공유하는 이웃 조각이 R17 창에 걸려 묶일 수 없는 경우 **R17_NEIGHBOUR**. tie는 추가로 H7(겹점이 박에서 시작도 박을 채우지도 않음), H6(합친 값이 한 셋잇단 괄호 안의 한 기호가 아님 — 괄호 경계를 넘거나 셋잇단 한 값이 없음), PARTIAL(화음 일부만 tie), XVOICE로 나눴다.
+
+| suite | `tm_missing` | 숨긴 1-음 tuplet (M5) | "mergeable" tie |
+| --- | --- | --- | --- |
+| core | 279 = R17 264 + NEIGHBOUR 15 | 139 = R17 137 + NEIGHBOUR 2 | 98 = **H7 58, H6 30**, R17 5, PARTIAL 4, XVOICE 1 |
+| robust | 133 = R17 121 + NEIGHBOUR 11 + CLEAN 1 (rollback 마디) | 48 = R17 48 | 45 = H6 21, R17 13, H7 5, PARTIAL 5, XVOICE 1 |
+| full | 2,943 = R17 2,683 + NEIGHBOUR 255 + CLEAN 5 (rollback 마디) | 1,226 = R17 1,212 + NEIGHBOUR 14 | 923 = **H7 497, H6 266**, R17 91, PARTIAL 49, XVOICE 4, P2가 만든 PARTIAL로 R-repr가 건너뛴 마디 16 |
+
+- core에서 ONSET 0 — "R-reg만이 고친다"(§27.4)는 `tm_missing`에 대해 맞다. §20.4 문구 "(G3a가 만든 출력에서)"와 R17(§6.3)이 이것을 G3b에 넘기므로, `tm_missing`을 R17로 나누는 것은 **완화가 아니라 goal 소유권**이다.
+- **`mergeable`에서 R17은 core 5 %, full 10 %뿐이다.** 대부분은 metric 정의("한 기호로 쓸 수 있는 tie", §20.3)가 설계 자신의 하드 규칙 H6·H7과 G3a 단일 성부(§8.2)를 모르는 탓이다. 그 tie는 설계상 합칠 수 없다. 이것을 metric에 반영하는 것은 R17 승인 범위 밖이므로 **사용자 결정**이다 (§28.9 U-1).
+- XVOICE·P2-PARTIAL(m1)과 rollback 마디의 CLEAN(M2)은 **G3 결함**이다 — 분리하면 안 되고 고쳐야 한다.
+- **R17 bucket은 공짜 면제가 아니다.** mutation `G3-TRIPLET-REST-NO-TM`(셋잇단 쉼표에 time-mod 없음)에 분류기를 돌리면 CLEAN `tm_missing` 1,213 + 숨긴 tuplet CLEAN 704가 나와 gate는 여전히 FAIL이지만, R17 bucket도 264 → 1,221로 커진다 (원래 R17 창 안에서 tuplet pass가 묶던 raw 쉼표들). 그러므로 R17 residual 수는 **케이스별 baseline(증가 금지)**이어야 한다. `G3-TIES-IN-BEAT`는 UNEXPLAINED mergeable 1,834로 잡힌다.
+- core `tm_missing` 중 8개(R17 1 + NEIGHBOUR 7)는 raw 그대로가 아니라 **G3a가 다시 쓴** 조각이다 (M2의 결함). "writer가 쓴 그대로 남긴 것"만 R17로 인정해야 한다.
+
+### 28.5 Findings
+
+**BLOCKER**
+
+- **B1 — G3a on이면 앱이 페달을 떼지 않는다.** P8(§13.2, G3-I7)은 release와 1박 미만 뒤의 press를 `changes` 하나로 합친다. 앱은 `change`를 떼지 않는 half-pedal로 재생한다: `Playback.pedal`(App 2660–2676)은 이미 내려가 있으면 `change`를 무시하고, `pedalEvents`(App 2828)는 CC64 = 64를 낸다. 그래서 legato 페달(마디선에서 떼고 1/48 W 뒤 다시 밟음, `pedal|oracle` 연주자가 하는 것)이 **곡 전체에 걸친 damper 하나**가 된다. 예: `sonatina/021|pedal|oracle|s1` raw 페달 62개 → G3 페달 1개 + change 61개. `strikes`(App 2864–2869)가 음 끝을 damper가 떼질 때까지 늘리므로, core pedal 30 케이스에서 음 10,439 / 10,932개가, full에서 146,242 / 159,412개가 더 길게 울린다 (평균 58 q / 44 q — 이어 붙은 damper 구간의 끝까지, 위 예에서는 곡 끝). 두 경로 모두 닿는다 (`legacy-score.js:352`, exporter `ped('change')`). 페달 표기가 바뀐 케이스: core 30, full 622 (join core 796, full 13,150). G0 페달 metric은 한 자리도 안 움직이고(0.9777 → 0.9777), MuseScore는 `change`를 올바르게 읽으므로 human review로도 보이지 않는다. golden `--g3` 허용 범주가 바로 이 변경을 허용한다(§27.5 h). **고칠 방향**: flip 전에 P8 페달 합치기를 기본 OFF (D2와 같은 논리: 앱이 틀리게 재생하는 표기는 쓰지 않는다), 또는 앱 재생을 고친다(G3 범위 밖, 사용자 결정 U-3).
+
+**MAJOR**
+
+- **M1 — 손 DP의 병적 배정.** 평균은 좋아진다(core 0.8876 → 0.9221, hands gate +50/−0; full 0.856 → 0.906, +726/−0). 그러나 깨끗한 입력의 흔한 짜임에서 틀린다.
+  - octave 항(1500 > keep 900)이 한 손 안의 옥타브를 무조건 벌점: 왼손 옥타브 베이스 `C2+C3 G2+G3 C2+C3` → G3·C3을 **오른손 2성부로** 옮김; 오른손 `C4+E4+G4+C5` 화음 → C4를 왼손 2성부로; 선율 `E4 D4 B3 C4` 아래 왼손 `G2+G3` → G3을 오른손으로.
+  - melody 항이 손을 번갈아 치는 음형(한 음씩 교대)을 한 손으로 접음: `method/czerny849/027|human|oracle|s11` (**깨끗한 입력**; human·pedal·lowconf × s11·s12 6 변형 모두 약 0.90 → 0.83) — 참조와 raw가 오른손에 둔 Eb4 43개를 포함해 44음이 틀려지고 6음이 나아짐.
+  - full에서 hand accuracy가 떨어지는 케이스 403개. amt micro M15 s2(깨끗한 `G4+B4+D5+G5`, `G4+G5` 화음이 쪼개짐)도 같은 원인.
+  - **고칠 방향**: octave 항은 "선율이 옥타브로 겹쳐 병행하는 경우"(E6)에만, 한 손 화음의 외성 옥타브와 왼손 옥타브 베이스는 면제; melody 항은 단음 교대 음형에 적용하지 않음(앞뒤 문맥이 선율일 때만). 위 짜임을 H-fixture로 추가.
+- **M2 — R-repr가 묶일 수 없는 셋잇단 창에 조각을 쓴다. A6은 명세대로 FAIL.** 같은 셋잇단 창을 공유하는 이웃 segment가 R17 창 때문에 그대로 남으면(stuck) 그 창은 tuplet으로 완성될 수 없는데, R-repr는 창 안의 다른 segment를 셋잇단 값으로 다시 쓴다 → time-mod 없는 셋잇단 조각.
+  - 조각이 **새 ID**면 critic이 새 `W-DISPLAY-DURATION`을 보고 그 마디를 raw로 되돌린다: robust 1 (`sonatina/012|human-alt` m44), full 9. 되돌린 마디에 raw 1-음 괄호가 남아 `one_note_rate`가 robust·full에서 FAIL. strict에서는 throw: `PPP_G3_SUITES=robust node --test tests/scoregraph/g3-preserve.test.js` → `CriticError: … W-DISPLAY-DURATION e1669`. A6 fixture는 "core + robust + golden"인데 테스트 기본값은 `core,golden`이라 CI는 못 본다.
+  - 조각이 경고가 있던 **옛 ID를 재사용**하면 critic의 (code, IDs) 비교가 "입력의 경고"로 넘긴다: core에서 G3a가 다시 쓴 time-mod 없는 셋잇단 조각 8개 (예: `hanon/007|human|none` m1–m4, 6/8의 E 음이 `32nd~` + 셋잇단 32분으로).
+  - **고칠 방향**: stuck segment가 걸친 셋잇단 창의 모든 segment를 그대로 둔다(동결 전파); critic은 G3가 내용을 바꾼 event의 경고를 G3의 것으로 본다; g3-preserve 기본 suite에 robust.
+- **M3 — mutation-check가 HEAD에서 FAIL (47/48). A37은 FAIL.** `G3-SPELL-STATIC`(구간 조 끄기) 결과가 원본과 **바이트 동일**. 구간 조 pass는 core·robust·full 5,811 케이스에서 조표를 **한 번도** 바꾸지 않는다 (core: 441 케이스는 창 결과가 적힌 조와 같고 112 케이스는 12마디 미만). `8322599`의 "한 5도 전환은 조표를 바꾸지 않음"(G3-I3) 이후 이 기능은 benchmark에서 비활성이고, §27.3의 "48/48"은 그 전 측정이다. main에 merge되면 nightly의 `mutation-check`가 실패한다. §19 E5·E9(조 재추정)도 실제 케이스에서는 일어나지 않는다. **고칠 방향**: 살아 있는 철자·임시표 경로를 겨누는 mutation으로 바꾸거나, 구간 조가 실제로 움직이는 케이스를 mutation suite에 두고 그 효과를 보이기; 기능이 비활성이면 그렇다고 기록.
+- **M4 — human review 세트가 블라인드가 아니다.** 파일 이름이 `A/B/C.musicxml`이고, 같은 폴더의 `meta.json`이 "B = recording path, G3a on"이라고 쓰며, 템플릿이 쌍의 좌우를 `"left": "A", "right": "B"`로, 절대 평가 항목을 `"version": "C"`로 보여 준다 (§21.4 "블라인드 쌍 비교" 위반). **고칠 방향**: 평가자용 폴더에 불투명 이름(예: 발췌마다 무작위 두 글자)만 두고, 열쇠(`key.json`)는 분리해 `--score`만 읽는다. C는 제목·작곡가·셈여림이 있어 본질적으로 알아볼 수 있다 — 한계로 기록.
+- **M5 — 묶이지 않는 1-음 tuplet을 숨긴다 (`printed:false`).** 설계 T08은 "변화 없음 + `N-TUPLET-UNGROUPABLE`"이고 §7.2는 괄호 표시를 G4 결정·G3 생성은 `printed: true`로 정했는데, 구현은 T08 fixture를 "unprinted: 3"으로 바꿨고 §27.5에 적지 않았다. exporter는 `printed:false`에 `<tuplet>`을 쓰지 않으므로(`musicxml-export.js:517`) reader/5의 `one_note_rate`가 이 조각들(core 139, full 1,226)을 보지 못하고, time-mod가 있어 `tm_missing`에도 안 잡힌다 → core의 "`one_note_rate == 0` PASS"는 부분적으로 숨김의 결과다. 앱 렌더러는 이 음에 괄호도 숫자도 그리지 않는다. **고칠 방향**: T08대로 되돌리고(인쇄 유지) R17 분류로 설명하거나, nq가 괄호 없는 time-mod 단독 음을 1-음 tuplet으로 센다.
+- **M6 — gate 재정의가 R17만으로는 부족하다** (§28.4). `mergeable`의 core 94 %·full 88 %가 H6·H7·PARTIAL, 즉 metric 정의 문제이고, R17 bucket은 baseline 없이 면제하면 퇴행을 숨긴다. **고칠 방향**: §28.9.
+
+**MINOR**
+
+- **m1 — P2가 tie 조각을 서로 다른 성부로 보낸다.** 조각마다 따로 옮겨서, 한 조각은 다른 staff 화음에 합쳐지고(`joinHeads`) 다른 조각은 2성부로 간다: cross-voice tie core 1(`burgmuller25/013|deadpan` m1), robust 1, full 33 (29 케이스). 또 tie가 있는 음에 머리를 합쳐 부분 화음 tie를 만들고, R-repr가 그 성부-마디 전체를 건너뛰어 옆의 평범한 `8.~16`이 안 합쳐진다 (full 16, 예: `sonatina/015` m16). 재생은 같고 화면은 다시 치는 음. **고칠 방향**: tie 사슬 전체를 한 성부 단위로 옮기고, tie가 있는 event에는 합치지 않는다; G3가 만든 cross-voice tie는 critic 위반.
+- **m2 — idempotence 1건 실패 (full 1 / 4,976).** `hymns/hyfrydol-alleluia|amt|oracle-noisy|s2`: 두 번째 실행에서 clef가 생긴다 (`nextId` 930 → 932). clef 규칙(G3-I4)이 덧줄 합을 **tie 조각마다** 세는데 뒤의 R-repr가 조각을 합쳐 합이 9 vs 7 → 6 vs 7로 뒤집힌다. §16.2(P2 입력 특징은 P4–P7이 바꾸지 않는 것만) 위반. 명세의 A5 집합(core·golden·corpus 369·fixture)에서는 통과, production은 한 번만 돌려 영향 없음. **고칠 방향**: 울리는 음(tie 사슬) 단위로 센다.
+- **m3 — force 모드가 미분음 임시표를 바꾼다.** `quarter-sharp` → `sharp`, `quarter-flat` → `flat` (소리는 ext로 보존). force는 테스트 전용. **고칠 방향**: `musicxml.microtone` ext가 있는 head의 `acc`는 건드리지 않는다.
+- **m4 — amt micro M20은 metric 산물.** `note_shape` 불일치 8 → 8, 분모 109 → 108 (G3가 tie 조각 하나를 합침) → 0.9266 → 0.9259. **disposition**: micro no-drop을 비율이 아니라 불일치 수로 판정 (이유 키, 파일 이름 아님).
+- **m5 — 테스트 범위가 명세보다 좁다.** A6 테스트 기본 suite에 robust가 없고(M2가 CI에 안 잡힘), A37 증거는 오래됐다(M3). §27.3의 A6·A37 PASS는 재현되지 않는다.
+
+**OPTIONAL**
+
+- o1 — A10: 논리 그룹은 올바르다 (czerny849/020 core: 528 그룹 전부 완전, 멤버 연속, start/stop 첫·끝). 앱 렌더러가 32분 셋잇단이 섞인 그룹 4개를 괄호 2개로 나눈다 (App 11609–11621, "normal × 가장 짧은 값"). **G3 PASS, G4 렌더러 후속.**
+- o2 — H3이 3/4의 1–2박 2분쉼표를 금지해 core에서 61곳이 `q q`가 된다. 설계의 보수적 선택. 흔한 현대 관례는 허용 — 원하면 S표에 추가.
+- o3 — human set의 C 파일 18개는 원본 참조가 `<score-part>`/`<part>`에 `id`가 없다 (원본 그대로 복사). MuseScore 4에서 열리는지 평가 전에 확인.
+- o4 — human set의 `nq.ned`(참조와의 표기 거리)가 A → B 평균 1.016 → 1.047로 **늘었다** (B가 가까움 8, 멀어짐 9, 같음 3; HG11 2.36 → 2.87). §21.5는 감소를 기대한다 — A36 18/20 기준이 위험하다는 신호(정보).
+- o5 — `ops.Draft`의 재사용은 입력 루트의 `Object.isFrozen(g)`만 본다. production 입력은 전부 deep-frozen·canonical이라 안전하지만(§28.7), 루트만 freeze된 입력이면 가변 event를 공유·제자리 정렬할 수 있다. 방어적으로 event마다 `Object.isFrozen(e)` 확인.
+
+### 28.6 amt micro 4건 (full G0 REGRESSION)
+
+| 케이스 | 변화 | 실제 음 | 판정 |
+| --- | --- | --- | --- |
+| M04-triplets-4-4 amt none s1 | hand 0.94 → 0.90 | pred m6: raw가 오른손에 맞게 둔 D5·G5가 왼손으로 — AMT 입력이 왼손에 B4, 오른손에 F#6을 둔 마디에서 왼손 B4 쪽으로 끌려감 (나아진 음 0) | **A** (AMT 경로의 현실적 입력에서 M1의 이동·선율 비용이 맞는 음을 옮김) |
+| M15-wide-chords amt none s1 | 0.894 → 0.879 | m8: 오른손 B4·D5가 왼손으로 — AMT가 더한 B5가 오른손 B4와 옥타브 → octave 항 | **A** (M1) |
+| M15-wide-chords amt none s2 | 0.893 → 0.879 | m9: 잡음 없는 `G4+B4+D5+G5`, `G4+G5`에서 G4가 왼손 2성부로 | **A** (M1, 깨끗한 입력) |
+| M20-compound-12-8 amt oracle-noisy s1 | note_shape 0.9266 → 0.9259 | 불일치 8 → 8, 분모 109 → 108 | **B** (m4) |
+
+A 셋은 예외 처리가 아니라 M1을 고쳐서 없앤다.
+
+### 28.7 손 DP · 성부 · 리듬 · 철자 · 구조 공유
+
+- **손 DP**: 재현 — core 0.8876 → 0.9221, hands gate +50/−0, Beyer 032 1.0; full +726/−0. 병적 배정은 M1. crossing은 만들지 않는다(설계대로, 왼손이 잠깐 위로 가는 C6은 오른손으로). 극단 음역(C8/A0), 13도 화음, 셋잇단 아르페지오, 트레블로 올라가는 왼손(clef)은 probe에서 바뀌지 않았다.
+- **성부**: `E-VOICE-OVERLAP` 0, staff당 ≤ 2 (core·robust·full), 2성부가 생긴 케이스 core 146 / full 1,340 — 전부 P2 이동의 결과이고 그중 일부는 M1의 틀린 이동. 2성부 쉼표 core 894 (전체 쉼표의 2 %). G3b `perf-voices`는 `opts.g3b`로만.
+- **리듬·쉼표·tie**: rests/bar(`read.rests_per_measure`) core 2.88 → 3.08. 그래프 쉼표 41,774 → 44,110: R-repr 단독 +1,748 (같은 구간의 쉼표 2,265개를 규칙대로 더 나누고 539개를 합침), P2 약 +1,015 (2성부 쉼표 894 포함). 나누는 패턴은 박을 드러내는 표준 규칙이다 — 4/4·6/8 "e"에서 시작한 `8.` → `16 8` 1,069, 4/4 가운데를 가리는 `h.` → `q h`/`h q` 235, 3/4 2–3박 `h` → `q q` 82 등. 불필요한 과분할 버그는 찾지 못했다 (선택지는 o2뿐). `ties.extra_per_100` 4.24 → 2.66. `tm_missing` 2,647 → 279는 §28.4. **R17만이 release 변경을 필요로 한다**는 `tm_missing`에 대해 확인했다 (ONSET 0).
+- **철자·임시표**: `critical.accidentals` 1.0, `required_recall` 1.0, `nq.acc.redundant_rate` 0, 케이스별 철자·key 퇴행 0 (core·robust·full) — 단 구간 조는 한 번도 발동하지 않아(M3) A24는 사실상 무변화로 통과한다. 이조 part 불변, 미분음은 m3.
+- **구조 공유·불변성**: 공유된 event 객체 core 138,185 / full 1,114,506개 전부 deep-frozen, 변경 시도는 전부 throw, 입력 그래프는 G3 전후 바이트 동일·deep-frozen, 출력은 deep-frozen이고 **메모리 상태로도 canonical** (core 553: `canonicalize(JSON)`과 동일). 재사용 조건은 JSON 동일성이고, event의 canonical 형태는 자기 필드에만 의존한다(`eventStaff`). critic memo는 (frozen event, 마디 시작)의 순수 함수. **안전하다** (o5만).
+- **idempotence**: core 553 P(P(g)) 바이트 동일·같은 객체·`nextId`/`rev` 불변, 두 번 실행 동일; valid·xml fixture 195 실행(rewrite·fill·force) 전부 idempotent; `g3-idempotence.test.js`(golden·corpus 369 force·G3 fixture) 통과. 예외는 full 1건 (m2).
+- **G3b·8va 격리**: 기본 pass 목록 `staff, voice, rhythm, tuplet, spell, beam, marks`. `perf-voices`·`regularize`는 `opts.g3b`, `ottava`는 `opts.ottava`에서만; production(`toMusicXml`)은 `professionalOptions || {}`를 넘기고 아무도 설정하지 않는다. λ = 1(`REG.LAMBDA`)은 자리표시, baseline·lock 변경 없음. on 출력에 `<octave-shift>` 0. **G3b는 M11 전 production ready가 아니다.**
+
+### 28.8 A1–A40 재판정
+
+| # | 구현자 | 리뷰 | 근거 |
+| --- | --- | --- | --- |
+| A1 | PASS | PASS | `test:scoregraph` 199/199 |
+| A2 | PASS | PASS | sg-roundtrip 369: L1 368, L1+ 367, L2 369, 순서 369 (허용 2) |
+| A3 | PASS | PASS | performance 바이트 5,811 케이스 동일 |
+| A4 | PASS | PASS | 두 번 실행·테스트(자식 프로세스·다른 CWD) |
+| A5 | PASS | PASS (명세 집합) | full 1건 실패 (m2) |
+| A6 | PASS | **FAIL** | robust strict throw, full rollback 9 (M2) |
+| A7 | PASS | PASS | 심은 위반 12종 + A7b; (code, IDs) 비교의 틈은 M2 |
+| A8 | PASS | PASS | corpus 369 rewrite 무변경 |
+| **A9** | PARTIAL | PARTIAL | `W-DISPLAY-DURATION` 2,647 → 279, `W-TUPLET-INCOMPLETE` 8,144 → 139; 나머지는 R17 계열(§28.4), 새 경고 0 (core) |
+| **A10** | PARTIAL | PARTIAL (G3 의미 PASS) | 1-음 괄호 0, 그룹 완전; 앱이 32분 셋잇단 그룹을 나눔 → G4 (o1) |
+| A11 | PASS | PASS | T01–T10 — 단 T08은 설계와 다름 (M5) |
+| **A12** | PARTIAL | PARTIAL | 279 전부 R17 계열, 그중 8개는 G3a가 다시 쓴 조각 (M2) |
+| A13 | PASS | PASS | |
+| A14 | PASS | PASS | duration·onset_pos·ioi·notes.*·note_values·beat_placement 케이스별 동일 (core); `page_accuracy`만 3 케이스 이동 — 표시가 실제 길이와 일치하게 된 결과 |
+| **A15** | PARTIAL | PARTIAL/FAIL | 98 = H7 58, H6 30, R17 5, PARTIAL 4, **XVOICE 1 (G3 결함)** |
+| A16 | PASS | PASS | R01–R28 |
+| **A17** | PARTIAL | PARTIAL | 0.0174 → 0.0176 (G3-I1, 기록된 이탈) |
+| A18 | PASS | PASS | |
+| **A19** | PARTIAL | **DEFERRED (M11)** | 기본 off에서 A14 성립; on 판정은 실제 녹음 3곡 뒤. 합성 수치는 gate가 아니다 |
+| A20 | PASS | PASS (수치) | 0.922, +50/−0, Beyer 032 1.0 — 병적 배정은 M1 |
+| A21 | PASS | PASS | `over_span_rate` 0.00236 → 0.00234 (full 0.00235 → 0.00237) |
+| A22 | PASS | PASS | H01–H11 (M1 짜임은 없음) |
+| A23 | PASS | PASS | |
+| A24 | PASS | PASS (공허) | 퇴행 0 — 구간 조가 발동하지 않음 (M3) |
+| A25–A27 | PASS | PASS | |
+| A28–A31 | PASS | PASS | boundary_ok 1.0, coverage 0.985; 표기 불변 |
+| A32 | PASS | PASS (문구) | `critical.pedal` 퇴행 0 — 그러나 앱 재생은 B1 |
+| A33 | PASS | PASS | unit 265, golden 17/17, base ≡ off (모든 metric·MusicXML 동일, full 포함) |
+| **A34** | BLOCKED | **FAIL** | G0: smoke·core·robust·replay-public PASS, full REGRESSION (micro 4, §28.6). G3 gate: core 2줄, robust 3줄, full 3줄 FAIL. usable Δ core +1.27, robust +1.42, full +3.67, hold-out +0.96 (재현) |
+| **A35** | PASS (dry) | PASS (dry) | 17 중 14 변경, 전부 허용 범주 — 페달 범주가 B1을 허용함 |
+| **A36** | PENDING | **PENDING** | 세트 존재·재현(60/60 바이트 동일)·라이선스 기록, 블라인드 아님 (M4) |
+| A37 | PASS | **FAIL** | mutation-check 47/48 (M3) |
+| A38 | PASS | PASS | 26 suite를 하나씩: G3 off 25/26, G3 on(HEAD를 export해 기본값만 `'on'`) 25/26, 같은 집합 — `transcription`은 venv 경로 검사(`transcribe.py`·그 테스트는 G3가 안 건드림, G1·G2와 같은 환경 실패). 어느 suite도 녹음 악보의 페달 재생을 보지 않아 B1을 못 잡는다 |
+| A39 | PASS | PASS | 단독 2,000마디 40k head 1.68 s; 500/1000/2000/4000마디 0.38/0.79/1.68/3.61 s (선형); core suite +22 % |
+| A40 | PASS | PASS | `g3-midi.test.js` 통과 (M13·M14·M10은 G2 R4로 열리지 않음) |
+
+### 28.9 merge 전에 필요한 정확한 작업
+
+**사용자 결정** (Fixer가 정할 수 없는 것)
+
+- **U-1 (M6)**: `nq.tie.mergeable_rate`의 "한 기호로 쓸 수 있는"을 설계 규칙 H6·H7과 단일 성부에 맞춘다 (그 tie는 설계상 합칠 수 없음) — 승인된 R17 범위 밖의 metric 정의 변경. 또는 H6/H7을 바꾼다.
+- **U-2**: PARTIAL(부분 화음 tie)을 G3a 범위 밖(성부 분리는 G3b)으로 둘지.
+- **U-3 (B1)**: P8 페달 합치기를 기본 OFF로 둘지(권고, D2와 같은 논리), 앱의 `change` 재생을 고칠지(앱 재생 변경, G3 밖).
+
+**Fixer**
+
+1. B1: P8 페달 join 기본 OFF (U-3 전까지), golden `--g3` 허용 범주에서 페달 형태 제거, 앱 재생 모델로 페달 음 끝을 비교하는 테스트 추가.
+2. M1: octave·melody 항 수정(§28.5 M1), 위 probe 짜임 5개를 H-fixture로; core·full hand 재측정 — micro M04·M15 회복 확인.
+3. M2: 동결 전파 + critic의 내용 기반 경고 판정 + `g3-preserve` 기본 suite에 robust; robust·full rollback 0 확인.
+4. m1: tie 사슬 단위 이동, tie가 있는 event에 head 합치기 금지, cross-voice tie를 critic 위반으로.
+5. M5: T08 설계대로(인쇄 유지) 또는 nq가 괄호 없는 단독 time-mod를 센다.
+6. M6: gate 구현 — `check --g3`의 zero 줄을 "unexpected == 0"으로: (a) 분류는 G3 내부가 아니라 출력(MusicXML/그래프)의 격자 분석(§28.4 규칙), (b) R17은 writer가 쓴 그대로 남은 residual만, (c) R17 수는 케이스별 baseline·증가 금지, (d) XVOICE·rollback·CLEAN은 항상 FAIL, (e) 분류기 mutation 증명(`G3-TRIPLET-REST-NO-TM`, `G3-TIES-IN-BEAT`가 unexpected로 잡힘). 파일 allowlist 금지.
+7. M3: `G3-SPELL-STATIC`를 살아 있는 경로로 교체(또는 구간 조가 움직이는 케이스로 증명) — mutation-check 48/48.
+8. M4: 블라인드 세트 재생성 (`--pairs`가 불투명 라벨 + 분리된 열쇠).
+9. m2, m3, m4 (M20 불일치 수 판정).
+10. 다시: `test:scoregraph`(+ `PPP_G3_SUITES=core,robust,golden`), `test:scoregraph:perf`, `test:bench`, `golden --g3`, `mutation-check`, smoke·core·robust·replay-public·full `ab` vs `cc509e2`, `check --g3`, `npm test` off·on, 앱 페달 재생 비교.
+
+그 뒤에 A36 (사용자, MuseScore 4). flip은 A36 통과 뒤. G3b는 M11 전 OFF, 자동 8va OFF.
+
+### 28.10 human review 방법 (A36, 사용자용)
+
+세트: `tests/bench/human/g3/HG01–HG20/{A,B,C}.musicxml`, 층화 6종·출처 5곳, 참조는 신뢰·PPP 비전사 파일(provenance는 `meta.json`의 `reference`). 재생성: `python tests/bench/run.py human-set --build` (결정론적, 60 파일 바이트 동일 확인), `--pairs` (seed 20260924). **M4를 고친 뒤** 평가:
+
+1. MuseScore 4에서 각 파일을 열어 같은 설정으로 본다 (앱 렌더러는 beam·괄호를 스스로 다시 정해 쓰지 않는다, D7).
+2. 쌍 비교(블라인드 라벨): 발췌마다 두 판본을 리듬 읽기·성부/손·철자/임시표·전체 4축에서 left/same/right.
+3. 절대 평가: B와 C를 섞은 목록에서 "피아노 교사가 이 악보를 학생에게 줄 수 있나"(yes/fix/no)와 1–5점, A는 별도 목록.
+4. 역할만 적고(이름 없이) `tests/bench/human/g3/review-<date>-<role>.json`으로 저장, `python tests/bench/run.py human-set --score <파일>` — 기준 §21.5 (전체 축 B ≥ A 18/20, 리듬 축 B < A 0, 절대 평가 B > A). 빈 템플릿은 `A36: FAIL`(미완)로 나온다 — 확인함.
+
+리뷰어는 판정을 쓰지 않았다.
+
+### 28.11 회귀 (이 세션, `bc1f7b4`)
+
+| 명령 | 결과 |
+| --- | --- |
+| `npm run test:scoregraph` | 199/199 |
+| `PPP_G3_SUITES=robust … g3-preserve.test.js` | **FAIL** (M2) |
+| `npm run test:scoregraph:perf` | PASS ×3 (단독) |
+| `npm run test:bench` | unit 265 OK, golden 17/17, correctness 13/13 |
+| `run.py sg-roundtrip` | 367 + 허용 2 (base와 같음) |
+| `run.py golden --g3` (on SUT) | 0 outside, 14 허용 변경 |
+| `run.py mutation-check` | **FAIL 47/48** (`G3-SPELL-STATIC`) |
+| `validate-preds.js --g3` | 2,647 → 279, 8,144 → 139, 새 경고 0 |
+| smoke·core·robust·replay-public `run` + `check` (HEAD, G3 off, 저장 baseline) | 전부 PASS |
+| base vs off (smoke·core·robust·full, 5,855 케이스) | metric·MusicXML **완전히 동일** |
+| on vs base | 위 §28.8 A34 |
+| `npm test` 26 suite, G3 off / G3 on | 25/26 / 25/26 (둘 다 `transcription` 환경만) |
 
 ---
 
