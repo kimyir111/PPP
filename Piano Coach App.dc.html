@@ -35,13 +35,14 @@
 <script src="./scoregraph/index.js?v=8"></script>
 <script src="./audio-score.js?v=8"></script>
 <!-- G4a (docs/GOALS/G04 §8.5): where the renderer's ScoreGraph comes from, and what it must draw. Draws nothing yet. -->
-<script src="./engrave/ledger.js?v=1"></script>
-<script src="./engrave/plan-beams.js?v=1"></script>
-<script src="./engrave/plan-tuplets.js?v=1"></script>
-<script src="./engrave/plan.js?v=1"></script>
-<script src="./engrave/store.js?v=1"></script>
-<script src="./engrave/source.js?v=1"></script>
-<script src="./engrave/index.js?v=1"></script>
+<script src="./engrave/ledger.js?v=2"></script>
+<script src="./engrave/glyphs.js?v=2"></script>
+<script src="./engrave/plan-beams.js?v=2"></script>
+<script src="./engrave/plan-tuplets.js?v=2"></script>
+<script src="./engrave/plan.js?v=2"></script>
+<script src="./engrave/store.js?v=2"></script>
+<script src="./engrave/source.js?v=2"></script>
+<script src="./engrave/index.js?v=2"></script>
 <script src="./score-search.js"></script>
 <script src="./support.js"></script>
 <script src="./lessons.js"></script>
@@ -14774,13 +14775,14 @@ class Component extends DCLogic {
     score.source = source;
     if (this._recording) this._recording.barStarts = built.stats.barStarts;
     this.adoptScore(score);
+    /* the rewritten song is saved now, slot and graph, like an import: not only when the page is left (G04 §32.13) */
     this.setState({
       importReport: report, importSource: source,
       lockMetre: lock.beats + '/' + lock.beatType,
       lockBpm: lock.bpm,
       lockDownbeat: lock.firstDownbeat,
       reviewFrom: Score.first(score)
-    });
+    }, () => this.saveNow());
     this.say(tx('Rewrote the rhythm as {{metre}} at {{tempo}} BPM.', { metre: lock.beats + '/' + lock.beatType, tempo: lock.bpm }));
   }
   easierArrangement() {
@@ -14852,7 +14854,7 @@ class Component extends DCLogic {
       arrangementLevel: plan.level, arrangementStyle: plan.style,
       arrangementBusy: false, arrangementStatus: arrangementStatus || '',
       reviewFrom: Score.first(arranged)
-    });
+    }, () => this.saveNow());
     this.say(tx('Created a {{level}} {{style}} arrangement.', {
       level: tx(plan.level), style: this.arrangementStyleName(plan.style)
     }));
@@ -15049,7 +15051,7 @@ class Component extends DCLogic {
       lockMetre: m0.time.beats + '/' + m0.time.beatType,
       lockBpm: built.stats.tempo,
       reviewFrom: Score.first(score)
-    });
+    }, () => this.saveNow());
     if (arrangement) {
       const before = built.stats.originalNotes || built.stats.notes;
       const after = built.stats.notes;
@@ -15116,7 +15118,8 @@ class Component extends DCLogic {
       if (!best || (run.to - run.from) > (best.to - best.from)) best = run;
     });
     if (best) this.setLoop(best.from, best.to);
-    this.setState({ screen: 'analysis', journeyStep: 1, pendingSong: null });
+    /* accepted: the song and its graph are saved now, not when the page is left */
+    this.setState({ screen: 'analysis', journeyStep: 1, pendingSong: null }, () => this.saveNow());
     this.say(best && (best.to - best.from + 1) < Score.count(S.score)
       ? tx('Starting on measures {{from}}–{{to}}, the cleanest stretch.', { from: best.from, to: best.to })
       : tx('Recognition accepted.'));

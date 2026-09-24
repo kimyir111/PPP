@@ -170,3 +170,101 @@ test('every kind of Score the app holds gets a graph: import, catalogue, recordi
   assert.equal(r.via, 'live');
   assert.equal(SG.legacy.inferredNotation(r.graph), true);
 });
+
+/* ---------------------------------------------------------------- fixer P3, P4, P9 */
+test('P3: a Score object the app replaced with another of the same music still finds its producer\'s graph', async () => {
+  const g = await graphOf('tests/scoregraph/fixtures/xml/piano-marks.musicxml');
+  const score = scoreOf(g, 'pm');
+  const backend = E.store.memoryBackend();
+  const a = fresh(backend);
+  a.remember(score, g, 'import:musicxml');
+  /* the app now holds a copy (a Score read back from its slot, a cloned state object) */
+  const copy = reload(score);
+  assert.equal(a.hasLive(copy), false, 'not the object the graph was remembered with');
+  const r = a.resolveSync(copy);
+  assert.equal(r.via, 'live', 'found by its music');
+  assert.equal(r.graph, g);
+  assert.ok(a.stats.byContent >= 1);
+  const put = await a.persist('song-1', copy);
+  assert.ok(put.ok, put.code);
+  assert.equal(SG.fingerprint((await fresh(backend).resolve(reload(score), { key: 'song-1' })).graph), SG.fingerprint(g));
+  /* a copy whose music differs is not handed that graph */
+  const other = reload(score); other.notes.find(n => !n.rest).dur += 1;
+  assert.equal((await a.persist('song-2', other)).code, 'no-live-graph');
+});
+
+test('P3: a save that fails is counted and the next save tries again - no stuck pending save', async () => {
+  const g = await graphOf('tests/scoregraph/fixtures/xml/piano-marks.musicxml');
+  const base = scoreOf(g, 'pm');
+  /* agree() reads score.notes; make it throw on the second read of one save (the first is the music hash) */
+  let reads = 0, fail = true;
+  const score = Object.assign({}, base);
+  Object.defineProperty(score, 'notes', { enumerable: true, get() { reads++; if (fail && reads === 2) throw new Error('boom'); return base.notes; } });
+  const backend = E.store.memoryBackend();
+  const a = fresh(backend);
+  a.remember(score, g, 'x');
+  const r1 = await a.persist('song-1', score);
+  assert.equal(r1.ok, false);
+  assert.equal(r1.code, 'error');
+  assert.equal(backend._map.has('song-1'), false);
+  fail = false;
+  const r2 = await a.persist('song-1', score);
+  assert.ok(r2.ok, 'the next save keeps it: ' + r2.code);
+  assert.equal(a.stats.persist.error, 1);
+  assert.equal(a.stats.persist.ok, 1);
+});
+
+test('P9: a Score changed in place is resolved again, and its save is not taken as already done', async () => {
+  const g = await graphOf('tests/scoregraph/fixtures/xml/piano-marks.musicxml');
+  const score = scoreOf(g, 'pm');
+  const backend = E.store.memoryBackend();
+  const a = fresh(backend);
+  a.remember(score, g, 'import:musicxml');
+  assert.equal(a.resolveSync(score).via, 'live');
+  assert.ok((await a.persist('song-1', score)).ok);
+  assert.equal((await a.persist('song-1', score)).code, 'already');
+  /* the same object, other music (an edit in place keeps the Score's id) */
+  score.notes.find(n => !n.rest).dur += 0.5;
+  const r = a.resolveSync(score);
+  assert.notEqual(r.via, 'live', 'the memo does not hand back the graph of the music that was');
+  assert.equal(r.diagnostics[0].code, 'SOURCE_DISAGREE');
+  const p = await a.persist('song-1', score);
+  assert.equal(p.code, 'disagree', 'not "already": the music changed');
+  /* and the kept graph, now stale, is dropped at the next read */
+  const back = await fresh(backend).resolve(reload(score), { key: 'song-1' });
+  assert.equal(back.via, 'projected');
+  assert.equal(back.diagnostics[0].code, 'STORE_STALE');
+});
+
+test('P4: a kept graph from another library or music-hash version is checked by agree() again - kept when it agrees, dropped when not', async () => {
+  const g = await graphOf('tests/scoregraph/fixtures/xml/piano-marks.musicxml');
+  const score = scoreOf(g, 'pm');
+  const backend = E.store.memoryBackend();
+  const st = E.store.createStore({ backend: backend });
+  const src = E.createSource({ store: st });
+  const hash = src.scoreHash(score);
+  /* kept by an older library: same music hash, but the rules it agreed under are not this library's */
+  assert.ok((await st.put('song-1', g, { via: 'live', scoreId: score.id, scoreHash: hash, hashV: src.HASH_VERSION, agreeLib: '1.2.0' })).ok);
+  const r = await E.createSource({ store: st }).resolve(reload(score), { key: 'song-1' });
+  assert.equal(r.via, 'store');
+  assert.ok(r.revalidated);
+  assert.ok(r.diagnostics.some(d => d.code === 'STORE_REVALIDATED'));
+  assert.equal(backend._map.get('song-1').agreeLib, SG.version, 'kept again under this library');
+  /* the next read takes the fast path */
+  const r2 = await E.createSource({ store: st }).resolve(reload(score), { key: 'song-1' });
+  assert.equal(r2.via, 'store');
+  assert.equal(r2.revalidated, false);
+  /* another piece's graph under this song, from an older hash version: agree() refuses it */
+  const other = await graphOf('tests/scoregraph/fixtures/xml/grand-staff.musicxml');
+  assert.ok((await st.put('song-2', other, { via: 'live', scoreId: score.id, scoreHash: 'old-hash', hashV: 'h0', agreeLib: SG.version })).ok);
+  const r3 = await E.createSource({ store: st }).resolve(reload(score), { key: 'song-2' });
+  assert.equal(r3.via, 'projected');
+  assert.ok(r3.diagnostics.some(d => d.code === 'STORE_INCOMPATIBLE'));
+  assert.equal(backend._map.has('song-2'), false, 'and dropped');
+  /* a migrated schema: the same rule (a stub store that says so) */
+  const stub = { get: async () => ({ ok: true, graph: g, migrated: true, record: { scoreId: score.id, scoreHash: hash, hashV: src.HASH_VERSION, agreeLib: SG.version, producer: 'x' } }),
+    put: async () => ({ ok: true }), del: async () => true };
+  const r4 = await E.createSource({ store: stub }).resolve(reload(score), { key: 'song-3' });
+  assert.equal(r4.via, 'store');
+  assert.ok(r4.revalidated, 'a migrated graph is agreed again before use');
+});

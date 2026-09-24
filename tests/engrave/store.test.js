@@ -5,6 +5,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { SG, E, corpusGraphs, graphOf, scoreOf } = require('./helpers.js');
+const Z = require('../../scoregraph/serialize.js');
 
 const S = E.store;
 
@@ -48,7 +49,10 @@ test('everything that can go wrong with a kept graph is named, and none of it th
   assert.equal(await code(Object.assign({}, identity, { data: bytes.buffer })), 'fingerprint');
   /* a newer schema than this code knows */
   const newer = new TextEncoder().encode(text.replace('"scoregraph_version": ' + SG.SCOREGRAPH_VERSION, '"scoregraph_version": 99'));
-  assert.equal(await code(Object.assign({}, identity, { data: newer.buffer })), 'schema-version');
+  /* intact bytes (their own fingerprint) of a schema this code does not know */
+  assert.equal(await code(Object.assign({}, identity, { data: newer.buffer, fp: Z.fnv1a64(newer) })), 'schema-version');
+  /* the same bytes under the fingerprint of what was kept: changed after they were kept */
+  assert.equal(await code(Object.assign({}, identity, { data: newer.buffer })), 'fingerprint');
   /* intact bytes of a graph the validator refuses (a note of no length) */
   const doc = JSON.parse(text);
   doc.parts[0].events[0].dur = '0';
@@ -102,4 +106,29 @@ test('storage: what a kept graph costs, against the Score the song slot already 
     Math.round(max('gzip').gzip / 1024) + ' KB (' + max('gzip').rel + ', text ' + Math.round(max('gzip').text / 1024) + ' KB)');
   assert.ok(ratio < 0.2, 'gzip keeps a graph at a fifth of its text or less');
   assert.ok(max('gzip').gzip < S.LIMITS.record, 'the largest corpus graph fits one record');
+});
+
+/* ---------------------------------------------------------------- fixer P8 */
+test('P8: eviction reads record sizes only, never a kept graph', async () => {
+  const g = await graphOf('tests/scoregraph/fixtures/xml/piano-marks.musicxml');
+  const inner = S.memoryBackend();
+  let dataReads = 0;
+  const backend = Object.assign({}, inner, { kind: 'counted', get: async k => { dataReads++; return inner.get(k); } });
+  let t = 0;
+  const st = S.createStore({ backend: backend, now: () => ++t, limits: { records: 5 } });
+  for (let i = 0; i < 12; i++) assert.ok((await st.put('k' + String(i).padStart(2, '0'), g, { via: 'live' })).ok);
+  assert.equal(dataReads, 0, 'twelve saves and seven evictions read no graph');
+  assert.deepEqual(await st.keys(), ['k07', 'k08', 'k09', 'k10', 'k11']);
+  assert.equal(st.stats.evicted, 7);
+});
+
+test('P8: the cache stops writing before the origin\'s storage runs short, and says so', async () => {
+  const g = await graphOf('tests/scoregraph/fixtures/xml/piano-marks.musicxml');
+  const full = S.createStore({ backend: S.memoryBackend(), estimate: async () => ({ usage: 80.5e6, quota: 100e6 }) });
+  assert.equal((await full.put('a', g, { via: 'live' })).code, 'quota-guard', 'room left for the song videos');
+  const roomy = S.createStore({ backend: S.memoryBackend(), estimate: async () => ({ usage: 1e6, quota: 100e6 }) });
+  assert.ok((await roomy.put('a', g, { via: 'live' })).ok);
+  const broken = S.createStore({ backend: S.memoryBackend(), estimate: async () => { throw new Error('no'); } });
+  assert.ok((await broken.put('a', g, { via: 'live' })).ok, 'an estimate that fails is not a reason to stop');
+  assert.equal((await roomy.put('a', g, { via: 'revalidated' })).ok, true, 'a kept graph agreed again may be kept again');
 });

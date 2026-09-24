@@ -28,27 +28,42 @@
   }
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (get, browser) {
   'use strict';
-  const ledger = get('ledger'), plan = get('plan'), store = get('store'), source = get('source');
+  const ledger = get('ledger'), glyphs = get('glyphs'), plan = get('plan'), store = get('store'), source = get('source');
 
   /* what G4 stage this is, so a stale script is visible in a report */
-  const version = '0.1.0-g4a';
+  const version = '0.1.1-g4a';
 
   let app = null;
   /* The app's single source. Created on first use, over IndexedDB when the browser has it (a private window
-     may not): without it graphs are simply not kept between visits, and a reload rebuilds one from the Score. */
+     may not): without it graphs are simply not kept between visits, and a reload rebuilds one from the Score.
+     A save's heavy steps wait for idle time; the cache stops writing before the origin's storage runs short
+     (navigator.storage.estimate), leaving the room to the song videos; a Score rebuilt into a graph is marked
+     inferred exactly when the app itself calls its notation inferred (PPP.inferredAudioNotation). */
   function appSource() {
     if (app) return app;
     let st = null;
     try {
-      if (browser && browser.indexedDB) st = store.createStore({ backend: store.idbBackend(browser.indexedDB) });
+      if (browser && browser.indexedDB) {
+        const nav = browser.navigator;
+        const estimate = nav && nav.storage && typeof nav.storage.estimate === 'function' ? () => nav.storage.estimate() : null;
+        st = store.createStore({ backend: store.idbBackend(browser.indexedDB), estimate: estimate });
+      }
     } catch (e) { st = null; }
-    app = source.createSource({ store: st });
+    const idle = browser && typeof browser.requestIdleCallback === 'function'
+      ? () => new Promise(r => browser.requestIdleCallback(() => r(), { timeout: 2000 }))
+      : () => new Promise(r => setTimeout(r, 0));
+    const inferred = score => {
+      const P = browser && browser.PPP;
+      return P && typeof P.inferredAudioNotation === 'function' ? P.inferredAudioNotation(score) : undefined;
+    };
+    app = source.createSource({ store: st, yield: idle, inferred: s => { const v = inferred(s); return v === undefined ? SGL().scoreNotationInferred(s) : v; } });
     return app;
   }
+  const SGL = () => (browser && browser.PPPScoreGraph ? browser.PPPScoreGraph.legacy : require('../scoregraph/index.js').legacy);
 
   return Object.freeze({
     version: version,
-    ledger: ledger, store: store,
+    ledger: ledger, store: store, glyphs: glyphs,
     plan: plan.plan, PLAN_VERSION: plan.PLAN_VERSION, PLAN_DEFAULTS: plan.DEFAULTS, onsetKey: plan.onsetKey,
     inventory: ledger.inventory, audit: ledger.audit,
     createSource: source.createSource, identity: source.identity, scoreHash: source.scoreHash,

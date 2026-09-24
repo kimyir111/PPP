@@ -631,11 +631,34 @@
       (+x.n.m || 0) - (+y.n.m || 0) || soft(+x.n.b || 0) - soft(+y.n.b || 0) || (+x.n.staff || 1) - (+y.n.staff || 1) ||
       (+x.n.voice || 1) - (+y.n.voice || 1) || (x.k < y.k ? -1 : x.k > y.k ? 1 : 0) || x.i - y.i);
   }
+  /* What belongs to a chord, not to one note of it. A chord is the notes of one voice that start together and last as
+     long. MusicXML writes a chord's tuplet bracket, slur ends, accent and note dynamic on one <note> of it: the app's
+     reader (parseMusicXML) keeps each on the note that carried it, toScore puts the tuplet on every head and the rest on
+     the first; and which note of a chord is written first is order, not music. So agree() and link() read these at the
+     chord: a flag any note of the chord has, all of its notes have, and `chord` says only that the note is one of a
+     chord of more than one (G04 §32.12, fixer P7: 100 of the 553 core transcriptions disagreed on this alone). */
+  const CHORD_FLAGS = ['tupletStart', 'tupletStop', 'slurStart', 'slurStop', 'accent', 'marcato'];
+  function chordLevel(notes) {
+    const groups = new Map();
+    notes.forEach(n => {
+      if (n.rest || n.p === null || n.p === undefined) return;
+      const k = n.m + '|' + soft(+n.b || 0) + '|' + (n.voice || 1) + '|' + soft(+n.dur || 0);
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(n);
+    });
+    groups.forEach(g => {
+      CHORD_FLAGS.forEach(f => { const v = g.some(n => n[f]); g.forEach(n => { if (v) n[f] = true; else delete n[f]; }); });
+      const withDyn = g.find(n => n.dyn !== undefined && n.dyn !== null);
+      g.forEach(n => { if (withDyn) n.dyn = withDyn.dyn; else delete n.dyn; n.chord = g.length > 1; });
+    });
+    return notes;
+  }
+  const musicNotes = (notes, extra) => chordLevel((notes || []).map(n => Object.assign(pick(n, NOTE_SCALARS.concat(NOTE_OBJECTS)), extra ? extra(n) : {})));
   function comparable(score) {
     const s = unfinalize(score || {});
     const out = { title: s.title, composer: s.composer, tempo: s.tempo, staves: s.staves,
       measures: (s.measures || []).map(m => pick(m, MEASURE_SCALARS.concat(MEASURE_OBJECTS))),
-      notes: canonicalOrder((s.notes || []).map(n => pick(n, NOTE_SCALARS.concat(NOTE_OBJECTS)))).map(x => x.n) };
+      notes: canonicalOrder(musicNotes(s.notes)).map(x => x.n) };
     SCORE_LISTS.forEach(k => { out[k] = (s[k] || []).map(x => Object.assign({}, x)); });
     return out;
   }
@@ -643,8 +666,11 @@
   /* Do a Score and a graph state the same music? compare() on both, in one note order. Title, composer and the
      score tempo are what the app shows, not what it plays or draws in the staff (a course piece renames itself
      after it is read), so they are reported, never a reason to disagree. */
-  function agree(score, graph) {
-    const a = comparable(score), b = comparable(toScore(graph));
+  function agree(score, graph) { return agreeFrom(comparable(score), comparable(toScore(graph))); }
+  /* the same, from the two sides already read (comparable(score), comparable(toScore(graph))): a caller that must not
+     hold the main thread long reads them in separate steps (engrave/source.js persist) */
+  function agreeFrom(a, b) {
+    b = Object.assign({}, b);
     const info = [];
     ['title', 'composer', 'tempo'].forEach(k => {
       if (String(a[k]) !== String(b[k])) info.push({ field: k, detail: JSON.stringify(a[k]) + ' vs ' + JSON.stringify(b[k]) });
@@ -658,9 +684,8 @@
      note with the Score in the canonical order. ok only when every note matches in every field compare() reads. */
   function link(score, graph) {
     const proj = toScore(graph, { ids: true });
-    const A = canonicalOrder(unfinalize(score).notes.map(n => pick(n, NOTE_SCALARS.concat(NOTE_OBJECTS))));
-    const B = canonicalOrder(proj.notes.map(n => Object.assign(pick(n, NOTE_SCALARS.concat(NOTE_OBJECTS)),
-      { sgEvent: n.sgEvent, sgHead: n.sgHead })));
+    const A = canonicalOrder(musicNotes(unfinalize(score).notes));
+    const B = canonicalOrder(musicNotes(proj.notes, n => ({ sgEvent: n.sgEvent, sgHead: n.sgHead })));
     const byNote = new Array(A.length).fill(null);
     const out = { ok: true, byNote: byNote, mismatch: null };
     if (A.length !== B.length) { out.ok = false; out.mismatch = 'notes ' + A.length + ' vs ' + B.length; return out; }
@@ -752,6 +777,18 @@
     return d;
   }
 
+  /* Was this Score's notation worked out by PPP rather than stated by a file? A Score made by toScore says so itself
+     (sgFrom.inferred, from the graph's provenance); a transcription made by the recording path says it in its source,
+     read exactly as the app reads it (App inferredAudioNotation, 3479 - tests/engrave/fromscore.test.js keeps the two
+     the same). The page passes the app's own answer as fromScore's opts.inferred. */
+  function scoreNotationInferred(score) {
+    if (score && score.sgFrom && typeof score.sgFrom.inferred === 'boolean') return score.sgFrom.inferred;
+    const src = (score && score.source) || {};
+    return !!(!src.referenceScore && !src.retrieved &&
+      (src.transcriptionVersion || src.amt || src.taskMode ||
+        /transcription|transkun|ensemble/i.test(src.engine || '')));
+  }
+
   /* A graph for a Score that has none: a song saved before PPP kept graphs, a shared score, an old
      transcription (G04 §8.2). Compatibility, not an importer: it states what the Score states and nothing it
      does not. What the Score cannot say (beams, grace notes, lyrics, most articulations, a transposition)
@@ -778,8 +815,14 @@
     if (score.title !== undefined && score.title !== null) meta.title = String(score.title);
     if (score.composer !== undefined && score.composer !== null) meta.composer = String(score.composer);
     const b = Build.builder({ id: opts.id || idOf(score.id), meta: meta });
+    /* What the Score states comes back as imported from it; where PPP had worked the notation out in the first place
+       (a transcription, a MIDI file: opts.inferred, else the Score's own sgFrom / source) the whole notation is
+       inferred, as it was in the graph the Score came from. Whatever this function pairs or groups by rule - slurs,
+       an ambiguous tie, an unprinted tuplet run, the parts - is inferred on the object itself. */
+    const inferredScore = opts.inferred !== undefined ? !!opts.inferred : scoreNotationInferred(score);
     const srcEnt = b.source({ kind: 'legacy-score', tool: 'ppp-legacy-score', note: 'rebuilt from the app Score (G04 8.2)' });
-    b.setDefault({ src: srcEnt.id, op: 'imported' });
+    b.setDefault({ src: srcEnt.id, op: inferredScore ? 'inferred' : 'imported' });
+    const byRule = () => ({ src: srcEnt.id, op: 'inferred' });
 
     /* ---- measures, and where each Score measure number lands */
     const numIndex = new Map();
@@ -864,7 +907,9 @@
     if (pianoIdx < 0) pianoIdx = layout.parts.length - 1;
     const partOfStaff = {}, staffEnt = {}, parts = [];
     layout.parts.forEach((staves, pi) => {
-      const part = b.part({ instrument: pi === pianoIdx ? { kind: 'piano', family: 'keyboard' } : { kind: 'unknown', family: 'other' } });
+      /* the Score keeps no parts: which staves form one is read back from the hands (G4-I7), a rule */
+      const part = b.part({ instrument: pi === pianoIdx ? { kind: 'piano', family: 'keyboard' } : { kind: 'unknown', family: 'other' },
+        prov: byRule() });
       parts.push(part);
       staves.forEach(s => { partOfStaff[s] = pi; staffEnt[s] = b.staff(part, {}); });
     });
@@ -1008,7 +1053,8 @@
         const cands = heads.filter(z => z.x.tieStop && !used.has(z.h.id) && z.g !== a.g && R.eq(absStart(z.g), end) && P.midi(z.h.pitch) === midi && z.g.part === a.g.part);
         const pickOne = cands.find(z => z.g.ent.voice === a.g.ent.voice) || cands.find(z => z.g.label === a.g.label) ||
           cands.find(z => (z.x.staff || 1) === (a.x.staff || 1)) || cands[0];
-        if (pickOne) { used.add(pickOne.h.id); from.add(a.h.id); b.spanner(parts[a.g.part], { type: 'tie', from: a.h.id, to: pickOne.h.id }); }
+        /* one candidate: the flags say it. Several: the rule chose, and says so */
+        if (pickOne) { used.add(pickOne.h.id); from.add(a.h.id); b.spanner(parts[a.g.part], Object.assign({ type: 'tie', from: a.h.id, to: pickOne.h.id }, cands.length > 1 ? { prov: byRule() } : {})); }
         else { from.add(a.h.id); b.spanner(parts[a.g.part], { type: 'tie', from: a.h.id }); note('tie-open-start', a.x.m + ':' + a.x.p); }
       });
       heads.forEach(z => {
@@ -1029,12 +1075,12 @@
         list.forEach(g => {
           const x0 = g.notes[0];
           if (x0.slurStop) {
-            if (open.length) b.spanner(parts[g.part], { type: 'slur', from: open.shift().ent.id, to: g.ent.id });
-            else { b.spanner(parts[g.part], { type: 'slur', to: g.ent.id }); note('slur-open-end', x0.m); }
+            if (open.length) b.spanner(parts[g.part], { type: 'slur', from: open.shift().ent.id, to: g.ent.id, prov: byRule() });
+            else { b.spanner(parts[g.part], { type: 'slur', to: g.ent.id, prov: byRule() }); note('slur-open-end', x0.m); }
           }
           if (x0.slurStart) open.push(g);
         });
-        open.forEach(g => { b.spanner(parts[g.part], { type: 'slur', from: g.ent.id }); note('slur-open-start', g.notes[0].m); });
+        open.forEach(g => { b.spanner(parts[g.part], { type: 'slur', from: g.ent.id, prov: byRule() }); note('slur-open-start', g.notes[0].m); });
       });
     }
     {
@@ -1102,7 +1148,7 @@
           sp.ent = b.spanner(parts[members[0].part], x);
         });
         let run = null;
-        const close = () => { if (run) b.spanner(parts[run.part], { type: 'tuplet', events: run.members.map(x => x.ent.id), actual: run.a, normal: run.n, printed: false }); run = null; };
+        const close = () => { if (run) b.spanner(parts[run.part], { type: 'tuplet', events: run.members.map(x => x.ent.id), actual: run.a, normal: run.n, printed: false, prov: byRule() }); run = null; };
         list.forEach(g => {
           if (inPrinted.has(g)) { close(); return; }
           const t = tmOf(g);
@@ -1271,6 +1317,6 @@
     return { app: shape(a), graph: b ? shape(b) : null };
   }
 
-  return Object.freeze({ toScore, compare, describe, inferredNotation, unfinalize, comparable, agree, link, fromScore,
+  return Object.freeze({ toScore, compare, describe, inferredNotation, scoreNotationInferred, unfinalize, comparable, agree, agreeFrom, link, fromScore,
     NOTE_SCALARS, MEASURE_SCALARS, MEASURE_OBJECTS, SCORE_LISTS });
 });

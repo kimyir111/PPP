@@ -1,8 +1,8 @@
 /* G4a in the real page: every score on screen can get its ScoreGraph, and a song's graph outlives a reload
    (docs/GOALS/G04 §8.2, G4-U1, A16). Local, like the G2 page checks: needs the app served and puppeteer.
 
-     PORT=8791 node server.js
-     NODE_PATH=D:/PPP/node_modules node tests/engrave/tools/app-source-check.js [--url http://127.0.0.1:8791]
+     PORT=8793 node server.js
+     NODE_PATH=D:/PPP/node_modules node tests/engrave/tools/app-source-check.js [--url http://127.0.0.1:8793]
 
    Drives the app's own entry points - a method-book piece (openCoursePiece), a MusicXML and a MIDI file through
    the import door (scoreFromFile), the built-in sample - saves them as songs the way the app does, reloads the page,
@@ -15,7 +15,7 @@ const puppeteer = require('puppeteer');
 const { preparePage } = require(path.join(REPO, 'tests', 'boot'));
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
-const URL = arg('--url', 'http://127.0.0.1:8791') + '/Piano%20Coach%20App.dc.html';
+const URL = arg('--url', 'http://127.0.0.1:8793') + '/Piano%20Coach%20App.dc.html';
 const errors = [];
 const ok = (name, cond, detail) => {
   console.log((cond ? '  ok   ' : '  FAIL ') + name + (detail ? ' - ' + detail : ''));
@@ -49,7 +49,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   console.log('\n-- what loaded');
   const ver = await page.evaluate(() => ({ e: window.PPPEngrave.version, sg: window.PPPScoreGraph.version, store: window.PPPEngrave.app.store && window.PPPEngrave.app.store.backend }));
-  ok('PPPEngrave is on the page', ver.e === '0.1.0-g4a', JSON.stringify(ver));
+  ok('PPPEngrave is on the page', ver.e === '0.1.1-g4a', JSON.stringify(ver));
   ok('the graph cache is IndexedDB', ver.store === 'indexeddb');
 
   console.log('\n-- the built-in sample: no file, a graph rebuilt from the Score');
@@ -112,7 +112,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   console.log('\n-- a kept graph is damaged');
   await page.evaluate(async id => {
     await new Promise((resolve, reject) => {
-      const req = indexedDB.open('ppp-engrave', 1);
+      const req = indexedDB.open('ppp-engrave');
       req.onsuccess = () => {
         const t = req.result.transaction('graphs', 'readwrite');
         const s = t.objectStore('graphs');

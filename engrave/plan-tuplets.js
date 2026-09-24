@@ -18,10 +18,13 @@
      - the same ratio and the same unit (the stated unit, or else the same
        written value on every member)
      - consecutive in time with no gap, no grace note inside, and no
-       tuplet of more than one event in that voice-measure
+       tuplet of more than one event in that voice-measure (printed or not)
      - the members fill exactly one tuplet (normal x unit), starting on a
        multiple of that length from the bar line, in a measure that is not a
        pickup, and there are at least two of them
+     - no semantic boundary inside the group: the members are all in one beam
+       of the graph or all in none, no slur starts or ends strictly inside it,
+       and no clef or key changes inside it
    The group is a display object ('d:tuplet:<first event>'); the ledger records
    each member as merged, code 'merged-for-display'.
    ========================================================================== */
@@ -46,11 +49,27 @@
       {
         const cand = tups.filter(s => s.printed !== false && (s.events || []).length === 1 && !s.parent && !hasChild.has(s.id) &&
           s.show === undefined && events.get(s.events[0]) && !events.get(s.events[0]).grace && !events.get(s.events[0]).hidden);
+        /* a voice-measure that already states a tuplet of several notes - printed or not - groups its triplets itself */
         const multiInVm = new Set();
         tups.forEach(s => {
-          if (s.printed === false || (s.events || []).length < 2) return;
+          if ((s.events || []).length < 2) return;
           s.events.forEach(id => { const e = events.get(id); if (e) multiInVm.add(e.voice + '|' + e.m); });
         });
+        /* the boundaries a display group may not cross: the graph's beams, slur ends, clef and key changes */
+        const beamOf = new Map();
+        part.spanners.forEach(s => { if (s.type === 'beam') (s.events || []).forEach(id => beamOf.set(id, s.id)); });
+        const slurFrom = new Set(), slurTo = new Set();
+        part.spanners.forEach(s => { if (s.type === 'slur') { if (s.from) slurFrom.add(s.from); if (s.to) slurTo.add(s.to); } });
+        const changesIn = (m, staff, a, z) =>
+          part.clefs.some(c => c.m === m && c.staff === staff && R.lt(a, R.parse(c.at)) && R.lt(R.parse(c.at), z)) ||
+          (g.timeline.keys || []).some(k => k.m === m && R.lt(a, R.parse(k.at)) && R.lt(R.parse(k.at), z));
+        const boundaryInside = members => {
+          const b0 = beamOf.get(members[0].e.id) || null;
+          if (members.some(x => (beamOf.get(x.e.id) || null) !== b0)) return true;
+          if (members.some((x, k) => (k > 0 && slurFrom.has(x.e.id)) || (k < members.length - 1 && slurTo.has(x.e.id)))) return true;
+          const last = members[members.length - 1];
+          return changesIn(members[0].e.m, members[0].e.staff, members[0].at, R.add(last.at, last.dur));
+        };
         const graceAt = new Map();       /* voice|m -> [at] of grace events */
         part.events.forEach(e => { if (e.grace) { const k = e.voice + '|' + e.m; if (!graceAt.has(k)) graceAt.set(k, []); graceAt.get(k).push(R.parse(e.at)); } });
         const vms = new Map();
@@ -89,12 +108,14 @@
                   if (!R.lt(sum, span)) break;
                   j++;
                 }
-                if (j < list.length && j > i && R.eq(sum, span)) {
+                if (j < list.length && j > i && R.eq(sum, span) && !boundaryInside(list.slice(i, j + 1))) {
                   const members = list.slice(i, j + 1);
                   const evIds = members.map(x => x.e.id);
                   const id = L.ref.derived('tuplet', evIds[0]);
-                  groups.push({ id: id, events: evIds, actual: a.s.actual, normal: a.s.normal, unit: a.s.unit || null, parent: null,
-                    number: 'actual', bracket: null, placement: null, source: 'merged', members: members.map(x => x.s.id) });
+                  const unitCopy = u => (u ? { type: u.type, dots: u.dots || 0 } : null);
+                  groups.push({ id: id, events: evIds, actual: a.s.actual, normal: a.s.normal, unit: unitCopy(a.s.unit), parent: null,
+                    number: 'actual', bracket: null, placement: null, source: 'merged', members: members.map(x => x.s.id),
+                    memberUnits: members.map(x => unitCopy(x.s.unit)) });
                   members.forEach(x => groupOf.set(x.s.id, id));
                   i = j + 1;
                   grouped = true;
@@ -134,7 +155,8 @@
         const bracket = show.bracket !== undefined ? show.bracket : bracketDefault(s.events || []);
         if (number === 'none' && bracket === false) { ledger.push({ ref: s.id, kind: 'tuplet', status: 'suppressed', code: 'show-none' }); return; }
         const d = depth(s);
-        const t = { id: s.id, events: (s.events || []).slice(), actual: s.actual, normal: s.normal, unit: s.unit || null,
+        const t = { id: s.id, events: (s.events || []).slice(), actual: s.actual, normal: s.normal,
+          unit: s.unit ? { type: s.unit.type, dots: s.unit.dots || 0 } : null,
           parent: s.parent || null, number: number, bracket: bracket, placement: show.placement || null, source: 'graph' };
         if (d >= 2) {
           t.deferred = 'nested-3';

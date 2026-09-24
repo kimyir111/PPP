@@ -28,6 +28,11 @@ jobs:
       - run: python -m unittest discover -s tests/bench/unit -t tests/bench
       - run: npm run test:scoregraph                 # the ScoreGraph library and the graphs toMusicXml writes from (G01)
       - run: npm run test:engrave                    # G4a: render source, legacy.fromScore, NotationPlan and its ledger (G04)
+      - run: node tests/engrave/tools/make-e-fixtures.js --check   # the E fixtures are the generator's (G04 §22.1)
+      - run: node tests/engrave/tools/make-corpus.js --check       # the R corpus manifest is the rule's (G04 §22.2)
+      - run: node tests/engrave/tools/bench.js check --suite r     # L1 on the reference corpus against its baseline (G04 §21.5)
+      - run: node tests/engrave/tools/bench.js check --suite e
+      - run: node tests/engrave/tools/bench.js check --suite x
       - run: python tests/bench/run.py sg-roundtrip  # every committed MusicXML through ScoreGraph and back (G01)
       - run: node tests/scoregraph/tools/make-midi-fixtures.js --check   # the committed MIDI bytes are the generator's (G02)
       - run: python tests/bench/run.py golden

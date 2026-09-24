@@ -21,7 +21,7 @@ test('the app loads every engrave/ file after the scoregraph library and audio-s
   assert.deepEqual(eng.slice().sort(), fs.readdirSync(path.join(REPO, 'engrave')).filter(f => f.endsWith('.js')).map(f => 'engrave/' + f).sort());
   assert.ok(srcs.indexOf(eng[0]) > a, 'after audio-score.js, so the library is in place');
   assert.equal(eng[eng.length - 1], 'engrave/index.js');
-  const order = ['ledger', 'plan-beams', 'plan-tuplets', 'plan', 'store', 'source', 'index'].map(n => 'engrave/' + n + '.js');
+  const order = ['ledger', 'glyphs', 'plan-beams', 'plan-tuplets', 'plan', 'store', 'source', 'index'].map(n => 'engrave/' + n + '.js');
   assert.deepEqual(eng, order, 'each after what it needs');
 });
 

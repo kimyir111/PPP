@@ -11,13 +11,21 @@ const FIX = path.join(__dirname, 'fixtures');
 const read = p => fs.readFileSync(p, 'utf8');
 const json = p => JSON.parse(read(p));
 
+/* The G0 hold-out references (tests/bench/corpus/references.json, 52 of 312): kept out of every G4 test and set, so
+   G0's hold-out stays independent and no hold-out value is ever reported per file (G04 §22.2). */
+function holdoutPaths() {
+  const r = json(path.join(REPO, 'tests', 'bench', 'corpus', 'references.json'));
+  return new Set(r.references.filter(x => x.holdout).map(x => x.path));
+}
 /* The committed scores a G4 test may read: every catalogue file the provenance record calls eligible (the 15
-   quarantined ones are out of every suite, tests/bench/corpus/provenance.json policy), and the project's own
-   fixtures - ScoreGraph MusicXML and MIDI fixtures, the engraving stress fixture, the OMR fixture. */
+   quarantined ones are out of every suite, tests/bench/corpus/provenance.json policy) that is not a G0 hold-out
+   reference, and the project's own fixtures - ScoreGraph MusicXML and MIDI fixtures, the engraving stress fixture,
+   the OMR fixture. */
 function corpusFiles() {
   const prov = json(path.join(REPO, 'tests', 'bench', 'corpus', 'provenance.json'));
+  const holdout = holdoutPaths();
   const eligible = prov.entries.filter(e => e.eligible && !e.quarantine_reason && /\.(musicxml|xml|mxl)$/i.test(e.path)
-    && fs.existsSync(path.join(REPO, e.path))).map(e => e.path);
+    && !holdout.has(e.path) && fs.existsSync(path.join(REPO, e.path))).map(e => e.path);
   const own = [];
   [['tests/scoregraph/fixtures/xml', /\.musicxml$/], ['tests/scoregraph/fixtures/midi', /\.mid$/], ['tests/fixtures', /\.(musicxml|xml)$/],
     ['tests/bench/corpus/omr', /\.(musicxml|xml)$/], ['samples', /\.musicxml$/]].forEach(([d, re]) => {
@@ -72,5 +80,5 @@ function withPositions(score) {
 
 const scoreOf = (g, name) => withPositions(SG.legacy.toScore(g, { name: name || 'test', id: 'test:' + (name || g.id) }));
 
-module.exports = { REPO, SG, E, FIX, read, json, corpusFiles, graphOf, corpusGraphs, goldenGraphs, g3aGraphs, storedScores,
+module.exports = { REPO, SG, E, FIX, read, json, holdoutPaths, corpusFiles, graphOf, corpusGraphs, goldenGraphs, g3aGraphs, storedScores,
   withPositions, scoreOf };

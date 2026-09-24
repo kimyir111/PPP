@@ -25,9 +25,22 @@ test('the vendored file is VexFlow 4.2.3 byte for byte, and the README says whic
   assert.match(fs.readFileSync(path.join(V, '.gitattributes'), 'utf8'), /^\* -text$/m, 'git keeps the bytes as they are');
 });
 
-test('the licences travel with it: VexFlow (MIT) and Bravura (SIL OFL 1.1)', () => {
+test('the licences travel with it: VexFlow (MIT), and every font whose outlines the build carries', () => {
   assert.match(fs.readFileSync(path.join(V, 'LICENSE-vexflow.txt'), 'utf8'), /Copyright \(c\) 2010 Mohit Muthanna Cheppudira[\s\S]*Permission is hereby granted, free of charge/);
-  assert.match(fs.readFileSync(path.join(V, 'LICENSE-bravura-OFL.txt'), 'utf8'), /Reserved Font Name "Bravura"[\s\S]*SIL OPEN FONT LICENSE Version 1\.1/);
+  const ofl = { Bravura: 'LICENSE-bravura-OFL.txt', Petaluma: 'LICENSE-petaluma-OFL.txt', Leland: 'LICENSE-leland-OFL.txt' };
+  Object.keys(ofl).forEach(font => assert.match(fs.readFileSync(path.join(V, ofl[font]), 'utf8'),
+    new RegExp('Reserved Font Name "' + font + '"[\\s\\S]*SIL OPEN FONT LICENSE Version 1\\.1'), font));
+  /* every font table in the build is a music font with a notice (or Gonville, unrestricted; Custom, VexFlow's own)
+     or a text-metrics table with no outlines */
+  const vex = fs.readFileSync(path.join(V, 'vexflow-4.2.3.js'), 'latin1');
+  const fams = [...vex.matchAll(/fontFamily:"([A-Za-z]+)",resolution:/g)].map(m => m[1]).sort();
+  assert.deepEqual(fams, ['Arial', 'Bravura', 'GonvilleSmufl', 'Leland', 'Petaluma', 'PetalumaScript', 'serif']);
+  ['Arial', 'serif', 'PetalumaScript'].forEach(f => {
+    const i = vex.indexOf('fontFamily:"' + f + '"'), j = vex.lastIndexOf('glyphs:{', i);
+    assert.doesNotMatch(vex.slice(j, i), /[{,]o:"/, f + ' carries metrics, no outlines');
+  });
+  const readme = fs.readFileSync(path.join(V, 'README.md'), 'utf8');
+  ['Bravura', 'Petaluma', 'Leland', 'Gonville', 'Custom'].forEach(f => assert.ok(readme.indexOf('| ' + f) >= 0, f + ' has its row in vendor/README.md'));
 });
 
 test('it runs without a DOM, draws with Bravura first, and its geometry is the same every run (G04 §7.3)', () => {

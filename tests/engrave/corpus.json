@@ -1,0 +1,208 @@
+{
+  "schema": "engrave-corpus/1",
+  "doc": "docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md §22.2 - written by tests/engrave/tools/make-corpus.js",
+  "seed": "g4-r-2026-09-25",
+  "rule": "eligible and not quarantined (tests/bench/corpus/provenance.json), not a G0 hold-out reference (references.json), per stratum ordered by sha256(seed + \":\" + path), first n",
+  "excluded": {
+    "quarantined": 15,
+    "holdoutInStrata": 52
+  },
+  "strata": [
+    {
+      "name": "hymns",
+      "n": 10,
+      "measures": "SATB four voices on two staves",
+      "pool": 100,
+      "heldOut": 19,
+      "files": [
+        "catalog/hymns/all-creatures.musicxml",
+        "catalog/hymns/all-glory-laud.musicxml",
+        "catalog/hymns/christ-arose.musicxml",
+        "catalog/hymns/god-rest-ye-merry.musicxml",
+        "catalog/hymns/how-firm-a-foundation.musicxml",
+        "catalog/hymns/nearer-my-god.musicxml",
+        "catalog/hymns/pass-me-not.musicxml",
+        "catalog/hymns/the-strife-is-oer.musicxml",
+        "catalog/hymns/what-child-is-this.musicxml",
+        "catalog/hymns/when-i-survey.musicxml"
+      ]
+    },
+    {
+      "name": "beyer",
+      "n": 10,
+      "measures": "plain beams, repeats and voltas",
+      "pool": 65,
+      "heldOut": 11,
+      "files": [
+        "catalog/method/beyer/001.mxl",
+        "catalog/method/beyer/007.mxl",
+        "catalog/method/beyer/013.mxl",
+        "catalog/method/beyer/020.mxl",
+        "catalog/method/beyer/024.mxl",
+        "catalog/method/beyer/036.mxl",
+        "catalog/method/beyer/038.mxl",
+        "catalog/method/beyer/048.mxl",
+        "catalog/method/beyer/050.mxl",
+        "catalog/method/beyer/061.mxl"
+      ]
+    },
+    {
+      "name": "czerny599",
+      "n": 10,
+      "measures": "secondary beam breaks, articulations",
+      "pool": 56,
+      "heldOut": 9,
+      "files": [
+        "catalog/method/czerny599/010.mxl",
+        "catalog/method/czerny599/013.mxl",
+        "catalog/method/czerny599/017.mxl",
+        "catalog/method/czerny599/027.mxl",
+        "catalog/method/czerny599/030.mxl",
+        "catalog/method/czerny599/032.mxl",
+        "catalog/method/czerny599/033.mxl",
+        "catalog/method/czerny599/035.mxl",
+        "catalog/method/czerny599/049.mxl",
+        "catalog/method/czerny599/052.mxl"
+      ]
+    },
+    {
+      "name": "czerny849",
+      "n": 8,
+      "measures": "triplets, fingering, grace notes, slurs, 8va",
+      "pool": 28,
+      "heldOut": 6,
+      "files": [
+        "catalog/method/czerny849/002.mxl",
+        "catalog/method/czerny849/005.mxl",
+        "catalog/method/czerny849/007.mxl",
+        "catalog/method/czerny849/018.mxl",
+        "catalog/method/czerny849/020.mxl",
+        "catalog/method/czerny849/022.mxl",
+        "catalog/method/czerny849/023.mxl",
+        "catalog/method/czerny849/025.mxl"
+      ]
+    },
+    {
+      "name": "sonatina",
+      "n": 10,
+      "measures": "dense marks: slurs, dynamics, hairpins, fingering, grace notes",
+      "pool": 28,
+      "heldOut": 2,
+      "files": [
+        "catalog/method/sonatina/001.mxl",
+        "catalog/method/sonatina/003.mxl",
+        "catalog/method/sonatina/004.mxl",
+        "catalog/method/sonatina/006.mxl",
+        "catalog/method/sonatina/019.mxl",
+        "catalog/method/sonatina/021.mxl",
+        "catalog/method/sonatina/022.mxl",
+        "catalog/method/sonatina/024.mxl",
+        "catalog/method/sonatina/025.mxl",
+        "catalog/method/sonatina/026.mxl"
+      ]
+    },
+    {
+      "name": "burgmuller25",
+      "n": 7,
+      "measures": "tuplet display options, lyrics, pedal",
+      "pool": 10,
+      "heldOut": 1,
+      "files": [
+        "catalog/method/burgmuller25/003.mxl",
+        "catalog/method/burgmuller25/005.mxl",
+        "catalog/method/burgmuller25/006.mxl",
+        "catalog/method/burgmuller25/015.mxl",
+        "catalog/method/burgmuller25/016.mxl",
+        "catalog/method/burgmuller25/019.mxl",
+        "catalog/method/burgmuller25/023.mxl"
+      ]
+    },
+    {
+      "name": "hanon",
+      "n": 3,
+      "measures": "long beam chains, fingering",
+      "pool": 20,
+      "heldOut": 4,
+      "files": [
+        "catalog/method/hanon/001.mxl",
+        "catalog/method/hanon/005.mxl",
+        "catalog/method/hanon/010.mxl"
+      ]
+    },
+    {
+      "name": "catalog",
+      "n": 3,
+      "measures": "Fur Elise, Gymnopedie, Happy Birthday",
+      "pool": 3,
+      "heldOut": 0,
+      "files": [
+        "catalog/fur-elise.musicxml",
+        "catalog/gymnopedie-1.musicxml",
+        "catalog/happy-birthday.musicxml"
+      ]
+    }
+  ],
+  "files": [
+    "catalog/hymns/all-creatures.musicxml",
+    "catalog/hymns/all-glory-laud.musicxml",
+    "catalog/hymns/christ-arose.musicxml",
+    "catalog/hymns/god-rest-ye-merry.musicxml",
+    "catalog/hymns/how-firm-a-foundation.musicxml",
+    "catalog/hymns/nearer-my-god.musicxml",
+    "catalog/hymns/pass-me-not.musicxml",
+    "catalog/hymns/the-strife-is-oer.musicxml",
+    "catalog/hymns/what-child-is-this.musicxml",
+    "catalog/hymns/when-i-survey.musicxml",
+    "catalog/method/beyer/001.mxl",
+    "catalog/method/beyer/007.mxl",
+    "catalog/method/beyer/013.mxl",
+    "catalog/method/beyer/020.mxl",
+    "catalog/method/beyer/024.mxl",
+    "catalog/method/beyer/036.mxl",
+    "catalog/method/beyer/038.mxl",
+    "catalog/method/beyer/048.mxl",
+    "catalog/method/beyer/050.mxl",
+    "catalog/method/beyer/061.mxl",
+    "catalog/method/czerny599/010.mxl",
+    "catalog/method/czerny599/013.mxl",
+    "catalog/method/czerny599/017.mxl",
+    "catalog/method/czerny599/027.mxl",
+    "catalog/method/czerny599/030.mxl",
+    "catalog/method/czerny599/032.mxl",
+    "catalog/method/czerny599/033.mxl",
+    "catalog/method/czerny599/035.mxl",
+    "catalog/method/czerny599/049.mxl",
+    "catalog/method/czerny599/052.mxl",
+    "catalog/method/czerny849/002.mxl",
+    "catalog/method/czerny849/005.mxl",
+    "catalog/method/czerny849/007.mxl",
+    "catalog/method/czerny849/018.mxl",
+    "catalog/method/czerny849/020.mxl",
+    "catalog/method/czerny849/022.mxl",
+    "catalog/method/czerny849/023.mxl",
+    "catalog/method/czerny849/025.mxl",
+    "catalog/method/sonatina/001.mxl",
+    "catalog/method/sonatina/003.mxl",
+    "catalog/method/sonatina/004.mxl",
+    "catalog/method/sonatina/006.mxl",
+    "catalog/method/sonatina/019.mxl",
+    "catalog/method/sonatina/021.mxl",
+    "catalog/method/sonatina/022.mxl",
+    "catalog/method/sonatina/024.mxl",
+    "catalog/method/sonatina/025.mxl",
+    "catalog/method/sonatina/026.mxl",
+    "catalog/method/burgmuller25/003.mxl",
+    "catalog/method/burgmuller25/005.mxl",
+    "catalog/method/burgmuller25/006.mxl",
+    "catalog/method/burgmuller25/015.mxl",
+    "catalog/method/burgmuller25/016.mxl",
+    "catalog/method/burgmuller25/019.mxl",
+    "catalog/method/burgmuller25/023.mxl",
+    "catalog/method/hanon/001.mxl",
+    "catalog/method/hanon/005.mxl",
+    "catalog/method/hanon/010.mxl",
+    "catalog/fur-elise.musicxml",
+    "catalog/gymnopedie-1.musicxml",
+    "catalog/happy-birthday.musicxml"
+  ]
+}

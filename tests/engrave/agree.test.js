@@ -112,3 +112,33 @@ test('link names the graph event and head of every note, and refuses a Score tha
   t.notes[0].dur += 1;
   assert.equal(L.link(t, g).ok, false);
 });
+
+/* fixer P7: 100 of the 553 G0 core transcriptions disagreed with their own graph only because the app's reader keeps a
+   chord's tuplet bracket on the one <note> that carried it and toScore on every head */
+test('what belongs to a chord is read at the chord: where in the chord a flag sits is not music, whether the chord has it is', async () => {
+  const g = await graphOf('tests/engrave/fixtures/e/E39-g3a-shape.musicxml');
+  const s = scoreOf(g, 'e39');
+  assert.ok(L.agree(s, g).ok && L.link(s, g).ok);
+  /* a two-note chord that starts a tuplet, with the bracket on its first note only - as parseMusicXML reads it */
+  const chordStart = x => { const i = x.notes.findIndex(n => n.tupletStart && x.notes.some(o => o !== n && !o.rest && o.m === n.m && o.b === n.b && o.voice === n.voice)); return i; };
+  const withChord = clone(s);
+  const i = withChord.notes.findIndex(n => n.tupletStart);
+  const n0 = withChord.notes[i];
+  withChord.notes.splice(i + 1, 0, Object.assign(clone(n0), { p: 'A5', midi: 81, chord: true, tupletStart: undefined, slurStart: undefined }));
+  const g2 = L.fromScore(withChord).graph;
+  assert.ok(chordStart(withChord) >= 0);
+  assert.ok(L.agree(withChord, g2).ok, 'the bracket on one note of the chord or on every note: the same chord, the same bracket');
+  assert.ok(L.link(withChord, g2).ok);
+  /* the chord losing its bracket is a difference */
+  const noBracket = clone(withChord); noBracket.notes.forEach(n => { if (n.m === n0.m && n.b === n0.b && n.voice === n0.voice) delete n.tupletStart; });
+  assert.equal(L.agree(noBracket, g2).ok, false, 'a chord that no longer starts a tuplet');
+  /* a note leaving the chord is a difference */
+  const fewer = clone(withChord); fewer.notes.splice(i + 1, 1);
+  assert.equal(L.agree(fewer, g2).ok, false, 'a chord with a note fewer');
+  /* a slur start moved to another chord is a difference */
+  const moved = clone(s);
+  const a = moved.notes.findIndex(n => !n.rest && !n.slurStart), b2 = moved.notes.findIndex((n, k) => k > a && !n.rest && (n.m !== moved.notes[a].m || n.b !== moved.notes[a].b));
+  moved.notes[a].slurStart = true;
+  assert.equal(L.agree(moved, g).ok, false, 'a slur that starts somewhere else');
+  assert.ok(b2 > a);
+});

@@ -6,7 +6,7 @@
 
      remember(score, graph | () => graph, producer)
          the graph a producer made the Score from (an import, a transcription,
-         a catalogue piece), kept beside the Score object in memory only
+         a catalogue piece), kept beside the Score in memory only
      persist(key, score)      that graph into the store, under the song's key
      forget(key)              the song is gone: so is its graph
      resolve(score, {key})    -> Promise<RenderSource>
@@ -19,6 +19,14 @@
      via 'none'       not even that (the renderer keeps the legacy one)
    A graph is used only when it agrees with the Score (legacy.agree, the G2
    comparator): practice, playback and the page then speak of the same notes.
+
+   Identity is by content, not by object. A producer's graph is found for the
+   Score object it was made with, or - when the app has since replaced that
+   object with another holding the same music (a copy, a Score read back from
+   its slot) - by the Score's music hash among the last few producers. Results
+   are remembered per Score object together with that hash, so a Score changed
+   in place is resolved again, and a song's graph is kept once per song and
+   music hash, not per Score id.
 
    identity(score, source, plan) is the practice map: for every plan event the
    Score notes it is (their indices, the legacy data-onset keys, positions,
@@ -36,6 +44,11 @@
   'use strict';
 
   const L = SG.legacy;
+  /* how scoreHash reads a Score (h2: chords compared at the chord, legacy-score chordLevel); a kept record hashed another way
+     is checked by agree() again before it is used */
+  const HASH_VERSION = 'h2';
+  /* how many recent producers' graphs are kept for finding a replaced Score object by its music */
+  const RECENT = 8;
 
   /* The music of a Score, as a hash: what agree() compares, without the title, composer and score tempo. A kept
      graph is stale when this has changed since it was kept. Values are read the way compare() reads them - a null,
@@ -57,12 +70,21 @@
     return Z.fnv1a64(Z.utf8(JSON.stringify(norm(c))));
   }
 
+  /* hand the main thread back between the heavy steps of a save (the page passes requestIdleCallback) */
+  const defaultYield = () => new Promise(r => setTimeout(r, 0));
+
   function createSource(opts) {
     opts = opts || {};
     const store = opts.store || null;
+    const yieldNow = opts.yield || defaultYield;
+    /* score => true when the Score's notation was worked out by PPP (a transcription), for fromScore's provenance;
+       the page passes the app's own inferredAudioNotation */
+    const inferredOf = typeof opts.inferred === 'function' ? opts.inferred : null;
     const live = new WeakMap();
+    const recent = [];
     const memo = new WeakMap();
-    const stats = { remembered: 0, resolved: { live: 0, store: 0, projected: 0, none: 0 }, persisted: 0, persist: {}, disagree: 0 };
+    const stats = { remembered: 0, resolved: { live: 0, store: 0, projected: 0, none: 0 }, byContent: 0, persisted: 0, persist: {},
+      disagree: 0, revalidated: 0 };
     const count = (o, k) => { o[k] = (o[k] || 0) + 1; };
 
     const liveGraph = entry => {
@@ -78,14 +100,31 @@
       if (!score || typeof score !== 'object' || !graph) return false;
       const entry = typeof graph === 'function' ? { thunk: graph } : { graph: graph };
       entry.producer = producer || null;
+      entry.score = score;
+      entry.persisted = new Set();
+      entry.pending = new Map();
       live.set(score, entry);
       memo.delete(score);
+      recent.push(entry);
+      if (recent.length > RECENT) recent.shift();
       stats.remembered++;
       return true;
     }
+    /* The producer's graph for this Score: the one remembered with this very object, else the most recent one
+       remembered with a Score of the same music (the app replaced the object). agree() still decides. */
+    function entryFor(score, hash) {
+      const e = live.get(score);
+      if (e) return e;
+      for (let i = recent.length - 1; i >= 0; i--) {
+        const r = recent[i];
+        if (r.hash === undefined) { try { r.hash = scoreHash(r.score); } catch (err) { r.hash = null; } }
+        if (r.hash === hash) { stats.byContent++; return r; }
+      }
+      return null;
+    }
 
-    function fromLive(score, diagnostics) {
-      const entry = live.get(score);
+    function fromLive(score, hash, diagnostics) {
+      const entry = entryFor(score, hash);
       const g = liveGraph(entry);
       if (!g) return null;
       const ag = L.agree(score, g);
@@ -101,89 +140,133 @@
 
     function projected(score, diagnostics) {
       let fr;
-      try { fr = L.fromScore(score); } catch (e) { fr = { ok: false, error: String(e && e.message) }; }
+      try { fr = L.fromScore(score, { inferred: inferredOf ? !!inferredOf(score) : undefined }); }
+      catch (e) { fr = { ok: false, error: String(e && e.message) }; }
       if (!fr.ok) {
         diagnostics.push({ code: 'PROJECTION_FAILED', detail: fr.error || null });
         return { graph: null, via: 'none', link: { ok: false, byNote: [] }, agree: null, unsupported: fr.unsupported || [], diagnostics: diagnostics };
       }
       const ag = L.agree(score, fr.graph);
-      /* when the projection states the same music, the full check links it; otherwise fromScore's own map is what
-         there is, and the notes it could not rebuild stay unlinked */
-      const link = ag.ok ? L.link(score, fr.graph) : { ok: false, byNote: fr.byNote, mismatch: 'projection disagrees' };
+      /* The notes are linked whenever they all came back, even if something else the graph refuses did not (an
+         ending closed with no opening, a hairpin never opened - named in `unsupported`); only when notes themselves
+         are missing is fromScore's own map what there is, and the notes it could not rebuild stay unlinked. */
+      const full = L.link(score, fr.graph);
+      const link = full.ok ? full : { ok: false, byNote: fr.byNote, mismatch: full.mismatch };
       if (!ag.ok) diagnostics.push({ code: 'PROJECTION_DISAGREES', detail: ag.diffs[0] || null });
       return { graph: fr.graph, via: 'projected', link: link, agree: ag, unsupported: fr.unsupported, removed: fr.removed, diagnostics: diagnostics };
     }
 
-    function finish(score, res) {
+    function finish(score, hash, res) {
       count(stats.resolved, res.via);
-      memo.set(score, res);
+      res.scoreHash = hash;
+      memo.set(score, { hash: hash, res: res });
       return res;
     }
+    /* a result for this Score object, if its music is still what it was when resolved */
+    const known = (score, hash) => { const m = memo.get(score); return m && m.hash === hash ? m.res : null; };
 
     function resolveSync(score) {
-      if (memo.has(score)) return memo.get(score);
+      const hash = scoreHash(score);
+      const k = known(score, hash);
+      if (k) return k;
       const diagnostics = [];
-      return finish(score, fromLive(score, diagnostics) || projected(score, diagnostics));
+      return finish(score, hash, fromLive(score, hash, diagnostics) || projected(score, diagnostics));
     }
 
     async function resolve(score, ropts) {
       ropts = ropts || {};
-      /* a projection resolveSync() made earlier does not stand in for a graph the store may still have */
-      const known = memo.get(score);
-      if (known && known.via !== 'projected' && known.via !== 'none') return known;
+      const hash = scoreHash(score);
+      /* a projection made earlier does not stand in for a graph the store may still have */
+      const k = known(score, hash);
+      if (k && k.via !== 'projected' && k.via !== 'none') return k;
       const diagnostics = [];
-      const l = fromLive(score, diagnostics);
-      if (l) return finish(score, l);
+      const l = fromLive(score, hash, diagnostics);
+      if (l) return finish(score, hash, l);
       if (store && ropts.key && ropts.key !== 'demo') {
-        const r = await store.get(ropts.key);
-        if (r.ok) {
-          const rec = r.record;
-          if (rec.scoreId !== score.id) { diagnostics.push({ code: 'STORE_OTHER_SCORE' }); await store.del(ropts.key); }
-          else if (rec.scoreHash !== scoreHash(score)) { diagnostics.push({ code: 'STORE_STALE' }); await store.del(ropts.key); }
-          else {
-            const link = L.link(score, r.graph);
-            if (link.ok) return finish(score, { graph: r.graph, via: 'store', producer: rec.producer, link: link, agree: { ok: true, diffs: [], info: [] },
-              unsupported: [], migrated: !!r.migrated, diagnostics: diagnostics });
-            diagnostics.push({ code: 'STORE_LINK_FAILED', detail: link.mismatch });
-            await store.del(ropts.key);
-          }
-        } else if (r.code !== 'missing') diagnostics.push({ code: 'STORE_' + r.code.toUpperCase().replace(/-/g, '_') });
+        const got = await fromStore(ropts.key, score, hash, diagnostics);
+        if (got) return finish(score, hash, got);
       }
-      return finish(score, projected(score, diagnostics));
+      return finish(score, hash, projected(score, diagnostics));
     }
 
-    /* Keep the producer's graph for this song. Only a live graph that agrees with the Score is kept, once per
-       Score and key; everything that goes wrong is counted, and nothing throws into the save it runs beside. */
-    async function persist(key, score) {
-      try {
-        if (!store) return { ok: false, code: 'no-store' };
-        if (!key || key === 'demo' || !score) return { ok: false, code: 'no-key' };
-        const entry = live.get(score);
-        if (!entry) return { ok: false, code: 'no-live-graph' };
-        if (entry.persisted === key + '|' + score.id) return { ok: true, code: 'already' };
-        if (entry.pending) return entry.pending;
-        entry.pending = (async () => {
-          const g = liveGraph(entry);
-          if (!g) return { ok: false, code: 'no-graph' };
-          const ag = L.agree(score, g);
-          if (!ag.ok) { stats.disagree++; return { ok: false, code: 'disagree' }; }
-          const r = await store.put(key, g, { via: 'live', scoreId: score.id, scoreHash: scoreHash(score), producer: entry.producer });
-          if (r.ok) { entry.persisted = key + '|' + score.id; stats.persisted++; }
-          return r;
-        })();
-        const r = await entry.pending;
-        entry.pending = null;
-        count(stats.persist, r.ok ? 'ok' : r.code);
-        return r;
-      } catch (e) {
-        count(stats.persist, 'error');
-        return { ok: false, code: 'error' };
+    /* The kept graph, when it is this Score's and still states its music. A record kept under this library and hash
+       version, of this schema, was found to agree when kept and its music hash is the Score's: that is enough, and
+       link() checks every note. Otherwise - another library, another hash, a migrated schema - agree() decides again,
+       and a graph that still agrees is kept again under this library. */
+    async function fromStore(key, score, hash, diagnostics) {
+      const r = await store.get(key);
+      if (!r.ok) { if (r.code !== 'missing') diagnostics.push({ code: 'STORE_' + r.code.toUpperCase().replace(/-/g, '_') }); return null; }
+      const rec = r.record;
+      if (rec.scoreId !== score.id) { diagnostics.push({ code: 'STORE_OTHER_SCORE' }); await store.del(key); return null; }
+      const sameRules = rec.agreeLib === SG.version && rec.hashV === HASH_VERSION && !r.migrated;
+      if (sameRules && rec.scoreHash !== hash) { diagnostics.push({ code: 'STORE_STALE' }); await store.del(key); return null; }
+      let ag = { ok: true, diffs: [], info: [] };
+      if (!sameRules) {
+        ag = L.agree(score, r.graph);
+        if (!ag.ok) { diagnostics.push({ code: 'STORE_INCOMPATIBLE', detail: ag.diffs[0] || null }); await store.del(key); return null; }
+        stats.revalidated++;
+        diagnostics.push({ code: 'STORE_REVALIDATED', detail: { lib: rec.agreeLib, hashV: rec.hashV, migrated: !!r.migrated } });
+        await store.put(key, r.graph, { via: 'revalidated', scoreId: score.id, scoreHash: hash, hashV: HASH_VERSION, agreeLib: SG.version,
+          producer: rec.producer });
       }
+      const link = L.link(score, r.graph);
+      if (!link.ok) { diagnostics.push({ code: 'STORE_LINK_FAILED', detail: link.mismatch }); await store.del(key); return null; }
+      return { graph: r.graph, via: 'store', producer: rec.producer, link: link, agree: ag, unsupported: [], migrated: !!r.migrated,
+        revalidated: !sameRules, diagnostics: diagnostics };
+    }
+
+    /* Keep the producer's graph for this song. Only a live graph that agrees with the Score is kept, once per song and
+       music hash; a failure of any kind is counted and leaves the next save free to try again. Nothing throws into the
+       save it runs beside. The heavy steps (agree, the canonical text, gzip) each run after the page yields. */
+    async function persist(key, score) {
+      let code = 'error';
+      try {
+        if (!store) return done({ ok: false, code: 'no-store' });
+        if (!key || key === 'demo' || !score) return done({ ok: false, code: 'no-key' });
+        await yieldNow();
+        const hash = scoreHash(score);
+        const entry = entryFor(score, hash);
+        if (!entry) return done({ ok: false, code: 'no-live-graph' });
+        const job = key + '|' + hash;
+        if (entry.persisted.has(job)) return done({ ok: true, code: 'already' });
+        if (entry.pending.has(job)) return entry.pending.get(job);
+        const run = (async () => {
+          try {
+            const g = liveGraph(entry);
+            if (!g) return { ok: false, code: 'no-graph' };
+            /* agree(), in its two halves: each side read in its own step */
+            await yieldNow();
+            const mine = L.comparable(score);
+            await yieldNow();
+            const theirs = L.comparable(L.toScore(g));
+            await yieldNow();
+            const ag = L.agreeFrom(mine, theirs);
+            if (!ag.ok) { stats.disagree++; return { ok: false, code: 'disagree', detail: ag.diffs[0] || null }; }
+            await yieldNow();
+            const text = SG.serialize(g);
+            await yieldNow();
+            const r = await store.put(key, g, { via: 'live', text: text, scoreId: score.id, scoreHash: hash, hashV: HASH_VERSION,
+              agreeLib: SG.version, producer: entry.producer });
+            if (r.ok) { entry.persisted.add(job); stats.persisted++; }
+            return r;
+          } catch (e) {
+            return { ok: false, code: 'error', detail: String(e && e.message) };
+          }
+        })();
+        entry.pending.set(job, run);
+        let r;
+        try { r = await run; } finally { entry.pending.delete(job); }
+        return done(r);
+      } catch (e) {
+        return done({ ok: false, code: code, detail: String(e && e.message) });
+      }
+      function done(r) { count(stats.persist, r.ok ? (r.code === 'already' ? 'already' : 'ok') : r.code); return r; }
     }
 
     async function forget(key) { return store ? store.del(key) : false; }
 
-    return { remember, resolve, resolveSync, persist, forget, stats, store, scoreHash, hasLive: score => live.has(score) };
+    return { remember, resolve, resolveSync, persist, forget, stats, store, scoreHash, HASH_VERSION,
+      hasLive: score => live.has(score) };
   }
 
   /* The practice map (G04 §8.2 link): which Score notes each plan event is. Everything the practice layer reads -
@@ -220,5 +303,5 @@
     };
   }
 
-  return Object.freeze({ scoreHash, createSource, identity });
+  return Object.freeze({ scoreHash, HASH_VERSION, createSource, identity });
 });

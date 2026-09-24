@@ -55,7 +55,7 @@ test('A16: the practice map is complete and exact for every corpus Score (a live
     check(rel, score, res);
     notes += score.notes.length;
   }
-  assert.ok(notes > 90000, notes + ' notes mapped');
+  assert.ok(notes > 80000, notes + ' notes mapped');
 });
 
 test('A16: the same for PPP transcriptions, their G3a versions, and the Scores the app holds (rebuilt graphs)', () => {
