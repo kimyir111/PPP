@@ -1731,7 +1731,7 @@ Implementer, 2026-09-25. 브랜치 `g4-professional-engraving` (`D:/PPP-g4`), �
 ### 32.11 커밋
 
 - 설계: `bd73d4f` (Architect, 2026-09-24).
-- G4a 구현: 이 절을 담은 커밋, `bd73d4f` 바로 다음 (해시는 CURRENT_STATE·push 기록에). 브랜치만 push, 병합 안 함.
+- G4a 구현: `3b8921f` (코드·테스트·vendor·이 기록), 이 해시를 적은 문서 커밋이 그 다음. 브랜치 `g4-professional-engraving`만 push, 병합 안 함.
 
 ---
 
