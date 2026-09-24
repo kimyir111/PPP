@@ -35,7 +35,7 @@
 
   /* The library's own version, checked by audio-score.js so a cached old script never runs with a new one
      (G01 §19 R10). It changes with any change to these files' behaviour; SCOREGRAPH_VERSION is the schema's. */
-  const version = '1.2.0';
+  const version = '1.3.0';
 
   return Object.freeze({
     version: version,

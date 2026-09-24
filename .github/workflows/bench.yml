@@ -27,6 +27,7 @@ jobs:
         with: { python-version: '3.13' }
       - run: python -m unittest discover -s tests/bench/unit -t tests/bench
       - run: npm run test:scoregraph                 # the ScoreGraph library and the graphs toMusicXml writes from (G01)
+      - run: npm run test:engrave                    # G4a: render source, legacy.fromScore, NotationPlan and its ledger (G04)
       - run: python tests/bench/run.py sg-roundtrip  # every committed MusicXML through ScoreGraph and back (G01)
       - run: node tests/scoregraph/tools/make-midi-fixtures.js --check   # the committed MIDI bytes are the generator's (G02)
       - run: python tests/bench/run.py golden

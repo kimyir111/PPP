@@ -34,6 +34,14 @@
 <script src="./scoregraph/pro.js?v=8"></script>
 <script src="./scoregraph/index.js?v=8"></script>
 <script src="./audio-score.js?v=8"></script>
+<!-- G4a (docs/GOALS/G04 §8.5): where the renderer's ScoreGraph comes from, and what it must draw. Draws nothing yet. -->
+<script src="./engrave/ledger.js?v=1"></script>
+<script src="./engrave/plan-beams.js?v=1"></script>
+<script src="./engrave/plan-tuplets.js?v=1"></script>
+<script src="./engrave/plan.js?v=1"></script>
+<script src="./engrave/store.js?v=1"></script>
+<script src="./engrave/source.js?v=1"></script>
+<script src="./engrave/index.js?v=1"></script>
 <script src="./score-search.js"></script>
 <script src="./support.js"></script>
 <script src="./lessons.js"></script>
@@ -4473,6 +4481,36 @@ function readerMessage(code, name, detail) {
   return (name || 'that file') + ': ' + detail;
 }
 
+/* G4a (docs/GOALS/G04 §8.2): the graph a Score was made from stays beside it, in memory, for the renderer
+   to come; the song's slot write keeps it between visits (writeSlot). A Score without one gets one rebuilt
+   from it when asked. Nothing here changes the Score, and nothing here may stop an import: every failure is
+   swallowed and counted in PPPEngrave.app.stats. */
+function engraveRemember(score, graph, producer) {
+  try { if (window.PPPEngrave && score && graph) window.PPPEngrave.app.remember(score, graph, producer); } catch (e) {}
+  return score;
+}
+/* the XML a Score was parsed from, read into a graph only if the renderer or the save asks for it */
+function engraveRememberXml(score, xml, producer) {
+  if (!xml) return score;
+  return engraveRemember(score, () => {
+    const r = PPPScoreGraph.musicxml.import(xml, { scoreId: scoreIdFor(score.title), sourceName: score.title || null });
+    return r.ok ? r.graph : null;
+  }, producer);
+}
+function engravePersist(songId, score) {
+  try {
+    if (!window.PPPEngrave || !score || score.id === 'demo' || !songId || songId === 'demo') return;
+    const app = window.PPPEngrave.app;
+    if (!app.hasLive(score)) return;
+    /* after the save that called it, when the page is idle: a graph is kept once per song */
+    const run = () => { app.persist(songId, score).catch(() => {}); };
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 4000 }); else setTimeout(run, 0);
+  } catch (e) {}
+}
+function engraveForget(songId) {
+  try { if (window.PPPEngrave && songId && songId !== 'demo') window.PPPEngrave.app.forget(songId).catch(() => {}); } catch (e) {}
+}
+
 /* MusicXML PPP already holds as text - a catalogue piece, a method book - through the same reader.
    Synchronous, because the text is in hand: no caller's signature changes (G02 §14.2). */
 function scoreFromXml(xml, name) {
@@ -4483,7 +4521,7 @@ function scoreFromXml(xml, name) {
     e.soft = true; e.code = r.code;
     throw e;
   }
-  return Score.finalize(PPPScoreGraph.legacy.toScore(r.graph, { name: name }));
+  return engraveRemember(Score.finalize(PPPScoreGraph.legacy.toScore(r.graph, { name: name })), r.graph, 'musicxml-text');
 }
 
 /* Read whatever the user picked and turn it into a Score. */
@@ -4503,7 +4541,7 @@ async function scoreFromFile(file) {
   }
   const bytes = new Uint8Array(await file.arrayBuffer());
   const got = await importToGraph(bytes, file.name, kind);
-  return Score.finalize(PPPScoreGraph.legacy.toScore(got.graph, { name: file.name }));
+  return engraveRemember(Score.finalize(PPPScoreGraph.legacy.toScore(got.graph, { name: file.name })), got.graph, 'file:' + kind);
 }
 
 /* ============================================================================
@@ -7171,7 +7209,7 @@ const Import = {
     const yt = what.url ? Import.youtubeWatch(what.url) : null;
     if (heard.engine === 'catalog' && heard.xml) {
       stage('parse', {});
-      const score = parseMusicXML(heard.xml, heard.title || title);
+      const score = engraveRememberXml(parseMusicXML(heard.xml, heard.title || title), heard.xml, 'catalog-match');
       if (heard.composer) score.composer = heard.composer;
       const aligned = heard.barStarts && heard.barStarts.length
         ? { barStarts: heard.barStarts, duration: heard.duration, tempo: score.tempo, measures: score.measures.length }
@@ -7216,7 +7254,7 @@ const Import = {
     stage('parse', {});
     let score;
     try {
-      score = parseMusicXML(built.xml, title);
+      score = engraveRemember(parseMusicXML(built.xml, title), built.graph, 'recording');
     } catch (e) {
       throw importError('bad-musicxml', tx('The notes were heard but could not be turned into a score: {{message}}', { message: e.message }));
     }
@@ -7521,7 +7559,7 @@ const Import = {
       }
       const bytes = new Uint8Array(await file.arrayBuffer());
       const got = await importToGraph(bytes, file.name, kind);
-      const score = Score.finalize(PPPScoreGraph.legacy.toScore(got.graph, { name: file.name }));
+      const score = engraveRemember(Score.finalize(PPPScoreGraph.legacy.toScore(got.graph, { name: file.name })), got.graph, 'import:' + kind);
       source.status = 'parsed';
       /* what the import kept and what it could not, small enough to save with the song.
          The graph itself travels beside the source, not on it: `importSource` is written whole
@@ -7595,6 +7633,7 @@ const Import = {
 
     stage('parse', {});
     let score;
+    let scoreXml = xml;
     try {
       score = parseMusicXML(xml, file.name);
     } catch (e) {
@@ -7646,6 +7685,7 @@ const Import = {
           /* adopt only when the merged score is strictly closer to the page */
           if (reportM.issues.length < report.issues.length) {
             score = scoreM;
+            scoreXml = mergedXml;
             source.fromPdf = fromPdfM;
             report = reportM;
           }
@@ -7670,6 +7710,7 @@ const Import = {
     source.status = report.level === 'poor' ? 'low-confidence' : 'recognised';
     score.source = source;
     /* page images stay in memory for the review screen; they are never persisted */
+    engraveRememberXml(score, scoreXml, 'omr');
     return { score: score, source: source, report: report, pageImages: pages, musicxml: xml };
   }
 };
@@ -14715,7 +14756,7 @@ class Component extends DCLogic {
       return;
     }
     let score;
-    try { score = parseMusicXML(built.xml, S.score.title); } catch (e) {
+    try { score = engraveRemember(parseMusicXML(built.xml, S.score.title), built.graph, 'rewrite'); } catch (e) {
       this.say(tx('The notes were heard but could not be turned into a score: {{message}}', { message: e.message }));
       return;
     }
@@ -14980,7 +15021,7 @@ class Component extends DCLogic {
       return;
     }
     let score;
-    try { score = parseMusicXML(built.xml, S.score.title); } catch (e) {
+    try { score = engraveRemember(parseMusicXML(built.xml, S.score.title), built.graph, 'rewrite'); } catch (e) {
       this.say(tx('The notes were heard but could not be turned into a score: {{message}}', { message: e.message }));
       return;
     }
@@ -15157,8 +15198,11 @@ class Component extends DCLogic {
         modelAgreement: rep.modelAgreement, modelCount: rep.modelCount
       } : null
     };
-    try { localStorage.setItem(SONG_KEY + id, JSON.stringify(slot)); return true; }
+    try { localStorage.setItem(SONG_KEY + id, JSON.stringify(slot)); }
     catch (e) { this.storageFull(); return false; }
+    /* the graph the song's score was made from, kept beside it once (G04 §8.2, G4-U1); never in the way of this save */
+    engravePersist(id, S.score);
+    return true;
   }
   storageFull() {
     if (this._fullSaid && Clock.now() - this._fullSaid < 60000) return;
@@ -15512,6 +15556,7 @@ class Component extends DCLogic {
     this.libraryWrite(lib);
     try { localStorage.removeItem(SONG_KEY + id); } catch (e) {}
     MediaStore.del(id);
+    engraveForget(id);
     this.setState({ armedRemove: null });
     if (!opts.quiet && gone) this.say(tx('Removed {{title}} from My Songs.', { title: gone.title }));
   }

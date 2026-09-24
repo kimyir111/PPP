@@ -4,7 +4,7 @@ ScoreGraph에 **이미 있는** 기보 의미를 PPP의 실제 화면과 인쇄�
 
 | | |
 | --- | --- |
-| 상태 | **설계 (Architect, 2026-09-24)** — 구현 전. 사용자 결정 G4-U1–U4 대기 (§29). production 코드·flag 변경 없음 |
+| 상태 | **G4a 구현 (Implementer, 2026-09-25): §32 — READY_FOR_REVIEW.** 렌더 원천·`legacy.fromScore`·NotationPlan·ledger·그래프 캐시·VexFlow 고정. 사용자에게 보이는 변화 없음 (legacy 렌더러가 기본, 바이트 동일). 사용자 결정 G4-U1–U4 수용 (§31, U2·U4는 조건과 수정 포함). G4b–G4f 미착수. 설계: Architect 2026-09-24 |
 | 기준 커밋 | `origin/main` = `55d1bd5` (G3 PARTIAL/DEFERRED closeout, PR #8) |
 | 브랜치 / worktree | `g4-professional-engraving` / `D:/PPP-g4` |
 | 시작 검증 | `npm run test:scoregraph` → **205/205 pass** (이 세션이 `55d1bd5`에서 직접 실행) |
@@ -48,6 +48,8 @@ ScoreGraph에 **이미 있는** 기보 의미를 PPP의 실제 화면과 인쇄�
 - [28. 위험](#28-위험)
 - [29. 사용자 결정](#29-사용자-결정)
 - [30. Definition of done](#30-definition-of-done)
+- [31. 사용자 결정 기록](#31-사용자-결정-기록)
+- [32. G4a 구현 기록](#32-g4a-구현-기록)
 - [부록 A. 이 세션의 측정](#부록-a-이-세션의-측정)
 - [부록 B. 코드 위치 색인](#부록-b-코드-위치-색인)
 
@@ -430,7 +432,7 @@ resolve(song) -> { graph, via: 'live'|'refetch'|'store'|'projected', link, diagn
 ```
 
 1. **live**: 생산자가 만든 그래프를 곡 옆 메모리에 둔다 (`this._engraveGraph = {graph, scoreId}`; state·localStorage에 넣지 않는다 — G2-D14와 같은 이유). 새로 두는 곳: import door(7533, 7540), `scoreFromXml` 호출처(15867, 7296, 7320 — `scoreFromXml`이 그래프도 돌려주게 내부 함수 추가), 녹음·다시 쓰기의 `built.graph`(7219, 14718, 14776, 14983), 카탈로그 일치 녹음(7174)과 OMR(7599–7643)은 같은 XML을 그래프 importer로 읽은 결과.
-2. **refetch**: course·카탈로그 곡은 정적 파일이므로 다시 읽는다 (`importSource.kind === 'course'` + 파일 경로, 로컬 카탈로그 항목).
+2. **refetch**: course·카탈로그 곡은 정적 파일이므로 다시 읽는다 (`importSource.kind === 'course'` + 파일 경로, 로컬 카탈로그 항목). **G4a에서 만들지 않았다 (G4-I2, §32.3)**: U1이 수용되어 course·카탈로그 곡도 열 때 그래프가 저장되므로 다시 읽기는 같은 결과로 가는 두 번째 길이다.
 3. **store**: G4-U1이 A면, 저장해 둔 그래프 (§29).
 4. **projected**: `PPPScoreGraph.legacy.fromScore(score)` — **새 역투영**. 모든 Score에서 항상 된다.
 
@@ -653,6 +655,8 @@ S1 기호는 가능한 한 붙은 대상 가까이. S2 system 안 같은 종류(
 - 이유: G3 off 녹음 경로는 beam을 하나도 쓰지 않는다. "충실"을 문자대로 하면 모든 8분음표가 깃발로 그려져 지금보다 크게 나빠진다. 지금 렌더러도 beam을 만든다(O1). 차이는 **G3와 같은 규칙 하나**를 쓰고, 파생임을 ledger에 적는다는 것이다 (중복 D1 해소). 파일 전체에 beam이 없는 MusicXML을 읽을 때 자동 beam을 쓰는 것은 흔한 판각기 동작이기도 하다.
 - 파생 beam은 그래프에 쓰지 않는다. MusicXML export에도 나오지 않는다 (export는 그래프만 쓴다).
 - G3a가 켜지면 그래프에 beam이 생기고 파생은 저절로 사라진다 (§26).
+- **G4a 구현에서 바꾼 것 (G4-I1, §32.3)**: 파생의 단위는 성부-마디가 아니라 **part**다. part에 그래프 beam이 하나라도 있으면 그 part에서는 파생하지 않는다 — beam을 쓰는 파일은 쓰지 않은 곳도 말한 것이다. 위 표의 성부-마디 규칙은 beam을 쓰는 카탈로그 파일 15개에서 파일이 깃발로 둔 259 묶음을 beam으로 바꿨을 것이다 (예: Czerny 599/26의 둘째 성부).
+- **(G4-I6)** 한 음 tuplet의 표시 병합(§12.3)을 beam보다 먼저 정해, 파생 beam 규칙이 병합된 묶음을 tuplet 하나로 본다. 그러지 않으면 병합된 셋잇단에 beam이 생기지 않는다.
 
 ### 11.2 기하
 
@@ -706,6 +710,7 @@ G3 off의 녹음 writer는 셋잇단 **조각마다** 괄호를 연다 (이슈 2
 - **충실한 그림**: 멤버마다 숫자 "3" (괄호 없이, 음표머리 또는 beam 쪽). 지금은 **아무것도 안 그린다**(O3) — 셋잇단 8분 셋이 보통 8분 셋처럼 보여 리듬을 읽을 수 없다.
 - **표시 병합 (선택지)**: 같은 성부에서 비율·단위가 같은 1-음 printed tuplet이 시간상 이어지고, 멤버 길이 합이 정확히 tuplet 하나(`normal × unit`)이며, 그 시작이 마디 안에서 그 단위 격자에 맞으면, 숫자 하나(괄호 규칙은 §12.1)로 그린다. 마디를 넘지 않는다. ledger는 원래 spanner ID들을 `merged`로 적는다. 그래프에 여러 멤버 tuplet이 하나라도 있는 성부-마디에서는 하지 않는다 (G3a 그래프에서는 저절로 꺼짐).
 - 둘 중 무엇을 기본으로 할지는 **G4-U2** (§29). 권고는 표시 병합이다. 어느 쪽이든 타이밍은 그대로이고, G3의 `nq.*` metric은 그래프를 재므로 이슈 20은 G3 측정에서 그대로 보인다.
+- **사용자 결정 G4-U2 B (§31)**: 표시 병합은 **모든 구조 조건이 한 시각 묶음임을 증명할 때만**, 애매하면 그래프 그대로. G4a의 조건 (`engrave/plan-tuplets.js`): printed, 멤버 하나, parent·자식 없음, 명시 `show` 없음; 같은 part·성부·staff·마디; grace·hidden 아님; 같은 비율과 같은 단위(명시 unit, 없으면 모든 멤버의 같은 음가); 틈 없이 이어지고 그 안에 grace 없음; 그 성부-마디에 여러 멤버 tuplet 없음; 멤버 합이 정확히 tuplet 하나(normal × unit)이고 마디 첫머리에서 그 길이의 배수에서 시작; pickup 마디 아님; 멤버 둘 이상. ledger는 각 멤버를 `merged`, code `merged-for-display`로 적는다. 조건 하나하나가 테스트로 고정되어 있다 (`tests/engrave/plan.test.js`).
 
 ### 12.4 검사
 
@@ -814,7 +819,9 @@ tie(같은 음높이를 잇는 소리 의미)와 slur(구절·레가토 표시)�
 
 화면 폭 약 100 sp와 인쇄 폭 약 103 sp가 거의 같아서, 두 모드의 system 내용도 비슷하다.
 
-### 15.2 화면 줄바꿈 (G4-U4 권고 A)
+### 15.2 화면 줄바꿈 (G4-U4 권고 A, 사용자 수정 수용)
+
+> **사용자 결정 G4-U4 (§31)**: 데스크톱 4마디, 휴대폰 2마디는 **선호 목표이지 고정 규칙이 아니다.** 실제 줄바꿈은 밀도와 폭이 이긴다 — 빽빽하면 줄이고, 성기면 **늘릴 수도 있다**. 외톨이 마지막 마디는 가능한 한 피한다. 인쇄는 밀도 기반 (§15.5). 아래 규칙은 G4b에서 이 결정에 맞춰 구현한다: 목표 N을 비용의 중심으로 두는 DP (N에서 멀수록 벌점, 폭 초과는 금지, 너무 성긴 줄은 N+1 이상 허용).
 
 - 한 system에 N마디 (데스크톱 4, ≤720 px 2 — 지금 `barsPerLine()` 16534와 같음). `width(0) × 1.05 > W`면 한 마디씩 줄인다 (지금과 같음).
 - **외톨이 마지막 줄 방지**: 마지막 system이 1마디이고 N ≥ 3이며 앞 system이 있으면, 앞 system에서 한 마디를 넘긴다 (4+1 → 3+2), 둘 다 들어갈 때만.
@@ -1239,7 +1246,7 @@ node tests/engrave/tools/legacy-geometry.js            # 옛 렌더러의 SVG에
 | A21 | beam 기울기 ≤ 0.25, 짧은 stem 0, beam이 자기 묶음 머리를 가로지르지 않음 | L2 |
 | A22 | tie 끝점 오차 ≤ 0.5 sp, slur 곡선이 안쪽 음 요소를 지나는 비율 ≤ 1 % (전부 진단 목록에) | L2 |
 | A23 | rod 위반 0, 간격 단조성 위반 0 | L2 |
-| A24 | system 넘침 0, 피할 수 있었던 1마디 system 0, 화면 system당 마디 ≤ N | L2 |
+| A24 | system 넘침 0, 피할 수 있었던 1마디 system 0, 화면 줄바꿈이 G4-U4(§31: N은 선호 목표, 밀도가 이김)의 규칙대로 | L2 |
 | A25 | staff·system 겹침 0, 세로 skyline 충돌 0 | L2 |
 | A26 | 다성부 staff-마디에서 stem 규칙 위반 0 (그래프 `display.stem` 또는 성부 순서), 쉼표가 다른 성부 머리와 겹침 0 | L2, E12–E13, R hymns |
 
@@ -1502,6 +1509,229 @@ G4는 다음이 모두 참일 때 끝난다.
 7. `docs/CURRENT_STATE.md`, `docs/DECISIONS.md`(G4-D·U를 Accepted로), `docs/ARCHITECTURE.md`(S5 렌더러 부분 완료), 이 문서의 구현·리뷰 기록 절이 갱신됨.
 8. "판각이 드러낸 업스트림 결함" 목록 (§26.1)과 `deferred` 목록이 다음 Goal을 위해 적혀 있다.
 9. G3의 상태 표시는 그대로 PARTIAL / DEFERRED다 — G4가 G3를 완료로 만들지 않는다.
+
+---
+
+## 31. 사용자 결정 기록
+
+2026-09-24, G4a 착수 지시와 함께. 네 결정 모두 수용, U2와 U4는 사용자의 조건·수정과 함께. `docs/DECISIONS.md` G4-U1–U4.
+
+| ID | 결정 | 이 문서에 반영한 곳 |
+| --- | --- | --- |
+| G4-U1 | **수용.** 그래프를 IndexedDB에 캐시한다 (압축이 맞으면 압축). ScoreGraph가 진실이다. 들여온 곡을 다시 불러와도 그래프 의미를 조용히 잃지 않는다. legacy Score는 호환·복구 표현이다. 그래프가 없으면 `legacy.fromScore`가 만들고, 그 결과는 설계된 `legacy.compare` 경로로 확인한다 | §8.2; 구현 §32.4 |
+| G4-U2 A | **수용.** 추론 tie를 **그린다**. 재생·연습이 이어진 음으로 다루면 악보에도 tie가 보여야 한다 | §13.1; 구현: plan은 모든 tie를 `drawn`으로, 추론이면 `inferred: true` (legacy 렌더러는 G4b까지 그대로) |
+| G4-U2 B | **조건부 수용.** 표시 병합은 **필요한 구조 조건이 모두** 인접한 한 음 tuplet이 한 시각 묶음임을 증명할 때만 — 적어도 같은 성부, 같은 staff, 같은 비율, 시간상 이어짐·양립, 충돌하는 의미 경계 없음, 결정론적 묶음. ledger에 merged-for-display(파생된 시각 묶음)로 기록한다. ScoreGraph의 시간·의미를 바꾸지 않는다. 병리적 한 음 tuplet을 일괄로 숨기지 않는다. 묶음이 애매하면 의미 그대로 그린다 | §12.3; 구현 §32.6 |
+| G4-U3 | **수용.** G4 인쇄는 브라우저 인쇄 layout → 인쇄 대화상자의 벡터 PDF. 외부 판각 엔진·서버 PDF 파이프라인 없음. MusicXML 내보내기는 따로 남는다 | §17 (G4e) |
+| G4-U4 | **수정 수용.** 데스크톱 4마디, 휴대폰 2마디는 **선호 목표이지 고정 규칙이 아니다**. 실제 줄바꿈은 밀도·폭이 이긴다: 빽빽하면 줄이고 성기면 늘린다. 외톨이 마지막 마디는 가능한 한 피한다. 인쇄는 밀도 기반 | §15.2, A24 (G4b) |
+
+---
+
+## 32. G4a 구현 기록
+
+Implementer, 2026-09-25. 브랜치 `g4-professional-engraving` (`D:/PPP-g4`), 설계 커밋 `bd73d4f` 위. **상태: READY_FOR_REVIEW** — 독립 리뷰 한 번을 기다린다. 병합하지 않았다. G4b는 시작하지 않았다.
+
+### 32.1 범위
+
+- **한 것** (§27 G4a): 렌더 원천 (live → store → projected), `legacy.fromScore`·`agree`·`link`, 좌표 없는 NotationPlan과 fidelity ledger, 곡마다 IndexedDB에 두는 그래프 캐시 (G4-U1), 연습 identity map, VexFlow 4.2.3 vendoring, `npm run test:engrave` (CI).
+- **하지 않은 것 (의도)**: 새 렌더러를 켜지 않았고 스위치 `PPP.renderer`도 없다 (G4b). 앱은 plan을 만들지 않는다 — `PPPEngrave.plan`을 부르는 곳은 테스트와 도구뿐이다. G4b 간격·충돌, G4c beam 그리기, G4d 기호·곡선, G4e 인쇄, 사람 평가, G5 없음. G3는 전부 off다: G3 flag를 읽지 않고 `professionalize`를 부르지 않는다 (A46).
+- **사용자에게 보이는 변화: 없음.** legacy 렌더러의 SVG가 `55d1bd5`와 바이트 동일 (§32.8), ScoreView 블록 hash 불변. 보이지 않는 변화 둘: 페이지가 `engrave/*.js` 7개를 더 읽고 (합 67 KB, 압축 전), 곡을 저장하면 idle 때 IndexedDB `ppp-engrave`에 그래프 한 벌을 쓴다.
+
+### 32.2 파일
+
+| 파일 | 무엇 |
+| --- | --- |
+| `engrave/source.js` | `createSource({store})` → `remember`, `resolve`, `resolveSync`, `persist`, `forget`, `stats`; `scoreHash`; `identity` (연습 map) |
+| `engrave/store.js` | 그래프 record `encode`/`decode`, `idbBackend`(IndexedDB)·`memoryBackend`, `createStore` (한도·축출) |
+| `engrave/plan.js` | `plan(graph, config)` → NotationPlan (§32.6) |
+| `engrave/plan-beams.js` | 그래프 beam과 파생 beam (`pro-beam.groups`) |
+| `engrave/plan-tuplets.js` | tuplet 표시, 한 음 tuplet 표시 병합 (G4-U2 B) |
+| `engrave/ledger.js` | status·ref 정의, `inventory(graph)` (plan과 독립), `audit(graph, plan)` |
+| `engrave/index.js` | `window.PPPEngrave` (`0.1.0-g4a`): `plan`, `audit`, `inventory`, `identity`, `store`, `scoreHash`, `app` (IndexedDB 위의 source, 처음 쓸 때 만든다) |
+| `scoregraph/legacy-score.js` | `fromScore`, `agree`, `link`, `unfinalize`, `comparable`, 필드 목록 (`NOTE_SCALARS` 등, `compare`도 이것을 쓴다), `toScore(g, {ids:true})`의 `sgEvent` |
+| `scoregraph/index.js`, `audio-score.js` | 라이브러리 1.2.0 → 1.3.0 (G4-I8) |
+| `Piano Coach App.dc.html` | `engrave/*.js?v=1` script 7개 (`audio-score.js` 다음); `engraveRemember`·`engraveRememberXml`·`engravePersist`·`engraveForget`; 생산자 8곳 (MusicXML 글, 파일, import door, 녹음, 다시 쓰기 둘, 카탈로그 맞춤, OMR); `writeSlot`·`removeSong` 각 한 줄. 모든 호출은 `try`로 싸여 import·저장을 멈추지 못한다 |
+| `vendor/` | `vexflow-4.2.3.js`, `README.md` (출처·sha256·SRI), `LICENSE-vexflow.txt`, `LICENSE-bravura-OFL.txt`, `.gitattributes` (`* -text`) |
+| `tests/engrave/` | 테스트 9 파일 50개, `helpers.js`, `fixtures/legacy/*.score.json` (앱에서 잡은 Score 13), `tools/` (`capture-legacy-scores.js`, `app-source-check.js`, `legacy-parity.js`, `g4a-report.js`) |
+| `package.json`, `.github/workflows/bench.yml` | `test:engrave`; CI에서 `test:scoregraph` 다음에 |
+| `docs/` | 이 문서 (§31, §32, 상태), `DECISIONS.md` (U1–U4, I1–I11), `CURRENT_STATE.md` |
+
+### 32.3 구현 중 결정과 설계와의 차이
+
+결정 G4-I1–I11의 전문과 증거는 `docs/DECISIONS.md`에 있다. 요약:
+
+| ID | 결정 |
+| --- | --- |
+| G4-I1 | 파생 beam의 단위는 **part** (G4-D3을 좁힘): part에 그래프 beam이 하나라도 있으면 그 part에서는 파생하지 않는다. 성부-마디 규칙은 beam을 쓰는 카탈로그 15 파일에서 깃발로 둔 259 묶음을 beam으로 바꿨을 것이다 |
+| G4-I2 | refetch를 만들지 않았다: live → store → projected. U1로 course·카탈로그 곡도 저장된다 |
+| G4-I3 | 캐시 키는 곡 id. `writeSlot` 뒤 idle에 저장, `removeSong`이 지운다. 읽을 때마다 scoreId·music hash 확인 |
+| G4-I4 | `agree`는 한 음 순서로 정렬해 G2 `compare()`에 넘기고, 제목·작곡가·점수 tempo는 보고만 한다 |
+| G4-I5 | music hash는 `compare()`처럼 정규화 (null·없음·false 같음, 수는 6자리) — `packScore`가 null을 버려 다시 불러온 곡이 전부 "낡음"이던 것을 페이지 검사가 찾았다 |
+| G4-I6 | 한 음 tuplet 병합을 beam보다 먼저 정하고, 파생 beam 규칙에 병합 묶음을 tuplet 하나로 넘긴다 |
+| G4-I7 | `fromScore`는 Score의 손에서 part 구성을 되살린다 |
+| G4-I8 | 라이브러리 1.3.0. `toScore`의 기본 출력은 바이트 그대로 |
+| G4-I9 | VexFlow는 vendoring만, 앱은 불러오지 않는다 (legacy는 CDN 그대로, G4b까지) |
+| G4-I10 | ledger status는 다섯 + code. 사용자의 이름과의 대응: merged-for-display = `merged` + `merged-for-display`, 명시적 의미로 숨김 = `suppressed` + code, 미지원 = `deferred` + code |
+| G4-I11 | `fromScore`는 조용히 버리지 않는다: 그래프가 거절한 객체는 하나씩 빼고 `refused-by-graph:<code>`로 이름을 댄다. staff 없는 Score 8va는 피아노 part 첫 staff에 두고 `ext['musicxml.ottava'].staff = 'assumed'`로 표시한다 (importer와 같은 방식, `toScore`는 다시 staff 없음으로 읽는다) |
+
+**§27 G4a 범위에서 벗어난 것 — 리뷰어가 판단할 것:**
+
+1. **E01–E40 fixture, `tests/engrave/corpus.json`, `tools/bench.js`의 L1은 만들지 않았다 → G4b로.** E fixture 대부분은 기하(간격·충돌·곡선 모양)를 재기 위한 것이라 plan만 있는 G4a에서는 판정할 것이 적다. G4a의 L1은 대신 (a) `plan.test.js`의 "L1 (A1)" 테스트가 코퍼스 399 그래프 + PPP 전사 17 + 그 G3a 17 전부에 대해 판정하고, (b) `tools/g4a-report.js`가 종류별 ledger 표를 찍는다 (§32.6). E 목록의 의미 사례(중첩 tuplet, 8va, 피아노 기호, 4성부, `printed:false`, 한 음 tuplet, 추론 tie)는 기존 ScoreGraph fixture와 테스트 안에서 builder로 만든 그래프로 다룬다. A2·A3·A4가 가리키는 E01–E07·E38 번호는 아직 없다.
+2. **refetch 없음** (G4-I2).
+3. **A1의 `projected-loss` status 없음** (G4-I10): ledger는 그래프가 말한 것만 센다. projection이 Score에서 그래프로 옮기지 못한 것은 `RenderSource.unsupported`(= `fromScore`의 `unsupported`)가 code와 수로 말한다.
+4. **A3 "성부-마디"는 "part"** (G4-I1).
+
+### 32.4 렌더 원천과 그래프 캐시 (G4-U1)
+
+**원천.** `PPPEngrave.app.resolve(score, {key})` → `{graph, via, link, agree, unsupported, diagnostics}`:
+
+1. **live** — 생산자가 Score를 만든 그래프 (`remember`로 Score 객체 곁에, 메모리에만). MusicXML 글로 가진 곡(카탈로그 맞춤, OMR)은 thunk로 두어 필요할 때만 읽는다. `agree`와 `link`가 둘 다 통과할 때만 쓴다. 아니면 `SOURCE_DISAGREE` / `LINK_FAILED`.
+2. **store** — 곡 id로 저장된 그래프. record의 `scoreId`가 Score의 id와 같고, `scoreHash`가 지금 Score의 music hash와 같고, `link`가 통과할 때만. 아니면 record를 지우고 `STORE_OTHER_SCORE` / `STORE_STALE` / `STORE_LINK_FAILED` / `STORE_<decode code>`.
+3. **projected** — `legacy.fromScore(score)` + `agree` + `link`. `unsupported`에 잃은 것. `PROJECTION_FAILED` / `PROJECTION_DISAGREES`면 `via: 'none'` (legacy 렌더러가 그대로 그린다).
+
+결과는 Score 객체마다 memo된다 (`resolveSync`는 store 없이 1·3만).
+
+**저장.** `writeSlot`이 slot을 쓴 뒤 `engravePersist(songId, score)` → `requestIdleCallback` (timeout 4 s) → `persist`. 저장하는 것은 **live이고 agree가 통과한 그래프뿐**이다: projected 그래프는 `put`이 `not-live`로 거절하므로, **다시 만든 그래프가 저장된 그래프를 덮어쓰는 길은 없다**. 한 곡·한 Score에 한 번 (`already`), 진행 중이면 다시 하지 않는다. `removeSong`이 `forget(songId)`로 지운다.
+
+**record** (`ppp-engrave` DB, `graphs` store, keyPath `key` = 곡 id): `{key, v:1, lib, sgv, graphId, rev, fp, scoreId, scoreHash, producer, encoding, size, stored, data, savedAt}`.
+
+- `data` = `SG.serialize(graph)`의 canonical 글을 `CompressionStream('gzip')`으로 (없으면 `identity`). 직렬화는 결정론적이고 (같은 그래프 → 같은 바이트) 그래프를 바꾸지 않는다 (encode 전후 fingerprint 같음, 테스트).
+- `fp` = 그래프 fingerprint (canonical 글의 FNV-1a 64). 읽을 때 다시 계산해 같아야 쓴다.
+
+**이전과 실패** — 모든 경우에 이름이 있고, 아무것도 throw하지 않으며, 곡은 언제나 열린다:
+
+| code | 뜻 | 동작 |
+| --- | --- | --- |
+| `missing` | record 없음 (G4a 이전에 저장된 곡 포함) | projected |
+| `record-version` | record 형식 `v`가 다름 | 지우고 projected |
+| `schema-version` | 더 새 ScoreGraph schema (`SG.parse`의 `E-VERSION`) | 지우고 projected |
+| (이전) | 더 옛 schema는 `SG.parse`가 migrate한다. 이때 fingerprint는 비교하지 않고 (`migrated: true`) validate만 | 사용 |
+| `no-decompression`, `encoding`, `no-data`, `unreadable`, `decode-failed` | 풀 수 없음 | 지우고 projected |
+| `fingerprint`, `invalid` | 바이트가 바뀜, validator ERROR | 지우고 projected |
+| `STORE_STALE`, `STORE_OTHER_SCORE` | Score가 바뀜 (다시 쓰기 등), 다른 Score | 지우고 projected |
+| put: `too-large` (record > 16 MB), `quota`, `backend` | 저장 실패 | 조용히 건너뜀, 곡 저장은 이미 끝남 |
+
+한도: record 200개, 합 64 MB. 넘으면 오래된 것부터 지운다. IndexedDB가 없으면 `resolve`는 store 없이 live → projected로 간다.
+
+**페이지 검사** (`tools/app-source-check.js`, 실제 앱 진입점): 기본 곡 → projected; course 곡, MusicXML·MIDI 파일 → live, 저장됨; 다시 불러오기 → 두 곡 모두 store, fingerprint가 저장 전과 같음; record 손상 → `STORE_DECODE_FAILED`로 이름을 대고 지운 뒤 projected, legacy 렌더러 그림은 그대로; My Songs·썸네일·퀴즈의 모든 Score가 그래프를 얻음; 곡 삭제 → 그래프도 지워짐; page error 0, engrave 경고 0.
+
+### 32.5 `legacy.fromScore`
+
+`fromScore(score)` → `{ok, graph, issues, byNote, unsupported: [{code, count, example}], removed}`. importer가 아니라 호환 경로다: Score가 말하는 것만 말하고, 옮기지 못한 것은 code로 이름을 댄다 (지어내지 않는다).
+
+- 옮기는 것: 마디·박자·조·세로줄·ending·jump·tempo, 손 → part 구성 (G4-I7), 첫 part의 clef, event (같은 자리의 음은 화음, 성부 겹침은 같은 이름의 층으로), tie (이어진 같은 음, 열린 끝 허용), slur (staff+voice 사슬에서 FIFO 짝), tuplet (stack 짝짓기, 부모 비율, 인쇄 안 된 연속), arpeggio, 음에 붙은 셈여림, 코드명, 셈여림 (소리 velocity 포함), hairpin, pedal, 8va (G4-I11).
+- 이름을 대는 것 (code마다 수와 첫 예): 예 `percussion-or-unpitched`, `transposition` (Score에 이조 음정이 없음), `microtone`, `tie-open-start`·`tie-open-end`, `slur-open-*`, `tuplet-unclosed`, `ottava-staff`, `refused-by-graph:<code>` (그래프 validator가 ERROR로 거절해 뺀 객체, 한 번에 하나씩 빼고 다시 봉인).
+- 결정론: 같은 Score → 같은 그래프 바이트, 저장했다 다시 읽은 Score에서도 (테스트).
+- **A48 결과** (`toScore(fromScore(S)) ≡ S`, `agree`와 테스트 안의 엄격 비교(모든 필드, 1e-9) 둘 다):
+  - 코퍼스 399 그래프: 398 동일, 1은 허용 목록 (`unpitched.musicxml`, `percussion-or-unpitched`로 말함).
+  - 커밋된 import 파일 504개 전체 (MusicXML 253, MXL 222, MIDI 29, `agree`만): 503/504, 같은 1개.
+  - PPP 전사 17, 그 G3a 17, 앱에서 잡은 Score 13 (녹음, parse, import, 저장 뒤 다시 읽음, 기본 곡): 전부 동일.
+
+### 32.6 NotationPlan과 ledger
+
+**NotationPlan** (`plan/1`, 좌표 없음, 모든 항목에 그래프 ID): `{version, graph:{id, rev, fingerprint}, config, meta, measures, meters, keys, tempos, endings, jumps, parts, staves, voices, roles, clefs, events, beams, tuplets, ties, slurs, lines, marks, ledger, summary, diagnostics}` + 열거되지 않는 `index`. config 기본값 `{mode:'screen', fingering:true, chords:true, marks:true, respectSourceBreaks:false, deriveBeams:true, oneNoteTupletMerge:true}`.
+
+- event: 적힌 음높이 (이조와 ottava `[from, to)`를 반영), stem (`display.stem`, 없으면 그래프 성부 순서, 음높이 아님), 성부 역할.
+- tie: 그래프의 모든 tie, `inferred`는 `SG.legacy.inferredNotation`에서 (G4-U2 A: 전부 `drawn`, 숨기지 않음).
+- beam: 그래프 beam은 `drawn` (여러 staff에 걸치면 `deferred` `cross-staff-beam`). 그래프 beam이 없는 part에만 `pro-beam.groups`로 파생 (`derived`, code `part-states-no-beams`), 그래프에는 쓰지 않는다.
+- tuplet: `printed:false` → `suppressed` `printed-false`; show none + 괄호 없음 → `suppressed` `show-none`; 3단 중첩 → `deferred` `nested-3`; 병합 → `merged` `merged-for-display`; 그 밖의 한 음 tuplet은 그래프대로 `drawn` (code `one-note`). 괄호 기본값은 "beam과 같지 않으면".
+
+**G4-U2 B 표시 병합** (`plan-tuplets.js` `merges`). 모든 조건이 참일 때만 묶는다. 하나라도 거짓이면 각 tuplet을 그래프대로 그린다:
+인쇄됨; event 하나; 부모·자식 없음; 명시적 `show` 없음; 같은 part·성부·staff·마디; 꾸밈음·숨김 아님; 같은 비율과 단위 (적힌 단위, 없으면 같은 표시 음가); 시간상 연속이고 사이에 꾸밈음 없음; 그 성부-마디에 여러 음 tuplet 없음; 길이 합 = normal × 단위; 시작이 그 단위 격자에 맞음; 못갖춘마디 아님; 둘 이상.
+그래프의 시간·의미는 바뀌지 않는다 (plan 전후 fingerprint 같음, A13). 결과: 433 그래프에서 45 tuplet → 15 묶음. 테스트는 14가지 경우 — 격자 밖, 틈, 셋 중 둘, 다른 비율, 다른 staff, 다른 성부, 명시적 `show`, 단위 없는 다른 음가, 사이 꾸밈음, 같은 성부-마디의 여러 음 tuplet, 못갖춘마디, 숨김, `printed:false` 멤버, 세로줄 넘김 — 에서 병합이 없고 각 tuplet이 그래프대로 그려지는지 본다. 중첩(부모·자식)은 코드의 조건으로만 막는다 (테스트 builder가 부모를 만들지 않음).
+
+**ledger** (`ledger.js`): `inventory(graph)`는 plan을 읽지 않고 그래프가 말하는 기보 객체를 ref → 종류로 센다. `audit(graph, plan)`은 `silent` (inventory에 있는데 ledger에 없음), `invented`, `duplicate`, `kindMismatch`, `missing` (ledger는 drawn인데 plan에 없음), `badStatus`를 센다. 테스트가 각 결함을 일부러 만들어 audit이 잡는지 본다.
+
+**L1 결과** (`tools/g4a-report.js`, 433 그래프 = 코퍼스 399 + 전사 17 + G3a 17): silent 0, invented 0, duplicate 0, missing 0, kindMismatch 0. 파생 beam 3,772, 병합 묶음 15. `deferred`는 `title-block` 234 (제목 영역, G4e)와 `cross-staff-chord` 1뿐.
+
+| 종류 | 수 | drawn | 그 밖 |
+| --- | --- | --- | --- |
+| note / head / stem | 86,150 / 96,774 / 41,579 | 전부 | — |
+| beam (그래프) | 10,278 | 10,278 | + derived 3,772 (plan 항목, 그래프 객체 아님) |
+| tuplet | 1,947 | 297 | merged 45, suppressed 1,605 (전부 `show-none`: 파일이 숫자와 괄호를 숨김) |
+| tie / slur | 326 / 2,971 | 전부 | — |
+| articulation / fingering / dynamic / wedge | 6,782 / 11,491 / 856 / 357 | 전부 | — |
+| pedal / pedal-change / ottava | 42 / 1 / 51 | 전부 | — |
+| rest | 5,285 | 5,122 | suppressed 163 (숨김) |
+| tempo / meter | 385 / 447 | 354 / 445 | suppressed 31 (`sound-only`), 2 (숨김) |
+| layout-break / multi-rest | 285 / 1 | 0 | suppressed (화면 모드, `respectSourceBreaks:false`) |
+
+### 32.7 연습 identity
+
+`identity(score, source, plan)` → `{events: {graphEventId: {notes, heads, onsetKeys, midis, hands, abs, m}}, measures, byNote, unmatchedNotes, unmatchedEvents, complete}`. `onsetKey`는 앱의 `onsetKey`(data-onset 키)를 그대로 재현한다. MIDI는 `ottavaShift`를 포함한 연습 쪽 값이다.
+결과 (A16): 코퍼스 399 (live 그래프), 전사 17·G3a 17·앱 Score 13 (다시 만든 그래프) 모두 `complete` — Score의 모든 음이 정확히 한 event·head에 대응하고, 하이라이트 키·마디·seek 위치·MIDI·손이 Score와 같다. Score를 저장했다 다시 읽어도 같다. link가 실패한 그래프는 쓰지 않는다 (§32.4).
+
+### 32.8 검증
+
+**Acceptance (G4a 몫)**
+
+| # | 결과 |
+| --- | --- |
+| A1 | PASS (plan 수준): 433 그래프에서 silent·invented·duplicate·missing 0, `deferred`는 허용 code만. `projected-loss`는 §32.3-3 |
+| A3 | PASS (part 단위, G4-I1): 파생 beam = `pro-beam.groups` 출력, 그래프에 쓰지 않음, `pro-beam.js`·`meter-grid.js` 바이트 불변 |
+| A13 | PASS: plan 전후 그래프 fingerprint 같음 (433 그래프 전부, L1 테스트). 그래프는 deep-frozen이라 쓰기는 throw한다 |
+| A15 | PASS (plan 수준): head staff = 그래프 head staff, stem은 그래프 성부 순서 |
+| A16 | PASS: link·agree, identity `complete` (§32.7). 렌더러 쪽 바이트 동일은 G4b (스위치가 생긴 뒤) |
+| A29 | PASS (vendoring): sha256 고정, 라이선스, `* -text`, DOM 없이 실행, 기하 결정론 (두 번 실행해 같음) |
+| A45 | PASS (G4a에서 가능한 만큼): legacy 렌더 16개 (8 악보 × 가까이 보기·전곡) SVG가 `55d1bd5`와 바이트 동일 (`tools/legacy-parity.js`), ScoreView 블록 hash 불변 |
+| A46 | PASS: 모든 테스트가 G3 off로 통과, G3a 그래프도 같은 plan 규칙, `engrave/`에 `professionalize` 호출 0 (정적 검사) |
+| A47 | PASS (plan 수준): import 파일 504개 전부 열림, plan 예외 0, audit 결함 0 |
+| A48 | PASS: §32.5 |
+
+**회귀**
+
+| 검사 | 결과 |
+| --- | --- |
+| `npm run test:engrave` | 50/50 (세 번 연속; B1 시간 검사는 다섯 번 중 가장 빠른 것 — `node --test`가 파일을 나란히 돌려 평균은 이웃을 잰다) |
+| `npm run test:scoregraph` | 205/205 (G3 기준선과 같은 수) |
+| G0 bench: unit / golden / correctness | 283 OK / 17/17 동일 / 13/13 |
+| sg-roundtrip | 369 파일, 367 통과, 2 실패는 기존 허용 목록 |
+| smoke / core | PASS (SQI 86.907 / 76.862) |
+| `ab --suite core` (`55d1bd5` 대 작업 트리) | 553 case 전부 같음 (상태, metric, 의미 projection) |
+| lint-corpus / provenance | 오류 0 / 일치 |
+| 브라우저 suite 26개 (각각 따로, `npm test`는 `&&` 사슬) | 25 통과. `transcription.test.js` 1 실패 ("the fallback is the venv transkun console script") — `55d1bd5`에서도 같은 실패, 이 PC에 transkun venv가 없음 (환경) |
+| `tools/app-source-check.js` | 전부 통과 (§32.4) |
+| `tools/legacy-parity.js` | 16/16 바이트 동일 |
+
+**측정** (이 PC, `tools/g4a-report.js`, 433 그래프, ms 중앙값 / 최악)
+
+| 무엇 | 중앙 | 최악 |
+| --- | --- | --- |
+| plan | 1.33 | 17.49 (`sonatina/013`) — B1 예산 60 ms |
+| fromScore | 2.06 | 32.05 |
+| agree / link | 0.94 / 0.71 | 14.13 / 13.98 |
+| encode / decode (gzip) | 2.10 / 3.02 | 23.85 / 34.37 |
+
+저장 비용 (코퍼스 399): canonical 글 19,286 KB → gzip 1,745 KB (9.0%). gzip 그래프는 같은 곡들의 legacy Score JSON (24,868 KB)의 약 7%다 (slot은 `packScore`로 더 작게 저장하므로, slot 대비로는 그보다 크다). 가장 큰 record는 gzip 32 KB (`sonatina/020`, 글 376 KB). 한도(200곡, 64 MB)까지 한참 멀다.
+
+### 32.9 리뷰어가 볼 것
+
+1. **보이는 변화 0**: `git diff 55d1bd5 -- "Piano Coach App.dc.html"`에서 ScoreView 블록이 그대로인지, 새 호출이 모두 `try`로 싸여 있는지. `legacy-parity.js`를 직접 돌려 볼 수 있다 (파일 머리의 명령).
+2. **G4-U1**: 저장된 그래프를 다시 만든 그래프가 덮어쓸 수 없는지 (`store.put`의 `not-live`, `source.persist`), 손상·낡음·다른 Score·새 schema가 모두 이름 있는 fallback인지 (§32.4 표), 저장 실패가 곡 저장·연습을 막지 못하는지.
+3. **G4-U2 B 조건** (`plan-tuplets.js` `merges`): 조건 하나라도 빠졌는지, 애매한 경우가 병합 쪽으로 떨어지지 않는지 (부정 테스트 14가지, 중첩은 코드로만). 그래프가 바뀌지 않는지 (A13).
+4. **`fromScore`가 지어내지 않는지**: `unsupported`·`refused-by-graph`가 잃은 것을 모두 말하는지. 8va `assumed` 처리 (G4-I11).
+5. **`agree`가 무르지 않은지**: G2 `compare()`는 일부러 무르다 (6자리, 첫 `.order`에서 멈춤). `agree.test.js`의 "catches every kind of semantic loss"와 `fromscore.test.js`의 엄격 비교를 볼 것.
+6. **ledger의 독립성**: `inventory`가 plan을 읽지 않는지 (정적 테스트), status·code 대응 (G4-I10).
+7. **G4a 범위 차이** (§32.3의 1–4): E fixture·`bench.js`를 G4b로 미룬 것이 받아들일 만한지.
+8. **G3 off**: `engrave/`에서 G3 flag·`professionalize` 0.
+9. **VexFlow**: `vendor/vexflow-4.2.3.js`의 sha256이 README와 npm `vexflow@4.2.3` `build/cjs/vexflow.js`와 같은지, 앱이 아직 불러오지 않는지.
+
+### 32.10 알려진 한계
+
+- **타악기 음은 projection으로 되살릴 수 없다** (Score에 음높이가 없음). `percussion-or-unpitched`로 말하고 그 음은 빠진다. 커밋된 파일 중 1개 (`unpitched.musicxml`).
+- **이조 음정은 projection에서 잃는다** (Score에 없음, `transposition`으로 말함). 저장·live 그래프에는 있다.
+- **OMR 곡은 projected로 간다**: `PdfLayer.apply`가 Score를 고친 뒤라 live 그래프가 agree하지 않는다. Audiveris의 beam은 잃고 파생 beam이 된다 (§26.2, PdfLayer의 그래프 이전은 G12).
+- **캐시는 이 기기에만 있다**: 서버·공유 곡, 다른 기기는 projected.
+- **G4a 이전에 저장된 곡에는 저장된 그래프가 없다**: 다시 들여오기 전까지 projected (그래도 agree·link로 확인된 그래프).
+- **저장은 idle에 한다**: 저장 직후 탭을 닫으면 그래프를 못 남길 수 있다 (다음에 projected, 다시 저장하면 남는다).
+- `resolve`는 Score 객체마다 memo한다: Score를 제자리에서 고치면 옛 결과를 줄 수 있다. G4a의 앱은 `resolve`를 부르지 않으므로 (테스트·도구만) 지금은 영향이 없다. G4b에서 ScoreView가 쓰기 전에 무효화 규칙을 정할 것. `persist`는 memo를 쓰지 않고 저장할 때 다시 agree한다.
+- VexFlow는 vendoring만, 아직 불러오지 않는다 (G4-I9). legacy 렌더러는 CDN 그대로.
+- 파생 beam은 G3의 `pro-beam` 규칙을 물려받는다 (그 규칙의 한계 포함, G03 §31).
+- U2 B의 중첩 조건(부모·자식이 있는 한 음 tuplet은 병합하지 않음)에는 따로 된 부정 테스트가 없다 (§32.6).
+
+### 32.11 커밋
+
+- 설계: `bd73d4f` (Architect, 2026-09-24).
+- G4a 구현: 이 절을 담은 커밋, `bd73d4f` 바로 다음 (해시는 CURRENT_STATE·push 기록에). 브랜치만 push, 병합 안 함.
 
 ---
 
