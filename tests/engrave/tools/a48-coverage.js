@@ -29,6 +29,22 @@ const H = require(path.join(REPO, 'tests', 'engrave', 'helpers.js'));
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const URL = arg('--url', 'http://127.0.0.1:8793') + '/Piano%20Coach%20App.dc.html';
 
+/* The corpus through the app's own (legacy) reader: what that Score states and a graph refuses, by file - the code
+   fromScore names it with, and the only fields it may change (the rule of tests/engrave/a48.test.js). Anything else
+   that differs is a new loss and fails. */
+const CORPUS_KNOWN_LOSS = {
+  /* an ending the file closes with no opening: the graph refuses it (E-ENDING), the bar keeps it */
+  'catalog/method/burgmuller25/016.mxl': { code: 'ending-stop-without-start', fields: ['measures.bar'] },
+  'tests/scoregraph/fixtures/xml/ending-stop-without-start.musicxml': { code: 'ending-stop-without-start', fields: ['measures.bar'] },
+  /* a hairpin the file stops with no start (or never closes): the graph refuses it */
+  'catalog/method/sonatina/014.mxl': { code: 'wedge-stop-without-start', fields: ['wedges'] },
+  'catalog/method/sonatina/026.mxl': { code: 'wedge-stop-without-start', fields: ['wedges'] },
+  'catalog/method/sonatina/027.mxl': { code: 'wedge-stop-without-start', fields: ['wedges'] },
+  'tests/scoregraph/fixtures/xml/wedge-unpaired.musicxml': { code: 'wedge-stop-without-start', fields: ['wedges'] },
+  /* percussion: no pitch a Score can hold */
+  'tests/scoregraph/fixtures/xml/unpitched.musicxml': { code: 'percussion-or-unpitched', fields: ['notes.count'] }
+};
+
 function coreJobs(tmp) {
   const py = [
     'import json, sys',
@@ -63,7 +79,9 @@ function coreJobs(tmp) {
   await page.goto(URL, { waitUntil: 'networkidle2' });
   await page.waitForFunction(() => window.PPP && window.PPP.app && window.PPPEngrave, { timeout: 30000 });
 
-  /* in the page: one Score through every check */
+  /* in the page: one Score through every check. Strict, as tests/engrave/a48.test.js: the same comparator
+     (tests/engrave/a48-compare.js), the app's own Score.finalize on the rebuilt side. */
+  await page.addScriptTag({ content: fs.readFileSync(path.join(REPO, 'tests', 'engrave', 'a48-compare.js'), 'utf8') });
   await page.evaluate(() => {
     const P = window.PPP, SG = window.PPPScoreGraph, L = SG.legacy;
     const first = ag => (ag && ag.diffs && ag.diffs[0] ? ag.diffs[0].field : null);
@@ -72,11 +90,13 @@ function coreJobs(tmp) {
         const out = {};
         if (graph) { const ag = L.agree(score, graph); out.live = ag.ok; out.liveDiff = first(ag); out.liveDetail = ag.ok ? null : ag.diffs[0].detail; }
         const fr = L.fromScore(score, { inferred: P.inferredAudioNotation(score) });
-        const ag2 = fr.ok ? L.agree(score, fr.graph) : null;
-        out.projected = !!(ag2 && ag2.ok); out.projDiff = first(ag2); out.projDetail = ag2 && !ag2.ok ? ag2.diffs[0].detail : null;
-        out.projLink = !!(ag2 && ag2.ok && L.link(score, fr.graph).ok);
-        out.unsupported = (fr.unsupported || []).map(u => u.code);
-        out.inferred = fr.ok ? L.inferredNotation(fr.graph) : null;
+        out.unsupported = fr.ok ? fr.unsupported.map(u => u.code) : ['fromScore-failed'];
+        if (!fr.ok) { out.fields = ['fromScore']; out.projLink = false; return out; }
+        const back = P.Score.finalize(L.toScore(fr.graph, { name: 'back', id: score.id }));
+        out.fields = window.PPPA48.fieldsThatDiffer(L, score, back);
+        out.agree = L.agree(score, fr.graph).ok;
+        out.projLink = L.link(score, fr.graph).ok;
+        out.inferred = L.inferredNotation(fr.graph);
         return out;
       }
     };
@@ -97,13 +117,13 @@ function coreJobs(tmp) {
       const slot = JSON.parse(JSON.stringify(P.packScore(score)));
       const saved = P.Score.finalize(P.unpackScore(slot));
       const s = window.__a48.check(saved, graph);
-      row.savedLive = s.live; row.savedProjected = s.projected; row.savedDiff = s.liveDiff || s.projDiff;
+      row.savedLive = s.live; row.savedFields = s.fields; row.savedUnsupported = s.unsupported;
       /* an old transcription opened again: migrated, then drawn from its Score */
       const old = JSON.parse(JSON.stringify(P.packScore(score)));
       old.source = Object.assign({}, old.source, { transcriptionVersion: 1 });
       const mig = P.migrateSavedTranscription(P.Score.finalize(P.unpackScore(old)), old.source, { level: 'good', issues: [], suspectMeasures: [] });
       const m = window.__a48.check(mig.score, null);
-      row.migratedChanged = !!mig.changed; row.migratedProjected = m.projected; row.migratedDiff = m.projDiff;
+      row.migratedChanged = !!mig.changed; row.migratedFields = m.fields; row.migratedUnsupported = m.unsupported;
       return row;
     }), batch);
     res.core.push(...rows);
@@ -156,32 +176,40 @@ function coreJobs(tmp) {
   }, omrXml);
   await browser.close();
 
-  /* ---- report */
-  const count = (rows, k) => rows.filter(r => r[k]).length;
-  const byField = (rows, ok, field) => {
-    const m = {};
-    rows.filter(r => !r[ok]).forEach(r => { const f = r[field] || '?'; m[f] = (m[f] || 0) + 1; });
-    return m;
-  };
-  const core = res.core, open = core.filter(r => !r.holdout), held = core.filter(r => r.holdout);
+  /* ---- report, and the gate: every Score comes back exactly, or loses only what a known loss names */
+  const A48 = require(path.join(REPO, 'tests', 'engrave', 'a48-compare.js'));
+  const exact = (fields, codes, rule) => !fields || !fields.length || A48.knownLoss(rule, codes || [], fields);
+  const coreBad = r => !r.live || !exact(r.fields, r.unsupported) || !r.savedLive || !exact(r.savedFields, r.savedUnsupported) ||
+    !exact(r.migratedFields, r.migratedUnsupported) || !r.projLink;
+  const core = res.core, held = core.filter(r => r.holdout);
+  const failingCore = core.filter(coreBad);
+  const corpusBad = res.corpus.filter(r => r.readError || !exact(r.fields, r.unsupported, CORPUS_KNOWN_LOSS[r.id]));
+  const corpusKnown = res.corpus.filter(r => !r.readError && r.fields && r.fields.length && A48.knownLoss(CORPUS_KNOWN_LOSS[r.id], r.unsupported, r.fields));
+  const omrBad = res.omr.filter(r => !exact(r.fields, r.unsupported));
+  const tally = (rows, k) => { const m = {}; rows.forEach(r => (r[k] || []).forEach(f => { m[f] = (m[f] || 0) + 1; })); return m; };
   const summary = {
-    core: { cases: core.length, holdout: held.length,
-      live: count(core, 'live'), projected: count(core, 'projected'), projectedLinked: count(core, 'projLink'),
-      savedLive: count(core, 'savedLive'), savedProjected: count(core, 'savedProjected'),
-      migratedChanged: count(core, 'migratedChanged'), migratedProjected: count(core, 'migratedProjected'),
-      inferred: count(core, 'inferred'),
-      liveFailuresByField: byField(core, 'live', 'liveDiff'), projectedFailuresByField: byField(core, 'projected', 'projDiff'),
-      failingCases: open.filter(r => !r.live || !r.projected || !r.savedLive || !r.savedProjected || !r.migratedProjected)
-        .map(r => ({ id: r.id, live: r.live, liveDetail: r.liveDetail, projected: r.projected, projDetail: r.projDetail })),
-      holdoutFailing: held.filter(r => !r.live || !r.projected || !r.savedLive || !r.savedProjected || !r.migratedProjected).length },
-    corpus: { files: res.corpus.length, readErrors: res.corpus.filter(r => r.readError).length, projected: count(res.corpus, 'projected'),
-      projectedLinked: count(res.corpus, 'projLink'), failuresByField: byField(res.corpus.filter(r => !r.readError), 'projected', 'projDiff'),
-      failing: res.corpus.filter(r => r.readError || !r.projected).map(r => ({ id: r.id, readError: r.readError, diff: r.projDiff, detail: r.projDetail, unsupported: r.unsupported })) },
-    omr: res.omr.map(r => ({ id: r.id, projected: r.projected, linked: r.projLink, diff: r.projDiff, unsupported: r.unsupported }))
+    core: { cases: core.length, holdout: held.length, live: core.filter(r => r.live).length,
+      projectedExact: core.filter(r => exact(r.fields, r.unsupported)).length, projectedLinked: core.filter(r => r.projLink).length,
+      savedLive: core.filter(r => r.savedLive).length, savedExact: core.filter(r => exact(r.savedFields, r.savedUnsupported)).length,
+      migratedChanged: core.filter(r => r.migratedChanged).length, migratedExact: core.filter(r => exact(r.migratedFields, r.migratedUnsupported)).length,
+      inferred: core.filter(r => r.inferred).length,
+      failingFields: tally(failingCore, 'fields'),
+      /* hold-out cases are counted, never named (G0 rule) */
+      failing: failingCore.filter(r => !r.holdout).map(r => ({ id: r.id, live: r.live, liveDetail: r.liveDetail, fields: r.fields,
+        saved: r.savedFields, migrated: r.migratedFields, unsupported: r.unsupported })),
+      holdoutFailing: failingCore.filter(r => r.holdout).length },
+    corpus: { files: res.corpus.length, readErrors: res.corpus.filter(r => r.readError).length,
+      exact: res.corpus.filter(r => !r.readError && (!r.fields || !r.fields.length)).length, knownLosses: corpusKnown.length,
+      projectedLinked: res.corpus.filter(r => r.projLink).length,
+      known: corpusKnown.map(r => r.id.split('/').pop() + ' ' + CORPUS_KNOWN_LOSS[r.id].code),
+      failing: corpusBad.map(r => ({ id: r.id, readError: r.readError, fields: r.fields, unsupported: r.unsupported })) },
+    omr: res.omr.map(r => ({ id: r.id, exact: exact(r.fields, r.unsupported), fields: r.fields, linked: r.projLink, unsupported: r.unsupported }))
   };
   console.log(JSON.stringify(summary, null, 1));
   const out = arg('--json', null);
-  if (out) fs.writeFileSync(out, JSON.stringify({ summary: summary, rows: { core: open, corpus: res.corpus, omr: res.omr } }, null, 1));
-  const bad = summary.core.cases - summary.core.live + summary.core.cases - summary.core.projected + summary.corpus.files - summary.corpus.projected - summary.corpus.readErrors;
+  if (out) fs.writeFileSync(out, JSON.stringify({ summary: summary, rows: { core: core.filter(r => !r.holdout), corpus: res.corpus, omr: res.omr } }, null, 1));
+  const bad = failingCore.length + corpusBad.length + omrBad.length;
+  console.log(bad ? 'A48 page gate: FAIL (' + failingCore.length + ' core, ' + corpusBad.length + ' corpus, ' + omrBad.length + ' OMR)'
+    : 'A48 page gate: PASS - core ' + core.length + ' (live, projected, saved, migrated) exact; corpus ' + res.corpus.length + ' (' + corpusKnown.length + ' known losses); OMR ' + res.omr.length);
   process.exit(bad ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });

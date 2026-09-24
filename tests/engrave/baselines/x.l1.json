@@ -16,6 +16,7 @@
  "eg.ledger.silent": 0,
  "eg.ledger.unapproved": 0,
  "eg.ledger.uncoded": 0,
+ "eg.ledger.unsupported": 0,
  "eg.mark.drawn_ratio.arpeggio": 1,
  "eg.mark.drawn_ratio.fingering": 1,
  "eg.mark.drawn_ratio.ottava": 1,

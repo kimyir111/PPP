@@ -22,7 +22,7 @@ const L = SG.legacy;
 const OUT = path.join(REPO, 'tests', 'engrave', 'out');
 const BASE = path.join(REPO, 'tests', 'engrave', 'baselines');
 const ZERO = ['eg.ledger.silent', 'eg.ledger.invented', 'eg.ledger.duplicate', 'eg.ledger.missing', 'eg.ledger.altered', 'eg.ledger.orphan',
-  'eg.ledger.unapproved', 'eg.ledger.uncoded', 'eg.beam.derived_in_beamed_part', 'eg.beam.orphan', 'eg.tuplet.suppressed_drawn',
+  'eg.ledger.unapproved', 'eg.ledger.uncoded', 'eg.ledger.unsupported', 'eg.beam.derived_in_beamed_part', 'eg.beam.orphan', 'eg.tuplet.suppressed_drawn',
   'eg.graph.changed', 'eg.plan.nondeterministic', 'eg.error'];
 const ONE = ['eg.beam.graph_drawn_ratio', 'eg.beam.members_exact', 'eg.tuplet.drawn_ratio', 'eg.tuplet.show_ok', 'eg.tie.drawn_ratio',
   'eg.slur.pair_exact', 'eg.event.multiset_equal', 'eg.staff.assignment_exact', 'eg.source.agree_live', 'eg.source.agree_projected'];
@@ -73,7 +73,7 @@ function measure(item) {
     set('eg.plan.nondeterministic', JSON.stringify(E.plan(g, cfg)) === JSON.stringify(p) ? 0 : 1);
     set('eg.graph.changed', SG.fingerprint(g) === fp ? 0 : 1);
     const a = E.audit(g, p);
-    ['silent', 'invented', 'duplicate', 'missing', 'altered', 'orphan', 'unapproved', 'uncoded'].forEach(k => set('eg.ledger.' + k, a[k].length));
+    ['silent', 'invented', 'duplicate', 'missing', 'altered', 'orphan', 'unapproved', 'uncoded', 'unsupported'].forEach(k => set('eg.ledger.' + k, a[k].length));
     Object.keys(a.codes).filter(c => c.split(':')[1] === 'deferred').forEach(c => set('eg.ledger.deferred.' + c.split(':')[2], a.codes[c]));
     const byId = new Map(g.parts.flatMap(pt => pt.events.map(e => [e.id, Object.assign({ part: pt.id }, e)])));
     /* beams */

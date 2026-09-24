@@ -29,6 +29,36 @@ test('a graph goes in and comes back the same, gzip or not, and the text kept is
   assert.deepEqual(new Uint8Array(a.data), new Uint8Array(b.data));
 });
 
+/* The final review saw an in-progress build gzip a comma-separated list of byte values instead of the JSON text: its
+   own decode then refused every fresh record (fingerprint). Checked here with a gunzip that is not ours. */
+test('what is kept is the canonical JSON\'s UTF-8 bytes, gzipped: node:zlib gunzips it to exactly that text, and a fresh write reads back', async () => {
+  const zlib = require('zlib');
+  const g0 = await graphOf('tests/scoregraph/fixtures/xml/piano-marks.musicxml');
+  /* a title outside ASCII: bytes and characters differ in length, as they do for Korean and German titles */
+  const doc = JSON.parse(SG.serialize(g0));
+  doc.meta.title = 'Für Elise — 엘리제를 위하여 ♩';
+  const g = SG.parse(JSON.stringify(doc));
+  const text = SG.serialize(g);
+  const rec = await S.encode(g, { key: 'k', scoreId: 's', scoreHash: 'h' });
+  assert.equal(rec.encoding, 'gzip');
+  const data = Buffer.from(new Uint8Array(rec.data));
+  assert.deepEqual([data[0], data[1]], [0x1f, 0x8b], 'a gzip member');
+  const back = zlib.gunzipSync(data);
+  assert.equal(back.toString('utf8'), text, 'the canonical text, not a list of numbers');
+  assert.ok(back.equals(Buffer.from(text, 'utf8')), 'byte for byte');
+  assert.equal(rec.size, Buffer.byteLength(text, 'utf8'));
+  assert.equal(rec.fp, SG.fingerprint(g), 'the fingerprint is the graph\'s own');
+  const d = await S.decode(rec);
+  assert.ok(d.ok, 'a fresh record passes its own checks: ' + d.code);
+  assert.equal(SG.serialize(d.graph), text);
+  /* through the store as the page uses it */
+  const st = S.createStore({ backend: S.memoryBackend() });
+  assert.ok((await st.put('song', g, { via: 'live', scoreId: 's' })).ok);
+  const got = await st.get('song');
+  assert.ok(got.ok, got.code);
+  assert.equal(SG.fingerprint(got.graph), SG.fingerprint(g));
+});
+
 test('everything that can go wrong with a kept graph is named, and none of it throws', async () => {
   const g = await graphOf('tests/scoregraph/fixtures/xml/piano-marks.musicxml');
   const good = await S.encode(g, { key: 'k' });
