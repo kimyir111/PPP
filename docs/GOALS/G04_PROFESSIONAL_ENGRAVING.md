@@ -1900,7 +1900,8 @@ Fixer가 이 과정에서 스스로 만든 결함 하나를 고쳤다: `legacy-s
 
 #### 32.12.11 커밋
 
-⟨커밋⟩
+- Fixer: `0f3d275` (코드·테스트·fixture·도구·vendor 고지·문서), 이 해시를 적은 문서 커밋이 그 다음. push하지 않았다 (브랜치의 origin은 `c3d6aa6`). 병합 안 함.
+- Fixer 커밋 뒤, 같은 worktree에서 다른 세션이 `engrave/plan-tuplets.js`와 `tests/engrave/plan.test.js`를 고치고 있었다 (beam이 있는 part에서 한 음 tuplet 병합을 "그 묶음과 정확히 같은 graph beam"일 때만 허용, cross-staff head 경계). Fixer는 그 변경을 커밋하지도 건드리지도 않았다 — 그 세션의 일이다. 위의 수(§32.12.2–§32.12.9)는 `0f3d275`의 것이다.
 
 ---
 
