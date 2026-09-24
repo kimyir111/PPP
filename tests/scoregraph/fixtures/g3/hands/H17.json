@@ -1,0 +1,21 @@
+{
+ "about": "a right-hand melody dipping below middle C over left-hand octaves: the octave G2+G3 stays in the left hand (G03 §28 M1)",
+ "spec": "G03 §28 M1 (review regression)",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "E4:q D4:q B3:q C4:q",
+  "lh": "C3+G3:h G2+G3:h"
+ },
+ "passes": [
+  "staff",
+  "voice",
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "same": true
+ }
+}

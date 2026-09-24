@@ -1,12 +1,12 @@
 {
- "about": "a chord note cannot join a hand whose span it would make unplayable (G3 with D5: 19 semitones), so that octave stays; the free A4 of the next measure goes down. At most two voices a staff",
+ "about": "a chord note cannot join a hand whose span it would make unplayable (G3 with D5: 19 semitones), so that octave stays; the next measure's line doubled at the octave, the left hand free, is split between the hands (A4 down). At most two voices a staff. (G03 §28 M1: the second measure was one octave A4+A5:h., which the old octave rule tore; a lone octave is one hand's, so it now stays, and the doubled line keeps what this fixture tests)",
  "spec": "G03 §8.2 V06",
  "input": {
   "time": [
    3,
    4
   ],
-  "rh": "D5+D6:h. | A4+A5:h.",
+  "rh": "D5+D6:h. | A4+A5:q A4+A5:q A4+A5:q",
   "lh": "G3:h. | r:h."
  },
  "passes": [
@@ -16,8 +16,8 @@
   "tuplet"
  ],
  "expect": {
-  "rh": "D5+D6:h. | A5:h.",
-  "lh": "G3:h. | A4:h.",
+  "rh": "D5+D6:h. | A5:q A5:q A5:q",
+  "lh": "G3:h. | A4:q A4:q A4:q",
   "voices": 2
  }
 }

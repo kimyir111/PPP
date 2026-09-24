@@ -1,0 +1,21 @@
+{
+ "about": "right-hand octave chords while the left hand rests: the chord stays whole (G03 §28 M1)",
+ "spec": "G03 §28 M1 (review regression)",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "C4+E4+G4+C5:q C4+E4+G4+C5:q C4+E4+G4+C5:h | C4+E4+G4+C5:w",
+  "lh": "C3:h r:h | r:w"
+ },
+ "passes": [
+  "staff",
+  "voice",
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "same": true
+ }
+}

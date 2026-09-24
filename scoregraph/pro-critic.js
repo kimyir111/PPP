@@ -23,6 +23,7 @@
      marks      slurs, dynamics, wedges, articulations, ornaments, fermatas,
                 fingering, lyrics, arpeggios: (kind, onset) — I6
      pedal      pedal marks
+     xties      ties whose two notes are in different voices or staves (a tie is one note: G03 §28 m1)
      errors     the validator's ERROR codes — I7
    ========================================================================== */
 (function (root, factory) {
@@ -34,9 +35,9 @@
   'use strict';
 
   const COMPONENTS = ['sound', 'onsets', 'place', 'rests', 'pieces', 'tuplets', 'beams', 'spelling', 'acc', 'keys', 'clefs',
-    'ottava', 'timeline', 'play', 'perf', 'marks', 'pedal', 'errors'];
+    'ottava', 'timeline', 'play', 'perf', 'marks', 'pedal', 'xties', 'errors'];
   /* components no pass may ever declare */
-  const FIXED = ['onsets', 'timeline', 'play', 'perf', 'marks', 'errors'];
+  const FIXED = ['onsets', 'timeline', 'play', 'perf', 'marks', 'xties', 'errors'];
 
   const F = r => R.format(r);
   const END_ARTS = ['tenuto', 'breath-mark', 'caesura'];
@@ -169,6 +170,14 @@
         else if (s.type === 'gliss') put('marks', 'global', ['gliss', s.slide ? 'slide' : ''].join('|'));
       });
       part.directions.forEach(d => put('marks', d.m, ['dir', d.kind, posW(d), d.value || d.text || d.chordKind || '', d.staff || ''].join('|')));
+      /* a tie from one voice (or staff) to another: which note it joins, where */
+      const evOfHead = new Map();
+      part.events.forEach(e => (e.heads || []).forEach(h => evOfHead.set(h.id, e)));
+      part.spanners.forEach(s => {
+        if (s.type !== 'tie' || s.from === undefined || s.to === undefined) return;
+        const a = evOfHead.get(s.from), b = evOfHead.get(s.to);
+        if (a && b && (a.voice !== b.voice || a.staff !== b.staff)) put('xties', a.m, F(posOf(a.m, a.at)) + '|' + F(posOf(b.m, b.at)));
+      });
       part.clefs.forEach(c => put('clefs', c.m, [c.staff, c.at, c.sign, c.line || '', c.octave || 0].join('|')));
     });
     (g.timeline.keys || []).forEach(k => put('keys', k.m, [k.at, k.fifths, k.mode || '', JSON.stringify(k.scope || null)].join('|')));
@@ -209,15 +218,38 @@
   /* The notation warnings G3 must never leave behind (§15.3.2). */
   const G3_WARNINGS = ['W-TUPLET-INCOMPLETE', 'W-DISPLAY-DURATION', 'W-BEAM-SHAPE', 'W-TUPLET-DISPLAY'];
   const issueKey = i => i.code + '|' + (i.ids || []).slice().sort().join(',');
-  /* ERROR codes of a graph, and the G3 warnings it has that its input did not (by code and IDs): a warning G3 found
-     and could not fix stays the input's; one G3 made is a violation. */
+  /* What an issue is about, as text: every entity its IDs name, and for a tuplet or a beam its member events too. */
+  function aboutOf(g) {
+    const ent = new Map();
+    g.parts.forEach(p => { p.events.forEach(e => ent.set(e.id, e)); p.spanners.forEach(s => ent.set(s.id, s)); });
+    /* what these warnings are about is an event's time and printed shape (its length against its printed value, a
+       bracket's cover, a beam's members), not its heads: a head the staff pass moves off a chord leaves the warning the
+       writer's (full: the writer's one-note tuplet over a chord a hand gave one note of) */
+    const shape = e => (e ? JSON.stringify([e.kind, e.m, e.voice, e.at, e.dur, e.display || null, e.grace || null]) : 'null');
+    const text = id => {
+      const x = ent.get(id);
+      if (!x) return '?';
+      if (Array.isArray(x.events)) return JSON.stringify(x) + x.events.map(m => shape(ent.get(m))).join('');
+      return shape(x);
+    };
+    return i => (i.ids || []).slice().sort().map(text).join('\n');
+  }
+  /* ERROR codes of a graph, and the G3 warnings it has that its input did not: a warning G3 found and could not fix
+     stays the input's only when the input had it (code and IDs) about the very same things (the entities it names are
+     unchanged). A warning on an event G3 wrote again under its old ID is G3's (G03 §28 M2: matching by ID alone let a
+     rewritten piece that no tuplet can hold pass as the writer's). */
   function validation(g, input) {
     const res = V.validate(g);
     const errors = res.issues.filter(i => i.severity === 'ERROR');
     /* the input is read only when the result has a G3 warning at all */
     const mine = res.issues.filter(i => G3_WARNINGS.indexOf(i.code) >= 0);
-    const before = new Set((input && mine.length ? V.validate(input).issues : []).map(issueKey));
-    const bad = mine.filter(i => !before.has(issueKey(i)));
+    let bad = mine;
+    if (input && mine.length) {
+      const nowAbout = aboutOf(g), thenAbout = aboutOf(input);
+      const before = new Map();
+      V.validate(input).issues.forEach(i => { if (G3_WARNINGS.indexOf(i.code) >= 0) before.set(issueKey(i), thenAbout(i)); });
+      bad = mine.filter(i => before.get(issueKey(i)) !== nowAbout(i));
+    }
     return { errors: errors, g3warnings: bad, issues: res.issues };
   }
 

@@ -22,7 +22,7 @@ const heads = g => {
 };
 
 test('A22: every H fixture gives exactly its sidecar; heads keep their IDs; the music is the same', () => {
-  assert.equal(specs.length, 11);
+  assert.equal(specs.length, 17);
   const failures = [];
   specs.forEach(f => {
     try {
@@ -61,4 +61,32 @@ test('the automatic 8va is off unless asked for (D2), and marks a measure or mor
   assert.equal(ot[0].shift, 1);
   assert.equal(ot[0].from.m, g.timeline.measures[1].id);
   assert.equal(SG.professionalize(on.graph, { strict: true, ottava: true }).graph, on.graph, 'idempotent');
+});
+
+/* G03 §28 M1: the review's hand regressions, cut from the corpus with the bars before them (the DP carries each hand's
+   position along). In the named bar the writer had every note in the right hand (the reference agrees) and G3 moved some
+   to the left; nothing there may change hands now. */
+const CORPUS = path.join(DIR, 'corpus');
+const KEEP_BAR = { 'H18-m04-amt-noise.sg.json': 2, 'H19-m15-octave-noise.sg.json': 2, 'H20-m15-octave-chord.sg.json': 2 };
+const limbOf = (g, e, h) => { const p = g.parts[0]; return (p.staves.find(s => s.id === (h.staff || e.staff)) || {}).limb; };
+
+test("M1: the review's hand regressions (micro M04, M15 x2) keep the writer's hands in the bar G3 used to break", () => {
+  Object.keys(KEEP_BAR).forEach(f => {
+    const g = SG.parse(fs.readFileSync(path.join(CORPUS, f), 'utf8'));
+    const out = SG.professionalize(g, { strict: true }).graph;
+    const m = g.timeline.measures[KEEP_BAR[f]].id;
+    const was = new Map();
+    g.parts[0].events.forEach(e => { if (e.m === m && e.kind === 'note') e.heads.forEach(h => was.set(h.id, limbOf(g, e, h))); });
+    const moved = [];
+    out.parts[0].events.forEach(e => { if (e.m === m && e.kind === 'note') e.heads.forEach(h => { if (was.get(h.id) !== limbOf(out, e, h)) moved.push(SG.pitch.midi(h.pitch) + ' ' + was.get(h.id) + '->' + limbOf(out, e, h)); }); });
+    assert.deepEqual(moved, [], f);
+  });
+});
+
+test('M1: a figure the hands share one note at a time (Czerny 849/027) is not folded into one hand', () => {
+  const g = SG.parse(fs.readFileSync(path.join(CORPUS, 'H21-czerny849-027-alternating.sg.json'), 'utf8'));
+  const out = SG.professionalize(g, { strict: true }).graph;
+  const eb4 = (x, limb) => x.parts[0].events.reduce((n, e) => n + (e.kind === 'note' ? e.heads.filter(h => SG.pitch.midi(h.pitch) === 63 && limbOf(x, e, h) === limb).length : 0), 0);
+  assert.ok(eb4(g, 'RH') >= 20, 'the writer (and the reference) has the repeated E flats in the right hand');
+  assert.equal(eb4(out, 'LH'), eb4(g, 'LH'), 'no E flat of the right hand moved to the left');
 });

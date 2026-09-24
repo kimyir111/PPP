@@ -1,0 +1,21 @@
+{
+ "about": "a figure shared between the hands, one note at a time (Czerny 849/027): left hand on the beats, right hand between; it is not folded into one hand (G03 §28 M1: the melody term)",
+ "spec": "G03 §28 M1 (review regression)",
+ "input": {
+  "time": [
+   4,
+   4
+  ],
+  "rh": "r:16 Eb4:16 r:16 Eb4:16 r:16 Eb4:16 r:16 Eb4:16 r:h | C6:q Bb5:q r:16 Eb4:16 r:16 Eb4:16 r:16 Eb4:16 r:16 Eb4:16",
+  "lh": "Ab3:16 r:16 C4:16 r:16 Ab3:16 r:16 C4:16 r:16 Ab3:16 r:16 C4:16 r:16 Ab3:16 r:16 C4:16 r:16 | r:h Ab3:16 r:16 C4:16 r:16 Ab3:16 r:16 C4:16 r:16"
+ },
+ "passes": [
+  "staff",
+  "voice",
+  "rhythm",
+  "tuplet"
+ ],
+ "expect": {
+  "same": true
+ }
+}

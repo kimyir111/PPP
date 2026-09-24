@@ -10,11 +10,21 @@
 
      span      per hand, 1500 per semitone over 12; over 14 cannot be played
      count     more than 5 notes in a hand cannot be played
-     move      150 × the distance each hand's centre moves from where it last
-               played, less the reach the time since gives it (6 semitones a beat)
+     move      150 × the distance each hand's centre moves from where it is, less the
+               reach the time since gives it (6 semitones a beat); where it is: the nearer
+               of where it last played and where it has been playing (a slow average), so
+               one stray note does not relocate a hand (G03 §28 M1, micro M04)
      melody    1500 when the top note leaves the hand that had the last top note (E7),
-               unless both hands played the notes before and it is nearer the left hand's
-     octave    1500 when one hand takes both notes of an octave (E6)
+               unless both hands played the notes before and it is nearer the left hand's,
+               or the notes are a figure the writer shared between the hands one note at a
+               time (a lone note between two lone notes of the other hand: §28 M1, Czerny
+               849/027)
+     octave    1500 when one hand takes both notes of an octave of a doubled line: three or
+               more bare octaves in a row with nothing else sounding (E6, Beyer 032, Hanon),
+               and 1500 when such a line is split at one onset and not the
+               next. An octave inside a chord, or a bass in octaves, is one hand's
+               (§28 M1: charging every octave split left-hand octaves and right-hand
+               octave chords)
      ledger    300 per note 4 or more ledger lines off both clefs
      tuplet    1500 when a triplet figure of one beat changes hands (E2, E3)
      keep      900 for each note moved off the staff the writer chose
@@ -25,6 +35,14 @@
    free; the DP now carries each hand's last centre along the best path. The
    weights above are the ones core hand accuracy picked (G03 §9.2 allows it;
    §24 record): mean 0.888 -> 0.918, no case loses the hands gate, 46 gain it.
+   The octave, move and melody terms as above since the review (G03 §28 M1,
+   §29): core 0.917, no case loses the hands gate, 42 gain it; full 0.897.
+
+   The carried centres make the DP greedy, so a stretch it re-hands is kept only
+   where it costs less, by its own terms, than the writer's hands there
+   (keepWhereNotBetter); and the hands are a fixed point of the model: read
+   again with the hands chosen as the writer's, it chooses the same (so a
+   second run moves nothing, A5).
 
    A note that changes hands moves as a whole event, or its heads move to a
    new event (moveHeads: head IDs kept, §9.2). A moved note that would
@@ -42,7 +60,8 @@
   'use strict';
 
   const W = Object.freeze({ SPAN: 1500, SPAN_MAX: 14, SPAN_FREE: 12, COUNT_MAX: 5, MOVE: 150, MELODY: 1500, OCTAVE: 1500,
-    LEDGER: 300, LEDGER_MIN: 4, TUPLET: 1500, KEEP: 900, REACH: 6, IMPOSSIBLE: 100000 });
+    LEDGER: 300, LEDGER_MIN: 4, TUPLET: 1500, KEEP: 900, REACH: 6, IMPOSSIBLE: 100000,
+    DOUBLED_RUN: 3, SETTLE: 0.25, ROUNDS: 4 });
   const STEP_INDEX = { C: 0, D: 1, E: 2, F: 3, G: 4, A: 5, B: 6 };
 
   /* ledger lines of a written pitch on a treble (G) or bass (F) staff */
@@ -81,8 +100,33 @@
     return out;
   }
 
+  /* What the onsets say before any cost (G03 §28 M1), read from features G3 does not change afterwards (onsets, pitches,
+     tied lengths, and the staff the writer chose), so a second run sees the same:
+       doubled      a bare octave (two notes, twelve apart) in a run of three or more such onsets in a row with nothing else
+                    sounding: a line doubled at the octave, one note for each hand, in any register (E6, Beyer 032; Hanon
+                    plays its hands an octave apart as low as E2/E3). Octaves under a note still sounding are not
+       alternating  a lone note between two lone notes the writer gave the other hand: a figure shared between the hands */
+  function evidence(groups) {
+    let held = -Infinity;
+    const bare = groups.map(grp => {
+      const ns = grp.notes;
+      const ok = ns.length === 2 && ns[1].midi - ns[0].midi === 12 && held <= grp.q + 1e-9;
+      ns.forEach(x => { held = Math.max(held, x.endQ); });
+      return ok;
+    });
+    groups.forEach((grp, k) => {
+      let a = k, b = k;
+      while (a > 0 && bare[a - 1] && bare[k]) a--;
+      while (b + 1 < groups.length && bare[b + 1] && bare[k]) b++;
+      grp.doubled = bare[k] && b - a + 1 >= W.DOUBLED_RUN;
+      const one = i => i >= 0 && i < groups.length && groups[i].notes.length === 1;
+      grp.alternating = one(k - 1) && one(k) && one(k + 1) && groups[k - 1].notes[0].staff === groups[k + 1].notes[0].staff &&
+        groups[k].notes[0].staff !== groups[k - 1].notes[0].staff;
+    });
+  }
+
   /* The DP: groups (onsets in order, each notes sorted low to high) -> split index per group (notes below it LH). */
-  function assign(groups, ctx) {
+  function assign(groups) {
     const n = groups.length;
     if (!n) return [];
     const centre = xs => (xs.length ? xs.reduce((s, x) => s + x.midi, 0) / xs.length : null);
@@ -95,8 +139,8 @@
         if (span > W.SPAN_MAX) c += W.IMPOSSIBLE * (span - W.SPAN_MAX);
         else if (span > W.SPAN_FREE) c += W.SPAN * (span - W.SPAN_FREE);
         if (xs.length > W.COUNT_MAX) c += W.IMPOSSIBLE * (xs.length - W.COUNT_MAX);
-        const pcs = new Map();
-        xs.forEach(x => { const k = x.midi % 12; if (pcs.has(k) && xs.some(y => y !== x && Math.abs(y.midi - x.midi) === 12)) c += W.OCTAVE; pcs.set(k, true); });
+        /* both notes of a doubled line's octave in one hand */
+        if (grp.doubled && xs.length === 2) c += W.OCTAVE;
         /* a staff can change clef (§9.3): a note costs ledger lines only when both clefs would leave it far off */
         xs.forEach(x => { if (Math.min(ledgers(x.h.pitch, 'F'), ledgers(x.h.pitch, 'G')) >= W.LEDGER_MIN) c += W.LEDGER; });
         xs.forEach(x => { if (x.staff !== (hi === 0 ? 'LH' : 'RH')) c += W.KEEP; });
@@ -108,29 +152,37 @@
       let c = 0;
       const lb = b.notes.slice(0, sb), rb = b.notes.slice(sb);
       const cl = centre(lb), cr = centre(rb);
-      /* a hand moving costs by the distance from where it last played, less the reach the time since gives it */
-      if (cl !== null && last.l !== null) c += Math.round(W.MOVE * Math.max(0, Math.abs(cl - last.l) - Math.max(0, b.q - last.lq) * W.REACH));
-      if (cr !== null && last.r !== null) c += Math.round(W.MOVE * Math.max(0, Math.abs(cr - last.r) - Math.max(0, b.q - last.rq) * W.REACH));
+      /* a hand moving costs by the distance from where it is (the nearer of where it last played and where it has been
+         playing), less the reach the time since gives it */
+      const away = (c0, at, settled) => Math.min(Math.abs(c0 - at), settled === null ? Infinity : Math.abs(c0 - settled));
+      if (cl !== null && last.l !== null) c += Math.round(W.MOVE * Math.max(0, away(cl, last.l, last.ls) - Math.max(0, b.q - last.lq) * W.REACH));
+      if (cr !== null && last.r !== null) c += Math.round(W.MOVE * Math.max(0, away(cr, last.r, last.rs) - Math.max(0, b.q - last.rq) * W.REACH));
       /* the top note stays in the hand that had the last top note, unless the notes before had both hands and it is
          nearer the left hand's: then it is the bass going on while the right hand rests (M16), not the melody. Read
-         from the state before (a, sa) only, not the carried centres, so the DP stays exact and G3 idempotent (A5). */
+         from the state before (a, sa) only: where a hand last played, carried along the path, would call a lone inner
+         note of the right hand's figure the bass (G03 §28 M1: Czerny 849/027's E flats, 3 -> 24 moved) */
       const topA = a.notes.length - 1 >= sa ? 'RH' : 'LH', topB = b.notes.length - 1 >= sb ? 'RH' : 'LH';
       const la = centre(a.notes.slice(0, sa)), ra = centre(a.notes.slice(sa)), top = b.notes[b.notes.length - 1].midi;
       const bassLine = la !== null && ra !== null && Math.abs(top - la) < Math.abs(top - ra);
       /* nor is it the melody's when the right hand's note before is still sounding: the melody is held there while the
          left hand plays under it (Gymnopedie's A4 over the chord, §24 record) */
       const held = a.notes.slice(sa).some(x => x.endQ > b.q + 1e-9);
-      if (topA === 'RH' && topB === 'LH' && !bassLine && !held) c += W.MELODY;
+      /* nor in a figure the writer shared between the hands one note at a time */
+      if (topA === 'RH' && topB === 'LH' && !bassLine && !held && !a.alternating && !b.alternating) c += W.MELODY;
+      /* a doubled line is split all the way or not at all (one onset of it in one hand, the next in two, is no line) */
+      if (a.doubled && b.doubled && (sa === 1) !== (sb === 1)) c += W.OCTAVE;
       /* a triplet figure of one beat stays in one hand */
       if (a.beat === b.beat && a.triplet && b.triplet && a.notes.length === 1 && b.notes.length === 1 && topA !== topB) c += W.TUPLET;
       return c;
     };
     /* the hands' last centres after a state: carried along the best path to it (a Viterbi with memory) */
+    const settle = (was, now) => (now === null ? was : was === null ? now : was + W.SETTLE * (now - was));
     const carry = (last, grp, s) => {
       const l = centre(grp.notes.slice(0, s)), r = centre(grp.notes.slice(s));
-      return { l: l !== null ? l : last.l, lq: l !== null ? grp.q : last.lq, r: r !== null ? r : last.r, rq: r !== null ? grp.q : last.rq };
+      return { l: l !== null ? l : last.l, lq: l !== null ? grp.q : last.lq, r: r !== null ? r : last.r, rq: r !== null ? grp.q : last.rq,
+        ls: settle(last.ls, l), rs: settle(last.rs, r) };
     };
-    const none = { l: null, lq: 0, r: null, rq: 0 };
+    const none = { l: null, lq: 0, r: null, rq: 0, ls: null, rs: null };
     let states = [];
     for (let s = 0; s <= groups[0].notes.length; s++) states.push({ cost: local(groups[0], s), last: carry(none, groups[0], s) });
     const back = [];
@@ -153,7 +205,57 @@
     for (let i = 1; i < states.length; i++) if (states[i].cost < states[s].cost) s = i;
     const out = new Array(n);
     for (let k = n - 1; k >= 0; k--) { out[k] = s; if (k > 0) s = back[k - 1][s]; }
-    void ctx;
+    return keepWhereNotBetter(groups, out, local, trans, carry, none);
+  }
+
+  /* The DP above carries each hand's position along its best path so far, so it is greedy: a stretch it re-hands can
+     cost more, by its own terms, than the writer's hands there (G03 §28 M1: Czerny 849/027, writer 17,905 against the
+     DP's 20,430). So every stretch between two onsets where both paths agree (the same split, the same hand positions
+     carried) is costed exactly along both, and the writer's hands are kept wherever they cost no more: G3 re-hands a
+     stretch only when its own model says that is better. The writer's hands are a path only where they are a split
+     (no left-hand note above a right-hand one at an onset); a stretch holding an onset where they are not is the DP's. */
+  function keepWhereNotBetter(groups, dp, local, trans, carry, none) {
+    const n = groups.length;
+    const writer = groups.map(grp => {
+      const st = grp.notes.map(x => x.staff);
+      const l = st.filter(x => x === 'LH').length;
+      return st.every((x, i) => (i < l ? x === 'LH' : x === 'RH')) ? l : null;
+    });
+    if (writer.every((w, k) => w === dp[k])) return dp;
+    const same = (a, b) => a.l === b.l && a.r === b.r && a.lq === b.lq && a.rq === b.rq;
+    /* the hand positions after each onset along each path (the writer's only while it is a path) */
+    const cd = [], cw = [];
+    let ld = none, lw = none, wOk = true;
+    for (let k = 0; k < n; k++) {
+      ld = carry(ld, groups[k], dp[k]); cd.push(ld);
+      if (writer[k] === null) wOk = false;
+      lw = wOk ? carry(lw, groups[k], writer[k]) : ld;
+      if (!wOk && writer[k] !== null && writer[k] === dp[k]) { lw = ld; wOk = true; }
+      cw.push(lw);
+    }
+    const out = dp.slice();
+    const cost = (path, from, to, state) => {
+      let c = 0, last = state;
+      for (let k = from; k <= to; k++) {
+        if (k > 0) c += trans(groups[k - 1], path[k - 1], last, groups[k], path[k]);
+        c += local(groups[k], path[k]);
+        last = carry(last, groups[k], path[k]);
+      }
+      return c;
+    };
+    let start = 0;
+    for (let k = 0; k < n; k++) {
+      const agree = dp[k] === writer[k] && same(cd[k], cw[k]);
+      if (!agree && k < n - 1) continue;
+      /* the stretch start..k (k included: the way into an agreeing onset counts) */
+      if (k >= start && writer.slice(start, k + 1).every(w => w !== null)) {
+        const state = start > 0 ? cd[start - 1] : none;
+        const wpath = dp.slice(0, start).concat(writer.slice(start, k + 1));
+        const dpath = dp.slice(0, k + 1);
+        if (cost(wpath, start, k, state) <= cost(dpath, start, k, state)) for (let i = start; i <= k; i++) out[i] = writer[i];
+      }
+      start = k + 1;
+    }
     return out;
   }
 
@@ -222,13 +324,26 @@
               triplet: ns.some(x => x.w.d % 3 === 0 || x.pieces.reduce((acc, p) => R.add(acc, R.parse(p.e.dur)), x.w).d % 3 === 0) };
           });
           if (groups.some(gr => gr.notes.some(x => !x.staff))) return;
-          const split = assign(groups, ctx);
+          /* The hands G3 writes are a fixed point of its own model: read again with the hands it chose as the writer's
+             (the keep term, the evidence, the path the DP compares with all read the writer's staff), it chooses the
+             same, so a second run moves nothing (A5, §16.2; G03 §28 M1: without this Burgmuller 013 and 021 re-handed a
+             note on the second run). The choice is applied to the notes it may move and the DP runs again, until
+             nothing changes (W.ROUNDS at most). */
+          notes.forEach(x => { x.writer = x.staff; });
+          for (let round = 0; round < W.ROUNDS; round++) {
+            evidence(groups);
+            const split = assign(groups);
+            let changed = false;
+            groups.forEach((gr, k) => gr.notes.forEach((x, i) => {
+              const want = i < split[k] ? 'LH' : 'RH';
+              if (want !== x.staff && movable(x)) { x.staff = want; changed = true; }
+            }));
+            if (!changed) break;
+            groups.forEach(gr => gr.notes.sort((a, b) => a.midi - b.midi || (a.staff === 'LH' ? -1 : 1)));
+          }
           /* the hand of every note that moves */
           const moves = [];
-          groups.forEach((gr, k) => gr.notes.forEach((x, i) => {
-            const want = i < split[k] ? 'LH' : 'RH';
-            if (want !== x.staff && movable(x)) moves.push({ x: x, to: want === 'RH' ? hands.rh : hands.lh });
-          }));
+          notes.forEach(x => { if (x.staff !== x.writer) moves.push({ x: x, to: x.staff === 'RH' ? hands.rh : hands.lh }); });
           if (moves.length) applyMoves(d, part, hands, moves, changes, ctx);
           clefChanges(d, d.doc.parts[pi], changes, ctx);
         });
@@ -276,42 +391,63 @@
       return byM.get(m);
     };
     const overlaps = (v, m, sp, self) => noteSpans(v, m).some(x => x.id !== self && R.lt(x.s[0], sp[1]) && R.lt(sp[0], x.s[1]));
-    Array.from(byEvent.values()).sort((a, b) => R.cmp(W0(a.e), W0(b.e)) || (a.e.id < b.e.id ? -1 : 1)).forEach(mv => {
-      const e = d.event(mv.e.id);
-      const all = mv.heads.length === e.heads.length;
-      const sp = span(e);
-      let v = primary(mv.to);
+    /* The pieces of one tied note move as one: the events of every moving note's pieces are one unit, which goes to one
+       voice, so no tie runs from one voice to another (G03 §28 m1: a piece that joined a chord of the other staff while
+       the piece tied to it went to the second voice left a tie between two voices, drawn by the app as a new stroke) */
+    const tiedHeads = new Set();
+    part.spanners.forEach(s => { if (s.type === 'tie' && s.from !== undefined && s.to !== undefined) { tiedHeads.add(s.from); tiedHeads.add(s.to); } });
+    const root = new Map();
+    const find = x => { let r = x; while (root.get(r) !== r) r = root.get(r); root.set(x, r); return r; };
+    byEvent.forEach((_, k) => root.set(k, k));
+    moves.forEach(mv => { const ids = mv.x.pieces.map(p => p.e.id); ids.slice(1).forEach(id => { const a = find(ids[0]), b = find(id); if (a !== b) root.set(b, a); }); });
+    const units = new Map();
+    byEvent.forEach((mv, k) => { const r = find(k); if (!units.has(r)) units.set(r, []); units.get(r).push(mv); });
+    const first = u => u.reduce((a, b) => (R.cmp(W0(b.e), W0(a.e)) < 0 || (R.eq(W0(b.e), W0(a.e)) && b.e.id < a.e.id) ? b : a));
+    Array.from(units.values()).sort((a, b) => R.cmp(W0(first(a).e), W0(first(b).e)) || (first(a).e.id < first(b).e.id ? -1 : 1)).forEach(unit => {
+      unit.sort((a, b) => R.cmp(W0(a.e), W0(b.e)) || (a.e.id < b.e.id ? -1 : 1));
+      const to = unit[0].to;
+      let v = primary(to);
       if (!v) return;
-      /* a note of the other staff that starts, lasts and prints the same: the moved heads join it as a chord */
-      const allHeads = mv.heads.length === e.heads.length;
-      const mate = !(allHeads && (e.arts || e.orn || e.fermata || e.lyrics)) && d.voiceMeasure(v, e.m).find(x => x.kind === 'note' && x.at === e.at && x.dur === e.dur && JSON.stringify(x.display) === JSON.stringify(e.display) &&
-        !x.heads.some(h => mv.heads.some(id => { const y = e.heads.find(z => z.id === id); return y && P.midi(y.pitch) === P.midi(h.pitch); })));
-      if (mate) {
-        const from = e.voice;
-        const all = mv.heads.length === e.heads.length;
-        d.joinHeads(e.id, mv.heads, mate.id);
-        if (all) { const left = noteSpans(from, e.m), i = left.findIndex(x => x.id === e.id); if (i >= 0) left.splice(i, 1); }
-        d.markProv(d.event(mate.id), ['staff']);
-        touched.add(from + '|' + e.m); touched.add(v + '|' + e.m);
-        changes.push({ pass: 'staff', kind: 'join', ids: [mate.id], m: e.m });
-        return;
+      const items = unit.map(mv => { const e = d.event(mv.e.id); return { mv: mv, e: e, all: mv.heads.length === e.heads.length, sp: span(e) }; });
+      if (items.length === 1) {
+        const { mv, e, all } = items[0];
+        /* a note of the other staff that starts, lasts and prints the same: the moved heads join it as a chord, unless
+           that note is tied (joining would make a chord only some of whose heads go on: a partial tie R-repr cannot
+           write, §28 m1) or the moving heads are */
+        const mate = !(all && (e.arts || e.orn || e.fermata || e.lyrics)) && !mv.heads.some(id => tiedHeads.has(id)) &&
+          d.voiceMeasure(v, e.m).find(x => x.kind === 'note' && x.at === e.at && x.dur === e.dur && JSON.stringify(x.display) === JSON.stringify(e.display) &&
+            !x.heads.some(h => tiedHeads.has(h.id)) &&
+            !x.heads.some(h => mv.heads.some(id => { const y = e.heads.find(z => z.id === id); return y && P.midi(y.pitch) === P.midi(h.pitch); })));
+        if (mate) {
+          const from = e.voice;
+          d.joinHeads(e.id, mv.heads, mate.id);
+          if (all) { const left = noteSpans(from, e.m), i = left.findIndex(x => x.id === e.id); if (i >= 0) left.splice(i, 1); }
+          d.markProv(d.event(mate.id), ['staff']);
+          touched.add(from + '|' + e.m); touched.add(v + '|' + e.m);
+          changes.push({ pass: 'staff', kind: 'join', ids: [mate.id], m: e.m });
+          return;
+        }
       }
       /* a triplet note among plain notes of the voice's beat (or a plain one among triplets) could not be grouped
-         there: it goes to the second voice, where it has the beat to itself */
-      if (overlaps(v, e.m, sp, all ? e.id : null) || clashes(d, v, e)) v = secondVoice(mv.to);
-      if (overlaps(v, e.m, sp, all ? e.id : null)) { ctx.issue('N-HAND-OVERLAP', 'a note at ' + e.m + '@' + e.at + ' would overlap both voices of the other staff: left where it is', { m: e.m }); return; }
-      const from = e.voice;
-      let id;
-      if (all) {
-        d.moveEvent(e.id, v, mv.to);
-        id = e.id;
-        const left = noteSpans(from, e.m), i = left.findIndex(x => x.id === e.id);
-        if (i >= 0) left.splice(i, 1);
-      } else id = d.moveHeads(e.id, mv.heads, v, mv.to);
-      noteSpans(v, e.m).push({ id: id, s: sp });
-      d.markProv(d.event(id), ['staff']);
-      touched.add(from + '|' + e.m); touched.add(v + '|' + e.m);
-      changes.push({ pass: 'staff', kind: all ? 'move' : 'split', ids: [id], m: e.m });
+         there: the unit goes to the second voice, where it has the beat to itself; a unit that would overlap both voices
+         stays where it is */
+      const blocked = vv => items.some(it => overlaps(vv, it.e.m, it.sp, it.all ? it.e.id : null));
+      if (blocked(v) || items.some(it => clashes(d, v, it.e))) v = secondVoice(to);
+      if (blocked(v)) { ctx.issue('N-HAND-OVERLAP', 'a note at ' + items[0].e.m + '@' + items[0].e.at + ' would overlap both voices of the other staff: left where it is', { m: items[0].e.m }); return; }
+      items.forEach(({ mv, e, all, sp }) => {
+        const from = e.voice;
+        let id;
+        if (all) {
+          d.moveEvent(e.id, v, to);
+          id = e.id;
+          const left = noteSpans(from, e.m), i = left.findIndex(x => x.id === e.id);
+          if (i >= 0) left.splice(i, 1);
+        } else id = d.moveHeads(e.id, mv.heads, v, to);
+        noteSpans(v, e.m).push({ id: id, s: sp });
+        d.markProv(d.event(id), ['staff']);
+        touched.add(from + '|' + e.m); touched.add(v + '|' + e.m);
+        changes.push({ pass: 'staff', kind: all ? 'move' : 'split', ids: [id], m: e.m });
+      });
     });
     /* the rests of every voice-measure a note left or arrived in (one sweep for all of them) */
     const drop = [], refill = [];
@@ -399,11 +535,22 @@
          turned by this pass on an earlier run: then the stretch it covers is read against the staff's own) */
       const home = st.limb === 'RH' ? 'G' : st.limb === 'LH' ? 'F' : own[0].sign, other = home === 'G' ? 'F' : 'G';
       if (own[0].sign !== home) return;
+      /* one entry per sounding note a measure holds: a piece tied in from the same measure is not counted again, so
+         the rule reads what R-repr (a later pass, which merges and splits tied pieces inside a measure) keeps, and a
+         second run decides the same (§16.2; G03 §28 m2: counting pieces flipped a clef on the second run) */
+      const tieFrom = new Map(), evOfHead = new Map();
+      part.spanners.forEach(s => { if (s.type === 'tie' && s.from !== undefined && s.to !== undefined) tieFrom.set(s.to, s.from); });
+      part.events.forEach(e => (e.heads || []).forEach(h => evOfHead.set(h.id, e)));
       const byM = new Map();
       part.events.forEach(e => {
         if (e.staff !== st.id || e.kind !== 'note' || e.grace) return;
         if (!byM.has(e.m)) byM.set(e.m, []);
-        e.heads.forEach(h => { if (h.pitch && (!h.staff || h.staff === st.id)) byM.get(e.m).push(h); });
+        e.heads.forEach(h => {
+          if (!h.pitch || (h.staff && h.staff !== st.id)) return;
+          const from = evOfHead.get(tieFrom.get(h.id));
+          if (from && from.m === e.m) return;
+          byM.get(e.m).push(h);
+        });
       });
       /* a measure reads better in the other clef when every note is 4 or more ledger lines off in this one (§9.3), or
          when one is and the other clef holds every note within fewer than 4 and with fewer lines in all (§24 record: a
@@ -475,5 +622,5 @@
     }
   });
 
-  return Object.freeze({ staff, ottava, assign, ledgers, handsOf, soundingNotes, restPieces, valueOf, W });
+  return Object.freeze({ staff, ottava, assign, evidence, ledgers, handsOf, soundingNotes, restPieces, valueOf, W });
 });
