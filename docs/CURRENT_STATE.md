@@ -3,15 +3,16 @@
 Updated 2026-09-24, on `g3-score-intelligence`. G0 (Quality Foundation), G1 (ScoreGraph) and G2 (Score Import)
 are all merged and closed; `origin/main` is `cc509e2`. **G3 is implemented on its branch, not merged, not
 switched on** (G03 §27). Its independent review said NEEDS_FIX (G03 §28); the Fixer (G03 §29) closed every BLOCKER
-and MAJOR finding: **READY_FOR_HUMAN_REVIEW** — the blind human review (A36) is the user's next step, and the G3a
-flip waits on it. Read this first in a new session, then the current goal's spec in `docs/GOALS/`.
+and MAJOR finding. **The blind human review (A36) FAILED (G03 §30)**, so the G3a flip did not happen: a Fixer on
+H1/H2, a freshly drawn set and a second review come next (§30.5). Read this first in a new session, then the
+current goal's spec in `docs/GOALS/`.
 
 ## Where things are
 
 | | |
 | --- | --- |
 | Goals | Numbered specs in `docs/GOALS/`. **G0 is merged and closed** — implemented (§16), reviewed and fixed through six passes (§17–§22.9), then merged as PR #1 (`aff7080`). `G00_QUALITY_FOUNDATION.md` §22.9 has the last result and what is still open (nothing). |
-| G3 | **Implemented on `g3-score-intelligence` (`D:/PPP-g3`), not merged, no PR** (G03 §27). `professionalize()` (a graph → graph pass pipeline: hands and staves, voices, rhythm representation, logical tuplets — G1 F1 fixed —, keys by region, spelling and accidentals, beams, marks, behind a critic that rolls back any change a pass may not make) runs in `toMusicXml` when `opts.professional` is `'on'`; **the default is still `'off'`**. Core with G3 on: usable +1.27 pt, hand accuracy 0.888 → 0.921, one-note brackets 100 % → 0, unneeded ties 0.43 → 0.01, beams 0 → 98.5 %, every critical gate case kept. The flip waits on G03 §27.4 (two G3-gate lines conflict with R17/H7; four amt micro cases on full). G3b (release → value, second voices from the performance) and the automatic 8va are built and **off**. The human review set (A36) is built for the user to judge. Independent review (G03 §28): NEEDS_FIX — BLOCKER 1, MAJOR 6. **Fixer (G03 §29): READY_FOR_HUMAN_REVIEW** — pedal join off by default (the app plays G3's pedals exactly as the writer's), the hand DP's octave/melody terms and its greed fixed (core 0.917, +42/−0; micro M04/M15 back to base; Czerny 849/027 E flats 43 → 3), a reason-aware G3 gate (user decisions U-1–U-3: only a legal, policy-allowed merge is a defect; partial-chord ties reported apart; R17 held to a per-case baseline), mutation-check live again, a blind human set. `check --suite core --g3` PASS 9/9. |
+| G3 | **Implemented on `g3-score-intelligence` (`D:/PPP-g3`), not merged, no PR** (G03 §27). `professionalize()` (a graph → graph pass pipeline: hands and staves, voices, rhythm representation, logical tuplets — G1 F1 fixed —, keys by region, spelling and accidentals, beams, marks, behind a critic that rolls back any change a pass may not make) runs in `toMusicXml` when `opts.professional` is `'on'`; **the default is still `'off'`**. Core with G3 on: usable +1.27 pt, hand accuracy 0.888 → 0.921, one-note brackets 100 % → 0, unneeded ties 0.43 → 0.01, beams 0 → 98.5 %, every critical gate case kept. The flip waits on G03 §27.4 (two G3-gate lines conflict with R17/H7; four amt micro cases on full). G3b (release → value, second voices from the performance) and the automatic 8va are built and **off**. The human review set (A36) is built for the user to judge. Independent review (G03 §28): NEEDS_FIX — BLOCKER 1, MAJOR 6. **Fixer (G03 §29): READY_FOR_HUMAN_REVIEW** — pedal join off by default (the app plays G3's pedals exactly as the writer's), the hand DP's octave/melody terms and its greed fixed (core 0.917, +42/−0; micro M04/M15 back to base; Czerny 849/027 E flats 43 → 3), a reason-aware G3 gate (user decisions U-1–U-3: only a legal, policy-allowed merge is a defect; partial-chord ties reported apart; R17 held to a per-case baseline), mutation-check live again, a blind human set. `check --suite core --g3` PASS 9/9. **A36 human review FAIL (G03 §30)**: 16/20 overall (18 needed), 4 rhythm losses (0 allowed), usable 12 = 12 — **not flipped**; next is a Fixer on H1 (moves that create rests) and H2 (triplet-internal rests and dots), then a re-review. |
 | G1 | **Merged and closed.** Implemented (§24), independently reviewed (§25: READY_TO_PR, BLOCKER 0, MAJOR 0), merged as PR #2 (`aa77d2e`), then the follow-up PR #3 (`00081cc`, §26) closed findings F2 and F3. F1 (tuplet bracket grouping) is left for G3 on purpose. `toMusicXml` writes its MusicXML from a ScoreGraph (`scoregraph/`); `opts.legacyWriter` is the way back for one release. |
 | G2 | **Merged and closed.** Implemented (§24), independently reviewed (§25), the one MAJOR it found closed by §26 (D7), merged as PR #4 (`cc0da79`) with BLOCKER 0 and MAJOR 0. Schema is version 2. **The app's import boundary is on the graph** — a file a person opens becomes a ScoreGraph and the Score is a projection of it; `PPP.legacyImport = true` is the way back for one release. **`.mid` opens**: its notes, times and controllers exactly as the file states them, its notation worked out by audio-score's existing quantizer and marked inferred in three places (D3). The MusicXML importer no longer refuses a whole file for an `<unpitched>` note, a missing time signature or a quarter tone. **A transposing part is printed where it is written and sounds where it sounds** (D7, §26). Transcription is unchanged: core 553/553 identical to `00081cc`. |
 | G0 code | On `main` since PR #1, which came from the clean branch `g0-quality-foundation-clean` (worktree `D:/PPP-g0-clean`). The older `g0-quality-foundation` branch and its `D:/PPP-g0` worktree are contaminated with other sessions' production changes — **never merge or edit those**. `tests/README.md` there has a two-line doc change left uncommitted on purpose (outside the allowed paths). |
@@ -250,6 +251,22 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
   (3) G3b's λ after the three real recordings (M11). Known limits: on full two AMT-noise hold-out cases at the 0.80
   hands threshold fall under it (within G0's allowance of 2) and full's hand mean is 0.897; keys by region never fire
   on the recording corpus (no forced key changes).
+- **A36 human review: FAIL (2026-09-24, G03 §30).** One reviewer (the user), result committed unchanged as
+  `tests/bench/human/g3/review-2026-09-24.json`. G3a ≥ G3 off overall in 16/20 (18 needed), G3a worse on rhythm in 4
+  (0 allowed: E07, E11, E15, E17), teacher-usable files 12 = 12 (G3a must beat G3 off; the reference got 16). To a
+  reader G3a was nearly indistinguishable from G3 off (overall 14 same, rhythm 16 same, identical give counts and a
+  2.70 mean score for both). **Nothing was flipped, blessed or baselined; no PR.** The 60 reviewed files are
+  byte-identical to what `f607728` builds. Rendered in the app (dev page, local branch `g3-dev-review-tool`, not for
+  main) instead of MuseScore 4 — a deviation from D7 recorded as G3-U8: the app ignores G3a's beams, but draws rests,
+  values, tuplets, staves and voices exactly as written (checked rest for rest on the six losing excerpts).
+  Failure types: **H1 BLOCKER** — G3a turns the recording path's early-release gaps into more rests (hand moves vacate
+  beats, beat-split rests, filler rests; 874 → 939 rests over the set, every loss has more rests or new triplet
+  rests); **H2 MAJOR** — triplet-internal rests and dotted pieces only G3a writes (40 and 10; worst E17);
+  **H3 MAJOR** — no gain a teacher would notice, because the defects both versions share (release rests; 7 excerpts
+  in the wrong metre and 6 in the wrong key upstream, which G3 preserves) are untouched. Next, in order: user
+  decisions (renderer for the re-run, D1 revisit — the top complaint is R-reg's (G3b) job, whether the 10
+  metre/key-mismatch excerpts stay), then a Fixer on H1/H2, a set drawn with a **new seed** (the old letters are now
+  known), and a second A36.
 - The full-suite baseline (and the others) predate main's `audio-score.js` changes (F7): decide on a
   rebaseline at `aff7080` before relying on `check --suite full`.
 - G0 is merged (PR #1, `aff7080`) and CI is on. The one thing still open from G0 is what to do with
