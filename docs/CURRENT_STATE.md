@@ -1,10 +1,10 @@
 # PPP — current state
 
 Updated 2026-09-24, on `g3-score-intelligence`. G0 (Quality Foundation), G1 (ScoreGraph) and G2 (Score Import)
-are all merged and closed; `origin/main` is `cc509e2`. **G3 is implemented on its branch, not merged, not
-switched on** (G03 §27). Its independent review said NEEDS_FIX (G03 §28); the Fixer (G03 §29) closed every BLOCKER
-and MAJOR finding. **The blind human review (A36) FAILED (G03 §30)**, so the G3a flip did not happen: a Fixer on
-H1/H2, a freshly drawn set and a second review come next (§30.5). Read this first in a new session, then the
+are all merged and closed; `origin/main` is `cc509e2`. **G3 is PARTIAL / DEFERRED** (G03 §31): implemented,
+reviewed and fixed, but its blind human review (A36) failed (§30), so every part of it stays **off** — G3a, G3b,
+the automatic 8va and the pedal join — and G3 off is byte-identical to `main`. The feature-gated infrastructure goes
+to `main` as a PR; the user decides the merge. **G4 has not started.** Read this first in a new session, then the
 current goal's spec in `docs/GOALS/`.
 
 ## Where things are
@@ -12,14 +12,14 @@ current goal's spec in `docs/GOALS/`.
 | | |
 | --- | --- |
 | Goals | Numbered specs in `docs/GOALS/`. **G0 is merged and closed** — implemented (§16), reviewed and fixed through six passes (§17–§22.9), then merged as PR #1 (`aff7080`). `G00_QUALITY_FOUNDATION.md` §22.9 has the last result and what is still open (nothing). |
-| G3 | **Implemented on `g3-score-intelligence` (`D:/PPP-g3`), not merged, no PR** (G03 §27). `professionalize()` (a graph → graph pass pipeline: hands and staves, voices, rhythm representation, logical tuplets — G1 F1 fixed —, keys by region, spelling and accidentals, beams, marks, behind a critic that rolls back any change a pass may not make) runs in `toMusicXml` when `opts.professional` is `'on'`; **the default is still `'off'`**. Core with G3 on: usable +1.27 pt, hand accuracy 0.888 → 0.921, one-note brackets 100 % → 0, unneeded ties 0.43 → 0.01, beams 0 → 98.5 %, every critical gate case kept. The flip waits on G03 §27.4 (two G3-gate lines conflict with R17/H7; four amt micro cases on full). G3b (release → value, second voices from the performance) and the automatic 8va are built and **off**. The human review set (A36) is built for the user to judge. Independent review (G03 §28): NEEDS_FIX — BLOCKER 1, MAJOR 6. **Fixer (G03 §29): READY_FOR_HUMAN_REVIEW** — pedal join off by default (the app plays G3's pedals exactly as the writer's), the hand DP's octave/melody terms and its greed fixed (core 0.917, +42/−0; micro M04/M15 back to base; Czerny 849/027 E flats 43 → 3), a reason-aware G3 gate (user decisions U-1–U-3: only a legal, policy-allowed merge is a defect; partial-chord ties reported apart; R17 held to a per-case baseline), mutation-check live again, a blind human set. `check --suite core --g3` PASS 9/9. **A36 human review FAIL (G03 §30)**: 16/20 overall (18 needed), 4 rhythm losses (0 allowed), usable 12 = 12 — **not flipped**; next is a Fixer on H1 (moves that create rests) and H2 (triplet-internal rests and dots), then a re-review. |
+| G3 | **PARTIAL / DEFERRED — not COMPLETE** (G03 §31, DECISIONS G3-U9). Branch `g3-score-intelligence` (`D:/PPP-g3`), sent to `main` as a PR of feature-gated infrastructure. `professionalize()` (a graph → graph pass pipeline behind a critic) runs in `toMusicXml` only when `opts.professional` is `'shadow'` or `'on'`; **the default is `'off'` and nothing passes it**, so G3 changes nothing a user sees — G3 off is byte-identical to `cc509e2` (§31.2). G3a's other acceptance criteria are PASS or PARTIAL by design (§29.9), but it **failed the blind human review A36** (§30); G3b waits on M11; 8va on issue 3; the pedal join on the app's `change` playback. Reopening: §31.5. |
 | G1 | **Merged and closed.** Implemented (§24), independently reviewed (§25: READY_TO_PR, BLOCKER 0, MAJOR 0), merged as PR #2 (`aa77d2e`), then the follow-up PR #3 (`00081cc`, §26) closed findings F2 and F3. F1 (tuplet bracket grouping) is left for G3 on purpose. `toMusicXml` writes its MusicXML from a ScoreGraph (`scoregraph/`); `opts.legacyWriter` is the way back for one release. |
 | G2 | **Merged and closed.** Implemented (§24), independently reviewed (§25), the one MAJOR it found closed by §26 (D7), merged as PR #4 (`cc0da79`) with BLOCKER 0 and MAJOR 0. Schema is version 2. **The app's import boundary is on the graph** — a file a person opens becomes a ScoreGraph and the Score is a projection of it; `PPP.legacyImport = true` is the way back for one release. **`.mid` opens**: its notes, times and controllers exactly as the file states them, its notation worked out by audio-score's existing quantizer and marked inferred in three places (D3). The MusicXML importer no longer refuses a whole file for an `<unpitched>` note, a missing time signature or a quarter tone. **A transposing part is printed where it is written and sounds where it sounds** (D7, §26). Transcription is unchanged: core 553/553 identical to `00081cc`. |
 | G0 code | On `main` since PR #1, which came from the clean branch `g0-quality-foundation-clean` (worktree `D:/PPP-g0-clean`). The older `g0-quality-foundation` branch and its `D:/PPP-g0` worktree are contaminated with other sessions' production changes — **never merge or edit those**. `tests/README.md` there has a two-line doc change left uncommitted on purpose (outside the allowed paths). |
 | `main` | **Local `main` is `d82bb71`, which must not be pushed.** Despite its message ("harden G0 quality benchmark") it holds no benchmark code: it is a `git add -A` sweep of `D:/PPP` with copyrighted `tmp/` audio and score renders, `__pycache__`, a `_oh-sheet-compare` gitlink and another session's 124 `catalog/method` files (G00 §19.18). It is not pushed, and `origin/main` (`00081cc`) does not contain it. The user decides how to undo it. |
 | App | `Piano Coach App.dc.html` (single file, ~19k lines), `audio-score.js` (recording → MusicXML; on the G1 branch through `scoregraph/`, which the page loads before it), `omr-service.js` (local helper, 127.0.0.1:8788), `server.js` (port 8777). Deploy: Render, manual (`render deploys create …`; a push does not deploy). |
 | ScoreGraph | `scoregraph/` (17 UMD files, no dependencies; `scoregraph/README.md`): versioned plain-JSON canonical score, validator (31 errors, 14 warnings, 7 notes), canonical JSON, time and performance layers, MusicXML import and export. Every committed MusicXML (369 files) goes through it and back (`run.py sg-roundtrip`): 367 unchanged, 2 with a documented difference (allowlisted; a closing ending bracket and a wedge that were never opened). Since G2 the app's import is on it too: a file a person opens becomes a graph and the Score is a projection (`legacy-score.js`). Storage, renderer and player still read the legacy `Score`; they move in G4–G5. |
-| Tests | `npm test` (26 browser suites; needs `npm start`, network, puppeteer), `npm run test:transcription-core` (16, including `beat_track_test.py`), `npm run test:arranger` (3), `npm run test:bench` (221 unit tests + 17 golden snapshots + 13 correctness fixtures), `npm run test:scoregraph` (132 node tests, G1–G2; 205 on the G3 branch, core + robust + golden by default), `npm run test:scoregraph:perf` (G3 A39, run alone). |
+| Tests | `npm test` (26 browser suites; needs `npm start`, network, puppeteer; they are chained with `&&`, so a failing suite hides every suite after it — run those alone), `npm run test:transcription-core` (16, including `beat_track_test.py`), `npm run test:arranger` (3), `npm run test:bench` (221 unit tests + 17 golden snapshots + 13 correctness fixtures), `npm run test:scoregraph` (132 node tests, G1–G2; 205 on the G3 branch, core + robust + golden by default), `npm run test:scoregraph:perf` (G3 A39, run alone). |
 | CI | `.github/workflows/bench.yml`: a gate job (unit, `test:scoregraph` and `sg-roundtrip` since G1, golden, lint, provenance, correctness, smoke/core/robust run + check, replay-public, transcription-core, arranger) and a nightly job (mutation-check, full, the reviews' `adversarial.py`, `final_review.py`, `final_oracle.py`). The gate runs on a **pull request** or a push to `main`; pushing the branch alone runs nothing. The nightly schedule runs only from the default branch (`workflow_dispatch` runs it by hand). The gate has run on GitHub for PR #2, PR #3 and PR #4 and passed every time, and on `main` at `cc0da79`. |
 
 ## Measuring score quality (G0)
@@ -220,53 +220,28 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
     still call `parseMusicXML` directly (stages S4/S5, §25.8), and decisions D2, D4, D5 and D6.
 - **G1 is merged and closed** (PR #2 `aa77d2e`, follow-up PR #3 `00081cc`). §26 records the two
   findings it closed. **Left open on purpose:** tuplet bracket grouping for split triplet pieces
-  (**F1** — the app draws fewer brackets; **G3 owns tuplet engraving**, see issue 20 above), and
+  (**F1** — the app draws fewer brackets; **G3 owns tuplet engraving**, see issue 20 above; G3a groups them in the
+  graph but is off, so F1 is still open in production), and
   F4–F8 (§25.3), none of them reachable today.
-- **G3 (score intelligence) design is approved** (`docs/GOALS/G03_SCORE_INTELLIGENCE.md`; designed 2026-09-23, decisions D1–D8 accepted 2026-09-24, §22.1): a graph → graph pass pipeline. G3a (tuplet grouping/F1, rhythm representation, hands, spelling, accidentals, beams) is ready to implement. G3b (release → note value, second voices from the performance) and the automatic 8va pass are built **default OFF**: G3b goes on in production only after three real recordings (duple, triple, compound) are baselined, 8va only after issue 3 is fixed. Ownership: G3 notation/spelling/hands, G4 engraving, G5 fingering.
-- **G3 is implemented on `g3-score-intelligence` (`D:/PPP-g3`), 20 commits over the design, pushed, no PR**
-  (G03 §27). Open, in order: (1) the user decides G03 §27.4 — the G3 gate asks for `nq.shape.tm_missing == 0`
-  and `nq.tie.mergeable_rate == 0`, which R17 (one-tick residues are R-reg's) and H7 (double dots) make
-  impossible for G3a; the flip (`PROFESSIONAL_DEFAULT = 'on'`, `golden --bless --g3`, `nq.*` into the core
-  gate and baseline) follows that decision; (2) an independent review before any merge; (3) the human review
-  (`run.py human-set`, MuseScore 4, A36); (4) G3b's λ after the three real recordings (M11).
-- **G3 independent review done (2026-09-24, G03 §28): NEEDS_FIX, BLOCKER 1 / MAJOR 6 / MINOR 5 / OPTIONAL 5.**
-  Preservation holds (sounding notes, onsets, tie-merged lengths, bars, metre, tempo, repeats, marks, performance
-  bytes identical on smoke, core, robust and full; G3 off is byte-identical to `cc509e2`). **B1**: P8 joins a pedal
-  release and the next press into one pedal with changes, and the app plays a `change` as no lift (App 2660–2676,
-  CC64 = 64), so with G3a on a pedalled transcription keeps the damper down through every change — for the
-  pedal-profile pieces, from the first press to the end. **MAJOR**: the hand DP's
-  octave and melody terms break left-hand octaves, right-hand octave chords and hand-alternating figures (M1);
-  R-repr writes triplet pieces a stuck R17 neighbour stops from grouping, so A6 fails on robust and the critic rolls
-  measures back on full (M2); `mutation-check` fails 47/48 at HEAD because keys by region never change a key
-  (M3); the human set is not blind (M4); ungroupable one-note tuplets are hidden from `one_note_rate` (M5); and
-  separating R17 alone does not fix the G3 gate — about 90 % of the "mergeable" ties are H6/H7/partial-chord ties
-  the design itself forbids merging (M6). User decisions needed: U-1 (the mergeable metric and H6/H7), U-2 (partial
-  chord ties), U-3 (pedal join off, or the app's `change` playback). A Fixer session takes §28.9 next; the human
-  review (A36) comes after the set is blinded; the flip only after A36.
-- **G3 Fixer done (2026-09-24, G03 §29): READY_FOR_HUMAN_REVIEW, BLOCKER 0 / MAJOR 0.** The user approved U-1–U-3
-  (DECISIONS G3-U5–U7). Open, in order: (1) **the user's blind review** — open the 60 files of
-  `tests/bench/human/g3/` in MuseScore 4, fill a copy of `review-form.json`, score it with
-  `python tests/bench/run.py human-set --score <file>` (G03 §29.8); (2) the G3a flip only if A36 passes
-  (`PROFESSIONAL_DEFAULT = 'on'`, `golden --bless --g3`, `nq.*` and the R17 baselines into the core gate);
-  (3) G3b's λ after the three real recordings (M11). Known limits: on full two AMT-noise hold-out cases at the 0.80
-  hands threshold fall under it (within G0's allowance of 2) and full's hand mean is 0.897; keys by region never fire
-  on the recording corpus (no forced key changes).
-- **A36 human review: FAIL (2026-09-24, G03 §30).** One reviewer (the user), result committed unchanged as
-  `tests/bench/human/g3/review-2026-09-24.json`. G3a ≥ G3 off overall in 16/20 (18 needed), G3a worse on rhythm in 4
-  (0 allowed: E07, E11, E15, E17), teacher-usable files 12 = 12 (G3a must beat G3 off; the reference got 16). To a
-  reader G3a was nearly indistinguishable from G3 off (overall 14 same, rhythm 16 same, identical give counts and a
-  2.70 mean score for both). **Nothing was flipped, blessed or baselined; no PR.** The 60 reviewed files are
-  byte-identical to what `f607728` builds. Rendered in the app (dev page, local branch `g3-dev-review-tool`, not for
-  main) instead of MuseScore 4 — a deviation from D7 recorded as G3-U8: the app ignores G3a's beams, but draws rests,
-  values, tuplets, staves and voices exactly as written (checked rest for rest on the six losing excerpts).
-  Failure types: **H1 BLOCKER** — G3a turns the recording path's early-release gaps into more rests (hand moves vacate
-  beats, beat-split rests, filler rests; 874 → 939 rests over the set, every loss has more rests or new triplet
-  rests); **H2 MAJOR** — triplet-internal rests and dotted pieces only G3a writes (40 and 10; worst E17);
-  **H3 MAJOR** — no gain a teacher would notice, because the defects both versions share (release rests; 7 excerpts
-  in the wrong metre and 6 in the wrong key upstream, which G3 preserves) are untouched. Next, in order: user
-  decisions (renderer for the re-run, D1 revisit — the top complaint is R-reg's (G3b) job, whether the 10
-  metre/key-mismatch excerpts stay), then a Fixer on H1/H2, a set drawn with a **new seed** (the old letters are now
-  known), and a second A36.
+- **G3 = PARTIAL / DEFERRED (2026-09-24, G03 §31, DECISIONS G3-U9) — not COMPLETE.** The user chose to stop
+  here and move to the next Goal without the M11 recordings. What exists, all switched off:
+  - **G3a** (hands and staves, voices, rhythm representation, logical tuplets = G1 F1, keys by region, spelling and
+    accidentals, beams, marks, behind a critic) is implemented, its other criteria PASS or PARTIAL by design (§29.9),
+    but it **failed the blind human review A36** (§30: overall 16/20 with 18 needed, 4 rhythm losses with 0 allowed, usable
+    12 = 12), so `PROFESSIONAL_DEFAULT` stays `'off'`. **G3b** (release → note value, voices from the performance) is
+    off until M11. The automatic **8va** is off until issue 3 is fixed; the **pedal join** is off until the app's
+    `change` playback is fixed.
+  - **No user-facing G3 behaviour.** G3 off is byte-identical to `origin/main` (`cc509e2`): MusicXML and stats of
+    879 smoke/core/robust transcriptions, and graph, export, legacy Score and report of all 504 committed
+    MusicXML/MXL/MIDI files through the import door (§31.2); `ab` smoke/core PASS with every case the same.
+  - The feature-gated infrastructure goes to `main` as a PR (not merged; the user decides). It carries the human
+    review result (`tests/bench/human/g3/review-2026-09-24.json`). Regression on the branch: every CI gate step, mutation-check 49/49 and `npm test` 25/26 — the one failure (no
+    transcribe venv in the worktree) fails the same way on `main` (§31.3).
+  - **To reopen** (§31.5): G3a — a Fixer on A36's H1 (moves that create rests) and H2 (rests and dots inside
+    triplets), a set drawn with a new seed, and a second A36 in the PPP app's renderer with the excerpts pre-split
+    into `CLEAN_INPUT` / `UPSTREAM_ERROR` (G3-U10). G3b — M11 (below). History: implementation §27, review §28,
+    Fixer §29, A36 §30.
+  - Local-only leftovers: branch `g3-dev-review-tool` (`9d02842`, the dev review page, not pushed, not for `main`).
 - The full-suite baseline (and the others) predate main's `audio-score.js` changes (F7): decide on a
   rebaseline at `aff7080` before relying on `check --suite full`.
 - G0 is merged (PR #1, `aff7080`) and CI is on. The one thing still open from G0 is what to do with

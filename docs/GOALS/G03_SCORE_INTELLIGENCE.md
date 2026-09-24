@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| 상태 | **A36 사람 평가 FAIL (2026-09-24, §30)** — 전체 G3a ≥ G3 off 16/20 (18 필요), 리듬 G3a 패 4 (0 필요), 절대 yes+fix 12 = 12 (B > A 필요). **G3a flip 안 함** (`PROFESSIONAL_DEFAULT = 'off'`), G3b·자동 8va·`pedalJoin` OFF. 다음: Fixer H1(이동이 만드는 쉼표)·H2(셋잇단 안 쉼표·점 음가) → 새 seed 세트 → A36 재평가 (§30.5). 이전: Fixer READY_FOR_HUMAN_REVIEW (§29), 독립 리뷰 NEEDS_FIX (§28), 구현 (§27). 설계 승인: Architect closeout 2026-09-24, D1–D8 Accepted (§22.1) |
+| 상태 | **PARTIAL / DEFERRED (2026-09-24, §31, G3-U9)** — COMPLETE 아님. G3a는 구현됐지만 **A36 사람 평가 FAIL** (§30: 전체 16/20, 리듬 패 4, 절대 12 = 12)로 OFF; G3b는 M11 전 OFF; 자동 8va·`pedalJoin` OFF. 사용자에게 보이는 G3 동작 없음 — G3 off는 `origin/main`과 바이트 동일 (§31.2). feature-gated 인프라는 PR로 main에 (병합은 사용자). 다시 여는 조건 §31.5. 이전: Fixer READY_FOR_HUMAN_REVIEW (§29), 독립 리뷰 NEEDS_FIX (§28), 구현 (§27). 설계 승인: Architect closeout 2026-09-24, D1–D8 Accepted (§22.1) |
 | 기준 커밋 | `origin/main` = `cc509e2` (G2 closeout + Windows mutation fix) |
 | 브랜치 / worktree | `g3-score-intelligence` / `D:/PPP-g3` |
 | 선행 | G0 Quality Foundation, G1 ScoreGraph, G2 Score Import — 모두 CLOSED |
@@ -1758,7 +1758,77 @@ MINOR: 철자 2 패 (E05, E10 — 메모 없음), 성부 1 패 (E17, H2와 같�
 
 | commit | 무엇 |
 | --- | --- |
-| (이 절) | test·docs: 사람 평가 결과 JSON, G03 §30, DECISIONS G3-U8, CURRENT_STATE. 코드·baseline·golden 변경 없음 |
+| `9f9ddc1` | test·docs: 사람 평가 결과 JSON, G03 §30, DECISIONS G3-U8, CURRENT_STATE. 코드·baseline·golden 변경 없음 |
+
+---
+
+## 31. 연기 종료 — PARTIAL / DEFERRED (2026-09-24)
+
+사용자 결정 (DECISIONS **G3-U9**): M11 실제 연주 녹음은 지금 하지 않고, G3를 더 붙잡지 않고 다음 Goal로 간다. G3는 **COMPLETE가 아니라 PARTIAL / DEFERRED**로 닫는다. 이 절은 무엇이 켜져 있지 않은지, G3 off가 main과 정말 같은지, 무엇을 나중에 다시 열어야 하는지를 적는다. M11 녹음 도구는 만들지 않았다.
+
+### 31.1 상태
+
+| 부분 | 상태 | 기본값 | 다시 여는 조건 |
+| --- | --- | --- | --- |
+| **G3a** (손·staff, 성부, R-repr, 논리 tuplet = G1 F1, 구간 조, 철자·임시표, beam, marks, critic) | 구현됨. §29.9: A36·A19 밖의 A1–A40은 PASS이거나 설계대로의 PARTIAL(A9·A10·A17); **사람 품질 A36은 FAIL** (§30) | `PROFESSIONAL_DEFAULT = 'off'` (`audio-score.js`) | §30.5: Fixer H1·H2 → 새 seed 세트 → A36 재평가 통과 (조건 G3-U10) |
+| **G3b** (R-reg, perf-voices) | 구현됨, λ = 1은 자리표시 | `opts.g3b` false | **M11**: 실제 사람 연주 3곡(단순 2박·3박·겹박자) baseline 뒤 A19 |
+| 자동 8va | 구현됨 | `opts.ottava` false | 이슈 3 (앱이 8va를 한 옥타브 틀리게 재생) 수정 뒤 (D2) |
+| P8 페달 join | 구현됨 | `opts.pedalJoin` false | 앱의 `change` 재생 수정 뒤 (G3-U7) |
+
+**사용자에게 보이는 G3 동작: 없음.** `toMusicXml`은 `opts.professional`이 `'shadow'`나 `'on'`일 때만 `professionalize`를 부르고, 앱과 benchmark의 어느 호출자도 그 옵션을 넘기지 않는다. 앱은 G3 모듈 10개를 불러오기만 한다 (script 태그).
+
+### 31.2 G3 off = origin/main (`cc509e2`)
+
+두 방식으로 쟀다. 하나는 저장소 공식 도구, 하나는 바이트 비교다.
+
+| 검사 | 범위 | 결과 |
+| --- | --- | --- |
+| `run.py ab --a git:origin/main --b worktree` + `ab_identical.py` | smoke 44, core 553 | verdict PASS; 케이스마다 status·metric·semantic projection 전부 같음 |
+| 녹음 경로 바이트 비교 (main의 SUT 스냅샷 대 브랜치, 기본 옵션 = G3 off, 같은 연주 입력) | smoke 44, core 553, robust 282 = 879 케이스 | **MusicXML 879/879, stats 879/879 바이트 동일** (다른 것은 벽시계 `ms`뿐) |
+| import 경로 바이트 비교 (각자의 scoregraph를 따로 띄운 Node 프로세스) | 커밋된 파일 504 (MusicXML 253, MXL 222, MIDI 29) | `importFile` 결과·그래프 직렬화·MusicXML export·legacy Score·import report·`fromMidi` **504/504 동일** |
+
+- import 비교는 두 가지만 정규화했다: report의 `…Ms` 벽시계 시간과 legacy Score `id`의 `Date.now()` 꼬리. 이 둘은 **같은 빌드끼리도** 매번 다르다 — 대조군 main 대 main이 정규화 뒤 504/504 동일.
+- 공유 모듈의 변경(`serialize.js`의 canonical 순서·동률 처리·event 재사용, `validate.js`의 memo, `schema.js`의 필드 목록 cache, `ops.js`의 추가, `rational.js`)은 성능 리팩터와 추가이고, 위 비교가 G3 off 출력이 바뀌지 않았음을 보인다. 라이브러리 버전은 1.1.0 → 1.2.0 (`audio-score.js`가 같은 값을 검사) — 출력에는 쓰이지 않는다.
+
+### 31.3 회귀 (`9f9ddc1` + 이 절의 docs, G3 off)
+
+| 명령 | 결과 |
+| --- | --- |
+| `npm run test:scoregraph` | 205/205 |
+| bench unit (`unittest discover`) | 283 OK |
+| `run.py sg-roundtrip` | L1 368/369, L1+ 367/369, L2 369/369, 순서 369/369 (허용 2, 전과 같음) |
+| `make-midi-fixtures.js --check` | 29 바이트 동일 |
+| `run.py golden` | 17/17 |
+| `run.py lint-corpus` / `make_provenance.py --check` | 0 오류 / 일치 |
+| `run.py correctness` | 13/13 |
+| smoke / core / robust `run` + `check` (저장 baseline) | PASS / PASS / PASS (SQI 86.9 / 76.9 / 76.6) |
+| `run --suite replay-public` | PASS (6 케이스) |
+| `test:transcription-core` / `test:arranger` | OK / OK |
+| `run.py mutation-check` | **PASS 49/49** — 해로운 47 전부 REGRESSION (G3 묶음 포함), no-op 2 바이트 동일 |
+| `npm test` (26 suite) | **25/26** — `transcription`의 한 검사만 실패 (venv transkun 경로: 이 worktree에 transcribe venv가 없다). `origin/main`(`cc509e2`) worktree에서 같은 검사가 같게 실패한다 (둘 다 84 통과 + 같은 1 실패, 경로만 다름) → 환경 실패. `&&` 사슬이 거기서 멈추므로 뒤의 8 suite(score-search, fingering, video, auth-ui, share, lessons, hymns-share, course)는 하나씩 돌려 전부 통과 |
+
+### 31.4 PR에 들어가는 것
+
+- **코드 (feature-gated)**: `scoregraph/meter-grid.js`, `pro.js`와 `pro-*.js` 8개(critic, staff, voice, rhythm, tuplet, spell, beam, marks); 공유 모듈의 추가·성능 변경(§31.2); `audio-score.js`의 `opts.professional` 분기(`'off'` | `'shadow'` | `'on'`, 기본 `'off'`)와 버전 1.2.0; 앱의 script 태그 10개; `package.json`의 `test:scoregraph:perf`.
+- **G1 F1 (tuplet 괄호 묶음)**: 논리 tuplet 하나 = spanner 하나(G3-D3)를 `pro-tuplet.js`가 그래프 층에서 한다. **G3가 꺼져 있으므로 production에서 F1은 여전히 열려 있다** (앱은 전과 같이 괄호를 적게 그린다).
+- **bench**: reader/5, `nq.*` metric, reason-aware G3 gate와 R17 baseline, notation audit, mutation, 사람 평가 도구·블라인드 세트·열쇠·**평가 결과**(`tests/bench/human/g3/review-2026-09-24.json`, §30).
+- **tests**: `tests/scoregraph`의 G3 테스트 (205 중 G3 몫), fixture.
+- 들어가지 않는 것: dev 평가 페이지 (`g3-dev-review-tool`, 로컬 브랜치 `9d02842`, push 안 함), M11 녹음 도구 (만들지 않음).
+
+### 31.5 미래 trigger
+
+1. **G3a** — §30.5 순서대로: Fixer H1(손·성부 이동이 새 쉼표를 만들지 않게)·H2(셋잇단 안의 release 잔여를 쉼표·점 조각으로 쓰지 않게) → **새 seed**로 세트 → A36 재평가. 재평가 조건 (사용자, G3-U10): PPP 앱 렌더러; 발췌를 평가 전에 `CLEAN_INPUT` / `UPSTREAM_ERROR`로 나눠 따로도 보고하되 전체에서 빼지 않는다. 그 도구는 `g3-dev-review-tool`에 있다.
+2. **G3b** — M11: 라이선스가 깨끗한 실제 사람 연주 3곡(단순 2박·3박·겹박자)을 raw로 저장·baseline한 뒤 λ·budget(0.35·IOI)·C5 문턱(50 %)을 정하고 A19. G0 §20.13의 M11 trigger는 그대로다 — release를 음가로 바꾸는 규칙을 production에서 바꾸는 첫 Goal 전에.
+3. **자동 8va** — 이슈 3 수정 뒤. **P8 페달 join** — 앱 `change` 재생 수정 뒤.
+4. G3의 A36 결과가 가리키는 것 중 판각(beam 모양·보임, 일부 tuplet 판각)은 G4 범위다 (G3-U10).
+
+### 31.6 Commit / PR
+
+| commit | 무엇 |
+| --- | --- |
+| (이 절) | docs: G03 §31, DECISIONS G3-U9·U10, CURRENT_STATE (G3 = PARTIAL / DEFERRED). 코드·baseline·golden 변경 없음 |
+
+PR `g3-score-intelligence` → `main`: feature-gated G3 인프라, 병합은 사용자가 정한다.
 
 ---
 
