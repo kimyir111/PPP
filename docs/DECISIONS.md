@@ -121,4 +121,22 @@ G3-U4대로 기록하고 올린다. 설계 결정 D1–D8은 바꾸지 않았다
 | G3-I6 | 철자 line speller는 기본 off | 켜면 core 철자 퇴행 케이스 |
 | G3-I7 | golden G3 허용 범주에 "release와 1박 안 press를 change 하나로" (P8) | G15 |
 | G3-I8 | A39 2 s 판정은 단독 실행 (`test:scoregraph:perf`); 병렬 suite 안에서는 기록만 | 병렬 실행은 wall·CPU 시간 모두 약 2배 |
-| G3-I9 | **flip 보류**: G3 gate의 `tm_missing == 0`·`mergeable == 0`이 R17·H7과 충돌 | G03 §27.4 — 사용자 결정 |
+| G3-I9 | **flip 보류**: G3 gate의 `tm_missing == 0`·`mergeable == 0`이 R17·H7과 충돌 | G03 §27.4 — 사용자 결정 (G3-U5로 해소) |
+
+**사용자 결정 (2026-09-24, 독립 리뷰 G03 §28.9 뒤; 영구)**
+
+| ID | 결정 |
+| --- | --- |
+| G3-U5 (U-1) | mergeable tie는 **한 기호로 합치는 것이 H6·H7 아래 합법이고 G3a 가독성 정책이 허용할 때만** 결함(`MERGEABLE_DEFECT`)이다. 나머지는 이유별로 따로 센다: `REQUIRED_H6`, `REQUIRED_H7`, `REQUIRED_BEAT_SPLIT`, `PARTIAL_CHORD_REQUIRED`, `R17_DEFER_G3B`, 그 밖의 명시적 이유. 파일 allowlist·전역 threshold 완화·이유 이름으로 결함 숨기기 금지. **R17은 케이스별 baseline을 고정**하고, R17 residual을 baseline보다 늘리는 변경은 FAIL |
+| G3-U6 (U-2) | 부분 화음 tie(화음의 일부 머리만 다음 음으로 이어짐)는 mergeable 결함에서 빼되 `PARTIAL_CHORD_REQUIRED`로 **따로 세어 보고**한다. G3a는 울리는 것을 바꿔서 이것을 풀지 않는다 |
+| G3-U7 (U-3) | P8 페달 합치기(release + 1박 안 press → `change`)는 **기본 OFF** — professionalize 기본값과 shadow 포함. 명시적 실험 옵션(`opts.pedalJoin`)으로만. 앱의 `change` 재생 수정은 G3 범위 밖. G3 off/on(기본)에서 앱이 재생하는 페달 이벤트가 같아야 한다 (B1 회귀 fixture). G3-I7을 대체한다 |
+
+### G3 Fixer 결정 (증거와 함께, G03 §29) — Fixer, 2026-09-24
+
+| ID | 결정 | 증거 |
+| --- | --- | --- |
+| G3-F1 | gate의 residual 분류는 G3 내부가 아니라 **출력 MusicXML**(reader/5 층)에서 한다 (`pppbench/notation_reasons.py`): 성부-마디 창이 이진·셋잇단 격자 중 하나로 설명되지 않고, 한 격자를 고를 때 어긋난 점이 전부 1 tick 안의 release면 R17. 괄호 없는 time-modification 음(인쇄되지 않은 1-음 tuplet)도 1-음 tuplet으로 센다 | core: `tm_missing` 291 = R17 291, 1-음 150 = R17 150, mergeable 93 = H7 58 + H6 30 + R17 5, 결함 0 (§29) |
+| G3-F2 | 손 DP의 옥타브 항은 **겹친 선**(나머지가 울리지 않는 맨 옥타브가 3번 이상 연속)에만; 손 위치는 "마지막 자리"와 "머물러 온 자리"(느린 평균, 작가가 그 손에 둔 음 뒤에만) 중 가까운 쪽; 한 음씩 번갈아 치는 음형은 선율 항 면제; 작가의 손이 DP보다 비싸지 않은 구간은 작가 것을 둔다; 결과는 자기 모델의 **고정점**(작가 손으로 다시 읽어도 같은 선택) | 리뷰의 M04·M15×2 회복, Czerny 849/027 human Eb4 43 → 3; P(P(g)) core 553·full 동일 (§29.4) |
+| G3-F3 | micro no-drop은 기호 수가 분모인 비율(`note_shape.consistency`)을 **불일치 수**로 판정한다 (`MICRO_BY_COUNT`) | M20: 불일치 8 → 8, 분모 109 → 108 |
+| G3-F4 | 구간 조 추론은 살아 있는 코드지만 녹음 corpus에서는 발동하지 않는다 — 억지로 조 변경을 만들지 않는다. mutation은 살아 있는 임시표 경로(`G3-ACC-BAR-STATE`)로 | core 441 중 2, full 4,165 중 14 케이스만 조 변경 제안, 전부 한 5도(G3-I3로 임시표); S06 fixture가 실제 전조를 증명 |
+| G3-F5 | 사람 평가 세트는 블라인드: 불투명 라벨(E01-X…), 판본 순서 무작위(seed), 머리·표지·마크 정규화, 열쇠는 `tests/bench/human/g3-key/` 분리 | §29.8 |

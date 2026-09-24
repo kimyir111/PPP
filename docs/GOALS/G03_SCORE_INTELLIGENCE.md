@@ -685,7 +685,7 @@ PPP는 beam을 쓰지 않는다 (0 vs reference 46.8 %). 앱 렌더러는 그래
 
 - imported pedal은 보존.
 - inferred pedal (녹음·MIDI): **있느냐 없느냐는 G3가 정하지 않는다** (이슈 17은 AMT의 가짜 페달이다; 그것을 걸러내는 것은 전사 품질의 일). G3는 표기만 정리한다:
-  - 1박 미만 간격의 release–press 쌍 → `changes`로 합침 (이미 writer가 일부 함).
+  - 1박 미만 간격의 release–press 쌍 → `changes`로 합침 (이미 writer가 일부 함). **G3-U7 (§29): 기본 OFF** — 앱은 `change`를 떼지 않는 페달로 재생한다(B1). `opts.pedalJoin`으로만 켜는 실험 기능이고, G3 off/on(기본)에서 앱이 재생하는 페달·sustain은 같아야 한다 (`g3-marks.test.js`).
   - `changes`의 위치를 가장 가까운 음 onset **뒤**(legato pedal 관례)로 — 단 같은 박 안에서만, 없으면 그대로.
   - 16분 미만 pedal 구간은 writer가 이미 버린다; G3는 새로 버리지 않는다.
 - G0 `critical.pedal`("사용된 곳에 페달이 적혀 있다") 퇴행 0 (A32).
@@ -910,7 +910,7 @@ G0 reader는 `<tuplet>` start/stop과 `<beam>`을 읽지 않는다 (F1이 안 �
 - **새 critical gate는 만들지 않는다.** usable-score 정의(G0)를 G3 중간에 바꾸면 G0 baseline 전체의 의미가 흔들린다.
 - G3 flip의 판정은 `run.py ab` + 다음 **G3 gate** (A34, `run.py check --suite core --g3`):
   - G0 critical gate: 케이스별 퇴행 0 (R-repr는 duration·onset을 보존하므로 note-values·beat gate 값이 **정확히** 같아야 한다).
-  - `nq.tuplet.one_note_rate == 0`, `nq.shape.tm_missing == 0`, `nq.tie.mergeable_rate == 0` (G3a가 만든 출력에서).
+  - ~~`nq.tuplet.one_note_rate == 0`, `nq.shape.tm_missing == 0`, `nq.tie.mergeable_rate == 0` (G3a가 만든 출력에서).~~ **G3-U5·U6 (§29.5)부터 이유별**: 출력 MusicXML에서 residual마다 이유를 매긴다(`pppbench/notation_reasons.py`). `tm_missing`과 1-음 tuplet(괄호가 인쇄되지 않은 것 포함)은 R17이 아닌 것 0; mergeable tie는 `MERGEABLE_DEFECT` 0이고 H6·H7·박 분할·부분 화음·성부 사이·R17은 따로 세어 보고; R17 수는 케이스별 baseline(`tests/bench/baselines/g3-r17.<suite>.json`, `run.py g3-r17`)을 넘으면 FAIL.
   - `hand.accuracy` 평균 ≥ 0.90, 케이스별 hands gate 퇴행 0.
   - `spelling.accuracy`, key gate: 케이스별 퇴행 ≤ 허용 목록.
 - flip 뒤 `nq.*`는 baseline에 들어가고 regression 검사를 받는다 (G0 절차).
@@ -918,6 +918,8 @@ G0 reader는 `<tuplet>` start/stop과 `<beam>`을 읽지 않는다 (F1이 안 �
 ### 20.5 Mutation 추가 (`mutation-check`)
 
 G3가 스스로를 잴 수 있음을 증명: (1) tuplet 조각 괄호 복원 (F1 되살리기) → `nq.tuplet.one_note_rate` 퇴행, (2) 셋잇단 쉼표 time-mod 제거, (3) 박 안 tie 되살리기, (4) beam을 박 경계 넘어 확장, (5) 철자 표를 정적 표로 되돌림, (6) 손 DP의 선율 벌점 0, (7) critic이 onset 1-tick 이동을 놓치게 (critic mutation → A7이 잡아야 함), (8) imported slur 앵커 버리기. 각각 REGRESSION이어야 한다.
+
+§29 (M3, M6): (5)는 녹음 corpus에서 아무것도 바꾸지 않아(구간 조가 발동하지 않음) 살아 있는 임시표 경로 `G3-ACC-BAR-STATE`(마디 안 임시표 상태를 잊음 → `critical.accidentals`)로 바꿨다. (2)는 `nq.shape.tm_missing.unexpected`, (3)은 `nq.tie.mergeable.defect`로 잡혀야 하고, R17 증가 증명으로 `G3-R17-GROW`(셋잇단 앞의 1-tick release 틈을 닫지 않음 → `nq.shape.tm_missing.r17`)를 더했다.
 
 ### 20.6 Golden
 
@@ -942,12 +944,13 @@ G0 golden 17개는 G3 flip에서 다시 bless한다. 라벨: tuplet 괄호·쉼�
 - 입력: 각 reference의 `human|oracle|s1` core 케이스 (합성 연주 → PPP).
 - 각 발췌에 세 판본: **A** = raw (G3 off), **B** = G3a, **C** = reference 원본. (G3b가 생기면 **D**.)
 - 파일: `tests/bench/human/g3/HG01–HG20/{A,B,C}.musicxml` + `meta.json` (케이스 key, 마디 범위, sha256). 전부 저장소 안 파일에서 결정론적으로 생성 (`run.py human-set --build`).
+- **§29 M4부터 블라인드**: 평가자는 `tests/bench/human/g3/E01-X.musicxml … E20-Z.musicxml`만 본다. 발췌 번호는 섞인 순서로, 판본은 발췌마다 X·Y·Z로 섞인다(seed 20260924). 모든 파일은 같게 정규화된다(제목·작곡가·표지·소프트웨어·레이아웃·방향 지시·slur·운지·가사 제거, 마디 1–8). 어느 글자가 A·B·C인지, 케이스·참조·출처·라이선스·sha256은 `tests/bench/human/g3-key/key.json`에만 있다.
 
 ### 21.4 Protocol
 
 1. **렌더러 고정**: 판본을 같은 렌더러로 PNG로 만든다. 앱 렌더러는 beam·tuplet을 스스로 정해서 G3 차이를 가리므로 **쓰지 않는다**. MusicXML을 읽는 외부 판각기(MuseScore 4, 사용자 로컬)를 쓰고, 버전을 `meta.json`에 기록한다 (D7).
-2. **블라인드 쌍 비교**: 발췌마다 (A,B) 쌍을 무작위 좌우로. 판정: "왼쪽이 낫다 / 같다 / 오른쪽이 낫다" × 4 축 (리듬 읽기, 성부·손, 철자·임시표, 전체) + 자유 메모.
-3. **절대 평가**: B와 C를 섞어 무작위로, "피아노 교사가 이 악보를 학생에게 줄 수 있나?" (예/고치면/아니오) + 1–5 전체 점수.
+2. **블라인드 쌍 비교**: 발췌마다 (A,B) 쌍을 무작위 좌우로. 판정: "왼쪽이 낫다 / 같다 / 오른쪽이 낫다" × 4 축 (리듬 읽기, 성부·손, 철자·임시표, 전체) + 자유 메모. **§29 M4부터**: 발췌마다 세 판본 X·Y·Z를 축마다 순위(1이 가장 좋음, 같으면 같은 순위)로 매긴다 — 어느 것이 A·B인지 모르므로 쌍 대신 셋의 순위. 점수 도구가 열쇠로 A·B 선호를 되찾는다.
+3. **절대 평가**: B와 C를 섞어 무작위로, "피아노 교사가 이 악보를 학생에게 줄 수 있나?" (예/고치면/아니오) + 1–5 전체 점수. **§29 M4부터** 60개 파일 전부를 한 목록에 섞어 각각 평가한다.
 4. 결과 파일: `tests/bench/human/g3/review-<date>-<reviewer>.json` (평가자 역할, 날짜, 커밋, 렌더러 버전, 판정). 평가자 이름·이메일은 적지 않는다 — 역할만.
 5. **평가자**: 사용자(피아노를 아는 사람) 1명 최소, 가능하면 2명. 1명이면 결과에 그 한계를 적는다.
 6. 도구: `run.py human-set --pairs`가 무작위(고정 seed) 쌍 목록과 빈 판정 JSON을 만든다. `run.py human-set --score`가 집계한다.
@@ -1466,6 +1469,191 @@ A 셋은 예외 처리가 아니라 M1을 고쳐서 없앤다.
 | base vs off (smoke·core·robust·full, 5,855 케이스) | metric·MusicXML **완전히 동일** |
 | on vs base | 위 §28.8 A34 |
 | `npm test` 26 suite, G3 off / G3 on | 25/26 / 25/26 (둘 다 `transcription` 환경만) |
+
+## 29. Fixer 기록 (G3 Fixer, 2026-09-24)
+
+`D:/PPP-g3`, `g3-score-intelligence`, 리뷰 commit `1c030f2`에서 시작. G3를 다시 설계하지 않았다: 리뷰가 찾은 결함을 고치고, 사용자가 승인한 U-1–U-3을 영구 결정으로 넣었다. G3a flip·G3b·자동 8va·G4는 건드리지 않았다 (`PROFESSIONAL_DEFAULT = 'off'`, `g3b`·`ottava`·`pedalJoin` 기본 false).
+
+### 29.1 판정
+
+**READY_FOR_HUMAN_REVIEW** — 남은 BLOCKER 0, MAJOR 0. 블라인드 세트는 최종 코드에서 다시 만들었다 (§29.8). A36(사람 평가)은 PENDING이고, **G3a flip은 A36 뒤**다.
+
+### 29.2 사용자 결정 (영구, DECISIONS G3-U5–U7)
+
+- **U-1 → G3-U5**: mergeable tie는 한 기호로 합치는 것이 H6·H7 아래 합법이고 G3a 가독성 정책이 허용할 때만 결함. 이유 등급 `MERGEABLE_DEFECT`, `REQUIRED_H6`, `REQUIRED_H7`, `REQUIRED_BEAT_SPLIT`, `PARTIAL_CHORD_REQUIRED`, `R17_DEFER_G3B`, 그 밖의 명시적 이유(`CROSS_VOICE`). 파일 allowlist·전역 threshold 완화·이름으로 숨기기 없음. R17은 케이스별 baseline, 늘면 FAIL.
+- **U-2 → G3-U6**: 부분 화음 tie는 결함에서 빼되 `PARTIAL_CHORD_REQUIRED`로 따로 세어 보고. G3a는 울리는 것을 바꾸지 않는다.
+- **U-3 → G3-U7**: P8 페달 합치기 기본 OFF (professionalize 기본값, shadow 포함), `opts.pedalJoin` 실험 옵션만. 앱 재생 수정은 G3 밖. G3-I7(golden 허용 범주)을 대체.
+
+### 29.3 Finding별 처리
+
+| Finding | 처리 | 증거 |
+| --- | --- | --- |
+| **B1** 페달 | P8 join 기본 OFF (`pro-marks.js`는 `opts.pedalJoin` 없으면 아무것도 안 함; `pro.js` 최종 검사에서 `pedal` 구성요소 FIXED). golden `--g3` 허용 범주에서 페달 제거 (`golden.py`, `BLESS_LOG.md`) | `g3-marks.test.js` B1: 녹음 그래프 852 (core·robust·golden) 중 페달 있는 31개에서 앱 재생 모델(`Playback.pedal`·`pedalEvents`·`strikes` 재현)의 damper 구간, CC64 1,677개, 친 음 10,780개의 끝이 G3 off와 **동일** — G3 때문에 더 울리는 음 0. 실험 옵션은 별도 테스트 |
+| **M1** 손 DP | §29.4 | M04·M15×2 = base, Czerny 849/027 human Eb4 43 → 3 |
+| **M2** 동결 전파 | R-repr: 쓰지 못한 segment가 걸친 셋잇단 region의 모든 segment를 그대로 둔다 (반복 전파). critic: G3 경고는 입력에 같은 (code, IDs)가 있고 그것이 가리키는 것의 **시간과 인쇄 모양**(kind, 마디, 성부, at, dur, display, grace)이 같을 때만 입력의 것 | core·robust·full rollback **0** (리뷰: robust 1, full 9); strict `g3-preserve`가 core·robust·golden에서 통과 |
+| **M3** 죽은 mutation | `G3-SPELL-STATIC` → `G3-ACC-BAR-STATE` (임시표 계획이 마디 상태를 잊음). 구간 조 추론 조사 (§29.6). 재측정에서 죽은 것으로 드러난 `G3-HANDS-NO-MELODY` → `G3-HANDS-NO-KEEP` | §29.9 |
+| **M4** 블라인드 아님 | 불투명 라벨·무작위 판본·정규화·분리된 열쇠 (§29.8) | 재생성 바이트 동일, 평가자 파일에 출처 문자열 0 |
+| **M5** 1-음 tuplet 숨김 | loose piece의 옛 tuplet을 **그대로** 둔다 (`printed` 건드리지 않음; T08 = 설계대로 "변화 없음 + `N-TUPLET-UNGROUPABLE`"). writer 자신이 숨긴 조각(`buildGraph`가 쪼갠 셋잇단의 가운데 조각)은 G3가 바꾸지 않고, nq가 **괄호 없는 time-modification 음**을 1-음 tuplet으로 센다 | 녹음 그래프에서 G3가 만들거나 바꾼 1-음 tuplet 0; 남긴 206개 전부 writer 것 + `N-TUPLET-UNGROUPABLE` (그중 writer가 숨긴 3); core 1-음 150 = R17 150 |
+| **M6** gate | §29.5 | 증명 4개 |
+| m1 cross-voice tie | P2가 tie 사슬을 한 단위로 한 성부에 옮긴다; tie 있는 음에는 머리를 합치지 않는다; critic 구성요소 `xties`(성부·staff가 다른 두 음의 tie) FIXED | core·robust·full `CROSS_VOICE` 0, `PARTIAL_CHORD_REQUIRED` 0 (리뷰: full 49 + P2가 만든 16) |
+| m2 idempotence | clef 규칙이 같은 마디 안에서 tie로 들어온 조각을 다시 세지 않는다; 재현 fixture `idem/I01-clef-tie-pieces.sg.json` | P(P(g)) core 553·robust 282·full 4,976 전부 바이트 동일 |
+| m3 미분음 | `musicxml.microtone` ext가 있는 head의 임시표·철자는 어느 모드(force 포함)에서도 안 건드린다 | `g3-spell.test.js` m3 |
+| m4 (M20) | micro no-drop에서 기호 수가 분모인 `note_shape.consistency`는 **불일치 수**(`notation.note_shape.mismatches`)로 판정 (`MICRO_BY_COUNT`); baseline 행이 그 수를 보관 | M20: 8 → 8 → 통과; 불일치가 늘면 FAIL (`test_compare.py`) |
+| m5 테스트 범위 | `g3-corpus-data.js` 기본 suite = core, robust, golden | `test:scoregraph` 205/205 |
+| o1 | 변경 없음 (G4 렌더러) | |
+| o2 | 변경 없음 — 설계의 보수적 선택 (3/4 1–2박 2분쉼표) | |
+| o3 | 정규화가 part id를 P1, P2 …로 준다 | 60 파일 모두 id 있음 |
+| o4 | 정보로 다시 잼: 세트의 `nq.ned` 평균 G3 off 1.0225 → G3a 1.0383 (가까움 7, 멀어짐 10, 같음 3) | 여전히 §21.5의 감소 기대와 반대 — 사람 평가가 판단 |
+| o5 | `ops.Draft`는 자기 자신이 frozen인 event만 돌려준다 | `g3-ops.test.js` |
+
+### 29.4 손 DP (M1)
+
+리뷰의 원인 두 가지(모든 옥타브에 벌점, 교대 음형에 선율 벌점)를 고쳤고, 그 과정에서 드러난 DP 자체의 결함 둘(탐욕, 두 번째 실행)을 고쳤다. 상수 하나를 바꾸지 않았다 — 비용을 항별로 분해하는 도구(작가 경로 대 DP 경로)로 매 변경을 확인하고, core·robust·full을 매번 다시 쟀다.
+
+- **octave**: "겹친 선"에만 — 맨 옥타브(두 음, 12 반음, 다른 음이 울리지 않음)가 3번 이상 연속 (E6, Beyer 032, Hanon은 E2/E3 옥타브까지). 한 손 화음 안의 옥타브, 왼손 옥타브 베이스는 한 손의 것. 겹친 선이 한 onset에서만 나뉘는 것에도 1500 (일관성).
+- **move**: 손의 자리 = 마지막 자리와 "머물러 온 자리"(느린 평균, 1/4씩) 중 가까운 쪽 — 잡음 음 하나가 손을 옮기지 않는다 (M04).
+- **melody**: 한 음씩 번갈아 치는 음형(다른 손의 두 단음 사이의 단음)에는 적용하지 않는다 (Czerny 849/027). 다른 면제는 그대로 (앞 onset에 두 손이 다 있을 때만) — 경로를 따라 든 손 자리로 넓히면 오른손 음형의 안쪽 음을 베이스로 보아 Czerny Eb4가 3 → 24로 되돌아간다 (재어 보고 버림).
+- **작가를 둔다 (keepWhereNotBetter)**: 손 자리를 경로를 따라 들고 가는 DP는 탐욕적이라 자기 비용으로도 작가보다 비싼 구간을 다시 배정했다 (Czerny: 작가 17,905 대 DP 20,430). 두 경로가 만나는 onset 사이 구간마다 둘 다 정확히 계산하고, 작가가 비싸지 않으면 작가 것.
+- **고정점**: 모델이 작가의 staff를 읽으므로(keep, 교대 증거, 작가 경로) 두 번째 실행이 다른 최적을 찾을 수 있었다 (Burgmüller 013·021, core 3 케이스). 선택을 작가 것으로 다시 읽어 같아질 때까지(최대 4회) 반복한 뒤에만 옮긴다.
+- **이동 단위**: tie로 이어진 조각들은 한 단위로 한 성부에 (m1).
+- fixture: H12–H17 (합성: 왼손 옥타브 베이스, 오른손 옥타브 화음, 선율 아래 왼손 옥타브, 교대 음형 등), H04 기대값 수정 (옥타브 화음이 찢기지 않음), H18–H21 (리뷰의 corpus 조각: M04, M15 ×2, Czerny 849/027 m11–m15), V06 (겹친 선으로 바꿔 원래 목적 유지).
+
+| 측정 (G3 on vs base `cc509e2`) | 리뷰 시점 | Fixer |
+| --- | --- | --- |
+| core hand accuracy | 0.8876 → 0.9221 | 0.8876 → **0.9168** |
+| core hands gate | +50 / −0 | **+42 / −0** |
+| robust | 0.8878 → 0.9226, +26 / −0 | 0.8878 → 0.9172, +22 / −0 (떨어지는 케이스 17 → 4) |
+| full | 0.8564 → 0.9060, +726 / −0 | 0.8564 → 0.8971, +551 / **−2** |
+| full 떨어지는 케이스 (0.02 넘게) | 403 (58) | 284 (31) |
+| micro M04 amt s1 | 0.94 → 0.90 | 0.94 (= base) |
+| micro M15 amt s1 / s2 | 0.894 → 0.879 / 0.893 → 0.879 | = base |
+| Czerny 849/027 human·oracle s11 / s12 | 0.9005 → 0.833 / 0.9023 → 0.835 | 0.8952 / 0.8970 (Eb4 43 → 3, 남은 셋은 도약 지점) |
+
+full의 −2는 둘 다 **hold-out** 케이스로, 잡음 AMT 입력(`amt|none`)이고 G3 off에서 이미 0.80 경계 바로 위에 있다 (케이스 이름과 값은 G0 hold-out 규칙에 따라 적지 않는다). 둘 다 오른손이 일찍 뗀 잡음 입력에서 선율 항이 손을 옮기는 것이다. 이 둘을 고치는 변형(경로를 따라 든 손 자리로 면제를 넓힘; 작가가 그 손에 둔 음 뒤에만 머문 자리)은 Czerny의 교대 음형을 다시 무너뜨리거나 다른 hold-out 케이스 13개를 경계 밖으로 밀어 채택하지 않았다. G0 full gate의 flip 허용(2) 안이고, G3 gate(A34, core)의 hands 줄은 −0. **기록된 한계 (MINOR)**. full의 hand 평균 0.8971은 G3 gate의 0.90 선(core에 정의)보다 낮다 — 리뷰 시점의 0.906은 병적 배정을 포함한 값이었다.
+
+**hold-out 오염 (알림)**: Czerny 849/027은 hold-out 참조다. 리뷰(§28)가 그 케이스별 값을 기록했고 brief가 회귀 fixture로 지정해 H21(5마디 조각)로 넣었으며, 교대 음형 규칙과 변형 선택(위의 −2, 13)에 hold-out 케이스 결과가 쓰였다. 따라서 full의 hold-out 집계는 **손 모델에 대해서는 더 이상 독립 검증이 아니다** (다른 pass에는 영향 없음). 케이스별 R17 baseline은 hold-out을 한 묶음으로만 둔다 (§29.5).
+
+### 29.5 Reason-aware gate (M6)
+
+- 분류는 **출력 MusicXML**(reader/5 층)에서 한다 — G3 내부 판단을 믿지 않는다 (`tests/bench/pppbench/notation_reasons.py`, 규칙은 §28.4의 독립 분류기). 성부-마디를 경계점(음 시작, 마디 안 tie로 합친 끝, 쉼표 구간 끝)으로 자르고, U = 192/온음표에서 창(단순 박자: 4분, 그 외: 8분)이 이진(3의 배수)·셋잇단(4의 배수) 어느 한 격자로도 설명되지 않으면 섞인 창. 한 격자를 골랐을 때 어긋난 점이 전부 release이고 1 tick 이내면 **R17** (넘으면 R17_WIDE, 역시 release만이라 R-reg 몫); onset이 어긋나면 `MIXED_ONSETS`(예상 밖). 자기 창이 깨끗해도 같은 창을 공유하는 segment가 R17이면 R17 (R-repr의 동결 전파).
+- metric (예측 값, 개수): `nq.shape.tm_missing.r17/.unexpected`, `nq.tuplet.one_note.r17/.unexpected` (괄호가 인쇄되지 않은 time-mod 음 포함), `nq.tie.mergeable.defect/.required_h6/.required_h7/.required_beat_split/.partial_chord/.cross_voice/.r17`. 기존 `nq.*` 정의는 바꾸지 않았다 — `tm_missing`·mergeable 수는 분류 합과 정확히 같다 (core 291, 93).
+- `check --g3` 줄: 예상 밖 `tm_missing` 0, 예상 밖 1-음 0, `MERGEABLE_DEFECT` 0 (나머지 이유는 수와 함께 보고), R17 세 종류(tm·1-음·tie) 모두 케이스별 baseline 이하, 이유 분리가 없는 결과는 FAIL. baseline: `tests/bench/baselines/g3-r17.{core,robust,full}.json`, `run.py g3-r17 --suite S --reason "…"`로 기록 — 예상 밖 residual이나 결함이 있는 실행(G3 off 실행 포함)은 기록을 거부한다. hold-out 케이스는 한 묶음(종류별 합, 늘면 FAIL)으로만 두고 gate 출력에서도 "(hold-out case)"로만 부른다 — 케이스별 hold-out 값은 커밋·출력하지 않는다 (G00 §17 m10). core 26 케이스, robust 11, full 191 + hold-out 묶음.
+- **증명**. 단위 (`test_notation_reasons.py`, 손으로 쓴 MusicXML): (1) 박 안 16~16 → `MERGEABLE_DEFECT` → gate FAIL, (2) 깨끗한 셋잇단 박의 time-mod 없는 쉼표 → 예상 밖 → FAIL, (3) R17이 baseline보다 많으면 FAIL, (4) H6(괄호 밖으로 나가는 tie)·H7(박에서 시작도 박을 채우지도 않는 겹점)·박 분할(못갖춘마디 offset)·부분 화음은 결함 아님 → PASS. 실제 SUT mutation: `G3-TIES-IN-BEAT` → `nq.tie.mergeable.defect` 0 → 3.51, `G3-TRIPLET-REST-NO-TM` → `nq.shape.tm_missing.unexpected` 0 → 1.44, 새 `G3-R17-GROW` (셋잇단 앞 1-tick release 틈을 닫지 않음: G3a가 쓸 수 있는 것은 늘지 않고 R17만 는다) → `nq.shape.tm_missing.r17` 0.053 → 0.252. H6 30·H7 58이 있는 실제 core 출력이 PASS하는 것이 (4)의 실데이터 증거.
+
+| suite | `tm_missing` | 1-음 tuplet | mergeable tie |
+| --- | --- | --- | --- |
+| core | 291 = R17 291 | 150 = R17 150 | 93 = H7 58, H6 30, R17 5; 결함·부분 화음·성부 사이 0 |
+| robust | 134 = R17 134 | 56 = R17 56 | 39 = H6 21, H7 5, R17 13; 결함 0 |
+| full | 3,006 = R17 3,006 | 1,384 = R17 1,384 | 857 = H7 499, H6 275, R17 83; 결함·부분 화음·성부 사이 0 |
+
+### 29.6 구간 조 추론 (§10.2) — 죽은 코드가 아니다, 발동하지 않을 뿐
+
+`regionKeys`를 계측해 이유를 셌다. core 553: 12마디 미만 112, 분석 441 중 Viterbi가 조 변경을 제안한 것 **2** (둘 다 한 5도 → G3-I3가 임시표로 둠). full 4,976: 짧음 811, 분석 4,165 중 제안 14, 전부 한 5도. 변경 비용(1.5 + 5도당 0.5)을 넘을 만큼 창 점수가 갈리는 전조가 녹음 corpus에 없다. S06 fixture(C → E♭)가 실제로 조표를 쓰는 것을 증명한다. 억지로 조 변경을 만들지 않았다. A24("퇴행 0")가 사실상 무변화로 통과한다는 리뷰 판정은 그대로 맞다 (G3-F4).
+
+### 29.7 측정 (최종 코드; G3 on SUT = 작업 트리에서 기본값만 `'on'`)
+
+G0 판정 (base `cc509e2` 실행을 pseudo-baseline으로, `ab`와 같은 방식):
+
+| suite | G0 | G3 gate (`check --g3`) | usable Δ |
+| --- | --- | --- | --- |
+| smoke | PASS | — | |
+| core | PASS (경고 2: `courtesy_per_100` 0 → 0.26, `tuplets.false_per_100` 3.38 → 3.67) | **PASS 9/9** | +0.72 pt |
+| robust | PASS | **PASS 9/9** | +0.71 pt |
+| replay-public | PASS (`note_shape` 0.9945 → 1.0) | — | |
+| full | PASS (경고: hands flip 2, 허용 2) | 8/9 — hand 평균 0.8971 < 0.90 (§29.4) | +1.89 pt |
+
+- 저장된 core·robust·smoke·replay-public baseline(G3 off)에 대한 `check`도 PASS. full의 저장 baseline(`full.aggregates.json`)은 G1·G2 이전 것이라 G3와 무관한 subgroup 차이로 REGRESSION이 난다 — 리뷰처럼 base 실행으로 판정했다.
+- A14 계열 (duration·onset_pos·ioi·notes.*·note_values·beat_placement·pitch·meter·structure·tempo): 케이스별 **동일**; `page_accuracy`만 core 3·full 31 케이스에서 오른다 (표시가 실제 길이와 일치하게 됨).
+- 철자·key: 케이스별 퇴행 0 (core·robust·full).
+- `validate-preds --g3` (core): `W-DISPLAY-DURATION` 2,647 → 291, `W-TUPLET-INCOMPLETE` 8,144 → 150 — 정확히 R17 residual 수; G3가 더한 경고 0.
+- P(P(g)): core·robust·full 전부 바이트 동일, rollback 0.
+
+### 29.8 사람 평가 세트 (M4, A36)
+
+- 평가자용: `tests/bench/human/g3/E01-X.musicxml … E20-Z.musicxml` (60), `manifest.json` (파일·sha256·정규화 목록·라이선스 문장), `review-form.json` (빈 판정 양식). 발췌 번호는 섞인 순서, 판본은 발췌마다 X·Y·Z로 섞임 (seed 20260924). 정규화: 제목·작곡가·표지·소프트웨어·레이아웃·악기, 방향 지시(셈여림·템포·페달·8va·글), slur·아티큘레이션·운지·꾸밈·가사 제거; part id P1…; 마디 1–8; 제목은 라벨. G3a가 쓰는 것(음·쉼표·tie·tuplet·beam·stem·성부·staff·clef·조표·박자·임시표·세로줄)만 남는다.
+- 열쇠: `tests/bench/human/g3-key/key.json` — 글자별 판본, 케이스, 참조 파일, 출처·라이선스 (전부 public domain 또는 CC0), 마디 범위, sha256, `nq.ned`. 평가를 제출하기 전에는 열지 않는다.
+- 재생성 `python tests/bench/run.py human-set --build` — 두 번 만들어 63 파일 바이트 동일, 평가자 파일에 출처를 드러내는 문자열 0 (확인).
+- 한계: C(참조)는 사람 판각이라 표기 자체로 알아볼 수 있다 (정규화는 머리·마크만 지운다). 블라인드 아닌 옛 세트(HG01–HG20)는 이 브랜치의 역사(`8dcc719` 이전)에 남아 있고 내용으로 새 파일과 짝지을 수 있다 — 열쇠와 마찬가지로 평가 전에는 `tests/bench/human`의 git 역사·diff를 보지 않는다 (옛 세트를 지우는 commit과 새 세트를 더하는 commit을 나눠 git이 이름 바꿈으로 짝짓지 않게 했다).
+
+**사용자가 할 일 (A36)**
+
+1. MuseScore 4에서 `tests/bench/human/g3/`의 60 파일을 같은 설정으로 연다 (앱 렌더러는 쓰지 않는다: beam·괄호를 스스로 다시 정한다).
+2. `review-form.json`을 복사해 채운다: `excerpts` — 발췌마다 세 판본 X·Y·Z를 리듬 읽기·성부/손·철자/임시표·전체 4축에서 순위 (1이 가장 좋음, 같으면 같은 순위); `absolute` — 60 파일 각각 `give` (yes/fix/no: 피아노 교사가 학생에게 줄 수 있나, 그대로 / 조금 고치면)와 `score` 1–5; `reviewer_role` (이름 없이), `date`, `renderer` (MuseScore 버전).
+3. `tests/bench/human/g3/review-<date>-<role>.json`으로 저장하고 `python tests/bench/run.py human-set --score tests/bench/human/g3/review-<date>-<role>.json`. 기준 §21.5: 전체 축에서 G3a ≥ G3 off가 20개 중 18 이상, 리듬 축에서 G3a가 나쁜 것 0, 절대 평가에서 G3a의 yes+fix가 G3 off보다 많음. 빈 양식은 `A36: FAIL`(미완)로 나온다.
+
+Fixer는 판정을 쓰지 않았다.
+
+### 29.9 A1–A40 재판정 (Fixer)
+
+| # | 리뷰 | Fixer | 근거 |
+| --- | --- | --- | --- |
+| A1 | PASS | PASS | `test:scoregraph` 205/205 (core·robust·golden 기본) |
+| A2 | PASS | PASS | sg-roundtrip 369: L1 368, L1+ 367, L2 369, 순서 369 (허용 2, base와 같음) |
+| A3 | PASS | PASS | performance 바이트: strict `g3-preserve` (core·robust·golden 852 그래프) |
+| A4 | PASS | PASS | |
+| A5 | PASS (명세 집합) | **PASS** | P(P(g)) core 553·robust 282·full 4,976 바이트 동일 (리뷰의 full 1건 = I01 fixture) |
+| A6 | FAIL | **PASS** | strict core·robust·golden (CI 기본), rollback core·robust·full 0 |
+| A7 | PASS | PASS | 심은 위반 + A7b; critic 경고 판정은 내용(시간·모양) 기반 |
+| A8 | PASS | PASS | |
+| A9 | PARTIAL | PARTIAL | `W-DISPLAY-DURATION` 2,647 → 291, `W-TUPLET-INCOMPLETE` 8,144 → 150 = R17 residual 수, 새 경고 0 |
+| A10 | PARTIAL | PARTIAL (G3 의미 PASS) | 앱 렌더러가 32분 셋잇단 그룹을 나눔 → G4 (o1) |
+| A11 | PASS (T08 다름) | **PASS** | T08 = 설계대로 |
+| A12 | PARTIAL | **PASS (G3-U5)** | `tm_missing` 291 전부 R17 (writer가 쓴 그대로), 케이스별 baseline |
+| A13 | PASS | PASS | |
+| A14 | PASS | PASS | 케이스별 동일; `page_accuracy`만 오른다 (core 3, full 31) |
+| A15 | PARTIAL/FAIL | **PASS (G3-U5/U6)** | `MERGEABLE_DEFECT` 0 (core·robust·full); H7·H6·R17 따로 보고, 부분 화음·성부 사이 0 |
+| A16 | PASS | PASS | |
+| A17 | PARTIAL | PARTIAL | G3-I1 (기록된 이탈), 변화 없음 |
+| A18 | PASS | PASS | |
+| A19 | DEFERRED (M11) | DEFERRED (M11) | G3b는 실제 녹음 3곡 뒤 |
+| A20 | PASS (M1) | **PASS** | 0.9168, +42/−0; 병적 배정 수정 (§29.4) |
+| A21 | PASS | PASS | |
+| A22 | PASS | PASS | H01–H21 |
+| A23 | PASS | PASS | V01–V06 (V06 겹친 선) |
+| A24 | PASS (공허) | PASS (공허) | 퇴행 0; 구간 조는 녹음 corpus에서 발동하지 않음 (§29.6) |
+| A25–A27 | PASS | PASS | m3 미분음 포함 |
+| A28–A31 | PASS | PASS | |
+| A32 | PASS (문구; B1) | **PASS** | `critical.pedal` 퇴행 0 **그리고** 앱 재생 동일 (B1 테스트) |
+| A33 | PASS | PASS | bench unit 283, golden 17/17, correctness 13/13 |
+| A34 | FAIL | **PASS** | G0: smoke·core·robust·replay-public·full PASS (base pseudo-baseline); `check --suite core --g3` PASS 9/9 (robust도 9/9) |
+| A35 | PASS (dry; B1 허용) | **PASS** | `golden --g3`: 17 중 0 범주 밖, 페달은 범주 밖 |
+| A36 | PENDING (블라인드 아님) | **PENDING** | 블라인드 세트 완성·최종 코드로 재생성 (§29.8) |
+| A37 | FAIL 47/48 | **PASS 49/49** | mutation-check (§29.10): 47 harmful 모두 REGRESSION, no-op 2개 바이트 동일 |
+| A38 | PASS | PASS | `npm test` 26 suite: G3 off 25/26, G3 on 25/26, 같은 집합 — `transcription`만 (venv transkun 경로 검사, 리뷰와 같은 환경 실패; G3가 안 건드림) |
+| A39 | PASS | PASS (여유 작음) | 2,000마디 40k head 1,897 ms < 2 s (리뷰 1.68 s) |
+| A40 | PASS | PASS | `g3-midi.test.js` |
+
+### 29.10 회귀 (최종 코드)
+
+| 명령 | 결과 |
+| --- | --- |
+| `npm run test:scoregraph` | 205/205 (기본 suite core·robust·golden) |
+| `npm run test:scoregraph:perf` | PASS — `professionalize` 1,897 ms (staff 522, voice 27, rhythm 367, tuplet 201, spell 228, beam 213) < 2 s. 리뷰의 1.68 s보다 느리다: 손 DP의 고정점·keepWhereNotBetter 몫이고 여유가 작다 |
+| `npm run test:bench` | unit 283 OK, golden 17/17, correctness 13/13 |
+| notation audit (`tools/notation_audit.py`, core) | 실행됨 (표 생성) |
+| `validate-preds.js --suite core --g3` | 2,647 → 291, 8,144 → 150, G3가 더한 경고 0 |
+| strict (`g3-preserve`, core·robust·golden) | PASS |
+| idempotence (core·robust·full sweep + fixture I01) | 0 실패, rollback 0 |
+| hands·rhythm·tuplets·beams·spelling·voice·marks 테스트 | `test:scoregraph`에 포함, 전부 PASS |
+| `run.py human-set --build` (두 번) | 63 파일 바이트 동일 |
+| `run.py sg-roundtrip` | 367 + 허용 2 |
+| `run.py golden` / `golden --g3` | 17/17 / 0 범주 밖 |
+| `run.py correctness` | 13/13 |
+| smoke·core·robust·replay-public·full `run` (G3 on) + 판정 | §29.7 |
+| `run.py mutation-check` | **PASS 49/49** — harmful 47 전부 REGRESSION(기대한 metric 포함), no-op 2 바이트 동일. G3 묶음: F1 괄호, 셋잇단 쉼표 time-mod(`tm_missing.unexpected`), 박 안 tie(`mergeable.defect`), beam, `G3-ACC-BAR-STATE`(`critical.accidentals`), `G3-R17-GROW`(`tm_missing.r17`), `G3-HANDS-NO-KEEP`(`hand.accuracy`, micro, flip). 첫 재측정에서 `G3-HANDS-NO-MELODY`가 죽어 있었다 (0.9187 → 0.9159, 허용 안) → 교체 후 전체 다시 실행 |
+| `npm test` (26 suite) G3 off / G3 on | 25/26 / 25/26 (둘 다 `transcription` 환경만; G3 on은 `git archive HEAD`에서 기본값만 `'on'`, `node_modules`는 임시 junction 후 제거) |
+
+### 29.11 Commit (origin/g3-score-intelligence, PR 없음, main merge 없음)
+
+| commit | 무엇 |
+| --- | --- |
+| `9f86cb1` | B1: 페달 join 기본 OFF, 앱 재생 동일 테스트 |
+| `392f6e7` | M1·m1·m2: 손 DP, tie 단위 이동, clef 셈, critic (xties, 내용 기반 경고) |
+| `1d23c5d` | M2·M5·m3·o5·A6: 동결 전파, writer의 1-음 tuplet 보존, 미분음, frozen event만 재사용, strict robust |
+| `8186a1f` | M6·M3·M20: 이유별 gate, R17 baseline(hold-out 묶음), 살아 있는 mutation, micro 불일치 수 |
+| `8dcc719` | M4: 블라인드 아닌 옛 세트 제거 |
+| `6eea6d7` | M4: 블라인드 세트 (최종 코드로 생성), 열쇠 분리 |
+| (이 절) | docs: G03 §29, spec 주석(§13.2·§20.4·§20.5·§21), DECISIONS G3-U5–U7·G3-F1–F5, CURRENT_STATE |
 
 ---
 
