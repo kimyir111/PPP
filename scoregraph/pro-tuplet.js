@@ -142,15 +142,14 @@
               return;
             }
             const loneSet = new Set(loose);
-            /* the new groups, and every old tuplet whose members are all loose pieces (kept as they were) */
+            /* the new groups, and every old tuplet whose members are all loose pieces, kept exactly as they were: a piece
+               no span holds is left as the writer wrote it, bracket included (§7.4 T08 "no change"; G03 §28 M5: hiding its
+               bracket hid it from the one-note metric, and whether a bracket shows is G4's, §7.2) */
             const plan = groups.map(x => ({ events: x.events, actual: 3, normal: 2, unit: { type: x.unit } }));
             mine.forEach(s => {
               if (s.events.every(id => loneSet.has(id))) {
                 const out = { events: s.events, actual: s.actual, normal: s.normal };
                 ['unit', 'show', 'printed', 'prov'].forEach(k => { if (s[k] !== undefined) out[k] = s[k]; });
-                /* a loose piece keeps its ratio (its length stays right, issue 19) but a bracket over one note is what
-                   G3 exists to remove (issue 20): the tuplet stays, unprinted */
-                if (s.events.length === 1 && out.printed !== false) { out.printed = false; out.prov = { src: d.source() }; }
                 plan.push(out);
               }
             });

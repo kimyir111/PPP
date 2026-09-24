@@ -31,6 +31,11 @@
   const SHARP_ORDER = ['F', 'C', 'G', 'D', 'A', 'E', 'B'];
   const ACC_OF = { '-2': 'flat-flat', '-1': 'flat', '0': 'natural', '1': 'sharp', '2': 'double-sharp' };
 
+  /* A head whose exact pitch is a microtone the file stated (G2-D16: head.pitch is rounded, ext holds the value): its
+     step and its printed accidental (quarter-sharp …) are the file's, and G3 has no microtonal spelling of its own, so
+     it neither respells nor re-accidentals it, in any mode (G03 §28 m3). */
+  const microtone = h => !!(h.ext && h.ext['musicxml.microtone']);
+
   /* the alteration of each step under a key signature (fifths) */
   function keyAlters(fifths) {
     const a = { C: 0, D: 0, E: 0, F: 0, G: 0, A: 0, B: 0 };
@@ -273,7 +278,7 @@
             const right = ctx.perm.event(part, e, 'display');
             if (right === 'none') return;
             e.heads.forEach(h => {
-              if (!want.has(h.id)) return;
+              if (!want.has(h.id) || microtone(h)) return;
               const acc = want.get(h.id);
               const now = h.acc || null;
               if (right === 'fill') {
@@ -326,7 +331,7 @@
       const tk = k.fifths + ':' + k.mode + ':' + k.tonic;
       if (!tables.has(tk)) tables.set(tk, spellingTable(k));
       e.heads.forEach(h => {
-        if (!h.pitch) return;
+        if (!h.pitch || microtone(h)) return;
         const p2 = spellMidi(P.midi(h.pitch), tables.get(tk));
         if (d.setSpelling(h.id, p2)) { d.markProv(h, ['spelling']); changes.push({ pass: 'spell', kind: 'spelling', ids: [h.id], m: e.m }); }
       });
@@ -423,7 +428,7 @@
       if (e.kind !== 'note' || e.grace || ctx.skip.has(e.m)) return;
       if (ctx.perm.event(gpart, gpart.events.find(x => x.id === e.id) || e, 'spelling') !== 'rewrite') return;
       e.heads.forEach(h => {
-        if (!h.pitch || tieIn.has(h.id)) return;
+        if (!h.pitch || tieIn.has(h.id) || microtone(h)) return;
         if (!byVoice.has(e.voice)) byVoice.set(e.voice, []);
         byVoice.get(e.voice).push({ e: e, h: h, midi: P.midi(h.pitch), w: R.add(mStart.get(e.m), R.parse(e.at)) });
       });

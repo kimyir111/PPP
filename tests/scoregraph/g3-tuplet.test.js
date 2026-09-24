@@ -61,8 +61,10 @@ test('A10 (F1): on method/czerny849/020 no logical tuplet has one note, each fil
     const out = SG.professionalize(r.graph, { strict: true }).graph;
     const tuplets = out.parts[0].spanners.filter(s => s.type === 'tuplet');
     assert.ok(tuplets.length > 0, r.id);
-    assert.equal(tuplets.filter(t => t.events.length === 1 && t.printed !== false).length, 0, r.id + ': one-note brackets');
-    const printed = tuplets.filter(t => t.printed !== false);
+    /* G3 makes no one-note tuplet; one it could not group is the writer's own, left as it was (§28 M5) */
+    const before = new Map(r.graph.parts[0].spanners.filter(s => s.type === 'tuplet').map(s => [s.id, JSON.stringify(s)]));
+    tuplets.filter(t => t.events.length === 1).forEach(t => assert.equal(JSON.stringify(t), before.get(t.id), r.id + ': one-note tuplet ' + t.id + ' is not the writer\'s own'));
+    const printed = tuplets.filter(t => t.printed !== false && t.events.length > 1);
     const whole = printed.filter(t => {
       const evs = t.events.map(id => out.parts[0].events.find(e => e.id === id));
       const sum = evs.reduce((s, e) => SG.rational.add(s, SG.rational.parse(e.dur)), SG.rational.ZERO);
@@ -72,9 +74,33 @@ test('A10 (F1): on method/czerny849/020 no logical tuplet has one note, each fil
     /* the app's renderer closes a bracket when `normal` times the shortest value it has seen has gone by, so a group
        holding a triplet 32nd is drawn as more than one bracket (G4, D4); every group is drawn at least once */
     const drawnBefore = appBrackets(SG.musicxml.export(r.graph).xml), drawnAfter = appBrackets(SG.musicxml.export(out).xml);
-    console.log('# ' + r.id + ': ' + printed.length + ' printed tuplets (' + (tuplets.length - printed.length) + ' loose, unprinted), the app draws ' + drawnAfter + ' brackets (before G3: ' + drawnBefore + ')');
+    console.log('# ' + r.id + ': ' + printed.length + ' printed groups (' + (tuplets.length - printed.length) + ' one-note tuplets left as the writer wrote them), the app draws ' + drawnAfter + ' brackets (before G3: ' + drawnBefore + ')');
     assert.ok(drawnAfter >= printed.length, r.id + ': the app draws ' + drawnAfter + ' brackets for ' + printed.length + ' tuplets');
   });
+});
+
+test("M5 (G03 §28): G3 creates no one-note tuplet; every one it leaves is the writer's own, unchanged, where it reports N-TUPLET-UNGROUPABLE", () => {
+  let left = 0, hidden = 0;
+  D.recorded().forEach(r => {
+    const res = SG.professionalize(r.graph);
+    const said = new Set(res.report.issues.filter(i => i.code === 'N-TUPLET-UNGROUPABLE' && i.at).map(i => i.at.m + '|' + i.at.voice));
+    const before = new Map();
+    r.graph.parts.forEach(p => p.spanners.forEach(s => { if (s.type === 'tuplet') before.set(s.id, JSON.stringify(s)); }));
+    res.graph.parts.forEach(p => {
+      const ev = new Map(p.events.map(e => [e.id, e]));
+      p.spanners.forEach(s => {
+        if (s.type !== 'tuplet' || s.events.length !== 1) return;
+        left++;
+        assert.equal(JSON.stringify(s), before.get(s.id), r.id + ': one-note tuplet ' + s.id + ' made or changed by G3');
+        /* G3 hides none: one not printed is a piece the writer itself hid (buildGraph prints a split triplet's first and
+           last pieces only, G1 F1), kept as it was; nq counts it (a time-modified note under no bracket) */
+        if (s.printed === false) { hidden++; assert.equal(JSON.parse(before.get(s.id)).printed, false, r.id + ': ' + s.id + ' hidden by G3'); }
+        const e = ev.get(s.events[0]);
+        assert.ok(said.has(e.m + '|' + e.voice), r.id + ': ' + s.id + ' left without N-TUPLET-UNGROUPABLE');
+      });
+    });
+  });
+  console.log('# one-note tuplets left as written, every one reported: ' + left + ' (' + hidden + ' the writer hid)');
 });
 
 test('A9 (tuplet part): every W-TUPLET-INCOMPLETE and W-DISPLAY-DURATION G3 leaves is in a voice-measure it reports', () => {

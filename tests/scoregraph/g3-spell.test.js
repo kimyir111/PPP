@@ -71,3 +71,16 @@ test('A27 (fixture part): every needed accidental is printed, as G0 reads them',
     }));
   });
 });
+
+test('m3 (G03 §28): a microtone keeps its printed quarter-tone accidental and its spelling in every mode, force included', () => {
+  const text = fs.readFileSync(path.join(__dirname, 'fixtures', 'xml', 'microtone-quarter-sharp.musicxml'), 'utf8');
+  const r = SG.musicxml.import(text, { scoreId: 'micro' });
+  assert.equal(r.ok, true);
+  const heads = g => g.parts.map(p => p.events.map(e => (e.heads || []).map(h => JSON.stringify([h.pitch, h.acc || null, h.ext || null])).join()).join()).join();
+  ['rewrite', 'fill', 'force'].forEach(mode => {
+    const out = SG.professionalize(r.graph, { mode: mode, strict: true }).graph;
+    assert.equal(heads(out), heads(r.graph), mode);
+    const pitches = x => (x.match(/<pitch>[\s\S]*?<\/pitch>|<accidental[^>]*>[^<]*<\/accidental>/g) || []).join('');
+    assert.equal(pitches(SG.musicxml.export(out).xml), pitches(SG.musicxml.export(r.graph).xml), mode + ': exported pitches and accidentals');
+  });
+});

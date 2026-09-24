@@ -1,7 +1,7 @@
 /* Corpus-scale inputs for G3's tests (docs/GOALS/G03 A3-A6, A8, A9): the graphs audio-score.js writes for a
-   benchmark suite, and the committed MusicXML corpus imported. Built once per test process. Set
-   PPP_G3_SUITES=core,robust,golden to choose the suites (default core and golden); PPP_G3_FAST=1 keeps one case in
-   five. */
+   benchmark suite, and the committed MusicXML corpus imported. Built once per test process. PPP_G3_SUITES chooses
+   the suites (default core, robust and golden: the A6 strict fixture set, G03 §28 A6 — robust's second generator
+   family found the critic hiding what core does not); PPP_G3_FAST=1 keeps one case in five. */
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -9,7 +9,7 @@ const G = require('./tools/g3-graphs.js');
 const { importCorpus } = require('./tools/g3-corpus.js');
 
 const cache = {};
-function suites() { return (process.env.PPP_G3_SUITES || 'core,golden').split(',').map(s => s.trim()).filter(Boolean); }
+function suites() { return (process.env.PPP_G3_SUITES || 'core,robust,golden').split(',').map(s => s.trim()).filter(Boolean); }
 function keep(i) { return !process.env.PPP_G3_FAST || i % 5 === 0; }
 /* [{id, graph}] of the suites' recording graphs */
 function recorded(names) {

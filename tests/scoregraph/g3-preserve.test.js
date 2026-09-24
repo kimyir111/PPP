@@ -1,6 +1,6 @@
 'use strict';
 /* G3 preservation over the corpus (docs/GOALS/G03 §15; A3, A6, A8): professionalize in strict mode on every graph
-   the recording path writes for core and the golden inputs (robust too with PPP_G3_SUITES), and on the committed
+   the recording path writes for core, robust and the golden inputs (g3-corpus-data.js, A6), and on the committed
    corpus imported and forced through the rewrite; the critic must find nothing and the result must validate. */
 const test = require('node:test');
 const assert = require('node:assert/strict');

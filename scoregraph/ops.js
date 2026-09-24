@@ -242,9 +242,10 @@
       this.g0 = g;
       this.doc = clone(g);
       /* each copied event -> the frozen (canonical) event it is a copy of: one the edit leaves as it was is handed back
-         as that event (edit), so an edit costs what it changes, not the whole graph */
+         as that event (edit), so an edit costs what it changes, not the whole graph. Only an event that is itself frozen
+         is handed back: a graph frozen at its root alone could share a mutable event (G03 §28 o5) */
       this.origEvent = new Map();
-      if (Object.isFrozen(g) && Array.isArray(g.parts)) g.parts.forEach((p, pi) => (p.events || []).forEach((e, ei) => this.origEvent.set(this.doc.parts[pi].events[ei], e)));
+      if (Object.isFrozen(g) && Array.isArray(g.parts)) g.parts.forEach((p, pi) => (p.events || []).forEach((e, ei) => { if (Object.isFrozen(e)) this.origEvent.set(this.doc.parts[pi].events[ei], e); }));
       this.opts = opts || {};
       this.idMap = {};
       this.changed = false;

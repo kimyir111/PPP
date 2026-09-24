@@ -332,12 +332,25 @@
             segs.forEach(sg => { points.add(sg.s); points.add(sg.e); });
             const regs = regions(gr, points);
             const frozen = regs.filter(r => r.kind === 'frozen');
+            /* a segment no writing fits (it reaches a frozen region) keeps its pieces; a triplet region it reaches can then
+               never be one whole tuplet, so every other segment reaching that region keeps its pieces too, and so on (G03
+               §28 M2: writing them anew left triplet pieces no tuplet could hold, a new W-DISPLAY-DURATION the critic
+               rolled back, or one it missed) */
+            const writes = segs.map(sg => writeSegment(gr, regs, sg));
+            const kept = new Set();
+            segs.forEach((sg, i) => { if (!writes[i]) kept.add(i); });
+            const overlaps = (sg, r) => sg.s < r.e && sg.e > r.s;
+            for (let grew = kept.size > 0; grew;) {
+              grew = false;
+              const blocked = regs.filter(r => r.kind === 'triplet' && Array.from(kept).some(i => overlaps(segs[i], r)));
+              segs.forEach((sg, i) => { if (!kept.has(i) && blocked.some(r => overlaps(sg, r))) { kept.add(i); grew = true; } });
+            }
             const plan = [];
             let changed = false, stuck = 0;
-            segs.forEach(sg => {
+            segs.forEach((sg, i) => {
               const keep = () => sg.events.forEach(e => plan.push(d.keepPlan(d.event(e.id))));
-              const w = writeSegment(gr, regs, sg);
-              if (!w) { stuck++; keep(); return; }
+              const w = writes[i];
+              if (kept.has(i)) { stuck++; keep(); return; }
               const now = currentCost(gr, regs, sg);
               if (sameWriting(sg, w.syms) || !rewrite(now, w, sg)) { keep(); return; }
               changed = true;
