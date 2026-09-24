@@ -14,6 +14,12 @@
    press (the writer already joins a release and a press at one position).
    Whether a pedal is there at all is the transcription's (issue 17), not G3's;
    G3 drops none and adds none. Imported pedals are kept.
+
+   The join is OFF unless opts.pedalJoin (G03 §28 B1, decision G3-U7): the app
+   plays a pedal change without lifting the damper (Playback.pedal keeps it
+   down, pedalEvents sends CC64 64), so a legato pedal written as changes would
+   be played held to its end. Until the app plays a change as a release and a
+   press, G3 writes every pedal as the writer wrote it.
    ========================================================================== */
 (function (root, factory) {
   'use strict';
@@ -28,6 +34,8 @@
     may: ['pedal'],
     run(g, ctx) {
       const changes = [];
+      /* experimental, off by default and in production (B1): see the header */
+      if (!ctx.opts.pedalJoin) return { graph: g, idMap: {}, changes: changes };
       const starts = new Map();
       let acc = R.ZERO;
       g.timeline.measures.forEach(m => { starts.set(m.id, acc); acc = R.add(acc, R.parse(m.dur)); });

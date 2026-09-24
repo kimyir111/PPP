@@ -6,9 +6,9 @@ Every accepted change to tests/bench/golden/expected. Bless in the same commit a
 which writes nothing unless every case's difference is one G3a may make:
 
 - may change: tuplet brackets; note and rest shapes (type, dots, tie merges); beams; printed accidentals; spelling and
-  key signatures; the staff and voice of a note; clefs; rests; a pedal release and the next press less than a beat
-  apart written as one change at the press (P8);
+  key signatures; the staff and voice of a note; clefs; rests;
 - may not change: the bars (count, numbers, lengths, pickups, repeats); the app's play order; the metre; tempo marks;
+  pedal marks (the app plays a pedal change without lifting the damper, so P8's join is off: G03 §28 B1, G3-U7);
   the sounding notes (onset, pitch, tie-merged length); stats and bar and beat times.
 
 `run.py golden --g3` is the same check without writing (`pppbench/golden.py` `G3_ALLOWED`, `g3_difference`).

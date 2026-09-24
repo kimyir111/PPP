@@ -38,10 +38,11 @@ class G3Golden(unittest.TestCase):
         a["score"]["music"]["measures"][1]["fifths"] = -3
         self.assertEqual(self.diff(a), [])
 
-    def test_a_release_and_press_joined_into_a_change_is_allowed(self):
+    def test_a_release_and_press_joined_into_a_change_is_refused(self):
+        """G03 §28 B1: the app plays a change without lifting the damper, so a join changes what it plays."""
         a = snap()
         a["score"]["music"]["pedals"] = [[0, "0", "start"], [1, "0", "change"], [1, "4", "stop"]]
-        self.assertEqual(self.diff(a), [])
+        self.assertTrue(self.diff(a))
 
     def test_a_pitch_an_onset_a_length_a_bar_or_a_metre_is_not(self):
         cases = {

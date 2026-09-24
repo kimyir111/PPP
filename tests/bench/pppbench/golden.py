@@ -234,9 +234,10 @@ def _check_case(case, row) -> Tuple[str, List[str]]:
 # ------------------------------------------------------------------ G3 (docs/GOALS/G03 §20.6, A35)
 # What G3a may change in a golden snapshot: how the music is written, never what it is. A bless with --g3 refuses a
 # case whose difference reaches past these (tests/bench/golden/BLESS_LOG.md says the same).
+# A pedal release and the next press joined into one change (P8) is NOT allowed: the app plays a change without lifting
+# the damper (G03 §28 B1, G3-U7), so the join is off and pedal marks are fixed.
 G3_ALLOWED = ("tuplet brackets", "note and rest shapes (type, dots, tie merges)", "beams", "printed accidentals",
-              "spelling and key signatures", "staff and voice of a note", "clefs", "rests",
-              "a pedal release and the next press less than a beat apart written as one change at the press (P8, §12)")
+              "spelling and key signatures", "staff and voice of a note", "clefs", "rests")
 G3_FIXED = ("bars (count, numbers, lengths, pickups, repeats)", "the app's play order", "metre", "tempo marks",
             "pedal marks", "the sounding notes (onset, pitch, tie-merged length)", "stats and bar and beat times")
 
@@ -268,34 +269,6 @@ def _sounding(sem: Dict[str, Any]) -> "Counter":
     return Counter((str(c[0]), c[1], str(c[2])) for c in done)
 
 
-def _pedals_joined(sem: Dict[str, Any]) -> List[List[str]]:
-    """The snapshot's pedal marks with every release followed by a press less than a beat later written as one change at
-    the press (what G3's P8 does, G03 §12), as [bar, position, type] strings."""
-    from fractions import Fraction
-    starts, acc = [], Fraction(0)
-    for b in sem["structure"]["bars"]:
-        starts.append(acc)
-        acc += Fraction(b["len"])
-    beat = {}
-    for m in sem["music"]["measures"]:
-        n, bt = m["time"]
-        beat[m["i"]] = Fraction(4, bt) * (3 if bt >= 8 and n % 3 == 0 else 1)
-    marks = [[p[0], str(p[1]), p[2]] for p in sem["music"]["pedals"]]
-    out, i = [], 0
-    while i < len(marks):
-        cur = marks[i]
-        nxt = marks[i + 1] if i + 1 < len(marks) else None
-        if cur[2] == "stop" and nxt and nxt[2] == "start":
-            gap = (starts[nxt[0]] + Fraction(nxt[1])) - (starts[cur[0]] + Fraction(cur[1]))
-            if Fraction(0) <= gap < beat.get(cur[0], Fraction(1)):
-                out.append([str(nxt[0]), nxt[1], "change"])
-                i += 2
-                continue
-        out.append([str(cur[0]), cur[1], cur[2]])
-        i += 1
-    return out
-
-
 def g3_difference(exp_sem: Dict[str, Any], act_sem: Dict[str, Any], exp_time: Dict[str, Any],
                   act_time: Dict[str, Any]) -> List[str]:
     """What differs between two snapshots outside G3_ALLOWED ([] when G3a may make the change)."""
@@ -308,8 +281,8 @@ def g3_difference(exp_sem: Dict[str, Any], act_sem: Dict[str, Any], exp_time: Di
         out.append("metre changed")
     if e["music"]["tempo"] != a["music"]["tempo"]:
         out.append("music.tempo changed")
-    if e["music"]["pedals"] != a["music"]["pedals"] and _pedals_joined(e) != [list(map(str, x)) for x in a["music"]["pedals"]]:
-        out.append("music.pedals changed (beyond a release and press joined into one change)")
+    if e["music"]["pedals"] != a["music"]["pedals"]:
+        out.append("music.pedals changed (pedal marks are fixed: the app plays a change without lifting, G03 §28 B1)")
     se, sa = _sounding(e), _sounding(a)
     if se != sa:
         gone, new = sorted((se - sa).elements()), sorted((sa - se).elements())

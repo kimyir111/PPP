@@ -18,6 +18,7 @@
      passes    {staff, voice, rhythm, tuplet, spell, beam, marks: bool}   one pass off (tests, bisect)
      g3b       false (default)   G3b: R-reg and performance-based voices (§6.4, §8.3; D1: off until M11)
      ottava    false (default)   the automatic 8va pass (§13.3; D2: off until issue 3)
+     pedalJoin false (default)   P8's pedal join (§13.2; G3-U7: off until the app plays a pedal change as a lift)
      strict    false             throw a CriticError on the first violation
      passList  (tests only)      run these pass objects instead of G3's own
    ========================================================================== */
@@ -134,11 +135,11 @@
 
   /* ------------------------------------------------------------ the pipeline */
   function professionalize(g, opts) {
-    opts = Object.assign({ mode: 'rewrite', g3b: false, ottava: false, strict: false }, opts || {});
+    opts = Object.assign({ mode: 'rewrite', g3b: false, ottava: false, pedalJoin: false, strict: false }, opts || {});
     if (MODES.indexOf(opts.mode) < 0) throw new TypeError('professionalize: mode must be one of ' + MODES.join(', '));
     const t0 = Date.now();
-    const report = { version: VERSION, mode: opts.mode, g3b: !!opts.g3b, ottava: !!opts.ottava, passes: [], issues: [],
-      rollbacks: [], fallback: false };
+    const report = { version: VERSION, mode: opts.mode, g3b: !!opts.g3b, ottava: !!opts.ottava, pedalJoin: !!opts.pedalJoin, passes: [],
+      issues: [], rollbacks: [], fallback: false };
     const grids = new Map();
     const ctx = {
       mode: opts.mode, opts: opts, report: report, source: SOURCE, skip: new Set(),
@@ -193,10 +194,11 @@
       cur = r.graph; fpCur = fp;
       entry.ms = Date.now() - tp;
     }
-    /* the whole run against the input: what no pass may change (and the notated lengths unless G3b ran) */
+    /* the whole run against the input: what no pass may change (the notated lengths unless G3b ran, the pedal marks
+       unless the experimental pedal join ran: B1) */
     let issues = null;
     if (cur !== g) {
-      const fixed = C.FIXED.concat(opts.g3b ? [] : ['sound']);
+      const fixed = C.FIXED.concat(opts.g3b ? [] : ['sound'], opts.pedalJoin ? [] : ['pedal']);
       const v = C.diff(fp0, fpCur, fixed);
       if (v.length) return fail('the result differs from the input in ' + v.map(x => x.component).join(', '), v);
       const val = C.validation(cur, g);
