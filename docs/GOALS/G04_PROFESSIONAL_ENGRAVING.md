@@ -58,6 +58,7 @@ ScoreGraph에 **이미 있는** 기보 의미를 PPP의 실제 화면과 인쇄�
 - [32. G4a 구현 기록](#32-g4a-구현-기록)
 - [33. G4b 구현 기록 — 배치 핵심 (layout core)](#33-g4b-구현-기록--배치-핵심-layout-core)
 - [34. G4c 구현 기록 — beam, stem, tuplet, 성부, 쉼표, 꾸밈음, SVG 백엔드](#34-g4c-구현-기록--beam-stem-tuplet-성부-쉼표-꾸밈음-svg-백엔드)
+- [35. G4d-1a 구현 기록 — 곡선, 음에 붙는 기호, 배치 함수, 글자 metric](#35-g4d-1a-구현-기록--곡선-음에-붙는-기호-배치-함수-글자-metric)
 - [부록 A. 이 세션의 측정](#부록-a-이-세션의-측정)
 - [부록 B. 코드 위치 색인](#부록-b-코드-위치-색인)
 
@@ -2826,6 +2827,222 @@ G4b·G4c의 틀 그대로 (CRLF 사본, anchor 정확히 한 번, 출력이 바�
 - G4d-1b: B9 다시 재기 (M3).
 - G4d-2: `.vf-notehead path` 선택자.
 - 관찰: Linux에서 `g3-idempotence` A5가 한 번 실패했다. 세 번 다시 돌려 통과했고, `scoregraph/`는 바뀌지 않았다.
+
+## 35. G4d-1a 구현 기록 — 곡선, 음에 붙는 기호, 배치 함수, 글자 metric
+
+Implementer, 2026-09-25. 브랜치 `g4d1a-curves-marks` (`D:/PPP-g4`), 시작 `d4b5b86` (= `origin/main`, G4c 마감 뒤). 입력은 Lead의 G4d-1a 지시(roadmap §14 카드, §5.1 G4d 행, G4-L3)다. 병합하지 않았고 PR도 없다 (Lead가 리뷰와 PR을 정한다). 결정은 DECISIONS G4-D1a-1–13.
+
+**한 줄**: EngravedScore가 음에 붙는 것을 그린다 — 그래프의 모든 tie(부분 화음, 세로줄, system 넘김의 반쪽 둘, 성부 바뀜, 추론한 마디 안 tie), 그래프 짝 그대로의 slur, glissando, articulation·꾸밈 기호·fermata(음·쉼표·세로줄)·tremolo, 인쇄 운지, arpeggio, notehead 모양과 괄호, 주의·괄호 임시표 — 모두 **하나의 배치 함수**(`skyline.js` `put()`)로 §10.2 순서 3–7에 따라 놓는다. 글자 폭은 새 `engrave/metrics-text.js` 표에서만 읽는다. G4c 리뷰가 넘긴 음 수준 일 넷(보표 밖 쉼표의 덧줄, beam 옆 tuplet 숫자, `plan/2`·`engr/2`와 그 규칙, E12의 증1도 unison)도 닫았다. **사용자에게 보이는 변화는 없다**: 앱 파일·`index.html`·`server.js`·`scoregraph/`는 바이트 그대로이고 앱은 새 모듈을 불러오지 않는다 (legacy parity 16/16).
+
+### 35.1 범위 — §27 G4d와 G4-L3
+
+§27 G4d 가운데 G4-L3이 G4d-1a에 둔 것: §13 곡선(`curves.js`), `place()`(§10.1), §10.2 순서 3–7(tie, tuplet, articulation·꾸밈 기호·fermata·tremolo, slur·glissando, 운지 — arpeggio·notehead 모양·주의 임시표 포함), §18.3 글자 metric 표와 `--check`, 그리고 G4c 리뷰의 음 수준 이월(§34.19 "넘기는 것"). Node만이다. 하지 않은 것: system에 붙는 기호(셈여림·hairpin·pedal·ottava·volta·코드명·tempo·rehearsal·jump·words·가사), §15.3 세로 배치의 다시 짜기, §15.4 courtesy, 안내 글자 — G4d-1b; 앱 통합 — G4d-2; 인쇄 — G4e. VexFlow 버전·G3 flag·schema는 그대로다.
+
+### 35.2 모듈
+
+| 파일 | 한 일 |
+| --- | --- |
+| `engrave/curves.js` (새) | 3차 Bézier 곡선 — 제어점이 현의 1/3·2/3에서 세로로만 올라가 x가 t에 선형, 가운데 높이 h = 곡선의 현에서 4h·t(1−t). `tieHeight`(0.15·길이 + 0.2를 0.5–1.2 sp로 자름), `slurHeight`(clamp(0.1·길이, 0.75, 3)), `arc`, `line`, `yAt`, `samples`(0.5 sp마다 상자, §10.1), `slur`(아래 §35.4) |
+| `engrave/marks.js` (새) | system 하나의 배치 pass `placeSystem`: staff마다 skyline(음 요소, 보표선 제외 — 보표 밖이어야 하는 것은 `limit`), 그 위에 §10.2 순서대로 tie → tuplet → articulation·꾸밈 기호·fermata·tremolo → slur(짧은 것 먼저)·glissando → 운지. 모든 곡선·기호는 놓인 뒤 skyline에 더해진다 |
+| `engrave/metrics-text.js` (새, 생성) | 글자 폭 표 (§35.6) |
+| `engrave/skyline.js` | `put({x0, x1, h, side, pad, limit, floor, snap})` — §10.1의 배치 함수 하나 (옛 `place(x0, x1, h, side, pad, limit)`은 이것을 부른다: volta); `profile()` (slur가 넘을 칸들); 충돌 검사에 H5(글자 대 음표머리·stem·beam·임시표) |
+| `engrave/layout.js` | `prepare`: arpeggio(화음과 임시표 왼쪽, staff마다 한 조각, 가리키는 끝에 화살표; non이면 괄호), notehead 괄호, 괄호(`[ ]`) 임시표, 숨표·caesura(음 뒤), 운지 폭을 기둥의 rod에(§9), 타악기(kit의 notehead·stem, 기본 stem 위), marks pass의 입력(`P.marks`); `notateSystem`: 쉼표를 옮긴 뒤 보표 밖 온·2분·겹온쉼표의 덧줄, tuplet은 marks pass로 옮김; `layout`: marks pass 호출, 곡선의 작은 보표 축소·세로 쌓기·출력, 세로 skyline에 곡선 표본; `VERSION` `engr/2`; `coverage.pending`에서 G4d-1a가 놓는 종류를 뺌 |
+| `engrave/notation.js` | `placeTuplet`이 `put()`으로 놓는다: 괄호는 보표 밖, 괄호 없는 숫자는 beam 옆 — 보표 안이라도 빈 곳이면 (G4c 리뷰 M2) |
+| `engrave/metrics.js`·`outlines.js` (생성) | glyph 23개 추가 (articulation 위·아래, fermata 셋 × 위·아래, 꾸밈 기호 넷, `tremolo1`, 숨표, caesura) — `make-metrics`·`make-outlines --check` 그대로; `articulation()`·`fermata()` 조회; `DRAWN`에 `accidentalBracketLeft/Right` (고정 글꼴에 없음, 백엔드가 그림) |
+| `engrave/plan.js` | `PLAN_VERSION` `plan/2`; 타악기 head에 `kit: {notehead, stem}` (§14.6) |
+| `engrave/svg.js` | tie `path.vf-stavetie.ppp-tie[data-tie]`(§16.4), slur `path.vf-curve.ppp-slur[data-slur]`(점선·파선은 stroke), glissando `path.ppp-gliss[data-gliss]`(물결은 2차 곡선), 음 그룹 안의 articulation·꾸밈 기호·fermata·tremolo·arpeggio(`.vf-stroke`)·머리 괄호·운지(`text.ppp-fingering`, 페이지 글꼴 family), 세로줄 fermata |
+| `engrave/index.js` | `version` `0.4.0-g4d1a`; 브라우저 로드 순서 `metrics, metrics-text, space, breaks, skyline, canon, notation, curves, marks, layout, practice, outlines, svg`, 그 뒤 `index.js` |
+
+도구: `tests/engrave/tools/make-text-metrics.js`(새, `--check`·`--fetch`), `render-png.js`(새, 로컬 PNG — 아래 §35.12), `layout-hashes.js`(버전 규칙 guard, G4-D1a-1), `layout-diff.js`(곡선과 버전 이름을 분류), `bench.js`·`browser-parity.js`(새 모듈). A29: `curves.js`·`marks.js`·`metrics-text.js`는 PURE 층 (테스트가 확인).
+
+### 35.3 Tie (§13.1, G4-D5, G4-U2 A; G4-D1a-5)
+
+- **모든 plan tie**를 그 head가 그려진 곳에 그린다: 두 head가 한 system이면 `whole` 하나, 다르면 앞 system 끝까지 `start` + 다음 system 첫 기둥 1 sp 앞부터 `end`, 한쪽 head만 있으면(열린 tie, 가까이 보기 창 밖) 그쪽 반쪽 하나(2 sp stub 또는 system 끝까지). 추론 tie(녹음 경로, `inferred`)도 마디 안이든 밖이든 그린다 (G4-U2 A). 성부가 바뀌는 tie는 from head → to head를 바로 잇는다 (sonatina/024).
+- **방향**: 여러 성부면 위 성부 위·아래 성부 아래; 음 하나면 stem 반대; 화음이면 §13.1 그대로 가운데 줄 위의 머리는 위, 아래는 아래, 가운데 줄은 stem 반대.
+- **끝점**: 그 쪽의 가장 바깥 머리이고 stem 쪽이 아니며(시작은) 점이 없으면 머리 가운데에서 0.2 sp, 머리 가장자리에서 0.15 sp 바깥; 아니면 그 높이(끝 y ± 0.25)에 그 event가 그린 것(머리·점·stem·flag, 끝에서는 임시표) 너머 0.15 sp, 머리 가운데에서 0.25 sp 비킨 높이. 높이 0.5–1.2 sp.
+- 두께 0.16 sp(가운데), 끝은 뾰족 — 백엔드가 가운데선의 제어점을 ±2t/3 옮긴 두 곡선으로 채운다.
+
+### 35.4 Slur (§13.2; G4-D1a-6)
+
+- **그래프 짝 그대로** — `from`·`to` event. 방향: `placement` → 성부 역할 → 걸친 성부 음의 stem이 모두 위면 아래, 아니면 위.
+- **끝점**: stem 반대쪽(머리 쪽)이면 머리 가운데 x에서, 머리 위에 선 것(가장자리 0.2 sp 제외 — 이웃의 stem·beam이 스치는 것은 아님: 다른 성부, 앞서 놓은 tie·slur·기호)의 바깥 0.25 sp; stem 쪽이면 stem 끝 너머(stem ± 0.2 sp의 beam·flag 바깥) — §13.2의 "머리에서 stem 길이의 2/3"은 쓰지 않았다(flag·beam과 부딪힘; §35.10). 그 음 자신의 기호(articulation 등)는 x와 상관없이 바깥으로 — slur는 articulation 바깥(§10.2 순서 6).
+- **모양**: 두 제어점을 따로 올린다 — 칸마다 A·k1 + B·k2 ≥ 필요량(A = 3(1−t)²t, B = 3(1−t)t²)이고 k1 + k2가 가장 작은 쌍 중 가장 고른 것(반으로 나눠 찾음; 둘 다 기본 높이 이상, 최대 3 sp 호 이하, 서로 0.35배 이상). 안 되면 두 끝을 0.5 sp씩 바깥으로(최대 6번), 그래도 안 되면 그대로 그리고 `SLUR_COLLIDES`. 끝점 0.5 sp 안의 칸은 끝 음 자신의 것으로 본다.
+- **순서**: 짧은 것 먼저(같으면 그래프 순서) — 안쪽 slur가 먼저 놓이고 바깥 phrase slur가 그것을 넘는다.
+- **system 넘김**: 반쪽 둘(앞은 끝 세로줄 1 sp 전까지, 뒤는 첫 기둥 1 sp 앞부터), 가운데 system은 `mid` 한 조각(그 system의 음 위로 평평). 반쪽의 자유 끝은 붙은 끝의 높이, 또는 자유 끝 앞 4 sp의 음 바깥. `line: dashed/dotted`은 선 모양으로.
+- 코퍼스(E + 347 + 전사 17, 404곡): slur 2,832개, 안쪽 머리·stem을 지나는 것 데스크톱 6 (0.21 %), 휴대폰 3 (0.11 %) — 모두 `SLUR_COLLIDES`로 이름이 있다 (A22 ≤ 1 %).
+
+### 35.5 음에 붙는 기호 (§10.2 순서 5, 7; G4-D1a-4, 7, 8, 9)
+
+- **articulation·꾸밈 기호·fermata·tremolo**: 한 성부면 stem 반대쪽, 여러 성부면 성부 쪽; stem 쪽에 서면 stem 가운데에 맞춰 stem 끝(beam) 너머. 꾸밈 기호는 위(아래 성부는 아래), fermata는 위(뒤집힌 것·아래 성부는 아래). 안에서 바깥으로 staccato·staccatissimo(0) < tenuto(1) < accent(2) < marcato(3) < 꾸밈 기호(4) < fermata(5). staccato·tenuto류는 보표 안이면 칸 가운데로(`spaceSnap`, 선 위 금지), 나머지는 보표 밖(`limit`). detached-legato는 staccato 위 tenuto 두 glyph. 고정 글꼴에 없는 spiccato·stress·unstress는 가장 가까운 glyph + `GLYPH_FALLBACK`(코퍼스 0). 숨표·caesura는 음 뒤, 보표 위(가로 간격에 들어감). 세로줄 fermata는 맨 위 staff 위(뒤집힌 것은 맨 아래 staff 아래), 세로줄 가운데. tremolo는 stem 위 머리와 끝 사이에 0.8 sp 간격의 획, stem이 없으면 머리 위.
+- **운지**: 그래프 `placement`, 없으면 part의 첫 staff는 위·둘째 staff는 아래. 화음은 머리 순서대로 쌓아 위 숫자가 위 음(위든 아래든), 안쪽부터(위: 낮은 음의 것부터) 놓는다; 여러 줄 운지(`"1\n3"`)는 줄마다. Figtree 1.4 sp, 폭은 표에서. 보표 밖, 음과 0.3 sp, 줄 사이 0.15 sp. 머리보다 넓은 운지는 기둥의 rod를 넓힌다. §10.2 순서대로 slur 뒤에 놓이므로 긴 phrase slur가 있으면 그 바깥에 선다 (M-H1에서 볼 것, §35.13).
+- **arpeggio**(§6): 화음과 그 임시표 왼쪽 0.25 sp, 끝 머리 너머 0.25 sp; 물결선(`dir`이면 가리키는 끝에 화살표), `non`이면 괄호. 두 staff에 걸치면 staff마다 한 조각, 화살표는 가리키는 쪽 끝 조각에만.
+- **notehead**: 그래프의 shape(없으면 타악기 kit의 것), 괄호(`paren`)면 좌우 괄호 glyph. **임시표**: `bracket`이면 `[ ]`(그려진 모양), `paren`이면 `( )`; `cautionary`만이면 그대로 — G4c는 `cautionary + bracket`을 괄호로 그렸다.
+- **타악기** (A12, §14.6): percussion staff의 음은 그래프·kit가 말하지 않으면 stem 위, 머리는 kit의 notehead (E27의 둘째 snare는 `<notehead>` 없이 kit의 x) — plan head의 `kit`.
+
+### 35.6 글자 metric 표 (§18.3; G4-D1a-2)
+
+- `tests/engrave/tools/make-text-metrics.js`가 앱이 Google Fonts에서 받는 세 family의 정적 TTF 다섯(Instrument Serif 보통·기울임 = `serif`·`serif-italic`, Figtree 400·700 = `sans`·`sans-bold`, JetBrains Mono 400 = `mono`)을 **버전이 박힌 gstatic URL과 sha256으로 고정**해 `tests/engrave/out/fonts/`(gitignore)에 받고, 작은 TrueType reader(head·hhea·hmtx·cmap 4/12·OS/2)로 문자 집합(Latin-1, 대시·따옴표·말줄임, ♭♮♯)의 advance width를 1/1000 em 정수로, capHeight·xHeight·ascender·descender와 함께 `engrave/metrics-text.js`에 쓴다. **글꼴 파일은 커밋하지 않는다** (테스트가 `git ls-files`에 ttf/otf/woff가 없음을 확인). 표 머리에 출처·sha256, 끝에 표 digest.
+- `--check`: 글꼴이 있으면(캐시 또는 `--fetch`) 다시 만들어 바이트 비교; 없으면 표의 형식(도구가 쓰는 모양)과 digest만 보고 "rebuild skipped"라고 말한다. CI는 `--check --fetch` (Windows·Linux 모두 rebuild까지 PASS).
+- `measure(text, role, size)` → {w, top, bottom, missing}: 폭은 advance의 합 × size, 없는 글자는 0.6 em + `missing` → layout이 `TEXT_GLYPH_MISSING`. kerning 없음. layout(운지, glissando 말)은 폭을 이 표에서만 읽고, `svg.js`는 같은 face의 CSS family를 쓴다 — 글꼴이 늦게 와도 기하는 같다. DOM 측정 없음 (A29).
+
+### 35.7 G4c 리뷰의 이월 (§34.19)
+
+| # | 한 일 | 증거 |
+| --- | --- | --- |
+| M1 보표 밖 쉼표의 덧줄 | 쉼표를 옮긴 뒤, 줄이 보표 밖인 온쉼표(매달린 줄)·2분쉼표(앉은 줄)·겹온쉼표(두 줄)에 그 줄 하나를 쉼표 폭 + 양쪽 0.2 sp로; 병합 쉼표는 한 번 | `origin/main` 코드로는 E + 코퍼스에서 덧줄 없는 쉼표 16(코퍼스 15 = 4곡: for-all-the-saints 7, it-is-well 4, the-strife-is-oer 3, burgmuller25/019 1 — 리뷰의 15와 같음, + 새 E13 1) → 0 (`eg.rest.ledger_missing`); E13에 2분쉼표가 보표 밖으로 가는 마디; mutation MR |
+| M2 tuplet 숫자 | 괄호 없는 숫자는 `put()`의 `limit: null` — beam 바깥 0.5 sp, 보표 안이라도 빈 곳 (괄호는 여전히 보표 밖) | `origin/main` 코드로 1.5 sp보다 먼 숫자 16 (czerny849/017 2, 019 2, 020 12 — 리뷰의 16과 같음) → 0 (`eg.tuplet.number_far`); 괄호 없는 숫자 219 중 13이 이제 보표 안; mutation MN |
+| M4 버전 | `plan/1` → `plan/2`, `engr/1` → `engr/2`, 규칙 "출력이 바뀌면 버전을 올린다" (G4-D1a-1). `layout-hashes.js --write`는 merge base(origin/main)의 hash와 다른데 버전이 같으면 쓰지 않는다 | 음성 대조: `VERSION`을 `engr/1`로 되돌리고 `--write` → "236 hashes differ … under the same version engr/1", exit 1 |
+| E12 증1도 unison | E12에 3마디: 위 성부 F5(임시표 없음) 대 아래 성부 F♯5 — 공유하지 않고 아래 성부가 비킴 | Lead의 mutation을 RA로 커밋: unison 규칙에서 alter 조건을 빼면 E12에서 `eg.voice.merge_illegal` 4 |
+
+### 35.8 Metric (`tests/engrave/l2.js`; G4-D1a-11)
+
+`skyline.js`·`curves.js`·`marks.js`를 불러오지 않는 자기 기하(Bézier를 0.5 sp마다 표본, 곡선이 상자를 지나는지는 0.05 sp마다 곡선 위의 점으로)로 계산한다. 글자 폭만은 §18.3의 표(데이터)를 읽는다. 모두 `bench.js` ZERO와 `layout.test.js` ZERO_L2 (E + 코퍼스 404곡 × 두 config가 0이어야 통과); baseline r·e·x는 **키만 더했다** (`bench.js baseline` 뒤 git diff에 지운 줄 0).
+
+| metric | 뜻 | §21 이름 |
+| --- | --- | --- |
+| `eg.tie.missing` | tie마다 head가 그려진 대로의 조각(한 system `whole`, 넘으면 `start`+`end`, 한쪽만이면 그 반쪽) | `eg.tie.drawn_ratio` (layout) |
+| `eg.tie.endpoint_err`, `eg.curve.endpoint_err_max` (≤ 0.5) | 그려진 tie 끝과 머리(시작은 그 줄의 점까지)의 거리; 머리가 stem 너머로 비킨 2도이거나 화음의 임시표가 tie 높이를 덮으면 그 화음 앞면까지 (G4-D1a-5) | A22 |
+| `eg.tie.dir_err` | 곡선이 휘는 쪽 ≠ §13.1 규칙 | §13.1 |
+| `eg.slur.pair_errors` | 첫 조각이 from 음(± 0.6 sp)에서, 끝 조각이 to 음에서 시작·끝나지 않음 | `eg.slur.pair_exact` (layout) |
+| `eg.slur.endpoint_err` | 끝점이 바로 아래 선 것(± 0.1 sp: 머리·stem 끝·다른 성부·beam·tie·짧은 slur, 그리고 그 음의 기호는 어디서든)의 0.1–1.25 sp 바깥이 아님 (끝을 옮긴 만큼 더 허용) | §13.2 |
+| `eg.curve.hits`(기록), `eg.curve.hit_ratio` (≤ 0.01, suite 합), `eg.curve.hits_undiagnosed` | slur가 끝 음 밖의 머리·stem을 지남; suite의 slur 수에 대한 비율; `SLUR_COLLIDES`가 없는 것 | `eg.curve.hits` (A22) |
+| `eg.gliss.errors` | 첫 머리 오른쪽에서 둘째 머리 왼쪽까지가 아님, 물결 여부 | §13.4 |
+| `eg.ledger.drawn_missing`, `eg.mark.missing.<kind>` | ledger가 drawn인 tie·slur·articulation·꾸밈 기호·fermata·운지·glissando·arpeggio 가운데 그 음이 그려졌는데 그 ref를 이름 대는 객체·곡선이 없음 | `eg.ledger.drawn_missing`, `eg.mark.drawn_ratio.*` |
+| `eg.mark.side_err`, `eg.mark.order_err`, `eg.mark.on_line` | 쪽 규칙(+ stem 쪽이면 stem 끝 너머), 안→밖 순서, staccato·tenuto가 보표 안에서 선 위 | §10.2 순서 5 |
+| `eg.fingering.side_err`, `eg.fingering.order_err` | 운지 쪽 규칙, 화음 쌓기 순서 | §10.2 순서 7 |
+| `eg.arpeggio.errors` | 머리 왼쪽·머리를 덮음·화살표 끝·non | §6 |
+| `eg.notehead.shape_err`, `eg.accidental.enclosure_err` | 머리 glyph = shape(kit)·채움, 괄호 있음/없음; 임시표의 `[ ]`·`( )` | A7, A12 |
+| `eg.rest.ledger_missing`, `eg.tuplet.number_far` | §35.7 M1, M2 | — |
+| `eg.overlap.text`, `eg.overlap.text_text`, `eg.overlap.mark_mark`, `eg.overlap.mark_note` | 글자 대 음 요소·곡선·기호, 글자끼리, 기호끼리(숫자와 제 괄호 제외), 기호 대 음 요소·곡선(tremolo와 제 stem·beam 제외) | A20 (1a의 객체) |
+| `eg.text.width_err`, `eg.text.missing_glyph`, `eg.clip.curves` | 글자 폭 = 표, `TEXT_GLYPH_MISSING` 수, 곡선이 페이지 안 | §18.3, A17 |
+
+`bench.js`: `eg.tie.drawn_ratio`·`eg.slur.pair_exact`·`eg.mark.drawn_ratio.{articulation, ornament, fermata, fingering, gliss, arpeggio}`는 이제 **layout까지** 본다 — plan이 싣고, 두 config의 layout이 그린 것만 (l2의 `missing` 집합). `eg.curve.hits`는 LOWER(늘면 퇴행), `eg.curve.hit_ratio`는 suite 합의 비율로 요약한다. 결과(r): `eg.curve.hit_ratio` 0.0016, `endpoint_err_max` 0.15, 영목표 전부 0.
+
+### 35.9 Mutation (`tests/engrave/layout-mutation.test.js`)
+
+G4b·G4c의 틀(CRLF 사본, anchor 정확히 한 번, 출력이 바뀌어야 함, 이름 붙은 metric이 잡아야 하고 그 metric은 같은 probe에서 원래 0)에 **probe 지정**을 더했다: `probes`를 적은 mutation은 그 probe에서만 돌고(기준도 같은 probe), 긴 czerny849/020은 그것을 적은 mutation만 쓴다. 새 probe: E09, E10, E15, E23, E27, E31, E32, E40, golden/G16, czerny849/020. M4·M24의 anchor는 tuplet 배치가 옮겨 간 `marks.js`로. 실행 약 30 s (`npm run test:engrave` 안), Linux도 통과.
+
+| # | 심은 결함 (파일) | 잡은 이름 (probe × 두 config 합) |
+| --- | --- | --- |
+| M8 | `put()`이 skyline을 안 봄 — 기호가 혼자일 때의 자리 (`skyline.js`) | `eg.overlap.mark_mark` 6, `eg.overlap.text` 167 |
+| M12 | 추론한 마디 안 tie를 다시 숨김 (O4) | `eg.tie.missing` 6 (G16) |
+| M14 | system을 넘는 tie를 버림 | `eg.tie.missing` 3 (E09) |
+| M15 | slur를 start → 같은 staff의 다음 stop으로 다시 짝지음 | `eg.slur.pair_errors` 2 (E10) |
+| M23 | staccato를 ledger 없이 건너뜀 | `eg.ledger.drawn_missing` 344, `eg.mark.missing.articulation` 344 |
+| RA | (Lead) unison 규칙에서 alter 조건을 뺌 (`layout.js`) | `eg.voice.merge_illegal` 4 (E12) |
+| MT | 음 하나의 tie가 stem 쪽 | `eg.tie.dir_err` 17 |
+| MS | slur 끝이 음 안쪽 (pad 부호) | `eg.slur.endpoint_err` 10 |
+| MC | slur가 아래 음을 넘지 않음 (`curves.js`) | `eg.curve.hits_undiagnosed` 1 |
+| MA | 기호를 밖→안 순서로 쌓음 | `eg.mark.order_err` 4 |
+| MO | 한 성부의 articulation을 stem 쪽에 | `eg.mark.side_err` 16 |
+| MI | 보표 안 staccato·tenuto를 칸으로 옮기지 않음 | `eg.mark.on_line` 8 |
+| MF | 위 staff 운지는 아래, 아래 staff는 위 | `eg.fingering.side_err` 140 |
+| MW | 운지 폭이 표와 다름 | `eg.text.width_err` 14 |
+| MN | 괄호 없는 tuplet 숫자를 보표 밖에 (`notation.js`) | `eg.tuplet.number_far` 24 (czerny849/020) |
+| MR | 보표 밖 쉼표의 덧줄을 안 그림 | `eg.rest.ledger_missing` 2 (E13) |
+| MP | 타악기 stem을 음높이 규칙으로 | `eg.voice.stem_policy_violations` 4 (E27) |
+| MK | 타악기 kit의 notehead를 무시 | `eg.notehead.shape_err` 2 |
+| MH | 머리 괄호를 안 그림 | `eg.notehead.shape_err` 2 (E31) |
+| MB | 괄호 임시표를 `( )`로 | `eg.accidental.enclosure_err` 2 (E32) |
+| MG | 물결 glissando를 직선으로 | `eg.gliss.errors` 2 (E40) |
+| MQ | arpeggio 화살표를 반대 끝에 | `eg.arpeggio.errors` 4 (E40) |
+
+G4b·G4c의 mutation 29개(M1–M7(M7a·b), M9–M11(M11a·b), M16–M18(M18a–c), M21, M24, RB, RB2, RF, RI, RK, RX, RY, F1–F3)는 그대로 잡힌다; N1·N2는 바이트 동일. **M23과 §23의 이름**: §23은 M23을 `eg.ledger.silent`로 적었다 — 그것은 plan이 ledger 없이 빠뜨리는 경우이고 `ledger-mutation.test.js`의 L-ART-LEDGER가 그대로 잡는다. layout이 ledger는 drawn인데 그리지 않고 건너뛰는 경우는 §21.1이 이름 붙인 `eg.ledger.drawn_missing`이 잡는다 (G4-D1a-13).
+
+### 35.10 설계 문서와 달라진 곳
+
+1. **§13.2 stem 쪽 slur 끝점**: "머리에서 stem 길이의 2/3" 대신 stem 끝(flag·beam) 너머 0.25 sp — 2/3 지점에서 시작하면 flag·beam과 부딪혔다 (G4-D1a-6).
+2. **§13.2 slur 모양**: 두 제어점을 같이 올리지 않고 따로 — 한쪽 끝 가까이의 높은 음을 넘을 때 끝을 덜 옮긴다. 반쪽의 자유 끝도 끝 앞 음의 높이를 따른다. 처음의 대칭 포물선·평평한 반쪽으로는 `SLUR_COLLIDES`가 E + 코퍼스 두 config에서 72, 지금 15.
+3. **G4-C6의 "tuplet은 언제나 보표 밖"**: 괄호 없는 숫자는 beam 옆, 보표 안이라도 (Lead가 G4d-1a에 준 M2).
+4. **A22의 tie 끝점**: 2도로 stem 너머에 비킨 머리, 또는 화음의 임시표가 tie 높이를 덮는 머리는 그 앞면까지 잰다 — tie는 stem·다른 머리·임시표를 넘을 수 없다 (코퍼스 7쌍, G4-D1a-5). 기준 0.5 sp는 그대로.
+5. **A22의 slur 1 %**: suite(bench) 합의 비율로 판정하고 곡마다의 비율은 기록만 — slur가 몇 개 안 되는 곡에서 하나가 넘으면 곡 비율은 1 %를 넘는다 (G4-D1a-11).
+6. **§18.3 운지의 글꼴 역할**: §18.3은 셋(serif, sans, mono)을 적고 운지를 어디에도 두지 않았다 — sans(Figtree)로 (G4-D1a-2).
+7. **§10.2 순서 7 운지**: 순서 그대로 slur 바깥이다 — 긴 phrase slur 아래의 운지가 음에서 멀어진다 (예: czerny849/013·020). Gould는 운지를 slur 안쪽에 두기도 한다. 바꾸지 않았고 M-H1에서 본다.
+
+### 35.11 Acceptance
+
+| # | 기준 | 증거 | 판정 |
+| --- | --- | --- | --- |
+| A5 | 모든 tie: 부분 화음, 세로줄·system 넘김 반쪽 둘, 성부 바뀜, 추론 마디 안 tie (U2 A) | `eg.tie.missing` 0 (E + 코퍼스 404 × 2, r·e·x), bench `eg.tie.drawn_ratio` 1 (layout 기준); E08(E만), E09(두 폭에서 반쪽 둘), sonatina/024(성부 바뀜), golden/G16(추론 3); M12, M14 | PASS |
+| A6 | 모든 slur가 제 from·to 사이: 겹친 slur, 쉼표에 걸린 slur, system 넘김 반쪽 | `eg.slur.pair_errors` 0, `eg.slur.pair_exact` 1; E10(겹침), E11(쉼표, source break로 반쪽 둘), 파선; M15 | PASS |
+| A7 | articulation, 꾸밈 기호, fermata(음·세로줄), 인쇄 운지, arpeggio(dir·non), 꾸밈음, glissando, notehead 모양, 주의·괄호 임시표 | `eg.mark.missing.*`·`eg.ledger.drawn_missing`·side/order/on_line·fingering·arpeggio·gliss·shape·enclosure 전부 0, `eg.mark.drawn_ratio.*` 1; E15(+ 3마디: trill·mordent·turn·detached-legato·tremolo·숨표·세로줄 fermata), E23, E31, E32, E40, E14(G4c); 코퍼스 articulation 6,454·운지 9,965·꾸밈 기호 50·fermata 36·arpeggio 13 객체; M23, MA, MO, MI, MF, MG, MQ, MH, MB | PASS |
+| A12 (타악기) | 타악기 event가 타악기 staff에 머리 모양대로 | E27: snare 둘 다 x(하나는 kit에서), bass drum 보통, stem 위, 쉼표 아님; `eg.notehead.shape_err`·`stem_policy` 0; MP, MK | PASS (가사는 G4d-1b) |
+| A20 (1a의 객체) | 글자 대 음 요소·글자, 기호끼리 | `eg.overlap.text`·`text_text`·`mark_mark`·`mark_note` 0; `skyline.collisions` H5 → `HARD_VIOLATION` 0; M8 | PASS (셈여림 등은 1b) |
+| A22 | tie 끝점 ≤ 0.5 sp, slur가 안쪽 음을 지나는 비율 ≤ 1 % (전부 진단에) | `endpoint_err_max` 0.15; 지나는 slur 데스크톱 6/2,832 (0.21 %), 휴대폰 3/2,832 (0.11 %), r suite 0.16 %, `hits_undiagnosed` 0; MT, MS, MC | PASS |
+| E08–E11, E15, E23, E27, E31–E33, E40, E12 새 경우 | fixture | `marks.test.js`(규칙별 테스트, 두 폭에서 영목표 0, HARD_VIOLATION·SLUR_COLLIDES 없음), `e-fixtures.test.js` | PASS |
+| R·X L1/L2 | 영목표 0 | `bench.js check` r·e·x PASS (Windows, Linux) | PASS |
+| A2–A4, A11, A14, A17–A19, A21, A23, A24, A26 | G4b·G4c | ZERO_L2 전부 0 (E + 코퍼스 404 × 2), 기울기 최대 0.25 | PASS |
+| A27 | Windows = Linux, 3회·역순 | layout hash 118 × 2 다시 bless (§35.14), Docker `node:24-bookworm`(LF clone)에서 같음 | PASS |
+| A28 | Node = Chrome | Chrome 153: layout 808/808, SVG 808/808 바이트 동일, 네트워크 0 | PASS |
+| A29 | DOM 측정 0 | A29 검사 (새 세 모듈 PURE), 글자 폭은 표 | PASS |
+| B1–B7 (+B9) | §19.2 | §35.12 | PASS (B5는 G4f 판정) |
+
+### 35.12 성능 (이 PC, Node 24.17, `layout-perf.js` 5회 중앙값, ms)
+
+| 곡 | event | 마디 | plan | prepare | layout 데스크톱 | 휴대폰 | SVG | 연습 map | system | 객체 | SVG KB |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| beyer/028 | 95 | 16 | 0.91 | 0.69 | 0.87 | 0.78 | 0.83 | 0.25 | 4 | 252 | 34.7 |
+| hymns/take-my-life | 136 | 16 | 1.51 | 1.17 | 1.31 | 1.15 | 0.88 | 0.30 | 4 | 390 | 51.6 |
+| burgmuller25/021 | 468 | 33 | 6.40 | 4.36 | 7.61 | 7.92 | 2.96 | 0.90 | 9 | 1,293 | 171.1 |
+| czerny849/001 | 548 | 32 | 7.56 | 4.51 | 8.00 | 8.86 | 3.06 | 0.85 | 9 | 1,590 | 188.0 |
+| sonatina/013 | 1,354 | 86 | 18.78 | 14.28 | 22.25 | 22.23 | 8.71 | 2.27 | 24 | 4,349 | 503.0 |
+| sonatina/016 | 1,494 | 92 | 17.79 | 12.21 | 24.48 | 24.31 | 10.13 | 2.75 | 25 | 5,120 | 581.1 |
+| sonatina/020 | 1,563 | 158 | 17.36 | 13.44 | 30.71 | 30.33 | 10.75 | 2.73 | 40 | 5,768 | 676.8 |
+
+코퍼스 347: plan 중앙 1.64, 최대 20.1; prepare + layout 중앙 2.8, p95 20.5, 최대 44.9. 예산: **B1** 19.65 ≤ 60; **B2** 4마디 창 layout + SVG p95 1.75 ≤ 25; **B3** 0.02 ≤ 8; **B4** 전곡 prepare + layout + SVG 최대 54.9 ≤ 100 (sonatina/020); **B6** p95 < 0.01(최대 0.1), 만진 수 = 바뀐 수; **B7** 0; **B9** 0.31 ≤ 0.5 (sonatina/016·020 0.31, burgmuller25/021 0.21, czerny849/001 0.26, sonatina/013 0.23 — G4d-1b가 1b의 객체 뒤에 다시 잰다) — 모두 PASS. **B5**(G4f 판정): sonatina/020 전곡 54.9 ms ≤ 300, 가장 긴 호출 30.7 ms (조각 12 ms는 G4f의 시간 나누기). G4c 대비 sonatina/020 layout 18.6 → 30.7 ms(marks pass: slur 끝점과 skyline), SVG 8.9 → 10.8 ms. Chrome 153(`browser-parity.js`) sonatina/020: 1× plan 12.9, prepare 10.5, layout 21.5; 4× CPU 60.9 / 54.3 / 96.6 — 한 호출이 50 ms를 넘는 것은 G4b·G4c와 같이 G4f의 idle·worker 나누기 몫이다.
+
+### 35.13 회귀 (코드 커밋 `4327a2c`)
+
+| 검사 | Windows (`D:/PPP-g4`, Node v24.17.0) | Linux (Docker `node:24-bookworm`, Node v24.21.0; `4327a2c`의 `core.autocrlf=false` clone, LF 파일) |
+| --- | --- | --- |
+| `npm run test:engrave` | **163/163** (149 + `marks.test.js` 14; 새 mutation 22는 기존 테스트 안) | **163/163** |
+| `npm run test:scoregraph` | **214/214** | **214/214** |
+| `layout-hashes.js` | 118 × 2 전부 커밋된 hash (다시 bless 236, §35.14) | 같음 |
+| `make-metrics`·`make-outlines`·`make-e-fixtures`·`make-corpus --check` | PASS | PASS |
+| `make-text-metrics.js --check --fetch` | PASS — 형식·digest, 고정 글꼴로 바이트 재생성 | PASS (Linux에서 받은 글꼴로 재생성까지) |
+| `bench.js check --suite r / e / x` | PASS / PASS / PASS | PASS / PASS / PASS |
+| G0 부분 (`run.py sg-roundtrip`, `golden`, `run`+`check --suite smoke`, `core`) | sg-roundtrip exit 0 (L1+ 367/369 — 허용 2), golden 17/17, smoke·core verdict PASS. G4d-1a는 G0 경로를 건드리지 않는다 | — |
+| `browser-parity.js` (A28) | Chrome 153: layout 808/808, SVG 808/808 바이트 동일, E14 `<use>` 18개 상자 오차 ≤ 0.01 sp, 네트워크 0 | — |
+| legacy parity (`legacy-parity.js`; `d4b5b86`의 `git archive`를 8801에, 이 트리를 8802에, `NODE_ENV=production HOST=127.0.0.1`) | **16/16 바이트 동일**; 8802의 `engrave/index.js`는 `0.4.0-g4d1a`, 8801은 `0.3.0-g4c` — 측정 뒤 두 서버를 껐다; 8777·8788은 건드리지 않음 | — |
+| `layout-perf.js` | 판정하는 예산 전부 PASS (§35.12) | — |
+| 앱 파일 | `Piano Coach App.dc.html`·`index.html`·`server.js`·`scoregraph/` 바이트 그대로 (`git diff d4b5b86` 비어 있음) | — |
+
+### 35.14 커밋된 layout hash 다시 bless — 분류 (§21.3)
+
+`tests/engrave/tools/layout-diff.js --base=<d4b5b86의 engrave/·scoregraph/>` (곡선과 버전 이름을 보도록 고침): 118곡 × 두 config = 236쌍, **전부 바뀜** (버전 이름 `engr/2`가 canonical JSON에 있다). 두 트리 모두 지금의 fixture를 배치한다 — E09·E12·E13·E15는 내용도 바뀌었다 (§35.7, §35.15).
+
+| 분류 | 수 (E / R / 전사) | 무엇 |
+| --- | --- | --- |
+| SERIALIZATION_ONLY `(version)` | 136 (50 / 56 / 30) | 버전 이름(`engr/2`, planKey의 `plan/2`)만 — 객체·좌표 같음 |
+| GEOMETRY_ONLY | 8 (6 / 0 / 2) | 괄호 없는 tuplet 숫자가 beam 옆으로 (E04, E07, golden/G03 × 2); E39 × 2는 숫자가 보표 안으로 들어가 system 윗선이 올라감 (모든 객체가 세로로) |
+| LEDGER_CHANGE | 92 (24 / 66 / 2) | 새로 그린 것: slur 46, articulation 52, 운지 40, tie 28, fermata 14, 쉼표 덧줄 6 (E13, the-strife-is-oer, burgmuller25/019 × 2), 꾸밈 기호 4, arpeggio 4, tremolo·glissando·머리 괄호·괄호 임시표·E27 kit 머리 각 2 |
+
+L1은 나빠지지 않았고(baseline은 키만 더함) L2 영목표는 전부 0이다. **bless 이유**: G4d-1a가 곡선과 음에 붙는 기호를 그리고, 괄호 없는 tuplet 숫자와 보표 밖 쉼표를 고치고(G4c 리뷰 M1·M2), 버전을 올렸기 때문 (G4-D1a-1).
+
+### 35.15 Fixture
+
+`make-e-fixtures.js --check` PASS. 바꾼 넷: **E09** 5마디(모든 세로줄에 tie, 왼손 8분) — 데스크톱·휴대폰 모두 tie 하나가 system을 넘는다; **E12** 3마디 증1도 unison (§35.7); **E13** 3마디 — 아래 성부 2분쉼표가 위 성부의 낮은 음 밑, 보표 밖으로; **E15** 3마디 — trill, 뒤집힌 mordent, turn + detached-legato, tremolo + 숨표, 마지막 세로줄 fermata. `e-fixtures.test.js`가 새 내용을 확인한다.
+
+### 35.16 PNG (직접 봄; `NODE_PATH=D:/PPP/node_modules node tests/engrave/tools/render-png.js`, 14 px/sp, gitignore)
+
+`tests/engrave/out/png/`: `e-E04-tuplet-show.desktop.png`, `e-E08-tie-partial-chord.desktop.png`, `e-E09-tie-barline-system.desktop.png`·`.phone.png`, `e-E10-slurs-overlap.desktop.png`, `e-E11-slur-rest-system.desktop.png`·`.phone.png`, `e-E12-two-voices-heads.desktop.png`, `e-E13-two-voices-rests.desktop.png`, `e-E15-articulations.desktop.png`, `e-E23-fingering.desktop.png`, `e-E27-percussion.desktop.png`, `e-E31-noteheads.desktop.png`, `e-E32-accidentals-cautionary.desktop.png`, `e-E33-accidental-chord.desktop.png`, `e-E40-arpeggio-gliss.desktop.png`; 카탈로그(G0 hold-out 아님) `czerny849-013.desktop.png`, `sonatina-017.desktop.png`, `burgmuller25-013.desktop.png`, `czerny849-020.phone.png`, `czerny849-020.desktop.clip.png`, `sonatina-020.desktop.clip.png`. 본 것: tie 반쪽이 system 끝·첫머리에서; 겹친 slur는 둘째가 첫째 위로; 쉼표를 넘는 slur; E15의 쌓기(staccato가 accent 안쪽, tenuto는 칸에, detached-legato 위 turn); 운지 쌓기(위 숫자가 위 음); arpeggio 화살표·괄호, 물결 glissando; 괄호 머리·`[ ]` 임시표; E13의 보표 밖 2분쉼표와 그 덧줄; Czerny 셋잇단 숫자가 beam 옆 보표 안; 두 성부 staccato가 stem 쪽이면 beam 너머 (처음엔 머리 위에 있어 고침 — G4-D1a-4). 남은 모양 문제는 §35.17.
+
+### 35.17 남은 것
+
+- **BLOCKER 0, MAJOR 0** (implementer 자체 판정).
+- MINOR·관찰:
+  1. 운지가 긴 phrase slur 바깥에 서서 음에서 멀다 (§35.10 7) — M-H1.
+  2. tie 높이는 포물선(제어점 1/3·2/3)이라 긴 tie가 둥글다; slur도 같은 모양 가족이다 — M-H1에서 상수 조정.
+  3. `SLUR_COLLIDES` 15 (E + 코퍼스, 두 config): 여러 system에 걸친 phrase slur, 다른 성부 stem 위로 가야 하는 slur. 모두 진단에 있고 1 % 안이다.
+  4. cross-staff tie·slur·glissando(코퍼스 slur 2)는 떠나는 staff에 그리고 진단 (`SLUR_CROSS_STAFF` 등) — cross-staff 판각은 G4 뒤.
+  5. 꾸밈음의 notehead shape는 G4c 그대로 보통 머리 (`eg.notehead.shape_err`는 꾸밈음을 보지 않음).
+  6. `eg.slur.endpoint_err`는 끝점 ± 0.1 sp 아래만 본다; M1 mutation(그래프 beam을 버림) 아래에서 한 끝이 다른 곡선과 0.07 sp — 실제 코퍼스는 0.
+- **G4d-1b로**: system에 붙는 기호(셈여림·hairpin·pedal·ottava·volta·코드명·tempo·rehearsal·jump·words·가사, 안내 글자), §15.3 세로 배치(음 쪽 skyline은 이 단계의 것 위에), §15.4 courtesy, B9 다시 재기(지금 0.31), A8–A10, A12 가사, A20·A25 전체. 글자 표의 `serif`·`serif-italic`·`sans-bold`·`mono`는 그때 쓰인다.
+- **G4d-2로**: 곡선·글자도 `svg.js`로 그려지므로 페이지 CSS(`.ppp-fingering` 등)와 테마 색; `data-plan`의 `plan/2`로 캐시 키 (G4-D1a-1).
+
+**커밋**: `4327a2c` (코드·테스트·fixture·baseline·layout hash·CI의 `make-text-metrics --check --fetch`), `41c7ca8` (`layout-hashes.js --write`의 버전 규칙 guard — 도구만; `layout-hashes.js`와 `layout.test.js`를 다시 돌려 PASS), 이어서 이 기록 (G04 §35, 목차; DECISIONS G4-D1a-1–13; CURRENT_STATE). `origin/g4d1a-curves-marks`에 push. 병합 안 함, PR 없음.
+
+**상태: G4d-1a READY_FOR_REVIEW** — BLOCKER 0, MAJOR 0 (자체 판정).
 
 ---
 
