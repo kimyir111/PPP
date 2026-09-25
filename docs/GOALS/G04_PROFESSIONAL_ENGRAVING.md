@@ -56,6 +56,7 @@ ScoreGraph에 **이미 있는** 기보 의미를 PPP의 실제 화면과 인쇄�
 - [31. 사용자 결정 기록](#31-사용자-결정-기록)
 - [32. G4a 구현 기록](#32-g4a-구현-기록)
 - [33. G4b 구현 기록 — 배치 핵심 (layout core)](#33-g4b-구현-기록--배치-핵심-layout-core)
+- [34. G4c 구현 기록 — beam, stem, tuplet, 성부, 쉼표, 꾸밈음, SVG 백엔드](#34-g4c-구현-기록--beam-stem-tuplet-성부-쉼표-꾸밈음-svg-백엔드)
 - [부록 A. 이 세션의 측정](#부록-a-이-세션의-측정)
 - [부록 B. 코드 위치 색인](#부록-b-코드-위치-색인)
 
@@ -713,7 +714,7 @@ G4는 **논리 tuplet을 그대로 그린다.** 시간을 다시 해석하지 �
 
 G3 off의 녹음 writer는 셋잇단 **조각마다** 괄호를 연다 (이슈 20, G03 A-2: 1-음 괄호 비율 1.000). 그래프에는 멤버 하나인 printed tuplet spanner로 들어온다.
 
-- **충실한 그림**: 멤버마다 숫자 "3" (괄호 없이, 음표머리 또는 beam 쪽). 지금은 **아무것도 안 그린다**(O3) — 셋잇단 8분 셋이 보통 8분 셋처럼 보여 리듬을 읽을 수 없다.
+- **충실한 그림**: 멤버마다 숫자 "3" (괄호 없이, 음표머리 또는 beam 쪽). 지금은 **아무것도 안 그린다**(O3) — 셋잇단 8분 셋이 보통 8분 셋처럼 보여 리듬을 읽을 수 없다. (G4c, G4-C5: plan의 한 음 tuplet 괄호 기본값이 거짓 — 숫자만)
 - **표시 병합 (선택지)**: 같은 성부에서 비율·단위가 같은 1-음 printed tuplet이 시간상 이어지고, 멤버 길이 합이 정확히 tuplet 하나(`normal × unit`)이며, 그 시작이 마디 안에서 그 단위 격자에 맞으면, 숫자 하나(괄호 규칙은 §12.1)로 그린다. 마디를 넘지 않는다. ledger는 원래 spanner ID들을 `merged`로 적는다. 그래프에 여러 멤버 tuplet이 하나라도 있는 성부-마디에서는 하지 않는다 (G3a 그래프에서는 저절로 꺼짐).
 - 둘 중 무엇을 기본으로 할지는 **G4-U2** (§29). 권고는 표시 병합이다. 어느 쪽이든 타이밍은 그대로이고, G3의 `nq.*` metric은 그래프를 재므로 이슈 20은 G3 측정에서 그대로 보인다.
 - **사용자 결정 G4-U2 B (§31)**: 표시 병합은 **모든 구조 조건이 한 시각 묶음임을 증명할 때만**, 애매하면 그래프 그대로. G4a의 조건 (`engrave/plan-tuplets.js`): printed, 멤버 하나, parent·자식 없음, 명시 `show` 없음; 같은 part·성부·staff·마디; grace·hidden 아님; 같은 비율과 같은 단위(명시 unit, 없으면 모든 멤버의 같은 음가); 틈 없이 이어지고 그 안에 grace 없음; 그 성부-마디에 여러 멤버 tuplet 없음; 멤버 합이 정확히 tuplet 하나(normal × unit)이고 마디 첫머리에서 그 길이의 배수에서 시작; pickup 마디 아님; 멤버 둘 이상. ledger는 각 멤버를 `merged`, code `merged-for-display`로 적는다. 조건 하나하나가 테스트로 고정되어 있다 (`tests/engrave/plan.test.js`).
@@ -768,8 +769,8 @@ tie(같은 음높이를 잇는 소리 의미)와 slur(구절·레가토 표시)�
 ### 14.2 음표머리 충돌
 
 - **2도 화음**(한 event): VexFlow 규칙 — stem 반대쪽으로 머리 하나 비킴.
-- **성부 사이 2도**: 아래 성부(`down`)의 머리를 오른쪽으로 머리 폭만큼.
-- **unison**: 두 성부의 같은 음이 같은 기둥에서, 음가 모양이 같고(둘 다 검은 머리, 또는 같은 흰 머리) 점 수가 같으면 **머리 하나를 공유**(stem 둘) — ledger `merged` (두 head ID). 다르면(검은 머리 대 흰 머리, 점 수 다름) 아래 성부를 오른쪽으로 비킴.
+- **성부 사이 2도**: 아래 성부(`down`)의 머리를 오른쪽으로 머리 폭만큼. (G4c: 머리 폭 + 0.2 sp — VexFlow 4.2.3의 `h + 2` px; stem이 다른 성부의 머리를 지나는 교차도 같은 규칙으로 비킴. G4-B11의 반대 규칙은 G4-C3이 대체 — §34.5)
+- **unison**: 두 성부의 같은 음이 같은 기둥에서, 음가 모양이 같고(둘 다 검은 머리, 또는 같은 흰 머리) 점 수가 같으면 **머리 하나를 공유**(stem 둘) — ledger `merged` (두 head ID). 다르면(검은 머리 대 흰 머리, 점 수 다름) 아래 성부를 오른쪽으로 비킴. (G4c, G4-C4: "merged"는 EngravedScore에 적는다 — head마다 객체가 남고 같은 상자에서 서로를 `merged`로 이름 댄다; plan ledger는 `drawn`. §34.5)
 - 화음 안 같은 음(서로 다른 임시표, 예: F와 F♯)은 비킴 + 임시표 열.
 
 ### 14.3 쉼표
@@ -777,7 +778,7 @@ tie(같은 음높이를 잇는 소리 의미)와 slur(구절·레가토 표시)�
 - 그래프 `display.pos`가 있으면 그 높이 (코퍼스 302).
 - `single`: 표준 위치 (온쉼표는 넷째 줄에 매달림, 2분쉼표는 셋째 줄 위, 나머지는 가운데).
 - `up`/`down` 성부의 쉼표: 기본 높이에서 시작해 같은 기둥의 다른 성부 음표머리·stem skyline을 0.5 sp 이상 비킬 때까지 바깥으로 (짝수 칸 단위로 이동해 줄/칸 모양 유지).
-- **두 성부가 같은 시간에 같은 길이로 쉬면**: 쉼표 하나를 가운데에 (ledger `merged`, 두 rest ID). 길이가 다르면 따로.
+- **두 성부가 같은 시간에 같은 길이로 쉬면**: 쉼표 하나를 가운데에 (ledger `merged`, 두 rest ID). 길이가 다르면 따로. (G4c: unison과 같이 EngravedScore의 `merged` — G4-C4, §34.6)
 - **마디 쉼표**(`measureRest`, 또는 한 성부가 마디 전체를 쉬는 rest): 온쉼표 모양으로 마디의 **가로 가운데**. 박자와 상관없다 (관례).
 - `hidden` 쉼표는 그리지 않지만 기둥은 차지한다 (ledger `suppressed`).
 
@@ -2409,6 +2410,240 @@ Chrome(1×)의 sonatina/020: plan 12.2, prepare 6.1, layout 7.9 ms. 4×: plan 65
 - G4-B11의 최종 규칙 (성부 사이 2도·unison의 비킴 방향 — 고정된 VexFlow 4.2.3은 stem 아래 음을 옮긴다. 근거를 확인해 정하고 §14.2나 G4-B11 중 하나를 고친다).
 
 §19.1의 hold-out 곡 이름은 Architect의 기준 측정이라 그대로 둔다 — 판각 시간이지 품질 값이 아니다. 새 성능 표는 hold-out을 쓰지 않는다 (`layout-perf.js`가 거절).
+
+---
+
+## 34. G4c 구현 기록 — beam, stem, tuplet, 성부, 쉼표, 꾸밈음, SVG 백엔드
+
+Implementer, 2026-09-25. 브랜치 `g4c-notation-core` (`D:/PPP-g4`), 시작 `1c92fc4` (= `origin/main`, G4b 병합과 마감 뒤). 입력은 Lead의 G4c 지시(roadmap §14 "G4c — implementer brief", §5.1 G4c 행, G4-L1)다. 병합하지 않았고 PR도 없다 (Lead가 리뷰와 PR을 정한다). 결정은 DECISIONS G4-C1–C12.
+
+**한 줄**: EngravedScore가 그래프의 리듬 기보를 그대로 그린다 — 그래프 beam(멤버·secondary break·hook)과 파생 beam, 최종 stem, tuplet 숫자·괄호, 성부 사이 비킴과 unison 공유, 성부 쉼표·병합 쉼표·마디 쉼표, 꾸밈음의 stem·flag·사선·beam — 그리고 `svg.js`가 그것을 결정론적 SVG 문자열로 바꾼다 (glyph는 `<symbol>`/`<use>`, 크기는 metric과 같음). G4b의 ratchet 둘은 0이 되어 영목표 gate다. **사용자에게 보이는 변화는 없다**: 앱 파일은 바이트 그대로이고 새 모듈을 불러오지 않는다 (legacy parity 16/16).
+
+### 34.1 범위 — §27 G4c와 G4-L1
+
+§27 G4c(§11, §12, §14 전부, cross-staff는 `deferred`)에 G4-L1이 옮긴 `svg.js`와 B9, 그리고 G4b의 backlog(§33.15 MINOR 4·5, §33.16.8 R4–R8·R11·O1·O2·O4, 마디 안 조 변경, ratchet 둘을 0으로)를 했다. Node만이다: 앱 통합(G4d-2), 곡선·기호·글자(G4d-1), 인쇄(G4e), flip(G4f)은 하지 않았다. 재생 코드와 `scoregraph/legacy-score.js`(MX-1이 같은 때 `D:/PPP-mx1`에서 고치는 곳)는 건드리지 않았다. G3 flag·schema·VexFlow 버전은 그대로다. R12(store timeout의 `estimate`·`decode`)는 §33.17대로 G4d-2 몫이다.
+
+### 34.2 모듈
+
+| 파일 | 한 일 |
+| --- | --- |
+| `engrave/notation.js` (새) | 음 둘레의 기하 도우미 — 순수 함수, 상태 없음: `autoDir`(가운데 줄에서 가장 먼 머리의 반대, 거리가 같으면 다수, 그래도 같으면 아래), `beamLine`(beam 바깥 모서리의 기울기와 높이), `beamRuns`(primary·secondary·hook), `beamShapes`(beam 객체와 stem 끝), `beamClash`(음이 달고 있는 것을 비키는 만큼), `placeRests`(성부 쉼표를 한 칸씩 바깥으로), `placeTuplet`(숫자·괄호) |
+| `engrave/layout.js` | `prepare`: stem 방향(§34.4), 최종 stem·flag(더는 `provisional` 없음), beam 멤버 stem은 `beam`을 달고 길이는 layout이 정함, 성부 비킴과 unison 공유(§34.5), 쉼표 기본 높이·병합·마디 쉼표(§34.6), 꾸밈음 stem·flag·사선·점·beam(§34.7), cross-staff 화음의 stem ID(R5), 마디 안 조 변경 기둥(§34.9). `layout`: system마다 x가 정해진 뒤 `notateSystem` — beam, 성부 쉼표 옮기기, tuplet — 그 뒤 작은 보표 축소와 세로 쌓기. 새 객체 필드: stem `dir`·`beam`, beam `events`·`level`·`hook`·`line`·`t`, tuplet `side`·`hooks`·`gap`·`hookLen`, 공유 `merged`, 마디 쉼표 `center` |
+| `engrave/svg.js` (새) | `svg(engraved, plan, opts)` → SVG 문자열 (§34.8) |
+| `engrave/outlines.js` (새, 생성) | 고정 Bravura의 윤곽 66개(metric 표의 glyph 전부), 글꼴 단위 정수 path. `tests/engrave/tools/make-outlines.js`가 만들고 `--check`가 CI에 있다 |
+| `engrave/plan-tuplets.js` | 한 음 tuplet의 괄호 기본값을 거짓으로 (§12.3, G4-C5) |
+| `engrave/canon.js` | 유한하지 않은 수(NaN, ±Infinity)는 `null`이 아니라 예외, 위치를 말함 (O1) |
+| `engrave/skyline.js` | 서로를 `merged`로 이름 댄 두 객체(공유 unison의 머리, 공유 임시표)는 H1·H2 충돌이 아니다 |
+| `engrave/index.js` | Node에서 `svg` 내보냄, `version` `0.3.0-g4c`. 브라우저에서는 G4b처럼 페이지가 불러온 경우에만 (앱은 안 불러옴) |
+
+브라우저 로드 순서(불러오는 페이지에서): `metrics, space, breaks, skyline, canon, notation, layout, practice, outlines, svg`, 그 뒤 `index.js`. A29: `notation.js`·`outlines.js`는 PURE 층(모든 규칙), `svg.js`는 §20대로 BACKEND 예외이지만 **예외가 필요 없다** — 다른 이름으로 검사해도 발견 0 (테스트가 확인).
+
+### 34.3 Beam (§11, G4-C2)
+
+- **원천**: plan의 beam 그대로 — 그래프 beam은 멤버 그대로, 파생 beam은 그래프 beam이 없는 part에서만 `pro-beam.groups()` (G4-D3/G4-I1, plan 단계는 G4a). 꾸밈음만으로 된 beam은 그 꾸밈음 묶음 안에서 `prepare`가 그린다(0.66).
+- **stem 방향**: 멤버 중 그래프 `display.stem`이 있으면 첫 것(서로 다르면 진단 `BEAM_STEM_MIXED` — 코퍼스 4), 아니면 성부 역할, 아니면 멤버 전체 머리에 `autoDir`. 꾸밈음 beam은 명시·역할 없으면 위.
+- **기울기**: 첫·끝 stem 쪽 머리의 높이 차의 절반, 최대 1 sp(꾸밈음은 × 0.66)를 가로 거리로 나누고 0.25로 자른다 — 2도 ¼ sp, 3도 ½ sp, 5도 이상 1 sp (Gould의 표와 같은 모양). 첫·끝이 같은 높이거나, 가운데 음이 양끝보다 beam 쪽으로 나오면(오목) 수평.
+- **높이**: 모든 stem이 적어도 `max(3.5, 2.5 + 0.75·(beam 수 − 1))` sp — 가장 짧은 stem이 그 길이. 한 성부만 있는 staff-마디에서는 beam이 가운데 줄까지 온다(덧줄 음). **두 성부 이상이면 가운데 줄 규칙을 쓰지 않는다** (beam 없는 stem도 같음) — 다른 성부로 뻗지 않게 (G4-C2; for-all-the-saints 23마디가 이 경우). 음이 달고 있는 임시표·점·머리·덧줄과 0.25 sp 떨어질 때까지 beam을 바깥으로 옮긴다 (`beamClash`).
+- **secondary·hook**: 레벨 k(2 이상)는 flag 수가 k 이상인 이웃 멤버끼리, 그래프 `breaks[{after, level ≤ k}]`에서 끊김. 한 멤버만 남으면 hook: 첫 멤버는 오른쪽, 끝 멤버는 왼쪽, 점음표 뒤는 왼쪽, 앞 음과 같은 박이면 왼쪽, 아니면 오른쪽 (§11.2). 길이는 머리 폭(1.18 sp)과 이웃 stem까지의 0.6 중 작은 것. 박은 박자표에서: 복합박자는 점 4분 단위, 가산 박자는 묶음.
+- **나뉨**: system을 넘는 beam은 system마다 한 조각; 멤버가 두 staff에 걸친 beam(`deferred:cross-staff-beam`, 코퍼스 0)은 staff마다 조각; 조각에 stem이 하나뿐이면 그 음에 flag를 돌려준다.
+- **객체**: `kind: 'beam'`, `id = <beam>#L<level>.<첫 멤버의 beam 안 순번>` (hook이면 뒤에 `h`), `refs [beam]`, `events` (조각이 잇는 음), `line` (윗모서리 양끝), `t` (두께 0.5, 꾸밈음 0.33), `dir`, `hook`. stem은 beam 바깥 모서리에서 끝난다. beam 아래 음에는 flag가 없다.
+- **쉼표**: beam 안이나 밑의 쉼표(E03)는 §34.6의 규칙이 beam을 장애물로 보고 옮긴다.
+
+### 34.4 Stem과 성부 역할 (§14.1)
+
+stem 방향의 순서: 그래프 `display.stem` (plan `stemFrom: 'graph'`) → 성부 역할 (`'voice'`: 그래프 순서로 up/down) → beam의 방향 → `autoDir`. beam 없는 stem 길이는 G4b 그대로(3.5, flag 3개부터 +0.5, 한 성부면 덧줄 음은 가운데 줄까지). cross-staff 화음(`deferred:cross-staff-chord`)의 다른 staff 쪽 부분은 stem이 반대 방향이고 ID는 `<event>#stem:<staff>`, flag는 집 staff에만 (R5).
+
+### 34.5 음표머리 충돌 — G4-B11의 결정 (G4-C3, G4-C4)
+
+**G4-B11을 정했다: 성부 사이 2도·모양이 다른 unison에서 stem 아래(down) 성부가 오른쪽으로 간다 — §14.2가 옳고, G4b의 코드(stem 위 성부를 오른쪽)를 바꿨다.** 근거:
+
+1. 고정된 VexFlow 4.2.3의 `StaveNote.format` (vendored 파일 133000번째 문자 부근): 두 성부가 닿고 stem이 반대면 **아래 음(`noteL`)에 `setXShift(h + 2)`** — 보통의 순서(위 성부 = stem 위)에서 그것은 stem 아래 음이다. 머리 모양이 같고 점 수가 같으며 2도가 아니면 옮기지 않는다(공유).
+2. Gould, *Behind Bars* p. 53: "Offset the lower part to the right. Vertically align the upper part with a part on another stave" — MuseScore 포럼 글(musescore.org/en/node/24850)에 인용된 문장을 웹 검색으로 확인했다. 책 자체는 이 세션이 확인하지 못했다 (Fixer도 §33.16.5에서 G4b 코드 주석의 "stem이 바깥, Gould"를 확인하지 못했다). 인용과 VexFlow가 같은 쪽을 가리킨다.
+3. legacy 렌더러는 VexFlow formatter로 그리므로 사용자가 지금 보는 모양이 이쪽이다 (M-H2 비교가 같은 관례 위에서 이루어진다).
+
+규칙(`staffColumn`): 한 기둥·staff의 event들을 stem 위 성부 먼저, 그다음 ID 순으로 놓는다. 앞서 놓은 성부와 **충돌**하면 — 머리끼리 겹침(H1), stem이 다른 성부의 머리를 지남, flag가 다른 성부의 머리에 닿음 — 그 성부 전체(머리·stem·flag)의 오른쪽 끝에서 0.2 sp(VexFlow의 `h + 2` px) 더 오른쪽으로 옮긴다. beam에 든 stem은 충돌 검사에서 8 sp로 본다 (beam이 늘릴 수 있으므로). 그래서 성부가 교차하는 경우도 옮겨지고, G4b ratchet의 stem·flag 충돌 216이 0이 되었다. 세 번째 성부는 앞의 둘을 모두 지나 옮겨진다.
+
+**unison 공유 (§14.2)**: stem이 반대인 두 성부, 같은 적힌 음(같은 alter), 같은 머리 glyph, 같은 점 수, 공유할 머리가 둘 다 stem 쪽 제자리(2도로 밀린 머리가 아님), 임시표가 없거나 같음, 그리고 그 머리를 빼면 충돌이 없을 때 머리 하나를 공유한다. **그래프 head마다 객체가 하나씩 그대로 남는다** — 두 notehead 객체가 같은 상자에 있고 `merged`로 서로를 이름 댄다; 임시표가 둘이면 한 자리에 둘(역시 `merged`), 점은 위 성부의 칸에. plan의 ledger는 `drawn` 그대로다 (G4-C4: §14.2·§14.3의 "ledger `merged`"를 EngravedScore의 `merged`로 읽는다 — 두 그래프 객체가 다 그려지고, 연습 map이 어느 성부든 그 머리를 찾는다; plan은 glyph 모양과 기둥을 모른다). 코퍼스(E + 347): 공유 머리 1,778(889쌍).
+
+### 34.6 쉼표 (§14.3, R6, R8)
+
+- **기본 높이**: 그래프 `display.pos`가 있으면 그 자리, 아니면 온쉼표는 넷째 줄에 매달림, 2분쉼표는 가운데 줄 위, 나머지는 가운데. G4b의 "역할이면 ±2 sp"는 없앴다.
+- **성부 쉼표**: staff-마디에 성부가 둘 이상이면 (**쉬기만 하는 성부도 센다** — plan의 역할은 소리 나는 성부만 세므로, 쉼표의 up/down은 그래프 성부 순서로 따로 정함, G4-C7) 또는 쉼표가 beam 밑에 있으면, `layout`이 beam을 놓은 뒤 쉼표를 옮긴다: 다른 성부의 머리·stem·flag·beam·덧줄·임시표·점·쉼표, 그리고 어느 성부든 beam과 가로로 겹치는 것에서 0.5 sp 떨어질 때까지 한 staff space씩 (줄은 줄, 칸은 칸) — 위 성부는 위로, 아래 성부는 아래로, 역할이 없으면 만난 것의 반대로; 점도 같이. 12칸 안에 자리가 없으면 진단 `REST_UNPLACED` (코퍼스 0).
+- **병합**: 한 기둥·staff에 음이 없고 둘 이상의 성부가 같은 길이·모양·점으로 쉬면 한 자리 — 객체는 각각, 같은 상자, `merged` (코퍼스 242).
+- **마디 쉼표**: `measureRest`이거나, 그 성부의 마디 안 유일한 event가 마디 전체를 쉬는 쉼표면 온쉼표(마디가 온음표 둘 이상이면 겹온쉼표), 점 없음, 마디 가로 가운데 (A11, R6; 코퍼스 164). 세로는 위 규칙대로.
+- **R8**: `prepare`는 plan에 아무것도 쓰지 않는다 (쉼표 높이는 지역 map; 테스트가 plan JSON을 전후 비교).
+
+### 34.7 꾸밈음 (§14.5)과 cross-staff (§14.4)
+
+- 주 음 기둥의 왼쪽, 0.66 크기: 머리·임시표·덧줄(G4b) + **stem**(그래프·역할 방향, 없으면 위; 길이 3.5 × 0.66), **flag**(beam이 없을 때), **사선**(`slash`, 첫 stem을 끝 근처에서 가로지르는 선 — beam 묶음이면 첫 음에만), **beam**(그래프 beam — 0.66 두께·간격, 가운데 줄 규칙 없음), **점**(점 꾸밈음: 머리 뒤, flag가 닿으면 flag 뒤). 묶음 폭은 flag·사선까지 포함해 오른쪽에서 왼쪽으로 쌓는다. 코퍼스: 꾸밈음 stem 220, flag 106, 사선 102, beam 114.
+- 그래프 beam이 없는 part의 꾸밈음 묶음은 beam이 없다 (`pro-beam`은 꾸밈음을 묶지 않는다; §14.5의 "둘 이상이면 beam"은 그래프 beam으로 — 그런 꾸밈음이 코퍼스에 0, G4-C8).
+- 뒤꾸밈음은 `deferred:grace-after` 그대로 (그리지 않음).
+- cross-staff event는 그 staff에(지원), 두 staff에 걸친 화음은 staff마다 부분 화음(`deferred`), ID 중복 없음 (R5, `eg.layout.duplicate_ids` 0).
+
+### 34.8 SVG 백엔드 (`svg.js`, G4-L1, B9, R7; G4-C9)
+
+- **입력·출력**: `svg(engraved, plan, {px: 10, idPrefix: 'ppp-g-', hash: false})` → 문자열. 같은 입력은 같은 바이트 (Node = Chrome 808/808, §34.14). DOM을 읽지도 재지도 않는다.
+- **단위**: viewBox는 staff space로 된 페이지, `width`·`height`는 px(1 sp = 10 px). 좌표는 0.01까지. 잉크는 `currentColor` (테마는 G4d-2가 CSS `color`로).
+- **glyph**: 쓰는 glyph마다 `<defs>`에 `<symbol id="ppp-g-<이름>" overflow="visible"><path transform="scale(0.002777778 -0.002777778)" d="…"/></symbol>` 한 번, 객체마다 `<use href="#…" x y>`(크기가 1이 아니면 `transform="translate(…) scale(…)"`). **R7**: VexFlow의 윤곽은 bbox 단위의 1.44배 단위로 저장되어 있다 (bbox 1,000/em, 윤곽 1,440/em — 66 glyph에서 비율 1.438–1.442); 1 sp = 360 윤곽 단위로 그리면 metric 표의 상자와 0.025 sp 안에서 맞고, Chrome이 그린 `<use>`의 상자는 EngravedScore 상자와 0.01 sp 안이다 (`browser-parity.js`, E14). G4b의 `layout-view.js`는 자기 윤곽 그리기를 버리고 `svg.js`를 쓴다 (+ `--boxes` 겹쳐 보기).
+- **그 밖**: stem·덧줄·세로줄은 `<rect>`, beam은 평행사변형 `<path>`, 보표선은 마디·staff마다 path 하나, slash 머리는 기울어진 막대, brace는 채운 곡선, volta는 선 + `<text>`, tuplet 괄호는 숫자 자리를 끊은 선.
+- **DOM 계약 (§16.4)**: `g.ppp-stave[data-m][data-staff][data-begin][data-end][data-volta][data-time]` — 마디·staff마다, legacy의 값(`repeat`/`final`/`double`, `BEGIN`/`BEGIN_END`/`MID`/`END` + `:번호`는 윗 staff에만, 박자표를 그린 마디의 `b/bt`); system 머리는 첫 마디 것에, 끝 courtesy는 끝 마디 것에. `g.ppp-note.vf-stavenote[data-onset][data-ev]`(+`data-rest="1"`) — event와 staff마다, `data-onset`은 legacy 키(`plan.onsetKey`). 안에 `.vf-notehead`(쉼표도, VexFlow처럼), `.vf-stem`, `.vf-flag`, `.vf-accidental`, `.vf-dot`, `.vf-ledger`. 꾸밈음은 `g.ppp-grace[data-ev]`(시간을 먹지 않으므로 `ppp-note`가 아님). `path.vf-beam[data-beam]`, `g.ppp-tuplet[data-tuplet]`, `g.ppp-volta`, clef `.vf-clef`. 뿌리 `svg.ppp-engraved[data-plan]`(그래프 fingerprint와 plan 버전), `data-layout`(layout hash)은 요청할 때만 — sonatina/020에서 hash가 45–125 ms로 SVG 쓰기(9 ms)보다 비싸다.
+- **B9** (§19.1 legacy 전곡 SVG 대비, hold-out 아닌 다섯 곡): burgmuller25/021 155 KB / 828 = 0.19, czerny849/001 171 / 725 = 0.24, sonatina/013 443 / 2,182 = 0.20, sonatina/016 506 / 1,894 = 0.27, sonatina/020 606 / 2,154 = 0.28 — 모두 ≤ 0.5. `svg.test.js`가 CI에서 같은 비교를 한다 (바이트는 결정론적 대리 지표, §19.2).
+
+### 34.9 G4b backlog (§33.16.8) — 닫은 것
+
+| # | 지적 | 한 일 | 증거 |
+| --- | --- | --- | --- |
+| R4 | layout 수준 다중집합이 event·머리뿐, 적힌 음 → y 검사 없음 | `l2.js`: `eg.layout.attachment_diff` (임시표를 가진 head 집합 = plan의 `acc` head 집합; event의 점 수는 점 수의 배수, 마디 쉼표는 0), `eg.layout.signature_diff` (system 머리의 clef glyph, 조표 수·종류, 박자표; system 안 조·박자 변경과 제자리표 수, 마디 안·마디 경계 clef 변경), `eg.layout.pitch_y_err` (모든 머리의 가운데 y = 보표 윗선 + staff space × clef 아래 적힌 음의 자리, `l2.js`의 자기 `staffY`); `eg.layout.multiset_diff` 키에 꾸밈음 여부 | 코퍼스 0; 음성 대조(`notation.test.js`): 반 칸 옮긴 머리, 빠진 임시표, 점 붙은 마디 쉼표, clef 빠진 system 머리, 안 그린 박자 변경 |
+| R5 | cross-staff 화음의 `#stem`/`#flag` ID 중복 | 다른 staff 쪽은 `#stem:<staff>`, flag는 집에만; `eg.layout.duplicate_ids` | E26; 음성 대조 |
+| R6 | 점 붙은 마디 쉼표, 적힌 음가 모양 | 온(겹온)쉼표, 점 없음, 가운데 | E29, 합성 3/4 점2분쉼표; `eg.rest.measure_errors` |
+| R7 | `layout-view.js`가 윤곽을 1.44배로 | `svg.js`를 metric 척도로, `layout-view.js`는 `svg.js`를 씀 | §34.8; `svg.test.js`, `browser-parity.js` |
+| R8 | `prepare`가 plan에 `__restY` | 지역 map | `notation.test.js` (plan JSON 불변) |
+| R11 | ragged 마지막 system의 u가 작은 보표 u(0)의 중앙값일 수 있음 | 전체 크기 system의 u만 모음 | 휴대폰 M05(첫 system 축소, u 0) → 마지막 u 4 (고치기 전 0) |
+| O1 | canon이 NaN을 `null`로 | 예외 (`canonical: a number that is not finite at $.a[1].b = NaN`) | 테스트 |
+| O2 | engraver 캐시 키 반올림(0.01) ≠ 배치 폭 | `normalizeConfig`가 폭을 0.01로 — 키와 배치가 같은 config | 50.004 / 50.001 / 50 → 한 번 배치, 두 번 적중 |
+| O4 | `l2.js`의 겹침 규칙이 `skyline.js`와 같음 | `l2.js`의 목록을 §10.3에서 새로 적고 넓힘 (임시표 대 +flag·beam, 점 대 +덧줄·beam, 쉼표 대 +beam·점, 머리 위를 지나는 +beam); 겹침은 1/100 sp 정수로, beam은 상자가 아니라 기울어진 띠로; `skyline.js`·`notation.js`를 불러오지 않음 | `notation.test.js` O4 (소스 검사, 목록이 더 넓음) |
+| — | 마디 안 조 변경 `pending` (§33.15) | 시간 없는 기둥(clef 다음), 모든 staff에, 앞 조의 제자리표; 이후 마디의 system 머리·courtesy·조 변경 취소는 마디 안 변경까지 읽음 (`keyAt`·`keyAtEnd`) | `tempo-meter-key-changes.musicxml`; `signature_diff` 0 |
+| — | ratchet 둘 → 0 | `eg.rest.overlap` 189 → **0**, `eg.voice.stem_over_head` 216 → **0** (E + 코퍼스, 두 config); R suite 34 / 74 → 0; `bench.js`의 `RATCHET`을 없애고 영목표(ZERO)로 | `layout.test.js`, baseline r·e·x |
+
+### 34.10 Metric — layout 수준 L1·L2 (`tests/engrave/l2.js`; G4-C10)
+
+`l2(engraved, plan, {prepared, layout, graph})`. `graph`를 주면 beam·tuplet 검사가 plan이 넘긴 것이 아니라 **그래프가 말하는 것**을 읽는다 — plan이 그래프 beam을 버리거나 tuplet의 `show`를 무시해도 잡힌다 (M1, M5). `bench.js`·`layout.test.js`·mutation test가 그래프를 넘긴다. 목록(모두 영목표, 두 config 합; `eg.beam.slope_max`만 최댓값):
+
+| metric | 뜻 | §21 이름 |
+| --- | --- | --- |
+| `eg.beam.graph_missing` | 그래프 beam마다 level 1 beam 조각들의 `events`가 system·staff별로 그 beam의 stem 있는 멤버와 같음 | `eg.beam.graph_drawn_ratio`, `members_exact` (render) |
+| `eg.beam.derived_missing` | 그래프 beam 없는 part에서 `pro-beam.groups()`(그래프에서 직접, 병합 tuplet 묶음 반영)가 낸 묶음마다 같음 | A3 render |
+| `eg.beam.unplanned` | 그래프에도 파생 규칙에도 없는 beam, 또는 그 beam에 없는 음을 잇는 조각 | `eg.beam.orphan` (render) |
+| `eg.beam.level_errors` | 멤버 stem 위 beam 레벨 수 = flag 수(hook 포함), 그래프 break를 넘는 조각 없음 | §11.2 |
+| `eg.beam.flag_errors` | beam 아래 flag, beam 없는 flag 음표의 flag 없음 | §11.2 |
+| `eg.beam.slope_max`, `eg.beam.slope_violations` | 가장 가파른 기울기(4 sp 이상의 primary, 0.01로), 0.25를 반올림 둘 넘게 넘은 조각 | A21 |
+| `eg.beam.head_crossings` | beam 띠가 자기 음의 머리를 지남 | H7 |
+| `eg.stem.short` | stem 쪽 머리에서 끝까지 < 2.5 + 0.75(n − 1)(beam) 또는 3.5(beam 없음), 꾸밈음 × 0.66 | A21 |
+| `eg.voice.stem_policy_violations` | stem `dir`이 그래프 → 역할 → beam → 가운데 줄 규칙과 다르거나 기하가 방향과 다름 (`l2.js`의 자기 `autoDir`, 머리 자리는 반 칸으로 읽음) | A26 |
+| `eg.rest.overlap`, `eg.voice.stem_over_head` | G4b의 둘, 넓힌 목록과 beam 띠 (공유 unison·병합 쉼표 짝은 제외) | A26 |
+| `eg.tuplet.missing` | 그려질 tuplet(merged 묶음 포함)마다 숫자나 괄호 | `eg.tuplet.drawn_ratio` (render) |
+| `eg.tuplet.show_errors` | 숫자("3", "3:2", 없음)·괄호 유무·명시된 placement가 그래프 `show`(없으면 §12.1·§12.3 기본)와 다름 | `eg.tuplet.show_ok` (render) |
+| `eg.tuplet.suppressed_rendered` | `printed:false`·`show.number:'none'`+괄호 없음에 그린 것 | `eg.tuplet.suppressed_drawn` (render) |
+| `eg.tuplet.extent_err` | 괄호가 첫 멤버(쉼표 포함) 머리 왼쪽 ~ 끝 멤버 오른쪽(점 포함)을 덮지 않음 | `eg.tuplet.extent_err` |
+| `eg.tuplet.nesting_errors` | 안쪽 tuplet이 바깥 tuplet보다 음에서 멂 | §12.1 |
+| `eg.grace.misplaced`, `eg.grace.stem_errors` | 꾸밈음 머리가 `grace`·0.66이 아니거나 주 음 기둥 오른쪽·다른 기둥에; stem·flag(beam 아닐 때)·사선이 없음 | A7, M16 |
+| `eg.rest.measure_errors` | 마디 쉼표가 온(겹온)쉼표가 아니거나 점이 있거나 가운데가 아님 | A11 |
+| `eg.layout.attachment_diff`, `signature_diff`, `pitch_y_err`, `duplicate_ids` | §34.9 R4·R5 | A14 |
+
+plan 수준의 G4a metric(`eg.beam.graph_drawn_ratio` 등)은 `bench.js`에 그대로다; `eg.tuplet.show_ok`의 기대값에만 §12.3(한 음은 숫자만)을 넣었다. 모든 새 metric은 `notation.test.js`의 음성 대조(실제 layout을 망가뜨림)가 1 이상을 낸다.
+
+### 34.11 Mutation (`tests/engrave/layout-mutation.test.js`, §23)
+
+G4b의 틀(CRLF 사본, anchor 정확히 한 번, 출력이 바뀌어야 함, 이름 붙은 metric이 잡아야 함, 그 metric은 mutation 없이 0)에 파일 선택(`file`)과 그래프 전달을 더했다. probe: E02, E04, E12, E13, E14, E33, E37, E38, Czerny 849/005, Burgmüller 25/015, 그리고 끝이 쉼표인 괄호 셋잇단(합성, M24용). 실행 약 18 s (Linux 22 s), `npm run test:engrave` 안.
+
+| # | 심은 결함 (파일) | 잡은 이름 (probe × 두 config 합) |
+| --- | --- | --- |
+| M1 | 그래프 beam을 버리고 모든 part를 파생 (`plan-beams.js`) | `eg.beam.graph_missing` 712 |
+| M2 | 파생 beam을 그리지 않음 (`layout.js`) | `eg.beam.derived_missing` 8 (+ `flag_errors`) |
+| M3 | 두 성부의 stem을 뒤집음 (`layout.js`의 역할) | `eg.voice.stem_policy_violations` 6 |
+| M4 | tuplet 숫자·괄호를 그리지 않음 | `eg.tuplet.missing` 24 |
+| M5 | `show.number:'none'` 무시 (`plan-tuplets.js`) | `eg.tuplet.show_errors` 170, `eg.tuplet.suppressed_rendered` 170 |
+| M16 | 꾸밈음을 보통 음처럼 시간 기둥에 | `eg.grace.misplaced` 8, `eg.layout.multiset_diff` 10 |
+| M24 | tuplet 괄호가 끝의 쉼표를 빼고 끝남 | `eg.tuplet.extent_err` 2 |
+| G4b의 12 | M6, M7a, M7b, M9, M10, M11a, M11b, M17, M18a–c, M21 (anchor만 새 코드에 맞춤) | 전부 그대로 잡힘 (예: M6 `eg.overlap.acc` 174, M21 `head_staff_wrong` 454) |
+| N1, N2 | 주석; 독립 문장 둘(꾸밈음 beam 판정과 tie 시작) 순서 | 바이트 동일, metric 같음, A29 깨끗 |
+
+### 34.12 Acceptance
+
+| # | 기준 | 증거 | 판정 |
+| --- | --- | --- | --- |
+| A2 | 그래프 beam마다 멤버가 같은 beam 하나, break·hook 규칙, 그래프 beam 있는 part에 파생 0, 근거 없는 beam 0 | `eg.beam.graph_missing`·`level_errors`·`unplanned` 0 (E + 코퍼스 387 × 2, r·e·x), plan 수준 `derived_in_beamed_part` 0; E01–E03·E39 테스트 (E02 break와 점음표 뒤 왼쪽 hook); M1 | PASS |
+| A3 (render) | 파생 beam = `pro-beam.groups`, 그래프 beam 없는 곳에만; `pro-beam.js`·`meter-grid.js` 불변 | `eg.beam.derived_missing` 0 (그래프에서 다시 계산); E38; 두 파일의 LF sha256이 G3의 것 (테스트); M2 | PASS |
+| A4 | printed tuplet마다 §12.1대로, `printed:false`에 0, 중첩 순서, 1-음은 G4-U2 B | `eg.tuplet.*` 0; E04(괄호, 숫자만, 없음 둘), E05(안쪽이 가까움), E06(쉼표 포함 괄호), E07(병합 둘은 숫자 하나씩, 격자 밖 셋은 숫자만), 명시 `3:2`·아래; M4, M5, M24 | PASS |
+| A7 (꾸밈음) | 꾸밈음이 그래프에 있을 때 그려짐 | `eg.grace.*` 0; E14 (사선, beam 쌍, 임시표 있는 주 음의 왼쪽, 뒤꾸밈음 deferred), 점 꾸밈음; M16 | PASS (꾸밈음 몫) |
+| A11 (마디 쉼표) | 마디 쉼표 가운데 | `eg.rest.measure_errors` 0; E29 (3/4, 6/8), R6 | PASS (마디 쉼표 몫; 마디 안 조 변경도 놓음) |
+| A21 | 기울기 ≤ 0.25, 짧은 stem 0, beam이 자기 머리를 지나지 않음 | `slope_max` 0.25 (r·e·x·코퍼스), `slope_violations`·`stem.short`·`head_crossings` 0; 합성 테스트 (8도 도약, 오목·볼록, 2도 ¼ sp, 32분음표 4 sp, 덧줄 음) | PASS |
+| A26 | 다성부 stem 규칙 위반 0, 쉼표가 다른 성부와 겹침 0 | `stem_policy_violations`·`rest.overlap`·`stem_over_head` 0 (R 찬송가 포함 — 이전 34/74); E12–E13; M3 | PASS |
+| B9 | 전곡 SVG ≤ 0.5 × 기준선 | 0.19–0.28 (§34.8) | PASS |
+| A14 | 다중집합 = plan, 기둥 순증가 | `multiset_diff`(꾸밈음 포함) 0, `column.order_violations` 0 | PASS |
+| A17–A19 | 잘림·머리·임시표·점 겹침 0 | 0 (넓힌 목록으로) | PASS |
+| A23 | rod·단조성 위반 0 | 0 | PASS |
+| A24 | 넘침 0(원본 결함 1곡 허용), 피할 수 있었던 1마디 0 | 그대로 | PASS |
+| A27 | 3회·역순·Windows = Linux | layout hash 118 × 2 다시 bless (§34.15) — Docker `node:24-bookworm`, LF clone에서 전부 같음 | PASS |
+| A28 | Node = Chrome | 808/808 layout hash, **SVG 808/808 바이트 동일**, 네트워크 0 | PASS |
+| A29 | DOM 측정 0, VexFlow 고정 | A29 검사 (`svg.js`도 모든 규칙에 깨끗), vendor 테스트 | PASS |
+| B1–B7 | §19.2 | §34.13 | PASS (B5는 G4f 판정) |
+
+### 34.13 성능 (이 PC, Node 24.17, `layout-perf.js` 5회 중앙값, ms)
+
+| 곡 | event | 마디 | plan | prepare | layout 데스크톱 | 휴대폰 | SVG | 연습 map | system | 객체 | SVG KB |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| beyer/028 | 95 | 16 | 1.06 | 0.70 | 0.79 | 0.71 | 0.86 | 0.20 | 4 | 252 | 34.7 |
+| hymns/take-my-life | 136 | 16 | 1.49 | 0.81 | 1.06 | 1.05 | 0.78 | 0.33 | 4 | 390 | 51.6 |
+| burgmuller25/021 | 468 | 33 | 5.99 | 3.96 | 4.48 | 4.19 | 2.36 | 0.79 | 9 | 1,271 | 154.8 |
+| czerny849/001 | 548 | 32 | 7.02 | 3.77 | 5.27 | 4.37 | 2.24 | 0.76 | 9 | 1,486 | 171.0 |
+| sonatina/013 | 1,354 | 86 | 19.25 | 12.06 | 16.05 | 13.99 | 6.79 | 2.19 | 24 | 3,924 | 443.0 |
+| sonatina/016 | 1,494 | 92 | 19.82 | 12.91 | 15.45 | 15.31 | 8.30 | 2.80 | 25 | 4,601 | 506.0 |
+| sonatina/020 | 1,563 | 158 | 19.18 | 13.20 | 18.56 | 19.20 | 8.89 | 2.37 | 40 | 5,400 | 605.6 |
+
+코퍼스 347: plan 중앙 1.36, 최대 20.73; prepare + layout 중앙 2.04, p95 14.66, 최대 30.82. 예산: B1 20.7 ≤ 60; B2 4마디 창 **layout + SVG** p95 1.11 ≤ 25; B3 0.01 ≤ 8; B4 전곡 prepare + layout + SVG 최대 40.7 ≤ 100; B6 p95 < 0.01, 만진 수 = 바뀐 수; B7 0; B9 0.28 ≤ 0.5 — 모두 PASS. B5(sonatina/020 전곡 40.7 ms, 가장 긴 호출 18.6 ms)는 G4b와 같이 G4f의 시간 나누기에서 판정한다. G4b 대비 sonatina/020 prepare + layout 23.7 → 31.8 ms (성부 충돌 검사, beam, tuplet). Chrome(1×) sonatina/020: plan 11.9, prepare 8.6, layout 14.0; 4× CPU: 60.8 / 45.6 / 66.0 — 한 호출이 50 ms를 넘는 것은 G4b 때와 같이 G4f의 idle·worker 나누기 몫이다 (§33.15 MINOR 3).
+
+### 34.14 회귀 (G4c 코드 커밋 `ae96f19`)
+
+| 검사 | Windows (`D:/PPP-g4`, Node v24.17.0) | Linux (Docker `node:24-bookworm`, Node v24.21.0; `ae96f19`의 `core.autocrlf=false` clone, LF 파일) |
+| --- | --- | --- |
+| `npm run test:engrave` | **149/149** (132 + `notation.test.js` 12 + `svg.test.js` 5) | **149/149** (mutation 보고가 글자까지 같음) |
+| `npm run test:scoregraph` | **205/205** | **205/205** |
+| `layout-hashes.js` | 118 × 2 전부 커밋된 hash | 같음 |
+| `make-metrics.js --check`, `make-outlines.js --check` | PASS | PASS |
+| `bench.js check --suite r / e / x` | PASS / PASS / PASS | PASS / PASS / PASS |
+| `make-e-fixtures.js --check`, `make-corpus.js --check` | PASS | — |
+| G0 gate 부분 (`run.py sg-roundtrip`, `golden`, `run`+`check --suite smoke`, `core`; `ae96f19`에서) | 모두 PASS — sg-roundtrip 369 (367 + 허용 2), golden 17/17, smoke 44·core 553 오류 0, verdict PASS. G4c는 G0 경로(`audio-score.js`, `scoregraph/`)를 건드리지 않는다 | — |
+| `browser-parity.js` (A28) | Chrome 153: layout 808/808, SVG 808/808, E14의 `<use>` 18개 상자 오차 ≤ 0.01 sp, 네트워크 0 | — |
+| legacy parity (`legacy-parity.js`, `1c92fc4`의 `git archive`를 8796에, 이 트리를 8795에, `NODE_ENV=production HOST=127.0.0.1`) | **16/16 바이트 동일** — 측정 뒤 두 서버를 껐다; 8777·8788은 건드리지 않음 | — |
+| `layout-perf.js` | 판정하는 예산 전부 PASS (§34.13) | — |
+| 앱 파일 | `Piano Coach App.dc.html` 바이트 그대로 (`git diff 1c92fc4 -- 'Piano Coach App.dc.html'` 비어 있음) | — |
+
+폭·창을 바꾼 견고성 실행(E + 코퍼스 + 전사 + G3a + projected, 434곡 × 폭 25·60·140·휴대폰 32·창 [2, 5]·휴대폰 창 [0, 1] = 2,604 layout): 예외 0, G4c의 영목표 metric 전부 0 (넘침·작은 보표·1마디 system은 G4b 줄바꿈이 그 폭에서 내는 것, gate 폭 100·40에서는 0).
+
+### 34.15 커밋된 layout hash 다시 bless — 분류 (§21.3)
+
+`tests/engrave/tools/layout-diff.js --base=<1c92fc4의 engrave/·scoregraph/>` (새 도구, 커밋): 118곡 × 두 config = 236쌍.
+
+| 분류 | 수 | 바뀐 객체 종류 |
+| --- | --- | --- |
+| LEDGER_CHANGE (그린 것이 달라짐) | 146 | beam 134, tuplet 숫자 22·괄호 6, 꾸밈음 flag 12·사선 12·stem 14, 마디 쉼표 glyph 8과 그 점 4, 세로줄 1 (sonatina/025 휴대폰: 꾸밈음의 stem·flag로 넓어진 마디 때문에 줄바꿈이 바뀌어, 14마디 끝 세로줄을 같은 system이 된 15마디의 여는 반복이 대신함) |
+| GEOMETRY_ONLY (좌표만) | 20 | 성부 비킴(G4-B11)·쉼표 자리·stem 길이; 줄바꿈이 바뀐 system 13 |
+| SERIALIZATION_ONLY (좌표 같고 필드만) | 68 | stem의 `provisional` 없어짐·`dir` 생김 66, 쉼표의 `center`·`merged` |
+| SAME | 2 | — |
+
+LEDGER_CHANGE는 모두 이 단계가 그리기로 한 것(beam, tuplet, 꾸밈음 stem·flag·사선, R6의 마디 쉼표)이다. 이 도구는 system 장식(`d:staff`·`d:brace`·`d:sysbar`·system 머리의 clef·key·time)을 기하로 센다 — 줄바꿈이 옮겨진 것은 그린 것의 변화가 아니다. L1은 나빠지지 않았고(r·e·x의 plan 수준 값 전부 같음) L2는 전부 영목표 0이다. **bless 이유**: G4c가 beam·tuplet·꾸밈음 stem을 새로 그리고, stem을 최종으로 하고, G4-B11을 §14.2쪽으로 정했기 때문.
+
+### 34.16 설계 문서와 달라진 곳
+
+1. **§14.2 성부 사이 2도·unison**: 규칙은 §14.2 그대로(아래 성부를 오른쪽) — 옮기는 양은 머리 폭 + 0.2 sp (VexFlow `h + 2`). G4-B11은 G4-C3이 대체한다.
+2. **§14.2 unison, §14.3 쉼표 병합의 "ledger `merged`"**: EngravedScore의 `merged`로 기록한다 (두 그래프 객체가 다 남고 같은 자리); plan ledger는 `drawn` (G4-C4).
+3. **§12.3 한 음 tuplet**: plan의 괄호 기본값이 거짓 — 숫자만 (G4-C5). 명시된 `show.bracket`은 그대로 이긴다.
+4. **§12.2 높이**: tuplet은 언제나 보표 밖(보표선과 겹치지 않게), 괄호는 수평 (§12.2의 "최대 기울기 0.25로 따라감"은 쓰지 않음) — G4-C6.
+5. **§11.2 가운데 줄 규칙**: 한 성부 staff-마디에서만 (G4-C2).
+6. **§21.1 render 수준 이름**: `graph_drawn_ratio`·`drawn_ratio`·`show_ok`·`suppressed_drawn`의 layout 판을 영목표 개수(`eg.beam.graph_missing`, `eg.tuplet.missing`·`show_errors`·`suppressed_rendered`)로 두었다 — 두 config 합이 비율이 아니라 개수여야 해서 (G4-C10). plan 수준 비율은 그대로.
+
+### 34.17 남은 것
+
+- **BLOCKER 0, MAJOR 0** (implementer 자체 판정).
+- MINOR·한계:
+  1. cross-staff beam(`deferred`, 코퍼스 0)은 staff마다 부분 beam; system을 넘는 beam은 system마다 따로 — 끊긴 끝 표시가 없다.
+  2. tuplet 숫자는 늘 보표 밖이고 괄호는 수평이다 — beam이 보표 안쪽에 있으면 숫자가 beam에서 멀다. M-H1에서 볼 것.
+  3. 그래프가 한 beam 안에서 서로 다른 stem 방향을 말하면(kneed beam, 코퍼스 4) 첫 명시 방향이 전체를 정한다 (`BEAM_STEM_MIXED`).
+  4. 교차 성부: VexFlow는 아래 음을(stem이 위여도) 옮기고, G4c는 stem 아래 성부를 옮긴다 — 보통 순서에서는 같다.
+  5. 보표 밖으로 옮겨진 온·2분쉼표에 덧줄이 없다.
+  6. 그래프 beam이 없는 part의 꾸밈음 묶음은 flag로 그려진다 (코퍼스 0).
+  7. `svg.js`의 `<use class="vf-notehead">` 안에는 `path`가 없다: `pdf-layer.test.js`의 `.vf-notehead path` 같은 legacy 선택자는 G4d-2(A30)에서 이유와 함께 바꿔야 한다.
+  8. EngravedScore 전체 hash가 비싸다 (sonatina/020 45–125 ms) — `svg.js`는 요청할 때만 쓴다; 페이지 캐시 키는 G4d-2가 plan key + config로.
+  9. 폭 25·32 sp 같은 gate 밖 폭에서 G4b 줄바꿈의 피할 수 있었던 1마디 system 11 (§34.14) — G4c 원인 아님.
+  10. §33.15의 그 밖(`in-the-bleak-midwinter` 넘침, 4× CPU의 plan 50 ms 넘음), §32.14의 MINOR·OPTIONAL, G4-F14(`bracket="yes"`)는 그대로.
+- 다음: G4d-1(곡선·기호·글자·세로 배치), G4d-2(앱의 개발용 스위치, `svg.js`를 새 `sync`와 함께, R12). 그 뒤 M-H1.
+
+### 34.18 커밋
+
+`ae96f19` (코드·테스트·baseline·layout hash·CI의 `make-outlines --check`·`vendor/README.md` 한 줄), 이어서 이 기록 (G04 §14.2·§14.3 주석, §34, 목차; DECISIONS G4-C1–C12와 G4-B11 대체 표시; CURRENT_STATE). `origin/g4c-notation-core`에 push. 병합 안 함, PR 없음.
+
+**상태: G4c READY_FOR_REVIEW** — BLOCKER 0, MAJOR 0 (자체 판정).
 
 ---
 
