@@ -10,7 +10,8 @@ ScoreGraph에 **이미 있는** 기보 의미를 PPP의 실제 화면과 인쇄�
 - 독립 리뷰 NEEDS_FIX(MAJOR 3) → Fixer §33.16 → Lead 재확인 → 병합 (§33.17).
 - geometry-only 범위는 Lead 결정 G4-L1이다 (§27 G4b의 주): `svg.js`는 G4c, 페이지 통합은 G4d-2.
 - **G4c CLOSED — PR #15로 병합 (`e3c8c5a`)**: 독립 리뷰 NEEDS_FIX(MAJOR 2) → Fixer §34.18 → Lead 재확인 → 병합 (§34.19). MX-1도 병합됐다 (PR #13).
-- **다음: G4d-1a** (곡선과 음에 붙는 기호, Lead 결정 G4-L3) (`docs/PPP_MASTER_ROADMAP.md`). 설계: Architect 2026-09-24 |
+- **G4d-1a CLOSED — PR #17로 병합 (`b4fe019`)**: 독립 리뷰 NEEDS_FIX(MAJOR 3) → Lead 결정 G4-L4·G4-L5 → Fixer §35.18 → Lead 재확인 → 병합 (§35.19).
+- **다음: G4d-1b** (system에 붙는 기호, 세로 배치, courtesy) (`docs/PPP_MASTER_ROADMAP.md`). 설계: Architect 2026-09-24 |
 | 기준 커밋 | `origin/main` = `55d1bd5` (G3 PARTIAL/DEFERRED closeout, PR #8) |
 | 브랜치 / worktree | `g4-professional-engraving` / `D:/PPP-g4` |
 | 시작 검증 | `npm run test:scoregraph` → **205/205 pass** (이 세션이 `55d1bd5`에서 직접 실행) |
@@ -3200,6 +3201,66 @@ L1은 나빠지지 않았고(baseline은 키만 더함) L2 영목표는 전부 0
 **커밋**: `aa813b7` (코드·테스트·fixture·baseline·layout hash·CI), `e11337b` (`layout-hashes.js`가 base의 `engrave/`를 파일마다 꺼냄), 이 기록 (G04 §35.18과 §10.2·§10.5·§13.1·§35.10·§35.14의 고친 글, DECISIONS G4-D1a-14–23, CURRENT_STATE). `origin/g4d1a-curves-marks`에 push, PR 없음.
 
 **상태: G4d-1a FIX: READY_FOR_RECHECK.**
+
+
+### 35.19 리뷰 판정·재확인·병합 (Lead, 2026-09-26)
+
+**독립 리뷰** (`7c83bc9`, read-only. 리뷰어 자신의 clone, Windows와 Linux Docker)
+
+- 판정: **NEEDS_FIX — BLOCKER 0, MAJOR 3, MINOR 5.**
+- 확인된 것:
+  - gate를 느슨하게 하지 않았다. 음성 대조로 tie 끝, slur 관통, 음표머리 위 운지가 각각 잡혔다.
+  - 다시 bless한 136/8/92를 독립적으로 재현했다.
+  - version guard가 동작한다.
+  - Windows = Linux = Chrome.
+  - 배치 비용이 음 수에 선형이다.
+- MAJOR:
+  - R1: 화음 tie 방향. §13.1의 규칙이 가운데 줄 기준이라 tie가 모두 한쪽으로 휜다 (42개 중 35개). 옆으로 비킨 2도에서는 tie 끝이 어느 음 것인지 모호하다 (7개).
+  - R2: §10.5 `FAR_PLACEMENT`가 없다. 운지가 phrase slur 위에 올라가 음에서 최대 14 sp 떨어진다.
+  - R3: 여러 규칙이 layout hash로만 지켜지거나 아무것도 지키지 않는다.
+
+**Lead 결정** (§13.1·§10.2·§10.5를 고침)
+
+- **G4-L4**: 한 성부 화음의 tie 방향은 그 화음 안의 자리로 정한다. 바깥 tie는 화음 밖으로 휜다. tie 끝은 어떤 다른 머리보다 자기 머리에 가깝다.
+- **G4-L5**: 운지를 slur보다 먼저 놓는다 (slur 안쪽, 음 옆). `FAR_PLACEMENT`와 zero-target 운지 거리 metric을 둔다.
+
+**Fixer** (§35.18)
+
+- R1–R3 FIXED, R4(PR gate의 글자 metric 검사를 네트워크 없이), R8(version guard가 닫힌 쪽으로 실패, `PLAN_VERSION`도 봄).
+- `engr/3`.
+- 수치 (`7c83bc9` → 수정 후):
+  - `eg.tie.dir_err` 116 → 0;
+  - `eg.fingering.far` 8,065 → 0;
+  - staff에서 8 sp 넘는 운지 198 → 16 (모두 진단됨).
+- 이름으로 잡히는 live mutation 63개.
+
+**Lead 재확인** (고친 항목만, `e5c616f`의 새 clone)
+
+- `test:engrave` 163/163, `test:scoregraph` 214/214, layout hash, bench r·e·x, make-metrics·outlines·e-fixtures·corpus·text-metrics `--check` 모두 PASS. text-metrics는 네트워크 없이 검사했다.
+- 음성 대조:
+  - `7c83bc9`의 `engrave/` 전체를 넣으면 bench r·e REGRESSION (`tie.dir_err` 55, `fingering.far` 2,559, `tie.endpoint_err` 4, `slur.endpoint_err` 13, `tie.crossings` 1).
+- Lead가 심은 mutation:
+  - 엔진이 `FAR_PLACEMENT`를 내지 않음 → `far_undiagnosed` 16;
+  - 화음 절반 규칙 제거 → `tie.dir_err` 60;
+  - 자기 머리에 가장 가까운 끝 찾기 끔 → `tie.endpoint_err` 4, `curve.endpoint_err_max` 1.34;
+  - 운지 간격 +1 sp → `fingering.far` 4,896;
+  - 같은 version에서 layout을 바꾸고 base가 낡은 채 `layout-hashes --write` → REFUSED, 아무것도 쓰지 않음.
+- 그림:
+  - czerny849/023: 운지가 음 옆, slur가 그 바깥;
+  - burgmuller25/015·sonatina/020: 화음 tie가 위아래로 갈림 (옆으로 비킨 2도 포함);
+  - czerny849/013: 한 장 전체가 깨끗하다.
+
+**병합**: PR #17, CI gate 초록, squash `b4fe019`. **G4d-1a CLOSED — 다시 열지 않는다.**
+
+**넘기는 것**
+
+- G4d-1b: R5 (괄호 임시표가 flat보다 짧다), B9 다시 재기.
+- **M-H1 관찰 목록** (G4d-2):
+  - 위 stem beam 묶음 첫 음에서 stem 옆에 붙는 운지;
+  - czerny849/013의 7 sp 높은 slur 끝 하나;
+  - system 넘김 뒤 짧은 반쪽 slur;
+  - 갈고리처럼 보이는 두 음 slur;
+  - 곡별 slur 관통 비율 (R6·R7).
 
 ---
 

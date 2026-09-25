@@ -1,6 +1,6 @@
 # PPP — current state
 
-Updated 2026-09-25 (G4c merged as PR #15; MX-1 merged as PR #13; G4b merged as PR #12; the production database moved to Neon Free). G0 (Quality Foundation), G1 (ScoreGraph) and G2 (Score Import) are all merged
+Updated 2026-09-26 (G4d-1a merged as PR #17; G4c merged as PR #15; MX-1 merged as PR #13; G4b merged as PR #12; the production database moved to Neon Free). G0 (Quality Foundation), G1 (ScoreGraph) and G2 (Score Import) are all merged
 and closed. **G3 is merged as PARTIAL / DEFERRED** (PR #7, `c5474c2`; G03 §31): implemented, reviewed and fixed,
 but its blind human review (A36) failed (§30), so every part of it stays **off** — G3a, G3b, the automatic 8va
 and the pedal join — and nothing a user sees changed. **The active goal is G4 Professional Engraving**
@@ -14,8 +14,9 @@ alike, and changes nothing a user sees — the app does not load it. **MX-1 (pla
 merged as PR #13 (`e37d37a`)**: an 8va sounds where the file says and is drawn under its sign in every view, a pedal `change`
 lifts the damper. **Production still runs `72549cb`**; MX-1 reaches players on the next manual deploy. **G4c (notation core) is CLOSED —
 merged as PR #15 (`e3c8c5a`)**: beams, stems, tuplets, voices, rests, grace notes and `svg.js`, Node only, nothing a user
-sees. **G4d-1a** (curves and marks attached to notes; G4-L3) is implemented on branch `g4d1a-curves-marks`; its independent
-review (NEEDS_FIX, MAJOR 3) and Fixer are done and it waits for the Lead's re-check (G04 §35, §35.18). Read this first in a new session, then
+sees. **G4d-1a (curves and marks attached to notes; G4-L3) is CLOSED — merged as PR #17 (`b4fe019`)**, after its review (NEEDS_FIX,
+MAJOR 3), the Lead's spec amendments G4-L4/G4-L5, its Fixer and the Lead's re-check (G04 §35–§35.19). **Next: G4d-1b** (marks
+attached to systems, vertical spacing, courtesy signs). Read this first in a new session, then
 `docs/PPP_MASTER_ROADMAP.md` (the order of the remaining Goals, their gates, the current and next task), then the
 current goal's spec in `docs/GOALS/`.
 
@@ -25,7 +26,7 @@ current goal's spec in `docs/GOALS/`.
 | --- | --- |
 | Goals | Numbered specs in `docs/GOALS/`. **G0 is merged and closed** — implemented (§16), reviewed and fixed through six passes (§17–§22.9), then merged as PR #1 (`aff7080`). `G00_QUALITY_FOUNDATION.md` §22.9 has the last result and what is still open (nothing). |
 | G3 | **PARTIAL / DEFERRED — not COMPLETE** (G03 §31, DECISIONS G3-U9). **Merged to `main` switched off** as PR #7 (`c5474c2`, a squash of `g3-score-intelligence` `966a053`; the branch and `D:/PPP-g3` are kept). `professionalize()` (a graph → graph pass pipeline behind a critic) runs in `toMusicXml` only when `opts.professional` is `'shadow'` or `'on'`; **the default is `'off'` and nothing passes it**, so G3 changes nothing a user sees — G3 off is byte-identical to the pre-G3 `main`, `cc509e2` (§31.2). G3a's other acceptance criteria are PASS or PARTIAL by design (§29.9), but it **failed the blind human review A36** (§30); G3b waits on M11; 8va on issue 3; the pedal join on the app's `change` playback. Reopening: §31.5. |
-| G4 | **G4d-1a FIX: READY_FOR_RECHECK** on `g4d1a-curves-marks` (G04 §35, review and Fixer §35.18; DECISIONS G4-D1a-1–23): ties (halves at a system break, inferred ties drawn; a chord's ties by each head's place in its chord and each end by its own head, G4-L4), slurs on the graph's pairs, glissandi, articulations, ornaments, fermatas, tremolos, fingering by its notes inside the slurs (G4-L5), arpeggios, notehead shapes and enclosed accidentals, all through one placement function with §10.5 `FAR_PLACEMENT`; the §18.3 text-metrics table (`engrave/metrics-text.js`; `make-text-metrics.js --check` in the PR gate, the rebuild from the pinned fonts nightly); ledger lines for rests off the staff; tuplet numbers by their beams; `plan/2`, `engr/3` and the rule that every output change moves the version (`layout-hashes.js --write` fails closed and checks the plan too). Node only, nothing a user sees changed. **G4c CLOSED — merged as PR #15 (`e3c8c5a`)** (G04 §34, review and Fixer §34.18, re-check and merge §34.19; DECISIONS G4-C1–C16, G4-L2, G4-L3). Graph beams drawn exactly and derived beams only where the part has none; final stems; tuplets with nesting and the one-note display; voices with shared unisons and the down-stem voice moved right at a second (G4-B11); rests clear of the other voice and centred whole-bar rests; grace notes at 0.66; the mid-measure key change; `svg.js` (0.19–0.28 of the legacy SVG size, B9). Rest and stem/flag collisions are zero-target gates (189 → 0, 216 → 0). Node only: the app does not load it, and nothing a user sees changed. **Next: G4d-1a** in `D:/PPP-g4` (curves and marks attached to notes), then G4d-1b, G4d-2 + M-H1. |
+| G4 | **G4d-1a CLOSED — merged as PR #17 (`b4fe019`)** (G04 §35, review and Fixer §35.18, re-check and merge §35.19; DECISIONS G4-D1a-1–23, G4-L4, G4-L5). Ties (halves at a system break, chord ties split relative to the chord, each end nearest its own head), slurs (graph pairs, clearing notes, marks and fingering; one part per system), glissandi, articulations, ornaments, fermatas, tremolo, fingering by its notes inside slurs, arpeggios, noteheads, cautionary accidentals, percussion heads; one `place()` over skylines with `FAR_PLACEMENT`; text widths from the pinned fonts' table (`engrave/metrics-text.js`); `plan/2`, `engr/3`, and a version guard. Earlier: G4a PR #9, G4b PR #12, G4c PR #15. Node only: nothing a user sees changed. **Next: G4d-1b** in `D:/PPP-g4`, then G4d-2 + M-H1. |
 | G1 | **Merged and closed.** Implemented (§24), independently reviewed (§25: READY_TO_PR, BLOCKER 0, MAJOR 0), merged as PR #2 (`aa77d2e`), then the follow-up PR #3 (`00081cc`, §26) closed findings F2 and F3. F1 (tuplet bracket grouping) is left for G3 on purpose. `toMusicXml` writes its MusicXML from a ScoreGraph (`scoregraph/`); `opts.legacyWriter` is the way back for one release. |
 | G2 | **Merged and closed.** Implemented (§24), independently reviewed (§25), the one MAJOR it found closed by §26 (D7), merged as PR #4 (`cc0da79`) with BLOCKER 0 and MAJOR 0. Schema is version 2. **The app's import boundary is on the graph** — a file a person opens becomes a ScoreGraph and the Score is a projection of it; `PPP.legacyImport = true` is the way back for one release. **`.mid` opens**: its notes, times and controllers exactly as the file states them, its notation worked out by audio-score's existing quantizer and marked inferred in three places (D3). The MusicXML importer no longer refuses a whole file for an `<unpitched>` note, a missing time signature or a quarter tone. **A transposing part is printed where it is written and sounds where it sounds** (D7, §26). Transcription is unchanged: core 553/553 identical to `00081cc`. |
 | G0 code | On `main` since PR #1, which came from the clean branch `g0-quality-foundation-clean` (worktree `D:/PPP-g0-clean`). The older `g0-quality-foundation` branch and its `D:/PPP-g0` worktree are contaminated with other sessions' production changes — **never merge or edit those**. `tests/README.md` there has a two-line doc change left uncommitted on purpose (outside the allowed paths). |
@@ -218,16 +219,15 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
 
 ## Next
 
-- **Active goal: G4 Professional Engraving — G4a, G4b and G4c CLOSED (PR #9 `df8a571`, PR #12 `62ede61`, PR #15
-  `e3c8c5a`); next G4d-1a.** The order, gates and briefs are in `docs/PPP_MASTER_ROADMAP.md` (§14 current task, §15 next).
+- **Active goal: G4 Professional Engraving — G4a, G4b, G4c and G4d-1a CLOSED (PR #9 `df8a571`, PR #12 `62ede61`, PR #15
+  `e3c8c5a`, PR #17 `b4fe019`); next G4d-1b.** The order, gates and briefs are in `docs/PPP_MASTER_ROADMAP.md` (§14 current task, §15 next).
   - **MX-1 — CLOSED, merged as PR #13 (`e37d37a`)** after one independent review (NEEDS_FIX: BLOCKER 1, MAJOR 1 — octave
     lines missing in partial views and on cards), its Fixer and the Lead's re-check (section "MX-1 — playback correctness"
     at the end of this file). Not deployed yet: production runs `72549cb` until the next manual deploy. Its follow-ups
     (saved-song migration keyed on `ottavaRule`, M4, M5, the G0 bench rebaseline) are MX-2 carry-overs (roadmap §5.2).
-  - **G4d-1a — FIX: READY_FOR_RECHECK** — worktree `D:/PPP-g4`, branch `g4d1a-curves-marks` (pushed, no PR): G04 §13 ties,
-    slurs and glissando, `place()` over skylines, the marks attached to notes, the §18.3 text-metrics table, and the G4c
-    review's note-level carry-overs (G04 §35). Its independent review (NEEDS_FIX: MAJOR 3) and Fixer (G04 §35.18: G4-L4,
-    G4-L5, named metrics for R3, R4, R8) are done. Next: the Lead's re-check, then G4d-1b (marks attached to systems).
+  - **G4d-1b** — worktree `D:/PPP-g4`, branch `g4d1b-system-marks` from `main`: G04 §10.2 rows 8–11 (dynamics, hairpins,
+    pedal, ottava, volta, chord names, tempo, rehearsal, jumps, words, lyrics), §15.3 vertical spacing, §15.4 courtesy signs,
+    B9 re-measured, and the G4d-1a review's R5 (roadmap §14).
   - Production keeps the legacy renderer until G4f.
   - What G3 left for G4 is in G03 §30–§31 and DECISIONS G3-D3, G3-D4 and G3-U10.
 - **Production database (2026-09-25, decision D-0): Neon Free, $0.**
