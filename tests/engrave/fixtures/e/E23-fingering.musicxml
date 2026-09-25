@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- a three-note chord with a finger on each head, fingers above in the right hand and below in the left (G04 §22.1; written by tests/engrave/tools/make-e-fixtures.js) -->
+<!-- a three-note chord with a finger on each head, fingers above in the right hand and below in the left; then fingered sixteenths under a slur, some fingers wider than their heads; then a finger over a note far above the staff (G04 §22.1; written by tests/engrave/tools/make-e-fixtures.js) -->
 <score-partwise version="4.0">
   <work><work-title>Printed fingering</work-title></work>
   <identification><creator type="composer">PPP</creator></identification>
@@ -15,6 +15,26 @@
       <backup><duration>1920</duration></backup>
       <note><pitch><step>C</step><octave>3</octave></pitch><duration>960</duration><voice>5</voice><type>half</type><staff>2</staff><notations><technical><fingering placement="below">5</fingering></technical></notations></note>
       <note><pitch><step>G</step><octave>3</octave></pitch><duration>960</duration><voice>5</voice><type>half</type><staff>2</staff><notations><technical><fingering placement="below">1</fingering></technical></notations></note>
+      </measure>
+    <measure number="2">
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>120</duration><voice>1</voice><type>16th</type><staff>1</staff><beam number="1">begin</beam><beam number="2">begin</beam><notations><slur type="start" number="1"/><technical><fingering>1</fingering></technical></notations></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>120</duration><voice>1</voice><type>16th</type><staff>1</staff><beam number="1">continue</beam><beam number="2">continue</beam><notations><technical><fingering>2</fingering></technical></notations></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>120</duration><voice>1</voice><type>16th</type><staff>1</staff><beam number="1">continue</beam><beam number="2">continue</beam><notations><technical><fingering>3</fingering></technical></notations></note>
+      <note><pitch><step>A</step><octave>5</octave></pitch><duration>120</duration><voice>1</voice><type>16th</type><staff>1</staff><beam number="1">end</beam><beam number="2">end</beam><notations><technical><fingering>4-3</fingering></technical></notations></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>120</duration><voice>1</voice><type>16th</type><staff>1</staff><beam number="1">begin</beam><beam number="2">begin</beam><notations><technical><fingering>2-1</fingering></technical></notations></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>120</duration><voice>1</voice><type>16th</type><staff>1</staff><beam number="1">continue</beam><beam number="2">continue</beam><notations><technical><fingering>3</fingering></technical></notations></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>120</duration><voice>1</voice><type>16th</type><staff>1</staff><beam number="1">continue</beam><beam number="2">continue</beam><notations><technical><fingering>2</fingering></technical></notations></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>120</duration><voice>1</voice><type>16th</type><staff>1</staff><beam number="1">end</beam><beam number="2">end</beam><notations><slur type="stop" number="1"/><technical><fingering>1</fingering></technical></notations></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>960</duration><voice>1</voice><type>half</type><staff>1</staff><notations><technical><fingering>1</fingering></technical></notations></note>
+      <backup><duration>1920</duration></backup>
+      <note><pitch><step>C</step><octave>3</octave></pitch><duration>1920</duration><voice>5</voice><type>whole</type><staff>2</staff><notations><technical><fingering>5</fingering></technical></notations></note>
+      </measure>
+    <measure number="3">
+      <note><pitch><step>A</step><octave>7</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><technical><fingering>5</fingering></technical></notations></note>
+      <note><rest/><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>960</duration><voice>1</voice><type>half</type><staff>1</staff></note>
+      <backup><duration>1920</duration></backup>
+      <note><pitch><step>C</step><octave>3</octave></pitch><duration>1920</duration><voice>5</voice><type>whole</type><staff>2</staff></note>
       <barline location="right"><bar-style>light-heavy</bar-style></barline>
       </measure>
   </part>

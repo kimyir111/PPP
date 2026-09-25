@@ -19,7 +19,7 @@ const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(
 /* ------------------------------------------------------------------ notes */
 /* n('C#5', 'eighth', {...}) or n(null, 'quarter', {...}) for a rest. Options:
    dots, voice (1), staff (1), chord, grace ({slash}), tie ['start'|'stop'], beams [[level, value]], tm [actual, normal],
-   tuplet {type, number, bracket, show, placement}, stem, acc, cautionary, paren, arts [...], orn [...], fermata,
+   tuplet {type, number, bracket, show, placement}, stem, acc, cautionary, paren, arts [...], orn [...], fermata (true | a shape),
    fingering [[f, placement]], slurs [{type, number, placement}], lyric {syllabic, text}, notehead {shape, paren},
    cue, hidden, measureRest, dur (divisions, overrides the type), arp ('up'|'down'|'non'), gliss {type, line, number}, slide {type} */
 function n(p, type, o) {
@@ -60,7 +60,7 @@ function n(p, type, o) {
     (t.placement ? ' placement="' + t.placement + '"' : '') + '/>'));
   if (o.arts && o.arts.length) nt.push('<articulations>' + o.arts.map(a => '<' + a + '/>').join('') + '</articulations>');
   if (o.orn && o.orn.length) nt.push('<ornaments>' + o.orn.map(a => (a === 'tremolo' ? '<tremolo type="single">3</tremolo>' : '<' + a + '/>')).join('') + '</ornaments>');
-  if (o.fermata) nt.push('<fermata type="upright"/>');
+  if (o.fermata) nt.push(o.fermata === true ? '<fermata type="upright"/>' : '<fermata type="upright">' + o.fermata + '</fermata>');
   if (o.fingering) nt.push('<technical>' + o.fingering.map(([f, pl]) => '<fingering' + (pl ? ' placement="' + pl + '"' : '') + '>' + f + '</fingering>').join('') + '</technical>');
   if (o.arp) nt.push(o.arp === 'non' ? '<non-arpeggiate type="bottom"/>' : '<arpeggiate' + (o.arp === 'up' || o.arp === 'down' ? ' direction="' + o.arp + '"' : '') + '/>');
   if (o.gliss) nt.push('<glissando type="' + o.gliss.type + '" number="1"' + (o.gliss.line ? ' line-type="' + o.gliss.line + '"' : '') + '/>');
@@ -199,9 +199,23 @@ E['E07-one-note-tuplets'] = () => pianoScore('One-note tuplets (the writer shape
     ...lhWhole('C3')], { barRight: finalBar() })
 ]);
 
-E['E08-tie-partial-chord'] = () => pianoScore('A tie from part of a chord', 'only the E of C-E-G is tied on', [
+/* G4d-1a (G4-L4: a tie's direction by its head's place in its own chord; each end nearer its own head than any other): then
+   chords tied whole - four heads (two up, two down), three with a second (the middle one away from the stem, the displaced
+   head's tie beside it), three dotted (the ties after the dots) - and a tie into a chord whose sharp stands over the tied
+   head's height (the end clears the accidental and stays by its head) */
+const chord = (ps, type, o, each) => ps.map((p, i) => n(p, type, Object.assign({}, o || {}, i ? { chord: true } : {}, (each || [])[i] || {})));
+const tied = (k, t) => Array.from({ length: k }, () => ({ tie: [t] }));
+E['E08-tie-partial-chord'] = () => pianoScore('A tie from part of a chord', 'only the E of C-E-G is tied on; then whole chords tied: ' +
+  'four heads, three with a second, three dotted; and a tie into a chord whose sharp stands over the tied head', [
   measure(1, [piano(), n('C5', 'half'), n('E5', 'half', { chord: true, tie: ['start'] }), n('G5', 'half', { chord: true }),
-    n('D5', 'half'), n('E5', 'half', { chord: true, tie: ['stop'] }), n('A5', 'half', { chord: true }), ...lhWhole('C3')], { barRight: finalBar() })
+    n('D5', 'half'), n('E5', 'half', { chord: true, tie: ['stop'] }), n('A5', 'half', { chord: true }), ...lhWhole('C3')]),
+  measure(2, [...chord(['C5', 'E5', 'G5', 'C6'], 'half', {}, tied(4, 'start')), ...chord(['C5', 'E5', 'G5', 'C6'], 'half', {}, tied(4, 'stop')),
+    ...lhWhole('C3')]),
+  measure(3, [...chord(['E4', 'G4', 'A4'], 'half', {}, tied(3, 'start')), ...chord(['E4', 'G4', 'A4'], 'half', {}, tied(3, 'stop')), ...lhWhole('A2')]),
+  measure(4, [...chord(['B4', 'D5', 'F5'], 'half', { dots: 1 }, tied(3, 'start')), ...chord(['B4', 'D5', 'F5'], 'quarter', {}, tied(3, 'stop')),
+    ...lhWhole('G2')]),
+  measure(5, [n('C5', 'half'), ...chord(['D5', 'F#5'], 'half', {}, [{ tie: ['start'] }, { acc: 'sharp' }]), ...lhWhole('D3')]),
+  measure(6, [...chord(['D5', 'F#5'], 'half', {}, [{ tie: ['stop'] }, { acc: 'sharp' }]), n('C5', 'half'), ...lhWhole('D3')], { barRight: finalBar() })
 ]);
 
 /* G4d-1a: five bars, a tie over every bar line and eighths in the left hand, so at the desktop and phone widths a tie crosses
@@ -215,15 +229,36 @@ E['E09-tie-barline-system'] = () => pianoScore('Ties over a bar line and a syste
   measure(5, [n('C5', 'whole', { tie: ['stop'] }), ...lhWhole('C3')], { barRight: finalBar() })
 ]);
 
-E['E10-slurs-overlap'] = () => pianoScore('Overlapping slurs', 'slur 1 over notes 1-3, slur 2 over notes 2-4', [
+/* G4d-1a (§13.2's side; the review's RV20): then a slur over notes that all stem up - below them; and two voices, each with
+   its slur - the upper voice's above (its stems up), the lower voice's below (its stems down) */
+E['E10-slurs-overlap'] = () => pianoScore('Overlapping slurs', 'slur 1 over notes 1-3, slur 2 over notes 2-4; then a slur over stems that all ' +
+  'point up; then a slur in each of two voices', [
   measure(1, [piano(), n('C5', 'quarter', { slurs: [{ type: 'start', number: 1 }] }), n('D5', 'quarter', { slurs: [{ type: 'start', number: 2 }] }),
-    n('E5', 'quarter', { slurs: [{ type: 'stop', number: 1 }] }), n('F5', 'quarter', { slurs: [{ type: 'stop', number: 2 }] }), ...lhWhole('C3')], { barRight: finalBar() })
+    n('E5', 'quarter', { slurs: [{ type: 'stop', number: 1 }] }), n('F5', 'quarter', { slurs: [{ type: 'stop', number: 2 }] }), ...lhWhole('C3')]),
+  measure(2, [n('E4', 'quarter', { slurs: [{ type: 'start' }] }), n('F4', 'quarter'), n('G4', 'quarter'), n('A4', 'quarter', { slurs: [{ type: 'stop' }] }),
+    ...lhWhole('C3')]),
+  measure(3, [n('C5', 'quarter', { voice: 1, slurs: [{ type: 'start' }] }), n('D5', 'quarter', { voice: 1 }), n('E5', 'quarter', { voice: 1 }),
+    n('F5', 'quarter', { voice: 1, slurs: [{ type: 'stop' }] }),
+    backup(4 * D),
+    n('F4', 'quarter', { voice: 2, slurs: [{ type: 'start', number: 2 }] }), n('G4', 'quarter', { voice: 2 }), n('A4', 'quarter', { voice: 2 }),
+    n('B4', 'quarter', { voice: 2, slurs: [{ type: 'stop', number: 2 }] }),
+    ...lhWhole('C3')], { barRight: finalBar() })
 ]);
 
-E['E11-slur-rest-system'] = () => pianoScore('A slur over a rest and a system break', 'the slur goes from a note past a rest; a second one crosses the break', [
+/* G4d-1a (§13.2 across breaks; the review's RV23): then a phrase slur over six bars of sixteenths - at every screen width
+   it spans three systems or more, so it has a middle part in each system between its halves */
+const SCALE16 = ['C5', 'D5', 'E5', 'F5', 'G5', 'F5', 'E5', 'D5', 'C5', 'D5', 'E5', 'F5', 'G5', 'F5', 'E5', 'D5'];
+const run16 = (ps, first, last) => ps.map((p, i) => {
+  const b = i % 4 === 0 ? 'begin' : i % 4 === 3 ? 'end' : 'continue';
+  const sl = i === 0 && first ? [{ type: 'start', number: 3 }] : i === ps.length - 1 && last ? [{ type: 'stop', number: 3 }] : [];
+  return n(p, '16th', { beams: [[1, b], [2, b]], slurs: sl });
+});
+E['E11-slur-rest-system'] = () => pianoScore('A slur over a rest and a system break', 'the slur goes from a note past a rest; a second one crosses the break; ' +
+  'then a phrase slur over six bars of sixteenths, across three systems or more', [
   measure(1, [piano(), n('C5', 'quarter', { slurs: [{ type: 'start', placement: 'above' }] }), n(null, 'quarter'), n('E5', 'quarter', { slurs: [{ type: 'stop' }] }),
     n('G5', 'quarter', { slurs: [{ type: 'start', number: 2 }] }), ...lhWhole('C3')]),
-  measure(2, [n('F5', 'half'), n('D5', 'half', { slurs: [{ type: 'stop', number: 2 }] }), ...lhWhole('G2')], { newSystem: true, barRight: finalBar() })
+  measure(2, [n('F5', 'half'), n('D5', 'half', { slurs: [{ type: 'stop', number: 2 }] }), ...lhWhole('G2')], { newSystem: true }),
+  ...[3, 4, 5, 6, 7, 8].map(k => measure(k, [...run16(SCALE16, k === 3, k === 8), ...lhWhole(k % 2 ? 'C3' : 'G2')], k === 8 ? { barRight: finalBar() } : {}))
 ]);
 
 E['E12-two-voices-heads'] = () => pianoScore('Two voices: seconds and unisons', 'a second between the voices, a unison of equal heads, a unison of a half and a quarter; ' +
@@ -282,14 +317,17 @@ E['E14-grace'] = () => pianoScore('Grace notes', 'an acciaccatura, a beamed pair
 ]);
 
 E['E15-articulations'] = () => pianoScore('Articulations under a slur', 'staccato, tenuto, accent, marcato, staccato with accent, a fermata; ' +
-  'then a trill, an inverted mordent, a turn over a detached-legato, a tremolo and a breath mark, and a fermata over the final bar line', [
+  'then an angled and a square fermata; then a trill, an inverted mordent, a turn over a detached-legato, a tremolo and a breath mark, and a ' +
+  'fermata over the final bar line', [
   measure(1, [piano(),
     n('C5', 'quarter', { arts: ['staccato'], slurs: [{ type: 'start' }] }), n('D5', 'quarter', { arts: ['tenuto'] }),
     n('E5', 'quarter', { arts: ['accent'] }), n('F5', 'quarter', { arts: ['strong-accent'], slurs: [{ type: 'stop' }] }), ...lhWhole('C3')]),
   measure(2, [n('G5', 'half', { arts: ['staccato', 'accent'] }), n('C6', 'half', { fermata: true }), ...lhWhole('C3', { fermata: true })]),
+  /* G4d-1a (the review's RV19): a fermata of each shape MusicXML names - angled (short) and square (long) */
+  measure(3, [n('E5', 'half', { fermata: 'angled' }), n('D5', 'half', { fermata: 'square' }), ...lhWhole('G2')]),
   /* G4d-1a: ornaments, a tremolo, a composite articulation, one drawn after its note, and a fermata over a bar line (§10.2
      priority 5) */
-  measure(3, [n('E5', 'quarter', { orn: ['trill-mark'] }), n('D5', 'quarter', { orn: ['inverted-mordent'] }),
+  measure(4, [n('E5', 'quarter', { orn: ['trill-mark'] }), n('D5', 'quarter', { orn: ['inverted-mordent'] }),
     n('C5', 'quarter', { orn: ['turn'], arts: ['detached-legato'] }), n('B4', 'quarter', { orn: ['tremolo'], arts: ['breath-mark'] }), ...lhWhole('G2')],
   { barRight: '<barline location="right"><bar-style>light-heavy</bar-style><fermata type="upright"/></barline>' })
 ]);
@@ -353,10 +391,19 @@ E['E22-repeats-jumps'] = () => pianoScore('Repeats, voltas and jumps', 'a repeat
   measure(6, [dir('<coda/>', { placement: 'above', sound: 'coda="coda1"' }), n('C6', 'whole'), ...lhWhole('C3')], { barRight: finalBar() })
 ]);
 
-E['E23-fingering'] = () => pianoScore('Printed fingering', 'a three-note chord with a finger on each head, fingers above in the right hand and below in the left', [
+/* G4d-1a (G4-L5: fingering by its notes, inside the slur; the review's RV9 and §10.5): then sixteenths under a phrase slur with
+   a finger each - some fingers (a change of finger, "4-3") wider than their heads, so the spacing must give them room - and
+   a note so high its finger stands more than 8 sp from the staff (FAR_PLACEMENT) */
+const FING16 = [['E5', '1'], ['F5', '2'], ['G5', '3'], ['A5', '4-3'], ['G5', '2-1'], ['F5', '3'], ['E5', '2'], ['D5', '1']];
+E['E23-fingering'] = () => pianoScore('Printed fingering', 'a three-note chord with a finger on each head, fingers above in the right hand and below in the left; ' +
+  'then fingered sixteenths under a slur, some fingers wider than their heads; then a finger over a note far above the staff', [
   measure(1, [piano(), n('C5', 'half', { fingering: [['1', 'above']] }), n('E5', 'half', { chord: true, fingering: [['3', 'above']] }), n('G5', 'half', { chord: true, fingering: [['5', 'above']] }),
     n('F5', 'quarter', { fingering: [['4']] }), n('E5', 'quarter', { fingering: [['3']] }),
-    backup(4 * D), n('C3', 'half', { voice: 5, staff: 2, fingering: [['5', 'below']] }), n('G3', 'half', { voice: 5, staff: 2, fingering: [['1', 'below']] })], { barRight: finalBar() })
+    backup(4 * D), n('C3', 'half', { voice: 5, staff: 2, fingering: [['5', 'below']] }), n('G3', 'half', { voice: 5, staff: 2, fingering: [['1', 'below']] })]),
+  measure(2, [...FING16.map(([p, f], i) => n(p, '16th', { fingering: [[f]], beams: [[1, i % 4 === 0 ? 'begin' : i % 4 === 3 ? 'end' : 'continue'], [2, i % 4 === 0 ? 'begin' : i % 4 === 3 ? 'end' : 'continue']],
+    slurs: i === 0 ? [{ type: 'start' }] : i === FING16.length - 1 ? [{ type: 'stop' }] : [] })), n('C5', 'half', { fingering: [['1']] }),
+    backup(4 * D), n('C3', 'whole', { voice: 5, staff: 2, fingering: [['5']] })]),
+  measure(3, [n('A7', 'quarter', { fingering: [['5']] }), n(null, 'quarter'), n('C5', 'half'), ...lhWhole('C3')], { barRight: finalBar() })
 ]);
 
 E['E24-lyrics'] = () => score('Lyrics', 'one verse under a melody, a word over two notes', [

@@ -846,7 +846,7 @@ function l2(eng, plan, opts) {
   set('eg.layout.hard_violations', (codes.get('HARD_VIOLATION') || []).length);
   set('eg.glyph.fallback', (codes.get('GLYPH_FALLBACK') || []).length);
   set('eg.text.missing_glyph', (codes.get('TEXT_GLYPH_MISSING') || []).length);
-  curvesAndMarks(eng, plan, opts, m, { pe, objsOf, spaceOf, staffTop, linesOf, laidOut, stemDirOf, offsOf, codes, ids });
+  curvesAndMarks(eng, plan, opts, m, { pe, pm, objsOf, spaceOf, staffTop, linesOf, laidOut, stemDirOf, offsOf, codes, ids });
   return m;
 }
 
@@ -893,6 +893,17 @@ const bulge = c => { const mid = bez(c, 0.5)[1], chord = (c.p0[1] + c.p3[1]) / 2
 /* §10.2 priority 5, inside to out */
 const MARK_RANK = { staccato: 0, staccatissimo: 0, spiccato: 0, 'detached-legato': 0, tenuto: 1, accent: 2, stress: 2, unstress: 2, marcato: 3 };
 const HORIZONTAL_ARTS = { 'breath-mark': 1, caesura: 1 };
+/* SMuFL's glyph of each articulation (+ Above | Below), with the pinned font's stand-in second where it lacks one (G04 §18.2);
+   a fermata by its MusicXML shape */
+const ARTIC_GLYPH = { staccato: ['articStaccato'], staccatissimo: ['articStaccatissimo'], tenuto: ['articTenuto'], accent: ['articAccent'],
+  marcato: ['articMarcato'], spiccato: ['articStaccatissimoWedge', 'articStaccatissimo'], stress: ['articStress', 'articAccent'],
+  unstress: ['articUnstress', 'articTenuto'] };
+const FERMATA_GLYPH = { normal: 'fermata', angled: 'fermataShort', square: 'fermataLong' };
+/* §10.5: the reference distance from the staff (sp) past which an item is placed anyway with FAR_PLACEMENT; what the one
+   placement function sets (§10.1); a finger's pad from its note (G4-D1a-7) */
+const FAR = 8;
+const PLACED_KINDS = ['articulation', 'ornament', 'fermata', 'tuplet-number', 'tuplet-bracket', 'fingering', 'text'];
+const FINGER_PAD = 0.3;
 const TEXT_KINDS = ['fingering', 'text'];
 const MARK_KINDS = ['articulation', 'ornament', 'fermata', 'tremolo', 'tuplet-number', 'tuplet-bracket'];
 const NOTE_KINDS = ['notehead', 'stem', 'flag', 'beam', 'accidental', 'dot', 'rest', 'ledger', 'paren', 'arpeggio', 'slash'];
@@ -916,12 +927,11 @@ function headGlyph(type, shape, filled) {
 
 function curvesAndMarks(eng, plan, opts, m, C) {
   const set = (k, v) => { m[k] = v; };
-  const { pe, objsOf, spaceOf, staffTop, linesOf, laidOut, stemDirOf, offsOf, codes, ids } = C;
+  const { pe, pm, objsOf, spaceOf, staffTop, linesOf, laidOut, stemDirOf, offsOf, codes, ids } = C;
   const curves = eng.curves || [];
   const miss = ref => { if (opts.missing) opts.missing.add(ref); };
   const headsById = new Map(eng.objects.filter(o => o.kind === 'notehead').map(o => [o.id, o]));
   const curvesOf = groupBy(curves, c => c.refs[0]);
-  const staffMid = o => staffTop.get(o.system + '|' + o.staffKey) + spaceOf(o) * Math.max(0, (linesOf.get(o.staffKey) || 5) - 1) / 2;
   const sysStaff = groupBy(eng.objects.filter(o => o.staffKey), o => o.system + '|' + o.staffKey);
   const curveSamples = new Map(curves.map(c => [c, sampleBoxes(c)]));
   /* voice roles (§14.1): the plan's, of the sounding voices; a rest's by the graph's order of every voice of its staff and
@@ -942,21 +952,26 @@ function curvesAndMarks(eng, plan, opts, m, C) {
 
   /* ---- ties (§13.1, A5, A22): every tie drawn where its heads are - one curve in one system, two halves across a
      break, one part from the head that is there when the other end is not (an open tie, or outside a close view); each
-     drawn end within 0.5 sp of its head (of its dots, at the start); bowing the way §13.1 says */
-  let tieMiss = 0, tieEnd = 0, endMax = 0, tieDir = 0;
+     drawn end within 0.5 sp of its own head (with its dots, at the start) and nearer it than any other head of its chord,
+     a head set past the stem at a second too (G4-L4: no allowance to the chord's front); bowing the way §13.1 says; not
+     through a head, stem, flag, dot or accidental of the two notes it joins */
+  let tieMiss = 0, tieEnd = 0, endMax = 0, tieDir = 0, tieCross = 0;
+  /* the heads of a head's chord: its event's heads on its staff in its system, grace or not as it is */
+  const chordOf = h => objsOf(h.event).filter(o => o.kind === 'notehead' && o.system === h.system && o.staffKey === h.staffKey && !!o.grace === !!h.grace);
+  /* §13.1 as G4-L4 amends it: two voices - the upper voice's ties up, the lower's down; one note - away from its stem; a
+     chord - by the head's place in its own chord (every head, tied or not): the top head's up and the bottom head's down,
+     the upper half up and the lower half down, the exact middle of an odd chord away from the stem */
   const tieRule = h => {
     const e = pe.get(h.event);
     if (!e) return null;
     const role = voiceRole(e);
     if (role === 'up') return 'above';
     if (role === 'down') return 'below';
-    const onStaff = e.heads.filter(x => (x.staff || e.staff) === e.staff).length;
-    const dir = stemDir(e);
-    if (onStaff <= 1) return dir === 'up' ? 'below' : 'above';
-    const y = cyOf(h.box), mid = staffMid(h);
-    if (y < mid - TOL) return 'above';
-    if (y > mid + TOL) return 'below';
-    return dir === 'up' ? 'below' : 'above';
+    const away = stemDir(e) === 'up' ? 'below' : 'above';
+    const chord = chordOf(h).sort((a, b) => cent(cyOf(a.box)) - cent(cyOf(b.box)) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    const n = chord.length, k = chord.indexOf(h);
+    if (n <= 1 || k < 0 || (n % 2 === 1 && k === (n - 1) / 2)) return away;
+    return k < n / 2 ? 'above' : 'below';
   };
   (plan.ties || []).forEach(t => {
     const fh = t.from ? headsById.get(t.from) : null, th = t.to ? headsById.get(t.to) : null;
@@ -968,34 +983,38 @@ function curvesAndMarks(eng, plan, opts, m, C) {
       if ((c.part === 'whole' || c.part === 'start') && fh && fh.system === c.system) ends.push([c.p0, fh, true]);
       if ((c.part === 'whole' || c.part === 'end') && th && th.system === c.system) ends.push([c.p3, th, false]);
       ends.forEach(([p, h, start]) => {
-        /* a head set beside the chord (a second) is met where the chord is: the tie cannot cross the other head or the
-           stem between them - its end is measured to the heads of the second and the stem between */
-        const pair = objsOf(h.event).filter(o => o.kind === 'notehead' && o !== h && o.system === h.system && o.staffKey === h.staffKey &&
-          Math.abs(cyOf(o.box) - cyOf(h.box)) <= 0.5 * spaceOf(h) + TOL && Math.abs(o.box[0] - h.box[0]) > TOL);
-        let b = pair.length ? unionBox([h.box].concat(pair.map(o => o.box), objsOf(h.event).filter(o => o.kind === 'stem' && o.system === h.system &&
-          o.staffKey === h.staffKey).map(o => [o.box[0], h.box[1], o.box[2], h.box[3]]))) : h.box;
-        /* and at the end, an accidental the chord sets before it at that height (another head's, taller than a head) */
-        if (!start) {
-          const acc = objsOf(h.event).filter(o => o.kind === 'accidental' && o.system === h.system && o.staffKey === h.staffKey && o.box[1] < p[1] + 0.25 && o.box[3] > p[1] - 0.25);
-          if (acc.length) b = unionBox([b].concat(acc.map(o => o.box)));
-        }
+        const f = spaceOf(h);
+        /* its own head - at the start with the dots of its row (§13.1: after the dot) and its note's flag where the flag
+           reaches that row (a tie on the stem's side of a flagged note starts after the flag, as after a dot) */
+        let b = h.box;
         if (start) {
-          const dots = objsOf(h.event).filter(o => o.kind === 'dot' && o.system === h.system && o.staffKey === h.staffKey && Math.abs(cyOf(o.box) - cyOf(h.box)) <= 0.75 * spaceOf(h));
-          if (dots.length) b = unionBox([b].concat(dots.map(o => o.box)));
+          const cy = cyOf(h.box);
+          const after = objsOf(h.event).filter(o => o.system === h.system && o.staffKey === h.staffKey && !!o.grace === !!h.grace &&
+            ((o.kind === 'dot' && Math.abs(cyOf(o.box) - cy) <= 0.75 * f) || (o.kind === 'flag' && o.box[1] < cy + 0.75 * f && o.box[3] > cy - 0.75 * f)));
+          if (after.length) b = unionBox([b].concat(after.map(o => o.box)));
         }
-        const d = pointGap(p, b) / spaceOf(h);
+        const d = pointGap(p, b) / f;
         endMax = Math.max(endMax, d);
-        if (d > 0.5 + TOL) tieEnd++;
+        /* nearer its own head than any other head of the chord (G4-L4) */
+        const other = chordOf(h).filter(o => o !== h).map(o => pointGap(p, o.box) / f);
+        if (d > 0.5 + TOL || other.some(x => x <= d + TOL)) tieEnd++;
       });
-      const h = fh && fh.system === c.system ? fh : th;
+      /* the rule of the head the tie leaves (both halves of a tie across a break bow one way), else the head it meets */
+      const h = fh || th;
       const rule = h ? tieRule(h) : null;
       if (rule && bulge(c) !== rule) tieDir++;
+      /* §13.1: after the dot, before the accidental - the tie crosses nothing its two notes draw */
+      const evs = [fh, th].filter(Boolean).map(x => x.event);
+      const own = [...new Set(evs)].flatMap(id => objsOf(id)).filter(o => o.system === c.system && o.staffKey === c.staffKey &&
+        ['notehead', 'stem', 'flag', 'dot', 'accidental'].indexOf(o.kind) >= 0);
+      if (own.some(o => curveCrosses(c, o.box))) tieCross++;
     });
   });
   set('eg.tie.missing', tieMiss);
   set('eg.tie.endpoint_err', tieEnd);
   set('eg.curve.endpoint_err_max', Math.round(endMax * 100) / 100);
   set('eg.tie.dir_err', tieDir);
+  set('eg.tie.crossings', tieCross);
 
   /* ---- slurs (§13.2, A6, A22): the graph's own pair - the first part starts at the from note, the last ends at the to
      note (within 0.6 sp of what the note draws); each end just outside what stands right under it on the slur's side
@@ -1003,11 +1022,30 @@ function curvesAndMarks(eng, plan, opts, m, C) {
      more by as far as the slur's ends were moved out to clear what lies under it (lift); a slur whose arc crosses a head
      or stem of a note between its
      ends is a hit - at most 1 % of the slurs (eg.curve.hit_ratio), every one named by SLUR_COLLIDES */
-  let pair = 0, slurEnd = 0, hits = 0, undiag = 0, slurs = 0;
+  let pair = 0, slurEnd = 0, hits = 0, undiag = 0, slurs = 0, slurParts = 0, slurSide = 0;
   const collides = new Set((codes.get('SLUR_COLLIDES') || []).flatMap(d => d.refs));
   const beams = eng.objects.filter(o => o.kind === 'beam');
   const evBox = (id, s) => unionBox(objsOf(id).filter(o => o.system === s && (o.kind === 'notehead' || o.kind === 'rest' || o.kind === 'stem')).map(o => o.box));
   const drawnAt = id => objsOf(id).find(o => o.kind === 'notehead' || o.kind === 'rest') || null;
+  /* §13.2's side: the graph's placement; else a voice's own side where two voices share the staff (§14.1: the upper voice's
+     slur above, the lower's below); else below when every note it spans (its voice, from its first note to its last) stems
+     up, above when all stem down or they are mixed */
+  const voiceNotes = groupBy(plan.events.filter(e => !e.hidden && !(e.grace && e.grace.after)), e => e.voice);
+  voiceNotes.forEach(list => list.sort((a, b) => pm.get(a.m).i - pm.get(b.m).i || q(a.at) - q(b.at) || (!!a.grace === !!b.grace ? 0 : a.grace ? -1 : 1) ||
+    SG.schema.idNumber(a.id) - SG.schema.idNumber(b.id)));
+  const slurRule = s => {
+    if (s.placement === 'above' || s.placement === 'below') return s.placement;
+    const fe = pe.get(s.from) || pe.get(s.to);
+    if (!fe) return null;
+    const role = [s.from, s.to].map(id => pe.get(id)).filter(Boolean).map(voiceRole).find(Boolean);
+    if (role === 'up') return 'above';
+    if (role === 'down') return 'below';
+    const seq = voiceNotes.get(fe.voice) || [];
+    const a = seq.findIndex(e => e.id === s.from), b = seq.findIndex(e => e.id === s.to);
+    const spanned = a >= 0 && b >= a ? seq.slice(a, b + 1) : [s.from, s.to].map(id => pe.get(id)).filter(Boolean);
+    const dirs = spanned.filter(e => e.kind !== 'rest' && e.heads.length).map(stemDir);
+    return dirs.length && dirs.every(d => d === 'up') ? 'below' : 'above';
+  };
   (plan.slurs || []).forEach(s => {
     const got = (curvesOf.get(s.id) || []).filter(c => c.kind === 'slur');
     const fa = s.from ? drawnAt(s.from) : null, ta = s.to ? drawnAt(s.to) : null;
@@ -1018,16 +1056,26 @@ function curvesAndMarks(eng, plan, opts, m, C) {
     if (fa) { const b = evBox(s.from, fa.system); bad = bad || !start || start.system !== fa.system || start.p0[0] < b[0] - 0.6 || start.p0[0] > b[2] + 0.6; }
     if (ta) { const b = evBox(s.to, ta.system); bad = bad || !end || end.system !== ta.system || end.p3[0] < b[0] - 0.6 || end.p3[0] > b[2] + 0.6; }
     if (bad) { pair++; miss(s.id); }
+    /* every part its notes call for (§13.2): one curve in one system; across breaks the first half, one middle part for each
+       system between, the last half; one half where only one end is laid out - nothing more */
+    const wantParts = fa && ta ? (fa.system === ta.system ? [['whole', fa.system]] : [['start', fa.system]].concat(
+      eng.systems.filter(y => y.index > fa.system && y.index < ta.system).map(y => ['mid', y.index]), [['end', ta.system]])) : fa ? [['start', fa.system]] : [['end', ta.system]];
+    if (got.length !== wantParts.length || !wantParts.every(([part, sy]) => got.filter(c => c.part === part && c.system === sy).length === 1)) { slurParts++; miss(s.id); }
+    /* each part bows to the side the rule gives */
+    const side = slurRule(s);
+    if (side && got.some(c => (bulge(c) || c.side) !== side)) slurSide++;
     [[start, 'p0', s.from, fa], [end, 'p3', s.to, ta]].forEach(([c, k, id, anchor]) => {
       if (!c || !anchor || c.system !== anchor.system || c.staffKey !== anchor.staffKey) return;
       const p = c[k], above = (bulge(c) || c.side) === 'above', f = spaceOf(anchor);
       const x0 = p[0] - 0.1 * f, x1 = p[0] + 0.1 * f;
       const inX = b => b[0] < x1 - EPS && x0 < b[2] - EPS;
       const under = b => (above ? b[3] >= p[1] - TOL : b[1] <= p[1] + TOL);
-      /* what stands under the end: the note's own head or stem end and marks, another voice's notes there, a beam, a tie
-         or a shorter slur (text is placed after slurs, §10.2) */
-      const boxes = (sysStaff.get(c.system + '|' + c.staffKey) || []).filter(o => TEXT_KINDS.indexOf(o.kind) < 0 && under(o.box) &&
-        ((inX(o.box) && (o.layer === 'note' || MARK_KINDS.indexOf(o.kind) >= 0)) || (o.event === id && ['articulation', 'ornament', 'fermata', 'tremolo'].indexOf(o.kind) >= 0))).map(o => o.box)
+      /* what stands under the end: the note's own head or stem end, its marks and fingering wherever they stand, another
+         voice's notes there, a beam, fingering, a tie or a shorter slur (G4-L5: fingering is placed before slurs; a
+         glissando's word after them) */
+      const boxes = (sysStaff.get(c.system + '|' + c.staffKey) || []).filter(o => o.kind !== 'text' && under(o.box) &&
+        ((inX(o.box) && (o.layer === 'note' || o.kind === 'fingering' || MARK_KINDS.indexOf(o.kind) >= 0)) ||
+          (o.event === id && ['articulation', 'ornament', 'fermata', 'tremolo', 'fingering'].indexOf(o.kind) >= 0))).map(o => o.box)
         .concat(curves.filter(q => q !== c && q.system === c.system && q.staffKey === c.staffKey).flatMap(q => curveSamples.get(q)).filter(b => inX(b) && under(b)));
       if (!boxes.length) { slurEnd++; return; }
       const reach = above ? Math.min(...boxes.map(b => b[1])) : Math.max(...boxes.map(b => b[3]));
@@ -1044,19 +1092,24 @@ function curvesAndMarks(eng, plan, opts, m, C) {
     if (hit) { hits++; if (!collides.has(s.id)) undiag++; }
   });
   set('eg.slur.pair_errors', pair);
+  set('eg.slur.missing', slurParts);
+  set('eg.slur.side_err', slurSide);
   set('eg.slur.endpoint_err', slurEnd);
   set('eg.curve.hits', hits);
   set('eg.curve.slurs', slurs);
   set('eg.curve.hit_ratio', slurs ? Math.round(hits / slurs * 10000) / 10000 : 0);
   set('eg.curve.hits_undiagnosed', undiag);
 
-  /* ---- glissandi (§13.4): from after the first head to before the second, wavy when the graph says so */
+  /* ---- glissandi (§13.4): from after the first head to before the second - each end at its own head's height (the
+     line joins the two pitches; a glissando drawn across staves keeps the height of the staff it leaves) - wavy when the
+     graph says so */
   let glissErr = 0;
   (plan.lines || []).filter(l => l.kind === 'gliss').forEach(l => {
     const fh = l.from ? headsById.get(l.from) : null, th = l.to ? headsById.get(l.to) : null;
     (curvesOf.get(l.id) || []).filter(c => c.kind === 'gliss').forEach(c => {
-      if (fh && fh.system === c.system && c.p0[0] < fh.box[2] - TOL) glissErr++;
-      if (th && th.system === c.system && c.p3[0] > th.box[0] + TOL) glissErr++;
+      if (fh && fh.system === c.system && (c.p0[0] < fh.box[2] - TOL || Math.abs(c.p0[1] - cyOf(fh.box)) > 0.25 * spaceOf(fh))) glissErr++;
+      if (th && th.system === c.system && (c.p3[0] > th.box[0] + TOL ||
+        (th.staffKey === c.staffKey && Math.abs(c.p3[1] - cyOf(th.box)) > 0.25 * spaceOf(th)))) glissErr++;
       if ((c.line === 'wavy') !== (l.line === 'wavy')) glissErr++;
     });
   });
@@ -1095,7 +1148,7 @@ function curvesAndMarks(eng, plan, opts, m, C) {
      inverted (or the lower voice's) - and outside the note (beyond the stem's end, on its side); inside to out staccato
      and staccatissimo, tenuto, accent,
      marcato, ornament, fermata; a staccato or tenuto inside the staff in a space, never on a line */
-  let sideErr = 0, orderErr = 0, onLine = 0;
+  let sideErr = 0, orderErr = 0, onLine = 0, glyphErr = 0;
   const artOf = o => { const mt = /#art(\d+)/.exec(o.refs[1] || ''), e = pe.get(o.event); return mt && e ? e.arts[+mt[1]] : null; };
   const rankOf = o => (o.kind === 'fermata' ? 5 : o.kind === 'ornament' ? 4 : MARK_RANK[artOf(o)]);
   const noteMarks = eng.objects.filter(o => (o.kind === 'articulation' || o.kind === 'ornament' || o.kind === 'fermata') && o.event && !HORIZONTAL_ARTS[artOf(o)]);
@@ -1140,8 +1193,26 @@ function curvesAndMarks(eng, plan, opts, m, C) {
     const inv = !!b.fermata.inverted, st = inv ? plan.staves[plan.staves.length - 1].id : plan.staves[0].id;
     const t0 = staffTop.get(o.system + '|' + st), last = Math.max(0, (linesOf.get(st) || 5) - 1) * spaceOf(o);
     if (o.staffKey !== st || (inv ? o.box[1] < t0 + last - TOL : o.box[3] > t0 + TOL)) sideErr++;
+    if (o.glyph !== FERMATA_GLYPH[b.fermata.shape || 'normal'] + (inv ? 'Below' : 'Above')) glyphErr++;
   }));
+  /* the glyph the graph asks for (G04 §6, §18.2; the review's RV17-RV19): an articulation's SMuFL glyph for its side (the
+     pinned font's stand-in where it lacks one - GLYPH_FALLBACK says so), detached-legato as a staccato and a tenuto, the
+     ornament the plan names, a fermata of its shape (normal, angled, square) */
+  noteMarks.forEach(o => {
+    const e = pe.get(o.event);
+    if (!e) return;
+    const d = geoSide(o) === 'above' ? 'Above' : 'Below';
+    let want;
+    if (o.kind === 'fermata') want = [FERMATA_GLYPH[(e.fermata && e.fermata.shape) || 'normal'] + d];
+    else if (o.kind === 'ornament') { const mt = /#orn(\d+)/.exec(o.refs[1] || ''), orn = mt ? (e.orn || [])[+mt[1]] : null; want = orn ? [orn.glyph] : []; }
+    else {
+      const a = artOf(o), part = /\.(\d+)$/.exec(o.id.slice((o.refs[1] || '').length));
+      want = (a === 'detached-legato' ? [part && part[1] === '1' ? 'articTenuto' : 'articStaccato'] : (ARTIC_GLYPH[a] || [])).map(g => g + d);
+    }
+    if (want.indexOf(o.glyph) < 0) glyphErr++;
+  });
   set('eg.mark.side_err', sideErr);
+  set('eg.mark.glyph_err', glyphErr);
   set('eg.mark.order_err', orderErr);
   set('eg.mark.on_line', onLine);
 
@@ -1174,6 +1245,47 @@ function curvesAndMarks(eng, plan, opts, m, C) {
   });
   set('eg.fingering.side_err', fSide);
   set('eg.fingering.order_err', fOrder);
+  /* fingering by its notes (G4-L5; §10.2 as amended: ties, tuplets, articulations/ornaments/fermatas/tremolos, then
+     fingering, then slurs and glissandi). A finger stands no farther from its note than what must stand between them
+     requires: over its own x (a skyline cell, 0.25 sp, either side), the notes of its staff (any voice), the ties, tuplet
+     numbers and brackets and the marks, the fingering of its own column stacked inside it (a chord's, another voice's at
+     the same time), and the staff itself (fingering stays outside it) - then its pad (0.3 sp from a note, 0.15 between
+     stacked fingers). A slur or glissando is never a reason (they come after and clear the fingering), nor a finger of
+     another column (the spacing gives each column its fingering's width, §9). eg.fingering.far counts the fingers farther
+     than that; 0 is the target. */
+  let fFar = 0;
+  const colOf = id => { const e = pe.get(id); return e ? e.m + '|' + q(e.at) + '|' + (e.grace ? 'g' : '') : id; };
+  fings.forEach(o => {
+    const mt = /^(.*)#fing\d+$/.exec(o.refs[1] || ''), ho = mt ? headsById.get(mt[1]) : null;
+    if (!ho) return;
+    const above = cyOf(o.box) < cyOf(ho.box), f = spaceOf(o);
+    const w0 = o.box[0] - 0.25 * f, w1 = o.box[2] + 0.25 * f;
+    const inX = b => b[0] < w1 - EPS && w0 < b[2] - EPS;
+    const inside = b => (above ? b[1] >= o.box[3] - TOL : b[3] <= o.box[1] + TOL);
+    const col = colOf(o.event);
+    const boxes = (sysStaff.get(o.system + '|' + o.staffKey) || []).filter(x => x !== o && inX(x.box) && inside(x.box) &&
+      (NOTE_KINDS.indexOf(x.kind) >= 0 || MARK_KINDS.indexOf(x.kind) >= 0 || (x.kind === 'fingering' && colOf(x.event) === col))).map(x => x.box)
+      .concat(curves.filter(c => c.kind === 'tie' && c.system === o.system && c.staffKey === o.staffKey).flatMap(c => curveSamples.get(c)).filter(b => inX(b) && inside(b)));
+    const t0 = staffTop.get(o.system + '|' + o.staffKey), last = t0 + Math.max(0, (linesOf.get(o.staffKey) || 5) - 1) * f;
+    const reach = above ? Math.min(t0, ...boxes.map(b => b[1])) : Math.max(last, ...boxes.map(b => b[3]));
+    const gap = (above ? reach - o.box[3] : o.box[1] - reach) / f;
+    if (gap > FINGER_PAD + TOL) fFar++;
+  });
+  set('eg.fingering.far', fFar);
+
+  /* ---- §10.5 FAR_PLACEMENT: an item the placement function set more than 8 sp from its staff (its near edge from the staff's
+     outer line) is placed anyway and says so. eg.layout.far_placements counts the diagnostics (recorded: lower is better);
+     eg.layout.far_undiagnosed counts the items that far with no FAR_PLACEMENT naming them (their id; a tuplet's by the
+     tuplet) - 0 */
+  const farNamed = new Set((codes.get('FAR_PLACEMENT') || []).flatMap(d => d.refs));
+  let farUndiag = 0;
+  eng.objects.filter(o => PLACED_KINDS.indexOf(o.kind) >= 0 && o.staffKey && staffTop.has(o.system + '|' + o.staffKey)).forEach(o => {
+    const f = spaceOf(o), t0 = staffTop.get(o.system + '|' + o.staffKey), last = t0 + Math.max(0, (linesOf.get(o.staffKey) || 5) - 1) * f;
+    const d = Math.max(t0 - o.box[3], o.box[1] - last, 0) / f;
+    if (d > FAR + TOL && !farNamed.has(o.id) && !(o.kind.indexOf('tuplet') === 0 && farNamed.has(o.refs[0]))) farUndiag++;
+  });
+  set('eg.layout.far_placements', (codes.get('FAR_PLACEMENT') || []).length);
+  set('eg.layout.far_undiagnosed', farUndiag);
 
   /* ---- arpeggios (§6): left of the chord's heads on every staff they reach, over those heads, the arrow where the graph
      points it, a bracket against arpeggiating */
@@ -1285,7 +1397,8 @@ function curvesAndMarks(eng, plan, opts, m, C) {
 /* the metrics whose target is 0 (all but the maximum and the recorded count of smaller staves) */
 const MAXIMA = { 'eg.beam.slope_max': MAX_SLOPE, 'eg.curve.endpoint_err_max': 0.5, 'eg.curve.hit_ratio': 0.01 };
 /* recorded, not zero: systems drawn smaller; the slurs that cross a note between their ends (each diagnosed, at most 1 %
-   of the slurs - eg.curve.hit_ratio, over a suite in bench.js) and the slurs drawn */
-const RECORDED = ['eg.system.scaled', 'eg.curve.hits', 'eg.curve.slurs'];
+   of the slurs - eg.curve.hit_ratio, over a suite in bench.js) and the slurs drawn; the items placed more than 8 sp from
+   their staff (§10.5 FAR_PLACEMENT, §21.2: recorded - each one named, eg.layout.far_undiagnosed) */
+const RECORDED = ['eg.system.scaled', 'eg.curve.hits', 'eg.curve.slurs', 'eg.layout.far_placements'];
 
 module.exports = { l2, EPS, TOL, MAXIMA, RECORDED, ACC_VS, DOT_VS, REST_VS, STEM_KINDS, DRAWN_KINDS, staffY, autoDir, sampleBoxes, bulge };

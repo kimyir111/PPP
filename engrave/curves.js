@@ -19,10 +19,13 @@
                                 cells [[x0, x1, y]] (a skyline's profile) are
                                 cleared by CLEAR, its two control points raised
                                 as little as they can (each as far as it must);
+                                a cell [x0, x1, y, true] (fingering by an end,
+                                G4-L5) is only never crossed, up to the ends;
                                 if even the highest arc does not clear, both ends
-                                move out MOVE at a time, TRIES times, and past
-                                that it is drawn anyway and says so (collides:
-                                true -> SLUR_COLLIDES)
+                                move out MOVE at a time, TRIES times, then one end
+                                further than the other (up to SPREAD moves each,
+                                least in all first); past that it is drawn anyway
+                                and says so (collides: true -> SLUR_COLLIDES)
    ========================================================================== */
 (function (root, factory) {
   'use strict';
@@ -33,14 +36,17 @@
 
   /* §13.1: a tie's height grows with its length within 0.5-1.2 sp; an end beside a head stands 0.2 sp from the head's
      centre and GAP off its edge, an end between heads (a chord's inner head, or after dots) INNER_DX past what it
-     leaves and INNER_DY off the head's centre; a tie with no other end is STUB long; THICK at its middle */
+     leaves and INNER_DY off the head's centre - G4-L4: within REACH of its own head and LEAD nearer it than any other head
+     of the chord, else further off the centre a STEP at a time; a tie with no other end is STUB long; THICK at its middle */
   const TIE = Object.freeze({ hMin: 0.5, hMax: 1.2, hPerLen: 0.15, hBase: 0.2, outerDx: 0.2, gap: 0.15, innerDx: 0.15, innerDy: 0.25,
-    stub: 2.0, thick: 0.16 });
+    reach: 0.45, lead: 0.05, step: 0.05, stub: 2.0, thick: 0.16 });
   /* §13.2: a slur's height, its clearance of what lies under it (0.25 sp), how far an end stands off its note (PAD), how
-     far its ends move out when even the highest arc does not clear (MOVE, TRIES times), where a half ends at a system
-     break (1 sp before the bar line, 1 sp before the first column), and its thickness */
+     far its ends move out when even the highest arc does not clear (MOVE, TRIES times together, then up to SPREAD times
+     each, one further than the other), where a half ends at a system break (1 sp before the bar line, 1 sp before the
+     first column), its thickness, the cells by an end that are its notes' own (ENDZONE), and how far a curve passes a
+     cell it must only not cross (TOUCH past its half thickness: fingering by an end, G4-L5) */
   const SLUR = Object.freeze({ hMin: 0.75, hMax: 3, hPerLen: 0.1, clear: 0.25, pad: 0.25, move: 0.5, tries: 6, sysGap: 1.0, thick: 0.2,
-    endZone: 0.5 });
+    endZone: 0.5, spread: 20, touch: 0.05 });
   /* §13.4: a glissando starts GAP after its first head and ends GAP before its second; a wavy one waves AMP either
      side of its line, a wave every WAVE sp */
   const GLISS = Object.freeze({ gap: 0.3, amp: 0.2, wave: 0.6, thick: 0.12 });
@@ -90,11 +96,13 @@
     const kmax = 4 * o.hMax / 3;
     const cons = [];
     if (L > 1e-9) {
-      const above = side === 'above', margin = o.clear + o.thick / 2;
+      const above = side === 'above';
       const lo = p0[0] + o.endZone, hi = p3[0] - o.endZone;
-      cells.forEach(([x0, x1, y]) => {
-        const a = Math.max(x0, lo), b = Math.min(x1, hi);
+      cells.forEach(([x0, x1, y, hard]) => {
+        /* a hard cell reaches the ends and asks only that the curve not cross it */
+        const a = Math.max(x0, hard ? p0[0] : lo), b = Math.min(x1, hard ? p3[0] : hi);
         if (a > b + 1e-9) return;
+        const margin = hard ? o.thick / 2 + o.touch : o.clear + o.thick / 2;
         [a, (a + b) / 2, b].forEach(x => {
           const t = (x - p0[0]) / L, u = 1 - t;
           const chord = p0[1] + (p3[1] - p0[1]) * t;
@@ -127,16 +135,26 @@
       h: 3 * (k1 + k2) / 8 };
   }
   function slur(p0, p3, side, cells, opts) {
-    const o = Object.assign({ clear: SLUR.clear, thick: SLUR.thick, endZone: SLUR.endZone, hMax: SLUR.hMax, move: SLUR.move, tries: SLUR.tries }, opts || {});
+    const o = Object.assign({ clear: SLUR.clear, thick: SLUR.thick, endZone: SLUR.endZone, hMax: SLUR.hMax, move: SLUR.move, tries: SLUR.tries,
+      spread: SLUR.spread, touch: SLUR.touch }, opts || {});
     const s = side === 'above' ? -1 : 1;
     const k0 = 4 * slurHeight(Math.abs(p3[0] - p0[0])) / 3;
-    let a = p0.slice(), b = p3.slice();
+    const at = (p, k) => [p[0], p[1] + s * k * o.move];
     for (let k = 0; k <= o.tries; k++) {
-      const r = lifts(a, b, side, cells, o, k0);
+      const a = at(p0, k), b = at(p3, k), r = lifts(a, b, side, cells, o, k0);
       if (r) return { curve: lifted(a, b, side, r.k1, r.k2), lift: k * o.move, collides: false };
-      if (k < o.tries) { a = [a[0], a[1] + s * o.move]; b = [b[0], b[1] + s * o.move]; }
     }
-    return { curve: arc(a, b, o.hMax, side), lift: o.tries * o.move, collides: true };
+    /* then one end further than the other - a long slur whose notes by one end stand high (G4-L5: with their fingering):
+       one end at most TRIES moves out, the other up to SPREAD; the least moved in all first, the start moved less first */
+    for (let k = 1; k <= o.tries + o.spread; k++) {
+      for (let i = Math.max(0, k - o.spread); i <= Math.min(k, o.spread); i++) {
+        const j = k - i;
+        if (i === j || (i > o.tries && j > o.tries)) continue;
+        const a = at(p0, i), b = at(p3, j), r = lifts(a, b, side, cells, o, k0);
+        if (r) return { curve: lifted(a, b, side, r.k1, r.k2), lift: Math.max(i, j) * o.move, collides: false };
+      }
+    }
+    return { curve: arc(at(p0, o.tries), at(p3, o.tries), o.hMax, side), lift: o.tries * o.move, collides: true };
   }
 
   return Object.freeze({ TIE, SLUR, GLISS, STEP, tieHeight, slurHeight, arc, line, yAt, samples, slur });

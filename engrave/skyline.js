@@ -32,6 +32,7 @@
 
   const CELL = 0.25;          /* sp */
   const EPS = 0.01;           /* sp: less overlap than this is touching */
+  const FAR = 8;              /* sp: §10.5's reference distance from the staff - farther, an item is placed anyway and says so */
   const cent = v => Math.round(v * 100);
 
   const overlaps = (a, b, eps) => {
@@ -41,11 +42,14 @@
   const union = boxes => boxes.reduce((u, b) => (u ? [Math.min(u[0], b[0]), Math.min(u[1], b[1]), Math.max(u[2], b[2]), Math.max(u[3], b[3])] : b.slice()), null);
 
   /* ---------------------------------------------------------------- skyline */
-  function Skyline(x0, x1) {
+  /* opts (optional): {edges: [top, bottom] - the staff's outer lines, far: the reference distance (FAR), diag(d) - where
+     put() reports an item set farther than that} */
+  function Skyline(x0, x1, opts) {
     this.x0 = x0;
     this.n = Math.max(1, Math.ceil((x1 - x0) / CELL) + 1);
     this.above = new Array(this.n).fill(Infinity);
     this.below = new Array(this.n).fill(-Infinity);
+    this.opts = opts || null;
   }
   Skyline.prototype.cells = function (x0, x1) {
     const a = Math.max(0, Math.floor((x0 - this.x0) / CELL)), b = Math.min(this.n - 1, Math.floor((x1 - this.x0 - 1e-9) / CELL));
@@ -79,7 +83,9 @@
        limit   the staff edge it may not come inside of (0 above, the bottom line below), or null: inside the staff too;
        floor   where the item starts from - the note it belongs to (its head's edge), or null.
      At least one of the two is given. snap(box) -> box moves the item outward only (a staccato dot inside the staff
-     keeps to a space). -> its box. `place(x0, x1, h, side, pad, limit)` is the old positional form (a volta). */
+     keeps to a space). -> its box. `place(x0, x1, h, side, pad, limit)` is the old positional form (a volta).
+     §10.5: on a staff's skyline (opts.edges), an item whose near edge lands more than opts.far from the staff's outer line
+     on its side is placed all the same, and put() reports FAR_PLACEMENT naming it.ref (the caller's id for the item). */
   Skyline.prototype.put = function (it) {
     const above = it.side === 'above';
     const t = above ? this.top(it.x0, it.x1) : this.bottom(it.x0, it.x1);
@@ -91,6 +97,11 @@
     else { const y0 = Math.max.apply(null, edge) + pad; box = [it.x0, y0, it.x1, y0 + it.h]; }
     if (it.snap) box = it.snap(box);
     this.add(box);
+    const o = this.opts;
+    if (o && o.edges && o.diag) {
+      const d = above ? o.edges[0] - box[3] : box[1] - o.edges[1], far = o.far === undefined ? FAR : o.far;
+      if (d > far + EPS) o.diag({ code: 'FAR_PLACEMENT', refs: [it.ref || null], detail: Math.round(d * 100) / 100 + ' sp ' + (above ? 'above' : 'below') + ' the staff' });
+    }
     return box;
   };
   Skyline.prototype.place = function (x0, x1, h, side, pad, limit) {
@@ -197,5 +208,5 @@
     return out.sort((a, b) => (a.code < b.code ? -1 : a.code > b.code ? 1 : 0) || (a.refs.join() < b.refs.join() ? -1 : a.refs.join() > b.refs.join() ? 1 : 0));
   }
 
-  return Object.freeze({ CELL, EPS, overlaps, union, Skyline, clearance, collisions });
+  return Object.freeze({ CELL, EPS, FAR, overlaps, union, Skyline, clearance, collisions });
 });

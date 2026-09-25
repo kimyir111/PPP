@@ -46,7 +46,9 @@ const ZERO_L2 = ['eg.clip.count', 'eg.overlap.head_head', 'eg.overlap.acc', 'eg.
   'eg.mark.missing.fingering', 'eg.mark.missing.gliss', 'eg.mark.missing.arpeggio', 'eg.mark.side_err', 'eg.mark.order_err', 'eg.mark.on_line',
   'eg.fingering.side_err', 'eg.fingering.order_err', 'eg.arpeggio.errors', 'eg.notehead.shape_err', 'eg.accidental.enclosure_err',
   'eg.rest.ledger_missing', 'eg.tuplet.number_far', 'eg.overlap.text', 'eg.overlap.text_text', 'eg.overlap.mark_mark', 'eg.overlap.mark_note',
-  'eg.text.width_err', 'eg.text.missing_glyph', 'eg.clip.curves'];
+  'eg.text.width_err', 'eg.text.missing_glyph', 'eg.clip.curves',
+  /* the G4d-1a fixer (G04 §35.18): G4-L4's tie ends and crossings, G4-L5's fingering by its notes and §10.5, the review's R3 */
+  'eg.tie.crossings', 'eg.slur.missing', 'eg.slur.side_err', 'eg.mark.glyph_err', 'eg.fingering.far', 'eg.layout.far_undiagnosed'];
 
 /* A piano piece from a compact spec: bars of voices of [dur, type, pitch, extra] with pitch 'C5', 'F#4' ('r' a rest) or
    an array of pitches (a chord); extra: {dots, acc, stem}. Voice 1 and 2 on the upper staff, voice 3 on the lower. */
@@ -109,9 +111,12 @@ test('A27: the same plan and config give the same EngravedScore, three times, pr
 test('A27: the committed layout hashes (E fixtures, the R suite, PPP transcriptions; desktop and phone) - the same on every OS', async () => {
   const want = JSON.parse(fs.readFileSync(HASHES.FILE, 'utf8'));
   assert.equal(want.version, L.VERSION);
-  const bad = HASHES.diff(await HASHES.compute('reverse'), want.hashes);
+  assert.equal(want.planVersion, E.PLAN_VERSION);
+  const got = await HASHES.computeAll('reverse');
+  const bad = HASHES.diff(got.hashes, want.hashes).concat(HASHES.diffPlans(got.plans, want.plans));
   assert.deepEqual(bad, [], 'tests/engrave/tools/layout-hashes.js --write after an intended layout change');
   assert.ok(Object.keys(want.hashes).length >= 118);
+  assert.deepEqual(Object.keys(want.plans), Object.keys(want.hashes), 'a plan hash for every score');
 });
 
 test('A29: no DOM measurement anywhere in engrave/ but the drawing backend; no browser global, clock, random, timer, network, locale or VexFlow from graph to EngravedScore', () => {
@@ -205,7 +210,7 @@ test('A29 negative controls: every banned construct is caught by its rule, whate
 test('the EngravedScore: staff-space coordinates to 0.01, every object keyed to plan or graph ids, unique ids, plain data', async () => {
   const p = await eplan('E35-voice-and-piano.musicxml');
   const e = L.engrave(p, {});
-  assert.equal(e.version, 'engr/2');
+  assert.equal(e.version, 'engr/3');
   assert.equal(e.planKey, p.graph.fingerprint + ':' + p.version);
   assert.deepEqual(e.config, { mode: 'screen', breakpoint: 'desktop', width: 100, barsPerSystem: 4, respectSourceBreaks: false, window: null });
   assert.deepEqual(Object.keys(e).sort(), ['config', 'coverage', 'curves', 'diagnostics', 'measures', 'objects', 'pages', 'planKey', 'systems', 'version']);
@@ -715,7 +720,7 @@ test('reflow: desktop -> phone -> desktop gives the same EngravedScore back from
 
 test('the index exports the layout core in Node; the app does not load it yet (legacy stays the renderer)', () => {
   assert.equal(typeof E.engrave, 'function');
-  assert.equal(E.layout.VERSION, 'engr/2');
+  assert.equal(E.layout.VERSION, 'engr/3');
   assert.equal(typeof E.practice.createPracticeMap, 'function');
   assert.equal(typeof E.layoutHash, 'function');
   const html = fs.readFileSync(path.join(REPO, 'Piano Coach App.dc.html'), 'utf8');

@@ -2,8 +2,12 @@
 
      node tests/engrave/tools/make-text-metrics.js                  write engrave/metrics-text.js from the cached fonts
      node tests/engrave/tools/make-text-metrics.js --fetch          download the pinned fonts first (into the cache)
-     node tests/engrave/tools/make-text-metrics.js --check          exit 1 if engrave/metrics-text.js is not what the fonts give
-     node tests/engrave/tools/make-text-metrics.js --check --fetch  the same, downloading what is not cached (CI)
+     node tests/engrave/tools/make-text-metrics.js --check          exit 1 if engrave/metrics-text.js is not what the fonts give - no
+                                                                    network: the form and digest always, the rebuild when the fonts
+                                                                    are cached (the PR gate)
+     node tests/engrave/tools/make-text-metrics.js --check --fetch  the same, downloading what is not cached (FETCH_MS a font at most);
+                                                                    a download that fails says "rebuild skipped (network)"
+     ... --check --fetch --strict                                   and exit 1 when the rebuild did not run (the nightly job)
 
    The page draws text in three families from Google Fonts (App line 58): Instrument Serif (titles, words, tempo text),
    Figtree (chord names, fingering) and JetBrains Mono (bar numbers, hint letters). The layout never measures text in a
@@ -18,7 +22,9 @@
 
    --check: with the fonts at hand (cached, or --fetch), the table must be byte for byte what they give. Without them
    (no network) it checks what it can - the block is in its canonical form and its digest matches its content - and
-   says that the rebuild was skipped. Exit 0 only when every check that ran passed. */
+   says that the rebuild was skipped, and why: "(network)" when a download failed or timed out, never silently. Exit 0
+   only when every check that ran passed - and, with --strict, only when the rebuild ran (the G4d-1a review R4: a pull
+   request's gate does not depend on the network; the nightly job does the rebuild and fails if it cannot). */
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -29,6 +35,7 @@ const FILE = path.join(REPO, 'engrave', 'metrics-text.js');
 const CACHE = path.join(REPO, 'tests', 'engrave', 'out', 'fonts');
 const BEGIN = '  /* BEGIN GENERATED (tests/engrave/tools/make-text-metrics.js) */', END = '  /* END GENERATED */';
 const GSTATIC = 'https://fonts.gstatic.com/s/';
+const FETCH_MS = 30000;        /* one font's download at most, then the fetch is abandoned */
 
 /* the faces the layout may name, each a pinned file of the Google Fonts css2 API (the URLs are versioned: v5, v9, v24) */
 const FACES = [
@@ -125,7 +132,7 @@ async function fetchFonts() {
   for (const f of FACES) {
     const p = cached(f);
     if (fs.existsSync(p) && sha(fs.readFileSync(p)) === f.sha256) continue;
-    const r = await fetch(GSTATIC + f.url);
+    const r = await fetch(GSTATIC + f.url, { signal: AbortSignal.timeout(FETCH_MS) });
     if (!r.ok) throw new Error(f.url + ': HTTP ' + r.status);
     fs.writeFileSync(p, Buffer.from(await r.arrayBuffer()));
   }
@@ -186,7 +193,7 @@ function splice(text, block) {
 }
 
 async function main() {
-  const check = process.argv.indexOf('--check') > 0, fetchIt = process.argv.indexOf('--fetch') > 0;
+  const check = process.argv.indexOf('--check') > 0, fetchIt = process.argv.indexOf('--fetch') > 0, strict = process.argv.indexOf('--strict') > 0;
   let fetchErr = null;
   if (fetchIt) { try { await fetchFonts(); } catch (e) { fetchErr = e; } }
   const bufs = loadFonts();
@@ -210,12 +217,13 @@ async function main() {
       if (!(String(ch.charCodeAt(0)) in d.widths)) bad.push(f.role + ' has no width for ' + ch);
     }));
   });
-  let rebuilt = 'skipped (the fonts are not at hand' + (fetchErr ? ': ' + fetchErr.message : '; --fetch downloads them') + ')';
+  let rebuilt = fetchErr ? 'skipped (network): ' + (fetchErr.name === 'TimeoutError' ? 'no answer in ' + FETCH_MS / 1000 + ' s' : fetchErr.message)
+    : 'skipped (the fonts are not cached; --fetch downloads them)';
   if (bufs) {
     const next = build(bufs);
     rebuilt = next === cur.block ? 'the pinned fonts give this table byte for byte' : 'DIFFERS from what the pinned fonts give';
     if (next !== cur.block) bad.push('the table differs from the pinned fonts');
-  }
+  } else if (strict) bad.push('--strict: the rebuild from the pinned fonts did not run (' + rebuilt + ')');
   console.log('engrave/metrics-text.js: ' + (bad.length ? 'FAIL' : 'PASS') + ' - form and digest checked; rebuild ' + rebuilt);
   bad.forEach(b => console.log('  ' + b));
   process.exit(bad.length ? 1 : 0);

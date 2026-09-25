@@ -1,27 +1,33 @@
 /* ============================================================================
-   PPP engrave — what stands around the notes, placed (docs/GOALS/G04 §10.1-§10.2 priorities 3-7, §12, §13; G4d-1a)
+   PPP engrave — what stands around the notes, placed (docs/GOALS/G04 §10.1-§10.2 priorities 3-7, §12, §13; G4d-1a;
+   the order and tie rules as G4-L4 and G4-L5 amend them)
 
    One pass per system, once the notes, beams and rests are where they go
    (layout.js notateSystem): every item outside the notes is placed through the
    one placement function (skyline.js put(), §10.1) over the skylines of the
    system's staves - the top and bottom reach of each 0.25 sp of x, of the notes
-   and of what was placed before - in G04's order, each item outside what came
-   before it:
-     3  ties (§13.1): every tie of the plan - a chord's partial ties, across bar
+   and of what was placed before - in G04's order (G4-L5), each item outside what
+   came before it:
+     1  ties (§13.1): every tie of the plan - a chord's partial ties, across bar
         lines, across a system break as two halves, from one voice to another;
-        the direction by §13.1's rule, the ends beside the heads (after dots)
-     4  tuplet numbers and brackets (§12): a bracket outside the staff, a number
+        the direction by §13.1's rule as G4-L4 amends it (a chord's by each head's
+        place in its own chord), each end beside its own head (after dots) and
+        nearer it than any other head of the chord
+     2  tuplet numbers and brackets (§12): a bracket outside the staff, a number
         without one by its beam, inside the staff where it is free (G4c review M2)
-     5  articulations, ornaments, fermatas (on notes, rests and bar lines),
+     3  articulations, ornaments, fermatas (on notes, rests and bar lines),
         tremolos: on the note's side (opposite the stem; a voice's own side where
         two share the staff - there on the stem, beyond its end), staccato and
         tenuto innermost - inside the staff, in a space - accent, marcato,
         ornament, fermata outward; a tremolo on its stem
-     6  slurs (§13.2), shortest first: the graph's own pairs, their ends at the head
-        or beyond the stem, the arc raised over everything between; glissandi
-        (§13.4), a straight or wavy line with its word
-     7  printed fingering: the graph's placement, else above the first staff of a
-        part and below the second; a chord's fingers stacked
+     4  printed fingering: the graph's placement, else above the first staff of a
+        part and below the second; a chord's fingers stacked - by its notes,
+        inside the slurs that come after it
+     5  slurs (§13.2), shortest first: the graph's own pairs, their ends at the head
+        or beyond the stem, the arc raised over everything between - the fingering
+        by an end too; glissandi (§13.4), a straight or wavy line with its word
+   An item the placement function sets more than 8 sp from its staff is placed all
+   the same and says so (§10.5 FAR_PLACEMENT, skyline.js).
    Coordinates are staff spaces, x absolute in the system, y from each staff's top
    line (y down) - the layout scales and stacks them afterwards. Pure: no DOM, no
    clock, no random; every list in a fixed order.
@@ -49,8 +55,9 @@
   const TREMOLO = Object.freeze({ pitch: 0.8 });
   /* a slur's half at a system break: its free end clears what the notes reach this far before it */
   const FREE_END = 4;
-  /* a slur's end stands outside what stands over its head, but for this much at either edge (sp) */
-  const END_X = 0.2;
+  /* a slur's end stands outside what stands over its head, but for this much at either edge (sp); outside another note's
+     fingering within FINGER_X of it (G4-L5) */
+  const END_X = 0.2, FINGER_X = 0.1;
   /* §10.2: inside to out - staccato, tenuto innermost; accent, marcato; ornaments; the fermata outermost */
   const RANK = Object.freeze({ staccato: 0, staccatissimo: 0, spiccato: 0, 'detached-legato': 0, tenuto: 1, accent: 2, stress: 2, unstress: 2,
     marcato: 3, ornament: 4, fermata: 5 });
@@ -81,7 +88,7 @@
     /* the skylines: per staff, of the notes (the staff lines are not in them - a mark's `limit` keeps it outside the staff
        where it must be) */
     const sky = new Map();
-    P.staves.forEach(s => sky.set(s.id, new SK.Skyline(0, S.x1 + 40)));
+    P.staves.forEach(s => sky.set(s.id, new SK.Skyline(0, S.x1 + 40, { edges: [0, lastLine(s.id)], far: SK.FAR, diag: d => S.diagnostics.push(d) })));
     objs.forEach(o => { if (o.layer === 'note' && sky.has(o.staffKey)) sky.get(o.staffKey).add(o.box); });
     const byEvent = new Map(), headObj = new Map();
     objs.forEach(o => {
@@ -143,20 +150,30 @@
     }).filter(x => x.x !== Infinity).sort((a, b) => a.x - b.x || idNum(a.id) - idNum(b.id)).map(x => x.id);
     const measureOf = id => { const I = infoOf(id); return (I.heads[0] || I.rest || I.os[0] || {}).measure || null; };
 
-    /* ------------------------------------------------------------ 3. ties */
-    const tieSide = (I, h) => {
-      if (I.role === 'up') return 'above';
-      if (I.role === 'down') return 'below';
-      const n = (I.e ? I.e.heads : []).filter(x => (x.staff || I.e.staff) === I.e.staff).length;
-      if (n <= 1) return I.dir === 'up' ? 'below' : 'above';
-      const mid = lastLine(h.staffKey) / 2, cy = (h.box[1] + h.box[3]) / 2;
-      if (cy < mid - 1e-6) return 'above';
-      if (cy > mid + 1e-6) return 'below';
-      return I.dir === 'up' ? 'below' : 'above';
+    /* ------------------------------------------------------------ 1. ties */
+    /* §13.1 as G4-L4 amends it: where two voices share the staff, the upper voice's ties up and the lower's down; a single
+       note's away from its stem; in a chord, by the head's place in its own chord (every head of it on the staff, tied or
+       not, in the order of their staff positions) - the top head's up, the bottom head's down, the upper half up and the
+       lower half down, the exact middle head of an odd chord away from the stem. Read from the plan, so both halves of a
+       tie across a system break bow the way the head it leaves says. */
+    const tieSide = (evId, headId, staffKey) => {
+      const role = P.roles.get(evId), e = K.events.get(evId);
+      if (role === 'up') return 'above';
+      if (role === 'down') return 'below';
+      const away = P.dirOf.get(evId) === 'up' ? 'below' : 'above';
+      const chord = (e ? e.heads : []).filter(h => h.staff === staffKey && h.step !== null)
+        .sort((a, b) => b.step - a.step || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+      const n = chord.length, k = chord.findIndex(h => h.id === headId);
+      if (n <= 1 || k < 0 || (n % 2 === 1 && k === (n - 1) / 2)) return away;
+      return k < n / 2 ? 'above' : 'below';
     };
     /* where a tie leaves (start) or meets (end) its head: beside it - 0.2 sp from its centre, just off its edge - when the
        head is the event's outermost on the tie's side, away from the stem and (at the start) undotted; else past what the
-       event draws at that height (heads, dots, stem, flag; accidentals at the end), just off the head's centre */
+       event draws at that height (heads, dots, stem, flag; accidentals at the end), just off the head's centre. G4-L4: the
+       end is nearer its own head (at the start with its dots and flag at that height) than any other head of its chord and
+       within REACH of it - where a head set past the stem at a second, or a chord's accidental, stands at that height, the
+       end moves outward from the head's centre a STEP at a time, up to just off its edge, until it is */
+    const gapTo = (p, b) => Math.hypot(Math.max(b[0] - p[0], 0, p[0] - b[2]), Math.max(b[1] - p[1], 0, p[1] - b[3]));
     const tieEnd = (I, h, side, start) => {
       const above = side === 'above', cy = (h.box[1] + h.box[3]) / 2, cx = (h.box[0] + h.box[2]) / 2;
       const hs = I.os.filter(o => o.kind === 'notehead' && o.staffKey === h.staffKey && !!o.grace === !!h.grace);
@@ -166,17 +183,32 @@
       const dotted = start && I.os.some(o => o.kind === 'dot' && o.staffKey === h.staffKey);
       if (outermost && !stemSide && !dotted) return [cx + (start ? 1 : -1) * CV.TIE.outerDx, above ? h.box[1] - CV.TIE.gap : h.box[3] + CV.TIE.gap];
       const kinds = start ? ['notehead', 'dot', 'stem', 'flag'] : ['notehead', 'stem', 'accidental'];
-      const y = cy + (above ? -CV.TIE.innerDy : CV.TIE.innerDy);
-      const near = I.os.filter(o => o.staffKey === h.staffKey && !!o.grace === !!h.grace && kinds.indexOf(o.kind) >= 0 && o.box[1] < y + 0.25 && o.box[3] > y - 0.25);
-      const x = start ? maxOf(near.map(o => o.box[2]).concat([h.box[2]])) + CV.TIE.innerDx : minOf(near.map(o => o.box[0]).concat([h.box[0]])) - CV.TIE.innerDx;
-      return [x, y];
+      const mine = o => o.staffKey === h.staffKey && !!o.grace === !!h.grace;
+      const at = dy => {
+        const y = cy + (above ? -dy : dy);
+        const near = I.os.filter(o => mine(o) && kinds.indexOf(o.kind) >= 0 && o.box[1] < y + 0.25 && o.box[3] > y - 0.25);
+        const x = start ? maxOf(near.map(o => o.box[2]).concat([h.box[2]])) + CV.TIE.innerDx : minOf(near.map(o => o.box[0]).concat([h.box[0]])) - CV.TIE.innerDx;
+        return [x, y];
+      };
+      const own = SK.union([h.box].concat(start ? I.os.filter(o => mine(o) && ((o.kind === 'dot' && Math.abs((o.box[1] + o.box[3]) / 2 - cy) <= 0.75) ||
+        (o.kind === 'flag' && o.box[1] < cy + 0.75 && o.box[3] > cy - 0.75))).map(o => o.box) : []));
+      const others = hs.filter(o => o !== h);
+      const fits = p => { const d = gapTo(p, own); return d <= CV.TIE.reach && others.every(o => gapTo(p, o.box) > d + CV.TIE.lead); };
+      for (let k = 0; CV.TIE.innerDy + k * CV.TIE.step <= 0.5 + CV.TIE.gap + 1e-9; k++) {
+        const p = at(CV.TIE.innerDy + k * CV.TIE.step);
+        if (fits(p)) return p;
+      }
+      return at(CV.TIE.innerDy);
     };
     K.ties.forEach(t => {
       const fh = t.from ? headObj.get(t.from) : null, th = t.to ? headObj.get(t.to) : null;
       if (!fh && !th) return;
       const fe = t.from ? K.headEvent.get(t.from) : null, te = t.to ? K.headEvent.get(t.to) : null;
       const anchor = fh || th, I = infoOf(fh ? fe : te);
-      const side = tieSide(I, anchor);
+      /* the head the tie leaves decides its side, wherever it is laid out; the head it meets when that one is not */
+      const lead = fe && K.events.has(fe) && S.sysOf(K.events.get(fe).m) !== undefined;
+      const side = lead ? tieSide(fe, t.from, (K.events.get(fe).heads.find(h => h.id === t.from) || {}).staff || anchor.staffKey)
+        : tieSide(te, t.to, anchor.staffKey);
       const staffKey = anchor.staffKey;
       let p0, p3, part;
       if (fh && th) {
@@ -202,7 +234,7 @@
       addCurve(out);
     });
 
-    /* ------------------------------------------------------------ 4. tuplets (§12; innermost first, an outer one clears it) */
+    /* ------------------------------------------------------------ 2. tuplets (§12; innermost first, an outer one clears it) */
     const tups = P.tuplets.slice().sort((a, c) => c.depth - a.depth || a.order - c.order);
     tups.forEach(t => {
       const evSet = new Set(t.events);
@@ -238,7 +270,7 @@
       const own = list.filter(o => o.layer === 'note' && o.box[0] < x1 - SK.EPS && x0 < o.box[2] - SK.EPS &&
         (evSet.has(o.event) || (o.kind === 'beam' && (o.events || []).some(id => evSet.has(id)))));
       const floor = own.length ? (side === 'above' ? minOf(own.map(o => o.box[1])) : maxOf(own.map(o => o.box[3]))) : (side === 'above' ? 0 : lastLine(staffKey));
-      const res = NT.placeTuplet([x0, x1], side, digits, t.bracket, [isFirst, isLast], it => put(staffKey, it),
+      const res = NT.placeTuplet([x0, x1], side, digits, t.bracket, [isFirst, isLast], it => put(staffKey, Object.assign({ ref: t.id }, it)),
         { floor: floor, limit: side === 'above' ? 0 : lastLine(staffKey) }, 1);
       res.number.forEach(n => sky.get(staffKey).add(n.box));
       const suffix = whole || isFirst ? '' : '@' + firstEv;
@@ -251,7 +283,7 @@
       out.forEach(o => addObj(o));
     });
 
-    /* ------------------------------------------------------------ 5. articulations, ornaments, fermatas, tremolos */
+    /* ------------------------------------------------------------ 3. articulations, ornaments, fermatas, tremolos */
     const markSide = (it, I) => {
       if (it.kind === 'fermata') return (it.what && it.what.inverted) || I.role === 'down' ? 'below' : 'above';
       if (it.kind === 'ornament') return I.role === 'down' ? 'below' : 'above';
@@ -293,7 +325,7 @@
             if (!g) { diag('MISSING_GLYPH', [it.ref], name); return; }
             const w = g.w * s, h = (g.yMax - g.yMin) * s;
             const inner = !!INNER[it.what];
-            const box = put(I.staffKey, { x0: cx - w / 2, x1: cx + w / 2, h: h, side: side, pad: first ? PAD.note : PAD.mark,
+            const box = put(I.staffKey, { ref: it.ref + (picks.length > 1 ? '.' + k : ''), x0: cx - w / 2, x1: cx + w / 2, h: h, side: side, pad: first ? PAD.note : PAD.mark,
               limit: inner ? null : (above ? 0 : lastLine(I.staffKey)), floor: floor, snap: inner ? spaceSnap(side, lastLine(I.staffKey)) : null });
             first = false;
             addObj({ id: it.ref + (picks.length > 1 ? '.' + k : ''), kind: it.kind, refs: [e.id, it.ref], event: e.id, glyph: name, scale: s,
@@ -317,7 +349,7 @@
       } else {
         xc = mainCx(I);
         const side = I.dir === 'down' ? 'below' : 'above';
-        const b = put(I.staffKey, { x0: xc - g.w / 2, x1: xc + g.w / 2, h: span + (g.yMax - g.yMin), side: side, pad: PAD.note, limit: null, floor: edgeOf(I, side) });
+        const b = put(I.staffKey, { ref: ref, x0: xc - g.w / 2, x1: xc + g.w / 2, h: span + (g.yMax - g.yMin), side: side, pad: PAD.note, limit: null, floor: edgeOf(I, side) });
         mid = (b[1] + b[3]) / 2;
       }
       for (let k = 0; k < n; k++) {
@@ -336,12 +368,50 @@
       const M = S.mx.get(bf.m);
       const xc = bars.length ? (minOf(bars.map(o => o.box[0])) + maxOf(bars.map(o => o.box[2]))) / 2 : bf.side === 'left' ? M.x : M.x + M.w;
       const name = glyphOf(MT.fermata(bf.fermata ? bf.fermata.shape : 'normal', above)), g = MT.glyph(name);
-      const box = put(staffKey, { x0: xc - g.w / 2, x1: xc + g.w / 2, h: g.yMax - g.yMin, side: above ? 'above' : 'below', pad: PAD.mark, limit: above ? 0 : lastLine(staffKey) });
+      const box = put(staffKey, { ref: bf.ref, x0: xc - g.w / 2, x1: xc + g.w / 2, h: g.yMax - g.yMin, side: above ? 'above' : 'below', pad: PAD.mark, limit: above ? 0 : lastLine(staffKey) });
       addObj({ id: bf.ref, kind: 'fermata', refs: [bf.m, bf.ref], glyph: name, box: MT.box(name, box[0] - g.xMin, box[1] + g.yMax), side: above ? 'above' : 'below',
         layer: 'mark', staffKey: staffKey, measure: bf.m });
     });
 
-    /* ------------------------------------------------------------ 6. slurs, glissandi */
+    /* ------------------------------------------------------------ 4. fingering (G4-L5: after the articulations, before the
+       slurs - printed fingering stays by its notes, inside a phrase slur, and the slurs clear it) */
+    here.forEach(id => {
+      const I = infoOf(id), e = I.e;
+      if (!e || !e.heads.some(h => (h.fingering || []).length)) return;
+      const entries = [];
+      e.heads.forEach(h => (h.fingering || []).forEach((f, i) => {
+        const ho = headObj.get(h.id);
+        const text = f && f.f !== undefined && f.f !== null ? String(f.f) : '';
+        if (!ho || !text.trim()) return;
+        const side = f.placement === 'above' || f.placement === 'below' ? f.placement : K.staffRank.get(ho.staffKey) === 1 ? 'below' : 'above';
+        entries.push({ h: h, ho: ho, i: i, side: side, ref: h.id + '#fing' + i, lines: text.split(/\r?\n/).filter(x => x.trim() !== '') });
+      }));
+      const groups = new Map();
+      entries.forEach(en => { const k = en.ho.staffKey + '|' + en.side; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(en); });
+      [...groups.keys()].sort().forEach(k => {
+        const list = groups.get(k).sort((a, b) => a.ho.box[1] - b.ho.box[1] || a.i - b.i);
+        const side = list[0].side, above = side === 'above', staffKey = list[0].ho.staffKey;
+        const heads = I.os.filter(o => o.kind === 'notehead' && o.staffKey === staffKey);
+        const cx = mainCx(I, heads), floor = edgeOf(I, side, heads);
+        /* innermost first: above, the lowest head's finger (its last line first); below, the highest head's (first line) */
+        const seq = above ? list.slice().reverse() : list;
+        let first = true;
+        seq.forEach(en => {
+          const lines = en.lines.map((t, k) => ({ t: t, k: k }));
+          (above ? lines.slice().reverse() : lines).forEach(ln => {
+            const m = TX.measure(ln.t, FINGER.font, FINGER.size);
+            if (m.missing.length) diag('TEXT_GLYPH_MISSING', [en.ref], m.missing.join(','));
+            const box = put(staffKey, { ref: en.ref + (en.lines.length > 1 ? '.' + ln.k : ''), x0: cx - m.w / 2, x1: cx + m.w / 2, h: m.bottom - m.top,
+              side: side, pad: first ? PAD.finger : PAD.fingerLine, limit: above ? 0 : lastLine(staffKey), floor: floor });
+            first = false;
+            addObj({ id: en.ref + (en.lines.length > 1 ? '.' + ln.k : ''), kind: 'fingering', refs: [e.id, en.ref], event: e.id, text: ln.t,
+              font: FINGER.font, size: FINGER.size, box: box, side: side, layer: 'text', staffKey: staffKey, measure: en.ho.measure });
+          });
+        });
+      });
+    });
+
+    /* ------------------------------------------------------------ 5. slurs, glissandi */
     /* §13.2: the graph's placement; else a voice's side where two share the staff; else below when every note under
        it stems up, above when all stem down or they are mixed */
     const slurSide = s => {
@@ -378,9 +448,12 @@
       }
       if (I.staffKey !== staffKey) diag('SLUR_CROSS_STAFF', [id], 'drawn on the staff it leaves');
       let v = reachAt(staffKey, xr[0], xr[1], above);
-      /* and outside the note's own marks on that side, wherever they stand (§10.2: a slur outside the articulations) */
+      /* and outside the note's own marks and fingering on that side, wherever they stand (§10.2: a slur outside the
+         articulations and, G4-L5, the fingering), and another note's fingering right under the end (within FINGER_X of
+         it; one beside the end the arc clears, curves.js) */
       (byStaff.get(staffKey) || []).forEach(o => {
-        if (o.event !== id || o.layer !== 'mark' || o.side !== side) return;
+        const under = o.kind === 'fingering' && o.side === side && o.box[0] < x + FINGER_X - SK.EPS && x - FINGER_X < o.box[2] - SK.EPS;
+        if (!under && (o.event !== id || (o.layer !== 'mark' && o.kind !== 'fingering') || o.side !== side)) return;
         v = v === null ? (above ? o.box[1] : o.box[3]) : above ? Math.min(v, o.box[1]) : Math.max(v, o.box[3]);
       });
       const y = v === null ? (above ? 0 : lastLine(staffKey)) : v;
@@ -424,7 +497,14 @@
       else if (!p3) { const x = Math.max(S.endX, p0[0] + 1); p3 = [x, freeY(x - FREE_END, x, p0[1])]; }
       else if (!p0) { const x = Math.min(S.startX, p3[0] - 1); p0 = [x, freeY(x, x + FREE_END, p3[1])]; }
       if (p3[0] < p0[0]) { const q = p0; p0 = p3; p3 = q; }
-      const r = CV.slur(p0, p3, side, sk.profile(p0[0] + CV.SLUR.endZone, p3[0] - CV.SLUR.endZone, side));
+      /* what lies between the ends, and (G4-L5) the fingering by either end - its own note's too, which the end stands over:
+         the arc never crosses a finger where it rises to or falls from its end */
+      const cells = sk.profile(p0[0] + CV.SLUR.endZone, p3[0] - CV.SLUR.endZone, side);
+      (byStaff.get(staffKey) || []).forEach(o => {
+        if (o.kind !== 'fingering' || o.side !== side || o.box[2] <= p0[0] || o.box[0] >= p3[0]) return;
+        if (o.box[0] < p0[0] + CV.SLUR.endZone || o.box[2] > p3[0] - CV.SLUR.endZone) cells.push([o.box[0], o.box[2], above ? o.box[1] : o.box[3], true]);
+      });
+      const r = CV.slur(p0, p3, side, cells);
       if (r.collides) diag('SLUR_COLLIDES', [s.id], 'no arc up to ' + CV.SLUR.hMax + ' sp clears what lies under it');
       const c = r.curve;
       const out = { id: sp.part === 'whole' ? s.id : s.id + '#' + sp.part, kind: 'slur', refs: [s.id], events: [s.from || null, s.to || null], system: si, staffKey: staffKey,
@@ -459,48 +539,12 @@
         const m = TX.measure(l.text, GLISS_TEXT.font, GLISS_TEXT.size);
         if (m.missing.length) diag('TEXT_GLYPH_MISSING', [l.id], m.missing.join(','));
         const mx = (p0[0] + p3[0]) / 2, my = Math.min(p0[1], p3[1]) - (wavy ? CV.GLISS.amp : 0);
-        const box = put(staffKey, { x0: mx - m.w / 2, x1: mx + m.w / 2, h: m.bottom - m.top, side: 'above', pad: GLISS_TEXT.pad, limit: null, floor: my });
+        const box = put(staffKey, { ref: l.id + '#text', x0: mx - m.w / 2, x1: mx + m.w / 2, h: m.bottom - m.top, side: 'above', pad: GLISS_TEXT.pad, limit: null, floor: my });
         addObj({ id: l.id + '#text', kind: 'text', refs: [l.id], event: K.headEvent.get((fh || th).id), text: l.text, font: GLISS_TEXT.font, size: GLISS_TEXT.size,
           box: box, layer: 'text', staffKey: staffKey, measure: (fh || th).measure });
       }
     });
 
-    /* ------------------------------------------------------------ 7. fingering */
-    here.forEach(id => {
-      const I = infoOf(id), e = I.e;
-      if (!e || !e.heads.some(h => (h.fingering || []).length)) return;
-      const entries = [];
-      e.heads.forEach(h => (h.fingering || []).forEach((f, i) => {
-        const ho = headObj.get(h.id);
-        const text = f && f.f !== undefined && f.f !== null ? String(f.f) : '';
-        if (!ho || !text.trim()) return;
-        const side = f.placement === 'above' || f.placement === 'below' ? f.placement : K.staffRank.get(ho.staffKey) === 1 ? 'below' : 'above';
-        entries.push({ h: h, ho: ho, i: i, side: side, ref: h.id + '#fing' + i, lines: text.split(/\r?\n/).filter(x => x.trim() !== '') });
-      }));
-      const groups = new Map();
-      entries.forEach(en => { const k = en.ho.staffKey + '|' + en.side; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(en); });
-      [...groups.keys()].sort().forEach(k => {
-        const list = groups.get(k).sort((a, b) => a.ho.box[1] - b.ho.box[1] || a.i - b.i);
-        const side = list[0].side, above = side === 'above', staffKey = list[0].ho.staffKey;
-        const heads = I.os.filter(o => o.kind === 'notehead' && o.staffKey === staffKey);
-        const cx = mainCx(I, heads), floor = edgeOf(I, side, heads);
-        /* innermost first: above, the lowest head's finger (its last line first); below, the highest head's (first line) */
-        const seq = above ? list.slice().reverse() : list;
-        let first = true;
-        seq.forEach(en => {
-          const lines = en.lines.map((t, k) => ({ t: t, k: k }));
-          (above ? lines.slice().reverse() : lines).forEach(ln => {
-            const m = TX.measure(ln.t, FINGER.font, FINGER.size);
-            if (m.missing.length) diag('TEXT_GLYPH_MISSING', [en.ref], m.missing.join(','));
-            const box = put(staffKey, { x0: cx - m.w / 2, x1: cx + m.w / 2, h: m.bottom - m.top, side: side, pad: first ? PAD.finger : PAD.fingerLine,
-              limit: above ? 0 : lastLine(staffKey), floor: floor });
-            first = false;
-            addObj({ id: en.ref + (en.lines.length > 1 ? '.' + ln.k : ''), kind: 'fingering', refs: [e.id, en.ref], event: e.id, text: ln.t,
-              font: FINGER.font, size: FINGER.size, box: box, side: side, layer: 'text', staffKey: staffKey, measure: en.ho.measure });
-          });
-        });
-      });
-    });
   }
 
   return Object.freeze({ PAD, FINGER, GLISS_TEXT, TREMOLO, RANK, INNER, HORIZONTAL, spaceSnap, placeSystem });

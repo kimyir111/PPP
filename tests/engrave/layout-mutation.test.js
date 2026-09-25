@@ -131,7 +131,7 @@ const MUTATIONS = [
     edits: [['        if (HORIZONTAL[a]) return;\n', '        if (HORIZONTAL[a]) return;\n        if (a === \'staccato\') return;\n']] },
   /* G4d-1a: one live mutation for each rule it adds */
   { id: 'MT', file: 'marks.js', expect: ['eg.tie.dir_err'], probes: ['E09', 'G16'], what: 'a single note\'s tie on its stem\'s side (§13.1: away from it)',
-    edits: [["      if (n <= 1) return I.dir === 'up' ? 'below' : 'above';", "      if (n <= 1) return I.dir === 'up' ? 'above' : 'below';"]] },
+    edits: [["      const away = P.dirOf.get(evId) === 'up' ? 'below' : 'above';", "      const away = P.dirOf.get(evId) === 'up' ? 'above' : 'below';"]] },
   { id: 'MS', file: 'marks.js', expect: ['eg.slur.endpoint_err'], probes: ['E10', 'E15'], what: 'a slur\'s ends inside what stands at its notes (the pad the wrong way)',
     edits: [['      return [x, above ? y - CV.SLUR.pad : y + CV.SLUR.pad];', '      return [x, above ? y + CV.SLUR.pad : y - CV.SLUR.pad];']] },
   { id: 'MC', file: 'curves.js', expect: ['eg.curve.hits_undiagnosed'], probes: ['burg015', 'czerny849_005', 'E10'], what: 'a slur no longer raised over the notes under it',
@@ -145,7 +145,7 @@ const MUTATIONS = [
   { id: 'MF', file: 'marks.js', expect: ['eg.fingering.side_err'], probes: ['E23', 'czerny849_005'], what: 'fingering below the upper staff and above the lower one',
     edits: [["K.staffRank.get(ho.staffKey) === 1 ? 'below' : 'above';", "K.staffRank.get(ho.staffKey) === 1 ? 'above' : 'below';"]] },
   { id: 'MW', file: 'marks.js', expect: ['eg.text.width_err'], probes: ['E23'], what: 'fingering as wide as something other than the text-metrics table says',
-    edits: [['const box = put(staffKey, { x0: cx - m.w / 2, x1: cx + m.w / 2,', 'const box = put(staffKey, { x0: cx - m.w / 2, x1: cx + m.w / 2 + 0.3,']] },
+    edits: [['x0: cx - m.w / 2, x1: cx + m.w / 2, h: m.bottom - m.top,', 'x0: cx - m.w / 2, x1: cx + m.w / 2 + 0.3, h: m.bottom - m.top,']] },
   { id: 'MN', file: 'notation.js', expect: ['eg.tuplet.number_far'], probes: ['czerny849_020'], what: 'a tuplet number without a bracket kept outside the staff, away from its beam',
     edits: [['pad: TUPLET.pad * s, limit: null, floor: where.floor });', 'pad: TUPLET.pad * s, limit: where.limit, floor: where.floor });']] },
   { id: 'MR', expect: ['eg.rest.ledger_missing'], probes: ['E13'], what: 'a half rest pushed off the staff left floating, with no ledger line',
@@ -163,7 +163,38 @@ const MUTATIONS = [
     edits: [["const wavy = l.line === 'wavy';", 'const wavy = false;']] },
   { id: 'MQ', expect: ['eg.arpeggio.errors'], probes: ['E40'], what: 'an arpeggio\'s arrow at the wrong end',
     edits: [["const top = a.dir === 'up' && staves[0] === staffId, bottom = a.dir === 'down' && staves[staves.length - 1] === staffId;",
-      "const top = a.dir === 'down' && staves[0] === staffId, bottom = a.dir === 'up' && staves[staves.length - 1] === staffId;"]] }
+      "const top = a.dir === 'down' && staves[0] === staffId, bottom = a.dir === 'up' && staves[staves.length - 1] === staffId;"]] },
+  /* the G4d-1a fixer (G04 §35.18): G4-L4 and G4-L5, and each rule the review found held by the layout hash alone (R3) - every
+     one caught by the metric that names it */
+  { id: 'TH', file: 'marks.js', expect: ['eg.tie.dir_err'], probes: ['E08', 'burg015'], what: 'G4-L4\'s chord halves flipped: the upper half of a chord ties down, the lower half up',
+    edits: [["      return k < n / 2 ? 'above' : 'below';", "      return k < n / 2 ? 'below' : 'above';"]] },
+  { id: 'TD', file: 'marks.js', expect: ['eg.tie.endpoint_err'], probes: ['E08'], what: 'a displaced head\'s tie meets its neighbour: the end is taken wherever it first falls, nearer the other head of the second',
+    edits: [['      const fits = p => { const d = gapTo(p, own); return d <= CV.TIE.reach && others.every(o => gapTo(p, o.box) > d + CV.TIE.lead); };',
+      '      const fits = p => !!p;']] },
+  { id: 'RV26', file: 'marks.js', expect: ['eg.tie.crossings'], probes: ['E08'], what: 'a tie starts through its own augmentation dot (dots ignored at the start)',
+    edits: [["      const dotted = start && I.os.some(o => o.kind === 'dot' && o.staffKey === h.staffKey);", '      const dotted = false;'],
+      ["      const kinds = start ? ['notehead', 'dot', 'stem', 'flag'] : ['notehead', 'stem', 'accidental'];", "      const kinds = start ? ['notehead', 'stem', 'flag'] : ['notehead', 'stem', 'accidental'];"]] },
+  { id: 'RV25', file: 'marks.js', expect: ['eg.tie.crossings'], probes: ['E08'], what: 'a tie into a chord ends through the chord\'s accidental (accidentals ignored at the end)',
+    edits: [["      const kinds = start ? ['notehead', 'dot', 'stem', 'flag'] : ['notehead', 'stem', 'accidental'];", "      const kinds = start ? ['notehead', 'dot', 'stem', 'flag'] : ['notehead', 'stem'];"]] },
+  { id: 'RV23', file: 'marks.js', expect: ['eg.slur.missing'], probes: ['E11'], what: 'a slur over three systems or more drawn without its middle parts',
+    edits: [["      else if (fs !== undefined && ts !== undefined && fs < si && si < ts) part = 'mid';", '      else void 0;']] },
+  { id: 'RV8b', file: 'marks.js', expect: ['eg.gliss.errors'], probes: ['E40'], what: 'a glissando ending at its first note\'s height (the wrong pitch)',
+    edits: [['p3 = th ? [leftOf(th) - CV.GLISS.gap, cy(th)] : null;', 'p3 = th ? [leftOf(th) - CV.GLISS.gap, fh ? cy(fh) : cy(th)] : null;']] },
+  { id: 'RV9', expect: ['eg.fingering.far'], probes: ['E23'], what: 'fingering\'s width left out of the spacing (a finger wider than its head does not widen its column)',
+    edits: [['if (t.trim()) fw = Math.max(fw, TX.measure(t, MK.FINGER.font, MK.FINGER.size).w);', 'if (t.trim()) fw = Math.max(fw, 0);']] },
+  { id: 'RV20', file: 'marks.js', expect: ['eg.slur.side_err'], probes: ['E10'], what: 'a slur over stems that all point up drawn above them (§13.2: below)',
+    edits: [["      if (dirs.length && dirs.every(d => d === 'up')) return 'below';", "      if (dirs.length && dirs.every(d => d === 'up')) return 'above';"]] },
+  { id: 'RV20c', file: 'marks.js', expect: ['eg.slur.side_err'], probes: ['E10'], what: 'a slur\'s side from the voice role inverted (the upper voice\'s slur below)',
+    edits: [["      if (role === 'up') return 'above';\n      if (role === 'down') return 'below';\n      const fe = K.events.get(s.from)",
+      "      if (role === 'up') return 'below';\n      if (role === 'down') return 'above';\n      const fe = K.events.get(s.from)"]] },
+  { id: 'RV19', file: 'marks.js', expect: ['eg.mark.glyph_err'], probes: ['E15'], what: 'a fermata\'s shape ignored (an angled or square one drawn as the normal one)',
+    edits: [["it.kind === 'fermata' ? [MT.fermata(it.what.shape, above)]", "it.kind === 'fermata' ? [MT.fermata('normal', above)]"]] },
+  { id: 'FS', file: 'marks.js', expect: ['eg.fingering.far'], probes: ['E23', 'czerny849_005'], what: 'G4-L5 undone: fingering placed after the slurs (outside them, away from its notes)',
+    edits: [['    here.forEach(id => {\n      const I = infoOf(id), e = I.e;\n      if (!e || !e.heads.some(h => (h.fingering || []).length)) return;',
+      '    const fingering = () => here.forEach(id => {\n      const I = infoOf(id), e = I.e;\n      if (!e || !e.heads.some(h => (h.fingering || []).length)) return;'],
+      ['  }\n\n  return Object.freeze({ PAD,', '    fingering();\n  }\n\n  return Object.freeze({ PAD,']] },
+  { id: 'FP', file: 'skyline.js', expect: ['eg.layout.far_undiagnosed'], probes: ['E23'], what: 'FAR_PLACEMENT suppressed: an item set more than 8 sp from its staff says nothing (§10.5)',
+    edits: [['      if (d > far + EPS) o.diag({', '      if (false) o.diag({']] }
 ];
 const CONTROLS = [
   { id: 'N1', what: 'a comment reworded',
@@ -265,6 +296,10 @@ const PROBES = {
   E31: 'tests/engrave/fixtures/e/E31-noteheads.musicxml',
   E32: 'tests/engrave/fixtures/e/E32-accidentals-cautionary.musicxml',
   E40: 'tests/engrave/fixtures/e/E40-arpeggio-gliss.musicxml',
+  /* the G4d-1a fixer: chords tied whole (G4-L4: four heads, a second, dotted, into a chord's sharp); a phrase slur over three
+     systems or more */
+  E08: 'tests/engrave/fixtures/e/E08-tie-partial-chord.musicxml',
+  E11: 'tests/engrave/fixtures/e/E11-slur-rest-system.musicxml',
   G16: () => goldenGraphs().find(([k]) => k === 'golden/G16.sg.json')[1],
   czerny849_005: 'catalog/method/czerny849/005.mxl',
   /* G4d-1a: triplets whose beams stand inside the staff - G4c put 12 of their numbers more than 1.5 sp from the beam */
@@ -334,7 +369,7 @@ test.before(() => {
 });
 test.after(() => { if (tmp) fs.rmSync(tmp, { recursive: true, force: true }); });
 
-test('every layout mutation (G04 §23: M1-M12, M14-M18, M21, M23, M24; the G4c review\'s RB, RB2, RF, RI, RK, RX, RY, the fixer\'s F1-F3 and the Lead\'s RA; G4d-1a\'s own) is live and caught by the metric or check it names; N1 and N2 change nothing', async (t) => {
+test('every layout mutation (G04 §23: M1-M12, M14-M18, M21, M23, M24; the G4c review\'s RB, RB2, RF, RI, RK, RX, RY, the fixer\'s F1-F3 and the Lead\'s RA; G4d-1a\'s own; the G4d-1a fixer\'s TH, TD, FS, FP and the review\'s RV8b, RV9, RV19, RV20, RV20c, RV23, RV25, RV26) is live and caught by the metric or check it names; N1 and N2 change nothing', async (t) => {
   const graphs = {};
   for (const k of Object.keys(PROBES)) {
     graphs[k] = typeof PROBES[k] === 'function' ? PROBES[k]() : await graphOf(PROBES[k]);

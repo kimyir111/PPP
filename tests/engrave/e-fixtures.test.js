@@ -80,7 +80,7 @@ test('E04-E07 tuplets: show options, printed:false, nesting, a rest member, one-
 
 test('E08-E11 ties and slurs: the graph\'s own pairs, over a bar line, a rest and a system break', async () => {
   const g8 = await load('E08'), p8 = E.plan(g8);
-  assert.equal(p8.ties.length, 1);
+  assert.equal(p8.ties.length, 12, 'E08: the partial tie, then whole chords of four, three and three heads tied, and a tie into a chord (G4d-1a, G4-L4)');
   const head = g8.parts[0].events.flatMap(e => e.heads || []).find(h => h.id === p8.ties[0].from);
   assert.equal(head.pitch.step, 'E', 'E08: only the E of the chord is tied');
   const p9 = E.plan(await load('E09'));
@@ -135,7 +135,8 @@ test('E15-E17 marks: articulations, fermatas, dynamics, hairpins, pedal marks an
   const p15 = E.plan(await load('E15'));
   assert.deepEqual(p15.events.flatMap(e => e.arts).sort(), ['accent', 'accent', 'breath-mark', 'detached-legato', 'marcato', 'staccato', 'staccato', 'tenuto']);
   assert.deepEqual(p15.events.flatMap(e => e.orn.map(o => o.type)).sort(), ['inverted-mordent', 'tremolo', 'trill', 'turn']);
-  assert.equal(entries(p15, 'fermata', 'drawn').length, 3, 'two on notes, one over the final bar line');
+  assert.equal(entries(p15, 'fermata', 'drawn').length, 5, 'four on notes (one angled, one square), one over the final bar line');
+  assert.deepEqual(p15.events.filter(e => e.fermata && e.fermata.shape).map(e => e.fermata.shape), ['angled', 'square']);
   const p16 = E.plan(await load('E16'));
   assert.deepEqual(p16.marks.filter(m => m.kind === 'dynamic').map(m => m.value), ['p', 'f', 'pp']);
   assert.deepEqual(p16.lines.filter(l => l.kind === 'wedge').map(l => l.wedge), ['crescendo', 'diminuendo']);
@@ -211,8 +212,8 @@ test('E22-E25: endings and jumps, fingering, lyrics, chord symbols (and a config
   assert.equal(p22.endings.length, 2);
   assert.deepEqual(p22.jumps.map(j => j.kind).sort(), ['coda', 'dalsegno', 'segno', 'tocoda']);
   const p23 = E.plan(await load('E23'));
-  assert.equal(entries(p23, 'fingering', 'drawn').length, 7);
-  assert.equal(entries(E.plan(await load('E23'), { fingering: false }), 'fingering', 'suppressed', 'config-off').length, 7);
+  assert.equal(entries(p23, 'fingering', 'drawn').length, 18);
+  assert.equal(entries(E.plan(await load('E23'), { fingering: false }), 'fingering', 'suppressed', 'config-off').length, 18);
   const p24 = E.plan(await load('E24'));
   assert.deepEqual(p24.events.flatMap(e => e.lyrics.map(l => l.text)), ['Sing', 'hap', 'py']);
   const p25 = E.plan(await load('E25'));

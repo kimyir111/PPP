@@ -66,7 +66,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (SG, MT, SP, BR, SK, CN, NT, TX, CV, MK) {
   'use strict';
 
-  const VERSION = 'engr/2';
+  const VERSION = 'engr/3';
   const R = SG.rational, EG = MT.ENGRAVING, r2 = CN.r2;
   const STEPS = 'CDEFGAB';
   /* horizontal gaps, sp (G04 §9.3, §15.4) */
@@ -1076,7 +1076,8 @@
        lines, each voice's notes in time order, each staff's place in its part */
     const mEvents = new Map(plan.events.filter(e => !e.hidden && !(e.grace && e.grace.after)).map(e => [e.id, { id: e.id, m: e.m, at: e.at, staff: e.staff,
       voice: e.voice, kind: e.kind, grace: !!e.grace, dots: e.dots || 0, arts: (e.arts || []).slice(), orn: (e.orn || []).map(o => Object.assign({}, o)),
-      fermata: e.fermata || null, heads: e.heads.map(h => ({ id: h.id, staff: h.staff || e.staff, fingering: (h.fingering || []).map(f => Object.assign({}, f)) })) }]));
+      fermata: e.fermata || null, heads: e.heads.map(h => ({ id: h.id, staff: h.staff || e.staff, fingering: (h.fingering || []).map(f => Object.assign({}, f)),
+        step: (h.written || h.pos) ? (h.written || h.pos).oct * 7 + STEPS.indexOf((h.written || h.pos).step) : null })) }]));
     const headEvent = new Map();
     plan.events.forEach(e => e.heads.forEach(h => headEvent.set(h.id, e.id)));
     const voiceSeq = new Map();

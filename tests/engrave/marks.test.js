@@ -98,6 +98,15 @@ test('§10.1: place() sets an item outside what the skyline holds there, a pad a
   assert.throws(() => s.put({ x0: 15, x1: 16, h: 1, side: 'above', pad: 0.5, limit: null, floor: null }), /no limit and no floor/);
   /* the old positional form is the same function (a volta) */
   assert.deepEqual(r2(s.place(2, 3, 1, 'above', 0.2, 0)), [2, -2, 3, -1]);
+  /* §10.5: on a staff's skyline, an item set more than 8 sp from the staff is placed all the same and put() says so, naming it */
+  const far = [];
+  const t = new SK.Skyline(0, 20, { edges: [0, 4], far: SK.FAR, diag: d => far.push(d) });
+  t.add([5, -8.5, 6, -7.5]);
+  assert.deepEqual(r2(t.put({ ref: 'near', x0: 1, x1: 2, h: 1, side: 'above', pad: 0.3, limit: 0 })), [1, -1.3, 2, -0.3]);
+  assert.deepEqual(r2(t.put({ ref: 'high', x0: 5, x1: 6, h: 1, side: 'above', pad: 0.3, limit: 0 })), [5, -9.8, 6, -8.8]);
+  assert.deepEqual(r2(t.put({ ref: 'low', x0: 9, x1: 10, h: 1, side: 'below', pad: 0.3, limit: 4, floor: 12 })), [9, 12.3, 10, 13.3]);
+  assert.deepEqual(far.map(d => [d.code, d.refs[0]]), [['FAR_PLACEMENT', 'high'], ['FAR_PLACEMENT', 'low']]);
+  assert.equal(SK.FAR, 8);
   /* a mark inside the staff keeps to a space: its centre moves outward to the nearest space centre */
   const snap = MK.spaceSnap('above', 4);
   assert.deepEqual(r2(snap([0, 1.8, 1, 2.2])), [0, 1.3, 1, 1.7]);
@@ -127,6 +136,14 @@ test('§13: a curve bows 4h·t(1-t) off its chord; ties 0.5-1.2 sp by length; a 
   assert.ok(d.collides && d.lift === CV.SLUR.tries * CV.SLUR.move);
   const e = CV.slur([0, 0], [10, 0], 'above', [[4.75, 5.25, -4]]);
   assert.ok(!e.collides && e.lift > 0 && e.curve.p0[1] === -e.lift, 'moved out, then cleared');
+  /* G4-L5: a finger by an end (a hard cell) is never crossed, up to the end - the end zone does not excuse it */
+  const soft = CV.slur([0, 0], [6, -4], 'above', [[5.6, 5.9, -3.9]]);
+  assert.ok(CV.yAt(soft.curve, 5.6) + CV.SLUR.thick / 2 > -3.9, 'in the end zone an ordinary cell is the end note\'s own: the curve goes through it');
+  const hard = CV.slur([0, 0], [6, -4], 'above', [[5.6, 5.9, -3.9, true]]);
+  assert.ok(!hard.collides && [5.6, 5.75, 5.9].every(x => CV.yAt(hard.curve, x) <= -3.9 - CV.SLUR.thick / 2 - CV.SLUR.touch + 1e-6), 'the curve passes over the finger');
+  /* a long slur whose notes by its end stand high: past TRIES moves together, one end moves further than the other */
+  const long = CV.slur([0, 0], [40, 0], 'above', [[37.75, 38.25, -5]]);
+  assert.ok(!long.collides && long.curve.p3[1] < long.curve.p0[1] && long.lift > CV.SLUR.tries * CV.SLUR.move, 'the end by the high notes moved out further');
   /* samples: one box per 0.5 sp of run, covering the line */
   const bs = CV.samples(c, 0.2);
   assert.equal(bs.length, 12);
@@ -135,8 +152,8 @@ test('§13: a curve bows 4h·t(1-t) off its chord; ties 0.5-1.2 sp by length; a 
 
 test('A5: every tie is drawn - a chord\'s partial tie, over bar lines, across a system break as two halves, from a voice to another, PPP\'s inferred ties inside a bar (G4-U2 A)', async () => {
   const x8 = await lay('E08');
-  assert.equal(x8.e.curves.filter(c => c.kind === 'tie').length, 1, 'E08: only the E of the chord');
-  const t8 = x8.e.curves[0];
+  assert.equal(x8.e.curves.filter(c => c.kind === 'tie').length, 12, 'E08: the E of the first chord, then whole chords of four, three and three, and one into a chord');
+  const t8 = x8.e.curves.find(c => c.refs[0] === x8.p.ties[0].id);
   assert.deepEqual(t8.heads, [x8.p.ties[0].from, x8.p.ties[0].to]);
   /* §16.4: PPP's own curve, with VexFlow's class */
   assert.match(E.svg(x8.e, x8.p), new RegExp('<path class="vf-stavetie ppp-tie" data-tie="' + t8.refs[0] + '" d="M[^"]+Z"/>'));
@@ -164,6 +181,36 @@ test('A5: every tie is drawn - a chord\'s partial tie, over bar lines, across a 
   const inferred = x16.p.ties.filter(t => t.inferred);
   assert.equal(inferred.length, 3);
   inferred.forEach(t => assert.ok(x16.e.curves.some(c => c.refs[0] === t.id)));
+  /* G4-L4 on E08, at both widths: a chord's ties by each head's place in its chord (the outer ones away from it, the upper half up,
+     the lower half down, an odd chord's middle away from the stem); each end nearer its own head than any other head of the chord -
+     the second's displaced head too; the dotted chord's ties after the dots; the tie into the chord with a sharp clears the sharp */
+  for (const bp of ['desktop', 'phone']) {
+    const x = await lay('E08', { breakpoint: bp });
+    assert.deepEqual(zeroes(x.m), [], bp);
+    const byEv = new Map();
+    x.e.curves.filter(c => c.kind === 'tie').forEach(c => {
+      const h = x.e.objects.find(o => o.id === c.heads[0]);
+      if (!byEv.has(h.event)) byEv.set(h.event, []);
+      byEv.get(h.event).push({ c, h });
+    });
+    const chords = [...byEv.values()].filter(l => l.length > 1).map(l => l.sort((a, b) => cy(a.h.box) - cy(b.h.box)).map(({ c, h }) => {
+      const st = x.e.objects.find(o => o.id === h.event + '#stem');
+      return bulge(c) + (st ? ':' + st.dir : '');
+    }).join(' '));
+    assert.deepEqual(chords, ['above:down above:down below:down below:down', 'above:up below:up below:up', 'above:down above:down below:down'], bp);
+    const dotted = [...byEv.values()].find(l => l.length === 3 && x.e.objects.some(o => o.kind === 'dot' && o.event === l[0].h.event));
+    const dots = x.e.objects.filter(o => o.kind === 'dot' && o.event === dotted[0].h.event);
+    dotted.forEach(({ c }) => assert.ok(sampleBoxes(c).every(b => dots.every(d => b[3] <= d.box[1] + 0.01 || b[1] >= d.box[3] - 0.01 || b[2] <= d.box[0] + 0.01 ||
+      b[0] >= d.box[2] - 0.01)), c.id + ': clear of the dots - after them where they stand at its height'));
+    assert.ok(dotted.some(({ c }) => c.p0[0] >= Math.max(...dots.map(o => o.box[2]))), 'a tie at a dot\'s height starts after it');
+    const sharp = x.e.objects.find(o => o.kind === 'accidental' && o.glyph === 'accidentalSharp' && x.p.ties.some(t => {
+      const to = x.e.objects.find(q => q.id === t.to);
+      return to && to.event === o.event;
+    }));
+    const into = x.e.curves.find(c => c.kind === 'tie' && x.e.objects.find(o => o.id === c.heads[1]).event === sharp.event);
+    assert.ok(sampleBoxes(into).every(b => b[3] <= sharp.box[1] + 0.01 || b[1] >= sharp.box[3] - 0.01 || b[2] <= sharp.box[0] + 0.01 || b[0] >= sharp.box[2] - 0.01),
+      bp + ': the tie into the chord passes the sharp');
+  }
   /* §13.1 direction: a single note's tie away from its stem; ends 0.2 sp from the head's centre, off its edge */
   const x9 = await lay('E09');
   x9.e.curves.filter(c => c.kind === 'tie' && c.part === 'whole').forEach(c => {
@@ -182,6 +229,24 @@ test('A6: every slur between its own notes - overlapping slurs, a slur over a re
     assert.ok(c.p3[0] >= at(s.to)[0] - 0.01 && c.p3[0] <= at(s.to)[2] + 0.01, s.id + ' ends at its note');
     assert.deepEqual(c.events, [s.from, s.to]);
   });
+  /* §13.2's side (the review's RV20): bar 2's slur over stems all up - below; bar 3's two voices - the upper voice's above, the
+     lower voice's below, whatever their stems */
+  const sideOf = s => bulge(x10.e.curves.find(q => q.refs[0] === s.id));
+  const inBar = (s, k) => x10.p.events.find(e => e.id === s.from).m === x10.p.measures[k].id;
+  assert.deepEqual(x10.p.slurs.filter(s => inBar(s, 1)).map(sideOf), ['below']);
+  const two = x10.p.slurs.filter(s => inBar(s, 2));
+  assert.deepEqual(two.map(s => x10.e.objects.find(o => o.id === s.from + '#stem').dir + ':' + sideOf(s)).sort(), ['down:below', 'up:above']);
+  assert.equal(x10.m['eg.slur.side_err'], 0);
+  /* a phrase slur over six bars: a middle part in every system between its halves, at both widths (the review's RV23) */
+  for (const bp of ['desktop', 'phone']) {
+    const x = await lay('E11', { breakpoint: bp });
+    const phrase = x.p.slurs[x.p.slurs.length - 1];
+    const parts = x.e.curves.filter(c => c.refs[0] === phrase.id);
+    const from = x.e.objects.find(o => o.event === phrase.from && o.kind === 'notehead').system, to = x.e.objects.find(o => o.event === phrase.to && o.kind === 'notehead').system;
+    assert.ok(to - from >= 2, bp + ': three systems or more');
+    assert.deepEqual(parts.map(c => c.part + c.system), ['start' + from].concat(Array.from({ length: to - from - 1 }, (v, k) => 'mid' + (from + 1 + k)), ['end' + to]), bp);
+    assert.equal(x.m['eg.slur.missing'], 0);
+  }
   const x11 = await lay('E11', { respectSourceBreaks: true });
   const placed = x11.p.slurs.find(s => s.placement === 'above');
   assert.equal(bulge(x11.e.curves.find(c => c.refs[0] === placed.id)), 'above');
@@ -201,10 +266,14 @@ test('A7: articulations, ornaments, fermatas (on notes and a bar line), a tremol
   assert.deepEqual(zeroes(x.m), []);
   const kinds = {};
   x.e.objects.forEach(o => { kinds[o.kind] = (kinds[o.kind] || 0) + 1; });
-  assert.ok(kinds.ornament === 3 && kinds.tremolo === 3 && kinds.fermata === 3, JSON.stringify(kinds));
+  assert.ok(kinds.ornament === 3 && kinds.tremolo === 3 && kinds.fermata === 5, JSON.stringify(kinds));
   const glyphs = x.e.objects.filter(o => ['articulation', 'ornament', 'fermata', 'tremolo'].indexOf(o.kind) >= 0).map(o => o.glyph).sort();
   ['articStaccatoAbove', 'articTenutoAbove', 'articAccentAbove', 'articMarcatoAbove', 'fermataAbove', 'ornamentTrill', 'ornamentShortTrill', 'ornamentTurn',
-    'tremolo1', 'breathMarkComma'].forEach(n => assert.ok(glyphs.indexOf(n) >= 0, n));
+    'tremolo1', 'breathMarkComma', 'fermataShortAbove', 'fermataLongAbove'].forEach(n => assert.ok(glyphs.indexOf(n) >= 0, n));
+  /* an angled fermata is the short one, a square fermata the long one (the review's RV19) */
+  const shaped = x.p.events.filter(e => e.fermata && e.fermata.shape);
+  assert.deepEqual(shaped.map(e => e.fermata.shape + ':' + x.e.objects.find(o => o.id === e.id + '#fermata').glyph), ['angled:fermataShortAbove', 'square:fermataLongAbove']);
+  assert.equal(x.m['eg.mark.glyph_err'], 0);
   /* staccato with accent on G5: the staccato nearer the note */
   const g5 = x.p.events.find(e => e.arts.join() === 'staccato,accent');
   const st = x.e.objects.find(o => o.id === g5.id + '#art0'), ac = x.e.objects.find(o => o.id === g5.id + '#art1');
@@ -241,6 +310,29 @@ test('A7: printed fingering above the right hand and below the left (the graph\'
   assert.ok(o5.box[3] <= x.e.objects.find(o => o.id === f5.heads[0].id).box[1]);
   /* the SVG writes it as text in the page's family */
   assert.match(E.svg(x.e, x.p), /<text class="ppp-fingering" x="[\d.]+" y="[\d.]+" font-family="Figtree, Arial, sans-serif" font-size="1.4">5<\/text>/);
+  /* G4-L5: the sixteenths' fingers stand by their notes, inside the slur over them - the slur clears them; none farther from its note
+     than what stands between (eg.fingering.far) */
+  const slur = x.e.curves.find(c => c.kind === 'slur');
+  const under = fs1.filter(o => o.box[0] > slur.p0[0] - 0.5 && o.box[2] < slur.p3[0] + 0.5 && o.staffKey === x.p.staves[0].id);
+  assert.equal(under.length, 8);
+  under.forEach(o => {
+    const h = x.e.objects.find(q => q.kind === 'notehead' && q.event === o.event);
+    assert.ok(o.box[3] <= h.box[1] + 0.01 && CV.yAt(slur, cx(o.box)) < o.box[1] - CV.SLUR.thick / 2, o.id + ' between its note and the slur');
+  });
+  assert.equal(x.m['eg.fingering.far'], 0);
+  /* a finger wider than its head ("4-3") widens its column: it stands clear of its neighbours' fingers (§9, the review's RV9) */
+  const wide = fs1.find(o => o.text === '4-3');
+  const head = x.e.objects.find(q => q.kind === 'notehead' && q.event === wide.event);
+  assert.ok(wide.box[2] - wide.box[0] > head.box[2] - head.box[0]);
+  fs1.filter(o => o !== wide && o.staffKey === wide.staffKey).forEach(o => assert.ok(o.box[2] <= wide.box[0] + 0.01 || o.box[0] >= wide.box[2] - 0.01 ||
+    o.box[3] <= wide.box[1] + 0.01 || o.box[1] >= wide.box[3] - 0.01, o.id + ' clear of the wide finger'));
+  /* §10.5: the finger over a note far above the staff is placed all the same and named by FAR_PLACEMENT */
+  const high = x.p.events.find(e => e.heads.length && (e.heads[0].written || e.heads[0].pos).oct === 7);
+  const hf = fs1.find(o => o.event === high.id);
+  assert.ok(x.e.systems[0].staves[0].y - hf.box[3] > 8, 'more than 8 sp above the staff');
+  assert.deepEqual(x.e.diagnostics.filter(d => d.code === 'FAR_PLACEMENT').map(d => d.refs[0]), [hf.id]);
+  assert.equal(x.m['eg.layout.far_placements'], 1);
+  assert.equal(x.m['eg.layout.far_undiagnosed'], 0);
 });
 
 test('A7, A12: arpeggios (up, down, against), glissandi (wavy, a slide), noteheads (x, diamond, slash, in parentheses), cautionary and bracketed accidentals, percussion heads and stems', async () => {
@@ -301,11 +393,11 @@ test('carry-overs: a rest off the staff sits on a ledger line of its own; a tupl
   assert.ok(inside.length > 0, 'numbers inside the staff');
 });
 
-test('versions (G4-D1a-1): every change to what the plan and the layout output moves their version - plan/2, engr/2 - and the layout says whose plan it drew', async () => {
+test('versions (G4-D1a-1): every change to what the plan and the layout output moves their version - plan/2, engr/3 (G4-L4, G4-L5) - and the layout says whose plan it drew', async () => {
   const x = await lay('E01');
   assert.equal(x.p.version, 'plan/2');
   assert.equal(E.PLAN_VERSION, 'plan/2');
-  assert.equal(x.e.version, 'engr/2');
+  assert.equal(x.e.version, 'engr/3');
   assert.ok(x.e.planKey.endsWith(':plan/2'));
   assert.match(E.svg(x.e, x.p), /data-plan="[^"]+:plan\/2"/);
   /* G4d-1a's head field: the percussion kit's notehead and stem, or null */
@@ -390,6 +482,40 @@ test('the G4d-1a metrics find the defects they name (negative controls on real l
   ok(x23, e, 'eg.text.width_err', 'a finger wider than the table says');
   e = clone(x9); e.curves[0].p0 = [-3, e.curves[0].p0[1]];
   ok(x9, e, 'eg.clip.curves', 'a curve off the page');
+  /* the fixer (G04 §35.18): G4-L4, G4-L5 and the review's R3 */
+  const x8 = await lay('E08'), x11 = await lay('E11'), x10b = await lay('E10');
+  [x8, x11].forEach(x => assert.deepEqual(zeroes(x.m), []));
+  const tieOf = (x, e2, pick) => e2.curves.find(c => c.kind === 'tie' && pick(x.e.objects.find(o => o.id === c.heads[0]), c));
+  e = clone(x8);
+  { const c = tieOf(x8, e, (h, c) => c.part === 'whole' && bulge(c) === 'above' && x8.e.objects.filter(o => o.kind === 'notehead' && o.event === h.event).length === 4);
+    const d1 = c.c1[1] - c.p0[1], d2 = c.c2[1] - c.p3[1]; c.c1[1] = c.p0[1] - d1; c.c2[1] = c.p3[1] - d2; }
+  ok(x8, e, 'eg.tie.dir_err', 'an upper-half tie of a four-note chord bowing down');
+  e = clone(x8);
+  { const c = tieOf(x8, e, h => x8.e.objects.filter(o => o.kind === 'notehead' && o.event === h.event).length === 3 && !x8.e.objects.some(o => o.kind === 'dot' && o.event === h.event) &&
+      bulge(x8.e.curves.find(q => q.heads[0] === h.id)) === 'above');
+    const to = e.objects.find(o => o.id === c.heads[1]), other = e.objects.filter(o => o.kind === 'notehead' && o.event === to.event && o !== to).sort((a, b) => Math.abs(cy(a.box) - cy(to.box)) - Math.abs(cy(b.box) - cy(to.box)))[0];
+    c.p3 = [other.box[0] - 0.1, cy(other.box) - 0.3]; }
+  ok(x8, e, 'eg.tie.endpoint_err', 'the displaced head\'s tie meeting its neighbour');
+  e = clone(x8);
+  { const c = tieOf(x8, e, h => x8.e.objects.some(o => o.kind === 'dot' && o.event === h.event) && bulge(x8.e.curves.find(q => q.heads[0] === h.id)) === 'above' &&
+      x8.e.objects.filter(o => o.kind === 'notehead' && o.event === h.event).sort((a, b) => cy(a.box) - cy(b.box))[1].id === h.id);
+    const h = e.objects.find(o => o.id === c.heads[0]), dot = e.objects.filter(o => o.kind === 'dot' && o.event === h.event).sort((a, b) => Math.abs(cy(a.box) - cy(h.box)) - Math.abs(cy(b.box) - cy(h.box)))[0];
+    const dx = h.box[2] + 0.1 - c.p0[0], dy = cy(dot.box) - c.p0[1]; ['p0', 'c1', 'c2'].forEach(k => { c[k] = [c[k][0] + (k === 'p0' ? dx : 0), c[k][1] + dy]; }); }
+  ok(x8, e, 'eg.tie.crossings', 'a tie starting through its own dot');
+  e = clone(x11); e.curves = e.curves.filter(c => c.part !== 'mid');
+  ok(x11, e, 'eg.slur.missing', 'a phrase slur\'s middle part gone');
+  e = clone(x10b);
+  { const s = x10b.p.slurs.find(q => x10b.p.events.find(ev => ev.id === q.from).m === x10b.p.measures[1].id), c = e.curves.find(q => q.refs[0] === s.id);
+    const d1 = c.c1[1] - c.p0[1], d2 = c.c2[1] - c.p3[1]; c.c1[1] = c.p0[1] - d1; c.c2[1] = c.p3[1] - d2; }
+  ok(x10b, e, 'eg.slur.side_err', 'a slur over stems all up bowing above');
+  e = clone(x40); { const c = e.curves.find(q => q.kind === 'gliss' && q.part === 'whole'); c.p3 = [c.p3[0], c.p0[1]]; }
+  ok(x40, e, 'eg.gliss.errors', 'a glissando ending at its first note\'s height');
+  e = clone(x15); e.objects.filter(o => /^fermata(Short|Long)/.test(o.glyph || '')).forEach(o => { o.glyph = o.glyph.replace(/Short|Long/, ''); });
+  ok(x15, e, 'eg.mark.glyph_err', 'an angled and a square fermata drawn as the normal one');
+  e = clone(x23); { const f = e.objects.find(o => o.kind === 'fingering' && o.text === '4-3'); f.box = [f.box[0], f.box[1] - 3, f.box[2], f.box[3] - 3]; }
+  ok(x23, e, 'eg.fingering.far', 'a finger 3 sp farther from its note than it need be');
+  e = clone(x23); e.diagnostics = e.diagnostics.filter(d => d.code !== 'FAR_PLACEMENT');
+  ok(x23, e, 'eg.layout.far_undiagnosed', 'a finger more than 8 sp from the staff with nothing saying so');
 });
 
 test('the layout stays within its checks on the E fixtures G4d-1a is about, at both screen widths (A20, A22)', async () => {

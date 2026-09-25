@@ -52,12 +52,18 @@ const ZERO = ['eg.ledger.silent', 'eg.ledger.invented', 'eg.ledger.duplicate', '
   'eg.mark.missing.fingering', 'eg.mark.missing.gliss', 'eg.mark.missing.arpeggio', 'eg.mark.side_err', 'eg.mark.order_err', 'eg.mark.on_line',
   'eg.fingering.side_err', 'eg.fingering.order_err', 'eg.arpeggio.errors', 'eg.notehead.shape_err', 'eg.accidental.enclosure_err',
   'eg.rest.ledger_missing', 'eg.tuplet.number_far', 'eg.overlap.text', 'eg.overlap.text_text', 'eg.overlap.mark_mark', 'eg.overlap.mark_note',
-  'eg.text.width_err', 'eg.text.missing_glyph', 'eg.clip.curves'];
+  'eg.text.width_err', 'eg.text.missing_glyph', 'eg.clip.curves',
+  /* the G4d-1a fixer (G04 §35.18): G4-L4's tie ends and crossings, G4-L5's fingering by its notes and §10.5's FAR_PLACEMENT
+     named, the review's R3 (a slur's middle parts, its side, a mark's glyph) */
+  'eg.tie.crossings', 'eg.slur.missing', 'eg.slur.side_err', 'eg.mark.glyph_err', 'eg.fingering.far', 'eg.layout.far_undiagnosed'];
 const ONE = ['eg.beam.graph_drawn_ratio', 'eg.beam.members_exact', 'eg.tuplet.drawn_ratio', 'eg.tuplet.show_ok', 'eg.tie.drawn_ratio',
   'eg.slur.pair_exact', 'eg.event.multiset_equal', 'eg.staff.assignment_exact', 'eg.source.agree_live', 'eg.source.agree_projected'];
 /* recorded, lower is better: more systems drawn at a smaller staff size is a regression; so is a slur more that crosses a
-   note between its ends (G4d-1a: at most 1 % of a suite's slurs, eg.curve.hit_ratio, each diagnosed) */
-const LOWER = ['eg.system.scaled', 'eg.curve.hits'];
+   note between its ends (G4d-1a: at most 1 % of a suite's slurs, eg.curve.hit_ratio, each diagnosed), and an item more placed
+   farther than 8 sp from its staff (§10.5 FAR_PLACEMENT, §21.2 eg.layout.far_placements: recorded, each named). The suite's
+   share of slurs that cross a note (eg.curve.hit_ratio, A22) is a ratio where lower is better: it is held here, not with the
+   drawn ratios (the G4d-1a fixer: compare() read every '.ratio' as higher-is-better, so a rise passed and a fall failed) */
+const LOWER = ['eg.system.scaled', 'eg.curve.hits', 'eg.layout.far_placements', 'eg.curve.hit_ratio'];
 /* a graph a legacy Score cannot rebuild, and the one code fromScore names it with (G04 §32.10): percussion has no pitch on a Score */
 const PROJECTION_ALLOWED = { 'e/E27-percussion.musicxml': 'percussion-or-unpitched' };
 const MARKS = ['articulation', 'ornament', 'fermata', 'fingering', 'dynamic', 'wedge', 'pedal', 'pedal-change', 'ottava', 'words', 'tempo',
@@ -216,7 +222,7 @@ function compare(sum, base) {
     if (sum.graphs !== base.graphs) bad.push('graphs ' + sum.graphs + ' vs baseline ' + base.graphs);
     Object.keys(base).filter(k => k.indexOf('eg.') === 0).forEach(k => {
       const v = sum[k] === undefined ? 0 : sum[k], b = base[k];
-      const higherIsBetter = ONE.indexOf(k) >= 0 || k.indexOf('ratio') >= 0;
+      const higherIsBetter = LOWER.indexOf(k) < 0 && (ONE.indexOf(k) >= 0 || k.indexOf('ratio') >= 0);
       if (higherIsBetter ? v < b : (k.indexOf('.deferred.') >= 0 || ZERO.indexOf(k) >= 0 || LOWER.indexOf(k) >= 0) ? v > b : false) bad.push(k + ' ' + v + ' vs baseline ' + b);
     });
     /* every zero target the suite measures is in the baseline (a metric added later is re-baselined, not skipped) */

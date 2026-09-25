@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- slur 1 over notes 1-3, slur 2 over notes 2-4 (G04 §22.1; written by tests/engrave/tools/make-e-fixtures.js) -->
+<!-- slur 1 over notes 1-3, slur 2 over notes 2-4; then a slur over stems that all point up; then a slur in each of two voices (G04 §22.1; written by tests/engrave/tools/make-e-fixtures.js) -->
 <score-partwise version="4.0">
   <work><work-title>Overlapping slurs</work-title></work>
   <identification><creator type="composer">PPP</creator></identification>
@@ -11,6 +11,27 @@
       <note><pitch><step>D</step><octave>5</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><slur type="start" number="2"/></notations></note>
       <note><pitch><step>E</step><octave>5</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><slur type="stop" number="1"/></notations></note>
       <note><pitch><step>F</step><octave>5</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><slur type="stop" number="2"/></notations></note>
+      <backup><duration>1920</duration></backup>
+      <note><pitch><step>C</step><octave>3</octave></pitch><duration>1920</duration><voice>5</voice><type>whole</type><staff>2</staff></note>
+      </measure>
+    <measure number="2">
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><slur type="start" number="1"/></notations></note>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><slur type="stop" number="1"/></notations></note>
+      <backup><duration>1920</duration></backup>
+      <note><pitch><step>C</step><octave>3</octave></pitch><duration>1920</duration><voice>5</voice><type>whole</type><staff>2</staff></note>
+      </measure>
+    <measure number="3">
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><slur type="start" number="1"/></notations></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><slur type="stop" number="1"/></notations></note>
+      <backup><duration>1920</duration></backup>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>480</duration><voice>2</voice><type>quarter</type><staff>1</staff><notations><slur type="start" number="2"/></notations></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>480</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>480</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>480</duration><voice>2</voice><type>quarter</type><staff>1</staff><notations><slur type="stop" number="2"/></notations></note>
       <backup><duration>1920</duration></backup>
       <note><pitch><step>C</step><octave>3</octave></pitch><duration>1920</duration><voice>5</voice><type>whole</type><staff>2</staff></note>
       <barline location="right"><bar-style>light-heavy</bar-style></barline>
