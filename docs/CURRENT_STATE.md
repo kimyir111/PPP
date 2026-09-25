@@ -12,7 +12,7 @@ renderer is still the one drawing (16/16 renders byte-identical to `55d1bd5`). *
 (G04 §33–§33.17, DECISIONS G4-B1–B11, G4-L1). It lays a NotationPlan out as an EngravedScore, in Node and in the browser
 alike, and changes nothing a user sees — the app does not load it. **MX-1 (playback correctness, decision D-1) is CLOSED —
 merged as PR #13 (`e37d37a`)**: an 8va sounds where the file says and is drawn under its sign in every view, a pedal `change`
-lifts the damper. **Production still runs `72549cb`**; MX-1 reaches players on the next manual deploy. **G4c (notation core) is CLOSED —
+lifts the damper. **Production runs `0ef0950` since 2026-09-26** (deployed at the user's request, with G1/G2 and MX-1). **G4c (notation core) is CLOSED —
 merged as PR #15 (`e3c8c5a`)**: beams, stems, tuplets, voices, rests, grace notes and `svg.js`, Node only, nothing a user
 sees. **G4d-1a (curves and marks attached to notes; G4-L3) is CLOSED — merged as PR #17 (`b4fe019`)**, after its review (NEEDS_FIX,
 MAJOR 3), the Lead's spec amendments G4-L4/G4-L5, its Fixer and the Lead's re-check (G04 §35–§35.19). **G4d-1b (marks
@@ -217,6 +217,10 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
 - `npm test` hardcodes port 8777. To test a worktree while another session's server holds 8777,
   run the worktree's server on another port and load a `-r` preload that rewrites the port in the
   test sources (G00 §18 records how).
+- `npm run test:scoregraph` runs its files in parallel, and on a fresh checkout several generate the same
+  `tests/bench/out/g3/jobs-<suite>.jsonl` at once; written in place, a reader could take a half-written file (CI
+  run 36174222416: 7 pedalled graphs, not ≥ 20). `g3_jobs.py` now writes a temp file and renames it into place,
+  and `g3-graphs.js` throws on a short file (`g3-jobs-race.test.js`; `PPP_G3_JOBS_DIR` moves the cache).
 
 ## Next
 
@@ -224,7 +228,7 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
   PR #15 `e3c8c5a`, PR #17 `b4fe019`, PR #19 `a6e1a75`); next G4d-2, then M-H1.** The order, gates and briefs are in `docs/PPP_MASTER_ROADMAP.md` (§14 current task, §15 next).
   - **MX-1 — CLOSED, merged as PR #13 (`e37d37a`)** after one independent review (NEEDS_FIX: BLOCKER 1, MAJOR 1 — octave
     lines missing in partial views and on cards), its Fixer and the Lead's re-check (section "MX-1 — playback correctness"
-    at the end of this file). Not deployed yet: production runs `72549cb` until the next manual deploy. Its follow-ups
+    at the end of this file). **Deployed 2026-09-26** (production `0ef0950`). Its follow-ups
     (saved-song migration keyed on `ottavaRule`, M4, M5, the G0 bench rebaseline) are MX-2 carry-overs (roadmap §5.2).
   - **G4d-2** — worktree `D:/PPP-g4`, branch `g4d2-page-integration` from `main`: the renderer in the page behind a dev-only
     switch (`?renderer=engrave`; the default stays `'legacy'`, so users see nothing new), the new `sync`, caches and `drawKey`,
@@ -235,8 +239,11 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
   - ppp-web's `DATABASE_URL` points at the Neon project `ppp`. It was verified identical to the Render data, with no
     writes lost. The URL is in `D:/PPP-db-backups/neon.env`, outside the repository; never commit it.
   - The shared Render free Postgres expires 2026-09-26 12:44 UTC and is left to expire.
-  - The **live deploy is still commit `72549cb`** (2026-09-20). `main` is not deployed, and deploying it is a
-    separate decision.
+  - **Deploy 2026-09-26 (user request): production runs `0ef0950`** (Render `dep-darc098u01pc73barsh0`, live 2026-09-25T18:41Z UTC). It ships G1 (ScoreGraph), G2 (import through the graph, MIDI), G3 (all off), the G4a–G4d-1b engine (not loaded by the app) and MX-1 (8va, pedal change, R4). Before: `72549cb`. Checked after the deploy:
+    - `/health`, `/`, the app, `/api/auth/me`, `/api/shares` (110) all answered 200; the app serves the MX-1 scripts (`?v=9`).
+    - In the live page, E18 imports with 8va notes sounding at the file's pitch and written an octave lower, marked `ottavaRule: 'D-1'`, and no page errors.
+    - The first `/api/shares` request after the restart stalled once (the database waking); later requests answered in under 1 s.
+    - Rollback: `render deploys create srv-dalt5s6k1f9s739cuetg --commit 72549cb…`.
   - Dumps and checksums are in `D:/PPP-db-backups/`.
 - **G2 is merged and closed** (PR #4, `cc0da79`): schema v2, a MusicXML importer that no longer
   refuses whole files, MIDI, one import door with one report, the legacy Score adapter, the flip,
