@@ -62,6 +62,7 @@ ScoreGraph에 **이미 있는** 기보 의미를 PPP의 실제 화면과 인쇄�
 - [34. G4c 구현 기록 — beam, stem, tuplet, 성부, 쉼표, 꾸밈음, SVG 백엔드](#34-g4c-구현-기록--beam-stem-tuplet-성부-쉼표-꾸밈음-svg-백엔드)
 - [35. G4d-1a 구현 기록 — 곡선, 음에 붙는 기호, 배치 함수, 글자 metric](#35-g4d-1a-구현-기록--곡선-음에-붙는-기호-배치-함수-글자-metric)
 - [36. G4d-1b 구현 기록 — system에 붙는 기호, 세로 배치, courtesy, 괄호 임시표](#36-g4d-1b-구현-기록--system에-붙는-기호-세로-배치-courtesy-괄호-임시표)
+- [37. G4d-2 구현 기록 — 판각기를 페이지에 (개발용 스위치), M-H1 도구](#37-g4d-2-구현-기록--판각기를-페이지에-개발용-스위치-m-h1-도구)
 - [부록 A. 이 세션의 측정](#부록-a-이-세션의-측정)
 - [부록 B. 코드 위치 색인](#부록-b-코드-위치-색인)
 
@@ -3665,6 +3666,236 @@ LEDGER_CHANGE 170쌍 가운데 이미 있던 객체가 **x로 움직인 것은 6
   - melisma 연장선 없음.
 - G4f: Chrome 4× CPU.
 - 다음 엔진 단계: 4 sp 넘게 밀리는 말이 있는 fixture.
+
+## 37. G4d-2 구현 기록 — 판각기를 페이지에 (개발용 스위치), M-H1 도구
+
+Implementer, 2026-09-26. 브랜치 `g4d2-page-integration` (`D:/PPP-g4`), 시작 `0ef0950` (= `origin/main`, G4d-1b 마감 뒤). 입력은 Lead의 G4d-2 지시(로드맵 §14 카드, §5.1 G4-L1)다. 병합하지 않았고 PR도 없다 (Lead가 리뷰와 PR을 정한다). 결정은 DECISIONS G4-D2-1–18.
+
+**한 줄**: 앱의 ScoreView가 `renderer='engrave'`일 때 판각기로 그린다 — 파일의 그래프(`legacy.agree`와 `link`가 확인할 때만, 아니면 Score 자신의 projection), plan, layout, SVG를 캐시하며 `engrave/page.js`가 뷰에 넣고, 연습 층(현재 마디, 루프 상자, 재생선, 약한 마디, 마디 번호, 제목, 안내 글자, 포인터)을 그 위에 얹고, 새 `sync`가 바뀐 음만 칠한다. 실패하면 그 곡은 legacy 렌더러가 그리고 세어진다. **기본값은 `'legacy'`이고, 기본 경로는 바뀌지 않았다**: 기본 페이지는 G4d-2 전과 같은 파일을 불러오고(레이아웃 파일과 `page.js`는 `'engrave'` 뷰가 처음 그릴 때만), legacy 렌더러의 SVG는 `0ef0950`과 바이트 동일(16/16), Score·재생 계획·연습 판정 입력은 두 렌더러에서 바이트 동일(A16). M-H1의 블라인드 X/Y packet을 만드는 `tests/engrave/tools/review-build.js`도 만들었다.
+
+### 37.1 범위 — §16과 G4-L1
+
+| 지시 | 한 일 | 어디 |
+| --- | --- | --- |
+| 스위치 (§16.1) | ScoreView prop `renderer`, 기본 `PPP.renderer` = `'legacy'`; `?renderer=engrave`, localStorage `ppp.renderer`; `PPP.strictEngrave`, `?strict=1` (G4-D2-1). `paint()`가 `engraveWanted(props)`이면 판각기, 아니면 옛 `draw()` | App 10538–10653, 10689–10691, 10712–10725 |
+| 옛 `draw()`·`buildVoice()`·`sync()` 불변 (A45) | 클래스의 두 표시된 삽입 밖은 MX-1이 남긴 그대로 — 고정을 넓힘 (G4-D2-3) | `tests/engrave/app.test.js` A45 |
+| `drawKey` | 그래프 fingerprint(또는 projection의 Score 음악 hash) + plan 버전 + semanticConfig + engr 버전 + layout config + 페이지 표시 (G4-D2-11) | `page.js` `viewKey` |
+| pipeline과 캐시 (§16.2, 버전 규칙) | plan은 그래프 × semantic마다 한 번, layout LRU 8 (`createEngraver`), SVG 글·PracticeMap은 layout마다, 키에 `plan/N`·`engr/N` | §37.4 |
+| 새 `sync` (A31) | G4b highlighter로 바뀐 음만, 바뀐 class만; 손·기억·숨김 단계가 바뀐 프레임만 전체 | §37.5 |
+| DOM 계약 (§16.4) | 전부 — `g.ppp-note[data-onset][data-ev]`, `data-rest`, `g.ppp-stave[...]`, `g.ppp-tuplet`, VexFlow class, `.ppp-now`, 루프 상자, 재생선, `.ppp-ann`, `data-ppp-row`, `svg.__ppp` + `.engraved`, `ppp-on/bad/off/ghost`; `.vf-notehead path` 등 선택자 고침 | §37.7 |
+| 크기·확대·태블릿 (§16.5, A32, A34) | breakpoint 안 창 크기는 같은 config — 배치도 그리기도 없음; 확대는 layout 캐시; 포인터 처리기는 legacy와 같은 문턱·사건 | §37.8 |
+| overlay (§16.6) | 현재 마디 wash, 루프 상자(한 system 안일 때만, legacy처럼), 재생선, 약한 마디 — PracticeMap에서; 손 필터·기억·리듬만 보기는 class로 (다시 배치 없음). 안내 글자는 페이지의 글자 (G4-D2-7) | `page.js` `decorate`, `overlays` |
+| 테마 (A33) | 잉크·보표선·종이·켜진 음이 CSS 변수 (G4-D2-14) | App 108–113 |
+| 실패 (§16.7) | fallback은 legacy로, code별·곡별 카운터, `console.warn('[ppp] engrave fallback', code, 이유)`, strict면 throw, 화면은 비지 않음; 코퍼스의 fallback 수를 페이지에서 잼 | §37.6 |
+| `agree.ok` 요구 | `agree.ok`와 `link.ok`가 아니면 그리지 않음 (G4-D2-9) — MX1-D3의 옛 저장 곡처럼 파일 그래프와 다른 Score는 자기 projection | `page.js` `paint` |
+| G4-L1의 나머지 | 캐시 가능한 전송 (G4-D2-5), 다시 불러온 곡의 `resolve` 비용 (잼, §37.12), R12 (G4-D2-16), `with-port.js`의 빈틈 (G4-D2-15) | §37.9 |
+| M-H1 도구 (§22.4) | `tests/engrave/tools/review-build.js` — packet을 한 번 만들고 직접 봄 | §37.14 |
+| 사용자에게 보이는 변화 없음 | 기본 페이지가 불러오는 파일 같음, legacy parity 16/16, A16, 기본 경로의 브라우저 suite = base | §37.10–§37.13 |
+
+하지 않은 것 (지시대로): flip, 시간 나누기·idle 미리 계산(§16.3 — 전곡 첫 그리기의 long task는 G4f), 인쇄, 엔진 규칙 변경 (페이지에서 본 엔진 결함은 M-H1 watch list로 §37.16), `scoregraph/`·재생 변경, VexFlow 버전, G3 flag.
+
+### 37.2 앱 파일의 변경 (`Piano Coach App.dc.html`, 이 커밋의 줄 번호)
+
+| 줄 | 무엇 |
+| --- | --- |
+| 43, 45 | `engrave/store.js?v=4`, `engrave/index.js?v=4` (R12와 version 글이 바뀐 두 파일; 불러오는 파일 목록은 그대로) |
+| 108–113 | CSS 네 줄: `svg.ppp-engraved`의 `color`, 보표선 `--score-staff`, `.ppp-on`·`.ppp-bad`의 `color` — `.ppp-engraved`가 없는 legacy SVG에는 닿지 않음 |
+| 10538–10653 | `makeScoreView` 바로 앞의 블록: `ENGRAVE_FILES`(15 파일과 hash), `ENGRAVE_SWITCH`, `PPP.renderer`·`PPP.strictEngrave`·`PPP.engraveStats`, `engraveWanted`, `loadEngrave()`, `engraveView(view)` |
+| 10689–10691 | `paint()`의 첫 문장 (`/* G4d-2 >>>` … `/* <<< G4d-2 */`) |
+| 10712–10725 | `paintEngrave()` (같은 표시) |
+
+그 밖의 앱 줄은 바이트 그대로다 — `draw()`, `buildVoice()`, `sync()`, `drawKey()`, VexFlow 머리(`VEXFLOW_URL`, `loadVexFlow`)를 포함해 (A45 고정). `server.js`에는 엔진 파일의 캐시 규칙(+30줄, 43–60, 852–866)만.
+
+### 37.3 모듈과 도구
+
+| 파일 | 한 일 |
+| --- | --- |
+| `engrave/page.js` (새) | `createView(env)` → `paint(el, props)` = `'drawn'`\|`'pending'`\|`'legacy'`; `layoutConfig`, `semanticConfig`, `viewKey`, `createSync`, `legacyClasses`, `groupsFor`, `annotations`, `stats`. A29 층 `PAGE` (G4-D2-4) |
+| `engrave/svg.js` | 선택 `unit`, `inline` (G4-D2-6); `data-volta`의 이름 (G4-D2-8). 기본 출력은 `data-volta` 값 말고 바이트 그대로 (E 40 + 코퍼스 347 + 전사 17의 두 config 808 SVG를 `0ef0950`의 `svg.js`와 비교: 바뀐 28 SVG의 64줄이 모두 `data-volta`) |
+| `engrave/store.js` | R12 (G4-D2-16) |
+| `engrave/index.js` | `version` `0.6.0-g4d2`, 머리 주석 |
+| `server.js` | `?h=` 엔진 파일 캐시 (G4-D2-5) |
+| `tests/engrave/page.test.js` (새, 7) | layout config (A32 대리), drawKey와 버전 규칙, 그룹 = Score 음, A31 대리 (sonatina/020 4,501 프레임이 legacy 규칙과 같고 쓴 것 = 바뀐 것), 글자, `unit`·`inline` 동치 |
+| `tests/engrave/tools/page-files.js` (새) | `ENGRAVE_FILES`의 hash 쓰기·확인 (`app.test.js`가 CI에서) |
+| `tests/engrave/tools/page-check.js` (새) | 실제 페이지에서 A16, A31, A32, A33, 코퍼스의 fallback, 성능, 스크린숏 |
+| `tests/engrave/tools/review-build.js` (새) | M-H1 packet (§37.14) |
+| `tests/engrave/tools/with-port.js` | G4-D2-15 |
+| `tests/engrave/tools/browser-parity.js` | 페이지의 SVG(`page.SVG_OPTS`)도 Node = Chrome, E14 glyph path의 getBBox = 상자 × 10 |
+| 그 밖의 테스트 | `a29.js`·`layout.test.js` (PAGE 층), `app.test.js` (스위치, A45, 파일 목록), `store.test.js` (R12), `svg.test.js` (`data-volta` "1."), `engraving.test.js`·`pdf-layer.test.js` (§37.7) |
+
+### 37.4 원천·캐시·키 (§16.1–§16.3)
+
+- **원천**: `PPPEngrave.app.resolve(score, {key})` — key는 앱이 연 곡의 id(그 Score가 `App.state.score`일 때), 썸네일은 없음. live → store(G4-U1) → projected. **`agree.ok`와 `link.ok`가 둘 다 참이 아니면 그리지 않는다** (G4-D2-9). Score 객체마다 한 번, 비동기 — 원천이 정해질 때까지 "Engraving…" (G4-D2-10).
+- **캐시** (G4-D2-11): 그래프 항목 — live·store는 그래프 객체(WeakMap), projection은 Score 음악 hash(LRU 4); 그 안에 plan — `PLAN_VERSION|canonical(semantic)`(LRU 4); plan마다 `createEngraver`(prepare 한 번, layout LRU 8), SVG 글과 PracticeMap — `engr/N|canonical(config)`(각 LRU 8). 
+- **drawKey**: `[그래프 키, plan 버전, semantic, engr 버전, layout config, 단위, 마디 번호, 제목, 안내 글자, 약한 마디, fluid, zoom]`. 재생선·켜진 음·손·기억·틀린 음·테마·종이·breakpoint 안 창 크기는 없다 (`page.test.js`가 확인).
+- **layout config** (G4-D2-13): 전곡 = breakpoint config (100 sp·4마디 / 40 sp·2마디); 가까이 보기 = 창 `[i0, i1]`, 줄당 마디 = `perRow` 또는 창의 마디 수, 폭 = 마디당 25 sp(휴대폰 20) × 줄당 마디 ÷ zoom.
+
+### 37.5 새 `sync` (§16.2, A31, B6; G4-D2-12)
+
+그룹 = `g.ppp-note` 하나(event × staff). 그 staff의 Score 음(identity의 link)에서 legacy가 그룹마다 두는 값 — 시작 `abs`, 끝 `scoreNoteEnd(abs, dur)`, 음높이, 손, onset 키, `hideIdx`. 프레임마다 G4b highlighter(`createHighlighter`에 이 구간들)가 켜짐이 바뀐 그룹만 돌려주고, 그 그룹의 class 네 비트(`ppp-ghost/off/on/bad`)를 legacy 규칙으로 다시 계산해 **바뀐 비트만 `classList.toggle`**. 손·기억 계획·숨김 단계가 바뀐 프레임은 전체, 틀린 음 목록만 바뀌면 울리는 그룹만. 쉼표는 legacy처럼 켜고, 꾸밈음(`g.ppp-grace`)은 켜지 않는다.
+
+- Node (`page.test.js`, sonatina/020 전곡 1,563 그룹, 40 ms 틱 4,501 프레임 + seek·손·기억·틀린 음): 모든 그룹의 class가 매 프레임 legacy 규칙과 같음, 쓴 수 = 바뀐 수, 보통 프레임에 만진 최대 6, p95 0.007 ms.
+- 페이지 (`page-check.js a31`, 1000 프레임 = `setState({beat})`): 쓴 요소(`classList.toggle` 호출)와 바뀐 요소(MutationObserver): **바뀌지 않은 요소에 쓴 것 0**, 프레임당 평균 0.77·최대 4; sync p95 **0.1 ms** (CPU 4×: 0.5 ms, 400 프레임). legacy는 프레임마다 1,563 요소 전부에 쓴다.
+
+### 37.6 fallback (§16.7)과 코퍼스
+
+code: `LOAD_FAILED`, `SOURCE_THREW`, `SOURCE_NONE`, `SOURCE_DISAGREES`, `LINK_FAILED`, `PLAN_THREW`, `LAYOUT_THREW`, `SYNC_THREW`. `PPP.engraveStats = {fallbacks: {code: n}, bySong: {scoreId: code}}` (세션), `PPPEngravePage.stats`(그림·캐시·프레임·시간). 그 Score 객체는 바뀔 때까지 legacy. strict면 `'[ppp] engrave <code>: <이유>'`를 throw. 판각기가 그리지 않는 축소 뷰는 routed (fallback 아님).
+
+**코퍼스의 fallback 수** (`page-check.js corpus`, 실제 페이지, `helpers.corpusFiles()` 347 + E 40 = 387 파일, G0 hold-out 없음):
+
+| 길 | 결과 |
+| --- | --- |
+| import door (`scoreFromFile`, live 그래프) | 그림 **361**, fallback **0**, 열리지 않음 26 (네 음 미만 `.mid` 등 — R4) |
+| 앱의 옛 reader (`parseMusicXML`, MusicXML 184) | 그림 182 (live 175 — 같은 음악의 생산자 그래프를 내용으로 찾음, G4-F3; projected 7), **fallback 2** — `ending-stop-without-start.musicxml`, `wedge-unpaired.musicxml` (`SOURCE_DISAGREES`: 그래프가 거절하는 열림 없는 ending·짝 없는 hairpin을 Score가 가짐 — A48의 알려진 손실과 같은 두 fixture; legacy가 그림) |
+
+A47(G4f 판정)의 "import 파일 전부 fallback 0"은 import door 기준으로 성립 (hold-out 52는 열지 않았다). 브라우저 suite에서 본 fallback은 §37.11.
+
+**발견 (고치지 않음, `scoregraph/` 밖)**: 공유 악보 seed 7곡 가운데 4곡(`pppseedjazz`·`newage`·`ost`·`game`)이 `SOURCE_DISAGREES` — 두 staff가 같은 voice 번호(1)를 쓰는 Score를 `legacy.fromScore`가 한 part의 한 성부로 읽어 staff 2의 손을 `'x'`로 되돌린다 (`notes.hand x vs l`). legacy가 그리고 세어진다. `fromScore`의 성부-staff 규칙 (G4a 코드) — G4f 또는 유지보수로.
+
+### 37.7 DOM 계약 (§16.4)과 바꾼 단언
+
+판각기의 SVG는 legacy의 계약을 지킨다: `g.ppp-stave[data-m][data-staff][data-begin][data-end][data-volta][data-time]` (volta 이름 "1." — G4-D2-8), `g.ppp-note.vf-stavenote[data-onset][data-ev]`(+`data-rest`), `g.ppp-tuplet`, `.vf-notehead`·`.vf-stem`·`.vf-clef`·`path.vf-stavetie`, `.ppp-now`, 루프 상자, 재생선, `.ppp-ann`(마디 번호·제목·작곡가·안내 글자 + 판각기의 글자), `data-ppp-row`(system 그룹과 페이지 글자 — `followStaff`), `svg.__ppp = {page, pad, rows, tight, begin, bars}`(px, 마디 번호는 Score의 것) + `engraved = {version, engr, plan, planKey, via, producer, config, ledger, diagnostics, notes, hash(getter)}`, `ppp-on/bad/off/ghost`. 좌표는 legacy의 px (`unit: 10`), glyph는 path (`inline`) — `getBBox`가 두 렌더러에서 같은 뜻.
+
+**바꾼 단언** (legacy 쪽 결과는 모두 전과 같음 — base에서 같은 suite가 통과):
+
+| suite | 단언 | 바꾼 것 | 이유 |
+| --- | --- | --- | --- |
+| engraving | partial chord tie, 추론 tie | `.vf-stavetie path` → `, path.vf-stavetie`도 | 판각기의 tie는 `path.vf-stavetie` 자신 (§16.4) — 선택자 |
+| engraving | 8va 두 단언 | 보표선: `.vf-stave path`의 `M x yL` → `path.vf-stave`의 `M x yH`도; 머리: `.vf-notehead path` → 그것 또는 `.vf-notehead` | 판각기는 보표 다섯 줄을 path 하나로, 머리를 path 자신으로 — 선택자 (G4c 리뷰가 맡긴 것) |
+| pdf-layer | 굴린 화음의 머리 | `.vf-notehead path` → 그것 또는 `.vf-notehead` | 같음 |
+| engraving | "lines hold at most four bars" | legacy: 4 이하 그대로; 판각기: 모든 마디 한 번·순서대로·줄당 6 이하 | 사용자 결정 G4-U4 (4는 선호, 밀도가 이김) — legacy 규칙을 고정한 단언 |
+| engraving | "audio inference does not present an intra-measure split as written legato" | legacy: tie 0 그대로; 판각기: tie 1 | 사용자 결정 G4-U2 A (추론 tie를 그림) — legacy 결함 O4를 고정한 단언 (§16.4가 예로 든 것) |
+| engraving | "a view of bars inside a longer 8va … (8va)" | legacy: "(8va)" 그대로; 판각기: "(8)" | 이어진 옥타브 선의 인쇄 관례 (G4-D1b-7, A10) |
+
+### 37.8 크기·확대·테마 (A32, A33, A34)
+
+- **A32** (`page-check.js a32`, sonatina/020 전곡): 1400 → 1200 → 1000 → 800 → 1600 → 1400 px에서 layout 0, 그리기 0; 700 px(휴대폰)에서 layout 1, 다시 1400 px는 캐시 적중(layout 0). 가까이 보기 zoom 1 → 1.25 → 1 → 1.25 → 1.6 → 1: 새 zoom마다 layout 1(2번), 나머지는 캐시.
+- **A33**: 어두운 테마·종이 없음 — 음표머리·stem·모든 `.ppp-ann` 밝기 > 0.7 (0.95), 보표선 0.46; 밝은 테마와 어두운 테마의 종이 — 잉크 < 0.3 (0.10, 0.09); 테마·종이를 바꿔도 그리기 0. `engraving.test.js`의 어두운 테마 단언(tempo·작곡가·마디 번호)이 `renderer=engrave`에서 통과.
+- **A34**: 포인터 처리기는 legacy와 같은 규칙(12 px 문턱, 세로면 pan, 가로면 선택, 탭은 end만, `touch-action: pan-y`); `layout.test.js`(태블릿: 세로 끌기 스크롤, 탭 재생)와 `interactions.test.js`(마디 클릭 seek)가 `renderer=engrave`에서 통과.
+
+### 37.9 전송, resolve 비용, R12, with-port
+
+- **전송** (G4-D2-5): 맞는 `?h=` → `Cache-Control: public, max-age=31536000, immutable`, `Content-Encoding: gzip` (15 파일 420 KB → 전송 139 KB; layout.js 110 → 33 KB); 틀린 `h`·`?v=` → `no-store` (curl로 확인). 기본 페이지는 `?h=`로 묻는 파일이 없다.
+- **resolve 비용** (다시 불러온 곡, store에서): sonatina/020 via `store`, resolve 121 ms, long task 209 ms (1×); 527 ms, 가장 긴 long task 878 ms (4×) — IndexedDB 읽기, gunzip, parse, validate, link가 한 덩어리. 멈춤은 아니다 (store timeout 2.5 s, R12). 나누기는 G4f.
+- **R12**: `estimate()`·`decode`가 답하지 않아도 put·get이 timeout 안에 끝남 (`store.test.js`).
+- **with-port.js**: auth-ui·share가 `PPP_URL` 없이 내 서버로; 8788 health 거부가 suite의 console 오류로 세어지지 않음; `PPP_RENDERER=engrave`; 끝에 "PPPEngrave 0.6.0-g4d2, renderer engrave, engraver draws N, fallbacks …" 한 줄 — 판각기가 실제로 그렸는지 suite마다 보인다.
+
+### 37.10 Acceptance
+
+| # | 기준 | 증거 | 판정 |
+| --- | --- | --- | --- |
+| A16 | Score, `PianoScore` 재생 이벤트, 연습 판정 입력이 `legacy`/`engrave`에서 바이트 동일 | `page-check.js a16`: 7곡 (Für Elise, sonatina/020, engraving-stress(옛 reader), E18, piano-marks, for-all-the-saints, 녹음 G03(projection)) × 전곡·가까이 보기 — `packScore`, `PianoScore.build`, `PerformanceEngine.expected`의 hash가 네 뷰 모두 같고, `engrave` 뷰는 판각기가 그림 (via live 5, projected 2) | PASS |
+| A31 | 프레임당 만진 요소 ≤ 켜짐이 바뀐 수; sonatina/020 전곡 p95 ≤ 1 ms | 페이지: 바뀌지 않은 요소에 쓴 것 0 (1000 프레임, 4× 400), sync p95 0.1 ms (4× 0.5 ms); Node: 4,501 프레임 legacy 규칙과 같음, 쓴 수 = 바뀐 수 | PASS |
+| A32 | 같은 breakpoint 안 창 크기 → layout 0; 확대는 캐시 | §37.8 (`page-check.js a32`; Node `page.test.js`) | PASS |
+| A33 | 잉크가 테마 변수를 따르고 어두운 테마 글자 밝기 단언 통과 | §37.8; `engraving.test.js`의 어두운 테마 단언이 `renderer=engrave`에서 통과 | PASS |
+| A34 | 태블릿 포인터 그대로 | `layout.test.js`·`interactions.test.js`가 `renderer=engrave`에서 통과; 처리기 규칙이 legacy와 같음 | PASS (G4f에서 다시) |
+| A45 | `'legacy'`가 옛 SVG를 바이트 동일하게, 기본값 `'legacy'` | 넓힌 고정 (G4-D2-3); `legacy-parity.js` `0ef0950`(8802) 대 이 트리(8801) **16/16 바이트 동일** | PASS |
+| A30 (G4f 판정 — 기록) | 브라우저 suite가 `renderer='engrave'`로 통과 | §37.11: 26 suite 가운데 25 통과, 실패 1(`transcription`)은 base·기본에서도 같은 환경 원인. A30의 여덟 suite(engraving, alignment, follow, interactions, layout, musicxml, coach, import)는 모두 판각기가 그린 뷰로 통과 | (G4f) |
+| A47 (G4f 판정 — 측정) | 코퍼스에서 fallback 0 | import door 361/361 그림, fallback 0; 옛 reader 2 (§37.6) | (G4f) |
+| 버전 규칙 | 출력이 바뀌면 올림 | plan·layout 출력은 바뀌지 않음 (커밋된 layout hash 118 × 2와 plan hash 그대로; `plan/3`, `engr/5`); 캐시 키에 두 버전 | PASS |
+| M-H1 도구 | 올바른 packet | §37.14 | PASS |
+
+### 37.11 브라우저 suite (각각 따로, `with-port.js`로 이 트리 8801, base `0ef0950`의 `git archive` 8802; 둘 다 `NODE_ENV=production HOST=127.0.0.1`)
+
+`기본`은 `PPP_RENDERER` 없이, `engrave`는 `PPP_RENDERER=engrave`(문서마다 localStorage `ppp.renderer`). base는 base 트리의 suite 파일을 base 서버에 (하네스는 이 트리의 `with-port.js` — 8788 거부 걸러내기와 context 포트가 없으면 base와 이 트리가 **똑같이** 실패한다, G04 §33.14). 괄호는 `engrave` 실행에서 판각기가 그린 뷰 수 / fallback / legacy로 보낸 축소 뷰 수 (`with-port.js`의 끝 줄). 실행은 `338ddb3`의 트리 — 뒤의 `origin/main` 병합(`5abf8c2`)은 앱·engrave/·suite가 읽는 파일을 바꾸지 않았다.
+
+| suite | 이 트리, 기본 | 이 트리, `engrave` | base, 기본 |
+| --- | --- | --- | --- |
+| `import.test.js` | PASS | PASS (4 / 0 / 1) | PASS |
+| `memory.test.js` | PASS | PASS (1 / 0 / 3) | PASS |
+| `learning.test.js` | PASS | PASS (1 / 0 / 3) | PASS |
+| `midi.test.js` | PASS | PASS (5 / SOURCE_DISAGREES 3 / 2) | PASS |
+| `playback-scheduler.test.js` | PASS | PASS (0 / 0 / 2) | PASS |
+| `musicxml.test.js` | PASS | PASS (2 / 0 / 1) | PASS |
+| `falling-notes.test.js` | PASS | PASS (2 / 0 / 1) | PASS |
+| `interactions.test.js` | PASS | PASS (19 / SOURCE_DISAGREES 4 / 3) | PASS |
+| `import-and-persistence.test.js` | PASS | PASS (12 / 0 / 5) | PASS |
+| `coach.test.js` | PASS | PASS (1 / 0 / 3) | PASS |
+| `i18n-and-auth.test.js` | PASS | PASS (12 / 0 / 11) | PASS |
+| `follow.test.js` | PASS | PASS (6 / 0 / 1) | PASS |
+| `layout.test.js` | PASS | PASS (2 / 0 / 9) | PASS |
+| `alignment.test.js` | PASS | PASS (2 / 0 / 2) | PASS |
+| `engraving.test.js` | PASS | PASS (6 / 0 / 2) | PASS |
+| `pdf-layer.test.js` | PASS | PASS (0 / SOURCE_DISAGREES 1 / 2) | PASS |
+| `library.test.js` | PASS | PASS (45 / 0 / 11) | PASS |
+| `transcription.test.js` | FAIL (환경) | FAIL (환경) (0 / 0 / 1) | FAIL (환경) |
+| `score-search.test.js` | PASS | PASS (0 / 0 / 0) | PASS |
+| `fingering.test.js` | PASS | PASS (3 / 0 / 7) | PASS |
+| `video.test.js` | PASS | PASS (17 / 0 / 11) | PASS |
+| `auth-ui.test.js` | PASS | PASS (0 / 0 / 77) | PASS |
+| `share.test.js` | PASS | PASS (22 / SOURCE_DISAGREES 12 / 3) | PASS |
+| `lessons.test.js` | PASS | PASS (0 / 0 / 9) | PASS |
+| `hymns-share.test.js` | PASS | PASS (22 / SOURCE_DISAGREES 12 / 3) | PASS |
+| `course.test.js` | PASS | PASS (2 / 0 / 3) | PASS |
+
+- **실패 하나는 셋 모두 같다**: `transcription` "the fallback is the venv transkun console script" — 이 PC에 transkun venv가 없음 (G04 §32.8, §33.14의 환경 원인).
+- **`engrave`의 fallback은 모두 `SOURCE_DISAGREES`** (Score의 projection이 Score와 다름 — 판각기는 다른 음을 그리지 않고 legacy가 그렸다): `interactions`·`share` — 공유 seed 4곡(두 staff가 voice 1을 같이 씀 → `fromScore`의 손 `x`); `midi` — soft pedal(`una corda`)이 든 테스트 곡 3 (`pedals.length 6 vs 5`); `pdf-layer` — `PdfLayer.apply`가 코드명을 적은 OMR Score (`chords.length 5 vs 4`, 그래서 이 suite의 단언은 legacy가 그린 뷰를 읽었다). 모두 `legacy.fromScore`의 한계 (`scoregraph/`, 이 단계 밖) — §37.16.
+- 판각기가 그린 뷰가 0인 suite(`playback-scheduler`, `auth-ui`, `lessons`, `hymns-share`, `score-search`, `transcription`)는 악보 뷰를 그리지 않거나 축소 뷰만 그린다.
+- 8777·8788에는 아무것도 띄우거나 끄지 않았다. 측정 뒤 8801·8802를 껐다.
+
+### 37.12 페이지 성능 (측정 — 판정은 G4f; `page-check.js perf`, 이 PC, Chrome 153 headless, 1400 × 1000, sonatina/020 = 158마디 1,563 음 그룹)
+
+| | legacy 1× | engrave 1× | legacy 4× | engrave 4× |
+| --- | --- | --- | --- | --- |
+| 전곡 열기 (곡을 열어 그려질 때까지, ms) | 261 | 368 | 837 | 1,869 |
+| 전곡 판각: layout / SVG / 넣기 / 꾸미기 = 합 (ms) | — | 46.2 / 21.6 / 20.6 / 8.5 = 96.9 | — | 197.4 / 131.9 / 115.9 / 43.2 = 488.4 |
+| 원천 resolve (live 그래프 agree·link, ms) | — | 49.8 | — | 282.2 |
+| 전곡 열기의 long task (수, 최대 ms) | 1, 111 | 2, 223 | 3, 508 | 3, 1,120 |
+| 전곡 재생 프레임 중앙 / p95 (ms) | 6.1 / 13.0 | 5.9 / 9.7 | 47.4 / 64.9 | 33.4 / 53.0 |
+| 그 동안의 long task | 0 | 0 | 1 (52 ms) | 0 |
+| 판각기 sync p95 (ms; legacy는 프레임마다 1,563 요소) | — | 0.1 | — | 0.3 |
+| 가까이 보기 열기 (ms) / 판각 합 | 80.5 / — | 70.1 / 9.1 | 228.2 / — | 133.6 / 44.6 |
+| 페이지 넘김 새 창, 중앙 / 최대 (ms) | 14.0 / 16.2 | 10.4 / 15.3 | 86.9 / 112.4 | 57.2 / 64.0 |
+| 되돌아가는 넘김 (캐시), 중앙 (ms) | 12.4 | 8.4 | 75.0 | 44.3 |
+| 가까이 보기 long task (수, 최대 ms) | 0 | 0 | 19, 133 | 1, 81 |
+| 가까이 보기 프레임 중앙 / p95 (ms) | 3.9 / 6.2 | 4.1 / 5.7 | 28.2 / 34.7 | 27.3 / 38.4 |
+
+- **전곡 첫 그리기**: 판각기 한 번에 layout·SVG·넣기·꾸미기가 동기 — long task 하나(1× 223 ms, 4× 1,120 ms). §16.3의 시간 나누기(system 단위, 12 ms)는 G4f 몫이다 (지시의 비목표).
+- **재생 프레임**(`setState({beat})` 하나의 앱 전체 비용): 판각기의 sync는 0.1 ms이고, 프레임의 나머지는 React와 브라우저의 다시 칠하기다. glyph를 `<use>`로 둔 첫 구현은 다시 칠하기가 legacy의 4배라 프레임 p95가 legacy보다 느렸다 (14.6 대 9.8 ms); `inline`(G4-D2-6)과 값이 바뀔 때만 쓰는 테마·overlay(G4-D2-12)로 고쳤다.
+- **페이지 넘김**(가까이 보기, 새 창): layout + SVG가 캐시에 없는 첫 넘김과 캐시에서 되돌아가는 넘김 (§16.3의 idle 미리 계산은 G4f).
+- **다시 불러온 곡의 resolve** (store에서, G4-U1): via `store`, resolve 120.7 ms에 long task 209 ms (1×), 526.6 ms에 가장 긴 long task 878 ms (4×) — IndexedDB 읽기, gunzip, parse, validate, link가 한 덩어리 (멈춤은 아니다: store timeout 2.5 s, R12).
+- SVG 크기: 페이지의 sonatina/020 전곡 SVG 1,640 KB (px 단위·glyph path, legacy 2,154 KB, §19.1). B9(`svg.js` 기본 출력, `<use>`)는 G4d-1b의 0.32 그대로.
+- Node = Chrome의 엔진 시간 (`browser-parity.js`): sonatina/020 plan 11.5, prepare 9.7, layout 26.2 ms (1×); 61.3 / 55.2 / 115.6 ms (4×).
+
+### 37.13 회귀
+
+| 검사 | 결과 |
+| --- | --- |
+| CI 단계 전부 (`.github/workflows/bench.yml` gate) + `page-files.js --check` — Windows, `origin/main` 병합 뒤 다시 | 모두 rc 0: unit 283, `test:scoregraph`, **`test:engrave` 183/183** (174 + `page.test.js` 7 + 스위치 1 + R12 1), E·corpus·metrics·outlines·text-metrics `--check`, layout hash 118 × 2, bench r·e·x PASS (61 / 40 / 76), sg-roundtrip, MIDI fixture, golden 17, lint, provenance, correctness, smoke·core·robust run+check PASS (SQI 86.907 / 76.862 / 76.550), replay-public PASS, transcription-core, arranger |
+| Linux (Docker `node:24-bookworm`, Node 24.21, `core.autocrlf=false` clone, LF) | `test:engrave` **183/183**, layout hash 118 × 2 + plan 같음, `page-files.js --check` PASS, `test:scoregraph` 216/216 (병합한 `g3-jobs-race.test.js` 포함) |
+| CRLF checkout (`git checkout-index` CRLF) | `page-files.js --check` PASS (hash는 CRLF를 LF로 읽음), `app.test.js`·`page.test.js`·`svg.test.js`·`store.test.js` 26/26, layout hash PASS; 전체 `test:engrave` 182/183 — 나머지 1은 `git ls-files`를 부르는 `marks.test.js`(checkout-index 디렉터리는 저장소가 아님; 작업 트리는 CRLF이고 거기서 183/183) |
+| `legacy-parity.js` (`0ef0950` 8802 대 이 트리 8801) | **16/16 바이트 동일** |
+| `browser-parity.js` (A28) | Chrome 153: layout 808/808, SVG 808/808, **페이지의 SVG 808/808** 바이트 동일; E14 `<use>` 18 오차 ≤ 0.01 sp, **페이지 SVG의 glyph path 14 getBBox 오차 ≤ 0.09 px**; 네트워크 0 |
+| 기본 SVG 출력 (`svg.js` 기본값) | `0ef0950`의 `svg.js`와 808 SVG 비교: 바뀐 28 SVG의 64줄 모두 `data-volta` (G4-D2-8) |
+| 앱의 기본 경로 | 기본 페이지가 불러오는 파일은 G4d-2 전과 같다 (`app.test.js`); ScoreView 밖의 앱 변경은 `makeScoreView` 앞의 블록과 CSS 네 줄 |
+
+### 37.14 M-H1 도구와 packet (§22.4)
+
+`NODE_PATH=D:/PPP/node_modules node tests/engrave/tools/review-build.js --url http://127.0.0.1:8801` (G4-D2-18).
+
+- **seed** `g4-mh1-2026-09-26` (새 seed, G3-F5처럼). 선택 규칙·층·seed·발췌(파일·마디·센 것)는 packet의 `manifest.json`에; X/Y 열쇠는 따로.
+- **층** (§22.4 그대로): 찬송가 다성부 3 (R `hymns`), 셋잇단 3 (R 전체, 보이는 셋잇단 3개 이상), 빽빽한 기호 4 (R `sonatina`), 기본 교재 3 (R `beyer`·`czerny599`), 꾸밈음·8va 2 (R 전체), 반복 1 (R 전체). 층마다 sha256(seed:층:path) 순서의 앞, 8마디 이상, 특징이 가장 빽빽한 8마디. G0 hold-out은 R에 없고 다시 검사한다.
+- **그림**: 한 페이지의 ScoreView 둘(`renderer` prop)이 같은 Score(import door — 판각기는 파일의 그래프)를 1000 px 폭, 8마디 줄당 4, 마디 번호, 안내 글자 없음, 켜진 것 없음, 종이 위에. 계산된 색을 각 도형에 적고 class·id·data-*를 지워 어느 렌더러인지 드러나지 않게. 어느 판본이든 제 렌더러가 그리지 않았으면 멈춤 — 이번 16발췌에 fallback 0.
+- **packet**: `D:/PPP-g4/tests/engrave/out/review/m-h1/` — `index.html`(발췌마다 X·Y, 질문), `svg/H01-X.svg` … `H16-Y.svg`, `manifest.json`, `results-template.json`(발췌·판본마다 readability, wrong, spacing, marks, overall, practise + prefer, notes). **열쇠**: `D:/PPP-g4/tests/engrave/out/review/m-h1-key/key.json` (평가자에게 주지 않음). 둘 다 `tests/engrave/out/`(gitignore). X가 판각기인 발췌 8, legacy 8.
+- **직접 본 것**: 모든 발췌가 두 판본 다 그려졌고 같은 폭이다. 판각기 판본의 눈에 띄는 차이 — 빽빽한 셋잇단(czerny849)은 G4-U4대로 줄당 2마디(legacy는 4마디를 욱여넣음), 파일이 숨긴 셋잇단 숫자는 그리지 않음(legacy는 전부 그림 — O2), 파일의 tempo·셈여림·hairpin·운지·slur·pedal을 그림(legacy는 대부분 없음), 이어진 8va는 "(8)"이고 긴 phrase slur 위라 음에서 멀다(watch list). 찬송가는 성부별 stem·쉼표. 틀린 음·빠진 마디는 보지 못했다.
+
+### 37.15 스크린숏 (직접 봄; `page-check.js shots`, gitignore)
+
+`D:/PPP-g4/tests/engrave/out/page/shots/`: 다섯 곡(G0 hold-out 아님) × 전곡·가까이 보기 × 데스크톱(1400)·휴대폰(390) — `burgmuller25-015`, `sonatina-028`, `czerny849-020`, `hymns-for-all-the-saints`, `beyer-046` 각 `.desktop.whole.png`, `.desktop.close.png`, `.phone.whole.png`, `.phone.close.png` — 와 어두운 테마 `burgmuller25-015.desktop.whole.dark.png`. 본 것: 제목·작곡가, 마디 번호(판각 요소 위로 올려진 것 포함), 현재 마디 wash와 재생선, 첫 화음이 accent로 켜짐, 셈여림·hairpin·pedal·운지·slur·8va, 휴대폰의 줄당 2마디, 어두운 테마에서 밝은 잉크와 연한 보표선, 가까이 보기의 안내 글자(판각 요소 아래로 비킨 것 포함). 처음 찍은 것에서 둘을 고쳤다: 긴 phrase slur의 제어점 상자 때문에 마디 번호가 위 system까지 올라간 것(곡선을 24조각 상자로), 안내 글자가 두 보표 사이 셈여림과 겹친 것(그 아래로).
+
+### 37.16 남은 것 — M-H1, G4e, G4f
+
+- **BLOCKER 0, MAJOR 0** (implementer 자체 판정).
+- **M-H1 watch list에 더할 것**: (1) 마디 번호와 안내 글자는 페이지의 글자라 판각기의 skyline 밖이다 — 올리거나 비켜도 기호에 가까울 수 있다; (2) 가까이 보기 창의 첫 마디에도 파일의 tempo 말이 선다 (legacy는 전곡 머리에만); (3) 빽빽한 곡은 줄당 2마디 (G4-U4 — 사용자 결정대로이지만 legacy와 가장 다르게 보이는 곳); (4) 이어진 8va "(8)"과 긴 slur 위의 8va 줄 (G4d-1b에서 넘어온 것).
+- **G4f**: 전곡 첫 그리기와 다시 불러온 곡의 resolve는 한 덩어리 long task (§37.12) — §16.3의 시간 나누기·idle 미리 계산; A30 전체와 페이지 수준 A35–A37; routed 축소 뷰(루프 썸네일 `clefs:false`, 빈 보표 `grand:false`)를 판각기로 그릴지 legacy로 둘지 flip 전에 정함; `legacy.fromScore`의 세 한계 — 두 staff가 같은 voice 번호를 쓰는 Score의 손, soft pedal, OMR 코드명 (공유 seed 4곡·테스트 곡·OMR이 legacy로 돌아감; `scoregraph/`); 안내 글자·마디 번호를 layout 객체로 (§16.6).
+- **G4e**: 인쇄 (제목 영역, 줄 첫머리 마디 번호 — 페이지의 글자와 겹치지 않게).
+- 앱의 `engrave` 경로는 VexFlow(CDN)가 준비될 때까지 기다린다 — fallback이 언제나 바로 그릴 수 있게 (렌더 `ready` 그대로). flip 뒤 CDN 없이 그리려면 G4f·G13.
+
+### 37.17 커밋
+
+`338ddb3` (코드·테스트·도구), `5abf8c2` (`origin/main` 병합 — #21, #22; 겹치는 파일 없음), 이어서 이 기록 (G04 §37, 목차; DECISIONS G4-D2-1–18; CURRENT_STATE). `origin/g4d2-page-integration`에 push. 병합 안 함, PR 없음.
+
+**상태: G4d-2 READY_FOR_REVIEW** — BLOCKER 0, MAJOR 0 (자체 판정).
 
 ---
 
