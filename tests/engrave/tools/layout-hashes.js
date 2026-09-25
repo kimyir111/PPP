@@ -5,7 +5,11 @@
      node tests/engrave/tools/layout-hashes.js           compare with tests/engrave/baselines/layout-hashes.json (exit 1 on a difference)
      node tests/engrave/tools/layout-hashes.js --write   write that file (after an intended layout change, with the reason in the commit)
 
-   A difference names the score and config; tests/engrave/tools/layout-view.js draws both sides for a look. */
+   A difference names the score and config; tests/engrave/tools/layout-view.js draws both sides for a look.
+
+   G4-D1a-1: every change to what the layout outputs moves its version (engr/N). --write refuses hashes that differ from
+   the ones at the branch's merge base with origin/main under the version that base had - bump VERSION in
+   engrave/layout.js first. Without git or origin/main it says it could not check. */
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -49,9 +53,25 @@ function diff(got, want) {
   return bad;
 }
 
+/* the committed file at the merge base with origin/main, or null */
+function atBase() {
+  try {
+    const { execFileSync } = require('child_process');
+    const base = execFileSync('git', ['merge-base', 'HEAD', 'origin/main'], { cwd: REPO, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    return JSON.parse(execFileSync('git', ['show', base + ':tests/engrave/baselines/layout-hashes.json'], { cwd: REPO, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 1 << 26 }));
+  } catch (e) { return null; }
+}
+
 async function main() {
   const got = await compute();
   if (process.argv.indexOf('--write') > 0) {
+    const base = atBase();
+    if (!base) console.log('could not read the merge base\'s hashes (no git or no origin/main): the version rule was not checked');
+    else if (base.version === E.layout.VERSION && diff(got, base.hashes).length) {
+      console.error(diff(got, base.hashes).length + ' hashes differ from the merge base\'s under the same version ' + base.version +
+        ': an output change moves the version (G4-D1a-1) - bump VERSION in engrave/layout.js');
+      process.exit(1);
+    }
     fs.writeFileSync(FILE, JSON.stringify({ version: E.layout.VERSION, configs: CONFIGS, hashes: got }, null, 1) + '\n');
     console.log('wrote ' + Object.keys(got).length + ' scores x ' + Object.keys(CONFIGS).length + ' configs to ' + path.relative(REPO, FILE));
     return;
