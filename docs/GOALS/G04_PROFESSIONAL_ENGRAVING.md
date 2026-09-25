@@ -9,7 +9,8 @@ ScoreGraph에 **이미 있는** 기보 의미를 PPP의 실제 화면과 인쇄�
 - layout core(NotationPlan → EngravedScore, 연습 map)를 만들었다. 앱은 불러오지 않는다 — 보이는 변화 없음.
 - 독립 리뷰 NEEDS_FIX(MAJOR 3) → Fixer §33.16 → Lead 재확인 → 병합 (§33.17).
 - geometry-only 범위는 Lead 결정 G4-L1이다 (§27 G4b의 주): `svg.js`는 G4c, 페이지 통합은 G4d-2.
-- **다음: MX-1(8va·pedal `change` 재생, 사용자 결정 D-1)과 G4c** (`docs/PPP_MASTER_ROADMAP.md`). 설계: Architect 2026-09-24 |
+- **G4c CLOSED — PR #15로 병합 (`e3c8c5a`)**: 독립 리뷰 NEEDS_FIX(MAJOR 2) → Fixer §34.18 → Lead 재확인 → 병합 (§34.19). MX-1도 병합됐다 (PR #13).
+- **다음: G4d-1a** (곡선과 음에 붙는 기호, Lead 결정 G4-L3) (`docs/PPP_MASTER_ROADMAP.md`). 설계: Architect 2026-09-24 |
 | 기준 커밋 | `origin/main` = `55d1bd5` (G3 PARTIAL/DEFERRED closeout, PR #8) |
 | 브랜치 / worktree | `g4-professional-engraving` / `D:/PPP-g4` |
 | 시작 검증 | `npm run test:scoregraph` → **205/205 pass** (이 세션이 `55d1bd5`에서 직접 실행) |
@@ -2762,6 +2763,69 @@ G4b·G4c의 틀 그대로 (CRLF 사본, anchor 정확히 한 번, 출력이 바�
 `270eddc` (코드·테스트: `engrave/layout.js`, `tests/engrave/l2.js`, `layout-mutation.test.js`, `notation.test.js`, `layout.test.js`, `e-fixtures.test.js`, `tools/bench.js`, `tools/make-e-fixtures.js`, E12·E13, baseline r·e·x와 layout hash), 이어서 이 기록 (G04 §34.5·§34.15·§34.17·§34.18, DECISIONS G4-C13–C16). `origin/g4c-notation-core`에 push. 병합 안 함, PR 없음. CURRENT_STATE는 고치지 않았다 (Lead 몫).
 
 **Fixer 상태: R1 FIXED, R2 FIXED, M6 정정; M1–M5는 Lead가 맡긴 곳 → G4c FIX: READY_FOR_RECHECK.**
+
+
+### 34.19 리뷰 판정·재확인·병합 (Lead, 2026-09-25)
+
+**독립 리뷰** (`f5517fe`, read-only. 리뷰어 자신의 clone에서, Windows와 Linux Docker 둘 다)
+
+- 판정: **NEEDS_FIX — BLOCKER 0, MAJOR 2, MINOR 6.**
+- 확인된 것:
+  - gate를 느슨하게 하지 않았다. 음성 대조: `placeRests`를 끄면 `eg.rest.overlap = 68`, exit 1.
+  - 다시 bless한 146/68/20/2를 재현했고, 표본마다 G4c의 변경으로 설명된다.
+  - G4-B11이 VexFlow 4.2.3 `StaveNote.format`과 같다.
+  - `svg.js`는 결정론적이고, DOM을 재지 않으며, §16.4 계약을 지킨다.
+  - Chrome 236/236.
+  - `outlines.js --check`는 숫자 하나만 바꿔도 exit 1.
+  - 앱·`scoregraph/` diff 없음.
+- MAJOR:
+  - R1: flag 있는 unison을 공유하지 않고 flag 너머로 민다 (21곡 34쌍).
+  - R2: `merged`를 검사 없이 믿는다. 또 G4c 규칙 여럿이 layout hash로만 지켜진다 (RF·RI·RY·RX·RB).
+- MINOR:
+  - M6은 Fixer가 고쳤다.
+  - M5는 Lead가 G4-L2로 승인했다.
+  - M1–M4는 G4d-1a·G4d-1b로 넘긴다 (아래).
+
+**Fixer** (§34.18): R1·R2 FIXED, M6 정정. `engrave/`에서는 `layout.js`만 바뀌었다. layout hash는 236쌍 중 8쌍만 다시 bless했다 (`f5517fe` 대비 SAME 230, GEOMETRY_ONLY 6).
+
+**Lead 재확인** (고친 항목만, `85da49f`의 새 clone)
+
+- `test:engrave` 149/149, `test:scoregraph` 205/205, layout hash 118 × 2, bench r·e·x 모두 PASS.
+- 음성 대조: `f5517fe`의 `layout.js`를 넣으면 bench r·e가 실패한다.
+- Lead가 따로 심은 mutation:
+  - 머리 glyph 조건 제거 → bench r·e REGRESSION;
+  - 점 조건 제거 → bench r·e REGRESSION;
+  - flag를 늘 비킴 거리에 넣음 → bench e REGRESSION;
+  - 쓸모없어진 공유를 푸는 코드 제거 → `test:engrave` 실패 (A17–A19, mutation test);
+  - 변화표(alter) 조건 제거 → 커밋된 입력 중 바뀌는 것이 없다. fixture의 빈틈이다: E12에 증1도 unison을 G4d-1a에서 넣는다.
+- angels-we-have-heard m20: flag 있는 8분음표 unison이 음표머리 하나를 공유한다 (그림으로 확인).
+
+**main과 합치기**
+
+- MX-1(PR #13)과 그 마감을 합친 병합 커밋 `997840c`. CURRENT_STATE 충돌은 main 쪽으로 풀었다.
+- 합친 트리에서 모두 PASS:
+  - `test:engrave` 149/149, `test:scoregraph` 214/214;
+  - layout hash, bench r·e·x;
+  - make-metrics·outlines·e-fixtures·corpus `--check`.
+- 앱 파일과 `scoregraph/`는 main과 같다.
+
+**병합**: PR #15, CI gate 초록, squash `e3c8c5a`. **G4c CLOSED — 다시 열지 않는다.**
+
+**Lead 결정**
+
+- G4-L2: G4-C4를 승인한다. unison 공유는 EngravedScore의 `merged`로 적고, plan ledger는 `drawn`으로 둔다. 단, R2의 합법 병합 검사가 있을 때만 성립한다.
+- G4-L3: G4d-1을 두 병합 지점(G4d-1a·G4d-1b)으로 나눈다.
+
+**넘기는 것**
+
+- G4d-1a:
+  - 보표 밖으로 옮겨진 쉼표의 덧줄 (M1);
+  - tuplet 숫자 위치 (M2);
+  - `plan/1`·`engr/1`을 올리고, "출력이 바뀌면 버전을 올린다"를 규칙으로 둔다 (M4);
+  - E12의 증1도 unison.
+- G4d-1b: B9 다시 재기 (M3).
+- G4d-2: `.vf-notehead path` 선택자.
+- 관찰: Linux에서 `g3-idempotence` A5가 한 번 실패했다. 세 번 다시 돌려 통과했고, `scoregraph/`는 바뀌지 않았다.
 
 ---
 

@@ -5,9 +5,9 @@ The operational roadmap for everything after G4a: order, dependencies, gates, an
 | | |
 | --- | --- |
 | Owner | The **Lead / Orchestrator** session. Implementers, reviewers and fixers read it. Only the Lead edits it. |
-| Updated | 2026-09-25 — fifth edition (Lead): **MX-1 CLOSED** (PR #13 `e37d37a`); current: G4c (Fixer) |
-| Base | `origin/main` = `e37d37a` (MX-1, PR #13) plus the docs closeout |
-| Active | **G4c** (beams, tuplets, voices, rests, grace notes, `svg.js`) — review NEEDS_FIX, Fixer running (§14). |
+| Updated | 2026-09-25 — sixth edition (Lead): **G4c CLOSED** (PR #15 `e3c8c5a`); current: G4d-1a |
+| Base | `origin/main` = `e3c8c5a` (G4c, PR #15) plus the docs closeout |
+| Active | **G4d-1a** (curves and marks attached to notes; `D:/PPP-g4`, branch `g4d1a-curves-marks`) — implementer running (§14). |
 | Lead worktree | `D:/PPP-lead`, branch `lead-roadmap`. The Lead writes docs only, never in an implementer's worktree. |
 | How this relates to other docs | `docs/CURRENT_STATE.md` says what is true now, with measurements. `docs/DECISIONS.md` says why. `docs/GOALS/Gxx_*.md` is the contract for one Goal: design, acceptance and implementation record. **This document says in what order, behind which gates, and what comes next.** It does not repeat the goal specs. On detail, the spec wins. On sequencing, this document wins. |
 
@@ -123,6 +123,7 @@ At `a0bc2ea`. The detailed structure is in `docs/ARCHITECTURE.md`.
 | G1 ScoreGraph | CLOSED | PR #2 `aa77d2e`, #3 `00081cc` | `scoregraph/`: schema, validator, canonical JSON, `time.js` (unroll, tempoMap, resolveSpan), `prov.js`, ops, MusicXML import/export, `sg-roundtrip`, SongGraph interface types (G01 §10.3) |
 | G2 Score Import | CLOSED | PR #4 `cc0da79` (+#5, #6) | `scoregraph/import.js` (the one door), MIDI (`midi-file.js`, `midi-import.js`), `legacy-score.js` `toScore`/`compare`, schema v2, the written/sounding pitch layers (G2-D15) |
 | G3 Score Intelligence | **PARTIAL / DEFERRED**, all off | PR #7 `c5474c2` (+#8) | `professionalize()` passes and critic (off), `meter-grid.js`, `pro-beam.js` `groups` (used by G4), reason-aware gates, blind human-review tooling (`run.py human-set`) |
+| G4c Notation core | CLOSED | PR #15 `e3c8c5a` | Beams (graph exact, derived only where none), final stems, tuplets, voices (shared unisons; G4-B11 down-stem moves right), rests, grace notes, the mid-measure key change; `svg.js` + vendored Bravura outlines (B9 0.19–0.28); rest and stem/flag collisions as zero-target gates; 7 named metrics for the G4c rules after the review |
 | MX-1 Playback correctness | CLOSED | PR #13 `e37d37a` | An 8va sounds at the file's pitch and is drawn under its sign in every view (D-1; the MusicXML octave-shift sign fixed, MX1-D1); cards print where a note sounds; a pedal `change` lifts and re-presses the damper; the four-note `.mid` message; the `ottavaRule` marker; audit: all 34 octave-line files sounding-encoded. **Production still `72549cb`** (manual deploy) |
 | G4b Layout core | CLOSED | PR #12 `62ede61` | `engrave/` layout core (`metrics`, `space`, `breaks`, `skyline`, `canon`, `layout`, `practice`): NotationPlan → EngravedScore `engr/1`, practice map and highlighter; L2 geometry bench; committed layout hashes (Windows = Linux = Chrome); layout mutation test; A29 static ban; the other-voice collision ratchets |
 | G4a Engraving source and plan | CLOSED | PR #9 `df8a571` (+#10) | `engrave/` (RenderSource, NotationPlan, fidelity ledger, glyph table, IndexedDB graph cache), `legacy.fromScore/agree/link`, vendored VexFlow 4.2.3, E01–E40, R corpus (61 files), L1 bench, `test:engrave` in CI |
@@ -207,8 +208,8 @@ G4b's acceptance is judged on what it built: A14, A17–A19 (basic), A23, A24, A
 | Stage | Scope (G04 §27 + the Lead's refinements) |
 | --- | --- |
 | **G4b** | **CLOSED** — PR #12 `62ede61` (G04 §33–§33.17). The six G4a MINORs; `metrics`, `space`, `breaks`, `skyline`, `canon`, `layout`, `practice`; L2 bench; committed layout hashes; browser parity; perf; after the review's Fixer, an A29 ban that can fail, a layout mutation test, and ratchets on other-voice collisions. |
-| **G4c** | §11 beams, §12 tuplets, §14 voices, rests and grace notes (cross-staff stays `deferred`) **+ `svg.js` + B9**, plus G4b's own MINORs (G04 §33.15: provisional stems, unison heads, rest heights by role, grace stems and slashes, the mid-measure key change still `pending`) and the G4b review's MINORs (G04 §33.16.8): the final rule for which voice moves aside at a second or unison between voices (G4-B11: the pinned VexFlow moves the down-stem note, the code the up-stem one — settle it with evidence); **gate `eg.rest.overlap` and the other-voice stem/flag metric at 0** (G4b only ratchets them); a layout-level object multiset beyond events and heads, plus written pitch → y (R4); unique stem/flag ids on cross-staff chords (R5); dotted measure rests (R6); `layout-view.js` outlines drawn 1.44× too large — build `svg.js` on the metrics' scale (R7); `prepare` must not write into the plan (R8); the ragged last system's u from unscaled systems only (R11); NaN guard in `canon` (O1); cache-key rounding (O2); `l2.js` rule lists independent of `skyline.js` (O4). The store timeout gaps (`estimate`, `decode`; R12) go to G4d-2 with the page work. E01–E07, E12–E14, E26, E29–E30, E38–E39; the X set L1/L2. Acceptance A2, A3 (render level), A4, A7 (grace), A11 (measure rests), A21, A26, B9. One merge point, Node only. |
-| **G4d** | **Two merge points.** **G4d-1** (Node): §13 curves, §10 placement of every mark, §15.3 vertical spacing with marks, §18.3 text metrics; A5–A10, A12, A20, A22, A25. **Carry-overs from the G4c review** (the Lead assigned them here): ledger lines for rests moved off the staff (15 whole/half rests in 4 files float without one, so whole and half look alike); tuplet numbers more than 1.5 sp from their beam (16 of 223, Czerny 849) — place them inside the staff where it is free; re-measure **B9** once curves and marks are drawn (the reviewer estimates ≈0.32 for sonatina/020, still ≤ 0.5); **bump `plan/1` and `engr/1`** — G4c changed both outputs without a bump, and from G4d-1 every output change bumps its version so that G4d-2's caches and `data-plan` can tell old from new. **G4d-2** (page): the app integration listed above, still defaulting to `'legacy'`, so nothing a user sees changes; A32, A33, the browser suites that can pass by then. Then **M-H1**, rendered through the real page, and the **Verovio trigger check** (G04 §7.3). If the trigger fires: stop, spike NotationPlan → MEI → Verovio on the same R corpus and L2, and put it to the user before G4e (§16). |
+| **G4c** | **CLOSED** — PR #15 `e3c8c5a` (G04 §34–§34.19). Beams, stems, tuplets, voices, rests, grace notes, `svg.js` + B9, the G4b backlog, both collision ratchets at 0; after the review's Fixer, shared flagged unisons and named metrics for merges, middle-line stems, rest positions, hook sides and tuplet hooks. G4-C4 ratified as G4-L2. |
+| **G4d** | **Three merge points** (G4-L3 splits G4d-1 so each review is of a manageable size). **G4d-1a** (Node): §13 curves (ties, slurs, glissando), `place()` over skylines, marks attached to notes (§10.2 priorities 3–7: articulations, ornaments, fermata, tremolo, fingering, arpeggio, notehead shapes, cautionary accidentals), the §18.3 text-metrics table; A5–A7, A22, A20 for its objects, A12 percussion noteheads; E08–E11, E15, E23, E27, E31–E33, E40; M8, M12, M14, M15, M23. **G4d-1b** (Node): marks attached to systems (priorities 8–11: dynamics, hairpins, pedal, ottava, volta, chord names, tempo, rehearsal, jumps, words, lyrics), §15.3 vertical spacing, §15.4 courtesy signs; A8–A10, A12 lyrics, A20, A25; E16–E22, E24, E25, E35; M13, M19, M20. **Carry-overs from the G4c review** (the Lead assigned them; all to G4d-1a except B9, which G4d-1b re-measures; plus an augmented-unison case in E12, because the Lead's alteration mutation changed no committed input): ledger lines for rests moved off the staff (15 whole/half rests in 4 files float without one, so whole and half look alike); tuplet numbers more than 1.5 sp from their beam (16 of 223, Czerny 849) — place them inside the staff where it is free; re-measure **B9** once curves and marks are drawn (the reviewer estimates ≈0.32 for sonatina/020, still ≤ 0.5); **bump `plan/1` and `engr/1`** — G4c changed both outputs without a bump, and from G4d-1 every output change bumps its version so that G4d-2's caches and `data-plan` can tell old from new. **G4d-2** (page): the app integration listed above, still defaulting to `'legacy'`, so nothing a user sees changes; A32, A33, the browser suites that can pass by then. Then **M-H1**, rendered through the real page, and the **Verovio trigger check** (G04 §7.3). If the trigger fires: stop, spike NotationPlan → MEI → Verovio on the same R corpus and L2, and put it to the user before G4e (§16). |
 | G4e | Unchanged (print). If print slips, G4f may flip the screen renderer with the print command hidden (the rollback for print is independent, G04 §27). |
 | **G4f** | As G04 §27, plus:<br>- **R5**: a nightly CI job with Chrome that runs the page tools (G2 shadow/app-import/pitch-layers; G4 `a48-coverage`, `u1-paths`, `legacy-parity`) and every browser suite **separately**, not `&&`-chained (TD8);<br>- A30 under both renderers;<br>- page-level perf at 4× CPU.<br>**The flip requires MX-1 merged** (done: PR #13 `e37d37a`) (drawn = played for 8va and pedal `change`). 8va display is settled by D-1 (§18): the plan's written = sounding − shift is correct. |
 
@@ -406,7 +407,7 @@ graph TD
 
 1. **G4b** — geometry-only as built (ratified, §5.1); under independent review.
 2. **MX-1** — approved (D-1 = YES), right after G4b; may run beside G4c in its own worktree.
-3. **G4c (+ `svg.js`) → G4d (G4d-1 marks, G4d-2 page integration, M-H1) → G4e → G4f (M-H2, flip)**.
+3. **G4c (+ `svg.js`) → G4d (G4d-1a note marks, G4d-1b system marks, G4d-2 page integration, M-H1) → G4e → G4f (M-H2, flip)**.
 4. **MX-2, MX-3** — clean data and dead switches before any new consumer is built on them.
 5. **G5 → G6** — the verifiers and the level scale; one shared human review, H-56.
 6. **G7 (a, b) → G8 → G9** — arrangement on clean symbolic input; H-8, then H-9 and the flip.
@@ -581,55 +582,37 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 
 ## 14. Current task
 
-**G4b is CLOSED** — PR #12, squash `62ede61`, 2026-09-25.
-1. The independent review found NEEDS_FIX, with MAJOR 3.
-2. The Fixer (G04 §33.16) closed R1–R3, changing tests and docs only.
-3. The Lead re-checked the fixed items on a fresh clone: 132/132; layout hashes unchanged; the ratchet exits 1 on a lowered baseline; a planted `getComputedTextLength` fails A29.
-4. CI gate green, then merged.
+**G4c is CLOSED** — PR #15, squash `e3c8c5a`, 2026-09-25.
+1. The independent review returned NEEDS_FIX (BLOCKER 0, MAJOR 2):
+   - flagged unisons were not shared;
+   - the bench trusted `merged` without checking, and several new rules were held only by the layout hash.
+2. A fresh Fixer (G04 §34.18) fixed both, with 7 named zero-target metrics and mutations caught by name. It re-blessed only 8 of 236 layout-hash pairs.
+3. The Lead re-checked the fixed items in a fresh clone:
+   - the gates are green;
+   - putting the old `layout.js` back fails the bench;
+   - of five mutations the Lead planted, four are caught. The fifth changes no committed input, which is a fixture gap handed to G4d-1a.
+4. The Lead merged `main` (MX-1) into the branch and re-ran every Node gate on the merged tree. CI was green, then G4c merged.
 
-The record is G04 §33.17 and DECISIONS G4-L1.
+The record is G04 §34.19, with DECISIONS G4-L2 and G4-L3. **MX-1 is CLOSED** too (PR #13 `e37d37a`; not deployed — production runs `72549cb`).
 
-**Current units** (Lead-launched 2026-09-25, each the only writer in its worktree; **start no other writer in either**):
-- **MX-1 — CLOSED**, PR #13, squash `e37d37a`. The review's NEEDS_FIX (BLOCKER 1, MAJOR 1: octave lines missing in partial views and on cards) was fixed in `be2925a`. The Lead re-checked the fixed items in a fresh clone: `test:scoregraph` 214/214, `test:engrave` 132/132 (A48 exact); `ottava-check.js` with 17 views PASSES on `be2925a` and FAILS on `8981750` (31 of 34 files); each fix reverted alone is caught (R1: the partial views; R2: every card view; the marker: 4 tests including A48); a screenshot shows "(8va)" over the shown bars. The bench edits are comments only. CI green, then merged. **Not deployed**: production runs `72549cb` until a manual deploy. Carry-overs are in §5.2 (MX-2).
-- **G4c — FIXER RUNNING.** Handed in at `f5517fe`. The independent review (2026-09-25) returned **NEEDS_FIX: BLOCKER 0, MAJOR 2, MINOR 6**. Gates were not weakened: the reviewer's negative controls fail as they should. The re-bless is honest (146/68/20/2 reproduced), G4-B11 matches VexFlow 4.2.3's `StaveNote.format`, and the pages look right apart from the findings. R1 (MAJOR): two voices on one pitch with flags are not given one shared head; the lower voice is pushed past the flag instead (34 unisons in 21 files), and no metric saw it. R2 (MAJOR): the L2 bench excludes every pair the layout calls `merged` without checking the merge is legal, and several new G4c rules are held only by the layout hash (the reviewer's mutations RF, RI, RY, RX, RB). A fresh Fixer fixes both, with named zero-target metrics and mutations, the two missing fixture cases (E12, E13) and two record errors (M6). The other MINORs go to G4d-1 (§5.1). **G4-C4 is ratified as G4-L2**: head sharing is recorded on the EngravedScore, and the plan ledger stays `drawn`; this is valid only with R2's legality check. G4c merges after MX-1; the two share only `docs/CURRENT_STATE.md` and `docs/DECISIONS.md`, and the Lead re-runs `test:engrave` and `test:scoregraph` on the merged tree before the PR.
-
-MX-1 must be merged before the G4f flip. Each unit: one independent review, then a Fixer only for BLOCKER/MAJOR.
-
-**MX-1 — playback correctness (implementer brief)**
-
-| | |
-| --- | --- |
-| Worktree / branch | `git worktree add --no-track -b mx1-playback-correctness D:/PPP-mx1 origin/main` (after G4b merges) |
-| Rule (D-1) | ScoreGraph pitch and MusicXML `<pitch>` are the **sounding** pitch. 8va/8vb/15ma/15mb is a display transformation: **written = sounding − shift**. Playback, practice judging, follow, falling notes and the keyboard use the sounding pitch and never shift it again. |
-| 1. 8va | `Score.finalize` (App 3593–3606) today sets `soundingMidi = midi + shift` and keeps the file's pitch as `writtenP`. Change it so that for notes from a file or the graph (`midi` = sounding): `soundingMidi = midi`, `writtenMidi = midi − shift`, `writtenP = p` shifted by −shift. The PdfLayer paths (App 10240, 10422) already derive sound from a written glyph; keep them, and prove they still agree. Make `legacy.fromScore`'s un-shift (`legacy-score.js` 601–613) and the adapter comments (202–234) consistent, so that A48 (`toScore(fromScore(S)) ≡ S` with the app's own `finalize`) stays exact. |
-| 2. Pedal `change` | `PianoScore` (App 2681) treats `change` as "stay down". Make it a damper lift and re-press at the change point: CC64 off then on for MIDI out, and release of the held notes for the sampler. G3's `pedalJoin` stays off (reopened in G10a). |
-| 3. R4 | The message for a `.mid` with fewer than 4 notes stops saying the file has no notes (`audio-score.js` 1556 and its i18n strings). The floor itself stays (G10a). |
-| 4. Audit | For every committed file with an octave shift (issue 3 counts 30 files and 2,229 notes; re-derive the list), report whether the notes under the line are plausibly sounding pitch (MusicXML) or written pitch (non-standard). Files that look written go to MX-2 as data defects. **No catalogue edits in MX-1.** |
-| Tests | Playback and follow fixtures for 8va, 8vb and 15ma (E18, `parse-ottava-8va-8vb`) and pedal `change` (E17); `playback-scheduler.test.js` extended; a page check that for every 8va file the app's sounding MIDI = the graph's concert pitch and the legacy renderer draws the written position. Every test must fail on the pre-fix code. |
-| Gates | CI green; `test:scoregraph`, `test:engrave` (A48 updated, not loosened); G0 `ab` core/smoke identical (the bench already reads MusicXML's way — G0-D10, C10/C11); shadow-legacy unchanged; browser suites (musicxml, playback-scheduler, follow, engraving, midi) on the worktree's own server. `legacy-parity` may differ **only** on the audited 8va files, each listed. |
-| Review | One independent review (user-audible change). Fixer only for BLOCKER/MAJOR. |
-| Rollback | Revert the PR. |
-| Not | No playback migration to the graph (G11a); no D.S./D.C./Fine or grace-note playback (G11a); no G3 flags; no catalogue edits (MX-2). |
-
-**G4c — implementer brief**
+**Current unit: G4d-1a — RUNNING** (Lead-launched implementer, the only writer in `D:/PPP-g4`).
 
 | | |
 | --- | --- |
-| Worktree / branch | `D:/PPP-g4`: `git switch --no-track -c g4c-notation-core origin/main` (after the closeout lands) |
-| Scope | The G4c card in §5.1: G04 §11 beams, §12 tuplets, §14 voices, rests and grace notes (cross-staff stays `deferred`), `svg.js` + B9 (G4-L1), and the G4b backlog (G04 §33.16.8), including the two other-voice ratchets taken to 0 |
-| Acceptance | A2, A3 (render level), A4, A7 (grace), A11 (measure rests), A21, A26, B9; E01–E07, E12–E14, E26, E29–E30, E38–E39; X set L1/L2; layout mutations for the new code (G04 §23 M1–M5, M16, M24) each caught by a named metric |
-| Not | No app change (page integration is G4d-2); no curves or marks (G4d); no print (G4e); no flip; no playback; no G3 flags |
+| Worktree / branch | `D:/PPP-g4`, `g4d1a-curves-marks`, from `origin/main` after this closeout |
+| Scope | G04 §13 ties, slurs and glissando (`curves.js`); `place()` over skylines (§10.1); marks attached to notes (§10.2 priorities 3–7); the §18.3 text-metrics table with a `--check` step in CI; the G4c review's carry-overs (ledger lines for off-staff rests, tuplet-number placement, the `plan`/`engr` version bump and the rule behind it, an augmented-unison E12 case) |
+| Acceptance | A5, A6, A7, A22, A20 for its objects, A12 percussion noteheads; E08–E11, E15, E23, E27, E31–E33, E40; R/X L1/L2 at 0; mutations M8, M12, M14, M15, M23 plus one per new rule, each caught by a named metric; still true: A2–A4, A11, A14, A17–A19, A21, A23, A24, A26–A29, B1–B7 |
+| Not | No app change; no G4d-1b objects (dynamics, hairpins, pedal, ottava, volta, chord names, tempo, rehearsal, jumps, words, lyrics); no page integration, print, flip, playback, `scoregraph/` change |
 | Review | One independent review; Fixer only for BLOCKER/MAJOR |
 
 ## 15. Next task
 
-**G4d**, in two merge points (§5.1):
-- **G4d-1** (Node): curves, marks, collisions, text metrics.
-- **G4d-2** (page): the dev-only renderer switch, highlighter as `sync`, cacheable assets, `agree.ok`, the store-timeout gaps (R12), `with-port.js` fixes. Then **M-H1** in the real page and the Verovio trigger check.
+- **G4d-1b** (Node): marks attached to systems, §15.3 vertical spacing, §15.4 courtesy signs, B9 re-measured (G4-L3).
+- **G4d-2** (page): the dev-only renderer switch, highlighter as `sync`, cacheable assets, `agree.ok`, the store-timeout gaps (R12), `with-port.js` fixes, `.vf-notehead path` selectors. Then **M-H1** in the real page and the Verovio trigger check.
 
 **The next five milestones:**
-1. G4c
-2. G4d-1
+1. G4d-1a
+2. G4d-1b
 3. G4d-2 + M-H1
 4. G4e
 5. G4f (M-H2, flip)
@@ -698,6 +681,7 @@ The Lead **will do these unless you object:**
 | Date | Change |
 | --- | --- |
 | 2026-09-25 | First edition (Lead). Remaining sequence G4b–G13; changes from the old roadmap in §7; MX lane; S4 owners; current task G4b in two merge points. |
+| 2026-09-25 | Sixth edition. **G4c CLOSED** (PR #15 `e3c8c5a`) after review (NEEDS_FIX, MAJOR 2) → Fixer → Lead re-check → merge with `main`. G4-L2 recorded; **G4-L3** splits G4d-1 into G4d-1a (curves, note marks) and G4d-1b (system marks, vertical spacing). Current: G4d-1a. |
 | 2026-09-25 | Fifth edition. **MX-1 CLOSED** (PR #13 `e37d37a`) after review (NEEDS_FIX) → Fixer → Lead re-check; MX-2 gets its carry-overs. G4c review NEEDS_FIX (MAJOR 2) → Fixer; G4-C4 ratified as G4-L2; G4d-1 carry-overs. |
 | 2026-09-25 | Fourth edition. **G4b CLOSED** (PR #12 `62ede61`) after review → Fixer → Lead re-check; the closeout records the review (G04 §33.17) and G4-L1. Current: MX-1 and G4c (briefs in §14). Next: G4d-1, G4d-2 + M-H1. |
 | 2026-09-25 | Third edition. G4b review: NEEDS_FIX, MAJOR 3 (dead static ban, no layout mutations, other-voice collisions invisible). Fixer launched for R1–R3; MINORs routed to G4c (R12 to G4d-2). D-0 done: both apps on Neon Free at $0. |

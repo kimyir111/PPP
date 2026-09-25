@@ -275,6 +275,8 @@ Fixer(`0f3d275`) 위에서 G4a를 마무리한 세션의 결정. 설계(G04 §0�
 | ID | 결정 | 근거 |
 | --- | --- | --- |
 | G4-L1 | **G4b는 geometry-only로 닫는다.** 옮긴 곳:<br>- `svg.js`(+B9) → G4c;<br>- 앱 통합 + A32·A33 → G4d-2 (M-H1 전, 기본값 `'legacy'`). 앱 통합은 개발용 renderer 스위치, 새 `sync`, 캐시 가능한 전송, `agree.ok` 요구다;<br>- A30 전체와 페이지 수준 A35–A37 → G4f.<br>G04 §27의 단계 표를 이렇게 읽는다 | - G4b 구현(§33.1)이 이미 이 경계다.<br>- Node만으로 판정 가능한 한 단위다.<br>- 19k줄 앱 파일을 세 단계 연속 건드리지 않는다.<br>- 사람 평가는 실제 PPP 렌더러에서 한다 (G3-U8·G3-U10의 교훈). |
+| G4-L2 | **G4-C4를 승인한다**: 성부 사이 unison의 음표머리 공유는 EngravedScore에 `merged`(두 머리가 서로를 가리킴)로 적고, plan의 fidelity ledger는 `drawn`으로 둔다. §14.2·§14.3의 "ledger `merged`"는 이 뜻으로 읽는다. **조건**: L2의 합법 병합 검사 `eg.voice.merge_illegal`(다른 성부, 같은 적힌 음·glyph·크기·점, 반대 stem)이 zero-target gate로 있을 때만 | G4c 리뷰 M5; 공유는 plan이 아니라 배치의 결과다 (세 번째 성부가 한 성부를 밀면 공유가 풀린다 — §34.18의 for-all-the-saints m.10) |
+| G4-L3 | **G4d-1을 두 병합 지점으로 나눈다.** G4d-1a: §13 곡선(tie·slur·glissando), `place()`, 음에 붙는 기호(§10.2 순서 3–7), §18.3 글자 metric 표, G4c 리뷰의 음 수준 이월. G4d-1b: system에 붙는 기호(순서 8–11: 셈여림·hairpin·pedal·ottava·volta·코드명·tempo·rehearsal·jump·words·가사), §15.3 세로 배치, §15.4 courtesy, B9 다시 재기. 각각 독립 리뷰 한 번 | G4c 한 단계가 3,900줄이었다. G4d-1 전체는 그보다 크고, 리뷰 하나로 보기에는 넓다. 음 쪽 기호가 끝나야 system 쪽 기호와 세로 배치의 skyline이 정해진다 |
 
 ## MX-1 — 재생 정확성 (유지보수 묶음, 2026-09-25 구현; 리뷰 NEEDS_FIX → 같은 날 수정, 재확인 대기; `docs/GOALS/MX1_PLAYBACK_CORRECTNESS.md`)
 
