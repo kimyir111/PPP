@@ -217,6 +217,10 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
 - `npm test` hardcodes port 8777. To test a worktree while another session's server holds 8777,
   run the worktree's server on another port and load a `-r` preload that rewrites the port in the
   test sources (G00 §18 records how).
+- `npm run test:scoregraph` runs its files in parallel, and on a fresh checkout several generate the same
+  `tests/bench/out/g3/jobs-<suite>.jsonl` at once; written in place, a reader could take a half-written file (CI
+  run 36174222416: 7 pedalled graphs, not ≥ 20). `g3_jobs.py` now writes a temp file and renames it into place,
+  and `g3-graphs.js` throws on a short file (`g3-jobs-race.test.js`; `PPP_G3_JOBS_DIR` moves the cache).
 
 ## Next
 
