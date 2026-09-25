@@ -7,7 +7,7 @@ The operational roadmap for everything after G4a: order, dependencies, gates, an
 | Owner | The **Lead / Orchestrator** session. Implementers, reviewers and fixers read it. Only the Lead edits it. |
 | Updated | 2026-09-26 — eighth edition (Lead): **G4d-1b CLOSED** (PR #19 `a6e1a75`), the Node engraver is complete; current: G4d-2 |
 | Base | `origin/main` = `a6e1a75` (G4d-1b, PR #19) plus the docs closeout |
-| Active | **G4d-2** (the renderer in the page behind a dev-only switch; `D:/PPP-g4`, branch `g4d2-page-integration`) — implementer running (§14). |
+| Active | **G4d-2** (the renderer in the page behind a dev-only switch; `D:/PPP-g4`, branch `g4d2-page-integration`) — handed in at `8529611`, in independent review (§14). |
 | Lead worktree | `D:/PPP-lead`, branch `lead-roadmap`. The Lead writes docs only, never in an implementer's worktree. |
 | How this relates to other docs | `docs/CURRENT_STATE.md` says what is true now, with measurements. `docs/DECISIONS.md` says why. `docs/GOALS/Gxx_*.md` is the contract for one Goal: design, acceptance and implementation record. **This document says in what order, behind which gates, and what comes next.** It does not repeat the goal specs. On detail, the spec wins. On sequencing, this document wins. |
 
@@ -602,7 +602,12 @@ The record is G04 §36.21.
 
 **CI race fix — DONE**: PR #21, squash `84abe80`. `g3_jobs.py` now writes the shared G3 jobs cache atomically, and the reader checks the count. A concurrency regression test fails with the old in-place write (Lead re-check: 2 of 2) and passes with the fix (3 of 3). `test:scoregraph` on a fresh clone passes 216/216.
 
-**Current unit: G4d-2 — RUNNING** (Lead-launched implementer, the only writer in `D:/PPP-g4`).
+**Current unit: G4d-2 — IN REVIEW.** Handed in READY_FOR_REVIEW at `8529611` (`338ddb3` code; `5abf8c2` merge of main; `8529611` docs; record G04 §37, DECISIONS G4-D2-1…18). Claims: the default stays legacy (legacy parity 16/16, A16 byte-identical); A31–A34 and A45 PASS; the A30 eight pass under `engrave`; corpus fallbacks: import door 0, the app's reader 2 (A48 known losses), plus `fromScore` limits (4 of 7 seed shares); the M-H1 packet is built. One independent read-only review is running. It must check:
+- no user-visible change on the default path (production runs `main`);
+- `server.js`'s new immutable caching for hashed engine files (security, stale pairing);
+- glyphs drawn as paths instead of `<use>` (§16.3; B9 re-measured);
+- bar numbers and note letters drawn by the page outside the collision layout;
+- whether the M-H1 packet follows §22.4 and leaks nothing.
 
 | | |
 | --- | --- |
