@@ -1,8 +1,10 @@
-/* G4b: the layout's metrics and checks are not dead (docs/GOALS/G04 §23; the G4b review R2).
+/* G4b-G4c: the layout's metrics and checks are not dead (docs/GOALS/G04 §23; the G4b review R2).
 
-   Each mutation edits the layout's SOURCE - a copy of engrave/ in a temporary directory, one anchored edit - the way a
-   real regression would, lays out fixed probe graphs with the mutated code at both screen configs, and computes the L2
-   metrics (l2.js), the determinism check (A27) and the static check (A29, a29.js) on what comes out. A mutation must
+   Each mutation edits the SOURCE of engrave/ - a copy in a temporary directory, one anchored edit in one file (the
+   layout, or the plan's beam and tuplet rules for the mutations §23 words as plan defects) - the way a real regression
+   would, lays out fixed probe graphs with the mutated code at both screen configs, and computes the L2 metrics (l2.js,
+   given the graph, so a plan that drops what the graph states is caught against the graph), the determinism check
+   (A27) and the static check (A29, a29.js) on what comes out. A mutation must
      1. find each of its anchors exactly once after CRLF is normalised to LF (the copy is written with CRLF line ends,
         as a Windows checkout has them, so this holds on every OS - the G2 MD-TEMPO-LAST-ONLY lesson),
      2. change the output for the probes (else it is dead and proves nothing - the G3 M3 lesson): the EngravedScores
@@ -16,15 +18,15 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { REPO, graphOf } = require('./helpers.js');
+const { REPO, SG, graphOf } = require('./helpers.js');
 const { l2 } = require('./l2.js');
 const A29 = require('./a29.js');
 
-const REST_PUSH = "        objs.push({ id: e.id, kind: 'rest', refs: [e.id], event: e.id, glyph: name, center: !!e.measureRest,\n" +
-  "          box: MT.box(name, -g.xMin, y), layer: 'note' });\n";
-const ONE_REST = "        if (e === plan.events.find(x => x.kind === 'rest' && !x.hidden)) objs.push(Object.assign({}, objs[objs.length - 1], ";
+const REST_PUSH = "        objs.push(o);\n        restY.set(e.id, y);\n";
+const ONE_REST = "        if (e === plan.events.find(x => x.kind === 'rest' && !x.hidden)) objs.push(Object.assign({}, o, ";
 const LAYOUT_TOP = '    counters.layout++;\n    const cfg = normalizeConfig(config);';
 const MUTATIONS = [
+  /* G4b (§33.16.3) */
   { id: 'M6', expect: ['eg.overlap.acc'], what: 'an accidental 0.8 sp into its head',
     edits: [['let x = right - a.w;', 'let x = right - a.w + 0.8;']] },
   { id: 'M7a', expect: ['eg.spacing.monotonic_violations'], what: 'u -> 0 in the placement only: every spring at its rod, the reported u kept',
@@ -38,9 +40,9 @@ const MUTATIONS = [
   { id: 'M10', expect: ['eg.clip.count'], what: 'the last system pushed off the page',
     edits: [['const x0 = MARGIN.left + braceSpace;', 'const x0 = MARGIN.left + braceSpace + (last ? 150 : 0);']] },
   { id: 'M11a', expect: ['eg.layout.multiset_diff'], what: 'one rest (the piece\'s first) drawn twice under its own id',
-    edits: [[REST_PUSH, REST_PUSH + ONE_REST + '{ box: objs[objs.length - 1].box.slice() }));\n']] },
+    edits: [[REST_PUSH, REST_PUSH + ONE_REST + '{ box: o.box.slice() }));\n']] },
   { id: 'M11b', expect: ['eg.layout.multiset_diff'], what: 'one rest (the piece\'s first) drawn twice, the copy under a new id',
-    edits: [[REST_PUSH, REST_PUSH + ONE_REST + '{ id: e.id + \'#copy\', box: objs[objs.length - 1].box.slice() }));\n']] },
+    edits: [[REST_PUSH, REST_PUSH + ONE_REST + '{ id: e.id + \'#copy\', box: o.box.slice() }));\n']] },
   { id: 'M17', expect: ['eg.layout.nondeterministic'], what: 'insertion order leaks: every third layout reversed, then sorted without the id tie-break',
     edits: [['objects.sort((a, b) => a.system - b.system || (a.box[0] - b.box[0]) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));',
       'if (counters.layout % 3 === 0) objects.reverse();\n    objects.sort((a, b) => a.system - b.system || (a.box[0] - b.box[0]));']] },
@@ -59,26 +61,146 @@ const MUTATIONS = [
         '        });'],
       ['const here = evs.filter(e => R.eq(R.parse(e.at), R.parse(col.at)) && (e.staff === s.id || e.heads.some(h => h.staff === s.id)));',
         'const here = evs.filter(e => R.eq(R.parse(e.at), R.parse(col.at)) && (e.staff === s.id ||\n' +
-        '            e.heads.some(h => { const o = staffById.get(h.staff || e.staff); return o && o.part === s.part; })));']] }
+        '            e.heads.some(h => { const o = staffById.get(h.staff || e.staff); return o && o.part === s.part; })));']] },
+  /* G4c (§23 M1-M5, M16, M24) */
+  { id: 'M1', file: 'plan-beams.js', expect: ['eg.beam.graph_missing'], what: 'the graph\'s beams ignored: none carried, every part derived by the rule',
+    edits: [['        out.push(b);\n', '        void b;\n'], ["      if (part.spanners.some(s => s.type === 'beam')) return;\n", '']] },
+  { id: 'M2', expect: ['eg.beam.derived_missing'], what: 'derived beams off: the layout draws the graph\'s beams only',
+    edits: [['const beams = plan.beams.filter(b => !graceBeam(b)).map(', "const beams = plan.beams.filter(b => !graceBeam(b) && b.source !== 'derived').map("]] },
+  { id: 'M3', expect: ['eg.voice.stem_policy_violations'], what: 'the stems of two voices flipped (the up voice down, the down voice up)',
+    edits: [["const roled = e => (e.stemFrom === 'voice' && (e.stem === 'up' || e.stem === 'down') ? e.stem : null);",
+      "const roled = e => (e.stemFrom === 'voice' && (e.stem === 'up' || e.stem === 'down') ? (e.stem === 'up' ? 'down' : 'up') : null);"]] },
+  { id: 'M4', expect: ['eg.tuplet.missing'], what: 'no tuplet number or bracket drawn',
+    edits: [['      if (!digits.length && !t.bracket) return;\n', '      return;\n']] },
+  { id: 'M5', file: 'plan-tuplets.js', expect: ['eg.tuplet.show_errors', 'eg.tuplet.suppressed_rendered'], what: 'show.number \'none\' ignored: every tuplet shows its number',
+    edits: [["const number = show.number || 'actual';", "const number = 'actual';"]] },
+  { id: 'M16', expect: ['eg.grace.misplaced', 'eg.layout.multiset_diff'], what: 'grace notes laid out as ordinary notes, on the time columns',
+    edits: [['const evs = evByM.get(m.id).filter(e => !e.grace);', 'const evs = evByM.get(m.id).filter(e => !e.grace || e.grace.after);'],
+      ['      if (!e.grace || e.grace.after || e.hidden || deferred.has(e.id)) return;\n', '      return;\n']] },
+  { id: 'M24', expect: ['eg.tuplet.extent_err'], what: 'a tuplet bracket ends at its last note, leaving out a rest that ends the group',
+    edits: [['const firstEv = present[0], lastEv = present[present.length - 1];',
+      "const firstEv = present[0], lastEv = present.filter(id => mem.some(o => o.event === id && o.kind === 'notehead')).pop() || present[present.length - 1];"]] },
+  /* the G4c review (G04 §34.18): its mutations RF, RI, RY, RX, RB, RK that only the layout hash caught, RB2, and the
+     fixer's own for R1 (F1, F2) and the merge check (F3) - each caught by a named metric */
+  { id: 'RF', expect: ['eg.voice.merge_illegal'], what: 'a unison shares its head across different dot counts (a dotted quarter and a quarter)',
+    edits: [['A.dir === B.dir || A.e.voice === B.e.voice || A.e.dots !== B.e.dots ||', 'A.dir === B.dir || A.e.voice === B.e.voice ||']] },
+  { id: 'RI', expect: ['eg.stem.middle_line'], what: 'unbeamed up stems of ledger-line notes in one voice stop short of the middle line',
+    edits: [["          if (!poly && L.dir === 'up' && end > mid) end = mid;\n", '\n']] },
+  { id: 'RY', file: 'notation.js', expect: ['eg.rest.position_err'], what: 'a rest steps half a space (a line rest lands on a space)',
+    edits: [['const REST = Object.freeze({ step: 1,', 'const REST = Object.freeze({ step: 0.5,']] },
+  { id: 'RX', file: 'notation.js', expect: ['eg.tuplet.hook_dir_err'], what: 'tuplet bracket hooks point away from the notes',
+    edits: [['  const TUPLET = Object.freeze({ hook: 0.75,', '  const TUPLET = Object.freeze({ hook: -0.75,']] },
+  { id: 'RB', file: 'notation.js', expect: ['eg.beam.hook_side_err'], what: 'beam hooks the other way (the first note\'s left, an inner one right inside its beat)',
+    edits: [["      if (i === 0) return 'right';",
+      "      if (i === 0) return 'left';\n      if (i > 0) return (members[i - 1].beat === members[i].beat && !members[i - 1].dots) ? 'right' : 'left';"]] },
+  { id: 'RB2', file: 'notation.js', expect: ['eg.beam.hook_side_err'], what: 'an inner hook\'s beat rule reversed (right inside the beat of the note before, left outside it)',
+    edits: [["      return prev.beat === members[i].beat ? 'left' : 'right';", "      return prev.beat === members[i].beat ? 'right' : 'left';"]] },
+  { id: 'RK', expect: ['eg.voice.merge_illegal'], what: 'rests of different lengths merged (a quarter rest and a half rest at one place)',
+    edits: [['rests.every(e => !e.restPos && e.dur === rests[0].dur && e.type === rests[0].type &&', 'rests.every(e => !e.restPos &&']] },
+  { id: 'F1', expect: ['eg.voice.unison_unshared'], what: 'R1 back: the flag test ignores the shared head, so a unison of flagged notes is not shared',
+    edits: [['if (a.flag && b.heads.some((h, j) => j !== sb && overlap(a.flag, h))) return true;', 'if (a.flag && b.heads.some(h => overlap(a.flag, h))) return true;'],
+      ['if (b.flag && a.heads.some((h, i) => i !== sa && overlap(b.flag, h))) return true;', 'if (b.flag && a.heads.some(h => overlap(b.flag, h))) return true;']] },
+  { id: 'F2', expect: ['eg.voice.offset_err'], what: 'R1 back: a voice beside a flagged note always moves past the flag (a second 1.1 sp apart)',
+    edits: [['return s.flag && own.some(h => s.flag[1] < h[3] - SK.EPS && h[1] < s.flag[3] - SK.EPS) ? Math.max(s.right, s.flag[2]) : s.right;',
+      'return s.flag ? Math.max(s.right, s.flag[2]) : s.right;']] },
+  { id: 'F3', expect: ['eg.voice.merge_illegal'], what: 'a unison whose voice moved for a third voice keeps naming its partner (heads apart, still "merged")',
+    edits: [['        if (P && P.dx !== L.dx) { partnerHead.delete(hid); partnerHead.delete(pid); }\n', '        void P;\n']] }
 ];
 const CONTROLS = [
   { id: 'N1', what: 'a comment reworded',
     edits: [['/* horizontal gaps, sp (G04 §9.3, §15.4) */', '/* horizontal gaps in staff spaces (G04 §9.3, §15.4) */']] },
-  { id: 'N2', what: 'two independent statements swapped (the beamed set and the tie starts)',
-    edits: [['    const beamed = new Set();\n    plan.beams.forEach(b => b.events.forEach(id => beamed.add(id)));\n' +
+  { id: 'N2', what: 'two independent statements swapped (the grace-beam test and the tie starts)',
+    edits: [['    const graceBeam = b => b.events.every(id => evById.get(id) && evById.get(id).grace);\n' +
       '    const tieFrom = new Set();\n    plan.ties.forEach(t => { if (t.from) tieFrom.add(t.from); });\n',
       '    const tieFrom = new Set();\n    plan.ties.forEach(t => { if (t.from) tieFrom.add(t.from); });\n' +
-      '    const beamed = new Set();\n    plan.beams.forEach(b => b.events.forEach(id => beamed.add(id)));\n']] }
+      '    const graceBeam = b => b.events.every(id => evById.get(id) && evById.get(id).grace);\n']] }
 ];
-/* the probes: two voices with rests, an accidental chord, a long grand-staff piece (several systems), and two piano
-   pieces whose hands cross middle C - Czerny 849/005 dense (its phone systems already at a smaller staff size),
-   Burgmuller 015. Every catch below is carried by two probes or more. */
+/* a triplet whose last member is a rest, bracketed (no beam holds it): the §23 M24 case */
+function tripletEndingInARest() {
+  const R = SG.rational;
+  const b = SG.builder({ id: 'm24', meta: { title: 'M24' } });
+  b.setDefault({ src: b.source({ kind: 'user' }).id });
+  const m = b.measure({ number: '1', dur: '1' });
+  b.meter({ m: m.id, beats: [4], beatType: 4 });
+  const part = b.part({ instrument: { kind: 'piano', family: 'keyboard' } });
+  const st = b.staff(part, {});
+  const v = b.voice(part, { staff: st.id, label: '1' });
+  b.clef(part, { staff: st.id, m: m.id, at: '0', sign: 'G' });
+  const ev = [];
+  [['C', 5], ['D', 5], null].forEach((p, k) => ev.push(b.event(part, Object.assign({ kind: p ? 'note' : 'rest', m: m.id, at: R.format(R.make(k, 12)), dur: '1/12',
+    voice: v.id, staff: st.id, display: { type: 'eighth' } }, p ? { heads: [{ pitch: { step: p[0], alter: 0, oct: p[1] } }] } : {}))));
+  b.spanner(part, { type: 'tuplet', events: ev.map(e => e.id), actual: 3, normal: 2 });
+  b.event(part, { kind: 'note', m: m.id, at: '1/4', dur: '3/4', voice: v.id, staff: st.id, display: { type: 'half', dots: 1 }, heads: [{ pitch: { step: 'E', alter: 0, oct: 5 } }] });
+  return b.finish().graph;
+}
+/* beam hooks on every side §11.2 gives (RB, RB2): bar 1 beams an eighth, a 16th inside the eighth's beat (left), an
+   eighth, a 16th in the next beat (right), an eighth; bar 2 a 16th that starts its beam (right) before a dotted eighth,
+   and a 16th that ends its beam after a dotted eighth (left) */
+function beamHooks() {
+  const R = SG.rational;
+  const b = SG.builder({ id: 'hooks', meta: { title: 'Hooks' } });
+  b.setDefault({ src: b.source({ kind: 'user' }).id });
+  const part = b.part({ instrument: { kind: 'piano', family: 'keyboard' } });
+  const st = b.staff(part, {});
+  const v = b.voice(part, { staff: st.id, label: '1' });
+  const bars = [
+    [['1/8', 'eighth', 'C5'], ['1/16', '16th', 'D5'], ['1/8', 'eighth', 'E5'], ['1/16', '16th', 'F5'], ['1/8', 'eighth', 'G5'], ['1/2', 'half', 'A5']],
+    [['1/16', '16th', 'C5'], ['3/16', 'eighth', 'D5', 1], ['3/16', 'eighth', 'E5', 1], ['1/16', '16th', 'F5'], ['1/2', 'half', 'G5']]];
+  const beams = [[[0, 1, 2, 3, 4]], [[0, 1], [2, 3]]];
+  bars.forEach((notes, i) => {
+    const m = b.measure({ number: String(i + 1), dur: '1' });
+    if (!i) { b.meter({ m: m.id, beats: [4], beatType: 4 }); b.clef(part, { staff: st.id, m: m.id, at: '0', sign: 'G' }); }
+    let at = R.ZERO;
+    const ev = notes.map(([dur, type, p, dots]) => {
+      const e = b.event(part, { kind: 'note', m: m.id, at: R.format(at), dur: dur, voice: v.id, staff: st.id, display: Object.assign({ type: type }, dots ? { dots: dots } : {}),
+        heads: [{ pitch: { step: p[0], alter: 0, oct: +p[1] } }] });
+      at = R.add(at, R.parse(dur));
+      return e;
+    });
+    beams[i].forEach(idx => b.spanner(part, { type: 'beam', events: idx.map(k => ev[k].id) }));
+  });
+  return b.finish().graph;
+}
+/* three voices on a bass staff (F3): an up-stem D4 and a down-stem D4-G3 share the D4, but a third voice's up stem from G2
+   runs through the G3, so the down-stem voice moves right - and its D4 is no longer the up voice's */
+function sharedThenMoved() {
+  const b = SG.builder({ id: 'three', meta: { title: 'Three voices' } });
+  b.setDefault({ src: b.source({ kind: 'user' }).id });
+  const m = b.measure({ number: '1', dur: '1' });
+  b.meter({ m: m.id, beats: [4], beatType: 4 });
+  const part = b.part({ instrument: { kind: 'piano', family: 'keyboard' } });
+  const st = b.staff(part, {});
+  b.clef(part, { staff: st.id, m: m.id, at: '0', sign: 'F' });
+  const P = (s, o) => ({ pitch: { step: s, alter: 0, oct: o } });
+  [['1', 'up', [P('D', 4)]], ['2', 'down', [P('D', 4), P('G', 3)]], ['3', 'up', [P('G', 2)]]].forEach(([label, stem, heads]) => {
+    const v = b.voice(part, { staff: st.id, label: label });
+    ['0', '1/2'].forEach(at => b.event(part, { kind: 'note', m: m.id, at: at, dur: '1/2', voice: v.id, staff: st.id, display: { type: 'half', stem: stem },
+      heads: heads.map(h => JSON.parse(JSON.stringify(h))) }));
+  });
+  return b.finish().graph;
+}
+/* the probes: two voices with rests, an accidental chord, a long grand-staff piece (several systems), two piano pieces
+   whose hands cross middle C - Czerny 849/005 dense (its phone systems already at a smaller staff size), Burgmuller
+   015 - and for G4c beams with secondary breaks and hooks (E02), tuplets shown as the file says (E04), two voices'
+   seconds and unisons (E12), grace notes (E14), the recording shape with derived beams (E38), and the M24 triplet; for
+   the G4c fixer ledger-line stems in one voice (E34), beam hooks on every side (beamHooks) and a unison a third voice
+   pulls apart (sharedThenMoved) - E12 and E13 hold the unisons of different dots, the flagged unison and second, and the
+   rests of different lengths. Every catch below is carried by probes that contain what it plants a defect in. */
 const PROBES = {
+  E02: 'tests/engrave/fixtures/e/E02-beams-compound-secondary.musicxml',
+  E04: 'tests/engrave/fixtures/e/E04-tuplet-show.musicxml',
+  E12: 'tests/engrave/fixtures/e/E12-two-voices-heads.musicxml',
   E13: 'tests/engrave/fixtures/e/E13-two-voices-rests.musicxml',
+  E14: 'tests/engrave/fixtures/e/E14-grace.musicxml',
   E33: 'tests/engrave/fixtures/e/E33-accidental-chord.musicxml',
+  E34: 'tests/engrave/fixtures/e/E34-ledger-lines.musicxml',
   E37: 'tests/engrave/fixtures/e/E37-long.musicxml',
+  E38: 'tests/engrave/fixtures/e/E38-recording-shape.musicxml',
   czerny849_005: 'catalog/method/czerny849/005.mxl',
-  burg015: 'catalog/method/burgmuller25/015.mxl'
+  burg015: 'catalog/method/burgmuller25/015.mxl',
+  m24: tripletEndingInARest,
+  hooks: beamHooks,
+  three: sharedThenMoved
 };
 const CONFIGS = [{ breakpoint: 'desktop' }, { breakpoint: 'phone' }];
 const FILE = 'layout.js';
@@ -89,7 +211,7 @@ const load = () => {
   return require(path.join(tmp, 'engrave', 'index.js'));
 };
 function withEdits(m, fn) {
-  const file = path.join(tmp, 'engrave', FILE);
+  const file = path.join(tmp, 'engrave', m.file || FILE);
   const orig = fs.readFileSync(file, 'utf8');
   let text = orig.replace(/\r\n/g, '\n');
   m.edits.forEach(([from, to]) => {
@@ -112,7 +234,7 @@ function run(E, graphs) {
     const lays = CONFIGS.map(c => E.layout.layout(P, c));
     lays.forEach(eng => {
       out.push(JSON.stringify(eng));
-      const x = l2(eng, p, { prepared: P, layout: E.layout });
+      const x = l2(eng, p, { prepared: P, layout: E.layout, graph: graphs[k] });
       Object.keys(x).forEach(key => { m[key] = (m[key] || 0) + x[key]; });
     });
     /* A27: the same graph three more times - prepared once, afresh, through the engraver's cache */
@@ -124,7 +246,7 @@ function run(E, graphs) {
   const findings = A29.scanDir(path.join(tmp, 'engrave')).findings;
   return { output: out.join('\n'), metrics: m, findings: findings };
 }
-const caught = (r, name) => (name.indexOf('eg.') === 0 ? r.metrics[name] > 0 : r.findings.some(f => f.rule === name && f.file === FILE));
+const caught = (r, name, file) => (name.indexOf('eg.') === 0 ? r.metrics[name] > 0 : r.findings.some(f => f.rule === name && f.file === (file || FILE)));
 
 test.before(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ppp-layout-mut-'));
@@ -138,23 +260,23 @@ test.before(() => {
 });
 test.after(() => { if (tmp) fs.rmSync(tmp, { recursive: true, force: true }); });
 
-test('every layout mutation (G04 §23: M6, M7, M9, M10, M11, M17, M18, M21) is live and caught by the metric or check it names; N1 and N2 change nothing', async (t) => {
+test('every layout mutation (G04 §23: M1-M7, M9-M11, M16-M18, M21, M24; the G4c review\'s RB, RB2, RF, RI, RK, RX, RY; the fixer\'s F1-F3) is live and caught by the metric or check it names; N1 and N2 change nothing', async (t) => {
   const graphs = {};
   for (const k of Object.keys(PROBES)) {
-    graphs[k] = await graphOf(PROBES[k]);
+    graphs[k] = typeof PROBES[k] === 'function' ? PROBES[k]() : await graphOf(PROBES[k]);
     assert.ok(graphs[k], k + ' opens');
   }
   assert.match(fs.readFileSync(path.join(tmp, 'engrave', FILE), 'utf8'), /\r\n/, 'the copy has CRLF line ends');
   const base = run(load(), graphs);
   /* every name a mutation expects is clean without it, on the same probes */
-  MUTATIONS.forEach(m => m.expect.forEach(name => assert.ok(!caught(base, name), m.id + ': ' + name + ' is clean on the real code')));
+  MUTATIONS.forEach(m => m.expect.forEach(name => assert.ok(!caught(base, name, m.file), m.id + ': ' + name + ' is clean on the real code')));
   assert.deepEqual(base.findings, []);
   const report = [];
   MUTATIONS.forEach(m => withEdits(m, E => {
     const r = run(E, graphs);
     if (m.static) assert.notDeepEqual(r.findings, base.findings, m.id + ' (' + m.what + '): the A29 findings changed - the mutation is live');
     else assert.notEqual(r.output, base.output, m.id + ' (' + m.what + '): the EngravedScores changed - the mutation is live');
-    m.expect.forEach(name => assert.ok(caught(r, name), m.id + ' (' + m.what + '): caught by ' + name + ' - ' +
+    m.expect.forEach(name => assert.ok(caught(r, name, m.file), m.id + ' (' + m.what + '): caught by ' + name + ' - ' +
       JSON.stringify(m.static ? r.findings : Object.fromEntries(Object.entries(r.metrics).filter(([k, v]) => v !== base.metrics[k])))));
     const also = Object.keys(r.metrics).filter(k => r.metrics[k] !== base.metrics[k] && m.expect.indexOf(k) < 0).sort();
     report.push(m.id + ' ' + m.expect.map(name => name + (name.indexOf('eg.') === 0 ? '=' + r.metrics[name] : '')).join(',') + (also.length ? ' (also ' + also.join(',') + ')' : ''));
@@ -174,3 +296,4 @@ test('every layout mutation (G04 §23: M6, M7, M9, M10, M11, M17, M18, M21) is l
   /* the copy is back to what it was */
   assert.deepEqual(run(load(), graphs).output, base.output);
 });
+

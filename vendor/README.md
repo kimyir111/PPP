@@ -36,5 +36,9 @@ PetalumaScript is part of the Petaluma family and is covered by the Petaluma not
 The notices were fetched from the fonts' own repositories on 2026-09-25 (fixer, G04 §32.12);
 `tests/engrave/vendor.test.js` checks that every outline font in the build has its row here.
 
+`engrave/outlines.js` (G4c) carries the Bravura outlines of the glyphs the engraving layout uses (66), taken unchanged
+from this build by `tests/engrave/tools/make-outlines.js` (`--check` in CI) so the SVG backend draws without loading
+VexFlow; the Bravura notice above (`LICENSE-bravura-OFL.txt`) covers them, and the file's header says so.
+
 Not an upgrade path to VexFlow 5 (G04 §7.3 B, R3): 4.2.3 is pinned. G4a only vendors and verifies the file; nothing loads
 it yet. The legacy renderer keeps loading the same version from the CDN until the engraving renderer replaces it (G4b+).

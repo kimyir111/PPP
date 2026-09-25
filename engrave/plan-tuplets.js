@@ -7,7 +7,8 @@
    A tuplet is drawn as the graph states it. Its time is never touched here.
      printed: false                 nothing (the file printed no bracket)
      show.number / show.bracket     as stated; with no bracket stated, a bracket
-                                    unless the notes are exactly one beam
+                                    unless the notes are exactly one beam, or
+                                    there is one note (§12.3: its number alone)
      parent                         nested: two levels drawn, a third deferred
 
    One-note tuplets (G4-U2 B). PPP's transcriptions open a bracket on every
@@ -182,9 +183,11 @@
 
   function tuplets(g, ctx, beamList, merged) {
     const out = [], ledger = [];
-    /* a beam whose notes are exactly a tuplet's carries the grouping: the number alone is enough (§12.1) */
+    /* a beam whose notes are exactly a tuplet's carries the grouping: the number alone is enough (§12.1). A tuplet of
+       one note shows its number alone too (§12.3: "멤버마다 숫자 3, 괄호 없이") - a bracket over one note brackets
+       nothing (G4c, G4-C5) */
     const beamKeys = new Set(beamList.map(b => b.events.join(' ')));
-    const bracketDefault = evIds => !beamKeys.has(evIds.join(' '));
+    const bracketDefault = evIds => evIds.length > 1 && !beamKeys.has(evIds.join(' '));
     merged = merged || { groupOf: new Map(), groups: [] };
     merged.groups.forEach(x => out.push(Object.assign({}, x, { bracket: bracketDefault(x.events) })));
 

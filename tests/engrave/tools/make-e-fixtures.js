@@ -221,19 +221,34 @@ E['E11-slur-rest-system'] = () => pianoScore('A slur over a rest and a system br
   measure(2, [n('F5', 'half'), n('D5', 'half', { slurs: [{ type: 'stop', number: 2 }] }), ...lhWhole('G2')], { newSystem: true, barRight: finalBar() })
 ]);
 
-E['E12-two-voices-heads'] = () => pianoScore('Two voices: seconds and unisons', 'a second between the voices, a unison of equal heads, a unison of a half and a quarter', [
+E['E12-two-voices-heads'] = () => pianoScore('Two voices: seconds and unisons', 'a second between the voices, a unison of equal heads, a unison of a half and a quarter; ' +
+  'then a unison of a dotted and a plain quarter, a unison of two flagged eighths, a second of two flagged eighths', [
   measure(1, [piano(),
     n('E5', 'quarter', { voice: 1, stem: 'up' }), n('C5', 'quarter', { voice: 1, stem: 'up' }), n('D5', 'half', { voice: 1, stem: 'up' }),
     backup(4 * D),
     n('D5', 'quarter', { voice: 2, stem: 'down' }), n('C5', 'quarter', { voice: 2, stem: 'down' }), n('D5', 'quarter', { voice: 2, stem: 'down' }), n('B4', 'quarter', { voice: 2, stem: 'down' }),
+    ...lhWhole('G2')]),
+  /* the eighths stand alone in their beats (no beam: a rest or a longer note beside them), so they are flagged */
+  measure(2, [
+    n('D5', 'quarter', { voice: 1, stem: 'up', dots: 1 }), n('C5', 'eighth', { voice: 1, stem: 'up' }), n('E5', 'eighth', { voice: 1, stem: 'up' }), n(null, 'eighth', { voice: 1 }),
+    n('D5', 'quarter', { voice: 1, stem: 'up' }),
+    backup(4 * D),
+    n('D5', 'quarter', { voice: 2, stem: 'down' }), n(null, 'eighth', { voice: 2 }), n('C5', 'eighth', { voice: 2, stem: 'down' }), n('D5', 'eighth', { voice: 2, stem: 'down' }),
+    n(null, 'eighth', { voice: 2 }), n('B4', 'quarter', { voice: 2, stem: 'down' }),
     ...lhWhole('G2')], { barRight: finalBar() })
 ]);
 
-E['E13-two-voices-rests'] = () => pianoScore('Two voices resting', 'both voices rest together for a quarter; then only the lower voice, for a half', [
+E['E13-two-voices-rests'] = () => pianoScore('Two voices resting', 'both voices rest together for a quarter; then only the lower voice, for a half; ' +
+  'then both rest at once for different lengths, a quarter above and a half below', [
   measure(1, [piano(),
     n(null, 'quarter', { voice: 1 }), n('E5', 'quarter', { voice: 1 }), n('F5', 'half', { voice: 1 }),
     backup(4 * D),
     n(null, 'quarter', { voice: 2 }), n('C5', 'quarter', { voice: 2 }), n(null, 'half', { voice: 2 }),
+    ...lhWhole('C3')]),
+  measure(2, [
+    n(null, 'quarter', { voice: 1 }), n('E5', 'quarter', { voice: 1 }), n('D5', 'half', { voice: 1 }),
+    backup(4 * D),
+    n(null, 'half', { voice: 2 }), n('G4', 'half', { voice: 2 }),
     ...lhWhole('C3')], { barRight: finalBar() })
 ]);
 

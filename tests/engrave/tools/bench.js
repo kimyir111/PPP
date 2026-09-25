@@ -19,9 +19,10 @@ const fs = require('fs');
 const path = require('path');
 const H = require('../helpers.js');
 const { SG, E, REPO } = H;
-/* RATCHET (l2.js): the other-voice collisions G4c removes - the baseline must record each, and a suite whose count
-   rises above it fails; G4c moves them to ZERO */
-const { l2, RATCHET } = require('../l2.js');
+/* L2 (l2.js): every layout metric is a zero target but the steepest beam (MAXIMA, a limit) and the count of systems
+   drawn smaller (LOWER). G4b's two ratchets on other-voice collisions (eg.rest.overlap, eg.voice.stem_over_head) are
+   zero targets since G4c (G04 §33.16.4, §34). */
+const { l2, MAXIMA } = require('../l2.js');
 const L = SG.legacy;
 
 const OUT = path.join(REPO, 'tests', 'engrave', 'out');
@@ -33,7 +34,17 @@ const ZERO = ['eg.ledger.silent', 'eg.ledger.invented', 'eg.ledger.duplicate', '
   'eg.clip.count', 'eg.overlap.head_head', 'eg.overlap.acc', 'eg.overlap.dot', 'eg.staff.overlap', 'eg.system.overlap', 'eg.system.overflow',
   'eg.spacing.rod_violations', 'eg.spacing.monotonic_violations', 'eg.column.order_violations', 'eg.layout.event_missing', 'eg.layout.event_unknown',
   'eg.layout.head_missing', 'eg.layout.head_staff_wrong', 'eg.systems.one_bar', 'eg.layout.hard_violations', 'eg.glyph.fallback',
-  'eg.layout.nondeterministic', 'eg.layout.multiset_diff', 'eg.system.fill_err', 'eg.system.scaled_avoidable'];
+  'eg.layout.nondeterministic', 'eg.layout.multiset_diff', 'eg.system.fill_err', 'eg.system.scaled_avoidable',
+  /* G4c: the G4b ratchets, now zero; beams, stems, tuplets, voices, rests, grace notes at the layout level; R4, R5 */
+  'eg.rest.overlap', 'eg.voice.stem_over_head', 'eg.voice.stem_policy_violations', 'eg.stem.short', 'eg.beam.graph_missing',
+  'eg.beam.derived_missing', 'eg.beam.unplanned', 'eg.beam.level_errors', 'eg.beam.flag_errors', 'eg.beam.slope_violations',
+  'eg.beam.head_crossings', 'eg.tuplet.missing', 'eg.tuplet.show_errors', 'eg.tuplet.extent_err', 'eg.tuplet.nesting_errors',
+  'eg.tuplet.suppressed_rendered', 'eg.grace.misplaced', 'eg.grace.stem_errors', 'eg.rest.measure_errors', 'eg.layout.attachment_diff',
+  'eg.layout.signature_diff', 'eg.layout.pitch_y_err', 'eg.layout.duplicate_ids',
+  /* the G4c fixer (G04 §34.18, the G4c review R1-R2): legal merges, shared unisons, the offset of voices side by side,
+     stems to the middle line, rests on line or space, hook sides, tuplet hooks toward the notes */
+  'eg.voice.merge_illegal', 'eg.voice.unison_unshared', 'eg.voice.offset_err', 'eg.stem.middle_line', 'eg.rest.position_err',
+  'eg.beam.hook_side_err', 'eg.tuplet.hook_dir_err'];
 const ONE = ['eg.beam.graph_drawn_ratio', 'eg.beam.members_exact', 'eg.tuplet.drawn_ratio', 'eg.tuplet.show_ok', 'eg.tie.drawn_ratio',
   'eg.slur.pair_exact', 'eg.event.multiset_equal', 'eg.staff.assignment_exact', 'eg.source.agree_live', 'eg.source.agree_projected'];
 /* recorded, lower is better: more systems drawn at a smaller staff size is a regression */
@@ -104,9 +115,10 @@ function measure(item) {
     const shown = gt.filter(s => s.printed !== false && !(s.show && s.show.number === 'none' && s.show.bracket === false));
     set('eg.tuplet.drawn_ratio', shown.length ? shown.filter(s => inOut.has(s.id) || inGroup.has(s.id)).length / shown.length : 1);
     const beamKeys = new Set(p.beams.map(b => b.events.join(' ')));
+    /* §12.1, and §12.3 for a tuplet of one note: its number alone */
     const showOk = [...inOut.values()].filter(t => {
       const s = gt.find(x => x.id === t.id), show = s.show || {};
-      return t.number === (show.number || 'actual') && t.bracket === (show.bracket !== undefined ? show.bracket : !beamKeys.has(s.events.join(' ')));
+      return t.number === (show.number || 'actual') && t.bracket === (show.bracket !== undefined ? show.bracket : s.events.length > 1 && !beamKeys.has(s.events.join(' ')));
     });
     set('eg.tuplet.show_ok', inOut.size ? showOk.length / inOut.size : 1);
     set('eg.tuplet.suppressed_drawn', gt.filter(s => s.printed === false && (inOut.has(s.id) || inGroup.has(s.id))).length);
@@ -144,7 +156,10 @@ function measure(item) {
     const t1 = process.hrtime.bigint();
     const lays = ['desktop', 'phone'].map(bp => E.layout.layout(P, { breakpoint: bp }));
     row.layoutMs = Number(process.hrtime.bigint() - t1) / 1e6 / 2;
-    lays.forEach(eng => { const m = l2(eng, p, { prepared: P, layout: E.layout }); Object.keys(m).forEach(k => set(k, (row.m[k] || 0) + m[k])); });
+    lays.forEach(eng => {
+      const m = l2(eng, p, { prepared: P, layout: E.layout, graph: g });
+      Object.keys(m).forEach(k => set(k, MAXIMA[k] !== undefined ? Math.max(row.m[k] || 0, m[k]) : (row.m[k] || 0) + m[k]));
+    });
     set('eg.layout.nondeterministic', E.layoutHash(E.engrave(E.plan(g, cfg), { breakpoint: 'desktop' })) === E.layoutHash(lays[0]) ? 0 : 1);
     set('eg.error', 0);
   } catch (e) {
@@ -160,6 +175,7 @@ function summarise(rows) {
   [...keys].sort().forEach(k => {
     const vs = rows.map(r => r.m[k]).filter(v => v !== undefined);
     if (ONE.indexOf(k) >= 0 || k.indexOf('ratio') >= 0) s[k] = Math.round(Math.min(...vs) * 1e6) / 1e6;
+    else if (MAXIMA[k] !== undefined) s[k] = Math.max(...vs);
     else s[k] = vs.reduce((a, b) => a + b, 0);
   });
   const ms = rows.map(r => r.ms || 0).sort((a, b) => a - b);
@@ -173,14 +189,16 @@ function compare(sum, base) {
   const bad = [];
   ZERO.forEach(k => { if ((sum[k] || 0) !== 0) bad.push(k + ' = ' + sum[k] + ' (must be 0)'); });
   ONE.forEach(k => { if (sum[k] !== undefined && sum[k] < 1) bad.push(k + ' = ' + sum[k] + ' (must be 1)'); });
+  Object.keys(MAXIMA).forEach(k => { if (sum[k] !== undefined && sum[k] > MAXIMA[k]) bad.push(k + ' = ' + sum[k] + ' (must be <= ' + MAXIMA[k] + ')'); });
   if (base) {
     if (sum.graphs !== base.graphs) bad.push('graphs ' + sum.graphs + ' vs baseline ' + base.graphs);
     Object.keys(base).filter(k => k.indexOf('eg.') === 0).forEach(k => {
       const v = sum[k] === undefined ? 0 : sum[k], b = base[k];
       const higherIsBetter = ONE.indexOf(k) >= 0 || k.indexOf('ratio') >= 0;
-      if (higherIsBetter ? v < b : (k.indexOf('.deferred.') >= 0 || ZERO.indexOf(k) >= 0 || LOWER.indexOf(k) >= 0 || RATCHET.indexOf(k) >= 0) ? v > b : false) bad.push(k + ' ' + v + ' vs baseline ' + b);
+      if (higherIsBetter ? v < b : (k.indexOf('.deferred.') >= 0 || ZERO.indexOf(k) >= 0 || LOWER.indexOf(k) >= 0) ? v > b : false) bad.push(k + ' ' + v + ' vs baseline ' + b);
     });
-    RATCHET.forEach(k => { if (base[k] === undefined) bad.push(k + ' ' + sum[k] + ': a ratchet metric the baseline does not record'); });
+    /* every zero target the suite measures is in the baseline (a metric added later is re-baselined, not skipped) */
+    ZERO.filter(k => sum[k] !== undefined && base[k] === undefined).forEach(k => bad.push(k + ' ' + sum[k] + ': a zero-target metric the baseline does not record'));
     Object.keys(sum).filter(k => k.indexOf('eg.ledger.deferred.') === 0 && base[k] === undefined).forEach(k => bad.push(k + ' ' + sum[k] + ': a deferred code the baseline does not have'));
   }
   return bad;
@@ -222,4 +240,4 @@ async function main() {
   process.exit(bad.length ? 1 : 0);
 }
 if (require.main === module) main().catch(e => { console.error(e); process.exit(1); });
-module.exports = { inputs, measure, summarise, compare, ZERO, ONE, LOWER, RATCHET };
+module.exports = { inputs, measure, summarise, compare, ZERO, ONE, LOWER, MAXIMA };

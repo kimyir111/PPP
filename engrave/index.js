@@ -13,14 +13,18 @@
      breaks    screen line breaking (G4-U4)
      skyline   extents, placement, clearance, hard-collision checks
      canon     the EngravedScore's canonical form and hash
+     notation  G4c: stem directions, beams, rests between voices, tuplets
      layout    prepare(plan), layout(prepared, config): the EngravedScore
      practice  the practice map (ids -> geometry) and the highlighter
-   SVG, the remaining notation and the renderer switch are G4c-G4f. Nothing
-   here changes what the app draws: the legacy renderer stays the default.
+     outlines  G4c: the pinned Bravura outlines (generated)
+     svg       G4c: svg(engraved, plan): the EngravedScore as an SVG string
+   Curves, marks, pages and the renderer switch are G4d-G4f. Nothing here
+   changes what the app draws: the legacy renderer stays the default.
 
    Browser order: ledger, plan-beams, plan-tuplets, plan, store, source, index,
-   after scoregraph/*.js and audio-score.js; the G4b files (metrics, space,
-   breaks, skyline, canon, layout, practice), where loaded, go before index.js.
+   after scoregraph/*.js and audio-score.js; the layout files (metrics, space,
+   breaks, skyline, canon, notation, layout, practice, outlines, svg), where
+   loaded, go before index.js.
    The app does not load them until the renderer switch (G4f); without them
    PPPEngrave.layout is null. Leaves window.PPPEngrave, with PPPEngrave.app:
    the app's one source, over IndexedDB when there is one.
@@ -42,10 +46,10 @@
   const ledger = get('ledger'), glyphs = get('glyphs'), plan = get('plan'), store = get('store'), source = get('source');
   /* the layout core: always in Node; in a browser only where a page loads it (the app does not, before G4f) */
   const optional = name => { if (!browser) return get(name); try { return get(name); } catch (e) { return null; } };
-  const layout = optional('layout'), practice = optional('practice'), canon = optional('canon'), metrics = optional('metrics');
+  const layout = optional('layout'), practice = optional('practice'), canon = optional('canon'), metrics = optional('metrics'), svg = optional('svg');
 
   /* what G4 stage this is, so a stale script is visible in a report */
-  const version = '0.2.0-g4b';
+  const version = '0.3.0-g4c';
 
   let app = null;
   /* The app's single source. Created on first use, over IndexedDB when the browser has it (a private window
@@ -83,6 +87,8 @@
     createSource: source.createSource, identity: source.identity, scoreHash: source.scoreHash,
     layout: layout, practice: practice, metrics: metrics,
     engrave: layout ? layout.engrave : null, layoutHash: canon ? canon.hash : null,
+    /* G4c: the SVG backend (EngravedScore -> an SVG string) */
+    svg: svg ? svg.svg : null,
     get app() { return appSource(); }
   });
 });
