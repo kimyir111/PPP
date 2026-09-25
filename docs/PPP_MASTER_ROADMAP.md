@@ -126,7 +126,7 @@ At `a0bc2ea`. The detailed structure is in `docs/ARCHITECTURE.md`.
 | G4d-1b System marks and vertical spacing | CLOSED | PR #19 `a6e1a75` | `sysmarks.js`: dynamics, hairpins, pedal (change visible), ottava ("(8)" after a break), voltas, chord names, tempo (one line), rehearsal, jumps, words, lyrics; §15.3 vertical spacing; §15.4 courtesy signs; named metrics for A8 positions and hairpin extent; `plan/3`, `engr/5`; B9 0.32 |
 | G4d-1a Curves and note marks | CLOSED | PR #17 `b4fe019` | `curves.js` (ties, slurs, glissandi, halves at system breaks), `marks.js` (one `place()` over skylines, `FAR_PLACEMENT`), articulations, ornaments, fermatas, fingering inside slurs (G4-L5), chord ties split relative to the chord (G4-L4), arpeggios, noteheads, cautionary accidentals, percussion; text-metrics table; `plan/2`, `engr/3` and a version guard |
 | G4c Notation core | CLOSED | PR #15 `e3c8c5a` | Beams (graph exact, derived only where none), final stems, tuplets, voices (shared unisons; G4-B11 down-stem moves right), rests, grace notes, the mid-measure key change; `svg.js` + vendored Bravura outlines (B9 0.19–0.28); rest and stem/flag collisions as zero-target gates; 7 named metrics for the G4c rules after the review |
-| MX-1 Playback correctness | CLOSED | PR #13 `e37d37a` | An 8va sounds at the file's pitch and is drawn under its sign in every view (D-1; the MusicXML octave-shift sign fixed, MX1-D1); cards print where a note sounds; a pedal `change` lifts and re-presses the damper; the four-note `.mid` message; the `ottavaRule` marker; audit: all 34 octave-line files sounding-encoded. **Production still `72549cb`** (manual deploy) |
+| MX-1 Playback correctness | CLOSED | PR #13 `e37d37a` | An 8va sounds at the file's pitch and is drawn under its sign in every view (D-1; the MusicXML octave-shift sign fixed, MX1-D1); cards print where a note sounds; a pedal `change` lifts and re-presses the damper; the four-note `.mid` message; the `ottavaRule` marker; audit: all 34 octave-line files sounding-encoded. **Deployed 2026-09-26** (production `0ef0950`) |
 | G4b Layout core | CLOSED | PR #12 `62ede61` | `engrave/` layout core (`metrics`, `space`, `breaks`, `skyline`, `canon`, `layout`, `practice`): NotationPlan → EngravedScore `engr/1`, practice map and highlighter; L2 geometry bench; committed layout hashes (Windows = Linux = Chrome); layout mutation test; A29 static ban; the other-voice collision ratchets |
 | G4a Engraving source and plan | CLOSED | PR #9 `df8a571` (+#10) | `engrave/` (RenderSource, NotationPlan, fidelity ledger, glyph table, IndexedDB graph cache), `legacy.fromScore/agree/link`, vendored VexFlow 4.2.3, E01–E40, R corpus (61 files), L1 bench, `test:engrave` in CI |
 
@@ -465,6 +465,7 @@ Architect (spec in docs/GOALS/, from this roadmap's card + a fresh repository in
   - **No review loops.**
 - **Lead after every merge:** update §14/§15/§19, move MINORs into the next card, choose the next task immediately.
 - Merge convention: `gh pr merge N --squash --match-head-commit <sha>`. The branch is kept. Deploys are manual (Render); a merge does not deploy.
+- **`main` has no required status checks, so `gh pr merge` does not wait for or respect a failed gate.** Read the gate's result as a separate step, and merge only on `pass`. On 2026-09-26 the docs-only closeout PR #20 was merged with a failed gate. The failure was a test-infrastructure race, not the change: G3 test files regenerate `tests/bench/out/g3/jobs-*.jsonl` concurrently on a fresh checkout. It is fixed on its own branch (`ci-g3-jobs-race`, §14).
 
 **Git safety.**
 - Never touch `D:/PPP` or its local `main` `d82bb71`.
@@ -599,6 +600,8 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 
 The record is G04 §36.21.
 
+**Also running: CI race fix** (`D:/PPP-ci`, branch `ci-g3-jobs-race`). The G3 corpus tests share a jobs cache that `g3_jobs.py` writes in place, header first. On a fresh checkout, parallel test files read a half-written file: the B1 check saw "7 pedalled recording graphs" on PR #20, and a G4c Linux run had one `g3-idempotence` failure. The fix is an atomic write plus a reader that checks its count, with a concurrency regression test. The Lead re-checks it; no separate review, because it is test infrastructure only.
+
 **Current unit: G4d-2 — RUNNING** (Lead-launched implementer, the only writer in `D:/PPP-g4`).
 
 | | |
@@ -684,6 +687,7 @@ The Lead **will do these unless you object:**
 | Date | Change |
 | --- | --- |
 | 2026-09-25 | First edition (Lead). Remaining sequence G4b–G13; changes from the old roadmap in §7; MX lane; S4 owners; current task G4b in two merge points. |
+| 2026-09-26 | Deploy: **production runs `0ef0950`** (user request; before `72549cb`), verified in the live page. PR #20 had been merged with a failed gate (a CI race, not the change); rule added in §8, fix running. |
 | 2026-09-26 | Eighth edition. **G4d-1b CLOSED** (PR #19 `a6e1a75`) after review (NEEDS_FIX, MAJOR 3; no invented notation) → Fixer → Lead re-check; the Node engraver is complete. Current: G4d-2 (page integration behind a dev-only switch, with the M-H1 review tool). Next: M-H1. |
 | 2026-09-26 | Seventh edition. **G4d-1a CLOSED** (PR #17 `b4fe019`) after review (NEEDS_FIX, MAJOR 3) → Lead spec amendments **G4-L4** (chord ties) and **G4-L5** (fingering inside slurs, `FAR_PLACEMENT`) → Fixer → Lead re-check. M-H1 watch list started. Current: G4d-1b. |
 | 2026-09-25 | Sixth edition. **G4c CLOSED** (PR #15 `e3c8c5a`) after review (NEEDS_FIX, MAJOR 2) → Fixer → Lead re-check → merge with `main`. G4-L2 recorded; **G4-L3** splits G4d-1 into G4d-1a (curves, note marks) and G4d-1b (system marks, vertical spacing). Current: G4d-1a. |
