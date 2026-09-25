@@ -85,6 +85,10 @@ const ped = inner => dir(inner, { placement: 'below', staff: 2 });
 const tempoMark = (w, unit, per, parens) => '<direction placement="above"><direction-type><words>' + esc(w) + '</words></direction-type><direction-type><metronome' +
   (parens ? ' parentheses="yes"' : '') + '><beat-unit>' + unit + '</beat-unit><per-minute>' + per + '</per-minute></metronome></direction-type><staff>1</staff>' +
   '<sound tempo="' + per + '"/></direction>';
+/* the G4d-1b fixer (R1): words a file prints around a metronome mark in one direction - "Più mosso (", the mark, ")" */
+const tempoAround = (before, unit, per, after) => '<direction placement="above"><direction-type><words>' + esc(before) + '</words></direction-type>' +
+  '<direction-type><metronome><beat-unit>' + unit + '</beat-unit><per-minute>' + per + '</per-minute></metronome></direction-type>' +
+  '<direction-type><words>' + esc(after) + '</words></direction-type><staff>1</staff><sound tempo="' + per + '"/></direction>';
 const harm = (step, alter, kind, bass) => '<harmony><root><root-step>' + step + '</root-step>' + (alter ? '<root-alter>' + alter + '</root-alter>' : '') + '</root><kind>' +
   kind + '</kind>' + (bass ? '<bass><bass-step>' + bass[0] + '</bass-step>' + (bass[1] ? '<bass-alter>' + bass[1] + '</bass-alter>' : '') + '</bass>' : '') + '</harmony>';
 const beam4 = i => [[1, i % 4 === 0 ? 'begin' : i % 4 === 3 ? 'end' : 'continue']];
@@ -422,17 +426,19 @@ E['E21-meter'] = () => pianoScore('Meter changes and symbols', '4/4, 3/4, common
   measure(8, [n('C5', 'whole'), ...lhWhole('C3')], { barRight: finalBar() })
 ]);
 
-/* G4d-1b (A8): a tempo's words and metronome mark in parentheses, and a rehearsal mark */
+/* G4d-1b (A8): a tempo's words and metronome mark in parentheses, and a rehearsal mark; its fixer (R1): the words a file prints
+   around a metronome mark, as Czerny's and Hanon's editions do - "Più mosso (" before it and ")" after, "(M.M. " and " to 72.)" */
 E['E22-repeats-jumps'] = () => pianoScore('Repeats, voltas and jumps', 'a repeat with first and second endings, segno, coda, D.S. al Coda, Fine; ' +
-  'a tempo with its metronome mark, a rehearsal mark', [
+  'a tempo with its metronome mark, a rehearsal mark; words printed around a metronome mark', [
   measure(1, [piano(), tempoMark('Allegro', 'quarter', 120, true), dir('<segno/>', { placement: 'above' }), n('C5', 'whole'), ...lhWhole('C3')], { barLeft: repeatL() }),
   measure(2, [n('D5', 'whole'), ...lhWhole('G2')], { barLeft: endingStart(1), barRight: repeatR(1) }),
   measure(3, [n('E5', 'whole'), words('Fine'), ...lhWhole('C3')], { barLeft: endingStart(2), barRight: endingStop(2, 'discontinue') }),
   measure(4, [dir('<rehearsal>A</rehearsal>', { placement: 'above', staff: 1 }), n('F5', 'half'), dir('<words>To Coda</words>', { placement: 'above', sound: 'tocoda="coda1"' }),
     n('G5', 'half'), ...lhWhole('F2')]),
-  measure(5, [n('A5', 'whole'), dir('<words>D.S. al Coda</words>', { placement: 'above', sound: 'dalsegno="segno1"' }), ...lhWhole('F2')],
+  measure(5, [tempoAround('Più mosso (', 'quarter', 132, ')'), n('A5', 'whole'), dir('<words>D.S. al Coda</words>', { placement: 'above', sound: 'dalsegno="segno1"' }), ...lhWhole('F2')],
     { barRight: '<barline location="right"><bar-style>light-light</bar-style></barline>' }),
-  measure(6, [dir('<coda/>', { placement: 'above', sound: 'coda="coda1"' }), n('C6', 'whole'), ...lhWhole('C3')], { barRight: finalBar() })
+  measure(6, [dir('<coda/>', { placement: 'above', sound: 'coda="coda1"' }), tempoAround('(M.M. ', 'quarter', 60, ' to 72.)'), n('C6', 'whole'), ...lhWhole('C3')],
+    { barRight: finalBar() })
 ]);
 
 /* G4d-1a (G4-L5: fingering by its notes, inside the slur; the review's RV9 and §10.5): then sixteenths under a phrase slur with

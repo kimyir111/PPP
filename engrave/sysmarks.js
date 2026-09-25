@@ -23,8 +23,9 @@
          above it, an 8vb, 15mb below - over exactly the notes they move, their
          heads at the written pitch, D-1; "(8)" where a line goes on after a
          break), chord names (pushed right where two would meet, §10.5), voltas,
-         tempo (words, metronome mark, parentheses) and rehearsal marks, then the
-         jumps (segno, coda, D.C., D.S., Fine, To Coda) and words above
+         tempo (words, metronome mark, parentheses - and the words a file prints
+         around the mark, on its line) and rehearsal marks, then the jumps
+         (segno, coda, D.C., D.S., Fine, To Coda) and words above
      11  the lower row: words and jumps below the lowest staff
    Text widths come only from metrics-text.js (A29), glyph boxes from metrics.js.
    Coordinates as marks.js: x absolute in the system, y from each staff's top
@@ -259,7 +260,9 @@
         const x0 = it.x0;
         let hit;
         while ((hit = meets(it, out[0])) && it.x0 - x0 <= PUSH_MAX) move(it, hit.x1 + PAD.word - it.x0);
-        if (!meets(it, out[0]) && it.x1 <= S.x1) { out[0].push(it); return; }
+        /* on the first line where it meets nothing there - at its place, or pushed no more than PUSH_MAX (the last push may not
+           carry it past that: G4-D1b-4's "at most 4 sp", eg.words.push_err) - and inside the system */
+        if (!meets(it, out[0]) && (it.x0 === x0 || it.x0 - x0 <= PUSH_MAX) && it.x1 <= S.x1) { out[0].push(it); return; }
         move(it, x0 - it.x0);
         let k = 1;
         while (out[k] && meets(it, out[k])) k++;
@@ -314,13 +317,35 @@
       placeRow(L.staff, 'below', row, { pad: PAD.lyric });
     });
 
+    /* ---- the words that stand around a tempo's metronome mark (the G4d-1b review R1, G4-D1b-17): a file prints "Molto
+       Allegro (", the mark and ")" as one direction, or "(M.M. ", the mark and " to 108.)"; the graph keeps them as words at the
+       tempo's place (its importer folds one leading word alone into the tempo's text). A word of the tempo's part at the tempo's
+       (m, at), not stated below, whose parentheses do not balance is part of the tempo's line: one that opens a parenthesis
+       goes before the metronome mark, one that closes one after it, each in graph order - one line, as the source prints it */
+    const tempoWords = new Map(), joined = new Set();
+    const parenBalance = s => (s.match(/\(/g) || []).length - (s.match(/\)/g) || []).length;
+    (Y.tempos || []).forEach(t => {
+      const mk = t.mark || {};
+      if (!mk.unit || !(q(mk.perMinute) > 0)) return;
+      const part = (t.display && t.display[0] && t.display[0].part) || Y.firstPart;
+      const tw = { before: [], after: [] };
+      (Y.directions || []).forEach(d => {
+        if (d.kind !== 'words' || joined.has(d.id) || d.part !== part || d.m !== t.m || Math.abs(q(d.at) - q(t.at)) > 1e-9 || d.placement === 'below') return;
+        const k = parenBalance(norm(d.text));
+        if (!k) return;
+        (k > 0 ? tw.before : tw.after).push(d);
+        joined.add(d.id);
+      });
+      if (tw.before.length || tw.after.length) tempoWords.set(t.id, tw);
+    });
+
     /* ================================================================ 8. dynamics, hairpins, words by them */
     const dynRows = new Map();
     const rowOf = (r, key) => { const k = r.staff + '|' + r.side; if (!dynRows.has(k)) dynRows.set(k, { staff: r.staff, side: r.side, band: r.band, items: [] }); return dynRows.get(k); };
     const upperWords = [], lowerWords = [];
     (Y.directions || []).forEach((d, order) => {
       if (d.kind !== 'dynamic' && d.kind !== 'words') return;
-      if (!here(d.m)) return;
+      if (!here(d.m) || joined.has(d.id)) return;
       const T = Tof(d.m, d.at);
       const r = resolve(d.part, d.staff, d.placement, d.kind === 'dynamic' ? 'dyn' : 'words');
       if (!r) return;
@@ -588,13 +613,24 @@
       if (!here(t.m)) return;
       const T = Tof(t.m, t.at);
       const a = anchor(T, topStaff) || [xAtM(t.m, t.at)];
-      const pieces = tempoPieces(t);
+      const pieces = tempoPieces(t, tempoWords.get(t.id));
       if (!pieces.length) return;
-      pieces.forEach(p => textMissing(p, t.id));
+      pieces.forEach(p => textMissing(p, p.word ? p.word.id : t.id));
       const c = composite(pieces, a[0], pieces.map(p => p.gapAfter || 0));
+      /* the tempo's own pieces are numbered among themselves; the pieces of a word around its metronome mark are the word's
+         (its ID, "#k" where it is two), all one mark with the tempo (its group) */
+      const nOf = new Map(), seen = new Map();
+      let k = 0;
+      pieces.forEach(p => { if (p.word) nOf.set(p.word.id, (nOf.get(p.word.id) || 0) + 1); });
+      const names = pieces.map(p => {
+        if (!p.word) return { id: t.id + '#' + (k++), refs: [t.id] };
+        const i = seen.get(p.word.id) || 0;
+        seen.set(p.word.id, i + 1);
+        return { id: nOf.get(p.word.id) > 1 ? p.word.id + '#' + i : p.word.id, refs: [p.word.id] };
+      });
       tempoItems.push({ ref: t.id, order: 1000 + order, x0: c.x0, x1: c.x1, rise: c.rise, drop: c.drop,
         make: (base, dx) => [].concat(...c.make(base, dx).map((o, i) => (Array.isArray(o) ? o : [o]).map((x, j) => Object.assign(x,
-          { id: t.id + '#' + i + (j ? '.' + j : ''), refs: [t.id], measure: t.m, group: t.id })))) });
+          { id: names[i].id + (j ? '.' + j : ''), refs: names[i].refs.slice(), measure: t.m, group: t.id })))) });
     });
     (Y.directions || []).forEach((d, order) => {
       if (d.kind !== 'rehearsal' || !here(d.m)) return;
@@ -707,8 +743,17 @@
     flush();
     return pieces;
   }
-  /* a tempo's pieces: its words, then the metronome mark - "(", a note (a head, its stem, a flag, a dot), "= 120", ")" */
-  function tempoPieces(t) {
+  /* where a text opens the parenthesis it leaves open (its first "(" never closed), else its end */
+  const openAt = s => {
+    const st = [];
+    for (let i = 0; i < s.length; i++) { if (s[i] === '(') st.push(i); else if (s[i] === ')' && st.length) st.pop(); }
+    return st.length ? st[0] : s.length;
+  };
+  /* a tempo's pieces: its words, then the metronome mark - "(", a note (a head, its stem, a flag, a dot), "= 120", ")". tw: the
+     words printed around the mark (G4-D1b-17) - before it, up to the parenthesis they open in the tempo's face and from it on in
+     the mark's (a parenthesis against the note), after it in the mark's face (a closing parenthesis against the number); each
+     piece of theirs names its word (`word`) */
+  function tempoPieces(t, tw) {
     const out = [];
     const mk = t.mark || {};
     const words = norm(mk.text);
@@ -717,11 +762,22 @@
     if (!unit && !per && t.heading && t.qpm) { unit = 'quarter'; per = q(t.qpm); }
     if (unit && per) {
       const num = Math.abs(per - Math.round(per)) < 1e-6 ? String(Math.round(per)) : String(Math.round(per * 100) / 100);
+      ((tw && tw.before) || []).forEach(d => {
+        const s = norm(d.text), i = openAt(s), head = s.slice(0, i).trim(), tail = s.slice(i).trim();
+        if (head) out.push(Object.assign(textPiece({ kind: 'words', text: head, font: FONT.tempo, size: SIZE.tempo }), { word: d, gapAfter: METRO.gap * 2 }));
+        if (tail) out.push(Object.assign(textPiece({ kind: 'words', text: tail, font: FONT.metronome, size: SIZE.metronome }),
+          { word: d, gapAfter: /\($/.test(tail) ? 0 : METRO.gap }));
+      });
       const parens = !!mk.parens;
       if (parens) out.push(textPiece({ kind: 'tempo', text: '(', font: FONT.metronome, size: SIZE.metronome }));
       out.push(notePiece(unit, dots));
       out[out.length - 1].gapAfter = METRO.gap;
       out.push(textPiece({ kind: 'tempo', text: '= ' + num + (parens ? ')' : ''), font: FONT.metronome, size: SIZE.metronome }));
+      ((tw && tw.after) || []).forEach(d => {
+        const s = norm(d.text);
+        out[out.length - 1].gapAfter = /^\)/.test(s) ? 0 : METRO.gap;
+        out.push(Object.assign(textPiece({ kind: 'words', text: s, font: FONT.metronome, size: SIZE.metronome }), { word: d }));
+      });
     }
     return out;
   }

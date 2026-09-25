@@ -393,11 +393,11 @@ test('carry-overs: a rest off the staff sits on a ledger line of its own; a tupl
   assert.ok(inside.length > 0, 'numbers inside the staff');
 });
 
-test('versions (G4-D1a-1): every change to what the plan and the layout output moves their version - plan/3, engr/4 (G4d-1b) - and the layout says whose plan it drew', async () => {
+test('versions (G4-D1a-1): every change to what the plan and the layout output moves their version - plan/3, engr/4 (G4d-1b), engr/5 (its fixer) - and the layout says whose plan it drew', async () => {
   const x = await lay('E01');
   assert.equal(x.p.version, 'plan/3');
   assert.equal(E.PLAN_VERSION, 'plan/3');
-  assert.equal(x.e.version, 'engr/4');
+  assert.equal(x.e.version, 'engr/5');
   assert.ok(x.e.planKey.endsWith(':plan/3'));
   assert.match(E.svg(x.e, x.p), /data-plan="[^"]+:plan\/3"/);
   /* G4d-1b's plan fields: every direction and line names its part; a dynamic carries the other marks its element prints */

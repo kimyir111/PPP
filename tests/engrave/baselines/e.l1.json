@@ -40,6 +40,7 @@
  "eg.grace.stem_errors": 0,
  "eg.graph.changed": 0,
  "eg.hairpin.clear_err": 0,
+ "eg.hairpin.extent_err": 0,
  "eg.hairpin.level_err": 0,
  "eg.hairpin.shape_err": 0,
  "eg.layout.attachment_diff": 0,
@@ -70,6 +71,7 @@
  "eg.ledger.unsupported": 0,
  "eg.lyric.place_err": 0,
  "eg.lyric.staff_err": 0,
+ "eg.mark.anchor_err": 0,
  "eg.mark.drawn_ratio.arpeggio": 1,
  "eg.mark.drawn_ratio.articulation": 1,
  "eg.mark.drawn_ratio.chord": 1,
@@ -129,6 +131,7 @@
  "eg.rest.overlap": 0,
  "eg.rest.position_err": 0,
  "eg.row.baseline_err": 0,
+ "eg.row.centre_err": 0,
  "eg.row.order_err": 0,
  "eg.skyline.vertical_collisions": 0,
  "eg.slur.endpoint_err": 0,
@@ -153,6 +156,7 @@
  "eg.system.scaled": 0,
  "eg.system.scaled_avoidable": 0,
  "eg.systems.one_bar": 0,
+ "eg.tempo.split_err": 0,
  "eg.text.content_err": 0,
  "eg.text.missing_glyph": 0,
  "eg.text.width_err": 0,
@@ -177,5 +181,6 @@
  "eg.voice.stem_over_head": 0,
  "eg.voice.stem_policy_violations": 0,
  "eg.voice.unison_unshared": 0,
- "eg.volta.extent_err": 0
+ "eg.volta.extent_err": 0,
+ "eg.words.push_err": 0
 }

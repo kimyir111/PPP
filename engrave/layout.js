@@ -58,7 +58,8 @@
    a later stage would place, so nothing is silently absent). VERSION names the
    EngravedScore's contract: every change to what layout() outputs moves it
    (G4-D1a-1: engr/4 is G4d-1b's marks attached to systems, vertical spacing and
-   bracketed accidentals).
+   bracketed accidentals; engr/5 its fixer's tempo line - the words a file prints
+   around a metronome mark on the mark's line, G4-D1b-17).
    ========================================================================== */
 (function (root, factory) {
   'use strict';
@@ -73,7 +74,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (SG, MT, SP, BR, SK, CN, NT, TX, CV, MK, SM) {
   'use strict';
 
-  const VERSION = 'engr/4';
+  const VERSION = 'engr/5';
   const R = SG.rational, EG = MT.ENGRAVING, r2 = CN.r2;
   const STEPS = 'CDEFGAB';
   /* horizontal gaps, sp (G04 §9.3, §15.4) */

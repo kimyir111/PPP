@@ -126,6 +126,13 @@ test('A8, §10.2 priority 10-11: voltas, a tempo with its metronome mark in pare
     assert.ok(kinds(x.e, 'frame').length === 1 && kinds(x.e, 'rehearsal')[0].text === 'A');
     assert.deepEqual(kinds(x.e, 'jump').map(o => o.glyph || o.text).sort(), ['D.S. al Coda', 'To Coda', 'coda', 'segno']);
     /* Fine at the end of its measure: right-aligned to its bar line */
+    /* the G4d-1b fixer (R1, G4-D1b-17): the words a file prints around a metronome mark on the mark's line, read as it prints them -
+       each a words object naming its graph ID, one line with the tempo (one baseline), no empty "( )" */
+    const line = t => x.e.objects.filter(o => o.group === t.id).sort((a, b) => a.box[0] - b.box[0])
+      .map(o => (o.text !== undefined ? o.text : o.glyph === 'noteheadBlack' ? '♩' : null)).filter(Boolean).join(' ');
+    assert.deepEqual(x.p.tempos.slice(1).map(line), ['Più mosso ( ♩ = 132 )', '(M.M. ♩ = 60 to 72.)']);
+    x.p.tempos.forEach(t => assert.equal(new Set(x.e.objects.filter(o => o.group === t.id && o.text !== undefined).map(o => o.origin[1])).size, 1, t.id + ' one line'));
+    x.p.marks.filter(d => d.kind === 'words' && d.text !== 'Fine').forEach(d => assert.ok(kinds(x.e, 'words').some(o => o.refs[0] === d.id && x.p.tempos.some(t => t.id === o.group)), d.text));
     const fine = kinds(x.e, 'words').find(o => o.text === 'Fine');
     const m = x.e.measures.find(y => y.id === fine.measure);
     assert.ok(Math.abs(fine.box[2] - (m.x + m.w)) < 0.02);
@@ -274,6 +281,25 @@ test('the G4d-1b metrics find the defects they name (negative controls on real l
   ok(x20, e, 'eg.courtesy.missing', 'no courtesy key signature');
   e = clone(x32); e.objects.filter(o => /accidentalBracket/.test(o.glyph || '')).forEach(o => { o.box[1] += 0.5; o.box[3] -= 0.5; });
   ok(x32, e, 'eg.accidental.bracket_err', 'brackets shorter than the flat');
+  /* the G4d-1b fixer (G04 §36.18): R1 - the words around a metronome mark; R2 - A8's positions; R3 - G4-D1b-4 and -5 */
+  e = clone(x22); e.objects.filter(o => o.kind === 'words' && o.text === ')').forEach(o => move(o, 0, -2));
+  ok(x22, e, 'eg.tempo.split_err', 'a closing parenthesis a line above its tempo');
+  e = clone(x22); e.objects.filter(o => o.kind === 'words' && o.text === '(').forEach(o => { o.text = 'Più mosso ( )'; });
+  ok(x22, e, 'eg.tempo.split_err', 'an empty "( )"');
+  e = clone(x16); e.objects.filter(o => o.kind === 'dynamic' && o.refs[0] === x16.p.marks.find(d => d.kind === 'dynamic').id).forEach(o => move(o, 1, 0));
+  ok(x16, e, 'eg.mark.anchor_err', 'a dynamic 1 sp right of its note');
+  e = clone(x22); e.objects.filter(o => o.group === x22.p.tempos[0].id).forEach(o => move(o, 2, 0));
+  ok(x22, e, 'eg.mark.anchor_err', 'a tempo 2 sp after its note');
+  e = clone(x22); e.objects.filter(o => o.kind === 'jump' && o.text === 'D.S. al Coda').forEach(o => move(o, -1, 0));
+  ok(x22, e, 'eg.mark.anchor_err', 'D.S. al Coda short of its bar line');
+  e = clone(x16); { const h = e.objects.find(o => o.kind === 'hairpin' && o.id === o.refs[0]); h.line[2] -= 1; h.box[2] -= 1; }
+  ok(x16, e, 'eg.hairpin.extent_err', 'a hairpin 1 sp short of where it ends');
+  e = clone(x16); e.objects = e.objects.filter(o => !(o.kind === 'hairpin' && /#end$/.test(o.id)));
+  ok(x16, e, 'eg.hairpin.extent_err', 'the part of a hairpin after a break dropped');
+  e = clone(x16); e.objects.filter(o => o.kind === 'words' && o.text === 'cresc.').forEach(o => move(o, 1, 0));
+  ok(x16, e, 'eg.words.push_err', 'cresc. 1 sp after its place, nothing before it there');
+  e = clone(x16); { const up = x16.p.staves[0].id; e.objects.filter(o => o.system === 0 && o.staffKey === up && o.side === 'below' && /^(dynamic|hairpin|words)$/.test(o.kind)).forEach(o => move(o, 0, -0.4)); }
+  ok(x16, e, 'eg.row.centre_err', 'the row between the staves 0.4 sp above the middle');
 });
 
 test('the upper row inside to out (§10.2 priority 10) and the one placement function: rows stand outside what came before them', async () => {

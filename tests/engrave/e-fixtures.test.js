@@ -216,8 +216,12 @@ test('E22-E25: endings and jumps, fingering, lyrics, chord symbols (and a config
   const p22 = E.plan(await load('E22'));
   assert.equal(p22.endings.length, 2);
   assert.deepEqual(p22.jumps.map(j => j.kind).sort(), ['coda', 'dalsegno', 'segno', 'tocoda']);
-  /* G4d-1b: a tempo's words and metronome mark in parentheses, a rehearsal mark */
-  assert.deepEqual(p22.tempos.map(t => t.mark), [{ unit: 'quarter', perMinute: '120', text: 'Allegro', parens: true }]);
+  /* G4d-1b: a tempo's words and metronome mark in parentheses, a rehearsal mark; its fixer (R1): the words a file prints around a
+     metronome mark stay words at the tempo's place (the importer folds one leading word alone), "Più mosso (" ... ")" and
+     "(M.M. " ... " to 72.)" */
+  assert.deepEqual(p22.tempos.map(t => t.mark), [{ unit: 'quarter', perMinute: '120', text: 'Allegro', parens: true }, { unit: 'quarter', perMinute: '132' },
+    { unit: 'quarter', perMinute: '60' }]);
+  assert.deepEqual(p22.marks.filter(m => m.kind === 'words').map(m => m.text), ['Fine', 'Più mosso (', ')', '(M.M. ', ' to 72.)']);
   assert.deepEqual(p22.marks.filter(m => m.kind === 'rehearsal').map(m => m.text), ['A']);
   const p23 = E.plan(await load('E23'));
   assert.equal(entries(p23, 'fingering', 'drawn').length, 18);

@@ -57,7 +57,9 @@ const ZERO_L2 = ['eg.clip.count', 'eg.overlap.head_head', 'eg.overlap.acc', 'eg.
   'eg.mark.missing.words', 'eg.mark.missing.lyric', 'eg.dynamic.side_err', 'eg.row.baseline_err', 'eg.hairpin.level_err', 'eg.hairpin.shape_err',
   'eg.hairpin.clear_err', 'eg.pedal.errors', 'eg.pedal.change_err', 'eg.ottava.extent_err', 'eg.ottava.label_err', 'eg.event.written_diff',
   'eg.volta.extent_err', 'eg.chord.order_err', 'eg.lyric.staff_err', 'eg.lyric.place_err', 'eg.row.order_err', 'eg.text.content_err',
-  'eg.skyline.vertical_collisions', 'eg.staff.gap_err', 'eg.system.gap_err', 'eg.courtesy.missing', 'eg.accidental.bracket_err'];
+  'eg.skyline.vertical_collisions', 'eg.staff.gap_err', 'eg.system.gap_err', 'eg.courtesy.missing', 'eg.accidental.bracket_err',
+  /* the G4d-1b fixer (G04 §36.18; the review's R1-R3) */
+  'eg.tempo.split_err', 'eg.mark.anchor_err', 'eg.hairpin.extent_err', 'eg.words.push_err', 'eg.row.centre_err'];
 
 /* A piano piece from a compact spec: bars of voices of [dur, type, pitch, extra] with pitch 'C5', 'F#4' ('r' a rest) or
    an array of pitches (a chord); extra: {dots, acc, stem}. Voice 1 and 2 on the upper staff, voice 3 on the lower. */
@@ -219,7 +221,7 @@ test('A29 negative controls: every banned construct is caught by its rule, whate
 test('the EngravedScore: staff-space coordinates to 0.01, every object keyed to plan or graph ids, unique ids, plain data', async () => {
   const p = await eplan('E35-voice-and-piano.musicxml');
   const e = L.engrave(p, {});
-  assert.equal(e.version, 'engr/4');
+  assert.equal(e.version, 'engr/5');
   assert.equal(e.planKey, p.graph.fingerprint + ':' + p.version);
   assert.deepEqual(e.config, { mode: 'screen', breakpoint: 'desktop', width: 100, barsPerSystem: 4, respectSourceBreaks: false, window: null });
   assert.deepEqual(Object.keys(e).sort(), ['config', 'coverage', 'curves', 'diagnostics', 'measures', 'objects', 'pages', 'planKey', 'systems', 'version']);
@@ -734,7 +736,7 @@ test('reflow: desktop -> phone -> desktop gives the same EngravedScore back from
 
 test('the index exports the layout core in Node; the app does not load it yet (legacy stays the renderer)', () => {
   assert.equal(typeof E.engrave, 'function');
-  assert.equal(E.layout.VERSION, 'engr/4');
+  assert.equal(E.layout.VERSION, 'engr/5');
   assert.equal(typeof E.practice.createPracticeMap, 'function');
   assert.equal(typeof E.layoutHash, 'function');
   const html = fs.readFileSync(path.join(REPO, 'Piano Coach App.dc.html'), 'utf8');

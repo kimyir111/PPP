@@ -250,7 +250,39 @@ const MUTATIONS = [
   { id: 'TC', file: 'sysmarks.js', expect: ['eg.text.content_err'], probes: ['E25'], what: 'a chord kind spelt otherwise than the app spells it (maj7 for M7)',
     edits: [["'major-seventh': 'M7',", "'major-seventh': 'maj7',"]] },
   { id: 'BR', expect: ['eg.accidental.bracket_err'], probes: ['E32'], what: 'the G4d-1a review R5 back: a bracketed accidental\'s brackets 2 sp tall whatever they enclose',
-    edits: [["              if (a.br && (n === 'accidentalBracketLeft' || n === 'accidentalBracketRight')) { box[1] = a.br[0]; box[3] = a.br[1]; }\n", '']] }
+    edits: [["              if (a.br && (n === 'accidentalBracketLeft' || n === 'accidentalBracketRight')) { box[1] = a.br[0]; box[3] = a.br[1]; }\n", '']] },
+  /* the G4d-1b fixer (G04 §36.18): the review's R1 (TW), its eight mutations that only the layout hash caught for R2 - A8's
+     positions and a hairpin's extent (R-DX, R-WX, R-TX, R-RX, R-JX, R-HE, R-HS0, R-HB) - and R3's (R-CB, R-CB2, R-WP): each caught
+     by the metric that names its rule */
+  { id: 'TW', file: 'sysmarks.js', expect: ['eg.tempo.split_err'], probes: ['E22', 'czerny849_005'],
+    what: 'the words around a metronome mark sent back to the words row ("Più mosso ( )" over "= 132", R1)',
+    edits: [['        const k = parenBalance(norm(d.text));', '        const k = 0;']] },
+  { id: 'R-DX', file: 'sysmarks.js', expect: ['eg.mark.anchor_err'], probes: ['E16'], what: 'a dynamic (and words by it) centred on the note a beat after its own',
+    edits: [['      const a = anchor(T, r.staff, d.event) || [xAtM(d.m, d.at), xAtM(d.m, d.at)];',
+      '      const a = anchor(T + 0.25, r.staff) || anchor(T, r.staff, d.event) || [xAtM(d.m, d.at), xAtM(d.m, d.at)];']] },
+  { id: 'R-WX', file: 'sysmarks.js', expect: ['eg.mark.anchor_err'], probes: ['E16'], what: 'words at the note a beat after their own',
+    edits: [['        const wx = Math.abs(q(d.at) - Y.dur.get(d.m)) < 1e-9 ? xAtM(d.m, d.at) - pc.w : a[0];',
+      '        const wx = Math.abs(q(d.at) - Y.dur.get(d.m)) < 1e-9 ? xAtM(d.m, d.at) - pc.w : (anchor(T + 0.25, r.staff) || a)[0];']] },
+  { id: 'R-TX', file: 'sysmarks.js', expect: ['eg.mark.anchor_err'], probes: ['E22', 'upper'], what: 'a tempo mark at the note a beat after its own',
+    edits: [['      const a = anchor(T, topStaff) || [xAtM(t.m, t.at)];', '      const a = anchor(T + 0.25, topStaff) || anchor(T, topStaff) || [xAtM(t.m, t.at)];']] },
+  { id: 'R-RX', file: 'sysmarks.js', expect: ['eg.mark.anchor_err'], probes: ['E22'], what: 'a rehearsal mark a bar late (at the next bar line)',
+    edits: [['      const x = q(d.at) === 0 ? M.x : xAtM(d.m, d.at);', '      const x = q(d.at) === 0 ? M.x + M.w : xAtM(d.m, d.at);']] },
+  { id: 'R-JX', file: 'sysmarks.js', expect: ['eg.mark.anchor_err'], probes: ['E22'], what: 'a jump\'s words at a measure\'s end (D.S. al Coda) at its start, not right-aligned to its bar line',
+    edits: [['        x = atEnd ? M.x + M.w - pc.w : atStart ? M.x + 0.3 :', '        x = atEnd ? M.x + 0.3 : atStart ? M.x + 0.3 :']] },
+  { id: 'R-HE', file: 'sysmarks.js', expect: ['eg.hairpin.extent_err'], probes: ['czerny849_005'], what: 'a hairpin that ends at a note (no dynamic there) stops 3 sp early',
+    edits: [['x1 = dZ.length ? minOf(dZ.map(it => it.x0)) - PAD.hairpin : endX(w.to, r.staff) - PAD.hairpin;',
+      'x1 = dZ.length ? minOf(dZ.map(it => it.x0)) - PAD.hairpin : endX(w.to, r.staff) - PAD.hairpin - 3;']] },
+  { id: 'R-HS0', file: 'sysmarks.js', expect: ['eg.hairpin.extent_err'], probes: ['E16'], what: 'a hairpin that starts at a note (no dynamic there) starts 3 sp late',
+    edits: [['x0 = dA.length ? maxOf(dA.map(it => it.x1)) + PAD.hairpin : a ? a[0] : S.startX;', 'x0 = dA.length ? maxOf(dA.map(it => it.x1)) + PAD.hairpin : a ? a[0] + 3 : S.startX;']] },
+  { id: 'R-HB', file: 'sysmarks.js', expect: ['eg.hairpin.extent_err'], probes: ['E16'], what: 'a hairpin that goes on across a break drawn in its first system only',
+    edits: [['      const startsHere = A >= T0 - 1e-9, endsHere = Z <= T1 + 1e-9;\n      /* the dynamics at a time',
+      '      const startsHere = A >= T0 - 1e-9, endsHere = Z <= T1 + 1e-9;\n      if (!startsHere) return;\n      /* the dynamics at a time']] },
+  { id: 'R-CB', expect: ['eg.row.centre_err'], probes: ['E16'], what: 'G4-D1b-5 off: the row between a grand staff\'s staves left where it was placed, not centred',
+    edits: [['      centreBands(sys, off, lineSpan, sky, f);', '      void centreBands;']] },
+  { id: 'R-CB2', expect: ['eg.row.centre_err'], probes: ['E16'], what: 'the row between the staves moved down onto the lower staff\'s content (no 1.0 sp)',
+    edits: [['        const d = Math.max(0, Math.min((down - up) / 2, down - VGAP.pad * f));', '        const d = Math.max(0, down);']] },
+  { id: 'R-WP', file: 'sysmarks.js', expect: ['eg.words.push_err'], probes: ['burg015', 'czerny849_005'], what: 'G4-D1b-4 off: a word by a dynamic sent a line out, not pushed after it',
+    edits: [['    const PUSH_MAX = 4;', '    const PUSH_MAX = -1;']] }
 ];
 const CONTROLS = [
   { id: 'N1', what: 'a comment reworded',
@@ -457,7 +489,7 @@ test.before(() => {
 });
 test.after(() => { if (tmp) fs.rmSync(tmp, { recursive: true, force: true }); });
 
-test('every layout mutation (G04 §23: M1-M12, M14-M18, M21, M23, M24; the G4c review\'s RB, RB2, RF, RI, RK, RX, RY, the fixer\'s F1-F3 and the Lead\'s RA; G4d-1a\'s own; the G4d-1a fixer\'s TH, TD, FS, FP and the review\'s RV8b, RV9, RV19, RV20, RV20c, RV23, RV25, RV26; G4d-1b\'s M13, M19, M20 and its own DB, HT, HL, HS, DS, SG, YS, VC, CK, VE, CP, OS, OL, PE, LW, LP, RO, TC, BR) is live and caught by the metric or check it names; N1 and N2 change nothing', async (t) => {
+test('every layout mutation (G04 §23: M1-M12, M14-M18, M21, M23, M24; the G4c review\'s RB, RB2, RF, RI, RK, RX, RY, the fixer\'s F1-F3 and the Lead\'s RA; G4d-1a\'s own; the G4d-1a fixer\'s TH, TD, FS, FP and the review\'s RV8b, RV9, RV19, RV20, RV20c, RV23, RV25, RV26; G4d-1b\'s M13, M19, M20 and its own DB, HT, HL, HS, DS, SG, YS, VC, CK, VE, CP, OS, OL, PE, LW, LP, RO, TC, BR; the G4d-1b fixer\'s TW and R-CB2 and the review\'s R-DX, R-WX, R-TX, R-RX, R-JX, R-HE, R-HS0, R-HB, R-CB, R-WP) is live and caught by the metric or check it names; N1 and N2 change nothing', async (t) => {
   const graphs = {};
   for (const k of Object.keys(PROBES)) {
     graphs[k] = typeof PROBES[k] === 'function' ? PROBES[k]() : await graphOf(PROBES[k]);
