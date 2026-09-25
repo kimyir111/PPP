@@ -103,8 +103,18 @@ test('E12-E13 voices: roles from the graph\'s voice order, stated stems win, res
   assert.ok(role, 'two voices on the upper staff');
   assert.deepEqual(Object.values(role.role), ['up', 'down']);
   p.events.filter(e => e.stemFrom === 'graph').forEach(e => assert.equal(e.stem, g.parts[0].events.find(x => x.id === e.id).display.stem));
+  /* §22.1: a unison of different dots (and, for the G4c review R1, a unison and a second of flagged eighths) */
+  const notes = p.events.filter(e => e.kind === 'note' && e.staff === p.staves[0].id);
+  const pitch = e => e.heads.map(h => h.written.step + h.written.oct).join();
+  const together = (a, b) => a.m === b.m && a.at === b.at && a.voice !== b.voice;
+  assert.ok(notes.some(a => notes.some(b => together(a, b) && pitch(a) === pitch(b) && a.type === b.type && (a.dots || 0) !== (b.dots || 0))), 'E12: a unison of different dots');
+  assert.ok(notes.some(a => notes.some(b => together(a, b) && pitch(a) === pitch(b) && a.type === 'eighth' && b.type === 'eighth')), 'E12: a unison of eighths');
   const p13 = E.plan(await load('E13'));
-  assert.equal(p13.events.filter(e => e.kind === 'rest').length, 3);
+  const rests = p13.events.filter(e => e.kind === 'rest');
+  assert.equal(rests.length, 5);
+  /* §22.1: two voices resting together for the same length, and for different lengths */
+  assert.ok(rests.some(a => rests.some(b => together(a, b) && a.dur === b.dur)), 'E13: rests of one length at once');
+  assert.ok(rests.some(a => rests.some(b => together(a, b) && a.dur !== b.dur)), 'E13: rests of different lengths at once');
 });
 
 test('E14 grace notes: before a note drawn, slashed or not; one after the last note deferred grace-after', async () => {

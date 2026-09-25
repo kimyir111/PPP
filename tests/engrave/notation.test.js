@@ -91,6 +91,17 @@ test('A2: every graph beam is drawn over exactly its notes - secondary beams bro
   const hook = of(x.e, o => o.kind === 'beam' && o.hook);
   assert.equal(hook.length, 1);
   assert.equal(hook[0].hook, 'left', 'the 16th after a dotted eighth: its hook points back (Gould, §11.2)');
+  /* every other side §11.2 gives (the G4c review R2: A2 pinned only the one above) - a 16th inside the beat of the eighth
+     before it hooks left, one in the next beat right; a 16th that starts its beam right, one that ends it left */
+  const S16 = (p, o) => ['1/16', '16th', p, o], D8 = p => ['3/16', 'eighth', p, { dots: 1 }];
+  const gh = piece({ bars: [{ voices: [[E8('C5'), S16('D5'), E8('E5'), S16('F5'), E8('G5'), ['1/2', 'half', 'A5']]] },
+    { voices: [[S16('C5'), D8('D5'), D8('E5'), S16('F5'), ['1/2', 'half', 'G5']]] }], beams: [[0, 0, [0, 1, 2, 3, 4]], [1, 0, [0, 1]], [1, 0, [2, 3]]] });
+  const xh = laid(gh);
+  assert.deepEqual(zeroes(xh.m), []);
+  const side = e => (of(xh.e, o => o.kind === 'beam' && o.hook && o.events[0] === e.id)[0] || {}).hook || '-';
+  const inBar = k => xh.p.events.filter(e => e.m === xh.p.measures[k].id && e.kind === 'note').sort((a, b) => R.cmp(R.parse(a.at), R.parse(b.at)));
+  assert.deepEqual(inBar(0).map(side), ['-', 'left', '-', 'right', '-', '-']);
+  assert.deepEqual(inBar(1).map(side), ['right', '-', '-', 'left', '-']);
   /* E03: the rest inside a beam is moved clear of it (§11.2) */
   const x3 = await lay('E03');
   const rest = of(x3.e, o => o.kind === 'rest')[0], beams = of(x3.e, o => o.kind === 'beam');
@@ -213,7 +224,7 @@ test('A4: tuplets as the graph shows them - bracket and number, the number alone
 test('A26 and G4-B11: two voices - stems by the graph or the voice order; a second: the down-stem voice to the right, the stems in one line; a unison of one shape shares its head, of two shapes stands side by side', async () => {
   const x = await lay('E12');
   assert.deepEqual(zeroes(x.m), []);
-  const ev = x.p.events.filter(e => e.kind === 'note' && e.staff === x.p.staves[0].id);
+  const ev = x.p.events.filter(e => e.kind === 'note' && e.staff === x.p.staves[0].id && e.m === x.p.measures[0].id);
   const at = (v, a) => ev.find(e => e.voice === v && e.at === a);
   const v1 = ev[0].voice, v2 = ev.find(e => e.voice !== v1).voice;
   ev.forEach(e => assert.equal(byId(x.e, e.id + '#stem').dir, e.voice === v1 ? 'up' : 'down'));
@@ -231,6 +242,18 @@ test('A26 and G4-B11: two voices - stems by the graph or the voice order; a seco
   /* a half and a quarter on one pitch: side by side */
   const h = byId(x.e, at(v1, '1/2').heads[0].id), q = byId(x.e, at(v2, '1/2').heads[0].id);
   assert.ok(!h.merged && q.box[0] >= h.box[2] - 0.01);
+  /* bar 2 (§22.1, the G4c review R1): a dotted quarter and a quarter on one pitch stand side by side, a head's width and
+     0.2 sp apart; two flagged eighths on one pitch share their head (the up-stem flag reaching down to it is no clash); a
+     second of flagged eighths is a head's width and 0.2 sp apart, not past the flag above it */
+  const ev2 = x.p.events.filter(e => e.kind === 'note' && e.staff === x.p.staves[0].id && e.m === x.p.measures[1].id);
+  const at2 = (v, a) => byId(x.e, ev2.find(e => e.voice === v && e.at === a).heads[0].id);
+  const [d1, d2] = [at2(v1, '0'), at2(v2, '0')];
+  assert.ok(!d1.merged && !d2.merged && Math.abs(d2.box[0] - d1.box[2] - 0.2) < 0.02, 'a unison of different dots: side by side, 0.2 sp apart');
+  const [u1, u2] = [at2(v1, '3/8'), at2(v2, '3/8')];
+  assert.ok(byId(x.e, u1.event + '#flag') && byId(x.e, u2.event + '#flag'), 'both eighths flagged');
+  assert.deepEqual([u1.box, u1.merged, u2.merged], [u2.box, [u2.id], [u1.id]], 'a unison of flagged eighths shares its head');
+  const [s1, s2] = [at2(v1, '1/2'), at2(v2, '1/2')];
+  assert.ok(byId(x.e, s1.event + '#flag') && Math.abs(s2.box[0] - s1.box[2] - 0.2) < 0.02, 'a second of flagged eighths: a head\'s width and 0.2 sp');
   /* E39: the lower voice's stated down stems; the upper's by its role */
   const x39 = await lay('E39');
   assert.deepEqual(zeroes(x39.m), []);
@@ -248,6 +271,15 @@ test('§14.3, A11, R6: rests - two voices resting together are one rest; a voice
   const pair = rests.filter(o => o.merged);
   assert.equal(pair.length, 2, 'the quarter rest both voices share');
   assert.deepEqual(pair[0].box, pair[1].box);
+  /* bar 2 (§22.1): a quarter rest and a half rest at once are two rests, the upper voice's above the lower's, each on a
+     line (whole staff spaces from the middle) */
+  const bar2 = rests.filter(o => o.measure === x.p.measures[1].id && x.p.events.find(e => e.id === o.event).at === '0');
+  assert.deepEqual(bar2.map(o => o.glyph).sort(), ['restHalf', 'restQuarter']);
+  assert.ok(bar2.every(o => !o.merged), 'rests of different lengths are not merged');
+  const [rq, rh] = ['restQuarter', 'restHalf'].map(gl => bar2.find(o => o.glyph === gl));
+  assert.ok(rq.box[3] <= rh.box[1] + 0.01, 'the quarter rest (upper voice) above the half rest');
+  const top = x.e.systems[rq.system].staves.find(s => s.key === rq.staffKey).y;
+  bar2.forEach(o => assert.ok(Math.abs((o.origin[1] - top) - Math.round(o.origin[1] - top)) < 0.02, o.glyph + ' on a line'));
   /* E29: 3/4 and 6/8 bar rests: whole rests centred */
   const x29 = await lay('E29');
   assert.deepEqual(zeroes(x29.m), []);
@@ -486,4 +518,50 @@ test('the G4c metrics find the defects they name (negative controls on real layo
   const dupStem = e.objects.find(o => o.id.indexOf('#stem:') > 0);
   dupStem.id = dupStem.id.split(':')[0].replace(/#stem.*/, '#stem');
   ok(x26, e, 'eg.layout.duplicate_ids', 'one stem id on two staves (R5)');
+  /* the G4c fixer's metrics (the G4c review R1, R2; G04 §34.18) */
+  const x13 = await lay('E13'), x34 = await lay('E34');
+  [x13, x34].forEach(x => assert.deepEqual(zeroes(m(x, x.e)), []));
+  const evOf = (x, o) => x.p.events.find(v => v.id === o.event);
+  const bar2 = (x, o) => evOf(x, o).m === x.p.measures[1].id;
+  const move = (o, dx) => { o.box = [o.box[0] + dx, o.box[1], o.box[2] + dx, o.box[3]]; };
+  e = clone(x12);
+  const sh = e.objects.find(o => o.kind === 'notehead' && o.merged);
+  move(sh, 1.4);
+  ok(x12, e, 'eg.voice.merge_illegal', 'a head naming a partner it does not stand with');
+  e = clone(x12);
+  const [dq, pq] = e.objects.filter(o => o.kind === 'notehead' && bar2(x12, o) && evOf(x12, o).at === '0');
+  dq.box = pq.box.slice(); dq.merged = [pq.id]; pq.merged = [dq.id];
+  ok(x12, e, 'eg.voice.merge_illegal', 'a dotted and a plain quarter sharing a head');
+  e = clone(x13);
+  const [ra, rb] = e.objects.filter(o => o.kind === 'rest' && bar2(x13, o) && evOf(x13, o).at === '0');
+  rb.box = ra.box.slice(); ra.merged = [rb.id]; rb.merged = [ra.id];
+  ok(x13, e, 'eg.voice.merge_illegal', 'a quarter rest and a half rest merged');
+  e = clone(x12);
+  const fu = e.objects.filter(o => o.kind === 'notehead' && o.merged && evOf(x12, o).type === 'eighth');
+  assert.equal(fu.length, 2, 'E12: the flagged unison shares its head');
+  fu.forEach(o => { delete o.merged; });
+  e.objects.filter(o => o.event === fu[1].event && ['notehead', 'stem', 'flag'].indexOf(o.kind) >= 0).forEach(o => move(o, 2.31));
+  ok(x12, e, 'eg.voice.unison_unshared', 'a unison of flagged eighths drawn apart (R1)');
+  e = clone(x12);
+  const sec = e.objects.find(o => o.kind === 'notehead' && bar2(x12, o) && evOf(x12, o).at === '1/2' && o.box[0] > o.anchor[0] + 0.5);
+  e.objects.filter(o => o.event === sec.event && ['notehead', 'stem', 'flag'].indexOf(o.kind) >= 0).forEach(o => move(o, 0.93));
+  ok(x12, e, 'eg.voice.offset_err', 'a second of flagged eighths past the flag, 1.1 sp apart (R1)');
+  e = clone(x34);
+  const midOf = o => e.systems[o.system].staves.find(s => s.key === o.staffKey).y + 2;
+  const reach = e.objects.find(o => o.kind === 'stem' && !o.beam && !o.grace && Math.abs((o.dir === 'up' ? o.box[1] : o.box[3]) - midOf(o)) < 0.02 &&
+    Math.abs(o.box[3] - o.box[1]) > 3.6);
+  assert.ok(reach, 'E34: a ledger-line stem drawn to the middle line');
+  if (reach.dir === 'up') reach.box[1] += 1; else reach.box[3] -= 1;
+  ok(x34, e, 'eg.stem.middle_line', 'a ledger-line stem short of the middle line');
+  e = clone(x13);
+  const r13 = e.objects.find(o => o.kind === 'rest');
+  r13.box = [r13.box[0], r13.box[1] + 0.5, r13.box[2], r13.box[3] + 0.5]; r13.origin = [r13.origin[0], r13.origin[1] + 0.5];
+  ok(x13, e, 'eg.rest.position_err', 'a rest half a space off its line');
+  e = clone(base);
+  e.objects.find(o => o.kind === 'beam' && o.hook).hook = 'right';
+  ok(base, e, 'eg.beam.hook_side_err', 'a hook on the wrong side');
+  e = clone(x04);
+  const tb = e.objects.find(o => o.kind === 'tuplet-bracket');
+  tb.hookLen = -tb.hookLen;
+  ok(x04, e, 'eg.tuplet.hook_dir_err', 'a bracket\'s hooks turned away from the notes');
 });

@@ -40,7 +40,11 @@ const ZERO = ['eg.ledger.silent', 'eg.ledger.invented', 'eg.ledger.duplicate', '
   'eg.beam.derived_missing', 'eg.beam.unplanned', 'eg.beam.level_errors', 'eg.beam.flag_errors', 'eg.beam.slope_violations',
   'eg.beam.head_crossings', 'eg.tuplet.missing', 'eg.tuplet.show_errors', 'eg.tuplet.extent_err', 'eg.tuplet.nesting_errors',
   'eg.tuplet.suppressed_rendered', 'eg.grace.misplaced', 'eg.grace.stem_errors', 'eg.rest.measure_errors', 'eg.layout.attachment_diff',
-  'eg.layout.signature_diff', 'eg.layout.pitch_y_err', 'eg.layout.duplicate_ids'];
+  'eg.layout.signature_diff', 'eg.layout.pitch_y_err', 'eg.layout.duplicate_ids',
+  /* the G4c fixer (G04 §34.18, the G4c review R1-R2): legal merges, shared unisons, the offset of voices side by side,
+     stems to the middle line, rests on line or space, hook sides, tuplet hooks toward the notes */
+  'eg.voice.merge_illegal', 'eg.voice.unison_unshared', 'eg.voice.offset_err', 'eg.stem.middle_line', 'eg.rest.position_err',
+  'eg.beam.hook_side_err', 'eg.tuplet.hook_dir_err'];
 const ONE = ['eg.beam.graph_drawn_ratio', 'eg.beam.members_exact', 'eg.tuplet.drawn_ratio', 'eg.tuplet.show_ok', 'eg.tie.drawn_ratio',
   'eg.slur.pair_exact', 'eg.event.multiset_equal', 'eg.staff.assignment_exact', 'eg.source.agree_live', 'eg.source.agree_projected'];
 /* recorded, lower is better: more systems drawn at a smaller staff size is a regression */

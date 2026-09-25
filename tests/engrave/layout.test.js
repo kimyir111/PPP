@@ -37,7 +37,9 @@ const ZERO_L2 = ['eg.clip.count', 'eg.overlap.head_head', 'eg.overlap.acc', 'eg.
   'eg.beam.derived_missing', 'eg.beam.unplanned', 'eg.beam.level_errors', 'eg.beam.flag_errors', 'eg.beam.slope_violations',
   'eg.beam.head_crossings', 'eg.tuplet.missing', 'eg.tuplet.show_errors', 'eg.tuplet.extent_err', 'eg.tuplet.nesting_errors',
   'eg.tuplet.suppressed_rendered', 'eg.grace.misplaced', 'eg.grace.stem_errors', 'eg.rest.measure_errors', 'eg.layout.attachment_diff',
-  'eg.layout.signature_diff', 'eg.layout.pitch_y_err', 'eg.layout.duplicate_ids'];
+  'eg.layout.signature_diff', 'eg.layout.pitch_y_err', 'eg.layout.duplicate_ids',
+  'eg.voice.merge_illegal', 'eg.voice.unison_unshared', 'eg.voice.offset_err', 'eg.stem.middle_line', 'eg.rest.position_err',
+  'eg.beam.hook_side_err', 'eg.tuplet.hook_dir_err'];
 
 /* A piano piece from a compact spec: bars of voices of [dur, type, pitch, extra] with pitch 'C5', 'F#4' ('r' a rest) or
    an array of pitches (a chord); extra: {dots, acc, stem}. Voice 1 and 2 on the upper staff, voice 3 on the lower. */

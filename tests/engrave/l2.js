@@ -46,9 +46,13 @@ const q = s => { const m = /^(-?\d+)(?:\/(\d+))?$/.exec(s); return m ? +m[1] / (
 const FLAGS = { eighth: 1, '16th': 2, '32nd': 3, '64th': 4, '128th': 5, '256th': 6 };
 const STEMLESS = { whole: 1, breve: 1, long: 1, maxima: 1 };
 const CLEF_GLYPH = { G: 'gClef', F: 'fClef', C: 'cClef', percussion: 'unpitchedPercussionClef1', TAB: '6stringTabClef' };
-/* merged: the two objects name each other and stand at one place (a shared unison, a merged rest, G04 §14.2-§14.3) */
-const mergedPair = (a, b) => !!(a.merged && b.merged && a.merged.indexOf(b.id) >= 0 && b.merged.indexOf(a.id) >= 0 &&
-  a.box.every((v, i) => Math.abs(v - b.box[i]) < EPS));
+/* merged (a shared unison, a merged rest, G04 §14.2-§14.3, G4-C4, G4-C14): the two objects name each other and stand
+   at one place. The layout's label alone is not trusted (the G4c review R2): only a merge the rules allow is left out of
+   the overlap counts, and any other is eg.voice.merge_illegal - see legalMerge in l2(). */
+const namesEachOther = (a, b) => !!(a.merged && b.merged && a.merged.indexOf(b.id) >= 0 && b.merged.indexOf(a.id) >= 0);
+const samePlace = (a, b) => a.system === b.system && a.staffKey === b.staffKey && a.box.every((v, i) => Math.abs(v - b.box[i]) < EPS);
+/* G04 §14.2, G4-C3: voices side by side - the moved voice starts this far past the other (VexFlow 4.2.3's h + 2 px) */
+const VOICE_GAP = 0.2;
 
 /* a beam is a slanted band, not its box: does the band itself cross the box (by more than 0.01 sp)? */
 function bandHits(beam, b) {
@@ -125,6 +129,43 @@ function l2(eng, plan, opts) {
   /* clipping: inside the page */
   set('eg.clip.count', eng.objects.filter(o => o.box[0] < -EPS || o.box[1] < -EPS || o.box[2] > page.w + EPS || o.box[3] > page.h + EPS).length);
 
+  /* ---- merges (G04 §14.2-§14.3, G4-C4, G4-C14; the G4c review R2): a pair of objects that name each other and stand
+     at one place is legal only as
+       two noteheads of different voices, one written pitch (step, octave, alter), one glyph and size, the same dots, the
+         stems opposite (or neither stemmed) - a shared unison;
+       two rests of different voices at one time, one glyph, the same length and dots, neither at a position the graph
+         states - a merged rest;
+       two accidentals of one glyph on such a pair of heads.
+     Grace notes never merge. Only a legal pair is left out of the overlap counts; every object naming a partner it may
+     not stand with is eg.voice.merge_illegal. */
+  const stemDirOf = new Map(eng.objects.filter(o => o.kind === 'stem' && /#stem$/.test(o.id)).map(o => [o.event, o.dir]));
+  const writtenOf = o => { const e = pe.get(o.event), h = e && e.heads.find(x => x.id === o.id); return h ? h.written || h.pos || null : null; };
+  const headAcc = o => { const e = pe.get(o.event), h = e && e.heads.find(x => x.id === o.id); return h && h.acc ? h.acc.type : null; };
+  const legalMerge = (a, b) => {
+    if (!a || !b || a === b || a.kind !== b.kind || !namesEachOther(a, b) || !samePlace(a, b)) return false;
+    if (a.kind === 'accidental') {
+      const ha = (ids.get(a.refs[0]) || []).find(o => o.kind === 'notehead'), hb = (ids.get(b.refs[0]) || []).find(o => o.kind === 'notehead');
+      return a.glyph === b.glyph && legalMerge(ha, hb);
+    }
+    const ea = pe.get(a.event), eb = pe.get(b.event);
+    if (!ea || !eb || ea.voice === eb.voice || a.grace || b.grace || ea.grace || eb.grace) return false;
+    if (a.glyph !== b.glyph || (a.scale || 1) !== (b.scale || 1) || (ea.dots || 0) !== (eb.dots || 0)) return false;
+    if (a.kind === 'notehead') {
+      const wa = writtenOf(a), wb = writtenOf(b);
+      if (!wa || !wb || wa.step !== wb.step || wa.oct !== wb.oct || (wa.alter || 0) !== (wb.alter || 0)) return false;
+      const da = stemDirOf.get(ea.id), db = stemDirOf.get(eb.id);
+      return da && db ? da !== db : !da && !db;
+    }
+    if (a.kind === 'rest') return ea.m === eb.m && q(ea.at) === q(eb.at) && q(ea.dur) === q(eb.dur) && !ea.restPos && !eb.restPos;
+    return false;
+  };
+  let illegal = 0;
+  eng.objects.forEach(o => {
+    if (!o.merged) return;
+    if (!o.merged.length || o.merged.some(id => !(ids.get(id) || []).some(p => legalMerge(o, p)))) illegal++;
+  });
+  set('eg.voice.merge_illegal', illegal);
+
   /* overlaps on one staff of one system */
   const voiceOf = new Map(plan.events.map(e => [e.id, e.voice]));
   const voiceOfObj = o => (o.event ? voiceOf.get(o.event) : o.kind === 'beam' && o.events ? voiceOf.get(o.events[0]) : undefined);
@@ -132,7 +173,7 @@ function l2(eng, plan, opts) {
   let hh = 0, acc = 0, dot = 0, restOv = 0, stemHead = 0;
   groupBy(eng.objects.filter(o => o.staffKey), o => o.system + '|' + o.staffKey).forEach(list => {
     pairs(list, (a, b) => {
-      if (mergedPair(a, b)) return;
+      if (legalMerge(a, b)) return;
       const k = [a.kind, b.kind].sort().join('/');
       if (k === 'notehead/notehead' && a.event !== b.event) hh++;
       if (a.kind === 'accidental' || b.kind === 'accidental') {
@@ -154,7 +195,7 @@ function l2(eng, plan, opts) {
       const head = a.kind === 'notehead' ? a : b.kind === 'notehead' ? b : null;
       const st = head === a ? b : a;
       if (head && STEM_KINDS.indexOf(st.kind) >= 0 && otherVoice(a, b)) {
-        const own = (head.merged || []).some(id => (ids.get(id) || []).some(h => h.event === st.event || (st.events && st.events.indexOf(h.event) >= 0)));
+        const own = (head.merged || []).some(id => (ids.get(id) || []).some(h => legalMerge(head, h) && (h.event === st.event || (st.events && st.events.indexOf(h.event) >= 0))));
         if (!own) stemHead++;
       }
     });
@@ -164,6 +205,51 @@ function l2(eng, plan, opts) {
   set('eg.overlap.dot', dot);
   set('eg.rest.overlap', restOv);
   set('eg.voice.stem_over_head', stemHead);
+
+  /* ---- two voices at one column (G04 §14.2, G4-C3, G4-C13; the G4c review R1): the noteheads of a system, staff and
+     column, by event */
+  const stemObjOf = new Map(eng.objects.filter(o => o.kind === 'stem' && /#stem$/.test(o.id)).map(o => [o.event, o]));
+  const flagObjOf = new Map(eng.objects.filter(o => o.kind === 'flag' && !o.grace).map(o => [o.event, o]));
+  let unshared = 0, offErr = 0;
+  groupBy(eng.objects.filter(o => o.kind === 'notehead' && !o.grace && o.anchor && o.staffKey), o => o.system + '|' + o.staffKey + '|' + o.anchor[0]).forEach(list => {
+    const evs = [...groupBy(list, o => o.event).entries()].map(([id, hs]) => ({ e: pe.get(id), hs: hs })).filter(x => x.e);
+    /* a unison of two single notes - different voices, one written pitch and accidental, one glyph and size, the same
+       dots, the stems opposite - shares its head (§14.2): a legal merge, else eg.voice.unison_unshared */
+    const single = evs.filter(x => x.e.heads.length === 1 && x.hs.length === 1 && x.e.staff === x.hs[0].staffKey);
+    for (let i = 0; i < single.length; i++) {
+      for (let j = i + 1; j < single.length; j++) {
+        const A = single[i], B = single[j], a = A.hs[0], b = B.hs[0];
+        if (A.e.voice === B.e.voice || a.glyph !== b.glyph || (a.scale || 1) !== (b.scale || 1) || (A.e.dots || 0) !== (B.e.dots || 0)) continue;
+        const wa = writtenOf(a), wb = writtenOf(b);
+        if (!wa || !wb || wa.step !== wb.step || wa.oct !== wb.oct || (wa.alter || 0) !== (wb.alter || 0)) continue;
+        const ca = headAcc(a), cb = headAcc(b), da = stemDirOf.get(A.e.id), db = stemDirOf.get(B.e.id);
+        if ((ca && cb && ca !== cb) || !da || !db || da === db) continue;
+        if (!legalMerge(a, b)) unshared++;
+      }
+    }
+    /* two voices side by side (§14.2, G4-C3, G4-C13): the voice that moved - its stem is not where its heads' column puts
+       it - starts VOICE_GAP past the other voice's heads and stem, and past that voice's flag only where the flag reaches
+       beside the moved heads (their heights overlap): no further, no nearer. Two stemmed events of two voices, every
+       head on its home staff; one of them stays. */
+    if (evs.length !== 2 || evs[0].e.voice === evs[1].e.voice) return;
+    if (evs.some(x => x.hs.some(h => h.staffKey !== x.e.staff) || x.e.heads.some(h => (h.staff || x.e.staff) !== x.e.staff))) return;
+    const st = evs.map(x => stemObjOf.get(x.e.id));
+    if (st.some((s, k) => !s || s.system !== evs[k].hs[0].system)) return;
+    const colX = list[0].anchor[0];
+    const moved = evs.map((x, k) => {
+      const w = Math.max(...x.hs.map(h => h.box[2] - h.box[0]));
+      return (st[k].dir === 'up' ? st[k].box[2] - w : st[k].box[0]) - colX > TOL;
+    });
+    if (!moved[0] && !moved[1]) return;
+    if (moved[0] && moved[1]) { offErr++; return; }
+    const u = moved[0] ? 1 : 0, U = evs[u], D = evs[1 - u];
+    const fl = flagObjOf.get(U.e.id);
+    const beside = !!fl && fl.system === st[u].system && D.hs.some(h => cent(h.box[3]) - cent(fl.box[1]) > 1 && cent(fl.box[3]) - cent(h.box[1]) > 1);
+    const reach = Math.max(...U.hs.map(h => h.box[2]), st[u].box[2], beside ? fl.box[2] : -Infinity);
+    if (Math.abs(Math.min(...D.hs.map(h => h.box[0])) - (reach + VOICE_GAP * spaceOf(D.hs[0]))) > TOL) offErr++;
+  });
+  set('eg.voice.unison_unshared', unshared);
+  set('eg.voice.offset_err', offErr);
 
   /* staves and systems: nothing of one staff on anything of another (bar lines through a part's gap meet the next
      staff by design), system bands apart */
@@ -451,6 +537,26 @@ function l2(eng, plan, opts) {
   });
   set('eg.voice.stem_policy_violations', pol);
   set('eg.stem.short', short);
+  /* §11.2 (the G4c review R2): where one voice sounds in a staff-measure, every stem reaches the middle line - an
+     unbeamed one from a ledger-line note, and a beam whose stems all stand in such staff-measures (G4-C2: not where two
+     voices share the staff, nor for grace notes) */
+  const sounding = new Map();
+  plan.events.forEach(e => {
+    if (e.grace || e.hidden || e.kind === 'rest') return;
+    const k = e.staff + '|' + e.m;
+    if (!sounding.has(k)) sounding.set(k, new Set());
+    sounding.get(k).add(e.voice);
+  });
+  const oneVoice = o => { const e = pe.get(o.event); return !!e && (sounding.get(o.staffKey + '|' + e.m) || new Set()).size === 1; };
+  const beamParts = groupBy(eng.objects.filter(o => o.kind === 'stem' && o.beam && !o.grace), o => o.beam + '|' + o.system + '|' + o.staffKey);
+  let midShort = 0;
+  eng.objects.forEach(o => {
+    if (o.kind !== 'stem' || !/#stem$/.test(o.id) || o.grace || !oneVoice(o)) return;
+    if (o.beam && !(beamParts.get(o.beam + '|' + o.system + '|' + o.staffKey) || []).every(oneVoice)) return;
+    const f = spaceOf(o), mid = staffTop.get(o.system + '|' + o.staffKey) + f * Math.max(0, (linesOf.get(o.staffKey) || 5) - 1) / 2;
+    if (o.dir === 'up' ? o.box[1] > mid + TOL : o.box[3] < mid - TOL) midShort++;
+  });
+  set('eg.stem.middle_line', midShort);
 
   /* ---- beams (§11, A2, A3, A21) */
   const beamObjs = eng.objects.filter(o => o.kind === 'beam');
@@ -537,6 +643,34 @@ function l2(eng, plan, opts) {
   });
   set('eg.beam.level_errors', lvl);
   set('eg.beam.flag_errors', flagErr);
+  /* §11.2 hooks (the G4c review R2): a hook stands where the rule puts it - the beam part's first note right, its last
+     left, after a dotted note left, in the beat of the note before left, else right - and is drawn on that side of its
+     stem. The beat is the meter's: a dotted one in compound time, a group of an additive meter (G04 §34.3). */
+  const meters = (plan.meters || []).filter(x => pm.has(x.m)).sort((a, b) => pm.get(a.m).i - pm.get(b.m).i);
+  const beatOf = e => {
+    let mt = null;
+    meters.forEach(x => { if (pm.get(x.m).i <= pm.get(e.m).i) mt = x; });
+    const t = q(e.at);
+    if (!mt) return Math.floor(t * 4 + 1e-9);
+    const bt = mt.beatType || 4, beats = mt.beats && mt.beats.length ? mt.beats : [4];
+    if (beats.length > 1) {
+      let acc = 0;
+      for (let i = 0; i < beats.length; i++) { acc += beats[i] / bt; if (t < acc - 1e-9) return i; }
+      return beats.length;
+    }
+    return Math.floor(t / (beats[0] % 3 === 0 && beats[0] > 3 && bt >= 8 ? 3 / bt : 1 / bt) + 1e-9);
+  };
+  let hookErr = 0;
+  beamObjs.filter(o => o.hook).forEach(o => {
+    const id = o.events[0], st = stemOf.get(id);
+    const part = beamObjs.find(p => p.level === 1 && p.refs[0] === o.refs[0] && p.system === o.system && p.staffKey === o.staffKey && p.events.indexOf(id) >= 0);
+    if (o.events.length !== 1 || !st || !part) { hookErr++; return; }
+    const i = part.events.indexOf(id), e = pe.get(id), prev = i > 0 ? pe.get(part.events[i - 1]) : null;
+    const want = i === 0 ? 'right' : i === part.events.length - 1 ? 'left' : prev.dots ? 'left' : beatOf(prev) === beatOf(e) ? 'left' : 'right';
+    const drawn = o.line[0] < st.box[0] - EPS ? 'left' : o.line[2] > st.box[2] + EPS ? 'right' : null;
+    if (o.hook !== want || drawn !== want) hookErr++;
+  });
+  set('eg.beam.hook_side_err', hookErr);
   /* slope (<= 0.25) and H7: no beam through a head of its own group */
   let slopeMax = 0, steep = 0, cross7 = 0;
   beamObjs.forEach(o => {
@@ -608,6 +742,16 @@ function l2(eng, plan, opts) {
   set('eg.tuplet.show_errors', show);
   set('eg.tuplet.extent_err', ext);
   set('eg.tuplet.nesting_errors', nest);
+  /* §12.2 (the G4c review R2): a bracket's hooks turn toward the notes - down from a bracket above, up from one below -
+     hookLen (> 0) from its line, the box spanning line and hooks */
+  let hookDir = 0;
+  tupObjs.filter(o => o.kind === 'tuplet-bracket' && (o.hooks || []).some(Boolean)).forEach(o => {
+    const y = o.line[1], hl = o.hookLen;
+    const ok = hl > EPS && (o.side === 'above' ? Math.abs(o.box[1] - y) <= TOL && Math.abs(o.box[3] - (y + hl)) <= TOL
+      : o.side === 'below' && Math.abs(o.box[3] - y) <= TOL && Math.abs(o.box[1] - (y - hl)) <= TOL);
+    if (!ok) hookDir++;
+  });
+  set('eg.tuplet.hook_dir_err', hookDir);
   /* nothing for a tuplet printed:false, or shown with no number and no bracket */
   const quiet = g ? [...graphTup.values()].filter(s => s.printed === false || (s.show && s.show.number === 'none' && s.show.bracket === false)).map(s => s.id)
     : plan.ledger.filter(x => x.kind === 'tuplet' && x.status === 'suppressed').map(x => x.ref);
@@ -650,6 +794,20 @@ function l2(eng, plan, opts) {
     if (['restWhole', 'restDoubleWhole'].indexOf(r.glyph) < 0 || objsOf(e.id).some(o => o.kind === 'dot') || Math.abs((r.box[0] + r.box[2]) / 2 - centre) > 0.05) mr++;
   });
   set('eg.rest.measure_errors', mr);
+  /* §14.3 (the G4c review R2): a rest keeps line or space as it moves, a whole staff space at a time - its glyph's
+     origin stands a whole number of staff spaces from where it starts: the position the graph states, else a line (a
+     whole or breve rest hangs from the line above the middle one, a half rest sits on the middle line, the others centre
+     on it) */
+  let rpos = 0;
+  eng.objects.forEach(o => {
+    const e = o.kind === 'rest' && o.origin ? pe.get(o.event) : null;
+    if (!e) return;
+    const f = spaceOf(o), mid = Math.max(0, (linesOf.get(o.staffKey) || 5) - 1) / 2;
+    const base = e.restPos ? staffY(e.restPos, clefIn(o.staffKey, e.m, e.at, false)) : o.glyph === 'restWhole' || o.glyph === 'restDoubleWhole' ? mid - 1 : mid;
+    const k = (o.origin[1] - staffTop.get(o.system + '|' + o.staffKey)) / f - base;
+    if (Math.abs(k - Math.round(k)) > TOL / f) rpos++;
+  });
+  set('eg.rest.position_err', rpos);
 
   /* one-bar systems a neighbour could have taken (G4-U4: density may force them; this counts the avoidable ones) */
   let one = 0;

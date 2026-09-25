@@ -434,14 +434,18 @@
       };
       /* a head's box at an offset */
       const headBox = (x, dx, s) => MT.box(x.name, x.x + dx - x.g.xMin * s, x.y, s);
+      /* `right`: the right edge of its heads and stem (a flag counts only where it reaches beside the other voice's heads,
+         see the placement below) */
       const shapeOf = (L, dx) => {
         const heads = L.hs.map(x => headBox(x, dx, L.scale));
         const sg = L.hasStem ? stemGeom(L, dx, true) : null;
         return { heads: heads, stem: sg ? sg.stem : null, flag: sg && sg.flag ? sg.flag.box : null,
-          right: Math.max.apply(null, heads.map(b => b[2]).concat(sg ? [sg.stem[2]].concat(sg.flag ? [sg.flag.box[2]] : []) : [])) };
+          right: Math.max.apply(null, heads.map(b => b[2]).concat(sg ? [sg.stem[2]] : [])) };
       };
-      /* A and B clash (§10.3 H1, and a stem through another voice's head): heads overlap, or a stem crosses the other's
-         head. `skip` names a shared unison's two heads, which coincide by design. */
+      /* A and B clash (§10.3 H1, and a stem or flag through another voice's head): heads overlap, or a stem or flag
+         crosses the other's head. `skip` names a shared unison's two heads, which coincide by design - and are each
+         voice's own head, which its own stem and flag touch (G4c review R1: an up-stem flag reaching down to the shared
+         head is not a clash). */
       const clash = (A, dxA, B, dxB, skip) => {
         const a = shapeOf(A, dxA), b = shapeOf(B, dxB);
         const sa = skip ? skip.get(A) : -1, sb = skip ? skip.get(B) : -1;
@@ -449,8 +453,8 @@
           for (let j = 0; j < b.heads.length; j++) if (!(i === sa && j === sb) && overlap(a.heads[i], b.heads[j])) return true;
         if (a.stem && b.heads.some((h, j) => j !== sb && overlap(a.stem, h))) return true;
         if (b.stem && a.heads.some((h, i) => i !== sa && overlap(b.stem, h))) return true;
-        if (a.flag && b.heads.some(h => overlap(a.flag, h))) return true;
-        if (b.flag && a.heads.some(h => overlap(b.flag, h))) return true;
+        if (a.flag && b.heads.some((h, j) => j !== sb && overlap(a.flag, h))) return true;
+        if (b.flag && a.heads.some((h, i) => i !== sa && overlap(b.flag, h))) return true;
         return false;
       };
       /* §14.2 unison: two voices, stems opposite, one pitch, the same head shape and the same dots share one head (each
@@ -485,16 +489,30 @@
         let dx = 0;
         for (let guard = 0; guard <= placed.length; guard++) {
           const hit = placed.filter(P => {
-            const shared = sharedOf.has(P) && sharedOf.has(L) && partnerHead.get(P.hs[sharedOf.get(P)].h.id) === L.hs[sharedOf.get(L)].h.id;
+            /* a shared head is skipped only while the two stand at one place (a voice moved for a third one shares no more) */
+            const shared = dx === P.dx && sharedOf.has(P) && sharedOf.has(L) && partnerHead.get(P.hs[sharedOf.get(P)].h.id) === L.hs[sharedOf.get(L)].h.id;
             return clash(P, P.dx, L, dx, shared ? skipAll : null);
           });
           if (!hit.length) break;
-          /* past everything of the voice it meets - its heads, and its stem and flag where they reach out - and VexFlow's
-             0.2 sp more (StaveNote.format shifts by the head's width + 2 px at 10 px a space) */
-          dx = Math.max.apply(null, hit.map(P => shapeOf(P, P.dx).right)) + VOICE_GAP - Math.min.apply(null, L.hs.map(a => a.x));
+          /* past the voice it meets - its heads and stem, and its flag only where the flag reaches down (or up) beside this
+             voice's heads (G4c review R1: a second below an up-stem eighth goes a head's width over, not past the flag
+             above it) - and VexFlow's 0.2 sp more (StaveNote.format shifts by the head's width + 2 px at 10 px a space) */
+          const own = L.hs.map(x => headBox(x, 0, L.scale));
+          const reach = P => {
+            const s = shapeOf(P, P.dx);
+            return s.flag && own.some(h => s.flag[1] < h[3] - SK.EPS && h[1] < s.flag[3] - SK.EPS) ? Math.max(s.right, s.flag[2]) : s.right;
+          };
+          dx = Math.max(dx, Math.max.apply(null, hit.map(reach)) + VOICE_GAP - Math.min.apply(null, L.hs.map(a => a.x)));
         }
         L.dx = dx;
         placed.push(L);
+      });
+      /* a unison whose voice had to move for a third voice is not shared after all: its two heads stand apart (the G4c
+         review R2's merge check found one, for-all-the-saints m. 10 - the heads kept naming each other) */
+      [...sharedOf.keys()].forEach(L => {
+        const hid = L.hs[sharedOf.get(L)].h.id, pid = partnerHead.get(hid);
+        const P = pid === undefined ? null : lay.find(x => x !== L && sharedOf.has(x) && x.hs[sharedOf.get(x)].h.id === pid);
+        if (P && P.dx !== L.dx) { partnerHead.delete(hid); partnerHead.delete(pid); }
       });
       /* heads, stems, flags, ledger lines */
       lay.forEach(L => {

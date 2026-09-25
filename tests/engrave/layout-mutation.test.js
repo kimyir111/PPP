@@ -79,7 +79,32 @@ const MUTATIONS = [
       ['      if (!e.grace || e.grace.after || e.hidden || deferred.has(e.id)) return;\n', '      return;\n']] },
   { id: 'M24', expect: ['eg.tuplet.extent_err'], what: 'a tuplet bracket ends at its last note, leaving out a rest that ends the group',
     edits: [['const firstEv = present[0], lastEv = present[present.length - 1];',
-      "const firstEv = present[0], lastEv = present.filter(id => mem.some(o => o.event === id && o.kind === 'notehead')).pop() || present[present.length - 1];"]] }
+      "const firstEv = present[0], lastEv = present.filter(id => mem.some(o => o.event === id && o.kind === 'notehead')).pop() || present[present.length - 1];"]] },
+  /* the G4c review (G04 §34.18): its mutations RF, RI, RY, RX, RB, RK that only the layout hash caught, RB2, and the
+     fixer's own for R1 (F1, F2) and the merge check (F3) - each caught by a named metric */
+  { id: 'RF', expect: ['eg.voice.merge_illegal'], what: 'a unison shares its head across different dot counts (a dotted quarter and a quarter)',
+    edits: [['A.dir === B.dir || A.e.voice === B.e.voice || A.e.dots !== B.e.dots ||', 'A.dir === B.dir || A.e.voice === B.e.voice ||']] },
+  { id: 'RI', expect: ['eg.stem.middle_line'], what: 'unbeamed up stems of ledger-line notes in one voice stop short of the middle line',
+    edits: [["          if (!poly && L.dir === 'up' && end > mid) end = mid;\n", '\n']] },
+  { id: 'RY', file: 'notation.js', expect: ['eg.rest.position_err'], what: 'a rest steps half a space (a line rest lands on a space)',
+    edits: [['const REST = Object.freeze({ step: 1,', 'const REST = Object.freeze({ step: 0.5,']] },
+  { id: 'RX', file: 'notation.js', expect: ['eg.tuplet.hook_dir_err'], what: 'tuplet bracket hooks point away from the notes',
+    edits: [['  const TUPLET = Object.freeze({ hook: 0.75,', '  const TUPLET = Object.freeze({ hook: -0.75,']] },
+  { id: 'RB', file: 'notation.js', expect: ['eg.beam.hook_side_err'], what: 'beam hooks the other way (the first note\'s left, an inner one right inside its beat)',
+    edits: [["      if (i === 0) return 'right';",
+      "      if (i === 0) return 'left';\n      if (i > 0) return (members[i - 1].beat === members[i].beat && !members[i - 1].dots) ? 'right' : 'left';"]] },
+  { id: 'RB2', file: 'notation.js', expect: ['eg.beam.hook_side_err'], what: 'an inner hook\'s beat rule reversed (right inside the beat of the note before, left outside it)',
+    edits: [["      return prev.beat === members[i].beat ? 'left' : 'right';", "      return prev.beat === members[i].beat ? 'right' : 'left';"]] },
+  { id: 'RK', expect: ['eg.voice.merge_illegal'], what: 'rests of different lengths merged (a quarter rest and a half rest at one place)',
+    edits: [['rests.every(e => !e.restPos && e.dur === rests[0].dur && e.type === rests[0].type &&', 'rests.every(e => !e.restPos &&']] },
+  { id: 'F1', expect: ['eg.voice.unison_unshared'], what: 'R1 back: the flag test ignores the shared head, so a unison of flagged notes is not shared',
+    edits: [['if (a.flag && b.heads.some((h, j) => j !== sb && overlap(a.flag, h))) return true;', 'if (a.flag && b.heads.some(h => overlap(a.flag, h))) return true;'],
+      ['if (b.flag && a.heads.some((h, i) => i !== sa && overlap(b.flag, h))) return true;', 'if (b.flag && a.heads.some(h => overlap(b.flag, h))) return true;']] },
+  { id: 'F2', expect: ['eg.voice.offset_err'], what: 'R1 back: a voice beside a flagged note always moves past the flag (a second 1.1 sp apart)',
+    edits: [['return s.flag && own.some(h => s.flag[1] < h[3] - SK.EPS && h[1] < s.flag[3] - SK.EPS) ? Math.max(s.right, s.flag[2]) : s.right;',
+      'return s.flag ? Math.max(s.right, s.flag[2]) : s.right;']] },
+  { id: 'F3', expect: ['eg.voice.merge_illegal'], what: 'a unison whose voice moved for a third voice keeps naming its partner (heads apart, still "merged")',
+    edits: [['        if (P && P.dx !== L.dx) { partnerHead.delete(hid); partnerHead.delete(pid); }\n', '        void P;\n']] }
 ];
 const CONTROLS = [
   { id: 'N1', what: 'a comment reworded',
@@ -108,11 +133,59 @@ function tripletEndingInARest() {
   b.event(part, { kind: 'note', m: m.id, at: '1/4', dur: '3/4', voice: v.id, staff: st.id, display: { type: 'half', dots: 1 }, heads: [{ pitch: { step: 'E', alter: 0, oct: 5 } }] });
   return b.finish().graph;
 }
+/* beam hooks on every side §11.2 gives (RB, RB2): bar 1 beams an eighth, a 16th inside the eighth's beat (left), an
+   eighth, a 16th in the next beat (right), an eighth; bar 2 a 16th that starts its beam (right) before a dotted eighth,
+   and a 16th that ends its beam after a dotted eighth (left) */
+function beamHooks() {
+  const R = SG.rational;
+  const b = SG.builder({ id: 'hooks', meta: { title: 'Hooks' } });
+  b.setDefault({ src: b.source({ kind: 'user' }).id });
+  const part = b.part({ instrument: { kind: 'piano', family: 'keyboard' } });
+  const st = b.staff(part, {});
+  const v = b.voice(part, { staff: st.id, label: '1' });
+  const bars = [
+    [['1/8', 'eighth', 'C5'], ['1/16', '16th', 'D5'], ['1/8', 'eighth', 'E5'], ['1/16', '16th', 'F5'], ['1/8', 'eighth', 'G5'], ['1/2', 'half', 'A5']],
+    [['1/16', '16th', 'C5'], ['3/16', 'eighth', 'D5', 1], ['3/16', 'eighth', 'E5', 1], ['1/16', '16th', 'F5'], ['1/2', 'half', 'G5']]];
+  const beams = [[[0, 1, 2, 3, 4]], [[0, 1], [2, 3]]];
+  bars.forEach((notes, i) => {
+    const m = b.measure({ number: String(i + 1), dur: '1' });
+    if (!i) { b.meter({ m: m.id, beats: [4], beatType: 4 }); b.clef(part, { staff: st.id, m: m.id, at: '0', sign: 'G' }); }
+    let at = R.ZERO;
+    const ev = notes.map(([dur, type, p, dots]) => {
+      const e = b.event(part, { kind: 'note', m: m.id, at: R.format(at), dur: dur, voice: v.id, staff: st.id, display: Object.assign({ type: type }, dots ? { dots: dots } : {}),
+        heads: [{ pitch: { step: p[0], alter: 0, oct: +p[1] } }] });
+      at = R.add(at, R.parse(dur));
+      return e;
+    });
+    beams[i].forEach(idx => b.spanner(part, { type: 'beam', events: idx.map(k => ev[k].id) }));
+  });
+  return b.finish().graph;
+}
+/* three voices on a bass staff (F3): an up-stem D4 and a down-stem D4-G3 share the D4, but a third voice's up stem from G2
+   runs through the G3, so the down-stem voice moves right - and its D4 is no longer the up voice's */
+function sharedThenMoved() {
+  const b = SG.builder({ id: 'three', meta: { title: 'Three voices' } });
+  b.setDefault({ src: b.source({ kind: 'user' }).id });
+  const m = b.measure({ number: '1', dur: '1' });
+  b.meter({ m: m.id, beats: [4], beatType: 4 });
+  const part = b.part({ instrument: { kind: 'piano', family: 'keyboard' } });
+  const st = b.staff(part, {});
+  b.clef(part, { staff: st.id, m: m.id, at: '0', sign: 'F' });
+  const P = (s, o) => ({ pitch: { step: s, alter: 0, oct: o } });
+  [['1', 'up', [P('D', 4)]], ['2', 'down', [P('D', 4), P('G', 3)]], ['3', 'up', [P('G', 2)]]].forEach(([label, stem, heads]) => {
+    const v = b.voice(part, { staff: st.id, label: label });
+    ['0', '1/2'].forEach(at => b.event(part, { kind: 'note', m: m.id, at: at, dur: '1/2', voice: v.id, staff: st.id, display: { type: 'half', stem: stem },
+      heads: heads.map(h => JSON.parse(JSON.stringify(h))) }));
+  });
+  return b.finish().graph;
+}
 /* the probes: two voices with rests, an accidental chord, a long grand-staff piece (several systems), two piano pieces
    whose hands cross middle C - Czerny 849/005 dense (its phone systems already at a smaller staff size), Burgmuller
    015 - and for G4c beams with secondary breaks and hooks (E02), tuplets shown as the file says (E04), two voices'
-   seconds and unisons (E12), grace notes (E14), the recording shape with derived beams (E38), and the M24 triplet.
-   Every catch below is carried by probes that contain what it plants a defect in. */
+   seconds and unisons (E12), grace notes (E14), the recording shape with derived beams (E38), and the M24 triplet; for
+   the G4c fixer ledger-line stems in one voice (E34), beam hooks on every side (beamHooks) and a unison a third voice
+   pulls apart (sharedThenMoved) - E12 and E13 hold the unisons of different dots, the flagged unison and second, and the
+   rests of different lengths. Every catch below is carried by probes that contain what it plants a defect in. */
 const PROBES = {
   E02: 'tests/engrave/fixtures/e/E02-beams-compound-secondary.musicxml',
   E04: 'tests/engrave/fixtures/e/E04-tuplet-show.musicxml',
@@ -120,11 +193,14 @@ const PROBES = {
   E13: 'tests/engrave/fixtures/e/E13-two-voices-rests.musicxml',
   E14: 'tests/engrave/fixtures/e/E14-grace.musicxml',
   E33: 'tests/engrave/fixtures/e/E33-accidental-chord.musicxml',
+  E34: 'tests/engrave/fixtures/e/E34-ledger-lines.musicxml',
   E37: 'tests/engrave/fixtures/e/E37-long.musicxml',
   E38: 'tests/engrave/fixtures/e/E38-recording-shape.musicxml',
   czerny849_005: 'catalog/method/czerny849/005.mxl',
   burg015: 'catalog/method/burgmuller25/015.mxl',
-  m24: tripletEndingInARest
+  m24: tripletEndingInARest,
+  hooks: beamHooks,
+  three: sharedThenMoved
 };
 const CONFIGS = [{ breakpoint: 'desktop' }, { breakpoint: 'phone' }];
 const FILE = 'layout.js';
@@ -184,7 +260,7 @@ test.before(() => {
 });
 test.after(() => { if (tmp) fs.rmSync(tmp, { recursive: true, force: true }); });
 
-test('every layout mutation (G04 §23: M1-M7, M9-M11, M16-M18, M21, M24) is live and caught by the metric or check it names; N1 and N2 change nothing', async (t) => {
+test('every layout mutation (G04 §23: M1-M7, M9-M11, M16-M18, M21, M24; the G4c review\'s RB, RB2, RF, RI, RK, RX, RY; the fixer\'s F1-F3) is live and caught by the metric or check it names; N1 and N2 change nothing', async (t) => {
   const graphs = {};
   for (const k of Object.keys(PROBES)) {
     graphs[k] = typeof PROBES[k] === 'function' ? PROBES[k]() : await graphOf(PROBES[k]);
