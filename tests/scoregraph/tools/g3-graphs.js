@@ -6,7 +6,10 @@
                                        before G3 (professional 'off') unless opts says otherwise
      slice(graph, from, to)            measures from..to (0-based, inclusive) as a graph of their own
 
-   The inputs are generated once into tests/bench/out/g3/ (gitignored) and reused. */
+   The inputs are generated once into tests/bench/out/g3/ (gitignored; PPP_G3_JOBS_DIR names another directory, a
+   relative one from the repository root) and reused. g3_jobs.py renames a finished file into place, so the test
+   processes node --test runs side by side never see half of one; a file whose header counts other than the lines it
+   holds is an error here, never a short list. */
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -18,10 +21,19 @@ const SG = require(path.join(REPO, 'scoregraph', 'index.js'));
 
 function python() { return process.env.PPP_PYTHON || (process.platform === 'win32' ? 'python' : 'python3'); }
 
+function outDir() { return process.env.PPP_G3_JOBS_DIR ? path.resolve(REPO, process.env.PPP_G3_JOBS_DIR) : OUT; }
+
 function jobs(suite) {
-  const file = path.join(OUT, 'jobs-' + suite + '.jsonl');
+  const file = path.join(outDir(), 'jobs-' + suite + '.jsonl');
   execFileSync(python(), [path.join(__dirname, 'g3_jobs.py'), '--suite', suite], { cwd: REPO, stdio: ['ignore', 'ignore', 'inherit'] });
-  const lines = fs.readFileSync(file, 'utf8').split('\n').filter(l => l.trim());
+  const text = fs.readFileSync(file, 'utf8');
+  const lines = text.split('\n').filter(l => l.trim());
+  let head = null;
+  try { head = JSON.parse(lines[0]); } catch (e) { /* reported below */ }
+  if (!head || head.suite !== suite || head.cases !== lines.length - 1 || !text.endsWith('\n')) {
+    throw new Error('g3-graphs: ' + file + ' is incomplete: its header ' + (head ? 'counts ' + head.cases + ' ' + head.suite + ' cases' : 'is missing') +
+      ', it holds ' + Math.max(0, lines.length - 1) + (text.endsWith('\n') ? '' : ' (the last one cut off)') + '. Delete it and run again.');
+  }
   return lines.slice(1).map(l => JSON.parse(l));
 }
 
@@ -96,4 +108,4 @@ function slice(g, from, to) {
   return SG.seal(doc).graph;
 }
 
-module.exports = { jobs, graphs, slice, REPO, OUT };
+module.exports = { jobs, graphs, slice, outDir, REPO, OUT };
