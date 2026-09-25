@@ -7,12 +7,23 @@
      store     the graph cache (IndexedDB in the browser, G4-U1)
      plan      plan(graph, config): the NotationPlan and its ledger
      ledger    inventory() and audit(): nothing a graph states goes unaccounted
-   Layout, SVG and the renderer switch are G4b and later. Nothing here changes
-   what the app draws: the legacy renderer stays the default.
+   G4b: where it is drawn (the layout core; the app does not load it yet).
+     metrics   glyph sizes from the pinned font data
+     space     springs and rods: horizontal spacing
+     breaks    screen line breaking (G4-U4)
+     skyline   extents, placement, clearance, hard-collision checks
+     canon     the EngravedScore's canonical form and hash
+     layout    prepare(plan), layout(prepared, config): the EngravedScore
+     practice  the practice map (ids -> geometry) and the highlighter
+   SVG, the remaining notation and the renderer switch are G4c-G4f. Nothing
+   here changes what the app draws: the legacy renderer stays the default.
 
    Browser order: ledger, plan-beams, plan-tuplets, plan, store, source, index,
-   after scoregraph/*.js and audio-score.js. Leaves window.PPPEngrave, with
-   PPPEngrave.app: the app's one source, over IndexedDB when there is one.
+   after scoregraph/*.js and audio-score.js; the G4b files (metrics, space,
+   breaks, skyline, canon, layout, practice), where loaded, go before index.js.
+   The app does not load them until the renderer switch (G4f); without them
+   PPPEngrave.layout is null. Leaves window.PPPEngrave, with PPPEngrave.app:
+   the app's one source, over IndexedDB when there is one.
    ========================================================================== */
 (function (root, factory) {
   'use strict';
@@ -29,9 +40,12 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (get, browser) {
   'use strict';
   const ledger = get('ledger'), glyphs = get('glyphs'), plan = get('plan'), store = get('store'), source = get('source');
+  /* the layout core: always in Node; in a browser only where a page loads it (the app does not, before G4f) */
+  const optional = name => { if (!browser) return get(name); try { return get(name); } catch (e) { return null; } };
+  const layout = optional('layout'), practice = optional('practice'), canon = optional('canon'), metrics = optional('metrics');
 
   /* what G4 stage this is, so a stale script is visible in a report */
-  const version = '0.1.1-g4a';
+  const version = '0.2.0-g4b';
 
   let app = null;
   /* The app's single source. Created on first use, over IndexedDB when the browser has it (a private window
@@ -67,6 +81,8 @@
     plan: plan.plan, PLAN_VERSION: plan.PLAN_VERSION, PLAN_DEFAULTS: plan.DEFAULTS, onsetKey: plan.onsetKey,
     inventory: ledger.inventory, audit: ledger.audit,
     createSource: source.createSource, identity: source.identity, scoreHash: source.scoreHash,
+    layout: layout, practice: practice, metrics: metrics,
+    engrave: layout ? layout.engrave : null, layoutHash: canon ? canon.hash : null,
     get app() { return appSource(); }
   });
 });

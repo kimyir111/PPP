@@ -1,0 +1,485 @@
+{
+ "version": "engr/1",
+ "configs": {
+  "desktop": {
+   "breakpoint": "desktop"
+  },
+  "phone": {
+   "breakpoint": "phone"
+  }
+ },
+ "hashes": {
+  "catalog/fur-elise.musicxml": {
+   "desktop": "7f7dbb9c5314aef0",
+   "phone": "17083b48cc787d30"
+  },
+  "catalog/gymnopedie-1.musicxml": {
+   "desktop": "b18141f72c68d418",
+   "phone": "fb60cfc59cf21fdd"
+  },
+  "catalog/happy-birthday.musicxml": {
+   "desktop": "43e8671604c23701",
+   "phone": "96931e0a497e51f6"
+  },
+  "catalog/hymns/all-creatures.musicxml": {
+   "desktop": "a69edf26979900f5",
+   "phone": "b8e34aac501fbd11"
+  },
+  "catalog/hymns/all-glory-laud.musicxml": {
+   "desktop": "91c441e28083c3a4",
+   "phone": "42ab694dacdf2dc4"
+  },
+  "catalog/hymns/christ-arose.musicxml": {
+   "desktop": "224cee799d7f8ab6",
+   "phone": "5e34545fe9ffba7f"
+  },
+  "catalog/hymns/god-rest-ye-merry.musicxml": {
+   "desktop": "ce58a5fd39ac68a0",
+   "phone": "a53cfe2fcc50ef6a"
+  },
+  "catalog/hymns/how-firm-a-foundation.musicxml": {
+   "desktop": "72ebb4fc949acebe",
+   "phone": "60a472c5caf2088c"
+  },
+  "catalog/hymns/nearer-my-god.musicxml": {
+   "desktop": "fe7d2ce8ac41cebf",
+   "phone": "9b27280704eb1f49"
+  },
+  "catalog/hymns/pass-me-not.musicxml": {
+   "desktop": "1415a87104649f24",
+   "phone": "2c24f5f5f996f1a1"
+  },
+  "catalog/hymns/the-strife-is-oer.musicxml": {
+   "desktop": "291d0d23b442e719",
+   "phone": "e8fab9b961e7bb46"
+  },
+  "catalog/hymns/what-child-is-this.musicxml": {
+   "desktop": "2f75fb3c1698582e",
+   "phone": "ff66cc32dfca6f5c"
+  },
+  "catalog/hymns/when-i-survey.musicxml": {
+   "desktop": "53df839a0d6de78c",
+   "phone": "3c7b4bd816cd2d6c"
+  },
+  "catalog/method/beyer/001.mxl": {
+   "desktop": "6707685ccc37bbec",
+   "phone": "b21f570f739be1ca"
+  },
+  "catalog/method/beyer/007.mxl": {
+   "desktop": "f08dfe79e67b7b22",
+   "phone": "38acc7e6a185c677"
+  },
+  "catalog/method/beyer/013.mxl": {
+   "desktop": "b287c691237e4ac3",
+   "phone": "8f99ed1226163cae"
+  },
+  "catalog/method/beyer/020.mxl": {
+   "desktop": "0beaa9b5d8ed2e1b",
+   "phone": "d9cdf6a7e8e9bada"
+  },
+  "catalog/method/beyer/024.mxl": {
+   "desktop": "e3901d9dda289142",
+   "phone": "6832a977cf8afc5b"
+  },
+  "catalog/method/beyer/036.mxl": {
+   "desktop": "22915e9568501b43",
+   "phone": "204f629d5f7e677c"
+  },
+  "catalog/method/beyer/038.mxl": {
+   "desktop": "c2a8890d9b04a019",
+   "phone": "581f3aee833d3b2b"
+  },
+  "catalog/method/beyer/048.mxl": {
+   "desktop": "84170af8f7dd8e57",
+   "phone": "a6a7a0b08efe4b40"
+  },
+  "catalog/method/beyer/050.mxl": {
+   "desktop": "976f2e1ee7c98e90",
+   "phone": "ab4525f716183752"
+  },
+  "catalog/method/beyer/061.mxl": {
+   "desktop": "7d2f1e5e2fd9a389",
+   "phone": "7d39079cd66d73ee"
+  },
+  "catalog/method/burgmuller25/003.mxl": {
+   "desktop": "239ba53cc453dde6",
+   "phone": "beb89ac9134e6e8f"
+  },
+  "catalog/method/burgmuller25/005.mxl": {
+   "desktop": "f1f60e59fd283a63",
+   "phone": "b250b651617d6681"
+  },
+  "catalog/method/burgmuller25/006.mxl": {
+   "desktop": "d85b0482a873b24e",
+   "phone": "15fb3cd58e6ce381"
+  },
+  "catalog/method/burgmuller25/015.mxl": {
+   "desktop": "cb88bc4158d14353",
+   "phone": "35e480c68a91b692"
+  },
+  "catalog/method/burgmuller25/016.mxl": {
+   "desktop": "f2ea22f8fafa3e0a",
+   "phone": "fde55c67b76f6d1d"
+  },
+  "catalog/method/burgmuller25/019.mxl": {
+   "desktop": "8e887ad2ea8195a3",
+   "phone": "df5862537bc4e133"
+  },
+  "catalog/method/burgmuller25/023.mxl": {
+   "desktop": "e7fc828e7f1f0cf5",
+   "phone": "359a33b5236c0a09"
+  },
+  "catalog/method/czerny599/010.mxl": {
+   "desktop": "8fdafe9286b99f8d",
+   "phone": "f16fb4262892c69d"
+  },
+  "catalog/method/czerny599/013.mxl": {
+   "desktop": "fba509fac582a763",
+   "phone": "622fe7756c75e09b"
+  },
+  "catalog/method/czerny599/017.mxl": {
+   "desktop": "cd98f35641614dfa",
+   "phone": "a37c840cd9918aac"
+  },
+  "catalog/method/czerny599/027.mxl": {
+   "desktop": "ca6a7ef160489859",
+   "phone": "c1fab48345a36837"
+  },
+  "catalog/method/czerny599/030.mxl": {
+   "desktop": "8d7d45183b362b0c",
+   "phone": "833ef5ff1e17d4aa"
+  },
+  "catalog/method/czerny599/032.mxl": {
+   "desktop": "d6222b64b7792fcf",
+   "phone": "999955db663a15a5"
+  },
+  "catalog/method/czerny599/033.mxl": {
+   "desktop": "b0ab7da2d5dd2aaa",
+   "phone": "70e8550b5b204e8c"
+  },
+  "catalog/method/czerny599/035.mxl": {
+   "desktop": "e970a387e71e0dff",
+   "phone": "e2fbd4eafd72556d"
+  },
+  "catalog/method/czerny599/049.mxl": {
+   "desktop": "5d5803f47d705848",
+   "phone": "d910e109552c2b71"
+  },
+  "catalog/method/czerny599/052.mxl": {
+   "desktop": "eae1a8a71d387d24",
+   "phone": "548e242e1802e227"
+  },
+  "catalog/method/czerny849/002.mxl": {
+   "desktop": "dd97d6dba6662a7e",
+   "phone": "3ea36db6b190d3bf"
+  },
+  "catalog/method/czerny849/005.mxl": {
+   "desktop": "16fc8126c4024863",
+   "phone": "66977a27e9cb849e"
+  },
+  "catalog/method/czerny849/007.mxl": {
+   "desktop": "62c9719f82505103",
+   "phone": "5f9ec1df39cca26c"
+  },
+  "catalog/method/czerny849/018.mxl": {
+   "desktop": "0596e9b16283ac26",
+   "phone": "d57d37c3fae474e6"
+  },
+  "catalog/method/czerny849/020.mxl": {
+   "desktop": "faafc53f817fe0ba",
+   "phone": "fb42f2706c82844d"
+  },
+  "catalog/method/czerny849/022.mxl": {
+   "desktop": "efafe7bcdc5a41a1",
+   "phone": "b664ee1fad4c5e67"
+  },
+  "catalog/method/czerny849/023.mxl": {
+   "desktop": "65d647ba2b11b517",
+   "phone": "8d77416ec7f67057"
+  },
+  "catalog/method/czerny849/025.mxl": {
+   "desktop": "891d51d1b7001106",
+   "phone": "87483340dbd18ef6"
+  },
+  "catalog/method/hanon/001.mxl": {
+   "desktop": "80acd8e301fdac91",
+   "phone": "66006fbb73dc2f0f"
+  },
+  "catalog/method/hanon/005.mxl": {
+   "desktop": "2cd3276cf2b7034b",
+   "phone": "bf1870747acfc768"
+  },
+  "catalog/method/hanon/010.mxl": {
+   "desktop": "2f4e9a021562a50f",
+   "phone": "45bb7fcf5ac8dd41"
+  },
+  "catalog/method/sonatina/001.mxl": {
+   "desktop": "723c3761895dedb5",
+   "phone": "c0e651cbef724949"
+  },
+  "catalog/method/sonatina/003.mxl": {
+   "desktop": "6a720fb72b00f5e3",
+   "phone": "8b0c2728c535201f"
+  },
+  "catalog/method/sonatina/004.mxl": {
+   "desktop": "920270becb1fc1a8",
+   "phone": "84bf3d7a07e7b888"
+  },
+  "catalog/method/sonatina/006.mxl": {
+   "desktop": "b9056505653b4bd9",
+   "phone": "d4a489d6765f0254"
+  },
+  "catalog/method/sonatina/019.mxl": {
+   "desktop": "ee287660b2869079",
+   "phone": "9456da23a5412a2f"
+  },
+  "catalog/method/sonatina/021.mxl": {
+   "desktop": "d477a1b37373b840",
+   "phone": "a5057451646d2a19"
+  },
+  "catalog/method/sonatina/022.mxl": {
+   "desktop": "db318a31951e07cd",
+   "phone": "295ea3dbf7768a22"
+  },
+  "catalog/method/sonatina/024.mxl": {
+   "desktop": "5802c0e29448c36b",
+   "phone": "66f4e22008eede89"
+  },
+  "catalog/method/sonatina/025.mxl": {
+   "desktop": "4ba83551fe0192d7",
+   "phone": "3945c0d206082dd0"
+  },
+  "catalog/method/sonatina/026.mxl": {
+   "desktop": "3cc4d274dedc3dc6",
+   "phone": "249dd2fa2c613f3d"
+  },
+  "e/E01-beams-basic.musicxml": {
+   "desktop": "8c49a736ffe49ba7",
+   "phone": "d5d3894f5a436d22"
+  },
+  "e/E02-beams-compound-secondary.musicxml": {
+   "desktop": "27da4f250e6f761f",
+   "phone": "524ccdba76f605b0"
+  },
+  "e/E03-beam-with-rest.musicxml": {
+   "desktop": "3041c9f03ba44816",
+   "phone": "183ee28810700e60"
+  },
+  "e/E04-tuplet-show.musicxml": {
+   "desktop": "af66b498ee8045c7",
+   "phone": "28f750c74d495add"
+  },
+  "e/E05-tuplet-nested.musicxml": {
+   "desktop": "25e87d1443bb455d",
+   "phone": "6fb13c0b8dd6c4d1"
+  },
+  "e/E06-tuplet-with-rest.musicxml": {
+   "desktop": "d155dc991f095e66",
+   "phone": "4912fd55f8226316"
+  },
+  "e/E07-one-note-tuplets.musicxml": {
+   "desktop": "5bed8284973d64d4",
+   "phone": "1c3ec09a260f3c52"
+  },
+  "e/E08-tie-partial-chord.musicxml": {
+   "desktop": "372a826ecd13b7c6",
+   "phone": "d0ab6e9d5613ed3e"
+  },
+  "e/E09-tie-barline-system.musicxml": {
+   "desktop": "770f374bd0796d8e",
+   "phone": "d10578df18be7e7b"
+  },
+  "e/E10-slurs-overlap.musicxml": {
+   "desktop": "3e88e3ddb41762d6",
+   "phone": "b5785727c7bf99dc"
+  },
+  "e/E11-slur-rest-system.musicxml": {
+   "desktop": "0f2e2ba057229a2c",
+   "phone": "42605c0fa3a47377"
+  },
+  "e/E12-two-voices-heads.musicxml": {
+   "desktop": "b61420d437b4fc48",
+   "phone": "334378bf1109e9ae"
+  },
+  "e/E13-two-voices-rests.musicxml": {
+   "desktop": "fc3fe3d06a22056a",
+   "phone": "9e4cb20db5c930b0"
+  },
+  "e/E14-grace.musicxml": {
+   "desktop": "b34b1e0d18930970",
+   "phone": "a8639711704fed4e"
+  },
+  "e/E15-articulations.musicxml": {
+   "desktop": "7285d82859d366ce",
+   "phone": "5a7dff1f7e39e826"
+  },
+  "e/E16-dynamics-hairpins.musicxml": {
+   "desktop": "866c2f1e12e3e119",
+   "phone": "e8b86f687caf26f3"
+  },
+  "e/E17-pedal.musicxml": {
+   "desktop": "755f36e0885dcff6",
+   "phone": "d31a48f98ff2bb6b"
+  },
+  "e/E18-ottava.musicxml": {
+   "desktop": "db009dde0cff4183",
+   "phone": "6e42f580fd265974"
+  },
+  "e/E19-clefs.musicxml": {
+   "desktop": "79eb3fd25196f2a1",
+   "phone": "7a522a559700a21c"
+  },
+  "e/E20-key-change.musicxml": {
+   "desktop": "d8800b95b2d45e73",
+   "phone": "618f20295c24addb"
+  },
+  "e/E21-meter.musicxml": {
+   "desktop": "71ea1c93cd014daf",
+   "phone": "3743ee861f97f60a"
+  },
+  "e/E22-repeats-jumps.musicxml": {
+   "desktop": "bcf91d4eacbb5e58",
+   "phone": "74dad6cb83458ee7"
+  },
+  "e/E23-fingering.musicxml": {
+   "desktop": "594b484d28d8746c",
+   "phone": "15da17361ebdb934"
+  },
+  "e/E24-lyrics.musicxml": {
+   "desktop": "0dbbee711b54a8cc",
+   "phone": "a9a9b26f01b0f98c"
+  },
+  "e/E25-chords-dense.musicxml": {
+   "desktop": "46909d9ec3ebd82a",
+   "phone": "78eb63de504998a0"
+  },
+  "e/E26-cross-staff.musicxml": {
+   "desktop": "8f0bbb3db33cf14c",
+   "phone": "57683501fae77068"
+  },
+  "e/E27-percussion.musicxml": {
+   "desktop": "aaefb6d6e697919d",
+   "phone": "5d37ba64d83dede7"
+  },
+  "e/E28-multirest.musicxml": {
+   "desktop": "38f69c69f74871a2",
+   "phone": "923c86a141f7efc5"
+  },
+  "e/E29-measure-rests.musicxml": {
+   "desktop": "1850bbbf3002e89c",
+   "phone": "22b9b8eb14b74e52"
+  },
+  "e/E30-hidden-cue.musicxml": {
+   "desktop": "516af15208f1fdc9",
+   "phone": "a5ca840b45112001"
+  },
+  "e/E31-noteheads.musicxml": {
+   "desktop": "046ebc7986b3baee",
+   "phone": "ef3b64f15a2268f6"
+  },
+  "e/E32-accidentals-cautionary.musicxml": {
+   "desktop": "b9a652e020f9fd9c",
+   "phone": "2c590c86b6ecb15b"
+  },
+  "e/E33-accidental-chord.musicxml": {
+   "desktop": "623c6f1f6f556782",
+   "phone": "252ed5bb3ce20140"
+  },
+  "e/E34-ledger-lines.musicxml": {
+   "desktop": "0586294a6b112425",
+   "phone": "b1c2bc1ba752ca19"
+  },
+  "e/E35-voice-and-piano.musicxml": {
+   "desktop": "d72b613c4e5859fc",
+   "phone": "a23be884060e1258"
+  },
+  "e/E36-pickup-implicit.musicxml": {
+   "desktop": "ba6adc2ce7496752",
+   "phone": "ae4b2d91a64fbe24"
+  },
+  "e/E37-long.musicxml": {
+   "desktop": "9d1cf315e3e15cc0",
+   "phone": "463817f473076f08"
+  },
+  "e/E38-recording-shape.musicxml": {
+   "desktop": "06fb24c24ee83919",
+   "phone": "f67c5c2d44b47fc3"
+  },
+  "e/E39-g3a-shape.musicxml": {
+   "desktop": "75253ade19bd945a",
+   "phone": "7b59dfc1a548ed9c"
+  },
+  "e/E40-arpeggio-gliss.musicxml": {
+   "desktop": "e81bdd215e2f11a3",
+   "phone": "c3fa94fab20fbdbb"
+  },
+  "golden/G01.sg.json": {
+   "desktop": "a8bd4ff6e71cdf14",
+   "phone": "5da43e4ca9db6767"
+  },
+  "golden/G02.sg.json": {
+   "desktop": "c7477441f9e73d1d",
+   "phone": "9f6fe07c04e312b0"
+  },
+  "golden/G03.sg.json": {
+   "desktop": "71a520bf486fc547",
+   "phone": "fbc08043ff139bf6"
+  },
+  "golden/G04.sg.json": {
+   "desktop": "3682f8c1012effd3",
+   "phone": "f7acc8978ad8eb8e"
+  },
+  "golden/G05.sg.json": {
+   "desktop": "486add6a26430b21",
+   "phone": "8bebf80de16b0b84"
+  },
+  "golden/G06.sg.json": {
+   "desktop": "333bb2cbcb7f1568",
+   "phone": "eb9d8aaf91213ade"
+  },
+  "golden/G07.sg.json": {
+   "desktop": "2424fd80f23efdff",
+   "phone": "8a5e56b7ba016014"
+  },
+  "golden/G08.sg.json": {
+   "desktop": "c58c4993f12b9045",
+   "phone": "69737f4064a49733"
+  },
+  "golden/G09.sg.json": {
+   "desktop": "5a74496e2d41f239",
+   "phone": "cc1e309e50757a70"
+  },
+  "golden/G10.sg.json": {
+   "desktop": "ca84301159d26400",
+   "phone": "fee26eb3755e910b"
+  },
+  "golden/G11.sg.json": {
+   "desktop": "a08701ad848b116b",
+   "phone": "c85acb8b5dda7683"
+  },
+  "golden/G12.sg.json": {
+   "desktop": "c96ee36dd6a3fd98",
+   "phone": "ccfca1a7f3c7b41a"
+  },
+  "golden/G13.sg.json": {
+   "desktop": "44f5123dc9d29467",
+   "phone": "4c60bf51efbfdd82"
+  },
+  "golden/G14.sg.json": {
+   "desktop": "8cfbf217b30807d4",
+   "phone": "6f021ad9679eddda"
+  },
+  "golden/G15.sg.json": {
+   "desktop": "709dd78b7459f942",
+   "phone": "b83f3b99f9e8bd87"
+  },
+  "golden/G16.sg.json": {
+   "desktop": "dbc9c7532fb310a3",
+   "phone": "750be5197bb24b6a"
+  },
+  "golden/G17.sg.json": {
+   "desktop": "3e2230ba9cad34d1",
+   "phone": "7d8636990d4a691e"
+  }
+ }
+}

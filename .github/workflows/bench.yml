@@ -30,6 +30,8 @@ jobs:
       - run: npm run test:engrave                    # G4a: render source, legacy.fromScore, NotationPlan and its ledger (G04)
       - run: node tests/engrave/tools/make-e-fixtures.js --check   # the E fixtures are the generator's (G04 §22.1)
       - run: node tests/engrave/tools/make-corpus.js --check       # the R corpus manifest is the rule's (G04 §22.2)
+      - run: node tests/engrave/tools/make-metrics.js --check      # G4b: the layout's glyph metrics are the pinned font's (G04 §18.2)
+      - run: node tests/engrave/tools/layout-hashes.js             # G4b: the committed layout hashes, on Linux too (A27)
       - run: node tests/engrave/tools/bench.js check --suite r     # L1 on the reference corpus against its baseline (G04 §21.5)
       - run: node tests/engrave/tools/bench.js check --suite e
       - run: node tests/engrave/tools/bench.js check --suite x
