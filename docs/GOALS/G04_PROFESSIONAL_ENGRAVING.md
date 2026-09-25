@@ -618,8 +618,8 @@ u*  = width(u) = W 인 u
 | 3 | tie | §13 | 음에 붙음 |
 | 4 | tuplet 괄호·숫자 | §12 | beam 쪽 또는 음표머리 쪽 |
 | 5 | articulation, 꾸밈 기호, fermata, tremolo | 음 쪽 (stem 반대) → skyline | staccato·tenuto가 가장 안쪽, accent, marcato, fermata가 가장 바깥 |
-| 6 | slur, glissando | §13 | articulation 바깥 (staccato·tenuto는 안쪽에 둠 — 관례) |
-| 7 | 운지, 안내 글자, 가사 | 운지: 1번 staff는 위, 2번 staff는 아래 (그래프 placement 우선). 안내 글자: 아래. 가사: 성부의 staff 아래 | 화음 운지는 세로로 쌓음 |
+| 6 | 운지 **(G4-L5, Lead 2026-09-25: articulation 다음, slur보다 먼저)** | 1번 staff는 위, 2번 staff는 아래 (그래프 placement 우선) — 음 곁에, phrase slur 안쪽 | 화음 운지는 세로로 쌓음. staccato·tenuto는 여전히 운지 안쪽 |
+| 7 | slur, glissando; 안내 글자, 가사 | slur·glissando: §13 **(G4-L5: 운지 다음 — slur가 운지를 비킨다)**. 안내 글자: 아래. 가사: 성부의 staff 아래 (안내 글자·가사는 G4d-1b) | slur는 articulation과 운지 바깥 (staccato·tenuto는 안쪽에 둠 — 관례) |
 | 8 | 셈여림, hairpin | 피아노 grand staff는 **두 보표 사이** (그래프가 placement·staff를 주면 그것) | 한 system에서 기준선 하나로 모음 |
 | 9 | pedal | 가장 낮은 피아노 보표 아래, system마다 기준선 하나 | |
 | 10 | 위쪽 줄: ottava, volta, 코드명, tempo, rehearsal, jump, 위쪽 words | 가장 높은 staff 위 | 안쪽에서 바깥: ottava → 코드명 → volta → tempo·rehearsal |
@@ -645,7 +645,7 @@ S1 기호는 가능한 한 붙은 대상 가까이. S2 system 안 같은 종류(
 
 ### 10.5 대체 동작
 
-- soft 제약을 못 지키면 바깥으로 민다. 기준 거리(staff에서 8 sp)를 넘으면 그래도 놓고 진단 `FAR_PLACEMENT`를 남긴다.
+- soft 제약을 못 지키면 바깥으로 민다. 기준 거리(staff에서 8 sp)를 넘으면 그래도 놓고 진단 `FAR_PLACEMENT`를 남긴다. **(G4-L5, Lead 2026-09-25)** 배치 함수(`skyline.js` `put()`)가 직접 남긴다: 놓인 항목의 staff 쪽 가장자리가 그 쪽 바깥 보표선에서 8 sp를 넘으면 그 항목의 id를 이름 댄다. §21.2의 `eg.layout.far_placements`로 센다(기록, baseline 대비 늘면 퇴행), 8 sp 너머인데 이름이 없는 항목은 `eg.layout.far_undiagnosed`(영목표). 운지는 따로 영목표 `eg.fingering.far`: 제 음과 그 사이에 서야 하는 것(음표·tie·tuplet·기호, 같은 기둥의 안쪽 운지, 보표)이 요구하는 것보다 먼 운지 (§35.18.3).
 - 같은 기준선에서 가로로 겹치는 글자(코드명, 셈여림): 코드명은 오른쪽으로 민다(지금 규칙과 같음), 셈여림은 한 단 더 바깥 기준선으로. 순서는 (x, 그래프 순서)로 정해 결정론적이다.
 - hard 제약을 공간을 늘려도 못 지키면 진단 `HARD_VIOLATION`(테스트에서 실패)을 남기고 그대로 그린다 — 화면을 비우지 않는다.
 
@@ -735,8 +735,8 @@ tie(같은 음높이를 잇는 소리 의미)와 slur(구절·레가토 표시)�
 
 - **모든 그래프 tie**를 그린다: head → head, 부분 화음 tie(이어지는 음만), 세로줄 넘기, **system 넘기**(앞 system 끝까지의 반쪽 + 다음 system 첫머리에서 시작하는 반쪽), 성부가 바뀌는 tie (from·to head를 직접 잇는다 — 사슬 이웃 규칙 O7을 쓰지 않는다).
 - 추론 악보의 마디 안 tie 숨김(O4)은 **G4-U2**가 정한다. 권고는 그린다: 앱은 그 음을 한 번 치고(2631) 한 번 누르기를 기대한다(6754). 그림이 두 번 치는 음을 보이면 연습 화면이 앱과 모순된다. tie가 가짜라면 고칠 곳은 그래프를 쓰는 G3/writer다.
-- **방향**: 음 하나 — stem 반대. 화음 — 가운데 줄을 기준으로 위쪽 머리들은 위로, 아래쪽 머리들은 아래로, 가운데 줄 머리는 stem 반대; 여러 성부 — 위 성부 위, 아래 성부 아래 (그래프에 방향 필드가 없으므로 규칙).
-- **끝점**: 음표머리 옆(머리 가운데에서 0.2 sp), 점이 있으면 점 뒤. 최소 길이 1.5 sp (§9.3의 rod가 보장).
+- **방향**: 음 하나 — stem 반대. 여러 성부 — 위 성부 위, 아래 성부 아래 (그래프에 방향 필드가 없으므로 규칙). 화음(한 성부) — **(G4-L4, Lead 2026-09-25)** 보표의 가운데 줄이 아니라 **그 머리의 제 화음 안 자리**로 정한다 (묶인 머리든 아니든 화음의 모든 머리를 센다): 맨 위 머리의 tie는 위로, 맨 아래 머리의 tie는 아래로 (바깥 tie는 화음에서 멀어지게), 위 절반의 머리는 위로, 아래 절반은 아래로, 머리 수가 홀수면 정확히 가운데 머리는 stem 반대. (G4d-1a까지의 "가운데 줄 위의 머리는 위로" 규칙은 코퍼스의 tie 달린 화음 42개 중 35개에서 모든 tie를 한쪽으로 휘게 했다.) system을 넘는 tie의 두 반쪽은 떠나는 머리의 규칙 하나로 휜다.
+- **끝점**: 음표머리 옆(머리 가운데에서 0.2 sp), 점이 있으면 점 뒤. 최소 길이 1.5 sp (§9.3의 rod가 보장). **(G4-L4, Lead 2026-09-25)** 모든 tie 끝은 **화음의 다른 어느 머리보다 제 머리에 더 가깝다** — 2도로 stem 너머에 비킨 머리를 포함해서; 비킨 머리의 tie는 그 머리 곁에서 시작하고 끝난다. A22의 "화음 앞면까지 잰다" 허용(G4-D1a-5)은 이 더 엄격한 검사로 바뀐다; 기준 0.5 sp는 그대로.
 - 높이: 길이에 비례, 0.5–1.2 sp.
 
 ### 13.2 Slur
@@ -2830,7 +2830,7 @@ G4b·G4c의 틀 그대로 (CRLF 사본, anchor 정확히 한 번, 출력이 바�
 
 ## 35. G4d-1a 구현 기록 — 곡선, 음에 붙는 기호, 배치 함수, 글자 metric
 
-Implementer, 2026-09-25. 브랜치 `g4d1a-curves-marks` (`D:/PPP-g4`), 시작 `d4b5b86` (= `origin/main`, G4c 마감 뒤). 입력은 Lead의 G4d-1a 지시(roadmap §14 카드, §5.1 G4d 행, G4-L3)다. 병합하지 않았고 PR도 없다 (Lead가 리뷰와 PR을 정한다). 결정은 DECISIONS G4-D1a-1–13.
+Implementer, 2026-09-25. 브랜치 `g4d1a-curves-marks` (`D:/PPP-g4`), 시작 `d4b5b86` (= `origin/main`, G4c 마감 뒤). 입력은 Lead의 G4d-1a 지시(roadmap §14 카드, §5.1 G4d 행, G4-L3)다. 병합하지 않았고 PR도 없다 (Lead가 리뷰와 PR을 정한다). 결정은 DECISIONS G4-D1a-1–13; 독립 리뷰(NEEDS_FIX, MAJOR 3)와 그 Fixer는 §35.18, G4-D1a-14–23.
 
 **한 줄**: EngravedScore가 음에 붙는 것을 그린다 — 그래프의 모든 tie(부분 화음, 세로줄, system 넘김의 반쪽 둘, 성부 바뀜, 추론한 마디 안 tie), 그래프 짝 그대로의 slur, glissando, articulation·꾸밈 기호·fermata(음·쉼표·세로줄)·tremolo, 인쇄 운지, arpeggio, notehead 모양과 괄호, 주의·괄호 임시표 — 모두 **하나의 배치 함수**(`skyline.js` `put()`)로 §10.2 순서 3–7에 따라 놓는다. 글자 폭은 새 `engrave/metrics-text.js` 표에서만 읽는다. G4c 리뷰가 넘긴 음 수준 일 넷(보표 밖 쉼표의 덧줄, beam 옆 tuplet 숫자, `plan/2`·`engr/2`와 그 규칙, E12의 증1도 unison)도 닫았다. **사용자에게 보이는 변화는 없다**: 앱 파일·`index.html`·`server.js`·`scoregraph/`는 바이트 그대로이고 앱은 새 모듈을 불러오지 않는다 (legacy parity 16/16).
 
@@ -2954,10 +2954,10 @@ G4b·G4c의 mutation 29개(M1–M7(M7a·b), M9–M11(M11a·b), M16–M18(M18a–
 1. **§13.2 stem 쪽 slur 끝점**: "머리에서 stem 길이의 2/3" 대신 stem 끝(flag·beam) 너머 0.25 sp — 2/3 지점에서 시작하면 flag·beam과 부딪혔다 (G4-D1a-6).
 2. **§13.2 slur 모양**: 두 제어점을 같이 올리지 않고 따로 — 한쪽 끝 가까이의 높은 음을 넘을 때 끝을 덜 옮긴다. 반쪽의 자유 끝도 끝 앞 음의 높이를 따른다. 처음의 대칭 포물선·평평한 반쪽으로는 `SLUR_COLLIDES`가 E + 코퍼스 두 config에서 72, 지금 15.
 3. **G4-C6의 "tuplet은 언제나 보표 밖"**: 괄호 없는 숫자는 beam 옆, 보표 안이라도 (Lead가 G4d-1a에 준 M2).
-4. **A22의 tie 끝점**: 2도로 stem 너머에 비킨 머리, 또는 화음의 임시표가 tie 높이를 덮는 머리는 그 앞면까지 잰다 — tie는 stem·다른 머리·임시표를 넘을 수 없다 (코퍼스 7쌍, G4-D1a-5). 기준 0.5 sp는 그대로.
+4. **A22의 tie 끝점**: 2도로 stem 너머에 비킨 머리, 또는 화음의 임시표가 tie 높이를 덮는 머리는 그 앞면까지 잰다 — tie는 stem·다른 머리·임시표를 넘을 수 없다 (코퍼스 7쌍, G4-D1a-5). 기준 0.5 sp는 그대로. — **G4-L4로 대체됨** (§13.1, §35.18.2): 앞면 허용은 없어지고 "화음의 다른 머리보다 제 머리에 더 가까움"을 잰다.
 5. **A22의 slur 1 %**: suite(bench) 합의 비율로 판정하고 곡마다의 비율은 기록만 — slur가 몇 개 안 되는 곡에서 하나가 넘으면 곡 비율은 1 %를 넘는다 (G4-D1a-11).
 6. **§18.3 운지의 글꼴 역할**: §18.3은 셋(serif, sans, mono)을 적고 운지를 어디에도 두지 않았다 — sans(Figtree)로 (G4-D1a-2).
-7. **§10.2 순서 7 운지**: 순서 그대로 slur 바깥이다 — 긴 phrase slur 아래의 운지가 음에서 멀어진다 (예: czerny849/013·020). Gould는 운지를 slur 안쪽에 두기도 한다. 바꾸지 않았고 M-H1에서 본다.
+7. **§10.2 순서 7 운지**: 순서 그대로 slur 바깥이다 — 긴 phrase slur 아래의 운지가 음에서 멀어진다 (예: czerny849/013·020). Gould는 운지를 slur 안쪽에 두기도 한다. 바꾸지 않았고 M-H1에서 본다. — **G4-L5로 대체됨** (§10.2 순서 6, §35.18.3): 운지는 slur보다 먼저, 음 곁에 놓인다.
 
 ### 35.11 Acceptance
 
@@ -3019,6 +3019,8 @@ G4b·G4c의 mutation 29개(M1–M7(M7a·b), M9–M11(M11a·b), M16–M18(M18a–
 
 L1은 나빠지지 않았고(baseline은 키만 더함) L2 영목표는 전부 0이다. **bless 이유**: G4d-1a가 곡선과 음에 붙는 기호를 그리고, 괄호 없는 tuplet 숫자와 보표 밖 쉼표를 고치고(G4c 리뷰 M1·M2), 버전을 올렸기 때문 (G4-D1a-1).
 
+(리뷰 R8의 기록 정정, Fixer §35.18.6) LEDGER_CHANGE 92쌍 가운데 **77쌍은 새로 그린 것만이 아니라 이미 있던 객체도 움직였다** (세로 배치: 새 곡선·기호가 staff skyline을 바꿔 보표·system 간격이 달라짐 — 리뷰의 `rebless-audit.js`, 이미 있던 머리 27,211·stem 23,499·덧줄 11,540 등). 분류 도구는 한 쌍에 한 등급만 주므로 이 움직임은 LEDGER_CHANGE 안에 들어 있다.
+
 ### 35.15 Fixture
 
 `make-e-fixtures.js --check` PASS. 바꾼 넷: **E09** 5마디(모든 세로줄에 tie, 왼손 8분) — 데스크톱·휴대폰 모두 tie 하나가 system을 넘는다; **E12** 3마디 증1도 unison (§35.7); **E13** 3마디 — 아래 성부 2분쉼표가 위 성부의 낮은 음 밑, 보표 밖으로; **E15** 3마디 — trill, 뒤집힌 mordent, turn + detached-legato, tremolo + 숨표, 마지막 세로줄 fermata. `e-fixtures.test.js`가 새 내용을 확인한다.
@@ -3043,6 +3045,161 @@ L1은 나빠지지 않았고(baseline은 키만 더함) L2 영목표는 전부 0
 **커밋**: `4327a2c` (코드·테스트·fixture·baseline·layout hash·CI의 `make-text-metrics --check --fetch`), `41c7ca8` (`layout-hashes.js --write`의 버전 규칙 guard — 도구만; `layout-hashes.js`와 `layout.test.js`를 다시 돌려 PASS), 이어서 이 기록 (G04 §35, 목차; DECISIONS G4-D1a-1–13; CURRENT_STATE). `origin/g4d1a-curves-marks`에 push. 병합 안 함, PR 없음.
 
 **상태: G4d-1a READY_FOR_REVIEW** — BLOCKER 0, MAJOR 0 (자체 판정).
+
+### 35.18 리뷰와 Fixer (2026-09-25–26)
+
+입력: G4d-1a 독립 리뷰 (read-only, 대상 `7c83bc9`; 증거는 리뷰 scratchpad `g4d1a-review/`의 `tools/`·`logs/`·`png/`)의 판정 **NEEDS_FIX — BLOCKER 0, MAJOR 3, MINOR 5**. 리뷰가 확인한 것: 약해진 gate 없음, re-bless는 정직함, Windows = Linux = Chrome, 성능은 선형. Lead의 Fixer 지시: MAJOR R1–R3을 고치고, 명세를 고치는 Lead 결정 둘(**G4-L4** 화음의 tie 방향과 끝, **G4-L5** 운지는 slur 안쪽 — 이 문서에서 고친 곳에 "(G4-L4, Lead 2026-09-25)"·"(G4-L5, …)"로 표시: §10.2 순서 6–7, §10.5, §13.1, §35.10 4·7)을 적용하고, 작은 일 둘(R4 글자 metric CI, R8 guard)을 한다. 나머지는 Lead가 다른 곳에 맡겼다 (§35.18.11). 같은 worktree `D:/PPP-g4`, 브랜치 `g4d1a-curves-marks`, 시작 `7c83bc9`. 리뷰의 스크립트는 생각만 빌렸고 (`chord-ties.js`로 전후를 셈), 커밋한 metric·fixture·mutation은 새로 썼다. `scoregraph/`·앱 파일·`index.html`·`server.js`·재생·카탈로그는 바이트 그대로다. 결정은 DECISIONS G4-D1a-14–23.
+
+"지금"의 수는 모두 E 40 + 코퍼스 347 + golden 17 = 404곡 × 두 config = 808 layout (따로 적지 않으면), "`7c83bc9`"의 수는 `7c83bc9`의 `engrave/`로 **오늘의 입력**(바뀐 fixture 포함)을 배치해 오늘의 `l2.js`로 잰 것이다.
+
+#### 35.18.1 지적과 처리
+
+| # | 지적 (리뷰) | 처리 | 어디 |
+| --- | --- | --- | --- |
+| R1 (MAJOR) | 화음의 tie 방향: §13.1의 가운데 줄 규칙이 화음의 모든 tie를 한쪽으로 휘게 한다 (코퍼스 tie 달린 화음 42 중 35, burgmuller25/015 마지막 마디); 2도로 비킨 머리의 tie 끝이 애매하다 (sonatina/020 ×4, /022, /024, /028) — A22가 화음 앞면까지 재서 못 봄 | **FIXED** — G4-L4를 `marks.js`와 `l2.js`에; tie 끝은 제 머리에 가장 가깝게; A22 앞면 허용 없앰; mutation TH, TD | §35.18.2 |
+| R2 (MAJOR) | §10.5 `FAR_PLACEMENT` 없음; 운지가 phrase slur 위에 서서 음에서 멂 (코퍼스 운지 9,958 중 190이 보표에서 8 sp 넘게, 최대 14.1 sp czerny849/023 — 이 Fixer의 셈으로는 198) | **FIXED** — G4-L5 (운지를 slur보다 먼저), `put()`의 `FAR_PLACEMENT`, `eg.layout.far_placements`·`far_undiagnosed`, 영목표 `eg.fingering.far`; mutation FS, FP | §35.18.3 |
+| R3 (MAJOR) | layout hash로만 잡히거나 아무것도 못 잡는 규칙: RV26 점을 지나는 tie, RV25 화음 임시표를 지나는 tie 끝, RV23 slur 가운데 조각, RV8b glissando 끝 높이, RV9 운지 폭의 간격, RV20·RV20c slur 쪽, RV19 fermata 모양 | **FIXED** — 이름 붙은 metric 다섯(+ glissando 높이), fixture E08·E10·E11·E15·E23, 살아 있는 mutation 여덟 | §35.18.4 |
+| R4 (MINOR) | 글자 metric CI 단계가 모든 PR을 network에 묶음 (`bench.yml:35`, `--fetch` 제한 시간 없음) | **FIXED** — PR은 `--check`(network 없음), 다시 만들기는 nightly `--strict`, 제한 시간, "skipped (network)" | §35.18.5 |
+| R8 (MINOR) | `layout-hashes.js --write`가 origin/main과 못 비교하면 "could not check"라 하고 그래도 씀; `PLAN_VERSION`을 안 봄; §35.14의 LEDGER_CHANGE 92쌍 중 77이 기존 객체도 옮겼음 | **FIXED** — fail closed, plan hash; 기록 정정은 §35.14에 | §35.18.6 |
+| R5, R6, R7 (MINOR) | 괄호 임시표가 flat보다 짧음; 짧은 반쪽 slur·갈고리 모양 두 음 slur; 곡마다 slur hit 최대 12.5 % | **Lead가 맡김** — 손대지 않음 (R6·R7의 수는 이 Fixer로 바뀜, §35.18.3) | §35.18.11 |
+
+#### 35.18.2 R1 — G4-L4: 화음의 tie 방향과 끝 (`engrave/marks.js`, `curves.js` `TIE`, `layout.js`; G4-D1a-14, 15)
+
+- **방향** (§13.1 as amended): 두 성부면 성부 역할, 음 하나면 stem 반대, 화음이면 그 머리의 **제 화음 안 자리** — plan의 머리 순서(적힌 음의 staff 자리, 그 staff의 머리 전부)로 센다: 위 절반 위, 아래 절반 아래, 홀수 화음의 가운데는 stem 반대. layout은 이것을 plan에서 읽는다(`prepare`가 marks pass에 머리마다 `step`을 넘김) — 그래서 system을 넘는 tie의 두 반쪽이 **떠나는 머리**의 규칙 하나로 휜다 (떠나는 머리의 마디가 배치되지 않은 가까이 보기 창에서는 닿는 머리). `7c83bc9`는 반쪽마다 그 system에 있는 머리로 정했다.
+- **끝점**: 먼저 `7c83bc9`의 자리(바깥 머리면 머리 위·아래 곁, 아니면 그 높이에서 event가 그린 것 너머, 머리 가운데에서 0.25 sp). 그 자리가 **제 머리(시작은 그 줄의 점과, 그 높이에 닿는 제 flag까지)에서 0.45 sp 안이고 화음의 다른 어느 머리보다 0.05 sp 넘게 가깝지** 않으면, 머리 가운데에서 0.05 sp씩 바깥으로(머리 가장자리 + 0.15 sp까지) 옮기며 x를 그 높이에서 다시 정한다 — 비킨 2도의 이웃 머리나 화음의 임시표가 그 높이를 벗어날 때까지. 808 layout에서 옮겨진 끝은 18: 0.1 sp 12 (sonatina/020 ×4, /022, E08 셋째 마디 — 두 config), 0.4 sp 6 (sonatina/024·/028의 화음 임시표, E08 여섯째 마디). 맞는 자리를 못 찾은 끝은 0.
+- **flag** (G4-D1a-15): G4-L4가 stem 쪽으로 돌린 tie가 flag 달린 음에서 떠나면 flag를 지나 시작한다 — 점 뒤에서 시작하는 것과 같다. 그래서 A22는 시작을 머리·그 줄의 점·**그 높이에 닿는 제 flag**까지 잰다. 코퍼스에 한 곳: sonatina/019 6마디(`m13`)의 3도 화음(8분, stem 위)의 위 tie (두 config). flag를 넣지 않으면 1.08 sp로 A22를 넘는다; flag를 지나지 않으면 tie가 flag를 가로지른다 (§35.18.11에 적음 — Lead가 받아들일지 볼 곳).
+- **`l2.js`**: `eg.tie.dir_err`는 G4-L4를 그려진 화음(한 system·staff의 그 event 머리, 세로 순서)에서 따로 셈 — 떠나는 머리가 그려졌으면 그 규칙; A22 끝점 검사는 제 머리(시작은 점·flag)까지 0.5 sp 이하 **그리고** 화음의 다른 머리보다 가까움 (G4-D1a-5의 앞면 허용 없앰); 새 `eg.tie.crossings` — tie 곡선이 제 두 음이 그린 머리·stem·flag·점·임시표를 지남.
+
+| metric | `7c83bc9` | 지금 | 잡는 mutation |
+| --- | --- | --- | --- |
+| `eg.tie.dir_err` (G4-L4) | **116** | 0 | TH (26), MT (17) |
+| `eg.tie.endpoint_err` (제 머리에 가장 가까움, 0.5 sp) | **18** = 리뷰의 7화음 × 2 + 새 E08 4 | 0 | TD (4) |
+| `eg.curve.endpoint_err_max` (A22, ≤ 0.5) | 1.35 | 0.27 (비킨 2도의 끝: stem 0.12 + 0.15) | — |
+| `eg.tie.crossings` | **1** (sonatina/024 휴대폰: system 넘는 tie `s2759`의 뒤 반쪽이 거꾸로 그려져 화음의 ♯을 지남) | 0 | RV26 (2), RV25 (2) |
+
+  리뷰의 `chord-ties.js` (tie 둘 이상인 화음, 데스크톱, 코퍼스 + E): `7c83bc9` 45 중 **38**이 모든 tie를 한쪽으로 (코퍼스 35 + 새 E08 3), 2도 이웃이 같은 쪽 6 → 지금 **0**, 0.
+- **fixture E08** (마디 2–6): 네 머리 화음 통째 tie (C5–E5–G5–C6, stem 아래: 위 둘 위, 아래 둘 아래), 2도가 있는 세 머리 (E4–G4–A4, stem 위, A4가 비킴: 위 · stem 반대인 가운데 아래 · 아래), 점 붙은 세 머리 (B4–D5–F5, tie는 점 뒤), D5–F♯5 화음의 D5 tie가 세로줄을 넘어 ♯이 있는 화음으로 (끝이 ♯ 아래로 비켜 D5 곁에). `marks.test.js` A5가 두 폭에서 방향 문자열·점 비킴·♯ 비킴을 고정.
+- **mutation**: TH — 화음의 절반 규칙을 뒤집음 → `eg.tie.dir_err` 26 (E08, burgmuller25/015); TD — 끝 맞추기를 끔(처음 자리가 늘 맞다고 함, 곧 `7c83bc9`) → `eg.tie.endpoint_err` 4 (E08); MT는 새 규칙의 anchor로 옮김.
+
+#### 35.18.3 R2 — G4-L5: 운지는 slur 안쪽, §10.5 `FAR_PLACEMENT` (`marks.js`, `curves.js` `SLUR`, `skyline.js`; G4-D1a-16, 17, 18)
+
+- **순서** (§10.2 as amended): tie → tuplet → articulation·꾸밈 기호·fermata·tremolo → **운지** → slur·glissando (→ G4d-1b의 것). staccato·tenuto는 여전히 운지 안쪽.
+- **slur가 운지를 비킴**: slur 끝은 제 음의 운지(어디 서든)와 끝 x ± 0.1 sp에 걸친 다른 음의 운지 바깥 0.25 sp; 호는 skyline(운지 포함)을 넘는다. 끝 0.5 sp 안(끝 음의 몫으로 빼던 칸)의 운지는 **hard 칸**으로 넘긴다 — 여유 없이(두께 반 + 0.05 sp) 가로지르지만 않게 (`curves.js` `TOUCH`); 가파르게 오르는 slur가 끝 음의 운지 모서리를 자르던 것 (sonatina/001·017·023, 8곳).
+- **한쪽 끝을 더 멀리** (G4-D1a-16): 운지가 음 곁에 오면 높은 음 위를 지나는 긴 phrase slur가 더 높이 가야 한다. 두 끝을 함께 0.5 sp씩 6번(`TRIES`) 옮겨도 안 되면, 한 끝은 `TRIES` 안에 두고 다른 끝을 `SPREAD` = 20번(10 sp)까지 — 옮긴 합이 적은 것부터. 12 slur가 이것으로 풀림 (끝 하나를 최대 7 sp; czerny849/013 `s1927`의 끝 반쪽 — 끝에서 오르는 음계 뒤의 낮은 마지막 음). 첫 6번에 풀리는 slur의 모양은 `7c83bc9`와 같다.
+- **`FAR_PLACEMENT`** (§10.5 as amended): `Skyline`이 선택 `{edges: [0, 마지막 줄], far: 8, diag}`를 받고 `put()`이 놓인 항목의 staff 쪽 가장자리가 그 쪽 바깥 줄에서 8 sp를 넘으면 `{code: 'FAR_PLACEMENT', refs: [항목 id]}`를 남긴다 (marks pass의 모든 `put()`이 id를 넘김; tuplet은 tuplet id). `eg.layout.far_placements`(§21.2, 기록 — `bench.js` LOWER ratchet), `eg.layout.far_undiagnosed`(8 sp 너머인데 그 id를 이름 대는 진단이 없는 배치 항목, 영목표). 지금 37 (r 16, e 2, x 0 = baseline): 모두 덧줄 많은 높은 음 곁의 운지·기호 (czerny849/007, 017, 019, 021, 023, sonatina/007, 010, E23의 A7) — slur 때문인 것은 0.
+- **`eg.fingering.far`** (G4-D1a-18, 영목표): 운지는 제 음에서 **그 사이에 서야 하는 것이 요구하는 만큼보다 멀지 않다** — 그 x(양쪽 skyline 칸 0.25 sp 더)에서 제 staff의 음 요소(어느 성부든), tie, tuplet 숫자·괄호, 기호(articulation·꾸밈 기호·fermata·tremolo), **같은 기둥**(같은 마디·시각)의 운지(화음·다른 성부의 쌓인 운지), 그리고 보표 자체(운지는 보표 밖) — 그 바깥 끝에서 운지까지가 0.3 sp(음에서의 pad) + 0.02를 넘으면 하나. slur·glissando는 이유가 되지 않고(뒤에 오며 운지를 비킨다), 다른 기둥의 운지도 아니다(간격이 기둥마다 운지 폭을 준다, §9 — RV9). 근거: G4-L5의 "음 곁"을 곧 놓이는 규칙대로 적은 것 — 고정 거리(예: 머리에서 2 sp)는 쌓인 화음 운지와 덧줄 음에서 틀리고, `FAR_PLACEMENT`만으로는 slur 위로 1–7 sp 올라간 운지를 못 본다.
+
+| metric | `7c83bc9` | 지금 | 잡는 mutation |
+| --- | --- | --- | --- |
+| `eg.fingering.far` | **8,065** | 0 | FS (137), RV9 (3) |
+| `eg.layout.far_undiagnosed` | **371** (진단 자체가 없음) | 0 | FP (2) |
+| `eg.layout.far_placements` (기록) | 0 (진단 없음) | 37 | — |
+| 코퍼스 운지(데스크톱 9,958) 중 보표에서 8 sp 넘게 | 198, 최대 14.16 sp (czerny849/023), 평균 2.92 | 16 (모두 `FAR_PLACEMENT`, 높은 음 곁), 최대 10.81, 평균 1.75 | — |
+| `SLUR_COLLIDES` (진단) | 15 | 1 (burgmuller25/013 휴대폰 `s729`, `7c83bc9`에도 있음) | — |
+| `eg.curve.hits` (안쪽 머리·stem을 지나는 slur) | 9 | 1 (위 `s729`, 진단됨) | — |
+| `eg.slur.endpoint_err` (운지가 끝 아래에 서는 G4-L5 뜻으로) | 40 | 0 | MS |
+| `eg.overlap.text` | 0 | 0 (hard 칸 전에는 10) | M8 |
+
+- **fixture E23** (마디 2–3): phrase slur 아래 운지 붙은 16분 여덟 — "4-3"·"2-1"(손가락 바꿈)은 머리보다 넓다 — 과 A7(보표 위 8.8 sp의 운지 → `FAR_PLACEMENT` 하나). `marks.test.js` A7이 운지가 음과 slur 사이, 넓은 운지가 이웃과 떨어짐, `FAR_PLACEMENT`가 그 운지 하나를 이름 댐을 고정.
+- **mutation**: FS — 운지 블록을 함수로 싸서 slur·glissando 뒤에 부름(G4-L5 되돌림) → `eg.fingering.far` 137 (E23, czerny849/005); FP — `put()`의 진단을 끔 → `eg.layout.far_undiagnosed` 2 (E23).
+- **본 것** (§35.18.10): czerny849/005·020·023 — 운지가 음 곁, slur가 그 바깥 (전에는 slur 위 2–6 sp); burgmuller25/015. **관찰** (고치지 않음, M-H1): stem이 위인 음의 운지는 그 x에 beam이 없으면(beam 묶음의 첫 음) stem 옆 머리 바로 위에 선다 — 운지가 머리 가운데에 맞춰지고 stem은 그 x 밖이기 때문(G4-D1a-7의 규칙 그대로; `7c83bc9`에서는 slur가 모두 밀어 올려 가려져 있었다, czerny849/023 PNG).
+
+#### 35.18.4 R3 — 이름 붙은 metric과 fixture (`tests/engrave/l2.js`, `make-e-fixtures.js`; G4-D1a-19)
+
+| 리뷰 | 규칙 | metric | `7c83bc9` | 지금 | mutation (값) | fixture |
+| --- | --- | --- | --- | --- | --- | --- |
+| RV26 | tie는 점 뒤에서 (§13.1) | `eg.tie.crossings` | 0 (점을 지나는 것) | 0 | RV26 (2) | E08 4마디 |
+| RV25 | tie 끝은 화음의 임시표 앞 | `eg.tie.crossings` | 1 (임시표를 지나는 것: sonatina/024 휴대폰) | 0 | RV25 (2) | E08 5–6마디 |
+| RV23 | 3 system 이상 넘는 slur는 그 사이 system마다 가운데 조각 하나 | `eg.slur.missing` (한 system `whole`, 넘으면 `start` + 사이마다 `mid` + `end`, 한쪽만이면 그 반쪽 — 더도 덜도 아님) | 0 | 0 | RV23 (2) | E11 3–8마디 (두 폭에서 3 system 이상) |
+| RV8b | glissando는 두 음높이를 잇는다 | `eg.gliss.errors`에 끝 높이: 두 끝이 제 머리 가운데 ± 0.25 sp (staff를 넘으면 떠나는 staff의 높이) | 0 | 0 | RV8b (4) | E40 |
+| RV9 | 운지 폭이 간격에 들어감 (§9) | `eg.fingering.far` (다른 기둥 운지에 밀린 운지) | 8,065 | 0 | RV9 (3) | E23 2마디 |
+| RV20, RV20c | §13.2의 slur 쪽: placement → 성부 역할 → 걸친 성부 음의 stem이 모두 위면 아래, 아니면 위 | `eg.slur.side_err` (l2가 다시 셈) | 0 | 0 | RV20 (2), RV20c (4) | E10 2마디(stem 모두 위), 3마디(두 성부, 각 slur) |
+| RV19 | fermata 모양 (normal, angled, square) | `eg.mark.glyph_err`: articulation은 쪽에 맞는 SMuFL glyph(고정 글꼴에 없으면 그 대체만), detached-legato는 staccato + tenuto, 꾸밈 기호는 plan이 이름 댄 glyph, fermata는 모양 | 0 | 0 | RV19 (4) | E15 3마디 (angled, square) |
+
+  모두 `bench.js` ZERO와 `layout.test.js` ZERO_L2 (808 layout 전부 0이어야 통과). `marks.test.js` "negative controls"가 실제 layout을 망가뜨려 아홉 metric(방향·끝·crossing·missing·side·gliss 높이·glyph·fingering.far·far_undiagnosed)이 제 결함을 찾음을 보인다. E fixture는 40개 그대로 (§22.1), 바뀐 것은 E08·E10·E11·E15·E23 — `make-e-fixtures.js --check` PASS, `e-fixtures.test.js`가 새 내용(tie 12, fermata 5, 운지 18)을 셈.
+- **layout mutation 전체** (`layout-mutation.test.js`, CRLF 사본, anchor 한 번, 출력이 바뀌고 이름 붙은 metric이 같은 probe에서 원래 0): 새 열둘 — TH, TD, FS, FP, RV8b, RV9, RV19, RV20, RV20c, RV23, RV25, RV26 — 모두 잡힘; G4b–G4d-1a의 51개 그대로 (MT·MW는 바뀐 코드의 anchor로 옮김), N1·N2 바이트 동일. 새 probe: E08, E11. 약 35 s.
+
+#### 35.18.5 R4 — 글자 metric의 CI (`make-text-metrics.js`, `.github/workflows/bench.yml`; G4-D1a-21)
+
+- **PR gate** (`gate` job): `make-text-metrics.js --check` — network 없음: 표의 형식과 digest는 언제나, 글꼴이 캐시에 있으면 다시 만들기까지 (CI에는 없으므로 "rebuild skipped (the fonts are not cached; …)"라고 말하고 PASS).
+- **nightly job**: `make-text-metrics.js --check --fetch --strict` — 고정 글꼴을 받아 바이트 비교; 다시 만들기가 돌지 못하면(받기 실패, 제한 시간) FAIL.
+- **받기**: 글꼴 하나에 `AbortSignal.timeout(30 s)`; 실패는 "rebuild skipped (network): …"(제한 시간이면 "no answer in 30 s")로 늘 말한다 — 조용히 통과하지 않는다.
+- **음성 대조** (Windows, 글꼴 캐시를 치우고, 받는 주소만 바꾼 임시 사본): DNS 실패 `--check --fetch` → PASS + "skipped (network): fetch failed", `--strict` → FAIL exit 1; 닿지 않는 주소(제한 시간 3 s로) → "no answer in 3 s", `--strict` → FAIL exit 1; 캐시 없는 `--check --strict` → FAIL. 진짜 받기 `--check --fetch --strict` → PASS (바이트 같음).
+
+#### 35.18.6 R8 — `layout-hashes.js --write`의 지킴이 (G4-D1a-22)와 기록 정정
+
+- **파일**: `version`(engr)과 함께 **`planVersion`과 곡마다 plan hash**(`plans`)를 싣는다. A27 테스트와 `layout-hashes.js`(검사)는 plan hash도 비교한다 — Linux에서도 같음.
+- **기준**: origin/main과의 merge base에 있는 파일. 거기 plan hash가 없으면(`d4b5b86`처럼) 그 commit의 `engrave/`·`scoregraph/`를 파일마다 `git show`로 꺼내 같은 graph의 plan hash를 셈. **fail closed**: git이나 origin/main이 없거나 merge base가 파일보다 오래되었으면(낡은 origin/main) 기준은 **여기 커밋된 파일**이 되고, 버전이 그것에서 움직였을 때만(또는 아무것도 다르지 않을 때만) 쓴다. 거절하면 이유를 말하고 exit 1, 아무것도 안 씀.
+- **규칙**: 같은 `engr` 버전 아래 layout hash가 다르면 거절; 같은 `planVersion` 아래 plan hash가 다르면 거절; 기준의 plan 버전이나 plan hash를 알 수 없으면 거절 (fail closed).
+- **음성 대조** (scratch clone, `refs/remotes/origin/main`을 바꿔 가며; Windows, 그리고 Docker Linux에서 B2·F):
+
+| # | origin/main | 바꾼 것 | 결과 |
+| --- | --- | --- | --- |
+| A | `d4b5b86` (진짜) | 없음 | 씀 (engr/1 → 3, plan/1 → 2), 파일 그대로 |
+| D | `d4b5b86` | `VERSION`을 engr/1로 | **거절** — 236 hash, 같은 engr/1 |
+| B1 | `a0bc2ea` (파일 이전, 낡음) | 없음 | fail closed, 아무것도 안 다름 → 씀 (파일 그대로) |
+| B2 | `a0bc2ea` | tie gap 0.15 → 0.2, engr/3 그대로 | **거절** — 24 hash, 커밋된 파일 기준 (Linux도) |
+| B2-old | `a0bc2ea` | 같은 것, `7c83bc9`의 도구로 | "could not read … not checked" 하고 **씀** — 리뷰가 본 결함 |
+| B3 | `a0bc2ea` | 같은 것 + engr/4 | 씀 |
+| B4 | `a0bc2ea` | plan 출력에 필드 하나, plan/2 그대로 | **거절** — plan 118 |
+| B5 | `a0bc2ea` | 같은 것 + plan/3 (+ engr/4, planKey가 바뀌므로) | 씀 |
+| E | 없음 | tie gap, engr/3 그대로 | **거절** — 커밋된 파일 기준 |
+| F | `d4b5b86` | `PLAN_VERSION`을 plan/1로 | **거절** — plan 118 (기준 plan은 `d4b5b86`의 제 코드로 셈; Linux도) |
+| F3 | `d4b5b86` | `d4b5b86`의 `engrave/`·`scoregraph/` 자체 | plan 차이 없음 (대조); layout 16 거절 — 그 뒤 바뀐 fixture 8개 |
+
+  (처음 구현은 `git archive | tar`였고 Windows의 MSYS tar가 `C:`를 host로 읽어 F가 "알 수 없음"으로만 거절됐다 — 파일마다 `git show`로 고침, `e11337b`.)
+- **기록 정정** (리뷰 R8의 둘째 부분, 문서만): §35.14에 "LEDGER_CHANGE 92쌍 중 77쌍은 이미 있던 객체도 움직였다(세로 배치)"를 더했다.
+
+#### 35.18.7 `bench.js`와 baseline (G4-D1a-20)
+
+- `compare()`는 이름에 `ratio`가 든 metric을 모두 "클수록 좋음"으로 읽었다 — `eg.curve.hit_ratio`(작을수록 좋음, A22)가 오르면 통과하고 내리면 퇴행이었다. `eg.curve.hit_ratio`를 LOWER에 넣고 LOWER는 클수록-좋음에서 뺀다. `eg.layout.far_placements`도 LOWER.
+- baseline r·e·x (`bench.js baseline` 뒤 git diff): 새 키 일곱(`eg.tie.crossings`, `eg.slur.missing`, `eg.slur.side_err`, `eg.mark.glyph_err`, `eg.fingering.far`, `eg.layout.far_undiagnosed` = 0, `eg.layout.far_placements` = r 16 / e 2 / x 0); 내린 값: r `eg.curve.hits` 3 → 0, `eg.curve.hit_ratio` 0.0016 → 0 (G4-L5의 slur 맞추기); 오른 값 둘은 이유가 있다: `eg.curve.slurs`(기록, e 10 → 20: 새 fixture의 slur), `eg.curve.endpoint_err_max`(MAXIMA ≤ 0.5, e·r 0.15 → 0.27: G4-L4가 앞면 허용을 없애 같은 끝을 제 머리까지 잼). 영목표·비율은 모두 0·1.
+
+#### 35.18.8 버전과 re-bless (§21.3; G4-D1a-23)
+
+- **버전**: layout 출력이 검토된 `7c83bc9`(engr/2)에서 바뀌었으므로 Lead 지시의 G4-D1a-1 읽기대로 `engr/2` → **`engr/3`**. plan 출력은 그대로 — 404곡의 plan이 `7c83bc9`의 것과 바이트 같음 — 이므로 **`plan/2` 유지**. `layout.test.js`·`marks.test.js`의 버전 검사를 engr/3으로.
+- **`layout-diff.js --base=<7c83bc9의 engrave/·scoregraph/>`** (두 트리 모두 오늘의 fixture를 배치): 118곡 × 두 config = 236쌍, **전부 바뀜** (버전 이름).
+
+| 분류 | 수 | 무엇 — 이유 |
+| --- | --- | --- |
+| SERIALIZATION_ONLY `(version)` | 194 | `engr/3`만 — 객체·좌표 같음 |
+| GEOMETRY_ONLY — tie만 | 8 | E08, sonatina/019, /022, burgmuller25/016 × 2 — **G4-L4** (방향, 끝) |
+| GEOMETRY_ONLY — 운지 + slur | 2 | E23 × 2 — **G4-L5** |
+| GEOMETRY_ONLY — 운지 + slur + 틀 | 22 | czerny849/002, 005, 007, 018, 022, 023, sonatina/001, 003, 004, 006, 021 × 2 — **G4-L5** (운지가 slur 안으로 와서 staff skyline이 줄고 보표·system 간격이 바뀜: 모든 객체가 세로로) |
+| GEOMETRY_ONLY — tie + 운지 + slur + 틀 | 10 | czerny849/020, sonatina/024, burgmuller25/003, 006, 015 × 2 — **G4-L4 + G4-L5** |
+| LEDGER_CHANGE | 0 | 그리는 것은 두 코드에서 같다 |
+
+  이와 별도로 **R3의 fixture** 다섯(E08, E10, E11, E15, E23 × 2 = 10쌍)은 내용이 바뀌어 `7c83bc9`의 커밋된 hash와 그리는 것이 다르다 (E10·E11·E15는 두 코드가 같게 그림 — 위 표에 없음). L1은 나빠지지 않았고 (baseline §35.18.7), L2 영목표는 전부 0. **bless 이유**: G4-L4, G4-L5, R3의 fixture, 버전 규칙 (G4-D1a-1) — 그 밖의 이유로 바뀐 쌍은 없다.
+
+#### 35.18.9 회귀 (코드 `aa813b7` + `e11337b`)
+
+| 검사 | Windows (`D:/PPP-g4`, Node v24.17.0) | Linux (Docker `node:24-bookworm`, Node v24.21.0; `e11337b`의 `core.autocrlf=false` clone, LF) |
+| --- | --- | --- |
+| `npm run test:engrave` | **163/163** (새 검사는 기존 테스트 안; mutation 63 + N1·N2) | **163/163** |
+| `npm run test:scoregraph` | **214/214** | **214/214** |
+| `layout-hashes.js` | 118 × 2 layout + 118 plan 전부 커밋된 hash | 같음 |
+| `make-metrics`·`make-outlines`·`make-e-fixtures`·`make-corpus --check` | PASS | PASS |
+| `make-text-metrics.js --check` (PR gate 형태) | PASS (캐시로 다시 만들기까지) | PASS |
+| `bench.js check --suite r / e / x` | PASS / PASS / PASS (61 / 40 / 76 graph) | PASS / PASS / PASS |
+| `layout-hashes.js --write` 음성 대조 | §35.18.6 표 | B2, F 같음 |
+| `browser-parity.js` (A28) | Chrome 153: layout 808/808, SVG 808/808 바이트 동일, E14 `<use>` 18 오차 ≤ 0.01 sp, network 0; sonatina/020 1× layout 23.2 ms, 4× CPU 107.2 ms | — |
+| legacy parity (`legacy-parity.js`; `d4b5b86`의 `git archive`를 8871에, 이 트리를 8872에, `NODE_ENV=production HOST=127.0.0.1`) | **16/16 바이트 동일**; 측정 뒤 두 서버를 껐다; 8777·8788은 건드리지 않음 | — |
+| `layout-perf.js` (5회 중앙값) | 판정하는 예산 전부 PASS: B1 22.1 ≤ 60, B2 p95 2.36 ≤ 25, B3 0.02 ≤ 8, B4 53.4 ≤ 100, B6 p95 0, B7 0, B9 0.31 ≤ 0.5; 코퍼스 prepare + layout 중앙 2.5, p95 23.2, 최대 46.1 (`7c83bc9` 44.9); sonatina/020 layout 29.4 ms (30.7) | — |
+| 앱 파일 | `Piano Coach App.dc.html`·`index.html`·`server.js`·`scoregraph/` 바이트 그대로 (`git diff d4b5b86` 비어 있음) | — |
+
+#### 35.18.10 PNG (직접 봄; `render-png.js`, 전은 `7c83bc9`의 트리, gitignore)
+
+`tests/engrave/out/png/fix-before/`와 `fix-after/`에 같은 이름으로: `burgmuller25-015.desktop.png`·`.clip.png`(마지막 system — 위 보표 화음의 두 tie가 전에는 둘 다 아래, 이제 위·아래), `sonatina-020.desktop.png`·`.clip.png`(5마디의 B3–F4–G4, stem 위, G4가 2도로 비킴 — 전에는 세 tie가 모두 아래; 이제 위 tie는 비킨 G4 곁에서 떠나 다음 화음의 stem 왼쪽에서 G4 높이에 닿고, 가운데 F4 tie는 stem 반대로 아래, B3 tie는 아래), `sonatina-019.desktop.clip.png`(flag를 지나 시작하는 위 tie, G4-D1a-15), `czerny849-005.desktop.png`·`.clip.png`, `czerny849-020.desktop.png`·`.clip.png`, `czerny849-023.desktop.png`·`.clip.png`(운지가 음 곁, slur가 그 바깥 — 전에는 slur 위 2–6 sp에 줄지어 섬). E fixture는 테스트가 고정한다.
+
+#### 35.18.11 남은 것과 맡긴 곳
+
+- **Lead가 맡긴 곳 (손대지 않음)**: R5 괄호 임시표가 flat보다 짧음 → **G4d-1b**; R6 system 넘은 뒤의 짧은 반쪽 slur, 갈고리처럼 보이는 두 음 slur → **M-H1 watch list (G4d-2)**; R7 곡마다 slur hit 최대 12.5 % → **M-H1 watch list** (참고: 이 Fixer 뒤 808 layout에서 hit는 1, 곡 최대 비율 4.35 % — burgmuller25/013 휴대폰).
+- **Lead가 볼 결정**: G4-D1a-15 (flag 달린 음의 stem 쪽 tie는 flag 뒤에서 시작하고 A22가 flag까지 잰다 — G4-L4가 만든 한 경우), G4-D1a-16 (한쪽 slur 끝을 최대 10 sp까지 — 긴 slur의 끝이 음에서 뜬다: czerny849/013 `s1927` 7 sp), G4-D1a-23 (engr/3).
+- **M-H1에서 볼 것**: stem 쪽 운지가 beam 묶음의 첫 음에서 stem 옆에 서는 모양 (§35.18.3); SPREAD로 뜬 slur 끝; 비킨 2도로 들어오는 tie가 stem 왼쪽에서 끝나는 모양 (sonatina/020).
+
+**커밋**: `aa813b7` (코드·테스트·fixture·baseline·layout hash·CI), `e11337b` (`layout-hashes.js`가 base의 `engrave/`를 파일마다 꺼냄), 이 기록 (G04 §35.18과 §10.2·§10.5·§13.1·§35.10·§35.14의 고친 글, DECISIONS G4-D1a-14–23, CURRENT_STATE). `origin/g4d1a-curves-marks`에 push, PR 없음.
+
+**상태: G4d-1a FIX: READY_FOR_RECHECK.**
 
 ---
 
