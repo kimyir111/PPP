@@ -1,5 +1,5 @@
 /* ============================================================================
-   PPP engrave — the layout core: NotationPlan -> EngravedScore (docs/GOALS/G04 §8.4, §9, §10, §15, G4b)
+   PPP engrave — the layout core: NotationPlan -> EngravedScore (docs/GOALS/G04 §8.4, §9-§12, §14, §15; G4b, G4c)
 
    The plan says WHAT is drawn; this says WHERE. Coordinates are staff spaces
    (sp; one screen sp is 10 px), y down, rounded to 0.01 sp; every object keeps
@@ -8,22 +8,29 @@
      prepare(plan)             everything that does not depend on the width:
                                per measure, the columns (every onset any staff
                                or voice has, shared - what sounds together is
-                               drawn together; a mid-measure clef change is a
-                               column of its own that takes no time), and per
-                               column and staff the glyph geometry relative to
-                               the column: noteheads (seconds to the other side
-                               of the stem, a second voice beside the first),
-                               stacked accidental columns, dots after every head,
-                               ledger lines, provisional stems and flags, rests,
-                               grace notes to the left. Their extents are the
-                               rods (§9.3). Also each measure's system head (clef,
-                               key, time), its start items, trailing clef,
-                               courtesy key/time and barline.
+                               drawn together; a mid-measure clef or key change
+                               is a column of its own that takes no time), and
+                               per column and staff the glyph geometry relative
+                               to the column: noteheads (seconds to the other
+                               side of the stem; voices that would touch side by
+                               side, the down-stem voice to the right; unisons
+                               of one shape sharing a head), stems in the
+                               direction the graph, the voice or the notes give,
+                               flags, stacked accidental columns, dots, ledger
+                               lines, rests, grace notes to the left with their
+                               stems, flags, slashes and beams. Their extents are
+                               the rods (§9.3). Also each measure's system head
+                               (clef, key, time), its start items, trailing clef,
+                               courtesy key/time and barline. The plan is only
+                               read (G4b review R8).
      layout(prepared, config)  the width-dependent part: line breaks (breaks.js,
                                G4-U4), one spring constant per system solved
-                               exactly (space.js), absolute x, staves and
-                               systems stacked by their skylines (skyline.js),
-                               voltas, the hard-collision check. -> EngravedScore
+                               exactly (space.js), absolute x; then, per system,
+                               the beams over the stems they join (notation.js),
+                               the rests moved clear of the other voices, the
+                               tuplet numbers and brackets; staves and systems
+                               stacked by their skylines (skyline.js), voltas,
+                               the hard-collision check. -> EngravedScore
      engrave(plan, config)     both.
      createEngraver(plan)      prepare once, lay out per config with an LRU cache
                                of 8: a resize reflows without re-preparing, and a
@@ -38,22 +45,19 @@
    than a phone) is drawn at a smaller staff size, its `space` (>= FIT_MIN);
    only past that is it an overflow (SYSTEM_OVERFLOW).
 
-   G4b places what the page's frame and rhythm need: staves, clefs, key and time
-   signatures, barlines and repeats, voltas, noteheads, accidentals, dots, ledger
-   lines, rests, grace noteheads, and provisional stems and flags (unbeamed; G4c
-   sets stems under beams). Beams, tuplet marks, ties, slurs, marks and text
-   are later stages: `coverage.pending` counts them, so nothing is silently absent.
+   Ties, slurs, marks and text are G4d: `coverage.pending` counts them, so
+   nothing is silently absent.
    ========================================================================== */
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports)
     module.exports = factory(require('../scoregraph/index.js'), require('./metrics.js'), require('./space.js'), require('./breaks.js'),
-      require('./skyline.js'), require('./canon.js'));
+      require('./skyline.js'), require('./canon.js'), require('./notation.js'));
   else {
     const M = root.PPPEngraveModules = root.PPPEngraveModules || {};
-    M.layout = factory(root.PPPScoreGraph, M.metrics, M.space, M.breaks, M.skyline, M.canon);
+    M.layout = factory(root.PPPScoreGraph, M.metrics, M.space, M.breaks, M.skyline, M.canon, M.notation);
   }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (SG, MT, SP, BR, SK, CN) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (SG, MT, SP, BR, SK, CN, NT) {
   'use strict';
 
   const VERSION = 'engr/1';
@@ -73,6 +77,13 @@
      overlapped (G4-B5); only beyond that is it an overflow */
   const FIT_MIN = 0.5;
   const SCREEN = Object.freeze({ desktop: { width: 100, bars: 4 }, phone: { width: 40, bars: 2 }, phoneMaxPx: 720 });
+  /* a grace note's slash (acciaccatura, §14.5): a stroke across the stem near its end, as VexFlow draws it */
+  const SLASH = Object.freeze({ x0: -0.7, y0: 2.35, x1: 1.3, y1: 0.7, t: 0.12 });
+  /* how far a stem under a beam may reach once the beam is placed (slope, more beams, a leap): what two voices at one
+     column must keep clear of each other's heads */
+  const BEAM_REACH = 8;
+  /* voices side by side (§14.2): the moved voice starts this far past the other's heads - VexFlow 4.2.3's h + 2 px */
+  const VOICE_GAP = 0.2;
   const counters = { prepare: 0, layout: 0 };
 
   /* ---------------------------------------------------------------- staff positions */
@@ -105,6 +116,15 @@
     objs.forEach(o => { if (-o.box[0] > l) l = -o.box[0]; if (o.box[2] > r) r = o.box[2]; });
     return { left: l, right: r };
   };
+  const STEMLESS = { whole: 1, breve: 1, long: 1, maxima: 1 };
+  const other = d => (d === 'up' ? 'down' : 'up');
+  const overlap = (p, q) => p[0] < q[2] - SK.EPS && q[0] < p[2] - SK.EPS && p[1] < q[3] - SK.EPS && q[1] < p[3] - SK.EPS;
+  /* the geometry fields an object may carry beyond its box: moved and scaled with it */
+  const moveGeom = (o, dx, dy) => {
+    o.box = shift(o.box, dx, dy);
+    if (o.line) o.line = [o.line[0] + dx, o.line[1] + dy, o.line[2] + dx, o.line[3] + dy];
+    if (o.gap) o.gap = [o.gap[0] + dx, o.gap[1] + dx];
+  };
 
   /* ================================================================ prepare */
   function prepare(plan) {
@@ -121,6 +141,7 @@
     const staves = plan.staves.filter(s => !deferred.has(s.id))
       .map((s, i) => ({ id: s.id, part: s.part, index: i, lines: s.lines === undefined || s.lines === null ? 5 : s.lines, kind: s.kind || 'standard' }));
     const staffById = new Map(staves.map(s => [s.id, s]));
+    const midOf = staffId => (staffById.has(staffId) ? Math.max(0, staffById.get(staffId).lines - 1) / 2 : 2);
 
     /* clefs per staff in time order; the clef in force at (measure index, at) */
     const clefsOf = new Map(staves.map(s => [s.id, []]));
@@ -135,22 +156,102 @@
       }
       return cur;
     };
-    /* keys and meters in force at a measure's start */
-    const keyAt = mi => { let k = null; (plan.keys || []).forEach(x => { if (mIndex.get(x.m) <= mi && R.isZero(R.parse(x.at))) k = x; }); return k; };
+    /* keys in time order; the key in force at (measure index, at): at a measure's start, at its end (Infinity), or
+       strictly before a mid-measure change */
+    const keys = (plan.keys || []).map((k, i) => ({ k: k, mi: mIndex.get(k.m), i: i })).filter(x => x.mi !== undefined)
+      .sort((a, b) => a.mi - b.mi || byAt(a.k.at, b.k.at) || a.i - b.i).map(x => x.k);
+    const keyIn = (mi, at, strict) => {
+      let cur = null;
+      for (const k of keys) {
+        const ki = mIndex.get(k.m);
+        const cmp = ki !== mi ? ki - mi : at === Infinity ? -1 : byAt(k.at, at);
+        if (cmp < 0 || (cmp === 0 && !strict)) cur = k; else break;
+      }
+      return cur;
+    };
+    const keyAt = mi => keyIn(mi, '0', false);
+    const keyAtEnd = mi => keyIn(mi, Infinity, false);
     const meterAt = mi => { let k = null; plan.meters.forEach(x => { if (mIndex.get(x.m) <= mi) k = x; }); return k; };
-    const keyChangeAt = mi => (plan.keys || []).find(x => mIndex.get(x.m) === mi && R.isZero(R.parse(x.at))) || null;
+    const keyChangeAt = mi => keys.find(x => mIndex.get(x.m) === mi && R.isZero(R.parse(x.at))) || null;
     /* what a key signature shows: nothing for a hidden key (§15.4) */
     const shown = k => (k && !k.hidden ? k.fifths : 0);
     const meterChangeAt = mi => plan.meters.find(x => mIndex.get(x.m) === mi) || null;
+    /* the beat an onset falls in (§11.2's hook rule): the meter's beat - a dotted beat in compound time, the groups of an
+       additive meter */
+    const beatOf = (mi, at) => {
+      const m = meterAt(mi), t = R.toNumber(R.parse(at));
+      if (!m) return Math.floor(t * 4 + 1e-9);
+      const bt = m.beatType || 4, beats = m.beats && m.beats.length ? m.beats : [4];
+      if (beats.length > 1) {
+        let acc = 0;
+        for (let i = 0; i < beats.length; i++) { acc += beats[i] / bt; if (t < acc - 1e-9) return i; }
+        return beats.length;
+      }
+      const unit = beats[0] % 3 === 0 && beats[0] > 3 && bt >= 8 ? 3 / bt : 1 / bt;
+      return Math.floor(t / unit + 1e-9);
+    };
 
-    /* beamed events (graph or derived beams: no flag) and tie starts, by head */
-    const beamed = new Set();
-    plan.beams.forEach(b => b.events.forEach(id => beamed.add(id)));
+    /* beams by event (graph or derived; a beam of grace notes only is drawn with its grace group), tie starts by head */
+    const evById = new Map(plan.events.map(e => [e.id, e]));
+    const beamOf = new Map();
+    plan.beams.forEach(b => b.events.forEach(id => { if (!beamOf.has(id)) beamOf.set(id, b); }));
+    const graceBeam = b => b.events.every(id => evById.get(id) && evById.get(id).grace);
     const tieFrom = new Set();
     plan.ties.forEach(t => { if (t.from) tieFrom.add(t.from); });
     /* roles per staff|measure|voice */
     const roleOf = new Map();
     (plan.roles || []).forEach(r => Object.keys(r.role || {}).forEach(v => roleOf.set(r.staff + '|' + r.m + '|' + v, r.role[v])));
+    const sounding2 = new Set();
+    (plan.roles || []).forEach(r => { if ((r.voices || []).length > 1) sounding2.add(r.staff + '|' + r.m); });
+    /* the voices of a staff-measure, resting ones included (the plan's roles count the sounding voices only): a rest of
+       the first voice in the graph's order goes up, of the second down (§14.1, §14.3) */
+    const voiceRank = new Map();
+    (plan.voices || []).forEach((v, i) => { const n = parseInt(v.label, 10); voiceRank.set(v.id, [isFinite(n) ? n : 1e6, i]); });
+    const vmAll = new Map();
+    plan.events.forEach(e => {
+      if (e.grace || e.hidden) return;
+      const k = e.staff + '|' + e.m;
+      if (!vmAll.has(k)) vmAll.set(k, []);
+      if (vmAll.get(k).indexOf(e.voice) < 0) vmAll.get(k).push(e.voice);
+    });
+    const multiVoice = new Set(), restRole = new Map();
+    vmAll.forEach((vs, k) => {
+      if (vs.length < 2) return;
+      multiVoice.add(k);
+      const rk = v => voiceRank.get(v) || [1e6, 1e6];
+      vs.slice().sort((a, b) => rk(a)[0] - rk(b)[0] || rk(a)[1] - rk(b)[1]).forEach((v, i) => restRole.set(k + '|' + v, i % 2 === 0 ? 'up' : 'down'));
+    });
+
+    /* ---- stem directions (§11.2, §14.1): the graph's display.stem, else the voice's role, else the notes - for a beam,
+       one direction for the whole group */
+    const stated = e => (e.stemFrom === 'graph' && (e.stem === 'up' || e.stem === 'down') ? e.stem : null);
+    const roled = e => (e.stemFrom === 'voice' && (e.stem === 'up' || e.stem === 'down') ? e.stem : null);
+    const homeYs = e => {
+      const mi = mIndex.get(e.m), mid = midOf(e.staff);
+      return (e.heads || []).filter(h => (h.staff || e.staff) === e.staff && (h.written || h.pos))
+        .map(h => yOf(h.written || h.pos, clefAt(e.staff, mi, e.at, false)) - mid);
+    };
+    const dirOf = new Map();
+    plan.beams.forEach(b => {
+      const ms = b.events.map(id => evById.get(id)).filter(e => e && !e.hidden && e.kind !== 'rest' && (e.heads || []).length);
+      if (!ms.length) return;
+      let d = null;
+      const st = ms.map(stated).filter(Boolean);
+      if (st.length) {
+        d = st[0];
+        if (st.some(x => x !== d)) diag('BEAM_STEM_MIXED', [b.id], 'the graph states both directions; the first holds');
+      } else {
+        const ro = ms.map(roled).filter(Boolean);
+        /* grace notes are stemmed up unless the graph or the voice says otherwise (§14.5) */
+        d = ro.length ? ro[0] : ms.every(e => e.grace) ? 'up' : NT.autoDir([].concat(...ms.map(homeYs)), 0);
+      }
+      ms.forEach(e => dirOf.set(e.id, d));
+    });
+    plan.events.forEach(e => {
+      if (dirOf.has(e.id) || e.kind === 'rest' || e.hidden) return;
+      if (e.grace) { dirOf.set(e.id, stated(e) || roled(e) || 'up'); return; }
+      dirOf.set(e.id, stated(e) || roled(e) || NT.autoDir(homeYs(e), 0));
+    });
 
     /* events by measure; grace notes by their principal */
     const evByM = new Map(plan.measures.map(m => [m.id, []]));
@@ -164,6 +265,13 @@
       gracesOf.get(k).push(e);
     });
     gracesOf.forEach(list => list.sort((a, b) => a.grace.order - b.grace.order || idNum(a.id) - idNum(b.id)));
+    /* a whole-measure rest (§14.3): stated, or a voice's only event, resting the whole measure - drawn as a whole
+       (or breve) rest in the middle of the measure, whatever its written value and dots (G4b review R6) */
+    const voiceCount = new Map();
+    plan.events.forEach(e => { if (!e.grace) { const k = e.voice + '|' + e.m; voiceCount.set(k, (voiceCount.get(k) || 0) + 1); } });
+    const mDur = new Map(plan.measures.map(m => [m.id, R.parse(m.dur)]));
+    const wholeBar = e => e.kind === 'rest' && (e.measureRest ||
+      (R.isZero(R.parse(e.at)) && mDur.has(e.m) && R.eq(R.parse(e.dur), mDur.get(e.m)) && voiceCount.get(e.voice + '|' + e.m) === 1));
 
     /* ---- key signature and time signature items, relative to x = 0 and the staff's top line */
     function keyItems(fifths, prevFifths, clef, idBase, refs) {
@@ -264,14 +372,14 @@
     /* ---- one staff at one column: the events that start there on this staff -> local objects */
     function staffColumn(evs, staffId, mi, at, mId) {
       const clef = clefAt(staffId, mi, at, false);
-      const mid = Math.max(0, staffById.get(staffId).lines - 1) / 2;
+      const mid = midOf(staffId);
       const objs = [];
       const notes = [], rests = [];
       evs.forEach(e => {
         if (e.hidden) return;
-        if (e.kind === 'rest') { rests.push(e); return; }
+        if (e.kind === 'rest') { if (e.staff === staffId) rests.push(e); return; }
         const heads = e.heads.filter(h => (h.staff || e.staff) === staffId && (h.written || h.pos));
-        if (heads.length) notes.push({ e: e, heads: heads });
+        if (heads.length) notes.push({ e: e, heads: heads, home: e.staff === staffId });
       });
       /* noteheads per event, seconds to the other side of the stem */
       const lay = notes.map(n => {
@@ -282,14 +390,11 @@
           const name = glyphOf(p), g = MT.glyph(name);
           return { h: h, y: yOf(h.written || h.pos, clef), name: name, w: g.w * scale, g: g };
         });
-        const hasStem = !(e.type === 'whole' || e.type === 'breve' || e.type === 'long' || e.type === 'maxima') && e.stem !== 'none';
-        let dir = e.stem === 'up' || e.stem === 'down' ? e.stem : null;
-        if (!dir) {
-          /* no graph stem and no voice role: the head farthest from the middle line decides, down on the line */
-          let far = hs[0];
-          hs.forEach(x => { if (Math.abs(x.y - mid) > Math.abs(far.y - mid)) far = x; });
-          dir = far.y > mid ? 'up' : 'down';
-        }
+        const hasStem = !STEMLESS[e.type] && e.stem !== 'none';
+        let dir = dirOf.get(e.id) || NT.autoDir(hs.map(x => x.y), mid);
+        /* a chord's heads on another staff (a cross-staff chord, deferred §14.4): a chord of their own there, its stem the
+           other way */
+        if (!n.home) dir = other(dir);
         const w = Math.max.apply(null, hs.map(x => x.w));
         const sorted = hs.slice().sort((a, b) => (dir === 'up' ? b.y - a.y : a.y - b.y) || idNum(a.h.id) - idNum(b.h.id));
         let prev = null;
@@ -298,18 +403,96 @@
           x.x = x.side ? (dir === 'up' ? w : -w) : 0;
           prev = x;
         });
-        return { e: e, hs: hs, dir: dir, w: w, dx: 0, hasStem: hasStem, scale: scale };
+        const beam = n.home && beamOf.has(e.id) && !graceBeam(beamOf.get(e.id)) ? beamOf.get(e.id) : null;
+        return { e: e, hs: hs, dir: dir, w: w, dx: 0, hasStem: hasStem, scale: scale, home: n.home, beam: beam };
       });
-      /* voices whose heads would touch (a unison or a second, H1) stand side by side: the down-stem voice keeps
-         its place and the up-stem one moves right, so the stems stay outside (G4c refines unison sharing) */
-      const order = lay.slice().sort((a, b) => (a.dir === b.dir ? 0 : a.dir === 'down' ? -1 : 1) || idNum(a.e.id) - idNum(b.e.id));
+      /* the staff-measure has two sounding voices or more: stems are not stretched to the middle line (in two-voice
+         writing the middle-line rule gives way, or the stems would run into the other voice) */
+      const poly = sounding2.has(staffId + '|' + mId);
+      /* one event's stem and flag at an offset: where they are drawn, and what two voices must not overlap. A stem under a
+         beam is taken long (the beam may lengthen it: BEAM_REACH) for that test. */
+      const stemGeom = (L, dx, forClash) => {
+        const e = L.e;
+        const ys = L.hs.map(x => x.y), yTop = Math.min.apply(null, ys), yBot = Math.max.apply(null, ys);
+        const sx = L.dir === 'up' ? L.w - EG.stem + dx : dx;
+        const flags = MT.flagCount(e.type);
+        let end;
+        if (L.beam) end = L.dir === 'up' ? yTop - (forClash ? BEAM_REACH : NT.BEAM.stem) : yBot + (forClash ? BEAM_REACH : NT.BEAM.stem);
+        else {
+          const len = EG.stemLength + Math.max(0, flags - 2) * 0.5;
+          end = L.dir === 'up' ? yTop - len : yBot + len;
+          /* a stem from a ledger-line note reaches the middle line */
+          if (!poly && L.dir === 'up' && end > mid) end = mid;
+          if (!poly && L.dir === 'down' && end < mid) end = mid;
+        }
+        const stem = L.dir === 'up' ? [sx, end, sx + EG.stem, yBot] : [sx, yTop, sx + EG.stem, end];
+        /* a flag at home only, and not on a note a beam holds */
+        const fp = !L.home || beamOf.has(e.id) ? null : MT.flag(e.type, L.dir === 'up');
+        let flag = null;
+        if (fp) { const g = MT.glyph(fp.name); flag = { p: fp, box: MT.box(fp.name, sx - g.xMin, end) }; }
+        return { sx: sx, end: end, yTop: yTop, yBot: yBot, stem: stem, flag: flag };
+      };
+      /* a head's box at an offset */
+      const headBox = (x, dx, s) => MT.box(x.name, x.x + dx - x.g.xMin * s, x.y, s);
+      const shapeOf = (L, dx) => {
+        const heads = L.hs.map(x => headBox(x, dx, L.scale));
+        const sg = L.hasStem ? stemGeom(L, dx, true) : null;
+        return { heads: heads, stem: sg ? sg.stem : null, flag: sg && sg.flag ? sg.flag.box : null,
+          right: Math.max.apply(null, heads.map(b => b[2]).concat(sg ? [sg.stem[2]].concat(sg.flag ? [sg.flag.box[2]] : []) : [])) };
+      };
+      /* A and B clash (§10.3 H1, and a stem through another voice's head): heads overlap, or a stem crosses the other's
+         head. `skip` names a shared unison's two heads, which coincide by design. */
+      const clash = (A, dxA, B, dxB, skip) => {
+        const a = shapeOf(A, dxA), b = shapeOf(B, dxB);
+        const sa = skip ? skip.get(A) : -1, sb = skip ? skip.get(B) : -1;
+        for (let i = 0; i < a.heads.length; i++)
+          for (let j = 0; j < b.heads.length; j++) if (!(i === sa && j === sb) && overlap(a.heads[i], b.heads[j])) return true;
+        if (a.stem && b.heads.some((h, j) => j !== sb && overlap(a.stem, h))) return true;
+        if (b.stem && a.heads.some((h, i) => i !== sa && overlap(b.stem, h))) return true;
+        if (a.flag && b.heads.some(h => overlap(a.flag, h))) return true;
+        if (b.flag && a.heads.some(h => overlap(b.flag, h))) return true;
+        return false;
+      };
+      /* §14.2 unison: two voices, stems opposite, one pitch, the same head shape and the same dots share one head (each
+         graph head keeps its object; the two have one box and name each other: `merged`) */
+      const sharedOf = new Map();          /* L -> index of its shared head */
+      const partnerHead = new Map();       /* head id -> partner head id */
+      for (let i = 0; i < lay.length; i++) {
+        for (let j = i + 1; j < lay.length; j++) {
+          const A = lay[i], B = lay[j];
+          if (sharedOf.has(A) || sharedOf.has(B) || A.dir === B.dir || A.e.voice === B.e.voice || A.e.dots !== B.e.dots || A.scale !== B.scale) continue;
+          const cand = [];
+          A.hs.forEach((a, ia) => B.hs.forEach((b, ib) => {
+            const wa = a.h.written, wb = b.h.written;
+            if (Math.abs(a.y - b.y) < 1e-9 && a.name === b.name && a.x === 0 && b.x === 0 && (!wa || !wb || wa.alter === wb.alter) &&
+              (!a.h.acc || !b.h.acc || a.h.acc.type === b.h.acc.type)) cand.push([ia, ib]);
+          }));
+          if (cand.length !== 1) continue;
+          const skip = new Map([[A, cand[0][0]], [B, cand[0][1]]]);
+          if (clash(A, 0, B, 0, skip)) continue;
+          sharedOf.set(A, cand[0][0]); sharedOf.set(B, cand[0][1]);
+          const ha = A.hs[cand[0][0]].h.id, hb = B.hs[cand[0][1]].h.id;
+          partnerHead.set(ha, hb); partnerHead.set(hb, ha);
+        }
+      }
+      /* §14.2 and G4-C3: voices that would clash stand side by side - the up-stem voice keeps its place and the down-stem
+         one moves right, a head's width and 0.2 sp (Gould's "offset the lower part to the right", VexFlow 4.2.3's
+         StaveNote.format); a voice that crosses the other's stems moves too; a third voice moves past both */
+      const skipAll = new Map([...sharedOf.entries()]);
+      const order = lay.slice().sort((a, b) => (a.dir === b.dir ? 0 : a.dir === 'up' ? -1 : 1) || idNum(a.e.id) - idNum(b.e.id));
       const placed = [];
       order.forEach(L => {
         let dx = 0;
-        placed.forEach(P => {
-          const clash = L.hs.some(a => P.hs.some(b => Math.abs(a.y - b.y) < 1 - 1e-9));
-          if (clash) dx = Math.max(dx, Math.max.apply(null, P.hs.map(b => b.x + b.w)) + P.dx - Math.min.apply(null, L.hs.map(a => a.x)));
-        });
+        for (let guard = 0; guard <= placed.length; guard++) {
+          const hit = placed.filter(P => {
+            const shared = sharedOf.has(P) && sharedOf.has(L) && partnerHead.get(P.hs[sharedOf.get(P)].h.id) === L.hs[sharedOf.get(L)].h.id;
+            return clash(P, P.dx, L, dx, shared ? skipAll : null);
+          });
+          if (!hit.length) break;
+          /* past everything of the voice it meets - its heads, and its stem and flag where they reach out - and VexFlow's
+             0.2 sp more (StaveNote.format shifts by the head's width + 2 px at 10 px a space) */
+          dx = Math.max.apply(null, hit.map(P => shapeOf(P, P.dx).right)) + VOICE_GAP - Math.min.apply(null, L.hs.map(a => a.x));
+        }
         L.dx = dx;
         placed.push(L);
       });
@@ -317,25 +500,28 @@
       lay.forEach(L => {
         const e = L.e;
         L.hs.forEach(x => {
-          objs.push({ id: x.h.id, kind: 'notehead', refs: [e.id, x.h.id], event: e.id, glyph: x.name, scale: L.scale,
-            box: MT.box(x.name, x.x + L.dx - x.g.xMin * L.scale, x.y, L.scale), layer: 'note' });
+          const o = { id: x.h.id, kind: 'notehead', refs: [e.id, x.h.id], event: e.id, glyph: x.name, scale: L.scale,
+            box: headBox(x, L.dx, L.scale), layer: 'note' };
+          if (partnerHead.has(x.h.id)) o.merged = [partnerHead.get(x.h.id)];
+          objs.push(o);
         });
         const ys = L.hs.map(x => x.y), yTop = Math.min.apply(null, ys), yBot = Math.max.apply(null, ys);
         if (L.hasStem) {
           const flags = MT.flagCount(e.type);
-          const len = EG.stemLength + Math.max(0, flags - 2) * 0.5;
-          const sx = L.dir === 'up' ? L.w - EG.stem + L.dx : L.dx;
-          let end = L.dir === 'up' ? yTop - len : yBot + len;
-          /* a stem from a ledger-line note reaches the middle line */
-          if (L.dir === 'up' && end > mid) end = mid;
-          if (L.dir === 'down' && end < mid) end = mid;
-          const box = L.dir === 'up' ? [sx, end, sx + EG.stem, yBot] : [sx, yTop, sx + EG.stem, end];
-          objs.push({ id: e.id + '#stem', kind: 'stem', refs: [e.id], event: e.id, provisional: true, box: box, layer: 'note' });
-          const fp = beamed.has(e.id) ? null : MT.flag(e.type, L.dir === 'up');
-          if (fp) {
-            const name = glyphOf(fp), g = MT.glyph(name);
-            objs.push({ id: e.id + '#flag', kind: 'flag', refs: [e.id], event: e.id, glyph: name, provisional: true,
-              box: MT.box(name, sx - g.xMin, end), layer: 'note' });
+          const sg = stemGeom(L, L.dx, false);
+          /* a stem of a cross-staff chord's other staff is named for that staff (G4b review R5) */
+          const sid = L.home ? e.id + '#stem' : e.id + '#stem:' + staffId;
+          if (L.beam) {
+            /* under a beam: the layout sets its length once the beam is placed (§11.2) */
+            objs.push({ id: sid, kind: 'stem', refs: [e.id], event: e.id, dir: L.dir, beam: L.beam.id, box: sg.stem, layer: 'note',
+              _tip: L.dir === 'up' ? yTop : yBot, _far: L.dir === 'up' ? yBot : yTop, _n: Math.max(1, flags), _dots: e.dots || 0, _beat: beatOf(mi, e.at),
+              _mid: mid, _poly: poly });
+          } else {
+            objs.push({ id: sid, kind: 'stem', refs: [e.id], event: e.id, dir: L.dir, box: sg.stem, layer: 'note' });
+            if (sg.flag) {
+              const name = glyphOf(sg.flag.p);
+              objs.push({ id: e.id + '#flag', kind: 'flag', refs: [e.id], event: e.id, glyph: name, box: sg.flag.box, layer: 'note' });
+            }
           }
         }
         /* ledger lines above and below the staff, under this event's heads */
@@ -348,21 +534,27 @@
           objs.push({ id: e.id + '#ledger' + staffId + ':' + ly, kind: 'ledger', refs: [e.id], event: e.id, box: [x0, ly - EG.ledger / 2, x1, ly + EG.ledger / 2], layer: 'note' });
         }
       });
-      /* rests: the value's glyph, raised or lowered for a voice that shares the staff (§14.3; G4c refines) */
+      /* rests at their standard height (§14.3): the graph's display position, else a whole rest hanging from the fourth
+         line, a half rest on the middle line, the others centred; the layout moves a voice's rest clear of the other
+         voices once it knows the beams. A whole-measure rest is a whole rest, without dots, centred in its measure. Two
+         voices resting together for the same time are one rest (both objects at one place, naming each other). */
+      const restY = new Map();
+      const merge = rests.length >= 2 && !lay.length && rests.every(e => !e.restPos && e.dur === rests[0].dur && e.type === rests[0].type &&
+        (e.dots || 0) === (rests[0].dots || 0) && wholeBar(e) === wholeBar(rests[0]));
       rests.forEach(e => {
-        const name = glyphOf(MT.rest(e.type || (e.measureRest ? 'whole' : 'quarter'))), g = MT.glyph(name);
+        const bar = wholeBar(e);
+        const name = glyphOf(bar ? MT.rest(R.toNumber(R.parse(e.dur)) >= 2 - 1e-9 ? 'breve' : 'whole') : MT.rest(e.type || 'quarter')), g = MT.glyph(name);
         const whole = name === 'restWhole' || name === 'restDoubleWhole';
-        let y = e.restPos ? yOf(e.restPos, clef) : whole ? mid - 1 : mid;
-        if (!e.restPos) {
-          const role = roleOf.get(staffId + '|' + mId + '|' + e.voice);
-          if (role === 'up') y -= 2; else if (role === 'down') y += 2;
-        }
-        objs.push({ id: e.id, kind: 'rest', refs: [e.id], event: e.id, glyph: name, center: !!e.measureRest,
-          box: MT.box(name, -g.xMin, y), layer: 'note' });
-        e.__restY = y;
+        const y = e.restPos ? yOf(e.restPos, clef) : whole ? mid - 1 : mid;
+        const o = { id: e.id, kind: 'rest', refs: [e.id], event: e.id, glyph: name, center: bar, box: MT.box(name, -g.xMin, y), layer: 'note' };
+        if (merge) o.merged = rests.filter(x => x !== e).map(x => x.id);
+        objs.push(o);
+        restY.set(e.id, y);
       });
-      /* accidentals: every one of this column and staff, stacked in columns to the left, top to bottom */
+      /* accidentals: every one of this column and staff, stacked in columns to the left, top to bottom; a shared unison
+         whose two heads state one accidental shows it once (both objects at one place) */
       const accs = [];
+      const accOf = new Map();
       lay.forEach(L => L.hs.forEach(x => {
         if (!x.h.acc) return;
         const parts = MT.accidental(x.h.acc.type).map(p => glyphOf(p));
@@ -370,7 +562,11 @@
         const gs = parts.map(n => MT.glyph(n));
         const w = gs.reduce((a, g) => a + g.w, 0) * L.scale + (gs.length - 1) * 0.05;
         const top = x.y - Math.max.apply(null, gs.map(g => g.yMax)) * L.scale, bot = x.y - Math.min.apply(null, gs.map(g => g.yMin)) * L.scale;
-        accs.push({ h: x.h, e: L.e, y: x.y, parts: parts, gs: gs, w: w, top: top, bot: bot, scale: L.scale });
+        const a = { h: x.h, e: L.e, y: x.y, parts: parts, gs: gs, w: w, top: top, bot: bot, scale: L.scale };
+        const partner = partnerHead.get(x.h.id);
+        if (partner && accOf.has(partner) && accOf.get(partner).parts.join() === parts.join()) { accOf.get(partner).twin = a; return; }
+        accOf.set(x.h.id, a);
+        accs.push(a);
       }));
       if (accs.length) {
         const headLeft = Math.min.apply(null, objs.filter(o => o.kind === 'notehead').map(o => o.box[0]).concat([0]));
@@ -389,8 +585,13 @@
             let x = right - a.w;
             a.parts.forEach((n, k) => {
               const g = a.gs[k];
-              objs.push({ id: a.h.id + '#acc' + (a.parts.length > 1 ? k : ''), kind: 'accidental', refs: [a.h.id], event: a.e.id, glyph: n, scale: a.scale,
-                box: MT.box(n, x - g.xMin * a.scale, a.y, a.scale), layer: 'note' });
+              const box = MT.box(n, x - g.xMin * a.scale, a.y, a.scale);
+              const accId = t => t.h.id + '#acc' + (a.parts.length > 1 ? k : '');
+              [a].concat(a.twin ? [a.twin] : []).forEach((t, ti, all) => {
+                const o = { id: accId(t), kind: 'accidental', refs: [t.h.id], event: t.e.id, glyph: n, scale: a.scale, box: box.slice(), layer: 'note' };
+                if (all.length > 1) o.merged = [accId(all[1 - ti])];
+                objs.push(o);
+              });
               x += g.w * a.scale + 0.05;
             });
           });
@@ -398,19 +599,21 @@
         });
       }
       /* dots after every head of the column (a second voice's heads included), on the space; where an up-stem flag
-         reaches down beside the heads, after the flag */
+         reaches down beside the heads, after the flag. A shared unison's two events dot the same space. A
+         whole-measure rest has none (R6). */
       const heads = objs.filter(o => o.kind === 'notehead' || o.kind === 'rest');
       const dot = MT.glyph('augmentationDot');
       const dotted = [];
       lay.concat(rests.map(e => ({ e: e, rest: true }))).forEach(L => {
         const e = L.e;
-        if (!e.dots) return;
-        const ys = L.rest ? [e.__restY] : L.hs.map(x => x.y);
+        if (!e.dots || (L.rest && wholeBar(e))) return;
+        const ys = L.rest ? [restY.get(e.id)] : L.hs.map(x => x.y);
         const down = roleOf.get(staffId + '|' + mId + '|' + e.voice) === 'down';
         const seen = new Set();
         ys.forEach((y, hi) => {
           const onLine = Math.abs(y - Math.round(y)) < 1e-9;
-          const dy = onLine ? (down ? y + 0.5 : y - 0.5) : y;
+          const sharedHead = !L.rest && partnerHead.has(L.hs[hi].h.id);
+          const dy = onLine ? (down && !sharedHead ? y + 0.5 : y - 0.5) : y;
           if (seen.has(dy)) return;
           seen.add(dy);
           dotted.push({ id: L.rest ? e.id : L.hs[hi].h.id, e: e, y: dy });
@@ -428,40 +631,122 @@
             box: MT.box('augmentationDot', x - dot.xMin, d.y), layer: 'note' });
         }
       });
-      /* grace notes of these events, to the left (small heads and accidentals; G4c adds their stems and slashes) */
+      /* grace notes of these events, to the left, at 0.66 (§14.5): heads, accidentals and ledger lines, stems (the
+         graph's direction, the voice's, else up), flags, a slash for an acciaccatura, and the beam of a group the graph
+         beams */
       const graceObjs = [];
       lay.concat(rests.map(e => ({ e: e }))).forEach(L => {
         const gl = gracesOf.get(principalKey(L.e));
         if (!gl) return;
+        const s = MT.SCALE.grace;
         let right = Math.min.apply(null, objs.map(o => o.box[0]).concat([0])) - EG.graceGap;
+        const units = [];
         for (let i = gl.length - 1; i >= 0; i--) {
           const ge = gl[i];
-          const s = MT.SCALE.grace;
           const gh = ge.heads.filter(h => (h.staff || ge.staff) === staffId && (h.written || h.pos));
           if (!gh.length) continue;
           const nm = glyphOf(MT.notehead(ge.type, null)), g = MT.glyph(nm);
-          const hx = right - g.w * s;
-          let left = hx;
-          gh.forEach(h => {
-            const y = yOf(h.written || h.pos, clef);
-            graceObjs.push({ id: h.id, kind: 'notehead', grace: true, refs: [ge.id, h.id], event: ge.id, glyph: nm, scale: s,
-              box: MT.box(nm, hx - g.xMin * s, y, s), layer: 'note' });
+          const ys = gh.map(h => yOf(h.written || h.pos, clef));
+          const yTop = Math.min.apply(null, ys), yBot = Math.max.apply(null, ys);
+          const dir = dirOf.get(ge.id) || 'up';
+          const home = (ge.staff === staffId);
+          const beam = home && beamOf.has(ge.id) && graceBeam(beamOf.get(ge.id)) ? beamOf.get(ge.id) : null;
+          /* the unit built at x = 0, then moved so it ends where the next one (or the principal) begins */
+          const u = [];
+          gh.forEach((h, k) => {
+            const y = ys[k];
+            u.push({ id: h.id, kind: 'notehead', grace: true, refs: [ge.id, h.id], event: ge.id, glyph: nm, scale: s, box: MT.box(nm, -g.xMin * s, y, s), layer: 'note' });
             if (h.acc) {
               const an = glyphOf(MT.accidental(h.acc.type)[0]), ag = MT.glyph(an);
-              const ax = hx - EG.accidentalGap * s - ag.w * s;
-              graceObjs.push({ id: h.id + '#acc', kind: 'accidental', grace: true, refs: [h.id], event: ge.id, glyph: an, scale: s,
-                box: MT.box(an, ax - ag.xMin * s, y, s), layer: 'note' });
-              left = Math.min(left, ax);
+              const ax = -EG.accidentalGap * s - ag.w * s;
+              u.push({ id: h.id + '#acc', kind: 'accidental', grace: true, refs: [h.id], event: ge.id, glyph: an, scale: s, box: MT.box(an, ax - ag.xMin * s, y, s), layer: 'note' });
             }
             if (y <= -1 || y >= 5) {
-              for (let ly = -1; ly >= Math.ceil(y - 1e-9); ly--) graceObjs.push({ id: ge.id + '#ledger' + ly + ':' + h.id, kind: 'ledger', grace: true, refs: [ge.id], event: ge.id,
-                box: [hx - EG.ledgerOverhang * s, ly - EG.ledger / 2, hx + g.w * s + EG.ledgerOverhang * s, ly + EG.ledger / 2], layer: 'note' });
-              for (let ly = 5; ly <= Math.floor(y + 1e-9); ly++) graceObjs.push({ id: ge.id + '#ledger' + ly + ':' + h.id, kind: 'ledger', grace: true, refs: [ge.id], event: ge.id,
-                box: [hx - EG.ledgerOverhang * s, ly - EG.ledger / 2, hx + g.w * s + EG.ledgerOverhang * s, ly + EG.ledger / 2], layer: 'note' });
+              const lx0 = -EG.ledgerOverhang * s, lx1 = g.w * s + EG.ledgerOverhang * s;
+              for (let ly = -1; ly >= Math.ceil(y - 1e-9); ly--) u.push({ id: ge.id + '#ledger' + ly + ':' + h.id, kind: 'ledger', grace: true, refs: [ge.id], event: ge.id,
+                box: [lx0, ly - EG.ledger / 2, lx1, ly + EG.ledger / 2], layer: 'note' });
+              for (let ly = 5; ly <= Math.floor(y + 1e-9); ly++) u.push({ id: ge.id + '#ledger' + ly + ':' + h.id, kind: 'ledger', grace: true, refs: [ge.id], event: ge.id,
+                box: [lx0, ly - EG.ledger / 2, lx1, ly + EG.ledger / 2], layer: 'note' });
             }
           });
-          right = left - EG.graceGap;
+          let stem = null;
+          if (home && !STEMLESS[ge.type] && ge.stem !== 'none') {
+            const sw = EG.stem * s, len = EG.stemLength * s;
+            const sx = dir === 'up' ? g.w * s - sw : 0;
+            const end = dir === 'up' ? yTop - len : yBot + len;
+            stem = { id: ge.id + '#stem', kind: 'stem', grace: true, refs: [ge.id], event: ge.id, dir: dir, scale: s,
+              box: dir === 'up' ? [sx, end, sx + sw, yBot] : [sx, yTop, sx + sw, end], layer: 'note',
+              _tip: dir === 'up' ? yTop : yBot, _far: dir === 'up' ? yBot : yTop, _n: Math.max(1, MT.flagCount(ge.type)), _dots: ge.dots || 0, _beat: 0 };
+            u.push(stem);
+            const fp = beam ? null : MT.flag(ge.type, dir === 'up');
+            if (fp) {
+              const name = glyphOf(fp), fg = MT.glyph(name);
+              u.push({ id: ge.id + '#flag', kind: 'flag', grace: true, refs: [ge.id], event: ge.id, glyph: name, scale: s, box: MT.box(name, sx - fg.xMin * s, end, s), layer: 'note' });
+            }
+          }
+          /* a dotted grace note's dots, small, after its heads on their spaces - after its flag where the flag reaches */
+          if (ge.dots) {
+            const dg = MT.glyph('augmentationDot'), seen = new Set();
+            const flagBox = (u.find(o => o.kind === 'flag') || {}).box;
+            ys.forEach(y => {
+              const dy = Math.abs(y - Math.round(y)) < 1e-9 ? y - 0.5 : y;
+              if (seen.has(dy)) return;
+              seen.add(dy);
+              let x0 = g.w * s + EG.dotGap * s;
+              if (flagBox && dy + dg.yMax * s > flagBox[1] && dy + dg.yMin * s < flagBox[3]) x0 = Math.max(x0, flagBox[2] + EG.dotSpacing * s);
+              for (let k = 0; k < ge.dots; k++) {
+                const dx0 = x0 + k * (dg.w + EG.dotSpacing) * s;
+                u.push({ id: ge.id + '#dot' + (seen.size - 1) + '.' + k, kind: 'dot', grace: true, refs: [ge.id], event: ge.id, glyph: 'augmentationDot', scale: s,
+                  box: MT.box('augmentationDot', dx0 - dg.xMin * s, dy, s), layer: 'note' });
+              }
+            });
+          }
+          const ext = SK.union(u.map(o => o.box));
+          const dx = right - ext[2];
+          u.forEach(o => { o.box = shift(o.box, dx, 0); });
+          right = ext[0] + dx - EG.graceGap;
+          units.push({ ge: ge, objs: u, stem: stem, beam: beam, dir: dir });
         }
+        units.reverse();
+        /* grace beams: the graph's beams over grace notes of this group */
+        const done = new Set();
+        units.forEach(un => {
+          if (!un.beam || done.has(un.beam.id)) return;
+          done.add(un.beam.id);
+          const ms = units.filter(x => x.beam === un.beam && x.stem).map(x => x.stem);
+          if (ms.length < 2) {
+            ms.forEach(st => {
+              const ev = evById.get(st.event), fp = MT.flag(ev.type, st.dir === 'up');
+              if (!fp) return;
+              const name = glyphOf(fp), fg = MT.glyph(name), sEnd = st.dir === 'up' ? st.box[1] : st.box[3];
+              graceObjs.push({ id: st.event + '#flag', kind: 'flag', grace: true, refs: [st.event], event: st.event, glyph: name, scale: s,
+                box: MT.box(name, st.box[0] - fg.xMin * s, sEnd, s), layer: 'note' });
+            });
+            return;
+          }
+          const members = ms.map(st => ({ x0: st.box[0], sw: st.box[2] - st.box[0], n: st._n, dots: st._dots, beat: st._beat, far: st._far, tip: st._tip, stem: st }));
+          const brk = new Map();
+          (un.beam.breaks || []).forEach(b => { const j = ms.findIndex(st => st.event === b.after); if (j >= 0) brk.set(j, Math.min(brk.has(j) ? brk.get(j) : Infinity, b.level)); });
+          const sh = NT.beamShapes(members, ms[0].dir, brk, { scale: s, mid: mid, reachMiddle: false });
+          sh.beams.forEach(bm => {
+            const idx = un.beam.events.indexOf(ms[bm.from].event);
+            graceObjs.push({ id: un.beam.id + '#L' + bm.level + '.' + idx + (bm.hook ? 'h' : ''), kind: 'beam', grace: true, refs: [un.beam.id],
+              events: ms.slice(bm.from, bm.to + 1).map(st => st.event), level: bm.level, dir: ms[0].dir, hook: bm.hook || undefined,
+              line: bm.line, t: bm.t, box: bm.box, layer: 'note' });
+          });
+        });
+        /* the slash of an acciaccatura: across its stem near the end (for a beamed group, the first stem only) */
+        units.forEach(un => {
+          if (!un.ge.grace.slash || !un.stem) return;
+          if (un.beam && units.filter(x => x.beam === un.beam && x.stem)[0] !== un) return;
+          const st = un.stem, up = st.dir === 'up', tipY = up ? st.box[1] : st.box[3], sx = st.box[0];
+          const sy = v => (up ? tipY + v * s : tipY - v * s);
+          const line = [sx + SLASH.x0 * s, sy(SLASH.y0), sx + SLASH.x1 * s, sy(SLASH.y1)];
+          const t = SLASH.t * s;
+          graceObjs.push({ id: un.ge.id + '#slash', kind: 'slash', grace: true, refs: [un.ge.id], event: un.ge.id, line: line, t: t,
+            box: [Math.min(line[0], line[2]), Math.min(line[1], line[3]) - t / 2, Math.max(line[0], line[2]), Math.max(line[1], line[3]) + t / 2], layer: 'note' });
+        });
+        units.forEach(un => un.objs.forEach(o => graceObjs.push(o)));
       });
       const all = objs.concat(graceObjs);
       const ext = extent(all);
@@ -474,33 +759,52 @@
       const evs = evByM.get(m.id).filter(e => !e.grace);
       const dur = R.toNumber(R.parse(m.dur));
       const toNum = s => { const q = R.parse(s); return q.n / q.d; };
-      /* time columns: every onset; clef columns: a mid-measure clef change, just before the notes at its time */
+      /* time columns: every onset; clef and key columns: a mid-measure change, just before the notes at its time (clef
+         first, then key, as at a bar line) */
       const ats = [];
       evs.forEach(e => { if (!ats.some(a => R.eq(R.parse(a), R.parse(e.at)))) ats.push(R.format(R.parse(e.at))); });
       if (!ats.length) ats.push('0');
       ats.sort(byAt);
+      const midKeys = keys.filter(k => k.m === m.id && !R.isZero(R.parse(k.at)) && !k.hidden);
       const cols = [];
-      ats.forEach(a => {
+      const changesAt = a => {
         plan.clefs.filter(c => c.m === m.id && !R.isZero(R.parse(c.at)) && R.eq(R.parse(c.at), R.parse(a)) && staffById.has(c.staff))
           .sort((x, y) => staffById.get(x.staff).index - staffById.get(y.staff).index)
-          .forEach(c => cols.push({ at: a, time: false, clef: c }));
-        cols.push({ at: a, time: true });
-      });
-      /* clef changes at a time no note starts */
-      plan.clefs.filter(c => c.m === m.id && !R.isZero(R.parse(c.at)) && staffById.has(c.staff) && !ats.some(a => R.eq(R.parse(a), R.parse(c.at))))
-        .forEach(c => { cols.push({ at: R.format(R.parse(c.at)), time: false, clef: c }); });
+          .forEach(c => cols.push({ at: R.format(R.parse(a)), time: false, clef: c }));
+        midKeys.filter(k => R.eq(R.parse(k.at), R.parse(a))).forEach(k => cols.push({ at: R.format(R.parse(a)), time: false, key: k }));
+      };
+      ats.forEach(a => { changesAt(a); cols.push({ at: a, time: true }); });
+      /* changes at a time no note starts */
+      const loose = [];
+      plan.clefs.filter(c => c.m === m.id && !R.isZero(R.parse(c.at)) && staffById.has(c.staff)).forEach(c => loose.push(R.format(R.parse(c.at))));
+      midKeys.forEach(k => loose.push(R.format(R.parse(k.at))));
+      loose.filter((a, i) => loose.indexOf(a) === i && !ats.some(x => R.eq(R.parse(x), R.parse(a)))).sort(byAt).forEach(changesAt);
       cols.sort((x, y) => byAt(x.at, y.at) || (x.time === y.time ? 0 : x.time ? 1 : -1));
       cols.forEach(col => {
         col.atW = toNum(col.at);
         col.staves = {};
         col.objects = [];
-        if (!col.time) {
+        if (!col.time && col.clef) {
           const c = col.clef;
           const it = clefItems(c, c.id, MT.SCALE.clefChange);
           const ext = extent(it.objects);
           col.staves[c.staff] = { left: 0, right: ext.right };
           it.objects.forEach(o => { o.staffKey = c.staff; col.objects.push(o); });
           col.left = 0; col.right = ext.right; col.tie = false;
+          return;
+        }
+        if (!col.time && col.key) {
+          /* a key change inside the measure (§15.4): on every staff, cancelling what the key before it drops */
+          const k = col.key;
+          const prev = keyIn(mi, k.at, true);
+          let w = 0;
+          staves.forEach(s => {
+            const it = keyItems(k.fifths, shown(prev), clefAt(s.id, mi, k.at, false), k.id + ':' + s.id, [k.id]);
+            it.objects.forEach(o => { o.staffKey = s.id; col.objects.push(o); });
+            col.staves[s.id] = { left: 0, right: it.w + GAP.startItem };
+            w = Math.max(w, it.w);
+          });
+          col.left = 0; col.right = w ? w + GAP.startItem : 0; col.tie = false;
           return;
         }
         let left = 0, right = 0, tie = false;
@@ -576,7 +880,7 @@
       M.replacesBar = M.open.w > 0 && (!prevBar || (!prevBar.repeat && (!prevBar.style || prevBar.style === 'regular')));
       /* a key or time change inside a system, after the bar line: each item a startItem gap after what precedes it */
       const kc = mi > 0 ? keyChangeAt(mi) : null, mc = mi > 0 ? meterChangeAt(mi) : null;
-      const prevKey = mi > 0 ? keyAt(mi - 1) : null;
+      const prevKey = mi > 0 ? keyAtEnd(mi - 1) : null;
       const start = { objects: [], w: 0 };
       let sx = 0;
       if (kc && !kc.hidden) {
@@ -626,7 +930,7 @@
         const nk = keyChangeAt(mi + 1), nm = meterChangeAt(mi + 1);
         let cx2 = 0;
         if (nk && !nk.hidden) {
-          const items = staves.map(s => keyItems(nk.fifths, shown(key), clefAt(s.id, mi + 1, '0', false), nk.id + ':courtesy:' + s.id, [nk.id]));
+          const items = staves.map(s => keyItems(nk.fifths, shown(keyAtEnd(mi)), clefAt(s.id, mi + 1, '0', false), nk.id + ':courtesy:' + s.id, [nk.id]));
           const w = Math.max.apply(null, items.map(i => i.w));
           if (w) { cx2 += GAP.courtesy; items.forEach((it, i) => it.objects.forEach(o => courtesy.objects.push(Object.assign({}, o, { staffKey: staves[i].id, courtesy: true, box: shift(o.box, cx2, 0) })))); cx2 += w; }
         }
@@ -640,17 +944,26 @@
       M.courtesy = courtesy;
     });
 
+    /* ---- what the layout needs of the plan's beams and tuplets, and of its voices */
+    const beams = plan.beams.filter(b => !graceBeam(b)).map(b => ({ id: b.id, events: b.events.slice(), breaks: (b.breaks || []).map(x => ({ after: x.after, level: x.level })) }));
+    const depthOf = t => { let d = 0, p = t.parent; while (p && d < 8) { d++; const q = plan.tuplets.find(x => x.id === p); p = q && q.parent; } return d; };
+    const hidden = new Set(plan.events.filter(e => e.hidden).map(e => e.id));
+    const tuplets = plan.tuplets.filter(t => !t.deferred).map((t, i) => ({ id: t.id, events: t.events.slice(), shown: t.events.filter(id => !hidden.has(id)),
+      actual: t.actual, normal: t.normal,
+      number: t.number, bracket: !!t.bracket, placement: t.placement || null, refs: [t.id].concat(t.source === 'merged' ? (t.members || []) : []), depth: depthOf(t), order: i }));
+    const voiceOf = new Map(plan.events.map(e => [e.id, e.voice]));
+    const roles = new Map();
+    plan.events.forEach(e => {
+      const r = e.kind === 'rest' ? restRole.get(e.staff + '|' + e.m + '|' + e.voice) : roleOf.get(e.staff + '|' + e.m + '|' + e.voice);
+      if (r) roles.set(e.id, r);
+    });
+
     /* what later stages draw: counted, so nothing is silently absent */
     const pending = {};
     const add = (k, n) => { if (n) pending[k] = (pending[k] || 0) + n; };
-    add('beam', plan.beams.length);
-    add('tuplet', plan.tuplets.length);
-    add('grace-stem', plan.events.filter(e => e.grace && !e.grace.after && !e.hidden).length);
     add('tie', plan.ties.length);
     add('slur', plan.slurs.length);
     add('jump', (plan.jumps || []).length);
-    /* a key change inside a measure: placed by a later stage (G4b draws key signatures at bar lines) */
-    add('key-mid-measure', (plan.keys || []).filter(k => !k.hidden && !R.isZero(R.parse(k.at))).length);
     add('tempo', (plan.tempos || []).filter(t => !t.hidden).length);
     plan.lines.forEach(l => add(l.kind, 1));
     plan.marks.forEach(mk => add(mk.kind, 1));
@@ -662,6 +975,8 @@
 
     return { version: VERSION, planKey: plan.graph.fingerprint + ':' + plan.version, staves: staves, measures: measures,
       endings: plan.endings || [], layoutBreaks: new Set(plan.measures.filter(m => m.layoutBreak && m.layoutBreak.newSystem).map(m => mIndex.get(m.id))),
+      beams: beams, tuplets: tuplets, voiceOf: voiceOf, roles: roles, multiVoice: multiVoice, evStaff: new Map(plan.events.map(e => [e.id, e.staff])),
+      evMeasure: new Map(plan.events.map(e => [e.id, e.m])), evTypes: new Map(plan.events.map(e => [e.id, e.type])), dirOf: dirOf,
       diagnostics: diagnostics, pending: pending };
   }
 
@@ -708,18 +1023,157 @@
   }
 
   /* window: [first, last] measure indices - a close view's bars, laid out as systems of their own (§15.2: the
-     engraving takes the window's bounds as system bounds); null for the whole score */
+     engraving takes the window's bounds as system bounds); null for the whole score. The width is kept to 0.01 sp, the
+     precision of every coordinate, so the config the engraver caches under is the config laid out (review O2). */
   function normalizeConfig(cfg) {
     cfg = cfg || {};
     const bp = cfg.breakpoint === 'phone' ? 'phone' : 'desktop';
     const win = Array.isArray(cfg.window) && cfg.window.length === 2 ? [Math.max(0, Math.floor(+cfg.window[0])), Math.floor(+cfg.window[1])] : null;
-    return { mode: 'screen', breakpoint: bp, width: +(cfg.width || SCREEN[bp].width), barsPerSystem: +(cfg.barsPerSystem || SCREEN[bp].bars),
+    return { mode: 'screen', breakpoint: bp, width: r2(+(cfg.width || SCREEN[bp].width)), barsPerSystem: Math.max(1, Math.round(+(cfg.barsPerSystem || SCREEN[bp].bars))),
       respectSourceBreaks: !!cfg.respectSourceBreaks, window: win };
   }
   function screenConfig(viewportPx, zoom) {
     const bp = viewportPx <= SCREEN.phoneMaxPx ? 'phone' : 'desktop';
     const z = zoom > 0 ? zoom : 1;
     return normalizeConfig({ breakpoint: bp, width: Math.round(SCREEN[bp].width / z * 2) / 2, barsPerSystem: SCREEN[bp].bars });
+  }
+
+  /* ---- per system, once the x of every column is known: beams, rests between voices, tuplets (staff-relative y) */
+  function notateSystem(P, sysObjs, diagnostics) {
+    const byStaff = new Map();
+    sysObjs.forEach(o => { if (o.staffKey) { if (!byStaff.has(o.staffKey)) byStaff.set(o.staffKey, []); byStaff.get(o.staffKey).push(o); } });
+    const staffOf = new Map(P.staves.map(s => [s.id, s]));
+    /* beams (§11.2): each beam's stems in this system, per staff (a cross-staff beam, deferred, is drawn as a partial
+       beam on each staff); one stem left alone gets its flag back */
+    const stemsOf = new Map();
+    sysObjs.forEach(o => { if (o.kind === 'stem' && o.beam) { if (!stemsOf.has(o.beam)) stemsOf.set(o.beam, []); stemsOf.get(o.beam).push(o); } });
+    P.beams.forEach(b => {
+      const stems = stemsOf.get(b.id);
+      if (!stems) return;
+      const parts = new Map();
+      stems.forEach(st => { if (!parts.has(st.staffKey)) parts.set(st.staffKey, []); parts.get(st.staffKey).push(st); });
+      parts.forEach((list, staffKey) => {
+        list.sort((a, c) => a.box[0] - c.box[0] || b.events.indexOf(a.event) - b.events.indexOf(c.event));
+        if (list.length < 2) {
+          list.forEach(st => {
+            const fp = MT.flag(st._type, st.dir === 'up');
+            if (!fp || fp.missing) return;
+            const g = MT.glyph(fp.name), end = st.dir === 'up' ? st.box[1] : st.box[3];
+            const f = { id: st.event + '#flag', kind: 'flag', refs: [st.event], event: st.event, glyph: fp.name, box: MT.box(fp.name, st.box[0] - g.xMin, end), layer: 'note',
+              staffKey: staffKey, measure: st.measure };
+            sysObjs.push(f);
+            byStaff.get(staffKey).push(f);
+          });
+          return;
+        }
+        const members = list.map(st => ({ x0: st.box[0], sw: st.box[2] - st.box[0], n: st._n, dots: st._dots, beat: st._beat, far: st._far, tip: st._tip, stem: st }));
+        const brk = new Map();
+        b.breaks.forEach(x => { const j = list.findIndex(st => st.event === x.after); if (j >= 0) brk.set(j, Math.min(brk.has(j) ? brk.get(j) : Infinity, x.level)); });
+        const dir = list[0].dir;
+        if (list.some(st => st.dir !== dir)) diagnostics.push({ code: 'BEAM_STEM_MIXED', refs: [b.id], detail: 'stems of one beam part point both ways' });
+        const bo = { scale: 1, mid: list[0]._mid, reachMiddle: !list.some(st => st._poly), extra: 0 };
+        let sh = NT.beamShapes(members, dir, brk, bo);
+        /* what the beam's notes carry - accidentals, dots, heads, ledger lines - stays clear of it */
+        const evs = new Set(list.map(st => st.event));
+        const carried = byStaff.get(staffKey).filter(o => evs.has(o.event) && ['accidental', 'dot', 'notehead', 'ledger'].indexOf(o.kind) >= 0);
+        for (let k = 0; k < 3; k++) {
+          const need = NT.beamClash(sh.beams, carried, dir);
+          if (need <= 1e-9) break;
+          bo.extra += need;
+          sh = NT.beamShapes(members, dir, brk, bo);
+        }
+        sh.beams.forEach(bm => {
+          const idx = b.events.indexOf(list[bm.from].event);
+          const o = { id: b.id + '#L' + bm.level + '.' + idx + (bm.hook ? 'h' : ''), kind: 'beam', refs: [b.id], events: list.slice(bm.from, bm.to + 1).map(st => st.event),
+            level: bm.level, dir: dir, line: bm.line, t: bm.t, box: bm.box, layer: 'note', staffKey: staffKey, measure: list[bm.from].measure };
+          if (bm.hook) o.hook = bm.hook;
+          sysObjs.push(o);
+          byStaff.get(staffKey).push(o);
+        });
+      });
+    });
+    /* rests between voices (§14.3): on a staff two voices share in that measure, or under a beam, a rest moves clear */
+    byStaff.forEach((list, staffKey) => {
+      const beamsHere = list.filter(o => o.kind === 'beam');
+      const rests = list.filter(o => o.kind === 'rest' && (P.multiVoice.has(staffKey + '|' + P.evMeasure.get(o.event)) ||
+        beamsHere.some(b => b.box[0] < o.box[2] - SK.EPS && o.box[0] < b.box[2] - SK.EPS)));
+      if (!rests.length) return;
+      const roleRank = o => (P.roles.get(o.event) === 'up' ? 0 : P.roles.get(o.event) === 'down' ? 2 : 1);
+      rests.sort((a, c) => a.box[0] - c.box[0] || roleRank(a) - roleRank(c) || idNum(a.id) - idNum(c.id));
+      const done = new Set();
+      const items = [];
+      rests.forEach(o => {
+        if (done.has(o.id)) return;
+        done.add(o.id);
+        const dots = list.filter(x => x.kind === 'dot' && x.event === o.event);
+        let partner = null;
+        if (o.merged) {
+          const p = rests.find(x => x.id === o.merged[0]);
+          if (p && !done.has(p.id)) { done.add(p.id); partner = { obj: p, dots: list.filter(x => x.kind === 'dot' && x.event === p.event) }; }
+        }
+        const role = P.roles.get(o.event);
+        items.push({ obj: o, dots: dots, partner: partner, dir: role === 'up' ? -1 : role === 'down' ? 1 : 0 });
+      });
+      const voice = P.voiceOf;
+      NT.placeRests(items, r => {
+        const own = voice.get(r.obj.event);
+        const skip = new Set([r.obj].concat(r.dots, r.partner ? [r.partner.obj].concat(r.partner.dots) : []));
+        return list.filter(x => !skip.has(x) && x.layer === 'note' && (x.kind === 'beam'
+          ? true : x.event && voice.get(x.event) !== own && !(r.partner && x.event === r.partner.obj.event)));
+      }).forEach(res => { if (!res.clear) diagnostics.push({ code: 'REST_UNPLACED', refs: [res.obj.id], detail: 'no clear place within 12 sp' }); });
+    });
+    /* tuplets (§12): innermost first, so an outer bracket clears an inner one */
+    const tups = P.tuplets.slice().sort((a, c) => c.depth - a.depth || a.order - c.order);
+    tups.forEach(t => {
+      const evSet = new Set(t.events);
+      const staffKey = P.evStaff.get(t.events[0]);
+      const list = byStaff.get(staffKey);
+      if (!list) return;
+      const mem = list.filter(o => evSet.has(o.event) && !o.grace && (o.kind === 'notehead' || o.kind === 'rest' || o.kind === 'dot' || o.kind === 'stem' || o.kind === 'flag'));
+      const present = t.events.filter(id => mem.some(o => o.event === id && (o.kind === 'notehead' || o.kind === 'rest')));
+      if (!present.length) return;
+      const firstEv = present[0], lastEv = present[present.length - 1];
+      const headsOf = id => mem.filter(o => o.event === id && (o.kind === 'notehead' || o.kind === 'rest'));
+      const x0 = Math.min.apply(null, headsOf(firstEv).map(o => o.box[0]));
+      const x1 = Math.max.apply(null, mem.filter(o => o.event === lastEv && (o.kind === 'notehead' || o.kind === 'rest' || o.kind === 'dot')).map(o => o.box[2]));
+      /* a tuplet across a system break is drawn in parts, the number on the first (§12.2) */
+      const isFirst = firstEv === t.shown[0], isLast = lastEv === t.shown[t.shown.length - 1];
+      const whole = isFirst && isLast;
+      /* the side: stated, else the voice's role, else where most member stems point (the beam's side), else above */
+      let side = t.placement;
+      if (side !== 'above' && side !== 'below') {
+        const role = P.roles.get(t.events[0]);
+        if (role === 'up' || role === 'down') side = role === 'up' ? 'above' : 'below';
+        else {
+          const dirs = t.events.map(id => P.dirOf.get(id)).filter(Boolean);
+          const ups = dirs.filter(d => d === 'up').length, downs = dirs.length - ups;
+          side = downs > ups ? 'below' : 'above';
+        }
+      }
+      const digits = !isFirst || t.number === 'none' ? [] : (t.number === 'both'
+        ? String(t.actual).split('').map(d => 'timeSig' + d).concat([':'], String(t.normal).split('').map(d => 'timeSig' + d))
+        : String(t.actual).split('').map(d => 'timeSig' + d));
+      if (!digits.length && !t.bracket) return;
+      const lines = staffOf.get(staffKey) ? Math.max(0, staffOf.get(staffKey).lines - 1) : 4;
+      const reach = (a, b, sd) => {
+        let r = sd === 'above' ? 0 : lines;
+        list.forEach(o => {
+          if (o.layer !== 'note' && o.kind !== 'tuplet-number' && o.kind !== 'tuplet-bracket') return;
+          if (!(o.box[0] < b - SK.EPS && a < o.box[2] - SK.EPS)) return;
+          r = sd === 'above' ? Math.min(r, o.box[1]) : Math.max(r, o.box[3]);
+        });
+        return r;
+      };
+      const res = NT.placeTuplet([x0, x1], side, digits, t.bracket, [isFirst, isLast], reach, 1);
+      const suffix = whole || isFirst ? '' : '@' + firstEv;
+      const measure = (mem.find(o => o.event === firstEv) || {}).measure || null;
+      const out = [];
+      if (res.bracket) out.push({ id: t.id + '#bracket' + suffix, kind: 'tuplet-bracket', refs: t.refs.slice(), side: side, line: res.bracket.line, hooks: res.bracket.hooks,
+        gap: res.bracket.gap, hookLen: res.bracket.hook, box: res.bracket.box, layer: 'tuplet', staffKey: staffKey, measure: measure });
+      res.number.forEach((n, k) => out.push({ id: t.id + '#num' + k, kind: 'tuplet-number', refs: t.refs.slice(), side: side, glyph: n.glyph, scale: n.scale,
+        box: n.box, layer: 'tuplet', staffKey: staffKey, measure: measure }));
+      out.forEach(o => { sysObjs.push(o); list.push(o); });
+    });
   }
 
   function layout(P, config) {
@@ -751,8 +1205,9 @@
       const parts = systemParts(P, i, j, last);
       let u, ragged = false, fit = 1;
       const min = SP.minWidth(parts.springs, parts.fixed);
-      /* the last system keeps the spacing of the others (their median u) when that leaves it well short of the
-         width; otherwise it is justified like them */
+      /* the last system keeps the spacing of the others (their median u, of the systems drawn at full size: a system
+         squeezed to a smaller staff has u = 0 and says nothing of the spacing - review R11) when that leaves it well
+         short of the width; otherwise it is justified like them */
       if (last) {
         const sorted = us.slice().sort((a, b) => a - b);
         const uRef = sorted.length ? sorted[Math.floor((sorted.length - 1) / 2)] : SP.U_NATURAL;
@@ -767,7 +1222,7 @@
           else diagnostics.push({ code: 'SYSTEM_SCALED', refs: [P.measures[i].id], detail: 'staff space ' + r2(fit) });
         }
       }
-      if (!last) us.push(u);
+      if (!last && fit === 1) us.push(u);
       /* x: walk the segments */
       const x0 = MARGIN.left + braceSpace;
       const sysObjs = [], mOut = [];
@@ -779,7 +1234,8 @@
           const colX = x;
           cur.columns.push({ at: g.col.at, x: colX, time: g.col.time });
           g.col.objects.forEach(o => {
-            const ob = Object.assign({}, o, { measure: g.measure, colX: colX, box: shift(o.box, colX, 0) });
+            const ob = Object.assign({}, o, { measure: g.measure, colX: colX });
+            moveGeom(ob, colX, 0);
             sysObjs.push(ob);
             if (o.center) cur.centered.push(ob);
           });
@@ -789,7 +1245,8 @@
         if (g.contentEnd) { cur.contentX1 = x; return; }
         if (g.close !== undefined) {
           const M = P.measures[g.close];
-          /* a whole-measure rest in the middle between the measure's content start and its bar line */
+          /* a whole-measure rest in the middle between the measure's content start and its bar line (with its twin, when
+             two voices rest the measure together) */
           cur.centered.forEach(ob => {
             const w = ob.box[2] - ob.box[0], cx = (cur.contentX0 + cur.contentX1 - GAP.beforeBar) / 2 - w / 2;
             ob.box = [cx, ob.box[1], cx + w, ob.box[3]];
@@ -798,14 +1255,25 @@
           cur = null;
           return;
         }
-        if (g.objects) g.objects.forEach(o => sysObjs.push(Object.assign({}, o, { measure: g.measure, box: shift(o.box, x, 0) }, g.courtesy ? { courtesy: true } : null)));
+        if (g.objects) g.objects.forEach(o => {
+          const ob = Object.assign({}, o, { measure: g.measure }, g.courtesy ? { courtesy: true } : null);
+          moveGeom(ob, x, 0);
+          sysObjs.push(ob);
+        });
         x += g.w;
       });
+      /* the stems a beam joins know their value (for a lone stem's flag) */
+      sysObjs.forEach(o => { if (o.kind === 'stem' && o.beam) o._type = P.evTypes.get(o.event); });
+      notateSystem(P, sysObjs, diagnostics);
       if (fit !== 1) {
         /* the smaller staff size: every x from the system's left edge and every y from its staff's top line */
         const fx = v => x0 + (v - x0) * fit;
         sysObjs.forEach(o => {
           o.box = [fx(o.box[0]), o.box[1] * fit, fx(o.box[2]), o.box[3] * fit];
+          if (o.line) o.line = [fx(o.line[0]), o.line[1] * fit, fx(o.line[2]), o.line[3] * fit];
+          if (o.gap) o.gap = [fx(o.gap[0]), fx(o.gap[1])];
+          if (o.t !== undefined) o.t *= fit;
+          if (o.hookLen !== undefined) o.hookLen *= fit;
           o.scale = (o.scale === undefined ? 1 : o.scale) * fit;
           if (o.colX !== undefined) o.colX = fx(o.colX);
         });
@@ -875,7 +1343,7 @@
         sys.objects.push({ id: 'd:staff:' + s.id + ':' + sys.measures[0], kind: 'staff', refs: [s.id], staffKey: s.id, measure: null,
           box: [sys.x, -EG.staffLine / 2 * f, sys.x + sys.w, lineSpan(s) + EG.staffLine / 2 * f], lines: s.lines, space: f, layer: 'staff' });
       });
-      sys.objects.forEach(ob => { ob.box = shift(ob.box, 0, sys.y + (off.get(ob.staffKey) || 0)); });
+      sys.objects.forEach(ob => { moveGeom(ob, 0, sys.y + (off.get(ob.staffKey) || 0)); });
       /* the bar lines of a part's staves run through the gap to its next staff (a grand staff's bar lines are one) */
       const nextInPart = new Map();
       P.staves.forEach((s, k) => { const n = P.staves[k + 1]; if (n && n.part === s.part) nextInPart.set(s.id, sys.y + off.get(n.id)); });
@@ -911,13 +1379,27 @@
         }
         if (o.scale !== undefined && o.scale !== 1) out.scale = r2(o.scale);
         if (o.grace) out.grace = true;
-        if (o.provisional) out.provisional = true;
         if (o.courtesy) out.courtesy = true;
         if (o.open) out.open = true;
         if (o.kind === 'volta') { out.start = !!o.start; if (o.label) out.label = o.label; }
         if (o.lines !== undefined) out.lines = o.lines;
         if (o.kind === 'staff') out.space = r2(o.space);
         if (o.colX !== undefined) out.anchor = [r2(o.colX), r2(sys.staves.find(s => s.key === o.staffKey).y)];
+        /* G4c: stems' direction and beam; beams' members, level, hook and edge; tuplet brackets' side, hooks and gap; the
+           partners of a shared unison or a merged rest */
+        if (o.dir) out.dir = o.dir;
+        if (o.kind === 'stem' && o.beam) out.beam = o.beam;
+        if (o.events) out.events = o.events.slice();
+        if (o.level !== undefined) out.level = o.level;
+        if (o.hook) out.hook = o.hook;
+        if (o.line) out.line = rb(o.line);
+        if (o.t !== undefined) out.t = r2(o.t);
+        if (o.side) out.side = o.side;
+        if (o.hooks) out.hooks = o.hooks.slice();
+        if (o.gap) out.gap = rb(o.gap);
+        if (o.hookLen !== undefined) out.hookLen = r2(o.hookLen);
+        if (o.merged) out.merged = o.merged.slice();
+        if (o.kind === 'rest' && o.center) out.center = true;
         objects.push(out);
       });
       /* the width as the difference of the rounded edges, so a measure ends exactly where the next begins */
@@ -963,6 +1445,6 @@
     };
   }
 
-  return Object.freeze({ VERSION, GAP, VGAP, MARGIN, BRACE, SCREEN, counters, clefRef, yOf, prepare, systemParts, layout, engrave, createEngraver,
+  return Object.freeze({ VERSION, GAP, VGAP, MARGIN, BRACE, SCREEN, SLASH, counters, clefRef, yOf, prepare, systemParts, layout, engrave, createEngraver,
     normalizeConfig, screenConfig });
 });

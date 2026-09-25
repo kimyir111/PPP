@@ -17,7 +17,8 @@
              accidental against a head, stem, accidental or ledger line, H3 a dot
              against a head, stem or flag, H4 anything outside the page, H6 an object
              of one staff against one of another staff, or systems overlapping, H8 a
-             note outside its measure. A sweep over x,
+             note outside its measure. Two objects that name each other `merged`
+             (a unison two voices share, G04 §14.2) coincide by design. A sweep over x,
              in a fixed order; touching (less than 0.01 sp of overlap) is not a
              collision.
    ========================================================================== */
@@ -131,6 +132,8 @@
         for (let j = i + 1; j < list.length && list[j].box[0] < a.box[2] - EPS; j++) {
           const b = list[j];
           if (!overlaps(a.box, b.box)) continue;
+          /* a shared unison's two heads, or the one accidental two voices share, stand at one place by design (§14.2) */
+          if (a.merged && a.merged.indexOf(b.id) >= 0 && b.merged && b.merged.indexOf(a.id) >= 0) continue;
           RULES.forEach(([code, ka, kb, same]) => {
             const hit = (x, y) => x.kind === ka && kb.indexOf(y.kind) >= 0 && (same || x.event !== y.event) && x.id !== y.id;
             if (hit(a, b) || hit(b, a)) out.push({ code: code, refs: [a.id, b.id].sort(), detail: a.kind + '/' + b.kind });

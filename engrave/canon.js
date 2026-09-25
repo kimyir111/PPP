@@ -11,6 +11,9 @@
                  and a browser compute it synchronously and identically. (G04 §8.4
                  named sha256; FNV is used because no browser offers a
                  synchronous sha256 - G4-B4.)
+   A number that is not finite (NaN, Infinity) is a layout defect, never data:
+   canonical() throws on it rather than writing null (G4b review O1), so a
+   broken coordinate cannot hash like a missing one.
    ========================================================================== */
 (function (root, factory) {
   'use strict';
@@ -20,8 +23,12 @@
   'use strict';
 
   const r2 = v => { const x = Math.round(v * 100) / 100; return x === 0 ? 0 : x; };
+  const BAD = {};
   function norm(v) {
-    if (typeof v === 'number') return isFinite(v) ? r2(v) : null;
+    if (typeof v === 'number') {
+      if (!isFinite(v)) throw BAD;
+      return r2(v);
+    }
     if (Array.isArray(v)) return v.map(norm);
     if (v && typeof v === 'object') {
       const o = {};
@@ -30,7 +37,21 @@
     }
     return v;
   }
-  const canonical = x => JSON.stringify(norm(x));
+  /* where the first number that is not finite sits (only walked when there is one) */
+  function whereBad(v, at) {
+    if (typeof v === 'number') return isFinite(v) ? null : at + ' = ' + String(v);
+    if (v && typeof v === 'object') {
+      const keys = Array.isArray(v) ? v.map((x, i) => i) : Object.keys(v).sort();
+      for (const k of keys) { const w = whereBad(v[k], at + (Array.isArray(v) ? '[' + k + ']' : '.' + k)); if (w) return w; }
+    }
+    return null;
+  }
+  function canonical(x) {
+    try { return JSON.stringify(norm(x)); } catch (e) {
+      if (e === BAD) throw new Error('canonical: a number that is not finite at ' + whereBad(x, '$'));
+      throw e;
+    }
+  }
   const hash = x => Z.fnv1a64(Z.utf8(canonical(x)));
 
   return Object.freeze({ r2, canonical, hash });

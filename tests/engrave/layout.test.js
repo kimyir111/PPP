@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { REPO, SG, E, corpusGraphs, graphOf } = require('./helpers.js');
-const { l2, RATCHET } = require('./l2.js');
+const { l2, MAXIMA, RECORDED } = require('./l2.js');
 const A29 = require('./a29.js');
 const HASHES = require('./tools/layout-hashes.js');
 
@@ -24,14 +24,20 @@ const eplan = async f => E.plan(await graphOf('tests/engrave/fixtures/e/' + f));
 /* the one committed score whose measure no width holds: its last measure is 175/4 whole notes (166 events, the rest of
    the hymn in one bar - a source defect); it overflows and says so */
 const OVERFLOW_ALLOWED = new Set(['catalog/hymns/in-the-bleak-midwinter.musicxml']);
+/* every L2 metric l2.js computes is a zero target but the steepest beam (a limit), the count of systems drawn smaller
+   (recorded) and an overflow (the one source defect below). G4b's ratchets on other-voice collisions (eg.rest.overlap,
+   eg.voice.stem_over_head: 189 and 216 over the corpus at G4b) are zero targets since G4c. */
+const NOT_ZERO = new Set(Object.keys(MAXIMA).concat(RECORDED, ['eg.system.overflow']));
+const zeroKeys = m => Object.keys(m).filter(k => !NOT_ZERO.has(k)).sort();
 const ZERO_L2 = ['eg.clip.count', 'eg.overlap.head_head', 'eg.overlap.acc', 'eg.overlap.dot', 'eg.staff.overlap', 'eg.system.overlap',
   'eg.spacing.rod_violations', 'eg.spacing.monotonic_violations', 'eg.column.order_violations', 'eg.layout.event_missing',
   'eg.layout.event_unknown', 'eg.layout.head_missing', 'eg.layout.head_staff_wrong', 'eg.systems.one_bar', 'eg.layout.hard_violations',
-  'eg.glyph.fallback', 'eg.layout.multiset_diff', 'eg.system.fill_err', 'eg.system.scaled_avoidable'];
-/* the other-voice collisions G4b records but does not yet remove (l2.js RATCHET: rests placed by role, provisional
-   stems - G4c's; G04 §33.15, §33.16): over the E fixtures and every committed score at both configs, never more than
-   this. G4c holds them at 0. */
-const RATCHET_CORPUS = { 'eg.rest.overlap': 189, 'eg.voice.stem_over_head': 216 };
+  'eg.glyph.fallback', 'eg.layout.multiset_diff', 'eg.system.fill_err', 'eg.system.scaled_avoidable',
+  'eg.rest.overlap', 'eg.voice.stem_over_head', 'eg.voice.stem_policy_violations', 'eg.stem.short', 'eg.beam.graph_missing',
+  'eg.beam.derived_missing', 'eg.beam.unplanned', 'eg.beam.level_errors', 'eg.beam.flag_errors', 'eg.beam.slope_violations',
+  'eg.beam.head_crossings', 'eg.tuplet.missing', 'eg.tuplet.show_errors', 'eg.tuplet.extent_err', 'eg.tuplet.nesting_errors',
+  'eg.tuplet.suppressed_rendered', 'eg.grace.misplaced', 'eg.grace.stem_errors', 'eg.rest.measure_errors', 'eg.layout.attachment_diff',
+  'eg.layout.signature_diff', 'eg.layout.pitch_y_err', 'eg.layout.duplicate_ids'];
 
 /* A piano piece from a compact spec: bars of voices of [dur, type, pitch, extra] with pitch 'C5', 'F#4' ('r' a rest) or
    an array of pitches (a chord); extra: {dots, acc, stem}. Voice 1 and 2 on the upper staff, voice 3 on the lower. */
@@ -107,8 +113,11 @@ test('A29: no DOM measurement anywhere in engrave/ but the drawing backend; no b
   assert.deepEqual(r.scanned.measure, r.files.filter(f => !A29.BACKEND[f]));
   assert.deepEqual(r.files.filter(f => r.scanned.pure.indexOf(f) < 0 && !A29.BACKEND[f]), Object.keys(A29.EDGE).sort());
   Object.keys(A29.EDGE).forEach(f => assert.ok(r.files.indexOf(f) >= 0, 'the exemption names a file that exists: ' + f));
-  ['metrics', 'space', 'breaks', 'skyline', 'canon', 'layout', 'practice', 'plan', 'plan-beams', 'plan-tuplets', 'ledger', 'glyphs']
+  ['metrics', 'space', 'breaks', 'skyline', 'canon', 'notation', 'layout', 'practice', 'outlines', 'plan', 'plan-beams', 'plan-tuplets', 'ledger', 'glyphs']
     .forEach(n => assert.ok(r.scanned.pure.indexOf(n + '.js') >= 0, n + '.js is held to every rule'));
+  /* the drawing backend is exempt by §20, and needs no exemption: it emits text and measures nothing */
+  assert.ok(r.files.indexOf('svg.js') >= 0);
+  assert.deepEqual(A29.scanSource(fs.readFileSync(path.join(REPO, 'engrave', 'svg.js'), 'utf8'), 'svg-as-a-layout-module.js'), [], 'svg.js holds to every rule too');
   /* the metrics table is exactly the pinned font's (CI runs the same check) */
   const out = execFileSync(process.execPath, [path.join(REPO, 'tests', 'engrave', 'tools', 'make-metrics.js'), '--check'], { encoding: 'utf8' });
   assert.match(out, /holds the pinned font's metrics/);
@@ -194,7 +203,8 @@ test('the EngravedScore: staff-space coordinates to 0.01, every object keyed to 
   assert.deepEqual(e.curves, [], 'curves are G4d');
   const ids = new Set();
   const planIds = new Set([].concat(p.events.map(x => x.id), p.events.flatMap(x => x.heads.map(h => h.id)), p.measures.map(x => x.id),
-    p.clefs.map(x => x.id), p.keys.map(x => x.id), p.meters.map(x => x.id), p.staves.map(x => x.id), p.parts.map(x => x.id), p.endings.map(x => x.id)));
+    p.clefs.map(x => x.id), p.keys.map(x => x.id), p.meters.map(x => x.id), p.staves.map(x => x.id), p.parts.map(x => x.id), p.endings.map(x => x.id),
+    p.beams.map(x => x.id), p.tuplets.map(x => x.id), p.tuplets.flatMap(x => x.members || [])));
   const two = v => Math.round(v * 100) / 100 === v;
   e.objects.forEach(o => {
     assert.ok(!ids.has(o.id), 'unique id ' + o.id);
@@ -228,10 +238,16 @@ test('intrinsic widths: accidentals, dots, seconds, chords, a second voice and r
   assert.ok(Math.abs(w(third) - w(plain)) < 1e-9, 'a third does not');
   const chordAcc = colOf({ beats: 1, dur: '1/4', bars: [{ voices: [[['1/4', 'quarter', ['C5', 'D5', 'E5'], { acc: 'sharp' }]]] }] }).cols[0];
   assert.ok(chordAcc.left > one({ acc: 'sharp' }).left, 'accidentals a second apart stack in columns');
+  /* two voices on one pitch (§14.2): one head of one shape is shared; a half and a quarter stand side by side */
   const unison = colOf({ beats: 1, dur: '1/4', bars: [{ voices: [[['1/4', 'quarter', 'C5', { stem: 'up' }]], [['1/4', 'quarter', 'C5', { stem: 'down' }]]] }] }).cols[0];
-  assert.ok(w(unison) > 2 * MT.glyph('noteheadBlack').w - 1e-9, 'two voices on one pitch stand side by side');
-  const rest = colOf({ beats: 1, dur: '1/4', bars: [{ voices: [[['1/4', 'quarter', 'r']]] }] }).cols[0];
+  assert.ok(Math.abs(w(unison) - MT.glyph('noteheadBlack').w) < 1e-9, 'two voices on one pitch and one shape share a head');
+  const unison2 = colOf({ beats: 2, dur: '1/2', bars: [{ voices: [[['1/2', 'half', 'C5', { stem: 'up' }]], [['1/4', 'quarter', 'C5', { stem: 'down' }], ['1/4', 'quarter', 'D5', { stem: 'down' }]]] }] }).cols[0];
+  assert.ok(w(unison2) > 2 * MT.glyph('noteheadBlack').w - 1e-9, 'a half and a quarter on one pitch stand side by side');
+  const rest = colOf({ beats: 2, dur: '1/2', bars: [{ voices: [[['1/4', 'quarter', 'r'], ['1/4', 'quarter', 'C5']]] }] }).cols[0];
   assert.ok(Math.abs(w(rest) - MT.glyph('restQuarter').w) < 1e-9, 'a rest: its glyph');
+  /* a rest the whole measure long is a whole rest (§14.3, G4b review R6) */
+  const bar = colOf({ beats: 1, dur: '1/4', bars: [{ voices: [[['1/4', 'quarter', 'r']]] }] }).cols[0];
+  assert.ok(Math.abs(w(bar) - MT.glyph('restWhole').w) < 1e-9, 'a whole-measure rest: a whole rest');
   /* extents are per staff: the upper staff's accidental does not give the lower staff a left extent */
   const twoP = E.plan(piece({ beats: 1, dur: '1/4', bars: [{ voices: [[['1/4', 'quarter', 'C5', { acc: 'sharp' }]], [], [['1/4', 'quarter', 'C3']]] }] }));
   const two = L.prepare(twoP).measures[0].cols[0];
@@ -453,25 +469,25 @@ test('A17-A19, A23-A25: the E fixtures and every committed score lay out with no
   for (const f of efix()) items.push(['e/' + f, await graphOf('tests/engrave/fixtures/e/' + f)]);
   (await corpusGraphs()).forEach(x => items.push(x));
   const bad = [];
-  const ratchet = {};
-  let n = 0;
+  let n = 0, slope = 0;
   items.forEach(([id, g]) => {
     const p = E.plan(g);
     const P = L.prepare(p);
     ['desktop', 'phone'].forEach(bp => {
       const e = L.layout(P, { breakpoint: bp });
-      const m = l2(e, p, { prepared: P, layout: L });
-      ZERO_L2.forEach(k => { if (m[k]) bad.push(id + ' ' + bp + ' ' + k + ' ' + m[k]); });
+      const m = l2(e, p, { prepared: P, layout: L, graph: g });
+      /* every zero target l2.js computes, whatever this list names (a new metric cannot be left out by accident) */
+      assert.deepEqual(zeroKeys(m), ZERO_L2.slice().sort());
+      zeroKeys(m).forEach(k => { if (m[k]) bad.push(id + ' ' + bp + ' ' + k + ' ' + m[k]); });
       if (m['eg.system.overflow'] && !OVERFLOW_ALLOWED.has(id)) bad.push(id + ' ' + bp + ' overflow ' + m['eg.system.overflow']);
-      RATCHET.forEach(k => { assert.equal(typeof m[k], 'number', k); ratchet[k] = (ratchet[k] || 0) + m[k]; });
+      slope = Math.max(slope, m['eg.beam.slope_max']);
       n++;
     });
   });
   assert.deepEqual(bad, []);
   assert.ok(n >= 2 * 380, n + ' layouts');
-  /* the other-voice collisions (A26) may fall, never rise, until G4c holds them at 0 */
-  assert.deepEqual(Object.keys(RATCHET_CORPUS).sort(), RATCHET.slice().sort());
-  RATCHET.forEach(k => assert.ok(ratchet[k] <= RATCHET_CORPUS[k], k + ' ' + ratchet[k] + ' > ' + RATCHET_CORPUS[k] + ' (ratchet)'));
+  /* A21: no beam steeper than 0.25 */
+  assert.ok(slope <= 0.25 && slope > 0.1, 'the steepest beam ' + slope);
 });
 
 test('the collision check finds each hard violation it names (negative controls)', async () => {
@@ -569,20 +585,22 @@ test('the G4b fixer\'s L2 metrics find what they name (negative controls): other
   assert.equal(l2(x, pl, {})['eg.system.scaled_avoidable'], 0);
 });
 
-test('ratchet gates (bench.js): a rise over the baseline fails, a fall passes, a baseline without the key fails', () => {
+test('zero gates (bench.js): G4b\'s two ratchets and every G4c metric are zero targets; the steepest beam is a limit; a baseline without a measured zero target fails', () => {
   const B = require('./tools/bench.js');
-  assert.deepEqual(B.RATCHET, RATCHET);
-  const base = { graphs: 1, 'eg.rest.overlap': 34, 'eg.voice.stem_over_head': 74 };
-  const sum = v => Object.assign({ graphs: 1 }, v);
-  assert.deepEqual(B.compare(sum({ 'eg.rest.overlap': 34, 'eg.voice.stem_over_head': 74 }), base), []);
-  assert.deepEqual(B.compare(sum({ 'eg.rest.overlap': 30, 'eg.voice.stem_over_head': 70 }), base), []);
-  assert.deepEqual(B.compare(sum({ 'eg.rest.overlap': 35, 'eg.voice.stem_over_head': 74 }), base), ['eg.rest.overlap 35 vs baseline 34']);
-  assert.deepEqual(B.compare(sum({ 'eg.rest.overlap': 34, 'eg.voice.stem_over_head': 75 }), base), ['eg.voice.stem_over_head 75 vs baseline 74']);
-  assert.ok(B.compare(sum({ 'eg.rest.overlap': 0, 'eg.voice.stem_over_head': 0 }), { graphs: 1 }).some(s => /a ratchet metric the baseline does not record/.test(s)));
-  /* every committed suite baseline records them */
+  ['eg.rest.overlap', 'eg.voice.stem_over_head'].concat(ZERO_L2).forEach(k => assert.ok(B.ZERO.indexOf(k) >= 0, k + ' is a zero target'));
+  assert.equal(B.RATCHET, undefined, 'no ratchet is left');
+  const base = { graphs: 1, 'eg.rest.overlap': 0, 'eg.voice.stem_over_head': 0, 'eg.beam.slope_max': 0.25 };
+  const sum = v => Object.assign({ graphs: 1, 'eg.rest.overlap': 0, 'eg.voice.stem_over_head': 0, 'eg.beam.slope_max': 0.25 }, v);
+  assert.deepEqual(B.compare(sum({}), base), []);
+  assert.deepEqual(B.compare(sum({ 'eg.rest.overlap': 1 }), base), ['eg.rest.overlap = 1 (must be 0)', 'eg.rest.overlap 1 vs baseline 0']);
+  assert.deepEqual(B.compare(sum({ 'eg.voice.stem_over_head': 2 }), base), ['eg.voice.stem_over_head = 2 (must be 0)', 'eg.voice.stem_over_head 2 vs baseline 0']);
+  assert.deepEqual(B.compare(sum({ 'eg.beam.slope_max': 0.26 }), base), ['eg.beam.slope_max = 0.26 (must be <= 0.25)']);
+  assert.ok(B.compare(sum({ 'eg.tuplet.missing': 0 }), base).some(s => /a zero-target metric the baseline does not record/.test(s)));
+  /* every committed suite baseline records them, at 0 */
   ['r', 'e', 'x'].forEach(s => {
     const b = JSON.parse(fs.readFileSync(path.join(REPO, 'tests', 'engrave', 'baselines', s + '.l1.json'), 'utf8'));
-    RATCHET.forEach(k => assert.equal(typeof b[k], 'number', s + ' ' + k));
+    ZERO_L2.forEach(k => assert.equal(b[k], 0, s + ' ' + k));
+    assert.ok(b['eg.beam.slope_max'] <= 0.25, s + ' slope');
   });
 });
 
@@ -612,11 +630,13 @@ test('coverage: what G4b places is counted, and what later stages draw is pendin
   assert.equal(e.coverage.pending.articulation, arts);
   const p1 = await eplan('E01-beams-basic.musicxml');
   const e1 = L.engrave(p1, {});
-  assert.equal(e1.coverage.pending.beam, p1.beams.length);
-  /* beamed notes get provisional stems and no flags until G4c */
+  /* G4c places beams, tuplets and grace stems: nothing of them is pending, and no stem is provisional any more */
+  ['beam', 'tuplet', 'grace-stem', 'key-mid-measure'].forEach(k => assert.equal(e1.coverage.pending[k], undefined, k));
+  assert.ok(e1.coverage.placed.beam >= p1.beams.length);
   const beamed = new Set(p1.beams.flatMap(b => b.events));
   assert.ok(e1.objects.filter(o => o.kind === 'flag').every(o => !beamed.has(o.event)));
-  assert.ok(e1.objects.filter(o => o.kind === 'stem').every(o => o.provisional));
+  assert.ok(e1.objects.filter(o => o.kind === 'stem').every(o => !o.provisional && (o.dir === 'up' || o.dir === 'down')));
+  assert.ok(e1.objects.filter(o => o.kind === 'stem' && beamed.has(o.event)).every(o => o.beam));
   /* hidden events and after-graces are not placed; a TAB staff (deferred) is not laid out */
   const p30 = await eplan('E30-hidden-cue.musicxml');
   const e30 = L.engrave(p30, {});
@@ -625,9 +645,18 @@ test('coverage: what G4b places is counted, and what later stages draw is pendin
   const keyed = hidden => L.engrave(E.plan(piece({ beats: 4, fifths: 2, keyHidden: hidden, bars: bars(2, QUARTERS) })), {});
   assert.equal(keyed(false).objects.filter(o => o.kind === 'keysig').length, 4);
   assert.equal(keyed(true).objects.filter(o => o.kind === 'keysig').length, 0);
-  /* a key change inside a measure is not placed yet: it is pending, not dropped */
-  const tk = L.engrave(E.plan(await graphOf('tests/scoregraph/fixtures/xml/tempo-meter-key-changes.musicxml')), {});
-  assert.equal(tk.coverage.pending['key-mid-measure'], 1);
+  /* a key change inside a measure (§15.4; pending in G4b): drawn where it happens, on every staff, cancelling the old key */
+  const tkg = await graphOf('tests/scoregraph/fixtures/xml/tempo-meter-key-changes.musicxml');
+  const tkp = E.plan(tkg);
+  const tk = L.engrave(tkp, {});
+  const mid = tkp.keys.find(k => k.at !== '0');
+  assert.ok(mid, 'the fixture changes key inside a measure');
+  assert.equal(tk.coverage.pending['key-mid-measure'], undefined);
+  const kobj = tk.objects.filter(o => o.kind === 'keysig' && o.refs[0] === mid.id);
+  assert.ok(kobj.length >= Math.abs(mid.fifths) && kobj.every(o => o.measure === mid.m), 'the change is in its measure: ' + kobj.length);
+  const col = tk.measures.find(m => m.id === mid.m).columns.find(c => !c.time && c.at === mid.at);
+  assert.ok(col && kobj.every(o => o.box[0] >= col.x - 0.01), 'at its own column, before the notes of its time');
+  assert.equal(l2(tk, tkp, { graph: tkg })['eg.layout.signature_diff'], 0);
   /* the slash notehead is a shape VexFlow draws, not a fallback */
   const e31 = L.engrave(await eplan('E31-noteheads.musicxml'), {});
   assert.ok(!e31.diagnostics.some(d => d.code === 'GLYPH_FALLBACK'));
@@ -669,5 +698,5 @@ test('the index exports the layout core in Node; the app does not load it yet (l
   assert.equal(typeof E.practice.createPracticeMap, 'function');
   assert.equal(typeof E.layoutHash, 'function');
   const html = fs.readFileSync(path.join(REPO, 'Piano Coach App.dc.html'), 'utf8');
-  ['metrics', 'space', 'breaks', 'skyline', 'canon', 'layout', 'practice'].forEach(n => assert.doesNotMatch(html, new RegExp('engrave/' + n + '\\.js')));
+  ['metrics', 'space', 'breaks', 'skyline', 'canon', 'notation', 'layout', 'practice', 'outlines', 'svg'].forEach(n => assert.doesNotMatch(html, new RegExp('engrave/' + n + '\\.js')));
 });

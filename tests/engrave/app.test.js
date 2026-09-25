@@ -14,8 +14,9 @@ const html = fs.readFileSync(path.join(REPO, 'Piano Coach App.dc.html'), 'utf8')
 const sha = s => crypto.createHash('sha256').update(s).digest('hex');
 const slice = (from, to) => { const i = html.indexOf(from); assert.ok(i >= 0, 'the app has ' + JSON.stringify(from)); const j = html.indexOf(to, i); return html.slice(i, j > 0 ? j : i + 3000); };
 
-/* G4b's layout core is not in the app until the renderer switch (G4f): nothing draws from it, the legacy renderer draws */
-const LAYOUT_CORE = ['breaks', 'canon', 'layout', 'metrics', 'practice', 'skyline', 'space'].map(n => 'engrave/' + n + '.js');
+/* G4b's layout core and G4c's notation and SVG backend are not in the app until the renderer switch (G4d-2, G4f):
+   nothing draws from them, the legacy renderer draws */
+const LAYOUT_CORE = ['breaks', 'canon', 'layout', 'metrics', 'notation', 'outlines', 'practice', 'skyline', 'space', 'svg'].map(n => 'engrave/' + n + '.js');
 
 test('the app loads every G4a engrave/ file after the scoregraph library and audio-score.js, index.js last - and no G4b layout file', () => {
   const srcs = [...html.matchAll(/<script src="\.\/((?:scoregraph\/[\w-]+|engrave\/[\w-]+|audio-score)\.js)\?v=[^"]*"><\/script>/g)].map(m => m[1]);
