@@ -587,7 +587,7 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 
 The record is G04 §33.17 and DECISIONS G4-L1.
 
-**Current units** — they touch disjoint files, so they may run at the same time in separate worktrees. With a single implementer, **MX-1 goes first** (small, approved by D-1, and it must be merged before the G4f flip).
+**Current units — both RUNNING since 2026-09-25**, as Lead-launched implementers, each the only writer in its worktree: MX-1 in `D:/PPP-mx1` and G4c in `D:/PPP-g4`. **Start no other writer in either worktree.** They touch disjoint files. MX-1 must be merged before the G4f flip. Each hands in READY_FOR_REVIEW, then gets one independent review, then a Fixer only for BLOCKER/MAJOR.
 
 **MX-1 — playback correctness (implementer brief)**
 
