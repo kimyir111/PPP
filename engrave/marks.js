@@ -33,7 +33,9 @@
    clock, no random; every list in a fixed order.
 
      placeSystem(S)   S = {P, objs, si, x1, startX, endX, sysOf, lines, mx, diagnostics, curves}
-                      appends the marks to objs and the curves to curves
+                      appends the marks to objs and the curves to curves, and leaves
+                      its skylines in S.sky for the marks attached to systems
+                      (sysmarks.js, G4d-1b)
    ========================================================================== */
 (function (root, factory) {
   'use strict';
@@ -545,6 +547,8 @@
       }
     });
 
+    /* the skylines, with everything placed here, for the rows that stand outside it all (sysmarks.js) */
+    S.sky = sky;
   }
 
   return Object.freeze({ PAD, FINGER, GLISS_TEXT, TREMOLO, RANK, INNER, HORIZONTAL, spaceSnap, placeSystem });

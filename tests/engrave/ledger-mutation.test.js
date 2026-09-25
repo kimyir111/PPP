@@ -52,7 +52,7 @@ const MUTATIONS = [
   { id: 'L-OTTAVA-OUTPUT', file: 'plan.js', probe: 'burg015', expect: 'missing', what: '8va lines dropped from the output',
     from: "lines.push({ id: s.id, kind: 'ottava',", to: "if (0) lines.push({ id: s.id, kind: 'ottava'," },
   { id: 'L-WEDGE-OUTPUT', file: 'plan.js', probe: 'burg015', expect: 'missing', what: 'hairpins dropped from the output',
-    from: "lines.push({ id: s.id, kind: 'wedge', wedge: s.kind,", to: "if (0) lines.push({ id: s.id, kind: 'wedge', wedge: s.kind," },
+    from: "lines.push({ id: s.id, kind: 'wedge', part: part.id, wedge: s.kind,", to: "if (0) lines.push({ id: s.id, kind: 'wedge', part: part.id, wedge: s.kind," },
   { id: 'L-MARK-OUTPUT', file: 'plan.js', probe: 'burg015', expect: 'missing', what: 'directions (dynamics, words) dropped from the output',
     from: 'marks.push({ id: d.id, kind: d.kind,', to: 'if (0) marks.push({ id: d.id, kind: d.kind,' },
   { id: 'L-PEDAL-MARK', file: 'plan.js', probe: 'piano-marks', expect: 'altered', what: 'a pedal carried without its sign/line mark',

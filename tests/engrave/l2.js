@@ -847,6 +847,7 @@ function l2(eng, plan, opts) {
   set('eg.glyph.fallback', (codes.get('GLYPH_FALLBACK') || []).length);
   set('eg.text.missing_glyph', (codes.get('TEXT_GLYPH_MISSING') || []).length);
   curvesAndMarks(eng, plan, opts, m, { pe, pm, objsOf, spaceOf, staffTop, linesOf, laidOut, stemDirOf, offsOf, codes, ids });
+  systemMarks(eng, plan, opts, m, { pe, pm, spaceOf, staffTop, linesOf, laidOut, clefIn, codes });
   return m;
 }
 
@@ -906,9 +907,23 @@ const PLACED_KINDS = ['articulation', 'ornament', 'fermata', 'tuplet-number', 't
 const FINGER_PAD = 0.3;
 const TEXT_KINDS = ['fingering', 'text'];
 const MARK_KINDS = ['articulation', 'ornament', 'fermata', 'tremolo', 'tuplet-number', 'tuplet-bracket'];
+/* G4d-1b: the text-like and line-like kinds of the marks attached to systems (below) join them - A20 in full */
+TEXT_KINDS.push('dynamic', 'words', 'chord', 'tempo', 'rehearsal', 'jump', 'lyric', 'pedal', 'ottava', 'volta-label');
+MARK_KINDS.push('hairpin', 'pedal-line', 'pedal-change', 'ottava-line', 'volta', 'frame', 'lyric-line');
 const NOTE_KINDS = ['notehead', 'stem', 'flag', 'beam', 'accidental', 'dot', 'rest', 'ledger', 'paren', 'arpeggio', 'slash'];
-/* the mark kinds §21.1's eg.mark.drawn_ratio names that G4d-1a draws */
-const DRAWN_KINDS = ['articulation', 'ornament', 'fermata', 'fingering', 'gliss', 'arpeggio'];
+/* the mark kinds §21.1's eg.mark.drawn_ratio names that G4d-1a draws, and (G4d-1b) the marks attached to systems: dynamics,
+   hairpins (wedge), pedals and their changes, octave lines, voltas (ending), chord names, tempos, rehearsal marks, jumps,
+   words, lyrics */
+const DRAWN_KINDS = ['articulation', 'ornament', 'fermata', 'fingering', 'gliss', 'arpeggio',
+  'dynamic', 'wedge', 'pedal', 'pedal-change', 'ottava', 'ending', 'chord', 'tempo', 'rehearsal', 'jump', 'words', 'lyric'];
+/* a pedal change is drawn as a change (A9, §23 M19): the release and the press again (one * and one Ped. naming it) where the pedal
+   is a sign, the line's notch where it is a line - never a release alone */
+function changeDrawn(objs, p, ref) {
+  const sign = !p.mark || p.mark.sign !== false, line = !!(p.mark && p.mark.line) || !sign;
+  const cs = objs.filter(o => o.refs.indexOf(ref) >= 0);
+  if (sign && !line) return cs.filter(o => o.glyph === 'keyboardPedalUp').length === 1 && cs.filter(o => o.glyph === 'keyboardPedalPed').length === 1;
+  return cs.filter(o => o.kind === 'pedal-change' && o.hookLen > 0.5 - TOL).length === 1;
+}
 /* SMuFL noteheads by shape and fill (G04 §6, §14.6): cross (a plus) has no glyph in the pinned font and stands in as x */
 const HEAD_GLYPHS = {
   normal: ['noteheadBlack', 'noteheadHalf', 'noteheadWhole', 'noteheadDoubleWhole'], x: ['noteheadXBlack', 'noteheadXHalf', 'noteheadXWhole', 'noteheadXWhole'],
@@ -1122,7 +1137,32 @@ function curvesAndMarks(eng, plan, opts, m, C) {
   eng.objects.forEach(o => o.refs.forEach(r => named.add(r)));
   curves.forEach(c => c.refs.forEach(r => named.add(r)));
   const drawnEvents = new Set(eng.objects.filter(o => o.kind === 'notehead' || o.kind === 'rest').map(o => o.event));
-  const byId = new Map([...(plan.ties || []), ...(plan.slurs || []), ...(plan.lines || [])].map(x => [x.id, x]));
+  const byId = new Map([...(plan.ties || []), ...(plan.slurs || []), ...(plan.lines || []), ...(plan.marks || []), ...(plan.tempos || []), ...(plan.jumps || []),
+    ...(plan.endings || [])].map(x => [x.id, x]));
+  /* G4d-1b: when the marks attached to systems are due - a direction, tempo or jump in a measure this layout draws (a word or
+     rehearsal mark with text to show), a hairpin or pedal over one, a pedal change in one, an octave line over a note drawn,
+     a volta over a measure drawn, a lyric of a note drawn */
+  const mIdx = m => (pm.get(m) || { i: -1 }).i;
+  const lastI = plan.measures.length - 1;
+  const spanLaid = (from, to) => { const a = mIdx(from.m), b = to ? mIdx(to.m) : lastI; return [...laidOut].some(mid => mIdx(mid) >= a && mIdx(mid) <= b); };
+  const qT = pos => { const mm = pm.get(pos.m); return mm ? q(String(mm.start)) + q(String(pos.at)) : null; };
+  const evTime = new Map(plan.events.map(e => [e.id, qT(e)]));
+  const drawnHeadsOn = st => eng.objects.filter(o => (o.kind === 'notehead' || o.kind === 'rest') && !o.grace && o.staffKey === st);
+  const sysDue = (en, x) => {
+    const k = en.kind;
+    if (k === 'dynamic') return laidOut.has(x.m) && (/^[pmfrsz]+$/.test(x.value || '') || !!String(x.value === 'other' || !x.value ? x.text || '' : x.value).trim());
+    if (k === 'words' || k === 'rehearsal') return laidOut.has(x.m) && !!String(x.text || '').trim();
+    if (k === 'chord' || k === 'tempo' || k === 'jump') return laidOut.has(x.m);
+    if (k === 'wedge') return !!x.from && !!x.to && spanLaid(x.from, x.to);
+    if (k === 'pedal') return !!x.from && x.visible && spanLaid(x.from, x.to);
+    if (k === 'ottava') {
+      if (!x.visible || !x.from || !x.to) return false;
+      const A = qT(x.from), Z = qT(x.to);
+      return (x.covers || []).some(st => drawnHeadsOn(st).some(o => evTime.get(o.event) >= A - 1e-9 && evTime.get(o.event) < Z - 1e-9));
+    }
+    if (k === 'ending') return spanLaid({ m: x.from }, { m: x.to || x.from });
+    return false;
+  };
   const markMiss = {};
   DRAWN_KINDS.forEach(k => { markMiss[k] = 0; });
   let drawnMissing = 0;
@@ -1134,7 +1174,20 @@ function curvesAndMarks(eng, plan, opts, m, C) {
     else if (en.kind === 'tie' || en.kind === 'gliss') due = !!x && [x.from, x.to].some(h => h && headsById.has(h));
     else if (en.kind === 'slur') due = !!x && [x.from, x.to].some(id => id && drawnEvents.has(id));
     else if (en.kind === 'arpeggio') due = !!x && (x.heads || []).some(h => headsById.has(h));
+    else if (en.kind === 'pedal-change') {
+      const p = byId.get(en.plan), c = p ? (p.changes || [])[+String(en.ref).split('#change')[1]] : null;
+      due = !!p && p.visible && !!c && laidOut.has(c.m);
+      if (due && changeDrawn(eng.objects, p, en.ref)) return;
+      if (due) { drawnMissing++; markMiss[en.kind]++; miss(en.ref); }
+      return;
+    } else if (en.kind === 'lyric') {
+      const e = pe.get(en.plan), l = e ? e.lyrics[+String(en.ref).split('#lyric')[1]] : null;
+      due = drawnEvents.has(en.plan) && !!l && !!String(l.text || '').trim();
+    } else if (x && ['dynamic', 'words', 'chord', 'rehearsal', 'tempo', 'jump', 'wedge', 'pedal', 'ottava', 'ending'].indexOf(en.kind) >= 0) due = sysDue(en, x);
     else due = drawnEvents.has(en.plan);
+    /* G4d-1b: a mark attached to the system is drawn when an object of its own kind names it (a volta's number alone is not
+       the volta, an octave line's dashes alone not its label) */
+    if (due && SYS_OBJ[en.kind]) { if (!eng.objects.some(o => o.kind === SYS_OBJ[en.kind] && o.refs.indexOf(en.ref) >= 0)) { drawnMissing++; markMiss[en.kind]++; miss(en.ref); } return; }
     if (!due || named.has(en.ref)) return;
     drawnMissing++;
     if (markMiss[en.kind] !== undefined) markMiss[en.kind]++;
@@ -1279,12 +1332,34 @@ function curvesAndMarks(eng, plan, opts, m, C) {
      tuplet) - 0 */
   const farNamed = new Set((codes.get('FAR_PLACEMENT') || []).flatMap(d => d.refs));
   let farUndiag = 0;
-  eng.objects.filter(o => PLACED_KINDS.indexOf(o.kind) >= 0 && o.staffKey && staffTop.has(o.system + '|' + o.staffKey)).forEach(o => {
-    const f = spaceOf(o), t0 = staffTop.get(o.system + '|' + o.staffKey), last = t0 + Math.max(0, (linesOf.get(o.staffKey) || 5) - 1) * f;
-    const d = Math.max(t0 - o.box[3], o.box[1] - last, 0) / f;
-    if (d > FAR + TOL && !farNamed.has(o.id) && !(o.kind.indexOf('tuplet') === 0 && farNamed.has(o.refs[0]))) farUndiag++;
+  /* G4d-1b: an item of a row attached to the system is named by its row item - the mark (its first ref or its group), or the
+     object it leads (a line after its label, a hyphen after its syllable) */
+  const sysNamed = o => [o.id, o.group, o.refs[0], o.id.lastIndexOf('#') > 0 ? o.id.slice(0, o.id.lastIndexOf('#')) : null].some(k => k && farNamed.has(k));
+  const nextInPart = new Map();
+  (plan.parts || []).forEach(pt => pt.staves.forEach((st, i) => { if (pt.staves[i + 1]) nextInPart.set(st, pt.staves[i + 1]); }));
+  /* a mark attached to the system is placed as one item with all its pieces (a label and its line, a tempo's words and note):
+     its distance is the nearest of them */
+  const sysItem = new Map();
+  eng.objects.filter(o => SYS_PLACED.indexOf(o.kind) >= 0 && o.staffKey).forEach(o => {
+    const k = o.system + '|' + o.staffKey + '|' + (o.group || o.refs[0]);
+    sysItem.set(k, sysItem.has(k) ? unionBox([sysItem.get(k), o.box]) : o.box.slice());
   });
-  set('eg.layout.far_placements', (codes.get('FAR_PLACEMENT') || []).length);
+  eng.objects.filter(o => (PLACED_KINDS.indexOf(o.kind) >= 0 || SYS_PLACED.indexOf(o.kind) >= 0) && o.staffKey && staffTop.has(o.system + '|' + o.staffKey)).forEach(o => {
+    const f = spaceOf(o), t0 = staffTop.get(o.system + '|' + o.staffKey), last = t0 + Math.max(0, (linesOf.get(o.staffKey) || 5) - 1) * f;
+    const bx = SYS_PLACED.indexOf(o.kind) >= 0 ? sysItem.get(o.system + '|' + o.staffKey + '|' + (o.group || o.refs[0])) : o.box;
+    let d = Math.max(t0 - bx[3], bx[1] - last, 0) / f;
+    /* G4d-1b: a mark between two staves of a part (below the upper one) is as far as it is from the nearer of them */
+    const nx = nextInPart.get(o.staffKey), nt = nx ? staffTop.get(o.system + '|' + nx) : undefined;
+    if (SYS_PLACED.indexOf(o.kind) >= 0 && bx[1] > last && nt !== undefined) d = Math.min(d, Math.max(nt - bx[3], 0) / f);
+    if (d > FAR + TOL && !farNamed.has(o.id) && !(o.kind.indexOf('tuplet') === 0 && farNamed.has(o.refs[0])) && !(SYS_PLACED.indexOf(o.kind) >= 0 && sysNamed(o))) farUndiag++;
+  });
+  /* the marks at the notes (G4d-1a's count) and the rows attached to systems (G4d-1b: an outer row stands over high notes and
+     the rows inside it - recorded apart, each lower is better) */
+  const sysRefs = new Set();
+  eng.objects.filter(o => SYS_PLACED.indexOf(o.kind) >= 0).forEach(o => [o.id, o.group, o.refs[0]].forEach(k => { if (k) sysRefs.add(k); }));
+  const farDiags = codes.get('FAR_PLACEMENT') || [];
+  set('eg.layout.far_placements', farDiags.filter(d => !d.refs.some(r => sysRefs.has(r))).length);
+  set('eg.layout.far_placements_system', farDiags.filter(d => d.refs.some(r => sysRefs.has(r))).length);
   set('eg.layout.far_undiagnosed', farUndiag);
 
   /* ---- arpeggios (§6): left of the chord's heads on every staff they reach, over those heads, the arrow where the graph
@@ -1371,6 +1446,9 @@ function curvesAndMarks(eng, plan, opts, m, C) {
   const own = (a, b) => (a.kind === 'tremolo' && (b.event === a.event || (b.kind === 'beam' && (b.events || []).indexOf(a.event) >= 0)));
   sysStaff.forEach(list => {
     pairs(list.filter(o => isText(o) || isMark(o) || isNote(o)), (a, b) => {
+      /* G4d-1b: the pieces of one mark (a dynamic's letters, a chord name's runs, a tempo's words and note, a rehearsal mark and
+         its frame, a volta and its number) stand together by design */
+      if (a.group && a.group === b.group) return;
       if (isText(a) && isText(b)) textText++;
       else if (isText(a) || isText(b)) text++;
       else if (isMark(a) && isMark(b)) { if (!((a.kind === 'tuplet-number' || b.kind === 'tuplet-number') && a.refs[0] === b.refs[0])) markMark++; }
@@ -1388,10 +1466,866 @@ function curvesAndMarks(eng, plan, opts, m, C) {
   set('eg.overlap.mark_mark', markMark);
   set('eg.overlap.mark_note', markNote);
   /* §18.3: text is as wide as the table says (the layout reads no other width) */
-  set('eg.text.width_err', eng.objects.filter(o => o.text !== undefined && Math.abs((o.box[2] - o.box[0]) - TX.measure(o.text, o.font, o.size).w) > TOL).length);
+  set('eg.text.width_err', eng.objects.filter(o => {
+    if (o.text === undefined) return false;
+    const w = TX.measure(o.text, o.font, o.size).w;
+    /* the size is written to 0.01 sp (a staff drawn smaller scales it, G4d-1b's long words): up to 0.005 sp an em apart */
+    return Math.abs((o.box[2] - o.box[0]) - w) > TOL + (o.size > 0 ? w / o.size : 0) * 0.005;
+  }).length);
   /* every curve lies on the page */
   const page = eng.pages[0];
   set('eg.clip.curves', curves.filter(c => curveSamples.get(c).some(b => b[0] < -EPS || b[1] < -EPS || b[2] > page.w + EPS || b[3] > page.h + EPS)).length);
+}
+
+
+/* ---------------------------------------------------------------- G4d-1b: marks attached to systems, vertical spacing,
+   courtesy signs (G04 §10.2 priorities 7-11, §10.4 S2 and S5, §15.3, §15.4; A8-A10, A12 lyrics, A20, A25). Written from G04's
+   text with geometry of its own - engrave/sysmarks.js is not read: what G4-D1b fixes (sizes, gaps) is restated here. */
+/* the gaps G4-D1b sets: a hairpin 0.5 sp from a dynamic on its line (S5), its axis 0.35 sp above the dynamics' baseline; a
+   volta 0.3 sp inside its bar lines; items a row pushes apart 0.4 sp; staves of a part 5.0 sp apart at least, of different
+   parts 6.0, their content 1.0 sp apart; systems 6.0 sp line to line, their bands 1.5 sp (§15.3) */
+const SYS = { hairpinClear: 0.5, hairpinRise: 0.35, voltaInset: 0.3, apart: 0.4, inPart: 5.0, betweenParts: 6.0, pad: 1.0, system: 6.0, systemPad: 1.5,
+  cell: 0.25, staffLine: 0.13, bracketOver: 0.1, bracketOn: 0.15, curveSlack: 0.1 };
+/* the G4d-1b fixer (G04 §36.18; the review's R1-R3), what G4-D1b-4, -5, -9 and -17 fix, restated: a word by the dynamics pushed
+   0.35 sp after what it meets on their line, at most 4 sp from its place; a jump's words at a measure's start 0.3 sp after the bar
+   line; a hairpin that goes on across a break 1.0 sp before the system's first note column and its last bar line; a row of
+   dynamics 0.5 sp outside what it clears; and the tolerances - a baseline read to 0.05 sp (the text table's heights after the
+   size's rounding), a hairpin's end held to 0.05 sp, the between-staves row's gaps to 0.15 sp (the stacking's curve samples may
+   stand up to 0.1 sp off l2's) */
+const FIX = { word: 0.35, pushMax: 4, jumpStart: 0.3, breakGap: 1.0, rowPad: 0.5, lineTol: 0.05, hairpinTol: 0.05, centreTol: 0.15 };
+/* the text-like and line-like kinds of the marks attached to systems (A20 covers them all) */
+const SYS_TEXT = ['dynamic', 'words', 'chord', 'tempo', 'rehearsal', 'jump', 'lyric', 'pedal', 'ottava', 'volta-label'];
+const SYS_MARK = ['hairpin', 'pedal-line', 'pedal-change', 'ottava-line', 'volta', 'frame', 'lyric-line'];
+const SYS_PLACED = SYS_TEXT.concat(SYS_MARK);
+/* the object kind that draws each ledger kind of them (a pedal is any of its pieces; its change is its own rule, changeDrawn) */
+const SYS_OBJ = { ending: 'volta', ottava: 'ottava', dynamic: 'dynamic', wedge: 'hairpin', chord: 'chord', tempo: 'tempo', jump: 'jump', words: 'words',
+  rehearsal: 'rehearsal', lyric: 'lyric' };
+/* the app's chord kinds (App CHORD_KIND; G04 §10.2 priority 10), a flat or sharp in a kind as its sign */
+const CHORD_TEXT = { major: '', minor: 'm', augmented: 'aug', diminished: 'dim', dominant: '7', 'major-seventh': 'M7', 'minor-seventh': 'm7',
+  'diminished-seventh': 'dim7', 'augmented-seventh': 'aug7', 'half-diminished': 'm7♭5', 'major-minor': 'mM7', 'major-sixth': '6', 'minor-sixth': 'm6',
+  'dominant-ninth': '9', 'major-ninth': 'M9', 'minor-ninth': 'm9', 'dominant-11th': '11', 'major-11th': 'M11', 'minor-11th': 'm11', 'dominant-13th': '13',
+  'major-13th': 'M13', 'minor-13th': 'm13', 'suspended-second': 'sus2', 'suspended-fourth': 'sus4', power: '5', none: 'N.C.', other: '', pedal: 'ped',
+  Neapolitan: 'N', Italian: 'It', French: 'Fr', German: 'Ger', Tristan: 'Tristan' };
+const ALTER_TEXT = { '-2': '♭♭', '-1': '♭', 0: '', 1: '♯', 2: '♯♯' };
+const JUMP_WORDS = { dacapo: 'D.C.', dalsegno: 'D.S.', fine: 'Fine', tocoda: 'To Coda' };
+const OTT_LABEL = { 1: '8va', 2: '15ma', 3: '22ma', '-1': '8vb', '-2': '15mb', '-3': '22mb' };
+const OTT_CONT = { 1: '(8)', 2: '(15)', 3: '(22)', '-1': '(8)', '-2': '(15)', '-3': '(22)' };
+const DYN_GLYPH = { p: 'dynamicPiano', m: 'dynamicMezzo', f: 'dynamicForte', r: 'dynamicRinforzando', s: 'dynamicSforzando', z: 'dynamicZ' };
+const HEAD_OF = { whole: 'noteheadWhole', breve: 'noteheadDoubleWhole', half: 'noteheadHalf' };
+const normText = s => String(s === null || s === undefined ? '' : s).replace(/\s+/g, ' ').trim();
+function chordSpelling(d) {
+  const acc = a => ALTER_TEXT[String(a || 0)] || '';
+  let s = d.root ? d.root.step + acc(d.root.alter) : '';
+  const kind = d.text !== null && d.text !== undefined ? String(d.text) : (CHORD_TEXT[d.chordKind] !== undefined ? CHORD_TEXT[d.chordKind] : '');
+  s += kind.replace(/b(?=\d)/g, '♭').replace(/#(?=\d)/g, '♯');
+  (d.degrees || []).forEach(g => { s += (g.type === 'subtract' ? 'no' : g.type === 'add' ? 'add' : '') + acc(g.alter) + g.value; });
+  if (d.bass) s += '/' + d.bass.step + acc(d.bass.alter);
+  s = s.replace(/\s+/g, ' ').trim();
+  if (d.chordKind === 'none' && (d.text === null || d.text === undefined)) s = 'N.C.';
+  return s;
+}
+
+function systemMarks(eng, plan, opts, m, C) {
+  const set = (k, v) => { m[k] = v; };
+  const { pm, spaceOf, staffTop, linesOf, laidOut, clefIn } = C;
+  const objs = eng.objects;
+  const sysById = new Map(eng.systems.map(s => [s.index, s]));
+  const measOut = new Map(eng.measures.map(x => [x.id, x]));
+  const Tnum = s => q(String(s));
+  const start = new Map(plan.measures.map(x => [x.id, Tnum(x.start)])), dur = new Map(plan.measures.map(x => [x.id, Tnum(x.dur)]));
+  const Tof = pos => (pos && start.has(pos.m) ? start.get(pos.m) + Tnum(pos.at) : null);
+  const deferred = new Set(plan.ledger.filter(x => x.status === 'deferred').map(x => x.ref));
+  const live = st => !deferred.has(st);
+  const partStaves = new Map((plan.parts || []).map(p => [p.id, p.staves.filter(live)]));
+  const voiceStaff = new Map((plan.voices || []).map(v => [v.id, v.staff]));
+  const drawnRef = new Set(plan.ledger.filter(x => x.status === 'drawn' || x.status === 'merged').map(x => x.ref));
+  const sung = new Set((plan.parts || []).filter(p => p.instrument === 'voice' || plan.events.some(e => e.part === p.id && (e.lyrics || []).length)).map(p => p.id));
+  const staffOf = (sys, key) => { const s = sysById.get(sys); return s ? s.staves.find(t => t.key === key) : null; };
+  const lineY = (sys, key) => { const t = staffOf(sys, key); return t ? { top: t.y, bottom: t.y + t.h } : null; };
+  const sysOfM = mid => (measOut.has(mid) ? measOut.get(mid).system : undefined);
+  /* the marks by every graph ID they name (one mark may name two: the same dynamic or hairpin stated for both staves) */
+  const byRef = new Map();
+  objs.filter(o => SYS_PLACED.indexOf(o.kind) >= 0).forEach(o => o.refs.forEach(r => { if (!byRef.has(r)) byRef.set(r, []); byRef.get(r).push(o); }));
+  /* the notes a mark lines up with (a whole-measure rest stands in its measure's middle, not at its time) */
+  const heads = objs.filter(o => (o.kind === 'notehead' || o.kind === 'rest') && !o.grace && o.event && !o.center);
+  const evT = new Map(plan.events.map(e => [e.id, start.get(e.m) + Tnum(e.at)]));
+  const pe = C.pe;
+  /* the x of a time in a system: at a column its x, between two in proportion, from the measure's start to its first column,
+     from its last to the bar line */
+  const xOfT = (sys, T) => {
+    const ms = eng.measures.filter(x => x.system === sys);
+    const M = ms.find(x => T >= start.get(x.id) - 1e-9 && T < start.get(x.id) + dur.get(x.id) - 1e-9) ||
+      (ms.length && Math.abs(T - start.get(ms[ms.length - 1].id) - dur.get(ms[ms.length - 1].id)) < 1e-9 ? ms[ms.length - 1] : null);
+    if (!M) return null;
+    const a = T - start.get(M.id), d = dur.get(M.id), end = M.x + M.w;
+    if (Math.abs(a - d) < 1e-9) return end;
+    const cols = M.columns.filter(c => c.time).map(c => ({ at: q(c.at), x: c.x }));
+    if (!cols.length) return M.x + (end - M.x) * a / (d || 1);
+    const hit = cols.find(c => Math.abs(c.at - a) < 1e-9);
+    if (hit) return hit.x;
+    if (a < cols[0].at) return M.x + (cols[0].x - M.x) * a / (cols[0].at || 1);
+    for (let k = 0; k + 1 < cols.length; k++) if (a > cols[k].at && a < cols[k + 1].at) return cols[k].x + (cols[k + 1].x - cols[k].x) * (a - cols[k].at) / (cols[k + 1].at - cols[k].at);
+    const L = cols[cols.length - 1];
+    return L.x + (end - L.x) * (a - L.at) / ((d - L.at) || 1);
+  };
+  /* where a mark at T stands on staves: the notes starting there ([left, right]), else the time's x */
+  const anchor = (sys, T, staves) => {
+    for (const st of staves) {
+      const hs = heads.filter(o => o.system === sys && o.staffKey === st && Math.abs(evT.get(o.event) - T) < 1e-9);
+      if (hs.length) return [Math.min(...hs.map(o => o.box[0])), Math.max(...hs.map(o => o.box[2]))];
+    }
+    const x = xOfT(sys, T);
+    return x === null ? null : [x, x];
+  };
+  const endPos = (sys, pos, staves) => {
+    if (measOut.has(pos.m) && Math.abs(Tnum(pos.at) - dur.get(pos.m)) < 1e-9) return measOut.get(pos.m).x + measOut.get(pos.m).w;
+    const a = anchor(sys, Tof(pos), staves);
+    return a ? a[0] : null;
+  };
+  const baseOf = o => (o.kind === 'hairpin' ? o.line[1] + SYS.hairpinRise * spaceOf(o) : o.kind === 'pedal-line' || o.kind === 'pedal-change' ? o.line[1] : o.origin ? o.origin[1] : null);
+
+  /* ---- the side a dynamic stands on (§10.2 priority 8): its graph staff and placement; a part of several staves between the
+     first two unless the graph says otherwise; a sung part above its staff; above a lower staff of a part is between it and the
+     one above (one row there) */
+  const dynPlace = d => {
+    const ps = partStaves.get(d.part) || [];
+    if (!ps.length) return null;
+    let st = d.staff && ps.indexOf(d.staff) >= 0 ? d.staff : null;
+    let side = d.placement === 'above' || d.placement === 'below' ? d.placement : null;
+    if (!side) side = sung.has(d.part) && ps.length === 1 ? 'above' : 'below';
+    if (!st) st = side === 'above' ? ps[0] : ps[0];
+    if (side === 'above' && ps.indexOf(st) > 0) { st = ps[ps.indexOf(st) - 1]; side = 'below'; }
+    return { staff: st, side: side, next: side === 'below' && ps.indexOf(st) < ps.length - 1 ? ps[ps.indexOf(st) + 1] : null };
+  };
+  let dynSide = 0;
+  (plan.marks || []).filter(d => d.kind === 'dynamic').forEach(d => {
+    const list = (byRef.get(d.id) || []).filter(o => o.kind === 'dynamic');
+    if (!list.length) return;
+    const r = dynPlace(d);
+    if (!r || list.some(o => {
+      const L = lineY(o.system, r.staff), N = r.next ? lineY(o.system, r.next) : null;
+      if (o.staffKey !== r.staff || !L) return true;
+      if (r.side === 'above') return o.box[3] > L.top + TOL;
+      return o.box[1] < L.bottom - TOL || (N && o.box[3] > N.top + TOL);
+    })) dynSide++;
+  });
+  set('eg.dynamic.side_err', dynSide);
+
+  /* ---- §10.4 S2: one baseline per system for each kind - the dynamics (a line further out only for one that would meet one
+     on the line inside it; hairpins on the first line), the pedal, chord names, octave-line labels, each verse of lyrics */
+  let baseErr = 0;
+  /* the distinct lines among baselines, each read to within the two roundings of 0.01 sp its glyph origin went through */
+  const distinct = vs => {
+    const out = [];
+    vs.slice().sort((a, b) => a - b).forEach(v => { if (!out.length || v - out[out.length - 1] > TOL) out.push(v); });
+    return out;
+  };
+  groupBy(objs.filter(o => o.kind === 'dynamic' || o.kind === 'hairpin'), o => o.system + '|' + o.staffKey + '|' + o.side).forEach(list => {
+    const above = list[0].side === 'above';
+    const items = [...groupBy(list, o => (o.kind === 'hairpin' ? o.id : o.refs[0])).values()].map(ps => {
+      const bs = distinct(ps.map(baseOf).filter(v => v !== null));
+      if (bs.length !== 1) baseErr++;
+      return { base: bs[0], x0: Math.min(...ps.map(o => o.box[0])), x1: Math.max(...ps.map(o => o.box[2])), hairpin: ps[0].kind === 'hairpin' };
+    });
+    const lines = distinct(items.map(it => it.base));
+    if (above) lines.reverse();
+    items.forEach(it => {
+      const k = lines.findIndex(v => Math.abs(v - it.base) <= TOL);
+      if (k > 0 && !items.some(o => Math.abs(o.base - lines[k - 1]) <= TOL && it.x0 < o.x1 + 0.2 + TOL && o.x0 < it.x1 + 0.2 + TOL)) baseErr++;
+    });
+  });
+  const oneLine = (kinds, key) => groupBy(objs.filter(o => kinds.indexOf(o.kind) >= 0 && (o.kind !== 'chord' || o.text !== undefined)), key)
+    .forEach(list => { baseErr += Math.max(0, distinct(list.map(baseOf).filter(v => v !== null)).length - 1); });
+  oneLine(['pedal', 'pedal-line', 'pedal-change'], o => o.system + '|' + o.staffKey);
+  oneLine(['chord'], o => o.system + '|' + o.staffKey + '|' + o.side);
+  oneLine(['ottava'], o => o.system + '|' + o.staffKey + '|' + o.side);
+  oneLine(['lyric'], o => o.system + '|' + o.staffKey + '|' + o.verse);
+  set('eg.row.baseline_err', baseErr);
+
+  /* ---- §10.4 S5: a hairpin is level, opens the way its wedge goes (a crescendo from its point, a diminuendo to it), and keeps
+     0.5 sp from every dynamic on its line */
+  let hLevel = 0, hShape = 0, hClear = 0;
+  const wedges = new Map((plan.lines || []).filter(l => l.kind === 'wedge').map(l => [l.id, l]));
+  objs.filter(o => o.kind === 'hairpin').forEach(o => {
+    if (!o.line || Math.abs(o.line[1] - o.line[3]) > EPS) hLevel++;
+    const w = wedges.get(o.refs[0]), e = o.ends || [0, 0];
+    const cresc = w && w.wedge !== 'diminuendo';
+    const whole = o.id === o.refs[0];
+    if (!w || o.wedge !== (cresc ? 'crescendo' : 'diminuendo') || (cresc ? !(e[0] < e[1]) : !(e[0] > e[1])) || (whole && Math.min(e[0], e[1]) > EPS)) hShape++;
+    const base = baseOf(o);
+    objs.filter(d => d.kind === 'dynamic' && d.system === o.system && d.staffKey === o.staffKey && Math.abs(baseOf(d) - base) <= TOL).forEach(d => {
+      const gap = Math.max(d.box[0] - o.box[2], o.box[0] - d.box[2]);
+      if (gap < SYS.hairpinClear * spaceOf(o) - TOL) hClear++;
+    });
+  });
+  set('eg.hairpin.level_err', hLevel);
+  set('eg.hairpin.shape_err', hShape);
+  set('eg.hairpin.clear_err', hClear);
+
+  /* ---- A9: the pedal under its part's lowest staff; down at its press - Ped. by the note, or the line's hook - and up at its
+     release (* before it, or the hook); a change drawn as a change: the release and the press again, or the line's notch */
+  let pedErr = 0, chErr = 0;
+  const pedals = (plan.lines || []).filter(l => l.kind === 'pedal' && l.visible && drawnRef.has(l.id) && l.from);
+  pedals.forEach(p => {
+    const ps = partStaves.get(p.part) || [];
+    const low = ps[ps.length - 1];
+    const sign = !p.mark || p.mark.sign !== false, line = !!(p.mark && p.mark.line) || !sign;
+    const mine = byRef.get(p.id) || [];
+    if (mine.some(o => o.staffKey !== low || (lineY(o.system, low) && o.box[1] < lineY(o.system, low).bottom - TOL))) pedErr++;
+    const s0 = sysOfM(p.from.m);
+    if (s0 !== undefined) {
+      const a = anchor(s0, Tof(p.from), [low].concat(ps));
+      const ok = a && (sign ? mine.some(o => o.system === s0 && o.glyph === 'keyboardPedalPed' && o.refs.length === 1 && o.box[0] >= a[0] - 0.8 && o.box[0] <= a[0] + 0.2)
+        : mine.some(o => o.system === s0 && o.kind === 'pedal-line' && o.hooks && o.hooks[0] && Math.abs(o.line[0] - a[0]) <= 0.3 + TOL));
+      if (!ok) pedErr++;
+    }
+    /* a release at a measure's start is the end of the measure before (it stands at that bar line) */
+    const toM = p.to && q(String(p.to.at)) === 0 && pm.get(p.to.m) && pm.get(p.to.m).i > 0 ? plan.measures[pm.get(p.to.m).i - 1] : null;
+    const to = toM ? { m: toM.id, at: toM.dur } : p.to;
+    const s1 = to ? sysOfM(to.m) : undefined;
+    if (s1 !== undefined) {
+      const x = endPos(s1, to, [low].concat(ps));
+      const ok = x !== null && (sign && !line ? mine.some(o => o.system === s1 && o.glyph === 'keyboardPedalUp' && o.refs.length === 1 && o.box[2] <= x + TOL && o.box[2] >= x - 2.0)
+        : mine.some(o => o.system === s1 && o.kind === 'pedal-line' && o.hooks && o.hooks[1] && o.line[2] <= x + TOL && o.line[2] >= x - 0.8));
+      if (!ok) pedErr++;
+    }
+    (p.changes || []).forEach((c, i) => {
+      const s = sysOfM(c.m);
+      if (s === undefined) return;
+      const ref = p.id + '#change' + i, cx = (anchor(s, Tof(c), [low].concat(ps)) || [null])[0];
+      const cs = mine.filter(o => o.refs.indexOf(ref) >= 0);
+      let shown, placed;
+      if (sign && !line) {
+        const up = cs.filter(o => o.glyph === 'keyboardPedalUp'), down = cs.filter(o => o.glyph === 'keyboardPedalPed');
+        shown = up.length === 1 && down.length === 1;
+        placed = shown && cx !== null && up[0].box[2] <= down[0].box[0] + TOL && down[0].box[0] >= cx - 0.8 && down[0].box[0] <= cx + 0.2;
+      } else {
+        const n = cs.filter(o => o.kind === 'pedal-change');
+        shown = n.length === 1 && n[0].hookLen > 0.5 - TOL;
+        placed = shown && cx !== null && Math.abs((n[0].line[0] + n[0].line[2]) / 2 - cx) <= 0.3 + TOL;
+      }
+      if (!placed) chErr++;
+    });
+  });
+  set('eg.pedal.errors', pedErr);
+  set('eg.pedal.change_err', chErr);
+
+  /* ---- A10: an octave line over exactly the notes it moves - per staff and system, from before the first to past the last
+     (on to the system's end where it goes on) and over no other note of the staff; labelled 8va, 8vb, 15ma ... where it starts,
+     "(8)" where it goes on after a break; above its staff for 8va, 15ma, below for 8vb, 15mb; hooked where it ends */
+  let ottExt = 0, ottLab = 0;
+  (plan.lines || []).filter(l => l.kind === 'ottava' && l.visible && drawnRef.has(l.id) && l.from && l.to).forEach(o => {
+    const A = Tof(o.from), Z = Tof(o.to);
+    (o.covers || []).filter(live).forEach(st => {
+      const onSt = e => (e.kind === 'rest' ? e.staff === st : e.heads.some(h => (h.staff || e.staff) === st));
+      const cov = new Set(plan.events.filter(e => !e.hidden && !e.grace && onSt(e) && evT.get(e.id) >= A - 1e-9 && evT.get(e.id) < Z - 1e-9).map(e => e.id));
+      const drawn = heads.filter(h => h.staffKey === st && cov.has(h.event));
+      const systems = [...new Set(drawn.map(h => h.system))].sort((a, b) => a - b);
+      const firstSys = systems[0], lastSys = systems[systems.length - 1];
+      const allSys = [...new Set(plan.events.filter(e => cov.has(e.id)).map(e => sysOfM(e.m)))];
+      systems.forEach(s => {
+        const labels = (byRef.get(o.id) || []).filter(x => x.kind === 'ottava' && x.system === s && x.staffKey === st);
+        const lines = (byRef.get(o.id) || []).filter(x => x.kind === 'ottava-line' && x.system === s && x.staffKey === st);
+        if (labels.length !== 1 || lines.length > 1) { ottExt++; ottLab++; return; }
+        const lab = labels[0], ln = lines[0];
+        const span = [lab.box[0], Math.max(lab.box[2], ln ? ln.line[2] : -Infinity)];
+        const here = drawn.filter(h => h.system === s);
+        const others = heads.filter(h => h.system === s && h.staffKey === st && !cov.has(h.event));
+        const goesOn = allSys.some(x => x === undefined ? false : x > s);
+        const sys = sysById.get(s);
+        if (here.some(h => h.box[0] < span[0] - TOL || h.box[2] > span[1] + TOL) ||
+          others.some(h => h.box[2] > span[0] + TOL && h.box[0] < span[1] - TOL) ||
+          (goesOn && span[1] < sys.x + sys.w - 2.0)) ottExt++;
+        const L = lineY(s, st);
+        const want = s === firstSys && !allSys.some(x => x !== undefined && x < s) ? OTT_LABEL[o.shift] : OTT_CONT[o.shift];
+        const sideOk = o.shift > 0 ? lab.box[3] <= L.top + TOL : lab.box[1] >= L.bottom - TOL;
+        const hookOk = !ln || !!(ln.hooks && ln.hooks[1]) === (s === lastSys && !goesOn);
+        if (lab.text !== want || !sideOk || !hookOk) ottLab++;
+      });
+    });
+  });
+  set('eg.ottava.extent_err', ottExt);
+  set('eg.ottava.label_err', ottLab);
+
+  /* ---- §23 M20, D-1: the heads drawn at their written pitch - the pitch that sounds, less the octave line over it (a transposing
+     part at its written pitch), read from the graph when it is given: the multiset (head, event, measure, written staff step)
+     the graph asks for against the one the drawn heads show */
+  const want = new Map(), got = new Map();
+  const bump = (mp, k) => mp.set(k, (mp.get(k) || 0) + 1);
+  const g = opts.graph || null;
+  const gParts = g ? g.parts : null;
+  const ottOf = [];
+  if (g) g.parts.forEach(p => {
+    const all = p.staves.map(s => s.id);
+    p.spanners.filter(s => s.type === 'ottava' && s.from && s.to).forEach(s => {
+      const assumed = !s.staff || !!(s.ext && s.ext['musicxml.ottava'] && s.ext['musicxml.ottava'].staff === 'assumed');
+      ottOf.push({ covers: assumed ? all : [s.staff], shift: s.shift, A: Tof(s.from), Z: Tof(s.to) });
+    });
+  });
+  else (plan.lines || []).filter(l => l.kind === 'ottava' && l.from && l.to).forEach(l => ottOf.push({ covers: l.covers || [], shift: l.shift, A: Tof(l.from), Z: Tof(l.to) }));
+  const transOf = new Map();
+  if (gParts) gParts.forEach(p => { if (p.instrument && p.instrument.transpose) transOf.set(p.id, p.instrument.transpose); });
+  const gHead = new Map();
+  if (gParts) gParts.forEach(p => p.events.forEach(e => (e.heads || []).forEach(h => gHead.set(h.id, { h: h, part: p.id }))));
+  const STEP_I = 'CDEFGAB';
+  objs.filter(o => o.kind === 'notehead').forEach(o => {
+    const e = pe.get(o.event);
+    if (!e) return;
+    const ph = e.heads.find(x => x.id === o.id);
+    if (!ph || !ph.pitch) return;
+    const gh = gHead.get(o.id);
+    let p = gh ? gh.h.pitch : ph.pitch;
+    if (gh && transOf.has(gh.part)) p = SG.pitch.written(p, transOf.get(gh.part));
+    const st = ph.staff || e.staff, T = evT.get(e.id);
+    let k = 0;
+    ottOf.forEach(x => { if (x.covers.indexOf(st) >= 0 && T >= x.A - 1e-9 && T < x.Z - 1e-9) k = x.shift; });
+    const dia = (p.oct - k) * 7 + STEP_I.indexOf(p.step);
+    bump(want, [o.id, o.event, e.m, dia].join('|'));
+    const clef = clefIn(o.staffKey, e.m, e.at, false);
+    const top = staffTop.get(o.system + '|' + o.staffKey), f = spaceOf(o);
+    const y = ((o.box[1] + o.box[3]) / 2 - top) / f;
+    /* staffY inverted: y = (5 - line) - (dia - ref) / 2 */
+    const sign = clef ? clef.sign : 'G';
+    const line = sign === 'F' ? (clef.line || 4) : sign === 'C' ? (clef.line || 3) : sign === 'G' ? ((clef && clef.line) || 2) : 2;
+    const ref = (sign === 'F' ? 3 * 7 + 3 : sign === 'C' ? 4 * 7 : 4 * 7 + 4) + 7 * ((clef && clef.octave) || 0);
+    bump(got, [o.id, o.event, e.m, Math.round(ref + ((5 - line) - y) * 2)].join('|'));
+  });
+  let wd = 0;
+  new Set([...want.keys(), ...got.keys()]).forEach(k => { wd += Math.abs((want.get(k) || 0) - (got.get(k) || 0)); });
+  set('eg.event.written_diff', wd);
+
+  /* ---- voltas: a bracket over exactly its bars in each system, 0.3 sp inside their bar lines, open at its start's bar line
+     only where it starts, closed at its end only where it ends (and is not left open); its number where it starts */
+  let voltaErr = 0;
+  (plan.endings || []).forEach(en => {
+    const a = pm.get(en.from) ? pm.get(en.from).i : -1, b = pm.get(en.to) ? pm.get(en.to).i : a;
+    groupBy(eng.measures.filter(x => pm.get(x.id).i >= a && pm.get(x.id).i <= b), x => x.system).forEach((ms, s) => {
+      ms.sort((u, v) => u.x - v.x);
+      const vs = (byRef.get(en.id) || []).filter(o => o.kind === 'volta' && o.system === s);
+      if (vs.length !== 1) { voltaErr++; return; }
+      const v = vs[0], x0 = ms[0].x + SYS.voltaInset, x1 = ms[ms.length - 1].x + ms[ms.length - 1].w - SYS.voltaInset;
+      const first = ms[0].id === en.from, closes = ms[ms.length - 1].id === en.to && !en.open;
+      const label = first ? normText(en.text || ((en.numbers || []).join(', ') + '.')) : null;
+      const lab = (byRef.get(en.id) || []).filter(o => o.kind === 'volta-label' && o.system === s);
+      if (Math.abs(v.box[0] - x0) > TOL || Math.abs(v.box[2] - x1) > TOL || !!v.start !== first || !!v.open === closes ||
+        (label ? !(lab.length === 1 && lab[0].text === label) : lab.length)) voltaErr++;
+    });
+  });
+  set('eg.volta.extent_err', voltaErr);
+
+  /* ---- §10.5 chord names: left at their note (never pushed left of it, but for one pulled back inside the system's end), in
+     order of time and graph order, apart from each other */
+  let chordErr = 0;
+  const chordIdx = new Map((plan.marks || []).map((d, i) => [d.id, i]));
+  groupBy(objs.filter(o => o.kind === 'chord'), o => o.system + '|' + o.staffKey + '|' + o.side).forEach(list => {
+    const sys = sysById.get(list[0].system), right = sys.x + sys.w;
+    const items = [...groupBy(list, o => o.refs[0]).entries()].map(([id, ps]) => {
+      const d = (plan.marks || []).find(x => x.id === id);
+      return { d: d, T: Tof(d), x0: Math.min(...ps.map(o => o.box[0])), x1: Math.max(...ps.map(o => o.box[2])) };
+    }).sort((a, b) => a.T - b.T || chordIdx.get(a.d.id) - chordIdx.get(b.d.id));
+    items.forEach((it, k) => {
+      const ps = partStaves.get(it.d.part) || [];
+      const a = anchor(list[0].system, it.T, [list[0].staffKey].concat(ps));
+      const pulled = Math.abs(it.x1 - right) <= TOL;
+      if (a && it.x0 < a[0] - TOL && !pulled) chordErr++;
+      if (k && it.x0 < items[k - 1].x1 + SYS.apart - TOL) chordErr++;
+    });
+  });
+  set('eg.chord.order_err', chordErr);
+
+  /* ---- A12: a lyric under its voice's staff, centred on its note (or pushed right of the syllable before it), a hyphen between
+     the syllables of a word where they leave room for one */
+  let lyStaff = 0, lyPlace = 0;
+  const lyrics = objs.filter(o => o.kind === 'lyric');
+  lyrics.forEach(o => {
+    const e = pe.get(o.refs[0]);
+    if (!e) { lyStaff++; return; }
+    const st = voiceStaff.get(e.voice) || e.staff, L = lineY(o.system, st);
+    if (o.staffKey !== st || !L || o.box[1] < L.bottom - TOL) lyStaff++;
+  });
+  groupBy(lyrics, o => o.system + '|' + o.staffKey + '|' + o.verse).forEach(list => {
+    list.sort((a, b) => a.box[0] - b.box[0]);
+    list.forEach((o, k) => {
+      const e = pe.get(o.refs[0]);
+      const hs = heads.filter(h => h.event === o.refs[0] && h.system === o.system && e && h.staffKey === e.staff);
+      if (!hs.length) { lyPlace++; return; }
+      const c = (Math.min(...hs.map(h => h.box[0])) + Math.max(...hs.map(h => h.box[2]))) / 2, oc = (o.box[0] + o.box[2]) / 2;
+      const pushed = oc > c + TOL && k && Math.abs(o.box[0] - list[k - 1].box[2] - SYS.apart / 2) <= TOL;
+      if (Math.abs(oc - c) > TOL && !pushed) lyPlace++;
+      const i = +String(o.refs[1]).split('#lyric')[1];
+      const ly = e && e.lyrics[i];
+      const next = list[k + 1];
+      const hyph = objs.some(x => x.kind === 'lyric-line' && x.refs[1] === o.refs[1]);
+      if (ly && (ly.syllabic === 'begin' || ly.syllabic === 'middle') && next && next.box[0] - o.box[2] >= 1.0 + TOL && !hyph) lyPlace++;
+    });
+  });
+  set('eg.lyric.staff_err', lyStaff);
+  set('eg.lyric.place_err', lyPlace);
+
+  /* ---- §10.2 priority 10: above a staff, inside to out - octave lines, chord names, voltas, tempo and rehearsal marks */
+  const RANK = { ottava: 0, 'ottava-line': 0, chord: 1, volta: 2, 'volta-label': 2, tempo: 3, rehearsal: 3, frame: 3 };
+  let orderErr = 0;
+  groupBy(objs.filter(o => RANK[o.kind] !== undefined && o.side === 'above'), o => o.system + '|' + o.staffKey).forEach(list => {
+    for (let i = 0; i < list.length; i++) for (let j = 0; j < list.length; j++) {
+      const a = list[i], b = list[j];
+      /* a (inner) and b (outer) over the same x: a stands under b */
+      if (RANK[a.kind] >= RANK[b.kind] || !(a.box[0] < b.box[2] - EPS && b.box[0] < a.box[2] - EPS)) continue;
+      if (a.box[1] < b.box[3] - TOL) orderErr++;
+    }
+  });
+  set('eg.row.order_err', orderErr);
+
+  /* ---- what the marks say is what the graph says: a dynamic's letters (or words), words, chord names, a tempo's words and
+     metronome mark, jumps, rehearsal marks, lyrics */
+  let content = 0;
+  const pieces = id => (byRef.get(id) || []).filter(o => o.text !== undefined || o.glyph).sort((a, b) => a.box[0] - b.box[0] || (a.id < b.id ? -1 : 1));
+  const seq = list => list.map(o => (o.text !== undefined ? 't:' + o.text : 'g:' + o.glyph)).join(' ');
+  const dynSeq = (value, text) => (/^[pmfrsz]+$/.test(value || '') ? value.split('').map(c => 'g:' + DYN_GLYPH[c]) : [normText(value === 'other' || !value ? text : value)].filter(Boolean).map(t => 't:' + t));
+  (plan.marks || []).forEach(d => {
+    if (!drawnRef.has(d.id) || !laidOut.has(d.m)) return;
+    const ps = pieces(d.id);
+    if (d.kind === 'dynamic') {
+      const w = dynSeq(d.value, d.text).concat(...(d.more || []).map(x => dynSeq(x.value, x.text)));
+      if (seq(ps.filter(o => o.kind === 'dynamic')) !== w.join(' ')) content++;
+    } else if (d.kind === 'words' || d.kind === 'rehearsal') {
+      /* words may be drawn in pieces - around a metronome mark, the parenthesis they open in the mark's face (G4-D1b-17) - which
+         read, left to right with a space between, as the words */
+      const t = normText(d.text), own = ps.filter(o => o.kind === d.kind);
+      if (t && (d.kind === 'words' && own.length > 1 && own.every(o => o.text !== undefined) ? 't:' + normText(own.map(o => o.text).join(' ')) : seq(own)) !== 't:' + t) content++;
+    } else if (d.kind === 'chord') {
+      const s = ps.map(o => (o.text !== undefined ? o.text : o.glyph === 'accidentalSharp' ? '♯' : o.glyph === 'accidentalFlat' ? '♭' : '?')).join('');
+      if (s !== chordSpelling(d)) content++;
+    }
+  });
+  (plan.tempos || []).forEach(t => {
+    if (!drawnRef.has(t.id) || !laidOut.has(t.m)) return;
+    const ps = pieces(t.id), mk = t.mark || {};
+    const texts = ps.filter(o => o.text !== undefined).map(o => o.text);
+    const words = normText(mk.text);
+    let unit = mk.unit || null, per = mk.perMinute ? q(String(mk.perMinute)) : null;
+    if (!unit && !per && t.heading && t.qpm) { unit = 'quarter'; per = q(String(t.qpm)); }
+    const w = [];
+    if (words) w.push(words);
+    if (unit && per) {
+      if (mk.parens) w.push('(');
+      w.push('= ' + (Math.abs(per - Math.round(per)) < 1e-6 ? String(Math.round(per)) : String(Math.round(per * 100) / 100)) + (mk.parens ? ')' : ''));
+    }
+    const head = ps.find(o => /^notehead/.test(o.glyph || ''));
+    if (texts.join('|') !== w.join('|') || (unit && per ? !head || head.glyph !== (HEAD_OF[unit] || 'noteheadBlack') : !!head)) content++;
+  });
+  (plan.jumps || []).forEach(j => {
+    if (!drawnRef.has(j.id) || !laidOut.has(j.m)) return;
+    const ps = pieces(j.id), text = normText(j.text);
+    const w = (j.kind === 'segno' || j.kind === 'coda') && !text ? 'g:' + j.kind : 't:' + (text || JUMP_WORDS[j.kind] || '');
+    if (seq(ps) !== w) content++;
+  });
+  lyrics.forEach(o => {
+    const e = pe.get(o.refs[0]), i = +String(o.refs[1]).split('#lyric')[1];
+    if (!e || !e.lyrics[i] || o.text !== normText(e.lyrics[i].text)) content++;
+  });
+  set('eg.text.content_err', content);
+
+  /* ---- §15.3, A25: staves and systems (their content) never meet; a part's staves at least 5.0 sp apart (6.0 between parts),
+     further only as far as their content needs - 1.0 sp between what reaches down from one and up from the next, one value per
+     system (a 0.25 sp cell of the skyline decides what stands over what); systems 6.0 sp line to line at least, their bands
+     1.5 sp, no further than that needs */
+  let vcol = 0, gapErr = 0, sysGap = 0;
+  /* the cells a box covers - widened by a rounding step either side: the layout's boxes before they are rounded to 0.01 sp */
+  const cells = b => [Math.floor((b[0] - EPS) / SYS.cell + 1e-9), Math.floor((b[2] + EPS - 1e-9) / SYS.cell)];
+  const contentOf = (s, key) => {
+    const out = [];
+    objs.forEach(o => {
+      if (o.system !== s.index || o.staffKey !== key || o.kind === 'barline') return;
+      if (o.kind === 'staff') { const t = SYS.staffLine * (o.space || 1) / 2; out.push([o.box[0], o.box[1] + t, o.box[2], o.box[3] - t]); }
+      else out.push(o.box);
+    });
+    /* a curve as the boxes it covers every 0.5 sp - the layout samples it at its own points, so a sample may stand up to 0.1 sp
+       off the layout's (CURVE_SLACK) */
+    (eng.curves || []).forEach(c => { if (c.system === s.index && c.staffKey === key) sampleBoxes(c).forEach(b => { const x = b.slice(); x.curve = true; out.push(x); }); });
+    return out;
+  };
+  eng.systems.forEach(s => {
+    for (let k = 0; k + 1 < s.staves.length; k++) {
+      const up = s.staves[k], lo = s.staves[k + 1];
+      /* the staff space, read from the staff's height (the system's `space` is rounded to 0.01) */
+      const n = (linesOf.get(up.key) || 5) - 1, f = n > 0 && up.h > 0 ? up.h / n : s.space || 1;
+      const U = contentOf(s, up.key), D = contentOf(s, lo.key);
+      let tight = Infinity;
+      U.forEach(a => {
+        const ca = cells(a);
+        D.forEach(b => {
+          const cb = cells(b);
+          if (ca[0] > cb[1] || cb[0] > ca[1]) return;
+          const d = b[1] - a[3];
+          tight = Math.min(tight, d);
+          if (a[0] < b[2] - EPS && b[0] < a[2] - EPS && d < SYS.pad * f - (a.curve || b.curve ? SYS.curveSlack : TOL)) vcol++;
+        });
+      });
+      const pu = (plan.staves.find(x => x.id === up.key) || {}).part, pl = (plan.staves.find(x => x.id === lo.key) || {}).part;
+      const min = (pu === pl ? SYS.inPart : SYS.betweenParts) * f;
+      const gap = lo.y - (up.y + up.h);
+      if (gap < min - TOL || (gap > min + TOL && !(tight <= SYS.pad * f + 0.1))) gapErr++;
+    }
+  });
+  for (let i = 1; i < eng.systems.length; i++) {
+    const a = eng.systems[i - 1], b = eng.systems[i];
+    const la = a.staves[a.staves.length - 1];
+    const lines = b.staves[0].y - (la.y + la.h), band = b.box[1] - a.box[3];
+    if (lines < SYS.system - TOL || band < SYS.systemPad - TOL || (lines > SYS.system + TOL && band > SYS.systemPad + TOL)) sysGap++;
+  }
+  set('eg.skyline.vertical_collisions', vcol);
+  set('eg.staff.gap_err', gapErr);
+  set('eg.system.gap_err', sysGap);
+
+  /* ---- §15.4: a system before a key or time change ends with the courtesy signature (key and meter as the next system's head
+     shows them, after its last bar line), before a clef change with the small clef before its last bar line */
+  let cour = 0;
+  const liveStaves = plan.staves.filter(s => live(s.id));
+  const keysSorted = (plan.keys || []).slice().sort((a, b) => pm.get(a.m).i - pm.get(b.m).i || q(a.at) - q(b.at));
+  const keyBefore = mid => { let cur = null; keysSorted.forEach(k => { if (pm.get(k.m).i < pm.get(mid).i) cur = k; }); return cur; };
+  for (let i = 0; i + 1 < eng.systems.length; i++) {
+    const s = eng.systems[i], lastM = s.measures[s.measures.length - 1], nextM = eng.systems[i + 1].measures[0];
+    const inLast = objs.filter(o => o.system === s.index && o.measure === lastM);
+    const kc = keysSorted.find(k => k.m === nextM && q(k.at) === 0 && !k.hidden);
+    const kb = keyBefore(nextM);
+    if (kc && (kb && !kb.hidden ? kb.fifths : 0) !== kc.fifths) liveStaves.forEach(st => {
+      const c = clefIn(st.id, nextM, '0', false);
+      if (c && (c.sign === 'percussion' || c.sign === 'TAB')) return;
+      const o = kb && !kb.hidden ? kb.fifths : 0, n = kc.fifths;
+      const cancel = !o ? 0 : Math.sign(o) === Math.sign(n) ? Math.max(0, Math.abs(o) - Math.abs(n)) : Math.abs(o);
+      const ks = inLast.filter(x => x.kind === 'keysig' && x.courtesy && x.staffKey === st.id && x.refs[0] === kc.id);
+      if (ks.length !== Math.abs(n) + cancel) cour++;
+    });
+    const mc = (plan.meters || []).find(x => x.m === nextM && !x.hidden);
+    if (mc) liveStaves.forEach(st => { if (!inLast.some(x => x.kind === 'timesig' && x.courtesy && x.staffKey === st.id && x.refs[0] === mc.id)) cour++; });
+    (plan.clefs || []).filter(c => c.m === nextM && q(c.at) === 0 && live(c.staff) && c.sign !== 'none').forEach(c => {
+      const b = clefIn(c.staff, nextM, '0', true);
+      if (b && b.sign === c.sign && (b.line || 0) === (c.line || 0) && (b.octave || 0) === (c.octave || 0)) return;
+      if (!inLast.some(x => x.kind === 'clef' && x.id === c.id && x.staffKey === c.staff)) cour++;
+    });
+  }
+  set('eg.courtesy.missing', cour);
+
+  /* ---- the G4d-1a review R5: an editorial accidental's square brackets as tall as the accidental they enclose (0.1 sp beyond
+     it at least), their ends off the staff lines */
+  let brErr = 0;
+  objs.filter(o => o.glyph === 'accidentalBracketLeft' || o.glyph === 'accidentalBracketRight').forEach(o => {
+    const inner = objs.filter(x => x.kind === 'accidental' && x.refs[0] === o.refs[0] && x.system === o.system && x.glyph && !/Bracket/.test(x.glyph));
+    if (!inner.length) { brErr++; return; }
+    const f = spaceOf(o), top = Math.min(...inner.map(x => x.box[1])), bot = Math.max(...inner.map(x => x.box[3]));
+    const t0 = staffTop.get(o.system + '|' + o.staffKey), n = (linesOf.get(o.staffKey) || 5) - 1;
+    const onLine = y => { for (let k = 0; k <= n; k++) if (Math.abs(y - (t0 + k * f)) < SYS.bracketOn * f - EPS) return true; return false; };
+    if (o.box[1] > top - SYS.bracketOver * f + TOL || o.box[3] < bot + SYS.bracketOver * f - TOL || onLine(o.box[1]) || onLine(o.box[3])) brErr++;
+  });
+  set('eg.accidental.bracket_err', brErr);
+
+  /* ================================================================ the G4d-1b fixer (G04 §36.18): the review's R1-R3 as named
+     metrics - what held these rules before was the committed layout hash alone */
+  const markById = new Map((plan.marks || []).map((d, i) => [d.id, Object.assign({ order: i }, d)]));
+  const staffPart = new Map(plan.staves.map(s => [s.id, s.part]));
+  const topStaff = (plan.staves.find(s => live(s.id)) || {}).id;
+  const firstPart = plan.parts && plan.parts[0] ? plan.parts[0].id : null;
+  const sysRight = s => sysById.get(s).x + sysById.get(s).w;
+  const sysT = s => { const x = sysById.get(s), a = x.measures[0], z = x.measures[x.measures.length - 1]; return [start.get(a), start.get(z) + dur.get(z)]; };
+  /* the line a piece stands on: a text's or glyph's baseline (the origin the layout gives it), a hairpin's line 0.35 sp under its axis */
+  const lineOf = o => (o.kind === 'hairpin' ? o.line[1] + SYS.hairpinRise * spaceOf(o) : o.origin ? o.origin[1] : null);
+  const partOfStaves = st => partStaves.get(staffPart.get(st)) || [];
+
+  /* ---- R1 (G4-D1b-17): the words a file prints around a tempo's metronome mark - a word of the tempo's part at the tempo's (m,
+     at), not stated below, whose parentheses do not balance - stand on the tempo's line: one that opens a parenthesis before the
+     mark's note, one that closes one after its number. And no line of text reads an empty "( )": a piece ending in "(" with the
+     next piece of its line starting with ")" and nothing drawn between them, or a text that holds one. eg.tempo.split_err */
+  let split = 0;
+  const balance = s => (s.match(/\(/g) || []).length - (s.match(/\)/g) || []).length;
+  const aroundTempo = new Map();
+  (plan.tempos || []).forEach(t => {
+    const mk = t.mark || {};
+    if (!drawnRef.has(t.id) || !mk.unit || !(q(String(mk.perMinute)) > 0)) return;
+    const part = (t.display && t.display[0] && t.display[0].part) || firstPart;
+    (plan.marks || []).forEach(d => {
+      if (d.kind !== 'words' || !drawnRef.has(d.id) || aroundTempo.has(d.id) || d.part !== part || d.m !== t.m || Tnum(d.at) !== Tnum(t.at) || d.placement === 'below') return;
+      const k = balance(normText(d.text));
+      if (k) aroundTempo.set(d.id, { t: t, before: k > 0 });
+    });
+  });
+  aroundTempo.forEach((w, id) => {
+    if (!laidOut.has(w.t.m)) return;
+    const mine = (byRef.get(id) || []).filter(o => o.kind === 'words');
+    const tp = byRef.get(w.t.id) || [];
+    const num = tp.find(o => o.text !== undefined && /^= /.test(o.text)), head = tp.find(o => /^notehead/.test(o.glyph || ''));
+    if (!mine.length || !num || !head) { split++; return; }
+    if (mine.some(o => o.system !== num.system || o.staffKey !== num.staffKey || Math.abs(lineOf(o) - lineOf(num)) > FIX.lineTol ||
+      (w.before ? o.box[2] > head.box[0] + TOL : o.box[0] < num.box[2] - TOL))) split++;
+  });
+  const texts = objs.filter(o => o.text !== undefined && SYS_TEXT.indexOf(o.kind) >= 0);
+  texts.forEach(o => {
+    if (/\(\s*\)/.test(o.text)) { split++; return; }
+    if (!/\($/.test(o.text)) return;
+    const next = texts.filter(x => x !== o && x.system === o.system && x.staffKey === o.staffKey && Math.abs(lineOf(x) - lineOf(o)) <= FIX.lineTol && x.box[0] >= o.box[2] - TOL)
+      .sort((a, b) => a.box[0] - b.box[0])[0];
+    if (!next || !/^\)/.test(next.text)) return;
+    const between = objs.some(x => x !== o && x !== next && x.system === o.system && x.box[0] >= o.box[2] - TOL && x.box[2] <= next.box[0] + TOL &&
+      x.box[1] < Math.max(o.box[3], next.box[3]) && x.box[3] > Math.min(o.box[1], next.box[1]));
+    if (!between) split++;
+  });
+  set('eg.tempo.split_err', split);
+
+  /* the marks as items - a dynamic, a hairpin, words, a jump; a tempo's line (its words, note and number, and the words around its
+     mark) and a framed rehearsal mark by their group - each with its line and its extent in x */
+  const items = [];
+  groupBy(objs.filter(o => SYS_PLACED.indexOf(o.kind) >= 0), o => o.system + '|' + (o.group || (o.kind === 'hairpin' ? o.id : o.kind + '|' + o.refs[0]))).forEach(list => {
+    const t = list.find(o => o.text !== undefined) || list.find(o => o.glyph) || list[0];
+    items.push({ list: list, key: list[0].group || list[0].refs[0], kind: list[0].kind, system: list[0].system, staffKey: list[0].staffKey, side: list[0].side || null,
+      base: lineOf(t), x0: Math.min(...list.map(o => o.box[0])), x1: Math.max(...list.map(o => o.box[2])), f: spaceOf(list[0]) });
+  });
+  const itemOf = (s, key, kind) => items.find(it => it.system === s && it.key === key && (!kind || it.list.some(o => o.kind === kind)));
+  const sameLine = (a, b) => a !== b && a.system === b.system && a.staffKey === b.staffKey && a.side === b.side && a.base !== null && b.base !== null &&
+    Math.abs(a.base - b.base) <= FIX.lineTol;
+  /* where words resolve (G04 §36.6, G4-D1b-9): their staff and side as the graph says (above by default; above a part's lower staff
+     is below the one over it); above a part's first staff the upper row, below the last staff of a part of several the lower row,
+     anywhere else the dynamics' line */
+  const wordsPlace = d => {
+    const ps = partStaves.get(d.part) || [];
+    if (!ps.length) return null;
+    let st = d.staff && ps.indexOf(d.staff) >= 0 ? d.staff : null;
+    let side = d.placement === 'above' || d.placement === 'below' ? d.placement : 'above';
+    if (!st) st = side === 'above' ? ps[0] : ps.length > 1 ? ps[0] : ps[ps.length - 1];
+    if (side === 'above' && ps.indexOf(st) > 0) { st = ps[ps.indexOf(st) - 1]; side = 'below'; }
+    const i = ps.indexOf(st);
+    return { staff: st, side: side, staves: [st].concat(ps), row: side === 'above' && i === 0 ? 'upper' : side === 'below' && i === ps.length - 1 && ps.length > 1 ? 'lower' : 'dynamics' };
+  };
+  /* the notes a mark at T lines up with in system s (its own event's heads where the graph names one) */
+  const notesAt = (s, T, staves, ev) => {
+    if (ev) { const hs = heads.filter(o => o.event === ev && o.system === s); if (hs.length) return [Math.min(...hs.map(o => o.box[0])), Math.max(...hs.map(o => o.box[2]))]; }
+    return anchor(s, T, staves);
+  };
+  /* where words want to stand (their own place): at their notes, right-aligned to the bar line at a measure's end, pulled back
+     inside the system's end */
+  const wordsWant = (it, d, r) => {
+    const T = Tof(d), M = measOut.get(d.m), w = it.x1 - it.x0;
+    let x;
+    if (Math.abs(Tnum(d.at) - dur.get(d.m)) < 1e-9) x = M.x + M.w - w;
+    else { const a = notesAt(it.system, T, r.staves, d.event); if (!a) return null; x = a[0]; }
+    return Math.min(x, sysRight(it.system) - w);
+  };
+
+  /* ---- R2, A8 "at the graph's position": eg.mark.anchor_err. Each mark where its rule puts it -
+       a dynamic: its letters centred on the notes that start at its time (its own event's where the graph names one; else on its
+         staff, else on another staff of its part; else the time's x); a dynamic in words starting there;
+       words, and a jump's words: at the notes of their time (the time's x where none starts); at a measure's end right-aligned to
+         its bar line, a jump's at a measure's start 0.3 sp after it; a segno or coda centred on its bar line (a measure's start) or
+         on its time's x;
+       a tempo's line: at the notes of its time on the top staff (else of its part's other staves; else the time's x);
+       a rehearsal mark: its letters at its bar line (a measure's start), else at its time's x -
+     or moved from there only as its row moves it: right, to stand 0.4 sp after an item of its line (0.35 for words by the
+     dynamics, whose push eg.words.push_err holds) - where a row pulls a pushed item back from the system's end, the items before
+     it come back with it, so a pushed item always stands that far after the one before it - or left of its place, to end at the
+     system's end or 0.4 sp before an item of its line. Held to 0.02 sp (two roundings). */
+  let anchorErr = 0;
+  const movedOk = (it, shift, gaps) => {
+    if (Math.abs(shift) <= TOL) return true;
+    const line = items.filter(o => sameLine(it, o));
+    if (shift > 0) return line.some(o => gaps.some(g => Math.abs(it.x0 - (o.x1 + g * it.f)) <= TOL));
+    return Math.abs(it.x1 - sysRight(it.system)) <= TOL || line.some(o => Math.abs(o.x0 - SYS.apart * it.f - it.x1) <= TOL);
+  };
+  items.filter(it => it.kind === 'dynamic').forEach(it => {
+    const glyphs = it.list.filter(o => o.glyph);
+    const ok = it.list[0].refs.some(id => {
+      const d = markById.get(id), r = d ? dynPlace(d) : null;
+      if (!r) return false;
+      const a = notesAt(it.system, Tof(d), [r.staff].concat(partStaves.get(d.part) || []), d.event);
+      if (!a) return false;
+      return glyphs.length ? Math.abs((Math.min(...glyphs.map(o => o.box[0])) + Math.max(...glyphs.map(o => o.box[2]))) / 2 - (a[0] + a[1]) / 2) <= TOL
+        : Math.abs(it.x0 - a[0]) <= TOL;
+    });
+    if (!ok) anchorErr++;
+  });
+  items.filter(it => it.kind === 'words' && !it.list[0].group).forEach(it => {
+    const d = markById.get(it.key), r = d ? wordsPlace(d) : null;
+    const want = d && r ? wordsWant(it, d, r) : null;
+    if (want === null || !movedOk(it, it.x0 - want, [FIX.word, SYS.apart])) anchorErr++;
+  });
+  (plan.tempos || []).forEach(t => {
+    const T = Tof(t);
+    eng.systems.forEach(s => {
+      const it = itemOf(s.index, t.id, 'tempo');
+      if (!it) return;
+      const a = anchor(s.index, T, [topStaff].concat(partOfStaves(topStaff)));
+      if (!a || !movedOk(it, it.x0 - a[0], [SYS.apart])) anchorErr++;
+    });
+  });
+  (plan.marks || []).filter(d => d.kind === 'rehearsal').forEach(d => {
+    eng.systems.forEach(s => {
+      const it = itemOf(s.index, d.id, 'rehearsal');
+      if (!it) return;
+      const txt = it.list.find(o => o.kind === 'rehearsal'), M = measOut.get(d.m);
+      const want = Tnum(d.at) === 0 ? M.x : xOfT(s.index, Tof(d));
+      if (want === null || !movedOk(it, txt.box[0] - want, [SYS.apart])) anchorErr++;
+    });
+  });
+  (plan.jumps || []).forEach(j => {
+    eng.systems.forEach(s => {
+      const it = itemOf(s.index, j.id, 'jump');
+      if (!it) return;
+      const disp = (j.display || [])[0] || {};
+      const ps = partStaves.get(disp.part || firstPart) || [topStaff];
+      const side = disp.placement === 'below' ? 'below' : 'above';
+      const st = disp.staff && ps.indexOf(disp.staff) >= 0 ? disp.staff : side === 'above' ? ps[0] : ps[ps.length - 1];
+      const M = measOut.get(j.m), a = Tnum(j.at), atEnd = Math.abs(a - dur.get(j.m)) < 1e-9, atStart = a === 0, w = it.x1 - it.x0;
+      let want;
+      if (it.list.some(o => o.glyph) && !it.list.some(o => o.text !== undefined)) { const c = atStart ? M.x : xOfT(s.index, Tof(j)); want = c === null ? null : c - w / 2; }
+      else if (atEnd) want = M.x + M.w - w;
+      else if (atStart) want = M.x + FIX.jumpStart * it.f;
+      else { const n = anchor(s.index, Tof(j), [st].concat(partOfStaves(st))); want = n ? n[0] : null; }
+      if (want === null || !movedOk(it, it.x0 - want, [SYS.apart])) anchorErr++;
+    });
+  });
+  set('eg.mark.anchor_err', anchorErr);
+
+  /* ---- R2, A8 and S5: eg.hairpin.extent_err. A hairpin is drawn in one piece in each system that holds part of its time and in no
+     other; each piece from where it starts - 0.5 sp after the dynamic(s) of its line's row at its first time, else its first
+     note's left edge (the time's x), or 1.0 sp before the system's first note column where it goes on from the system before - to
+     where it ends - 0.5 sp before the dynamic(s) at its last time, else 0.5 sp before the note it stops at (the bar line, at a
+     measure's end or start), or 1.0 sp before the system's last bar line where it goes on; either end moved only to keep 0.5 sp
+     from a dynamic of its row that stands there (S5), its end only where HAIRPIN_OVERLAP or HAIRPIN_SHORT names it. Held to
+     0.05 sp. */
+  let hExt = 0;
+  const excused = new Set(['HAIRPIN_OVERLAP', 'HAIRPIN_SHORT'].flatMap(c => (C.codes.get(c) || []).flatMap(d => d.refs)));
+  const dynRow = new Map();
+  items.filter(it => it.kind === 'dynamic').forEach(it => {
+    const k = it.system + '|' + it.staffKey + '|' + it.side, d = markById.get(it.list[0].refs[0]);
+    if (!dynRow.has(k)) dynRow.set(k, []);
+    dynRow.get(k).push({ T: d ? Tof(d) : null, x0: it.x0, x1: it.x1 });
+  });
+  const firstColX = s => { const M = measOut.get(sysById.get(s).measures[0]); const c = M.columns.find(x => x.time) || M.columns[0]; return c ? c.x : M.content[0]; };
+  const lastBarX = s => { const ms = sysById.get(s).measures, M = measOut.get(ms[ms.length - 1]); return M.x + M.w; };
+  const endAt = (s, pos, staves) => {
+    const M = measOut.get(pos.m);
+    if (M && M.system === s && Math.abs(Tnum(pos.at) - dur.get(pos.m)) < 1e-9) return M.x + M.w;
+    const i = pm.get(pos.m) ? pm.get(pos.m).i : -1;
+    if (Tnum(pos.at) === 0 && i > 0) { const P = measOut.get(plan.measures[i - 1].id); if (P && P.system === s) return P.x + P.w; }
+    const a = anchor(s, Tof(pos), staves);
+    return a ? a[0] : null;
+  };
+  (plan.lines || []).filter(l => l.kind === 'wedge' && drawnRef.has(l.id) && l.from && l.to).forEach(w => {
+    const A = Tof(w.from), Z = Tof(w.to), r = dynPlace(w);
+    if (A === null || Z === null || !(Z > A) || !r) return;
+    const staves = [r.staff].concat(partStaves.get(w.part) || []);
+    eng.systems.forEach(s => {
+      const [T0, T1] = sysT(s.index);
+      const pieces = objs.filter(o => o.kind === 'hairpin' && o.system === s.index && o.refs.indexOf(w.id) >= 0);
+      if (!(A < T1 - 1e-9 && Z > T0 + 1e-9)) { if (pieces.length) hExt++; return; }
+      if (pieces.length !== 1) { hExt++; return; }
+      const o = pieces[0], f = spaceOf(o), clear = SYS.hairpinClear * f, tol = FIX.hairpinTol;
+      const dyn = dynRow.get(s.index + '|' + o.staffKey + '|' + o.side) || [];
+      const at = T => dyn.filter(x => x.T !== null && Math.abs(x.T - T) < 1e-9);
+      let want0, want1;
+      if (A >= T0 - 1e-9) { const dA = at(A); want0 = dA.length ? Math.max(...dA.map(x => x.x1)) + clear : (anchor(s.index, A, staves) || [null])[0]; }
+      else want0 = firstColX(s.index) - FIX.breakGap * f;
+      if (Z <= T1 + 1e-9) { const dZ = at(Z), e = endAt(s.index, w.to, staves); want1 = dZ.length ? Math.min(...dZ.map(x => x.x0)) - clear : e === null ? null : e - clear; }
+      else want1 = lastBarX(s.index) - FIX.breakGap * f;
+      const x0 = o.line[0], x1 = o.line[2];
+      const ok0 = want0 !== null && (Math.abs(x0 - want0) <= tol || dyn.some(x => x.x1 + clear > want0 + tol && Math.abs(x0 - (x.x1 + clear)) <= tol));
+      const ok1 = excused.has(w.id) || (want1 !== null && (Math.abs(x1 - want1) <= tol || dyn.some(x => x.x0 - clear < want1 - tol && Math.abs(x1 - (x.x0 - clear)) <= tol)));
+      if (!ok0 || !ok1) hExt++;
+    });
+  });
+  set('eg.hairpin.extent_err', hExt);
+
+  /* ---- R3, G4-D1b-4: eg.words.push_err. Words on the dynamics' line (between a part's staves, or below a one-staff part) stand on
+     its first line (the one nearest the staff) at the nearest place at or after their own where they meet nothing of that line -
+     their own place, or 0.35 sp after an item of it - when that is at most 4 sp from their own place and inside the system; else
+     a line further out, at their own place. What the first line holds for them: its dynamics and hairpins, and the words before
+     them (in place, then graph order); two items meet nearer than 0.2 sp. */
+  let pushErr = 0;
+  const dynWords = new Set();
+  items.filter(it => it.kind === 'words' && !it.list[0].group).forEach(it => {
+    const d = markById.get(it.key), r = d ? wordsPlace(d) : null;
+    if (r && r.row === 'dynamics') { it.want = wordsWant(it, d, r); it.order = d.order; dynWords.add(it); }
+  });
+  groupBy(items.filter(it => it.kind === 'dynamic' || it.kind === 'hairpin' || dynWords.has(it)), it => it.system + '|' + it.staffKey + '|' + it.side).forEach(list => {
+    const ws = list.filter(it => dynWords.has(it));
+    if (!ws.length) return;
+    const bases = distinct(list.map(it => it.base).filter(v => v !== null));
+    const first = list[0].side === 'above' ? bases[bases.length - 1] : bases[0];
+    const onFirst = it => it.base !== null && Math.abs(it.base - first) <= FIX.lineTol;
+    ws.sort((a, b) => (a.want === null ? 0 : a.want) - (b.want === null ? 0 : b.want) || a.order - b.order);
+    ws.forEach((W, k) => {
+      if (W.want === null) { pushErr++; return; }
+      const f = W.f, w = W.x1 - W.x0, gap = SYS.apart / 2 * f;
+      const L1 = list.filter(it => it !== W && onFirst(it) && (!dynWords.has(it) || ws.indexOf(it) < k));
+      const meets = c => L1.some(it => c < it.x1 + gap - EPS && it.x0 < c + w + gap - EPS);
+      const c = [W.want].concat(L1.map(it => it.x1 + FIX.word * f)).filter(x => x >= W.want - TOL).sort((a, b) => a - b).find(x => !meets(x));
+      const fits = c !== undefined && c - W.want <= FIX.pushMax * f + TOL && c + w <= sysRight(W.system) + TOL;
+      if (onFirst(W) ? !(fits && Math.abs(W.x0 - c) <= TOL) : fits || Math.abs(W.x0 - W.want) > TOL) pushErr++;
+    });
+  });
+  set('eg.words.push_err', pushErr);
+
+  /* ---- R3, §15.3 as G4-D1b-5 adds: eg.row.centre_err. The row between two staves of a part - the dynamics, hairpins and words
+     below its upper staff - is moved down, level, into the middle of the room there, never up and never within 1.0 sp of the
+     lower staff's content. With gu its least gap to what the upper staff reaches down to over its items and gd its least gap to
+     what the lower staff reaches up to (read in the 0.25 sp cells the stacking reads), gd is at least 1.0 sp, and either
+       gu = gd (to 0.15 sp) - in the middle;
+       gu < gd = 1.0 sp - the middle would bring it nearer the lower staff than 1.0 sp;
+       gu > gd - the middle is above it: it stands where its placement put it, 0.5 sp (the row's pad) under what the upper staff
+         reaches down to within 0.25 sp of one of its items (the placement's reach: a tuplet number, for one, is put with room to
+         spare either side). */
+  let centreErr = 0;
+  /* what a staff holds, as the stacking reads it (§10.1): its objects, its lines, and each curve as one box per 0.5 sp of x from
+     the curve's height at the step's two ends, thickened by half its thickness */
+  const stepBoxes = c => {
+    const L = c.p3[0] - c.p0[0], n = Math.max(1, Math.ceil(Math.abs(L) / 0.5 - 1e-9)), w = (c.t || 0) / 2 + (c.line === 'wavy' ? 0.2 : 0), out = [];
+    for (let k = 0; k < n; k++) {
+      const xa = c.p0[0] + L * k / n, xb = c.p0[0] + L * (k + 1) / n, ya = yOnCurve(c, xa), yb = yOnCurve(c, xb);
+      if (ya !== null && yb !== null) out.push([Math.min(xa, xb), Math.min(ya, yb) - w, Math.max(xa, xb), Math.max(ya, yb) + w]);
+    }
+    return out;
+  };
+  const roomOf = (s, key) => {
+    const out = [];
+    objs.forEach(o => {
+      if (o.system !== s.index || o.staffKey !== key || o.kind === 'barline') return;
+      if (o.kind === 'staff') { const t = SYS.staffLine * (o.space || 1) / 2; out.push([o.box[0], o.box[1] + t, o.box[2], o.box[3] - t]); } else out.push(o.box);
+    });
+    (eng.curves || []).forEach(c => { if (c.system === s.index && c.staffKey === key) stepBoxes(c).forEach(b => out.push(b)); });
+    return out;
+  };
+  eng.systems.forEach(s => {
+    for (let k = 0; k + 1 < s.staves.length; k++) {
+      const up = s.staves[k], lo = s.staves[k + 1];
+      if (!staffPart.get(up.key) || staffPart.get(up.key) !== staffPart.get(lo.key)) continue;
+      const band = objs.filter(o => o.system === s.index && o.staffKey === up.key && o.side === 'below' && (o.kind === 'dynamic' || o.kind === 'hairpin' || o.kind === 'words'));
+      if (!band.length) continue;
+      const n = (linesOf.get(up.key) || 5) - 1, f = n > 0 && up.h > 0 ? up.h / n : s.space || 1;
+      const own = new Set(band.map(o => o.box));
+      const U = roomOf(s, up.key).filter(b => !own.has(b)), D = roomOf(s, lo.key);
+      /* the cells a box covers, read as the layout read the box before its edges were rounded to 0.01 sp: exactly, or widened
+         by that rounding - the row passes if either reading does */
+      const reading = e => {
+        const cellsOf = x => [Math.floor((x[0] - e) / SYS.cell + 1e-9), Math.floor((x[2] + e - 1e-9) / SYS.cell)];
+        let gu = Infinity, gd = Infinity, reach = Infinity;
+        band.forEach(o => {
+          const c = cellsOf(o.box), cw = cellsOf([o.box[0] - SYS.cell * f, 0, o.box[2] + SYS.cell * f]);
+          let a = -Infinity, aw = -Infinity, b = Infinity;
+          U.forEach(x => {
+            const cx = cellsOf(x);
+            if (cx[0] <= c[1] && c[0] <= cx[1]) a = Math.max(a, x[3]);
+            if (cx[0] <= cw[1] && cw[0] <= cx[1] && x[3] <= o.box[1] + TOL) aw = Math.max(aw, x[3]);
+          });
+          D.forEach(x => { const cx = cellsOf(x); if (cx[0] <= c[1] && c[0] <= cx[1]) b = Math.min(b, x[1]); });
+          gu = Math.min(gu, o.box[1] - a);
+          gd = Math.min(gd, b - o.box[3]);
+          reach = Math.min(reach, o.box[1] - aw);
+        });
+        const tol = FIX.centreTol;
+        return gd >= SYS.pad * f - tol && (Math.abs(gu - gd) <= tol || (gu < gd && Math.abs(gd - SYS.pad * f) <= tol) ||
+          (gu > gd && Math.abs(reach - FIX.rowPad * f) <= tol));
+      };
+      if (!reading(0) && !reading(EPS)) centreErr++;
+    }
+  });
+  set('eg.row.centre_err', centreErr);
 }
 
 /* the metrics whose target is 0 (all but the maximum and the recorded count of smaller staves) */
@@ -1399,6 +2333,6 @@ const MAXIMA = { 'eg.beam.slope_max': MAX_SLOPE, 'eg.curve.endpoint_err_max': 0.
 /* recorded, not zero: systems drawn smaller; the slurs that cross a note between their ends (each diagnosed, at most 1 %
    of the slurs - eg.curve.hit_ratio, over a suite in bench.js) and the slurs drawn; the items placed more than 8 sp from
    their staff (§10.5 FAR_PLACEMENT, §21.2: recorded - each one named, eg.layout.far_undiagnosed) */
-const RECORDED = ['eg.system.scaled', 'eg.curve.hits', 'eg.curve.slurs', 'eg.layout.far_placements'];
+const RECORDED = ['eg.system.scaled', 'eg.curve.hits', 'eg.curve.slurs', 'eg.layout.far_placements', 'eg.layout.far_placements_system'];
 
 module.exports = { l2, EPS, TOL, MAXIMA, RECORDED, ACC_VS, DOT_VS, REST_VS, STEM_KINDS, DRAWN_KINDS, staffY, autoDir, sampleBoxes, bulge };

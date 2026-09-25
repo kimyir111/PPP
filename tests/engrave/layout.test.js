@@ -48,7 +48,18 @@ const ZERO_L2 = ['eg.clip.count', 'eg.overlap.head_head', 'eg.overlap.acc', 'eg.
   'eg.rest.ledger_missing', 'eg.tuplet.number_far', 'eg.overlap.text', 'eg.overlap.text_text', 'eg.overlap.mark_mark', 'eg.overlap.mark_note',
   'eg.text.width_err', 'eg.text.missing_glyph', 'eg.clip.curves',
   /* the G4d-1a fixer (G04 §35.18): G4-L4's tie ends and crossings, G4-L5's fingering by its notes and §10.5, the review's R3 */
-  'eg.tie.crossings', 'eg.slur.missing', 'eg.slur.side_err', 'eg.mark.glyph_err', 'eg.fingering.far', 'eg.layout.far_undiagnosed'];
+  'eg.tie.crossings', 'eg.slur.missing', 'eg.slur.side_err', 'eg.mark.glyph_err', 'eg.fingering.far', 'eg.layout.far_undiagnosed',
+  /* G4d-1b (G04 §10.2 priorities 7-11, §10.4 S2 and S5, §15.3, §15.4; A8-A10, A12 lyrics, A20, A25; the G4d-1a review R5): the
+     marks attached to systems drawn and where their rules put them, the written pitch under octave lines, vertical spacing,
+     courtesy signs, bracketed accidentals */
+  'eg.mark.missing.dynamic', 'eg.mark.missing.wedge', 'eg.mark.missing.pedal', 'eg.mark.missing.pedal-change', 'eg.mark.missing.ottava',
+  'eg.mark.missing.ending', 'eg.mark.missing.chord', 'eg.mark.missing.tempo', 'eg.mark.missing.rehearsal', 'eg.mark.missing.jump',
+  'eg.mark.missing.words', 'eg.mark.missing.lyric', 'eg.dynamic.side_err', 'eg.row.baseline_err', 'eg.hairpin.level_err', 'eg.hairpin.shape_err',
+  'eg.hairpin.clear_err', 'eg.pedal.errors', 'eg.pedal.change_err', 'eg.ottava.extent_err', 'eg.ottava.label_err', 'eg.event.written_diff',
+  'eg.volta.extent_err', 'eg.chord.order_err', 'eg.lyric.staff_err', 'eg.lyric.place_err', 'eg.row.order_err', 'eg.text.content_err',
+  'eg.skyline.vertical_collisions', 'eg.staff.gap_err', 'eg.system.gap_err', 'eg.courtesy.missing', 'eg.accidental.bracket_err',
+  /* the G4d-1b fixer (G04 §36.18; the review's R1-R3) */
+  'eg.tempo.split_err', 'eg.mark.anchor_err', 'eg.hairpin.extent_err', 'eg.words.push_err', 'eg.row.centre_err'];
 
 /* A piano piece from a compact spec: bars of voices of [dur, type, pitch, extra] with pitch 'C5', 'F#4' ('r' a rest) or
    an array of pitches (a chord); extra: {dots, acc, stem}. Voice 1 and 2 on the upper staff, voice 3 on the lower. */
@@ -128,7 +139,7 @@ test('A29: no DOM measurement anywhere in engrave/ but the drawing backend; no b
   assert.deepEqual(r.files.filter(f => r.scanned.pure.indexOf(f) < 0 && !A29.BACKEND[f]), Object.keys(A29.EDGE).sort());
   Object.keys(A29.EDGE).forEach(f => assert.ok(r.files.indexOf(f) >= 0, 'the exemption names a file that exists: ' + f));
   ['metrics', 'space', 'breaks', 'skyline', 'canon', 'notation', 'layout', 'practice', 'outlines', 'plan', 'plan-beams', 'plan-tuplets', 'ledger', 'glyphs',
-    'curves', 'marks', 'metrics-text'].forEach(n => assert.ok(r.scanned.pure.indexOf(n + '.js') >= 0, n + '.js is held to every rule'));
+    'curves', 'marks', 'metrics-text', 'sysmarks'].forEach(n => assert.ok(r.scanned.pure.indexOf(n + '.js') >= 0, n + '.js is held to every rule'));
   /* the drawing backend is exempt by §20, and needs no exemption: it emits text and measures nothing */
   assert.ok(r.files.indexOf('svg.js') >= 0);
   assert.deepEqual(A29.scanSource(fs.readFileSync(path.join(REPO, 'engrave', 'svg.js'), 'utf8'), 'svg-as-a-layout-module.js'), [], 'svg.js holds to every rule too');
@@ -210,7 +221,7 @@ test('A29 negative controls: every banned construct is caught by its rule, whate
 test('the EngravedScore: staff-space coordinates to 0.01, every object keyed to plan or graph ids, unique ids, plain data', async () => {
   const p = await eplan('E35-voice-and-piano.musicxml');
   const e = L.engrave(p, {});
-  assert.equal(e.version, 'engr/3');
+  assert.equal(e.version, 'engr/5');
   assert.equal(e.planKey, p.graph.fingerprint + ':' + p.version);
   assert.deepEqual(e.config, { mode: 'screen', breakpoint: 'desktop', width: 100, barsPerSystem: 4, respectSourceBreaks: false, window: null });
   assert.deepEqual(Object.keys(e).sort(), ['config', 'coverage', 'curves', 'diagnostics', 'measures', 'objects', 'pages', 'planKey', 'systems', 'version']);
@@ -218,7 +229,10 @@ test('the EngravedScore: staff-space coordinates to 0.01, every object keyed to 
   const ids = new Set();
   const planIds = new Set([].concat(p.events.map(x => x.id), p.events.flatMap(x => x.heads.map(h => h.id)), p.measures.map(x => x.id),
     p.clefs.map(x => x.id), p.keys.map(x => x.id), p.meters.map(x => x.id), p.staves.map(x => x.id), p.parts.map(x => x.id), p.endings.map(x => x.id),
-    p.beams.map(x => x.id), p.tuplets.map(x => x.id), p.tuplets.flatMap(x => x.members || [])));
+    p.beams.map(x => x.id), p.tuplets.map(x => x.id), p.tuplets.flatMap(x => x.members || []),
+    /* G4d-1b: the marks attached to systems - directions, lines, tempos, jumps, lyrics (by their ledger refs) */
+    p.marks.map(x => x.id), p.lines.map(x => x.id), p.tempos.map(x => x.id), p.jumps.map(x => x.id),
+    p.ledger.filter(x => x.kind === 'lyric' || x.kind === 'pedal-change').map(x => x.ref)));
   const two = v => Math.round(v * 100) / 100 === v;
   e.objects.forEach(o => {
     assert.ok(!ids.has(o.id), 'unique id ' + o.id);
@@ -439,18 +453,19 @@ test('staff and system geometry: a braced grand staff with bar lines through it,
 
 test('system heads, clef/key/time changes: a clef change at a bar line goes before it, small; courtesy key and time end a system', async () => {
   const e19 = L.engrave(await eplan('E19-clefs.musicxml'), {});
-  const c15 = e19.objects.find(o => o.id === 'c15');
-  const bar = e19.objects.find(o => o.id === 'm7#bar.right:' + c15.staffKey + '#0');
-  assert.ok(c15.scale < 1 && c15.box[2] < bar.box[0] - 0.1 && c15.measure === 'm7', 'the alto clef that starts bar 2 ends bar 1, before its bar line');
-  assert.ok(e19.objects.find(o => o.id === 'c14').box[0] > e19.measures[0].columns[0].x, 'a clef inside a bar, before the notes it applies to');
-  /* key change: A major to F major - three naturals and a flat, after the bar line */
-  const e20 = L.engrave(await eplan('E20-key-change.musicxml'), {});
-  const ks = e20.objects.filter(o => o.kind === 'keysig' && o.measure === 'm9' && o.staffKey === e20.systems[0].staves[0].key);
+  /* (G4d-1b's longer E19 and E20: the IDs moved) the alto clef c18 starts bar 2, the clef inside bar 1 is c17 */
+  const alto = e19.objects.find(o => o.id === 'c18');
+  const bar = e19.objects.find(o => o.id === 'm7#bar.right:' + alto.staffKey + '#0');
+  assert.ok(alto.scale < 1 && alto.box[2] < bar.box[0] - 0.1 && alto.measure === 'm7', 'the alto clef that starts bar 2 ends bar 1, before its bar line');
+  assert.ok(e19.objects.find(o => o.id === 'c17').box[0] > e19.measures[0].columns[0].x, 'a clef inside a bar, before the notes it applies to');
+  /* key change: A major to F major - three naturals and a flat, after the bar line (all six bars on one wide system) */
+  const e20 = L.engrave(await eplan('E20-key-change.musicxml'), { width: 200, barsPerSystem: 6 });
+  const ks = e20.objects.filter(o => o.kind === 'keysig' && o.measure === 'm11' && o.staffKey === e20.systems[0].staves[0].key);
   assert.deepEqual(ks.map(o => o.glyph), ['accidentalNatural', 'accidentalNatural', 'accidentalNatural', 'accidentalFlat']);
   assert.equal(e20.objects.filter(o => o.kind === 'keysig' && o.measure === null && o.system === 0).length, 6, 'the head: three sharps on each staff');
   /* when the change starts a system, the one before ends with it (courtesy), and the new system's head shows the new key */
-  const narrow = L.engrave(await eplan('E20-key-change.musicxml'), { width: 30 });
-  assert.equal(narrow.systems[1].measures[0], 'm9');
+  const narrow = L.engrave(await eplan('E20-key-change.musicxml'), {});
+  assert.equal(narrow.systems[1].measures[0], 'm11');
   assert.equal(narrow.objects.filter(o => o.courtesy && o.kind === 'keysig').length, 8);
   assert.equal(narrow.objects.filter(o => o.kind === 'keysig' && o.system === 1 && o.measure === null).map(o => o.glyph).join(), 'accidentalFlat,accidentalFlat');
   /* meters: C and cut time are their symbols; a courtesy meter ends the system before a change */
@@ -650,10 +665,11 @@ test('coverage: what G4b places is counted, and what later stages draw is pendin
   assert.equal(e.coverage.placed.articulation, arts + p.events.reduce((a, x) => a + (x.arts || []).filter(t => t === 'detached-legato').length, 0));
   assert.equal(e.coverage.placed.slur, p.slurs.length);
   ['articulation', 'ornament', 'fermata', 'fingering', 'tie', 'slur', 'gliss', 'arpeggio'].forEach(k => assert.equal(e.coverage.pending[k], undefined, k));
-  /* marks attached to systems are G4d-1b's: still counted as pending */
+  /* G4d-1b places the marks attached to systems: nothing is pending any more - each dynamic, hairpin and word is drawn */
   const p16 = await eplan('E16-dynamics-hairpins.musicxml');
   const e16 = L.engrave(p16, {});
-  assert.ok(e16.coverage.pending.dynamic > 0 && e16.coverage.pending.wedge > 0);
+  assert.deepEqual(e16.coverage.pending, {});
+  assert.ok(e16.coverage.placed.dynamic >= p16.marks.filter(m => m.kind === 'dynamic').length && e16.coverage.placed.hairpin >= 2 && e16.coverage.placed.words >= 1);
   const p1 = await eplan('E01-beams-basic.musicxml');
   const e1 = L.engrave(p1, {});
   /* G4c places beams, tuplets and grace stems: nothing of them is pending, and no stem is provisional any more */
@@ -720,9 +736,9 @@ test('reflow: desktop -> phone -> desktop gives the same EngravedScore back from
 
 test('the index exports the layout core in Node; the app does not load it yet (legacy stays the renderer)', () => {
   assert.equal(typeof E.engrave, 'function');
-  assert.equal(E.layout.VERSION, 'engr/3');
+  assert.equal(E.layout.VERSION, 'engr/5');
   assert.equal(typeof E.practice.createPracticeMap, 'function');
   assert.equal(typeof E.layoutHash, 'function');
   const html = fs.readFileSync(path.join(REPO, 'Piano Coach App.dc.html'), 'utf8');
-  ['metrics', 'metrics-text', 'space', 'breaks', 'skyline', 'canon', 'notation', 'curves', 'marks', 'layout', 'practice', 'outlines', 'svg'].forEach(n => assert.doesNotMatch(html, new RegExp('engrave/' + n + '\\.js')));
+  ['metrics', 'metrics-text', 'space', 'breaks', 'skyline', 'canon', 'notation', 'curves', 'marks', 'sysmarks', 'layout', 'practice', 'outlines', 'svg'].forEach(n => assert.doesNotMatch(html, new RegExp('engrave/' + n + '\\.js')));
 });

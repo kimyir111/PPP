@@ -40,8 +40,9 @@
   'use strict';
 
   /* the plan's output contract: every change to what plan() outputs moves it (G4-D1a-1: plan/2 is G4c's one-note bracket
-     default and G4d-1a's percussion kit on heads) */
-  const PLAN_VERSION = 'plan/2';
+     default and G4d-1a's percussion kit on heads; plan/3 is G4d-1b's part on every direction and line - a chord name, a
+     pedal or a word that names no staff belongs to its part - and the other marks one dynamics element prints) */
+  const PLAN_VERSION = 'plan/3';
   const R = SG.rational, P = SG.pitch, MG = SG.meterGrid;
   const DEFAULTS = Object.freeze({ mode: 'screen', fingering: true, chords: true, marks: true, respectSourceBreaks: false,
     deriveBeams: true, oneNoteTupletMerge: true });
@@ -291,9 +292,13 @@
       part.directions.forEach(d => {
         const off = d.kind === 'chord' ? !cfg.chords : d.kind === 'dynamic' ? !cfg.marks : false;
         put({ ref: d.id, kind: d.kind, status: off ? 'suppressed' : 'drawn', code: off ? 'config-off' : undefined, plan: d.id });
-        marks.push({ id: d.id, kind: d.kind, m: d.m, at: d.at, staff: d.staff || null, voice: d.voice || null, event: d.event || null,
+        /* G4d-1b: the marks after the first that one <dynamics> element prints ("p dolce"), which the graph keeps on the
+           direction (musicxml.dynamics), drawn after it */
+        const more = d.kind === 'dynamic' && d.ext && d.ext['musicxml.dynamics'] && Array.isArray(d.ext['musicxml.dynamics'].more)
+          ? d.ext['musicxml.dynamics'].more.map(x => ({ value: has(x.value) ? x.value : null, text: has(x.text) ? x.text : null })) : [];
+        marks.push({ id: d.id, kind: d.kind, part: part.id, m: d.m, at: d.at, staff: d.staff || null, voice: d.voice || null, event: d.event || null,
           placement: d.placement || null, value: has(d.value) ? d.value : null, text: has(d.text) ? d.text : null,
-          root: cp(d.root), chordKind: has(d.chordKind) ? d.chordKind : null, bass: cp(d.bass), degrees: cp(d.degrees) });
+          root: cp(d.root), chordKind: has(d.chordKind) ? d.chordKind : null, bass: cp(d.bass), degrees: cp(d.degrees), more: more });
       });
 
       /* ---- spanners other than beams and tuplets (plan-beams.js, plan-tuplets.js) */
@@ -310,26 +315,26 @@
           put({ ref: s.id, kind: 'slur', status: 'drawn', code: open ? 'open' : undefined, plan: s.id });
         } else if (s.type === 'pedal') {
           const off = s.soundOnly ? 'sound-only' : !cfg.marks ? 'config-off' : null;
-          lines.push({ id: s.id, kind: 'pedal', pedal: s.pedal, from: cp(s.from), to: cp(s.to), changes: cp(s.changes) || [],
+          lines.push({ id: s.id, kind: 'pedal', part: part.id, pedal: s.pedal, from: cp(s.from), to: cp(s.to), changes: cp(s.changes) || [],
             mark: cp(s.mark), text: has(s.text) ? s.text : null, soundOnly: !!s.soundOnly, visible: !off });
           put({ ref: s.id, kind: 'pedal', status: off ? 'suppressed' : 'drawn', code: off || (open ? 'open' : undefined), plan: s.id });
           (s.changes || []).forEach((c, i) => put({ ref: L.ref.pedalChange(s.id, i), kind: 'pedal-change', status: off ? 'suppressed' : 'drawn', code: off || undefined, plan: s.id }));
         } else if (s.type === 'ottava') {
           const off = !cfg.marks;
           const o = coversOf.get(s.id);
-          lines.push({ id: s.id, kind: 'ottava', shift: s.shift, staff: s.staff || null, assumed: o ? o.assumed : !s.staff,
+          lines.push({ id: s.id, kind: 'ottava', part: part.id, shift: s.shift, staff: s.staff || null, assumed: o ? o.assumed : !s.staff,
             covers: o ? o.covers.slice() : (s.staff ? [s.staff] : allStaves.slice()), from: cp(s.from), to: cp(s.to), visible: !off });
           put({ ref: s.id, kind: 'ottava', status: off ? 'suppressed' : 'drawn', code: off ? 'config-off' : (open ? 'open' : undefined), plan: s.id });
         } else if (s.type === 'wedge') {
-          lines.push({ id: s.id, kind: 'wedge', wedge: s.kind, staff: s.staff || null, from: cp(s.from), to: cp(s.to),
+          lines.push({ id: s.id, kind: 'wedge', part: part.id, wedge: s.kind, staff: s.staff || null, from: cp(s.from), to: cp(s.to),
             placement: s.placement || null, niente: !!s.niente });
           put({ ref: s.id, kind: 'wedge', status: 'drawn', code: open ? 'open' : undefined, plan: s.id });
         } else if (s.type === 'gliss') {
-          lines.push({ id: s.id, kind: 'gliss', from: s.from || null, to: s.to || null, slide: !!s.slide, line: s.line || null,
+          lines.push({ id: s.id, kind: 'gliss', part: part.id, from: s.from || null, to: s.to || null, slide: !!s.slide, line: s.line || null,
             text: has(s.text) ? s.text : null, placement: s.placement || null });
           put({ ref: s.id, kind: 'gliss', status: 'drawn', code: open ? 'open' : undefined, plan: s.id });
         } else if (s.type === 'arpeggio') {
-          lines.push({ id: s.id, kind: 'arpeggio', heads: (s.heads || []).slice(), dir: s.dir || null, non: !!s.non });
+          lines.push({ id: s.id, kind: 'arpeggio', part: part.id, heads: (s.heads || []).slice(), dir: s.dir || null, non: !!s.non });
           put({ ref: s.id, kind: 'arpeggio', status: 'drawn', plan: s.id });
         } else {
           /* no such type in a valid graph. If one appears it is unsupported - named, never deferred - and the audit
