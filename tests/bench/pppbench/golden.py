@@ -235,7 +235,8 @@ def _check_case(case, row) -> Tuple[str, List[str]]:
 # What G3a may change in a golden snapshot: how the music is written, never what it is. A bless with --g3 refuses a
 # case whose difference reaches past these (tests/bench/golden/BLESS_LOG.md says the same).
 # A pedal release and the next press joined into one change (P8) is NOT allowed: the app plays a change without lifting
-# the damper (G03 §28 B1, G3-U7), so the join is off and pedal marks are fixed.
+# the damper (G03 §28 B1, G3-U7), so the join is off and pedal marks are fixed. (MX-1: this reason models the pre-MX-1
+# app, which now lifts at a change; the text is rebaselined in MX-2, and the rule stays until P8 is reopened, G3-U7/G10a.)
 G3_ALLOWED = ("tuplet brackets", "note and rest shapes (type, dots, tie merges)", "beams", "printed accidentals",
               "spelling and key signatures", "staff and voice of a note", "clefs", "rests")
 G3_FIXED = ("bars (count, numbers, lengths, pickups, repeats)", "the app's play order", "metre", "tempo marks",
@@ -282,6 +283,7 @@ def g3_difference(exp_sem: Dict[str, Any], act_sem: Dict[str, Any], exp_time: Di
     if e["music"]["tempo"] != a["music"]["tempo"]:
         out.append("music.tempo changed")
     if e["music"]["pedals"] != a["music"]["pedals"]:
+        # MX-1: the reason in this message models the pre-MX-1 app; rebaselined in MX-2 (the app now lifts at a change)
         out.append("music.pedals changed (pedal marks are fixed: the app plays a change without lifting, G03 §28 B1)")
     se, sa = _sounding(e), _sounding(a)
     if se != sa:

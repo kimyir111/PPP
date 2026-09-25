@@ -4,8 +4,8 @@
 | --- | --- |
 | Kind | Maintenance batch, not a Goal (`docs/PPP_MASTER_ROADMAP.md` §5.2, §14). Approved by the user (decision D-1, 2026-09-25) |
 | Branch | `mx1-playback-correctness` from `origin/main` `1c92fc4`, worktree `D:/PPP-mx1` |
-| Status | Implemented 2026-09-25, waiting for the independent review. Not merged |
-| Decisions | `docs/DECISIONS.md` MX1-D1 … MX1-D8 |
+| Status | Implemented 2026-09-25; the independent review found NEEDS_FIX (BLOCKER 1, MAJOR 1); fixed the same day (§7), waiting for the recheck. Not merged |
+| Decisions | `docs/DECISIONS.md` MX1-D1 … MX1-D12 |
 
 ## 1. The rule (D-1)
 
@@ -88,6 +88,11 @@ staff), which reproduces issue 3's count: **30 files and 2,229 notes** in the ca
 | tests/engrave/fixtures/e/E18-ottava.musicxml | 8va, 8vb, 15ma, 8va (no staff) | 1, 2, 1, both | 11 | G1–E7 | 0.09 / 6.09 | 16 / 29 (5) | sounding |
 | tests/scoregraph/fixtures/xml/ottava-8va-8vb.musicxml | 8va, 8vb | 1, 2 | 6 | G2–C6 | 0.67 / 0.83 | 8.5 / 20.5 (2) | sounding (one sign: the page reads both ways) |
 
+**What the method cannot do (review M3).** It cannot positively identify a file encoded as written pitch. The reviewer
+lowered the notes under each line by an octave in copies of Czerny 849/14, Burgmüller 21 and Czerny 299/5; the audit
+returned "written (one sign)", "unclear" and "unclear" - never "sounding". So a written-encoded file shows up as
+"unclear" or "written", not as "sounding"; every catalogue file returned "sounding" on both signs, and that verdict stands.
+
 **Result: 30 of 30 catalogue and sample files, and all four fixtures, are encoded as sounding pitch (MusicXML).** None is
 written-encoded, so the audit gives MX-2 no octave-line defect. Every catalogue line is an 8va on the treble staff. Edition
 evidence agrees: every catalogue file with a line is a MuseScore/PDMX typeset (the Burgmüller and Sonatina files name their
@@ -147,13 +152,12 @@ Browser suites (distinct checks passed / failed):
 ## 6. What remains
 
 - **Saved songs are not migrated** (MX1-D3). A Score saved before MX-1 (a song slot, a shared score) keeps the reading it
-  was saved with: drawn = played still holds for it, an octave from the file. Importing the file again reads it anew. A
-  course piece already on the shelf is reopened from its slot (App `openCoursePiece` → `openSong`), so a person who
-  opened one of the 30 catalogue pieces with a line before MX-1 keeps the old playback until the song is removed and
-  added again. A load-time migration needs a marker that says which rule a stored Score was finalized with (a stored
-  line does not say whether it came from a file, where the sign flipped, or from PdfLayer, where it did not); that is a
-  follow-up if the Lead wants one. A G4 renderer that draws from the graph will not take such a Score for its file
-  (`agree` fails) and falls back to the Score's own projection.
+  was saved with: drawn = played still holds for it, in every view (§7), an octave from the file. Importing the file
+  again reads it anew. A course piece already on the shelf is reopened from its slot (App `openCoursePiece` →
+  `openSong`), so a person who opened one of the 30 catalogue pieces with a line before MX-1 keeps the old playback until
+  the song is removed and added again. From the fixer on, every Score finalize reads afresh carries `ottavaRule: 'D-1'`
+  (MX1-D11), which is what a migration keys on (§7, M1). A G4 renderer that draws from the graph will not take an old
+  Score for its file (`agree` fails) and falls back to the Score's own projection.
 - **The G0 bench still models the pre-MX-1 app** (MX1-D7): `pppbench/musicxml.py` `ottava="app"`, the known-failure class
   `octave_shift_playback` (30 files, 2,229 notes), the C10/C11 "the app reads this differently" notes and unit test r20.
   None of them feeds a core/smoke metric (predictions carry no octave line), so the G0 numbers do not move; the local
@@ -165,3 +169,130 @@ Browser suites (distinct checks passed / failed):
   bracket once, over the treble. Only E18 bar 3 has notes on the other staff under such a line; no catalogue file does.
   The G4 renderer decides how to draw it.
 - G3's automatic 8va and `pedalJoin` stay off; reopening them is their Goal's decision (G3-D2, G10a).
+- **For MX-2, from the review** (not fixed in MX-1):
+  - **M4** — a `stop` and a `start` at the same point go to MIDI out as CC64 127 only (`pedalEvents` keeps the last word
+    at one point), so an external instrument does not lift there; the sampler does (the damper spans are closed and
+    reopened).
+  - **M5** — a line that names no staff shifts the bass notes too but is bracketed over the treble only (E18 bar 3), and
+    the legacy renderer draws a pedal change as a lone "∗". Both are drawing questions for the G4 renderer as much as for
+    MX-2.
+  - **M2** — the G0 bench text that models the pre-MX-1 app, annotated in place ("models the pre-MX-1 app; rebaselined in
+    MX-2"): the CI correctness line "app reading departs from MusicXML on 2 (known)" and `APP_DEVIATIONS`
+    (`pppbench/correctness.py`), the `octave_shift_playback` class in `known_failures` (`pppbench/known_defects.py`),
+    unit r20 (`unit/test_parity_rules.py`), and the "the app plays a change without lifting" reason in `pppbench/golden.py`
+    (the G3 rule that pedal marks are fixed stays until P8 is reopened, G3-U7). No number, baseline or `known_failures`
+    changed.
+
+## 7. Review and fix (2026-09-25)
+
+The independent review returned **NEEDS_FIX**: BLOCKER 1 (R1), MAJOR 1 (R2), MINOR 5 (M1–M5). The Lead added M1 to the
+fix. The fixer's commit is on top of `8981750`.
+
+### R1 (BLOCKER) — a view of some bars drew the notes under an 8va an octave low with no sign
+
+The legacy renderer skipped every octave line whose first or last bar was not on screen (`if (!a || !z || z.y < a.y)
+return;`), while the notes were still drawn at `writtenP`, an octave from where they sound. "This part", the phone's two
+bars, the tablet's two lines, the import preview, the review staff and the loop card's one bar all showed a stretch of a
+longer line without it (Czerny 849/20, bars 16–19: C5 drawn, C6 played, no bracket). The same held before MX-1 for the old
+reading (the file's pitch drawn with no "8vb", while the app played an octave lower).
+
+- **Fix** (App 11198–11218, 11244–11252): a line with an end off screen is drawn over the bars it covers that are shown.
+  Carried on from a bar before the first one shown, it is labelled "(8va)", as a line carried to a new system is; going on
+  past the last bar shown, it runs to that bar's end with no hook. Lines with both ends on screen are drawn exactly as
+  before. The label and the dashes carry `data-ppp-row` (the row they belong to), which also keeps an "(8va)" in view when
+  a tablet scrolls to the next line (App `followStaff`, 12388).
+- **A45** pinned the ScoreView class at 55d1bd5: it now pins the class as it is, and a second hash proves everything
+  outside the octave-line block is still 55d1bd5's, byte for byte (`tests/engrave/app.test.js`).
+
+### R2 (MAJOR) — cards drew the opening 8va bars an octave low with no sign
+
+`openingBars` (the My Songs card, the Shared Scores card, the link card, and the preview stored with a share) dropped the
+lines and kept each note's `writtenP`.
+
+- **Fix** (App 12226–12246): a card has no line, so `openingBars` prints each note where it sounds — `writtenP` and
+  `writtenMidi` take the shift back and `ottavaShift` is 0. Every Score states written = sounding − shift, before MX-1
+  as after, so the same step is right for a preview already on the server from either: the Shared Scores card reads the
+  stored preview through `openingBars` again (`sharedThumb`), so previews stored before MX-1 and by `8981750` draw right
+  too. Checked: fresh cards, cards of a song saved before MX-1, previews stored before MX-1 and by `8981750` (below).
+- **Rejected:** keeping the lines on a card, clipped to its bars. It gives a card an "8va" sign, but previews already
+  stored have no lines to keep, so they would still need this step; one rule for every card is simpler (MX1-D10).
+
+### M1 (MINOR, included) — which rule made a Score's pitch layers
+
+- **Fix** (App 3597, 3615, 3618–3621): `Score.finalize` sets `score.ottavaRule = 'D-1'` when no note of the Score arrived
+  with its layers already made (an import, a recording, the demo, a rebuilt Score); a Score that carries the mark keeps
+  it; a Score whose notes arrive with layers and no mark - a save from before this commit - is left unmarked. It is a Score-level
+  field: song slots (`packScore` keeps Score fields), shares (the server keeps the score JSON) and cards keep it; nothing
+  draws it, so no render changes (legacy-parity: no file without a line differs).
+- **A48 stays exact:** `tests/engrave/a48-compare.js` now compares `ottavaRule` too, and `toScore(fromScore(S))`
+  reproduces it - finalize marks the rebuilt Score, as it marked S. Population A: 544 files, 540 exact, the same 4 named
+  losses; population C: the 13 captured Scores re-captured from this page (the only change: the added mark), all exact;
+  the "not blind" test drops the mark and sees it. A Score saved before MX-1 is unmarked, and its rebuild - its own music
+  read again - is marked; `app-playback.test.js` asserts exactly that difference and nothing else.
+- **What a migration keys on (for MX-2):** a stored Score with lines or with notes whose `ottavaShift` is not 0, and no
+  `ottavaRule`, was finalized before this commit. Deployed, that means saves from 72549cb up to the MX-1 merge (and on a
+  development machine, `8981750`, whose Scores are D-1 but unmarked). A line read from a MusicXML `<octave-shift>` in such
+  a save is signed the old way; a line PdfLayer found on a page image was already signed D-1. The song's `importSource`
+  (kept in the slot) or its `source.kind` tells which; re-importing the file is the exact migration. Without a file, the
+  old-to-D-1 step is the inverse of `preMx1` in `tests/scoregraph/tools/ottava-views.js`: for each shifted note,
+  `p`/`midi`/`soundingMidi` ← `writtenP`/`writtenMidi` (the file's pitch), `writtenP` ← that shifted by the old
+  `ottavaShift`, `ottavaShift` ← −`ottavaShift`; each line's `dir` and `semitones` negated; then the mark. The migration
+  itself is not in MX-1.
+
+### M2, M3, M4, M5
+
+Docs only (§3, §6): M2's stale G0 bench text annotated in place (comments; no number, baseline or `known_failures`
+changed); M3 stated in §3; M4 and M5 listed for MX-2 in §6.
+
+### The invariant, and the check that proves it
+
+`tests/scoregraph/tools/ottava-check.js` now also runs `ottava-views.js`: in every view that draws a score, every note of
+the bars shown is drawn at the pitch it sounds, or an octave (two) away under a visible octave line of its system whose
+label says so. The views are drawn by the app's own ScoreView with the props the app passes there, and the cards on the
+Scores the app's `shelfThumb` / `sharedThumb` make: the whole score at four and two bars a line (lines across system
+breaks), "This part" on a desktop, a tablet (two lines) and a phone, the review staff, the loop card's bar, the import
+preview, the Progress thumbnail, the My Songs card, a Shared Scores card, the link card, a preview stored by `8981750`, a
+preview stored before MX-1, and a song saved before MX-1 (whole, part, card). The windows of the partial views start
+before, at, inside and at the end of every line.
+
+| | This branch | `8981750` |
+| --- | --- | --- |
+| `ottava-check.js` (34 files, views on) | PASS: 2,484 renders, 195,663 notes checked, 0 problems | FAIL: 31 of 34 files |
+| `app-playback.test.js` | 9/9 | 7/9 (R2 cards and M1 fail) |
+| `engraving.test.js`, the new "This part" inside a longer 8va | pass | fail (no "(8va)") |
+
+By view, on `8981750` (renders, notes checked, problems, files with one) — every view but the whole score fails:
+
+| View | Renders | Notes | Problems on `8981750` | Files | This branch |
+| --- | --- | --- | --- | --- | --- |
+| whole, whole-phone | 34 each | 19,582 each | 0 | 0 | 0 |
+| part (This part) | 380 | 27,474 | 8,710 | 27 | 0 |
+| tablet (two lines) | 380 | 27,474 | 8,710 | 27 | 0 |
+| phone | 295 | 10,982 | 6,332 | 27 | 0 |
+| review | 380 | 27,474 | 8,710 | 27 | 0 |
+| dashboard (one bar) | 295 | 5,675 | 3,656 | 27 | 0 |
+| preview (import) | 34 | 1,648 | 64 | 1 | 0 |
+| progress | 34 | 1,090 | 32 | 1 | 0 |
+| card, shared-card | 34 each | 1,090 each | 210 each | 8 each | 0 |
+| link | 34 | 2,176 | 318 | 11 | 0 |
+| stored-8981750, stored-pre-mx1 | 34 each | 1,090 each | 210 each | 8 each | 0 |
+| old-whole / old-part / old-card | 34 / 380 / 34 | 19,582 / 27,474 / 1,090 | 0 / 8,710 / 210 | 0 / 27 / 8 | 0 |
+
+(A problem is a note, or a drawn head, that the invariant does not hold for. The partial views of a song saved before
+MX-1 fail on `8981750` - and on 72549cb - the same way: that renderer drew the file's pitch with no "8vb" in a window,
+an octave above what the old Score plays.) The check was itself checked: a first version measured a head's clef from its
+onset key rounded to three places and flagged two notes after a mid-bar clef change in Burgmüller 21; and before the
+renderer marks a label's system, the check places it by direction (an 8va over the system below it).
+
+**Gates after the fix**
+
+| Gate | Result |
+| --- | --- |
+| `npm run test:scoregraph` | 214/214 (app-playback 9/9) |
+| `npm run test:engrave` | 132/132; A48 (A) 544 files, 540 exact, the same 4 named losses; (C) 13 exact; A45 as above |
+| CRLF checkout (`git checkout-index`, the App file CRLF) | engrave 132/132, app-playback 9/9; scoregraph 209/214 - the 5 are the tests that need `.git`, as on any archive |
+| `ottava-check.js` | PASS here, FAIL on `8981750` (above) |
+| browser suites on this worktree's server, each separately | engraving 38/0, playback-scheduler 9/0, midi 74/0, pdf-layer 52/0; follow 31 and musicxml 42 pass, each with the one known failure (the refused 127.0.0.1:8788/health) |
+| `legacy-parity` (base `1c92fc4` → this) | only `ottava` (close and whole) differs |
+| the same, extended in scratch to all 34 octave-line files and 12 without one | 47 renders differ, all in octave-line files - the same 47 as before the fix; the 38 renders without a line are byte-identical (the mark changes no render) |
+| G0 `ab --suite smoke` | PASS; `ab_identical.py` 44/44 cases the same; unit 283 OK, golden 17/17, correctness 13/13 |

@@ -3594,6 +3594,7 @@ const Score = {
       });
       return best;
     };
+    let carried = 0;
     score.notes.forEach(n => {
       const mm = byNumber[n.m];
       n.abs = (mm ? mm.startQ : 0) + n.b;
@@ -3611,8 +3612,13 @@ const Score = {
         n.soundingMidi = n.midi;
       } else if (!n.rest && n.midi != null) {
         n.midi = n.soundingMidi;
+        carried++;
       }
     });
+    /* Which rule made the pitch layers (MX-1 fixer, M1): a Score whose every note this reads afresh is marked D-1. A
+       Score saved before MX-1 comes back with its layers already made and no mark, and keeps none, which is what a
+       migration of those saves keys on (MX-2); a marked one keeps its mark. */
+    if (!carried) score.ottavaRule = 'D-1';
     score.notes.sort((a, b) => a.abs - b.abs || (a.staff || 1) - (b.staff || 1));
     if (!score.sections || !score.sections.length) score.sections = Score.deriveSections(score);
     return score;
@@ -11189,11 +11195,27 @@ function makeScoreView(React) {
           const r = rowSpan[sg.y] = rowSpan[sg.y] || { x0: Infinity, x1: -Infinity };
           r.x0 = Math.min(r.x0, sg.x); r.x1 = Math.max(r.x1, sg.x + sg.w);
         });
+        const rowOfY = {};
+        this._map.forEach(sg => { rowOfY[sg.y] = sg.row; });
         (score.ottavas || []).forEach(ov => {
           if (ov.endM == null) return;
-          const a = atBeat(ov.m, ov.b || 0);
-          const z = atBeat(ov.endM, Math.max(0, (ov.endB || 0) - 0.002));
-          if (!a || !z || z.y < a.y) return;
+          let a = atBeat(ov.m, ov.b || 0);
+          let z = atBeat(ov.endM, Math.max(0, (ov.endB || 0) - 0.002));
+          /* A view of some bars - this part, a phone's two, the import preview, the review staff - draws the stretch
+             of a line that falls in them: its notes are printed an octave from where they sound, so the sign must be
+             there (MX-1 fixer, R1). Carried on from a bar before the first shown, it is labelled "(8va)", as on a
+             new line of the page; going on past the last bar shown, it has no end hook. */
+          let carried = false, open = false;
+          if (!a || !z) {
+            const mA = Score.measure(score, ov.m), mZ = Score.measure(score, ov.endM);
+            const qa = mA ? mA.startQ + (ov.b || 0) : -Infinity, qz = mZ ? mZ.startQ + (ov.endB || 0) : Infinity;
+            const on = this._map.filter(sg => sg.startQ + sg.lenQ > qa + 1e-6 && sg.startQ < qz - 1e-6);
+            if (!on.length) return;
+            const end = on[on.length - 1];
+            if (!a) { a = { x: on[0].x, y: on[0].y }; carried = true; }
+            if (!z) { z = { x: end.x + end.w - 12, y: end.y }; open = qz > end.startQ + end.lenQ + 1e-6; }
+          }
+          if (z.y < a.y) return;
           const staffNo = ov.staff || (ov.dir > 0 ? pianoTop + 1 : pianoTop + 2);
           const k = Math.max(0, Math.min(nStaves - 1, staffNo - 1));
           /* over the staff for an 8va, under it for an 8vb */
@@ -11219,13 +11241,15 @@ function makeScoreView(React) {
             const x1 = last ? z.x + 12 : rowSpan[ry].x1;
             const y = lineY(ry);
             /* the sign at the start, and in brackets where it carries on */
-            const label = first ? name : '(' + name + ')';
-            const lw = first ? 24 : 34;
-            svgLabel(label, { x: x0, y: y + 4, size: 13, italic: true, stroke: 0.4 });
+            const opens = first && !carried;
+            const label = opens ? name : '(' + name + ')';
+            const lw = opens ? 24 : 34;
+            svgLabel(label, { x: x0, y: y + 4, size: 13, italic: true, stroke: 0.4, row: rowOfY[ry] });
             if (x1 <= x0 + lw + 4) return;
             const line = document.createElementNS(SVGNS, 'path');
             line.setAttribute('d', 'M ' + (x0 + lw) + ' ' + y + ' L ' + x1 + ' ' + y +
-              (last ? ' L ' + x1 + ' ' + (y + (ov.dir > 0 ? 6 : -6)) : ''));
+              (last && !open ? ' L ' + x1 + ' ' + (y + (ov.dir > 0 ? 6 : -6)) : ''));
+            line.setAttribute('data-ppp-row', String(rowOfY[ry]));
             line.setAttribute('fill', 'none');
             line.setAttribute('stroke', ink);
             line.setAttribute('stroke-width', '1');
@@ -12204,8 +12228,19 @@ function openingBars(full, n) {
   const keep = {};
   ms.forEach(m => { keep[m.number] = true; });
   const mine = list => (list || []).filter(x => keep[x.m]).map(x => Object.assign({}, x));
+  /* A card draws no octave line, so a note under one is printed where it sounds (MX-1 fixer, R2). Every Score states
+     written = sounding - shift, before MX-1 as after it, so adding the shift back is right for a preview stored with a
+     share by either; and a preview made here is stored that way. */
+  const notes = mine(full.notes);
+  notes.forEach(x => {
+    const s = +x.ottavaShift || 0;
+    if (!s || x.rest) return;
+    if (x.writtenP) x.writtenP = shiftPitchOctave(x.writtenP, s);
+    if (x.writtenMidi != null) x.writtenMidi += s;
+    x.ottavaShift = 0;
+  });
   return Object.assign({}, full, {
-    measures: ms, notes: mine(full.notes), chords: mine(full.chords), pedals: mine(full.pedals), ottavas: [],
+    measures: ms, notes: notes, chords: mine(full.chords), pedals: mine(full.pedals), ottavas: [],
     marks: mine(full.marks),
     sections: [{ id: 's1', from: ms[0].number, to: ms[ms.length - 1].number }], _byNumber: undefined
   });

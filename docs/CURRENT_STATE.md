@@ -216,8 +216,8 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
 
 - **Active goal: G4 Professional Engraving — G4a and G4b CLOSED (PR #9 `df8a571`, PR #12 `62ede61`); next G4c, with MX-1
   beside it.** The order, gates and briefs are in `docs/PPP_MASTER_ROADMAP.md` (§14 current task, §15 next).
-  - **MX-1** — own worktree `D:/PPP-mx1`, branch `mx1-playback-correctness` — **implemented 2026-09-25, waiting for the
-    independent review** (section "MX-1 — playback correctness" at the end of this file):
+  - **MX-1** — own worktree `D:/PPP-mx1`, branch `mx1-playback-correctness` — **implemented 2026-09-25; the review's
+    NEEDS_FIX fixed the same day, waiting for the recheck** (section "MX-1 — playback correctness" at the end of this file):
     - the app stops shifting 8va passages a second time when it plays them (decision D-1: ScoreGraph and MusicXML
       `<pitch>` are the sounding pitch; 8va/15ma is display only);
     - pedal `change` lifts and re-presses the damper;
@@ -295,8 +295,15 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
 
 ### MX-1 — playback correctness (2026-09-25)
 
-Branch `mx1-playback-correctness` from `1c92fc4`; implemented, waiting for the independent review; not merged. Record:
-`docs/GOALS/MX1_PLAYBACK_CORRECTNESS.md` (what changed by file and line, the audit table, the tests). Decisions MX1-D1…D8.
+Branch `mx1-playback-correctness` from `1c92fc4`; implemented; not merged. Record:
+`docs/GOALS/MX1_PLAYBACK_CORRECTNESS.md` (what changed by file and line, the audit table, the tests). Decisions MX1-D1…D12.
+
+- **Review and fix (record §7).** The review found NEEDS_FIX: views that show some bars of a longer 8va (This part, the
+  phone, the review staff, the import preview, the loop card) and the song and share cards drew its notes an octave low
+  with no sign. Fixed: those views draw the part of the line they show ("(8va)" when it carries on), and cards print the
+  notes where they sound (previews already stored included). Every Score finalize reads afresh is now marked
+  `ottavaRule: 'D-1'`, for MX-2's migration of older saves. A page check proves drawn = played in every view on all 34
+  octave-line files (2,484 renders); it fails on the pre-fix commit `8981750`.
 
 - **What changed.**
   - 8va (issue 3, decision D-1): `parseMusicXML` reads `<octave-shift type="down">` as an 8va, and `legacy.toScore` /

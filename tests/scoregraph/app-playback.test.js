@@ -8,7 +8,11 @@
    Score.finalize and PianoScore are read out of Piano Coach App.dc.html, with the few constants they use, the way
    tests/engrave/helpers.js appFinalize reads finalize: these are the app's own functions, not copies. The same checks
    in the running page (both import doors, the renderer, the scheduler, follow) are tests/scoregraph/tools/ottava-check.js,
-   tests/playback-scheduler.test.js and tests/follow.test.js. */
+   tests/playback-scheduler.test.js and tests/follow.test.js.
+
+   MX-1 fixer: a card (the opening bars of a song, a share preview) prints every note where it sounds (R2), and a Score
+   says which rule made its pitch layers (M1, `ottavaRule`). The partial views of the renderer (R1) need the page:
+   tests/scoregraph/tools/ottava-views.js, run by ottava-check.js, and tests/engraving.test.js. */
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
@@ -36,7 +40,9 @@ function appCode() {
   };
   const body = decl('PIANO') + decl('DYN_VEL') + decl('PEDAL_CC') + fn('firstAtOrAfter') + decl('STEP_SEMI') + decl('PITCH_RE') +
     fn('pitchToMidi') + fn('shiftPitchOctave') + fn('ottavaSemitones') + decl('PianoScore') + decl('Score') +
-    'return { Score: Score, PianoScore: PianoScore, pitchToMidi: pitchToMidi, ottavaSemitones: ottavaSemitones };';
+    fn('packScore') + fn('unpackScore') + fn('openingBars') +
+    'return { Score: Score, PianoScore: PianoScore, pitchToMidi: pitchToMidi, ottavaSemitones: ottavaSemitones, ' +
+    'packScore: packScore, unpackScore: unpackScore, openingBars: openingBars };';
   return new Function(body)();
 }
 const APP = appCode();
@@ -49,6 +55,23 @@ const graphOfFile = async rel => {
   return r.graph;
 };
 const pitchName = p => p.step + (p.alter > 0 ? '#'.repeat(p.alter) : p.alter < 0 ? 'b'.repeat(-p.alter) : '') + p.oct;
+/* a Score as the app held it before MX-1 (App 72549cb..1c92fc4): the line signed the other way, p and midi moved by it,
+   the file's pitch in writtenP, no ottavaRule. The same transform as tests/scoregraph/tools/ottava-views.js preMx1; the
+   test "a song saved before MX-1" checks it against a Score captured from that page. */
+function preMx1(s0) {
+  const o = clone(s0);
+  delete o._byNumber;
+  delete o.ottavaRule;
+  o.notes.forEach(n => {
+    const k = +n.ottavaShift || 0;
+    if (!k || n.rest) return;
+    n.writtenP = n.p; n.writtenMidi = n.midi;
+    n.ottavaShift = -k; n.midi -= k; n.soundingMidi = n.midi;
+    n.p = n.p.replace(/-?\d+$/, o2 => String(+o2 - k / 12));
+  });
+  (o.ottavas || []).forEach(ov => { ov.dir = -ov.dir; ov.semitones = -ov.semitones; });
+  return o;
+}
 
 /* What the graph says about each head, read from the graph alone: the pitch that sounds, the line over it (the part the
    app plays; a line that names no staff covers every staff of that part, as the G4 plan reads it) and the pitch printed
@@ -176,7 +199,10 @@ test('a song saved before MX-1: read back as it was saved, rebuilt exactly from 
   const A48 = require(path.join(REPO, 'tests', 'engrave', 'a48-compare.js'));
   const fr = L.fromScore(s);
   assert.ok(fr.ok);
-  assert.deepEqual(A48.fieldsThatDiffer(L, s, APP.Score.finalize(L.toScore(fr.graph, { name: 'back', id: s.id }))), []);
+  /* the same music exactly; the rebuild is marked D-1 (M1): finalize reads it afresh, from its own graph */
+  const back = APP.Score.finalize(L.toScore(fr.graph, { name: 'back', id: s.id }));
+  assert.deepEqual(A48.fieldsThatDiffer(L, s, back), ['ottavaRule']);
+  assert.equal(back.ottavaRule, 'D-1');
   assert.ok(L.agree(s, fr.graph).ok);
   /* the file's graph sounds the 8va an octave above what that Score plays: not the same music, so a renderer drawing
      from the graph falls back to the Score's own projection for such a song (G4 SOURCE_DISAGREE); the Score the app
@@ -184,6 +210,74 @@ test('a song saved before MX-1: read back as it was saved, rebuilt exactly from 
   const g = importXml(xml('ottava-8va-8vb')).graph;
   assert.equal(L.agree(s, g).ok, false);
   assert.ok(L.agree(held(g), g).ok);
+  /* the pre-MX-1 transform the view checks use (preMx1) makes, from today's Score, the Score that page saved */
+  const made = preMx1(held(g));
+  assert.deepEqual(layers(made), layers(saved));
+  assert.deepEqual(made.ottavas.map(o => [o.dir, o.semitones, o.staff]), saved.ottavas.map(o => [o.dir, o.semitones, o.staff]));
+});
+
+/* ---------------------------------------------------------------- the cards (R2) */
+test('R2: a card prints every note where it sounds - My Songs, Shared Scores, the link card, and previews stored before this fix and before MX-1', async () => {
+  const hold = holdouts();
+  const bad = [];
+  let shifted = 0, files = 0;
+  /* what the card's Score draws: a card has no octave line, so each head is printed at writtenP (App 10742) */
+  const check = (name, kind, card, full) => {
+    if ((card.ottavas || []).length) bad.push(name + ' ' + kind + ': the card keeps an octave line');
+    card.notes.filter(n => !n.rest && n.p).forEach(n => {
+      if ((n.writtenP || n.p) !== n.p || (n.writtenMidi != null && n.writtenMidi !== n.soundingMidi) || n.ottavaShift)
+        bad.push(name + ' ' + kind + ' m' + n.m + ' b' + n.b + ': printed ' + (n.writtenP || n.p) + ', sounds ' + n.p);
+    });
+    /* and it plays what the song plays */
+    const sound = x => x.notes.filter(n => !n.rest && card._byNumber[n.m]).map(n => n.m + '|' + n.b + '|' + n.staff + '|' + n.soundingMidi).sort().join(' ');
+    if (sound(card) !== sound(full)) bad.push(name + ' ' + kind + ': the card does not sound as the song');
+  };
+  for (const rel of ottavaFiles()) {
+    const name = hold.has(rel) ? 'a G0 hold-out file' : rel;
+    const s = held(await graphOfFile(rel));
+    const old = APP.Score.finalize(preMx1(s));
+    if (s.notes.some(n => n.ottavaShift && s.measures.slice(0, 4).some(m => m.number === n.m))) files++;
+    shifted += s.notes.filter(n => n.ottavaShift && s.measures.slice(0, 2).some(m => m.number === n.m)).length;
+    /* My Songs (App shelfThumb): the song's slot, packed and read back */
+    const slot = x => APP.unpackScore(JSON.parse(JSON.stringify(APP.packScore(clone(x)))));
+    check(name, 'card', APP.Score.finalize(APP.openingBars(slot(s), 2)), s);
+    check(name, 'card of a song saved before MX-1', APP.Score.finalize(APP.openingBars(slot(old), 2)), old);
+    /* Shared Scores (App publishSong stores openingBars(score, 2); sharedThumb reads it through openingBars again) and the
+       link card (sharedThumb of the whole score, four bars) */
+    const stored = JSON.parse(JSON.stringify(APP.openingBars(clone(s), 2)));
+    check(name, 'shared card', APP.Score.finalize(APP.openingBars(stored, 2)), s);
+    check(name, 'link card', APP.Score.finalize(APP.openingBars(clone(s), 4)), s);
+    /* previews already on the server: made by openingBars before this fix, which dropped the lines and kept each note */
+    const before = x => { const o = clone(x); const keep = new Set(o.measures.slice(0, 2).map(m => m.number));
+      o.measures = o.measures.slice(0, 2); o.notes = o.notes.filter(n => keep.has(n.m)); o.ottavas = []; return JSON.parse(JSON.stringify(o)); };
+    check(name, 'preview stored by MX-1 before this fix', APP.Score.finalize(APP.openingBars(before(s), 2)), s);
+    check(name, 'preview stored before MX-1', APP.Score.finalize(APP.openingBars(before(old), 2)), old);
+  }
+  assert.deepEqual(bad.slice(0, 5), []);
+  assert.ok(files >= 8 && shifted >= 20, 'the cards cover notes under a line: ' + shifted + ' in the first two bars, ' + files + ' files in the first four');
+});
+
+/* ---------------------------------------------------------------- the rule a Score was made by (M1) */
+test('M1: Score.finalize marks a Score whose pitch layers it makes (ottavaRule D-1); a save keeps the mark, a pre-MX-1 save stays unmarked', async () => {
+  const s = held(await graphOfFile('tests/engrave/fixtures/e/E18-ottava.musicxml'));
+  assert.equal(s.ottavaRule, 'D-1', 'an import is read under D-1');
+  /* a song slot (App writeSlot / openSong), a share (the server keeps the score JSON as sent), a card */
+  const slot = APP.Score.finalize(APP.unpackScore(JSON.parse(JSON.stringify(APP.packScore(clone(s))))));
+  assert.equal(slot.ottavaRule, 'D-1', 'kept through a song slot');
+  assert.equal(APP.Score.finalize(JSON.parse(JSON.stringify(clone(s)))).ottavaRule, 'D-1', 'kept through a share');
+  assert.equal(APP.Score.finalize(APP.openingBars(slot, 2)).ottavaRule, 'D-1', 'kept on a card');
+  /* a Score saved before MX-1 comes back with its layers already made: finalize cannot tell its rule and leaves it unmarked */
+  const saved = JSON.parse(fs.readFileSync(path.join(FIX, 'saved', 'stored-pre-mx1-ottava.score.json'), 'utf8')).score;
+  assert.equal(saved.ottavaRule, undefined);
+  assert.equal(APP.Score.finalize(clone(saved)).ottavaRule, undefined, 'a pre-MX-1 save is not marked by opening it');
+  assert.equal(APP.Score.finalize(preMx1(s)).ottavaRule, undefined);
+  /* a Score with no octave line at all is marked the same way: the mark is about the rule, not the lines */
+  const plain = held(importXml(xml('grand-staff')).graph);
+  assert.equal(plain.ottavaRule, 'D-1');
+  /* the mark does not change the music: the layers of a marked and an unmarked finalize are the same */
+  const layers = x => x.notes.map(n => [n.p, n.midi, n.writtenP, n.writtenMidi, n.soundingMidi, n.ottavaShift].join(' '));
+  const unmarked = clone(s); delete unmarked.ottavaRule;
+  assert.deepEqual(layers(APP.Score.finalize(unmarked)), layers(s));
 });
 
 /* ---------------------------------------------------------------- the pedal */

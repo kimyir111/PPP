@@ -95,7 +95,7 @@ test('A48 (C): the Scores captured from the running app - recording, parsed, imp
   assert.deepEqual(bad, []);
 });
 
-test('A48: the comparison is not blind - a written pitch, an approximation, an 8va shift, a note fewer each differ', async () => {
+test('A48: the comparison is not blind - a written pitch, an approximation, an 8va shift, a note fewer, the rule mark each differ', async () => {
   const g = (await SG.importFile(new Uint8Array(fs.readFileSync(path.join(REPO, 'tests/scoregraph/fixtures/xml/ottava-8va-8vb.musicxml'))), { name: 'o', scoreId: 'a48' })).graph;
   const s = finalize(L.toScore(g, { name: 'o', id: 'a48:o' }));
   const clone = () => JSON.parse(JSON.stringify(s));
@@ -106,5 +106,8 @@ test('A48: the comparison is not blind - a written pitch, an approximation, an 8
   assert.ok(k >= 0, 'the fixture has a note under an 8va');
   const sh = clone(); sh.notes[k].ottavaShift = 0; assert.deepEqual(fieldsThatDiffer(s, sh), ['notes.ottavaShift']);
   const fewer = clone(); fewer.notes.splice(i, 1); assert.ok(fieldsThatDiffer(s, fewer).indexOf('notes.count') >= 0);
+  /* the rule the layers were made by (MX-1 fixer, M1): an import is marked, and a Score without the mark differs */
+  assert.equal(s.ottavaRule, 'D-1');
+  const unmarked = clone(); delete unmarked.ottavaRule; assert.deepEqual(fieldsThatDiffer(s, unmarked), ['ottavaRule']);
   assert.deepEqual(fieldsThatDiffer(s, clone()), []);
 });

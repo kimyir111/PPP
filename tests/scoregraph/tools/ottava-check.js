@@ -12,9 +12,14 @@
               staff covers every staff of the part, as the G4 plan reads it);
      drawn    the legacy renderer, whole score, puts every notehead of every note under a line on the staff position of
               that written pitch (measured on the SVG against the staff lines of its bar), and labels each line
-              8va / 8vb / 15ma / 15mb by what it does.
+              8va / 8vb / 15ma / 15mb by what it does;
+     views    (MX-1 fixer, R1/R2; tests/scoregraph/tools/ottava-views.js) in every view that draws a score - the whole
+              score at two widths, "This part" on a desktop, a tablet and a phone, the review staff, the loop card's
+              bar, the import preview, the Progress thumbnail, the My Songs card, a Shared Scores card, the card a link
+              lands on, share previews stored before this fix and before MX-1, and a song saved before MX-1 - every note
+              is drawn where it sounds, or under a visible octave line of its system whose label says how far away.
    The G0 hold-out references are checked like the others and never named. Needs puppeteer (NODE_PATH or
-   PPP_BENCH_NODE_MODULES). Exit 1 on any difference. */
+   PPP_BENCH_NODE_MODULES). --no-views skips the views; --only <substring> checks some files. Exit 1 on any difference. */
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -24,10 +29,12 @@ const searchPaths = [path.join(REPO, 'node_modules')].concat((process.env.PPP_BE
 const puppeteer = require(require.resolve('puppeteer', { paths: searchPaths }));
 const { preparePage } = require(path.join(REPO, 'tests', 'boot'));
 const { xmlText, ottavaFiles, holdouts } = require('./ottava-audit.js');
+const VIEWS = require('./ottava-views.js');
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const base = arg('--base', 'http://127.0.0.1:8841');
 const only = arg('--only', null);
+const withViews = process.argv.indexOf('--no-views') < 0;
 
 (async () => {
   const hold = holdouts();
@@ -43,6 +50,8 @@ const only = arg('--only', null);
   await page.evaluate(() => window.__pppTest.practice());
   await new Promise(r => setTimeout(r, 1200));
   const lib = await page.evaluate(() => window.PPPScoreGraph.version);
+  if (withViews) await page.evaluate(VIEWS.install);
+  const viewTotals = {};
   console.log('page ' + base + ' (scoregraph ' + lib + '), ' + files.length + ' files with an octave line\n');
 
   let bad = 0, k = 0;
@@ -121,6 +130,7 @@ const only = arg('--only', null);
       /* ---- what the legacy renderer draws: the import door's Score, the whole score */
       const score = doors[0][1];
       score.id = 'mx1-check:' + fileName;
+      window.__mx1Held = score;
       App.shelveSong();
       App.adoptScore(score);
       App.enterSong(score, { kind: 'musicxml', name: fileName, importedAt: 0, status: 'parsed' }, false);
@@ -132,7 +142,7 @@ const only = arg('--only', null);
       const BOTTOM = { treble: 30, bass: 18, alto: 24, tenor: 22, percussion: 30 };      /* bottom line, diatonic (C4 = 28) */
       const clefAt = (mm, staffNo, b) => {
         let cl = (mm.clefs && mm.clefs[staffNo]) || (staffNo === 1 ? 'treble' : 'bass');
-        (mm.clefChanges || []).forEach(ch => { if ((ch.staff || 1) === staffNo && ch.b <= b + 1e-6) cl = ch.clef; });
+        (mm.clefChanges || []).forEach(ch => { if ((ch.staff || 1) === staffNo && ch.b <= b + 1e-3) cl = ch.clef; });   /* b is read from an onset key, to three places */
         return cl;
       };
       const byNo = {};
@@ -184,6 +194,14 @@ const only = arg('--only', null);
     }, buf.toString('base64'), path.basename(rel), /\.mxl$/i.test(rel) ? xmlText(buf) : buf.toString('utf8'));
     if (r.error) { bad++; console.log('  FAIL ' + name + '  ' + r.error); continue; }
     totals.notes += r.notes; totals.under += r.under; totals.heads += r.drawnChecked || 0; totals.strikes += r.strikes || 0;
+    if (withViews) {
+      const v = await page.evaluate(n => window.__mx1Views(window.__mx1Held, n), path.basename(rel));
+      Object.keys(v).forEach(kind => {
+        const t = viewTotals[kind] = viewTotals[kind] || { renders: 0, notes: 0, bad: 0, files: 0 };
+        t.renders += v[kind].renders; t.notes += v[kind].notes; t.bad += v[kind].bad.length;
+        if (v[kind].bad.length) { t.files++; r.bad.push('view ' + kind + ': ' + v[kind].bad.length + ' notes, e.g. ' + v[kind].bad[0]); }
+      });
+    }
     const ok = !r.bad.length;
     if (!ok) bad++;
     console.log((ok ? '  ok   ' : '  FAIL ') + name + '  ' + r.notes + ' notes, ' + r.under + ' under a line, ' + (r.drawnChecked || 0) + ' drawn and measured' +
@@ -191,7 +209,16 @@ const only = arg('--only', null);
   }
   await browser.close();
   console.log('\n' + totals.notes + ' notes (' + totals.under + ' under a line, ' + totals.heads + ' of them measured on the page), ' + totals.strikes + ' strikes');
+  if (withViews) {
+    console.log('\nviews: renders, notes checked, problems (a note or a head), files with one');
+    Object.keys(viewTotals).forEach(kind => {
+      const t = viewTotals[kind];
+      console.log('  ' + (t.bad ? 'FAIL ' : 'ok   ') + kind.padEnd(16) + String(t.renders).padStart(6) + String(t.notes).padStart(9) +
+        String(t.bad).padStart(8) + String(t.files).padStart(5));
+    });
+  }
   console.log('page errors: ' + (pageErrors.length ? pageErrors.slice(0, 3).join(' | ') : 'none'));
-  console.log(bad ? bad + ' of ' + files.length + ' files FAIL' : 'every file: the app sounds the graph\'s pitch, prints it less the shift, and draws it there');
+  console.log(bad ? bad + ' of ' + files.length + ' files FAIL' : 'every file: the app sounds the graph\'s pitch, prints it less the shift, and draws it there' +
+    (withViews ? ', in every view' : ''));
   process.exit(bad ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(2); });
