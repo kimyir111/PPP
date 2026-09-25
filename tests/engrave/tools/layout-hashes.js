@@ -82,9 +82,12 @@ function planVersionAt(commit) {
 async function plansAt(commit) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ppp-plans-'));
   try {
-    const tar = path.join(dir, 'src.tar');
-    git(['archive', '--format=tar', '-o', tar, commit, 'engrave', 'scoregraph']);
-    execFileSync('tar', ['-xf', tar, '-C', dir], { stdio: 'ignore' });
+    /* that commit's engrave/ and scoregraph/, file by file (no tar: the same on every OS) */
+    git(['ls-tree', '-r', '--name-only', commit, 'engrave', 'scoregraph']).split('\n').filter(Boolean).forEach(rel => {
+      const to = path.join(dir, rel);
+      fs.mkdirSync(path.dirname(to), { recursive: true });
+      fs.writeFileSync(to, execFileSync('git', ['show', commit + ':' + rel], { cwd: REPO, stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 1 << 28 }));
+    });
     const X = require(path.join(dir, 'engrave', 'index.js'));
     const out = {};
     (await inputs()).forEach(([id, g]) => { out[id] = X.layoutHash(X.plan(g)); });
