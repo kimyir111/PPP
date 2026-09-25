@@ -45,7 +45,7 @@ test('live: the producer\'s graph is used while it agrees with the Score; one th
 test('G4-U1: a song\'s graph survives save and reload, from the store, and is the graph that was kept', async () => {
   const rel = 'tests/scoregraph/fixtures/xml/ottava-8va-8vb.musicxml';
   const g = xmlGraph(rel);
-  /* the app's own Score for this file, captured from the page (finalized, 8va moved) */
+  /* the app's own Score for this file, captured from the page (finalized: the 8va printed an octave from what sounds) */
   const score = JSON.parse(JSON.stringify(storedScores().find(([f]) => f === 'stored-graph-ottava.score.json')[1].score));
   const backend = E.store.memoryBackend();
   const a = fresh(backend);

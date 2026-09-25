@@ -60,7 +60,7 @@
     "Metronome": "メトロノーム",
     "Tempo": "速さ",
     "Played correctly": "当たった音",
-    "Wrong note": "間違った音",
+    "Wrong note": "間違いです",
     "Expected next": "次に弾く音",
     "PPP Coach": "PPPコーチ",
     "listening": "聞いています",
@@ -735,7 +735,6 @@
     "Show keys": "鍵盤を表示",
     "Hide the on-screen keyboard so the score has the screen": "鍵盤を隠して楽譜を大きくします",
     "Drag to resize the keyboard": "ドラッグして鍵盤の大きさを変えます",
-    "Wrong note": "間違いです",
     "{{want}}, not {{got}}": "{{want}}です。{{got}}ではありません",
     "Answer on": "正解オン",
     "Answer off": "正解オフ",
@@ -1911,6 +1910,7 @@
     "faithful solo piano": "ピアノ独奏の忠実な採譜",
     "Only one piano model was available, so these notes could not be cross-checked by another model.": "利用できるピアノモデルが1つだけだったため、別モデルとの照合は行われていません。",
     "{{n}} possible notes were rejected because the piano models did not agree.": "ピアノモデル間で一致しなかった候補音{{n}}個を除外しました。",
-    "Reading notation directly from the vector PDF": "ベクターPDFから楽譜情報を直接読み取っています"
+    "Reading notation directly from the vector PDF": "ベクターPDFから楽譜情報を直接読み取っています",
+    "PPP needs at least four notes to write a score, and this MIDI file has fewer.": "PPP が楽譜を作るには 4 つ以上の音が必要ですが、この MIDI ファイルの音はそれより少ないです。"
   }
 }

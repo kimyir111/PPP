@@ -69,7 +69,7 @@ function storedScores() {
 }
 
 /* What Score.finalize does to a toScore projection that matters to a comparison and to the practice layer: measure
-   starts and absolute positions (App 3555). Its 8va move is exercised by the captured Scores, not re-implemented here. */
+   starts and absolute positions (App 3568). Its 8va printing is exercised by the captured Scores, not re-implemented here. */
 function withPositions(score) {
   let q = 0;
   const byNumber = {};
@@ -81,7 +81,7 @@ function withPositions(score) {
 const scoreOf = (g, name) => withPositions(SG.legacy.toScore(g, { name: name || 'test', id: 'test:' + (name || g.id) }));
 
 /* Score.finalize, taken from the app itself (G04 A48): the Score a person's import leaves in the app is
-   finalize(toScore(graph)) - the 8va move, soundingMidi, writtenP / writtenMidi and the note order (position, then
+   finalize(toScore(graph)) - the 8va's printed pitch, soundingMidi, writtenP / writtenMidi and the note order (position, then
    staff) are the app's. Its helpers come with it; deriveSections (practice sections) is not music a Score projects. */
 let finalizeFn = null;
 function appFinalize() {

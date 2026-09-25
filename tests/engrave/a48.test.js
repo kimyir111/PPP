@@ -2,9 +2,10 @@
 
    Population A is every committed import file that opens (G04 A47/A48: 504 - MusicXML, MXL, MIDI), read the way the
    app reads a file: Score.finalize(legacy.toScore(graph)) - with Score.finalize taken from the app itself, so the 8va
-   move, soundingMidi, writtenP / writtenMidi and the note order are the app's. Population C is the Scores captured
-   from the running app (recording, parsed, imported, stored and read back, the demo). The core 553 recording Scores
-   come from the app's own MusicXML reader, which needs a browser: tests/engrave/tools/a48-coverage.js (local gate).
+   (printed an octave from what sounds, MX-1), soundingMidi, writtenP / writtenMidi and the note order are the app's.
+   Population C is the Scores captured from the running app (recording, parsed, imported, stored and read back, the
+   demo). The core 553 recording Scores come from the app's own MusicXML reader, which needs a browser:
+   tests/engrave/tools/a48-coverage.js (local gate).
 
    The comparison is strict and field by field - every note field the app keeps, written and sounding pitch, the
    microtone approximation, positions, measures, and every list - with nothing rounded but floating noise (1e-9).

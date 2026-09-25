@@ -303,6 +303,45 @@ const survey = page => page.evaluate(() => {
   ok('audio inference does not present an intra-measure split as written legato',
     inferredTiePaths === 0, inferredTiePaths + ' tie path(s)');
 
+  /* MX-1: an octave line from a file is drawn as the page prints it - "8va" over the treble staff with its notes brought
+     down onto the staff, "8vb" under the bass staff, "15ma" two octaves - while the notes sound where the file says
+     (decision D-1: MusicXML's <pitch> sounds; the player's half is tests/playback-scheduler.test.js) */
+  const e18 = fs.readFileSync(path.join(__dirname, 'engrave', 'fixtures', 'e', 'E18-ottava.musicxml'), 'utf8');
+  const ott = await page.evaluate(async xml => {
+    const score = PPP.parseMusicXML(xml, 'E18-ottava.musicxml');
+    await new Promise(resolve => PPP.app.setState({
+      score: score, screen: 'player', beat: 0, playing: false,
+      loop: false, loopFrom: 1, loopTo: 3
+    }, resolve));
+    await new Promise(resolve => setTimeout(resolve, 400));
+    const svg = document.querySelector('.ppp-staffwrap svg');
+    if (!svg) return null;
+    const lines = (m, st) => {
+      const g = [...svg.querySelectorAll('g.ppp-stave')].find(x => x.getAttribute('data-m') === String(m) && x.getAttribute('data-staff') === String(st));
+      const ys = g ? [...g.querySelectorAll('.vf-stave path')].map(q => +((/M[\d.]+ ([\d.]+)L/.exec(q.getAttribute('d')) || [])[1])).filter(isFinite) : [];
+      return ys.length ? { top: Math.min.apply(null, ys), bottom: Math.max.apply(null, ys) } : null;
+    };
+    const head = key => {
+      const h = svg.querySelector('g.ppp-note[data-onset="' + key + '"] .vf-notehead path');
+      if (!h) return null;
+      const b = h.getBBox();
+      return b.y + b.height / 2;
+    };
+    const label = t => [...svg.querySelectorAll('text')].filter(x => x.textContent.trim() === t).map(x => { const b = x.getBBox(); return b.y + b.height / 2; });
+    return { s1: lines(1, 1), s2: lines(1, 2), c6: head('1|0.000|1'), c2: head('1|0.000|2'),
+      va: label('8va'), vb: label('8vb'), ma: label('15ma'), mb: label('15mb') };
+  }, e18);
+  ok('an 8va is labelled over the treble staff, an 8vb under the bass staff, a 15ma as two octaves',
+    !!(ott && ott.s1 && ott.s2) && ott.va.some(y => y < ott.s1.top) && ott.vb.some(y => y > ott.s2.bottom) &&
+      ott.ma.length > 0 && ott.mb.length === 0,
+    ott ? JSON.stringify({ '8va': ott.va.map(Math.round), '8vb': ott.vb.map(Math.round), '15ma': ott.ma.length, '15mb': ott.mb.length,
+      treble: ott.s1, bass: ott.s2 }) : 'no staff');
+  ok('the C6 under the 8va and the C2 under the 8vb are drawn on their staves, where the page prints them (C5, C3)',
+    !!(ott && ott.s1 && ott.s2 && ott.c6 != null && ott.c2 != null) &&
+      ott.c6 >= ott.s1.top && ott.c6 <= ott.s1.bottom && ott.c2 >= ott.s2.top && ott.c2 <= ott.s2.bottom,
+    ott ? 'C6 head at ' + Math.round(ott.c6) + ' (staff ' + (ott.s1 && ott.s1.top) + '-' + (ott.s1 && ott.s1.bottom) + '), C2 at ' +
+      Math.round(ott.c2) + ' (staff ' + (ott.s2 && ott.s2.top) + '-' + (ott.s2 && ott.s2.bottom) + ')' : '');
+
   await page.evaluate(() => { try { localStorage.removeItem('ppp.state.v2'); } catch (e) {} });
 
   await browser.close();
