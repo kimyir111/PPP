@@ -7,7 +7,7 @@ The operational roadmap for everything after G4a: order, dependencies, gates, an
 | Owner | The **Lead / Orchestrator** session. Implementers, reviewers and fixers read it. Only the Lead edits it. |
 | Updated | 2026-09-26 — seventh edition (Lead): **G4d-1a CLOSED** (PR #17 `b4fe019`); current: G4d-1b |
 | Base | `origin/main` = `b4fe019` (G4d-1a, PR #17) plus the docs closeout |
-| Active | **G4d-1b** (marks attached to systems, vertical spacing, courtesy signs; `D:/PPP-g4`, branch `g4d1b-system-marks`) — handed in at `ee87449`, in independent review (§14). |
+| Active | **G4d-1b** (marks attached to systems, vertical spacing, courtesy signs; `D:/PPP-g4`, branch `g4d1b-system-marks`) — review NEEDS_FIX (MAJOR 3), Fixer running (§14). |
 | Lead worktree | `D:/PPP-lead`, branch `lead-roadmap`. The Lead writes docs only, never in an implementer's worktree. |
 | How this relates to other docs | `docs/CURRENT_STATE.md` says what is true now, with measurements. `docs/DECISIONS.md` says why. `docs/GOALS/Gxx_*.md` is the contract for one Goal: design, acceptance and implementation record. **This document says in what order, behind which gates, and what comes next.** It does not repeat the goal specs. On detail, the spec wins. On sequencing, this document wins. |
 
@@ -597,13 +597,22 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 
 The record is G04 §35.19 and DECISIONS G4-L4 and G4-L5.
 
-**Current unit: G4d-1b — IN REVIEW.** Handed in READY_FOR_REVIEW at `ee87449` (`17a38f3` code, `ee87449` docs; record G04 §36, DECISIONS G4-D1b-1…16; `plan/3`, `engr/4`). Claims: A8–A12 (lyrics), A20 (all), A25 PASS; 22 new mutations caught by name; B9 0.32; layout 30.7 → 38.4 ms. One independent read-only review is running. It must check:
-- whether the "♩ = N" marks that 152 layout pairs gained are printed in the sources or invented (A13);
-- the new `far_placements_system` metric split off from `far_placements`;
-- a sign-style pedal change drawn as release plus press (A9);
-- ottava labels as text;
-- chord-name widths now in the note spacing;
-- duplicate dynamics drawn once.
+**Current unit: G4d-1b — FIXER RUNNING.** Handed in at `ee87449` (record G04 §36, DECISIONS G4-D1b-1…16).
+
+The independent review (2026-09-26) returned **NEEDS_FIX: BLOCKER 0, MAJOR 3, MINOR 3**. What it confirmed:
+- **No invented notation.** Every drawn metronome mark, harmony and lyric is printed in its source. Only MIDI imports get a heading tempo, from the file's own tempo event.
+- No gate was weakened; the `far_placements_system` split is legitimate.
+- The re-bless is honest.
+- A9 holds: a sign-style change is drawn as "✻ Ped.".
+- A10 holds.
+- Windows = Linux = Chrome.
+
+The MAJORs:
+- **R1:** the words around a metronome mark ("Molto Allegro (𝅗𝅥 = 100)") go to another row, leaving an empty "( )". This affects 20 catalogue files.
+- **R2:** A8's positions (dynamic, words, tempo, rehearsal, jumps; the extent of a hairpin and its continuation across a break) are held only by the layout hash.
+- **R3:** two new rules (centring the between-staves row; a word pushed after a dynamic) have no named metric.
+
+A fresh Fixer fixes R1 without touching `scoregraph/`, adds named metrics and the reviewer's mutations for R2 and R3, and corrects the record. M2 (a tempo word stacked over its metronome mark) goes to the M-H1 watch list unless R1's fix covers it; M3 (Chrome at 4× CPU) goes to G4f.
 
 | | |
 | --- | --- |
