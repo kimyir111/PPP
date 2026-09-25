@@ -2457,7 +2457,7 @@ stem 방향의 순서: 그래프 `display.stem` (plan `stemFrom: 'graph'`) → �
 
 **G4-B11을 정했다: 성부 사이 2도·모양이 다른 unison에서 stem 아래(down) 성부가 오른쪽으로 간다 — §14.2가 옳고, G4b의 코드(stem 위 성부를 오른쪽)를 바꿨다.** 근거:
 
-1. 고정된 VexFlow 4.2.3의 `StaveNote.format` (vendored 파일 133000번째 문자 부근): 두 성부가 닿고 stem이 반대면 **아래 음(`noteL`)에 `setXShift(h + 2)`** — 보통의 순서(위 성부 = stem 위)에서 그것은 stem 아래 음이다. 머리 모양이 같고 점 수가 같으며 2도가 아니면 옮기지 않는다(공유).
+1. 고정된 VexFlow 4.2.3의 `StaveNote.format` (vendored 파일 133000번째 문자 부근): 두 성부가 닿고 stem이 반대면 **아래 음(`noteL`)에 `setXShift(h + 2)`** — 보통의 순서(위 성부 = stem 위)에서 그것은 stem 아래 음이다. 머리 모양이 같고 점 수가 같으며 2도가 아니면 옮기지 않는다(공유). (Fixer 정정, §34.18.6: `noteL`은 음높이로 정한 "아래 음"이 아니다 — 첫 성부의 음이 stem 아래이고 둘째가 stem 위이면 둘을 바꾼 뒤이므로, stem이 반대일 때 옮겨지는 음은 **언제나 stem 아래 음**이다.)
 2. Gould, *Behind Bars* p. 53: "Offset the lower part to the right. Vertically align the upper part with a part on another stave" — MuseScore 포럼 글(musescore.org/en/node/24850)에 인용된 문장을 웹 검색으로 확인했다. 책 자체는 이 세션이 확인하지 못했다 (Fixer도 §33.16.5에서 G4b 코드 주석의 "stem이 바깥, Gould"를 확인하지 못했다). 인용과 VexFlow가 같은 쪽을 가리킨다.
 3. legacy 렌더러는 VexFlow formatter로 그리므로 사용자가 지금 보는 모양이 이쪽이다 (M-H2 비교가 같은 관례 위에서 이루어진다).
 
@@ -2530,7 +2530,7 @@ stem 방향의 순서: 그래프 `display.stem` (plan `stemFrom: 'graph'`) → �
 | `eg.rest.measure_errors` | 마디 쉼표가 온(겹온)쉼표가 아니거나 점이 있거나 가운데가 아님 | A11 |
 | `eg.layout.attachment_diff`, `signature_diff`, `pitch_y_err`, `duplicate_ids` | §34.9 R4·R5 | A14 |
 
-plan 수준의 G4a metric(`eg.beam.graph_drawn_ratio` 등)은 `bench.js`에 그대로다; `eg.tuplet.show_ok`의 기대값에만 §12.3(한 음은 숫자만)을 넣었다. 모든 새 metric은 `notation.test.js`의 음성 대조(실제 layout을 망가뜨림)가 1 이상을 낸다.
+plan 수준의 G4a metric(`eg.beam.graph_drawn_ratio` 등)은 `bench.js`에 그대로다; `eg.tuplet.show_ok`의 기대값에만 §12.3(한 음은 숫자만)을 넣었다. 모든 새 metric은 `notation.test.js`의 음성 대조(실제 layout을 망가뜨림)가 1 이상을 낸다. (리뷰 뒤 Fixer가 영목표 일곱을 더했고 `merged` 짝은 합법일 때만 겹침에서 뺀다 — §34.18.3.)
 
 ### 34.11 Mutation (`tests/engrave/layout-mutation.test.js`, §23)
 
@@ -2547,6 +2547,8 @@ G4b의 틀(CRLF 사본, anchor 정확히 한 번, 출력이 바뀌어야 함, �
 | M24 | tuplet 괄호가 끝의 쉼표를 빼고 끝남 | `eg.tuplet.extent_err` 2 |
 | G4b의 12 | M6, M7a, M7b, M9, M10, M11a, M11b, M17, M18a–c, M21 (anchor만 새 코드에 맞춤) | 전부 그대로 잡힘 (예: M6 `eg.overlap.acc` 174, M21 `head_staff_wrong` 454) |
 | N1, N2 | 주석; 독립 문장 둘(꾸밈음 beam 판정과 tie 시작) 순서 | 바이트 동일, metric 같음, A29 깨끗 |
+
+리뷰 뒤 Fixer가 RF, RI, RY, RX, RB, RB2, RK, F1–F3과 probe 셋을 더했다 — §34.18.4.
 
 ### 34.12 Acceptance
 
@@ -2614,6 +2616,8 @@ G4b의 틀(CRLF 사본, anchor 정확히 한 번, 출력이 바뀌어야 함, �
 
 LEDGER_CHANGE는 모두 이 단계가 그리기로 한 것(beam, tuplet, 꾸밈음 stem·flag·사선, R6의 마디 쉼표)이다. 이 도구는 system 장식(`d:staff`·`d:brace`·`d:sysbar`·system 머리의 clef·key·time)을 기하로 센다 — 줄바꿈이 옮겨진 것은 그린 것의 변화가 아니다. L1은 나빠지지 않았고(r·e·x의 plan 수준 값 전부 같음) L2는 전부 영목표 0이다. **bless 이유**: G4c가 beam·tuplet·꾸밈음 stem을 새로 그리고, stem을 최종으로 하고, G4-B11을 §14.2쪽으로 정했기 때문.
 
+**stem 방향이 바뀐 것 (Fixer가 더함, 리뷰 M6)**: 위 표가 빠뜨린 변화가 하나 있다. G4c의 `autoDir`(G4-C2)은 가운데 줄에서 가장 먼 머리가 위아래로 같은 거리이면 다수, 그래도 같으면 **아래**다; G4b의 임시 stem은 같은 거리이면 plan 순서의 첫 머리를 따랐다(C3–E3 화음은 C3 → 위). 그래서 beam 없는 화음 stem **46개가 위 → 아래**로 바뀌었다 (데스크톱, 휴대폰도 같음; 9곡): **golden/G07의 C3–E3 8개** — G07 두 config의 변화는 이것뿐이라 GEOMETRY_ONLY(stem)다 — 그리고 golden/G11 2(G4–D5), golden/G17 2(C3–E3, A2–G3), czerny599/010 2·032 4·033 4·035 7(G4–B4–D5 13, C3–E3 2, A4–C5 1, G4–D5 1), burgmuller25/019 16·023 1(A4–C5 13, G4–D5 4) — 이 곡들은 beam 등 다른 변화와 함께라 위 표의 다른 줄에 들어 있다. 규칙은 §11.2(같으면 다수결, 그래도 같으면 아래) 그대로이고 모두 L2 0이다 (`eg.voice.stem_policy_violations`가 같은 규칙을 따로 계산).
+
 ### 34.16 설계 문서와 달라진 곳
 
 1. **§14.2 성부 사이 2도·unison**: 규칙은 §14.2 그대로(아래 성부를 오른쪽) — 옮기는 양은 머리 폭 + 0.2 sp (VexFlow `h + 2`). G4-B11은 G4-C3이 대체한다.
@@ -2630,7 +2634,7 @@ LEDGER_CHANGE는 모두 이 단계가 그리기로 한 것(beam, tuplet, 꾸밈�
   1. cross-staff beam(`deferred`, 코퍼스 0)은 staff마다 부분 beam; system을 넘는 beam은 system마다 따로 — 끊긴 끝 표시가 없다.
   2. tuplet 숫자는 늘 보표 밖이고 괄호는 수평이다 — beam이 보표 안쪽에 있으면 숫자가 beam에서 멀다. M-H1에서 볼 것.
   3. 그래프가 한 beam 안에서 서로 다른 stem 방향을 말하면(kneed beam, 코퍼스 4) 첫 명시 방향이 전체를 정한다 (`BEAM_STEM_MIXED`).
-  4. 교차 성부: VexFlow는 아래 음을(stem이 위여도) 옮기고, G4c는 stem 아래 성부를 옮긴다 — 보통 순서에서는 같다.
+  4. ~~교차 성부: VexFlow는 아래 음을(stem이 위여도) 옮기고, G4c는 stem 아래 성부를 옮긴다 — 보통 순서에서는 같다.~~ **(Fixer 정정, §34.18.6)** 틀린 기록이었다: vendored 4.2.3의 `StaveNote.format`은 첫 성부의 음(`noteU`)이 stem 아래이고 둘째(`noteL`)가 stem 위이면 둘을 바꾼 뒤(`n=a[1], l=a[0]`) `noteL`을 옮기므로, stem이 반대일 때 옮겨지는 음은 음높이와 상관없이 **언제나 stem 아래 음**이다. 교차 성부에서도 VexFlow와 G4c는 같은 음을 옮긴다 — 남은 차이가 아니다.
   5. 보표 밖으로 옮겨진 온·2분쉼표에 덧줄이 없다.
   6. 그래프 beam이 없는 part의 꾸밈음 묶음은 flag로 그려진다 (코퍼스 0).
   7. `svg.js`의 `<use class="vf-notehead">` 안에는 `path`가 없다: `pdf-layer.test.js`의 `.vf-notehead path` 같은 legacy 선택자는 G4d-2(A30)에서 이유와 함께 바꿔야 한다.
@@ -2639,11 +2643,125 @@ LEDGER_CHANGE는 모두 이 단계가 그리기로 한 것(beam, tuplet, 꾸밈�
   10. §33.15의 그 밖(`in-the-bleak-midwinter` 넘침, 4× CPU의 plan 50 ms 넘음), §32.14의 MINOR·OPTIONAL, G4-F14(`bracket="yes"`)는 그대로.
 - 다음: G4d-1(곡선·기호·글자·세로 배치), G4d-2(앱의 개발용 스위치, `svg.js`를 새 `sync`와 함께, R12). 그 뒤 M-H1.
 
-### 34.18 커밋
-
-`ae96f19` (코드·테스트·baseline·layout hash·CI의 `make-outlines --check`·`vendor/README.md` 한 줄), 이어서 이 기록 (G04 §14.2·§14.3 주석, §34, 목차; DECISIONS G4-C1–C12와 G4-B11 대체 표시; CURRENT_STATE). `origin/g4c-notation-core`에 push. 병합 안 함, PR 없음.
+**커밋 (Implementer)**: `ae96f19` (코드·테스트·baseline·layout hash·CI의 `make-outlines --check`·`vendor/README.md` 한 줄), 이어서 이 기록 (G04 §14.2·§14.3 주석, §34, 목차; DECISIONS G4-C1–C12와 G4-B11 대체 표시; CURRENT_STATE). `origin/g4c-notation-core`에 push. 병합 안 함, PR 없음. (이 단락은 처음에 §34.18 "커밋"이었다 — §34.18을 리뷰와 Fixer에 내주려고 여기로 옮겼다.)
 
 **상태: G4c READY_FOR_REVIEW** — BLOCKER 0, MAJOR 0 (자체 판정).
+
+### 34.18 리뷰와 Fixer (2026-09-25)
+
+입력: G4c 독립 리뷰 (read-only, 대상 `f5517fe`; 증거는 리뷰 scratchpad `g4c-review/`의 `mutate.py`·`mut.js`·`analyze.js`·`analyze2.js`·`pairdiff.js`·`out/`·`png/`)의 판정 **NEEDS_FIX — BLOCKER 0, MAJOR 2, MINOR 6**, 그리고 Lead의 Fixer 지시: MAJOR R1·R2와 기록 정정(M6)만 하고, 나머지 MINOR(M1–M5)는 Lead가 맡긴 곳으로 둔다. 같은 worktree `D:/PPP-g4`, 브랜치 `g4c-notation-core`, 시작 `f5517fe`. 리뷰의 스크립트는 생각만 빌렸고(mutation은 리뷰가 적은 anchor 그대로 옮김), 커밋한 metric과 테스트는 새로 썼다. `engrave/`에서 바뀐 파일은 `layout.js` 하나다 (R1, 그리고 R2의 새 metric이 찾은 병합 결함). `scoregraph/`·앱 파일·재생 코드·카탈로그·`vendor/`는 바이트 그대로이고, `plan/1`·`engr/1`은 올리지 않았다 (M4, Lead 지시). 결정은 DECISIONS G4-C13–C16.
+
+#### 34.18.1 지적과 처리
+
+| # | 지적 (리뷰) | 처리 | 어디 |
+| --- | --- | --- | --- |
+| R1 (MAJOR) | flag가 있는 unison이 공유되지 않는다: `layout.js` `clash()`의 flag 검사가 공유 머리(`sa`/`sb`)를 건너뛰지 않아 stem 위 flag가 두 성부의 공유 머리에 "닿고", 아래 성부가 flag 오른쪽 끝을 지나 2.31 sp 옮겨진다 — 간격 1.1 sp, 잇단 두 8분처럼 읽힌다 (§14.2는 공유 MUST, G4-C3은 머리 폭 + 0.2 sp). E + 코퍼스(데스크톱)의 같은 모양 한 음 unison 908 중 34가 공유 안 됨(21곡, 전부 flag; R suite의 what-child-is-this·czerny849/007 포함), flag 있는 2도도 1.1 sp. L2는 전부 0 | **FIXED** — flag 검사도 공유 머리를 건너뜀; 옆 성부는 flag가 자기 머리 높이에 닿을 때만 flag 뒤로 (G4-C13); metric `eg.voice.unison_unshared`·`eg.voice.offset_err`; mutation F1·F2; E12에 flag unison과 2도 | §34.18.2 |
+| R2 (MAJOR) | `l2.js`의 `mergedPair`가 layout이 `merged`라 붙인 짝을 합법인지 보지 않고 모든 겹침 수에서 뺀다; G4c의 새 규칙 몇이 이름 붙은 metric이 없어 리뷰의 mutation RF, RI, RY, RX, RB(RB2), RK가 커밋된 layout hash(A27)로만 잡힌다; E12·E13에 §22.1의 두 경우(점 다른 unison, 길이 다른 쉼표)가 없다 | **FIXED** — 합법 병합만 겹침 수에서 빠지고 나머지는 `eg.voice.merge_illegal` (G4-C14); `eg.stem.middle_line`, `eg.rest.position_err`, `eg.beam.hook_side_err`, `eg.tuplet.hook_dir_err` (G4-C15); mutation RF, RI, RY, RX, RB, RB2, RK와 F3이 모두 이름으로 잡힘; E12·E13에 두 경우 (G4-C16) | §34.18.3–§34.18.5 |
+| M6 | 기록 오류 둘: §34.15가 같은 거리 규칙에 따른 stem 뒤집힘(golden/G07의 C3–E3 8개, 위 → 아래)을 적지 않음; §34.17.4가 "VexFlow는 stem이 위여도 아래 음을 옮긴다"고 적음 | **정정** | §34.18.6 |
+| M1–M5 | MINOR 다섯 | **Lead가 맡김** — 손대지 않음 | §34.18.8 |
+
+#### 34.18.2 R1 — flag 달린 unison과 2도 (`engrave/layout.js` `staffColumn`; G4-C13)
+
+- **공유**: `clash()`의 flag 대 머리 검사 두 줄이 stem 검사처럼 공유 머리(`skip`의 `sa`/`sb`)를 건너뛴다 — 그 머리는 두 성부 모두의 제 머리이고, 제 flag가 거기 닿는 것은 충돌이 아니다. 리뷰의 한 줄 시험과 같은 결과: 같은 모양 한 음 unison 909/909 공유 (데스크톱, E + 코퍼스, 리뷰의 `analyze2.js`로 다시 잼 — `f5517fe`의 fixture로는 908/908, 새 E12가 하나 더함). 예: angels-we-have-heard 12마디(`m20`)의 e345/e351은 이제 한 머리.
+- **비킴의 양**: 옮기는 성부는 부딪힌 성부의 **머리와 stem**의 오른쪽 끝 + 0.2 sp로 간다. 그 성부의 flag는 **flag의 세로 범위가 옮기는 성부의 머리와 겹칠 때만** 오른쪽 끝에 넣는다 (`reach`). stem 위 8분 아래의 2도는 머리가 flag 높이에 닿지 않으므로 머리 폭 + 0.2 = 1.38 sp (전에는 2.31). 공유할 수 없는 unison(점 수가 다름, 같은 화음 둘 — 후보가 하나가 아님)이나 교차에서 flag가 옆 머리 높이까지 내려오면 여전히 flag 뒤로 간다 (예: burgmuller25/019의 두 성부 E4–A4–C5 8분 화음, 2.32 sp).
+- **보강 둘** (출력 변화 없음 — E + 코퍼스 + golden 808 layout 바이트 동일): 공유 머리를 건너뛰는 것은 두 성부가 한 자리에 있을 때만(`dx === P.dx`) — 셋째 성부 때문에 옮겨진 성부는 짝과 다시 온전히 검사한다; 옮김 양은 되풀이 중 줄지 않는다(`Math.max(dx, …)`) — 세 성부에서 오가지 않게.
+- **공유 풀기** (R2의 `eg.voice.merge_illegal`이 찾은 `f5517fe`의 결함): 공유가 정해진 뒤 셋째 성부 때문에 한쪽이 옮겨지면, 두 머리가 떨어져 있으면서 서로를 `merged`로 이름 댔다 — for-all-the-saints 10마디(`m20`) 아래 보표: 위 성부 D4–G4–B4–D5와 아래 성부 G3–B3–D4가 D4를 공유했는데 셋째 성부 G2의 stem이 G3 머리를 지나 아래 성부가 1.38 sp 옮겨졌다. 이제 옮겨진 unison은 공유를 푼다 (`partnerHead`에서 지움): 두 머리에 `merged`가 없다 (좌표는 그대로 — `f5517fe` 대비 SERIALIZATION_ONLY).
+- **잰 값** (E + 코퍼스 387곡 × 두 config; 새 E12 포함; `f5517fe` → 지금):
+
+| metric | `f5517fe` | 지금 | 어디 |
+| --- | --- | --- | --- |
+| `eg.voice.unison_unshared` | **70** | 0 | 코퍼스 68 = 34쌍 × 2 (21곡 — 리뷰의 34와 같음), 새 E12 2 |
+| `eg.voice.offset_err` | **10** | 0 | flag 달린 2도 1.13–1.14 sp: beneath-the-cross 8마디 E4/D4, glorious-things 5마디 G4/F4, in-the-bleak-midwinter 4마디 D3/C3, midnight-clear 13마디 F4/E♭4 (4곳 × 2; 리뷰는 3곳을 적음), 새 E12 2 |
+| `eg.voice.merge_illegal` | **4** | 0 | for-all-the-saints 2 × 2 (위) |
+
+  R suite(`bench.js`, gate)에서는 `f5517fe`가 `unison_unshared` 10 (what-child-is-this, czerny849/007), E suite 새 E12에서 `unison_unshared` 2·`offset_err` 2.
+- **바뀐 그림**: 공유 머리(E + 코퍼스, 데스크톱) 1,778 → 1,846 (+34쌍 R1, +1쌍 새 E12의 flag unison, −1쌍 for-all-the-saints). 코퍼스 layout 694 중 46이 바뀜(23곡: R1 공유 21곡, 2도만 glorious-things, 공유 풀기 for-all-the-saints); 좁아진 기둥 때문에 줄바꿈이 바뀐 것은 joy-to-the-world(두 config)와 rock-of-ages(데스크톱)뿐, 객체 수는 모두 같음.
+
+#### 34.18.3 R2 — 합법 병합과 새 metric (`tests/engrave/l2.js`; G4-C14, G4-C15)
+
+- **합법 병합** (`legalMerge`, `mergedPair`를 대신함): 서로를 이름 대고 한 자리(같은 system·staff, 상자 0.01 sp 안)이며 — **머리**는 다른 성부, 같은 적힌 음(step·octave·alter), 같은 glyph·크기, 같은 점 수, stem 반대(둘 다 stem이 없으면 허용); **쉼표**는 다른 성부, 같은 마디·시각, 같은 glyph·길이·점, 둘 다 그래프가 자리를 말하지 않음; **임시표**는 같은 glyph이고 그 머리들이 합법 짝. 꾸밈음은 병합하지 않는다. 합법 짝만 `eg.overlap.head_head`·`acc`·`dot`·`eg.rest.overlap`에서 빠지고, `eg.voice.stem_over_head`의 "공유 머리는 제 머리" 예외도 합법 짝에만 준다.
+- **새 metric 일곱** (모두 영목표; `bench.js` ZERO와 `layout.test.js` ZERO_L2 — E + 코퍼스 전부 × 두 config가 0이어야 통과; baseline r·e·x는 키만 더함: `bench.js baseline`으로 쓰고 git diff로 대조 — 바뀐 값 0, 없어진 키 0):
+
+| metric | 뜻 | `f5517fe` | 지금 | 잡는 mutation |
+| --- | --- | --- | --- | --- |
+| `eg.voice.merge_illegal` | `merged`를 가진 객체가 합법 짝이 아닌 상대를 이름 댐 (자리·음·glyph·점·길이·성부·stem 중 하나라도 어긋남) | 4 | 0 | RF, RK, F3 |
+| `eg.voice.unison_unshared` | 한 system·staff·기둥의 한 음 event 둘: 다른 성부, 같은 적힌 음·임시표, 같은 glyph·크기·점, stem 반대 — 그런데 합법 공유가 아님 (§14.2 MUST) | 70 | 0 | F1 |
+| `eg.voice.offset_err` | 한 기둥·staff에 stem 있는 두 성부 event(모든 머리가 제 staff)가 있고 한쪽이 옮겨짐(stem이 머리 기둥 자리에 있지 않음): 옮긴 쪽 머리 왼쪽 끝 ≠ 남은 쪽 머리·stem 오른쪽 끝(flag는 옮긴 머리와 세로로 겹칠 때만) + 0.2 sp (0.02 안); 둘 다 옮겨져도 | 10 | 0 | F2 |
+| `eg.stem.middle_line` | 한 성부만 소리 나는 staff-마디의 stem(꾸밈음 제외; beam이면 그 beam 조각의 stem이 모두 그런 staff-마디일 때)이 가운데 줄에 닿지 않음 (§11.2, G4-C2) | 0 | 0 | RI |
+| `eg.rest.position_err` | 쉼표 glyph의 원점이 출발 자리에서 staff space의 정수배가 아님 — 출발 자리는 그래프가 말한 자리, 아니면 줄(온·겹온쉼표는 가운데 위 줄에 매달림, 2분쉼표는 가운데 줄 위, 나머지는 가운데 줄 중심) (§14.3의 "줄/칸 모양 유지") | 0 | 0 | RY |
+| `eg.beam.hook_side_err` | hook의 `hook` 값이나 그린 쪽(제 stem 기준)이 §11.2와 다름: beam 조각의 첫 음 오른쪽, 끝 음 왼쪽, 점음표 뒤 왼쪽, 앞 음과 같은 박 왼쪽, 아니면 오른쪽 (박은 `l2.js`가 박자표에서 따로 셈: 복합박자는 점 박, 가산 박자는 묶음) | 0 | 0 | RB, RB2 |
+| `eg.tuplet.hook_dir_err` | 갈고리가 있는 괄호의 `hookLen` ≤ 0이거나, 상자가 음 쪽(위 괄호는 아래로, 아래 괄호는 위로)으로 hookLen만큼 뻗지 않음 (§12.2 "음 쪽으로 0.75 sp") | 0 | 0 | RX |
+
+  넷(`middle_line`·`position_err`·`hook_side_err`·`hook_dir_err`)은 `f5517fe`의 규칙이 맞았던 곳의 지킴이다 — 0이 기대값이고, 규칙이 깨지면(mutation) 이름으로 잡는다. 모두 `l2.js`의 제 코드이며 `skyline.js`·`notation.js`를 불러오지 않는다 (O4 테스트 그대로).
+- **A2 테스트**: `notation.test.js`의 A2가 이제 hook의 네 쪽을 모두 고정한다 (합성 곡: 앞 8분과 같은 박의 16분 왼쪽, 다음 박의 16분 오른쪽, beam을 시작하는 16분 오른쪽, 점8분 뒤 끝 16분 왼쪽; E02의 점음표 뒤 왼쪽은 그대로).
+- **음성 대조** (`notation.test.js` "the G4c metrics find the defects they name", 실제 layout을 망가뜨림, 각 ≥ 1이고 원래 layout에서 0): 짝과 떨어진 공유 머리·점 다른 두 4분에 붙인 `merged`·4분과 2분 쉼표의 병합 → `merge_illegal`; 떼어 놓은 flag unison → `unison_unshared`; flag 뒤로 옮긴 2도 → `offset_err`; E34의 가운데 줄까지 늘인 stem을 1 sp 줄임 → `middle_line`; 반 칸 옮긴 쉼표 → `position_err`; E02 hook을 오른쪽으로 → `hook_side_err`; E04 괄호 `hookLen`의 부호 → `hook_dir_err`.
+- **`f5517fe` 코드 음성 대조 (bench gate)**: `engrave/layout.js`만 `f5517fe`의 것으로 바꾸고 `bench.js check` — r: `REGRESSION eg.voice.unison_unshared = 10 (must be 0)`(what-child-is-this, czerny849/007), exit 1; e: `unison_unshared = 2`, `offset_err = 2`(E12), exit 1; x: PASS. 되돌리면 셋 다 PASS (파일 sha1 전후 같음).
+
+#### 34.18.4 Mutation (`tests/engrave/layout-mutation.test.js`)
+
+G4b·G4c의 틀 그대로 (CRLF 사본, anchor 정확히 한 번, 출력이 바뀌어야 함, 이름 붙은 metric이 잡아야 함, 그 metric은 mutation 없이 같은 probe에서 0; hash만으로는 인정 안 함). probe 셋을 더했다: E34(덧줄 음, 한 성부), `beamHooks`(합성: §11.2 hook의 네 쪽), `sharedThenMoved`(합성: 세 성부 — 셋째 성부의 stem이 공유된 unison을 떼어 냄). E12·E13은 새 경우를 품는다. RB2는 리뷰 scratch에 patch가 없어 이 Fixer가 정의했다.
+
+| # | 심은 결함 (파일) | 잡은 이름 (probe × 두 config 합) | 함께 오른 것 |
+| --- | --- | --- | --- |
+| RF | unison 공유 조건에서 점 수 비교를 뺌 (`layout.js`) | `eg.voice.merge_illegal` 4 | `eg.overlap.head_head`, `eg.voice.stem_over_head` |
+| RI | 한 성부 beam 없는 위 stem의 가운데 줄 규칙을 뺌 (`layout.js`) | `eg.stem.middle_line` 8 | — |
+| RY | 쉼표가 반 칸씩 움직임 (`notation.js` `REST.step` 0.5) | `eg.rest.position_err` 20 | — |
+| RX | tuplet 괄호 갈고리가 음 반대쪽 (`notation.js` `TUPLET.hook` −0.75) | `eg.tuplet.hook_dir_err` 4 | — |
+| RB | hook을 거꾸로 — 첫 음 왼쪽, 박 안 오른쪽 (`notation.js`) | `eg.beam.hook_side_err` 108 | — |
+| RB2 | 박 규칙만 거꾸로 — 앞 음과 같은 박이면 오른쪽 (`notation.js`) | `eg.beam.hook_side_err` 56 | — |
+| RK | 길이가 다른 쉼표도 병합 (`layout.js`) | `eg.voice.merge_illegal` 4 | `eg.rest.overlap` |
+| F1 | R1 되돌림: flag 검사가 공유 머리를 건너뛰지 않음 | `eg.voice.unison_unshared` 2 | — |
+| F2 | R1 되돌림: 옆 성부가 언제나 flag 뒤로 | `eg.voice.offset_err` 2 | — |
+| F3 | 셋째 성부로 옮겨진 unison의 공유를 풀지 않음 | `eg.voice.merge_illegal` 8 | — |
+
+기존 mutation은 모두 그대로 잡힌다 (M11b는 이제 `eg.voice.merge_illegal`도 올린다 — 새 ID 사본이 짝 없는 `merged`를 가짐). 실행 약 17 s (Linux 26 s), `npm run test:engrave` 안.
+
+#### 34.18.5 Fixture와 layout hash 다시 bless (§21.3; G4-C16)
+
+- **E12** (`make-e-fixtures.js`, 2마디를 더함): 점4분 D5 대 4분 D5 (점 다른 unison — §22.1; 공유 안 하고 머리 폭 + 0.2 sp), flag 8분 C5 unison (공유), flag 8분 E5/D5 2도 (1.38 sp), 8분 쉼표 병합, 4분 D5/B4. 8분은 옆에 쉼표나 긴 음이 있어 파생 beam이 묶지 않는다(flag). **E13** (2마디): 위 성부 4분 쉼표와 아래 성부 2분 쉼표가 동시에 (길이 다른 쉼표 — §22.1): 병합하지 않고, 위 쉼표는 위로 줄 단위, 2분 쉼표는 가운데 줄. `make-e-fixtures.js --check` PASS; `e-fixtures.test.js`가 두 경우가 있는지, `notation.test.js`가 그 그림을 확인한다.
+- **분류**: `layout-diff.js --base=<f5517fe의 engrave/·scoregraph/>` (두 트리 모두 지금의 fixture로): 236쌍 중 **SAME 230, GEOMETRY_ONLY 6**, LEDGER_CHANGE·SERIALIZATION_ONLY 0.
+- **바뀐 커밋 hash 8/236**:
+
+| 곡 × config | 분류 | 이유 |
+| --- | --- | --- |
+| E12 × 2 | fixture 내용 + GEOMETRY_ONLY (새 fixture 위에서) | 새 2마디; R1 — flag unison 공유(h43 −2.31 sp), 2도 1.38 sp(h45 −0.93) |
+| E13 × 2 | fixture 내용만 (새 fixture 위에서 SAME) | 새 2마디 — 코드 변화 없음 |
+| what-child-is-this × 2 | GEOMETRY_ONLY | R1: unison 4쌍 공유 (옮겨졌던 머리 −2.31, −1.38, −2.32, −1.38 sp); 줄바꿈·객체 수 같음 |
+| czerny849/007 × 2 | GEOMETRY_ONLY | R1: unison 1쌍 공유 (−2.32 sp); 줄바꿈·객체 수 같음 |
+
+  L1은 그대로(r·e·x plan 수준 값 전부 같음), L2 영목표는 새 일곱까지 전부 0. **bless 이유**: R1(공유와 비킴의 양)과 §22.1이 요구한 fixture 경우. 나머지 코퍼스 변화(§34.18.2)는 커밋된 hash 밖이고 `layout.test.js`의 E + 코퍼스 L2 gate가 본다.
+
+#### 34.18.6 기록 정정 (M6)
+
+- **§34.15**: stem 방향이 바뀐 것을 더했다 — G4c `autoDir`의 같은 거리 규칙(다수, 그래도 같으면 아래)으로 beam 없는 화음 stem 46개가 위 → 아래 (9곡; golden/G07의 C3–E3 8개는 G07 변화의 전부, GEOMETRY_ONLY). 이 Fixer가 `1c92fc4`와 `f5517fe`의 layout을 비교해 다시 셌다.
+- **§34.17.4**: 틀린 문장을 지우고 바로잡았다 — vendored VexFlow 4.2.3 `StaveNote.format`은 두 음의 stem이 반대이고 첫 성부(`noteU`)가 stem 아래이면 둘을 바꾼 뒤(`n=a[1], l=a[0]`) `noteL`을 `setXShift(h + 2)`하므로, 옮겨지는 음은 음높이와 상관없이 언제나 stem 아래 음이다 (vendored 파일 132,800–133,900번째 문자 부근을 읽음). §34.5의 1번 근거에도 같은 뜻의 한 줄을 붙였다.
+
+#### 34.18.7 회귀 (코드 커밋 `270eddc`)
+
+| 검사 | Windows (`D:/PPP-g4`, Node v24.17.0) | Linux (Docker `node:24-bookworm`, Node v24.21.0; `270eddc`의 `core.autocrlf=false` clone, LF 파일) |
+| --- | --- | --- |
+| `npm run test:engrave` | **149/149** (테스트 수 같음 — 단언·음성 대조·mutation 10·probe 3을 기존 테스트에 더함) | **149/149** (mutation 보고가 글자까지 같음) |
+| `npm run test:scoregraph` | **205/205** | **205/205** — 첫 실행에서 `g3-idempotence.test.js`의 A5(녹음 그래프, 30.4 s) 하나가 한 번 실패했고, 다시 실행 셋(같은 순서 — `test:engrave` 뒤 `test:scoregraph` — 둘, 그 파일 단독 하나)에서 재현되지 않았다. `scoregraph/`는 이 Fixer가 바꾸지 않았다 (`git diff f5517fe -- scoregraph` 비어 있음) |
+| `layout-hashes.js` | 118 × 2 전부 커밋된 hash (다시 bless 8) | 같음 |
+| `make-metrics.js`·`make-outlines.js`·`make-e-fixtures.js`·`make-corpus.js --check` | PASS | PASS |
+| `bench.js check --suite r / e / x` | PASS / PASS / PASS | PASS / PASS / PASS |
+| `browser-parity.js` (A28, 전체) | Chrome 153: layout 808/808, SVG 808/808 바이트 동일 (바뀐 layout 전부 포함), E14 `<use>` 18개 상자 오차 ≤ 0.01 sp, 네트워크 0 | — |
+| legacy parity (`legacy-parity.js`; `1c92fc4`의 `git archive`를 8871에, 이 트리를 8872에, `NODE_ENV=production HOST=127.0.0.1`) | **16/16 바이트 동일** — 측정 뒤 두 서버를 껐다; 8777·8788은 건드리지 않음 | — |
+| 음성 대조 | §34.18.3 (metric), §34.18.4 (mutation) | — |
+| 앱 파일 | `Piano Coach App.dc.html`·`index.html`·`server.js` 바이트 그대로 (`git diff 1c92fc4` 비어 있음) | — |
+
+#### 34.18.8 Lead가 맡긴 것 (손대지 않음)
+
+- **M1** (보표 밖으로 옮겨진 쉼표에 덧줄이 없다 — §34.17.5)와 **M2** (tuplet 숫자가 beam에서 멀다 — §34.17.2): **G4d-1**.
+- **M3** (G4d 객체가 생긴 뒤 B9를 다시 잼): **G4d-1**.
+- **M4** (`plan/1`·`engr/1`을 올리지 않음): **G4d-1 / G4d-2의 캐시가 나가기 전**. 지금 올리지 않았다.
+- **M5** (G4-C4가 §14.2·§14.3의 MUST 문장을 고쳐 읽음): Lead가 따로 승인한다. 이 Fixer는 §14.2·§14.3 본문을 고치지 않았다 (G4-C13의 비킴 양은 DECISIONS와 이 절에만).
+
+#### 34.18.9 커밋
+
+`270eddc` (코드·테스트: `engrave/layout.js`, `tests/engrave/l2.js`, `layout-mutation.test.js`, `notation.test.js`, `layout.test.js`, `e-fixtures.test.js`, `tools/bench.js`, `tools/make-e-fixtures.js`, E12·E13, baseline r·e·x와 layout hash), 이어서 이 기록 (G04 §34.5·§34.15·§34.17·§34.18, DECISIONS G4-C13–C16). `origin/g4c-notation-core`에 push. 병합 안 함, PR 없음. CURRENT_STATE는 고치지 않았다 (Lead 몫).
+
+**Fixer 상태: R1 FIXED, R2 FIXED, M6 정정; M1–M5는 Lead가 맡긴 곳 → G4c FIX: READY_FOR_RECHECK.**
 
 ---
 
