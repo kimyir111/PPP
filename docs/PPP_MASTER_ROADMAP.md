@@ -7,7 +7,7 @@ The operational roadmap for everything after G4a: order, dependencies, gates, an
 | Owner | The **Lead / Orchestrator** session. Implementers, reviewers and fixers read it. Only the Lead edits it. |
 | Updated | 2026-09-26 — seventh edition (Lead): **G4d-1a CLOSED** (PR #17 `b4fe019`); current: G4d-1b |
 | Base | `origin/main` = `b4fe019` (G4d-1a, PR #17) plus the docs closeout |
-| Active | **G4d-1b** (marks attached to systems, vertical spacing, courtesy signs; `D:/PPP-g4`, branch `g4d1b-system-marks`) — implementer running (§14). |
+| Active | **G4d-1b** (marks attached to systems, vertical spacing, courtesy signs; `D:/PPP-g4`, branch `g4d1b-system-marks`) — handed in at `ee87449`, in independent review (§14). |
 | Lead worktree | `D:/PPP-lead`, branch `lead-roadmap`. The Lead writes docs only, never in an implementer's worktree. |
 | How this relates to other docs | `docs/CURRENT_STATE.md` says what is true now, with measurements. `docs/DECISIONS.md` says why. `docs/GOALS/Gxx_*.md` is the contract for one Goal: design, acceptance and implementation record. **This document says in what order, behind which gates, and what comes next.** It does not repeat the goal specs. On detail, the spec wins. On sequencing, this document wins. |
 
@@ -597,7 +597,13 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 
 The record is G04 §35.19 and DECISIONS G4-L4 and G4-L5.
 
-**Current unit: G4d-1b — RUNNING** (Lead-launched implementer, the only writer in `D:/PPP-g4`).
+**Current unit: G4d-1b — IN REVIEW.** Handed in READY_FOR_REVIEW at `ee87449` (`17a38f3` code, `ee87449` docs; record G04 §36, DECISIONS G4-D1b-1…16; `plan/3`, `engr/4`). Claims: A8–A12 (lyrics), A20 (all), A25 PASS; 22 new mutations caught by name; B9 0.32; layout 30.7 → 38.4 ms. One independent read-only review is running. It must check:
+- whether the "♩ = N" marks that 152 layout pairs gained are printed in the sources or invented (A13);
+- the new `far_placements_system` metric split off from `far_placements`;
+- a sign-style pedal change drawn as release plus press (A9);
+- ottava labels as text;
+- chord-name widths now in the note spacing;
+- duplicate dynamics drawn once.
 
 | | |
 | --- | --- |
