@@ -140,6 +140,8 @@ CLASSES = [
      "An accidental earlier in the bar still holds on the page, but the file plays the note without it."),
     ("wrong_printed_accidental", "Printed accidentals naming another pitch", "wrong_accidental", "notes",
      lambda a: a["notes"] > 0, "The printed accidental and the played pitch disagree."),
+    # MX-1: this class models the pre-MX-1 app; rebaselined in MX-2. The app now plays <pitch> under an octave line
+    # (these 30 files and 2,229 notes); the count and the text stay in known_failures until then, so no baseline moves.
     ("octave_shift_playback", "8va/8vb passages read the app's way", "ottava_shifted_notes", "notes",
      lambda a: a["octave_shift"],
      "MusicXML keeps the sounding pitch in <pitch> and marks an 8va with octave-shift type=\"down\"; the app treats "

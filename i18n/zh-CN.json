@@ -60,7 +60,7 @@
     "Metronome": "节拍器",
     "Tempo": "速度",
     "Played correctly": "弹对的音",
-    "Wrong note": "错音",
+    "Wrong note": "弹错了",
     "Expected next": "下一个该弹的音",
     "PPP Coach": "PPP 教练",
     "listening": "正在听",
@@ -735,7 +735,6 @@
     "Show keys": "显示键盘",
     "Hide the on-screen keyboard so the score has the screen": "隐藏屏幕键盘，把画面留给乐谱",
     "Drag to resize the keyboard": "拖动可调整键盘大小",
-    "Wrong note": "弹错了",
     "{{want}}, not {{got}}": "是 {{want}}，不是 {{got}}",
     "Answer on": "显示正确答案",
     "Answer off": "隐藏正确答案",
@@ -1911,6 +1910,7 @@
     "faithful solo piano": "钢琴独奏忠实记谱",
     "Only one piano model was available, so these notes could not be cross-checked by another model.": "只有一个钢琴模型可用，因此无法用其他模型交叉核对这些音符。",
     "{{n}} possible notes were rejected because the piano models did not agree.": "由于钢琴模型之间未达成一致，已排除{{n}}个候选音符。",
-    "Reading notation directly from the vector PDF": "正在直接读取矢量PDF中的乐谱信息"
+    "Reading notation directly from the vector PDF": "正在直接读取矢量PDF中的乐谱信息",
+    "PPP needs at least four notes to write a score, and this MIDI file has fewer.": "PPP 至少需要四个音符才能写出乐谱，而这个 MIDI 文件的音符少于四个。"
   }
 }

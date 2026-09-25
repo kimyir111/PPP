@@ -1151,7 +1151,7 @@
      and the ties between them, rest pieces, triplet values, printed accidentals, pedal marks — as a canonical,
      validated graph whose MusicXML reads back as the same music. What was heard (onsets and releases in µs,
      velocities, the pedal, bar times) stays in the graph's performance layer instead of being dropped. */
-  const SCOREGRAPH_VERSION = '1.3.0';
+  const SCOREGRAPH_VERSION = '1.3.1';
   /* G3 in toMusicXml: 'off' | 'shadow' | 'on' (opts.professional overrides it). Off until the G3a flip (G03 Step 13). */
   const PROFESSIONAL_DEFAULT = 'off';
   let scoreGraphLib = null;
@@ -1342,9 +1342,13 @@
     return b.finish();
   }
 
-  function noNotes() {
-    const e = new Error('No piano notes were heard in this recording.');
+  /* The floor: fewer than four notes give the beat and metre nothing to stand on (G2 R4; it stays until G10a). The
+     message says what happened, not that there were none; the app words it for a recording or a MIDI file by the
+     code (App midiMessage, and the recording import). */
+  function noNotes(count) {
+    const e = new Error('PPP needs at least four notes to write a score; this has ' + (count | 0) + '.');
     e.code = 'no-notes';
+    e.notes = count | 0;
     throw e;
   }
 
@@ -1505,7 +1509,7 @@
   function fromGrid(input, opts) {
     const g = input.grid;
     const raw = (g.notes || []).filter(n => n && isFinite(n.tick) && n.midi >= 21 && n.midi <= 108);
-    if (raw.length < 4) noNotes();
+    if (raw.length < 4) noNotes(raw.length);
     const tpq = g.ticksPerQuarter || g.ticksPerBeat || Q;
     const scale = Q / tpq;
     let q = raw.map(n => {
@@ -1565,7 +1569,7 @@
     const arrangementPlan = arrangement ? normaliseArrangement(arrangement) : null;
     const notes = arrangementPlan && arrangementPlan.level !== 'original'
       ? arrangeNotes(timingNotes, arrangementPlan) : timingNotes;
-    if (notes.length < 4) noNotes();
+    if (notes.length < 4) noNotes(notes.length);
     const clustered = clusterNotes(notes, CLUSTER_S);
     /* Arrangement must not change the detected tempo or metre. Analyse the
        original performance, then write only the selected voices. */

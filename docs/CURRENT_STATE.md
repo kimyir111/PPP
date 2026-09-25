@@ -142,6 +142,8 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
 3. **The app plays 8va passages an octave off.** MusicXML's `<pitch>` is the sounding pitch; the app
    shifts it again. 30 committed scores, 2,229 notes. The benchmark reads references the MusicXML
    way (19 of the 29 method-book files are references again) and fixtures C10/C11 pin the rule.
+   **Fixed in MX-1** (branch `mx1-playback-correctness`, not merged yet; section at the end of this file). The G0
+   bench's model of the app (`ottava="app"`, known failure `octave_shift_playback`) is left for MX-2's rebaseline.
 4. `Import.load` returns the first-pass MusicXML even when it adopted the re-recognised merge.
 5. **Key estimation.** Key gate 88.6 % in core; Sonatina 0.74, Czerny 849 0.77, Beyer 0.82. A piece
    that changes key (Burgmüller 15, C → E♭) gets one key signature for the whole piece.
@@ -214,7 +216,8 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
 
 - **Active goal: G4 Professional Engraving — G4a and G4b CLOSED (PR #9 `df8a571`, PR #12 `62ede61`); next G4c, with MX-1
   beside it.** The order, gates and briefs are in `docs/PPP_MASTER_ROADMAP.md` (§14 current task, §15 next).
-  - **MX-1** — own worktree `D:/PPP-mx1`, branch `mx1-playback-correctness`:
+  - **MX-1** — own worktree `D:/PPP-mx1`, branch `mx1-playback-correctness` — **implemented 2026-09-25; the review's
+    NEEDS_FIX fixed the same day, waiting for the recheck** (section "MX-1 — playback correctness" at the end of this file):
     - the app stops shifting 8va passages a second time when it plays them (decision D-1: ScoreGraph and MusicXML
       `<pitch>` are the sounding pitch; 8va/15ma is display only);
     - pedal `change` lifts and re-presses the damper;
@@ -239,6 +242,7 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
     (`if (notes.length < 4) noNotes();`), which predates G2 and cannot be lowered without a new
     quantizer, so the work is to say so honestly: the message a person sees is "This MIDI file has
     no notes to read", and the file does have notes. 26 of the 29 M fixtures hit it (§25.5).
+    **The message is fixed in MX-1** (four languages); the floor stays.
   - **R5** — `node tests/scoregraph/tools/shadow-legacy.js --check`, `app-import-check.js` and
     `pitch-layers-check.js` run locally, not in CI, because they need puppeteer and `npm start`.
     They are the only evidence for A32/A33, so an adapter change after this merge is not caught
@@ -288,3 +292,49 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
   with `PPP.legacyImport`, after one release — each is a way back, kept deliberately, and each has a
   shadow check to prove it can go. The app's storage, renderer and player onto the graph is
   G4–G5 (G01 §15.2 S4–S5, Appendix B).
+
+### MX-1 — playback correctness (2026-09-25)
+
+Branch `mx1-playback-correctness` from `1c92fc4`; implemented; not merged. Record:
+`docs/GOALS/MX1_PLAYBACK_CORRECTNESS.md` (what changed by file and line, the audit table, the tests). Decisions MX1-D1…D12.
+
+- **Review and fix (record §7).** The review found NEEDS_FIX: views that show some bars of a longer 8va (This part, the
+  phone, the review staff, the import preview, the loop card) and the song and share cards drew its notes an octave low
+  with no sign. Fixed: those views draw the part of the line they show ("(8va)" when it carries on), and cards print the
+  notes where they sound (previews already stored included). Every Score finalize reads afresh is now marked
+  `ottavaRule: 'D-1'`, for MX-2's migration of older saves. A page check proves drawn = played in every view on all 34
+  octave-line files (2,484 renders); it fails on the pre-fix commit `8981750`.
+
+- **What changed.**
+  - 8va (issue 3, decision D-1): `parseMusicXML` reads `<octave-shift type="down">` as an 8va, and `legacy.toScore` /
+    `fromScore` sign it the same way. `Score.finalize` leaves what sounds alone and prints the note at sounding − shift
+    (`writtenP`, `writtenMidi`), transposing parts included. Playback, MIDI out, practice judging, follow, the falling notes
+    and the keyboard now play an 8va where the file says; the legacy renderer prints it where the edition does, under an
+    "8va" over the staff.
+  - A printed pedal `change` lifts the damper and presses it again: CC64 0 then 127 for MIDI out; the sampler lets go
+    what only the pedal held. A numeric `<sound damper-pedal>` depth is still a half pedal. `pedalJoin` stays off.
+  - R4: a `.mid` under the four-note floor now says "PPP needs at least four notes to write a score, and this MIDI file
+    has fewer." in en/ko/ja/zh. The floor stays.
+  - ScoreGraph library 1.3.1 (adapter behaviour), `?v=9` on the three changed scripts.
+- **Audit.** All 30 catalogue and sample files with a line (2,229 notes), the 4 fixtures and the 2 G0 hold-out files
+  (not named) are encoded as sounding pitch, the MusicXML way; nothing goes to MX-2 from it
+  (`node tests/scoregraph/tools/ottava-audit.js`).
+- **Evidence** (the base is `1c92fc4` served from `git archive`, the same checks run against both):
+  - New tests fail on the base and pass here: `tests/scoregraph/app-playback.test.js` 7/7 (0/7 on the base), and in the
+    browser suites playback-scheduler +5, follow +3, midi +4, engraving +2, pdf-layer +1.
+  - `test:scoregraph` 212/212, `test:engrave` 132/132. A48 is exact and not loosened: 544 files, 540 exact, the same 4
+    named losses; the 13 captured Scores (two re-captured from this page) and a Score saved before MX-1 come back exactly.
+  - `ottava-check.js` (page): 34/34 files, 19,582 notes, 2,255 under a line all measured on the SVG; 34/34 fail on the base.
+  - G0: unit 283 OK, golden 17/17, sg-roundtrip, lint-corpus, correctness 13/13, smoke/core/robust run + check PASS,
+    replay-public PASS. `ab --suite core` and `smoke`: PASS, every case the same (553/553 and 44/44; `known_failures`
+    identical).
+  - `shadow-legacy --check` unchanged: 398 files, 375 identical, 23 listed, 0 unexpected (the same on the base).
+    `pitch-layers-check` and `app-import-check` pass.
+  - `legacy-parity` (base vs this): only the 8va fixture's two renders differ. Extended to every octave-line file and 12
+    files without one: 47 renders differ, all in octave-line files; the 38 renders without a line are byte-identical.
+  - Browser suites on this worktree's server: the remaining failures are the environment's (the refused
+    127.0.0.1:8788/health, no transkun venv) and fail the same way on the base.
+- **What remains.** Songs saved before MX-1 keep the reading they were saved with (MX1-D3; a course piece already on the
+  shelf reopens from its slot). The G0 bench still models the old app reading — `ottava="app"`, known failure
+  `octave_shift_playback`, C10/C11 notes, unit r20 — for MX-2's rebaseline (MX1-D7). Audiveris's encoding of a line is
+  unchecked (no committed OMR output has one).

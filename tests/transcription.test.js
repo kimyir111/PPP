@@ -610,8 +610,8 @@ const helperHealth = () => new Promise(resolve => {
         <attributes><divisions>1</divisions><key><fifths>0</fifths><mode>major</mode></key>
           <time><beats>4</beats><beat-type>4</beat-type></time><staves>1</staves>
           <clef number="1"><sign>G</sign><line>2</line></clef></attributes>
-        <direction placement="above"><direction-type><octave-shift type="up" size="8"/></direction-type><staff>1</staff></direction>
-        <note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+        <direction placement="above"><direction-type><octave-shift type="down" size="8"/></direction-type><staff>1</staff></direction>
+        <note><pitch><step>C</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
         <direction placement="above"><direction-type><octave-shift type="stop" size="8"/></direction-type><staff>1</staff></direction>
       </measure></part></score-partwise>`;
     const score = PPP.parseMusicXML(xml, 'ottava.musicxml');
@@ -627,6 +627,7 @@ const helperHealth = () => new Promise(resolve => {
       ranges: score.ottavas.length
     };
   });
+  /* MusicXML: <pitch> sounds, and an 8va is octave-shift type="down" - printed C4, sounding C5 (MX-1, D-1) */
   ok('8va keeps written and sounding pitches separate',
     ottavaBack.written === 'C4' && ottavaBack.sounding === 'C5' &&
       ottavaBack.writtenMidi === 60 && ottavaBack.soundingMidi === 72 &&

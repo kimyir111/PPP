@@ -10,6 +10,8 @@
    nothing here can pass by inspecting internals the user never sees.
    ========================================================================== */
 
+const fs = require('fs');
+const path = require('path');
 const puppeteer = require('puppeteer');
 const { preparePage } = require('./boot');
 
@@ -310,6 +312,38 @@ const look = page => page.evaluate(() => {
   ok('playing the next written pitch skips the rest wait',
     skipped.rest === true && Math.abs((skipped.b || 0) - 3) < 0.05,
     JSON.stringify(skipped));
+
+  /* MX-1: MusicXML's <pitch> sounds and an octave line moves only what is printed (decision D-1), so under an 8va, 8vb
+     or 15ma follow waits for the key that sounds - the one the player hears - not the one printed an octave away. */
+  console.log('\n── under an octave line it asks for the key that sounds ──');
+  const e18 = fs.readFileSync(path.join(__dirname, 'engrave', 'fixtures', 'e', 'E18-ottava.musicxml'), 'utf8');
+  const ott = await page.evaluate(async xml => {
+    const app = PPP.app;
+    const sc = PPP.scoreFromXml(xml, 'E18-ottava.musicxml');
+    app._kbRange = PPP.Score.keyRange(sc);        /* the keyboard shows the keys this piece sounds, as entering a song does */
+    app.setState({
+      score: sc, tempo: 120, hands: 'both', loop: false, practiceMode: 'whole',
+      playing: false, toggles: Object.assign({}, app.state.toggles, { follow: true })
+    });
+    app._gatesKey = null;
+    const gates = app.followGates().filter(g => !g.rest).map(g => (g.notes || []).map(n => n.midi).sort((a, b) => a - b).join('+'));
+    app.setState(app.followReset({}));
+    await new Promise(r => setTimeout(r, 600));
+    const want = () => [...document.querySelectorAll('[data-state="expected"]')].map(e => +e.getAttribute('data-midi')).sort((a, b) => a - b);
+    const first = want();
+    first.forEach(m => window.__press(m));
+    await new Promise(r => setTimeout(r, 200));
+    const moved = (app.followGates()[app.state.gateIdx] || {}).notes || [];
+    first.forEach(m => window.__release(m));
+    await new Promise(r => setTimeout(r, 200));
+    return { gates: gates, first: first, second: want(), next: moved.map(n => n.midi).join('+') };
+  }, e18);
+  ok('the gates are the pitches that sound (E18: 8va and 8vb, 15ma, a line over both staves)',
+    ott.gates.join(' ') === '36+84 88 31+91 48+96 100 60+84 62+86', ott.gates.join(' '));
+  ok('the keyboard asks for C2 and C6 under the 8vb and the 8va, not the printed C3 and C5',
+    ott.first.join() === '36,84', ott.first.join(', '));
+  ok('and playing them moves on to the E6 that sounds', ott.next === '88' && ott.second.join() === '88',
+    'next gate ' + ott.next + ', keyboard asks for ' + ott.second.join(', '));
 
   console.log('\n── turning it off restores the clock ──');
   await page.evaluate(() => {

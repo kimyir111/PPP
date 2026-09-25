@@ -25,6 +25,9 @@ DIR = os.path.join(util.bench_root(), "corpus", "correctness")
 EXPECTED = os.path.join(DIR, "expected.json")
 
 # fixture id -> why the app's reading differs from MusicXML there (known_defects: octave_shift_playback)
+# MX-1 (docs/GOALS/MX1_PLAYBACK_CORRECTNESS.md): these two and the "app reading departs from MusicXML on 2 (known)"
+# line below model the pre-MX-1 app; rebaselined in MX-2. The app now reads C10/C11 the MusicXML way; the reader's
+# ottava="app" mode still reproduces the old app, and the text and the count stay until that rebaseline.
 APP_DEVIATIONS = {
     "C10-octave-shift-8va": "the app subtracts an octave under octave-shift type=\"down\" (MusicXML: pitch data is sounding)",
     "C11-octave-shift-8vb": "the app adds an octave under octave-shift type=\"up\" (MusicXML: pitch data is sounding)",

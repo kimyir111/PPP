@@ -4,14 +4,17 @@
 
    Needs the app served (PORT=8791 node server.js) and puppeteer (NODE_PATH=D:/PPP/node_modules). Writes
    tests/engrave/fixtures/legacy/<name>.score.json: the Score object the renderer and the practice layer hold
-   (Score.finalize'd: 8va moved, notes sorted, positions stamped), from each way a Score is made today:
+   (Score.finalize'd: an 8va printed an octave from what sounds, notes sorted, positions stamped), from each way a
+   Score is made today:
      recording   toMusicXml (G3 off, audio-score.js in Node) -> parseMusicXML in the page, source marked as a
                  transcription the way the app marks it
      parse       parseMusicXML of MusicXML (the OMR, catalogue-match and legacy-import path)
      graph       scoreFromXml (the import door: graph -> toScore -> finalize)
      stored      any of those through packScore -> JSON -> unpackScore -> finalize (a song slot, reloaded)
      demo        buildDemoScore (the built-in sample, no file at all)
-   A fixture changes only when the app's Score changes; re-run and commit the files with that change. */
+   A fixture changes only when the app's Score changes; re-run and commit the files with that change. MX-1 changed the
+   two 8va Scores (parse-ottava-8va-8vb, stored-graph-ottava); the Score a song slot kept from before it is
+   tests/scoregraph/fixtures/saved/stored-pre-mx1-ottava.score.json, which this tool can no longer make. */
 'use strict';
 const fs = require('fs');
 const path = require('path');

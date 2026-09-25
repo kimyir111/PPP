@@ -20,7 +20,7 @@
 <script src="./scoregraph/musicxml-export.js?v=8"></script>
 <script src="./scoregraph/midi-file.js?v=8"></script>
 <script src="./scoregraph/midi-import.js?v=8"></script>
-<script src="./scoregraph/legacy-score.js?v=8"></script>
+<script src="./scoregraph/legacy-score.js?v=9"></script>
 <script src="./scoregraph/import.js?v=8"></script>
 <script src="./scoregraph/meter-grid.js?v=8"></script>
 <script src="./scoregraph/pro-critic.js?v=8"></script>
@@ -32,8 +32,8 @@
 <script src="./scoregraph/pro-beam.js?v=8"></script>
 <script src="./scoregraph/pro-marks.js?v=8"></script>
 <script src="./scoregraph/pro.js?v=8"></script>
-<script src="./scoregraph/index.js?v=8"></script>
-<script src="./audio-score.js?v=8"></script>
+<script src="./scoregraph/index.js?v=9"></script>
+<script src="./audio-score.js?v=9"></script>
 <!-- G4a (docs/GOALS/G04 §8.5): where the renderer's ScoreGraph comes from, and what it must draw. Draws nothing yet. -->
 <script src="./engrave/ledger.js?v=3"></script>
 <script src="./engrave/glyphs.js?v=3"></script>
@@ -2666,19 +2666,25 @@ const PianoScore = {
     });
     return { hold: hold, cont: cont };
   },
-  /* [down, up) spans in written quarters for the damper. A "change" is half-pedal:
-     the strings stay up. */
+  /* [down, up) spans in written quarters for the damper. A printed "change" lets
+     the damper down and presses the pedal again at once (MX-1): what only the
+     pedal held stops there, and a key still down carries on into the next span.
+     A <sound damper-pedal> depth (a "change" with a value) is a half pedal and
+     keeps the strings up. */
   pedal(score) {
     const ev = (score.pedals || [])
       .filter(p => !p.kind || p.kind === 'damper')
-      .map(p => ({ q: Score.startQ(score, p.m) + (p.b || 0), type: p.type }))
+      .map(p => ({ q: Score.startQ(score, p.m) + (p.b || 0), type: p.type, lift: PianoScore.lifts(p) }))
       .sort((a, b) => a.q - b.q);
     const spans = [];
     let down = null;
     ev.forEach(e => {
       if (e.type === 'start') { if (down == null) down = e.q; }
       else if (e.type === 'stop') { if (down != null) spans.push([down, e.q]); down = null; }
-      else if (e.type === 'change') { if (down == null) down = e.q; }
+      else if (e.type === 'change') {
+        if (e.lift && down != null && e.q > down + 1e-6) { spans.push([down, e.q]); down = e.q; }
+        else if (down == null) down = e.q;
+      }
     });
     if (down != null) spans.push([down, score.lengthQ]);
     return spans;
@@ -2832,22 +2838,24 @@ const PianoScore = {
       const kind = p.kind || 'damper';
       const q = Score.startQ(score, p.m) + (p.b || 0);
       let value = p.value;
-      if (value == null) {
-        if (p.type === 'stop') value = 0;
-        else if (p.type === 'change') value = 64;
-        else value = 127;
-      }
+      /* a printed change: the pedal up, then down again, at the same point (MX-1) */
+      if (PianoScore.lifts(p)) ev.push({ q: q, kind: kind, type: p.type, value: 0, lift: true });
+      if (value == null) value = p.type === 'stop' ? 0 : 127;
       ev.push({ q: q, kind: kind, type: p.type, value: Math.max(0, Math.min(127, value | 0)) });
     });
     ev.sort((a, b) => a.q - b.q || a.kind.localeCompare(b.kind));
     const out = [];
     ev.forEach(e => {
       const last = out[out.length - 1];
-      if (last && last.kind === e.kind && Math.abs(last.q - e.q) < 1e-6) out[out.length - 1] = e;
+      /* one pedal at one point: the last word wins, except that a change's lift keeps its re-press */
+      if (last && last.kind === e.kind && Math.abs(last.q - e.q) < 1e-6 && !last.lift) out[out.length - 1] = e;
       else out.push(e);
     });
     return out;
   },
+  /* A printed pedal change (<pedal type="change"/>), as opposed to a pedal depth
+     the file gives as a number (<sound damper-pedal="64"/>), which is a half pedal. */
+  lifts(p) { return !!p && p.type === 'change' && p.value == null && (!p.kind || p.kind === 'damper'); },
   pedalCCs(score, visits) {
     const written = this.pedalEvents(score);
     const out = [];
@@ -3586,26 +3594,31 @@ const Score = {
       });
       return best;
     };
+    let carried = 0;
     score.notes.forEach(n => {
       const mm = byNumber[n.m];
       n.abs = (mm ? mm.startQ : 0) + n.b;
       if (n.midi == null && n.p) n.midi = pitchToMidi(n.p);
       if (!n.rest && n.midi != null && n.soundingMidi == null) {
-        n.writtenP = n.writtenP || n.p;
-        n.writtenMidi = n.writtenMidi == null ? n.midi : n.writtenMidi;
         const shift = shiftAt(n);
+        /* `p`/`midi` are the pitch that sounds, as MusicXML's <pitch> and the graph state it, and
+           `writtenP`/`writtenMidi` are what is printed. They are the same note unless the part
+           transposes, where the graph import fills both in (G02 §26): a B-flat clarinet is printed a
+           tone above what it sounds. An 8va moves only what is printed: written = sounding - shift,
+           and what sounds is never shifted again (MX-1, decision D-1). */
+        n.writtenP = shiftPitchOctave(n.writtenP || n.p, -shift);
+        n.writtenMidi = (n.writtenMidi == null ? n.midi : n.writtenMidi) - shift;
         n.ottavaShift = shift;
-        /* `p`/`midi` are the pitch that sounds before any 8va, and `writtenP`/`writtenMidi` are what
-           is printed. They are the same note unless the part transposes, where the graph import
-           fills both in (G02 §26): a B-flat clarinet is printed a tone above what it sounds. So the
-           8va is added to what sounds, not to what is printed. */
-        n.soundingMidi = n.midi + shift;
-        n.midi = n.soundingMidi;
-        if (n.p) n.p = shiftPitchOctave(n.p, shift);
+        n.soundingMidi = n.midi;
       } else if (!n.rest && n.midi != null) {
         n.midi = n.soundingMidi;
+        carried++;
       }
     });
+    /* Which rule made the pitch layers (MX-1 fixer, M1): a Score whose every note this reads afresh is marked D-1. A
+       Score saved before MX-1 comes back with its layers already made and no mark, and keeps none, which is what a
+       migration of those saves keys on (MX-2); a marked one keeps its mark. */
+    if (!carried) score.ottavaRule = 'D-1';
     score.notes.sort((a, b) => a.abs - b.abs || (a.staff || 1) - (b.staff || 1));
     if (!score.sections || !score.sections.length) score.sections = Score.deriveSections(score);
     return score;
@@ -4091,13 +4104,15 @@ function parseMusicXML(xmlText, name) {
               const size = parseInt(oct.getAttribute('size') || '8', 10) || 8;
               const octNumber = oct.getAttribute('number') || null;
               if (t === 'up' || t === 'down') {
-                /* MusicXML's direction is the sounding shift: up is 8va/15ma
-                   and down is 8vb/15mb. Keep that separate from written pitch. */
+                /* MusicXML says which way the notes are printed from the
+                   <pitch> that sounds: "down" is an 8va/15ma (printed lower,
+                   sounding higher) and "up" an 8vb/15mb. `dir`/`semitones`
+                   are what sounds minus what is printed (MX-1, D-1). */
                 const onStaff = parseInt(txt(el, 'staff', ''), 10);
                 const octaves = size >= 15 ? 2 : 1;
                 ottavas.push({ m: number, b: atB, endM: null, endB: null,
-                  size: size, dir: t === 'up' ? 1 : -1,
-                  semitones: (t === 'up' ? 1 : -1) * 12 * octaves,
+                  size: size, dir: t === 'down' ? 1 : -1,
+                  semitones: (t === 'down' ? 1 : -1) * 12 * octaves,
                   staff: isFinite(onStaff) ? staffBase + onStaff : null, number: octNumber });
               } else if (t === 'stop') {
                 const stopStaff = parseInt(txt(el, 'staff', ''), 10);
@@ -4471,7 +4486,9 @@ async function importToGraph(bytes, name, kind) {
 function midiMessage(err, name) {
   if (err.code === 'MIDI-NOT-A-FILE') return tx('That is not a MIDI file.');
   if (err.code === 'MIDI-TRUNCATED' || err.code === 'MIDI-BAD-HEADER') return tx('This MIDI file is damaged and PPP cannot read it.');
-  if (err.code === 'MIDI-NO-NOTES' || err.code === 'no-notes') return tx('This MIDI file has no notes to read.');
+  if (err.code === 'MIDI-NO-NOTES') return tx('This MIDI file has no notes to read.');
+  /* audio-score.js writes a score from four notes or more (G2 R4): a shorter file does have notes */
+  if (err.code === 'no-notes') return tx('PPP needs at least four notes to write a score, and this MIDI file has fewer.');
   return (name || 'that file') + ': ' + String(err.message || err);
 }
 function readerMessage(code, name, detail) {
@@ -11178,11 +11195,27 @@ function makeScoreView(React) {
           const r = rowSpan[sg.y] = rowSpan[sg.y] || { x0: Infinity, x1: -Infinity };
           r.x0 = Math.min(r.x0, sg.x); r.x1 = Math.max(r.x1, sg.x + sg.w);
         });
+        const rowOfY = {};
+        this._map.forEach(sg => { rowOfY[sg.y] = sg.row; });
         (score.ottavas || []).forEach(ov => {
           if (ov.endM == null) return;
-          const a = atBeat(ov.m, ov.b || 0);
-          const z = atBeat(ov.endM, Math.max(0, (ov.endB || 0) - 0.002));
-          if (!a || !z || z.y < a.y) return;
+          let a = atBeat(ov.m, ov.b || 0);
+          let z = atBeat(ov.endM, Math.max(0, (ov.endB || 0) - 0.002));
+          /* A view of some bars - this part, a phone's two, the import preview, the review staff - draws the stretch
+             of a line that falls in them: its notes are printed an octave from where they sound, so the sign must be
+             there (MX-1 fixer, R1). Carried on from a bar before the first shown, it is labelled "(8va)", as on a
+             new line of the page; going on past the last bar shown, it has no end hook. */
+          let carried = false, open = false;
+          if (!a || !z) {
+            const mA = Score.measure(score, ov.m), mZ = Score.measure(score, ov.endM);
+            const qa = mA ? mA.startQ + (ov.b || 0) : -Infinity, qz = mZ ? mZ.startQ + (ov.endB || 0) : Infinity;
+            const on = this._map.filter(sg => sg.startQ + sg.lenQ > qa + 1e-6 && sg.startQ < qz - 1e-6);
+            if (!on.length) return;
+            const end = on[on.length - 1];
+            if (!a) { a = { x: on[0].x, y: on[0].y }; carried = true; }
+            if (!z) { z = { x: end.x + end.w - 12, y: end.y }; open = qz > end.startQ + end.lenQ + 1e-6; }
+          }
+          if (z.y < a.y) return;
           const staffNo = ov.staff || (ov.dir > 0 ? pianoTop + 1 : pianoTop + 2);
           const k = Math.max(0, Math.min(nStaves - 1, staffNo - 1));
           /* over the staff for an 8va, under it for an 8vb */
@@ -11208,13 +11241,15 @@ function makeScoreView(React) {
             const x1 = last ? z.x + 12 : rowSpan[ry].x1;
             const y = lineY(ry);
             /* the sign at the start, and in brackets where it carries on */
-            const label = first ? name : '(' + name + ')';
-            const lw = first ? 24 : 34;
-            svgLabel(label, { x: x0, y: y + 4, size: 13, italic: true, stroke: 0.4 });
+            const opens = first && !carried;
+            const label = opens ? name : '(' + name + ')';
+            const lw = opens ? 24 : 34;
+            svgLabel(label, { x: x0, y: y + 4, size: 13, italic: true, stroke: 0.4, row: rowOfY[ry] });
             if (x1 <= x0 + lw + 4) return;
             const line = document.createElementNS(SVGNS, 'path');
             line.setAttribute('d', 'M ' + (x0 + lw) + ' ' + y + ' L ' + x1 + ' ' + y +
-              (last ? ' L ' + x1 + ' ' + (y + (ov.dir > 0 ? 6 : -6)) : ''));
+              (last && !open ? ' L ' + x1 + ' ' + (y + (ov.dir > 0 ? 6 : -6)) : ''));
+            line.setAttribute('data-ppp-row', String(rowOfY[ry]));
             line.setAttribute('fill', 'none');
             line.setAttribute('stroke', ink);
             line.setAttribute('stroke-width', '1');
@@ -12193,8 +12228,19 @@ function openingBars(full, n) {
   const keep = {};
   ms.forEach(m => { keep[m.number] = true; });
   const mine = list => (list || []).filter(x => keep[x.m]).map(x => Object.assign({}, x));
+  /* A card draws no octave line, so a note under one is printed where it sounds (MX-1 fixer, R2). Every Score states
+     written = sounding - shift, before MX-1 as after it, so adding the shift back is right for a preview stored with a
+     share by either; and a preview made here is stored that way. */
+  const notes = mine(full.notes);
+  notes.forEach(x => {
+    const s = +x.ottavaShift || 0;
+    if (!s || x.rest) return;
+    if (x.writtenP) x.writtenP = shiftPitchOctave(x.writtenP, s);
+    if (x.writtenMidi != null) x.writtenMidi += s;
+    x.ottavaShift = 0;
+  });
   return Object.assign({}, full, {
-    measures: ms, notes: mine(full.notes), chords: mine(full.chords), pedals: mine(full.pedals), ottavas: [],
+    measures: ms, notes: notes, chords: mine(full.chords), pedals: mine(full.pedals), ottavas: [],
     marks: mine(full.marks),
     sections: [{ id: 's1', from: ms[0].number, to: ms[ms.length - 1].number }], _byNumber: undefined
   });
