@@ -190,3 +190,55 @@ test('a projection\'s losses are named as projected-loss, and only under p: refe
   const q = clone(p); q.ledger.push({ ref: 'e1', kind: 'note', status: 'projected-loss', code: 'x' });
   assert.ok(E.audit(g, q).invented.includes('e1') || E.audit(g, q).duplicate.includes('e1'), 'a projected-loss entry may not claim a graph object');
 });
+
+/* G4b hardening of the A1 contract (G4a final review MINORs) */
+test('a tuplet\'s stated display - number, bracket, placement - is part of it: carried otherwise, it is altered', () => {
+  const SG = require('./helpers.js').SG, R = SG.rational;
+  const b = SG.builder({ id: 'tshow', meta: {} });
+  const src = b.source({ kind: 'user' });
+  b.setDefault({ src: src.id });
+  const m = b.measure({ number: '1', dur: '1' });
+  b.meter({ m: m.id, beats: [4], beatType: 4 });
+  const part = b.part({ instrument: { kind: 'piano', family: 'keyboard' } });
+  const st = b.staff(part, {});
+  const v = b.voice(part, { staff: st.id, label: '1' });
+  b.clef(part, { staff: st.id, m: m.id, at: '0', sign: 'G' });
+  const evs = [0, 1, 2].map(k => b.event(part, { kind: 'note', m: m.id, at: R.format(R.make(k, 12)), dur: '1/12', voice: v.id, staff: st.id,
+    display: { type: 'eighth' }, heads: [{ pitch: { step: 'E', oct: 5 } }] }));
+  b.spanner(part, { type: 'tuplet', events: evs.map(e => e.id), actual: 3, normal: 2, show: { number: 'both', bracket: false, placement: 'below' } });
+  /* (a stated bracket="yes" is the schema default and is not kept apart from it: G4-F14) */
+  const g = b.finish().graph;
+  const p = E.plan(g);
+  assert.ok(E.audit(g, p).ok);
+  const t = p.tuplets.find(x => x.source === 'graph');
+  assert.deepEqual([t.number, t.bracketStated, t.placement], ['both', false, 'below']);
+  [['placement', null], ['bracketStated', null], ['number', 'actual']].forEach(([f, v]) => {
+    const q = clone(p); q.tuplets.find(x => x.source === 'graph')[f] = v;
+    assert.ok(E.audit(g, q).altered.includes(t.id), f + ' dropped is caught');
+  });
+});
+
+test('a code must fit the kind using it: an event deferred as stem-double, a slur as ornament-glyph, a part name as title-block fail', async () => {
+  const g = await graphOf('catalog/method/burgmuller25/015.mxl');
+  const p = E.plan(g);
+  assert.ok(E.audit(g, p).ok);
+  const use = (kind, status, code) => {
+    const q = clone(p);
+    const en = q.ledger.find(x => x.kind === kind);
+    assert.ok(en, kind);
+    en.status = status; en.code = code;
+    return E.audit(g, q).unapproved;
+  };
+  assert.equal(use('note', 'deferred', 'stem-double').length, 1, 'an event with a stem\'s code');
+  assert.equal(use('slur', 'deferred', 'ornament-glyph').length, 1, 'a slur with an ornament\'s code');
+  assert.equal(use('articulation', 'deferred', 'title-block').length, 1, 'an articulation with the title area\'s code');
+  assert.equal(use('tie', 'suppressed', 'show-none').length, 1, 'a tie with a tuplet\'s code');
+  assert.equal(use('stem', 'deferred', 'stem-double').length, 0, 'a stem with its own code passes');
+  const g4 = await graphOf('tests/engrave/fixtures/e/E04-tuplet-show.musicxml');
+  const q4 = clone(E.plan(g4));
+  const tu = q4.ledger.find(x => x.kind === 'tuplet' && x.status === 'drawn');
+  tu.status = 'deferred'; tu.code = 'nested-3';
+  assert.equal(E.audit(g4, q4).unapproved.length, 0, 'a tuplet with its own code passes');
+  /* every code of every status names the kinds it may be used for */
+  Object.keys(L.CODE_KINDS).forEach(st => Object.keys(L.CODE_KINDS[st]).forEach(c => assert.ok(st === 'unsupported' || Array.isArray(L.CODE_KINDS[st][c]), st + ':' + c)));
+});

@@ -332,3 +332,37 @@ test('a save whose write fails is recorded, and once storage recovers the next s
   assert.equal(mem._map.has('song-1'), true);
   assert.equal(SG.fingerprint((await fresh(mem).resolve(reload(score), { key: 'song-1' })).graph), SG.fingerprint(g));
 });
+
+/* G4b (G4a final review MINOR): IndexedDB can leave a call pending for good; nothing may wait on it for ever */
+test('a store that never answers: resolve() falls back to the projection in bounded time, and names it', async () => {
+  const g = await graphOf('tests/scoregraph/fixtures/xml/piano-marks.musicxml');
+  const score = scoreOf(g, 'pm');
+  const never = () => new Promise(() => {});
+  const hang = { kind: 'hang', get: never, put: never, del: never, sizes: never };
+  const st = E.store.createStore({ backend: hang, limits: { timeout: 40 } });
+  const t0 = Date.now();
+  const r = await E.createSource({ store: st }).resolve(reload(score), { key: 'song-1' });
+  assert.ok(Date.now() - t0 < 2000, 'bounded: ' + (Date.now() - t0) + ' ms');
+  assert.equal(r.via, 'projected');
+  assert.ok(r.link.ok, 'practice still has its map');
+  assert.ok(r.diagnostics.some(d => d.code === 'STORE_TIMEOUT'), JSON.stringify(r.diagnostics));
+  /* a save against it ends too, named, and does not stay pending */
+  const a = E.createSource({ store: st });
+  a.remember(score, g, 'import:musicxml');
+  assert.equal((await a.persist('song-1', score)).code, 'timeout');
+  assert.equal((await a.persist('song-1', score)).code, 'timeout', 'the next save tries again, it is not stuck behind the first');
+});
+
+test('an IndexedDB open that never settles times out, and a late success is closed rather than kept', async () => {
+  let req = null;
+  const fakeIdb = { open: () => { req = {}; return req; } };
+  const backend = E.store.idbBackend(fakeIdb, { openTimeout: 30 });
+  await assert.rejects(backend.get('k'), e => e.code === 'timeout');
+  let closed = false;
+  req.result = { close: () => { closed = true; } };
+  req.onsuccess();
+  assert.equal(closed, true, 'the connection that answered too late is closed');
+  /* through the store: a named code, never a hang */
+  const st = E.store.createStore({ backend: E.store.idbBackend({ open: () => ({}) }, { openTimeout: 30 }) });
+  assert.equal((await st.get('k')).code, 'timeout');
+});

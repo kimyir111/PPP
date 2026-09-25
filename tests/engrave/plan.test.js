@@ -20,7 +20,7 @@ function mk(spec) {
   b.setDefault({ src: src.id });
   const bars = spec.bars || [{ dur: '1' }];
   const ms = bars.map((x, i) => b.measure({ number: String(i + 1), dur: x.dur, implicit: x.implicit || undefined }));
-  b.meter({ m: ms[0].id, beats: [spec.beats || 4], beatType: spec.beatType || 4 });
+  b.meter({ m: ms[0].id, beats: Array.isArray(spec.beats) ? spec.beats : [spec.beats || 4], beatType: spec.beatType || 4 });
   const part = b.part({ instrument: { kind: 'piano', family: 'keyboard' } });
   const st = [b.staff(part, {}), b.staff(part, {})];
   const vs = [b.voice(part, { staff: st[0].id, label: '1' }), b.voice(part, { staff: st[0].id, label: '2' }), b.voice(part, { staff: st[1].id, label: '5' })];
@@ -247,6 +247,37 @@ test('G4-U2 B: when any condition fails, each one-note tuplet is drawn as the gr
     assert.equal(mergedOf(p).length, 0, 'a nested one-note tuplet is not merged');
     assert.ok(E.audit(g, p).ok);
   }
+  /* G4b (G4a review MINOR): an event under two tuplets the graph does not relate (siblings, no `parent`) is ambiguous */
+  {
+    const b = SG.builder({ id: 'sib', meta: {} });
+    const src = b.source({ kind: 'user' });
+    b.setDefault({ src: src.id });
+    const m = b.measure({ number: '1', dur: '1' });
+    b.meter({ m: m.id, beats: [4], beatType: 4 });
+    const part = b.part({ instrument: { kind: 'piano', family: 'keyboard' } });
+    const st = b.staff(part, {});
+    const v = b.voice(part, { staff: st.id, label: '1' });
+    b.clef(part, { staff: st.id, m: m.id, at: '0', sign: 'G' });
+    const evs = [0, 1, 2].map(k => b.event(part, { kind: 'note', m: m.id, at: R.format(R.make(k, 12)), dur: '1/12', voice: v.id, staff: st.id,
+      display: { type: 'eighth' }, heads: [{ pitch: { step: 'C', oct: 5 } }] }));
+    b.spanner(part, { type: 'tuplet', events: [evs[0].id], actual: 3, normal: 2 });
+    b.spanner(part, { type: 'tuplet', events: [evs[0].id], actual: 3, normal: 2 });
+    evs.slice(1).forEach(e => b.spanner(part, { type: 'tuplet', events: [e.id], actual: 3, normal: 2 }));
+    const g = b.finish().graph;
+    const p = E.plan(g);
+    assert.equal(mergedOf(p).length, 0, 'sibling one-note tuplets on one event: no merge');
+    assert.ok(E.audit(g, p).ok);
+  }
+  /* G4b (G4a review MINOR): groups are placed by the meter's beats and beat groups, not by the bar line alone */
+  const at = (a, k) => R.format(R.add(R.parse(a), R.make(k, 12)));
+  const from = (start, n, extra) => Array.from({ length: n }, (_, k) => Object.assign({ at: at(start, k), dur: '1/12', tuplet: {} }, extra || {}));
+  none('6/8: triplet eighths over the second and third eighths cross the dotted-quarter beat', { bars: [{ dur: '3/4' }], beats: 6, beatType: 8, events: from('1/4', 3) });
+  assert.equal(mergedOf(E.plan(mk({ bars: [{ dur: '3/4' }], beats: 6, beatType: 8, events: from('0', 3) }))).length, 1, '6/8: inside the first beat');
+  none('5/8 as 3+2: a group over 1/4-1/2 crosses the 3/8 group start', { bars: [{ dur: '5/8' }], beats: [3, 2], beatType: 8, events: from('1/4', 3) });
+  assert.equal(mergedOf(E.plan(mk({ bars: [{ dur: '5/8' }], beats: [3, 2], beatType: 8, events: from('3/8', 3) }))).length, 1, '5/8 as 3+2: the group starts on the 3/8 beat');
+  const quarters = start => Array.from({ length: 3 }, (_, k) => ({ at: R.format(R.add(R.parse(start), R.make(k, 6))), dur: '1/6', type: 'quarter', tuplet: {} }));
+  none('4/4: quarter triplets from beat 2 cross the half-bar group', { events: quarters('1/4') });
+  assert.equal(mergedOf(E.plan(mk({ events: quarters('0') }))).length, 1, '4/4: quarter triplets over the first half bar');
   /* the final review's counterexample (G4-U2 B): six one-note triplets, graph beams [0,1] [2,3] [4,5] - never [0,1,2] [3,4,5] */
   none('graph beams [0,1] [2,3] [4,5] across the would-be groups', { events: triplets(6, 0), beams: [[0, 1], [2, 3], [4, 5]] });
   none('a graph beam crossing the group edge ([0..3])', { events: triplets(6, 0), beams: [[0, 3]] });
