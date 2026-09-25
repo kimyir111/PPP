@@ -3265,7 +3265,7 @@ L1은 나빠지지 않았고(baseline은 키만 더함) L2 영목표는 전부 0
 
 ## 36. G4d-1b 구현 기록 — system에 붙는 기호, 세로 배치, courtesy, 괄호 임시표
 
-Implementer, 2026-09-26. 브랜치 `g4d1b-system-marks` (`D:/PPP-g4`), 시작 `747e45e` (= `origin/main`, G4d-1a 마감 뒤). 입력은 Lead의 G4d-1b 지시(roadmap §14 카드, §5.1 G4d 행, G4-L3)다. 병합하지 않았고 PR도 없다 (Lead가 리뷰와 PR을 정한다). 결정은 DECISIONS G4-D1b-1–16.
+Implementer, 2026-09-26. 브랜치 `g4d1b-system-marks` (`D:/PPP-g4`), 시작 `747e45e` (= `origin/main`, G4d-1a 마감 뒤). 입력은 Lead의 G4d-1b 지시(roadmap §14 카드, §5.1 G4d 행, G4-L3)다. 병합하지 않았고 PR도 없다 (Lead가 리뷰와 PR을 정한다). 결정은 DECISIONS G4-D1b-1–16. 독립 리뷰(NEEDS_FIX, MAJOR 3)와 그 Fixer는 §36.18 (DECISIONS G4-D1b-17–24).
 
 **한 줄**: EngravedScore가 system에 붙는 것을 그린다 — 가사, 셈여림과 hairpin(grand staff의 두 보표 사이, system마다 기준선 하나, hairpin은 수평이고 양끝 셈여림과 0.5 sp), pedal(sign 또는 line, change는 change로 — 뗌만으로 그리지 않음), ottava(걸친 음을 정확히 덮고, 머리는 적힌 높이, system 넘김은 "(8)"), 코드명, volta, tempo(말·메트로놈·괄호), rehearsal, jump, words — 모두 G4d-1a의 **하나의 배치 함수**(`skyline.js` `put()`)로 §10.2 순서 7–11에 따라 놓는다. §15.3 세로 배치는 이 기호들이 든 skyline으로 쌓고, 두 보표 사이의 줄은 남은 자리의 가운데로 옮긴다. §15.4 courtesy는 모든 system 끝에서 검사한다. G4d-1a 리뷰의 R5(괄호 임시표)를 닫고 B9를 다시 쟀다. **사용자에게 보이는 변화는 없다**: 앱 파일·`index.html`·`server.js`·`scoregraph/`는 바이트 그대로이고(`git diff 747e45e` 비어 있음) 앱은 새 모듈을 불러오지 않는다 (legacy parity 16/16).
 
@@ -3317,7 +3317,7 @@ Implementer, 2026-09-26. 브랜치 `g4d1b-system-marks` (`D:/PPP-g4`), 시작 `7
 
 - **코드명**: sans 1.4 sp, 음 왼쪽에 맞춤, system 위 줄 하나. 철자는 앱의 `CHORD_KIND`(App 3849)와 같은 표(M7, m7♭5, sus4, /bass …); ♯·♭은 글꼴(Figtree)에 없어 SMuFL `accidentalSharp/Flat` glyph로. **폭은 기둥의 rod에** (그 시각의 기둥, 그 staff): 코드명이 서로 비키도록 간격이 넓어진다. 음이 시작하지 않는 시각의 코드명(E25 3마디)은 §10.5대로 (x, 그래프 순서)로 오른쪽으로 0.4 sp씩, system 끝을 넘으면 안으로 당김.
 - **volta**: 윗 staff 위, 세로줄 안쪽 0.3 sp부터, 높이 1.8 sp, 시작하는 조각에 번호("1.", "1, 2." 또는 그래프 text, serif 1.3 sp — 이제 따로 된 글자 객체), 닫히는 곳에만 끝 갈고리. G4b는 세로 쌓기 때 놓았고, 이제 sysmarks에서 순서대로.
-- **tempo**: 말(serif 1.6 sp) + 메트로놈(적힌 음가의 머리를 0.6배로, stem·flag·점, "= 120", 괄호면 "(" … ")"). 표시가 없고 plan이 `heading`으로 그리라는 첫 tempo(앱의 "♩ = N" 머리, G4a의 ledger `playback-tempo`)는 "♩ = N". 음 왼쪽에 맞춤. 코퍼스 tempo 객체 886(대부분 heading의 조각).
+- **tempo**: 말(serif 1.6 sp) + 메트로놈(적힌 음가의 머리를 0.6배로, stem·flag·점, "= 120", 괄호면 "(" … ")"). 표시가 없고 plan이 `heading`으로 그리라는 첫 tempo(앱의 "♩ = N" 머리, G4a의 ledger `playback-tempo`)는 "♩ = N". 음 왼쪽에 맞춤. 코퍼스 tempo 객체 886 (데스크톱) — heading "♩ = N"의 조각은 그 가운데 81 (MIDI 가져오기 27곡, 파일의 tempo event에서, G4-F12), 805는 파일이 인쇄한 표시 (Fixer 정정, §36.18.5; 처음 기록은 "대부분 heading의 조각"). 파일이 메트로놈 둘레에 인쇄한 말("Molto Allegro (" … ")")은 Fixer부터 그 줄에 (§36.18.2).
 - **rehearsal**: sans-bold 1.5 sp, 세로줄 x에서, 0.3 sp 틀.
 - **jump**: segno·coda는 SMuFL glyph(2.4 sp em)를 세로줄 가운데에; 말(serif-italic 1.4 sp)은 그래프 text, 없으면 D.C., D.S., Fine, To Coda. 마디 끝에 선 것은 세로줄에 오른쪽 맞춤, 마디 시작은 세로줄 뒤, 그 밖은 음 왼쪽. 그래프의 placement가 below면 가장 낮은 staff 아래 (sonatina/012·015·017의 Fine).
 - **words**: serif-italic 1.4 sp, 공백을 하나로. part의 첫 staff 위는 위쪽 줄의 바깥, 가장 낮은 staff 아래는 아래쪽 줄, 그 밖(오른손 아래, 왼손 위)은 셈여림 줄. 마디 끝의 words는 세로줄에 오른쪽 맞춤.
@@ -3326,7 +3326,7 @@ Implementer, 2026-09-26. 브랜치 `g4d1b-system-marks` (`D:/PPP-g4`), 시작 `7
 ### 36.7 가사 (§10.2 순서 7; A12, E24)
 
 - 그 **voice의 staff 아래**, 절(verse)마다 system당 한 기준선, 음절은 그 음 머리의 가운데에. serif 1.3 sp. 음절 폭(과 이어지는 음절이면 hyphen 자리)은 기둥의 rod에 들어가서 만나지 않는다 (만나면 오른쪽으로).
-- 단어 안의 음절 사이(begin·middle 뒤)에 hyphen(폭 0.6 sp)을 자리가 있으면. melisma 연장선(`extend`)은 그리지 않는다 (§36.19).
+- 단어 안의 음절 사이(begin·middle 뒤)에 hyphen(폭 0.6 sp)을 자리가 있으면. melisma 연장선(`extend`)은 그리지 않는다 (§36.20).
 
 ### 36.8 세로 배치 (§15.3; A25)와 courtesy (§15.4; A11)
 
@@ -3362,7 +3362,7 @@ Implementer, 2026-09-26. 브랜치 `g4d1b-system-marks` (`D:/PPP-g4`), 시작 `7
 | `eg.courtesy.missing` | §36.8 | §15.4, A11 |
 | `eg.accidental.bracket_err` | §36.9 | R5 |
 
-기존 metric의 확장: `eg.overlap.text`·`text_text`·`mark_mark`·`mark_note`에 1b의 글자·선 종류 (한 기호의 조각 — 셈여림의 글자들, 코드명의 조각, tempo의 말과 음, rehearsal과 틀, volta와 번호 — 은 `group`으로 제외) = **A20 전체**; `eg.text.width_err`의 허용은 size의 0.01 반올림만큼(em당 0.005 sp); FAR는 1b의 줄을 한 항목(조각의 합)으로 재고, 두 보표 사이면 가까운 보표에서; `eg.layout.far_placements`(1a의 기호, 37 그대로)와 **새 기록 키** `eg.layout.far_placements_system`(1b의 줄, LOWER; r 23, e 0, x 0) — 높은 음 위의 바깥 줄은 8 sp를 넘을 수 있고 모두 진단된다 (`far_undiagnosed` 0).
+기존 metric의 확장: `eg.overlap.text`·`text_text`·`mark_mark`·`mark_note`에 1b의 글자·선 종류 (한 기호의 조각 — 셈여림의 글자들, 코드명의 조각, tempo의 말과 음, rehearsal과 틀, volta와 번호 — 은 `group`으로 제외) = **A20 전체**; `eg.text.width_err`의 허용은 size의 0.01 반올림만큼(em당 0.005 sp); FAR는 1b의 줄을 한 항목(조각의 합)으로 재고, 두 보표 사이면 가까운 보표에서; `eg.layout.far_placements`(1a의 기호: r 16, 코퍼스 35 — E fixture 둘을 더해 808 layout에서 37 — 모두 그대로; Fixer 정정, §36.18.5)와 **새 기록 키** `eg.layout.far_placements_system`(1b의 줄, LOWER; r 23, e 0, x 0 — Fixer 뒤 r 8, 코퍼스 63 → 28, §36.18.2) — 높은 음 위의 바깥 줄은 8 sp를 넘을 수 있고 모두 진단된다 (`far_undiagnosed` 0).
 
 `skyline.collisions`(layout의 자기 검사, `HARD_VIOLATION`)의 H5에 1b의 글자 종류; 코퍼스 0.
 
@@ -3410,7 +3410,7 @@ G4b–G4d-1a의 틀 그대로 (CRLF 사본, anchor 정확히 한 번, 출력이 
 
 | # | 기준 | 증거 | 판정 |
 | --- | --- | --- | --- |
-| A8 | 셈여림, hairpin, words, rehearsal, tempo(말·메트로놈·괄호), 코드명, jump가 그래프 위치에 | `eg.mark.missing.*` 0, bench `eg.mark.drawn_ratio.{dynamic, wedge, words, rehearsal, tempo, chord, jump, ending}` 1 (layout 기준), side·S2·S5·volta·chord·order·content 0; E16, E22, E25, E35 (`sysmarks.test.js`); M13, DB, HT, HL, HS, DS, VE, CP, RO, TC | PASS |
+| A8 | 셈여림, hairpin, words, rehearsal, tempo(말·메트로놈·괄호), 코드명, jump가 그래프 위치에 | `eg.mark.missing.*` 0, bench `eg.mark.drawn_ratio.{dynamic, wedge, words, rehearsal, tempo, chord, jump, ending}` 1 (layout 기준), side·S2·S5·volta·chord·order·content 0; E16, E22, E25, E35 (`sysmarks.test.js`); M13, DB, HT, HL, HS, DS, VE, CP, RO, TC; Fixer (§36.18): `eg.mark.anchor_err`, `eg.hairpin.extent_err`, `eg.tempo.split_err`, `eg.words.push_err`, `eg.row.centre_err` 0, mutation TW, R-DX, R-WX, R-TX, R-RX, R-JX, R-HE, R-HS0, R-HB, R-WP, R-CB, R-CB2 | PASS |
 | A9 | pedal 시작·끝·change가 `mark`대로, change가 뗌으로 보이지 않음 | `eg.pedal.errors`·`change_err`·`mark.missing.pedal(-change)` 0, drawn_ratio 1; E17(sign, line + change, 녹음 모양), E37(sign change, system 넘는 line + change), E38; M19, PE | PASS |
 | A10 | ottava가 걸친 event를 정확히, 머리는 적힌 높이, 15ma, system 넘김 "(8)" | `eg.ottava.extent_err`·`label_err`·`event.written_diff`·`layout.pitch_y_err` 0; E18(8va·8vb·15ma, staff 없는 8va가 두 staff에), E37("(8)"), 코퍼스 "(8)" 84; M20, OS, OL; L3 re-bless | PASS |
 | A12 (가사) | 가사 기본 | `eg.lyric.staff_err`·`place_err`·`mark.missing.lyric` 0; E24(두 절, hyphen), E35(voice + piano), burgmuller25/013; LW, LP | PASS |
@@ -3424,7 +3424,7 @@ G4b–G4d-1a의 틀 그대로 (CRLF 사본, anchor 정확히 한 번, 출력이 
 | A28 | Node = Chrome | Chrome 153: layout 808/808, SVG 808/808 바이트 동일, 네트워크 0 | PASS |
 | A29 | DOM 측정 0 | A29 검사 (`sysmarks.js` PURE), 글자 폭은 표만 | PASS |
 | B1–B7, B9 | §19.2 | §36.14 | PASS (B5는 G4f 판정) |
-| 버전 규칙 | 출력이 바뀌면 올림 | `plan/3`, `engr/4`; `layout-hashes.js --write` 음성 대조: engr/3로 되돌리면 "REFUSED: 236 layout hashes …", plan/2로 되돌리면 "REFUSED: 48 plans …", 아무것도 안 씀 | PASS |
+| 버전 규칙 | 출력이 바뀌면 올림 | `plan/3`, `engr/4`; `layout-hashes.js --write` 음성 대조: engr/3로 되돌리면 "REFUSED: 236 layout hashes …", plan/2로 되돌리면 "REFUSED: 49 plans …" (리뷰가 같은 commit에서 다시 돌린 수; 처음 기록의 48은 틀림, §36.18.5), 아무것도 안 씀 | PASS |
 
 ### 36.14 성능 (이 PC, Node 24.17, `layout-perf.js` 5회 중앙값, ms)
 
@@ -3465,33 +3465,154 @@ G4b–G4d-1a의 틀 그대로 (CRLF 사본, anchor 정확히 한 번, 출력이 
 | --- | --- | --- |
 | SERIALIZATION_ONLY `(version)` | 64 | 버전 이름만 — system에 붙는 기호가 없는 곡 |
 | GEOMETRY_ONLY | 2 | E32 × 2: 괄호 임시표의 괄호가 임시표 높이로 (R5) |
-| LEDGER_CHANGE | 170 | 새로 그린 것 (종류별 쌍 수): tempo 152 (대부분 plan이 그리라는 heading "♩ = N"), words 66, 셈여림 56, hairpin 34, ottava·ottava-line 16, pedal·pedal-line 10, pedal-change 6, volta 번호 10 (따로 된 글자가 됨), 가사 4·hyphen 2, 코드명 4, jump 4, rehearsal·틀 2 |
+| LEDGER_CHANGE | 170 | 새로 그린 것 (종류별 쌍 수): tempo 152 (76곡 × 2 — 모두 파일이 인쇄한 표시: 이 118곡에 heading "♩ = N"은 없다, heading은 코퍼스의 MIDI 가져오기 27곡에만 선다 (G4-F12); Fixer 정정, §36.18.5 — 처음 기록은 "대부분 heading"), words 66, 셈여림 56, hairpin 34, ottava·ottava-line 16, pedal·pedal-line 10, pedal-change 6, volta 번호 10 (따로 된 글자가 됨), 가사 4·hyphen 2, 코드명 4, jump 4, rehearsal·틀 2 |
 
-LEDGER_CHANGE 170쌍 가운데 이미 있던 객체가 **x로 움직인 것은 6쌍**(E24·E25·E35의 두 config: 가사·코드명의 폭이 간격에 들어감; E25 휴대폰은 1 → 3 system), **세로로만 움직인 것은 158쌍**(새 줄 — 위쪽 tempo 줄, 두 보표 사이 셈여림 줄과 그 가운데 맞춤, pedal 줄 — 이 staff·system 간격을 바꿈), 그대로인 것 6쌍 (이 세는 도구는 scratch의 `audit.js`, 커밋 안 함). plan은 48/118곡에서 출력이 바뀌었다 (part와 `more`); 나머지 70곡은 버전 이름만. L1은 나빠지지 않았고 (baseline은 키를 더함) L2 영목표는 전부 0. **bless 이유**: G4d-1b가 system에 붙는 기호를 그리고, 세로 배치에 넣고, R5를 고치고, 버전을 올렸기 때문 (G4-D1a-1) — 그 밖의 이유로 바뀐 쌍은 없다.
+LEDGER_CHANGE 170쌍 가운데 이미 있던 객체가 **x로 움직인 것은 6쌍**(E24·E25·E35의 두 config: 가사·코드명의 폭이 간격에 들어감; E25 휴대폰은 1 → 3 system), **세로로만 움직인 것은 158쌍**(새 줄 — 위쪽 tempo 줄, 두 보표 사이 셈여림 줄과 그 가운데 맞춤, pedal 줄 — 이 staff·system 간격을 바꿈), 그대로인 것 6쌍 (이 세는 도구는 scratch의 `audit.js`, 커밋 안 함). plan 출력은 같은 입력(`ee87449`의 fixture)을 `747e45e`와 `17a38f3`의 `plan()`에 넣고 버전 이름을 빼고 비교하면 **45/118곡**에서 바뀌었고 (모두 `part`·`more`), 버전 guard가 보는 것(각 commit이 제 fixture로 만든 plan)으로는 **49** (= 45 + 파일만 바뀐 fixture 넷); 나머지는 버전 이름만 (Fixer 정정, §36.18.5 — 처음 기록의 "48"은 어느 셈으로도 다시 나오지 않는다). L1은 나빠지지 않았고 (baseline은 키를 더함) L2 영목표는 전부 0. **bless 이유**: G4d-1b가 system에 붙는 기호를 그리고, 세로 배치에 넣고, R5를 고치고, 버전을 올렸기 때문 (G4-D1a-1) — 그 밖의 이유로 바뀐 쌍은 없다.
 
 ### 36.17 Fixture
 
 `make-e-fixtures.js --check` PASS, 40개 그대로. 바꾼 아홉: **E16** 8마디 — 다섯 마디 diminuendo가 모든 폭에서 system을 넘음, cresc., 위 보표 위 mf·아래 보표 아래 p, 16분음표 간격의 sfz·ff, "p dolce"; **E19** 6마디 — 5마디에서 높은음자리표로 돌아옴 (system 넘김); **E20** 6마디 — 조 변경이 5마디 (system 넘김); **E21** 8마디 — cut time이 5마디, hidden이 7마디; **E22** — "Allegro (♩ = 120)", rehearsal "A"; **E24** 2마디 — 두 절, 두 음에 걸친 단어; **E25** 3마디 — 8분음표마다 긴 코드명(CM7, F♯m7♭5, B♭7/D …), 음이 없는 시각의 코드명; **E35** — voice의 placement 없는 mf와 코드명, piano의 staff 없는 p; **E37** — bar 3 sign pedal change, bar 7–10 8va, bar 11–14 line pedal (bar 13 change) — 모든 폭에서 system을 넘음. **E17·E18은 그대로** (§36.12 5). `e-fixtures.test.js`가 새 내용을 확인한다.
 
-### 36.18 PNG (직접 봄; `NODE_PATH=D:/PPP/node_modules node tests/engrave/tools/render-png.js … --scale=14`, gitignore)
+### 36.18 리뷰와 Fixer (2026-09-26)
 
-`tests/engrave/out/png/g4d1b/`: `e-E16-dynamics-hairpins.desktop.png`·`.phone.png`, `e-E17-pedal.desktop.png`·`.phone.png`, `e-E18-ottava.desktop.png`·`.phone.png`, `e-E19-clefs.desktop.png`·`.phone.png`, `e-E20-key-change.desktop.png`·`.phone.png`, `e-E21-meter.desktop.png`·`.phone.png`, `e-E22-repeats-jumps.desktop.png`·`.phone.png`, `e-E23-fingering.desktop.png`, `e-E24-lyrics.desktop.png`·`.phone.png`, `e-E25-chords-dense.desktop.png`·`.phone.png`, `e-E32-accidentals-cautionary.desktop.png`, `e-E35-voice-and-piano.desktop.png`·`.phone.png`, `e-E37-long.desktop.png`·`.desktop.clip.png`·`.phone.png`; 카탈로그(G0 hold-out 아님) `burgmuller25-015.desktop.png`·`.phone.png`(셈여림·hairpin·pedal·8va), `sonatina-028.desktop.png`(셈여림·hairpin·pedal·tempo), `czerny849-020.desktop.png`(8va와 "(8)" 이어짐). 본 것: 두 보표 사이 가운데의 셈여림과 hairpin(양끝 0.5 sp), 휴대폰에서 한 줄 바깥으로 간 ff, "p dolce"·"p misterioso"; sign pedal의 "* Ped." change, line pedal의 notch와 system 넘김, E17의 녹음 모양; 8va·8vb·15ma, 두 staff에 걸친 8va, system 넘김 "(8)" 뒤 닫는 갈고리, 적힌 높이의 머리; volta 번호, "Allegro (♩ = 120)", 틀 안 "A", segno·coda, 세로줄에 맞춘 Fine·D.S. al Coda; 두 절의 가사와 hyphen; 빽빽한 코드명(♯♭ glyph)과 밀린 Am7; system 끝의 courtesy 조표·박자·작은 clef; E32의 [♭]. **관찰** (고치지 않음, M-H1): czerny849/020처럼 긴 phrase slur가 있으면 ottava가 그 바깥(§10.2 순서대로)이라 음에서 멀다; tempo의 heading "♩ = N"이 많은 곡의 첫머리에 새로 선다.
+입력: G4d-1b 독립 리뷰 (read-only, 대상 `ee87449`; 증거는 리뷰 scratchpad `g4d1b-review/`의 스크립트·`logs/`·`png/`)의 판정 **NEEDS_FIX — BLOCKER 0, MAJOR 3, MINOR 3**. 리뷰가 확인한 것: 지어낸 기보 없음 (그려진 메트로놈 표시는 모두 원본에 인쇄되어 있다), 약해진 gate 없음, re-bless는 정직함, A9·A10 성립, Windows = Linux = Chrome, legacy parity 16/16. Lead의 Fixer 지시: MAJOR R1–R3과 기록 오류(M1)를 고치고 그 밖은 손대지 않는다 (M2는 R1에서 저절로 나올 때만). 같은 worktree `D:/PPP-g4`, 브랜치 `g4d1b-system-marks`, 시작 `ee87449`. 리뷰의 하네스는 생각만 빌렸고 (변이의 anchor, WMW 셈), 커밋한 metric·fixture·mutation은 새로 썼다. `scoregraph/`·plan·앱 파일·`index.html`·`server.js`는 바이트 그대로 (`git diff 747e45e`의 앱 쪽 비어 있음; plan 출력 불변이라 `plan/3` 그대로). 결정은 DECISIONS G4-D1b-17–24. (이 절의 번호는 Lead 지시대로 §36.18이고, implementer의 PNG·남은 것은 §36.19·§36.20으로 번호만 옮겼다.)
 
-### 36.19 남은 것
+"지금"의 수는 모두 E 40 + 코퍼스 347 + golden 17 = 404곡 × 두 config = 808 layout (따로 적지 않으면), "`ee87449`"의 수는 `ee87449`의 `engrave/`로 **오늘의 입력**을 배치해 오늘의 `l2.js`로 잰 것이다.
+
+#### 36.18.1 지적과 처리
+
+| # | 지적 (리뷰) | 처리 | 어디 |
+| --- | --- | --- | --- |
+| R1 (MAJOR) | 메트로놈 표시 둘레의 tempo 말이 다른 줄로 갈라지고 빈 "( )"가 남음: 파일은 "Molto Allegro (", 메트로놈, ")"를 한 direction으로 인쇄하는데 (importer는 앞 말 하나만 tempo text로 접는다, `musicxml-import.js:737`) `sysmarks.js`가 말을 바깥 words 줄로, 메트로놈을 tempo 줄로 보냄 — 카탈로그 20곡(czerny849 19, hanon/001), R suite 8곡; 이 말이 system 줄 FAR 63 가운데 38 | **FIXED** — 말은 tempo 줄에서 메트로놈 앞·뒤로; 영목표 `eg.tempo.split_err`; E22에 두 모양; mutation TW | §36.18.2 |
+| R2 (MAJOR) | A8의 "그래프 위치"를 layout hash만 지킴: `eg.mark.missing.*`는 그 종류의 객체가 ref를 이름 대는지만 보고 (hairpin의 첫 조각이 모든 system을 채움), hairpin 검사는 수평·모양·간격만 봄; 리뷰의 변이 여덟(R-DX, R-WX, R-TX, R-RX, R-JX, R-HE, R-HS0, R-HB)이 출력을 바꾸는데 영목표 metric은 하나도 안 움직임 | **FIXED** — `eg.mark.anchor_err`, `eg.hairpin.extent_err`; 여덟 변이가 이름으로 잡힘 | §36.18.3 |
+| R3 (MAJOR) | 이름 붙은 metric이 없는 새 규칙 둘: G4-D1b-5 사이 줄의 가운데 맞춤 (R-CB `void centreBands`가 40여 layout을 바꾸고 metric 0), G4-D1b-4 셈여림 곁 words는 그 뒤로 최대 4 sp (R-WP `PUSH_MAX = -1`이 burgmuller25/013·015, czerny849/005·018을 바꾸고 metric 0) | **FIXED** — `eg.row.centre_err`, `eg.words.push_err`; mutation R-CB, R-CB2, R-WP; "최대 4 sp"를 코드도 지키게 (출력 변화 0) | §36.18.4 |
+| M1 (MINOR) | 기록 오류: tempo 152쌍이 "대부분 heading ♩ = N", plan 48곡, `far_placements` 37 | **FIXED** (문서) | §36.18.5 |
+| M2 (MINOR) | 따로 된 direction의 tempo 말이 메트로놈 위에 쌓임 (czerny599/054 "Moderato" over "♩ = 100") | R1에서 저절로 나오지 않음 → **M-H1 watch list** | §36.18.8 |
+| M3 (MINOR) | Chrome 4× CPU에서 한 호출이 50 ms를 넘음 | **G4f** (손대지 않음) | §36.18.8 |
+
+#### 36.18.2 R1 — 메트로놈 둘레의 말은 그 줄에 (`engrave/sysmarks.js`; G4-D1b-17, 18)
+
+- **원인**: 원본의 한 direction `<words>Molto Allegro ( </words><metronome>…</metronome><words> )</words>`에서 importer는 메트로놈 앞의 말이 **하나**일 때만 그것을 tempo의 text로 접는다; 말이 둘이면 둘 다 그 자리의 words로 남는다 (`scoregraph/`는 이 goal 밖). layout은 그 words를 위쪽 줄 바깥(jump·words 줄)에 따로, 메트로놈을 tempo 줄에 그렸다: "Molto Allegro ( )" 위에 "𝅗𝅥 = 100". 코퍼스 20곡이 모두 이 모양(WMW)이다: czerny849/001·002·005–008·011–014·016–024의 "… ( " M " )", hanon/001의 "(M.M. " M " to 108.)".
+- **규칙** (G4-D1b-17): 메트로놈 표시가 있는 tempo의 **part**(그래프 `display`의 part, 없으면 첫 part)에 속하고 그 tempo와 **같은 (m, at)**에 선, placement가 below가 아닌 words 가운데 **괄호가 맞지 않는 것**은 tempo의 줄이다 — 여는 괄호가 남는 것은 메트로놈 앞, 닫는 괄호가 남는 것은 그 뒤, 각각 그래프 순서로. 앞의 말은 그것이 여는 괄호 앞까지 tempo의 글꼴(serif 1.6), 그 괄호부터 메트로놈의 글꼴(serif 1.4)로 — 괄호로 끝나면 음표에 붙여; 뒤의 말은 메트로놈의 글꼴로 — ")"로 시작하면 숫자에 붙여. 그래서 czerny849/002는 E22의 `parens`와 같은 모양 "Molto Allegro (𝅗𝅥 = 100)", hanon/001은 "(M.M. ♩ = 60 to 108.)" 한 줄이다. 텍스트 규칙("(로 끝남"/")로 시작")만으로는 hanon의 "(M.M. "·" to 108.)"을 못 잡아 괄호의 짝으로 정했다.
+- **객체**: 말의 조각은 `words` 객체 — id는 그 말의 그래프 ID(조각이 둘이면 `ID#0`, `ID#1`), refs는 그 말, `group`은 tempo ID(한 기호: A20의 겹침에서 서로 빠짐). 그래서 `eg.mark.missing.words`는 그대로 성립하고, `eg.text.content_err`는 words의 조각을 왼쪽부터 공백으로 이어 읽는다 (l2 한 줄 고침). DOM은 `g.ppp-words[data-ref]` 그대로.
+- **새 영목표 `eg.tempo.split_err`** (`l2.js`, 규칙을 다시 적음): 위 규칙의 말마다 그려진 조각이 tempo의 "= N"과 같은 system·staff·기준선(0.05 sp)에 있고, 여는 말은 메트로놈 음표 머리 앞에서 끝나고 닫는 말은 "= N" 뒤에서 시작; 그리고 어느 글자 줄에서도 빈 "( )" — "("로 끝나는 조각 다음 조각이 ")"로 시작하고 그 사이에 그려진 것이 없음, 또는 "( )"를 담은 글자 — 가 없음.
+
+| | `ee87449` | 지금 | mutation |
+| --- | --- | --- | --- |
+| `eg.tempo.split_err` (808 layout) | **118** — 20곡 40 layout (czerny849 layout마다 3: 두 말이 다른 줄 + 빈 "( )"; hanon/001 2) | 0 | TW (16) |
+| 그 가운데 R suite (czerny849/002·005·007·018·020·022·023, hanon/001 × 두 config) | **46** | 0 | — |
+| system 줄 FAR (`eg.layout.far_placements_system`, 기록) | 코퍼스 63, r 23 | 코퍼스 28, r 8 | — |
+
+- **fixture E22** (40개 그대로): 5마디 "Più mosso (" + ♩ = 132 + ")" (Czerny의 모양), 6마디 "(M.M. " + ♩ = 60 + " to 72.)" (Hanon의 모양) — 한 direction씩, `make-e-fixtures.js`의 `tempoAround`. `e-fixtures.test.js`가 plan의 tempo 셋과 words 다섯을, `sysmarks.test.js`가 두 폭에서 "Più mosso ( ♩ = 132 )"·"(M.M. ♩ = 60 to 72.)"가 한 기준선의 한 줄이고 말이 제 ID를 이름 댐을 고정한다.
+- **mutation TW**: 괄호 짝을 늘 0으로 (말을 words 줄로 되돌림, 곧 `ee87449`) → `eg.tempo.split_err` 16 (E22, czerny849/005).
+- **본 것**: czerny849/002, hanon/001 전후 (§36.18.7).
+- **M2** (G4-D1b-18): 파일이 **따로 된 direction**으로 적은 tempo 말(czerny599/054 "Moderato" 위, "♩ = 100" 아래)은 합치지 않았다. 규칙이 저절로 넓어지지 않는다: 코퍼스에서 메트로놈만 있는 tempo와 같은 자리에 괄호 없는 words 하나가 따로 선 곳이 54이고, 그 가운데 czerny599/038 "dolce"처럼 tempo 말이 아닌 것도 있다 — 어느 것이 tempo 말인지는 글자 목록이나 원본의 좌표가 있어야 정할 수 있다. **M-H1 watch list**로.
+
+#### 36.18.3 R2 — A8 "그래프 위치" (`tests/engrave/l2.js`; G4-D1b-19, 20)
+
+**`eg.mark.anchor_err`** — 기호마다 그 규칙이 두는 곳 (sysmarks를 읽지 않고 다시 적음; 0.02 sp = 반올림 둘):
+
+| 종류 | 규칙 |
+| --- | --- |
+| 셈여림 | 글자 glyph들이 그 시각에 시작하는 음의 가운데 — 그래프가 event를 말하면 그 event의 머리, 아니면 그 staff(§36.3의 자리 규칙대로), 없으면 part의 다른 staff, 없으면 그 시각의 x; 말로 된 셈여림은 거기서 시작. 한 기호가 두 ID를 이름 대면(두 보표가 다 적음) 둘 중 하나에 맞으면 됨 |
+| words (메트로놈 둘레 말 밖) | 그 시각의 음(없으면 시각의 x) 왼쪽; 마디 끝이면 세로줄에 오른쪽 맞춤; system 끝을 넘으면 안으로 |
+| tempo 줄 | 그 시각에 top staff에서 시작하는 음 (없으면 그 part의 다른 staff, 없으면 시각의 x) — 줄 전체(메트로놈 둘레 말 포함)의 왼쪽 |
+| rehearsal | 글자가 세로줄(마디 시작)에, 아니면 그 시각의 x |
+| jump | 말: 마디 끝이면 세로줄에 오른쪽 맞춤, 마디 시작이면 세로줄 뒤 0.3 sp, 그 밖은 그 시각의 음; segno·coda glyph: 세로줄(마디 시작) 또는 그 시각의 x에 가운데 |
+| 옮김 | 줄이 옮기는 만큼만: 오른쪽으로는 같은 줄(같은 system·staff·쪽·기준선)의 항목 뒤 0.4 sp (셈여림 곁 words는 0.35 — 그 규칙은 `eg.words.push_err`) — system 끝에서 당겨진 항목은 그 앞 항목들도 함께 당겨지므로 민 항목은 늘 앞 항목 뒤 정확히 그만큼; 왼쪽으로는 system 끝, 또는 같은 줄 다음 항목 0.4 sp 앞에서 끝남 |
+
+**`eg.hairpin.extent_err`** — hairpin은 그 시간의 일부를 담은 system마다 **한 조각**, 그 밖의 system에는 없음; 조각의 시작은 그 첫 시각에 그 줄(행)의 셈여림 뒤 0.5 sp (없으면 첫 음의 왼쪽, 시각의 x), system을 넘어 이어지면 그 system 첫 음 기둥 1.0 sp 앞; 끝은 마지막 시각의 셈여림 0.5 sp 앞 (없으면 멈추는 음 — 마디 끝이나 시작이면 세로줄 — 0.5 sp 앞), 이어지면 마지막 세로줄 1.0 sp 앞. 양끝은 그 행의 셈여림과 0.5 sp를 지키려고만 옮겨지고 (S5), 끝은 `HAIRPIN_OVERLAP`·`HAIRPIN_SHORT`가 이름 댄 것만 따로. 0.05 sp.
+
+| 리뷰의 변이 | 심은 결함 | 잡은 이름 (probe × 두 config 합) | `ee87449` · 지금 |
+| --- | --- | --- | --- |
+| R-DX | 셈여림(과 그 곁 words)을 한 박 뒤 음에 | `eg.mark.anchor_err` 18 (E16; `eg.words.push_err`도) | 0 · 0 |
+| R-WX | words를 한 박 뒤 음에 | `eg.mark.anchor_err` 2 (E16의 cresc.) | 0 · 0 |
+| R-TX | tempo를 한 박 뒤 음에 | `eg.mark.anchor_err` 8 (E22, 합성 `upper`) | 0 · 0 |
+| R-RX | rehearsal을 한 마디 뒤 세로줄에 | `eg.mark.anchor_err` 2 (E22) | 0 · 0 |
+| R-JX | 마디 끝의 jump 말(D.S. al Coda)을 마디 시작에 | `eg.mark.anchor_err` 2 (E22) | 0 · 0 |
+| R-HE | 음에서 끝나는 hairpin이 3 sp 일찍 멈춤 | `eg.hairpin.extent_err` 18 (czerny849/005) | 0 · 0 |
+| R-HS0 | 음에서 시작하는 hairpin이 3 sp 늦게 | `eg.hairpin.extent_err` 2 (E16) | 0 · 0 |
+| R-HB | system을 넘는 hairpin의 뒤 조각을 버림 | `eg.hairpin.extent_err` 3 (E16) | 0 · 0 |
+
+  두 metric은 `ee87449`에서도 0이다 — 코드는 규칙대로였고 지키는 것이 hash뿐이었다. 기존 변이 가운데 HT(`hairpin.extent_err`도), DS(`mark.anchor_err`도)가 새 metric을 함께 움직인다. Fixer가 처음 쓴 판에서는 R-RX가 E22 데스크톱에서 통과했다 — 한 마디 뒤가 곧 system 끝이라 "system 끝으로 당겨진" 것으로 읽혔다; 민 항목은 앞 항목 뒤 정확히 0.4 sp라는 규칙(위 표 "옮김")으로 고쳐 잡는다.
+
+#### 36.18.4 R3 — G4-D1b-4와 G4-D1b-5 (`l2.js`, `sysmarks.js`; G4-D1b-21, 22)
+
+- **`eg.words.push_err`** (G4-D1b-4): 셈여림 줄의 words(두 보표 사이, 또는 한 staff part의 아래 — §36.6의 자리 규칙)는 그 행의 **첫 줄**(보표에 가장 가까운)에서, 제 자리 또는 그 줄 항목 뒤 0.35 sp 가운데 **아무것도 만나지 않는(0.2 sp) 가장 가까운 곳** — 그것이 제 자리에서 4 sp 안이고 system 안이면; 아니면 한 줄 바깥에서 제 자리에. 첫 줄이 그 말에게 담는 것: 셈여림, hairpin, 그리고 (자리, 그래프 순서로) 앞의 words.
+- **코드를 규칙에 맞춤**: `lines()`는 마지막 밀기가 4 sp를 넘겨도 첫 줄에 두었다 (밀기를 계속할지는 밀기 전 거리로 봄) — "최대 4 sp"와 다르다. 이제 첫 줄에 남는 것은 제 자리이거나 4 sp 안으로 밀린 것만. 808 layout에서 출력 변화 0 (`ee87449`에서도 `eg.words.push_err` 0 — 그런 말이 코퍼스에 없다).
+- **`eg.row.centre_err`** (G4-D1b-5): 두 보표 사이 줄(위 보표 아래의 셈여림·hairpin·words)의 위 틈 gu(위 보표가 그 항목들 위로 내려온 곳까지, 그 줄 밖의 것만)와 아래 틈 gd(아래 보표가 올라온 곳까지)를 stacking이 읽듯 0.25 sp 칸으로 — 곡선은 x 0.5 sp마다 두 끝의 높이로(§10.1) — 읽어, gd ≥ 1.0 sp이고 셋 가운데 하나: **gu = gd** (가운데), **gu < gd = 1.0 sp** (가운데면 아래 보표에 1.0 sp보다 가까움), **gu > gd** (가운데가 위: 줄은 위로 옮기지 않으므로 놓인 자리 — 그 항목 하나 곁 0.25 sp 안의 위 보표 내용에서 0.5 sp). 0.15 sp; 칸은 반올림 전처럼 그대로, 또는 0.01만큼 넓혀 읽어 어느 한쪽이 맞으면.
+  - **808 layout의 사이 줄 1,618개** (layout 자신의 up·down으로): 가운데 738, 아래 보표에서 1.0 sp에 묶임 879 (그 system의 보표 간격을 사이 줄이 정함), 놓인 자리 1. 그 하나 — 셋째 경우가 있는 이유: czerny849/002 데스크톱 system 10의 ff는 위 보표의 맨 내용에서 2.2 sp 아래에 놓였다 — 옆의 tuplet 숫자가 배치 skyline에 양쪽 0.2 sp 여유를 두고 들어가 ff의 칸에 닿기 때문이다 (tuplet 상자 51.65–52.57, skyline 51.45–52.77). 가운데가 그 위라 줄은 그대로 선다 (G4-D1b-5의 "아래로만"). 처음 쓴 metric은 이 줄을 틀렸다고 셌다.
+- **mutation**: R-WP `PUSH_MAX = -1` → `eg.words.push_err` 4 (burgmuller25/015, czerny849/005); R-CB `void centreBands` → `eg.row.centre_err` 5 (E16); R-CB2 (Fixer의 것) 줄을 아래 보표 내용까지 내림 → `eg.row.centre_err` 6 (E16; `vertical_collisions`·`staff.overlap`도). 기존 VC·M10도 `eg.row.centre_err`를 함께 움직인다.
+- **음성 대조** (`sysmarks.test.js`, 실제 layout을 망가뜨림): 새 아홉 — 닫는 괄호를 한 줄 위로·빈 "( )"(`tempo.split_err`), 셈여림 1 sp 오른쪽·tempo 2 sp 뒤·D.S. al Coda 1 sp 앞(`mark.anchor_err`), hairpin 끝 1 sp 짧게·system 넘은 뒤 조각 버림(`hairpin.extent_err`), cresc. 1 sp 뒤(`words.push_err`), 사이 줄 0.4 sp 위로(`row.centre_err`).
+
+#### 36.18.5 기록 정정 (M1, 문서만)
+
+- **tempo 152쌍**: §36.16의 "tempo 152 (대부분 plan이 그리라는 heading ♩ = N)"은 틀렸다. hash에 든 118곡 가운데 tempo를 그리는 것은 76곡(× 두 config = 152쌍)이고 **heading "♩ = N"은 하나도 없다** — 모두 파일이 인쇄한 표시다 (E22 1, R suite 58, golden 17). heading은 코퍼스의 MIDI 가져오기 27곡에만, 파일의 tempo event에서 선다 (G4-F12). §36.6의 "코퍼스 tempo 객체 886(대부분 heading의 조각)"도 같은 오류: 886 가운데 heading의 조각은 81 (27곡 × 음표·줄기·"= N"), 805는 인쇄된 표시. §36.19의 관찰("heading ♩ = N이 많은 곡의 첫머리에 새로 선다")도 같이 고쳤다. (셈: `ee87449`의 `plan()`·layout으로 ledger가 drawn인 tempo의 `heading`을 셈.)
+- **plan 48곡**: 어떻게 셌는지가 없었고 다시 나오지 않는다. 두 가지로 셌다: (A) **같은 입력**(`ee87449`의 fixture)을 `747e45e`와 `17a38f3`의 `plan()`에 넣고 버전 이름을 빼고 비교 — **45/118** (marks의 `part`만 21, lines의 `part`만 6, 둘 다 15, 셋 다와 `more` 3); (B) 버전 guard가 보는 것(각 commit이 **제 fixture**로 만든 plan) — **49** = 45 + 파일만 바뀌고 plan 코드의 변화는 닿지 않는 fixture 넷(E19, E20, E21, E24). 리뷰의 45·49와 같다. 다른 것은 모두 `part` 또는 `more`다. §36.13의 guard 음성 대조("REFUSED: 48 plans")도 49로.
+- **`far_placements` 37**: 1a 기호의 FAR는 **r 16, 코퍼스 35** (E fixture 둘 — E23 — 을 더하면 808 layout에서 37)이고 G4d-1b 전후 그대로다. §36.10을 고쳤다.
+- 고친 곳: §36.6, §36.10, §36.13 (버전 규칙 행), §36.16, §36.19 (implementer의 PNG, 옛 §36.18), §36.20 (implementer의 남은 것, 옛 §36.19 — R1인 예 하나에 표시), DECISIONS G4-D1b-1, -12, -15.
+
+#### 36.18.6 버전과 re-bless (§21.3; G4-D1b-23)
+
+- **버전**: layout 출력이 검토된 `ee87449`(engr/4)에서 바뀌었으므로 **`engr/5`** (G4-D1a-1, G4-D1a-23의 읽기). plan 출력은 그대로 — 같은 입력에서 404곡의 plan이 `ee87449`와 같다 (바뀐 plan hash는 fixture가 바뀐 E22 하나) — **`plan/3` 유지**. `layout.test.js`·`marks.test.js`의 버전 검사를 engr/5로. 참고: `layout-hashes.js --write`의 기준은 origin/main과의 merge base(`747e45e`, engr/3)라 engr/4로 두어도 거절하지 않는다 (해 봄: "wrote …") — 버전은 손으로 올렸다.
+- **`layout-diff.js --base=<ee87449의 engrave/·scoregraph/>`** (두 트리 모두 오늘의 fixture): 118곡 × 두 config = 236쌍.
+
+| 분류 | 수 | 무엇 — 이유 |
+| --- | --- | --- |
+| SERIALIZATION_ONLY `(version)` | 218 | `engr/5`만 — 객체·좌표 같음 (셈여림 곁 words의 코드 맞춤은 출력을 바꾸지 않음) |
+| LEDGER_CHANGE — words | 14 | czerny849/002, 005, 007, 018, 020, 022, 023 × 2 — **R1**: "… (" 말이 tempo 줄에서 두 조각(`ID#0`, `ID#1`)이 됨; words 줄이 없어져 그 아래 모든 것이 세로로 |
+| LEDGER_CHANGE — words | 2 | E22 × 2 — **fixture** (새 tempo 줄 둘) |
+| GEOMETRY_ONLY | 2 | hanon/001 × 2 — **R1**: 두 말이 (한 조각씩, 같은 ID로) tempo 줄로; 그 아래가 세로로 |
+
+  L1은 나빠지지 않았다 — baseline r·e·x는 새 키 다섯(0)만 더했고, 바뀐 값 하나는 내림: r `eg.layout.far_placements_system` 23 → 8 (R1). L2 영목표는 808 layout 전부 0. **bless 이유**: R1과 E22 fixture, 버전 규칙 — 그 밖의 이유로 바뀐 쌍은 없다.
+
+#### 36.18.7 회귀 (코드 커밋 `3746437`)
+
+| 검사 | Windows (`D:/PPP-g4`, Node v24.17.0) | Linux (Docker `node:24-bookworm`, Node v24.21.0; `3746437`의 `core.autocrlf=false` clone, LF) |
+| --- | --- | --- |
+| `npm run test:engrave` | **174/174** (mutation 97 + N1·N2, 약 52 s; 음성 대조 +9) | **174/174** |
+| `npm run test:scoregraph` | **214/214** | **214/214** |
+| `layout-hashes.js` | 118 × 2 layout + 118 plan 전부 커밋된 hash (다시 bless, §36.18.6) | 같음 |
+| `make-metrics`·`make-outlines`·`make-e-fixtures`·`make-corpus --check` | PASS | PASS |
+| `make-text-metrics.js --check` | PASS (캐시로 다시 만들기까지) | PASS (글꼴 캐시 없음: 형식·digest) |
+| `bench.js check --suite r / e / x` | PASS / PASS / PASS (61 / 40 / 76 graph) | PASS / PASS / PASS |
+| 새 metric의 음성 대조 | `ee87449`: `tempo.split_err` 118 (R suite 46); 넷은 0이고 제 변이로 >0 (§36.18.3–4); 지금 다섯 모두 0 | — |
+| `browser-parity.js` (A28) | Chrome 153: layout 808/808, SVG 808/808 바이트 동일 (R1이 바꾼 코퍼스 20곡과 E22 포함), E14 `<use>` 18 오차 ≤ 0.01 sp, network 0; sonatina/020 1× layout 23.8 ms, 4× CPU 118.6 ms | — |
+| legacy parity (`legacy-parity.js`; `747e45e`의 `git archive`를 8871에, 이 트리를 8872에, `NODE_ENV=production HOST=127.0.0.1`) | **16/16 바이트 동일**; 8872의 `engrave/index.js`는 `0.5.0-g4d1b`, 8871은 `0.4.0-g4d1a` — 측정 뒤 두 서버를 껐다; 8777·8788은 건드리지 않음 | — |
+| 앱 파일 | `Piano Coach App.dc.html`·`index.html`·`server.js`·`scoregraph/` 바이트 그대로 (`git diff 747e45e` 비어 있음) | — |
+
+**PNG** (직접 봄; `NODE_PATH=D:/PPP/node_modules node tests/engrave/tools/render-png.js … --scale=14`, 전은 `ee87449`의 트리, gitignore): `tests/engrave/out/png/g4d1b-fix/before/`와 `after/`에 같은 이름으로 `czerny849-002.desktop.png`·`.clip.png`(전: "Molto Allegro ( )" 위, "𝅗𝅥 = 100" 아래 두 줄; 후: "Molto Allegro (𝅗𝅥 = 100)" 한 줄, 그 아래 줄이 올라옴), `hanon-001.desktop.png`·`.clip.png`(전: "(M.M. to 108.)" 위, "♩ = 60" 아래; 후: "(M.M. ♩ = 60 to 108.)"), `burgmuller25-015.desktop.png`·`.clip.png`(전후 바이트 같은 PNG — "p misterioso"가 p 뒤 0.35 sp로 밀리고 사이 줄이 가운데; G4-D1b-4·5가 이제 metric으로 지켜짐); `after/e-E22-repeats-jumps.desktop.png`("Più mosso (♩ = 132)", "(M.M. ♩ = 60 to 72.)").
+
+#### 36.18.8 남은 것과 맡긴 곳
+
+- **BLOCKER 0, MAJOR 0** (Fixer 판정): R1–R3 FIXED, M1 FIXED.
+- **Lead가 맡긴 곳 (손대지 않음)**: M2 따로 된 direction의 tempo 말이 메트로놈 위에 쌓임 → **M-H1 watch list** (§36.18.2; 코퍼스 54곳, czerny599/038의 "dolce"처럼 tempo 말이 아닌 것이 섞임); M3 Chrome 4× CPU → **G4f**. G4d-1a의 규칙, 앱·`scoregraph/`·`server.js`·`index.html`, 페이지 통합은 건드리지 않았다.
+- **Lead가 볼 결정**: G4-D1b-17 (괄호 짝으로 합치는 규칙과 두 글꼴), G4-D1b-21 (마지막 밀기도 4 sp 안 — 코드를 규칙에 맞춤, 출력 변화 0), G4-D1b-22 (사이 줄 metric의 셋째 경우: 가운데가 위면 놓인 자리 — 배치 skyline의 여유 때문에 맨 내용보다 깊이 놓일 수 있다), G4-D1b-23 (engr/5; guard의 기준이 merge base라 engr/4도 막지 않는다).
+- **M-H1에서 볼 것**: 합쳐진 tempo 줄에서 두 글꼴 크기(말 1.6, 괄호·"= N"·뒤 말 1.4)의 모양; 위 M2.
+
+**커밋**: `3746437` (코드·테스트·fixture·baseline·layout hash), 이어서 이 기록 (G04 §36.18과 §36의 정정·번호, DECISIONS G4-D1b-17–24와 G4-D1b-1·12·15의 정정, CURRENT_STATE). `origin/g4d1b-system-marks`에 push, PR 없음.
+
+**상태: G4d-1b FIX: READY_FOR_RECHECK.**
+
+### 36.19 PNG (직접 봄; `NODE_PATH=D:/PPP/node_modules node tests/engrave/tools/render-png.js … --scale=14`, gitignore)
+
+`tests/engrave/out/png/g4d1b/`: `e-E16-dynamics-hairpins.desktop.png`·`.phone.png`, `e-E17-pedal.desktop.png`·`.phone.png`, `e-E18-ottava.desktop.png`·`.phone.png`, `e-E19-clefs.desktop.png`·`.phone.png`, `e-E20-key-change.desktop.png`·`.phone.png`, `e-E21-meter.desktop.png`·`.phone.png`, `e-E22-repeats-jumps.desktop.png`·`.phone.png`, `e-E23-fingering.desktop.png`, `e-E24-lyrics.desktop.png`·`.phone.png`, `e-E25-chords-dense.desktop.png`·`.phone.png`, `e-E32-accidentals-cautionary.desktop.png`, `e-E35-voice-and-piano.desktop.png`·`.phone.png`, `e-E37-long.desktop.png`·`.desktop.clip.png`·`.phone.png`; 카탈로그(G0 hold-out 아님) `burgmuller25-015.desktop.png`·`.phone.png`(셈여림·hairpin·pedal·8va), `sonatina-028.desktop.png`(셈여림·hairpin·pedal·tempo), `czerny849-020.desktop.png`(8va와 "(8)" 이어짐). 본 것: 두 보표 사이 가운데의 셈여림과 hairpin(양끝 0.5 sp), 휴대폰에서 한 줄 바깥으로 간 ff, "p dolce"·"p misterioso"; sign pedal의 "* Ped." change, line pedal의 notch와 system 넘김, E17의 녹음 모양; 8va·8vb·15ma, 두 staff에 걸친 8va, system 넘김 "(8)" 뒤 닫는 갈고리, 적힌 높이의 머리; volta 번호, "Allegro (♩ = 120)", 틀 안 "A", segno·coda, 세로줄에 맞춘 Fine·D.S. al Coda; 두 절의 가사와 hyphen; 빽빽한 코드명(♯♭ glyph)과 밀린 Am7; system 끝의 courtesy 조표·박자·작은 clef; E32의 [♭]. **관찰** (고치지 않음, M-H1): czerny849/020처럼 긴 phrase slur가 있으면 ottava가 그 바깥(§10.2 순서대로)이라 음에서 멀다; 파일이 인쇄한 tempo 표시(말·메트로놈)가 많은 곡의 첫머리에 새로 선다 (Fixer 정정, §36.18.5: 처음 기록은 "heading ♩ = N" — heading은 MIDI 가져오기에만).
+
+### 36.20 남은 것
 
 - **BLOCKER 0, MAJOR 0** (implementer 자체 판정).
 - MINOR·관찰:
   1. 가사의 melisma 연장선(`extend`)은 그리지 않는다 (A12 "기본"; 코퍼스 가사 1곡).
   2. ottava 레이블은 글자 (§36.12 1) — 판본의 굵은 SMuFL 숫자와 모양이 다르다. M-H1에서 볼 것.
-  3. 긴 phrase slur 바깥의 ottava·tempo 줄은 음에서 멀 수 있다 (FAR는 진단됨; `eg.layout.far_placements_system` r 23).
+  3. 긴 phrase slur 바깥의 ottava·tempo 줄은 음에서 멀 수 있다 (FAR는 진단됨; `eg.layout.far_placements_system` r 23 — Fixer 뒤 r 8).
   4. 두 보표 사이 줄의 가운데 맞춤은 줄 전체를 한 번에 옮긴다 — 한 곳이 좁으면 줄 전체가 위 보표 가까이 남는다 (S2를 지키기 위해).
-  5. words는 간격에 들어가지 않는다 — 긴 words("Molto vivace e leggiero ( ")는 한 줄 바깥이나 system 안으로 당겨진다.
+  5. words는 간격에 들어가지 않는다 — 긴 words("Molto vivace e leggiero ( ")는 한 줄 바깥이나 system 안으로 당겨진다. (Fixer: 이 예는 리뷰의 R1이었다 — 메트로놈 둘레의 말로, 이제 tempo 줄에 선다, §36.18.2.)
 - **G4d-2로**: system에 붙는 기호도 `svg.js`가 그리므로 페이지 CSS(`.ppp-dynamic`, `.ppp-pedal` …)와 테마 색; `data-plan`의 `plan/3`·`engr/4`로 캐시 키 (G4-D1a-1); `g.ppp-<종류>[data-ref]`가 새 DOM 계약 (G4-D1b-16).
 - **M-H1에서 볼 것**: 두 보표 사이 셈여림의 높이와 크기(2.5 sp em), hairpin 열림 1.1 sp, pedal 기호 크기, 코드명 폭이 간격을 넓히는 정도, heading tempo, 위 §35.19의 관찰 목록.
 
 **커밋**: `17a38f3` (코드·테스트·fixture·baseline·layout hash), 이어서 이 기록 (G04 §36, 목차; DECISIONS G4-D1b-1–16; CURRENT_STATE). `origin/g4d1b-system-marks`에 push. 병합 안 함, PR 없음.
 
-**상태: G4d-1b READY_FOR_REVIEW** — BLOCKER 0, MAJOR 0 (자체 판정).
+**상태: G4d-1b READY_FOR_REVIEW** — BLOCKER 0, MAJOR 0 (자체 판정). → 독립 리뷰 NEEDS_FIX (MAJOR 3), Fixer: §36.18 (READY_FOR_RECHECK).
 
 ---
 
