@@ -11,7 +11,8 @@ ScoreGraph에 **이미 있는** 기보 의미를 PPP의 실제 화면과 인쇄�
 - geometry-only 범위는 Lead 결정 G4-L1이다 (§27 G4b의 주): `svg.js`는 G4c, 페이지 통합은 G4d-2.
 - **G4c CLOSED — PR #15로 병합 (`e3c8c5a`)**: 독립 리뷰 NEEDS_FIX(MAJOR 2) → Fixer §34.18 → Lead 재확인 → 병합 (§34.19). MX-1도 병합됐다 (PR #13).
 - **G4d-1a CLOSED — PR #17로 병합 (`b4fe019`)**: 독립 리뷰 NEEDS_FIX(MAJOR 3) → Lead 결정 G4-L4·G4-L5 → Fixer §35.18 → Lead 재확인 → 병합 (§35.19).
-- **다음: G4d-1b** (system에 붙는 기호, 세로 배치, courtesy) (`docs/PPP_MASTER_ROADMAP.md`). 설계: Architect 2026-09-24 |
+- **G4d-1b CLOSED — PR #19로 병합 (`a6e1a75`)**: 독립 리뷰 NEEDS_FIX(MAJOR 3) → Fixer §36.18 → Lead 재확인 → 병합 (§36.21). G4d-1(Node 판각)이 끝났다.
+- **다음: G4d-2** (앱 통합, 개발용 스위치 뒤, 기본값 `'legacy'`) → M-H1 (`docs/PPP_MASTER_ROADMAP.md`). 설계: Architect 2026-09-24 |
 | 기준 커밋 | `origin/main` = `55d1bd5` (G3 PARTIAL/DEFERRED closeout, PR #8) |
 | 브랜치 / worktree | `g4-professional-engraving` / `D:/PPP-g4` |
 | 시작 검증 | `npm run test:scoregraph` → **205/205 pass** (이 세션이 `55d1bd5`에서 직접 실행) |
@@ -3613,6 +3614,57 @@ LEDGER_CHANGE 170쌍 가운데 이미 있던 객체가 **x로 움직인 것은 6
 **커밋**: `17a38f3` (코드·테스트·fixture·baseline·layout hash), 이어서 이 기록 (G04 §36, 목차; DECISIONS G4-D1b-1–16; CURRENT_STATE). `origin/g4d1b-system-marks`에 push. 병합 안 함, PR 없음.
 
 **상태: G4d-1b READY_FOR_REVIEW** — BLOCKER 0, MAJOR 0 (자체 판정). → 독립 리뷰 NEEDS_FIX (MAJOR 3), Fixer: §36.18 (READY_FOR_RECHECK).
+
+
+### 36.21 리뷰 판정·재확인·병합 (Lead, 2026-09-26)
+
+**독립 리뷰** (`ee87449`, read-only. 리뷰어 자신의 clone에서 Windows와 Linux Docker로 돌림)
+
+- 판정: **NEEDS_FIX — BLOCKER 0, MAJOR 3, MINOR 3.**
+- 확인된 것:
+  - **지어낸 기보 없음 (A13).** 그려진 metronome 표시·화음명·가사는 모두 원본에 인쇄된 것이다. 곡머리 "♩ = N"은 MIDI 가져오기 27곡뿐이고, 파일의 tempo 이벤트에서 온다.
+  - gate를 느슨하게 하지 않았다. `far_placements_system` 분리는 정당하다.
+  - 다시 bless한 64/2/170을 재현했다.
+  - A9: 기호식 change는 "✻ Ped."로 그린다 (MX1-D4와 같음).
+  - A10이 성립한다.
+  - Windows = Linux = Chrome, legacy parity 16/16.
+- MAJOR:
+  - R1: metronome 표시를 둘러싼 빠르기말이 다른 줄로 가서 빈 "( )"가 남는다 (카탈로그 20곡).
+  - R2: A8 위치(셈여림·말·tempo·rehearsal·jump의 x, hairpin 범위와 system 넘김)를 layout hash만 지킨다.
+  - R3: 새 규칙 둘(보표 사이 줄의 가운데 맞춤, 셈여림 뒤로 밀린 말)에 이름 붙은 metric이 없다.
+
+**Fixer** (§36.18): R1–R3 FIXED, 기록 정정 (M1). `engr/5`, `plan/3`.
+- R1: 빠르기말이 metronome 표시와 한 줄에 선다. `eg.tempo.split_err` 118 → 0.
+- R2: `eg.mark.anchor_err`, `eg.hairpin.extent_err`를 더했다.
+- R3: `eg.words.push_err`, `eg.row.centre_err`를 더했다.
+- 리뷰어의 mutation 12개를 모두 이름으로 잡는다.
+
+**Lead 재확인** (고친 항목만, `5e53965`의 새 clone)
+
+- gate: `test:engrave` 174/174, `test:scoregraph` 214/214. layout hash, bench r·e·x, `--check` 도구 다섯 모두 PASS.
+- 음성 대조: `ee87449`의 `sysmarks.js`를 넣으면 `tempo.split_err`가 r 46, e 10.
+- Lead가 심은 mutation:
+
+  | mutation | 잡은 metric |
+  | --- | --- |
+  | hairpin 여백 0.5 → 1.5 sp | `hairpin.extent_err` 292 |
+  | Fine·D.C.의 오른쪽 맞춤을 없앰 | `mark.anchor_err` 2 |
+  | 셈여림을 음 가운데가 아니라 음에서 시작 | `mark.anchor_err` 415 |
+  | 말을 미는 한도 4 → 8 sp | 죽은 mutation — 커밋된 입력 중 4 sp 넘게 밀리는 말이 없다. fixture 빈틈이고, 규칙 자체의 mutation(R-WP)은 잡힌다 |
+
+- 그림: czerny849/002 "Molto Allegro (𝅗𝅥 = 100)"이 한 줄, hanon/001 "(M.M. ♩ = 60 to 108.)".
+
+**병합**: PR #19, CI gate 초록, squash `a6e1a75`. **G4d-1b CLOSED — 다시 열지 않는다. G4d-1(Node 판각)이 끝났다.**
+
+**넘기는 것**
+
+- **M-H1 관찰 목록**:
+  - 따로 적힌 빠르기말이 metronome 표시 위에 쌓임 (czerny599/054);
+  - ottava 표시가 글자다 (고정된 Bravura에 ottava glyph 없음);
+  - 긴 phrase slur 위의 octave line·tempo 줄 (진단됨);
+  - melisma 연장선 없음.
+- G4f: Chrome 4× CPU.
+- 다음 엔진 단계: 4 sp 넘게 밀리는 말이 있는 fixture.
 
 ---
 
