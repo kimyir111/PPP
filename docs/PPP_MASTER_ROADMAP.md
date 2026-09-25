@@ -7,7 +7,7 @@ The operational roadmap for everything after G4a: order, dependencies, gates, an
 | Owner | The **Lead / Orchestrator** session. Implementers, reviewers and fixers read it. Only the Lead edits it. |
 | Updated | 2026-09-25 — fourth edition (Lead): **G4b CLOSED** (PR #12 `62ede61`); current: MX-1 and G4c |
 | Base | `origin/main` = `62ede61` (G4b, PR #12) plus the docs closeout |
-| Active | **MX-1** (8va and pedal `change` playback) — in independent review; **G4c** (beams, tuplets, voices, rests, grace notes, `svg.js`; `D:/PPP-g4`) — running (§14). |
+| Active | **MX-1** (8va and pedal `change` playback) — in independent review; **G4c** (beams, tuplets, voices, rests, grace notes, `svg.js`) — in independent review (§14). |
 | Lead worktree | `D:/PPP-lead`, branch `lead-master-roadmap`. The Lead writes docs only, never in an implementer's worktree. |
 | How this relates to other docs | `docs/CURRENT_STATE.md` says what is true now, with measurements. `docs/DECISIONS.md` says why. `docs/GOALS/Gxx_*.md` is the contract for one Goal: design, acceptance and implementation record. **This document says in what order, behind which gates, and what comes next.** It does not repeat the goal specs. On detail, the spec wins. On sequencing, this document wins. |
 
@@ -589,7 +589,7 @@ The record is G04 §33.17 and DECISIONS G4-L1.
 
 **Current units** (Lead-launched 2026-09-25, each the only writer in its worktree; **start no other writer in either**):
 - **MX-1 — IN REVIEW.** Handed in READY_FOR_REVIEW at `8981750` (`a3d82ae` code and tests, `8981750` docs; record `docs/GOALS/MX1_PLAYBACK_CORRECTNESS.md`, MX1-D1…D8). One independent read-only review is running. Points it must settle: the octave-shift sign flip in `parseMusicXML` (MX1-D1, beyond the brief's wording), saved songs not migrated (MX1-D3; production has 1 of 110 shared scores with an octave line, song slots are browser-local), the G0 bench still modelling the old reading (MX1-D7, to MX-2). Audit: all 34 committed octave-line files are sounding-encoded, so MX-2 gets no octave data fixes.
-- **G4c — RUNNING** in `D:/PPP-g4`. It merges after MX-1, so it takes MX-1's `scoregraph` 1.3.1 and its `tests/engrave` edits (agree/identity tests, two re-captured 8va legacy fixtures) when it lands.
+- **G4c — IN REVIEW.** Handed in READY_FOR_REVIEW at `f5517fe` (`ae96f19` code, tests and baselines; `f5517fe` docs; record G04 §34, DECISIONS G4-C1…C12, G4-B11 amended: the down-stem voice moves right at a second). Claims: the two collision ratchets at 0 and now zero-target gates; 236 layout-hash pairs re-blessed with a classification tool; M1–M5, M16 and M24 caught; `svg.js` at 0.19–0.28 of the legacy size. One independent read-only review is running; it must check that no gate was weakened to reach 0, that the re-bless is honest, and look at rendered pages. G4c merges after MX-1; the two share only `docs/CURRENT_STATE.md` and `docs/DECISIONS.md`, and the Lead re-runs `test:engrave` and `test:scoregraph` on the merged tree before the PR.
 
 MX-1 must be merged before the G4f flip. Each unit: one independent review, then a Fixer only for BLOCKER/MAJOR.
 
