@@ -16,6 +16,9 @@ tests/bench/out/
 !tests/bench/tools/
 # ... and so are the ScoreGraph tests' (fixture generators, the A/B comparison, G01)
 !tests/scoregraph/tools/
+# ... and the engraving tests' (fixture and corpus generators, the L1 benchmark, page checks, G04); their run output is not
+!tests/engrave/tools/
+tests/engrave/out/
 tests/bench/.cache/
 __pycache__/
 # Local experiments; holds copyrighted audio and PDFs that must never be committed.

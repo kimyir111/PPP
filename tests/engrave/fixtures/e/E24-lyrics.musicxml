@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- one verse under a melody, a word over two notes (G04 §22.1; written by tests/engrave/tools/make-e-fixtures.js) -->
+<score-partwise version="4.0">
+  <work><work-title>Lyrics</work-title></work>
+  <identification><creator type="composer">PPP</creator></identification>
+  <part-list><score-part id="P1"><part-name>Voice</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes><divisions>480</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff><lyric number="1"><syllabic>single</syllabic><text>Sing</text></lyric></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff><lyric number="1"><syllabic>begin</syllabic><text>hap</text></lyric></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>960</duration><voice>1</voice><type>half</type><staff>1</staff><lyric number="1"><syllabic>end</syllabic><text>py</text></lyric></note>
+      <barline location="right"><bar-style>light-heavy</bar-style></barline>
+      </measure>
+  </part>
+</score-partwise>

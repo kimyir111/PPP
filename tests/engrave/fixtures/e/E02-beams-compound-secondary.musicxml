@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- a 16th secondary beam broken inside an eighth group, and hooks (G04 §22.1; written by tests/engrave/tools/make-e-fixtures.js) -->
+<score-partwise version="4.0">
+  <work><work-title>Beams: 6/8, 12/8, secondary breaks and hooks</work-title></work>
+  <identification><creator type="composer">PPP</creator></identification>
+  <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes><divisions>480</divisions><key><fifths>0</fifths></key><time><beats>6</beats><beat-type>8</beat-type></time><staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef></attributes>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>120</duration><voice>1</voice><type>16th</type><staff>1</staff><beam number="1">begin</beam><beam number="2">begin</beam></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>120</duration><voice>1</voice><type>16th</type><staff>1</staff><beam number="1">continue</beam><beam number="2">end</beam></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>120</duration><voice>1</voice><type>16th</type><staff>1</staff><beam number="1">continue</beam><beam number="2">begin</beam></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>120</duration><voice>1</voice><type>16th</type><staff>1</staff><beam number="1">continue</beam><beam number="2">continue</beam></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>120</duration><voice>1</voice><type>16th</type><staff>1</staff><beam number="1">continue</beam><beam number="2">continue</beam></note>
+      <note><pitch><step>A</step><octave>5</octave></pitch><duration>120</duration><voice>1</voice><type>16th</type><staff>1</staff><beam number="1">end</beam><beam number="2">end</beam></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>360</duration><voice>1</voice><type>eighth</type><dot/><staff>1</staff><beam number="1">begin</beam></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>120</duration><voice>1</voice><type>16th</type><staff>1</staff><beam number="1">continue</beam><beam number="2">backward hook</beam></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>240</duration><voice>1</voice><type>eighth</type><staff>1</staff><beam number="1">end</beam></note>
+      <backup><duration>1440</duration></backup>
+      <note><pitch><step>C</step><octave>3</octave></pitch><duration>720</duration><voice>5</voice><type>quarter</type><dot/><staff>2</staff></note>
+      <note><pitch><step>G</step><octave>3</octave></pitch><duration>720</duration><voice>5</voice><type>quarter</type><dot/><staff>2</staff></note>
+      </measure>
+    <measure number="2">
+      <attributes><time><beats>12</beats><beat-type>8</beat-type></time></attributes>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>240</duration><voice>1</voice><type>eighth</type><staff>1</staff><beam number="1">begin</beam></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>240</duration><voice>1</voice><type>eighth</type><staff>1</staff><beam number="1">continue</beam></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>240</duration><voice>1</voice><type>eighth</type><staff>1</staff><beam number="1">end</beam></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>240</duration><voice>1</voice><type>eighth</type><staff>1</staff><beam number="1">begin</beam></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>240</duration><voice>1</voice><type>eighth</type><staff>1</staff><beam number="1">continue</beam></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>240</duration><voice>1</voice><type>eighth</type><staff>1</staff><beam number="1">end</beam></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>240</duration><voice>1</voice><type>eighth</type><staff>1</staff><beam number="1">begin</beam></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>240</duration><voice>1</voice><type>eighth</type><staff>1</staff><beam number="1">continue</beam></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>240</duration><voice>1</voice><type>eighth</type><staff>1</staff><beam number="1">end</beam></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>240</duration><voice>1</voice><type>eighth</type><staff>1</staff><beam number="1">begin</beam></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>240</duration><voice>1</voice><type>eighth</type><staff>1</staff><beam number="1">continue</beam></note>
+      <note><pitch><step>A</step><octave>5</octave></pitch><duration>240</duration><voice>1</voice><type>eighth</type><staff>1</staff><beam number="1">end</beam></note>
+      <backup><duration>2880</duration></backup>
+      <note><pitch><step>C</step><octave>3</octave></pitch><duration>2880</duration><voice>5</voice><type>whole</type><dot/><staff>2</staff></note>
+      <barline location="right"><bar-style>light-heavy</bar-style></barline>
+      </measure>
+  </part>
+</score-partwise>

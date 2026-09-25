@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- what PPP writes from a recording with G3 off: no beams, a bracket per triplet piece, a 64th rest, a tie inside the bar, a changed pedal (G04 §22.1; written by tests/engrave/tools/make-e-fixtures.js) -->
+<score-partwise version="4.0">
+  <work><work-title>The G3-off recording shape</work-title></work>
+  <identification><creator type="composer">PPP</creator></identification>
+  <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes><divisions>480</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time><staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef></attributes>
+      <direction placement="below"><direction-type><pedal type="start" line="yes" sign="no"/></direction-type><staff>2</staff></direction>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>160</duration><voice>1</voice><type>eighth</type><time-modification><actual-notes>3</actual-notes><normal-notes>2</normal-notes></time-modification><staff>1</staff><notations><tuplet type="start" number="1"/><tuplet type="stop" number="1"/></notations></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>160</duration><voice>1</voice><type>eighth</type><time-modification><actual-notes>3</actual-notes><normal-notes>2</normal-notes></time-modification><staff>1</staff><notations><tuplet type="start" number="1"/><tuplet type="stop" number="1"/></notations></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>160</duration><voice>1</voice><type>eighth</type><time-modification><actual-notes>3</actual-notes><normal-notes>2</normal-notes></time-modification><staff>1</staff><notations><tuplet type="start" number="1"/><tuplet type="stop" number="1"/></notations></note>
+      <note><pitch><step>C</step><octave>6</octave></pitch><duration>240</duration><tie type="start"/><voice>1</voice><type>eighth</type><staff>1</staff><notations><tied type="start"/></notations></note>
+      <note><pitch><step>C</step><octave>6</octave></pitch><duration>210</duration><tie type="stop"/><voice>1</voice><type>16th</type><dot/><dot/><staff>1</staff><notations><tied type="stop"/></notations></note>
+      <note><rest/><duration>30</duration><voice>1</voice><type>64th</type><staff>1</staff></note>
+      <direction placement="below"><direction-type><pedal type="change" line="yes"/></direction-type><staff>2</staff></direction>
+      <note><pitch><step>B</step><octave>5</octave></pitch><duration>240</duration><voice>1</voice><type>eighth</type><staff>1</staff></note>
+      <note><pitch><step>A</step><octave>5</octave></pitch><duration>240</duration><voice>1</voice><type>eighth</type><staff>1</staff></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+      <backup><duration>1920</duration></backup>
+      <note><pitch><step>C</step><octave>3</octave></pitch><duration>960</duration><voice>5</voice><type>half</type><staff>2</staff></note>
+      <note><pitch><step>G</step><octave>3</octave></pitch><duration>960</duration><voice>5</voice><type>half</type><staff>2</staff></note>
+      <direction placement="below"><direction-type><pedal type="stop" line="yes" sign="no"/></direction-type><staff>2</staff></direction>
+      <barline location="right"><bar-style>light-heavy</bar-style></barline>
+      </measure>
+  </part>
+</score-partwise>
