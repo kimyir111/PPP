@@ -9,17 +9,22 @@
      B2  a close-view window (4 bars) laid out, no cache (layout only)   p95 <= 25 ms (the budget includes the SVG)
      B3  the same window again, from the engraver's cache                p95 <= 8 ms
      B4  the whole score laid out (the first screen needs it: breaks are global)   <= 100 ms
-     B5  the whole score, sonatina/020                                    <= 300 ms, and no single task over 50 ms
+     B5  the whole score, sonatina/020: measured, NOT judged here. §19.2 asks <= 300 ms done, <= 12 ms per chunk and no
+         long task - that is the page's time slicing (G4f); G4b has one synchronous prepare + layout call
      B6  a highlight update during playback                              p95 <= 1 ms, touched = changed
      B7  a resize inside a breakpoint                                    0 layouts
-   plus the practice map (build, hit-test, seek) and a reflow to the other breakpoint. */
+   plus the practice map (build, hit-test, seek) and a reflow to the other breakpoint.
+
+   The pieces are G04 §19.1's baseline sizes, taken from outside the G0 hold-out (tests/bench/corpus/references.json
+   holdout: true): per-piece values are printed, and a hold-out file's never are (G04 §22.2). beyer/028 and
+   hymns/take-my-life stand for §19.1's beyer/030 and hymns/amazing-grace (hold-outs) at the same size. */
 'use strict';
 const fs = require('fs');
 const path = require('path');
 const H = require('../helpers.js');
 const { REPO, E } = H;
 
-const PIECES = ['catalog/method/beyer/030.mxl', 'catalog/hymns/amazing-grace.musicxml', 'catalog/method/burgmuller25/021.mxl',
+const PIECES = ['catalog/method/beyer/028.mxl', 'catalog/hymns/take-my-life.musicxml', 'catalog/method/burgmuller25/021.mxl',
   'catalog/method/czerny849/001.mxl', 'catalog/method/sonatina/013.mxl', 'catalog/method/sonatina/016.mxl', 'catalog/method/sonatina/020.mxl'];
 const now = () => Number(process.hrtime.bigint()) / 1e6;
 const pct = (xs, p) => { const s = xs.slice().sort((a, b) => a - b); return s.length ? s[Math.min(s.length - 1, Math.ceil(p * s.length) - 1)] : 0; };
@@ -29,6 +34,9 @@ const r2 = v => Math.round(v * 100) / 100;
 async function main() {
   const arg = process.argv.find(a => a.startsWith('--runs='));
   const RUNS = arg ? +arg.slice(7) : 5;
+  const holdout = H.holdoutPaths();
+  const bad = PIECES.filter(r => holdout.has(r));
+  if (bad.length) throw new Error('a G0 hold-out file is not measured per piece: ' + bad.join(', '));
   const out = { machine: process.platform + ' node ' + process.version, runs: RUNS, pieces: {}, corpus: {}, budgets: {} };
 
   /* the corpus: plan, prepare and one layout of every committed score (cold: each graph once) */
@@ -109,13 +117,15 @@ async function main() {
     B2: { what: '4-bar window layout, no cache, p95 (ms; layout only - the SVG is G4c+)', value: r2(pct(windows, 0.95)), budget: 25, n: windows.length },
     B3: { what: 'the same window from the cache, p95 (ms)', value: r2(pct(hits, 0.95)), budget: 8 },
     B4: { what: 'whole-score layout, prepare + layout, worst baseline piece (ms)', value: Math.max(...PIECES.map(r => out.pieces[r].fullMs)), budget: 100 },
-    B5: { what: 'sonatina/020 whole layout (ms), and its longest single task', value: s020.fullMs, budget: 300, longestTaskMs: Math.max(s020.prepareMs, s020.desktopMs), longTaskBudget: 50 },
+    /* measured, not judged (§19.2 B5: <= 300 ms, <= 12 ms per chunk, long task 0 - the page's time slicing, G4f) */
+    B5: { what: 'sonatina/020 whole layout, prepare + layout (ms), and its longest single call (ms) - not judged in G4b', value: s020.fullMs,
+      longestCallMs: Math.max(s020.prepareMs, s020.desktopMs), judged: false },
     B6: { what: 'highlight update p95 (ms); touched = changed every frame', value: r2(pct(updates, 0.95)), max: r2(Math.max(...updates)), budget: 1, touchedOk: touchedOk, n: updates.length },
     B7: { what: 'layouts on resize inside a breakpoint', value: resizeLayouts, budget: 0 },
     lookup: { hitTestP95: r2(pct(hitTests, 0.95)), seekP95: r2(pct(seeks, 0.95)), mapBuild020Ms: s020.mapMs },
     reflow: { what: 'sonatina/020 to the phone breakpoint, from the prepared plan (ms)', value: s020.phoneMs }
   };
-  Object.values(out.budgets).forEach(b => { if (b.budget !== undefined) b.ok = b.value <= b.budget && (b.touchedOk !== false) && (b.longestTaskMs === undefined || b.longestTaskMs <= b.longTaskBudget); });
+  Object.values(out.budgets).forEach(b => { if (b.budget !== undefined) b.ok = b.value <= b.budget && (b.touchedOk !== false); });
   const dir = path.join(REPO, 'tests', 'engrave', 'out');
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'layout-perf.json'), JSON.stringify(out, null, 1) + '\n');

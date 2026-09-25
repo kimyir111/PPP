@@ -19,7 +19,9 @@ const fs = require('fs');
 const path = require('path');
 const H = require('../helpers.js');
 const { SG, E, REPO } = H;
-const { l2 } = require('../l2.js');
+/* RATCHET (l2.js): the other-voice collisions G4c removes - the baseline must record each, and a suite whose count
+   rises above it fails; G4c moves them to ZERO */
+const { l2, RATCHET } = require('../l2.js');
 const L = SG.legacy;
 
 const OUT = path.join(REPO, 'tests', 'engrave', 'out');
@@ -31,7 +33,7 @@ const ZERO = ['eg.ledger.silent', 'eg.ledger.invented', 'eg.ledger.duplicate', '
   'eg.clip.count', 'eg.overlap.head_head', 'eg.overlap.acc', 'eg.overlap.dot', 'eg.staff.overlap', 'eg.system.overlap', 'eg.system.overflow',
   'eg.spacing.rod_violations', 'eg.spacing.monotonic_violations', 'eg.column.order_violations', 'eg.layout.event_missing', 'eg.layout.event_unknown',
   'eg.layout.head_missing', 'eg.layout.head_staff_wrong', 'eg.systems.one_bar', 'eg.layout.hard_violations', 'eg.glyph.fallback',
-  'eg.layout.nondeterministic'];
+  'eg.layout.nondeterministic', 'eg.layout.multiset_diff', 'eg.system.fill_err', 'eg.system.scaled_avoidable'];
 const ONE = ['eg.beam.graph_drawn_ratio', 'eg.beam.members_exact', 'eg.tuplet.drawn_ratio', 'eg.tuplet.show_ok', 'eg.tie.drawn_ratio',
   'eg.slur.pair_exact', 'eg.event.multiset_equal', 'eg.staff.assignment_exact', 'eg.source.agree_live', 'eg.source.agree_projected'];
 /* recorded, lower is better: more systems drawn at a smaller staff size is a regression */
@@ -176,8 +178,9 @@ function compare(sum, base) {
     Object.keys(base).filter(k => k.indexOf('eg.') === 0).forEach(k => {
       const v = sum[k] === undefined ? 0 : sum[k], b = base[k];
       const higherIsBetter = ONE.indexOf(k) >= 0 || k.indexOf('ratio') >= 0;
-      if (higherIsBetter ? v < b : (k.indexOf('.deferred.') >= 0 || ZERO.indexOf(k) >= 0 || LOWER.indexOf(k) >= 0) ? v > b : false) bad.push(k + ' ' + v + ' vs baseline ' + b);
+      if (higherIsBetter ? v < b : (k.indexOf('.deferred.') >= 0 || ZERO.indexOf(k) >= 0 || LOWER.indexOf(k) >= 0 || RATCHET.indexOf(k) >= 0) ? v > b : false) bad.push(k + ' ' + v + ' vs baseline ' + b);
     });
+    RATCHET.forEach(k => { if (base[k] === undefined) bad.push(k + ' ' + sum[k] + ': a ratchet metric the baseline does not record'); });
     Object.keys(sum).filter(k => k.indexOf('eg.ledger.deferred.') === 0 && base[k] === undefined).forEach(k => bad.push(k + ' ' + sum[k] + ': a deferred code the baseline does not have'));
   }
   return bad;
@@ -219,4 +222,4 @@ async function main() {
   process.exit(bad.length ? 1 : 0);
 }
 if (require.main === module) main().catch(e => { console.error(e); process.exit(1); });
-module.exports = { inputs, measure, summarise, compare, ZERO, ONE, LOWER };
+module.exports = { inputs, measure, summarise, compare, ZERO, ONE, LOWER, RATCHET };

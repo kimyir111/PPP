@@ -7,7 +7,8 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { REPO, SG, E, corpusGraphs, graphOf } = require('./helpers.js');
-const { l2 } = require('./l2.js');
+const { l2, RATCHET } = require('./l2.js');
+const A29 = require('./a29.js');
 const HASHES = require('./tools/layout-hashes.js');
 
 const L = E.layout;
@@ -26,7 +27,11 @@ const OVERFLOW_ALLOWED = new Set(['catalog/hymns/in-the-bleak-midwinter.musicxml
 const ZERO_L2 = ['eg.clip.count', 'eg.overlap.head_head', 'eg.overlap.acc', 'eg.overlap.dot', 'eg.staff.overlap', 'eg.system.overlap',
   'eg.spacing.rod_violations', 'eg.spacing.monotonic_violations', 'eg.column.order_violations', 'eg.layout.event_missing',
   'eg.layout.event_unknown', 'eg.layout.head_missing', 'eg.layout.head_staff_wrong', 'eg.systems.one_bar', 'eg.layout.hard_violations',
-  'eg.glyph.fallback'];
+  'eg.glyph.fallback', 'eg.layout.multiset_diff', 'eg.system.fill_err', 'eg.system.scaled_avoidable'];
+/* the other-voice collisions G4b records but does not yet remove (l2.js RATCHET: rests placed by role, provisional
+   stems - G4c's; G04 §33.15, §33.16): over the E fixtures and every committed score at both configs, never more than
+   this. G4c holds them at 0. */
+const RATCHET_CORPUS = { 'eg.rest.overlap': 189, 'eg.voice.stem_over_head': 216 };
 
 /* A piano piece from a compact spec: bars of voices of [dur, type, pitch, extra] with pitch 'C5', 'F#4' ('r' a rest) or
    an array of pitches (a chord); extra: {dots, acc, stem}. Voice 1 and 2 on the upper staff, voice 3 on the lower. */
@@ -94,18 +99,88 @@ test('A27: the committed layout hashes (E fixtures, the R suite, PPP transcripti
   assert.ok(Object.keys(want.hashes).length >= 118);
 });
 
-test('A29: the layout modules measure no DOM, read no clock, draw no random number and load no VexFlow', () => {
-  ['metrics', 'space', 'breaks', 'skyline', 'canon', 'layout', 'practice'].forEach(n => {
-    const src = fs.readFileSync(path.join(REPO, 'engrave', n + '.js'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-    /* the browser globals (a property named window - the close view's config - is not one) */
-    assert.doesNotMatch(src, /(?<![.\w])(document|window)\b(?!\s*:)|getBBox|getBoundingClientRect|getComputedStyle|measureText|\bDate\b|performance\.now|Math\.random|vexflow|\bfetch\b|XMLHttpRequest/,
-      'engrave/' + n + '.js');
-    /* the check itself sees a global */
-    assert.match('const w = window.innerWidth;', /(?<![.\w])(document|window)\b(?!\s*:)/);
-  });
+test('A29: no DOM measurement anywhere in engrave/ but the drawing backend; no browser global, clock, random, timer, network, locale or VexFlow from graph to EngravedScore', () => {
+  const r = A29.scanDir(path.join(REPO, 'engrave'));
+  assert.deepEqual(r.findings, [], 'engrave/ is clean');
+  /* what the tiers cover (G04 §20): DOM measurement in every file but svg.js (not written yet, G4c+); the determinism
+     rules in every file but that and the G4a render-source files that talk to the page by design */
+  assert.deepEqual(r.scanned.measure, r.files.filter(f => !A29.BACKEND[f]));
+  assert.deepEqual(r.files.filter(f => r.scanned.pure.indexOf(f) < 0 && !A29.BACKEND[f]), Object.keys(A29.EDGE).sort());
+  Object.keys(A29.EDGE).forEach(f => assert.ok(r.files.indexOf(f) >= 0, 'the exemption names a file that exists: ' + f));
+  ['metrics', 'space', 'breaks', 'skyline', 'canon', 'layout', 'practice', 'plan', 'plan-beams', 'plan-tuplets', 'ledger', 'glyphs']
+    .forEach(n => assert.ok(r.scanned.pure.indexOf(n + '.js') >= 0, n + '.js is held to every rule'));
   /* the metrics table is exactly the pinned font's (CI runs the same check) */
   const out = execFileSync(process.execPath, [path.join(REPO, 'tests', 'engrave', 'tools', 'make-metrics.js'), '--check'], { encoding: 'utf8' });
   assert.match(out, /holds the pinned font's metrics/);
+});
+
+test('A29 negative controls: every banned construct is caught by its rule, whatever precedes the dot; comments, the config\'s window and the UMD root are not', () => {
+  const CAUGHT = [
+    ['dom-measure', 'const w = el.getComputedTextLength();'],
+    ['dom-measure', 'const b = node.getBBox();'],
+    ['dom-measure', 'const w = ctx.measureText(label).width;'],
+    ['dom-measure', 'const r = el.getBoundingClientRect();'],
+    ['dom-measure', 'const s = getComputedStyle(el).fontSize;'],
+    ['dom-global', 'const d = globalThis.document;'],
+    ['global-object', 'const d = globalThis.document;'],
+    ['dom-global', 'const d = root.document;'],
+    ['dom-global', 'const b = document.body;'],
+    ['dom-global', "const d = root['document'];"],
+    ['dom-global', 'const w = window.innerWidth;'],
+    ['dom-global', 'const w = root.window;'],
+    ['dom-global', 'const n = navigator.hardwareConcurrency;'],
+    ['dom-global', 'const r = devicePixelRatio;'],
+    ['global-object', 'const r = self.devicePixelRatio;'],
+    ['global-object', 'const g = globalThis;'],
+    ['global-object', 'global.cache = {};'],
+    ['clock', 'const t = Date.now();'],
+    ['clock', 'const t = new Date();'],
+    ['clock', 'const t = performance.now();'],
+    ['clock', 'const t = process.hrtime();'],
+    ['timer', 'setTimeout(next, 0);'],
+    ['timer', 'requestAnimationFrame(draw);'],
+    ['random', 'const r = Math.random();'],
+    ['random', "const r = Math['random']();"],
+    ['random', 'crypto.getRandomValues(buf);'],
+    ['network', 'fetch(url);'],
+    ['network', 'const x = new XMLHttpRequest();'],
+    ['network', "import('./font.js');"],
+    ['dynamic-code', "const f = new Function('return this')();"],
+    ['dynamic-code', 'eval(src);'],
+    ['locale', 'const s = new Intl.NumberFormat().format(x);'],
+    ['locale', 'const s = x.toLocaleString();'],
+    ['locale', 'const s = n.toLocaleUpperCase();'],
+    ['locale', 'ids.sort((a, b) => a.localeCompare(b));'],
+    ['vexflow', "const VF = require('../vendor/vexflow-4.2.3.js');"],
+    ['vexflow', 'const st = new Vex.Flow.Stave(0, 0, 100);'],
+    ['require-nonrelative', "const fs = require('fs');"],
+    /* a string is scanned: computed access names the global in one */
+    ['dom-global', "const k = 'document';"],
+    /* what looks like a comment inside a string or a regex hides nothing */
+    ['network', "const a = '/*'; fetch(u); const b = '*/';"],
+    ['network', 'const re = /[/*]/; fetch(u); const c = 1; /* */']
+  ];
+  CAUGHT.forEach(([rule, src]) => {
+    const f = A29.scanSource(src, 'layout.js');
+    assert.ok(f.some(x => x.rule === rule), rule + ' catches: ' + src + ' -> ' + JSON.stringify(f));
+  });
+  const CLEAN = [
+    '/* getBBox, getComputedTextLength, measureText, document, window, Date, Math.random, fetch, Intl, toLocaleString, VexFlow */ const a = 1;',
+    '// a line comment naming document.body, performance.now() and require(\'fs\')\nconst b = 2;',
+    'const lo = cfg.window ? cfg.window[0] : 0, hi = config.window ? config.window[1] : 0;',
+    'return { mode: \'screen\', window: win, width: w };',
+    "(function (root, factory) { root.M = factory(); })(typeof globalThis !== 'undefined' ? globalThis : this, function () { return 1; });",
+    'const documentation = 1, windowed = 2, updatedAt = 3, randomize = 4, dateOf = 5;',
+    'const re = /\\/\\/ x/g; const q = a / b / c;',
+    "const self = ['drawn', null]; put(self[0], self[1]);",
+    "const M = require('./metrics.js'), SG = require('../scoregraph/index.js');"
+  ];
+  CLEAN.forEach(src => assert.deepEqual(A29.scanSource(src, 'layout.js'), [], 'no finding: ' + src));
+  /* the tiers: the G4a edge files may use their page globals but may not measure the DOM; the backend may measure */
+  assert.deepEqual(A29.scanSource('setTimeout(f, 0); const db = indexedDB; const t = Date.now();', 'store.js'), []);
+  assert.ok(A29.scanSource('const b = el.getBBox();', 'store.js').some(x => x.rule === 'dom-measure'));
+  assert.deepEqual(A29.scanSource('const b = el.getBBox(), w = el.getComputedTextLength();', 'svg.js'), []);
+  assert.ok(A29.scanSource('const t = Date.now();', 'some-new-module.js').some(x => x.rule === 'clock'), 'a new file is held to every rule');
 });
 
 /* ------------------------------------------------------------------ the EngravedScore */
@@ -378,6 +453,7 @@ test('A17-A19, A23-A25: the E fixtures and every committed score lay out with no
   for (const f of efix()) items.push(['e/' + f, await graphOf('tests/engrave/fixtures/e/' + f)]);
   (await corpusGraphs()).forEach(x => items.push(x));
   const bad = [];
+  const ratchet = {};
   let n = 0;
   items.forEach(([id, g]) => {
     const p = E.plan(g);
@@ -387,11 +463,15 @@ test('A17-A19, A23-A25: the E fixtures and every committed score lay out with no
       const m = l2(e, p, { prepared: P, layout: L });
       ZERO_L2.forEach(k => { if (m[k]) bad.push(id + ' ' + bp + ' ' + k + ' ' + m[k]); });
       if (m['eg.system.overflow'] && !OVERFLOW_ALLOWED.has(id)) bad.push(id + ' ' + bp + ' overflow ' + m['eg.system.overflow']);
+      RATCHET.forEach(k => { assert.equal(typeof m[k], 'number', k); ratchet[k] = (ratchet[k] || 0) + m[k]; });
       n++;
     });
   });
   assert.deepEqual(bad, []);
   assert.ok(n >= 2 * 380, n + ' layouts');
+  /* the other-voice collisions (A26) may fall, never rise, until G4c holds them at 0 */
+  assert.deepEqual(Object.keys(RATCHET_CORPUS).sort(), RATCHET.slice().sort());
+  RATCHET.forEach(k => assert.ok(ratchet[k] <= RATCHET_CORPUS[k], k + ' ' + ratchet[k] + ' > ' + RATCHET_CORPUS[k] + ' (ratchet)'));
 });
 
 test('the collision check finds each hard violation it names (negative controls)', async () => {
@@ -436,6 +516,74 @@ test('the collision check finds each hard violation it names (negative controls)
   assert.ok(codes(x).indexOf('H6') >= 0);
   /* the L2 metrics count the same things, computed on their own */
   assert.ok(l2(x, E.plan(await graphOf('tests/engrave/fixtures/e/E33-accidental-chord.musicxml')), {})['eg.staff.overlap'] > 0);
+});
+
+test('the G4b fixer\'s L2 metrics find what they name (negative controls): other-voice rests and stems, the drawn multiset, justification, avoidable small staves', async () => {
+  const p = await eplan('E13-two-voices-rests.musicxml');
+  const e = L.engrave(p, {});
+  const base = l2(e, p, {});
+  ['eg.rest.overlap', 'eg.voice.stem_over_head', 'eg.layout.multiset_diff', 'eg.system.fill_err', 'eg.system.scaled_avoidable'].forEach(k => assert.equal(base[k], 0, k));
+  const voice = new Map(p.events.map(x => [x.id, x.voice]));
+  const clone = () => JSON.parse(JSON.stringify(e));
+  const other = (x, a, kind) => x.objects.find(o => o.kind === kind && o.system === a.system && o.staffKey === a.staffKey && voice.get(o.event) !== voice.get(a.event));
+  const m = x => l2(x, p, {});
+  /* a rest on another voice's head */
+  let x = clone();
+  const rest = x.objects.find(o => o.kind === 'rest' && other(x, o, 'notehead'));
+  assert.ok(rest, 'E13 has a rest beside another voice');
+  rest.box = other(x, rest, 'notehead').box.slice();
+  assert.ok(m(x)['eg.rest.overlap'] >= 1);
+  /* a stem across another voice's head */
+  x = clone();
+  const stem = x.objects.find(o => o.kind === 'stem' && other(x, o, 'notehead'));
+  const h = other(x, stem, 'notehead');
+  stem.box = [h.box[0] + 0.3, h.box[1] - 1, h.box[0] + 0.42, h.box[3] + 1];
+  assert.ok(m(x)['eg.voice.stem_over_head'] >= 1);
+  /* the multiset: a rest twice under one id, a copy under a new id, a head on the other staff */
+  x = clone();
+  x.objects.push(JSON.parse(JSON.stringify(x.objects.find(o => o.kind === 'rest'))));
+  assert.equal(m(x)['eg.layout.multiset_diff'], 1);
+  x = clone();
+  x.objects.push(Object.assign(JSON.parse(JSON.stringify(x.objects.find(o => o.kind === 'rest'))), { id: 'copy' }));
+  assert.equal(m(x)['eg.layout.multiset_diff'], 1);
+  x = clone();
+  const hd = x.objects.find(o => o.kind === 'notehead');
+  hd.staffKey = x.systems[0].staves.find(s => s.key !== hd.staffKey).key;
+  assert.equal(m(x)['eg.layout.multiset_diff'], 2, 'missing where it belongs, extra where it is');
+  /* justification: a justified system short of the width; a ragged system that is not the last */
+  const long = L.engrave(await eplan('E37-long.musicxml'), {});
+  const pl = await eplan('E37-long.musicxml');
+  assert.equal(l2(long, pl, {})['eg.system.fill_err'], 0);
+  x = JSON.parse(JSON.stringify(long));
+  x.systems[0].w -= 5;
+  assert.equal(l2(x, pl, {})['eg.system.fill_err'], 1);
+  x = JSON.parse(JSON.stringify(long));
+  x.systems[0].ragged = true;
+  assert.equal(l2(x, pl, {})['eg.system.fill_err'], 1);
+  /* a system of several measures at a smaller staff size could have been broken; one measure may be (G4-B5) */
+  x = JSON.parse(JSON.stringify(long));
+  x.systems[0].space = 0.8;
+  assert.ok(x.systems[0].measures.length > 1);
+  assert.equal(l2(x, pl, {})['eg.system.scaled_avoidable'], 1);
+  x.systems[0].measures = x.systems[0].measures.slice(0, 1);
+  assert.equal(l2(x, pl, {})['eg.system.scaled_avoidable'], 0);
+});
+
+test('ratchet gates (bench.js): a rise over the baseline fails, a fall passes, a baseline without the key fails', () => {
+  const B = require('./tools/bench.js');
+  assert.deepEqual(B.RATCHET, RATCHET);
+  const base = { graphs: 1, 'eg.rest.overlap': 34, 'eg.voice.stem_over_head': 74 };
+  const sum = v => Object.assign({ graphs: 1 }, v);
+  assert.deepEqual(B.compare(sum({ 'eg.rest.overlap': 34, 'eg.voice.stem_over_head': 74 }), base), []);
+  assert.deepEqual(B.compare(sum({ 'eg.rest.overlap': 30, 'eg.voice.stem_over_head': 70 }), base), []);
+  assert.deepEqual(B.compare(sum({ 'eg.rest.overlap': 35, 'eg.voice.stem_over_head': 74 }), base), ['eg.rest.overlap 35 vs baseline 34']);
+  assert.deepEqual(B.compare(sum({ 'eg.rest.overlap': 34, 'eg.voice.stem_over_head': 75 }), base), ['eg.voice.stem_over_head 75 vs baseline 74']);
+  assert.ok(B.compare(sum({ 'eg.rest.overlap': 0, 'eg.voice.stem_over_head': 0 }), { graphs: 1 }).some(s => /a ratchet metric the baseline does not record/.test(s)));
+  /* every committed suite baseline records them */
+  ['r', 'e', 'x'].forEach(s => {
+    const b = JSON.parse(fs.readFileSync(path.join(REPO, 'tests', 'engrave', 'baselines', s + '.l1.json'), 'utf8'));
+    RATCHET.forEach(k => assert.equal(typeof b[k], 'number', s + ' ' + k));
+  });
 });
 
 test('a measure wider than the screen is drawn at a smaller staff size, never clipped; beyond the floor it is an overflow and says so', async () => {

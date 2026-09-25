@@ -16,6 +16,7 @@
  "eg.layout.hard_violations": 0,
  "eg.layout.head_missing": 0,
  "eg.layout.head_staff_wrong": 0,
+ "eg.layout.multiset_diff": 0,
  "eg.layout.nondeterministic": 0,
  "eg.ledger.altered": 0,
  "eg.ledger.deferred.grace-after": 2,
@@ -44,6 +45,7 @@
  "eg.overlap.dot": 0,
  "eg.overlap.head_head": 0,
  "eg.plan.nondeterministic": 0,
+ "eg.rest.overlap": 34,
  "eg.slur.pair_exact": 1,
  "eg.source.agree_live": 1,
  "eg.source.agree_projected": 1,
@@ -51,13 +53,16 @@
  "eg.spacing.rod_violations": 0,
  "eg.staff.assignment_exact": 1,
  "eg.staff.overlap": 0,
+ "eg.system.fill_err": 0,
  "eg.system.overflow": 0,
  "eg.system.overlap": 0,
  "eg.system.scaled": 34,
+ "eg.system.scaled_avoidable": 0,
  "eg.systems.one_bar": 0,
  "eg.tie.drawn_ratio": 1,
  "eg.tuplet.drawn_ratio": 1,
  "eg.tuplet.merged_groups": 0,
  "eg.tuplet.show_ok": 1,
- "eg.tuplet.suppressed_drawn": 0
+ "eg.tuplet.suppressed_drawn": 0,
+ "eg.voice.stem_over_head": 74
 }

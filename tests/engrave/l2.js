@@ -7,13 +7,23 @@
      l2(engraved, plan, {prepared, layout})  -> { 'eg.<metric>': number }
 
    prepared/layout (engrave/layout.js) are needed only for eg.systems.one_bar, which asks the layout's own width model
-   whether a one-bar system could have joined a neighbour. */
+   whether a one-bar system could have joined a neighbour.
+
+   RATCHET: the metrics G4b records but does not yet hold at 0 - the other-voice collisions of rests and provisional
+   stems, which G4c's rest placement and stems remove (G04 §33.15, §33.16). bench.js fails a suite whose count rises
+   above its baseline; G4c moves them to zero targets. */
 'use strict';
 
 const EPS = 0.01;
 /* a comparison of sums of coordinates each rounded to 0.01 sp: two roundings' worth */
 const TOL = 0.02;
 const ROD = 0.3, BEFORE_BAR = 1.0;     /* G04 §9.3: the least gaps between columns and before a bar line */
+const RAGGED_MAX = 0.8;                /* G4-B3: a last system is left ragged only at most this share of the width */
+const RATCHET = ['eg.rest.overlap', 'eg.voice.stem_over_head'];
+/* A26 and §14.2-§14.3, with kind lists of their own (not skyline.js's H-rules, review O4: the two must not be blind
+   together): what a rest may not touch of another voice, and what of a voice may not cross another voice's head */
+const REST_VS = ['notehead', 'stem', 'flag', 'rest', 'ledger', 'accidental'];
+const STEM_KINDS = ['stem', 'flag'];
 const over = (a, b) => a[0] < b[2] - EPS && b[0] < a[2] - EPS && a[1] < b[3] - EPS && b[1] < a[3] - EPS;
 const q = s => { const m = /^(-?\d+)(?:\/(\d+))?$/.exec(s); return m ? +m[1] / (m[2] ? +m[2] : 1) : NaN; };
 
@@ -40,7 +50,9 @@ function l2(eng, plan, opts) {
   set('eg.clip.count', eng.objects.filter(o => o.box[0] < -EPS || o.box[1] < -EPS || o.box[2] > page.w + EPS || o.box[3] > page.h + EPS).length);
 
   /* overlaps on one staff of one system */
-  let hh = 0, acc = 0, dot = 0;
+  const voiceOf = new Map(plan.events.map(e => [e.id, e.voice]));
+  const otherVoice = (a, b) => !!a.event && !!b.event && a.event !== b.event && voiceOf.get(a.event) !== voiceOf.get(b.event);
+  let hh = 0, acc = 0, dot = 0, restOv = 0, stemHead = 0;
   groupBy(eng.objects.filter(o => o.staffKey), o => o.system + '|' + o.staffKey).forEach(list => {
     pairs(list, (a, b) => {
       const k = [a.kind, b.kind].sort().join('/');
@@ -53,11 +65,21 @@ function l2(eng, plan, opts) {
         const other = a.kind === 'dot' ? b : a;
         if (['notehead', 'stem', 'flag', 'accidental', 'rest'].indexOf(other.kind) >= 0 && other.id !== (a.kind === 'dot' ? a : b).id) dot++;
       }
+      /* a rest on another voice's head, stem, flag, rest, ledger line or accidental (rest/dot is eg.overlap.dot's) */
+      if ((a.kind === 'rest' && REST_VS.indexOf(b.kind) >= 0) || (b.kind === 'rest' && REST_VS.indexOf(a.kind) >= 0)) {
+        if (otherVoice(a, b)) restOv++;
+      }
+      /* a stem or a flag across another voice's notehead */
+      if ((STEM_KINDS.indexOf(a.kind) >= 0 && b.kind === 'notehead') || (STEM_KINDS.indexOf(b.kind) >= 0 && a.kind === 'notehead')) {
+        if (otherVoice(a, b)) stemHead++;
+      }
     });
   });
   set('eg.overlap.head_head', hh);
   set('eg.overlap.acc', acc);
   set('eg.overlap.dot', dot);
+  set('eg.rest.overlap', restOv);
+  set('eg.voice.stem_over_head', stemHead);
 
   /* staves and systems: nothing of one staff on anything of another (bar lines through a part's gap meet the next
      staff by design), system bands apart */
@@ -72,6 +94,18 @@ function l2(eng, plan, opts) {
   set('eg.system.overlap', sy);
   set('eg.system.overflow', eng.systems.filter(s => s.w > eng.config.width + EPS).length);
   set('eg.system.scaled', eng.systems.filter(s => s.space < 1).length);
+  /* the smaller staff size is for one measure wider than the width (G4-B5). A system of several measures that needed it,
+     or overflows, could have been broken: a line break the layout dropped (§23 M9) shows here, not as an overflow,
+     since G4-B5 draws smaller what would overflow unless even the floor is too wide */
+  set('eg.system.scaled_avoidable', eng.systems.filter(s => s.measures.length > 1 && (s.space < 1 || s.w > eng.config.width + EPS)).length);
+  /* justification (§9.4, G4-B3; review O3): a system that is not ragged spans the width to 0.01 sp - one u solved
+     exactly, or the smaller staff size that fits it - unless it overflows (eg.system.overflow counts that one); a
+     ragged system is the piece's last and at most RAGGED_MAX of the width. Spacing that is uniformly too tight (every
+     spring at its rod, u = 0 everywhere) keeps the time steps in order, so the monotonic count cannot see it; this can. */
+  const W = eng.config.width;
+  set('eg.system.fill_err', eng.systems.filter((s, k) => s.ragged
+    ? k !== eng.systems.length - 1 || s.w > RAGGED_MAX * W + EPS
+    : s.w <= W + EPS && Math.abs(s.w - W) > EPS).length);
 
   /* columns: x strictly increasing with time inside a measure, measures left to right inside a system */
   const pm = new Map(plan.measures.map(x => [x.id, x]));
@@ -158,6 +192,32 @@ function l2(eng, plan, opts) {
   set('eg.layout.head_missing', hm);
   set('eg.layout.head_staff_wrong', hs);
 
+  /* the drawn events as a multiset (A14 at the layout level; §23 M11): each rest the plan draws is exactly one 'rest'
+     object and each head exactly one 'notehead' object, keyed (kind, id, event, measure, column time, staff). A copy
+     under the same id or a new one, a missing one, one on another staff or at another time is a difference. The
+     count is the size of the multiset difference, both ways. */
+  const colAt = new Map();
+  eng.measures.forEach(me => me.columns.forEach(c => { if (c.time) colAt.set(me.id + '|' + c.x, q(c.at)); }));
+  const want = new Map(), got = new Map();
+  const bump = (m, k) => m.set(k, (m.get(k) || 0) + 1);
+  const primaryKey = (kind, id, ev, meas, at, st) => [kind, id, ev, meas, at, st].join('|');
+  plan.events.forEach(e => {
+    if (e.hidden || (e.grace && e.grace.after) || deferred.has(e.id) || !laidOut.has(e.m)) return;
+    if (e.kind === 'rest') { if (liveStaff(e.staff)) bump(want, primaryKey('rest', e.id, e.id, e.m, q(e.at), e.staff)); return; }
+    e.heads.forEach(h => {
+      const st = h.staff || e.staff;
+      if (liveStaff(st) && (h.written || h.pos)) bump(want, primaryKey('notehead', h.id, e.id, e.m, q(e.at), st));
+    });
+  });
+  eng.objects.forEach(o => {
+    if (o.kind !== 'rest' && o.kind !== 'notehead') return;
+    const at = o.anchor ? colAt.get(o.measure + '|' + o.anchor[0]) : undefined;
+    bump(got, primaryKey(o.kind, o.id, o.event, o.measure, at === undefined ? 'no-column' : at, o.staffKey));
+  });
+  let md = 0;
+  new Set([...want.keys(), ...got.keys()]).forEach(k => { md += Math.abs((want.get(k) || 0) - (got.get(k) || 0)); });
+  set('eg.layout.multiset_diff', md);
+
   /* one-bar systems a neighbour could have taken (G4-U4: density may force them; this counts the avoidable ones) */
   let one = 0;
   if (opts && opts.prepared && opts.layout && eng.measures.length > 1) {
@@ -184,4 +244,4 @@ function l2(eng, plan, opts) {
   return m;
 }
 
-module.exports = { l2, EPS, TOL };
+module.exports = { l2, EPS, TOL, RATCHET };
