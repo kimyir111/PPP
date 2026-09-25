@@ -4,7 +4,7 @@ ScoreGraph에 **이미 있는** 기보 의미를 PPP의 실제 화면과 인쇄�
 
 | | |
 | --- | --- |
-| 상태 | **G4a 최종 (2026-09-25): §32.13 — BLOCKER 0, MAJOR 0, READY_FOR_FINAL_REVIEW.** 구현 §32 (Implementer), 병렬 리뷰의 Fixer §32.12, 최종 리뷰(BLOCKER 1·MAJOR 5)를 닫은 기록 §32.13. 렌더 원천·`legacy.fromScore`·NotationPlan·출력을 대조하는 ledger·그래프 캐시·VexFlow 고정·E01–E40·R 코퍼스·L1·A48 gate. 사용자에게 보이는 변화 없음 (legacy 렌더러가 기본, 바이트 동일). 사용자 결정 G4-U1–U5 (§31, §32.13). G4b–G4f 미착수. 설계: Architect 2026-09-24 |
+| 상태 | **G4a CLOSED — PR #9로 병합 (`df8a571`, 2026-09-25).** 최종 독립 리뷰 PASS (BLOCKER 0, MAJOR 0, §32.13–§32.14). 구현 §32, Fixer §32.12, 최종 §32.13, 마감 §32.14. 사용자에게 보이는 변화 없음 (legacy 렌더러가 기본, 바이트 동일). 사용자 결정 G4-U1–U5 (§31). **G4b 다음, 미착수** — 그 backlog는 §32.14. 설계: Architect 2026-09-24 |
 | 기준 커밋 | `origin/main` = `55d1bd5` (G3 PARTIAL/DEFERRED closeout, PR #8) |
 | 브랜치 / worktree | `g4-professional-engraving` / `D:/PPP-g4` |
 | 시작 검증 | `npm run test:scoregraph` → **205/205 pass** (이 세션이 `55d1bd5`에서 직접 실행) |
@@ -2040,6 +2040,21 @@ Fixer가 이 과정에서 스스로 만든 결함 하나를 고쳤다: `legacy-s
 
 - `c77cd30` fix: satisfy G4a semantic and persistence acceptance (코드와 그 테스트), `77baa39` test: complete G4a corpus and coverage gates (A48 gate, ledger mutation, store, U1 도구, L1 baseline), 이 절을 담은 문서 커밋 — 모두 `2a83333` 위. review 화면의 `saveNow` 넷(G4-F16)은 `0f3d275`에 있다. 각 코드 커밋은 Windows CRLF checkout(`git checkout-index`)에서 `test:engrave`가 통과함을 확인했다. 브랜치만 push, PR·병합 없음.
 - **상태: READY_FOR_FINAL_REVIEW** — BLOCKER 0, MAJOR 0 (§32.13.1). G4b는 시작하지 않았다.
+
+
+### 32.14 마감 — 병합과 G4b로 넘기는 것 (2026-09-25)
+
+- **최종 독립 리뷰** (`39b3bcc`, 서로 독립인 리뷰어 셋: 코드·테스트, 실행 UI·parity, 회귀 gate): **BLOCKER 0, MAJOR 0, MINOR 6, OPTIONAL 5 — PASS, READY_FOR_G4b.** 앞선 최종 리뷰의 BLOCKER 1(한 음 tuplet 병합)과 MAJOR 5(ledger/A1, 저장·다시 불러오기, E/코퍼스/L1, A48, deferred 계약)는 모두 PASS. 회귀 gate는 깨끗한 clone에서 전부 재현 (`ab --a git:55d1bd5 --b git:39b3bcc`: 553 case 모두 같음, `mutation-check` 49/49), 보이는 parity: legacy SVG 16/16 + 페이지 스냅숏 64/64 (선언된 script 태그·IndexedDB 제외), engrave source mutation 57/57 재현.
+- **병합**: PR #9 (`g4-professional-engraving` → `main`), CI gate 초록, mergeStateStatus CLEAN, squash `df8a571` — 트리는 리뷰한 `39b3bcc`와 같다. 브랜치는 남겨 둔다. **G4a는 CLOSED — 다시 열지 않는다.**
+- **G4b backlog (최종 리뷰의 MINOR — G4a를 다시 여는 이유가 아니다)**:
+  1. `resolve()` can wait forever when IndexedDB `open` never settles - add a timeout and fallback before G4b awaits it
+  2. the A48 page gate (`tests/engrave/tools/a48-coverage.js`) must assert its population (553 core, 318 corpus) and flag a stale allowlist entry, not accept fewer cases
+  3. sibling (parent-less) tuplets on one event: the one-note merge must treat them conservatively (no merge)
+  4. the one-note merge must respect the meter's beat groups (6/8, 5/8 grouped 3+2), not only multiples of the tuplet span from the bar line
+  5. tuplet display attributes (show number, bracket, placement, printed) belong in the ledger audit's semantic signature
+  6. deferred codes must be tied to the kinds they may apply to, not only to an allowed code string
+  그 밖의 MINOR·OPTIONAL: 저장 뒤 그래프 쓰기가 idle을 기다리는 동안(측정 160–235 ms) 다시 불러오면 그 곡은 projected로 남는다 (`STORE_OTHER_SCORE`, 곡 slot은 그대로); `u1-paths.js`는 앱 메서드를 부르고 helper의 `/health`를 막지 않는다; `a48-compare.js`의 화음 셈여림은 첫 것만 본다; `eg.tuplet.merged_groups`는 L1 비교에 없다; P3 테스트 하나는 pending 경로에 닿지 않는다 (§32.13의 새 테스트가 닿는다). §32.12.10의 G4b 몫(VexFlow 전송, `resolve` 비용, 8va 적힌 음 표시, 명시된 `bracket="yes"`)도 그대로다.
+- **G4b 준비**: 같은 폴더 `D:/PPP-g4`, 최신 `origin/main`에서 브랜치 `g4b-layout-core` (upstream 없음). G4b는 시작하지 않았다.
 
 ---
 
