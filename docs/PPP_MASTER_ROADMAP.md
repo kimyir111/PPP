@@ -465,7 +465,7 @@ Architect (spec in docs/GOALS/, from this roadmap's card + a fresh repository in
   - **No review loops.**
 - **Lead after every merge:** update §14/§15/§19, move MINORs into the next card, choose the next task immediately.
 - Merge convention: `gh pr merge N --squash --match-head-commit <sha>`. The branch is kept. Deploys are manual (Render); a merge does not deploy.
-- **`main` has no required status checks, so `gh pr merge` does not wait for or respect a failed gate.** Read the gate's result as a separate step, and merge only on `pass`. On 2026-09-26 the docs-only closeout PR #20 was merged with a failed gate. The failure was a test-infrastructure race, not the change: G3 test files regenerate `tests/bench/out/g3/jobs-*.jsonl` concurrently on a fresh checkout. It is fixed on its own branch (`ci-g3-jobs-race`, §14).
+- **`main` has no required status checks, so `gh pr merge` does not wait for or respect a failed gate.** Read the gate's result as a separate step, and merge only on `pass`. On 2026-09-26 the docs-only closeout PR #20 was merged with a failed gate. The failure was a test-infrastructure race, not the change: G3 test files regenerate `tests/bench/out/g3/jobs-*.jsonl` concurrently on a fresh checkout. It is fixed by PR #21 (`84abe80`).
 
 **Git safety.**
 - Never touch `D:/PPP` or its local `main` `d82bb71`.
@@ -600,7 +600,7 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 
 The record is G04 §36.21.
 
-**Also running: CI race fix** (`D:/PPP-ci`, branch `ci-g3-jobs-race`). The G3 corpus tests share a jobs cache that `g3_jobs.py` writes in place, header first. On a fresh checkout, parallel test files read a half-written file: the B1 check saw "7 pedalled recording graphs" on PR #20, and a G4c Linux run had one `g3-idempotence` failure. The fix is an atomic write plus a reader that checks its count, with a concurrency regression test. The Lead re-checks it; no separate review, because it is test infrastructure only.
+**CI race fix — DONE**: PR #21, squash `84abe80`. `g3_jobs.py` now writes the shared G3 jobs cache atomically, and the reader checks the count. A concurrency regression test fails with the old in-place write (Lead re-check: 2 of 2) and passes with the fix (3 of 3). `test:scoregraph` on a fresh clone passes 216/216.
 
 **Current unit: G4d-2 — RUNNING** (Lead-launched implementer, the only writer in `D:/PPP-g4`).
 
