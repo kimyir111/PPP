@@ -40,9 +40,9 @@
 <script src="./engrave/plan-beams.js?v=3"></script>
 <script src="./engrave/plan-tuplets.js?v=3"></script>
 <script src="./engrave/plan.js?v=3"></script>
-<script src="./engrave/store.js?v=3"></script>
+<script src="./engrave/store.js?v=4"></script>
 <script src="./engrave/source.js?v=3"></script>
-<script src="./engrave/index.js?v=3"></script>
+<script src="./engrave/index.js?v=4"></script>
 <script src="./score-search.js"></script>
 <script src="./support.js"></script>
 <script src="./lessons.js"></script>
@@ -105,6 +105,12 @@
   .ppp-note.ppp-on [stroke]:not([stroke="none"]) { stroke: var(--accent) !important; }
   .ppp-note.ppp-bad [fill]:not([fill="none"]) { fill: var(--bad) !important; }
   .ppp-note.ppp-bad [stroke]:not([stroke="none"]) { stroke: var(--bad) !important; }
+  /* G4d-2: the engraver's SVG (renderer 'engrave', engrave/page.js) is inked with currentColor, so the theme colours
+     it here - nothing is baked in when it is drawn. The legacy renderer's SVG has no .ppp-engraved. */
+  .ppp-score svg.ppp-engraved { color: var(--score-ink, var(--ink)); }
+  .ppp-score svg.ppp-engraved .vf-stave { stroke: var(--score-staff, var(--staff)); }
+  .ppp-score svg.ppp-engraved .ppp-note.ppp-on { color: var(--accent); }
+  .ppp-score svg.ppp-engraved .ppp-note.ppp-bad { color: var(--bad); }
 
   /* Falling Notes keeps its fast-changing picture inside one high-DPI canvas.
      The surrounding controls remain ordinary PPP UI and inherit its theme. */
@@ -10529,6 +10535,123 @@ function barQ(seg, x) {
   return len;
 }
 
+/* ============================================================================
+   THE ENGRAVER IN THE PAGE — a developer's switch (G4d-2, docs/GOALS/G04 §16, §25)
+
+   PPP.renderer is the default of every ScoreView's `renderer` prop: 'legacy'
+   unless the page was opened with ?renderer=engrave, or localStorage
+   'ppp.renderer' says 'engrave'. Nothing a person can press sets either. With
+   'legacy' nothing below runs and nothing more is loaded: the page draws,
+   plays and judges exactly as before.
+
+   With 'engrave' a ScoreView draws through engrave/page.js, loaded on first
+   use (ENGRAVE_FILES, each asked for by its content hash, so the server may
+   let the browser keep it; tests/engrave/tools/page-files.js writes the list).
+   A view the engraver does not draw (no clefs, one staff of several), and a
+   song whose engraving fails, is drawn by the legacy renderer - a failure is
+   counted in PPP.engraveStats and warned as "[ppp] engrave fallback", so the
+   screen is never blank. PPP.strictEngrave (?strict=1) throws instead.
+   ========================================================================== */
+const ENGRAVE_FILES = [
+  ['metrics', '259583c8ba91'],
+  ['metrics-text', 'cbb942fd8cbe'],
+  ['space', 'e3e23b29d607'],
+  ['breaks', 'd468932e22ac'],
+  ['skyline', '95b90524bd90'],
+  ['canon', '81df50e82079'],
+  ['notation', 'cdb7622fe315'],
+  ['curves', 'f07b5e357536'],
+  ['marks', '88ff84541273'],
+  ['sysmarks', 'bc1b0605ae44'],
+  ['layout', '2f24d37b94c1'],
+  ['practice', '896d337259aa'],
+  ['outlines', 'a1414e5d01dd'],
+  ['svg', '46d7288935b8'],
+  ['page', '96d81f01f98e']
+];
+const ENGRAVE_SWITCH = (() => {
+  const sw = { renderer: 'legacy', strict: false, stats: { fallbacks: {}, bySong: {} } };
+  try {
+    const q = new URLSearchParams(location.search);
+    const r = q.get('renderer') || localStorage.getItem('ppp.renderer');
+    if (r === 'engrave') sw.renderer = 'engrave';
+    sw.strict = q.get('strict') === '1' || localStorage.getItem('ppp.strictEngrave') === '1';
+  } catch (e) { /* no URL or storage: the default */ }
+  return sw;
+})();
+Object.defineProperties(window.PPP, {
+  renderer: { enumerable: true, get: () => ENGRAVE_SWITCH.renderer, set: v => { ENGRAVE_SWITCH.renderer = v === 'engrave' ? 'engrave' : 'legacy'; } },
+  strictEngrave: { enumerable: true, get: () => ENGRAVE_SWITCH.strict, set: v => { ENGRAVE_SWITCH.strict = !!v; } },
+  /* the fallbacks, by code and by song (the engraver's own counters are PPPEngravePage.stats) */
+  engraveStats: { enumerable: true, get: () => ENGRAVE_SWITCH.stats }
+});
+const engraveWanted = p => (p.renderer || ENGRAVE_SWITCH.renderer) === 'engrave';
+let _engravePromise = null;
+function loadEngrave() {
+  if (window.PPPEngravePage) return Promise.resolve(window.PPPEngravePage);
+  if (_engravePromise) return _engravePromise;
+  _engravePromise = new Promise((resolve, reject) => {
+    let left = ENGRAVE_FILES.length;
+    ENGRAVE_FILES.forEach(([name, hash]) => {
+      const s = document.createElement('script');
+      s.src = './engrave/' + name + '.js?h=' + hash;
+      /* in order: each file reads the ones before it */
+      s.async = false;
+      s.onload = () => {
+        if (--left) return;
+        if (window.PPPEngravePage) resolve(window.PPPEngravePage); else reject(new Error('engrave/page.js did not initialise'));
+      };
+      s.onerror = () => reject(new Error('Could not load engrave/' + name + '.js'));
+      document.head.appendChild(s);
+    });
+  });
+  return _engravePromise;
+}
+/* One per ScoreView: the engraver's view once it is loaded; until then 'pending'. 'legacy' hands the view back to the
+   legacy renderer. */
+function engraveView(view) {
+  let ctl = null, failed = null;
+  const stats = ENGRAVE_SWITCH.stats;
+  return {
+    paint(el, p) {
+      const PG = window.PPPEngravePage;
+      if (!PG) {
+        if (failed) {
+          if (ENGRAVE_SWITCH.strict) throw failed;
+          if (!failed.counted) {
+            failed.counted = true;
+            stats.fallbacks.LOAD_FAILED = (stats.fallbacks.LOAD_FAILED || 0) + 1;
+            if (window.console) console.warn('[ppp] engrave fallback', 'LOAD_FAILED', failed.message);
+          }
+          return 'legacy';
+        }
+        loadEngrave().then(() => { if (!view._dead) view.paint(); }, e => { failed = e; if (!view._dead) view.paint(); });
+        if (!el.querySelector('[data-engrave-wait]')) {
+          el.innerHTML = '<div data-engrave-wait="1" style="min-height:120px;display:grid;place-items:center;font-size:12px;color:var(--ink3);">Engraving…</div>';
+        }
+        return 'pending';
+      }
+      if (!ctl) {
+        ctl = PG.createView({
+          source: () => window.PPPEngrave.app,
+          /* the song's key in the graph cache, for the Score the app has open (a thumbnail of another song has none) */
+          songKey: score => {
+            const A = window.PPP && window.PPP.app;
+            return A && A.state && A.state.score === score ? (A.state.songId || null) : null;
+          },
+          noteEnd: scoreNoteEnd,
+          strict: () => ENGRAVE_SWITCH.strict,
+          viewport: () => window.innerWidth,
+          props: () => view.props,
+          repaint: () => { if (!view._dead) view.paint(); },
+          stats: stats
+        });
+      }
+      return ctl.paint(el, p);
+    }
+  };
+}
+
 function makeScoreView(React) {
   return class ScoreView extends React.Component {
     constructor(props) {
@@ -10563,6 +10686,9 @@ function makeScoreView(React) {
     }
 
     paint() {
+      /* G4d-2 >>> renderer 'engrave' (G04 §16.1): the engraver draws, or hands back to the legacy path below */
+      if (engraveWanted(this.props) && this.paintEngrave()) return;
+      /* <<< G4d-2 */
       if (!this.el || !window.Vex || !window.Vex.Flow) return;
       const k = this.drawKey();
       if (k !== this._key) {
@@ -10583,6 +10709,20 @@ function makeScoreView(React) {
       }
       this.sync();
     }
+    /* G4d-2 >>> true when the engraver drew this view (or waits for its files or the score's graph); false for the
+       legacy path - a view it does not draw, or a song whose engraving failed, counted (G04 §16.7) */
+    paintEngrave() {
+      if (!this.el) return false;
+      if (!this._engrave) this._engrave = engraveView(this);
+      if (this._engrave.paint(this.el, this.props) === 'legacy') {
+        if (this._engraveDrew) { this._engraveDrew = false; this._key = null; }
+        return false;
+      }
+      this._engraveDrew = true;
+      this._key = null;
+      return true;
+    }
+    /* <<< G4d-2 */
 
     draw() {
       const VF = window.Vex.Flow;

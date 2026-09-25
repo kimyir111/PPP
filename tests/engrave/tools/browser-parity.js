@@ -43,11 +43,14 @@ async function main() {
   /* Node's hashes, and a hash of the SVG each layout draws (G4c: the backend's text is the same in Node and Chrome) */
   const Z = require('../../../scoregraph/serialize.js');
   const svgHash = s => Z.fnv1a64(Z.utf8(s));
-  const node = {}, nodeSvg = {};
+  const node = {}, nodeSvg = {}, nodePage = {};
+  /* G4d-2: the page's SVG (engrave/page.js: px units, every glyph a path) */
+  const PAGE_OPTS = require('../../../engrave/page.js').SVG_OPTS;
   items.forEach(([id, g]) => {
     const p = E.plan(g);
     node[id] = {}; nodeSvg[id] = {};
-    Object.keys(CONFIGS).forEach(c => { const e = E.engrave(p, CONFIGS[c]); node[id][c] = E.layoutHash(e); nodeSvg[id][c] = svgHash(E.svg(e, p)); });
+    nodePage[id] = {};
+    Object.keys(CONFIGS).forEach(c => { const e = E.engrave(p, CONFIGS[c]); node[id][c] = E.layoutHash(e); nodeSvg[id][c] = svgHash(E.svg(e, p)); nodePage[id][c] = svgHash(E.svg(e, p, PAGE_OPTS)); });
   });
   const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'], protocolTimeout: 600000 });
   const page = await browser.newPage();
@@ -59,32 +62,35 @@ async function main() {
   const ready = await page.evaluate(() => !!(window.PPPEngrave && window.PPPEngrave.layout && window.PPPEngrave.practice && window.PPPEngrave.svg && window.PPPEngrave.version));
   if (!ready) throw new Error('the page did not load the layout core');
   /* the browser's hashes, a batch at a time */
-  const got = {}, gotSvg = {};
+  const got = {}, gotSvg = {}, gotPage = {};
   const BATCH = 25;
   for (let i = 0; i < items.length; i += BATCH) {
     const batch = items.slice(i, i + BATCH).map(([id, g]) => [id, SG.serialize(g)]);
-    const res = await page.evaluate((batch, CONFIGS) => {
-      const out = {}, svg = {};
+    const res = await page.evaluate((batch, CONFIGS, PAGE_OPTS) => {
+      const out = {}, svg = {}, pg = {};
       const Z = window.PPPScoreGraphModules.serialize;
       batch.forEach(([id, text]) => {
         const g = window.PPPScoreGraph.parse(text);
         const p = window.PPPEngrave.plan(g);
-        out[id] = {}; svg[id] = {};
+        out[id] = {}; svg[id] = {}; pg[id] = {};
         Object.keys(CONFIGS).forEach(c => {
           const e = window.PPPEngrave.engrave(p, CONFIGS[c]);
           out[id][c] = window.PPPEngrave.layoutHash(e);
           svg[id][c] = Z.fnv1a64(Z.utf8(window.PPPEngrave.svg(e, p)));
+          pg[id][c] = Z.fnv1a64(Z.utf8(window.PPPEngrave.svg(e, p, PAGE_OPTS)));
         });
       });
-      return { out: out, svg: svg };
-    }, batch, CONFIGS);
+      return { out: out, svg: svg, page: pg };
+    }, batch, CONFIGS, PAGE_OPTS);
     Object.assign(got, res.out);
     Object.assign(gotSvg, res.svg);
+    Object.assign(gotPage, res.page);
   }
-  const differ = [], svgDiffer = [];
+  const differ = [], svgDiffer = [], pageDiffer = [];
   Object.keys(node).forEach(id => Object.keys(CONFIGS).forEach(c => {
     if (node[id][c] !== (got[id] || {})[c]) differ.push(id + ' ' + c);
     if (nodeSvg[id][c] !== (gotSvg[id] || {})[c]) svgDiffer.push(id + ' ' + c);
+    if (nodePage[id][c] !== (gotPage[id] || {})[c]) pageDiffer.push(id + ' ' + c);
   }));
   /* the SVG drawn in the page: every glyph Chrome renders from a <use> sits at the box the layout measured (R7: the
      outlines at the metrics' scale), for a fixture of full-size and grace (0.66) glyphs */
@@ -109,6 +115,23 @@ async function main() {
     });
     return { uses: uses.length, objects: objs.length, worst: Math.round(worst * 1000) / 1000 };
   }, SG.serialize(await H.graphOf('tests/engrave/fixtures/e/E14-grace.musicxml')));
+  /* G4d-2, the page's SVG drawn: every glyph a path in px, whose box in Chrome (getBBox, no transform on it) is the layout's
+     box times ten */
+  const pageBoxes = await page.evaluate((text, PAGE_OPTS) => {
+    const E = window.PPPEngrave, g = window.PPPScoreGraph.parse(text), p = E.plan(g), e = E.engrave(p, { breakpoint: 'desktop' });
+    document.body.innerHTML = E.svg(e, p, PAGE_OPTS);
+    const svg = document.querySelector('svg');
+    const objs = e.objects.filter(o => o.glyph && !o.drawn);
+    const cls = new Set(['vf-notehead', 'vf-flag', 'vf-accidental', 'vf-clef', 'vf-rest']);
+    const paths = [...svg.querySelectorAll('path')].filter(q => (q.getAttribute('class') || '').split(' ').some(c => cls.has(c)));
+    let worst = 0;
+    paths.forEach(q => {
+      const b = q.getBBox();
+      const d = Math.min(...objs.map(o => Math.max(Math.abs(b.x - o.box[0] * 10), Math.abs(b.y - o.box[1] * 10), Math.abs(b.x + b.width - o.box[2] * 10), Math.abs(b.y + b.height - o.box[3] * 10))));
+      worst = Math.max(worst, d);
+    });
+    return { paths: paths.length, uses: svg.querySelectorAll('use').length, worstPx: Math.round(worst * 1000) / 1000 };
+  }, SG.serialize(await H.graphOf('tests/engrave/fixtures/e/E14-grace.musicxml')), PAGE_OPTS);
   /* timing in the browser: sonatina/020 at 1x and 4x CPU */
   const g020 = SG.serialize(await H.graphOf('catalog/method/sonatina/020.mxl'));
   const client = await page.target().createCDPSession();
@@ -139,14 +162,17 @@ async function main() {
   const version = await browser.version();
   await browser.close();
   const report = { browser: version, scores: items.length, configs: Object.keys(CONFIGS), equal: items.length * 2 - differ.length, differ: differ,
-    svgEqual: items.length * 2 - svgDiffer.length, svgDiffer: svgDiffer, drawnBoxes: drawnBoxes, networkRequests: requests, timing020: timing };
+    svgEqual: items.length * 2 - svgDiffer.length, svgDiffer: svgDiffer, drawnBoxes: drawnBoxes,
+    pageSvgEqual: items.length * 2 - pageDiffer.length, pageSvgDiffer: pageDiffer, pageBoxes: pageBoxes, networkRequests: requests, timing020: timing };
   const dir = path.join(REPO, 'tests', 'engrave', 'out');
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'browser-parity.json'), JSON.stringify(report, null, 1) + '\n');
   console.log(version + ': ' + report.equal + '/' + items.length * 2 + ' layouts hash the same as Node' + (differ.length ? ' - DIFFER: ' + differ.slice(0, 10).join(', ') : '') +
     '; SVG ' + report.svgEqual + '/' + items.length * 2 + ' byte-identical' + (svgDiffer.length ? ' - DIFFER: ' + svgDiffer.slice(0, 10).join(', ') : '') +
-    '; E14 drawn in the page: ' + JSON.stringify(drawnBoxes) + '; network requests ' + requests);
+    '; E14 drawn in the page: ' + JSON.stringify(drawnBoxes) + '; the page SVG (G4d-2) ' + report.pageSvgEqual + '/' + items.length * 2 + ' byte-identical' +
+    (pageDiffer.length ? ' - DIFFER: ' + pageDiffer.slice(0, 10).join(', ') : '') + ', E14 glyph paths ' + JSON.stringify(pageBoxes) + '; network requests ' + requests);
   Object.keys(timing).forEach(k => console.log('sonatina/020 ' + k + ' CPU: ' + JSON.stringify(timing[k])));
-  process.exit(differ.length || svgDiffer.length || requests || drawnBoxes.uses !== drawnBoxes.objects || drawnBoxes.worst > 0.05 ? 1 : 0);
+  process.exit(differ.length || svgDiffer.length || pageDiffer.length || requests || drawnBoxes.uses !== drawnBoxes.objects || drawnBoxes.worst > 0.05 ||
+    pageBoxes.uses !== 0 || pageBoxes.worstPx > 0.5 ? 1 : 0);
 }
 main().catch(e => { console.error(e); process.exit(1); });

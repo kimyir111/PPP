@@ -100,7 +100,8 @@ test('§16.4: the DOM contract - g.ppp-stave per measure and staff with the lega
   assert.ok(staves.some(a => a['data-end'] === 'repeat') && staves.some(a => a['data-end'] === 'final'), 'data-end repeat and final');
   const voltas = staves.filter(a => a['data-volta']);
   assert.ok(voltas.length >= 2 && voltas.every(a => a['data-staff'] === '1'), 'data-volta on the top staff');
-  assert.ok(voltas.some(a => /^BEGIN(_END)?:1$/.test(a['data-volta'])), JSON.stringify(voltas.map(a => a['data-volta'])));
+  /* the label as it is printed and as the legacy renderer writes it, "1." (G4d-2: the engraving test reads BEGIN_END:1.) */
+  assert.ok(voltas.some(a => /^BEGIN(_END)?:1\.$/.test(a['data-volta'])), JSON.stringify(voltas.map(a => a['data-volta'])));
   assert.deepEqual(staves.filter(a => a['data-time']).map(a => a['data-time']).slice(0, 2), ['4/4', '4/4'], 'data-time where the time signature is drawn');
   /* notes: one group per event and staff; the key is the legacy one */
   for (const k of ['E13', 'E26', 'E37']) {

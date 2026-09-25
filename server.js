@@ -9,6 +9,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
+const zlib = require('zlib');
 const { spawn } = require('child_process');
 const { URL } = require('url');
 
@@ -40,6 +41,22 @@ const MIME = {
 };
 
 const BLOCKED = new Set(['node_modules', 'tools', '.git', 'data', 'tests']);
+
+/* G4d-2 (docs/GOALS/G04 §16; DECISIONS G4-D2-5): the engraver's files and the vendored VexFlow are kept by the browser for
+   good when they are asked for by their content hash - ?h=<the first 12 hex of the sha256 of the file with CRLF read as
+   LF> (tests/engrave/tools/page-files.js) - and the hash is the file's own. Such a URL names one content, so a kept copy
+   can never be stale; gzip when the browser takes it. Every other request, and any request for another file, is
+   answered as before (.js no-store). The app asks this way only under the developer's renderer 'engrave'. */
+const ENGINE_DIRS = new Set(['engrave', 'vendor']);
+const engineCache = new Map();
+function engineFile(abs, buf, st) {
+  const c = engineCache.get(abs);
+  if (c && c.mtimeMs === st.mtimeMs && c.size === st.size) return c;
+  const hash = crypto.createHash('sha256').update(Buffer.from(buf.toString('utf8').replace(/\r\n/g, '\n'), 'utf8')).digest('hex').slice(0, 12);
+  const e = { mtimeMs: st.mtimeMs, size: st.size, hash: hash, gz: null };
+  engineCache.set(abs, e);
+  return e;
+}
 
 function send(res, status, body, headers) {
   const extra = headers || {};
@@ -834,6 +851,19 @@ async function serveStatic(req, res, urlPath, url) {
       : ext === '.mp3' ? 'public, max-age=2592000' : 'public, max-age=3600';
     fs.readFile(abs, (e2, buf) => {
       if (e2) return jsonError(res, 500, 'Read failed');
+      const want = ext === '.js' && url && url.searchParams ? url.searchParams.get('h') : null;
+      if (want && ENGINE_DIRS.has(path.relative(ROOT, abs).split(path.sep)[0])) {
+        const e = engineFile(abs, buf, st);
+        if (e.hash === want) {
+          const headers = { 'Content-Type': type, 'Cache-Control': 'public, max-age=31536000, immutable', 'Vary': 'Accept-Encoding' };
+          if (/\bgzip\b/.test(req.headers['accept-encoding'] || '')) {
+            if (!e.gz) e.gz = zlib.gzipSync(buf, { level: 9 });
+            headers['Content-Encoding'] = 'gzip';
+            return send(res, 200, e.gz, headers);
+          }
+          return send(res, 200, buf, headers);
+        }
+      }
       send(res, 200, buf, { 'Content-Type': type, 'Cache-Control': cache });
     });
   });

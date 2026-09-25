@@ -556,7 +556,9 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
     /* the rolled G4: its wavy line is drawn with it, to the left of its head */
     const g4 = [...svg.querySelectorAll('g.ppp-note[data-onset]')].filter(g => /^1\|0\.000\|1$/.test(g.getAttribute('data-onset')))[0];
     /* the head is the first shape of its group; VexFlow draws the wavy line into the same group */
-    const gb = g4 ? g4.getBBox() : null, g4h = g4 ? g4.querySelector('.vf-notehead path').getBBox() : null;
+    /* G4d-2: VexFlow's head is a path inside g.vf-notehead, the engraver's is use.vf-notehead itself */
+    const g4head = g4 ? (g4.querySelector('.vf-notehead path') || g4.querySelector('.vf-notehead')) : null;
+    const gb = g4 ? g4.getBBox() : null, g4h = g4head ? g4head.getBBox() : null;
     return {
       texts: texts, ottava: svg.querySelectorAll('.ppp-ottava').length,
       staffTop: sb ? sb.y : null, staffBottom: sb ? sb.y + sb.height : null, headY: hb ? hb.y : null,

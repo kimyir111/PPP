@@ -60,8 +60,15 @@
   const EG = MT.ENGRAVING;
   /* hash: also write the EngravedScore's layout hash (data-layout) - off by default: hashing a whole score costs more than
      writing its SVG */
-  const DEFAULTS = Object.freeze({ px: 10, idPrefix: 'ppp-g-', hash: false });
-  const f = v => { const x = Math.round(v * 100) / 100; return String(x === 0 ? 0 : x); };
+  /* unit: user units per staff space - 1 (the viewBox in sp), or the page's 10 (G4d-2: the viewBox in the legacy renderer's px, so
+     every coordinate a page reads back - getBBox, svg.__ppp, a pointer - is in the same units under both renderers); the
+     drawing is the same, every length multiplied, every scale factor kept.
+     inline: every glyph is written out as a path at its place (the outline's points moved and scaled, to 0.01) instead of a
+     <use> of a <symbol> - the same drawing, a larger document (G4d-2, the page: Chrome repaints a score of 2,655 <use> 8-10
+     times slower than of paths - every playback frame repaints it - and getBBox reads a path where it stands, a scaled <use>
+     not; measured, G04 §37) */
+  const DEFAULTS = Object.freeze({ px: 10, idPrefix: 'ppp-g-', hash: false, unit: 1, inline: false });
+  const fmt = v => { const x = Math.round(v * 100) / 100; return String(x === 0 ? 0 : x); };
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const attrs = o => Object.keys(o).filter(k => o[k] !== undefined && o[k] !== null && o[k] !== '').map(k => ' ' + k + '="' + esc(o[k]) + '"').join('');
   const K = 1 / OL.UNITS;
@@ -83,7 +90,7 @@
     ottava: 'ppp-ottava', 'ottava-line': 'ppp-ottava', chord: 'ppp-chord', volta: 'ppp-volta', 'volta-label': 'ppp-volta', tempo: 'ppp-tempo',
     rehearsal: 'ppp-rehearsal', frame: 'ppp-rehearsal', jump: 'ppp-jump', lyric: 'ppp-lyric', 'lyric-line': 'ppp-lyric' };
   /* a bracket's path: along `line`, a hook at each end `hooks` names, toward the notes (down for a mark above them) */
-  const bracketPath = (l, hooks, h, gap) => {
+  const bracketPath = (l, hooks, h, gap, f) => {
     const y = l[1], d = [];
     const left = hooks && hooks[0], right = hooks && hooks[1];
     d.push('M' + f(l[0]) + ' ' + f(left ? y + h : y) + (left ? 'V' + f(y) : ''));
@@ -93,14 +100,14 @@
   };
   /* a curve's filled shape: its centre line's control points moved out and in by 2t/3 (t thick at the middle, the ends
      pointed) */
-  const lens = (c, side) => {
+  const lens = (c, side, f) => {
     const s = side === 'above' ? -1 : 1, d = 2 * c.t / 3;
     const P = p => f(p[0]) + ' ' + f(p[1]);
     const o1 = [c.c1[0], c.c1[1] + s * d], o2 = [c.c2[0], c.c2[1] + s * d], i1 = [c.c1[0], c.c1[1] - s * d], i2 = [c.c2[0], c.c2[1] - s * d];
     return 'M' + P(c.p0) + 'C' + P(o1) + ' ' + P(o2) + ' ' + P(c.p3) + 'C' + P(i2) + ' ' + P(i1) + ' ' + P(c.p0) + 'Z';
   };
   /* a wavy line from a to b: half waves of `wave`/2, `amp` either side, as quadratic curves */
-  const wavy = (a, b, amp, wave) => {
+  const wavy = (a, b, amp, wave, f) => {
     const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.sqrt(dx * dx + dy * dy);
     const n = Math.max(2, Math.round(L / (wave / 2)));
     const ux = dx / L, uy = dy / L, nx = -uy, ny = ux;
@@ -115,17 +122,29 @@
 
   function svg(eng, plan, options) {
     const o = Object.assign({}, DEFAULTS, options || {});
+    const U = o.unit > 0 ? o.unit : 1;
+    const f = U === 1 ? fmt : v => fmt(v * U);
+    const ks = U === 1 ? KS : String(Math.round(K * U * 1e9) / 1e9);
     const P = o.idPrefix;
     const page = eng.pages[0];
     const out = [];
-    /* the glyphs this page uses, each defined once */
+    /* the glyphs this page uses, each defined once (unless inline) */
     const used = new Set();
-    eng.objects.forEach(x => { if (x.glyph && !x.drawn && OL.PATHS[x.glyph]) used.add(x.glyph); });
+    if (!o.inline) eng.objects.forEach(x => { if (x.glyph && !x.drawn && OL.PATHS[x.glyph]) used.add(x.glyph); });
     const glyphs = [...used].sort();
+    /* an outline as its text and number slots (its points: M, L, C, Z only, absolute, x then y), once per glyph */
+    const parts = new Map();
+    const partsOf = g => { if (!parts.has(g)) parts.set(g, OL.PATHS[g].split(/(-?\d+(?:\.\d+)?)/)); return parts.get(g); };
     const use = (x, cls) => {
       const s = x.scale === undefined ? 1 : x.scale;
+      if (o.inline) {
+        /* the outline itself at the glyph's place: font units times K (a staff space's 1/360) times the size, y up */
+        const p = partsOf(x.glyph).slice(), k = K * s, ox = x.origin[0], oy = x.origin[1];
+        for (let i = 1, n = 0; i < p.length; i += 2, n++) p[i] = n % 2 === 0 ? f(ox + k * +p[i]) : f(oy - k * +p[i]);
+        return '<path' + (cls ? ' class="' + cls + '"' : '') + ' d="' + p.join('') + '"/>';
+      }
       const pos = s === 1 ? ' x="' + f(x.origin[0]) + '" y="' + f(x.origin[1]) + '"'
-        : ' transform="translate(' + f(x.origin[0]) + ' ' + f(x.origin[1]) + ') scale(' + f(s) + ')"';
+        : ' transform="translate(' + f(x.origin[0]) + ' ' + f(x.origin[1]) + ') scale(' + fmt(s) + ')"';
       return '<use href="#' + P + x.glyph + '"' + (cls ? ' class="' + cls + '"' : '') + pos + '/>';
     };
     const rect = (b, cls, extra) => '<rect' + (cls ? ' class="' + cls + '"' : '') + ' x="' + f(b[0]) + '" y="' + f(b[1]) + '" width="' + f(b[2] - b[0]) +
@@ -157,14 +176,14 @@
       }
       if (x.kind === 'tuplet-bracket') {
         const h = x.side === 'above' ? x.hookLen : -x.hookLen;
-        return '<path class="' + cls + '" d="' + bracketPath(x.line, x.hooks, h, x.gap) + '" fill="none" stroke="currentColor" stroke-width="' + f(0.1 * (x.hookLen / 0.75)) + '"/>';
+        return '<path class="' + cls + '" d="' + bracketPath(x.line, x.hooks, h, x.gap, f) + '" fill="none" stroke="currentColor" stroke-width="' + f(0.1 * (x.hookLen / 0.75)) + '"/>';
       }
       if (x.kind === 'volta') {
         /* the bracket: up from the bar line where the ending starts, along, down where it closes (its label is its own
            text object, G4d-1b) */
         const b = x.box;
         return '<path class="' + cls + '" d="M' + f(b[0]) + ' ' + f(x.start ? b[3] : b[1]) + 'V' + f(b[1]) + 'H' + f(b[2]) + (x.open ? '' : 'V' + f(b[3])) +
-          '" fill="none" stroke="currentColor" stroke-width="0.13"/>';
+          '" fill="none" stroke="currentColor" stroke-width="' + f(0.13) + '"/>';
       }
       /* G4d-1b: a hairpin's two strokes from its narrow end to its wide one; the pedal's line with its hooks up and a
          change's notch; an octave line dashed, its hook toward the notes; a rehearsal mark's frame */
@@ -174,7 +193,7 @@
           'L' + f(l[2]) + ' ' + f(y + e[1] / 2) + '" fill="none" stroke="currentColor" stroke-width="' + f(x.t || 0.1) + '"/>';
       }
       if (x.kind === 'pedal-line') {
-        return '<path class="' + cls + '" d="' + bracketPath(x.line, x.hooks, -x.hookLen) + '" fill="none" stroke="currentColor" stroke-width="' + f(x.t || 0.12) + '"/>';
+        return '<path class="' + cls + '" d="' + bracketPath(x.line, x.hooks, -x.hookLen, undefined, f) + '" fill="none" stroke="currentColor" stroke-width="' + f(x.t || 0.12) + '"/>';
       }
       if (x.kind === 'pedal-change') {
         const l = x.line, xc = (l[0] + l[2]) / 2;
@@ -185,7 +204,7 @@
         /* the line dashed, the hook at a closed end solid */
         const l = x.line, h = x.side === 'above' ? x.hookLen : -x.hookLen;
         let s = '<path class="' + cls + '" d="M' + f(l[0]) + ' ' + f(l[1]) + 'H' + f(l[2]) + '" fill="none" stroke="currentColor" stroke-width="' + f(x.t || 0.1) +
-          '" stroke-dasharray="0.5 0.35"/>';
+          '" stroke-dasharray="' + f(0.5) + ' ' + f(0.35) + '"/>';
         if (x.hooks && x.hooks[1]) s += '<path class="' + cls + '" d="M' + f(l[2]) + ' ' + f(l[1]) + 'V' + f(l[1] + h) + '" fill="none" stroke="currentColor" stroke-width="' + f(x.t || 0.1) + '"/>';
         return s;
       }
@@ -211,9 +230,9 @@
         if (x.non) {
           /* against arpeggiating: a bracket, its ends turned toward the chord */
           return '<path class="' + cls + '" d="M' + f(b[2]) + ' ' + f(l[1]) + 'H' + f(xc) + 'V' + f(l[3]) + 'H' + f(b[2]) +
-            '" fill="none" stroke="currentColor" stroke-width="0.12"/>';
+            '" fill="none" stroke="currentColor" stroke-width="' + f(0.12) + '"/>';
         }
-        let s = '<path class="' + cls + '" d="' + wavy([xc, l[3]], [xc, l[1]], 0.18, 0.8) + '" fill="none" stroke="currentColor" stroke-width="0.12"/>';
+        let s = '<path class="' + cls + '" d="' + wavy([xc, l[3]], [xc, l[1]], 0.18, 0.8, f) + '" fill="none" stroke="currentColor" stroke-width="' + f(0.12) + '"/>';
         if (x.dir === 'up') s += '<path class="' + cls + '" d="M' + f(xc) + ' ' + f(b[1]) + 'L' + f(xc - 0.35) + ' ' + f(l[1]) + 'H' + f(xc + 0.35) + 'Z"/>';
         if (x.dir === 'down') s += '<path class="' + cls + '" d="M' + f(xc) + ' ' + f(b[3]) + 'L' + f(xc - 0.35) + ' ' + f(l[3]) + 'H' + f(xc + 0.35) + 'Z"/>';
         return s;
@@ -224,17 +243,17 @@
     /* a curve (G4d-1a): a tie or a slur as its filled shape (a dashed or dotted slur as a stroke), a glissando as a line */
     function curve(c) {
       if (c.kind === 'gliss') {
-        const d = c.line === 'wavy' ? wavy(c.p0, c.p3, CV.GLISS.amp, CV.GLISS.wave) : 'M' + f(c.p0[0]) + ' ' + f(c.p0[1]) + 'L' + f(c.p3[0]) + ' ' + f(c.p3[1]);
+        const d = c.line === 'wavy' ? wavy(c.p0, c.p3, CV.GLISS.amp, CV.GLISS.wave, f) : 'M' + f(c.p0[0]) + ' ' + f(c.p0[1]) + 'L' + f(c.p3[0]) + ' ' + f(c.p3[1]);
         return '<path class="ppp-gliss" data-gliss="' + esc(c.refs[0]) + '" d="' + d + '" fill="none" stroke="currentColor" stroke-width="' + f(c.t) + '"/>';
       }
       const cls = c.kind === 'tie' ? 'vf-stavetie ppp-tie' : 'vf-curve ppp-slur', data = c.kind === 'tie' ? 'data-tie' : 'data-slur';
       if (c.line === 'dashed' || c.line === 'dotted') {
         const P = p => f(p[0]) + ' ' + f(p[1]);
         return '<path class="' + cls + '" ' + data + '="' + esc(c.refs[0]) + '" d="M' + P(c.p0) + 'C' + P(c.c1) + ' ' + P(c.c2) + ' ' + P(c.p3) +
-          '" fill="none" stroke="currentColor" stroke-width="' + f(c.t * 0.6) + '" stroke-dasharray="' + (c.line === 'dotted' ? '0.1 0.4' : '0.6 0.4') +
+          '" fill="none" stroke="currentColor" stroke-width="' + f(c.t * 0.6) + '" stroke-dasharray="' + (c.line === 'dotted' ? f(0.1) + ' ' + f(0.4) : f(0.6) + ' ' + f(0.4)) +
           '" stroke-linecap="round"/>';
       }
-      return '<path class="' + cls + '" ' + data + '="' + esc(c.refs[0]) + '" d="' + lens(c, c.side) + '"/>';
+      return '<path class="' + cls + '" ' + data + '="' + esc(c.refs[0]) + '" d="' + lens(c, c.side, f) + '"/>';
     }
     /* staff lines of one staff object, between x0 and x1 */
     const lines = (st, x0, x1) => {
@@ -244,11 +263,11 @@
       return d.length ? '<path class="vf-stave" d="' + d.join('') + '" fill="none" stroke="currentColor" stroke-width="' + f(EG.staffLine * sp) + '"/>' : '';
     };
 
-    out.push('<svg xmlns="http://www.w3.org/2000/svg" class="ppp-engraved" viewBox="0 0 ' + f(page.w) + ' ' + f(page.h) + '" width="' + f(page.w * o.px) +
-      '" height="' + f(page.h * o.px) + '" fill="currentColor" data-plan="' + esc(eng.planKey) + '"' + (o.hash ? ' data-layout="' + CN.hash(eng) + '"' : '') + '>');
+    out.push('<svg xmlns="http://www.w3.org/2000/svg" class="ppp-engraved" viewBox="0 0 ' + f(page.w) + ' ' + f(page.h) + '" width="' + fmt(page.w * o.px) +
+      '" height="' + fmt(page.h * o.px) + '" fill="currentColor" data-plan="' + esc(eng.planKey) + '"' + (o.hash ? ' data-layout="' + CN.hash(eng) + '"' : '') + '>');
     if (glyphs.length) {
       out.push('<defs>');
-      glyphs.forEach(n => out.push('<symbol id="' + P + n + '" overflow="visible"><path transform="scale(' + KS + ' -' + KS + ')" d="' + OL.PATHS[n] + '"/></symbol>'));
+      glyphs.forEach(n => out.push('<symbol id="' + P + n + '" overflow="visible"><path transform="scale(' + ks + ' -' + ks + ')" d="' + OL.PATHS[n] + '"/></symbol>'));
       out.push('</defs>');
     }
 
@@ -257,13 +276,17 @@
     const staffNo = new Map(plan.staves.map((s, i) => [s.id, s.number || i + 1]));
     const pe = new Map(plan.events.map(e => [e.id, e]));
     const meterAt = mid => { const i = pm.get(mid).i; let k = null; (plan.meters || []).forEach(x => { if (pm.get(x.m) && pm.get(x.m).i <= i) k = x; }); return k; };
+    /* the label a volta prints where it starts (sysmarks.js: the ending's text, or its numbers, "1." / "1, 2.") - data-volta
+       carries the same, as the legacy renderer's does (G04 §16.4; G4d-2) */
+    const voltaLabel = new Map();
+    eng.objects.forEach(x => { if (x.kind === 'volta' && x.start && x.label && !voltaLabel.has(x.refs[0])) voltaLabel.set(x.refs[0], x.label); });
     const voltaOf = (mid, staffKey) => {
       if (staffKey !== plan.staves[0].id) return null;
       const i = pm.get(mid).i;
       for (const en of plan.endings || []) {
         const a = pm.get(en.from) ? pm.get(en.from).i : -1, b = pm.get(en.to) ? pm.get(en.to).i : a;
         if (i < a || i > b) continue;
-        const label = i === a ? (en.numbers || []).join(',') : '';
+        const label = i === a ? (voltaLabel.get(en.id) || (en.numbers || []).join(', ') + '.') : '';
         const type = i === a ? (a === b && !en.open ? 'BEGIN_END' : 'BEGIN') : i === b && !en.open ? 'END' : 'MID';
         return type + (label ? ':' + label : '');
       }
