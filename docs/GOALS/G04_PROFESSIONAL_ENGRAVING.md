@@ -4,7 +4,12 @@ ScoreGraph에 **이미 있는** 기보 의미를 PPP의 실제 화면과 인쇄�
 
 | | |
 | --- | --- |
-| 상태 | **G4a CLOSED — PR #9로 병합 (`df8a571`, 2026-09-25).** 최종 독립 리뷰 PASS (BLOCKER 0, MAJOR 0, §32.13–§32.14). 구현 §32, Fixer §32.12, 최종 §32.13, 마감 §32.14. 사용자에게 보이는 변화 없음 (legacy 렌더러가 기본, 바이트 동일). 사용자 결정 G4-U1–U5 (§31). **G4b 구현됨 — READY_FOR_G4b_REVIEW (§33, 브랜치 `g4b-layout-core`, 병합 안 함)**: G4a MINOR 여섯을 닫고 layout core(NotationPlan → EngravedScore, 연습 map)를 만들었다. 앱은 불러오지 않는다 — 보이는 변화 없음. 설계: Architect 2026-09-24 |
+| 상태 | **G4a CLOSED — PR #9로 병합 (`df8a571`, 2026-09-25).** 최종 독립 리뷰 PASS (BLOCKER 0, MAJOR 0, §32.13–§32.14). 구현 §32, Fixer §32.12, 최종 §32.13, 마감 §32.14. 사용자에게 보이는 변화 없음 (legacy 렌더러가 기본, 바이트 동일). 사용자 결정 G4-U1–U5 (§31). **G4b CLOSED — PR #12로 병합 (`62ede61`, 2026-09-25)**:
+- G4a MINOR 여섯을 닫았다.
+- layout core(NotationPlan → EngravedScore, 연습 map)를 만들었다. 앱은 불러오지 않는다 — 보이는 변화 없음.
+- 독립 리뷰 NEEDS_FIX(MAJOR 3) → Fixer §33.16 → Lead 재확인 → 병합 (§33.17).
+- geometry-only 범위는 Lead 결정 G4-L1이다 (§27 G4b의 주): `svg.js`는 G4c, 페이지 통합은 G4d-2.
+- **다음: MX-1(8va·pedal `change` 재생, 사용자 결정 D-1)과 G4c** (`docs/PPP_MASTER_ROADMAP.md`). 설계: Architect 2026-09-24 |
 | 기준 커밋 | `origin/main` = `55d1bd5` (G3 PARTIAL/DEFERRED closeout, PR #8) |
 | 브랜치 / worktree | `g4-professional-engraving` / `D:/PPP-g4` |
 | 시작 검증 | `npm run test:scoregraph` → **205/205 pass** (이 세션이 `55d1bd5`에서 직접 실행) |
@@ -1381,6 +1386,23 @@ node tests/engrave/tools/legacy-geometry.js            # 옛 렌더러의 SVG에
 | 의존 | G4a |
 | rollback | 스위치 기본 `'legacy'` |
 
+> **Lead 결정 G4-L1 (2026-09-25)** — G4b는 **geometry-only**로 닫았다 (§33.1). G4b에는 다음이 없다: `svg.js`, 앱 ScoreView의 `renderer` 스위치와 새 `sync`, `renderer='engrave'` 브라우저 suite.
+>
+> 옮긴 곳:
+> - `svg.js`(+ B9) → **G4c**.
+> - 앱 통합 + A32·A33 → **G4d-2**. 기본값은 `'legacy'` 그대로이고, M-H1을 실제 페이지에서 보기 위해서다. 내용:
+>   - 개발용 스위치: `renderer` prop, `?renderer=engrave`, `PPP.strictEngrave`;
+>   - 곡 단위 fallback 카운터;
+>   - G4b highlighter를 새 `sync`로;
+>   - 내용 hash `drawKey`;
+>   - `agree.ok` 요구;
+>   - vendored 파일을 캐시 가능하게 전송;
+>   - 다시 불러온 곡의 `resolve` 비용;
+>   - `with-port.js`의 빈틈.
+> - A30 전체와 페이지 수준 A35–A37 → **G4f**.
+>
+> G4b가 판정한 acceptance: A14, A17–A19(기본), A23, A24, A27–A29, B1–B7(Node·Chrome), A31(Node 대리 지표). 근거와 순서는 `docs/PPP_MASTER_ROADMAP.md` §5.1, DECISIONS G4-L1.
+
 ### G4c — beam, stem, tuplet, 성부, 쉼표, 꾸밈음
 
 | | |
@@ -2348,6 +2370,45 @@ Chrome(1×)의 sonatina/020: plan 12.2, prepare 6.1, layout 7.9 ms. 4×: plan 65
 `4c8dd46` (코드·테스트: `tests/engrave/a29.js`, `layout-mutation.test.js`, `l2.js`, `layout.test.js`, `tools/bench.js`, `tools/layout-perf.js`, baseline r·e·x), 이어서 이 기록 (G04 §33, DECISIONS G4-B11, CURRENT_STATE). `origin/g4b-layout-core`에 push. 병합 안 함, PR 없음.
 
 **Fixer 상태: R1 FIXED, R2 FIXED, R3 FIXED (ratchet); R9·R10·R13 기록 정정; BLOCKER 0, MAJOR 0 → READY_FOR_MERGE_CHECK.**
+
+### 33.17 리뷰 판정·재확인·병합 (Lead, 2026-09-25)
+
+**독립 리뷰**
+
+- 대상과 방법: `ab59f80`, read-only. 리뷰어 자신의 `git clone --shared`에서, Windows CRLF와 Linux Docker 둘 다로 돌렸다.
+- 판정: **NEEDS_FIX — BLOCKER 0, MAJOR 3, MINOR 10, OPTIONAL 5.**
+- 안전성은 확인됐다:
+  - 보이는 변화 없음 (legacy parity 16/16);
+  - `test:engrave` 128/128 (Windows·Linux);
+  - 커밋된 layout hash가 Linux에서도 같다 (A27);
+  - Node = Chrome 808/808;
+  - G0 gate와 `mutation-check` 49/49, A48 페이지 gate PASS;
+  - §33의 다시 잰 수가 모두 일치.
+- MAJOR:
+  - R1: A29 정적 검사가 `getComputedTextLength`(M18)와 `globalThis.document`를 놓친다 (죽은 mutation).
+  - R2: layout 코드의 소스 mutation이 없다.
+  - R3: 다른 성부와의 쉼표·stem 충돌을 어떤 metric도 보지 못한다 (R suite에서 34개인데 L2는 0이라 보고).
+
+**Fixer** (§33.16): R1–R3 FIXED, 기록 정정 R9·R10·R13. `engrave/`와 앱 파일은 바뀌지 않았다.
+
+**Lead 재확인** (고친 항목만, `63f1bd6`의 새 clone):
+
+- `ab59f80..63f1bd6`에서 `engrave/`·앱·`scoregraph/`의 변경 파일 0.
+- `test:engrave` 132/132. `layout-mutation.test.js`의 모든 mutation이 이름 붙은 metric으로 잡히고, N1·N2는 동일하다.
+- layout hash 118 × 2 불변; `bench.js check` r·e·x PASS.
+- 음성 대조:
+  - r baseline의 `eg.rest.overlap`을 34 → 33으로 낮추면 `bench.js check --suite r`가 `REGRESSION eg.rest.overlap 34 vs baseline 33`, exit 1. 되돌리면 exit 0.
+  - `engrave/layout.js`에 `getComputedTextLength`를 심으면 A29 테스트가 실패한다.
+
+**병합**: PR #12, CI gate 초록, squash `62ede61`. 트리는 `63f1bd6`와 같고, 브랜치는 남겨 둔다. **G4b CLOSED — 다시 열지 않는다.**
+
+**G4c로 넘기는 것**
+
+- §33.16.8의 MINOR·OPTIONAL (R4–R8, R11, O1–O5). R12 store timeout의 `estimate`·`decode`는 G4d-2로 간다.
+- ratchet 둘(`eg.rest.overlap`, `eg.voice.stem_over_head`)을 0으로 gate.
+- G4-B11의 최종 규칙 (성부 사이 2도·unison의 비킴 방향 — 고정된 VexFlow 4.2.3은 stem 아래 음을 옮긴다. 근거를 확인해 정하고 §14.2나 G4-B11 중 하나를 고친다).
+
+§19.1의 hold-out 곡 이름은 Architect의 기준 측정이라 그대로 둔다 — 판각 시간이지 품질 값이 아니다. 새 성능 표는 hold-out을 쓰지 않는다 (`layout-perf.js`가 거절).
 
 ---
 

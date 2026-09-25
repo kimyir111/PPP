@@ -246,3 +246,9 @@ Fixer(`0f3d275`) 위에서 G4a를 마무리한 세션의 결정. 설계(G04 §0�
 | G4-B9 | **가까이 보기 창은 config `window: [첫, 끝]`** — 그 마디만 system으로 (§15.2 "창 경계를 system 경계로"). 창의 마지막 system은 곡이 거기서 끝날 때만 마지막(ragged) | 전곡 layout에서 잘라 쓰기 | B2 (창 p95 0.39 ms), 캐시 키에 포함 |
 | G4-B10 | **연습 map은 EngravedScore에서 한 번, highlighter는 두 포인터**: 시간은 앱처럼 4분음표, onset 키는 legacy `data-onset`, `legacyMap()`은 `_map` 모양. 앞으로는 바뀐 event만, 뒤로 seek는 가장 긴 음 길이 안의 event만 다시 본다. layout을 부르지 않는다 | 프레임마다 전부 훑기(지금 앱), DOM에서 bbox | B6, A31 (만진 수 = 바뀐 수) |
 | G4-B11 | **성부 사이 2도·unison(머리를 나누지 못할 때)은 stem 위 성부를 오른쪽으로** — stem 아래 성부가 제자리, 두 stem이 바깥 (`layout.js` `staffColumn` 303–315). **G04 §14.2와 다르다**: §14.2는 아래(`down`) 성부를 오른쪽으로 적었다. G4b는 이 규칙으로 커밋된 layout hash를 고정했고 Fixer 범위는 `layout.js`를 바꾸지 않으므로 G4b에서는 그대로 둔다. **최종 규칙은 G4c**(§14.2의 성부·unison 공유가 G4c 범위)가 E12·E13·찬송가 그림으로 정한다: 지키면 §14.2를 고치고, §14.2를 따르면 코드와 hash를 바꾼다 (GEOMETRY_ONLY) (Fixer, G04 §33.16.5) | §14.2대로 아래 성부를 오른쪽 (두 stem이 가운데서 한 줄) — G4b에서 바꾸면 커밋된 hash와 Fixer 범위를 넘는다 | 코드: E12에서 2도(v5 위 5.5, v6 아래 6.0)와 unison 둘 모두 stem 위 v5가 오른쪽 (머리 x0 10.66 대 9.48). 테스트: `layout.test.js` intrinsic widths(같은 음 두 성부는 나란히), `eg.overlap.head_head` 0 (코퍼스·E, 두 config), 커밋된 hash (E12, R 찬송가). Gould(*Behind Bars*)는 Implementer가 "stem이 바깥"의 근거로 코드에 적었다 — Fixer는 해당 쪽을 확인하지 못했다. **반대 증거**: vendored VexFlow 4.2.3의 `StaveNote.format`은 두 stem이 반대면 stem 아래 음에 `setXShift` (§14.2와 같음) |
+
+### Lead 결정 (G4 단계 경계, `docs/PPP_MASTER_ROADMAP.md` §5.1) — 2026-09-25
+
+| ID | 결정 | 근거 |
+| --- | --- | --- |
+| G4-L1 | **G4b는 geometry-only로 닫는다.** 옮긴 곳:<br>- `svg.js`(+B9) → G4c;<br>- 앱 통합 + A32·A33 → G4d-2 (M-H1 전, 기본값 `'legacy'`). 앱 통합은 개발용 renderer 스위치, 새 `sync`, 캐시 가능한 전송, `agree.ok` 요구다;<br>- A30 전체와 페이지 수준 A35–A37 → G4f.<br>G04 §27의 단계 표를 이렇게 읽는다 | - G4b 구현(§33.1)이 이미 이 경계다.<br>- Node만으로 판정 가능한 한 단위다.<br>- 19k줄 앱 파일을 세 단계 연속 건드리지 않는다.<br>- 사람 평가는 실제 PPP 렌더러에서 한다 (G3-U8·G3-U10의 교훈). |
