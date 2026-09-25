@@ -7,7 +7,7 @@ The operational roadmap for everything after G4a: order, dependencies, gates, an
 | Owner | The **Lead / Orchestrator** session. Implementers, reviewers and fixers read it. Only the Lead edits it. |
 | Updated | 2026-09-25 — sixth edition (Lead): **G4c CLOSED** (PR #15 `e3c8c5a`); current: G4d-1a |
 | Base | `origin/main` = `e3c8c5a` (G4c, PR #15) plus the docs closeout |
-| Active | **G4d-1a** (curves and marks attached to notes; `D:/PPP-g4`, branch `g4d1a-curves-marks`) — implementer running (§14). |
+| Active | **G4d-1a** (curves and marks attached to notes; `D:/PPP-g4`, branch `g4d1a-curves-marks`) — handed in at `7c83bc9`, in independent review (§14). |
 | Lead worktree | `D:/PPP-lead`, branch `lead-roadmap`. The Lead writes docs only, never in an implementer's worktree. |
 | How this relates to other docs | `docs/CURRENT_STATE.md` says what is true now, with measurements. `docs/DECISIONS.md` says why. `docs/GOALS/Gxx_*.md` is the contract for one Goal: design, acceptance and implementation record. **This document says in what order, behind which gates, and what comes next.** It does not repeat the goal specs. On detail, the spec wins. On sequencing, this document wins. |
 
@@ -595,7 +595,7 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 
 The record is G04 §34.19, with DECISIONS G4-L2 and G4-L3. **MX-1 is CLOSED** too (PR #13 `e37d37a`; not deployed — production runs `72549cb`).
 
-**Current unit: G4d-1a — RUNNING** (Lead-launched implementer, the only writer in `D:/PPP-g4`).
+**Current unit: G4d-1a — IN REVIEW.** Handed in READY_FOR_REVIEW at `7c83bc9` (`4327a2c` code, `41c7ca8` version-rule guard, `7c83bc9` docs; record G04 §35, DECISIONS G4-D1a-1…13). Claims: A5–A7, A12 (percussion), A20 (1a's objects), A22 PASS; 16 new named mutations plus M8/M12/M14/M15/M23 caught; `plan/2`/`engr/2` with a guard that refuses a changed hash under an unchanged version; B9 0.31; layout 18.6 → 30.7 ms. One independent read-only review is running. It must judge: fingering placed outside long slurs (§10.2's order), how A22 measures tie ends at displaced heads, the slur-hit ratio judged per suite, two departures from §13.2, and whether the CI font fetch (`make-text-metrics --check --fetch`) makes the merge gate depend on the network.
 
 | | |
 | --- | --- |
