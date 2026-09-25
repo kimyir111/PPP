@@ -160,7 +160,20 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
       rolled: score.notes.filter(n => n.arp).map(n => n.m + '|' + n.b + '|' + n.p),
       flats: score.notes.filter(n => n.acc === 'flat').map(n => n.m + '|' + n.b + '|' + n.p),
       untouched: untouched, otherChords: (other.chords || []).length,
-      saved: JSON.stringify({ score: score })
+      saved: JSON.stringify({ score: score }),
+      /* MX-1: the page's 8va and a file's 8va state the same pitch layers. PdfLayer derives what sounds from the glyph
+         it reads (written + shift); Score.finalize derives what is printed from what sounds (sounding - shift). Take
+         PdfLayer's layers off and finalize puts the same ones back, and a song saved and read back keeps them. */
+      pdfAgree: (() => {
+        const clean = x => JSON.parse(JSON.stringify(x, (k, v) => (k === '_byNumber' ? undefined : v)));
+        const layers = sc => sc.notes.filter(n => !n.rest).map(n => [n.m, n.b, n.staff, n.p, n.midi, n.writtenP, n.writtenMidi,
+          n.soundingMidi, n.ottavaShift || 0].join(' ')).sort();
+        const bare = clean(score);
+        bare.notes.forEach(n => { delete n.writtenP; delete n.writtenMidi; delete n.soundingMidi; delete n.ottavaShift; });
+        const a = layers(score), b = layers(PPP.Score.finalize(bare)), c = layers(PPP.Score.finalize(clean(score)));
+        return { same: a.join('|') === b.join('|') && a.join('|') === c.join('|'), under: score.notes.filter(n => n.ottavaShift).length,
+          diff: a.filter(x => b.indexOf(x) < 0).slice(0, 2).concat(b.filter(x => a.indexOf(x) < 0).slice(0, 2)) };
+      })()
     };
   }, makePdf(), XML, PDFJS_WORKER);
 
@@ -233,6 +246,8 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
   ok('the notes under it sound an octave higher; the one after it does not',
     r.pitches.indexOf('2|2|E6') > -1 && r.pitches.indexOf('3|0|G6') > -1 && r.pitches.indexOf('3|2|Bb4') > -1 && r.pitches.indexOf('2|0|C5') > -1,
     r.pitches.join(', '));
+  ok('the 8va the page draws and an 8va a file states are one reading: Score.finalize gives its notes the same layers',
+    r.pdfAgree.same && r.pdfAgree.under === 2, JSON.stringify(r.pdfAgree));
   ok('the title comes from the page, not the file name', r.before.title === 'vector.pdf' && r.title === 'Vector Song', r.title);
   ok('the composer comes from the page', r.composer === 'Music by Test Composer', r.composer);
   ok('the tempo comes from the page', r.tempo === 70, String(r.tempo));

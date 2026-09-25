@@ -60,7 +60,7 @@
     "Metronome": "메트로놈",
     "Tempo": "빠르기",
     "Played correctly": "맞은 음",
-    "Wrong note": "틀린 음",
+    "Wrong note": "틀렸어요",
     "Expected next": "다음에 칠 음",
     "PPP Coach": "PPP 코치",
     "listening": "듣는 중",
@@ -737,7 +737,6 @@
     "Show keys": "건반 보기",
     "Hide the on-screen keyboard so the score has the screen": "건반을 숨겨서 악보를 크게 봐요",
     "Drag to resize the keyboard": "끌어다 건반 크기를 조절해요",
-    "Wrong note": "틀렸어요",
     "{{want}}, not {{got}}": "{{want}}이에요. {{got}}가 아니에요",
     "Answer on": "정답 켜짐",
     "Answer off": "정답 꺼짐",
@@ -1913,6 +1912,7 @@
     "faithful solo piano": "피아노 독주 원음 채보",
     "Only one piano model was available, so these notes could not be cross-checked by another model.": "피아노 모델 하나만 사용되어 다른 모델과 음을 교차 확인하지 못했어요.",
     "{{n}} possible notes were rejected because the piano models did not agree.": "피아노 모델끼리 일치하지 않은 후보 음 {{n}}개를 제외했어요.",
-    "Reading notation directly from the vector PDF": "벡터 PDF에서 악보 정보를 직접 읽는 중"
+    "Reading notation directly from the vector PDF": "벡터 PDF에서 악보 정보를 직접 읽는 중",
+    "PPP needs at least four notes to write a score, and this MIDI file has fewer.": "PPP가 악보를 만들려면 음이 네 개 이상 있어야 하는데, 이 MIDI 파일에는 그보다 적어요."
   }
 }

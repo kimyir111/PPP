@@ -12,14 +12,14 @@
    The contract is parity, not improvement. Where the app reads something in a
    way this library would not - dynamics and tempo taken from every part, the
    piano chosen as the part with two staves or else the last one, an octave
-   shift applied to what sounds - the adapter reproduces the app, and the
-   difference is left to the Goal that owns it. compare() below is what proves
-   it: field by field over every committed file (A32, A33).
+   line that names no staff read on every staff - the adapter reproduces the
+   app, and the difference is left to the Goal that owns it. compare() below
+   is what proves it: field by field over every committed file (A32, A33).
 
    Nothing here is an opinion about the music. It is a projection.
 
    G4a (docs/GOALS/G04 §8.2) adds the way back and the checks between the two:
-     unfinalize(score)      the Score as toScore makes it, before Score.finalize moved it
+     unfinalize(score)      the Score as toScore makes it, before Score.finalize stated its printed pitch
      comparable(score)      the fields compare() reads, in one canonical note order
      agree(score, graph)    do a Score and a graph state the same music? (compare() on both)
      link(score, graph)     which graph event and head each Score note is
@@ -199,7 +199,9 @@
         }
       });
     });
-    /* an octave shift moves what sounds, the way the app reads it (issue 3; parity, G02 §14.3) */
+    /* An octave line moves only what is printed (MX-1, decision D-1): the graph's pitch sounds, and its shift is the
+       app's `dir` - both +1 for an 8va (<octave-shift type="down">), sounding an octave above the page. The notes keep
+       the pitch that sounds; Score.finalize prints them at sounding - shift (writtenP, writtenMidi). */
     /* the part the app plays: the first with two staves, else the last (App 3955-3960) */
     let pianoGuess = g.parts.findIndex(p => p.staves.length >= 2);
     if (pianoGuess < 0) pianoGuess = g.parts.length - 1;
@@ -211,8 +213,7 @@
         const from = mIndex.get(s.from.m), to = s.to ? mIndex.get(s.to.m) : undefined;
         if (from === undefined) return;
         const octaves = Math.abs(s.shift);
-        /* the graph's shift is +1 for <octave-shift type="down">, which the app signs the other way */
-        const dir = s.shift > 0 ? -1 : 1;
+        const dir = s.shift > 0 ? 1 : -1;
         ottavas.push({ m: numberOf[from], b: Q(s.from.at),
           endM: to === undefined ? null : numberOf[to], endB: s.to ? Q(s.to.at) : null,
           size: octaves === 1 ? 8 : octaves === 2 ? 15 : 22,
@@ -231,8 +232,9 @@
       /* D7. The graph holds the pitch that sounds; a transposing part is printed somewhere else.
          `p` and `midi` stay concert, because that is what every sound-making consumer reads, and
          the printed pitch goes in `writtenP`/`writtenMidi`, which is where the sheet renderer
-         already looks (App 10659) and where the app's own octave-shift handling puts it. A piano
-         does not transpose, so nothing below fires for it and its Score is untouched. */
+         already looks (App 10726) and where Score.finalize prints a note under an 8va (it takes the
+         shift off the printed pitch, never off the sounding one). A piano does not transpose, so
+         nothing below fires for it and its Score is untouched. */
       const tr = part.instrument && part.instrument.transpose;
       const transposes = !!(tr && (tr.chromatic || tr.diatonic || tr.octave));
       part.events.forEach(e => {
@@ -598,9 +600,11 @@
      for a Score only when the two state the same music, and a Score with no graph gets one made from it.
      ========================================================================== */
 
-  /* Score.finalize (App 3555) moves what sounds under an 8va: p and midi are shifted by n.ottavaShift and the
-     notes are sorted by position. That is the app's reading (issue 3), not the file's, so it is undone here
-     before a Score is compared with a projection: the projection is what finalize starts from. */
+  /* Score.finalize (App 3568) prints a note under an 8va an octave from where it sounds: writtenP and writtenMidi are
+     the sounding pitch less n.ottavaShift, and p and midi - what sounds - are left as they are (MX-1, decision D-1).
+     It also sorts the notes by position. The printed pitch is taken back here before a Score is compared with a
+     projection: the projection is what finalize starts from. A Score saved before MX-1 holds p and midi already
+     moved and the line signed the other way; read back the same way, it comes out as the music it plays. */
   const PITCH_RE = /^([A-G])(#{0,3}|b{0,3})(-?\d+)$/;
   function octaveShift(p, semitones) {
     const m = PITCH_RE.exec(p || '');
@@ -610,7 +614,8 @@
   function beforeFinalize(n) {
     const shift = n && !n.rest && isFinite(+n.ottavaShift) ? +n.ottavaShift : 0;
     if (!shift) return n;
-    return Object.assign({}, n, { p: n.p ? octaveShift(n.p, -shift) : n.p, midi: n.midi == null ? n.midi : n.midi - shift });
+    return Object.assign({}, n, { writtenP: n.writtenP ? octaveShift(n.writtenP, shift) : n.writtenP,
+      writtenMidi: n.writtenMidi == null ? n.writtenMidi : n.writtenMidi + shift });
   }
   function unfinalize(score) {
     return Object.assign({}, score, { notes: (score.notes || []).map(beforeFinalize) });
@@ -1263,7 +1268,7 @@
       const a = posOf(ov.m, ov.b), z = ov.endM != null ? posOf(ov.endM, ov.endB || 0) : null;
       const oct = OCTAVES_OF_SIZE[ov.size] || Math.max(1, Math.round(Math.abs(+ov.semitones || 12) / 12));
       if (!a || !z) { note('ottava', ov.m); return; }
-      const x = { type: 'ottava', shift: (ov.dir < 0 ? 1 : -1) * oct, from: a, to: z };
+      const x = { type: 'ottava', shift: (ov.dir > 0 ? 1 : -1) * oct, from: a, to: z };
       if (ov.staff !== null && ov.staff !== undefined) {
         if (partOfStaff[ov.staff] !== pianoIdx) { note('ottava-staff', ov.staff); return; }
         x.staff = staffEnt[ov.staff].id;

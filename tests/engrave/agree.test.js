@@ -79,15 +79,20 @@ test('agree is blind only to what is not music: note order, title, composer, the
   assert.deepEqual(a.info.map(i => i.field), ['title', 'composer', 'tempo'], 'and says what it did not compare');
 });
 
-test('unfinalize undoes the 8va move Score.finalize makes, so a finalized Score compares with its projection', () => {
+test('unfinalize takes back the printed pitch Score.finalize gives a note under an 8va, so a finalized Score compares with its projection', () => {
   const s = fixture('parse-ottava-8va-8vb');
   const moved = s.notes.filter(n => n.ottavaShift);
   assert.ok(moved.length > 0, 'the fixture has notes under an 8va');
   const u = L.unfinalize(s);
   moved.forEach(n => {
     const back = u.notes[s.notes.indexOf(n)];
-    assert.equal(back.midi, n.midi - n.ottavaShift);
-    assert.notEqual(back.p, n.p);
+    /* what sounds is the graph's pitch and is never moved (MX-1, decision D-1); what is printed goes back to it (a piano
+       does not transpose) */
+    assert.equal(back.midi, n.midi);
+    assert.equal(back.p, n.p);
+    assert.notEqual(n.writtenP, n.p);
+    assert.equal(back.writtenP, n.p);
+    assert.equal(back.writtenMidi, n.midi);
   });
   /* and a Score that was never finalized comes back untouched */
   const plain = L.toScore(SG.musicxml.import(require('fs').readFileSync(require('path').join(require('./helpers.js').REPO,

@@ -303,6 +303,89 @@ const survey = page => page.evaluate(() => {
   ok('audio inference does not present an intra-measure split as written legato',
     inferredTiePaths === 0, inferredTiePaths + ' tie path(s)');
 
+  /* MX-1: an octave line from a file is drawn as the page prints it - "8va" over the treble staff with its notes brought
+     down onto the staff, "8vb" under the bass staff, "15ma" two octaves - while the notes sound where the file says
+     (decision D-1: MusicXML's <pitch> sounds; the player's half is tests/playback-scheduler.test.js) */
+  const e18 = fs.readFileSync(path.join(__dirname, 'engrave', 'fixtures', 'e', 'E18-ottava.musicxml'), 'utf8');
+  const ott = await page.evaluate(async xml => {
+    const score = PPP.parseMusicXML(xml, 'E18-ottava.musicxml');
+    await new Promise(resolve => PPP.app.setState({
+      score: score, screen: 'player', beat: 0, playing: false,
+      loop: false, loopFrom: 1, loopTo: 3
+    }, resolve));
+    await new Promise(resolve => setTimeout(resolve, 400));
+    const svg = document.querySelector('.ppp-staffwrap svg');
+    if (!svg) return null;
+    const lines = (m, st) => {
+      const g = [...svg.querySelectorAll('g.ppp-stave')].find(x => x.getAttribute('data-m') === String(m) && x.getAttribute('data-staff') === String(st));
+      const ys = g ? [...g.querySelectorAll('.vf-stave path')].map(q => +((/M[\d.]+ ([\d.]+)L/.exec(q.getAttribute('d')) || [])[1])).filter(isFinite) : [];
+      return ys.length ? { top: Math.min.apply(null, ys), bottom: Math.max.apply(null, ys) } : null;
+    };
+    const head = key => {
+      const h = svg.querySelector('g.ppp-note[data-onset="' + key + '"] .vf-notehead path');
+      if (!h) return null;
+      const b = h.getBBox();
+      return b.y + b.height / 2;
+    };
+    const label = t => [...svg.querySelectorAll('text')].filter(x => x.textContent.trim() === t).map(x => { const b = x.getBBox(); return b.y + b.height / 2; });
+    return { s1: lines(1, 1), s2: lines(1, 2), c6: head('1|0.000|1'), c2: head('1|0.000|2'),
+      va: label('8va'), vb: label('8vb'), ma: label('15ma'), mb: label('15mb') };
+  }, e18);
+  ok('an 8va is labelled over the treble staff, an 8vb under the bass staff, a 15ma as two octaves',
+    !!(ott && ott.s1 && ott.s2) && ott.va.some(y => y < ott.s1.top) && ott.vb.some(y => y > ott.s2.bottom) &&
+      ott.ma.length > 0 && ott.mb.length === 0,
+    ott ? JSON.stringify({ '8va': ott.va.map(Math.round), '8vb': ott.vb.map(Math.round), '15ma': ott.ma.length, '15mb': ott.mb.length,
+      treble: ott.s1, bass: ott.s2 }) : 'no staff');
+  ok('the C6 under the 8va and the C2 under the 8vb are drawn on their staves, where the page prints them (C5, C3)',
+    !!(ott && ott.s1 && ott.s2 && ott.c6 != null && ott.c2 != null) &&
+      ott.c6 >= ott.s1.top && ott.c6 <= ott.s1.bottom && ott.c2 >= ott.s2.top && ott.c2 <= ott.s2.bottom,
+    ott ? 'C6 head at ' + Math.round(ott.c6) + ' (staff ' + (ott.s1 && ott.s1.top) + '-' + (ott.s1 && ott.s1.bottom) + '), C2 at ' +
+      Math.round(ott.c2) + ' (staff ' + (ott.s2 && ott.s2.top) + '-' + (ott.s2 && ott.s2.bottom) + ')' : '');
+
+  /* MX-1 fixer (R1): "This part" shows four bars of a line that starts before them and ends after them. Its notes are
+     printed an octave below where they sound, so the line must be drawn over the bars shown - "(8va)", carried on from
+     before, with no end hook - or the page would say C5 where the app plays C6. */
+  const longLine = (() => {
+    const bar = (m, inner) => '<measure number="' + m + '">' + (m === 1 ? '<attributes><divisions>1</divisions><key><fifths>0</fifths></key>' +
+      '<time><beats>4</beats><beat-type>4</beat-type></time><staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef>' +
+      '<clef number="2"><sign>F</sign><line>4</line></clef></attributes>' : '') + inner + '</measure>';
+    const n = (step, oct, staff, dur, type) => '<note><pitch><step>' + step + '</step><octave>' + oct + '</octave></pitch><duration>' + dur +
+      '</duration><voice>' + (staff === 1 ? 1 : 5) + '</voice><type>' + type + '</type><staff>' + staff + '</staff></note>';
+    let body = '';
+    for (let m = 1; m <= 8; m++) {
+      body += bar(m, (m === 1 ? '<direction placement="above"><direction-type><octave-shift type="down" size="8"/></direction-type><staff>1</staff></direction>' : '') +
+        n('C', 6, 1, 1, 'quarter') + n('E', 6, 1, 1, 'quarter') + n('G', 6, 1, 1, 'quarter') + n('C', 7, 1, 1, 'quarter') +
+        (m === 8 ? '<direction><direction-type><octave-shift type="stop" size="8"/></direction-type><staff>1</staff></direction>' : '') +
+        '<backup><duration>4</duration></backup>' + n('C', 3, 2, 4, 'whole'));
+    }
+    return '<?xml version="1.0"?><score-partwise version="4.0"><part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>' +
+      '<part id="P1">' + body + '</part></score-partwise>';
+  })();
+  const part = await page.evaluate(async xml => {
+    const score = PPP.scoreFromXml(xml, 'long-8va.musicxml');
+    await new Promise(resolve => PPP.app.setState({
+      score: score, screen: 'player', wholeScore: false, focus: false, beat: PPP.Score.startQ(score, 3), playing: false,
+      loop: true, loopFrom: 3, loopTo: 6
+    }, resolve));
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const svg = document.querySelector('.ppp-staffwrap svg');
+    if (!svg) return null;
+    const bars = [...new Set([...svg.querySelectorAll('g.ppp-stave')].map(g => +g.getAttribute('data-m')))];
+    const g = [...svg.querySelectorAll('g.ppp-stave')].find(x => x.getAttribute('data-m') === String(bars[0]) && x.getAttribute('data-staff') === '1');
+    const ys = g ? [...g.querySelectorAll('.vf-stave path')].map(q => +((/M[\d.]+ ([\d.]+)L/.exec(q.getAttribute('d')) || [])[1])).filter(isFinite) : [];
+    const h = svg.querySelector('g.ppp-note[data-onset="' + bars[0] + '|0.000|1"] .vf-notehead path');
+    const hb = h ? h.getBBox() : null;
+    const labels = [...svg.querySelectorAll('text')].map(t => t.textContent.trim()).filter(t => /^\(?(8va|8vb|15ma|15mb)\)?$/.test(t));
+    const dashes = [...svg.querySelectorAll('path.ppp-ottava')].map(q => q.getAttribute('d'));
+    return { bars: bars, labels: labels, hooks: dashes.filter(d => (d.match(/ L /g) || []).length > 1).length, dashes: dashes.length,
+      top: ys.length ? Math.min.apply(null, ys) : null, bottom: ys.length ? Math.max.apply(null, ys) : null, head: hb ? hb.y + hb.height / 2 : null };
+  }, longLine);
+  ok('a view of bars inside a longer 8va draws the line over them - "(8va)", carried on, no end hook - and the C6 it plays on the staff, as C5',
+    !!part && part.bars[0] > 1 && part.bars[part.bars.length - 1] < 8 && part.labels.join() === '(8va)' && part.dashes === 1 && part.hooks === 0 &&
+      part.head != null && part.head >= part.top && part.head <= part.bottom,
+    part ? JSON.stringify({ bars: part.bars, labels: part.labels, dashes: part.dashes, hooks: part.hooks,
+      head: Math.round(part.head), staff: [part.top, part.bottom] }) : 'no staff');
+
   await page.evaluate(() => { try { localStorage.removeItem('ppp.state.v2'); } catch (e) {} });
 
   await browser.close();

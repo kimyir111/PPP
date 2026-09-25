@@ -6,7 +6,7 @@
      highlight   the legacy renderer's data-onset key "m|b|staff" (App onsetKey)
      bar, loop   the Score's measure number at the same position in the bar list
      seek        the absolute position in quarters (Score.finalize's abs)
-     MIDI        the pitch the app sounds and checks (with its 8va reading, issue 3)
+     MIDI        the pitch the app sounds and checks (the graph's: an 8va moves only what is printed, MX-1 / D-1)
      hands       the hand the Score gives the note */
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -34,8 +34,8 @@ function check(name, score, res) {
     assert.equal(score.measures[mIndex.get(ev.m)].number, n.m, name + ' note ' + i + ': bar');
     /* seek: the same absolute position */
     if (n.abs !== undefined) assert.ok(Math.abs(R.toNumber(R.add(mStart.get(ev.m), R.parse(ev.at))) * 4 - n.abs) < 1e-6, name + ' note ' + i + ': position');
-    /* MIDI feedback: the pitch the app plays and checks (concert pitch, plus its own 8va reading) */
-    if (head && head.midi !== null) assert.equal(head.midi + (+n.ottavaShift || 0), n.midi, name + ' note ' + i + ': pitch');
+    /* MIDI feedback: the pitch the app plays and checks is the head's concert pitch, under an 8va too (MX-1, D-1) */
+    if (head && head.midi !== null) assert.equal(head.midi, n.midi, name + ' note ' + i + ': pitch');
     assert.ok(id.events[l.event].hands.indexOf(n.hand) >= 0, name + ' note ' + i + ': hand');
   });
   /* loops and bar highlights name bars by number, in order */

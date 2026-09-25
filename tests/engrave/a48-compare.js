@@ -3,8 +3,8 @@
 
    fieldsThatDiffer(L, a, b) -> sorted list of what differs ('notes.writtenP', 'measures', 'wedges', ...), [] when the
    two Scores state the same music. Every note field the app keeps - written and sounding pitch, the microtone
-   approximation, the 8va shift, positions - the measures and every list; notes as multisets (which of two
-   simultaneous notes the app sorts first is not music); nothing rounded but floating noise (1e-9). L is
+   approximation, the 8va shift, positions - the measures, every list and the Score's ottavaRule; notes as multisets
+   (which of two simultaneous notes the app sorts first is not music); nothing rounded but floating noise (1e-9). L is
    PPPScoreGraph.legacy (its field lists). */
 (function (root, factory) {
   'use strict';
@@ -72,6 +72,10 @@
       if (JSON.stringify(s(a[k])) !== JSON.stringify(s(b[k]))) out.add(k);
     });
     if (val(a.staves) !== val(b.staves)) out.add('staves');
+    /* the rule the pitch layers were made by (MX-1 fixer, M1): finalize marks every Score it reads afresh, a rebuilt one
+       too, so both sides of every Score A48 holds carry it; a Score saved before MX-1 has none, and its rebuild - its own
+       music read again under D-1 - is marked (tests/scoregraph/app-playback.test.js) */
+    if (val(a.ottavaRule) !== val(b.ottavaRule)) out.add('ottavaRule');
     return Array.from(out).sort();
   }
 

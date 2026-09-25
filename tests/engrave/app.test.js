@@ -53,11 +53,17 @@ test('a song keeps its graph when its slot is written, and loses it when the son
   assert.doesNotMatch(slotObject, /graph/i);
 });
 
-test('A45: the legacy renderer is byte for byte the one at 55d1bd5, and nothing draws from a plan yet', () => {
-  /* hashed at 55d1bd5 (LF): the ScoreView class from makeScoreView to its closing brace, and the renderer's head */
+test('A45: the legacy renderer is byte for byte the one at 55d1bd5 but for MX-1\'s octave lines, and nothing draws from a plan yet', () => {
+  /* hashed at 55d1bd5 (LF): the ScoreView class from makeScoreView to its closing brace, and the renderer's head. MX-1
+     (fixer, R1) changed one block of it on purpose - where the octave lines are drawn, so a view of some bars draws the
+     stretch of a line it shows: the class is pinned as it is now, and everything outside that block is still the
+     55d1bd5 renderer byte for byte (the second hash is 55d1bd5's class with the same block cut out) */
   const b = html.indexOf('function makeScoreView(React) {');
   const scoreView = html.slice(b, html.indexOf('\n  };\n}\n', b) + 7);
-  assert.equal(sha(scoreView), 'fa5b225d609aff96eb5cc41a1c4e2dcb215783f2306889411328e1f2e08ec3a1');
+  assert.equal(sha(scoreView), '8ceb975a9fa3867a7fbc0ef0033b6051aef7f0a6245478417a2cab3bfa49d368');
+  const oa = scoreView.indexOf('        const absOfBar = n => Score.startQ(score, n);'), oz = scoreView.indexOf('      /* A segno or coda sign stands');
+  assert.ok(oa > 0 && oz > oa, 'the octave-line block is where it was');
+  assert.equal(sha(scoreView.slice(0, oa) + scoreView.slice(oz)), '80149fb7729d7b7160f9042c198ea17bad086113f667e247ff464f218cb52248');
   const a = html.indexOf('   NOTATION RENDERER (VexFlow)');
   assert.equal(sha(html.slice(a, html.indexOf('\n/* ====', a + 40))), 'b59e39a421ac5d786fd67780ba587938d99b0ed9ee44bcf1455a9eaf9e98b183');
   assert.match(html, /const VEXFLOW_URL = 'https:\/\/cdn\.jsdelivr\.net\/npm\/vexflow@4\.2\.3\/build\/cjs\/vexflow\.js';/, 'the legacy renderer loads what it always loaded');

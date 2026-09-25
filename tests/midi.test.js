@@ -1,6 +1,7 @@
 const puppeteer = require('puppeteer');
 const { preparePage } = require('./boot');
 const path = require('path');
+const fs = require('fs');
 
 const URL = 'http://127.0.0.1:8777/Piano%20Coach%20App.dc.html';
 const errors = [];
@@ -638,6 +639,82 @@ function installFakeMidi() {
   });
   ok('Local Control on when output is the same device as input', local.localOn && !local.localOff && local.same,
     JSON.stringify(local));
+
+  /* ================= 4b. MX-1: what goes out under an octave line and at a pedal change ================= */
+  console.log('\n── MIDI output: an 8va and a pedal change ──');
+  /* MusicXML's <pitch> sounds and an 8va moves only what is printed (decision D-1); a printed pedal change is the damper
+     let down and pressed again at once: CC64 0 then 127, at the same moment, in that order */
+  const changeXml = '<?xml version="1.0"?><score-partwise version="3.1"><part-list><score-part id="P1"><part-name>P</part-name></score-part></part-list><part id="P1">' +
+    '<measure number="1"><attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>' +
+    '<direction><direction-type><pedal type="start"/></direction-type></direction>' +
+    '<direction placement="above"><direction-type><octave-shift type="down" size="8"/></direction-type></direction>' +
+    '<note><pitch><step>C</step><octave>6</octave></pitch><duration>1</duration><type>quarter</type></note>' +
+    '<note><pitch><step>E</step><octave>6</octave></pitch><duration>1</duration><type>quarter</type></note>' +
+    '<direction><direction-type><octave-shift type="stop" size="8"/></direction-type></direction>' +
+    '<direction><direction-type><pedal type="change"/></direction-type></direction>' +
+    '<note><pitch><step>G</step><octave>4</octave></pitch><duration>1</duration><type>quarter</type></note>' +
+    '<note><pitch><step>A</step><octave>4</octave></pitch><duration>1</duration><type>quarter</type></note>' +
+    '<direction><direction-type><pedal type="stop"/></direction-type></direction>' +
+    '</measure></part></score-partwise>';
+  const changeRun = await page.evaluate(async xml => {
+    const app = PPP.app;
+    if (app.state.playing) app.togglePlay();
+    const score = PPP.parseMusicXML(xml, 'midi-out-change.musicxml');
+    app.setState({
+      score: score, tempo: 120, loop: false, loopFrom: 1, loopTo: 1, beat: 0,
+      playing: false, hands: 'both', practiceMode: 'practice',
+      toggles: Object.assign({}, app.state.toggles, { notes: true, midi: false, midiOut: true, sound: false, follow: false })
+    });
+    await app.connectMidiOut('fake-out');
+    await new Promise(r => setTimeout(r, 50));
+    window.__fake.sent = [];
+    app.wake();
+    app.togglePlay();
+    /* the first scheduling pass queues the whole bar (two seconds of lookahead); read it before stop sends its panic */
+    const queued = window.__fake.sent.map(x => ({ st: x.data[0], d1: x.data[1], d2: x.data[2], t: x.timestamp }));
+    app.togglePlay();
+    const isOn = x => (x.st & 0xf0) === 0x90 && x.d2 > 0;
+    const first = queued.find(isOn);
+    const t0 = first ? first.t : 0;
+    return {
+      ons: queued.filter(isOn).map(x => x.d1),
+      pedal: queued.filter(x => (x.st & 0xf0) === 0xb0 && x.d1 === 64).map(x => x.d2 + '@' + Math.round(x.t - t0))
+    };
+  }, changeXml);
+  ok('under an 8va the notes go out at the pitch that sounds (C6, E6), not the printed C5, E5',
+    changeRun.ons.join(' ') === '84 88 67 69', changeRun.ons.join(' '));
+  ok('a pedal change goes out as the damper let down and pressed again: CC64 0 then 127, at the change',
+    changeRun.pedal.join(' ') === '127@0 0@1000 127@1000', changeRun.pedal.join(' '));
+
+  /* ================= 4c. R4: a MIDI file with fewer than four notes ================= */
+  console.log('\n── a MIDI file too short to write a score ──');
+  /* PPP writes a score from four notes or more (the floor stays, G2 R4); a file under it does have notes, and the message
+     says so in every language the app speaks */
+  const midiB64 = fs.readFileSync(path.join(__dirname, 'scoregraph', 'fixtures', 'midi', 'm02-chord-3.mid')).toString('base64');
+  const shortMidi = await page.evaluate(async b64 => {
+    const bin = atob(b64); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    const I = window.PPP_I18N;
+    await I.ready;
+    const out = {};
+    for (const loc of ['en-US', 'ko-KR', 'ja-JP', 'zh-CN']) {
+      I.setLocale(loc);
+      await new Promise(r => setTimeout(r, 300));
+      const catalog = await fetch('./i18n/' + loc + '.json').then(r => r.json());
+      const key = 'PPP needs at least four notes to write a score, and this MIDI file has fewer.';
+      let msg = null;
+      try { await PPP.Import.load(new File([u], 'three-notes.mid')); msg = 'opened'; } catch (e) { msg = e.message; }
+      out[loc] = { msg: msg, want: (catalog.content && catalog.content[key]) || key };
+    }
+    I.setLocale('en-US');
+    await new Promise(r => setTimeout(r, 300));
+    return out;
+  }, midiB64);
+  ok('a three-note MIDI file is refused for being short, not for having no notes',
+    shortMidi['en-US'].msg === 'PPP needs at least four notes to write a score, and this MIDI file has fewer.',
+    shortMidi['en-US'].msg);
+  ok('and it says so in Korean, Japanese and Chinese',
+    ['ko-KR', 'ja-JP', 'zh-CN'].every(l => shortMidi[l].msg === shortMidi[l].want && shortMidi[l].want !== shortMidi['en-US'].want),
+    ['ko-KR', 'ja-JP', 'zh-CN'].map(l => l + ': ' + shortMidi[l].msg).join(' | '));
 
   /* ================= 5. no Web MIDI at all ================= */
   console.log('\n── unsupported browser ──');

@@ -160,6 +160,8 @@ class ParityRules(unittest.TestCase):
         c = musicxml.read_score(score([n() + d + n() * 3]))
         self.assertEqual(c.marks[0].pos_q, 3)
 
+    # r20: the reader's ottava="app" mode models the pre-MX-1 app; rebaselined in MX-2 (the app now reads an
+    # octave-shift the MusicXML way).
     def test_r20_ottava_up_raises_the_sounding_pitch(self):
         up = '<direction><direction-type><octave-shift type="up" size="8"/></direction-type><staff>1</staff></direction>'
         stop = '<direction><direction-type><octave-shift type="stop" size="8"/></direction-type><staff>1</staff></direction>'
