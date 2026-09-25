@@ -1,6 +1,6 @@
 # PPP — current state
 
-Updated 2026-09-25 (G4b merged as PR #12; the production database moved to Neon Free). G0 (Quality Foundation), G1 (ScoreGraph) and G2 (Score Import) are all merged
+Updated 2026-09-25 (MX-1 merged as PR #13; G4b merged as PR #12; the production database moved to Neon Free). G0 (Quality Foundation), G1 (ScoreGraph) and G2 (Score Import) are all merged
 and closed. **G3 is merged as PARTIAL / DEFERRED** (PR #7, `c5474c2`; G03 §31): implemented, reviewed and fixed,
 but its blind human review (A36) failed (§30), so every part of it stays **off** — G3a, G3b, the automatic 8va
 and the pedal join — and nothing a user sees changed. **The active goal is G4 Professional Engraving**
@@ -10,8 +10,10 @@ CLOSED — merged as PR #9 (`df8a571`)** after its final independent review pass
 renderer is still the one drawing (16/16 renders byte-identical to `55d1bd5`). **G4b (layout core) is CLOSED — merged as PR #12
 (`62ede61`)**. It went through one independent review (NEEDS_FIX, MAJOR 3), its Fixer, and the Lead's re-check
 (G04 §33–§33.17, DECISIONS G4-B1–B11, G4-L1). It lays a NotationPlan out as an EngravedScore, in Node and in the browser
-alike, and changes nothing a user sees — the app does not load it. **Next: MX-1** (8va and pedal `change` playback,
-decision D-1) **and G4c** (beams, tuplets, voices, rests, grace notes, `svg.js`). Read this first in a new session, then
+alike, and changes nothing a user sees — the app does not load it. **MX-1 (playback correctness, decision D-1) is CLOSED —
+merged as PR #13 (`e37d37a`)**: an 8va sounds where the file says and is drawn under its sign in every view, a pedal `change`
+lifts the damper. **Production still runs `72549cb`**; MX-1 reaches players on the next manual deploy. **Next: G4c** (beams,
+tuplets, voices, rests, grace notes, `svg.js`), in its Fixer. Read this first in a new session, then
 `docs/PPP_MASTER_ROADMAP.md` (the order of the remaining Goals, their gates, the current and next task), then the
 current goal's spec in `docs/GOALS/`.
 
@@ -142,7 +144,7 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
 3. **The app plays 8va passages an octave off.** MusicXML's `<pitch>` is the sounding pitch; the app
    shifts it again. 30 committed scores, 2,229 notes. The benchmark reads references the MusicXML
    way (19 of the 29 method-book files are references again) and fixtures C10/C11 pin the rule.
-   **Fixed in MX-1** (branch `mx1-playback-correctness`, not merged yet; section at the end of this file). The G0
+   **Fixed in MX-1** (PR #13 `e37d37a`; section at the end of this file). The G0
    bench's model of the app (`ottava="app"`, known failure `octave_shift_playback`) is left for MX-2's rebaseline.
 4. `Import.load` returns the first-pass MusicXML even when it adopted the re-recognised merge.
 5. **Key estimation.** Key gate 88.6 % in core; Sonatina 0.74, Czerny 849 0.77, Beyer 0.82. A piece
@@ -214,15 +216,12 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
 
 ## Next
 
-- **Active goal: G4 Professional Engraving — G4a and G4b CLOSED (PR #9 `df8a571`, PR #12 `62ede61`); next G4c, with MX-1
-  beside it.** The order, gates and briefs are in `docs/PPP_MASTER_ROADMAP.md` (§14 current task, §15 next).
-  - **MX-1** — own worktree `D:/PPP-mx1`, branch `mx1-playback-correctness` — **implemented 2026-09-25; the review's
-    NEEDS_FIX fixed the same day, waiting for the recheck** (section "MX-1 — playback correctness" at the end of this file):
-    - the app stops shifting 8va passages a second time when it plays them (decision D-1: ScoreGraph and MusicXML
-      `<pitch>` are the sounding pitch; 8va/15ma is display only);
-    - pedal `change` lifts and re-presses the damper;
-    - the message for a `.mid` with fewer than four notes stops saying it has none;
-    - every 8va file's encoding is audited (files written the other way go to MX-2).
+- **Active goal: G4 Professional Engraving — G4a and G4b CLOSED (PR #9 `df8a571`, PR #12 `62ede61`); G4c in its
+  Fixer.** The order, gates and briefs are in `docs/PPP_MASTER_ROADMAP.md` (§14 current task, §15 next).
+  - **MX-1 — CLOSED, merged as PR #13 (`e37d37a`)** after one independent review (NEEDS_FIX: BLOCKER 1, MAJOR 1 — octave
+    lines missing in partial views and on cards), its Fixer and the Lead's re-check (section "MX-1 — playback correctness"
+    at the end of this file). Not deployed yet: production runs `72549cb` until the next manual deploy. Its follow-ups
+    (saved-song migration keyed on `ottavaRule`, M4, M5, the G0 bench rebaseline) are MX-2 carry-overs (roadmap §5.2).
   - **G4c** — worktree `D:/PPP-g4`, a new branch from `main`: G04 §27 G4c plus `svg.js` and B9 (G4-L1), the G4b
     backlog of G04 §33.16.8, and the two other-voice collision ratchets taken to 0.
   - Production keeps the legacy renderer until G4f.
@@ -295,7 +294,8 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
 
 ### MX-1 — playback correctness (2026-09-25)
 
-Branch `mx1-playback-correctness` from `1c92fc4`; implemented; not merged. Record:
+**CLOSED — merged as PR #13 (`e37d37a`)** after one independent review (NEEDS_FIX: BLOCKER 1, MAJOR 1), its Fixer
+(`be2925a`) and the Lead's re-check (the views check fails on `8981750` and passes after; each fix reverted alone is caught). Record:
 `docs/GOALS/MX1_PLAYBACK_CORRECTNESS.md` (what changed by file and line, the audit table, the tests). Decisions MX1-D1…D12.
 
 - **Review and fix (record §7).** The review found NEEDS_FIX: views that show some bars of a longer 8va (This part, the
