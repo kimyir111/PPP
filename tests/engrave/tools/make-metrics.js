@@ -30,7 +30,12 @@ const NAMES = [
   'timeSigCommon', 'timeSigCutCommon', 'timeSigPlus', 'timeSigPlusSmall',
   'restDoubleWhole', 'restWhole', 'restHalf', 'restQuarter', 'rest8th', 'rest16th', 'rest32nd', 'rest64th', 'rest128th',
   'flag8thUp', 'flag8thDown', 'flag16thUp', 'flag16thDown', 'flag32ndUp', 'flag32ndDown', 'flag64thUp', 'flag64thDown',
-  'flag128thUp', 'flag128thDown'
+  'flag128thUp', 'flag128thDown',
+  /* G4d-1a: marks attached to notes (G04 §10.2 priority 5) */
+  'articStaccatoAbove', 'articStaccatoBelow', 'articStaccatissimoAbove', 'articStaccatissimoBelow', 'articTenutoAbove', 'articTenutoBelow',
+  'articAccentAbove', 'articAccentBelow', 'articMarcatoAbove', 'articMarcatoBelow',
+  'fermataAbove', 'fermataBelow', 'fermataShortAbove', 'fermataShortBelow', 'fermataLongAbove', 'fermataLongBelow',
+  'ornamentTrill', 'ornamentMordent', 'ornamentShortTrill', 'ornamentTurn', 'tremolo1', 'breathMarkComma', 'caesura'
 ];
 
 function build() {

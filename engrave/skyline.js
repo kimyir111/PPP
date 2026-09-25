@@ -15,9 +15,10 @@
    collisions(objects, page)   the hard constraints of §10.3 that G4b's objects
              can break: H1 noteheads of different events on one staff, H2 an
              accidental against a head, stem, accidental or ledger line, H3 a dot
-             against a head, stem or flag, H4 anything outside the page, H6 an object
-             of one staff against one of another staff, or systems overlapping, H8 a
-             note outside its measure. Two objects that name each other `merged`
+             against a head, stem or flag, H4 anything outside the page, H5 text
+             (fingering, a glissando's word) against a head, stem, beam or accidental
+             (G4d-1a), H6 an object of one staff against one of another staff, or
+             systems overlapping, H8 a note outside its measure. Two objects that name each other `merged`
              (a unison two voices share, G04 §14.2) coincide by design. A sweep over x,
              in a fixed order; touching (less than 0.01 sp of overlap) is not a
              collision.
@@ -31,6 +32,7 @@
 
   const CELL = 0.25;          /* sp */
   const EPS = 0.01;           /* sp: less overlap than this is touching */
+  const FAR = 8;              /* sp: §10.5's reference distance from the staff - farther, an item is placed anyway and says so */
   const cent = v => Math.round(v * 100);
 
   const overlaps = (a, b, eps) => {
@@ -40,11 +42,14 @@
   const union = boxes => boxes.reduce((u, b) => (u ? [Math.min(u[0], b[0]), Math.min(u[1], b[1]), Math.max(u[2], b[2]), Math.max(u[3], b[3])] : b.slice()), null);
 
   /* ---------------------------------------------------------------- skyline */
-  function Skyline(x0, x1) {
+  /* opts (optional): {edges: [top, bottom] - the staff's outer lines, far: the reference distance (FAR), diag(d) - where
+     put() reports an item set farther than that} */
+  function Skyline(x0, x1, opts) {
     this.x0 = x0;
     this.n = Math.max(1, Math.ceil((x1 - x0) / CELL) + 1);
     this.above = new Array(this.n).fill(Infinity);
     this.below = new Array(this.n).fill(-Infinity);
+    this.opts = opts || null;
   }
   Skyline.prototype.cells = function (x0, x1) {
     const a = Math.max(0, Math.floor((x0 - this.x0) / CELL)), b = Math.min(this.n - 1, Math.floor((x1 - this.x0 - 1e-9) / CELL));
@@ -72,21 +77,47 @@
     for (let c = a; c <= b; c++) if (this.below[c] > m) m = this.below[c];
     return m === -Infinity ? null : m / 100;
   };
-  /* §10.1's placement: an item of height h over [x0, x1] set outside everything already there on `side`, `pad` away,
-     but never closer to the staff than `limit` (the staff edge: 0 above, the bottom line below). -> its box, added */
-  Skyline.prototype.place = function (x0, x1, h, side, pad, limit) {
+  /* §10.1's placement - the one function every mark outside the notes goes through (G4d-1a): an item of height h over
+     [x0, x1] set outside everything already there on `side` ('above' | 'below'), `pad` away, then added, so the next
+     item stands outside it. Where it may stand when nothing is in the way:
+       limit   the staff edge it may not come inside of (0 above, the bottom line below), or null: inside the staff too;
+       floor   where the item starts from - the note it belongs to (its head's edge), or null.
+     At least one of the two is given. snap(box) -> box moves the item outward only (a staccato dot inside the staff
+     keeps to a space). -> its box. `place(x0, x1, h, side, pad, limit)` is the old positional form (a volta).
+     §10.5: on a staff's skyline (opts.edges), an item whose near edge lands more than opts.far from the staff's outer line
+     on its side is placed all the same, and put() reports FAR_PLACEMENT naming it.ref (the caller's id for the item). */
+  Skyline.prototype.put = function (it) {
+    const above = it.side === 'above';
+    const t = above ? this.top(it.x0, it.x1) : this.bottom(it.x0, it.x1);
+    const edge = [t, it.limit === undefined ? null : it.limit, it.floor === undefined ? null : it.floor].filter(v => v !== null);
+    if (!edge.length) throw new Error('place(): an item with no limit and no floor over empty space');
+    const pad = it.pad || 0;
     let box;
-    if (side === 'above') {
-      const t = this.top(x0, x1);
-      const y1 = Math.min(t === null ? limit : t, limit) - pad;
-      box = [x0, y1 - h, x1, y1];
-    } else {
-      const b = this.bottom(x0, x1);
-      const y0 = Math.max(b === null ? limit : b, limit) + pad;
-      box = [x0, y0, x1, y0 + h];
-    }
+    if (above) { const y1 = Math.min.apply(null, edge) - pad; box = [it.x0, y1 - it.h, it.x1, y1]; }
+    else { const y0 = Math.max.apply(null, edge) + pad; box = [it.x0, y0, it.x1, y0 + it.h]; }
+    if (it.snap) box = it.snap(box);
     this.add(box);
+    const o = this.opts;
+    if (o && o.edges && o.diag) {
+      const d = above ? o.edges[0] - box[3] : box[1] - o.edges[1], far = o.far === undefined ? FAR : o.far;
+      if (d > far + EPS) o.diag({ code: 'FAR_PLACEMENT', refs: [it.ref || null], detail: Math.round(d * 100) / 100 + ' sp ' + (above ? 'above' : 'below') + ' the staff' });
+    }
     return box;
+  };
+  Skyline.prototype.place = function (x0, x1, h, side, pad, limit) {
+    return this.put({ x0: x0, x1: x1, h: h, side: side, pad: pad, limit: limit });
+  };
+  /* the outermost reach on a side over each cell of [x0, x1], in sp: [[cell x0, cell x1, y]] for the cells that hold
+     something - what a slur between two notes must clear (§13.2) */
+  Skyline.prototype.profile = function (x0, x1, side) {
+    const [a, b] = this.cells(x0, x1);
+    const out = [];
+    for (let c = a; c <= b; c++) {
+      const v = side === 'above' ? this.above[c] : this.below[c];
+      if (v === Infinity || v === -Infinity) continue;
+      out.push([this.x0 + c * CELL, this.x0 + (c + 1) * CELL, v / 100]);
+    }
+    return out;
   };
   /* the least distance (sp) from `upper`'s reference line to `lower`'s so that nothing below the upper one comes
      within `pad` of anything above the lower one: max over x of (upper.below - upperEdge) + (lowerEdge - lower.above).
@@ -107,7 +138,9 @@
     /* [code, kind a, kinds b, same-event allowed?] */
     ['H1', 'notehead', ['notehead'], false],
     ['H2', 'accidental', ['notehead', 'stem', 'accidental', 'ledger'], true],
-    ['H3', 'dot', ['notehead', 'stem', 'flag'], true]
+    ['H3', 'dot', ['notehead', 'stem', 'flag'], true],
+    ['H5', 'fingering', ['notehead', 'stem', 'beam', 'accidental'], true],
+    ['H5', 'text', ['notehead', 'stem', 'beam', 'accidental'], true]
   ];
   /* objects: EngravedScore objects; page: {w, h}; measures: the EngravedScore measures (for H8); systems (for H6).
      -> [{code, refs: [object ids], detail}] in a fixed order */
@@ -175,5 +208,5 @@
     return out.sort((a, b) => (a.code < b.code ? -1 : a.code > b.code ? 1 : 0) || (a.refs.join() < b.refs.join() ? -1 : a.refs.join() > b.refs.join() ? 1 : 0));
   }
 
-  return Object.freeze({ CELL, EPS, overlaps, union, Skyline, clearance, collisions });
+  return Object.freeze({ CELL, EPS, FAR, overlaps, union, Skyline, clearance, collisions });
 });

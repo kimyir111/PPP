@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { REPO, SG, E, graphOf } = require('./helpers.js');
-const { l2, ACC_VS, DOT_VS, REST_VS, STEM_KINDS } = require('./l2.js');
+const { l2, ACC_VS, DOT_VS, REST_VS, STEM_KINDS, MAXIMA, RECORDED } = require('./l2.js');
 
 const L = E.layout;
 const R = SG.rational;
@@ -61,7 +61,8 @@ function piece(spec) {
 const E8 = (p, x) => ['1/8', 'eighth', p, x];
 const Q = (p, x) => ['1/4', 'quarter', p, x];
 const laid = g => { const p = E.plan(g); const P = L.prepare(p); const e = L.layout(P, {}); return { g, p, P, e, m: l2(e, p, { prepared: P, layout: L, graph: g }) }; };
-const zeroes = m => Object.keys(m).filter(k => ['eg.beam.slope_max', 'eg.system.scaled', 'eg.system.overflow'].indexOf(k) < 0 && m[k]).map(k => k + '=' + m[k]);
+/* every zero target that is not 0 (the maxima, the recorded counts and an overflow are not zero targets) */
+const zeroes = m => Object.keys(m).filter(k => Object.keys(MAXIMA).concat(RECORDED, ['eg.system.overflow']).indexOf(k) < 0 && m[k]).map(k => k + '=' + m[k]);
 
 /* ------------------------------------------------------------------ §11 beams (A2, A3, A21) */
 test('A2: every graph beam is drawn over exactly its notes - secondary beams broken where the graph says, hooks on the side §11.2 gives - with stems to the beam and no flag', async () => {

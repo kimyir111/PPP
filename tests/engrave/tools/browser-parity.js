@@ -16,7 +16,7 @@ const H = require('../helpers.js');
 const { REPO, SG, E } = H;
 
 const CONFIGS = { desktop: { breakpoint: 'desktop' }, phone: { breakpoint: 'phone' } };
-const LAYOUT_CORE = ['metrics', 'space', 'breaks', 'skyline', 'canon', 'notation', 'layout', 'practice', 'outlines', 'svg'];
+const LAYOUT_CORE = ['metrics', 'metrics-text', 'space', 'breaks', 'skyline', 'canon', 'notation', 'curves', 'marks', 'layout', 'practice', 'outlines', 'svg'];
 
 function scripts() {
   const html = fs.readFileSync(path.join(REPO, 'Piano Coach App.dc.html'), 'utf8');

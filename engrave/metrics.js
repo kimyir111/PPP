@@ -86,7 +86,30 @@
     "flag64thUp": [0, 1.044, -3.248, 1.388],
     "flag64thDown": [0, 1.092, -1.504, 3.248],
     "flag128thUp": [0, 1.044, -3.248, 2.132],
-    "flag128thDown": [0, 1.092, -2.32, 3.248]
+    "flag128thDown": [0, 1.092, -2.32, 3.248],
+    "articStaccatoAbove": [0, 0.336, 0, 0.336],
+    "articStaccatoBelow": [0, 0.336, -0.336, 0],
+    "articStaccatissimoAbove": [0.004, 0.4, -0.008, 1.172],
+    "articStaccatissimoBelow": [0.004, 0.4, -1.18, 0],
+    "articTenutoAbove": [-0.004, 1.352, 0, 0.192],
+    "articTenutoBelow": [-0.004, 1.352, -0.192, 0],
+    "articAccentAbove": [0, 1.356, 0.004, 0.98],
+    "articAccentBelow": [0, 1.356, -0.976, 0],
+    "articMarcatoAbove": [-0.004, 0.94, -0.004, 1.012],
+    "articMarcatoBelow": [-0.004, 0.94, -1.016, 0],
+    "fermataAbove": [0.012, 2.42, -0.012, 1.316],
+    "fermataBelow": [0.012, 2.42, -1.328, 0],
+    "fermataShortAbove": [0, 2.416, 0, 1.364],
+    "fermataShortBelow": [0, 2.416, -1.364, 0],
+    "fermataLongAbove": [0, 2.412, -0.004, 1.332],
+    "fermataLongBelow": [0, 2.412, -1.332, 0.004],
+    "ornamentTrill": [0, 2.084, -0.04, 1.56],
+    "ornamentMordent": [0.004, 2.916, -0.292, 1.276],
+    "ornamentShortTrill": [0, 2.9, 0, 0.98],
+    "ornamentTurn": [0, 1.84, 0, 0.872],
+    "tremolo1": [-0.6, 0.6, -0.372, 0.376],
+    "breathMarkComma": [0.004, 0.608, 0.008, 1.004],
+    "caesura": [0, 1.536, -0.004, 2.128]
   });
   /* END GENERATED */
 
@@ -111,7 +134,10 @@
   /* Shapes the pinned font has no outline for but VexFlow draws as a path of its own, with the size it draws them:
      the slash notehead is Tables.SLASH_NOTEHEAD_WIDTH = 15 px wide (1.5 sp at 10 px a staff space) and reaches a
      space above and below its position. A backend draws these (`drawn: true`); they are not fallbacks. */
-  const DRAWN = Object.freeze({ noteheadSlashHorizontalEnds: [0, 1.5, -1, 1] });
+  const DRAWN = Object.freeze({ noteheadSlashHorizontalEnds: [0, 1.5, -1, 1],
+    /* G4d-1a: the square brackets of an editorial accidental (SMuFL accidentalBracketLeft/Right, not in the pinned font):
+       a thin bracket PPP's backend draws, as tall as the parentheses the font has */
+    accidentalBracketLeft: [0, 0.4, -1, 1], accidentalBracketRight: [0, 0.4, -1, 1] });
 
   const table = name => (Object.prototype.hasOwnProperty.call(GLYPHS, name) ? GLYPHS[name]
     : Object.prototype.hasOwnProperty.call(DRAWN, name) ? DRAWN[name] : null);
@@ -182,10 +208,28 @@
   }
   const flagCount = type => FLAG_COUNT[type] || 0;
 
+  /* ---- marks attached to notes (G04 §10.2 priority 5, G4d-1a): the glyph above or below the note. An articulation the
+     pinned font lacks stands in with the nearest it has and says so (GLYPH_FALLBACK); detached-legato is drawn as its
+     two parts, tenuto over staccato (not a fallback) */
+  const ARTIC = { staccato: 'articStaccato', staccatissimo: 'articStaccatissimo', tenuto: 'articTenuto', accent: 'articAccent',
+    marcato: 'articMarcato', spiccato: 'articStaccatissimoWedge', stress: 'articStress', unstress: 'articUnstress' };
+  const ARTIC_FALLBACK = { spiccato: 'articStaccatissimo', stress: 'articAccent', unstress: 'articTenuto' };
+  /* -> [pick] (one or two glyphs, innermost first) | null for a mark that is not placed above or below a note */
+  function articulation(kind, above) {
+    const d = above ? 'Above' : 'Below';
+    if (kind === 'detached-legato') return [pick('articStaccato' + d, 'articStaccato' + d), pick('articTenuto' + d, 'articTenuto' + d)];
+    if (!ARTIC[kind]) return null;
+    return [pick(ARTIC[kind] + d, (ARTIC_FALLBACK[kind] ? ARTIC_FALLBACK[kind] : ARTIC[kind]) + d)];
+  }
+  /* a fermata by its shape (MusicXML normal, angled, square) */
+  const FERMATA = { normal: 'fermata', angled: 'fermataShort', square: 'fermataLong' };
+  function fermata(shape, above) { return pick((FERMATA[shape] || 'fermata') + (above ? 'Above' : 'Below'), 'fermata' + (above ? 'Above' : 'Below')); }
+
   /* ---- clefs, time signatures */
   const CLEFS = { G: 'gClef', F: 'fClef', C: 'cClef', percussion: 'unpitchedPercussionClef1', TAB: '6stringTabClef' };
   function clef(sign) { return CLEFS[sign] ? pick(CLEFS[sign], 'gClef') : null; }
   const digit = d => pick('timeSig' + d, 'timeSig0');
 
-  return Object.freeze({ GLYPHS, DRAWN, ENGRAVING, SCALE, glyph, box, has, drawn, headClass, notehead, accidental, rest, flag, flagCount, clef, digit });
+  return Object.freeze({ GLYPHS, DRAWN, ENGRAVING, SCALE, glyph, box, has, drawn, pick, headClass, notehead, accidental, rest, flag, flagCount, clef, digit,
+    articulation, fermata });
 });

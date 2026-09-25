@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- both voices rest together for a quarter; then only the lower voice, for a half; then both rest at once for different lengths, a quarter above and a half below (G04 §22.1; written by tests/engrave/tools/make-e-fixtures.js) -->
+<!-- both voices rest together for a quarter; then only the lower voice, for a half; then both rest at once for different lengths, a quarter above and a half below; then the lower voice rests for a half under low notes of the upper one, off the staff (G04 §22.1; written by tests/engrave/tools/make-e-fixtures.js) -->
 <score-partwise version="4.0">
   <work><work-title>Two voices resting</work-title></work>
   <identification><creator type="composer">PPP</creator></identification>
@@ -24,6 +24,15 @@
       <backup><duration>1920</duration></backup>
       <note><rest/><duration>960</duration><voice>2</voice><type>half</type><staff>1</staff></note>
       <note><pitch><step>G</step><octave>4</octave></pitch><duration>960</duration><voice>2</voice><type>half</type><staff>1</staff></note>
+      <backup><duration>1920</duration></backup>
+      <note><pitch><step>C</step><octave>3</octave></pitch><duration>1920</duration><voice>5</voice><type>whole</type><staff>2</staff></note>
+      </measure>
+    <measure number="3">
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>960</duration><voice>1</voice><type>half</type><stem>up</stem><staff>1</staff></note>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>960</duration><voice>1</voice><type>half</type><stem>up</stem><staff>1</staff></note>
+      <backup><duration>1920</duration></backup>
+      <note><rest/><duration>960</duration><voice>2</voice><type>half</type><staff>1</staff></note>
+      <note><pitch><step>D</step><octave>4</octave></pitch><duration>960</duration><voice>2</voice><type>half</type><stem>down</stem><staff>1</staff></note>
       <backup><duration>1920</duration></backup>
       <note><pitch><step>C</step><octave>3</octave></pitch><duration>1920</duration><voice>5</voice><type>whole</type><staff>2</staff></note>
       <barline location="right"><bar-style>light-heavy</bar-style></barline>

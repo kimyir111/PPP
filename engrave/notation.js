@@ -29,8 +29,9 @@
      placeRests(...)            rests of a voice move away in whole staff spaces
                                 until they clear what other voices draw there
                                 (and their own voice's beam) by 0.5 sp (§14.3)
-     placeTuplet(...)           a tuplet's number and bracket over its members,
-                                outside the staff and everything drawn there (§12.2)
+     placeTuplet(...)           a tuplet's number and bracket over its members through
+                                the staff's placement function (§12.2, §10.1): a
+                                bracket outside the staff, a number alone by its beam
    ========================================================================== */
 (function (root, factory) {
   'use strict';
@@ -208,11 +209,14 @@
     return out;
   }
 
-  /* A tuplet's marks over its members on one staff (§12.1-§12.2). span: [x0, x1] (the first member's head or rest to
-     the last's right edge, dots included); side 'above'|'below'; digits: glyph names left to right ([] for no number);
-     reach(x0, x1, side) -> the outermost y anything already there reaches on that side (the staff included); scale: the
-     staff's. -> {bracket: {line, box, hooks, gap} | null, number: [{glyph, origin, box, scale}]} */
-  function placeTuplet(span, side, digits, bracket, hooks, reach, s) {
+  /* A tuplet's marks over its members on one staff (§12.1-§12.2), placed through the skyline (§10.1, G4d-1a). span: [x0,
+     x1] (the first member's head or rest to the last's right edge, dots included); side 'above'|'below'; digits: glyph
+     names left to right ([] for no number); put(item) -> box: the staff's placement function (skyline.js put); where:
+     {limit: the staff edge, floor: how far the members reach on that side}; s: the staff's scale.
+     A bracket stands outside the staff and everything under it, its hooks' tips the pad clear of that; a number without
+     a bracket stands by its notes - by the beam, inside the staff where that is free (the G4c review M2).
+     -> {bracket: {line, box, hooks, gap} | null, number: [{glyph, origin, box, scale}]} */
+  function placeTuplet(span, side, digits, bracket, hooks, put, where, s) {
     const up = side === 'above';
     const ns = TUPLET.scale * s;
     /* ':' (show both numbers) is two dots, one above the other, as VexFlow draws a ratioed tuplet */
@@ -220,16 +224,14 @@
     const nw = gl.reduce((a, g) => a + g.w * ns, 0) + Math.max(0, gl.length - 1) * 0.05 * s;
     const nh = digits.length ? 2 * ns : 0;                /* the time-signature digits span 2 sp */
     const cx = (span[0] + span[1]) / 2;
-    let lineY, box = null;
+    let lineY;
     if (bracket) {
-      const r = reach(span[0], span[1], side);
-      /* the hooks' tips clear what the bracket covers by the pad */
-      lineY = up ? r - TUPLET.pad * s - TUPLET.hook * s : r + TUPLET.pad * s + TUPLET.hook * s;
-      /* and the number, which sits on the line, clears it too */
-      if (digits.length) lineY = up ? Math.min(lineY, r - TUPLET.pad * s - nh / 2) : Math.max(lineY, r + TUPLET.pad * s + nh / 2);
+      /* the line, with the number on it and the hooks under it */
+      const b = put({ x0: span[0], x1: span[1], h: Math.max(TUPLET.hook * s, nh / 2), side: side, pad: TUPLET.pad * s, limit: where.limit, floor: where.floor });
+      lineY = up ? b[1] : b[3];
     } else {
-      const r = reach(cx - nw / 2 - 0.2 * s, cx + nw / 2 + 0.2 * s, side);
-      lineY = up ? r - TUPLET.pad * s - nh / 2 : r + TUPLET.pad * s + nh / 2;
+      const b = put({ x0: cx - nw / 2 - 0.2 * s, x1: cx + nw / 2 + 0.2 * s, h: nh, side: side, pad: TUPLET.pad * s, limit: null, floor: where.floor });
+      lineY = (b[1] + b[3]) / 2;
     }
     const number = [];
     let x = cx - nw / 2;

@@ -6,9 +6,11 @@
    <dir>`). Every score of tests/engrave/tools/layout-hashes.js (E fixtures, the R suite, PPP transcriptions) is laid out
    at both screen configs by both trees, and each pair is:
      SAME                identical canonical JSON
-     SERIALIZATION_ONLY  the same objects (kind, id, glyph, refs) at the same coordinates; other fields differ
+     SERIALIZATION_ONLY  the same objects (kind, id, glyph, refs) at the same coordinates; other fields differ - '(version)'
+                         when only the EngravedScore's and the plan's version names differ (G4-D1a-1)
      GEOMETRY_ONLY       the same objects; some coordinate differs (L1 and L2 must not get worse - bench.js says)
-     LEDGER_CHANGE       what is drawn differs: an object added or gone, or drawn with another glyph (review needed)
+     LEDGER_CHANGE       what is drawn differs: an object or a curve (a tie, slur or glissando, G4d-1a) added or gone, or
+                         drawn with another glyph (review needed)
    with the kinds that changed. Writes nothing into the repository. */
 'use strict';
 const fs = require('fs');
@@ -18,20 +20,23 @@ const HASHES = require('./layout-hashes.js');
 
 const REPO = H.REPO;
 const COORD = ['box', 'origin', 'anchor', 'line', 'gap'];
+const CURVE = ['p0', 'c1', 'c2', 'p3'];
 
 function load(root) {
   const dir = path.resolve(root);
   Object.keys(require.cache).forEach(k => { if (k.startsWith(dir)) delete require.cache[k]; });
   return require(path.join(dir, 'engrave', 'index.js'));
 }
-const keyOf = o => [o.kind, o.id, o.glyph || '', (o.refs || []).join(',')].join('|');
+const keyOf = o => [o.kind, o.id, o.glyph || '', (o.refs || []).join(','), o.part || ''].join('|');
 /* a system's own decorations (its staff lines, brace, opening line, head clef, key and time) are named by the system's
    first measure: a line break moved is a geometry change, not a change of what is drawn */
 const frameObj = o => /^d:(staff|brace|sysbar|clef|keysig|timesig):/.test(o.id);
 
 function classify(a, b, CN) {
   if (CN.canonical(a) === CN.canonical(b)) return { cls: 'SAME', kinds: [] };
-  const ka = new Map(a.objects.filter(o => !frameObj(o)).map(o => [keyOf(o), o])), kb = new Map(b.objects.filter(o => !frameObj(o)).map(o => [keyOf(o), o]));
+  /* the curves (G4d-1a) are drawn things like the objects; a version name is not */
+  const drawn = x => x.objects.filter(o => !frameObj(o)).concat(x.curves || []);
+  const ka = new Map(drawn(a).map(o => [keyOf(o), o])), kb = new Map(drawn(b).map(o => [keyOf(o), o]));
   const kinds = new Set();
   let ledger = false;
   ka.forEach((o, k) => { if (!kb.has(k)) { ledger = true; kinds.add(o.kind); } });
@@ -40,13 +45,15 @@ function classify(a, b, CN) {
   let geo = false;
   ka.forEach((o, k) => {
     const p = kb.get(k);
-    const moved = COORD.some(f => CN.canonical(o[f] === undefined ? null : o[f]) !== CN.canonical(p[f] === undefined ? null : p[f])) || o.system !== p.system;
+    const moved = COORD.concat(CURVE).some(f => CN.canonical(o[f] === undefined ? null : o[f]) !== CN.canonical(p[f] === undefined ? null : p[f])) || o.system !== p.system;
     if (moved) { geo = true; kinds.add(o.kind); }
   });
   const fa = a.objects.filter(frameObj), fb = b.objects.filter(frameObj);
   const frame = ['pages', 'systems', 'measures'].some(f => CN.canonical(a[f]) !== CN.canonical(b[f])) || CN.canonical(fa) !== CN.canonical(fb);
   if (geo || frame) return { cls: 'GEOMETRY_ONLY', kinds: [...kinds].sort().concat(frame ? ['(frame)'] : []) };
   ka.forEach((o, k) => { if (CN.canonical(o) !== CN.canonical(kb.get(k))) kinds.add(o.kind); });
+  const bare = x => Object.assign({}, x, { version: null, planKey: String(x.planKey).replace(/:plan\/\d+$/, '') });
+  if (!kinds.size && CN.canonical(bare(a)) === CN.canonical(bare(b))) kinds.add('(version)');
   return { cls: 'SERIALIZATION_ONLY', kinds: [...kinds].sort() };
 }
 

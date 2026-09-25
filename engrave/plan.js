@@ -39,7 +39,9 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (SG, L, PB, PT, GL) {
   'use strict';
 
-  const PLAN_VERSION = 'plan/1';
+  /* the plan's output contract: every change to what plan() outputs moves it (G4-D1a-1: plan/2 is G4c's one-note bracket
+     default and G4d-1a's percussion kit on heads) */
+  const PLAN_VERSION = 'plan/2';
   const R = SG.rational, P = SG.pitch, MG = SG.meterGrid;
   const DEFAULTS = Object.freeze({ mode: 'screen', fingering: true, chords: true, marks: true, respectSourceBreaks: false,
     deriveBeams: true, oneNoteTupletMerge: true });
@@ -144,6 +146,9 @@
       parts.push({ id: part.id, name: has(part.name) ? part.name : null, abbr: has(part.abbr) ? part.abbr : null,
         instrument: part.instrument.kind, staves: part.staves.map(s => s.id) });
       const tr = part.instrument && part.instrument.transpose;
+      /* a percussion kit's items by key: the notehead and stem an instrument is written with when the note does not say
+         (G04 §14.6, G4d-1a) */
+      const kit = new Map(((part.instrument && part.instrument.kit && part.instrument.kit.items) || []).map(k => [k.key, k]));
       part.staves.forEach(s => {
         staffNo++;
         const tab = s.kind === 'tab';
@@ -267,8 +272,10 @@
           if (cross) put({ ref: L.ref.headStaff(h.id), kind: 'cross-staff-head', status: 'deferred', code: 'cross-staff-chord', plan: h.id });
           /* string and fret: tablature data, which G4 does not draw (§14.6) */
           if (h.tech !== undefined) put({ ref: L.ref.tech(h.id), kind: 'technical', status: 'deferred', code: 'tab', plan: h.id });
+          const ki = has(h.inst) ? kit.get(h.inst) : null;
           return { id: h.id, staff: staffId, pitch: cp(h.pitch), written: written, midi: h.pitch ? P.midi(h.pitch) : null,
             inst: has(h.inst) ? h.inst : null, pos: cp(h.pos), lead: !!h.lead, tech: cp(h.tech),
+            kit: ki ? { notehead: ki.notehead || null, stem: ki.stem || null } : null,
             acc: cp(h.acc), notehead: cp(h.notehead),
             fingering: cfg.fingering && h.fingering ? cp(h.fingering) : [],
             crossStaff: cross };

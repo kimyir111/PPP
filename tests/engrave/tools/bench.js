@@ -22,7 +22,7 @@ const { SG, E, REPO } = H;
 /* L2 (l2.js): every layout metric is a zero target but the steepest beam (MAXIMA, a limit) and the count of systems
    drawn smaller (LOWER). G4b's two ratchets on other-voice collisions (eg.rest.overlap, eg.voice.stem_over_head) are
    zero targets since G4c (G04 §33.16.4, §34). */
-const { l2, MAXIMA } = require('../l2.js');
+const { l2, MAXIMA, DRAWN_KINDS } = require('../l2.js');
 const L = SG.legacy;
 
 const OUT = path.join(REPO, 'tests', 'engrave', 'out');
@@ -44,11 +44,26 @@ const ZERO = ['eg.ledger.silent', 'eg.ledger.invented', 'eg.ledger.duplicate', '
   /* the G4c fixer (G04 §34.18, the G4c review R1-R2): legal merges, shared unisons, the offset of voices side by side,
      stems to the middle line, rests on line or space, hook sides, tuplet hooks toward the notes */
   'eg.voice.merge_illegal', 'eg.voice.unison_unshared', 'eg.voice.offset_err', 'eg.stem.middle_line', 'eg.rest.position_err',
-  'eg.beam.hook_side_err', 'eg.tuplet.hook_dir_err'];
+  'eg.beam.hook_side_err', 'eg.tuplet.hook_dir_err',
+  /* G4d-1a (G04 §21.1-§21.2 for ties, slurs, glissandi, marks attached to notes, fingering and text; the G4c review's rest
+     ledger lines and tuplet numbers) */
+  'eg.tie.missing', 'eg.tie.endpoint_err', 'eg.tie.dir_err', 'eg.slur.pair_errors', 'eg.slur.endpoint_err', 'eg.curve.hits_undiagnosed',
+  'eg.gliss.errors', 'eg.ledger.drawn_missing', 'eg.mark.missing.articulation', 'eg.mark.missing.ornament', 'eg.mark.missing.fermata',
+  'eg.mark.missing.fingering', 'eg.mark.missing.gliss', 'eg.mark.missing.arpeggio', 'eg.mark.side_err', 'eg.mark.order_err', 'eg.mark.on_line',
+  'eg.fingering.side_err', 'eg.fingering.order_err', 'eg.arpeggio.errors', 'eg.notehead.shape_err', 'eg.accidental.enclosure_err',
+  'eg.rest.ledger_missing', 'eg.tuplet.number_far', 'eg.overlap.text', 'eg.overlap.text_text', 'eg.overlap.mark_mark', 'eg.overlap.mark_note',
+  'eg.text.width_err', 'eg.text.missing_glyph', 'eg.clip.curves',
+  /* the G4d-1a fixer (G04 §35.18): G4-L4's tie ends and crossings, G4-L5's fingering by its notes and §10.5's FAR_PLACEMENT
+     named, the review's R3 (a slur's middle parts, its side, a mark's glyph) */
+  'eg.tie.crossings', 'eg.slur.missing', 'eg.slur.side_err', 'eg.mark.glyph_err', 'eg.fingering.far', 'eg.layout.far_undiagnosed'];
 const ONE = ['eg.beam.graph_drawn_ratio', 'eg.beam.members_exact', 'eg.tuplet.drawn_ratio', 'eg.tuplet.show_ok', 'eg.tie.drawn_ratio',
   'eg.slur.pair_exact', 'eg.event.multiset_equal', 'eg.staff.assignment_exact', 'eg.source.agree_live', 'eg.source.agree_projected'];
-/* recorded, lower is better: more systems drawn at a smaller staff size is a regression */
-const LOWER = ['eg.system.scaled'];
+/* recorded, lower is better: more systems drawn at a smaller staff size is a regression; so is a slur more that crosses a
+   note between its ends (G4d-1a: at most 1 % of a suite's slurs, eg.curve.hit_ratio, each diagnosed), and an item more placed
+   farther than 8 sp from its staff (§10.5 FAR_PLACEMENT, §21.2 eg.layout.far_placements: recorded, each named). The suite's
+   share of slurs that cross a note (eg.curve.hit_ratio, A22) is a ratio where lower is better: it is held here, not with the
+   drawn ratios (the G4d-1a fixer: compare() read every '.ratio' as higher-is-better, so a rise passed and a fall failed) */
+const LOWER = ['eg.system.scaled', 'eg.curve.hits', 'eg.layout.far_placements', 'eg.curve.hit_ratio'];
 /* a graph a legacy Score cannot rebuild, and the one code fromScore names it with (G04 §32.10): percussion has no pitch on a Score */
 const PROJECTION_ALLOWED = { 'e/E27-percussion.musicxml': 'percussion-or-unpitched' };
 const MARKS = ['articulation', 'ornament', 'fermata', 'fingering', 'dynamic', 'wedge', 'pedal', 'pedal-change', 'ottava', 'words', 'tempo',
@@ -156,9 +171,19 @@ function measure(item) {
     const t1 = process.hrtime.bigint();
     const lays = ['desktop', 'phone'].map(bp => E.layout.layout(P, { breakpoint: bp }));
     row.layoutMs = Number(process.hrtime.bigint() - t1) / 1e6 / 2;
+    /* what either layout should draw and does not (G4d-1a): the ties, slurs and marks the drawn ratios count out */
+    const undrawn = new Set();
     lays.forEach(eng => {
-      const m = l2(eng, p, { prepared: P, layout: E.layout, graph: g });
+      const m = l2(eng, p, { prepared: P, layout: E.layout, graph: g, missing: undrawn });
       Object.keys(m).forEach(k => set(k, MAXIMA[k] !== undefined ? Math.max(row.m[k] || 0, m[k]) : (row.m[k] || 0) + m[k]));
+    });
+    /* §21.1's drawn ratios, since G4d-1a at the layout: a tie is drawn when the plan carries it and each layout draws it (a
+       curve, or two halves across a break), a slur when its curve joins its own notes, a mark when an object names it */
+    set('eg.tie.drawn_ratio', ties.length ? ties.filter(s => p.ties.some(t => t.id === s.id && t.from === (s.from || null) && t.to === (s.to || null)) && !undrawn.has(s.id)).length / ties.length : 1);
+    set('eg.slur.pair_exact', slurs.length ? slurs.filter(s => p.slurs.some(t => t.id === s.id && t.from === (s.from || null) && t.to === (s.to || null)) && !undrawn.has(s.id)).length / slurs.length : 1);
+    DRAWN_KINDS.forEach(kind => {
+      const due = p.ledger.filter(x => x.kind === kind && (x.status === 'drawn' || x.status === 'merged'));
+      if (p.ledger.some(x => x.kind === kind)) set('eg.mark.drawn_ratio.' + kind, due.length ? due.filter(x => a.missing.indexOf(x.ref) < 0 && !undrawn.has(x.ref)).length / due.length : 1);
     });
     set('eg.layout.nondeterministic', E.layoutHash(E.engrave(E.plan(g, cfg), { breakpoint: 'desktop' })) === E.layoutHash(lays[0]) ? 0 : 1);
     set('eg.error', 0);
@@ -178,6 +203,9 @@ function summarise(rows) {
     else if (MAXIMA[k] !== undefined) s[k] = Math.max(...vs);
     else s[k] = vs.reduce((a, b) => a + b, 0);
   });
+  /* A22: the share of the suite's slurs that cross a note between their ends (each layout's own share is a row's) */
+  const slurs = rows.reduce((a, r) => a + (r.m['eg.curve.slurs'] || 0), 0), hits = rows.reduce((a, r) => a + (r.m['eg.curve.hits'] || 0), 0);
+  if (keys.has('eg.curve.hit_ratio')) s['eg.curve.hit_ratio'] = slurs ? Math.round(hits / slurs * 10000) / 10000 : 0;
   const ms = rows.map(r => r.ms || 0).sort((a, b) => a - b);
   const lms = rows.map(r => r.layoutMs || 0).sort((a, b) => a - b);
   s.timing = { planMsMedian: +ms[Math.floor(ms.length / 2)].toFixed(2), planMsMax: +ms[ms.length - 1].toFixed(2),
@@ -194,7 +222,7 @@ function compare(sum, base) {
     if (sum.graphs !== base.graphs) bad.push('graphs ' + sum.graphs + ' vs baseline ' + base.graphs);
     Object.keys(base).filter(k => k.indexOf('eg.') === 0).forEach(k => {
       const v = sum[k] === undefined ? 0 : sum[k], b = base[k];
-      const higherIsBetter = ONE.indexOf(k) >= 0 || k.indexOf('ratio') >= 0;
+      const higherIsBetter = LOWER.indexOf(k) < 0 && (ONE.indexOf(k) >= 0 || k.indexOf('ratio') >= 0);
       if (higherIsBetter ? v < b : (k.indexOf('.deferred.') >= 0 || ZERO.indexOf(k) >= 0 || LOWER.indexOf(k) >= 0) ? v > b : false) bad.push(k + ' ' + v + ' vs baseline ' + b);
     });
     /* every zero target the suite measures is in the baseline (a metric added later is re-baselined, not skipped) */
