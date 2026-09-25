@@ -4,7 +4,7 @@ ScoreGraph에 **이미 있는** 기보 의미를 PPP의 실제 화면과 인쇄�
 
 | | |
 | --- | --- |
-| 상태 | **G4a CLOSED — PR #9로 병합 (`df8a571`, 2026-09-25).** 최종 독립 리뷰 PASS (BLOCKER 0, MAJOR 0, §32.13–§32.14). 구현 §32, Fixer §32.12, 최종 §32.13, 마감 §32.14. 사용자에게 보이는 변화 없음 (legacy 렌더러가 기본, 바이트 동일). 사용자 결정 G4-U1–U5 (§31). **G4b 다음, 미착수** — 그 backlog는 §32.14. 설계: Architect 2026-09-24 |
+| 상태 | **G4a CLOSED — PR #9로 병합 (`df8a571`, 2026-09-25).** 최종 독립 리뷰 PASS (BLOCKER 0, MAJOR 0, §32.13–§32.14). 구현 §32, Fixer §32.12, 최종 §32.13, 마감 §32.14. 사용자에게 보이는 변화 없음 (legacy 렌더러가 기본, 바이트 동일). 사용자 결정 G4-U1–U5 (§31). **G4b 구현됨 — READY_FOR_G4b_REVIEW (§33, 브랜치 `g4b-layout-core`, 병합 안 함)**: G4a MINOR 여섯을 닫고 layout core(NotationPlan → EngravedScore, 연습 map)를 만들었다. 앱은 불러오지 않는다 — 보이는 변화 없음. 설계: Architect 2026-09-24 |
 | 기준 커밋 | `origin/main` = `55d1bd5` (G3 PARTIAL/DEFERRED closeout, PR #8) |
 | 브랜치 / worktree | `g4-professional-engraving` / `D:/PPP-g4` |
 | 시작 검증 | `npm run test:scoregraph` → **205/205 pass** (이 세션이 `55d1bd5`에서 직접 실행) |
@@ -50,6 +50,7 @@ ScoreGraph에 **이미 있는** 기보 의미를 PPP의 실제 화면과 인쇄�
 - [30. Definition of done](#30-definition-of-done)
 - [31. 사용자 결정 기록](#31-사용자-결정-기록)
 - [32. G4a 구현 기록](#32-g4a-구현-기록)
+- [33. G4b 구현 기록 — 배치 핵심 (layout core)](#33-g4b-구현-기록--배치-핵심-layout-core)
 - [부록 A. 이 세션의 측정](#부록-a-이-세션의-측정)
 - [부록 B. 코드 위치 색인](#부록-b-코드-위치-색인)
 
@@ -2055,6 +2056,182 @@ Fixer가 이 과정에서 스스로 만든 결함 하나를 고쳤다: `legacy-s
   6. deferred codes must be tied to the kinds they may apply to, not only to an allowed code string
   그 밖의 MINOR·OPTIONAL: 저장 뒤 그래프 쓰기가 idle을 기다리는 동안(측정 160–235 ms) 다시 불러오면 그 곡은 projected로 남는다 (`STORE_OTHER_SCORE`, 곡 slot은 그대로); `u1-paths.js`는 앱 메서드를 부르고 helper의 `/health`를 막지 않는다; `a48-compare.js`의 화음 셈여림은 첫 것만 본다; `eg.tuplet.merged_groups`는 L1 비교에 없다; P3 테스트 하나는 pending 경로에 닿지 않는다 (§32.13의 새 테스트가 닿는다). §32.12.10의 G4b 몫(VexFlow 전송, `resolve` 비용, 8va 적힌 음 표시, 명시된 `bracket="yes"`)도 그대로다.
 - **G4b 준비**: 같은 폴더 `D:/PPP-g4`, 최신 `origin/main`에서 브랜치 `g4b-layout-core` (upstream 없음). G4b는 시작하지 않았다.
+
+## 33. G4b 구현 기록 — 배치 핵심 (layout core)
+
+Implementer, 2026-09-25. 브랜치 `g4b-layout-core` (`D:/PPP-g4`), 시작 `a0bc2ea` (= `origin/main`, G4a 마감 뒤). 입력은 사용자가 준 "G4b IMPLEMENTER — LAYOUT CORE" 지시다. 병합하지 않았고 PR도 없다. 결정은 DECISIONS G4-B1–B10.
+
+**한 줄**: NotationPlan → EngravedScore(`engr/1`)를 Node와 브라우저에서 같은 수로 만든다 — 음·쉼표·임시표·점·덧줄·stem·flag, staff·clef·key·time·세로줄·반복·volta의 staff-space 좌표, 결정론적 hash, 줄바꿈(G4-U4), 충돌 검사, 연습 map과 highlighter. **사용자에게 보이는 변화는 없다**: 앱은 새 모듈을 불러오지 않고 legacy 렌더러가 그린다 (16/16 바이트 동일).
+
+### 33.1 범위 — G04 §27의 G4b와 다른 점
+
+§27의 G4b 범위 가운데 `svg.js`(`<symbol>`/`<use>`), 앱 ScoreView의 `renderer` 스위치와 새 `sync`, 브라우저 suite를 `renderer='engrave'`로 돌리기는 **하지 않았다.** 이번 지시가 "렌더러를 보이게 하지 않는다, production 변경 없음, G4c 이후 없음"으로 범위를 좁혔기 때문이다. 그래서 G4b acceptance 가운데 A30, A32의 브라우저 부분, A33, B9는 이 단계에서 판정하지 않고, A31은 Node의 결정론적 대리 지표(프레임마다 만지는 event 수)로 판정한다. 나머지(A14, A17–A19, A23, A24, A27–A29, B2–B4, B6, B7)는 §33.12. G4c(beam·최종 stem·tuplet 표시·성부·쉼표 판각), G4d(곡선·셈여림·아티큘레이션·글자 충돌), G4e(페이지·인쇄·PDF), G4f(production 스위치), G5는 시작하지 않았다. G3는 전부 off 그대로다.
+
+### 33.2 G4a MINOR 여섯 (§32.14 backlog) — 먼저 닫음
+
+| # | 문제 | 한 일 | 테스트 |
+| --- | --- | --- | --- |
+| A | IndexedDB `open`이 끝나지 않으면 `resolve()`가 영원히 기다림 | `store.js`: 모든 backend 호출에 `within(p, LIMITS.timeout = 2500 ms)`(timer는 `unref`), 넘으면 code `'timeout'`. `idbBackend(idb, {openTimeout})`: `open`이 안 끝나면 거부하고, 늦게 열린 연결은 닫는다(`finish(ok)` 가드), 다음 호출이 다시 연다. `source.resolve`는 store 실패를 `STORE_TIMEOUT`으로 기록하고 projected로 간다 — 앱은 멈추지 않는다 | `source.test.js`: 답하지 않는 store → 제한 시간 안에 projected + `STORE_TIMEOUT`, persist는 두 번 다 `'timeout'`(막히지 않음); 끝나지 않는 idb `open` → backend가 timeout으로 거부, 늦은 성공은 닫힘, `store.get` code `'timeout'` |
+| B | A48 페이지 gate가 모집단을 확인하지 않음 | `a48-coverage.js`: 기록된 모집단 `EXPECTED = {core: 553, corpus: 318}`. core는 suite 정의(`pppbench` `suite.expand`)에서, corpus는 provenance 규칙(`helpers.corpusFiles`)에서 실행 때 다시 끌어내 기록과 비교. 기대 case마다 job 하나(생성·표기가 빠뜨린 case도 "not written"으로 남김), 결과가 없는 기대 case(suite 목록 기준)·파일은 실패, 허용 목록 항목이 모집단 밖이거나 더는 잃는 것이 없으면 실패 | 실행 PASS (core 553/553, corpus 318/318, 이름 있는 손실 7, OMR 2). **음성 대조 4개 모두 FAIL(exit 1)**: 기록 554 → population 1; 페이지 결과에서 core 하나 뺌 → population 1; corpus 하나 뺌 → population 1; 허용 목록에 잃는 것 없는 파일 + 없는 파일 → allowlist 2 (임시 사본으로 돌리고 지움) |
+| C | 부모 없는 형제 tuplet이 한 event에 둘이면 병합 | `plan-tuplets.js`: 한 음 tuplet 후보는 그 event에 걸린 tuplet이 정확히 하나일 때만 (`tupletsOn`) | `plan.test.js` 형제 tuplet: 병합 없음 |
+| D | 한 음 병합이 박자 묶음을 모름 (마디 줄에서의 배수만 봄) | `placedInMeter(gr)`: `meter-grid`의 `beats`·`groups`로 — 박 안에 들어가면 박 시작에서 span의 배수, 박을 넘으면 박 경계에서 시작·끝나고 한 묶음 안이거나 묶음 경계에서 시작·끝 | 6/8: 1/4에서 시작하는 세잇단 → 병합 안 함, 0에서 → 병합; 5/8(3+2): 1/4 → 안 함, 3/8 → 함; 4/4 4분 세잇단: 1/4 → 안 함, 0 → 함 |
+| E | ledger 의미 서명에 tuplet 표시 속성이 없음 | `ledger.sig.tuplet`에 `[number, bracket, placement, printed]`. 그래프 쪽은 `show`+`printed`, plan 쪽은 출력(`number`, `bracketStated`, `placement`)으로 — plan은 그래프 tuplet에 `bracketStated`를 싣는다 | `ledger.test.js`: `show {number:'both', bracket:false, placement:'below'}`에서 셋 중 하나를 떨어뜨리면 `altered`; mutation `L-TUPLET-BRACKET` (E04) |
+| F | deferred code가 적용될 kind와 묶이지 않음 | `ledger.CODE_KINDS`: status → code → 허용 kind (`null`이면 아무 kind). `CODES`는 여기서 끌어냄, `codeFits(status, code, kind)`; 맞지 않으면 audit `unapproved`에 `ref kind status:code` | `ledger.test.js`: note/stem-double, slur/ornament-glyph, articulation/title-block, tie/show-none → unapproved; stem/stem-double, E04 tuplet/nested-3 → 없음; mutation `L-KIND-CODE` |
+
+ledger mutation은 27 → 29, 전부 잡힌다.
+
+### 33.3 모듈
+
+`engrave/` (UMD, Node와 브라우저, DOM·시계·난수·네트워크 없음 — 정적 검사):
+
+| 파일 | 하는 일 |
+| --- | --- |
+| `metrics.js` | glyph bbox 표. **생성된다**: `tests/engrave/tools/make-metrics.js`가 vendored VexFlow 4.2.3의 Bravura outline에서 66개 glyph의 `[xMin, xMax, yMin, yMax]`를 sp로 (1 em = 4 sp, 0.001 sp) — `--check`가 CI에 있다. 그 밖에 판각 상수(`ENGRAVING`: 보표선 0.13, stem 0.12, stem 길이 3.5, 덧줄 0.16·돌출 0.2, 세로줄 0.16/0.5/간격 0.4, 점 간격 0.3/0.2, 임시표 간격 0.2 …), 크기 비율(꾸밈음 0.66, clef 변경 2/3), 표기 → glyph 이름(음표머리 모양·채움, 임시표 조합, 쉼표, flag, clef, 숫자). 고정 글꼴에 없고 VexFlow가 path로 그리는 모양(`DRAWN`: slash 머리 1.5 × 2 sp, VexFlow `SLASH_NOTEHEAD_WIDTH`)은 대체가 아니다; 정말 없는 것(cross 머리)은 x 머리로 대체하고 `GLYPH_FALLBACK` |
+| `space.js` | spring–rod: `ideal(Δ) = u·(Δ/¼)^0.65`, 거리 = max(ideal, rod). `solve(springs, fixed, target)`는 **정확한** u (폭 함수가 조각별 선형·증가이므로 spring을 rod/g 순으로 정렬해 한 조각을 푼다, 이분법 없음), rod만으로도 넘치면 `overflow` |
+| `breaks.js` | 화면 줄바꿈 DP (§33.8) |
+| `skyline.js` | 0.25 sp 칸의 위·아래 skyline(정수 1/100 sp), `place()`(§10.1의 배치 함수), `clearance()`(세로 간격), `collisions()`(H1–H4, H6, H8) |
+| `canon.js` | canonical JSON(키 정렬, 0.01 반올림, −0 없음)과 hash |
+| `layout.js` | `prepare(plan)`(폭과 무관한 것) → `layout(prepared, config)` → EngravedScore; `engrave`, `createEngraver`(LRU 8), `screenConfig`, `systemParts` |
+| `practice.js` | `createPracticeMap(engraved, plan)`, `createHighlighter(map)` (§33.9) |
+| `index.js` | Node에서는 위 전부를 내보낸다 (`layout`, `practice`, `metrics`, `engrave`, `layoutHash`). 브라우저에서는 페이지가 불러온 경우에만 — **앱은 불러오지 않는다** (G4-B1), 그때 `PPPEngrave.layout`은 null. `version` `0.2.0-g4b` |
+
+도구(`tests/engrave/tools/`): `make-metrics.js`, `layout-hashes.js`(커밋된 hash, `--write`), `layout-view.js`(개발용 SVG — Bravura outline과 상자, 앱과 무관), `layout-perf.js`(예산), `browser-parity.js`(A28, 서버·포트 없이 headless Chrome). `tests/engrave/l2.js`: L2 기하 metric — `skyline.js`와 따로 구현, 테스트와 `bench.js`가 같이 쓴다.
+
+### 33.4 EngravedScore (`engr/1`)
+
+```
+{ version: 'engr/1', planKey: '<graph fingerprint>:<plan version>',
+  config:   { mode: 'screen', breakpoint, width, barsPerSystem, respectSourceBreaks, window },
+  pages:    [{ index, w, h, systems }],                        화면은 한 페이지, 높이 끝없음
+  systems:  [{ index, page, x, y, w, u, stretch, ragged, space, measures, staves: [{ key, y, h, top, bottom }], box }],
+  measures: [{ id, number, system, x, w, content: [x0, x1], columns: [{ at, x, time }] }],
+  objects:  [{ id, kind, refs, system, staffKey, measure, box, layer, event?, glyph?, origin?, scale?, anchor?, drawn?,
+               grace?, provisional?, courtesy?, lines?, space?, open?, start?, label? }],
+  curves:   [],                                                G4d
+  coverage: { placed: {kind: n}, pending: {kind: n} },
+  diagnostics: [{ code, refs, detail }] }
+```
+
+- 좌표는 staff space(화면 1 sp = 10 px), y는 아래로, 전부 0.01 sp로 반올림. 마디 `w`는 반올림한 두 끝의 차라서 마디가 정확히 이어진다.
+- **ID**: 음표머리는 그래프 head ID, 쉼표는 event ID, 나머지 event 요소는 `<event>#stem|#flag|#dot<k>|#ledger<staff>:<y>`, `<head>#acc`; clef·key·time 변경은 그 그래프 ID(+`:staff`), system 머리·보표선·brace처럼 그래프에 없는 장식은 `d:`로 시작. 모든 `refs`는 plan/그래프 ID. **폭이 바뀌어도 음 요소 ID는 같다** (시험됨).
+- glyph 요소는 `origin`(백엔드가 glyph를 그릴 점)과 `scale`, 열에 매달린 요소는 `anchor [기둥 x, 보표 윗선 y]`. `provisional` stem·flag는 G4c가 beam 아래에서 다시 정한다. `coverage.pending`은 G4b가 놓지 않는 것(beam, tuplet, tie, slur, 선·기호, 아티큘레이션, 장식음, fermata, 가사, 운지, 꾸밈음 stem, 반복 기호 글자, 템포, 마디 안 조 변경)을 센다 — 조용히 빠지는 것이 없다.
+- 백엔드와 무관한 순수 데이터: JSON 왕복 뒤 hash가 같다.
+
+### 33.5 intrinsic 폭 (§9.3)
+
+`prepare`가 마디마다 **기둥**(어느 staff·성부든 음이 시작하는 모든 시각; 마디 안 clef 변경은 시간을 먹지 않는 기둥)을 만들고, 기둥 × staff마다 요소를 기둥 기준 상대 좌표로 놓는다:
+
+- 음표머리: 쓰인 음 높이와 그 시각의 clef로 y(윗선 0, 반 sp씩; G·F·C·옥타브 clef, 타악기는 높은음자리처럼). 2도는 stem 반대편으로(stem 위면 아래에서부터, 아래면 위에서부터). 두 성부가 1도·2도로 닿으면 나란히 — stem 아래 성부가 제자리, stem 위 성부가 오른쪽 (stem이 바깥, Gould).
+- stem: plan의 `stem`(그래프 `display.stem` 또는 성부 역할), 없으면 가운데 줄에서 먼 머리 쪽. 길이 3.5 sp(+flag 3개부터 0.5씩), 덧줄 음이면 가운데 줄까지. beam에 든 음은 flag 없음.
+- 덧줄(머리마다, 2도 머리까지 덮고 양쪽 0.2), 쉼표(성부 역할 위/아래면 ±2 sp, 마디 쉼표는 마디 가운데), 임시표(위에서 아래로, 세로로 겹치면 다음 열로 — 열마다 오른쪽 맞춤), 점(기둥의 모든 머리 오른쪽; 줄 위 음은 위 칸, 아래 성부는 아래 칸; **위로 뻗은 flag의 상자와 겹치면 flag 뒤로**), 꾸밈음(0.66 크기의 머리·임시표·덧줄을 왼쪽에; stem·사선은 G4c).
+- 기둥의 staff별 왼쪽·오른쪽 넓이가 rod가 된다: 이웃 기둥 사이 rod = max over staff(왼 기둥 오른쪽 + 오른 기둥 왼쪽) + 0.3 sp; tie가 시작하는 기둥은 ≥ 2.0 sp; 마지막 기둥에서 세로줄까지 오른쪽 + 1.0 sp. staff가 다르면 서로 밀지 않는다 (시험됨).
+
+**`x = 시간 × 상수`가 아니다**: 2분음표 칸은 4분음표 칸의 2^0.65 = 1.569배 (시험됨), rod가 이기는 곳은 rod.
+
+### 33.6 가로 간격 (§9.4)
+
+system 하나 = 고정 조각과 spring의 **segment 목록 하나** (`segments()`): system 머리(clef | key | time — staff마다 같은 열에 맞춤), 마디마다 [여는 반복 또는 첫머리 뒤 1.5 / 세로줄 뒤 1.2, 마디 안 key·time 변경], 첫 기둥 왼쪽 넓이, spring들, 뒤따르는 clef(다음 마디 첫 clef 변경 — 세로줄 **앞**, 2/3 크기, 앞뒤 0.5), 세로줄(다음 마디의 여는 반복이 평범한 세로줄을 대신하면 없음), system 끝 courtesy key·time(세로줄 뒤). 줄바꿈 비용, 폭 풀이, 배치가 모두 이 목록 하나를 읽으므로 서로 어긋날 수 없다.
+
+u는 system마다 하나: `solve`로 폭에 정확히 맞춘다. 마지막 system은 앞 system들의 u 중앙값으로 놓았을 때 폭의 80 % 이하면 그 간격 그대로(ragged), 아니면 맞춘다. rod만으로도 넓으면 §33.7의 작은 보표.
+
+### 33.7 staff·system 기하 (§15.3)
+
+- staff마다 skyline(보표선도 내용). 같은 part의 보표 사이 `max(5.0, 위 보표 아래 skyline + 아래 보표 위 skyline + 1.0)`, part 사이 최소 6.0 — skyline이라 한 곳에서 낮고 다른 곳에서 높은 두 보표는 맞물릴 수 있다.
+- system은 **띠**로 쌓는다(G4-B7): 한 system의 가장 높은 것이 위 system의 가장 낮은 것보다 1.5 아래, 그리고 위 system 마지막 보표의 아랫선에서 다음 system 윗선까지 최소 6.0. 화면 system은 맞물리지 않아서 system 상자가 깨끗한 hit·scroll 대상이다.
+- grand staff: 세로줄이 part 안 다음 보표까지 이어지고, system 여는 줄(보표 둘 이상), part마다 brace(글꼴에 없음 — VexFlow처럼 모양, 폭 1.0 + 0.4, 왼쪽 여백에 자리).
+- volta는 윗보표 skyline 위에 `place()`로 (윗선에서 ≥ 2 sp), system마다 한 조각, 끝이 열렸는지, 시작 조각에만 `label`("1.", "1, 2.").
+- 폭 제약: 한 마디가 rod만으로도 폭보다 넓으면(휴대폰의 16분음표 마디) 그 system을 **작은 보표**로 — `space = max(0.5, W / 최소 폭)`, 모든 x는 system 왼쪽에서, y는 보표 윗선에서 비율로 줄이고 보표선 간격·세로 간격도 같이 (`SYSTEM_SCALED`). 0.5로도 넘치면 `SYSTEM_OVERFLOW` (G4-B5). 페이지 매김은 없다 (G4e).
+
+### 33.8 줄바꿈 (G4-U4)
+
+마디 위의 DP: system [i..j]는 최소 폭 × 1.05 ≤ W일 때만(한 마디는 늘 가능), 비용 = `12·(k−N)²`(마지막 system은 k > N일 때만) + 압축 `400·(1−s)²` (s = W/자연 폭, 자연 폭은 u = 4) + 성김 `60·(s−1.5)²` (s > 1.5, 마지막 제외) + 1마디 system 50 (마지막이면 60). 총합 최소, 1e-9로 비교, 긴 system부터 — 같은 입력은 같은 나눔. N은 **선호**다: 빽빽하면 줄고(16분음표 12마디 → system마다 < 4), 성기면 늘고(2/4 2분음표 → 5마디), 5·9·13마디에서 외톨이 마지막 마디 없음. `respectSourceBreaks`면 그래프의 `newSystem`에서 강제로 나눈다. 코퍼스 347 그래프(데스크톱): system의 마디 수 4가 1,307, 3이 178, 5가 190, 2가 168, 6이 2; 1마디짜리 마지막 system 34는 마디가 하나뿐인 파일 33과 결함 있는 찬송가 1(§33.15). 휴대폰(40 sp)에서는 마지막이 아닌 1마디 system이 1,253개 — 모두 두 마디가 폭에 들어가지 않는 밀도다(`eg.systems.one_bar` = 피할 수 있었던 것 0).
+
+### 33.9 연습 map (§8.4, §16.4–§16.6)
+
+`createPracticeMap(engraved, plan)` — EngravedScore에서 한 번 끌어내고, 그 뒤 질문은 모두 조회다:
+- `systems` (상자, 마디 wash용 `band` = 윗보표 −1.5 … 아랫보표 +1.5), `measures` (상자, content, `startQ`/`lenQ`, 기둥 `[{b, q, x}]` — 시간은 앱과 같은 4분음표 단위, 적힌 순서로 누적)
+- `event(id)` → {m, staff, system, box, objects, onsetKeys, startQ, endQ}; `byOnset(key)` — 키는 legacy 렌더러의 `data-onset` (`E.onsetKey`, "마디|박|staff")
+- `xAt(m, b)` 기둥 사이 선형, 마지막 기둥에서 세로줄까지; `locate(q)`; `hitTest(x, y)` → {system, measure, b, q, event}; `loopBoxes(a, b)` system마다 상자 하나; `legacyMap()` — 지금 ScoreView `_map`의 모양 `{x, w, startQ, lenQ, pts: [[q, x]]}`
+- `createHighlighter(map)`: 시작순·끝순 두 목록과 두 포인터. 앞으로 재생하면 상태가 바뀌는 event만 만진다; 뒤로 seek하면 아직 울릴 수 있는 event(q − 가장 긴 길이 이후 시작)만 다시 보고 차이만 만진다. layout 함수를 부르지 않는다 (`counters.layout` 불변, EngravedScore hash 불변 — 시험됨).
+
+### 33.10 다시 배치 (resize·reflow, §16.5)
+
+`createEngraver(plan)`: `prepare`는 한 번, config마다 layout, 최근 8개 LRU. 같은 breakpoint 안에서 창 크기를 바꾸면 `screenConfig(px)`가 같은 config → **layout 0회** (B7); 720 px를 넘으면 다른 config; 확대는 폭 변경(`screenConfig(px, zoom)`, 1.25배 → 80 sp). 데스크톱 → 휴대폰 → 데스크톱은 캐시의 같은 객체. 음 요소 ID·event ID·onset 키·시간은 폭과 무관하고, highlighter 상태는 event ID와 시간뿐이라 다른 폭의 map으로 그대로 옮겨 간다 (시험됨). 가까이 보기 창: `config.window = [첫, 끝]` 마디만 system으로 (§15.2 "창 경계를 system 경계로").
+
+### 33.11 결정론 (A27–A29)
+
+고정된 반복 순서, 정렬은 모두 전순서(동률은 ID), 비교는 1e-9 또는 정수 1/100 sp, 출력 0.01 반올림, glyph 크기는 생성된 표, DOM·시계·난수 없음(정적 검사 — 전역 `document`/`window`, `getBBox`, `measureText`, `Date`, `performance.now`, `Math.random`, VexFlow, `fetch`). **layout hash는 canonical JSON의 FNV-1a 64** (G4-B4 — 브라우저에 동기 sha256이 없다; ScoreGraph fingerprint와 같은 함수). 커밋된 hash `tests/engrave/baselines/layout-hashes.json`: E 40 + R 61 + PPP 전사 17 = 118곡 × 데스크톱·휴대폰 — Windows에서 만들고 테스트와 CI(Linux)가 비교. **Node = Chrome 153 headless: 808/808 layout hash 같음** (코퍼스 347 + E 40 + 전사 17, 두 config; `browser-parity.js`, 네트워크 요청 0). 같은 plan 세 번(새로 prepare, 캐시, 새 그래프), fixture 역순 — 같은 hash.
+
+### 33.12 성능 (§19.2; 이 PC, Node 24, `layout-perf.js` 5회 중앙값; 브라우저는 `browser-parity.js`)
+
+| 곡 | event | 마디 | plan | prepare | layout 데스크톱 | 휴대폰 | 연습 map | system | 요소 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| beyer/030 | 95 | 16 | 1.18 | 0.53 | 0.69 | 0.58 | 0.28 | 4 | 266 |
+| hymns/amazing-grace | 135 | 17 | 1.55 | 0.51 | 0.79 | 0.77 | 0.38 | 4 | 372 |
+| burgmuller25/021 | 468 | 33 | 5.13 | 3.08 | 2.94 | 2.79 | 0.73 | 9 | 1,152 |
+| czerny849/001 | 548 | 32 | 7.0 | 3.17 | 3.10 | 3.09 | 0.97 | 9 | 1,350 |
+| sonatina/013 | 1,354 | 86 | 18.84 | 8.97 | 10.31 | 10.10 | 3.27 | 24 | 3,500 |
+| sonatina/016 | 1,494 | 92 | 16.84 | 9.97 | 10.34 | 9.43 | 2.16 | 25 | 4,147 |
+| sonatina/020 | 1,563 | 158 | 18.96 | 9.42 | 12.83 | 12.69 | 2.87 | 40 | 4,720 |
+
+(ms.) 코퍼스 347 그래프 한 번씩: prepare + layout 중앙 1.49, p95 10.82, 최대 24.05 ms.
+
+| 예산 | G4b가 잴 수 있는 것 | 측정 | 판정 |
+| --- | --- | --- | --- |
+| B1 plan ≤ 60 ms | 가장 긴 코퍼스 곡의 plan | 16.9 ms | PASS |
+| B2 창 p95 ≤ 25 ms | 4마디 창 layout, 캐시 없음 (SVG는 G4c+) | 0.39 ms (107창) | PASS (layout 몫) |
+| B3 p95 ≤ 8 ms | 같은 창, 캐시 적중 | 0.01 ms | PASS |
+| B4 ≤ 100 ms | 전곡 prepare + layout (줄바꿈이 전역이라 첫 화면도 이것) | 최대 22.3 ms | PASS |
+| B5 ≤ 300 ms, task ≤ 50 ms | sonatina/020 전곡 | 22.3 ms, 가장 긴 task 12.8 ms | PASS |
+| B6 p95 ≤ 1 ms, 만진 수 = 바뀐 수 | highlighter update, 40 ms 틱 17,517번 | p95 < 0.01 ms, 최대 0.1 ms, 만진 수 = 바뀐 수 전부 | PASS |
+| B7 layout 0회 | 같은 breakpoint 안 창 크기 7가지 | 0 | PASS |
+| A37 (4× CPU) B2 ≤ 80, B6 ≤ 3 | Chrome, CPU 4× 감속 | 창 p95 1.3 ms, highlight p95 < 0.1 ms | PASS |
+
+Chrome(1×)의 sonatina/020: plan 12.2, prepare 6.1, layout 7.9 ms. 4×: plan 65.5, prepare 37.7, layout 42.8 ms — prepare와 layout은 따로 부르면 각각 50 ms 아래지만 **plan(G4a)은 4×에서 50 ms를 넘는다** (B1은 1× 예산이라 PASS; G4f가 전곡 보기를 idle·worker로 나눌 때 볼 일, §33.15). 연습 조회: hit-test·seek p95 < 0.01 ms, sonatina/020 map 만들기 2.9 ms.
+
+### 33.13 테스트와 회귀
+
+- `npm run test:engrave` **128/128** (G4a 95 + `layout.test.js` 22 + `practice.test.js` 7 + ledger 2 + source 2), `npm run test:scoregraph` **205/205**.
+- `layout.test.js`: canonical·hash; 결정론 3회·역순·JSON 왕복; 커밋된 hash; 정적 검사 + `make-metrics --check`; EngravedScore 모양·ID·0.01; intrinsic 폭(임시표·겹임시표·점 1·2개·2도·3도·화음 임시표 열·같은 음 두 성부·쉼표·staff별 넓이·2^0.65); spring 정확 풀이·rod·overflow; 4/4·3/4·6/8·5/8(3+2) 기둥·같은 Δ 같은 간격·박자표; 여러 성부·화음·임시표·쉼표 공유 기둥; 음 높이 → y(높은·낮은·가온·테너·8vb clef), stem 방향, 덧줄; G4-U4 보통 4/2, 빽빽 < 4, 성김 > 4; 외톨이 마지막 마디, 한 마디 넘침; `respectSourceBreaks`; grand staff·brace·이어진 세로줄·system 띠; 뒤따르는 clef, key 변경 제자리표, courtesy key·time, C·¢; 여는 반복·volta와 system 넘김; **코퍼스 347 + E 40 × 두 config의 L2 전부 0** (허용 1: §33.15); 충돌 검사 음성 대조(H1, H2, H3, H4, H6, H8 — 일부러 겹친 상자를 찾는다); 작은 보표·넘침 진단; coverage·pending·숨긴 event·숨긴 조표·slash 머리; reflow 캐시·ID·screenConfig·LRU; 앱은 layout core를 불러오지 않음.
+- `practice.test.js`: event → 요소·상자·onset 키(E.onsetKey와 같음); 시간·xAt·locate; hit-test; loop·`legacyMap`; highlighter = 전수 계산(3,000 프레임 이상, 만진 수 = 바뀐 수, seek 7번); 곡 길이와 무관한 프레임 비용(방문 수/프레임 < 1.5); 폭이 바뀌어도 ID·키·시간·highlight 상태 같음.
+- **L2 bench**: `bench.js`가 그래프마다 두 config를 배치하고 `l2.js` metric(클립, 머리·임시표·점 겹침, staff·system 겹침·넘침, rod·단조성·기둥 순서, event·head 누락, staff 틀림, 피할 수 있었던 1마디 system, hard 위반, glyph 대체, layout 비결정)을 L1 행에 더한다 — 영목표 metric은 gate. r 61 / e 40 / x 76 PASS, L1 값은 바뀌지 않음(baseline diff는 새 키 추가뿐), `eg.system.scaled`(r 34, x 4)는 낮을수록 좋음으로 기록.
+- CI(`bench.yml`)에 `make-metrics.js --check`, `layout-hashes.js` 추가.
+- 회귀: E/corpus `--check`, L1 r·e·x, `sg-roundtrip`, golden, lint-corpus, provenance, correctness, smoke/core/robust run+check, bench unit, `mutation-check` — §33.14. **legacy parity** (`a0bc2ea`의 `git archive`를 8796에, 이 트리를 8795에): 16/16 바이트 동일. **A48 페이지 gate** PASS (§33.2 B). 브라우저 suite 26개 — §33.14.
+
+### 33.14 회귀 실행 결과
+
+(아래 표는 커밋 직전 이 트리에서 돈 결과다.)
+
+| 검사 | 결과 |
+| --- | --- |
+| `npm run test:engrave` | **128/128** (G4a 95) |
+| `npm run test:scoregraph` | **205/205** |
+| carryover 커밋만 (`a0bc2ea` + 그 파일들, `git archive`로 따로 풀어서) | `test:engrave` 99/99 |
+| `python -m unittest discover -s tests/bench/unit` | PASS |
+| `make-e-fixtures.js --check`, `make-corpus.js --check`, `make-metrics.js --check`, `layout-hashes.js` | 모두 PASS (layout hash 118곡 × 2) |
+| `bench.js check --suite r / e / x` (L1 + L2) | PASS / PASS / PASS (61 / 40 / 76 그래프) |
+| `run.py sg-roundtrip`, `golden`, `lint-corpus`, `make_provenance.py --check`, `correctness` | 모두 PASS |
+| `run.py run/check --suite smoke`, `core`, `robust` | 모두 PASS (core 553, robust 282 case) |
+| `run.py mutation-check` | **PASS** — 49/49 (해로운 mutation 전부 REGRESSION, no-op 두 개 결과 동일) |
+| A48 페이지 gate (`a48-coverage.js`, 이 트리 8795) | **PASS** — core 553/553, corpus 318/318 (이름 있는 손실 7), OMR 2; 음성 대조 4개 FAIL (§33.2 B) |
+| legacy parity (`legacy-parity.js`, `a0bc2ea` 8796 대 이 트리 8795) | **16/16 바이트 동일** |
+| `browser-parity.js` (A28) | Node = Chrome 153: **808/808** layout hash, 네트워크 0 |
+| `layout-perf.js` | 모든 예산 PASS (§33.12) |
+| 브라우저 suite 26개 (각각 따로, `with-port.js`로 이 트리 8795에 — 페이지의 `PPPEngrave.version` `0.2.0-g4b` 확인) | **25 통과.** `transcription` 실패("the fallback is the venv transkun console script" — 이 PC에 transkun venv·helper 없음)는 **같은 harness로 base(`a0bc2ea`, 8796)에서도 똑같이 실패** — G4a 기록(§32.13)과 같은 환경 원인. 임시 preload 두 가지(커밋 안 함): 앱이 스스로 부르는 `127.0.0.1:8788/health`의 연결 거부 console·requestfailed만 거르기, `createBrowserContext()`로 연 페이지에도 8777 → 8795 바꾸기(`with-port.js`는 `browser.newPage`만 바꾼다; `auth-ui`·`share`가 그 경로) — 이 둘이 없으면 console 오류를 세는 suite와 두 context suite가 이 트리와 base에서 **똑같이** 실패한다 |
+
+서버: 이 트리와 base를 `NODE_ENV=production HOST=127.0.0.1`로 8795·8796에 띄웠다 — 개발 모드의 `server.js`는 helper가 없으면 `omr-service.js`를 기본 포트 8788로 띄우는데, 8777·8788은 사용자 것이라 쓰지 않는다. 측정이 끝나고 두 서버를 껐다.
+
+### 33.15 남은 것
+
+- **BLOCKER 0, MAJOR 0.**
+- MINOR:
+  1. `catalog/hymns/in-the-bleak-midwinter.musicxml`의 마지막 마디는 길이 175/4(온음표 43¾개, event 166개 — 곡의 나머지가 한 마디에 들어간 원본 결함)라서 어느 폭·크기에도 들어가지 않는다: `SYSTEM_OVERFLOW`로 말하고, 테스트는 이 파일만 이름으로 허용한다 (R·E·X suite에는 없음). 마디를 system 사이로 쪼개는 일은 G4b에 없다.
+  2. 마디 안 조 변경(코퍼스에 1개, `tempo-meter-key-changes.musicxml`)은 놓지 않고 `pending['key-mid-measure']`로 센다.
+  3. 4× CPU에서 plan(G4a)이 sonatina/020에 65 ms — 50 ms long task. G4f의 전곡 보기가 plan·prepare·layout을 idle·worker로 나눌 때 다룬다.
+  4. 음 요소 자리는 G4b 수준이다: stem은 `provisional`, 같은 음 두 성부는 머리를 나누지 않고 나란히, 쉼표 높이는 역할에 ±2 sp, 꾸밈음에 stem·사선 없음 — G4c의 몫(§11, §14).
+- G4a에서 넘어온 G4b 몫 가운데 이 지시 범위 밖이라 그대로 둔 것 (G4f에서 앱이 layout을 쓸 때): vendored VexFlow 전송(`no-store`·gzip 없음), 다시 불러온 곡 `resolve` 비용(4×), 8va 적힌 음 표시(G4b는 plan의 `written`(= concert − shift)대로 놓는다 — flip 전에 사용자 결정), 명시된 `bracket="yes"`(schema). §32.14의 그 밖의 MINOR·OPTIONAL도 그대로다.
+- 브라우저 suite harness의 한계 둘 (§33.14): 앱 페이지가 스스로 `127.0.0.1:8788/health`를 확인해, helper가 없는 PC에서는 console 오류를 세는 suite가 실패한다; `with-port.js`는 `createBrowserContext()`로 연 페이지(`auth-ui`·`share`)를 8777에서 바꾸지 않는다. 둘 다 이 트리와 base에서 똑같이 나타나 G4b 원인이 아니다. 이번 실행은 커밋하지 않은 임시 preload로 돌렸고 도구는 고치지 않았다 (MINOR). 8777·8788에는 아무것도 띄우거나 끄지 않았다 (앱 페이지가 스스로 보내는 8788 health 확인이 거부됐을 뿐).
+- **상태: READY_FOR_G4b_REVIEW.** 병합 안 함, PR 없음.
 
 ---
 
