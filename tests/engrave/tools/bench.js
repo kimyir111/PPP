@@ -1,4 +1,6 @@
 /* G04 §21.1 L1 at the plan level (G4a): does the NotationPlan carry everything each graph states?
+   G04 §21.2 L2 at the layout level (G4b): is the EngravedScore free of clips, overlaps, rod and order violations and
+   overflow, at the desktop and phone screen configs (tests/engrave/l2.js, computed apart from engrave/skyline.js)?
 
      node tests/engrave/tools/bench.js run --suite r|e|x        per-graph rows + summary -> tests/engrave/out/<suite>.l1.json
      node tests/engrave/tools/bench.js check --suite r|e|x      the summary against tests/engrave/baselines/<suite>.l1.json: exit 1 on
@@ -17,15 +19,25 @@ const fs = require('fs');
 const path = require('path');
 const H = require('../helpers.js');
 const { SG, E, REPO } = H;
+/* RATCHET (l2.js): the other-voice collisions G4c removes - the baseline must record each, and a suite whose count
+   rises above it fails; G4c moves them to ZERO */
+const { l2, RATCHET } = require('../l2.js');
 const L = SG.legacy;
 
 const OUT = path.join(REPO, 'tests', 'engrave', 'out');
 const BASE = path.join(REPO, 'tests', 'engrave', 'baselines');
 const ZERO = ['eg.ledger.silent', 'eg.ledger.invented', 'eg.ledger.duplicate', 'eg.ledger.missing', 'eg.ledger.altered', 'eg.ledger.orphan',
   'eg.ledger.unapproved', 'eg.ledger.uncoded', 'eg.ledger.unsupported', 'eg.beam.derived_in_beamed_part', 'eg.beam.orphan', 'eg.tuplet.suppressed_drawn',
-  'eg.graph.changed', 'eg.plan.nondeterministic', 'eg.error'];
+  'eg.graph.changed', 'eg.plan.nondeterministic', 'eg.error',
+  /* L2 (G4b) */
+  'eg.clip.count', 'eg.overlap.head_head', 'eg.overlap.acc', 'eg.overlap.dot', 'eg.staff.overlap', 'eg.system.overlap', 'eg.system.overflow',
+  'eg.spacing.rod_violations', 'eg.spacing.monotonic_violations', 'eg.column.order_violations', 'eg.layout.event_missing', 'eg.layout.event_unknown',
+  'eg.layout.head_missing', 'eg.layout.head_staff_wrong', 'eg.systems.one_bar', 'eg.layout.hard_violations', 'eg.glyph.fallback',
+  'eg.layout.nondeterministic', 'eg.layout.multiset_diff', 'eg.system.fill_err', 'eg.system.scaled_avoidable'];
 const ONE = ['eg.beam.graph_drawn_ratio', 'eg.beam.members_exact', 'eg.tuplet.drawn_ratio', 'eg.tuplet.show_ok', 'eg.tie.drawn_ratio',
   'eg.slur.pair_exact', 'eg.event.multiset_equal', 'eg.staff.assignment_exact', 'eg.source.agree_live', 'eg.source.agree_projected'];
+/* recorded, lower is better: more systems drawn at a smaller staff size is a regression */
+const LOWER = ['eg.system.scaled'];
 /* a graph a legacy Score cannot rebuild, and the one code fromScore names it with (G04 §32.10): percussion has no pitch on a Score */
 const PROJECTION_ALLOWED = { 'e/E27-percussion.musicxml': 'percussion-or-unpitched' };
 const MARKS = ['articulation', 'ornament', 'fermata', 'fingering', 'dynamic', 'wedge', 'pedal', 'pedal-change', 'ottava', 'words', 'tempo',
@@ -126,6 +138,14 @@ function measure(item) {
     const allowed = !projOk && PROJECTION_ALLOWED[item.id] && fr.unsupported && fr.unsupported.some(u => u.code === PROJECTION_ALLOWED[item.id]);
     set('eg.source.agree_projected', projOk || allowed ? 1 : 0);
     if (allowed) set('eg.source.projection_allowlisted', 1);
+    /* L2: the layout at both screen configs, each metric summed over the two; the same graph laid out afresh gives the
+       same EngravedScore */
+    const P = E.layout.prepare(p);
+    const t1 = process.hrtime.bigint();
+    const lays = ['desktop', 'phone'].map(bp => E.layout.layout(P, { breakpoint: bp }));
+    row.layoutMs = Number(process.hrtime.bigint() - t1) / 1e6 / 2;
+    lays.forEach(eng => { const m = l2(eng, p, { prepared: P, layout: E.layout }); Object.keys(m).forEach(k => set(k, (row.m[k] || 0) + m[k])); });
+    set('eg.layout.nondeterministic', E.layoutHash(E.engrave(E.plan(g, cfg), { breakpoint: 'desktop' })) === E.layoutHash(lays[0]) ? 0 : 1);
     set('eg.error', 0);
   } catch (e) {
     set('eg.error', 1);
@@ -143,7 +163,9 @@ function summarise(rows) {
     else s[k] = vs.reduce((a, b) => a + b, 0);
   });
   const ms = rows.map(r => r.ms || 0).sort((a, b) => a - b);
-  s.timing = { planMsMedian: +ms[Math.floor(ms.length / 2)].toFixed(2), planMsMax: +ms[ms.length - 1].toFixed(2) };
+  const lms = rows.map(r => r.layoutMs || 0).sort((a, b) => a - b);
+  s.timing = { planMsMedian: +ms[Math.floor(ms.length / 2)].toFixed(2), planMsMax: +ms[ms.length - 1].toFixed(2),
+    layoutMsMedian: +lms[Math.floor(lms.length / 2)].toFixed(2), layoutMsMax: +lms[lms.length - 1].toFixed(2) };
   return s;
 }
 
@@ -156,8 +178,9 @@ function compare(sum, base) {
     Object.keys(base).filter(k => k.indexOf('eg.') === 0).forEach(k => {
       const v = sum[k] === undefined ? 0 : sum[k], b = base[k];
       const higherIsBetter = ONE.indexOf(k) >= 0 || k.indexOf('ratio') >= 0;
-      if (higherIsBetter ? v < b : (k.indexOf('.deferred.') >= 0 || ZERO.indexOf(k) >= 0) ? v > b : false) bad.push(k + ' ' + v + ' vs baseline ' + b);
+      if (higherIsBetter ? v < b : (k.indexOf('.deferred.') >= 0 || ZERO.indexOf(k) >= 0 || LOWER.indexOf(k) >= 0 || RATCHET.indexOf(k) >= 0) ? v > b : false) bad.push(k + ' ' + v + ' vs baseline ' + b);
     });
+    RATCHET.forEach(k => { if (base[k] === undefined) bad.push(k + ' ' + sum[k] + ': a ratchet metric the baseline does not record'); });
     Object.keys(sum).filter(k => k.indexOf('eg.ledger.deferred.') === 0 && base[k] === undefined).forEach(k => bad.push(k + ' ' + sum[k] + ': a deferred code the baseline does not have'));
   }
   return bad;
@@ -199,4 +222,4 @@ async function main() {
   process.exit(bad.length ? 1 : 0);
 }
 if (require.main === module) main().catch(e => { console.error(e); process.exit(1); });
-module.exports = { inputs, measure, summarise, compare, ZERO, ONE };
+module.exports = { inputs, measure, summarise, compare, ZERO, ONE, LOWER, RATCHET };

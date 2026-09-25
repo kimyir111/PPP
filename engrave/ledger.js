@@ -56,21 +56,44 @@
      It is named, with a diagnostic, and it always fails the audit - never deferred, never passed in silence (G4-U5). */
   const UNSUPPORTED = 'unsupported';
 
-  /* The codes each status may carry. deferred is G04 A1's allow-list (§21.1) and the two the user approved
-     (G4-U5): title-block (the printed title area beyond title and composer, G4e) and ornament-glyph (a schema
-     ornament whose SMuFL glyph the pinned font lacks, G4d). Any other code fails the audit (unapproved), so a new
-     way of not drawing something cannot appear unreviewed. */
-  const CODES = Object.freeze({
-    drawn: Object.freeze(['open', 'one-note', 'playback-tempo']),
-    derived: Object.freeze(['part-states-no-beams']),
-    merged: Object.freeze(['merged-for-display']),
-    suppressed: Object.freeze(['hidden', 'hidden-event', 'printed-false', 'show-none', 'sound-only', 'config-off', 'clef-none',
-      'analysis-only', 'screen-draws-each-bar', 'source-break-not-honored', 'print-only', 'single-part']),
-    deferred: Object.freeze(['cross-staff-chord', 'cross-staff-beam', 'tab', 'nested-3', 'grace-after', 'stem-double',
-      'title-block', 'ornament-glyph']),
-    unsupported: Object.freeze(['unknown-spanner', 'unknown-ornament'])
+  /* The codes each status may carry, and the kinds each code may be used for. deferred is G04 A1's allow-list
+     (§21.1) and the two the user approved (G4-U5): title-block (the printed title area beyond title and composer,
+     G4e) and ornament-glyph (a schema ornament whose SMuFL glyph the pinned font lacks, G4d). A code outside its
+     status's list, or on a kind it does not belong to (an event deferred as `stem-double`, a slur as
+     `ornament-glyph`), fails the audit (unapproved): a new way of not drawing something cannot appear unreviewed
+     (G4a review MINOR, closed in G4b). */
+  const EVENT_KINDS = ['note', 'rest', 'grace', 'perc'];
+  /* what an event keeps inside itself, which inherits the event's disposition (hidden, grace-after) */
+  const EVENT_PARTS = ['stem', 'rest-position', 'measure-rest', 'size', 'cue', 'cross-staff-event', 'articulation', 'ornament',
+    'fermata', 'lyric', 'head', 'accidental', 'fingering', 'notehead'];
+  const CODE_KINDS = Object.freeze({
+    drawn: { 'open': ['tie', 'slur', 'pedal', 'wedge', 'ottava', 'gliss'], 'one-note': ['tuplet'], 'playback-tempo': ['tempo'] },
+    derived: { 'part-states-no-beams': ['beam'] },
+    merged: { 'merged-for-display': ['tuplet'] },
+    suppressed: {
+      'hidden': EVENT_KINDS.concat(['hidden', 'meter', 'key']), 'hidden-event': EVENT_PARTS,
+      'printed-false': ['tuplet'], 'show-none': ['tuplet'], 'sound-only': ['tempo', 'pedal', 'pedal-change'],
+      'config-off': ['fingering', 'chord', 'dynamic', 'pedal', 'pedal-change', 'ottava'], 'clef-none': ['clef'],
+      'analysis-only': ['phrase', 'section'], 'screen-draws-each-bar': ['multi-rest'], 'source-break-not-honored': ['layout-break'],
+      'print-only': ['meta', 'part-name', 'part-abbr'], 'single-part': ['part-name', 'part-abbr']
+    },
+    deferred: {
+      'cross-staff-chord': ['cross-staff-head'], 'cross-staff-beam': ['beam', 'beam-break'], 'tab': ['staff', 'clef', 'technical'],
+      'nested-3': ['tuplet'], 'grace-after': ['grace'].concat(EVENT_PARTS), 'stem-double': ['stem'], 'title-block': ['meta'],
+      'ornament-glyph': ['ornament']
+    },
+    /* never a pass: named so the failure says what it met */
+    unsupported: { 'unknown-spanner': null, 'unknown-ornament': ['ornament'] }
   });
+  Object.keys(CODE_KINDS).forEach(st => { Object.keys(CODE_KINDS[st]).forEach(c => { if (CODE_KINDS[st][c]) Object.freeze(CODE_KINDS[st][c]); }); Object.freeze(CODE_KINDS[st]); });
+  const CODES = Object.freeze(Object.keys(CODE_KINDS).reduce((o, st) => { o[st] = Object.freeze(Object.keys(CODE_KINDS[st])); return o; }, {}));
   const DEFERRED_ALLOWED = CODES.deferred;
+  /* may this status carry this code on this kind? */
+  const codeFits = (status, code, kind) => {
+    const byCode = CODE_KINDS[status];
+    if (!byCode || !Object.prototype.hasOwnProperty.call(byCode, code)) return false;
+    return byCode[code] === null || byCode[code].indexOf(kind) >= 0;
+  };
 
   const ref = Object.freeze({
     sub: (id, what) => id + '#' + what,
@@ -150,7 +173,10 @@
     slur: (from, to, placement, line) => J([nz(from), nz(to), nz(placement), nz(line)]),
     beam: (events, breaks) => J([events, (breaks || []).map(b => [b.after, b.level])]),
     beamBreak: (after, level) => J([after, level]),
-    tuplet: (events, actual, normal, unit, parent) => J([events, actual, normal, unit ? [unit.type, unit.dots || 0] : null, nz(parent)]),
+    /* the display a graph states - number, bracket, placement, printed - is part of the tuplet (G4a review MINOR, closed
+       in G4b): a plan that drops a stated bracket or placement carries the tuplet altered */
+    tuplet: (events, actual, normal, unit, parent, show) => J([events, actual, normal, unit ? [unit.type, unit.dots || 0] : null, nz(parent),
+      show ? [nz(show.number) || 'actual', show.bracket === undefined || show.bracket === null ? null : !!show.bracket, nz(show.placement), show.printed !== false] : ['actual', null, null, true]]),
     wedge: (kind, staff, from, to, placement, niente) => J([kind, nz(staff), from, to, nz(placement), !!niente]),
     pedal: (pedal, from, to, mark, text, soundOnly) => J([pedal, from, to, nz(mark), nz(text), !!soundOnly]),
     pos: p => J(p),
@@ -224,7 +250,8 @@
             put(s.id, 'beam', sig.beam(s.events, s.breaks));
             (s.breaks || []).forEach((b, i) => put(ref.beamBreak(s.id, i), 'beam-break', sig.beamBreak(b.after, b.level)));
             break;
-          case 'tuplet': put(s.id, 'tuplet', sig.tuplet(s.events, s.actual, s.normal, s.unit, s.parent)); break;
+          case 'tuplet': put(s.id, 'tuplet', sig.tuplet(s.events, s.actual, s.normal, s.unit, s.parent,
+            Object.assign({}, s.show || {}, { printed: s.printed !== false }))); break;
           case 'wedge': put(s.id, 'wedge', sig.wedge(s.kind, s.staff, pos(s.from), pos(s.to), s.placement, s.niente)); break;
           case 'pedal':
             put(s.id, 'pedal', sig.pedal(s.pedal, pos(s.from), pos(s.to), s.mark, s.text, s.soundOnly));
@@ -331,7 +358,8 @@
         put(t.id, 'tuplet-group', sig.tuplet(t.events, t.actual, t.normal, t.unit, null));
         (t.members || []).forEach((sid, k) => put(sid, 'tuplet', sig.tuplet([t.events[k]], t.actual, t.normal,
           t.memberUnits ? t.memberUnits[k] : t.unit, null)));
-      } else put(t.id, 'tuplet', sig.tuplet(t.events, t.actual, t.normal, t.unit, t.parent));
+      } else put(t.id, 'tuplet', sig.tuplet(t.events, t.actual, t.normal, t.unit, t.parent,
+        { number: t.number, bracket: t.bracketStated, placement: t.placement, printed: true }));
     });
     return items;
   }
@@ -352,7 +380,7 @@
       if (STATUS.indexOf(en.status) < 0) { badStatus.push(en.ref); return; }
       if (en.status === 'projected-loss') { if (en.ref.indexOf('p:') !== 0) invented.push(en.ref); if (!en.code) uncoded.push(en.ref); return; }
       if (en.status !== 'drawn' && !en.code) uncoded.push(en.ref);
-      if (en.code && CODES[en.status].indexOf(en.code) < 0) unapproved.push(en.ref + ' ' + en.status + ':' + en.code);
+      if (en.code && !codeFits(en.status, en.code, en.kind)) unapproved.push(en.ref + ' ' + en.kind + ' ' + en.status + ':' + en.code);
       const x = exp.get(en.ref);
       if (!own(en.ref) && !x) invented.push(en.ref);
       if (x && x.kind !== en.kind) kindMismatch.push(en.ref + ' ' + x.kind + '/' + en.kind);
@@ -389,5 +417,6 @@
     }, problems);
   }
 
-  return Object.freeze({ STATUS, UNSUPPORTED, CODES, DEFERRED_ALLOWED, ref, META_FIELDS, CLEF_LINE, sig, expected, inventory, consumed, audit });
+  return Object.freeze({ STATUS, UNSUPPORTED, CODES, CODE_KINDS, DEFERRED_ALLOWED, codeFits, ref, META_FIELDS, CLEF_LINE, sig, expected, inventory,
+    consumed, audit });
 });

@@ -14,11 +14,16 @@ const html = fs.readFileSync(path.join(REPO, 'Piano Coach App.dc.html'), 'utf8')
 const sha = s => crypto.createHash('sha256').update(s).digest('hex');
 const slice = (from, to) => { const i = html.indexOf(from); assert.ok(i >= 0, 'the app has ' + JSON.stringify(from)); const j = html.indexOf(to, i); return html.slice(i, j > 0 ? j : i + 3000); };
 
-test('the app loads every engrave/ file after the scoregraph library and audio-score.js, index.js last', () => {
+/* G4b's layout core is not in the app until the renderer switch (G4f): nothing draws from it, the legacy renderer draws */
+const LAYOUT_CORE = ['breaks', 'canon', 'layout', 'metrics', 'practice', 'skyline', 'space'].map(n => 'engrave/' + n + '.js');
+
+test('the app loads every G4a engrave/ file after the scoregraph library and audio-score.js, index.js last - and no G4b layout file', () => {
   const srcs = [...html.matchAll(/<script src="\.\/((?:scoregraph\/[\w-]+|engrave\/[\w-]+|audio-score)\.js)\?v=[^"]*"><\/script>/g)].map(m => m[1]);
   const a = srcs.indexOf('audio-score.js');
   const eng = srcs.filter(s => s.startsWith('engrave/'));
-  assert.deepEqual(eng.slice().sort(), fs.readdirSync(path.join(REPO, 'engrave')).filter(f => f.endsWith('.js')).map(f => 'engrave/' + f).sort());
+  const files = fs.readdirSync(path.join(REPO, 'engrave')).filter(f => f.endsWith('.js')).map(f => 'engrave/' + f);
+  LAYOUT_CORE.forEach(f => assert.ok(files.indexOf(f) >= 0 && eng.indexOf(f) < 0, f + ' exists and the app does not load it'));
+  assert.deepEqual(eng.slice().sort(), files.filter(f => LAYOUT_CORE.indexOf(f) < 0).sort());
   assert.ok(srcs.indexOf(eng[0]) > a, 'after audio-score.js, so the library is in place');
   assert.equal(eng[eng.length - 1], 'engrave/index.js');
   const order = ['ledger', 'glyphs', 'plan-beams', 'plan-tuplets', 'plan', 'store', 'source', 'index'].map(n => 'engrave/' + n + '.js');

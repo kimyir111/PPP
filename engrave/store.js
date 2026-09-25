@@ -37,7 +37,20 @@
   const DB_NAME = 'ppp-engrave', DB_VERSION = 2, STORE_NAME = 'graphs', META_NAME = 'meta';
   /* records: songs kept; bytes: all records; record: one; share: the part of the origin's storage the cache may
      reach before it stops writing - the song videos (IndexedDB 'ppp-media') come first */
-  const LIMITS = Object.freeze({ records: 200, bytes: 64 * 1024 * 1024, record: 16 * 1024 * 1024, share: 0.8 });
+  /* timeout: the longest any one call to the backend may take (ms). IndexedDB `open` can stay pending for good (a
+     blocked upgrade, a browser that never answers); no caller - resolve() before a render, persist() after a save -
+     may wait on it for ever (G4a final review MINOR, closed in G4b). A call that runs out is named `timeout`. */
+  const LIMITS = Object.freeze({ records: 200, bytes: 64 * 1024 * 1024, record: 16 * 1024 * 1024, share: 0.8, timeout: 2500 });
+
+  /* p, or a rejection with code 'timeout' after ms; the timer never keeps a process alive */
+  function within(p, ms) {
+    return new Promise((resolve, reject) => {
+      const t = setTimeout(() => { const e = new Error('timeout'); e.code = 'timeout'; reject(e); }, ms);
+      if (t && typeof t.unref === 'function') t.unref();
+      Promise.resolve(p).then(v => { clearTimeout(t); resolve(v); }, e => { clearTimeout(t); reject(e); });
+    });
+  }
+  const timedOut = e => !!(e && e.code === 'timeout');
 
   const streams = () => typeof CompressionStream === 'function' && typeof DecompressionStream === 'function' &&
     typeof Blob === 'function' && typeof Response === 'function';
@@ -106,13 +119,22 @@
     };
   }
   const metaOf = rec => ({ key: rec.key, stored: rec.stored || 0, savedAt: rec.savedAt || 0 });
-  function idbBackend(idb) {
+  /* opts.openTimeout (ms): how long `open` may stay pending before it counts as failed; the next call opens again */
+  function idbBackend(idb, opts) {
+    const openTimeout = (opts && opts.openTimeout) || LIMITS.timeout;
     let db = null;
     const open = () => {
       if (db) return db;
       db = new Promise((resolve, reject) => {
-        let req;
-        try { req = idb.open(DB_NAME, DB_VERSION); } catch (e) { reject(e); return; }
+        let req, settled = false;
+        const t = setTimeout(() => { settled = true; const e = new Error('timeout'); e.code = 'timeout'; reject(e); }, openTimeout);
+        if (t && typeof t.unref === 'function') t.unref();
+        /* the first answer settles the open; a connection that opens after a timeout or a block is closed, not kept */
+        const finish = ok => {
+          if (settled) { if (ok) { try { req.result.close(); } catch (e) { /* closed */ } } return false; }
+          settled = true; clearTimeout(t); return true;
+        };
+        try { req = idb.open(DB_NAME, DB_VERSION); } catch (e) { settled = true; clearTimeout(t); reject(e); return; }
         req.onupgradeneeded = ev => {
           const d = req.result, t = req.transaction;
           if (!d.objectStoreNames.contains(STORE_NAME)) d.createObjectStore(STORE_NAME, { keyPath: 'key' });
@@ -128,14 +150,15 @@
           }
         };
         req.onsuccess = () => {
+          if (!finish(true)) return;
           const d = req.result;
           /* another tab opens a newer version: give way, and open again when next needed */
           d.onversionchange = () => { try { d.close(); } catch (e) { /* closed */ } db = null; };
           d.onclose = () => { db = null; };
           resolve(d);
         };
-        req.onerror = () => reject(req.error);
-        req.onblocked = () => reject(new Error('blocked'));
+        req.onerror = () => { if (finish(false)) reject(req.error); };
+        req.onblocked = () => { if (finish(false)) reject(new Error('blocked')); };
       });
       db.catch(() => { db = null; });
       return db;
@@ -170,11 +193,11 @@
 
     /* the oldest records go first once there are too many or they take too much room; only sizes are read */
     async function evict(keep, keepStored) {
-      const all = (await backend.sizes()).filter(r => r && r.key !== keep).sort((a, b) => (a.savedAt || 0) - (b.savedAt || 0) || (a.key < b.key ? -1 : 1));
+      const all = (await within(backend.sizes(), limits.timeout)).filter(r => r && r.key !== keep).sort((a, b) => (a.savedAt || 0) - (b.savedAt || 0) || (a.key < b.key ? -1 : 1));
       let total = all.reduce((s, r) => s + (r.stored || 0), 0) + (keepStored || 0), n = all.length + 1;
       for (const r of all) {
         if (n <= limits.records && total <= limits.bytes) break;
-        await backend.del(r.key);
+        await within(backend.del(r.key), limits.timeout);
         total -= r.stored || 0; n--;
         stats.evicted++;
         count(stats.dropped, 'evicted');
@@ -197,12 +220,13 @@
       async get(key) {
         stats.gets++;
         let rec;
-        try { rec = await backend.get(key); } catch (e) { count(stats.errors, 'get'); return { ok: false, code: 'backend' }; }
+        try { rec = await within(backend.get(key), limits.timeout); }
+        catch (e) { count(stats.errors, timedOut(e) ? 'timeout' : 'get'); return { ok: false, code: timedOut(e) ? 'timeout' : 'backend' }; }
         if (!rec) return { ok: false, code: 'missing' };
         const d = await decode(rec);
         if (!d.ok) {
           count(stats.dropped, d.code);
-          try { await backend.del(key); } catch (e) { /* gone next time, or never read again */ }
+          try { await within(backend.del(key), limits.timeout); } catch (e) { /* gone next time, or never read again */ }
           return { ok: false, code: d.code };
         }
         stats.hits++;
@@ -219,19 +243,20 @@
         catch (e) { count(stats.errors, 'encode'); return { ok: false, code: 'encode' }; }
         if (rec.stored > limits.record) { count(stats.dropped, 'too-large'); return { ok: false, code: 'too-large' }; }
         if (!(await roomFor(rec.stored))) { count(stats.dropped, 'quota-guard'); return { ok: false, code: 'quota-guard' }; }
-        try { await backend.put(rec); await evict(key, rec.stored); }
+        try { await within(backend.put(rec), limits.timeout); await evict(key, rec.stored); }
         catch (e) {
           const quota = e && /quota/i.test((e.name || '') + ' ' + (e.message || ''));
-          count(stats.errors, quota ? 'quota' : 'put');
-          return { ok: false, code: quota ? 'quota' : 'backend' };
+          const code = timedOut(e) ? 'timeout' : quota ? 'quota' : 'backend';
+          count(stats.errors, code === 'backend' ? 'put' : code);
+          return { ok: false, code: code };
         }
         stats.puts++;
         return { ok: true, record: rec };
       },
-      async del(key) { try { await backend.del(key); return true; } catch (e) { return false; } },
-      async keys() { try { return (await backend.sizes()).map(r => r.key).sort(); } catch (e) { return []; } }
+      async del(key) { try { await within(backend.del(key), limits.timeout); return true; } catch (e) { return false; } },
+      async keys() { try { return (await within(backend.sizes(), limits.timeout)).map(r => r.key).sort(); } catch (e) { return []; } }
     };
   }
 
-  return Object.freeze({ RECORD_VERSION, DB_NAME, DB_VERSION, STORE_NAME, META_NAME, LIMITS, encode, decode, memoryBackend, idbBackend, createStore });
+  return Object.freeze({ RECORD_VERSION, DB_NAME, DB_VERSION, STORE_NAME, META_NAME, LIMITS, within, encode, decode, memoryBackend, idbBackend, createStore });
 });

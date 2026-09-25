@@ -74,7 +74,13 @@ const MUTATIONS = [
     to: "put({ ref: s.id, kind: 'slur', status: 'deferred', code: 'not-yet', plan: s.id });" },
   { id: 'L-MERGED-RATIO', file: 'plan-tuplets.js', probe: 'E07', expect: 'altered', what: 'a merged one-note group shown with another ratio',
     from: 'groups.push({ id: id, events: evIds, actual: a.s.actual, normal: a.s.normal,',
-    to: 'groups.push({ id: id, events: evIds, actual: a.s.actual + 1, normal: a.s.normal,' }
+    to: 'groups.push({ id: id, events: evIds, actual: a.s.actual + 1, normal: a.s.normal,' },
+  /* G4b hardening (G4a final review MINORs) */
+  { id: 'L-TUPLET-BRACKET', file: 'plan-tuplets.js', probe: 'E04', expect: 'altered', what: 'a stated tuplet bracket not carried',
+    from: 'bracketStated: show.bracket !== undefined ? !!show.bracket : null,', to: 'bracketStated: null,' },
+  { id: 'L-KIND-CODE', file: 'plan.js', probe: 'sonatina/002', expect: 'unapproved', what: 'a grace note deferred with the code of a stem',
+    from: "const self = e.hidden ? ['suppressed', 'hidden'] : after ? ['deferred', 'grace-after'] : ['drawn'];",
+    to: "const self = e.hidden ? ['suppressed', 'hidden'] : after ? ['deferred', 'stem-double'] : ['drawn'];" }
 ];
 const CONTROL = { id: 'N1', file: 'plan.js', probe: 'piano-marks', what: 'a comment changed',
   from: '/* ---- analysis that is not notation */', to: '/* ---- analysis, not notation */' };
@@ -107,6 +113,7 @@ async function probeGraphs() {
     'piano-marks': await graphOf('tests/scoregraph/fixtures/xml/piano-marks.musicxml'),
     'burg015': await graphOf('catalog/method/burgmuller25/015.mxl'),
     'sonatina/002': await graphOf('catalog/method/sonatina/002.mxl'),
+    'E04': await graphOf('tests/engrave/fixtures/e/E04-tuplet-show.musicxml'),
     'E07': await graphOf('tests/engrave/fixtures/e/E07-one-note-tuplets.musicxml'),
     'E12': await graphOf('tests/engrave/fixtures/e/E12-two-voices-heads.musicxml'),
     'E14': await graphOf('tests/engrave/fixtures/e/E14-grace.musicxml'),

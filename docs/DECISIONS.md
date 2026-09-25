@@ -149,7 +149,7 @@ G3-U4대로 기록하고 올린다. 설계 결정 D1–D8은 바꾸지 않았다
 | G3-U9 | **G3를 PARTIAL / DEFERRED로 닫는다** (COMPLETE 아님). M11 실제 연주 녹음은 지금 하지 않는다. G3a는 A36 FAIL로 OFF, G3b·자동 8va·`pedalJoin` OFF. G3 off에서 출력이 main과 같은 feature-gated 인프라는 main에 넣어도 된다. 다음 Goal로 간다 | 사용자 2026-09-24; G03 §31 |
 | G3-U10 | 다음 A36 재평가는 **PPP 앱 렌더러**로 한다 — 실제 PPP 사용자가 보는 결과가 합격 대상 (D7(a)와 G3-U8의 "재평가 렌더러는 다시 결정"을 대체). 앱이 못 그리는 beam 모양·보임과 일부 tuplet 판각은 G4 범위이고, G3 구조 metric·테스트로 따로 검증한다. MuseScore 설치를 요구하지 않는다. 재평가 전에 발췌를 `CLEAN_INPUT` / `UPSTREAM_ERROR`(녹음 경로의 박자·조가 참조와 다름)로 미리 나눠 따로도 보고하되, 결과를 본 뒤 빼지 않고 전체 판정에서도 빼지 않는다. **구현 안 함** (재평가 때) | 사용자 2026-09-24; G03 §31.5 |
 
-## G4 — Professional Engraving (Proposed, 2026-09-24 설계; G4a 병합 2026-09-25 PR #9 `df8a571`, 최종 리뷰 PASS)
+## G4 — Professional Engraving (Proposed, 2026-09-24 설계; G4a 병합 2026-09-25 PR #9 `df8a571`, 최종 리뷰 PASS; G4b 구현 2026-09-25, 리뷰 대기)
 
 전문은 `docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md`. Architect 세션이 저장소 증거로 정한 것이다. 사용자 결정 G4-U1–U4는 수용되었다 (아래). G4a가 구현한 결정(D2, D3의 plan 부분, D4의 plan 부분, D5의 plan 부분, D6의 plan 부분, D7의 NotationPlan, D10)은 G04 §32에 구현 기록이 있고, 독립 리뷰 뒤 Accepted로 바꾼다.
 
@@ -228,3 +228,21 @@ Fixer(`0f3d275`) 위에서 G4a를 마무리한 세션의 결정. 설계(G04 §0�
 | G4-F19 | **`fromScore`는 화음을 음 순서와 상관없이 자리로 묶는다.** `Score.finalize`는 음을 위치·staff로 정렬하므로 staff를 넘는 화음의 첫 음(chord:false)이 뒤에 올 수 있다 | A48을 앱의 finalize로 돌리자 cross-staff 두 파일이 `notes.chord`로 달랐다 → 고친 뒤 정확 |
 | G4-F20 | **A48 gate.** (A) Node 테스트: 커밋된 import 파일 전부(544 = 504 + E fixture 40)를 앱이 가진 모양 `finalize(toScore(g))`(앱의 `Score.finalize`를 파일에서 꺼내 씀)로, `writtenP`·`writtenMidi`·`approx`·`soundingMidi`·`ottavaShift`까지 엄격 비교; 알려진 손실은 파일·code·바뀔 수 있는 필드로만 허용. (B) 페이지 gate `a48-coverage.js`: core 553 (live·projected·slot 왕복·이전된 녹음), 코퍼스 318 (앱의 옛 reader, 이름 있는 손실 7), OMR 2 — 같은 비교기(`tests/engrave/a48-compare.js`, 화음에 속한 flag는 화음에서, G4-F8), 실패하면 exit 1 | §32.13 |
 | G4-F21 | **장식음 glyph 표는 처분만 정한다 (G4-U5).** `glyphs.js`는 schema 장식음 → SMuFL 이름과, 고정 글꼴에 없는 glyph 목록(글꼴 파일과 양쪽으로 대조). 없으면 deferred `ornament-glyph`, schema가 모르면 `unsupported`. 무엇으로 대신 그릴지는 G4d | `glyphs.test.js` |
+
+### G4b 구현 중 결정 (배치 핵심, G04 §33) — Implementer, 2026-09-25
+
+브랜치 `g4b-layout-core` (`a0bc2ea`에서). 병합 안 함. G4a MINOR 여섯의 처리는 G04 §33.2.
+
+| ID | 결정 | 버린 대안 | 근거 |
+| --- | --- | --- | --- |
+| G4-B1 | **layout core(`metrics`·`space`·`breaks`·`skyline`·`canon`·`layout`·`practice`)는 앱이 불러오지 않는다** — G4f의 스위치 때까지. `index.js`는 Node에서 늘, 브라우저에서는 페이지가 불러왔을 때만 내보낸다(없으면 `PPPEngrave.layout` null). 바뀐 G4a 파일이 사용자에게 닿도록 engrave script 태그만 `?v=3` | 앱에 미리 싣기(보이지 않아도 production 바이트가 늚), 별도 index | 지시: 렌더러 비가시·production 변경 없음. `app.test.js`가 둘 다 확인 |
+| G4-B2 | **EngravedScore `engr/1`**: staff space, y 아래, 0.01 반올림; 객체 ID는 그래프 ID(+접미사) 또는 `d:` 장식; glyph는 `origin`·`scale`, 기둥 요소는 `anchor`; VexFlow가 path로 그리는 모양은 `drawn`; `coverage.pending`이 뒤 단계의 것을 센다; system의 `space`(작은 보표). G04 §8.4의 모양 + 이것들 | 좌표 없는 plan에 바로 그리기, 백엔드 요소 ID | G04 §33.4 |
+| G4-B3 | **간격 상수**: rod 간격 0.3, 세로줄 뒤 1.2·앞 1.0, 첫머리 뒤 1.5, tie 시작 기둥 ≥ 2.0, 뒤따르는 clef 앞뒤 0.5; u는 system마다 조각별 선형을 정확히 풀어서; 마지막 system은 앞 u의 중앙값으로 폭의 80 % 이하면 ragged. system 하나 = segment 목록 하나 — 줄바꿈·폭 풀이·배치가 같은 목록을 읽는다 | 이분법, 줄바꿈과 배치의 따로 계산 | 서로 어긋날 수 없게; 결정론 |
+| G4-B4 | **layout hash는 canonical JSON의 FNV-1a 64** (G04 §8.4의 sha256 대신) — ScoreGraph fingerprint와 같은 함수 | sha256 (브라우저는 비동기 `crypto.subtle`뿐) | Node = Chrome 808/808 (§33.11) |
+| G4-B5 | **폭에 안 들어가는 system은 작은 보표로**: rod만으로도 넓으면 `space = max(0.5, W / 최소 폭)`로 x·y·glyph·보표선을 같이 줄인다 (`SYSTEM_SCALED`); 0.5로도 넘치면 `SYSTEM_OVERFLOW`. 잘림·겹침은 없다 | 넘치게 두기(가로 scroll), rod 아래로 압축(겹침), 마디 쪼개기 | 휴대폰의 16분음표 마디(코퍼스 15곡 72 system). 넘침은 원본 결함 1곡뿐 |
+| G4-B6 | **G4-U4 줄바꿈 비용**: `12·(k−N)²`(마지막은 k > N만) + `400·(1−s)²`(s < 1) + `60·(s−1.5)²`(s > 1.5, 마지막 제외) + 1마디 50(마지막 60); 가능 조건 최소 폭 × 1.05 ≤ W; 최대 12마디; 1e-9 비교, 긴 system 먼저 | 고정 N(지금 앱), 인쇄용 Knuth–Plass 그대로 | 보통 4/2, 빽빽 < N, 성김 > N, 외톨이 마지막 마디 없음; 피할 수 있었던 1마디 system 0 |
+| G4-B7 | **보표는 skyline clearance로 맞물리게, system은 띠로 (맞물리지 않게)**. H6: 서로 다른 보표의 요소끼리 상자 겹침(세로줄이 part 안 다음 보표에 닿는 것은 설계), system 상자끼리 | 보표도 띠(너무 벌어짐), system도 skyline(hit·scroll 상자가 겹침) | §15.3; 연습 map의 system hit-test |
+| G4-B8 | **glyph metric은 vendored Bravura에서 생성** (`make-metrics.js`, `--check`를 CI에). slash 머리는 VexFlow가 그리는 모양(1.5 × 2 sp)으로 `DRAWN`, 글꼴에 없는 cross 머리는 x 머리로 대체하고 `GLYPH_FALLBACK` | 손으로 옮긴 표, DOM 측정 | A29; `eg.glyph.fallback` 0 (코퍼스·E) |
+| G4-B9 | **가까이 보기 창은 config `window: [첫, 끝]`** — 그 마디만 system으로 (§15.2 "창 경계를 system 경계로"). 창의 마지막 system은 곡이 거기서 끝날 때만 마지막(ragged) | 전곡 layout에서 잘라 쓰기 | B2 (창 p95 0.39 ms), 캐시 키에 포함 |
+| G4-B10 | **연습 map은 EngravedScore에서 한 번, highlighter는 두 포인터**: 시간은 앱처럼 4분음표, onset 키는 legacy `data-onset`, `legacyMap()`은 `_map` 모양. 앞으로는 바뀐 event만, 뒤로 seek는 가장 긴 음 길이 안의 event만 다시 본다. layout을 부르지 않는다 | 프레임마다 전부 훑기(지금 앱), DOM에서 bbox | B6, A31 (만진 수 = 바뀐 수) |
+| G4-B11 | **성부 사이 2도·unison(머리를 나누지 못할 때)은 stem 위 성부를 오른쪽으로** — stem 아래 성부가 제자리, 두 stem이 바깥 (`layout.js` `staffColumn` 303–315). **G04 §14.2와 다르다**: §14.2는 아래(`down`) 성부를 오른쪽으로 적었다. G4b는 이 규칙으로 커밋된 layout hash를 고정했고 Fixer 범위는 `layout.js`를 바꾸지 않으므로 G4b에서는 그대로 둔다. **최종 규칙은 G4c**(§14.2의 성부·unison 공유가 G4c 범위)가 E12·E13·찬송가 그림으로 정한다: 지키면 §14.2를 고치고, §14.2를 따르면 코드와 hash를 바꾼다 (GEOMETRY_ONLY) (Fixer, G04 §33.16.5) | §14.2대로 아래 성부를 오른쪽 (두 stem이 가운데서 한 줄) — G4b에서 바꾸면 커밋된 hash와 Fixer 범위를 넘는다 | 코드: E12에서 2도(v5 위 5.5, v6 아래 6.0)와 unison 둘 모두 stem 위 v5가 오른쪽 (머리 x0 10.66 대 9.48). 테스트: `layout.test.js` intrinsic widths(같은 음 두 성부는 나란히), `eg.overlap.head_head` 0 (코퍼스·E, 두 config), 커밋된 hash (E12, R 찬송가). Gould(*Behind Bars*)는 Implementer가 "stem이 바깥"의 근거로 코드에 적었다 — Fixer는 해당 쪽을 확인하지 못했다. **반대 증거**: vendored VexFlow 4.2.3의 `StaveNote.format`은 두 stem이 반대면 stem 아래 음에 `setXShift` (§14.2와 같음) |

@@ -19,9 +19,13 @@
        written value on every member)
      - consecutive in time with no gap, no grace note inside, and no
        tuplet of more than one event in that voice-measure (printed or not)
-     - the members fill exactly one tuplet (normal x unit), starting on a
-       multiple of that length from the bar line, in a measure that is not a
-       pickup, and there are at least two of them
+     - the members fill exactly one tuplet (normal x unit), placed by the
+       meter's beats and beat groups (placedInMeter: inside one beat at a
+       multiple of the span from its start, or over whole beats without
+       crossing a beat group), in a measure that is not a pickup, and there
+       are at least two of them
+     - no event of the group is under a second tuplet (nested, or a sibling
+       the graph does not relate by `parent`)
      - no semantic boundary inside the group or across its edges:
          in a part that states beams, one graph beam holds exactly the
          group's notes (a beam crossing an edge, a beam over part of the
@@ -42,6 +46,32 @@
 
   const R = SG.rational, S = SG.schema;
 
+  /* Where a display group of this span may start in the measure, read from the meter's own beats and beat groups
+     (meter-grid.js), not from the bar line alone (G4a review MINOR): a group no longer than a beat lies inside one beat,
+     at a multiple of its span from that beat's start; a longer one starts and ends on beats and does not cross a beat
+     group unless it starts and ends on group boundaries. So in 6/8 (beats of a dotted quarter) three triplet eighths
+     over the second and third eighths, which cross the beat, are not one group; in 5/8 as 3+2 a group starts at 0 or
+     3/8, never at 1/4. Positions are exact integers of 1/U whole notes. */
+  function placedInMeter(gr) {
+    const bounds = list => list.concat([gr.durU]).filter((x, i, a) => a.indexOf(x) === i).sort((x, y) => x - y);
+    const beats = bounds(gr.beats && gr.beats.length ? gr.beats : [0]);
+    const groups = bounds(gr.groups && gr.groups.length ? gr.groups : [0]);
+    const unitAt = (list, s) => { let k = 0; while (k + 1 < list.length && list[k + 1] <= s) k++; return [list[k], list[k + 1]]; };
+    return (at, span) => {
+      const sR = R.mul(at, R.make(gr.U)), wR = R.mul(span, R.make(gr.U));
+      if (sR.d !== 1 || wR.d !== 1 || wR.n <= 0) return false;
+      const s = sR.n, e = sR.n + wR.n;
+      if (e > gr.durU) return false;
+      const [a, b] = unitAt(beats, s);
+      if (b === undefined) return false;
+      if (e <= b) return (s - a) % wR.n === 0;
+      /* longer than the beat it starts in: whole beats, inside one group or over whole groups */
+      if (s !== a || beats.indexOf(e) < 0) return false;
+      const [ga, gb] = unitAt(groups, s);
+      return e <= gb || (s === ga && groups.indexOf(e) >= 0);
+    };
+  }
+
   /* The one-note merge (G4-U2 B), worked out before the beams: a derived beam then treats a merged group as the
      one tuplet it is shown as. -> { groupOf: Map(spanner id -> group id), groups: [display tuplet] } */
   function merges(g, ctx) {
@@ -51,8 +81,13 @@
     g.parts.forEach(part => {
       const tups = part.spanners.filter(s => s.type === 'tuplet');
       const hasChild = new Set(tups.filter(s => s.parent).map(s => s.parent));
+      /* how many tuplets hold each event: an event under two tuplets - nested, or siblings the graph does not relate
+         by `parent` - is ambiguous, so none of its tuplets joins a display group (G4-U2 B; G4a review MINOR) */
+      const tupletsOn = new Map();
+      tups.forEach(s => (s.events || []).forEach(id => tupletsOn.set(id, (tupletsOn.get(id) || 0) + 1)));
       {
         const cand = tups.filter(s => s.printed !== false && (s.events || []).length === 1 && !s.parent && !hasChild.has(s.id) &&
+          tupletsOn.get(s.events[0]) === 1 &&
           s.show === undefined && events.get(s.events[0]) && !events.get(s.events[0]).grace && !events.get(s.events[0]).hidden);
         /* a voice-measure that already states a tuplet of several notes - printed or not - groups its triplets itself */
         const multiInVm = new Set();
@@ -103,14 +138,14 @@
           const unitOf = x => x.s.unit ? S.noteValue(x.s.unit.type, x.s.unit.dots || 0)
             : (x.e.display && x.e.display.type ? S.noteValue(x.e.display.type, x.e.display.dots || 0) : null);
           const graces = graceAt.get(k) || [];
+          const fits = placedInMeter(gr);
           let i = 0;
           while (i < list.length) {
             const a = list[i], unit = unitOf(a);
             let grouped = false;
             if (unit) {
               const span = R.mul(R.make(a.s.normal), unit);
-              const q = R.div(a.at, span);
-              if (q.d === 1) {
+              if (fits(a.at, span)) {
                 let sum = R.ZERO, end = a.at, j = i;
                 while (j < list.length) {
                   const x = list[j];
@@ -172,7 +207,8 @@
         const d = depth(s);
         const t = { id: s.id, events: (s.events || []).slice(), actual: s.actual, normal: s.normal,
           unit: s.unit ? { type: s.unit.type, dots: s.unit.dots || 0 } : null,
-          parent: s.parent || null, number: number, bracket: bracket, placement: show.placement || null, source: 'graph' };
+          parent: s.parent || null, number: number, bracket: bracket, bracketStated: show.bracket !== undefined ? !!show.bracket : null,
+          placement: show.placement || null, source: 'graph' };
         if (d >= 2) {
           t.deferred = 'nested-3';
           out.push(t);
