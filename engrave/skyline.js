@@ -16,8 +16,8 @@
              can break: H1 noteheads of different events on one staff, H2 an
              accidental against a head, stem, accidental or ledger line, H3 a dot
              against a head, stem or flag, H4 anything outside the page, H5 text
-             (fingering, a glissando's word) against a head, stem, beam or accidental
-             (G4d-1a), H6 an object of one staff against one of another staff, or
+             (fingering, a glissando's word; G4d-1b: the text of the marks attached
+             to systems) against a head, stem, beam or accidental (G4d-1a), H6 an object of one staff against one of another staff, or
              systems overlapping, H8 a note outside its measure. Two objects that name each other `merged`
              (a unison two voices share, G04 §14.2) coincide by design. A sweep over x,
              in a fixed order; touching (less than 0.01 sp of overlap) is not a
@@ -85,17 +85,24 @@
      At least one of the two is given. snap(box) -> box moves the item outward only (a staccato dot inside the staff
      keeps to a space). -> its box. `place(x0, x1, h, side, pad, limit)` is the old positional form (a volta).
      §10.5: on a staff's skyline (opts.edges), an item whose near edge lands more than opts.far from the staff's outer line
-     on its side is placed all the same, and put() reports FAR_PLACEMENT naming it.ref (the caller's id for the item). */
+     on its side is placed all the same, and put() reports FAR_PLACEMENT naming it.ref (the caller's id for the item).
+     G4d-1b, a row of one kind on one baseline (§10.4 S2): `probe: true` only says where the item would go (nothing is
+     added, nothing reported); `at` places the item's near edge there - the row's line, found by probing each of its items,
+     outside every one of them - and adds it as any other. */
   Skyline.prototype.put = function (it) {
     const above = it.side === 'above';
-    const t = above ? this.top(it.x0, it.x1) : this.bottom(it.x0, it.x1);
-    const edge = [t, it.limit === undefined ? null : it.limit, it.floor === undefined ? null : it.floor].filter(v => v !== null);
-    if (!edge.length) throw new Error('place(): an item with no limit and no floor over empty space');
-    const pad = it.pad || 0;
     let box;
-    if (above) { const y1 = Math.min.apply(null, edge) - pad; box = [it.x0, y1 - it.h, it.x1, y1]; }
-    else { const y0 = Math.max.apply(null, edge) + pad; box = [it.x0, y0, it.x1, y0 + it.h]; }
-    if (it.snap) box = it.snap(box);
+    if (it.at !== undefined && it.at !== null) box = above ? [it.x0, it.at - it.h, it.x1, it.at] : [it.x0, it.at, it.x1, it.at + it.h];
+    else {
+      const t = above ? this.top(it.x0, it.x1) : this.bottom(it.x0, it.x1);
+      const edge = [t, it.limit === undefined ? null : it.limit, it.floor === undefined ? null : it.floor].filter(v => v !== null);
+      if (!edge.length) throw new Error('place(): an item with no limit and no floor over empty space');
+      const pad = it.pad || 0;
+      if (above) { const y1 = Math.min.apply(null, edge) - pad; box = [it.x0, y1 - it.h, it.x1, y1]; }
+      else { const y0 = Math.max.apply(null, edge) + pad; box = [it.x0, y0, it.x1, y0 + it.h]; }
+      if (it.snap) box = it.snap(box);
+      if (it.probe) return box;
+    }
     this.add(box);
     const o = this.opts;
     if (o && o.edges && o.diag) {
@@ -141,7 +148,10 @@
     ['H3', 'dot', ['notehead', 'stem', 'flag'], true],
     ['H5', 'fingering', ['notehead', 'stem', 'beam', 'accidental'], true],
     ['H5', 'text', ['notehead', 'stem', 'beam', 'accidental'], true]
-  ];
+  ].concat(['dynamic', 'words', 'chord', 'tempo', 'rehearsal', 'jump', 'lyric', 'pedal', 'ottava', 'volta-label']
+    /* G4d-1b: the text of the marks attached to systems - dynamics, words, chord names, tempo, rehearsal marks, jumps, lyrics,
+       the pedal's signs, an octave line's label, a volta's number (§10.3 H5) */
+    .map(k => ['H5', k, ['notehead', 'stem', 'beam', 'accidental'], true]));
   /* objects: EngravedScore objects; page: {w, h}; measures: the EngravedScore measures (for H8); systems (for H6).
      -> [{code, refs: [object ids], detail}] in a fixed order */
   function collisions(objects, page, measures, systems) {

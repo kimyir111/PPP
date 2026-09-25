@@ -393,13 +393,16 @@ test('carry-overs: a rest off the staff sits on a ledger line of its own; a tupl
   assert.ok(inside.length > 0, 'numbers inside the staff');
 });
 
-test('versions (G4-D1a-1): every change to what the plan and the layout output moves their version - plan/2, engr/3 (G4-L4, G4-L5) - and the layout says whose plan it drew', async () => {
+test('versions (G4-D1a-1): every change to what the plan and the layout output moves their version - plan/3, engr/4 (G4d-1b) - and the layout says whose plan it drew', async () => {
   const x = await lay('E01');
-  assert.equal(x.p.version, 'plan/2');
-  assert.equal(E.PLAN_VERSION, 'plan/2');
-  assert.equal(x.e.version, 'engr/3');
-  assert.ok(x.e.planKey.endsWith(':plan/2'));
-  assert.match(E.svg(x.e, x.p), /data-plan="[^"]+:plan\/2"/);
+  assert.equal(x.p.version, 'plan/3');
+  assert.equal(E.PLAN_VERSION, 'plan/3');
+  assert.equal(x.e.version, 'engr/4');
+  assert.ok(x.e.planKey.endsWith(':plan/3'));
+  assert.match(E.svg(x.e, x.p), /data-plan="[^"]+:plan\/3"/);
+  /* G4d-1b's plan fields: every direction and line names its part; a dynamic carries the other marks its element prints */
+  assert.ok(x.p.marks.concat(x.p.lines).every(d => typeof d.part === 'string'));
+  assert.ok(x.p.marks.filter(d => d.kind === 'dynamic').every(d => Array.isArray(d.more)));
   /* G4d-1a's head field: the percussion kit's notehead and stem, or null */
   assert.ok(x.p.events.every(e => e.heads.every(h => h.kit === null)));
 });

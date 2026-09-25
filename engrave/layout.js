@@ -32,9 +32,14 @@
                                then what stands around the notes, through the one
                                placement function (marks.js, G4d-1a: ties, tuplet
                                numbers and brackets, articulations, ornaments,
-                               fermatas, slurs, glissandi, fingering); staves
-                               and systems stacked by their skylines (skyline.js),
-                               voltas, the hard-collision check. -> EngravedScore
+                               fermatas, slurs, glissandi, fingering), then the
+                               marks attached to systems (sysmarks.js, G4d-1b:
+                               lyrics, dynamics and hairpins, pedal, octave lines,
+                               chord names, voltas, tempo, rehearsal marks, jumps,
+                               words); staves and systems stacked by their
+                               skylines (skyline.js, §15.3), the rows between a
+                               grand staff's staves centred in the room left there,
+                               the hard-collision check. -> EngravedScore
      engrave(plan, config)     both.
      createEngraver(plan)      prepare once, lay out per config with an LRU cache
                                of 8: a resize reflows without re-preparing, and a
@@ -49,24 +54,26 @@
    than a phone) is drawn at a smaller staff size, its `space` (>= FIT_MIN);
    only past that is it an overflow (SYSTEM_OVERFLOW).
 
-   Marks attached to systems (dynamics, hairpins, pedal, 8va, words, tempo,
-   jumps, lyrics) are G4d-1b: `coverage.pending` counts them, so nothing is
-   silently absent. VERSION names the EngravedScore's contract: every change to
-   what layout() outputs moves it (G4-D1a-1).
+   Nothing the plan draws is pending since G4d-1b (`coverage.pending` counts what
+   a later stage would place, so nothing is silently absent). VERSION names the
+   EngravedScore's contract: every change to what layout() outputs moves it
+   (G4-D1a-1: engr/4 is G4d-1b's marks attached to systems, vertical spacing and
+   bracketed accidentals).
    ========================================================================== */
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports)
     module.exports = factory(require('../scoregraph/index.js'), require('./metrics.js'), require('./space.js'), require('./breaks.js'),
-      require('./skyline.js'), require('./canon.js'), require('./notation.js'), require('./metrics-text.js'), require('./curves.js'), require('./marks.js'));
+      require('./skyline.js'), require('./canon.js'), require('./notation.js'), require('./metrics-text.js'), require('./curves.js'), require('./marks.js'),
+      require('./sysmarks.js'));
   else {
     const M = root.PPPEngraveModules = root.PPPEngraveModules || {};
-    M.layout = factory(root.PPPScoreGraph, M.metrics, M.space, M.breaks, M.skyline, M.canon, M.notation, M.metricsText, M.curves, M.marks);
+    M.layout = factory(root.PPPScoreGraph, M.metrics, M.space, M.breaks, M.skyline, M.canon, M.notation, M.metricsText, M.curves, M.marks, M.sysmarks);
   }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (SG, MT, SP, BR, SK, CN, NT, TX, CV, MK) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (SG, MT, SP, BR, SK, CN, NT, TX, CV, MK, SM) {
   'use strict';
 
-  const VERSION = 'engr/3';
+  const VERSION = 'engr/4';
   const R = SG.rational, EG = MT.ENGRAVING, r2 = CN.r2;
   const STEPS = 'CDEFGAB';
   /* horizontal gaps, sp (G04 §9.3, §15.4) */
@@ -98,6 +105,19 @@
      rest fills the space above it */
   const RESTLINE = Object.freeze({ restWhole: [0], restHalf: [0], restDoubleWhole: [0, 1] });
   const BREATH = Object.freeze({ gap: 0.4, comma: -0.3, caesura: 1.0 });
+  /* G4d-1b: the least room between two lyric syllables, and after a chord name, that their columns keep */
+  const LYRIC_GAP = 0.4, CHORD_GAP = 0.5;
+  /* G4d-1b (R5): a bracketed accidental's brackets reach OVER beyond the accidental, and an end within ON of a staff line moves
+     out to CLEAR from it */
+  const BRACKET = Object.freeze({ over: 0.15, on: 0.2, clear: 0.25 });
+  /* the ends [top, bottom] of a bracket over [top, bottom], each moved outward off a staff line (lines at 0 .. last) */
+  function bracketEnds(top, bot, last) {
+    const off = (y, dir) => {
+      for (let k = 0; k <= last; k++) if (Math.abs(y - k) < BRACKET.on) return dir < 0 ? Math.min(y, k - BRACKET.clear) : Math.max(y, k + BRACKET.clear);
+      return y;
+    };
+    return [off(top, -1), off(bot, 1)];
+  }
   const counters = { prepare: 0, layout: 0 };
 
   /* ---------------------------------------------------------------- staff positions */
@@ -205,6 +225,23 @@
       return Math.floor(t / unit + 1e-9);
     };
 
+    /* G4d-1b: each voice's staff (a lyric stands under it), each event's lyrics (their widths are in the spacing) */
+    const voiceStaff = new Map((plan.voices || []).map(v => [v.id, v.staff]));
+    const lyricsOf = new Map();
+    plan.events.forEach(e => { if ((e.lyrics || []).length && !e.hidden) lyricsOf.set(e.id, e.lyrics); });
+    /* G4d-1b: the chord names by measure (their widths are in the spacing of the column they start at, on the staff they stand
+       over - sysmarks.js sets them left at their note; §10.5's push right is for one that stands where no column is) */
+    const chordStaff = d => { const pt = (plan.parts || []).find(x => x.id === d.part); const ps = pt ? pt.staves.filter(id => staffById.has(id)) : [];
+      return d.staff && ps.indexOf(d.staff) >= 0 ? d.staff : ps[0] || null; };
+    const drawnChord = new Set(plan.ledger.filter(en => en.kind === 'chord' && en.status === 'drawn').map(en => en.ref));
+    const chordsIn = new Map();
+    plan.marks.filter(d => d.kind === 'chord' && drawnChord.has(d.id)).forEach(d => {
+      const st = chordStaff(d);
+      if (!st) return;
+      if (!chordsIn.has(d.m)) chordsIn.set(d.m, []);
+      const w = SM.chordPieces(d).reduce((a, p) => a + p.w, 0);
+      chordsIn.get(d.m).push({ at: d.at, staff: st, w: w });
+    });
     /* arpeggios by head, and the staves each one reaches, top down (G4d-1a) */
     const arpOf = new Map(), arpStaves = new Map();
     plan.lines.filter(l => l.kind === 'arpeggio').forEach(l => (l.heads || []).forEach(h => arpOf.set(h, l)));
@@ -619,8 +656,17 @@
         else if (x.h.acc.paren) { parts.unshift('accidentalParensLeft'); parts.push('accidentalParensRight'); }
         const gs = parts.map(n => MT.glyph(n));
         const w = gs.reduce((a, g) => a + g.w, 0) * L.scale + (gs.length - 1) * 0.05;
-        const top = x.y - Math.max.apply(null, gs.map(g => g.yMax)) * L.scale, bot = x.y - Math.min.apply(null, gs.map(g => g.yMin)) * L.scale;
-        const a = { h: x.h, e: L.e, y: x.y, parts: parts, gs: gs, w: w, top: top, bot: bot, scale: L.scale };
+        let top = x.y - Math.max.apply(null, gs.map(g => g.yMax)) * L.scale, bot = x.y - Math.min.apply(null, gs.map(g => g.yMin)) * L.scale;
+        /* G4d-1b (the G4d-1a review R5): square brackets as tall as the accidental they enclose and BRACKET.over beyond it,
+           their ends off the staff lines (an end on a line vanishes into it and the bracket reads as a bar) */
+        let br = null;
+        if (x.h.acc.bracket) {
+          const inner = gs.filter((g, k) => k > 0 && k < gs.length - 1);
+          br = bracketEnds(x.y - Math.max.apply(null, inner.map(g => g.yMax)) * L.scale - BRACKET.over * L.scale,
+            x.y - Math.min.apply(null, inner.map(g => g.yMin)) * L.scale + BRACKET.over * L.scale, Math.max(0, (staffById.get(staffId) || { lines: 5 }).lines - 1));
+          top = Math.min(top, br[0]); bot = Math.max(bot, br[1]);
+        }
+        const a = { h: x.h, e: L.e, y: x.y, parts: parts, gs: gs, w: w, top: top, bot: bot, scale: L.scale, br: br };
         const partner = partnerHead.get(x.h.id);
         if (partner && accOf.has(partner) && accOf.get(partner).parts.join() === parts.join()) { accOf.get(partner).twin = a; return; }
         accOf.set(x.h.id, a);
@@ -644,6 +690,7 @@
             a.parts.forEach((n, k) => {
               const g = a.gs[k];
               const box = MT.box(n, x - g.xMin * a.scale, a.y, a.scale);
+              if (a.br && (n === 'accidentalBracketLeft' || n === 'accidentalBracketRight')) { box[1] = a.br[0]; box[3] = a.br[1]; }
               const accId = t => t.h.id + '#acc' + (a.parts.length > 1 ? k : '');
               [a].concat(a.twin ? [a.twin] : []).forEach((t, ti, all) => {
                 const o = { id: accId(t), kind: 'accidental', refs: [t.h.id], event: t.e.id, glyph: n, scale: a.scale, box: box.slice(), layer: 'note' };
@@ -854,6 +901,19 @@
         ext.left = Math.max(ext.left, fw / 2 - cx);
         ext.right = Math.max(ext.right, cx + fw / 2);
       });
+      /* G4d-1b: a lyric syllable stands centred under its note (sysmarks.js): one wider than the head widens the column, with
+         room for a hyphen after a syllable that goes on (G04 §9: the lyrics are in the spacing) */
+      lay.forEach(L => {
+        if (!L.home) return;
+        const ls = lyricsOf.get(L.e.id);
+        if (!ls || voiceStaff.get(L.e.voice) !== staffId) return;
+        let lw = 0, go = false;
+        ls.forEach(l => { const t = String(l.text || '').replace(/\s+/g, ' ').trim(); if (t) lw = Math.max(lw, TX.measure(t, SM.FONT.lyric, SM.SIZE.lyric).w); if (l.syllabic === 'begin' || l.syllabic === 'middle') go = true; });
+        if (!lw) return;
+        const cx = L.dx + L.w / 2;
+        ext.left = Math.max(ext.left, lw / 2 - cx + LYRIC_GAP / 2);
+        ext.right = Math.max(ext.right, cx + lw / 2 + LYRIC_GAP / 2 + (go ? SM.HYPHEN.width + 2 * SM.HYPHEN.gap : 0));
+      });
       const tie = evs.some(e => e.heads && e.heads.some(h => (h.staff || e.staff) === staffId && tieFrom.has(h.id)));
       return { objects: all, left: ext.left, right: ext.right, tie: tie };
     }
@@ -922,6 +982,12 @@
           tie = tie || sc.tie;
         });
         col.left = left; col.right = right; col.tie = tie;
+        /* G4d-1b: a chord name starting here widens its staff's room to its width and a gap */
+        (chordsIn.get(m.id) || []).filter(c => R.eq(R.parse(c.at), R.parse(col.at))).forEach(c => {
+          const was = col.staves[c.staff] || { left: 0, right: 0 };
+          col.staves[c.staff] = { left: was.left, right: Math.max(was.right, c.w + CHORD_GAP) };
+          col.right = Math.max(col.right, c.w + CHORD_GAP);
+        });
       });
       /* springs: between columns, then from the last column to the barline */
       const springs = [];
@@ -1062,15 +1128,45 @@
       if (r) roles.set(e.id, r);
     });
 
-    /* what later stages draw (G4d-1b: marks attached to systems): counted, so nothing is silently absent. G4d-1a places
-       ties, slurs, glissandi, arpeggios, articulations, ornaments, fermatas and fingering */
+    /* what later stages draw: counted, so nothing is silently absent. Since G4d-1b every kind the plan draws on a screen is
+       placed (G4d-1a: ties, slurs, glissandi, arpeggios, articulations, ornaments, fermatas, fingering; G4d-1b: the marks
+       attached to systems) - nothing is pending */
     const pending = {};
-    const add = (k, n) => { if (n) pending[k] = (pending[k] || 0) + n; };
-    add('jump', (plan.jumps || []).length);
-    add('tempo', (plan.tempos || []).filter(t => !t.hidden).length);
-    plan.lines.forEach(l => { if (l.kind !== 'gliss' && l.kind !== 'arpeggio') add(l.kind, 1); });
-    plan.marks.forEach(mk => add(mk.kind, 1));
-    plan.events.forEach(e => add('lyric', (e.lyrics || []).length));
+
+    /* G4d-1b: what the pass over each system's marks reads (sysmarks.js) - the drawn directions, hairpins, pedals, octave
+       lines, tempos, jumps and lyrics, and where each staff stands in its part; time as whole notes from the start */
+    const drawnRef = new Set(plan.ledger.filter(en => en.status === 'drawn' || en.status === 'merged').map(en => en.ref));
+    const Tnum = s => { const q = R.parse(s); return q.n / q.d; };
+    const mStart = new Map(plan.measures.map(m => [m.id, Tnum(m.start)])), mDurN = new Map(plan.measures.map(m => [m.id, Tnum(m.dur)]));
+    const partStaves = new Map(), staffPart = new Map();
+    (plan.parts || []).forEach(pt => partStaves.set(pt.id, pt.staves.filter(id => staffById.has(id))));
+    partStaves.forEach((list, pid) => list.forEach(id => staffPart.set(id, pid)));
+    const Tpos = pos => (pos && mStart.has(pos.m) ? mStart.get(pos.m) + Tnum(pos.at) : null);
+    const ottavas = plan.lines.filter(l => l.kind === 'ottava' && l.visible && drawnRef.has(l.id) && l.from && l.to)
+      .map(l => Object.assign({}, l, { covers: (l.covers || []).filter(id => staffById.has(id)) }));
+    const ottEvents = new Map();
+    ottavas.forEach(o => {
+      const A = Tpos(o.from), Z = Tpos(o.to);
+      o.covers.forEach(st => ottEvents.set(o.id + '|' + st, plan.events.filter(e => !e.hidden && !e.grace && (e.kind === 'rest' ? e.staff === st : e.heads.some(h => (h.staff || e.staff) === st)))
+        .map(e => mStart.get(e.m) + Tnum(e.at)).filter(T => T >= A - 1e-9 && T < Z - 1e-9).sort((a, b) => a - b)));
+    });
+    const lyricList = [];
+    plan.events.forEach(e => (e.lyrics || []).forEach((l, i) => {
+      const ref = e.id + '#lyric' + i;
+      if (!e.hidden && drawnRef.has(ref)) lyricList.push({ event: e.id, ref: ref, verse: l.verse || 1, text: l.text, syllabic: l.syllabic || null, extend: !!l.extend, order: lyricList.length });
+    }));
+    const sys = { start: mStart, dur: mDurN, prevMeasure: new Map(plan.measures.map((m, i) => [m.id, i ? plan.measures[i - 1].id : null])), partStaves: partStaves, staffPart: staffPart, staffIndex: new Map(staves.map(s => [s.id, s.index])),
+      /* a sung part (a voice, or a part with lyrics): its dynamics above the staff, clear of the words (§10.2 priority 8) */
+      voicePart: new Set((plan.parts || []).filter(pt => pt.instrument === 'voice' || plan.events.some(e => e.part === pt.id && (e.lyrics || []).length)).map(pt => pt.id)),
+      firstPart: plan.parts && plan.parts[0] ? plan.parts[0].id : null,
+      voiceStaff: voiceStaff,
+      directions: plan.marks.filter(d => drawnRef.has(d.id) && d.part && partStaves.has(d.part)),
+      wedges: plan.lines.filter(l => l.kind === 'wedge' && drawnRef.has(l.id) && l.from && l.to && partStaves.has(l.part)),
+      pedals: plan.lines.filter(l => l.kind === 'pedal' && l.visible && drawnRef.has(l.id) && l.from && partStaves.has(l.part)).map(l => Object.assign({ ref: l.id }, l)),
+      ottavas: ottavas, ottEvents: ottEvents,
+      tempos: (plan.tempos || []).filter(t => drawnRef.has(t.id)),
+      jumps: (plan.jumps || []).filter(j => drawnRef.has(j.id)),
+      lyrics: lyricList };
 
     /* what the marks pass reads (marks.js): the events' marks and heads, the ties, slurs and glissandi, the fermatas on bar
        lines, each voice's notes in time order, each staff's place in its part */
@@ -1097,7 +1193,7 @@
 
     return { version: VERSION, planKey: plan.graph.fingerprint + ':' + plan.version, staves: staves, measures: measures,
       endings: plan.endings || [], layoutBreaks: new Set(plan.measures.filter(m => m.layoutBreak && m.layoutBreak.newSystem).map(m => mIndex.get(m.id))),
-      beams: beams, tuplets: tuplets, voiceOf: voiceOf, roles: roles, multiVoice: multiVoice, evStaff: new Map(plan.events.map(e => [e.id, e.staff])), marks: marks,
+      beams: beams, tuplets: tuplets, voiceOf: voiceOf, roles: roles, multiVoice: multiVoice, evStaff: new Map(plan.events.map(e => [e.id, e.staff])), marks: marks, sys: sys,
       evMeasure: new Map(plan.events.map(e => [e.id, e.m])), evTypes: new Map(plan.events.map(e => [e.id, e.type])), dirOf: dirOf,
       diagnostics: diagnostics, pending: pending };
   }
@@ -1359,8 +1455,13 @@
          fingering, each through the placement function, in G04 §10.2's order (marks.js) */
       const sysCurves = [];
       const lastM = mOut[mOut.length - 1], firstCol = (mOut[0].columns.find(c => c.time) || mOut[0].columns[0] || { x: mOut[0].contentX0 });
-      MK.placeSystem({ P: P, objs: sysObjs, si: si, x1: x, startX: firstCol.x - CV.SLUR.sysGap, endX: lastM.x + lastM.w - CV.SLUR.sysGap,
-        sysOf: m => sysOfMeasure.get(m), lines: staffLines, mx: new Map(mOut.map(m => [m.id, m])), diagnostics: diagnostics, curves: sysCurves });
+      const MS = { P: P, objs: sysObjs, si: si, x1: x, startX: firstCol.x - CV.SLUR.sysGap, endX: lastM.x + lastM.w - CV.SLUR.sysGap,
+        sysOf: m => sysOfMeasure.get(m), lines: staffLines, mx: new Map(mOut.map(m => [m.id, m])), diagnostics: diagnostics, curves: sysCurves,
+        first: mOut[0].id, last: lastM.id };
+      MK.placeSystem(MS);
+      /* then what is attached to the system (G4d-1b): lyrics, dynamics, hairpins, pedal, octave lines, chord names, voltas,
+         tempo, rehearsal marks, jumps and words, each row outside what came before it, through the same skylines */
+      SM.placeSystem(MS);
       if (fit !== 1) {
         /* the smaller staff size: every x from the system's left edge and every y from its staff's top line */
         const fx = v => x0 + (v - x0) * fit;
@@ -1370,6 +1471,7 @@
           if (o.gap) o.gap = [fx(o.gap[0]), fx(o.gap[1])];
           if (o.t !== undefined) o.t *= fit;
           if (o.hookLen !== undefined) o.hookLen *= fit;
+          if (o.ends) o.ends = o.ends.map(v => v * fit);
           if (o.size !== undefined) o.size *= fit;
           o.scale = (o.scale === undefined ? 1 : o.scale) * fit;
           if (o.colX !== undefined) o.colX = fx(o.colX);
@@ -1389,8 +1491,32 @@
         first: i, last: j, objects: sysObjs, curves: sysCurves, mOut: mOut });
     });
 
-    /* vertical: each staff's skyline, staves stacked by clearance, voltas over the top staff, systems stacked */
+    /* vertical: each staff's skyline, staves stacked by clearance (the marks attached to the system are in them), the rows
+       between a part's staves centred, systems stacked */
     const pageW = MARGIN.left + braceSpace + Math.max(W, Math.max.apply(null, systems.map(s => s.w))) + MARGIN.right;
+    /* G4d-1b: the rows placed between two staves of a part (below the upper one) move together, level, into the middle of the
+       room between what the upper staff reaches down to over them and what the lower one reaches up to - by at most what
+       keeps VGAP.pad from the lower staff; never up (they stand as close to the upper staff as the placement allows) */
+    function centreBands(sys, off, lineSpan, sky, f) {
+      P.staves.forEach((s, k) => {
+        const band = sys.objects.filter(o => o.band && o.staffKey === s.id);
+        const n = P.staves[k + 1];
+        if (!band.length || !n || n.part !== s.part) return;
+        const own = new SK.Skyline(0, pageW);
+        own.add([sys.x, 0, sys.x + sys.w, lineSpan(s)]);
+        sys.objects.forEach(o => { if (o.staffKey === s.id && !o.band) own.add(o.box); });
+        sys.curves.forEach(c => { if (c.staffKey === s.id) CV.samples(c, c.t, c.line === 'wavy' ? CV.GLISS.amp * f : 0).forEach(b => own.add(b)); });
+        const dy = off.get(n.id) - off.get(s.id);
+        let up = Infinity, down = Infinity;
+        band.forEach(o => {
+          const a = own.bottom(o.box[0], o.box[2]), b = sky.get(n.id).top(o.box[0], o.box[2]);
+          up = Math.min(up, o.box[1] - (a === null ? lineSpan(s) : a));
+          down = Math.min(down, (b === null ? 0 : Math.min(0, b)) + dy - o.box[3]);
+        });
+        const d = Math.max(0, Math.min((down - up) / 2, down - VGAP.pad * f));
+        if (d > 1e-9) band.forEach(o => moveGeom(o, 0, d));
+      });
+    }
     let yCursor = null, prevLast = null;
     systems.forEach(sys => {
       const f = sys.space;
@@ -1401,21 +1527,9 @@
       sys.objects.forEach(o => { if (sky.has(o.staffKey)) sky.get(o.staffKey).add(o.box); });
       /* curves as the boxes they cover (§10.1) */
       sys.curves.forEach(c => { if (sky.has(c.staffKey)) CV.samples(c, c.t, c.line === 'wavy' ? CV.GLISS.amp * f : 0).forEach(b => sky.get(c.staffKey).add(b)); });
-      /* voltas over the top staff: one bracket per ending and system */
-      const top = P.staves[0];
-      P.endings.forEach(en => {
-        const a = mIdx.get(en.from), b = mIdx.has(en.to) ? mIdx.get(en.to) : a;
-        const ms = sys.mOut.filter(m => mIdx.get(m.id) >= a && mIdx.get(m.id) <= b);
-        if (!ms.length) return;
-        const x0 = ms[0].x + 0.3, x1 = ms[ms.length - 1].x + ms[ms.length - 1].w - 0.3;
-        const box = sky.get(top.id).place(x0, x1, 1.8 * f, 'above', 1.0 * f, -1.0 * f);
-        /* the bracket's label ("1.", "1, 2.") on the segment where the ending starts; its text is G4d's to set */
-        const first = ms[0].id === en.from;
-        sys.objects.push({ id: en.id + ':' + ms[0].id, kind: 'volta', refs: [en.id], staffKey: top.id, measure: null, box: box, layer: 'above',
-          open: en.open || ms[ms.length - 1].id !== en.to, start: first,
-          label: first ? (en.text || ((en.numbers || []).join(', ') + '.')) : null });
-      });
-      /* staff offsets inside the system */
+      /* staff offsets inside the system (§15.3): a part's staves max(5.0 sp, what reaches down from the upper one - the row
+         of dynamics between them included - and up from the lower one + 1.0 sp), parts max(6.0 sp, ...), one value per
+         system and pair */
       const off = new Map();
       let o = 0;
       P.staves.forEach((s, k) => {
@@ -1427,6 +1541,10 @@
         }
         off.set(s.id, o);
       });
+      /* the rows between a part's staves (sysmarks.js `band`: dynamics, hairpins and words by them) stand in the middle of
+         the room the stacking left them, as far from the notes above as from those below, but never nearer the lower staff
+         than the stacking's own 1.0 sp (G4-D1b-5) */
+      centreBands(sys, off, lineSpan, sky, f);
       /* systems are stacked as bands: a system's highest reach clears the one above's lowest by systemPad, and its
          top line is at least VGAP.system below the last line above (screen systems never interleave, so a system's
          box is a clean hit and scroll target) */
@@ -1438,7 +1556,9 @@
       sys.staves = P.staves.map(s => {
         const sk = sky.get(s.id);
         const y = sys.y + off.get(s.id);
-        const t = sk.top(0, pageW), b = sk.bottom(0, pageW);
+        const t = sk.top(0, pageW);
+        let b = sk.bottom(0, pageW);
+        sys.objects.forEach(o => { if (o.band && o.staffKey === s.id) b = b === null ? o.box[3] : Math.max(b, o.box[3]); });
         return { key: s.id, y: y, h: lineSpan(s), top: y + Math.min(0, t === null ? 0 : t), bottom: y + Math.max(lineSpan(s), b === null ? 0 : b) };
       });
       sys.box = [sys.x, Math.min.apply(null, sys.staves.map(s => s.top)), sys.x + sys.w, Math.max.apply(null, sys.staves.map(s => s.bottom))];
@@ -1507,6 +1627,13 @@
         if (o.kind === 'rest' && o.center) out.center = true;
         /* G4d-1a: an arpeggio against arpeggiating; text - its characters, face and size, and its baseline's start */
         if (o.non) out.non = true;
+        /* G4d-1b: a hairpin's kind and its opening at each end; the side of its staff a mark attached to the system stands
+           on, the verse of a lyric, the one item a composite mark's pieces belong to (a dynamic's letters, a chord name's
+           runs, a tempo's words and note) */
+        if (o.wedge) out.wedge = o.wedge;
+        if (o.ends) out.ends = o.ends.map(r2);
+        if (o.verse !== undefined) out.verse = o.verse;
+        if (o.group) out.group = o.group;
         if (o.text !== undefined) {
           out.text = o.text; out.font = o.font; out.size = r2(o.size);
           out.origin = [r2(o.box[0]), r2(o.box[1] + TX.face(o.font).capHeight / 1000 * o.size)];

@@ -20,7 +20,8 @@ const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(
 /* n('C#5', 'eighth', {...}) or n(null, 'quarter', {...}) for a rest. Options:
    dots, voice (1), staff (1), chord, grace ({slash}), tie ['start'|'stop'], beams [[level, value]], tm [actual, normal],
    tuplet {type, number, bracket, show, placement}, stem, acc, cautionary, paren, arts [...], orn [...], fermata (true | a shape),
-   fingering [[f, placement]], slurs [{type, number, placement}], lyric {syllabic, text}, notehead {shape, paren},
+   fingering [[f, placement]], slurs [{type, number, placement}], lyric {syllabic, text}, lyrics [{number, syllabic, text}],
+   notehead {shape, paren},
    cue, hidden, measureRest, dur (divisions, overrides the type), arp ('up'|'down'|'non'), gliss {type, line, number}, slide {type} */
 function n(p, type, o) {
   o = o || {};
@@ -67,6 +68,7 @@ function n(p, type, o) {
   if (o.slide) nt.push('<slide type="' + o.slide.type + '" number="1"/>');
   if (nt.length) x.push('<notations>' + nt.join('') + '</notations>');
   if (o.lyric) x.push('<lyric number="1"><syllabic>' + o.lyric.syllabic + '</syllabic><text>' + esc(o.lyric.text) + '</text></lyric>');
+  (o.lyrics || []).forEach(l => x.push('<lyric number="' + l.number + '"><syllabic>' + l.syllabic + '</syllabic><text>' + esc(l.text) + '</text></lyric>'));
   x.push('</note>');
   return x.join('');
 }
@@ -76,6 +78,17 @@ const dir = (inner, o) => { o = o || {}; return '<direction' + (o.placement ? ' 
 const dyn = (v, staff) => dir('<dynamics><' + v + '/></dynamics>', { placement: 'below', staff: staff || 1 });
 const wedge = (t, staff) => dir('<wedge type="' + t + '"/>', { placement: 'below', staff: staff || 1 });
 const words = (t, staff) => dir('<words>' + esc(t) + '</words>', { placement: 'above', staff: staff || 1 });
+/* G4d-1b: a dynamics element as the file writes it (one or more marks), with or without a placement and a staff; a pedal mark
+   under the lower staff; a tempo's words and metronome mark; a rehearsal mark; a chord symbol */
+const dynDir = (inner, placement, staff) => dir('<dynamics>' + inner + '</dynamics>', { placement: placement, staff: staff });
+const ped = inner => dir(inner, { placement: 'below', staff: 2 });
+const tempoMark = (w, unit, per, parens) => '<direction placement="above"><direction-type><words>' + esc(w) + '</words></direction-type><direction-type><metronome' +
+  (parens ? ' parentheses="yes"' : '') + '><beat-unit>' + unit + '</beat-unit><per-minute>' + per + '</per-minute></metronome></direction-type><staff>1</staff>' +
+  '<sound tempo="' + per + '"/></direction>';
+const harm = (step, alter, kind, bass) => '<harmony><root><root-step>' + step + '</root-step>' + (alter ? '<root-alter>' + alter + '</root-alter>' : '') + '</root><kind>' +
+  kind + '</kind>' + (bass ? '<bass><bass-step>' + bass[0] + '</bass-step>' + (bass[1] ? '<bass-alter>' + bass[1] + '</bass-alter>' : '') + '</bass>' : '') + '</harmony>';
+const beam4 = i => [[1, i % 4 === 0 ? 'begin' : i % 4 === 3 ? 'end' : 'continue']];
+const beam16 = i => [[1, i % 4 === 0 ? 'begin' : i % 4 === 3 ? 'end' : 'continue'], [2, i % 4 === 0 ? 'begin' : i % 4 === 3 ? 'end' : 'continue']];
 
 /* attributes: {key, mode, time: [b, bt] | 'common' | 'cut', hiddenTime, staves, clefs: [[sign, line, octave]]} */
 function attrs(a) {
@@ -332,10 +345,22 @@ E['E15-articulations'] = () => pianoScore('Articulations under a slur', 'staccat
   { barRight: '<barline location="right"><bar-style>light-heavy</bar-style><fermata type="upright"/></barline>' })
 ]);
 
-E['E16-dynamics-hairpins'] = () => pianoScore('Dynamics and hairpins', 'p, a crescendo to f, a diminuendo over a system break', [
+/* G4d-1b (G04 §10.2 priority 8, §10.4 S2 and S5, §10.5): a diminuendo over five bars, so it crosses a system break at every
+   screen width; words where the dynamics stand; a dynamic the graph puts above the upper staff and one below the lower; two
+   dynamics a sixteenth apart (the second goes one line further out); p dolce, two marks of one dynamics element */
+E['E16-dynamics-hairpins'] = () => pianoScore('Dynamics and hairpins', 'p, a crescendo to f, a diminuendo over five bars across a system break at every ' +
+  'width to pp; cresc. by the dynamics, mf above the upper staff and p below the lower one; sfz and ff a sixteenth apart; p dolce', [
   measure(1, [piano(), dyn('p'), wedge('crescendo'), n('C5', 'quarter'), n('D5', 'quarter'), n('E5', 'quarter'), wedge('stop'), dyn('f'), n('F5', 'quarter'), ...lhWhole('C3')]),
   measure(2, [wedge('diminuendo'), n('G5', 'half'), n('E5', 'half'), ...lhWhole('C3')]),
-  measure(3, [n('D5', 'half'), wedge('stop'), dyn('pp'), n('C5', 'half'), ...lhWhole('C3')], { newSystem: true, barRight: finalBar() })
+  measure(3, [n('D5', 'whole'), ...lhWhole('G2')], { newSystem: true }),
+  measure(4, [n('C5', 'whole'), ...lhWhole('A2')]),
+  measure(5, [n('B4', 'whole'), ...lhWhole('G2')]),
+  measure(6, [n('D5', 'half'), wedge('stop'), dyn('pp'), n('C5', 'half'), ...lhWhole('C3')]),
+  measure(7, [dir('<words>cresc.</words>', { placement: 'below', staff: 1 }), n('E5', 'quarter'), n('F5', 'quarter'), dynDir('<mf/>', 'above', 1), n('G5', 'half'),
+    backup(4 * D), n('C3', 'half', { voice: 5, staff: 2 }), dynDir('<p/>', 'below', 2), n('G2', 'half', { voice: 5, staff: 2 })]),
+  measure(8, [dyn('sfz'), n('C6', '16th', { beams: beam16(0) }), dyn('ff'), n('B5', '16th', { beams: beam16(1) }), n('A5', '16th', { beams: beam16(2) }),
+    n('G5', '16th', { beams: beam16(3) }), n('F5', 'quarter'), dynDir('<p/><other-dynamics>dolce</other-dynamics>', 'below', 1), n('E5', 'half'), ...lhWhole('C3')],
+  { barRight: finalBar() })
 ]);
 
 E['E17-pedal'] = () => pianoScore('Pedal', 'a pedal with its sign; a line pedal changed in the middle; the recording shape (a line with no sign)', [
@@ -359,33 +384,52 @@ E['E18-ottava'] = () => pianoScore('Octave lines', '8va on the right hand, 8vb o
     dir('<octave-shift type="stop" size="8" number="1"/>')], { barRight: finalBar() })
 ]);
 
-E['E19-clefs'] = () => pianoScore('Clef changes', 'a change inside a bar, one at a bar line, an alto clef, a treble clef an octave down', [
+/* G4d-1b (§15.4): then bars so clef changes meet system breaks - the treble clef back at bar 5, a break at the desktop and the
+   phone widths (and bar 3 one on the phone): the system before ends with the small clef, before its last bar line */
+E['E19-clefs'] = () => pianoScore('Clef changes', 'a change inside a bar, one at a bar line, an alto clef, a treble clef an octave down; then the treble ' +
+  'clef back at a system break', [
   measure(1, [piano(), n('C5', 'half'), n('E5', 'half'), backup(4 * D), n('C3', 'half', { voice: 5, staff: 2 }),
     attrs({ divisions: false, clefs: [['G', 2]], clefNumber: 2 }), n('C4', 'half', { voice: 5, staff: 2 })]),
   measure(2, [attrs({ divisions: false, clefs: [['C', 3]], clefNumber: 1 }), n('C4', 'whole'), ...lhWhole('E4')]),
   measure(3, [attrs({ divisions: false, clefs: [['G', 2, -1]], clefNumber: 1 }), n('C4', 'whole'), backup(4 * D),
-    attrs({ divisions: false, clefs: [['F', 4]], clefNumber: 2 }), n('C3', 'whole', { voice: 5, staff: 2 })], { barRight: finalBar() })
+    attrs({ divisions: false, clefs: [['F', 4]], clefNumber: 2 }), n('C3', 'whole', { voice: 5, staff: 2 })]),
+  measure(4, [n('E4', 'whole'), ...lhWhole('G2')]),
+  measure(5, [attrs({ divisions: false, clefs: [['G', 2]], clefNumber: 1 }), n('C5', 'whole'), ...lhWhole('C3')]),
+  measure(6, [n('E5', 'whole'), ...lhWhole('C3')], { barRight: finalBar() })
 ]);
 
+/* G4d-1b (§15.4): the change is at bar 5, a system break at the desktop and the phone widths - the system before ends with the
+   courtesy signature */
 E['E20-key-change'] = () => pianoScore('A key change with cancellation', 'three sharps to one flat, at a system break', [
   measure(1, [piano({ key: 3 }), n('A4', 'quarter'), n('C#5', 'quarter'), n('E5', 'half'), ...lhWhole('A2')]),
   measure(2, [n('F#5', 'whole'), ...lhWhole('A2')]),
-  measure(3, [attrs({ divisions: false, key: -1 }), n('F5', 'quarter'), n('A5', 'quarter'), n('C6', 'half'), ...lhWhole('F2')], { newSystem: true, barRight: finalBar() })
+  measure(3, [n('E5', 'half'), n('C#5', 'half'), ...lhWhole('E2')]),
+  measure(4, [n('A4', 'whole'), ...lhWhole('A2')]),
+  measure(5, [attrs({ divisions: false, key: -1 }), n('F5', 'quarter'), n('A5', 'quarter'), n('C6', 'half'), ...lhWhole('F2')], { newSystem: true }),
+  measure(6, [n('F5', 'whole'), ...lhWhole('F2')], { barRight: finalBar() })
 ]);
 
+/* G4d-1b (§15.4): eight bars, so meter changes meet system breaks - cut time at bar 5 at the desktop and the phone widths, common
+   time at bar 3 on the phone; the systems before end with the courtesy meter */
 E['E21-meter'] = () => pianoScore('Meter changes and symbols', '4/4, 3/4, common time, cut time, and a hidden meter', [
   measure(1, [piano(), n('C5', 'whole'), ...lhWhole('C3')]),
   measure(2, [attrs({ divisions: false, time: [3, 4] }), n('D5', 'half', { dots: 1 }), backup(3 * D), n('C3', 'half', { dots: 1, voice: 5, staff: 2 })]),
   measure(3, [attrs({ divisions: false, time: 'common' }), n('E5', 'whole'), ...lhWhole('C3')]),
-  measure(4, [attrs({ divisions: false, time: 'cut' }), n('F5', 'whole'), ...lhWhole('C3')]),
-  measure(5, [attrs({ divisions: false, time: [4, 4], hiddenTime: true }), n('G5', 'whole'), ...lhWhole('C3')], { barRight: finalBar() })
+  measure(4, [n('D5', 'whole'), ...lhWhole('G2')]),
+  measure(5, [attrs({ divisions: false, time: 'cut' }), n('F5', 'whole'), ...lhWhole('C3')]),
+  measure(6, [n('E5', 'whole'), ...lhWhole('C3')]),
+  measure(7, [attrs({ divisions: false, time: [4, 4], hiddenTime: true }), n('G5', 'whole'), ...lhWhole('C3')]),
+  measure(8, [n('C5', 'whole'), ...lhWhole('C3')], { barRight: finalBar() })
 ]);
 
-E['E22-repeats-jumps'] = () => pianoScore('Repeats, voltas and jumps', 'a repeat with first and second endings, segno, coda, D.S. al Coda, Fine', [
-  measure(1, [piano(), dir('<segno/>', { placement: 'above' }), n('C5', 'whole'), ...lhWhole('C3')], { barLeft: repeatL() }),
+/* G4d-1b (A8): a tempo's words and metronome mark in parentheses, and a rehearsal mark */
+E['E22-repeats-jumps'] = () => pianoScore('Repeats, voltas and jumps', 'a repeat with first and second endings, segno, coda, D.S. al Coda, Fine; ' +
+  'a tempo with its metronome mark, a rehearsal mark', [
+  measure(1, [piano(), tempoMark('Allegro', 'quarter', 120, true), dir('<segno/>', { placement: 'above' }), n('C5', 'whole'), ...lhWhole('C3')], { barLeft: repeatL() }),
   measure(2, [n('D5', 'whole'), ...lhWhole('G2')], { barLeft: endingStart(1), barRight: repeatR(1) }),
   measure(3, [n('E5', 'whole'), words('Fine'), ...lhWhole('C3')], { barLeft: endingStart(2), barRight: endingStop(2, 'discontinue') }),
-  measure(4, [n('F5', 'half'), dir('<words>To Coda</words>', { placement: 'above', sound: 'tocoda="coda1"' }), n('G5', 'half'), ...lhWhole('F2')]),
+  measure(4, [dir('<rehearsal>A</rehearsal>', { placement: 'above', staff: 1 }), n('F5', 'half'), dir('<words>To Coda</words>', { placement: 'above', sound: 'tocoda="coda1"' }),
+    n('G5', 'half'), ...lhWhole('F2')]),
   measure(5, [n('A5', 'whole'), dir('<words>D.S. al Coda</words>', { placement: 'above', sound: 'dalsegno="segno1"' }), ...lhWhole('F2')],
     { barRight: '<barline location="right"><bar-style>light-light</bar-style></barline>' }),
   measure(6, [dir('<coda/>', { placement: 'above', sound: 'coda="coda1"' }), n('C6', 'whole'), ...lhWhole('C3')], { barRight: finalBar() })
@@ -406,17 +450,32 @@ E['E23-fingering'] = () => pianoScore('Printed fingering', 'a three-note chord w
   measure(3, [n('A7', 'quarter', { fingering: [['5']] }), n(null, 'quarter'), n('C5', 'half'), ...lhWhole('C3')], { barRight: finalBar() })
 ]);
 
-E['E24-lyrics'] = () => score('Lyrics', 'one verse under a melody, a word over two notes', [
+/* G4d-1b (A12): then two verses, each word over two notes (a hyphen between its syllables), a syllable wider than its note */
+const verses = (a, b) => [{ number: 1, syllabic: a[0], text: a[1] }, { number: 2, syllabic: b[0], text: b[1] }];
+E['E24-lyrics'] = () => score('Lyrics', 'one verse under a melody, a word over two notes; then two verses', [
   { id: 'P1', name: 'Voice', measures: [measure(1, [single(), n('C5', 'quarter', { lyric: { syllabic: 'single', text: 'Sing' } }),
-    n('D5', 'quarter', { lyric: { syllabic: 'begin', text: 'hap' } }), n('E5', 'half', { lyric: { syllabic: 'end', text: 'py' } })], { barRight: finalBar() })] }
+    n('D5', 'quarter', { lyric: { syllabic: 'begin', text: 'hap' } }), n('E5', 'half', { lyric: { syllabic: 'end', text: 'py' } })]),
+  measure(2, [n('G5', 'quarter', { lyrics: verses(['begin', 'love'], ['begin', 'sun']) }), n('F5', 'quarter', { lyrics: verses(['end', 'ly'], ['end', 'ny']) }),
+    n('E5', 'eighth', { lyrics: verses(['single', 'bright'], ['single', 'through']) }), n('D5', 'eighth', { lyrics: verses(['single', 'the'], ['single', 'a']) }),
+    n('C5', 'quarter', { lyrics: verses(['single', 'day'], ['single', 'way']) })], { barRight: finalBar() })] }
 ]);
 
-E['E25-chords-dense'] = () => pianoScore('Chord symbols, dense', 'a chord symbol on every beat', [
+/* G4d-1b (§10.5): then a chord symbol on every eighth, long ones among them - too close for their places, so each is pushed right
+   of the one before, in order */
+const CH8 = [['C', 0, 'major-seventh'], ['F', 1, 'half-diminished'], ['B', -1, 'dominant', ['D', 0]], ['E', 0, 'minor-seventh'], ['A', 0, 'dominant', ['C', 1]],
+  ['D', 0, 'minor'], ['G', 0, 'suspended-fourth'], ['C', 0, 'major', ['E', 0]]];
+E['E25-chords-dense'] = () => pianoScore('Chord symbols, dense', 'a chord symbol on every beat; then on every eighth, too close for their places', [
   measure(1, [piano(), ...['C', 'Am', 'F', 'G7'].map((c, i) => {
     const m = /^([A-G])(.*)$/.exec(c);
     const kind = m[2] === 'm' ? 'minor' : m[2] === '7' ? 'dominant' : 'major';
     return '<harmony><root><root-step>' + m[1] + '</root-step></root><kind>' + kind + '</kind></harmony>' + n(['C5', 'A4', 'F5', 'G5'][i], 'quarter');
-  }), ...lhWhole('C3')], { barRight: finalBar() })
+  }), ...lhWhole('C3')]),
+  measure(2, [...CH8.map(([st, al, kind, bass], i) => harm(st, al, kind, bass && [bass[0], bass[1]]) + n(['C5', 'D5', 'E5', 'F5', 'G5', 'F5', 'E5', 'D5'][i], 'eighth', { beams: beam4(i) })),
+    ...lhWhole('C3')]),
+  /* two chord symbols over one half note, the second an eighth later where no note starts: it would stand inside the first
+     name, so it is pushed right of it */
+  measure(3, [harm('C', 0, 'major-seventh'), '<harmony><root><root-step>A</root-step></root><kind>minor-seventh</kind><offset>' + (D / 2) + '</offset></harmony>',
+    n('E5', 'half'), n('D5', 'half'), ...lhWhole('C3')], { barRight: finalBar() })
 ]);
 
 E['E26-cross-staff'] = () => pianoScore('Cross-staff notes', 'a left-hand voice note on the upper staff, and a chord with heads on both staves', [
@@ -467,12 +526,15 @@ E['E34-ledger-lines'] = () => pianoScore('Ledger lines', 'notes far above and be
     n('C2', 'quarter', { voice: 5, staff: 2 }), n('A1', 'quarter', { voice: 5, staff: 2 }), n('E1', 'quarter', { voice: 5, staff: 2 }), n('E4', 'quarter', { voice: 5, staff: 2 })], { barRight: finalBar() })
 ]);
 
-E['E35-voice-and-piano'] = () => score('Voice and piano', 'three staves: a sung line with words over a piano', [
+/* G4d-1b: the voice's dynamic with no placement stands above its staff, the piano's between its staves; a chord symbol over the
+   voice */
+E['E35-voice-and-piano'] = () => score('Voice and piano', 'three staves: a sung line with words over a piano; a dynamic in each part, a chord symbol over the voice', [
   { id: 'P1', name: 'Voice', abbr: 'V.', measures: [
-    measure(1, [single(), n('E5', 'half', { lyric: { syllabic: 'single', text: 'Lo' } }), n('D5', 'half', { lyric: { syllabic: 'single', text: 'how' } })]),
-    measure(2, [n('C5', 'whole', { lyric: { syllabic: 'single', text: 'a' } })], { barRight: finalBar() })] },
+    measure(1, [single(), dynDir('<mf/>'), harm('C', 0, 'major'), n('E5', 'half', { lyric: { syllabic: 'single', text: 'Lo' } }), harm('G', 0, 'major', ['B', 0]),
+      n('D5', 'half', { lyric: { syllabic: 'single', text: 'how' } })]),
+    measure(2, [harm('C', 0, 'major'), n('C5', 'whole', { lyric: { syllabic: 'single', text: 'a' } })], { barRight: finalBar() })] },
   { id: 'P2', name: 'Piano', abbr: 'Pno.', measures: [
-    measure(1, [piano(), n('C5', 'half'), n('E5', 'half', { chord: true }), n('B4', 'half'), n('D5', 'half', { chord: true }), ...lhWhole('C3')]),
+    measure(1, [piano(), dynDir('<p/>'), n('C5', 'half'), n('E5', 'half', { chord: true }), n('B4', 'half'), n('D5', 'half', { chord: true }), ...lhWhole('C3')]),
     measure(2, [n('C5', 'whole'), n('E5', 'whole', { chord: true }), ...lhWhole('C3')], { barRight: finalBar() })] }
 ]);
 
@@ -483,16 +545,31 @@ E['E36-pickup-implicit'] = () => pianoScore('A pickup and an implicit bar', 'an 
   measure('X1', [n('G5', 'quarter'), backup(D), n('G2', 'quarter', { voice: 5, staff: 2 })], { implicit: true, barRight: finalBar() })
 ]);
 
+/* G4d-1b (A9, A10 at a system break - E17 and E18 stay as MX-1's playback tests hold them): a sign pedal changed in bar 3 (the
+   release and the press again); an 8va over bars 7-10 and a line pedal over bars 11-14, changed in bar 13 - both cross a
+   system break at every screen width ("(8)" where the line goes on) */
 E['E37-long'] = () => {
   const ms = [];
   const scale = ['C5', 'D5', 'E5', 'F5', 'G5', 'A5', 'B5', 'C6'];
+  /* marks before the eighth at index i of bar k */
+  const at = {
+    3: { 0: [ped('<pedal type="start" line="no" sign="yes"/>')], 4: [ped('<pedal type="change" line="no" sign="yes"/>')] },
+    4: { 0: [ped('<pedal type="stop" line="no" sign="yes"/>')] },
+    7: { 0: [dir('<octave-shift type="down" size="8" number="1"/>', { placement: 'above', staff: 1 })] },
+    11: { 0: [dir('<octave-shift type="stop" size="8" number="1"/>', { staff: 1 }), ped('<pedal type="start" line="yes" sign="no"/>')] },
+    13: { 2: [ped('<pedal type="change" line="yes"/>')] },
+    15: { 0: [ped('<pedal type="stop" line="yes" sign="no"/>')] }
+  };
   for (let k = 1; k <= 64; k++) {
     const up = k % 2 === 1;
     const ps = up ? scale : scale.slice().reverse();
-    ms.push(measure(k, [...(k === 1 ? [piano()] : []), ...eighths(ps, 4), backup(4 * D), n(k % 4 === 0 ? 'G2' : 'C3', 'half', { voice: 5, staff: 2 }), n('G3', 'half', { voice: 5, staff: 2 })],
+    const rh = [];
+    eighths(ps, 4).forEach((x, i) => { ((at[k] || {})[i] || []).forEach(d => rh.push(d)); rh.push(x); });
+    ms.push(measure(k, [...(k === 1 ? [piano()] : []), ...rh, backup(4 * D), n(k % 4 === 0 ? 'G2' : 'C3', 'half', { voice: 5, staff: 2 }), n('G3', 'half', { voice: 5, staff: 2 })],
       k === 64 ? { barRight: finalBar() } : {}));
   }
-  return pianoScore('A long piece', 'sixty-four bars of scales: for performance and determinism', ms);
+  return pianoScore('A long piece', 'sixty-four bars of scales: for performance and determinism; a sign pedal changed, an 8va and a line pedal across ' +
+    'system breaks', ms);
 };
 
 E['E38-recording-shape'] = () => pianoScore('The G3-off recording shape', 'what PPP writes from a recording with G3 off: no beams, a bracket per triplet piece, a 64th rest, a tie inside the bar, a changed pedal', [

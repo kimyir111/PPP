@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- three staves: a sung line with words over a piano (G04 §22.1; written by tests/engrave/tools/make-e-fixtures.js) -->
+<!-- three staves: a sung line with words over a piano; a dynamic in each part, a chord symbol over the voice (G04 §22.1; written by tests/engrave/tools/make-e-fixtures.js) -->
 <score-partwise version="4.0">
   <work><work-title>Voice and piano</work-title></work>
   <identification><creator type="composer">PPP</creator></identification>
@@ -7,10 +7,14 @@
   <part id="P1">
     <measure number="1">
       <attributes><divisions>480</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>
+      <direction><direction-type><dynamics><mf/></dynamics></direction-type></direction>
+      <harmony><root><root-step>C</root-step></root><kind>major</kind></harmony>
       <note><pitch><step>E</step><octave>5</octave></pitch><duration>960</duration><voice>1</voice><type>half</type><staff>1</staff><lyric number="1"><syllabic>single</syllabic><text>Lo</text></lyric></note>
+      <harmony><root><root-step>G</root-step></root><kind>major</kind><bass><bass-step>B</bass-step></bass></harmony>
       <note><pitch><step>D</step><octave>5</octave></pitch><duration>960</duration><voice>1</voice><type>half</type><staff>1</staff><lyric number="1"><syllabic>single</syllabic><text>how</text></lyric></note>
       </measure>
     <measure number="2">
+      <harmony><root><root-step>C</root-step></root><kind>major</kind></harmony>
       <note><pitch><step>C</step><octave>5</octave></pitch><duration>1920</duration><voice>1</voice><type>whole</type><staff>1</staff><lyric number="1"><syllabic>single</syllabic><text>a</text></lyric></note>
       <barline location="right"><bar-style>light-heavy</bar-style></barline>
       </measure>
@@ -18,6 +22,7 @@
   <part id="P2">
     <measure number="1">
       <attributes><divisions>480</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time><staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef></attributes>
+      <direction><direction-type><dynamics><p/></dynamics></direction-type></direction>
       <note><pitch><step>C</step><octave>5</octave></pitch><duration>960</duration><voice>1</voice><type>half</type><staff>1</staff></note>
       <note><chord/><pitch><step>E</step><octave>5</octave></pitch><duration>960</duration><voice>1</voice><type>half</type><staff>1</staff></note>
       <note><pitch><step>B</step><octave>4</octave></pitch><duration>960</duration><voice>1</voice><type>half</type><staff>1</staff></note>

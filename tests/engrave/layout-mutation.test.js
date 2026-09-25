@@ -114,7 +114,7 @@ const MUTATIONS = [
   /* G4d-1a: §23 M8, M12, M14, M15, M23 */
   { id: 'M8', file: 'skyline.js', expect: ['eg.overlap.mark_mark', 'eg.overlap.text'], probes: ['E15', 'E23', 'czerny849_005', 'burg015'],
     what: 'place() ignores the skyline: every mark where it would stand alone (its note\'s edge, the staff\'s)',
-    edits: [['    const t = above ? this.top(it.x0, it.x1) : this.bottom(it.x0, it.x1);', '    const t = null;']] },
+    edits: [['      const t = above ? this.top(it.x0, it.x1) : this.bottom(it.x0, it.x1);', '      const t = null;']] },
   { id: 'M12', file: 'marks.js', expect: ['eg.tie.missing'], probes: ['G16'], what: 'a tie PPP inferred inside a bar hidden again (the legacy O4 rule back)',
     edits: [[TIE_TOP, TIE_TOP + '\n      if (t.inferred && fh && th && fh.measure === th.measure) return;']] },
   { id: 'M14', file: 'marks.js', expect: ['eg.tie.missing'], probes: ['E09'], what: 'a tie across a system break dropped (its halves not drawn)',
@@ -194,7 +194,63 @@ const MUTATIONS = [
       '    const fingering = () => here.forEach(id => {\n      const I = infoOf(id), e = I.e;\n      if (!e || !e.heads.some(h => (h.fingering || []).length)) return;'],
       ['  }\n\n  return Object.freeze({ PAD,', '    fingering();\n  }\n\n  return Object.freeze({ PAD,']] },
   { id: 'FP', file: 'skyline.js', expect: ['eg.layout.far_undiagnosed'], probes: ['E23'], what: 'FAR_PLACEMENT suppressed: an item set more than 8 sp from its staff says nothing (§10.5)',
-    edits: [['      if (d > far + EPS) o.diag({', '      if (false) o.diag({']] }
+    edits: [['      if (d > far + EPS) o.diag({', '      if (false) o.diag({']] },
+  /* G4d-1b: §23 M13, M19, M20 - and one live mutation for each rule it adds (G04 §36) */
+  { id: 'M13', file: 'sysmarks.js', expect: ['eg.overlap.text'], probes: ['E16', 'burg015'], what: 'dynamics at notehead height (their row 4 sp inside the notes it clears)',
+    edits: [['make: base => it.make(base).map(o => (R.band ? Object.assign(o, { band: true }) : o)) })), { pad: PAD.row }));',
+      'make: base => it.make(base).map(o => (R.band ? Object.assign(o, { band: true }) : o)) })), { pad: -4 }));']] },
+  { id: 'M19', file: 'sysmarks.js', expect: ['eg.mark.missing.pedal-change', 'eg.pedal.change_err'], probes: ['E37'], what: 'a pedal change drawn as a release only (the * without the Ped. after it)',
+    edits: [["          signs.push({ x0: c.x - PEDAL.lead, p: press, id: pd.id + '#change' + c.i + '.down', refs: [pd.id, c.ref], measure: c.measure });\n", '']] },
+  { id: 'M20', file: 'plan.js', expect: ['eg.event.written_diff'], probes: ['E18'], what: 'the heads under an 8va drawn at the pitch that sounds (D-1: written = sounding - shift)',
+    edits: [['written = { step: w.step, alter: w.alter || 0, oct: w.oct - shiftOf(e, staffId) };', 'written = { step: w.step, alter: w.alter || 0, oct: w.oct };']] },
+  { id: 'DB', file: 'sysmarks.js', expect: ['eg.row.baseline_err'], probes: ['E16'], what: 'S2 undone: each item of a row on the line it alone would take, not one line for the row',
+    edits: [['        const y = above ? b[3] - it.drop : b[1] + it.rise;', '        const y = above ? b[3] - it.drop : b[1] + it.rise;\n        it._b = y;'],
+      ['        sk.put({ x0: it.x0, x1: it.x1, h: it.rise + it.drop, side: side, at: above ? base + it.drop : base - it.rise, ref: it.ref });\n        it.make(base).forEach(x =>',
+        '        sk.put({ x0: it.x0, x1: it.x1, h: it.rise + it.drop, side: side, at: above ? it._b + it.drop : it._b - it.rise, ref: it.ref });\n        it.make(it._b).forEach(x =>']] },
+  { id: 'HT', file: 'sysmarks.js', expect: ['eg.hairpin.clear_err'], probes: ['E16'], what: 'S5 undone: a hairpin 0.25 sp from the dynamics at its ends (touching them, not 0.5 sp clear)',
+    edits: [['const PAD = Object.freeze({ row: 0.5, lyric: 0.5, pedal: 0.6, apart: 0.4, word: 0.35, hairpin: 0.5 });',
+      'const PAD = Object.freeze({ row: 0.5, lyric: 0.5, pedal: 0.6, apart: 0.4, word: 0.35, hairpin: 0.25 });']] },
+  { id: 'HL', file: 'sysmarks.js', expect: ['eg.hairpin.level_err'], probes: ['E16'], what: 'a hairpin tilted (its far end half a space lower)',
+    edits: [['line: [xa, y, xb, y], ends: ends', 'line: [xa, y, xb, y + 0.5], ends: ends']] },
+  { id: 'HS', file: 'sysmarks.js', expect: ['eg.hairpin.shape_err'], probes: ['E16'], what: 'crescendo and diminuendo swapped',
+    edits: [["      const cresc = w.wedge !== 'diminuendo';", "      const cresc = w.wedge === 'diminuendo';"]] },
+  { id: 'DS', file: 'sysmarks.js', expect: ['eg.dynamic.side_err'], probes: ['E35'], what: 'a dynamic that names no staff below the lowest staff of its part, not between its staves',
+    edits: [["      if (!st) st = side === 'above' ? ps[0] : ps.length > 1 ? ps[0] : ps[ps.length - 1];", "      if (!st) st = side === 'above' ? ps[0] : ps[ps.length - 1];"]] },
+  { id: 'SG', expect: ['eg.staff.gap_err'], probes: ['E16'], what: 'the staves of a grand staff closer than 5.0 sp (4.0)',
+    edits: [['  const VGAP = Object.freeze({ inPart: 5.0, betweenParts: 6.0, system: 6.0, pad: 1.0, systemPad: 1.5 });',
+      '  const VGAP = Object.freeze({ inPart: 4.0, betweenParts: 6.0, system: 6.0, pad: 1.0, systemPad: 1.5 });']] },
+  { id: 'YS', expect: ['eg.system.gap_err'], probes: ['E16'], what: 'systems closer than 6.0 sp line to line (4.0)',
+    edits: [['  const VGAP = Object.freeze({ inPart: 5.0, betweenParts: 6.0, system: 6.0, pad: 1.0, systemPad: 1.5 });',
+      '  const VGAP = Object.freeze({ inPart: 5.0, betweenParts: 6.0, system: 4.0, pad: 1.0, systemPad: 1.5 });']] },
+  { id: 'VC', expect: ['eg.skyline.vertical_collisions'], probes: ['E16', 'czerny849_005'], what: 'the content of two staves allowed within 0.3 sp of each other (A25: 1.0)',
+    edits: [['  const VGAP = Object.freeze({ inPart: 5.0, betweenParts: 6.0, system: 6.0, pad: 1.0, systemPad: 1.5 });',
+      '  const VGAP = Object.freeze({ inPart: 5.0, betweenParts: 6.0, system: 6.0, pad: 0.3, systemPad: 1.5 });']] },
+  { id: 'CK', expect: ['eg.courtesy.missing'], probes: ['E20'], what: 'no courtesy key signature at the end of the system before a key change (§15.4)',
+    edits: [['        if (nk && !nk.hidden) {', '        if (false) {']] },
+  { id: 'VE', file: 'sysmarks.js', expect: ['eg.volta.extent_err'], probes: ['E22'], what: 'a volta a bar too long (over the bar after its last)',
+    edits: [['const x0 = inSys[0].x + VOLTA.inset, x1 = inSys[inSys.length - 1].x + inSys[inSys.length - 1].w - VOLTA.inset;',
+      'const nx = ms[ms.indexOf(inSys[inSys.length - 1]) + 1] || inSys[inSys.length - 1];\n      const x0 = inSys[0].x + VOLTA.inset, x1 = nx.x + nx.w - VOLTA.inset;']] },
+  { id: 'CP', file: 'sysmarks.js', expect: ['eg.chord.order_err'], probes: ['E25'], what: 'chord names pushed left of their notes, not right of the name before',
+    edits: [['      pushRight(R.items, PAD.apart);\n      placeRow(R.staff, R.side, R.items.map(it => ({ x0: it.x0, x1: it.x1, rise: it.rise, drop: it.drop, ref: it.ref, make: base => it.make(base, it.dx) })),\n        { pad: PAD.row, limit: R.side',
+      '      R.items.forEach(it => move(it, -1));\n      placeRow(R.staff, R.side, R.items.map(it => ({ x0: it.x0, x1: it.x1, rise: it.rise, drop: it.drop, ref: it.ref, make: base => it.make(base, it.dx) })),\n        { pad: PAD.row, limit: R.side']] },
+  { id: 'OS', file: 'sysmarks.js', expect: ['eg.ottava.extent_err'], probes: ['E18'], what: 'an octave line one note short (it ends before its last note)',
+    edits: [['        if (!under.length) return;\n        const side = ov.shift > 0', '        under.pop();\n        if (!under.length) return;\n        const side = ov.shift > 0']] },
+  { id: 'OL', file: 'sysmarks.js', expect: ['eg.ottava.label_err'], probes: ['E37'], what: 'an octave line going on after a break labelled 8va again, not (8)',
+    edits: [['(cont ? OTTAVA_CONT : OTTAVA_LABEL)', '(OTTAVA_LABEL)']] },
+  { id: 'PE', file: 'sysmarks.js', expect: ['eg.pedal.errors'], probes: ['E17', 'E37'], what: 'the pedal\'s * where it goes down, not where it comes up',
+    edits: [['        if (endsHere) signs.push({ x0: xZ - PEDAL.release - release.w,', '        if (endsHere) signs.push({ x0: xA - PEDAL.release - release.w,']] },
+  { id: 'LW', file: 'sysmarks.js', expect: ['eg.lyric.staff_err'], probes: ['E35'], what: 'a lyric under the system\'s lowest staff, not its voice\'s',
+    edits: [['      const staff = Y.voiceStaff.get(e.voice) || e.staff;', '      const staff = P.staves[P.staves.length - 1].id;']] },
+  { id: 'LP', file: 'sysmarks.js', expect: ['eg.lyric.place_err'], probes: ['E24'], what: 'a syllable starting at its note\'s middle, not centred on it',
+    edits: [['x0: cx - pc.w / 2, x1: cx + pc.w / 2,', 'x0: cx, x1: cx + pc.w,']] },
+  { id: 'RO', file: 'sysmarks.js', expect: ['eg.row.order_err'], probes: ['upper'], what: '§10.2 priority 10 reordered: chord names placed before the octave lines (inside them)',
+    edits: [["    [...ottRows.values()].sort((a, b) => Y.staffIndex.get(a.staff) - Y.staffIndex.get(b.staff) || (a.side < b.side ? -1 : 1))\n      .forEach(R => placeRow(R.staff, R.side, R.items, { pad: PAD.row }));",
+      "    const ottLater = () => [...ottRows.values()].sort((a, b) => Y.staffIndex.get(a.staff) - Y.staffIndex.get(b.staff) || (a.side < b.side ? -1 : 1))\n      .forEach(R => placeRow(R.staff, R.side, R.items, { pad: PAD.row }));"],
+      ['    /* voltas: a bracket over their bars in this system,', '    ottLater();\n    /* voltas: a bracket over their bars in this system,']] },
+  { id: 'TC', file: 'sysmarks.js', expect: ['eg.text.content_err'], probes: ['E25'], what: 'a chord kind spelt otherwise than the app spells it (maj7 for M7)',
+    edits: [["'major-seventh': 'M7',", "'major-seventh': 'maj7',"]] },
+  { id: 'BR', expect: ['eg.accidental.bracket_err'], probes: ['E32'], what: 'the G4d-1a review R5 back: a bracketed accidental\'s brackets 2 sp tall whatever they enclose',
+    edits: [["              if (a.br && (n === 'accidentalBracketLeft' || n === 'accidentalBracketRight')) { box[1] = a.br[0]; box[3] = a.br[1]; }\n", '']] }
 ];
 const CONTROLS = [
   { id: 'N1', what: 'a comment reworded',
@@ -269,6 +325,27 @@ function sharedThenMoved() {
   });
   return b.finish().graph;
 }
+/* the upper row over one bar (§10.2 priority 10, the RO mutation): an 8va over high notes, a chord name at each half, a volta and a
+   tempo mark - each row outside the one before it */
+function upperRow() {
+  const b = SG.builder({ id: 'upper', meta: { title: 'Upper row' } });
+  b.setDefault({ src: b.source({ kind: 'user' }).id });
+  const m1 = b.measure({ number: '1', dur: '1' }), m2 = b.measure({ number: '2', dur: '1' });
+  b.meter({ m: m1.id, beats: [4], beatType: 4 });
+  const part = b.part({ instrument: { kind: 'piano', family: 'keyboard' } });
+  const st = b.staff(part, {}), lo = b.staff(part, {});
+  const v = b.voice(part, { staff: st.id, label: '1' }), w = b.voice(part, { staff: lo.id, label: '5' });
+  b.clef(part, { staff: st.id, m: m1.id, at: '0', sign: 'G' });
+  b.clef(part, { staff: lo.id, m: m1.id, at: '0', sign: 'F' });
+  [[m1, 'E', 7], [m1, 'G', 7], [m2, 'C', 5], [m2, 'E', 5]].forEach(([m, s, o], k) => b.event(part, { kind: 'note', m: m.id, at: k % 2 ? '1/2' : '0', dur: '1/2', voice: v.id, staff: st.id,
+    display: { type: 'half' }, heads: [{ pitch: { step: s, alter: 0, oct: o } }] }));
+  [m1, m2].forEach(m => b.event(part, { kind: 'note', m: m.id, at: '0', dur: '1', voice: w.id, staff: lo.id, display: { type: 'whole' }, heads: [{ pitch: { step: 'C', alter: 0, oct: 3 } }] }));
+  b.spanner(part, { type: 'ottava', staff: st.id, shift: 1, from: { m: m1.id, at: '0' }, to: { m: m2.id, at: '0' } });
+  ['0', '1/2'].forEach(at => b.direction(part, { kind: 'chord', m: m1.id, at: at, root: { step: 'C' }, chordKind: 'major' }));
+  b.ending({ numbers: [1], from: m1.id, to: m1.id });
+  b.tempo({ m: m1.id, at: '0', qpm: '100', mark: { text: 'Allegro' } });
+  return b.finish().graph;
+}
 /* the probes: two voices with rests, an accidental chord, a long grand-staff piece (several systems), two piano pieces
    whose hands cross middle C - Czerny 849/005 dense (its phone systems already at a smaller staff size), Burgmuller
    015 - and for G4c beams with secondary breaks and hooks (E02), tuplets shown as the file says (E04), two voices'
@@ -302,6 +379,17 @@ const PROBES = {
   E11: 'tests/engrave/fixtures/e/E11-slur-rest-system.musicxml',
   G16: () => goldenGraphs().find(([k]) => k === 'golden/G16.sg.json')[1],
   czerny849_005: 'catalog/method/czerny849/005.mxl',
+  /* G4d-1b: the marks attached to systems - dynamics and hairpins, pedal, octave lines, key change at a break, repeats and jumps,
+     lyrics, chord names, voice and piano, bracketed accidentals; the upper row stacked over one bar */
+  E16: 'tests/engrave/fixtures/e/E16-dynamics-hairpins.musicxml',
+  E17: 'tests/engrave/fixtures/e/E17-pedal.musicxml',
+  E18: 'tests/engrave/fixtures/e/E18-ottava.musicxml',
+  E20: 'tests/engrave/fixtures/e/E20-key-change.musicxml',
+  E22: 'tests/engrave/fixtures/e/E22-repeats-jumps.musicxml',
+  E24: 'tests/engrave/fixtures/e/E24-lyrics.musicxml',
+  E25: 'tests/engrave/fixtures/e/E25-chords-dense.musicxml',
+  E35: 'tests/engrave/fixtures/e/E35-voice-and-piano.musicxml',
+  upper: upperRow,
   /* G4d-1a: triplets whose beams stand inside the staff - G4c put 12 of their numbers more than 1.5 sp from the beam */
   czerny849_020: 'catalog/method/czerny849/020.mxl',
   burg015: 'catalog/method/burgmuller25/015.mxl',
@@ -369,7 +457,7 @@ test.before(() => {
 });
 test.after(() => { if (tmp) fs.rmSync(tmp, { recursive: true, force: true }); });
 
-test('every layout mutation (G04 §23: M1-M12, M14-M18, M21, M23, M24; the G4c review\'s RB, RB2, RF, RI, RK, RX, RY, the fixer\'s F1-F3 and the Lead\'s RA; G4d-1a\'s own; the G4d-1a fixer\'s TH, TD, FS, FP and the review\'s RV8b, RV9, RV19, RV20, RV20c, RV23, RV25, RV26) is live and caught by the metric or check it names; N1 and N2 change nothing', async (t) => {
+test('every layout mutation (G04 §23: M1-M12, M14-M18, M21, M23, M24; the G4c review\'s RB, RB2, RF, RI, RK, RX, RY, the fixer\'s F1-F3 and the Lead\'s RA; G4d-1a\'s own; the G4d-1a fixer\'s TH, TD, FS, FP and the review\'s RV8b, RV9, RV19, RV20, RV20c, RV23, RV25, RV26; G4d-1b\'s M13, M19, M20 and its own DB, HT, HL, HS, DS, SG, YS, VC, CK, VE, CP, OS, OL, PE, LW, LP, RO, TC, BR) is live and caught by the metric or check it names; N1 and N2 change nothing', async (t) => {
   const graphs = {};
   for (const k of Object.keys(PROBES)) {
     graphs[k] = typeof PROBES[k] === 'function' ? PROBES[k]() : await graphOf(PROBES[k]);

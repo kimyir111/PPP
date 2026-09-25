@@ -109,7 +109,17 @@
     "ornamentTurn": [0, 1.84, 0, 0.872],
     "tremolo1": [-0.6, 0.6, -0.372, 0.376],
     "breathMarkComma": [0.004, 0.608, 0.008, 1.004],
-    "caesura": [0, 1.536, -0.004, 2.128]
+    "caesura": [0, 1.536, -0.004, 2.128],
+    "dynamicPiano": [-0.356, 1.464, -0.568, 1.096],
+    "dynamicMezzo": [-0.08, 1.784, -0.04, 1.096],
+    "dynamicForte": [-0.564, 1.456, -0.608, 1.776],
+    "dynamicRinforzando": [-0.08, 1.108, 0, 1.096],
+    "dynamicSforzando": [0, 0.916, -0.04, 1.092],
+    "dynamicZ": [-0.12, 0.976, -0.04, 1.072],
+    "keyboardPedalPed": [0, 4.076, -0.032, 2.22],
+    "keyboardPedalUp": [0, 1.8, 0, 1.8],
+    "segno": [0.016, 2.2, -0.108, 3.036],
+    "coda": [-0.016, 3.82, -0.632, 3.592]
   });
   /* END GENERATED */
 
@@ -136,7 +146,9 @@
      space above and below its position. A backend draws these (`drawn: true`); they are not fallbacks. */
   const DRAWN = Object.freeze({ noteheadSlashHorizontalEnds: [0, 1.5, -1, 1],
     /* G4d-1a: the square brackets of an editorial accidental (SMuFL accidentalBracketLeft/Right, not in the pinned font):
-       a thin bracket PPP's backend draws, as tall as the parentheses the font has */
+       a thin bracket PPP's backend draws. Its width is this; its height is the accidental's it encloses (G4d-1b, the
+       G4d-1a review R5: a fixed 2 sp was shorter than a flat and, on a line, ended on the staff lines) - the layout
+       sets it from the enclosed glyph's box */
     accidentalBracketLeft: [0, 0.4, -1, 1], accidentalBracketRight: [0, 0.4, -1, 1] });
 
   const table = name => (Object.prototype.hasOwnProperty.call(GLYPHS, name) ? GLYPHS[name]
@@ -225,11 +237,25 @@
   const FERMATA = { normal: 'fermata', angled: 'fermataShort', square: 'fermataLong' };
   function fermata(shape, above) { return pick((FERMATA[shape] || 'fermata') + (above ? 'Above' : 'Below'), 'fermata' + (above ? 'Above' : 'Below')); }
 
+  /* ---- marks attached to systems (G04 §10.2 priorities 8-10, §18.2; G4d-1b): a dynamic is its letters, each a SMuFL
+     glyph (p, m, f, r, s, z - the pinned font has them; niente and a dynamic in words are text, not glyphs); the pedal's
+     press and release signs; segno and coda */
+  const DYN_LETTER = { p: 'dynamicPiano', m: 'dynamicMezzo', f: 'dynamicForte', r: 'dynamicRinforzando', s: 'dynamicSforzando', z: 'dynamicZ' };
+  /* -> [glyph names] for a dynamic's letters, or null when a letter has no glyph (the layout sets it as text) */
+  function dynamic(value) {
+    const v = String(value || '');
+    if (!/^[pmfrsz]+$/.test(v)) return null;
+    const names = v.split('').map(c => DYN_LETTER[c]);
+    return names.every(has) ? names : null;
+  }
+  const PEDAL = Object.freeze({ press: 'keyboardPedalPed', release: 'keyboardPedalUp' });
+  const JUMP_SIGN = Object.freeze({ segno: 'segno', coda: 'coda' });
+
   /* ---- clefs, time signatures */
   const CLEFS = { G: 'gClef', F: 'fClef', C: 'cClef', percussion: 'unpitchedPercussionClef1', TAB: '6stringTabClef' };
   function clef(sign) { return CLEFS[sign] ? pick(CLEFS[sign], 'gClef') : null; }
   const digit = d => pick('timeSig' + d, 'timeSig0');
 
   return Object.freeze({ GLYPHS, DRAWN, ENGRAVING, SCALE, glyph, box, has, drawn, pick, headClass, notehead, accidental, rest, flag, flagCount, clef, digit,
-    articulation, fermata });
+    articulation, fermata, DYN_LETTER, dynamic, PEDAL, JUMP_SIGN });
 });

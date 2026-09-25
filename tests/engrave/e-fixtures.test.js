@@ -138,7 +138,12 @@ test('E15-E17 marks: articulations, fermatas, dynamics, hairpins, pedal marks an
   assert.equal(entries(p15, 'fermata', 'drawn').length, 5, 'four on notes (one angled, one square), one over the final bar line');
   assert.deepEqual(p15.events.filter(e => e.fermata && e.fermata.shape).map(e => e.fermata.shape), ['angled', 'square']);
   const p16 = E.plan(await load('E16'));
-  assert.deepEqual(p16.marks.filter(m => m.kind === 'dynamic').map(m => m.value), ['p', 'f', 'pp']);
+  /* G4d-1b: then pp at the end of a long diminuendo, mf above the upper staff and p below the lower, sfz and ff a sixteenth
+     apart, p dolce (two marks of one element), and cresc. by them */
+  assert.deepEqual(p16.marks.filter(m => m.kind === 'dynamic').map(m => m.value), ['p', 'f', 'pp', 'mf', 'p', 'sfz', 'ff', 'p']);
+  assert.deepEqual(p16.marks.filter(m => m.kind === 'dynamic').map(m => [m.placement, m.staff === p16.staves[1].id]).slice(3, 5), [['above', false], ['below', true]]);
+  assert.deepEqual(p16.marks.find(m => m.kind === 'dynamic' && m.more.length).more, [{ value: 'other', text: 'dolce' }]);
+  assert.deepEqual(p16.marks.filter(m => m.kind === 'words').map(m => m.text), ['cresc.']);
   assert.deepEqual(p16.lines.filter(l => l.kind === 'wedge').map(l => l.wedge), ['crescendo', 'diminuendo']);
   const p17 = E.plan(await load('E17'));
   const ped = p17.lines.filter(l => l.kind === 'pedal');
@@ -198,7 +203,7 @@ test('E18 / fixer P6: an 8va that names no staff moves the notes of every staff 
 
 test('E19-E21 clefs, keys and meters: as the graph states them, a hidden meter suppressed', async () => {
   const p19 = E.plan(await load('E19'));
-  assert.deepEqual(p19.clefs.map(c => [c.sign, c.line, c.octave]), [['G', 2, 0], ['F', 4, 0], ['G', 2, 0], ['C', 3, 0], ['G', 2, -1], ['F', 4, 0]]);
+  assert.deepEqual(p19.clefs.map(c => [c.sign, c.line, c.octave]), [['G', 2, 0], ['F', 4, 0], ['G', 2, 0], ['C', 3, 0], ['G', 2, -1], ['F', 4, 0], ['G', 2, 0]]);
   assert.ok(p19.clefs.some(c => c.at !== '0'), 'a change inside a bar');
   const p20 = E.plan(await load('E20'));
   assert.deepEqual(p20.keys.map(k => k.fifths), [3, -1]);
@@ -211,14 +216,18 @@ test('E22-E25: endings and jumps, fingering, lyrics, chord symbols (and a config
   const p22 = E.plan(await load('E22'));
   assert.equal(p22.endings.length, 2);
   assert.deepEqual(p22.jumps.map(j => j.kind).sort(), ['coda', 'dalsegno', 'segno', 'tocoda']);
+  /* G4d-1b: a tempo's words and metronome mark in parentheses, a rehearsal mark */
+  assert.deepEqual(p22.tempos.map(t => t.mark), [{ unit: 'quarter', perMinute: '120', text: 'Allegro', parens: true }]);
+  assert.deepEqual(p22.marks.filter(m => m.kind === 'rehearsal').map(m => m.text), ['A']);
   const p23 = E.plan(await load('E23'));
   assert.equal(entries(p23, 'fingering', 'drawn').length, 18);
   assert.equal(entries(E.plan(await load('E23'), { fingering: false }), 'fingering', 'suppressed', 'config-off').length, 18);
   const p24 = E.plan(await load('E24'));
-  assert.deepEqual(p24.events.flatMap(e => e.lyrics.map(l => l.text)), ['Sing', 'hap', 'py']);
+  assert.deepEqual(p24.events.flatMap(e => e.lyrics.map(l => l.text)), ['Sing', 'hap', 'py', 'love', 'sun', 'ly', 'ny', 'bright', 'through', 'the', 'a', 'day', 'way']);
+  assert.deepEqual([...new Set(p24.events.flatMap(e => e.lyrics.map(l => l.verse || 1)))].sort(), [1, 2]);
   const p25 = E.plan(await load('E25'));
-  assert.equal(p25.marks.filter(m => m.kind === 'chord').length, 4);
-  assert.equal(entries(E.plan(await load('E25'), { chords: false }), 'chord', 'suppressed', 'config-off').length, 4);
+  assert.equal(p25.marks.filter(m => m.kind === 'chord').length, 14);
+  assert.equal(entries(E.plan(await load('E25'), { chords: false }), 'chord', 'suppressed', 'config-off').length, 14);
 });
 
 test('E26-E30: cross-staff, percussion, multi-bar and whole-bar rests, hidden and cue notes', async () => {
@@ -257,6 +266,11 @@ test('E31-E36: noteheads, cautionary accidentals, an accidental chord, ledger li
 test('E37-E40: a long piece, the G3-off recording shape, the G3a shape, arpeggios and glissandi', async () => {
   const p37 = E.plan(await load('E37'));
   assert.equal(p37.measures.length, 64);
+  /* G4d-1b: a sign pedal changed (bar 3), an 8va over bars 7-10, a line pedal over bars 11-14 changed in bar 13 */
+  const ped37 = p37.lines.filter(l => l.kind === 'pedal');
+  assert.deepEqual(ped37.map(l => [l.mark, l.changes.length]), [[{ line: false }, 1], [{ line: true, sign: false }, 1]]);
+  assert.deepEqual(p37.lines.filter(l => l.kind === 'ottava').map(l => [l.shift, p37.measures.find(m => m.id === l.from.m).number, p37.measures.find(m => m.id === l.to.m).number]),
+    [[1, '7', '11']]);
   const p38 = E.plan(await load('E38'));
   assert.equal(p38.beams.filter(b => b.source === 'graph').length, 0);
   assert.ok(p38.beams.filter(b => b.source === 'derived').length >= 1, 'E38: no beam in the file - derived by the one rule');

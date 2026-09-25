@@ -55,7 +55,16 @@ const ZERO = ['eg.ledger.silent', 'eg.ledger.invented', 'eg.ledger.duplicate', '
   'eg.text.width_err', 'eg.text.missing_glyph', 'eg.clip.curves',
   /* the G4d-1a fixer (G04 §35.18): G4-L4's tie ends and crossings, G4-L5's fingering by its notes and §10.5's FAR_PLACEMENT
      named, the review's R3 (a slur's middle parts, its side, a mark's glyph) */
-  'eg.tie.crossings', 'eg.slur.missing', 'eg.slur.side_err', 'eg.mark.glyph_err', 'eg.fingering.far', 'eg.layout.far_undiagnosed'];
+  'eg.tie.crossings', 'eg.slur.missing', 'eg.slur.side_err', 'eg.mark.glyph_err', 'eg.fingering.far', 'eg.layout.far_undiagnosed',
+  /* G4d-1b (G04 §10.2 priorities 7-11, §10.4 S2 and S5, §15.3, §15.4; A8-A10, A12 lyrics, A20, A25; the G4d-1a review R5): the
+     marks attached to systems drawn and where their rules put them, the written pitch under octave lines, vertical spacing,
+     courtesy signs, bracketed accidentals */
+  'eg.mark.missing.dynamic', 'eg.mark.missing.wedge', 'eg.mark.missing.pedal', 'eg.mark.missing.pedal-change', 'eg.mark.missing.ottava',
+  'eg.mark.missing.ending', 'eg.mark.missing.chord', 'eg.mark.missing.tempo', 'eg.mark.missing.rehearsal', 'eg.mark.missing.jump',
+  'eg.mark.missing.words', 'eg.mark.missing.lyric', 'eg.dynamic.side_err', 'eg.row.baseline_err', 'eg.hairpin.level_err', 'eg.hairpin.shape_err',
+  'eg.hairpin.clear_err', 'eg.pedal.errors', 'eg.pedal.change_err', 'eg.ottava.extent_err', 'eg.ottava.label_err', 'eg.event.written_diff',
+  'eg.volta.extent_err', 'eg.chord.order_err', 'eg.lyric.staff_err', 'eg.lyric.place_err', 'eg.row.order_err', 'eg.text.content_err',
+  'eg.skyline.vertical_collisions', 'eg.staff.gap_err', 'eg.system.gap_err', 'eg.courtesy.missing', 'eg.accidental.bracket_err'];
 const ONE = ['eg.beam.graph_drawn_ratio', 'eg.beam.members_exact', 'eg.tuplet.drawn_ratio', 'eg.tuplet.show_ok', 'eg.tie.drawn_ratio',
   'eg.slur.pair_exact', 'eg.event.multiset_equal', 'eg.staff.assignment_exact', 'eg.source.agree_live', 'eg.source.agree_projected'];
 /* recorded, lower is better: more systems drawn at a smaller staff size is a regression; so is a slur more that crosses a
@@ -63,11 +72,11 @@ const ONE = ['eg.beam.graph_drawn_ratio', 'eg.beam.members_exact', 'eg.tuplet.dr
    farther than 8 sp from its staff (§10.5 FAR_PLACEMENT, §21.2 eg.layout.far_placements: recorded, each named). The suite's
    share of slurs that cross a note (eg.curve.hit_ratio, A22) is a ratio where lower is better: it is held here, not with the
    drawn ratios (the G4d-1a fixer: compare() read every '.ratio' as higher-is-better, so a rise passed and a fall failed) */
-const LOWER = ['eg.system.scaled', 'eg.curve.hits', 'eg.layout.far_placements', 'eg.curve.hit_ratio'];
+const LOWER = ['eg.system.scaled', 'eg.curve.hits', 'eg.layout.far_placements', 'eg.curve.hit_ratio', 'eg.layout.far_placements_system'];
 /* a graph a legacy Score cannot rebuild, and the one code fromScore names it with (G04 §32.10): percussion has no pitch on a Score */
 const PROJECTION_ALLOWED = { 'e/E27-percussion.musicxml': 'percussion-or-unpitched' };
 const MARKS = ['articulation', 'ornament', 'fermata', 'fingering', 'dynamic', 'wedge', 'pedal', 'pedal-change', 'ottava', 'words', 'tempo',
-  'jump', 'chord', 'lyric', 'gliss', 'arpeggio', 'grace'];
+  'jump', 'chord', 'lyric', 'gliss', 'arpeggio', 'grace', 'rehearsal', 'ending'];
 
 async function inputs(suite) {
   if (suite === 'r') {

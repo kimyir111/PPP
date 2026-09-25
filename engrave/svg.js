@@ -35,6 +35,13 @@
        parentheses and fingering (text.ppp-fingering); a fermata over a bar
        line after the notes. Text is <text> in the page's families (the widths
        the layout used are engrave/metrics-text.js's).
+       G4d-1b: the marks attached to systems, one g per mark with its graph ID
+       (data-ref): g.ppp-dynamic (glyph letters or text), g.ppp-hairpin (two
+       strokes), g.ppp-pedal (Ped. and * glyphs, or the line with its hooks and
+       a change's notch), g.ppp-ottava (the label, a dashed line, the hook),
+       g.ppp-chord, g.ppp-volta (the bracket and its label), g.ppp-tempo (words,
+       a note, "= 120"), g.ppp-rehearsal (framed), g.ppp-jump, g.ppp-words,
+       g.ppp-lyric (syllables and hyphens).
      and the root svg.ppp-engraved[data-plan] (the graph fingerprint and plan
      version the layout was made from; data-layout, the layout hash, on request).
    ========================================================================== */
@@ -65,7 +72,25 @@
     ledger: 'vf-ledger', clef: 'vf-clef', keysig: 'vf-keysignature', timesig: 'vf-timesignature', barline: 'vf-barline', slash: 'vf-grace-slash',
     'tuplet-number': 'vf-tuplet-number', 'tuplet-bracket': 'vf-tuplet-bracket',
     articulation: 'vf-articulation', ornament: 'vf-ornament', fermata: 'vf-fermata', tremolo: 'vf-tremolo', paren: 'vf-notehead-paren',
-    arpeggio: 'vf-stroke', fingering: 'ppp-fingering', text: 'ppp-text' };
+    arpeggio: 'vf-stroke', fingering: 'ppp-fingering', text: 'ppp-text',
+    /* G4d-1b */
+    dynamic: 'ppp-dynamic-mark', hairpin: 'ppp-hairpin-line', words: 'ppp-words-text', pedal: 'ppp-pedal-sign', 'pedal-line': 'ppp-pedal-line',
+    'pedal-change': 'ppp-pedal-change', ottava: 'ppp-ottava-label', 'ottava-line': 'ppp-ottava', chord: 'ppp-chord-text', volta: 'ppp-volta-bracket',
+    'volta-label': 'ppp-volta-label', tempo: 'ppp-tempo-mark', rehearsal: 'ppp-rehearsal-text', frame: 'ppp-rehearsal-frame', jump: 'ppp-jump-mark',
+    lyric: 'ppp-lyric-text', 'lyric-line': 'ppp-lyric-hyphen' };
+  /* G4d-1b: the marks attached to systems, and the group each is drawn in (one per mark, by its graph ID) */
+  const SYSTEM_GROUP = { dynamic: 'ppp-dynamic', hairpin: 'ppp-hairpin', words: 'ppp-words', pedal: 'ppp-pedal', 'pedal-line': 'ppp-pedal', 'pedal-change': 'ppp-pedal',
+    ottava: 'ppp-ottava', 'ottava-line': 'ppp-ottava', chord: 'ppp-chord', volta: 'ppp-volta', 'volta-label': 'ppp-volta', tempo: 'ppp-tempo',
+    rehearsal: 'ppp-rehearsal', frame: 'ppp-rehearsal', jump: 'ppp-jump', lyric: 'ppp-lyric', 'lyric-line': 'ppp-lyric' };
+  /* a bracket's path: along `line`, a hook at each end `hooks` names, toward the notes (down for a mark above them) */
+  const bracketPath = (l, hooks, h, gap) => {
+    const y = l[1], d = [];
+    const left = hooks && hooks[0], right = hooks && hooks[1];
+    d.push('M' + f(l[0]) + ' ' + f(left ? y + h : y) + (left ? 'V' + f(y) : ''));
+    if (gap) d.push('H' + f(gap[0]) + 'M' + f(gap[1]) + ' ' + f(y));
+    d.push('H' + f(l[2]) + (right ? 'V' + f(y + h) : ''));
+    return d.join('');
+  };
   /* a curve's filled shape: its centre line's control points moved out and in by 2t/3 (t thick at the middle, the ends
      pointed) */
   const lens = (c, side) => {
@@ -131,20 +156,43 @@
         return '<path class="' + cls + '" d="M' + f(l[0]) + ' ' + f(l[1]) + 'L' + f(l[2]) + ' ' + f(l[3]) + '" fill="none" stroke="currentColor" stroke-width="' + f(x.t) + '"/>';
       }
       if (x.kind === 'tuplet-bracket') {
-        const l = x.line, y = l[1], h = x.side === 'above' ? x.hookLen : -x.hookLen;
-        const d = [];
-        const left = x.hooks && x.hooks[0], right = x.hooks && x.hooks[1];
-        d.push('M' + f(l[0]) + ' ' + f(left ? y + h : y) + (left ? 'V' + f(y) : ''));
-        if (x.gap) d.push('H' + f(x.gap[0]) + 'M' + f(x.gap[1]) + ' ' + f(y));
-        d.push('H' + f(l[2]) + (right ? 'V' + f(y + h) : ''));
-        return '<path class="' + cls + '" d="' + d.join('') + '" fill="none" stroke="currentColor" stroke-width="' + f(0.1 * (x.hookLen / 0.75)) + '"/>';
+        const h = x.side === 'above' ? x.hookLen : -x.hookLen;
+        return '<path class="' + cls + '" d="' + bracketPath(x.line, x.hooks, h, x.gap) + '" fill="none" stroke="currentColor" stroke-width="' + f(0.1 * (x.hookLen / 0.75)) + '"/>';
       }
       if (x.kind === 'volta') {
+        /* the bracket: up from the bar line where the ending starts, along, down where it closes (its label is its own
+           text object, G4d-1b) */
         const b = x.box;
-        let s = '<path d="M' + f(b[0]) + ' ' + f(x.start ? b[3] : b[1]) + 'V' + f(b[1]) + 'H' + f(b[2]) + (x.open ? '' : 'V' + f(b[3])) +
+        return '<path class="' + cls + '" d="M' + f(b[0]) + ' ' + f(x.start ? b[3] : b[1]) + 'V' + f(b[1]) + 'H' + f(b[2]) + (x.open ? '' : 'V' + f(b[3])) +
           '" fill="none" stroke="currentColor" stroke-width="0.13"/>';
-        if (x.label) s += '<text x="' + f(b[0] + 0.4) + '" y="' + f(b[1] + 1.4) + '" font-size="1.3" font-family="serif">' + esc(x.label) + '</text>';
+      }
+      /* G4d-1b: a hairpin's two strokes from its narrow end to its wide one; the pedal's line with its hooks up and a
+         change's notch; an octave line dashed, its hook toward the notes; a rehearsal mark's frame */
+      if (x.kind === 'hairpin') {
+        const l = x.line, y = l[1], e = x.ends || [0, 0];
+        return '<path class="' + cls + '" d="M' + f(l[0]) + ' ' + f(y - e[0] / 2) + 'L' + f(l[2]) + ' ' + f(y - e[1] / 2) + 'M' + f(l[0]) + ' ' + f(y + e[0] / 2) +
+          'L' + f(l[2]) + ' ' + f(y + e[1] / 2) + '" fill="none" stroke="currentColor" stroke-width="' + f(x.t || 0.1) + '"/>';
+      }
+      if (x.kind === 'pedal-line') {
+        return '<path class="' + cls + '" d="' + bracketPath(x.line, x.hooks, -x.hookLen) + '" fill="none" stroke="currentColor" stroke-width="' + f(x.t || 0.12) + '"/>';
+      }
+      if (x.kind === 'pedal-change') {
+        const l = x.line, xc = (l[0] + l[2]) / 2;
+        return '<path class="' + cls + '" d="M' + f(l[0]) + ' ' + f(l[1]) + 'L' + f(xc) + ' ' + f(l[1] - x.hookLen) + 'L' + f(l[2]) + ' ' + f(l[3]) +
+          '" fill="none" stroke="currentColor" stroke-width="' + f(x.t || 0.12) + '" stroke-linejoin="miter"/>';
+      }
+      if (x.kind === 'ottava-line') {
+        /* the line dashed, the hook at a closed end solid */
+        const l = x.line, h = x.side === 'above' ? x.hookLen : -x.hookLen;
+        let s = '<path class="' + cls + '" d="M' + f(l[0]) + ' ' + f(l[1]) + 'H' + f(l[2]) + '" fill="none" stroke="currentColor" stroke-width="' + f(x.t || 0.1) +
+          '" stroke-dasharray="0.5 0.35"/>';
+        if (x.hooks && x.hooks[1]) s += '<path class="' + cls + '" d="M' + f(l[2]) + ' ' + f(l[1]) + 'V' + f(l[1] + h) + '" fill="none" stroke="currentColor" stroke-width="' + f(x.t || 0.1) + '"/>';
         return s;
+      }
+      if (x.kind === 'frame') {
+        const b = x.box, t = x.t || 0.1;
+        return '<rect class="' + cls + '" x="' + f(b[0] + t / 2) + '" y="' + f(b[1] + t / 2) + '" width="' + f(b[2] - b[0] - t) + '" height="' + f(b[3] - b[1] - t) +
+          '" fill="none" stroke="currentColor" stroke-width="' + f(t) + '"/>';
       }
       if (x.kind === 'brace') {
         /* a curly brace through its box, filled between two curves */
@@ -154,7 +202,7 @@
           'C' + f(xm - 0.1) + ' ' + f(y1 - 0.1 * h) + ' ' + f(x1 + 0.45) + ' ' + f(ym + 0.1 * h) + ' ' + f(x0 + 0.25) + ' ' + f(ym) +
           'C' + f(x1 + 0.45) + ' ' + f(ym - 0.1 * h) + ' ' + f(xm - 0.1) + ' ' + f(y0 + 0.1 * h) + ' ' + f(x1) + ' ' + f(y0) + 'Z"/>';
       }
-      if (x.kind === 'fingering' || x.kind === 'text') {
+      if (x.text !== undefined) {
         return '<text class="' + cls + '" x="' + f(x.origin[0]) + '" y="' + f(x.origin[1]) + '" font-family="' + esc(TX.FAMILY[x.font]) + '"' +
           (/italic/.test(x.font) ? ' font-style="italic"' : '') + (/bold/.test(x.font) ? ' font-weight="700"' : '') + ' font-size="' + f(x.size) + '">' + esc(x.text) + '</text>';
       }
@@ -294,7 +342,20 @@
         list.forEach(x => out.push(draw(x)));
         out.push('</g>');
       });
-      objs.filter(x => x.kind === 'volta').forEach(x => out.push('<g class="ppp-volta">' + draw(x) + '</g>'));
+      /* G4d-1b: the marks attached to the system, one group per mark (a volta's bracket and label together) */
+      const marks = new Map(), morder = [];
+      objs.forEach(x => {
+        if (x.event || !SYSTEM_GROUP[x.kind]) return;
+        const k = SYSTEM_GROUP[x.kind] + '|' + x.refs[0];
+        if (!marks.has(k)) { marks.set(k, []); morder.push(k); }
+        marks.get(k).push(x);
+      });
+      morder.forEach(k => {
+        const list = marks.get(k);
+        out.push('<g class="' + SYSTEM_GROUP[list[0].kind] + '" data-ref="' + esc(list[0].refs[0]) + '">');
+        list.forEach(x => out.push(draw(x)));
+        out.push('</g>');
+      });
       /* G4d-1a: a fermata over a bar line (no note of its own), then the curves */
       objs.filter(x => !x.event && (x.kind === 'fermata' || x.kind === 'text')).forEach(x => out.push(draw(x)));
       (curvesBy.get(sys.index) || []).forEach(c => out.push(curve(c)));

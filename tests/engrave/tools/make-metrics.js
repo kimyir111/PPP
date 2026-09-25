@@ -35,7 +35,10 @@ const NAMES = [
   'articStaccatoAbove', 'articStaccatoBelow', 'articStaccatissimoAbove', 'articStaccatissimoBelow', 'articTenutoAbove', 'articTenutoBelow',
   'articAccentAbove', 'articAccentBelow', 'articMarcatoAbove', 'articMarcatoBelow',
   'fermataAbove', 'fermataBelow', 'fermataShortAbove', 'fermataShortBelow', 'fermataLongAbove', 'fermataLongBelow',
-  'ornamentTrill', 'ornamentMordent', 'ornamentShortTrill', 'ornamentTurn', 'tremolo1', 'breathMarkComma', 'caesura'
+  'ornamentTrill', 'ornamentMordent', 'ornamentShortTrill', 'ornamentTurn', 'tremolo1', 'breathMarkComma', 'caesura',
+  /* G4d-1b: marks attached to systems (G04 §10.2 priorities 8-10, §18.2): the dynamics letters, the pedal signs, segno and coda */
+  'dynamicPiano', 'dynamicMezzo', 'dynamicForte', 'dynamicRinforzando', 'dynamicSforzando', 'dynamicZ',
+  'keyboardPedalPed', 'keyboardPedalUp', 'segno', 'coda'
 ];
 
 function build() {

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- one verse under a melody, a word over two notes (G04 §22.1; written by tests/engrave/tools/make-e-fixtures.js) -->
+<!-- one verse under a melody, a word over two notes; then two verses (G04 §22.1; written by tests/engrave/tools/make-e-fixtures.js) -->
 <score-partwise version="4.0">
   <work><work-title>Lyrics</work-title></work>
   <identification><creator type="composer">PPP</creator></identification>
@@ -10,6 +10,13 @@
       <note><pitch><step>C</step><octave>5</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff><lyric number="1"><syllabic>single</syllabic><text>Sing</text></lyric></note>
       <note><pitch><step>D</step><octave>5</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff><lyric number="1"><syllabic>begin</syllabic><text>hap</text></lyric></note>
       <note><pitch><step>E</step><octave>5</octave></pitch><duration>960</duration><voice>1</voice><type>half</type><staff>1</staff><lyric number="1"><syllabic>end</syllabic><text>py</text></lyric></note>
+      </measure>
+    <measure number="2">
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff><lyric number="1"><syllabic>begin</syllabic><text>love</text></lyric><lyric number="2"><syllabic>begin</syllabic><text>sun</text></lyric></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff><lyric number="1"><syllabic>end</syllabic><text>ly</text></lyric><lyric number="2"><syllabic>end</syllabic><text>ny</text></lyric></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>240</duration><voice>1</voice><type>eighth</type><staff>1</staff><lyric number="1"><syllabic>single</syllabic><text>bright</text></lyric><lyric number="2"><syllabic>single</syllabic><text>through</text></lyric></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>240</duration><voice>1</voice><type>eighth</type><staff>1</staff><lyric number="1"><syllabic>single</syllabic><text>the</text></lyric><lyric number="2"><syllabic>single</syllabic><text>a</text></lyric></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff><lyric number="1"><syllabic>single</syllabic><text>day</text></lyric><lyric number="2"><syllabic>single</syllabic><text>way</text></lyric></note>
       <barline location="right"><bar-style>light-heavy</bar-style></barline>
       </measure>
   </part>
