@@ -204,10 +204,15 @@ E['E08-tie-partial-chord'] = () => pianoScore('A tie from part of a chord', 'onl
     n('D5', 'half'), n('E5', 'half', { chord: true, tie: ['stop'] }), n('A5', 'half', { chord: true }), ...lhWhole('C3')], { barRight: finalBar() })
 ]);
 
-E['E09-tie-barline-system'] = () => pianoScore('Ties over a bar line and a system break', 'the file breaks the system between the tied notes', [
-  measure(1, [piano(), n('C5', 'half'), n('G5', 'half', { tie: ['start'] }), ...lhWhole('C3')]),
-  measure(2, [n('G5', 'half', { tie: ['stop'] }), n('E5', 'half', { tie: ['start'] }), ...lhWhole('E3')]),
-  measure(3, [n('E5', 'whole', { tie: ['stop'] }), ...lhWhole('C3')], { newSystem: true, barRight: finalBar() })
+/* G4d-1a: five bars, a tie over every bar line and eighths in the left hand, so at the desktop and phone widths a tie crosses
+   a system break (§13.1: two halves) */
+const lhEighths = ps => [backup(4 * D), ...eighths(ps, 4, { voice: 5, staff: 2 })];
+E['E09-tie-barline-system'] = () => pianoScore('Ties over a bar line and a system break', 'a tie over every bar line, so one crosses a system break at any width; the file breaks the system at bar 3', [
+  measure(1, [piano(), n('C5', 'half'), n('G5', 'half', { tie: ['start'] }), ...lhEighths(['C3', 'G3', 'E3', 'G3', 'C3', 'G3', 'E3', 'G3'])]),
+  measure(2, [n('G5', 'half', { tie: ['stop'] }), n('E5', 'half', { tie: ['start'] }), ...lhEighths(['E3', 'B3', 'G3', 'B3', 'E3', 'B3', 'G3', 'B3'])]),
+  measure(3, [n('E5', 'half', { tie: ['stop'] }), n('D5', 'half', { tie: ['start'] }), ...lhEighths(['F3', 'A3', 'D4', 'A3', 'F3', 'A3', 'D4', 'A3'])], { newSystem: true }),
+  measure(4, [n('D5', 'half', { tie: ['stop'] }), n('C5', 'half', { tie: ['start'] }), ...lhEighths(['G2', 'D3', 'G3', 'D3', 'G2', 'D3', 'G3', 'D3'])]),
+  measure(5, [n('C5', 'whole', { tie: ['stop'] }), ...lhWhole('C3')], { barRight: finalBar() })
 ]);
 
 E['E10-slurs-overlap'] = () => pianoScore('Overlapping slurs', 'slur 1 over notes 1-3, slur 2 over notes 2-4', [
@@ -222,7 +227,7 @@ E['E11-slur-rest-system'] = () => pianoScore('A slur over a rest and a system br
 ]);
 
 E['E12-two-voices-heads'] = () => pianoScore('Two voices: seconds and unisons', 'a second between the voices, a unison of equal heads, a unison of a half and a quarter; ' +
-  'then a unison of a dotted and a plain quarter, a unison of two flagged eighths, a second of two flagged eighths', [
+  'then a unison of a dotted and a plain quarter, a unison of two flagged eighths, a second of two flagged eighths; then an augmented unison, F against F sharp', [
   measure(1, [piano(),
     n('E5', 'quarter', { voice: 1, stem: 'up' }), n('C5', 'quarter', { voice: 1, stem: 'up' }), n('D5', 'half', { voice: 1, stem: 'up' }),
     backup(4 * D),
@@ -235,11 +240,19 @@ E['E12-two-voices-heads'] = () => pianoScore('Two voices: seconds and unisons', 
     backup(4 * D),
     n('D5', 'quarter', { voice: 2, stem: 'down' }), n(null, 'eighth', { voice: 2 }), n('C5', 'eighth', { voice: 2, stem: 'down' }), n('D5', 'eighth', { voice: 2, stem: 'down' }),
     n(null, 'eighth', { voice: 2 }), n('B4', 'quarter', { voice: 2, stem: 'down' }),
+    ...lhWhole('G2')]),
+  /* G4d-1a (the G4c review's re-check): an augmented unison - one staff position, two alterations - is never one head: F with
+     no accidental in the upper voice, F sharp in the lower, the lower voice beside it */
+  measure(3, [
+    n('F5', 'quarter', { voice: 1, stem: 'up' }), n('E5', 'quarter', { voice: 1, stem: 'up' }), n('D5', 'half', { voice: 1, stem: 'up' }),
+    backup(4 * D),
+    n('F#5', 'quarter', { voice: 2, stem: 'down', acc: 'sharp' }), n('C5', 'quarter', { voice: 2, stem: 'down' }), n('B4', 'half', { voice: 2, stem: 'down' }),
     ...lhWhole('G2')], { barRight: finalBar() })
 ]);
 
 E['E13-two-voices-rests'] = () => pianoScore('Two voices resting', 'both voices rest together for a quarter; then only the lower voice, for a half; ' +
-  'then both rest at once for different lengths, a quarter above and a half below', [
+  'then both rest at once for different lengths, a quarter above and a half below; then the lower voice rests for a half under low notes of ' +
+  'the upper one, off the staff', [
   measure(1, [piano(),
     n(null, 'quarter', { voice: 1 }), n('E5', 'quarter', { voice: 1 }), n('F5', 'half', { voice: 1 }),
     backup(4 * D),
@@ -249,6 +262,13 @@ E['E13-two-voices-rests'] = () => pianoScore('Two voices resting', 'both voices 
     n(null, 'quarter', { voice: 1 }), n('E5', 'quarter', { voice: 1 }), n('D5', 'half', { voice: 1 }),
     backup(4 * D),
     n(null, 'half', { voice: 2 }), n('G4', 'half', { voice: 2 }),
+    ...lhWhole('C3')]),
+  /* G4d-1a (the G4c review M1): a half rest pushed below the staff by the upper voice's low notes sits on a ledger line of its
+     own - without it a half rest and a whole rest look alike */
+  measure(3, [
+    n('E4', 'half', { voice: 1, stem: 'up' }), n('F4', 'half', { voice: 1, stem: 'up' }),
+    backup(4 * D),
+    n(null, 'half', { voice: 2 }), n('D4', 'half', { voice: 2, stem: 'down' }),
     ...lhWhole('C3')], { barRight: finalBar() })
 ]);
 
@@ -261,11 +281,17 @@ E['E14-grace'] = () => pianoScore('Grace notes', 'an acciaccatura, a beamed pair
     ...lhWhole('C3')], { barRight: finalBar() })
 ]);
 
-E['E15-articulations'] = () => pianoScore('Articulations under a slur', 'staccato, tenuto, accent, marcato, staccato with accent, a fermata', [
+E['E15-articulations'] = () => pianoScore('Articulations under a slur', 'staccato, tenuto, accent, marcato, staccato with accent, a fermata; ' +
+  'then a trill, an inverted mordent, a turn over a detached-legato, a tremolo and a breath mark, and a fermata over the final bar line', [
   measure(1, [piano(),
     n('C5', 'quarter', { arts: ['staccato'], slurs: [{ type: 'start' }] }), n('D5', 'quarter', { arts: ['tenuto'] }),
     n('E5', 'quarter', { arts: ['accent'] }), n('F5', 'quarter', { arts: ['strong-accent'], slurs: [{ type: 'stop' }] }), ...lhWhole('C3')]),
-  measure(2, [n('G5', 'half', { arts: ['staccato', 'accent'] }), n('C6', 'half', { fermata: true }), ...lhWhole('C3', { fermata: true })], { barRight: finalBar() })
+  measure(2, [n('G5', 'half', { arts: ['staccato', 'accent'] }), n('C6', 'half', { fermata: true }), ...lhWhole('C3', { fermata: true })]),
+  /* G4d-1a: ornaments, a tremolo, a composite articulation, one drawn after its note, and a fermata over a bar line (§10.2
+     priority 5) */
+  measure(3, [n('E5', 'quarter', { orn: ['trill-mark'] }), n('D5', 'quarter', { orn: ['inverted-mordent'] }),
+    n('C5', 'quarter', { orn: ['turn'], arts: ['detached-legato'] }), n('B4', 'quarter', { orn: ['tremolo'], arts: ['breath-mark'] }), ...lhWhole('G2')],
+  { barRight: '<barline location="right"><bar-style>light-heavy</bar-style><fermata type="upright"/></barline>' })
 ]);
 
 E['E16-dynamics-hairpins'] = () => pianoScore('Dynamics and hairpins', 'p, a crescendo to f, a diminuendo over a system break', [

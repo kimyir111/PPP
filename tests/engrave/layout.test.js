@@ -39,7 +39,14 @@ const ZERO_L2 = ['eg.clip.count', 'eg.overlap.head_head', 'eg.overlap.acc', 'eg.
   'eg.tuplet.suppressed_rendered', 'eg.grace.misplaced', 'eg.grace.stem_errors', 'eg.rest.measure_errors', 'eg.layout.attachment_diff',
   'eg.layout.signature_diff', 'eg.layout.pitch_y_err', 'eg.layout.duplicate_ids',
   'eg.voice.merge_illegal', 'eg.voice.unison_unshared', 'eg.voice.offset_err', 'eg.stem.middle_line', 'eg.rest.position_err',
-  'eg.beam.hook_side_err', 'eg.tuplet.hook_dir_err'];
+  'eg.beam.hook_side_err', 'eg.tuplet.hook_dir_err',
+  /* G4d-1a: curves, marks attached to notes, fingering, text, rest ledger lines, tuplet numbers by their beams */
+  'eg.tie.missing', 'eg.tie.endpoint_err', 'eg.tie.dir_err', 'eg.slur.pair_errors', 'eg.slur.endpoint_err', 'eg.curve.hits_undiagnosed',
+  'eg.gliss.errors', 'eg.ledger.drawn_missing', 'eg.mark.missing.articulation', 'eg.mark.missing.ornament', 'eg.mark.missing.fermata',
+  'eg.mark.missing.fingering', 'eg.mark.missing.gliss', 'eg.mark.missing.arpeggio', 'eg.mark.side_err', 'eg.mark.order_err', 'eg.mark.on_line',
+  'eg.fingering.side_err', 'eg.fingering.order_err', 'eg.arpeggio.errors', 'eg.notehead.shape_err', 'eg.accidental.enclosure_err',
+  'eg.rest.ledger_missing', 'eg.tuplet.number_far', 'eg.overlap.text', 'eg.overlap.text_text', 'eg.overlap.mark_mark', 'eg.overlap.mark_note',
+  'eg.text.width_err', 'eg.text.missing_glyph', 'eg.clip.curves'];
 
 /* A piano piece from a compact spec: bars of voices of [dur, type, pitch, extra] with pitch 'C5', 'F#4' ('r' a rest) or
    an array of pitches (a chord); extra: {dots, acc, stem}. Voice 1 and 2 on the upper staff, voice 3 on the lower. */
@@ -115,8 +122,8 @@ test('A29: no DOM measurement anywhere in engrave/ but the drawing backend; no b
   assert.deepEqual(r.scanned.measure, r.files.filter(f => !A29.BACKEND[f]));
   assert.deepEqual(r.files.filter(f => r.scanned.pure.indexOf(f) < 0 && !A29.BACKEND[f]), Object.keys(A29.EDGE).sort());
   Object.keys(A29.EDGE).forEach(f => assert.ok(r.files.indexOf(f) >= 0, 'the exemption names a file that exists: ' + f));
-  ['metrics', 'space', 'breaks', 'skyline', 'canon', 'notation', 'layout', 'practice', 'outlines', 'plan', 'plan-beams', 'plan-tuplets', 'ledger', 'glyphs']
-    .forEach(n => assert.ok(r.scanned.pure.indexOf(n + '.js') >= 0, n + '.js is held to every rule'));
+  ['metrics', 'space', 'breaks', 'skyline', 'canon', 'notation', 'layout', 'practice', 'outlines', 'plan', 'plan-beams', 'plan-tuplets', 'ledger', 'glyphs',
+    'curves', 'marks', 'metrics-text'].forEach(n => assert.ok(r.scanned.pure.indexOf(n + '.js') >= 0, n + '.js is held to every rule'));
   /* the drawing backend is exempt by §20, and needs no exemption: it emits text and measures nothing */
   assert.ok(r.files.indexOf('svg.js') >= 0);
   assert.deepEqual(A29.scanSource(fs.readFileSync(path.join(REPO, 'engrave', 'svg.js'), 'utf8'), 'svg-as-a-layout-module.js'), [], 'svg.js holds to every rule too');
@@ -198,11 +205,11 @@ test('A29 negative controls: every banned construct is caught by its rule, whate
 test('the EngravedScore: staff-space coordinates to 0.01, every object keyed to plan or graph ids, unique ids, plain data', async () => {
   const p = await eplan('E35-voice-and-piano.musicxml');
   const e = L.engrave(p, {});
-  assert.equal(e.version, 'engr/1');
+  assert.equal(e.version, 'engr/2');
   assert.equal(e.planKey, p.graph.fingerprint + ':' + p.version);
   assert.deepEqual(e.config, { mode: 'screen', breakpoint: 'desktop', width: 100, barsPerSystem: 4, respectSourceBreaks: false, window: null });
   assert.deepEqual(Object.keys(e).sort(), ['config', 'coverage', 'curves', 'diagnostics', 'measures', 'objects', 'pages', 'planKey', 'systems', 'version']);
-  assert.deepEqual(e.curves, [], 'curves are G4d');
+  assert.deepEqual(e.curves, [], 'this piece has no tie, slur or glissando (curves: marks.test.js)');
   const ids = new Set();
   const planIds = new Set([].concat(p.events.map(x => x.id), p.events.flatMap(x => x.heads.map(h => h.id)), p.measures.map(x => x.id),
     p.clefs.map(x => x.id), p.keys.map(x => x.id), p.meters.map(x => x.id), p.staves.map(x => x.id), p.parts.map(x => x.id), p.endings.map(x => x.id),
@@ -471,13 +478,14 @@ test('A17-A19, A23-A25: the E fixtures and every committed score lay out with no
   for (const f of efix()) items.push(['e/' + f, await graphOf('tests/engrave/fixtures/e/' + f)]);
   (await corpusGraphs()).forEach(x => items.push(x));
   const bad = [];
-  let n = 0, slope = 0;
+  let n = 0, slope = 0, hits = 0, slurs = 0, tieEnd = 0;
   items.forEach(([id, g]) => {
     const p = E.plan(g);
     const P = L.prepare(p);
     ['desktop', 'phone'].forEach(bp => {
       const e = L.layout(P, { breakpoint: bp });
       const m = l2(e, p, { prepared: P, layout: L, graph: g });
+      hits += m['eg.curve.hits']; slurs += m['eg.curve.slurs']; tieEnd = Math.max(tieEnd, m['eg.curve.endpoint_err_max']);
       /* every zero target l2.js computes, whatever this list names (a new metric cannot be left out by accident) */
       assert.deepEqual(zeroKeys(m), ZERO_L2.slice().sort());
       zeroKeys(m).forEach(k => { if (m[k]) bad.push(id + ' ' + bp + ' ' + k + ' ' + m[k]); });
@@ -490,6 +498,9 @@ test('A17-A19, A23-A25: the E fixtures and every committed score lay out with no
   assert.ok(n >= 2 * 380, n + ' layouts');
   /* A21: no beam steeper than 0.25 */
   assert.ok(slope <= 0.25 && slope > 0.1, 'the steepest beam ' + slope);
+  /* A22: every tie within 0.5 sp of its heads; at most 1 % of the slurs cross a note between their ends (each diagnosed) */
+  assert.ok(tieEnd <= 0.5, 'the farthest tie end ' + tieEnd);
+  assert.ok(slurs > 5000 && hits / slurs <= 0.01, hits + ' of ' + slurs + ' slurs cross a note');
 });
 
 test('the collision check finds each hard violation it names (negative controls)', async () => {
@@ -629,7 +640,15 @@ test('coverage: what G4b places is counted, and what later stages draw is pendin
   assert.ok(e.coverage.placed.notehead > 0 && e.coverage.placed.staff > 0);
   const arts = p.events.reduce((a, x) => a + (x.arts || []).length, 0);
   assert.ok(arts > 0);
-  assert.equal(e.coverage.pending.articulation, arts);
+  /* G4d-1a places articulations, fermatas, slurs (and ties, ornaments, fingering, glissandi, arpeggios): none is pending */
+  /* each articulation one object; a detached-legato two (its tenuto over its staccato) */
+  assert.equal(e.coverage.placed.articulation, arts + p.events.reduce((a, x) => a + (x.arts || []).filter(t => t === 'detached-legato').length, 0));
+  assert.equal(e.coverage.placed.slur, p.slurs.length);
+  ['articulation', 'ornament', 'fermata', 'fingering', 'tie', 'slur', 'gliss', 'arpeggio'].forEach(k => assert.equal(e.coverage.pending[k], undefined, k));
+  /* marks attached to systems are G4d-1b's: still counted as pending */
+  const p16 = await eplan('E16-dynamics-hairpins.musicxml');
+  const e16 = L.engrave(p16, {});
+  assert.ok(e16.coverage.pending.dynamic > 0 && e16.coverage.pending.wedge > 0);
   const p1 = await eplan('E01-beams-basic.musicxml');
   const e1 = L.engrave(p1, {});
   /* G4c places beams, tuplets and grace stems: nothing of them is pending, and no stem is provisional any more */
@@ -696,9 +715,9 @@ test('reflow: desktop -> phone -> desktop gives the same EngravedScore back from
 
 test('the index exports the layout core in Node; the app does not load it yet (legacy stays the renderer)', () => {
   assert.equal(typeof E.engrave, 'function');
-  assert.equal(E.layout.VERSION, 'engr/1');
+  assert.equal(E.layout.VERSION, 'engr/2');
   assert.equal(typeof E.practice.createPracticeMap, 'function');
   assert.equal(typeof E.layoutHash, 'function');
   const html = fs.readFileSync(path.join(REPO, 'Piano Coach App.dc.html'), 'utf8');
-  ['metrics', 'space', 'breaks', 'skyline', 'canon', 'notation', 'layout', 'practice', 'outlines', 'svg'].forEach(n => assert.doesNotMatch(html, new RegExp('engrave/' + n + '\\.js')));
+  ['metrics', 'metrics-text', 'space', 'breaks', 'skyline', 'canon', 'notation', 'curves', 'marks', 'layout', 'practice', 'outlines', 'svg'].forEach(n => assert.doesNotMatch(html, new RegExp('engrave/' + n + '\\.js')));
 });

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- staccato, tenuto, accent, marcato, staccato with accent, a fermata (G04 §22.1; written by tests/engrave/tools/make-e-fixtures.js) -->
+<!-- staccato, tenuto, accent, marcato, staccato with accent, a fermata; then a trill, an inverted mordent, a turn over a detached-legato, a tremolo and a breath mark, and a fermata over the final bar line (G04 §22.1; written by tests/engrave/tools/make-e-fixtures.js) -->
 <score-partwise version="4.0">
   <work><work-title>Articulations under a slur</work-title></work>
   <identification><creator type="composer">PPP</creator></identification>
@@ -19,7 +19,15 @@
       <note><pitch><step>C</step><octave>6</octave></pitch><duration>960</duration><voice>1</voice><type>half</type><staff>1</staff><notations><fermata type="upright"/></notations></note>
       <backup><duration>1920</duration></backup>
       <note><pitch><step>C</step><octave>3</octave></pitch><duration>1920</duration><voice>5</voice><type>whole</type><staff>2</staff><notations><fermata type="upright"/></notations></note>
-      <barline location="right"><bar-style>light-heavy</bar-style></barline>
+      </measure>
+    <measure number="3">
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><ornaments><trill-mark/></ornaments></notations></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><ornaments><inverted-mordent/></ornaments></notations></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><articulations><detached-legato/></articulations><ornaments><turn/></ornaments></notations></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>480</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><articulations><breath-mark/></articulations><ornaments><tremolo type="single">3</tremolo></ornaments></notations></note>
+      <backup><duration>1920</duration></backup>
+      <note><pitch><step>G</step><octave>2</octave></pitch><duration>1920</duration><voice>5</voice><type>whole</type><staff>2</staff></note>
+      <barline location="right"><bar-style>light-heavy</bar-style><fermata type="upright"/></barline>
       </measure>
   </part>
 </score-partwise>

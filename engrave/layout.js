@@ -27,10 +27,14 @@
                                G4-U4), one spring constant per system solved
                                exactly (space.js), absolute x; then, per system,
                                the beams over the stems they join (notation.js),
-                               the rests moved clear of the other voices, the
-                               tuplet numbers and brackets; staves and systems
-                               stacked by their skylines (skyline.js), voltas,
-                               the hard-collision check. -> EngravedScore
+                               the rests moved clear of the other voices (with
+                               a ledger line where one stands off the staff);
+                               then what stands around the notes, through the one
+                               placement function (marks.js, G4d-1a: ties, tuplet
+                               numbers and brackets, articulations, ornaments,
+                               fermatas, slurs, glissandi, fingering); staves
+                               and systems stacked by their skylines (skyline.js),
+                               voltas, the hard-collision check. -> EngravedScore
      engrave(plan, config)     both.
      createEngraver(plan)      prepare once, lay out per config with an LRU cache
                                of 8: a resize reflows without re-preparing, and a
@@ -45,22 +49,24 @@
    than a phone) is drawn at a smaller staff size, its `space` (>= FIT_MIN);
    only past that is it an overflow (SYSTEM_OVERFLOW).
 
-   Ties, slurs, marks and text are G4d: `coverage.pending` counts them, so
-   nothing is silently absent.
+   Marks attached to systems (dynamics, hairpins, pedal, 8va, words, tempo,
+   jumps, lyrics) are G4d-1b: `coverage.pending` counts them, so nothing is
+   silently absent. VERSION names the EngravedScore's contract: every change to
+   what layout() outputs moves it (G4-D1a-1).
    ========================================================================== */
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports)
     module.exports = factory(require('../scoregraph/index.js'), require('./metrics.js'), require('./space.js'), require('./breaks.js'),
-      require('./skyline.js'), require('./canon.js'), require('./notation.js'));
+      require('./skyline.js'), require('./canon.js'), require('./notation.js'), require('./metrics-text.js'), require('./curves.js'), require('./marks.js'));
   else {
     const M = root.PPPEngraveModules = root.PPPEngraveModules || {};
-    M.layout = factory(root.PPPScoreGraph, M.metrics, M.space, M.breaks, M.skyline, M.canon, M.notation);
+    M.layout = factory(root.PPPScoreGraph, M.metrics, M.space, M.breaks, M.skyline, M.canon, M.notation, M.metricsText, M.curves, M.marks);
   }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (SG, MT, SP, BR, SK, CN, NT) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (SG, MT, SP, BR, SK, CN, NT, TX, CV, MK) {
   'use strict';
 
-  const VERSION = 'engr/1';
+  const VERSION = 'engr/2';
   const R = SG.rational, EG = MT.ENGRAVING, r2 = CN.r2;
   const STEPS = 'CDEFGAB';
   /* horizontal gaps, sp (G04 §9.3, §15.4) */
@@ -84,6 +90,14 @@
   const BEAM_REACH = 8;
   /* voices side by side (§14.2): the moved voice starts this far past the other's heads - VexFlow 4.2.3's h + 2 px */
   const VOICE_GAP = 0.2;
+  /* G4d-1a: an arpeggio's wavy line (or a non-arpeggio's bracket) left of its chord, past each end head by OVER, an arrow
+     ARROW long; a head in parentheses; a breath mark or caesura after its note */
+  const ARP = Object.freeze({ w: 0.8, nonW: 0.5, gap: 0.25, over: 0.25, arrow: 0.8 });
+  const PAREN_GAP = 0.1;
+  /* the lines a rest touches, below its glyph's origin (sp): a whole rest hangs from it, a half rest sits on it, a breve
+     rest fills the space above it */
+  const RESTLINE = Object.freeze({ restWhole: [0], restHalf: [0], restDoubleWhole: [0, 1] });
+  const BREATH = Object.freeze({ gap: 0.4, comma: -0.3, caesura: 1.0 });
   const counters = { prepare: 0, layout: 0 };
 
   /* ---------------------------------------------------------------- staff positions */
@@ -191,6 +205,16 @@
       return Math.floor(t / unit + 1e-9);
     };
 
+    /* arpeggios by head, and the staves each one reaches, top down (G4d-1a) */
+    const arpOf = new Map(), arpStaves = new Map();
+    plan.lines.filter(l => l.kind === 'arpeggio').forEach(l => (l.heads || []).forEach(h => arpOf.set(h, l)));
+    plan.events.forEach(e => e.heads.forEach(h => {
+      const a = arpOf.get(h.id);
+      if (!a || !staffById.has(h.staff || e.staff)) return;
+      if (!arpStaves.has(a.id)) arpStaves.set(a.id, []);
+      const list = arpStaves.get(a.id), st = h.staff || e.staff;
+      if (list.indexOf(st) < 0) { list.push(st); list.sort((x, y) => staffById.get(x).index - staffById.get(y).index); }
+    }));
     /* beams by event (graph or derived; a beam of grace notes only is drawn with its grace group), tie starts by head */
     const evById = new Map(plan.events.map(e => [e.id, e]));
     const beamOf = new Map();
@@ -231,6 +255,9 @@
       return (e.heads || []).filter(h => (h.staff || e.staff) === e.staff && (h.written || h.pos))
         .map(h => yOf(h.written || h.pos, clefAt(e.staff, mi, e.at, false)) - mid);
     };
+    /* §14.6: a percussion note stems up unless the graph or its kit says otherwise (A12) */
+    const percussive = e => e.kind === 'perc' || (staffById.has(e.staff) && staffById.get(e.staff).kind === 'percussion');
+    const kitStem = e => { const h = (e.heads || []).find(x => x.kit && (x.kit.stem === 'up' || x.kit.stem === 'down')); return h ? h.kit.stem : null; };
     const dirOf = new Map();
     plan.beams.forEach(b => {
       const ms = b.events.map(id => evById.get(id)).filter(e => e && !e.hidden && e.kind !== 'rest' && (e.heads || []).length);
@@ -243,14 +270,14 @@
       } else {
         const ro = ms.map(roled).filter(Boolean);
         /* grace notes are stemmed up unless the graph or the voice says otherwise (§14.5) */
-        d = ro.length ? ro[0] : ms.every(e => e.grace) ? 'up' : NT.autoDir([].concat(...ms.map(homeYs)), 0);
+        d = ro.length ? ro[0] : ms.every(e => e.grace) || ms.every(percussive) ? 'up' : NT.autoDir([].concat(...ms.map(homeYs)), 0);
       }
       ms.forEach(e => dirOf.set(e.id, d));
     });
     plan.events.forEach(e => {
       if (dirOf.has(e.id) || e.kind === 'rest' || e.hidden) return;
       if (e.grace) { dirOf.set(e.id, stated(e) || roled(e) || 'up'); return; }
-      dirOf.set(e.id, stated(e) || roled(e) || NT.autoDir(homeYs(e), 0));
+      dirOf.set(e.id, stated(e) || roled(e) || kitStem(e) || (percussive(e) ? 'up' : NT.autoDir(homeYs(e), 0)));
     });
 
     /* events by measure; grace notes by their principal */
@@ -386,7 +413,9 @@
         const e = n.e;
         const scale = e.cue ? 0.75 : 1;
         const hs = n.heads.map(h => {
-          const p = MT.notehead(e.type, h.notehead && h.notehead.shape, h.notehead ? h.notehead.filled : undefined);
+          /* the head the graph states, else the percussion kit's for its instrument (§14.6) */
+          const shape = (h.notehead && h.notehead.shape) || (h.kit && h.kit.notehead) || null;
+          const p = MT.notehead(e.type, shape, h.notehead ? h.notehead.filled : undefined);
           const name = glyphOf(p), g = MT.glyph(name);
           return { h: h, y: yOf(h.written || h.pos, clef), name: name, w: g.w * scale, g: g };
         });
@@ -522,6 +551,14 @@
             box: headBox(x, L.dx, L.scale), layer: 'note' };
           if (partnerHead.has(x.h.id)) o.merged = [partnerHead.get(x.h.id)];
           objs.push(o);
+          /* a head in parentheses (§6 notehead paren, G4d-1a): one either side */
+          if (x.h.notehead && x.h.notehead.paren) {
+            const gl = MT.glyph('noteheadParenthesisLeft'), gr = MT.glyph('noteheadParenthesisRight'), s = L.scale, b = o.box;
+            objs.push({ id: x.h.id + '#paren.l', kind: 'paren', refs: [e.id, x.h.id], event: e.id, glyph: 'noteheadParenthesisLeft', scale: s,
+              box: MT.box('noteheadParenthesisLeft', b[0] - PAREN_GAP * s - gl.xMax * s, x.y, s), layer: 'note' });
+            objs.push({ id: x.h.id + '#paren.r', kind: 'paren', refs: [e.id, x.h.id], event: e.id, glyph: 'noteheadParenthesisRight', scale: s,
+              box: MT.box('noteheadParenthesisRight', b[2] + PAREN_GAP * s - gr.xMin * s, x.y, s), layer: 'note' });
+          }
         });
         const ys = L.hs.map(x => x.y), yTop = Math.min.apply(null, ys), yBot = Math.max.apply(null, ys);
         if (L.hasStem) {
@@ -576,7 +613,10 @@
       lay.forEach(L => L.hs.forEach(x => {
         if (!x.h.acc) return;
         const parts = MT.accidental(x.h.acc.type).map(p => glyphOf(p));
-        if (x.h.acc.paren || (x.h.acc.cautionary && x.h.acc.paren !== false && x.h.acc.bracket)) { parts.unshift('accidentalParensLeft'); parts.push('accidentalParensRight'); }
+        /* an editorial accidental in square brackets, one in parentheses (a cautionary one as stated: parentheses only when
+           the graph says so) - G4d-1a */
+        if (x.h.acc.bracket) { parts.unshift('accidentalBracketLeft'); parts.push('accidentalBracketRight'); }
+        else if (x.h.acc.paren) { parts.unshift('accidentalParensLeft'); parts.push('accidentalParensRight'); }
         const gs = parts.map(n => MT.glyph(n));
         const w = gs.reduce((a, g) => a + g.w, 0) * L.scale + (gs.length - 1) * 0.05;
         const top = x.y - Math.max.apply(null, gs.map(g => g.yMax)) * L.scale, bot = x.y - Math.min.apply(null, gs.map(g => g.yMin)) * L.scale;
@@ -587,7 +627,7 @@
         accs.push(a);
       }));
       if (accs.length) {
-        const headLeft = Math.min.apply(null, objs.filter(o => o.kind === 'notehead').map(o => o.box[0]).concat([0]));
+        const headLeft = Math.min.apply(null, objs.filter(o => o.kind === 'notehead' || o.kind === 'paren').map(o => o.box[0]).concat([0]));
         accs.sort((a, b) => a.y - b.y || idNum(a.h.id) - idNum(b.h.id));
         const cols = [];
         accs.forEach(a => {
@@ -619,7 +659,7 @@
       /* dots after every head of the column (a second voice's heads included), on the space; where an up-stem flag
          reaches down beside the heads, after the flag. A shared unison's two events dot the same space. A
          whole-measure rest has none (R6). */
-      const heads = objs.filter(o => o.kind === 'notehead' || o.kind === 'rest');
+      const heads = objs.filter(o => o.kind === 'notehead' || o.kind === 'rest' || o.kind === 'paren');
       const dot = MT.glyph('augmentationDot');
       const dotted = [];
       lay.concat(rests.map(e => ({ e: e, rest: true }))).forEach(L => {
@@ -649,6 +689,40 @@
             box: MT.box('augmentationDot', x - dot.xMin, d.y), layer: 'note' });
         }
       });
+      /* a breath mark or caesura after its note, above the staff (G4d-1a) */
+      lay.forEach(L => (L.e.arts || []).forEach((a, i) => {
+        if (!L.home || !MK.HORIZONTAL[a]) return;
+        const name = a === 'caesura' ? 'caesura' : 'breathMarkComma', g = MT.glyph(name);
+        const x0 = Math.max.apply(null, objs.map(o => o.box[2]).concat([0])) + BREATH.gap;
+        const ref = L.e.id + '#art' + i;
+        objs.push({ id: ref, kind: 'articulation', refs: [L.e.id, ref], event: L.e.id, glyph: name, side: 'above',
+          box: MT.box(name, x0 - g.xMin, (a === 'caesura' ? BREATH.caesura : BREATH.comma) + g.yMin), layer: 'mark' });
+      }));
+      /* arpeggios (§6, G4d-1a): a wavy line - an arrow at its top or bottom for a stated direction - or, against
+         arpeggiating, a bracket, left of the chord and its accidentals, past its end heads; one part per staff it reaches,
+         the arrow on the end it points to */
+      const arps = new Map();
+      lay.forEach(L => L.hs.forEach(x => {
+        const a = arpOf.get(x.h.id);
+        if (!a) return;
+        if (!arps.has(a.id)) arps.set(a.id, { a: a, ys: [], e: L.e });
+        arps.get(a.id).ys.push(x.y);
+      }));
+      if (arps.size) {
+        let right = Math.min.apply(null, objs.map(o => o.box[0]).concat([0])) - ARP.gap;
+        [...arps.values()].sort((p, q) => idNum(p.a.id) - idNum(q.a.id)).forEach(({ a, ys, e }) => {
+          const staves = arpStaves.get(a.id) || [staffId];
+          const top = a.dir === 'up' && staves[0] === staffId, bottom = a.dir === 'down' && staves[staves.length - 1] === staffId;
+          const w = a.non ? ARP.nonW : ARP.w, xc = right - w / 2;
+          const y0 = Math.min.apply(null, ys) - 0.5 - ARP.over, y1 = Math.max.apply(null, ys) + 0.5 + ARP.over;
+          const o = { id: staves[0] === staffId ? a.id : a.id + ':' + staffId, kind: 'arpeggio', refs: [a.id], event: e.id, line: [xc, y0, xc, y1],
+            box: [right - w, y0 - (top ? ARP.arrow : 0), right, y1 + (bottom ? ARP.arrow : 0)], layer: 'note' };
+          if (top || bottom) o.dir = top ? 'up' : 'down';
+          if (a.non) o.non = true;
+          objs.push(o);
+          right -= w + ARP.gap;
+        });
+      }
       /* grace notes of these events, to the left, at 0.66 (§14.5): heads, accidentals and ledger lines, stems (the
          graph's direction, the voice's, else up), flags, a slash for an acciaccatura, and the beam of a group the graph
          beams */
@@ -768,6 +842,18 @@
       });
       const all = objs.concat(graceObjs);
       const ext = extent(all);
+      /* printed fingering stands centred over its heads (marks.js): a finger wider than the head widens the column (G04 §9:
+         the fingering text is in the spacing) */
+      lay.forEach(L => {
+        let fw = 0;
+        L.hs.forEach(x => (x.h.fingering || []).forEach(f => String(f && f.f !== undefined && f.f !== null ? f.f : '').split(/\r?\n/).forEach(t => {
+          if (t.trim()) fw = Math.max(fw, TX.measure(t, MK.FINGER.font, MK.FINGER.size).w);
+        })));
+        if (!fw) return;
+        const cx = L.dx + L.w / 2;
+        ext.left = Math.max(ext.left, fw / 2 - cx);
+        ext.right = Math.max(ext.right, cx + fw / 2);
+      });
       const tie = evs.some(e => e.heads && e.heads.some(h => (h.staff || e.staff) === staffId && tieFrom.has(h.id)));
       return { objects: all, left: ext.left, right: ext.right, tie: tie };
     }
@@ -976,24 +1062,41 @@
       if (r) roles.set(e.id, r);
     });
 
-    /* what later stages draw: counted, so nothing is silently absent */
+    /* what later stages draw (G4d-1b: marks attached to systems): counted, so nothing is silently absent. G4d-1a places
+       ties, slurs, glissandi, arpeggios, articulations, ornaments, fermatas and fingering */
     const pending = {};
     const add = (k, n) => { if (n) pending[k] = (pending[k] || 0) + n; };
-    add('tie', plan.ties.length);
-    add('slur', plan.slurs.length);
     add('jump', (plan.jumps || []).length);
     add('tempo', (plan.tempos || []).filter(t => !t.hidden).length);
-    plan.lines.forEach(l => add(l.kind, 1));
+    plan.lines.forEach(l => { if (l.kind !== 'gliss' && l.kind !== 'arpeggio') add(l.kind, 1); });
     plan.marks.forEach(mk => add(mk.kind, 1));
-    plan.events.forEach(e => {
-      add('articulation', (e.arts || []).length); add('ornament', (e.orn || []).length); add('fermata', e.fermata ? 1 : 0);
-      add('lyric', (e.lyrics || []).length);
-      e.heads.forEach(h => add('fingering', (h.fingering || []).length));
-    });
+    plan.events.forEach(e => add('lyric', (e.lyrics || []).length));
+
+    /* what the marks pass reads (marks.js): the events' marks and heads, the ties, slurs and glissandi, the fermatas on bar
+       lines, each voice's notes in time order, each staff's place in its part */
+    const mEvents = new Map(plan.events.filter(e => !e.hidden && !(e.grace && e.grace.after)).map(e => [e.id, { id: e.id, m: e.m, at: e.at, staff: e.staff,
+      voice: e.voice, kind: e.kind, grace: !!e.grace, dots: e.dots || 0, arts: (e.arts || []).slice(), orn: (e.orn || []).map(o => Object.assign({}, o)),
+      fermata: e.fermata || null, heads: e.heads.map(h => ({ id: h.id, staff: h.staff || e.staff, fingering: (h.fingering || []).map(f => Object.assign({}, f)) })) }]));
+    const headEvent = new Map();
+    plan.events.forEach(e => e.heads.forEach(h => headEvent.set(h.id, e.id)));
+    const voiceSeq = new Map();
+    [...mEvents.values()].forEach(e => { if (!voiceSeq.has(e.voice)) voiceSeq.set(e.voice, []); voiceSeq.get(e.voice).push(e); });
+    voiceSeq.forEach((list, v) => voiceSeq.set(v, list.sort((a, b) => mIndex.get(a.m) - mIndex.get(b.m) || byAt(a.at, b.at) ||
+      (a.grace === b.grace ? 0 : a.grace ? -1 : 1) || idNum(a.id) - idNum(b.id)).map(e => e.id)));
+    const barFermatas = [];
+    plan.measures.forEach(m => ['left', 'right'].forEach(side => {
+      const b = m.barline && m.barline[side];
+      if (b && b.fermata !== undefined && b.fermata !== null) barFermatas.push({ m: m.id, side: side, fermata: b.fermata, ref: m.id + '#bar.' + side + '.fermata' });
+    }));
+    const staffRank = new Map();
+    staves.forEach(s => staffRank.set(s.id, staves.filter(t => t.part === s.part).indexOf(s)));
+    const marks = { events: mEvents, headEvent: headEvent, voiceSeq: voiceSeq, mIndex: mIndex, barFermatas: barFermatas, staffRank: staffRank,
+      ties: plan.ties.map(t => Object.assign({}, t)), slurs: plan.slurs.map(s => Object.assign({}, s)),
+      gliss: plan.lines.filter(l => l.kind === 'gliss').map(l => Object.assign({}, l)) };
 
     return { version: VERSION, planKey: plan.graph.fingerprint + ':' + plan.version, staves: staves, measures: measures,
       endings: plan.endings || [], layoutBreaks: new Set(plan.measures.filter(m => m.layoutBreak && m.layoutBreak.newSystem).map(m => mIndex.get(m.id))),
-      beams: beams, tuplets: tuplets, voiceOf: voiceOf, roles: roles, multiVoice: multiVoice, evStaff: new Map(plan.events.map(e => [e.id, e.staff])),
+      beams: beams, tuplets: tuplets, voiceOf: voiceOf, roles: roles, multiVoice: multiVoice, evStaff: new Map(plan.events.map(e => [e.id, e.staff])), marks: marks,
       evMeasure: new Map(plan.events.map(e => [e.id, e.m])), evTypes: new Map(plan.events.map(e => [e.id, e.type])), dirOf: dirOf,
       diagnostics: diagnostics, pending: pending };
   }
@@ -1140,57 +1243,21 @@
           ? true : x.event && voice.get(x.event) !== own && !(r.partner && x.event === r.partner.obj.event)));
       }).forEach(res => { if (!res.clear) diagnostics.push({ code: 'REST_UNPLACED', refs: [res.obj.id], detail: 'no clear place within 12 sp' }); });
     });
-    /* tuplets (§12): innermost first, so an outer bracket clears an inner one */
-    const tups = P.tuplets.slice().sort((a, c) => c.depth - a.depth || a.order - c.order);
-    tups.forEach(t => {
-      const evSet = new Set(t.events);
-      const staffKey = P.evStaff.get(t.events[0]);
-      const list = byStaff.get(staffKey);
-      if (!list) return;
-      const mem = list.filter(o => evSet.has(o.event) && !o.grace && (o.kind === 'notehead' || o.kind === 'rest' || o.kind === 'dot' || o.kind === 'stem' || o.kind === 'flag'));
-      const present = t.events.filter(id => mem.some(o => o.event === id && (o.kind === 'notehead' || o.kind === 'rest')));
-      if (!present.length) return;
-      const firstEv = present[0], lastEv = present[present.length - 1];
-      const headsOf = id => mem.filter(o => o.event === id && (o.kind === 'notehead' || o.kind === 'rest'));
-      const x0 = Math.min.apply(null, headsOf(firstEv).map(o => o.box[0]));
-      const x1 = Math.max.apply(null, mem.filter(o => o.event === lastEv && (o.kind === 'notehead' || o.kind === 'rest' || o.kind === 'dot')).map(o => o.box[2]));
-      /* a tuplet across a system break is drawn in parts, the number on the first (§12.2) */
-      const isFirst = firstEv === t.shown[0], isLast = lastEv === t.shown[t.shown.length - 1];
-      const whole = isFirst && isLast;
-      /* the side: stated, else the voice's role, else where most member stems point (the beam's side), else above */
-      let side = t.placement;
-      if (side !== 'above' && side !== 'below') {
-        const role = P.roles.get(t.events[0]);
-        if (role === 'up' || role === 'down') side = role === 'up' ? 'above' : 'below';
-        else {
-          const dirs = t.events.map(id => P.dirOf.get(id)).filter(Boolean);
-          const ups = dirs.filter(d => d === 'up').length, downs = dirs.length - ups;
-          side = downs > ups ? 'below' : 'above';
-        }
-      }
-      const digits = !isFirst || t.number === 'none' ? [] : (t.number === 'both'
-        ? String(t.actual).split('').map(d => 'timeSig' + d).concat([':'], String(t.normal).split('').map(d => 'timeSig' + d))
-        : String(t.actual).split('').map(d => 'timeSig' + d));
-      if (!digits.length && !t.bracket) return;
-      const lines = staffOf.get(staffKey) ? Math.max(0, staffOf.get(staffKey).lines - 1) : 4;
-      const reach = (a, b, sd) => {
-        let r = sd === 'above' ? 0 : lines;
-        list.forEach(o => {
-          if (o.layer !== 'note' && o.kind !== 'tuplet-number' && o.kind !== 'tuplet-bracket') return;
-          if (!(o.box[0] < b - SK.EPS && a < o.box[2] - SK.EPS)) return;
-          r = sd === 'above' ? Math.min(r, o.box[1]) : Math.max(r, o.box[3]);
-        });
-        return r;
-      };
-      const res = NT.placeTuplet([x0, x1], side, digits, t.bracket, [isFirst, isLast], reach, 1);
-      const suffix = whole || isFirst ? '' : '@' + firstEv;
-      const measure = (mem.find(o => o.event === firstEv) || {}).measure || null;
-      const out = [];
-      if (res.bracket) out.push({ id: t.id + '#bracket' + suffix, kind: 'tuplet-bracket', refs: t.refs.slice(), side: side, line: res.bracket.line, hooks: res.bracket.hooks,
-        gap: res.bracket.gap, hookLen: res.bracket.hook, box: res.bracket.box, layer: 'tuplet', staffKey: staffKey, measure: measure });
-      res.number.forEach((n, k) => out.push({ id: t.id + '#num' + k, kind: 'tuplet-number', refs: t.refs.slice(), side: side, glyph: n.glyph, scale: n.scale,
-        box: n.box, layer: 'tuplet', staffKey: staffKey, measure: measure }));
-      out.forEach(o => { sysObjs.push(o); list.push(o); });
+    /* the whole, half and breve rests that stand off the staff (moved clear of another voice, or where the graph puts
+       them) get the ledger line they hang from or sit on - else a whole rest and a half rest look alike (the G4c review
+       M1). One line each, the rest's width and the ledger overhang either side; a merged pair draws it once. */
+    sysObjs.filter(o => o.kind === 'rest' && RESTLINE[o.glyph]).forEach(o => {
+      if (o.merged && o.merged.some(id => id < o.id)) return;
+      const st = staffOf.get(o.staffKey), last = st ? Math.max(0, st.lines - 1) : 4;
+      const g = MT.glyph(o.glyph), s = o.scale === undefined ? 1 : o.scale;
+      const y = o.box[1] + g.yMax * s;
+      RESTLINE[o.glyph].map(d => y - d).forEach(ly => {
+        if (Math.abs(ly - Math.round(ly)) > 0.01 || (ly > -0.01 && ly < last + 0.01)) return;
+        const L = { id: o.event + '#ledger' + o.staffKey + ':' + Math.round(ly), kind: 'ledger', refs: [o.event], event: o.event,
+          box: [o.box[0] - EG.ledgerOverhang, ly - EG.ledger / 2, o.box[2] + EG.ledgerOverhang, ly + EG.ledger / 2], layer: 'note', staffKey: o.staffKey, measure: o.measure };
+        sysObjs.push(L);
+        byStaff.get(o.staffKey).push(L);
+      });
     });
   }
 
@@ -1210,7 +1277,7 @@
     }, forced);
     const br = { systems: br0.systems.map(([i, j]) => [lo + i, lo + j]), cost: br0.cost };
 
-    const systems = [], measuresOut = [], objects = [];
+    const systems = [], measuresOut = [], objects = [], curves = [];
     const us = [];
     /* the parts of several staves, and the room their brace takes at the left */
     const partStaves = new Map();
@@ -1218,6 +1285,10 @@
     const braced = [...partStaves.values()].filter(list => list.length > 1);
     const braceSpace = braced.length ? BRACE.w + BRACE.gap : 0;
     const mIdx = new Map(P.measures.map((m, k) => [m.id, k]));
+    /* the system each laid-out measure is in (a tie or slur to a measure of another system is drawn in halves) */
+    const sysOfMeasure = new Map();
+    br.systems.forEach(([i, j], si) => { for (let k = i; k <= j; k++) sysOfMeasure.set(P.measures[k].id, si); });
+    const staffLines = new Map(P.staves.map(s => [s.id, s.lines]));
     br.systems.forEach(([i, j], si) => {
       const last = si === br.systems.length - 1 && endsPiece;
       const parts = systemParts(P, i, j, last);
@@ -1283,6 +1354,12 @@
       /* the stems a beam joins know their value (for a lone stem's flag) */
       sysObjs.forEach(o => { if (o.kind === 'stem' && o.beam) o._type = P.evTypes.get(o.event); });
       notateSystem(P, sysObjs, diagnostics);
+      /* what stands around the notes (G4d-1a): ties, tuplets, articulations, ornaments, fermatas, slurs, glissandi and
+         fingering, each through the placement function, in G04 §10.2's order (marks.js) */
+      const sysCurves = [];
+      const lastM = mOut[mOut.length - 1], firstCol = (mOut[0].columns.find(c => c.time) || mOut[0].columns[0] || { x: mOut[0].contentX0 });
+      MK.placeSystem({ P: P, objs: sysObjs, si: si, x1: x, startX: firstCol.x - CV.SLUR.sysGap, endX: lastM.x + lastM.w - CV.SLUR.sysGap,
+        sysOf: m => sysOfMeasure.get(m), lines: staffLines, mx: new Map(mOut.map(m => [m.id, m])), diagnostics: diagnostics, curves: sysCurves });
       if (fit !== 1) {
         /* the smaller staff size: every x from the system's left edge and every y from its staff's top line */
         const fx = v => x0 + (v - x0) * fit;
@@ -1292,8 +1369,14 @@
           if (o.gap) o.gap = [fx(o.gap[0]), fx(o.gap[1])];
           if (o.t !== undefined) o.t *= fit;
           if (o.hookLen !== undefined) o.hookLen *= fit;
+          if (o.size !== undefined) o.size *= fit;
           o.scale = (o.scale === undefined ? 1 : o.scale) * fit;
           if (o.colX !== undefined) o.colX = fx(o.colX);
+        });
+        sysCurves.forEach(c => {
+          ['p0', 'c1', 'c2', 'p3'].forEach(k => { c[k] = [fx(c[k][0]), c[k][1] * fit]; });
+          c.t *= fit;
+          if (c.lift !== undefined) c.lift *= fit;
         });
         mOut.forEach(m => {
           m.w *= fit; m.x = fx(m.x); m.contentX0 = fx(m.contentX0); m.contentX1 = fx(m.contentX1);
@@ -1302,7 +1385,7 @@
         x = fx(x);
       }
       systems.push({ index: si, page: 0, x: x0, w: x - x0, u: u, stretch: u / SP.U_NATURAL, ragged: ragged, space: fit, measures: mOut.map(m => m.id),
-        first: i, last: j, objects: sysObjs, mOut: mOut });
+        first: i, last: j, objects: sysObjs, curves: sysCurves, mOut: mOut });
     });
 
     /* vertical: each staff's skyline, staves stacked by clearance, voltas over the top staff, systems stacked */
@@ -1315,6 +1398,8 @@
       /* staff lines count as content */
       P.staves.forEach(s => sky.get(s.id).add([sys.x, 0, sys.x + sys.w, lineSpan(s)]));
       sys.objects.forEach(o => { if (sky.has(o.staffKey)) sky.get(o.staffKey).add(o.box); });
+      /* curves as the boxes they cover (§10.1) */
+      sys.curves.forEach(c => { if (sky.has(c.staffKey)) CV.samples(c, c.t, c.line === 'wavy' ? CV.GLISS.amp * f : 0).forEach(b => sky.get(c.staffKey).add(b)); });
       /* voltas over the top staff: one bracket per ending and system */
       const top = P.staves[0];
       P.endings.forEach(en => {
@@ -1362,6 +1447,7 @@
           box: [sys.x, -EG.staffLine / 2 * f, sys.x + sys.w, lineSpan(s) + EG.staffLine / 2 * f], lines: s.lines, space: f, layer: 'staff' });
       });
       sys.objects.forEach(ob => { moveGeom(ob, 0, sys.y + (off.get(ob.staffKey) || 0)); });
+      sys.curves.forEach(c => { const dy = sys.y + (off.get(c.staffKey) || 0); ['p0', 'c1', 'c2', 'p3'].forEach(k => { c[k] = [c[k][0], c[k][1] + dy]; }); });
       /* the bar lines of a part's staves run through the gap to its next staff (a grand staff's bar lines are one) */
       const nextInPart = new Map();
       P.staves.forEach((s, k) => { const n = P.staves[k + 1]; if (n && n.part === s.part) nextInPart.set(s.id, sys.y + off.get(n.id)); });
@@ -1418,7 +1504,24 @@
         if (o.hookLen !== undefined) out.hookLen = r2(o.hookLen);
         if (o.merged) out.merged = o.merged.slice();
         if (o.kind === 'rest' && o.center) out.center = true;
+        /* G4d-1a: an arpeggio against arpeggiating; text - its characters, face and size, and its baseline's start */
+        if (o.non) out.non = true;
+        if (o.text !== undefined) {
+          out.text = o.text; out.font = o.font; out.size = r2(o.size);
+          out.origin = [r2(o.box[0]), r2(o.box[1] + TX.face(o.font).capHeight / 1000 * o.size)];
+        }
         objects.push(out);
+      });
+      sys.curves.forEach(c => {
+        const out = { id: c.id, kind: c.kind, refs: c.refs.slice(), system: sys.index, staffKey: c.staffKey, measure: c.measure || null, part: c.part,
+          p0: rb(c.p0), c1: rb(c.c1), c2: rb(c.c2), p3: rb(c.p3), t: r2(c.t) };
+        if (c.side) out.side = c.side;
+        if (c.heads) out.heads = c.heads.slice();
+        if (c.events) out.events = c.events.slice();
+        if (c.line) out.line = c.line;
+        if (c.open) out.open = true;
+        if (c.lift !== undefined) out.lift = r2(c.lift);
+        curves.push(out);
       });
       /* the width as the difference of the rounded edges, so a measure ends exactly where the next begins */
       sys.mOut.forEach(m => measuresOut.push({ id: m.id, number: m.number, system: sys.index, x: r2(m.x), w: r2(r2(m.x + m.w) - r2(m.x)),
@@ -1433,9 +1536,11 @@
     hard.forEach(h => diagnostics.push({ code: 'HARD_VIOLATION', refs: h.refs, detail: h.code + ' ' + h.detail }));
     const placed = {};
     objects.forEach(o => { placed[o.kind] = (placed[o.kind] || 0) + 1; });
+    curves.forEach(c => { placed[c.kind] = (placed[c.kind] || 0) + 1; });
+    curves.sort((a, b) => a.system - b.system || a.p0[0] - b.p0[0] || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
     return {
       version: VERSION, planKey: P.planKey, config: cfg,
-      pages: [page], systems: systemsOut, measures: measuresOut, objects: objects, curves: [],
+      pages: [page], systems: systemsOut, measures: measuresOut, objects: objects, curves: curves,
       coverage: { placed: placed, pending: P.pending },
       diagnostics: diagnostics.map(d => [d.code + '\u0000' + d.refs.join('\u0001') + '\u0000' + (d.detail === null ? '' : d.detail), d])
         .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)).map(x => x[1])

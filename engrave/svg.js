@@ -28,18 +28,26 @@
        g.ppp-grace[data-ev]   a grace note (it takes no time: not a ppp-note)
        path.vf-beam[data-beam], g.ppp-tuplet[data-tuplet], g.ppp-volta,
        .vf-clef on clefs
+       G4d-1a: ties as path.vf-stavetie.ppp-tie[data-tie] (§16.4: PPP's own
+       curve, with VexFlow's class), slurs path.vf-curve.ppp-slur[data-slur],
+       glissandi path.ppp-gliss[data-gliss]; in a note's group its
+       articulations, ornaments, fermata, tremolo, arpeggio (.vf-stroke), head
+       parentheses and fingering (text.ppp-fingering); a fermata over a bar
+       line after the notes. Text is <text> in the page's families (the widths
+       the layout used are engrave/metrics-text.js's).
      and the root svg.ppp-engraved[data-plan] (the graph fingerprint and plan
      version the layout was made from; data-layout, the layout hash, on request).
    ========================================================================== */
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports)
-    module.exports = factory(require('./metrics.js'), require('./outlines.js'), require('./canon.js'), require('./plan.js'));
+    module.exports = factory(require('./metrics.js'), require('./outlines.js'), require('./canon.js'), require('./plan.js'), require('./metrics-text.js'),
+      require('./curves.js'));
   else {
     const M = root.PPPEngraveModules = root.PPPEngraveModules || {};
-    M.svg = factory(M.metrics, M.outlines, M.canon, M.plan);
+    M.svg = factory(M.metrics, M.outlines, M.canon, M.plan, M.metricsText, M.curves);
   }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (MT, OL, CN, PL) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (MT, OL, CN, PL, TX, CV) {
   'use strict';
 
   const EG = MT.ENGRAVING;
@@ -55,7 +63,30 @@
 
   const CLASS = { notehead: 'vf-notehead', rest: 'vf-notehead vf-rest', stem: 'vf-stem', flag: 'vf-flag', accidental: 'vf-accidental', dot: 'vf-dot',
     ledger: 'vf-ledger', clef: 'vf-clef', keysig: 'vf-keysignature', timesig: 'vf-timesignature', barline: 'vf-barline', slash: 'vf-grace-slash',
-    'tuplet-number': 'vf-tuplet-number', 'tuplet-bracket': 'vf-tuplet-bracket' };
+    'tuplet-number': 'vf-tuplet-number', 'tuplet-bracket': 'vf-tuplet-bracket',
+    articulation: 'vf-articulation', ornament: 'vf-ornament', fermata: 'vf-fermata', tremolo: 'vf-tremolo', paren: 'vf-notehead-paren',
+    arpeggio: 'vf-stroke', fingering: 'ppp-fingering', text: 'ppp-text' };
+  /* a curve's filled shape: its centre line's control points moved out and in by 2t/3 (t thick at the middle, the ends
+     pointed) */
+  const lens = (c, side) => {
+    const s = side === 'above' ? -1 : 1, d = 2 * c.t / 3;
+    const P = p => f(p[0]) + ' ' + f(p[1]);
+    const o1 = [c.c1[0], c.c1[1] + s * d], o2 = [c.c2[0], c.c2[1] + s * d], i1 = [c.c1[0], c.c1[1] - s * d], i2 = [c.c2[0], c.c2[1] - s * d];
+    return 'M' + P(c.p0) + 'C' + P(o1) + ' ' + P(o2) + ' ' + P(c.p3) + 'C' + P(i2) + ' ' + P(i1) + ' ' + P(c.p0) + 'Z';
+  };
+  /* a wavy line from a to b: half waves of `wave`/2, `amp` either side, as quadratic curves */
+  const wavy = (a, b, amp, wave) => {
+    const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.sqrt(dx * dx + dy * dy);
+    const n = Math.max(2, Math.round(L / (wave / 2)));
+    const ux = dx / L, uy = dy / L, nx = -uy, ny = ux;
+    let d = 'M' + f(a[0]) + ' ' + f(a[1]);
+    for (let k = 0; k < n; k++) {
+      const t0 = k / n, t1 = (k + 1) / n, tm = (t0 + t1) / 2, sgn = k % 2 ? -1 : 1;
+      const cx = a[0] + dx * tm + nx * 2 * amp * sgn, cy = a[1] + dy * tm + ny * 2 * amp * sgn;
+      d += 'Q' + f(cx) + ' ' + f(cy) + ' ' + f(a[0] + dx * t1) + ' ' + f(a[1] + dy * t1);
+    }
+    return d;
+  };
 
   function svg(eng, plan, options) {
     const o = Object.assign({}, DEFAULTS, options || {});
@@ -77,6 +108,12 @@
     /* one object, as the element that draws it */
     function draw(x) {
       const cls = CLASS[x.kind] || null;
+      if (x.glyph && x.drawn && (x.glyph === 'accidentalBracketLeft' || x.glyph === 'accidentalBracketRight')) {
+        /* an editorial accidental's square bracket (G4d-1a): a thin stroke with its two ends turned in */
+        const b = x.box, left = x.glyph === 'accidentalBracketLeft', xs = left ? b[0] + 0.1 : b[2] - 0.1, xe = left ? b[2] : b[0];
+        return '<path' + (cls ? ' class="' + cls + '"' : '') + ' d="M' + f(xe) + ' ' + f(b[1]) + 'H' + f(xs) + 'V' + f(b[3]) + 'H' + f(xe) +
+          '" fill="none" stroke="currentColor" stroke-width="' + f(0.12 * (x.scale || 1)) + '"/>';
+      }
       if (x.glyph && x.drawn) {
         /* a shape VexFlow draws as a path (the slash notehead): a slanted bar across its box */
         const b = x.box, w = Math.min(0.45, (b[2] - b[0]) / 3);
@@ -117,8 +154,39 @@
           'C' + f(xm - 0.1) + ' ' + f(y1 - 0.1 * h) + ' ' + f(x1 + 0.45) + ' ' + f(ym + 0.1 * h) + ' ' + f(x0 + 0.25) + ' ' + f(ym) +
           'C' + f(x1 + 0.45) + ' ' + f(ym - 0.1 * h) + ' ' + f(xm - 0.1) + ' ' + f(y0 + 0.1 * h) + ' ' + f(x1) + ' ' + f(y0) + 'Z"/>';
       }
+      if (x.kind === 'fingering' || x.kind === 'text') {
+        return '<text class="' + cls + '" x="' + f(x.origin[0]) + '" y="' + f(x.origin[1]) + '" font-family="' + esc(TX.FAMILY[x.font]) + '"' +
+          (/italic/.test(x.font) ? ' font-style="italic"' : '') + (/bold/.test(x.font) ? ' font-weight="700"' : '') + ' font-size="' + f(x.size) + '">' + esc(x.text) + '</text>';
+      }
+      if (x.kind === 'arpeggio') {
+        const l = x.line, b = x.box, xc = l[0];
+        if (x.non) {
+          /* against arpeggiating: a bracket, its ends turned toward the chord */
+          return '<path class="' + cls + '" d="M' + f(b[2]) + ' ' + f(l[1]) + 'H' + f(xc) + 'V' + f(l[3]) + 'H' + f(b[2]) +
+            '" fill="none" stroke="currentColor" stroke-width="0.12"/>';
+        }
+        let s = '<path class="' + cls + '" d="' + wavy([xc, l[3]], [xc, l[1]], 0.18, 0.8) + '" fill="none" stroke="currentColor" stroke-width="0.12"/>';
+        if (x.dir === 'up') s += '<path class="' + cls + '" d="M' + f(xc) + ' ' + f(b[1]) + 'L' + f(xc - 0.35) + ' ' + f(l[1]) + 'H' + f(xc + 0.35) + 'Z"/>';
+        if (x.dir === 'down') s += '<path class="' + cls + '" d="M' + f(xc) + ' ' + f(b[3]) + 'L' + f(xc - 0.35) + ' ' + f(l[3]) + 'H' + f(xc + 0.35) + 'Z"/>';
+        return s;
+      }
       if (x.kind === 'staff') return '';
       return rect(x.box, cls);
+    }
+    /* a curve (G4d-1a): a tie or a slur as its filled shape (a dashed or dotted slur as a stroke), a glissando as a line */
+    function curve(c) {
+      if (c.kind === 'gliss') {
+        const d = c.line === 'wavy' ? wavy(c.p0, c.p3, CV.GLISS.amp, CV.GLISS.wave) : 'M' + f(c.p0[0]) + ' ' + f(c.p0[1]) + 'L' + f(c.p3[0]) + ' ' + f(c.p3[1]);
+        return '<path class="ppp-gliss" data-gliss="' + esc(c.refs[0]) + '" d="' + d + '" fill="none" stroke="currentColor" stroke-width="' + f(c.t) + '"/>';
+      }
+      const cls = c.kind === 'tie' ? 'vf-stavetie ppp-tie' : 'vf-curve ppp-slur', data = c.kind === 'tie' ? 'data-tie' : 'data-slur';
+      if (c.line === 'dashed' || c.line === 'dotted') {
+        const P = p => f(p[0]) + ' ' + f(p[1]);
+        return '<path class="' + cls + '" ' + data + '="' + esc(c.refs[0]) + '" d="M' + P(c.p0) + 'C' + P(c.c1) + ' ' + P(c.c2) + ' ' + P(c.p3) +
+          '" fill="none" stroke="currentColor" stroke-width="' + f(c.t * 0.6) + '" stroke-dasharray="' + (c.line === 'dotted' ? '0.1 0.4' : '0.6 0.4') +
+          '" stroke-linecap="round"/>';
+      }
+      return '<path class="' + cls + '" ' + data + '="' + esc(c.refs[0]) + '" d="' + lens(c, c.side) + '"/>';
     }
     /* staff lines of one staff object, between x0 and x1 */
     const lines = (st, x0, x1) => {
@@ -156,6 +224,8 @@
 
     const bySystem = new Map(eng.systems.map(s => [s.index, []]));
     eng.objects.forEach(x => bySystem.get(x.system).push(x));
+    const curvesBy = new Map();
+    (eng.curves || []).forEach(c => { if (!curvesBy.has(c.system)) curvesBy.set(c.system, []); curvesBy.get(c.system).push(c); });
     const mById = new Map(eng.measures.map(m => [m.id, m]));
     eng.systems.forEach(sys => {
       const objs = bySystem.get(sys.index);
@@ -225,6 +295,9 @@
         out.push('</g>');
       });
       objs.filter(x => x.kind === 'volta').forEach(x => out.push('<g class="ppp-volta">' + draw(x) + '</g>'));
+      /* G4d-1a: a fermata over a bar line (no note of its own), then the curves */
+      objs.filter(x => !x.event && (x.kind === 'fermata' || x.kind === 'text')).forEach(x => out.push(draw(x)));
+      (curvesBy.get(sys.index) || []).forEach(c => out.push(curve(c)));
       out.push('</g>');
     });
     out.push('</svg>');

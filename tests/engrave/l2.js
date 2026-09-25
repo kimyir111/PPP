@@ -13,14 +13,23 @@
    and tuplet checks read what the graph states rather than what the plan passed on - a plan that drops a graph beam or
    ignores a tuplet's show options is then caught too (§23 M1, M5); without it they read the plan.
 
-   Every metric here is a count whose target is 0, except eg.beam.slope_max (the steepest beam, <= 0.25: a maximum,
-   summed as one) - see ZERO_TARGET. G4b's two ratchets (eg.rest.overlap, eg.voice.stem_over_head) are zero targets
-   since G4c (G04 §33.16.4). */
+   Every metric here is a count whose target is 0, except the maxima (MAXIMA): eg.beam.slope_max (the steepest beam,
+   <= 0.25), and since G4d-1a eg.curve.endpoint_err_max (the farthest a tie ends from its head, <= 0.5 sp, A22) and
+   eg.curve.hit_ratio (the share of slurs that cross a note between their ends, <= 1 %, A22). G4b's two ratchets
+   (eg.rest.overlap, eg.voice.stem_over_head) are zero targets since G4c (G04 §33.16.4).
+
+   G4d-1a (G04 §10, §13, §18.3, §21): ties, slurs and glissandi (eng.curves), marks attached to notes, printed fingering,
+   the rests' ledger lines and the tuplet numbers by their beams - each rule G04 states, computed here from the boxes and
+   curves, with its own geometry (a Bezier sampled every 0.5 sp), not engrave/curves.js or engrave/marks.js. The text
+   widths are engrave/metrics-text.js's table: that table is data (§18.3), the one source of widths for everyone.
+   opts.missing (a Set): the ledger refs of ties, slurs and marks this layout should draw and does not - bench.js turns
+   them into the drawn ratios of §21.1. */
 'use strict';
 const path = require('path');
 const REPO = path.resolve(__dirname, '..', '..');
 const proBeam = require(path.join(REPO, 'scoregraph', 'pro-beam.js'));
 const SG = require(path.join(REPO, 'scoregraph', 'index.js'));
+const TX = require(path.join(REPO, 'engrave', 'metrics-text.js'));
 
 const EPS = 0.01;
 /* a comparison of sums of coordinates each rounded to 0.01 sp: two roundings' worth */
@@ -33,8 +42,8 @@ const STEM = { beamed: 2.5, perBeam: 0.75, free: 3.5 }, MAX_SLOPE = 0.25, GRACE 
 /* §10.3 H1-H3, H7 and A26, with kind lists of their own (not skyline.js's H-rules, review O4: the two must not be blind
    together - these are wider): what an accidental, a dot, a rest may not touch, and what of one voice may not cross
    another voice's head */
-const ACC_VS = ['notehead', 'stem', 'accidental', 'ledger', 'flag', 'beam'];
-const DOT_VS = ['notehead', 'stem', 'flag', 'accidental', 'rest', 'ledger', 'beam'];
+const ACC_VS = ['notehead', 'stem', 'accidental', 'ledger', 'flag', 'beam', 'paren', 'arpeggio'];
+const DOT_VS = ['notehead', 'stem', 'flag', 'accidental', 'rest', 'ledger', 'beam', 'paren'];
 const REST_VS = ['notehead', 'stem', 'flag', 'rest', 'ledger', 'accidental', 'beam', 'dot'];
 const STEM_KINDS = ['stem', 'flag', 'beam'];
 const STEPS = 'CDEFGAB';
@@ -503,6 +512,10 @@ function l2(eng, plan, opts) {
   });
   const stated = e => (e.stemFrom === 'graph' && (e.stem === 'up' || e.stem === 'down') ? e.stem : null);
   const roled = e => (e.stemFrom === 'voice' && (e.stem === 'up' || e.stem === 'down') ? e.stem : null);
+  /* §14.6: a percussion note stems up unless the graph or its kit says otherwise */
+  const staffKind = new Map(plan.staves.map(s => [s.id, s.kind || 'standard']));
+  const percussive = e => e.kind === 'perc' || staffKind.get(e.staff) === 'percussion';
+  const kitStem = e => { const h = e.heads.find(x => x.kit && (x.kit.stem === 'up' || x.kit.stem === 'down')); return h ? h.kit.stem : null; };
   const policy = e => {
     const b = beamOfEv.get(e.id);
     if (b) {
@@ -511,11 +524,11 @@ function l2(eng, plan, opts) {
       if (s) return s;
       const r = ms.map(roled).find(Boolean);
       if (r) return r;
-      if (ms.every(x => x.grace)) return 'up';
+      if (ms.every(x => x.grace) || ms.every(percussive)) return 'up';
       return autoDir([].concat(...ms.map(offsOf)));
     }
     if (e.grace) return stated(e) || roled(e) || 'up';
-    return stated(e) || roled(e) || autoDir(offsOf(e));
+    return stated(e) || roled(e) || kitStem(e) || (percussive(e) ? 'up' : autoDir(offsOf(e)));
   };
   let pol = 0, short = 0;
   eng.objects.forEach(o => {
@@ -832,11 +845,447 @@ function l2(eng, plan, opts) {
   const codes = groupBy(eng.diagnostics, d => d.code);
   set('eg.layout.hard_violations', (codes.get('HARD_VIOLATION') || []).length);
   set('eg.glyph.fallback', (codes.get('GLYPH_FALLBACK') || []).length);
+  set('eg.text.missing_glyph', (codes.get('TEXT_GLYPH_MISSING') || []).length);
+  curvesAndMarks(eng, plan, opts, m, { pe, objsOf, spaceOf, staffTop, linesOf, laidOut, stemDirOf, offsOf, codes, ids });
   return m;
 }
 
-/* the metrics whose target is 0 (all but the maximum and the recorded count of smaller staves) */
-const MAXIMA = { 'eg.beam.slope_max': MAX_SLOPE };
-const RECORDED = ['eg.system.scaled'];
+/* ---------------------------------------------------------------- G4d-1a: curves and marks attached to notes */
+const cxOf = b => (b[0] + b[2]) / 2, cyOf = b => (b[1] + b[3]) / 2;
+const unionBox = bs => bs.reduce((u, b) => (u ? [Math.min(u[0], b[0]), Math.min(u[1], b[1]), Math.max(u[2], b[2]), Math.max(u[3], b[3])] : b.slice()), null);
+const pointGap = (p, b) => Math.hypot(Math.max(b[0] - p[0], 0, p[0] - b[2]), Math.max(b[1] - p[1], 0, p[1] - b[3]));
+const boxGap = (a, b) => Math.hypot(Math.max(0, b[0] - a[2], a[0] - b[2]), Math.max(0, b[1] - a[3], a[1] - b[3]));
+/* a curve's point at t, and the boxes it covers (every 0.5 sp of its run), thickened by half its thickness */
+const bez = (c, t) => { const u = 1 - t; return [0, 1].map(k => u * u * u * c.p0[k] + 3 * u * u * t * c.c1[k] + 3 * u * t * t * c.c2[k] + t * t * t * c.p3[k]); };
+function sampleBoxes(c) {
+  const n = Math.max(1, Math.ceil(Math.abs(c.p3[0] - c.p0[0]) / 0.5));
+  const out = [], w = (c.t || 0) / 2 + (c.line === 'wavy' ? 0.2 : 0);
+  let a = bez(c, 0);
+  for (let k = 1; k <= n; k++) {
+    const b = bez(c, k / n);
+    out.push([Math.min(a[0], b[0]), Math.min(a[1], b[1]) - w, Math.max(a[0], b[0]), Math.max(a[1], b[1]) + w]);
+    a = b;
+  }
+  return out;
+}
+/* where the curve passes x: its y there (t found by halving - the x of a tie, slur or glissando only ever grows along
+   it), or null outside its run */
+function yOnCurve(c, x) {
+  const lo = Math.min(c.p0[0], c.p3[0]), hi = Math.max(c.p0[0], c.p3[0]);
+  if (x < lo - 1e-9 || x > hi + 1e-9) return null;
+  const up = c.p3[0] >= c.p0[0];
+  let a = 0, b = 1;
+  for (let k = 0; k < 40; k++) { const t = (a + b) / 2, bx = bez(c, t)[0]; if ((bx < x) === up) a = t; else b = t; }
+  return bez(c, (a + b) / 2)[1];
+}
+/* does the curve itself (its line, t/2 either side) pass through the box - looked at every 0.05 sp of the box's width */
+function curveCrosses(c, box) {
+  const w = (c.t || 0) / 2;
+  const n = Math.max(1, Math.ceil((box[2] - box[0]) / 0.05));
+  for (let k = 0; k <= n; k++) {
+    const x = box[0] + (box[2] - box[0]) * k / n, y = yOnCurve(c, x);
+    if (y !== null && y + w > box[1] + EPS && y - w < box[3] - EPS && x > box[0] + EPS && x < box[2] - EPS) return true;
+  }
+  return false;
+}
+/* which way a curve bows: above its chord (y smaller at the middle) or below */
+const bulge = c => { const mid = bez(c, 0.5)[1], chord = (c.p0[1] + c.p3[1]) / 2; return mid < chord - 1e-6 ? 'above' : mid > chord + 1e-6 ? 'below' : null; };
+/* §10.2 priority 5, inside to out */
+const MARK_RANK = { staccato: 0, staccatissimo: 0, spiccato: 0, 'detached-legato': 0, tenuto: 1, accent: 2, stress: 2, unstress: 2, marcato: 3 };
+const HORIZONTAL_ARTS = { 'breath-mark': 1, caesura: 1 };
+const TEXT_KINDS = ['fingering', 'text'];
+const MARK_KINDS = ['articulation', 'ornament', 'fermata', 'tremolo', 'tuplet-number', 'tuplet-bracket'];
+const NOTE_KINDS = ['notehead', 'stem', 'flag', 'beam', 'accidental', 'dot', 'rest', 'ledger', 'paren', 'arpeggio', 'slash'];
+/* the mark kinds §21.1's eg.mark.drawn_ratio names that G4d-1a draws */
+const DRAWN_KINDS = ['articulation', 'ornament', 'fermata', 'fingering', 'gliss', 'arpeggio'];
+/* SMuFL noteheads by shape and fill (G04 §6, §14.6): cross (a plus) has no glyph in the pinned font and stands in as x */
+const HEAD_GLYPHS = {
+  normal: ['noteheadBlack', 'noteheadHalf', 'noteheadWhole', 'noteheadDoubleWhole'], x: ['noteheadXBlack', 'noteheadXHalf', 'noteheadXWhole', 'noteheadXWhole'],
+  cross: ['noteheadXBlack', 'noteheadXHalf', 'noteheadXWhole', 'noteheadXWhole'], 'circle-x': ['noteheadCircleX', 'noteheadCircleX', 'noteheadCircleX', 'noteheadCircleX'],
+  diamond: ['noteheadDiamondBlack', 'noteheadDiamondHalf', 'noteheadDiamondWhole', 'noteheadDiamondWhole'],
+  triangle: ['noteheadTriangleUpBlack', 'noteheadTriangleUpHalf', 'noteheadTriangleUpWhole', 'noteheadTriangleUpWhole'],
+  square: ['noteheadSquareBlack', 'noteheadSquareWhite', 'noteheadSquareWhite', 'noteheadSquareWhite'],
+  slash: ['noteheadSlashHorizontalEnds', 'noteheadSlashHorizontalEnds', 'noteheadSlashHorizontalEnds', 'noteheadSlashHorizontalEnds']
+};
+function headGlyph(type, shape, filled) {
+  let k = type === 'whole' ? 2 : (type === 'breve' || type === 'long' || type === 'maxima') ? 3 : type === 'half' ? 1 : 0;
+  if (filled === true) k = 0;
+  else if (filled === false && k === 0) k = 1;
+  return (HEAD_GLYPHS[shape] || HEAD_GLYPHS.normal)[k];
+}
 
-module.exports = { l2, EPS, TOL, MAXIMA, RECORDED, ACC_VS, DOT_VS, REST_VS, STEM_KINDS, staffY, autoDir };
+function curvesAndMarks(eng, plan, opts, m, C) {
+  const set = (k, v) => { m[k] = v; };
+  const { pe, objsOf, spaceOf, staffTop, linesOf, laidOut, stemDirOf, offsOf, codes, ids } = C;
+  const curves = eng.curves || [];
+  const miss = ref => { if (opts.missing) opts.missing.add(ref); };
+  const headsById = new Map(eng.objects.filter(o => o.kind === 'notehead').map(o => [o.id, o]));
+  const curvesOf = groupBy(curves, c => c.refs[0]);
+  const staffMid = o => staffTop.get(o.system + '|' + o.staffKey) + spaceOf(o) * Math.max(0, (linesOf.get(o.staffKey) || 5) - 1) / 2;
+  const sysStaff = groupBy(eng.objects.filter(o => o.staffKey), o => o.system + '|' + o.staffKey);
+  const curveSamples = new Map(curves.map(c => [c, sampleBoxes(c)]));
+  /* voice roles (§14.1): the plan's, of the sounding voices; a rest's by the graph's order of every voice of its staff and
+     measure (§14.3) */
+  const roleOf = new Map();
+  (plan.roles || []).forEach(r => Object.keys(r.role || {}).forEach(v => roleOf.set(r.staff + '|' + r.m + '|' + v, r.role[v])));
+  const rank = new Map((plan.voices || []).map((v, i) => { const n = parseInt(v.label, 10); return [v.id, [isFinite(n) ? n : 1e6, i]]; }));
+  const vm = groupBy(plan.events.filter(e => !e.grace && !e.hidden), e => e.staff + '|' + e.m);
+  const restRole = new Map();
+  vm.forEach((evs, k) => {
+    const vs = [...new Set(evs.map(e => e.voice))];
+    if (vs.length < 2) return;
+    const r = v => rank.get(v) || [1e6, 1e6];
+    vs.sort((a, b) => r(a)[0] - r(b)[0] || r(a)[1] - r(b)[1]).forEach((v, i) => restRole.set(k + '|' + v, i % 2 === 0 ? 'up' : 'down'));
+  });
+  const voiceRole = e => (e.kind === 'rest' ? restRole.get(e.staff + '|' + e.m + '|' + e.voice) : roleOf.get(e.staff + '|' + e.m + '|' + e.voice)) || null;
+  const stemDir = e => stemDirOf.get(e.id) || autoDir(offsOf(e));
+
+  /* ---- ties (§13.1, A5, A22): every tie drawn where its heads are - one curve in one system, two halves across a
+     break, one part from the head that is there when the other end is not (an open tie, or outside a close view); each
+     drawn end within 0.5 sp of its head (of its dots, at the start); bowing the way §13.1 says */
+  let tieMiss = 0, tieEnd = 0, endMax = 0, tieDir = 0;
+  const tieRule = h => {
+    const e = pe.get(h.event);
+    if (!e) return null;
+    const role = voiceRole(e);
+    if (role === 'up') return 'above';
+    if (role === 'down') return 'below';
+    const onStaff = e.heads.filter(x => (x.staff || e.staff) === e.staff).length;
+    const dir = stemDir(e);
+    if (onStaff <= 1) return dir === 'up' ? 'below' : 'above';
+    const y = cyOf(h.box), mid = staffMid(h);
+    if (y < mid - TOL) return 'above';
+    if (y > mid + TOL) return 'below';
+    return dir === 'up' ? 'below' : 'above';
+  };
+  (plan.ties || []).forEach(t => {
+    const fh = t.from ? headsById.get(t.from) : null, th = t.to ? headsById.get(t.to) : null;
+    const want = fh && th ? (fh.system === th.system ? [['whole', fh.system]] : [['start', fh.system], ['end', th.system]]) : fh ? [['start', fh.system]] : th ? [['end', th.system]] : [];
+    const got = (curvesOf.get(t.id) || []).filter(c => c.kind === 'tie');
+    if (!(got.length === want.length && want.every(([part, s]) => got.some(c => c.part === part && c.system === s)))) { tieMiss++; miss(t.id); }
+    got.forEach(c => {
+      const ends = [];
+      if ((c.part === 'whole' || c.part === 'start') && fh && fh.system === c.system) ends.push([c.p0, fh, true]);
+      if ((c.part === 'whole' || c.part === 'end') && th && th.system === c.system) ends.push([c.p3, th, false]);
+      ends.forEach(([p, h, start]) => {
+        /* a head set beside the chord (a second) is met where the chord is: the tie cannot cross the other head or the
+           stem between them - its end is measured to the heads of the second and the stem between */
+        const pair = objsOf(h.event).filter(o => o.kind === 'notehead' && o !== h && o.system === h.system && o.staffKey === h.staffKey &&
+          Math.abs(cyOf(o.box) - cyOf(h.box)) <= 0.5 * spaceOf(h) + TOL && Math.abs(o.box[0] - h.box[0]) > TOL);
+        let b = pair.length ? unionBox([h.box].concat(pair.map(o => o.box), objsOf(h.event).filter(o => o.kind === 'stem' && o.system === h.system &&
+          o.staffKey === h.staffKey).map(o => [o.box[0], h.box[1], o.box[2], h.box[3]]))) : h.box;
+        /* and at the end, an accidental the chord sets before it at that height (another head's, taller than a head) */
+        if (!start) {
+          const acc = objsOf(h.event).filter(o => o.kind === 'accidental' && o.system === h.system && o.staffKey === h.staffKey && o.box[1] < p[1] + 0.25 && o.box[3] > p[1] - 0.25);
+          if (acc.length) b = unionBox([b].concat(acc.map(o => o.box)));
+        }
+        if (start) {
+          const dots = objsOf(h.event).filter(o => o.kind === 'dot' && o.system === h.system && o.staffKey === h.staffKey && Math.abs(cyOf(o.box) - cyOf(h.box)) <= 0.75 * spaceOf(h));
+          if (dots.length) b = unionBox([b].concat(dots.map(o => o.box)));
+        }
+        const d = pointGap(p, b) / spaceOf(h);
+        endMax = Math.max(endMax, d);
+        if (d > 0.5 + TOL) tieEnd++;
+      });
+      const h = fh && fh.system === c.system ? fh : th;
+      const rule = h ? tieRule(h) : null;
+      if (rule && bulge(c) !== rule) tieDir++;
+    });
+  });
+  set('eg.tie.missing', tieMiss);
+  set('eg.tie.endpoint_err', tieEnd);
+  set('eg.curve.endpoint_err_max', Math.round(endMax * 100) / 100);
+  set('eg.tie.dir_err', tieDir);
+
+  /* ---- slurs (§13.2, A6, A22): the graph's own pair - the first part starts at the from note, the last ends at the to
+     note (within 0.6 sp of what the note draws); each end just outside what stands right under it on the slur's side
+     (the note's head or stem end, its marks wherever they stand, another voice there, a beam, a tie or shorter slur): 0.1 to 1.25 sp away,
+     more by as far as the slur's ends were moved out to clear what lies under it (lift); a slur whose arc crosses a head
+     or stem of a note between its
+     ends is a hit - at most 1 % of the slurs (eg.curve.hit_ratio), every one named by SLUR_COLLIDES */
+  let pair = 0, slurEnd = 0, hits = 0, undiag = 0, slurs = 0;
+  const collides = new Set((codes.get('SLUR_COLLIDES') || []).flatMap(d => d.refs));
+  const beams = eng.objects.filter(o => o.kind === 'beam');
+  const evBox = (id, s) => unionBox(objsOf(id).filter(o => o.system === s && (o.kind === 'notehead' || o.kind === 'rest' || o.kind === 'stem')).map(o => o.box));
+  const drawnAt = id => objsOf(id).find(o => o.kind === 'notehead' || o.kind === 'rest') || null;
+  (plan.slurs || []).forEach(s => {
+    const got = (curvesOf.get(s.id) || []).filter(c => c.kind === 'slur');
+    const fa = s.from ? drawnAt(s.from) : null, ta = s.to ? drawnAt(s.to) : null;
+    if (!fa && !ta) { if (got.length) pair++; return; }
+    slurs++;
+    const start = got.find(c => c.part === 'whole' || c.part === 'start'), end = got.find(c => c.part === 'whole' || c.part === 'end');
+    let bad = !got.length;
+    if (fa) { const b = evBox(s.from, fa.system); bad = bad || !start || start.system !== fa.system || start.p0[0] < b[0] - 0.6 || start.p0[0] > b[2] + 0.6; }
+    if (ta) { const b = evBox(s.to, ta.system); bad = bad || !end || end.system !== ta.system || end.p3[0] < b[0] - 0.6 || end.p3[0] > b[2] + 0.6; }
+    if (bad) { pair++; miss(s.id); }
+    [[start, 'p0', s.from, fa], [end, 'p3', s.to, ta]].forEach(([c, k, id, anchor]) => {
+      if (!c || !anchor || c.system !== anchor.system || c.staffKey !== anchor.staffKey) return;
+      const p = c[k], above = (bulge(c) || c.side) === 'above', f = spaceOf(anchor);
+      const x0 = p[0] - 0.1 * f, x1 = p[0] + 0.1 * f;
+      const inX = b => b[0] < x1 - EPS && x0 < b[2] - EPS;
+      const under = b => (above ? b[3] >= p[1] - TOL : b[1] <= p[1] + TOL);
+      /* what stands under the end: the note's own head or stem end and marks, another voice's notes there, a beam, a tie
+         or a shorter slur (text is placed after slurs, §10.2) */
+      const boxes = (sysStaff.get(c.system + '|' + c.staffKey) || []).filter(o => TEXT_KINDS.indexOf(o.kind) < 0 && under(o.box) &&
+        ((inX(o.box) && (o.layer === 'note' || MARK_KINDS.indexOf(o.kind) >= 0)) || (o.event === id && ['articulation', 'ornament', 'fermata', 'tremolo'].indexOf(o.kind) >= 0))).map(o => o.box)
+        .concat(curves.filter(q => q !== c && q.system === c.system && q.staffKey === c.staffKey).flatMap(q => curveSamples.get(q)).filter(b => inX(b) && under(b)));
+      if (!boxes.length) { slurEnd++; return; }
+      const reach = above ? Math.min(...boxes.map(b => b[1])) : Math.max(...boxes.map(b => b[3]));
+      const d = (above ? reach - p[1] : p[1] - reach) / f;
+      if (d < 0.1 - TOL || d > 1.25 + (c.lift || 0) / f + TOL) slurEnd++;
+    });
+    let hit = false;
+    got.forEach(c => {
+      const a = Math.min(c.p0[0], c.p3[0]), b = Math.max(c.p0[0], c.p3[0]);
+      const inner = (sysStaff.get(c.system + '|' + c.staffKey) || []).filter(o => (o.kind === 'notehead' || o.kind === 'stem') && o.event !== s.from && o.event !== s.to &&
+        cxOf(o.box) > a + 0.5 && cxOf(o.box) < b - 0.5);
+      if (inner.some(o => curveCrosses(c, o.box))) hit = true;
+    });
+    if (hit) { hits++; if (!collides.has(s.id)) undiag++; }
+  });
+  set('eg.slur.pair_errors', pair);
+  set('eg.slur.endpoint_err', slurEnd);
+  set('eg.curve.hits', hits);
+  set('eg.curve.slurs', slurs);
+  set('eg.curve.hit_ratio', slurs ? Math.round(hits / slurs * 10000) / 10000 : 0);
+  set('eg.curve.hits_undiagnosed', undiag);
+
+  /* ---- glissandi (§13.4): from after the first head to before the second, wavy when the graph says so */
+  let glissErr = 0;
+  (plan.lines || []).filter(l => l.kind === 'gliss').forEach(l => {
+    const fh = l.from ? headsById.get(l.from) : null, th = l.to ? headsById.get(l.to) : null;
+    (curvesOf.get(l.id) || []).filter(c => c.kind === 'gliss').forEach(c => {
+      if (fh && fh.system === c.system && c.p0[0] < fh.box[2] - TOL) glissErr++;
+      if (th && th.system === c.system && c.p3[0] > th.box[0] + TOL) glissErr++;
+      if ((c.line === 'wavy') !== (l.line === 'wavy')) glissErr++;
+    });
+  });
+  set('eg.gliss.errors', glissErr);
+
+  /* ---- what the ledger draws is drawn (§21.1 eg.ledger.drawn_missing, eg.mark.drawn_ratio; §23 M23): every tie, slur and
+     mark attached to a note the ledger calls drawn, of a note (or measure) this layout draws, is an object or a curve
+     naming its ref */
+  const named = new Set();
+  eng.objects.forEach(o => o.refs.forEach(r => named.add(r)));
+  curves.forEach(c => c.refs.forEach(r => named.add(r)));
+  const drawnEvents = new Set(eng.objects.filter(o => o.kind === 'notehead' || o.kind === 'rest').map(o => o.event));
+  const byId = new Map([...(plan.ties || []), ...(plan.slurs || []), ...(plan.lines || [])].map(x => [x.id, x]));
+  const markMiss = {};
+  DRAWN_KINDS.forEach(k => { markMiss[k] = 0; });
+  let drawnMissing = 0;
+  plan.ledger.forEach(en => {
+    if ((en.status !== 'drawn' && en.status !== 'merged') || (DRAWN_KINDS.indexOf(en.kind) < 0 && en.kind !== 'tie' && en.kind !== 'slur')) return;
+    const x = byId.get(en.ref);
+    let due;
+    if (en.kind === 'fermata' && /#bar\.(left|right)\.fermata$/.test(en.ref)) due = laidOut.has(en.plan);
+    else if (en.kind === 'tie' || en.kind === 'gliss') due = !!x && [x.from, x.to].some(h => h && headsById.has(h));
+    else if (en.kind === 'slur') due = !!x && [x.from, x.to].some(id => id && drawnEvents.has(id));
+    else if (en.kind === 'arpeggio') due = !!x && (x.heads || []).some(h => headsById.has(h));
+    else due = drawnEvents.has(en.plan);
+    if (!due || named.has(en.ref)) return;
+    drawnMissing++;
+    if (markMiss[en.kind] !== undefined) markMiss[en.kind]++;
+    miss(en.ref);
+  });
+  set('eg.ledger.drawn_missing', drawnMissing);
+  DRAWN_KINDS.forEach(k => set('eg.mark.missing.' + k, markMiss[k]));
+
+  /* ---- marks on a note (§10.2 priority 5): on the side the rule gives - a voice's own side where two share the staff,
+     else opposite the stem (a rest's above); an ornament above (the lower voice's below), a fermata above unless
+     inverted (or the lower voice's) - and outside the note (beyond the stem's end, on its side); inside to out staccato
+     and staccatissimo, tenuto, accent,
+     marcato, ornament, fermata; a staccato or tenuto inside the staff in a space, never on a line */
+  let sideErr = 0, orderErr = 0, onLine = 0;
+  const artOf = o => { const mt = /#art(\d+)/.exec(o.refs[1] || ''), e = pe.get(o.event); return mt && e ? e.arts[+mt[1]] : null; };
+  const rankOf = o => (o.kind === 'fermata' ? 5 : o.kind === 'ornament' ? 4 : MARK_RANK[artOf(o)]);
+  const noteMarks = eng.objects.filter(o => (o.kind === 'articulation' || o.kind === 'ornament' || o.kind === 'fermata') && o.event && !HORIZONTAL_ARTS[artOf(o)]);
+  noteMarks.forEach(o => {
+    const e = pe.get(o.event);
+    if (!e) { sideErr++; return; }
+    const role = voiceRole(e);
+    const want = o.kind === 'fermata' ? ((e.fermata && e.fermata.inverted) || role === 'down' ? 'below' : 'above')
+      : o.kind === 'ornament' ? (role === 'down' ? 'below' : 'above')
+        : role === 'up' ? 'above' : role === 'down' ? 'below' : e.kind === 'rest' || !e.heads.length ? 'above' : stemDir(e) === 'up' ? 'below' : 'above';
+    const own = objsOf(e.id).filter(x => x.system === o.system && x.staffKey === o.staffKey && (x.kind === 'notehead' || x.kind === 'rest'));
+    if (!own.length) { sideErr++; return; }
+    const top = Math.min(...own.map(x => x.box[1])), bot = Math.max(...own.map(x => x.box[3]));
+    /* on the stem's side, beyond the stem's end */
+    const st = objsOf(e.id).find(x => x.kind === 'stem' && x.system === o.system && x.staffKey === o.staffKey && /#stem$/.test(x.id));
+    const stemSide = st && (st.dir === 'up') === (want === 'above');
+    if (want === 'above' ? o.box[3] > (stemSide ? st.box[1] : top) + TOL : o.box[1] < (stemSide ? st.box[3] : bot) - TOL) sideErr++;
+    const r = rankOf(o);
+    if ((r === 0 || r === 1) && o.kind === 'articulation') {
+      const f = spaceOf(o), t0 = staffTop.get(o.system + '|' + o.staffKey), last = Math.max(0, (linesOf.get(o.staffKey) || 5) - 1);
+      const c = (cyOf(o.box) - t0) / f;
+      if (c > -0.25 && c < last + 0.25 && Math.abs((c - 0.5) - Math.round(c - 0.5)) > TOL / f) onLine++;
+    }
+  });
+  /* which side of its note a mark stands on, from where it is */
+  const geoSide = o => {
+    const own = objsOf(o.event).filter(x => x.system === o.system && x.staffKey === o.staffKey && (x.kind === 'notehead' || x.kind === 'rest'));
+    return own.length && cyOf(o.box) < Math.min(...own.map(x => cyOf(x.box))) ? 'above' : 'below';
+  };
+  groupBy(noteMarks, o => o.event + '|' + o.system + '|' + geoSide(o)).forEach(list => {
+    if (list.length < 2) return;
+    const above = geoSide(list[0]) === 'above';
+    const near = list.slice().sort((a, b) => (above ? b.box[3] - a.box[3] : a.box[1] - b.box[1]));
+    for (let i = 1; i < near.length; i++) if (rankOf(near[i]) < rankOf(near[i - 1])) { orderErr++; break; }
+  });
+  /* a fermata over a bar line: above the top staff, below the bottom one when inverted */
+  (plan.measures || []).forEach(me => ['left', 'right'].forEach(side => {
+    const b = me.barline && me.barline[side];
+    if (!b || b.fermata === undefined || b.fermata === null || !laidOut.has(me.id)) return;
+    const o = (ids.get(me.id + '#bar.' + side + '.fermata') || [])[0];
+    if (!o) return;
+    const inv = !!b.fermata.inverted, st = inv ? plan.staves[plan.staves.length - 1].id : plan.staves[0].id;
+    const t0 = staffTop.get(o.system + '|' + st), last = Math.max(0, (linesOf.get(st) || 5) - 1) * spaceOf(o);
+    if (o.staffKey !== st || (inv ? o.box[1] < t0 + last - TOL : o.box[3] > t0 + TOL)) sideErr++;
+  }));
+  set('eg.mark.side_err', sideErr);
+  set('eg.mark.order_err', orderErr);
+  set('eg.mark.on_line', onLine);
+
+  /* ---- printed fingering (§10.2 priority 7): the graph's placement, else above on a part's first staff and below on its
+     second; outside the heads; a chord's fingers stacked in the order of its heads (the top finger the top note's) */
+  let fSide = 0, fOrder = 0;
+  const partStaves = groupBy(plan.staves, s => s.part);
+  const staffRank = new Map();
+  partStaves.forEach(list => list.forEach((s, i) => staffRank.set(s.id, i)));
+  const fings = eng.objects.filter(o => o.kind === 'fingering');
+  fings.forEach(o => {
+    const e = pe.get(o.event), mt = /^(.*)#fing(\d+)$/.exec(o.refs[1] || '');
+    const h = e && mt ? e.heads.find(x => x.id === mt[1]) : null, fg = h ? (h.fingering || [])[+mt[2]] : null, ho = h ? headsById.get(h.id) : null;
+    if (!fg || !ho) { fSide++; return; }
+    const want = fg.placement === 'above' || fg.placement === 'below' ? fg.placement : staffRank.get(ho.staffKey) === 1 ? 'below' : 'above';
+    const hs = objsOf(e.id).filter(x => x.kind === 'notehead' && x.staffKey === ho.staffKey && x.system === ho.system);
+    const top = Math.min(...hs.map(x => x.box[1])), bot = Math.max(...hs.map(x => x.box[3]));
+    if (want === 'above' ? o.box[3] > top + TOL : o.box[1] < bot - TOL) fSide++;
+  });
+  /* stacked: sorted by their heads top down (then by finger, then by line), each stands no lower than the one before */
+  const fKey = o => {
+    const mt = /^(.*)#fing(\d+)$/.exec(o.refs[1] || ''), h = mt ? headsById.get(mt[1]) : null;
+    const k = /\.(\d+)$/.exec(o.id.slice((o.refs[1] || '').length));
+    return [h ? cyOf(h.box) : 0, mt ? +mt[2] : 0, k ? +k[1] : 0];
+  };
+  const fSideOf = o => { const mt = /^(.*)#fing/.exec(o.refs[1] || ''), h = mt ? headsById.get(mt[1]) : null; return h && cyOf(o.box) < cyOf(h.box) ? 'a' : 'b'; };
+  groupBy(fings, o => o.event + '|' + o.system + '|' + o.staffKey + '|' + fSideOf(o)).forEach(list => {
+    const sorted = list.slice().sort((a, b) => { const ka = fKey(a), kb = fKey(b); return ka[0] - kb[0] || ka[1] - kb[1] || ka[2] - kb[2]; });
+    for (let i = 1; i < sorted.length; i++) if (sorted[i].box[1] < sorted[i - 1].box[1] - TOL) { fOrder++; break; }
+  });
+  set('eg.fingering.side_err', fSide);
+  set('eg.fingering.order_err', fOrder);
+
+  /* ---- arpeggios (§6): left of the chord's heads on every staff they reach, over those heads, the arrow where the graph
+     points it, a bracket against arpeggiating */
+  let arpErr = 0;
+  (plan.lines || []).filter(l => l.kind === 'arpeggio').forEach(l => {
+    const hs = (l.heads || []).map(h => headsById.get(h)).filter(Boolean);
+    if (!hs.length) return;
+    const parts = eng.objects.filter(o => o.kind === 'arpeggio' && o.refs[0] === l.id);
+    const byStaff = groupBy(hs, h => h.system + '|' + h.staffKey);
+    byStaff.forEach(list => {
+      const o = parts.find(p => p.system === list[0].system && p.staffKey === list[0].staffKey);
+      const f = spaceOf(list[0]);
+      if (!o || o.box[2] > Math.min(...list.map(h => h.box[0])) + TOL || o.line[1] > Math.min(...list.map(h => cyOf(h.box))) - 0.5 * f + TOL ||
+        o.line[3] < Math.max(...list.map(h => cyOf(h.box))) + 0.5 * f - TOL || !!o.non !== !!l.non) arpErr++;
+    });
+    if (l.dir === 'up' || l.dir === 'down') {
+      const arrows = parts.filter(p => p.dir === l.dir);
+      const ys = hs.map(h => cyOf(h.box));
+      if (arrows.length !== 1 || (l.dir === 'up' ? arrows[0].box[1] > Math.min(...ys) - 0.5 : arrows[0].box[3] < Math.max(...ys) + 0.5)) arpErr++;
+    } else if (parts.some(p => p.dir)) arpErr++;
+  });
+  set('eg.arpeggio.errors', arpErr);
+
+  /* ---- noteheads (§6, §14.6, A7, A12): the glyph of the shape the graph states (a percussion kit's, else normal), in
+     parentheses when the graph says so; accidentals in brackets or parentheses as stated */
+  let shapeErr = 0, encl = 0;
+  eng.objects.filter(o => o.kind === 'notehead' && !o.grace).forEach(o => {
+    const e = pe.get(o.event), h = e && e.heads.find(x => x.id === o.id);
+    if (!h) return;
+    const shape = (h.notehead && h.notehead.shape) || (h.kit && h.kit.notehead) || 'normal';
+    if (o.glyph !== headGlyph(e.type || 'quarter', shape, h.notehead ? h.notehead.filled : undefined)) shapeErr++;
+    const parens = objsOf(e.id).filter(x => x.kind === 'paren' && x.refs[1] === h.id && x.system === o.system);
+    const want = !!(h.notehead && h.notehead.paren);
+    if (want ? !(parens.length === 2 && parens.some(p => p.box[2] <= o.box[0] + TOL) && parens.some(p => p.box[0] >= o.box[2] - TOL)) : parens.length) shapeErr++;
+    const accs = objsOf(e.id).filter(x => x.kind === 'accidental' && x.refs[0] === h.id && !x.grace).sort((a, b) => a.box[0] - b.box[0]);
+    if (!h.acc || !accs.length) return;
+    const first = accs[0].glyph, last = accs[accs.length - 1].glyph;
+    const br = first === 'accidentalBracketLeft' && last === 'accidentalBracketRight', pa = first === 'accidentalParensLeft' && last === 'accidentalParensRight';
+    if (h.acc.bracket ? !br : h.acc.paren ? !pa : (br || pa)) encl++;
+  });
+  set('eg.notehead.shape_err', shapeErr);
+  set('eg.accidental.enclosure_err', encl);
+
+  /* ---- a whole, half or breve rest off the staff hangs from (sits on) a ledger line of its own (the G4c review M1) */
+  let restLedger = 0;
+  eng.objects.filter(o => o.kind === 'rest' && o.origin && (o.glyph === 'restWhole' || o.glyph === 'restHalf' || o.glyph === 'restDoubleWhole')).forEach(o => {
+    const f = spaceOf(o), t0 = staffTop.get(o.system + '|' + o.staffKey), last = Math.max(0, (linesOf.get(o.staffKey) || 5) - 1);
+    const ly = (o.origin[1] - t0) / f;
+    const lys = (o.glyph === 'restDoubleWhole' ? [ly, ly - 1] : [ly]).filter(v => Math.abs(v - Math.round(v)) < 0.02 && (v < -0.02 || v > last + 0.02));
+    const evs = [o.event].concat(o.merged || []);
+    const ledgers = eng.objects.filter(x => x.kind === 'ledger' && x.system === o.system && x.staffKey === o.staffKey && evs.indexOf(x.event) >= 0);
+    lys.forEach(v => {
+      const y = t0 + v * f;
+      if (!ledgers.some(L => Math.abs(cyOf(L.box) - y) <= TOL && L.box[0] <= o.box[0] + TOL && L.box[2] >= o.box[2] - TOL)) restLedger++;
+    });
+    if (!lys.length && ledgers.length) restLedger++;
+  });
+  set('eg.rest.ledger_missing', restLedger);
+
+  /* ---- a tuplet number without a bracket stands by its notes (§12.2; the G4c review M2): within 1.5 sp of the nearest
+     head, stem, flag, rest or beam of its members */
+  let far = 0;
+  const tupBy = groupBy(eng.objects.filter(o => o.kind === 'tuplet-number' || o.kind === 'tuplet-bracket'), o => o.refs[0]);
+  tupBy.forEach((list, tid) => {
+    if (list.some(o => o.kind === 'tuplet-bracket')) return;
+    const t = (plan.tuplets || []).find(x => x.id === tid);
+    if (!t) return;
+    const evs = new Set(t.events);
+    list.forEach(n => {
+      const mem = (sysStaff.get(n.system + '|' + n.staffKey) || []).filter(o => (o.event && evs.has(o.event) && ['notehead', 'rest', 'stem', 'flag'].indexOf(o.kind) >= 0) ||
+        (o.kind === 'beam' && (o.events || []).some(id => evs.has(id))));
+      if (!mem.length) return;
+      if (Math.min(...mem.map(o => boxGap(n.box, o.box))) / spaceOf(n) > 1.5 + TOL) far++;
+    });
+  });
+  set('eg.tuplet.number_far', far);
+
+  /* ---- A20 for what G4d-1a places: text (fingering, a glissando's word) on nothing - no note element, curve, mark or
+     other text; marks on no note element or curve and not on each other (a tuplet's number cuts its own bracket; a
+     tremolo crosses its own stem and beam by design) */
+  let text = 0, textText = 0, markMark = 0, markNote = 0;
+  const isText = o => TEXT_KINDS.indexOf(o.kind) >= 0, isMark = o => MARK_KINDS.indexOf(o.kind) >= 0, isNote = o => NOTE_KINDS.indexOf(o.kind) >= 0;
+  const own = (a, b) => (a.kind === 'tremolo' && (b.event === a.event || (b.kind === 'beam' && (b.events || []).indexOf(a.event) >= 0)));
+  sysStaff.forEach(list => {
+    pairs(list.filter(o => isText(o) || isMark(o) || isNote(o)), (a, b) => {
+      if (isText(a) && isText(b)) textText++;
+      else if (isText(a) || isText(b)) text++;
+      else if (isMark(a) && isMark(b)) { if (!((a.kind === 'tuplet-number' || b.kind === 'tuplet-number') && a.refs[0] === b.refs[0])) markMark++; }
+      else if (isMark(a) || isMark(b)) { if (!own(a, b) && !own(b, a)) markNote++; }
+    });
+  });
+  curves.forEach(c => {
+    (sysStaff.get(c.system + '|' + c.staffKey) || []).forEach(o => {
+      if (!isText(o) && !(isMark(o) && o.kind !== 'tuplet-bracket')) return;
+      if (curveCrosses(c, o.box)) { if (isText(o)) text++; else markNote++; }
+    });
+  });
+  set('eg.overlap.text', text);
+  set('eg.overlap.text_text', textText);
+  set('eg.overlap.mark_mark', markMark);
+  set('eg.overlap.mark_note', markNote);
+  /* §18.3: text is as wide as the table says (the layout reads no other width) */
+  set('eg.text.width_err', eng.objects.filter(o => o.text !== undefined && Math.abs((o.box[2] - o.box[0]) - TX.measure(o.text, o.font, o.size).w) > TOL).length);
+  /* every curve lies on the page */
+  const page = eng.pages[0];
+  set('eg.clip.curves', curves.filter(c => curveSamples.get(c).some(b => b[0] < -EPS || b[1] < -EPS || b[2] > page.w + EPS || b[3] > page.h + EPS)).length);
+}
+
+/* the metrics whose target is 0 (all but the maximum and the recorded count of smaller staves) */
+const MAXIMA = { 'eg.beam.slope_max': MAX_SLOPE, 'eg.curve.endpoint_err_max': 0.5, 'eg.curve.hit_ratio': 0.01 };
+/* recorded, not zero: systems drawn smaller; the slurs that cross a note between their ends (each diagnosed, at most 1 %
+   of the slurs - eg.curve.hit_ratio, over a suite in bench.js) and the slurs drawn */
+const RECORDED = ['eg.system.scaled', 'eg.curve.hits', 'eg.curve.slurs'];
+
+module.exports = { l2, EPS, TOL, MAXIMA, RECORDED, ACC_VS, DOT_VS, REST_VS, STEM_KINDS, DRAWN_KINDS, staffY, autoDir, sampleBoxes, bulge };
