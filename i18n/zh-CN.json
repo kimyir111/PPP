@@ -743,6 +743,8 @@
     "Whole score": "整首乐谱",
     "This part": "仅此段",
     "See the whole piece at once, with the weak bars shaded": "一次看完整首，薄弱小节会标色",
+    "Print / Save as PDF": "打印 / 另存为 PDF",
+    "Print this score, or save it as a PDF": "打印此乐谱，或将其另存为 PDF",
     "Red bars are the ones PPP found weak. Click a bar to start a passage, then click where it ends.": "红色小节是 PPP 认为薄弱的地方。点一个小节作为开始，再点一个作为结束。",
     "Measure {{n}} is the start — now click where the passage ends.": "第 {{n}} 小节是开始，请点击结束的小节。",
     "Play it from memory": "不看谱弹一遍",

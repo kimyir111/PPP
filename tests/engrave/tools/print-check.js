@@ -1,0 +1,135 @@
+/* G4e: print a real page's print command through headless Chrome (docs/GOALS/G04 §17, §27 G4e card - "look at the
+   output"). Local: needs this tree served and puppeteer.
+
+     NODE_ENV=production HOST=127.0.0.1 PORT=8801 node server.js
+     NODE_PATH=D:/PPP/node_modules node tests/engrave/tools/print-check.js --url http://127.0.0.1:8801
+       [--out tests/engrave/out/print]
+
+   For each of SONGS: opens the app under ?renderer=engrave, loads the piece the way a person's song opens (the
+   import door - scoreFromXml/scoreFromFile - or the app's own reader), switches to the whole-score view, then calls
+   window.PPPEngravePage.printScore() itself (the same function the "Print / Save as PDF" button calls) - the real
+   pipeline: PPPEngrave.app.resolve, printLayout, printSvgs, the hidden container, document.fonts.ready,
+   window.print(). Puppeteer's page.pdf() substitutes for a person's own "Save as PDF": Chrome headless renders
+   exactly what @media print shows (G04 §27 G4e: "puppeteer's page.pdf() can substitute"). Writes one PDF a piece to
+   <out> (gitignored, tests/engrave/out/) and a JSON summary; exit 1 on any failure. No G0 hold-out file is opened. */
+'use strict';
+const fs = require('fs');
+const path = require('path');
+const REPO = path.resolve(__dirname, '..', '..', '..');
+const puppeteer = require('puppeteer');
+const { preparePage } = require(path.join(REPO, 'tests', 'boot'));
+const H = require(path.join(REPO, 'tests', 'engrave', 'helpers.js'));
+
+const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
+const BASE = arg('--url', 'http://127.0.0.1:8801');
+const OUT = path.resolve(REPO, arg('--out', 'tests/engrave/out/print'));
+fs.mkdirSync(OUT, { recursive: true });
+const rd = p => fs.readFileSync(path.join(REPO, p), 'utf8');
+const HOLDOUT = H.holdoutPaths();
+const notHoldout = p => { if (HOLDOUT.has(p)) throw new Error('a G0 hold-out file is never opened here'); return p; };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* four real catalogue pieces (one long enough for several pages), plus two fixtures for the features their names
+   check: E28 multi-rest merging, E35 a multi-part score (its part name on the first system) */
+const SONGS = [
+  { name: 'fur-elise.musicxml', how: 'xml', xml: () => rd(notHoldout('catalog/fur-elise.musicxml')) },
+  { name: 'for-all-the-saints.musicxml', how: 'xml', xml: () => rd(notHoldout('catalog/hymns/for-all-the-saints.musicxml')) },
+  { name: 'czerny849-002.mxl', how: 'file', file: 'catalog/method/czerny849/002.mxl' },
+  { name: 'sonatina-020.mxl', how: 'file', file: 'catalog/method/sonatina/020.mxl' },
+  { name: 'E28-multirest.musicxml', how: 'xml', xml: () => rd('tests/engrave/fixtures/e/E28-multirest.musicxml') },
+  { name: 'E35-voice-and-piano.musicxml', how: 'xml', xml: () => rd('tests/engrave/fixtures/e/E35-voice-and-piano.musicxml') }
+];
+
+async function openPage(browser) {
+  const page = await browser.newPage();
+  const logs = [];
+  page.on('console', m => logs.push(m.text()));
+  page.on('pageerror', e => logs.push('pageerror: ' + e.message));
+  await preparePage(page);
+  await page.setViewport({ width: 1400, height: 1000 });
+  await page.goto(BASE + '/Piano%20Coach%20App.dc.html?renderer=engrave', { waitUntil: 'networkidle2' });
+  await page.waitForFunction(() => window.PPP && window.PPP.app && window.Vex && window.Vex.Flow, { timeout: 30000 });
+  await page.evaluate(() => window.__pppTest.practice());
+  await sleep(500);
+  page.__logs = logs;
+  return page;
+}
+async function openSong(page, s) {
+  const load = s.how === 'file'
+    ? page.evaluate(async (bytes, name) => {
+      const P = window.PPP, App = P.app;
+      const score = await P.scoreFromFile(new File([new Uint8Array(bytes)], name));
+      score.id = 'print-check:' + name;
+      App.shelveSong(); App.adoptScore(score);
+      App.enterSong(score, { kind: 'mxl', name: name, importedAt: 0, status: 'parsed' }, false);
+      App.go('player')();
+      await new Promise(r => App.setState({ wholeScore: true, beat: 0, playing: false }, r));
+    }, [...fs.readFileSync(path.join(REPO, notHoldout(s.file)))], path.basename(s.file))
+    : page.evaluate(async (how, xml, name) => {
+      const P = window.PPP, App = P.app;
+      const score = how === 'xml' ? P.scoreFromXml(xml, name) : P.parseMusicXML(xml, name);
+      score.id = 'print-check:' + name;
+      App.shelveSong(); App.adoptScore(score);
+      App.enterSong(score, { kind: 'musicxml', name: name, importedAt: 0, status: 'parsed' }, false);
+      App.go('player')();
+      await new Promise(r => App.setState({ wholeScore: true, beat: 0, playing: false }, r));
+    }, s.how, s.xml(), s.name);
+  await load;
+  for (let i = 0; i < 80; i++) {
+    await sleep(100);
+    const svg = await page.evaluate(() => { const s = document.querySelector('.ppp-staffwrap svg'); return !!(s && s.__ppp); });
+    if (svg) break;
+  }
+}
+/* the print command itself, in the page - the same call the button makes (App printScore()) */
+async function printIt(page) {
+  return page.evaluate(() => new Promise((resolve, reject) => {
+    if (!window.PPPEngravePage) { reject(new Error('engrave/page.js not loaded')); return; }
+    const App = window.PPP.app;
+    const score = App.state.score;
+    window.PPPEngravePage.printScore({
+      source: () => window.PPPEngrave.app,
+      songKey: () => App.state.songId || null,
+      window: window, document: document
+    }, score).then(resolve, reject);
+  }));
+}
+
+async function main() {
+  const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
+  const summary = { url: BASE, pieces: [] };
+  let failed = 0;
+  try {
+    for (const s of SONGS) {
+      const page = await openPage(browser);
+      try {
+        await openSong(page, s);
+        const r = await printIt(page);
+        const ok = r && r.ok;
+        const pageCount = await page.evaluate(() => document.querySelectorAll('#ppp-print-root .ppp-print-page').length);
+        /* window.print() was actually called (stubbed by preparePage/the test harness's own print stub if any; here we
+           just confirm the container built the right number of pages and no raster, then take Chrome's own PDF of
+           the print media - the closest thing to a person choosing "Save as PDF" in the dialog window.print() opens */
+        const outFile = path.join(OUT, s.name.replace(/\.(musicxml|mxl)$/, '') + '.pdf');
+        await page.pdf({ path: outFile, printBackground: true, preferCSSPageSize: true });
+        const stat = fs.statSync(outFile);
+        console.log((ok ? 'ok  ' : 'FAIL') + ' ' + s.name + ' - pages ' + pageCount + ' (engine: ' + (r && r.pages) + '), raster ' +
+          JSON.stringify(r && r.raster) + ', pdf ' + stat.size + ' bytes -> ' + path.relative(REPO, outFile));
+        if (!ok || pageCount !== (r && r.pages) || !(r && r.raster && r.raster.ok)) failed++;
+        summary.pieces.push({ name: s.name, ok: !!ok, pages: pageCount, enginePages: r && r.pages, raster: r && r.raster, pdfBytes: stat.size, logs: page.__logs.slice(0, 20) });
+      } catch (e) {
+        failed++;
+        console.log('FAIL ' + s.name + ' - ' + e.message);
+        summary.pieces.push({ name: s.name, ok: false, error: e.message, logs: page.__logs.slice(0, 20) });
+      } finally {
+        await page.close();
+      }
+    }
+  } finally {
+    await browser.close();
+  }
+  fs.writeFileSync(path.join(OUT, 'print-check.json'), JSON.stringify(summary, null, 1) + '\n');
+  console.log(failed ? (failed + ' FAILED') : 'all pieces printed cleanly');
+  process.exit(failed ? 1 : 0);
+}
+main().catch(e => { console.error(e); process.exit(1); });

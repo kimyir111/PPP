@@ -35,6 +35,26 @@
   'use strict';
 
   const COST = Object.freeze({ C_COUNT: 12, C_COMPRESS: 400, C_SPARSE: 60, S_SPARSE: 1.5, C_ONE: 50, C_LONE: 60, SLACK: 1.05, MAX_BARS: 12 });
+  /* print's cost (G04 §15.5, G4-E1): a Knuth-Plass-style DP, density alone (no preferred bar count). Cost of one
+     system spanning bars i..j: 100 * (stretch - 1.15)^2, stretch = width / natural width (a system at u = 4 sp per
+     quarter is its natural width); a one-bar system (when the piece has more than one bar) costs +50 - the DP's own
+     minimisation is what "excludes it if avoidable": the penalty only stays paid when no other break does better, so
+     nothing more than this constant is needed to satisfy "avoided unless unavoidable". 1-6 bars a system. The last
+     system may be ragged: PCOST.RAGGED_LAST reads it as "if the last system, held to the same width as the others,
+     would need compressing below its natural width (stretch < 1), that compression is free - there is no other
+     system to move those bars to. A last system with room to spare (stretch >= 1, the ordinary case of a short
+     trailing line) still pays the usual distance from 1.15, so the DP does not strand a lone bar there when pulling
+     one back from the system before it would look better; layout.js renders that short last system unstretched
+     (ragged) when it is comfortably under the width, the same "ragged" rendering the screen breaker already gives
+     its own last system. */
+  const PCOST = Object.freeze({ TARGET: 1.15, K: 100, ONE: 50, SLACK: 1.05, MAX_BARS: 6 });
+  function printSystemCost(p) {
+    if (p.bars > 1 && p.minWidth * PCOST.SLACK > p.width) return Infinity;
+    const s = p.natural > 0 ? p.width / p.natural : 1;
+    let c = (p.last && s < 1) ? 0 : PCOST.K * (s - PCOST.TARGET) * (s - PCOST.TARGET);
+    if (p.bars === 1 && p.total > 1) c += PCOST.ONE;
+    return c;
+  }
 
   /* one system's cost; {minWidth, natural} of bars [i..j] at the given width */
   function systemCost(p) {
@@ -78,5 +98,38 @@
     return { systems: systems, cost: best[count] };
   }
 
-  return Object.freeze({ COST, systemCost, breakLines });
+  /* print line breaking (G04 §15.5, G4-E1): the same shape of DP as breakLines (measure(i, j, last) -> {minWidth,
+     natural}, forced: a Set of measure indices that must start a system), width fixed (print does not justify to a
+     preferred bar count), 1-6 bars a system, printSystemCost's density-only cost. A separate function, not a
+     parameterisation of breakLines, so the screen breaker (already reviewed, its committed hashes depended on) is
+     never touched by this change - zero shared mutable state, no risk of moving the screen's output. */
+  function printBreakLines(count, width, measure, forced, banned) {
+    forced = forced || new Set();
+    banned = banned || new Set();
+    const best = new Array(count + 1).fill(Infinity), from = new Array(count + 1).fill(-1);
+    best[0] = 0;
+    for (let j = 1; j <= count; j++) {
+      const lo = Math.max(0, j - PCOST.MAX_BARS);
+      for (let i = lo; i < j; i++) {
+        if (!isFinite(best[i])) continue;
+        /* a bar a multi-measure rest merges (G4-E2) may not start a system: whatever system holds the bar before it
+           must hold it too, so the run stays whole (its own kind of "never split a system", §15.5) */
+        if (banned.has(i)) continue;
+        let blocked = false;
+        for (let f = i + 1; f < j; f++) if (forced.has(f)) { blocked = true; break; }
+        if (blocked) continue;
+        const m = measure(i, j - 1, j === count);
+        const c = printSystemCost({ bars: j - i, width: width, minWidth: m.minWidth, natural: m.natural, last: j === count, total: count });
+        if (!isFinite(c)) continue;
+        const t = best[i] + c;
+        if (t < best[j] - 1e-9) { best[j] = t; from[j] = i; }
+      }
+      if (from[j] < 0) { best[j] = (isFinite(best[j - 1]) ? best[j - 1] : 0) + PCOST.ONE; from[j] = j - 1; }
+    }
+    const systems = [];
+    for (let j = count; j > 0; j = from[j]) systems.unshift([from[j], j - 1]);
+    return { systems: systems, cost: best[count] };
+  }
+
+  return Object.freeze({ COST, systemCost, breakLines, PCOST, printSystemCost, printBreakLines });
 });

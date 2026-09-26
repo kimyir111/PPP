@@ -1142,6 +1142,9 @@
                 <sc-if value="{{ showSheetControls }}" hint-placeholder-val="{{ true }}">
                   <button onClick="{{ toggleWhole }}" style="{{ wholeBtnStyle }}" title="{{ wholeHint }}">{{ wholeLabel }}</button>
                 </sc-if>
+                <sc-if value="{{ showPrintControls }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ printScore }}" style="{{ printBtnStyle }}" title="{{ printHint }}">{{ printLabel }}</button>
+                </sc-if>
                 <button class="ppp-focus-only" data-keys-toggle onClick="{{ toggleKeys }}" style="{{ keysBtnStyle }}" title="{{ keysHint }}">{{ keysLabel }}</button>
                 <sc-if value="{{ showVisualizerControls }}" hint-placeholder-val="{{ false }}">
                   <button onClick="{{ toggleVisualizerSettings }}" style="{{ visualSettingsBtnStyle }}" aria-expanded="{{ visualSettingsExpanded }}">Visual settings</button>
@@ -10556,18 +10559,18 @@ const ENGRAVE_FILES = [
   ['metrics', '259583c8ba91'],
   ['metrics-text', 'cbb942fd8cbe'],
   ['space', 'e3e23b29d607'],
-  ['breaks', 'd468932e22ac'],
+  ['breaks', 'c1821ba66dbe'],
   ['skyline', '95b90524bd90'],
   ['canon', '81df50e82079'],
   ['notation', 'cdb7622fe315'],
   ['curves', 'f07b5e357536'],
   ['marks', '88ff84541273'],
   ['sysmarks', 'bc1b0605ae44'],
-  ['layout', '2f24d37b94c1'],
+  ['layout', '73a158c4efad'],
   ['practice', '896d337259aa'],
   ['outlines', 'a1414e5d01dd'],
-  ['svg', '46d7288935b8'],
-  ['page', '0083c650e2e4']
+  ['svg', 'f78b662f6a18'],
+  ['page', 'b6b9e6ef625e']
 ];
 const ENGRAVE_SWITCH = (() => {
   const sw = { renderer: 'legacy', strict: false, stats: { fallbacks: {}, bySong: {} } };
@@ -16693,6 +16696,25 @@ class Component extends DCLogic {
       paper: this.state.toggles.paper !== false
     }, props));
   }
+  /* G4e: "Print / Save as PDF" (G04 §17.1) - dev-switch gated (showPrintControls); reaches no one until G4f's flip.
+     Builds a print layout from the same source the engraver reads for this Score (PPPEngrave.app.resolve, §7.4:
+     the file's own graph when it agrees with the Score, else the Score's own projection), puts one <svg> a page
+     into a hidden container, waits document.fonts.ready, then calls window.print() - engrave/page.js printScore()
+     does all of this; the button only wires it to the app's engrave-files loader and this Score. */
+  printScore() {
+    const score = this.state.score;
+    if (!score || typeof window === 'undefined') return;
+    loadEngrave().then(PG => PG.printScore({
+      source: () => window.PPPEngrave.app,
+      songKey: () => this.state.songId || null,
+      window: window,
+      document: document
+    }, score)).then(r => {
+      if (!r || r.ok === false) {
+        if (window.console) console.warn('[ppp] print', r && r.code, r && r.error && r.error.message);
+      }
+    }, e => { if (window.console) console.warn('[ppp] print load failed', e && e.message); });
+  }
   visualTimeline(S) {
     S = S || this.state;
     const range = this.range(S), from = range[0], to = range[1];
@@ -18217,6 +18239,13 @@ class Component extends DCLogic {
       wholeBtnStyle: this.chip(S.wholeScore),
       wholeLabel: tx(S.wholeScore ? 'Whole score' : 'This part'),
       wholeHint: tx('See the whole piece at once, with the weak bars shaded'),
+      /* G4e: print/PDF, dev-switch gated the same way the engraver renderer is (G04 §27 G4e card - no flip until
+         G4f) - only in the whole-score view, since print lays out the whole piece regardless of the close window */
+      showPrintControls: S.wholeScore && engraveWanted({ renderer: PPP.renderer }),
+      printBtnStyle: this.chip(false),
+      printLabel: tx('Print / Save as PDF'),
+      printHint: tx('Print this score, or save it as a PDF'),
+      printScore: () => this.printScore(),
       focusAttr: S.focus ? 'true' : 'false',
       keysAttr: S.toggles.keys === false ? 'false' : 'true',
       kbVar: `--ppp-kb-h:${this.kbHeight()}px;`,

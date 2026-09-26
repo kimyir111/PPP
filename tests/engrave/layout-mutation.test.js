@@ -22,6 +22,7 @@ const path = require('path');
 const { REPO, SG, graphOf, goldenGraphs } = require('./helpers.js');
 const { l2 } = require('./l2.js');
 const A29 = require('./a29.js');
+const PL2 = require('./print-l2.js');
 
 const REST_PUSH = "        objs.push(o);\n        restY.set(e.id, y);\n";
 const TIE_TOP = '      if (!fh && !th) return;\n      const fe = t.from ? K.headEvent.get(t.from) : null, te = t.to ? K.headEvent.get(t.to) : null;';
@@ -528,5 +529,53 @@ test('every layout mutation (G04 §23: M1-M12, M14-M18, M21, M23, M24; the G4c r
   assert.throws(() => withEdits({ id: 'X2', edits: [['const ', 'let ']] }, () => null), /X2: the anchor is found exactly once/);
   /* the copy is back to what it was */
   assert.deepEqual(run(load(), graphs).output, base.output);
+});
+
+/* G4e (§15.5, §23): print's own mutations, on the same tmp copy (test.before/after above) - a separate block, not
+   folded into MUTATIONS/CONFIGS above, because print lays out the whole score at a fixed A4 width rather than a
+   screen breakpoint, and l2.js's own metrics assume one continuous page (a system's y only ever grows down it) -
+   asking them about a multi-page score would ask a question across a page boundary that makes no sense. print-l2.js
+   is the print-specific equivalent, and this block drives it the same way the block above drives l2.js: an anchored
+   edit to a temporary copy, laid out, checked against a metric that is clean without the edit and not without it. */
+test('G4e print mutations: M25 (a system split across pages) and the honouring of respectSourceBreaks are live and caught', async () => {
+  const g25 = await graphOf('catalog/method/beyer/001.mxl');
+  const gSrc = await graphOf('tests/engrave/fixtures/e/E09-tie-barline-system.musicxml');
+
+  /* M25: a system split across two pages - engineered directly (an object's own page independent of its system's),
+     since nothing in ordinary pagination ever lets this happen; eg.page.split_system is what must say so */
+  const m25 = {
+    id: 'M25', file: 'layout.js', what: 'a system\'s own objects split across two pages by x, instead of the whole system on one page',
+    expect: ['eg.page.split_system'],
+    edits: [['system: sys.index, page: pi, staffKey: o.staffKey || null, measure: o.measure || null,',
+      'system: sys.index, page: (o.box[0] > sys.x + sys.w / 2 ? pi + 1 : pi), staffKey: o.staffKey || null, measure: o.measure || null,']]
+  };
+  const E0 = load();
+  const base25 = PL2.pageMetrics(E0.layout.engrave(E0.plan(g25, { mode: 'print' }), { mode: 'print' }));
+  assert.equal(base25['eg.page.split_system'], 0, 'M25: clean on the real code');
+  withEdits(m25, E2 => {
+    const eng = E2.layout.engrave(E2.plan(g25, { mode: 'print' }), { mode: 'print' });
+    const m = PL2.pageMetrics(eng);
+    assert.ok(m['eg.page.split_system'] > 0, 'M25 (' + m25.what + '): caught by eg.page.split_system - ' + JSON.stringify(m));
+  });
+
+  /* respectSourceBreaks (§15.5, default false): forcing it regardless of the flag - E09 has a real
+     Measure.layout.newSystem, and true/false give different system lists on the real code (2,3 bars a system vs a
+     single 5-bar one) */
+  const srcMut = {
+    id: 'RSB', file: 'layout.js', what: 'the source\'s forced breaks honoured regardless of respectSourceBreaks',
+    expect: ['eg.page.source_break_ignored'],
+    edits: [['const forced = cfg.respectSourceBreaks ? P.layoutBreaks : new Set();', 'const forced = P.layoutBreaks;']]
+  };
+  const baseSys = cfg => E0.layout.layout(E0.layout.prepare(E0.plan(gSrc, { mode: 'print' })), Object.assign({ mode: 'print' }, cfg)).systems;
+  const hadBreak = E0.layout.prepare(E0.plan(gSrc, { mode: 'print' })).layoutBreaks.size > 0;
+  assert.ok(hadBreak, 'the fixture has a source break to honour');
+  assert.equal(PL2.sourceBreakIgnored(baseSys({ respectSourceBreaks: true }), baseSys({ respectSourceBreaks: false }), hadBreak), 0, 'RSB: clean on the real code');
+  withEdits(srcMut, E2 => {
+    const P2 = E2.layout.prepare(E2.plan(gSrc, { mode: 'print' }));
+    const sysT = E2.layout.layout(P2, { mode: 'print', respectSourceBreaks: true }).systems;
+    const sysF = E2.layout.layout(P2, { mode: 'print', respectSourceBreaks: false }).systems;
+    const v = PL2.sourceBreakIgnored(sysT, sysF, hadBreak);
+    assert.ok(v > 0, 'RSB (' + srcMut.what + '): caught by eg.page.source_break_ignored - ' + v);
+  });
 });
 

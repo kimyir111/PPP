@@ -743,6 +743,8 @@
     "Whole score": "全体を表示",
     "This part": "この部分だけ",
     "See the whole piece at once, with the weak bars shaded": "曲全体を一度に表示。弱い小節に色が付きます",
+    "Print / Save as PDF": "印刷 / PDFとして保存",
+    "Print this score, or save it as a PDF": "この楽譜を印刷するか、PDFとして保存します",
     "Red bars are the ones PPP found weak. Click a bar to start a passage, then click where it ends.": "赤い小節が PPP の見つけた弱い所です。小節をクリックで開始、もう一度で終了。",
     "Measure {{n}} is the start — now click where the passage ends.": "第{{n}}小節が開始です。終わりの小節をクリックしてください。",
     "Play it from memory": "楽譜を見ずに弾く",

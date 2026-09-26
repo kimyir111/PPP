@@ -59,7 +59,12 @@
    EngravedScore's contract: every change to what layout() outputs moves it
    (G4-D1a-1: engr/4 is G4d-1b's marks attached to systems, vertical spacing and
    bracketed accidentals; engr/5 its fixer's tempo line - the words a file prints
-   around a metronome mark on the mark's line, G4-D1b-17).
+   around a metronome mark on the mark's line, G4-D1b-17; engr/6 is G4e's print
+   mode - config.mode 'print', a paginated multi-page EngravedScore (`pages`, and
+   `page` on every object and system), multi-measure rest merging and the title
+   area, page number and bar-number text objects layoutPrint() adds - the screen
+   mode's own output is byte-identical, moved only because the version is the
+   whole function's contract, not one mode's, G4-E1).
    ========================================================================== */
 (function (root, factory) {
   'use strict';
@@ -74,7 +79,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (SG, MT, SP, BR, SK, CN, NT, TX, CV, MK, SM) {
   'use strict';
 
-  const VERSION = 'engr/5';
+  const VERSION = 'engr/6';
   const R = SG.rational, EG = MT.ENGRAVING, r2 = CN.r2;
   const STEPS = 'CDEFGAB';
   /* horizontal gaps, sp (G04 §9.3, §15.4) */
@@ -91,6 +96,25 @@
      overlapped (G4-B5); only beyond that is it an overflow */
   const FIT_MIN = 0.5;
   const SCREEN = Object.freeze({ desktop: { width: 100, bars: 4 }, phone: { width: 40, bars: 2 }, phoneMaxPx: 720 });
+  /* print page geometry (G04 §15.1, §15.5, §17; G4-E1): A4 portrait, 15 mm margin, staff 7.0 mm - 1 sp = 1.75 mm, so
+     the content is ~103 sp wide. Coordinates stay in sp everywhere (as the screen's do); the mm conversion is only
+     the print container's physical size (page.js, the browser's own @page rule), never a unit this module writes. */
+  const MM_PER_SP = 1.75;
+  const PRINT = Object.freeze({
+    mm: Object.freeze({ width: 210, height: 297, margin: 15 }),
+    pageW: r2(210 / MM_PER_SP), pageH: r2(297 / MM_PER_SP), margin: r2(15 / MM_PER_SP),
+    contentW: r2((210 - 30) / MM_PER_SP)
+  });
+  /* the title area (§15.5): title centred, composer right-aligned, above the first system of page 1 only - real text
+     metrics (metrics-text.js), not a guess, so the space it reserves is deterministic and exact */
+  const TITLE = Object.freeze({ titleSize: 2.6, titleFont: 'serif', composerSize: 1.5, composerFont: 'serif',
+    gapAbove: 1.5, gapBetween: 0.8, gapBelow: 2.5 });
+  /* the page number (§15.5, from page 2): bottom centre; the multi-rest's bar and count (G4-E2): a plain bar (not
+     the SMuFL glyph with its hash-mark variants - no new pinned glyph this session) centred on the middle line, with
+     its count above; a fixed width when it is a system's only content, stretched across the run once every bar's x
+     in the system is known (stretchRests) */
+  const PAGENO = Object.freeze({ size: 1.4, font: 'mono', gapAboveBottom: 3.0 });
+  const MREST = Object.freeze({ w: 8.0, y0: 1.75, y1: 2.25, numSize: 2.2, numFont: 'serif', numY: -1.0 });
   /* a grace note's slash (acciaccatura, §14.5): a stroke across the stem near its end, as VexFlow draws it */
   const SLASH = Object.freeze({ x0: -0.7, y0: 2.35, x1: 1.3, y1: 0.7, t: 0.12 });
   /* how far a stem under a beam may reach once the beam is placed (slope, more beams, a leap): what two voices at one
@@ -1009,7 +1033,7 @@
       const barlineStyle = m.barline && m.barline.right ? m.barline.right : null;
       const leftBar = m.barline && m.barline.left ? m.barline.left : null;
       return { id: m.id, number: m.number, index: mi, start: toNum(m.start), dur: dur, cols: cols, springs: springs,
-        leftBar: leftBar, rightBar: barlineStyle };
+        leftBar: leftBar, rightBar: barlineStyle, multiRest: m.multiRest || null };
     });
 
     /* ---- per measure: its system head (if a system starts there), start items (mid-system), trailing clef,
@@ -1196,7 +1220,7 @@
       endings: plan.endings || [], layoutBreaks: new Set(plan.measures.filter(m => m.layoutBreak && m.layoutBreak.newSystem).map(m => mIndex.get(m.id))),
       beams: beams, tuplets: tuplets, voiceOf: voiceOf, roles: roles, multiVoice: multiVoice, evStaff: new Map(plan.events.map(e => [e.id, e.staff])), marks: marks, sys: sys,
       evMeasure: new Map(plan.events.map(e => [e.id, e.m])), evTypes: new Map(plan.events.map(e => [e.id, e.type])), dirOf: dirOf,
-      diagnostics: diagnostics, pending: pending };
+      diagnostics: diagnostics, pending: pending, meta: plan.meta || {}, parts: plan.parts || [] };
   }
 
   /* ================================================================ layout */
@@ -1246,6 +1270,11 @@
      precision of every coordinate, so the config the engraver caches under is the config laid out (review O2). */
   function normalizeConfig(cfg) {
     cfg = cfg || {};
+    if (cfg.mode === 'print') {
+      /* print always lays out the whole score, at the fixed A4 page size (§15.1): no window, no breakpoint, no
+         caller-supplied width - only respectSourceBreaks is print's own knob (§15.5) */
+      return { mode: 'print', respectSourceBreaks: !!cfg.respectSourceBreaks, window: null };
+    }
     const bp = cfg.breakpoint === 'phone' ? 'phone' : 'desktop';
     const win = Array.isArray(cfg.window) && cfg.window.length === 2 ? [Math.max(0, Math.floor(+cfg.window[0])), Math.floor(+cfg.window[1])] : null;
     return { mode: 'screen', breakpoint: bp, width: r2(+(cfg.width || SCREEN[bp].width)), barsPerSystem: Math.max(1, Math.round(+(cfg.barsPerSystem || SCREEN[bp].bars))),
@@ -1359,9 +1388,506 @@
     });
   }
 
+  /* ================================================================ print (G04 §15.5, §17; G4-E1, G4-E2, G4-E3) */
+  /* multi-measure rests merge only for print (§17.3; A11, A40): a run of `multiRest` measures (G4a already reads
+     the graph field into every measure) becomes one wide bar - a plain thick bar per staff (not the SMuFL glyph
+     with its hash-mark variants: this session pins no new glyph) at the run's first bar, with the bar count once
+     above the top staff, and bars 2..N of the run replace the previous bar's line (M.replacesBar, the same
+     mechanism a forward repeat's open bar already uses) so nothing draws between them. -> {measures, banned,
+     runLen}: banned is the Set of measure indices a system may not start at (bars 2..N of every run - the DP's own
+     "never split a system", extended to a merged run); runLen maps a run's first measure id to its bar count, for
+     stretchRests() once the system's x is known. Screen never calls this (mode 'screen' keeps every bar drawn,
+     G3's practice-by-measure decision, §15.1) - a completely separate function, not a config flag inside prepare()
+     or segments(), so the screen path (its committed hashes) is never at risk from this addition. */
+  function mergeRests(P) {
+    const runs = [];
+    const n = P.measures.length;
+    for (let k = 0; k < n;) {
+      const nr = P.measures[k].multiRest;
+      if (nr && nr >= 2 && k + nr <= n) { runs.push([k, k + nr - 1]); k += nr; } else k += 1;
+    }
+    if (!runs.length) return { measures: P.measures, banned: null, runLen: null };
+    const out = P.measures.slice();
+    const banned = new Set(), runLen = new Map();
+    runs.forEach(([a, b]) => {
+      for (let m = a + 1; m <= b; m++) banned.add(m);
+      const first = out[a], count = b - a + 1;
+      runLen.set(first.id, count);
+      /* measure: null - once stretched (stretchRests) these span the whole run, not the one measure their id names,
+         so the single-measure containment check (H8) does not apply to them; refs keeps the run's first measure id
+         for provenance */
+      const objs = P.staves.map(s => ({ id: 'd:multirest:' + first.id + ':' + s.id, kind: 'rest', refs: [first.id], measure: null,
+        staffKey: s.id, layer: 'note', box: [0, MREST.y0, MREST.w, MREST.y1] }));
+      const nm = TX.measure(String(count), MREST.numFont, MREST.numSize);
+      objs.push({ id: 'd:multirest-n:' + first.id, kind: 'text', refs: [first.id], measure: null, staffKey: P.staves[0].id, layer: 'note',
+        text: String(count), font: MREST.numFont, size: MREST.numSize, box: [0, MREST.numY + nm.top, nm.w, MREST.numY + nm.bottom] });
+      out[a] = Object.assign({}, first, { cols: [{ at: '0', time: true, left: 0, objects: objs }], springs: [{ g: 0, rod: MREST.w }] });
+      for (let m = a + 1; m <= b; m++) {
+        out[m] = Object.assign({}, out[m], { open: { objects: [], w: 0 }, start: { objects: [], w: 0 }, trailing: { objects: [], w: 0 },
+          cols: [], springs: [], replacesBar: true });
+      }
+    });
+    return { measures: out, banned: banned, runLen: runLen };
+  }
+  /* once a system's bars all have their x (mOut): stretch a merged run's bar(s) and count from the run's first bar
+     to its last, so it reads as one wide bar rather than a narrow one followed by empty space */
+  function stretchRests(mOut, sysObjs, runLen) {
+    if (!runLen || !runLen.size) return;
+    const at = new Map(mOut.map((m, idx) => [m.id, idx]));
+    runLen.forEach((n, firstId) => {
+      const idx = at.get(firstId);
+      if (idx === undefined) return;
+      const endIdx = idx + n - 1;
+      if (endIdx >= mOut.length) return;
+      const x0 = mOut[idx].contentX0, x1 = mOut[endIdx].contentX1;
+      const prefix = 'd:multirest:' + firstId + ':';
+      /* the x-walk re-sets `measure` to the column's own measure (segments()'s generic column handling) - put it
+         back to null once stretched: these span the whole run, not the one bar their id names (H8 exemption) */
+      sysObjs.forEach(o => { if (o.id.indexOf(prefix) === 0) { o.box = [x0, o.box[1], x1, o.box[3]]; o.measure = null; } });
+      const label = sysObjs.find(o => o.id === 'd:multirest-n:' + firstId);
+      if (label) { const w = label.box[2] - label.box[0], cx = (x0 + x1) / 2 - w / 2; label.box = [cx, label.box[1], cx + w, label.box[3]]; label.measure = null; }
+    });
+  }
+  /* the title area's reserved height on page 1 (real text metrics, so it is exact and deterministic): 0 when the
+     graph names neither a title nor a composer (§15.5, ledger 'meta' status - only these two are ever drawn, the
+     rest stay 'deferred' as G4-U5 already decided, G04 ledger.js) */
+  function titleHeight(meta) {
+    const hasTitle = !!(meta && meta.title), hasComposer = !!(meta && meta.composer);
+    if (!hasTitle && !hasComposer) return 0;
+    let h = TITLE.gapAbove;
+    if (hasTitle) { const m = TX.measure(meta.title, TITLE.titleFont, TITLE.titleSize); h += -m.top + Math.max(0, m.bottom); }
+    if (hasComposer) { const m = TX.measure(meta.composer, TITLE.composerFont, TITLE.composerSize); h += (hasTitle ? TITLE.gapBetween : 0) + -m.top + Math.max(0, m.bottom); }
+    return r2(h + TITLE.gapBelow);
+  }
+  /* the per-system local geometry (page-independent): staff offsets, skylines, how far the system reaches above and
+     below its own y = 0 - computed once, before any page is decided, so choosing or moving a page never re-derives
+     it (G04 §15.3, shared shape with the screen's own per-system stacking, layout()) */
+  function centreBandsAt(P, sys, off, lineSpan, sky, f, pageW) {
+    P.staves.forEach((s, k) => {
+      const band = sys.objects.filter(o => o.band && o.staffKey === s.id);
+      const n = P.staves[k + 1];
+      if (!band.length || !n || n.part !== s.part) return;
+      const own = new SK.Skyline(0, pageW);
+      own.add([sys.x, 0, sys.x + sys.w, lineSpan(s)]);
+      sys.objects.forEach(o => { if (o.staffKey === s.id && !o.band) own.add(o.box); });
+      sys.curves.forEach(c => { if (c.staffKey === s.id) CV.samples(c, c.t, c.line === 'wavy' ? CV.GLISS.amp * f : 0).forEach(bx => own.add(bx)); });
+      const dy = off.get(n.id) - off.get(s.id);
+      let up = Infinity, down = Infinity;
+      band.forEach(o => {
+        const a = own.bottom(o.box[0], o.box[2]), b = sky.get(n.id).top(o.box[0], o.box[2]);
+        up = Math.min(up, o.box[1] - (a === null ? lineSpan(s) : a));
+        down = Math.min(down, (b === null ? 0 : Math.min(0, b)) + dy - o.box[3]);
+      });
+      const d = Math.max(0, Math.min((down - up) / 2, down - VGAP.pad * f));
+      if (d > 1e-9) band.forEach(o => moveGeom(o, 0, d));
+    });
+  }
+  function localGeometry(P, sys, pageW) {
+    const f = sys.space;
+    const lineSpan = s => Math.max(0, s.lines - 1) * f;
+    const sky = new Map(P.staves.map(s => [s.id, new SK.Skyline(0, pageW)]));
+    P.staves.forEach(s => sky.get(s.id).add([sys.x, 0, sys.x + sys.w, lineSpan(s)]));
+    sys.objects.forEach(o => { if (sky.has(o.staffKey)) sky.get(o.staffKey).add(o.box); });
+    sys.curves.forEach(c => { if (sky.has(c.staffKey)) CV.samples(c, c.t, c.line === 'wavy' ? CV.GLISS.amp * f : 0).forEach(b => sky.get(c.staffKey).add(b)); });
+    const off = new Map();
+    let o = 0;
+    P.staves.forEach((s, k) => {
+      if (k > 0) {
+        const prev = P.staves[k - 1];
+        const min = (prev.part === s.part ? VGAP.inPart : VGAP.betweenParts) * f;
+        const need = SK.clearance(sky.get(prev.id), lineSpan(prev), sky.get(s.id), 0, VGAP.pad * f);
+        o += lineSpan(prev) + Math.max(min, need);
+      }
+      off.set(s.id, o);
+    });
+    centreBandsAt(P, sys, off, lineSpan, sky, f, pageW);
+    const first = P.staves[0], lastS = P.staves[P.staves.length - 1];
+    const t0 = sky.get(first.id).top(0, pageW);
+    const topReach = Math.min(0, t0 === null ? 0 : t0);
+    let bottomLocal = 0;
+    P.staves.forEach(s => {
+      const sk = sky.get(s.id);
+      let b = sk.bottom(0, pageW);
+      sys.objects.forEach(o2 => { if (o2.band && o2.staffKey === s.id) b = b === null ? o2.box[3] : Math.max(b, o2.box[3]); });
+      bottomLocal = Math.max(bottomLocal, off.get(s.id) + Math.max(lineSpan(s), b === null ? 0 : b));
+    });
+    return { lineSpan: lineSpan, sky: sky, off: off, topReach: topReach, bottomLocal: bottomLocal, f: f, first: first, lastS: lastS,
+      lastOff: off.get(lastS.id), lastSpan: lineSpan(lastS) };
+  }
+  /* one system's spring constant (space.js, §9.4): justified to W, or - the last system only - ragged at a
+     reference u (the screen's and print's own median, each keeping its own) when that leaves it comfortably short of
+     W (§15.2, §15.5). Shared by the screen's continuous flow and print's paginated one - one place, so a mutation
+     that targets this line (M7a, M7b) has exactly one to find, in whichever mode runs it. */
+  function resolveSystemU(parts, W, us, last, diagnostics, firstMeasureId) {
+    let u, ragged = false, fit = 1;
+    const min = SP.minWidth(parts.springs, parts.fixed);
+    if (last) {
+      const sorted = us.slice().sort((a, b) => a - b);
+      const uRef = sorted.length ? sorted[Math.floor((sorted.length - 1) / 2)] : SP.U_NATURAL;
+      if (SP.width(parts.springs, parts.fixed, uRef) <= 0.8 * W) { u = uRef; ragged = true; }
+    }
+    if (u === undefined) {
+      const sol = SP.solve(parts.springs, parts.fixed, W);
+      u = sol.u;
+      if (sol.overflow) {
+        fit = Math.max(FIT_MIN, W / min);
+        if (min * fit > W + 1e-9) diagnostics.push({ code: 'SYSTEM_OVERFLOW', refs: [firstMeasureId], detail: r2(min * fit) + ' sp > ' + W + ' sp' });
+        else diagnostics.push({ code: 'SYSTEM_SCALED', refs: [firstMeasureId], detail: 'staff space ' + r2(fit) });
+      }
+    }
+    return { u: u, ragged: ragged, fit: fit };
+  }
+  /* the x-walk over one system's segments (§9.4, §15.4): every fixed piece placed, every spring solved at `u`,
+     centred whole-measure (and merged multi-rest, G4-E2) content recentred at each measure's close. Shared by the
+     screen's continuous flow and print's paginated one, so this walk (and the one mutable line M7a targets) exists
+     once in the file regardless of which mode built it. -> {sysObjs, mOut, x} (x: the system's right edge). */
+  function walkSystem(measuresList, parts, x0, u, si) {
+    const sysObjs = [], mOut = [];
+    let x = x0, cur = null;
+    parts.segs.forEach(g => {
+      if (g.open !== undefined) { cur = { x: x, columns: [], centered: [] }; return; }
+      if (g.contentStart) { cur.contentX0 = x; x += g.w; return; }
+      if (g.spring) {
+        const colX = x;
+        cur.columns.push({ at: g.col.at, x: colX, time: g.col.time });
+        g.col.objects.forEach(o => {
+          const ob = Object.assign({}, o, { measure: g.measure, colX: colX });
+          moveGeom(ob, colX, 0);
+          sysObjs.push(ob);
+          if (o.center) cur.centered.push(ob);
+        });
+        x += Math.max(u * g.spring.g, g.spring.rod);
+        return;
+      }
+      if (g.contentEnd) { cur.contentX1 = x; return; }
+      if (g.close !== undefined) {
+        const M = measuresList[g.close];
+        cur.centered.forEach(ob => {
+          const w = ob.box[2] - ob.box[0], cx = (cur.contentX0 + cur.contentX1 - GAP.beforeBar) / 2 - w / 2;
+          ob.box = [cx, ob.box[1], cx + w, ob.box[3]];
+        });
+        mOut.push({ id: M.id, number: M.number, system: si, x: cur.x, w: x - cur.x, contentX0: cur.contentX0, contentX1: cur.contentX1, columns: cur.columns });
+        cur = null;
+        return;
+      }
+      if (g.objects) g.objects.forEach(o => {
+        const ob = Object.assign({}, o, { measure: g.measure }, g.courtesy ? { courtesy: true } : null);
+        moveGeom(ob, x, 0);
+        sysObjs.push(ob);
+      });
+      x += g.w;
+    });
+    return { sysObjs: sysObjs, mOut: mOut, x: x };
+  }
+
+  function layoutPrint(P, cfg) {
+    const diagnostics = P.diagnostics.slice();
+    const n = P.measures.length;
+    const merged = mergeRests(P);
+    const PM = merged.measures;
+    const forced = cfg.respectSourceBreaks ? P.layoutBreaks : new Set();
+    const partStaves = new Map();
+    P.staves.forEach(s => { if (!partStaves.has(s.part)) partStaves.set(s.part, []); partStaves.get(s.part).push(s); });
+    const braced = [...partStaves.values()].filter(list => list.length > 1);
+    const braceSpace = braced.length ? BRACE.w + BRACE.gap : 0;
+    /* the brace, when there is one, comes out of the DP's own target width - not added on top of it - so the full
+       page (margin + brace + content + margin) is exactly PRINT.pageW, never wider (a piano's grand staff is
+       braced on every real score, so this is not an edge case) */
+    const W = r2(PRINT.contentW - braceSpace);
+    const x0 = r2(PRINT.margin + braceSpace);
+
+    const P2 = Object.assign({}, P, { measures: PM });
+    const br0 = BR.printBreakLines(n, W, (i, j, last) => {
+      const s = systemParts(P2, i, j, last);
+      return { minWidth: SP.minWidth(s.springs, s.fixed), natural: SP.width(s.springs, s.fixed, SP.U_NATURAL) };
+    }, forced, merged.banned);
+    const br = { systems: br0.systems, cost: br0.cost };
+
+    const systems = [];
+    const us = [];
+    const sysOfMeasure = new Map();
+    br.systems.forEach(([i, j], si) => { for (let k = i; k <= j; k++) sysOfMeasure.set(PM[k].id, si); });
+    const staffLines = new Map(P.staves.map(s => [s.id, s.lines]));
+
+    br.systems.forEach(([i, j], si) => {
+      const last = si === br.systems.length - 1;
+      const parts = systemParts(P2, i, j, last);
+      const R = resolveSystemU(parts, W, us, last, diagnostics, PM[i].id);
+      const u = R.u, ragged = R.ragged, fit = R.fit;
+      if (!last && fit === 1) us.push(u);
+      const walked = walkSystem(PM, parts, x0, u, si);
+      const sysObjs = walked.sysObjs, mOut = walked.mOut;
+      let x = walked.x;
+      stretchRests(mOut, sysObjs, merged.runLen);
+      sysObjs.forEach(o => { if (o.kind === 'stem' && o.beam) o._type = P.evTypes.get(o.event); });
+      notateSystem(P, sysObjs, diagnostics);
+      const sysCurves = [];
+      const lastM = mOut[mOut.length - 1], firstCol = (mOut[0].columns.find(c => c.time) || mOut[0].columns[0] || { x: mOut[0].contentX0 });
+      const MS = { P: P, objs: sysObjs, si: si, x1: x, startX: firstCol.x - CV.SLUR.sysGap, endX: lastM.x + lastM.w - CV.SLUR.sysGap,
+        sysOf: m => sysOfMeasure.get(m), lines: staffLines, mx: new Map(mOut.map(m => [m.id, m])), diagnostics: diagnostics, curves: sysCurves,
+        first: mOut[0].id, last: lastM.id };
+      MK.placeSystem(MS);
+      SM.placeSystem(MS);
+      if (fit !== 1) {
+        const fx = v => x0 + (v - x0) * fit;
+        sysObjs.forEach(o => {
+          o.box = [fx(o.box[0]), o.box[1] * fit, fx(o.box[2]), o.box[3] * fit];
+          if (o.line) o.line = [fx(o.line[0]), o.line[1] * fit, fx(o.line[2]), o.line[3] * fit];
+          if (o.gap) o.gap = [fx(o.gap[0]), fx(o.gap[1])];
+          if (o.t !== undefined) o.t *= fit;
+          if (o.hookLen !== undefined) o.hookLen *= fit;
+          if (o.ends) o.ends = o.ends.map(v => v * fit);
+          if (o.size !== undefined) o.size *= fit;
+          o.scale = (o.scale === undefined ? 1 : o.scale) * fit;
+          if (o.colX !== undefined) o.colX = fx(o.colX);
+        });
+        sysCurves.forEach(c => {
+          ['p0', 'c1', 'c2', 'p3'].forEach(k => { c[k] = [fx(c[k][0]), c[k][1] * fit]; });
+          c.t *= fit;
+          if (c.lift !== undefined) c.lift *= fit;
+        });
+        mOut.forEach(m => {
+          m.w *= fit; m.x = fx(m.x); m.contentX0 = fx(m.contentX0); m.contentX1 = fx(m.contentX1);
+          m.columns.forEach(c => { c.x = fx(c.x); });
+        });
+        x = fx(x);
+      }
+      systems.push({ index: si, page: 0, x: x0, w: x - x0, u: u, stretch: u / SP.U_NATURAL, ragged: ragged, space: fit, measures: mOut.map(m => m.id),
+        first: i, last: j, objects: sysObjs, curves: sysCurves, mOut: mOut });
+    });
+
+    /* ---- vertical: local geometry per system (page-independent), then page-aware y (§15.5: never split a system;
+       fill front to back; pull one back from the page before when the last page would otherwise hold one) ---- */
+    const geoms = systems.map(sys => localGeometry(P, sys, PRINT.pageW));
+    const titleH = titleHeight(P.meta);
+    const bottomLimit = r2(PRINT.pageH - PRINT.margin);
+    const pagesSys = [];
+    let curPage = [];
+    let prevAbsCursor = null, prevAbsBottom = null, prevSpan = null;
+    systems.forEach((sys, idx) => {
+      const g = geoms[idx];
+      let candidateY, newPage = curPage.length === 0;
+      if (!newPage) {
+        candidateY = Math.max(prevAbsCursor + prevSpan + VGAP.system, prevAbsBottom + VGAP.systemPad - g.topReach);
+        if (candidateY + g.bottomLocal > bottomLimit) { newPage = true; pagesSys.push(curPage); curPage = []; }
+      }
+      if (newPage) {
+        const extra = pagesSys.length === 0 ? titleH : 0;
+        candidateY = r2(PRINT.margin + extra - g.topReach);
+        if (candidateY + g.bottomLocal > bottomLimit)
+          diagnostics.push({ code: 'PAGE_OVERFLOW', refs: [P.measures[sys.first].id], detail: 'a system taller than one page' });
+      }
+      sys.y = r2(candidateY);
+      curPage.push(idx);
+      prevAbsCursor = sys.y + g.lastOff; prevSpan = g.lastSpan; prevAbsBottom = sys.y + g.bottomLocal;
+    });
+    pagesSys.push(curPage);
+    /* a lone last system: pull one back from the page before it, when both pages still fit (§15.5) */
+    if (pagesSys.length >= 2 && pagesSys[pagesSys.length - 1].length === 1 && pagesSys[pagesSys.length - 2].length >= 2) {
+      const lastPage = pagesSys[pagesSys.length - 1], prevPage = pagesSys[pagesSys.length - 2];
+      const movedIdx = prevPage[prevPage.length - 1], keepIdx = lastPage[0];
+      const gMoved = geoms[movedIdx], gKeep = geoms[keepIdx];
+      const movedY = r2(PRINT.margin - gMoved.topReach);
+      const cursorAfterMoved = movedY + gMoved.lastOff, bottomAfterMoved = movedY + gMoved.bottomLocal;
+      const keepY = r2(Math.max(cursorAfterMoved + gMoved.lastSpan + VGAP.system, bottomAfterMoved + VGAP.systemPad - gKeep.topReach));
+      if (bottomAfterMoved <= bottomLimit && keepY + gKeep.bottomLocal <= bottomLimit) {
+        prevPage.pop();
+        lastPage.unshift(movedIdx);
+        systems[movedIdx].y = movedY;
+        systems[keepIdx].y = keepY;
+      }
+    }
+    const pageOf = new Array(systems.length);
+    pagesSys.forEach((list, pi) => list.forEach(idx => { pageOf[idx] = pi; }));
+
+    /* ---- apply absolute y (per system, using the geometry already computed) ---- */
+    systems.forEach((sys, idx) => {
+      const g = geoms[idx], f = sys.space, lineSpan = g.lineSpan, off = g.off, sky = g.sky;
+      sys.staves = P.staves.map(s => {
+        const sk = sky.get(s.id);
+        const y = sys.y + off.get(s.id);
+        const t = sk.top(0, PRINT.pageW);
+        let b = sk.bottom(0, PRINT.pageW);
+        sys.objects.forEach(o => { if (o.band && o.staffKey === s.id) b = b === null ? o.box[3] : Math.max(b, o.box[3]); });
+        return { key: s.id, y: y, h: lineSpan(s), top: y + Math.min(0, t === null ? 0 : t), bottom: y + Math.max(lineSpan(s), b === null ? 0 : b) };
+      });
+      sys.box = [sys.x, Math.min.apply(null, sys.staves.map(s => s.top)), sys.x + sys.w, Math.max.apply(null, sys.staves.map(s => s.bottom))];
+      P.staves.forEach(s => {
+        sys.objects.push({ id: 'd:staff:' + s.id + ':' + sys.measures[0], kind: 'staff', refs: [s.id], staffKey: s.id, measure: null,
+          box: [sys.x, -EG.staffLine / 2 * f, sys.x + sys.w, lineSpan(s) + EG.staffLine / 2 * f], lines: s.lines, space: f, layer: 'staff' });
+      });
+      sys.objects.forEach(ob => { moveGeom(ob, 0, sys.y + (off.get(ob.staffKey) || 0)); });
+      sys.curves.forEach(c => { const dy = sys.y + (off.get(c.staffKey) || 0); ['p0', 'c1', 'c2', 'p3'].forEach(k => { c[k] = [c[k][0], c[k][1] + dy]; }); });
+      const lastS = P.staves[P.staves.length - 1];
+      const nextInPart = new Map();
+      P.staves.forEach((s, k) => { const nx = P.staves[k + 1]; if (nx && nx.part === s.part) nextInPart.set(s.id, sys.y + off.get(nx.id)); });
+      sys.objects.forEach(ob => { if (ob.kind === 'barline' && !ob.glyph && nextInPart.has(ob.staffKey)) ob.box = [ob.box[0], ob.box[1], ob.box[2], nextInPart.get(ob.staffKey)]; });
+      const yTop = sys.y, yBot = sys.y + off.get(lastS.id) + lineSpan(lastS);
+      if (P.staves.length > 1)
+        sys.objects.push({ id: 'd:sysbar:' + sys.measures[0], kind: 'barline', refs: [], staffKey: null, measure: null,
+          box: [sys.x, yTop, sys.x + EG.thinBar * f, yBot], layer: 'staff' });
+      braced.forEach(list => {
+        const a = list[0], b = list[list.length - 1];
+        sys.objects.push({ id: 'd:brace:' + a.part + ':' + sys.measures[0], kind: 'brace', refs: [a.part], staffKey: null, measure: null,
+          box: [sys.x - BRACE.gap - BRACE.w, sys.y + off.get(a.id), sys.x - BRACE.gap, sys.y + off.get(b.id) + lineSpan(b)], layer: 'staff' });
+      });
+    });
+
+    /* ---- page-level text: title/composer (page 1 only), the page number (from page 2), a bar number at every
+       system's head (§15.1, §15.5) - each a plain text object (system: -1 when it belongs to the page, not a
+       system) placed through the same skyline foundation as everything else (§10.1) so it never overlaps the
+       notation ---- */
+    const pageObjs = [];
+    const hasTitle = !!(P.meta && P.meta.title), hasComposer = !!(P.meta && P.meta.composer);
+    if (hasTitle) {
+      const m = TX.measure(P.meta.title, TITLE.titleFont, TITLE.titleSize);
+      const baseline = r2(PRINT.margin + TITLE.gapAbove - m.top);
+      pageObjs.push({ id: 'd:meta:title', kind: 'text', refs: ['meta.title'], measure: null, staffKey: null, system: -1, page: 0, layer: 'title',
+        text: P.meta.title, font: TITLE.titleFont, size: TITLE.titleSize, box: [PRINT.pageW / 2 - m.w / 2, baseline + m.top, PRINT.pageW / 2 + m.w / 2, baseline + m.bottom] });
+    }
+    if (hasComposer) {
+      const m = TX.measure(P.meta.composer, TITLE.composerFont, TITLE.composerSize);
+      const titleM = hasTitle ? TX.measure(P.meta.title, TITLE.titleFont, TITLE.titleSize) : null;
+      const baseline = r2(PRINT.margin + TITLE.gapAbove + (titleM ? (-titleM.top + Math.max(0, titleM.bottom) + TITLE.gapBetween) : 0) - m.top);
+      pageObjs.push({ id: 'd:meta:composer', kind: 'text', refs: ['meta.composer'], measure: null, staffKey: null, system: -1, page: 0, layer: 'title',
+        text: P.meta.composer, font: TITLE.composerFont, size: TITLE.composerSize, box: [PRINT.pageW - PRINT.margin - m.w, baseline + m.top, PRINT.pageW - PRINT.margin, baseline + m.bottom] });
+    }
+    /* §15.5: several parts name each on the first system, left of it (right-aligned, clear of any brace) - the
+       first system is always page 0's (piece order, G4-E2's runs never move a system across a page on their own) */
+    if ((P.parts || []).length > 1 && systems.length) {
+      const sys0 = systems[0];
+      P.parts.forEach(part => {
+        if (!part.name) return;
+        const idxs = P.staves.map((s, k) => (s.part === part.id ? k : -1)).filter(k => k >= 0);
+        if (!idxs.length) return;
+        const top = sys0.staves[idxs[0]].top, bottom = sys0.staves[idxs[idxs.length - 1]].bottom;
+        const m = TX.measure(part.name, 'serif', 1.4);
+        const baseline = r2((top + bottom) / 2 + (-m.top + m.bottom) / 2 - m.bottom);
+        const xEnd = r2(sys0.x - (braceSpace ? braceSpace + BRACE.gap : 0) - 0.5);
+        /* a name too wide for the margin (a long track name from a MIDI import, not real sheet-music naming) stays on
+         the page rather than running off its left edge - it may then stand a little into the system, an accepted
+         edge case rather than a page overflow (A17) */
+        const x1 = Math.max(m.w, xEnd);
+        pageObjs.push({ id: 'd:partname:' + part.id, kind: 'text', refs: [part.id], measure: null, staffKey: null, system: -1, page: 0, layer: 'page',
+          text: part.name, font: 'serif', size: 1.4, box: [x1 - m.w, baseline + m.top, x1, baseline + m.bottom] });
+      });
+    }
+    pagesSys.forEach((list, pi) => {
+      if (pi > 0) {
+        const t = String(pi + 1);
+        const m = TX.measure(t, PAGENO.font, PAGENO.size);
+        const baseline = r2(PRINT.pageH - PAGENO.gapAboveBottom);
+        pageObjs.push({ id: 'd:pageno:' + pi, kind: 'text', refs: ['page.' + pi], measure: null, staffKey: null, system: -1, page: pi, layer: 'page',
+          text: t, font: PAGENO.font, size: PAGENO.size, box: [PRINT.pageW / 2 - m.w / 2, baseline + m.top, PRINT.pageW / 2 + m.w / 2, baseline + m.bottom] });
+      }
+      list.forEach(idx => {
+        const sys = systems[idx];
+        const num = P.measures[sys.first].number;
+        const t = String(num);
+        const m = TX.measure(t, 'mono', 1.2);
+        const sky = new SK.Skyline(0, PRINT.pageW);
+        sys.objects.forEach(o => { if (o.kind !== 'staff' && o.kind !== 'barline' && o.kind !== 'brace') sky.add(o.box); });
+        const top = sys.staves[0].y;
+        const box = sky.put({ x0: sys.x + 0.3, x1: sys.x + 0.3 + m.w, h: -m.top + Math.max(0, m.bottom), side: 'above', pad: 0.25, floor: top - 0.9 });
+        pageObjs.push({ id: 'd:barno:' + sys.measures[0], kind: 'text', refs: [sys.measures[0]], measure: null, staffKey: null, system: -1, page: pi, layer: 'page',
+          text: t, font: 'mono', size: 1.2, box: box });
+      });
+    });
+
+    /* ---- the EngravedScore (every number to 0.01 sp, as the screen's) ---- */
+    const rb = b => b.map(r2);
+    const objects = [], curves = [], measuresOut = [];
+    systems.forEach(sys => {
+      const pi = pageOf[sys.index];
+      sys.objects.forEach(o => {
+        const out = { id: o.id, kind: o.kind, refs: o.refs.slice(), system: sys.index, page: pi, staffKey: o.staffKey || null, measure: o.measure || null,
+          box: rb(o.box), layer: o.layer };
+        if (o.event) out.event = o.event;
+        if (o.glyph) {
+          const g = MT.glyph(o.glyph), s = o.scale === undefined ? 1 : o.scale;
+          out.glyph = o.glyph;
+          out.origin = [r2(o.box[0] - g.xMin * s), r2(o.box[1] + g.yMax * s)];
+          if (MT.drawn(o.glyph)) out.drawn = true;
+        }
+        if (o.scale !== undefined && o.scale !== 1) out.scale = r2(o.scale);
+        if (o.grace) out.grace = true;
+        if (o.courtesy) out.courtesy = true;
+        if (o.open) out.open = true;
+        if (o.kind === 'volta') { out.start = !!o.start; if (o.label) out.label = o.label; }
+        if (o.lines !== undefined) out.lines = o.lines;
+        if (o.kind === 'staff') out.space = r2(o.space);
+        if (o.colX !== undefined) out.anchor = [r2(o.colX), r2(sys.staves.find(s => s.key === o.staffKey).y)];
+        if (o.dir) out.dir = o.dir;
+        if (o.kind === 'stem' && o.beam) out.beam = o.beam;
+        if (o.events) out.events = o.events.slice();
+        if (o.level !== undefined) out.level = o.level;
+        if (o.hook) out.hook = o.hook;
+        if (o.line) out.line = rb(o.line);
+        if (o.t !== undefined) out.t = r2(o.t);
+        if (o.side) out.side = o.side;
+        if (o.hooks) out.hooks = o.hooks.slice();
+        if (o.gap) out.gap = rb(o.gap);
+        if (o.hookLen !== undefined) out.hookLen = r2(o.hookLen);
+        if (o.merged) out.merged = o.merged.slice();
+        if (o.kind === 'rest' && o.center) out.center = true;
+        if (o.non) out.non = true;
+        if (o.wedge) out.wedge = o.wedge;
+        if (o.ends) out.ends = o.ends.map(r2);
+        if (o.verse !== undefined) out.verse = o.verse;
+        if (o.group) out.group = o.group;
+        if (o.text !== undefined) {
+          out.text = o.text; out.font = o.font; out.size = r2(o.size);
+          out.origin = [r2(o.box[0]), r2(o.box[1] + TX.face(o.font).capHeight / 1000 * o.size)];
+        }
+        objects.push(out);
+      });
+      sys.curves.forEach(c => {
+        const out = { id: c.id, kind: c.kind, refs: c.refs.slice(), system: sys.index, page: pi, staffKey: c.staffKey, measure: c.measure || null, part: c.part,
+          p0: rb(c.p0), c1: rb(c.c1), c2: rb(c.c2), p3: rb(c.p3), t: r2(c.t) };
+        if (c.side) out.side = c.side;
+        if (c.heads) out.heads = c.heads.slice();
+        if (c.events) out.events = c.events.slice();
+        if (c.line) out.line = c.line;
+        if (c.open) out.open = true;
+        if (c.lift !== undefined) out.lift = r2(c.lift);
+        curves.push(out);
+      });
+      sys.mOut.forEach(m => measuresOut.push({ id: m.id, number: m.number, system: sys.index, x: r2(m.x), w: r2(r2(m.x + m.w) - r2(m.x)),
+        content: [r2(m.contentX0), r2(m.contentX1)], columns: m.columns.map(c => ({ at: c.at, x: r2(c.x), time: c.time })) }));
+    });
+    pageObjs.forEach(o => {
+      const out = { id: o.id, kind: o.kind, refs: o.refs.slice(), system: -1, page: o.page, staffKey: null, measure: null, box: rb(o.box), layer: o.layer,
+        text: o.text, font: o.font, size: r2(o.size), origin: [r2(o.box[0]), r2(o.box[1] + TX.face(o.font).capHeight / 1000 * o.size)] };
+      objects.push(out);
+    });
+    objects.sort((a, b) => a.page - b.page || a.system - b.system || (a.box[0] - b.box[0]) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    const systemsOut = systems.map(s => ({ index: s.index, page: pageOf[s.index], x: r2(s.x), y: r2(s.y), w: r2(s.w), u: r2(s.u), stretch: r2(s.stretch),
+      ragged: s.ragged, space: r2(s.space), measures: s.measures,
+      staves: s.staves.map(t => ({ key: t.key, y: r2(t.y), h: r2(t.h), top: r2(t.top), bottom: r2(t.bottom) })), box: rb(s.box) }));
+    const pages = pagesSys.map((list, pi) => ({ index: pi, w: PRINT.pageW, h: PRINT.pageH, systems: list }));
+    pages.forEach(pg => {
+      const pageObjects = objects.filter(o => o.page === pg.index);
+      const pageMeasures = measuresOut.filter(m => pg.systems.indexOf(m.system) >= 0);
+      const pageSystems = systemsOut.filter(s => pg.systems.indexOf(s.index) >= 0);
+      SK.collisions(pageObjects, pg, pageMeasures, pageSystems).forEach(h => diagnostics.push({ code: 'HARD_VIOLATION', refs: h.refs, detail: h.code + ' ' + h.detail }));
+    });
+    const placed = {};
+    objects.forEach(o => { placed[o.kind] = (placed[o.kind] || 0) + 1; });
+    curves.forEach(c => { placed[c.kind] = (placed[c.kind] || 0) + 1; });
+    curves.sort((a, b) => a.system - b.system || a.p0[0] - b.p0[0] || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    return {
+      version: VERSION, planKey: P.planKey, config: cfg,
+      pages: pages, systems: systemsOut, measures: measuresOut, objects: objects, curves: curves,
+      coverage: { placed: placed, pending: P.pending },
+      diagnostics: diagnostics.map(d => [d.code + '\u0000' + d.refs.join('\u0001') + '\u0000' + (d.detail === null ? '' : d.detail), d])
+        .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)).map(x => x[1])
+    };
+  }
+
   function layout(P, config) {
     counters.layout++;
     const cfg = normalizeConfig(config);
+    if (cfg.mode === 'print') return layoutPrint(P, cfg);
     const W = cfg.width, N = cfg.barsPerSystem;
     const diagnostics = P.diagnostics.slice();
     const n = P.measures.length;
@@ -1390,65 +1916,17 @@
     br.systems.forEach(([i, j], si) => {
       const last = si === br.systems.length - 1 && endsPiece;
       const parts = systemParts(P, i, j, last);
-      let u, ragged = false, fit = 1;
-      const min = SP.minWidth(parts.springs, parts.fixed);
       /* the last system keeps the spacing of the others (their median u, of the systems drawn at full size: a system
          squeezed to a smaller staff has u = 0 and says nothing of the spacing - review R11) when that leaves it well
-         short of the width; otherwise it is justified like them */
-      if (last) {
-        const sorted = us.slice().sort((a, b) => a - b);
-        const uRef = sorted.length ? sorted[Math.floor((sorted.length - 1) / 2)] : SP.U_NATURAL;
-        if (SP.width(parts.springs, parts.fixed, uRef) <= 0.8 * W) { u = uRef; ragged = true; }
-      }
-      if (u === undefined) {
-        const sol = SP.solve(parts.springs, parts.fixed, W);
-        u = sol.u;
-        if (sol.overflow) {
-          fit = Math.max(FIT_MIN, W / min);
-          if (min * fit > W + 1e-9) diagnostics.push({ code: 'SYSTEM_OVERFLOW', refs: [P.measures[i].id], detail: r2(min * fit) + ' sp > ' + W + ' sp' });
-          else diagnostics.push({ code: 'SYSTEM_SCALED', refs: [P.measures[i].id], detail: 'staff space ' + r2(fit) });
-        }
-      }
+         short of the width; otherwise it is justified like them (resolveSystemU, shared with print's own systems) */
+      const Ru = resolveSystemU(parts, W, us, last, diagnostics, P.measures[i].id);
+      const u = Ru.u, ragged = Ru.ragged, fit = Ru.fit;
       if (!last && fit === 1) us.push(u);
-      /* x: walk the segments */
+      /* x: walk the segments (walkSystem, shared with print's own systems) */
       const x0 = MARGIN.left + braceSpace;
-      const sysObjs = [], mOut = [];
-      let x = x0, cur = null;
-      parts.segs.forEach(g => {
-        if (g.open !== undefined) { cur = { x: x, columns: [], centered: [] }; return; }
-        if (g.contentStart) { cur.contentX0 = x; x += g.w; return; }
-        if (g.spring) {
-          const colX = x;
-          cur.columns.push({ at: g.col.at, x: colX, time: g.col.time });
-          g.col.objects.forEach(o => {
-            const ob = Object.assign({}, o, { measure: g.measure, colX: colX });
-            moveGeom(ob, colX, 0);
-            sysObjs.push(ob);
-            if (o.center) cur.centered.push(ob);
-          });
-          x += Math.max(u * g.spring.g, g.spring.rod);
-          return;
-        }
-        if (g.contentEnd) { cur.contentX1 = x; return; }
-        if (g.close !== undefined) {
-          const M = P.measures[g.close];
-          /* a whole-measure rest in the middle between the measure's content start and its bar line (with its twin, when
-             two voices rest the measure together) */
-          cur.centered.forEach(ob => {
-            const w = ob.box[2] - ob.box[0], cx = (cur.contentX0 + cur.contentX1 - GAP.beforeBar) / 2 - w / 2;
-            ob.box = [cx, ob.box[1], cx + w, ob.box[3]];
-          });
-          mOut.push({ id: M.id, number: M.number, system: si, x: cur.x, w: x - cur.x, contentX0: cur.contentX0, contentX1: cur.contentX1, columns: cur.columns });
-          cur = null;
-          return;
-        }
-        if (g.objects) g.objects.forEach(o => {
-          const ob = Object.assign({}, o, { measure: g.measure }, g.courtesy ? { courtesy: true } : null);
-          moveGeom(ob, x, 0);
-          sysObjs.push(ob);
-        });
-        x += g.w;
-      });
+      const walked = walkSystem(P.measures, parts, x0, u, si);
+      const sysObjs = walked.sysObjs, mOut = walked.mOut;
+      let x = walked.x;
       /* the stems a beam joins know their value (for a lone stem's flag) */
       sysObjs.forEach(o => { if (o.kind === 'stem' && o.beam) o._type = P.evTypes.get(o.event); });
       notateSystem(P, sysObjs, diagnostics);
@@ -1697,6 +2175,6 @@
     };
   }
 
-  return Object.freeze({ VERSION, GAP, VGAP, MARGIN, BRACE, SCREEN, SLASH, counters, clefRef, yOf, prepare, systemParts, layout, engrave, createEngraver,
-    normalizeConfig, screenConfig });
+  return Object.freeze({ VERSION, GAP, VGAP, MARGIN, BRACE, SCREEN, SLASH, PRINT, TITLE, PAGENO, MREST, counters, clefRef, yOf, prepare, systemParts,
+    layout, engrave, createEngraver, normalizeConfig, screenConfig, mergeRests, titleHeight });
 });

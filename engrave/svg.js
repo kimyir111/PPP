@@ -67,7 +67,10 @@
      <use> of a <symbol> - the same drawing, a larger document (G4d-2, the page: Chrome repaints a score of 2,655 <use> 8-10
      times slower than of paths - every playback frame repaints it - and getBBox reads a path where it stands, a scaled <use>
      not; measured, G04 §37) */
-  const DEFAULTS = Object.freeze({ px: 10, idPrefix: 'ppp-g-', hash: false, unit: 1, inline: false });
+  /* page: which of eng.pages to draw (G4e, print's multi-page EngravedScore) - 0 by default, the only page a screen
+     layout ever has. Print objects and systems carry their own `page`; a screen object carries none, and is drawn on
+     every page asked for (there is only ever one) - so this file needs no separate "screen" code path */
+  const DEFAULTS = Object.freeze({ px: 10, idPrefix: 'ppp-g-', hash: false, unit: 1, inline: false, page: 0 });
   const fmt = v => { const x = Math.round(v * 100) / 100; return String(x === 0 ? 0 : x); };
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const attrs = o => Object.keys(o).filter(k => o[k] !== undefined && o[k] !== null && o[k] !== '').map(k => ' ' + k + '="' + esc(o[k]) + '"').join('');
@@ -126,11 +129,14 @@
     const f = U === 1 ? fmt : v => fmt(v * U);
     const ks = U === 1 ? KS : String(Math.round(K * U * 1e9) / 1e9);
     const P = o.idPrefix;
-    const page = eng.pages[0];
+    const targetPage = o.page || 0;
+    const page = eng.pages[targetPage] || eng.pages[0];
+    /* a screen object has no `page` (there is only ever the one); a print object does - drawn only on its own */
+    const onPage = x => x.page === undefined || x.page === targetPage;
     const out = [];
     /* the glyphs this page uses, each defined once (unless inline) */
     const used = new Set();
-    if (!o.inline) eng.objects.forEach(x => { if (x.glyph && !x.drawn && OL.PATHS[x.glyph]) used.add(x.glyph); });
+    if (!o.inline) eng.objects.forEach(x => { if (onPage(x) && x.glyph && !x.drawn && OL.PATHS[x.glyph]) used.add(x.glyph); });
     const glyphs = [...used].sort();
     /* an outline as its text and number slots (its points: M, L, C, Z only, absolute, x then y), once per glyph */
     const parts = new Map();
@@ -293,12 +299,13 @@
       return null;
     };
 
-    const bySystem = new Map(eng.systems.map(s => [s.index, []]));
-    eng.objects.forEach(x => bySystem.get(x.system).push(x));
+    const systemsHere = eng.systems.filter(onPage);
+    const bySystem = new Map(systemsHere.map(s => [s.index, []]));
+    eng.objects.forEach(x => { if (onPage(x) && bySystem.has(x.system)) bySystem.get(x.system).push(x); });
     const curvesBy = new Map();
-    (eng.curves || []).forEach(c => { if (!curvesBy.has(c.system)) curvesBy.set(c.system, []); curvesBy.get(c.system).push(c); });
+    (eng.curves || []).forEach(c => { if (onPage(c) && bySystem.has(c.system)) { if (!curvesBy.has(c.system)) curvesBy.set(c.system, []); curvesBy.get(c.system).push(c); } });
     const mById = new Map(eng.measures.map(m => [m.id, m]));
-    eng.systems.forEach(sys => {
+    systemsHere.forEach(sys => {
       const objs = bySystem.get(sys.index);
       out.push('<g class="ppp-system" data-system="' + sys.index + '">');
       /* staves: per measure and staff - the staff lines of the measure, its bar lines and signatures; the system's head
@@ -379,11 +386,20 @@
         list.forEach(x => out.push(draw(x)));
         out.push('</g>');
       });
-      /* G4d-1a: a fermata over a bar line (no note of its own), then the curves */
-      objs.filter(x => !x.event && (x.kind === 'fermata' || x.kind === 'text')).forEach(x => out.push(draw(x)));
+      /* G4d-1a: a fermata over a bar line (no note of its own); G4-E2: a merged multi-rest bar (also no event of its
+         own - it stands for a run of bars, not one) - then the curves */
+      objs.filter(x => !x.event && (x.kind === 'fermata' || x.kind === 'text' || x.kind === 'rest')).forEach(x => out.push(draw(x)));
       (curvesBy.get(sys.index) || []).forEach(c => out.push(curve(c)));
       out.push('</g>');
     });
+    /* G4e: the page's own text - title, composer, page number, a system's bar number (layout.js layoutPrint, system
+       -1: it belongs to the page, not a system) */
+    const pageLevel = eng.objects.filter(x => x.system === -1 && onPage(x));
+    if (pageLevel.length) {
+      out.push('<g class="ppp-page-text">');
+      pageLevel.forEach(x => out.push(draw(x)));
+      out.push('</g>');
+    }
     out.push('</svg>');
     return out.join('\n');
   }

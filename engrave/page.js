@@ -732,8 +732,104 @@
     };
   }
 
+  /* ------------------------------------------------------------------ print (G04 §17, §15.5; G4e, G4-E3) */
+  /* the print pipeline (Node-testable): a graph -> its print plan and EngravedScore -> one SVG string a page (raw sp
+     viewBox - the container gives each one its physical A4 size, not this file: G4-U3 decided against a client PDF
+     library, so nothing here writes mm). semanticConfig's marks/chords stay on for print (a printed score keeps its
+     dynamics and chord names); the practice overlay and guide letters never reach print mode at all - they are the
+     page's own decorations (annotations(), createSync()) over the SCREEN layout only, never called for a print one. */
+  const PRINT_SVG_OPTS = Object.freeze({ unit: 1, px: 1, inline: false });
+  function printLayout(graph, semantic) {
+    const plan = PL.plan(graph, Object.assign({}, semanticConfig(semantic || {}), { mode: 'print' }));
+    const eng = LY.engrave(plan, { mode: 'print' });
+    return { plan: plan, eng: eng };
+  }
+  /* each page's glyph <symbol>s get their own id prefix: several print pages, and the screen SVG already drawn on
+     the page underneath the hidden print container, all share the document's one id space (SVG <use href="#id">
+     resolves against the whole document, not the <svg> it is in). Without this, a print page's <use> can resolve to
+     a symbol another page - or the screen SVG (unit 10, ten times the scale) - defined first: a real bug this
+     session's own puppeteer check caught (a note glyph the size of the page). */
+  function printSvgs(eng, plan) {
+    return eng.pages.map((pg, i) => SV.svg(eng, plan, Object.assign({ page: i, idPrefix: 'ppp-print-' + i + '-g-' }, PRINT_SVG_OPTS)));
+  }
+  /* A39: no raster element in the print output - an automated check, not just a milestone look */
+  function noRaster(svgs) {
+    const bad = [];
+    svgs.forEach((s, i) => { if (/<image[\s>]/.test(s)) bad.push('page ' + i + ': <image>'); if (/<canvas[\s>]/.test(s)) bad.push('page ' + i + ': <canvas>'); });
+    return { ok: !bad.length, bad: bad };
+  }
+
+  /* ---- the DOM half: the hidden print container, @media print, window.print() (browser only) ---- */
+  const PRINT_ID = 'ppp-print-root', PRINT_STYLE_ID = 'ppp-print-style';
+  /* @page {size: A4; margin: 0} (G04 §17.1): the container is the only thing @media print shows, so the browser's
+     own page setup (headers, margins) never doubles up with the score's own margins already in the layout */
+  function printCss() {
+    return '#' + PRINT_ID + '{display:none}\n' +
+      '@media print{\n' +
+      '  body>*:not(#' + PRINT_ID + '){display:none!important}\n' +
+      '  #' + PRINT_ID + '{display:block!important}\n' +
+      '  .ppp-print-page{page-break-after:always}\n' +
+      '  .ppp-print-page:last-child{page-break-after:auto}\n' +
+      '  @page{size:A4;margin:0}\n' +
+      '}';
+  }
+  function ensurePrintStyle(doc) {
+    if (doc.getElementById(PRINT_STYLE_ID)) return;
+    const style = doc.createElement('style');
+    style.id = PRINT_STYLE_ID;
+    style.textContent = printCss();
+    doc.head.appendChild(style);
+  }
+  /* one <svg> a page, each given its physical mm size (PRINT.mm) so @page's A4 and the container's own pages line up
+     exactly - the viewBox (raw sp) does the scaling, no other unit conversion anywhere in this pipeline (G4-E3) */
+  function buildPrintContainer(doc, svgs) {
+    let host = doc.getElementById(PRINT_ID);
+    if (!host) { host = doc.createElement('div'); host.id = PRINT_ID; doc.body.appendChild(host); }
+    host.innerHTML = '';
+    const mm = LY.PRINT.mm;
+    svgs.forEach(s => {
+      const div = doc.createElement('div');
+      div.className = 'ppp-print-page';
+      div.innerHTML = s;
+      const svgEl = div.querySelector('svg');
+      if (svgEl) { svgEl.setAttribute('width', mm.width + 'mm'); svgEl.setAttribute('height', mm.height + 'mm'); svgEl.style.display = 'block'; }
+      host.appendChild(div);
+    });
+    return host;
+  }
+  /* the glyphs are always vector (SVG path/<use>, §16.3); the text needs the web font loaded so the browser embeds
+     it rather than a system fallback (G04 §17.1) - fonts.ready never rejects, but a browser without it (very old, or
+     a test DOM) gets an immediate resolve rather than a hang */
+  function fontsReady(doc) {
+    return (doc && doc.fonts && doc.fonts.ready && typeof doc.fonts.ready.then === 'function') ? doc.fonts.ready.then(() => null, () => null) : Promise.resolve();
+  }
+  function runPrint(win, doc, svgs) {
+    ensurePrintStyle(doc);
+    const host = buildPrintContainer(doc, svgs);
+    return fontsReady(doc).then(() => { if (win && typeof win.print === 'function') win.print(); return host; });
+  }
+  /* env: {source(), songKey(score), window, document} - the same shape createView's env takes (G04 §16.1), so the
+     app wires the print command the same way it wires the renderer switch. -> {pages, plan, eng} once printed
+     (or a fallback string PRINT_SOURCE_UNAVAILABLE / PRINT_LAYOUT_THREW, never a throw the caller must catch itself
+     to keep the button from freezing the page - the caller decides what to tell the person) */
+  function printScore(env, score) {
+    const doc = env.document, win = env.window || (doc && doc.defaultView);
+    return env.source().resolve(score, { key: env.songKey ? env.songKey(score) : null }).then(src => {
+      if (!src || !src.graph || !src.agree || !src.agree.ok) return { ok: false, code: 'PRINT_SOURCE_UNAVAILABLE' };
+      let plan, eng, svgs;
+      try {
+        const built = printLayout(src.graph, {});
+        plan = built.plan; eng = built.eng;
+        svgs = printSvgs(eng, plan);
+      } catch (e) { return { ok: false, code: 'PRINT_LAYOUT_THREW', error: e }; }
+      const raster = noRaster(svgs);
+      return runPrint(win, doc, svgs).then(() => ({ ok: true, pages: svgs.length, plan: plan, eng: eng, svgs: svgs, raster: raster }));
+    }, e => ({ ok: false, code: 'PRINT_SOURCE_THREW', error: e }));
+  }
+
   return Object.freeze({
     VERSION, UNIT, SVG_OPTS, stats,
-    semanticConfig, layoutConfig, drawKey, viewKey, createSync, legacyClasses, groupsFor, annotations, createView, lru
+    semanticConfig, layoutConfig, drawKey, viewKey, createSync, legacyClasses, groupsFor, annotations, createView, lru,
+    PRINT_SVG_OPTS, printLayout, printSvgs, noRaster, printCss, ensurePrintStyle, buildPrintContainer, fontsReady, runPrint, printScore
   });
 });
