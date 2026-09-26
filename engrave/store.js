@@ -188,6 +188,8 @@
     const backend = opts.backend || memoryBackend();
     const limits = Object.assign({}, LIMITS, opts.limits || {});
     const now = opts.now || (() => Date.now());
+    /* the decoder (a test hands in one that never answers) */
+    const decodeWith = typeof opts.decode === 'function' ? opts.decode : decode;
     const stats = { puts: 0, gets: 0, hits: 0, dropped: {}, errors: {}, evicted: 0 };
     const count = (o, code) => { o[code] = (o[code] || 0) + 1; };
 
@@ -203,13 +205,16 @@
         count(stats.dropped, 'evicted');
       }
     }
+    /* navigator.storage.estimate() can stay pending too (G4b review R12): it runs under the same timeout, and an answer that
+       never comes is counted and read as an unknown quota - as an estimate that fails always was: the write goes ahead,
+       and the backend's own quota error still stops it */
     async function roomFor(bytes) {
       if (typeof opts.estimate !== 'function') return true;
       try {
-        const e = await opts.estimate();
+        const e = await within(opts.estimate(), limits.timeout);
         if (!e || !(e.quota > 0)) return true;
         return (e.usage || 0) + bytes <= e.quota * limits.share;
-      } catch (err) { return true; }
+      } catch (err) { if (timedOut(err)) count(stats.errors, 'estimate-timeout'); return true; }
     }
 
     return {
@@ -223,7 +228,11 @@
         try { rec = await within(backend.get(key), limits.timeout); }
         catch (e) { count(stats.errors, timedOut(e) ? 'timeout' : 'get'); return { ok: false, code: timedOut(e) ? 'timeout' : 'backend' }; }
         if (!rec) return { ok: false, code: 'missing' };
-        const d = await decode(rec);
+        /* decoding (gunzip through the page's DecompressionStream) is under the timeout as well (R12): a record that cannot be
+           read in time is named `timeout` and kept - nothing says it is bad - and the renderer goes on to a projection */
+        let d;
+        try { d = await within(decodeWith(rec), limits.timeout); }
+        catch (e) { count(stats.errors, 'decode-timeout'); return { ok: false, code: 'timeout' }; }
         if (!d.ok) {
           count(stats.dropped, d.code);
           try { await within(backend.del(key), limits.timeout); } catch (e) { /* gone next time, or never read again */ }

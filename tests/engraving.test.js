@@ -58,6 +58,8 @@ const survey = page => page.evaluate(() => {
   const clefs = [...svg.querySelectorAll('.vf-clef')].map(box);
   const vb = svg.viewBox.baseVal;
   return {
+    /* G4d-2: which renderer drew it (the engraver's SVG is svg.ppp-engraved, renderer 'engrave' - a developer's switch) */
+    engraved: svg.classList.contains('ppp-engraved'),
     layout: svg.__ppp, heads: heads, staves: staves, clefs: clefs,
     tuplets: svg.querySelectorAll('g.ppp-tuplet').length,
     page: { w: vb.width }, drawn: box(svg)
@@ -118,7 +120,11 @@ const survey = page => page.evaluate(() => {
   ok('the score is engraved', !!d && d.heads.length > 40, d ? d.heads.length + ' note heads' : 'no staff');
   if (d) {
     console.log('\n── the page ───────────────────────────');
-    ok('lines hold at most four bars', d.layout.rows.every(r => r.length <= 4), JSON.stringify(d.layout.rows));
+    /* G4d-2: four bars to a line is the legacy renderer's rule; the engraver follows the user's G4-U4 - four is the preference and
+       density wins (a line of sparse bars may hold more, never a bar twice or out of order; G04 §15.2, §33.8) */
+    if (!d.engraved) ok('lines hold at most four bars', d.layout.rows.every(r => r.length <= 4), JSON.stringify(d.layout.rows));
+    else ok('lines hold every bar once, in order, four to a line by preference (G4-U4: at most six)',
+      d.layout.rows.every(r => r.length <= 6) && [].concat.apply([], d.layout.rows).join() === d.layout.bars.map(b => b.m).join(), JSON.stringify(d.layout.rows));
     ok('nothing is drawn past the edge of the page', d.drawn.x + d.drawn.w <= d.page.w + 2,
       'drawn to ' + Math.round(d.drawn.x + d.drawn.w) + ' of ' + Math.round(d.page.w));
 
@@ -275,7 +281,8 @@ const survey = page => page.evaluate(() => {
     }, resolve));
     await new Promise(resolve => setTimeout(resolve, 300));
     const svg = document.querySelector('.ppp-staffwrap svg');
-    return svg ? svg.querySelectorAll('.vf-stavetie path').length : -1;
+    /* G4d-2: VexFlow draws a tie as a path inside g.vf-stavetie, the engraver as path.vf-stavetie itself (G04 §16.4) */
+    return svg ? svg.querySelectorAll('.vf-stavetie path, path.vf-stavetie').length : -1;
   });
   ok('a partial chord tie curves only the pitch that actually continues', chordTiePaths === 1,
     chordTiePaths + ' tie path(s)');
@@ -298,16 +305,28 @@ const survey = page => page.evaluate(() => {
     }, resolve));
     await new Promise(resolve => setTimeout(resolve, 300));
     const svg = document.querySelector('.ppp-staffwrap svg');
-    return svg ? svg.querySelectorAll('.vf-stavetie path').length : -1;
+    return svg ? { n: svg.querySelectorAll('.vf-stavetie path, path.vf-stavetie').length, engraved: svg.classList.contains('ppp-engraved') } : { n: -1 };
   });
-  ok('audio inference does not present an intra-measure split as written legato',
-    inferredTiePaths === 0, inferredTiePaths + ' tie path(s)');
+  /* G4d-2: the legacy renderer hides the tie PPP inferred inside a bar (G04 §4.5 O4); the engraver draws it, as the user
+     decided (G4-U2 A: what playback and practice treat as one note the page shows as one, tied) */
+  if (!inferredTiePaths.engraved) ok('audio inference does not present an intra-measure split as written legato',
+    inferredTiePaths.n === 0, inferredTiePaths.n + ' tie path(s)');
+  else ok('an inferred tie inside a bar is drawn, as playback and practice hear it (G4-U2 A)', inferredTiePaths.n === 1, inferredTiePaths.n + ' tie path(s)');
 
   /* MX-1: an octave line from a file is drawn as the page prints it - "8va" over the treble staff with its notes brought
      down onto the staff, "8vb" under the bass staff, "15ma" two octaves - while the notes sound where the file says
      (decision D-1: MusicXML's <pitch> sounds; the player's half is tests/playback-scheduler.test.js) */
   const e18 = fs.readFileSync(path.join(__dirname, 'engrave', 'fixtures', 'e', 'E18-ottava.musicxml'), 'utf8');
+  /* G4d-2: the y of a staff's lines - VexFlow draws one path a line (M x yL x2 y) inside g.vf-stave, the engraver one
+     path.vf-stave a staff (M x yH x2 M x y2H x2 ...) */
+  await page.evaluate(() => {
+    window.__lineYs = g => (g ? [...g.querySelectorAll('.vf-stave path, path.vf-stave')].flatMap(q => {
+      const d = q.getAttribute('d') || '';
+      return q.classList.contains('vf-stave') ? [...d.matchAll(/M[\d.]+ ([\d.]+)H/g)].map(m => +m[1]) : [+((/M[\d.]+ ([\d.]+)L/.exec(d) || [])[1])];
+    }).filter(isFinite) : []);
+  });
   const ott = await page.evaluate(async xml => {
+    const lineYs = window.__lineYs;
     const score = PPP.parseMusicXML(xml, 'E18-ottava.musicxml');
     await new Promise(resolve => PPP.app.setState({
       score: score, screen: 'player', beat: 0, playing: false,
@@ -318,11 +337,12 @@ const survey = page => page.evaluate(() => {
     if (!svg) return null;
     const lines = (m, st) => {
       const g = [...svg.querySelectorAll('g.ppp-stave')].find(x => x.getAttribute('data-m') === String(m) && x.getAttribute('data-staff') === String(st));
-      const ys = g ? [...g.querySelectorAll('.vf-stave path')].map(q => +((/M[\d.]+ ([\d.]+)L/.exec(q.getAttribute('d')) || [])[1])).filter(isFinite) : [];
+      const ys = lineYs(g);
       return ys.length ? { top: Math.min.apply(null, ys), bottom: Math.max.apply(null, ys) } : null;
     };
     const head = key => {
-      const h = svg.querySelector('g.ppp-note[data-onset="' + key + '"] .vf-notehead path');
+      const at = 'g.ppp-note[data-onset="' + key + '"] .vf-notehead';
+      const h = svg.querySelector(at + ' path') || svg.querySelector(at);
       if (!h) return null;
       const b = h.getBBox();
       return b.y + b.height / 2;
@@ -362,6 +382,7 @@ const survey = page => page.evaluate(() => {
       '<part id="P1">' + body + '</part></score-partwise>';
   })();
   const part = await page.evaluate(async xml => {
+    const lineYs = window.__lineYs;
     const score = PPP.scoreFromXml(xml, 'long-8va.musicxml');
     await new Promise(resolve => PPP.app.setState({
       score: score, screen: 'player', wholeScore: false, focus: false, beat: PPP.Score.startQ(score, 3), playing: false,
@@ -372,16 +393,18 @@ const survey = page => page.evaluate(() => {
     if (!svg) return null;
     const bars = [...new Set([...svg.querySelectorAll('g.ppp-stave')].map(g => +g.getAttribute('data-m')))];
     const g = [...svg.querySelectorAll('g.ppp-stave')].find(x => x.getAttribute('data-m') === String(bars[0]) && x.getAttribute('data-staff') === '1');
-    const ys = g ? [...g.querySelectorAll('.vf-stave path')].map(q => +((/M[\d.]+ ([\d.]+)L/.exec(q.getAttribute('d')) || [])[1])).filter(isFinite) : [];
-    const h = svg.querySelector('g.ppp-note[data-onset="' + bars[0] + '|0.000|1"] .vf-notehead path');
+    const ys = lineYs(g);
+    const at = 'g.ppp-note[data-onset="' + bars[0] + '|0.000|1"] .vf-notehead';
+    const h = svg.querySelector(at + ' path') || svg.querySelector(at);
     const hb = h ? h.getBBox() : null;
-    const labels = [...svg.querySelectorAll('text')].map(t => t.textContent.trim()).filter(t => /^\(?(8va|8vb|15ma|15mb)\)?$/.test(t));
+    /* G4d-2: the engraver labels a line carried on from before "(8)", the printed convention (G4-D1b-7, A10) */
+    const labels = [...svg.querySelectorAll('text')].map(t => t.textContent.trim()).filter(t => /^\(?(8va|8vb|15ma|15mb)\)?$/.test(t) || /^\((8|15)\)$/.test(t));
     const dashes = [...svg.querySelectorAll('path.ppp-ottava')].map(q => q.getAttribute('d'));
-    return { bars: bars, labels: labels, hooks: dashes.filter(d => (d.match(/ L /g) || []).length > 1).length, dashes: dashes.length,
+    return { engraved: svg.classList.contains('ppp-engraved'), bars: bars, labels: labels, hooks: dashes.filter(d => (d.match(/ L /g) || []).length > 1).length, dashes: dashes.length,
       top: ys.length ? Math.min.apply(null, ys) : null, bottom: ys.length ? Math.max.apply(null, ys) : null, head: hb ? hb.y + hb.height / 2 : null };
   }, longLine);
   ok('a view of bars inside a longer 8va draws the line over them - "(8va)", carried on, no end hook - and the C6 it plays on the staff, as C5',
-    !!part && part.bars[0] > 1 && part.bars[part.bars.length - 1] < 8 && part.labels.join() === '(8va)' && part.dashes === 1 && part.hooks === 0 &&
+    !!part && part.bars[0] > 1 && part.bars[part.bars.length - 1] < 8 && part.labels.join() === (part.engraved ? '(8)' : '(8va)') && part.dashes === 1 && part.hooks === 0 &&
       part.head != null && part.head >= part.top && part.head <= part.bottom,
     part ? JSON.stringify({ bars: part.bars, labels: part.labels, dashes: part.dashes, hooks: part.hooks,
       head: Math.round(part.head), staff: [part.top, part.bottom] }) : 'no staff');

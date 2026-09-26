@@ -162,3 +162,29 @@ test('P8: the cache stops writing before the origin\'s storage runs short, and s
   assert.ok((await broken.put('a', g, { via: 'live' })).ok, 'an estimate that fails is not a reason to stop');
   assert.equal((await roomy.put('a', g, { via: 'revalidated' })).ok, true, 'a kept graph agreed again may be kept again');
 });
+
+test('R12 (G4b review, G4d-2): an estimate() or a decode that never answers runs under the store timeout - the save and the read both finish', async () => {
+  const g = await graphOf('tests/scoregraph/fixtures/xml/piano-marks.musicxml');
+  const never = () => new Promise(() => {});
+  const limits = { timeout: 40 };
+  /* estimate() pending for good: the put still ends, as with an estimate that fails (the backend's own quota error stops a full disk) */
+  const hung = S.createStore({ backend: S.memoryBackend(), estimate: never, limits: limits });
+  const t0 = Date.now();
+  const put = await hung.put('a', g, { via: 'live' });
+  assert.ok(put.ok, JSON.stringify(put));
+  assert.ok(Date.now() - t0 < 2000, 'within the timeout, not for ever');
+  assert.equal(hung.stats.errors['estimate-timeout'], 1, 'counted by name');
+  /* a decode that never answers: the read ends as `timeout`, and the record is kept (nothing says it is bad) */
+  const backend = S.memoryBackend();
+  const writer = S.createStore({ backend: backend });
+  assert.ok((await writer.put('k', g, { via: 'live' })).ok);
+  const reader = S.createStore({ backend: backend, decode: never, limits: limits });
+  const got = await reader.get('k');
+  assert.equal(got.ok, false);
+  assert.equal(got.code, 'timeout');
+  assert.equal(reader.stats.errors['decode-timeout'], 1);
+  assert.deepEqual(await reader.keys(), ['k'], 'the record stays');
+  /* and the real decoder, under the same store, reads it */
+  const ok = await S.createStore({ backend: backend }).get('k');
+  assert.ok(ok.ok, ok.code);
+});

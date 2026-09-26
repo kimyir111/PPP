@@ -25,15 +25,20 @@
      sysmarks  G4d-1b: the marks attached to systems - lyrics, dynamics and
                hairpins, pedal, octave lines, chord names, voltas, tempo,
                rehearsal marks, jumps, words - placed through the same skylines
-   Pages and the renderer switch are G4d-2-G4f.
-   Nothing here changes what the app draws: the legacy renderer stays the
-   default.
+   G4d-2: the renderer in the page (engrave/page.js, window.PPPEngravePage):
+     page      the app's ScoreView under renderer 'engrave' - the source,
+               the caches, the SVG in the view, the practice layer's marks
+               and text, the page's sync, the fallback counter
+   Pages and print are G4e, the flip G4f. Nothing here changes what the app
+   draws by default: the legacy renderer stays the default, and the page loads
+   the layout files and page.js only when a view asks for 'engrave'.
 
    Browser order: ledger, plan-beams, plan-tuplets, plan, store, source, index,
    after scoregraph/*.js and audio-score.js; the layout files (metrics,
    metrics-text, space, breaks, skyline, canon, notation, curves, marks,
    sysmarks, layout, practice, outlines, svg), where loaded, go before index.js.
-   The app does not load them until the renderer switch (G4f); without them
+   The app loads them (and page.js) on first use under renderer 'engrave'
+   (App ENGRAVE_FILES); until then, and in a page that never asks,
    PPPEngrave.layout is null. Leaves window.PPPEngrave, with PPPEngrave.app:
    the app's one source, over IndexedDB when there is one.
    ========================================================================== */
@@ -57,7 +62,7 @@
   const layout = optional('layout'), practice = optional('practice'), canon = optional('canon'), metrics = optional('metrics'), svg = optional('svg');
 
   /* what G4 stage this is, so a stale script is visible in a report */
-  const version = '0.5.0-g4d1b';
+  const version = '0.6.0-g4d2';
 
   let app = null;
   /* The app's single source. Created on first use, over IndexedDB when the browser has it (a private window

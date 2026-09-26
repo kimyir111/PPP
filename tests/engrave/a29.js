@@ -25,6 +25,10 @@ const fs = require('fs');
 const path = require('path');
 
 const BACKEND = { 'svg.js': 'the drawing backend (G4c+): §20 allows DOM measurement here and nowhere else' };
+/* the page adapter (G4d-2): the one file that works with the DOM - it puts the SVG into the app's view, reads the pointer
+   (getScreenCTM), times its steps (performance.now) and colours through the page's CSS. Nothing in engrave/ requires it,
+   so no path from a graph to an EngravedScore or an SVG can reach it (layout.test.js checks) */
+const PAGE = { 'page.js': 'the renderer in the page (G4d-2): the DOM, the pointer, timings - it draws nothing it measures' };
 const EDGE = {
   'index.js': 'the entry point: finds the page\'s IndexedDB and navigator.storage (G4a, G4-U1)',
   'source.js': 'the render source: yields to the page with setTimeout between chunks (G4a)',
@@ -124,7 +128,7 @@ function stripComments(src) {
 const lineOf = (code, idx) => code.slice(0, idx).split('\n').length;
 function tiers(file) {
   const base = path.basename(file);
-  return { measure: !BACKEND[base], pure: !BACKEND[base] && !EDGE[base] };
+  return { measure: !BACKEND[base] && !PAGE[base], pure: !BACKEND[base] && !EDGE[base] && !PAGE[base] };
 }
 function scanSource(src, file) {
   const t = tiers(file || 'x.js');
@@ -160,4 +164,4 @@ function scanDir(dir) {
   return { findings: findings, scanned: scanned, files: files };
 }
 
-module.exports = { BACKEND, EDGE, MEASURE, PURE, stripComments, scanSource, scanDir };
+module.exports = { BACKEND, EDGE, PAGE, MEASURE, PURE, stripComments, scanSource, scanDir };

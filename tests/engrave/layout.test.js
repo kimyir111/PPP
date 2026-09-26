@@ -135,8 +135,13 @@ test('A29: no DOM measurement anywhere in engrave/ but the drawing backend; no b
   assert.deepEqual(r.findings, [], 'engrave/ is clean');
   /* what the tiers cover (G04 §20): DOM measurement in every file but svg.js (not written yet, G4c+); the determinism
      rules in every file but that and the G4a render-source files that talk to the page by design */
-  assert.deepEqual(r.scanned.measure, r.files.filter(f => !A29.BACKEND[f]));
-  assert.deepEqual(r.files.filter(f => r.scanned.pure.indexOf(f) < 0 && !A29.BACKEND[f]), Object.keys(A29.EDGE).sort());
+  assert.deepEqual(r.scanned.measure, r.files.filter(f => !A29.BACKEND[f] && !A29.PAGE[f]));
+  assert.deepEqual(r.files.filter(f => r.scanned.pure.indexOf(f) < 0 && !A29.BACKEND[f] && !A29.PAGE[f]), Object.keys(A29.EDGE).sort());
+  /* G4d-2: the page adapter is the one file exempt from both - and no engrave/ file requires it, so nothing from a graph to an
+     EngravedScore or an SVG can reach the DOM through it */
+  assert.deepEqual(Object.keys(A29.PAGE), ['page.js']);
+  r.files.filter(f => f !== 'page.js').forEach(f => assert.doesNotMatch(fs.readFileSync(path.join(REPO, 'engrave', f), 'utf8'), /require\(['"]\.\/page\.js['"]\)|M\.page\b/,
+    f + ' does not read the page adapter'));
   Object.keys(A29.EDGE).forEach(f => assert.ok(r.files.indexOf(f) >= 0, 'the exemption names a file that exists: ' + f));
   ['metrics', 'space', 'breaks', 'skyline', 'canon', 'notation', 'layout', 'practice', 'outlines', 'plan', 'plan-beams', 'plan-tuplets', 'ledger', 'glyphs',
     'curves', 'marks', 'metrics-text', 'sysmarks'].forEach(n => assert.ok(r.scanned.pure.indexOf(n + '.js') >= 0, n + '.js is held to every rule'));
