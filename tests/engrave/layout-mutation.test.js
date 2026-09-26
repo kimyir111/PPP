@@ -283,7 +283,13 @@ const MUTATIONS = [
   { id: 'R-CB2', expect: ['eg.row.centre_err'], probes: ['E16'], what: 'the row between the staves moved down onto the lower staff\'s content (no 1.0 sp)',
     edits: [['        const d = Math.max(0, Math.min((down - up) / 2, down - VGAP.pad * f));', '        const d = Math.max(0, down);']] },
   { id: 'R-WP', file: 'sysmarks.js', expect: ['eg.words.push_err'], probes: ['burg015', 'czerny849_005'], what: 'G4-D1b-4 off: a word by a dynamic sent a line out, not pushed after it',
-    edits: [['    const PUSH_MAX = 4;', '    const PUSH_MAX = -1;']] }
+    edits: [['    const PUSH_MAX = 4;', '    const PUSH_MAX = -1;']] },
+  /* G4f-2 polish (G4-L7, §47.x): the flip's own regression - a window whose first displayed measure is not the
+     piece's true start (a learner's practice view, Piano Coach App.dc.html's startM/viewStart) drew no time
+     signature at all, because showTime was gated on the whole piece's mi === 0 with no notion of a window. Caught
+     directly (run()'s own extra windowed layout, below), not by the committed hash alone (the G4-C15/A42 lesson). */
+  { id: 'WT', expect: ['eg.timesig.window_missing'], what: 'G4-L7 undone: a window\'s forced-in first measure no longer forces its time signature to show',
+    edits: [['const forceWindowTime = !!(cfg.window && lo > 0);', 'const forceWindowTime = false;']] }
 ];
 const CONTROLS = [
   { id: 'N1', what: 'a comment reworded',
@@ -471,8 +477,19 @@ function run(E, graphs, only) {
     const again = [E.layout.layout(P, CONFIGS[0]), E.engrave(E.plan(graphs[k]), CONFIGS[0]), E.layout.createEngraver(E.plan(graphs[k])).layout(CONFIGS[0])];
     again.forEach(eng => out.push(JSON.stringify(eng)));
     if (new Set([lays[0]].concat(again).map(eng => E.layoutHash(eng))).size !== 1) nondet++;
+    /* G4-L7 (§47.x): a window whose first displayed measure is not the piece's true first (any probe with more than
+       one measure, windowed from its second measure to its end) must show the time signature there, exactly like
+       clef/key already do - not folded into CONFIGS above (that would also change every other mutation's base
+       output for a config none of them is about), a fresh layout the same way A27's "again" above is */
+    if (P.measures.length > 1) {
+      const wEng = E.layout.layout(P, { breakpoint: 'desktop', window: [1, P.measures.length - 1] });
+      out.push(JSON.stringify(wEng));
+      const hasTime = wEng.objects.some(o => o.kind === 'timesig' && o.system === 0);
+      m['eg.timesig.window_missing'] = (m['eg.timesig.window_missing'] || 0) + (hasTime ? 0 : 1);
+    }
   });
   m['eg.layout.nondeterministic'] = nondet;
+  if (m['eg.timesig.window_missing'] === undefined) m['eg.timesig.window_missing'] = 0;
   const findings = A29.scanDir(path.join(tmp, 'engrave')).findings;
   return { output: out.join('\n'), metrics: m, findings: findings };
 }

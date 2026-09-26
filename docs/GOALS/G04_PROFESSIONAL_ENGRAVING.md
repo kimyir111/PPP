@@ -4688,6 +4688,69 @@ flip 리뷰가 남긴 m2: 공유(Shared Scores) 라이브러리 seed 7곡 중 4�
 
 ---
 
+## 47. G4 폴리싱 — 창(window)의 첫 마디에서 박자표가 사라지는 flip의 회귀 고침 (Implementer, 2026-09-27)
+
+### 47.1 버그 (Lead가 확인, 직접 재현함)
+
+`Piano Coach App.dc.html` ~18384의 연습 화면 기본 호출: `startM: S.wholeScore ? this.firstM() : this.viewStart(staffBars)`. 앱의 가장 흔한 뷰(전곡이 아닌, 학습자가 지금 연습 중인 구간)는 **`viewStart()`**(~13925)가 정한 자리에서 시작한다 — 곡 전체가 아니라 곡 중간 어디든. `App.sv({ score, staves, grand, startM: 13, count: 8, renderer: 'engrave' })`를 `catalog/method/sonatina/019.mxl`(11–18마디는 박자 변화 없이 6/8 그대로)에 걸면, `renderer: 'legacy'`는 "6/8"을 그리지만 **`renderer: 'engrave'`는 박자표를 아예 그리지 않는다** — 화면 어디에도 없다. Clef와 조표는 13마디 시작에서 이미 맞게 그려진다(같은 스크린샷으로 확인) — 박자표만 빠진다.
+
+원인: `engrave/layout.js` (당시) 1043행 `const showTime = mi === 0 || !!meterChangeAt(mi);` — `mi`는 **곡 전체**에서 그 마디의 인덱스다(레이아웃은 곡 전체를 한 번에 짜고, `page.js`의 `layoutConfig()`는 나중에 *어느 시스템을 보여줄지*만 `cfg.window = [i0, i1]`로 자른다 — page.js ~97–112). 그래서 박자표는 곡의 진짜 첫 마디이거나 실제 박자 변화가 있을 때만 그려지고, 창(window)이 곡 중간 어디서 시작하든 그 창의 첫 마디에는 결코 그려지지 않는다. Legacy는 항상 자신이 그리라고 받은 구간의 맨 앞에 박자표를 다시 그리므로, 이것은 legacy의 한계가 아니라 flip(G4f-2, PR #32) 자체가 만든 회귀다.
+
+### 47.2 이음매(seam) — clef/key는 왜 이미 맞는가
+
+`prepare(plan)`(창을 모르는, plan당 한 번만 도는 함수) 안에서 마디마다(`measures.forEach((M, mi) => {...})`, layout.js ~1071 부근) `M.head`를 계산한다: clef·key는 `clefAt`/`keyAt`으로 **`mi`가 0인지와 무관하게 항상** 계산되고, time만 `showTime`(`mi===0 || meterChangeAt(mi)`) 뒤에서 게이트된다. 이 `M.head`가 실제로 어느 시스템의 "머리"로 쓰이는지는 전혀 다른 곳, `layout(P, config)`(창을 아는, config당 한 번 도는 함수) 안의 `segments(P, i, j, last)`(layout.js, `fixed(P.measures[i].head.w, P.measures[i].head.objects, null);`)에서 정해진다 — 시스템의 시작 마디 `i`가 곡 전체에서 몇 번째든, `i`가 창의 `lo`(`cfg.window[0]`)와 같으면 그 마디의 머리가 화면 그 시스템의 머리로 쓰인다. Clef/key가 이미 맞는 이유는 이들이 **머리 데이터 자체에 항상 들어 있어서**이고, time이 빠지는 이유는 머리 데이터를 만드는 `prepare()`가 **그 머리가 나중에 창의 강제된 시스템 시작으로 쓰일지 전혀 모르기 때문**이다 — `showTime`을 `mi===0`에서 그냥 지우는 것으로는 못 고친다(`mi`는 창의 경계를 전혀 모른다); 창의 경계(`lo`)를 아는 곳, 즉 `layout()`/`segments()`까지 그 정보를 연결해야 한다.
+
+### 47.3 고침
+
+1. **`buildHead(M, mi, showTime)`** (layout.js ~1048): 기존 머리 계산 코드를 그대로 함수로 뽑아, `showTime`을 인자로 받게 했다. 마디마다 두 번 부른다: `M.head = buildHead(M, mi, showTime)`(기존과 같은 규칙), `M.headWithTime = showTime ? M.head : buildHead(M, mi, true)`(강제로 박자표를 넣은 대안 머리 — `showTime`이 이미 참이면 같은 객체를 재사용해 낭비가 없다). `P`(plan당 캐시되는, 여러 창 config가 같이 쓰는 값 — review O2)는 그대로 두고, 두 버전을 다 들고 있게만 했다.
+2. **`segments(P, i, j, last, forceTime)`**(layout.js ~1246): 넷째 인자 `forceTime`을 추가, `forceTime`이면 `P.measures[i].head` 대신 `P.measures[i].headWithTime`을 쓴다. `systemParts(P, i, j, last, forceTime)`도 그대로 전달.
+3. **`layout(P, config)`**(layout.js ~1920): `const forceWindowTime = !!(cfg.window && lo > 0);` — 창이 있고 그 시작(`lo`)이 곡의 진짜 시작이 아닐 때만 참. 이 값을 두 곳에 넘긴다: DP의 폭 계산(`systemParts(P, lo + i, lo + j, last && endsPiece, forceWindowTime && i === 0)` — 지역 인덱스 `i===0`이 전역 `lo`), 그리고 실제로 그리는 곳(`systemParts(P, i, j, last, forceWindowTime && i === lo)`) — 같은 조건이라 줄바꿈을 정하는 DP와 최종 렌더가 항상 같은 폭(넓어진 머리)에 합의한다.
+4. Print(`layoutPrint`)는 `cfg.window`가 항상 `null`(normalizeConfig의 print 분기)이라 `forceWindowTime`이 절대 참이 되지 않는다 — 코드를 건드리지 않고도 print는 자동으로 영향 밖이다.
+
+**규칙(범위)**: 창이 곡의 진짜 첫 마디를 포함하면(`i0===0`, 이어서 `i1===n-1`이 아니어도 `lo===0`이라 무관) 기존 그대로(`mi===0`이 이미 참). 창의 첫 마디가 곡의 진짜 시작이 아니면(`lo>0`) 그 창의 **첫 시스템에서만** 박자표를 강제로 보여준다 — 창 안에서 줄이 더 나뉘어도 두 번째 시스템부터는 강제하지 않는다(§15.4의 통상 규칙 그대로: 박자표는 바뀔 때만 다시 그린다, clef/key와 다르게). Print(창 없음)는 전혀 바뀌지 않는다.
+
+### 47.4 `startM:`을 쓰는 모든 곳 (`Piano Coach App.dc.html`)
+
+레이아웃 수준(`layout.js`)에서 고쳤으므로 **호출부를 하나도 바꿀 필요가 없다** — `cfg.window`가 있고 `lo>0`이기만 하면 어느 호출이든 저절로 고쳐진다.
+
+| 위치 | `startM` | 창(`lo>0`)? | 전/후 |
+|---|---|---|---|
+| ~15964 카드 미리보기 | `Score.first(th)` | 아니오(`i0=0`) | 그대로 |
+| ~17691 카드 미리보기 | `Score.first(thumbScore)` | 아니오 | 그대로 |
+| ~17820 루프 썸네일 | `S.loopFrom` | `clefs:false`로 legacy에 routed (G4-D2-9) | engrave 레이아웃을 아예 안 타서 무관 |
+| ~17917 미리보기 | `this.firstM()` | 아니오 | 그대로 |
+| ~18111 **복습(review) 패킷** | `S.reviewFrom` | **예 — 학습자가 아무 마디로나 넘길 수 있음** | **버그 있었음 → 고쳐짐** (review-build.js의 M-H1/M-H2 패킷도 같은 `App.sv({startM: score.measures[fromIndex].number, ...})` 경로라 함께 고쳐짐) |
+| ~18384 **연습 화면(기본, 버그 리포트의 자리)** | `S.wholeScore ? this.firstM() : this.viewStart(staffBars)` | **예 — 가장 흔한 뷰** | **버그 있었음 → 고쳐짐** (§47.1의 스크린샷으로 확인) |
+| ~18567 | `this.firstM()` | 아니오 | 그대로 |
+| ~18671 퀴즈 | `1`(고정) | 아니오 | 그대로 |
+| ~18692 빈 보표 placeholder | `this.firstM()`, `clefs:false` | routed to legacy | 무관 |
+
+### 47.5 버전과 hash
+
+`VERSION`(layout.js): `engr/6` → **`engr/7`**(plan은 안 바뀜, `plan/3` 그대로 — plan()의 출력은 손대지 않았다). `tests/engrave/tools/layout-hashes.js --write`로 118곡×3 config(desktop/phone/print, 전부 창 없음) 재생성 — `layout-diff.js --base=<855685a 체크아웃>`로 118×3=354건 전부 `SERIALIZATION_ONLY (version)`임을 확인(버전 문자열만 다르고 기하는 완전히 같음 — 세 baseline config 다 창이 없어서 당연함). `tests/engrave/tools/page-files.js --write`로 앱이 든 `engrave/layout.js` 해시도 갱신(안 하면 `page-files.js --check` STALE). `tests/engrave/layout.test.js`·`marks.test.js`의 하드코딩된 `'engr/6'` 세 곳도 `'engr/7'`로.
+
+### 47.6 새 mutation — `WT` (`tests/engrave/layout-mutation.test.js`)
+
+기존 hash만으로는 이 회귀를 못 잡는다(창 config가 118곡 baseline에 아예 없다) — G4-C15/A42의 교훈대로 이름 붙은 metric을 새로 만들었다. `run()`(harness)에 마디 수가 2개 이상인 모든 probe마다 `E.layout.layout(P, { breakpoint: 'desktop', window: [1, n-1] })`(곡 전체의 두 번째 마디부터 끝까지 — 진짜 시작이 아닌 창)를 한 번 더 레이아웃해, 그 결과의 시스템 0에 `kind==='timesig'` 객체가 있는지로 `eg.timesig.window_missing`을 센다(probe당 없으면 +1). Mutation `WT`: `const forceWindowTime = !!(cfg.window && lo > 0);` → `const forceWindowTime = false;`(§47.3의 고침을 정확히 되돌림) — 살아있고(`eg.timesig.window_missing=23`으로 바로 잡힘), 통제(N1/N2)는 바이트 동일 그대로.
+
+### 47.7 회귀
+
+- `npm run test:engrave` **199/199** (Windows), `npm run test:scoregraph` **216/216** (Windows) — 둘 다 Docker `node:24-bookworm`(진짜 `git clone`, `git archive` 아님)에서도 동일.
+- 5개 `--check` 도구: `page-files.js --check`(ENGRAVE_FILES matches), `app-source-check.js`(§47.7.1의 사전 결함 하나 빼고 전부 ok — 아래), `page-check.js`(all checks pass), `print-check.js`(all pieces printed cleanly), `legacy-parity.js --a <855685a> --b <이 브랜치>`(**16/16 바이트 동일** — legacy 렌더러는 `engrave/`를 전혀 안 타므로 당연).
+- `bench.js check --suite r|e|x` — 세 suite 전부 PASS(61/40/76 그래프, 회귀 없음).
+- 브라우저 suite(`with-port.js`, 이 브랜치 서버 하나): `engraving`·`layout`·`interactions`·`follow` 넷 다 PASS, 콘솔·페이지 에러 0, `engraving.test.js`의 "the time signature is printed once, at the start" 포함.
+- 실제 앱으로 재현(§47.1과 같은 설정, puppeteer, `NODE_ENV=production`): `renderer:'legacy'`와 `renderer:'engrave'` 둘 다 이제 13마디 시작에 조표(내림표)·clef·**6/8 박자표**를 함께 그린다 — 스크린샷으로 확인.
+
+#### 47.7.1 사전 결함 (이 변경과 무관, 고치지 않음)
+
+`app-source-check.js`의 `PPPEngrave is on the page` 검사가 `window.PPPEngrave.version === '0.1.1-g4a'`를 기대하는데 실제 값은 `'0.6.0-g4d2'`(`engrave/index.js`·`page.js`의 `VERSION` — 이 세션이 건드리지 않은 상수)다. G4a 시절의 하드코딩이 G4d-2 버전 갱신을 안 따라간, 이 작업 전부터 있던 결함 — 이번 §47 변경은 이 상수를 하나도 만지지 않았다. 범위 밖이라 고치지 않고 그대로 남긴다.
+
+### 47.8 상태
+
+**READY_FOR_REVIEW.** 새 판각 규칙은 없다 — 창의 강제된 시스템 시작에서 clef/key가 이미 하던 일을 time도 하게 만든 것뿐. `engrave/layout.js`, `Piano Coach App.dc.html`(ENGRAVE_FILES 해시만), `tests/engrave/`(baselines, layout-mutation.test.js, layout.test.js, marks.test.js) 밖은 손대지 않았다.
+
+---
+
 ## 부록 A. 이 세션의 측정
 
 모두 `D:/PPP-g4`, `55d1bd5`, 작업 트리 clean. 스크립트는 세션 scratchpad에 있고 저장소에 쓰지 않았다 (측정 뒤 `git status` clean 확인). G4a·G4f가 같은 정의로 `tests/engrave/tools/`에 다시 만든다.
