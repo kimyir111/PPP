@@ -1913,6 +1913,8 @@
     "Only one piano model was available, so these notes could not be cross-checked by another model.": "利用できるピアノモデルが1つだけだったため、別モデルとの照合は行われていません。",
     "{{n}} possible notes were rejected because the piano models did not agree.": "ピアノモデル間で一致しなかった候補音{{n}}個を除外しました。",
     "Reading notation directly from the vector PDF": "ベクターPDFから楽譜情報を直接読み取っています",
-    "PPP needs at least four notes to write a score, and this MIDI file has fewer.": "PPP が楽譜を作るには 4 つ以上の音が必要ですが、この MIDI ファイルの音はそれより少ないです。"
+    "PPP needs at least four notes to write a score, and this MIDI file has fewer.": "PPP が楽譜を作るには 4 つ以上の音が必要ですが、この MIDI ファイルの音はそれより少ないです。",
+    "Engraving…": "楽譜を描画中…",
+    "This score could not be prepared for printing.": "この楽譜は印刷用に準備できませんでした。"
   }
 }

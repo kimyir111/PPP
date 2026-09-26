@@ -52,7 +52,13 @@ test('the app loads every G4a engrave/ file after the scoregraph library and aud
 
 /* The switch block of the app (ENGRAVE_FILES through engraveView), run in a sandbox: the page's location, storage, console
    and document are stand-ins, so what the switch decides is checked by running it, not by reading it */
-function runSwitch(search, stored) {
+/* a view's element: setting innerHTML gives it a first child, as the page's does */
+function viewEl() {
+  const el = { _h: '', firstChild: null, querySelector: () => null };
+  Object.defineProperty(el, 'innerHTML', { set(v) { this._h = v; this.firstChild = v ? { textContent: '' } : null; }, get() { return this._h; } });
+  return el;
+}
+function runSwitch(search, stored, extra) {
   const a = html.indexOf('const ENGRAVE_FILES = [');
   const b = html.indexOf('function makeScoreView(React) {');
   assert.ok(a > 0 && b > a, 'the switch block is before makeScoreView');
@@ -63,9 +69,14 @@ function runSwitch(search, stored) {
     window, document, URLSearchParams,
     location: { search: search || '' },
     localStorage: { getItem: k => (stored && k in stored ? stored[k] : null) },
-    console: { warn: function () { warns.push([...arguments].join(' ')); } }
+    console: { warn: function () { warns.push([...arguments].join(' ')); } },
+    /* the app's i18n (G4f-2 R3): the page's placeholder text goes through it */
+    tx: s => 'tx:' + s,
+    scoreNoteEnd: () => 0,
+    setTimeout: (f) => f()
   });
-  const out = vm.runInContext(html.slice(a, b) + '\n;({ ENGRAVE_SWITCH, engraveWanted, engraveView })', ctx);
+  if (extra) extra(window);
+  const out = vm.runInContext(html.slice(a, b) + '\n;({ ENGRAVE_SWITCH, engraveWanted, engraveView, engraveDrew })', ctx);
   return Object.assign(out, { PPP: window.PPP, scripts, warns });
 }
 
@@ -115,7 +126,7 @@ test('G4f-2: the switch defaults to engrave; legacy is one switch away - the URL
 
 test('G4f-2: a reduced view is routed to the legacy renderer before any engraver file is asked for - not a fallback, not warned; a full view loads the engraver (G4-F2-2)', () => {
   const r = runSwitch('', null);
-  const el = { innerHTML: '', querySelector: () => null };
+  const el = viewEl();
   const view = { props: null, paint() {} };
   const one = { staves: 1 }, two = { staves: 2 };
   /* the loop thumbnail (clefs: false), the empty page's staff (clefs: false, grand: false), one staff of a grand staff */
@@ -131,6 +142,43 @@ test('G4f-2: a reduced view is routed to the legacy renderer before any engraver
   assert.equal(r.engraveView(view).paint(el, { score: one, grand: false }), 'pending');
   assert.equal(r.scripts.length, PAGE_FILES.ORDER.length);
   assert.match(el.innerHTML, /data-engrave-wait/);
+});
+
+test('G4f-2 (review R2): the print command is offered only for a Score the engraver drew - never for one that fell back', () => {
+  /* the app's switch block with a stand-in engraver whose views answer as told: the outcome is kept per Score, a fallback is
+     sticky, and a change re-renders the app (setState) once */
+  let answer = 'drawn', renders = 0;
+  const one = { staves: 1 }, two = { staves: 1 }, three = { staves: 1 };
+  const r = runSwitch('', null, window => {
+    window.PPPEngravePage = { createView: () => ({ paint: () => answer }) };
+    window.PPP.app = { state: { score: one }, setState: () => { renders++; } };
+  });
+  const el = viewEl();
+  const view = { props: null, paint() {} };
+  assert.equal(r.engraveDrew(one), false, 'not before it is drawn');
+  assert.equal(r.engraveView(view).paint(el, { score: one }), 'drawn');
+  assert.equal(r.engraveDrew(one), true);
+  assert.equal(renders, 1, 'the app re-rendered once, so the command appears');
+  r.engraveView(view).paint(el, { score: one });
+  assert.equal(renders, 1, 'no change, no render');
+  answer = 'legacy';
+  r.engraveView(view).paint(el, { score: two });
+  assert.equal(r.engraveDrew(two), false, 'a Score that fell back (a shared seed song, SOURCE_DISAGREES) gets no command');
+  answer = 'drawn';
+  r.engraveView(view).paint(el, { score: two });
+  assert.equal(r.engraveDrew(two), false, 'a fallback is sticky');
+  answer = 'pending';
+  r.engraveView(view).paint(el, { score: three });
+  assert.equal(r.engraveDrew(three), false, 'still waiting: no command yet');
+  /* the command's condition, and the message when printing still fails */
+  assert.match(html, /showPrintControls: S\.wholeScore && engraveWanted\(\{ renderer: PPP\.renderer \}\) && engraveDrew\(S\.score\),/);
+  const pr = slice('  printScore() {', '\n  }\n');
+  assert.equal((pr.match(/this\.say\(tx\('This score could not be prepared for printing\.'\)\)/g) || []).length, 2, 'a failed print and a failed load both tell the person');
+  /* R3: the placeholder text is the app's, translated */
+  const rr = runSwitch('', null);
+  const el2 = viewEl();
+  rr.engraveView(view).paint(el2, { score: one });
+  assert.equal(el2.firstChild.textContent, 'tx:Engraving…');
 });
 
 test('every producer keeps the graph it made the Score from (G04 §8.2 live)', () => {
@@ -163,13 +211,20 @@ test('A45: the legacy renderer is byte for byte the one at 55d1bd5 but for MX-1\
        the class as it is now;
        the class with the G4d-2 blocks cut out = the class as MX-1 left it, byte for byte (so draw(), buildVoice(), sync(),
          drawKey() and the rest of paint() are untouched - A45's rollback path);
-       that with MX-1's block cut out too = 55d1bd5's class with the same block cut out. */
+       that with MX-1's block cut out too = 55d1bd5's class with the same block cut out.
+     G4f-2 (review R3) localised one string of the class - the placeholder render() shows until VexFlow is ready, which
+     every user sees since the flip - as an inline mark "G4f-2: was <original> >>>" <new> "<<< G4f-2" (in comments). The
+     pin puts the original back from the mark before the hashes below, so they prove that string is the only change. */
   const b = html.indexOf('function makeScoreView(React) {');
   const scoreView = html.slice(b, html.indexOf('\n  };\n}\n', b) + 7);
-  assert.equal(sha(scoreView), 'c208062f2f77ed7972319521d12677e071af61db2c95b0c1dd669658d69cf78e');
-  const blocks = [...scoreView.matchAll(/^[^\n]*\/\* G4d-2 >>>[\s\S]*?\/\* <<< G4d-2 \*\/[^\n]*\n/gm)];
+  assert.equal(sha(scoreView), '8f292d3c7e60096cd7c1a3745af53c11c93f401460e8f9592a24088839beb641');
+  const MARK = /\/\* G4f-2: was ('[^'\n]*') >>> \*\/([^\n]*?)\/\* <<< G4f-2 \*\//g;
+  assert.deepEqual([...scoreView.matchAll(MARK)].map(m => [m[1], m[2]]), [["'Engraving…'", "tx('Engraving…')"]], 'one G4f-2 mark: the placeholder, through tx()');
+  const unmarked = scoreView.replace(MARK, '$1');
+  assert.equal(sha(unmarked), 'c208062f2f77ed7972319521d12677e071af61db2c95b0c1dd669658d69cf78e', 'the class as G4d-2 left it, byte for byte');
+  const blocks = [...unmarked.matchAll(/^[^\n]*\/\* G4d-2 >>>[\s\S]*?\/\* <<< G4d-2 \*\/[^\n]*\n/gm)];
   assert.equal(blocks.length, 2, 'two insertions');
-  const before = scoreView.replace(/^[^\n]*\/\* G4d-2 >>>[\s\S]*?\/\* <<< G4d-2 \*\/[^\n]*\n/gm, '');
+  const before = unmarked.replace(/^[^\n]*\/\* G4d-2 >>>[\s\S]*?\/\* <<< G4d-2 \*\/[^\n]*\n/gm, '');
   assert.equal(sha(before), '8ceb975a9fa3867a7fbc0ef0033b6051aef7f0a6245478417a2cab3bfa49d368', 'outside the two G4d-2 blocks, the class MX-1 left');
   /* where they are: the first statement of paint(), and between paint() and draw() - in none of draw(), buildVoice(), sync() */
   const at = name => scoreView.indexOf('\n    ' + name + '(');

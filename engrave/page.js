@@ -64,14 +64,15 @@
   const UNIT = 10;
   const NS = 'http://www.w3.org/2000/svg';
   const GRAPHS = 4, PER_PLAN = 8;
-  /* the page's SVG: in px (unit), each glyph defined once in <defs> and placed with <use> - svg.js's default (G4-D2-19,
-     R3 fix). G4d-2 first chose inline: true (a path written out at every occurrence) on a claimed 4-10x Chrome repaint
-     cost against <use> - but the real page's inline output broke B9 (<=0.5x the legacy renderer's SVG, §19.1) on 2 of 5
-     measured non-trivial pieces (up to 0.79x), undisclosed, while the independent review's own Chrome trace found the
-     real repaint cost of <use> against inline paths is about 2x, not 4-10x - <use> is still measurably slower per
-     playback frame, just not by the multiple that justified breaking B9. Recovering B9 across the catalogue is worth
-     that (G04 §37.1, DECISIONS G4-D2-19/20). */
-  const SVG_OPTS = Object.freeze({ unit: UNIT, px: UNIT, inline: false });
+  /* the page's SVG: in px (unit), every glyph written out as a path where it stands (inline) - the Lead's decision G4-L6
+     (G4f-2 review, G04 §43.10). Every playback tick changes the one score <svg> (the playhead, a note's class, the bar
+     wash) and Chrome re-records the paint of the whole SVG; a <use> instance costs far more to re-record than a path
+     (the review's trace at CPU 4x: Paint 51.7 ms a frame with <use>, 8.5 inline, 17.2 legacy), so a whole score drawn
+     with <use> played back slower than the legacy renderer - smooth playback is the product. The price is size: B9
+     (<= 0.5x the legacy SVG) was a proxy budget; for the screen it is now "no larger than the legacy SVG" (inline is
+     0.5-0.8x). G4-D2-21 had chosen <use> (svg.js's default) for B9 on the claim, G4-D2-22, that the frame time was the
+     same - measured on playback it was not. svg.js's default and print (PRINT_SVG_OPTS) keep <use>. */
+  const SVG_OPTS = Object.freeze({ unit: UNIT, px: UNIT, inline: true });
   const now = () => (browser && browser.performance ? browser.performance.now() : Number(process.hrtime.bigint()) / 1e6);
 
   const stats = {
@@ -429,7 +430,7 @@
       const d = doc.createElement('div');
       d.setAttribute('data-engrave-wait', '1');
       d.style.cssText = 'min-height:120px;display:grid;place-items:center;font-size:12px;color:var(--ink3);';
-      d.textContent = 'Engraving…';
+      d.textContent = (env.waitText && env.waitText()) || 'Engraving…';
       el.appendChild(d);
       drawn = null;
     }
