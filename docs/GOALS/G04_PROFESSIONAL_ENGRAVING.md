@@ -4688,7 +4688,25 @@ flip 리뷰가 남긴 m2: 공유(Shared Scores) 라이브러리 seed 7곡 중 4�
 
 ---
 
-## 47. G4 폴리싱 — 창(window)의 첫 마디에서 박자표가 사라지는 flip의 회귀 고침 (Implementer, 2026-09-27)
+## 46. G4 폴리싱 — 홀로 낀 16분음표 flag 모양: 조사 뒤 종결 (Lead, 2026-09-27)
+
+로드맵 §15의 다음 항목(§38.1, §42.1의 flag 모양)을 다시 조사했다 — sonatina/019(11–18마디)와 sonatina/024(100–107마디) 둘 다 직접 다시 그려 비교(`g4-polish-inspect*.js`).
+
+**결론: 결함 아님, 고치지 않는다.** legacy는 서로 다른 리듬(예: 8분음표 하나 + 16분음표 둘)을 beam 하나로 시각적으로 이어 붙여 "매끄러워 보이지만" 실제로는 잘못된 모양이고, engrave는 그래프의 실제 리듬·beam 그룹대로 홀로 낀 음을 정석 flag로 그린다 — Bravura(고정 글꼴, §18.2)의 실제 glyph이고 stem 길이도 표준 공식(`stemLength: 3.5` + flag 2개 넘을 때마다 0.5sp, §11.2 그대로)이다. M-H1(§38.1)과 M-H2(§42.1)가 이미 독립적으로 "관례 차이, 결함 아님"이라 판정한 것과 같은 결론이다 — 코드를 바꿀 지점이 없다(고정 글꼴 glyph를 바꾸는 건 §18.2 계약 위반, beam을 그래프와 다르게 유도하는 건 G4-D3 위반). **이 항목은 여기서 닫는다.**
+
+## 47. G4 폴리싱 — 창(window) 뷰의 박자표 누락: 새 발견 (Lead, 2026-09-27)
+
+같은 조사 중에 flag 모양과는 별개로 **더 무거운 것을 발견했다.** `engrave/layout.js:1043`의 `const showTime = mi === 0 || !!meterChangeAt(mi);` — `mi`는 곡 전체 기준 마디 index다(page.js가 `startM`/`count`로 화면에 보일 구간만 나중에 자르는 구조라, layout 단계는 창을 모른다). 그래서 **곡의 진짜 첫 마디이거나 실제 박자 변경이 있는 마디가 아니면, 어디서 창을 열든 박자표를 그리지 않는다.**
+
+**왜 중요한가**: App:18384 `startM: S.wholeScore ? this.firstM() : this.viewStart(staffBars)` — **"전체 악보"가 아닌 기본 연습 화면("이 부분만")은 항상 이 경로를 쓴다.** `viewStart`(App:13925)는 현재 연습 중인 마디 근처로 창을 옮기므로, 곡 앞부분이 아닌 곳을 연습하면(흔한 일 — 여러 마디짜리 곡을 처음부터 끝까지 첫 화면만으로 연습하는 사람은 없다) 그 구간에 박자 변경이 없는 한 **화면 어디에도 박자표가 없다.** 직접 재현: sonatina/019 11–18마디(박자 변경 없음, 6/8 그대로), `App.sv({startM:13, renderer:'legacy'})`는 6/8을 그리고 `renderer:'engrave'`는 아무것도 안 그린다 — 같은 코드 경로, 같은 마디.
+
+clef·key는 이미 창의 첫 마디에서 항상 그려진다(정상 — Gould 관례: clef·key는 매 system 첫머리에 다시, 박자표는 안 바뀌면 반복 안 함). 이 관례는 **줄바꿈으로 이어지는 계속되는 악보**에는 맞지만, **맥락 없이 뚝 떨어진 창**(연습 화면, 리뷰 packet)에는 안 맞는다 — 그런 창은 고립된 발췌이므로 박자표까지 다시 보여줘야 읽는 사람이 박자를 알 수 있다. **legacy는 (의도했든 아니든) 이 경우를 우연히 맞게 처리해 왔고, engrave는 "system 대 창"을 구분하지 못해 이 경우에 legacy보다 못하다** — flip 이후 지금 production에 있는 실제 회귀다.
+
+**범위 추정**: 정확한 규칙 결정(어떤 창이 "고립된 창"인가 — `layoutConfig`의 `window`가 `i0>0`이면 그 창의 첫 표시 마디는 박자표를 강제로 보여준다, 인 것으로 보이나 clef·key가 이미 창 경계에서 어떻게 올바르게 나오는지 먼저 정확히 추적해야 같은 자리에 시간 규칙을 끼워 넣을 수 있다), `engr`/`plan` 버전 올림 + 118곡×3설정 layout hash 재생성, 이름 붙은 metric으로 잡는 mutation 하나 추가, `startM`을 쓰는 다른 화면들(카드 미리보기·퀴즈·루프 축소판 등, 대부분 `firstM()`이라 영향 없음 — 직접 확인 필요)이 실수로 박자표를 새로 얻지 않는지 확인. **화면 렌더러(scoregraph/engrave) 코드라 전체 리뷰 사이클 필요** — G4f-2 flip과 같은 급의 "app/live-deploy-affecting" 범주.
+
+**Lead 판단**: 사용자에게 보고했고, 지금 바로 고치기로 결정(2026-09-27) — 이미 production에 있는 회귀이므로 뒤로 미루지 않는다. 구현 브리프는 `brief_g4_timesig.md`. G4-D3(그래프 beam 그대로)와 같은 급의 새 규칙이므로 DECISIONS에 결정으로 남긴다(G4-L7 예정, Fixer가 실제 규칙을 정하면 확정).
+
+**상태: Implementer가 §47.1–47.8에서 구현, READY_FOR_REVIEW (아래).**
 
 ### 47.1 버그 (Lead가 확인, 직접 재현함)
 
@@ -4748,6 +4766,76 @@ flip 리뷰가 남긴 m2: 공유(Shared Scores) 라이브러리 seed 7곡 중 4�
 ### 47.8 상태
 
 **READY_FOR_REVIEW.** 새 판각 규칙은 없다 — 창의 강제된 시스템 시작에서 clef/key가 이미 하던 일을 time도 하게 만든 것뿐. `engrave/layout.js`, `Piano Coach App.dc.html`(ENGRAVE_FILES 해시만), `tests/engrave/`(baselines, layout-mutation.test.js, layout.test.js, marks.test.js) 밖은 손대지 않았다.
+
+## 48. G4 폴리싱 — 소나티네 빽빽한 구간 beam: H03 조사 (2026-09-27)
+
+M-H2 §42.2의 관찰(빽빽한 소나티네 층 4개 중 2개, H01·H03에서 legacy가 "전체" 점수로 이겼다)을 별도 워크트리(`D:/PPP-g4-sonatina`)에서 조사했다 — 미리 결론을 정하지 않고, 실제 결함이 있으면 고치고 없으면 §46처럼 조사만으로 닫는 방식. 브리프 `brief_g4_sonatina.md`.
+
+### 48.1 배경
+
+H01은 §42.1·§46에서 이미 조사되어 결함 아님으로 닫혔다. **H03(sonatina/019, 11–18마디)은 양쪽 렌더러 다 지적된 발췌라 flip 결정을 막지 않았지만, 실제로 들여다본 적이 없었다.** 사용자 코멘트 — engrave: "이어지는 선이 왜 두겹씩 있고 13 마디 음표는 또 왜 선이 이상하냐"; legacy: "16번쨰 선 이어진거만 좀 이상함 그리고 17~18마디 사이 음 배치 간격과 박자 이상해보여". 이 절은 그 조사 기록이다.
+
+### 48.2 방법
+
+두 렌더러로 11–18마디를 실제 크기로(썸네일이 아니라) 다시 그림 — Lead의 `g4-polish-inspect.js`/`inspect2.js` 기법을 이 워크트리(`D:/PPP-g4-sonatina`, 포트 8801)에 맞게 다시 짜서 13마디·16–18마디를 확대 촬영. 원본 MusicXML(`catalog/method/sonatina/019.mxl`)을 풀어 11–18마디의 `<slur>`·`<tie>`·`<articulations>` 태그를 직접 읽음. 각 렌더러의 SVG를 브라우저에서 직접 질의(클래스·`d` 속성 개수)해 실제로 그려진 곡선·표시 개수를 셈. 마지막으로 `tests/engrave/tools/legacy-geometry.js`를 `corpus.json`의 소나티네 서브셋 10개 파일(001·003·004·006·019·021·022·024·025·026) 전체에 대해 돌려, "빽빽한 소나티네 구간에서 engrave의 spacing·충돌 회피가 측정 가능하게 legacy보다 못한가"를 이름 붙은 지표로 확인.
+
+### 48.3 발견 — 지적된 4곳 전부
+
+1. **11마디, "선이 두겹씩"(engrave 코멘트)**: XML에 서로 다른 3개의 `<slur number="1">` 요소가 인접한 음에 이어 걸려 있다(하나가 `stop`되자마자 바로 다음 음에서 같은 번호로 `start`) — 원곡이 짧게 끊어지는 3개의 어구를 그렇게 인코딩한 것. engrave는 각 slur를 그대로 별도 곡선 3개로 그린다(`.vf-curve.ppp-slur` 3개 확인). legacy는 같은 자리에 곡선 모양 SVG path가 1개만 존재 — 2개를 누락한다. → engrave가 원본에 더 충실하고, legacy가 단순화(누락)한 것. 결함 아님.
+2. **13마디, "음표 선이 이상"(engrave 코멘트)**: 이 마디 12개 음(트레블 6, 베이스 6) 전부에 `<tenuto/>`가 붙어 있다. engrave는 관례대로(스템 반대쪽에) tenuto 대시 12개를 전부 그린다. legacy는 13마디에서 tenuto 대시를 **단 하나도** 그리지 않는다(치밀하게 크롭해 직접 확인). → engrave가 원본을 legacy보다 완전하게 그리는 것뿐이고, legacy에서 본 적 없는 표시라 사용자에게 낯설게 보인 것. 결함 아님.
+3. **16마디, "선 이어진게 이상"(legacy 코멘트)**: legacy 베이스 clef에서 렌즈 모양의 이중 곡선(겹친 곡선 2개)이 실제로 그려짐을 스크린샷으로 확인했다. engrave는 같은 자리에 곡선 1개만 그린다. → 이건 legacy 쪽의 실제 렌더링 결함이고, engrave에는 없다. engrave 쪽 조치 불요.
+4. **17–18마디, "배치·박자 이상"(legacy 코멘트)**: legacy는 17마디의 16분음표 런 전체(한 마디 분량)를 박자 구분 없이 통짜 beam 하나로 그린다. engrave는 6/8의 8분음표 펄스에 맞춰 4음씩 3그룹으로 나눠 그린다(정석 beam 표기, 박자를 눈으로 읽을 수 있다). → legacy의 통짜 beam이 박자를 읽기 어렵게 만드는 쪽이고, engrave가 표준 관례를 따른다. engrave 쪽 조치 불요.
+
+### 48.4 소나티네 층 전체 측정 (A43, `legacy-geometry.js`)
+
+corpus.json의 소나티네 10개 파일에 대해 legacy-geometry.js를 실행(로컬 전용, CI 게이트 아님, §21.5):
+
+| 지표 | engrave | legacy |
+| --- | --- | --- |
+| clip | 0 | 0 |
+| head-head 겹침 | **0** | **133**(019 자체에서 legacy=12, engrave=0) |
+| beam | 1684 | 1483 |
+| tie | 53 | 15 |
+| tuplet | 6 | 6 |
+
+A43 기준(결함 카테고리는 g4 ≤ legacy, 커버리지 카테고리는 g4 ≥ legacy) 5개 카테고리 전부 통과. **빽빽한 16분음표 구간에서 engrave의 spacing·충돌 회피가 legacy보다 못하다는 측정상 징후는 전혀 없다 — 오히려 head-head 겹침이 legacy에서만 133건 나온다.**
+
+### 48.5 결론
+
+H03에서 지적된 4곳 전부를 직접 조사했고, **engrave 쪽에 실제 결함은 없다.** engrave 쪽 코멘트(11·13마디)는 원본 MusicXML을 legacy보다 충실/완전하게 그리는 데서 온 낯섦이고, legacy 쪽 코멘트(16·17–18마디)는 legacy 자체의 렌더링 한계(이중 곡선 아티팩트, 박자 구분 없는 통짜 beam)를 사용자가 정확히 짚어낸 것이다 — legacy 쪽은 이 워크트리의 비목표(엔진이 아니라 legacy 자체 결함이고, 이미 flip으로 기본 렌더러가 아니게 되었으므로 손대지 않는다). §42.2가 남긴 가설("빽빽한 소나티네 층에서 engrave의 beam·spacing 판단이 아직 약점일 수 있다")은 §48.4의 corpus 전체 측정으로 반증된다. **코드 변경 없음. H01(§38.1·§42.1·§46)에 이어 H03도 종결.**
+
+**상태: 조사 완료, 결함 아님 (NO CHANGE).** 이 트리(`D:/PPP-g4-sonatina`, `g4-polish-sonatina`)는 코드를 건드리지 않았으므로 회귀·리뷰 대상 없음.
+
+## 49. G4 폴리싱 — B5: 첫 그리기 성능 예산 조사 (stop-and-report, 2026-09-27)
+
+G4b부터 매 단계 미뤄온 B5(§19.2: 전곡 첫 그리기 ≤ 300 ms, **조각당 ≤ 12 ms, long task 0**)를 이번에 직접 재보고 판정을 시도했다. `D:/PPP-g4-b5`, `g4-polish-b5`, 시작 `855685a`. **결론: 작게 고칠 수 없다 — stop-and-report.** 코드는 바꾸지 않았다(scratch 스크립트는 세션 scratchpad에만 있고 저장소에는 없다).
+
+### 49.1 잰 것 (이 PC, Chrome headless, 1400×1000, sonatina/020 = 158마디 1,563 음 그룹)
+
+- **Node** (`layout-perf.js`): prepare 9.47 + desktop layout 27.87 + svg 9.01 = **46.35 ms** (plan 14.08은 별도). 예산 안(B4 100ms 기준으로도, historical 23.7ms대와 같은 자릿수 — 기계 편차).
+- **격리된 브라우저** (`browser-parity.js --quick`, DOM·React 없이 엔진 스크립트만 로드): 1× plan 8.9 + prepare 9 + layout 19 = **28 ms**; **4× plan 51.1 + prepare 44.9 + layout 108.3 = 153.2 ms** — layout() 한 호출만으로 4×에서 이미 108ms, §19.2의 조각(12ms)을 훌쩍 넘는다.
+- **실제 페이지** (`page-check.js --part perf`, 판각기 모듈은 이미 로드된 상태에서 sonatina/020을 처음 여는 것): 1× `wholeDraw` = {layout 40.3, svg 22.1, insert 19.8, decorate 18.7, **total 100.9**}, `resolve` 41.2, **long task {n:2, max:205}**. 4×: `wholeDraw.total` 446.7, `resolve` 251.4, **long task {n:3, max:1006}**. G4f-2 리뷰가 잰 252ms(1×)/984ms(4×)와 거의 같다 — 재현됐다.
+- **reload**(이미 저장소에 있는 곡을 다시 열기, `fromStore`가 이미 `await`로 양보하는 경로인데도): 1× resolveMs 99.4, long task 1개(max 211ms); **4× resolveMs 326.3, long task 5개(max 832ms)**. 이미 부분적으로 양보하는 경로조차 4×에서 832ms 한 덩어리다.
+- **단계별 타임스탬프**(직접 계측, scratchpad `g4-b5/breakdown.js`, 1×): `scoreFromFile`(mxl 압축 해제 + MusicXML 파싱 + scoregraph 그래프 생성) 자체가 **83.8 ms**, 그 자체로 별도의 long task(81ms) — `draw()`가 시작하기도 전이다. 그다음 `App.setState(wholeScore:true)`가 트리거하는 실제 그리기가 **두 번째 long task 180ms** — `stats.last`가 재는 layout+svg+insert+decorate 합(84.7ms) + `resolve` 40.6ms를 더해도 125ms, 나머지 ~55ms는 React의 커밋(첫 호출은 소스가 준비되지 않아 placeholder를, 두 번째 호출에서 실제로 그리는 두 번의 paint)과 `paint()`의 SYNC 단계(`dress()`, `sync.update()`, `overlays()` — 시간을 재지 않음)로 추정된다.
+
+### 49.2 왜 - 코드에서 확인한 것
+
+1. `engrave/source.js`의 `resolve(score, ropts)`는 `async`로 선언돼 있지만, "live"(방금 연 파일의 그래프가 메모리에 있는) 경로에서는 `scoreHash` + `L.agree()` + `L.link()`를 **함수 몸통 안에서 전부 동기로** 끝내고 `finish()`를 즉시 반환한다 — `await`는 그 반환을 microtask로 미룰 뿐, 브라우저에 실제로 양보(yield)하는 지점이 없다. 이 파일에 진짜 양보 헬퍼(`defaultYield = () => new Promise(r => setTimeout(r, 0))`)가 이미 있고 `persist()`는 그것을 쓰지만, `resolve()`의 live/projected 경로는 쓰지 않는다.
+2. `engrave/layout.js`의 `layout(P, config)`는 `BR.breakLines(...)`로 **악보 전체의 시스템 나눔을 한 번에 정하는 전역 DP**를 먼저 돌린 뒤에야(`br`) 시스템별 배치 루프(`br.systems.forEach(...)`)로 들어간다 — 나눔이 전부 정해지기 전에는 첫 시스템도 확정해서 그릴 수 없다(뒤 시스템의 너비 제약·`resolveSystemU`의 누적 중앙값이 앞선 선택에 영향을 준다). 배치 루프 자체는 이미 시스템 단위로 도는 구조지만, 그 앞의 DP는 본질적으로 한 덩어리다.
+3. `engrave/page.js`의 `draw()`(layout+svg+insert+decorate)와 그 호출자 `paint()`의 SYNC 단계(`dress`/`sync.update`/`overlays`) 어디에도 양보 지점이 없다.
+4. 즉 `scoreFromFile`(scoregraph의 MusicXML/mxl 가져오기), `resolve()`의 동기 agree/link, `plan()`, `layout()`, `svg()`, DOM 삽입, SYNC 단계 — **어느 CPU 속도에서도 지금은 메인 스레드를 한 번도 양보하지 않는다.**
+
+### 49.3 작게 고칠 수 없는 이유, 그리고 옵션
+
+**결정적 사실**: engrave/ 안(layout.js·svg.js·page.js)을 완벽하게 조각내더라도, `scoreFromFile` + `resolve()`의 동기 부분만으로 이미 1×에서 ~125ms, 4×에서 ~380ms(추정) 이상의 **손댈 수 없는 한 덩어리**가 남는다 — 이 브리프의 non-goal이 명시한 `scoregraph/`(파싱·비교기) 밖이기 때문이다. "long task 0"은 engrave/만 고쳐서는 도달할 수 없다.
+
+- **옵션 A(작음·부분적)**: `layout()`의 DP 이후 시스템별 배치 루프에 양보를 넣고, `svg()`/`el.innerHTML`/`decorate()`를 시스템 단위로 나눠 점진적으로 이어붙인다(악보가 시스템별로 채워지는 게 보임). engrave/layout.js·svg.js·page.js만 건드리므로 범위 안. 규모: 며칠(레이아웃을 재개 가능하게 바꾸면 `createEngraver`/`draw()`뿐 아니라 인쇄(`print.js`, 범위 밖)의 동기 전체 레이아웃 호출과 공존시켜야 해 단순 루프 삽입보다 크다). 위험: 낮음–중간(`layout-hashes.js`로 산출물 불변 확인 가능). **B5를 닫지 못한다** — DP 자체(4×에서 108ms 한 호출)와 `scoreFromFile`+`resolve`(위 결정적 사실)가 그대로 남는다.
+- **옵션 B(중간)**: `BR.breakLines`(DP) 자체를 재개 가능하게(단계마다 양보) 다시 짠다 + 옵션 A. 핵심 알고리즘을 건드리므로 며칠~1주+, `layout-hashes.js`/`legacy-parity.js`로 나눔 선택이 조금도 안 바뀌었는지 세심한 검증 필요(재개 가능한 DP가 부분 상태를 잘못 보면 다른 나눔을 고를 위험). 이것도 `scoreFromFile`+`resolve`는 그대로 두므로 **B5를 닫지 못한다** — 그쪽은 비슷한 크기의 별도 작업(scoregraph쪽 브리프)이 필요하다.
+- **옵션 C(큼)**: 파싱→resolve→plan→layout→svg 계산을 Web Worker로 옮기고 시스템 단위 SVG 조각을 메인 스레드로 돌려받아 붙인다(메인 스레드 작업은 항상 12ms 이하). DP 재개 문제를 우회하는 유일한 방법이지만, `svg.js`의 `browser` shim과 `page.js`의 DOM 의존(`el.innerHTML`, `decorate()`의 라이브 쿼리)을 계산부/DOM부로 실제로 갈라야 하고, 그래프·plan을 worker 경계로 넘기는 구조화 복제 비용, 인쇄의 동기 경로, `resolve()`가 가끔 쓰는 store(IndexedDB) 접근까지 다시 설계해야 한다. 사용자가 지금 미루라고 한 "catalog 규모" 작업 — 1–2주 이상으로 추정.
+
+### 49.4 상태
+
+**STOP AND REPORT — 코드 변경 없음.** Lead가 옵션 A/B/C 중 하나를 고르거나, engrave/와 scoregraph/를 함께 다루는 새 브리프로 다시 스코프하기를 기다린다. `test:engrave`/`test:scoregraph` 등 리그레션은 코드를 바꾸지 않았으므로 돌리지 않았다.
 
 ---
 
