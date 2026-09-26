@@ -4648,6 +4648,14 @@ Implementer, 2026-09-26. 브랜치 `g4f2-flip` (`D:/PPP-g4`), 시작 `9bffea3` (
 
 **판정: 병합 가능.** 4×에서도 §16.3의 50 ms를 완전히는 못 지키지만 legacy보다 낫다(위). m2·m3·M-H2의 flag·소나티네는 flip 뒤 과제로 로드맵에 남긴다. **배포는 병합 뒤 사용자에게 따로 묻는다.**
 
+## 44. 배포 (2026-09-26)
+
+PR #32 병합(`9dc6942`) 뒤 사용자에게 물었다 — "지금 배포"를 골랐다. `render deploys create srv-dalt5s6k1f9s739cuetg --commit 9dc6942`, `dep-daru9259fdbs73b3j7eg`, 약 50초 뒤 live.
+
+**실제 서비스에서 확인**(`/health`만이 아니라): `PPP.renderer`가 `'engrave'`; puppeteer로 sonatina/020을 직접 불러와 그리게 하니 `ppp-engraved` 클래스로 그려지고 인쇄 명령이 보임; `/health`·`/api/auth/me`·`/api/shares` 모두 200; 콘솔 에러 0. 되돌리기: `render deploys create ... --commit 0ef0950`(몇 분), 또는 방문자별 `?renderer=legacy`(즉시).
+
+**G4 "Professional Engraving"의 제품 목표가 production에 도달했다.** 남은 것은 §14/§15의 폴리싱(m2, flag 모양, 소나티네 beam, B5)과 한 릴리스 뒤 §25 3단계(legacy 렌더러 제거)뿐 — 더 이상 사람 게이트나 사용자 승인이 필요한 결정은 없다.
+
 ---
 
 ## 부록 A. 이 세션의 측정

@@ -1,6 +1,6 @@
 # PPP — current state
 
-Updated 2026-09-26 (G4f-2 flip merged as PR #32 `9dc6942`, not yet deployed; M-H2 accepted and the flip approved, G4-U6; G4f-1 merged as PR #28; G4e merged as PR #26; G4d-2 merged as PR #23; G4d-1b merged as PR #19; G4d-1a merged as PR #17; G4c merged as PR #15; MX-1 merged as PR #13; G4b merged as PR #12; the production database moved to Neon Free). G0 (Quality Foundation), G1 (ScoreGraph) and G2 (Score Import) are all merged
+Updated 2026-09-26 (G4f-2 flip merged as PR #32 `9dc6942` and **deployed to production** on the user's word; M-H2 accepted and the flip approved, G4-U6; G4f-1 merged as PR #28; G4e merged as PR #26; G4d-2 merged as PR #23; G4d-1b merged as PR #19; G4d-1a merged as PR #17; G4c merged as PR #15; MX-1 merged as PR #13; G4b merged as PR #12; the production database moved to Neon Free). G0 (Quality Foundation), G1 (ScoreGraph) and G2 (Score Import) are all merged
 and closed. **G3 is merged as PARTIAL / DEFERRED** (PR #7, `c5474c2`; G03 §31): implemented, reviewed and fixed,
 but its blind human review (A36) failed (§30), so every part of it stays **off** — G3a, G3b, the automatic 8va
 and the pedal join — and nothing a user sees changed. **The active goal is G4 Professional Engraving**
@@ -44,8 +44,8 @@ fallbacks, not a new defect). Its independent review returned PASS (0 BLOCKER/MA
 substantive MINOR directly (the CI server-boot readiness loop now fails its own step on a timeout, `5079d64`) rather
 than opening a Fixer round for a one-line change. No product-facing change; the default renderer is still `'legacy'`.
 **M-H2 is DONE and accepted by the user with one known exception** (G04 §42, DECISIONS G4-U6), who also approved the
-flip. **The G4f-2 flip is merged as PR #32 (`9dc6942`)** (G04 §43–§43.11, DECISIONS G4-F2-1..9, G4-L6) — **not yet
-deployed; production still draws with the legacy renderer until the user asks for a deploy.** On `main` the default `PPP.renderer` is
+flip. **The G4f-2 flip is merged as PR #32 (`9dc6942`) and deployed to production** (G04 §43–§43.11, DECISIONS
+G4-F2-1..9, G4-L6) — the user's word, 2026-09-26. **Production's default `PPP.renderer` is now `'engrave'`**;
 `'engrave'`; `?renderer=legacy`, localStorage `ppp.renderer = 'legacy'` or `PPP.renderer = 'legacy'` is the rollback
 (A45: 16/16 byte-identical); reduced views (the loop thumbnail) stay legacy without loading the engraver; the print
 command shows in the whole-score view. A30's eight suites pass on the default page and under `legacy`. Open for the
@@ -54,7 +54,11 @@ the page's screen SVG is inline again (Lead decision G4-L6 — `<use>` made whol
 inline is faster than legacy at 1x, 0.51–0.78x its size), Print shows only for a song the engraver drew, and
 "Engraving…" is translated. The Lead's re-check on a fresh clone (G04 §43.11): whole-score playback now faster than
 legacy (1x p95 10–13 vs 14–16 ms; 4x 70 vs 100 ms, 1 vs 16 long tasks), Print right on all 7 shared seed songs.
-**Next: deploy only on the user's word; then the follow-ups (roadmap §15).**
+**Deployed 2026-09-26** (Render deploy `dep-daru9259fdbs73b3j7eg`, commit `9dc6942`, live in ~50s). Verified on the
+live site: `/health`, `/api/auth/me`, `/api/shares` all 200; the home page's `PPP.renderer` reads `'engrave'`; a live
+import of sonatina/020 draws with the engraver (`ppp-engraved` class) and shows the Print control; 0 console errors.
+Rollback: `render deploys create srv-dalt5s6k1f9s739cuetg --commit 0ef0950`, or `?renderer=legacy` per visitor.
+**Next: the follow-ups (roadmap §15) — m2 (4 of 7 library shared songs), the flag shape, B5, then §25 step 3.**
 Read this first in a new session, then
 `docs/PPP_MASTER_ROADMAP.md` (the order of the remaining Goals, their gates, the current and next task), then the
 current goal's spec in `docs/GOALS/`.
@@ -265,7 +269,7 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
 - **Active goal: G4 Professional Engraving — G4a through G4f-1 all CLOSED (PR #9 `df8a571`, PR #12 `62ede61`, PR #15
   `e3c8c5a`, PR #17 `b4fe019`, PR #19 `a6e1a75`, PR #23 `16ce784`, PR #26 `a33ccd3`, PR #28 `2c6d108`) and M-H1 DONE
   (G04 §38); M-H2 DONE and accepted, flip approved (G4-U6, G04 §42); the G4f-2 flip is merged as PR #32 (`9dc6942`,
-  G04 §43) — not yet deployed.** The order, gates and briefs are in
+  G04 §43) and **deployed to production** 2026-09-26.** The order, gates and briefs are in
   `docs/PPP_MASTER_ROADMAP.md` (§14 current task, §15 next).
   - **MX-1 — CLOSED, merged as PR #13 (`e37d37a`)** after one independent review (NEEDS_FIX: BLOCKER 1, MAJOR 1 — octave
     lines missing in partial views and on cards), its Fixer and the Lead's re-check (section "MX-1 — playback correctness"
@@ -282,14 +286,16 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
     `show-number:none`), and legacy's 402 real notehead overlaps (G4's 0) were sampled and confirmed real. The Lead
     fixed the one substantive MINOR directly (the CI server-boot readiness loop, `5079d64`). A47's 2 already-known
     fallbacks and the CI gate's ~25s headroom are noted, not new problems.
-  - **G4f-2 flip — MERGED as PR #32 (`9dc6942`), not yet deployed** (G04 §43–§43.11, DECISIONS G4-F2-1..9, G4-L6): default `PPP.renderer = 'engrave'`;
+  - **G4f-2 flip — MERGED as PR #32 (`9dc6942`) and DEPLOYED to production** (G04 §43–§43.11, DECISIONS G4-F2-1..9, G4-L6): default `PPP.renderer = 'engrave'`;
     rollback `?renderer=legacy` / localStorage `ppp.renderer = 'legacy'` / `PPP.renderer = 'legacy'` (A45 16/16);
     reduced views routed to legacy before any engraver file loads; print command visible in the whole-score view; A30
     suites pass under both renderers. Review NEEDS_FIX → Fixer (G04 §43.10): screen SVG inline (G4-L6, playback no
     slower than legacy), Print only where the engraver drew (G4-F2-7), "Engraving…" translated; the Lead's re-check PASS (G04 §43.11).
     Open: B5's first-draw long task; 4x playback still has an occasional long task (fewer than legacy); 4 of 7 library
     shared songs keep the legacy look (`legacy.fromScore` gives staff 2's hand `'x'` when both staves use voice 1).
-    Production keeps the legacy renderer until a deploy the user asks for.
+    **Deployed and verified live** (Render `dep-daru9259fdbs73b3j7eg`, commit `9dc6942`): `PPP.renderer` reads
+    `'engrave'`, a live import draws with the engraver, Print control shows, 0 console errors. Rollback: redeploy
+    `0ef0950`, or `?renderer=legacy` per visitor.
   - What G3 left for G4 is in G03 §30–§31 and DECISIONS G3-D3, G3-D4 and G3-U10.
 - **Production database (2026-09-25, decision D-0): Neon Free, $0.**
   - ppp-web's `DATABASE_URL` points at the Neon project `ppp`. It was verified identical to the Render data, with no

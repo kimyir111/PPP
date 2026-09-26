@@ -5,9 +5,9 @@ The operational roadmap for everything after G4a: order, dependencies, gates, an
 | | |
 | --- | --- |
 | Owner | The **Lead / Orchestrator** session. Implementers, reviewers and fixers read it. Only the Lead edits it. |
-| Updated | 2026-09-26 — thirteenth edition (Lead): **M-H2 accepted (G4-U6); the flip merged** (PR #32 `9dc6942`); current: deploy on the user's word |
+| Updated | 2026-09-26 — fourteenth edition (Lead): **the flip is DEPLOYED to production** (`dep-daru9259fdbs73b3j7eg`, commit `9dc6942`); G4's product goal is achieved. Current: G4 polish, then §25 step 3 |
 | Base | `origin/main` = `9dc6942` (G4f-2 flip, PR #32) plus the docs closeout |
-| Active | **G4f-2** — the flip is merged, not deployed (§14, §15). |
+| Active | **G4f-2 done, deployed.** Next: G4 polish (§14, §15). |
 | Lead worktree | `D:/PPP-lead`, branch `lead-roadmap`. The Lead writes docs only, never in an implementer's worktree. |
 | How this relates to other docs | `docs/CURRENT_STATE.md` says what is true now, with measurements. `docs/DECISIONS.md` says why. `docs/GOALS/Gxx_*.md` is the contract for one Goal: design, acceptance and implementation record. **This document says in what order, behind which gates, and what comes next.** It does not repeat the goal specs. On detail, the spec wins. On sequencing, this document wins. |
 
@@ -598,21 +598,25 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 - **G4f-2 RUNNING (the Lead)** — M-H2 packet built, published, rated, and decoded (G04 §41–§42). **Result: borderline, one criterion technically fails.** "Overall" axis G4 ≥ legacy on 14/16 (passes, exactly at the line); G4's yes+fix ties legacy's 14/16 (passes); but 1 excerpt (H01) has "looks wrong" on engrave only, where §22.4 requires zero. Investigated directly (G04 §42.1): H01 is the *same file and bars* as M-H1's H03 (a different seed happened to pick the same sonatina/024, bars 100–107) and the *same already-understood* isolated-16th-note flag-shape question from M-H1 §38.1 — not a new or different defect, and arguably engrave's rendering is the more correct one (legacy visually fuses two different rhythms into one slanted beam). It was flagged for cosmetic polish before G4e and never actually touched. **User decision (G4-U6, G04 §42.3): accept the result with that one known exception, and proceed with the flip.** A44 = PASS (one exception accepted by the user, recorded, not hidden). The flip is approved; deploying it stays a separate confirmation after merge, as every deploy has been.
 - **G4f-2 flip handed in, in independent review** — `afd6184` on `g4f2-flip` (G04 §43, DECISIONS G4-F2-1…6). Default `'engrave'`, symmetric `legacy` override, reduced views (loop thumbnail, empty staff) routed to legacy before any engine file loads; A45 16/16, A30 26 suites on both renderers (bar the known env failure), print 6/6, G0 unchanged, Linux green. **The implementer raised a MAJOR itself: whole-score playback frame p95 19.3 vs 9.7 ms (1×), 100.7 vs 66.4 ms with 20 long tasks (4×)** — repainting shared `<use>` glyphs (G4d-2's B9 fix) appears to be the cost, contradicting G4-D2-22. The review must reproduce it and measure fix options (inline glyphs everywhere / only on the playing view / a highlight that doesn't repaint glyphs). **Must be fixed before deploy.**
 - **Review: NEEDS_FIX (0 BLOCKER, MAJOR 2)** — switch, routing and rollback confirmed correct (legacy-parity 16/16 on the reviewer's own servers). MAJOR-1 reproduced with a Chrome trace: each tick makes Chrome re-record the whole score SVG, and `<use>` instances cost ~6× an inline path to re-record (4× paint 51.7 vs 8.5 ms); overlays, `will-change`, pre-scaling don't fix it. **Lead decision G4-L6: inline glyphs on the screen page** (4× long tasks 41–59 → 0–1; SVG 0.51–0.78× legacy, so B9's 0.5× gives way to "no larger than today"). MAJOR-2: the newly visible Print button did nothing, silently, on songs that fall back (4 of 7 library shared songs) — show it only when the engraver drew the view, plus a localized message on failure. m1 "Engraving…" English-only — fixed in the same round. Fixer (the implementer, resumed) running. Deferred: m2 (4 of 7 library shared songs fall back — `legacy.fromScore` hands staff 2 `'x'` when both staves use voice 1), m3 (B5 first-draw long task, pre-existing).
-- **Fixer done → Lead re-check PASS → MERGED as PR #32 (`9dc6942`), CI green** (G04 §43.10–§43.11). On a fresh clone: whole-score playback now *faster* than legacy (1× p95 10–13 vs 14–16 ms; 4× 70 vs 100 ms, 1 vs 16 long tasks; SVG 1.72 vs 2.20 MB); print-check 6/6 plus all 7 shared seeds (Print shown on the 3 the engraver draws, hidden on the 4 that fall back, a forced print shows a localized message). The Lead reworded the Korean print message to the app's "~어요" tone. **Not deployed.**
+- **Fixer done → Lead re-check PASS → MERGED as PR #32 (`9dc6942`), CI green** (G04 §43.10–§43.11). On a fresh clone: whole-score playback now *faster* than legacy (1× p95 10–13 vs 14–16 ms; 4× 70 vs 100 ms, 1 vs 16 long tasks; SVG 1.72 vs 2.20 MB); print-check 6/6 plus all 7 shared seeds (Print shown on the 3 the engraver draws, hidden on the 4 that fall back, a forced print shows a localized message). The Lead reworded the Korean print message to the app's "~어요" tone.
+- **DEPLOYED to production, 2026-09-26** — the user's word. `render deploys create srv-dalt5s6k1f9s739cuetg --commit 9dc6942`, live as `dep-daru9259fdbs73b3j7eg` in ~50s. Verified on the live site (a fresh puppeteer check, not just `/health`): `PPP.renderer` reads `'engrave'`; a live import of sonatina/020 draws with the engraver (`ppp-engraved`) and shows the Print control; `/health`, `/api/auth/me`, `/api/shares` all 200; 0 console errors. Rollback: redeploy `0ef0950`, or `?renderer=legacy` per visitor. **G4 "Professional Engraving" has reached production. This is the goal's central deliverable — everything after this is polish and cleanup, not further gating.**
 
 ## 15. Next task
 
-**Deploy the flip — only on the user's word.** Production runs `0ef0950`; a deploy of `9dc6942` also ships everything merged since (G4d-2's engine in the page and hashed-file caching, G4e print, the CI fixes, the docs) — all reviewed. Rollback: `render deploys create srv-dalt5s6k1f9s739cuetg --commit 0ef0950`, or a one-line default change + deploy; per-user `?renderer=legacy` works immediately.
+**G4 polish, then §25 step 3.** No more human gates or approvals needed for these — ordinary engineering.
 
-**After the flip (Lead's order, next briefs):**
-1. **G4 polish (small, one merge point):** m2 — `legacy.fromScore` so the 4 library shared songs (visible to every user) draw with the engraver (a `scoregraph/` change, A48 must hold); the isolated-16th-note flag shape (§38.1, §42.1); a look at dense sonatina beaming (§42.2); B5's first-draw long task (§16.3 time slicing).
-2. **§25 step 3 (one release after the flip):** remove the legacy renderer, `loadVexFlow`'s CDN path, with the fallback counter at 0 as evidence — needs m2 first, since fallback songs still use legacy.
-3. Then MX-2 and G5 as below.
+1. **`legacy.fromScore` for the 4-of-7 library shared songs** (m2): both staves use voice 1, so staff 2's hand comes back `'x'` and the song falls back to legacy — visible to every user who opens the shared library. A `scoregraph/` change; A48 must still hold.
+2. **The isolated-16th-note flag shape** (§38.1, §42.1) — cosmetic, low risk.
+3. **A look at dense/sonatina beaming** (§42.2) — legacy won "overall" on 2 of that stratum's 4 M-H2 excerpts; worth understanding even though it didn't block the flip.
+4. **B5's first-draw long task** (§16.3 time slicing) — pre-existing since G4d-2, unresolved by the flip.
+5. **§25 step 3, one release after the flip:** remove the legacy renderer and `loadVexFlow`'s CDN path, with the fallback counter at 0 as evidence — do this only after item 1, since fallback songs still need legacy today.
+
+Then MX-2 and G5 as below.
 
 Carried in from earlier stages, still to weigh: §15.3's page-fill vertical justification (real corpus average 65.3%, some pages under 20% — now a higher priority given the real incidence, G4-E7); the M-H1 watch list (a beam/flag shape question, a notation-reading question, §38.1–§38.2); three MINORs from G4e's review (a pre-existing multi-`ScoreView` id-collision risk from G4d-2, `part-abbr`'s ledger status not satisfied past the first system, G4-E6); G4f-1's MINOR-2 (CI gate timing headroom, non-urgent); the 402 legacy notehead overlaps G4f-1 measured (G04 §40.3, §40.11 — sampled and confirmed real).
 
 **The next five milestones:**
-1. Deploy the flip (user's word), then G4 polish (m2, flag shape, B5) and §25 step 3
+1. G4 polish (m2, flag shape, sonatina beaming, B5), then §25 step 3
 2. MX-2 (catalogue data, with MX-1's carry-overs)
 3. G5 (playability and fingering)
 4. G6 (difficulty)
@@ -681,6 +685,7 @@ The Lead **will do these unless you object:**
 
 | Date | Change |
 | --- | --- |
+| 2026-09-26 | Fourteenth edition. **The flip is DEPLOYED to production** (`dep-daru9259fdbs73b3j7eg`, commit `9dc6942`), the user's word, verified live with a fresh puppeteer check (not just `/health`). G4 "Professional Engraving" has reached its product goal. Current: G4 polish (the 4-of-7 library fallback songs, the flag shape, sonatina beaming, B5), then §25 step 3 (remove the legacy renderer). |
 | 2026-09-26 | Thirteenth edition. **M-H2 accepted** by the user with one known exception (G4-U6) and **the flip merged** (PR #32 `9dc6942`) after review (NEEDS_FIX, MAJOR 2: `<use>` glyphs made playback slower than legacy → inline, G4-L6; Print silently failing on fallback songs → shown only where the engraver drew) → Fixer → Lead re-check (playback now faster than legacy). Not deployed — deploy on the user's word. |
 | 2026-09-26 | Twelfth edition. **G4f-1 CLOSED** (PR #28 `2c6d108`) after review (PASS, 0 BLOCKER/MAJOR, 2 MINOR) — the Lead fixed the one substantive MINOR directly (`5079d64`, CI readiness loop) rather than opening a Fixer round. Mutation suite complete 25/25; `legacy-geometry.js`/A43 confirms G4 ≥ legacy in every category; A46/A47/A48 confirmed. Current: G4f-2 (M-H2, then the flip). |
 | 2026-09-25 | First edition (Lead). Remaining sequence G4b–G13; changes from the old roadmap in §7; MX lane; S4 owners; current task G4b in two merge points. |
