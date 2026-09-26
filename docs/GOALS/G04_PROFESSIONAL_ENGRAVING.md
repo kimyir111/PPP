@@ -4329,6 +4329,39 @@ Docker `node:24-bookworm`(Node 24.21.0), `git -c core.autocrlf=false clone`(LF, 
 
 ---
 
+## 41. G4f-2 구현 기록 — M-H2 (Lead, 2026-09-26)
+
+G4f-1 CLOSED(`2c6d108`, PR #28) 뒤, Lead가 직접 진행. `D:/PPP-g4`에 `origin/main`(`2b68f4e`, docs closeout PR #29 포함)에서 새 브랜치 `g4f2-mh2`를 만들었다(clean, `test:engrave` 197/197 재확인). Implementer 세션은 없다 — packet 제작과 검증은 §22.4가 정한 도구 `review-build.js`를 그대로 쓰는 일이라 Fixer/리뷰 사이클을 새로 열지 않았다(review-depth-by-risk 정책, 도구 자체는 이미 두 번의 독립 리뷰를 거쳤다).
+
+### 41.1 Packet 제작
+
+- 서버 `NODE_ENV=production HOST=127.0.0.1 PORT=8801 node server.js` (같은 트리).
+- `NODE_PATH=D:/PPP/node_modules node tests/engrave/tools/review-build.js --url http://127.0.0.1:8801 --out tests/engrave/out/review/m-h2 --key tests/engrave/out/review/m-h2-key --seed <새 무작위 seed>` — seed는 `g4-mh2-` 뒤에 `openssl rand -hex 8`, 이 문서를 포함해 어디에도 적지 않는다(§22.4: "새 seed"). 열쇠는 `D:/PPP-g4/tests/engrave/out/review/m-h2-key/key.json`에만, gitignored, 평가자에게 주지 않음.
+- §22.4 그대로 16발췌×8마디, 같은 6개 층(찬송가 다성부 3, 셋잇단 3, 빽빽한 기호 4, 기초 교재 3, 꾸밈음·8va 2, 반복 1). 실제 뽑힌 파일은 M-H1과 부분적으로 겹친다(같은 코퍼스, 다른 seed이므로 8마디 구간과 X/Y 배정은 다르다) — 우연이며 문제 아님.
+- fallback 0으로 정상 종료(둘 다 제 렌더러가 그렸다는 스크립트 자체 검사 통과).
+
+### 41.2 Lead의 누출 재확인 (§37.19·§37 fixer가 한 번 고친 문제이므로 매번 직접 확인)
+
+- manifest.json·results-template.json에 seed·X/Y 산식 없음(문구만 "따로 보관, 여기 없음") — grep으로 확인.
+- 32개 SVG 전체에서 태그 이름 대칭 확인: X쪽에만/Y쪽에만 있는 태그 0개(`<use>`/`<symbol>` 포함 0/0 — B9 이후 고정된 `inline:false` 그대로).
+- 속성 이름도 태그와 같은 방식으로 대칭 확인 — 비대칭 0개.
+- 발췌별 파일 크기: X가 큰 것 9개, Y가 큰 것 7개, 비율 0.65~1.56배로 겹침 — 전역적으로 한쪽이 항상 크지 않다(M-H1 사후 검증과 같은 기준).
+
+### 41.3 사용자에게 보여줄 페이지
+
+M-H1과 같은 방식 — `review-build.js`의 원본 `index.html`(결과를 JSON 파일로 손으로 채우는 방식)을 그대로 주지 않고, 인터랙티브 Artifact로 다시 만들었다:
+
+- 데이터: `mh2-prep.js`(M-H1의 `mh1-prep.js`와 동일한 구조)로 manifest + 32 SVG를 base64로 묶어 `mh2-data.json`(4.78 MB) 작성.
+- 페이지: M-H1 템플릿을 재사용하되 제목·머리말만 "두 번째이자 마지막" 회차로 고침(질문 축·척도·pill 구성은 §22.4대로 M-H1과 동일 — 방법론을 유지해야 두 회차가 비교 가능하다는 로드맵 §15의 요구). `localStorage` 키 prefix `mh2:`로 분리(같은 브라우저에서 두 회차가 섞이지 않도록; artifact마다 origin이 달라 실질적으로는 이미 격리된다). db collection은 M-H1과 같은 `ratings`(artifact마다 독립 DB이므로 이름이 같아도 섞이지 않음).
+- 검증: 로컬 puppeteer로 (a) JS 에러 0, 16장 카드 모두 렌더, (b) 평가 dot 클릭 시 상태 반영과 진행률 갱신, (c) `localStorage` 폴백 저장 확인. 발행 뒤 `ArtifactData`로 `ratings/_leadtest` set→get→delete 왕복 확인(테스트 문서는 삭제됨, 실제 평가 데이터에 영향 없음).
+- 발행: `capabilities: {db:{}}`, 기본 접근 규칙(비공개, 소유자만). URL: **https://claude.ai/artifact/S7XGiAUxAUBsepdjDddrgH** ("악보 비교 2차").
+
+### 41.4 다음
+
+사용자가 16개를 채우면(§10 인간 게이트: 새 seed로 ~45분), Lead가 열쇠로 복호화해 §22.4 합격 기준(14/16 이상 G4 ≥ 옛 렌더러; "틀려 보임"이 G4에만 있는 발췌 0; G4의 yes+fix ≥ 옛 렌더러의 yes+fix)을 판정하고 결과를 §42(가칭)에 기록한다. 결과 JSON은 A36 관례대로 커밋한다(열쇠는 결과 기록에만 쓰고 커밋하지 않음). 합격이면 flip 초안을 준비하되 실제 전환은 사용자 승인 뒤에만 한다(§25, §27 G4f 카드). 불합격이면 §16 stop condition대로 사용자에게 보고하고 원인을 분석한다(품질 목표를 몰래 낮추지 않는다).
+
+---
+
 ## 부록 A. 이 세션의 측정
 
 모두 `D:/PPP-g4`, `55d1bd5`, 작업 트리 clean. 스크립트는 세션 scratchpad에 있고 저장소에 쓰지 않았다 (측정 뒤 `git status` clean 확인). G4a·G4f가 같은 정의로 `tests/engrave/tools/`에 다시 만든다.
