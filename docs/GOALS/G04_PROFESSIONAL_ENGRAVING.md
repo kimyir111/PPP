@@ -3951,6 +3951,18 @@ Windows: `npm run test:engrave` 183/183, `npm run test:scoregraph` 216/216, `pag
 
 **상태: G4d-2 FIX READY_FOR_RECHECK** — MAJOR 0 (자체 판정; R2의 안내 글자 잔여 171/2,301과 R3의 4–5배 trace 차이는 위에 이름 붙여 남김, Lead 검토 요청).
 
+### 37.19 Lead 재확인과 두 번째 R1 (2026-09-26)
+
+**재확인** (`e40b8f2`의 새 clone) — `test:engrave` 183/183, `test:scoregraph` 216/216, layout hash, `--check` 도구 다섯, bench r·e·x 모두 PASS. `legacy-parity.js` 16/16 (base·head 서버를 각각 띄워 직접 실행). R2는 리뷰의 도구(`coll3.js`)로 직접 다시 재서 마디 번호 3/1,698(수정자 주장과 일치), 안내 글자 39/2,301(수정자의 171보다 낮음 — 방법 차이로 보이나 방향은 개선이라 문제 삼지 않음)을 얻었다.
+
+**두 번째 R1 발견.** R3의 B9 수정(G4-D2-21)이 `SVG_OPTS`를 svg.js의 `<defs>`/`<symbol>` + `<use>` 모드로 되돌렸는데, 이 모드는 legacy가 절대 쓰지 않는 `<use>`/`<symbol>` 태그를 판각기의 모든 SVG에 남긴다 — 알고리즘 없이 태그 존재만 봐도 16/16 완벽하게 갈린다(직접 만든 시험용 packet에서 확인). R1의 두 원인을 고친 뒤에도 R3가 세 번째 원인을 새로 만든 셈이다.
+
+**Lead가 직접, 좁은 범위로 고침** (`a2054ab`, G4-D2-23): `tests/engrave/tools/review-build.js`의 내보내기 복사 단계에서만 각 `<use>`를 그것이 가리키는 `<symbol>`의 리터럴 복제로 바꾸고(자기 x·y를 이동으로, 자기 칠·선 속성을 감싸는 `<g>`에 올림 — 위 칠 계산 루프가 이미 `<use>` 자체에 계산된 칠을 써 두었다), 빈 `<defs>`·`<symbol>` 뼈대를 지운다. **앱의 실제 페이지 출력은 그대로 `inline: false`를 쓴다** — B9는 그대로 회복된 채다. 시험용 packet(seed `lead-recheck2-2026-09-26`, 버림)에서 두 쪽 다 `<use>`·`<symbol>` 0개, 파일 길이 구간이 겹침, 키 복원 시도가 우연 수준(16개 중 6–11개)임을 확인했다. 렌더링도 그대로다(H01 engrave 쪽 스크린샷으로 확인).
+
+**진짜 M-H1 packet을 처음부터 다시 만든다** (예전 packet과 키는 아무도 보지 않은 채 지운다) — 세 번째 seed로, Lead가 병합 직후에.
+
+**상태: G4d-2 CLOSED로 병합 준비 완료.**
+
 ---
 
 ## 부록 A. 이 세션의 측정
