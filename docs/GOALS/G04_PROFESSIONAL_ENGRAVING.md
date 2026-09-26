@@ -4309,6 +4309,24 @@ Docker `node:24-bookworm`(Node 24.21.0), `git -c core.autocrlf=false clone`(LF, 
 
 브랜치 `g4f1-benchmark`, `94c909c` 위에: `ef12fd1`(mutation M22·B2 판정·`legacy-geometry.js`), `611a4e8`(nightly CI). push는 `origin/g4f1-benchmark`. PR 없음(Lead가 정한다).
 
+### 40.11 Lead 재확인과 병합 (2026-09-26)
+
+**독립 리뷰**: `f0bdbbb`, read-only. **판정: PASS — BLOCKER 0, MAJOR 0, MINOR 2.**
+
+- 핵심 질문(§40.3의 tuplet 범주)을 직접 재현해 확인: czerny849/002·005·020의 원본 MusicXML에 `show-number="none"`이 106·84·129건 있고, plan의 ledger `drawn` 수(13·8·12)와 정확히 일치한다. legacy 코드(App 11821)는 `show-number`·`bracket`을 전혀 읽지 않고 모든 리듬 묶음에 숫자를 낸다 — **G4의 결함이 아니라 legacy의 결함으로 확정**.
+- M22와 나머지 24개 mutation을 전부 다시 돌려 재현했다(N1·N2 바이트 동일 포함).
+- nightly의 puppeteer 세 도구를 자기 서버로 직접 돌려 exit 0, 같은 수치 재현.
+- legacy의 음표머리 겹침 402건 중 2건을 직접 그려 눈으로 확인 — 실제 겹침(같은 화음 다른 성부).
+- MINOR: (1) 서버 기동 대기 루프가 timeout에도 이 단계를 실패시키지 않아, 세 puppeteer 단계의 진짜 실패와 첫 실행 결함을 구분 못 함; (2) CI gate 여유 20–26초(급하지 않음, 이미 기록됨).
+
+**Fixer 없이 Lead가 직접 고침** (한 줄, `5079d64`): 대기 루프 뒤에 `curl -sf ... || exit 1`을 붙여, 서버가 안 뜨면 이 단계 자체가 실패하게 했다. MINOR 하나짜리 한 줄 수정이라 별도 Fixer 사이클을 열지 않았다.
+
+**Lead 재확인**: Windows·Linux에서 `test:engrave` 197/197, `test:scoregraph` 216/216, layout hash·다섯 `--check` 도구·bench r·e·x 모두 PASS(리뷰어가 두 OS 모두에서 직접 실행). YAML 문법 확인(`python -c "import yaml..."`)만 Lead가 별도로 함.
+
+**병합**: PR #28, CI gate 초록, squash `2c6d108`. **G4f-1 CLOSED — 다시 열지 않는다.**
+
+**다음**: M-H2(합격 판정 사람 평가, Lead가 packet을 만든다) → 통과하면 flip(사용자 승인 필요).
+
 ---
 
 ## 부록 A. 이 세션의 측정
