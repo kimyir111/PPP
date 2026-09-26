@@ -4688,6 +4688,39 @@ flip 리뷰가 남긴 m2: 공유(Shared Scores) 라이브러리 seed 7곡 중 4�
 
 ---
 
+## 49. G4 폴리싱 — B5: 첫 그리기 성능 예산 조사 (stop-and-report, 2026-09-27)
+
+G4b부터 매 단계 미뤄온 B5(§19.2: 전곡 첫 그리기 ≤ 300 ms, **조각당 ≤ 12 ms, long task 0**)를 이번에 직접 재보고 판정을 시도했다. `D:/PPP-g4-b5`, `g4-polish-b5`, 시작 `855685a`. **결론: 작게 고칠 수 없다 — stop-and-report.** 코드는 바꾸지 않았다(scratch 스크립트는 세션 scratchpad에만 있고 저장소에는 없다).
+
+### 49.1 잰 것 (이 PC, Chrome headless, 1400×1000, sonatina/020 = 158마디 1,563 음 그룹)
+
+- **Node** (`layout-perf.js`): prepare 9.47 + desktop layout 27.87 + svg 9.01 = **46.35 ms** (plan 14.08은 별도). 예산 안(B4 100ms 기준으로도, historical 23.7ms대와 같은 자릿수 — 기계 편차).
+- **격리된 브라우저** (`browser-parity.js --quick`, DOM·React 없이 엔진 스크립트만 로드): 1× plan 8.9 + prepare 9 + layout 19 = **28 ms**; **4× plan 51.1 + prepare 44.9 + layout 108.3 = 153.2 ms** — layout() 한 호출만으로 4×에서 이미 108ms, §19.2의 조각(12ms)을 훌쩍 넘는다.
+- **실제 페이지** (`page-check.js --part perf`, 판각기 모듈은 이미 로드된 상태에서 sonatina/020을 처음 여는 것): 1× `wholeDraw` = {layout 40.3, svg 22.1, insert 19.8, decorate 18.7, **total 100.9**}, `resolve` 41.2, **long task {n:2, max:205}**. 4×: `wholeDraw.total` 446.7, `resolve` 251.4, **long task {n:3, max:1006}**. G4f-2 리뷰가 잰 252ms(1×)/984ms(4×)와 거의 같다 — 재현됐다.
+- **reload**(이미 저장소에 있는 곡을 다시 열기, `fromStore`가 이미 `await`로 양보하는 경로인데도): 1× resolveMs 99.4, long task 1개(max 211ms); **4× resolveMs 326.3, long task 5개(max 832ms)**. 이미 부분적으로 양보하는 경로조차 4×에서 832ms 한 덩어리다.
+- **단계별 타임스탬프**(직접 계측, scratchpad `g4-b5/breakdown.js`, 1×): `scoreFromFile`(mxl 압축 해제 + MusicXML 파싱 + scoregraph 그래프 생성) 자체가 **83.8 ms**, 그 자체로 별도의 long task(81ms) — `draw()`가 시작하기도 전이다. 그다음 `App.setState(wholeScore:true)`가 트리거하는 실제 그리기가 **두 번째 long task 180ms** — `stats.last`가 재는 layout+svg+insert+decorate 합(84.7ms) + `resolve` 40.6ms를 더해도 125ms, 나머지 ~55ms는 React의 커밋(첫 호출은 소스가 준비되지 않아 placeholder를, 두 번째 호출에서 실제로 그리는 두 번의 paint)과 `paint()`의 SYNC 단계(`dress()`, `sync.update()`, `overlays()` — 시간을 재지 않음)로 추정된다.
+
+### 49.2 왜 - 코드에서 확인한 것
+
+1. `engrave/source.js`의 `resolve(score, ropts)`는 `async`로 선언돼 있지만, "live"(방금 연 파일의 그래프가 메모리에 있는) 경로에서는 `scoreHash` + `L.agree()` + `L.link()`를 **함수 몸통 안에서 전부 동기로** 끝내고 `finish()`를 즉시 반환한다 — `await`는 그 반환을 microtask로 미룰 뿐, 브라우저에 실제로 양보(yield)하는 지점이 없다. 이 파일에 진짜 양보 헬퍼(`defaultYield = () => new Promise(r => setTimeout(r, 0))`)가 이미 있고 `persist()`는 그것을 쓰지만, `resolve()`의 live/projected 경로는 쓰지 않는다.
+2. `engrave/layout.js`의 `layout(P, config)`는 `BR.breakLines(...)`로 **악보 전체의 시스템 나눔을 한 번에 정하는 전역 DP**를 먼저 돌린 뒤에야(`br`) 시스템별 배치 루프(`br.systems.forEach(...)`)로 들어간다 — 나눔이 전부 정해지기 전에는 첫 시스템도 확정해서 그릴 수 없다(뒤 시스템의 너비 제약·`resolveSystemU`의 누적 중앙값이 앞선 선택에 영향을 준다). 배치 루프 자체는 이미 시스템 단위로 도는 구조지만, 그 앞의 DP는 본질적으로 한 덩어리다.
+3. `engrave/page.js`의 `draw()`(layout+svg+insert+decorate)와 그 호출자 `paint()`의 SYNC 단계(`dress`/`sync.update`/`overlays`) 어디에도 양보 지점이 없다.
+4. 즉 `scoreFromFile`(scoregraph의 MusicXML/mxl 가져오기), `resolve()`의 동기 agree/link, `plan()`, `layout()`, `svg()`, DOM 삽입, SYNC 단계 — **어느 CPU 속도에서도 지금은 메인 스레드를 한 번도 양보하지 않는다.**
+
+### 49.3 작게 고칠 수 없는 이유, 그리고 옵션
+
+**결정적 사실**: engrave/ 안(layout.js·svg.js·page.js)을 완벽하게 조각내더라도, `scoreFromFile` + `resolve()`의 동기 부분만으로 이미 1×에서 ~125ms, 4×에서 ~380ms(추정) 이상의 **손댈 수 없는 한 덩어리**가 남는다 — 이 브리프의 non-goal이 명시한 `scoregraph/`(파싱·비교기) 밖이기 때문이다. "long task 0"은 engrave/만 고쳐서는 도달할 수 없다.
+
+- **옵션 A(작음·부분적)**: `layout()`의 DP 이후 시스템별 배치 루프에 양보를 넣고, `svg()`/`el.innerHTML`/`decorate()`를 시스템 단위로 나눠 점진적으로 이어붙인다(악보가 시스템별로 채워지는 게 보임). engrave/layout.js·svg.js·page.js만 건드리므로 범위 안. 규모: 며칠(레이아웃을 재개 가능하게 바꾸면 `createEngraver`/`draw()`뿐 아니라 인쇄(`print.js`, 범위 밖)의 동기 전체 레이아웃 호출과 공존시켜야 해 단순 루프 삽입보다 크다). 위험: 낮음–중간(`layout-hashes.js`로 산출물 불변 확인 가능). **B5를 닫지 못한다** — DP 자체(4×에서 108ms 한 호출)와 `scoreFromFile`+`resolve`(위 결정적 사실)가 그대로 남는다.
+- **옵션 B(중간)**: `BR.breakLines`(DP) 자체를 재개 가능하게(단계마다 양보) 다시 짠다 + 옵션 A. 핵심 알고리즘을 건드리므로 며칠~1주+, `layout-hashes.js`/`legacy-parity.js`로 나눔 선택이 조금도 안 바뀌었는지 세심한 검증 필요(재개 가능한 DP가 부분 상태를 잘못 보면 다른 나눔을 고를 위험). 이것도 `scoreFromFile`+`resolve`는 그대로 두므로 **B5를 닫지 못한다** — 그쪽은 비슷한 크기의 별도 작업(scoregraph쪽 브리프)이 필요하다.
+- **옵션 C(큼)**: 파싱→resolve→plan→layout→svg 계산을 Web Worker로 옮기고 시스템 단위 SVG 조각을 메인 스레드로 돌려받아 붙인다(메인 스레드 작업은 항상 12ms 이하). DP 재개 문제를 우회하는 유일한 방법이지만, `svg.js`의 `browser` shim과 `page.js`의 DOM 의존(`el.innerHTML`, `decorate()`의 라이브 쿼리)을 계산부/DOM부로 실제로 갈라야 하고, 그래프·plan을 worker 경계로 넘기는 구조화 복제 비용, 인쇄의 동기 경로, `resolve()`가 가끔 쓰는 store(IndexedDB) 접근까지 다시 설계해야 한다. 사용자가 지금 미루라고 한 "catalog 규모" 작업 — 1–2주 이상으로 추정.
+
+### 49.4 상태
+
+**STOP AND REPORT — 코드 변경 없음.** Lead가 옵션 A/B/C 중 하나를 고르거나, engrave/와 scoregraph/를 함께 다루는 새 브리프로 다시 스코프하기를 기다린다. `test:engrave`/`test:scoregraph` 등 리그레션은 코드를 바꾸지 않았으므로 돌리지 않았다.
+
+---
+
 ## 부록 A. 이 세션의 측정
 
 모두 `D:/PPP-g4`, `55d1bd5`, 작업 트리 clean. 스크립트는 세션 scratchpad에 있고 저장소에 쓰지 않았다 (측정 뒤 `git status` clean 확인). G4a·G4f가 같은 정의로 `tests/engrave/tools/`에 다시 만든다.
