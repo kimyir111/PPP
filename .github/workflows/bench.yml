@@ -107,6 +107,7 @@ jobs:
         run: |
           NODE_ENV=production HOST=127.0.0.1 PORT=8801 node server.js &
           for i in $(seq 1 30); do curl -sf http://127.0.0.1:8801/ > /dev/null && break; sleep 1; done
+          curl -sf http://127.0.0.1:8801/ > /dev/null || { echo "the server never came up - failing this step so it is not confused with a puppeteer-tool hiccup (Lead re-check, G4f-1)"; exit 1; }
       - name: A43 - legacy vs engrave (tests/engrave/tools/legacy-geometry.js)
         continue-on-error: true
         run: node tests/engrave/tools/legacy-geometry.js --url http://127.0.0.1:8801 --suite r --out tests/engrave/out/legacy-geometry.json
