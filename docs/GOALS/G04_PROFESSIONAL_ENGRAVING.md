@@ -4767,6 +4767,18 @@ clef·key는 이미 창의 첫 마디에서 항상 그려진다(정상 — Gould
 
 **READY_FOR_REVIEW.** 새 판각 규칙은 없다 — 창의 강제된 시스템 시작에서 clef/key가 이미 하던 일을 time도 하게 만든 것뿐. `engrave/layout.js`, `Piano Coach App.dc.html`(ENGRAVE_FILES 해시만), `tests/engrave/`(baselines, layout-mutation.test.js, layout.test.js, marks.test.js) 밖은 손대지 않았다.
 
+### 47.9 독립 리뷰 (2026-09-27)
+
+**판정: PASS.** `180f033` 대 base `6e46de6`의 두 사본으로 직접 재현·재확인 — §47.1의 버그를 base에서 재현(0개), fix에서 확인(4개, system 0 안에만); 화음 안 실제 박자 변경이 있는 창에서 `headWithTime === M.head`(같은 객체)라 이중으로 안 그려짐을 직접 확인; 전곡 창(`window: null`)과 인쇄(`normalizeConfig`가 `layout()`이 `forceWindowTime` 계산 전에 `layoutPrint()`로 갈라짐 — 구조적으로 닿을 수 없음, 실측으로도 5쪽 인쇄에 박자표는 첫 쪽뿐임을 확인)는 영향 없음을 확인; DP 쪽과 실제 그리는 쪽이 **같은 캐시된 `headWithTime` 객체**를 읽어 어긋날 수 없음을 코드로 확인; `startM:`을 쓰는 9곳을 직접 다시 찾아 각각 확인(리뷰 packet 포함 — 실제로 M-H2 packet 하나를 새로 만들어 발췌 하나가 base에서는 박자표 없이, fix에서는 "3/8"로 그려짐을 스크린샷으로 확인); 118×3 hash 변경 354개 전부를 독립적으로 `layout-diff.js`로 다시 돌려 100% `SERIALIZATION_ONLY (version)` 확인; mutation `WT`를 직접 되돌려 만든 사본에서 재현; `test:engrave` 199/199, `test:scoregraph` 216/216, `legacy-parity.js` 16/16, `bench.js` r/e/x, 브라우저 suite 4개 전부 리뷰어 자신의 서버로 재실행; `app-source-check.js`의 결함이 base·fix 양쪽에서 바이트 단위로 같은 실패임을 확인(무관, 사전 존재). BLOCKER/MAJOR/MINOR 전부 0.
+
+### 47.10 Lead 재확인과 병합 (2026-09-27)
+
+새로 `git clone`한 사본(`180f033`)에서 직접: `test:engrave` 199/199, `test:scoregraph` 216/216. 실제 페이지(포트 8830)에 sonatina/019를 `App.sv({startM:13, renderer:'engrave'})`로 직접 그려 13마디 첫머리에 "6/8"이 실제로 나타나는 것을 스크린샷으로 확인(리뷰의 §47.9와 같은 결과).
+
+**병합**: PR #41, CI gate 초록, squash. **G4 §47 CLOSED.**
+
+**다음**: §25 3단계(legacy 렌더러 제거) — flag 모양·소나티네·m2·시간표시 전부 닫혔고 B5만 백로그로 남았다. B5가 §25 3단계를 막지는 않는다(전곡 첫 그리기 속도 문제이지 legacy 제거 자체와는 무관).
+
 ## 48. G4 폴리싱 — 소나티네 빽빽한 구간 beam: H03 조사 (2026-09-27)
 
 M-H2 §42.2의 관찰(빽빽한 소나티네 층 4개 중 2개, H01·H03에서 legacy가 "전체" 점수로 이겼다)을 별도 워크트리(`D:/PPP-g4-sonatina`)에서 조사했다 — 미리 결론을 정하지 않고, 실제 결함이 있으면 고치고 없으면 §46처럼 조사만으로 닫는 방식. 브리프 `brief_g4_sonatina.md`.
