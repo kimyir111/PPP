@@ -405,10 +405,17 @@ async function perf(browser) {
       const med = a => { const x = a.slice().sort((u, v) => u - v); return +x[Math.floor(x.length / 2)].toFixed(1); };
       const p95 = a => { const x = a.slice().sort((u, v) => u - v); return +x[Math.floor(x.length * 0.95)].toFixed(1); };
       out[r + '@' + rate + 'x'] = { wholeOpenMs: whole, wholeDraw: res.wholeDraw, wholeLong: res.wholeLong, wholeFrameMedian: med(res.wholeFrames), wholeFrameP95: p95(res.wholeFrames),
-        wholeFrameLong: res.wholeFrameLong, closeOpenMs: +res.closeOpen.toFixed(1), closeDraw: res.closeDraw, turnMedian: med(res.turns), turnMax: +Math.max(...res.turns).toFixed(1),
+        wholeFrameLong: res.wholeFrameLong, closeOpenMs: +res.closeOpen.toFixed(1), closeDraw: res.closeDraw, turnMedian: med(res.turns), turnP95: p95(res.turns), turnMax: +Math.max(...res.turns).toFixed(1),
         turnBackMedian: med(res.back), closeLong: res.closeLong, closeFrameMedian: med(res.closeFrames), closeFrameP95: p95(res.closeFrames),
         syncP95: res.syncMs.length ? p95(res.syncMs) : null };
       console.log('  ' + r + ' @' + rate + 'x ' + JSON.stringify(out[r + '@' + rate + 'x']));
+      /* B2 (G04 §19.2): the close view's page turn, uncached (a new window each turn) - p95 <= 25 ms at 1x, and A37's
+         tablet budget (CPU 4x throttle) <= 80 ms - engrave only (legacy has no such budget) */
+      if (r === 'engrave') {
+        if (rate === 1) check('perf', 'engrave @1x: B2 close-view turn (uncached) p95 <= 25 ms', out['engrave@1x'].turnP95 <= 25, out['engrave@1x'].turnP95 + ' ms');
+        else check('perf', 'engrave @' + rate + 'x: B2 close-view turn (uncached) p95 <= 80 ms (A37\'s tablet budget)', out[r + '@' + rate + 'x'].turnP95 <= 80,
+          out[r + '@' + rate + 'x'].turnP95 + ' ms');
+      }
       await page.close();
     }
   }
@@ -453,7 +460,7 @@ async function perf(browser) {
     console.log('  reload @' + rate + 'x ' + JSON.stringify(out['reload@' + rate + 'x']));
     await page.close();
   }
-  report.parts.perf = { data: out };
+  (report.parts.perf = report.parts.perf || { checks: [] }).data = out;
 }
 
 /* ------------------------------------------------------------------ screenshots */

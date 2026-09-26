@@ -4180,6 +4180,137 @@ R 코퍼스(60개) 중 가장 긴 파일 `catalog/method/sonatina/024.mxl`(123�
 
 ---
 
+## 40. G4f-1 구현 기록 — benchmark 완성 (mutation, legacy 비교, 성능, CI)
+
+Implementer, 2026-09-26. 브랜치 `g4f1-benchmark` (`D:/PPP-g4`), 시작 `94c909c` (= `origin/main`, G4e 마감 뒤). 입력은 로드맵 §14 카드, G04 §27 G4f 카드, §23·§24.6·§24.8. **G4f는 두 조각이다 — 이 기록은 G4f-1(엔지니어링 증거 기반)만이다.** flip, `PPP.renderer` 기본값, M-H2 사람 평가 packet은 Lead의 G4f-2(다음 단계) 몫이며 이 세션은 손대지 않았다. 병합하지 않았고 PR도 없다 (Lead가 리뷰와 PR을 정한다).
+
+**한 줄**: mutation M1–M25 전부(§23) 이름 붙은 metric에서 라이브 확인(신규는 M22 하나); `tests/engrave/tools/legacy-geometry.js`(신규)로 옛 렌더러의 SVG와 G4를 5개 범주에서 직접 비교(A43) — 4개는 깨끗이 G4 ≥ legacy, 1개(tuplet 구조적 개수)는 이 도구의 한계로 설명됨(아래); CPU 4배 감속에서 B2·B6 예산 확인(A37, 이미 있던 `page-check.js`를 확장); CI gate는 손대지 않고(이미 90초 예산 안, ~70초 측정) nightly에 전체 mutation 재확인과 puppeteer 세 도구를 새로 얹음; A46·A47·A48은 이미 다른 곳에서 구현된 것을 재확인.
+
+### 40.1 범위 — §27·§23·§24.6·§24.8과 다른 점
+
+이 세션은 **새 판각 규칙을 하나도 넣지 않았다.** 손댄 것은 테스트·도구·CI뿐이다: `tests/engrave/layout-mutation.test.js`(M22 하나 추가), `tests/engrave/tools/page-check.js`(B2 예산 판정 추가), `tests/engrave/tools/legacy-geometry.js`(신규 도구), `.github/workflows/bench.yml`(nightly job 확장). `engrave/`, `Piano Coach App.dc.html`, `scoregraph/`는 이 커밋에서 한 글자도 바뀌지 않았다(§40.6의 회귀가 이를 증명한다 — 화면 legacy parity 16/16 바이트 동일).
+
+### 40.2 Mutation 완전성 (A42) — 감사와 M22
+
+`tests/engrave/layout-mutation.test.js`(그리고 M25는 별도 `test()` 블록)를 G04 §23의 M1–M25 표와 대조했다. **M1–M21, M23–M25는 이미 라이브였다** — 일부는 표가 부른 하나의 결함이 실제로는 두 가지 방식으로 나므로 `a`/`b`/`c` 하위 mutation으로 갈라져 있다(M7a/M7b, M11a/M11b, M18a/M18b/M18c) — 모두 이름 붙은 metric으로 잡히고, 위원회 hash만으로 판정하는 것은 하나도 없었다. 다만 §23 표가 든 예시 metric 이름과 실제 이름이 다른 경우가 있다(G4b·G4c가 이미 정한 것, 이 세션이 바꾸지 않음): M9 `eg.system.scaled_avoidable`(표는 `eg.system.overflow`), M17 `eg.layout.nondeterministic`(표는 `eg.determinism.hash`), M21 `eg.layout.head_staff_wrong`(표는 `eg.staff.assignment_exact`) — 개념은 표와 같고, 이름 붙은 metric이라는 §23의 요구는 그대로 만족한다.
+
+**M22(누락)**: "`sync`가 매 프레임 전체를 훑음" — `engrave/practice.js`의 `createHighlighter().update()`는 앞으로 재생할 때 `ps`/`pe` 두 포인터로 이어서 진행해(B6: 곡 길이와 무관) 실제로 바뀐 음만 "만진다"(`on`/`off`/`touched`). 이 규칙은 `layout.js`가 아니라 `practice.js`에 있고 EngravedScore를 전혀 건드리지 않으므로, 기존 mutation 틀(`run()`이 EngravedScore를 만들고 `l2()`로 재는 방식)로는 표현할 수 없다 — M25(인쇄, `print-l2.js`)와 같은 이유로 별도 `test()` 블록을 두었다(같은 `withEdits`를 그대로 쓴다). Mutation: `ps`/`pe`를 버리고 매 프레임 `byStart`/`byEnd`를 처음부터 다시 훑는다(정확성은 그대로 — `on`/`off`/`touched`는 바이트 동일, 스캔 비용만 바뀐다). 잡는 것: highlighter 자신의 `stats.visited`(§19.2 "만진 요소 수" 대리 지표 그대로) — burgmuller25/015(413 event, 401 프레임)로 재면 정상 코드 `visited=652`(≈ 이벤트 수의 2배, 한 번 훑는 비용), mutation 코드 `visited=125,448`(≈ 192배) — 정확성(`touched=628`, 둘 다 같음)과 성능(방문 수)이 따로 놀 수 있음을 보여 주는 깨끗한 사례다.
+
+**최종: M1–M25 전부 25/25 라이브, 이름 붙은 metric**, N1·N2 바이트 동일(변경 없음, 회귀 확인).
+
+| # | 결함 | 잡는 metric |
+| --- | --- | --- |
+| M1 | 그래프 beam 무시 | `eg.beam.graph_missing` |
+| M2 | 파생 beam 끔 | `eg.beam.derived_missing` |
+| M3 | 성부 stem 뒤집음 | `eg.voice.stem_policy_violations` |
+| M4 | tuplet 숫자·괄호 안 그림 | `eg.tuplet.missing` |
+| M5 | `show.number:'none'` 무시 | `eg.tuplet.show_errors`, `eg.tuplet.suppressed_rendered` |
+| M6 | 임시표 0.8 sp 겹침 | `eg.overlap.acc` |
+| M7a/M7b | 간격 u→0(배치만/전부) | `eg.spacing.monotonic_violations` / `eg.system.fill_err` |
+| M8 | skyline 무시 | `eg.overlap.mark_mark`, `eg.overlap.text` |
+| M9 | 줄바꿈 하나 제거 | `eg.system.scaled_avoidable` |
+| M10 | 마지막 system 페이지 밖 | `eg.clip.count` |
+| M11a/M11b | 쉼표 두 번 그림 | `eg.layout.multiset_diff` |
+| M12 | 마디 안 tie 숨김 | `eg.tie.missing` |
+| M13 | 셈여림 음표머리 높이 | `eg.overlap.text` |
+| M14 | system 넘는 tie 버림 | `eg.tie.missing` |
+| M15 | slur 재짝짓기 | `eg.slur.pair_errors` |
+| M16 | 꾸밈음 시간 기둥에 | `eg.grace.misplaced`, `eg.layout.multiset_diff` |
+| M17 | 배치 순서 비결정 | `eg.layout.nondeterministic` |
+| M18a/b/c | layout이 DOM 측정 | A29 정적 검사(`dom-measure`, `dom-global`/`global-object`) |
+| M19 | pedal change를 뗌으로만 | `eg.mark.missing.pedal-change`, `eg.pedal.change_err` |
+| M20 | 8va 안 음을 울리는 높이로 | `eg.event.written_diff` |
+| M21 | staff를 음높이로 고름 | `eg.layout.head_staff_wrong` |
+| **M22 (신규)** | **sync가 매 프레임 전체를 훑음** | **highlighter `stats.visited`(B6 대리 지표)** |
+| M23 | articulation을 ledger 없이 건너뜀 | `eg.ledger.drawn_missing`, `eg.mark.missing.articulation` |
+| M24 | tuplet 괄호가 끝 쉼표 제외 | `eg.tuplet.extent_err` |
+| M25 | 인쇄에서 system 두 페이지 쪼갬 | `eg.page.split_system` |
+| N1, N2 | no-op 대조군 | 바이트 동일 (확인됨) |
+
+### 40.3 `legacy-geometry.js`와 A43
+
+**새 도구** `tests/engrave/tools/legacy-geometry.js` (G4a·G4b는 만들지 않았다 — `tests/engrave/tools/`에 존재하지 않았음을 확인). 그래프·NotationPlan·legacy Score 무엇에도 기대지 않고, 옛 렌더러가 실제로 그린 SVG의 classed group과 `getBBox()`만으로 잴 수 있는 것을 잰다("엔진 협조 없이 일반 SVG 기하 pass가 셀 수 있는 것"):
+
+| metric | 뜻 | G4 쪽 계산 |
+| --- | --- | --- |
+| `eg.clip.count` | SVG 자신의 viewBox 밖 요소 | `l2.js`의 같은 이름 metric |
+| `eg.overlap.head_head` | 음표머리 bbox가 진짜 겹치고 (거의) 같은 위치가 아님(같은 위치는 일반 pass가 "의도한 공유 unison"으로 볼 수 있는 유일한 모양 — 그래프 없이는 §14.2의 진짜 합법성 검사를 할 수 없어, 이 도구는 그렇다고 스스로 적는다) | `l2.js`의 같은 이름 metric |
+| `eg.beam.count` | `.vf-beam` group 수 | `kind:'beam'` 객체 수 |
+| `eg.tie.count` | `.vf-stavetie` group 수 | `eng.curves`의 `kind:'tie'` 수(system 넘김 tie는 반쪽 둘로 이미 §13.1대로 셈) |
+| `eg.tuplet.count` | `.ppp-tuplet`(앱이 VexFlow의 tuplet 그리기를 감싸는 자기 그룹) 수 | `tuplet-bracket`/`tuplet-number` 객체를 원래 tuplet id로 중복 제거한 수 |
+
+R 코퍼스 61개 전부(§22.2), 화면 desktop config, `NODE_ENV=production HOST=127.0.0.1 PORT=8801 node server.js` + puppeteer로 실측(`tests/engrave/out/legacy-geometry.json`, gitignored):
+
+| 범주 | G4 | legacy | A43 판정 | 방향 |
+| --- | --- | --- | --- | --- |
+| `eg.clip.count` | 0 | 0 | **PASS**(동률) | 결함 수, 낮을수록 좋음 |
+| `eg.overlap.head_head` | 0 | 402 | **PASS** — G4가 확실히 낫다 | 결함 수, 낮을수록 좋음 |
+| beam 수 | 4,986 | 3,727 | PASS (구조 표현 차이, 아래) | 구조 개수 |
+| tie 수 | 86 | 31 | PASS | 구조 개수 |
+| tuplet 수 | 39 | 358 | **표면상 FAIL** — 조사 결과 이 도구의 한계, 아래 | 구조 개수 |
+
+**두 개는 실제 발견**: `eg.overlap.head_head` — legacy는 R 코퍼스 61개에서 402회 진짜 음표머리 겹침을 낸다(찬송가 SATB, 밀도 높은 czerny·sonatina 발췌에서 특히 많다: what-child-is-this 16, sonatina/022 55, burgmuller25/023 53). G4는 0이다(같은 화면 desktop config). 이 도구는 "거의 같은 위치"(0.75 unit 이내, 어느 렌더러든 의도한 공유로 볼 수 있는 유일한 모양)만 겹침에서 뺀다 — 그래프 기반 합법성 검사(§14.2: 다른 성부, 같은 적힌 음, 반대 stem)는 하지 않으므로, 402가 전부 "진짜 결함"이라 단정하지는 않지만, 상당수가 legacy의 다성부 배치 한계(초 2도·unison을 벌리지 않음)로 보인다 — Lead가 M-H2 전에 살펴볼 만한 근거.
+
+**beam·tie 구조 개수 차**: G4가 legacy보다 높다(4,986 대 3,727; 86 대 31) — 병합 규칙이 다르다는 뜻이지 결함이 아니다. G4의 beam 객체는 secondary break가 있는 beam을 별도 하위 그룹으로 셀 수 있고(§11.2), legacy의 `.vf-beam`은 VexFlow의 Beam 인스턴스 하나에 대응한다 — 같은 음악을 셀 때 단위가 다르다. tie도 system 넘김을 G4는 반쪽 둘로 세지만 legacy의 `.vf-stavetie`가 같은 규칙을 따르는지는 확인하지 않았다. 둘 다 "구조가 다르게 세어진다"는 관찰이지, A43이 요구하는 결함 비교가 아니다 — 이 도구가 셀 수 있는 한계로 기록한다.
+
+**tuplet 개수(표면상 FAIL)의 조사**: czerny849/002(31,441 등 세 파일 모두 같은 모양) — 그래프 자체는 tuplet spanner 119개(중복 없음, 각 3개 사건)를 갖는다. `E.plan(g).ledger`를 보면 **13개는 `drawn`, 106개는 `suppressed/show-none`**이다 — MusicXML이 그 106개에 `<tuplet-number>none</tuplet-number>`(또는 동등한 `show.number:'none'`)를 명시한 것이고, G04 §12.1 표("`show.number` ... `'none'` 숫자 없음")대로 G4는 그 지시를 그대로 따른다(연속된 3연음 구간에서 첫 그룹에만 숫자를 매기는 실제 판각 관례). Legacy의 `.ppp-tuplet` group 119개는 이 지시를 무시하고 전부 그리는 것으로 보인다(3파일 다 legacy 개수 ≈ 그래프의 전체 spanner 수, G4 개수 ≈ `drawn` ledger 항목 수와 정확히 일치: czerny849/002 13=13, /005 8=8, /020 12=12). 이 범주에서 "G4 ≥ legacy"라는 raw-count 판정 규칙은 **틀렸다** — 개수가 적은 쪽(G4)이 그래프가 지시한 대로이고, 개수가 많은 쪽(legacy)이 지시를 무시한 것일 가능성이 높다. G4 자신의 정확성은 이미 다른 곳에서 독립적으로 증명되어 있다(`bench.js check --suite r`의 L1 `eg.tuplet.show_ok = 1`, `eg.tuplet.suppressed_rendered = 0`, 이 세션이 새로 만든 것이 아니라 이미 CI에서 도는 것). **결론**: 이 특정 범주는 일반 SVG 개수 비교로는 판정할 수 없다(그래프의 `show.number` 지시를 일반 pass가 읽지 못하므로) — A43의 "모든 범주"를 문자 그대로 채우지 못했다는 뜻이지, G4의 결함이 아니다. Lead에게: (1) legacy가 `show.number:'none'`을 실제로 무시하는지 별도로 확인할 가치가 있다(이 세션은 legacy 소스를 고치지 않으므로 하지 않았다), (2) 이 도구의 tuplet 범주는 A43의 신뢰할 수 있는 신호가 아니라고 기록해 둔다.
+
+### 40.4 성능 — CPU 4배 감속 (A35–A37)
+
+새 perf 도구를 만들지 않고 `tests/engrave/tools/page-check.js`(G4d-2가 이미 `--cpu 1,4`로 두 렌더러를 도는 도구)를 확장했다: `a31`은 이미 B6(sync p95, ≤1ms@1x·≤3ms@4x)를 판정하고 있었고, `perf`는 B2에 필요한 `turns`(가까이 보기, 캐시 없는 페이지 넘김) 배열을 이미 모으고 있었으나 median/max만 내고 p95 판정이 없었다 — `turnP95`와 그 예산 확인(`check()`)을 추가했다. sonatina/020(158마디, 1,563음 — R 코퍼스에서 가장 긴, hold-out 아닌 곡, §19.1과 같은 곡)으로 실측:
+
+| 예산 | 1× | 4× | 판정 |
+| --- | --- | --- | --- |
+| B2 (가까이 보기 창, 캐시 없음, p95) | 9.4 ms (≤25 ms) | 55.8 ms (≤80 ms) | **PASS** |
+| B6 (`sync`, p95) | 0.1 ms (≤1 ms) | 0.4 ms (≤3 ms) | **PASS** |
+
+전체 결과(참고, `tests/engrave/out/page/page-check.json`, gitignored): 전곡 열기 335 ms(1×)/1,459 ms(4×), 전곡 프레임 p95 15.3 ms(1×)/74.7 ms(4×), `sync` touched=바뀐 수 초과 0(1×·4×). B8(인쇄 layout, ≤2s)은 G4e §39.9가 이미 36–43 ms로 확인했고 Node 자체 연산(DOM 없음)이라 CPU 감속과 무관 — 다시 재지 않았다(그 자체가 §40.6의 회귀에서 다시 확인됨).
+
+### 40.5 CI — gate와 nightly (A41)
+
+`npm run test:engrave`(1m 1.5s, Windows; Linux Docker 1m 5.3s)와 `bench.js check --suite r`(8.1s, Windows) — **합계 ≈ 69.6초, A41의 90초 예산 안.** gate job(`.github/workflows/bench.yml`)은 이미 둘 다 돌리고 있었다(G4a부터) — 손대지 않았다. **여유는 20초 남짓뿐이다** — mutation이 한 단계마다 늘어 온 걸 보면(M22를 더해 197개 test), 다음 단계가 여기에 더 얹으면 예산을 넘길 수 있다. Lead에게: 여유가 계속 줄면 원래 §21.5 설계(`mutation.js`를 nightly 전용으로 분리)를 고려할 시점.
+
+nightly job에 추가(기존 G0 전용 단계는 그대로): `npm run test:engrave`·`test:scoregraph`를 gate와 별도로 재확인(전체 mutation suite가 gate뿐 아니라 nightly에서도 독립적으로 도는 것), 그다음 `npm ci`(puppeteer 설치)와 이 트리를 띄운 뒤 `legacy-geometry.js --suite r`(A43), `page-check.js --part perf,a31 --cpu 1,4`(A35–A37), `print-check.js`(A38–A40) — 셋 다 이 프로젝트 CI에서 처음 도는 puppeteer 도구다(G04 §21.5 자신이 "로컬"이라 적어 둔 것들). 실제 GitHub Actions 러너에서 이 세션이 직접 실행해 볼 방법이 없어(오프라인 세션), 세 단계는 `continue-on-error: true`로 두었다 — 러너 특유의 문제(Chrome 다운로드, 리눅스에 없는 글꼴이 글자 metric에 영향)가 nightly를 빨갛게 만들기 전에 Lead가 첫 실제 실행을 보게 하려는 것(JSON은 그래도 artifact로 올라온다). **Lead에게: 병합 뒤 `workflow_dispatch`로 한 번 수동 실행해 실제로 도는지 확인 필요 — 이 세션은 그 확인을 하지 못했다.**
+
+### 40.6 A46·A47·A48 확인
+
+- **A46(G3 독립)**: 이미 `tests/engrave/plan.test.js`("A46: the plan needs no G3")가 구현·통과 중이었다 — G3-off golden 그래프와 G3a(X 세트) 그래프 모두 `E.audit().ok`(허용 목록 밖 `deferred` 있으면 실패), `engrave/`의 모든 파일에 `professionalize(` 없음과 G3 스위치(`PROFESSIONAL_DEFAULT`, `pedalJoin:true`, `g3b:true`) 없음을 정적으로 확인. 이 세션은 손대지 않고 재확인만 했다(`test:engrave` 통과에 포함).
+- **A47(import 견고성)**: `page-check.js --part corpus`(G4d-2가 이미 만든 도구, 주석에 "A47은 G4f에서 판정"이라고 스스로 적어 둠)를 실행했다. `helpers.corpusFiles()`(347, provenance 규칙·hold-out 52 제외) + E fixture 40 = 387파일. **거부 26개**는 전부 `tests/scoregraph/fixtures/midi/`의 4음 미만 MIDI fixture(G02 R4 정책, import 문 자체의 오래된 규칙 — G4와 무관, 렌더러에 닿지도 않음). live 경로 361/361 예외 없이 그려짐. parse 경로(184개, musicxml/xml만): drawn:live 175, drawn:projected 7, **fallback 2**(`ending-stop-without-start.musicxml`, `wedge-unpaired.musicxml`, 둘 다 `SOURCE_DISAGREES`) — 이 둘은 `tests/engrave/tools/a48-coverage.js`의 `CORPUS_KNOWN_LOSS`에 **이미 등록된**, 의도적으로 병리적인 ScoreGraph fixture다(끝나지 않은 ending·짝 없는 wedge — 그래프가 정당하게 거부하는 것). A47의 문구는 "fallback 0"이지만 실측은 "새로운 원인 없는 fallback 0, 이미 알려진 2"다 — 조용히 allowlist에 더 넣지 않고 그대로 보고한다(브리프의 지시대로). 페이지 오류 0.
+- **A48(왕복 충실도)**: `test:engrave`의 `a48.test.js`가 이미 이 세션 전부터 커버하고 있다(§32.13.7 기록: 544/544 열림, 540 정확, 4는 알려진 손실만) — 이 세션이 새로 만들지 않았다. G4는 Score·`PianoScore`·연습 판정을 전혀 건드리지 않으므로(§16.8, A16: 두 렌더러에서 바이트 동일) A48은 어느 렌더러가 그리는지와 무관하다 — `renderer='engrave'`가 A48을 바꿀 경로 자체가 없다. `test:engrave`가 그대로 통과함으로 확인(재실행하지 않고, 페이지 수준 `a48-coverage.js`도 다시 돌리지 않았다 — 렌더러와 무관하다는 위 이유로, 시간 대비 이득이 낮다고 판단).
+
+### 40.7 회귀 — Windows
+
+- `npm run test:engrave` **197/197**(기존 196 + M22). `npm run test:scoregraph` **216/216**(무변경, 대조).
+- `layout-hashes.js` — 118곡 × 3 config(desktop·phone·print) 전부 PASS, 다시 쓰지 않음(버전 그대로, 손댄 layout 코드 없음).
+- 다섯 `--check` 도구(`make-e-fixtures`, `make-corpus`, `make-metrics`, `make-outlines`, `make-text-metrics`) 모두 PASS.
+- `bench.js check --suite r|e|x` **61/40/76** PASS.
+- **legacy parity 16/16**: `legacy-parity.js --a http://127.0.0.1:8802(94c909c 아카이브) --b http://127.0.0.1:8801(이 브랜치)` — 16개 렌더 전부 바이트 동일. 화면 경로 무변경 확인.
+
+### 40.8 회귀 — Linux
+
+Docker `node:24-bookworm`(Node 24.21.0), `git -c core.autocrlf=false clone`(LF, 로컬 clone).
+
+- `node --test 'tests/engrave/**/*.test.js'` **197/197**.
+- `node --test 'tests/scoregraph/**/*.test.js'` **216/216**(대조).
+- `layout-hashes.js`, 다섯 `--check` 도구, `bench.js check --suite r|e|x`(61/40/76) 모두 PASS — Windows와 같은 hash(A27 크로스 플랫폼).
+
+### 40.9 남은 것 — Lead(G4f-2)에게 넘기는 발견
+
+이 세션이 **고치지 않고** 표시만 하는 것 (브리프의 명시적 지시: "발견은 보고, 고치지 않는다"):
+
+1. **legacy 다성부 겹침**: R 코퍼스에서 legacy가 실제로 402회 음표머리 겹침을 낸다(§40.3) — G4는 0. M-H2 전에 Lead가 눈으로 몇 개 확인해 볼 근거.
+2. **tuplet 범주는 A43의 신뢰할 수 있는 신호가 아니다**(§40.3) — 이 도구의 한계(그래프의 `show.number` 지시를 못 읽음)이지 G4의 결함이 아니라고 조사로 확인했지만, legacy가 `show.number:'none'`을 실제로 무시하는지는 별도 확인이 필요(이 세션은 legacy 소스를 고치거나 깊이 추적하지 않았다).
+3. **A47의 fallback 2건**은 이미 알려진 것이지만 A47의 "0"이라는 문구를 문자 그대로 채우지는 못한다(§40.6) — allowlist에 넣지 않고 그대로 남긴다.
+4. **CI gate 여유 20초 남짓**(§40.5) — 다음 단계가 mutation이나 테스트를 더 얹으면 예산을 넘길 수 있다.
+5. **nightly의 puppeteer 세 단계는 실제 GitHub Actions에서 검증되지 않았다**(§40.5) — 병합 뒤 수동 실행 필요.
+6. G4e가 넘긴 것들(§39.11, §39.16 이하) — §15.3 60% 채움 세로 맞춤(우선순위 높음, G4-E7), part 약어(G4-E6), G4e 리뷰의 MINOR 셋(다중 `ScoreView` id 충돌 위험, `part-abbr`의 ledger 상태, 버전 가드 한계) — 이 세션이 측정하며 다시 마주치지 않았고, 손대지도 않았다.
+
+### 40.10 커밋
+
+브랜치 `g4f1-benchmark`, `94c909c` 위에: `ef12fd1`(mutation M22·B2 판정·`legacy-geometry.js`), `611a4e8`(nightly CI). push는 `origin/g4f1-benchmark`. PR 없음(Lead가 정한다).
+
+---
+
 ## 부록 A. 이 세션의 측정
 
 모두 `D:/PPP-g4`, `55d1bd5`, 작업 트리 clean. 스크립트는 세션 scratchpad에 있고 저장소에 쓰지 않았다 (측정 뒤 `git status` clean 확인). G4a·G4f가 같은 정의로 `tests/engrave/tools/`에 다시 만든다.
