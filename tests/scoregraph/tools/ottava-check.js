@@ -45,7 +45,10 @@ const withViews = process.argv.indexOf('--no-views') < 0;
   await page.setViewport({ width: 1400, height: 900 });
   const pageErrors = [];
   page.on('pageerror', e => pageErrors.push(String(e.message)));
-  await page.goto(base + '/Piano%20Coach%20App.dc.html', { waitUntil: 'networkidle2', timeout: 120000 });
+  /* G4f-2: "drawn" and "views" measure the legacy renderer's SVG (its staff-line paths, its label text); since the flip the
+     default page is the engraver's, so this opens the rollback, ?renderer=legacy (the engraver's octave lines are G4's
+     A10 - tests/engrave) */
+  await page.goto(base + '/Piano%20Coach%20App.dc.html?renderer=legacy', { waitUntil: 'networkidle2', timeout: 120000 });
   await page.waitForFunction(() => window.PPP && window.PPP.app && window.PPPScoreGraph && window.Vex && window.Vex.Flow, { timeout: 60000 });
   await page.evaluate(() => window.__pppTest.practice());
   await new Promise(r => setTimeout(r, 1200));

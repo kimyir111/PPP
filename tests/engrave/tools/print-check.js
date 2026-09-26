@@ -5,7 +5,9 @@
      NODE_PATH=D:/PPP/node_modules node tests/engrave/tools/print-check.js --url http://127.0.0.1:8801
        [--out tests/engrave/out/print]
 
-   For each of SONGS: opens the app under ?renderer=engrave, loads the piece the way a person's song opens (the
+   For each of SONGS: opens the app's default page (the engraver since the G4f-2 flip; G4e opened ?renderer=engrave,
+   then the only way to the command - --renderer engrave does that still), checks the "Print / Save as PDF" command is
+   shown in the whole-score view, loads the piece the way a person's song opens (the
    import door - scoreFromXml/scoreFromFile - or the app's own reader), switches to the whole-score view, then calls
    window.PPPEngravePage.printScore() itself (the same function the "Print / Save as PDF" button calls) - the real
    pipeline: PPPEngrave.app.resolve, printLayout, printSvgs, the hidden container, document.fonts.ready,
@@ -22,6 +24,8 @@ const H = require(path.join(REPO, 'tests', 'engrave', 'helpers.js'));
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const BASE = arg('--url', 'http://127.0.0.1:8801');
+/* the page's renderer: 'default' (no ?renderer - what a person gets) or a ?renderer= value */
+const RENDERER = arg('--renderer', 'default');
 const OUT = path.resolve(REPO, arg('--out', 'tests/engrave/out/print'));
 fs.mkdirSync(OUT, { recursive: true });
 const rd = p => fs.readFileSync(path.join(REPO, p), 'utf8');
@@ -47,7 +51,7 @@ async function openPage(browser) {
   page.on('pageerror', e => logs.push('pageerror: ' + e.message));
   await preparePage(page);
   await page.setViewport({ width: 1400, height: 1000 });
-  await page.goto(BASE + '/Piano%20Coach%20App.dc.html?renderer=engrave', { waitUntil: 'networkidle2' });
+  await page.goto(BASE + '/Piano%20Coach%20App.dc.html' + (RENDERER === 'default' ? '' : '?renderer=' + RENDERER), { waitUntil: 'networkidle2' });
   await page.waitForFunction(() => window.PPP && window.PPP.app && window.Vex && window.Vex.Flow, { timeout: 30000 });
   await page.evaluate(() => window.__pppTest.practice());
   await sleep(500);
@@ -104,6 +108,9 @@ async function main() {
       const page = await openPage(browser);
       try {
         await openSong(page, s);
+        /* the command a person presses is there (whole-score view, the engraver's page) */
+        const shown = await page.evaluate(() => [...document.querySelectorAll('button')].some(b => (b.textContent || '').trim() === 'Print / Save as PDF'));
+        if (!shown) throw new Error('the "Print / Save as PDF" command is not shown in the whole-score view');
         const r = await printIt(page);
         const ok = r && r.ok;
         const pageCount = await page.evaluate(() => document.querySelectorAll('#ppp-print-root .ppp-print-page').length);

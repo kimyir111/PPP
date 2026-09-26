@@ -1,15 +1,17 @@
 /* G4a and G4d-2 in the app: what changed, and what did not (docs/GOALS/G04 §8.2, §16, §25; A45, A46).
 
    G4a gives every Score on screen a way to its graph and keeps a song's graph beside it. G4d-2 puts the engraver in the
-   page behind a developer's switch whose default is 'legacy': by default the legacy renderer draws, byte for byte the one
-   at 55d1bd5 but for MX-1's octave lines, and G3 stays off. The browser side of the same claims is
-   tests/engrave/tools/app-source-check.js, legacy-parity.js and page-check.js (the real page, local, like the G2 page
-   checks). */
+   page behind a switch; G4f-2 flips its default to 'engrave' (G04 §25.2 step 2, DECISIONS G4-U6, G4-F2-1). 'legacy' is
+   the rollback, one switch away: under it the legacy renderer draws, byte for byte the one at 55d1bd5 but for MX-1's
+   octave lines (A45). G3 stays off. The browser side of the same claims is tests/engrave/tools/app-source-check.js,
+   legacy-parity.js and page-check.js (the real page, local, like the G2 page checks; page-check.js --part switch for the
+   rollback in the page). */
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const vm = require('vm');
 const { REPO } = require('./helpers.js');
 
 const html = fs.readFileSync(path.join(REPO, 'Piano Coach App.dc.html'), 'utf8').replace(/\r\n/g, '\n');
@@ -18,8 +20,11 @@ const slice = (from, to) => { const i = html.indexOf(from); assert.ok(i >= 0, 't
 const PAGE_FILES = require('./tools/page-files.js');
 
 /* G4b's layout core, G4c's notation and SVG backend, G4d-1a's curves, marks and text metrics, G4d-1b's marks attached to
-   systems and G4d-2's page adapter are not loaded by the page: only a view under renderer 'engrave' loads them, on first use
-   (ENGRAVE_FILES, by content hash) - the default page loads what it loaded before G4d-2 */
+   systems and G4d-2's page adapter are not in the page's <script> tags: a view under renderer 'engrave' loads them, on
+   first use (ENGRAVE_FILES, by content hash). G4f-2: 'engrave' is now the default, so the default page loads them when its
+   first full view paints (a reduced view does not - routed first, G4-F2-2); the page's static list is what it was before
+   G4d-2, and under ?renderer=legacy nothing more is loaded (the assertion G4d-2 wrote here, "the default page loads what it
+   loaded before G4d-2", pinned the old default and is now said of the legacy page - G04 §43) */
 const LAYOUT_CORE = PAGE_FILES.ORDER.map(n => 'engrave/' + n + '.js');
 
 test('the app loads every G4a engrave/ file after the scoregraph library and audio-score.js, index.js last - and the layout files and page.js only on demand', () => {
@@ -41,16 +46,62 @@ test('the app loads every G4a engrave/ file after the scoregraph library and aud
   assert.match(loader, /s\.src = '\.\/engrave\/' \+ name \+ '\.js\?h=' \+ hash;/);
   assert.match(loader, /s\.async = false;/, 'in order');
   /* defined once, called from the engraver's view (G4d-2) and G4e's print command (printScore()) - both need the
-     layout core and page.js, and both are dev-switch gated the same way */
+     layout core and page.js, and both are on the same switch (on by default since the G4f-2 flip) */
   assert.equal((html.match(/loadEngrave\(\)/g) || []).length, 3, 'defined once, called from the engraver\'s view and the print command');
 });
 
-test('G4d-2: the switch defaults to legacy; only a view whose renderer is \'engrave\' reaches the engraver (G04 §16.1, §25.1)', () => {
+/* The switch block of the app (ENGRAVE_FILES through engraveView), run in a sandbox: the page's location, storage, console
+   and document are stand-ins, so what the switch decides is checked by running it, not by reading it */
+function runSwitch(search, stored) {
+  const a = html.indexOf('const ENGRAVE_FILES = [');
+  const b = html.indexOf('function makeScoreView(React) {');
+  assert.ok(a > 0 && b > a, 'the switch block is before makeScoreView');
+  const scripts = [], warns = [];
+  const document = { head: { appendChild: s => scripts.push(s.src) }, createElement: () => ({}) };
+  const window = { PPP: {} };
+  const ctx = vm.createContext({
+    window, document, URLSearchParams,
+    location: { search: search || '' },
+    localStorage: { getItem: k => (stored && k in stored ? stored[k] : null) },
+    console: { warn: function () { warns.push([...arguments].join(' ')); } }
+  });
+  const out = vm.runInContext(html.slice(a, b) + '\n;({ ENGRAVE_SWITCH, engraveWanted, engraveView })', ctx);
+  return Object.assign(out, { PPP: window.PPP, scripts, warns });
+}
+
+test('G4f-2: the switch defaults to engrave; legacy is one switch away - the URL, storage or PPP.renderer (G04 §16.1, §25; the rollback, tested)', () => {
   const sw = slice('const ENGRAVE_SWITCH = (() => {', '})();');
-  assert.match(sw, /renderer: 'legacy', strict: false/, 'the default');
-  assert.match(sw, /q\.get\('renderer'\) \|\| localStorage\.getItem\('ppp\.renderer'\)/, 'a developer\'s URL or storage, nothing a person presses');
-  assert.match(sw, /if \(r === 'engrave'\) sw\.renderer = 'engrave';/);
+  /* G4f-2 changed this: G4d-2 pinned renderer: 'legacy' and "r === 'engrave'" - the old default (A30 rule: an assertion that
+     pinned the old default changes, with the reason; G04 §43) */
+  assert.match(sw, /renderer: 'engrave', strict: false/, 'the default');
+  assert.match(sw, /q\.get\('renderer'\) \|\| localStorage\.getItem\('ppp\.renderer'\)/, 'the URL or storage, nothing a person presses');
+  assert.match(sw, /if \(r === 'legacy'\) sw\.renderer = 'legacy';/);
   assert.match(html, /const engraveWanted = p => \(p\.renderer \|\| ENGRAVE_SWITCH\.renderer\) === 'engrave';/);
+  /* run it: the default, the rollback by URL and by storage, the URL over storage, anything else = the default */
+  const cases = [
+    ['', null, 'engrave'], ['?renderer=legacy', null, 'legacy'], ['', { 'ppp.renderer': 'legacy' }, 'legacy'],
+    ['?renderer=engrave', { 'ppp.renderer': 'legacy' }, 'engrave'], ['?renderer=legacy', { 'ppp.renderer': 'engrave' }, 'legacy'],
+    ['?renderer=', { 'ppp.renderer': 'legacy' }, 'legacy'], ['?renderer=vexflow', null, 'engrave'], ['', { 'ppp.renderer': 'LEGACY' }, 'engrave']
+  ];
+  cases.forEach(([search, stored, want]) => {
+    const r = runSwitch(search, stored);
+    assert.equal(r.PPP.renderer, want, JSON.stringify([search, stored]));
+    assert.equal(r.engraveWanted({}), want === 'engrave');
+    /* a view's own prop wins over the switch, both ways */
+    assert.equal(r.engraveWanted({ renderer: 'legacy' }), false);
+    assert.equal(r.engraveWanted({ renderer: 'engrave' }), true);
+  });
+  /* at run time: PPP.renderer = 'legacy' is the rollback; anything else is the default */
+  const r = runSwitch('', null);
+  r.PPP.renderer = 'legacy';
+  assert.equal(r.PPP.renderer, 'legacy');
+  assert.equal(r.engraveWanted({}), false);
+  r.PPP.renderer = 'engrave';
+  assert.equal(r.engraveWanted({}), true);
+  r.PPP.renderer = 'legacy';
+  r.PPP.renderer = 'nonsense';
+  assert.equal(r.PPP.renderer, 'engrave');
+  assert.deepEqual(r.scripts, [], 'deciding loads nothing');
   /* the only way in: paint() asks engraveWanted first; paintEngrave is called from there alone, engraveView from paintEngrave */
   assert.equal((html.match(/this\.paintEngrave\(\)/g) || []).length, 1);
   assert.match(html, /if \(engraveWanted\(this\.props\) && this\.paintEngrave\(\)\) return;/);
@@ -60,6 +111,26 @@ test('G4d-2: the switch defaults to legacy; only a view whose renderer is \'engr
   assert.doesNotMatch(html.replace(sw, ''), /localStorage\.setItem\('ppp\.renderer'/);
   /* fallbacks are counted and warned, never silent (G04 §16.7) */
   assert.match(slice('function engraveView(view) {', '\n}\n'), /console\.warn\('\[ppp\] engrave fallback', 'LOAD_FAILED'/);
+});
+
+test('G4f-2: a reduced view is routed to the legacy renderer before any engraver file is asked for - not a fallback, not warned; a full view loads the engraver (G4-F2-2)', () => {
+  const r = runSwitch('', null);
+  const el = { innerHTML: '', querySelector: () => null };
+  const view = { props: null, paint() {} };
+  const one = { staves: 1 }, two = { staves: 2 };
+  /* the loop thumbnail (clefs: false), the empty page's staff (clefs: false, grand: false), one staff of a grand staff */
+  [{ score: two, clefs: false, grand: true }, { score: one, clefs: false, grand: false }, { score: two, grand: false }].forEach(p => {
+    assert.equal(r.engraveView(view).paint(el, p), 'legacy', JSON.stringify(p));
+  });
+  assert.equal(r.ENGRAVE_SWITCH.stats.routed, 3, 'counted as routed');
+  assert.equal(Object.keys(r.ENGRAVE_SWITCH.stats.fallbacks).length, 0, 'not as a fallback');
+  assert.deepEqual(r.warns, [], 'and not warned');
+  assert.deepEqual(r.scripts, [], 'nothing loaded, no "Engraving…"');
+  assert.equal(el.innerHTML, '');
+  /* the quiz's one-staff score (grand: false on one staff) and a full view are the engraver's: it is loaded, 15 files */
+  assert.equal(r.engraveView(view).paint(el, { score: one, grand: false }), 'pending');
+  assert.equal(r.scripts.length, PAGE_FILES.ORDER.length);
+  assert.match(el.innerHTML, /data-engrave-wait/);
 });
 
 test('every producer keeps the graph it made the Score from (G04 §8.2 live)', () => {

@@ -41,7 +41,21 @@ const openPractice = page => page.evaluate(() => {
 const survey = page => page.evaluate(() => {
   const svg = document.querySelector('.ppp-staffwrap svg');
   if (!svg || !svg.__ppp) return null;
-  const box = e => { const b = e.getBBox(); return { x: b.x, y: b.y, w: b.width, h: b.height }; };
+  /* G4f-2: in the SVG's own units, through the element's own transform - getBBox() leaves that out. The legacy renderer
+     puts no transform on these elements (its boxes are unchanged); the engraver places a scaled glyph - the smaller clef of
+     a change inside a bar - as <use transform="translate(x y) scale(0.67)">, whose getBBox() alone reads the glyph at the
+     origin (x 0). The page draws it with <use> since G4-D2-21; this read it as "0 clefs inside bar 2" (G04 §39.7, §43). */
+  const box = e => {
+    const b = e.getBBox();
+    const tl = e.transform && e.transform.baseVal;
+    const t = tl && tl.numberOfItems ? tl.consolidate().matrix : null;
+    if (!t) return { x: b.x, y: b.y, w: b.width, h: b.height };
+    const xs = [], ys = [];
+    [[b.x, b.y], [b.x + b.width, b.y], [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]].forEach(([x, y]) => {
+      xs.push(t.a * x + t.c * y + t.e); ys.push(t.b * x + t.d * y + t.f);
+    });
+    return { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+  };
   const heads = [];
   svg.querySelectorAll('g.ppp-note[data-onset]').forEach((g, gi) => {
     const [m, beat, staff] = g.getAttribute('data-onset').split('|');
@@ -58,7 +72,8 @@ const survey = page => page.evaluate(() => {
   const clefs = [...svg.querySelectorAll('.vf-clef')].map(box);
   const vb = svg.viewBox.baseVal;
   return {
-    /* G4d-2: which renderer drew it (the engraver's SVG is svg.ppp-engraved, renderer 'engrave' - a developer's switch) */
+    /* G4d-2: which renderer drew it (the engraver's SVG is svg.ppp-engraved - the default renderer since the G4f-2 flip;
+       ?renderer=legacy draws the legacy one) */
     engraved: svg.classList.contains('ppp-engraved'),
     layout: svg.__ppp, heads: heads, staves: staves, clefs: clefs,
     tuplets: svg.querySelectorAll('g.ppp-tuplet').length,

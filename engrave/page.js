@@ -2,9 +2,9 @@
    PPP engrave — the renderer in the page (docs/GOALS/G04 §16; G4d-2)
 
    The app's ScoreView draws through this file when its `renderer` is
-   'engrave' (a developer's switch in G4d-2: the default stays 'legacy', G04
-   §25). It is the one engrave/ file that works with the DOM: it puts the
-   engraver's SVG into the view's element, draws the practice layer's own marks
+   'engrave' (the app's default since the G4f-2 flip; 'legacy' is the
+   rollback, G04 §25). It is the one engrave/ file that works with the DOM:
+   it puts the engraver's SVG into the view's element, draws the practice layer's own marks
    over it, moves the playhead, colours the notes and reads the pointer. What
    is drawn, and where, is decided elsewhere and never here - the plan
    (plan.js), the layout (layout.js), the SVG (svg.js), the practice map
