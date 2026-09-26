@@ -49,8 +49,10 @@ not deployed; production still draws with the legacy renderer.** On that branch 
 `'engrave'`; `?renderer=legacy`, localStorage `ppp.renderer = 'legacy'` or `PPP.renderer = 'legacy'` is the rollback
 (A45: 16/16 byte-identical); reduced views (the loop thumbnail) stay legacy without loading the engraver; the print
 command shows in the whole-score view. A30's eight suites pass on the default page and under `legacy`. Open for the
-Lead: whole-score playback frames are slower than legacy (the `<use>` repaint; 4x CPU: 20 long tasks up to 73 ms) and
-B5's "no long task" on the first whole-score draw (G04 §43.8).
+Lead: B5's "no long task" on the first whole-score draw (G04 §43.8). Its review (NEEDS_FIX, MAJOR 2) → Fixer (G04 §43.10):
+the page's screen SVG is inline again (Lead decision G4-L6 — `<use>` made whole-score playback slower than legacy;
+inline is faster than legacy at 1x, 0.51–0.78x its size), Print shows only for a song the engraver drew, and
+"Engraving…" is translated.
 **Next: the flip's review and merge, then deploy only on the user's word.**
 Read this first in a new session, then
 `docs/PPP_MASTER_ROADMAP.md` (the order of the remaining Goals, their gates, the current and next task), then the
@@ -282,8 +284,9 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
   - **G4f-2 flip — implemented, in review** (G04 §43, DECISIONS G4-F2-1..6): default `PPP.renderer = 'engrave'`;
     rollback `?renderer=legacy` / localStorage `ppp.renderer = 'legacy'` / `PPP.renderer = 'legacy'` (A45 16/16);
     reduced views routed to legacy before any engraver file loads; print command visible in the whole-score view; A30
-    suites pass under both renderers. For the Lead: slower whole-score playback frames than legacy (`<use>` repaint)
-    and B5's first-draw long task (G04 §43.8). Production keeps the legacy renderer until the merge **and** a deploy the
+    suites pass under both renderers. Review NEEDS_FIX → Fixer (G04 §43.10): screen SVG inline (G4-L6, playback no
+    slower than legacy), Print only where the engraver drew (G4-F2-7), "Engraving…" translated — in the Lead's re-check.
+    Open: B5's first-draw long task, 4x playback still has long tasks like legacy (G04 §43.10.5). Production keeps the legacy renderer until the merge **and** a deploy the
     user asks for.
   - What G3 left for G4 is in G03 §30–§31 and DECISIONS G3-D3, G3-D4 and G3-U10.
 - **Production database (2026-09-25, decision D-0): Neon Free, $0.**

@@ -4537,7 +4537,7 @@ Implementer, 2026-09-26. 브랜치 `g4f2-flip` (`D:/PPP-g4`), 시작 `9bffea3` (
 | 가까이 보기 프레임 중앙 / p95 | 4.5 / 7.2 | 3.9 / 5.6 | 27.5 / 37.8 | 22.5 / 35.3 |
 | 다시 불러온 곡 (store) resolve, long task | 100.1 ms; 2, 최대 194 | — | 344.4 ms; 5, 최대 854 | — |
 
-**B 예산** (§19.2): B2 p95 11.7 ms ≤ 25 (1×), 60.8 ms ≤ 80 (4×) **PASS** — 단, 부하가 더 큰 두 번째·세 번째 4× 실행에서 87.9, 102.9 ms (같은 실행의 legacy 넘김도 92.9 → 113.3 ms로 느려짐; 판각기가 legacy보다 느린 적은 없음). B4·B5의 시간: 전곡 판각 합 77.8 ms (+ resolve 52.4) — 300 ms 안. **B5의 "조각 ≤ 12 ms, long task 0"은 FAIL** (시간 나누기 없음 — §37.12부터 알려진 것; 1× 189 ms, 4× 985 ms 한 덩어리. legacy도 105 / 544 ms). B6 0.1 / 0.5 ms PASS (`a31`). B7 PASS (`a32`). B8 36–43 ms (§39.9). B9 0.24–0.36 (G4-D2-21).
+**B 예산** (§19.2): B2 p95 11.7 ms ≤ 25 (1×), 60.8 ms ≤ 80 (4×) **PASS** — 단, 부하가 더 큰 두 번째·세 번째 4× 실행에서 87.9, 102.9 ms (같은 실행의 legacy 넘김도 92.9 → 113.3 ms로 느려짐; 판각기가 legacy보다 느린 적은 없음). B4·B5의 시간: 전곡 판각 합 77.8 ms (+ resolve 52.4) — 300 ms 안. **B5의 "조각 ≤ 12 ms, long task 0"은 FAIL** (시간 나누기 없음 — §37.12부터 알려진 것; 1× 189 ms, 4× 985 ms 한 덩어리. legacy도 105 / 544 ms). B6 0.1 / 0.5 ms PASS (`a31`). B7 PASS (`a32`). B8 36–43 ms (§39.9). B9 0.24–0.36 (G4-D2-21) — **리뷰 뒤 inline으로 0.51–0.78 (G4-L6, §43.10)**.
 
 **첫 방문** (`page-check.js first`: 새 browser context = 빈 캐시·저장소, 홈 → 연습):
 
@@ -4569,11 +4569,74 @@ Implementer, 2026-09-26. 브랜치 `g4f2-flip` (`D:/PPP-g4`), 시작 `9bffea3` (
 3. `app-source-check.js`의 낡은 버전 고정 (`0.1.1-g4a`) — base에서도 실패, flip과 무관.
 4. G4e 리뷰의 MINOR "여러 ScoreView의 glyph id 충돌": 이제 실제로 한 문서에 판각기 SVG가 여럿 있다 (My Songs 카드 등, `library` suite 45 그림). 모든 화면 SVG가 `unit 10`이라 `ppp-g-*` symbol이 같은 모양이므로 보이는 차이는 없다 (인쇄는 G4-E4의 자기 접두사).
 
-**BLOCKER 0, MAJOR 1** (implementer 자체 판정): MAJOR = 발견 1 (전곡 재생 프레임, 4× long task) — flip 자체의 결함이 아니라 판각기의 성질이 기본 경로에 온 것이지만, 태블릿급 기기에서 사용자가 느낄 수 있으므로 배포 전에 Lead가 받아들이거나 고칠 단계를 정해야 한다.
+**→ 리뷰 R1, Lead 결정 G4-L6으로 inline으로 고침 (§43.10).** **BLOCKER 0, MAJOR 1** (implementer 자체 판정, 리뷰 전): MAJOR = 발견 1 (전곡 재생 프레임, 4× long task) — flip 자체의 결함이 아니라 판각기의 성질이 기본 경로에 온 것이지만, 태블릿급 기기에서 사용자가 느낄 수 있으므로 배포 전에 Lead가 받아들이거나 고칠 단계를 정해야 한다.
 
 ### 43.9 커밋
 
 `b2de7da` (앱·`engrave/page.js`·테스트·도구), `bd1c7af` (`origin/main` #31 병합), 이어서 이 기록 (G04 §43, 목차, §16.1·§25.1 주; DECISIONS G4-F2-1–6; CURRENT_STATE; ARCHITECTURE). `origin/g4f2-flip`에 push. 병합 안 함, PR 없음, 배포 없음.
+
+### 43.10 리뷰와 Fixer (2026-09-26)
+
+입력: G4f-2 flip 독립 리뷰(대상 `afd6184`)의 판정 **NEEDS_FIX — BLOCKER 0, MAJOR 2, MINOR 3**. 리뷰의 증거와 도구는 세션 scratchpad `g4f2-review/`(`perf.js` 재생 하네스와 trace 분해, `sizes.js`, `printseed.js`). Lead 지시: R1은 Lead 결정 G4-L6(inline)대로, R2·R3(= m1)을 고치고, m2(공유 seed 4곡의 `fromScore` 손 `x`)·m3(B5 첫 그리기 long task)·M-H2의 flag·소나티네 다듬기는 이번 라운드 밖(Lead가 후속으로 기록). 같은 worktree·브랜치, 시작 `afd6184`. 결정은 DECISIONS G4-L6, G4-D2-21/22 정정, G4-F2-7–9.
+
+#### 43.10.1 지적과 처리
+
+| # | 지적 (리뷰) | 처리 | 어디 |
+| --- | --- | --- | --- |
+| R1 (MAJOR-1) | 전곡 재생 프레임이 legacy보다 느리다 — Chrome trace: 재생 틱마다 악보 `<svg>` 하나가 바뀌고(재생선 x, 음의 class, 마디 wash) Chrome이 SVG 전체의 paint를 다시 기록하는데, `<use>` 하나는 inline path보다 다시 기록하는 값이 훨씬 비싸다 (4×: Paint 51.7 ms `<use>` / 8.5 inline / 17.2 legacy; Layerize 19.9 / 1.1 / 3.2). highlighter가 원인이 아니고, overlay·`will-change`·미리 크기 맞춤으로는 풀리지 않음 | **FIXED — G4-L6**: `engrave/page.js`의 `SVG_OPTS`를 `inline: true`로 (`svg.js`의 기본값과 인쇄 `PRINT_SVG_OPTS`는 `<use>` 그대로), `page-files.js --write`. B9는 화면 SVG에 대해 "legacy 이하 (지금보다 크지 않음)"로 — 실측 0.51–0.78. DECISIONS G4-D2-21·22를 제자리에서 정정 | `engrave/page.js` 67–75 |
+| R2 (MAJOR-2) | "Print / Save as PDF"가 fallback 곡(원천이 합의하지 않음 — 공유 seed 4곡, soft pedal MusicXML, 코드명이 있는 OMR)에서도 보이고, 누르면 `PRINT_SOURCE_UNAVAILABLE`을 `console.warn`만 하고 아무 일도 없다 (리뷰가 production 라이브러리 7곡 중 4곡에서 재현) | **FIXED** — `showPrintControls`에 `engraveDrew(S.score)`: 앱의 `engraveView`가 판각기 자신의 paint 결과(`'drawn'`/`'legacy'`)를 Score마다 적는다 (다시 계산하지 않음; fallback은 sticky; 바뀌면 앱을 한 번 다시 그림). 그래도 인쇄가 실패하거나 파일을 못 불러오면 토스트(`this.say(tx('This score could not be prepared for printing.'))`, ko·ja·zh) | App `engraveDrewScore`/`engraveOutcome`/`engraveDrew` (`engraveView` 앞), `showPrintControls`, `printScore()` |
+| R3 (m1) | "Engraving…"이 영어뿐 | **FIXED** — 앱의 기다림 표시(`engraveView`)는 `tx('Engraving…')`(textContent로), `page.js`의 것은 새 env `waitText()`(앱이 `tx`를 넘김), ScoreView 자신의 VexFlow 기다림 표시(render, 곧 모든 사용자가 봄)는 한 줄의 표시 `/* G4f-2: was 'Engraving…' >>> */tx('Engraving…')/* <<< G4f-2 */` — `app.test.js` A45가 표시에서 원래 글자를 되돌린 뒤 기존 hash 셋(`c208062f…`, `8ceb975a…`, `80149fb7…`)을 그대로 확인하므로, 클래스에서 바뀐 것은 이 글자 하나임이 증명된다 (지금 클래스의 hash는 `8f292d3c…`). 카탈로그 ko·ja·zh에 두 key (i18n 파일은 `json.dumps(indent=2, ensure_ascii=False) + "\n"` 왕복 그대로) | App, `engrave/page.js`, `i18n/*.json` |
+
+#### 43.10.2 R1 — 재생 전후 (sonatina/020 전곡, 리뷰의 `perf.js`, 이 PC; 세 변형을 같은 라운드 안에서 번갈아 3라운드)
+
+변형: **legacy** = 이 트리 `?renderer=legacy`; **전 (`<use>`)** = `afd6184`의 `git archive`(8802); **후 (inline)** = 이 트리(8801). `cb` = `setState({beat})` 60번 연속(프레임 = 콜백까지), `play` = 실제 재생 6 s(rAF 간격). 다른 프로그램이 함께 돈 PC라 범위로 적는다 (특히 4×).
+
+| | legacy | 전 (`<use>`) | 후 (inline) |
+| --- | --- | --- | --- |
+| 1× `cb` 프레임 p95 (ms) | 10.7–16.8 | 19.0–23.0 | **7.6–10.0** |
+| 1× `cb` long task | 0 | 0 | **0** |
+| 1× `play` rAF p95 (ms) | 7.1 | 13.8–13.9 | **7.1** |
+| 1× `play` long task | 0 | 0–1 (51 ms) | **0** |
+| 4× `cb` 프레임 p95 (ms) | 85.4–168.8 | 117.2–250.1 | **52.6–63.5** |
+| 4× `cb` long task (수, 최대 ms) | 2–65, 64–135 | 31–73, 96–254 | **0–1, 82** |
+| 4× `play` rAF p95 (ms) | 69.5–111.1 | 145.8–201.7 | **55.6–159.7** (76.4, 55.6; 부하가 컸던 둘째 라운드 159.7 — 그 라운드 legacy 104.2) |
+| 4× `play` 50 ms 넘는 rAF 간격 (수 / 전체) | 43–67 / 127–190 | 38–50 / 69–94 | 19–54 / 105–248 |
+| 4× `play` long task (수, 최대 ms) | 7–26, 67–207 | 43–50, 126–220 | 2–49, 53–145 |
+
+- **1×: legacy보다 나쁘지 않고(더 낫다), §16.3의 "재생 중 50 ms 넘는 막힘 없음"을 지킨다** (long task 0).
+- **4×**: `cb`는 세 라운드 모두 legacy보다 좋다. 실제 재생은 두 라운드에서 legacy보다 좋고(p95 76.4 / 55.6 대 111.1 / 69.5), 부하가 컸던 한 라운드에서 legacy보다 나빴다(159.7 대 104.2). **4×에서 §16.3의 "50 ms 넘는 막힘 없음"은 legacy처럼 지키지 못한다** (long task 2–49) — 정직하게 남긴다.
+- 크기 (리뷰의 `sizes.js`, 전곡 SVG, legacy 대비): 
+
+| | burgmuller25/021 | czerny849/001 | sonatina/013 | sonatina/016 | sonatina/020 |
+| --- | --- | --- | --- | --- | --- |
+| legacy | 825 KB | 725 KB | 2,182 KB | 1,894 KB | 2,154 KB |
+| 전 (`<use>`) | 195 KB (0.24) | 209 KB (0.29) | 557 KB (0.26) | 641 KB (0.34) | 761 KB (0.35) |
+| 후 (inline) | 472 KB (0.57) | 369 KB (0.51) | 1,229 KB (0.56) | 1,461 KB (0.77) | 1,679 KB (0.78) |
+
+  넣기(insert) 시간은 전후 같은 수준 (sonatina/020 33.3 → 18.3 ms, 016 23.7 → 24.3 ms).
+- B2 (가까이 보기 넘김, 캐시 없음): inline 실험 서버에서 13.9 ms (1×), 71 ms (4×) — 예산 안 (§43.8의 실험과 같은 코드).
+
+#### 43.10.3 R2 — 인쇄 명령
+
+- `print-check.js`에 공유 seed 7곡(`catalog/shared-seeds.json`, 공유 곡이 열리는 방식)을 더했다: 명령은 **판각기가 그린 곡에서만** 보이고(classic·pop·hymn — 보임), fallback 곡(jazz·newage·ost·game — `SOURCE_DISAGREES`)에서는 보이지 않으며, 그 곡에 앱의 `printScore()`를 직접 불러도(버튼을 거치지 않은 방어) 토스트 "This score could not be prepared for printing."가 뜨고 `window.print`는 불리지 않는다. 기존 6곡은 그대로 인쇄된다 (페이지 1, 2, 3, 5, 1, 1, 래스터 0).
+- **부정 대조**: `showPrintControls`에서 `engraveDrew(S.score)`를 빼면 fallback 4곡이 "command shown true"로 **4 FAILED** — 되돌리면 통과.
+- `app.test.js`(새 test): 판각기 대역으로 결과를 Score마다 적는지(그림 → true, 앱을 한 번 다시 그림, 같으면 다시 그리지 않음; fallback → false, 뒤에 그려도 false — sticky; pending → false), `showPrintControls`의 식, `printScore()`의 두 실패 경로가 토스트를 띄우는지.
+- 언어: ko·ja·zh 페이지에서 기다림 표시가 "악보를 그리는 중…" / "楽譜を描画中…" / "正在绘制乐谱…", 인쇄 실패 문구가 각 언어로 (직접 확인, `page.js`를 4초 붙잡아 표시를 읽음).
+
+#### 43.10.4 회귀
+
+- Windows: `npm run test:engrave` **199/199** (198 + R2 test 1), `layout-hashes.js` 118 × 3 **그대로** (SVG 직렬화는 layout hash가 아니다 — 바뀐 hash 0), `page-files.js --check` PASS. `browser-parity.js`: layout 808/808, SVG 808/808, 페이지 SVG 808/808 바이트 동일, E14 glyph path 14개 getBBox 오차 ≤ 0.09 px, 네트워크 0.
+- `legacy-parity.js` (`afd6184` 대 이 트리, `?renderer=legacy`): **16/16 바이트 동일**.
+- `page-check.js`: a31 (쓴 것 중 안 바뀐 것 0, sync p95 0.1 / 0.5 ms), a32 셋, a33 셋, switch 열 — 모두 PASS.
+- 브라우저 suite: 기본 페이지에서 26개 전부 다시 — `transcription`(환경, §43.5) 말고 모두 PASS; `renderer=legacy`에서 A30 여덟과 `i18n-and-auth` PASS.
+- Linux (Docker `node:24-bookworm`, LF clone의 `7f8ce24`): `test:engrave` **199/199**, `test:scoregraph` **216/216**, layout hash, `page-files.js --check` PASS.
+
+#### 43.10.5 남은 것 — Lead
+
+- 4× 실제 재생에서 §16.3의 50 ms가 legacy처럼 여전히 넘는다 (위 표) — inline이 `<use>`보다 훨씬 낫고 대체로 legacy 이상이지만, 태블릿급 기기에서 긴 곡의 전곡 보기 재생이 완전히 매끄럽다고는 말할 수 없다.
+- m2 (공유 seed 4곡이 legacy로 — `fromScore`의 손), m3 (B5 첫 그리기 long task), M-H2의 flag·소나티네 — 이번 라운드 밖 (지시).
+
+**상태: G4f-2 flip FIX — READY_FOR_LEAD_RECHECK** (자체 판정 BLOCKER 0, MAJOR 0). 커밋 `7f8ce24` (코드·테스트), 이어서 이 기록.
 
 ---
 
