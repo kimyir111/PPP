@@ -579,3 +579,50 @@ test('G4e print mutations: M25 (a system split across pages) and the honouring o
   });
 });
 
+/* G4f (§16.7, §19.2, §23 M22): sync's own mutation, on the same tmp copy. M22 lives in engrave/practice.js, not
+   layout.js, and touches no EngravedScore - it is a runtime-cost defect the way M18's is a static one, so this is a
+   separate block, driven by withEdits the same way, but judged by the highlighter's own named counter (`stats.visited`,
+   B6's "touched element count" surrogate, §19.2) instead of an EngravedScore diff or an A29 finding. The forward path
+   (createHighlighter's `update`, practice.js) is meant to resume from where the last frame left off (two pointers,
+   ps/pe) so the work per frame is the number of events that actually turn on or off, not the piece's length (B6: p95
+   <= 1 ms, sonatina/020 full score, and independent of how long the piece is). The mutation drops the resume and
+   rescans every event from the start on every forward frame - `on`/`off`/`touched` (what actually lit up) stay
+   identical, since the same "already active" check still guards them, but `stats.visited` (the scan work) grows with
+   frames x events instead of staying close to one pass over the events. */
+test('G4f sync mutation: M22 (sync forgets its place and rescans every event on every frame) is live and caught by the visited-element surrogate (B6)', async () => {
+  const g = await graphOf('catalog/method/burgmuller25/015.mxl');
+  const playback = E => {
+    const p = E.plan(g);
+    const eng = E.engrave(p, { breakpoint: 'desktop' });
+    const map = E.practice.createPracticeMap(eng, p);
+    const timeline = map.measures.reduce((mx, m) => Math.max(mx, m.startQ + m.lenQ), 0);
+    const h = E.practice.createHighlighter(map);
+    const frames = 400; /* well past the piece's own event count, so a per-frame full rescan cannot hide */
+    for (let i = 0; i <= frames; i++) h.update(timeline * i / frames);
+    return h.stats;
+  };
+  const E0 = load();
+  const base = playback(E0);
+  assert.ok(base.visited > 0, 'the clean highlighter visits something');
+  const m22 = {
+    id: 'M22', file: 'practice.js',
+    what: 'the forward highlighter drops its ps/pe resume points and rescans byStart/byEnd from index 0 every frame',
+    edits: [[
+      '      } else {\n        for (; ps < byStart.length && byStart[ps].start <= q; ps++) {\n          stats.visited++;\n' +
+      '          const e = byStart[ps];\n          if (e.end > q && !active.has(e.id)) { active.add(e.id); on.push(e.id); }\n' +
+      '        }\n        for (; pe < byEnd.length && byEnd[pe].end <= q; pe++) {\n          stats.visited++;\n' +
+      '          const e = byEnd[pe];\n          if (active.has(e.id)) { active.delete(e.id); off.push(e.id); }\n        }\n      }',
+      '      } else {\n        for (let i = 0; i < byStart.length && byStart[i].start <= q; i++) {\n          stats.visited++;\n' +
+      '          const e = byStart[i];\n          if (e.end > q && !active.has(e.id)) { active.add(e.id); on.push(e.id); }\n' +
+      '        }\n        for (let i = 0; i < byEnd.length && byEnd[i].end <= q; i++) {\n          stats.visited++;\n' +
+      '          const e = byEnd[i];\n          if (active.has(e.id)) { active.delete(e.id); off.push(e.id); }\n        }\n      }'
+    ]]
+  };
+  withEdits(m22, E2 => {
+    const r = playback(E2);
+    assert.equal(r.touched, base.touched, 'M22: the same notes still turn on/off - a cost defect, not a correctness one (§23 M22 is about B6)');
+    assert.ok(r.visited > base.visited * 20,
+      'M22 (' + m22.what + '): caught by the highlighter\'s visited count (B6 surrogate) - ' + r.visited + ' vs clean ' + base.visited);
+  });
+});
+
