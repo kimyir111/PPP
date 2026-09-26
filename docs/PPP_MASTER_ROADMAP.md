@@ -5,9 +5,9 @@ The operational roadmap for everything after G4a: order, dependencies, gates, an
 | | |
 | --- | --- |
 | Owner | The **Lead / Orchestrator** session. Implementers, reviewers and fixers read it. Only the Lead edits it. |
-| Updated | 2026-09-26 — tenth edition (Lead): **M-H1 DONE** (G04 §38); no Verovio trigger; current: G4e |
-| Base | `origin/main` = `16ce784` (G4d-2, PR #23) plus the docs closeout |
-| Active | **G4e** — print (§14, §15). |
+| Updated | 2026-09-26 — eleventh edition (Lead): **G4e CLOSED** (PR #26 `a33ccd3`); current: G4f |
+| Base | `origin/main` = `a33ccd3` (G4e, PR #26) plus the docs closeout |
+| Active | **G4f** — mutation completion, page performance, M-H2, flip (§14, §15). |
 | Lead worktree | `D:/PPP-lead`, branch `lead-roadmap`. The Lead writes docs only, never in an implementer's worktree. |
 | How this relates to other docs | `docs/CURRENT_STATE.md` says what is true now, with measurements. `docs/DECISIONS.md` says why. `docs/GOALS/Gxx_*.md` is the contract for one Goal: design, acceptance and implementation record. **This document says in what order, behind which gates, and what comes next.** It does not repeat the goal specs. On detail, the spec wins. On sequencing, this document wins. |
 
@@ -125,6 +125,7 @@ At `a0bc2ea`. The detailed structure is in `docs/ARCHITECTURE.md`.
 | G3 Score Intelligence | **PARTIAL / DEFERRED**, all off | PR #7 `c5474c2` (+#8) | `professionalize()` passes and critic (off), `meter-grid.js`, `pro-beam.js` `groups` (used by G4), reason-aware gates, blind human-review tooling (`run.py human-set`) |
 | G4d-1b System marks and vertical spacing | CLOSED | PR #19 `a6e1a75` | `sysmarks.js`: dynamics, hairpins, pedal (change visible), ottava ("(8)" after a break), voltas, chord names, tempo (one line), rehearsal, jumps, words, lyrics; §15.3 vertical spacing; §15.4 courtesy signs; named metrics for A8 positions and hairpin extent; `plan/3`, `engr/5`; B9 0.32 |
 | G4d-1a Curves and note marks | CLOSED | PR #17 `b4fe019` | `curves.js` (ties, slurs, glissandi, halves at system breaks), `marks.js` (one `place()` over skylines, `FAR_PLACEMENT`), articulations, ornaments, fermatas, fingering inside slurs (G4-L5), chord ties split relative to the chord (G4-L4), arpeggios, noteheads, cautionary accidentals, percussion; text-metrics table; `plan/2`, `engr/3` and a version guard |
+| G4e Print and PDF | CLOSED | PR #26 `a33ccd3` | Print-only DP line-breaker (`engrave/breaks.js`), pagination that never splits a system, a title/composer/page-number area, print-only multi-measure rest merging, a dev-switch-gated print command; screen output byte-identical (`engr/6`, 236/236 SERIALIZATION_ONLY); a committed print regression-hash baseline added after review (G4-E8) |
 | G4d-2 Page integration | CLOSED | PR #23 `16ce784` | `engrave/page.js`: the renderer in the page behind a dev-only switch (default `'legacy'`); `sync` touches only changed elements; §16.4 DOM contract; fallback to legacy with a counted warning; `server.js` hash-gated immutable caching; the M-H1 review tool. Verified byte-identical to base on a scripted default-renderer user session |
 | G4c Notation core | CLOSED | PR #15 `e3c8c5a` | Beams (graph exact, derived only where none), final stems, tuplets, voices (shared unisons; G4-B11 down-stem moves right), rests, grace notes, the mid-measure key change; `svg.js` + vendored Bravura outlines (B9 0.19–0.28); rest and stem/flag collisions as zero-target gates; 7 named metrics for the G4c rules after the review |
 | MX-1 Playback correctness | CLOSED | PR #13 `e37d37a` | An 8va sounds at the file's pitch and is drawn under its sign in every view (D-1; the MusicXML octave-shift sign fixed, MX1-D1); cards print where a note sounds; a pedal `change` lifts and re-presses the damper; the four-note `.mid` message; the `ottavaRule` marker; audit: all 34 octave-line files sounding-encoded. **Deployed 2026-09-26** (production `0ef0950`) |
@@ -588,26 +589,26 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 
 ## 14. Current task
 
-**G4 is now fully in the page, engine and integration both closed, and M-H1 is done.**
+**G4 is now fully in the page, engine, integration and print all closed, and M-H1 is done.**
 
-- **G4d-1b CLOSED** — PR #19, `a6e1a75`. The Node engraver (G4a–G4d-1b) was complete: review NEEDS_FIX (MAJOR 3, no invented notation) → Fixer (G04 §36.18) → Lead re-check → merge (G04 §36.21).
-- **CI race fix — DONE** — PR #21, `84abe80`. The shared G3 jobs cache is now written atomically; a concurrency regression test covers it.
-- **Production deployed** — 2026-09-26, user request. `main` (`0ef0950` at the time) went live: G1/G2 (import through the graph, MIDI), G3 (off), MX-1 (8va, pedal `change`, R4). The G4 engine ships unloaded. Verified in the live page.
-- **G4d-2 CLOSED** — PR #23, `16ce784`. The engraver reached the real page behind a dev-only switch (default `'legacy'`, nothing a user sees changed — verified byte-identical on a scripted user session). Review NEEDS_FIX (MAJOR 3: a leaky M-H1 packet, page text colliding with notation, a broken SVG-size budget) → Fixer → Lead re-check, which found and closed a **second, independent M-H1 leak** the Fixer's own B9 fix had reopened (`<use>`/`<symbol>` tags only on the engraved half), fixed narrowly in the export tool only (G04 §37.19, DECISIONS G4-D2-23).
-- **M-H1 — DONE.** The Lead built the real blind packet (third seed, discarded with the key), rebuilt it as an interactive artifact with autosave (the raw tool's own page asks for hand-edited JSON, unusable for a non-technical reviewer), and the user rated all 16 excerpts. **Result (G04 §38): engrave preferred 5, legacy preferred 2, tied 9 (5 of those at a perfect score both sides); zero excerpts where only engrave looked wrong.** The two legacy-preferred excerpts were checked by hand (§38.1, §38.2) and are a minor flag-shape question and a notation-reading question, not engine defects — both go on the G4e watch list, nothing more. Two real legacy defects the ratings surfaced (tie/stem overlaps) turned out to already be fixed by engrave, validating G4c/G4d's work. **The Verovio trigger (§7.3) does not fire** (§38.4): proceeding with the current engine.
+- **G4d-2 CLOSED** — PR #23, `16ce784`. The engraver reached the real page behind a dev-only switch (default `'legacy'`, nothing a user sees changed). Review NEEDS_FIX (MAJOR 3) → Fixer → Lead re-check, which found and closed a **second, independent M-H1 leak** the Fixer's own B9 fix had reopened, fixed narrowly in the export tool only (G04 §37.19, DECISIONS G4-D2-23).
+- **M-H1 — DONE.** The user rated all 16 blind excerpts. **Result (G04 §38): engrave preferred 5, legacy preferred 2, tied 9 (5 of those at a perfect score both sides); zero excerpts where only engrave looked wrong.** The two legacy-preferred excerpts were checked by hand (§38.1, §38.2) and are a minor flag-shape question and a notation-reading question, not engine defects. Two real legacy defects the ratings surfaced (tie/stem overlaps) turned out to already be fixed by engrave. **The Verovio trigger (§7.3) does not fire** (§38.4).
+- **G4e CLOSED** — PR #26, `a33ccd3`, 2026-09-26. Print/PDF (G04 §17): a print-only DP line-breaker, page breaks that never split a system, a title area, page numbers, print-only multi-measure rest merging, a dev-switch-gated print command. Review NEEDS_FIX (MAJOR 2: a wrong page-fill claim in DECISIONS G4-E7 — corrected to the real corpus average of 65.3%, far below the record's claimed ~92%; print had no committed regression-hash baseline — added, with a negative control) → Fixer → Lead re-check, which independently reproduced both corrections bit for bit and confirmed legacy parity 16/16 on its own two servers (G04 §39–§39.13, DECISIONS G4-E1–E8).
 
 ## 15. Next task
 
-**G4e — print.** Depends on G4d and decision G4-U3 (print range). Scope: the print/PDF path from NotationPlan, page breaks independent of the screen's, the print command (currently hidden pending this). Rollback is independent of the screen renderer.
+**G4f — benchmark completion, the pass/fail human review, the flip.** Depends on G4a–G4e (all closed) and MX-1 (already merged, satisfying G4f's precondition).
 
-After G4e: **G4f** — mutation suite completion (M1–M25), `legacy-geometry.js` comparison, perf tools under CPU throttling, nightly CI browser suites (A30), **M-H2** (the pass/fail human review, not diagnostic like M-H1: G4 ≥ legacy on 14 of 16 excerpts, zero excerpts where only G4 looks wrong, G4's yes+fix ≥ legacy's), then the user's flip approval. MX-1 is already merged, satisfying G4f's precondition.
+Scope: mutation suite completion (M1–M25, including print's M25 already covered in G4e), `legacy-geometry.js` comparison, perf tools under CPU throttling, nightly CI browser suites (A30), a nightly job that also runs the print determinism check across the corpus. Then **M-H2** — the pass/fail human review, not diagnostic like M-H1: G4 ≥ legacy on at least 14 of 16 excerpts, zero excerpts where only G4 looks wrong, G4's yes+fix ≥ legacy's. On approval, the flip (screen renderer defaults to `'engrave'`) — an irreversible, user-facing change, so it needs the user's explicit sign-off, not just a passing gate.
+
+Carried in from earlier stages, to weigh during G4f: §15.3's page-fill vertical justification (real corpus average 65.3%, some pages under 20% — now a higher priority given the real incidence, G4-E7); the M-H1 watch list (a beam/flag shape question, a notation-reading question, §38.1–§38.2); three MINORs from G4e's review (a pre-existing multi-`ScoreView` id-collision risk from G4d-2, `part-abbr`'s ledger status not satisfied past the first system, G4-E6).
 
 **The next five milestones:**
-1. G4e (print)
-2. G4f (A30, page performance, M-H2, flip)
-3. MX-2 (catalogue data, with MX-1's carry-overs)
-4. G5 (playability and fingering)
-5. G6 (difficulty)
+1. G4f (A30, page performance, M-H2, flip)
+2. MX-2 (catalogue data, with MX-1's carry-overs)
+3. G5 (playability and fingering)
+4. G6 (difficulty)
+5. G7a (SongGraph core)
 
 ## 16. Stop conditions
 
@@ -674,6 +675,7 @@ The Lead **will do these unless you object:**
 | --- | --- |
 | 2026-09-25 | First edition (Lead). Remaining sequence G4b–G13; changes from the old roadmap in §7; MX lane; S4 owners; current task G4b in two merge points. |
 | 2026-09-26 | Deploy: **production runs `0ef0950`** (user request; before `72549cb`), verified in the live page. PR #20 had been merged with a failed gate (a CI race, not the change); rule added in §8, fix running. |
+| 2026-09-26 | Eleventh edition. **G4e CLOSED** (PR #26 `a33ccd3`) after review (NEEDS_FIX, MAJOR 2: a wrong page-fill claim, no print regression baseline) -> Fixer -> Lead re-check, which reproduced both corrections independently. Current: G4f. |
 | 2026-09-26 | Tenth edition. **M-H1 DONE** (G04 §38): the user rated all 16 blind excerpts; engrave preferred 5, legacy 2, tied 9; zero excerpts where only engrave looked wrong; two legacy-preferred cases checked by hand and found to be minor, non-blocking; two real legacy defects the ratings surfaced turned out already fixed by engrave. Verovio trigger (§7.3) does not fire. Current: G4e. |
 | 2026-09-26 | Ninth edition. **G4d-2 CLOSED** (PR #23 `16ce784`) after review (NEEDS_FIX, MAJOR 3) -> Fixer -> Lead re-check, which found and closed a *third*, independent M-H1 leak the Fixer's own B9 fix had reopened. The engraver now reaches the real page, still behind a dev-only switch. Current: M-H1. |
 | 2026-09-26 | Eighth edition. **G4d-1b CLOSED** (PR #19 `a6e1a75`) after review (NEEDS_FIX, MAJOR 3; no invented notation) → Fixer → Lead re-check; the Node engraver is complete. Current: G4d-2 (page integration behind a dev-only switch, with the M-H1 review tool). Next: M-H1. |

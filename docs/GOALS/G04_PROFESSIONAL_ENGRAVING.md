@@ -4163,7 +4163,20 @@ R 코퍼스(60개) 중 가장 긴 파일 `catalog/method/sonatina/024.mxl`(123�
 
 **커밋**: 브랜치 `g4e-print`, `fb38d07` 위에. push는 `origin/g4e-print`. PR 없음(Lead가 정한다).
 
-**상태: G4e FIX: READY_FOR_RECHECK.**
+### 39.13 Lead 재확인과 병합 (2026-09-26)
+
+`61bbc7f`의 새 clone에서 독립적으로 재확인했다.
+
+- **R1 재현**: 리뷰어와 같은 방법(마지막 system의 아래 끝 ÷ 쓸 수 있는 페이지 높이)으로 R 코퍼스 61개 파일, 96페이지를 직접 다시 재서 **평균 65.3%, 50% 미만 35/96, 70% 미만 51/96, 최악 Für Elise 18.8%** — Fixer가 적은 수치와 비트 단위로 같았다.
+- **R2 재현**: `engrave/breaks.js`의 `PCOST.TARGET`을 1.15 → 1.10으로 심어 봄 — print 항목 7개만 바뀌고 desktop·phone은 그대로(격리 확인), `layout-hashes.js` 검사 exit 1, `--write` REFUSED, 되돌리면 다시 깨끗이 통과.
+- **화면 동일성**: base(`338508d`)·head(`61bbc7f`) 서버 두 개를 직접 띄워 `legacy-parity.js` 16/16 바이트 동일.
+- **게이트**: `test:engrave` 196/196, `test:scoregraph` 216/216, layout hash·다섯 `--check` 도구·bench r·e·x 모두 PASS(Windows, 이 clone에서 직접).
+
+**병합**: PR #26, CI gate 초록, squash `a33ccd3`. **G4e CLOSED — 다시 열지 않는다.**
+
+**다음**: G4f — mutation 완성, 페이지 성능, M-H2(합격 판정 사람 평가), flip. §15.3 페이지 채움(§39.12에서 정정한 65.3% 평균)이 우선순위 높은 항목.
+
+**상태: G4e CLOSED, 병합 완료.**
 
 ---
 
