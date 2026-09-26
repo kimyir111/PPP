@@ -130,7 +130,7 @@ G4는 **S5의 렌더러 부분**이다: 렌더러가 legacy `Score` 대신 Score
 ```
 
 - VexFlow 4.2.3을 `vendor/`에 고정하고 glyph·음표 단위 formatter로만 쓴다. 간격·줄바꿈·충돌·곡선·페이지는 `engrave/`(UMD, 앱 파일 밖)가 소유한다 (G4-D1).
-- 옛 렌더러는 `PPP.renderer = 'legacy'`(기본)로 남는다. G4f에서 flip하고 한 릴리스 뒤 제거한다.
+- 화면의 기본 렌더러는 판각기다 (`PPP.renderer = 'engrave'`, G4f-2 flip — G04 §43, DECISIONS G4-F2-1; 병합·배포 전). 옛 렌더러는 되돌리기로 `?renderer=legacy`·localStorage `ppp.renderer = 'legacy'`·`PPP.renderer = 'legacy'` 뒤에 한 릴리스 남고, 그 뒤 제거한다 (§25.2 3단계). 축소 뷰(clef 없는 썸네일)는 옛 렌더러가 그린다 (G4-F2-2).
 
 ## 3. 품질 측정의 자리
 

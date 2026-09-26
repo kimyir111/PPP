@@ -65,6 +65,10 @@ ScoreGraph에 **이미 있는** 기보 의미를 PPP의 실제 화면과 인쇄�
 - [37. G4d-2 구현 기록 — 판각기를 페이지에 (개발용 스위치), M-H1 도구](#37-g4d-2-구현-기록--판각기를-페이지에-개발용-스위치-m-h1-도구)
 - [38. M-H1 — 사용자 평가 결과](#38-m-h1--사용자-평가-결과)
 - [39. G4e 구현 기록 — 페이지와 인쇄](#39-g4e-구현-기록--페이지와-인쇄)
+- [40. G4f-1 구현 기록 — benchmark 완성 (mutation, legacy 비교, 성능, CI)](#40-g4f-1-구현-기록--benchmark-완성-mutation-legacy-비교-성능-ci)
+- [41. G4f-2 구현 기록 — M-H2 (Lead, 2026-09-26)](#41-g4f-2-구현-기록--m-h2-lead-2026-09-26)
+- [42. M-H2 — 사용자 평가 결과 (2026-09-26)](#42-m-h2--사용자-평가-결과-2026-09-26)
+- [43. G4f-2 flip 구현 기록 — 기본 렌더러를 판각기로](#43-g4f-2-flip-구현-기록--기본-렌더러를-판각기로)
 - [부록 A. 이 세션의 측정](#부록-a-이-세션의-측정)
 - [부록 B. 코드 위치 색인](#부록-b-코드-위치-색인)
 
@@ -878,7 +882,7 @@ tie(같은 음높이를 잇는 소리 의미)와 slur(구절·레가토 표시)�
 
 ### 16.1 ScoreView의 스위치
 
-- prop `renderer` (`'legacy'` | `'engrave'`), 기본값은 `PPP.renderer`(기본 `'legacy'`, §25). `paint()`는 renderer에 따라 옛 `draw()` 또는 새 pipeline을 부른다. **옛 `draw()`·`buildVoice()`·`sync()`는 고치지 않는다** (되돌리기 경로, A45).
+- prop `renderer` (`'legacy'` | `'engrave'`), 기본값은 `PPP.renderer`(기본 `'legacy'`, §25 — **G4f-2 flip부터 `'engrave'`**, §43). `paint()`는 renderer에 따라 옛 `draw()` 또는 새 pipeline을 부른다. **옛 `draw()`·`buildVoice()`·`sync()`는 고치지 않는다** (되돌리기 경로, A45).
 - 새 `drawKey`: 그래프 hash(또는 projected면 Score 내용 hash) + layoutConfig hash + semanticConfig. `score.id`만 보는 지금의 한계(§4.4)를 없앤다.
 
 ### 16.2 판각과 하이라이트를 나눈다
@@ -1320,7 +1324,7 @@ node tests/engrave/tools/legacy-geometry.js            # 옛 렌더러의 SVG에
 
 ### 25.1 스위치 (G4-D9)
 
-- `PPP.renderer`: `'legacy'`(기본) | `'engrave'`. 개발·테스트용으로 URL `?renderer=engrave`, localStorage `ppp.renderer`. ScoreView prop `renderer`가 개별 화면을 덮어쓸 수 있다 (썸네일만 먼저 켜는 식의 단계적 확대 가능).
+- `PPP.renderer`: `'legacy'`(기본) | `'engrave'`. 개발·테스트용으로 URL `?renderer=engrave`, localStorage `ppp.renderer`. **G4f-2 flip 뒤 (§43, G4-F2-1)**: 기본 `'engrave'`, 되돌리기는 `?renderer=legacy`·localStorage `ppp.renderer = 'legacy'`·`PPP.renderer = 'legacy'`. ScoreView prop `renderer`가 개별 화면을 덮어쓸 수 있다 (썸네일만 먼저 켜는 식의 단계적 확대 가능).
 - `PPP.strictEngrave`: 테스트에서 fallback 대신 throw.
 - G1 `opts.legacyWriter`, G2 `PPP.legacyImport`와 같은 모양이다: 명시적 스위치, 한 릴리스 동안 옛 경로 유지.
 
@@ -4414,6 +4418,162 @@ M-H1과 같은 방식 — `review-build.js`의 원본 `index.html`(결과를 JSO
 
 - 결과 JSON: M-H1과 같이 이 절의 표가 기록이다(§22.4는 "결과 JSON을 커밋한다"라고 적었으나 M-H1부터 artifact 방식으로 바뀌어 원본 `results-template.json` 경로를 쓰지 않았다 — 두 회차를 같은 방식으로 남긴다).
 - 이후 과제(flip을 막지 않음): 홀로 낀 16분음표 flag 모양(§38.1, §42.1)과 빽빽한 소나티네 구간의 beam 판단(§42.2) — MX 또는 G4 후속 폴리싱.
+
+## 43. G4f-2 flip 구현 기록 — 기본 렌더러를 판각기로
+
+Implementer, 2026-09-26. 브랜치 `g4f2-flip` (`D:/PPP-g4`), 시작 `9bffea3` (= `origin/main`), 코드 커밋 `b2de7da` 뒤 `origin/main`의 #31(`1562066`, M-H2 수용·flip 승인 G4-U6, 문서만)을 병합. 입력은 Lead의 G4f-2 flip 지시, §25 2단계, §37.16의 "flip 전에" 목록. 병합하지 않았고 PR도 없으며 **배포하지 않았다** (Render·Neon 손대지 않음 — 배포는 병합 뒤 Lead가 사용자에게 묻는다). 결정은 DECISIONS G4-F2-1–6.
+
+**한 줄**: `PPP.renderer`의 기본값이 `'engrave'`가 되었다. `?renderer=legacy`, localStorage `ppp.renderer = 'legacy'`, 실행 중 `PPP.renderer = 'legacy'`가 legacy 렌더러로 되돌리는 스위치다 (§25.3 되돌리기, 한 릴리스 동안). 그 밖의 값은 기본값. legacy 렌더러(`draw()`·`buildVoice()`·`sync()`)는 한 바이트도 바뀌지 않았다 (A45 고정 그대로, `?renderer=legacy`에서 parity 16/16). 축소 뷰(루프 썸네일·빈 페이지의 보표)는 판각기 파일을 부르기 **전에** legacy로 보낸다 (G4-F2-2). 제거(§25.2 3단계)는 하지 않았다.
+
+### 43.1 앱 파일의 변경 (`Piano Coach App.dc.html`)
+
+스위치 블록 (`makeScoreView` 앞, "THE ENGRAVER IN THE PAGE"):
+
+| | 전 (`9bffea3`) | 후 |
+| --- | --- | --- |
+| 기본값 | `const sw = { renderer: 'legacy', strict: false, stats: { fallbacks: {}, bySong: {} } };` | `const sw = { renderer: 'engrave', strict: false, stats: { fallbacks: {}, bySong: {}, routed: 0 } };` |
+| URL·저장소 | `if (r === 'engrave') sw.renderer = 'engrave';` | `if (r === 'legacy') sw.renderer = 'legacy';` (`r`은 그대로 `q.get('renderer') \|\| localStorage.getItem('ppp.renderer')` — URL이 저장소를 이긴다) |
+| 실행 중 | `set: v => { ENGRAVE_SWITCH.renderer = v === 'engrave' ? 'engrave' : 'legacy'; }` | `set: v => { ENGRAVE_SWITCH.renderer = v === 'legacy' ? 'legacy' : 'engrave'; }` |
+| 축소 뷰 | (`engrave/page.js`만 routed로 보냄 — 그 전에 판각기 15 파일을 불러오고 "Engraving…"을 보임) | `engraveView().paint` 첫 줄: `if (p.clefs === false \|\| (p.grand === false && ((p.score && p.score.staves) \|\| 1) > 1)) { stats.routed++; return 'legacy'; }` — page.js와 같은 규칙, 불러오기 전에 |
+| 블록 주석 | "a developer's switch … 'legacy' unless …" | 기본은 `'engrave'`(§25.2, G4-U6), `'legacy'`가 되돌리기(§25.3)이며 한 릴리스 뒤 제거(§25.2 3단계), Score·재생·판정은 둘 다 같음(A16), 축소 뷰는 routed(G4-F2-2) |
+
+그 밖: `ENGRAVE_FILES`의 `page` hash (`b6b9e6ef625e` → `51224a4f1526`; `engrave/page.js` 머리 주석의 "default stays 'legacy'"를 고친 것뿐 — 출력·버전 그대로, `page-files.js --write`), 인쇄 명령의 주석 두 곳("dev-switch gated; reaches no one until G4f's flip" → 기본이 판각기인 곳에서 보임). `showPrintControls`의 식은 그대로다 (`S.wholeScore && engraveWanted({ renderer: PPP.renderer })`) — 스위치가 바뀌었으므로 인쇄 명령이 기본으로 보인다.
+
+**손대지 않은 것**: ScoreView 클래스 전부 (`draw()`, `buildVoice()`, `sync()`, `drawKey()`, 두 G4d-2 블록 포함 — `app.test.js` A45의 hash 셋 `c208062f…`, `8ceb975a…`, `80149fb7…`과 NOTATION RENDERER 머리 `b59e39a4…`가 그대로 통과), `loadVexFlow`와 CDN 경로, `scoregraph/`, 재생, G3 flag (A46), 판각 규칙 (layout hash 118 × 3 그대로).
+
+### 43.2 "flip 전에" 정할 것 (§37.16 G4f 목록)
+
+| 항목 | 결정 | 이유·증거 |
+| --- | --- | --- |
+| routed 축소 뷰 (루프 썸네일 `clefs:false`, 빈 보표 `grand:false`) | **legacy에 둔다, 그리고 앱에서 판각기 파일을 부르기 전에 정한다** (G4-F2-2) | 판각기에는 clef 없는 모드가 없다 (G4-D2-9). 기본이 `'engrave'`가 되자 홈 화면의 "Continue Practicing" 카드(루프 썸네일 하나)만으로 15 파일(전송 152 KB)을 불러오고 썸네일 상자에 "Engraving…"(min-height 120 px)을 띄웠다 — **부정 대조**: 새 줄을 빼면 `page-check.js --part switch`의 홈 화면 검사가 "asked 15, routed 0"으로 실패하고 `app.test.js`의 routed 검사도 실패; 넣으면 홈에서 0 파일, routed 1, fallback 0, 경고 0. routed는 fallback으로 세지 않고 경고하지 않는다 (`PPP.engraveStats.routed`, `with-port.js` 끝 줄이 합산) |
+| 전곡 첫 그리기·다시 불러온 곡의 resolve = 긴 한 덩어리 (§37.12) | **재기만 하고 바꾸지 않는다** (지시: 이 단계에서 불러오기·시간 나누기를 다시 설계하지 않음) | §43.5. B5의 "long task 0"은 여전히 어긋난다 (1× 189 ms, legacy 105 ms) — G4d-2 때부터 있던 성질이 이제 기본 경로에 있다. 첫 방문에서 판각기 15 파일은 연습 화면을 처음 열 때 불러오며 첫 보표까지 1× 324 대 319 ms, 4× 902 대 822 ms (legacy) |
+| `legacy.fromScore`의 세 한계로 legacy로 돌아가는 곡 (공유 seed 4곡의 손, soft pedal, OMR 코드명) 과 옛 reader의 병리 fixture 2 | **legacy가 그리고 경고한다 — 고치지 않는다** (`scoregraph/`, 이 단계 밖) | 기본 페이지에서 센 수: §43.6. 모두 `SOURCE_DISAGREES`, 모두 legacy가 그림(빈 화면 0), 경고는 뷰마다 곡당 한 번 (프레임마다가 아님) |
+| 안내 글자·마디 번호를 layout 객체로 (§16.6) | 이 단계 밖 (판각 규칙 변경) | 지시의 비목표; G4-D2-20의 skyline 배치 그대로 |
+| VexFlow(CDN) 대기 (§37.16 끝) | 그대로 | `loadVexFlow`·CDN 제거는 §25.2 3단계·G13 |
+
+### 43.3 바꾼 단언과 도구 (A30 규칙: 옛 기본값이나 옛 결함을 고정한 것만)
+
+| 파일 | 단언·동작 | 바꾼 것 | 이유 |
+| --- | --- | --- | --- |
+| `tests/engrave/app.test.js` 머리·test 1 주석 | "the default page loads what it loaded before G4d-2" | 정적 `<script>` 목록은 그대로(단언 불변), 주석을 "기본 페이지는 첫 전체 뷰가 그릴 때 판각기 파일을 불러오고, `?renderer=legacy`에서는 아무것도" 로 | 옛 기본값을 적은 문장 |
+| `app.test.js` test 2 | `renderer: 'legacy', strict: false`, `if (r === 'engrave') …` | `renderer: 'engrave'`, `if (r === 'legacy') …`; **새로** 스위치 블록을 `vm` sandbox에서 실제로 돌림 — 기본, `?renderer=legacy`, 저장소 `legacy`, URL이 저장소를 이김(두 방향), 빈 `?renderer=`는 저장소로, 그 밖의 값(`vexflow`, `LEGACY`)은 기본, prop이 스위치를 이김(두 방향), 실행 중 `PPP.renderer = 'legacy'`/`'engrave'`/`'nonsense'`, 정하는 동안 불러온 파일 0 | 옛 기본값을 고정한 단언; **되돌리기를 가정하지 않고 시험한다** (지시) |
+| `app.test.js` (새 test) | — | 축소 뷰 셋(루프 썸네일, 빈 보표, 여러 보표 곡의 한 보표)은 `'legacy'`, routed 3, fallback 0, 경고 0, 불러온 파일 0, placeholder 없음; 한 보표 곡의 `grand:false`(퀴즈)와 전체 뷰는 `'pending'`과 15 파일 | G4-F2-2 |
+| `tests/engraving.test.js` `box()` | "the clef change is drawn inside bar 2" — 판각기에서 0 | `getBBox()`에 그 요소 자신의 `transform`을 적용 (legacy는 잰 요소에 transform이 0개 — 잰 결과 그대로) | **측정의 결함**: 판각기는 마디 안 clef 변경을 작은 glyph로 `<use transform="translate(399.2 174.5) scale(0.67)">`로 그리는데, `getBBox()`는 요소 자신의 transform을 빼고 원점(x 0)으로 읽는다. G4-D2-21(`inline:false`)부터의 실패로 §39.7이 "기존 결함"으로 적은 것 — `origin/main`의 트리·suite를 `renderer=engrave`로 돌려도 같은 실패(재현), 판각기는 그 clef를 마디 2 안(x 399, 마디 294–688)에 바르게 그린다. legacy·기본 모두 통과 |
+| `tests/engrave/tools/legacy-parity.js` | 기본 페이지를 열었다 | 두 서버 모두 `?renderer=legacy`, 판각기 SVG면 비교 거부 | A45는 되돌리기(legacy)의 주장; flip 전 base는 그 값을 몰라도 기본이 legacy |
+| `tests/engrave/tools/legacy-geometry.js` | 기본 페이지 + `App.setState({renderer:'legacy'})` (이 state는 ScoreView에 닿지 않는다 — 기본값 덕에 legacy를 읽었다) | `?renderer=legacy`, 판각기 SVG면 오류 | 옛 기본값에 기댐; 결과는 G4f-1과 같음 (clip 0/0, head-head 0/402, beam 4,986/3,727, tie 86/31, tuplet 39/358 — tuplet은 §40.3·§40.11의 legacy 결함, exit 1도 G4f-1과 같음) |
+| `tests/scoregraph/tools/ottava-check.js` | 기본 페이지 | `?renderer=legacy` | MX-1의 "drawn"·"views"는 legacy SVG(보표선 path·라벨 글자)를 잰다 — 판각기의 8va는 A10 (`tests/engrave`). 통과 |
+| `tests/engrave/tools/page-check.js` | `?renderer=` 두 값 | `'default'`(쿼리 없음)와 `--renderers`; perf의 B2 판정은 legacy가 아닌 쪽; corpus·reload는 첫 비-legacy; **새 part** `switch`(기본·되돌리기 URL·저장소·실행 중, 인쇄 명령이 전곡 보기·판각기에서만, 홈 썸네일 routed·경고 0·파일 0), `first`(빈 캐시 첫 방문) | 기본 페이지를 잴 수 있게; 되돌리기를 페이지에서 시험 |
+| `tests/engrave/tools/print-check.js` | `?renderer=engrave` | 기본 페이지(`--renderer`로 바꿀 수 있음) + 전곡 보기에 "Print / Save as PDF"가 보이는지 먼저 확인 | 인쇄 명령이 이제 사용자에게 보인다 |
+| `tests/engrave/tools/with-port.js` | `PPP_RENDERER=engrave`가 판각기를 켬 | 주석: `PPP_RENDERER=legacy`가 되돌리기, 없으면 기본(판각기); routed = page.js + 앱의 routed | 옛 기본값을 적은 문장, G4-F2-2의 카운터 |
+| `storage-failure.js`, `app-source-check.js` | "drawn by the legacy renderer" | "기본 렌더러가 그린다" (단언 불변 — `g.ppp-note` 수) | 옛 기본값을 적은 문장 |
+
+### 43.4 Acceptance
+
+| # | 증거 | 판정 |
+| --- | --- | --- |
+| A45 | `legacy-parity.js` base `origin/main`(`9bffea3`의 `git archive`, 8802) 대 이 트리(8801), 둘 다 `?renderer=legacy`: **16/16 바이트 동일**. `app.test.js` A45 test (hash 넷) 그대로 통과 | PASS |
+| A30 | §43.5의 표: 여덟 suite(engraving, alignment, follow, interactions, layout, musicxml, coach, import)가 **기본 페이지**(판각기가 그림)와 **`renderer=legacy`** 둘 다 통과 | PASS |
+| A16 | `page-check.js a16`: 7곡 × 전곡·가까이 보기, `packScore`·`PianoScore.build`·`PerformanceEngine.expected` hash가 legacy·engrave에서 같음 (live 5, projected 2) | PASS |
+| A31–A34 | `a31`: touched ≤ changed (쓴 것 중 안 바뀐 것 0, 1× 1000·4× 400 프레임), sync p95 0.1 ms (4× 0.5 ms); `a32` 셋, `a33` 셋 통과; A34 — `layout`·`interactions` suite 두 렌더러 통과 | PASS |
+| A35–A37 | §43.6 — B2·B6 PASS, B5의 "long task 0"은 FAIL(G4d-2부터, §37.12), 전곡 재생 프레임은 legacy보다 느림(§43.8) | 부분 — Lead 판단 |
+| A38–A40 (인쇄, 기본 페이지) | `print-check.js`(기본 페이지): 6곡 모두 명령이 전곡 보기에 보이고, 엔진 페이지 수 = 인쇄 페이지 수 (1, 2, 3, 5, 1, 1), 래스터 0; Für Elise PDF를 직접 봄 (제목·작곡가·템포·마디 번호, G4-E7의 18.8% 채움 그대로). `switch`: 가까이 보기에는 명령 없음, 전곡 보기에 있음, `?renderer=legacy`·저장소 `legacy`·실행 중 `'legacy'`에서 없음 | PASS |
+| A47 | `page-check.js corpus`(기본 페이지): import door 361/361 그림(live), fallback 0; 옛 reader 184 중 live 175·projected 7, **fallback 2** (G4f-1과 같은 두 병리 fixture, §40.6); 거부 26 (4음 미만 MIDI, R4); 페이지 오류 0 | 그대로 (G4f-1 기록) |
+| G0 | `run.py golden` 17/17 identical, `run.py correctness` 13/13 — MusicXML export·Score는 바뀌지 않음 (`scoregraph/`·`audio-score.js` 무변경) | PASS |
+
+### 43.5 브라우저 suite (각각 따로, `with-port.js`, 이 트리 8801, base `9bffea3` 8802; 둘 다 `NODE_ENV=production HOST=127.0.0.1`)
+
+`기본` = `PPP_RENDERER` 없음(판각기), `legacy` = `PPP_RENDERER=legacy`. 괄호는 기본 실행의 판각기 그림 / fallback / routed (with-port 끝 줄; routed는 paint 수).
+
+| suite | 기본 | legacy |
+| --- | --- | --- |
+| import | PASS (4 / 0 / 1) | PASS |
+| memory | PASS (1 / 0 / 3) | PASS |
+| learning | PASS (1 / 0 / 3) | PASS |
+| midi | PASS (5 / SOURCE_DISAGREES 3 / 2) | PASS |
+| playback-scheduler | PASS (0 / 0 / 2) | PASS |
+| musicxml | PASS (2 / 0 / 1) | PASS |
+| falling-notes | PASS (2 / 0 / 1) | PASS |
+| interactions | PASS (19 / SOURCE_DISAGREES 4 / 3) | PASS |
+| import-and-persistence | PASS (12 / 0 / 5) | PASS |
+| coach | PASS (1 / 0 / 3) | PASS |
+| i18n-and-auth | PASS (12 / 0 / 11) | PASS |
+| follow | PASS (6 / 0 / 1) | PASS |
+| layout | PASS (2 / 0 / 9) | PASS |
+| alignment | PASS (2 / 0 / 2) | PASS |
+| engraving | PASS (6 / 0 / 2) — `box()` 고친 뒤; 고치기 전 FAIL 1 ("clef change … 0 clef(s)", §43.3) | PASS |
+| pdf-layer | PASS (0 / SOURCE_DISAGREES 1 / 2) | PASS |
+| library | PASS (45 / 0 / 11) | PASS |
+| transcription | FAIL (환경) (0 / 0 / 1) | FAIL (환경) |
+| score-search | PASS (페이지 없음) | PASS |
+| fingering | PASS (3 / 0 / 7) | PASS |
+| video | PASS (17 / 0 / 11) | PASS |
+| auth-ui | PASS (0 / 0 / 77) | PASS |
+| share | PASS (21 / SOURCE_DISAGREES 12 / 3) | PASS |
+| lessons | PASS (0 / 0 / 9) | PASS |
+| hymns-share | PASS (0 / 0 / 1) | PASS |
+| course | PASS (2 / 0 / 3) | PASS |
+
+- **`transcription`의 실패는 셋 다 같다**: "the fallback is the venv transkun console script" — 이 PC에 transkun venv가 없음 (§32.8, §37.11). base(`9bffea3`) 기본에서도 같은 단언이 같은 이유로 실패.
+- base의 `engraving`: 기본(legacy) PASS, `renderer=engrave` FAIL — 같은 clef 단언 (§43.3의 측정 결함이 `origin/main`에 이미 있었음을 확인).
+- 그 밖에 실행한 페이지 도구 (기본 페이지): `storage-failure.js` 전부 통과 (IndexedDB 없음·open throw·quota — 판각기가 projection으로 그림); `app-source-check.js` 1 실패 = `PPPEngrave.version === '0.1.1-g4a'` 고정(낡은 G4a 단언, base `9bffea3`에서도 똑같이 실패 — flip과 무관, 손대지 않음); `ottava-check.js`(`?renderer=legacy`) 통과; `legacy-geometry.js` G4f-1과 같은 수.
+
+### 43.6 측정 (이 PC, Chrome headless, 1400 × 1000, sonatina/020 = 158마디 1,563 음 그룹; `page-check.js --renderers default,legacy --cpu 1,4`)
+
+이 PC에서 다른 프로그램(Unity·게임 등, CPU 사용 약 65%)이 함께 돌았다 — 4× 수치는 흔들린다 (아래 B2).
+
+| | 기본(판각기) 1× | legacy 1× | 기본 4× | legacy 4× |
+| --- | --- | --- | --- | --- |
+| 전곡 열기 (ms) | 370 | 247 | 1,869 | 875 |
+| 전곡 판각: layout / SVG / 넣기 / 꾸미기 = 합 (ms) | 36.7 / 13.0 / 18.3 / 9.8 = 77.8 | — | 176.3 / 74.9 / 112.0 / 43.0 = 406.2 | — |
+| 원천 resolve (live, ms) | 52.4 | — | 275.7 | — |
+| 전곡 열기의 long task (수, 최대 ms) | 3, 189 | 1, 105 | 3, 985 | 3, 544 |
+| 전곡 재생 프레임 중앙 / p95 (ms) | 10.1 / 19.3 | 5.7 / 9.7 | 71.5 / 100.7 | 45.5 / 66.4 |
+| 그 동안의 long task (수, 최대) | 0 | 0 | 20, 73 ms | 0 |
+| sync p95 (ms) | 0.1 | (전부 씀) | 0.3 | — |
+| 가까이 보기 열기 (ms) | 77.9 | 74.1 | 161.7 | 221.8 |
+| 페이지 넘김 새 창 중앙 / p95 (ms) | 10.5 / 11.7 | 11.5 / 14.7 | 56.6 / 60.8 | 79.3 / 92.9 |
+| 되돌아가는 넘김 중앙 (ms) | 9.4 | 10.9 | 50.2 | 69.6 |
+| 가까이 보기 long task | 0 | 0 | 1 (78) | 20 (120) |
+| 가까이 보기 프레임 중앙 / p95 | 4.5 / 7.2 | 3.9 / 5.6 | 27.5 / 37.8 | 22.5 / 35.3 |
+| 다시 불러온 곡 (store) resolve, long task | 100.1 ms; 2, 최대 194 | — | 344.4 ms; 5, 최대 854 | — |
+
+**B 예산** (§19.2): B2 p95 11.7 ms ≤ 25 (1×), 60.8 ms ≤ 80 (4×) **PASS** — 단, 부하가 더 큰 두 번째·세 번째 4× 실행에서 87.9, 102.9 ms (같은 실행의 legacy 넘김도 92.9 → 113.3 ms로 느려짐; 판각기가 legacy보다 느린 적은 없음). B4·B5의 시간: 전곡 판각 합 77.8 ms (+ resolve 52.4) — 300 ms 안. **B5의 "조각 ≤ 12 ms, long task 0"은 FAIL** (시간 나누기 없음 — §37.12부터 알려진 것; 1× 189 ms, 4× 985 ms 한 덩어리. legacy도 105 / 544 ms). B6 0.1 / 0.5 ms PASS (`a31`). B7 PASS (`a32`). B8 36–43 ms (§39.9). B9 0.24–0.36 (G4-D2-21).
+
+**첫 방문** (`page-check.js first`: 새 browser context = 빈 캐시·저장소, 홈 → 연습):
+
+| | 앱까지 (ms) | 연습 → 첫 보표 (ms) | 홈에서 부른 판각기 파일 | 판각기 파일 (수, 전송 KB) | 전체 전송 (KB) | long task (수, 최대 ms) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 기본 1× | 1,362 | 324 | 0 | 15, 151.8 | 6,046 | 3, 109 |
+| legacy 1× | 1,348 | 319 | 0 | 0 | 5,965 | 2, 119 |
+| 기본 4× | 3,023 | 902 | 0 | 15, 151.8 | 6,046 | 10, 540 |
+| legacy 4× | 3,019 | 822 | 0 | 0 | 5,965 | 8, 783 |
+
+판각기가 기본이 되어 새로 드는 비용은 연습 화면을 처음 열 때 15 파일·152 KB(전체의 2.5%)와 4×에서 첫 보표까지 +80 ms — 예산을 넘는 새 항목은 아니다 (G4-F2-2 없이는 홈 화면이 이미 이것을 치렀다).
+
+**fallback으로 legacy가 그리는 곡** (기본 페이지): 코퍼스(`corpus`) — 옛 reader의 병리 fixture 2 (`SOURCE_DISAGREES`: 짝 없는 wedge `wedges.length 2 vs 0`, 시작 없는 ending `measures.bar`); 브라우저 suite — `share` 12 (공유 seed 4곡의 손 `x`, §37.6), `interactions` 4 (같은 seed), `midi` 3 (soft pedal), `pdf-layer` 1 (OMR 코드명). 모두 legacy가 그렸고(직접 확인: 두 fixture × 전곡·가까이 보기, legacy SVG, 음 3개, "Engraving…" 0), 경고는 뷰마다 곡당 한 번이다.
+
+### 43.7 회귀 — Windows와 Linux
+
+- Windows: `npm run test:engrave` **198/198** (197 + 새 routed test 1), `npm run test:scoregraph` **216/216**, `layout-hashes.js` 118 × 3 그대로, `page-files.js --check`, 다섯 `--check` 도구 PASS, `bench.js check --suite r|e|x` PASS (61 / 40 / 76), `run.py golden` 17/17 identical, `run.py correctness` 13/13.
+- Linux (Docker `node:24-bookworm`, Node 24.21.0, `git -c core.autocrlf=false clone`의 `b2de7da`, LF 확인): `test:engrave` **198/198**, `test:scoregraph` **216/216**, `layout-hashes.js`, `page-files.js --check` PASS.
+- #31 병합(문서 셋만)은 코드·테스트가 읽는 파일을 바꾸지 않았다.
+
+### 43.8 사용자에게 보이는 것, 남은 것 (Lead에게)
+
+**보이는 것**: 모든 악보 화면(연습의 전곡·가까이 보기, 미리 보기, 검토, My Songs·공유 카드, Progress 썸네일, 퀴즈)을 판각기가 그린다; 홈의 루프 썸네일과 빈 페이지의 보표는 legacy 그대로. **전곡 보기에 "Print / Save as PDF" 명령이 나타난다** (가까이 보기에는 없음). 연습 화면을 처음 열 때 판각기 파일을 받는 동안 "Engraving…". fallback 곡(공유 seed 4곡 등)은 legacy 모양 그대로 — 한 화면에 두 렌더러의 모양이 섞일 수 있다 (예: 공유 목록 카드).
+
+**발견 — 고치지 않음 (지시: 판각 규칙·불러오기를 이 단계에서 바꾸지 않는다)**:
+
+1. **전곡 보기 재생 프레임이 legacy보다 느리다** (1× p95 19.3 대 9.7 ms, 4× 100.7 대 66.4 ms, 4×에서 재생 중 long task 20개·최대 73 ms, legacy 0) — §16.3의 "재생 UI가 50 ms 넘게 막히지 않는다"를 4× 전곡 보기에서 어긴다. **원인 실험**: 같은 트리에서 `engrave/page.js`의 `SVG_OPTS`만 `inline: true`로 바꾼 서버(버림)를 같은 도구로 잼 — 전곡 프레임 1× 중앙/p95 5.8 / 10.8 ms(`<use>` 5.7 / 21.5), 4× 42.4 / 62.8 ms·long task 2(`<use>` 81.6 / 119.4 ms·35). 즉 G4-D2-21(B9를 위해 `<use>`로)과 G4-D2-22("체감 프레임 시간은 같다")의 판단이 전곡 재생에서는 맞지 않는다 — 전곡 SVG의 수많은 `<use>`를 매 프레임 다시 칠하는 비용. B9와 재생 프레임의 맞바꿈은 Lead의 결정 (예: 화면은 inline, 인쇄·저장은 `<use>`; 또는 켜진 음만 다시 칠하게 하는 층 나누기).
+2. **B5의 long task 0** — 전곡 첫 그리기와 다시 불러온 곡의 resolve가 한 덩어리 (§37.12 그대로). 시간 나누기(§16.3)는 아직 없다.
+3. `app-source-check.js`의 낡은 버전 고정 (`0.1.1-g4a`) — base에서도 실패, flip과 무관.
+4. G4e 리뷰의 MINOR "여러 ScoreView의 glyph id 충돌": 이제 실제로 한 문서에 판각기 SVG가 여럿 있다 (My Songs 카드 등, `library` suite 45 그림). 모든 화면 SVG가 `unit 10`이라 `ppp-g-*` symbol이 같은 모양이므로 보이는 차이는 없다 (인쇄는 G4-E4의 자기 접두사).
+
+**BLOCKER 0, MAJOR 1** (implementer 자체 판정): MAJOR = 발견 1 (전곡 재생 프레임, 4× long task) — flip 자체의 결함이 아니라 판각기의 성질이 기본 경로에 온 것이지만, 태블릿급 기기에서 사용자가 느낄 수 있으므로 배포 전에 Lead가 받아들이거나 고칠 단계를 정해야 한다.
+
+### 43.9 커밋
+
+`b2de7da` (앱·`engrave/page.js`·테스트·도구), `bd1c7af` (`origin/main` #31 병합), 이어서 이 기록 (G04 §43, 목차, §16.1·§25.1 주; DECISIONS G4-F2-1–6; CURRENT_STATE; ARCHITECTURE). `origin/g4f2-flip`에 push. 병합 안 함, PR 없음, 배포 없음.
 
 ---
 

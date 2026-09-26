@@ -1,6 +1,6 @@
 # PPP — current state
 
-Updated 2026-09-26 (G4f-1 merged as PR #28; G4e merged as PR #26; G4d-2 merged as PR #23; G4d-1b merged as PR #19; G4d-1a merged as PR #17; G4c merged as PR #15; MX-1 merged as PR #13; G4b merged as PR #12; the production database moved to Neon Free). G0 (Quality Foundation), G1 (ScoreGraph) and G2 (Score Import) are all merged
+Updated 2026-09-26 (G4f-2 flip implemented on branch `g4f2-flip`, in review, not merged or deployed; M-H2 accepted and the flip approved, G4-U6; G4f-1 merged as PR #28; G4e merged as PR #26; G4d-2 merged as PR #23; G4d-1b merged as PR #19; G4d-1a merged as PR #17; G4c merged as PR #15; MX-1 merged as PR #13; G4b merged as PR #12; the production database moved to Neon Free). G0 (Quality Foundation), G1 (ScoreGraph) and G2 (Score Import) are all merged
 and closed. **G3 is merged as PARTIAL / DEFERRED** (PR #7, `c5474c2`; G03 §31): implemented, reviewed and fixed,
 but its blind human review (A36) failed (§30), so every part of it stays **off** — G3a, G3b, the automatic 8va
 and the pedal join — and nothing a user sees changed. **The active goal is G4 Professional Engraving**
@@ -43,7 +43,15 @@ is the one follow-up; A46, A47 and A48 were re-confirmed rather than rebuilt (A4
 fallbacks, not a new defect). Its independent review returned PASS (0 BLOCKER/MAJOR, 2 MINOR); the Lead fixed the one
 substantive MINOR directly (the CI server-boot readiness loop now fails its own step on a timeout, `5079d64`) rather
 than opening a Fixer round for a one-line change. No product-facing change; the default renderer is still `'legacy'`.
-**Next: M-H2** (the pass/fail human review) **and then the flip — both the Lead's.**
+**M-H2 is DONE and accepted by the user with one known exception** (G04 §42, DECISIONS G4-U6), who also approved the
+flip. **The G4f-2 flip is implemented and in review** (branch `g4f2-flip`, G04 §43, DECISIONS G4-F2-1..6) — **not merged,
+not deployed; production still draws with the legacy renderer.** On that branch the default `PPP.renderer` is
+`'engrave'`; `?renderer=legacy`, localStorage `ppp.renderer = 'legacy'` or `PPP.renderer = 'legacy'` is the rollback
+(A45: 16/16 byte-identical); reduced views (the loop thumbnail) stay legacy without loading the engraver; the print
+command shows in the whole-score view. A30's eight suites pass on the default page and under `legacy`. Open for the
+Lead: whole-score playback frames are slower than legacy (the `<use>` repaint; 4x CPU: 20 long tasks up to 73 ms) and
+B5's "no long task" on the first whole-score draw (G04 §43.8).
+**Next: the flip's review and merge, then deploy only on the user's word.**
 Read this first in a new session, then
 `docs/PPP_MASTER_ROADMAP.md` (the order of the remaining Goals, their gates, the current and next task), then the
 current goal's spec in `docs/GOALS/`.
@@ -54,7 +62,7 @@ current goal's spec in `docs/GOALS/`.
 | --- | --- |
 | Goals | Numbered specs in `docs/GOALS/`. **G0 is merged and closed** — implemented (§16), reviewed and fixed through six passes (§17–§22.9), then merged as PR #1 (`aff7080`). `G00_QUALITY_FOUNDATION.md` §22.9 has the last result and what is still open (nothing). |
 | G3 | **PARTIAL / DEFERRED — not COMPLETE** (G03 §31, DECISIONS G3-U9). **Merged to `main` switched off** as PR #7 (`c5474c2`, a squash of `g3-score-intelligence` `966a053`; the branch and `D:/PPP-g3` are kept). `professionalize()` (a graph → graph pass pipeline behind a critic) runs in `toMusicXml` only when `opts.professional` is `'shadow'` or `'on'`; **the default is `'off'` and nothing passes it**, so G3 changes nothing a user sees — G3 off is byte-identical to the pre-G3 `main`, `cc509e2` (§31.2). G3a's other acceptance criteria are PASS or PARTIAL by design (§29.9), but it **failed the blind human review A36** (§30); G3b waits on M11; 8va on issue 3; the pedal join on the app's `change` playback. Reopening: §31.5. |
-| G4 | **G4a through G4f-1 all CLOSED** (PR #9 `df8a571`, PR #12 `62ede61`, PR #15 `e3c8c5a`, PR #17 `b4fe019`, PR #19 `a6e1a75`, PR #23 `16ce784`, PR #26 `a33ccd3`, PR #28 `2c6d108`). The Node engraving engine is complete, reaches the real page, and prints — all still behind a dev-only switch, default `'legacy'`; nothing a user sees has changed. **M-H1 is DONE** (G04 §38): engrave preferred 5 of 16, legacy 2, tied 9, zero excerpts where only engrave looked wrong; the Verovio trigger does not fire. **G4f-1 (the engineering evidence base) is DONE** (G04 §40–§40.1, DECISIONS G4-F1-1..5): all 25 mutations live, `legacy-geometry.js` confirms G4 is even with or ahead of legacy in every real category (two apparent legacy wins turned out to be legacy's own defects — 402 real notehead overlaps and ignoring `show-number:none` — confirmed at the source level), performance holds under CPU throttling, CI gate stays under budget. Full detail in the paragraph above. **Next: M-H2** (the pass/fail human review) and, on approval, the flip — both the Lead's. |
+| G4 | **G4a through G4f-1 all CLOSED** (PR #9 `df8a571`, PR #12 `62ede61`, PR #15 `e3c8c5a`, PR #17 `b4fe019`, PR #19 `a6e1a75`, PR #23 `16ce784`, PR #26 `a33ccd3`, PR #28 `2c6d108`). The Node engraving engine is complete, reaches the real page, and prints — all still behind a dev-only switch, default `'legacy'`, on `main`; nothing a user sees has changed yet. **M-H1 is DONE** (G04 §38): engrave preferred 5 of 16, legacy 2, tied 9, zero excerpts where only engrave looked wrong; the Verovio trigger does not fire. **G4f-1 (the engineering evidence base) is DONE** (G04 §40–§40.1, DECISIONS G4-F1-1..5): all 25 mutations live, `legacy-geometry.js` confirms G4 is even with or ahead of legacy in every real category (two apparent legacy wins turned out to be legacy's own defects — 402 real notehead overlaps and ignoring `show-number:none` — confirmed at the source level), performance holds under CPU throttling, CI gate stays under budget. Full detail in the paragraph above. **M-H2 DONE, accepted (G4-U6), flip approved.** **G4f-2 flip implemented, in review** (branch `g4f2-flip`, G04 §43, DECISIONS G4-F2-1..6): default `'engrave'`, `'legacy'` one switch away — not merged, not deployed. |
 | G1 | **Merged and closed.** Implemented (§24), independently reviewed (§25: READY_TO_PR, BLOCKER 0, MAJOR 0), merged as PR #2 (`aa77d2e`), then the follow-up PR #3 (`00081cc`, §26) closed findings F2 and F3. F1 (tuplet bracket grouping) is left for G3 on purpose. `toMusicXml` writes its MusicXML from a ScoreGraph (`scoregraph/`); `opts.legacyWriter` is the way back for one release. |
 | G2 | **Merged and closed.** Implemented (§24), independently reviewed (§25), the one MAJOR it found closed by §26 (D7), merged as PR #4 (`cc0da79`) with BLOCKER 0 and MAJOR 0. Schema is version 2. **The app's import boundary is on the graph** — a file a person opens becomes a ScoreGraph and the Score is a projection of it; `PPP.legacyImport = true` is the way back for one release. **`.mid` opens**: its notes, times and controllers exactly as the file states them, its notation worked out by audio-score's existing quantizer and marked inferred in three places (D3). The MusicXML importer no longer refuses a whole file for an `<unpitched>` note, a missing time signature or a quarter tone. **A transposing part is printed where it is written and sounds where it sounds** (D7, §26). Transcription is unchanged: core 553/553 identical to `00081cc`. |
 | G0 code | On `main` since PR #1, which came from the clean branch `g0-quality-foundation-clean` (worktree `D:/PPP-g0-clean`). The older `g0-quality-foundation` branch and its `D:/PPP-g0` worktree are contaminated with other sessions' production changes — **never merge or edit those**. `tests/README.md` there has a two-line doc change left uncommitted on purpose (outside the allowed paths). |
@@ -253,7 +261,8 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
 
 - **Active goal: G4 Professional Engraving — G4a through G4f-1 all CLOSED (PR #9 `df8a571`, PR #12 `62ede61`, PR #15
   `e3c8c5a`, PR #17 `b4fe019`, PR #19 `a6e1a75`, PR #23 `16ce784`, PR #26 `a33ccd3`, PR #28 `2c6d108`) and M-H1 DONE
-  (G04 §38); next M-H2, then the flip, both the Lead's.** The order, gates and briefs are in
+  (G04 §38); M-H2 DONE and accepted, flip approved (G4-U6, G04 §42); the G4f-2 flip is implemented and in review
+  (branch `g4f2-flip`, G04 §43) — not merged, not deployed.** The order, gates and briefs are in
   `docs/PPP_MASTER_ROADMAP.md` (§14 current task, §15 next).
   - **MX-1 — CLOSED, merged as PR #13 (`e37d37a`)** after one independent review (NEEDS_FIX: BLOCKER 1, MAJOR 1 — octave
     lines missing in partial views and on cards), its Fixer and the Lead's re-check (section "MX-1 — playback correctness"
@@ -270,7 +279,12 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
     `show-number:none`), and legacy's 402 real notehead overlaps (G4's 0) were sampled and confirmed real. The Lead
     fixed the one substantive MINOR directly (the CI server-boot readiness loop, `5079d64`). A47's 2 already-known
     fallbacks and the CI gate's ~25s headroom are noted, not new problems.
-  - Production keeps the legacy renderer until the flip (M-H2, after which the Lead asks the user to approve it).
+  - **G4f-2 flip — implemented, in review** (G04 §43, DECISIONS G4-F2-1..6): default `PPP.renderer = 'engrave'`;
+    rollback `?renderer=legacy` / localStorage `ppp.renderer = 'legacy'` / `PPP.renderer = 'legacy'` (A45 16/16);
+    reduced views routed to legacy before any engraver file loads; print command visible in the whole-score view; A30
+    suites pass under both renderers. For the Lead: slower whole-score playback frames than legacy (`<use>` repaint)
+    and B5's first-draw long task (G04 §43.8). Production keeps the legacy renderer until the merge **and** a deploy the
+    user asks for.
   - What G3 left for G4 is in G03 §30–§31 and DECISIONS G3-D3, G3-D4 and G3-U10.
 - **Production database (2026-09-25, decision D-0): Neon Free, $0.**
   - ppp-web's `DATABASE_URL` points at the Neon project `ppp`. It was verified identical to the Render data, with no

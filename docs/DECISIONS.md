@@ -413,6 +413,19 @@ Fixer(`0f3d275`) 위에서 G4a를 마무리한 세션의 결정. 설계(G04 §0�
 | G4-F1-4 | **gate job은 손대지 않는다** (`npm run test:engrave` + `bench.js check --suite r`, 이미 A41 예산 안 — 실측 ≈70초). **nightly job에 `npm ci` + puppeteer 세 도구**(`legacy-geometry.js`, `page-check.js --part perf,a31 --cpu 1,4`, `print-check.js`)를 새로 얹는다 — 이 프로젝트 CI에서 puppeteer의 첫 사용이라(G04 §21.5는 이 도구들을 "로컬"이라 적어 뒀다), `continue-on-error: true`로 첫 실제 실행까지의 위험을 줄인다 | gate를 mutation 전용 빠른 부분집합과 nightly 전용 전체 집합으로 쪼개기(§21.5의 원래 설계) — 지금은 gate가 이미 예산 안이라 쪼갤 필요가 급하지 않고, 쪼개려면 100개 넘는 기존 mutation을 재배치해야 해 이 세션의 낮은 위험 범위를 넘는다. 여유가 계속 줄면(§40.9) 다음 단계에서 재고할 문제로 남긴다 | §40.5 |
 | G4-F1-5 | **A47·A48을 새로 만들지 않고 이미 있는 도구로 재확인만 한다** — A47은 `page-check.js`의 `corpus` part(G4d-2가 "A47은 G4f에서 판정"이라 스스로 적어 둔 것), A48은 `test:engrave`의 `a48.test.js`(G4a부터 있었고, G4는 Score·재생을 전혀 안 건드리므로 렌더러와 무관해 재실행 없이도 유효). fallback 2건(둘 다 이미 `a48-coverage.js`의 `CORPUS_KNOWN_LOSS`에 있는 병리적 fixture)은 allowlist에 새로 넣지 않고 A47의 "0"과 다르다는 사실 그대로 기록한다 | 두 acceptance를 위해 새 도구를 만들거나, fallback 2건을 조용히 새 allowlist 항목으로 처리 — 이미 있는 것을 다시 만드는 낭비이고, 후자는 브리프가 명시적으로 금한 것("file-allowlist it away silently"를 하지 않는다) | §40.6 |
 
+## G4f-2 flip — 기본 렌더러를 판각기로 (Implementer, 2026-09-26; `docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md` §43)
+
+브랜치 `g4f2-flip` (`9bffea3`에서, #31 병합). 병합·PR·배포 없음. 사용자 승인 G4-U6(§42.3) 뒤 §25 2단계.
+
+| ID | 결정 | 버린 대안 | 근거 |
+| --- | --- | --- | --- |
+| G4-F2-1 | **기본 `PPP.renderer = 'engrave'`, 되돌리기는 대칭인 스위치 하나**: `?renderer=legacy`, localStorage `ppp.renderer = 'legacy'`, 실행 중 `PPP.renderer = 'legacy'`. 그 밖의 값(빈 값·오타·대문자)은 기본. URL이 저장소를 이긴다(G4-D2-1과 같은 읽기). 사람이 누르는 버튼 없음. legacy 렌더러는 바이트 그대로 한 릴리스 남는다(§25.2 3단계에서 제거) | `'engrave'`만 알아보는 옛 규칙 유지(되돌리기가 기본값 한 줄 수정 + 배포뿐), 설정 화면 토글(새 UI — 비목표), `'legacy'` 말고 `'engrave'`도 아닌 값을 legacy로(오타가 사용자를 옛 렌더러로 보냄) | §25.1, §25.3; `app.test.js`가 sandbox에서 경우 8개·실행 중 셋을 돌림; `page-check.js switch` |
+| G4-F2-2 | **축소 뷰(clef 없음, 여러 보표 곡의 한 보표 — 루프 썸네일, 빈 페이지의 보표)는 legacy에 둔다, 앱에서 판각기 파일을 부르기 전에** (`engraveView().paint` 첫 줄, page.js와 같은 규칙). routed로 세고(`PPP.engraveStats.routed`) fallback으로 세지 않으며 경고하지 않는다 | 판각기로 그림(판각기에 clef 없는 모드가 없음, 엔진 변경), page.js에서만 routed(기본이 판각기가 되자 홈 화면의 썸네일 하나가 15 파일 152 KB를 부르고 "Engraving…"을 띄움 — 부정 대조로 확인) | §37.16 G4f 목록, G4-D2-9; G04 §43.2 |
+| G4-F2-3 | **전곡 첫 그리기·다시 불러온 곡의 resolve는 재기만 한다** — 시간 나누기(§16.3)·불러오기 재설계는 이 단계에서 하지 않는다. B5의 "long task 0"은 FAIL로 기록(1× 189 ms, legacy 105 ms), 첫 방문 비용은 연습 화면에서 15 파일 152 KB, 첫 보표 +5 ms(1×)·+80 ms(4×) | flip과 함께 시간 나누기(지시의 비목표, flip의 diff를 키움) | G04 §43.6 |
+| G4-F2-4 | **`fromScore` 한계로 합의하지 않는 곡은 legacy가 그리고 경고한다 — 고치지 않는다** (공유 seed 4곡의 손, soft pedal, OMR 코드명, 옛 reader의 병리 fixture 2). 경고는 뷰마다 곡당 한 번 | `scoregraph/`의 `fromScore` 수정(이 단계 밖), 합의하지 않아도 그림(다른 음을 그릴 수 있음 — G4-D2-9가 버림) | G04 §43.6 |
+| G4-F2-5 | **옛 기본값에 기댄 도구는 `?renderer=legacy`를 명시한다** (`legacy-parity.js`, `legacy-geometry.js` — `App.setState({renderer})`는 ScoreView에 닿지 않았다, `ottava-check.js`), 판각기 SVG를 받으면 거부. `page-check.js`에 기본 페이지(`'default'`)·`switch`·`first`, `print-check.js`는 기본 페이지에서 명령이 보이는지부터 | 도구를 그대로 두기(A45·A43·MX-1 검사가 조용히 판각기를 legacy로 잼) | G04 §43.3 |
+| G4-F2-6 | **`engraving.test.js`의 `box()`에 요소 자신의 transform을 적용한다** — 판각기의 마디 안 clef 변경(`<use transform="… scale(0.67)">`)을 `getBBox()`가 원점으로 읽어 "0 clefs"였다(G4-D2-21부터, `origin/main`에서 재현). legacy는 잰 요소에 transform이 없어 결과 그대로 | 단언을 판각기에서 건너뜀(측정 결함을 숨김), 판각기가 clef를 x·y로 그리게 엔진 변경(규칙 변경 — 비목표) | A30; G04 §43.3 |
+
 ## MX-1 — 재생 정확성 (유지보수 묶음, 2026-09-25 구현; 리뷰 NEEDS_FIX → 같은 날 수정, 재확인 대기; `docs/GOALS/MX1_PLAYBACK_CORRECTNESS.md`)
 
 브랜치 `mx1-playback-correctness` (`1c92fc4`에서). 사용자 결정 D-1: ScoreGraph의 음높이와 MusicXML `<pitch>`는 **울리는 음**이고, 8va·8vb·15ma·15mb는 표시만 옮긴다 (written = sounding − shift).
