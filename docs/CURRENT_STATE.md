@@ -67,8 +67,15 @@ verified, the user confirmed before the write) since `seedSharedScores()` skips 
 live: all 7 seeds now draw with the engraver and show Print. **Flag shape and sonatina beaming (H03) CLOSED with no
 code change** (both traced to legacy under-drawing or a legacy-only artifact, never an engrave defect — G04 §46, §48).
 **B5's first-draw long task investigated and DEFERRED as backlog** (root cause needs a Web Worker split to fully
-close, out of scope for now — G04 §49). **A real live regression found along the way is being fixed now**: the
-default practice view can show no time signature in a windowed section away from the piece's start (G04 §47).
+close, out of scope for now — G04 §49). **G4 polish (window time signature, READY_FOR_REVIEW, not merged,
+`g4-polish-timesig`)** (G04 §47.1–47.8, DECISIONS G4-L7 proposed): the flip's own production regression — the
+practice view's default, `viewStart()`-driven window (the most common view; also the review packet and M-H1/M-H2's
+`review-build.js`) drew no time signature at all whenever the learner practiced a section that starts away from the
+piece's true first measure with no meter change there, because `showTime` was gated on the whole piece's `mi === 0`,
+oblivious to any window. Fixed at the layout level (`engrave/layout.js`'s `layout()`/`segments()`, `engr/6` →
+`engr/7`): a window whose first displayed measure is not the piece's true first now forces the time signature there,
+exactly like clef/key already did; whole-score and print layouts are byte-identical (118×3 baselines,
+`SERIALIZATION_ONLY (version)` only). Does not close G4 further than it already is.
 **Next: the time-signature fix's review and merge, then §25 step 3 (roadmap §15).**
 Read this first in a new session, then
 `docs/PPP_MASTER_ROADMAP.md` (the order of the remaining Goals, their gates, the current and next task), then the

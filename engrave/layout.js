@@ -64,7 +64,10 @@
    `page` on every object and system), multi-measure rest merging and the title
    area, page number and bar-number text objects layoutPrint() adds - the screen
    mode's own output is byte-identical, moved only because the version is the
-   whole function's contract, not one mode's, G4-E1).
+   whole function's contract, not one mode's, G4-E1; engr/7 is G4-L7's fix - a
+   window whose first displayed measure is not the piece's true first measure now
+   shows the time signature there, like clef/key already did; the whole-score
+   layout and print (no window) are byte-identical).
    ========================================================================== */
 (function (root, factory) {
   'use strict';
@@ -79,7 +82,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (SG, MT, SP, BR, SK, CN, NT, TX, CV, MK, SM) {
   'use strict';
 
-  const VERSION = 'engr/6';
+  const VERSION = 'engr/7';
   const R = SG.rational, EG = MT.ENGRAVING, r2 = CN.r2;
   const STEPS = 'CDEFGAB';
   /* horizontal gaps, sp (G04 §9.3, §15.4) */
@@ -1038,10 +1041,12 @@
 
     /* ---- per measure: its system head (if a system starts there), start items (mid-system), trailing clef,
        courtesy key/time (if a system ends before the next), right barline */
-    measures.forEach((M, mi) => {
+    /* a measure's system head, per staff, in aligned columns: clef | key | time. Clef and key are unconditional here
+       (clefAt/keyAt take mi but never gate on it being 0 or a "real" break) - showTime is the one item a caller
+       controls, so the same builder makes both a measure's ordinary head and, forced true, the alternate head a
+       window's forced-in first measure uses (G4-L7, layout()/segments() below). */
+    const buildHead = (M, mi, showTime) => {
       const meter = meterAt(mi), key = keyAt(mi);
-      const showTime = mi === 0 || !!meterChangeAt(mi);
-      /* system head, per staff, in aligned columns: clef | key | time */
       const perStaff = staves.map(s => {
         const c = clefAt(s.id, mi, '0', false);
         return { s: s, clef: clefItems(c, 'd:clef:' + s.id + ':' + M.id, 1, c ? [c.id] : []),
@@ -1062,7 +1067,16 @@
         p.time.objects.forEach(o => head.objects.push(Object.assign({}, o, { staffKey: p.s.id, box: shift(o.box, tx + (tw - p.time.w) / 2, 0) })));
       });
       head.w = x;
-      M.head = head;
+      return head;
+    };
+    measures.forEach((M, mi) => {
+      const showTime = mi === 0 || !!meterChangeAt(mi);
+      M.head = buildHead(M, mi, showTime);
+      /* the same head, but with the time signature forced shown - built for every measure (cheap: it only re-runs
+         the per-staff item computation above) so that layout()'s window handling (G4-L7) can pick it for a window's
+         forced-in first measure without mutating M.head, which this window-independent, cached P (prepare() runs
+         once per plan; layout() runs once per view/window, review O2) shares with every other view of this piece. */
+      M.headWithTime = showTime ? M.head : buildHead(M, mi, true);
       /* a forward repeat or a stated left bar line: at a system's start after its head; inside a system it takes the
          place of the bar line before it when that one is plain */
       M.open = { objects: [], w: 0 };
@@ -1226,11 +1240,15 @@
   /* ================================================================ layout */
   /* A system of bars i..j as a list of segments, left to right: {w, objects, measure} fixed pieces and {spring}
      references. The line breaker, the width solver and the placement all read this one list. A measure's box runs
-     from its first segment to its bar line (the system head belongs to the system). */
-  function segments(P, i, j, last) {
+     from its first segment to its bar line (the system head belongs to the system). forceTime (G4-L7): use measure
+     i's headWithTime instead of its ordinary head - set only for the very first system of a window whose first
+     displayed measure isn't the piece's true first measure (layout() below), never for print (no window) or for an
+     ordinary mid-piece system break. */
+  function segments(P, i, j, last, forceTime) {
     const out = [];
     const fixed = (w, objects, measure, extra) => out.push(Object.assign({ w: w, objects: objects || null, measure: measure }, extra || {}));
-    fixed(P.measures[i].head.w, P.measures[i].head.objects, null);
+    const head = forceTime ? P.measures[i].headWithTime : P.measures[i].head;
+    fixed(head.w, head.objects, null);
     for (let k = i; k <= j; k++) {
       const M = P.measures[k];
       const next = k < j ? P.measures[k + 1] : null;
@@ -1257,8 +1275,8 @@
     }
     return out;
   }
-  function systemParts(P, i, j, last) {
-    const segs = segments(P, i, j, last);
+  function systemParts(P, i, j, last, forceTime) {
+    const segs = segments(P, i, j, last, forceTime);
     let fixed = 0;
     const springs = [];
     segs.forEach(g => { if (g.spring) springs.push(g.spring); else if (g.w !== undefined) fixed += g.w; });
@@ -1894,9 +1912,15 @@
     /* the measures laid out: all, or a window's; the window's last system is the piece's last only if the piece ends there */
     const lo = cfg.window ? Math.min(cfg.window[0], n - 1) : 0, hi = cfg.window ? Math.max(lo, Math.min(cfg.window[1], n - 1)) : n - 1;
     const endsPiece = hi === n - 1;
+    /* G4-L7: a window whose first displayed measure isn't the piece's true first measure (lo > 0) shows the time
+       signature there, like clef/key already do - never for the whole score (lo === 0, mi === 0 already covers it)
+       and never for an ordinary system break elsewhere in the window (only local i === 0, i.e. global lo, qualifies).
+       Fed into the DP's own width measurement too, so the system that gets the wider head is the one the break
+       decision (and the final render) both agree on. */
+    const forceWindowTime = !!(cfg.window && lo > 0);
     const forced = cfg.respectSourceBreaks ? new Set([...P.layoutBreaks].map(k => k - lo).filter(k => k > 0 && k <= hi - lo)) : null;
     const br0 = BR.breakLines(hi - lo + 1, N, W, (i, j, last) => {
-      const s = systemParts(P, lo + i, lo + j, last && endsPiece);
+      const s = systemParts(P, lo + i, lo + j, last && endsPiece, forceWindowTime && i === 0);
       return { minWidth: SP.minWidth(s.springs, s.fixed), natural: SP.width(s.springs, s.fixed, SP.U_NATURAL) };
     }, forced);
     const br = { systems: br0.systems.map(([i, j]) => [lo + i, lo + j]), cost: br0.cost };
@@ -1915,7 +1939,7 @@
     const staffLines = new Map(P.staves.map(s => [s.id, s.lines]));
     br.systems.forEach(([i, j], si) => {
       const last = si === br.systems.length - 1 && endsPiece;
-      const parts = systemParts(P, i, j, last);
+      const parts = systemParts(P, i, j, last, forceWindowTime && i === lo);
       /* the last system keeps the spacing of the others (their median u, of the systems drawn at full size: a system
          squeezed to a smaller staff has u = 0 and says nothing of the spacing - review R11) when that leaves it well
          short of the width; otherwise it is justified like them (resolveSystemU, shared with print's own systems) */

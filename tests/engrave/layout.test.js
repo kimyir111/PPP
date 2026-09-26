@@ -226,7 +226,7 @@ test('A29 negative controls: every banned construct is caught by its rule, whate
 test('the EngravedScore: staff-space coordinates to 0.01, every object keyed to plan or graph ids, unique ids, plain data', async () => {
   const p = await eplan('E35-voice-and-piano.musicxml');
   const e = L.engrave(p, {});
-  assert.equal(e.version, 'engr/6');
+  assert.equal(e.version, 'engr/7');
   assert.equal(e.planKey, p.graph.fingerprint + ':' + p.version);
   assert.deepEqual(e.config, { mode: 'screen', breakpoint: 'desktop', width: 100, barsPerSystem: 4, respectSourceBreaks: false, window: null });
   assert.deepEqual(Object.keys(e).sort(), ['config', 'coverage', 'curves', 'diagnostics', 'measures', 'objects', 'pages', 'planKey', 'systems', 'version']);
@@ -741,7 +741,7 @@ test('reflow: desktop -> phone -> desktop gives the same EngravedScore back from
 
 test('the index exports the layout core in Node; the app does not load it yet (legacy stays the renderer)', () => {
   assert.equal(typeof E.engrave, 'function');
-  assert.equal(E.layout.VERSION, 'engr/6');
+  assert.equal(E.layout.VERSION, 'engr/7');
   assert.equal(typeof E.practice.createPracticeMap, 'function');
   assert.equal(typeof E.layoutHash, 'function');
   const html = fs.readFileSync(path.join(REPO, 'Piano Coach App.dc.html'), 'utf8');
