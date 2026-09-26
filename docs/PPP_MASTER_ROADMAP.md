@@ -5,9 +5,9 @@ The operational roadmap for everything after G4a: order, dependencies, gates, an
 | | |
 | --- | --- |
 | Owner | The **Lead / Orchestrator** session. Implementers, reviewers and fixers read it. Only the Lead edits it. |
-| Updated | 2026-09-26 — eighth edition (Lead): **G4d-1b CLOSED** (PR #19 `a6e1a75`), the Node engraver is complete; current: G4d-2 |
-| Base | `origin/main` = `a6e1a75` (G4d-1b, PR #19) plus the docs closeout |
-| Active | **G4d-2** (the renderer in the page behind a dev-only switch; `D:/PPP-g4`, branch `g4d2-page-integration`) — fixed, Lead re-check found a second leak and closed it, ready to merge (§14). |
+| Updated | 2026-09-26 — ninth edition (Lead): **G4d-2 CLOSED** (PR #23 `16ce784`), the engraver is now in the page; current: M-H1 |
+| Base | `origin/main` = `16ce784` (G4d-2, PR #23) plus the docs closeout |
+| Active | **M-H1** — the user's first look at the engraver, a fresh blind packet (§14, §15). |
 | Lead worktree | `D:/PPP-lead`, branch `lead-roadmap`. The Lead writes docs only, never in an implementer's worktree. |
 | How this relates to other docs | `docs/CURRENT_STATE.md` says what is true now, with measurements. `docs/DECISIONS.md` says why. `docs/GOALS/Gxx_*.md` is the contract for one Goal: design, acceptance and implementation record. **This document says in what order, behind which gates, and what comes next.** It does not repeat the goal specs. On detail, the spec wins. On sequencing, this document wins. |
 
@@ -125,6 +125,7 @@ At `a0bc2ea`. The detailed structure is in `docs/ARCHITECTURE.md`.
 | G3 Score Intelligence | **PARTIAL / DEFERRED**, all off | PR #7 `c5474c2` (+#8) | `professionalize()` passes and critic (off), `meter-grid.js`, `pro-beam.js` `groups` (used by G4), reason-aware gates, blind human-review tooling (`run.py human-set`) |
 | G4d-1b System marks and vertical spacing | CLOSED | PR #19 `a6e1a75` | `sysmarks.js`: dynamics, hairpins, pedal (change visible), ottava ("(8)" after a break), voltas, chord names, tempo (one line), rehearsal, jumps, words, lyrics; §15.3 vertical spacing; §15.4 courtesy signs; named metrics for A8 positions and hairpin extent; `plan/3`, `engr/5`; B9 0.32 |
 | G4d-1a Curves and note marks | CLOSED | PR #17 `b4fe019` | `curves.js` (ties, slurs, glissandi, halves at system breaks), `marks.js` (one `place()` over skylines, `FAR_PLACEMENT`), articulations, ornaments, fermatas, fingering inside slurs (G4-L5), chord ties split relative to the chord (G4-L4), arpeggios, noteheads, cautionary accidentals, percussion; text-metrics table; `plan/2`, `engr/3` and a version guard |
+| G4d-2 Page integration | CLOSED | PR #23 `16ce784` | `engrave/page.js`: the renderer in the page behind a dev-only switch (default `'legacy'`); `sync` touches only changed elements; §16.4 DOM contract; fallback to legacy with a counted warning; `server.js` hash-gated immutable caching; the M-H1 review tool. Verified byte-identical to base on a scripted default-renderer user session |
 | G4c Notation core | CLOSED | PR #15 `e3c8c5a` | Beams (graph exact, derived only where none), final stems, tuplets, voices (shared unisons; G4-B11 down-stem moves right), rests, grace notes, the mid-measure key change; `svg.js` + vendored Bravura outlines (B9 0.19–0.28); rest and stem/flag collisions as zero-target gates; 7 named metrics for the G4c rules after the review |
 | MX-1 Playback correctness | CLOSED | PR #13 `e37d37a` | An 8va sounds at the file's pitch and is drawn under its sign in every view (D-1; the MusicXML octave-shift sign fixed, MX1-D1); cards print where a note sounds; a pedal `change` lifts and re-presses the damper; the four-note `.mid` message; the `ottavaRule` marker; audit: all 34 octave-line files sounding-encoded. **Deployed 2026-09-26** (production `0ef0950`) |
 | G4b Layout core | CLOSED | PR #12 `62ede61` | `engrave/` layout core (`metrics`, `space`, `breaks`, `skyline`, `canon`, `layout`, `practice`): NotationPlan → EngravedScore `engr/1`, practice map and highlighter; L2 geometry bench; committed layout hashes (Windows = Linux = Chrome); layout mutation test; A29 static ban; the other-voice collision ratchets |
@@ -604,7 +605,9 @@ The record is G04 §36.21.
 
 **CI race fix — DONE**: PR #21, squash `84abe80`. `g3_jobs.py` now writes the shared G3 jobs cache atomically, and the reader checks the count. A concurrency regression test fails with the old in-place write (Lead re-check: 2 of 2) and passes with the fix (3 of 3). `test:scoregraph` on a fresh clone passes 216/216.
 
-**Current unit: G4d-2 — READY TO MERGE.** The Fixer closed R1 (both leaks it found), R2 and R3 in `e40b8f2`. The Lead's re-check confirmed the gates, legacy parity and R2/R3 numbers, then found a **second, independent M-H1 leak**: R3's B9 fix (switching back to svg.js's shared `<defs>`/`<use>` glyph mode) reintroduced `<use>`/`<symbol>` tags that only ever appear on the engraved half of a comparison packet — a perfect fingerprint, no algorithm needed. Fixed narrowly by the Lead (`a2054ab`), in the review-export tool only; the app's real output is untouched, so B9 stays recovered. Verified with a disposable test packet: no tag difference, overlapping file sizes, chance-level key recovery. PR #23 open.
+**G4d-2 is CLOSED** — PR #23, squash `16ce784`, 2026-09-26. The Node engraving engine (G4a–G4d-2) now reaches the real page, still behind a dev-only switch with the default `'legacy'`. The independent review's three MAJORs (a leaky M-H1 packet, page-drawn text colliding with notation, a broken SVG-size budget) were fixed, and the Lead's re-check found and closed a **third, independent leak** in the M-H1 packet — the B9 fix itself reopened it by reintroducing `<use>`/`<symbol>` tags only the engraved half ever carries. Fixed narrowly in the export tool only (`a2054ab`), never touching the app's real output. The record is G04 §37.19 and DECISIONS G4-D2-23.
+
+**Current: M-H1 — the user's first look at the engraver.** The Lead rebuilds the M-H1 packet from scratch, under a brand-new seed (the old one was never shown to anyone and is discarded), and publishes it privately with the §5.1 watch list, then asks for the ratings §22.4 defines: readability, "notation looks wrong", spacing, mark placement, overall, and "would practise with this: yes / fix / no". After M-H1, the Lead checks the Verovio trigger (§7.3) before G4e.
 
 The independent review (2026-09-26) returned **NEEDS_FIX: BLOCKER 0, MAJOR 3, MINOR 2**. What it confirmed:
 - **No user-visible change on the default path.** A full scripted user flow (home → practice → course piece → loop → memory mode → My Songs → a shared score → dark theme) gave byte-identical DOM, text and network requests on base versus this branch; legacy parity 16/16.
@@ -631,11 +634,11 @@ A fresh Fixer fixes all three, regenerates the M-H1 packet from scratch under a 
 **M-H1** — the user's first visual review, diagnostic (G04 §22.4, §27 G4d). After G4d-2 merges, the Lead builds the blind packet with `review-build.js` (16 excerpts × 8 bars, legacy versus G4, opaque labels), publishes it privately for the user with the watch list (§5.1), and asks for the ratings: readability, "notation looks wrong", spacing, mark placement, overall, and "would practise with this: yes / fix / no". The results tune constants before G4e. The Lead then checks the **Verovio trigger** (§7.3): if the mark-placement axis or the L2 curve and collision metrics fall short because of PPP's placement layer, a Verovio spike goes to the user before G4e.
 
 **The next five milestones:**
-1. G4d-2
-2. M-H1 (user review) + Verovio trigger check
-3. G4e (print)
-4. G4f (A30, page performance, M-H2, flip)
-5. MX-2 (catalogue data, with MX-1's carry-overs)
+1. M-H1 (user review) + Verovio trigger check
+2. G4e (print)
+3. G4f (A30, page performance, M-H2, flip)
+4. MX-2 (catalogue data, with MX-1's carry-overs)
+5. G5 (playability and fingering)
 
 ## 16. Stop conditions
 
@@ -702,6 +705,7 @@ The Lead **will do these unless you object:**
 | --- | --- |
 | 2026-09-25 | First edition (Lead). Remaining sequence G4b–G13; changes from the old roadmap in §7; MX lane; S4 owners; current task G4b in two merge points. |
 | 2026-09-26 | Deploy: **production runs `0ef0950`** (user request; before `72549cb`), verified in the live page. PR #20 had been merged with a failed gate (a CI race, not the change); rule added in §8, fix running. |
+| 2026-09-26 | Ninth edition. **G4d-2 CLOSED** (PR #23 `16ce784`) after review (NEEDS_FIX, MAJOR 3) -> Fixer -> Lead re-check, which found and closed a *third*, independent M-H1 leak the Fixer's own B9 fix had reopened. The engraver now reaches the real page, still behind a dev-only switch. Current: M-H1. |
 | 2026-09-26 | Eighth edition. **G4d-1b CLOSED** (PR #19 `a6e1a75`) after review (NEEDS_FIX, MAJOR 3; no invented notation) → Fixer → Lead re-check; the Node engraver is complete. Current: G4d-2 (page integration behind a dev-only switch, with the M-H1 review tool). Next: M-H1. |
 | 2026-09-26 | Seventh edition. **G4d-1a CLOSED** (PR #17 `b4fe019`) after review (NEEDS_FIX, MAJOR 3) → Lead spec amendments **G4-L4** (chord ties) and **G4-L5** (fingering inside slurs, `FAR_PLACEMENT`) → Fixer → Lead re-check. M-H1 watch list started. Current: G4d-1b. |
 | 2026-09-25 | Sixth edition. **G4c CLOSED** (PR #15 `e3c8c5a`) after review (NEEDS_FIX, MAJOR 2) → Fixer → Lead re-check → merge with `main`. G4-L2 recorded; **G4-L3** splits G4d-1 into G4d-1a (curves, note marks) and G4d-1b (system marks, vertical spacing). Current: G4d-1a. |
