@@ -530,6 +530,8 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 | Performance | perf tools with CPU throttling; CI uses deterministic proxies (elements touched, bytes, object counts) | local, recorded in the spec |
 | Human | §10 | milestones |
 
+**Review depth by risk** (user decision, 2026-09-26): the full cycle (implementer → one independent review → Fixer for BLOCKER/MAJOR → Lead re-check → merge) stays mandatory for anything touching the app file or `server.js`, anything that could reach the live deploy, or anything hard to roll back. For docs-only, test/tooling-only, or Node-only engine code the app does not yet load, the Lead may read the diff directly and skip or shrink the independent-review step, at its own judgment, without asking each time.
+
 **Known environment traps** (details in CURRENT_STATE and the Goal records):
 - Port 8777 is usually another tree's server.
 - `npm test` is `&&`-chained, so one failure hides the rest.
