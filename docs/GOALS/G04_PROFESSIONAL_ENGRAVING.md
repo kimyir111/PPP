@@ -4658,6 +4658,29 @@ PR #32 병합(`9dc6942`) 뒤 사용자에게 물었다 — "지금 배포"를 �
 
 ---
 
+## 45. G4 폴리싱 — m2: 공유 seed 4곡의 손 배정 (Lead, 2026-09-27)
+
+flip 리뷰가 남긴 m2: 공유(Shared Scores) 라이브러리 seed 7곡 중 4곡(Midtown Blues, Rain on Glass, First Light Theme, Pixel Meadow)이 legacy 렌더러로 그려진다 — 모든 사용자가 보는 화면. "`legacy.fromScore`가 두 보표 다 voice 1이면 둘째 보표 손을 `'x'`로 준다"는 리뷰의 요약을 그대로 믿지 않고 직접 재현했다(브라우저에서 `legacy.fromScore`/`agree`/`link`를 곡마다 직접 불러, §22.4의 재확인 방식과 같은 태도로).
+
+**진짜 원인은 다른 곳에 있었다.** `catalog/build-shared-seeds.js`가 만드는 MusicXML(PPP가 직접 쓴 4곡 — Jazz, New Age, OST, Game)이 `<attributes>`에 `<stave-count>2</stave-count>`를 적는데, **MusicXML 표준 태그 이름은 `<staves>`다** — 진짜 파일(Gymnopédie, Happy Birthday, Amazing Grace)은 전부 `<staves>2</staves>`를 쓴다. 앱의 `parseMusicXML`(App ~4047)은 `<staves>`만 읽으므로, 이 4곡은 `partStaves`가 기본값 1로 남아 "피아노 두 보표"로 인식되지 못하고, 손 배정 규칙(App ~4335)이 둘째 보표를 전부 `'x'`(어느 손도 아님)로 적는다 — `legacy.fromScore`는 이 잘못된 `'x'`를 그대로 다시 만들려다 실패(구조상 정상적인 2보표 곡에서는 `'x'`를 재현할 방법이 없다)해 `SOURCE_DISAGREES`로 fallback한다. `fromScore` 자체는 제 일을 정확히 했다 — 있는 그대로 보고했을 뿐, 결함은 seed 생성 도구 하나의 태그 이름 오타였다.
+
+**고침**: `catalog/build-shared-seeds.js` 한 줄, `<stave-count>` → `<staves>`. 서버를 띄워 `node catalog/build-shared-seeds.js`로 `catalog/shared-seeds.json`을 다시 만듦.
+
+**검증**:
+- 새/옛 JSON을 음표 단위로 diff — 마디·박자·음높이 전부 그대로(measures 동일), 바뀐 필드는 딱 두 종류: (1) 4곡의 `hand`: 둘째 보표 전부 `x`→`l`(Midtown 51개, Rain 93개, First Light 46개, Pixel 104개), 나머지 3곡은 hand 변화 0; (2) 7곡 전부 `writtenP`/`writtenMidi`/`ottavaShift`/`soundingMidi` — 2026-09-25 MX-1 이후 다시 만들지 않았던 seed 파일이 이번에 최신 `Score.finalize`를 한 번 더 거치며 채워진 것뿐(전부 `soundingMidi === midi`, `ottavaShift === 0` — 옥타브선 없는 곡들이라 수치상 의미 없는 채움, 실제 들리거나 보이는 것 없음).
+- `legacy.fromScore`/`agree`/`link`를 7곡 모두 다시 호출 — 전부 `agreeOk`/`linkOk` true.
+- `print-check.js`(공유 seed 검사 포함)를 새 데이터로 다시 실행 — 7곡 전부 판각기로 그려지고 인쇄 명령이 보임.
+- **리그레션 테스트**(`app.test.js`, `print-check.js`)의 "seed 한 곡은 fallback해야 한다"는 부정 대조가 이제 거짓이 됐다(내가 고쳤으니까) — 진짜 seed로 부정 대조를 하는 대신, seed 하나를 복제해 **같은 버그를 일부러 재현**(둘째 보표 손을 전부 `x`로 강제)한 합성 데이터로 바꿔, 게이팅 로직 자체는 계속 검사되게 했다. `app.test.js`의 예시 문구("a shared seed song")도 더는 사실이 아니므로 고침.
+- `npm run test:engrave` 199/199, `npm run test:scoregraph` 216/216, `layout-hashes.js` — Windows·Linux(Docker `node:24-bookworm`, 진짜 clone) 둘 다.
+
+**아직 손대지 않은 것 — 이번 범위 밖**: 로드맵 §15의 나머지 폴리싱(고립된 16분음표 flag 모양, 소나티네 빽빽한 구간 beam 판단, B5 첫 그리기 long task).
+
+**production 반영은 코드 병합과 별개다** — `server.js`의 `seedSharedScores()`는 `store.getShare(s.id)`가 이미 있으면 건너뛴다(`if (have) continue`), 그래서 4곡은 이미 배포 때(0ef0950 이전부터) production DB `ppp_shares`에 씨 뿌려져 있어 **이 JSON을 배포해도 기존 행이 저절로 갱신되지 않는다**. 병합 뒤 별도로: (a) 4행을 새 `score`/`preview`로 옮기는 좁은 마이그레이션을 만들고, (b) 되돌릴 수 있게 먼저 그 4행을 백업하고, (c) 실행 전에 사용자에게 한 번 확인받는다(운영 DB에 직접 쓰는 일이라 배포와 같은 급의 "돌이키기 어려운" 행동으로 다룬다).
+
+**상태: 병합 가능, self-reviewed(review-depth-by-risk — scoregraph 엔진·앱 파일 아닌 도구+seed 데이터).** 배포는 코드 병합만으로 안 끝난다(위).
+
+---
+
 ## 부록 A. 이 세션의 측정
 
 모두 `D:/PPP-g4`, `55d1bd5`, 작업 트리 clean. 스크립트는 세션 scratchpad에 있고 저장소에 쓰지 않았다 (측정 뒤 `git status` clean 확인). G4a·G4f가 같은 정의로 `tests/engrave/tools/`에 다시 만든다.

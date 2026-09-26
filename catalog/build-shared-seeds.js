@@ -66,7 +66,7 @@ function musicxml(opt) {
         ? '<attributes><divisions>' + divisions + '</divisions>'
           + '<key><fifths>' + (opt.fifths || 0) + '</fifths></key>'
           + '<time><beats>' + (opt.beats || 4) + '</beats><beat-type>' + (opt.beatType || 4) + '</beat-type></time>'
-          + '<stave-count>2</stave-count>'
+          + '<staves>2</staves>'
           + '<clef number="1"><sign>' + clefs.t[0] + '</sign><line>' + clefs.t[1] + '</line></clef>'
           + '<clef number="2"><sign>' + clefs.b[0] + '</sign><line>' + clefs.b[1] + '</line></clef>'
           + '</attributes>'

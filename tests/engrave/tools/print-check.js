@@ -18,7 +18,9 @@
    G4f-2 review R2: then the shared seed songs (catalog/shared-seeds.json), opened as a shared song opens, whole score:
    the command is shown exactly when the engraver drew the song - a song that fell back to the legacy renderer (its
    source disagrees, so the print layout has nothing to read) shows none - and asking such a song to print anyway (the
-   app's own printScore(), window.print stubbed) tells the person, in a toast, instead of doing nothing. */
+   app's own printScore(), window.print stubbed) tells the person, in a toast, instead of doing nothing. All 7 real
+   seeds now agree (G4 polish m2 fixed catalog/build-shared-seeds.js's wrong <stave-count> tag), so a cloned,
+   deliberately re-broken seed is the negative control that keeps the gating itself under test. */
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -147,9 +149,17 @@ async function main() {
       const page = await openPage(browser2);
       await page.evaluate(() => { window.__prints = 0; window.print = () => { window.__prints++; }; });
       const seeds = JSON.parse(rd('catalog/shared-seeds.json')).seeds;
+      /* a deliberate negative control (G4 polish m2): every real seed now agrees (catalog/build-shared-seeds.js used
+         to write the non-standard <stave-count> instead of MusicXML's <staves>, so 4 of 7 seeds looked single-staff
+         and their staff 2 came back hand 'x' - fixed). To keep proving the gating itself still works, clone one seed
+         and break it the same way that bug did: force a hand no 2-staff layout can reproduce. */
+      const broken = JSON.parse(JSON.stringify(seeds[0]));
+      broken.id = 'synthetic-broken-hand'; broken.title = 'synthetic (m2 negative control)';
+      broken.score.notes.filter(n => (n.staff || 1) === 2).forEach(n => { n.hand = 'x'; });
+      const allSeeds = seeds.concat([broken]);
       summary.seeds = [];
       let fell = 0, drew = 0;
-      for (const seed of seeds) {
+      for (const seed of allSeeds) {
         const r = await page.evaluate(async seed => {
           const P = window.PPP, App = P.app;
           const score = P.Score.finalize(P.unpackScore(JSON.parse(JSON.stringify(seed.score))));
@@ -178,7 +188,8 @@ async function main() {
         console.log((ok ? 'ok  ' : 'FAIL') + ' shared seed ' + r.id + ' - drawn by the engraver ' + r.engraved + ', command shown ' + r.shown + (r.toast ? ', a print asked anyway says "' + r.toast + '"' : ''));
         summary.seeds.push(r);
       }
-      if (!fell || !drew) { failed++; console.log('FAIL the seeds should include a song the engraver draws and one that falls back (drew ' + drew + ', fell back ' + fell + ')'); }
+      if (drew !== seeds.length) { failed++; console.log('FAIL all ' + seeds.length + ' real seeds should draw with the engraver now (drew ' + drew + ')'); }
+      if (fell !== 1) { failed++; console.log('FAIL expected exactly the one synthetic negative control to fall back (fell ' + fell + ')'); }
       const prints = await page.evaluate(() => window.__prints);
       if (prints) { failed++; console.log('FAIL a refused print reached window.print (' + prints + ')'); }
       await page.close();

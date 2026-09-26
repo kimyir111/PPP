@@ -163,7 +163,7 @@ test('G4f-2 (review R2): the print command is offered only for a Score the engra
   assert.equal(renders, 1, 'no change, no render');
   answer = 'legacy';
   r.engraveView(view).paint(el, { score: two });
-  assert.equal(r.engraveDrew(two), false, 'a Score that fell back (a shared seed song, SOURCE_DISAGREES) gets no command');
+  assert.equal(r.engraveDrew(two), false, 'a Score that fell back (SOURCE_DISAGREES) gets no command');
   answer = 'drawn';
   r.engraveView(view).paint(el, { score: two });
   assert.equal(r.engraveDrew(two), false, 'a fallback is sticky');
