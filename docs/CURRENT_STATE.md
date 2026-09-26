@@ -1,6 +1,6 @@
 # PPP — current state
 
-Updated 2026-09-26 (G4d-2 merged as PR #23; G4d-1b merged as PR #19; G4d-1a merged as PR #17; G4c merged as PR #15; MX-1 merged as PR #13; G4b merged as PR #12; the production database moved to Neon Free). G0 (Quality Foundation), G1 (ScoreGraph) and G2 (Score Import) are all merged
+Updated 2026-09-26 (G4e merged as PR #26; G4d-2 merged as PR #23; G4d-1b merged as PR #19; G4d-1a merged as PR #17; G4c merged as PR #15; MX-1 merged as PR #13; G4b merged as PR #12; the production database moved to Neon Free). G0 (Quality Foundation), G1 (ScoreGraph) and G2 (Score Import) are all merged
 and closed. **G3 is merged as PARTIAL / DEFERRED** (PR #7, `c5474c2`; G03 §31): implemented, reviewed and fixed,
 but its blind human review (A36) failed (§30), so every part of it stays **off** — G3a, G3b, the automatic 8va
 and the pedal join — and nothing a user sees changed. **The active goal is G4 Professional Engraving**
@@ -21,14 +21,15 @@ Node engraver is complete. **G4d-2 (the renderer in the page behind a dev-only s
 — merged as PR #23 (`16ce784`)**, after its review, a Fixer, and a Lead re-check that found and closed a second blind-review
 leak in the M-H1 packet tool. **M-H1 is DONE** (G04 §38): the user rated all 16 blind excerpts — engrave preferred 5,
 legacy 2, tied 9, zero excerpts where only engrave looked wrong; the Verovio trigger does not fire. **G4e (print) is
-implemented** (branch `g4e-print`, `D:/PPP-g4`, G04 §39, DECISIONS G4-E1–E8):
-config `mode:'print'` alone gives a paginated A4 `EngravedScore` from the same plan the screen uses — its own DP line
-breaker, page breaks that never split a system, a title area, page numbers, bar numbers at each system's head, print-only
-multi-measure rest merging, and a dev-switch-gated "Print / Save as PDF" command. Screen output stays byte-identical
-(`engr/6`, version-only re-bless). An independent review returned NEEDS_FIX (MAJOR 2: DECISIONS G4-E7's page-fill
-evidence was wrong, corrected in place with a reproduced corpus-wide 65.3% average; print had no committed
-regression-hash baseline, added to `layout-hashes.js` with a negative control) — the Fixer's record is G04 §39.12,
-**G4e FIX: READY_FOR_RECHECK**. Not yet independently re-checked or merged.
+CLOSED — merged as PR #26 (`a33ccd3`)** (G04 §39–§39.12, DECISIONS G4-E1–E8): `mode:'print'` alone gives a paginated
+A4 `EngravedScore` from the same plan the screen uses — its own DP line breaker, page breaks that never split a system,
+a title area, page numbers, bar numbers at each system's head, print-only multi-measure rest merging, and a
+dev-switch-gated "Print / Save as PDF" command. Screen output stays byte-identical (`engr/6`, version-only re-bless).
+Its independent review returned NEEDS_FIX (MAJOR 2: DECISIONS G4-E7's page-fill evidence was wrong, corrected in
+place; print had no committed regression-hash baseline, added to `layout-hashes.js`), a Fixer closed both, and the
+Lead's re-check reproduced the corrected 65.3% corpus-wide fill average and the hash guard's negative control
+independently, bit for bit, and confirmed legacy parity 16/16 on its own two servers. **Next: G4f** (M-H2, the
+pass/fail human review, then the flip).
 Read this first in a new session, then
 `docs/PPP_MASTER_ROADMAP.md` (the order of the remaining Goals, their gates, the current and next task), then the
 current goal's spec in `docs/GOALS/`.
@@ -39,7 +40,7 @@ current goal's spec in `docs/GOALS/`.
 | --- | --- |
 | Goals | Numbered specs in `docs/GOALS/`. **G0 is merged and closed** — implemented (§16), reviewed and fixed through six passes (§17–§22.9), then merged as PR #1 (`aff7080`). `G00_QUALITY_FOUNDATION.md` §22.9 has the last result and what is still open (nothing). |
 | G3 | **PARTIAL / DEFERRED — not COMPLETE** (G03 §31, DECISIONS G3-U9). **Merged to `main` switched off** as PR #7 (`c5474c2`, a squash of `g3-score-intelligence` `966a053`; the branch and `D:/PPP-g3` are kept). `professionalize()` (a graph → graph pass pipeline behind a critic) runs in `toMusicXml` only when `opts.professional` is `'shadow'` or `'on'`; **the default is `'off'` and nothing passes it**, so G3 changes nothing a user sees — G3 off is byte-identical to the pre-G3 `main`, `cc509e2` (§31.2). G3a's other acceptance criteria are PASS or PARTIAL by design (§29.9), but it **failed the blind human review A36** (§30); G3b waits on M11; 8va on issue 3; the pedal join on the app's `change` playback. Reopening: §31.5. |
-| G4 | **G4a–G4d-2 all CLOSED** (PR #9 `df8a571`, PR #12 `62ede61`, PR #15 `e3c8c5a`, PR #17 `b4fe019`, PR #19 `a6e1a75`, PR #23 `16ce784`): the Node engraving engine is complete and now reaches the real page behind a dev-only switch (`renderer` prop, default `'legacy'`) — nothing a user sees changed, verified byte-identical to base on a scripted default-renderer session. **M-H1 is DONE** (G04 §38): the user rated 16 blind excerpts on the real page's own two renderers — engrave preferred 5, legacy 2, tied 9 (5 of those at a perfect score both sides), zero excerpts where only engrave looked wrong. The two legacy-preferred excerpts were checked by hand (§38.1 a beam/flag shape question, §38.2 a notation-reading question) — not engine defects, both on the G4e watch list. Two real legacy defects the ratings surfaced (tie/stem overlaps) turned out already fixed by engrave. The Verovio trigger (§7.3) does not fire (§38.4). **G4e (print) is implemented; an independent review returned NEEDS_FIX (MAJOR 2), fixed — G4e FIX: READY_FOR_RECHECK** (not yet re-checked or merged) — G04 §39–§39.12, DECISIONS G4-E1–E8: print's own DP line-breaker (density only, no screen-style preferred bar count), page breaks that never split a system, title/composer/page-number/bar-number text, print-only multi-measure rest merging, a dev-switch-gated print command; screen output byte-identical (`engr/6`, version-only re-bless, 236/236 SERIALIZATION_ONLY). The Fixer corrected DECISIONS G4-E7's page-fill evidence (R corpus average is 65.3%, not ~92%) and added a committed print regression-hash baseline to `layout-hashes.js` (G4-E8) with a negative control. |
+| G4 | **G4a–G4e all CLOSED** (PR #9 `df8a571`, PR #12 `62ede61`, PR #15 `e3c8c5a`, PR #17 `b4fe019`, PR #19 `a6e1a75`, PR #23 `16ce784`, PR #26 `a33ccd3`): the Node engraving engine is complete, reaches the real page, and now prints — all still behind a dev-only switch (`renderer` prop, default `'legacy'`); nothing a user sees changed, verified byte-identical to base on a scripted default-renderer session and on legacy parity (16/16, Lead re-check). **M-H1 is DONE** (G04 §38): the user rated 16 blind excerpts on the real page's own two renderers — engrave preferred 5, legacy 2, tied 9 (5 of those at a perfect score both sides), zero excerpts where only engrave looked wrong. The two legacy-preferred excerpts were checked by hand (§38.1 a beam/flag shape question, §38.2 a notation-reading question) — not engine defects, both on the G4f watch list. Two real legacy defects the ratings surfaced (tie/stem overlaps) turned out already fixed by engrave. The Verovio trigger (§7.3) does not fire (§38.4). **G4e (print)** — G04 §39–§39.12, DECISIONS G4-E1–E8: print's own DP line-breaker, page breaks that never split a system, title/composer/page-number/bar-number text, print-only multi-measure rest merging, a dev-switch-gated print command; screen output byte-identical (`engr/6`, version-only re-bless, 236/236 SERIALIZATION_ONLY). Its review (NEEDS_FIX, MAJOR 2: a wrong page-fill claim in DECISIONS G4-E7, corrected; print had no committed regression-hash baseline, added with a negative control) was fixed and the Lead's re-check independently reproduced both corrections bit for bit. **Next: G4f** — the pass/fail human review (M-H2) and, on approval, the flip. |
 | G1 | **Merged and closed.** Implemented (§24), independently reviewed (§25: READY_TO_PR, BLOCKER 0, MAJOR 0), merged as PR #2 (`aa77d2e`), then the follow-up PR #3 (`00081cc`, §26) closed findings F2 and F3. F1 (tuplet bracket grouping) is left for G3 on purpose. `toMusicXml` writes its MusicXML from a ScoreGraph (`scoregraph/`); `opts.legacyWriter` is the way back for one release. |
 | G2 | **Merged and closed.** Implemented (§24), independently reviewed (§25), the one MAJOR it found closed by §26 (D7), merged as PR #4 (`cc0da79`) with BLOCKER 0 and MAJOR 0. Schema is version 2. **The app's import boundary is on the graph** — a file a person opens becomes a ScoreGraph and the Score is a projection of it; `PPP.legacyImport = true` is the way back for one release. **`.mid` opens**: its notes, times and controllers exactly as the file states them, its notation worked out by audio-score's existing quantizer and marked inferred in three places (D3). The MusicXML importer no longer refuses a whole file for an `<unpitched>` note, a missing time signature or a quarter tone. **A transposing part is printed where it is written and sounds where it sounds** (D7, §26). Transcription is unchanged: core 553/553 identical to `00081cc`. |
 | G0 code | On `main` since PR #1, which came from the clean branch `g0-quality-foundation-clean` (worktree `D:/PPP-g0-clean`). The older `g0-quality-foundation` branch and its `D:/PPP-g0` worktree are contaminated with other sessions' production changes — **never merge or edit those**. `tests/README.md` there has a two-line doc change left uncommitted on purpose (outside the allowed paths). |
@@ -236,9 +237,9 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
 
 ## Next
 
-- **Active goal: G4 Professional Engraving — G4a through G4d-2 all CLOSED (PR #9 `df8a571`, PR #12 `62ede61`, PR #15
-  `e3c8c5a`, PR #17 `b4fe019`, PR #19 `a6e1a75`, PR #23 `16ce784`) and M-H1 DONE (G04 §38); next G4e.** The order, gates
-  and briefs are in `docs/PPP_MASTER_ROADMAP.md` (§14 current task, §15 next).
+- **Active goal: G4 Professional Engraving — G4a through G4e all CLOSED (PR #9 `df8a571`, PR #12 `62ede61`, PR #15
+  `e3c8c5a`, PR #17 `b4fe019`, PR #19 `a6e1a75`, PR #23 `16ce784`, PR #26 `a33ccd3`) and M-H1 DONE (G04 §38); next G4f.**
+  The order, gates and briefs are in `docs/PPP_MASTER_ROADMAP.md` (§14 current task, §15 next).
   - **MX-1 — CLOSED, merged as PR #13 (`e37d37a`)** after one independent review (NEEDS_FIX: BLOCKER 1, MAJOR 1 — octave
     lines missing in partial views and on cards), its Fixer and the Lead's re-check (section "MX-1 — playback correctness"
     at the end of this file). **Deployed 2026-09-26** (production `0ef0950`). Its follow-ups
