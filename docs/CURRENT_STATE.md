@@ -19,7 +19,9 @@ MAJOR 3), the Lead's spec amendments G4-L4/G4-L5, its Fixer and the Lead's re-ch
 attached to systems, vertical spacing, courtesy signs) is CLOSED — merged as PR #19 (`a6e1a75`)** (G04 §36–§36.21), so the
 Node engraver is complete. **G4d-2 (the renderer in the page behind a dev-only switch, default `'legacy'`) is CLOSED
 — merged as PR #23 (`16ce784`)**, after its review, a Fixer, and a Lead re-check that found and closed a second blind-review
-leak in the M-H1 packet tool. **Next: M-H1** — the user's first look, in a fresh blind packet. Read this first in a new session, then
+leak in the M-H1 packet tool. **M-H1 is DONE** (G04 §38): the user rated all 16 blind excerpts — engrave preferred 5,
+legacy 2, tied 9, zero excerpts where only engrave looked wrong; the Verovio trigger does not fire. **Next: G4e** (print).
+Read this first in a new session, then
 `docs/PPP_MASTER_ROADMAP.md` (the order of the remaining Goals, their gates, the current and next task), then the
 current goal's spec in `docs/GOALS/`.
 
@@ -29,7 +31,7 @@ current goal's spec in `docs/GOALS/`.
 | --- | --- |
 | Goals | Numbered specs in `docs/GOALS/`. **G0 is merged and closed** — implemented (§16), reviewed and fixed through six passes (§17–§22.9), then merged as PR #1 (`aff7080`). `G00_QUALITY_FOUNDATION.md` §22.9 has the last result and what is still open (nothing). |
 | G3 | **PARTIAL / DEFERRED — not COMPLETE** (G03 §31, DECISIONS G3-U9). **Merged to `main` switched off** as PR #7 (`c5474c2`, a squash of `g3-score-intelligence` `966a053`; the branch and `D:/PPP-g3` are kept). `professionalize()` (a graph → graph pass pipeline behind a critic) runs in `toMusicXml` only when `opts.professional` is `'shadow'` or `'on'`; **the default is `'off'` and nothing passes it**, so G3 changes nothing a user sees — G3 off is byte-identical to the pre-G3 `main`, `cc509e2` (§31.2). G3a's other acceptance criteria are PASS or PARTIAL by design (§29.9), but it **failed the blind human review A36** (§30); G3b waits on M11; 8va on issue 3; the pedal join on the app's `change` playback. Reopening: §31.5. |
-| G4 | **G4d-1b CLOSED — merged as PR #19 (`a6e1a75`)** (G04 §36, review and Fixer §36.18, re-check and merge §36.21; DECISIONS G4-D1b-1–24). `engrave/sysmarks.js`: dynamics and hairpins between the grand staff's staves (one baseline per system), pedal (a sign change as "✻ Ped.", a line change as a notch), ottava (exact extent, written heads, "(8)" after a break), voltas, chord names, tempo (words and metronome mark on one line), rehearsal, jumps, words, lyrics; §15.3 vertical spacing; §15.4 courtesy signs; `plan/3`, `engr/5`; B9 0.32. Earlier: G4a PR #9, G4b PR #12, G4c PR #15, G4d-1a PR #17 — the Node engraver is complete. Node only: nothing a user sees changed. **G4d-2 FIX READY_FOR_RECHECK** on `g4d2-page-integration` (G04 §37, §37.18; DECISIONS G4-D2-1–22): ScoreView's `renderer` prop / `PPP.renderer` (default `'legacy'`), `engrave/page.js`, the M-H1 packet builder; a Fixer pass closed the review's three MAJORs (M-H1 blindness, annotation collisions via the engine's skyline, B9 via shared `<defs>`/`<use>`). Then M-H1. |
+| G4 | **G4a–G4d-2 all CLOSED** (PR #9 `df8a571`, PR #12 `62ede61`, PR #15 `e3c8c5a`, PR #17 `b4fe019`, PR #19 `a6e1a75`, PR #23 `16ce784`): the Node engraving engine is complete and now reaches the real page behind a dev-only switch (`renderer` prop, default `'legacy'`) — nothing a user sees changed, verified byte-identical to base on a scripted default-renderer session. **M-H1 is DONE** (G04 §38): the user rated 16 blind excerpts on the real page's own two renderers — engrave preferred 5, legacy 2, tied 9 (5 of those at a perfect score both sides), zero excerpts where only engrave looked wrong. The two legacy-preferred excerpts were checked by hand (§38.1 a beam/flag shape question, §38.2 a notation-reading question) — not engine defects, both on the G4e watch list. Two real legacy defects the ratings surfaced (tie/stem overlaps) turned out already fixed by engrave. The Verovio trigger (§7.3) does not fire (§38.4). **Next: G4e** (print). |
 | G1 | **Merged and closed.** Implemented (§24), independently reviewed (§25: READY_TO_PR, BLOCKER 0, MAJOR 0), merged as PR #2 (`aa77d2e`), then the follow-up PR #3 (`00081cc`, §26) closed findings F2 and F3. F1 (tuplet bracket grouping) is left for G3 on purpose. `toMusicXml` writes its MusicXML from a ScoreGraph (`scoregraph/`); `opts.legacyWriter` is the way back for one release. |
 | G2 | **Merged and closed.** Implemented (§24), independently reviewed (§25), the one MAJOR it found closed by §26 (D7), merged as PR #4 (`cc0da79`) with BLOCKER 0 and MAJOR 0. Schema is version 2. **The app's import boundary is on the graph** — a file a person opens becomes a ScoreGraph and the Score is a projection of it; `PPP.legacyImport = true` is the way back for one release. **`.mid` opens**: its notes, times and controllers exactly as the file states them, its notation worked out by audio-score's existing quantizer and marked inferred in three places (D3). The MusicXML importer no longer refuses a whole file for an `<unpitched>` note, a missing time signature or a quarter tone. **A transposing part is printed where it is written and sounds where it sounds** (D7, §26). Transcription is unchanged: core 553/553 identical to `00081cc`. |
 | G0 code | On `main` since PR #1, which came from the clean branch `g0-quality-foundation-clean` (worktree `D:/PPP-g0-clean`). The older `g0-quality-foundation` branch and its `D:/PPP-g0` worktree are contaminated with other sessions' production changes — **never merge or edit those**. `tests/README.md` there has a two-line doc change left uncommitted on purpose (outside the allowed paths). |
@@ -226,20 +228,17 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
 
 ## Next
 
-- **Active goal: G4 Professional Engraving — G4a, G4b, G4c, G4d-1a, G4d-1b and G4d-2 CLOSED (PR #9 `df8a571`, PR #12
-  `62ede61`, PR #15 `e3c8c5a`, PR #17 `b4fe019`, PR #19 `a6e1a75`, PR #23 `16ce784`); next M-H1.** The order, gates and briefs are in `docs/PPP_MASTER_ROADMAP.md` (§14 current task, §15 next).
-  PR #15 `e3c8c5a`, PR #17 `b4fe019`, PR #19 `a6e1a75`); next G4d-2, then M-H1.** The order, gates and briefs are in `docs/PPP_MASTER_ROADMAP.md` (§14 current task, §15 next).
+- **Active goal: G4 Professional Engraving — G4a through G4d-2 all CLOSED (PR #9 `df8a571`, PR #12 `62ede61`, PR #15
+  `e3c8c5a`, PR #17 `b4fe019`, PR #19 `a6e1a75`, PR #23 `16ce784`) and M-H1 DONE (G04 §38); next G4e.** The order, gates
+  and briefs are in `docs/PPP_MASTER_ROADMAP.md` (§14 current task, §15 next).
   - **MX-1 — CLOSED, merged as PR #13 (`e37d37a`)** after one independent review (NEEDS_FIX: BLOCKER 1, MAJOR 1 — octave
     lines missing in partial views and on cards), its Fixer and the Lead's re-check (section "MX-1 — playback correctness"
     at the end of this file). **Deployed 2026-09-26** (production `0ef0950`). Its follow-ups
     (saved-song migration keyed on `ottavaRule`, M4, M5, the G0 bench rebaseline) are MX-2 carry-overs (roadmap §5.2).
-  - **G4d-2 — CLOSED, merged as PR #23 (`16ce784`)** (G04 §37–§37.19, DECISIONS G4-D2-1…23): the renderer in the page
-    behind a dev-only switch (`?renderer=engrave`; the default stays `'legacy'`, so the default page loads, draws and plays
-    exactly as before — legacy parity 16/16, A16), `sync` touching only changed elements, the §16.4 DOM contract, fallback to
-    legacy with a counted warning, `?h=`-gated immutable caching for engine files, and the M-H1 review tool. The independent
-    review's three MAJORs (a leaky M-H1 packet, page-drawn text colliding with notation, a broken SVG-size budget) were fixed;
-    the Lead's re-check found and closed a third, independent leak the B9 fix had reopened (`<use>`/`<symbol>` tags only ever
-    on the engraved half). **Next: M-H1** — a fresh blind packet, new seed, for the user's first look.
+  - **M-H1 — DONE** (G04 §38): a fresh blind packet, new seed, published as an interactive artifact; the user rated all
+    16 excerpts. Engrave preferred 5, legacy 2, tied 9; zero excerpts where only engrave looked wrong. The two
+    legacy-preferred cases were checked by hand and are minor, non-blocking (§38.1, §38.2) — on the G4e watch list, not
+    fixed now. The Verovio trigger (§7.3) does not fire (§38.4).
   - Production keeps the legacy renderer until G4f.
   - What G3 left for G4 is in G03 §30–§31 and DECISIONS G3-D3, G3-D4 and G3-U10.
 - **Production database (2026-09-25, decision D-0): Neon Free, $0.**
