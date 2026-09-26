@@ -134,7 +134,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await page.evaluate(() => window.__pppTest.practice());
   await sleep(1500);
   const drawn2 = await page.evaluate(() => { const svg = document.querySelector('.ppp-staffwrap svg'); return svg ? svg.querySelectorAll('g.ppp-note').length : 0; });
-  ok('and the legacy renderer draws it as before', Math.max(drawn, drawn2) > 0, drawn + '/' + drawn2 + ' note groups');
+  /* G4f-2: the default renderer draws it - the engraver since the flip (G4a wrote "the legacy renderer", then the default) */
+  ok('and the default renderer draws it', Math.max(drawn, drawn2) > 0, drawn + '/' + drawn2 + ' note groups');
 
   console.log('\n-- every Score a screen can show gets a graph');
   const all = await page.evaluate(async () => {

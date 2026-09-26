@@ -10539,21 +10539,28 @@ function barQ(seg, x) {
 }
 
 /* ============================================================================
-   THE ENGRAVER IN THE PAGE — a developer's switch (G4d-2, docs/GOALS/G04 §16, §25)
+   THE ENGRAVER IN THE PAGE — the default renderer (G4d-2, G4f-2 flip; docs/GOALS/G04 §16, §25)
 
-   PPP.renderer is the default of every ScoreView's `renderer` prop: 'legacy'
-   unless the page was opened with ?renderer=engrave, or localStorage
-   'ppp.renderer' says 'engrave'. Nothing a person can press sets either. With
-   'legacy' nothing below runs and nothing more is loaded: the page draws,
-   plays and judges exactly as before.
+   PPP.renderer is the default of every ScoreView's `renderer` prop: 'engrave'
+   (the flip, G04 §25.2 step 2, approved by the user - DECISIONS G4-U6) unless
+   the page was opened with ?renderer=legacy, or localStorage 'ppp.renderer'
+   says 'legacy'; any other value is the default. PPP.renderer = 'legacy' at
+   run time does the same. That is the rollback (§25.3): the legacy renderer -
+   draw(), buildVoice(), sync() below, byte for byte what it drew before (A45) -
+   stays one switch away for one release, then goes (§25.2 step 3, its own PR).
+   Nothing a person can press sets the switch. Score, playback and the practice
+   judge are the same under both (A16): only the drawing differs.
 
-   With 'engrave' a ScoreView draws through engrave/page.js, loaded on first
-   use (ENGRAVE_FILES, each asked for by its content hash, so the server may
-   let the browser keep it; tests/engrave/tools/page-files.js writes the list).
-   A view the engraver does not draw (no clefs, one staff of several), and a
-   song whose engraving fails, is drawn by the legacy renderer - a failure is
-   counted in PPP.engraveStats and warned as "[ppp] engrave fallback", so the
-   screen is never blank. PPP.strictEngrave (?strict=1) throws instead.
+   A ScoreView draws through engrave/page.js, loaded on first use
+   (ENGRAVE_FILES, each asked for by its content hash, so the server may let
+   the browser keep it; tests/engrave/tools/page-files.js writes the list).
+   A reduced view the engraver does not draw (no clefs, one staff of several:
+   the loop thumbnail, the empty page's staff) is routed to the legacy renderer
+   before anything is loaded - routed, not a failure: not counted as a
+   fallback, not warned (G4-F2-2). A song whose engraving fails is drawn by the
+   legacy renderer - counted in PPP.engraveStats and warned as "[ppp] engrave
+   fallback", so the screen is never blank. PPP.strictEngrave (?strict=1)
+   throws instead.
    ========================================================================== */
 const ENGRAVE_FILES = [
   ['metrics', '259583c8ba91'],
@@ -10570,22 +10577,23 @@ const ENGRAVE_FILES = [
   ['practice', '896d337259aa'],
   ['outlines', 'a1414e5d01dd'],
   ['svg', 'f78b662f6a18'],
-  ['page', 'b6b9e6ef625e']
+  ['page', '4853080bd90c']
 ];
 const ENGRAVE_SWITCH = (() => {
-  const sw = { renderer: 'legacy', strict: false, stats: { fallbacks: {}, bySong: {} } };
+  const sw = { renderer: 'engrave', strict: false, stats: { fallbacks: {}, bySong: {}, routed: 0 } };
   try {
     const q = new URLSearchParams(location.search);
     const r = q.get('renderer') || localStorage.getItem('ppp.renderer');
-    if (r === 'engrave') sw.renderer = 'engrave';
+    if (r === 'legacy') sw.renderer = 'legacy';
     sw.strict = q.get('strict') === '1' || localStorage.getItem('ppp.strictEngrave') === '1';
   } catch (e) { /* no URL or storage: the default */ }
   return sw;
 })();
 Object.defineProperties(window.PPP, {
-  renderer: { enumerable: true, get: () => ENGRAVE_SWITCH.renderer, set: v => { ENGRAVE_SWITCH.renderer = v === 'engrave' ? 'engrave' : 'legacy'; } },
+  renderer: { enumerable: true, get: () => ENGRAVE_SWITCH.renderer, set: v => { ENGRAVE_SWITCH.renderer = v === 'legacy' ? 'legacy' : 'engrave'; } },
   strictEngrave: { enumerable: true, get: () => ENGRAVE_SWITCH.strict, set: v => { ENGRAVE_SWITCH.strict = !!v; } },
-  /* the fallbacks, by code and by song (the engraver's own counters are PPPEngravePage.stats) */
+  /* the fallbacks, by code and by song, and the paints routed to the legacy renderer before the engraver was asked (the
+     engraver's own counters are PPPEngravePage.stats) */
   engraveStats: { enumerable: true, get: () => ENGRAVE_SWITCH.stats }
 });
 const engraveWanted = p => (p.renderer || ENGRAVE_SWITCH.renderer) === 'engrave';
@@ -10610,6 +10618,20 @@ function loadEngrave() {
   });
   return _engravePromise;
 }
+/* G4f-2 (review R2): what the engraver did with each Score - true once a view of it was drawn by the engraver, false
+   once one fell back (sticky: that Score is the legacy renderer's until it changes). The print command is offered only
+   on true (showPrintControls) - never for a song whose source disagrees, which would print nothing. A change re-renders
+   the app once, off the paint, so the command appears or goes with the drawing. */
+const engraveDrewScore = new WeakMap();
+function engraveOutcome(score, r) {
+  if (!score || (r !== 'drawn' && r !== 'legacy')) return;
+  const was = engraveDrewScore.get(score);
+  const now = r === 'drawn' ? was !== false : false;
+  if (was === now) return;
+  engraveDrewScore.set(score, now);
+  setTimeout(() => { const A = window.PPP && window.PPP.app; if (A && A.state && A.state.score === score) A.setState({}); }, 0);
+}
+const engraveDrew = score => !!score && engraveDrewScore.get(score) === true;
 /* One per ScoreView: the engraver's view once it is loaded; until then 'pending'. 'legacy' hands the view back to the
    legacy renderer. */
 function engraveView(view) {
@@ -10617,6 +10639,10 @@ function engraveView(view) {
   const stats = ENGRAVE_SWITCH.stats;
   return {
     paint(el, p) {
+      /* a reduced view (no clefs; one staff of several) is the legacy renderer's - engrave/page.js routes it the same way;
+         here it is decided before the engraver's files are asked for, so the empty page's staff and the loop thumbnail
+         neither load them nor show "Engraving…" (G4-F2-2) */
+      if (p.clefs === false || (p.grand === false && ((p.score && p.score.staves) || 1) > 1)) { stats.routed++; return 'legacy'; }
       const PG = window.PPPEngravePage;
       if (!PG) {
         if (failed) {
@@ -10626,11 +10652,13 @@ function engraveView(view) {
             stats.fallbacks.LOAD_FAILED = (stats.fallbacks.LOAD_FAILED || 0) + 1;
             if (window.console) console.warn('[ppp] engrave fallback', 'LOAD_FAILED', failed.message);
           }
+          engraveOutcome(p.score, 'legacy');
           return 'legacy';
         }
         loadEngrave().then(() => { if (!view._dead) view.paint(); }, e => { failed = e; if (!view._dead) view.paint(); });
         if (!el.querySelector('[data-engrave-wait]')) {
-          el.innerHTML = '<div data-engrave-wait="1" style="min-height:120px;display:grid;place-items:center;font-size:12px;color:var(--ink3);">Engraving…</div>';
+          el.innerHTML = '<div data-engrave-wait="1" style="min-height:120px;display:grid;place-items:center;font-size:12px;color:var(--ink3);"></div>';
+          el.firstChild.textContent = tx('Engraving…');
         }
         return 'pending';
       }
@@ -10647,10 +10675,13 @@ function engraveView(view) {
           viewport: () => window.innerWidth,
           props: () => view.props,
           repaint: () => { if (!view._dead) view.paint(); },
+          waitText: () => tx('Engraving…'),
           stats: stats
         });
       }
-      return ctl.paint(el, p);
+      const r = ctl.paint(el, p);
+      engraveOutcome(p.score, r);
+      return r;
     }
   };
 }
@@ -11948,7 +11979,7 @@ function makeScoreView(React) {
       if (!this.state.ready) {
         return React.createElement('div', {
           style: { minHeight: p.grand === false ? 60 : 140, display: 'grid', placeItems: 'center', fontSize: 12, color: 'var(--ink3)' }
-        }, 'Engraving…');
+        }, /* G4f-2: was 'Engraving…' >>> */tx('Engraving…')/* <<< G4f-2 */);
       }
       return React.createElement('div', {
         className: 'ppp-score',
@@ -16696,7 +16727,8 @@ class Component extends DCLogic {
       paper: this.state.toggles.paper !== false
     }, props));
   }
-  /* G4e: "Print / Save as PDF" (G04 §17.1) - dev-switch gated (showPrintControls); reaches no one until G4f's flip.
+  /* G4e: "Print / Save as PDF" (G04 §17.1) - shown where the engraver is the renderer (showPrintControls): by default
+     since the G4f-2 flip, not under ?renderer=legacy.
      Builds a print layout from the same source the engraver reads for this Score (PPPEngrave.app.resolve, §7.4:
      the file's own graph when it agrees with the Score, else the Score's own projection), puts one <svg> a page
      into a hidden container, waits document.fonts.ready, then calls window.print() - engrave/page.js printScore()
@@ -16712,8 +16744,12 @@ class Component extends DCLogic {
     }, score)).then(r => {
       if (!r || r.ok === false) {
         if (window.console) console.warn('[ppp] print', r && r.code, r && r.error && r.error.message);
+        this.say(tx('This score could not be prepared for printing.'));
       }
-    }, e => { if (window.console) console.warn('[ppp] print load failed', e && e.message); });
+    }, e => {
+      if (window.console) console.warn('[ppp] print load failed', e && e.message);
+      this.say(tx('This score could not be prepared for printing.'));
+    });
   }
   visualTimeline(S) {
     S = S || this.state;
@@ -18239,9 +18275,11 @@ class Component extends DCLogic {
       wholeBtnStyle: this.chip(S.wholeScore),
       wholeLabel: tx(S.wholeScore ? 'Whole score' : 'This part'),
       wholeHint: tx('See the whole piece at once, with the weak bars shaded'),
-      /* G4e: print/PDF, dev-switch gated the same way the engraver renderer is (G04 §27 G4e card - no flip until
-         G4f) - only in the whole-score view, since print lays out the whole piece regardless of the close window */
-      showPrintControls: S.wholeScore && engraveWanted({ renderer: PPP.renderer }),
+      /* G4e: print/PDF, on the same switch as the engraver renderer - on by default since the G4f-2 flip, off under
+         ?renderer=legacy - only in the whole-score view, since print lays out the whole piece regardless of the close window,
+         and only once the engraver has drawn this Score (G4f-2 review R2: a song that fell back to the legacy renderer
+         has no source the print layout can use) */
+      showPrintControls: S.wholeScore && engraveWanted({ renderer: PPP.renderer }) && engraveDrew(S.score),
       printBtnStyle: this.chip(false),
       printLabel: tx('Print / Save as PDF'),
       printHint: tx('Print this score, or save it as a PDF'),

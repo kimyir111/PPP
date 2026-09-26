@@ -85,6 +85,7 @@ async function legacyMetrics(page, rel) {
     }
     const svg = document.querySelector('.ppp-staffwrap svg');
     if (!svg) return { error: 'no svg' };
+    if (svg.classList.contains('ppp-engraved')) return { error: 'drawn by the engraver, not the legacy renderer' };
     /* the SVG's own declared drawing frame: the one boundary a generic pass can call "the page" for a renderer that
        has no page model of its own (legacy has no A4/print layout - only this continuous view) */
     const vb = (svg.getAttribute('viewBox') || '').trim().split(/\s+/).map(Number);
@@ -142,7 +143,10 @@ async function engraveMetrics(rel) {
   const page = await browser.newPage();
   await preparePage(page);
   await page.setViewport({ width: 1400, height: 1000 });
-  await page.goto(BASE + '/Piano%20Coach%20App.dc.html', { waitUntil: 'networkidle2' });
+  /* G4f-2: the default page is the engraver's since the flip - the legacy side of A43 is the rollback, ?renderer=legacy
+     (App.setState's `renderer` below never reached a ScoreView: this tool read the legacy renderer because it was the
+     default; a drawing by the engraver is refused below) */
+  await page.goto(BASE + '/Piano%20Coach%20App.dc.html?renderer=legacy', { waitUntil: 'networkidle2' });
   await page.waitForFunction(() => window.PPP && window.PPP.app && window.Vex && window.Vex.Flow, { timeout: 30000 });
   await page.evaluate(() => window.__pppTest.practice());
   await sleep(500);

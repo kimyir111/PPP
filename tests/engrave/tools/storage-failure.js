@@ -8,8 +8,9 @@
      open-throws    indexedDB.open throws (restricted storage)
      quota          every IndexedDB write fails with QuotaExceededError (a full disk)
    In each, a MusicXML file is imported the way a person imports it (startImport), saved, reloaded and opened again,
-   and practised: the song must be there, drawn by the legacy renderer, with no page error; the source says why
-   nothing was kept, and still gives every Score a graph. */
+   and practised: the song must be there, drawn (G4a: by the legacy renderer; since the G4f-2 flip by the default, the
+   engraver, from the Score's projection), with no page error; the source says why nothing was kept, and still gives
+   every Score a graph. */
 'use strict';
 const fs = require('fs');
 const path = require('path');

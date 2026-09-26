@@ -10,8 +10,10 @@
    prints it).
 
    G4d-2 (docs/GOALS/G04 §16, A30):
-     PPP_RENDERER=engrave   every page opens with the developer's switch on (localStorage 'ppp.renderer', set before the app
-                            runs on every document, so a reload keeps it); PPP_STRICT=1 adds 'ppp.strictEngrave'
+     PPP_RENDERER=legacy    every page opens with the rollback on (localStorage 'ppp.renderer', set before the app runs on
+                            every document, so a reload keeps it). G4f-2 flipped the default to 'engrave': with no
+                            PPP_RENDERER a suite runs the default page, the engraver's; PPP_RENDERER=engrave says so
+                            explicitly (under G4d-2 it switched the engraver on). PPP_STRICT=1 adds 'ppp.strictEngrave'
      the page's own health check of the local helper (http://127.0.0.1:8788/health, which nothing serves on a PC without the
      helper) is kept out of the suites' console and requestfailed listeners - it failed the suites that count console errors
      on every tree alike (G04 §33.14); PPP_KEEP_8788=1 turns this off
@@ -35,7 +37,7 @@ async function collect(p) {
       p.evaluate(() => {
         const S = window.PPPEngravePage && window.PPPEngravePage.stats;
         return { v: window.PPPEngrave && window.PPPEngrave.version, r: window.PPP && window.PPP.renderer,
-          draws: S ? S.draws : 0, routed: S ? S.routed : 0, fb: window.PPP && window.PPP.engraveStats ? window.PPP.engraveStats.fallbacks : null,
+          draws: S ? S.draws : 0, routed: (S ? S.routed : 0) + (window.PPP && window.PPP.engraveStats ? window.PPP.engraveStats.routed || 0 : 0), fb: window.PPP && window.PPP.engraveStats ? window.PPP.engraveStats.fallbacks : null,
           songs: window.PPP && window.PPP.engraveStats ? Object.keys(window.PPP.engraveStats.bySong).map(k => k + ' ' + window.PPP.engraveStats.bySong[k]) : [] };
       }),
       new Promise(res => setTimeout(() => res(null), 1500))

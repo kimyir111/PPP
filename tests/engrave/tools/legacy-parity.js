@@ -7,7 +7,11 @@
 
    Each score is opened the same way in both (scoreFromXml, or the app's own parser, then adopt + enter song), drawn
    in the close view and the whole-score view, and the staff SVG is compared after numbering VexFlow's automatic
-   element IDs in document order. Exit 1 on any difference. */
+   element IDs in document order. Exit 1 on any difference.
+
+   Both pages are opened with ?renderer=legacy (G4f-2): since the flip the default page is the engraver's, and A45 is the
+   claim that the rollback - the legacy renderer - draws what it drew. A base from before the flip knows no such value and
+   draws legacy anyway (its default). */
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -36,7 +40,7 @@ async function renders(url) {
   const page = await browser.newPage();
   await preparePage(page);
   await page.setViewport({ width: 1400, height: 900 });
-  await page.goto(url + '/Piano%20Coach%20App.dc.html', { waitUntil: 'networkidle2' });
+  await page.goto(url + '/Piano%20Coach%20App.dc.html?renderer=legacy', { waitUntil: 'networkidle2' });
   await page.waitForFunction(() => window.PPP && window.PPP.app && window.Vex && window.Vex.Flow, { timeout: 30000 });
   await page.evaluate(() => window.__pppTest.practice());
   await new Promise(r => setTimeout(r, 1200));
@@ -56,7 +60,7 @@ async function renders(url) {
         await new Promise(r => App.setState({ wholeScore: whole, beat: 0, playing: false }, r));
         await new Promise(r => setTimeout(r, 700));
         const el = document.querySelector('.ppp-staffwrap svg');
-        if (!el) return null;
+        if (!el || el.classList.contains('ppp-engraved')) return null;
         let n = 0;
         const ids = new Map();
         return el.outerHTML.replace(/vf-auto\d+/g, m => { if (!ids.has(m)) ids.set(m, 'vf-auto#' + (n++)); return ids.get(m); });

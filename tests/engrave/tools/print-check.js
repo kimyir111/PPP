@@ -5,13 +5,20 @@
      NODE_PATH=D:/PPP/node_modules node tests/engrave/tools/print-check.js --url http://127.0.0.1:8801
        [--out tests/engrave/out/print]
 
-   For each of SONGS: opens the app under ?renderer=engrave, loads the piece the way a person's song opens (the
+   For each of SONGS: opens the app's default page (the engraver since the G4f-2 flip; G4e opened ?renderer=engrave,
+   then the only way to the command - --renderer engrave does that still), checks the "Print / Save as PDF" command is
+   shown in the whole-score view, loads the piece the way a person's song opens (the
    import door - scoreFromXml/scoreFromFile - or the app's own reader), switches to the whole-score view, then calls
    window.PPPEngravePage.printScore() itself (the same function the "Print / Save as PDF" button calls) - the real
    pipeline: PPPEngrave.app.resolve, printLayout, printSvgs, the hidden container, document.fonts.ready,
    window.print(). Puppeteer's page.pdf() substitutes for a person's own "Save as PDF": Chrome headless renders
    exactly what @media print shows (G04 §27 G4e: "puppeteer's page.pdf() can substitute"). Writes one PDF a piece to
-   <out> (gitignored, tests/engrave/out/) and a JSON summary; exit 1 on any failure. No G0 hold-out file is opened. */
+   <out> (gitignored, tests/engrave/out/) and a JSON summary; exit 1 on any failure. No G0 hold-out file is opened.
+
+   G4f-2 review R2: then the shared seed songs (catalog/shared-seeds.json), opened as a shared song opens, whole score:
+   the command is shown exactly when the engraver drew the song - a song that fell back to the legacy renderer (its
+   source disagrees, so the print layout has nothing to read) shows none - and asking such a song to print anyway (the
+   app's own printScore(), window.print stubbed) tells the person, in a toast, instead of doing nothing. */
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -22,6 +29,8 @@ const H = require(path.join(REPO, 'tests', 'engrave', 'helpers.js'));
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const BASE = arg('--url', 'http://127.0.0.1:8801');
+/* the page's renderer: 'default' (no ?renderer - what a person gets) or a ?renderer= value */
+const RENDERER = arg('--renderer', 'default');
 const OUT = path.resolve(REPO, arg('--out', 'tests/engrave/out/print'));
 fs.mkdirSync(OUT, { recursive: true });
 const rd = p => fs.readFileSync(path.join(REPO, p), 'utf8');
@@ -47,7 +56,7 @@ async function openPage(browser) {
   page.on('pageerror', e => logs.push('pageerror: ' + e.message));
   await preparePage(page);
   await page.setViewport({ width: 1400, height: 1000 });
-  await page.goto(BASE + '/Piano%20Coach%20App.dc.html?renderer=engrave', { waitUntil: 'networkidle2' });
+  await page.goto(BASE + '/Piano%20Coach%20App.dc.html' + (RENDERER === 'default' ? '' : '?renderer=' + RENDERER), { waitUntil: 'networkidle2' });
   await page.waitForFunction(() => window.PPP && window.PPP.app && window.Vex && window.Vex.Flow, { timeout: 30000 });
   await page.evaluate(() => window.__pppTest.practice());
   await sleep(500);
@@ -104,6 +113,9 @@ async function main() {
       const page = await openPage(browser);
       try {
         await openSong(page, s);
+        /* the command a person presses is there (whole-score view, the engraver's page) */
+        const shown = await page.evaluate(() => [...document.querySelectorAll('button')].some(b => (b.textContent || '').trim() === 'Print / Save as PDF'));
+        if (!shown) throw new Error('the "Print / Save as PDF" command is not shown in the whole-score view');
         const r = await printIt(page);
         const ok = r && r.ok;
         const pageCount = await page.evaluate(() => document.querySelectorAll('#ppp-print-root .ppp-print-page').length);
@@ -127,6 +139,50 @@ async function main() {
     }
   } finally {
     await browser.close();
+  }
+  /* G4f-2 review R2: the shared seed songs - the command only where the engraver drew; a refused print is said */
+  {
+    const browser2 = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
+    try {
+      const page = await openPage(browser2);
+      await page.evaluate(() => { window.__prints = 0; window.print = () => { window.__prints++; }; });
+      const seeds = JSON.parse(rd('catalog/shared-seeds.json')).seeds;
+      summary.seeds = [];
+      let fell = 0, drew = 0;
+      for (const seed of seeds) {
+        const r = await page.evaluate(async seed => {
+          const P = window.PPP, App = P.app;
+          const score = P.Score.finalize(P.unpackScore(JSON.parse(JSON.stringify(seed.score))));
+          score.id = 'shared:' + seed.id;
+          App.shelveSong(); App.adoptScore(score);
+          App.enterSong(score, { kind: 'shared', name: seed.title, importedAt: 0, status: 'parsed' }, false);
+          App.go('player')();
+          await new Promise(r => App.setState({ wholeScore: true, beat: 0, playing: false }, r));
+          for (let i = 0; i < 60; i++) { await new Promise(r => setTimeout(r, 100)); const s = document.querySelector('.ppp-staffwrap svg'); if (s && s.__ppp) break; }
+          await new Promise(r => setTimeout(r, 400));
+          const svg = document.querySelector('.ppp-staffwrap svg');
+          const shown = [...document.querySelectorAll('button')].some(b => (b.textContent || '').trim() === 'Print / Save as PDF');
+          const engraved = !!(svg && svg.classList.contains('ppp-engraved'));
+          let toast = null;
+          if (!engraved) {
+            App.setState({ toast: '' });
+            App.printScore();
+            for (let i = 0; i < 40 && !App.state.toast; i++) await new Promise(r => setTimeout(r, 100));
+            toast = App.state.toast || null;
+          }
+          return { id: seed.id, engraved, shown, toast };
+        }, seed);
+        const ok = r.shown === r.engraved && (r.engraved || !!r.toast);
+        if (!ok) failed++;
+        if (r.engraved) drew++; else fell++;
+        console.log((ok ? 'ok  ' : 'FAIL') + ' shared seed ' + r.id + ' - drawn by the engraver ' + r.engraved + ', command shown ' + r.shown + (r.toast ? ', a print asked anyway says "' + r.toast + '"' : ''));
+        summary.seeds.push(r);
+      }
+      if (!fell || !drew) { failed++; console.log('FAIL the seeds should include a song the engraver draws and one that falls back (drew ' + drew + ', fell back ' + fell + ')'); }
+      const prints = await page.evaluate(() => window.__prints);
+      if (prints) { failed++; console.log('FAIL a refused print reached window.print (' + prints + ')'); }
+      await page.close();
+    } finally { await browser2.close(); }
   }
   fs.writeFileSync(path.join(OUT, 'print-check.json'), JSON.stringify(summary, null, 1) + '\n');
   console.log(failed ? (failed + ' FAILED') : 'all pieces printed cleanly');

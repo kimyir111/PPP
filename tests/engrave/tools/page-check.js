@@ -3,11 +3,12 @@
 
      NODE_ENV=production HOST=127.0.0.1 PORT=8801 node server.js
      NODE_PATH=D:/PPP/node_modules node tests/engrave/tools/page-check.js --url http://127.0.0.1:8801 [--part a16,a31,a32,a33,corpus,perf,shots]
-       [--out tests/engrave/out/page] [--cpu 1,4]
+       [--out tests/engrave/out/page] [--cpu 1,4] [--renderers engrave,legacy]
 
    Every part opens the app itself, the way a person's song is opened (scoreFromXml, parseMusicXML or an import through the
    import door, then adoptScore + enterSong), and draws it through ScoreView - the legacy renderer with ?renderer=legacy,
-   the engraver with ?renderer=engrave:
+   the engraver with ?renderer=engrave, and the default page (no ?renderer at all - the engraver since the G4f-2 flip) as
+   'default' (--renderers, for perf and first):
      a16     the Score, PianoScore's playback plan and the practice judge's expected notes are byte for byte the same under
              both renderers, whole score and close view (the renderer reads the Score and changes nothing)
      a31     sonatina/020's whole score, a playback frame at a time: the elements whose class is written (a count of
@@ -23,8 +24,16 @@
      perf    sonatina/020, whole score and close view, first draw, page turns, the playback frame, long tasks - at each
              --cpu rate, both renderers; and a reloaded song's resolve (the graph from the store)
      shots   PNGs of pieces under the engraver: whole score and close view, desktop and phone, and the dark theme
-   Writes <out>/page-check.json and prints a summary; exit 1 when a16, a31, a32 or a33 fail. G0 hold-out files are never
-   opened or named. */
+     switch  (G4f-2) the default and the rollback in the page: the default page is the engraver's and asks for its files;
+             ?renderer=legacy, localStorage 'ppp.renderer' = 'legacy' and PPP.renderer = 'legacy' at run time each give the
+             legacy renderer (and ask for none of them); the print command is shown in the whole-score view only, and
+             only under the engraver; the home page's loop thumbnail is routed to the legacy renderer - counted as routed,
+             never as a fallback, never warned, and it loads nothing
+     first   (G4f-2) a first visit, per --renderers and --cpu: a fresh browser context (empty cache and storage), the home
+             page, then Practice - time to the app, to the first staff, the engraver's files asked for (count, bytes on
+             the wire), long tasks
+   Writes <out>/page-check.json and prints a summary; exit 1 when a16, a31, a32, a33 or switch fail. G0 hold-out files are
+   never opened or named. */
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -33,6 +42,7 @@ const REPO = path.resolve(__dirname, '..', '..', '..');
 const puppeteer = require('puppeteer');
 const { preparePage } = require(path.join(REPO, 'tests', 'boot'));
 const H = require(path.join(REPO, 'tests', 'engrave', 'helpers.js'));
+const PAGE_ORDER_LEN = require('./page-files.js').ORDER.length;
 const A = require(path.join(REPO, 'audio-score.js'));
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -40,6 +50,9 @@ const BASE = arg('--url', 'http://127.0.0.1:8801');
 const PARTS = arg('--part', 'a16,a31,a32,a33,corpus,perf,shots').split(',');
 const OUT = path.resolve(REPO, arg('--out', 'tests/engrave/out/page'));
 const CPUS = arg('--cpu', '1,4').split(',').map(Number);
+const RENDERERS = arg('--renderers', 'engrave,legacy').split(',');
+/* the page's query for a renderer: 'default' is the page with no ?renderer (the engraver since the G4f-2 flip) */
+const query = r => (r === 'default' ? '' : '?renderer=' + r);
 fs.mkdirSync(OUT, { recursive: true });
 const sha = s => crypto.createHash('sha256').update(s).digest('hex').slice(0, 16);
 const rd = p => fs.readFileSync(path.join(REPO, p), 'utf8');
@@ -62,7 +75,7 @@ async function openPage(browser, renderer, width, height) {
   page.on('pageerror', e => logs.push('pageerror: ' + e.message));
   await preparePage(page);
   await page.setViewport({ width: width || 1400, height: height || 1000 });
-  await page.goto(BASE + '/Piano%20Coach%20App.dc.html?renderer=' + renderer, { waitUntil: 'networkidle2' });
+  await page.goto(BASE + '/Piano%20Coach%20App.dc.html' + query(renderer), { waitUntil: 'networkidle2' });
   await page.waitForFunction(() => window.PPP && window.PPP.app && window.Vex && window.Vex.Flow, { timeout: 30000 });
   await page.evaluate(() => window.__pppTest.practice());
   await sleep(800);
@@ -301,7 +314,7 @@ async function corpus(browser) {
   console.log('\nThe corpus in the page: drawn by the engraver, or fell back');
   const files = H.corpusFiles().concat(fs.readdirSync(path.join(REPO, 'tests/engrave/fixtures/e')).filter(f => f.endsWith('.musicxml')).sort()
     .map(f => 'tests/engrave/fixtures/e/' + f));
-  const page = await openPage(browser, 'engrave', 1400, 1000);
+  const page = await openPage(browser, RENDERERS.find(r => r !== 'legacy') || 'engrave', 1400, 1000);
   const rows = [];
   for (const rel of files) {
     const bytes = [...fs.readFileSync(path.join(REPO, notHoldout(rel)))];
@@ -364,7 +377,7 @@ async function perf(browser) {
   console.log('\nPage performance: sonatina/020');
   const out = {};
   for (const rate of CPUS) {
-    for (const r of ['engrave', 'legacy']) {
+    for (const r of RENDERERS) {
       const page = await openPage(browser, r, 1400, 1000);
       const s = await cpu(page, rate);
       await page.evaluate(() => {
@@ -411,9 +424,9 @@ async function perf(browser) {
       console.log('  ' + r + ' @' + rate + 'x ' + JSON.stringify(out[r + '@' + rate + 'x']));
       /* B2 (G04 §19.2): the close view's page turn, uncached (a new window each turn) - p95 <= 25 ms at 1x, and A37's
          tablet budget (CPU 4x throttle) <= 80 ms - engrave only (legacy has no such budget) */
-      if (r === 'engrave') {
-        if (rate === 1) check('perf', 'engrave @1x: B2 close-view turn (uncached) p95 <= 25 ms', out['engrave@1x'].turnP95 <= 25, out['engrave@1x'].turnP95 + ' ms');
-        else check('perf', 'engrave @' + rate + 'x: B2 close-view turn (uncached) p95 <= 80 ms (A37\'s tablet budget)', out[r + '@' + rate + 'x'].turnP95 <= 80,
+      if (r !== 'legacy') {
+        if (rate === 1) check('perf', r + ' @1x: B2 close-view turn (uncached) p95 <= 25 ms', out[r + '@1x'].turnP95 <= 25, out[r + '@1x'].turnP95 + ' ms');
+        else check('perf', r + ' @' + rate + 'x: B2 close-view turn (uncached) p95 <= 80 ms (A37\'s tablet budget)', out[r + '@' + rate + 'x'].turnP95 <= 80,
           out[r + '@' + rate + 'x'].turnP95 + ' ms');
       }
       await page.close();
@@ -421,7 +434,7 @@ async function perf(browser) {
   }
   /* a reloaded song: the graph from the store (G4-U1), at each rate */
   for (const rate of CPUS) {
-    const page = await openPage(browser, 'engrave', 1400, 1000);
+    const page = await openPage(browser, RENDERERS.find(r => r !== 'legacy') || 'engrave', 1400, 1000);
     const bytes = [...fs.readFileSync(path.join(REPO, 'catalog/method/sonatina/020.mxl'))];
     const kept = await page.evaluate(async bytes => {
       const A = window.PPP.app, I = window.PPP.Import, E = window.PPPEngrave.app;
@@ -461,6 +474,129 @@ async function perf(browser) {
     await page.close();
   }
   (report.parts.perf = report.parts.perf || { checks: [] }).data = out;
+}
+
+/* ------------------------------------------------------------------ the switch: the default and the rollback (G4f-2) */
+/* the engraver's files a page asked for (./engrave/<name>.js?h=<hash>, loadEngrave) */
+const engraveAsked = page => { const a = []; page.on('request', q => { if (/\/engrave\/[\w-]+\.js\?h=/.test(q.url())) a.push(q.url()); }); return a; };
+/* what the practice page shows: the staff's renderer, the print command, the switch */
+const shown = page => page.evaluate(() => {
+  const svg = document.querySelector('.ppp-staffwrap svg');
+  const btn = [...document.querySelectorAll('button')].some(b => (b.textContent || '').trim() === 'Print / Save as PDF');
+  return { renderer: window.PPP.renderer, engraved: !!(svg && svg.classList.contains('ppp-engraved')), legacy: !!(svg && !svg.classList.contains('ppp-engraved') && svg.querySelector('.vf-stave')),
+    print: btn, whole: window.PPP.app.state.wholeScore, fallbacks: Object.keys(window.PPP.engraveStats.fallbacks).length };
+});
+const settle = async (page, pred) => { for (let i = 0; i < 60; i++) { const s = await shown(page); if (pred(s)) return s; await sleep(100); } return shown(page); };
+const setWhole = (page, whole) => page.evaluate(w => new Promise(r => window.PPP.app.setState({ wholeScore: w }, r)), whole);
+async function switchPart(browser) {
+  console.log('\nThe switch (G4f-2): the default is the engraver; legacy is one switch away');
+  /* the default page: the home page, its loop thumbnail routed and nothing loaded for it; then Practice */
+  {
+    const page = await browser.newPage();
+    const warns = [], asked = engraveAsked(page);
+    page.on('console', m => { if (/\[ppp\] engrave/.test(m.text())) warns.push(m.text()); });
+    await preparePage(page);
+    await page.setViewport({ width: 1400, height: 1000 });
+    await page.goto(BASE + '/Piano%20Coach%20App.dc.html', { waitUntil: 'networkidle2' });
+    await page.waitForFunction(() => window.PPP && window.PPP.app && window.Vex && window.Vex.Flow, { timeout: 30000 });
+    await sleep(800);
+    const home = await page.evaluate(() => ({ renderer: window.PPP.renderer, routed: window.PPP.engraveStats.routed, fallbacks: Object.keys(window.PPP.engraveStats.fallbacks).length,
+      thumbs: [...document.querySelectorAll('main svg')].filter(s => s.querySelector('.vf-stave, .ppp-stave, path.vf-stave')).map(s => s.classList.contains('ppp-engraved') ? 'engrave' : 'legacy'),
+      waiting: document.querySelectorAll('[data-engrave-wait]').length }));
+    check('switch', 'default page: PPP.renderer is \'engrave\'', home.renderer === 'engrave', home.renderer);
+    check('switch', 'home page: the loop thumbnail is routed to legacy - counted as routed, no fallback, no warning, no "Engraving…", no engraver file asked for',
+      home.routed > 0 && home.fallbacks === 0 && warns.length === 0 && home.waiting === 0 && asked.length === 0, Object.assign({ warns: warns.length, asked: asked.length }, home));
+    const askedHome = asked.length;
+    await page.evaluate(() => window.__pppTest.practice());
+    await setWhole(page, false);
+    const close = await settle(page, s => s.engraved);
+    check('switch', 'default page, Practice: the engraver draws the staff, and its files were asked for', close.engraved && asked.length === PAGE_ORDER_LEN, { close, askedHome, asked: asked.length });
+    check('switch', 'default page, close view: no print command (whole-score view only, G4e)', !close.print, close);
+    await setWhole(page, true);
+    const whole = await settle(page, s => s.engraved && s.print);
+    check('switch', 'default page, whole score: the print command is shown (G4e, visible since the flip)', whole.engraved && whole.print, whole);
+    /* the rollback at run time */
+    await page.evaluate(() => { window.PPP.renderer = 'legacy'; return new Promise(r => window.PPP.app.setState({}, r)); });
+    const rolled = await settle(page, s => s.legacy && !s.print);
+    check('switch', 'PPP.renderer = \'legacy\' at run time: the legacy renderer draws, the print command goes', rolled.renderer === 'legacy' && rolled.legacy && !rolled.print, rolled);
+    await page.evaluate(() => { window.PPP.renderer = 'engrave'; return new Promise(r => window.PPP.app.setState({}, r)); });
+    const back = await settle(page, s => s.engraved);
+    check('switch', 'and PPP.renderer = \'engrave\' brings the engraver back', back.engraved && back.print, back);
+    check('switch', 'no fallback and no engrave warning on the default page', back.fallbacks === 0 && warns.filter(w => /fallback/.test(w)).length === 0, warns.slice(0, 3));
+    report.parts.switch = Object.assign(report.parts.switch || { checks: [] }, { home, askedHome, asked: asked.length });
+    await page.close();
+  }
+  /* the rollback before the page runs: the URL, and storage */
+  for (const [how, url, stored] of [['?renderer=legacy', '?renderer=legacy', null], ['localStorage ppp.renderer = legacy', '', 'legacy']]) {
+    const page = await browser.newPage();
+    const asked = engraveAsked(page);
+    await preparePage(page);
+    if (stored) await page.evaluateOnNewDocument(v => { try { localStorage.setItem('ppp.renderer', v); } catch (e) { /* no storage */ } }, stored);
+    await page.setViewport({ width: 1400, height: 1000 });
+    await page.goto(BASE + '/Piano%20Coach%20App.dc.html' + url, { waitUntil: 'networkidle2' });
+    await page.waitForFunction(() => window.PPP && window.PPP.app && window.Vex && window.Vex.Flow, { timeout: 30000 });
+    await page.evaluate(() => window.__pppTest.practice());
+    await setWhole(page, true);
+    const s = await settle(page, x => x.legacy);
+    check('switch', how + ': the legacy renderer draws, no print command, none of the engraver\'s files asked for',
+      s.renderer === 'legacy' && s.legacy && !s.print && asked.length === 0, Object.assign({ asked: asked.length }, s));
+    await page.close();
+  }
+}
+
+/* ------------------------------------------------------------------ a first visit (G4f-2) */
+async function first(browser) {
+  console.log('\nA first visit: the home page, then Practice, from an empty cache');
+  const out = {};
+  for (const rate of CPUS) {
+    for (const r of RENDERERS) {
+      const ctx = await browser.createBrowserContext();
+      const page = await ctx.newPage();
+      await preparePage(page);
+      await page.setViewport({ width: 1400, height: 1000 });
+      await page.evaluateOnNewDocument(() => {
+        window.__long = [];
+        try { new PerformanceObserver(l => l.getEntries().forEach(e => window.__long.push([Math.round(e.startTime), Math.round(e.duration)]))).observe({ type: 'longtask', buffered: true }); } catch (e) { /* none */ }
+      });
+      const cdp = await page.target().createCDPSession();
+      await cdp.send('Network.enable');
+      await cdp.send('Network.setCacheDisabled', { cacheDisabled: false });
+      const urls = new Map(), bytes = { engrave: 0, engraveFiles: 0, all: 0 };
+      cdp.on('Network.requestWillBeSent', e => urls.set(e.requestId, e.request.url));
+      cdp.on('Network.loadingFinished', e => {
+        bytes.all += e.encodedDataLength;
+        if (/\/engrave\/[\w-]+\.js\?h=/.test(urls.get(e.requestId) || '')) { bytes.engrave += e.encodedDataLength; bytes.engraveFiles++; }
+      });
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: rate });
+      const t0 = Date.now();
+      await page.goto(BASE + '/Piano%20Coach%20App.dc.html' + query(r), { waitUntil: 'networkidle2' });
+      await page.waitForFunction(() => window.PPP && window.PPP.app, { timeout: 60000 });
+      const appMs = Date.now() - t0;
+      const homeFiles = bytes.engraveFiles;
+      const t1 = Date.now();
+      const res = await page.evaluate(async () => {
+        const t = performance.now();
+        await window.__pppTest.practice();
+        let svg = null;
+        for (let i = 0; i < 400; i++) {
+          svg = document.querySelector('.ppp-staffwrap svg');
+          if (svg && svg.__ppp) break;
+          await new Promise(r => setTimeout(r, 25));
+        }
+        return { staffMs: Math.round(performance.now() - t), engraved: !!(svg && svg.classList.contains('ppp-engraved')), long: window.__long.slice() };
+      });
+      const staffWall = Date.now() - t1;
+      await sleep(300);
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+      const long = res.long.map(x => x[1]);
+      out[r + '@' + rate + 'x'] = { appMs, staffMs: res.staffMs, staffWall, engraved: res.engraved, engraveFilesAtHome: homeFiles, engraveFiles: bytes.engraveFiles,
+        engraveKB: +(bytes.engrave / 1024).toFixed(1), allKB: +(bytes.all / 1024).toFixed(1), longTasks: long.length, longMax: long.length ? Math.max(...long) : 0 };
+      console.log('  ' + r + ' @' + rate + 'x ' + JSON.stringify(out[r + '@' + rate + 'x']));
+      await cdp.detach();
+      await ctx.close();
+    }
+  }
+  report.parts.first = { checks: [], data: out };
 }
 
 /* ------------------------------------------------------------------ screenshots */
@@ -542,6 +678,8 @@ async function shots(browser) {
     if (PARTS.includes('corpus')) await corpus(browser);
     if (PARTS.includes('perf')) await perf(browser);
     if (PARTS.includes('shots')) await shots(browser);
+    if (PARTS.includes('switch')) await switchPart(browser);
+    if (PARTS.includes('first')) await first(browser);
   } finally { await browser.close(); }
   fs.writeFileSync(path.join(OUT, 'page-check.json'), JSON.stringify(report, null, 1));
   console.log('\n' + (failed ? failed + ' FAILED' : 'all checks pass') + ' - ' + path.relative(REPO, path.join(OUT, 'page-check.json')));

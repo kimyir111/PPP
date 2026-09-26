@@ -1913,6 +1913,8 @@
     "Only one piano model was available, so these notes could not be cross-checked by another model.": "只有一个钢琴模型可用，因此无法用其他模型交叉核对这些音符。",
     "{{n}} possible notes were rejected because the piano models did not agree.": "由于钢琴模型之间未达成一致，已排除{{n}}个候选音符。",
     "Reading notation directly from the vector PDF": "正在直接读取矢量PDF中的乐谱信息",
-    "PPP needs at least four notes to write a score, and this MIDI file has fewer.": "PPP 至少需要四个音符才能写出乐谱，而这个 MIDI 文件的音符少于四个。"
+    "PPP needs at least four notes to write a score, and this MIDI file has fewer.": "PPP 至少需要四个音符才能写出乐谱，而这个 MIDI 文件的音符少于四个。",
+    "Engraving…": "正在绘制乐谱…",
+    "This score could not be prepared for printing.": "无法为打印准备此乐谱。"
   }
 }
