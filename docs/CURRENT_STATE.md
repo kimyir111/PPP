@@ -58,7 +58,14 @@ legacy (1x p95 10–13 vs 14–16 ms; 4x 70 vs 100 ms, 1 vs 16 long tasks), Prin
 live site: `/health`, `/api/auth/me`, `/api/shares` all 200; the home page's `PPP.renderer` reads `'engrave'`; a live
 import of sonatina/020 draws with the engraver (`ppp-engraved` class) and shows the Print control; 0 console errors.
 Rollback: `render deploys create srv-dalt5s6k1f9s739cuetg --commit 0ef0950`, or `?renderer=legacy` per visitor.
-**Next: the follow-ups (roadmap §15) — m2 (4 of 7 library shared songs), the flag shape, B5, then §25 step 3.**
+**m2 CLOSED 2026-09-27** (PR #35 `7ecfb53`, G04 §45): `catalog/build-shared-seeds.js` wrote the non-standard
+`<stave-count>` instead of MusicXML's `<staves>`, so the app's parser treated 4 of the 7 Shared Scores library seeds
+as single-staff and marked their whole second staff hand `'x'` — a fallback to the legacy renderer every user could
+see. Fixed the tag, regenerated `catalog/shared-seeds.json` (only `hand` and stale MX-1 bookkeeping fields changed,
+verified note-by-note), then migrated the 4 already-seeded `ppp_shares` production rows (backed up first, dry-run
+verified, the user confirmed before the write) since `seedSharedScores()` skips ids that already exist. Verified
+live: all 7 seeds now draw with the engraver and show Print. **Next: the flag shape, sonatina beaming, B5, then §25
+step 3 (roadmap §15).**
 Read this first in a new session, then
 `docs/PPP_MASTER_ROADMAP.md` (the order of the remaining Goals, their gates, the current and next task), then the
 current goal's spec in `docs/GOALS/`.
@@ -291,11 +298,17 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
     reduced views routed to legacy before any engraver file loads; print command visible in the whole-score view; A30
     suites pass under both renderers. Review NEEDS_FIX → Fixer (G04 §43.10): screen SVG inline (G4-L6, playback no
     slower than legacy), Print only where the engraver drew (G4-F2-7), "Engraving…" translated; the Lead's re-check PASS (G04 §43.11).
-    Open: B5's first-draw long task; 4x playback still has an occasional long task (fewer than legacy); 4 of 7 library
-    shared songs keep the legacy look (`legacy.fromScore` gives staff 2's hand `'x'` when both staves use voice 1).
-    **Deployed and verified live** (Render `dep-daru9259fdbs73b3j7eg`, commit `9dc6942`): `PPP.renderer` reads
-    `'engrave'`, a live import draws with the engraver, Print control shows, 0 console errors. Rollback: redeploy
-    `0ef0950`, or `?renderer=legacy` per visitor.
+    Open at the time: B5's first-draw long task, an occasional 4x playback long task (fewer than legacy), and 4 of 7
+    library shared songs on the legacy look. **Deployed and verified live** (Render `dep-daru9259fdbs73b3j7eg`,
+    commit `9dc6942`): `PPP.renderer` reads `'engrave'`, a live import draws with the engraver, Print control shows,
+    0 console errors. Rollback: redeploy `0ef0950`, or `?renderer=legacy` per visitor.
+  - **G4 polish m2 — CLOSED** (PR #35 `7ecfb53`, G04 §45): the real cause of the 4-of-7 library fallback was a typo
+    in `catalog/build-shared-seeds.js` (`<stave-count>` instead of MusicXML's `<staves>`), not a `scoregraph/`
+    engine bug — the app's parser never learned those 4 demo songs had two staves, so it marked the whole second
+    staff hand `'x'` and `legacy.fromScore` correctly refused to reproduce that. Fixed, regenerated the seed JSON
+    (verified only `hand` and stale MX-1 fields changed), then migrated the 4 already-seeded production rows
+    (`ppp_shares` — backed up, dry-run checked, the user confirmed the write). All 7 shared seeds now draw with the
+    engraver in production, verified live. Still open: the flag shape, sonatina beaming, B5, then §25 step 3.
   - What G3 left for G4 is in G03 §30–§31 and DECISIONS G3-D3, G3-D4 and G3-U10.
 - **Production database (2026-09-25, decision D-0): Neon Free, $0.**
   - ppp-web's `DATABASE_URL` points at the Neon project `ppp`. It was verified identical to the Render data, with no

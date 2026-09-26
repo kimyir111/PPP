@@ -4675,9 +4675,16 @@ flip 리뷰가 남긴 m2: 공유(Shared Scores) 라이브러리 seed 7곡 중 4�
 
 **아직 손대지 않은 것 — 이번 범위 밖**: 로드맵 §15의 나머지 폴리싱(고립된 16분음표 flag 모양, 소나티네 빽빽한 구간 beam 판단, B5 첫 그리기 long task).
 
-**production 반영은 코드 병합과 별개다** — `server.js`의 `seedSharedScores()`는 `store.getShare(s.id)`가 이미 있으면 건너뛴다(`if (have) continue`), 그래서 4곡은 이미 배포 때(0ef0950 이전부터) production DB `ppp_shares`에 씨 뿌려져 있어 **이 JSON을 배포해도 기존 행이 저절로 갱신되지 않는다**. 병합 뒤 별도로: (a) 4행을 새 `score`/`preview`로 옮기는 좁은 마이그레이션을 만들고, (b) 되돌릴 수 있게 먼저 그 4행을 백업하고, (c) 실행 전에 사용자에게 한 번 확인받는다(운영 DB에 직접 쓰는 일이라 배포와 같은 급의 "돌이키기 어려운" 행동으로 다룬다).
+**production 반영은 코드 병합과 별개였다** — `server.js`의 `seedSharedScores()`는 `store.getShare(s.id)`가 이미 있으면 건너뛴다(`if (have) continue`), 그래서 4곡은 이미 배포 때(0ef0950 이전부터) production DB `ppp_shares`에 씨 뿌려져 있어 이 JSON을 배포해도 기존 행이 저절로 갱신되지 않았다.
 
-**상태: 병합 가능, self-reviewed(review-depth-by-risk — scoregraph 엔진·앱 파일 아닌 도구+seed 데이터).** 배포는 코드 병합만으로 안 끝난다(위).
+**병합(PR #35, squash `7ecfb53`) 뒤 마이그레이션 실행 (2026-09-27, 사용자 승인):**
+- 백업 먼저: `ppp_shares`의 4행(`pppseedjazz`·`pppseednewage`·`pppseedost`·`pppseedgame`) 전체를 JSON으로 저장. 저장된 값이 이 절 §45.0의 재현과 정확히 같은 `hand: 'x'` 버그를 담고 있음을 재확인.
+- dry-run으로 각 행의 `score.notes` 개수·`measures`·메타(제목·작곡가·장르·종류·listed)가 새 seed와 완전히 같고, 바뀌는 것은 둘째 보표 `hand`(x→l) 뿐임을 먼저 출력해 확인.
+- 사용자에게 물어("지금 실행") 승인받은 뒤, 트랜잭션 없이 행 하나씩 `UPDATE ... WHERE id = $1 AND updated_at = $2`(백업 시점 이후 아무도 안 건드렸을 때만 쓰기) — 4행 모두 `rows affected: 1`.
+- **실제 서비스에서 확인**: `/api/shares` 목록에 4곡 제목 그대로 남아 있음; Midtown Blues·Pixel Meadow를 직접 불러와 그리게 하니 `ppp-engraved` 클래스로 그려지고("engraved": true) 인쇄 명령도 나타남("PDF" 텍스트 확인); 콘솔 에러 0.
+- 이제 **공유(Shared Scores) 라이브러리 7곡 전부가 판각기로 그려진다** — m2 완전히 닫힘.
+
+**상태: MERGED (PR #35 `7ecfb53`) + production 마이그레이션 완료, 실제 서비스에서 확인함.** review-depth-by-risk에 따라 self-reviewed(scoregraph 엔진·앱 파일이 아니라 seed 생성 도구 하나의 태그 오타); DB 쓰기만 배포와 같은 급으로 다뤄 사용자 확인 뒤 실행했다.
 
 ---
 
