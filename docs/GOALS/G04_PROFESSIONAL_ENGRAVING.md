@@ -64,6 +64,7 @@ ScoreGraph에 **이미 있는** 기보 의미를 PPP의 실제 화면과 인쇄�
 - [36. G4d-1b 구현 기록 — system에 붙는 기호, 세로 배치, courtesy, 괄호 임시표](#36-g4d-1b-구현-기록--system에-붙는-기호-세로-배치-courtesy-괄호-임시표)
 - [37. G4d-2 구현 기록 — 판각기를 페이지에 (개발용 스위치), M-H1 도구](#37-g4d-2-구현-기록--판각기를-페이지에-개발용-스위치-m-h1-도구)
 - [38. M-H1 — 사용자 평가 결과](#38-m-h1--사용자-평가-결과)
+- [39. G4e 구현 기록 — 페이지와 인쇄](#39-g4e-구현-기록--페이지와-인쇄)
 - [부록 A. 이 세션의 측정](#부록-a-이-세션의-측정)
 - [부록 B. 코드 위치 색인](#부록-b-코드-위치-색인)
 
@@ -4013,6 +4014,156 @@ engrave로 그려서 직접 봄(legacy도 같은 자리에 같은 지적이 나�
 ### 38.4 Verovio 재평가 조건 점검 (§7.3)
 
 방아쇠 조건("기호 배치" 축이나 L2 곡선·충돌 지표가 PPP 배치 층 때문에 목표에 못 미침)은 **성립하지 않는다**: engrave 단독 결함 0개, engrave 선호가 legacy 선호보다 많고(5 대 2), legacy에서만 나온 결함 둘(H07·H10 tie·stem 겹침, H12 tie·stem 겹침)은 오히려 engrave가 고친 것으로 확인됐다. **Verovio spike 불필요 — G4e로 진행한다.**
+
+---
+
+## 39. G4e 구현 기록 — 페이지와 인쇄
+
+Implementer, 2026-09-26. 브랜치 `g4e-print` (`D:/PPP-g4`), 시작 `338508d` (= `origin/main`, M-H1 마감 뒤). 입력은 로드맵 §14 카드, §5.1 G4e 카드, G04 §17·§15.5·§27이다. 병합하지 않았고 PR도 없다 (Lead가 리뷰와 PR을 정한다). 결정은 DECISIONS G4-E1–E7.
+
+**한 줄**: 화면과 같은 plan에서, config `mode:'print'`만으로 A4 여러 페이지 `EngravedScore`를 만든다 — 마디 경계 DP 줄바꿈(밀도만, 화면의 목표 마디 수 없음), system을 쪼개지 않는 페이지 나눔, 제목·작곡가·페이지 번호·마디 번호(줄 첫머리만), 인쇄에서만 묶는 여러 마디 쉼표, 여러 part의 첫 system part 이름. 화면 출력은 바이트 그대로다 (`engr/6`으로 버전만 올림, 236개 비교 전부 SERIALIZATION_ONLY (version)). 페이지의 "인쇄 / PDF로 저장" 명령은 개발용 스위치 뒤에 있다 (기본값 `'legacy'`는 그대로, G4f 전에는 아무도 닿지 않는다).
+
+### 39.1 범위 — §17·§27과 다른 점
+
+| 지시 | 한 일 | 어디 |
+| --- | --- | --- |
+| 인쇄 줄바꿈 DP (§15.5) | `breaks.js`의 화면 DP(`breakLines`)와 완전히 분리된 `printBreakLines`/`printSystemCost`: 비용 `100·(stretch−1.15)²`, 1마디 +50(전곡이 1마디면 면제), 1–6마디, 마지막 system은 `stretch<1`(압축이 필요했을 상황)일 때만 비용 0(ragged) | `engrave/breaks.js` |
+| 페이지 나눔 (§15.5) | system을 절대 쪼개지 않음; 앞에서부터 채움; 마지막 페이지가 system 하나뿐이면 앞 페이지에서 하나를 넘겨받는 시도(두 페이지 다 넘치지 않을 때만) | `engrave/layout.js` `layoutPrint` |
+| 제목 영역 (§15.5) | 제목 가운데, 작곡가 오른쪽 — 실제 글자 metric(`metrics-text.js`)으로 정확한 높이를 예약(`titleHeight`); 그래프에 제목·작곡가가 둘 다 없으면 0 | `layoutPrint` |
+| 페이지 번호 (§15.5) | 둘째 페이지부터, 페이지 아래 가운데 | `layoutPrint` |
+| 마디 번호 (§15.1) | 화면은 매 마디(그대로, `page.js`), 인쇄는 줄(=system) 첫머리만 — `engrave/skyline.js`로 실제 기보와 겹치지 않게 배치 | `layoutPrint` |
+| 여러 part 이름 (§15.5) | 첫 system 왼쪽, part의 staff 묶음 세로 가운데; 브레이스 왼쪽에 자리가 없을 만큼 긴 이름은 페이지 밖으로 나가지 않게 자리를 양보(자리는 좁아져도 잘리지 않음, A17) | `layoutPrint` |
+| 여러 마디 쉼표 병합 (§17.3, A11) | 인쇄에서만: 굵은 가로선(SMuFL 여러 마디 쉼표 글리프의 hash-mark 변형은 이번 세션에 새 글리프를 박지 않기로 하고 넣지 않음, G4-E2) + 마디 수, staff마다 하나, 첫 system 위 마디 수 글자. 화면은 `mergeRests`를 아예 부르지 않아 매 마디 그대로(G3 마디 단위 연습 결정, §15.1) | `mergeRests`/`stretchRests`, `layoutPrint` |
+| 인쇄 EngravedScore (§17.1) | `pages`(여러 항목), 모든 object·system에 `page` — 화면 object는 `page` 필드가 아예 없음(구분 기준) | `layoutPrint` 마지막 조립 |
+| 결정론 (§17.3, A38) | 인쇄 hash는 결정론적(3회, fixture 순서 뒤집기); PDF 바이트는 비교하지 않는다 | `print.test.js` |
+| 인쇄 명령 (§17.1) | 숨은 컨테이너 하나에 페이지마다 `<svg>`(물리 A4 mm는 CSS `width`/`height`, viewBox는 sp 그대로), `@media print`가 그 컨테이너만 보이게, `@page{size:A4;margin:0}`, `document.fonts.ready` 기다린 뒤 `window.print()` | `engrave/page.js` (`printLayout`, `printSvgs`, `ensurePrintStyle`, `buildPrintContainer`, `fontsReady`, `runPrint`, `printScore`), 앱의 `printScore()`와 "Print / Save as PDF" 버튼(개발 스위치 게이팅, `showPrintControls`) |
+| 래스터 0 (A39) | 자동 검사(`<image>`/`<canvas>` 정규식) | `page.js` `noRaster` |
+| i18n | ko·ja·zh 3개 문자열(`Print / Save as PDF`, 그 hint); en은 key 그대로 | `i18n/*.json` |
+
+**하지 않은 것** (지시대로): 서버 판각기, 클라이언트 PDF 라이브러리(G4-U3 B), `scoregraph/`·재생·G3 flag 변경, VexFlow 버전, 화면 렌더러 규칙 변경(M-H1 watch list 둘은 손대지 않음), §15.3의 60% 채움 세로 맞춤 스트레치(§15.3에 있으나 이 브리프의 Scope 목록에는 없음 — G4-E7로 G4f에 넘김), part 약어(§15.5 "약어는 그 밖의 system" — 이번엔 첫 system 이름만, G4-E6).
+
+### 39.2 모듈
+
+| 파일 | 한 일 |
+| --- | --- |
+| `engrave/breaks.js` | `PCOST`, `printSystemCost`, `printBreakLines(count, width, measure, forced, banned)` — `banned`는 여러 마디 쉼표가 병합한 마디가 system을 시작하지 못하게 막는 새 매개변수(화면 `breakLines`는 손대지 않음) |
+| `engrave/layout.js` | `PRINT`(A4 mm→sp 상수, 1 sp = 1.75 mm), `TITLE`/`PAGENO`/`MREST` 상수; `mergeRests`, `stretchRests`, `titleHeight`, `centreBandsAt`, `localGeometry`(페이지 독립적인 system 세로 형상); `resolveSystemU`/`walkSystem` — 화면 `layout()`과 `layoutPrint()`가 공유하는, 딱 한 곳에만 있는 코드(뮤테이션 anchor 유일성과 화면 회귀 안전을 위해 이 세션에서 빼냄); `layoutPrint(P, cfg)` — 전체 새 함수. `prepare()`에 `meta`·`parts`·마디 `multiRest` 필드 추가(부가적, 화면 소비 안 함) |
+| `engrave/svg.js` | `page` 옵션(어느 페이지를 그릴지, 기본 0); 페이지 소속이 없는 화면 객체는 항상 그림; 이벤트 없는 `rest`(여러 마디 쉼표 막대)도 그리게 최종 필터에 추가 |
+| `engrave/page.js` | `printLayout`, `printSvgs`(페이지마다 독립 id 접두사 — 39.7 참고), `noRaster`, `printCss`, `ensurePrintStyle`, `buildPrintContainer`, `fontsReady`, `runPrint`, `printScore` |
+| `Piano Coach App.dc.html` | `showPrintControls`/`printBtnStyle`/`printLabel`/`printHint`/`printScore()` 메서드, 템플릿 버튼 하나(`showSheetControls`의 "Whole score" 버튼 옆) |
+| `tests/engrave/print-l2.js` (새) | 인쇄 전용 named metric — `splitSystem`(M25), `overflow`, `breakCountErr`, `oneBarAvoidable`, `multirestScreenBars`, `sourceBreakIgnored`, `ledgerAllowDiff`(A40) |
+| `tests/engrave/print.test.js` (새, 12) | DP·cost 단위, 실제 페이지 나눔, 제목 영역, A38 결정론, A11/E28, A40, A39, svg.js `page` 옵션, id 충돌 회귀, R 코퍼스 전체, B8 |
+| `tests/engrave/layout-mutation.test.js` | M25(system 쪼개짐)과 respectSourceBreaks 뮤테이션 새 블록(자체 러너, print-l2.js로 판정 — l2.js는 한 페이지 가정이라 그대로 못 씀, 39.6) |
+| `tests/engrave/tools/print-check.js` (새) | puppeteer로 진짜 6곡을 실제 인쇄 명령으로 PDF까지(Chrome `page.pdf()`가 "PDF로 저장" 대신) |
+| `i18n/{ko-KR,ja-JP,zh-CN}.json` | 인쇄 명령 문자열 둘 |
+
+### 39.3 DP 비용 함수 (구현대로, §15.5)
+
+```
+stretch = width / natural         (natural: u = 4 sp/quarter일 때 system 폭)
+cost(i..j) = last && stretch<1 ? 0 : 100·(stretch−1.15)²
+if bars===1 && total>1: cost += 50
+1–6마디, 폭 넘침(2마디 이상이면서 rod 합·1.05 > width)은 Infinity
+```
+
+"1마디 벌점이 피할 수 없으면 제외"는 별도 분기 없이 DP의 최소화 자체가 한다 — 이웃과 합쳐 비용이 더 낮으면 DP가 그쪽을 고르므로, 벌점은 "피할 수 있을 때만 물린다"는 요구를 그 자체로 만족한다(G4-E1). 마지막 system의 ragged 예외는 화면 breaks.js의 같은 정신(짧은 마지막 줄은 정상)을 인쇄 나름으로 옮긴 것 — `stretch<1`(압축이 필요했을 상황)일 때만 면제하고, `stretch≥1`(성긴, 보통의 마지막 줄)은 그대로 1.15에서 멀어지는 만큼 낸다: 마지막 한 마디를 앞에서 당겨와 더 균형 있게 만드는 선택이 여전히 이기게 하기 위해서다. 60개 파일 정공 코퍼스 스윕으로는 "1마디 벌점 제거"가 실제로 결과를 바꾸는 경우를 찾지 못했다(마디 하나가 시스템 하나만큼 넓어지려면 극단적인 폭이 필요) — 그래서 이 규칙은 `printSystemCost`(공개 함수) 직접 호출로 증명한다(§39.6).
+
+### 39.4 여러 마디 쉼표 병합 (G4-E2)
+
+`prepare()`가 만드는 `P.measures[k]`는 config에 무관(화면·인쇄가 공유) — 그래서 병합은 `prepare()`가 아니라 `layoutPrint()`가 그때그때 만드는 사본(`mergeRests(P)` → `{measures, banned, runLen}`)에서만 한다. 화면 `layout()`은 이 함수를 전혀 부르지 않는다(같은 파일 안에 있지만 화면 코드 경로에서 도달 불가 — 화면 committed hash가 위험해질 일이 없다). 병합 마디의 열린 바(2번째~N번째 마디)는 `M.replacesBar=true`로 표시해 앞 마디 줄을 지운다(정방향 도돌이가 이미 쓰는 그 메커니즘 재사용). 첫 마디는 `springs:[{g:0, rod:8}]`(고정 폭, DP는 보통 마디 하나로 본다)와 굵은 막대+마디 수 객체를 담고, `stretchRests`가 system의 x를 다 구한 뒤 실제 런(run) 전체 폭으로 늘린다. `banned` set은 `printBreakLines`의 새 매개변수로 런의 2~N번째 마디가 system을 시작하지 못하게 막아 런이 절대 쪼개지지 않게 한다.
+
+### 39.5 Acceptance
+
+| # | 기준 | 증거 | 판정 |
+| --- | --- | --- | --- |
+| A11 | 인쇄 여러 마디 쉼표 | E28 fixture: 화면 6마디 그대로, 인쇄는 굵은 막대+"4" (`print.test.js`) | PASS |
+| A38 | 인쇄 layout 결정론(페이지 수·system·hash), 잘림 0, system 쪼개짐 0 | `print.test.js` A38(3회+fixture 뒤집기), R 코퍼스 전체 `eg.page.*` 0(§39.6) | PASS |
+| A39 | 인쇄 → 벡터 PDF: 래스터 0(자동), 페이지 수 = layout 페이지 수, 사람이 한 번 확인 | `noRaster`(page.js) 자동; `print-check.js` 6곡 puppeteer `page.pdf()`, 직접 본 페이지(§39.8) | PASS |
+| A40 | 화면·인쇄 ledger 동일(허용 목록: multi-rest, meta, tempo, part-name/abbr) | `print-l2.js` `ledgerAllowDiff`, R 코퍼스+E fixture 전체 0 diff | PASS |
+| B8 | 인쇄 layout ≤ 2 s(가장 긴 곡) | R 코퍼스 최장 sonatina/024(123마디, 4페이지) 36–43 ms(§39.9) | PASS |
+
+### 39.6 Metric과 Mutation (§23)
+
+`tests/engrave/print-l2.js`의 named metric은 모두 0 목표: `eg.page.split_system`(M25), `eg.page.overflow`, `eg.page.break_count_err`, `eg.page.one_bar_avoidable`, `eg.page.multirest_screen_bars`, `eg.page.source_break_ignored`. l2.js를 그대로 쓰지 않은 이유: l2.js의 많은 검사(세로 간격·겹침 등)가 "system의 y는 한 페이지를 계속 내려간다"는 화면의 전제를 깔고 있어, 여러 페이지 악보에 그대로 물으면 페이지 경계를 넘나드는 질문(2페이지 system 4가 1페이지 system 3 "아래"인가?)이 돼 버린다 — 그래서 별도 파일로 뒀다(공유 부분은 `pageMetrics`가 인자로 받는다).
+
+| # | 결함 | 잡는 metric | 확인 |
+| --- | --- | --- | --- |
+| M25 | 인쇄에서 system을 두 페이지에 쪼갬 | `eg.page.split_system` | `layout-mutation.test.js` 새 블록: 객체의 `page`를 `sys.x`가 아니라 자기 `box[0]`으로 결정하게 바꿈(x가 system 절반을 넘으면 다음 페이지) — 실제 코드에서 0, 뮤테이션에서 양수 |
+| (신규 규칙) respectSourceBreaks | 플래그와 무관하게 항상 forced | `eg.page.source_break_ignored` | E09 fixture(진짜 `Measure.layout.newSystem` 있음): 실제 코드는 true/false가 다른 system 배열(2,3마디 대 5마디 한 줄)을 주고, 뮤테이션은 둘 다 강제해 같아짐 |
+| (신규 규칙) 1마디 벌점 | `printSystemCost` 직접(§39.3) | 60개 정공 코퍼스로는 실제 뮤테이션(소스 편집+재로드)이 걸리는 파일을 찾지 못해(격리 규모의 결함이 아니라 아주 좁은 폭 상황에서만 나타남), 공개 함수 자체를 직접 호출해 "+50이 있고 없고"를 증명 — G4-E3(기록만, `print.test.js`) |
+
+기존 M1–M24(스크린)와 A27–A29는 손대지 않았고 `npm run test:engrave` 196/196으로 그대로 통과한다(§39.7).
+
+### 39.7 회귀 — Windows
+
+- `npm run test:engrave` **196/196** (기존 183 + 새 `print.test.js` 12 + `page-files`/`layout-mutation` 갱신 1). `npm run test:scoregraph` **216/216**(변경 없음, 대조).
+- 다섯 `--check` 도구(`make-e-fixtures`, `make-corpus`, `make-metrics`, `make-outlines`, `make-text-metrics`) 모두 PASS.
+- `layout-hashes.js` — 118곡 × 2 config, `engr/6`로 재작성(§39.7.1). `bench.js check --suite r|e|x` 모두 PASS(61/40/76).
+- `python tests/bench/run.py sg-roundtrip` 369개 중 367 pass(기존 2개 allowlist 그대로) — `scoregraph/` 무변경 대조.
+- G0 부분집합: `run.py run/check --suite smoke`(SQI 86.907085, 이전과 동일), `run.py run/check --suite core`(SQI 76.862396, 동일), `run.py golden`(17/17 identical).
+- `page-files.js --check` PASS(15개 hash 갱신 반영).
+- **화면 출력 불변**: `layout-diff.js --base=<338508d 아카이브>` — 118곡 × 2 config **236개 전부 SERIALIZATION_ONLY (version)**, GEOMETRY_ONLY·LEDGER_CHANGE 0.
+- 브라우저 suite(`with-port.js`, 8801): `interactions.test.js` 기본·`engrave` 둘 다 52/52, 콘솔 오류 0; `i18n-and-auth.test.js` 전부 PASS(새 문자열 포함); `engraving.test.js`는 `renderer=engrave`에서 기존에 있던 결함 하나("the clef change is drawn inside bar 2" 0 clef)가 그대로 재현됨 — **`338508d`(이 브랜치 시작점) 원본에서도 같은 실패**임을 확인(8802에서 직접 재현), G4e가 만든 회귀가 아니다.
+
+#### 39.7.1 버전과 re-bless (G4-D1a-1)
+
+`engr/5` → `engr/6`. 화면 출력은 바뀌지 않았지만(§39.7의 layout-diff), `layout()`의 전체 계약(새 `page` 필드, 여러 페이지 `pages`)이 넓어졌으므로 규칙대로 올렸다. `plan/3`은 그대로(`plan.js` 무변경). re-bless는 **236/236 SERIALIZATION_ONLY (version)**, GEOMETRY_ONLY·LEDGER_CHANGE 0 — `layout-hashes.js --write`가 버전이 옮았으므로 허용했다(가드는 같은 버전 아래 다른 해시만 거절).
+
+### 39.8 회귀 — Linux
+
+Docker `node:24-bookworm`(Node 24.21), `git -c core.autocrlf=false clone`(LF), `NODE_PATH`는 Windows `D:/PPP/node_modules`를 컨테이너에 읽기전용 마운트.
+
+- `node --test 'tests/engrave/**/*.test.js'` **196/196**.
+- `node --test 'tests/scoregraph/**/*.test.js'` **216/216**(대조).
+- `layout-hashes.js`, `page-files.js --check`, `bench.js check --suite r|e|x`(61/40/76) 모두 PASS — Windows와 같은 hash(A27 크로스 플랫폼).
+
+### 39.9 성능 (B8, 이 PC, Node 24.17)
+
+R 코퍼스(60개) 중 가장 긴 파일 `catalog/method/sonatina/024.mxl`(123마디)의 인쇄 layout: **36–43 ms** (예산 ≤ 2,000 ms, §19.2). 4페이지로 나뉜다. G0 hold-out 파일 이름은 쓰지 않았다.
+
+### 39.10 실제로 본 것 (사람이 봄)
+
+`tests/engrave/tools/print-check.js`(puppeteer): 실제 앱 페이지를 `?renderer=engrave`로 열고, "인쇄 / PDF로 저장" 버튼이 부르는 바로 그 `PPPEngravePage.printScore()`를 호출한 뒤 Chrome의 `page.pdf()`로 실제 사람의 "PDF로 저장"을 대신했다(§27 G4e 카드 문구 그대로). 6곡: **Für Elise**(1페이지), **For All the Saints**(찬송가, 그랜드 스태프, 2페이지), **Czerny Op. 849 No. 2**(3페이지, 운지·헤어핀·붙임줄), **Sonatina Op. 20 No. 1 III**(5페이지, 빽빽한 16분음표), **E28**(여러 마디 쉼표), **E35**(성악+피아노, 여러 part 이름). 전부 엔진이 계산한 페이지 수와 실제 렌더된 페이지 수가 일치, 래스터 0.
+
+직접 PDF를 읽어(Claude의 PDF 읽기 도구) 1페이지씩 봤다: 제목 가운데·작곡가 오른쪽·마디 번호 1·템포 말이 첫 system 위(Für Elise, Czerny, Sonatina), 한국어 제목이 올바르게 그려짐(For All the Saints, "성도의 믿음 따라"), 브레이스와 part 이름("Voice"/"Piano", E35), 코드명·가사·다이내믹(E35), 운지·슬러·헤어핀·붙임줄·스타카토(Czerny, Sonatina), 여러 마디 쉼표가 4마디 폭 굵은 막대 하나 + "4"로(E28). **처음 찍은 PDF에서 결함 하나를 발견해 고쳤다**(§39.10.1) — 그 뒤로는 결함 없음.
+
+#### 39.10.1 발견하고 고친 것: 페이지 간 글리프 id 충돌
+
+처음 만든 PDF에서 음표머리 하나가 페이지 전체를 뒤덮는 검은 얼룩으로 나왔다(§27 G4e 카드가 요구한 "직접 봄"이 실제로 잡은 결함). 원인: `svg.js`의 `<symbol>` id가 기본값 `ppp-g-*`로 고정돼 있어, 이미 그려진 화면 SVG(숨겨졌을 뿐 DOM에는 남아 있음, unit 10)와 인쇄 컨테이너의 여러 페이지 SVG(unit 1)가 **문서 전체에서 같은 id**를 공유했다 — `<use href="#ppp-g-noteheadBlack">`가 브라우저의 id 해석 규칙대로 그중 하나(치수가 다른 심볼)를 가리켜 10배 커진 글리프가 나온 것. `page.js`의 `printSvgs()`가 페이지마다 `idPrefix: 'ppp-print-' + i + '-g-'`를 주도록 고쳤다(G4-E4). 회귀 테스트(`print.test.js`)를 추가했다.
+
+### 39.11 남은 것 — G4f, 그리고 G4e가 다루지 않은 것
+
+- **§15.3의 60% 채움 세로 맞춤**(페이지가 60% 이상 차면 system 사이를 늘려 아래까지 맞춤): 이 브리프의 Scope 목록에 없어 이번엔 하지 않음 — 지금은 항상 위에 붙임(§15.3 "아니면 위에 붙임" 쪽). G4-E7로 남김. **정정(§39.12): 실제 채움은 R 코퍼스 평균 65.3%, 35/96 페이지가 50% 미만이다 — 드문 예외가 아니라 흔한 경우이므로, G4f 우선순위 목록에서 이 항목을 낮은 우선순위 "있으면 좋은 것"이 아니라 상위에 둔다.**
+- **여러 part의 약어**(§15.5 "약어는 그 밖의 system"): 첫 system의 온전한 이름만 구현, 둘째 이후 system의 약어는 하지 않음(ledger는 `part-abbr`를 `drawn`으로 표시하지만 이 세션은 아무 데도 그리지 않는다 — G4-E6, ledger.audit()은 plan 출력만 보므로 실패하지 않는다).
+- `engraving.test.js`의 기존 결함("마디 2 안의 clef 변경이 0개") — G4e 이전부터 있던 것, 확인만 하고 손대지 않음(범위 밖, 화면 렌더러 규칙).
+- G4f가 할 것: mutation 완성(M1–M25 전부, 이제 M25 포함), `legacy-geometry.js`, perf 도구, CI에 `test:engrave`, M-H2, flip.
+
+### 39.12 리뷰와 Fixer (2026-09-26)
+
+독립 리뷰: **NEEDS_FIX (BLOCKER 0, MAJOR 2, MINOR 3)**. 화면(legacy) 경로는 그대로(legacy parity 16/16, `interactions.test.js`/`i18n-and-auth.test.js` 52/52 두 렌더러 모두), A38·A39·A40·B8은 리뷰 자신의 재측정으로도 유지, DP 줄바꿈은 진짜 최소화(탐욕 근사 아님), id 충돌 수정은 완결. MAJOR 둘을 고쳤다. MINOR 셋(pre-existing id-collision 위험, part-abbr 미방영 G4-E6, 버전 가드가 "같은 바이트의 버전 올림"과 "진짜 변경"을 못 가른다는 것)은 브리프대로 손대지 않았다 — G4f 항목으로만 남긴다.
+
+**R1 (MAJOR) — DECISIONS G4-E7의 근거가 틀림.** G4-E7은 "실제로 본 6곡 모두 첫 페이지가 92% 안팎까지 차 어색하지 않았다"고 §15.3(60% 채움 세로 맞춤) 보류의 근거를 댔다. 리뷰가 R 코퍼스 전체(committed print page 96개)를 재서 평균 65.3%, 35/96 50% 미만, 51/96 70% 미만, Für Elise 18.8%(제목 + 4마디 + 빈 여백)를 찾아냈다 — 이 Fixer가 같은 방법(마지막 system의 아래 끝 ÷ 실사용 페이지 높이, `PRINT.pageH − 2·PRINT.margin`)으로 R 코퍼스(`tests/engrave/corpus.json`, 61개 파일) 전체를 다시 재서 **똑같은 숫자**를 얻었다(96 페이지, 평균 65.3%, 35/96 < 50%, 51/96 < 70%, 최저 Für Elise 18.8%) — 리뷰의 결과가 재현 가능함을 확인했다. **한 일**: DECISIONS G4-E7을 제자리에서 고쳤다(취소선으로 틀린 문장을 남기고 정정을 덧붙임, docs/DECISIONS.md 400행) — §15.3 미구현이라는 결정 자체(이번 사이클 범위 밖의 새 기능)는 바꾸지 않았다. §39.11에 정정 문구를 추가하고, G4f 우선순위에서 §15.3을 "있으면 좋은 것"이 아니라 상위로 올린다고 적었다(위 39.11). §15.3의 세로 맞춤 자체는 **구현하지 않았다** — 브리프의 명시적 지시대로.
+
+**R2 (MAJOR) — 인쇄 출력에 committed 회귀 baseline이 없었음.** `layout-hashes.js`의 `CONFIGS`가 화면(desktop·phone)만 있어, `printBreakLines`/`printSystemCost`/`layoutPrint`가 공유 레이아웃 헬퍼의 의도치 않은 변경으로 조용히 흔들려도 CI가 잡지 못했다(A38의 결정론 테스트는 "같은 코드가 매번 같은 출력"만 증명하지, "이 커밋의 출력이 리뷰받은 그대로"는 증명하지 않는다). **한 일**: 새 파일이나 새 도구를 만들지 않고, `CONFIGS`에 `print: {mode:'print'}` 한 줄을 추가했다(`tests/engrave/tools/layout-hashes.js` 28행) — `createEngraver(plan).layout({mode:'print'})`가 화면과 같은 `EngravedScore` 모양(다만 `pages` 있음)을 내므로 기존 `computeAll`/`diff`/`guard`가 그대로 적용된다. R(61)+E(40)+X(golden 17) 전체 스코프로 118개 스코어 × 3 config(desktop·phone·print)를 `--write`로 다시 썼다 — 화면 두 config의 해시는 그대로(`engr/6`, `plan/3` 버전 유지, 새 config를 추가하는 것뿐이라 브리프대로 버전을 올리지 않았다).
+
+가드 빈틈 하나를 리뷰 전에 직접 찾아 메웠다: `--write`의 기존 가드(`reference()`/`guard()`)는 `origin/main`과의 merge base 파일의 기존 키만 비교한다 — merge base(`338508d`)는 이 브랜치가 아직 병합되지 않아 `print` config를 전혀 모르므로, `printSystemCost`를 바꿔도 버전을 올리지 않은 채 `--write`가 조용히 통과했다(직접 재현해 확인, 아래 부정 대조). `layout-hashes.js`에 `diffAgainstNewConfigs()`를 추가해, merge base가 모르는 (score, config) 쌍은 디스크에 이미 커밋된 파일과 같은 버전 아래 비교하도록 했다 — 병합 전까지는 이 fallback이, 병합 뒤에는 merge base 자체가 print를 알게 되어 원래 경로가 지킨다(DECISIONS G4-E8).
+
+**부정 대조 (negative control)**: `engrave/breaks.js`의 `PCOST.TARGET`을 `1.15` → `1.10`으로 바꾸고(print 전용 비용 함수),
+- `node layout-hashes.js` (check): **7개 print 해시만** 달라짐(desktop·phone은 0 — print 전용 변경이 print에만 보임을 확인), exit 1.
+- `node layout-hashes.js --write`: 새 `diffAgainstNewConfigs` 가드가 "merge base가 모르는 config에서 같은 버전 아래 커밋된 파일과 다름"으로 **REFUSED**, exit 1, 아무것도 쓰지 않음.
+되돌린 뒤(`1.10` → `1.15`) 둘 다 다시 통과(check exit 0, "all the committed hashes"). `git diff --stat engrave/breaks.js`로 작업 트리가 깨끗함을 확인했다 — 부정 대조는 실제 커밋에 남지 않았다.
+
+**회귀 — Windows**: `npm run test:engrave` **196/196**(무변경, 대조), `npm run test:scoregraph` **216/216**(무변경, 대조). 다섯 `--check` 도구(`make-e-fixtures`, `make-corpus`, `make-metrics`, `make-outlines`, `make-text-metrics`) 및 `page-files.js --check` 모두 PASS. `layout-hashes.js`(이제 print 포함) PASS. `bench.js check --suite r|e|x` **61/40/76** PASS(§39.7과 동일한 수). 화면 전용 레거시 parity(`legacy-parity.js`, base `338508d` 8871 대 head 8872) **16/16 byte for byte**.
+
+**회귀 — Linux**: Docker `node:24-bookworm`, `git -c core.autocrlf=false clone`(LF)로 이 Fixer 커밋을 복제. `node --test 'tests/engrave/**/*.test.js'` **196/196**, `layout-hashes.js`(print 포함) PASS, `bench.js check --suite r|e|x` **61/40/76** PASS — Windows와 같은 해시(A27 크로스 플랫폼, print config도 포함해 확인).
+
+**버전**: `engr/6`·`plan/3` 그대로 — print config를 baseline에 추가만 했을 뿐 어떤 layout 출력도 바꾸지 않았다(G4-D1a-1: 새 config 추가는 버전을 요구하지 않는다, 기존 config의 값이 달라질 때만 요구한다).
+
+**G0 hold-out**: 이 기록 어디에도 hold-out 파일 이름을 쓰지 않았다(`tests/engrave/helpers.js`의 `corpusFiles()`가 이미 제외).
+
+**커밋**: 브랜치 `g4e-print`, `fb38d07` 위에. push는 `origin/g4e-print`. PR 없음(Lead가 정한다).
+
+**상태: G4e FIX: READY_FOR_RECHECK.**
 
 ---
 

@@ -1,6 +1,9 @@
 /* G04 §20, §21.3, A27: the EngravedScore hash of every E fixture, R suite score and PPP transcription, at the desktop
-   and phone screen configs - committed, so the same graphs lay out to the same geometry on every machine (Windows
-   here, Linux in CI) - and the hash of each one's NotationPlan (the G4d-1a fixer, R8).
+   and phone screen configs and the print config (G4-E8, G4e Fixer R2: print's DP line-breaking and pagination had no
+   committed regression baseline - the same mechanism that already covers the screen configs covers print too, since
+   createEngraver(plan).layout({mode:'print'}) returns the same shape of EngravedScore, just with `pages`) -
+   committed, so the same graphs lay out to the same geometry on every machine (Windows here, Linux in CI) - and the
+   hash of each one's NotationPlan (the G4d-1a fixer, R8).
 
      node tests/engrave/tools/layout-hashes.js           compare with tests/engrave/baselines/layout-hashes.json (exit 1 on a difference)
      node tests/engrave/tools/layout-hashes.js --write   write that file (after an intended layout change, with the reason in the commit)
@@ -25,7 +28,7 @@ const { REPO, E } = H;
 
 const FILE = path.join(REPO, 'tests', 'engrave', 'baselines', 'layout-hashes.json');
 const FILE_REL = 'tests/engrave/baselines/layout-hashes.json';
-const CONFIGS = { desktop: { breakpoint: 'desktop' }, phone: { breakpoint: 'phone' } };
+const CONFIGS = { desktop: { breakpoint: 'desktop' }, phone: { breakpoint: 'phone' }, print: { mode: 'print' } };
 
 async function inputs() {
   const out = [];
@@ -111,6 +114,27 @@ function reference() {
   console.log('failing closed: checking against the committed ' + FILE_REL + ' - a changed hash is written only under a moved version');
   return { name: 'the committed file', commit: null, file: cur, closed: true };
 }
+/* configs a merge base can be silent about: it predates a config being added (G4-E8 - print, added on this branch,
+   is not yet in origin/main's file). Without this, a change to that config's own code would slip past the guard
+   with no version bump for as long as the branch carrying it is unmerged, because diff() only ever checks the keys
+   the reference already has. So, in addition to the merge-base diff, also fail closed against whatever is already
+   sitting in the committed file on disk (the one --write is about to overwrite) for any (score, config) pair the
+   merge-base reference does not know about yet - same rule, same version gate, just a second source of "before". */
+function diffAgainstNewConfigs(got, refHashes) {
+  const bad = [];
+  if (!fs.existsSync(FILE)) return bad;
+  const onDisk = JSON.parse(fs.readFileSync(FILE, 'utf8'));
+  if (onDisk.version !== E.layout.VERSION) return bad; // a version mismatch is reported separately, not double-counted here
+  Object.keys(onDisk.hashes || {}).forEach(id => {
+    Object.keys(onDisk.hashes[id]).forEach(c => {
+      const knownToRef = refHashes[id] && refHashes[id][c] !== undefined;
+      if (knownToRef) return; // the merge-base diff above already covers this one
+      if (got[id] && got[id][c] !== undefined && got[id][c] !== onDisk.hashes[id][c])
+        bad.push(id + ' ' + c + ': ' + got[id][c] + ' != ' + onDisk.hashes[id][c] + ' (committed on disk, ahead of the merge base)');
+    });
+  });
+  return bad;
+}
 /* -> the reasons to refuse the write (none: write) */
 async function guard(got, plans, ref) {
   const out = [];
@@ -122,6 +146,12 @@ async function guard(got, plans, ref) {
   const dl = diff(got, f.hashes || {});
   if (dl.length && f.version === E.layout.VERSION)
     out.push(dl.length + ' layout hashes differ from ' + ref.name + ' under the same version ' + f.version + ': an output change moves the version (G4-D1a-1) - bump VERSION in engrave/layout.js');
+  if (!ref.closed) {
+    const dn = diffAgainstNewConfigs(got, f.hashes || {});
+    if (dn.length)
+      out.push(dn.length + ' layout hashes differ from the committed ' + FILE_REL + ' under the same version ' + E.layout.VERSION +
+        ' for a config the merge base does not have yet: an output change still moves the version (G4-D1a-1) - bump VERSION in engrave/layout.js');
+  }
   const pv = f.planVersion || (ref.commit ? planVersionAt(ref.commit) : null);
   if (pv !== E.PLAN_VERSION) {
     if (pv === null) out.push('the plan version of ' + ref.name + ' is not known: cannot tell whether PLAN_VERSION moved (fail closed)');

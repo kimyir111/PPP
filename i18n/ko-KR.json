@@ -745,6 +745,8 @@
     "Whole score": "전체 악보",
     "This part": "이 부분만",
     "See the whole piece at once, with the weak bars shaded": "곡 전체를 한눈에. 약한 마디가 표시돼요",
+    "Print / Save as PDF": "인쇄 / PDF로 저장",
+    "Print this score, or save it as a PDF": "이 악보를 인쇄하거나 PDF로 저장해요",
     "Red bars are the ones PPP found weak. Click a bar to start a passage, then click where it ends.": "빨간 마디가 PPP가 약하다고 본 곳이에요. 마디를 누르면 시작, 한 번 더 누르면 끝이에요.",
     "Measure {{n}} is the start — now click where the passage ends.": "{{n}}마디가 시작이에요. 끝날 마디를 눌러 주세요.",
     "Play it from memory": "악보 없이 쳐 보기",

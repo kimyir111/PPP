@@ -40,7 +40,9 @@ test('the app loads every G4a engrave/ file after the scoregraph library and aud
   const loader = slice('function loadEngrave() {', '\n}\n');
   assert.match(loader, /s\.src = '\.\/engrave\/' \+ name \+ '\.js\?h=' \+ hash;/);
   assert.match(loader, /s\.async = false;/, 'in order');
-  assert.equal((html.match(/loadEngrave\(\)/g) || []).length, 2, 'defined once, called from the engraver\'s view only');
+  /* defined once, called from the engraver's view (G4d-2) and G4e's print command (printScore()) - both need the
+     layout core and page.js, and both are dev-switch gated the same way */
+  assert.equal((html.match(/loadEngrave\(\)/g) || []).length, 3, 'defined once, called from the engraver\'s view and the print command');
 });
 
 test('G4d-2: the switch defaults to legacy; only a view whose renderer is \'engrave\' reaches the engraver (G04 §16.1, §25.1)', () => {
