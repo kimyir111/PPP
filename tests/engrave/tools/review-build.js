@@ -178,6 +178,27 @@ async function draw(page, c) {
         if (cs.strokeWidth) d.setAttribute('stroke-width', cs.strokeWidth);
         if (cs.opacity !== '1') d.setAttribute('opacity', cs.opacity);
       });
+      /* G4-D2-23 (a second R1 leak, found on the Lead's re-check): once B9's fix (G4-D2-20) put the app back on svg.js's
+         shared <defs>/<symbol> + <use> glyphs, every engraved copy carries <use>/<symbol> tags that the legacy half never
+         has - a perfect, algorithm-free fingerprint (16/16 on a fresh test packet, just by checking for the tag). It only
+         matters for what ships in this review packet, so it is undone here, not in the app: each <use> is replaced by a
+         literal clone of the <symbol> it points at (its own x/y as a translate, its own paint attributes carried onto the
+         wrapping <g> - the paint loop above already wrote computed paint onto the <use> element itself), then the empty
+         <defs>/<symbol> scaffolding is dropped. Both halves end up as plain path/rect/text/line/... nodes only. */
+      const SVGNS = 'http://www.w3.org/2000/svg', XLINKNS = 'http://www.w3.org/1999/xlink';
+      [...copy.querySelectorAll('use')].forEach(u => {
+        const href = u.getAttribute('href') || u.getAttributeNS(XLINKNS, 'href');
+        const id = href && href.replace(/^#/, '');
+        const sym = id && copy.querySelector('#' + CSS.escape(id));
+        if (!sym) return;
+        const g = document.createElementNS(SVGNS, 'g');
+        const x = u.getAttribute('x'), y = u.getAttribute('y');
+        if (x || y) g.setAttribute('transform', 'translate(' + (x || 0) + ',' + (y || 0) + ')');
+        ['fill', 'stroke', 'stroke-width', 'opacity'].forEach(a => { const v = u.getAttribute(a); if (v != null) g.setAttribute(a, v); });
+        [...sym.childNodes].forEach(n => g.appendChild(n.cloneNode(true)));
+        u.replaceWith(g);
+      });
+      [...copy.querySelectorAll('defs, symbol')].forEach(e => e.remove());
       /* the practice layer's marks (hidden: nothing is lit) go; so do classes, ids, data-* and the root's sizing. G4-D2-19
          (R1 fix): the root's own fill/stroke/font-* are boilerplate the two renderers set differently (VexFlow bakes a
          font preamble on its root that svg.js never does) and every shape below already carries its own resolved paint
