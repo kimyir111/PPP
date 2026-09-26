@@ -7,7 +7,7 @@ The operational roadmap for everything after G4a: order, dependencies, gates, an
 | Owner | The **Lead / Orchestrator** session. Implementers, reviewers and fixers read it. Only the Lead edits it. |
 | Updated | 2026-09-26 — eighth edition (Lead): **G4d-1b CLOSED** (PR #19 `a6e1a75`), the Node engraver is complete; current: G4d-2 |
 | Base | `origin/main` = `a6e1a75` (G4d-1b, PR #19) plus the docs closeout |
-| Active | **G4d-2** (the renderer in the page behind a dev-only switch; `D:/PPP-g4`, branch `g4d2-page-integration`) — review NEEDS_FIX (MAJOR 3), Fixer running (§14). |
+| Active | **G4d-2** (the renderer in the page behind a dev-only switch; `D:/PPP-g4`, branch `g4d2-page-integration`) — fixed, Lead re-check found a second leak and closed it, ready to merge (§14). |
 | Lead worktree | `D:/PPP-lead`, branch `lead-roadmap`. The Lead writes docs only, never in an implementer's worktree. |
 | How this relates to other docs | `docs/CURRENT_STATE.md` says what is true now, with measurements. `docs/DECISIONS.md` says why. `docs/GOALS/Gxx_*.md` is the contract for one Goal: design, acceptance and implementation record. **This document says in what order, behind which gates, and what comes next.** It does not repeat the goal specs. On detail, the spec wins. On sequencing, this document wins. |
 
@@ -604,7 +604,7 @@ The record is G04 §36.21.
 
 **CI race fix — DONE**: PR #21, squash `84abe80`. `g3_jobs.py` now writes the shared G3 jobs cache atomically, and the reader checks the count. A concurrency regression test fails with the old in-place write (Lead re-check: 2 of 2) and passes with the fix (3 of 3). `test:scoregraph` on a fresh clone passes 216/216.
 
-**Current unit: G4d-2 — FIXER RUNNING.** Handed in at `8529611` (record G04 §37, DECISIONS G4-D2-1…18).
+**Current unit: G4d-2 — READY TO MERGE.** The Fixer closed R1 (both leaks it found), R2 and R3 in `e40b8f2`. The Lead's re-check confirmed the gates, legacy parity and R2/R3 numbers, then found a **second, independent M-H1 leak**: R3's B9 fix (switching back to svg.js's shared `<defs>`/`<use>` glyph mode) reintroduced `<use>`/`<symbol>` tags that only ever appear on the engraved half of a comparison packet — a perfect fingerprint, no algorithm needed. Fixed narrowly by the Lead (`a2054ab`), in the review-export tool only; the app's real output is untouched, so B9 stays recovered. Verified with a disposable test packet: no tag difference, overlapping file sizes, chance-level key recovery. PR #23 open.
 
 The independent review (2026-09-26) returned **NEEDS_FIX: BLOCKER 0, MAJOR 3, MINOR 2**. What it confirmed:
 - **No user-visible change on the default path.** A full scripted user flow (home → practice → course piece → loop → memory mode → My Songs → a shared score → dark theme) gave byte-identical DOM, text and network requests on base versus this branch; legacy parity 16/16.
