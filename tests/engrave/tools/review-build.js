@@ -142,6 +142,13 @@ async function draw(page, c) {
     const out = {};
     for (const r of ['legacy', 'engrave']) {
       const host = document.createElement('div');
+      /* G4-D2-19 (R1 fix): a host outside the app's [data-app] theme root never sees --staff (it lives only under
+         [data-app], G04 §25) - the engraver's stave-line colour (a CSS var, .ppp-engraved .vf-stave) then resolves to
+         the initial 'none' while the legacy renderer bakes the same variable into a literal attribute in JS (col()) and
+         so still paints. That asymmetry was also a real renderer fingerprint in the shipped packet (a computed
+         stroke="none" stroke-width="1.3px" on every engraved stave line, absent from the legacy half - 16/16 in a test
+         packet). Drawing inside a themed root, as the app always does, fixes both: the colour resolves and the leak closes. */
+      host.setAttribute('data-app', 'light');
       host.style.cssText = 'position:absolute;left:0;top:0;width:' + WIDTH + 'px;background:#fff;';
       document.body.appendChild(host);
       const root = ReactDOM.createRoot(host);
@@ -156,20 +163,28 @@ async function draw(page, c) {
       }
       if (!svg) { out[r] = { error: 'not drawn', fallbacks: P.engraveStats.fallbacks }; root.unmount(); host.remove(); continue; }
       const engraved = svg.classList.contains('ppp-engraved');
-      /* a copy with the computed paint written on every shape, then nothing that names who drew it */
+      /* a copy with the computed paint written on every shape, then nothing that names who drew it. G4-D2-19 (R1 fix):
+         'svg' itself must be in this list too - the engraver's root keeps its literal fill="currentColor" (svg.js) if
+         skipped, while VexFlow's root already carries baked literal colours and font defaults; left unequal, the shipped
+         root tag alone told X from Y (16/16, no manifest needed) worse than the stave-line bug ever did. */
       const copy = svg.cloneNode(true);
       const live = [svg, ...svg.querySelectorAll('*')], dead = [copy, ...copy.querySelectorAll('*')];
       live.forEach((e, i) => {
         const d = dead[i];
-        if (!/^(path|rect|text|line|circle|ellipse|polygon|polyline|use|tspan)$/.test(e.tagName)) return;
+        if (!/^(svg|path|rect|text|line|circle|ellipse|polygon|polyline|use|tspan)$/.test(e.tagName)) return;
         const cs = getComputedStyle(e);
         d.setAttribute('fill', cs.fill);
         d.setAttribute('stroke', cs.stroke);
         if (cs.strokeWidth) d.setAttribute('stroke-width', cs.strokeWidth);
         if (cs.opacity !== '1') d.setAttribute('opacity', cs.opacity);
       });
-      /* the practice layer's marks (hidden: nothing is lit) go; so do classes, ids, data-* and the root's sizing */
+      /* the practice layer's marks (hidden: nothing is lit) go; so do classes, ids, data-* and the root's sizing. G4-D2-19
+         (R1 fix): the root's own fill/stroke/font-* are boilerplate the two renderers set differently (VexFlow bakes a
+         font preamble on its root that svg.js never does) and every shape below already carries its own resolved paint
+         from the loop above - so the root needs none of it, and keeping it would fingerprint the renderer by its mere
+         presence or absence, with no manifest needed. */
       [...copy.querySelectorAll('[opacity="0"]')].forEach(e => e.remove());
+      ['fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'font-family', 'font-size', 'font-weight', 'font-style'].forEach(a => copy.removeAttribute(a));
       [copy, ...copy.querySelectorAll('*')].forEach(e => {
         [...e.attributes].forEach(a => { if (a.name === 'class' || a.name === 'id' || /^data-/.test(a.name) || (e === copy && a.name === 'style')) e.removeAttribute(a.name); });
       });
@@ -227,11 +242,16 @@ const AXES = [
   if (Object.keys(fallbacks).length) throw new Error('fallbacks while drawing: ' + JSON.stringify(fallbacks));
 
   const commit = (() => { try { return require('child_process').execSync('git -C "' + REPO + '" rev-parse --short HEAD', { encoding: 'utf8' }).trim(); } catch (e) { return null; } })();
+  /* G4-D2-19 (R1 fix): the manifest is what ships to the reviewer, so it must not state or imply the seed or the X/Y
+     assignment rule - either one lets X/Y be recomputed with a few lines of code (a reviewer did, from an earlier
+     manifest, and got 16/16). It may still say how an excerpt's file and bars were picked (needed to build it, and
+     harmless - it says nothing about which of X/Y is which), but the seed and the "X is legacy when ..." rule live only
+     in the key file below, which never ships. */
   const manifest = {
-    review: 'M-H1', doc: 'docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md §22.4', seed: SEED, bars: BARS, width: WIDTH, built: { commit: commit, engrave: version, server: BASE },
-    rule: 'R corpus (tests/engrave/corpus.json, no G0 hold-out, not quarantined); per stratum, candidates ordered by sha256(seed:stratum:path), first n unused ' +
-      'with at least 8 measures and the feature present; in each, the 8 bars where the feature is densest (earliest on a tie); excerpt order by ' +
-      'sha256(seed:order:path); X is the legacy renderer when parseInt(sha256(seed:xy:path)[0..8], 16) is even',
+    review: 'M-H1', doc: 'docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md §22.4', bars: BARS, width: WIDTH, built: { commit: commit, engrave: version, server: BASE },
+    rule: 'R corpus (tests/engrave/corpus.json, no G0 hold-out, not quarantined); per stratum, candidates ordered by a keyed hash of the path, first n unused ' +
+      'with at least 8 measures and the feature present; in each, the 8 bars where the feature is densest (earliest on a tie). Excerpt order and which of X/Y ' +
+      'is which are drawn independently, from a key kept apart from this file (never the seed or rule stated here).',
     strata: STRATA.map(s => ({ name: s.name, n: s.n, feature: s.feature, min: s.min || 1 })),
     excerpts: chosen.map(c => ({ id: c.id, stratum: c.stratum, file: c.file, bars: c.bars, counted: c.counted })),
     drawing: 'both by the app\'s ScoreView in one page (renderer prop legacy / engrave), from the same Score (the import door), ' + WIDTH +
@@ -239,7 +259,7 @@ const AXES = [
   };
   fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 1) + '\n');
   const blank = () => Object.fromEntries(AXES.map(([k]) => [k, null]));
-  const template = { review: 'M-H1', seed: SEED, reviewer: 'role, never a name', date: null, limitation: 'one reviewer (G03 §21.4.5)',
+  const template = { review: 'M-H1', reviewer: 'role, never a name', date: null, limitation: 'one reviewer (G03 §21.4.5)',
     axes: Object.fromEntries(AXES), excerpts: chosen.map(c => ({ id: c.id, X: blank(), Y: blank(), prefer: null, notes: '' })) };
   fs.writeFileSync(path.join(OUT, 'results-template.json'), JSON.stringify(template, null, 1) + '\n');
   fs.writeFileSync(path.join(KEY, 'key.json'), JSON.stringify({ review: 'M-H1', seed: SEED, commit: commit,

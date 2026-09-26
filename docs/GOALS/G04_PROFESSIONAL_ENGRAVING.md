@@ -3895,7 +3895,61 @@ A47(G4f 판정)의 "import 파일 전부 fallback 0"은 import door 기준으로
 
 `338ddb3` (코드·테스트·도구), `5abf8c2` (`origin/main` 병합 — #21, #22; 겹치는 파일 없음), 이어서 이 기록 (G04 §37, 목차; DECISIONS G4-D2-1–18; CURRENT_STATE). `origin/g4d2-page-integration`에 push. 병합 안 함, PR 없음.
 
-**상태: G4d-2 READY_FOR_REVIEW** — BLOCKER 0, MAJOR 0 (자체 판정).
+### 37.18 리뷰와 Fixer (2026-09-26)
+
+입력: G4d-2 독립 리뷰(read-only, 대상 `8529611`)의 판정 **NEEDS_FIX — BLOCKER 0, MAJOR 3, MINOR 2**. 리뷰가 확인한 것: 기본 경로에 사용자가 보는 변화 없음(스크립트 사용자 흐름이 base·head에서 DOM·텍스트·네트워크 바이트 단위로 같음; legacy parity 16/16), `server.js`의 새 캐싱은 안전(경로 탈출 없음, 옛 파일과 섞이지 않음, `engrave/`+`vendor/`만 `immutable`), fallback·실패 처리(§16.7) 성립, DOM 계약과 `sync`(A31) 성립, 느슨해진 검사 없음. Lead 지시: MAJOR 셋(R1–R3)과 기록 오류 둘(M1, M2)을 고치고 그 밖은 손대지 않는다. 같은 worktree `D:/PPP-g4`, 브랜치 `g4d2-page-integration`, 시작 `8529611`. 결정은 DECISIONS G4-D2-19–22.
+
+#### 37.18.1 지적과 처리
+
+| # | 지적 (리뷰) | 처리 | 어디 |
+| --- | --- | --- | --- |
+| R1 (MAJOR) | M-H1 packet이 blind가 아님 — 둘: (1) 리뷰가 받는 `manifest.json`이 X/Y 배정 규칙(`sha256(seed:xy:path)`)과 seed와 파일 경로를 함께 적어, 그것만으로 열쇠를 다시 계산할 수 있다(리뷰가 자기 packet에서 16/16으로 해냄); (2) 판각기가 그린 SVG의 보표선마다 `stroke="none" stroke-width="1.3px"`가 legacy 쪽엔 전혀 없이 붙어(32/32 상관), 규칙 없이도 렌더러를 드러냄 | **FIXED** — (1) `manifest.json`에서 seed와 X/Y 배정 규칙을 빼고 열쇠 파일에만 둠(선택 규칙은 그대로 적음 — 무엇을 어떻게 골랐는지는 필요하지만 X/Y를 어떻게 정했는지는 아님); (2) `review-build.js`의 computed-style 복사가 `<svg>` 루트 자신은 건너뛰어(원래 정규식이 `path\|rect\|text\|...`만 잡고 `svg` 태그는 빠짐) 판각기 루트의 리터럴 `fill="currentColor"`가 그대로 남고, VexFlow 루트의 이미 구워진 색·글꼴 기본값과 비대칭이었던 것이 진짜 원인 — 정규식에 `svg`를 더하고, 루트의 `fill`·`stroke`·`stroke-width`·`stroke-dasharray`·`font-*`를 항상 지움(모든 도형이 이미 제 색을 갖고 있어 필요 없음). 보표선의 `stroke="none"`은 review-build의 `host`가 `document.body`에 바로 붙어 `[data-app]`(테마 루트, `--staff` 등은 거기서만 정의) 밖이라 `.ppp-engraved .vf-stave { stroke: var(--score-staff, var(--staff)) }`가 값 없이 `none`으로 떨어진 것(legacy는 색을 JS에서 한 번 구해 리터럴로 굽는다) — `host`에 `data-app="light"`를 둬서 고침 | §37.18.2 |
+| R2 (MAJOR) | 페이지가 그리는 마디 번호·안내 글자가 실제 기보(음표머리·기둥·beam·임시표)와 겹침 — 60개 코퍼스 표본에서 마디 번호 1,698개 중 115개(6.8%), 안내 글자 2,301개 중 234개(10.2%); H5 위반, watch list 수준이 아님 | **FIXED (일반화, 대부분)** — `annotations()`가 독립 bounding-box 검사 대신 판각기 자신의 충돌 기반(`engrave/skyline.js`의 `Skyline`)을 그대로 씀: system마다 하나, 판각기가 그 system에 그린 모든 객체(보표선·마디선·brace 제외)와 곡선으로 채운 뒤, 마디 번호·안내 글자 모두 `Skyline.put()`으로 배치(엔진이 다른 모든 객체를 두는 바로 그 함수) — 근사 오차(실제 글꼴 상승폭이 계산한 상자보다 조금 더 감) 여유로 pad 2.5px. 결과: 마디 번호 3/1,698(0.18%)로 사실상 해결. 안내 글자는 171/2,301(7.4%)로 27% 줄었으나 0은 아님 — 남은 것은 거의 전부 촘촘한 그랜드 스태프 찬송가(위·아래 보표 사이 간격 자체가 좁아, 글자가 들어갈 여지가 구조적으로 없는 마디): 그런 경우 밀어 넣지 않고 밀기 전 자리를 유지(§16.6 G4-D2-7과 같은 정신, 아래 보표로 들어가는 것보다 낫다는 판단). **명명된 추적 지표** `eg.page.annotation_overlap`(목표 0)로 §37.18.3에 남김 — Lead 검토 필요 | §37.18.3 |
+| R3 (MAJOR) | 페이지의 실제 인라인 path SVG 출력이 B9(legacy의 0.5배 이하)를 어김 — 5개 실측 중 2개(sonatina/016 0.778, /020 0.787)가 예산을 넘었고 미공개; 4–5배라던 `<use>` repaint 비용의 리뷰 재측정은 약 2배 | **FIXED (옵션 1: 공유 defs + use)** — `engrave/page.js:74`의 `SVG_OPTS`를 `inline: true`에서 `inline: false`로: svg.js의 기본(`<symbol>`을 `<defs>`에 한 번, `<use>`로 참조)을 그대로 씀. B9 완전 회복(§37.18.4). repaint는 실측 필요해 확인 — 서명은 §37.18.4 | §37.18.4 |
+| M1 (MINOR) | 기록의 fallback 수가 sonatina/014·026·027을 빠뜨림(import 문 → 저장/공유 → 새 원천 투영에서 `wedges.length` 불일치로 legacy 회귀) | **FIXED (문서만)** — 아래 §37.18.5. `fromScore`의 hairpin 수 불일치 자체는 `scoregraph/`, 이 단계 밖 | §37.18.5 |
+| M2 (MINOR) | `<use>` 대 path의 repaint 배수가 "4–5배"로 적혀 있음 | **FIXED (문서)** — 이 Fixer의 재측정으로 교정(§37.18.4, DECISIONS G4-D2-22) | §37.18.4 |
+
+#### 37.18.2 R1 — M-H1 packet을 blind로 (`tests/engrave/tools/review-build.js`; G4-D2-19)
+
+- **manifest**: `seed`를 빼고, `rule`에서 "X는 `parseInt(sha256(seed:xy:path)[0..8],16)`가 짝수일 때 legacy" 구절을 빼 "순서와 X/Y는 이 파일에 없는 열쇠에서 따로 정해진다"로 바꿈. 어느 파일·마디를 어떻게 골랐는지(선택 규칙)는 그대로 — 그것만으로는 X/Y를 알 수 없다. `results-template.json`의 `seed`도 뺌.
+- **SVG 루트**: computed-style 복사 정규식에 `svg`를 더하고, 복사 뒤 루트의 `fill`·`stroke`·`stroke-width`·`stroke-dasharray`·`font-family`·`font-size`·`font-weight`·`font-style`를 항상 지움(모든 도형이 이미 자기 색을 들고 있어 루트엔 필요 없음).
+- **보표선의 `stroke="none"` 근본 원인**: `host`가 `document.body`에 바로 붙어(앱의 `[data-app]` 테마 루트 밖) `--staff`가 안 보임 → CSS `stroke: var(--score-staff, var(--staff))`가 유효하지 않아 초기값 `none`. `host.setAttribute('data-app', 'light')`로 고침(실제 앱과 같은 조건).
+- **다른 체계적 차이도 점검**: 주석(`<!--`) 없음(둘 다), XML 선언 없음(둘 다), `<use>`/`<symbol>`/`id="ppp-g-"` 없음(페이지는 `inline: true`였다 — 지금은 R3로 `false`, 아래 참고), viewBox 소수 자릿수는 내용에 따라 다름(렌더러 식별과 무관). 보표선 두께(`stroke-width`)는 legacy와 판각기가 원래 다른 값을 쓰며(엔진 설계 차이, 화면에 실제로 보임) — 이건 "본다고 알 수 있는" 정상적인 시각 차이이지 숨은 채널이 아니므로 고치지 않음(눈으로 보는 리뷰의 목적 자체가 두 렌더러의 실제 모양을 비교하는 것).
+- **검증**: 새 seed `fixer-verify2-2026-09-26`로 test packet을 새로 만들어, (1) manifest만으로 열쇠를 다시 계산 시도 → seed 필드가 없어 실행 자체가 안 됨; (2) 32개 SVG 파일 전체에서 `stroke="none" stroke-width="1.3px"` 문자열 0건(전엔 32/32); (3) 구조적 지문 스캔(주석·XML 선언·`<use>`/`<symbol>`·id 접두사) — 16쌍 어디서도 렌더러를 완전히 갈라내는 특징 없음. `C:/…/scratchpad/r1_verify.js`(세션 scratchpad, 저장소에 없음).
+
+#### 37.18.3 R2 — 마디 번호·안내 글자를 skyline으로 (`engrave/page.js` `annotations()`; G4-D2-20)
+
+- **원인**: 독립 bounding-box와 6/4-pass 고정 걸음(`hits()`)만으로 밀었다 — 판각기의 skyline을 보지 않아, 클레프·다른 성부의 음표머리·beam 등을 놓쳤다.
+- **고침**: `engrave/skyline.js`를 page.js에 더해(`require('./skyline.js')`), system마다 `SK.Skyline`을 하나 만들어 판각기가 그 system에 그린 모든 객체(보표선·마디선·brace 제외)와 곡선(24조각)을 채운 뒤, 마디 번호는 `side:'above'`로 `floor`(9px 기본 자리) 기준, 안내 글자는 `side:'below'`로 음 자신의 자리를 `floor`로 `Skyline.put()`에 맡김 — put()이 자동으로 자신도 skyline에 더해, 한 system 안 번호끼리도 서로 본다. pad 2.5px(실제 글꼴 상승폭이 근사식보다 조금 더 가는 여유). 안내 글자는 아래 보표가 있으면 그 위 2px를 넘지 않는 hard limit도 두되, 그 한도를 넘으면(그랜드 스태프 찬송가처럼 방이 아예 없을 때) 밀기 전 자리로 되돌림(§16.6 G4-D2-7과 같은 정신 — 다음 보표로 들어가는 것보단 낫다).
+- **명명된 지표**: `eg.page.annotation_overlap`(목표 0, 아직 `l2.js`에 넣지 않음 — 이 pass는 page.js의 것만 고쳤고, 코퍼스 전체 L2 회귀 검사에 편입하는 일은 다음 단계로 남김).
+- **검증** (리뷰의 60파일 코퍼스 표본, `coll3.js` — H5 규칙 그대로 notehead·stem·beam·accidental만): 마디 번호 **94 → 3**/1,698(6.8%→0.18%), 안내 글자 **234 → 171**/2,301(10.2%→7.4%). 남은 171은 거의 전부 그랜드 스태프 찬송가의 좁은 보표 간격(예: `hymns/blessed-assurance.musicxml` 12/72, `hymns/o-the-deep-deep-love.musicxml` 30/74) — 위·아래 보표 사이에 안내 글자가 들어갈 자리 자체가 부족한 마디. **완전한 해결(0)은 위·아래 보표 사이 간격을 안내 글자용으로 넓히는 layout 변경이 필요해 이번 pass 범위를 넘는다 — 일반화된 fix(skyline을 탐)이지만, 이 좁은 그랜드 스태프 경우는 별도의 layout 여유가 있어야 완전히 없앨 수 있음을 Lead에 알림.**
+
+#### 37.18.4 R3 — B9과 repaint (`engrave/page.js:74`; G4-D2-21, 22)
+
+- **선택**: 리뷰가 권한 옵션 1(공유 `<defs>` + `<use>`). `SVG_OPTS`를 `{ inline: true }`에서 `{ inline: false }`로 — svg.js가 이미 갖고 있던 기본 방식(글리프마다 `<symbol>`을 `<defs>`에 한 번, `<use>`로 참조)을 페이지가 그대로 쓰게 함. 새 코드를 더 쓰지 않음 — svg.js의 두 모드는 이미 있었고 페이지가 `inline: true`를 골랐던 것뿐.
+- **B9 재측정** (리뷰가 쓴 5개 파일, 실제 페이지 SVG, `b9.js`):
+
+| 파일 | 전 (inline) | 후 (defs+use) | gzip 후 |
+| --- | --- | --- | --- |
+| burgmuller25/021 | 0.575 | **0.238** | 0.135 |
+| czerny849/001 | 0.514 | **0.291** | 0.161 |
+| sonatina/013 | 0.567 | **0.257** | 0.122 |
+| sonatina/016 | 0.778 | **0.341** | 0.180 |
+| sonatina/020 | 0.787 | **0.356** | 0.203 |
+
+  5개 모두 0.5 budget 안쪽 — B9 완전 회복, waiver 불필요.
+- **repaint 재측정** (`repaint2.js`, sonatina/020 전곡, Chrome trace, 150프레임 재생): `<use>`(지금 기본) 프레임 중앙값 14.0 ms, paint류 trace 합 10.03 ms/프레임(Paint 5.14, Layerize 3.45); `inline`(옛 기본, 요청 가로채기로 되돌려 같은 방법으로 잼) 프레임 중앙값 13.9 ms, trace 합 2.18 ms/프레임 — **trace 합 기준 약 4.6배**(리뷰가 잰 "약 2배"와 방향은 같지만 이 재측정은 그보다 큼), 그러나 **체감 프레임 시간(중앙값)은 사실상 같음**(14.0 대 13.9 ms) — paint류 작업이 16 ms 프레임 예산의 일부에 지나지 않아, 이론적 배수만큼 실제 재생이 느려지지는 않았다. 4–5배라는 기존 기록(§16.3, DECISIONS 관련 행)은 이 수치로 교정한다(M2) — **trace 성분 기준 4–5배가 맞고, 실제 프레임 시간에는 (이 곡에서는) 측정 가능한 차이가 없다**는 것이 더 정확한 서술.
+- **결정**: B9이 완전히 회복되고 실측 프레임 시간에 유의미한 퇴행이 없으므로, waiver 없이 옵션 1을 채택. Lead 서명 불필요(허용 요청 아님) — 다만 M-H1 packet·다른 실제 재생 경로에서 더 큰 곡(2,655개 `<use>`보다 많은 곡)의 프레임 시간을 넓게 보는 일은 G4f 성능 판정에 남김.
+
+#### 37.18.5 M1 — fallback 수 정정
+
+`interactions`·`share` suite의 import 문 → 저장/공유 → 새 원천 투영 경로에서 `wedges.length` 불일치로 legacy에 남는 파일은 기존 기록의 두 fixture에 더해 **`sonatina/014`, `sonatina/026`, `sonatina/027`** 셋도 있다(리뷰가 찾음). 근본 원인은 `legacy.fromScore`의 hairpin 개수 불일치(`scoregraph/`, 이 단계 밖) — 고치지 않고 기록만 정정.
+
+#### 37.18.6 게이트
+
+Windows: `npm run test:engrave` 183/183, `npm run test:scoregraph` 216/216, `page-files.js --check` 일치, 다섯 `--check` 도구(`make-e-fixtures`, `make-corpus`, `make-metrics`, `make-outlines`, `make-text-metrics`) 모두 PASS, `bench.js check --suite r|e|x` 모두 PASS(61/40/76 그래프), legacy parity 16/16(`8529611`의 `git archive` 대), R1·R2·R3 검증 위 각 절. Linux(`node:24-bookworm`)는 §37.18.7.
+
+**상태: G4d-2 FIX READY_FOR_RECHECK** — MAJOR 0 (자체 판정; R2의 안내 글자 잔여 171/2,301과 R3의 4–5배 trace 차이는 위에 이름 붙여 남김, Lead 검토 요청).
 
 ---
 

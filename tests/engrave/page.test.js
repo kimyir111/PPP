@@ -239,6 +239,9 @@ test('svg.js {unit: 10}: the page\'s SVG is the same drawing in the legacy rende
 });
 
 test('svg.js {inline}: the page\'s SVG writes every glyph as a path where the layout put it - the <use> drawing, point for point, and nothing else changed', async () => {
+  /* svg.js's own inline mode against its own <use> mode (not page.js's SVG_OPTS, which chose <use> for B9 from G4-D2-19
+     on - this test is about the two modes svg.js offers agreeing with each other, not about which one the page draws) */
+  const INLINE_OPTS = Object.assign({}, PG.SVG_OPTS, { inline: true });
   let scaled = 0, total = 0;
   const OL = require('../../engrave/outlines.js');
   for (const rel of ['tests/engrave/fixtures/e/E14-grace.musicxml', 'tests/engrave/fixtures/e/E19-clefs.musicxml', 'tests/engrave/fixtures/e/E16-dynamics-hairpins.musicxml',
@@ -246,8 +249,8 @@ test('svg.js {inline}: the page\'s SVG writes every glyph as a path where the la
     const g = await graphOf(rel);
     const plan = E.plan(g);
     const eng = E.layout.engrave(plan, { breakpoint: 'phone' });
-    const a = E.svg(eng, plan, { unit: 10 }), b = E.svg(eng, plan, PG.SVG_OPTS);
-    assert.equal(E.svg(eng, plan, PG.SVG_OPTS), b, 'deterministic');
+    const a = E.svg(eng, plan, { unit: 10 }), b = E.svg(eng, plan, INLINE_OPTS);
+    assert.equal(E.svg(eng, plan, INLINE_OPTS), b, 'deterministic');
     assert.doesNotMatch(b, /<use |<symbol |<defs>/, rel + ': no <use>, no <symbol>');
     /* each <use> of the unit-10 SVG is, in the inline one, a path: the symbol's outline moved to the <use>'s place and scaled by
        its transform - worked out here from the <use> itself, not from the layout */

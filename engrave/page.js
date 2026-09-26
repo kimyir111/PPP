@@ -50,13 +50,13 @@
   'use strict';
   if (typeof module === 'object' && module.exports)
     module.exports = factory(require('./plan.js'), require('./layout.js'), require('./practice.js'), require('./svg.js'), require('./canon.js'),
-      require('./source.js'), null);
+      require('./source.js'), require('./skyline.js'), null);
   else {
     const M = root.PPPEngraveModules = root.PPPEngraveModules || {};
-    M.page = factory(M.plan, M.layout, M.practice, M.svg, M.canon, M.source, root);
+    M.page = factory(M.plan, M.layout, M.practice, M.svg, M.canon, M.source, M.skyline, root);
     root.PPPEngravePage = M.page;
   }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (PL, LY, PR, SV, CN, SRC, browser) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (PL, LY, PR, SV, CN, SRC, SK, browser) {
   'use strict';
 
   const VERSION = '0.6.0-g4d2';
@@ -64,9 +64,14 @@
   const UNIT = 10;
   const NS = 'http://www.w3.org/2000/svg';
   const GRAPHS = 4, PER_PLAN = 8;
-  /* the page's SVG: in px (unit), every glyph a path at its place (inline: a playback frame repaints the score, and Chrome
-     repaints <use> elements 8-10 times slower than paths; getBBox reads a path where it stands - svg.js) */
-  const SVG_OPTS = Object.freeze({ unit: UNIT, px: UNIT, inline: true });
+  /* the page's SVG: in px (unit), each glyph defined once in <defs> and placed with <use> - svg.js's default (G4-D2-19,
+     R3 fix). G4d-2 first chose inline: true (a path written out at every occurrence) on a claimed 4-10x Chrome repaint
+     cost against <use> - but the real page's inline output broke B9 (<=0.5x the legacy renderer's SVG, §19.1) on 2 of 5
+     measured non-trivial pieces (up to 0.79x), undisclosed, while the independent review's own Chrome trace found the
+     real repaint cost of <use> against inline paths is about 2x, not 4-10x - <use> is still measurably slower per
+     playback frame, just not by the multiple that justified breaking B9. Recovering B9 across the catalogue is worth
+     that (G04 §37.1, DECISIONS G4-D2-19/20). */
+  const SVG_OPTS = Object.freeze({ unit: UNIT, px: UNIT, inline: false });
   const now = () => (browser && browser.performance ? browser.performance.now() : Number(process.hrtime.bigint()) / 1e6);
 
   const stats = {
@@ -293,13 +298,22 @@
     const x0 = t.anchor === 'middle' ? t.x - w / 2 : t.anchor === 'end' ? t.x - w : t.x;
     return [x0, t.y - t.size * 0.75, x0 + w, t.y + t.size * 0.2];
   }
-  const hits = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
+  /* G4-D2-19 (R2 fix): bar numbers and guide letters used to be placed from independent bounding-box checks against a
+     flat list of the engraver's boxes (a handful of fixed-step nudges, no real placement rule) - on a 60-file corpus
+     sample this missed 115/1,698 bar-number and 234/2,301 guide-letter collisions with real noteheads, stems, beams and
+     accidentals (H5). They now go through the same collision foundation the engraver itself places every other object
+     with (engrave/skyline.js, §10.1): one Skyline per system, built from the same boxes as before (everything the
+     engraver drew there, minus the staff lines, bar lines and braces that text may cross), and each label is placed with
+     Skyline.put() - out past whatever is already there, not just past the pass count a fixed loop happened to try. A
+     label put() adds itself, so two labels in one system see each other too. This is the generalized fix: the skyline
+     itself decides where content is, not a special-cased distance to look. */
   function annotations(eng, plan, score, p, groups) {
     const U = UNIT, out = [];
-    const bySys = new Map(eng.systems.map(s => [s.index, []]));
+    const pageW = eng.pages[0].w * U;
+    const skyBySys = new Map(eng.systems.map(s => [s.index, new SK.Skyline(0, pageW)]));
     eng.objects.forEach(o => {
       if (o.kind === 'staff' || o.kind === 'barline' || o.kind === 'brace') return;
-      bySys.get(o.system).push(o.box.map(v => v * U));
+      skyBySys.get(o.system).add(o.box.map(v => v * U));
     });
     /* a curve as the boxes of its short pieces (24 along it), not its control points' box - a phrase slur's control points
        stand far above the slur itself */
@@ -309,31 +323,37 @@
       let px = at(0, 0), py = at(0, 1);
       for (let k = 1; k <= 24; k++) {
         const x = at(k / 24, 0), y = at(k / 24, 1);
-        bySys.get(c.system).push([Math.min(px, x) * U, (Math.min(py, y) - half) * U, Math.max(px, x) * U, (Math.max(py, y) + half) * U]);
+        skyBySys.get(c.system).add([Math.min(px, x) * U, (Math.min(py, y) - half) * U, Math.max(px, x) * U, (Math.max(py, y) + half) * U]);
         px = x; py = y;
       }
     });
+    /* a text box in the skyline's own boxes: [x0,x1] and h so that put()'s box, converted back, matches textBox()'s
+       occupied region (ascent 0.75*size above the baseline, descent 0.2*size below) */
+    const span = t => { const w = String(t.text).length * t.size * (t.family === 'mono' ? 0.6 : 0.5); const x0 = t.anchor === 'middle' ? t.x - w / 2 : t.anchor === 'end' ? t.x - w : t.x; return { x0: x0, x1: x0 + w, h: t.size * 0.95 }; };
     const numberOf = mid => { const i = plan.measures.findIndex(m => m.id === mid); const sm = (score.measures || [])[i]; return sm ? sm.number : plan.measures[i].number; };
     if (p.numbers !== false) {
       const mById = new Map(eng.measures.map(m => [m.id, m]));
       eng.systems.forEach(sys => {
         const top = sys.staves[0].y * U;
+        const sky = skyBySys.get(sys.index);
         sys.measures.forEach((mid, k) => {
           const m = mById.get(mid);
           const t = { kind: 'bar', text: String(numberOf(mid)), x: (k === 0 ? sys.x : m.x) * U + 3, y: top - 9, size: 12, family: 'mono', weight: '500', stroke: 0.6,
             anchor: 'start', row: sys.index };
-          for (let pass = 0; pass < 6; pass++) {
-            const b = textBox(t);
-            const hit = bySys.get(sys.index).filter(o => hits(b, o));
-            if (!hit.length) break;
-            t.y = Math.min(...hit.map(o => o[1])) - 3;
-          }
+          const s = span(t);
+          /* floor: where it stands when nothing is in the way - 9 px over the top line, unchanged (floor - PAD = top -
+             6.6, the same default box textBox() always gave); PAD past whatever the skyline says is closer when it is
+             closer than that - real glyph metrics run a little past the box textBox() estimates for them, so a plain
+             0-clearance push can still touch in a real renderer; PAD gives that margin (G4-D2-19) */
+          const PAD = 2.5;
+          const box = sky.put({ x0: s.x0, x1: s.x1, h: s.h, side: 'above', pad: PAD, floor: top - 6.6 + PAD });
+          t.y = box[3] - t.size * 0.2;
           out.push(t);
         });
       });
     }
     if (p.heading === true && p.perRow) {
-      const W = eng.pages[0].w * U;
+      const W = pageW;
       if (score.title) out.push({ kind: 'title', text: String(score.title), x: W / 2, y: -38, size: 26, family: 'serif', weight: '400', anchor: 'middle', row: 0 });
       if (score.composer) out.push({ kind: 'composer', text: String(score.composer), x: W - 4, y: -16, size: 15, family: 'serif', weight: '500', anchor: 'end',
         stroke: 0.7, row: 0 });
@@ -351,22 +371,27 @@
         if (!heads.length) return;
         const st = sysStaff.get(heads[0].system + '|' + heads[0].staffKey);
         const x = heads.reduce((s, o) => s + (o.box[0] + o.box[2]) / 2, 0) / heads.length;
-        /* under the note and everything it carries (a down stem too), and never inside the staff */
-        const low = Math.max(st ? st.y + st.h : 0, ...list.map(o => o.box[3]));
-        const t = { kind: 'guide', text: g.letter, x: x * U, y: low * U + 12, size: 9, family: 'mono', weight: '400', anchor: 'middle', row: heads[0].system };
-        /* below whatever the engraver put there (a dynamic, a hairpin, fingering between the staves), but not into the staff
-           below: if there is no room, where it was (G4-D2-7) */
+        /* under the note and everything it carries (a down stem too), and never inside the staff - the note's own
+           reach, in px, is `floor`: where the letter starts from when nothing else is lower */
+        const lowSp = Math.max(st ? st.y + st.h : 0, ...list.map(o => o.box[3]));
+        const t = { kind: 'guide', text: g.letter, x: x * U, y: 0, size: 9, family: 'mono', weight: '400', anchor: 'middle', row: heads[0].system };
+        const s = span(t);
         const sys = eng.systems[heads[0].system];
-        const below = sys.staves.filter(s => st && s.y > st.y).map(s => s.y * U);
-        const floor = below.length ? Math.min(...below) - 2 : Infinity;
-        const y0 = t.y;
-        for (let pass = 0; pass < 4; pass++) {
-          const b = textBox(t);
-          const hit = bySys.get(heads[0].system).filter(o => hits(b, o));
-          if (!hit.length) break;
-          t.y = Math.max(...hit.map(o => o[3])) + t.size * 0.8;
-          if (t.y > floor) { t.y = y0; break; }
-        }
+        /* the staff below (if any), a hard limit: the skyline may still report something closer than the note's own
+           reach (a dynamic, a hairpin, fingering between the staves) and put() will stand outside that too, but never
+           past this - if the room between the note and the staff below is too small for the letter, it keeps its
+           unpushed spot (G4-D2-7) rather than entering that staff */
+        const below = sys.staves.filter(s2 => st && s2.y > st.y).map(s2 => s2.y * U);
+        const hardLimit = below.length ? Math.min(...below) - 2 : null;
+        const PAD = 2.5;
+        const floor = lowSp * U + 5.85 - PAD;
+        const sky = skyBySys.get(heads[0].system);
+        const box = sky.put({ x0: s.x0, x1: s.x1, h: s.h, side: 'below', pad: PAD, floor: floor });
+        /* the room between the note and the staff below may be too tight for the full push (dense grand-staff hymn
+           writing): standing exactly on the boundary can still land inside the staff below's own notes (ledger lines
+           reach up past its top line), so - as before the fix - it keeps its unpushed spot rather than guessing (a named,
+           tracked residual: eg.page.annotation_overlap, G4-D2-19, §37.1) */
+        t.y = (hardLimit !== null && box[3] > hardLimit) ? (floor + PAD) + t.size * 0.75 : box[1] + t.size * 0.75;
         out.push(t);
       });
     }
