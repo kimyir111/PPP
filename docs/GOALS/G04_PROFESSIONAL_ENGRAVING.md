@@ -4638,6 +4638,16 @@ Implementer, 2026-09-26. 브랜치 `g4f2-flip` (`D:/PPP-g4`), 시작 `9bffea3` (
 
 **상태: G4f-2 flip FIX — READY_FOR_LEAD_RECHECK** (자체 판정 BLOCKER 0, MAJOR 0). 커밋 `7f8ce24` (코드·테스트), 이어서 이 기록.
 
+### 43.11 Lead 재확인 (2026-09-26)
+
+고친 것만 다시 봤다 — 구현자의 작업 트리가 아니라 `11fab5e`를 새로 `git clone --shared`한 사본, 제 서버(8816), 리뷰어의 `perf.js`로.
+
+- **R1 (inline)**: `test:engrave` 199/199. 전곡 재생(sonatina/020), 기본(판각기) ↔ `?renderer=legacy` 번갈아 두 번, 1×: 프레임 중앙값 6.5 / 6.5 ms 대 9.1 / 9.2 ms, p95 10.2 / 13.2 대 13.8 / 16.0 ms, long task 0 대 0; SVG 1.72 MB(`<use>` 0) 대 2.20 MB (0.78배). 4×: p95 70.2 대 100.5 ms, long task 1(50 ms) 대 16(최대 65 ms). **판각기가 이제 legacy보다 빠르다** — MAJOR-1 닫힘.
+- **R2 (인쇄 명령)**: `print-check.js` — 여섯 곡 모두 인쇄(쪽 수 = 엔진, raster 없음); 공유 seed 일곱 중 판각기가 그린 셋은 명령 보임, legacy로 돌아간 넷은 안 보임, 그래도 부르면 번역된 안내. 코드: `engraveOutcome`은 `page.js`의 `'drawn'`/`'legacy'` 반환만 쓰고, 축소 뷰 routing은 그 앞(`engraveView` 첫 줄)에서 돌아가므로 곡을 fallback으로 적지 않는다 — 확인. MAJOR-2 닫힘.
+- **R3**: ko 문구의 말투만 Lead가 고침 — "준비하지 못했습니다" → "준비하지 못했어요" (앱의 다른 ko 문구가 모두 "~어요"); i18n 파일은 그대로 정확히 왕복한다.
+
+**판정: 병합 가능.** 4×에서도 §16.3의 50 ms를 완전히는 못 지키지만 legacy보다 낫다(위). m2·m3·M-H2의 flag·소나티네는 flip 뒤 과제로 로드맵에 남긴다. **배포는 병합 뒤 사용자에게 따로 묻는다.**
+
 ---
 
 ## 부록 A. 이 세션의 측정
