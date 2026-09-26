@@ -4133,10 +4133,37 @@ R 코퍼스(60개) 중 가장 긴 파일 `catalog/method/sonatina/024.mxl`(123�
 
 ### 39.11 남은 것 — G4f, 그리고 G4e가 다루지 않은 것
 
-- **§15.3의 60% 채움 세로 맞춤**(페이지가 60% 이상 차면 system 사이를 늘려 아래까지 맞춤): 이 브리프의 Scope 목록에 없어 이번엔 하지 않음 — 지금은 항상 위에 붙임(§15.3 "아니면 위에 붙임" 쪽). G4-E7로 남김.
+- **§15.3의 60% 채움 세로 맞춤**(페이지가 60% 이상 차면 system 사이를 늘려 아래까지 맞춤): 이 브리프의 Scope 목록에 없어 이번엔 하지 않음 — 지금은 항상 위에 붙임(§15.3 "아니면 위에 붙임" 쪽). G4-E7로 남김. **정정(§39.12): 실제 채움은 R 코퍼스 평균 65.3%, 35/96 페이지가 50% 미만이다 — 드문 예외가 아니라 흔한 경우이므로, G4f 우선순위 목록에서 이 항목을 낮은 우선순위 "있으면 좋은 것"이 아니라 상위에 둔다.**
 - **여러 part의 약어**(§15.5 "약어는 그 밖의 system"): 첫 system의 온전한 이름만 구현, 둘째 이후 system의 약어는 하지 않음(ledger는 `part-abbr`를 `drawn`으로 표시하지만 이 세션은 아무 데도 그리지 않는다 — G4-E6, ledger.audit()은 plan 출력만 보므로 실패하지 않는다).
 - `engraving.test.js`의 기존 결함("마디 2 안의 clef 변경이 0개") — G4e 이전부터 있던 것, 확인만 하고 손대지 않음(범위 밖, 화면 렌더러 규칙).
 - G4f가 할 것: mutation 완성(M1–M25 전부, 이제 M25 포함), `legacy-geometry.js`, perf 도구, CI에 `test:engrave`, M-H2, flip.
+
+### 39.12 리뷰와 Fixer (2026-09-26)
+
+독립 리뷰: **NEEDS_FIX (BLOCKER 0, MAJOR 2, MINOR 3)**. 화면(legacy) 경로는 그대로(legacy parity 16/16, `interactions.test.js`/`i18n-and-auth.test.js` 52/52 두 렌더러 모두), A38·A39·A40·B8은 리뷰 자신의 재측정으로도 유지, DP 줄바꿈은 진짜 최소화(탐욕 근사 아님), id 충돌 수정은 완결. MAJOR 둘을 고쳤다. MINOR 셋(pre-existing id-collision 위험, part-abbr 미방영 G4-E6, 버전 가드가 "같은 바이트의 버전 올림"과 "진짜 변경"을 못 가른다는 것)은 브리프대로 손대지 않았다 — G4f 항목으로만 남긴다.
+
+**R1 (MAJOR) — DECISIONS G4-E7의 근거가 틀림.** G4-E7은 "실제로 본 6곡 모두 첫 페이지가 92% 안팎까지 차 어색하지 않았다"고 §15.3(60% 채움 세로 맞춤) 보류의 근거를 댔다. 리뷰가 R 코퍼스 전체(committed print page 96개)를 재서 평균 65.3%, 35/96 50% 미만, 51/96 70% 미만, Für Elise 18.8%(제목 + 4마디 + 빈 여백)를 찾아냈다 — 이 Fixer가 같은 방법(마지막 system의 아래 끝 ÷ 실사용 페이지 높이, `PRINT.pageH − 2·PRINT.margin`)으로 R 코퍼스(`tests/engrave/corpus.json`, 61개 파일) 전체를 다시 재서 **똑같은 숫자**를 얻었다(96 페이지, 평균 65.3%, 35/96 < 50%, 51/96 < 70%, 최저 Für Elise 18.8%) — 리뷰의 결과가 재현 가능함을 확인했다. **한 일**: DECISIONS G4-E7을 제자리에서 고쳤다(취소선으로 틀린 문장을 남기고 정정을 덧붙임, docs/DECISIONS.md 400행) — §15.3 미구현이라는 결정 자체(이번 사이클 범위 밖의 새 기능)는 바꾸지 않았다. §39.11에 정정 문구를 추가하고, G4f 우선순위에서 §15.3을 "있으면 좋은 것"이 아니라 상위로 올린다고 적었다(위 39.11). §15.3의 세로 맞춤 자체는 **구현하지 않았다** — 브리프의 명시적 지시대로.
+
+**R2 (MAJOR) — 인쇄 출력에 committed 회귀 baseline이 없었음.** `layout-hashes.js`의 `CONFIGS`가 화면(desktop·phone)만 있어, `printBreakLines`/`printSystemCost`/`layoutPrint`가 공유 레이아웃 헬퍼의 의도치 않은 변경으로 조용히 흔들려도 CI가 잡지 못했다(A38의 결정론 테스트는 "같은 코드가 매번 같은 출력"만 증명하지, "이 커밋의 출력이 리뷰받은 그대로"는 증명하지 않는다). **한 일**: 새 파일이나 새 도구를 만들지 않고, `CONFIGS`에 `print: {mode:'print'}` 한 줄을 추가했다(`tests/engrave/tools/layout-hashes.js` 28행) — `createEngraver(plan).layout({mode:'print'})`가 화면과 같은 `EngravedScore` 모양(다만 `pages` 있음)을 내므로 기존 `computeAll`/`diff`/`guard`가 그대로 적용된다. R(61)+E(40)+X(golden 17) 전체 스코프로 118개 스코어 × 3 config(desktop·phone·print)를 `--write`로 다시 썼다 — 화면 두 config의 해시는 그대로(`engr/6`, `plan/3` 버전 유지, 새 config를 추가하는 것뿐이라 브리프대로 버전을 올리지 않았다).
+
+가드 빈틈 하나를 리뷰 전에 직접 찾아 메웠다: `--write`의 기존 가드(`reference()`/`guard()`)는 `origin/main`과의 merge base 파일의 기존 키만 비교한다 — merge base(`338508d`)는 이 브랜치가 아직 병합되지 않아 `print` config를 전혀 모르므로, `printSystemCost`를 바꿔도 버전을 올리지 않은 채 `--write`가 조용히 통과했다(직접 재현해 확인, 아래 부정 대조). `layout-hashes.js`에 `diffAgainstNewConfigs()`를 추가해, merge base가 모르는 (score, config) 쌍은 디스크에 이미 커밋된 파일과 같은 버전 아래 비교하도록 했다 — 병합 전까지는 이 fallback이, 병합 뒤에는 merge base 자체가 print를 알게 되어 원래 경로가 지킨다(DECISIONS G4-E8).
+
+**부정 대조 (negative control)**: `engrave/breaks.js`의 `PCOST.TARGET`을 `1.15` → `1.10`으로 바꾸고(print 전용 비용 함수),
+- `node layout-hashes.js` (check): **7개 print 해시만** 달라짐(desktop·phone은 0 — print 전용 변경이 print에만 보임을 확인), exit 1.
+- `node layout-hashes.js --write`: 새 `diffAgainstNewConfigs` 가드가 "merge base가 모르는 config에서 같은 버전 아래 커밋된 파일과 다름"으로 **REFUSED**, exit 1, 아무것도 쓰지 않음.
+되돌린 뒤(`1.10` → `1.15`) 둘 다 다시 통과(check exit 0, "all the committed hashes"). `git diff --stat engrave/breaks.js`로 작업 트리가 깨끗함을 확인했다 — 부정 대조는 실제 커밋에 남지 않았다.
+
+**회귀 — Windows**: `npm run test:engrave` **196/196**(무변경, 대조), `npm run test:scoregraph` **216/216**(무변경, 대조). 다섯 `--check` 도구(`make-e-fixtures`, `make-corpus`, `make-metrics`, `make-outlines`, `make-text-metrics`) 및 `page-files.js --check` 모두 PASS. `layout-hashes.js`(이제 print 포함) PASS. `bench.js check --suite r|e|x` **61/40/76** PASS(§39.7과 동일한 수). 화면 전용 레거시 parity(`legacy-parity.js`, base `338508d` 8871 대 head 8872) **16/16 byte for byte**.
+
+**회귀 — Linux**: Docker `node:24-bookworm`, `git -c core.autocrlf=false clone`(LF)로 이 Fixer 커밋을 복제. `node --test 'tests/engrave/**/*.test.js'` **196/196**, `layout-hashes.js`(print 포함) PASS, `bench.js check --suite r|e|x` **61/40/76** PASS — Windows와 같은 해시(A27 크로스 플랫폼, print config도 포함해 확인).
+
+**버전**: `engr/6`·`plan/3` 그대로 — print config를 baseline에 추가만 했을 뿐 어떤 layout 출력도 바꾸지 않았다(G4-D1a-1: 새 config 추가는 버전을 요구하지 않는다, 기존 config의 값이 달라질 때만 요구한다).
+
+**G0 hold-out**: 이 기록 어디에도 hold-out 파일 이름을 쓰지 않았다(`tests/engrave/helpers.js`의 `corpusFiles()`가 이미 제외).
+
+**커밋**: 브랜치 `g4e-print`, `fb38d07` 위에. push는 `origin/g4e-print`. PR 없음(Lead가 정한다).
+
+**상태: G4e FIX: READY_FOR_RECHECK.**
 
 ---
 
