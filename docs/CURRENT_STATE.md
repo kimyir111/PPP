@@ -64,8 +64,12 @@ as single-staff and marked their whole second staff hand `'x'` — a fallback to
 see. Fixed the tag, regenerated `catalog/shared-seeds.json` (only `hand` and stale MX-1 bookkeeping fields changed,
 verified note-by-note), then migrated the 4 already-seeded `ppp_shares` production rows (backed up first, dry-run
 verified, the user confirmed before the write) since `seedSharedScores()` skips ids that already exist. Verified
-live: all 7 seeds now draw with the engraver and show Print. **Next: the flag shape, sonatina beaming, B5, then §25
-step 3 (roadmap §15).**
+live: all 7 seeds now draw with the engraver and show Print. **Flag shape and sonatina beaming (H03) CLOSED with no
+code change** (both traced to legacy under-drawing or a legacy-only artifact, never an engrave defect — G04 §46, §48).
+**B5's first-draw long task investigated and DEFERRED as backlog** (root cause needs a Web Worker split to fully
+close, out of scope for now — G04 §49). **A real live regression found along the way is being fixed now**: the
+default practice view can show no time signature in a windowed section away from the piece's start (G04 §47).
+**Next: the time-signature fix's review and merge, then §25 step 3 (roadmap §15).**
 Read this first in a new session, then
 `docs/PPP_MASTER_ROADMAP.md` (the order of the remaining Goals, their gates, the current and next task), then the
 current goal's spec in `docs/GOALS/`.
