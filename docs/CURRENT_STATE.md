@@ -1,6 +1,6 @@
 # PPP — current state
 
-Updated 2026-09-26 (G4d-1b merged as PR #19; G4d-1a merged as PR #17; G4c merged as PR #15; MX-1 merged as PR #13; G4b merged as PR #12; the production database moved to Neon Free). G0 (Quality Foundation), G1 (ScoreGraph) and G2 (Score Import) are all merged
+Updated 2026-09-26 (G4d-2 merged as PR #23; G4d-1b merged as PR #19; G4d-1a merged as PR #17; G4c merged as PR #15; MX-1 merged as PR #13; G4b merged as PR #12; the production database moved to Neon Free). G0 (Quality Foundation), G1 (ScoreGraph) and G2 (Score Import) are all merged
 and closed. **G3 is merged as PARTIAL / DEFERRED** (PR #7, `c5474c2`; G03 §31): implemented, reviewed and fixed,
 but its blind human review (A36) failed (§30), so every part of it stays **off** — G3a, G3b, the automatic 8va
 and the pedal join — and nothing a user sees changed. **The active goal is G4 Professional Engraving**
@@ -17,7 +17,9 @@ merged as PR #15 (`e3c8c5a`)**: beams, stems, tuplets, voices, rests, grace note
 sees. **G4d-1a (curves and marks attached to notes; G4-L3) is CLOSED — merged as PR #17 (`b4fe019`)**, after its review (NEEDS_FIX,
 MAJOR 3), the Lead's spec amendments G4-L4/G4-L5, its Fixer and the Lead's re-check (G04 §35–§35.19). **G4d-1b (marks
 attached to systems, vertical spacing, courtesy signs) is CLOSED — merged as PR #19 (`a6e1a75`)** (G04 §36–§36.21), so the
-Node engraver is complete. **Next: G4d-2** (the renderer in the page behind a dev-only switch, default `'legacy'`), then M-H1. Read this first in a new session, then
+Node engraver is complete. **G4d-2 (the renderer in the page behind a dev-only switch, default `'legacy'`) is CLOSED
+— merged as PR #23 (`16ce784`)**, after its review, a Fixer, and a Lead re-check that found and closed a second blind-review
+leak in the M-H1 packet tool. **Next: M-H1** — the user's first look, in a fresh blind packet. Read this first in a new session, then
 `docs/PPP_MASTER_ROADMAP.md` (the order of the remaining Goals, their gates, the current and next task), then the
 current goal's spec in `docs/GOALS/`.
 
@@ -224,22 +226,20 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
 
 ## Next
 
-- **Active goal: G4 Professional Engraving — G4a, G4b, G4c, G4d-1a and G4d-1b CLOSED (PR #9 `df8a571`, PR #12 `62ede61`,
+- **Active goal: G4 Professional Engraving — G4a, G4b, G4c, G4d-1a, G4d-1b and G4d-2 CLOSED (PR #9 `df8a571`, PR #12
+  `62ede61`, PR #15 `e3c8c5a`, PR #17 `b4fe019`, PR #19 `a6e1a75`, PR #23 `16ce784`); next M-H1.** The order, gates and briefs are in `docs/PPP_MASTER_ROADMAP.md` (§14 current task, §15 next).
   PR #15 `e3c8c5a`, PR #17 `b4fe019`, PR #19 `a6e1a75`); next G4d-2, then M-H1.** The order, gates and briefs are in `docs/PPP_MASTER_ROADMAP.md` (§14 current task, §15 next).
   - **MX-1 — CLOSED, merged as PR #13 (`e37d37a`)** after one independent review (NEEDS_FIX: BLOCKER 1, MAJOR 1 — octave
     lines missing in partial views and on cards), its Fixer and the Lead's re-check (section "MX-1 — playback correctness"
     at the end of this file). **Deployed 2026-09-26** (production `0ef0950`). Its follow-ups
     (saved-song migration keyed on `ottavaRule`, M4, M5, the G0 bench rebaseline) are MX-2 carry-overs (roadmap §5.2).
-  - **G4d-2 — FIX READY_FOR_RECHECK** (worktree `D:/PPP-g4`, branch `g4d2-page-integration`, pushed; no PR; G04 §37, §37.18,
-    DECISIONS G4-D2-1–22): the engraver draws in the real page behind a developer's switch (`?renderer=engrave` or localStorage
-    `ppp.renderer`; the default stays `'legacy'` and the default page loads, draws and plays as before — legacy parity 16/16,
-    A16), `engrave/page.js` (source with `agree.ok`, caches keyed by plan/engr versions, the new `sync`, the §16.4 contract,
-    fallback to legacy counted in `PPP.engraveStats`), cacheable engine files (`?h=` content hash), R12, `with-port.js`'s gaps,
-    and the M-H1 packet builder `tests/engrave/tools/review-build.js` (the packet is local and gitignored; the Lead arranges M-H1).
-    One independent review returned NEEDS_FIX (MAJOR 3, MINOR 2); a Fixer pass closed the M-H1 blind-review leak (G4-D2-19),
-    routed the page's bar numbers and guide letters through the engine's own skyline placement (G4-D2-20; a small, named
-    residual remains, `eg.page.annotation_overlap`), and recovered B9 by switching the page's SVG to the shared-`<defs>`/`<use>`
-    scheme (G4-D2-21, 22). Awaiting the Lead's re-check.
+  - **G4d-2 — CLOSED, merged as PR #23 (`16ce784`)** (G04 §37–§37.19, DECISIONS G4-D2-1…23): the renderer in the page
+    behind a dev-only switch (`?renderer=engrave`; the default stays `'legacy'`, so the default page loads, draws and plays
+    exactly as before — legacy parity 16/16, A16), `sync` touching only changed elements, the §16.4 DOM contract, fallback to
+    legacy with a counted warning, `?h=`-gated immutable caching for engine files, and the M-H1 review tool. The independent
+    review's three MAJORs (a leaky M-H1 packet, page-drawn text colliding with notation, a broken SVG-size budget) were fixed;
+    the Lead's re-check found and closed a third, independent leak the B9 fix had reopened (`<use>`/`<symbol>` tags only ever
+    on the engraved half). **Next: M-H1** — a fresh blind packet, new seed, for the user's first look.
   - Production keeps the legacy renderer until G4f.
   - What G3 left for G4 is in G03 §30–§31 and DECISIONS G3-D3, G3-D4 and G3-U10.
 - **Production database (2026-09-25, decision D-0): Neon Free, $0.**
