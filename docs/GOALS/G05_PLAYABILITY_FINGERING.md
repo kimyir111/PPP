@@ -193,16 +193,25 @@ number looks good") rather than suppressed:
 - **The remainder (roughly 30 hits, concentrated in a handful of individual measures across
   czerny599/033, czerny849/025, burgmuller25/005/016/019, and `happy-birthday.musicxml`) are isolated wide
   chords or dyads, each individually implausible as a literal simultaneous stretch.** Two concrete,
-  traced examples: czerny599/033 m17 has a written RH dyad B4+G6 (20 semitones) with no arpeggio spanner
-  anywhere in the piece; burgmuller25/019 m17 has the identical triad E4+A4+C#5 written *twice*, in two
-  separate voices at the same onset (6 "keys" from 3 real pitches) — the shape of a measured tremolo
-  (`ORNAMENTS` already lists `'tremolo'`, schema.js) whose source MusicXML carries no `<tremolo>`/`orn`
-  marking. Both read as either a PPP-catalog transcription artifact (this corpus's `method` set states
-  several pieces are PPP's own transcriptions, tests/bench/README.md) or a wide voicing real performance
-  practice would roll — not a bug in the SPAN/KEYS mechanism itself, which is otherwise clean (`beyer` and
-  `hanon`, the two simplest strata, are 0/0 at every profile). Left as a named exception rather than
-  suppressed, matching the SATB case above; worth a follow-up (G0 catalog QA, or a later G5 refinement
-  that reads arpeggio/tremolo markings before grouping onsets) but out of scope for G5a itself.
+  traced examples (measure ids below are the ScoreGraph's internal ids, not printed measure numbers —
+  czerny599/033's internal `m17` is printed measure 11; burgmuller25/019's internal `m25` is printed
+  measure 17): czerny599/033 (internal `m17`) has a written RH dyad B4+G6 (20 semitones) with no arpeggio
+  spanner anywhere in the piece; burgmuller25/019 (internal `m25`) has the identical triad E4+A4+C#5
+  written *twice*, in two separate voices at the same onset (6 "keys" from 3 real pitches) — the shape of
+  a measured tremolo (`ORNAMENTS` already lists `'tremolo'`, schema.js) whose source MusicXML carries no
+  `<tremolo>`/`orn` marking. Both read as either a PPP-catalog transcription artifact (this corpus's
+  `method` set states several pieces are PPP's own transcriptions, tests/bench/README.md) or a wide
+  voicing real performance practice would roll — not a bug in the SPAN mechanism itself, which is
+  otherwise clean (`beyer` and `hanon`, the two simplest strata, are 0/0 at every profile). Left as a
+  named exception rather than suppressed, matching the SATB case above; worth a follow-up (G0 catalog QA,
+  or a later G5 refinement that reads arpeggio/tremolo markings before grouping onsets) but out of scope
+  for G5a itself.
+  **The KEYS check specifically, independent review found, has a real, fixable gap worth its own
+  follow-up rather than folding into the exception above**: `analyze.js`'s simultaneous-key count does
+  not deduplicate identical sounding pitches before counting, so burgmuller25/019's case above costs 2
+  "keys" toward `MAX_KEYS=5` for what is physically one key struck by two voices — a small, correctable
+  analyzer refinement (dedupe by pitch before counting), not purely a data/transcription story. Deferred
+  to G5b rather than reopening G5a for a change that affects exactly one file in the whole R corpus.
 - The false-positive count is gated as a **regression baseline** (`R_CORPUS_BASELINE` in
   `tests/playability/playability.test.js`, the same shape as G0's known-defects gate): the test fails if
   the count *grows*, not because it is nonzero.
@@ -213,7 +222,7 @@ alone: browser `ScoreArranger`, `arrange_score.py`, and `audio-score.js`'s `arra
 run through the G5a analyzer over their own real output (`tests/playability/arranger-baseline.test.js`):
 
 1. **`arrange_score.py`** (its own shipped test fixture, `tests/arranger_test.py`'s `fixture()`, every
-   style x level — 28 combinations): 19/28 combinations produce a hard violation even against the
+   style x level — 28 combinations): 18/28 combinations produce a hard violation even against the
    **large**-hand profile; the worst observed simultaneous left-hand span is a full two octaves (24
    semitones — `[36, 48, 52, 55, 60]`), which is `_voicing_options`'s own gap check
    (`pitches[-1] - pitches[0] > 24`) being reached in practice, not just permitted in theory.
