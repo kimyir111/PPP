@@ -356,18 +356,23 @@
             return i === undefined ? null : { m: numberOf[i], b: Q(pos.at) };
           };
           const dbl = s.ext && s.ext['musicxml.pedal'];
-          /* a doubled end (fromScore's ext, G4-R2) is a printed <pedal> element and a <sound *-pedal>
-             attribute restating one action - written back as the same two entries, plain then valued */
-          const one = (pos, type, doubled) => {
+          /* a doubled end or change (fromScore's ext, G4-R2) is a printed <pedal> element and a <sound
+             *-pedal> attribute restating one action - written back as the same two entries, plain then
+             valued. A start/stop's valued side has no value of its own to remember (127/0, or the
+             spanner's own soundOnly/depth); a change's does - dbl.changes[i] names it directly. */
+          const one = (pos, type, doubled, val) => {
             const a = at(pos);
             if (!a) return;
             if (doubled) pedals.push({ m: a.m, b: a.b, type: type, kind: s.pedal });
             const x = { m: a.m, b: a.b, type: type, kind: s.pedal };
-            if (s.soundOnly || doubled) x.value = s.depth !== undefined ? s.depth : (type === 'stop' ? 0 : 127);
+            if (s.soundOnly || doubled) x.value = val !== undefined ? val : (s.depth !== undefined ? s.depth : (type === 'stop' ? 0 : 127));
             pedals.push(x);
           };
           one(s.from, 'start', dbl && dbl.from);
-          (s.changes || []).forEach(c => one(c, 'change'));
+          (s.changes || []).forEach((c, i) => {
+            const cv = dbl && dbl.changes && dbl.changes[i];
+            one(c, 'change', cv !== null && cv !== undefined, cv);
+          });
           if (s.to) one(s.to, 'stop', dbl && dbl.to);
         } else if (s.type === 'wedge') {
           const from = mIndex.get(s.from.m), to = s.to ? mIndex.get(s.to.m) : undefined;
@@ -1264,15 +1269,29 @@
     }
     {
       const open = {};
-      const flush = kind => { const o = open[kind]; if (!o) return; b.spanner(parts[pianoIdx], o.x); open[kind] = null; };
       const markDoubled = (x, side) => {
         x.ext = Object.assign({}, x.ext, { 'musicxml.pedal': Object.assign({}, x.ext && x.ext['musicxml.pedal'], { [side]: true }) });
       };
+      const flush = kind => {
+        const o = open[kind];
+        if (!o) return;
+        /* a doubled change (below) names an index in x.changes, not an end - stamped on here, once the
+           array is done growing, rather than by markDoubled at push time */
+        if (o.chDoubled && o.chDoubled.some(v => v !== null)) {
+          const cur = (o.x.ext && o.x.ext['musicxml.pedal']) || {};
+          o.x.ext = Object.assign({}, o.x.ext, { 'musicxml.pedal': Object.assign({}, cur, { changes: o.chDoubled }) });
+        }
+        b.spanner(parts[pianoIdx], o.x);
+        open[kind] = null;
+      };
       /* App:4100/4163 push one pedal action twice: a printed <pedal> element (no value) and its <sound
          *-pedal> attribute at the same position (no distinct value carried through, but the value naming
-         which side spoke). A start immediately followed by a same-kind, same-position, same-type restatement
-         is that one action, not a second press - merge them (keep whichever named a value) and remember
-         which end doubled in ext, so toScore below writes both entries back (G4-R2). */
+         which side spoke). A start, change or stop immediately followed by a same-kind, same-position,
+         same-type restatement is that one action, not a second one - merge them (keep whichever named a
+         value) and remember what doubled in ext, so toScore below writes both entries back (G4-R2).
+         A doubled change matters as much as a doubled start or stop: two entries at the same position in
+         one spanner's `changes` is E-SPAN-ORDER (strictly increasing), which refuses the whole spanner -
+         not just this one pedal action, everything from it to the end of the piece. */
       const rawPedals = src.pedals || [];
       const dedupPedals = [];
       for (let i = 0; i < rawPedals.length; i++) {
@@ -1280,9 +1299,9 @@
         const kindOf = x => (x.kind === 'sostenuto' || x.kind === 'soft' ? x.kind : 'damper');
         const hasValue = x => x.value !== undefined && x.value !== null;
         if (nx && nx.m === pd.m && nx.b === pd.b && kindOf(nx) === kindOf(pd) && nx.type === pd.type &&
-            pd.type !== 'change' && hasValue(pd) !== hasValue(nx)) {
+            hasValue(pd) !== hasValue(nx)) {
           const merged = hasValue(pd) ? pd : nx;
-          dedupPedals.push(Object.assign({}, merged, { _doubled: pd.type === 'stop' ? 'to' : 'from' }));
+          dedupPedals.push(Object.assign({}, merged, { _doubled: pd.type === 'stop' ? 'to' : pd.type === 'change' ? 'change' : 'from' }));
           i++;
           continue;
         }
@@ -1297,10 +1316,13 @@
           const x = { type: 'pedal', pedal: kind, from: p };
           if (pd.value !== undefined && pd.value !== null) { x.soundOnly = true; if (pd.value !== 127) x.depth = Math.max(1, Math.min(127, Math.round(pd.value))); }
           if (pd._doubled === 'from') markDoubled(x, 'from');
-          open[kind] = { x: x };
+          open[kind] = { x: x, chDoubled: [] };
         } else if (pd.type === 'change') {
           if (!open[kind]) { note('pedal-change-without-start', pd.m); return; }
           (open[kind].x.changes = open[kind].x.changes || []).push(p);
+          /* the value a doubled change's <sound> side named, to write both entries back in toScore; null
+             for an ordinary (single-signal) change, kept only for the same-length index it lines up with */
+          (open[kind].chDoubled = open[kind].chDoubled || []).push(pd._doubled === 'change' ? pd.value : null);
         } else if (pd.type === 'stop') {
           if (!open[kind]) { note('pedal-stop-without-start', pd.m); return; }
           open[kind].x.to = p;

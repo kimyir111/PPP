@@ -4884,7 +4884,11 @@ G4b부터 매 단계 미뤄온 B5(§19.2: 전곡 첫 그리기 ≤ 300 ms, **조
 
 **Lead의 §50 가설 정정.** "soft pedal이 안 닫힌 채 끝나는 왕복에서 개수가 어긋나는 것으로 보이며, 더 깊이 보지는 않았다"였는데 — 재현해 보니(브라우저에서 `score.pedals`와 `toScore(fromScore(score).graph).pedals`를 나란히 찍음) **진짜 원인은 안 닫힌 pedal이 아니었다.** 앱의 `parseMusicXML`(4100·4163행)은 pedal 하나를 **두 번** `score.pedals`에 적는다 — 인쇄된 `<pedal type="…">`(또는 "una corda" 문구) 한 줄과, 같은 자리의 `<sound damper-pedal="…">` 한 줄. 이 fixture는 damper start·stop과 soft start가 다 이 방식으로 두 줄씩 적혀 **원본이 6줄**이다. `fromScore`의 열림/닫힘 상태 기계는 두 번째 "start"를 "먼저 것이 안 닫힌 채 새 press가 왔다"로 읽어 `note('pedal-unclosed', …)`를 부르고 첫 번째를 끝 없이 flush했다 — 그 결과 spurious한 spanner 둘, 그리고 두 번째 "stop"은 이미 짝이 사라져 `pedal-stop-without-start`로 버려졌다. 안 닫힌 soft pedal 자체는 시작부터 정확히 1개 항목으로 왕복하고 있었다 — 어긋남은 damper 쪽의 이 중복 신호에서 났다.
 
-**고침**: `fromScore`가 접기 전에, 같은 (m, b)·같은 kind·같은 type(start 또는 stop)이 바로 이어지고 한쪽만 값을 가진 두 줄을 하나로 합친다(값을 가진 쪽이 말한다 — 더 정확한 sound 쪽 정보를 살린다). 합쳐진 끝은 `ext['musicxml.pedal']`에 `{from:true}`/`{to:true}`로 남겨 `toScore`가 그 끝에서 두 줄(민 것 먼저, 값 있는 것 다음 — 원래 순서)을 다시 낸다. `change`는 원래도 손실 없이 왕복하므로(값이 있어도 `changes`에 위치만 쌓이고, 되돌릴 때도 위치마다 하나씩 그대로 나온다) 합치지 않았다.
+**고침**: `fromScore`가 접기 전에, 같은 (m, b)·같은 kind·같은 type(start·change·stop 무엇이든)이 바로 이어지고 한쪽만 값을 가진 두 줄을 하나로 합친다(값을 가진 쪽이 말한다 — 더 정확한 sound 쪽 정보를 살린다). start·stop 쪽으로 합쳐진 끝은 `ext['musicxml.pedal']`에 `{from:true}`/`{to:true}`로 남겨 `toScore`가 그 끝에서 두 줄(민 것 먼저, 값 있는 것 다음 — 원래 순서)을 다시 낸다.
+
+**독립 리뷰가 잡은 MAJOR, 그리고 이 기록의 첫 판이 틀렸던 것**: 첫 판은 "`change`는 원래도 손실 없이 왕복하므로 합치지 않았다"고 적었는데, **사실이 아니었다.** 리뷰어가 `<pedal type="change"/>` + `<sound damper-pedal="64"/>` 짝(시작·끝 사이의 절반 페달, 값 있는 신호가 `change`에도 똑같이 겹친다)으로 든 대항 사례를 재현하니: `change`를 합치지 않으므로 중복된 두 줄이 `changes` 배열의 **같은 자리**에 그대로 쌓이고, 기존 validator 규칙 E-SPAN-ORDER(자리는 반드시 늘어나야 한다)가 그 spanner 전체를 거부한다 — 이 페달 하나가 아니라 그 뒤로 곡이 끝날 때까지 전부. 원본 6줄이 그래프에 **0줄**로 들어간다(`origin/main`에서도 재현되는, 이 브리프가 만들지 않은 기존 결함이지만, 코퍼스에 아직 없다고 해서 이 고침이 막으려는 바로 그 위험군이다). 커밋된 코퍼스에는 지금 `<pedal type="change">` + `<sound damper-pedal>` 짝이 없어 실제 위험은 0이지만, 규칙만은 실제로 닫아야 했다.
+
+`change`도 같은 원리로 합친다 — 다만 `change`의 값(1–126, `start`의 127·`stop`의 0처럼 고정값이 아니라 임의의 반쪽 깊이)은 spanner 하나에 여러 개 있을 수 있는 `changes` 배열의 한 자리를 가리켜야 하므로, `from`/`to`처럼 끝 하나에 붙는 불(boolean)이 아니라 `changes`와 나란한 배열(`ext['musicxml.pedal'].changes`, 합쳐지지 않은 자리는 `null`, 합쳐진 자리는 그 값)로 남긴다. `toScore`는 이 배열을 읽어 그 자리에서만 두 줄(민 것, 값 있는 것)을 낸다 — 나머지 change는 전과 같이 한 줄.
 
 **두 번째로 잡은 문제**: `toScore`는 spanner 하나(damper 전체, soft 전체)를 통째로 이어붙여 `pedals`에 넣는다 — 두 종류(damper·soft)가 겹쳐 열려 있으면(이 fixture처럼 damper가 열린 채로 soft가 열리고 damper가 닫힘) 원래의 시간 순서(damper 시작 → soft 시작 → damper 끝)가 "damper 시작 → damper 끝 → soft 시작"으로 뒤바뀐다. `compare()`는 `pedals`를 정렬 없이 그대로 대조하므로 이 순서 차이도 `SOURCE_DISAGREES`였다. `toScore`가 `pedals`를 반환하기 직전 (m, b)로 안정 정렬해 되돌렸다 — 음의 `canonicalOrder`가 쓰는 것과 같은 키, 겹치지 않는 pedal(대부분의 곡)에는 영향 없음.
 
@@ -4925,7 +4929,20 @@ G4b부터 매 단계 미뤄온 B5(§19.2: 전곡 첫 그리기 ≤ 300 ms, **조
 
 Windows와 같은 결과. `npm ci`가 puppeteer의 Chromium을 못 받아도(postinstall 스크립트가 `allowScripts`에 안 걸려 건너뜀) 이 두 suite는 브라우저를 안 띄우므로 영향 없음.
 
-**상태: READY_FOR_REVIEW.** Lead가 재확인할 것: G4-R1(root 없는 화음의 스키마 완화, `chordKind:'none'`+bass의 화면 처리)과 G4-R2(pedal 중복 신호 합치기, `toScore` pedal 정렬)를 규칙으로 승인. §25 3단계(legacy 렌더러 완전 제거)의 범위를 다시 잡을 근거: 코퍼스·모든 suite에서 진짜 fallback 0.
+### 51.7 독립 리뷰: NEEDS_FIX → MAJOR 고침, MINOR 3건은 기록만
+
+**리뷰 판정: NEEDS_FIX (MAJOR 1, MINOR 3).**
+
+**MAJOR (고침, 51.2에 반영).** 리뷰어가 든 대항 사례 — `<pedal type="change"/>` + `<sound damper-pedal="64"/>`를 `start`/`stop` 사이에 끼운, 51.2가 처음 "원래 손실 없이 왕복하므로 합치지 않았다"고 (틀리게) 적었던 바로 그 경우 — 를 그대로 재현해 잡았다: 합치지 않은 두 `change` 줄이 `changes` 배열의 같은 자리에 남아 E-SPAN-ORDER가 spanner 전체를 거부, 원본 6줄이 그래프에 0줄로 들어갔다. `origin/main`에도 있는 기존 결함이고 코퍼스엔 아직 실례가 없다고 리뷰어가 확인했지만, "이 고침이 막으려는 위험군 자체"라 그대로 두지 않았다. 고침: `change`도 `start`/`stop`과 같은 원리로 합치되, 값은 `changes`와 나란한 배열(`ext['musicxml.pedal'].changes`)에 자리별로 남긴다 — 51.2 최종본에 반영. 리뷰어의 대항 사례를 그대로 다시 넣어 확인: `agree().ok === true`, `validate().ok === true`, 원본 6줄이 왕복 6줄로 순서까지 그대로.
+
+**MINOR 3건 (전부 이 브리프 전부터 있던 동작, 이번 변경과 무관, 코퍼스 위험 0 — 고치지 않고 기록만 한다):**
+1. 합쳐진 `stop`의 depth 값 — `toScore`의 `one()`은 `soundOnly`인 spanner의 모든 줄(시작·change·끝)에 `s.depth`(또는 127/0)를 매기는데, 이는 `change` 자신의 실제 깊이가 아니라 spanner 전체의(시작이 준) 값이다. 합쳐지지 않은 단독 `change`(예: `<sound damper-pedal="64">`만, 짝이 되는 `<pedal type="change">` 없이)는 자기 깊이를 그대로 잃는다 — `changes`가 위치만 갖는 `Pos`라 처음부터 그랬다.
+2. 겹친 종류의 동일 (m, b) 타이 순서 — 두 pedal 종류가 정확히 같은 자리에서 사건을 내면 `toScore`의 안정 정렬은 spanner를 만난 순서(선언 순서)로 그 자리의 동률을 깬다. 원본이 그 자리에서 어느 kind를 먼저 적었는지와 다를 수 있다.
+3. `chordKind:'none'` + root 있음 + bass 없음의 화면 — `engrave/sysmarks.js`의 `chordPieces`는 이 조합에서 `s = root + 'N.C.'`가 되어 예컨대 "CN.C."로 찍힌다(51.1의 고침은 bass가 있을 때만 'N.C.'를 비웠다). 이 조합이 실제로 나오는 경로는 없다(스키마상 가능할 뿐).
+
+**리그레션 재확인 (MAJOR 고침 뒤, 51.5의 전부 다시)**: `test:scoregraph` 216/216, `test:engrave` 199/199, `pdf-layer`·`midi` 및 다른 브라우저 suite 24개 전부 `fallbacks none`, `legacy-parity.js` 16/16, `a48-coverage.js` PASS(core 553/553, corpus 318/318, OMR 2/2) — 전부 변화 없음(MAJOR 고침은 `change`가 겹쳐 적힌 경우에만 갈리고, 지금 어느 fixture·코퍼스도 그 경우가 아니라서 기존 결과가 그대로다).
+
+**상태: READY_FOR_REVIEW.** Lead가 재확인할 것: G4-R1(root 없는 화음의 스키마 완화, `chordKind:'none'`+bass의 화면 처리)과 G4-R2(pedal 중복 신호 합치기 — start·change·stop 전부, `toScore` pedal 정렬)를 규칙으로 승인. §25 3단계(legacy 렌더러 완전 제거)의 범위를 다시 잡을 근거: 코퍼스·모든 suite에서 진짜 fallback 0(위 MINOR 3건은 별개 — 코퍼스 위험 0인 기존 동작으로 남겨 둠).
 
 **상태: READY_FOR_REVIEW.** Lead가 재확인할 것: G4-R1(root 없는 화음의 스키마 완화, `chordKind:'none'`+bass의 화면 처리)과 G4-R2(pedal 중복 신호 합치기, `toScore` pedal 정렬)를 규칙으로 승인. §25 3단계(legacy 렌더러 완전 제거)의 범위를 다시 잡을 근거: 코퍼스·모든 suite에서 진짜 fallback 0.
 
