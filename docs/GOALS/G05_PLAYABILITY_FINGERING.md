@@ -128,4 +128,129 @@ Node-only modules the app does not load.
 
 ## 11. Implementation record
 
-(Grows here as each phase lands — G5a first.)
+### G5a — analyzer, metrics, legacy-arranger baseline (2026-09-28)
+
+**What was built.** A pure-function UMD module, `playability/` (Node-only, not loaded by the app):
+
+- `playability/reach.js` — hand-profile reach and keyboard-velocity constants, all cited (see the file's
+  own header for the full reasoning). The three hand profiles are not invented: they are the app's own
+  `Fingering.SPANS['1-5']` table (App 8337-8354, Parncutt et al. 1997) — `small: 10` (MinRel), `medium: 12`
+  (MaxComf), `large: 14` (MaxPrac) semitones, the widest interval one hand may hold at once.
+- `playability/graph.js` — `attacksOf(graph, opts)`: a ScoreGraph's heads, grouped into per-hand keyboard
+  attacks. Hands come only from `pitch.limbOf` (G1-D12), exactly as §10 requires. Ties are resolved into
+  one continuous hold so a tied note is never misread as a new attack.
+  `docs/DECISIONS.md` G1-D12 is the limb decision; G3-D4 is the `Head.fingering` provenance rule G5b will
+  need. `scoregraph/pitch.js`'s `limbOf(part, event, head) = head.limb ?? voice.limb ?? staff.limb` (§8.2)
+  is the whole hand-assignment mechanism this phase touches — G5a reads it, never writes it.
+- `playability/analyze.js` — `analyze(attacks, opts)`: the four hard violations (SPAN, KEYS, VELOCITY, and
+  a held-note conflict, which turned out to be the *same check* as SPAN/KEYS with a non-empty "held" list
+  rather than a fifth mechanism — see the file's header) plus soft strain (stretch, jump, crossing,
+  repeat, an approximated black-key-thumb signal, polyphony), at both the event and the measure level.
+- `playability/index.js` — `analyzeGraph(graph, opts)`, the common-case entry point.
+- `test:playability` (new, Node, `node --test "tests/playability/**/*.test.js"`), wired into the gate job
+  in `.github/workflows/bench.yml` next to `test:scoregraph`/`test:engrave`.
+
+**Corrections to this doc, found by actually measuring rather than assuming (§10 asked for this):**
+
+1. **The first "impossible velocity" model was wrong, and the R-corpus false-positive run caught it.** A
+   flat 250 ms floor between *any* two attacks in one hand (from the cited "~4 Hz human key-strike
+   repetition limit") flagged 999 of 1,401 events in sonatina/020 alone — almost all single-semitone scale
+   steps, which real players take far faster than 4/second because different fingers cover them without
+   moving the hand. The corrected model (`playability/reach.js`) only requires travel time once a jump
+   exceeds the hand's own reach; a repeated *single key* is a separate, narrower case, and a repeated or
+   tremolo *chord* (several fingers, several keys) is not held to that case's floor at all — an earlier,
+   still-wrong intermediate version flagged those too (Burgmüller 25 no. 15's repeated RH triad, no. 23's
+   repeated LH note), fixed the same way. Repeated-note speed is scored as **soft** strain, per §3(a)'s own
+   list — it was a bug in this implementation, not a gap in the doc, that early code hard-gated it too.
+2. **The velocity distance-per-semitone figure (0.012 s) is an explicit placeholder, not a citation** — no
+   source, in or out of this repo, gives a semitones/second figure for whole-hand relocation (as opposed
+   to single-key repetition, which the 4 Hz figure above does cover). Flagged in `reach.js` for H-56 or a
+   measured corpus to correct, exactly as §10 anticipates.
+3. **The R corpus is not the negative control §3(d) assumed it would be, and the reason is real, not a
+   bug in the checks above.** See the false-positive numbers below.
+
+**R-corpus false positives** (`tests/engrave/corpus.json`, G4a's own manifest — reused, not redefined,
+per §10; 61 files across 8 strata):
+
+| hand profile | files with a hard violation | total hard violations | by code |
+| --- | --- | --- | --- |
+| small (10 st) | 22 / 61 | 235 | SPAN 229, VELOCITY 5, KEYS 1 |
+| medium (12 st) | 14 / 61 | 68 | SPAN 66, VELOCITY 1, KEYS 1 |
+| large (14 st) | 14 / 61 | 64 | SPAN 63, KEYS 1 |
+
+Not ≈0, at any profile. Investigated per §10's instruction ("don't just tune the analyzer until the
+number looks good") rather than suppressed:
+
+- **The large majority (35 of the medium-profile 66 SPAN hits, in 8 of 10 hymns) is the SATB-hymn
+  two-staff convention.** A hymn's four voices sit on two staves (soprano+alto on the treble staff,
+  tenor+bass on the bass staff); `musicxml-import.js`'s own rule for a 2-staff piano part gives staff 1
+  RH and staff 2 LH *uniformly* (line 1025), so the left hand is asked to hold tenor and bass together —
+  and real hymn/keyboard performance practice routinely redistributes an inconvenient tenor note to the
+  right hand or rolls it, a convention this graph's per-staff hand model has no way to see. This is a
+  named, understood exception (§3(d)'s own phrase), not a defect in G1's hand assignment or in this
+  analyzer: `all-creatures.musicxml` m16 (LH holds D4=62, then also strikes C#3=49, a 13th) is
+  representative.
+- **The remainder (roughly 30 hits, concentrated in a handful of individual measures across
+  czerny599/033, czerny849/025, burgmuller25/005/016/019, and `happy-birthday.musicxml`) are isolated wide
+  chords or dyads, each individually implausible as a literal simultaneous stretch.** Two concrete,
+  traced examples: czerny599/033 m17 has a written RH dyad B4+G6 (20 semitones) with no arpeggio spanner
+  anywhere in the piece; burgmuller25/019 m17 has the identical triad E4+A4+C#5 written *twice*, in two
+  separate voices at the same onset (6 "keys" from 3 real pitches) — the shape of a measured tremolo
+  (`ORNAMENTS` already lists `'tremolo'`, schema.js) whose source MusicXML carries no `<tremolo>`/`orn`
+  marking. Both read as either a PPP-catalog transcription artifact (this corpus's `method` set states
+  several pieces are PPP's own transcriptions, tests/bench/README.md) or a wide voicing real performance
+  practice would roll — not a bug in the SPAN/KEYS mechanism itself, which is otherwise clean (`beyer` and
+  `hanon`, the two simplest strata, are 0/0 at every profile). Left as a named exception rather than
+  suppressed, matching the SATB case above; worth a follow-up (G0 catalog QA, or a later G5 refinement
+  that reads arpeggio/tremolo markings before grouping onsets) but out of scope for G5a itself.
+- The false-positive count is gated as a **regression baseline** (`R_CORPUS_BASELINE` in
+  `tests/playability/playability.test.js`, the same shape as G0's known-defects gate): the test fails if
+  the count *grows*, not because it is nonzero.
+
+**Legacy-arranger baseline** (closes half of G0 Step 14, `docs/GOALS/G00_QUALITY_FOUNDATION.md` §16.6 —
+confirmed never done before this; `docs/PPP_MASTER_ROADMAP.md` names three engines, not `arrange_score.py`
+alone: browser `ScoreArranger`, `arrange_score.py`, and `audio-score.js`'s `arrangeNotes`). All three,
+run through the G5a analyzer over their own real output (`tests/playability/arranger-baseline.test.js`):
+
+1. **`arrange_score.py`** (its own shipped test fixture, `tests/arranger_test.py`'s `fixture()`, every
+   style x level — 28 combinations): 19/28 combinations produce a hard violation even against the
+   **large**-hand profile; the worst observed simultaneous left-hand span is a full two octaves (24
+   semitones — `[36, 48, 52, 55, 60]`), which is `_voicing_options`'s own gap check
+   (`pitches[-1] - pitches[0] > 24`) being reached in practice, not just permitted in theory.
+2. **`ScoreArranger`** (App 8977-9213, extracted the way `tests/engrave/helpers.js`'s `appFinalize()`
+   already extracts `Score.finalize`, run over a real R-corpus melody — sonatina/001 — with real G1 hand
+   assignment substituted for `legacy-score.js`'s always-`'r'` placeholder): 24/28 combinations produce a
+   hard violation against the large profile. Traced worst case: the `'cinematic'` style's own two
+   `atPattern` calls (App ~9090-9094) both target the left hand with overlapping durations — `[root,
+   root+12]` held up to 1.8 s, then `root+24` struck at the next beat while it is still sounding — a
+   genuine, reproducible 24-semitone stacked left-hand chord.
+3. **`audio-score.js`'s `arrangeNotes`**: structurally different from the other two — it only ever keeps a
+   *subset* of notes it is given, never inventing a pitch. Its own thinning strategy explicitly keeps a
+   cluster's lowest and highest note first (`take(lo); take(hi)`, before anything else, at every level),
+   so a wide chord's span survives even the most aggressive ('beginner') thinning; only the note *count*
+   (the KEYS check) improves with a stricter level. Demonstrated on a synthetic two-hand wide-chord
+   cluster (C2-C5, 36 semitones) — no recorded performance sample was available in this environment, so
+   this one is a structural finding, not a corpus measurement like the two above.
+
+**Mutation suite** (`tests/playability/playability.test.js`): a clean baseline (no hard violations); one
+"dead" mutation (a cosmetic key-signature change, nothing about playability altered) that must and does
+leave the totals byte-for-byte identical; and one planted fixture per hard-violation kind — a 13th in one
+hand (SPAN), 6 simultaneous notes in one hand (KEYS), a held note plus a same-hand re-strike 33 semitones
+away (SPAN with `hold: true` — the fourth violation the goal doc names separately), an impossible 3-octave
+16th-note leap (VELOCITY), and a genuinely playable fast scale run confirmed to stay clean (the regression
+test for finding 1 above). A profile-boundary case (a 13-semitone chord: a violation for `small`/`medium`,
+not for `large`) confirms the three profiles actually change the verdict, not just the label. 15/15 tests
+pass.
+
+**Performance** (G05 §7): sonatina/020 is confirmed the longest R-corpus piece by head count (1,776 heads,
+matching the doc's figure exactly) and the longest in the full 347-file eligible catalogue too, not only
+within the R-corpus manifest. `analyzeGraph` over it: **~9-10 ms** in Node, well inside the 150 ms budget.
+
+**Scope notes.** No fingering DP, no `Head.fingering` writes, no app/UI changes (G5b/G5c). The printed-
+fingering set (14,305 heads / 84 files) and the "17 book cases" are G5b's concern and were not
+investigated here, per §10's own instruction to leave them alone until G5a's own acceptance criteria are
+met. `test:scoregraph` (216/216) and the pre-existing `test:engrave` suite were reconfirmed unaffected by
+this phase (a pre-existing, unrelated `test:engrave` failure on `be-still-my-soul.musicxml` tie rendering
+was observed during this work; it is untouched by and unrelated to G5a — no file under `engrave/`,
+`scoregraph/`, or `catalog/` was read for anything other than analysis in this phase, and none was
+written to).
