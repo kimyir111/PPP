@@ -115,7 +115,10 @@ G5a).
 ## 9. Rollback
 
 `PPP.fingering = 'legacy'` once G5c exists. Before G5c, there is nothing user-facing to roll back — G5a/b are
-Node-only modules the app does not load.
+Node-only modules the app does not load. **G5c (§11) now exists and ships with exactly this default** —
+`PPP.fingering` defaults to `'legacy'`, so there is nothing to roll back yet either; the switch exists
+for `'inferred'` to be turned on deliberately (dev console, a test, or a future default flip with its own
+review), not because anything changed for a user today.
 
 ## 10. Architecture notes for the G5a implementer
 
@@ -453,3 +456,208 @@ tests in this phase — nothing in the app or in G3's `professionalize()` pipeli
 still holds: G3 infers no fingering). `test:scoregraph` (216/216) reconfirmed unaffected; `test:engrave`
 was not re-run in this phase (no file under `engrave/` was touched) but nothing in `playability/` or
 `tests/playability/` overlaps it.
+
+### G5c — app integration (2026-09-28)
+
+**What was investigated first (§10's own instruction, before designing anything).** Two questions had to
+be answered before choosing an integration point, both traced against the running code, not assumed:
+
+1. **Does `Fingering.plan(sc)`'s live DP actually honor a pre-set `n.finger` as a hard constraint, or only
+   as a soft hint?** Traced `Fingering.events()` (App ~8560-8592: `e.fixed = e.notes.map(n => (n.finger >=
+   1 && n.finger <= 5) ? n.finger : 0)`) into `Fingering.candidates()` (App ~8564-8598): every enumerated
+   candidate finger assignment is rejected unless it agrees with every fixed note in that chord
+   (`if (want[idx] && want[idx] !== f[idx]) okFixed = false`), and — critically — when NO candidate can
+   satisfy every fixed note at once (a chord whose fixed fingers do not fit the model's own
+   pitch-ascending/finger-ascending enumeration order), `candidates()` still falls back to a single
+   candidate that forces every fixed value through regardless (App ~8590-8595: `f[idx] = want[idx] ||
+   ...`). So a fixed finger is unconditionally returned for that note, in every code path, with no
+   exception. This is a hard filter, not an anchor cost term — confirmed by reading the actual branches,
+   not by inference from the comment ("a written fingering is kept") alone.
+2. **Is every open song's Score still derived from a graph via `toScore()`, per G2's import-boundary
+   decision, or has that regressed?** Traced every call site (corrected below to actually be every one —
+   the first pass through this file missed a fourth): `scoreFromXml`, `scoreFromFile` and `Import.load`'s
+   own MusicXML/MXL/MIDI branch (App ~7597-7609) all call `PPPScoreGraph.legacy.toScore(graph, ...)` when
+   `LEGACY_IMPORT` is false (the default; `PPP.legacyImport = true` is G2-D13's own one-release rollback,
+   unrelated to this phase) — confirmed still true, not regressed. **But that is not the whole story**, and
+   the goal doc's premise needed a correction here — three distinct paths bypass the graph entirely and
+   call `parseMusicXML(xml, ...)` directly and unconditionally, regardless of `LEGACY_IMPORT`:
+   - audio-recording transcription (`Import.finishHeard`);
+   - the "rhythm rewrite" and "rich review arrangement" flows (`rewriteFromHeard`,
+     `applyRichReviewArrangement`);
+   - and `Import.load`'s OWN scanned-page (PDF/PNG/JPG, OMR) branch (App ~7662-7690): when the graph-import
+     route (`importToGraph`, at the top of `Import.load`) is not the one that ends up producing text —
+     i.e. once `PdfLayer.notate(pages, file.name)` builds MusicXML text straight from the raster/PDF layer
+     — `score = parseMusicXML(xml, file.name)` (App ~7685) turns it into a Score without ever calling
+     `graphForScore()` or `toScore()`. This is a second, separate route inside the very function (`Import.
+     load`) that finding 2 already traced for its graph-backed branch — missed the first time through.
+
+   All three are correct and intentional to leave alone in this phase (G2-D11: MIDI/audio transcription
+   and OMR scanning get no new quantizer/voice/hand/graph code here; G05 §2's own non-goal excludes hand
+   inference for recordings, G10a) — it just means "every open song's Score comes from a graph" is true
+   only for the graph-backed file-import branch (MusicXML/MXL/MIDI through `Import.load`) and false for
+   audio-recording-derived, rhythm-rewritten/rearranged, and OMR-scanned scores alike. G5c correctly does
+   nothing for any of the three: none of them ever reach a graph, so `n.finger` stays unset on them exactly
+   as it did before this phase, switch or no switch, and the hand guide falls back to its live per-note DP
+   exactly as always — the same "fails safe, does nothing" behavior in all three cases, not just the two
+   originally disclosed here.
+
+**Integration point chosen: (a), writing onto the graph itself, at the single spot the app turns a freshly
+imported graph into a Score.** Three call sites do this (`scoreFromXml`, `scoreFromFile`, `Import.load`),
+all sharing the identical shape `Score.finalize(PPPScoreGraph.legacy.toScore(graph, opts))` immediately
+beside `engraveRemember(..., graph, producer)` (the same graph object also handed to G4's renderer/save
+path). A new helper, `graphForScore(graph)`, wraps the graph at each of these three sites — mutating the
+`got.graph`/`r.graph` variable in place, not just the copy fed to `toScore()` — for two reasons: (1) it
+is the one point that already exists for every graph-backed import, needing no new hook, matching how G1's
+`opts.legacyWriter`/G2's `PPP.legacyImport` switches were also plain call-site wraps, not new machinery;
+and (2) using the SAME graph object for both `toScore()` and `engraveRemember()` means the printed,
+engraved score (G4 already draws `Head.fingering` as a mark when present, A7) shows the identical
+generated fingering the hand guide's overlay shows — one write, two consistent readers — rather than a
+split-brain where the hand guide shows generated fingers the engraved page does not, which a plain reading
+of §3(c) ("the score shows generated fingering... G4 already draws `Head.fingering`... so display is not
+new work") rules out anyway.
+
+```js
+let FINGERING_MODE = 'legacy';
+function graphForScore(graph) {
+  if (FINGERING_MODE !== 'inferred') return graph;
+  try {
+    const F = (typeof window !== 'undefined' && window.PPPPlayabilityModules) ? window.PPPPlayabilityModules.fingering : null;
+    if (F) return F.fingerGraph(graph).graph;
+  } catch (e) { /* a bad graph or a missing module: fall back to what was imported, unfingered */ }
+  return graph;
+}
+```
+
+Because of finding 1 above, this needed **zero changes** to `fingerPlan()` (App ~15714, the hand guide's
+own cache — already keyed by `this.state.score` identity, so it already computes the plan once per song
+load exactly the way G4's plan/layout caches do, and needed no new caching of its own), to `Fingering.plan`
+itself, to `HandArt`, or to any renderer/mark-drawing code: whatever `Head.fingering` value `write()`
+placed on a head flows through `toScore()` into `n.finger`, and the very next `Fingering.plan(sc)` call —
+made by the hand guide exactly as it always was — echoes it straight back through the `fixed`-candidate
+mechanism already in the live code.
+
+**The switch: `PPP.fingering`, default `'legacy'`.** Values are `'legacy'` (default — every graph is
+used exactly as its importer built it; the hand guide's live DP recomputes fingering from scratch, byte
+for byte what it always did) and `'inferred'` (the graph is run through G5b's `fingerGraph()` before it
+becomes a Score, writing `Head.fingering` with provenance `inferred` wherever a head has no fingering
+opinion of its own yet). Any other value — unset, a typo, the wrong case — is `'legacy'`, following
+G4-F2-1's own convention for `PPP.renderer` rather than inventing a new one. Exposed on `window.PPP` as a
+plain get/set pair next to `legacyImport` (App ~9262-9266), the same "one dev switch, no URL param, no
+localStorage" shape `PPP.legacyImport` already uses (App ~4443's own comment on that switch was the
+model followed here) — deliberately simpler than `PPP.renderer`'s URL/localStorage layering, since G05 §9
+only ever asked for `PPP.fingering = 'legacy'` as the rollback, not a user-visible toggle.
+
+**Provenance respected, reusing G5b's guard exactly.** `write()` (`playability/fingering.js`, unchanged
+by this phase) is called as-is through `fingerGraph()` — no new guard was written. A head that already
+carries `imported` (printed) or `edited` fingering is left alone; only an empty head, or one already
+`inferred` by an earlier pass, may be (re)written.
+
+**Two new script tags, loaded but inert until the switch is on.** `playability/graph.js` and
+`playability/fingering.js` (G5a/G5b's own modules, unmodified) now load in the app's `<head>`, right after
+the `scoregraph/` chain and before `audio-score.js` — both already depend only on `scoregraph/rational.js`,
+`pitch.js`, `time.js`, `ops.js` and `prov.js`, all loaded earlier in that same chain. `server.js` needed no
+change: its static file serving is deny-listed (`node_modules`, `tools`, `.git`, `data`, `tests`), not
+allow-listed, so `playability/` was already servable, exactly like `scoregraph/` and `engrave/`.
+`tests/scoregraph/server.test.js`'s literal "index.js is immediately followed by audio-score.js" assertion
+had to be updated to expect the two new tags between them (its intent — a clean, deliberate module
+boundary, no stray script — is unchanged; only the literal adjacency moved).
+
+**A real, verified interaction with G1's hand assignment, found while testing, not assumed.** G5's
+fingering only ever reaches a head whose graph carries an RH/LH limb (G05 §10's own constraint — G5 must
+not infer hands). `musicxml-import.js` only sets that limb for a piano part with **exactly two staves**
+(`st.limb = s === 1 ? 'RH' : 'LH'` when `part.nStaves === 2`, `scoregraph/musicxml-import.js:1025`); a
+single-staff part (a melody-only file, say) gets no staff-level limb at all, so `'inferred'` correctly
+writes nothing for one — the hand guide's live DP still fingers it exactly as before (it does not depend
+on graph limb; `legacy-score.js`'s own, separate "hand rule" already gives such notes `n.hand = 'r'`
+directly from staff position, App 4303's ported logic). MIDI import is unaffected by this limb gap:
+`audio-score.js`'s MIDI-to-graph builder always creates a 2-staff piano skeleton with `limb: 'RH'`/`'LH'`
+staves outright (`audio-score.js:1185`), so `'inferred'` reaches MIDI-derived graphs the same as a 2-staff
+MusicXML file.
+
+**A second real, verified interaction, with ties.** A tie continuation (`n.tieStop`) is never its own
+attack in either the legacy DP or G5b's port (`Fingering.events()`, App ~8565: a tied-into note only
+extends how long the previous note holds; `playability/graph.js`'s `attacksOf` excludes a tie continuation
+from `headInfo` entirely, by design, per its own header). Measured directly on sonatina/020 (1,776 RH/LH
+heads): exactly **13** are tie continuations, and none of them receive a `solveGraph()` result or a
+written `Head.fingering` under `'inferred'` — confirmed this is not a bug, not a gap: a tie continuation's
+displayed finger has always come from a wholly separate step in `Fingering.plan` (App ~8804-8810, the
+`holding` map built after both hands solve, `n.tieStop && holding[k] != null && !res.finger.has(n)`),
+which reads the tie START note's live-solved finger regardless of whether that finger came from the DP
+itself or was echoed back from a `Head.fingering` value — so a tie continuation plays correctly either
+way, switch on or off. `tests/fingering.test.js`'s new performance check asserts fingering coverage
+excluding tie continuations, and separately asserts every tie continuation still resolves to a valid
+finger through `Fingering.plan`.
+
+**Tests.** Extended the existing app-level hand-guide suite, `tests/fingering.test.js` (browser,
+Puppeteer, not in CI per the roadmap's own note on that file — matching how the file already worked
+before this phase): a new section builds a real 2-staff piano MusicXML fixture (right hand C-D-E-F
+quarter notes, C and F printed with fingering 2 and 5, D and E unfingered; left hand a whole rest) and
+checks, through `scoreFromXml` and separately through the real `Import.load` entry point:
+
+- `PPP.fingering` defaults to `'legacy'`; an unrecognized value falls back to `'legacy'`.
+- **Switch off**: only the printed fingering appears on the Score's notes — byte for byte what
+  `parseMusicXML`'s own pre-existing "a finger printed on the page is kept" test already asserted for the
+  legacy import path, now reconfirmed for the graph-import path this phase touches.
+- **Switch on, no printed fingering**: the two previously-unfingered notes are filled (a valid finger,
+  1-5), and — separately — every note's `Head.fingering`-sourced value is proven to be exactly what
+  `Fingering.plan` plays back (the `fixed`-candidate mechanism from finding 1, exercised end to end, not
+  just reasoned about).
+- **Switch on, real printed fingering present**: the printed notes (C, F) are provably unchanged.
+- **Performance**: sonatina/020 (1,776 heads, the longest R-corpus piece, G5a/G5b's own benchmark) run
+  through the real `scoreFromXml` import path in the browser — see below.
+
+All of `tests/fingering.test.js` (pre-existing 60+ assertions plus the new ones), `test:scoregraph`
+(216/216) and `test:playability` (32/32) pass. `test:engrave` showed 3 failures on this commit
+(`708e5f2`) at first, not 2: the A27 hymn layout-hash drift and the `be-still-my-soul.musicxml`
+tie-endpoint issue (TD14, §13 of the roadmap) are genuinely pre-existing — reconfirmed present,
+byte-identical, on the pre-G5c base commit (`7464cb3`) via `git stash`, untouched by this phase. The
+third, `tests/engrave/app.test.js`'s "every producer keeps the graph it made the Score from" test, was
+**not** pre-existing: it passes clean on `7464cb3` and only broke on `708e5f2` because this commit's own
+refactor (wrapping the imported graph through the new `graphForScore()` before `toScore()`, §11 above)
+changed `scoreFromXml`'s source text in a way the test's literal regex no longer matched — a real
+regression in the test itself, introduced by this phase, initially and incorrectly reported as part of
+the same "3 pre-existing, verified via `git stash`" claim as the other two. That claim was false for this
+one; independent review caught it. Fixed by updating the regex to recognize the new-but-equivalent
+`graphForScore`-wrapped shape via a backreference, so it still enforces the real invariant (the same graph
+object reaches both `toScore()` and `engraveRemember()`) rather than matching literal text that happened
+to change — confirmed by deliberately breaking that invariant in the source (making `toScore()` and
+`engraveRemember()` receive two different graphs) and seeing the test catch it, then reverting. With that
+fix, `test:engrave` is 199/201, with only the 2 genuinely pre-existing failures left.
+`tests/import-and-persistence.test.js`, `tests/musicxml.test.js`, `tests/engraving.test.js`,
+`tests/library.test.js` and `tests/course.test.js` (222 catalog scores read) were also re-run as an
+end-to-end check on the three patched call sites and pass with no console or page errors.
+
+**Performance in the browser (G05 §7).** §7 asks for "idle-sliced, no long task on the main thread" in
+the page, and "once per song load, cached" (this doc's own task framing, matching how G4's plan/layout
+caches already work) rather than per-keystroke or per-render — `fingerPlan()`'s pre-existing cache (keyed
+by `this.state.score` identity) already guarantees the *display* side of this: `Fingering.plan` runs once
+per song object regardless of switch. The NEW cost `'inferred'` adds is at import time, once, inside
+`graphForScore()` (`solveGraph` + one `Ops.edit` write-and-validate transaction). Measured in the running
+page (Chromium via Puppeteer, not Node) over sonatina/020, imported through the real `scoreFromXml` path:
+**legacy 49.0 ms, inferred 94.7 ms — an added ~45.7 ms** for the DP solve plus the graph write transaction,
+on the single largest piece in the corpus. This is higher than G5b's Node-only "~20-40 ms" figure (G05 §11
+above) because it now includes `write()`'s `Ops.edit`/validate/seal pass, not measured by G5b (which timed
+`solveGraph` alone), plus ordinary browser-vs-Node overhead — but it is a one-time cost on song import
+(gated by a switch defaulting off), not a per-frame or per-keystroke cost, so it does not compete with the
+"idle-sliced, no long task" requirement the way a per-render cost would; a follow-up (H-56 or a later
+phase) could still idle-slice the write step itself if `'inferred'` ever becomes the default, out of scope
+here since this phase ships with the switch off.
+
+**Honest gap against §7's own aspiration.** §7 (above) asks for the fingering-solve cost to be
+"idle-sliced, no long task" — the actual `graphForScore()` call is not: it runs `solveGraph()` and the
+`Ops.edit` write synchronously, inline in `scoreFromXml`/`scoreFromFile`/`Import.load`, on the main thread,
+at import time — a real single-task block, independently measured at ~35-90 ms depending on piece size
+(the 94.7 ms total above includes the pre-existing ~49 ms `toScore()`/legacy path cost this phase did not
+add). This differs from §7's original aspiration and is disclosed here rather than left to look
+idle-sliced by the "does not compete with the requirement" framing two paragraphs up, which is true only
+in the sense that the switch defaults off, not in the sense that the code is actually sliced. Real risk
+today is low — `PPP.fingering` ships `'legacy'`, so no current import pays this cost — but if `'inferred'`
+is ever considered as a future default, idle-slicing this write (H-56 or a later phase) should be treated
+as a prerequisite, not an afterthought.
+
+**What was NOT changed.** No rendering code (`fingerPlan`, `HandArt`, any `engrave/` file) was touched —
+finding 1 above is exactly why none needed to be. No default flipped: `PPP.fingering` ships `'legacy'`,
+matching every G4 stage before its own flip and G05 §9's own instruction not to flip it in this phase.
+`write()`'s guard (§11 G5b) was reused verbatim, not reimplemented. `test:scoregraph`'s and
+`test:playability`'s own suites were not modified beyond the one literal script-adjacency assertion in
+`tests/scoregraph/server.test.js` noted above.

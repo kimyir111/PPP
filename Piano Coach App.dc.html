@@ -33,6 +33,9 @@
 <script src="./scoregraph/pro-marks.js?v=8"></script>
 <script src="./scoregraph/pro.js?v=8"></script>
 <script src="./scoregraph/index.js?v=9"></script>
+<!-- G05 §11 G5c: the fingering DP (G5b), ported to the ScoreGraph. Only used when PPP.fingering === 'inferred'. -->
+<script src="./playability/graph.js?v=1"></script>
+<script src="./playability/fingering.js?v=1"></script>
 <script src="./audio-score.js?v=9"></script>
 <!-- G4a (docs/GOALS/G04 §8.5): where the renderer's ScoreGraph comes from, and what it must draw. Draws nothing yet. -->
 <script src="./engrave/ledger.js?v=3"></script>
@@ -4453,6 +4456,40 @@ function findCentral(dv, u8, wanted) {
 let LEGACY_IMPORT = false;
 const scoreIdFor = name => ('f-' + String(name || 'score').replace(/[^A-Za-z0-9._:-]+/g, '-')).slice(0, 64);
 
+/* G05 §11 G5c: PPP.fingering = 'legacy' (default, one-release rollback switch,
+   same shape as PPP.legacyImport above) leaves every graph exactly as its
+   importer built it, so the hand guide's live Fingering.plan(sc) call (App
+   ~15680) recomputes fingering the same way it always has - nothing here
+   changes what a person sees. 'inferred' additionally runs the G5b fingering
+   DP (playability/fingering.js, ported from this same Fingering module) over
+   the graph BEFORE it becomes a Score, and writes its answer onto Head.
+   fingering with provenance 'inferred' (G3-D4) - never over a head that
+   already carries a printed or user-edited fingering (write()'s own guard,
+   reused verbatim, not reimplemented here).
+
+   Why this needs no change to the hand guide or the renderer at all: toScore()
+   already carries any Head.fingering into a note's n.finger (scoregraph/
+   legacy-score.js ~294), and Fingering.events() already treats a set n.finger
+   as a FIXED constraint (App ~8589, e.fixed), which Fingering.candidates()
+   (App ~8524-8558) enforces as a hard filter over every candidate fingering
+   for that note - and, when no candidate can satisfy every fixed note in a
+   chord at once, falls back to using the fixed value regardless (App
+   8551-8556). So whatever finger a note's n.finger already names is always
+   the finger Fingering.plan(sc) returns for it: the SAME live call the hand
+   guide and the printed engraving (G4 already draws Head.fingering, A7)
+   already make simply echoes back whatever this wrote, unchanged. A value
+   any other code (a typo, an unset variable) sets is treated as 'legacy',
+   the same convention G4-F2-1 used for PPP.renderer. */
+let FINGERING_MODE = 'legacy';
+function graphForScore(graph) {
+  if (FINGERING_MODE !== 'inferred') return graph;
+  try {
+    const F = (typeof window !== 'undefined' && window.PPPPlayabilityModules) ? window.PPPPlayabilityModules.fingering : null;
+    if (F) return F.fingerGraph(graph).graph;
+  } catch (e) { /* a bad graph or a missing module: fall back to what was imported, unfingered */ }
+  return graph;
+}
+
 async function importToGraph(bytes, name, kind) {
   if (kind === 'midi') {
     let r;
@@ -4528,7 +4565,8 @@ function scoreFromXml(xml, name) {
     e.soft = true; e.code = r.code;
     throw e;
   }
-  return engraveRemember(Score.finalize(PPPScoreGraph.legacy.toScore(r.graph, { name: name })), r.graph, 'musicxml-text');
+  const graph = graphForScore(r.graph);
+  return engraveRemember(Score.finalize(PPPScoreGraph.legacy.toScore(graph, { name: name })), graph, 'musicxml-text');
 }
 
 /* Read whatever the user picked and turn it into a Score. */
@@ -4548,6 +4586,7 @@ async function scoreFromFile(file) {
   }
   const bytes = new Uint8Array(await file.arrayBuffer());
   const got = await importToGraph(bytes, file.name, kind);
+  got.graph = graphForScore(got.graph);
   return engraveRemember(Score.finalize(PPPScoreGraph.legacy.toScore(got.graph, { name: file.name })), got.graph, 'file:' + kind);
 }
 
@@ -7566,6 +7605,7 @@ const Import = {
       }
       const bytes = new Uint8Array(await file.arrayBuffer());
       const got = await importToGraph(bytes, file.name, kind);
+      got.graph = graphForScore(got.graph);
       const score = engraveRemember(Score.finalize(PPPScoreGraph.legacy.toScore(got.graph, { name: file.name })), got.graph, 'import:' + kind);
       source.status = 'parsed';
       /* what the import kept and what it could not, small enough to save with the song.
@@ -9221,6 +9261,9 @@ window.PPP = {
   importToGraph,
   get legacyImport() { return LEGACY_IMPORT; },
   set legacyImport(v) { LEGACY_IMPORT = !!v; },
+  /* G05 §11 G5c: 'legacy' (default) | 'inferred'. Any other value is 'legacy' (G4-F2-1's convention). */
+  get fingering() { return FINGERING_MODE; },
+  set fingering(v) { FINGERING_MODE = v === 'inferred' ? 'inferred' : 'legacy'; },
   pitchToMidi, midiToFreq, keyName,
   PIANO, PianoSamples, PianoScore, PianoPlayer,
   PianoVisual: {

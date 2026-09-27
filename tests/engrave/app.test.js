@@ -160,7 +160,15 @@ test('G4f-2 (review R2), unchanged by §25.2 step 3: the print command is offere
 });
 
 test('every producer keeps the graph it made the Score from (G04 §8.2 live)', () => {
-  assert.match(slice('function scoreFromXml(xml, name)', '\n}\n'), /return engraveRemember\(Score\.finalize\(PPPScoreGraph\.legacy\.toScore\(r\.graph/);
+  /* G5c's graphForScore(r.graph) (PPP.fingering) now sits between the import and toScore() here - a real
+     value that may differ from what musicxml.import() produced when the switch is on. The invariant this
+     test guards survives that unchanged: the SAME local `graph` must still reach both toScore() (what is
+     drawn) and engraveRemember()'s own graph argument (what is kept beside the Score, G4a) - never two
+     graphs that merely look alike. \1 below is a backreference, not a repeated literal, so it actually
+     enforces that identity: it would stop matching if a future change let toScore() and engraveRemember()
+     diverge onto two different graphs. */
+  assert.match(slice('function scoreFromXml(xml, name)', '\n}\n'),
+    /const (\w+) = graphForScore\(r\.graph\);\s*return engraveRemember\(Score\.finalize\(PPPScoreGraph\.legacy\.toScore\(\1, \{ name: name \}\)\), \1, 'musicxml-text'\);/);
   assert.match(slice('async function scoreFromFile(file)', '\n}\n'), /return engraveRemember\(Score\.finalize\(PPPScoreGraph\.legacy\.toScore\(got\.graph/);
   assert.match(slice("if (kind === 'musicxml' || kind === 'mxl' || kind === 'midi')", 'PDF / photo'), /const score = engraveRemember\(Score\.finalize\(PPPScoreGraph\.legacy\.toScore\(got\.graph[^\n]*'import:' \+ kind\)/);
   assert.match(html, /engraveRemember\(parseMusicXML\(built\.xml, title\), built\.graph, 'recording'\)/);
