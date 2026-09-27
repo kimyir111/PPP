@@ -5,9 +5,9 @@ The operational roadmap for everything after G4a: order, dependencies, gates, an
 | | |
 | --- | --- |
 | Owner | The **Lead / Orchestrator** session. Implementers, reviewers and fixers read it. Only the Lead edits it. |
-| Updated | 2026-09-27 — twenty-third edition (Lead): **MX-2 (catalogue data integrity) merged** (PR #57, squashed `ca70a03`) — 89 hymns' key signatures, tie stops and in-bar accidentals fixed; `bar_integrity`/`tempo_marks_disagree` investigated and deferred. Current: deploy MX-2 |
-| Base | `origin/main` = `ca70a03` (MX-2, PR #57), not yet deployed |
-| Active | **G4 fully done and live. MX-2 merged, not yet deployed.** Next: deploy MX-2 (§14, §15). |
+| Updated | 2026-09-27 — twenty-fourth edition (Lead): **MX-2 (catalogue data integrity) merged and DEPLOYED** (PR #57, squashed `ca70a03`, deploy `dep-dasjdlt9fdbs73dnhgo0`, verified live: F#3 midi 54 in a G-major hymn) — 89 hymns' key signatures, tie stops and in-bar accidentals fixed; `bar_integrity`/`tempo_marks_disagree` investigated and deferred. Current: start G5 |
+| Base | `origin/main` = `931747b` (MX-2 docs), deployed to production as `ca70a03` |
+| Active | **G4 and MX-2 both fully done and live.** Next: G5 (§14, §15). |
 | Lead worktree | `D:/PPP-lead`, branch `lead-roadmap`. The Lead writes docs only, never in an implementer's worktree. |
 | How this relates to other docs | `docs/CURRENT_STATE.md` says what is true now, with measurements. `docs/DECISIONS.md` says why. `docs/GOALS/Gxx_*.md` is the contract for one Goal: design, acceptance and implementation record. **This document says in what order, behind which gates, and what comes next.** It does not repeat the goal specs. On detail, the spec wins. On sequencing, this document wins. |
 
@@ -592,15 +592,14 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 **G4 "Professional Engraving" is completely done and deployed**, and **MX-2 (catalogue data integrity) is merged, not yet deployed.** Full G4 blow-by-blow is in `docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md` §32-§52 and `docs/DECISIONS.md`'s G4-* rows -- this section only tracks what's still open.
 
 - **G4**: every stage, both human review gates, the flip, all polish, and the full legacy-renderer removal are closed, merged, and live in production (deploy `dep-dasi7ah7lnhs739a2ia0`, commit `256aa9a`, 2026-09-27). Nothing open.
-- **MX-2** (PR #57 `789e6de`/`fbda4b4`, squashed as `ca70a03`): `catalog/hymns/abc-to-musicxml.js` wrote `<alter>` only for an explicit ABC accidental, so most hymn notes played natural regardless of the printed key signature, and wrote tie starts with no matching stop. Fixed the converter (key-signature default, in-bar carry across voices on a staff, tie-stop matching) and patched the 91 affected shipped `.musicxml` files directly (the ABC source tree no longer exists on disk -- `catalog/hymns/README.md`). `known_defects.py` hymn counts: `key_signature_playback` 89/89 files to 0, `bar_accidental_not_carried` 10/100 to 0, `tie_without_stop` 10/10 to 0. `bar_integrity` (12 hymn files, a converter gap folding multiple ABC bars into one MusicXML measure) and `tempo_marks_disagree` (0 hymns, unrelated files) were investigated and deliberately deferred -- per-file judgment, not a mechanical fix. Independent review found two MAJOR issues (a latent ordering bug, dormant in all 100 current files but real for a future rebuild; and a missing audit trail for the one-off data patch), both fixed in a follow-up commit and re-verified (`catalog/hymns/tools/check-accidentals.py`, a from-scratch verifier, 0 errors across all 100 hymn files; `catalog/hymns/tools/test-key-signature.js`, a regression test for the ordering bug). **Data-only change (no app file touched). Not yet deployed.**
+- **MX-2** (PR #57 `789e6de`/`fbda4b4`, squashed as `ca70a03`): `catalog/hymns/abc-to-musicxml.js` wrote `<alter>` only for an explicit ABC accidental, so most hymn notes played natural regardless of the printed key signature, and wrote tie starts with no matching stop. Fixed the converter (key-signature default, in-bar carry across voices on a staff, tie-stop matching) and patched the 91 affected shipped `.musicxml` files directly (the ABC source tree no longer exists on disk -- `catalog/hymns/README.md`). `known_defects.py` hymn counts: `key_signature_playback` 89/89 files to 0, `bar_accidental_not_carried` 10/100 to 0, `tie_without_stop` 10/10 to 0. `bar_integrity` (12 hymn files, a converter gap folding multiple ABC bars into one MusicXML measure) and `tempo_marks_disagree` (0 hymns, unrelated files) were investigated and deliberately deferred -- per-file judgment, not a mechanical fix. Independent review found two MAJOR issues (a latent ordering bug, dormant in all 100 current files but real for a future rebuild; and a missing audit trail for the one-off data patch), both fixed in a follow-up commit and re-verified (`catalog/hymns/tools/check-accidentals.py`, a from-scratch verifier, 0 errors across all 100 hymn files; `catalog/hymns/tools/test-key-signature.js`, a regression test for the ordering bug). **Data-only change (no app file touched). Deployed to production** (`dep-dasjdlt9fdbs73dnhgo0`, 2026-09-27) -- verified live by fetching the actual served hymn file and confirming the app's own parser now reads F#3 (midi 54) where it used to read F natural.
 
 ## 15. Next task
 
-**Deploy MX-2** (PR #57, squashed `ca70a03`) -- ask the user first, same as every deploy this session. After that:
+**Start G5** (playability and fingering), then:
 
-1. G5 (playability and fingering)
-2. G6 (difficulty)
-3. G7a (SongGraph core)
+1. G6 (difficulty)
+2. G7a (SongGraph core)
 
 ## 16. Stop conditions
 
