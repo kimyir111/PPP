@@ -16,7 +16,7 @@
    },
    "critical.key": {
     "mean": 1.0,
-    "n": 39
+    "n": 44
    },
    "critical.meter": {
     "mean": 0.772727,
@@ -59,7 +59,7 @@
     "n": 44
    },
    "notation.accidentals.missing.delta": {
-    "mean": -11.045455,
+    "mean": 0.0,
     "n": 44
    },
    "notation.accidentals.required_recall": {
@@ -67,7 +67,7 @@
     "n": 44
    },
    "notation.accidentals.required_recall.delta": {
-    "mean": 0.110227,
+    "mean": 0.0,
     "n": 44
    },
    "notation.duration.accuracy": {
@@ -83,11 +83,11 @@
     "n": 44
    },
    "notation.hand.accuracy": {
-    "mean": 0.952662,
+    "mean": 0.952839,
     "n": 44
    },
    "notation.hand.accuracy_ref": {
-    "mean": 0.931907,
+    "mean": 0.932079,
     "n": 44
    },
    "notation.ioi.accuracy": {
@@ -147,12 +147,12 @@
     "n": 4
    },
    "notation.spelling.accuracy": {
-    "mean": 0.999889,
-    "n": 39
+    "mean": 0.999901,
+    "n": 44
    },
    "notation.spelling.accuracy_ref": {
-    "mean": 0.979112,
-    "n": 39
+    "mean": 0.977258,
+    "n": 44
    },
    "notation.ties.extra_per_100": {
     "mean": 5.005797,
@@ -198,12 +198,152 @@
     "mean": 3.836412,
     "n": 44
    },
+   "nq.acc.redundant_rate": {
+    "mean": 0.0,
+    "n": 44
+   },
+   "nq.acc.redundant_rate.delta": {
+    "mean": -0.000861,
+    "n": 44
+   },
+   "nq.beam.coverage": {
+    "mean": 0.0,
+    "n": 30
+   },
+   "nq.beam.coverage.delta": {
+    "mean": -0.192308,
+    "n": 26
+   },
+   "nq.ned": {
+    "mean": 0.519056,
+    "n": 44
+   },
+   "nq.range.ledger4_rate": {
+    "mean": 0.0,
+    "n": 44
+   },
+   "nq.range.ledger4_rate.delta": {
+    "mean": 0.0,
+    "n": 44
+   },
+   "nq.rest.per_measure_delta": {
+    "mean": 1.223891,
+    "n": 44
+   },
+   "nq.rhythm.hidden_beat_rate": {
+    "mean": 0.02002,
+    "n": 44
+   },
+   "nq.rhythm.hidden_beat_rate.delta": {
+    "mean": 0.012405,
+    "n": 44
+   },
+   "nq.rhythm.short_rate_delta": {
+    "mean": 0.022744,
+    "n": 44
+   },
+   "nq.shape.tm_missing": {
+    "mean": 0.068182,
+    "n": 44
+   },
+   "nq.shape.tm_missing.delta": {
+    "mean": 0.068182,
+    "n": 44
+   },
+   "nq.shape.tm_missing.r17": {
+    "mean": 0.045455,
+    "n": 44
+   },
+   "nq.shape.tm_missing.unexpected": {
+    "mean": 0.022727,
+    "n": 44
+   },
+   "nq.spell.context_odd": {
+    "mean": 0.0,
+    "n": 44
+   },
+   "nq.spell.context_odd.delta": {
+    "mean": 0.0,
+    "n": 44
+   },
+   "nq.spell.mixed_bar_rate": {
+    "mean": 0.00072,
+    "n": 44
+   },
+   "nq.spell.mixed_bar_rate.delta": {
+    "mean": 0.0004,
+    "n": 44
+   },
+   "nq.tie.mergeable.cross_voice": {
+    "mean": 0.0,
+    "n": 44
+   },
+   "nq.tie.mergeable.defect": {
+    "mean": 1.590909,
+    "n": 44
+   },
+   "nq.tie.mergeable.partial_chord": {
+    "mean": 0.0,
+    "n": 44
+   },
+   "nq.tie.mergeable.r17": {
+    "mean": 0.0,
+    "n": 44
+   },
+   "nq.tie.mergeable.required_beat_split": {
+    "mean": 0.0,
+    "n": 44
+   },
+   "nq.tie.mergeable.required_h6": {
+    "mean": 0.0,
+    "n": 44
+   },
+   "nq.tie.mergeable.required_h7": {
+    "mean": 0.0,
+    "n": 44
+   },
+   "nq.tie.mergeable_rate": {
+    "mean": 0.262324,
+    "n": 9
+   },
+   "nq.tie.mergeable_rate.delta": {
+    "mean": 0.508224,
+    "n": 2
+   },
+   "nq.tuplet.group_complete": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "nq.tuplet.group_complete.delta": {
+    "mean": -1.0,
+    "n": 2
+   },
+   "nq.tuplet.one_note.r17": {
+    "mean": 0.045455,
+    "n": 44
+   },
+   "nq.tuplet.one_note.unexpected": {
+    "mean": 1.931818,
+    "n": 44
+   },
+   "nq.tuplet.one_note_rate": {
+    "mean": 1.0,
+    "n": 4
+   },
+   "nq.tuplet.one_note_rate.delta": {
+    "mean": 1.0,
+    "n": 2
+   },
+   "nq.voice.poly_recall": {
+    "mean": 0.0,
+    "n": 8
+   },
    "read.accidentals_per_note": {
-    "mean": 0.011136,
+    "mean": 0.008213,
     "n": 44
    },
    "read.accidentals_per_note.delta": {
-    "mean": 0.001608,
+    "mean": -0.001315,
     "n": 44
    },
    "read.bar_completeness": {
@@ -279,7 +419,7 @@
     "n": 44
    },
    "sqi": {
-    "mean": 86.907085,
+    "mean": 87.091303,
     "n": 44
    },
    "struct.downbeat.f1": {
@@ -296,15 +436,15 @@
    },
    "struct.key.fifths_exact": {
     "mean": 1.0,
-    "n": 39
+    "n": 44
    },
    "struct.key.mirex": {
     "mean": 1.0,
-    "n": 37
+    "n": 42
    },
    "struct.key.timeline_accuracy": {
     "mean": 1.0,
-    "n": 39
+    "n": 44
    },
    "struct.measure_numbers.app_onset_accuracy": {
     "mean": 1.0,
@@ -396,7 +536,7 @@
     },
     "critical.key": {
      "mean": 1.0,
-     "n": 14
+     "n": 16
     },
     "critical.meter": {
      "mean": 0.5625,
@@ -435,7 +575,7 @@
      "n": 16
     },
     "notation.accidentals.missing.delta": {
-     "mean": -14.0,
+     "mean": 0.0,
      "n": 16
     },
     "notation.accidentals.required_recall": {
@@ -443,7 +583,7 @@
      "n": 16
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": 0.121875,
+     "mean": 0.0,
      "n": 16
     },
     "notation.duration.accuracy": {
@@ -459,11 +599,11 @@
      "n": 16
     },
     "notation.hand.accuracy": {
-     "mean": 0.952173,
+     "mean": 0.952417,
      "n": 16
     },
     "notation.hand.accuracy_ref": {
-     "mean": 0.918294,
+     "mean": 0.91853,
      "n": 16
     },
     "notation.ioi.accuracy": {
@@ -511,12 +651,12 @@
      "n": 16
     },
     "notation.spelling.accuracy": {
-     "mean": 0.999816,
-     "n": 14
+     "mean": 0.999839,
+     "n": 16
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.963384,
-     "n": 14
+     "mean": 0.963457,
+     "n": 16
     },
     "notation.ties.extra_per_100": {
      "mean": 10.444081,
@@ -562,12 +702,152 @@
      "mean": 2.050204,
      "n": 16
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": -0.001008,
+     "n": 16
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 12
+    },
+    "nq.beam.coverage.delta": {
+     "mean": -0.2,
+     "n": 10
+    },
+    "nq.ned": {
+     "mean": 0.652544,
+     "n": 16
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 1.20159,
+     "n": 16
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.017177,
+     "n": 16
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.008939,
+     "n": 16
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.023498,
+     "n": 16
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0625,
+     "n": 16
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0625,
+     "n": 16
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0625,
+     "n": 16
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.000651,
+     "n": 16
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.000211,
+     "n": 16
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 2.5,
+     "n": 16
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.275394,
+     "n": 5
+    },
+    "nq.tie.mergeable_rate.delta": {
+     "mean": 0.4375,
+     "n": 1
+    },
+    "nq.tuplet.group_complete": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "nq.tuplet.group_complete.delta": {
+     "mean": -1.0,
+     "n": 1
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 2.9375,
+     "n": 16
+    },
+    "nq.tuplet.one_note_rate": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "nq.tuplet.one_note_rate.delta": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 3
+    },
     "read.accidentals_per_note": {
-     "mean": 0.014628,
+     "mean": 0.008778,
      "n": 16
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.004288,
+     "mean": -0.001562,
      "n": 16
     },
     "read.bar_completeness": {
@@ -643,7 +923,7 @@
      "n": 16
     },
     "sqi": {
-     "mean": 78.985209,
+     "mean": 79.395017,
      "n": 16
     },
     "struct.downbeat.f1": {
@@ -660,15 +940,15 @@
     },
     "struct.key.fifths_exact": {
      "mean": 1.0,
-     "n": 14
+     "n": 16
     },
     "struct.key.mirex": {
      "mean": 1.0,
-     "n": 13
+     "n": 15
     },
     "struct.key.timeline_accuracy": {
      "mean": 1.0,
-     "n": 14
+     "n": 16
     },
     "struct.measure_numbers.app_onset_accuracy": {
      "mean": 1.0,
@@ -759,7 +1039,7 @@
     },
     "critical.key": {
      "mean": 1.0,
-     "n": 21
+     "n": 24
     },
     "critical.meter": {
      "mean": 0.916667,
@@ -802,7 +1082,7 @@
      "n": 24
     },
     "notation.accidentals.missing.delta": {
-     "mean": -10.916667,
+     "mean": 0.0,
      "n": 24
     },
     "notation.accidentals.required_recall": {
@@ -810,7 +1090,7 @@
      "n": 24
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": 0.120833,
+     "mean": 0.0,
      "n": 24
     },
     "notation.duration.accuracy": {
@@ -826,11 +1106,11 @@
      "n": 24
     },
     "notation.hand.accuracy": {
-     "mean": 0.945099,
+     "mean": 0.945261,
      "n": 24
     },
     "notation.hand.accuracy_ref": {
-     "mean": 0.938356,
+     "mean": 0.938513,
      "n": 24
     },
     "notation.ioi.accuracy": {
@@ -890,12 +1170,12 @@
      "n": 4
     },
     "notation.spelling.accuracy": {
-     "mean": 0.999916,
-     "n": 21
+     "mean": 0.999927,
+     "n": 24
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.995587,
-     "n": 21
+     "mean": 0.99139,
+     "n": 24
     },
     "notation.ties.extra_per_100": {
      "mean": 0.459165,
@@ -941,12 +1221,152 @@
      "mean": 3.010613,
      "n": 24
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 24
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": -0.000672,
+     "n": 24
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.beam.coverage.delta": {
+     "mean": -0.142857,
+     "n": 14
+    },
+    "nq.ned": {
+     "mean": 0.365384,
+     "n": 24
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 24
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 24
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 0.971623,
+     "n": 24
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.019352,
+     "n": 24
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.010884,
+     "n": 24
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.015804,
+     "n": 24
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.083333,
+     "n": 24
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.083333,
+     "n": 24
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.083333,
+     "n": 24
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 24
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 24
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 24
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.000887,
+     "n": 24
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.000593,
+     "n": 24
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 24
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 0.958333,
+     "n": 24
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 24
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 24
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 24
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 24
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 24
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.351974,
+     "n": 2
+    },
+    "nq.tie.mergeable_rate.delta": {
+     "mean": 0.578947,
+     "n": 1
+    },
+    "nq.tuplet.group_complete": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tuplet.group_complete.delta": {
+     "mean": -1.0,
+     "n": 1
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.083333,
+     "n": 24
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 1.583333,
+     "n": 24
+    },
+    "nq.tuplet.one_note_rate": {
+     "mean": 1.0,
+     "n": 3
+    },
+    "nq.tuplet.one_note_rate.delta": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 4
+    },
     "read.accidentals_per_note": {
-     "mean": 0.010422,
+     "mean": 0.008963,
      "n": 24
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.000315,
+     "mean": -0.001144,
      "n": 24
     },
     "read.bar_completeness": {
@@ -1022,7 +1442,7 @@
      "n": 24
     },
     "sqi": {
-     "mean": 93.63055,
+     "mean": 93.695078,
      "n": 24
     },
     "struct.downbeat.f1": {
@@ -1039,15 +1459,15 @@
     },
     "struct.key.fifths_exact": {
      "mean": 1.0,
-     "n": 21
+     "n": 24
     },
     "struct.key.mirex": {
      "mean": 1.0,
-     "n": 20
+     "n": 23
     },
     "struct.key.timeline_accuracy": {
      "mean": 1.0,
-     "n": 21
+     "n": 24
     },
     "struct.measure_numbers.app_onset_accuracy": {
      "mean": 1.0,
@@ -1299,6 +1719,126 @@
     "notes.timing.median_abs_ms": {
      "mean": 15.936041,
      "n": 4
+    },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": -0.001404,
+     "n": 4
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.beam.coverage.delta": {
+     "mean": -0.5,
+     "n": 2
+    },
+    "nq.ned": {
+     "mean": 0.907138,
+     "n": 4
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 2.826705,
+     "n": 4
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.035397,
+     "n": 4
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.035397,
+     "n": 4
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.061364,
+     "n": 4
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 1.75,
+     "n": 4
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.14,
+     "n": 2
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 1
     },
     "read.accidentals_per_note": {
      "mean": 0.001453,
@@ -1657,6 +2197,122 @@
     },
     "notes.timing.median_abs_ms": {
      "mean": 2.775232,
+     "n": 3
+    },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": -0.005618,
+     "n": 3
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.beam.coverage.delta": {
+     "mean": -1.0,
+     "n": 3
+    },
+    "nq.ned": {
+     "mean": 1.169118,
+     "n": 3
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 3.363636,
+     "n": 3
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.005051,
+     "n": 3
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.005051,
+     "n": 3
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.090144,
+     "n": 3
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 0.666667,
+     "n": 3
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.083333,
+     "n": 3
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.0,
      "n": 3
     },
     "read.accidentals_per_note": {
@@ -2018,6 +2674,126 @@
      "mean": 0.0,
      "n": 2
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": -0.010508,
+     "n": 2
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.beam.coverage.delta": {
+     "mean": -1.0,
+     "n": 2
+    },
+    "nq.ned": {
+     "mean": 1.460637,
+     "n": 2
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 4.519756,
+     "n": 2
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.005535,
+     "n": 2
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.005535,
+     "n": 2
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.187795,
+     "n": 2
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.015847,
+     "n": 2
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.008804,
+     "n": 2
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 14.5,
+     "n": 2
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.508224,
+     "n": 2
+    },
+    "nq.tie.mergeable_rate.delta": {
+     "mean": 0.508224,
+     "n": 2
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.0,
+     "n": 2
+    },
     "read.accidentals_per_note": {
      "mean": 0.05729,
      "n": 2
@@ -2211,7 +2987,7 @@
     },
     "critical.key": {
      "mean": 1.0,
-     "n": 3
+     "n": 8
     },
     "critical.meter": {
      "mean": 0.875,
@@ -2250,7 +3026,7 @@
      "n": 8
     },
     "notation.accidentals.missing.delta": {
-     "mean": -60.75,
+     "mean": 0.0,
      "n": 8
     },
     "notation.accidentals.required_recall": {
@@ -2258,7 +3034,7 @@
      "n": 8
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": 0.60625,
+     "mean": 0.0,
      "n": 8
     },
     "notation.duration.accuracy": {
@@ -2274,11 +3050,11 @@
      "n": 8
     },
     "notation.hand.accuracy": {
-     "mean": 0.915035,
+     "mean": 0.916008,
      "n": 8
     },
     "notation.hand.accuracy_ref": {
-     "mean": 0.884717,
+     "mean": 0.88566,
      "n": 8
     },
     "notation.ioi.accuracy": {
@@ -2327,11 +3103,11 @@
     },
     "notation.spelling.accuracy": {
      "mean": 1.0,
-     "n": 3
+     "n": 8
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.972917,
-     "n": 3
+     "mean": 0.96659,
+     "n": 8
     },
     "notation.ties.extra_per_100": {
      "mean": 3.825137,
@@ -2373,12 +3149,132 @@
      "mean": 4.968099,
      "n": 8
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.beam.coverage.delta": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.ned": {
+     "mean": 0.490268,
+     "n": 8
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 0.561581,
+     "n": 8
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.027493,
+     "n": 8
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.012399,
+     "n": 8
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.000644,
+     "n": 8
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 2.5,
+     "n": 8
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.357143,
+     "n": 1
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 8
+    },
     "read.accidentals_per_note": {
-     "mean": 0.019855,
+     "mean": 0.003778,
      "n": 8
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.015929,
+     "mean": -0.000148,
      "n": 8
     },
     "read.bar_completeness": {
@@ -2454,7 +3350,7 @@
      "n": 8
     },
     "sqi": {
-     "mean": 91.333512,
+     "mean": 92.346714,
      "n": 8
     },
     "struct.downbeat.f1": {
@@ -2471,15 +3367,15 @@
     },
     "struct.key.fifths_exact": {
      "mean": 1.0,
-     "n": 3
+     "n": 8
     },
     "struct.key.mirex": {
      "mean": 1.0,
-     "n": 3
+     "n": 8
     },
     "struct.key.timeline_accuracy": {
      "mean": 1.0,
-     "n": 3
+     "n": 8
     },
     "struct.measure_numbers.app_onset_accuracy": {
      "mean": 1.0,
@@ -2732,6 +3628,126 @@
      "mean": 5.668702,
      "n": 3
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.beam.coverage.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.ned": {
+     "mean": 0.541667,
+     "n": 3
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 1.722222,
+     "n": 3
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": -0.117357,
+     "n": 3
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tuplet.group_complete": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 1.0,
+     "n": 3
+    },
+    "nq.tuplet.one_note_rate": {
+     "mean": 1.0,
+     "n": 1
+    },
     "read.accidentals_per_note": {
      "mean": 0.0,
      "n": 3
@@ -2929,7 +3945,7 @@
     },
     "critical.key": {
      "mean": 1.0,
-     "n": 6
+     "n": 11
     },
     "critical.meter": {
      "mean": 0.727273,
@@ -2972,7 +3988,7 @@
      "n": 11
     },
     "notation.accidentals.missing.delta": {
-     "mean": -44.181818,
+     "mean": 0.0,
      "n": 11
     },
     "notation.accidentals.required_recall": {
@@ -2980,7 +3996,7 @@
      "n": 11
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": 0.440909,
+     "mean": 0.0,
      "n": 11
     },
     "notation.duration.accuracy": {
@@ -2996,11 +4012,11 @@
      "n": 11
     },
     "notation.hand.accuracy": {
-     "mean": 0.853792,
+     "mean": 0.854499,
      "n": 11
     },
     "notation.hand.accuracy_ref": {
-     "mean": 0.830569,
+     "mean": 0.831255,
      "n": 11
     },
     "notation.ioi.accuracy": {
@@ -3061,11 +4077,11 @@
     },
     "notation.spelling.accuracy": {
      "mean": 1.0,
-     "n": 6
+     "n": 11
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.977273,
-     "n": 6
+     "mean": 0.970691,
+     "n": 11
     },
     "notation.ties.extra_per_100": {
      "mean": 8.626073,
@@ -3107,12 +4123,140 @@
      "mean": 3.984755,
      "n": 11
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 11
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": 0.0,
+     "n": 11
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.beam.coverage.delta": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.ned": {
+     "mean": 0.522668,
+     "n": 11
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 11
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 11
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 0.58979,
+     "n": 11
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.023948,
+     "n": 11
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.01297,
+     "n": 11
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.008044,
+     "n": 11
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 11
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 11
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 11
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 11
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 11
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 11
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 11
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 11
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 11
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 2.727273,
+     "n": 11
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 11
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 11
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 11
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 11
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 11
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.363757,
+     "n": 2
+    },
+    "nq.tuplet.group_complete": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 11
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.181818,
+     "n": 11
+    },
+    "nq.tuplet.one_note_rate": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 5
+    },
     "read.accidentals_per_note": {
-     "mean": 0.01444,
+     "mean": 0.002748,
      "n": 11
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.011584,
+     "mean": -0.000108,
      "n": 11
     },
     "read.bar_completeness": {
@@ -3188,7 +4332,7 @@
      "n": 11
     },
     "sqi": {
-     "mean": 87.468222,
+     "mean": 88.205096,
      "n": 11
     },
     "struct.downbeat.f1": {
@@ -3205,15 +4349,15 @@
     },
     "struct.key.fifths_exact": {
      "mean": 1.0,
-     "n": 6
+     "n": 11
     },
     "struct.key.mirex": {
      "mean": 1.0,
-     "n": 6
+     "n": 11
     },
     "struct.key.timeline_accuracy": {
      "mean": 1.0,
-     "n": 6
+     "n": 11
     },
     "struct.measure_numbers.app_onset_accuracy": {
      "mean": 1.0,
@@ -3479,6 +4623,126 @@
      "n": 5
     },
     "notes.timing.median_abs_ms": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": -0.004203,
+     "n": 5
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.beam.coverage.delta": {
+     "mean": -1.0,
+     "n": 2
+    },
+    "nq.ned": {
+     "mean": 0.855683,
+     "n": 5
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 2.549569,
+     "n": 5
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.081381,
+     "n": 5
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.038524,
+     "n": 5
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.075118,
+     "n": 5
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.006339,
+     "n": 5
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.003522,
+     "n": 5
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 5.8,
+     "n": 5
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.508224,
+     "n": 2
+    },
+    "nq.tie.mergeable_rate.delta": {
+     "mean": 0.508224,
+     "n": 2
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tuplet.one_note.unexpected": {
      "mean": 0.0,
      "n": 5
     },
@@ -3843,6 +5107,134 @@
     },
     "notes.timing.median_abs_ms": {
      "mean": 0.0,
+     "n": 2
+    },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.beam.coverage.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.ned": {
+     "mean": 0.288462,
+     "n": 2
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 1.55,
+     "n": 2
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.051724,
+     "n": 2
+    },
+    "nq.shape.tm_missing": {
+     "mean": 1.5,
+     "n": 2
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 1.5,
+     "n": 2
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.5,
+     "n": 2
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tuplet.group_complete": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tuplet.group_complete.delta": {
+     "mean": -1.0,
+     "n": 2
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 40.0,
+     "n": 2
+    },
+    "nq.tuplet.one_note_rate": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "nq.tuplet.one_note_rate.delta": {
+     "mean": 1.0,
      "n": 2
     },
     "read.accidentals_per_note": {
@@ -4220,6 +5612,126 @@
      "mean": 1.512934,
      "n": 8
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": -0.004734,
+     "n": 8
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.beam.coverage.delta": {
+     "mean": -1.0,
+     "n": 5
+    },
+    "nq.ned": {
+     "mean": 0.886912,
+     "n": 8
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 2.47662,
+     "n": 8
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.003278,
+     "n": 8
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.003278,
+     "n": 8
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.080753,
+     "n": 8
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.003962,
+     "n": 8
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.002201,
+     "n": 8
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 3.875,
+     "n": 8
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.253289,
+     "n": 5
+    },
+    "nq.tie.mergeable_rate.delta": {
+     "mean": 0.508224,
+     "n": 2
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 8
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.0,
+     "n": 8
+    },
     "read.accidentals_per_note": {
      "mean": 0.016393,
      "n": 8
@@ -4415,6 +5927,10 @@
      "mean": 1.0,
      "n": 2
     },
+    "critical.key": {
+     "mean": 1.0,
+     "n": 2
+    },
     "critical.meter": {
      "mean": 1.0,
      "n": 2
@@ -4452,7 +5968,7 @@
      "n": 2
     },
     "notation.accidentals.missing.delta": {
-     "mean": -186.0,
+     "mean": 0.0,
      "n": 2
     },
     "notation.accidentals.required_recall": {
@@ -4460,7 +5976,7 @@
      "n": 2
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": 1.0,
+     "mean": 0.0,
      "n": 2
     },
     "notation.duration.accuracy": {
@@ -4476,11 +5992,11 @@
      "n": 2
     },
     "notation.hand.accuracy": {
-     "mean": 0.840467,
+     "mean": 0.844358,
      "n": 2
     },
     "notation.hand.accuracy_ref": {
-     "mean": 0.815094,
+     "mean": 0.818868,
      "n": 2
     },
     "notation.ioi.accuracy": {
@@ -4527,6 +6043,14 @@
      "mean": 0.0,
      "n": 2
     },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "notation.spelling.accuracy_ref": {
+     "mean": 0.969811,
+     "n": 2
+    },
     "notation.ties.extra_per_100": {
      "mean": 0.0,
      "n": 2
@@ -4567,12 +6091,128 @@
      "mean": 0.0,
      "n": 2
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.beam.coverage.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.ned": {
+     "mean": 0.484906,
+     "n": 2
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 0.382353,
+     "n": 2
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.057554,
+     "n": 2
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": -0.002823,
+     "n": 2
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 2
+    },
     "read.accidentals_per_note": {
-     "mean": 0.035019,
+     "mean": 0.0,
      "n": 2
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.035019,
+     "mean": 0.0,
      "n": 2
     },
     "read.bar_completeness": {
@@ -4648,7 +6288,7 @@
      "n": 2
     },
     "sqi": {
-     "mean": 95.799218,
+     "mean": 96.316128,
      "n": 2
     },
     "struct.downbeat.f1": {
@@ -4660,6 +6300,18 @@
      "n": 2
     },
     "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "struct.key.timeline_accuracy": {
      "mean": 1.0,
      "n": 2
     },
@@ -4912,6 +6564,110 @@
     },
     "notes.timing.median_abs_ms": {
      "mean": 6.406517,
+     "n": 3
+    },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.ned": {
+     "mean": 0.020833,
+     "n": 3
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 0.148148,
+     "n": 3
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.0,
      "n": 3
     },
     "read.accidentals_per_note": {
@@ -5293,6 +7049,134 @@
      "mean": 2.010798,
      "n": 16
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 13
+    },
+    "nq.beam.coverage.delta": {
+     "mean": 0.0,
+     "n": 10
+    },
+    "nq.ned": {
+     "mean": 0.359692,
+     "n": 16
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 1.119603,
+     "n": 16
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.02474,
+     "n": 16
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.011347,
+     "n": 16
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": -0.015539,
+     "n": 16
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.1875,
+     "n": 16
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.1875,
+     "n": 16
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.125,
+     "n": 16
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0625,
+     "n": 16
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tuplet.group_complete": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tuplet.group_complete.delta": {
+     "mean": -1.0,
+     "n": 2
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.125,
+     "n": 16
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 5.1875,
+     "n": 16
+    },
+    "nq.tuplet.one_note_rate": {
+     "mean": 1.0,
+     "n": 3
+    },
+    "nq.tuplet.one_note_rate.delta": {
+     "mean": 1.0,
+     "n": 2
+    },
     "read.accidentals_per_note": {
      "mean": 0.0125,
      "n": 16
@@ -5652,6 +7536,134 @@
      "mean": 6.619475,
      "n": 9
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 9
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": 0.0,
+     "n": 9
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.beam.coverage.delta": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.ned": {
+     "mean": 0.620847,
+     "n": 9
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 9
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 9
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 1.416667,
+     "n": 9
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.018879,
+     "n": 9
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.018879,
+     "n": 9
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.066463,
+     "n": 9
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 9
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 9
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 9
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 9
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 9
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 9
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 9
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 9
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 9
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 1.888889,
+     "n": 9
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 9
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 9
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 9
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 9
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 9
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.325185,
+     "n": 2
+    },
+    "nq.tuplet.group_complete": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 9
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.222222,
+     "n": 9
+    },
+    "nq.tuplet.one_note_rate": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 3
+    },
     "read.accidentals_per_note": {
      "mean": 0.0,
      "n": 9
@@ -5849,7 +7861,7 @@
     },
     "critical.key": {
      "mean": 1.0,
-     "n": 3
+     "n": 6
     },
     "critical.meter": {
      "mean": 0.666667,
@@ -5888,7 +7900,7 @@
      "n": 6
     },
     "notation.accidentals.missing.delta": {
-     "mean": -19.0,
+     "mean": 0.0,
      "n": 6
     },
     "notation.accidentals.required_recall": {
@@ -5896,7 +7908,7 @@
      "n": 6
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": 0.475,
+     "mean": 0.0,
      "n": 6
     },
     "notation.duration.accuracy": {
@@ -5965,11 +7977,11 @@
     },
     "notation.spelling.accuracy": {
      "mean": 1.0,
-     "n": 3
+     "n": 6
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.990196,
-     "n": 3
+     "mean": 0.974156,
+     "n": 6
     },
     "notation.ties.extra_per_100": {
      "mean": 16.374692,
@@ -6011,12 +8023,132 @@
      "mean": 7.621843,
      "n": 6
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.beam.coverage.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.ned": {
+     "mean": 0.561361,
+     "n": 6
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 0.360907,
+     "n": 6
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.028967,
+     "n": 6
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.028967,
+     "n": 6
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.000859,
+     "n": 6
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 3.666667,
+     "n": 6
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.22205,
+     "n": 2
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 3
+    },
     "read.accidentals_per_note": {
-     "mean": 0.014801,
+     "mean": 0.005038,
      "n": 6
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.009565,
+     "mean": -0.000198,
      "n": 6
     },
     "read.bar_completeness": {
@@ -6092,7 +8224,7 @@
      "n": 6
     },
     "sqi": {
-     "mean": 88.085801,
+     "mean": 89.264432,
      "n": 6
     },
     "struct.downbeat.f1": {
@@ -6109,15 +8241,15 @@
     },
     "struct.key.fifths_exact": {
      "mean": 1.0,
-     "n": 3
+     "n": 6
     },
     "struct.key.mirex": {
      "mean": 1.0,
-     "n": 3
+     "n": 6
     },
     "struct.key.timeline_accuracy": {
      "mean": 1.0,
-     "n": 3
+     "n": 6
     },
     "struct.measure_numbers.app_onset_accuracy": {
      "mean": 1.0,
@@ -6368,6 +8500,122 @@
     },
     "notes.timing.median_abs_ms": {
      "mean": 5.751989,
+     "n": 3
+    },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.beam.coverage.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.ned": {
+     "mean": 0.739583,
+     "n": 3
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 2.520833,
+     "n": 3
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.042146,
+     "n": 3
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.042146,
+     "n": 3
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.171611,
+     "n": 3
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 2.333333,
+     "n": 3
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.28,
+     "n": 1
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.0,
      "n": 3
     },
     "read.accidentals_per_note": {
@@ -6729,6 +8977,126 @@
      "mean": 1.665139,
      "n": 5
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": -0.007574,
+     "n": 5
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.beam.coverage.delta": {
+     "mean": -1.0,
+     "n": 5
+    },
+    "nq.ned": {
+     "mean": 1.285725,
+     "n": 5
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 3.826084,
+     "n": 5
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.005244,
+     "n": 5
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.005244,
+     "n": 5
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.129204,
+     "n": 5
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.006339,
+     "n": 5
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.003522,
+     "n": 5
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 6.2,
+     "n": 5
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.253289,
+     "n": 5
+    },
+    "nq.tie.mergeable_rate.delta": {
+     "mean": 0.508224,
+     "n": 2
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.0,
+     "n": 5
+    },
     "read.accidentals_per_note": {
      "mean": 0.026229,
      "n": 5
@@ -6926,7 +9294,7 @@
     },
     "critical.key": {
      "mean": 1.0,
-     "n": 16
+     "n": 18
     },
     "critical.meter": {
      "mean": 1.0,
@@ -6969,7 +9337,7 @@
      "n": 18
     },
     "notation.accidentals.missing.delta": {
-     "mean": -20.666667,
+     "mean": 0.0,
      "n": 18
     },
     "notation.accidentals.required_recall": {
@@ -6977,7 +9345,7 @@
      "n": 18
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": 0.111111,
+     "mean": 0.0,
      "n": 18
     },
     "notation.duration.accuracy": {
@@ -6993,11 +9361,11 @@
      "n": 18
     },
     "notation.hand.accuracy": {
-     "mean": 0.961946,
+     "mean": 0.962379,
      "n": 18
     },
     "notation.hand.accuracy_ref": {
-     "mean": 0.951648,
+     "mean": 0.952068,
      "n": 18
     },
     "notation.ioi.accuracy": {
@@ -7058,11 +9426,11 @@
     },
     "notation.spelling.accuracy": {
      "mean": 1.0,
-     "n": 16
+     "n": 18
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.991587,
-     "n": 16
+     "mean": 0.989167,
+     "n": 18
     },
     "notation.ties.extra_per_100": {
      "mean": 0.0,
@@ -7108,12 +9476,144 @@
      "mean": 2.46624,
      "n": 18
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 15
+    },
+    "nq.beam.coverage.delta": {
+     "mean": 0.0,
+     "n": 12
+    },
+    "nq.ned": {
+     "mean": 0.349299,
+     "n": 18
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 1.022695,
+     "n": 18
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.028386,
+     "n": 18
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.009772,
+     "n": 18
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": -0.013812,
+     "n": 18
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.166667,
+     "n": 18
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.166667,
+     "n": 18
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.111111,
+     "n": 18
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.055556,
+     "n": 18
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tuplet.group_complete": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tuplet.group_complete.delta": {
+     "mean": -1.0,
+     "n": 2
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.111111,
+     "n": 18
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 4.611111,
+     "n": 18
+    },
+    "nq.tuplet.one_note_rate": {
+     "mean": 1.0,
+     "n": 3
+    },
+    "nq.tuplet.one_note_rate.delta": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 2
+    },
     "read.accidentals_per_note": {
-     "mean": 0.003891,
+     "mean": 0.0,
      "n": 18
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.003891,
+     "mean": 0.0,
      "n": 18
     },
     "read.bar_completeness": {
@@ -7189,7 +9689,7 @@
      "n": 18
     },
     "sqi": {
-     "mean": 92.778643,
+     "mean": 92.836078,
      "n": 18
     },
     "struct.downbeat.f1": {
@@ -7206,15 +9706,15 @@
     },
     "struct.key.fifths_exact": {
      "mean": 1.0,
-     "n": 16
+     "n": 18
     },
     "struct.key.mirex": {
      "mean": 1.0,
-     "n": 16
+     "n": 18
     },
     "struct.key.timeline_accuracy": {
      "mean": 1.0,
-     "n": 16
+     "n": 18
     },
     "struct.measure_numbers.app_onset_accuracy": {
      "mean": 1.0,
@@ -7305,7 +9805,7 @@
     },
     "critical.key": {
      "mean": 1.0,
-     "n": 15
+     "n": 18
     },
     "critical.meter": {
      "mean": 0.722222,
@@ -7348,7 +9848,7 @@
      "n": 18
     },
     "notation.accidentals.missing.delta": {
-     "mean": -6.333333,
+     "mean": 0.0,
      "n": 18
     },
     "notation.accidentals.required_recall": {
@@ -7356,7 +9856,7 @@
      "n": 18
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": 0.158333,
+     "mean": 0.0,
      "n": 18
     },
     "notation.duration.accuracy": {
@@ -7437,11 +9937,11 @@
     },
     "notation.spelling.accuracy": {
      "mean": 1.0,
-     "n": 15
+     "n": 18
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.983532,
-     "n": 15
+     "mean": 0.979296,
+     "n": 18
     },
     "notation.ties.extra_per_100": {
      "mean": 9.029659,
@@ -7483,12 +9983,140 @@
      "mean": 5.490452,
      "n": 18
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 7
+    },
+    "nq.beam.coverage.delta": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.ned": {
+     "mean": 0.439095,
+     "n": 18
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 0.486098,
+     "n": 18
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.012071,
+     "n": 18
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.012071,
+     "n": 18
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.004916,
+     "n": 18
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 1.777778,
+     "n": 18
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.27149,
+     "n": 3
+    },
+    "nq.tuplet.group_complete": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.111111,
+     "n": 18
+    },
+    "nq.tuplet.one_note_rate": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 6
+    },
     "read.accidentals_per_note": {
-     "mean": 0.016045,
+     "mean": 0.01279,
      "n": 18
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.003188,
+     "mean": -6.6e-05,
      "n": 18
     },
     "read.bar_completeness": {
@@ -7564,7 +10192,7 @@
      "n": 18
     },
     "sqi": {
-     "mean": 89.85948,
+     "mean": 90.252357,
      "n": 18
     },
     "struct.downbeat.f1": {
@@ -7581,15 +10209,15 @@
     },
     "struct.key.fifths_exact": {
      "mean": 1.0,
-     "n": 15
+     "n": 18
     },
     "struct.key.mirex": {
      "mean": 1.0,
-     "n": 15
+     "n": 18
     },
     "struct.key.timeline_accuracy": {
      "mean": 1.0,
-     "n": 15
+     "n": 18
     },
     "struct.measure_numbers.app_onset_accuracy": {
      "mean": 1.0,
@@ -7842,6 +10470,126 @@
      "mean": 1.665139,
      "n": 5
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": -0.007574,
+     "n": 5
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.beam.coverage.delta": {
+     "mean": -1.0,
+     "n": 5
+    },
+    "nq.ned": {
+     "mean": 1.285725,
+     "n": 5
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 3.826084,
+     "n": 5
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.005244,
+     "n": 5
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.005244,
+     "n": 5
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.129204,
+     "n": 5
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.006339,
+     "n": 5
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.003522,
+     "n": 5
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 6.2,
+     "n": 5
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.253289,
+     "n": 5
+    },
+    "nq.tie.mergeable_rate.delta": {
+     "mean": 0.508224,
+     "n": 2
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.0,
+     "n": 5
+    },
     "read.accidentals_per_note": {
      "mean": 0.026229,
      "n": 5
@@ -8039,7 +10787,7 @@
     },
     "critical.key": {
      "mean": 1.0,
-     "n": 15
+     "n": 18
     },
     "critical.meter": {
      "mean": 0.722222,
@@ -8082,7 +10830,7 @@
      "n": 18
     },
     "notation.accidentals.missing.delta": {
-     "mean": -6.333333,
+     "mean": 0.0,
      "n": 18
     },
     "notation.accidentals.required_recall": {
@@ -8090,7 +10838,7 @@
      "n": 18
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": 0.158333,
+     "mean": 0.0,
      "n": 18
     },
     "notation.duration.accuracy": {
@@ -8171,11 +10919,11 @@
     },
     "notation.spelling.accuracy": {
      "mean": 1.0,
-     "n": 15
+     "n": 18
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.983532,
-     "n": 15
+     "mean": 0.979296,
+     "n": 18
     },
     "notation.ties.extra_per_100": {
      "mean": 9.029659,
@@ -8217,12 +10965,140 @@
      "mean": 5.490452,
      "n": 18
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 7
+    },
+    "nq.beam.coverage.delta": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.ned": {
+     "mean": 0.439095,
+     "n": 18
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 0.486098,
+     "n": 18
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.012071,
+     "n": 18
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.012071,
+     "n": 18
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.004916,
+     "n": 18
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 1.777778,
+     "n": 18
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.27149,
+     "n": 3
+    },
+    "nq.tuplet.group_complete": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.111111,
+     "n": 18
+    },
+    "nq.tuplet.one_note_rate": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 6
+    },
     "read.accidentals_per_note": {
-     "mean": 0.016045,
+     "mean": 0.01279,
      "n": 18
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.003188,
+     "mean": -6.6e-05,
      "n": 18
     },
     "read.bar_completeness": {
@@ -8298,7 +11174,7 @@
      "n": 18
     },
     "sqi": {
-     "mean": 89.85948,
+     "mean": 90.252357,
      "n": 18
     },
     "struct.downbeat.f1": {
@@ -8315,15 +11191,15 @@
     },
     "struct.key.fifths_exact": {
      "mean": 1.0,
-     "n": 15
+     "n": 18
     },
     "struct.key.mirex": {
      "mean": 1.0,
-     "n": 15
+     "n": 18
     },
     "struct.key.timeline_accuracy": {
      "mean": 1.0,
-     "n": 15
+     "n": 18
     },
     "struct.measure_numbers.app_onset_accuracy": {
      "mean": 1.0,
@@ -8414,7 +11290,7 @@
     },
     "critical.key": {
      "mean": 1.0,
-     "n": 16
+     "n": 18
     },
     "critical.meter": {
      "mean": 1.0,
@@ -8457,7 +11333,7 @@
      "n": 18
     },
     "notation.accidentals.missing.delta": {
-     "mean": -20.666667,
+     "mean": 0.0,
      "n": 18
     },
     "notation.accidentals.required_recall": {
@@ -8465,7 +11341,7 @@
      "n": 18
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": 0.111111,
+     "mean": 0.0,
      "n": 18
     },
     "notation.duration.accuracy": {
@@ -8481,11 +11357,11 @@
      "n": 18
     },
     "notation.hand.accuracy": {
-     "mean": 0.961946,
+     "mean": 0.962379,
      "n": 18
     },
     "notation.hand.accuracy_ref": {
-     "mean": 0.951648,
+     "mean": 0.952068,
      "n": 18
     },
     "notation.ioi.accuracy": {
@@ -8546,11 +11422,11 @@
     },
     "notation.spelling.accuracy": {
      "mean": 1.0,
-     "n": 16
+     "n": 18
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.991587,
-     "n": 16
+     "mean": 0.989167,
+     "n": 18
     },
     "notation.ties.extra_per_100": {
      "mean": 0.0,
@@ -8596,12 +11472,144 @@
      "mean": 2.46624,
      "n": 18
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 15
+    },
+    "nq.beam.coverage.delta": {
+     "mean": 0.0,
+     "n": 12
+    },
+    "nq.ned": {
+     "mean": 0.349299,
+     "n": 18
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 1.022695,
+     "n": 18
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.028386,
+     "n": 18
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.009772,
+     "n": 18
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": -0.013812,
+     "n": 18
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.166667,
+     "n": 18
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.166667,
+     "n": 18
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.111111,
+     "n": 18
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.055556,
+     "n": 18
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.tuplet.group_complete": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tuplet.group_complete.delta": {
+     "mean": -1.0,
+     "n": 2
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.111111,
+     "n": 18
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 4.611111,
+     "n": 18
+    },
+    "nq.tuplet.one_note_rate": {
+     "mean": 1.0,
+     "n": 3
+    },
+    "nq.tuplet.one_note_rate.delta": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 2
+    },
     "read.accidentals_per_note": {
-     "mean": 0.003891,
+     "mean": 0.0,
      "n": 18
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.003891,
+     "mean": 0.0,
      "n": 18
     },
     "read.bar_completeness": {
@@ -8677,7 +11685,7 @@
      "n": 18
     },
     "sqi": {
-     "mean": 92.778643,
+     "mean": 92.836078,
      "n": 18
     },
     "struct.downbeat.f1": {
@@ -8694,15 +11702,15 @@
     },
     "struct.key.fifths_exact": {
      "mean": 1.0,
-     "n": 16
+     "n": 18
     },
     "struct.key.mirex": {
      "mean": 1.0,
-     "n": 16
+     "n": 18
     },
     "struct.key.timeline_accuracy": {
      "mean": 1.0,
-     "n": 16
+     "n": 18
     },
     "struct.measure_numbers.app_onset_accuracy": {
      "mean": 1.0,
@@ -8955,6 +11963,122 @@
      "mean": 5.751989,
      "n": 3
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.beam.coverage.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.ned": {
+     "mean": 0.739583,
+     "n": 3
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 2.520833,
+     "n": 3
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.042146,
+     "n": 3
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.042146,
+     "n": 3
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.171611,
+     "n": 3
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 2.333333,
+     "n": 3
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.28,
+     "n": 1
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.0,
+     "n": 3
+    },
     "read.accidentals_per_note": {
      "mean": 0.0,
      "n": 3
@@ -9152,7 +12276,7 @@
     },
     "critical.key": {
      "mean": 1.0,
-     "n": 34
+     "n": 39
     },
     "critical.meter": {
      "mean": 0.820513,
@@ -9195,7 +12319,7 @@
      "n": 39
     },
     "notation.accidentals.missing.delta": {
-     "mean": -12.461538,
+     "mean": 0.0,
      "n": 39
     },
     "notation.accidentals.required_recall": {
@@ -9203,7 +12327,7 @@
      "n": 39
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": 0.124359,
+     "mean": 0.0,
      "n": 39
     },
     "notation.duration.accuracy": {
@@ -9219,11 +12343,11 @@
      "n": 39
     },
     "notation.hand.accuracy": {
-     "mean": 0.94938,
+     "mean": 0.949579,
      "n": 39
     },
     "notation.hand.accuracy_ref": {
-     "mean": 0.933578,
+     "mean": 0.933772,
      "n": 39
     },
     "notation.ioi.accuracy": {
@@ -9284,11 +12408,11 @@
     },
     "notation.spelling.accuracy": {
      "mean": 1.0,
-     "n": 34
+     "n": 39
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.985378,
-     "n": 34
+     "mean": 0.982482,
+     "n": 39
     },
     "notation.ties.extra_per_100": {
      "mean": 5.480243,
@@ -9334,12 +12458,148 @@
      "mean": 4.148773,
      "n": 39
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 39
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": -0.000432,
+     "n": 39
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 28
+    },
+    "nq.beam.coverage.delta": {
+     "mean": -0.125,
+     "n": 24
+    },
+    "nq.ned": {
+     "mean": 0.497877,
+     "n": 39
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 39
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 39
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 1.130703,
+     "n": 39
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.022303,
+     "n": 39
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.013712,
+     "n": 39
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.016029,
+     "n": 39
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.076923,
+     "n": 39
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.076923,
+     "n": 39
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.051282,
+     "n": 39
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.025641,
+     "n": 39
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 39
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 39
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 39
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 39
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 39
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 1.051282,
+     "n": 39
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 39
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 39
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 39
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 39
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 39
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.192067,
+     "n": 7
+    },
+    "nq.tuplet.group_complete": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tuplet.group_complete.delta": {
+     "mean": -1.0,
+     "n": 2
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.051282,
+     "n": 39
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 2.179487,
+     "n": 39
+    },
+    "nq.tuplet.one_note_rate": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "nq.tuplet.one_note_rate.delta": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 8
+    },
     "read.accidentals_per_note": {
-     "mean": 0.004498,
+     "mean": 0.0012,
      "n": 39
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.002828,
+     "mean": -0.00047,
      "n": 39
     },
     "read.bar_completeness": {
@@ -9415,7 +12675,7 @@
      "n": 39
     },
     "sqi": {
-     "mean": 88.122279,
+     "mean": 88.330115,
      "n": 39
     },
     "struct.downbeat.f1": {
@@ -9432,15 +12692,15 @@
     },
     "struct.key.fifths_exact": {
      "mean": 1.0,
-     "n": 34
+     "n": 39
     },
     "struct.key.mirex": {
      "mean": 1.0,
-     "n": 34
+     "n": 39
     },
     "struct.key.timeline_accuracy": {
      "mean": 1.0,
-     "n": 34
+     "n": 39
     },
     "struct.measure_numbers.app_onset_accuracy": {
      "mean": 1.0,
@@ -9707,6 +12967,110 @@
     },
     "notes.timing.median_abs_ms": {
      "mean": 2.333333,
+     "n": 3
+    },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.ned": {
+     "mean": 0.166667,
+     "n": 3
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 0.238095,
+     "n": 3
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.0,
      "n": 3
     },
     "read.accidentals_per_note": {
@@ -10068,6 +13432,126 @@
      "mean": 0.0,
      "n": 2
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": -0.010508,
+     "n": 2
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.beam.coverage.delta": {
+     "mean": -1.0,
+     "n": 2
+    },
+    "nq.ned": {
+     "mean": 1.460637,
+     "n": 2
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 4.519756,
+     "n": 2
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.005535,
+     "n": 2
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.005535,
+     "n": 2
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.187795,
+     "n": 2
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.015847,
+     "n": 2
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.008804,
+     "n": 2
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 14.5,
+     "n": 2
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.508224,
+     "n": 2
+    },
+    "nq.tie.mergeable_rate.delta": {
+     "mean": 0.508224,
+     "n": 2
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.0,
+     "n": 2
+    },
     "read.accidentals_per_note": {
      "mean": 0.05729,
      "n": 2
@@ -10423,6 +13907,126 @@
      "mean": 15.936041,
      "n": 4
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": -0.001404,
+     "n": 4
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.beam.coverage.delta": {
+     "mean": -0.5,
+     "n": 2
+    },
+    "nq.ned": {
+     "mean": 0.907138,
+     "n": 4
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 2.826705,
+     "n": 4
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.035397,
+     "n": 4
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.035397,
+     "n": 4
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.061364,
+     "n": 4
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 1.75,
+     "n": 4
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.14,
+     "n": 2
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 1
+    },
     "read.accidentals_per_note": {
      "mean": 0.001453,
      "n": 4
@@ -10620,7 +14224,7 @@
     },
     "critical.key": {
      "mean": 1.0,
-     "n": 14
+     "n": 16
     },
     "critical.meter": {
      "mean": 0.5625,
@@ -10659,7 +14263,7 @@
      "n": 16
     },
     "notation.accidentals.missing.delta": {
-     "mean": -14.0,
+     "mean": 0.0,
      "n": 16
     },
     "notation.accidentals.required_recall": {
@@ -10667,7 +14271,7 @@
      "n": 16
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": 0.121875,
+     "mean": 0.0,
      "n": 16
     },
     "notation.duration.accuracy": {
@@ -10683,11 +14287,11 @@
      "n": 16
     },
     "notation.hand.accuracy": {
-     "mean": 0.952173,
+     "mean": 0.952417,
      "n": 16
     },
     "notation.hand.accuracy_ref": {
-     "mean": 0.918294,
+     "mean": 0.91853,
      "n": 16
     },
     "notation.ioi.accuracy": {
@@ -10735,12 +14339,12 @@
      "n": 16
     },
     "notation.spelling.accuracy": {
-     "mean": 0.999816,
-     "n": 14
+     "mean": 0.999839,
+     "n": 16
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.963384,
-     "n": 14
+     "mean": 0.963457,
+     "n": 16
     },
     "notation.ties.extra_per_100": {
      "mean": 10.444081,
@@ -10786,12 +14390,152 @@
      "mean": 2.050204,
      "n": 16
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": -0.001008,
+     "n": 16
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 12
+    },
+    "nq.beam.coverage.delta": {
+     "mean": -0.2,
+     "n": 10
+    },
+    "nq.ned": {
+     "mean": 0.652544,
+     "n": 16
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 1.20159,
+     "n": 16
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.017177,
+     "n": 16
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.008939,
+     "n": 16
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.023498,
+     "n": 16
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0625,
+     "n": 16
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0625,
+     "n": 16
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0625,
+     "n": 16
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.000651,
+     "n": 16
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.000211,
+     "n": 16
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 2.5,
+     "n": 16
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.275394,
+     "n": 5
+    },
+    "nq.tie.mergeable_rate.delta": {
+     "mean": 0.4375,
+     "n": 1
+    },
+    "nq.tuplet.group_complete": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "nq.tuplet.group_complete.delta": {
+     "mean": -1.0,
+     "n": 1
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 2.9375,
+     "n": 16
+    },
+    "nq.tuplet.one_note_rate": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "nq.tuplet.one_note_rate.delta": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 3
+    },
     "read.accidentals_per_note": {
-     "mean": 0.014628,
+     "mean": 0.008778,
      "n": 16
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.004288,
+     "mean": -0.001562,
      "n": 16
     },
     "read.bar_completeness": {
@@ -10867,7 +14611,7 @@
      "n": 16
     },
     "sqi": {
-     "mean": 78.985209,
+     "mean": 79.395017,
      "n": 16
     },
     "struct.downbeat.f1": {
@@ -10884,15 +14628,15 @@
     },
     "struct.key.fifths_exact": {
      "mean": 1.0,
-     "n": 14
+     "n": 16
     },
     "struct.key.mirex": {
      "mean": 1.0,
-     "n": 13
+     "n": 15
     },
     "struct.key.timeline_accuracy": {
      "mean": 1.0,
-     "n": 14
+     "n": 16
     },
     "struct.measure_numbers.app_onset_accuracy": {
      "mean": 1.0,
@@ -10983,7 +14727,7 @@
     },
     "critical.key": {
      "mean": 1.0,
-     "n": 14
+     "n": 16
     },
     "critical.meter": {
      "mean": 0.875,
@@ -11022,7 +14766,7 @@
      "n": 16
     },
     "notation.accidentals.missing.delta": {
-     "mean": -14.0,
+     "mean": 0.0,
      "n": 16
     },
     "notation.accidentals.required_recall": {
@@ -11030,7 +14774,7 @@
      "n": 16
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": 0.121875,
+     "mean": 0.0,
      "n": 16
     },
     "notation.duration.accuracy": {
@@ -11046,11 +14790,11 @@
      "n": 16
     },
     "notation.hand.accuracy": {
-     "mean": 0.95213,
+     "mean": 0.952373,
      "n": 16
     },
     "notation.hand.accuracy_ref": {
-     "mean": 0.94628,
+     "mean": 0.946516,
      "n": 16
     },
     "notation.ioi.accuracy": {
@@ -11098,12 +14842,12 @@
      "n": 16
     },
     "notation.spelling.accuracy": {
-     "mean": 0.999874,
-     "n": 14
+     "mean": 0.99989,
+     "n": 16
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.996627,
-     "n": 14
+     "mean": 0.992544,
+     "n": 16
     },
     "notation.ties.extra_per_100": {
      "mean": 0.688747,
@@ -11149,12 +14893,152 @@
      "mean": 0.098789,
      "n": 16
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": -0.001008,
+     "n": 16
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 11
+    },
+    "nq.beam.coverage.delta": {
+     "mean": -0.2,
+     "n": 10
+    },
+    "nq.ned": {
+     "mean": 0.416105,
+     "n": 16
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 1.042861,
+     "n": 16
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.01731,
+     "n": 16
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.009072,
+     "n": 16
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.027609,
+     "n": 16
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.125,
+     "n": 16
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.125,
+     "n": 16
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.125,
+     "n": 16
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.00133,
+     "n": 16
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.00089,
+     "n": 16
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 1.4375,
+     "n": 16
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.351974,
+     "n": 2
+    },
+    "nq.tie.mergeable_rate.delta": {
+     "mean": 0.578947,
+     "n": 1
+    },
+    "nq.tuplet.group_complete": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tuplet.group_complete.delta": {
+     "mean": -1.0,
+     "n": 1
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.125,
+     "n": 16
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 2.25,
+     "n": 16
+    },
+    "nq.tuplet.one_note_rate": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "nq.tuplet.one_note_rate.delta": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 3
+    },
     "read.accidentals_per_note": {
-     "mean": 0.010784,
+     "mean": 0.008595,
      "n": 16
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.000444,
+     "mean": -0.001745,
      "n": 16
     },
     "read.bar_completeness": {
@@ -11230,7 +15114,7 @@
      "n": 16
     },
     "sqi": {
-     "mean": 92.253968,
+     "mean": 92.317473,
      "n": 16
     },
     "struct.downbeat.f1": {
@@ -11247,15 +15131,15 @@
     },
     "struct.key.fifths_exact": {
      "mean": 1.0,
-     "n": 14
+     "n": 16
     },
     "struct.key.mirex": {
      "mean": 1.0,
-     "n": 13
+     "n": 15
     },
     "struct.key.timeline_accuracy": {
      "mean": 1.0,
-     "n": 14
+     "n": 16
     },
     "struct.measure_numbers.app_onset_accuracy": {
      "mean": 1.0,
@@ -11524,6 +15408,118 @@
      "mean": 0.210317,
      "n": 4
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.beam.coverage.delta": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "nq.ned": {
+     "mean": 0.213492,
+     "n": 4
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 0.590278,
+     "n": 4
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.046875,
+     "n": 4
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.029018,
+     "n": 4
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.0,
+     "n": 4
+    },
     "read.accidentals_per_note": {
      "mean": 0.016667,
      "n": 4
@@ -11721,7 +15717,7 @@
     },
     "critical.key": {
      "mean": 1.0,
-     "n": 3
+     "n": 4
     },
     "critical.meter": {
      "mean": 1.0,
@@ -11760,7 +15756,7 @@
      "n": 4
     },
     "notation.accidentals.missing.delta": {
-     "mean": -9.5,
+     "mean": 0.0,
      "n": 4
     },
     "notation.accidentals.required_recall": {
@@ -11768,7 +15764,7 @@
      "n": 4
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": 0.2375,
+     "mean": 0.0,
      "n": 4
     },
     "notation.duration.accuracy": {
@@ -11837,11 +15833,11 @@
     },
     "notation.spelling.accuracy": {
      "mean": 1.0,
-     "n": 3
+     "n": 4
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.984848,
-     "n": 3
+     "mean": 0.978165,
+     "n": 4
     },
     "notation.ties.extra_per_100": {
      "mean": 0.0,
@@ -11882,6 +15878,130 @@
     "notes.timing.median_abs_ms": {
      "mean": 17.458205,
      "n": 4
+    },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.beam.coverage.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.ned": {
+     "mean": 0.31439,
+     "n": 4
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 1.068015,
+     "n": 4
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": -0.015609,
+     "n": 4
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tuplet.group_complete": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.5,
+     "n": 4
+    },
+    "nq.tuplet.one_note_rate": {
+     "mean": 1.0,
+     "n": 1
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 1
     },
     "read.accidentals_per_note": {
      "mean": 0.002732,
@@ -11964,7 +16084,7 @@
      "n": 4
     },
     "sqi": {
-     "mean": 93.922599,
+     "mean": 94.055748,
      "n": 4
     },
     "struct.downbeat.f1": {
@@ -11981,15 +16101,15 @@
     },
     "struct.key.fifths_exact": {
      "mean": 1.0,
-     "n": 3
+     "n": 4
     },
     "struct.key.mirex": {
      "mean": 1.0,
-     "n": 3
+     "n": 4
     },
     "struct.key.timeline_accuracy": {
      "mean": 1.0,
-     "n": 3
+     "n": 4
     },
     "struct.measure_numbers.app_onset_accuracy": {
      "mean": 1.0,
@@ -12080,7 +16200,7 @@
     },
     "critical.key": {
      "mean": 1.0,
-     "n": 39
+     "n": 44
     },
     "critical.meter": {
      "mean": 0.772727,
@@ -12123,7 +16243,7 @@
      "n": 44
     },
     "notation.accidentals.missing.delta": {
-     "mean": -11.045455,
+     "mean": 0.0,
      "n": 44
     },
     "notation.accidentals.required_recall": {
@@ -12131,7 +16251,7 @@
      "n": 44
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": 0.110227,
+     "mean": 0.0,
      "n": 44
     },
     "notation.duration.accuracy": {
@@ -12147,11 +16267,11 @@
      "n": 44
     },
     "notation.hand.accuracy": {
-     "mean": 0.952662,
+     "mean": 0.952839,
      "n": 44
     },
     "notation.hand.accuracy_ref": {
-     "mean": 0.931907,
+     "mean": 0.932079,
      "n": 44
     },
     "notation.ioi.accuracy": {
@@ -12211,12 +16331,12 @@
      "n": 4
     },
     "notation.spelling.accuracy": {
-     "mean": 0.999889,
-     "n": 39
+     "mean": 0.999901,
+     "n": 44
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.979112,
-     "n": 39
+     "mean": 0.977258,
+     "n": 44
     },
     "notation.ties.extra_per_100": {
      "mean": 5.005797,
@@ -12262,12 +16382,152 @@
      "mean": 3.836412,
      "n": 44
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 44
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": -0.000861,
+     "n": 44
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 30
+    },
+    "nq.beam.coverage.delta": {
+     "mean": -0.192308,
+     "n": 26
+    },
+    "nq.ned": {
+     "mean": 0.519056,
+     "n": 44
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 44
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 44
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 1.223891,
+     "n": 44
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.02002,
+     "n": 44
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.012405,
+     "n": 44
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.022744,
+     "n": 44
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.068182,
+     "n": 44
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.068182,
+     "n": 44
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.045455,
+     "n": 44
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.022727,
+     "n": 44
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 44
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 44
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.00072,
+     "n": 44
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0004,
+     "n": 44
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 44
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 1.590909,
+     "n": 44
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 44
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 44
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 44
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 44
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 44
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.262324,
+     "n": 9
+    },
+    "nq.tie.mergeable_rate.delta": {
+     "mean": 0.508224,
+     "n": 2
+    },
+    "nq.tuplet.group_complete": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tuplet.group_complete.delta": {
+     "mean": -1.0,
+     "n": 2
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.045455,
+     "n": 44
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 1.931818,
+     "n": 44
+    },
+    "nq.tuplet.one_note_rate": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "nq.tuplet.one_note_rate.delta": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 8
+    },
     "read.accidentals_per_note": {
-     "mean": 0.011136,
+     "mean": 0.008213,
      "n": 44
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.001608,
+     "mean": -0.001315,
      "n": 44
     },
     "read.bar_completeness": {
@@ -12343,7 +16603,7 @@
      "n": 44
     },
     "sqi": {
-     "mean": 86.907085,
+     "mean": 87.091303,
      "n": 44
     },
     "struct.downbeat.f1": {
@@ -12360,15 +16620,15 @@
     },
     "struct.key.fifths_exact": {
      "mean": 1.0,
-     "n": 39
+     "n": 44
     },
     "struct.key.mirex": {
      "mean": 1.0,
-     "n": 37
+     "n": 42
     },
     "struct.key.timeline_accuracy": {
      "mean": 1.0,
-     "n": 39
+     "n": 44
     },
     "struct.measure_numbers.app_onset_accuracy": {
      "mean": 1.0,
@@ -12621,6 +16881,130 @@
      "mean": 8.050929,
      "n": 6
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.beam.coverage.delta": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.ned": {
+     "mean": 0.630784,
+     "n": 6
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 0.604167,
+     "n": 6
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.018741,
+     "n": 6
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.018741,
+     "n": 6
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.013889,
+     "n": 6
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 2.0,
+     "n": 6
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.228663,
+     "n": 2
+    },
+    "nq.tuplet.group_complete": {
+     "mean": 0.0,
+     "n": 1
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.333333,
+     "n": 6
+    },
+    "nq.tuplet.one_note_rate": {
+     "mean": 1.0,
+     "n": 1
+    },
     "read.accidentals_per_note": {
      "mean": 0.0,
      "n": 6
@@ -12816,6 +17200,10 @@
      "mean": 1.0,
      "n": 5
     },
+    "critical.key": {
+     "mean": 1.0,
+     "n": 5
+    },
     "critical.meter": {
      "mean": 0.8,
      "n": 5
@@ -12853,7 +17241,7 @@
      "n": 5
     },
     "notation.accidentals.missing.delta": {
-     "mean": -97.2,
+     "mean": 0.0,
      "n": 5
     },
     "notation.accidentals.required_recall": {
@@ -12861,7 +17249,7 @@
      "n": 5
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": 0.97,
+     "mean": 0.0,
      "n": 5
     },
     "notation.duration.accuracy": {
@@ -12877,11 +17265,11 @@
      "n": 5
     },
     "notation.hand.accuracy": {
-     "mean": 0.864056,
+     "mean": 0.865612,
      "n": 5
     },
     "notation.hand.accuracy_ref": {
-     "mean": 0.831797,
+     "mean": 0.833306,
      "n": 5
     },
     "notation.ioi.accuracy": {
@@ -12928,6 +17316,14 @@
      "mean": 0.0,
      "n": 5
     },
+    "notation.spelling.accuracy": {
+     "mean": 1.0,
+     "n": 5
+    },
+    "notation.spelling.accuracy_ref": {
+     "mean": 0.962794,
+     "n": 5
+    },
     "notation.ties.extra_per_100": {
      "mean": 6.120219,
      "n": 5
@@ -12968,12 +17364,132 @@
      "mean": 3.748002,
      "n": 5
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.beam.coverage.delta": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.ned": {
+     "mean": 0.563596,
+     "n": 5
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 0.511029,
+     "n": 5
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.043989,
+     "n": 5
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.019838,
+     "n": 5
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.001031,
+     "n": 5
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 4.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.357143,
+     "n": 1
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 5
+    },
     "read.accidentals_per_note": {
-     "mean": 0.031768,
+     "mean": 0.006045,
      "n": 5
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.025486,
+     "mean": -0.000237,
      "n": 5
     },
     "read.bar_completeness": {
@@ -13049,7 +17565,7 @@
      "n": 5
     },
     "sqi": {
-     "mean": 88.052938,
+     "mean": 89.67406,
      "n": 5
     },
     "struct.downbeat.f1": {
@@ -13061,6 +17577,18 @@
      "n": 5
     },
     "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 5
+    },
+    "struct.key.fifths_exact": {
+     "mean": 1.0,
+     "n": 5
+    },
+    "struct.key.mirex": {
+     "mean": 1.0,
+     "n": 5
+    },
+    "struct.key.timeline_accuracy": {
      "mean": 1.0,
      "n": 5
     },
@@ -13313,6 +17841,126 @@
     },
     "notes.timing.median_abs_ms": {
      "mean": 1.665139,
+     "n": 5
+    },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": -0.007574,
+     "n": 5
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.beam.coverage.delta": {
+     "mean": -1.0,
+     "n": 5
+    },
+    "nq.ned": {
+     "mean": 1.285725,
+     "n": 5
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 3.826084,
+     "n": 5
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.005244,
+     "n": 5
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.005244,
+     "n": 5
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.129204,
+     "n": 5
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.006339,
+     "n": 5
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.003522,
+     "n": 5
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 6.2,
+     "n": 5
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.253289,
+     "n": 5
+    },
+    "nq.tie.mergeable_rate.delta": {
+     "mean": 0.508224,
+     "n": 2
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 5
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.0,
      "n": 5
     },
     "read.accidentals_per_note": {
@@ -13694,6 +18342,142 @@
      "mean": 3.336816,
      "n": 28
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 28
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": 0.0,
+     "n": 28
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 16
+    },
+    "nq.beam.coverage.delta": {
+     "mean": 0.0,
+     "n": 13
+    },
+    "nq.ned": {
+     "mean": 0.350256,
+     "n": 28
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 28
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 28
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 1.019308,
+     "n": 28
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.018653,
+     "n": 28
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.010999,
+     "n": 28
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.009508,
+     "n": 28
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.107143,
+     "n": 28
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.107143,
+     "n": 28
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.071429,
+     "n": 28
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.035714,
+     "n": 28
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 28
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 28
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 28
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 28
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 28
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 0.25,
+     "n": 28
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 28
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 28
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 28
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 28
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 28
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.28,
+     "n": 1
+    },
+    "nq.tuplet.group_complete": {
+     "mean": 0.0,
+     "n": 3
+    },
+    "nq.tuplet.group_complete.delta": {
+     "mean": -1.0,
+     "n": 2
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.071429,
+     "n": 28
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 2.964286,
+     "n": 28
+    },
+    "nq.tuplet.one_note_rate": {
+     "mean": 1.0,
+     "n": 3
+    },
+    "nq.tuplet.one_note_rate.delta": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 3
+    },
     "read.accidentals_per_note": {
      "mean": 0.007143,
      "n": 28
@@ -14053,6 +18837,126 @@
      "mean": 0.0,
      "n": 2
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": -0.010508,
+     "n": 2
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.beam.coverage.delta": {
+     "mean": -1.0,
+     "n": 2
+    },
+    "nq.ned": {
+     "mean": 1.460637,
+     "n": 2
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 4.519756,
+     "n": 2
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.005535,
+     "n": 2
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.005535,
+     "n": 2
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.187795,
+     "n": 2
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.015847,
+     "n": 2
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.008804,
+     "n": 2
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 14.5,
+     "n": 2
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.508224,
+     "n": 2
+    },
+    "nq.tie.mergeable_rate.delta": {
+     "mean": 0.508224,
+     "n": 2
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 2
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.0,
+     "n": 2
+    },
     "read.accidentals_per_note": {
      "mean": 0.05729,
      "n": 2
@@ -14246,7 +19150,7 @@
     },
     "critical.key": {
      "mean": 1.0,
-     "n": 8
+     "n": 13
     },
     "critical.meter": {
      "mean": 0.692308,
@@ -14285,7 +19189,7 @@
      "n": 13
     },
     "notation.accidentals.missing.delta": {
-     "mean": -37.384615,
+     "mean": 0.0,
      "n": 13
     },
     "notation.accidentals.required_recall": {
@@ -14293,7 +19197,7 @@
      "n": 13
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": 0.373077,
+     "mean": 0.0,
      "n": 13
     },
     "notation.duration.accuracy": {
@@ -14309,11 +19213,11 @@
      "n": 13
     },
     "notation.hand.accuracy": {
-     "mean": 0.947714,
+     "mean": 0.948312,
      "n": 13
     },
     "notation.hand.accuracy_ref": {
-     "mean": 0.922574,
+     "mean": 0.923155,
      "n": 13
     },
     "notation.ioi.accuracy": {
@@ -14362,11 +19266,11 @@
     },
     "notation.spelling.accuracy": {
      "mean": 1.0,
-     "n": 8
+     "n": 13
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.97931,
-     "n": 8
+     "mean": 0.972958,
+     "n": 13
     },
     "notation.ties.extra_per_100": {
      "mean": 3.190318,
@@ -14408,12 +19312,132 @@
      "mean": 3.928499,
      "n": 13
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 13
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": -0.001296,
+     "n": 13
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 10
+    },
+    "nq.beam.coverage.delta": {
+     "mean": -0.3,
+     "n": 10
+    },
+    "nq.ned": {
+     "mean": 0.604893,
+     "n": 13
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 13
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 13
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 1.254455,
+     "n": 13
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.018084,
+     "n": 13
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.008796,
+     "n": 13
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.021199,
+     "n": 13
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 13
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 13
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 13
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 13
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 13
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 13
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 13
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 13
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 13
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 1.692308,
+     "n": 13
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 13
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 13
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 13
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 13
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 13
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.151786,
+     "n": 4
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 13
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.0,
+     "n": 13
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 8
+    },
     "read.accidentals_per_note": {
-     "mean": 0.013493,
+     "mean": 0.003599,
      "n": 13
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.008484,
+     "mean": -0.00141,
      "n": 13
     },
     "read.bar_completeness": {
@@ -14489,7 +19513,7 @@
      "n": 13
     },
     "sqi": {
-     "mean": 84.685821,
+     "mean": 85.30933,
      "n": 13
     },
     "struct.downbeat.f1": {
@@ -14506,15 +19530,15 @@
     },
     "struct.key.fifths_exact": {
      "mean": 1.0,
-     "n": 8
+     "n": 13
     },
     "struct.key.mirex": {
      "mean": 1.0,
-     "n": 8
+     "n": 13
     },
     "struct.key.timeline_accuracy": {
      "mean": 1.0,
-     "n": 8
+     "n": 13
     },
     "struct.measure_numbers.app_onset_accuracy": {
      "mean": 1.0,
@@ -14787,6 +19811,138 @@
      "mean": 4.059712,
      "n": 29
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 29
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": 0.0,
+     "n": 29
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.beam.coverage.delta": {
+     "mean": 0.0,
+     "n": 14
+    },
+    "nq.ned": {
+     "mean": 0.415641,
+     "n": 29
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 29
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 29
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 0.982889,
+     "n": 29
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.021887,
+     "n": 29
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.014498,
+     "n": 29
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.012053,
+     "n": 29
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.103448,
+     "n": 29
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.103448,
+     "n": 29
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.068966,
+     "n": 29
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.034483,
+     "n": 29
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 29
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 29
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.0,
+     "n": 29
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0,
+     "n": 29
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 29
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 0.655172,
+     "n": 29
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 29
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 29
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 29
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 29
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 29
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.245776,
+     "n": 3
+    },
+    "nq.tuplet.group_complete": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tuplet.group_complete.delta": {
+     "mean": -1.0,
+     "n": 2
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.068966,
+     "n": 29
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 2.931034,
+     "n": 29
+    },
+    "nq.tuplet.one_note_rate": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "nq.tuplet.one_note_rate.delta": {
+     "mean": 1.0,
+     "n": 2
+    },
     "read.accidentals_per_note": {
      "mean": 0.006897,
      "n": 29
@@ -14984,7 +20140,7 @@
     },
     "critical.key": {
      "mean": 1.0,
-     "n": 39
+     "n": 44
     },
     "critical.meter": {
      "mean": 0.772727,
@@ -15027,7 +20183,7 @@
      "n": 44
     },
     "notation.accidentals.missing.delta": {
-     "mean": -11.045455,
+     "mean": 0.0,
      "n": 44
     },
     "notation.accidentals.required_recall": {
@@ -15035,7 +20191,7 @@
      "n": 44
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": 0.110227,
+     "mean": 0.0,
      "n": 44
     },
     "notation.duration.accuracy": {
@@ -15051,11 +20207,11 @@
      "n": 44
     },
     "notation.hand.accuracy": {
-     "mean": 0.952662,
+     "mean": 0.952839,
      "n": 44
     },
     "notation.hand.accuracy_ref": {
-     "mean": 0.931907,
+     "mean": 0.932079,
      "n": 44
     },
     "notation.ioi.accuracy": {
@@ -15115,12 +20271,12 @@
      "n": 4
     },
     "notation.spelling.accuracy": {
-     "mean": 0.999889,
-     "n": 39
+     "mean": 0.999901,
+     "n": 44
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.979112,
-     "n": 39
+     "mean": 0.977258,
+     "n": 44
     },
     "notation.ties.extra_per_100": {
      "mean": 5.005797,
@@ -15166,12 +20322,152 @@
      "mean": 3.836412,
      "n": 44
     },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 44
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": -0.000861,
+     "n": 44
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 30
+    },
+    "nq.beam.coverage.delta": {
+     "mean": -0.192308,
+     "n": 26
+    },
+    "nq.ned": {
+     "mean": 0.519056,
+     "n": 44
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 44
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 44
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 1.223891,
+     "n": 44
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.02002,
+     "n": 44
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.012405,
+     "n": 44
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.022744,
+     "n": 44
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.068182,
+     "n": 44
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.068182,
+     "n": 44
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.045455,
+     "n": 44
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.022727,
+     "n": 44
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 44
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": 0.0,
+     "n": 44
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.00072,
+     "n": 44
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.0004,
+     "n": 44
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 44
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 1.590909,
+     "n": 44
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 44
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 44
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 44
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 44
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 44
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.262324,
+     "n": 9
+    },
+    "nq.tie.mergeable_rate.delta": {
+     "mean": 0.508224,
+     "n": 2
+    },
+    "nq.tuplet.group_complete": {
+     "mean": 0.0,
+     "n": 4
+    },
+    "nq.tuplet.group_complete.delta": {
+     "mean": -1.0,
+     "n": 2
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.045455,
+     "n": 44
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 1.931818,
+     "n": 44
+    },
+    "nq.tuplet.one_note_rate": {
+     "mean": 1.0,
+     "n": 4
+    },
+    "nq.tuplet.one_note_rate.delta": {
+     "mean": 1.0,
+     "n": 2
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 8
+    },
     "read.accidentals_per_note": {
-     "mean": 0.011136,
+     "mean": 0.008213,
      "n": 44
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.001608,
+     "mean": -0.001315,
      "n": 44
     },
     "read.bar_completeness": {
@@ -15247,7 +20543,7 @@
      "n": 44
     },
     "sqi": {
-     "mean": 86.907085,
+     "mean": 87.091303,
      "n": 44
     },
     "struct.downbeat.f1": {
@@ -15264,15 +20560,15 @@
     },
     "struct.key.fifths_exact": {
      "mean": 1.0,
-     "n": 39
+     "n": 44
     },
     "struct.key.mirex": {
      "mean": 1.0,
-     "n": 37
+     "n": 42
     },
     "struct.key.timeline_accuracy": {
      "mean": 1.0,
-     "n": 39
+     "n": 44
     },
     "struct.measure_numbers.app_onset_accuracy": {
      "mean": 1.0,
@@ -15365,7 +20661,7 @@
    },
    "critical.key": {
     "mean": 1.0,
-    "n": 39
+    "n": 44
    },
    "critical.meter": {
     "mean": 0.772727,
@@ -15404,7 +20700,7 @@
     "n": 44
    },
    "notation.accidentals.missing.delta": {
-    "mean": -11.045455,
+    "mean": 0.0,
     "n": 44
    },
    "notation.accidentals.required_recall": {
@@ -15412,7 +20708,7 @@
     "n": 44
    },
    "notation.accidentals.required_recall.delta": {
-    "mean": 0.110227,
+    "mean": 0.0,
     "n": 44
    },
    "notation.duration.accuracy": {
@@ -15428,11 +20724,11 @@
     "n": 44
    },
    "notation.hand.accuracy": {
-    "mean": 0.952662,
+    "mean": 0.952839,
     "n": 44
    },
    "notation.hand.accuracy_ref": {
-    "mean": 0.931907,
+    "mean": 0.932079,
     "n": 44
    },
    "notation.ioi.accuracy": {
@@ -15492,12 +20788,12 @@
     "n": 4
    },
    "notation.spelling.accuracy": {
-    "mean": 0.999889,
-    "n": 39
+    "mean": 0.999901,
+    "n": 44
    },
    "notation.spelling.accuracy_ref": {
-    "mean": 0.979112,
-    "n": 39
+    "mean": 0.977258,
+    "n": 44
    },
    "notation.ties.extra_per_100": {
     "mean": 5.005797,
@@ -15543,12 +20839,152 @@
     "mean": 3.836412,
     "n": 44
    },
+   "nq.acc.redundant_rate": {
+    "mean": 0.0,
+    "n": 44
+   },
+   "nq.acc.redundant_rate.delta": {
+    "mean": -0.000861,
+    "n": 44
+   },
+   "nq.beam.coverage": {
+    "mean": 0.0,
+    "n": 30
+   },
+   "nq.beam.coverage.delta": {
+    "mean": -0.192308,
+    "n": 26
+   },
+   "nq.ned": {
+    "mean": 0.519056,
+    "n": 44
+   },
+   "nq.range.ledger4_rate": {
+    "mean": 0.0,
+    "n": 44
+   },
+   "nq.range.ledger4_rate.delta": {
+    "mean": 0.0,
+    "n": 44
+   },
+   "nq.rest.per_measure_delta": {
+    "mean": 1.223891,
+    "n": 44
+   },
+   "nq.rhythm.hidden_beat_rate": {
+    "mean": 0.02002,
+    "n": 44
+   },
+   "nq.rhythm.hidden_beat_rate.delta": {
+    "mean": 0.012405,
+    "n": 44
+   },
+   "nq.rhythm.short_rate_delta": {
+    "mean": 0.022744,
+    "n": 44
+   },
+   "nq.shape.tm_missing": {
+    "mean": 0.068182,
+    "n": 44
+   },
+   "nq.shape.tm_missing.delta": {
+    "mean": 0.068182,
+    "n": 44
+   },
+   "nq.shape.tm_missing.r17": {
+    "mean": 0.045455,
+    "n": 44
+   },
+   "nq.shape.tm_missing.unexpected": {
+    "mean": 0.022727,
+    "n": 44
+   },
+   "nq.spell.context_odd": {
+    "mean": 0.0,
+    "n": 44
+   },
+   "nq.spell.context_odd.delta": {
+    "mean": 0.0,
+    "n": 44
+   },
+   "nq.spell.mixed_bar_rate": {
+    "mean": 0.00072,
+    "n": 44
+   },
+   "nq.spell.mixed_bar_rate.delta": {
+    "mean": 0.0004,
+    "n": 44
+   },
+   "nq.tie.mergeable.cross_voice": {
+    "mean": 0.0,
+    "n": 44
+   },
+   "nq.tie.mergeable.defect": {
+    "mean": 1.590909,
+    "n": 44
+   },
+   "nq.tie.mergeable.partial_chord": {
+    "mean": 0.0,
+    "n": 44
+   },
+   "nq.tie.mergeable.r17": {
+    "mean": 0.0,
+    "n": 44
+   },
+   "nq.tie.mergeable.required_beat_split": {
+    "mean": 0.0,
+    "n": 44
+   },
+   "nq.tie.mergeable.required_h6": {
+    "mean": 0.0,
+    "n": 44
+   },
+   "nq.tie.mergeable.required_h7": {
+    "mean": 0.0,
+    "n": 44
+   },
+   "nq.tie.mergeable_rate": {
+    "mean": 0.262324,
+    "n": 9
+   },
+   "nq.tie.mergeable_rate.delta": {
+    "mean": 0.508224,
+    "n": 2
+   },
+   "nq.tuplet.group_complete": {
+    "mean": 0.0,
+    "n": 4
+   },
+   "nq.tuplet.group_complete.delta": {
+    "mean": -1.0,
+    "n": 2
+   },
+   "nq.tuplet.one_note.r17": {
+    "mean": 0.045455,
+    "n": 44
+   },
+   "nq.tuplet.one_note.unexpected": {
+    "mean": 1.931818,
+    "n": 44
+   },
+   "nq.tuplet.one_note_rate": {
+    "mean": 1.0,
+    "n": 4
+   },
+   "nq.tuplet.one_note_rate.delta": {
+    "mean": 1.0,
+    "n": 2
+   },
+   "nq.voice.poly_recall": {
+    "mean": 0.0,
+    "n": 8
+   },
    "read.accidentals_per_note": {
-    "mean": 0.011136,
+    "mean": 0.008213,
     "n": 44
    },
    "read.accidentals_per_note.delta": {
-    "mean": 0.001608,
+    "mean": -0.001315,
     "n": 44
    },
    "read.bar_completeness": {
@@ -15624,7 +21060,7 @@
     "n": 44
    },
    "sqi": {
-    "mean": 86.907085,
+    "mean": 87.091303,
     "n": 44
    },
    "struct.downbeat.f1": {
@@ -15641,15 +21077,15 @@
    },
    "struct.key.fifths_exact": {
     "mean": 1.0,
-    "n": 39
+    "n": 44
    },
    "struct.key.mirex": {
     "mean": 1.0,
-    "n": 37
+    "n": 42
    },
    "struct.key.timeline_accuracy": {
     "mean": 1.0,
-    "n": 39
+    "n": 44
    },
    "struct.measure_numbers.app_onset_accuracy": {
     "mean": 1.0,
@@ -15724,12 +21160,12 @@
     "n": 44
    }
   },
-  "date": "2026-09-22",
-  "git_sha": "151541749368b131df2e5176cc61f5d2cb10779c",
+  "date": "2026-09-27",
+  "git_sha": "42d7b0cd6ebaf95dc0673ed71b348f0b305c9a67",
   "versions": {
    "generator": "perform/2",
    "metrics": "metrics/6",
-   "reader": "reader/4",
+   "reader": "reader/5",
    "sqi": "sqi/2"
   }
  },
@@ -15756,6 +21192,7 @@
     "notation.hand.accuracy_ref": 0.970588,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.970588,
     "notation.pedal.f1": null,
@@ -15815,6 +21252,7 @@
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
     "notation.pedal.f1": null,
@@ -15874,6 +21312,7 @@
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
     "notation.pedal.f1": null,
@@ -15933,6 +21372,7 @@
     "notation.hand.accuracy_ref": 0.659091,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.0,
     "notation.onset_pos.accuracy_ref": 0.0,
     "notation.pedal.f1": null,
@@ -15992,6 +21432,7 @@
     "notation.hand.accuracy_ref": 0.659091,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.954545,
     "notation.pedal.f1": null,
@@ -16051,6 +21492,7 @@
     "notation.hand.accuracy_ref": 0.659091,
     "notation.ioi.accuracy": 0.789474,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.952381,
     "notation.onset_pos.accuracy_ref": 0.909091,
     "notation.pedal.f1": null,
@@ -16094,7 +21536,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
-    "critical.key": null,
+    "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
     "critical.pedal": null,
@@ -16106,16 +21548,17 @@
     "notation.duration.accuracy": 0.945525,
     "notation.duration.accuracy_ref": 0.916981,
     "notation.duration.page_accuracy": 0.945525,
-    "notation.hand.accuracy": 0.840467,
-    "notation.hand.accuracy_ref": 0.815094,
+    "notation.hand.accuracy": 0.844358,
+    "notation.hand.accuracy_ref": 0.818868,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.969811,
     "notation.pedal.f1": null,
     "notation.pedal.false_per_min": 0.0,
-    "notation.spelling.accuracy": null,
-    "notation.spelling.accuracy_ref": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 0.969811,
     "notation.ties.extra_per_100": 0.0,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
@@ -16124,11 +21567,11 @@
     "read.bar_completeness": 1.0,
     "read.bar_integrity": 1.0,
     "read.ledger_lines.heavy_rate": 0.0,
-    "sqi": 95.954601,
+    "sqi": 96.448204,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": null,
-    "struct.key.timeline_accuracy": null,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 1.0,
@@ -16143,8 +21586,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "532e2b2b27a638f0",
-   "sqi": 95.954601,
+   "semantic": "61f9fcfe975d814e",
+   "sqi": 96.448204,
    "status": "ok"
   },
   "hymns/i-know-whom|human|oracle|s1": {
@@ -16153,7 +21596,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
-    "critical.key": null,
+    "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
     "critical.pedal": null,
@@ -16165,16 +21608,17 @@
     "notation.duration.accuracy": 0.918288,
     "notation.duration.accuracy_ref": 0.890566,
     "notation.duration.page_accuracy": 0.918288,
-    "notation.hand.accuracy": 0.840467,
-    "notation.hand.accuracy_ref": 0.815094,
+    "notation.hand.accuracy": 0.844358,
+    "notation.hand.accuracy_ref": 0.818868,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.969811,
     "notation.pedal.f1": null,
     "notation.pedal.false_per_min": 0.0,
-    "notation.spelling.accuracy": null,
-    "notation.spelling.accuracy_ref": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 0.969811,
     "notation.ties.extra_per_100": 0.0,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
@@ -16183,11 +21627,11 @@
     "read.bar_completeness": 1.0,
     "read.bar_integrity": 1.0,
     "read.ledger_lines.heavy_rate": 0.0,
-    "sqi": 95.643835,
+    "sqi": 96.184053,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": null,
-    "struct.key.timeline_accuracy": null,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 1.0,
@@ -16202,8 +21646,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "097fc301872cef12",
-   "sqi": 95.643835,
+   "semantic": "98f867fa5899c798",
+   "sqi": 96.184053,
    "status": "ok"
   },
   "hymns/we-gather-together|deadpan|none|s1": {
@@ -16212,7 +21656,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 0.0,
     "critical.hands": 1.0,
-    "critical.key": null,
+    "critical.key": 1.0,
     "critical.meter": 0.0,
     "critical.note_values": 1.0,
     "critical.pedal": null,
@@ -16228,12 +21672,13 @@
     "notation.hand.accuracy_ref": 0.842932,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.0,
     "notation.onset_pos.accuracy_ref": 0.0,
     "notation.pedal.f1": null,
     "notation.pedal.false_per_min": 0.0,
-    "notation.spelling.accuracy": null,
-    "notation.spelling.accuracy_ref": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 0.958115,
     "notation.ties.extra_per_100": 30.601093,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
@@ -16242,11 +21687,11 @@
     "read.bar_completeness": 1.0,
     "read.bar_integrity": 1.0,
     "read.ledger_lines.heavy_rate": 0.0,
-    "sqi": 58.181637,
+    "sqi": 64.244967,
     "struct.downbeat.f1": 0.0,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": null,
-    "struct.key.timeline_accuracy": null,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 0.0,
@@ -16261,8 +21706,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "e1d5c8801311c445",
-   "sqi": 58.181637,
+   "semantic": "01fa8d50a8c4d066",
+   "sqi": 64.244967,
    "status": "ok"
   },
   "hymns/we-gather-together|human|oracle|s1": {
@@ -16271,7 +21716,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
-    "critical.key": null,
+    "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
     "critical.pedal": null,
@@ -16287,12 +21732,13 @@
     "notation.hand.accuracy_ref": 0.842932,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.958115,
     "notation.pedal.f1": null,
     "notation.pedal.false_per_min": 0.0,
-    "notation.spelling.accuracy": null,
-    "notation.spelling.accuracy_ref": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 0.958115,
     "notation.ties.extra_per_100": 0.0,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
@@ -16301,11 +21747,11 @@
     "read.bar_completeness": 1.0,
     "read.bar_integrity": 1.0,
     "read.ledger_lines.heavy_rate": 0.0,
-    "sqi": 95.431406,
+    "sqi": 95.907271,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": null,
-    "struct.key.timeline_accuracy": null,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 1.0,
@@ -16320,8 +21766,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "00b34cf8081fc768",
-   "sqi": 95.431406,
+   "semantic": "9f16fba9307cd4eb",
+   "sqi": 95.907271,
    "status": "ok"
   },
   "hymns/we-gather-together|rubato|oracle|s1": {
@@ -16330,7 +21776,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
-    "critical.key": null,
+    "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
     "critical.pedal": null,
@@ -16346,12 +21792,13 @@
     "notation.hand.accuracy_ref": 0.842932,
     "notation.ioi.accuracy": 0.96,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.994536,
     "notation.onset_pos.accuracy_ref": 0.95288,
     "notation.pedal.f1": null,
     "notation.pedal.false_per_min": 0.0,
-    "notation.spelling.accuracy": null,
-    "notation.spelling.accuracy_ref": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 0.958115,
     "notation.ties.extra_per_100": 0.0,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
@@ -16360,11 +21807,11 @@
     "read.bar_completeness": 1.0,
     "read.bar_integrity": 1.0,
     "read.ledger_lines.heavy_rate": 0.0,
-    "sqi": 95.053211,
+    "sqi": 95.585805,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": null,
-    "struct.key.timeline_accuracy": null,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 1.0,
@@ -16379,8 +21826,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "9e1d72d053dc5408",
-   "sqi": 95.053211,
+   "semantic": "38a778dd0470ebea",
+   "sqi": 95.585805,
    "status": "ok"
   },
   "method/czerny599/040|amt|oracle-noisy|s1": {
@@ -16405,6 +21852,7 @@
     "notation.hand.accuracy_ref": 0.932584,
     "notation.ioi.accuracy": 0.948052,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.060241,
     "notation.onset_pos.accuracy_ref": 0.05618,
     "notation.pedal.f1": null,
@@ -16464,6 +21912,7 @@
     "notation.hand.accuracy_ref": 0.983146,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.057143,
     "notation.onset_pos.accuracy_ref": 0.05618,
     "notation.pedal.f1": null,
@@ -16523,6 +21972,7 @@
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.05618,
     "notation.onset_pos.accuracy_ref": 0.05618,
     "notation.pedal.f1": null,
@@ -16582,6 +22032,7 @@
     "notation.hand.accuracy_ref": 0.64903,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.020566,
     "notation.onset_pos.accuracy_ref": 0.014109,
     "notation.pedal.f1": null,
@@ -16641,6 +22092,7 @@
     "notation.hand.accuracy_ref": 0.945326,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.017637,
     "notation.onset_pos.accuracy_ref": 0.017637,
     "notation.pedal.f1": null,
@@ -16700,6 +22152,7 @@
     "notation.hand.accuracy_ref": 0.91875,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.91875,
     "notation.pedal.f1": null,
@@ -16759,6 +22212,7 @@
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
     "notation.pedal.f1": null,
@@ -16818,6 +22272,7 @@
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
     "notation.pedal.f1": null,
@@ -16877,6 +22332,7 @@
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.0,
     "notation.onset_pos.accuracy_ref": 0.0,
     "notation.pedal.f1": null,
@@ -16936,6 +22392,7 @@
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
     "notation.pedal.f1": null,
@@ -16995,6 +22452,7 @@
     "notation.hand.accuracy_ref": 0.96875,
     "notation.ioi.accuracy": 0.688889,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.032258,
     "notation.onset_pos.accuracy_ref": 0.03125,
     "notation.pedal.f1": null,
@@ -17054,6 +22512,7 @@
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
     "notation.pedal.f1": null,
@@ -17113,6 +22572,7 @@
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
     "notation.pedal.f1": null,
@@ -17172,6 +22632,7 @@
     "notation.hand.accuracy_ref": 0.865385,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 0.982759,
+    "notation.note_shape.mismatches": 1.0,
     "notation.onset_pos.accuracy": 0.0,
     "notation.onset_pos.accuracy_ref": 0.0,
     "notation.pedal.f1": null,
@@ -17231,6 +22692,7 @@
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 0.765957,
     "notation.note_shape.consistency": 0.965517,
+    "notation.note_shape.mismatches": 2.0,
     "notation.onset_pos.accuracy": 0.846154,
     "notation.onset_pos.accuracy_ref": 0.846154,
     "notation.pedal.f1": null,
@@ -17290,6 +22752,7 @@
     "notation.hand.accuracy_ref": 0.981481,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.0,
     "notation.onset_pos.accuracy_ref": 0.0,
     "notation.pedal.f1": null,
@@ -17349,6 +22812,7 @@
     "notation.hand.accuracy_ref": 0.981481,
     "notation.ioi.accuracy": 0.705882,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.851852,
     "notation.onset_pos.accuracy_ref": 0.851852,
     "notation.pedal.f1": null,
@@ -17408,6 +22872,7 @@
     "notation.hand.accuracy_ref": 0.981481,
     "notation.ioi.accuracy": 0.470588,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.796296,
     "notation.onset_pos.accuracy_ref": 0.796296,
     "notation.pedal.f1": null,
@@ -17467,6 +22932,7 @@
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.116667,
     "notation.onset_pos.accuracy_ref": 0.116667,
     "notation.pedal.f1": null,
@@ -17526,6 +22992,7 @@
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
     "notation.pedal.f1": null,
@@ -17585,6 +23052,7 @@
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
     "notation.pedal.f1": 1.0,
@@ -17644,6 +23112,7 @@
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.0,
     "notation.onset_pos.accuracy_ref": 0.0,
     "notation.pedal.f1": null,
@@ -17703,6 +23172,7 @@
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
     "notation.pedal.f1": null,
@@ -17762,6 +23232,7 @@
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
     "notation.pedal.f1": 1.0,
@@ -17821,6 +23292,7 @@
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.133333,
     "notation.onset_pos.accuracy_ref": 0.133333,
     "notation.pedal.f1": null,
@@ -17880,6 +23352,7 @@
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
     "notation.pedal.f1": null,
@@ -17939,6 +23412,7 @@
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
     "notation.pedal.f1": 1.0,
@@ -17998,6 +23472,7 @@
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.0,
     "notation.onset_pos.accuracy_ref": 0.0,
     "notation.pedal.f1": null,
@@ -18057,6 +23532,7 @@
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
     "notation.pedal.f1": null,
@@ -18116,6 +23592,7 @@
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
     "notation.pedal.f1": null,
@@ -18175,6 +23652,7 @@
     "notation.hand.accuracy_ref": 0.896552,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
     "notation.pedal.f1": null,
@@ -18234,6 +23712,7 @@
     "notation.hand.accuracy_ref": 0.896552,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
     "notation.pedal.f1": null,
@@ -18293,6 +23772,7 @@
     "notation.hand.accuracy_ref": 0.896552,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
     "notation.pedal.f1": 1.0,
@@ -18398,22 +23878,26 @@
    "reason": "G0 PF-M1/PF-M2 (final pass review §22): a lone forward repeat no longer excuses a fake split, a short first/last bar is excused only where the truth is short the same way, struct.measures.count_exact joins critical.structure (metrics/6). No real-corpus number moves (ab PASS vs git:HEAD).",
    "sqi_all": 86.907085,
    "usable_all": 0.386364
+  },
+  {
+   "date": "2026-09-27",
+   "event": "versions {'generator': 'perform/2', 'metrics': 'metrics/6', 'reader': 'reader/4', 'sqi': 'sqi/2'} -> {'generator': 'perform/2', 'metrics': 'metrics/6', 'reader': 'reader/5', 'sqi': 'sqi/2'}; new anchor, earlier numbers are not comparable"
+  },
+  {
+   "audio_score_sha256": "c7b3d4ae03ddfe50ed8b691449b7f7183698c564475449c1857d10080c022cf7",
+   "date": "2026-09-27",
+   "git_sha": "42d7b0cd6ebaf95dc0673ed71b348f0b305c9a67",
+   "reason": "MX-2: fixed catalog/hymns/abc-to-musicxml.js key-signature/tie-stop bug; hymn reference files regenerated",
+   "sqi_all": 87.091303,
+   "usable_all": 0.386364
   }
  ],
  "known_failures": {
   "classes": {
    "bar_accidental_not_carried": {
-    "by_collection": {
-     "hymns": 10
-    },
-    "examples": [
-     "catalog/hymns/angels-from-the-realms.musicxml",
-     "catalog/hymns/beneath-the-cross.musicxml",
-     "catalog/hymns/breathe-on-me.musicxml",
-     "catalog/hymns/hark-the-voice.musicxml",
-     "catalog/hymns/hyfrydol-alleluia.musicxml"
-    ],
-    "files_affected": 10,
+    "by_collection": {},
+    "examples": [],
+    "files_affected": 0,
     "files_in_scope": 329,
     "impact": "An accidental earlier in the bar still holds on the page, but the file plays the note without it.",
     "in_scope_by_collection": {
@@ -18428,8 +23912,8 @@
      "method/sonatina": 28,
      "samples": 4
     },
-    "items": 18,
-    "status": "KNOWN_FAILURE",
+    "items": 0,
+    "status": "NONE",
     "title": "In-bar accidentals that are not carried",
     "unit": "notes"
    },
@@ -18558,18 +24042,15 @@
    },
    "key_signature_playback": {
     "by_collection": {
-     "hymns": 89,
      "method/czerny849": 1,
      "samples": 2
     },
     "examples": [
-     "catalog/hymns/all-creatures.musicxml",
-     "catalog/hymns/all-hail-the-power.musicxml",
-     "catalog/hymns/all-praise-to-thee.musicxml",
-     "catalog/hymns/amazing-grace.musicxml",
-     "catalog/hymns/angels-we-have-heard.musicxml"
+     "catalog/method/czerny849/017.mxl",
+     "samples/chords-sample.musicxml",
+     "samples/vocal-piano.musicxml"
     ],
-    "files_affected": 92,
+    "files_affected": 3,
     "files_in_scope": 155,
     "impact": "The page shows the key signature (e.g. F# in G major) but the note has no <alter> and no printed accidental, so the app plays another note (F natural) than the page shows. Cause in the hymns: catalog/hymns/abc-to-musicxml.js writes <alter> only for explicit ABC accidentals; in the other files a natural sign is missing.",
     "in_scope_by_collection": {
@@ -18583,7 +24064,7 @@
      "method/sonatina": 16,
      "samples": 3
     },
-    "items": 6119,
+    "items": 6,
     "status": "KNOWN_FAILURE",
     "title": "Notes played against the printed key signature (hymn converter)",
     "unit": "notes"
@@ -18684,19 +24165,18 @@
    },
    "tie_without_stop": {
     "by_collection": {
-     "hymns": 10,
      "method/burgmuller25": 1,
      "method/sonatina": 4,
      "samples": 1
     },
     "examples": [
-     "catalog/hymns/amazing-grace.musicxml",
-     "catalog/hymns/be-still-my-soul.musicxml",
-     "catalog/hymns/it-is-well.musicxml",
-     "catalog/hymns/jesus-is-all-the-world.musicxml",
-     "catalog/hymns/midnight-clear.musicxml"
+     "catalog/method/burgmuller25/021.mxl",
+     "catalog/method/sonatina/010.mxl",
+     "catalog/method/sonatina/014.mxl",
+     "catalog/method/sonatina/015.mxl",
+     "catalog/method/sonatina/025.mxl"
     ],
-    "files_affected": 16,
+    "files_affected": 6,
     "files_in_scope": 50,
     "impact": "The tied note is struck again instead of held (the app joins a tie only at a matching tie-stop). Cause: abc-to-musicxml.js writes <tie type=\"start\"> and never the stop.",
     "in_scope_by_collection": {
@@ -18708,7 +24188,7 @@
      "method/sonatina": 16,
      "samples": 2
     },
-    "items": 121,
+    "items": 20,
     "status": "KNOWN_FAILURE",
     "title": "Tie starts that never stop",
     "unit": "ties"
@@ -18753,12 +24233,12 @@
   "scope": "committed scores under catalog/ and samples/",
   "version": "known-defects/3"
  },
- "lock_sha256": "3d8ada0ec5c5083e2c8564e2fb8f62e3c5235c651302a1348b64367ddfb1b233",
+ "lock_sha256": "222425b39194074f5d7143963ef5626f6928c10924df4d294ed295d05b54294f",
  "recorded": {
-  "audio_score_sha256": "559a1f40fb73416bc72d671d894251f7c3263110fa10780559047f6f22009288",
-  "date": "2026-09-22",
+  "audio_score_sha256": "c7b3d4ae03ddfe50ed8b691449b7f7183698c564475449c1857d10080c022cf7",
+  "date": "2026-09-27",
   "git_dirty": true,
-  "git_sha": "151541749368b131df2e5176cc61f5d2cb10779c",
+  "git_sha": "42d7b0cd6ebaf95dc0673ed71b348f0b305c9a67",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"
@@ -18769,7 +24249,7 @@
  "versions": {
   "generator": "perform/2",
   "metrics": "metrics/6",
-  "reader": "reader/4",
+  "reader": "reader/5",
   "sqi": "sqi/2"
  }
 }
