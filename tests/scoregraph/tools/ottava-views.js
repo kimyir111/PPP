@@ -32,6 +32,9 @@ function install() {
   const deg = p => { const m = RE.exec(p || ''); return m ? (+m[3]) * 7 + DI[m[1]] : null; };
   const BOTTOM = { treble: 30, bass: 18, alto: 24, tenor: 22, percussion: 30 };      /* bottom line, diatonic (C4 = 28) */
   const NAME = { 12: '8va', '-12': '8vb', 24: '15ma', '-24': '15mb' };
+  /* a line carried into a view that does not include its start reads the abbreviated "(8)"/"(15)" - magnitude only,
+     no direction (G4-D1b-7, tests/engraving.test.js:416) - so it matches an expected '8va' and an '8vb' alike */
+  const MAG = { '8va': '8', '8vb': '8', '15ma': '15', '15mb': '15' };
   const clone = x => JSON.parse(JSON.stringify(x, (k, v) => (k === '_byNumber' ? undefined : v)));
   const shiftP = (p, s) => { const m = RE.exec(p || ''); return m ? m[1] + m[2] + (+m[3] + Math.round(s / 12)) : p; };
   const clefAt = (mm, staffNo, b) => {
@@ -132,14 +135,25 @@ function install() {
       });
       return best;
     };
-    const lines = [...svg.querySelectorAll('text')].filter(t => /^\(?(8va|8vb|15ma|15mb)\)?$/.test(t.textContent.trim())).map(t => {
-      const x = +t.getAttribute('x'), y = +t.getAttribute('y'), bb = t.getBBox();
-      /* the dash starts a little after the label's own measured right edge - not a fixed offset from its left edge
-         (§25.2 step 3: the old renderer's font metrics gave a near-constant gap for "8va"/"15ma" alike; the engraver's
-         may not, so this reads the label's actual width instead of assuming one) */
-      const dash = paths.find(q => Math.abs(q.y - (y - 4)) < 0.6 && q.x0 >= x + bb.width - 4 && q.x0 <= x + bb.width + 16);
+    const lines = [...svg.querySelectorAll('text')].filter(t => {
+      const s = t.textContent.trim();
+      return /^\(?(8va|8vb|15ma|15mb)\)?$/.test(s) || /^\((8|15)\)$/.test(s);
+    }).map(t => {
+      const x = +t.getAttribute('x'), y = +t.getAttribute('y');
+      /* the dash starts a little after the label's own right edge, on the same line - matched by y-proximity and
+         picking the leftmost candidate at or after the label's own x, rather than a width-based window keyed to
+         getBBox()'s measured text width (§25.2 step 3 fixer review: widening this did not by itself close the
+         residual "dashboard" mismatch reported there - a deeper, unresolved cause, not this window's fault - but a
+         match that does not depend on getBBox() agreeing with itself call to call is the more robust one regardless) */
+      const dash = paths.filter(q => Math.abs(q.y - (y - 4)) < 0.6 && q.x0 >= x - 2).sort((a, b) => a.x0 - b.x0)[0];
+      const bb = t.getBBox();
       const row = t.getAttribute('data-ppp-row'), name = t.textContent.trim().replace(/[()]/g, '');
-      return { name: name, row: row != null ? +row : rowOf8(y, /a$/.test(name)),
+      /* the abbreviated form has no direction letter to read - ottava labels never carry data-ppp-row (checked live),
+         so this keeps both rows the label's position could plausibly belong to (its own system, or the one before -
+         only differ when the label sits between two systems) rather than guessing a direction that is not there */
+      const short = /^(8|15)$/.test(name);
+      const rows = row != null ? [+row] : short ? [...new Set([rowOf8(y, true), rowOf8(y, false)])] : [rowOf8(y, /a$/.test(name))];
+      return { name: name, short: short, rows: rows,
         x0: x, x1: Math.max(x + bb.width, dash ? dash.x1 : -Infinity) };
     });
     /* the heads drawn at each onset: the first path of a notehead group is the head (the group also holds its accidental) */
@@ -181,7 +195,7 @@ function install() {
       if (d === 0) return null;
       const name = d % 7 === 0 ? NAME[String(12 * d / 7)] : null;
       if (!name) return 'drawn ' + d + ' steps from where it sounds';
-      const ok = lines.some(l => l.name === name && l.row === row && hd.x >= l.x0 - 8 && hd.x <= l.x1 + 8);
+      const ok = lines.some(l => (l.name === name || (l.short && l.name === MAG[name])) && l.rows.indexOf(row) > -1 && hd.x >= l.x0 - 8 && hd.x <= l.x1 + 8);
       return ok ? null : 'drawn an octave' + (Math.abs(d) > 7 ? ' (two)' : '') + ' from where it sounds with no "' + name + '" over it';
     };
     notes.forEach((ns, key) => {

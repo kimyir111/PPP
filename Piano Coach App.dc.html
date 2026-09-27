@@ -41,7 +41,7 @@
 <script src="./engrave/plan-tuplets.js?v=3"></script>
 <script src="./engrave/plan.js?v=3"></script>
 <script src="./engrave/store.js?v=4"></script>
-<script src="./engrave/source.js?v=3"></script>
+<script src="./engrave/source.js?v=4"></script>
 <script src="./engrave/index.js?v=4"></script>
 <script src="./score-search.js"></script>
 <script src="./support.js"></script>
@@ -11096,7 +11096,7 @@ function openingBars(full, n) {
   });
   return Object.assign({}, full, {
     measures: ms, notes: notes, chords: mine(full.chords), pedals: mine(full.pedals), ottavas: [],
-    marks: mine(full.marks),
+    marks: mine(full.marks), dynamics: mine(full.dynamics), wedges: mine(full.wedges),
     sections: [{ id: 's1', from: ms[0].number, to: ms[ms.length - 1].number }], _byNumber: undefined
   });
 }

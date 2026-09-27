@@ -193,11 +193,16 @@ const withViews = process.argv.indexOf('--no-views') < 0;
       });
       out.drawnChecked = checked;
       if (checked < out.under) out.bad.push('only ' + checked + ' of ' + out.under + ' notes under a line were found drawn');
-      /* the labels: an 8va (shift +1) reads "8va", an 8vb "8vb", two octaves "15ma" / "15mb" */
-      const labels = [...svg.querySelectorAll('text')].map(t => t.textContent.trim()).filter(t => /^\(?(8va|8vb|15ma|15mb)\)?$/.test(t)).map(t => t.replace(/[()]/g, ''));
+      /* the labels: an 8va (shift +1) reads "8va", an 8vb "8vb", two octaves "15ma" / "15mb" - a line carried into a
+         view that does not include its start reads the abbreviated "(8)"/"(15)" instead, magnitude only, no direction
+         (G4-D1b-7, tests/engraving.test.js:416) */
+      const labels = [...svg.querySelectorAll('text')].map(t => t.textContent.trim())
+        .filter(t => /^\(?(8va|8vb|15ma|15mb)\)?$/.test(t) || /^\((8|15)\)$/.test(t)).map(t => t.replace(/[()]/g, ''));
       const names = Array.from(new Set(lines.map(o => (Math.abs(o.shift) >= 2 ? '15m' : '8v') + (o.shift > 0 ? 'a' : 'b'))));
-      names.forEach(nm => { if (labels.indexOf(nm) < 0) out.bad.push('no "' + nm + '" label drawn (found ' + Array.from(new Set(labels)).join(' ') + ')'); });
-      labels.forEach(l => { if (names.indexOf(l) < 0) out.bad.push('a "' + l + '" label, but no such line in the file'); });
+      const MAG = { '8va': '8', '8vb': '8', '15ma': '15', '15mb': '15' };
+      const wantMags = new Set(names.map(nm => MAG[nm]));
+      names.forEach(nm => { if (labels.indexOf(nm) < 0 && labels.indexOf(MAG[nm]) < 0) out.bad.push('no "' + nm + '" label drawn (found ' + Array.from(new Set(labels)).join(' ') + ')'); });
+      labels.forEach(l => { if (names.indexOf(l) < 0 && !wantMags.has(l)) out.bad.push('a "' + l + '" label, but no such line in the file'); });
       return out;
     }, buf.toString('base64'), path.basename(rel), /\.mxl$/i.test(rel) ? xmlText(buf) : buf.toString('utf8'));
     if (r.error) { bad++; console.log('  FAIL ' + name + '  ' + r.error); continue; }
