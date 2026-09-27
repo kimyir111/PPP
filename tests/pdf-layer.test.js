@@ -562,18 +562,26 @@ const XML = '<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"
     return {
       texts: texts, ottava: svg.querySelectorAll('.ppp-ottava').length,
       staffTop: sb ? sb.y : null, staffBottom: sb ? sb.y + sb.height : null, headY: hb ? hb.y : null,
-      wavyReach: gb && g4h ? g4h.x - gb.x : null
+      wavyReach: gb && g4h ? g4h.x - gb.x : null,
+      /* the engraver draws a chord's flat/sharp and a segno/coda sign as their own glyph (a <path>, from
+         the music font's outline), not as a Unicode character inside the <text> - this OMR score used to
+         fall back to the legacy renderer (SOURCE_DISAGREES, G4-R1/R2), whose SVG puts the whole chord or
+         mark in one <text> run; now that it agrees, the engraver draws it and the glyph is a sibling
+         element of the text (G4d-1a R5, §10.5) */
+      chordGlyphs: svg.querySelectorAll('g.ppp-chord path.ppp-chord-text').length,
+      jumpGlyphs: svg.querySelectorAll('g.ppp-jump path.ppp-jump-mark').length
     };
   });
-  ok('the chord names are printed, with the flat as a sign', !!d && d.texts.indexOf('Cm/E♭') > -1 && d.texts.indexOf('G') > -1, d ? d.texts.filter(t => /^[A-G]/.test(t)).join(' ') : 'no staff');
+  ok('the chord names are printed, with the flat as its own glyph', !!d && d.texts.indexOf('Cm/E') > -1 && d.texts.indexOf('G') > -1 && d.chordGlyphs > 0,
+    d ? d.texts.filter(t => /^[A-G]/.test(t)).join(' ') + ' (glyphs ' + d.chordGlyphs + ')' : 'no staff');
   ok('the 8va bracket is drawn', !!d && d.ottava > 0 && d.texts.indexOf('8va') > -1);
   ok('a note under the 8va is drawn where the page writes it, inside the staff',
     !!d && d.headY != null && d.headY >= d.staffTop - 6 && d.headY <= d.staffBottom,
     d ? 'head at ' + Math.round(d.headY) + ', staff ' + Math.round(d.staffTop) + '–' + Math.round(d.staffBottom) : '');
   ok('the title from the page heads the score', !!d && d.texts.indexOf('Vector Song') > -1);
   ok('the segno and coda signs and their words are printed',
-    !!d && ['𝄋', '𝄌', 'To Coda', 'D.S. al Coda'].every(t => d.texts.indexOf(t) > -1),
-    d ? d.texts.filter(t => /𝄋|𝄌|Coda/.test(t)).join(' | ') : '');
+    !!d && ['To Coda', 'D.S. al Coda'].every(t => d.texts.indexOf(t) > -1) && d.jumpGlyphs >= 2,
+    d ? d.texts.filter(t => /Coda/.test(t)).join(' | ') + ' (glyphs ' + d.jumpGlyphs + ')' : '');
   ok('the arpeggio is drawn beside its chord', !!d && d.wavyReach != null && d.wavyReach > 6,
     d && d.wavyReach != null ? 'reaches ' + d.wavyReach.toFixed(1) + 'px left of the head' : 'not found');
   ok('no page errors', pageErrors.length === 0, pageErrors.slice(0, 2).join(' | ') || 'clean');

@@ -408,7 +408,15 @@
     parts.forEach((part, pi) => {
       if (!isObj(part)) return;
       arr(part.clefs).forEach(cl => { if (ok(cl)) checkPos(cl, cl, 'clef', false, pi); });
-      arr(part.directions).forEach(d => { if (ok(d)) checkPos(d, d, 'direction', false, pi); });
+      arr(part.directions).forEach(d => {
+        if (!ok(d)) return;
+        checkPos(d, d, 'direction', false, pi);
+        /* root is not required (schema.js, G4-R1): a bass-only symbol ("/E") has no root. One or the other
+           must say something, the same "neither end" shape as a tie or slur with no end (E-SHAPE, above). */
+        if (d.kind === 'chord' && d.root === undefined && d.bass === undefined) {
+          add('E-SHAPE', 'chord ' + d.id + ' has neither root nor bass', [d.id]); broken.add(d);
+        }
+      });
       arr(part.events).forEach(e => { if (ok(e)) checkPos(e, e, 'event', !isObj(e.grace), pi); });
       arr(part.spanners).forEach(s => {
         if (!ok(s)) return;

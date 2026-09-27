@@ -722,12 +722,16 @@
   function chordPieces(d) {
     const acc = a => ACC_TEXT[String(a || 0)] || '';
     let s = d.root ? d.root.step + acc(d.root.alter) : '';
-    const kind = d.text !== null && d.text !== undefined ? String(d.text) : (CHORD_KIND[d.chordKind] !== undefined ? CHORD_KIND[d.chordKind] : '');
+    /* chordKind 'none' means CHORD_KIND.none, "N.C." - but only when it really is "no chord": with a bass
+       and no root (G4-R1, e.g. "/E", a slash chord with nothing above it) the bass says it all and "none"
+       prints nothing here */
+    const kind = d.text !== null && d.text !== undefined ? String(d.text)
+      : d.chordKind === 'none' && d.bass ? ''
+      : (CHORD_KIND[d.chordKind] !== undefined ? CHORD_KIND[d.chordKind] : '');
     s += kind.replace(/b(?=\d)/g, '♭').replace(/#(?=\d)/g, '♯');
     (d.degrees || []).forEach(g => { s += (g.type === 'subtract' ? 'no' : g.type === 'add' ? 'add' : '') + acc(g.alter) + g.value; });
     if (d.bass) s += '/' + d.bass.step + acc(d.bass.alter);
     s = s.replace(/\s+/g, ' ').trim();
-    if (d.chordKind === 'none' && (d.text === null || d.text === undefined)) s = 'N.C.';
     const pieces = [];
     let run = '';
     const flush = () => { if (run) pieces.push(textPiece({ kind: 'chord', text: run, font: FONT.chord, size: SIZE.chord })); run = ''; };

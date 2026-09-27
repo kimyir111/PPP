@@ -355,16 +355,20 @@
             const i = mIndex.get(pos.m);
             return i === undefined ? null : { m: numberOf[i], b: Q(pos.at) };
           };
-          const one = (pos, type) => {
+          const dbl = s.ext && s.ext['musicxml.pedal'];
+          /* a doubled end (fromScore's ext, G4-R2) is a printed <pedal> element and a <sound *-pedal>
+             attribute restating one action - written back as the same two entries, plain then valued */
+          const one = (pos, type, doubled) => {
             const a = at(pos);
             if (!a) return;
+            if (doubled) pedals.push({ m: a.m, b: a.b, type: type, kind: s.pedal });
             const x = { m: a.m, b: a.b, type: type, kind: s.pedal };
-            if (s.soundOnly) x.value = s.depth !== undefined ? s.depth : (type === 'stop' ? 0 : 127);
+            if (s.soundOnly || doubled) x.value = s.depth !== undefined ? s.depth : (type === 'stop' ? 0 : 127);
             pedals.push(x);
           };
-          one(s.from, s.pedal === 'sostenuto' && !s.soundOnly ? 'start' : 'start');
+          one(s.from, 'start', dbl && dbl.from);
           (s.changes || []).forEach(c => one(c, 'change'));
-          if (s.to) one(s.to, 'stop');
+          if (s.to) one(s.to, 'stop', dbl && dbl.to);
         } else if (s.type === 'wedge') {
           const from = mIndex.get(s.from.m), to = s.to ? mIndex.get(s.to.m) : undefined;
           if (from !== undefined) wedges.push({ m: numberOf[from], b: Q(s.from.at), type: s.kind });
@@ -429,6 +433,13 @@
     });
     const firstTempo = tempos.length ? tempos[0].bpm : null;
 
+    /* one spanner contributes its start, its changes and its stop together, in that order - but a piece
+       often has two pedal kinds open at once (the soft pedal pressed while the damper is still down), and
+       the Score reads every pedal action in one chronological line (App:4100-4169). A stable sort by
+       position turns "one spanner's events, then the next's" back into that line without disturbing a
+       doubled pair's own plain-then-valued order (G4-R2; matches the (m, b) key canonicalOrder already
+       uses for notes). */
+    pedals.sort((x, y) => (+x.m || 0) - (+y.m || 0) || (+x.b || 0) - (+y.b || 0));
     const title = g.meta.title !== undefined ? g.meta.title : (name || 'Untitled');
     return {
       id: opts.id || ('sg:' + (name || title) + ':' + Date.now()),
@@ -491,7 +502,8 @@
       (x.type === 'subtract' ? 'omit' + x.value : sign(x.alter) + x.value)).filter(Boolean);
     const extra = (d.text !== undefined && d.text !== '') ? degs.filter(x => d.text.indexOf(x) < 0) : degs;
     if (extra.length) quality += '(' + extra.join(',') + ')';
-    return d.root.step + sign(d.root.alter) + quality +
+    /* d.root is absent for a bass-only symbol (G4-R1); quality is '' there too (CHORD_KIND.none) */
+    return (d.root ? d.root.step + sign(d.root.alter) : '') + quality +
       (d.bass ? '/' + d.bass.step + sign(d.bass.alter) : '');
   }
   /* the app's own fallback when a note has no <type> */
@@ -774,12 +786,21 @@
   }
 
   function chordFromText(text) {
-    const m = /^([A-G])(bb|b|##|#)?(.*?)(?:\/([A-G])(bb|b|##|#)?)?$/.exec(String(text || ''));
-    if (!m) return null;
-    const d = { root: { step: m[1], alter: ALTER_OF[m[2] || ''] || 0 }, chordKind: m[3] ? 'other' : 'major' };
-    if (m[3]) d.text = m[3];
-    if (m[4]) d.bass = { step: m[4], alter: ALTER_OF[m[5] || ''] || 0 };
-    return d;
+    const s = String(text || '');
+    const m = /^([A-G])(bb|b|##|#)?(.*?)(?:\/([A-G])(bb|b|##|#)?)?$/.exec(s);
+    if (m) {
+      const d = { root: { step: m[1], alter: ALTER_OF[m[2] || ''] || 0 }, chordKind: m[3] ? 'other' : 'major' };
+      if (m[3]) d.text = m[3];
+      if (m[4]) d.bass = { step: m[4], alter: ALTER_OF[m[5] || ''] || 0 };
+      return d;
+    }
+    /* a bass note alone, with no chord above it - a real, if less common, lead-sheet convention (under a
+       pedal point or a walking bass line, e.g. "/E"). MusicXML's own way to write this is <kind>none</kind>
+       with no <root>, just <bass>; the graph holds it the same way (G4-R1) - chordKind 'none' with no root,
+       chordText below reads it back through CHORD_KIND['none'] = ''. */
+    const bm = /^\/([A-G])(bb|b|##|#)?$/.exec(s);
+    if (bm) return { chordKind: 'none', bass: { step: bm[1], alter: ALTER_OF[bm[2] || ''] || 0 } };
+    return null;
   }
 
   /* Was this Score's notation worked out by PPP rather than stated by a file? A Score made by toScore says so itself
@@ -1244,7 +1265,30 @@
     {
       const open = {};
       const flush = kind => { const o = open[kind]; if (!o) return; b.spanner(parts[pianoIdx], o.x); open[kind] = null; };
-      (src.pedals || []).forEach(pd => {
+      const markDoubled = (x, side) => {
+        x.ext = Object.assign({}, x.ext, { 'musicxml.pedal': Object.assign({}, x.ext && x.ext['musicxml.pedal'], { [side]: true }) });
+      };
+      /* App:4100/4163 push one pedal action twice: a printed <pedal> element (no value) and its <sound
+         *-pedal> attribute at the same position (no distinct value carried through, but the value naming
+         which side spoke). A start immediately followed by a same-kind, same-position, same-type restatement
+         is that one action, not a second press - merge them (keep whichever named a value) and remember
+         which end doubled in ext, so toScore below writes both entries back (G4-R2). */
+      const rawPedals = src.pedals || [];
+      const dedupPedals = [];
+      for (let i = 0; i < rawPedals.length; i++) {
+        const pd = rawPedals[i], nx = rawPedals[i + 1];
+        const kindOf = x => (x.kind === 'sostenuto' || x.kind === 'soft' ? x.kind : 'damper');
+        const hasValue = x => x.value !== undefined && x.value !== null;
+        if (nx && nx.m === pd.m && nx.b === pd.b && kindOf(nx) === kindOf(pd) && nx.type === pd.type &&
+            pd.type !== 'change' && hasValue(pd) !== hasValue(nx)) {
+          const merged = hasValue(pd) ? pd : nx;
+          dedupPedals.push(Object.assign({}, merged, { _doubled: pd.type === 'stop' ? 'to' : 'from' }));
+          i++;
+          continue;
+        }
+        dedupPedals.push(pd);
+      }
+      dedupPedals.forEach(pd => {
         const p = posOf(pd.m, pd.b);
         const kind = pd.kind === 'sostenuto' || pd.kind === 'soft' ? pd.kind : 'damper';
         if (!p) { note('pedal', pd.type); return; }
@@ -1252,6 +1296,7 @@
           if (open[kind]) { note('pedal-unclosed', pd.m); flush(kind); }
           const x = { type: 'pedal', pedal: kind, from: p };
           if (pd.value !== undefined && pd.value !== null) { x.soundOnly = true; if (pd.value !== 127) x.depth = Math.max(1, Math.min(127, Math.round(pd.value))); }
+          if (pd._doubled === 'from') markDoubled(x, 'from');
           open[kind] = { x: x };
         } else if (pd.type === 'change') {
           if (!open[kind]) { note('pedal-change-without-start', pd.m); return; }
@@ -1259,6 +1304,7 @@
         } else if (pd.type === 'stop') {
           if (!open[kind]) { note('pedal-stop-without-start', pd.m); return; }
           open[kind].x.to = p;
+          if (pd._doubled === 'to') markDoubled(open[kind].x, 'to');
           flush(kind);
         } else note('pedal', pd.type);
       });
