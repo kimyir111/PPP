@@ -19,6 +19,8 @@ tests/bench/out/
 # ... and the engraving tests' (fixture and corpus generators, the L1 benchmark, page checks, G04); their run output is not
 !tests/engrave/tools/
 tests/engrave/out/
+# ... and the playability tests' (the legacy-arranger baseline script, G05)
+!tests/playability/tools/
 tests/bench/.cache/
 __pycache__/
 # Local experiments; holds copyrighted audio and PDFs that must never be committed.
