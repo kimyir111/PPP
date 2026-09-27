@@ -4944,7 +4944,15 @@ Windows와 같은 결과. `npm ci`가 puppeteer의 Chromium을 못 받아도(pos
 
 **상태: READY_FOR_REVIEW.** Lead가 재확인할 것: G4-R1(root 없는 화음의 스키마 완화, `chordKind:'none'`+bass의 화면 처리)과 G4-R2(pedal 중복 신호 합치기 — start·change·stop 전부, `toScore` pedal 정렬)를 규칙으로 승인. §25 3단계(legacy 렌더러 완전 제거)의 범위를 다시 잡을 근거: 코퍼스·모든 suite에서 진짜 fallback 0(위 MINOR 3건은 별개 — 코퍼스 위험 0인 기존 동작으로 남겨 둠).
 
-**상태: READY_FOR_REVIEW.** Lead가 재확인할 것: G4-R1(root 없는 화음의 스키마 완화, `chordKind:'none'`+bass의 화면 처리)과 G4-R2(pedal 중복 신호 합치기, `toScore` pedal 정렬)를 규칙으로 승인. §25 3단계(legacy 렌더러 완전 제거)의 범위를 다시 잡을 근거: 코퍼스·모든 suite에서 진짜 fallback 0.
+### 51.8 Lead 재확인과 병합 (2026-09-27)
+
+새로 `git clone`한 사본(`2b861f4`)에서 직접: `test:scoregraph` 216/216, `test:engrave` 199/199. 리뷰어의 대항 사례(`<pedal type="change"/>` + `<sound damper-pedal="64">`를 start/stop 사이에)를 실제 페이지에서 `parseMusicXML`→`legacy.fromScore`→`legacy.agree`로 직접 재현: 원본 6줄, `fromScoreOk: true`, `agreeOk: true`, `unsupported: []` — MAJOR가 실제로 닫혔음을 독립적으로 확인.
+
+**G4-R1·G4-R2 승인한다.**
+
+**병합**: PR #48, CI gate 초록, squash. §51 CLOSED.
+
+**다음**: §25 3단계(legacy 렌더러 완전 제거) — 코퍼스·모든 브라우저 suite에서 진짜 fallback 원인 0을 확인했으니, 실제 코드(옛 `draw()`·`buildVoice()`·`sync()`·`loadVexFlow`) 제거를 시작할 근거가 갖춰졌다. MINOR 3건(전부 코퍼스 위험 0인 기존 동작)과 A47의 이미 받아들인 코퍼스 fixture 2개는 제거를 막지 않는다.
 
 ---
 
