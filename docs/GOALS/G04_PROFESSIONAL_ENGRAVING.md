@@ -4851,6 +4851,23 @@ G4b부터 매 단계 미뤄온 B5(§19.2: 전곡 첫 그리기 ≤ 300 ms, **조
 
 ---
 
+## 50. §25 3단계(legacy 렌더러 제거) — fallback 실태 조사 (Lead, 2026-09-27)
+
+로드맵 §15: "legacy 렌더러 제거는 fallback 카운터 0을 증거로" — 실제로 지금 0에 얼마나 가까운지 먼저 재봤다(`D:/PPP-g4`, 새 브랜치 `g4-legacy-removal`).
+
+**flip 리뷰가 보고한 20건 중 16건은 이미 고친 m2 버그의 잔재였다.** `share`·`interactions` suite가 각각 12·4건 `SOURCE_DISAGREES`(`notes.hand: x vs l`)를 냈는데, 원인을 보니 이 워크트리의 로컬 개발용 DB 파일(`data/shares.json`, `.gitignore` 대상, 2026-09-24 것 — m2 고치기 전)이 옛 깨진 seed 데이터를 그대로 갖고 있었을 뿐이었다. `server.js`의 `seedSharedScores()`가 "이미 있으면 건너뛴다"는 그 규칙 그대로, production만이 아니라 **로컬 개발 DB도** 똑같이 갱신 안 된 것 — m2가 고친 코드 자체는 이미 맞다. 로컬 `data/*.json`을 지우고 서버를 다시 띄우니(새로 seed) 두 suite 다 **fallback 0**으로 확인됨.
+
+**진짜 남은 것은 둘, 둘 다 좁고 이해된 경우:**
+1. **`midi.test.js`의 페달 시나리오**(`pedals.length: 6 vs 5`, 3건 — 전부 같은 fixture를 여러 UI 경로로 여는 것이라 "3개의 다른 파일"이 아니라 "1개 fixture × 3번"): 테스트 XML이 damper pedal을 열고 닫지만 **soft(una corda) pedal은 연 채로 끝난다**(`<sound soft-pedal="yes"/>`, 대응하는 stop 없음). `parseMusicXML`(App:4163)과 `legacy.fromScore`(1247행) 둘 다 soft pedal 자체는 이미 제대로 읽고 쓴다 — 안 닫힌 채 곡이 끝나는 경우의 왕복에서 개수가 어긋나는 것으로 보이며, 더 깊이 보지는 않았다.
+2. **`pdf-layer.test.js`의 코드명 시나리오**(`chords.length: 5 vs 4`, 1건): OMR이 "베이스만 바뀜"(`/E` 같은, 근음 없는 슬래시 코드)을 코드명으로 낸다. `legacy-score.js`의 `chordFromText`(776행) 정규식 `^([A-G])...` 은 **앞에 근음 글자가 있어야만** 매치한다 — `/E`처럼 근음 없이 베이스만 있는 코드명은 통째로 `null`이 되어 `fromScore`가 조용히 잃는다. 원인은 확인했지만 고치지는 않았다(그래프 스키마가 "근음 없는 코드"를 표현할 수 있는지부터 확인이 필요 — 정규식만의 문제가 아닐 수 있다).
+3. A47이 이미 받아들인, 이름 붙은 코퍼스 병리 fixture 2개(`a48-coverage.js`의 `CORPUS_KNOWN_LOSS`)는 그대로.
+
+**결론**: legacy 제거를 막는 "널리 퍼진" 진짜 fallback은 없다 — 남은 3부류 전부 좁고, 합성 테스트 fixture이거나 이미 이름 붙어 받아들여진 것들이다. 하지만 legacy를 **완전히 지우면** 이 좁은 경우들이 지금처럼 "조용히 옛 렌더러로" 넘어갈 데가 없어진다 — **"이 곡은 지금 그릴 수 없습니다" 같은 화면을 사용자가 보게 할지, 아니면 이 두 가지(안 닫힌 페달, 근음 없는 코드명)까지 먼저 고쳐서 실제로 0을 만들지는 제품 결정이라 Lead가 정하지 않는다.**
+
+**상태: 코드 변경 없음, 조사만.** `test:engrave`/`test:scoregraph`는 손대지 않아 다시 안 돌림. 로컬 `data/*.json` 삭제는 이 워크트리에만 영향(gitignore 대상, 커밋 없음) — 다음에 이 워크트리를 쓸 때 서버가 새로 seed한다.
+
+---
+
 ## 부록 A. 이 세션의 측정
 
 모두 `D:/PPP-g4`, `55d1bd5`, 작업 트리 clean. 스크립트는 세션 scratchpad에 있고 저장소에 쓰지 않았다 (측정 뒤 `git status` clean 확인). G4a·G4f가 같은 정의로 `tests/engrave/tools/`에 다시 만든다.
