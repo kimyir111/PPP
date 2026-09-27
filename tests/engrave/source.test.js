@@ -127,6 +127,36 @@ test('a kept graph that is stale, another score\'s, corrupt or unreachable is no
   assert.ok(r4.link.ok, 'and practice still has its map');
 });
 
+test('a corrupt record\'s diagnostic is not lost to a second resolve() of the same Score, once the store\'s own repair has removed it (fixer review, §25.2 step 3)', async () => {
+  /* store.get() deletes a record it cannot read as part of the very read that reports it - self-healing, so a bad
+     record is never read twice. That means whichever caller's resolve() makes that one read is the only one who ever
+     sees the store's own answer; a later resolve() of the same Score (the app's own repaint, another view asking
+     again) finds the key simply 'missing' and would otherwise report no diagnostic at all - the record being gone by
+     then does not make the reason it failed any less true, so resolve() carries the earlier STORE_ diagnostic forward
+     for a Score it already knows about. */
+  const g = await graphOf('tests/scoregraph/fixtures/xml/piano-marks.musicxml');
+  const score = scoreOf(g, 'pm');
+  const backend = E.store.memoryBackend();
+  const a = fresh(backend);
+  a.remember(score, g, 'x');
+  assert.ok((await a.persist('song-4', score)).ok);
+  backend._map.get('song-4').data = new Uint8Array(64).buffer;
+  const src = fresh(backend);
+  const same = reload(score);
+  const r1 = await src.resolve(same, { key: 'song-4' });
+  assert.equal(r1.via, 'projected');
+  assert.ok(/^STORE_/.test(r1.diagnostics[0].code), 'the first resolve sees the store\'s own diagnostic');
+  assert.equal(backend._map.has('song-4'), false, 'and the store has already repaired itself');
+  /* the same source, the same Score object, asked again - as the app's own repaint or another view would */
+  const r2 = await src.resolve(same, { key: 'song-4' });
+  assert.equal(r2.via, 'projected');
+  assert.ok(r2.diagnostics.some(d => d.code === r1.diagnostics[0].code), 'the second resolve still learns why, from the first');
+  /* a genuinely different Score (a new object, its own hash) gets no carried-over diagnostic that is not its own */
+  const other = scoreOf(g, 'pm2');
+  const r3 = await src.resolve(other, { key: 'song-5' });
+  assert.ok(!r3.diagnostics.some(d => /^STORE_/.test(d.code)), 'no diagnostic leaks across unrelated Scores');
+});
+
 test('a reconstructed graph never takes the place of a kept one, and only an agreeing live graph is kept', async () => {
   const g = await graphOf('tests/scoregraph/fixtures/xml/piano-marks.musicxml');
   const score = scoreOf(g, 'pm');

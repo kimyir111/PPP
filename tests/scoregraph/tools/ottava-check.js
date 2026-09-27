@@ -10,7 +10,7 @@
               schedules (PianoScore), is the graph's concert pitch;
      print    every note's writtenMidi is that pitch less the line's shift (the graph's display octave; a line that names no
               staff covers every staff of the part, as the G4 plan reads it);
-     drawn    the legacy renderer, whole score, puts every notehead of every note under a line on the staff position of
+     drawn    the engraver, whole score, puts every notehead of every note under a line on the staff position of
               that written pitch (measured on the SVG against the staff lines of its bar), and labels each line
               8va / 8vb / 15ma / 15mb by what it does;
      views    (MX-1 fixer, R1/R2; tests/scoregraph/tools/ottava-views.js) in every view that draws a score - the whole
@@ -45,11 +45,12 @@ const withViews = process.argv.indexOf('--no-views') < 0;
   await page.setViewport({ width: 1400, height: 900 });
   const pageErrors = [];
   page.on('pageerror', e => pageErrors.push(String(e.message)));
-  /* G4f-2: "drawn" and "views" measure the legacy renderer's SVG (its staff-line paths, its label text); since the flip the
-     default page is the engraver's, so this opens the rollback, ?renderer=legacy (the engraver's octave lines are G4's
-     A10 - tests/engrave) */
-  await page.goto(base + '/Piano%20Coach%20App.dc.html?renderer=legacy', { waitUntil: 'networkidle2', timeout: 120000 });
-  await page.waitForFunction(() => window.PPP && window.PPP.app && window.PPPScoreGraph && window.Vex && window.Vex.Flow, { timeout: 60000 });
+  /* "drawn" and "views" measure the engraver's SVG (its staff-line paths, its label text) - it shares its class names
+     with the old, now-removed VexFlow-based renderer on purpose (the DOM contract, G04 §16.4, tests/engrave), which is
+     exactly what lets this tool's geometry reading keep working unchanged after §25.2 step 3 (the engraver's own
+     octave-line correctness is also G4's A10, tests/engrave) */
+  await page.goto(base + '/Piano%20Coach%20App.dc.html', { waitUntil: 'networkidle2', timeout: 120000 });
+  await page.waitForFunction(() => window.PPP && window.PPP.app && window.PPPScoreGraph, { timeout: 60000 });
   await page.evaluate(() => window.__pppTest.practice());
   await new Promise(r => setTimeout(r, 1200));
   const lib = await page.evaluate(() => window.PPPScoreGraph.version);
@@ -130,7 +131,7 @@ const withViews = process.argv.indexOf('--no-views') < 0;
         }
       });
 
-      /* ---- what the legacy renderer draws: the import door's Score, the whole score */
+      /* ---- what the engraver draws: the import door's Score, the whole score */
       const score = doors[0][1];
       score.id = 'mx1-check:' + fileName;
       window.__mx1Held = score;
@@ -152,7 +153,10 @@ const withViews = process.argv.indexOf('--no-views') < 0;
       score.measures.forEach(mm => { byNo[mm.number] = mm; });
       const staffBottom = {};
       svg.querySelectorAll('g.ppp-stave').forEach(gs => {
-        const ys = [...gs.querySelectorAll('.vf-stave path')].map(p => /M[\d.]+ ([\d.]+)L/.exec(p.getAttribute('d'))).filter(Boolean).map(m => +m[1]);
+        /* the engraver draws the five staff lines as one path, 'M x y H x2' a line (§25.2 step 3: the old renderer drew
+           each line as its own path, 'M x y L x2 y2' - this reads either shape) */
+        const stave = gs.querySelector('.vf-stave');
+        const ys = stave ? [...(stave.getAttribute('d') || '').matchAll(/M[\d.]+ ([\d.]+)[LH]/g)].map(m => +m[1]) : [];
         if (ys.length >= 5) staffBottom[gs.getAttribute('data-m') + '|' + gs.getAttribute('data-staff')] = { bottom: Math.max.apply(null, ys), gap: (Math.max.apply(null, ys) - Math.min.apply(null, ys)) / 4 };
       });
       const byOnset = new Map();
@@ -163,13 +167,14 @@ const withViews = process.argv.indexOf('--no-views') < 0;
         byOnset.get(k2).push(x.t);
       });
       /* every notehead drawn at an onset (the voices of a staff are drawn as separate notes with one onset key); a head
-         is measured on its own glyph - the first path of .vf-notehead, since its group also holds the accidental */
+         is measured on its own glyph - the engraver draws a notehead as its own path; the old renderer wrapped it in a
+         group whose first path was the head, alongside its accidental (§25.2 step 3: this reads either shape) */
       const drawnAt = new Map();
       svg.querySelectorAll('g.ppp-note[data-onset]').forEach(gn => {
         if (gn.getAttribute('data-rest') === '1') return;
         const k2 = gn.getAttribute('data-onset');
         if (!drawnAt.has(k2)) drawnAt.set(k2, []);
-        gn.querySelectorAll('.vf-notehead').forEach(h => { const pth = h.querySelector('path'); if (pth) drawnAt.get(k2).push(pth.getBBox()); });
+        gn.querySelectorAll('.vf-notehead').forEach(h => { const pth = h.tagName.toLowerCase() === 'path' ? h : h.querySelector('path'); if (pth) drawnAt.get(k2).push(pth.getBBox()); });
       });
       let checked = 0;
       byOnset.forEach((ts, k2) => {
@@ -188,11 +193,16 @@ const withViews = process.argv.indexOf('--no-views') < 0;
       });
       out.drawnChecked = checked;
       if (checked < out.under) out.bad.push('only ' + checked + ' of ' + out.under + ' notes under a line were found drawn');
-      /* the labels: an 8va (shift +1) reads "8va", an 8vb "8vb", two octaves "15ma" / "15mb" */
-      const labels = [...svg.querySelectorAll('text')].map(t => t.textContent.trim()).filter(t => /^\(?(8va|8vb|15ma|15mb)\)?$/.test(t)).map(t => t.replace(/[()]/g, ''));
+      /* the labels: an 8va (shift +1) reads "8va", an 8vb "8vb", two octaves "15ma" / "15mb" - a line carried into a
+         view that does not include its start reads the abbreviated "(8)"/"(15)" instead, magnitude only, no direction
+         (G4-D1b-7, tests/engraving.test.js:416) */
+      const labels = [...svg.querySelectorAll('text')].map(t => t.textContent.trim())
+        .filter(t => /^\(?(8va|8vb|15ma|15mb)\)?$/.test(t) || /^\((8|15)\)$/.test(t)).map(t => t.replace(/[()]/g, ''));
       const names = Array.from(new Set(lines.map(o => (Math.abs(o.shift) >= 2 ? '15m' : '8v') + (o.shift > 0 ? 'a' : 'b'))));
-      names.forEach(nm => { if (labels.indexOf(nm) < 0) out.bad.push('no "' + nm + '" label drawn (found ' + Array.from(new Set(labels)).join(' ') + ')'); });
-      labels.forEach(l => { if (names.indexOf(l) < 0) out.bad.push('a "' + l + '" label, but no such line in the file'); });
+      const MAG = { '8va': '8', '8vb': '8', '15ma': '15', '15mb': '15' };
+      const wantMags = new Set(names.map(nm => MAG[nm]));
+      names.forEach(nm => { if (labels.indexOf(nm) < 0 && labels.indexOf(MAG[nm]) < 0) out.bad.push('no "' + nm + '" label drawn (found ' + Array.from(new Set(labels)).join(' ') + ')'); });
+      labels.forEach(l => { if (names.indexOf(l) < 0 && !wantMags.has(l)) out.bad.push('a "' + l + '" label, but no such line in the file'); });
       return out;
     }, buf.toString('base64'), path.basename(rel), /\.mxl$/i.test(rel) ? xmlText(buf) : buf.toString('utf8'));
     if (r.error) { bad++; console.log('  FAIL ' + name + '  ' + r.error); continue; }

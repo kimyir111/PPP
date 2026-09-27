@@ -186,6 +186,16 @@
         const got = await fromStore(ropts.key, score, hash, diagnostics);
         if (got) return finish(score, hash, got);
       }
+      /* store.get() deletes a record it finds unreadable as part of the same read that reports it (self-healing - a
+         bad record is not read again). Whichever caller's resolve() happens to be the one to make that read is the
+         only one who ever sees the code: an earlier resolve for the same Score (this app's own repaint, another view)
+         may already have hit it and had the record gone by the time this call re-checked the store, seeing 'missing'
+         and nothing else. Carry the earlier STORE_ diagnostic forward rather than lose it - the record being gone now
+         does not make the reason it failed any less true (fixer review, this PR: removing ScoreView's old VexFlow-
+         readiness gate made the app's own auto-resolve run sooner, which made this race visible). */
+      if (!diagnostics.some(d => /^STORE_/.test(d.code)) && k && k.diagnostics) {
+        k.diagnostics.filter(d => /^STORE_/.test(d.code)).forEach(d => diagnostics.push(d));
+      }
       return finish(score, hash, projected(score, diagnostics));
     }
 

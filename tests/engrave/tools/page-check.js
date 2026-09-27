@@ -1,60 +1,49 @@
-/* G4d-2 in the real page (docs/GOALS/G04 §16, §19, §24: A16, A31, A32, A33; A47 measured). Local: needs this tree served
-   and puppeteer.
+/* The engraver in the real page (docs/GOALS/G04 §16, §19, §24, §52: A31, A32, A33; A47 measured). Local: needs this tree
+   served and puppeteer. §25.2 step 3 removed the old VexFlow-based renderer and its dev-only switch - there is one page
+   now, not several to compare, so this dropped its old --renderers option and the parts (a16, switch) that existed only
+   to prove the two agreed or that the switch worked.
 
      NODE_ENV=production HOST=127.0.0.1 PORT=8801 node server.js
-     NODE_PATH=D:/PPP/node_modules node tests/engrave/tools/page-check.js --url http://127.0.0.1:8801 [--part a16,a31,a32,a33,corpus,perf,shots]
-       [--out tests/engrave/out/page] [--cpu 1,4] [--renderers engrave,legacy]
+     NODE_PATH=D:/PPP/node_modules node tests/engrave/tools/page-check.js --url http://127.0.0.1:8801 [--part a31,a32,a33,corpus,perf,shots]
+       [--out tests/engrave/out/page] [--cpu 1,4]
 
    Every part opens the app itself, the way a person's song is opened (scoreFromXml, parseMusicXML or an import through the
-   import door, then adoptScore + enterSong), and draws it through ScoreView - the legacy renderer with ?renderer=legacy,
-   the engraver with ?renderer=engrave, and the default page (no ?renderer at all - the engraver since the G4f-2 flip) as
-   'default' (--renderers, for perf and first):
-     a16     the Score, PianoScore's playback plan and the practice judge's expected notes are byte for byte the same under
-             both renderers, whole score and close view (the renderer reads the Score and changes nothing)
+   import door, then adoptScore + enterSong), and draws it through ScoreView:
      a31     sonatina/020's whole score, a playback frame at a time: the elements whose class is written (a count of
              classList.toggle calls) are no more than the elements whose class changed (a MutationObserver), and the
-             engraver's sync p95 (PPPEngravePage.stats.syncTimes) - at each --cpu rate; the legacy renderer's for contrast
+             engraver's sync p95 (PPPEngravePage.stats.syncTimes) - at each --cpu rate
      a32     a resize inside a breakpoint lays nothing out and draws nothing; across 720 px one layout, and back a cache hit;
              the close view's zoom lays out once per zoom, then from the cache
      a33     dark theme without paper: the noteheads, stems, staff lines and every .ppp-ann text are light; with paper, dark
              on the paper; switching draws nothing (CSS variables)
      corpus  every committed score a G4 set may read (helpers.corpusFiles: no G0 hold-out) and the E fixtures, through the
-             import door (a live graph) and through the app's own reader (a projection): drawn by the engraver, or fell
-             back - by code (A47 is judged in G4f; this measures it)
+             import door (a live graph) and through the app's own reader (a projection): drawn by the engraver, or a
+             genuine engraving failure - by code (A47 is judged in G4f; this measures it; §25.2 step 3: there is nothing
+             left to fall back to, so a failure now means this view's own "could not be engraved" message, not a second
+             renderer)
      perf    sonatina/020, whole score and close view, first draw, page turns, the playback frame, long tasks - at each
-             --cpu rate, both renderers; and a reloaded song's resolve (the graph from the store)
+             --cpu rate; and a reloaded song's resolve (the graph from the store)
      shots   PNGs of pieces under the engraver: whole score and close view, desktop and phone, and the dark theme
-     switch  (G4f-2) the default and the rollback in the page: the default page is the engraver's and asks for its files;
-             ?renderer=legacy, localStorage 'ppp.renderer' = 'legacy' and PPP.renderer = 'legacy' at run time each give the
-             legacy renderer (and ask for none of them); the print command is shown in the whole-score view only, and
-             only under the engraver; the home page's loop thumbnail is routed to the legacy renderer - counted as routed,
-             never as a fallback, never warned, and it loads nothing
-     first   (G4f-2) a first visit, per --renderers and --cpu: a fresh browser context (empty cache and storage), the home
-             page, then Practice - time to the app, to the first staff, the engraver's files asked for (count, bytes on
-             the wire), long tasks
-   Writes <out>/page-check.json and prints a summary; exit 1 when a16, a31, a32, a33 or switch fail. G0 hold-out files are
-   never opened or named. */
+     first   a first visit, per --cpu rate: a fresh browser context (empty cache and storage), the home page, then
+             Practice - time to the app, to the first staff, the engraver's files asked for (count, bytes on the wire),
+             long tasks
+   Writes <out>/page-check.json and prints a summary; exit 1 when a31, a32 or a33 fail. G0 hold-out files are never
+   opened or named. */
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
 const REPO = path.resolve(__dirname, '..', '..', '..');
 const puppeteer = require('puppeteer');
 const { preparePage } = require(path.join(REPO, 'tests', 'boot'));
 const H = require(path.join(REPO, 'tests', 'engrave', 'helpers.js'));
-const PAGE_ORDER_LEN = require('./page-files.js').ORDER.length;
 const A = require(path.join(REPO, 'audio-score.js'));
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const BASE = arg('--url', 'http://127.0.0.1:8801');
-const PARTS = arg('--part', 'a16,a31,a32,a33,corpus,perf,shots').split(',');
+const PARTS = arg('--part', 'a31,a32,a33,corpus,perf,shots').split(',');
 const OUT = path.resolve(REPO, arg('--out', 'tests/engrave/out/page'));
 const CPUS = arg('--cpu', '1,4').split(',').map(Number);
-const RENDERERS = arg('--renderers', 'engrave,legacy').split(',');
-/* the page's query for a renderer: 'default' is the page with no ?renderer (the engraver since the G4f-2 flip) */
-const query = r => (r === 'default' ? '' : '?renderer=' + r);
 fs.mkdirSync(OUT, { recursive: true });
-const sha = s => crypto.createHash('sha256').update(s).digest('hex').slice(0, 16);
 const rd = p => fs.readFileSync(path.join(REPO, p), 'utf8');
 const HOLDOUT = H.holdoutPaths();
 const notHoldout = p => { if (HOLDOUT.has(p)) throw new Error('a G0 hold-out file is never opened here'); return p; };
@@ -68,15 +57,15 @@ const check = (part, name, ok, detail) => {
   console.log('  ' + (ok ? 'ok  ' : 'FAIL') + ' ' + name + (detail !== undefined ? ' - ' + (typeof detail === 'string' ? detail : JSON.stringify(detail)) : ''));
 };
 
-async function openPage(browser, renderer, width, height) {
+async function openPage(browser, width, height) {
   const page = await browser.newPage();
   const logs = [];
   page.on('console', m => { if (/\[ppp\]/.test(m.text())) logs.push(m.text()); });
   page.on('pageerror', e => logs.push('pageerror: ' + e.message));
   await preparePage(page);
   await page.setViewport({ width: width || 1400, height: height || 1000 });
-  await page.goto(BASE + '/Piano%20Coach%20App.dc.html' + query(renderer), { waitUntil: 'networkidle2' });
-  await page.waitForFunction(() => window.PPP && window.PPP.app && window.Vex && window.Vex.Flow, { timeout: 30000 });
+  await page.goto(BASE + '/Piano%20Coach%20App.dc.html', { waitUntil: 'networkidle2' });
+  await page.waitForFunction(() => window.PPP && window.PPP.app, { timeout: 30000 });
   await page.evaluate(() => window.__pppTest.practice());
   await sleep(800);
   page.__logs = logs;
@@ -142,104 +131,67 @@ async function openFile(page, rel, whole, extra) {
 }
 const open = (page, s, whole) => (s.file ? openFile(page, s.file, whole) : openSong(page, s, whole));
 
-/* what the practice layer and playback read, as text: the Score (packScore), PianoScore's plan, the judge's expected notes */
-const practiceFacts = page => page.evaluate(() => {
-  const P = window.PPP, App = P.app, score = App.state.score;
-  const plain = (k, v) => (v instanceof Map ? { map: [...v.entries()] } : v instanceof Set ? { set: [...v] } : v);
-  const first = P.Score.first(score), last = P.Score.last(score);
-  const eng = new P.PerformanceEngine(score);
-  eng.begin({ from: first, to: last, hands: 'both', tempo: score.tempo || 84, startedAt: 0, practiceMode: 'practice' });
-  return {
-    score: JSON.stringify(P.packScore(score)),
-    piano: JSON.stringify(P.PianoScore.build(score, first, last), plain),
-    judge: JSON.stringify(eng.expected.map(e => Object.assign({}, e, { note: e.note ? { m: e.note.m, b: e.note.b, midi: e.note.midi, staff: e.note.staff, hand: e.note.hand } : null })))
-  };
-});
-
-/* ------------------------------------------------------------------ A16 */
-async function a16(browser) {
-  console.log('\nA16: the Score, playback and the practice judge are the same under both renderers');
-  const pages = { legacy: await openPage(browser, 'legacy'), engrave: await openPage(browser, 'engrave') };
-  for (const s of SONGS) {
-    const facts = {};
-    for (const r of ['legacy', 'engrave']) {
-      const views = [];
-      for (const whole of [true, false]) {
-        const o = await open(pages[r], s, whole);
-        views.push(o);
-        const f = await practiceFacts(pages[r]);
-        facts[r + (whole ? ':whole' : ':close')] = { score: sha(f.score), piano: sha(f.piano), judge: sha(f.judge), engraved: o.engraved, via: o.via };
-      }
-    }
-    const L = facts['legacy:whole'], rows = Object.values(facts);
-    const same = rows.every(x => x.score === L.score && x.piano === L.piano && x.judge === L.judge);
-    const drew = facts['engrave:whole'].engraved && facts['engrave:close'].engraved && !facts['legacy:whole'].engraved;
-    check('a16', s.name + ': Score, PianoScore and judge byte-identical; the engraver drew under engrave (' + facts['engrave:whole'].via + ')', same && drew,
-      { score: L.score, piano: L.piano, judge: L.judge, differs: rows.filter(x => x.score !== L.score || x.piano !== L.piano || x.judge !== L.judge).length });
-  }
-  report.parts.a16.fallbacks = await pages.engrave.evaluate(() => window.PPP.engraveStats.fallbacks);
-  for (const p of Object.values(pages)) await p.close();
-}
-
 /* ------------------------------------------------------------------ A31 */
+/* A16 (the Score, PianoScore and the practice judge are byte for byte the same under both renderers) retired with the
+   legacy renderer at §25.2 step 3 - there is only one renderer left, so there is nothing left to compare it against.
+   The invariant it protected (the renderer only draws; it never touches the Score, playback or practice judge) is
+   still true by construction - engrave/page.js's paint() takes a Score and an element, and returns nothing else - and
+   is exercised structurally by tests/engrave/app.test.js and every other part of this file that reads S.score after a
+   draw. */
 async function a31(browser) {
   console.log('\nA31: the page\'s sync - touched <= changed, p95');
   const out = {};
   for (const rate of CPUS) {
-    for (const r of ['engrave', 'legacy']) {
-      const page = await openPage(browser, r);
-      await openFile(page, 'catalog/method/sonatina/020.mxl', true);
-      const s = await cpu(page, rate);
-      const res = await page.evaluate(async (frames) => {
-        const App = window.PPP.app;
-        const svg = document.querySelector('.ppp-staffwrap svg');
-        const notes = new Set(svg.querySelectorAll('g.ppp-note'));
-        /* what is written: classList.toggle calls on note groups; what changed: their class attribute, as observed */
-        const touched = new Set();
-        const orig = DOMTokenList.prototype.toggle;
-        const owner = new WeakMap();
-        notes.forEach(g => owner.set(g.classList, g));
-        DOMTokenList.prototype.toggle = function () { const g = owner.get(this); if (g) touched.add(g); return orig.apply(this, arguments); };
-        /* the observer's callback runs on the await below and would take the records itself: keep them */
-        const seen = [];
-        const mo = new MutationObserver(recs => { seen.push(...recs); });
-        mo.observe(svg, { subtree: true, attributes: true, attributeFilter: ['class'], attributeOldValue: true });
-        const S = window.PPPEngravePage && window.PPPEngravePage.stats;
-        const sync0 = S ? S.syncTimes.length : 0;
-        const rows = [];
-        let q = 0;
-        for (let i = 0; i < frames; i++) {
-          touched.clear();
-          seen.length = 0;
-          const t0 = performance.now();
-          await new Promise(res => App.setState({ beat: q }, res));
-          const dt = performance.now() - t0;
-          const recs = seen.concat(mo.takeRecords()).filter(x => notes.has(x.target));
-          const changed = new Set(recs.filter(x => x.oldValue !== x.target.getAttribute('class')).map(x => x.target));
-          let over = 0;
-          touched.forEach(g => { if (!changed.has(g)) over++; });
-          rows.push([touched.size, changed.size, over, dt]);
-          q += 0.08;
-        }
-        DOMTokenList.prototype.toggle = orig;
-        mo.disconnect();
-        const syncMs = S ? S.syncTimes.slice(sync0) : [];
-        return { notes: notes.size, rows: rows, syncMs: syncMs };
-      }, rate === 1 ? 1000 : 400);
-      await s.detach();
-      const p95 = a => { const x = a.slice().sort((u, v) => u - v); return x.length ? +x[Math.floor(x.length * 0.95)].toFixed(3) : null; };
-      const touched = res.rows.map(x => x[0]), over = res.rows.reduce((t, x) => t + x[2], 0);
-      out[r + '@' + rate + 'x'] = { notes: res.notes, frames: res.rows.length, touchedMax: Math.max(...touched), touchedMean: +(touched.reduce((a, b) => a + b, 0) / touched.length).toFixed(2),
-        touchedNotChanged: over, frameP95: p95(res.rows.map(x => x[3])), syncP95: p95(res.syncMs), syncMax: res.syncMs.length ? +Math.max(...res.syncMs).toFixed(3) : null };
-      console.log('  ' + r + ' @' + rate + 'x ' + JSON.stringify(out[r + '@' + rate + 'x']));
-      if (r === 'engrave') {
-        check('a31', 'engrave @' + rate + 'x: no frame writes a note whose class does not change', over === 0, out[r + '@' + rate + 'x'].touchedNotChanged + ' writes');
-        if (rate === 1) check('a31', 'engrave @1x: sync p95 <= 1 ms on sonatina/020\'s whole score', out[r + '@1x'].syncP95 !== null && out[r + '@1x'].syncP95 <= 1, out[r + '@1x'].syncP95 + ' ms');
-        else check('a31', 'engrave @' + rate + 'x: sync p95 <= 3 ms (A37\'s tablet budget for B6)', out[r + '@' + rate + 'x'].syncP95 !== null && out[r + '@' + rate + 'x'].syncP95 <= 3,
-          out[r + '@' + rate + 'x'].syncP95 + ' ms');
+    const page = await openPage(browser);
+    await openFile(page, 'catalog/method/sonatina/020.mxl', true);
+    const s = await cpu(page, rate);
+    const res = await page.evaluate(async (frames) => {
+      const App = window.PPP.app;
+      const svg = document.querySelector('.ppp-staffwrap svg');
+      const notes = new Set(svg.querySelectorAll('g.ppp-note'));
+      /* what is written: classList.toggle calls on note groups; what changed: their class attribute, as observed */
+      const touched = new Set();
+      const orig = DOMTokenList.prototype.toggle;
+      const owner = new WeakMap();
+      notes.forEach(g => owner.set(g.classList, g));
+      DOMTokenList.prototype.toggle = function () { const g = owner.get(this); if (g) touched.add(g); return orig.apply(this, arguments); };
+      /* the observer's callback runs on the await below and would take the records itself: keep them */
+      const seen = [];
+      const mo = new MutationObserver(recs => { seen.push(...recs); });
+      mo.observe(svg, { subtree: true, attributes: true, attributeFilter: ['class'], attributeOldValue: true });
+      const S = window.PPPEngravePage && window.PPPEngravePage.stats;
+      const sync0 = S ? S.syncTimes.length : 0;
+      const rows = [];
+      let q = 0;
+      for (let i = 0; i < frames; i++) {
+        touched.clear();
+        seen.length = 0;
+        const t0 = performance.now();
+        await new Promise(res => App.setState({ beat: q }, res));
+        const dt = performance.now() - t0;
+        const recs = seen.concat(mo.takeRecords()).filter(x => notes.has(x.target));
+        const changed = new Set(recs.filter(x => x.oldValue !== x.target.getAttribute('class')).map(x => x.target));
+        let over = 0;
+        touched.forEach(g => { if (!changed.has(g)) over++; });
+        rows.push([touched.size, changed.size, over, dt]);
+        q += 0.08;
       }
-      await page.close();
-    }
+      DOMTokenList.prototype.toggle = orig;
+      mo.disconnect();
+      const syncMs = S ? S.syncTimes.slice(sync0) : [];
+      return { notes: notes.size, rows: rows, syncMs: syncMs };
+    }, rate === 1 ? 1000 : 400);
+    await s.detach();
+    const p95 = a => { const x = a.slice().sort((u, v) => u - v); return x.length ? +x[Math.floor(x.length * 0.95)].toFixed(3) : null; };
+    const touched = res.rows.map(x => x[0]), over = res.rows.reduce((t, x) => t + x[2], 0);
+    const key = 'engrave@' + rate + 'x';
+    out[key] = { notes: res.notes, frames: res.rows.length, touchedMax: Math.max(...touched), touchedMean: +(touched.reduce((a, b) => a + b, 0) / touched.length).toFixed(2),
+      touchedNotChanged: over, frameP95: p95(res.rows.map(x => x[3])), syncP95: p95(res.syncMs), syncMax: res.syncMs.length ? +Math.max(...res.syncMs).toFixed(3) : null };
+    console.log('  ' + key + ' ' + JSON.stringify(out[key]));
+    check('a31', 'engrave @' + rate + 'x: no frame writes a note whose class does not change', over === 0, out[key].touchedNotChanged + ' writes');
+    if (rate === 1) check('a31', 'engrave @1x: sync p95 <= 1 ms on sonatina/020\'s whole score', out['engrave@1x'].syncP95 !== null && out['engrave@1x'].syncP95 <= 1, out['engrave@1x'].syncP95 + ' ms');
+    else check('a31', 'engrave @' + rate + 'x: sync p95 <= 3 ms (A37\'s tablet budget for B6)', out[key].syncP95 !== null && out[key].syncP95 <= 3, out[key].syncP95 + ' ms');
+    await page.close();
   }
   report.parts.a31.data = out;
 }
@@ -247,7 +199,7 @@ async function a31(browser) {
 /* ------------------------------------------------------------------ A32 */
 async function a32(browser) {
   console.log('\nA32: a resize inside a breakpoint lays nothing out; zoom from the cache');
-  const page = await openPage(browser, 'engrave', 1400, 1000);
+  const page = await openPage(browser, 1400, 1000);
   await openFile(page, 'catalog/method/sonatina/020.mxl', true);
   const st = () => page.evaluate(() => { const S = window.PPPEngravePage.stats; return { layouts: S.layouts, layoutHits: S.layoutHits, draws: S.draws }; });
   const repaint = () => page.evaluate(() => new Promise(r => window.PPP.app.setState({}, r)));
@@ -277,7 +229,7 @@ async function a32(browser) {
 /* ------------------------------------------------------------------ A33 */
 async function a33(browser) {
   console.log('\nA33: the ink follows the theme');
-  const page = await openPage(browser, 'engrave', 1400, 1000);
+  const page = await openPage(browser, 1400, 1000);
   await open(page, SONGS[2], true);
   const lum = () => page.evaluate(() => {
     const svg = document.querySelector('.ppp-staffwrap svg');
@@ -311,10 +263,10 @@ async function a33(browser) {
 
 /* ------------------------------------------------------------------ the corpus (A47, measured) */
 async function corpus(browser) {
-  console.log('\nThe corpus in the page: drawn by the engraver, or fell back');
+  console.log('\nThe corpus in the page: drawn by the engraver, or a genuine engraving failure');
   const files = H.corpusFiles().concat(fs.readdirSync(path.join(REPO, 'tests/engrave/fixtures/e')).filter(f => f.endsWith('.musicxml')).sort()
     .map(f => 'tests/engrave/fixtures/e/' + f));
-  const page = await openPage(browser, RENDERERS.find(r => r !== 'legacy') || 'engrave', 1400, 1000);
+  const page = await openPage(browser, 1400, 1000);
   const rows = [];
   for (const rel of files) {
     const bytes = [...fs.readFileSync(path.join(REPO, notHoldout(rel)))];
@@ -329,14 +281,13 @@ async function corpus(browser) {
         host.appendChild(div);
         const root = ReactDOM.createRoot(div);
         const n = score.measures.length;
-        root.render(App.sv({ score: score, startM: score.measures[0].number, count: n, perRow: 4, fluid: true, heading: true, renderer: 'engrave' }));
+        root.render(App.sv({ score: score, startM: score.measures[0].number, count: n, perRow: 4, fluid: true, heading: true }));
         let res = 'timeout';
         for (let i = 0; i < 100; i++) {
           await new Promise(r => setTimeout(r, 50));
           const svg = div.querySelector('svg');
           if (JSON.stringify(P.engraveStats.fallbacks) !== before) { res = 'fallback:' + Object.keys(P.engraveStats.bySong).filter(k => k === score.id).map(k => P.engraveStats.bySong[k]).join(); break; }
           if (svg && svg.classList.contains('ppp-engraved') && svg.__ppp) { res = 'drawn:' + svg.__ppp.engraved.via; break; }
-          if (svg && !svg.classList.contains('ppp-engraved')) { res = 'legacy'; break; }
         }
         root.unmount();
         div.remove();
@@ -359,7 +310,7 @@ async function corpus(browser) {
     rows.push([rel, r]);
     if (Object.values(r).some(v => !/^drawn|^refused/.test(v))) console.log('  ' + rel + ' ' + JSON.stringify(r));
   }
-  /* by outcome: drawn:<via>, fallback:<code>, legacy (routed), timeout, refused */
+  /* by outcome: drawn:<via>, fallback:<code>, timeout, refused */
   const count = tag => {
     const c = {};
     rows.forEach(([, r]) => { if (!r[tag]) return; const k = /^refused/.test(r[tag]) ? 'refused' : r[tag]; c[k] = (c[k] || 0) + 1; });
@@ -377,64 +328,60 @@ async function perf(browser) {
   console.log('\nPage performance: sonatina/020');
   const out = {};
   for (const rate of CPUS) {
-    for (const r of RENDERERS) {
-      const page = await openPage(browser, r, 1400, 1000);
-      const s = await cpu(page, rate);
-      await page.evaluate(() => {
-        window.__long = [];
-        new PerformanceObserver(l => l.getEntries().forEach(e => window.__long.push(e.duration))).observe({ type: 'longtask', buffered: false });
-      });
-      const t0 = Date.now();
-      await openFile(page, 'catalog/method/sonatina/020.mxl', true);
-      const whole = Date.now() - t0;
-      const res = await page.evaluate(async () => {
-        const App = window.PPP.app, S = window.PPPEngravePage && window.PPPEngravePage.stats;
-        const long = () => { const l = window.__long.splice(0); return { n: l.length, max: l.length ? Math.round(Math.max(...l)) : 0 }; };
-        const lastDraw = () => (S && S.last ? Object.fromEntries(Object.entries(S.last).map(([k, v]) => [k, typeof v === 'number' ? +v.toFixed(1) : v])) : null);
-        const wholeDraw = lastDraw();
-        const wholeLong = long();
-        /* frames on the whole score */
-        const fr = [];
-        for (let i = 0, q = 0; i < 60; i++, q += 0.08) { const t = performance.now(); await new Promise(r => App.setState({ beat: q }, r)); fr.push(performance.now() - t); }
-        const wholeFrameLong = long();
-        /* the close view: open, then turn the page ten times (a new window each), then back over them (cached) */
-        let t = performance.now();
-        await new Promise(r => App.setState({ wholeScore: false, beat: 0, loopFrom: null, loopTo: null }, r));
-        await new Promise(r => setTimeout(r, 50));
-        const closeOpen = performance.now() - t, closeDraw = lastDraw();
-        const turns = [], back = [];
-        const lenOf = m => App.state.score.measures.find(x => x.number === m);
-        const starts = App.state.score.measures.filter((m, i) => i % 4 === 0).slice(1, 11).map(m => m.startQ);
-        for (const q of starts) { t = performance.now(); await new Promise(r => App.setState({ beat: q + 0.01 }, r)); turns.push(performance.now() - t); }
-        for (const q of starts.slice().reverse()) { t = performance.now(); await new Promise(r => App.setState({ beat: q + 0.01 }, r)); back.push(performance.now() - t); }
-        const closeLong = long();
-        const cf = [];
-        for (let i = 0, q = starts[0]; i < 40; i++, q += 0.08) { const t2 = performance.now(); await new Promise(r => App.setState({ beat: q }, r)); cf.push(performance.now() - t2); }
-        void lenOf;
-        return { wholeDraw, wholeLong, wholeFrames: fr, wholeFrameLong, closeOpen, closeDraw, turns, back, closeLong, closeFrames: cf,
-          syncMs: S ? S.syncTimes.slice(-100) : [] };
-      });
-      await s.detach();
-      const med = a => { const x = a.slice().sort((u, v) => u - v); return +x[Math.floor(x.length / 2)].toFixed(1); };
-      const p95 = a => { const x = a.slice().sort((u, v) => u - v); return +x[Math.floor(x.length * 0.95)].toFixed(1); };
-      out[r + '@' + rate + 'x'] = { wholeOpenMs: whole, wholeDraw: res.wholeDraw, wholeLong: res.wholeLong, wholeFrameMedian: med(res.wholeFrames), wholeFrameP95: p95(res.wholeFrames),
-        wholeFrameLong: res.wholeFrameLong, closeOpenMs: +res.closeOpen.toFixed(1), closeDraw: res.closeDraw, turnMedian: med(res.turns), turnP95: p95(res.turns), turnMax: +Math.max(...res.turns).toFixed(1),
-        turnBackMedian: med(res.back), closeLong: res.closeLong, closeFrameMedian: med(res.closeFrames), closeFrameP95: p95(res.closeFrames),
-        syncP95: res.syncMs.length ? p95(res.syncMs) : null };
-      console.log('  ' + r + ' @' + rate + 'x ' + JSON.stringify(out[r + '@' + rate + 'x']));
-      /* B2 (G04 §19.2): the close view's page turn, uncached (a new window each turn) - p95 <= 25 ms at 1x, and A37's
-         tablet budget (CPU 4x throttle) <= 80 ms - engrave only (legacy has no such budget) */
-      if (r !== 'legacy') {
-        if (rate === 1) check('perf', r + ' @1x: B2 close-view turn (uncached) p95 <= 25 ms', out[r + '@1x'].turnP95 <= 25, out[r + '@1x'].turnP95 + ' ms');
-        else check('perf', r + ' @' + rate + 'x: B2 close-view turn (uncached) p95 <= 80 ms (A37\'s tablet budget)', out[r + '@' + rate + 'x'].turnP95 <= 80,
-          out[r + '@' + rate + 'x'].turnP95 + ' ms');
-      }
-      await page.close();
-    }
+    const page = await openPage(browser, 1400, 1000);
+    const s = await cpu(page, rate);
+    await page.evaluate(() => {
+      window.__long = [];
+      new PerformanceObserver(l => l.getEntries().forEach(e => window.__long.push(e.duration))).observe({ type: 'longtask', buffered: false });
+    });
+    const t0 = Date.now();
+    await openFile(page, 'catalog/method/sonatina/020.mxl', true);
+    const whole = Date.now() - t0;
+    const res = await page.evaluate(async () => {
+      const App = window.PPP.app, S = window.PPPEngravePage && window.PPPEngravePage.stats;
+      const long = () => { const l = window.__long.splice(0); return { n: l.length, max: l.length ? Math.round(Math.max(...l)) : 0 }; };
+      const lastDraw = () => (S && S.last ? Object.fromEntries(Object.entries(S.last).map(([k, v]) => [k, typeof v === 'number' ? +v.toFixed(1) : v])) : null);
+      const wholeDraw = lastDraw();
+      const wholeLong = long();
+      /* frames on the whole score */
+      const fr = [];
+      for (let i = 0, q = 0; i < 60; i++, q += 0.08) { const t = performance.now(); await new Promise(r => App.setState({ beat: q }, r)); fr.push(performance.now() - t); }
+      const wholeFrameLong = long();
+      /* the close view: open, then turn the page ten times (a new window each), then back over them (cached) */
+      let t = performance.now();
+      await new Promise(r => App.setState({ wholeScore: false, beat: 0, loopFrom: null, loopTo: null }, r));
+      await new Promise(r => setTimeout(r, 50));
+      const closeOpen = performance.now() - t, closeDraw = lastDraw();
+      const turns = [], back = [];
+      const lenOf = m => App.state.score.measures.find(x => x.number === m);
+      const starts = App.state.score.measures.filter((m, i) => i % 4 === 0).slice(1, 11).map(m => m.startQ);
+      for (const q of starts) { t = performance.now(); await new Promise(r => App.setState({ beat: q + 0.01 }, r)); turns.push(performance.now() - t); }
+      for (const q of starts.slice().reverse()) { t = performance.now(); await new Promise(r => App.setState({ beat: q + 0.01 }, r)); back.push(performance.now() - t); }
+      const closeLong = long();
+      const cf = [];
+      for (let i = 0, q = starts[0]; i < 40; i++, q += 0.08) { const t2 = performance.now(); await new Promise(r => App.setState({ beat: q }, r)); cf.push(performance.now() - t2); }
+      void lenOf;
+      return { wholeDraw, wholeLong, wholeFrames: fr, wholeFrameLong, closeOpen, closeDraw, turns, back, closeLong, closeFrames: cf,
+        syncMs: S ? S.syncTimes.slice(-100) : [] };
+    });
+    await s.detach();
+    const med = a => { const x = a.slice().sort((u, v) => u - v); return +x[Math.floor(x.length / 2)].toFixed(1); };
+    const p95 = a => { const x = a.slice().sort((u, v) => u - v); return +x[Math.floor(x.length * 0.95)].toFixed(1); };
+    const key = 'engrave@' + rate + 'x';
+    out[key] = { wholeOpenMs: whole, wholeDraw: res.wholeDraw, wholeLong: res.wholeLong, wholeFrameMedian: med(res.wholeFrames), wholeFrameP95: p95(res.wholeFrames),
+      wholeFrameLong: res.wholeFrameLong, closeOpenMs: +res.closeOpen.toFixed(1), closeDraw: res.closeDraw, turnMedian: med(res.turns), turnP95: p95(res.turns), turnMax: +Math.max(...res.turns).toFixed(1),
+      turnBackMedian: med(res.back), closeLong: res.closeLong, closeFrameMedian: med(res.closeFrames), closeFrameP95: p95(res.closeFrames),
+      syncP95: res.syncMs.length ? p95(res.syncMs) : null };
+    console.log('  ' + key + ' ' + JSON.stringify(out[key]));
+    /* B2 (G04 §19.2): the close view's page turn, uncached (a new window each turn) - p95 <= 25 ms at 1x, and A37's
+       tablet budget (CPU 4x throttle) <= 80 ms */
+    if (rate === 1) check('perf', 'engrave @1x: B2 close-view turn (uncached) p95 <= 25 ms', out['engrave@1x'].turnP95 <= 25, out['engrave@1x'].turnP95 + ' ms');
+    else check('perf', 'engrave @' + rate + 'x: B2 close-view turn (uncached) p95 <= 80 ms (A37\'s tablet budget)', out[key].turnP95 <= 80, out[key].turnP95 + ' ms');
+    await page.close();
   }
   /* a reloaded song: the graph from the store (G4-U1), at each rate */
   for (const rate of CPUS) {
-    const page = await openPage(browser, RENDERERS.find(r => r !== 'legacy') || 'engrave', 1400, 1000);
+    const page = await openPage(browser, 1400, 1000);
     const bytes = [...fs.readFileSync(path.join(REPO, 'catalog/method/sonatina/020.mxl'))];
     const kept = await page.evaluate(async bytes => {
       const A = window.PPP.app, I = window.PPP.Import, E = window.PPPEngrave.app;
@@ -447,7 +394,7 @@ async function perf(browser) {
       return null;
     }, bytes);
     await page.reload({ waitUntil: 'networkidle2' });
-    await page.waitForFunction(() => window.PPP && window.PPP.app && window.Vex, { timeout: 30000 });
+    await page.waitForFunction(() => window.PPP && window.PPP.app, { timeout: 30000 });
     const s = await cpu(page, rate);
     const r = await page.evaluate(async id => {
       const A = window.PPP.app;
@@ -476,125 +423,65 @@ async function perf(browser) {
   (report.parts.perf = report.parts.perf || { checks: [] }).data = out;
 }
 
-/* ------------------------------------------------------------------ the switch: the default and the rollback (G4f-2) */
-/* the engraver's files a page asked for (./engrave/<name>.js?h=<hash>, loadEngrave) */
-const engraveAsked = page => { const a = []; page.on('request', q => { if (/\/engrave\/[\w-]+\.js\?h=/.test(q.url())) a.push(q.url()); }); return a; };
-/* what the practice page shows: the staff's renderer, the print command, the switch */
-const shown = page => page.evaluate(() => {
-  const svg = document.querySelector('.ppp-staffwrap svg');
-  const btn = [...document.querySelectorAll('button')].some(b => (b.textContent || '').trim() === 'Print / Save as PDF');
-  return { renderer: window.PPP.renderer, engraved: !!(svg && svg.classList.contains('ppp-engraved')), legacy: !!(svg && !svg.classList.contains('ppp-engraved') && svg.querySelector('.vf-stave')),
-    print: btn, whole: window.PPP.app.state.wholeScore, fallbacks: Object.keys(window.PPP.engraveStats.fallbacks).length };
-});
-const settle = async (page, pred) => { for (let i = 0; i < 60; i++) { const s = await shown(page); if (pred(s)) return s; await sleep(100); } return shown(page); };
-const setWhole = (page, whole) => page.evaluate(w => new Promise(r => window.PPP.app.setState({ wholeScore: w }, r)), whole);
-async function switchPart(browser) {
-  console.log('\nThe switch (G4f-2): the default is the engraver; legacy is one switch away');
-  /* the default page: the home page, its loop thumbnail routed and nothing loaded for it; then Practice */
-  {
-    const page = await browser.newPage();
-    const warns = [], asked = engraveAsked(page);
-    page.on('console', m => { if (/\[ppp\] engrave/.test(m.text())) warns.push(m.text()); });
-    await preparePage(page);
-    await page.setViewport({ width: 1400, height: 1000 });
-    await page.goto(BASE + '/Piano%20Coach%20App.dc.html', { waitUntil: 'networkidle2' });
-    await page.waitForFunction(() => window.PPP && window.PPP.app && window.Vex && window.Vex.Flow, { timeout: 30000 });
-    await sleep(800);
-    const home = await page.evaluate(() => ({ renderer: window.PPP.renderer, routed: window.PPP.engraveStats.routed, fallbacks: Object.keys(window.PPP.engraveStats.fallbacks).length,
-      thumbs: [...document.querySelectorAll('main svg')].filter(s => s.querySelector('.vf-stave, .ppp-stave, path.vf-stave')).map(s => s.classList.contains('ppp-engraved') ? 'engrave' : 'legacy'),
-      waiting: document.querySelectorAll('[data-engrave-wait]').length }));
-    check('switch', 'default page: PPP.renderer is \'engrave\'', home.renderer === 'engrave', home.renderer);
-    check('switch', 'home page: the loop thumbnail is routed to legacy - counted as routed, no fallback, no warning, no "Engraving…", no engraver file asked for',
-      home.routed > 0 && home.fallbacks === 0 && warns.length === 0 && home.waiting === 0 && asked.length === 0, Object.assign({ warns: warns.length, asked: asked.length }, home));
-    const askedHome = asked.length;
-    await page.evaluate(() => window.__pppTest.practice());
-    await setWhole(page, false);
-    const close = await settle(page, s => s.engraved);
-    check('switch', 'default page, Practice: the engraver draws the staff, and its files were asked for', close.engraved && asked.length === PAGE_ORDER_LEN, { close, askedHome, asked: asked.length });
-    check('switch', 'default page, close view: no print command (whole-score view only, G4e)', !close.print, close);
-    await setWhole(page, true);
-    const whole = await settle(page, s => s.engraved && s.print);
-    check('switch', 'default page, whole score: the print command is shown (G4e, visible since the flip)', whole.engraved && whole.print, whole);
-    /* the rollback at run time */
-    await page.evaluate(() => { window.PPP.renderer = 'legacy'; return new Promise(r => window.PPP.app.setState({}, r)); });
-    const rolled = await settle(page, s => s.legacy && !s.print);
-    check('switch', 'PPP.renderer = \'legacy\' at run time: the legacy renderer draws, the print command goes', rolled.renderer === 'legacy' && rolled.legacy && !rolled.print, rolled);
-    await page.evaluate(() => { window.PPP.renderer = 'engrave'; return new Promise(r => window.PPP.app.setState({}, r)); });
-    const back = await settle(page, s => s.engraved);
-    check('switch', 'and PPP.renderer = \'engrave\' brings the engraver back', back.engraved && back.print, back);
-    check('switch', 'no fallback and no engrave warning on the default page', back.fallbacks === 0 && warns.filter(w => /fallback/.test(w)).length === 0, warns.slice(0, 3));
-    report.parts.switch = Object.assign(report.parts.switch || { checks: [] }, { home, askedHome, asked: asked.length });
-    await page.close();
-  }
-  /* the rollback before the page runs: the URL, and storage */
-  for (const [how, url, stored] of [['?renderer=legacy', '?renderer=legacy', null], ['localStorage ppp.renderer = legacy', '', 'legacy']]) {
-    const page = await browser.newPage();
-    const asked = engraveAsked(page);
-    await preparePage(page);
-    if (stored) await page.evaluateOnNewDocument(v => { try { localStorage.setItem('ppp.renderer', v); } catch (e) { /* no storage */ } }, stored);
-    await page.setViewport({ width: 1400, height: 1000 });
-    await page.goto(BASE + '/Piano%20Coach%20App.dc.html' + url, { waitUntil: 'networkidle2' });
-    await page.waitForFunction(() => window.PPP && window.PPP.app && window.Vex && window.Vex.Flow, { timeout: 30000 });
-    await page.evaluate(() => window.__pppTest.practice());
-    await setWhole(page, true);
-    const s = await settle(page, x => x.legacy);
-    check('switch', how + ': the legacy renderer draws, no print command, none of the engraver\'s files asked for',
-      s.renderer === 'legacy' && s.legacy && !s.print && asked.length === 0, Object.assign({ asked: asked.length }, s));
-    await page.close();
-  }
-}
+/* the 'switch' part (the default page vs. the ?renderer=legacy/PPP.renderer='legacy' rollback) retired with the legacy
+   renderer at §25.2 step 3 - there is one page now, nothing to switch to. The home page's loop thumbnail is no longer
+   routed away either (DECISIONS G4-R3): tests/engrave/app.test.js checks this structurally; the real page's home
+   screen is covered by the end-to-end check (G04 §52) and part of 'first' below (the engraver's files are asked for on
+   the very first paint now, not deferred). */
 
-/* ------------------------------------------------------------------ a first visit (G4f-2) */
+/* ------------------------------------------------------------------ a first visit */
 async function first(browser) {
   console.log('\nA first visit: the home page, then Practice, from an empty cache');
   const out = {};
   for (const rate of CPUS) {
-    for (const r of RENDERERS) {
-      const ctx = await browser.createBrowserContext();
-      const page = await ctx.newPage();
-      await preparePage(page);
-      await page.setViewport({ width: 1400, height: 1000 });
-      await page.evaluateOnNewDocument(() => {
-        window.__long = [];
-        try { new PerformanceObserver(l => l.getEntries().forEach(e => window.__long.push([Math.round(e.startTime), Math.round(e.duration)]))).observe({ type: 'longtask', buffered: true }); } catch (e) { /* none */ }
-      });
-      const cdp = await page.target().createCDPSession();
-      await cdp.send('Network.enable');
-      await cdp.send('Network.setCacheDisabled', { cacheDisabled: false });
-      const urls = new Map(), bytes = { engrave: 0, engraveFiles: 0, all: 0 };
-      cdp.on('Network.requestWillBeSent', e => urls.set(e.requestId, e.request.url));
-      cdp.on('Network.loadingFinished', e => {
-        bytes.all += e.encodedDataLength;
-        if (/\/engrave\/[\w-]+\.js\?h=/.test(urls.get(e.requestId) || '')) { bytes.engrave += e.encodedDataLength; bytes.engraveFiles++; }
-      });
-      await cdp.send('Emulation.setCPUThrottlingRate', { rate: rate });
-      const t0 = Date.now();
-      await page.goto(BASE + '/Piano%20Coach%20App.dc.html' + query(r), { waitUntil: 'networkidle2' });
-      await page.waitForFunction(() => window.PPP && window.PPP.app, { timeout: 60000 });
-      const appMs = Date.now() - t0;
-      const homeFiles = bytes.engraveFiles;
-      const t1 = Date.now();
-      const res = await page.evaluate(async () => {
-        const t = performance.now();
-        await window.__pppTest.practice();
-        let svg = null;
-        for (let i = 0; i < 400; i++) {
-          svg = document.querySelector('.ppp-staffwrap svg');
-          if (svg && svg.__ppp) break;
-          await new Promise(r => setTimeout(r, 25));
-        }
-        return { staffMs: Math.round(performance.now() - t), engraved: !!(svg && svg.classList.contains('ppp-engraved')), long: window.__long.slice() };
-      });
-      const staffWall = Date.now() - t1;
-      await sleep(300);
-      await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
-      const long = res.long.map(x => x[1]);
-      out[r + '@' + rate + 'x'] = { appMs, staffMs: res.staffMs, staffWall, engraved: res.engraved, engraveFilesAtHome: homeFiles, engraveFiles: bytes.engraveFiles,
-        engraveKB: +(bytes.engrave / 1024).toFixed(1), allKB: +(bytes.all / 1024).toFixed(1), longTasks: long.length, longMax: long.length ? Math.max(...long) : 0 };
-      console.log('  ' + r + ' @' + rate + 'x ' + JSON.stringify(out[r + '@' + rate + 'x']));
-      await cdp.detach();
-      await ctx.close();
-    }
+    const ctx = await browser.createBrowserContext();
+    const page = await ctx.newPage();
+    await preparePage(page);
+    await page.setViewport({ width: 1400, height: 1000 });
+    await page.evaluateOnNewDocument(() => {
+      window.__long = [];
+      try { new PerformanceObserver(l => l.getEntries().forEach(e => window.__long.push([Math.round(e.startTime), Math.round(e.duration)]))).observe({ type: 'longtask', buffered: true }); } catch (e) { /* none */ }
+    });
+    const cdp = await page.target().createCDPSession();
+    await cdp.send('Network.enable');
+    await cdp.send('Network.setCacheDisabled', { cacheDisabled: false });
+    const urls = new Map(), bytes = { engrave: 0, engraveFiles: 0, all: 0 };
+    cdp.on('Network.requestWillBeSent', e => urls.set(e.requestId, e.request.url));
+    cdp.on('Network.loadingFinished', e => {
+      bytes.all += e.encodedDataLength;
+      if (/\/engrave\/[\w-]+\.js\?h=/.test(urls.get(e.requestId) || '')) { bytes.engrave += e.encodedDataLength; bytes.engraveFiles++; }
+    });
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: rate });
+    const t0 = Date.now();
+    await page.goto(BASE + '/Piano%20Coach%20App.dc.html', { waitUntil: 'networkidle2' });
+    await page.waitForFunction(() => window.PPP && window.PPP.app, { timeout: 60000 });
+    const appMs = Date.now() - t0;
+    /* §25.2 step 3 (DECISIONS G4-R3): the home page's loop thumbnail is no longer routed away from the engraver, so
+       this is no longer 0 on a first visit with a "Continue Practicing" song - it is the whole 15-file cost, moved up
+       from Practice to the very first paint (measured, and accepted: DECISIONS G4-R3) */
+    const homeFiles = bytes.engraveFiles;
+    const t1 = Date.now();
+    const res = await page.evaluate(async () => {
+      const t = performance.now();
+      await window.__pppTest.practice();
+      let svg = null;
+      for (let i = 0; i < 400; i++) {
+        svg = document.querySelector('.ppp-staffwrap svg');
+        if (svg && svg.__ppp) break;
+        await new Promise(r => setTimeout(r, 25));
+      }
+      return { staffMs: Math.round(performance.now() - t), engraved: !!(svg && svg.classList.contains('ppp-engraved')), long: window.__long.slice() };
+    });
+    const staffWall = Date.now() - t1;
+    await sleep(300);
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+    const long = res.long.map(x => x[1]);
+    const key = 'engrave@' + rate + 'x';
+    out[key] = { appMs, staffMs: res.staffMs, staffWall, engraved: res.engraved, engraveFilesAtHome: homeFiles, engraveFiles: bytes.engraveFiles,
+      engraveKB: +(bytes.engrave / 1024).toFixed(1), allKB: +(bytes.all / 1024).toFixed(1), longTasks: long.length, longMax: long.length ? Math.max(...long) : 0 };
+    console.log('  ' + key + ' ' + JSON.stringify(out[key]));
+    await cdp.detach();
+    await ctx.close();
   }
   report.parts.first = { checks: [], data: out };
 }
@@ -641,7 +528,7 @@ async function shots(browser) {
     'catalog/method/beyer/046.mxl'];
   const list = [];
   for (const [w, h, tag] of [[1400, 1000, 'desktop'], [390, 844, 'phone']]) {
-    const page = await openPage(browser, 'engrave', w, h);
+    const page = await openPage(browser, w, h);
     for (const rel of PIECES) {
       for (const whole of [true, false]) {
         await openFile(page, rel, whole);
@@ -653,7 +540,7 @@ async function shots(browser) {
     await page.close();
   }
   /* the dark theme once, whole score */
-  const page = await openPage(browser, 'engrave', 1400, 1000);
+  const page = await openPage(browser, 1400, 1000);
   await openFile(page, PIECES[0], true);
   await page.evaluate(() => new Promise(r => window.PPP.app.setState(st => ({ theme: 'dark', toggles: Object.assign({}, st.toggles, { paper: false }) }), r)));
   await sleep(500);
@@ -671,14 +558,12 @@ async function shots(browser) {
     const v = await (async () => { const p = await browser.newPage(); await p.goto(BASE + '/engrave/index.js'); const t = await p.evaluate(() => document.body.innerText); await p.close(); return (/version = '([^']+)'/.exec(t) || [])[1]; })();
     console.log('PPPEngrave ' + v + ' at ' + BASE);
     report.version = v;
-    if (PARTS.includes('a16')) await a16(browser);
     if (PARTS.includes('a31')) await a31(browser);
     if (PARTS.includes('a32')) await a32(browser);
     if (PARTS.includes('a33')) await a33(browser);
     if (PARTS.includes('corpus')) await corpus(browser);
     if (PARTS.includes('perf')) await perf(browser);
     if (PARTS.includes('shots')) await shots(browser);
-    if (PARTS.includes('switch')) await switchPart(browser);
     if (PARTS.includes('first')) await first(browser);
   } finally { await browser.close(); }
   fs.writeFileSync(path.join(OUT, 'page-check.json'), JSON.stringify(report, null, 1));

@@ -72,8 +72,8 @@ const survey = page => page.evaluate(() => {
   const clefs = [...svg.querySelectorAll('.vf-clef')].map(box);
   const vb = svg.viewBox.baseVal;
   return {
-    /* G4d-2: which renderer drew it (the engraver's SVG is svg.ppp-engraved - the default renderer since the G4f-2 flip;
-       ?renderer=legacy draws the legacy one) */
+    /* G4d-2: the engraver's SVG carries svg.ppp-engraved - the only renderer since §25.2 step 3 removed the old
+       VexFlow-based one and its ?renderer=legacy switch */
     engraved: svg.classList.contains('ppp-engraved'),
     layout: svg.__ppp, heads: heads, staves: staves, clefs: clefs,
     tuplets: svg.querySelectorAll('g.ppp-tuplet').length,

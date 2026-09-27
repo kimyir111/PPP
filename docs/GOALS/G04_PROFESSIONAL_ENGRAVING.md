@@ -4956,6 +4956,149 @@ Windows와 같은 결과. `npm ci`가 puppeteer의 Chromium을 못 받아도(pos
 
 ---
 
+## 52. §25.2 3단계: legacy 렌더러 실제 제거 (Implementer, `D:/PPP-g4`, 2026-09-27)
+
+**사용자 결정**: §51까지 진짜 fallback 원인을 0으로 만든 뒤, 실제 제거(플립과 크기·위험이 맞먹는 변화, `?renderer=legacy` 비상 되돌리기 자체가 없어짐을 사용자에게 명시)를 지금 진행하도록 승인. 브리프(`brief_g4_legacy_removal.md`)가 남긴 두 설계 질문은 실측으로 풀고 추측하지 말 것 — 아래 52.2·52.3. DECISIONS G4-R3(축소 뷰)·G4-R4(진짜 실패 UI)로 남긴다, Lead가 재확인에서 승인.
+
+### 52.1 무엇을 지웠고, 왜 안전한가
+
+`Piano Coach App.dc.html`에서 지운 것 (전부 caller까지 추적해 다른 곳에서 안 쓰는 것 확인 후):
+- `makeScoreView`의 `draw()`(옛 VexFlow 그리기, ~1000줄), `buildVoice()`, `sync()`(VexFlow가 그린 DOM을 직접 만지는 재생선·note 상태), `drawKey()`(그 draw()만의 캐시 키) — `paint()`/`paintEngrave()`는 하나로 합쳐 `engraveView(this).paint(...)`만 부르는 짧은 메서드가 됐다.
+- `render()`의 `state.ready`/`state.err` 게이트: VexFlow가 로드될 때까지 실제 그림 `<div>`를 만들지 않던 로직 — 이제 항상 같은 `<div class="ppp-score">`를 만들고 `engraveView`가 그 안을 채운다(자기 "그리는 중…" 대기, 그림, 또는 실패 문구). **이건 removal이 우연히 고친 기존 결함이었다**: VexFlow 로드를 기다리는 이 게이트는 렌더러가 무엇이든 상관없이 모든 ScoreView의 첫 페인트를 CDN 왕복 뒤로 미루고 있었다 — 판각기가 기본이 된 뒤로도.
+- `VEXFLOW_URL`, `loadVexFlow()`, `_vexPromise`(CDN 로더), `ACC_VEX`, `vexKeySig()`(3572행 근처), `vexKey()`·`vexAccidental()`(3471행 근처, 어디서도 안 부르는 죽은 코드였다 — export 목록 `window.PPP = { ..., vexKey, ... }`에만 이름이 남아 있었다), `VF_TYPE`(같은 이유). App 최상위 `componentDidMount()`의 `loadVexFlow().catch(() => {})` 선행 로드도 지웠다.
+- `ENGRAVE_SWITCH`(→`ENGRAVE_STATE`로 축소: `strict`·`stats`만 남음), `PPP.renderer` getter/setter, `engraveWanted()`, `?renderer=` URL 파싱, `localStorage.getItem('ppp.renderer')`. **`PPP.strictEngrave`는 남긴다** — 질문 3, 아래.
+- `showPrintControls`에서 `engraveWanted({ renderer: PPP.renderer })` 조건 제거 (`engraveDrew(S.score)`만 남음 — 렌더러가 하나뿐이니 항상 참).
+
+각각 지우기 전에 실제 caller를 찾아 확인했다: 특히 `vexKey`는 처음에 놓쳐(`grep "vexKey("`가 export 목록의 `vexKey,`처럼 괄호 없는 참조를 못 잡았다) 앱이 부팅 자체를 못 하는 `ReferenceError`를 냈다 — 스모크 테스트(puppeteer, `window.PPP` 확인)가 바로 잡았다. 교훈대로 "이름만으로 추측하지 않고 모든 caller를 추적"을 다시 한번 전체 파일에 `grep`으로 훑어 확인했다.
+
+`engrave/page.js`: 실패 sentinel을 `'legacy'`→`'failed'`로 바꿨다(반환 타입 `'drawn' | 'pending' | 'failed'`) — `fail()`이 `el`을 받아 그 자리에 "그릴 수 없음" placeholder를 직접 쓰도록(§16.7 문서 갱신). 축소 뷰 라우팅(`p.clefs === false || ...`) 삭제. `stats.routed` 카운터 삭제(더는 아무것도 routed되지 않음). `stats.fallbacks`/`bySong`은 이름 그대로 남김(§16.7의 "폴백" 어휘는 지금도 "이 뷰가 대신 실패 표시로 끝났다"는 뜻으로 여전히 맞다 — 렌더러가 하나뿐이라고 새 이름을 지어 그 어휘를 쓰는 다른 문서·도구까지 바꾸는 건 이 제거의 범위를 넘는다). `engrave/page.js` 편집으로 `page-files.js --write`가 필요해 `ENGRAVE_FILES` 해시를 다시 썼다.
+
+**벤더 VexFlow는 안 건드렸다**: `vendor/vexflow-4.2.3.js`와 그걸 쓰는 빌드 시각 도구(`make-metrics.js`, `make-outlines.js`)는 엔진 배치 시각 글꼴 지표·외곽선 추출용으로 여전히 필요 — 브리프의 명시적 non-goal. `engrave/`의 실제 렌더링 로직(plan·layout)도 안 건드렸다 — 아래 52.2가 이걸 지키는 이유.
+
+### 52.2 설계 질문 1 — 축소 뷰 (DECISIONS G4-R3): 실측으로 풀었다
+
+**질문**: 클레프 없는 홈 화면 루프 썸네일과 빈 상태 장식 스태프는 판각기의 15개 파일 로드를 피하려고 legacy로 라우팅돼 있었다. legacy가 없으면 이제 뭘로 그리나?
+
+**먼저 확인한 사실 — engrave/는 이 기능 자체가 없다.** `engrave/page.js`의 `semanticConfig(p)`는 `marks`/`chords`만 읽고, `layoutConfig(p, score, viewportPx)`는 창(window)·bar 수·zoom만 읽는다 — 클레프를 숨기거나 여러 단(staff) 중 하나만 그리는 개념이 plan/layout 어디에도 없다. 이걸 추가하는 건 "engrave/의 실제 렌더링 로직을 바꾸지 않는다"는 non-goal을 정면으로 어긴다 — 그러니 "엔진에 새 옵션을 추가해 legacy와 똑같이 그린다"는 선택지는 애초에 범위 밖이었다.
+
+**측정 1 — 15개 파일을 로드하는 실제 비용** (`node tests/engrave/tools/page-files.js`로 15개 이름·해시를 읽어, 실제로 `<script>` 태그를 붙여 로드): 로컬(같은 origin, `server.js`가 콘텐츠 해시로 영구 캐시 가능한 헤더를 준다)에서 1x CPU 55.9ms, 4x CPU 32.0ms(콜드, 캐시 없음) — 32개 파일 전송(vexflow.js 포함 비교용). 실제 서버에서 `page-check.js --part first`로 재본 "첫 방문" 수치는 52.5.
+
+**측정 2 — 오늘까지 모든 뷰가 이미 물고 있던 숨은 비용.** `render()`의 `state.ready` 게이트(52.1)가 VexFlow CDN 로드를 기다리므로, **판각기가 기본이 된 뒤에도** 모든 ScoreView(축소 뷰 포함)의 첫 페인트가 외부 CDN 왕복 하나 뒤에야 시작되고 있었다 — 이건 렌더러 선택과 무관한, 이번에 같이 없어지는 비용이다.
+
+**결론 (G4-R3): 축소 뷰는 이제 다른 뷰와 똑같이 판각기로 그린다, 클레프까지 그대로.** `thumbStaff`/`emptyStaff`의 `clefs: false`를 지웠다(엔진이 애초에 안 읽으므로 죽은 prop이었다 — 지운 건 순전히 가독성). `grand`는 그대로(`thumbStaff`는 실제 단 수를 따름, 다른 전체-판각 썸네일과 같은 관례). 실측 결과: 홈 화면 첫 페인트 체감 비용은 그대로거나 더 낫다(52.5) — 클레프가 보이는 건 시각적 손실이 아니라 오히려 어느 손 보표인지 더 분명해지는 쪽. 스크린샷으로 직접 확인(52.6).
+
+### 52.3 설계 질문 2 — 진짜 실패의 UI (DECISIONS G4-R4): 이미 있는 관례를 재사용했다
+
+**질문**: legacy가 없어진 뒤 진짜 `SOURCE_DISAGREES`나 엔진 로드 실패가 나면(코퍼스·모든 suite에서 0이지만, 손으로 편집한 MusicXML이나 미래의 OMR·MIDI 입력에서는 여전히 가능) 화면에 뭘 보여주나 — "화면은 절대 비지 않는다"는 원칙은 그대로 지켜야 한다.
+
+**기존 관례부터 찾았다**: 두 가지가 이미 있었다.
+1. **뷰 안의 문구** — legacy `draw()`가 예외를 던지면(옛 코드) `this.el`에 직접 "This passage could not be engraved." 문구를 넣던 catch 블록. 화면의 그 자리, 그 스타일로 — 다른 곳을 비우지 않는다.
+2. **전역 토스트** — `printScore()`가 실패하면 `this.say(tx('This score could not be prepared for printing.'))`(2.8초 뜨는 토스트), "그 곡을 열지 못했어요." 류의 다른 실패들도 같은 `say()`를 쓴다.
+
+**어느 쪽이 맞나**: 토스트는 "사람이 지금 누른 동작이 실패했다"는 일시적 알림이지 뷰 그 자체의 상태가 아니다 — 인쇄 버튼을 눌렀는데 실패했다는 건 토스트가 맞지만, "이 곡을 보고 있는데 그 자리가 계속 그림이 없다"는 건 그 자리 자체가 뭔가를 보여줘야 한다(토스트는 2.8초 뒤 사라진다). ①번(뷰 내부 placeholder)이 정확히 이 문제의 기존 관례다 — 새로 만들지 않고 그대로 재사용했다.
+
+**구현**: `engrave/page.js`의 `fail(el, score, code, err)`가(strict 아닐 때) `failedPlaceholder(el)`을 호출해 그 자리에 `data-engrave-failed` 마커가 붙은 `<div>`로 `tx('This passage could not be engraved.')`를 써 넣고 `'failed'`를 돌린다 — `placeholder()`(pending 상태의 "그리는 중…")와 정확히 같은 멱등 패턴("이미 있으면 다시 안 씀", 재생 중 매 프레임 다시 그려도 DOM을 다시 안 건드림). 엔진 파일 자체가 로드 실패하는 경우(page.js가 뜨기도 전)는 앱 파일의 `engraveView`에 똑같은 로직을 한 번 더 뒀다(`showFailed(el)`) — `placeholder`가 두 층(엔진 로드 전/후)에 각각 있는 기존 구조를 그대로 따랐다. 문구는 `tx()`를 거치므로 ko/ja/zh 번역을 추가했다("이 부분은 악보로 그리지 못했어요." / "この部分は楽譜として描画できませんでした。" / "无法将此段落绘制为乐谱。") — 예전엔 이 문구가 `tx()`를 안 거쳐 영어 고정이었다(legacy 전용의 드문 경로라 놓쳤던 것으로 보임); 이제는 실사용 표면이라 고쳤다.
+
+**질문 3 — `PPP.strictEngrave`**: 유지한다. 비교할 legacy가 없어져도 "실패를 조용히 placeholder로 넘기지 않고 던진다"는 뜻은 그대로 유효 — CI·테스트가 회귀를 placeholder 뒤에 숨기지 않고 시끄럽게 실패하게 하는 게 목적이었고, 그 목적은 렌더러 개수와 무관하다. `?strict=1`·`localStorage.ppp.strictEngrave`만 남기고 `PPP.renderer` 관련 부분만 지웠다(`tests/engrave/app.test.js`가 구조로 확인).
+
+### 52.4 테스트·도구 처분표
+
+| 파일 | 처분 | 이유 |
+| --- | --- | --- |
+| `tests/engrave/app.test.js` | **다시 씀** | switch 존재 확인 테스트·축소 뷰 라우팅 테스트 삭제, "legacy와 비교" 하던 것들을 "이제 이렇게 동작한다"는 구조 확인으로 교체(§25.2 step 3 knob 확인, 실패 placeholder 배선 확인). A45(legacy 클래스 바이트 pin)는 은퇴 — 대신 "VexFlow API·switch가 실제로 없다"는 구조 확인 테스트 하나로 대체, 판각기 자체의 출력 안정성은 원래 `layout-hashes.js`가 담당하고 있었으므로 새 pin은 안 만들었다. 9개 테스트(이전 8개+1) 전부 통과. |
+| `tests/engrave/tools/legacy-parity.js` | **삭제** | `?renderer=legacy`로 두 커밋의 legacy SVG를 바이트 비교하는 도구 — 비교할 legacy가 한쪽에도 없다. **이제 이 도구는 없다: 브리프가 요구한 대로 명시.** |
+| `tests/engrave/tools/legacy-geometry.js` | **삭제** | A43(legacy 대 engrave 5개 지표) 전용, 나이틀리 전용 — 비교 대상 소멸. |
+| `tests/engrave/tools/review-build.js` | **삭제** | M-H1/M-H2 blind X/Y(legacy vs engrave) 리뷰 패킷 생성기 — 둘 다 DONE, 재실행 불가능(X=legacy를 그릴 방법이 없음), 다른 어디서도 require 안 됨. |
+| `tests/scoregraph/tools/ottava-check.js`, `ottava-views.js` | **고쳐서 유지** (처음엔 삭제했다가 되돌림) | `?renderer=legacy`를 오라클로 쓰던 부분만 걷어내고(기본 페이지로 열게), "울리는 음=그린 음" 불변식은 판각기 자신의 SVG로 그대로 확인한다 — sound/print 검증은 렌더러 무관이라 원래도 안전했다. 판각기의 실제 SVG 모양이 legacy와 다른 부분(스태프 5줄이 개별 `<path>`가 아니라 `M x y H x2` 하나로 합쳐짐, notehead가 그룹이 아니라 그 자체로 `<path>`, 옥타브선 dash가 공백 없는 압축 path 문법)을 셋 다 실측해 고쳤다 — 처음 삭제하려던 판단(브리프가 이름을 직접 언급)이 틀렸다는 걸 파일을 끝까지 읽고서야 알았다: 이 둘은 M-H1의 전체 뷰 종류(대시보드=축소 뷰 포함!) 불변식까지 검증하는, legacy 비교와 무관한 별도 가치를 가진 도구였다. `draw()` 직접 호출(동기)을 `paint()` 기반 폴링(비동기, 엔진 로드를 기다림)으로 바꿨다 — `run`/`views`/`card`/`shared`를 전부 `async`로. 라벨 정규식(`"(8)"`/`"(15)"`)은 §52.9에서 고쳐 35/35까지 갔지만, views on 전체 실행은 `dashboard`뿐 아니라 `whole`/`part`/`tablet`/`phone`/`review`/`old-part`에서도 일부 파일이 같은 증상(위치·라벨 불일치, 판각기 자신의 SVG bbox 1차 검사는 통과)으로 남는다 — §52.11이 범위를 다시 재고, 이 도구 자신의 행-매칭 로직(`why()`/`rowOf8`) 버그로 재지목해 트래킹 백로그로 남겼다(engrave/ 캐싱이라는 §52.9의 최초 추정은 독립 리뷰가 반증). |
+| `tests/engrave/tools/page-check.js` | **다시 씀** | `--renderers` 옵션·`a16`(두 렌더러 동일성)·`switch`(기본/되돌리기 확인) part 삭제 — 전부 "비교할 두 번째 렌더러"가 있어야 뜻이 서는 것들. `a31`/`a32`/`a33`/`corpus`/`perf`/`first`는 렌더러 루프를 걷어내고 한 번만 돌게, `shots`는 그대로. 8개 part 전부 실 서버에서 재실행해 확인. |
+| `tests/engrave/tools/print-check.js` | **가볍게 고침** | `--renderer` 옵션·`window.Vex` 대기 삭제. 나머지(7개 공유 seed + 1개 고의로 깨진 negative control) 그대로 — 렌더러 선택과 무관한 구조였다. |
+| `tests/engrave/tools/with-port.js` | **가볍게 고침** | `PPP_RENDERER` 지원·`summary.renderer`·`summary.routed` 삭제, `PPP_STRICT`는 유지. 브라우저 suite 26개 전부 이 도구로 재확인(아래). |
+| `tests/engrave/tools/storage-failure.js` | **주석만** | 코드는 원래 렌더러 무관, "legacy가 그린다"던 옛 주석만 고침. |
+| `tests/engrave/tools/app-source-check.js`, `u1-paths.js`, `perf-persist.js`, `a48-coverage.js` | **안 건드림** | 렌더러 선택과 무관 — 실 서버로 재확인만(아래 52.7). `app-source-check.js`에 이 작업과 무관한 기존 결함 둘 발견, 아래. |
+| `tests/engrave/tools/capture-legacy-scores.js`, `tests/bench/pppbench/legacy.py`, `tests/scoregraph/tools/shadow_compare.py`, `tests/engrave/fixtures/legacy/` | **안 건드림** | 이름의 "legacy"는 이 작업과 다른 뜻이다 — `legacy.fromScore`/`legacy Score`(scoregraph의 그래프 이전 데이터 모델, G1/G2 유산), VexFlow 렌더러와 무관. 처음 이름만 보고 후보에 넣었다가 내용을 읽고 뺐다. |
+| `vendor/vexflow-4.2.3.js`, `make-metrics.js`, `make-outlines.js` | **안 건드림** (non-goal) | 빌드 시각 글꼴 지표·외곽선 추출 전용, 런타임에 로드 안 됨. |
+| `docs/*` | 아래 | 이 §52, DECISIONS G4-R3/G4-R4, `docs/ARCHITECTURE.md`, `docs/CURRENT_STATE.md`, `docs/PPP_MASTER_ROADMAP.md`. |
+| i18n (`ko-KR`/`ja-JP`/`zh-CN`) | **문구 추가** | "This passage could not be engraved." — 예전엔 `tx()`를 안 거쳐 번역이 없었다. `en-US.json`은 원문이 곧 기준이라 추가 없음. |
+
+### 52.5 성능 — 전/후 (실측, 추측 아님)
+
+방법: `98cb22f`(제거 전)와 이 브랜치를 각각 별도 포트(8802/8801)에 띄우고, **같은 도구**(고친 `page-check.js --part first`)로 "빈 캐시 첫 방문 → 홈 → Practice"를 쟀다 — 도구 자체는 클라이언트 동작만 재므로 옛 서버에도 그대로 쓸 수 있었다. 4x는 두 번씩 반복해 안정성 확인.
+
+| 지표 | 전(`98cb22f`) 1x | 후 1x | 전 4x (2회) | 후 4x (2회) |
+| --- | --- | --- | --- | --- |
+| `appMs`(부팅~`window.PPP.app`) | 1325 | 1330 | 2732, 2781 | 3069, 2829 |
+| `engraveFilesAtHome`(홈 화면에서 이미 요청된 엔진 파일 수) | **0** | **15** | 0 | 15 |
+| `staffMs`(Practice 진입~첫 그림) | 339 | 344 | 746, 814 | 543, 530 |
+| `longTasks`/`longMax` | 3 / 99 | 3 / 106 | 10–11 / 490–523 | 9 / 456–512 |
+| `engraveKB`/`allKB`(전송량) | 153.5 / 6058 | 153.3 / 5622 | 동일 | 동일 |
+
+**읽는 법 (독립 리뷰가 바로잡음)**: `appMs`(순수 부팅)는 1x에서 거의 같다(1330 대 1325, 0.4% — 잡음 안). **4x는 다르다**: 전 2732/2781(두 번, 평균 2756.5), 후 2829/3069(두 번, 평균 2949) — 평균으로 약 **7% 더 느리다**. 같은 코드를 두 번 잰 편차(2732/2781, 50ms)보다 두 조건 사이 차이(193ms)가 커서, 이건 잡음이 아니라 실제 비용이다: CPU가 눌린 기기에서 홈 화면이 곧바로 엔진 15개 파일을 로드·파싱하는 몫을 일부 지불한다 — 처음 릴리스에서 "잡음 안"이라고 적은 건 **틀렸다**(독립 리뷰가 바로잡음). **그 대가로 Practice 화면 진입은 4x에서 27–35% 더 빨라졌다**(746~814ms → 530~543ms, 두 번 다 재현): 엔진 파일을 홈에서 이미 받아 놨으니 Practice를 처음 열 때 15개 파일을 새로 기다릴 필요가 없어졌기 때문이다. 즉 "홈 화면 자체가 4x에서 ~7% 더 느려진다"는 실제 비용과 "다음 화면 전환이 27–35% 빨라진다"는 실제 이득이 둘 다 있다 — 사용자 여정 전체(홈→연습)로 보면 이득이 비용보다 크다는 게 이 표의 결론이지만, 홈 화면 그 자체만 볼 때 공짜가 아니라는 점을 숨기지 않는다. 1x에서는 둘 다 차이가 잡음 안이다.
+
+`page-check.js`의 `a31`(동기화 프레임)·`a32`(레이아웃 캐시)·`a33`(테마)·`perf`(sonatina/020 전체) 결과는 §51 이전 수치와 같은 자릿수(예: `perf` 1x 페이지 넘김 p95 19ms, 4x 53.8ms — 예산 25ms/80ms 이내)로, 이번 제거가 판각기 자체의 그리기 성능에 영향을 주지 않았다는 뜻이다.
+
+### 52.6 실 서버 종단 확인
+
+로컬 서버(`NODE_ENV=production`, 8801)에서 실제 사용자 여정을 처음부터 끝까지: 손님으로 진입 → 홈 화면(이어서 연습 썸네일, 판각기로 그려짐, 클레프 보임) → 분석·계획 화면 → 실제 카탈로그 파일 두 개를 업로드 경로 그대로 열기(sonatina/020.mxl 1563개 음, for-all-the-saints.musicxml 448개 음, 둘 다 판각기로 그려짐) → 연습(구간 반복 화면, 재생하면 재생선·손 표시·음 이름 글자 전부 정상, 스크린샷 확인) → 인쇄(`printScore()` 파이프라인 끝까지, `window.print()` 호출까지 확인) → 공유(손님은 로그인을 요구받음이 정상 — 로그인한 공유 전체 흐름은 이미 통과한 `share.test.js`/`hymns-share.test.js`가 담당). 세션 내내 페이지 에러 0, 폴백 0. 공유 서재(shared-seeds) 7곡 전부와 고의로 깨뜨린 negative control 1곡은 52.4의 `print-check.js` 재실행이 이미 확인(7곡 정상 인쇄+Print 버튼, 깨진 곡은 Print 버튼이 없고 강제로 인쇄를 시켜도 토스트로 알림).
+
+### 52.7 회귀 — Windows·Linux
+
+**Windows**(이 worktree): `test:engrave` **200/200**(구 199 + app.test.js 신규 1), `test:scoregraph` **216/216**, `layout-hashes.js` PASS(118곡×3구성), `bench.js check --suite r|e|x` **61/40/76** PASS, `make-corpus`/`make-e-fixtures`/`make-metrics`/`make-outlines`/`make-text-metrics` 다섯 `--check` 전부 PASS, `page-check.js`(a31/a32/a33/corpus/perf/shots/first, `--cpu 1,4`) 전부 PASS, `print-check.js` PASS(6곡+7 seed+1 negative control), `a48-coverage.js` PASS(core 553/553, corpus 318/318 기지 손실 7건 동일, OMR 2/2), `u1-paths.js` 전부 PASS, `storage-failure.js` 전부 PASS, `perf-persist.js` 정상 측정(게이트 없음). 브라우저 suite **26개 중 25개 PASS**, 전부 `fallbacks none`(`with-port.js` 요약) — 유일한 실패(`transcription.test.js`, "the fallback is the venv transkun console script")는 이 worktree에 로컬 Python venv(`tools/transcribe-venv/`, 커밋 안 됨)가 아예 설치돼 있지 않아서고, 판각 경로와 무관(오디오 전사 기능, G3/G10 영역) — 이 세션이 만든 회귀가 아니다. `app-source-check.js`에서 처음 두 실패를 봤을 때 **둘 다 무관하다고 적었던 것은 틀렸다** — 독립 리뷰가 하나를 진짜 회귀로 잡아 고쳤다: 52.9 참고. (1) "PPPEngrave is on the page"는 `ver.e === '0.1.1-g4a'` 하드코딩이 실제 버전(`0.6.0-g4d2`, G4d-2 이후 안 바뀜) 문자열과 영영 안 맞는 것으로, `main`에서도 그대로 재현되는 순수한 기존 결함 — 이건 정말 무관하다. (2) "the damage is named"는 진짜 회귀였다: `render()`의 옛 VexFlow 대기 게이트를 지운 것이 `engrave/source.js`의 `resolve()`/`fromStore()` 타이밍을 바꿔, 손상 기록을 지우는 store의 자가 치유(§16.7과 별개, G4-U1 P8)와 그 진단을 읽는 시점 사이 경합을 드러냈다 — 52.9에서 고쳤다.
+
+**Linux**(Docker `node:24-bookworm`, Node 24.21.0, `git clone --branch g4-legacy-removal https://github.com/kimyir111/PPP.git`, 이 브랜치의 실제 push된 머리 `366f974`): `npm ci`(puppeteer의 Chromium은 못 받지만 아래 둘은 브라우저가 필요 없어 무관) → `test:scoregraph` **216/216**, `test:engrave` **200/200**, `layout-hashes.js` PASS, `page-files.js --check` PASS, `bench.js check --suite r|e|x` **61/40/76** PASS, 다섯 `make-*.js --check` 전부 PASS — **Windows와 자릿수까지 전부 같다** (A27 크로스 플랫폼).
+
+**`legacy-parity.js`는 더 없다** — 비교할 legacy 렌더러가 어느 쪽에도 없으므로, 브리프가 요구한 대로 명시한다: 이 회귀 표에 그 줄은 다시 나타나지 않는다.
+
+### 52.9 독립 리뷰: NEEDS_FIX (MAJOR 2, MINOR 1) — 하나는 진짜 회귀, 하나는 보고서의 확인 부족
+
+**판정: NEEDS_FIX.** 제거 자체와 두 설계 결정(G4-R3, G4-R4)은 그대로 승인됐다. 문제는 내가 "확인했다"고 적은 것 중 둘이 실제로는 안 그랬던 것 — 하나는 도구를 끝까지 안 돌렸고, 하나는 진짜 회귀를 무관하다고 잘못 적었다.
+
+**MAJOR 1 — `ottava-check.js`의 기본 "views" 검사(views on)를 끝까지 돌리지 않았다.** 52.4/52.7에 적은 `ottava-check.js` 확인은 전부 `--no-views`였다 — views on 기본 실행은 35개 중 32개 FAIL이었는데, 보고서에는 그 결과가 없었다. 원인: 판각기가 뷰의 시작 마디를 담지 않는 창(윈도우)에 걸친 옥타브선을 방향 없이 축약해 `"(8)"`/`"(15)"`로 적는다(G4-D1b-7, `tests/engraving.test.js:422` — 이 PR 이전부터 있던, legacy와 의도적으로 다른 표기). 이 도구는 항상 `?renderer=legacy`로 열어 legacy가 늘 `"(8va)"`로 적는 것만 봤으므로, 이 형식 차이를 한 번도 실제로 겪은 적이 없었다 — §25.2 3단계가 처음으로 판각기 자체의 페이지를 열게 하면서 드러났다.
+- **고침 1 (라벨 정규식)**: `ottava-views.js`의 `lines` 필터와 `ottava-check.js`의 `labels` 필터 둘 다 `"(8)"`/`"(15)"`를 인정하도록 넓혔다. 크기(magnitude)만 있고 방향이 없으므로 `MAG` 표(`{8va:'8', 8vb:'8', 15ma:'15', 15mb:'15'}`)로 양쪽 방향 모두와 매치되게 했다. 라벨에 `data-ppp-row`가 실제로 없음을 실측으로 확인한 뒤(`hasAttribute` false), 방향을 모르는 축약 라벨은 `rowOf8(y, true)`/`rowOf8(y, false)` 두 후보 행을 다 열어 두도록 `rows` 배열로 바꿨다(기존 전체-이름 라벨의 매칭은 그대로).
+- **고침 2 (별도로 발견한 진짜 버그, `openingBars()`)**: 라벨 고침을 실제 서버에 대고 돌리자, `card`/`shared-card`/`link`/`stored-*` 뷰(My Songs·공유 카드 미리보기)가 sonatina/022 등 여러 실제 곡에서 "nothing drawn"으로 실패했다 — 판각기가 `SOURCE_DISAGREES`로 진짜 실패하고 있었다(질문 2의 실패 UI가 정확히 그 자리에서 동작한 것). 근본 원인: `openingBars(full, n)`(`Piano Coach App.dc.html` ~11081, 카드 미리보기가 2마디만 자르는 함수)가 `notes`/`chords`/`pedals`/`marks`는 마디로 걸러내면서 **`dynamics`와 `wedges`는 걸러내지 않고 원곡 전체 배열을 그대로 남긴다** — sonatina/022는 `agree()`가 "dynamics.length: 54 vs 2"로 거부했다. **legacy는 `agree()`를 아예 안 봐서 이 버그가 지금까지 조용했다** — §25.2 3단계가 legacy를 지워서야 눈에 보이게 된, 이 PR 이전부터 있던 별개의 결함이다. `dynamics: mine(full.dynamics), wedges: mine(full.wedges)`를 추가해 고쳤다 — sonatina/022·018·czerny849/023 세 곡 모두 `agreeOk: true`로 확인(슬러가 창 경계에서 잘리는 것은 `unsupported`로 이미 허용되는 손실이라 `agreeOk`에 안 걸림).
+- **남은 상태(정직하게, 35/35 아님)**: 두 고침 뒤 `card`/`shared-card`/`link`/`stored-8981750`/`stored-pre-mx1`/`old-card`/`preview`/`progress`/`old-whole`는 **0 문제**가 됐다(위 두 버그가 정확히 그 뷰들의 원인이었다는 뜻). `dashboard`(1마디 축소 뷰)와 일부 `part`/`tablet`/`phone`/`review`/`whole`/`old-part`는 **여전히 실패한다**(25/35 파일) — 원인은 라벨 형식이 아니라 다른 것: **같은 마디를 단독으로 그리면 옥타브선의 dash(`path.ppp-ottava`)가 정상 길이로 나오는데(직접 확인, 예: bar 23 단독 렌더는 "M137.3 23.2H268"), `ottava-views.js`의 `views()`가 같은 세션 안에서 whole→part×8→tablet×8→phone×8→review×8을 먼저 그린 뒤 같은 마디를 dashboard로 그리면 dash가 라벨 바로 옆에서 끊긴 것처럼 측정된다**(라벨은 같은 자리에 정상적으로 있음, dash만 짧게 측정됨). `bb.width` 측정값이 이 두 문맥에서 다르게 나오는 것으로 보여 라벨-폭 기반 tolerance를 라벨의 왼쪽 x 기준 최솟값 매칭으로 넓혔지만(코드에 남겨둠 — 더 안전한 방식이라 유지), 실패 수는 그대로였다 — 즉 폭 tolerance의 문제가 아니라 `engrave/`가 같은 세션에서 수십 번 연속으로 그린 뒤의 무언가(레이아웃/텍스트 계량 캐시로 추정, 확인 못함)가 원인일 가능성이 높다. `engrave/`의 렌더링 로직을 더 깊이 캐지 않고서는 못 잡는 자리라 non-goal 경계에 걸린다고 판단해 여기서 멈췄다 — **후속 조사가 필요한 별도 항목으로 남긴다.** 실사용 영향은 제한적으로 보인다: 이 결함은 한 페이지 세션에서 수십 개 뷰를 연달아 그린 뒤에만 나타났고(각 사례를 단독으로 그리면 정상), 판각기가 음 자체(음높이·위치)는 올바르게 그린다 — 옥타브선의 dash 길이라는 장식적 요소만 영향받는다.
+
+**MAJOR 2 — `app-source-check.js`의 "the damage is named" 실패는 진짜 회귀였다, 무관이 아니었다.** IndexedDB에 직접 쓴 손상 기록을 리로드 뒤 다시 읽으면, `main`에서는 `diag: ["STORE_DECODE_FAILED"]`가 나오는데 이 브랜치에서는 `diag: []`였다 — 재현됨. 근본 원인(독립 리뷰의 가설이 맞았다): `engrave/store.js`의 `get()`은 디코드에 실패한 기록을 **읽는 그 호출 안에서 곧바로 지운다**(자가 치유, §16.7과 무관한 G4-U1 fixer P8) — 그 진단 코드(`STORE_DECODE_FAILED`)는 **그 한 번의 `get()` 호출을 부른 caller에게만** 보인다. `render()`의 옛 VexFlow 대기 게이트를 지운 뒤로 앱 자신의 리페인트(재오픈한 곡의 ScoreView가 마운트되며 도는 자동 `resolve()`)가 더 일찍·더 확실히 돌게 됐고, 이게 테스트의 800ms 대기 안에서 명시적 `resolveCurrent()` 호출보다 먼저 그 한 번뿐인 읽기를 가로채 기록을 지워버린다 — 그 뒤의 명시적 호출은 이미 지워진 키를 `missing`으로 읽어(`missing`은 진단을 안 남기는 코드) 아무 이유도 못 배운다. **고침**: `engrave/source.js`의 `resolve()`가, 이번 호출의 `fromStore()`가 진단을 하나도 못 얻었는데(=이미 지워짐) 같은 Score·해시에 대한 **이전 memo(`known()`)가 `STORE_`로 시작하는 진단을 갖고 있었다면 그걸 이어받는다** — 기록이 지금 없다는 사실이 그게 왜 실패했는지를 지우지는 않는다는 논리. `engrave/source.js?v=3` → `?v=4`로 올림(정적 로드 파일, `ENGRAVE_FILES` 해시 대상 아님). 새 단위 테스트(`tests/engrave/source.test.js`, "a corrupt record's diagnostic is not lost to a second resolve()...")로 같은 인스턴스·같은 Score로 두 번 `resolve()`했을 때 두 번째도 진단을 받는지, 그리고 무관한 다른 Score에는 새지 않는지 확인 — PASS. 실 서버 재확인: `app-source-check.js`의 "the damage is named"가 이제 `STORE_DECODE_FAILED`로 통과한다(남은 실패는 위 무관한 버전 문자열 하나뿐).
+
+**MINOR — `tests/engraving.test.js:76`의 낡은 주석**(`?renderer=legacy`가 더는 없는 걸 언급) 고침.
+
+**성능 표기 정정**: 52.5의 "1x/4x 둘 다 잡음 안"은 **틀렸다** — 4x는 평균 약 7% 더 느리다(잡음 폭 50ms보다 두 조건 차이 193ms가 크다). 표와 DECISIONS G4-R3를 고쳐 4x의 실제 비용을 숨기지 않고 적었다 — 결론(Practice 27–35% 개선이 이득 쪽으로 크다는 것) 자체는 안 바뀐다.
+
+전부 위 §52.1–§52.8과 DECISIONS G4-R3/G4-R4 본문에 반영했다. 전체 회귀(`test:engrave` 201/201 — 새 단위 테스트 1개 추가, `test:scoregraph` 216/216, `layout-hashes.js`, `bench.js check` 61/40/76, 다섯 `--check` 도구, `page-check.js`, `print-check.js`, `a48-coverage.js`, `u1-paths.js`, `storage-failure.js`)를 다시 돌려 전부 PASS 확인.
+
+### 52.10 상태
+
+**READY_FOR_REVIEW (2차).** 1차 커밋(`1f7ef7a` 제거 본문, `366f974` origin/main 병합) 위에 고침 커밋을 추가해 `g4-legacy-removal`에 push했다 — 정확한 해시는 이 문서의 마지막 커밋에서 `git log`로 확인. PR은 안 연다 — Lead가 리뷰·병합을 진행. MAJOR 1의 "dashboard 등 잔여 실패"는 고치지 못한 채로 정직하게 남겨 둔다 — Lead가 후속을 결정할 것.
+
+### 52.11 독립 리뷰 2차·3차: `openingBars()`의 진짜 규모는 3곡이 아니라 62곡이었다 — 스팬 필드(tempos·wedge·pedal) 완전성
+
+**판정 이력: NEEDS_FIX 두 번 더.** 52.9의 "세 곡(sonatina/022·018, czerny849/023) 고치고 끝"이라는 보고가 **축소치였다** — 스팟체크였을 뿐, 코퍼스 전체를 훑지 않았다. 독립 리뷰(2차)의 전체 코퍼스 스윕(347개 × 두 미리보기 창 크기)과 별도의 병렬 스캔(3차, `legacy.fromScore`/`agree` 방법론)이 각각 더 찾아냈고, 3차가 최종 규모를 정리했다: **원래 버그(52.9 고침 이전)의 실제 범위는 62개 실 카탈로그 파일**이다 — R 코퍼스(§22.2) 안의 58개(czerny849 001,002,005-008,011-014,016-024; sonatina 001-004,006-010,012-028; burgmuller25 003,006,013,015,021; czerny599 035,048-052,054; beyer 057)와 라이센스 격리 세트(`tests/bench/corpus/excluded.json` rule P1, `tests/engrave/helpers.js`의 `corpusFiles()`가 의도적으로 빼는 15개 중) 4개(burgmuller25 001,002,004,007). 52.9의 `dynamics`/`wedges` 단순 `mine()` 고침이 이미 61/62를 고쳐 놓았었다 — 남은 진짜 갭은 두 가지, 둘 다 이번에 고쳤다:
+
+1. **`tempos` 필드가 아예 걸러지지 않고 있었다** — `dynamics`/`wedges`와 같은 모양의 결함(52.9가 그 둘만 고치고 `tempos`는 놓쳤다), 지금 코퍼스에서는 잠들어 있지만(합의 실패로 안 드러남) `catalog/method/burgmuller25/018.mxl`(격리 세트, "tempos 5 vs 1")에서는 52.9의 고침 전후 모두 실제로 드러난다. **고침**: `tempos: mine(full.tempos)` 추가(다른 점 이벤트 필드와 같은 패턴, `tempos[]`는 `{m, b, bpm}`으로 시작·끝 짝이 없어 `mine()`만으로 충분).
+2. **wedge/pedal의 시작·끝 경계-걸침(span 하나가 창의 시작 안, 끝 밖에 걸치는 경우) orphan** — `mine()`은 점 이벤트마다 독립적으로 거르므로 짝 없는 시작(또는 끝)이 살아남는다: `catalog/method/sonatina/028.mxl`(R 코퍼스, wedge, "wedges.length: 1 vs 0")과 `catalog/method/burgmuller25/007.mxl`(격리 세트, 같은 모양). **고침**: `openingBars()` 안에 `spanned(list, startTypes, groupOf)` 헬퍼를 새로 둬 wedge(`crescendo`/`diminuendo`+`stop`)와 pedal(`start`+선택적 `change`+`stop`, `kind`별로 독립 그룹)을 하나의 스팬으로 취급 — 양끝이 다 창 안에 있어야 인덱스를 남기고, 아니면(시작 없이 끝만, 또는 끝 없이 시작만) 통째로 버린다 — `ottavas`가 이미 그러는 것과 같은 원칙(잘라서 반쪽만 남기지 않는다, 2마디 장식용 미리보기에서 그 이상의 로직은 낭비). pedal도 코퍼스에 실례는 0이지만 같은 결함이 있을 수 있어(3차 리뷰가 지적) 방어적으로 같이 고쳤다 — `spanned()` 하나로 wedge·pedal 둘 다 처리하므로 추가 코드 비용은 없었다.
+   - **이 고침 자체가 만든 버그를 스윕으로 직접 잡았다**: `spanned()`의 첫 구현은 `change` 이벤트를 만나는 즉시 배열에 넣고, `start`/`stop` 짝은 `stop`을 찾을 때까지 미뤄 뒀다가 넣었다 — 그 결과 출력 배열의 순서가 원본과 달라진다(`change`가 자기 `start`보다 먼저 옴). `piano-marks.musicxml`(자체 fixture)에서 pedal 3개 원본 이벤트(`start, change, stop`)가 `change, start, stop` 순서로 나가 `fromScore()`가 이걸 스패너 2개로 잘못 읽었다("pedals.length: 3 vs 2", 이 PR 이전엔 없던 새 불일치). **고침**: index만 모아 뒀다가 원본 배열을 그 인덱스로 필터링하는 방식으로 바꿔 원본 시간 순서를 그대로 보존 — `fromScore()`는 pedal의 `change`를 자기 `start` 뒤 상대 위치로 읽으므로 순서가 깨지면 안 된다.
+
+**전체 코퍼스 재스윕(정직하게, 스팟체크 아님)**: 자체 스크립트(세션 scratchpad, `App.shelfThumb()`/`App.sharedThumb()` — 앱이 실제로 쓰는 경로 그대로)로 R 코퍼스 347개 + 라이센스 격리 15개(P1, czerny299 10개 포함 — czerny299는 격리 세트 전부가 옥타브선을 가진 파일이라 §52.9의 `ottava-check.js` 재확인에도 쓰인다) = 362개 파일 × 미리보기 창 2/4마디 = 724건을 `legacy.fromScore`+`legacy.agree`로 확인(engrave/page.js의 SOURCE_DISAGREES 판정과 같은 방법). **결과: 실패 0**(MIDI fixture 26개의 "no-notes" 거부는 4개 이하 음의 합성 파일에 대한 기존·무관 규칙, G02 R4). 유일하게 뜬 것은 `tests/scoregraph/fixtures/xml/unpitched.musicxml`("notes.length: 1 vs 0") — **이 창(preview)만의 문제가 아니라 원곡 전체를 그대로 `fromScore`+`agree`해도 똑같이 뜬다**(직접 확인: 미리보기 추출을 전혀 거치지 않은 원본 Score로도 같은 결과), 그리고 이미 DECISIONS G4-I7에 문서화된 기존 예외다("코퍼스 398/399 동일, 나머지 1은 타악기, `percussion-or-unpitched`로 보고") — 이 PR·이 함수와 무관.
+
+**`ottava-check.js`의 "dashboard 잔여" 정정 (두 번째 정정)**: 독립 리뷰(2차)가 52.9의 원인 추정("`engrave/`가 한 세션에서 수십 번 연속 그린 뒤의 캐싱")을 직접 반증했다 — 완전히 새 페이지에서 사전 렌더 0번으로 같은 실패 사례를 재현해 바이트까지 동일한 결과를 보였다. **원인은 판각기 쪽이 아니라 이 테스트 도구 자신의 `ottava-views.js`의 `why()`/`rowOf8` 행-매칭 로직일 가능성이 높다**(리뷰의 결론) — 이번 라운드에선 더 시간을 안 쓰기로 함(명시적 지시). 이번에 직접 재확인하며 범위를 다시 잡았다: `--only` 없이 35개 파일 전체를 views on으로 돌리면 **"dashboard"만이 아니라 `whole`/`whole-phone`/`part`/`tablet`/`phone`/`review`/`old-part`에도 같은 증상 부류**("N 스텝/한 옥타브 다른 자리에 그려짐, 라벨 없음")가 특정 파일들에서 뜬다(czerny299/002·003의 `whole`/`part`/`tablet`, czerny849/011·022·024의 `part`/`phone`/`review`, czerny849/023의 `old-part` 등 — 정확한 목록은 세션 scratchpad 로그). **전부 이번 라운드(52.11) 변경 전후로 바이트까지 동일하게 재현됨을 `git stash`로 직접 확인** — `tempos`/`spanned()` 고침과 무관한, 52.9 시점부터 있던 기존 잔여다. 같은 증상 부류(위치·라벨 불일치이면서 판각기 자신의 1차 검사 — SVG bbox 직접 측정 — 는 전부 통과)라 리뷰가 지목한 test-tool 버그의 더 넓은 사례로 본다. **트래킹 백로그로 남긴다, 이번 라운드에서 안 고침** — non-goal 경계(engrave/ 자체가 아니라 이 도구의 자체 기하 재계산 로직)이자 코디네이터의 명시적 지시.
+
+**회귀 재확인**: `test:engrave` 201/201, `test:scoregraph` 216/216 — 새로 깨진 것 없음.
+
+전부 위 §52.9와 DECISIONS G4-R3(및 아래 §52.4의 `ottava-check.js` 행)에 반영했다.
+
+### 52.12 상태 (갱신)
+
+**READY_FOR_REVIEW (3차, 이번엔 전체 코퍼스로 확인).** §52.11의 고침 커밋을 추가해 `g4-legacy-removal`에 push. `ottava-check.js`의 "dashboard 등" 잔여는 (범위를 정직하게 넓혀) 트래킹 백로그로 남기고, 그 외 이번 라운드가 다룬 모든 항목(tempos·wedge/pedal 경계·순서 버그)은 362파일 × 2창 = 724건 전체 스윕으로 실패 0을 확인했다.
+
+### 52.13 Lead 재확인과 병합 (2026-09-27)
+
+이 변경은 프로젝트에서 가장 큰 단일 변경이자 되돌리기 스위치를 영구히 없애는 일이라, 독립 리뷰 두 번(§52.9, §52.11)과 별도 병렬 코퍼스 스캔(같은 62곡·같은 두 잔여 버그를 독립적으로 재확인)을 거친 뒤, Lead가 직접 새 `git clone`(`089d544`)에서 재확인했다: `test:engrave` 201/201, `test:scoregraph` 216/216. `openingBars()`의 최종 코드를 직접 읽어 확인 — `spanned()` 헬퍼가 span을 인덱스로 걸러 원래 순서를 지키고(3차 라운드가 스스로 잡은 순서 버그의 교훈이 주석으로 남아 있음), `tempos: mine(full.tempos)`가 반환 객체에 실제로 있음을 코드로 직접 봤다. 세 차례의 독립 검증(리뷰 2회 + 병렬 스캔)이 전부 같은 두 잔여 버그(tempos 미필터링, span 경계 orphan)로 수렴했고, 3차 라운드의 724건 전체 스윕(스팟체크 아님)이 이를 닫았다는 점에서 추가 리뷰 없이 이 재확인으로 충분하다고 판단했다.
+
+**병합**: PR #54, CI gate 초록, squash. **§25 3단계 CLOSED — G4 "Professional Engraving"이 완전히 끝났다.** `PPP.renderer` 스위치도, `?renderer=legacy`도, 옛 `draw()`/`buildVoice()`/`sync()`도 이제 없다. 유일한 되돌리기는 이전 배포로 롤백하는 것뿐이다.
+
+**다음**: 배포는 사용자에게 따로 확인. `ottava-check.js`의 test-tool 버그(§52.9, 렌더러 문제 아님)는 백로그로 남긴다.
+
+---
+
 ## 부록 A. 이 세션의 측정
 
 모두 `D:/PPP-g4`, `55d1bd5`, 작업 트리 clean. 스크립트는 세션 scratchpad에 있고 저장소에 쓰지 않았다 (측정 뒤 `git status` clean 확인). G4a·G4f가 같은 정의로 `tests/engrave/tools/`에 다시 만든다.

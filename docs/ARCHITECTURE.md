@@ -130,7 +130,7 @@ G4는 **S5의 렌더러 부분**이다: 렌더러가 legacy `Score` 대신 Score
 ```
 
 - VexFlow 4.2.3을 `vendor/`에 고정하고 glyph·음표 단위 formatter로만 쓴다. 간격·줄바꿈·충돌·곡선·페이지는 `engrave/`(UMD, 앱 파일 밖)가 소유한다 (G4-D1).
-- 화면의 기본 렌더러는 판각기다 (`PPP.renderer = 'engrave'`, G4f-2 flip — G04 §43, DECISIONS G4-F2-1; 병합·배포 전). 옛 렌더러는 되돌리기로 `?renderer=legacy`·localStorage `ppp.renderer = 'legacy'`·`PPP.renderer = 'legacy'` 뒤에 한 릴리스 남고, 그 뒤 제거한다 (§25.2 3단계). 축소 뷰(clef 없는 썸네일)는 옛 렌더러가 그린다 (G4-F2-2).
+- 화면의 유일한 렌더러는 판각기다 (G4f-2 flip으로 기본이 됨 — G04 §43, DECISIONS G4-F2-1 — 뒤 §25.2 3단계에서 옛 VexFlow 렌더러·`PPP.renderer` 스위치·CDN 로더를 완전히 제거 — G04 §52, DECISIONS G4-R3/G4-R4). 축소 뷰(clef 없는 홈 화면 썸네일, 빈 상태 장식 스태프)도 이제 같은 판각기로 그린다 — clef를 감추는 기능은 plan/layout에 없고(엔진 로직 변경은 이 제거의 범위 밖), 실측한 15개 파일 추가 로드 비용(수십 ms, 콘텐츠 해시로 영구 캐시)이 예전 VexFlow CDN 왕복보다 작았다(G4-R3). 엔진 로딩 실패나 드문 `SOURCE_DISAGREES` 같은 실제 판각 실패는 이제 대체 렌더러가 아니라 그 뷰 자신의 "그릴 수 없음" 표시로 끝난다(G4-R4; 화면이 비지 않는다는 원칙은 그대로).
 
 ## 3. 품질 측정의 자리
 
