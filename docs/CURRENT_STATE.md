@@ -439,3 +439,16 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
   shelf reopens from its slot). The G0 bench still models the old app reading — `ottava="app"`, known failure
   `octave_shift_playback`, C10/C11 notes, unit r20 — for MX-2's rebaseline (MX1-D7). Audiveris's encoding of a line is
   unchecked (no committed OMR output has one).
+
+### §25 stage 3 groundwork — the two real `fromScore` fallbacks (2026-09-27, branch `g4-legacy-removal`, not yet merged)
+
+Not a further G4 close-out — groundwork for legacy-renderer removal (§25.2 step 3), which needs the fallback counter at 0
+first. The Lead's survey (G04 §50) found 16 of 20 previously-reported fallbacks were stale local dev-DB residue from the
+already-fixed m2 bug, and two genuine, narrow cases: a root-less bass-only chord symbol (`/E`) that `legacy.fromScore`'s
+`chordFromText` silently dropped, and an unclosed pedal at the end of a piece whose count round-tripped wrong (`pedals.length`
+6 vs 5). Fixed on branch `g4-legacy-removal` (DECISIONS G4-R1, G4-R2; G04 §51), pending the Lead's re-check: `Direction`'s
+chord `root` is no longer required (a bass-only symbol is `chordKind:'none'` + `bass`, no root); `fromScore` now merges the
+duplicate `<pedal>`/`<sound *-pedal>` signal the app's own MusicXML reader writes for one pedal action, and `toScore` restores
+chronological order across overlapping pedal kinds. Both target tests (`pdf-layer.test.js`, `midi.test.js`) and every other
+browser suite now show `fallbacks none`; `test:scoregraph` 216/216, `test:engrave` 199/199 (A48 included), `legacy-parity`
+16/16, `a48-coverage.js` page gate PASS. The legacy renderer itself is untouched.
