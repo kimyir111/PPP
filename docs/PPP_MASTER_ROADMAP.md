@@ -584,6 +584,7 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 | TD11 | Arrangers have no quality metric and no hand-span check | G8/G9 baselines | G5 (baseline), G7b (invariants) |
 | TD12 | `Score.form` ignores D.S., D.C. and Fine; grace notes are not played | G4 draws jumps and graces the player ignores; G11a parity | G11a |
 | TD13 | Runtime CDN dependencies (React, Babel, pdf.js, tfjs, fonts) | Offline use, determinism | G13 |
+| TD14 | A latent `engrave/marks.js` tie-endpoint bug: `catalog/hymns/be-still-my-soul.musicxml`'s very last measure, the upper voice of a two-voice staff, draws its tie curve ~1.35 sp from the note it should meet (found by G5a's own `test:engrave` run, once MX-2 gave this file a real tie to draw for the first time — not a new regression from MX-2, a pre-existing engraver bug that no committed file happened to exercise before). Cosmetic only: no effect on notes, playback or any other file (confirmed: only this one file/measure/voice fails the full-corpus A17-A19/A23-A25 zero-target sweep). Low severity, not urgent | `test:engrave`'s full-corpus zero-target gate | Unscheduled — fix whenever `engrave/marks.js`'s `tieEnd` is next touched |
 
 ---
 
