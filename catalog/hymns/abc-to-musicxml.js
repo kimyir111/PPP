@@ -392,6 +392,36 @@ function toMusicXml(abcText, opts) {
     }
   });
 
+  // The tie pass above can force a note's alter to differ from the key signature's default (a tie
+  // crossing into a bar where the tied pitch isn't the default). The bar-carry pass ran before it,
+  // so it never saw that forced value - a later, non-explicit note of the same pitch letter+octave
+  // in a *different* voice on the same staff, later in that same bar, would otherwise wrongly fall
+  // back to the key-signature default instead of inheriting the tied-in pitch. Re-propagate forward,
+  // in onset order, seeding carry state from tie-stops the same way an explicit accidental would.
+  for (let mi = 0; mi < maxBars; mi++) {
+    [1, 2].forEach(st => {
+      const entries = [];
+      byStaff[st].forEach(name => {
+        let local = 0;
+        (parsed[name][mi] || []).forEach(group => {
+          if (!group.rest) group.pitches.forEach(p => entries.push({ onset: local, pitchRef: p }));
+          local += group.q;
+        });
+      });
+      entries.sort((a, b) => a.onset - b.onset);
+      const state = {};
+      entries.forEach(e => {
+        const p = e.pitchRef;
+        const key2 = p.step + '|' + p.octave;
+        if (p.explicit || p.tieStop) {
+          state[key2] = p.alter;
+        } else if (key2 in state) {
+          p.alter = state[key2];
+        }
+      });
+    });
+  }
+
   const DIV = 24;
   const qToDur = q => Math.max(1, Math.round(q * DIV));
   const barQ = (meter.beats * 4) / meter.beatType;
