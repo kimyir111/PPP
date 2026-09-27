@@ -36,68 +36,44 @@
    "sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/all-creatures",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 65 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/all-creatures.musicxml",
    "set": "hymns",
-   "sha256": "2fffb6da34955d50922c793dea1dd10edb58deeb78c2eefcb909f71c79ad7c3d"
+   "sha256": "ca6cb5d68043d16efecc6452f311f75eb04ea9153c23b02f639e149dd6ec2c4b"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/all-hail-the-power",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 15 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/all-hail-the-power.musicxml",
    "set": "hymns",
-   "sha256": "d9419f6f4505a204f2036f7626cb8b4369c6e6978c95c0c3f38c5936c862f65f"
+   "sha256": "5abd674a00eca0cf867d84317f9f5e931512363437bb63dbf37d1abef3760ea8"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/all-praise-to-thee",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 8 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/all-praise-to-thee.musicxml",
    "set": "hymns",
-   "sha256": "19e7a13281eee721c2869b34d43cad8588bad521fc64cb63ff67b454ad6deeb4"
+   "sha256": "957aa2b4f2a0336337391ceed4893b549962185b15d5e2db908b4ff881ff89c1"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": true,
    "id": "hymns/amazing-grace",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 3 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/amazing-grace.musicxml",
    "set": "hymns",
-   "sha256": "a573c63e44f81a2ebeaaaacf21c6e1321cded78d915eecd013a33fd4cdf04c3b"
+   "sha256": "f9eb5e1a06b56e46726b867dafeb333fdcf08b40f3d4056c5911d759f27aa107"
   },
   {
    "expect": {},
@@ -107,151 +83,97 @@
    "note": "",
    "path": "catalog/hymns/angels-from-the-realms.musicxml",
    "set": "hymns",
-   "sha256": "ad600d6df0722ae9d806517fef3ebcc4539a073fb913b9236d289d49ae5690a2"
+   "sha256": "ece5b7b0ad4292d1fb288957e7663d07e615ffa90d1c9e1b920418ae47cf594a"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/angels-we-have-heard",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 23 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/angels-we-have-heard.musicxml",
    "set": "hymns",
-   "sha256": "a1f7f7b9716fe7bcae7c3ca62626c857b26b17723418faf3f3925fd9c2fd5cc5"
+   "sha256": "50de0c6a744e8020ee85b7c9279e4bf87b57a5216a47921bfc4bba37a5af8212"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/as-with-gladness",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 15 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/as-with-gladness.musicxml",
    "set": "hymns",
-   "sha256": "bdeefd5078b622ff30765caf3eea23210922eea05988196cdf096e3d852fe4a2"
+   "sha256": "72f54a5bf44952e577b0a41d05368ff93ba4dcdb8afa55b64cae916a60a93470"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/away-in-a-manger",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 19 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/away-in-a-manger.musicxml",
    "set": "hymns",
-   "sha256": "78be8ff2d657ed97b310afe13ce418bd792b63b45917063505dbdf61c72cf837"
+   "sha256": "f18088cd2d855461f8bee56e4daa67ac4cfc96c8263ece0acf0894010a60e733"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/be-thou-my-vision",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 109 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/be-thou-my-vision.musicxml",
    "set": "hymns",
-   "sha256": "b343a76c8e9b8de834d8cc74e750fdf31a334f4db127b130eb97051037cbc61f"
+   "sha256": "c4ccbe23477404f85adc96236bd0ed925f7c4b87d0c98405bb8d6253de69026b"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/beautiful-savior",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 96 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/beautiful-savior.musicxml",
    "set": "hymns",
-   "sha256": "d1afac43c3f17cff197808bae287642cae71ff52a17f9b437517127038555ad4"
+   "sha256": "ac0ff5ce8721f82ebde7df49d29c7c96cab381444b00de185e1d633f48048a66"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/beneath-the-cross",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 183 notes on key-signature steps, 1% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/beneath-the-cross.musicxml",
    "set": "hymns",
-   "sha256": "4b52a862ad61b5069fc32b5238344d78776491a47975d2c0c6db4bc259cc12a6"
+   "sha256": "3ea56e55e7016a6ef41d06c1a9d6d1c6d487f9b176a08240d19481f84a589d22"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/blessed-assurance",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 52 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/blessed-assurance.musicxml",
    "set": "hymns",
-   "sha256": "78efa66a3f336be042b393d082cc68703900780c63106394a8f000cbf8a56a89"
+   "sha256": "fefacac57d9d359038c679d2683839b82e9150664d8c3e95e4424e25d1204814"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": true,
    "id": "hymns/blest-be-the-tie",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 15 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/blest-be-the-tie.musicxml",
    "set": "hymns",
-   "sha256": "6ac73de7aa0a46a4a8528fee422087d7d03aa988664c7d4077c6c68cc5a30460"
+   "sha256": "2fc3afd1b7a4319183a3facd5709acd4958159cf9c9f0d52af1f3e0d18be828b"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/breathe-on-me",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 52 notes on key-signature steps, 2% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/breathe-on-me.musicxml",
    "set": "hymns",
-   "sha256": "aef6e0ef315257c1d9124f5768fbb9adf54894fc57a8f824611f57953077b6dd"
+   "sha256": "50b28d78d0cd5ffd8592eef9471449b15519c2b77f7965af97caacd9c982e2b0"
   },
   {
    "expect": {},
@@ -264,52 +186,34 @@
    "sha256": "bf390fff2f43c8100d718cfb61635791fbcf1cddf44d686ed9e1e20db578f1fc"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/christ-the-lord-is-risen",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 26 notes on key-signature steps, 4% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/christ-the-lord-is-risen.musicxml",
    "set": "hymns",
-   "sha256": "a0919cdde8c8d8f9082c1d18b31e4be1fd0fadebeeb8e032b26768d2f72a6265"
+   "sha256": "e8ef5b8931b31cf77d401719f11a681a1e237021495c6f4fc4a8c9a81f77063b"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/come-holy-spirit",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 39 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/come-holy-spirit.musicxml",
    "set": "hymns",
-   "sha256": "89dac546b6d3a3c8ad33c4b31f33797692137be4867f53f89f3abc8a438a3024"
+   "sha256": "436dc2b0366e47f591cfa9fb53d219997c3624cad6db413f12232120c5fcad1f"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/come-thou-fount",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 162 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/come-thou-fount.musicxml",
    "set": "hymns",
-   "sha256": "12d1731332944adda7ce761732f43170462610ed47886e0cfaa67bfe578a8633"
+   "sha256": "dba85c5feda981d5d505f83bbc295b947378939e0abbb2e236b0f6b7469754eb"
   },
   {
    "expect": {},
@@ -332,148 +236,94 @@
    "sha256": "d87cc263ea8736f5c90264d0382a0b621b817df14449810b4923a20a0cab269f"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/crown-him",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 42 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/crown-him.musicxml",
    "set": "hymns",
-   "sha256": "b61da9807fc2009920328638b6d3c54368f6d25a007728050d483e2c0dab6cd6"
+   "sha256": "5ce0262f374510236c633c2c17031c51343dc716b0a059c3c9b284d68ac5cffa"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": true,
    "id": "hymns/faith-of-our-fathers",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 12 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/faith-of-our-fathers.musicxml",
    "set": "hymns",
-   "sha256": "aaf57c10b4a1cc5c7cff532c34adb9e43cfc7ce9b4b4e8064db2e3779ec49bc2"
+   "sha256": "f791380f1f171cb94fb92688bb362e8fcb6ee379d605c9e95e363a4bba96e86d"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": true,
    "id": "hymns/first-noel",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 63 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/first-noel.musicxml",
    "set": "hymns",
-   "sha256": "a748ae94c71355361c248ad82694a4d7e70dc6aff999973fdcd4f0901d5fe22c"
+   "sha256": "c555332a379a43c9f0696c7c6df0e5c4f418aa588cb9e94305aa59c4f1855c0c"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/for-the-beauty",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 15 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/for-the-beauty.musicxml",
    "set": "hymns",
-   "sha256": "38e7cdae44358cacf84148646f22b16208c015f5a439931acd7cce136c705f4c"
+   "sha256": "f76eaec5276c805921a217c9bd3b7abad9497d791f1d16fbd2480beb972f02dd"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/glorious-things",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 33 notes on key-signature steps, 3% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/glorious-things.musicxml",
    "set": "hymns",
-   "sha256": "fba79272c5691c88691866295665fde4df5dab6921d4fc451b9a15602e8e40e4"
+   "sha256": "1e3137a4378bf391abb01d9ce10fe43de384da42f126e128093f25ac3f0251eb"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/go-to-dark-gethsemane",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 104 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/go-to-dark-gethsemane.musicxml",
    "set": "hymns",
-   "sha256": "228d6faf7d24db74915ba0cc28d71aed6b462ff558428b9d46fa97419c9dd4e7"
+   "sha256": "77a678a4488c5f9878ae3e0a8685a371f3be63b28271bf03dd80b1c0f825d06a"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/god-rest-ye-merry",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 23 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/god-rest-ye-merry.musicxml",
    "set": "hymns",
-   "sha256": "25b6d11c1ab98ca13cb2e3be4b1efad503a67c26e42486b33a9a440cf5cbefb3"
+   "sha256": "55456218b523d3dbf8c6a0491920e3e750e3d1c5b06b5f4e1a7656ac865cbeea"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/god-will-take-care",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 90 notes on key-signature steps, 2% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/god-will-take-care.musicxml",
    "set": "hymns",
-   "sha256": "3de7bc3ee24ccac0cb5de02af06d415985833b30f702e50c746b51e26930438f"
+   "sha256": "cff1016e6d83b88665582d52617471f97d9636e01510518d4e73546d990f0c28"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": true,
    "id": "hymns/guide-me",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 16 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/guide-me.musicxml",
    "set": "hymns",
-   "sha256": "6ec21df301fb840a745f56e01e5d266a025a38155c44981ef42068887756be39"
+   "sha256": "be29d5461412f31733f3581173bed90e41f4014ddb3bc9c3ce70523a2e13ee63"
   },
   {
    "expect": {},
@@ -486,132 +336,84 @@
    "sha256": "8e5b81082ae01f012a56132283eb54afaf11e14a3d54e89e7b895ec7b19245d3"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/hark-the-herald",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 34 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/hark-the-herald.musicxml",
    "set": "hymns",
-   "sha256": "07eae7708ce235886a2eb87bdef320910b63c256250832a492eb4895df1cc236"
+   "sha256": "499be8058c12f568f3e66ee8ad82c7e8c8622d5804740018d46cfd7cdd84e616"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/hark-the-voice",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 19 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/hark-the-voice.musicxml",
    "set": "hymns",
-   "sha256": "641f1a9f81aa046025eee2b98e8cd6bf7782e875bf2c8321de119bf40378643c"
+   "sha256": "2109a0e1a9120f0451f8ba4dfaaf09e0963a65afb72a8137b440628868163cff"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": true,
    "id": "hymns/he-leadeth-me",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 60 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/he-leadeth-me.musicxml",
    "set": "hymns",
-   "sha256": "a9321528f7731f0398f95b0eaf4274572218dee3dd52506757faa45da8ae9c63"
+   "sha256": "ea31576e0879633c4d41ef7335751d4768475e6f6204bf0880902695592fedaf"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": true,
    "id": "hymns/holy-god-we-praise",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 19 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/holy-god-we-praise.musicxml",
    "set": "hymns",
-   "sha256": "8a9daddfe2467971157bd5306e3f65a7fcb9a7336b5510303f0e8fa92d858897"
+   "sha256": "94b758d6cf677cb27bdb143321e568c40947e22b8ac180b7af6cef779f6caa18"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/holy-holy-holy",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 43 notes on key-signature steps, 2% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/holy-holy-holy.musicxml",
    "set": "hymns",
-   "sha256": "c50d6ba77fc80e38684f02f19b08646b87b5e3d1204b6fb6fe8e14369863dc9d"
+   "sha256": "caf89c6e8a4a8075d11601d48413f8f2780896269e1c95996bad8be98cb329f6"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/hosanna-loud",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 86 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/hosanna-loud.musicxml",
    "set": "hymns",
-   "sha256": "8a6dd5810eae43e8e48bc882055f7b22176fcc6a0ea4f31df998e133a852689c"
+   "sha256": "71edb6300f1d791e5416029e7011b5420af526832ccfa6a382bc69d56a7a0888"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/how-firm-a-foundation",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 132 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/how-firm-a-foundation.musicxml",
    "set": "hymns",
-   "sha256": "e0d7391b14226669dbfed9ac6dce4293308ae2ad79920158748bcaafe9dfdbc2"
+   "sha256": "dbdb9244e5287c8de5772e2a27bd3c1c9dee8ef02f0ed8927cbd674484e2cb04"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/hyfrydol-alleluia",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 29 notes on key-signature steps, 3% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/hyfrydol-alleluia.musicxml",
    "set": "hymns",
-   "sha256": "dcd6d510f1bf3eb34d7c50c3fbb6992b479f467b8e037f677ba60c9b08e2f3e9"
+   "sha256": "bc7ad064aeb38ce0ca92f798602a02dd1ffe749ce85a3edce5a500a769ea6d1a"
   },
   {
    "expect": {},
@@ -624,68 +426,44 @@
    "sha256": "e87397d0c527491e747e3e24d78ce2921db44a140c20de9fd045279c70a6e26f"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/i-know-that-my-redeemer",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 34 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/i-know-that-my-redeemer.musicxml",
    "set": "hymns",
-   "sha256": "ff19bea5df2e4c4a94a30645efd247e34d13ddaed8d2805788a31806291e556e"
+   "sha256": "7628017376b099d8ed260f0ec35fa600e6f57186c831f71197e71cd48b09ab41"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/i-know-whom",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 186 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/i-know-whom.musicxml",
    "set": "hymns",
-   "sha256": "41521cf8a2621e5cd7c0db4ae971e9bb10326efe09955006bbbf3ef446efe587"
+   "sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/immortal-invisible",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 12 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/immortal-invisible.musicxml",
    "set": "hymns",
-   "sha256": "60ee63c8fa138b7063f9a96eec0dce19e2f1516cf17d4c4b8f7755b827023b33"
+   "sha256": "e316e0fa2db60671990b012e50c5789e489f18ae9507bbaee9c4687cb595abc9"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/it-is-well",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 176 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/it-is-well.musicxml",
    "set": "hymns",
-   "sha256": "8eb5f47ffd53c00d86562a7170fb88e8443584abcc97fdb46c68c39e36786f87"
+   "sha256": "8e98bf8cf64d77adefb0271b6527156d5b083480f03d5d3283e8c537c834dfb8"
   },
   {
    "expect": {},
@@ -698,180 +476,114 @@
    "sha256": "44afb25e658c94de6af37fea078462789f695a3410731f92e26eb3e3d51355ab"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/jesus-is-all-the-world",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 171 notes on key-signature steps, 2% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/jesus-is-all-the-world.musicxml",
    "set": "hymns",
-   "sha256": "6b3f2c33e9dcf138bbede86ede158c1bdf4a2e57a4813bb0b09681a978642320"
+   "sha256": "2d9e65219ee6e351ab477e61c20bb3d8f32e5f22fe89111deb410d109b89654e"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/jesus-loves-me",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 130 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/jesus-loves-me.musicxml",
    "set": "hymns",
-   "sha256": "bfedf2d008c1452f3ee08b813408a86d4a98011a73054c782b415edba137259f"
+   "sha256": "d702051f41390e93314935430cd06fad54e4dd83e0a24ed9fc2efebfe6090fbc"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/jesus-shall-reign",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 99 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/jesus-shall-reign.musicxml",
    "set": "hymns",
-   "sha256": "4d2ea8f3393c7fac7f516d1dd7b1c01ff2ae58b684324f3ba68109a537aed6ce"
+   "sha256": "af69d4c2692a0ac2b45feb60bc1d66808529f31ec9cf40ea9962909592dcaff6"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/joy-to-the-world",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 43 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/joy-to-the-world.musicxml",
    "set": "hymns",
-   "sha256": "aa73fc44da36da6f6ec01cdcd1f7425e4059469d1df524c2ceffa471d51525b1"
+   "sha256": "c30b56e3025a9d99847192abf3f12fcad7db296f58895d60c18213553937596d"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/joyful-joyful",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 21 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/joyful-joyful.musicxml",
    "set": "hymns",
-   "sha256": "41df4924c5cf298c032543cccab0a4b3f70e3875667722e96b8d8e47a74756f2"
+   "sha256": "a59548c46970464ece547be3f19f569e5ec4da18861d7fba423388d6463ad56a"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/lamp-of-our-feet",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 7 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/lamp-of-our-feet.musicxml",
    "set": "hymns",
-   "sha256": "70779ec9a745a99e555b4acf9d311eaeaf07758f32087e24bfbe7a289ced2c7c"
+   "sha256": "f94b9350077a829bfba6d6f2cd3b4102ef9fdedefd7e40472556ead8d0512c58"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": true,
    "id": "hymns/let-all-mortal-flesh",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 10 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/let-all-mortal-flesh.musicxml",
    "set": "hymns",
-   "sha256": "4d1c090c5b6a69ffaca8201a35df4737e51447e4522e8d4217cd97286530e770"
+   "sha256": "ee6f8647f2fcc880c2b72da23367cd38b42a03f0edc19f5d7ead55bbd1a64cd1"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/lo-he-comes",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 29 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/lo-he-comes.musicxml",
    "set": "hymns",
-   "sha256": "0cd408fee4aa8293ba8e1392f610d1a0835d2293dde32dc981dede3291747931"
+   "sha256": "95bf92686a6dd2c4b6e25956c8605be22d220583ece3ad0be0587f7c02c94e48"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/midnight-clear",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 87 notes on key-signature steps, 1% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/midnight-clear.musicxml",
    "set": "hymns",
-   "sha256": "3d4a1402440a5c141e5abddc4e678a1e70665b5599cb4e66c2c5a0a7f9f0d12f"
+   "sha256": "c91335e8443360d45b4808c880da11b080244c8401929ead4becbdc19a1b50d6"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/more-love-to-thee",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 123 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/more-love-to-thee.musicxml",
    "set": "hymns",
-   "sha256": "280ad71cfa177f8fdb920f65bdd0619605d597f42826926d11547a6889a1e472"
+   "sha256": "5627e432f279fd3ac2f2831d320ff31587569ad8549ebaad261c05dc9985126f"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/my-faith-looks-up",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 34 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/my-faith-looks-up.musicxml",
    "set": "hymns",
-   "sha256": "1e0a55ee3b64116c94ee11dd230329401cae5dc913e3e825dd3e4f8a3780479d"
+   "sha256": "958c18d875237ea25c3ea0b499b1de6c8b4e55d1038d1ab2650e4cbb3ff5546b"
   },
   {
    "expect": {},
@@ -881,135 +593,87 @@
    "note": "",
    "path": "catalog/hymns/my-hope-is-built.musicxml",
    "set": "hymns",
-   "sha256": "bad1d533aa640976909217efbb8e93fcd09ea1d61f4119262259751910715c5a"
+   "sha256": "04e2f4612dcaa97964d4c15fa0acdc37df59af4d3bdb889fa73d4f2686fc46ce"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/my-saviors-love",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 198 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/my-saviors-love.musicxml",
    "set": "hymns",
-   "sha256": "7d5b64c9baf4b3c63c526981e8032ac29cb392e06fe3a8210de06315c4c45d2f"
+   "sha256": "1705a8c1f423a90884ccb4834f17b17f45b494a80e6af588f9ab377fa2df46bc"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/nearer-my-god",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 9 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/nearer-my-god.musicxml",
    "set": "hymns",
-   "sha256": "3cce59ade3d4038c83289fae2f5a97a5051e57ef4395719da2dafe08672b7506"
+   "sha256": "7ec99f24f09e486fa5c14af5ddb62cfee8c94f8622b54bf94bf29073f90e274c"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/no-not-one",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 21 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/no-not-one.musicxml",
    "set": "hymns",
-   "sha256": "e93aad86c0f08d1b56b24db05135182f5c098707ee393eb9af240ae54c1ed78c"
+   "sha256": "8341c37ebe79e140849bef5a6e4db9d3d2e50291074c3a9d36c1e50d6aa6601c"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/o-come-all-ye-faithful",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 25 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/o-come-all-ye-faithful.musicxml",
    "set": "hymns",
-   "sha256": "3ecec21951cc8ab6eb7518ca1af05beceabbbf97cbda5e40372dc7b3bacee5e6"
+   "sha256": "a613ba68b2f4911aeebd63e661867c8653c2da687353c02d12de92e0722c4562"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/o-come-emmanuel",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 18 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/o-come-emmanuel.musicxml",
    "set": "hymns",
-   "sha256": "448f41eee308474eafebedfd1937d8989a9047bf78f9d36c56df8446fb074aee"
+   "sha256": "6c3bb71e6038582a5286e18ce70758f4f970fe71ea848265cceeff82604a5988"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": true,
    "id": "hymns/o-for-a-thousand",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 85 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/o-for-a-thousand.musicxml",
    "set": "hymns",
-   "sha256": "45764b6ec194f23814776a5903c7e9bb84f7da2eb23e7d4a3cd5622ef163b129"
+   "sha256": "49d7385d0ceb14cd589b1f6f4940928325b8c456fb938d092fb98d6ef278690a"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/o-holy-spirit-enter",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 167 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/o-holy-spirit-enter.musicxml",
    "set": "hymns",
-   "sha256": "522049faa0b4d69133d4289cad9b252235f276dd6c07754c22775a1ee012a6c6"
+   "sha256": "43b0b9b78e0c04e2c376be680eae41c2ec799703fd09273e9c4bebce40f2ecdc"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": true,
    "id": "hymns/o-little-town",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 28 notes on key-signature steps, 4% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/o-little-town.musicxml",
    "set": "hymns",
-   "sha256": "b472ffd596fa606f3220f3ebc5d0ba7a09d62acb317de4d15be6c3f82cad3d14"
+   "sha256": "0d839ecc083ecccd752690848f1ae7f94d77d707eb256d1fb9c1a74f2af6cbff"
   },
   {
    "expect": {},
@@ -1032,356 +696,224 @@
    "sha256": "3777b3e0c6e93199efea8545de02f647b6b83ccc8a491660043e0aa852512286"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/pass-me-not",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 149 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/pass-me-not.musicxml",
    "set": "hymns",
-   "sha256": "0629deb823d635421c8744e4e73eac084a4066603c7f6675559de086cf5a0363"
+   "sha256": "2d02a60484f009e6842d1c52f3e9dfe0e845f0b437e68a51c9ad1b20c7fa8b12"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": true,
    "id": "hymns/praise-my-soul",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 100 notes on key-signature steps, 1% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/praise-my-soul.musicxml",
    "set": "hymns",
-   "sha256": "652ebbe7513fb5d3e7939854332922e7c8e3edb9dd693c423c7e06c4d7a14ff1"
+   "sha256": "51380e38bada3bb20195a2007d4cc3c5f285c99d6581f859fb89e15d9149aed4"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": true,
    "id": "hymns/praise-to-the-lord",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 22 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/praise-to-the-lord.musicxml",
    "set": "hymns",
-   "sha256": "85e7fefe923ff6978a636015fa7fce9eae7d0e34d8902dcf65bae4e65e32a999"
+   "sha256": "fa23c5109d4d29487fca4c362812950539baa76e9d3738a07582141869b7ada1"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/rescue-the-perishing",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 105 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/rescue-the-perishing.musicxml",
    "set": "hymns",
-   "sha256": "6f2ff4d275c3951a07e30d636e0b62da9f7c0e90d303ec3dc351cf1f47c68e81"
+   "sha256": "6ce430f11945c9800ad7e7d97ce991b32a1066f9da9c980a271cad68c9798f27"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/rock-of-ages",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 65 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/rock-of-ages.musicxml",
    "set": "hymns",
-   "sha256": "526c53604b5d2d3bf027c5a0abd20faa46be31b1c83be4e3519452bb6d15f39b"
+   "sha256": "5a8ca789dbc7242c46f56ec730507b8bb6f127a75ec4de69df9a0c4dcb251c59"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/savior-like-a-shepherd",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 176 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/savior-like-a-shepherd.musicxml",
    "set": "hymns",
-   "sha256": "e271457d73c1965549fdf4f45508b068a586c5c890fb96141b6fbcc82f08f79c"
+   "sha256": "54f3253b68b43a02f451bf84afc169fbc4fb0c1b57aec9ff00c6d030c3537302"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/silent-night",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 81 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/silent-night.musicxml",
    "set": "hymns",
-   "sha256": "82d6a3d6953b98ebe0e1d93bdfcd0590a82c4f502cd235444eb6388c92240d84"
+   "sha256": "43029b1b6d8e1282a4c23339516b591f8e80c822714680e65f0e61fe8060d570"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/stricken-smitten",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 56 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/stricken-smitten.musicxml",
    "set": "hymns",
-   "sha256": "2da7ec9861975cb0044f3ea28bea79adf4b4976e4e9a3fb71b416a1a147f1a0d"
+   "sha256": "19ba4b06e14ec65fc48ce42b2c27684e61103f69246598c401672e8d9466f273"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/take-my-life",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 16 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/take-my-life.musicxml",
    "set": "hymns",
-   "sha256": "2d314b524c6effa9092e0477036b2e1aa57a693be9fd52b0ca0134f695581850"
+   "sha256": "0bee9653ca9516ac08720df7ec4593392599c02673f93bcf1e707dee8d5fe4e5"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": true,
    "id": "hymns/take-up-thy-cross",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 11 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/take-up-thy-cross.musicxml",
    "set": "hymns",
-   "sha256": "48db5c2d3ca911dfcd654bc46d08c1b979c9bc20b34933286bd2e690f1c41d20"
+   "sha256": "e54b1271c8653b7a1e506c90d82d1ded3bbfe61a2b3b935f9e3e2bf01fb7e75f"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/the-churchs-one-foundation",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 43 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/the-churchs-one-foundation.musicxml",
    "set": "hymns",
-   "sha256": "7bf265a97e864287f3dfe06e2a3b5d39283b7466ecff812207505f1600776369"
+   "sha256": "4845a251a83141522b72e2167da1b7e5b9b74f31972585e4999ad8d9ce4406e9"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/the-lords-my-shepherd",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 44 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/the-lords-my-shepherd.musicxml",
    "set": "hymns",
-   "sha256": "eddf4dfe146c746c8f1c7eb53229931550a0529af367ba121958d74cff349f4f"
+   "sha256": "8aafd7bf3bbb87b90c02499c8a28755b658e3b0ec77a6f3682ed49eee460e769"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": true,
    "id": "hymns/the-love-of-god",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 303 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/the-love-of-god.musicxml",
    "set": "hymns",
-   "sha256": "25e5d3f4789472cff2c6ed45d2e505a1acab3f20ea3109fe5140f3eb076ef84e"
+   "sha256": "e5e4e160bcb2b5ca4aaf722ca7562b7162370f0999c7057a4bbc284d7effdeeb"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": true,
    "id": "hymns/the-old-rugged-cross",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 162 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/the-old-rugged-cross.musicxml",
    "set": "hymns",
-   "sha256": "f9bbb02734ea9a95d1416fcb2801f72bbdf6b7ccefe1d43ba2b991780ffeb486"
+   "sha256": "22159a6d18a2cb09832235f2fb7ae6c37fe193a3f189653cd948d18d074afa92"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/to-god-be-the-glory",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 273 notes on key-signature steps, 1% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/to-god-be-the-glory.musicxml",
    "set": "hymns",
-   "sha256": "d829c95f5b21ea0e6d172b74cc45ec984357ae2406100a3c070ffea35f416cb3"
+   "sha256": "4933985e57546f4b5051906060c5bcb95ca137d153fc8fbf78f37ddde9b03ac3"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/under-his-wings",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 237 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/under-his-wings.musicxml",
    "set": "hymns",
-   "sha256": "6c85edfa576a5a51fa2093a619ede5654a399a9ab21123e9ff5f420467b01405"
+   "sha256": "412192c62e5e19d242faae2b310c0fe1735c06bbb5b990584eba18b7a5e08992"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/we-gather-together",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 38 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/we-gather-together.musicxml",
    "set": "hymns",
-   "sha256": "3b4c372d3f5bb03e67873976aa3b1a672f00f58bdea4994a68bb7cbf77d9e51f"
+   "sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": true,
    "id": "hymns/what-a-friend",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 23 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/what-a-friend.musicxml",
    "set": "hymns",
-   "sha256": "48c23c9a38e0d51e2abcaf9c426a9ea812a39834334ab37906f902e033b4c5ea"
+   "sha256": "3b605334f460a13651d94a3eb85f498106eb224f936e8ec6b286b50d805a9c09"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/what-child-is-this",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 38 notes on key-signature steps, 5% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/what-child-is-this.musicxml",
    "set": "hymns",
-   "sha256": "76931b6d3836e44a45ca17cbddaef33874bff55bdd097189f749b06d1432fcbc"
+   "sha256": "c384d096a44416fc83b206c52815942f27de411d858a2a2bdaa1c398e98f49c0"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/when-i-survey",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 10 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/when-i-survey.musicxml",
    "set": "hymns",
-   "sha256": "39ce6a8b9a59b0023eb658191ef0991dae31502984c9e7031a274d35abf4b958"
+   "sha256": "337c6e049ed96c87bc61cf88c48a4413b61a2a6338f15b1fc9e7a65d54e22357"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": false,
    "id": "hymns/when-the-roll",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 288 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/when-the-roll.musicxml",
    "set": "hymns",
-   "sha256": "6ce01ac635b597eb6bc6cf38742615a896d6cd38e7a61d1b1a7afda79e202007"
+   "sha256": "444b9923888efe1973db9c9cf2146e8203a4d9b7069032064eac2103ff6ff02a"
   },
   {
-   "expect": {
-    "skip_metrics": [
-     "struct.key.fifths_exact",
-     "struct.key.mirex",
-     "notation.spelling.accuracy"
-    ]
-   },
+   "expect": {},
    "holdout": true,
    "id": "hymns/where-he-leads-me",
    "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
-   "note": "Data defect: 28 notes on key-signature steps, 0% carry the signature's alter, so PPP plays them unaltered. Key and spelling metrics are skipped; rhythm, metre and hands still count.",
+   "note": "",
    "path": "catalog/hymns/where-he-leads-me.musicxml",
    "set": "hymns",
-   "sha256": "76d4887221b320dafed1266f62019305d976d8f9f3e189c41175d9542450aa71"
+   "sha256": "795f5cbaf887abef7f0157ccee4cd6b14aee7e86e25f0c7eeafe2c7d11b85fb3"
   },
   {
    "book": "beyer",

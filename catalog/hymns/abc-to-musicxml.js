@@ -7,6 +7,21 @@ const KEY_FIFTHS = {
   F: -1, Bb: -2, Eb: -3, Ab: -4, Db: -5, Gb: -6, Cb: -7
 };
 
+// Key signature -> default alteration per pitch letter, same table as
+// tests/bench/pppbench/metrics/readability.py `signature_alters`.
+const SHARP_ORDER = 'FCGDAEB';
+
+function signatureAlters(fifths) {
+  const alters = { C: 0, D: 0, E: 0, F: 0, G: 0, A: 0, B: 0 };
+  if (fifths > 0) {
+    for (let i = 0; i < fifths && i < SHARP_ORDER.length; i++) alters[SHARP_ORDER[i]] = 1;
+  } else if (fifths < 0) {
+    const order = SHARP_ORDER.split('').reverse();
+    for (let i = 0; i < -fifths && i < order.length; i++) alters[order[i]] = -1;
+  }
+  return alters;
+}
+
 function xmlEsc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;'
@@ -142,7 +157,7 @@ function parseNoteGroup(s, i, defQ) {
       i = p.i;
       const ln = parseLength(s, i, defQ);
       i = ln.i;
-      pitches.push({ step: p.step, octave: p.octave, alter: p.alter, q: ln.q });
+      pitches.push({ step: p.step, octave: p.octave, alter: p.alter, explicit: p.alter !== null, q: ln.q });
     }
     if (s[i] === ']') i++;
     const outer = parseLength(s, i, null);
@@ -156,7 +171,7 @@ function parseNoteGroup(s, i, defQ) {
     i = p.i;
     const ln = parseLength(s, i, defQ);
     i = ln.i;
-    pitches.push({ step: p.step, octave: p.octave, alter: p.alter, q: ln.q });
+    pitches.push({ step: p.step, octave: p.octave, alter: p.alter, explicit: p.alter !== null, q: ln.q });
   }
   let tie = false;
   i = skipSpace(s, i);
@@ -304,10 +319,6 @@ function toMusicXml(abcText, opts) {
   });
   if (!maxBars) throw new Error('no measures');
 
-  const DIV = 24;
-  const qToDur = q => Math.max(1, Math.round(q * DIV));
-  const barQ = (meter.beats * 4) / meter.beatType;
-
   const byStaff = { 1: [], 2: [] };
   names.forEach(n => {
     const st = staffOf(n, names);
@@ -315,6 +326,105 @@ function toMusicXml(abcText, opts) {
   });
   if (!byStaff[1].length) byStaff[1] = names.slice(0, 1);
   if (!byStaff[2].length) byStaff[2] = names.slice(-1);
+
+  // Apply the key signature's default alteration to notes with no explicit ABC accidental, and
+  // carry an explicit accidental for the rest of its bar (same pitch letter+octave, same staff,
+  // across every voice on that staff) - the fix for key_signature_playback and
+  // bar_accidental_not_carried (docs/PPP_MASTER_ROADMAP.md MX-2).
+  const sig = signatureAlters(key.fifths);
+  for (let mi = 0; mi < maxBars; mi++) {
+    [1, 2].forEach(st => {
+      const entries = [];
+      byStaff[st].forEach(name => {
+        let local = 0;
+        (parsed[name][mi] || []).forEach(group => {
+          if (!group.rest) {
+            group.pitches.forEach(p => entries.push({ onset: local, step: p.step, octave: p.octave, pitchRef: p }));
+          }
+          local += group.q;
+        });
+      });
+      entries.sort((a, b) => a.onset - b.onset);
+      const state = {};
+      entries.forEach(e => {
+        const key2 = e.step + '|' + e.octave;
+        let finalAlter, printAccidental;
+        if (e.pitchRef.explicit) {
+          finalAlter = e.pitchRef.alter;
+          printAccidental = true;
+          state[key2] = finalAlter;
+        } else if (key2 in state) {
+          finalAlter = state[key2];
+          printAccidental = false;
+        } else {
+          finalAlter = sig[e.step] || 0;
+          printAccidental = false;
+        }
+        e.pitchRef.alter = finalAlter;
+        e.pitchRef.printAccidental = printAccidental;
+      });
+    });
+  }
+
+  // Write a matching tie stop (sounding <tie> and printed <notations><tied>) on the note that
+  // continues a tie: the next note-group of the same voice, matched pitch by pitch letter+octave -
+  // the fix for tie_without_stop. A tied note must sound the same pitch as the note it continues,
+  // so its alter is forced to match (overriding the key-signature/carry pass above) and it prints
+  // no accidental of its own.
+  names.forEach(name => {
+    let pending = null;
+    for (let mi = 0; mi < maxBars; mi++) {
+      (parsed[name][mi] || []).forEach(group => {
+        if (group.rest) { pending = null; return; }
+        if (pending && pending.length) {
+          group.pitches.forEach(p => {
+            const match = pending.find(pp => !pp.used && pp.step === p.step && pp.octave === p.octave);
+            if (match) {
+              match.used = true;
+              p.tieStop = true;
+              p.alter = match.pitchRef.alter;
+              p.printAccidental = false;
+            }
+          });
+        }
+        pending = group.tie ? group.pitches.map(p => ({ step: p.step, octave: p.octave, pitchRef: p, used: false })) : null;
+      });
+    }
+  });
+
+  // The tie pass above can force a note's alter to differ from the key signature's default (a tie
+  // crossing into a bar where the tied pitch isn't the default). The bar-carry pass ran before it,
+  // so it never saw that forced value - a later, non-explicit note of the same pitch letter+octave
+  // in a *different* voice on the same staff, later in that same bar, would otherwise wrongly fall
+  // back to the key-signature default instead of inheriting the tied-in pitch. Re-propagate forward,
+  // in onset order, seeding carry state from tie-stops the same way an explicit accidental would.
+  for (let mi = 0; mi < maxBars; mi++) {
+    [1, 2].forEach(st => {
+      const entries = [];
+      byStaff[st].forEach(name => {
+        let local = 0;
+        (parsed[name][mi] || []).forEach(group => {
+          if (!group.rest) group.pitches.forEach(p => entries.push({ onset: local, pitchRef: p }));
+          local += group.q;
+        });
+      });
+      entries.sort((a, b) => a.onset - b.onset);
+      const state = {};
+      entries.forEach(e => {
+        const p = e.pitchRef;
+        const key2 = p.step + '|' + p.octave;
+        if (p.explicit || p.tieStop) {
+          state[key2] = p.alter;
+        } else if (key2 in state) {
+          p.alter = state[key2];
+        }
+      });
+    });
+  }
+
+  const DIV = 24;
+  const qToDur = q => Math.max(1, Math.round(q * DIV));
+  const barQ = (meter.beats * 4) / meter.beatType;
 
   function emitNote(n, staff, voice, chord) {
     const td = typeDots(n.q);
@@ -326,19 +436,22 @@ function toMusicXml(abcText, opts) {
         + '<staff>' + staff + '</staff></note>';
     }
     return n.pitches.map((p, pi) => {
-      const acc = p.alter == null ? '' : (
+      const acc = !p.printAccidental ? '' : (
         p.alter === 1 ? '<accidental>sharp</accidental>'
         : p.alter === 2 ? '<accidental>double-sharp</accidental>'
         : p.alter === -1 ? '<accidental>flat</accidental>'
         : p.alter === -2 ? '<accidental>flat-flat</accidental>'
         : '<accidental>natural</accidental>'
       );
-      const alter = p.alter == null ? '' : '<alter>' + p.alter + '</alter>';
-      const tie = n.tie ? '<tie type="start"/>' : '';
-      const notations = n.tie ? '<notations><tied type="start"/></notations>' : '';
+      const alter = p.alter ? '<alter>' + p.alter + '</alter>' : '';
+      const tieStop = p.tieStop ? '<tie type="stop"/>' : '';
+      const tieStart = n.tie ? '<tie type="start"/>' : '';
+      const tiedStop = p.tieStop ? '<tied type="stop"/>' : '';
+      const tiedStart = n.tie ? '<tied type="start"/>' : '';
+      const notations = (tiedStop || tiedStart) ? '<notations>' + tiedStop + tiedStart + '</notations>' : '';
       return '<note>' + ((chord || pi > 0) ? '<chord/>' : '')
         + '<pitch><step>' + p.step + '</step>' + alter + '<octave>' + p.octave + '</octave></pitch>'
-        + '<duration>' + dur + '</duration>' + tie
+        + '<duration>' + dur + '</duration>' + tieStop + tieStart
         + '<voice>' + voice + '</voice><type>' + td.type + '</type>'
         + (td.dots ? '<dot/>'.repeat(td.dots) : '') + acc
         + '<staff>' + staff + '</staff>' + notations + '</note>';
@@ -396,4 +509,4 @@ function toMusicXml(abcText, opts) {
   return xml;
 }
 
-module.exports = { toMusicXml, parseKey, parseMeter, collectVoices, parseVoiceMeasures };
+module.exports = { toMusicXml, parseKey, parseMeter, collectVoices, parseVoiceMeasures, signatureAlters };

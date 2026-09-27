@@ -35,12 +35,12 @@
     </measure>
     <measure number="3">
       <note><pitch><step>A</step><octave>4</octave></pitch><duration>24</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
-      <note><pitch><step>F</step><octave>4</octave></pitch><duration>24</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+      <note><pitch><step>F</step><alter>1</alter><octave>4</octave></pitch><duration>24</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
       <note><pitch><step>A</step><octave>4</octave></pitch><duration>24</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
       <backup><duration>72</duration></backup>
-      <note><pitch><step>F</step><octave>4</octave></pitch><duration>24</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>
+      <note><pitch><step>F</step><alter>1</alter><octave>4</octave></pitch><duration>24</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>
       <note><pitch><step>D</step><octave>4</octave></pitch><duration>24</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>
-      <note><pitch><step>F</step><octave>4</octave></pitch><duration>24</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>
+      <note><pitch><step>F</step><alter>1</alter><octave>4</octave></pitch><duration>24</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>
       <backup><duration>72</duration></backup>
       <note><pitch><step>D</step><octave>3</octave></pitch><duration>48</duration><voice>5</voice><type>half</type><staff>2</staff></note>
       <note><pitch><step>D</step><octave>3</octave></pitch><duration>24</duration><voice>5</voice><type>quarter</type><staff>2</staff></note>
@@ -77,7 +77,7 @@
       <backup><duration>72</duration></backup>
       <note><pitch><step>C</step><octave>3</octave></pitch><duration>48</duration><voice>6</voice><type>half</type><staff>2</staff></note>
       <note><pitch><step>E</step><octave>2</octave></pitch><duration>12</duration><voice>6</voice><type>eighth</type><staff>2</staff></note>
-      <note><pitch><step>F</step><octave>2</octave></pitch><duration>12</duration><voice>6</voice><type>eighth</type><staff>2</staff></note>
+      <note><pitch><step>F</step><alter>1</alter><octave>2</octave></pitch><duration>12</duration><voice>6</voice><type>eighth</type><staff>2</staff></note>
     </measure>
     <measure number="6">
       <note><pitch><step>G</step><octave>4</octave></pitch><duration>24</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
@@ -94,11 +94,11 @@
       <note><pitch><step>B</step><octave>2</octave></pitch><duration>24</duration><voice>6</voice><type>quarter</type><staff>2</staff></note>
     </measure>
     <measure number="7">
-      <note><pitch><step>F</step><octave>4</octave></pitch><duration>48</duration><voice>1</voice><type>half</type><staff>1</staff></note>
+      <note><pitch><step>F</step><alter>1</alter><octave>4</octave></pitch><duration>48</duration><voice>1</voice><type>half</type><staff>1</staff></note>
       <note><pitch><step>A</step><octave>4</octave></pitch><duration>24</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
       <backup><duration>72</duration></backup>
       <note><pitch><step>D</step><octave>4</octave></pitch><duration>48</duration><voice>2</voice><type>half</type><staff>1</staff></note>
-      <note><pitch><step>F</step><octave>4</octave></pitch><duration>24</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>
+      <note><pitch><step>F</step><alter>1</alter><octave>4</octave></pitch><duration>24</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>
       <backup><duration>72</duration></backup>
       <note><pitch><step>D</step><octave>3</octave></pitch><duration>48</duration><voice>5</voice><type>half</type><staff>2</staff></note>
       <note><pitch><step>D</step><octave>3</octave></pitch><duration>24</duration><voice>5</voice><type>quarter</type><staff>2</staff></note>
@@ -108,19 +108,19 @@
     </measure>
     <measure number="8">
       <note><pitch><step>A</step><octave>4</octave></pitch><duration>24</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
-      <note><pitch><step>F</step><octave>4</octave></pitch><duration>24</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+      <note><pitch><step>F</step><alter>1</alter><octave>4</octave></pitch><duration>24</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
       <note><pitch><step>A</step><octave>4</octave></pitch><duration>24</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
       <backup><duration>72</duration></backup>
-      <note><pitch><step>F</step><octave>4</octave></pitch><duration>24</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>
+      <note><pitch><step>F</step><alter>1</alter><octave>4</octave></pitch><duration>24</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>
       <note><pitch><step>D</step><octave>4</octave></pitch><duration>24</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>
       <note><pitch><step>D</step><octave>4</octave></pitch><duration>24</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>
       <backup><duration>72</duration></backup>
-      <note><pitch><step>F</step><octave>3</octave></pitch><duration>24</duration><voice>5</voice><type>quarter</type><staff>2</staff></note>
+      <note><pitch><step>F</step><alter>1</alter><octave>3</octave></pitch><duration>24</duration><voice>5</voice><type>quarter</type><staff>2</staff></note>
       <note><pitch><step>D</step><octave>3</octave></pitch><duration>24</duration><voice>5</voice><type>quarter</type><staff>2</staff></note>
       <note><pitch><step>C</step><octave>3</octave></pitch><duration>24</duration><voice>5</voice><type>quarter</type><staff>2</staff></note>
       <backup><duration>72</duration></backup>
       <note><pitch><step>D</step><octave>3</octave></pitch><duration>48</duration><voice>6</voice><type>half</type><staff>2</staff></note>
-      <note><pitch><step>F</step><octave>2</octave></pitch><duration>24</duration><voice>6</voice><type>quarter</type><staff>2</staff></note>
+      <note><pitch><step>F</step><alter>1</alter><octave>2</octave></pitch><duration>24</duration><voice>6</voice><type>quarter</type><staff>2</staff></note>
     </measure>
     <measure number="9">
       <note><pitch><step>G</step><octave>4</octave></pitch><duration>24</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
@@ -144,15 +144,15 @@
       <note><pitch><step>C</step><octave>5</octave></pitch><duration>24</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
       <backup><duration>72</duration></backup>
       <note><pitch><step>A</step><octave>4</octave></pitch><duration>24</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>
-      <note><pitch><step>F</step><octave>4</octave></pitch><duration>24</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>
+      <note><pitch><step>F</step><alter>1</alter><octave>4</octave></pitch><duration>24</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>
       <note><pitch><step>A</step><octave>4</octave></pitch><duration>24</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>
       <backup><duration>72</duration></backup>
-      <note><pitch><step>F</step><octave>3</octave></pitch><duration>24</duration><voice>5</voice><type>quarter</type><staff>2</staff></note>
+      <note><pitch><step>F</step><alter>1</alter><octave>3</octave></pitch><duration>24</duration><voice>5</voice><type>quarter</type><staff>2</staff></note>
       <note><pitch><step>D</step><octave>3</octave></pitch><duration>24</duration><voice>5</voice><type>quarter</type><staff>2</staff></note>
       <note><pitch><step>D</step><octave>3</octave></pitch><duration>24</duration><voice>5</voice><type>quarter</type><staff>2</staff></note>
       <backup><duration>72</duration></backup>
       <note><pitch><step>D</step><octave>3</octave></pitch><duration>48</duration><voice>6</voice><type>half</type><staff>2</staff></note>
-      <note><pitch><step>F</step><octave>2</octave></pitch><duration>24</duration><voice>6</voice><type>quarter</type><staff>2</staff></note>
+      <note><pitch><step>F</step><alter>1</alter><octave>2</octave></pitch><duration>24</duration><voice>6</voice><type>quarter</type><staff>2</staff></note>
     </measure>
     <measure number="11">
       <note><pitch><step>B</step><octave>4</octave></pitch><duration>24</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
@@ -191,7 +191,7 @@
       <backup><duration>72</duration></backup>
       <note><pitch><step>G</step><octave>4</octave></pitch><duration>24</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>
       <note><pitch><step>E</step><octave>4</octave></pitch><duration>24</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>
-      <note><pitch><step>F</step><octave>4</octave></pitch><duration>24</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>
+      <note><pitch><step>F</step><alter>1</alter><octave>4</octave></pitch><duration>24</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>
       <backup><duration>72</duration></backup>
       <note><pitch><step>D</step><octave>3</octave></pitch><duration>48</duration><voice>5</voice><type>half</type><staff>2</staff></note>
       <note><pitch><step>C</step><octave>3</octave></pitch><duration>24</duration><voice>5</voice><type>quarter</type><staff>2</staff></note>

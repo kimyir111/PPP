@@ -32,28 +32,28 @@
   },
   {
    "id": "hymns/i-know-whom|deadpan|none|s1",
-   "input_sha256": "85a45a67bd2d310d3bfc3f661f1042f2b29a41dcd72cc092260148622106a220",
-   "reference_sha256": "41521cf8a2621e5cd7c0db4ae971e9bb10326efe09955006bbbf3ef446efe587"
+   "input_sha256": "6c5ffdc3a13b1a0a747dcf1b522358d949d8d6d96ff29e89996d2c1f75c41fa7",
+   "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
   },
   {
    "id": "hymns/i-know-whom|human|oracle|s1",
-   "input_sha256": "d733aa7faf041fa7489289174882d755c4a61fa2ff175a22ca22db75ecedb04b",
-   "reference_sha256": "41521cf8a2621e5cd7c0db4ae971e9bb10326efe09955006bbbf3ef446efe587"
+   "input_sha256": "97050486798242e183c8c87804912b68905b57565c201b324dfffb9060f046b8",
+   "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
   },
   {
    "id": "hymns/we-gather-together|deadpan|none|s1",
-   "input_sha256": "30269bfa037ee84d28dacfdeae081a1c3cc0350464a9373e39a79ea09910060c",
-   "reference_sha256": "3b4c372d3f5bb03e67873976aa3b1a672f00f58bdea4994a68bb7cbf77d9e51f"
+   "input_sha256": "f016c0bb9d89a3221147f8568321433ae08b76e022eace4ddd7eeadbfde0b391",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
   },
   {
    "id": "hymns/we-gather-together|human|oracle|s1",
-   "input_sha256": "293612748ed4d79eb7ebeb51319f772b8f4c430a08a734ef94041b9c5a455fc4",
-   "reference_sha256": "3b4c372d3f5bb03e67873976aa3b1a672f00f58bdea4994a68bb7cbf77d9e51f"
+   "input_sha256": "fdfe4c4961ba469d33cd9f588f3c5ab17f5e9e4cfa5ad59dc79aeabfc5ba1ada",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
   },
   {
    "id": "hymns/we-gather-together|rubato|oracle|s1",
-   "input_sha256": "2794d34dfc704a8ecafa193b8bf3aa086132d953245c5d82a0cb1feea8714cb9",
-   "reference_sha256": "3b4c372d3f5bb03e67873976aa3b1a672f00f58bdea4994a68bb7cbf77d9e51f"
+   "input_sha256": "087794b2f44186bbc6fae8943af352be00db443e624cbd2720f4e7da7a11dc60",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
   },
   {
    "id": "method/czerny599/040|amt|oracle-noisy|s1",
@@ -222,7 +222,7 @@
   }
  ],
  "generator": "perform/2",
- "reader": "reader/4",
+ "reader": "reader/5",
  "schema": "ppp.bench-lock/1",
  "suite_sha256": "54a3d1680d1570b7d508f7697404c0182f94799b614320150af16a569a0e6cc7"
 }
