@@ -5,9 +5,9 @@ The operational roadmap for everything after G4a: order, dependencies, gates, an
 | | |
 | --- | --- |
 | Owner | The **Lead / Orchestrator** session. Implementers, reviewers and fixers read it. Only the Lead edits it. |
-| Updated | 2026-09-27 — twenty-first edition (Lead): **G4 "Professional Engraving" is completely CLOSED** — the legacy renderer removal merged (PR #54 `4962251`), all polish resolved. Current: deploy PR #54, then MX-2 |
-| Base | `origin/main` = `4962251` (legacy renderer removal, PR #54) plus the docs closeout |
-| Active | **G4 fully done.** Next: deploy PR #54, then MX-2 (§14, §15). |
+| Updated | 2026-09-27 — twenty-second edition (Lead): **G4 "Professional Engraving" is completely CLOSED AND DEPLOYED** — the legacy renderer removal merged (PR #54 `4962251`) and deployed to production (`dep-dasi7ah7lnhs739a2ia0`, commit `256aa9a`, verified live), all polish resolved. Current: start MX-2 |
+| Base | `origin/main` = `256aa9a` (docs closeout on top of the legacy renderer removal, PR #54/#55), deployed to production |
+| Active | **G4 fully done and live.** Next: MX-2 (§14, §15). |
 | Lead worktree | `D:/PPP-lead`, branch `lead-roadmap`. The Lead writes docs only, never in an implementer's worktree. |
 | How this relates to other docs | `docs/CURRENT_STATE.md` says what is true now, with measurements. `docs/DECISIONS.md` says why. `docs/GOALS/Gxx_*.md` is the contract for one Goal: design, acceptance and implementation record. **This document says in what order, behind which gates, and what comes next.** It does not repeat the goal specs. On detail, the spec wins. On sequencing, this document wins. |
 
@@ -589,22 +589,21 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 
 ## 14. Current task
 
-**G4 "Professional Engraving" is completely done.** Every stage (G4a-G4f-2), both human review gates (M-H1, M-H2), the flip, all polish, and the full legacy-renderer removal are closed and merged. Full blow-by-blow (every review round, every fixer cycle, every decision) is in `docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md` §32-§52 and `docs/DECISIONS.md`'s G4-* rows -- this section only tracks what's still open.
+**G4 "Professional Engraving" is completely done and deployed.** Every stage (G4a-G4f-2), both human review gates (M-H1, M-H2), the flip, all polish, and the full legacy-renderer removal are closed, merged, and live in production. Full blow-by-blow (every review round, every fixer cycle, every decision) is in `docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md` §32-§52 and `docs/DECISIONS.md`'s G4-* rows -- this section only tracks what's still open (nothing).
 
 - **The engine, page, print, and evidence base** (G4a-G4f-1): CLOSED. New Node engraving engine, reaching the real page, printing, with a complete mutation suite and A43 evidence that it matches or beats legacy in every measurable category.
 - **M-H1 (diagnostic) and M-H2 (pass/fail)**: both DONE. M-H2 passed with one accepted, already-understood exception (G4-U6) -- the user chose to proceed rather than chase a cosmetic nit further.
 - **The flip** (PR #32 `9dc6942`): the engraver became the default renderer, **deployed to production** 2026-09-26, verified live.
 - **G4 polish** (m2, the flag shape, sonatina beaming, B5, the time-signature bug): all resolved -- three closed with no code change, one fixed and **deployed** (PR #41 `16f4311`), one (B5) investigated and deferred as real backlog (needs a Web Worker split to fully close; explicitly out of scope for now).
-- **§25 step 3, the legacy renderer's full removal** (PR #48 `98cb22f` for the last two fallback causes, then PR #54 `4962251` for the removal itself): **MERGED.** Old `draw()`/`buildVoice()`/`sync()`, the VexFlow CDN loader, and the entire `PPP.renderer` dev switch are gone -- net -1503 lines, the largest single change in the project. This took three independent-review rounds (it surfaced a previously-undiscovered fallback cause affecting 62 real catalog files along the way, fully closed by a 724-check full-corpus sweep) given it permanently removes the app's instant `?renderer=legacy` emergency rollback. **Not yet deployed.**
+- **§25 step 3, the legacy renderer's full removal** (PR #48 `98cb22f` for the last two fallback causes, then PR #54 `4962251` for the removal itself): **MERGED AND DEPLOYED** (deploy `dep-dasi7ah7lnhs739a2ia0`, commit `256aa9a`, 2026-09-27; verified live by opening a real song through the app's own API and confirming it engraves, zero console errors). Old `draw()`/`buildVoice()`/`sync()`, the VexFlow CDN loader, and the entire `PPP.renderer` dev switch are gone -- net -1503 lines, the largest single change in the project. This took three independent-review rounds (it surfaced a previously-undiscovered fallback cause affecting 62 real catalog files along the way, fully closed by a 724-check full-corpus sweep) given it permanently removes the app's instant `?renderer=legacy` emergency rollback. **The only rollback now is redeploying the previous build (`16f4311`).**
 
 ## 15. Next task
 
-**Deploy the legacy-renderer removal (PR #54, `4962251`) -- the last step of G4.** Ask the user first, same as every deploy this session. After that, G4 needs nothing further; move on to:
+**Start MX-2** (catalogue data, with MX-1's carry-overs), then:
 
-1. MX-2 (catalogue data, with MX-1's carry-overs)
-2. G5 (playability and fingering)
-3. G6 (difficulty)
-4. G7a (SongGraph core)
+1. G5 (playability and fingering)
+2. G6 (difficulty)
+3. G7a (SongGraph core)
 
 ## 16. Stop conditions
 
