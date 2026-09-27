@@ -5,9 +5,9 @@ The operational roadmap for everything after G4a: order, dependencies, gates, an
 | | |
 | --- | --- |
 | Owner | The **Lead / Orchestrator** session. Implementers, reviewers and fixers read it. Only the Lead edits it. |
-| Updated | 2026-09-27 — twenty-fifth edition (Lead): **G5a (playability analyzer) merged** (PR #62, `0b6c8dd`) — Node-only, unloaded, no deploy needed. R-corpus and legacy-arranger baselines done; one independent review, READY_TO_MERGE. Current: G5b (fingering DP) |
-| Base | `origin/main` = `0b6c8dd`, deployed as `ca70a03` (G5a itself needs no deploy) |
-| Active | **G4 and MX-2 live. G5a merged.** Next: G5b (§14, §15). |
+| Updated | 2026-09-27 — twenty-sixth edition (Lead): **G5b (fingering DP) merged** (PR #64, `290dba3`) — beats legacy on printed-fingering agreement (70.7% vs 70.6%), Node-only, no deploy needed. Current: G5c (app integration — the only G5 phase touching the app file) |
+| Base | `origin/main` = `290dba3`, deployed as `ca70a03` (G5a/b need no deploy) |
+| Active | **G4 and MX-2 live. G5a, G5b merged.** Next: G5c (§14, §15). |
 | Lead worktree | `D:/PPP-lead`, branch `lead-roadmap`. The Lead writes docs only, never in an implementer's worktree. |
 | How this relates to other docs | `docs/CURRENT_STATE.md` says what is true now, with measurements. `docs/DECISIONS.md` says why. `docs/GOALS/Gxx_*.md` is the contract for one Goal: design, acceptance and implementation record. **This document says in what order, behind which gates, and what comes next.** It does not repeat the goal specs. On detail, the spec wins. On sequencing, this document wins. |
 
@@ -590,19 +590,19 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 
 ## 14. Current task
 
-**G4 "Professional Engraving" and MX-2 (catalogue data integrity) are both completely done and deployed.** **G5a (playability analyzer) is merged** — Node-only, unloaded, no deploy needed. Full G4 blow-by-blow is in `docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md` §32-§52 and `docs/DECISIONS.md`'s G4-* rows; G5's is in `docs/GOALS/G05_PLAYABILITY_FINGERING.md` §11 -- this section only tracks what's still open.
+**G4 "Professional Engraving" and MX-2 (catalogue data integrity) are both completely done and deployed.** **G5a and G5b (playability analyzer, fingering DP) are both merged** — Node-only, unloaded, no deploy needed. Full G4 blow-by-blow is in `docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md` §32-§52 and `docs/DECISIONS.md`'s G4-* rows; G5's is in `docs/GOALS/G05_PLAYABILITY_FINGERING.md` §11 -- this section only tracks what's still open.
 
 - **G4**: every stage, both human review gates, the flip, all polish, and the full legacy-renderer removal are closed, merged, and live in production (deploy `dep-dasi7ah7lnhs739a2ia0`, commit `256aa9a`, 2026-09-27). Nothing open.
 - **MX-2** (PR #57 `789e6de`/`fbda4b4`, squashed as `ca70a03`): `catalog/hymns/abc-to-musicxml.js` wrote `<alter>` only for an explicit ABC accidental, so most hymn notes played natural regardless of the printed key signature, and wrote tie starts with no matching stop. Fixed the converter (key-signature default, in-bar carry across voices on a staff, tie-stop matching) and patched the 91 affected shipped `.musicxml` files directly (the ABC source tree no longer exists on disk -- `catalog/hymns/README.md`). `known_defects.py` hymn counts: `key_signature_playback` 89/89 files to 0, `bar_accidental_not_carried` 10/100 to 0, `tie_without_stop` 10/10 to 0. `bar_integrity` (12 hymn files) and `tempo_marks_disagree` (0 hymns) were investigated and deliberately deferred -- per-file judgment, not a mechanical fix. Independent review found two MAJOR issues (a latent ordering bug and a missing audit trail for the one-off data patch), both fixed and re-verified. **Deployed to production** (`dep-dasjdlt9fdbs73dnhgo0`, 2026-09-27) -- verified live (F#3 midi 54 where it used to read F natural). Incidentally exposed a pre-existing, unrelated `engrave/marks.js` tie-endpoint bug on one file's last measure (TD14, §13) -- cosmetic only, logged as backlog, not a MX-2 regression.
 - **G5a** (PR #62, `676ca48`/`08b226f`, squashed `0b6c8dd`): a playability analyzer (`playability/`) over the ScoreGraph -- hard violations (span, key-count, velocity, held-note conflict) and soft strain, at event and measure level, for a hand profile (small/medium/large, reach numbers from the app's own `Fingering.SPANS`). R-corpus false-positive baseline: 68 hits across 14/61 files at medium profile, investigated file-by-file (mostly the SATB two-voices-per-staff convention, a couple of real transcription artifacts), gated as a regression baseline rather than tuned to zero. Legacy-arranger baseline (closes half of G0 Step 14): all three arrangers produce real hand-span violations against their own output. One independent review round: READY_TO_MERGE, two trivial doc fixes applied, one follow-up noted (KEYS check should dedupe identical simultaneous pitches -- deferred to G5b, affects one file). Node-only, not loaded by the app.
+- **G5b** (PR #64, `5f85f35`/`1fde340`, squashed `290dba3`): a faithful port of the app's legacy `Fingering` DP onto the ScoreGraph (`playability/fingering.js`). Independent review confirmed the design doc's "extend jointly across both hands" premise was wrong -- the legacy DP has zero cross-hand cost term anywhere, so G5b solves each hand independently, same as legacy. Found and fixed a real bug (heads sharing a pitch within one attack must collapse to one finger), moving overall printed-fingering agreement from 69.7% (losing to legacy) to **70.7% vs legacy's 70.6%** -- beats legacy on both hands and overall, the acceptance bar. Ground truth recounted: 66 files/10,358 heads (not the design doc's never-verified 84/14,305). Performance well inside budget (~20-40ms full piece, ~0.1ms one passage). Writes `Head.fingering` with `provenance:'inferred'`, never overwriting `imported`/`edited`. Given the narrow reported margin, one independent review round reproduced every number from scratch (including deliberately disabling the fix to confirm it's load-bearing): READY_TO_MERGE, two MINOR doc-citation errors fixed. Node-only, not loaded by the app.
 
 ## 15. Next task
 
-**G5b** (fingering DP on the graph, measured against printed fingering and the legacy model), then:
+**G5c** (app integration: the hand guide reads the G5 plan, the score shows generated fingering behind a `PPP.fingering` config switch) -- the only G5 phase that touches the app file, so it keeps the full implement-review-fixer cycle rather than G5a/b's lightened one. Then:
 
-1. G5c (app integration behind a switch)
-2. G6 (difficulty)
-3. G7a (SongGraph core)
+1. G6 (difficulty)
+2. G7a (SongGraph core)
 
 ## 16. Stop conditions
 
