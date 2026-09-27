@@ -4918,7 +4918,14 @@ G4b부터 매 단계 미뤄온 B5(§19.2: 전곡 첫 그리기 ≤ 300 ms, **조
 
 ### 51.6 Linux (Docker) 재현
 
-(아래에 실행 결과를 채운다.)
+`docker run -d node:24-bookworm sleep infinity`, 컨테이너 안에서 `git clone --branch g4-legacy-removal https://github.com/kimyir111/PPP.git`(전체 history, `--depth 1`은 `browser-load.test.js`의 base-commit 비교가 커밋을 못 찾아 뺐다) → `npm ci` → `node --test`. 커밋 `be9f3f3`(이 두 브랜치 커밋을 `origin/main`에 merge한 것, fast-forward 가능, 충돌 없음 — `docs/PPP_MASTER_ROADMAP.md` 한 파일, Lead의 로드맵 기록뿐).
+
+- `test:scoregraph`: **216/216 PASS**.
+- `test:engrave`: **199/199 PASS** (A48 포함).
+
+Windows와 같은 결과. `npm ci`가 puppeteer의 Chromium을 못 받아도(postinstall 스크립트가 `allowScripts`에 안 걸려 건너뜀) 이 두 suite는 브라우저를 안 띄우므로 영향 없음.
+
+**상태: READY_FOR_REVIEW.** Lead가 재확인할 것: G4-R1(root 없는 화음의 스키마 완화, `chordKind:'none'`+bass의 화면 처리)과 G4-R2(pedal 중복 신호 합치기, `toScore` pedal 정렬)를 규칙으로 승인. §25 3단계(legacy 렌더러 완전 제거)의 범위를 다시 잡을 근거: 코퍼스·모든 suite에서 진짜 fallback 0.
 
 **상태: READY_FOR_REVIEW.** Lead가 재확인할 것: G4-R1(root 없는 화음의 스키마 완화, `chordKind:'none'`+bass의 화면 처리)과 G4-R2(pedal 중복 신호 합치기, `toScore` pedal 정렬)를 규칙으로 승인. §25 3단계(legacy 렌더러 완전 제거)의 범위를 다시 잡을 근거: 코퍼스·모든 suite에서 진짜 fallback 0.
 
