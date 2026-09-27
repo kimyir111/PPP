@@ -63,10 +63,13 @@ shows generated fingering behind a config switch (the roadmap names it `PPP.fing
   named, understood exception.
 - The printed-fingering set: 14,305 heads across 84 files, licence-clean, no hold-out — this is the fingering DP's
   accuracy ground truth (per-hand agreement with what the edition actually printed). **Corrected by G5b (§11):**
-  84/14,305 is the count before licence filtering — 17 of those 84 files are quarantined (licence not evidenced,
-  `tests/bench/corpus/excluded.json` rule P1) and are not "licence-clean". The real licence-clean set is **66 files,
-  10,358 heads** (all in the `method` stratum: `czerny849` 24 files/4,162 heads, `hanon` 20/3,440, `sonatina`
-  17/2,509, `burgmuller25` 5/248 — beyer and czerny599 print no fingering at all).
+  84/14,305 is the count before licence filtering. The real licence-clean set is **66 files, 10,358 heads** (all in
+  the `method` stratum: `czerny849` 24 files/4,162 heads, `hanon` 20/3,440, `sonatina` 17/2,509, `burgmuller25`
+  5/248 — beyer and czerny599 print no fingering at all). The gap is not one single cause: independent review
+  found only 15 `excluded.json` P1 (licence) entries exist at all, and just 5 of those are in a
+  fingering-bearing stratum (`burgmuller25`); the rest of the 84-to-66 drop is 8 `sonatina` files under the L8
+  (bar-integrity) exclusion plus roughly a dozen otherwise-eligible `czerny849`/`sonatina`/`burgmuller25` files
+  that simply carry no `<fingering>` data in the source edition.
 - Generated arrangements (once G7/G8 exist — for now, whatever synthetic or corpus-derived material is available).
 - **The playability baseline of all three legacy arrangers** run over their own output — this closes half of
   G0 Step 14 (the open item about unchecked hand-span in the legacy pipeline) and stands on its own regardless of
@@ -333,11 +336,13 @@ not loaded by the app:
 5. **The printed-fingering set's "14,305 heads / 84 files" needed the correction now in §3(d)**: real,
    licence-clean count is 66 files / 10,358 heads (measured via the same corpus registry G0/G4 use,
    `tests/bench/corpus/references.json`, filtered to `set === 'method'` and to files where an imported
-   `Head.fingering` is non-empty). The original figure is the pre-licence-filter count — 17 of those 84
-   files are quarantined under `tests/bench/corpus/excluded.json` rule P1 (licence not evidenced) and
-   cannot be "licence-clean" ground truth by definition. "No hold-out" needed no correction: it is
-   accurate (this set does not reserve its own held-out split, unlike G3's H-56/`human_set.py` review
-   sample) and G5b's measurement uses all 66 files, none held back.
+   `Head.fingering` is non-empty). The original figure is the pre-licence-filter count, but independent
+   review found the gap is not explained by licence quarantine alone: `excluded.json` has only 15 P1
+   entries total, and just 5 sit in a fingering-bearing stratum (`burgmuller25`); the rest of the 84-to-66
+   drop is 8 `sonatina` files under the unrelated L8 (bar-integrity) exclusion and roughly a dozen files
+   with no `<fingering>` data in the source edition at all — see §3(d)'s corrected text. "No hold-out"
+   needed no correction: it is accurate (this set does not reserve its own held-out split, unlike G3's
+   H-56/`human_set.py` review sample) and G5b's measurement uses all 66 files, none held back.
 
 **Module boundary: `playability/fingering.js`, not a new top-level module.** §3(b) left this open
 ("use your judgment... if the legacy DP's structure suggests a different module boundary, say so").
@@ -375,7 +380,8 @@ worked example: `czerny849/002` measure 8 writes a held quarter-note C4 (voice 5
 G4 triplet figure (voice 6) whose first note is the same C4 — before the fix, G5b assigned that
 duplicated C4 finger 2 instead of the printed (and legacy-agreeing) 5, and the wrong choice cascaded
 through the WHOLE phrase (the second-order DP's global optimum shifts once one candidate slot is wrong),
-costing 22 of that file's 162 ground-truth heads. This is the identical gap G5a's own independent review
+costing 29 of that file's 162 ground-truth heads (independent review's own no-dedup rerun measured this
+exactly: 83/162 without the fix, 112/162 with it). This is the identical gap G5a's own independent review
 found and explicitly deferred here: "`analyze.js`'s simultaneous-key count does not deduplicate identical
 sounding pitches before counting... a small, correctable analyzer refinement... Deferred to G5b" (§11
 G5a). The fix (`eventsForHand`, `playability/fingering.js`): heads sharing a pitch within one attack
