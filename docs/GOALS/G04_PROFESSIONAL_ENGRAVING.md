@@ -5089,6 +5089,14 @@ Windows와 같은 결과. `npm ci`가 puppeteer의 Chromium을 못 받아도(pos
 
 **READY_FOR_REVIEW (3차, 이번엔 전체 코퍼스로 확인).** §52.11의 고침 커밋을 추가해 `g4-legacy-removal`에 push. `ottava-check.js`의 "dashboard 등" 잔여는 (범위를 정직하게 넓혀) 트래킹 백로그로 남기고, 그 외 이번 라운드가 다룬 모든 항목(tempos·wedge/pedal 경계·순서 버그)은 362파일 × 2창 = 724건 전체 스윕으로 실패 0을 확인했다.
 
+### 52.13 Lead 재확인과 병합 (2026-09-27)
+
+이 변경은 프로젝트에서 가장 큰 단일 변경이자 되돌리기 스위치를 영구히 없애는 일이라, 독립 리뷰 두 번(§52.9, §52.11)과 별도 병렬 코퍼스 스캔(같은 62곡·같은 두 잔여 버그를 독립적으로 재확인)을 거친 뒤, Lead가 직접 새 `git clone`(`089d544`)에서 재확인했다: `test:engrave` 201/201, `test:scoregraph` 216/216. `openingBars()`의 최종 코드를 직접 읽어 확인 — `spanned()` 헬퍼가 span을 인덱스로 걸러 원래 순서를 지키고(3차 라운드가 스스로 잡은 순서 버그의 교훈이 주석으로 남아 있음), `tempos: mine(full.tempos)`가 반환 객체에 실제로 있음을 코드로 직접 봤다. 세 차례의 독립 검증(리뷰 2회 + 병렬 스캔)이 전부 같은 두 잔여 버그(tempos 미필터링, span 경계 orphan)로 수렴했고, 3차 라운드의 724건 전체 스윕(스팟체크 아님)이 이를 닫았다는 점에서 추가 리뷰 없이 이 재확인으로 충분하다고 판단했다.
+
+**병합**: PR #54, CI gate 초록, squash. **§25 3단계 CLOSED — G4 "Professional Engraving"이 완전히 끝났다.** `PPP.renderer` 스위치도, `?renderer=legacy`도, 옛 `draw()`/`buildVoice()`/`sync()`도 이제 없다. 유일한 되돌리기는 이전 배포로 롤백하는 것뿐이다.
+
+**다음**: 배포는 사용자에게 따로 확인. `ottava-check.js`의 test-tool 버그(§52.9, 렌더러 문제 아님)는 백로그로 남긴다.
+
 ---
 
 ## 부록 A. 이 세션의 측정
