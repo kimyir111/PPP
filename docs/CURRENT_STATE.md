@@ -1,6 +1,6 @@
 # PPP — current state
 
-Updated 2026-09-27 (**G4 "Professional Engraving" is completely CLOSED AND DEPLOYED** — the legacy renderer removal merged as PR #54 `4962251`, deployed to production 2026-09-27 (`dep-dasi7ah7lnhs739a2ia0`, commit `256aa9a`, verified live via a real song render), one release after the flip (PR #32 `9dc6942`, deployed 2026-09-26); every G4 stage from G4a through the removal is merged and live. The only rollback now is redeploying the previous build (`16f4311`) — the `?renderer=legacy` switch itself is gone from the code. Full history: G04 §32–§52, DECISIONS' G4-* rows. The production database moved to Neon Free on 2026-09-25). G0 (Quality Foundation), G1 (ScoreGraph) and G2 (Score Import) are all merged
+Updated 2026-09-27 (**G4 "Professional Engraving" is completely CLOSED AND DEPLOYED** — the legacy renderer removal merged as PR #54 `4962251`, deployed to production 2026-09-27 (`dep-dasi7ah7lnhs739a2ia0`, commit `256aa9a`, verified live via a real song render), one release after the flip (PR #32 `9dc6942`, deployed 2026-09-26); every G4 stage from G4a through the removal is merged and live. The only rollback now is redeploying the previous build (`16f4311`) — the `?renderer=legacy` switch itself is gone from the code. Full history: G04 §32–§52, DECISIONS' G4-* rows. **MX-2 (catalogue data integrity) is merged as PR #57, squashed `ca70a03`** — 89 hymns' key signatures, tie stops and in-bar accidentals fixed at the root (`catalog/hymns/abc-to-musicxml.js`); data-only, not yet deployed (section below). The production database moved to Neon Free on 2026-09-25). G0 (Quality Foundation), G1 (ScoreGraph) and G2 (Score Import) are all merged
 and closed. **G3 is merged as PARTIAL / DEFERRED** (PR #7, `c5474c2`; G03 §31): implemented, reviewed and fixed,
 but its blind human review (A36) failed (§30), so every part of it stays **off** — G3a, G3b, the automatic 8va
 and the pedal join — and nothing a user sees changed. **The active goal is G4 Professional Engraving**
@@ -458,3 +458,38 @@ duplicate `<pedal>`/`<sound *-pedal>` signal the app's own MusicXML reader write
 chronological order across overlapping pedal kinds. Both target tests (`pdf-layer.test.js`, `midi.test.js`) and every other
 browser suite now show `fallbacks none`; `test:scoregraph` 216/216, `test:engrave` 199/199 (A48 included), `legacy-parity`
 16/16, `a48-coverage.js` page gate PASS. The legacy renderer itself is untouched.
+
+### MX-2 — catalogue data integrity (2026-09-27)
+
+**MERGED as PR #57** (`789e6de` fix + `fbda4b4` review fixup, squashed `ca70a03`), after one independent review round
+(MAJOR 2, both fixed and re-verified). Data-only change (no app file touched). **Not yet deployed.**
+
+- **What was wrong.** `catalog/hymns/abc-to-musicxml.js` (ABC to MusicXML converter for the 100 Open Hymnal piano
+  reductions) wrote `<alter>` only for a note with an explicit ABC accidental mark; every other note — the vast
+  majority — got no `<alter>` at all, so the app played it natural regardless of the printed key signature (89/89
+  non-C-major hymns affected, 6,119 notes). It also wrote `<tie type="start"/>` with no matching stop, so a tied note
+  was struck again instead of held (10/10 hymns with ties, 121 ties), and an accidental earlier in a bar did not carry
+  for the rest of it (10/100 hymns, 18 notes).
+- **Fix.** The converter now applies the key signature's default alteration to notes with no explicit accidental,
+  carries an explicit accidental for the rest of its bar across every voice on the same staff, and writes matching
+  tie stops (`<tie>` and `<notations><tied>`). The ABC source tree (`OPENHYMNAL_ABC`) no longer exists on disk (an
+  unrelated earlier session's temp directory, never committed), so `build.js` could not be rerun; the 91 affected
+  shipped `.musicxml` files were instead patched directly with the same deterministic algorithm applied to each
+  file's own existing pitch/octave/duration/measure/staff data (untouched by these three bugs) — `catalog/hymns/README.md`.
+- **Result.** `known_defects.py` hymn counts: `key_signature_playback` 89/89 to 0, `bar_accidental_not_carried` 10/100
+  to 0 (class now empty), `tie_without_stop` 10/10 to 0. `smoke`/`core` suites PASS after relock/rebaseline;
+  `sg-roundtrip` 367/369 (2 pre-existing, allowlisted, unrelated to hymns). `bar_integrity` (12 hymn files — the
+  converter folds multiple ABC bars into one MusicXML measure, a separate structural gap) and `tempo_marks_disagree`
+  (0 hymns, 4 unrelated method-book files) were investigated and deliberately deferred: neither traces to this
+  converter, and both need per-file judgment rather than a mechanical fix.
+- **Review.** One independent review round, MAJOR 2: (1) a latent ordering bug — the tie-stop pass ran after the
+  bar-carry pass and never fed a forced tie-continuation alter back into that bar's carried-accidental state, so a
+  tie crossing a bar boundary followed later in that bar by a different voice's plain note at the same pitch would
+  wrongly fall back to the key-signature default; dormant in all 100 current files (proven with a new regression
+  test, `catalog/hymns/tools/test-key-signature.js` — fails without the fix, passes with it) but real for any future
+  rebuild; (2) the one-off script that patched the shipped files was never committed, leaving no audit trail for a
+  change to real, user-facing data. Both fixed: an additional forward-propagation pass in the converter, and
+  `catalog/hymns/tools/check-accidentals.py` — written from scratch, trusting neither the converter nor the lost
+  patch script, it re-derives every note's expected `<alter>` from the shipped MusicXML alone (key signature, in-bar
+  carry, tie chains) and found 0 errors across all 100 hymn files, independently confirming the review's own
+  from-scratch verification.
