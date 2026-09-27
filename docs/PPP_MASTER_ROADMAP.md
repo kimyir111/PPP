@@ -5,9 +5,9 @@ The operational roadmap for everything after G4a: order, dependencies, gates, an
 | | |
 | --- | --- |
 | Owner | The **Lead / Orchestrator** session. Implementers, reviewers and fixers read it. Only the Lead edits it. |
-| Updated | 2026-09-27 — twenty-second edition (Lead): **G4 "Professional Engraving" is completely CLOSED AND DEPLOYED** — the legacy renderer removal merged (PR #54 `4962251`) and deployed to production (`dep-dasi7ah7lnhs739a2ia0`, commit `256aa9a`, verified live), all polish resolved. Current: start MX-2 |
-| Base | `origin/main` = `256aa9a` (docs closeout on top of the legacy renderer removal, PR #54/#55), deployed to production |
-| Active | **G4 fully done and live.** Next: MX-2 (§14, §15). |
+| Updated | 2026-09-27 — twenty-third edition (Lead): **MX-2 (catalogue data integrity) merged** (PR #57, squashed `ca70a03`) — 89 hymns' key signatures, tie stops and in-bar accidentals fixed; `bar_integrity`/`tempo_marks_disagree` investigated and deferred. Current: deploy MX-2 |
+| Base | `origin/main` = `ca70a03` (MX-2, PR #57), not yet deployed |
+| Active | **G4 fully done and live. MX-2 merged, not yet deployed.** Next: deploy MX-2 (§14, §15). |
 | Lead worktree | `D:/PPP-lead`, branch `lead-roadmap`. The Lead writes docs only, never in an implementer's worktree. |
 | How this relates to other docs | `docs/CURRENT_STATE.md` says what is true now, with measurements. `docs/DECISIONS.md` says why. `docs/GOALS/Gxx_*.md` is the contract for one Goal: design, acceptance and implementation record. **This document says in what order, behind which gates, and what comes next.** It does not repeat the goal specs. On detail, the spec wins. On sequencing, this document wins. |
 
@@ -589,17 +589,14 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 
 ## 14. Current task
 
-**G4 "Professional Engraving" is completely done and deployed.** Every stage (G4a-G4f-2), both human review gates (M-H1, M-H2), the flip, all polish, and the full legacy-renderer removal are closed, merged, and live in production. Full blow-by-blow (every review round, every fixer cycle, every decision) is in `docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md` §32-§52 and `docs/DECISIONS.md`'s G4-* rows -- this section only tracks what's still open (nothing).
+**G4 "Professional Engraving" is completely done and deployed**, and **MX-2 (catalogue data integrity) is merged, not yet deployed.** Full G4 blow-by-blow is in `docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md` §32-§52 and `docs/DECISIONS.md`'s G4-* rows -- this section only tracks what's still open.
 
-- **The engine, page, print, and evidence base** (G4a-G4f-1): CLOSED. New Node engraving engine, reaching the real page, printing, with a complete mutation suite and A43 evidence that it matches or beats legacy in every measurable category.
-- **M-H1 (diagnostic) and M-H2 (pass/fail)**: both DONE. M-H2 passed with one accepted, already-understood exception (G4-U6) -- the user chose to proceed rather than chase a cosmetic nit further.
-- **The flip** (PR #32 `9dc6942`): the engraver became the default renderer, **deployed to production** 2026-09-26, verified live.
-- **G4 polish** (m2, the flag shape, sonatina beaming, B5, the time-signature bug): all resolved -- three closed with no code change, one fixed and **deployed** (PR #41 `16f4311`), one (B5) investigated and deferred as real backlog (needs a Web Worker split to fully close; explicitly out of scope for now).
-- **§25 step 3, the legacy renderer's full removal** (PR #48 `98cb22f` for the last two fallback causes, then PR #54 `4962251` for the removal itself): **MERGED AND DEPLOYED** (deploy `dep-dasi7ah7lnhs739a2ia0`, commit `256aa9a`, 2026-09-27; verified live by opening a real song through the app's own API and confirming it engraves, zero console errors). Old `draw()`/`buildVoice()`/`sync()`, the VexFlow CDN loader, and the entire `PPP.renderer` dev switch are gone -- net -1503 lines, the largest single change in the project. This took three independent-review rounds (it surfaced a previously-undiscovered fallback cause affecting 62 real catalog files along the way, fully closed by a 724-check full-corpus sweep) given it permanently removes the app's instant `?renderer=legacy` emergency rollback. **The only rollback now is redeploying the previous build (`16f4311`).**
+- **G4**: every stage, both human review gates, the flip, all polish, and the full legacy-renderer removal are closed, merged, and live in production (deploy `dep-dasi7ah7lnhs739a2ia0`, commit `256aa9a`, 2026-09-27). Nothing open.
+- **MX-2** (PR #57 `789e6de`/`fbda4b4`, squashed as `ca70a03`): `catalog/hymns/abc-to-musicxml.js` wrote `<alter>` only for an explicit ABC accidental, so most hymn notes played natural regardless of the printed key signature, and wrote tie starts with no matching stop. Fixed the converter (key-signature default, in-bar carry across voices on a staff, tie-stop matching) and patched the 91 affected shipped `.musicxml` files directly (the ABC source tree no longer exists on disk -- `catalog/hymns/README.md`). `known_defects.py` hymn counts: `key_signature_playback` 89/89 files to 0, `bar_accidental_not_carried` 10/100 to 0, `tie_without_stop` 10/10 to 0. `bar_integrity` (12 hymn files, a converter gap folding multiple ABC bars into one MusicXML measure) and `tempo_marks_disagree` (0 hymns, unrelated files) were investigated and deliberately deferred -- per-file judgment, not a mechanical fix. Independent review found two MAJOR issues (a latent ordering bug, dormant in all 100 current files but real for a future rebuild; and a missing audit trail for the one-off data patch), both fixed in a follow-up commit and re-verified (`catalog/hymns/tools/check-accidentals.py`, a from-scratch verifier, 0 errors across all 100 hymn files; `catalog/hymns/tools/test-key-signature.js`, a regression test for the ordering bug). **Data-only change (no app file touched). Not yet deployed.**
 
 ## 15. Next task
 
-**Start MX-2** (catalogue data, with MX-1's carry-overs), then:
+**Deploy MX-2** (PR #57, squashed `ca70a03`) -- ask the user first, same as every deploy this session. After that:
 
 1. G5 (playability and fingering)
 2. G6 (difficulty)
