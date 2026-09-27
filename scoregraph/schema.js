@@ -204,7 +204,9 @@
       f('m', T.ref(['m']), req), f('at', T.rat(), req), f('staff', T.ref(['st'])), f('voice', T.ref(['v'])),
       f('event', T.ref(['e'])), f('placement', T.en(PLACEMENTS)),
       f('value', T.en(DYNAMICS), { req: true, only: ['dynamic'] }),
-      f('root', T.obj('StepAlter'), { req: true, only: ['chord'] }),
+      /* not req: a bass-only symbol (a slash chord with no chord above it, e.g. "/E") has no root - only a
+         bass. validate.js's rules pass requires one or the other (G4-R1). */
+      f('root', T.obj('StepAlter'), { only: ['chord'] }),
       /* §5.8 names this field "kind", which the union's own discriminator already uses; see G01 §24 */
       f('chordKind', T.str(), { req: true, only: ['chord'] }),
       f('bass', T.obj('StepAlter'), { only: ['chord'] }), f('degrees', T.arr(T.obj('Degree')), { only: ['chord'] }),

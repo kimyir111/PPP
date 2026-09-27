@@ -575,7 +575,8 @@
       return [dynGlyph(d)].concat(more.map(dynGlyph)).join('');
     }
     function harmonyXml(d, pl) {
-      return '<harmony' + pl + '><root><root-step>' + d.root.step + '</root-step>' + (d.root.alter ? '<root-alter>' + d.root.alter + '</root-alter>' : '') + '</root>' +
+      /* d.root is absent for a bass-only symbol (G4-R1: chordKind 'none', only a bass) */
+      return '<harmony' + pl + '>' + (d.root ? '<root><root-step>' + d.root.step + '</root-step>' + (d.root.alter ? '<root-alter>' + d.root.alter + '</root-alter>' : '') + '</root>' : '') +
         '<kind' + (d.text !== undefined ? ' text="' + attr(d.text) + '"' : '') + '>' + esc(d.chordKind) + '</kind>' +
         (d.bass ? '<bass><bass-step>' + d.bass.step + '</bass-step>' + (d.bass.alter ? '<bass-alter>' + d.bass.alter + '</bass-alter>' : '') + '</bass>' : '') +
         (d.degrees || []).map(x => '<degree><degree-value>' + x.value + '</degree-value><degree-alter>' + x.alter + '</degree-alter><degree-type>' + x.type + '</degree-type></degree>').join('') +

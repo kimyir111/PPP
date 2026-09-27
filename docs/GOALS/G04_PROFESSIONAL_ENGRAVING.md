@@ -4868,6 +4868,94 @@ G4b부터 매 단계 미뤄온 B5(§19.2: 전곡 첫 그리기 ≤ 300 ms, **조
 
 ---
 
+## 51. §50이 남긴 두 fallback을 실제로 고침 (Implementer, `D:/PPP-g4`, 2026-09-27)
+
+사용자 결정: "고치지 않고 fallback UI로 두는 대신, legacy 제거 전에 이 두 가지를 지금 고쳐라." DECISIONS G4-R1(코드명)·G4-R2(pedal) — 결정 전문·버린 대안은 그쪽에.
+
+### 51.1 코드명: 근음 없는 슬래시 코드 (`/E`)
+
+**Lead의 §50 가설 확인·정정.** "정규식만의 문제가 아닐 수 있다"였는데, 맞았다 — 하지만 "조용히 잃는다"는 부분은 틀렸다: `chordFromText`가 `null`을 돌리면 `fromScore`의 호출자(1206행)가 이미 `note('chord-symbol', c.text)`를 부른다. 완전한 무명의 손실은 아니고, 다만 이 코드가 "화음 텍스트가 뭐든 안 읽힌 모든 경우"를 가리켜 이 case만 따로 허용 목록에 넣을 수 없었을 뿐이다 — `agree()`는 `unsupported`를 참고하지 않고 Score와 그래프의 화음 개수를 그대로 대조하므로, 이름이 붙어도 `SOURCE_DISAGREES`는 그대로 났다.
+
+**스키마가 표현할 수 있는지부터 확인**: `Direction`(chord)의 `root`는 `schema.js`에서 `req: true`였다 — 오직 이 필드 하나가 "근음 없는 화음"을 막고 있었다(`chordKind`·`bass`는 이미 선택). `musicxml-export.js`의 `harmonyXml`, `musicxml-import.js`의 `readHarmony`도 같은 이유로 근음 없는 `<harmony>`를 각각 못 쓰거나(`d.root.step`을 그대로 읽음) 못 읽는다(`if (!rootEl || ...) { used.delete(h); return; }` — 이쪽은 이미 `drop('harmony')`로 이름 붙여 세고 있었다). 커밋된 코퍼스(`catalog/` 325개 MusicXML)에는 `<bass>`가 있는 파일이 하나도 없다 — 지금 이 case는 PdfLayer의 OMR 코드명 읽기(`score.chords[].text`, MusicXML `<harmony>`를 거치지 않는 별도 텍스트 형식)에서만 실제로 나며, 실제 콘텐츠 위험은 낮지만 진짜 리드시트 관례(베이스만 바뀐 코드, 페달 포인트나 워킹 베이스 아래)다.
+
+**고침**: `root`의 `req: true`를 뺐다(schema.js). 대신 `validate.js`가 tie·slur의 "양끝 다 없음"과 같은 자리에 "화음에 root도 bass도 없음"을 E-SHAPE로 잡는다. `chordFromText`는 근음 있는 정규식이 안 맞으면 `/[A-G](bb|b|##|#)?`만 있는 형태를 하나 더 보고, root 없이 `{chordKind:'none', bass:{...}}`를 돌린다 — MusicXML 자신의 관례(`<kind>none</kind>`, `<root>` 없음)와 같다. `chordText`(반대 방향)는 `d.root`가 없으면 그 부분을 비운다. **첫 시도에서 놓친 것**: `engrave/sysmarks.js`의 `CHORD_KIND.none`은 이미 `'N.C.'`였다 — bass만 있어도 그대로 꽂혀 `/E`가 **"N.C./E"**로 찍혔다(`pdf-layer.test.js`의 새 "drawing it" 단언으로 잡음, 아래 51.3). `chordKind === 'none' && d.bass`일 때는 그 자리를 비우게 고쳤다. `musicxml-export.js`의 `harmonyXml`도 `d.root` 없을 때 `<root>`를 안 쓰게 방어(지금 이 경로로 root 없는 화음을 내보내는 실제 소비자는 없지만, 공개 라이브러리 함수라 방어).
+
+### 51.2 pedal: 안 닫힌 채 끝나는 곡의 `pedals.length`
+
+**Lead의 §50 가설 정정.** "soft pedal이 안 닫힌 채 끝나는 왕복에서 개수가 어긋나는 것으로 보이며, 더 깊이 보지는 않았다"였는데 — 재현해 보니(브라우저에서 `score.pedals`와 `toScore(fromScore(score).graph).pedals`를 나란히 찍음) **진짜 원인은 안 닫힌 pedal이 아니었다.** 앱의 `parseMusicXML`(4100·4163행)은 pedal 하나를 **두 번** `score.pedals`에 적는다 — 인쇄된 `<pedal type="…">`(또는 "una corda" 문구) 한 줄과, 같은 자리의 `<sound damper-pedal="…">` 한 줄. 이 fixture는 damper start·stop과 soft start가 다 이 방식으로 두 줄씩 적혀 **원본이 6줄**이다. `fromScore`의 열림/닫힘 상태 기계는 두 번째 "start"를 "먼저 것이 안 닫힌 채 새 press가 왔다"로 읽어 `note('pedal-unclosed', …)`를 부르고 첫 번째를 끝 없이 flush했다 — 그 결과 spurious한 spanner 둘, 그리고 두 번째 "stop"은 이미 짝이 사라져 `pedal-stop-without-start`로 버려졌다. 안 닫힌 soft pedal 자체는 시작부터 정확히 1개 항목으로 왕복하고 있었다 — 어긋남은 damper 쪽의 이 중복 신호에서 났다.
+
+**고침**: `fromScore`가 접기 전에, 같은 (m, b)·같은 kind·같은 type(start·change·stop 무엇이든)이 바로 이어지고 한쪽만 값을 가진 두 줄을 하나로 합친다(값을 가진 쪽이 말한다 — 더 정확한 sound 쪽 정보를 살린다). start·stop 쪽으로 합쳐진 끝은 `ext['musicxml.pedal']`에 `{from:true}`/`{to:true}`로 남겨 `toScore`가 그 끝에서 두 줄(민 것 먼저, 값 있는 것 다음 — 원래 순서)을 다시 낸다.
+
+**독립 리뷰가 잡은 MAJOR, 그리고 이 기록의 첫 판이 틀렸던 것**: 첫 판은 "`change`는 원래도 손실 없이 왕복하므로 합치지 않았다"고 적었는데, **사실이 아니었다.** 리뷰어가 `<pedal type="change"/>` + `<sound damper-pedal="64"/>` 짝(시작·끝 사이의 절반 페달, 값 있는 신호가 `change`에도 똑같이 겹친다)으로 든 대항 사례를 재현하니: `change`를 합치지 않으므로 중복된 두 줄이 `changes` 배열의 **같은 자리**에 그대로 쌓이고, 기존 validator 규칙 E-SPAN-ORDER(자리는 반드시 늘어나야 한다)가 그 spanner 전체를 거부한다 — 이 페달 하나가 아니라 그 뒤로 곡이 끝날 때까지 전부. 원본 6줄이 그래프에 **0줄**로 들어간다(`origin/main`에서도 재현되는, 이 브리프가 만들지 않은 기존 결함이지만, 코퍼스에 아직 없다고 해서 이 고침이 막으려는 바로 그 위험군이다). 커밋된 코퍼스에는 지금 `<pedal type="change">` + `<sound damper-pedal>` 짝이 없어 실제 위험은 0이지만, 규칙만은 실제로 닫아야 했다.
+
+`change`도 같은 원리로 합친다 — 다만 `change`의 값(1–126, `start`의 127·`stop`의 0처럼 고정값이 아니라 임의의 반쪽 깊이)은 spanner 하나에 여러 개 있을 수 있는 `changes` 배열의 한 자리를 가리켜야 하므로, `from`/`to`처럼 끝 하나에 붙는 불(boolean)이 아니라 `changes`와 나란한 배열(`ext['musicxml.pedal'].changes`, 합쳐지지 않은 자리는 `null`, 합쳐진 자리는 그 값)로 남긴다. `toScore`는 이 배열을 읽어 그 자리에서만 두 줄(민 것, 값 있는 것)을 낸다 — 나머지 change는 전과 같이 한 줄.
+
+**두 번째로 잡은 문제**: `toScore`는 spanner 하나(damper 전체, soft 전체)를 통째로 이어붙여 `pedals`에 넣는다 — 두 종류(damper·soft)가 겹쳐 열려 있으면(이 fixture처럼 damper가 열린 채로 soft가 열리고 damper가 닫힘) 원래의 시간 순서(damper 시작 → soft 시작 → damper 끝)가 "damper 시작 → damper 끝 → soft 시작"으로 뒤바뀐다. `compare()`는 `pedals`를 정렬 없이 그대로 대조하므로 이 순서 차이도 `SOURCE_DISAGREES`였다. `toScore`가 `pedals`를 반환하기 직전 (m, b)로 안정 정렬해 되돌렸다 — 음의 `canonicalOrder`가 쓰는 것과 같은 키, 겹치지 않는 pedal(대부분의 곡)에는 영향 없음.
+
+### 51.3 fallback 카운트: 전후
+
+| suite | 고치기 전 | 고친 뒤 |
+| --- | --- | --- |
+| `pdf-layer.test.js` | `fallbacks SOURCE_DISAGREES 1` (`chords.length 5 vs 4`) | `fallbacks none` (52/52 체크, "drawing it"의 두 단언은 엔진이 코드명·segno·coda를 이제 실제로 그려서 glyph 모양으로 다시 씀 — 51.4) |
+| `midi.test.js` | `fallbacks SOURCE_DISAGREES 3` (`pedals.length 6 vs 5`, 같은 fixture를 세 UI 경로로 열어 3건) | `fallbacks none` (74/74 체크) |
+| `share.test.js` | 0 (§50에서 이미 확인) | `fallbacks none` (`data/*.json` 새로 seed, 45/45 안팎) |
+| `interactions.test.js` | 0 | `fallbacks none` (52/52 체크) |
+| `hymns-share.test.js` | 0 | `fallbacks none` |
+| 그 밖의 브라우저 suite 21개(`npm test` 전부: import·memory·learning·playback-scheduler·musicxml·falling-notes·import-and-persistence·coach·i18n-and-auth·follow·layout·alignment·engraving·library·transcription·score-search·fingering·video·auth-ui·lessons·course) | (이 브리프의 조사 범위 밖) | 전부 `fallbacks none`, 새 콘솔/페이지 에러 없음. `transcription.test.js`의 venv `transkun.exe` 실패 1건은 이 워크트리 로컬 Python 환경 문제로, 고치기 전 코드(`origin/main` 그대로의 base 서버)에서도 재현 — scoregraph와 무관 |
+| `tests/engrave/a48.test.js`(A48 코퍼스) | (기존 그대로, 손대지 않음) | PASS 그대로 |
+| `a48-coverage.js`(페이지 gate) | 고치기 전은 안 돌림 | PASS: core 553/553(live·projected·saved·migrated 모두 exact), corpus 318/318(알려진 손실 7 그대로), OMR 2/2 exact |
+| `legacy-parity.js` | (범위 밖 — legacy를 안 건드림) | 16/16 바이트 동일 (base `e6f733f` 대 이 워크트리) |
+
+**전체 코퍼스 기준**: 커밋된 코퍼스(`catalog/` 325 MusicXML)에는 이번 두 case의 실제 사례가 없다(51.1: `<bass>` 있는 파일 0; pedal 중복은 App의 `parseMusicXML`만 만들고 코퍼스 파일 자체의 문제가 아니다) — `a48-coverage.js`의 corpus 318/318과 A48의 corpus 카운트가 고치기 전후로 같은 것이 그 증거다. 두 case는 **테스트 fixture와 OMR 경로**에서만 실제로 나던 것이었고, 지금은 거기서도 0이다.
+
+### 51.4 부수적으로 드러난 것 (엔진 결함 아님, 테스트만 고침)
+
+`pdf-layer.test.js`의 이 OMR 곡은 지금까지 늘 `SOURCE_DISAGREES`로 legacy가 그렸다 — "drawing it" 절의 코드명·segno·coda 단언은 legacy의 SVG(하나의 `<text>`에 유니코드 `♭`·`𝄋`·`𝄌`까지 통째로) 모양으로만 맞춰져 있었다. 이제 `agree()`가 성립해 엔진이 그리자, 엔진은 flat과 segno/coda를 (제대로) 자기 글꼴 outline의 별도 `<path>`로 그린다(`g.ppp-chord path.ppp-chord-text`, `g.ppp-jump path.ppp-jump-mark` — `test:engrave`의 A20·§10.5·G4d-1a R5가 이미 검증하는 그 모양) — `<text>`만 보던 옛 단언 두 개가 깨졌다. 엔진 쪽 코드는 고치지 않았고(정확히 그리고 있었다), 테스트만 그 모양을 알아보게 고쳤다(글리프 개수를 같이 확인).
+
+### 51.5 리그레션
+
+- `test:scoregraph` (Windows, Node 24): 216/216 PASS.
+- `test:engrave` (Windows, Node 24): 199/199 PASS (A48 포함).
+- Linux (Docker `node:24-bookworm`, 실제 `git clone`): 아래 51.6.
+- `legacy-parity.js` 16/16, `a48-coverage.js` PASS — 위 표.
+- 브라우저 suite 26개(`npm test` 전부 + `pdf-layer`·`midi`) 전부 PASS, `fallbacks none`.
+
+### 51.6 Linux (Docker) 재현
+
+`docker run -d node:24-bookworm sleep infinity`, 컨테이너 안에서 `git clone --branch g4-legacy-removal https://github.com/kimyir111/PPP.git`(전체 history, `--depth 1`은 `browser-load.test.js`의 base-commit 비교가 커밋을 못 찾아 뺐다) → `npm ci` → `node --test`. 커밋 `be9f3f3`(이 두 브랜치 커밋을 `origin/main`에 merge한 것, fast-forward 가능, 충돌 없음 — `docs/PPP_MASTER_ROADMAP.md` 한 파일, Lead의 로드맵 기록뿐).
+
+- `test:scoregraph`: **216/216 PASS**.
+- `test:engrave`: **199/199 PASS** (A48 포함).
+
+Windows와 같은 결과. `npm ci`가 puppeteer의 Chromium을 못 받아도(postinstall 스크립트가 `allowScripts`에 안 걸려 건너뜀) 이 두 suite는 브라우저를 안 띄우므로 영향 없음.
+
+### 51.7 독립 리뷰: NEEDS_FIX → MAJOR 고침, MINOR 3건은 기록만
+
+**리뷰 판정: NEEDS_FIX (MAJOR 1, MINOR 3).**
+
+**MAJOR (고침, 51.2에 반영).** 리뷰어가 든 대항 사례 — `<pedal type="change"/>` + `<sound damper-pedal="64"/>`를 `start`/`stop` 사이에 끼운, 51.2가 처음 "원래 손실 없이 왕복하므로 합치지 않았다"고 (틀리게) 적었던 바로 그 경우 — 를 그대로 재현해 잡았다: 합치지 않은 두 `change` 줄이 `changes` 배열의 같은 자리에 남아 E-SPAN-ORDER가 spanner 전체를 거부, 원본 6줄이 그래프에 0줄로 들어갔다. `origin/main`에도 있는 기존 결함이고 코퍼스엔 아직 실례가 없다고 리뷰어가 확인했지만, "이 고침이 막으려는 위험군 자체"라 그대로 두지 않았다. 고침: `change`도 `start`/`stop`과 같은 원리로 합치되, 값은 `changes`와 나란한 배열(`ext['musicxml.pedal'].changes`)에 자리별로 남긴다 — 51.2 최종본에 반영. 리뷰어의 대항 사례를 그대로 다시 넣어 확인: `agree().ok === true`, `validate().ok === true`, 원본 6줄이 왕복 6줄로 순서까지 그대로.
+
+**MINOR 3건 (전부 이 브리프 전부터 있던 동작, 이번 변경과 무관, 코퍼스 위험 0 — 고치지 않고 기록만 한다):**
+1. 합쳐진 `stop`의 depth 값 — `toScore`의 `one()`은 `soundOnly`인 spanner의 모든 줄(시작·change·끝)에 `s.depth`(또는 127/0)를 매기는데, 이는 `change` 자신의 실제 깊이가 아니라 spanner 전체의(시작이 준) 값이다. 합쳐지지 않은 단독 `change`(예: `<sound damper-pedal="64">`만, 짝이 되는 `<pedal type="change">` 없이)는 자기 깊이를 그대로 잃는다 — `changes`가 위치만 갖는 `Pos`라 처음부터 그랬다.
+2. 겹친 종류의 동일 (m, b) 타이 순서 — 두 pedal 종류가 정확히 같은 자리에서 사건을 내면 `toScore`의 안정 정렬은 spanner를 만난 순서(선언 순서)로 그 자리의 동률을 깬다. 원본이 그 자리에서 어느 kind를 먼저 적었는지와 다를 수 있다.
+3. `chordKind:'none'` + root 있음 + bass 없음의 화면 — `engrave/sysmarks.js`의 `chordPieces`는 이 조합에서 `s = root + 'N.C.'`가 되어 예컨대 "CN.C."로 찍힌다(51.1의 고침은 bass가 있을 때만 'N.C.'를 비웠다). 이 조합이 실제로 나오는 경로는 없다(스키마상 가능할 뿐).
+
+**리그레션 재확인 (MAJOR 고침 뒤, 51.5의 전부 다시)**: `test:scoregraph` 216/216, `test:engrave` 199/199, `pdf-layer`·`midi` 및 다른 브라우저 suite 24개 전부 `fallbacks none`, `legacy-parity.js` 16/16, `a48-coverage.js` PASS(core 553/553, corpus 318/318, OMR 2/2) — 전부 변화 없음(MAJOR 고침은 `change`가 겹쳐 적힌 경우에만 갈리고, 지금 어느 fixture·코퍼스도 그 경우가 아니라서 기존 결과가 그대로다).
+
+**상태: READY_FOR_REVIEW.** Lead가 재확인할 것: G4-R1(root 없는 화음의 스키마 완화, `chordKind:'none'`+bass의 화면 처리)과 G4-R2(pedal 중복 신호 합치기 — start·change·stop 전부, `toScore` pedal 정렬)를 규칙으로 승인. §25 3단계(legacy 렌더러 완전 제거)의 범위를 다시 잡을 근거: 코퍼스·모든 suite에서 진짜 fallback 0(위 MINOR 3건은 별개 — 코퍼스 위험 0인 기존 동작으로 남겨 둠).
+
+### 51.8 Lead 재확인과 병합 (2026-09-27)
+
+새로 `git clone`한 사본(`2b861f4`)에서 직접: `test:scoregraph` 216/216, `test:engrave` 199/199. 리뷰어의 대항 사례(`<pedal type="change"/>` + `<sound damper-pedal="64">`를 start/stop 사이에)를 실제 페이지에서 `parseMusicXML`→`legacy.fromScore`→`legacy.agree`로 직접 재현: 원본 6줄, `fromScoreOk: true`, `agreeOk: true`, `unsupported: []` — MAJOR가 실제로 닫혔음을 독립적으로 확인.
+
+**G4-R1·G4-R2 승인한다.**
+
+**병합**: PR #48, CI gate 초록, squash. §51 CLOSED.
+
+**다음**: §25 3단계(legacy 렌더러 완전 제거) — 코퍼스·모든 브라우저 suite에서 진짜 fallback 원인 0을 확인했으니, 실제 코드(옛 `draw()`·`buildVoice()`·`sync()`·`loadVexFlow`) 제거를 시작할 근거가 갖춰졌다. MINOR 3건(전부 코퍼스 위험 0인 기존 동작)과 A47의 이미 받아들인 코퍼스 fixture 2개는 제거를 막지 않는다.
+
+---
+
 ## 부록 A. 이 세션의 측정
 
 모두 `D:/PPP-g4`, `55d1bd5`, 작업 트리 clean. 스크립트는 세션 scratchpad에 있고 저장소에 쓰지 않았다 (측정 뒤 `git status` clean 확인). G4a·G4f가 같은 정의로 `tests/engrave/tools/`에 다시 만든다.
