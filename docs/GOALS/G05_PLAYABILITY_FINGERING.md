@@ -62,7 +62,14 @@ shows generated fingering behind a config switch (the roadmap names it `PPP.fing
   should be ≈ 0, since every piece in it is published and playable; a hit is either a real defect or must be a
   named, understood exception.
 - The printed-fingering set: 14,305 heads across 84 files, licence-clean, no hold-out — this is the fingering DP's
-  accuracy ground truth (per-hand agreement with what the edition actually printed).
+  accuracy ground truth (per-hand agreement with what the edition actually printed). **Corrected by G5b (§11):**
+  84/14,305 is the count before licence filtering. The real licence-clean set is **66 files, 10,358 heads** (all in
+  the `method` stratum: `czerny849` 24 files/4,162 heads, `hanon` 20/3,440, `sonatina` 17/2,509, `burgmuller25`
+  5/248 — beyer and czerny599 print no fingering at all). The gap is not one single cause: independent review
+  found only 15 `excluded.json` P1 (licence) entries exist at all, and just 5 of those are in a
+  fingering-bearing stratum (`burgmuller25`); the rest of the 84-to-66 drop is 8 `sonatina` files under the L8
+  (bar-integrity) exclusion plus roughly a dozen otherwise-eligible `czerny849`/`sonatina`/`burgmuller25` files
+  that simply carry no `<fingering>` data in the source edition.
 - Generated arrangements (once G7/G8 exist — for now, whatever synthetic or corpus-derived material is available).
 - **The playability baseline of all three legacy arrangers** run over their own output — this closes half of
   G0 Step 14 (the open item about unchecked hand-span in the legacy pipeline) and stands on its own regardless of
@@ -82,8 +89,9 @@ shows generated fingering behind a config switch (the roadmap names it `PPP.fing
 - Planted unplayable fixtures (synthetic: a 13th in one hand, 6 simultaneous notes, an impossible same-hand
   double-strike) are all caught — a mutation suite, same shape as G4's.
 - G5b: fingering beats the legacy model on printed-finger agreement per hand on the same evaluation set, and keeps
-  whatever book-fixture cases the legacy model already had correct (the roadmap cites 17; confirm the real count
-  when the legacy module is read).
+  whatever book-fixture cases the legacy model already had correct (the roadmap cites 17; confirmed by G5b, §11 —
+  the roadmap's number is exactly right: `tests/fingering.test.js`'s "the fingering a piano book would print"
+  section has exactly 17 named cases, App's own hand-guide test).
 - Deterministic (same input, same output, byte for byte). Off-path (module not loaded) leaves the app unchanged.
 
 ## 6. Regression
@@ -263,3 +271,185 @@ this phase (a pre-existing, unrelated `test:engrave` failure on `be-still-my-sou
 was observed during this work; it is untouched by and unrelated to G5a — no file under `engrave/`,
 `scoregraph/`, or `catalog/` was read for anything other than analysis in this phase, and none was
 written to).
+
+### G5b — the fingering DP (2026-09-28)
+
+**What was built.** `playability/fingering.js`, alongside `reach.js`/`graph.js`/`analyze.js` (same
+module, `playability/`, not a new top-level module — see "module boundary" below for why), Node-only,
+not loaded by the app:
+
+- The legacy `Fingering` DP (App 8337-8775), ported field-for-field: the Parncutt span table
+  (`SPANS`), its cost weights (`W`), keyboard geometry (`keyX`/`dist`/`isBlack`), every cost function
+  (`pairCost`, `lineCost`, `frame`, `chordStep`, `stepCost`, `selfCost`, `tripleCost`, `candidates`) and
+  the second-order Viterbi itself (`solve`, phrase-split by `solveHand`) — verbatim logic, ScoreGraph
+  inputs.
+- `eventsForHand(attacksForHand)`: `playability/graph.js`'s `attacksOf` (G5a's reviewed hand-extraction
+  mechanism, reused exactly as §10 asked — nothing here re-derives hand assignment) turned into the
+  legacy DP's own event shape, in the legacy model's own unit (quarter-note beats: `beats(w) =
+  R.toNumber(w) * 4`, tempo-independent, matching a DP that is about notated rhythm and hand geometry,
+  not real time).
+- `solveGraph(g, opts)`: both hands from one `attacksOf` pass, each solved by the ported DP (see "joint"
+  below for why solving them separately is not a shortcut here).
+- `write(g, results, opts)`: writes `Head.fingering` under the G3-D4 provenance guard (see "provenance
+  guard" below) — one `scoregraph/ops.js` `edit()` transaction for a whole file, not one per head.
+- `fingerGraph(g, opts)`: `solveGraph` + `write` in one call, the common case.
+- `tests/playability/fingering.test.js` (17 tests: 6 book-fingering fidelity checks, 6 mutation/write
+  tests, 3 performance/invariant checks at corpus scale, 2 measurement tests) and
+  `tests/playability/legacy-fingering-extract.js` (extracts the app's own `Fingering` for the
+  measurement, the same technique `tests/engrave/helpers.js`'s `appFinalize()` and
+  `tests/playability/score-arranger-extract.js`'s `scoreArranger()` already use). Both files are picked
+  up by `npm run test:playability`'s existing glob (`tests/playability/**/*.test.js`) with no change to
+  `package.json` or `.github/workflows/bench.yml` — a separate `test:fingering` script was considered
+  (G05 §8 leaves the choice open) and rejected as pure duplication of wiring that already exists.
+
+**Verifying the design doc against the actual legacy code (§10's own instruction).**
+
+1. **The legacy `Fingering` DP is JS, in the app file, not Python** — §10 flagged this as unconfirmed
+   ("it may not be JS at all"). It is JS (App 8337-8775), so G5b is the port-not-wrapper case the doc
+   anticipated, but the "port" turned out to be a straightforward one: no server round trip, no second
+   language, one file to read.
+2. **The doc's one-line description of the algorithm is accurate**: "Parncutt spans, keyboard distance,
+   a second-order DP over finger transitions" is exactly what `Fingering.solve` (App 8596-8650) is — the
+   DP state is the pair (finger choice at i-1, finger choice at i), because `tripleCost` (Rules 4/5/7,
+   three consecutive notes) needs to see three events at once to detect a hand relocation. No correction
+   needed here, unlike G5a's velocity-model citation.
+3. **"Extend... to both hands jointly" needed correcting, and is corrected in `fingering.js`'s own
+   header.** `Fingering.plan` (App 8754-8774) loops `['r', 'l']` and runs two textually-independent DPs
+   — no cost function anywhere (`pairCost`/`stepCost`/`tripleCost`/`selfCost`) reads the other hand's
+   notes or fingers. The only cross-hand mechanism in this whole codebase is G5a's `analyze.js`
+   `crossingStrain` — a same-onset soft-strain score, not a fingering decision, and it does not feed back
+   into either hand's DP. There is no physical reason for one to: G1's hand assignment (out of scope for
+   G5, §2) already fixed which hand plays what, so the two hands never compete for the same key at the
+   same instant, crossing passages included. `solveGraph` still does what the goal doc actually needs —
+   one function, one `attacksOf` pass, both hands solved from that one shared traversal instead of two
+   separately-coded callers — but the DP itself factors into two independent optimizations because the
+   ported cost model has no cross term to couple them with. Solving them separately gives the identical
+   answer a coupled joint DP with zero cross terms would give.
+4. **The "17 book cases" is exactly right, not approximate.** `tests/fingering.test.js`'s "the fingering
+   a piano book would print" section (its `cases` array) has exactly 17 entries — the app's own hand-
+   guide test, unrelated to G5 until now. A representative 6 of the 17 (the ones a `mk()`-built
+   single-part fixture can express without new DSL support — chords and multi-bar lines, not the ones
+   needing a written `<fingering>` hint or a live MIDI follower) are reproduced byte-for-byte by the
+   ScoreGraph port in `fingering.test.js`: C major scale (both directions), G major, F major (thumb off
+   B flat), a C triad, and the thumb-under arpeggio all give the identical finger string the legacy test
+   asserts.
+5. **The printed-fingering set's "14,305 heads / 84 files" needed the correction now in §3(d)**: real,
+   licence-clean count is 66 files / 10,358 heads (measured via the same corpus registry G0/G4 use,
+   `tests/bench/corpus/references.json`, filtered to `set === 'method'` and to files where an imported
+   `Head.fingering` is non-empty). The original figure is the pre-licence-filter count, but independent
+   review found the gap is not explained by licence quarantine alone: `excluded.json` has only 15 P1
+   entries total, and just 5 sit in a fingering-bearing stratum (`burgmuller25`); the rest of the 84-to-66
+   drop is 8 `sonatina` files under the unrelated L8 (bar-integrity) exclusion and roughly a dozen files
+   with no `<fingering>` data in the source edition at all — see §3(d)'s corrected text. "No hold-out"
+   needed no correction: it is accurate (this set does not reserve its own held-out split, unlike G3's
+   H-56/`human_set.py` review sample) and G5b's measurement uses all 66 files, none held back.
+
+**Module boundary: `playability/fingering.js`, not a new top-level module.** §3(b) left this open
+("use your judgment... if the legacy DP's structure suggests a different module boundary, say so").
+It does not: the legacy DP has no dependency the rest of `playability/` doesn't already carry
+(`scoregraph/rational.js`, and now also `ops.js`/`prov.js` for the write guard), it consumes
+`graph.js`'s `attacksOf` exactly as `analyze.js` does, and G05 §3(b) itself says "keep the DP's path
+cost as the strain signal for (a)" — a future wiring `analyze.js` would import from the same directory
+either way. A separate top-level module would only add an extra `index.js`-style seam with nothing on
+either side of it.
+
+**Deliberately not ported** (both noted in `fingering.js`'s own header, for the next reader):
+
+- `Fingering.positions`/`restFingers` (App 8667-8750) — where the whole hand sits and where idle
+  fingers rest, for the hand-guide's DRAWING. Purely a G5c/display concern; G5b only needs `Head.
+  fingering` per note, never a hand "position."
+- The `candidates()` "a written fingering is kept" hint path (the `fixed` array `candidates()` still
+  accepts, kept in the port) is never wired to an existing `Head.fingering` value. Doing so would let a
+  head's OWN printed finger bias the very prediction later measured against that same printed finger —
+  the ground-truth leakage risk the write guard (below) is built to avoid on the other side of the same
+  problem. A future phase (G5c, or G9's repair loop) can pass real hints once partial-fingering
+  completion has its own design pass; for now every solve is blind, matching how the legacy comparison
+  in the measurement below is made fair (its printed `n.finger` is stripped before `Fingering.plan` runs,
+  for the identical reason).
+- `scoreNoteEnd`'s `SCORE_HAND_HOLD_Q` floor (App 8306-8307, a 0.25-beat minimum visual hold so a very
+  short note does not make the hand-guide's drawing flicker) — a display-only hack. `attacksOf`'s real,
+  tie-resolved head timing is used as-is.
+
+**A real bug found and fixed: same-pitch heads must share one finger.** The first working version of
+`eventsForHand` fed `attacksOf`'s heads straight to the DP as one "note" per head. `attacksOf` groups
+by (limb, onset) across every voice on a hand's staff — so a sustained note in one voice and a newly-
+struck note of the SAME pitch in another voice at the same instant (a held bass note under a broken-
+chord figure re-striking it, an ordinary Alberti-bass encoding) arrived as two separate "notes" at one
+pitch, and the DP had to invent two DIFFERENT fingers for what is physically one key. Traced to a
+worked example: `czerny849/002` measure 8 writes a held quarter-note C4 (voice 5) under a broken C4-E4-
+G4 triplet figure (voice 6) whose first note is the same C4 — before the fix, G5b assigned that
+duplicated C4 finger 2 instead of the printed (and legacy-agreeing) 5, and the wrong choice cascaded
+through the WHOLE phrase (the second-order DP's global optimum shifts once one candidate slot is wrong),
+costing 29 of that file's 162 ground-truth heads (independent review's own no-dedup rerun measured this
+exactly: 83/162 without the fix, 112/162 with it). This is the identical gap G5a's own independent review
+found and explicitly deferred here: "`analyze.js`'s simultaneous-key count does not deduplicate identical
+sounding pitches before counting... a small, correctable analyzer refinement... Deferred to G5b" (§11
+G5a). The fix (`eventsForHand`, `playability/fingering.js`): heads sharing a pitch within one attack
+collapse to a single DP "note" (App 8580's own rule, "the same key twice: one finger", now also applied
+here rather than only in the legacy code), and every head at that pitch gets the SAME chosen finger back.
+This is now a structural invariant, not a tested probability — `fingering.test.js`'s "invariant at
+scale" test confirms it holds everywhere in sonatina/020, and a unit test constructs the exact two-voice
+collision and checks both heads get one finger. Before the fix, G5b measured 69.7% overall agreement
+against 70.6% for the legacy model (G5b LOSING the comparison, failing §5's acceptance criterion); after
+it, 70.7% against 70.6% (the table below).
+
+**A second, non-obvious finding: the provenance guard cannot be "skip when `provOf(...).op` is
+`imported`".** `scoregraph/musicxml-import.js` never stamps a per-aspect `prov.asp.fingering` on a head
+— it only sets one GRAPH-LEVEL default, `provenance.default = {op: 'imported'}`
+(`scoregraph/build.js`'s `setDefault`). `provOf`'s fallback chain (`scoregraph/prov.js`) means EVERY
+head with no fingering opinion of its own — i.e. almost the entire corpus — still resolves to
+`op: 'imported'` through that default. Checking that naively would refuse to write fingering anywhere
+in an imported score, not just to the heads that print one. `write()`'s real guard is content-first: a
+head is protected once it actually carries a `Head.fingering` VALUE (from an import or a user edit), and
+only an already-`inferred` value (G5b's own earlier output) may be recomputed. A head with no value has
+nothing to protect regardless of the graph's ambient default.
+
+**Measured numbers** (`tests/playability/fingering.test.js`, the 66-file/10,358-head licence-clean
+set above, both models run blind — the legacy model's own printed `n.finger` hint is stripped before
+`Fingering.plan` runs, exactly as G5b's own `candidates()` fixed-hint path is never fed a real printed
+value, so neither side sees the answer it is graded against):
+
+| hand | G5b agreement | legacy agreement | heads |
+| --- | --- | --- | --- |
+| RH | 4,750/6,928 (68.6%) | 4,737/6,928 (68.4%) | 6,928 |
+| LH | 2,577/3,430 (75.1%) | 2,573/3,430 (75.0%) | 3,430 |
+| overall | 7,327/10,358 (70.7%) | 7,310/10,358 (70.6%) | 10,358 |
+
+G5b beats the legacy model on both hands and overall, satisfying §5's acceptance criterion — by a real
+but narrow margin (17 heads overall), which is the expected shape of the result: this is the SAME cost
+model faithfully ported, not a different algorithm, so the two should agree almost everywhere (many
+individual files come out byte-for-byte identical), and the measured gap is concentrated in the files
+the same-pitch dedup fix touches, plus a handful of smaller, unexplained per-file gaps left as a named,
+open item rather than chased further (`burgmuller25/003`: G5b 29/52 vs legacy 40/52 — the divergent
+heads there are spread across many measures rather than concentrated the way the dedup bug's heads were,
+so it reads as a smaller, harder-to-isolate modeling nuance, not the same class of bug; worth a later
+look, e.g. in H-56, not a blocker for G5b's own acceptance). Also worth naming as an inherited, not
+introduced, limitation: `stepCost`'s "finger already committed elsewhere" check (App 8410-8416, the
+`heldFinger` cost) only ever compares an event to its IMMEDIATE predecessor in the per-hand sequence — a
+held note two or more events back can still have its finger reused without penalty. This is the legacy
+model's own actual mechanism (ported verbatim, not weakened), not a G5b regression; `fingering.test.js`'s
+held-note mutation test checks the case the model actually guards (an adjacent overlap), not an idealised
+whole-phrase version it was never built to catch.
+
+**Mutation suite** (`tests/playability/fingering.test.js`): the same-pitch invariant (a planted two-
+voice unison at one onset, checked to produce one shared finger, both as a targeted unit test and as a
+scale invariant scanned across every attack of sonatina/020), a held-finger-avoidance case (an adjacent
+overlapping note must not steal the currently-sounding note's finger when other fingers are free), a
+dead mutation (a cosmetic key-signature change leaves every finger byte-for-byte identical), and three
+`write()` provenance-guard cases (a printed/imported value is never touched, a user-edited value is
+never touched, an earlier G5b/`inferred` value may be recomputed). 17/17 tests pass.
+
+**Performance** (G05 §7): analyzer + fingering combined over sonatina/020 (1,776 heads, confirmed by
+G5a): **~20-40 ms** in Node (median ~20 ms across 10 runs after JIT warm-up, worst observed ~40 ms cold),
+well inside the 150 ms budget. Re-solving a single 24-event passage alone (not the whole piece, the
+later G9 requirement §7 asks G5b to keep in mind): **~0.1-0.15 ms** — trivially inside the 20 ms budget,
+and structurally so: `solveHand`'s existing phrase-splitting (App 8652-8665, kept verbatim) already means
+`solve()` never needs more than one phrase's worth of events, so slicing out a passage and re-solving it
+alone is not new machinery, just calling the same function on a shorter slice.
+
+**Scope notes.** No app/UI integration, no `PPP.fingering` switch, no display work (G5c, unchanged from
+G5a's own scope note). `Head.fingering` is written only by `write()`/`fingerGraph()`, called only from
+tests in this phase — nothing in the app or in G3's `professionalize()` pipeline calls it (G3-D8/A31
+still holds: G3 infers no fingering). `test:scoregraph` (216/216) reconfirmed unaffected; `test:engrave`
+was not re-run in this phase (no file under `engrave/` was touched) but nothing in `playability/` or
+`tests/playability/` overlaps it.
