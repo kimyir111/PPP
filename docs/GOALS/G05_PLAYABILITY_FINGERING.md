@@ -474,20 +474,32 @@ be answered before choosing an integration point, both traced against the runnin
    exception. This is a hard filter, not an anchor cost term — confirmed by reading the actual branches,
    not by inference from the comment ("a written fingering is kept") alone.
 2. **Is every open song's Score still derived from a graph via `toScore()`, per G2's import-boundary
-   decision, or has that regressed?** Traced every call site: `scoreFromXml`, `scoreFromFile` and
-   `Import.load` (the one real MusicXML/MXL/MIDI import entry point) all call
-   `PPPScoreGraph.legacy.toScore(graph, ...)` when `LEGACY_IMPORT` is false (the default; `PPP.legacyImport
-   = true` is G2-D13's own one-release rollback, unrelated to this phase) — confirmed still true, not
-   regressed. **But it is not the whole story**, and the goal doc's premise needed a correction here:
-   audio-recording transcription (`Import.finishHeard`), the "rhythm rewrite" and "rich review
-   arrangement" flows (`rewriteFromHeard`, `applyRichReviewArrangement`) all call `parseMusicXML(xml, ...)`
-   **directly and unconditionally** — never through a graph at all, regardless of `LEGACY_IMPORT`. This is
-   correct and intentional (G2-D11: MIDI/audio transcription gets no new quantizer/voice/hand code, and
-   G05 §2's own non-goal excludes hand inference for recordings, G10a) — it just means "every open song's
-   Score comes from a graph" is true for file import (MusicXML/MXL/MIDI, `Import.load`) but not for
-   audio-recording-derived or rhythm-rewritten scores, which G5c correctly does nothing for: they never
-   reach a graph, so `n.finger` stays unset on them exactly as it did before this phase, switch or no
-   switch, and the hand guide falls back to its live per-note DP exactly as always.
+   decision, or has that regressed?** Traced every call site (corrected below to actually be every one —
+   the first pass through this file missed a fourth): `scoreFromXml`, `scoreFromFile` and `Import.load`'s
+   own MusicXML/MXL/MIDI branch (App ~7597-7609) all call `PPPScoreGraph.legacy.toScore(graph, ...)` when
+   `LEGACY_IMPORT` is false (the default; `PPP.legacyImport = true` is G2-D13's own one-release rollback,
+   unrelated to this phase) — confirmed still true, not regressed. **But that is not the whole story**, and
+   the goal doc's premise needed a correction here — three distinct paths bypass the graph entirely and
+   call `parseMusicXML(xml, ...)` directly and unconditionally, regardless of `LEGACY_IMPORT`:
+   - audio-recording transcription (`Import.finishHeard`);
+   - the "rhythm rewrite" and "rich review arrangement" flows (`rewriteFromHeard`,
+     `applyRichReviewArrangement`);
+   - and `Import.load`'s OWN scanned-page (PDF/PNG/JPG, OMR) branch (App ~7662-7690): when the graph-import
+     route (`importToGraph`, at the top of `Import.load`) is not the one that ends up producing text —
+     i.e. once `PdfLayer.notate(pages, file.name)` builds MusicXML text straight from the raster/PDF layer
+     — `score = parseMusicXML(xml, file.name)` (App ~7685) turns it into a Score without ever calling
+     `graphForScore()` or `toScore()`. This is a second, separate route inside the very function (`Import.
+     load`) that finding 2 already traced for its graph-backed branch — missed the first time through.
+
+   All three are correct and intentional to leave alone in this phase (G2-D11: MIDI/audio transcription
+   and OMR scanning get no new quantizer/voice/hand/graph code here; G05 §2's own non-goal excludes hand
+   inference for recordings, G10a) — it just means "every open song's Score comes from a graph" is true
+   only for the graph-backed file-import branch (MusicXML/MXL/MIDI through `Import.load`) and false for
+   audio-recording-derived, rhythm-rewritten/rearranged, and OMR-scanned scores alike. G5c correctly does
+   nothing for any of the three: none of them ever reach a graph, so `n.finger` stays unset on them exactly
+   as it did before this phase, switch or no switch, and the hand guide falls back to its live per-note DP
+   exactly as always — the same "fails safe, does nothing" behavior in all three cases, not just the two
+   originally disclosed here.
 
 **Integration point chosen: (a), writing onto the graph itself, at the single spot the app turns a freshly
 imported graph into a Score.** Three call sites do this (`scoreFromXml`, `scoreFromFile`, `Import.load`),
@@ -595,10 +607,23 @@ checks, through `scoreFromXml` and separately through the real `Import.load` ent
   through the real `scoreFromXml` import path in the browser — see below.
 
 All of `tests/fingering.test.js` (pre-existing 60+ assertions plus the new ones), `test:scoregraph`
-(216/216), `test:playability` (32/32) and `test:engrave` (198/201; the 3 failures are the pre-existing,
-unrelated hymn-layout-hash and `be-still-my-soul.musicxml` tie-endpoint issues G5a's own record already
-named — reconfirmed present, byte-identical, on the pre-G5c commit via `git stash`, so untouched by this
-phase) pass. `tests/import-and-persistence.test.js`, `tests/musicxml.test.js`, `tests/engraving.test.js`,
+(216/216) and `test:playability` (32/32) pass. `test:engrave` showed 3 failures on this commit
+(`708e5f2`) at first, not 2: the A27 hymn layout-hash drift and the `be-still-my-soul.musicxml`
+tie-endpoint issue (TD14, §13 of the roadmap) are genuinely pre-existing — reconfirmed present,
+byte-identical, on the pre-G5c base commit (`7464cb3`) via `git stash`, untouched by this phase. The
+third, `tests/engrave/app.test.js`'s "every producer keeps the graph it made the Score from" test, was
+**not** pre-existing: it passes clean on `7464cb3` and only broke on `708e5f2` because this commit's own
+refactor (wrapping the imported graph through the new `graphForScore()` before `toScore()`, §11 above)
+changed `scoreFromXml`'s source text in a way the test's literal regex no longer matched — a real
+regression in the test itself, introduced by this phase, initially and incorrectly reported as part of
+the same "3 pre-existing, verified via `git stash`" claim as the other two. That claim was false for this
+one; independent review caught it. Fixed by updating the regex to recognize the new-but-equivalent
+`graphForScore`-wrapped shape via a backreference, so it still enforces the real invariant (the same graph
+object reaches both `toScore()` and `engraveRemember()`) rather than matching literal text that happened
+to change — confirmed by deliberately breaking that invariant in the source (making `toScore()` and
+`engraveRemember()` receive two different graphs) and seeing the test catch it, then reverting. With that
+fix, `test:engrave` is 199/201, with only the 2 genuinely pre-existing failures left.
+`tests/import-and-persistence.test.js`, `tests/musicxml.test.js`, `tests/engraving.test.js`,
 `tests/library.test.js` and `tests/course.test.js` (222 catalog scores read) were also re-run as an
 end-to-end check on the three patched call sites and pass with no console or page errors.
 
@@ -617,6 +642,18 @@ above) because it now includes `write()`'s `Ops.edit`/validate/seal pass, not me
 "idle-sliced, no long task" requirement the way a per-render cost would; a follow-up (H-56 or a later
 phase) could still idle-slice the write step itself if `'inferred'` ever becomes the default, out of scope
 here since this phase ships with the switch off.
+
+**Honest gap against §7's own aspiration.** §7 (above) asks for the fingering-solve cost to be
+"idle-sliced, no long task" — the actual `graphForScore()` call is not: it runs `solveGraph()` and the
+`Ops.edit` write synchronously, inline in `scoreFromXml`/`scoreFromFile`/`Import.load`, on the main thread,
+at import time — a real single-task block, independently measured at ~35-90 ms depending on piece size
+(the 94.7 ms total above includes the pre-existing ~49 ms `toScore()`/legacy path cost this phase did not
+add). This differs from §7's original aspiration and is disclosed here rather than left to look
+idle-sliced by the "does not compete with the requirement" framing two paragraphs up, which is true only
+in the sense that the switch defaults off, not in the sense that the code is actually sliced. Real risk
+today is low — `PPP.fingering` ships `'legacy'`, so no current import pays this cost — but if `'inferred'`
+is ever considered as a future default, idle-slicing this write (H-56 or a later phase) should be treated
+as a prerequisite, not an afterthought.
 
 **What was NOT changed.** No rendering code (`fingerPlan`, `HandArt`, any `engrave/` file) was touched —
 finding 1 above is exactly why none needed to be. No default flipped: `PPP.fingering` ships `'legacy'`,
