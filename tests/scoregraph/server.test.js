@@ -62,7 +62,10 @@ test('a running server answers GET /scoregraph/<file>.js with the file (A44)', a
     }
     const page = await get(port, '/');
     assert.equal(page.status, 200);
-    assert.match(page.body, /<script src="\.\/scoregraph\/index\.js\?v=\d+"><\/script>\s*<script src="\.\/audio-score\.js\?v=\d+"><\/script>/);
+    /* G05 §11 G5c: playability/graph.js and playability/fingering.js (the ported fingering DP) now load
+       between the scoregraph chain and audio-score.js — still right after scoregraph, still before
+       anything else, just no longer immediately adjacent to audio-score.js itself. */
+    assert.match(page.body, /<script src="\.\/scoregraph\/index\.js\?v=\d+"><\/script>[\s\S]*?<script src="\.\/playability\/graph\.js\?v=\d+"><\/script>\s*<script src="\.\/playability\/fingering\.js\?v=\d+"><\/script>\s*<script src="\.\/audio-score\.js\?v=\d+"><\/script>/);
   } finally {
     child.kill();
   }

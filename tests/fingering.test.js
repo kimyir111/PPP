@@ -308,6 +308,132 @@ const clickText = (page, re) => page.evaluate(src => {
   ok('the parser reads <fingering>', printed.read === '2 0 0 5', printed.read);
   ok('and the guide plays it as printed, fitting the rest around it', /^2 \d \d 5$/.test(printed.used) && printed.used !== '2 2 2 5', printed.used);
 
+  console.log('\n── PPP.fingering switch (G5c): legacy default, inferred opt-in ──');
+  /* A real 2-staff piano part, not the single-staff fixture above: G5's fingering only ever reaches a
+     note whose graph carries an RH/LH limb (G05 §10), and musicxml-import.js only sets that for a piano
+     part with exactly two staves (scoregraph/musicxml-import.js:1025) - a single staff gets none, so G5c
+     would (correctly) write nothing for one. The right hand gets four printed quarter notes, C and F
+     fingered (2, 5) as ground truth the write() guard must never touch; D and E are unfingered, for
+     'inferred' to fill. The left hand is a whole rest, so it never enters this check. */
+  const g5cXml = (() => {
+    const rh = (step, oct, fing) => '<note><pitch><step>' + step + '</step><octave>' + oct + '</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type><staff>1</staff>' +
+      (fing ? '<notations><technical><fingering>' + fing + '</fingering></technical></notations>' : '') + '</note>';
+    return '<?xml version="1.0"?><score-partwise version="3.1"><part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>' +
+      '<part id="P1"><measure number="1"><attributes><divisions>1</divisions><staves>2</staves><key><fifths>0</fifths></key>' +
+      '<time><beats>4</beats><beat-type>4</beat-type></time><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef></attributes>' +
+      rh('C', 4, 2) + rh('D', 4) + rh('E', 4) + rh('F', 4, 5) +
+      '<backup><duration>4</duration></backup><note><rest/><duration>4</duration><voice>2</voice><staff>2</staff></note></measure></part></score-partwise>';
+  })();
+  const g5c = await page.evaluate(xml => {
+    /* by MIDI pitch, not array position: Score.finalize orders notes by absolute time, not document
+       order, and the whole-measure LH rest shares onset 0 with the first RH note (App comment, App
+       ~315: "no sort here... Score.finalize orders by absolute position"). C4=60, D4=62, E4=64, F4=65. */
+    const byPitch = sc => { const m = {}; sc.notes.forEach(n => { if (!n.rest) m[n.midi] = n.finger || 0; }); return m; };
+    const savedFingering = window.PPP.fingering, savedLegacyImport = window.PPP.legacyImport;
+    const out = { defaultMode: window.PPP.fingering };
+    window.PPP.legacyImport = false;   /* the graph import path (G2's default) - the only one G5c reaches */
+    try {
+      window.PPP.fingering = 'legacy';
+      const scOff = window.PPP.scoreFromXml(xml, 'g5c-off.musicxml');
+      out.off = byPitch(scOff);
+      const planOff = window.PPP.Fingering.plan(scOff);
+      out.offPrintedKept = {};
+      scOff.notes.forEach(n => { if (!n.rest) out.offPrintedKept[n.midi] = planOff.finger.get(n) || 0; });
+
+      window.PPP.fingering = 'inferred';
+      const scOn = window.PPP.scoreFromXml(xml, 'g5c-on.musicxml');
+      out.on = byPitch(scOn);
+      const planOn = window.PPP.Fingering.plan(scOn);
+      out.onEchoed = scOn.notes.every(n => !n.finger || planOn.finger.get(n) === n.finger);
+
+      window.PPP.fingering = 'some-typo';
+      out.typoMode = window.PPP.fingering;
+    } finally {
+      window.PPP.fingering = savedFingering;
+      window.PPP.legacyImport = savedLegacyImport;
+    }
+    return out;
+  }, g5cXml);
+  ok('PPP.fingering defaults to \'legacy\'', g5c.defaultMode === 'legacy', g5c.defaultMode);
+  ok('legacy mode: only the printed fingering lands on the note, exactly as before G5c',
+    g5c.off[60] === 2 && g5c.off[62] === 0 && g5c.off[64] === 0 && g5c.off[65] === 5, JSON.stringify(g5c.off));
+  ok('legacy mode: the hand guide still plays the printed fingers as printed',
+    g5c.offPrintedKept[60] === 2 && g5c.offPrintedKept[65] === 5, JSON.stringify(g5c.offPrintedKept));
+  ok('inferred mode: the printed fingering is untouched (G3-D4\'s write() guard, never overridden)',
+    g5c.on[60] === 2 && g5c.on[65] === 5, JSON.stringify(g5c.on));
+  ok('inferred mode: G5 fills the two notes that printed no fingering',
+    g5c.on[62] >= 1 && g5c.on[62] <= 5 && g5c.on[64] >= 1 && g5c.on[64] <= 5, JSON.stringify(g5c.on));
+  ok('inferred mode: whatever was written is exactly what the hand guide plays back (App 8524-8558\'s fixed-candidate filter)',
+    g5c.onEchoed, JSON.stringify(g5c.on));
+  ok('an unrecognized value falls back to \'legacy\' (G4-F2-1\'s convention)', g5c.typoMode === 'legacy', g5c.typoMode);
+
+  console.log('\n── PPP.fingering reaches the real import entry point (Import.load), not just scoreFromXml ──');
+  const g5cImport = await page.evaluate(async xml => {
+    const byPitch = sc => { const m = {}; sc.notes.forEach(n => { if (!n.rest) m[n.midi] = n.finger || 0; }); return m; };
+    const savedFingering = window.PPP.fingering, savedLegacyImport = window.PPP.legacyImport;
+    window.PPP.legacyImport = false;
+    try {
+      const file = new File([xml], 'g5c-import.musicxml', { type: 'application/vnd.recordare.musicxml+xml' });
+      window.PPP.fingering = 'legacy';
+      const off = await window.PPP.Import.load(file, () => {}, {});
+      window.PPP.fingering = 'inferred';
+      const on = await window.PPP.Import.load(file, () => {}, {});
+      return { off: byPitch(off.score), on: byPitch(on.score) };
+    } finally {
+      window.PPP.fingering = savedFingering;
+      window.PPP.legacyImport = savedLegacyImport;
+    }
+  }, g5cXml);
+  ok('Import.load under \'legacy\' leaves unprinted notes unfingered',
+    g5cImport.off[60] === 2 && g5cImport.off[62] === 0 && g5cImport.off[64] === 0 && g5cImport.off[65] === 5, JSON.stringify(g5cImport.off));
+  ok('Import.load under \'inferred\' fills them, without touching the printed ones',
+    g5cImport.on[60] === 2 && g5cImport.on[65] === 5 && g5cImport.on[62] >= 1 && g5cImport.on[62] <= 5 && g5cImport.on[64] >= 1 && g5cImport.on[64] <= 5,
+    JSON.stringify(g5cImport.on));
+
+  console.log('\n── PPP.fingering=\'inferred\' performance on import (G05 §7) ──');
+  const g5cPerf = await page.evaluate(async b64 => {
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const xml = await window.PPP.readMxl(bytes.buffer);
+    const savedFingering = window.PPP.fingering, savedLegacyImport = window.PPP.legacyImport;
+    window.PPP.legacyImport = false;
+    try {
+      window.PPP.fingering = 'legacy';
+      window.PPP.scoreFromXml(xml, 'perf-warm.mxl'); /* warm up parsing/JIT before timing either mode */
+      const t0 = performance.now();
+      window.PPP.scoreFromXml(xml, 'perf-legacy.mxl');
+      const legacyMs = performance.now() - t0;
+
+      window.PPP.fingering = 'inferred';
+      window.PPP.scoreFromXml(xml, 'perf-warm2.mxl'); /* warm up the DP + Ops.edit path once too */
+      const t1 = performance.now();
+      const sc = window.PPP.scoreFromXml(xml, 'perf-inferred.mxl');
+      const inferredMs = performance.now() - t1;
+      /* A tie continuation (n.tieStop) is never its own attack (App Fingering.events(), App ~8565: it
+         only extends how long the previous note holds) - it always inherits the tie-start's finger
+         through Fingering.plan's own separate holding-map step (App 8766-8772), regardless of what (if
+         anything) Head.fingering says, so 'inferred' correctly writes nothing for one. Only non-tie-
+         continuation struck notes are the ones G5 fingers directly. */
+      const struckHand = n => !n.rest && (n.hand === 'r' || n.hand === 'l');
+      const fingerable = sc.notes.filter(n => struckHand(n) && !n.tieStop);
+      const fingered = fingerable.filter(n => n.finger >= 1 && n.finger <= 5).length;
+      const plan = window.PPP.Fingering.plan(sc);
+      const tieContinuations = sc.notes.filter(n => struckHand(n) && n.tieStop);
+      const tiedStillPlayable = tieContinuations.every(n => { const f = plan.finger.get(n); return f >= 1 && f <= 5; });
+      return { legacyMs, inferredMs, fingered, struck: fingerable.length, tieContinuations: tieContinuations.length, tiedStillPlayable };
+    } finally {
+      window.PPP.fingering = savedFingering;
+      window.PPP.legacyImport = savedLegacyImport;
+    }
+  }, fs.readFileSync(path.join(__dirname, '..', 'catalog', 'method', 'sonatina', '020.mxl')).toString('base64'));
+  ok('sonatina/020 (the longest R-corpus piece) gets fingered on import under \'inferred\', tie continuations aside',
+    g5cPerf.fingered === g5cPerf.struck && g5cPerf.struck > 1000, g5cPerf.fingered + ' of ' + g5cPerf.struck + ' (' + g5cPerf.tieContinuations + ' tie continuations excluded)');
+  ok('and every tie continuation still plays with a valid, inherited finger regardless (App 8766-8772)',
+    g5cPerf.tiedStillPlayable, g5cPerf.tieContinuations + ' tie continuation(s)');
+  ok('and importing it with \'inferred\' on stays well under a 300ms single-song budget (idle-sliced, once per load, G05 §7)',
+    g5cPerf.inferredMs < 300, 'legacy ' + g5cPerf.legacyMs.toFixed(1) + 'ms, inferred ' + g5cPerf.inferredMs.toFixed(1) + 'ms (added ' + (g5cPerf.inferredMs - g5cPerf.legacyMs).toFixed(1) + 'ms)');
+
   console.log('\n── on the practice page ──');
   await page.evaluate(() => window.__pppTest.practice());
   await sleep(1000);
