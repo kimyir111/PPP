@@ -1,6 +1,6 @@
 # PPP — current state
 
-Updated 2026-09-27 (**G4 "Professional Engraving" is completely CLOSED AND DEPLOYED** — the legacy renderer removal merged as PR #54 `4962251`, deployed to production 2026-09-27 (`dep-dasi7ah7lnhs739a2ia0`, commit `256aa9a`, verified live via a real song render), one release after the flip (PR #32 `9dc6942`, deployed 2026-09-26); every G4 stage from G4a through the removal is merged and live. The only rollback now is redeploying the previous build (`16f4311`) — the `?renderer=legacy` switch itself is gone from the code. Full history: G04 §32–§52, DECISIONS' G4-* rows. **MX-2 (catalogue data integrity) is merged as PR #57, squashed `ca70a03`** — 89 hymns' key signatures, tie stops and in-bar accidentals fixed at the root (`catalog/hymns/abc-to-musicxml.js`); data-only, not yet deployed (section below). The production database moved to Neon Free on 2026-09-25). G0 (Quality Foundation), G1 (ScoreGraph) and G2 (Score Import) are all merged
+Updated 2026-09-27 (**G4 "Professional Engraving" is completely CLOSED AND DEPLOYED** — the legacy renderer removal merged as PR #54 `4962251`, deployed to production 2026-09-27 (`dep-dasi7ah7lnhs739a2ia0`, commit `256aa9a`, verified live via a real song render), one release after the flip (PR #32 `9dc6942`, deployed 2026-09-26); every G4 stage from G4a through the removal is merged and live. The only rollback now is redeploying the previous build (`16f4311`) — the `?renderer=legacy` switch itself is gone from the code. Full history: G04 §32–§52, DECISIONS' G4-* rows. **MX-2 (catalogue data integrity) is merged and DEPLOYED as PR #57, squashed `ca70a03`** — 89 hymns' key signatures, tie stops and in-bar accidentals fixed at the root (`catalog/hymns/abc-to-musicxml.js`), deploy `dep-dasjdlt9fdbs73dnhgo0`, verified live (section below). The production database moved to Neon Free on 2026-09-25). G0 (Quality Foundation), G1 (ScoreGraph) and G2 (Score Import) are all merged
 and closed. **G3 is merged as PARTIAL / DEFERRED** (PR #7, `c5474c2`; G03 §31): implemented, reviewed and fixed,
 but its blind human review (A36) failed (§30), so every part of it stays **off** — G3a, G3b, the automatic 8va
 and the pedal join — and nothing a user sees changed. **The active goal is G4 Professional Engraving**
@@ -461,8 +461,13 @@ browser suite now show `fallbacks none`; `test:scoregraph` 216/216, `test:engrav
 
 ### MX-2 — catalogue data integrity (2026-09-27)
 
-**MERGED as PR #57** (`789e6de` fix + `fbda4b4` review fixup, squashed `ca70a03`), after one independent review round
-(MAJOR 2, both fixed and re-verified). Data-only change (no app file touched). **Not yet deployed.**
+**MERGED and DEPLOYED as PR #57** (`789e6de` fix + `fbda4b4` review fixup, squashed `ca70a03`), after one independent
+review round (MAJOR 2, both fixed and re-verified). Data-only change (no app file touched). **Deployed to production**
+(`dep-dasjdlt9fdbs73dnhgo0`, 2026-09-27): verified beyond `/health` by fetching the actual served
+`catalog/hymns/amazing-grace.musicxml` and confirming `window.PPP.parseMusicXML` in the live page now reads its
+measure-3 bass F as F#3 (midi 54, matching the G-major key signature) instead of F natural (a first check gave a
+false negative by reading a stale copy of the file from an unrelated worktree instead of the actual deployed content —
+corrected by curling the real served URL).
 
 - **What was wrong.** `catalog/hymns/abc-to-musicxml.js` (ABC to MusicXML converter for the 100 Open Hymnal piano
   reductions) wrote `<alter>` only for a note with an explicit ABC accidental mark; every other note — the vast
