@@ -11083,6 +11083,36 @@ function openingBars(full, n) {
   const keep = {};
   ms.forEach(m => { keep[m.number] = true; });
   const mine = list => (list || []).filter(x => keep[x.m]).map(x => Object.assign({}, x));
+  /* A wedge (crescendo/diminuendo + stop) or a pedal action (start, an optional change, stop) is more than one point
+     event - mine() alone can keep a start whose matching stop falls outside this 2-bar window (or a stray stop with
+     none), an orphan fromScore() cannot place: the same SOURCE_DISAGREES class G4-R1/G4-R2 fixed for the whole score,
+     now possible in miniature here (a real catalog piece hit exactly this, fixer review round 2). Since this always
+     starts at the piece's own first measure, a span can only run off the END of the window, never open before it -
+     kept only whole (both ends inside the window), otherwise dropped exactly as ottavas already are, not clipped: a
+     mark cut off mid-span is not worth the extra logic for a 2-bar decorative preview. Pedals group by kind (damper,
+     sostenuto, soft are independent of each other); wedges do not need to. */
+  const spanned = (list, startTypes, groupOf) => {
+    const arr = list || [];
+    const openIdx = {};    /* group -> the indices buffered so far for its currently-open span, or null */
+    const keepIdx = new Set();
+    arr.forEach((x, i) => {
+      const g = groupOf ? groupOf(x) : '';
+      if (startTypes.indexOf(x.type) > -1) { openIdx[g] = keep[x.m] ? [i] : null; return; }
+      if (x.type === 'stop') {
+        if (openIdx[g] && keep[x.m]) { openIdx[g].push(i); openIdx[g].forEach(j => keepIdx.add(j)); }
+        openIdx[g] = null;
+        return;
+      }
+      /* an in-between event (a pedal 'change') belongs to whatever span of its own kind is currently open - buffered,
+         not kept outright, so an incomplete span (no stop found) drops its changes too, not just its start */
+      if (openIdx[g]) { if (keep[x.m]) openIdx[g].push(i); else openIdx[g] = null; }
+    });
+    /* filtering the original array by index (not rebuilding it start-then-change-then-stop) keeps whatever
+       chronological order the Score already had - fromScore() reads a pedal's change relative to its own start by
+       position, so a change pushed out of order (this filter's first version) silently built a second, spurious
+       spanner from it (piano-marks.musicxml, round 3: 3 raw events read back as 2 pedals, not 1) */
+    return arr.filter((x, i) => keepIdx.has(i)).map(x => Object.assign({}, x));
+  };
   /* A card draws no octave line, so a note under one is printed where it sounds (MX-1 fixer, R2). Every Score states
      written = sounding - shift, before MX-1 as after it, so adding the shift back is right for a preview stored with a
      share by either; and a preview made here is stored that way. */
@@ -11095,8 +11125,9 @@ function openingBars(full, n) {
     x.ottavaShift = 0;
   });
   return Object.assign({}, full, {
-    measures: ms, notes: notes, chords: mine(full.chords), pedals: mine(full.pedals), ottavas: [],
-    marks: mine(full.marks), dynamics: mine(full.dynamics), wedges: mine(full.wedges),
+    measures: ms, notes: notes, chords: mine(full.chords), pedals: spanned(full.pedals, ['start'], p => p.kind || 'damper'), ottavas: [],
+    marks: mine(full.marks), dynamics: mine(full.dynamics), wedges: spanned(full.wedges, ['crescendo', 'diminuendo']),
+    tempos: mine(full.tempos),
     sections: [{ id: 's1', from: ms[0].number, to: ms[ms.length - 1].number }], _byNumber: undefined
   });
 }
