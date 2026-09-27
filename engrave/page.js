@@ -1,16 +1,16 @@
 /* ============================================================================
    PPP engrave — the renderer in the page (docs/GOALS/G04 §16; G4d-2)
 
-   The app's ScoreView draws through this file when its `renderer` is
-   'engrave' (the app's default since the G4f-2 flip; 'legacy' is the
-   rollback, G04 §25). It is the one engrave/ file that works with the DOM:
+   The app's ScoreView draws through this file - the only renderer since
+   §25.2 step 3 removed the old VexFlow-based one and its dev-only switch
+   (G04 §16, §25, §52). It is the one engrave/ file that works with the DOM:
    it puts the engraver's SVG into the view's element, draws the practice layer's own marks
    over it, moves the playhead, colours the notes and reads the pointer. What
    is drawn, and where, is decided elsewhere and never here - the plan
    (plan.js), the layout (layout.js), the SVG (svg.js), the practice map
    (practice.js).
 
-     createView(env)   one per ScoreView: paint(el, props) -> 'drawn' | 'pending' | 'legacy'
+     createView(env)   one per ScoreView: paint(el, props) -> 'drawn' | 'pending' | 'failed'
      layoutConfig(p, score, viewportPx), semanticConfig(p), drawKey(parts)
      createSync(groups) the page's sync (§16.2): the notes lit, hidden and
                         marked wrong, touching only what changed
@@ -37,14 +37,21 @@
    + what the page draws over it. Anything else - the playhead, the notes lit,
    the hands shown, memory mode - is sync()'s, and draws nothing new.
 
-   The page's SVG is in the legacy renderer's units: 1 user unit = 1 px at the
-   engraver's 10 px per staff space (svg.js {unit: 10}), so svg.__ppp, the
-   overlays and every pixel test read the same numbers under both renderers.
+   The page's SVG is in the old (now removed) legacy renderer's units: 1 user
+   unit = 1 px at the engraver's 10 px per staff space (svg.js {unit: 10}) -
+   kept as is so svg.__ppp, the overlays and every pixel test already written
+   against it read the same numbers as before.
 
-   Failure (§16.7): anything that throws makes the view hand the song back to
-   the legacy renderer ('legacy'), counted in stats.fallbacks by code and per
-   song, and warned once as "[ppp] engrave fallback" - the screen is never left
-   blank. env.strict() (PPP.strictEngrave, ?strict=1) throws instead.
+   Failure (§16.7): anything that throws makes the view show its own "could not
+   be engraved" message in place of the drawing ('failed', env.failText()),
+   counted in stats.fallbacks by code and per song, and warned once as
+   "[ppp] engrave fallback" - the screen is never left blank. A reduced view
+   (no clefs, one staff of several - the home page's loop thumbnail, the empty
+   page's staff) draws like any other view since §25.2 step 3 (DECISIONS
+   G4-R3): the plan/layout pipeline has no notion of hiding a clef or a staff,
+   so it simply shows them, small. env.strict() (PPP.strictEngrave, ?strict=1)
+   throws instead of showing the failure message - for CI and tests, so a
+   real regression fails loudly rather than quietly drawing a placeholder.
    ========================================================================== */
 (function (root, factory) {
   'use strict';
@@ -77,7 +84,7 @@
 
   const stats = {
     version: VERSION,
-    views: 0, paints: 0, draws: 0, pending: 0, routed: 0,
+    views: 0, paints: 0, draws: 0, pending: 0,
     fallbacks: {}, bySong: {},
     plans: 0, planHits: 0, layouts: 0, layoutHits: 0, svgs: 0, svgHits: 0, maps: 0,
     frames: 0, fullFrames: 0, touched: 0, visited: 0,
@@ -404,12 +411,26 @@
   function createView(env) {
     stats.views++;
     const doc = browser.document;
-    const fellBack = new WeakMap();      /* score -> the code it fell back with: legacy for that song from then on */
+    const failedScores = new WeakMap();  /* score -> the code it failed with: sticky, so a song that failed stays failed
+                                             until its score object changes (§25.2 step 3: there is no other renderer to
+                                             hand it to any more - this view's own "could not be engraved" message, never
+                                             a blank screen) */
     let st = null;                       /* {score, src, pending, error, ident} */
     let drawn = null;                    /* {key, el, svg, eng, plan, map, sync, segs, over} */
     const counters = env.stats || stats;
 
-    function fail(score, code, err) {
+    /* the message this view shows in place of the drawing (idempotent: repainting an already-failed score, every sync
+       frame during playback, must not touch the DOM again) */
+    function failedPlaceholder(el) {
+      if (el.firstChild && el.firstChild.getAttribute && el.firstChild.getAttribute('data-engrave-failed')) return;
+      el.innerHTML = '';
+      const d = doc.createElement('div');
+      d.setAttribute('data-engrave-failed', '1');
+      d.style.cssText = 'padding:22px;text-align:center;font-size:12.5px;color:var(--ink3);';
+      d.textContent = (env.failText && env.failText()) || 'This passage could not be engraved.';
+      el.appendChild(d);
+    }
+    function fail(el, score, code, err) {
       if (env.strict && env.strict()) {
         const e = new Error('[ppp] engrave ' + code + (err && err.message ? ': ' + err.message : ''));
         e.code = code; e.cause = err;
@@ -419,10 +440,11 @@
       const id = (score && score.id) || '?';
       counters.bySong[id] = code;
       if (counters !== stats) { stats.fallbacks[code] = (stats.fallbacks[code] || 0) + 1; stats.bySong[id] = code; }
-      if (score) fellBack.set(score, code);
+      if (score) failedScores.set(score, code);
       drawn = null;
       try { browser.console.warn('[ppp] engrave fallback', code, err && err.message ? err.message : ''); } catch (e) { /* no console */ }
-      return 'legacy';
+      failedPlaceholder(el);
+      return 'failed';
     }
     function placeholder(el) {
       if (el.firstChild && el.firstChild.getAttribute && el.firstChild.getAttribute('data-engrave-wait')) return;
@@ -451,21 +473,19 @@
     function paint(el, p) {
       stats.paints++;
       const score = p.score;
-      if (!score || !el) return 'legacy';
-      if (fellBack.has(score)) return 'legacy';
-      /* a reduced drawing the engraver does not make - no clefs, one staff of several: the legacy renderer's */
-      if (p.clefs === false || (p.grand === false && (score.staves || 1) > 1)) { stats.routed++; return 'legacy'; }
+      if (!score || !el) return 'failed';
+      if (failedScores.has(score)) { failedPlaceholder(el); return 'failed'; }
       let stage = 'SOURCE';
       try {
         const s = sourceFor(score);
         if (s.pending) { stats.pending++; if (!drawn || drawn.el !== el || drawn.score !== score) placeholder(el); return 'pending'; }
-        if (s.error) return fail(score, 'SOURCE_THREW', s.error);
+        if (s.error) return fail(el, score, 'SOURCE_THREW', s.error);
         const src = s.src;
         /* why, in the warning: the source's first diagnostic (the comparator's first difference, a refused projection) */
         const why = () => new Error(JSON.stringify((src && src.diagnostics && src.diagnostics[0]) || null).slice(0, 300));
-        if (!src || src.via === 'none' || !src.graph) return fail(score, 'SOURCE_NONE', why());
-        if (!src.agree || !src.agree.ok) return fail(score, 'SOURCE_DISAGREES', why());
-        if (!src.link || !src.link.ok) return fail(score, 'LINK_FAILED', new Error(JSON.stringify(src.link && src.link.mismatch || null).slice(0, 300)));
+        if (!src || src.via === 'none' || !src.graph) return fail(el, score, 'SOURCE_NONE', why());
+        if (!src.agree || !src.agree.ok) return fail(el, score, 'SOURCE_DISAGREES', why());
+        if (!src.link || !src.link.ok) return fail(el, score, 'LINK_FAILED', new Error(JSON.stringify(src.link && src.link.mismatch || null).slice(0, 300)));
         stage = 'PLAN';
         const sem = semanticConfig(p);
         const g = graphEntry(src);
@@ -482,7 +502,7 @@
         overlays(p);
         return 'drawn';
       } catch (e) {
-        return fail(score, stage + '_THREW', e);
+        return fail(el, score, stage + '_THREW', e);
       }
     }
 

@@ -5,9 +5,8 @@
      NODE_PATH=D:/PPP/node_modules node tests/engrave/tools/print-check.js --url http://127.0.0.1:8801
        [--out tests/engrave/out/print]
 
-   For each of SONGS: opens the app's default page (the engraver since the G4f-2 flip; G4e opened ?renderer=engrave,
-   then the only way to the command - --renderer engrave does that still), checks the "Print / Save as PDF" command is
-   shown in the whole-score view, loads the piece the way a person's song opens (the
+   For each of SONGS: opens the app's page (the only renderer since §25.2 step 3), checks the "Print / Save as PDF"
+   command is shown in the whole-score view, loads the piece the way a person's song opens (the
    import door - scoreFromXml/scoreFromFile - or the app's own reader), switches to the whole-score view, then calls
    window.PPPEngravePage.printScore() itself (the same function the "Print / Save as PDF" button calls) - the real
    pipeline: PPPEngrave.app.resolve, printLayout, printSvgs, the hidden container, document.fonts.ready,
@@ -16,8 +15,8 @@
    <out> (gitignored, tests/engrave/out/) and a JSON summary; exit 1 on any failure. No G0 hold-out file is opened.
 
    G4f-2 review R2: then the shared seed songs (catalog/shared-seeds.json), opened as a shared song opens, whole score:
-   the command is shown exactly when the engraver drew the song - a song that fell back to the legacy renderer (its
-   source disagrees, so the print layout has nothing to read) shows none - and asking such a song to print anyway (the
+   the command is shown exactly when the engraver drew the song - a song whose engraving failed (its source disagrees,
+   so the print layout has nothing to read) shows none - and asking such a song to print anyway (the
    app's own printScore(), window.print stubbed) tells the person, in a toast, instead of doing nothing. All 7 real
    seeds now agree (G4 polish m2 fixed catalog/build-shared-seeds.js's wrong <stave-count> tag), so a cloned,
    deliberately re-broken seed is the negative control that keeps the gating itself under test. */
@@ -31,8 +30,6 @@ const H = require(path.join(REPO, 'tests', 'engrave', 'helpers.js'));
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const BASE = arg('--url', 'http://127.0.0.1:8801');
-/* the page's renderer: 'default' (no ?renderer - what a person gets) or a ?renderer= value */
-const RENDERER = arg('--renderer', 'default');
 const OUT = path.resolve(REPO, arg('--out', 'tests/engrave/out/print'));
 fs.mkdirSync(OUT, { recursive: true });
 const rd = p => fs.readFileSync(path.join(REPO, p), 'utf8');
@@ -58,8 +55,8 @@ async function openPage(browser) {
   page.on('pageerror', e => logs.push('pageerror: ' + e.message));
   await preparePage(page);
   await page.setViewport({ width: 1400, height: 1000 });
-  await page.goto(BASE + '/Piano%20Coach%20App.dc.html' + (RENDERER === 'default' ? '' : '?renderer=' + RENDERER), { waitUntil: 'networkidle2' });
-  await page.waitForFunction(() => window.PPP && window.PPP.app && window.Vex && window.Vex.Flow, { timeout: 30000 });
+  await page.goto(BASE + '/Piano%20Coach%20App.dc.html', { waitUntil: 'networkidle2' });
+  await page.waitForFunction(() => window.PPP && window.PPP.app, { timeout: 30000 });
   await page.evaluate(() => window.__pppTest.practice());
   await sleep(500);
   page.__logs = logs;

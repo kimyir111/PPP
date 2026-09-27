@@ -88,16 +88,17 @@
   /* the hand guide slides to a new position rather than jumping there */
   .ppp-hand { transition: transform .28s cubic-bezier(.3, .7, .3, 1); }
   @media (prefers-reduced-motion: reduce) { .ppp-hand { transition: none; } }
-  /* Engraved score. Note state is a class on the VexFlow note group so the
+  /* Engraved score. Note state is a class on the drawn note group so the
      playhead, hand filter and memory level never force a re-engrave. The
      attribute selectors recolour only what is already painted, leaving
      stroke-less noteheads and fill-less stems alone. */
   .ppp-score { position: relative; }
   .ppp-score svg { display: block; max-width: 100%; overflow: visible; }
-  /* Tempo, composer, bar numbers and other labels we draw ourselves. VexFlow
-     stamps fill="black" on the SVG root; a presentation attribute on a small
-     Latin <text> then loses to that inherited black, so these would vanish on
-     a dark page even when the title (fallback Hangul, using CSS color) did not. */
+  /* Tempo, composer, bar numbers and other labels we draw ourselves, over a
+     drawing whose SVG root may stamp fill="black": a presentation attribute on
+     a small Latin <text> then loses to that inherited black, so these would
+     vanish on a dark page even when the title (fallback Hangul, using CSS
+     color) did not. */
   .ppp-score svg .ppp-ann { fill: var(--score-ink, var(--ink)) !important; }
   .ppp-note.ppp-off { visibility: hidden; }
   .ppp-note.ppp-ghost { opacity: .16; }
@@ -105,8 +106,8 @@
   .ppp-note.ppp-on [stroke]:not([stroke="none"]) { stroke: var(--accent) !important; }
   .ppp-note.ppp-bad [fill]:not([fill="none"]) { fill: var(--bad) !important; }
   .ppp-note.ppp-bad [stroke]:not([stroke="none"]) { stroke: var(--bad) !important; }
-  /* G4d-2: the engraver's SVG (renderer 'engrave', engrave/page.js) is inked with currentColor, so the theme colours
-     it here - nothing is baked in when it is drawn. The legacy renderer's SVG has no .ppp-engraved. */
+  /* G4d-2: the engraver's SVG (engrave/page.js, svg.ppp-engraved - every drawing since §25.2 step 3) is inked with
+     currentColor, so the theme colours it here - nothing is baked in when it is drawn. */
   .ppp-score svg.ppp-engraved { color: var(--score-ink, var(--ink)); }
   .ppp-score svg.ppp-engraved .vf-stave { stroke: var(--score-staff, var(--staff)); }
   .ppp-score svg.ppp-engraved .ppp-note.ppp-on { color: var(--accent); }
@@ -3467,22 +3468,6 @@ function ottavaSemitones(ov) {
   const octaves = size >= 15 ? 2 : 1;
   return (ov.dir > 0 ? 1 : -1) * 12 * octaves;
 }
-/* VexFlow wants 'e/5' — and its own accidental modifier, so strip ours off the key. */
-function vexKey(p) {
-  const m = PITCH_RE.exec(p || '');
-  if (!m) return 'b/4';
-  return m[1].toLowerCase() + '/' + m[3];
-}
-function vexAccidental(p) {
-  const m = PITCH_RE.exec(p || '');
-  if (!m || !m[2]) return null;
-  return m[2].charAt(0) === '#' ? (m[2].length === 2 ? '##' : '#') : (m[2].length === 2 ? 'bb' : 'b');
-}
-
-const VF_TYPE = {
-  breve: '1/2', whole: 'w', half: 'h', quarter: 'q', eighth: '8',
-  '16th': '16', '32nd': '32', '64th': '64', '128th': '128'
-};
 const Q_TYPE = [[4, 'whole'], [2, 'half'], [1, 'quarter'], [0.5, 'eighth'], [0.25, '16th'], [0.125, '32nd']];
 function typeFromQ(q) {
   for (let i = 0; i < Q_TYPE.length; i++) if (q >= Q_TYPE[i][0] - 1e-6) return Q_TYPE[i][1];
@@ -3564,11 +3549,6 @@ const KEY_MINOR = ['Ab', 'Eb', 'Bb', 'F', 'C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C
 function keyName(fifths, mode) {
   const i = clampN((fifths | 0) + 7, 0, 14);
   return mode === 'minor' ? KEY_MINOR[i] + ' minor' : KEY_MAJOR[i] + ' major';
-}
-/* VexFlow key signature spelling. */
-function vexKeySig(fifths, mode) {
-  const i = clampN((fifths | 0) + 7, 0, 14);
-  return mode === 'minor' ? KEY_MINOR[i] + 'm' : KEY_MAJOR[i];
 }
 function clampN(v, a, b) { return v < a ? a : v > b ? b : v; }
 
@@ -9241,7 +9221,7 @@ window.PPP = {
   importToGraph,
   get legacyImport() { return LEGACY_IMPORT; },
   set legacyImport(v) { LEGACY_IMPORT = !!v; },
-  pitchToMidi, midiToFreq, keyName, vexKey,
+  pitchToMidi, midiToFreq, keyName,
   PIANO, PianoSamples, PianoScore, PianoPlayer,
   PianoVisual: {
     defaults: PIANO_VISUALIZER_DEFAULTS,
@@ -9262,43 +9242,6 @@ window.PPP = {
   ScoreSearch: (typeof window !== 'undefined' ? window.PPPScoreSearch : null),
   Coach, COACH, Fingering, HandArt, tx: tx
 };
-/* ============================================================================
-   NOTATION RENDERER (VexFlow)
-
-   Engraving is expensive and the playhead moves every 40ms, so the two are
-   separated: draw() re-engraves only when something structural changes, and
-   sync() moves the playhead and repaints note states by touching the DOM
-   directly. Note colour, hand filtering and memory-mode hiding are CSS classes
-   on the note groups, so switching hands or memory level never reflows the
-   score — the spacing stays put, which is what you want when the point of the
-   exercise is remembering where the notes were.
-   ========================================================================== */
-
-const VEXFLOW_URL = 'https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/cjs/vexflow.js';
-const SVGNS = 'http://www.w3.org/2000/svg';
-let _vexPromise = null;
-
-function loadVexFlow() {
-  if (window.Vex && window.Vex.Flow) return Promise.resolve(window.Vex.Flow);
-  if (_vexPromise) return _vexPromise;
-  _vexPromise = new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = VEXFLOW_URL;
-    s.async = true;
-    s.onload = () => (window.Vex && window.Vex.Flow)
-      ? resolve(window.Vex.Flow)
-      : reject(new Error('The notation library loaded but did not initialise.'));
-    s.onerror = () => reject(new Error('Could not reach the notation library.'));
-    document.head.appendChild(s);
-  });
-  return _vexPromise;
-}
-
-const ACC_VEX = {
-  'sharp': '#', 'flat': 'b', 'natural': 'n', 'double-sharp': '##', 'sharp-sharp': '##',
-  'flat-flat': 'bb', 'double-flat': 'bb', 'quarter-sharp': '+', 'quarter-flat': 'd'
-};
-
 /* ============================================================================
    WHAT A PDF SAYS IN ITS OWN WORDS
 
@@ -10539,28 +10482,37 @@ function barQ(seg, x) {
 }
 
 /* ============================================================================
-   THE ENGRAVER IN THE PAGE — the default renderer (G4d-2, G4f-2 flip; docs/GOALS/G04 §16, §25)
+   THE ENGRAVER IN THE PAGE — the only renderer (G4d-2, G4f-2 flip, §25.2 step 3
+   removal; docs/GOALS/G04 §16, §25, §52)
 
-   PPP.renderer is the default of every ScoreView's `renderer` prop: 'engrave'
-   (the flip, G04 §25.2 step 2, approved by the user - DECISIONS G4-U6) unless
-   the page was opened with ?renderer=legacy, or localStorage 'ppp.renderer'
-   says 'legacy'; any other value is the default. PPP.renderer = 'legacy' at
-   run time does the same. That is the rollback (§25.3): the legacy renderer -
-   draw(), buildVoice(), sync() below, byte for byte what it drew before (A45) -
-   stays one switch away for one release, then goes (§25.2 step 3, its own PR).
-   Nothing a person can press sets the switch. Score, playback and the practice
-   judge are the same under both (A16): only the drawing differs.
-
-   A ScoreView draws through engrave/page.js, loaded on first use
+   Every ScoreView draws through engrave/page.js, loaded on first use
    (ENGRAVE_FILES, each asked for by its content hash, so the server may let
    the browser keep it; tests/engrave/tools/page-files.js writes the list).
-   A reduced view the engraver does not draw (no clefs, one staff of several:
-   the loop thumbnail, the empty page's staff) is routed to the legacy renderer
-   before anything is loaded - routed, not a failure: not counted as a
-   fallback, not warned (G4-F2-2). A song whose engraving fails is drawn by the
-   legacy renderer - counted in PPP.engraveStats and warned as "[ppp] engrave
-   fallback", so the screen is never blank. PPP.strictEngrave (?strict=1)
-   throws instead.
+   There used to be a second, VexFlow-based renderer and a dev-only switch to
+   fall back to it - PPP.renderer = 'legacy' (§25.3) - kept for one release
+   after the flip as an emergency rollback. It is gone (§25.2 step 3, DECISIONS
+   G4-R3/G4-R4): the fallback-cause survey found the real corpus and every
+   browser suite at zero (G04 §50-§51), so there was nothing left worth keeping
+   a second renderer alive for. A reduced view (no clefs, one staff of several:
+   the loop thumbnail, the empty page's staff) used to be routed away from the
+   engraver before anything loaded, purely to avoid its 15-file load for a tiny
+   thumbnail; measured, that load is a few tens of ms of small same-origin
+   files the server already caches for good by hash (DECISIONS G4-R3) - far
+   less than the VexFlow CDN round trip every view used to wait on regardless
+   of which renderer drew it. The engraver's plan/layout pipeline has no notion
+   of hiding a clef or a staff (adding one would be a change to engrave/'s
+   rendering logic, out of scope for a removal), so these two views now simply
+   draw like any other, clef and all.
+
+   A song whose engraving fails (a genuine SOURCE_DISAGREES on a file this
+   session's corpus never produces, or the engrave/ files themselves failing to
+   load) shows this view's own "This passage could not be engraved." message
+   in place of the drawing - counted in PPP.engraveStats and warned as "[ppp]
+   engrave fallback", so the screen is never blank (DECISIONS G4-R4; the same
+   inline-message convention the app already used elsewhere for a per-song
+   drawing problem, not a new one). PPP.strictEngrave (?strict=1) throws
+   instead, for CI and tests that must fail loudly rather than pass on a
+   quietly-shown placeholder.
    ========================================================================== */
 const ENGRAVE_FILES = [
   ['metrics', '259583c8ba91'],
@@ -10577,26 +10529,21 @@ const ENGRAVE_FILES = [
   ['practice', '896d337259aa'],
   ['outlines', 'a1414e5d01dd'],
   ['svg', 'f78b662f6a18'],
-  ['page', '4853080bd90c']
+  ['page', '2512d9aebb77']
 ];
-const ENGRAVE_SWITCH = (() => {
-  const sw = { renderer: 'engrave', strict: false, stats: { fallbacks: {}, bySong: {}, routed: 0 } };
+const ENGRAVE_STATE = (() => {
+  const st = { strict: false, stats: { fallbacks: {}, bySong: {} } };
   try {
     const q = new URLSearchParams(location.search);
-    const r = q.get('renderer') || localStorage.getItem('ppp.renderer');
-    if (r === 'legacy') sw.renderer = 'legacy';
-    sw.strict = q.get('strict') === '1' || localStorage.getItem('ppp.strictEngrave') === '1';
+    st.strict = q.get('strict') === '1' || localStorage.getItem('ppp.strictEngrave') === '1';
   } catch (e) { /* no URL or storage: the default */ }
-  return sw;
+  return st;
 })();
 Object.defineProperties(window.PPP, {
-  renderer: { enumerable: true, get: () => ENGRAVE_SWITCH.renderer, set: v => { ENGRAVE_SWITCH.renderer = v === 'legacy' ? 'legacy' : 'engrave'; } },
-  strictEngrave: { enumerable: true, get: () => ENGRAVE_SWITCH.strict, set: v => { ENGRAVE_SWITCH.strict = !!v; } },
-  /* the fallbacks, by code and by song, and the paints routed to the legacy renderer before the engraver was asked (the
-     engraver's own counters are PPPEngravePage.stats) */
-  engraveStats: { enumerable: true, get: () => ENGRAVE_SWITCH.stats }
+  strictEngrave: { enumerable: true, get: () => ENGRAVE_STATE.strict, set: v => { ENGRAVE_STATE.strict = !!v; } },
+  /* the fallbacks, by code and by song (the engraver's own counters are PPPEngravePage.stats) */
+  engraveStats: { enumerable: true, get: () => ENGRAVE_STATE.stats }
 });
-const engraveWanted = p => (p.renderer || ENGRAVE_SWITCH.renderer) === 'engrave';
 let _engravePromise = null;
 function loadEngrave() {
   if (window.PPPEngravePage) return Promise.resolve(window.PPPEngravePage);
@@ -10618,13 +10565,13 @@ function loadEngrave() {
   });
   return _engravePromise;
 }
-/* G4f-2 (review R2): what the engraver did with each Score - true once a view of it was drawn by the engraver, false
-   once one fell back (sticky: that Score is the legacy renderer's until it changes). The print command is offered only
-   on true (showPrintControls) - never for a song whose source disagrees, which would print nothing. A change re-renders
-   the app once, off the paint, so the command appears or goes with the drawing. */
+/* what the engraver did with each Score - true once a view of it was drawn, false once one failed (sticky: that Score
+   stays failed until it changes). The print command is offered only on true (showPrintControls) - never for a song
+   whose source disagrees, which would print nothing. A change re-renders the app once, off the paint, so the command
+   appears or goes with the drawing. */
 const engraveDrewScore = new WeakMap();
 function engraveOutcome(score, r) {
-  if (!score || (r !== 'drawn' && r !== 'legacy')) return;
+  if (!score || (r !== 'drawn' && r !== 'failed')) return;
   const was = engraveDrewScore.get(score);
   const now = r === 'drawn' ? was !== false : false;
   if (was === now) return;
@@ -10632,28 +10579,38 @@ function engraveOutcome(score, r) {
   setTimeout(() => { const A = window.PPP && window.PPP.app; if (A && A.state && A.state.score === score) A.setState({}); }, 0);
 }
 const engraveDrew = score => !!score && engraveDrewScore.get(score) === true;
-/* One per ScoreView: the engraver's view once it is loaded; until then 'pending'. 'legacy' hands the view back to the
-   legacy renderer. */
+/* One per ScoreView: the engraver's view once it is loaded; until then 'pending'. 'failed' means this view now shows
+   its own placeholder text in place of a drawing (below), and there is nothing more for the ScoreView to do. */
 function engraveView(view) {
   let ctl = null, failed = null;
-  const stats = ENGRAVE_SWITCH.stats;
+  const stats = ENGRAVE_STATE.stats;
+  /* the same "could not be engraved" placeholder engrave/page.js itself writes on a drawing failure once the engraver
+     is loaded (failedPlaceholder there) - written here too for the one failure that can happen before it ever loads:
+     the engrave/ files themselves failing to reach the browser. Idempotent, so repainting an already-failed view every
+     sync frame during playback never touches the DOM again. */
+  function showFailed(el) {
+    if (el.firstChild && el.firstChild.getAttribute && el.firstChild.getAttribute('data-engrave-failed')) return;
+    el.innerHTML = '';
+    const d = document.createElement('div');
+    d.setAttribute('data-engrave-failed', '1');
+    d.style.cssText = 'padding:22px;text-align:center;font-size:12.5px;color:var(--ink3);';
+    d.textContent = tx('This passage could not be engraved.');
+    el.appendChild(d);
+  }
   return {
     paint(el, p) {
-      /* a reduced view (no clefs; one staff of several) is the legacy renderer's - engrave/page.js routes it the same way;
-         here it is decided before the engraver's files are asked for, so the empty page's staff and the loop thumbnail
-         neither load them nor show "Engraving…" (G4-F2-2) */
-      if (p.clefs === false || (p.grand === false && ((p.score && p.score.staves) || 1) > 1)) { stats.routed++; return 'legacy'; }
       const PG = window.PPPEngravePage;
       if (!PG) {
         if (failed) {
-          if (ENGRAVE_SWITCH.strict) throw failed;
+          if (ENGRAVE_STATE.strict) throw failed;
           if (!failed.counted) {
             failed.counted = true;
             stats.fallbacks.LOAD_FAILED = (stats.fallbacks.LOAD_FAILED || 0) + 1;
             if (window.console) console.warn('[ppp] engrave fallback', 'LOAD_FAILED', failed.message);
           }
-          engraveOutcome(p.score, 'legacy');
-          return 'legacy';
+          showFailed(el);
+          engraveOutcome(p.score, 'failed');
+          return 'failed';
         }
         loadEngrave().then(() => { if (!view._dead) view.paint(); }, e => { failed = e; if (!view._dead) view.paint(); });
         if (!el.querySelector('[data-engrave-wait]')) {
@@ -10671,11 +10628,12 @@ function engraveView(view) {
             return A && A.state && A.state.score === score ? (A.state.songId || null) : null;
           },
           noteEnd: scoreNoteEnd,
-          strict: () => ENGRAVE_SWITCH.strict,
+          strict: () => ENGRAVE_STATE.strict,
           viewport: () => window.innerWidth,
           props: () => view.props,
           repaint: () => { if (!view._dead) view.paint(); },
           waitText: () => tx('Engraving…'),
+          failText: () => tx('This passage could not be engraved.'),
           stats: stats
         });
       }
@@ -10688,1299 +10646,22 @@ function engraveView(view) {
 
 function makeScoreView(React) {
   return class ScoreView extends React.Component {
-    constructor(props) {
-      super(props);
-      this.state = { ready: !!(window.Vex && window.Vex.Flow), err: null };
-      this._noteEls = [];
-      this._map = [];
-      this._key = null;
-    }
-
-    componentDidMount() {
-      if (!this.state.ready) {
-        loadVexFlow().then(
-          () => { if (!this._dead) this.setState({ ready: true }); },
-          e => { if (!this._dead) this.setState({ err: e.message }); }
-        );
-      }
-      this.paint();
-    }
+    componentDidMount() { this.paint(); }
     componentDidUpdate() { this.paint(); }
     componentWillUnmount() { this._dead = true; }
 
-    /* Everything that changes the engraving. Note state, playhead, hands and
-       memory level are deliberately absent — those are sync()'s job. */
-    drawKey() {
-      const p = this.props;
-      return [
-        p.score.id, p.startM, p.count, p.grand !== false, p.numbers !== false,
-        p.clefs !== false, !!p.guidance, p.theme, p.mW, p.zoom, p.fluid, p.perRow || 0, p.paper !== false, p.chords !== false, p.staves || 0, p.heading === true, p.marks !== false, (p.weak || []).join(','), p.notesKey || '',
-        inferredAudioNotation(p.score)
-      ].join('|');
-    }
-
+    /* The engraver draws (or waits for its files or the score's graph, or shows its own "could not be engraved"
+       message) - engraveView owns the whole drawing, so there is nothing else for a ScoreView to do (§25.2 step 3:
+       there used to be a second, VexFlow-based path here for engrave to hand back to; it is gone). */
     paint() {
-      /* G4d-2 >>> renderer 'engrave' (G04 §16.1): the engraver draws, or hands back to the legacy path below */
-      if (engraveWanted(this.props) && this.paintEngrave()) return;
-      /* <<< G4d-2 */
-      if (!this.el || !window.Vex || !window.Vex.Flow) return;
-      const k = this.drawKey();
-      if (k !== this._key) {
-        try {
-          this.draw();
-          this._key = k;
-        } catch (e) {
-          this._key = k;
-          this._noteEls = []; this._map = [];
-          this.el.innerHTML = '';
-          const d = document.createElement('div');
-          d.style.cssText = 'padding:22px;text-align:center;font-size:12.5px;color:var(--ink3);';
-          d.textContent = 'This passage could not be engraved.';
-          this.el.appendChild(d);
-          if (window.console) console.warn('[ppp] engraving failed:', e && e.message);
-          return;
-        }
-      }
-      this.sync();
-    }
-    /* G4d-2 >>> true when the engraver drew this view (or waits for its files or the score's graph); false for the
-       legacy path - a view it does not draw, or a song whose engraving failed, counted (G04 §16.7) */
-    paintEngrave() {
-      if (!this.el) return false;
+      if (!this.el) return;
       if (!this._engrave) this._engrave = engraveView(this);
-      if (this._engrave.paint(this.el, this.props) === 'legacy') {
-        if (this._engraveDrew) { this._engraveDrew = false; this._key = null; }
-        return false;
-      }
-      this._engraveDrew = true;
-      this._key = null;
-      return true;
-    }
-    /* <<< G4d-2 */
-
-    draw() {
-      const VF = window.Vex.Flow;
-      const p = this.props;
-      const score = p.score;
-      const inferredTies = inferredAudioNotation(score);
-      const el = this.el;
-      el.innerHTML = '';
-      this._noteEls = [];
-      this._map = [];
-
-      const cs = getComputedStyle(el);
-      const col = n => (cs.getPropertyValue(n) || '').trim() || '#222';
-      /* On paper the notation is mixed for paper; following the theme it is
-         mixed for the theme. Nothing else about the engraving changes. */
-      const onPaper = p.paper !== false;
-      const ink = onPaper ? (col('--paper-ink') || col('--ink')) : col('--ink');
-      const staffCol = onPaper ? (col('--paper-staff') || col('--staff')) : col('--staff');
-      /* labels (tempo, composer, bar numbers) use the same ink as the notes —
-         --ink3 matches the staff colour in dark mode and cannot be read */
-      el.style.setProperty('--score-ink', ink);
-
-      const grand = p.grand !== false;
-      const zoom = p.zoom || 1;
-      const mW = (p.mW || 200) * zoom;
-
-      /* Collect the measure window, stopping at the end of the score. */
-      const measures = [];
-      for (let i = 0; i < p.count; i++) {
-        const no = Score.step(score, p.startM, i);
-        if (measures.length && no === measures[measures.length - 1].number) break;
-        const mm = Score.measure(score, no);
-        if (!mm) break;
-        measures.push(mm);
-      }
-      if (!measures.length) return;
-
-      /* Chord symbols sit above the top staff, so the system starts lower when
-         there are any to print. */
-      /* which staff the piano's right hand is on, so the brace goes round the
-         right pair when a melody line sits above it */
-      const pianoTop = (() => {
-        const rh = (score.notes || []).filter(n => n.hand === 'r')[0];
-        return rh ? Math.max(0, (rh.staff || 1) - 1) : 0;
-      })();
-
-      const chordsFor = {};
-      let anyChord = false;
-      if (p.chords !== false) {
-        (score.chords || []).forEach(c => { (chordsFor[c.m] = chordsFor[c.m] || []).push(c); });
-        anyChord = measures.some(mm => chordsFor[mm.number] && chordsFor[mm.number].length);
-      }
-      const CHORD_H = anyChord ? 22 : 0;
-
-      /* Printed music puts the title, who wrote it and the tempo mark on the
-         page, not in the surrounding application. On the whole score PPP does
-         the same, so the page is a page rather than a strip of staves. */
-      const heading = p.heading === true && !!p.perRow;
-      const HEAD_H = heading ? 72 : 0;
-
-      const showClefs = p.clefs !== false;
-      /* A vocal line over a piano part is three staves. The system is
-         however many the score has, stacked, rather than a hardcoded pair. */
-      const nStaves = grand ? Math.max(2, Math.min(4, p.staves || score.staves || 2)) : 1;
-      const STAFF_GAP = 92;
-      const TOP_Y = 12 + CHORD_H;     /* inside the row; rowTop already clears the heading */
-      const staffY = k => TOP_Y + k * STAFF_GAP;
-      const TREBLE_Y = TOP_Y;
-      /* room under the lowest staff when the score asks for the pedal */
-      const PED_H = (p.marks !== false && (score.pedals || []).length) ? 26 : 0;
-      const SYS_H = (12 + CHORD_H) + (nStaves - 1) * STAFF_GAP + 84 + PED_H;
-      const LINE0 = 40;                               /* first line below the stave's y */
-      const BAND_TOP = TOP_Y + LINE0 - 18;
-      const BAND_BOT = staffY(nStaves - 1) + LINE0 + 40 + 18;
-      const BAR = VF.BarlineType || (VF.Barline && VF.Barline.type) || {};
-      const VOLTA = VF.VoltaType || (VF.Volta && VF.Volta.type) || {};
-      const QT = (VF.RESOLUTION || 16384) / 4;        /* ticks in a quarter */
-
-      /* ---- what a bar prints before its notes ----
-         Clef and key begin every line. The time signature is printed at the
-         start and again only where it changes, not at the head of every line.
-         A change of clef or key inside a line is printed where it happens. */
-      const clefOf = (mm, k) => mm.clefs[k + 1] || (k === 0 ? 'treble' : 'bass');
-      const changesOf = (mm, k) => (mm.clefChanges || []).filter(c => c.staff === k + 1).sort((a, b) => a.b - b.b);
-      /* the clef in force at a beat of the bar, and the one the bar ends in */
-      const clefAt = (mm, k, b) => {
-        let c = clefOf(mm, k);
-        changesOf(mm, k).forEach(ch => { if (ch.b <= b + 1e-6) c = ch.clef; });
-        return c;
-      };
-      const clefEndOf = (mm, k) => clefAt(mm, k, Infinity);
-      const timeOf = mm => mm.time.beats + '/' + mm.time.beatType;
-      const keyOf = mm => vexKeySig(mm.key.fifths, mm.key.mode);
-      const dress = (st, i, k, lineStart) => {
-        const mm = measures[i], prev = i > 0 ? measures[i - 1] : null;
-        const bm = mm.bar || {};
-        const put = { time: false };
-        if (bm.repeatStart && BAR.REPEAT_BEGIN != null) st.setBegBarType(BAR.REPEAT_BEGIN);
-        if (!showClefs) return put;
-        if (lineStart || !prev || clefEndOf(prev, k) !== clefOf(mm, k))
-          st.addClef(clefOf(mm, k), lineStart ? 'default' : 'small');
-        if (lineStart ? !!mm.key.fifths : (!!prev && prev.key.fifths !== mm.key.fifths))
-          st.addKeySignature(keyOf(mm), (!lineStart && prev) ? keyOf(prev) : undefined);
-        if (!prev || timeOf(prev) !== timeOf(mm)) { st.addTimeSignature(timeOf(mm)); put.time = true; }
-        return put;
-      };
-      /* how far in from a bar's left edge its notes may start: the widest of
-         its staves, so every staff of the system starts its notes together */
-      const beginCache = {};
-      const beginW = (i, lineStart) => {
-        const ck = i + (lineStart ? 'L' : 'M');
-        if (beginCache[ck] != null) return beginCache[ck];
-        let best = 0;
-        for (let k = 0; k < nStaves; k++) {
-          try {
-            const st = new VF.Stave(0, 0, 600);
-            dress(st, i, k, lineStart);
-            best = Math.max(best, st.getNoteStartX());
-          } catch (e) { /* a bar that cannot be dressed gets no extra room */ }
-        }
-        return (beginCache[ck] = best);
-      };
-      /* VexFlow puts a note this far after where the stave says notes start */
-      const PAD = (() => {
-        try {
-          const st = new VF.Stave(0, 0, 300);
-          const n = new VF.StaveNote({ keys: ['b/4'], duration: 'q' });
-          const tc = new VF.TickContext();
-          tc.addTickable(n); tc.preFormat(); tc.setX(0);
-          n.setStave(st);
-          const v = n.getAbsoluteX() - st.getNoteStartX();
-          return isFinite(v) && v >= 0 && v < 60 ? v : 12;
-        } catch (e) { return 12; }
-      })();
-      const END_PAD = 12;
-
-      /* Notes under an 8va sound an octave above where they are written, and
-         PPP keeps each note at the pitch it sounds, which is what is played
-         and checked. On the page they are drawn where the page writes them,
-         under the bracket. With the marks hidden there is no bracket, so they
-         are drawn where they sound. */
-      const ottRanges = (p.marks !== false ? (score.ottavas || []) : []).filter(ov => ov.endM != null).map(ov => ({
-        staff: ov.staff || (ov.dir > 0 ? pianoTop + 1 : pianoTop + 2),
-        a: Score.startQ(score, ov.m) + (ov.b || 0), z: Score.startQ(score, ov.endM) + (ov.endB || 0),
-        dir: ov.dir, shift: ottavaSemitones(ov)
-      }));
-      const written = n => {
-        /* MusicXML/PDF import records the exact written pitch here. Prefer it
-           over reverse arithmetic so enharmonic spelling survives 8va. */
-        if (p.marks !== false && n && n.writtenP) return n.writtenP;
-        for (let i = 0; i < ottRanges.length; i++) {
-          const o = ottRanges[i];
-          if ((n.staff || 1) !== o.staff || n.abs < o.a - 1e-6 || n.abs >= o.z) continue;
-          return shiftPitchOctave(n.p, -o.shift);
-        }
-        return n.p;
-      };
-
-      /* ---- every bar's notes, built once and measured ----
-         What a bar needs is decided by what is in it: sixteen notes with
-         accidentals need more room than two half notes. Each bar is built and
-         measured before any line is laid out, so no bar is given less room than
-         its notes take up and nothing runs over the bar line into the next. */
-      const prep = measures.map(mm => {
-        const built = [];
-        for (let k = 0; k < nStaves; k++) {
-          const staffNo = k + 1;
-          const mine = score.notes.filter(n => n.m === mm.number && (n.staff || 1) === staffNo);
-          if (!mine.length) continue;
-          const byVoice = {};
-          mine.forEach(n => { (byVoice[n.voice || 1] = byVoice[n.voice || 1] || []).push(n); });
-          const vns = Object.keys(byVoice);
-          /* Two voices on one staff are told apart by their stems: the upper
-             voice points up and the lower one down, so their notes are not
-             drawn on top of each other. A voice alone chooses its own stems. */
-          const dirOf = {};
-          if (vns.length > 1) {
-            const mean = vn => {
-              const ms = byVoice[vn].filter(n => !n.rest && n.midi != null).map(n => n.midi);
-              return ms.length ? ms.reduce((a, b) => a + b, 0) / ms.length : -1;
-            };
-            vns.map(vn => ({ vn: vn, m: mean(vn) })).sort((a, b) => b.m - a.m)
-              .forEach((r, idx) => { dirOf[r.vn] = idx === 0 ? 1 : -1; });
-          }
-          vns.forEach(vn => {
-            const b1 = this.buildVoice(VF, byVoice[vn], b => clefAt(mm, k, b), mm, ink, p.guidance, dirOf[vn] || 0, written);
-            if (!b1) return;
-            b1.staffNo = staffNo;
-            b1.voiceNo = vn;
-            built.push(b1);
-          });
-        }
-        let ctxs = [];
-        if (built.length) {
-          const fmt = new VF.Formatter();
-          /* per staff, and for a single voice too: this is what places a
-             chord's accidentals so they do not overlap each other or the note
-             before */
-          for (let k = 1; k <= nStaves; k++) {
-            const grp = built.filter(b => b.staffNo === k).map(b => b.voice);
-            if (grp.length) { try { fmt.joinVoices(grp); } catch (e) { /* ragged voices */ } }
-          }
-          try {
-            fmt.format(built.map(b => b.voice), 0);
-            const tcs = fmt.getTickContexts();
-            const rm = tcs.resolutionMultiplier || 1;
-            ctxs = tcs.list.map(key => {
-              const c = tcs.map[key];
-              const mt = c.getMetrics() || {};
-              const left = Math.max(0, mt.totalLeftPx || 0);
-              return { c: c, q: key / rm / QT, left: left, right: Math.max(0, c.getWidth() - left) };
-            });
-          } catch (e) { ctxs = []; }
-        }
-        /* room for a clef that changes partway through, just before the first
-           notes it applies to */
-        for (let k = 0; k < nStaves; k++) {
-          changesOf(mm, k).forEach(ch => {
-            const c = ctxs.filter(cx => cx.q >= ch.b - 1e-6)[0];
-            if (!c) return;
-            let cw = 18;
-            try { cw = new VF.Clef(ch.clef, 'small').getWidth() + 4; } catch (e) {}
-            (c.clefs = c.clefs || []).push({ staff: k + 1, clef: ch.clef, acc: c.left, w: cw });
-            c.left += cw;
-          });
-        }
-        const lastQ = ctxs.length ? ctxs[ctxs.length - 1].q + 0.01 : 0;
-        return { mm: mm, built: built, ctxs: ctxs, barQ: Math.max(mm.lenQ || 4, lastQ) };
-      });
-
-      /* Spacing inside a bar. Each column of notes gets at least what its
-         notes, accidentals and dots need, and otherwise room that grows with
-         the time until the next column — a half note gets more than a
-         quarter, but not twice as much, as in any engraved score. u is the
-         room given to one beat. Columns are shared by every staff, so what
-         sounds together stays drawn together. */
-      const spaceBar = (pr, u) => {
-        const cs = pr.ctxs;
-        const xs = [];
-        if (!cs.length) return { xs: xs, width: PAD + Math.max(END_PAD * 2, u * Math.pow(pr.barQ, 0.65)) };
-        let xx = cs[0].left;
-        for (let j = 0; j < cs.length; j++) {
-          xs.push(xx);
-          const nx = j + 1 < cs.length ? cs[j + 1] : null;
-          const d = Math.max(1 / 32, (nx ? nx.q : pr.barQ) - cs[j].q);
-          xx += Math.max(cs[j].right + (nx ? nx.left : END_PAD), u * Math.pow(d, 0.65));
-        }
-        return { xs: xs, width: PAD + xx };
-      };
-      const rowWidth = (idxs, u) => {
-        let sum = 0;
-        idxs.forEach((j, t) => { sum += beginW(j, t === 0) + spaceBar(prep[j], u).width; });
-        return sum;
-      };
-      /* the beat room that makes a line exactly fill the page */
-      const solveU = (idxs, room) => {
-        if (rowWidth(idxs, 0) >= room) return 0;
-        let lo = 0, hi = 64;
-        while (rowWidth(idxs, hi) < room && hi < 1e5) hi *= 2;
-        for (let it = 0; it < 32; it++) {
-          const mid = (lo + hi) / 2;
-          if (rowWidth(idxs, mid) < room) lo = mid; else hi = mid;
-        }
-        return lo;
-      };
-
-      /* Four bars to a line, as a printed score sets them, unless four will not
-         fit even closely spaced — then fewer. Every line but a short last one
-         is spread to the full width of the page. */
-      const wrapping = !!p.perRow;
-      const per = wrapping ? Math.max(1, Math.round(p.perRow)) : measures.length;
-      const PAGE = beginW(0, true) + mW * per;
-      const rowsIdx = [];
-      for (let i0 = 0; i0 < measures.length;) {
-        let n = Math.min(per, measures.length - i0);
-        const take = cnt => { const a = []; for (let j = 0; j < cnt; j++) a.push(i0 + j); return a; };
-        /* a strip of bars stays one strip, however much it holds */
-        while (wrapping && n > 1 && rowWidth(take(n), 0) * 1.05 > PAGE) n--;
-        rowsIdx.push(take(n));
-        i0 += n;
-      }
-      const rowU = rowsIdx.map((idxs, r) =>
-        (wrapping && r === rowsIdx.length - 1 && idxs.length < per) ? null : solveU(idxs, PAGE));
-      const fullRows = rowU.filter(u => u != null).sort((a, b) => a - b);
-      rowU.forEach((u, r) => {
-        if (u != null) return;
-        const idxs = rowsIdx[r];
-        /* a short last line keeps the spacing of the lines above it */
-        const typical = fullRows.length ? fullRows[Math.floor(fullRows.length / 2)]
-          : solveU(idxs, beginW(idxs[0], true) + mW * idxs.length);
-        rowU[r] = Math.min(typical, solveU(idxs, PAGE));
-      });
-
-      const rows = rowsIdx.length;
-      /* systems that touch each other read as one block of lines */
-      const GAP = wrapping ? 46 : 0;
-      const ROW_H = SYS_H + GAP;
-      const H = HEAD_H + ROW_H * rows - GAP;
-      let widest = PAGE;
-      rowsIdx.forEach((idxs, r) => { widest = Math.max(widest, rowWidth(idxs, rowU[r])); });
-      const W = Math.ceil(widest) + 14;
-
-      const renderer = new VF.Renderer(el, VF.Renderer.Backends.SVG);
-      renderer.resize(W, H);
-      const ctx = renderer.getContext();
-      /* VexFlow's SVG context defaults fill to black on the root.
-         Replace it before anything is drawn so inherited colour is ink. */
-      ctx.svg.setAttribute('fill', ink);
-      ctx.svg.style.fill = ink;
-      ctx.svg.style.color = ink;
-
-      const svgLabel = (text, o) => {
-        if (text == null || text === '') return null;
-        const t = document.createElementNS(SVGNS, 'text');
-        t.setAttribute('x', o.x);
-        t.setAttribute('y', o.y);
-        if (o.anchor) t.setAttribute('text-anchor', o.anchor);
-        t.setAttribute('font-size', o.size || 13);
-        if (o.weight) t.setAttribute('font-weight', o.weight);
-        if (o.italic) t.setAttribute('font-style', 'italic');
-        t.setAttribute('font-family', o.family || "'Instrument Serif', Georgia, serif");
-        t.setAttribute('fill', ink);
-        t.style.setProperty('fill', ink, 'important');
-        /* a hairline of the same ink so 13px serif strokes still read as white
-           on a dark page instead of antialiasing down to grey */
-        if (o.stroke) {
-          t.setAttribute('stroke', ink);
-          t.style.setProperty('stroke', ink, 'important');
-          t.style.setProperty('stroke-width', String(o.stroke));
-          t.style.setProperty('paint-order', 'stroke fill');
-        }
-        t.setAttribute('class', 'ppp-ann');
-        if (o.row != null) t.setAttribute('data-ppp-row', String(o.row));
-        t.textContent = String(text);
-        ctx.svg.appendChild(t);
-        return t;
-      };
-
-      const allNoteMeta = [];
-      /* one ordered chain per (staff, voice), so a tie or a slur can find the
-         note it runs to even when that note is in the next bar */
-      const chains = {};
-
-      if (heading) {
-        const mid = (10 + PAGE) / 2;
-        svgLabel(score.title, { x: mid, y: 34, size: 26, weight: '400', anchor: 'middle' });
-        svgLabel(score.composer, { x: PAGE - 4, y: 56, size: 15, weight: '500', anchor: 'end', stroke: 0.7 });
-        /* the tempo mark belongs over the first bar, left, as it is printed.
-           Noto Music first so the crotchet is an outline glyph, not a colour
-           emoji that ignores fill. */
-        const bpm = Math.round(score.tempo || 0);
-        if (bpm) svgLabel('♩ = ' + bpm, {
-          x: 10, y: 56, size: 15, weight: '600', anchor: 'start', stroke: 0.8,
-          family: "'Noto Music', 'Instrument Serif', Georgia, serif"
-        });
-      }
-
-      /* how high each bar's notes reach, and the chord names waiting for
-         their line to be finished */
-      const barReach = {};
-      const chordQueue = [];
-      const voltaQueue = [];
-      const rowOttava = {};
-
-      /* First and second endings: which part of the bracket each bar carries. */
-      const voltaOf = [];
-      {
-        let open = false;
-        measures.forEach(mm => {
-          const bm = mm.bar || {};
-          let type = null;
-          if (bm.ending) {
-            type = bm.endingEnd === 'stop' ? 'BEGIN_END' : 'BEGIN';
-            open = !bm.endingEnd;
-          } else if (open) {
-            type = bm.endingEnd === 'stop' ? 'END' : 'MID';
-            if (bm.endingEnd) open = false;
-          }
-          voltaOf.push(type ? { type: type, label: bm.ending || '' } : null);
-        });
-      }
-
-      rowsIdx.forEach((idxs, r) => {
-        const rowTop = HEAD_H + r * ROW_H;
-        let x = 10;
-        idxs.forEach((i, t) => {
-          const pr = prep[i], mm = pr.mm;
-          const lineStart = t === 0;
-          const bw = beginW(i, lineStart);
-          const sp = spaceBar(pr, rowU[r]);
-          const w = bw + sp.width;
-          const bm = mm.bar || {};
-          const endType = bm.repeatEnd ? 'repeat' : bm.style === 'light-heavy' ? 'final' : bm.style === 'light-light' ? 'double' : '';
-          const staves = [];
-          for (let k = 0; k < nStaves; k++) {
-            const st = new VF.Stave(x, staffY(k) + rowTop, w, { spacing_between_lines_px: 10 });
-            /* The stave lines are stroked in --staff; the clef, key and time
-               signature are filled glyphs and take the fill style, which is why
-               they came out pure black and vanished on a dark background. */
-            st.setStyle({ strokeStyle: staffCol, fillStyle: ink, lineWidth: 1 });
-            const put = dress(st, i, k, lineStart);
-            if (endType === 'repeat' && BAR.REPEAT_END != null) st.setEndBarType(BAR.REPEAT_END);
-            else if (endType === 'final' && BAR.END != null) st.setEndBarType(BAR.END);
-            else if (endType === 'double' && BAR.DOUBLE != null) st.setEndBarType(BAR.DOUBLE);
-            const vo = voltaOf[i];
-            if (k === 0 && vo) voltaQueue.push({ row: r, x0: x + (lineStart ? bw : 0), x1: x + w, type: vo.type, label: vo.label });
-            /* every staff starts its notes at the same x, whatever its clef */
-            st.setNoteStartX(x + bw);
-            const g = ctx.openGroup('ppp-stave', null);
-            if (g && g.setAttribute) {
-              if (g.classList) g.classList.add('ppp-stave');
-              g.setAttribute('data-m', mm.number);
-              g.setAttribute('data-staff', k + 1);
-              if (bm.repeatStart) g.setAttribute('data-begin', 'repeat');
-              if (endType) g.setAttribute('data-end', endType);
-              if (k === 0 && vo) g.setAttribute('data-volta', vo.type + (vo.label ? ':' + vo.label : ''));
-              if (put.time) g.setAttribute('data-time', timeOf(mm));
-            }
-            st.setContext(ctx).draw();
-            ctx.closeGroup();
-            staves.push(st);
-          }
-
-          if (nStaves > 1) {
-            /* the brace belongs to the piano's pair; anything above it is a
-               separate line and gets only the bracket down the left edge */
-            const lo = staves[pianoTop], hi = staves[Math.min(pianoTop + 1, nStaves - 1)];
-            const CT = VF.StaveConnector.type;
-            if (lineStart && showClefs) {
-              if (lo && hi && lo !== hi)
-                new VF.StaveConnector(lo, hi).setType(CT.BRACE).setContext(ctx).draw();
-              new VF.StaveConnector(staves[0], staves[nStaves - 1]).setType(CT.SINGLE_LEFT).setContext(ctx).draw();
-            }
-            /* a piano's bar lines run through both of its staves */
-            if (lo && hi && lo !== hi) {
-              try {
-                const ty = (endType === 'repeat' || endType === 'final') ? CT.BOLD_DOUBLE_RIGHT
-                  : endType === 'double' ? CT.THIN_DOUBLE : CT.SINGLE_RIGHT;
-                new VF.StaveConnector(lo, hi).setType(ty).setContext(ctx).draw();
-              } catch (e) { /* a missing connector is cosmetic */ }
-            }
-          }
-
-          /* the bar's notes, in the columns worked out for them */
-          pr.ctxs.forEach((c, j) => { try { c.c.setX(sp.xs[j]); } catch (e) {} });
-          pr.ctxs.forEach((c, j) => (c.clefs || []).forEach(cl => {
-            const stave = staves[cl.staff - 1];
-            if (!stave || !showClefs) return;
-            try {
-              const glyph = new VF.Clef(cl.clef, 'small');
-              glyph.setStave(stave);
-              glyph.setX(x + bw + PAD + sp.xs[j] - cl.acc - cl.w + 2);
-              glyph.setStyle({ fillStyle: ink, strokeStyle: ink });
-              glyph.draw();
-            } catch (e) { /* the notes are right either way */ }
-          }));
-          pr.built.forEach(b => {
-            const stave = staves[b.staffNo - 1];
-            if (!stave) return;
-            b.voice.setStave(stave);
-            b.voice.getTickables().forEach((sn, idx) => {
-              const meta = b.meta[idx];
-              if (!meta) return;
-              /* VexFlow prefixes group classes with "vf-", so tag the element
-                 ourselves rather than depending on that. */
-              const g = ctx.openGroup('ppp-note', null);
-              if (g && g.classList) g.classList.add('ppp-note');
-              /* bar|beat|staff, so what sounds together can be checked to be drawn together */
-              if (g && g.setAttribute && meta.key) g.setAttribute('data-onset', meta.key);
-              if (g && g.setAttribute && meta.rest) g.setAttribute('data-rest', '1');
-              try { sn.setStave(stave).setContext(ctx).draw(); } catch (e) {}
-              ctx.closeGroup();
-              if (!meta.rest && meta.sn) {
-                const ck = b.staffNo + ':' + (b.voiceNo || 1);
-                (chains[ck] = chains[ck] || []).push({
-                  sn: meta.sn, stave: stave, row: r, measure: mm.number,
-                  midis: meta.midis || [],
-                  tieStarts: meta.tieStarts || [], tieStops: meta.tieStops || [],
-                  slurStart: meta.slurStart, slurStop: meta.slurStop
-                });
-              }
-              allNoteMeta.push({
-                el: g,
-                absStart: meta.abs,
-                absEnd: scoreNoteEnd(meta.abs, meta.dur),
-                midis: meta.midis || [],
-                hand: meta.hand,
-                key: meta.key
-              });
-            });
-            b.beams.forEach(bm2 => { try { bm2.setContext(ctx).draw(); } catch (e) {} });
-            b.tuplets.forEach(tp => {
-              const g = ctx.openGroup('ppp-tuplet', null);
-              if (g && g.classList) g.classList.add('ppp-tuplet');
-              try { tp.setContext(ctx).draw(); } catch (e) {}
-              ctx.closeGroup();
-            });
-          });
-          /* the highest point the top staff's notes reach in this bar, so the
-             chord names and an 8va can sit above them rather than on them */
-          let reach = Infinity;
-          pr.built.filter(b => b.staffNo === 1).forEach(b => b.voice.getTickables().forEach(sn => {
-            if (VF.GhostNote && sn instanceof VF.GhostNote) return;
-            try {
-              let t = Math.min.apply(null, sn.getYs()) - 7;
-              if (sn.hasStem && sn.hasStem() && sn.getStemDirection() > 0) t = Math.min(t, sn.getStemExtents().topY - 3);
-              reach = Math.min(reach, t);
-            } catch (e) { /* a rest or a note VexFlow cannot measure */ }
-          }));
-          barReach[mm.number] = reach;
-
-          if (p.numbers !== false) {
-            /* just above the top line of the top staff, not above its empty headroom */
-            svgLabel(mm.number, {
-              x: x + 3, y: TREBLE_Y + rowTop + LINE0 - 9, size: 12, weight: '500',
-              family: "'JetBrains Mono', monospace", stroke: 0.6, row: r
-            });
-          }
-
-          /* where each beat of this bar was drawn: the playhead, chord symbols
-             and pedal marks follow the notes rather than an even grid */
-          const noteX = x + bw + PAD;
-          const seg = {
-            number: mm.number, row: r, x: x + (lineStart ? bw : 0), y: rowTop, w: w - (lineStart ? bw : 0),
-            startQ: mm.startQ, lenQ: mm.lenQ,
-            pts: sp.xs.map((xx, j) => [pr.ctxs[j].q, noteX + xx + NOTE_MID])
-          };
-
-          const chs = chordsFor[mm.number];
-          if (chs && chs.length) {
-            chs.forEach(c => chordQueue.push({ row: r, x: barX(seg, c.b || 0) - NOTE_MID, text: chordFace(c.text) }));
-          }
-
-          this._map.push(seg);
-          x += w;
-        });
-      });
-
-      /* Ties and slurs are drawn after every note exists, because both of them
-         run from one note to another and the second one is often in the next
-         bar. A curve that would cross a line break is dropped rather than
-         drawn across the page. */
-      Object.keys(chains).forEach(ck => {
-        const seq = chains[ck];
-        for (let i = 0; i < seq.length - 1; i++) {
-          const a = seq[i], bn = seq[i + 1];
-          if (a.row !== bn.row) continue;
-          /* Audio reveals that a key stayed down, but it cannot reveal that a
-             composer wrote an intra-measure tie. Old transcriptions split
-             ordinary releases on every beat and produced hundreds of fake
-             legato arcs. Keep only structural bar-to-bar ties for inferred
-             notation. Uploaded/reference scores retain every written tie. */
-          if (inferredTies && a.measure === bn.measure) continue;
-          try {
-            /* Tie only pitches that continue on both sides. Treating a chord as
-               one boolean tied every head when just one note continued. */
-            const first = [], last = [];
-            a.tieStarts.forEach(midi => {
-              const ai = a.midis.indexOf(midi), bi = bn.midis.indexOf(midi);
-              if (ai > -1 && bi > -1 && bn.tieStops.indexOf(midi) > -1) {
-                first.push(ai); last.push(bi);
-              }
-            });
-            if (first.length) new VF.StaveTie({
-              first_note: a.sn, last_note: bn.sn,
-              first_indices: first, last_indices: last
-            }).setContext(ctx).draw();
-          } catch (e) { /* a tie that VexFlow cannot place is not worth failing over */ }
-        }
-        /* a slur runs from its start to the next stop in the same voice */
-        for (let i = 0; i < seq.length; i++) {
-          if (!seq[i].slurStart) continue;
-          let j = i + 1;
-          while (j < seq.length && !seq[j].slurStop) j++;
-          if (j >= seq.length || seq[j].row !== seq[i].row) continue;
-          try {
-            /* a slur between two close notes is a shallow arc; a fixed height
-               turned the short ones into hooks */
-            let dx = 60;
-            try { dx = Math.abs(seq[j].sn.getAbsoluteX() - seq[i].sn.getAbsoluteX()); } catch (e) {}
-            const hgt = Math.max(5, Math.min(16, dx * 0.14));
-            new VF.Curve(seq[i].sn, seq[j].sn, { cps: [{ x: 0, y: hgt }, { x: 0, y: hgt }] })
-              .setContext(ctx).draw();
-          } catch (e) { /* likewise */ }
-        }
-      });
-
-      /* Pedal and 8va are instructions to the player, so they are drawn where
-         a printed score puts them: the pedal under the lowest staff, the
-         octave bracket over the highest. */
-      const segOf = n => this._map.filter(sg => sg.number === n)[0] || null;
-      const atBeat = (mNo, beat) => {
-        const sg = segOf(mNo);
-        if (!sg) return null;
-        return { x: barX(sg, beat || 0) - NOTE_MID, y: sg.y || 0 };
-      };
-      if (p.marks !== false) {
-        (score.pedals || []).forEach(pd => {
-          const at = atBeat(pd.m, pd.b);
-          if (!at) return;
-          /* below the lowest staff, where it does not sit on the notes */
-          svgLabel(pd.type === 'start' ? 'Ped.' : '∗', {
-            x: at.x, y: at.y + staffY(nStaves - 1) + 102, size: 13, italic: true
-          });
-        });
-        const absOfBar = n => Score.startQ(score, n);
-        /* the left and right ends of each line of the page */
-        const rowSpan = {};
-        this._map.forEach(sg => {
-          const r = rowSpan[sg.y] = rowSpan[sg.y] || { x0: Infinity, x1: -Infinity };
-          r.x0 = Math.min(r.x0, sg.x); r.x1 = Math.max(r.x1, sg.x + sg.w);
-        });
-        const rowOfY = {};
-        this._map.forEach(sg => { rowOfY[sg.y] = sg.row; });
-        (score.ottavas || []).forEach(ov => {
-          if (ov.endM == null) return;
-          let a = atBeat(ov.m, ov.b || 0);
-          let z = atBeat(ov.endM, Math.max(0, (ov.endB || 0) - 0.002));
-          /* A view of some bars - this part, a phone's two, the import preview, the review staff - draws the stretch
-             of a line that falls in them: its notes are printed an octave from where they sound, so the sign must be
-             there (MX-1 fixer, R1). Carried on from a bar before the first shown, it is labelled "(8va)", as on a
-             new line of the page; going on past the last bar shown, it has no end hook. */
-          let carried = false, open = false;
-          if (!a || !z) {
-            const mA = Score.measure(score, ov.m), mZ = Score.measure(score, ov.endM);
-            const qa = mA ? mA.startQ + (ov.b || 0) : -Infinity, qz = mZ ? mZ.startQ + (ov.endB || 0) : Infinity;
-            const on = this._map.filter(sg => sg.startQ + sg.lenQ > qa + 1e-6 && sg.startQ < qz - 1e-6);
-            if (!on.length) return;
-            const end = on[on.length - 1];
-            if (!a) { a = { x: on[0].x, y: on[0].y }; carried = true; }
-            if (!z) { z = { x: end.x + end.w - 12, y: end.y }; open = qz > end.startQ + end.lenQ + 1e-6; }
-          }
-          if (z.y < a.y) return;
-          const staffNo = ov.staff || (ov.dir > 0 ? pianoTop + 1 : pianoTop + 2);
-          const k = Math.max(0, Math.min(nStaves - 1, staffNo - 1));
-          /* over the staff for an 8va, under it for an 8vb */
-          const lineY = ry => {
-            if (ov.dir < 0) return ry + staffY(k) + LINE0 + 40 + 22;
-            let y = ry + staffY(k) + LINE0 - 16;
-            /* over the notes it covers, when they climb above that */
-            if (k === 0) this._map.forEach(sg => {
-              if (sg.y !== ry || barReach[sg.number] == null) return;
-              const inSpan = absOfBar(sg.number) + sg.lenQ > Score.startQ(score, ov.m) + (ov.b || 0) &&
-                absOfBar(sg.number) <= Score.startQ(score, ov.endM) + (ov.endB || 0);
-              if (inSpan) y = Math.min(y, barReach[sg.number] - 4);
-            });
-            rowOttava[ry] = Math.min(rowOttava[ry] == null ? Infinity : rowOttava[ry], y);
-            return y;
-          };
-          const shift = ottavaSemitones(ov);
-          const name = Math.abs(shift) >= 24 ? (shift > 0 ? '15ma' : '15mb') : (shift > 0 ? '8va' : '8vb');
-          const rows = Object.keys(rowSpan).map(Number).filter(ry => ry >= a.y && ry <= z.y).sort((u, v) => u - v);
-          rows.forEach((ry, i) => {
-            const first = i === 0, last = i === rows.length - 1;
-            const x0 = first ? a.x : rowSpan[ry].x0;
-            const x1 = last ? z.x + 12 : rowSpan[ry].x1;
-            const y = lineY(ry);
-            /* the sign at the start, and in brackets where it carries on */
-            const opens = first && !carried;
-            const label = opens ? name : '(' + name + ')';
-            const lw = opens ? 24 : 34;
-            svgLabel(label, { x: x0, y: y + 4, size: 13, italic: true, stroke: 0.4, row: rowOfY[ry] });
-            if (x1 <= x0 + lw + 4) return;
-            const line = document.createElementNS(SVGNS, 'path');
-            line.setAttribute('d', 'M ' + (x0 + lw) + ' ' + y + ' L ' + x1 + ' ' + y +
-              (last && !open ? ' L ' + x1 + ' ' + (y + (ov.dir > 0 ? 6 : -6)) : ''));
-            line.setAttribute('data-ppp-row', String(rowOfY[ry]));
-            line.setAttribute('fill', 'none');
-            line.setAttribute('stroke', ink);
-            line.setAttribute('stroke-width', '1');
-            line.setAttribute('stroke-dasharray', '4 3');
-            line.setAttribute('class', 'ppp-ottava');
-            ctx.svg.appendChild(line);
-          });
-        });
-      }
-
-      /* A segno or coda sign stands at the start of its bar, on the line of
-         the chord names, and takes its turn with them. */
-      const segOfBar = {};
-      this._map.forEach(sg => { segOfBar[sg.number] = sg; });
-      const rowOfY = y => Math.round((y - HEAD_H) / ROW_H);
-      (score.marks || []).forEach(mk => {
-        const sg = segOfBar[mk.m];
-        if (!sg || (mk.kind !== 'segno' && mk.kind !== 'coda')) return;
-        /* Noto Music draws the coda smaller than the segno; printed, they match */
-        chordQueue.push({ row: rowOfY(sg.y), x: sg.x + 1, text: mk.kind === 'segno' ? '𝄋' : '𝄌',
-          family: "'Noto Music', 'Segoe UI Symbol', serif", size: mk.kind === 'segno' ? 22 : 30, weight: '400', sign: true });
-      });
-
-      /* Chord names sit on one line per system, as a lead sheet prints them:
-         where the staff leaves room, or higher when a note, a beam or an 8va
-         climbs into that room. */
-      const chordBase = {};
-      this._map.forEach(sg => {
-        const need = barReach[sg.number];
-        let y = chordBase[sg.y] == null ? sg.y + TREBLE_Y + LINE0 - 24 : chordBase[sg.y];
-        if (need != null && isFinite(need)) y = Math.min(y, need - 5);
-        if (rowOttava[sg.y] != null) y = Math.min(y, rowOttava[sg.y] - 13);
-        chordBase[sg.y] = y;
-      });
-      const hasChords = {};
-      chordQueue.forEach(c => { hasChords[HEAD_H + c.row * ROW_H] = true; });
-      /* left to right along each line; a name that would run into the one
-         before it moves along rather than printing over it */
-      const lastEnd = {};
-      chordQueue.slice().sort((a, b) => a.row - b.row || a.x - b.x).forEach(c => {
-        const rTop = HEAD_H + c.row * ROW_H;
-        const x = Math.max(c.x, (lastEnd[c.row] || -Infinity) + 6);
-        const t = svgLabel(c.text, { x: x, y: chordBase[rTop] + (c.sign ? 4 : 0), size: c.size || 13, weight: c.weight || '600',
-          family: c.family || "Figtree, system-ui, sans-serif", row: c.row });
-        let wd = c.text.length * 7.5;
-        try { wd = t.getComputedTextLength() || wd; } catch (e) {}
-        /* a long name at the end of a line is pulled back inside the page */
-        const room = W - 4;
-        if (t && x + wd > room) {
-          const nx = Math.max((lastEnd[c.row] || -Infinity) + 6, room - wd);
-          t.setAttribute('x', nx);
-          lastEnd[c.row] = nx + wd;
-        } else lastEnd[c.row] = x + wd;
-      });
-
-      /* "To Coda" and "Fine" over the end of their bar, "D.S." and "D.C."
-         under it, set as a printed score sets them. */
-      (score.marks || []).forEach(mk => {
-        const sg = segOfBar[mk.m];
-        if (!sg || !mk.text || mk.kind === 'segno' || mk.kind === 'coda') return;
-        const x = sg.x + sg.w - 4;
-        if (mk.kind === 'tocoda' || mk.kind === 'fine') {
-          let y = sg.y + TREBLE_Y + LINE0 - 6;
-          if (barReach[mk.m] != null && isFinite(barReach[mk.m])) y = Math.min(y, barReach[mk.m] - 4);
-          svgLabel(mk.text, { x: x, y: y, size: 13, weight: '700', anchor: 'end', row: rowOfY(sg.y) });
-        } else {
-          const below = sg.y + staffY(nStaves - 1) + LINE0 + 40 + (PED_H ? 44 : 22);
-          svgLabel(mk.text, { x: x, y: below, size: 13, weight: '700', anchor: 'end' });
-        }
-      });
-
-      /* First and second endings, over the chord names of their line: a line
-         with a hook down where the ending starts and, when it is closed, where
-         it stops, and its number inside. */
-      voltaQueue.forEach(v => {
-        const rTop = HEAD_H + v.row * ROW_H;
-        const base = chordBase[rTop] != null ? chordBase[rTop] : rTop + TREBLE_Y + LINE0 - 24;
-        const y = hasChords[rTop] ? base - 27 : Math.min(base - 4, rTop + TREBLE_Y + LINE0 - 22);
-        const x0 = v.x0 + 2, x1 = v.x1 - 3;
-        let d = 'M ' + x0 + ' ' + y + ' L ' + x1 + ' ' + y;
-        if (v.type === 'BEGIN' || v.type === 'BEGIN_END') d = 'M ' + x0 + ' ' + (y + 12) + ' L ' + x0 + ' ' + y + ' L ' + x1 + ' ' + y;
-        if (v.type === 'END' || v.type === 'BEGIN_END') d += ' L ' + x1 + ' ' + (y + 12);
-        const path = document.createElementNS(SVGNS, 'path');
-        path.setAttribute('d', d);
-        path.setAttribute('fill', 'none');
-        path.setAttribute('stroke', ink);
-        path.setAttribute('stroke-width', '1.2');
-        path.setAttribute('class', 'ppp-volta');
-        ctx.svg.appendChild(path);
-        if (v.label && (v.type === 'BEGIN' || v.type === 'BEGIN_END'))
-          svgLabel(v.label, { x: x0 + 5, y: y + 12, size: 12, weight: '600', row: v.row });
-      });
-
-      /* "Measures 21–24" means nothing to someone who cannot see which part of
-         the piece that is. On the whole score the weak bars are shaded where
-         they actually are, so the advice points at something. */
-      if (p.weak && p.weak.length) {
-        const bad = col('--bad');
-        const want = {};
-        p.weak.forEach(n => { want[n] = true; });
-        this._map.forEach(seg => {
-          if (!want[seg.number]) return;
-          const r = document.createElementNS(SVGNS, 'rect');
-          r.setAttribute('x', seg.x - 2);
-          r.setAttribute('y', (seg.y || 0) + BAND_TOP);
-          r.setAttribute('width', seg.w + 4);
-          r.setAttribute('height', BAND_BOT - BAND_TOP);
-          r.setAttribute('rx', 7);
-          r.setAttribute('fill', onPaper ? 'rgb(214,64,52)' : col('--bad'));
-          r.setAttribute('opacity', onPaper ? 0.15 : 0.22);
-          ctx.svg.insertBefore(r, ctx.svg.firstChild);
-        });
-      }
-
-      /* Order the note groups in time so memory-mode hiding is stable. */
-      allNoteMeta.sort((a, b) => a.absStart - b.absStart);
-      allNoteMeta.forEach((n, i) => { n.hideIdx = i; });
-      this._noteEls = allNoteMeta;
-
-      const svg = ctx.svg;
-      /* Nothing on a page of music is meant to be a colour the theme did not
-         choose. Pure black is VexFlow's default, not a decision.
-
-         The sweep below only reaches elements that carry an explicit fill. Some
-         glyphs carry none at all and inherit, so the inherited value is set on
-         the root as well — otherwise they fall back to black and disappear on a
-         dark background whatever the sweep does. */
-      svg.setAttribute('fill', ink);
-      svg.style.fill = ink;
-      svg.style.color = ink;
-      try {
-        svg.querySelectorAll('[fill="#000000"],[fill="#000"],[fill="black"],[fill="rgb(0, 0, 0)"],[fill="rgb(0,0,0)"]')
-          .forEach(e => e.setAttribute('fill', ink));
-        svg.querySelectorAll('[stroke="#000000"],[stroke="#000"],[stroke="black"],[stroke="rgb(0, 0, 0)"],[stroke="rgb(0,0,0)"]')
-          .forEach(e => e.setAttribute('stroke', ink));
-        svg.querySelectorAll('.ppp-ann').forEach(e => {
-          e.setAttribute('fill', ink);
-          e.style.setProperty('fill', ink, 'important');
-          if (e.getAttribute('stroke') && e.getAttribute('stroke') !== 'none') {
-            e.setAttribute('stroke', ink);
-            e.style.setProperty('stroke', ink, 'important');
-          }
-        });
-      } catch (e) { /* styling is not worth failing an engraving over */ }
-
-      /* Ledger lines, high notes and the guidance letters all sit outside the
-         nominal stave box, so fit the viewBox to what was actually drawn
-         instead of cropping it. */
-      let top = 0, height = H;
-      try {
-        const bb = svg.getBBox();
-        top = Math.min(0, Math.floor(bb.y - 4));
-        height = Math.max(H, Math.ceil(bb.y + bb.height + 4)) - top;
-      } catch (e) { /* getBBox can throw on a detached node */ }
-      svg.setAttribute('viewBox', '0 ' + top + ' ' + W + ' ' + height);
-      /* renderer.resize() leaves an inline width/height that would override the
-         attributes, so set the style as well and let the height follow the
-         aspect ratio. */
-      svg.setAttribute('height', height);
-      svg.style.height = 'auto';
-      /* The notation is ink on paper wherever it appears — the thumbnails, the
-         loop screen, the recognition review — so the paper travels with it
-         rather than being painted on each container that happens to hold one. */
-      svg.style.background = onPaper ? 'var(--paper)' : 'transparent';
-      if (p.fluid) {
-        svg.setAttribute('width', '100%');
-        svg.style.width = '100%';
-      } else {
-        svg.style.width = W + 'px';
-      }
-      svg.style.display = 'block';
-      /* a page has a width: on a very wide monitor the whole score is centred
-         at a readable size rather than stretched until four bars fill a wall */
-      svg.style.maxWidth = (wrapping && p.fluid) ? '1320px' : '100%';
-      if (wrapping && p.fluid) svg.style.margin = '0 auto';
-      svg.style.overflow = 'visible';
-
-      /* Behind the notes: loop bracket and current-measure wash. */
-      const mk = (tag, attrs) => {
-        const e = document.createElementNS(SVGNS, tag);
-        Object.keys(attrs).forEach(a => e.setAttribute(a, attrs[a]));
-        return e;
-      };
-      /* fixed mixes on paper; the theme's own tokens when following it */
-      const nowFill = onPaper ? 'rgba(96,74,220,.16)' : col('--accent-3');
-      const nowLine = onPaper ? 'rgba(96,74,220,.55)' : col('--accent-2');
-      const accent = onPaper ? 'rgb(96,74,220)' : col('--accent');
-      this._loopBox = mk('rect', { fill: 'none', stroke: nowLine, 'stroke-width': 1.5, 'stroke-dasharray': '5 4', rx: 10, opacity: 0 });
-      this._hl = mk('rect', { class: 'ppp-now', fill: nowFill, stroke: nowLine, 'stroke-width': 1.5, rx: 8, opacity: 0 });
-      svg.insertBefore(this._loopBox, svg.firstChild);
-      svg.insertBefore(this._hl, svg.firstChild);
-
-      /* The page itself is the control. A click reports the bar and the beat
-         under the pointer; a sideways drag reports a range. Start-to-finish
-         plays from that beat, loop and memorize still pick a passage. */
-      if (p.pick) {
-        svg.style.cursor = 'pointer';
-        /* vertical scrolling of the score still works on touch; a sideways
-           drag selects */
-        svg.style.touchAction = 'pan-y';
-        const hover = mk('rect', { fill: 'none', stroke: nowLine, 'stroke-width': 1.5, rx: 8, opacity: 0 });
-        hover.style.pointerEvents = 'none';
-        svg.insertBefore(hover, svg.firstChild);
-
-        const hit = ev => {
-          let pt;
-          try {
-            pt = svg.createSVGPoint();
-            pt.x = ev.clientX; pt.y = ev.clientY;
-            pt = pt.matrixTransform(svg.getScreenCTM().inverse());
-          } catch (e) { return null; }
-          const sys = this._SYS || this._H;
-          const seg = this._map.filter(s =>
-            pt.x >= s.x - 8 && pt.x <= s.x + s.w + 8 &&
-            pt.y >= (s.y || 0) && pt.y <= (s.y || 0) + sys)[0] || null;
-          if (!seg) return null;
-          const inner = Math.max(0, Math.min(seg.lenQ - 1e-4, barQ(seg, pt.x)));
-          return { seg: seg, q: seg.startQ + inner };
-        };
-        const outline = seg => {
-          if (!seg) { hover.setAttribute('opacity', 0); return; }
-          const sys = this._SYS || this._H;
-          hover.setAttribute('x', seg.x - 4); hover.setAttribute('y', (seg.y || 0) + BAND_TOP - 4);
-          hover.setAttribute('width', seg.w + 8); hover.setAttribute('height', BAND_BOT - BAND_TOP + 8);
-          hover.setAttribute('opacity', 1);
-        };
-        /* read the live prop, not the one captured when this was drawn */
-        const send = e => { const fn = this.props.pick; if (fn) fn(e); };
-
-        let from = null, last = null, downY = 0, downX = 0, mode = null;
-        svg.addEventListener('pointerdown', ev => {
-          const h = hit(ev);
-          if (!h || ev.button > 0) return;
-          from = h.seg.number;
-          last = h;
-          downY = ev.clientY;
-          downX = ev.clientX;
-          mode = null;
-        });
-        svg.addEventListener('pointermove', ev => {
-          const h = hit(ev);
-          outline(h && h.seg);
-          if (from == null) return;
-          const dx = Math.abs(ev.clientX - downX), dy = Math.abs(ev.clientY - downY);
-          if (mode == null) {
-            if (dx < 12 && dy < 12) return;
-            /* a vertical pan scrolls the page of music; capturing the pointer
-               had stolen that gesture on a tablet */
-            if (dy > dx) { mode = 'pan'; from = null; last = null; return; }
-            mode = 'pick';
-            try { svg.setPointerCapture(ev.pointerId); } catch (e) {}
-            send({ from: from, to: from, q: last.q, extend: ev.shiftKey, phase: 'start' });
-          }
-          if (mode !== 'pick' || !h) return;
-          last = h;
-          send({ from: from, to: h.seg.number, q: h.q, extend: ev.shiftKey, phase: 'move' });
-        });
-        svg.addEventListener('pointerup', ev => {
-          if (from != null && last && mode !== 'pan') {
-            if (mode === 'pick') {
-              send({ from: from, to: last.seg.number, q: last.q, extend: !!(ev && ev.shiftKey), phase: 'end' });
-            } else {
-              /* a tap: no drag, so it never sent start */
-              send({ from: from, to: last.seg.number, q: last.q, extend: !!(ev && ev.shiftKey), phase: 'end' });
-            }
-          }
-          from = null; last = null; mode = null;
-        });
-        svg.addEventListener('pointercancel', () => { from = null; last = null; mode = null; });
-        svg.addEventListener('pointerleave', () => { if (from == null) outline(null); });
-      }
-
-      /* In front: the playhead. */
-      this._phLine = mk('line', { stroke: accent, 'stroke-width': 2.5, opacity: 0 });
-      this._phDot = mk('circle', { r: 5, fill: accent, opacity: 0 });
-      svg.appendChild(this._phLine);
-      svg.appendChild(this._phDot);
-      this._H = H;
-      this._SYS = SYS_H;
-      this._band = { top: BAND_TOP, bottom: BAND_BOT };
-      /* how the page was laid out, for the engraving checks */
-      try {
-        svg.__ppp = {
-          page: PAGE, pad: PAD,
-          rows: rowsIdx.map(idxs => idxs.map(i => measures[i].number)),
-          tight: prep.map(pr => Math.round(spaceBar(pr, 0).width)),
-          begin: measures.map((mm, i) => Math.round(beginW(i, false))),
-          bars: this._map.map(sg => ({ m: sg.number, row: sg.row, x: sg.x, y: sg.y, w: sg.w }))
-        };
-      } catch (e) {}
+      this._engrave.paint(this.el, this.props);
     }
 
-    buildVoice(VF, list, clef, mm, ink, guidance, stemDir, written) {
-      /* the clef may be one name, or change partway through the bar */
-      const clefFor = typeof clef === 'function' ? clef : () => clef;
-      const groups = [];
-      const byOnset = {};
-      list.forEach(n => {
-        const k = n.b.toFixed(5);
-        if (!byOnset[k]) { byOnset[k] = { b: n.b, notes: [] }; groups.push(byOnset[k]); }
-        byOnset[k].notes.push(n);
-      });
-      if (!groups.length) return null;
-      groups.sort((a, b) => a.b - b.b);
-
-      const meta = [];
-      const tickables = [];
-      const QT = (VF.RESOLUTION || 16384) / 4;          /* ticks in a quarter */
-      /* Each note is made to take up exactly the time from its onset to where
-         it ends, both counted from the start of the bar and rounded to the
-         tick grid once. Voices that start a note at the same moment then land
-         on the same tick — also after a triplet — and are drawn in one column,
-         whatever lengths the file wrote. The glyph stays as written. */
-      const at = q => Math.round(q * QT);
-      const fit = (t, fromQ, toQ) => {
-        const want = Math.max(1, at(toQ) - at(fromQ));
-        let tk = null;
-        try { tk = t.getTicks(); } catch (e) { return; }
-        if (!tk || !tk.value() || Math.abs(tk.value() - want) < 1e-9) return;
-        try { t.applyTickMultiplier(want * tk.denominator, tk.numerator); } catch (e) { /* leave it as written */ }
-      };
-      const spacer = (fromQ, toQ) => {
-        const gn = new VF.GhostNote({ duration: 'q' });
-        fit(gn, fromQ, toQ);
-        return gn;
-      };
-      /* a rest in the upper of two voices sits high, in the lower one low */
-      const restKey = (dir, cl) => cl === 'bass'
-        ? (dir > 0 ? 'f/3' : dir < 0 ? 'b/2' : 'd/3')
-        : (dir > 0 ? 'd/5' : dir < 0 ? 'g/4' : 'b/4');
-      const barQ = mm.lenQ || 4;
-      const fits = [];
-      const drawn = [];                 /* {g, sn, isRest, type, dir} per note column */
-      if (groups[0].b > 1e-3) { tickables.push(spacer(0, groups[0].b)); meta.push(null); }
-      groups.forEach((g, gi) => {
-        const head = g.notes[0];
-        const nextB = gi + 1 < groups.length ? groups[gi + 1].b : Math.max(barQ, g.b + 0.01);
-        const span = Math.max(0.01, nextB - g.b);
-        const sounding = head.dur > 0 ? Math.min(head.dur, span) : span;
-        const heads = g.notes.filter(n => !n.rest && n.p);
-        const isRest = !heads.length;
-        const base = VF_TYPE[head.type] || 'q';
-        const dir = head.stem === 'up' ? 1 : head.stem === 'down' ? -1 : (stemDir || 0);
-        let sn;
-        try {
-          const cl = clefFor(g.b);
-          const opts = {
-            keys: isRest ? [restKey(dir, cl)] : heads.map(n => vexKey(written ? written(n) : n.p)),
-            duration: base + (isRest ? 'r' : ''),
-            clef: cl
-          };
-          if (dir) opts.stem_direction = dir; else opts.auto_stem = true;
-          sn = new VF.StaveNote(opts);
-        } catch (e) { return; }
-
-        if (!isRest && g.notes.some(n => n.arp)) {
-          try { sn.addStroke(0, new VF.Stroke(VF.Stroke.Type.ARPEGGIO_DIRECTIONLESS)); } catch (e) { /* drawn without it */ }
-        }
-        if (!isRest) {
-          heads.forEach((n, i) => {
-            const a = n.acc ? ACC_VEX[n.acc] : null;
-            if (a) { try { sn.addModifier(new VF.Accidental(a), i); } catch (e) {} }
-          });
-          if (guidance) {
-            try {
-              const ann = new VF.Annotation(heads[0].p.charAt(0))
-                .setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM)
-                .setFont('JetBrains Mono, monospace', 9);
-              sn.addModifier(ann, 0);
-            } catch (e) {}
-          }
-        }
-        for (let d = 0; d < (head.dots || 0); d++) { try { VF.Dot.buildAndAttach([sn], { all: true }); } catch (e) {} }
-        try { sn.setStyle({ fillStyle: ink, strokeStyle: ink }); } catch (e) {}
-
-        fits.push([sn, g.b, g.b + sounding]);
-        drawn.push({ g: g, sn: sn, isRest: isRest, dir: dir, next: nextB });
-        tickables.push(sn);
-        meta.push({
-          abs: (mm.startQ + g.b), dur: head.dur, rest: isRest,
-          midis: heads.map(n => n.midi),
-          hand: head.hand,
-          key: onsetKey(head.m, g.b, head.staff),
-          /* kept so ties and slurs can be drawn between the real objects */
-          sn: sn,
-          tieStarts: heads.filter(n => n.tieStart).map(n => n.midi),
-          tieStops: heads.filter(n => n.tieStop).map(n => n.midi),
-          slurStart: g.notes.some(n => n.slurStart), slurStop: g.notes.some(n => n.slurStop)
-        });
-        /* a note shorter than the gap to the next one: hold the rest of the gap */
-        if (span - sounding > 1e-3) { tickables.push(spacer(g.b + sounding, nextB)); meta.push(null); }
-      });
-      if (!tickables.length) return null;
-
-      /* Beams join the eighths and shorter notes of one beat — counted from
-         the bar line, not from wherever the voice happens to begin, which is
-         what grouped a run starting half a beat late across the beat. */
-      const beatQ = (mm.time.beatType === 8 && mm.time.beats % 3 === 0) ? 1.5 : 1;
-      const SHORT = { eighth: 1, '16th': 1, '32nd': 1, '64th': 1, '128th': 1 };
-      const beams = [];
-      let run = [], runBeat = null;
-      const closeRun = () => {
-        if (run.length > 1) {
-          try { beams.push(new VF.Beam(run.map(d => d.sn), !run[0].dir)); } catch (e) { /* unbeamable */ }
-        }
-        run = []; runBeat = null;
-      };
-      drawn.forEach(d => {
-        const beat = Math.floor((d.g.b + 1e-6) / beatQ);
-        if (d.isRest || !SHORT[d.g.notes[0].type]) { closeRun(); return; }
-        if (runBeat != null && beat !== runBeat) closeRun();
-        run.push(d); runBeat = beat;
-      });
-      closeRun();
-
-      /* A triplet is marked with a 3 over the group. A group runs until the
-         file says it stops, or until it has filled the time it stands for:
-         three triplet eighths fill the time of two ordinary ones. */
-      const TYPE_Q = { whole: 4, half: 2, quarter: 1, eighth: 0.5, '16th': 0.25, '32nd': 0.125, '64th': 0.0625 };
-      const tuplets = [];
-      let tr = [], trFrom = 0, trTm = null, trUnit = 1;
-      const closeTuplet = () => {
-        if (tr.length > 1 && trTm) {
-          try {
-            const up = tr[0].dir >= 0;
-            tuplets.push(new VF.Tuplet(tr.map(d => d.sn), {
-              num_notes: trTm.a, notes_occupied: trTm.n,
-              location: up ? 1 : -1
-            }));
-          } catch (e) { /* leave the notes unmarked */ }
-        }
-        tr = []; trTm = null; trUnit = 1;
-      };
-      drawn.forEach(d => {
-        const head = d.g.notes[0];
-        const tm = head.tm;
-        if (!tm || (trTm && (tm.a !== trTm.a || tm.n !== trTm.n)) || head.tupletStart) closeTuplet();
-        if (!tm) return;
-        if (!tr.length) { trFrom = d.g.b; trTm = tm; }
-        tr.push(d);
-        const unit = TYPE_Q[head.type] || 0.5;
-        trUnit = tr.length === 1 ? unit : Math.min(trUnit, unit);
-        const filled = d.next - trFrom >= trTm.n * trUnit - 0.02;
-        if (head.tupletStop || filled) closeTuplet();
-      });
-      closeTuplet();
-
-      /* only now the lengths: a tuplet sets its own ratio on its notes, and
-         the fit is made on top of whatever that left */
-      fits.forEach(f => fit(f[0], f[1], f[2]));
-
-      const voice = new VF.Voice({ num_beats: mm.time.beats, beat_value: mm.time.beatType })
-        .setMode(VF.Voice.Mode.SOFT);
-      voice.addTickables(tickables);
-      return { voice, meta, beams, tuplets };
-    }
-
-    /* Cheap per-frame update: no re-engraving. */
-    sync() {
-      const p = this.props;
-      if (!this._noteEls) return;
-      const hide = p.hide || 0;
-      const wrong = p.wrong || [];
-      const beat = p.beat;
-      const wantHand = p.hands === 'right' ? 'r' : p.hands === 'left' ? 'l' : null;
-
-      /* A hide plan decides what goes, by musical role — bar lines, downbeats,
-         phrase starts and chords survive longest. Only when no plan is supplied
-         does this fall back to the crude positional rule. */
-      const plan = p.hidePlan || null;
-      const ghost = !!(plan && plan.ghost);
-      this._noteEls.forEach(ne => {
-        const cl = ne.el && ne.el.classList;
-        if (!cl) return;
-        const handOff = wantHand && ne.hand !== wantHand;
-        const byPlan = plan ? !!plan.hide[ne.key]
-          : (hide >= 3 || (hide === 2 && ne.hideIdx % 2 === 1) || (hide === 1 && ne.hideIdx % 4 === 3));
-        const hidden = handOff || byPlan;
-        const on = !hidden && beat != null && beat >= ne.absStart && beat < ne.absEnd;
-        const bad = on && ne.midis.some(m => wrong.indexOf(m) > -1);
-        /* "rhythm only" keeps the shapes faintly visible: you can see where the
-           notes fall without being able to read them. */
-        cl.toggle('ppp-ghost', !!(hidden && ghost && !handOff));
-        cl.toggle('ppp-off', !!hidden && !(ghost && !handOff));
-        cl.toggle('ppp-on', !!on && !bad);
-        cl.toggle('ppp-bad', !!bad);
-      });
-
-      const seg = q => {
-        for (let i = 0; i < this._map.length; i++) {
-          const s = this._map[i];
-          if (q >= s.startQ - 1e-9 && q < s.startQ + s.lenQ) return s;
-        }
-        return null;
-      };
-
-      if (this._hl) {
-        const cm = p.currentM != null ? this._map.filter(s => s.number === p.currentM)[0] : null;
-        if (cm) {
-          const sys = this._SYS || this._H;
-          this._hl.setAttribute('x', cm.x - 4);
-          const band = this._band || { top: 16, bottom: sys - 12 };
-          this._hl.setAttribute('y', (cm.y || 0) + band.top);
-          this._hl.setAttribute('width', cm.w);
-          this._hl.setAttribute('height', band.bottom - band.top);
-          this._hl.setAttribute('opacity', 1);
-        } else this._hl.setAttribute('opacity', 0);
-      }
-
-      if (this._loopBox) {
-        const a = p.loopFrom != null ? this._map.filter(s => s.number >= p.loopFrom)[0] : null;
-        const bs = p.loopTo != null ? this._map.filter(s => s.number <= p.loopTo) : [];
-        const b = bs.length ? bs[bs.length - 1] : null;
-        /* Across a wrap the bracket would be a box round half the page, so it
-           marks the first system of the range and the wash marks the rest. */
-        if (a && b && (a.y || 0) === (b.y || 0) && b.x + b.w > a.x) {
-          const sys = this._SYS || this._H;
-          this._loopBox.setAttribute('x', a.x - 6);
-          const band2 = this._band || { top: 16, bottom: sys - 12 };
-          this._loopBox.setAttribute('y', (a.y || 0) + band2.top - 6);
-          this._loopBox.setAttribute('width', (b.x + b.w) - a.x + 12);
-          this._loopBox.setAttribute('height', band2.bottom - band2.top + 12);
-          this._loopBox.setAttribute('opacity', 1);
-        } else this._loopBox.setAttribute('opacity', 0);
-      }
-
-      if (this._phLine) {
-        const s = p.playX != null ? seg(p.playX) : null;
-        if (s) {
-          const x = barX(s, p.playX - s.startQ);
-          const sys = this._SYS || this._H;
-          const top = (s.y || 0);
-          this._phLine.setAttribute('x1', x); this._phLine.setAttribute('x2', x);
-          const band3 = this._band || { top: 14, bottom: sys - 10 };
-          this._phLine.setAttribute('y1', top + band3.top); this._phLine.setAttribute('y2', top + band3.bottom);
-          this._phLine.setAttribute('opacity', 1);
-          this._phDot.setAttribute('cx', x); this._phDot.setAttribute('cy', top + band3.top);
-          this._phDot.setAttribute('opacity', 1);
-        } else {
-          this._phLine.setAttribute('opacity', 0);
-          this._phDot.setAttribute('opacity', 0);
-        }
-      }
-    }
-
+    /* Always the same element: engraveView fills it in (its own "Engraving…" wait text, the drawing, or the "could not
+       be engraved" message) once mounted - there is no separate library load to wait on here any more (§25.2 step 3). */
     render() {
-      const p = this.props;
-      if (this.state.err) {
-        return React.createElement('div', {
-          style: { padding: '20px', textAlign: 'center', fontSize: 12.5, color: 'var(--ink3)', border: '1px dashed var(--line)', borderRadius: 12 }
-        }, this.state.err);
-      }
-      if (!this.state.ready) {
-        return React.createElement('div', {
-          style: { minHeight: p.grand === false ? 60 : 140, display: 'grid', placeItems: 'center', fontSize: 12, color: 'var(--ink3)' }
-        }, /* G4f-2: was 'Engraving…' >>> */tx('Engraving…')/* <<< G4f-2 */);
-      }
       return React.createElement('div', {
         className: 'ppp-score',
         ref: e => { this.el = e; }
@@ -12607,7 +11288,6 @@ class Component extends DCLogic {
     this.applyTheme();
     this.restore();
     this.warmMidiIfAllowed();
-    loadVexFlow().catch(() => {});
     if (this.props.startScreen) this.setState({ screen: this.props.startScreen });
     if (this.props.theme === 'dark') this.setState({ theme: 'dark' });
     this._last = (window.performance || Date).now();
@@ -16727,8 +15407,7 @@ class Component extends DCLogic {
       paper: this.state.toggles.paper !== false
     }, props));
   }
-  /* G4e: "Print / Save as PDF" (G04 §17.1) - shown where the engraver is the renderer (showPrintControls): by default
-     since the G4f-2 flip, not under ?renderer=legacy.
+  /* G4e: "Print / Save as PDF" (G04 §17.1) - shown once the engraver has drawn this Score (showPrintControls).
      Builds a print layout from the same source the engraver reads for this Score (PPPEngrave.app.resolve, §7.4:
      the file's own graph when it agrees with the Score, else the Score's own projection), puts one <svg> a page
      into a hidden container, waits document.fonts.ready, then calls window.print() - engrave/page.js printScore()
@@ -17817,7 +16496,11 @@ class Component extends DCLogic {
       curSection: passage,
       lastPracticed: S.laps ? tx('just now') : tx('12 minutes ago'),
       streakDays: tx('{{n}} day streak', { n: S.streak }),
-      thumbStaff: this.sv({ startM: S.loopFrom, count: 1, mW: 120, numbers: false, guidance: false, chords: false, fluid: true, clefs: false, grand: score.staves > 1 }),
+      /* §25.2 step 3 (DECISIONS G4-R3): used to pass clefs: false to route this thumbnail to the (now removed) legacy
+         renderer, avoiding its 15-file load for a tiny box; the engraver has no notion of hiding a clef, and measured,
+         loading it here costs a few tens of ms of already-cached same-origin files - so this draws like any other
+         thumbnail (grand: th.staves > 1 elsewhere), clef and all */
+      thumbStaff: this.sv({ startM: S.loopFrom, count: 1, mW: 120, numbers: false, guidance: false, chords: false, fluid: true, grand: score.staves > 1 }),
       /* Detected from performance history. Empty until PPP has heard you play. */
       hasWeak: !!learn.ranges.length,
       noWeak: !learn.ranges.length,
@@ -18275,11 +16958,10 @@ class Component extends DCLogic {
       wholeBtnStyle: this.chip(S.wholeScore),
       wholeLabel: tx(S.wholeScore ? 'Whole score' : 'This part'),
       wholeHint: tx('See the whole piece at once, with the weak bars shaded'),
-      /* G4e: print/PDF, on the same switch as the engraver renderer - on by default since the G4f-2 flip, off under
-         ?renderer=legacy - only in the whole-score view, since print lays out the whole piece regardless of the close window,
-         and only once the engraver has drawn this Score (G4f-2 review R2: a song that fell back to the legacy renderer
-         has no source the print layout can use) */
-      showPrintControls: S.wholeScore && engraveWanted({ renderer: PPP.renderer }) && engraveDrew(S.score),
+      /* G4e: print/PDF - only in the whole-score view, since print lays out the whole piece regardless of the close
+         window, and only once the engraver has drawn this Score (G4f-2 review R2: a song whose engraving failed has no
+         source the print layout can use) */
+      showPrintControls: S.wholeScore && engraveDrew(S.score),
       printBtnStyle: this.chip(false),
       printLabel: tx('Print / Save as PDF'),
       printHint: tx('Print this score, or save it as a PDF'),
@@ -18689,7 +17371,8 @@ class Component extends DCLogic {
       settingGroups,
       resetProgress: () => this.resetProgress(),
 
-      emptyStaff: this.sv({ startM: this.firstM(), count: 1, mW: 70, grand: false, clefs: false, numbers: false, guidance: false, fluid: true }),
+      /* §25.2 step 3 (DECISIONS G4-R3): see thumbStaff above - drawn by the engraver like any other view now */
+      emptyStaff: this.sv({ startM: this.firstM(), count: 1, mW: 70, numbers: false, guidance: false, fluid: true }),
       stateTabs: ['Loading', 'Error', 'Offline'].map(label => ({ label: tx(label), style: this.pill(S.stateTab === label), on: () => this.setState({ stateTab: label }) })),
       stateLoading: S.stateTab === 'Loading', stateError: S.stateTab === 'Error', stateOffline: S.stateTab === 'Offline',
       skeletons: [1, 2, 3]

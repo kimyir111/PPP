@@ -9,44 +9,41 @@
    http.request/get and fetch. Check it took: the page's window.PPPEngrave.version is this tree's (the summary line below
    prints it).
 
-   G4d-2 (docs/GOALS/G04 §16, A30):
-     PPP_RENDERER=legacy    every page opens with the rollback on (localStorage 'ppp.renderer', set before the app runs on
-                            every document, so a reload keeps it). G4f-2 flipped the default to 'engrave': with no
-                            PPP_RENDERER a suite runs the default page, the engraver's; PPP_RENDERER=engrave says so
-                            explicitly (under G4d-2 it switched the engraver on). PPP_STRICT=1 adds 'ppp.strictEngrave'
+   (docs/GOALS/G04 §16, A30, §52): PPP_STRICT=1 sets 'ppp.strictEngrave' before the app runs on every document (question
+     3 of §25.2 step 3: kept after the renderer switch itself was removed, so CI and tests can still make a real
+     engraving failure throw instead of showing this view's own "could not be engraved" message). PPP_RENDERER, which
+     used to pick the legacy renderer or the engraver explicitly, is gone with the switch it drove - there is one
+     renderer now, always the default page.
      the page's own health check of the local helper (http://127.0.0.1:8788/health, which nothing serves on a PC without the
      helper) is kept out of the suites' console and requestfailed listeners - it failed the suites that count console errors
      on every tree alike (G04 §33.14); PPP_KEEP_8788=1 turns this off
-     at exit one line: the tree's PPPEngrave.version, the renderer, and the engraver's draws and fallbacks by code over every
-     page the suite opened (read before each navigation and close) - so a pass under 'engrave' is known to be the engraver's */
+     at exit one line: the tree's PPPEngrave.version, and the engraver's draws and fallbacks by code over every page the
+     suite opened (read before each navigation and close) */
 'use strict';
 const Module = require('module');
 const http = require('http');
 const TO = process.env.PPP_PORT || '8793';
-const RENDERER = process.env.PPP_RENDERER || '';
 const STRICT = process.env.PPP_STRICT === '1';
 const KEEP_8788 = process.env.PPP_KEEP_8788 === '1';
 const fix = u => (typeof u === 'string' ? u.replace(/(127\.0\.0\.1|localhost):8777/g, '127.0.0.1:' + TO) : u);
 const helperUrl = u => /^https?:\/\/(127\.0\.0\.1|localhost):8788\//.test(String(u || ''));
 
-const summary = { pages: 0, versions: new Set(), renderer: new Set(), draws: 0, fallbacks: {}, fallbackWarnings: 0, fallbackTexts: [], songs: [], routed: 0, errors: 0 };
+const summary = { pages: 0, versions: new Set(), draws: 0, fallbacks: {}, fallbackWarnings: 0, fallbackTexts: [], songs: [], errors: 0 };
 async function collect(p) {
   try {
     if (p.isClosed && p.isClosed()) return;
     const r = await Promise.race([
       p.evaluate(() => {
         const S = window.PPPEngravePage && window.PPPEngravePage.stats;
-        return { v: window.PPPEngrave && window.PPPEngrave.version, r: window.PPP && window.PPP.renderer,
-          draws: S ? S.draws : 0, routed: (S ? S.routed : 0) + (window.PPP && window.PPP.engraveStats ? window.PPP.engraveStats.routed || 0 : 0), fb: window.PPP && window.PPP.engraveStats ? window.PPP.engraveStats.fallbacks : null,
+        return { v: window.PPPEngrave && window.PPPEngrave.version,
+          draws: S ? S.draws : 0, fb: window.PPP && window.PPP.engraveStats ? window.PPP.engraveStats.fallbacks : null,
           songs: window.PPP && window.PPP.engraveStats ? Object.keys(window.PPP.engraveStats.bySong).map(k => k + ' ' + window.PPP.engraveStats.bySong[k]) : [] };
       }),
       new Promise(res => setTimeout(() => res(null), 1500))
     ]);
     if (!r) return;
     if (r.v) summary.versions.add(r.v);
-    if (r.r) summary.renderer.add(r.r);
     summary.draws += r.draws || 0;
-    summary.routed += r.routed || 0;
     Object.keys(r.fb || {}).forEach(k => { summary.fallbacks[k] = (summary.fallbacks[k] || 0) + r.fb[k]; });
     (r.songs || []).forEach(s => { if (summary.songs.length < 12 && summary.songs.indexOf(s) < 0) summary.songs.push(s); });
   } catch (e) { summary.errors++; }
@@ -62,10 +59,10 @@ const patchPage = p => {
   p.reload = async o => { await collect(p); return reload(o); };
   const close = p.close.bind(p);
   p.close = async o => { await collect(p); return close(o); };
-  if (RENDERER) {
-    p.evaluateOnNewDocument((r, strict) => {
-      try { localStorage.setItem('ppp.renderer', r); if (strict) localStorage.setItem('ppp.strictEngrave', '1'); } catch (e) { /* no storage */ }
-    }, RENDERER, STRICT).catch(() => {});
+  if (STRICT) {
+    p.evaluateOnNewDocument(() => {
+      try { localStorage.setItem('ppp.strictEngrave', '1'); } catch (e) { /* no storage */ }
+    }).catch(() => {});
   }
   p.on('console', m => {
     if (!/\[ppp\] engrave fallback/.test(m.text())) return;
@@ -151,8 +148,8 @@ if (typeof globalThis.fetch === 'function') {
 }
 process.on('exit', () => {
   const fb = Object.keys(summary.fallbacks).map(k => k + ' ' + summary.fallbacks[k]).join(', ') || 'none';
-  process.stdout.write('[with-port] ' + TO + ': PPPEngrave ' + ([...summary.versions].join('/') || '?') + ', renderer ' + ([...summary.renderer].join('/') || '?') +
-    ', engraver draws ' + summary.draws + ', fallbacks ' + fb + ' (warnings ' + summary.fallbackWarnings + '), routed to legacy ' + summary.routed +
+  process.stdout.write('[with-port] ' + TO + ': PPPEngrave ' + ([...summary.versions].join('/') || '?') +
+    ', engraver draws ' + summary.draws + ', fallbacks ' + fb + ' (warnings ' + summary.fallbackWarnings + ')' +
     ', pages ' + summary.pages + '\n');
   summary.fallbackTexts.forEach(t => process.stdout.write('[with-port]   ' + t + '\n'));
   if (summary.songs.length) process.stdout.write('[with-port]   songs: ' + summary.songs.join('; ') + '\n');
