@@ -5,9 +5,9 @@ The operational roadmap for everything after G4a: order, dependencies, gates, an
 | | |
 | --- | --- |
 | Owner | The **Lead / Orchestrator** session. Implementers, reviewers and fixers read it. Only the Lead edits it. |
-| Updated | 2026-09-28 — thirty-third edition (Lead): **G7 is completely done — G7b (Arrangement Planner) merged** (PR #79, `b344688`). Rejected inverting G6's model for plan-level bounds (unsound), built real empirical bands from G6's own training data instead; honestly classified all 10 G0 Step 14 invariants rather than overclaiming. Node-only, no deploy needed. Current: G8 v1 (deterministic pattern-library realizer -- no D-3 decision needed yet; D-3 is only for v2, decided once v1's real numbers exist, per §5.6) |
-| Base | `origin/main` = `b344688`, deployed as `6c63338` (G7 needs no deploy) |
-| Active | **G4, MX-2, G5, G6 and G7 all fully merged.** Next: G8 v1 (§14, §15). |
+| Updated | 2026-09-28 — thirty-fourth edition (Lead): **G8a (deterministic realizer) merged** (PR #82, `2f97ceb`) after resolving a real multi-writer collision (sub-agents overstepped a research-only mandate and wrote conflicting implementations to the same worktree -- cleaned up, kept the better-evidenced one). Real finding, independently reproduced twice: **v1 does not beat the in-app `ScoreArranger` head-to-head** (§7's bar not met) -- one tuning round closed part of the gap (ties on G6 level-within-±1, narrowly beats on harmony root-only) but not all of it. Reported to the user plainly. Node-only, no deploy needed. Current: ask the user how to proceed (more tuning, accept and move to G8b, or pause) |
+| Base | `origin/main` = `2f97ceb`, deployed as `6c63338` (G8a needs no deploy) |
+| Active | **G4, MX-2, G5, G6 and G7 all live. G8a merged, its acceptance bar partially met.** Next: user decision, then G8b or further tuning (§14, §15). |
 | Lead worktree | `D:/PPP-lead`, branch `lead-roadmap`. The Lead writes docs only, never in an implementer's worktree. |
 | How this relates to other docs | `docs/CURRENT_STATE.md` says what is true now, with measurements. `docs/DECISIONS.md` says why. `docs/GOALS/Gxx_*.md` is the contract for one Goal: design, acceptance and implementation record. **This document says in what order, behind which gates, and what comes next.** It does not repeat the goal specs. On detail, the spec wins. On sequencing, this document wins. |
 
@@ -590,7 +590,9 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 
 ## 14. Current task
 
-**G4 "Professional Engraving", MX-2, G5 (playability and fingering), G6 (difficulty) and G7 (SongGraph + Arrangement Planner) are all completely done.** G4-G6 are deployed; G7 is Node-only and needs no deploy. Full G4 blow-by-blow is in `docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md` §32-§52 and `docs/DECISIONS.md`'s G4-* rows; G5's is in `docs/GOALS/G05_PLAYABILITY_FINGERING.md` §11; G6's is in `docs/GOALS/G06_DIFFICULTY.md` §11; G7a's is in `docs/GOALS/G07_SONGGRAPH_CORE.md` §12; G7b's is in `docs/GOALS/G07B_ARRANGEMENT_PLANNER.md` §11 -- this section only tracks what's still open.
+**G4 "Professional Engraving", MX-2, G5 (playability and fingering), G6 (difficulty) and G7 (SongGraph + Arrangement Planner) are all completely done. G8a (deterministic realizer) is merged, its acceptance bar partially met.** G4-G6 are deployed; G7-G8a are Node-only and need no deploy. Full G4 blow-by-blow is in `docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md` §32-§52 and `docs/DECISIONS.md`'s G4-* rows; G5's is in `docs/GOALS/G05_PLAYABILITY_FINGERING.md` §11; G6's is in `docs/GOALS/G06_DIFFICULTY.md` §11; G7a's is in `docs/GOALS/G07_SONGGRAPH_CORE.md` §12; G7b's is in `docs/GOALS/G07B_ARRANGEMENT_PLANNER.md` §11; G8a's is in `docs/GOALS/G08_ARRANGEMENT_REALIZATION.md` §14 -- this section only tracks what's still open.
+
+- **G8a** (multiple PRs, squashed `2f97ceb`, on top of the design doc PR #81 `aaeb67f`): a deterministic pattern-library realizer turning a G7b `ArrangementPlan` into a real ScoreGraph. Hit a real multi-writer collision mid-implementation -- sub-agents dispatched for research did not stay read-only and wrote conflicting implementations to the shared worktree; cleaned up, kept the better-evidenced one (`realize/`, which reuses the standard G4a reference corpus for its comparison harness and found/fixed a real correctness bug in the harness itself -- `legacy-score.js`'s `fromScore` never sets a hand limb, which had silently produced a false "0 hard violations for everyone" result). **Real finding, independently reproduced by two separate implementations/harnesses before cleanup, and confirmed again after one tuning round: §7's "better than all three legacy engines on every metric" bar is NOT met** -- G8a does not beat the in-app `ScoreArranger` on hard-violation rate or (fully) on G6-level accuracy, though it clearly beats the other two legacy engines and, after tuning the density policy against G7b's real per-stage bands (`arrangement/reference.js`), now ties `ScoreArranger` on G6-level-within-±1 (83.3% vs 83%) and narrowly beats it on harmony root-only agreement. Still behind on level mean-error (>2x), harmony root+quality, and hard-violation rate. One tuning round included a disclosed, reverted regression (a data-driven chord-sizing attempt that caused a real build failure) -- independent review reproduced the regression exactly, confirmed the revert is clean. Reported to the user plainly at each step, not narrowed to favorable metrics. Node-only, not loaded by the app.
 
 - **G7b** (PR #79, `fd74d06`/`e2efc52`, squashed `b344688`): given a piece's SongGraph and a target (level, style, hand profile, sections, key), finds an `ArrangementPlan` by deterministic search under G5/G6 constraints -- writes no notes (G8's job). Rejected inverting G6's trained difficulty model for plan-level bounds (mathematically unsound: non-negative weights + possibly-negative feature z-scores means a partial sum isn't a real bound) and built real empirical per-stage bands from G6's own training data instead. Rejected the design doc's own suggested texture vocabulary (block chords/Alberti/arpeggiated) since G7a has no rhythmic-pattern feature to distinguish them -- used a "full/partial/reduced" voice-retention ladder instead. Classified all 10 G0 Step 14 arrangement invariants explicitly (real-and-checked / structurally-guaranteed-of-the-plan / partial-proxy / deferred-to-G8) rather than overclaiming. **169/369 corpus files plannable at their own G6-assessed level (67/100 hymns), 0 crashes across 3,321 attempts, 400/400 determinism checks identical, 49ms worst-case (budget 200ms).** Two honest negative findings reported, not tuned away: Hanon fails at every hand profile (both voices land in the same hand by real register, doubling its attack rate past the corpus band); czerny299's low coverage is the same licence-quarantine data gap G6/G7a already found, not a planner defect. Independent review: READY_TO_MERGE, found one small (1/169, 0.6%) real circularity in max-based ceilings for anchor pieces evaluated against bands built partly from themselves -- documented as follow-up for G8/G9, not fixed now (negligible today). One MINOR doc-accuracy fix applied. Node-only, not loaded by the app.
 
@@ -606,12 +608,13 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 
 ## 15. Next task
 
-**Start G8 v1** (deterministic pattern-library realizer -- §5.6's v1 scope: a texture pattern library,
-voice leading, limbs/fingering from G5, output provenance `generated`). No D-3 decision needed for v1;
-D-3 (LLM vs trained/local model vs deterministic-only) is only for v2, decided once v1's real measured
-results exist (roadmap §5.6, §18 D-3). Then, once v1 is measured:
+**Ask the user how to proceed on G8a's partially-met acceptance bar** -- more tuning rounds (diminishing
+returns risk), accept the current state and move to G8b (S4/S6 legacy retirement, app integration, full
+review cycle), or pause G8 and revisit D-3 (v2, AI-3) sooner than planned given v1's real ceiling. No
+D-3 decision is needed just to answer this -- D-3 itself is only for v2, decided once the user has settled
+how much further v1 investment is worthwhile (roadmap §5.6, §18 D-3). Then:
 
-1. Present D-3 to the user for G8 v2
+1. G8b, or further G8a tuning, per the user's choice
 2. G9 (multi-candidate, critics, repair)
 
 ## 16. Stop conditions
