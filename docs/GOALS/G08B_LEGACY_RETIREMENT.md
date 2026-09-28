@@ -280,22 +280,30 @@ allowance to fix such a thing directly, disclosed here:
   `Score` via `scoregraph/legacy-score.js`'s `toScore(g, {ids:true})` (already the
   established, reviewed "the object `PPP.Score.finalize()` takes" bridge - first real use of
   it from the app itself, not invented for this phase), then substitutes each note's real
-  `hand` from the graph's own `limb` (`scoregraph/pitch.js`'s `limbOf`) - `toScore` itself
-  always defaults every note to `hand:'r'` (it derives hands from a different,
-  MusicXML-text-only heuristic this graph-based path never goes through), the SAME
-  known limitation and the SAME fix technique `tests/playability/arranger-baseline.test.js`'s
-  `legacyScoreFromGraph` already established for exactly this reason.
+  `hand` from the graph's own `limb` (`scoregraph/pitch.js`'s `limbOf`). **Correction (independent
+  review, 2026-09-28)**: `toScore` does not literally always default to `hand:'r'` - it has a
+  real staff-position heuristic (top piano staff -> 'r', bottom -> 'l'), present since G2. The
+  substitution is still genuinely necessary and load-bearing, though: G8a's `realize()` can place
+  both hands' voices on the SAME staff in low-confidence/degraded sections (`realize/index.js`'s
+  own comment already discloses this), which defeats the staff-based guess. Measured directly on
+  real corpus files: 35-42% of notes (36/104 to 116/474) get a different, corrected hand once the
+  limb-based substitution is applied versus raw `toScore` output - a real, substantial fix, not a
+  decorative one, even though the original "always defaults to `'r'`" framing (inherited from
+  `realize/tools/legacy.js`'s own pre-existing comment) was an oversimplification.
 - **`applyRichReviewArrangement` (S4/TD2 fix)**: when `PPP.arranger === 'g8'`,
   `built.graph` goes straight to `realizeWithG8` -> `graphToReviewScore` - no
   `parseMusicXML(built.xml, ...)` re-parse, no `wireScore`/`fromEngine`, no HTTP round trip.
   A refusal (`UNREACHABLE`, missing reference data, a crash) reports a real message via
   `this.say(...)` and returns, exactly the same shape the legacy branch's own `catch` already
   uses - never a silent fallback to the very different legacy engine under a `'g8'` label.
-  When `'legacy'` (default), the branch is untouched byte-for-byte; the one shared line after
-  the branch (`arranged.composer = base.composer`) was changed to
-  `arranged.composer = S.score.composer || ''` so it works for both branches - functionally
-  identical for the legacy path, since `base.composer` was always set from exactly that
-  expression one line earlier.
+  When `'legacy'` (default), the branch's own logic is unchanged (**correction, independent
+  review**: the lines were moved one level deeper into a new `else {}` block, so a literal byte
+  diff exists from the reindentation alone - "byte-for-byte" overstated this; the behavior is
+  semantically/functionally identical, confirmed by reading the diff directly, which is what
+  actually matters here); the one shared line after the branch (`arranged.composer =
+  base.composer`) was changed to `arranged.composer = S.score.composer || ''` so it works for
+  both branches - functionally identical for the legacy path, since `base.composer` was always
+  set from exactly that expression one line earlier.
 - **Style pass-through, a deliberate, disclosed limitation**: the review screen's style
   picker (`jazz`/`ballad`/`pop`/`waltz`/`bossa`/`cinematic`) has **no effect** under `'g8'`
   beyond selecting the target level - `arrangement/plan.js`'s own header already says style
@@ -304,6 +312,26 @@ allowance to fix such a thing directly, disclosed here:
   fundamentally different vocabulary from `ScoreArranger`'s named styles. Forcing a
   name-based mapping between the two would manufacture an illusion of style control neither
   G7b nor G8a actually implements; not attempted here.
+- **A real, MAJOR-severity scope gap found by independent review, not by this implementation's
+  own "every real call site" search, and disclosed here rather than silently left out**: the
+  review screen's DEFAULT style, `'balanced'` (`S.arrangementStyle || 'balanced'` - also the
+  only style `easierArrangement()` ever requests), never reaches `applyRichReviewArrangement` at
+  all. `applyArrangement()`/`rewriteRhythm()`/`aiArrangement()` only route to it for the "rich"
+  `ScoreArranger` styles (`jazz`/`ballad`/`pop`/`waltz`/`bossa`/`cinematic`); for `'balanced'`
+  they call `rewriteFromHeard()` instead, which uses a THIRD, entirely separate legacy engine
+  (`audio-score.js`'s `arrangeNotes`) with no `ARRANGER_MODE` check anywhere in that path. **This
+  means `PPP.arranger = 'g8'` has zero effect on the review screen's default/most-common
+  arrangement request** - a user who never touches the style picker, or clicks "easier
+  arrangement," gets neither `ScoreArranger` nor G8a's realizer; this style path is completely
+  unaffected by the switch in either direction. This is pre-existing behavior (the
+  style-conditional routing predates this phase) and poses no live risk today (the switch
+  defaults to `'legacy'` regardless), but it means §5's acceptance wording ("Switch on ('g8'):
+  the review screen's arrangement flow produces a real G8a-realized ScoreGraph") is true only for
+  the non-default rich styles, not for the review screen's arrangement flow as a whole. Anyone
+  using G8a's coverage or H-8 review-readiness numbers to reason about what real users would see
+  under a future default flip must account for this: `'balanced'`-style requests would need
+  their own, separate wiring (out of scope here) before a flip could mean what it sounds like it
+  means. Flagged for whoever next touches this switch's default, not fixed in this phase.
 - **`saveSongArrangement`/`aiSongArrangement`: deliberately NOT wired to `'g8'` this phase.**
   This doc's §3/§4 named `applyRichReviewArrangement` as the S4 fix target because it alone
   has TD2's defect (a `built.graph` already in scope, discarded); `saveSongArrangement`
