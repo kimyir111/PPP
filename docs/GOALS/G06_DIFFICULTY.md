@@ -14,8 +14,14 @@ beats legacy (84.7% vs 79.0%) and the hold-out confidence interval excludes zero
 +6.6) — both already true. **G6a is ACCEPTED.** The one miss (an unseen whole book placed cross-book) was
 shown by the independent review to be statistical noise on a 22-piece fold (its own bootstrap CI: −26 to
 +16), not a demonstrated generalization failure; logged as G6-L2 for a possible future fold-tolerance
-redesign, not blocking. Next: G6b (app integration, full review cycle — the only G6 phase touching the app
-file). Full record in §11.
+redesign, not blocking.
+
+**G6b implemented 2026-09-28 (branch `g6-difficulty`), self-reported, not yet independently reviewed.**
+`PPP.difficulty` (`'legacy'` default | `'g6'`) wires G6a's ranker into the Analysis screen's Difficulty
+fact and hard-parts list, and into the Coach's structural context, over the same ScoreGraph the renderer
+already resolves for the open Score (`PPPEngrave.app.resolveSync`). Default off; every existing behaviour
+is unchanged when off, checked against independently recomputed legacy output, not just "it didn't crash".
+Full record in §11.
 
 ## 1. Goal
 
@@ -442,3 +448,160 @@ entirely unseen book) — within-book leave-one-book-out ≥ legacy (met: 84.7% 
 above 0 (met: +0.4 to +6.6). Options (b) (licence-clear more data for a 4th fold) and (c) (iterate further)
 remain open as future work, not blockers — (b) especially, since the cross-book question genuinely isn't
 resolved by today's 3-fold evidence. **G6b may start.**
+
+### G6b — app integration, `PPP.difficulty` (2026-09-28)
+
+**What was investigated first (§10/G6a's own discipline, applied to G6b).** Read before designing anything,
+as the brief required:
+- `Score.deriveSections` (App 3668, called from `finalize()` at App 3615) and `Coach.structural` (App 8005,
+  read as `session.structural` at App 7960/8000 and inline at App 17213-17218) are exactly what §1
+  described — no correction needed this time.
+- **`Coach.structural` has three, not one, real consumer**, not just the two the brief named: `Coach.context`'s
+  `structural` field (App 7960, the AI-facing context), the inline `coachStructural` text built directly in
+  `renderVals()` for the Coach panel (App ~17213-17218, its own separate `Coach.structural(score)` call — not
+  reached through `Coach.context`), and a **third the brief did not name**: `App.difficultyLabel()` (App
+  ~15503) and the Analysis screen's `hard`/`hardCount` (App ~16920-16941) read `score.sections`
+  (`deriveSections`'s own `.hard`/`.score`/`.reason`) **directly**, never through `Coach.structural` at all.
+  All four call sites needed gating, not the two the design doc's §1 implied.
+- **G5c's exact precedent held**: every score the app opens reaches a ScoreGraph the same way for every
+  purpose, confirmed again independently for G6 rather than assumed. But the reusable mechanism was **not**
+  `graphForScore`/the three import call sites G5c traced (those exist only to enrich the graph *at import
+  time*, before it becomes a Score - useless for a Score already open, already saved and reloaded, or the
+  ever-present demo score). The right mechanism, read in full first (`engrave/source.js`), is
+  **`PPPEngrave.app.resolveSync(score)`** (G4a, "a graph for every Score") - the same synchronous,
+  memoised-by-content-hash resolver the renderer itself already calls for every ScoreView: `via: 'live'`
+  (the importer's own graph, still in memory), `via: 'store'` is unreachable synchronously (IndexedDB is
+  async; `resolveSync` never awaits it) so a returning visit falls through to `via: 'projected'`
+  (`scoregraph`'s own `legacy.fromScore(score)`, rebuilt from the Score itself), or `via: 'none'` when even
+  that fails. G6 reads whichever graph comes back and never re-derives one; a `'none'` is handled exactly
+  like "no weights loaded yet" (§ below) - `difficultyAssessment()` returns `null`, and every caller shows
+  what it always has. Confirmed in the browser (not assumed): the demo score's first assessment came back
+  `via: 'projected'` (it has no live producer graph), and a freshly-imported piece came back `via: 'live'` -
+  both produced a working assessment.
+- `window.PPPEngrave` (the source/graph module) loads **synchronously at page load** (static `<script>` tags,
+  App 41-48) - only the heavier drawing code (`ENGRAVE_FILES`, VexFlow-replacement layout) is the part that
+  loads lazily on first paint (App ~10591-10610, `loadEngrave()`). `PPPEngrave.app.resolveSync` is therefore
+  available the moment `App.difficultyAssessment()` can be called, with no async wait for the renderer.
+- `PPP.fingering`'s precedent (`FINGERING_MODE`, `graphForScore`) was read in full and is **not** a template
+  for the caching shape here: it is a one-time *import-time* enrichment baked into `n.finger`, never
+  recomputed per render. G6's need is different - the Analysis screen and Coach panel read the assessment
+  on every render of the current score - so the actual precedent reused is **`fingerPlan()`**'s per-score
+  memo (App ~15747, "worked out once per score"), extended with one thing `fingerPlan()` doesn't need: a
+  mode tag, because `PPP.difficulty` (unlike `PPP.fingering`) can flip at runtime for the very same open
+  score, and a stale legacy-mode `null` must not survive a flip to `'g6'`.
+- `difficulty/features.js`'s own UMD header names its real browser dependency as `root.PPPPlayability` (the
+  **combined** `playability/index.js` object: `reach`, `graph`, `analyze`, `fingering`), not
+  `root.PPPPlayabilityModules.fingering` alone, which is all G5c ever loaded. `playability/reach.js`,
+  `analyze.js` and `index.js` were not in the app before G6b (G5c only needed `graph.js` + `fingering.js`
+  directly) and had to be added.
+
+**The switch.** `PPP.difficulty`, get/set on `window.PPP`, exactly `PPP.fingering`'s shape (App ~9294-9299):
+`'legacy'` (default) | `'g6'`; any other value (a typo, an unset variable) is `'legacy'`
+(G4-F2-1's convention, confirmed against the running app: `PPP.difficulty = 'some-typo'` reads back
+`'legacy'`). Backed by a module-level `DIFFICULTY_MODE` beside `FINGERING_MODE`. Rollback is exactly §9:
+set it to `'legacy'` (already the default; nothing to flip in production, since G6b has never shipped on).
+
+**The integration point.** One new method, `App.difficultyAssessment()` (beside `fingerPlan()`), computed
+once per render and reused by every consumer in that render (`renderVals()` names it `g6`/`g6Hot` once,
+near `secList`):
+- Returns `null` immediately under `'legacy'` (default) - none of the four call sites above do anything
+  different from before G6b.
+- Under `'g6'`: fetches `difficulty/weights/g6a-v1.json` once, lazily, on first use (not on every page load,
+  not when the switch is off) via `fetch(..., {cache: 'force-cache'})`, cached in a module-level
+  `DIFFICULTY_WEIGHTS`; while it is in flight, returns `null` **without caching that null** (a caching bug
+  caught by this phase's own browser test before it was committed: caching a "not ready yet" result under
+  the score+mode key made every later call return the same stale `null` forever, even after the weights had
+  landed - fixed by only caching once a real attempt has been made, i.e. once weights exist).
+- Once weights exist: `PPPEngrave.app.resolveSync(score)` for the graph, then
+  `PPPDifficulty.assess(graph, weights)`. Any exception (a graph G6 cannot read) is caught and treated as
+  `null`, never thrown into render.
+- Cached per `{score object, DIFFICULTY_MODE}` - flipping the switch for the same open score invalidates
+  the cache and recomputes (checked: switching back to `'legacy'` after `'g6'` immediately returns `null`
+  again for the same score object).
+
+**Wired at four call sites**, all gated on `difficultyAssessment()` returning non-null (never on the switch
+directly, so a `'g6'` mode with no graph or unloaded weights degrades to legacy automatically, the same
+"honest" path as the weak-coverage case):
+1. `App.difficultyLabel()` - the Analysis screen's "Difficulty" fact. Legacy: unchanged (still returns
+   `tx('Beginner'|'Intermediate'|'Advanced')`; the call site's redundant outer `tx(...)` was removed since
+   the value is now already translated - verified byte-identical to the old double-`tx` result, since `tx`
+   of an already-English string is the identity in `en-US`). G6: `App.difficultyLevelLabel(level)`, e.g.
+   "Harder than Beyer No. 65, easier than Czerny 100 No. 30", or "Harder than {book} — beyond what PPP has
+   measured" when `level.beyond` is set (G6a's own `levelOf` flag for a score past every anchor in that
+   direction) - the one place this phase surfaces G6a's honest limits in the UI itself, not just in the
+   Coach's text.
+2. The Analysis screen's `hardCount`/`hard` list (App ~16920-16947) - only when there is no learning-based
+   `learn.ranges` (that branch, "from your playing", is untouched either way) **and** G6 found at least one
+   positive hotspot (`g6Hot`). A piece with no local score above its own method-book average (Beyer No. 1,
+   the corpus' easiest and almost-empty first duet part, has zero) correctly falls through to the legacy
+   section list instead of showing an empty "0 tricky spots" - checked directly, not assumed.
+3. The Coach panel's inline `coachStructural` text (App ~17213-17226) - G6's top hotspot and its reasons
+   when present, the legacy `Coach.structural(score).hardest` text otherwise.
+4. `Coach.context()`'s `structural` field (App ~7990) - now `b.difficulty ? Coach.structuralFromAssessment(b.difficulty) : Coach.structural(score)`.
+   `Coach.structuralFromAssessment` (new, beside `Coach.structural`) never imports the difficulty module
+   itself - `App.coachContext()` passes `this.difficultyAssessment()` in as `b.difficulty`, keeping `Coach`'s
+   own dependency graph exactly what it was before G6b (§3(c)). Its `note` field states G6a's honest
+   self-assessment in the AI-facing text itself (decision G6-L1): strong within a trained book, "placing a
+   book it has never seen an example of is not yet reliable" - so a plan built from this context, human or
+   AI, cannot overstate it.
+
+**Honesty (§4), without a confidence UI that wasn't asked for.** The only surfaced caveat is `level.beyond`
+in `difficultyLevelLabel` (item 1 above) and the note text in `Coach.structuralFromAssessment` (item 4) -
+both already-existing fields G6a's own `model.js` computes, not a new feature built for this. No separate
+confidence indicator, badge or score was added; G6a's real, narrower strength (§11 G6-L1: good within a
+book, unresolved cross-book) is not a per-piece runtime signal beyond `beyond`, so nothing more precise
+could honestly be shown.
+
+**A known cosmetic rough edge, left as such.** `difficultyLevelLabel` names books through
+`App.courseBookName(id)`, which needs `catalog/method/index.json` loaded (`state.courseCat`). G6b defers
+that fetch via `setTimeout(() => this.loadCourse(), 0)` the first time an assessment succeeds (never
+`setState` during render, matching the Course screen's own existing lazy-fetch pattern at App ~14974) rather
+than force-loading it eagerly for everyone. Until it lands, book names fall back to their raw catalog id
+(`courseBookName`'s own existing fallback), so a label can briefly read "Harder than beyer No. 65" in
+lowercase before correcting itself to "Beyer" once the catalog arrives (observed directly in the browser
+test). Not fixed: it is a pre-existing, documented fallback of `courseBookName` itself, transient, and never
+wrong information - just not capitalized for the first render or two of a session.
+
+**Script loading.** Added, in the browser-order both files already document: `playability/reach.js` (before
+`graph.js`), `playability/analyze.js` and `playability/index.js` (after `fingering.js`), then
+`difficulty/features.js`, `difficulty/model.js`, `difficulty/index.js`. All unconditional (loaded regardless
+of the switch, ~52 KB uncompressed total added script - `reach.js` 7.5 KB, `analyze.js` 9.0 KB,
+`playability/index.js` 2.1 KB, `features.js` 24.4 KB, `model.js` 9.3 KB, `difficulty/index.js` 1.8 KB), the
+same "always loaded, gated at runtime" shape G5c already used for `graph.js`/`fingering.js`. The
+18.8 KB weights JSON is the only thing actually deferred, since it is the only piece with no reason to ever
+load when the switch is off.
+
+**Performance in the browser (§7).** Measured with `App.difficultyAssessment()` itself, in the same
+Puppeteer suite that drives the real app (`tests/difficulty-app.test.js`), not a synthetic benchmark:
+sonatina/020 (1,776 notes, the longest corpus piece - same file G6a's own Node benchmark and G5's
+`fingering.test.js` perf check both use), cold (fresh score, fresh graph resolution via `resolveSync`,
+fresh features + inference, nothing warmed up beforehand except JIT on a throwaway import): **40.3 ms**.
+A second call for the same score object: **0.00 ms** (served from `_da`, the exact object G6a computed,
+`===`-identical). This is once per song view, not per render and not per keystroke - well inside a
+generous 200 ms single-song budget, and consistent with G6a's own Node numbers (§11 G6a: total ≤ 17.4 ms
+worst-case in Node) plus real browser/DOM/JIT overhead on top. No attempt was made to shave this further
+since it was never close to a problem.
+
+**Tests.** `tests/difficulty-app.test.js` (new, sibling to `tests/fingering.test.js`, same Puppeteer/`boot.js`
+harness, run against a real server): the switch's default and typo fallback; the required modules
+(`PPPDifficulty`, `PPPPlayability`, `PPPEngrave.app.resolveSync`) are present; a freshly-imported piece
+(Beyer No. 1) with the switch off produces a Difficulty fact, hard-count text, hard list and
+`Coach.context().structural` all **independently recomputed and compared for exact equality** to the legacy
+formulas, not merely "no crash"; the same piece's `Coach.structural(score)` is checked byte-identical to
+what `Coach.context()` returns under `'legacy'`; a different piece (Beyer No. 65, which has both a real
+level move and real hotspots, unlike No. 1) with the switch on gets a named-anchor level, at least one
+reason, a non-empty hotspot map, an Analysis "Measure N (hand)" hard list, and a Coach panel line and
+context that both reflect G6 and its honest self-description; switching back to `'legacy'` for the same
+score restores the legacy view immediately; Beyer No. 1 (the documented `handFallback` case, §11 G6a point
+6) still gets a finite score and a real level under `'g6'`, not an error; and the performance numbers above.
+31 assertions (after fixing the caching bug above, which the test itself caught), 0 failures. Also re-run
+for regressions, unaffected as expected since neither touches `deriveSections`/`Coach.structural`'s own
+logic nor the difficulty module's Node-only code: `test:difficulty` (34/34), `test:playability` (32/32),
+`tests/coach.test.js`, `tests/musicxml.test.js`, `tests/fingering.test.js`, `tests/course.test.js` (all
+green, all with the switch at its default).
+
+**Scope notes.** `Score.deriveSections` and `Coach.structural` are untouched - still called, still producing
+exactly what they did before, for `'legacy'` and as the fallback whenever G6 has nothing to say. No note,
+section or arrangement changes. Not yet independently reviewed (this brief required the full review cycle
+because this is the first G6 phase to touch the app file - review is the next step before this merges or
+any deploy is discussed).
