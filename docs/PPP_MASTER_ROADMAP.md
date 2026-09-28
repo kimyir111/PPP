@@ -5,9 +5,9 @@ The operational roadmap for everything after G4a: order, dependencies, gates, an
 | | |
 | --- | --- |
 | Owner | The **Lead / Orchestrator** session. Implementers, reviewers and fixers read it. Only the Lead edits it. |
-| Updated | 2026-09-28 — thirty-seventh edition (Lead): **G8 is completely done and DEPLOYED** (`dep-dat761nlk1mc73ehv95g`, commit `4866b66`, verified live: `PPP.arranger` defaults to `'legacy'`, `realize`/`arrangement` modules confirmed loading correctly in the real production browser -- validating G8b's UMD-wrapper fix outside simulation). Current: G9 |
-| Base | `origin/main` = `4866b66`, deployed to production |
-| Active | **G4, MX-2, G5, G6, G7 and G8 all live.** Next: G9 (§14, §15). |
+| Updated | 2026-09-28 — thirty-eighth edition (Lead, on Opus for G9's design at the user's request): **G9 designed** (PR #90, `9f9897e`, `docs/GOALS/G09_CANDIDATES_CRITICS_REPAIR.md`). Three roadmap corrections: H-8 was never run, so AI-4 has zero training data; the planned H-8/H-9 volume likely can't support AI-4's bar; the flip needs G8b's `'balanced'`-routing gap fixed first. Phased G9a-G9e so nothing waits on missing data or user decisions. Current: G9a (candidates + deterministic critics + selection, measured head-to-head vs legacy) |
+| Base | `origin/main` = `9f9897e`, deployed as `4866b66` |
+| Active | **G4, MX-2, G5, G6, G7 and G8 all live. G9 designed.** Next: G9a (§14, §15). |
 | Lead worktree | `D:/PPP-lead`, branch `lead-roadmap`. The Lead writes docs only, never in an implementer's worktree. |
 | How this relates to other docs | `docs/CURRENT_STATE.md` says what is true now, with measurements. `docs/DECISIONS.md` says why. `docs/GOALS/Gxx_*.md` is the contract for one Goal: design, acceptance and implementation record. **This document says in what order, behind which gates, and what comes next.** It does not repeat the goal specs. On detail, the spec wins. On sequencing, this document wins. |
 
@@ -610,9 +610,17 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 
 ## 15. Next task
 
-**Start G9** (multi-candidate, critics and repair), then:
+**G9a** (in progress): N candidates from the real G7b/G8a knobs, seven deterministic critics (five
+promoted from G8a's harness, two new), hard constraints as filters, deterministic selection with an
+explanation — then **best-of-N measured head-to-head against all three legacy engines on G8a's same
+harness and 16-file sample**. That number decides whether G9's approach works at all. Then:
 
-1. G10 or G11 (whichever has its prerequisites ready first, per §5.8's ordering note)
+1. G9b (repair, G3-D5's per-measure rollback, provenance `repaired`) — Node-only
+2. G9c (new blind-review packet builder, then H-8/H-9) — **needs the user's time; schedule with them**
+3. G9d (AI-4, Opus) — **only if real judgment data can support its bar**; user decides on the opt-in
+   in-app preference picker (the only realistic data source) and whether AI-4 is worth pursuing
+4. G9e (app integration, route `'balanced'` through the gated path, flip) — **H-9 + explicit user approval**
+5. Then G10 or G11 (whichever has its prerequisites ready first, per §5.8's ordering note)
 
 ## 16. Stop conditions
 
