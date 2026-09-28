@@ -175,4 +175,204 @@ this without checking the roadmap again at that time).
 
 ## 14. Implementation record
 
-(Grows here as G8a lands.)
+### G8a — Realizer + comparative harness, one of two independent implementations (2026-09-28)
+
+**IMPORTANT — read this before anything else in this section.** This worktree (`D:/PPP-g8`,
+branch `g8-arrangement-realization`) had **two concurrent writers** building G8a at the same
+time, confirmed directly (not suspected): a second process independently created its own
+`arrangement/realize.js`, `arrangement/patterns.js`, `arrangement/voicing.js`, `arrangement/
+spell.js` and `arrangement/tools/eval-harness.js`, interleaved with the commits below on this
+same branch (`git log` shows both authors' commits alternating by timestamp, same git identity).
+This is exactly `parallel-sessions-one-file`'s documented risk ("goal worktrees can have a second
+writer even when told 'only writer'"), generalized here beyond the app file to a whole goal
+worktree. Neither implementation was stopped or merged into the other — that is a Lead decision,
+not one this record makes. **This section documents the implementation under `arrangement/g8a-
+realize.js`, `arrangement/g8a-accompaniment.js`, `arrangement/voicelead.js` and `tests/
+arrangement/tools/g8a-harness.js` only** (filenames deliberately prefixed/renamed once the
+collision was discovered, to stop overwriting the other writer's in-progress files) — the other
+implementation (plain `realize.js`/`patterns.js`/`voicing.js`/`spell.js`) is a separate, real
+piece of work with its own commits and its own record, not described further here. **Before this
+branch is merged, a Lead must explicitly choose one implementation (or a merge of both), not
+assume this one is "the" G8a.**
+
+**What was built** (Node-only, not loaded by the app, per §2/§10):
+- `arrangement/voicelead.js`: `chordTones(rootPc, iv, size)` (real chord-tone selection from a
+  songgraph/harmony.js fit, priority fifth-before-third-before-extension when thinning),
+  `voiceGroup(prevMidis, pcs, opts)` (per-voice nearest-pitch-class voice leading from the
+  previous window's own voicing, or a fresh close-position voicing seeded from the plan's real
+  register when there is none), `clamp` (span/register safety, applied unconditionally on every
+  voicing - not only when a check trips, which is what kept this implementation from the
+  unbounded-register-drift bug the other implementation found and had to fix separately).
+- `arrangement/g8a-accompaniment.js`: the 6 named patterns (block, broken/Alberti, ballad, pop,
+  waltz, generative; hymn is a separate literal-materialization mode in the realizer itself, not
+  a pattern function - see below), each a pure `(windows, ctx) -> [{w0, w1, midis}]` over
+  songgraph/harmony.js's real per-beat-window fits, read once against `arrange_score.py`'s
+  `_texture()` (lines 642-733) for prior art (the ballad up-and-back arpeggio idea, the pop
+  alternating-bass idea) and independently written against this module's own voiced tones - no
+  code, wire-JSON shape or simultaneous-note cap reused from it, per §5/§13.
+- `arrangement/g8a-realize.js`: `realize(g, sg, plan, opts)` and `arrange(g, sg, request, opts)`
+  (plan+realize in one call). Two modes: **'hymn'** materializes every voice the plan already
+  retained verbatim into the hand `arrangement/plan.js` already assigned it - no new note,
+  inheriting G7b's own already-checked reach numbers for that exact voice combination (a
+  structural way to reach 0 G5 hard violations for real multi-voice material). Every other style
+  is **generative**: the RH plays the plan's declared melody voice verbatim (real notes, making
+  "melody preserved" a checkable claim rather than a proxy); the LH is realized from the chosen
+  pattern, sized 1/2/3 real chord tones by the plan's texture tier (reduced/partial/full) and
+  bounded by the request's real G5 hand-profile MAX_SPAN/MAX_KEYS. Fingering: `playability/
+  fingering.js`'s real `fingerGraph` (G5b), never re-derived. Provenance: verified against
+  `scoregraph/schema.js` directly rather than trusting this doc's own §13 phrasing - `ProvRef.src`
+  is a real ref to a registered `Source` (`{kind:'generator', tool:'ppp.g8a', version}`), set once
+  as the whole document's `provenance.default` (`{src, op:'generated'}`), the same mechanism
+  `tests/scoregraph/g3-helpers.js`'s `mk()` fixture builder and G7a's `addSection`/`addPhrase`
+  already use - not a per-entity `{op, src:{kind,...}}` inline shape as a literal reading of §13
+  might suggest.
+- `tests/arrangement/g8a-realize.test.js` / `g8a-mutation.test.js` (`npm run test:arrange`, 9/9
+  passing, deliberately named `g8a-*` rather than `realize.test.js`/`mutation.test.js` to avoid
+  colliding with the other implementation's own tests in the same directory): all 6 styles build
+  a valid 0-hard-violation graph on a real hymn; an unknown style fails cleanly; the generative
+  styles keep the melody voice pitch-identical to the source, note for note; hymn style
+  materializes every retained voice verbatim; the same plan realized twice is byte-for-byte
+  identical (the "golden... same input, same output" requirement of §8, measured the same way
+  G7b's own suite measures determinism - a same-run repeat-call comparison, not a new on-disk
+  golden-file mechanism nothing else in this codebase uses for this purpose); the mutation suite
+  (§8): the SAME planted 2-octave-dyad-bass fixture `tests/arrangement/mutation.test.js` uses
+  fails cleanly through `arrange()` with G7b's own real `UNREACHABLE` reason at every hand
+  profile; the SAME real degraded corpus case G7b's own mutation suite uses
+  (`catalog/hymns/for-all-the-saints.musicxml`, `melodyConf`/`bassConf` exactly 0.0/0.0) realizes
+  conservatively (texture `reduced`) at 0 hard violations rather than crashing or fabricating
+  confidence, at both `block` and `hymn` styles.
+
+**Real corpus sweep beyond the committed tests** (60 real files across `catalog/hymns/`,
+`catalog/method/sonatina/` and `catalog/method/beyer/`, x 3 target levels, x all 6 styles = 975
+attempts): **678/975 successful realizations, 0 crashes, 0 realize-level failures, 0 G5 hard
+violations on any successful realization** (the 297 non-attempts are `arrangement/plan.js`
+itself declining `UNREACHABLE` before G8a ever runs - a G7b coverage number, not a G8a defect).
+Two real bugs found and fixed during this sweep, both from real corpus files, not hypothesized:
+1. **A pickup/anacrusis measure overrun.** `songgraph/util.js`'s `beatGrid` sizes every measure's
+   beat windows by the METER in force (its full beat count), not that specific measure's own
+   (possibly shorter) written duration - real for a pickup measure, where the meter's later beat
+   windows fall entirely past the measure's true end. A generated LH event derived from such a
+   window could therefore extend past a short measure's real boundary. Fixed by clamping (and, if
+   entirely beyond the true end, dropping) at the one place a generated event turns into a real
+   `(measure, at, dur)` position - never an out-of-bounds event the validator would reject.
+2. **A register-extreme spelling failure.** At a register extreme, `scoregraph/pro-spell.js`'s
+   own key-based spelling table can pick a letter that needs to "borrow" from the octave above or
+   below (e.g. a low pitch class spelled as B# rather than C), producing an `oct` outside the
+   schema's required 0-9 range - `pro-spell.js`'s own note-line DP (`spellVoice`, not used here,
+   see below) never hits this in real melodic lines because it always has a diatonic alternative
+   nearby to prefer; G8a's accompaniment voicing has no such DP. Fixed with a real fallback via
+   `pro-spell.js`'s own exported `candidates(midi)`: the first spelling (smallest `|alter|` first)
+   whose octave actually lands in range - never an invented pitch class, only a different, equally
+   real spelling of the same sounding pitch.
+   `scoregraph/pro-spell.js`'s own `spellMidi` is a small **private** helper (not in its export
+   list, checked directly) - reproduced verbatim (4 lines, read from the source, not guessed)
+   rather than changing another Goal's already-reviewed module's public surface for G8a's sake.
+
+**Performance** (§9's own ≤1s/piece estimate, checked, not assumed): the full committed
+`catalog/` corpus (325 importable files) x 3 target levels x `analyze()`+`plan()`+`realize()` =
+975 attempts, 363 successful (the same `plan()` coverage limit as above). **Worst case 72ms**
+total (`catalog/method/sonatina/013.mxl`, stage 3), **p99 35ms**, **p50 5ms** - comfortably inside
+budget, the same "confirmed realistic, not revised" finding every prior G5/G6/G7 phase reports
+for its own perf estimate.
+
+**The comparative evaluation harness** (`tests/arrangement/tools/g8a-harness.js` +
+`legacy-arrange-score.py`, gitignore-exempted like every prior phase's own tools directory,
+`!tests/arrangement/tools/` added to `.gitignore`): extends the G5a baseline (`docs/GOALS/
+G05_PLAYABILITY_FINGERING.md` §11 - one fixture per legacy engine, one of the five metrics) to a
+real 17-file corpus sample (10 hymns + 7 method-book pieces) x 2 target levels (G6 stage 2 and 3,
+crosswalked to the legacy engines' own `beginner`/`intermediate` labels - **a declared,
+approximate crosswalk**, since G6's numeric course scale and the legacy engines' 4-tier label
+have no exact equivalence) = 34 inputs, scored on all five metrics for G8a's own `block`-style
+output and all three legacy engines' `balanced`-style output. Every legacy engine is invoked
+read-only:
+- `arrange_score.py`: a real corpus piece converted to its wire-score shape
+  (`scoregraph/legacy-score.js`'s `toScore`, adapted), piped to a new stdin/stdout sidecar script
+  (`legacy-arrange-score.py`) that calls its own `Arranger` class unmodified.
+- The in-app `ScoreArranger`: the SAME extraction `tests/playability/arranger-baseline.test.js`
+  already uses (`tests/playability/score-arranger-extract.js`), never touching the app file.
+- `audio-score.js`'s `arrangeNotes`: real "heard notes" synthesized from the piece's own real
+  note timing (`playability/graph.js`'s `attacksOf`, already tempo-aware), matched back to their
+  source event/head after thinning (never invents a pitch, per its own header comment - matches
+  a genuine subset of what it was given).
+
+Each legacy engine's very different output shape is turned into a real `ScoreGraph` via a
+harness-only adapter (`wireNotesToGraph`/`audioScoreToGraph`) that reuses the ORIGINAL piece's own
+unchanged timeline (every measure/meter/key/tempo), so every output's real beat windows line up
+with the original's for the melody-preservation and harmony-agreement metrics - the same real
+`scoregraph/pro-spell.js` spelling table G8a's own realizer uses, and a multi-layer voice
+allocator (the same idea `scoregraph/legacy-score.js`'s own `fromScore`/`layerFor` uses) for the
+same-hand overlaps a single ScoreGraph voice cannot represent (a held bass note under a
+freshly-struck upper note in the same hand is real and common in these engines' own output).
+
+**The real head-to-head, stated plainly** (34 inputs; G8a scored on 29/34 - `arrangement/plan.js`
+itself declines the other 5 as `UNREACHABLE` before G8a ever runs, a real coverage gap disclosed
+here, not excluded from the comparison silently):
+
+| Metric | G8a | arrange_score.py | ScoreArranger | audio-score.js | G8a better than all 3? |
+|---|---|---|---|---|---|
+| G5 hard violations (mean, %zero) | 0, 100% | 0, 100% | 0, 100% | 0, 100% | **No - tied**, not better |
+| G6 level within +/-1 (%) | 44.8% | 50.0% | 50.0% | 50.0% | **No - worse** |
+| melody preservation (mean) | 1.000 | 0.987 | 1.000 | 0.936 | **No - tied with ScoreArranger** |
+| harmony agreement root+quality / root-only | 0.860 / 0.983 | 0.385 / 0.559 | 0.839 / 0.891 | 0.831 / 0.886 | **Yes** |
+| engrave L1 silent / L2 hard (mean) | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | **No - tied**, and structurally uninformative here (see below) |
+
+**§7's acceptance bar ("better than all three legacy engines on every metric, on the same
+inputs") is NOT met.** G8a wins clearly only on harmony agreement. It ties (not strictly beats)
+on G5 hard violations, melody preservation (tied with ScoreArranger specifically) and engraving,
+and is measurably WORSE than all three legacy engines on G6 level-within-±1. This is reported
+plainly, the same way G6a reported missing its original bar, per the task's own instruction not
+to narrow the comparison to favorable metrics.
+
+**Caveats a reader needs to weigh this table honestly, not hidden:**
+- This run uses a DELIBERATELY GENTLE slice of each legacy engine's own real range: `balanced`
+  style only, and only the `beginner`/`intermediate` levels. The G5a baseline (§11 of G05's own
+  doc) measured `arrange_score.py` and `ScoreArranger` hitting a hard violation in most combos
+  across their FULL style x level range (7 styles x 4 levels including `cinematic`/`jazz` at
+  `advanced`/`original`). This harness's 0/0/0/0 hard-violation row does **not** contradict that
+  finding - it measures a narrower, gentler slice and should not be read as "the legacy engines
+  are actually always safe."
+- G8a's G6 coverage (29/34) is lower than every legacy engine's (34/34, since none of them
+  refuses an input the way `arrangement/plan.js` does). The 5 excluded inputs are omitted from
+  G8a's averages entirely; whether including them would have raised or lowered G8a's numbers is
+  not something this run measures, and is not assumed either way.
+- Engraving L1/L2 reads 0/0 for all four because none of the four evaluation graphs carries
+  dynamics, pedals or lyrics (the harness's own adapters strip to bare notes for comparability) -
+  this metric leg had very little to trigger on for any engine in this run, not a genuine
+  engraving-quality finding.
+- The G6 stage <-> legacy-level crosswalk (`STAGE_TO_LEGACY` in the harness) is a declared
+  approximation; a different, equally defensible crosswalk could move this number.
+
+**Scope actually completed vs. this doc's own §6a/§13 sketch:**
+- All 6 named patterns built and exercised on real corpus material - not split off.
+- The evaluation harness covers all 5 metrics on a real multi-file sample - not split off,
+  though the corpus sample (17 files) is a real, chosen slice, not the full 369-file corpus (G7b's
+  own `corpus-check.js` full-corpus sweep was judged not necessary to add a 6th head-to-head
+  metric; the 60-file/975-attempt internal sweep above already gives real, full-range evidence
+  for G8a's OWN quality independent of the legacy comparison).
+- The golden/determinism requirement (§8) is met via same-run repeat-call comparison, not a new
+  on-disk golden-file mechanism - a deliberate choice to match G7b's own precedent rather than
+  invent a second determinism-testing convention in the same codebase.
+- H-8 (the blind human review) is explicitly NOT started here, per §10's own instruction not to
+  schedule it until the evaluation harness already shows the realizer is in the right ballpark -
+  the real numbers above do not clearly clear that bar (see the acceptance-bar finding), so H-8 is
+  left for the Lead to decide whether to run anyway, run against the OTHER implementation instead,
+  or hold until further tuning.
+- G8b (legacy retirement, the review-screen fix, the `PPP.arranger` switch) is untouched, per
+  its own explicit exclusion from this phase (§2, §6b).
+
+**What in this doc turned out wrong or needed correction, once something real was built:**
+- §13's phrasing of the provenance shape (`{op:'generated', src:{kind:'generator', ...}}`) reads
+  as a per-entity inline shape; the real, schema-correct mechanism is a document-level
+  `provenance.default` referencing a registered `Source` id, exactly as this section's "what was
+  built" describes - confirmed by reading `scoregraph/schema.js`/`scoregraph/build.js` directly,
+  per §13's own instruction to check fresh.
+- §13 anticipated a possible split ("G8a-1: the realizer" vs. "G8a-2: the harness") if honest
+  scope didn't fit one phase; it did fit, for this implementation - both the realizer and the
+  full-5-metric harness landed in one phase, on real corpus evidence.
+- The design doc's own informal expectation (never stated as a hard requirement, but implicit in
+  §7's framing) that a deterministic v1 realizer would cleanly beat three much older, less
+  G5/G6-aware legacy engines did not hold in this measurement - only harmony agreement shows a
+  clear, real win; G6 level accuracy is measurably worse. This is worth the Lead's attention before
+  deciding whether v1's pattern-density-by-texture-tier policy (1/2/3 chord tones) needs tuning
+  against G6's real per-stage bands (`arrangement/reference.js`) rather than a fixed mapping, and
+  before any H-8 review or production-flip discussion.
