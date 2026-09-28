@@ -6,8 +6,16 @@ Architect 2026-09-27 (Lead). Depends on G5 (CLOSED, deployed) for its features. 
 `docs/PPP_MASTER_ROADMAP.md` §5.4. This doc is the contract for G6 and grows with each phase's
 implementation record, the way `docs/GOALS/G05_PLAYABILITY_FINGERING.md` did.
 
-**G6a implemented 2026-09-28 (branch `g6-difficulty`). §5's leave-one-book-out bar is NOT met: a tie with
-legacy. The model is better within books and on the hold-out. An open decision for the Lead is in §11.**
+**G6a implemented 2026-09-27 (branch `g6-difficulty`), independently reviewed 2026-09-27 (every number
+reproduced from scratch). §5's original leave-one-book-out bar (legacy +2.0 points overall) is NOT met: a
+tie with legacy, 89.5% vs 89.5%. Decision G6-L1 (`docs/DECISIONS.md`): the Lead presented this to the user
+with the independent review's findings, and the user accepted a revised bar — within-book leave-one-book-out
+beats legacy (84.7% vs 79.0%) and the hold-out confidence interval excludes zero (+3.4, 95% CI +0.4 to
++6.6) — both already true. **G6a is ACCEPTED.** The one miss (an unseen whole book placed cross-book) was
+shown by the independent review to be statistical noise on a 22-piece fold (its own bootstrap CI: −26 to
++16), not a demonstrated generalization failure; logged as G6-L2 for a possible future fold-tolerance
+redesign, not blocking. Next: G6b (app integration, full review cycle — the only G6 phase touching the app
+file). Full record in §11.
 
 ## 1. Goal
 
@@ -102,7 +110,13 @@ behavior when off.
 - **Leave-one-book-out pairwise accuracy beats the legacy heuristic** (`Score.deriveSections`/
   `Coach.structural`'s implicit ordering, measured the same way) **by a margin fixed after G6a's own
   baseline run** — do not assume a number now; measure the legacy baseline first, the way G5b measured the
-  legacy fingering DP before claiming to beat it.
+  legacy fingering DP before claiming to beat it. **Revised by decision G6-L1 (`docs/DECISIONS.md`) once
+  G6a's real numbers were in hand and independently reproduced**: the overall-pairs bar was not met (a tie,
+  89.5% vs 89.5%), but the deployment-relevant reading is met — within-book leave-one-book-out beats legacy
+  (84.7% vs 79.0%) and the hold-out 95% confidence interval excludes zero (+3.4, +0.4 to +6.6). Placing an
+  entirely unseen whole book cross-book remains unresolved in general (one fold's apparent loss was shown
+  to be sampling noise on 22 pieces, not a proven failure) — flagged as future work (more licence-clear
+  method-book data for a 4th fold), not a blocker for G6b.
 - **Metamorphic tests, 100%**: a faster tempo is not easier (difficulty is about the score, not the
   playback speed the app happens to set); fewer notes is not automatically harder or easier without
   checking why; transposing to a key with more accidentals is not easier (it should be harder or equal,
@@ -415,15 +429,16 @@ of today's weights.
 **Scope notes.** No `PPP.difficulty` switch, no Analysis-screen or Coach change, no app file edit: that is
 G6b. The legacy functions are untouched. H-56 (§8) can now draw "which is harder" pairs from this model.
 
-**Open decision for the Lead.** §5's leave-one-book-out bar, fixed before the first model run, is not met: a
-tie on pooled primary. The evidence splits two ways. The model is significantly better at within-book order
-(leave-one-book-out and hold-out) and better overall on the hold-out. It is not better at placing an unseen
-book. Options:
-- **(a) Accept G6a on the evidence as it stands**, with an explicitly revised bar for G6b. For example:
-  within-book leave-one-book-out ≥ legacy, plus the hold-out CI above 0.
-- **(b) Get more data.** Licence-clearing even part of Czerny 40 (P1) would add the missing stage-4 fold and
-  a real top anchor. Today the scale ends at late Czerny 30.
-- **(c) Iterate further on features or a hybrid ranker.** Any new leave-one-book-out selection would need a
-  fresh untouched test set, because the current hold-out has now been looked at once.
-
-G6b should not start until this is settled.
+**Decided (G6-L1, `docs/DECISIONS.md`, 2026-09-27).** An independent review reproduced every number in this
+section from scratch (dataset builder and trainer/evaluator run fresh, not just the committed test suite),
+confirmed the legacy baseline's six readings were a fair, good-faith attempt (not a strawman), confirmed no
+leakage in either the hold-out or leave-one-book-out splits, and — critically — ran its own bootstrap
+restricted to the one fold that "lost" (czerny849, 22 pieces): that fold's within-book CI is **−26 to +16
+points**, meaning the apparent loss is statistical noise on a small fold, not a demonstrated generalization
+failure. The Lead presented both the implementer's self-report and the independent review's findings to the
+user, who chose **option (a)**: accept G6a with the leave-one-book-out bar revised to what actually matters
+for how the shipped model will be used (scoring real pieces from books it was trained on, not placing an
+entirely unseen book) — within-book leave-one-book-out ≥ legacy (met: 84.7% vs 79.0%) and the hold-out CI
+above 0 (met: +0.4 to +6.6). Options (b) (licence-clear more data for a 4th fold) and (c) (iterate further)
+remain open as future work, not blockers — (b) especially, since the cross-book question genuinely isn't
+resolved by today's 3-fold evidence. **G6b may start.**
