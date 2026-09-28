@@ -845,6 +845,19 @@ unchanged by this round's `'auto'`-only downgrade), the real degraded corpus cas
 (`for-all-the-saints`, `melodyConf=bassConf=0.0`) still realizing conservatively at 0 hard
 violations, and performance.
 
+**Corpus-wide sweep, independently run and recorded here** (this implementer's own report cited
+an ad hoc 61-file/8-violating-file sweep that was never actually committed as a script or written
+into this doc — a real documentation gap; independent review reran a broader, real sweep and its
+numbers are recorded here instead, since they are the ones actually reproducible from this
+record): across 312 corpus files (the same plan-search methodology the harness itself uses), hard
+violations dropped from **57 files / 327 violations, before this round, to 2 files / 3
+violations, after**. The 2 remaining are byte-identical before and after this round's changes (1
+pre-existing SPAN violation on `sonatina/013.mxl`, 2 pre-existing VELOCITY violations on
+`czerny849/027.mxl`) — an unrelated failure mode this round did not touch, not a residual of the
+fix. The error/crash set after this round is a strict subset of before (several previously
+`BUILD_FAILED` files now succeed as a side effect of this round's pickup-measure clamp fix; no
+new failures introduced anywhere).
+
 **§7's acceptance bar ("better than all three legacy engines on every metric") verdict: STILL
 NOT MET, but measurably, honestly closer than any prior round.** G8a now ties or beats
 `ScoreArranger` on 3 of 5 metrics: G5 hard violations is now a clear, real WIN (100%/0 vs.
