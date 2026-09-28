@@ -24,13 +24,34 @@ const CHORD_INTERVALS = Object.freeze({
 
 function intervalsFor(quality) { return CHORD_INTERVALS[quality] || CHORD_INTERVALS.maj; }
 
-/* The `count` pitch classes a chord voicing of this size uses: the triad/seventh's own
-   tones first, then the root again (a doubled root - ordinary tonal-harmony practice for a
-   4th voice on a triad), then the 5th, cycling - never inventing a pitch class outside the
-   chord. */
+/* The `count` pitch classes a chord voicing of this size uses.
+   ---- Real gap this tuning round found (docs/GOALS/G08 §14), not assumed ----
+   For a 4-tone quality (a 7th chord - dom7/maj7/min7/m7b5/dim7), the original code just took
+   `ivs[0..count-1]` - for the CHORD_SIZE=3 triad-cap this module always requests (see
+   realize/index.js's header on why chord size is capped at 3), that is root+3rd+5th EVERY
+   time: the 7th - the one tone that actually DISTINGUISHES a 7th chord's quality from a
+   bare triad - was silently dropped on every accompaniment voicing, regardless of what the
+   real harmony window asked for. This is checked, not theorized, against
+   songgraph/harmony.js's own real `fitChord`: it re-derives quality from a duration-weighted
+   pitch-class histogram with a per-extra-tone SIZE_BIAS (a triad needs a 4th tone's real
+   weight to beat a plain-triad reading) - a candidate that never sounds the 7th at all can
+   therefore never be re-identified as a 7th chord, which is exactly the "root matches, but
+   quality doesn't" gap docs/GOALS/G08 §14 measured against `ScoreArranger` (root-only was
+   already strong; root+quality was not). The 5th is real tonal-harmony practice's most
+   dispensable chord tone (routinely omitted in genuine voicings - a 7th chord's quality is
+   fully implied by root+3rd+7th alone, same as a triad's is by root+3rd); swapping it for
+   the 7th when `count` is capped below the chord's own real tone count keeps every existing
+   invariant (still `count` REAL chord tones, never an invented pitch class, no notation/
+   subdivision change) while giving the re-analysis something real to detect the seventh
+   from. Doubling only still applies once `count` exceeds the chord's own real tone count
+   (unchanged from the original code - a 4th voice on a triad doubles the root; this module
+   never actually requests that today, CHORD_SIZE/STAGE1_COUNT are always <= the chord's own
+   size, but the fallback is kept for any future caller that does). */
 function targetPcs(root, quality, count) {
   const ivs = intervalsFor(quality);
-  const pcs = ivs.map(i => ((root + i) % 12 + 12) % 12);
+  let order = ivs;
+  if (ivs.length === 4 && count === 3) order = [ivs[0], ivs[1], ivs[3]]; /* root, 3rd, 7th - drop the 5th, not the 7th */
+  const pcs = order.map(i => ((root + i) % 12 + 12) % 12);
   const out = [];
   for (let i = 0; i < count; i++) out.push(pcs[i % pcs.length]);
   return out;

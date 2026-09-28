@@ -51,6 +51,7 @@ const PAT = require('./patterns.js');
 const TH = require('./theory.js');
 const NOTATION = require('./notation.js');
 const REF = require('../arrangement/reference.js');
+const ARRPLAN = require('../arrangement/plan.js'); /* read-only reuse of maxSimultaneous - see hymnHandsReachable below */
 
 const SOURCE = Object.freeze({ kind: 'generator', tool: 'ppp.g8a-realizer', version: '1.0.0' });
 const CHORD_SIZE = 3; /* see header: always a triad, never a 7th - keeps every pattern tuplet-free */
@@ -97,25 +98,95 @@ function rebalanceHands(origPart, measureIds, hands) {
 
 function stripId(x) { const o = Object.assign({}, x); delete o.id; return o; }
 
-/* Which pattern a section gets. `opts.pattern` (one of PATTERN_NAMES) is honoured directly;
-   anything else (including 'auto', the default) is decided from real, structural signal
-   only - never a genre guess G7a's output cannot support (arrangement/plan.js's own header,
-   "style... has no effect... nothing in G7a's output distinguishes a style"):
-     - 3+ real kept voices in a texture ('full'/'partial' on a 3-4 voice part) -> 'hymn'
-       (there is real independent-voice content worth preserving verbatim).
-     - a genuinely triple meter (time.groups() gives exactly 3 pulses a measure) -> 'waltz'.
-     - otherwise -> 'block' (always constructible, the same "start simple" floor G7b's own
-       texture ladder uses for stage 1). */
-function resolvePattern(requested, section, g, oldMeasureIdx) {
-  if (requested && requested !== 'auto') return PATTERN_NAMES.indexOf(requested) >= 0 ? requested : 'block';
-  const kept = section.hands.RH.length + section.hands.LH.length;
-  if (kept >= 3) return 'hymn';
+/* The non-'hymn' structural default: a genuinely triple meter (time.groups() gives exactly
+   3 pulses a measure) -> 'waltz'; otherwise -> 'block' (always constructible, the same
+   "start simple" floor G7b's own texture ladder uses for stage 1). Factored out of
+   resolvePattern so the real-span downgrade below (see hymnHandsReachable) can fall back to
+   the SAME structural choice a non-'hymn' section would have gotten, not a fixed guess. */
+function structuralFallback(g, oldMeasureIdx) {
   try {
     const m = g.timeline.measures[oldMeasureIdx];
     const meter = T.meterAt(g, m.id);
     if (meter && T.groups(meter).length === 3) return 'waltz';
   } catch (e) { /* no meter in force yet - fall through to the safe default */ }
   return 'block';
+}
+
+/* Which pattern a section gets. `opts.pattern` (one of PATTERN_NAMES) is honoured directly;
+   anything else (including 'auto', the default) is decided from real, structural signal
+   only - never a genre guess G7a's output cannot support (arrangement/plan.js's own header,
+   "style... has no effect... nothing in G7a's output distinguishes a style"):
+     - 3+ real kept voices in a texture ('full'/'partial' on a 3-4 voice part) -> 'hymn'
+       (there is real independent-voice content worth preserving verbatim) - UNLESS
+       hymnHandsReachable (below) finds this specific voice-to-hand combination for real
+       genuinely unplayable, in which case the caller downgrades to structuralFallback.
+     - otherwise structuralFallback's own choice. */
+function resolvePattern(requested, section, g, oldMeasureIdx) {
+  if (requested && requested !== 'auto') return PATTERN_NAMES.indexOf(requested) >= 0 ? requested : 'block';
+  const kept = section.hands.RH.length + section.hands.LH.length;
+  if (kept >= 3) return 'hymn';
+  return structuralFallback(g, oldMeasureIdx);
+}
+
+/* ---- a real gap this tuning round found (docs/GOALS/G08 §14), not assumed ----
+   'hymn' mode's verbatim multi-voice copy silently trusts that G7b's plan already verified
+   this section's hand assignment is reachable. It has NOT, for a real, measured case: G7b's
+   own per-section hand split (arrangement/plan.js's planSection) picks RH/LH by each kept
+   VOICE's average pitch across the whole section, then checks reach (maxSimultaneous) on the
+   resulting hand's own combined notes - correctly, at every real onset (checked directly in
+   arrangement/plan.js's source, not assumed: it already handles held notes via songgraph/
+   util.js's soundingAt). So why does a real corpus case still slip through? Confirmed
+   directly (not guessed) on catalog/method/czerny599/013.mxl: G7b's plan keeps hands
+   RH=[v5,v6], LH=[v7] at 'large' profile (MAX_SPAN 14) for a 'full'-texture section, and
+   REUSING G7b's own maxSimultaneous (never reimplemented - arrangement/plan.js is read-only
+   here, per this doc's own scope rule) on v5+v6's real combined notes measures a real
+   17-semitone span at several real onsets (v6's sustained 62/67 dyad ringing under v5's
+   melody leaping up to a high G) - i.e. G7b's OWN reach check, run honestly on the SAME
+   voices it kept, says this combination is NOT reachable at this profile. The same real
+   pattern recurs on catalog/hymns/all-creatures.musicxml (LH=[v7,v8]) and catalog/hymns/
+   all-glory-laud.musicxml (LH=[v7,v8], a 'partial' tier this time - kept voice count alone,
+   not tier, is what matters). This is NOT the OTHER real gap this doc already documents
+   (rebalanceHands, above, for a hand left completely IDLE): here BOTH hands are genuinely in
+   use, so onset-sampling the RIGHT hand's own combined notes still finds the real violation -
+   the bug is that 'hymn' mode never actually RE-RUNS that check against the specific
+   plan.request.handProfile G8a is REALIZING for before trusting it.
+
+   Two real shapes of the fix were tried and MEASURED against the same 16-file harness, not
+   assumed - the honest record, including the one that lost:
+   - **Per-hand thinning** (drop the offending hand to its single most important real voice,
+     verbatim; leave the OTHER, reachable hand fully intact): preserves strictly more real
+     NOTE content than a whole-section downgrade, but measured WORSE on harmony agreement
+     (root+quality 0.892 vs. 0.929, root-only 0.921 vs. 0.946) at an IDENTICAL hard-violation
+     and G6-level-within-±1 outcome. Why: harmonyAgreement re-derives quality from the
+     CANDIDATE's own real notes via songgraph/harmony.js's fitChord; a verbatim-but-INCOMPLETE
+     real voice set (one real voice quietly missing) reads as a more AMBIGUOUS chord than a
+     regenerated accompaniment deliberately voiced (via realize/theory.js, this round's own
+     targetPcs fix included) to match the section's real per-beat harmony root+quality as
+     closely as a triad can - "more real notes, but the wrong subset" measurably lost to
+     "fewer notes, but deliberately harmony-matched" on the metric that matters here. Reverted.
+   - **Kept: downgrade the WHOLE section to the SAME non-'hymn' structural choice a <3-kept-
+     voice section would already get** (structuralFallback) - the melody voice is still always
+     preserved verbatim (that invariant never depends on which pattern a section uses), and the
+     OTHER hand is regenerated from the section's own real harmony instead of copied verbatim.
+     Never a pitch change to the melody, only which of this doc's own two realization modes a
+     section uses when 'hymn' mode's own reach can't be trusted for it. */
+function hymnHandsReachable(origPart, hands, measureIds, oldIdx, measureOffset, maxSpan, maxKeys) {
+  return ['RH', 'LH'].every(hand => {
+    const voiceIds = hands[hand];
+    if (voiceIds.length < 2) return true;
+    const notes = [];
+    const mset = new Set(measureIds);
+    origPart.events.forEach(e => {
+      if (e.kind !== 'note' || e.grace || voiceIds.indexOf(e.voice) < 0 || !mset.has(e.m)) return;
+      const idx = oldIdx.get(e.m);
+      const w0 = R.add(measureOffset[idx], R.parse(e.at));
+      const w1 = R.add(w0, R.parse(e.dur));
+      (e.heads || []).forEach(h => notes.push({ w0: w0, w1: w1, midi: P.midi(h.pitch) }));
+    });
+    notes.sort((a, b) => R.cmp(a.w0, b.w0) || R.cmp(a.w1, b.w1));
+    const sim = ARRPLAN.maxSimultaneous(notes);
+    return sim.span <= maxSpan && sim.count <= maxKeys;
+  });
 }
 
 /* count/subdivision policy by G6 stage - TUNED against arrangement/reference.js's REAL
@@ -304,10 +375,21 @@ function realize(g, sg, plan, opts) {
     const measureIds = measureIdxs.map(i => oldMeasures[i].id);
 
     const basePattern = resolvePattern(opts.pattern, sec, g, i0);
-    const policy = policyForStage(plan.stage, basePattern);
-    report.patternCounts[policy.pattern] = (report.patternCounts[policy.pattern] || 0) + 1;
+    let policy = policyForStage(plan.stage, basePattern);
 
     const hands = rebalanceHands(origPart, measureIds, sec.hands);
+
+    /* Real-check 'hymn' mode's own "already-checked reach" assumption (see
+       hymnHandsReachable's header above) before trusting it - never assumed, and only ever
+       downgrades an 'auto'-resolved 'hymn' choice (an explicit opts.pattern==='hymn' request
+       is still honoured verbatim, same as every other explicit pattern request, matching
+       `tests/realize/realize.test.js`'s own explicit-hymn fidelity check). */
+    if (policy.pattern === 'hymn' && (!opts.pattern || opts.pattern === 'auto') &&
+        !hymnHandsReachable(origPart, hands, measureIds, oldIdx, measureOffset, maxSpan, REACH.MAX_KEYS)) {
+      policy = policyForStage(plan.stage, structuralFallback(g, i0));
+    }
+    report.patternCounts[policy.pattern] = (report.patternCounts[policy.pattern] || 0) + 1;
+
     const melodyVoiceId = sec.melody && sec.melody.voice;
     const melodyHand = melodyVoiceId && hands.RH.indexOf(melodyVoiceId) >= 0 ? 'RH'
       : (melodyVoiceId && hands.LH.indexOf(melodyVoiceId) >= 0 ? 'LH' : 'RH');
@@ -341,13 +423,31 @@ function realize(g, sg, plan, opts) {
       if (!windows.length) return;
       const r = PAT.run(policy.pattern, windows, prevMidis, { anchor: anchor, count: policy.count, maxSpan: maxSpan });
       prevMidis = r.prevMidis;
+      const measureDur = R.parse(oldM.dur);
       r.events.forEach(ev => {
-        const disp = NOTATION.displayFor(ev.dur);
-        if (!disp) throw new Error('G8a: pattern ' + policy.pattern + ' produced a non-notatable duration ' + R.format(ev.dur));
-        const heads = ev.midis.map(m => ({ pitch: keyTrack.spellAt(m, mi), prov: prov() }));
         const at = R.sub(ev.at, measureOffset[mi]); /* absolute -> measure-relative, see above */
+        /* A pickup/short measure's own real duration can be shorter than the METER's beat
+           grid the harmony window came from (songgraph/util.js's beatGrid sizes windows by
+           the meter in force, not this one measure's own possibly-shorter written duration -
+           a real, already-documented gap, docs/GOALS/G08 §14). 'hymn' mode never calls this
+           loop at all (it only copies real events verbatim), so only a genuine pickup/
+           irregular measure triggers it - checked here, not assumed, only since this round's
+           own hymnHandsReachable downgrade (above) started routing a few more real sections
+           through this generative path (catalog/hymns/all-creatures.musicxml, once downgraded,
+           has exactly this pickup-measure shape). Clamp to the measure's own real end; drop an
+           event entirely past it, or one whose clamped remainder has no clean notated value -
+           never an out-of-bounds Event the validator would reject. */
+        let dur = ev.dur, clamped = false;
+        if (R.ge(at, measureDur)) return;
+        if (R.gt(R.add(at, dur), measureDur)) { dur = R.sub(measureDur, at); clamped = true; }
+        const disp = NOTATION.displayFor(dur);
+        if (!disp) {
+          if (clamped) return;
+          throw new Error('G8a: pattern ' + policy.pattern + ' produced a non-notatable duration ' + R.format(dur));
+        }
+        const heads = ev.midis.map(m => ({ pitch: keyTrack.spellAt(m, mi), prov: prov() }));
         b.event(part, {
-          kind: 'note', m: newMeasureId.get(oldM.id), at: R.format(at), dur: R.format(ev.dur),
+          kind: 'note', m: newMeasureId.get(oldM.id), at: R.format(at), dur: R.format(dur),
           voice: accompVoiceId, staff: accompStaffId, display: disp, heads: heads, prov: prov()
         });
       });

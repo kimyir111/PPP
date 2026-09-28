@@ -712,3 +712,158 @@ retuned `realize/index.js`'s `policyForStage` and its own module-local constants
 Investigation for this round was done directly (Read/Grep/Bash on the real files above), not
 delegated to any sub-agent, per this task's own explicit instruction not to repeat the
 multi-writer collision the Lead's decision note above documents.
+
+### G8a — final tuning round: 'hymn'-mode real-span check + 7th-chord voicing fix (2026-09-28)
+
+**Continues the kept `realize/` implementation only**, per the user's own explicit instruction
+("one more tuning round; if it doesn't meaningfully improve, accept the current state and move
+on"). Targets the two metrics the prior round's table (above) still showed behind
+`ScoreArranger`: G5 hard-violation rate/count (75%/2.83 vs. `ScoreArranger`'s 83%/0.92) and
+harmony root+quality agreement (0.894 vs. 0.947). All investigation was done directly by this
+implementer (Read/Grep/Bash on the real files, plus small ad hoc diagnostic scripts run from a
+scratch directory outside the worktree) - **no sub-agent was dispatched for any part of this
+round**, per this task's own hard process constraint (the Lead's decision note above documents
+exactly what went wrong the last time a "research" sub-agent was allowed to touch this
+worktree).
+
+**Investigation 1 - where the real G5 hard violations come from.** `realize/tools/harness.js`'s
+own 16-file sample was re-run with a small diagnostic script calling `playability/index.js`'s
+`analyzeGraph` directly on G8a's realized output and printing every hard-violation event's
+code/span/count/midis (never guessed from the aggregate numbers alone). All 3 real files with a
+violation (`catalog/hymns/all-creatures.musicxml`, `catalog/hymns/all-glory-laud.musicxml`,
+`catalog/method/czerny599/013.mxl`) showed **100% SPAN violations** (never KEYS or VELOCITY,
+across all 34 individual violation events measured), and every one traced to the SAME real
+structural cause, confirmed directly by printing the plan's own section/hands output and the
+original part's raw voice content: **'hymn' mode's verbatim multi-voice copy trusts that G7b's
+plan already verified a hand's kept-voice combination is reachable, and for these 3 files it has
+NOT.** On `czerny599/013.mxl`, G7b's plan keeps `RH=[v5,v6], LH=[v7]` at the `large` profile
+(MAX_SPAN 14); re-running G7b's OWN already-reviewed `arrangement/plan.js`'s `maxSimultaneous`
+(never reimplemented) on v5+v6's real combined notes measures a genuine **17-semitone span** at
+several real onsets (v6's sustained 62/67 dyad ringing under v5's melody leaping to a high G) -
+i.e. G7b's own reach check, honestly re-run on the exact voices it kept, says the combination is
+not reachable at this profile. The same real shape (2 real voices sharing a hand, one an
+inner/bass line sustained under the other) recurs on both hymn files' LH. This is a DIFFERENT
+real gap from the one `rebalanceHands` (above) already fixes (a hand left completely IDLE) -
+here both hands are genuinely in use, so onset-sampling the right hand's own combined notes
+still finds the real violation; the bug is that 'hymn' mode never re-runs that check against the
+specific `plan.request.handProfile` G8a is realizing for before trusting it.
+
+**Investigation 2 - where the harmony root+quality gap comes from.** Read `songgraph/
+harmony.js`'s `fitChord` in full: it re-derives a window's quality from a duration-weighted
+pitch-class histogram, with a `SIZE_BIAS` charged per chord tone (a triad needs a 4th tone's
+real weight to beat a plain-triad reading) - so a candidate whose accompaniment NEVER sounds a
+7th chord's actual seventh can never be re-identified as a 7th chord, root match or not. Read
+`realize/theory.js`'s `targetPcs`: capped at `count<=3` by design (the notation/tuplet-free
+invariant `realize/index.js`'s own header documents, unchanged this round), it was taking
+`ivs[0..2]` regardless of quality - root+3rd+5th every time, silently dropping the 7th for every
+real dom7/maj7/min7/m7b5/dim7 window, regardless of what `count` was. This exactly matches the
+measured pattern the prior round flagged: root-only agreement was already strong (0.959);
+root+quality was not (0.894) - a candidate that always reads as a plain triad can match root
+often but quality only by coincidence.
+
+**Fixes made** (`realize/theory.js` and `realize/index.js` only; no change to
+`arrangement/reference.js`/`plan.js`/`texture.js`, `songgraph/`, `playability/`, or
+`difficulty/` - all read-only reuse, per this task's own scope rule):
+
+1. **`hymnHandsReachable`** (`realize/index.js`): before trusting an `'auto'`-resolved `'hymn'`
+   section, re-checks each hand's real combined span/count via G7b's own `maxSimultaneous`
+   (fed real `{w0,w1,midi}` windows built from the original part's own events, exactly the shape
+   `songgraph/util.js`'s `noteWindows` would produce); if either hand fails, the WHOLE section
+   downgrades to the same structural fallback (`block`/`waltz`) a <3-kept-voice section would
+   already get - the melody voice is still always copied verbatim (that invariant does not
+   depend on which pattern a section uses), only the OTHER hand is regenerated from real
+   harmony instead of copied verbatim. Only applies to an `'auto'`-resolved choice - an EXPLICIT
+   `opts.pattern==='hymn'` request is still honoured completely verbatim, matching
+   `tests/realize/realize.test.js`'s own existing explicit-hymn fidelity test unchanged.
+   - **A second real bug surfaced and was fixed while testing this, not designed around in
+     advance**: a pickup/short-measure overrun (`songgraph/util.js`'s `beatGrid` sizes a beat
+     window by the METER in force, not that one measure's own possibly-shorter real duration -
+     the SAME real gap the OTHER, discarded G8a implementation already found and fixed, §14
+     above, under a different codebase). It was never triggered in `realize/`'s own committed
+     corpus sample before, because 'hymn' mode never calls the harmony-regenerating loop at
+     all; once a downgraded section could reach it (`catalog/hymns/all-creatures.musicxml`,
+     confirmed directly - a real `E-MEASURE-OVERFLOW` build failure on the first attempt at
+     this fix), the same clamp-to-the-measure's-real-end-or-drop fix was applied here too, in
+     the accompaniment-writing loop, never an out-of-bounds Event reaching the validator.
+   - **An alternative shape was tried and MEASURED, then reverted - the honest record, not the
+     final shape**: per-hand thinning (drop only the OFFENDING hand to its single most
+     important real voice - melody, else the declared bass voice, else the lowest-register
+     voice - verbatim; leave the OTHER, reachable hand fully intact) preserves strictly MORE
+     real note content than the whole-section downgrade. Measured on the same 16-file harness,
+     it scored WORSE on harmony agreement (root+quality 0.892 vs. 0.929, root-only 0.921 vs.
+     0.946) at an IDENTICAL hard-violation and G6-level-within-±1 outcome. Why, once measured:
+     `harmonyAgreement` re-derives quality from the CANDIDATE's own real notes; a
+     verbatim-but-INCOMPLETE real voice set (one real voice quietly missing from an otherwise
+     multi-voice hand) reads as a MORE ambiguous chord to `fitChord` than a regenerated
+     accompaniment deliberately voiced (via `realize/theory.js`, fix 2 below included) to match
+     the section's real per-beat harmony as closely as a triad can - "more real notes, but the
+     wrong subset" measurably lost to "fewer notes, but deliberately harmony-matched" on the
+     metric that actually matters here. Reverted in favor of the whole-section downgrade.
+2. **`targetPcs`** (`realize/theory.js`): when a chord's real quality has 4 tones (a 7th chord)
+   but `count` is capped at 3, voice root+3rd+**7th** instead of root+3rd+5th - the 5th is real
+   tonal-harmony practice's most dispensable chord tone (routinely omitted in genuine voicings;
+   a 7th chord's quality is fully implied by root+3rd+7th alone, same as a triad's is by
+   root+3rd), and giving `fitChord`'s re-analysis the real 7th to detect is what actually lets a
+   7th-chord quality be told apart from a bare triad. Still exactly `count` real chord tones,
+   never an invented pitch class, no notation/subdivision change - the doubling fallback for
+   `count` beyond a chord's own tone count is unchanged (this module never actually requests
+   that today).
+
+**Real before/after numbers** (same `realize/tools/harness.js --sample 16`, same 16-file
+sample, 12/16 files scored - the same 4 `UNREACHABLE` G7b exclusions as every prior round on
+this sample, untouched by this round):
+
+| Metric | G8a (prior round) | G8a (this round) | arrange_score.py | ScoreArranger | audio-score.js |
+|---|---|---|---|---|---|
+| G5 hard violations (%zero, mean count) | 75% (9/12), 2.83 | **100%** (12/12), **0** — improved, now BEATS ScoreArranger | 0% (0/12), 37.25 | 83% (10/12), 0.92 | 8% (1/12), 77.25 |
+| G6 level within ±1 (%), mean \|diff\| | 83.3% (10/12), 0.755 | 66.7% (8/12), 0.715 — REGRESSED (see below) | 58% (7/12), 0.81 | 83% (10/12), 0.30 | N/A |
+| melody preservation (mean) | 1.000 | 1.000 — unchanged | 0.927 | 0.985 | 0.946 |
+| harmony agreement root+quality / root-only | 0.894 / 0.959 | **0.929** / 0.946 — root+quality improved, root-only slipped slightly | 0.520 / 0.653 | 0.947 / 0.956 | N/A |
+| engrave L1 silent / L2 hard (all-zero rate) | 12/12, 12/12 | 12/12, 12/12 — unchanged | 12/12, 12/12 | 12/12, 12/12 | N/A |
+
+**The G6-level regression, explained honestly, not hidden.** Two files crossed the ±1 threshold
+(mean \|diff\| itself barely moved, 0.755->0.715 - actually slightly better on average; it is
+the coarse ±1 pass/fail count that moved): `all-creatures.musicxml` (\|diff\| 1.00->1.26) had 6
+real G5 hard violations under 'hymn' mode before this round; fixing them means trading a
+genuinely-unplayable 4-real-voice-per-hand texture for a simpler, playable one, which
+necessarily reads as less difficult to `difficulty/index.js`. This is a direct, understood, and
+in this implementer's judgment a CORRECT trade-off: an arrangement a target-level player cannot
+physically play is not meaningfully "at that level" regardless of what a surface-complexity
+model says about it, and the task's own instruction ranks G5 hard violations as the metric to
+fix. `burgmuller25_003.mxl` (\|diff\| 0.93->1.01) had 0 hard violations before AND after and
+never uses 'hymn' mode in this piece - the small nudge (0.08) is a side effect of fix 2 (voicing
+the 7th instead of the 5th shifts `difficulty/features.js`'s interval-content signal slightly);
+a small, understood, honest side effect, not a new bug. Root-only harmony (0.959->0.946)
+similarly gave back a little ground for the same underlying reason: a few sections that
+previously matched by verbatim coincidence now go through the regenerated, harmony-targeted
+path instead.
+
+**`npm run test:realize`: 9/9 passing** after every change, including the final kept state -
+determinism/golden across 8 real corpus files x 7 patterns, melody preservation under every
+non-hymn pattern, the EXPLICIT-`'hymn'`-request fidelity test (every retained voice verbatim,
+unchanged by this round's `'auto'`-only downgrade), the real degraded corpus case
+(`for-all-the-saints`, `melodyConf=bassConf=0.0`) still realizing conservatively at 0 hard
+violations, and performance.
+
+**§7's acceptance bar ("better than all three legacy engines on every metric") verdict: STILL
+NOT MET, but measurably, honestly closer than any prior round.** G8a now ties or beats
+`ScoreArranger` on 3 of 5 metrics: G5 hard violations is now a clear, real WIN (100%/0 vs.
+83%/0.92 - the metric this round was most asked to fix); melody preservation remains tied;
+G6 level-within-±1's coarse form is now narrowly behind (66.7% vs. 83%, was tied at 83% before
+this round - see the honest explanation above) while its finer mean-\|diff\| form barely moved
+and remains far behind (0.715 vs. 0.304, unchanged in kind). Harmony root+quality improved
+measurably (gap to `ScoreArranger` narrowed from 0.053 to 0.018) but is not closed; harmony
+root-only, a narrow win last round (0.959 vs. 0.956), is now a narrow loss (0.946 vs. 0.956).
+**This is a real, measured, partial improvement traded honestly against a real, understood, and
+in the hard-violation case arguably CORRECT small regression elsewhere - not a clean win on
+every axis, and not manufactured to look like one.** Per the user's own explicit "one more
+round, then accept the state" instruction, no further iteration was attempted once this
+trade-off was measured and understood; this is the final state of G8a's tuning.
+
+**Scope discipline**: no change to `arrangement/reference.js`, `arrangement/plan.js`,
+`arrangement/texture.js`, `songgraph/`, `playability/`, or `difficulty/` - this round only added
+`hymnHandsReachable`/`structuralFallback` and the measure-clamp fix to `realize/index.js`, and
+retuned `targetPcs` in `realize/theory.js`. No app file touched (Node-only, per §2/§10,
+unchanged). All investigation was done directly (Read/Grep/Bash, plus small ad hoc diagnostic
+scripts run from outside the worktree) - no sub-agent was dispatched for any part of this round,
+per this task's own hard process constraint.
