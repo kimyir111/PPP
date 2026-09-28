@@ -5,9 +5,9 @@ The operational roadmap for everything after G4a: order, dependencies, gates, an
 | | |
 | --- | --- |
 | Owner | The **Lead / Orchestrator** session. Implementers, reviewers and fixers read it. Only the Lead edits it. |
-| Updated | 2026-09-28 — thirty-first edition (Lead): **G6 is completely done and DEPLOYED** (`dep-dasuhch7lnhs73atgh80`, commit `6c63338`, verified live: `PPP.difficulty` defaults to `'legacy'`, `'g6'` produces a real level/hotspots for a real song after its one-time weights fetch). Current: G7a |
-| Base | `origin/main` = `6c63338`, deployed to production |
-| Active | **G4, MX-2, G5 and G6 all live.** Next: G7a (§14, §15). |
+| Updated | 2026-09-28 — thirty-second edition (Lead): **G7a (SongGraph core) merged** (PR #76, `bbadfd6`) — key regions, harmony, melody/bass ID, sections, phrases/cadences, voice roles, energy, all in one pass (no split needed). Beats hymn-SATB ground truth (harmony 89.2%/93.1%, melody 100%, bass 99%) with leakage specifically checked and ruled out. Node-only, no deploy needed. Current: G7b (Arrangement Planner) |
+| Base | `origin/main` = `bbadfd6`, deployed as `6c63338` (G7a itself needs no deploy) |
+| Active | **G4, MX-2, G5 and G6 all live. G7a merged.** Next: G7b (§14, §15). |
 | Lead worktree | `D:/PPP-lead`, branch `lead-roadmap`. The Lead writes docs only, never in an implementer's worktree. |
 | How this relates to other docs | `docs/CURRENT_STATE.md` says what is true now, with measurements. `docs/DECISIONS.md` says why. `docs/GOALS/Gxx_*.md` is the contract for one Goal: design, acceptance and implementation record. **This document says in what order, behind which gates, and what comes next.** It does not repeat the goal specs. On detail, the spec wins. On sequencing, this document wins. |
 
@@ -590,7 +590,9 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 
 ## 14. Current task
 
-**G4 "Professional Engraving", MX-2 (catalogue data integrity), G5 (playability and fingering) and G6 (difficulty) are all completely done and deployed.** Full G4 blow-by-blow is in `docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md` §32-§52 and `docs/DECISIONS.md`'s G4-* rows; G5's is in `docs/GOALS/G05_PLAYABILITY_FINGERING.md` §11; G6's is in `docs/GOALS/G06_DIFFICULTY.md` §11 -- this section only tracks what's still open (nothing).
+**G4 "Professional Engraving", MX-2, G5 (playability and fingering) and G6 (difficulty) are all completely done and deployed. G7a (SongGraph core) is merged, not yet deployed (Node-only, no deploy needed until G7b).** Full G4 blow-by-blow is in `docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md` §32-§52 and `docs/DECISIONS.md`'s G4-* rows; G5's is in `docs/GOALS/G05_PLAYABILITY_FINGERING.md` §11; G6's is in `docs/GOALS/G06_DIFFICULTY.md` §11; G7's is in `docs/GOALS/G07_SONGGRAPH_CORE.md` §12 -- this section only tracks what's still open.
+
+- **G7a** (PR #76, `9d6315f`/`79c82ca`, squashed `bbadfd6`): built the SongGraph's core analyses over a ScoreGraph in one pass (no split needed) -- key regions (reusing G3's existing `regionKeys()` directly), harmony per beat window, melody/bass identification with confidence, exact-repeat section detection, cadence-based phrase detection, voice-role classification, an energy/density curve. New `ops.addSection`/`addPhrase` (the only promotion path into the previously schema-only `Structure.sections`/`phrases`), reusing G1's already-built `resolveSpan`/`spanOf`/`fingerprint`/`scoreRef` machinery rather than rebuilding it. **Corrected a stale roadmap assumption before implementation**: the "550 printed chord symbols" ground truth is real as a count but 100% concentrated in licence-quarantined `czerny299` files (effectively zero usable) -- hymn SATB (a real, independent 4-voice texture, not a reduction) is the actual usable ground truth. Measured against it: **harmony 89.2% root+quality / 93.1% root-only, melody 100.0%, bass 99.0%**. No ground truth exists anywhere in the repo for sections/phrases/energy (confirmed, not assumed) -- exercised by mutation tests instead. Independent review specifically checked the unusually strong 100%/99% figures for leakage and confirmed none (the detectors never read SATB voice-label conventions, only the eval/test code does); found and the Lead fixed one MAJOR test-quality gap (a committed regression test for a real, already-fixed bug didn't actually discriminate it on its small synthetic fixture -- added a test against the real `amazing-grace.musicxml` file instead, verified to fail under the reverted bug and pass under the fix). Performance 53ms worst-case, budget 500ms. Node-only, not loaded by the app.
 
 - **G4**: every stage, both human review gates, the flip, all polish, and the full legacy-renderer removal are closed, merged, and live in production (deploy `dep-dasi7ah7lnhs739a2ia0`, commit `256aa9a`, 2026-09-27). Nothing open.
 - **MX-2** (PR #57 `789e6de`/`fbda4b4`, squashed as `ca70a03`): `catalog/hymns/abc-to-musicxml.js` wrote `<alter>` only for an explicit ABC accidental, so most hymn notes played natural regardless of the printed key signature, and wrote tie starts with no matching stop. Fixed the converter (key-signature default, in-bar carry across voices on a staff, tie-stop matching) and patched the 91 affected shipped `.musicxml` files directly (the ABC source tree no longer exists on disk -- `catalog/hymns/README.md`). `known_defects.py` hymn counts: `key_signature_playback` 89/89 files to 0, `bar_accidental_not_carried` 10/100 to 0, `tie_without_stop` 10/10 to 0. `bar_integrity` (12 hymn files) and `tempo_marks_disagree` (0 hymns) were investigated and deliberately deferred -- per-file judgment, not a mechanical fix. Independent review found two MAJOR issues (a latent ordering bug and a missing audit trail for the one-off data patch), both fixed and re-verified. **Deployed to production** (`dep-dasjdlt9fdbs73dnhgo0`, 2026-09-27) -- verified live (F#3 midi 54 where it used to read F natural). Incidentally exposed a pre-existing, unrelated `engrave/marks.js` tie-endpoint bug on one file's last measure (TD14, §13) -- cosmetic only, logged as backlog, not a MX-2 regression.
@@ -602,9 +604,9 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 
 ## 15. Next task
 
-**Start G7a** (SongGraph core), then:
+**Start G7b** (Arrangement Planner), then:
 
-1. G7b (Arrangement Planner)
+1. G8 (Arrangement realization)
 
 ## 16. Stop conditions
 
