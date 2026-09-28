@@ -599,3 +599,116 @@ was under 3s; `realize()` alone is comfortably inside §9's 1s/piece budget on e
   arranging judgment (voicing density scaled sensibly to its own level parameter, in particular)
   that neither deterministic G8a implementation's simpler, more mechanical density policy
   (chord-tone count by texture tier, or a fixed per-stage policy) reproduces yet.
+
+### G8a — density-policy tuning against real G6 per-stage bands (2026-09-28)
+
+**Continues the kept `realize/` implementation only** (per the Lead's decision note above),
+responding directly to the finding both implementations converged on: `realize/index.js`'s
+`policyForStage(stage, patternName)` used a fixed, stage-independent rule (stage 1 a bare
+root+fifth dyad, every stage 2+ one fixed `CHORD_SIZE` triad) instead of the real per-stage
+bands `arrangement/reference.js` already exposes (G7b's own module, not modified here). This
+section tunes that one function (and adds a stage-aware pattern choice next to it) against
+those real bands, then re-measures on the SAME 16-file sample and SAME harness
+(`realize/tools/harness.js --sample 16`) the second implementation entry above used, so the
+before/after numbers are directly comparable.
+
+**What changed**, both in `realize/index.js`:
+1. **A real-data-driven rhythmic-subdivision rule**, replacing "stage 2+ always gets the
+   requested pattern unchanged": `arrangement/reference.js`'s real bands show `notesPerBeatLH`
+   (attacks per beat - subdivision) nearly doubling from stage 1/2 to stage 3/4 (ratio to
+   stage 1: 1.2x at stage 2, ~2.0x at stage 3/4), while `chordLoad` (simultaneous "extra"
+   notes per beat) does NOT climb monotonically with stage - stage 3's real p50/p90 are
+   actually lower than stage 2's. Real harder pieces get denser by subdividing the beat
+   (Alberti-style figures), not by stacking bigger chords. So an `'auto'`-resolved `'block'`
+   section at stage 3/4 (ratio >= `SUBDIVIDE_RATIO = 1.5`) now becomes `'broken'` instead -
+   never overriding an explicit `opts.pattern`, and never overriding `'hymn'`/`'waltz'`
+   (both already real, structurally-decided choices made elsewhere, not this function's job).
+2. **A re-measured stage-1 floor**: the original code's stage-1 dyad (`count: 2`) was a
+   design assumption ("a single tone can't carry chord quality"), never itself a data point -
+   real stage-1 `chordLoad` is 0 at BOTH p50 and p90. Measured instead of assumed (round 3
+   below): dropping to a bare single bass tone (`count: 1`) at stage 1 improved every metric
+   that moved, so it is kept.
+
+**Three tuning rounds were run, honestly, including the one that made things worse:**
+
+- **Round 1** (subdivision rule above, stage 2+ `count` left at the original fixed
+  `CHORD_SIZE`): G6 level-within-±1 unchanged (9/12), mean |diff| barely moved (0.843 ->
+  0.838); harmony agreement moved slightly the wrong way (0.841/0.906 -> 0.839/0.903) since
+  only a few sections in a few files actually crossed `SUBDIVIDE_RATIO`. Net: negligible
+  either way, kept as a real, if small, improvement in mean |diff| and a defensible,
+  evidence-backed rule on its own terms.
+- **Round 2** (tried sizing stage-2+ `count` from chordLoad's real **p50**, the typical real
+  piece rather than its p90 ceiling - `round(chordLoad.p50) + 1`, clamped to a dyad floor):
+  this is the one that made things **worse**, measured, not assumed - one file's sample
+  dropped out (`hardViolationsZero` denominator fell from 12 to 11), the hard-violation rate
+  got worse (`9/12` zero -> `8/11` zero, mean count `2.83` -> `3.09`), harmony agreement fell
+  substantially (`0.841/0.906` -> `0.733/0.788`), and `catalog/method/sonatina/003.mxl` hit a
+  real build failure (`E-SHAPE ... pitch.oct must be an integer >= 0 <= 9`) that never
+  triggered at a full triad - a smaller chord-tone pool changed `theory.js`'s voice-leading
+  permutation search enough to reach a register extreme `scoregraph/pro-spell.js` can't
+  spell. **Reverted in full** - stage 2+ `count` stays the original fixed `CHORD_SIZE` (real
+  chordLoad p90 at every stage 2+ - 1.83/1.69/1.69 - supports a full triad; it is p50 that
+  does not, and using p50 here was the mistake).
+- **Round 3** (the stage-1 floor change above, `count: 2` -> `count: 1`, everything else as
+  round 1): this is the round that actually helped, measured on the same 16-file sample: G6
+  level-within-±1 rose from **9/12 (75%) to 10/12 (83.3%)**, mean |diff| improved from
+  **0.843 to 0.755**; harmony agreement rose too, not fell as the original dyad's design
+  reasoning predicted (**0.841/0.906 -> 0.894/0.959**) - the dyad's extra fifth was
+  apparently disagreeing with the preserved melody often enough at stage 1 to read as a WORSE
+  harmonic match than a bare root, the opposite of the assumption that motivated the original
+  floor. Hard violations and melody preservation were unaffected (0-risk/perfect already at
+  this stage, checked, not assumed). **Kept.**
+
+Total: 2 of 3 rounds kept (1 and 3), 1 reverted (2) after being measured and found to
+regress multiple metrics at once. `npm run test:realize` passes 9/9 after every round,
+including the final kept state (determinism, melody preservation, 0 hard violations on the
+committed fixtures, and the real degraded-corpus case still realizing conservatively).
+
+**The real head-to-head, before vs. after this tuning, same 16-file sample, same harness**
+(12/16 files scored, same 4 `UNREACHABLE` G7b exclusions as the second entry above - a G7b
+coverage limit, not something this tuning round touches):
+
+| Metric | G8a (before tuning) | G8a (after tuning) | arrange_score.py | ScoreArranger | audio-score.js |
+|---|---|---|---|---|---|
+| G5 hard violations (%zero, mean count) | 75% (9/12), 2.83 | 75% (9/12), 2.83 — unchanged | 0% (0/12), 37.25 | **83%** (10/12), **0.92** | 8% (1/12), 77.25 |
+| G6 level within ±1 (%), mean \|diff\| | 75% (9/12), 0.84 | **83.3%** (10/12), **0.755** — improved | 58% (7/12), 0.81 | 83% (10/12), **0.30** | N/A |
+| melody preservation (mean) | 1.000 | 1.000 — unchanged | 0.927 | 0.985 | 0.946 |
+| harmony agreement root+quality / root-only | 0.841 / 0.906 | **0.894 / 0.959** — both improved | 0.520 / 0.653 | 0.947 / 0.956 | N/A |
+| engrave L1 silent / L2 hard (all-zero rate) | 12/12, 12/12 | 12/12, 12/12 — unchanged | 12/12, 12/12 | 12/12, 12/12 | N/A |
+
+**Read plainly against the other three engines, after tuning:**
+- G6 level-within-±1 (the coarse pass/fail form of the metric): G8a now **ties** ScoreArranger
+  (10/12 each) and clearly beats `arrange_score.py` (7/12) - this specific sub-metric's gap to
+  ScoreArranger, which the untuned realizer measurably lost, is now closed. The finer mean
+  |diff| form of the same metric is NOT closed (G8a 0.755 vs. ScoreArranger's 0.304) -
+  ScoreArranger is still more than twice as precise on average when both land "close enough."
+- harmony agreement root-only: G8a now edges past ScoreArranger (0.959 vs. 0.956) for the
+  first time in either implementation's measurement. root+quality (the stricter sub-metric)
+  is still behind ScoreArranger (0.894 vs. 0.947), though the gap narrowed.
+- G5 hard violations and melody preservation are unchanged by this tuning round (the sections
+  this tuning touches - stage-1 accompaniment density, stage-3/4 subdivision - were not the
+  ones producing G8a's existing hard violations; those come from specific harder sections at
+  stage 2/3, e.g. `czerny599/013`'s 23 and `all-glory-laud`'s 5, untouched by either round
+  kept here). ScoreArranger still has a materially better hard-violation rate and mean count.
+
+**§7's acceptance bar ("better than all three legacy engines on every metric") is STILL NOT
+MET, stated plainly.** This tuning round is real, measured progress against `ScoreArranger`
+specifically - the shared weak point both original implementations diagnosed - closing the
+G6 level-within-±1 gap entirely (tie) and turning one harmony sub-metric from a loss into a
+narrow win, without regressing hard violations or melody preservation. But G8a is still
+behind ScoreArranger on: G6 level mean |diff| (more than 2x worse), harmony root+quality, and
+G5 hard-violation rate and mean count. The honest characterization is **partially met**: real,
+disclosed improvement on 2 of 5 metrics relative to the specific engine the design doc's own
+diagnosis named, not a reversal of the overall finding that a further iteration on
+`ScoreArranger`'s own hand-written style logic (still not reproduced here) would likely be
+needed to fully close the remaining gaps - most plainly the hard-violation rate, which this
+round's tuning never touched because none of the density levers changed here are what
+produces G8a's existing violations.
+
+**Scope discipline**: no change to `arrangement/reference.js`, `arrangement/plan.js`,
+`arrangement/texture.js`, `songgraph/`, `playability/`, or `difficulty/` - this round only
+retuned `realize/index.js`'s `policyForStage` and its own module-local constants
+(`SUBDIVIDE_RATIO`, `STAGE1_COUNT`). No app file touched (Node-only, per §2/§10, unchanged).
+Investigation for this round was done directly (Read/Grep/Bash on the real files above), not
+delegated to any sub-agent, per this task's own explicit instruction not to repeat the
+multi-writer collision the Lead's decision note above documents.

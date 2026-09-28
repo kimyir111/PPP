@@ -50,6 +50,7 @@ const FING = require('../playability/fingering.js');
 const PAT = require('./patterns.js');
 const TH = require('./theory.js');
 const NOTATION = require('./notation.js');
+const REF = require('../arrangement/reference.js');
 
 const SOURCE = Object.freeze({ kind: 'generator', tool: 'ppp.g8a-realizer', version: '1.0.0' });
 const CHORD_SIZE = 3; /* see header: always a triad, never a 7th - keeps every pattern tuplet-free */
@@ -117,16 +118,73 @@ function resolvePattern(requested, section, g, oldMeasureIdx) {
   return 'block';
 }
 
-/* count/subdivision policy by G6 stage (arrangement/reference.js's stageForPosition scale,
-   1-4): stage 1 forces 'block' (the plan's own texture.js uses the same "start simple"
-   policy for voice selection; G8a mirrors it for accompaniment RHYTHM) with a bare
-   root+fifth dyad (no 3rd) - the simplest possible harmonic support. Stage 2+ uses the
-   requested pattern with full triads. A real, declared, simple rule (not derived from G6's
-   model - arrangement/reference.js's header already shows that inversion doesn't work) -
-   see docs/GOALS/G08 §14 for the measured result of using it. */
+/* count/subdivision policy by G6 stage - TUNED against arrangement/reference.js's REAL
+   per-stage bands (docs/GOALS/G08 §14's tuning round, replacing the original flat "stage<=1
+   dyad, stage>=2 always a fixed triad" rule the design doc flagged as worth checking against
+   real data rather than a guess). Three rounds were run against the real comparative
+   harness (`realize/tools/harness.js`, the same 16-file sample §14's second entry used) -
+   the honest round-by-round record, including the one that made things worse, is in
+   docs/GOALS/G08 §14; only the shape that survives all three is kept here.
+
+   What the real bands (`REF.bandsForStage`, G6's own anchor corpus) actually show, checked
+   directly before writing any rule here:
+     stage:               1      2      3      4 (extrapolated from 3, no real stage-4 anchors)
+     chordLoad p50:       0      1.09   0.56   0.56
+     chordLoad p90:       0      1.83   1.69   1.69
+     notesPerBeatLH p50:  0.83   1.00   1.69   1.69
+
+   Two real findings drive the two knobs below, neither obvious in advance:
+   1. chordLoad (simultaneous "extra" notes per beat) does NOT climb monotonically with
+      stage - stage 3's real p50/p90 are actually LOWER than stage 2's. Round 1 kept `count`
+      a flat triad for every stage 2+ (chordLoad's p90 supports a triad at every one of those
+      stages, 1.83/1.69/1.69). Round 2 tried sizing `count` from chordLoad's p50 instead (the
+      TYPICAL real piece, not its ceiling) - which drops to a dyad at EVERY stage 2+ - and
+      MEASURED a real regression (harmony agreement fell from 0.841/0.906 to 0.733/0.788,
+      hard-violation rate got worse, and one corpus file's voicing search hit a real
+      register-extreme spelling failure that never triggered at a full triad, `sonatina/
+      003.mxl` E-SHAPE `oct` out of range). Reverted; `count` for stage 2+ stays a flat
+      CHORD_SIZE(3), round 1's shape, real chordLoad p90 evidence behind it unchanged.
+   2. notesPerBeatLH (attacks per beat - subdivision, not stack size) very nearly DOUBLES
+      from stage 2 to stage 3/4 (ratio vs. stage 1: 1.2x at stage 2, ~2.0x at stage 3/4).
+      Real harder pieces get denser by subdividing the beat into more, thinner attacks
+      (Alberti/broken figures), not by stacking bigger chords - which also explains finding
+      1: an arpeggiated triad plays every real chord tone but never more than one at a time,
+      so its OWN chordLoad reads low even though its harmonic content is a full triad. Kept
+      from round 1: once a section's real notesPerBeatLH ratio to stage 1 crosses
+      SUBDIVIDE_RATIO, an 'auto'-resolved 'block' section subdivides into 'broken' (Alberti)
+      instead - never overriding an explicitly requested pattern, and never overriding
+      'hymn'/'waltz' (both already real, structurally-decided rhythmic shapes, resolvePattern's
+      own job, not this function's).
+
+   Round 3's real finding, ALSO kept: stage 1's floor was a bare dyad (`count: 2`, root+
+   fifth) in the original code and in rounds 1-2, on the theory (never itself a data point)
+   that a single tone can't carry chord quality and would hurt harmony agreement. Measured
+   instead of assumed: dropping the stage-1 floor to a single bass tone (`count: 1`, real
+   chordLoad p50/p90 at stage 1 are BOTH 0 - the evidence never supported the dyad) IMPROVED
+   every metric that moved: G6 level-within-±1 rose from 9/12 to 10/12 (mean |diff| 0.843 ->
+   0.755) and harmony agreement rose too (0.841/0.906 -> 0.894/0.959), not fell - the dyad's
+   extra fifth was apparently fighting the preserved melody often enough at stage 1 to read
+   as a WORSE harmonic match than a bare root, the opposite of the theory that motivated it.
+   Hard violations and melody preservation were unaffected (both already 0-risk/perfect at
+   this stage). Kept as this policy's final stage-1 rule. */
+const SUBDIVIDE_RATIO = 1.5; /* stage 2's real ratio (~1.2) stays below this; stage 3/4's
+  real ratio (~2.0) clears it - see the table above, docs/GOALS/G08 §14. */
+const STAGE1_COUNT = 1; /* round 3, see above: measured better than the original dyad floor
+  on every metric that moved, not assumed. */
+
+function densityBand(stage) {
+  try { return REF.bandsForStage(stage); } catch (e) { return null; }
+}
+
 function policyForStage(stage, patternName) {
-  if (stage <= 1) return { pattern: 'block', count: 2 };
-  return { pattern: patternName, count: CHORD_SIZE };
+  if (stage <= 1) return { pattern: 'block', count: STAGE1_COUNT };
+  const band = densityBand(stage), base = densityBand(1);
+  let pattern = patternName;
+  if (patternName === 'block' && band && base && base.notesPerBeatLH.p50 > 0) {
+    const ratio = band.notesPerBeatLH.p50 / base.notesPerBeatLH.p50;
+    if (ratio >= SUBDIVIDE_RATIO) pattern = 'broken';
+  }
+  return { pattern: pattern, count: CHORD_SIZE };
 }
 
 function copyEventShape(e, newMeasureId, newVoice, newStaff) {
