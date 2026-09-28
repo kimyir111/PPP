@@ -34,8 +34,15 @@
 <script src="./scoregraph/pro.js?v=8"></script>
 <script src="./scoregraph/index.js?v=9"></script>
 <!-- G05 §11 G5c: the fingering DP (G5b), ported to the ScoreGraph. Only used when PPP.fingering === 'inferred'. -->
+<script src="./playability/reach.js?v=1"></script>
 <script src="./playability/graph.js?v=1"></script>
+<script src="./playability/analyze.js?v=1"></script>
 <script src="./playability/fingering.js?v=1"></script>
+<script src="./playability/index.js?v=1"></script>
+<!-- G06 §11 G6b: the difficulty ranker (G6a), over the same ScoreGraph. Only used when PPP.difficulty === 'g6'. -->
+<script src="./difficulty/features.js?v=1"></script>
+<script src="./difficulty/model.js?v=1"></script>
+<script src="./difficulty/index.js?v=1"></script>
 <script src="./audio-score.js?v=9"></script>
 <!-- G4a (docs/GOALS/G04 §8.5): where the renderer's ScoreGraph comes from, and what it must draw. Draws nothing yet. -->
 <script src="./engrave/ledger.js?v=3"></script>
@@ -4490,6 +4497,29 @@ function graphForScore(graph) {
   return graph;
 }
 
+/* G06 §11 G6b: PPP.difficulty = 'legacy' (default, same one-release-rollback shape as PPP.fingering and
+   PPP.legacyImport above) leaves the Analysis screen's facts/hard list and the Coach's structural context
+   exactly as `Score.deriveSections`/`Coach.structural` already produce them - nothing here changes what a
+   person sees. 'g6' reads the committed G6a ranker (difficulty/index.js, weights in
+   difficulty/weights/g6a-v1.json) over the SAME ScoreGraph the renderer already resolves for this Score
+   (PPPEngrave.app.resolveSync - G4a's "a graph for every Score", live, kept or rebuilt - App.difficultyAssessment
+   below), and only where that succeeds; any value other than 'g6' is 'legacy' (G4-F2-1's convention). The
+   weights are fetched once, lazily, the first time a score is viewed under 'g6' - not on every page load,
+   and not when the switch is off. */
+let DIFFICULTY_MODE = 'legacy';
+let DIFFICULTY_WEIGHTS = null;
+let _difficultyWeightsPromise = null;
+function loadDifficultyWeights() {
+  if (DIFFICULTY_WEIGHTS) return Promise.resolve(DIFFICULTY_WEIGHTS);
+  if (_difficultyWeightsPromise) return _difficultyWeightsPromise;
+  _difficultyWeightsPromise = (typeof fetch === 'function'
+    ? fetch('./difficulty/weights/g6a-v1.json', { cache: 'force-cache' }).then(r => (r.ok ? r.json() : null))
+    : Promise.resolve(null))
+    .catch(() => null)
+    .then(w => { DIFFICULTY_WEIGHTS = w || null; return DIFFICULTY_WEIGHTS; });
+  return _difficultyWeightsPromise;
+}
+
 async function importToGraph(bytes, name, kind) {
   if (kind === 'midi') {
     let r;
@@ -7956,8 +7986,11 @@ const Coach = {
         lastAccuracy: S.lastAcc, completedTasks: (b.completed || []).length
       },
       /* Predicted from the notation alone. Never to be reported as something
-         observed about this player. */
-      structural: Coach.structural(score),
+         observed about this player. G06 §11 G6b: `b.difficulty` is the app's own
+         App.difficultyAssessment() (null under PPP.difficulty = 'legacy', the default, or before G6's
+         weights load) - Coach itself never imports the difficulty module, keeping this function's
+         dependencies exactly what they were before G6b (App:coachContext passes it in). */
+      structural: b.difficulty ? Coach.structuralFromAssessment(b.difficulty) : Coach.structural(score),
       /* what a plan is allowed to contain */
       allowed: {
         measures: allowed, hands: COACH.hands, modes: COACH.modes,
@@ -8038,6 +8071,26 @@ const Coach = {
       sections: out,
       hardest: out.slice().sort((a, b) =>
         (b.notesPerMeasure + b.widestLeapSemitones) - (a.notesPerMeasure + a.widestLeapSemitones))[0] || null
+    };
+  },
+
+  /* ---- G06 §11 G6b: the same envelope (note/sections/hardest) as structural() above, built from G6's own
+     assessment (difficulty/index.js assess()) instead of the section-average heuristic. Called only from
+     App.context() above, and only with a non-null `assessment` (App.coachContext already gates this on
+     PPP.difficulty === 'g6' and a resolvable graph) - Coach itself never imports the difficulty module, so
+     its own dependency graph is unchanged by G6b (§3(c)). The note names both what G6 is confident about and
+     what it is not (G6a §11, decision G6-L1): strong ordering pieces within a book it trained on, unresolved
+     at placing a book it has never seen an example of - so a plan built from this never overstates it. */
+  structuralFromAssessment(a) {
+    const hot = (a.hotspots || []).map(h => ({ from: h.number, to: h.number, hand: h.hand, reasons: h.reasons || [] }));
+    return {
+      note: 'Predicted from the notation by PPP’s difficulty model (G6). Not a measurement of this player. ' +
+        'It orders pieces well within a method book it has trained on; placing a book it has never seen an ' +
+        'example of is not yet reliable.',
+      level: a.level || null,
+      reasons: (a.reasons || []).map(r => r.text),
+      sections: hot,
+      hardest: hot[0] || null
     };
   },
 
@@ -9264,6 +9317,9 @@ window.PPP = {
   /* G05 §11 G5c: 'legacy' (default) | 'inferred'. Any other value is 'legacy' (G4-F2-1's convention). */
   get fingering() { return FINGERING_MODE; },
   set fingering(v) { FINGERING_MODE = v === 'inferred' ? 'inferred' : 'legacy'; },
+  /* G06 §11 G6b: 'legacy' (default) | 'g6'. Any other value is 'legacy' (G4-F2-1's convention). */
+  get difficulty() { return DIFFICULTY_MODE; },
+  set difficulty(v) { DIFFICULTY_MODE = v === 'g6' ? 'g6' : 'legacy'; },
   pitchToMidi, midiToFreq, keyName,
   PIANO, PianoSamples, PianoScore, PianoPlayer,
   PianoVisual: {
@@ -11857,7 +11913,10 @@ class Component extends DCLogic {
       model: this.model(), state: S,
       recommendation: this.recommendation(),
       songProgress: this.songProgress(), songMemory: this.songMemory(),
-      completed: S.coachDone
+      completed: S.coachDone,
+      /* G06 §11 G6b: null under PPP.difficulty = 'legacy' (default), so Coach.context falls back to its
+         own Coach.structural(score) exactly as before G6b. */
+      difficulty: this.difficultyAssessment()
     });
   }
   /* A test seam: a fake provider can be installed here without touching the
@@ -15468,8 +15527,13 @@ class Component extends DCLogic {
     return { from: rec.from, to: rec.to, accuracy: null, weakness: 0, id: null };
   }
   difficultyLabel() {
+    /* G06 §11 G6b: PPP.difficulty = 'g6' replaces this heuristic average with G6's level, anchored to named
+       method-book points; difficultyAssessment() returns null under 'legacy' (default) or before the
+       weights have loaded, so this line is the only change and everything below it is untouched. */
+    const da = this.difficultyAssessment();
+    if (da && da.level) return this.difficultyLevelLabel(da.level);
     const avg = this.sections().reduce((a, s) => a + (s.score || 0), 0) / Math.max(1, this.sections().length);
-    return avg > 26 ? 'Advanced' : avg > 14 ? 'Intermediate' : 'Beginner';
+    return tx(avg > 26 ? 'Advanced' : avg > 14 ? 'Intermediate' : 'Beginner');
   }
 
   /* ============================ views ============================ */
@@ -15718,6 +15782,67 @@ class Component extends DCLogic {
     try { plan = Fingering.plan(sc); } catch (e) { plan = { finger: new Map(), hands: {} }; }
     this._fp = { score: sc, plan };
     return plan;
+  }
+
+  /* ============================ difficulty (G06 §11 G6b) ============================
+     G6's level/hotspot/reasons for the current score - cached exactly like fingerPlan() above, once per
+     score object, but also keyed on the switch itself (PPP.difficulty can flip at runtime, unlike
+     PPP.fingering which only matters at import). Under 'legacy' (default) this never runs G6 at all and
+     returns null, so every caller below falls back to its pre-G6b behaviour unchanged.
+
+     The graph is the SAME one the renderer already resolves for this Score - PPPEngrave.app.resolveSync
+     (engrave/source.js: live, the graph its importer made; store, kept from a previous visit; projected,
+     rebuilt from the Score with scoregraph's own legacy.fromScore - the same three the renderer falls back
+     through), memoised there by content hash, so this does not add a second graph-resolution path (G02's
+     "the import boundary is on the graph", confirmed for G6 the same way G5c confirmed it for fingering).
+     A score with no resolvable graph at all (via 'none') is handled the same as no weights yet: this
+     returns null and every caller shows what it always has. */
+  difficultyAssessment() {
+    const sc = this.state.score;
+    if (DIFFICULTY_MODE !== 'g6' || !sc) {
+      this._da = { score: sc, mode: DIFFICULTY_MODE, result: null };
+      return null;
+    }
+    if (!DIFFICULTY_WEIGHTS) {
+      /* fetched once, lazily; when it lands, re-render this same score so the switch takes effect
+         without the person having to do anything (the same shape as engraveOutcome's re-paint above).
+         Deliberately NOT cached below: the next call, once the weights have landed, must try again
+         rather than be stuck on this call's null forever. */
+      loadDifficultyWeights().then(w => { if (w && this.state.score === sc) this.setState({}); });
+      return null;
+    }
+    if (this._da && this._da.score === sc && this._da.mode === DIFFICULTY_MODE) return this._da.result;
+    let result = null;
+    if (window.PPPDifficulty && window.PPPEngrave) {
+      try {
+        const src = window.PPPEngrave.app.resolveSync(sc);
+        if (src && src.graph) result = window.PPPDifficulty.assess(src.graph, DIFFICULTY_WEIGHTS);
+      } catch (e) { result = null; /* a graph G6 cannot read: fall back, never throw into render */ }
+      /* so difficultyLevelLabel() has real book titles (Beyer, Czerny 100, ...) rather than raw ids the
+         first time this runs in a session - deferred exactly like the Course screen's own lazy fetch
+         below (never setState during render); loadCourse() is itself a guarded no-op once fetched */
+      if (result) setTimeout(() => this.loadCourse(), 0);
+    }
+    this._da = { score: sc, mode: DIFFICULTY_MODE, result };
+    return result;
+  }
+  /* "Harder than Beyer No. 8, easier than Czerny 100 No. 3" - anchored to named method-book points
+     (G06 §3(b)), never a bare number. `beyond` (G6a's model.js levelOf) means the score sits past every
+     anchor G6 was trained on in that direction; said plainly rather than hidden, per G6a's own restraint
+     (§11 G6-L1: strong within a trained book, unresolved on a book it has never seen an example of). */
+  difficultyLevelLabel(level) {
+    if (!level) return null;
+    const name = a => (a ? this.courseBookName(a.book) + ' No. ' + a.no : null);
+    if (level.beyond === 'top' && level.below) {
+      return tx('Harder than {{book}} — beyond what PPP has measured', { book: name(level.below) });
+    }
+    if (level.beyond === 'bottom' && level.above) {
+      return tx('Easier than {{book}} — beyond what PPP has measured', { book: name(level.above) });
+    }
+    if (level.below && level.above) {
+      return tx('Harder than {{a}}, easier than {{b}}', { a: name(level.below), b: name(level.above) });
+    }
+    return tx('{{stage}}', { stage: level.stageName || '' });
   }
 
   handsOn() { return this.state.toggles.handGuide !== false; }
@@ -16222,6 +16347,11 @@ class Component extends DCLogic {
 
     const secList = this.sections();
     const half = secList[Math.floor(secList.length / 2)] || secList[0];
+    /* G06 §11 G6b: computed once per render, reused by the Analysis screen's facts/hard list below and by
+       the Coach panel's structural line further down - null under 'legacy' (default) or before the weights
+       load, in which case every use below is exactly what it was before G6b. */
+    const g6 = this.difficultyAssessment();
+    const g6Hot = g6 && g6.hotspots && g6.hotspots.length ? g6.hotspots : null;
     /* Go to the memory tab, at the blind level when the passage has earned it —
        otherwise the tab itself says what is still missing. */
     const blind = () => { this.go('memory')(); if (this.memEligible().ok) this.setMemLevel(4); };
@@ -16916,7 +17046,7 @@ class Component extends DCLogic {
 
       /* ---- analysis ---- */
       facts: [
-        { k: tx('Difficulty'), v: tx(this.difficultyLabel()) },
+        { k: tx('Difficulty'), v: this.difficultyLabel() },
         { k: tx('Key'), v: keyName(m0.key.fifths, m0.key.mode) },
         { k: tx('Time'), v: m0.time.beats + '/' + m0.time.beatType },
         { k: tx('Tempo'), v: score.tempo + ' BPM' },
@@ -16928,17 +17058,27 @@ class Component extends DCLogic {
         ? tx(learn.ranges.length === 1
           ? 'From your playing, PPP flagged {{n}} passage to work on.'
           : 'From your playing, PPP flagged {{n}} passages to work on.', { n: learn.ranges.length })
-        : tx('From the notation, PPP expects {{n}} tricky sections.', { n: secList.filter(s => s.hard).length }),
+        /* G06 §11 G6b: G6's hotspots (per-measure, not deriveSections' 8-bar sections) when the switch is on
+           and a graph resolved; otherwise the legacy `hard` flags, unchanged. */
+        : g6Hot
+          ? tx('From the notation, PPP expects {{n}} tricky spots.', { n: g6Hot.length })
+          : tx('From the notation, PPP expects {{n}} tricky sections.', { n: secList.filter(s => s.hard).length }),
       hard: (learn.ranges.length
         ? learn.ranges.slice(0, 4).map(r => ({
           range: tx('Measures {{from}}–{{to}}', { from: r.from, to: r.to }),
           reason: Learning.explain(score, S.history, r.from, r.to)[0] || tx('Accuracy is slipping here.'),
           cta: tx('Loop it'), on: this.drill(r.from, r.to)
         }))
-        : secList.filter(s => s.hard).map(s => ({
-          range: tx('Measures {{from}}–{{to}}', { from: s.from, to: s.to }), reason: tx(s.reason),
-          cta: tx('Loop it'), on: this.drill(s.from, s.to)
-        }))),
+        : g6Hot
+          ? g6Hot.map(hs => ({
+            range: hs.hand === 'both' ? tx('Measure {{n}}', { n: hs.number }) : tx('Measure {{n}} ({{hand}})', { n: hs.number, hand: hs.hand }),
+            reason: hs.reasons[0] || tx('Above the method-book average here.'),
+            cta: tx('Loop it'), on: this.drill(hs.number, hs.number)
+          }))
+          : secList.filter(s => s.hard).map(s => ({
+            range: tx('Measures {{from}}–{{to}}', { from: s.from, to: s.to }), reason: tx(s.reason),
+            cta: tx('Loop it'), on: this.drill(s.from, s.to)
+          }))),
 
       /* ---- transport and learning view ---- */
       visualMode: visualMode,
@@ -17210,8 +17350,14 @@ class Component extends DCLogic {
       sessionLabel: tx('Session'),
       noSessionLabel: tx('No session planned yet.'),
       replanLabel: tx('Re-plan the session'),
-      /* structural difficulty is labelled as a prediction, never as measurement */
+      /* structural difficulty is labelled as a prediction, never as measurement.
+         G06 §11 G6b: G6's own top hotspot and reasons when the switch is on and a graph resolved (g6Hot,
+         defined above with secList) - the legacy Coach.structural(score) otherwise, unchanged. */
       coachStructural: (() => {
+        if (g6Hot) {
+          const top = g6Hot[0];
+          return tx('From the notation, measure {{n}} looks hardest ({{reasons}}). That is a prediction, not a measurement of your playing.', { n: top.number, reasons: top.reasons.join(', ') });
+        }
         const st = Coach.structural(score).hardest;
         if (!st || !st.traits.length) return '';
         return tx('From the notation, measures {{from}}–{{to}} look hardest ({{traits}}). That is a prediction, not a measurement of your playing.', { from: st.from, to: st.to, traits: st.traits.map(t => tx(t)).join(', ') });
