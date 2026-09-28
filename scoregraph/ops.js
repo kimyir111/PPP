@@ -339,6 +339,31 @@
       this.srcId = src.id;
       return src.id;
     }
+    /* Find-or-register any {kind, tool, version} source in provenance.sources: source()'s lookup, generalized
+       to more than one caller-chosen source per edit (G07's addSection/addPhrase, one analyzer per {kind,tool}
+       rather than G3's single fixed source per edit). Returns the Source's id. */
+    sourceOf(desc) {
+      this.srcCache = this.srcCache || new Map();
+      const key = JSON.stringify([desc.kind, desc.tool, desc.version]);
+      if (this.srcCache.has(key)) return this.srcCache.get(key);
+      const found = this.doc.provenance.sources.find(s => s.kind === desc.kind && s.tool === desc.tool && s.version === desc.version);
+      const id = found ? found.id : (() => {
+        const src = Object.assign({ id: this.newId('sr') }, desc);
+        this.doc.provenance.sources.push(src);
+        return src.id;
+      })();
+      this.srcCache.set(key, id);
+      return id;
+    }
+    /* {op?, source?: {kind,tool,version}, conf?} -> a ProvRef with source registered/reused via sourceOf. */
+    provRefOf(prov) {
+      if (!prov) return undefined;
+      const out = {};
+      if (prov.source) out.src = this.sourceOf(prov.source);
+      if (prov.op !== undefined) out.op = prov.op;
+      if (prov.conf !== undefined) out.conf = prov.conf;
+      return out;
+    }
     /* entity.prov.asp[aspect] = {src: G3} for each aspect (G03 §17). The op is written only when it is not the
        one the entity inherits: a rewritten inferred entity stays inferred (only the source is G3); what G3 fills
        into an imported score is 'generated'. */
@@ -864,6 +889,51 @@
       this.touch();
       return s.id;
     }
+    /* A structural section over [from, to] measures (inclusive), with an optional label/parent (G07 §5
+       "sections and repetition"). Promotion: the only way a SongGraph analyzer's finding becomes a first-class
+       graph object, per G07 §1's direction rule — never a direct schema write. */
+    addSection(from, to, opts) {
+      opts = opts || {};
+      if (!this.mIdx.has(from)) throw new OpError('E-OP-TARGET', 'no measure ' + from);
+      if (!this.mIdx.has(to)) throw new OpError('E-OP-TARGET', 'no measure ' + to);
+      const st0 = this.doc.structure || {};
+      if (opts.parent !== undefined && !(st0.sections || []).some(s => s.id === opts.parent)) throw new OpError('E-OP-TARGET', 'no section ' + opts.parent);
+      this.doc.structure = this.doc.structure || {};
+      const sections = this.doc.structure.sections = this.doc.structure.sections || [];
+      const s = { id: this.newId('sc'), from: from, to: to };
+      if (opts.label !== undefined) s.label = opts.label;
+      if (opts.parent !== undefined) s.parent = opts.parent;
+      const prov = this.provRefOf(opts.prov);
+      if (prov) s.prov = prov;
+      sections.push(s);
+      this.touch();
+      return s.id;
+    }
+    /* A phrase over [from, to) (Pos), optionally scoped to a part/voices and a parent section (G07 §5
+       "phrases and cadences"). Same promotion rule as addSection. */
+    addPhrase(from, to, opts) {
+      opts = opts || {};
+      if (!this.mIdx.has(from.m)) throw new OpError('E-OP-TARGET', 'no measure ' + from.m);
+      if (!this.mIdx.has(to.m)) throw new OpError('E-OP-TARGET', 'no measure ' + to.m);
+      if (opts.part !== undefined && !this.doc.parts.some(p => p.id === opts.part)) throw new OpError('E-OP-TARGET', 'no part ' + opts.part);
+      const st0 = this.doc.structure || {};
+      if (opts.section !== undefined && !(st0.sections || []).some(s => s.id === opts.section)) throw new OpError('E-OP-TARGET', 'no section ' + opts.section);
+      this.doc.structure = this.doc.structure || {};
+      const phrases = this.doc.structure.phrases = this.doc.structure.phrases || [];
+      const ph = {
+        id: this.newId('ph'),
+        from: { m: from.m, at: R.format(R.parse(String(from.at))) },
+        to: { m: to.m, at: R.format(R.parse(String(to.at))) }
+      };
+      if (opts.part !== undefined) ph.part = opts.part;
+      if (opts.voices !== undefined) ph.voices = opts.voices.slice();
+      if (opts.section !== undefined) ph.section = opts.section;
+      const prov = this.provRefOf(opts.prov);
+      if (prov) ph.prov = prov;
+      phrases.push(ph);
+      this.touch();
+      return ph.id;
+    }
     /* Pedal marks: replace a pedal spanner's changes / ends (G03 §13.2). */
     setPedal(spannerId, fields) {
       for (const part of this.doc.parts) {
@@ -941,5 +1011,6 @@
   return Object.freeze({ CODES, OpError, updateHead, removeEvents, replaceRegion, edit, Draft, END_ARTS,
     splitEvent: single('splitEvent'), mergeTied: single('mergeTied'), retimeVoiceMeasure: single('retimeVoiceMeasure'),
     moveEvent: single('moveEvent'), moveHeads: single('moveHeads'), setTuplets: single('setTuplets'), setBeams: single('setBeams'),
-    setAcc: single('setAcc'), setSpelling: single('setSpelling'), setKey: single('setKey'), refillRests: single('refillRests') });
+    setAcc: single('setAcc'), setSpelling: single('setSpelling'), setKey: single('setKey'), refillRests: single('refillRests'),
+    addSection: single('addSection'), addPhrase: single('addPhrase') });
 });

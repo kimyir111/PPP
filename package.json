@@ -16,6 +16,7 @@
     "test:engrave": "node --test \"tests/engrave/**/*.test.js\"",
     "test:playability": "node --test \"tests/playability/**/*.test.js\"",
     "test:difficulty": "node --test \"tests/difficulty/**/*.test.js\"",
+    "test:songgraph": "node --test \"tests/songgraph/**/*.test.js\"",
     "test:scoregraph:perf": "node -e \"process.env.PPP_PERF='1'; require('child_process').execFileSync(process.execPath, ['--test', 'tests/scoregraph/g3-perf.test.js'], { stdio: 'inherit', env: process.env })\"",
     "test:arranger": "python tests/arranger_test.py",
     "omr": "node omr-service.js",

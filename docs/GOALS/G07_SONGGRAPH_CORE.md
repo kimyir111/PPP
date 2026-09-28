@@ -169,4 +169,222 @@ Nothing user-facing — G7a is Node-only, not loaded by the app, same shape as G
 
 ## 12. Implementation record
 
-(Grows here as G7a lands.)
+### G7a — SongGraph analysis: key regions, harmony, melody/bass, sections, phrases/cadences, voice roles, energy (2026-09-28)
+
+**Headline.** All of §5's scope is built and tested, Node-only (`songgraph/`, `tests/songgraph/`,
+`npm run test:songgraph`, 44/44 passing; wired into the CI gate alongside `test:difficulty`). No
+split was needed — this phase's honest scope turned out to fit in one pass, unlike some earlier
+Goals (G4b/c/d). The two passes with real ground truth (harmony, melody/bass) are measured against
+it directly, on the real hymn corpus, not assumed: **harmony 89.2% root+quality / 93.1% root-only
+agreement with hymn SATB; melody 100.0%, bass 99.0%**. Sections, phrases/cadences and the energy
+curve have no ground truth anywhere in this repo to measure against (confirmed, not assumed — see
+below) and are exercised by the mutation suite instead. Performance is 53ms worst-case in Node
+(sonatina/020, 158 measures/1423 notes), comfortably inside §8's 500ms budget — confirmed realistic,
+no correction needed.
+
+**What was built** (Node only, not loaded by the app; scoregraph/ gets exactly two new ops):
+- `scoregraph/ops.js`: `addSection(from, to, opts)` and `addPhrase(from, to, opts)`, matching the
+  existing single-op/`edit()` pattern (`setKey`, `addClef`, `addSpanner`). Both validate their
+  measure/part/parent/section references (`E-OP-TARGET`) before writing, and both take `prov:
+  {op, source: {kind, tool, version}}` — a new `Draft.sourceOf(desc)` generalizes G3's existing
+  `source()` (which is fixed to one `{kind,tool}` per edit) to any number of caller-chosen sources
+  reused across calls by `{kind,tool,version}` equality, since G07's analyzers register several
+  distinct tools (`ppp.songgraph.sections`, `ppp.songgraph.phrases`, …) where G3 only ever needed
+  one. `Draft.provRefOf(prov)` turns `{op, source}` into the `ProvRef` the schema actually requires
+  (`src` must be a real registered `Source` id — the design doc's own `prov: {op:'inferred',
+  src:'songgraph'}` phrasing reads as a bare string, but the schema's `ProvRef.src` is `T.ref(['sr'])`;
+  a first implementation attempt hit `E-ID-FORMAT`/`E-PROV` immediately and made this concrete).
+- `songgraph/util.js`: `beatGrid(g)` (every notated beat window, from `time.js`'s own
+  `meterAt`/`groups` — the same beat grouping `metric()` uses), `noteWindows(g, opts)` (every
+  sounding note, once, reused by every other module instead of each re-walking `g.parts`),
+  `pcWeights`/`overlap`/`soundingAt`.
+- `songgraph/keys.js`: `keyRegionsOf(g, opts)` — wires up `pro-spell.js`'s `regionKeys()` directly,
+  per §3/§11's instruction; no second key-detection algorithm.
+- `songgraph/harmony.js`: `fitChord(hist, bassPc)` (12-bin pitch-class histogram → best {root,
+  quality} over 9 triad/seventh qualities, scored as in-chord weight minus a penalty on
+  out-of-chord weight minus a small per-tone size bias, with a bass-note-agreement bonus small
+  enough to only break real ties) and `harmonyOf(g, opts)` (one fit per `beatGrid` window, over the
+  duration-weighted pitch-class content of every part combined).
+- `songgraph/voices.js`: `melodyBassOf(g, opts)` (per voice, the fraction of the part's shared
+  onset instants where that voice sounds the highest/lowest pitch — "melody"/"bass" almost by a
+  chorale or keyboard texture's own definition — plus a confidence margin over the runner-up) and
+  `voiceRolesOf(g, opts)` (melody/bass as above, 'inner' for a 3rd+ voice, 'accompaniment' for a
+  2-voice part's non-melody voice, e.g. a keyboard LH that both harmonizes and carries the bass).
+- `songgraph/sections.js`: `sectionsOf(g)` — an **exact-repeat** detector. Each measure gets a
+  content signature (every note's voice/onset-offset/pitch-class/duration, across every part, not a
+  pitch-class histogram — see the correction below); candidate run lengths [16,8,4,2] measures are
+  tried longest-first, a run that recurs verbatim (2+ non-overlapping copies, octave differences
+  tolerated since pitch class rather than absolute MIDI is used) claims those measures under one
+  shared label, and whatever is left becomes its own single-run section. `promoteSections` writes
+  the result via `ops.addSection` only.
+- `songgraph/phrases.js`: `cadencesOfPart`/`phrasesOf(g, opts)` — cadence detection grounded in
+  this phase's own harmony+melody output, exactly as the design doc's §5 directs
+  ("harmonic-rhythm/melodic-closure signals," not an arbitrary heuristic). Primary signal:
+  **authentic** (a dominant-function chord resolving a fifth down, i.e. V-I/V7-I or IV-I, with the
+  melody voice landing on and holding a note at least as long as the arrival beat). Only when a
+  part has *no* authentic cadence anywhere (and the piece has more than one distinct chord at all —
+  see the correction below) does a weaker **harmonic-rest** fallback fire: the same chord held
+  across an entire measure while the melody also stops moving. `promotePhrases` writes the result
+  via `ops.addPhrase` only.
+- `songgraph/energy.js`: `energyOf(g, opts)` — density (onsets/beat), spread (sounding-register
+  width), thickness (mean simultaneous notes at an onset) all min-max normalized per piece, folded
+  with a printed dynamic's 0..13 index (2x weight) **only where one is printed** — `dynamic: null`
+  otherwise, never invented.
+- `songgraph/index.js`: `analyze(g, opts)` (every pass above, plus `ref: scoreRef(g)`),
+  `isFresh(g, sg)`/`refresh(g, sg, opts)` (recompute `fingerprint(g)`, compare to `sg.ref.fp`; a
+  stale SongGraph is always fully re-analyzed, not patched via `idMap` — see the note below),
+  `promote(g, sg, opts)` (sections first, then phrases, since a phrase can name a `section`).
+- `songgraph/tools/hymn-ground-truth.js`, `hymn-eval.js` (the reporting CLI that produced the
+  numbers below) and `corpus-check.js` (crash/performance/key-region sanity over the full 369-file
+  corpus). `!songgraph/tools/` added to `.gitignore` (the same root-`tools/`-swallows-everything gap
+  G6a hit).
+- `tests/songgraph/`: 44 tests, `npm run test:songgraph`, wired into `.github/workflows/bench.yml`'s
+  gate job alongside `test:difficulty`.
+
+**Harmony and melody/bass, measured against real hymn SATB ground truth** (design doc §4's
+correction: printed chord symbols are unusable, all 550 licence-quarantined in `czerny299`; hymn
+SATB is real and usable instead). 96 of the 100 `catalog/hymns/*.musicxml` files carry the full
+`1/2/5/6` (soprano/alto/tenor/bass) voice-label convention (3 are `1,5` only — soprano+tenor, no
+independent alto/bass line to compare against; 1 is `1,2,5` — no bass; both are simply excluded
+from the harmony comparison, not padded with a guess); all 100 have at least voice 1 or voice 6, so
+melody and bass are each checked separately against whichever of the two exists per file.
+
+- **Harmony**: 5,586 beats compared (every beat where at least 3 of the 4 SATB voices sound,
+  across the 96 full-SATB files) — **89.2% root+quality agreement, 93.1% root-only**. The ground
+  truth is the chord `fitChord` itself computes from exactly the 4 written pitches sounding at the
+  beat's onset (a "vertical-slice" reading); the detector is the same `fitChord` run on the
+  duration-weighted content of the *whole* beat window across all four voices. The gap between the
+  two is exactly what an onset-vs-window comparison should surface: passing tones and suspensions
+  inside a beat that the window-based detector sees and the instantaneous slice does not. Per-file
+  agreement ranges from 100% (5 files, e.g. `o-come-emmanuel`, `when-i-survey`) down to 24%
+  (`for-all-the-saints`, only 29 comparable beats — a passage where alto/bass rest often, leaving
+  thin, more ambiguous 3-voice slices).
+- **Melody/bass**: melody (voice 1) correct in **100/100** files; bass (voice 6) correct in
+  **95/96**. This is a real measurement, but an "easy" one for this stratum by construction — a
+  four-part chorale texture puts the soprano on top and the bass on the bottom almost by the
+  convention's own definition, so a top-voice/bottom-voice feature is close to definitionally
+  correct here. It is a legitimate general feature (it also correctly separates RH melody from LH
+  bass in every method-book piece checked, §5's "building on the melody/bass work" for voice roles),
+  just not a hard test of anything subtler than "which staff is which" for this particular stratum.
+- **No ground truth exists for the non-hymn corpus** (design doc §5's instruction, followed rather
+  than assumed): checked directly, not guessed — `grep`-ing every file under this phase's corpus
+  roots (`catalog/`, `samples/`, `tests/bench/corpus/`, `tests/fixtures/`, the same roots
+  `tests/scoregraph/tools/g3-corpus.js` defines) for `<lyric>` found none outside `catalog/hymns/`
+  (two unrelated fixtures under `tests/engrave/fixtures/`, not one of those corpus roots, do have
+  lyrics, and are not evaluated). No other melody-tagging convention exists in the committed corpus
+  either. `voices.js`'s header states this gap explicitly; `hymn-corpus.test.js` has a standing
+  assertion that fails loudly if this ever stops being true, so a future addition to the corpus
+  can't silently go unnoticed.
+
+**Sections, phrases and energy have no ground truth to measure against, anywhere in this repo** —
+confirmed, not assumed, the same honesty the melody/bass gap gets. `structure.sections`/`phrases`
+were schema-only before this Goal (§3); no annotated form/cadence/energy dataset exists. These are
+exercised by the mutation suite (§7) instead of an accuracy number: a real, present structure (a
+verbatim repeat, a genuine V-I resolution, a real key change) must be found, and a look-alike
+near-miss must not be over-claimed. Real-corpus sanity (not accuracy): over all 369 importable
+corpus files, `sectionsOf` finds at least one verbatim repeated passage in **53.9%** of pieces
+(average 5.88 sections/piece), and `phrasesOf` finds an authentic cadence in most pieces (902
+authentic vs. 159 harmonic-rest-fallback cadences over 1,061 total; average 3.76 phrases/piece).
+
+**Two real regressions found and fixed while building this, both by looking at real output, not
+assumed correct on the first attempt:**
+1. **Section detection's first version signatured a measure by its pitch-class histogram alone**,
+   and over-matched constantly: two measures sitting on the same tonic triad "matched" regardless
+   of what tune was written over it (a hymn in G major restates a plain G-B-D triad in many
+   unrelated measures). `amazing-grace.musicxml` came back with 7 sections from 8 spurious
+   "repeats" before this was caught. Fixed by signaturing the *exact* note content (voice, onset
+   offset, pitch class, duration) instead — deliberately narrower (misses a transposed repeat) but
+   no longer conflates "same chord" with "same passage." `sections.test.js` plants exactly this
+   case (same harmony, different melody) as a standing regression guard.
+2. **Cadence detection's first "harmonic-rest" fallback fired on almost every measure** of a
+   typical hymn (any measure ending in a held chord + a held melody note — common on beats 3-4 of a
+   4/4 hymn line) — `amazing-grace` got 7 "cadences" in 17 measures. Tightened twice: the fallback
+   now requires the chord held across the *entire* measure (not just its last beat), only fires at
+   all when a part has zero real authentic cadences, and is skipped entirely for a piece with only
+   one distinct chord from start to end (a sustained drone has no harmonic rhythm to pause in — it
+   is not that every bar-end is a rest, it is that nothing ever moves). `phrases.test.js` plants
+   both a real V-I cadence and a static single-chord piece as standing regression guards.
+
+**Corrections to this doc's own claims, from real measurement:**
+1. **§4/§5's "hymns modulate more than method-book pieces" does not hold for this corpus.**
+   `songgraph/tools/corpus-check.js` ran `regionKeys()` over all 305 corpus files long enough to
+   have windows (≥12 measures) and found **zero** with more than one distinct key region — hymns
+   included. This corpus's hymn arrangements and method-book pieces are both, in fact, single-key
+   throughout. This is a fact about this specific corpus, not a claim that hymns or tonal music in
+   general don't modulate.
+2. **`regionKeys()` had no test anywhere in this repo before G07** (confirmed by grep across
+   `tests/`) — the design doc's "already correct" (§3, §11) was accurate but, until now, was never
+   actually exercised by a test that plants a real modulation. `tests/songgraph/keys.test.js` and
+   `mutation.test.js` are the first: a synthetic 16-measures-C-major-then-16-D-major fixture (long
+   enough to give the Viterbi real evidence on both sides — a 12+12 first attempt sat right at the
+   window-size boundary and stayed a single compromise region, which is itself informative about
+   how much evidence `regionKeys` needs, not a bug) is correctly split into two regions.
+3. **§5's "promotion... `prov: {op:'inferred', src: 'songgraph'}`" reads as a bare string `src`,
+   but the schema requires `ProvRef.src` to be a real registered `Source` entity id.** `addSection`/
+   `addPhrase` instead take `prov: {op, source: {kind, tool, version}}` and register-or-reuse the
+   source via the new `Draft.sourceOf`, exactly as G3's own `source()` already does for its one
+   fixed source per edit.
+4. **§5's freshness plumbing is implemented as "always re-analyze," not the `idMap`-remap fast
+   path the design doc allows as an alternative.** At 53ms worst-case (§8, 9x under budget),
+   re-analysis from scratch is cheap enough that the fast path isn't needed yet — noted here as a
+   real, deliberately-not-taken optimization, not a correctness gap.
+
+**Mutation suite (§7), all three planted defects caught:**
+- **A planted wrong key** (transposing the second half of a piece up a step): `keyRegionsOf` splits
+  it into two regions with different `fifths`, where the clean (untransposed) version is one region.
+- **A melody/bass swap** (rewriting the same two lines onto the opposite staff — the tune now in
+  the bass clef, the accompaniment in the treble): `melodyBassOf`'s `melodyVoice` moves to the other
+  staff's voice, with high confidence retained in both directions.
+- **An off-by-one span**: shrinking or shifting a `spanOf` selection by one event changes what
+  `resolveSpan` recovers, and the dropped/shifted-past event does not reappear.
+
+**`resolveSpan`/`spanOf` round-trip test (§6, new — did not exist before G07, not to be confused
+with G1's unrelated MusicXML-import/export `sg-roundtrip`):** `tests/songgraph/roundtrip.test.js`.
+A contiguous single-voice run recovers exactly itself, in the same order; a non-contiguous
+selection recovers a real, larger superset (checked to actually be larger, not accidentally exact);
+a head id resolves through its owning event; `spanOf(resolveSpan(spanOf(E)))` is a fixed point
+(idempotent); and the same checks hold over real corpus graphs (a hymn and a method-book piece), not
+only synthetic fixtures. `resolveSpan`/`spanOf` themselves needed no changes — the design doc's
+"already correct" held up under this first real exercise of the round trip specifically.
+
+**Performance (§8):** measured over the full 369-file corpus (`songgraph/tools/corpus-check.js`),
+worst case **53.6ms** for `analyze()` end-to-end, `catalog/method/sonatina/020.mxl` (158 measures,
+1,423 notes — the same file G5/G6's own perf checks already use as the corpus's longest). Next
+slowest: `sonatina/016.mxl` 46.7ms, `czerny299/009.mxl` 43.2ms. All comfortably inside the 500ms
+budget (§8's own number is confirmed realistic, not revised). `tests/songgraph/perf.test.js` guards
+`sonatina/020.mxl` directly so a real regression trips CI without re-running the whole corpus.
+
+**Scope notes.** All of §5 is built; nothing was deferred or split off. `Score.deriveSections` and
+the app file are untouched (§13, §2) — no G6-style integration phase is implied or started here.
+G7b (the Arrangement Planner) is explicitly out of scope and untouched, per §0.
+
+**Pre-existing, unrelated finding (not caused by this work, not fixed here):**
+`tests/scoregraph/server.test.js`'s script-tag-ordering assertion already failed on this branch's
+starting commit (`6753a53`, before any G7a change) — confirmed by stashing every G7a change and
+re-running `test:scoregraph` (215/216 pass either way, same one failure). The regex expects
+`scoregraph/index.js` to be followed by `playability/graph.js` with nothing but whitespace between;
+G6b's real script additions (`playability/reach.js`, `analyze.js`, `index.js`, then
+`difficulty/*.js`) sit in between today. Left alone — G7a adds no `<script>` tags (it is Node-only,
+§13) and fixing an unrelated pre-existing test is out of scope for this phase.
+
+**Independent review (2026-09-28): READY_TO_MERGE, one MAJOR test-quality gap fixed, two MINOR
+doc/comment fixes applied.** The review reproduced every headline number from scratch (harmony 89.2%/
+93.1%, melody 100.0%, bass 99.0%, performance 53.1ms) and specifically checked the two 100%/99%
+figures for leakage — confirmed `harmony.js`/`voices.js` never read SATB voice labels or hymn
+conventions; the ground-truth extraction lives only in the eval/test code, never in the detectors.
+The `addSection`/`addPhrase` ops, their validation, and the provenance-schema fix were all
+independently re-verified against `scoregraph/validate.js`/`schema.js` (both diffs empty — pre-existing
+wiring, as claimed).
+
+One real gap found: the committed `sections.test.js` regression test for the histogram-over-match
+bug (the near-miss "same harmony, different melody" fixture) does not actually discriminate the
+bug — reverting the fix on that small 4-measure fixture still produces a shape-identical false
+match (adjacent runs collapse under the same-letter merge either way). The bug and its fix are both
+real (confirmed against the real corpus: buggy code gives `amazing-grace.musicxml` 10 sections with
+3 duplicated labels; fixed code gives 1), so nothing shipped was wrong — only the safety net was
+weak. **Fixed**: added a new test using the real `amazing-grace.musicxml` file, which does
+discriminate (verified both directions: fails under a temporarily-reverted buggy signature, passes
+under the real fix). Also fixed two MINOR doc nits the review found: `harmony.js`'s comment named a
+test file that doesn't exist (corrected to the real `hymn-corpus.test.js`), and `sections.js`'s
+module-level docstring still described the discarded histogram-only approach after the function-level
+comment had already been corrected (now consistent).
