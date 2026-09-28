@@ -16,10 +16,22 @@
    {events: [{at, dur, midis:[...]}], prevMidis}. `at`/`dur` are rationals RELATIVE TO THE
    MEASURE (the same convention scoregraph Events use), so the caller (realize/index.js)
    only has to attach the right measure id.
+
+   G8b note (docs/GOALS/G08B_LEGACY_RETIREMENT.md): wrapped in the same UMD shape every
+   sibling module (songgraph/*, arrangement/*, playability/*) already uses, so the app can
+   load it via <script> - a pure packaging change, no logic below this point was touched.
    ========================================================================== */
-'use strict';
-const R = require('../scoregraph/rational.js');
-const TH = require('./theory.js');
+(function (root, factory) {
+  'use strict';
+  if (typeof module === 'object' && module.exports) {
+    module.exports = factory(require('../scoregraph/rational.js'), require('./theory.js'));
+  } else {
+    const SG = root.PPPScoreGraphModules || {};
+    const M = root.PPPRealizeModules = root.PPPRealizeModules || {};
+    M.patterns = factory(SG.rational, M.theory);
+  }
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (R, TH) {
+  'use strict';
 
 function sortAsc(a) { return a.slice().sort((x, y) => x - y); }
 
@@ -124,4 +136,5 @@ function run(name, windows, prevMidis, opts) {
   return fn(windows, prevMidis, opts);
 }
 
-module.exports = { PATTERNS, patternNames, run, chordOf, sortAsc, span };
+  return { PATTERNS, patternNames, run, chordOf, sortAsc, span };
+});
