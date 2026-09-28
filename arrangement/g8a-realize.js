@@ -145,7 +145,7 @@
      per pattern attack, a rest for any window with no sounding harmony at all - into the LH
      voice. Voice-leading state (`vlState`) is threaded in from the caller so a new section
      continues the previous one's own voicing rather than restarting cold. */
-  function writeGenerated(b, destPart, section, origToNewMeasure, measureIdSet, style, profile, vlState, allWindows) {
+  function writeGenerated(b, destPart, destVoiceId, destStaffId, section, origToNewMeasure, measureIdSet, style, profile, vlState, allWindows) {
     const windows = allWindows.filter(w => measureIdSet.has(w.m));
     const chordSize = TIER_CHORD_SIZE[section.texture] || 1;
     const regLH = section.voicing.registerLH ||
@@ -167,11 +167,25 @@
     });
     events.forEach(ev => {
       const mEntry = origToNewMeasure.get(windowMeasureOf(windows, ev));
-      const at = R.format(R.sub(ev.w0, mEntry.origStart));
-      const dur = R.format(R.sub(ev.w1, ev.w0));
-      if (!ev.midis) { b.event(destPart, { kind: 'rest', m: mEntry.id, at: at, dur: dur }); return; }
+      /* songgraph/util.js's beatGrid groups every measure by the METER in force (its full beat
+         count), not by that measure's own (possibly shorter) written duration - real for a
+         pickup/anacrusis measure, where the meter's later beat windows fall entirely past the
+         measure's true end. Real note positions never have this problem (copyVoice uses each
+         copied event's own already-valid at/dur); only a beatGrid-DERIVED position can overrun,
+         so it is clamped here, at the one place a generated event turns into a real position -
+         a portion beyond the true measure end is dropped, never placed as an out-of-bounds
+         event the validator would reject (found empirically on a real corpus pickup measure,
+         not hypothesized in advance). */
+      const atR = R.sub(ev.w0, mEntry.origStart);
+      if (R.ge(atR, mEntry.dur)) return;
+      const endR0 = R.sub(ev.w1, mEntry.origStart);
+      const endR = R.lt(endR0, mEntry.dur) ? endR0 : mEntry.dur;
+      const durR = R.sub(endR, atR);
+      if (!R.gt(durR, R.ZERO)) return;
+      const at = R.format(atR), dur = R.format(durR);
+      if (!ev.midis) { b.event(destPart, { kind: 'rest', m: mEntry.id, at: at, dur: dur, voice: destVoiceId, staff: destStaffId }); return; }
       const heads = ev.midis.slice().sort((a, c) => a - c).map(m => ({ pitch: { midiOnly: m } }));
-      b.event(destPart, { kind: 'note', m: mEntry.id, at: at, dur: dur, heads: heads });
+      b.event(destPart, { kind: 'note', m: mEntry.id, at: at, dur: dur, voice: destVoiceId, staff: destStaffId, heads: heads });
     });
   }
   /* A generated event has no `.m` of its own (it only carries absolute w0/w1) - find which
@@ -185,6 +199,36 @@
      force at its own measure (scoregraph/pro-spell.js's spellingTable/spellMidi - the same
      enharmonic-spelling module G3's own passes use, not a second spelling algorithm). Copied
      (melody/hymn) heads already carry a real spelled pitch from the source and are untouched. */
+  /* scoregraph/pro-spell.js's own spellingTable(key) is real and exported, but the function that
+     reads a table back into a {step,alter,oct} pitch (`spellMidi`) is a small PRIVATE helper in
+     that module, not part of its export list (`spellingTable, regionKeys, spellVoice, candidates,
+     ...` - checked directly, not assumed). Rather than change another Goal's already-reviewed G3
+     module's public surface for G8a's sake, the same ~4-line lookup is reproduced here verbatim
+     (read from scoregraph/pro-spell.js directly, lines 172-176) - identical logic, not a second
+     spelling algorithm. */
+  function spellMidi(midi, table) {
+    const x = table[((midi % 12) + 12) % 12];
+    const oct = Math.floor((midi - (x.alter || 0)) / 12) - 1;
+    return x.alter ? { step: x.step, alter: x.alter, oct: oct } : { step: x.step, oct: oct };
+  }
+
+  /* Found empirically on the real corpus, not hypothesized: at a register extreme, the key's own
+     spelling table can pick a letter that needs to "borrow" from the octave below/above (e.g. a
+     low pitch class the table spells as B# rather than C) - schema.js requires oct in [0, 9], and
+     scoregraph/pro-spell.js's own DP (spellVoice, not used here - see the header note above) never
+     hits this in practice because it always has a diatonic or simple alternative nearby in a real
+     melodic line to prefer instead. G8a's accompaniment has no such DP, so it falls back here,
+     using the same module's real, exported `candidates(midi)`: the first spelling (smallest
+     |alter| first) whose octave actually lands in range - never an invented pitch class, only a
+     different, equally real spelling of the SAME sounding pitch. */
+  function safeSpell(midi, table, SPELL) {
+    const p = spellMidi(midi, table);
+    if (p.oct >= 0 && p.oct <= 9) return p;
+    const alts = SPELL.candidates(midi).filter(c => c.oct >= 0 && c.oct <= 9);
+    alts.sort((a, b) => Math.abs(a.alter || 0) - Math.abs(b.alter || 0));
+    return alts[0] || p;
+  }
+
   function spellGenerated(destPart, keyByMeasure) {
     const SPELL = require('../scoregraph/pro-spell.js');
     const tableCache = new Map();
@@ -196,7 +240,7 @@
           const cacheKey = key.fifths + ':' + key.mode;
           let table = tableCache.get(cacheKey);
           if (!table) { table = SPELL.spellingTable({ fifths: key.fifths, mode: key.mode, tonic: tonicPcOf(key.fifths, key.mode) }); tableCache.set(cacheKey, table); }
-          h.pitch = SPELL.spellMidi(h.pitch.midiOnly, table);
+          h.pitch = safeSpell(h.pitch.midiOnly, table, SPELL);
         }
       });
     });
@@ -264,7 +308,7 @@
       const tp = temposByM.get(m.id);
       const tempoVal = tp ? R.toNumber(R.parse(tp.qpm)) : (prevTempo ? null : 120);
       if (tempoVal !== null && tempoVal !== prevTempo) { b.tempo({ m: nm.id, at: '0', qpm: String(tempoVal) }); prevTempo = tempoVal; }
-      origToNewMeasure.set(m.id, { id: nm.id, idx: i, origStart: origStart });
+      origToNewMeasure.set(m.id, { id: nm.id, idx: i, origStart: origStart, dur: R.parse(m.dur) });
     });
     b.clef(part, { staff: staffRH, m: firstMeasureId, at: '0', sign: 'G' });
     b.clef(part, { staff: staffLH, m: firstMeasureId, at: '0', sign: 'F' });
@@ -291,11 +335,11 @@
         /* an unused slot in this section (fewer real voices than another section uses) gets one
            whole-measure rest per measure, so every destination voice keeps full time coverage -
            never an invented note, just silence where G7b's plan itself keeps nothing this hand. */
-        for (let i = section.hands.RH.length; i < maxRH; i++) ms.forEach(m => b.event(part, { kind: 'rest', m: origToNewMeasure.get(m.id).id, at: '0', dur: m.dur }));
-        for (let i = section.hands.LH.length; i < maxLH; i++) ms.forEach(m => b.event(part, { kind: 'rest', m: origToNewMeasure.get(m.id).id, at: '0', dur: m.dur }));
+        for (let i = section.hands.RH.length; i < maxRH; i++) ms.forEach(m => b.event(part, { kind: 'rest', m: origToNewMeasure.get(m.id).id, at: '0', dur: m.dur, voice: rhVoices[i], staff: staffRH }));
+        for (let i = section.hands.LH.length; i < maxLH; i++) ms.forEach(m => b.event(part, { kind: 'rest', m: origToNewMeasure.get(m.id).id, at: '0', dur: m.dur, voice: lhVoices[i], staff: staffLH }));
       } else {
         cutTiesTotal += copyVoice(b, part, srcPart, section.melody.voice, measureIdSet, origToNewMeasure, rhVoices[0], staffRH);
-        writeGenerated(b, part, section, origToNewMeasure, measureIdSet, style, profile, vlState, allWindows);
+        writeGenerated(b, part, lhVoices[0], staffLH, section, origToNewMeasure, measureIdSet, style, profile, vlState, allWindows);
       }
     });
 
