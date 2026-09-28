@@ -1,11 +1,22 @@
 /* songgraph/sections.js: exact-repeat section detection. An earlier version signatured a measure by
    its pitch-class histogram alone and over-matched constantly (any two measures sitting on the same
    tonic triad "repeated," regardless of what tune was over it) - these tests plant a real repeat and
-   a look-alike near-miss (same harmony, different tune) to guard against that regression directly. */
+   a look-alike near-miss (same harmony, different tune) to guard against that regression directly.
+
+   The synthetic near-miss test below (2nd test) does NOT actually discriminate the histogram-only bug:
+   independent review found the buggy signature does cause an internal false match on that fixture, but
+   because the falsely-matched runs sit adjacent, sectionsOf's consecutive-letter merge collapses them
+   into one section - identical in shape to the correct output, so `labels.size === sections.length`
+   passes either way. The corpus test below (real amazing-grace.musicxml) DOES discriminate: the buggy
+   signature reports 10 sections with 3 duplicated labels there; the fix reports 1. Keep both - the
+   synthetic test still documents the intended bug pattern even though it can't catch a reintroduction
+   on its own. */
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { SEC, O, mk } = require('./helpers.js');
+const fs = require('fs');
+const path = require('path');
+const { REPO, SEC, O, mk } = require('./helpers.js');
 
 test('sectionsOf: a verbatim repeated 2-measure phrase is found and labelled the same letter both times', () => {
   const phrase = 'C5:q D5:q E5:q F5:q | G5:h E5:h';
@@ -28,6 +39,22 @@ test('sectionsOf: same harmony, different melody is NOT reported as a repeat (th
   const sections = SEC.sectionsOf(g);
   const labels = new Set(sections.map(s => s.label));
   assert.equal(labels.size, sections.length, 'no two of these differently-tuned sections should share a label: ' + JSON.stringify(sections));
+});
+
+test('sectionsOf: real corpus regression - amazing-grace.musicxml reports 1 section, not the histogram-only bug\'s 10', async () => {
+  /* discriminating regression test for the bug the test above documents but cannot actually catch
+     (see the module comment): reverting sections.js's exact-content signature to the old
+     pitch-class-histogram-only signature makes this file report 10 sections with 3 duplicated labels
+     (independent review, 2026-09-28) - the fixed code must report exactly 1. */
+  const SG = require(path.join(REPO, 'scoregraph', 'index.js'));
+  const bytes = fs.readFileSync(path.join(REPO, 'catalog', 'hymns', 'amazing-grace.musicxml'));
+  const r = await SG.importFile(new Uint8Array(bytes), { name: 'amazing-grace.musicxml', scoreId: 'x' });
+  assert.ok(r.ok, 'amazing-grace.musicxml should import cleanly');
+  const sections = SEC.sectionsOf(r.graph);
+  const labels = sections.map(s => s.label);
+  assert.equal(new Set(labels).size, labels.length,
+    'no label should repeat on this through-composed hymn: ' + JSON.stringify(sections));
+  assert.equal(sections.length, 1, 'amazing-grace.musicxml should report exactly 1 section: ' + JSON.stringify(sections));
 });
 
 test('sectionsOf: a through-composed piece with no repeats is one section covering everything', () => {

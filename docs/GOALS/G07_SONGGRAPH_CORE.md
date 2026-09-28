@@ -366,3 +366,25 @@ re-running `test:scoregraph` (215/216 pass either way, same one failure). The re
 G6b's real script additions (`playability/reach.js`, `analyze.js`, `index.js`, then
 `difficulty/*.js`) sit in between today. Left alone — G7a adds no `<script>` tags (it is Node-only,
 §13) and fixing an unrelated pre-existing test is out of scope for this phase.
+
+**Independent review (2026-09-28): READY_TO_MERGE, one MAJOR test-quality gap fixed, two MINOR
+doc/comment fixes applied.** The review reproduced every headline number from scratch (harmony 89.2%/
+93.1%, melody 100.0%, bass 99.0%, performance 53.1ms) and specifically checked the two 100%/99%
+figures for leakage — confirmed `harmony.js`/`voices.js` never read SATB voice labels or hymn
+conventions; the ground-truth extraction lives only in the eval/test code, never in the detectors.
+The `addSection`/`addPhrase` ops, their validation, and the provenance-schema fix were all
+independently re-verified against `scoregraph/validate.js`/`schema.js` (both diffs empty — pre-existing
+wiring, as claimed).
+
+One real gap found: the committed `sections.test.js` regression test for the histogram-over-match
+bug (the near-miss "same harmony, different melody" fixture) does not actually discriminate the
+bug — reverting the fix on that small 4-measure fixture still produces a shape-identical false
+match (adjacent runs collapse under the same-letter merge either way). The bug and its fix are both
+real (confirmed against the real corpus: buggy code gives `amazing-grace.musicxml` 10 sections with
+3 duplicated labels; fixed code gives 1), so nothing shipped was wrong — only the safety net was
+weak. **Fixed**: added a new test using the real `amazing-grace.musicxml` file, which does
+discriminate (verified both directions: fails under a temporarily-reverted buggy signature, passes
+under the real fix). Also fixed two MINOR doc nits the review found: `harmony.js`'s comment named a
+test file that doesn't exist (corrected to the real `hymn-corpus.test.js`), and `sections.js`'s
+module-level docstring still described the discarded histogram-only approach after the function-level
+comment had already been corrected (now consistent).

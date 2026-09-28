@@ -8,9 +8,10 @@
    sectionsOf(g, opts) -> [{from, to, label}] (measure IDs, in time order, non-overlapping,
    covering the whole piece): a two-stage read of a ScoreGraph's own written measures —
 
-     1. exact repeated measure-runs: every measure gets a coarse pitch-class-content signature
-        (util.pcWeights, quantized to sixths so a repeat surviving re-voicing/octave choices still
-        matches); candidate run lengths [16, 8, 4, 2] measures are tried longest-first, and a run
+     1. exact repeated measure-runs: every measure gets an exact content signature — every note's
+        (voice, onset offset in the measure, pitch class, duration), across every part (see
+        measureSignature below for why this replaced an earlier, over-matching pitch-class-histogram
+        signature); candidate run lengths [16, 8, 4, 2] measures are tried longest-first, and a run
         that recurs (2+ non-overlapping copies) claims those measures and is labelled with one
         shared letter (A, B, …) — an AABA-style form falls out of this directly.
      2. whatever measures no repeat claims become their own single-run sections, each a new letter.

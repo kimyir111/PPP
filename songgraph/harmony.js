@@ -14,7 +14,7 @@
    probability).
 
    Ground truth (G07 design doc §4): hymn SATB. That comparison lives in
-   tests/songgraph/harmony-hymn.test.js, not here — this module reads a ScoreGraph the same way
+   tests/songgraph/hymn-corpus.test.js, not here — this module reads a ScoreGraph the same way
    for every corpus stratum, hymn or not, and does not know what a "voice 1/6" convention means
    (that is hymn-specific ground-truth-extraction logic, kept out of the analyzer itself).
    ========================================================================== */
