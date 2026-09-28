@@ -65,23 +65,54 @@
     return base;
   }
 
+  /* REGISTER_HALF_RANGE: real finding (docs/GOALS/G08_ARRANGEMENT_REALIZATION.md §14) - a first
+     version of voiceLead always matched a pitch class to whichever octave was nearest the
+     PREVIOUS window's own voice, with nothing at all pulling it back toward the plan's real
+     register (`centerMidi`) once prevMidis existed. Chasing only "smallest step from the last
+     chord" has no ceiling: a real hymn (come-thou-long) has a harmonic-root sequence that climbs
+     by small steps for many consecutive beats (each individual step under a fifth, each
+     individually "the nearest octave"), and with a single retained accompaniment voice
+     (n=1 - clampToReach's own span/key-count checks never even trigger, so its later
+     center-tie-break fix does nothing here either) the walk had nowhere to stop: MIDI 57 drifted
+     to 105 over 31 beats, and a DIFFERENT real file (o-come-emmanuel, see clampToReach's own
+     header) drifted the other direction. Fixed at the root: every candidate octave voiceLead
+     considers is bounded to within REGISTER_HALF_RANGE semitones of `centerMidi` (the plan's own
+     real registerRH/LH) - "nearest to the previous voice" now means "nearest to the previous
+     voice, AMONG the octaves that still land in the hand's own real register," not literally
+     any octave on the keyboard. 14 semitones (an octave plus a bit, REACH's own largest
+     MAX_SPAN) is a generous window for one hand's real voicing, not a citation. */
+  const REGISTER_HALF_RANGE = 14;
+  function candidatesNear(pc, center) {
+    const out = [];
+    for (let oct = -3; oct <= 3; oct++) {
+      const cand = nearestOctave(pc, center) + oct * 12;
+      if (Math.abs(cand - center) <= REGISTER_HALF_RANGE) out.push(cand);
+    }
+    return out.length ? out : [nearestOctave(pc, center)];
+  }
+
   /* pcs: [pc,...] in the order they should be assigned (root first). prevMidis: the previous
-     window's chosen MIDI list (any order) or null. centerMidi: fallback register target. */
+     window's chosen MIDI list (any order) or null. centerMidi: the plan's own real register
+     target for this hand - always the true anchor now, not just a first-window fallback. */
   function voiceLead(pcs, prevMidis, centerMidi) {
+    const center = centerMidi == null ? 60 : centerMidi;
     const avail = (prevMidis || []).slice();
     return pcs.map(pc => {
+      const candidates = candidatesNear(pc, center);
       if (avail.length) {
-        /* nearest previous voice whose pitch class could move to this pc with the least motion */
+        /* nearest previous voice whose pitch class could move to this pc with the least motion,
+           among the octaves that stay within this hand's real register */
         let best = null, bestDist = Infinity, bestIdx = -1;
         avail.forEach((m, i) => {
-          const cand = nearestOctave(pc, m);
-          const d = Math.abs(cand - m);
-          if (d < bestDist) { bestDist = d; best = cand; bestIdx = i; }
+          candidates.forEach(cand => {
+            const d = Math.abs(cand - m);
+            if (d < bestDist) { bestDist = d; best = cand; bestIdx = i; }
+          });
         });
         avail.splice(bestIdx, 1);
         return best;
       }
-      return nearestOctave(pc, centerMidi == null ? 60 : centerMidi);
+      return candidates.reduce((a, b) => (Math.abs(b - center) < Math.abs(a - center) ? b : a));
     });
   }
 
