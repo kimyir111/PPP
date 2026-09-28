@@ -31,6 +31,7 @@ jobs:
       - run: npm run test:playability                # G5a: the playability analyzer, its mutation suite, R-corpus false positives, the legacy-arranger baseline (G05)
       - run: npm run test:difficulty                 # G6a: difficulty features, the ranker, metamorphic tests, the dataset/weights reproduce (G06)
       - run: node difficulty/tools/train.js --check  # G6a: the committed leave-one-book-out and hold-out evaluation reproduces (G06 §11)
+      - run: npm run test:songgraph                  # G7a: key regions, harmony, melody/bass, sections/phrases, voice roles, energy, span round trips, mutation suite (G07)
       - run: node tests/engrave/tools/make-e-fixtures.js --check   # the E fixtures are the generator's (G04 §22.1)
       - run: node tests/engrave/tools/make-corpus.js --check       # the R corpus manifest is the rule's (G04 §22.2)
       - run: node tests/engrave/tools/make-metrics.js --check      # G4b: the layout's glyph metrics are the pinned font's (G04 §18.2)
