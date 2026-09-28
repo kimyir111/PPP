@@ -29,6 +29,11 @@ tests/engrave/out/
 !arrangement/tools/
 # ... and the G8a realizer's comparative evaluation harness (vs. all 3 legacy engines, G08)
 !tests/arrangement/tools/
+# ... and this session's own independent G8a realizer + comparative harness, kept under a
+# distinct realize/ namespace (a second, concurrent G8a implementation landed in this same
+# worktree mid-session - docs/GOALS/G08_ARRANGEMENT_REALIZATION.md section 14 names both)
+!realize/tools/
+tests/realize/out/
 tests/bench/.cache/
 __pycache__/
 # Local experiments; holds copyrighted audio and PDFs that must never be committed.

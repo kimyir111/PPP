@@ -1,0 +1,317 @@
+/* ============================================================================
+   PPP Arrangement Realization (docs/GOALS/G08_ARRANGEMENT_REALIZATION.md) — G8a.
+
+   realize(g, sg, plan, opts) -> {ok:true, graph, report} | {ok:false, reason, detail}
+
+   Turns a G7b ArrangementPlan (arrangement/plan.js — a SELECTION of which real voices each
+   section keeps and which hand plays them, never a pitch) into an actual two-staff piano
+   ScoreGraph: real notes, real durations, real hands, real fingering (playability/fingering.js,
+   G5 — called directly, never re-derived, per G08 §6a). Node-only, not loaded by the app
+   (G08 §6a/§10).
+
+   ---- Two realization modes, not six independent code paths ----
+   The design doc's own pattern-library list ('block chords, broken chords/Alberti, ballad
+   arpeggio, hymn 4-part, simple pop comping, waltz') is honoured, but real corpus behaviour
+   (checked directly, not assumed - see docs/GOALS/G08 §14) showed only ONE of those six
+   names names something structurally different from the other five: 'hymn' is a literal,
+   verbatim multi-voice copy (every voice the plan kept, on its own staff/voice, ties
+   included) — the natural realization of G7b's 'full'-tier SATB texture, where nothing
+   needs inventing. The other five ('block', 'broken', 'ballad', 'pop', 'waltz') all share
+   the SAME shape: the plan's declared melody voice is copied verbatim into its assigned
+   hand (this is what makes "melody preserved" a real, checkable property — the pitches and
+   rhythm are byte-identical to the original), and the OTHER hand is entirely regenerated
+   from the section's own real per-beat harmony (songgraph/harmony.js) via
+   realize/patterns.js + realize/theory.js's voice-led chord construction — they differ only
+   in the RHYTHMIC SHAPE that regeneration takes, exactly as arrange_score.py's `_texture()`
+   (read for prior art, not ported - G08 §13) distinguishes its styles by rhythm, not by
+   voice selection. This is a real, declared simplification: under a non-'hymn' pattern, a
+   'partial'/'full' tier's extra inner voice is not separately preserved - its contribution
+   already lives inside the harmony window (computed from the WHOLE piece's real pitch
+   content, kept voices included) that drives the regenerated hand. Documented here, not
+   hidden — see docs/GOALS/G08 §14 for the real numbers this produced.
+
+   ---- Chord size is capped at 3 (triads), deliberately ----
+   Every pattern divides a beat window into at most 4 equal parts (broken/ballad) or plays
+   the whole window as one chord (block/waltz) - always a clean power-of-two subdivision of
+   a real notated beat, so `realize/notation.js`'s plain noteValue() inverse lookup always
+   finds an exact, tuplet-free display for every event this module emits. A 4-note seventh
+   chord's extra arpeggiation step (ballad's up-and-back sweep) would need a 6-way split
+   (not a power of two) - so v1 always builds 3-note triads (theory.js's targetPcs), the
+   seventh's extra tension tone dropped. A real, declared scope limit, not an oversight -
+   see docs/GOALS/G08 §14.
+   ========================================================================== */
+'use strict';
+const R = require('../scoregraph/rational.js');
+const T = require('../scoregraph/time.js');
+const P = require('../scoregraph/pitch.js');
+const B = require('../scoregraph/build.js');
+const REACH = require('../playability/reach.js');
+const FING = require('../playability/fingering.js');
+const PAT = require('./patterns.js');
+const TH = require('./theory.js');
+const NOTATION = require('./notation.js');
+
+const SOURCE = Object.freeze({ kind: 'generator', tool: 'ppp.g8a-realizer', version: '1.0.0' });
+const CHORD_SIZE = 3; /* see header: always a triad, never a 7th - keeps every pattern tuplet-free */
+const PATTERN_NAMES = ['hymn', 'block', 'broken', 'ballad', 'pop', 'waltz'];
+
+function fail(reason, detail) { return { ok: false, reason: reason, detail: detail || null }; }
+
+/* A real gap found by this module's own tests (docs/GOALS/G08 §14), not assumed: G7b's
+   plan-level reach check (arrangement/plan.js's `maxSimultaneous`) samples span only at
+   each hand's own distinct onsets, so it can miss a real hard violation that only shows up
+   once actual heads exist (a real corpus example: catalog/hymns/for-all-the-saints.musicxml,
+   a 'reduced'-texture section where G7b's own register-based hand split puts BOTH the
+   melody and bass voice in RH with LH left empty - G7b's plan-level check said RH span 8/14,
+   G5's real analyzer found a genuine 15-semitone span at one specific attack). Since this
+   is never a pitch change - only which staff/hand plays an already-real voice - the safe,
+   always-available fix is real hand REBALANCING: whenever one hand ends up completely idle
+   while the other carries two or more real voices, move the lower-register voice across
+   before any note is written. This is a general policy (a competent arranger would not
+   leave one hand idle while the other juggles two independent lines when redistributing is
+   free), not a narrow patch for this one file - see docs/GOALS/G08 §14 for what this
+   changed in the real corpus numbers. */
+function rebalanceHands(origPart, measureIds, hands) {
+  const ms = new Set(measureIds);
+  const avgMidi = voiceId => {
+    const vals = [];
+    origPart.events.forEach(e => {
+      if (e.kind === 'note' && !e.grace && e.voice === voiceId && ms.has(e.m)) (e.heads || []).forEach(h => vals.push(P.midi(h.pitch)));
+    });
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+  };
+  const out = { RH: hands.RH.slice(), LH: hands.LH.slice() };
+  ['RH', 'LH'].forEach(hand => {
+    const other = hand === 'RH' ? 'LH' : 'RH';
+    if (out[other].length !== 0 || out[hand].length < 2) return;
+    const withAvg = out[hand].map(v => ({ v: v, avg: avgMidi(v) })).filter(x => x.avg != null);
+    if (withAvg.length < 2) return;
+    withAvg.sort((a, b) => a.avg - b.avg);
+    const lowest = withAvg[0].v;
+    out[hand] = out[hand].filter(v => v !== lowest);
+    out[other] = [lowest];
+  });
+  return out;
+}
+
+function stripId(x) { const o = Object.assign({}, x); delete o.id; return o; }
+
+/* Which pattern a section gets. `opts.pattern` (one of PATTERN_NAMES) is honoured directly;
+   anything else (including 'auto', the default) is decided from real, structural signal
+   only - never a genre guess G7a's output cannot support (arrangement/plan.js's own header,
+   "style... has no effect... nothing in G7a's output distinguishes a style"):
+     - 3+ real kept voices in a texture ('full'/'partial' on a 3-4 voice part) -> 'hymn'
+       (there is real independent-voice content worth preserving verbatim).
+     - a genuinely triple meter (time.groups() gives exactly 3 pulses a measure) -> 'waltz'.
+     - otherwise -> 'block' (always constructible, the same "start simple" floor G7b's own
+       texture ladder uses for stage 1). */
+function resolvePattern(requested, section, g, oldMeasureIdx) {
+  if (requested && requested !== 'auto') return PATTERN_NAMES.indexOf(requested) >= 0 ? requested : 'block';
+  const kept = section.hands.RH.length + section.hands.LH.length;
+  if (kept >= 3) return 'hymn';
+  try {
+    const m = g.timeline.measures[oldMeasureIdx];
+    const meter = T.meterAt(g, m.id);
+    if (meter && T.groups(meter).length === 3) return 'waltz';
+  } catch (e) { /* no meter in force yet - fall through to the safe default */ }
+  return 'block';
+}
+
+/* count/subdivision policy by G6 stage (arrangement/reference.js's stageForPosition scale,
+   1-4): stage 1 forces 'block' (the plan's own texture.js uses the same "start simple"
+   policy for voice selection; G8a mirrors it for accompaniment RHYTHM) with a bare
+   root+fifth dyad (no 3rd) - the simplest possible harmonic support. Stage 2+ uses the
+   requested pattern with full triads. A real, declared, simple rule (not derived from G6's
+   model - arrangement/reference.js's header already shows that inversion doesn't work) -
+   see docs/GOALS/G08 §14 for the measured result of using it. */
+function policyForStage(stage, patternName) {
+  if (stage <= 1) return { pattern: 'block', count: 2 };
+  return { pattern: patternName, count: CHORD_SIZE };
+}
+
+function copyEventShape(e, newMeasureId, newVoice, newStaff) {
+  const x = { kind: e.kind, m: newMeasureId, at: e.at, dur: e.dur, voice: newVoice, staff: newStaff };
+  if (e.display) x.display = e.display;
+  if (e.grace) x.grace = e.grace;
+  return x;
+}
+
+/* Copies one original voice's events (in this section's measures only) into the new graph
+   verbatim: same pitches, same rhythm, same display, ties reconnected. `headMap` (old head
+   id -> new head id) is shared and accumulated across the whole piece by the caller so a
+   tie spanning a section boundary still resolves (a tie is a graph-wide spanner, not a
+   per-section one). */
+function copyVoiceVerbatim(b, part, oldPart, oldVoiceId, measureIds, newMeasureId, newVoiceId, newStaffId, headMap) {
+  const mset = new Set(measureIds);
+  const evs = oldPart.events.filter(e => e.voice === oldVoiceId && mset.has(e.m));
+  evs.sort((a, c) => (measureIds.indexOf(a.m) - measureIds.indexOf(c.m)) || R.cmp(R.parse(a.at), R.parse(c.at)));
+  evs.forEach(e => {
+    const x = copyEventShape(e, newMeasureId.get(e.m), newVoiceId, newStaffId);
+    x.prov = { src: SOURCE_ID.id, op: 'generated' };
+    if (e.kind === 'note') x.heads = e.heads.map(h => ({ pitch: h.pitch, prov: { src: SOURCE_ID.id, op: 'generated' } }));
+    const ne = b.event(part, x);
+    if (e.kind === 'note') e.heads.forEach((h, i) => headMap.set(h.id, ne.heads[i].id));
+  });
+}
+
+/* A process-wide mutable slot for the current builder's source id, so copyVoiceVerbatim
+   (called many times per realize()) doesn't need it threaded through every call - realize()
+   sets it once per call, before any copying starts. Safe: realize() is synchronous and this
+   module has no other reentrancy. */
+let SOURCE_ID = null;
+
+/* Fills, per voice actually used, any measure of the whole piece where that voice has zero
+   real coverage with one whole-measure rest - a real gap (§ above: a section can leave a
+   hand entirely silent, e.g. a high passage where G7a's own per-section register split puts
+   both real voices in the treble staff - a real, observed corpus case, not synthetic; or a
+   'hymn' section thinner than the one before it) rather than an invalid, partially-drawn
+   measure. */
+function fillRests(b, part, voiceId, staffId, oldMeasures, newMeasureId) {
+  const evs = part.events.filter(e => e.voice === voiceId);
+  const byMeasure = new Map();
+  evs.forEach(e => { const k = e.m; if (!byMeasure.has(k)) byMeasure.set(k, []); byMeasure.get(k).push(e); });
+  oldMeasures.forEach(m => {
+    const nm = newMeasureId.get(m.id);
+    const here = byMeasure.get(nm) || [];
+    if (here.length) return; /* covered already - every generator in this module fully tiles a measure it touches */
+    b.event(part, {
+      kind: 'rest', m: nm, at: '0', dur: m.dur, voice: voiceId, staff: staffId,
+      display: { type: 'whole', measureRest: true }, prov: { src: SOURCE_ID.id, op: 'generated' }
+    });
+  });
+}
+
+function realize(g, sg, plan, opts) {
+  opts = opts || {};
+  if (!plan || !plan.sections || !plan.sections.length) return fail('BAD_PLAN', 'plan has no sections');
+
+  const profile = REACH.profileOf(plan.request.handProfile);
+  const maxSpan = REACH.MAX_SPAN[profile];
+
+  const b = B.builder({
+    id: (g.id || 'sg') + '-g8a', meta: Object.assign({}, g.meta || {}),
+    source: Object.assign({}, SOURCE)
+  });
+  SOURCE_ID = b.doc.provenance.sources[0];
+  const prov = () => ({ src: SOURCE_ID.id, op: 'generated' });
+
+  const oldMeasures = g.timeline.measures;
+  const oldIdx = new Map(oldMeasures.map((m, i) => [m.id, i]));
+  /* songgraph/util.js's beatGrid (and so harmony.js's w0/w1) are ABSOLUTE time positions,
+     cumulative from the piece's start - NOT measure-relative the way a ScoreGraph Event's
+     own `at` is (checked directly, not assumed: catalog/method/beyer/007.mxl's m8 windows
+     start at w0=1, i.e. one whole note in, not 0). `measureOffset[i]` is measure i's own
+     absolute start, subtracted below before any harmony-window position becomes an Event's
+     `at`. */
+  const measureOffset = [];
+  { let acc = R.ZERO; oldMeasures.forEach(m => { measureOffset.push(acc); acc = R.add(acc, R.parse(m.dur)); }); }
+  const newMeasureId = new Map();
+  oldMeasures.forEach(m => newMeasureId.set(m.id, b.measure({ number: m.number, dur: m.dur }).id));
+  g.timeline.meters.forEach(mt => b.meter(Object.assign(stripId(mt), { m: newMeasureId.get(mt.m) })));
+  g.timeline.keys.forEach(k => b.key(Object.assign(stripId(k), { m: newMeasureId.get(k.m) })));
+  /* A TempoEvent's optional `display` can carry a per-part text override (`display[].part`)
+     - dropped here (this is a brand-new graph with its own new part ids; the tempo VALUE,
+     not its display override, is what "tempo preserved" (G08 §7) is actually about). */
+  g.timeline.tempos.forEach(t => { const x = stripId(t); delete x.display; b.tempo(Object.assign(x, { m: newMeasureId.get(t.m) })); });
+
+  const part = b.part({ name: 'Piano', instrument: { kind: 'piano', family: 'keyboard' } });
+  const rhSt = b.staff(part, { limb: 'RH' }), lhSt = b.staff(part, { limb: 'LH' });
+  const rhV1 = b.voice(part, { staff: rhSt.id, limb: 'RH', label: '1' });
+  const lhV1 = b.voice(part, { staff: lhSt.id, limb: 'LH', label: '5' });
+  let rhV2 = null, lhV2 = null;
+  const voiceObj = (hand, slot) => {
+    if (hand === 'RH') { if (slot === 0) return rhV1; if (!rhV2) rhV2 = b.voice(part, { staff: rhSt.id, limb: 'RH', label: '2' }); return rhV2; }
+    if (slot === 0) return lhV1; if (!lhV2) lhV2 = b.voice(part, { staff: lhSt.id, limb: 'LH', label: '6' }); return lhV2;
+  };
+  b.clef(part, { staff: rhSt.id, m: newMeasureId.get(oldMeasures[0].id), at: '0', sign: 'G' });
+  b.clef(part, { staff: lhSt.id, m: newMeasureId.get(oldMeasures[0].id), at: '0', sign: 'F' });
+
+  const origPart = g.parts.find(p => p.id === plan.part);
+  if (!origPart) return fail('BAD_PLAN', 'plan.part ' + plan.part + ' not found in graph');
+
+  const harmonyByMeasure = new Map();
+  sg.harmony.forEach(w => { if (!harmonyByMeasure.has(w.m)) harmonyByMeasure.set(w.m, []); harmonyByMeasure.get(w.m).push(w); });
+  harmonyByMeasure.forEach(list => list.sort((a, c) => R.cmp(a.w0, c.w0)));
+
+  const keyTrack = NOTATION.keyTracker(g);
+  const headMap = new Map();
+  let prevMidis = null; /* threaded across the WHOLE piece, not reset per section - real
+    "voice leading between successive harmony windows" across a section boundary too. */
+  const report = { sections: [], patternCounts: {} };
+
+  for (const sec of plan.sections) {
+    const i0 = oldIdx.get(sec.section.from), i1 = oldIdx.get(sec.section.to);
+    if (i0 === undefined || i1 === undefined || i1 < i0) return fail('BAD_SECTION', sec.section);
+    const measureIdxs = []; for (let i = i0; i <= i1; i++) measureIdxs.push(i);
+    const measureIds = measureIdxs.map(i => oldMeasures[i].id);
+
+    const basePattern = resolvePattern(opts.pattern, sec, g, i0);
+    const policy = policyForStage(plan.stage, basePattern);
+    report.patternCounts[policy.pattern] = (report.patternCounts[policy.pattern] || 0) + 1;
+
+    const hands = rebalanceHands(origPart, measureIds, sec.hands);
+    const melodyVoiceId = sec.melody && sec.melody.voice;
+    const melodyHand = melodyVoiceId && hands.RH.indexOf(melodyVoiceId) >= 0 ? 'RH'
+      : (melodyVoiceId && hands.LH.indexOf(melodyVoiceId) >= 0 ? 'LH' : 'RH');
+    const accompHand = melodyHand === 'RH' ? 'LH' : 'RH';
+
+    if (policy.pattern === 'hymn') {
+      ['RH', 'LH'].forEach(hand => {
+        const staffId = hand === 'RH' ? rhSt.id : lhSt.id;
+        hands[hand].forEach((vid, slot) => {
+          const vObj = voiceObj(hand, slot);
+          copyVoiceVerbatim(b, part, origPart, vid, measureIds, newMeasureId, vObj.id, staffId, headMap);
+        });
+      });
+      report.sections.push({ label: sec.section.label, pattern: policy.pattern, degraded: sec.degraded, melodyHand: melodyHand });
+      continue;
+    }
+
+    if (melodyVoiceId) {
+      const staffId = melodyHand === 'RH' ? rhSt.id : lhSt.id;
+      copyVoiceVerbatim(b, part, origPart, melodyVoiceId, measureIds, newMeasureId, voiceObj(melodyHand, 0).id, staffId, headMap);
+    }
+
+    const accompStaffId = accompHand === 'RH' ? rhSt.id : lhSt.id;
+    const accompVoiceId = voiceObj(accompHand, 0).id;
+    const regBand = accompHand === 'RH' ? sec.voicing.registerRH : sec.voicing.registerLH;
+    const anchor = regBand ? Math.round((regBand.lo + regBand.hi) / 2) : (accompHand === 'LH' ? 48 : 72);
+
+    measureIdxs.forEach(mi => {
+      const oldM = oldMeasures[mi];
+      const windows = harmonyByMeasure.get(oldM.id) || [];
+      if (!windows.length) return;
+      const r = PAT.run(policy.pattern, windows, prevMidis, { anchor: anchor, count: policy.count, maxSpan: maxSpan });
+      prevMidis = r.prevMidis;
+      r.events.forEach(ev => {
+        const disp = NOTATION.displayFor(ev.dur);
+        if (!disp) throw new Error('G8a: pattern ' + policy.pattern + ' produced a non-notatable duration ' + R.format(ev.dur));
+        const heads = ev.midis.map(m => ({ pitch: keyTrack.spellAt(m, mi), prov: prov() }));
+        const at = R.sub(ev.at, measureOffset[mi]); /* absolute -> measure-relative, see above */
+        b.event(part, {
+          kind: 'note', m: newMeasureId.get(oldM.id), at: R.format(at), dur: R.format(ev.dur),
+          voice: accompVoiceId, staff: accompStaffId, display: disp, heads: heads, prov: prov()
+        });
+      });
+    });
+
+    report.sections.push({ label: sec.section.label, pattern: policy.pattern, degraded: sec.degraded, melodyHand: melodyHand });
+  }
+
+  /* Ties: one whole-piece pass over the original part's tie spanners, both ends real in
+     this realization's headMap (see copyVoiceVerbatim's header - a tie can cross a section
+     boundary, so this cannot be done per-section). */
+  origPart.spanners.filter(s => s.type === 'tie' && headMap.has(s.from) && headMap.has(s.to))
+    .forEach(s => b.spanner(part, { type: 'tie', from: headMap.get(s.from), to: headMap.get(s.to) }));
+
+  [[rhV1, rhSt], [rhV2, rhSt], [lhV1, lhSt], [lhV2, lhSt]].forEach(([v, st]) => { if (v) fillRests(b, part, v.id, st.id, oldMeasures, newMeasureId); });
+
+  let built;
+  try { built = b.finish(); } catch (e) { return fail('BUILD_FAILED', String(e && e.message || e)); }
+
+  const fingered = FING.fingerGraph(built.graph, { source: FING.SOURCE });
+
+  return { ok: true, graph: fingered.graph, report: report };
+}
+
+module.exports = { realize, resolvePattern, policyForStage, PATTERN_NAMES, CHORD_SIZE, SOURCE };
