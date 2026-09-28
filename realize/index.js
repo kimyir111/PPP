@@ -39,19 +39,37 @@
    (not a power of two) - so v1 always builds 3-note triads (theory.js's targetPcs), the
    seventh's extra tension tone dropped. A real, declared scope limit, not an oversight -
    see docs/GOALS/G08 §14.
-   ========================================================================== */
-'use strict';
-const R = require('../scoregraph/rational.js');
-const T = require('../scoregraph/time.js');
-const P = require('../scoregraph/pitch.js');
-const B = require('../scoregraph/build.js');
-const REACH = require('../playability/reach.js');
-const FING = require('../playability/fingering.js');
-const PAT = require('./patterns.js');
-const TH = require('./theory.js');
-const NOTATION = require('./notation.js');
-const REF = require('../arrangement/reference.js');
-const ARRPLAN = require('../arrangement/plan.js'); /* read-only reuse of maxSimultaneous - see hymnHandsReachable below */
+
+   G8b note (docs/GOALS/G08B_LEGACY_RETIREMENT.md): wrapped in the same UMD shape every
+   sibling module (songgraph/*, arrangement/*, playability/*, difficulty/*) already uses -
+   this file was the one real gap keeping G8a's realizer from being loadable by the app at
+   all (a plain top-level `require()`, unlike every sibling module already wired for
+   <script>-tag loading). This is a pure packaging change needed to call realize() from the
+   app; no realizer logic below this point was touched. Browser global: root.PPPRealize
+   (matching root.PPPArrangement/root.PPPSongGraph's own top-level-namespace convention),
+   with the per-file pieces under root.PPPRealizeModules (matching
+   root.PPPArrangementModules/root.PPPPlayabilityModules). */
+(function (root, factory) {
+  'use strict';
+  if (typeof module === 'object' && module.exports) {
+    module.exports = factory(
+      require('../scoregraph/rational.js'), require('../scoregraph/time.js'),
+      require('../scoregraph/pitch.js'), require('../scoregraph/build.js'),
+      require('../playability/reach.js'), require('../playability/fingering.js'),
+      require('./patterns.js'), require('./theory.js'), require('./notation.js'),
+      require('../arrangement/reference.js'), require('../arrangement/plan.js'));
+  } else {
+    const SG = root.PPPScoreGraphModules || {};
+    const PP = root.PPPPlayabilityModules || {};
+    const AR = root.PPPArrangementModules || {};
+    const M = root.PPPRealizeModules = root.PPPRealizeModules || {};
+    root.PPPRealize = factory(
+      SG.rational, SG.time, SG.pitch, SG.build, PP.reach, PP.fingering,
+      M.patterns, M.theory, M.notation, AR.reference, AR.plan);
+  }
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (R, T, P, B, REACH, FING, PAT, TH, NOTATION, REF, ARRPLAN) {
+  'use strict';
+  /* read-only reuse of ARRPLAN.maxSimultaneous - see hymnHandsReachable below */
 
 const SOURCE = Object.freeze({ kind: 'generator', tool: 'ppp.g8a-realizer', version: '1.0.0' });
 const CHORD_SIZE = 3; /* see header: always a triad, never a 7th - keeps every pattern tuplet-free */
@@ -243,13 +261,27 @@ const SUBDIVIDE_RATIO = 1.5; /* stage 2's real ratio (~1.2) stays below this; st
 const STAGE1_COUNT = 1; /* round 3, see above: measured better than the original dyad floor
   on every metric that moved, not assumed. */
 
-function densityBand(stage) {
-  try { return REF.bandsForStage(stage); } catch (e) { return null; }
+/* G8b fix (docs/GOALS/G08B_LEGACY_RETIREMENT.md): `referenceOpts` threads through to
+   `REF.bandsForStage`, exactly the way `arrangement/plan.js`'s own line already does
+   (`REF.bandsForStage(stage, opts.reference)`). Without this, `REF.ref()`'s no-opts branch
+   falls back to its Node-only `require()` default (arrangement/reference.js's own `load()`),
+   which does not exist in a browser - the try/catch below silently swallowed that
+   ReferenceError and returned null, silently discarding this function's whole real,
+   evidence-based stage-3/4 subdivision rule (docs/GOALS/G08 §14's "round 1", a kept, measured
+   improvement) for every caller that cannot `require()`, with no way for such a caller to
+   supply real reference data instead - every other real dependency `realize()` has (REACH,
+   FING, PAT, TH, NOTATION, REF, ARRPLAN) is already injected via this module's own UMD
+   closure, so a caller with no real reference data had no way to reach this one. Every
+   existing Node caller (this module's own tests, `realize/tools/harness.js`) never passes
+   `opts.reference`, so `referenceOpts` is `undefined` for them exactly as before - this is a
+   pure injection-point fix, not a policy change. */
+function densityBand(stage, referenceOpts) {
+  try { return REF.bandsForStage(stage, referenceOpts); } catch (e) { return null; }
 }
 
-function policyForStage(stage, patternName) {
+function policyForStage(stage, patternName, referenceOpts) {
   if (stage <= 1) return { pattern: 'block', count: STAGE1_COUNT };
-  const band = densityBand(stage), base = densityBand(1);
+  const band = densityBand(stage, referenceOpts), base = densityBand(1, referenceOpts);
   let pattern = patternName;
   if (patternName === 'block' && band && base && base.notesPerBeatLH.p50 > 0) {
     const ratio = band.notesPerBeatLH.p50 / base.notesPerBeatLH.p50;
@@ -375,7 +407,7 @@ function realize(g, sg, plan, opts) {
     const measureIds = measureIdxs.map(i => oldMeasures[i].id);
 
     const basePattern = resolvePattern(opts.pattern, sec, g, i0);
-    let policy = policyForStage(plan.stage, basePattern);
+    let policy = policyForStage(plan.stage, basePattern, opts.reference);
 
     const hands = rebalanceHands(origPart, measureIds, sec.hands);
 
@@ -386,7 +418,7 @@ function realize(g, sg, plan, opts) {
        `tests/realize/realize.test.js`'s own explicit-hymn fidelity check). */
     if (policy.pattern === 'hymn' && (!opts.pattern || opts.pattern === 'auto') &&
         !hymnHandsReachable(origPart, hands, measureIds, oldIdx, measureOffset, maxSpan, REACH.MAX_KEYS)) {
-      policy = policyForStage(plan.stage, structuralFallback(g, i0));
+      policy = policyForStage(plan.stage, structuralFallback(g, i0), opts.reference);
     }
     report.patternCounts[policy.pattern] = (report.patternCounts[policy.pattern] || 0) + 1;
 
@@ -472,4 +504,5 @@ function realize(g, sg, plan, opts) {
   return { ok: true, graph: fingered.graph, report: report };
 }
 
-module.exports = { realize, resolvePattern, policyForStage, PATTERN_NAMES, CHORD_SIZE, SOURCE };
+  return { realize, resolvePattern, policyForStage, PATTERN_NAMES, CHORD_SIZE, SOURCE };
+});

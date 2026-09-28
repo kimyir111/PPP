@@ -7,11 +7,22 @@
    lookup against scoregraph/schema.js's own `noteValue(type, dots)`, not a rhythm-spelling
    algorithm (that harder problem is G3's pro-rhythm.js, and does not need reproducing here
    because G8a never emits anything G3 would need to re-spell).
+
+   G8b note (docs/GOALS/G08B_LEGACY_RETIREMENT.md): wrapped in the same UMD shape every
+   sibling module already uses, so the app can load it via <script> - a pure packaging
+   change, no logic below this point was touched.
    ========================================================================== */
-'use strict';
-const R = require('../scoregraph/rational.js');
-const S = require('../scoregraph/schema.js');
-const SP = require('../scoregraph/pro-spell.js');
+(function (root, factory) {
+  'use strict';
+  if (typeof module === 'object' && module.exports) {
+    module.exports = factory(require('../scoregraph/rational.js'), require('../scoregraph/schema.js'), require('../scoregraph/pro-spell.js'));
+  } else {
+    const SG = root.PPPScoreGraphModules || {};
+    const M = root.PPPRealizeModules = root.PPPRealizeModules || {};
+    M.notation = factory(SG.rational, SG.schema, SG.proSpell);
+  }
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (R, S, SP) {
+  'use strict';
 
 const TYPES = ['whole', 'half', 'quarter', 'eighth', '16th', '32nd', '64th'];
 
@@ -75,4 +86,5 @@ function keyTracker(g) {
   };
 }
 
-module.exports = { displayFor, tonicPcOf, keyTracker, TYPES };
+  return { displayFor, tonicPcOf, keyTracker, TYPES };
+});

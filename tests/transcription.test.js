@@ -799,6 +799,52 @@ const helperHealth = () => new Promise(resolve => {
     ok('a rich style can be applied before accepting the transcription',
       jazzReview.style === 'jazz' && jazzReview.notes > 0 && jazzReview.measures === r.measures,
       JSON.stringify(jazzReview));
+
+    console.log('\n── G08b: PPP.arranger = \'g8\' hands the review screen\'s built.graph straight to G7a/G7b/G8a, no XML re-parse, no arrange_score.py round trip ──');
+    const g8Switch = await page.evaluate(() => {
+      const saved = window.PPP.arranger;
+      window.PPP.arranger = 'some-typo';
+      const typo = window.PPP.arranger;
+      window.PPP.arranger = saved;
+      return { defaultMode: saved, typoMode: typo };
+    });
+    ok('PPP.arranger defaults to \'legacy\'', g8Switch.defaultMode === 'legacy', g8Switch.defaultMode);
+    ok('an unrecognized value falls back to \'legacy\' (G4-F2-1\'s convention)', g8Switch.typoMode === 'legacy', g8Switch.typoMode);
+
+    await page.evaluate(() => { window.PPP.arranger = 'g8'; });
+    await page.select('[data-arrangement-level]', 'beginner');
+    await page.select('[data-arrangement-style]', 'ballad');
+    await page.click('[data-apply-arrangement]');
+    await sleep(1200);
+    const g8Review = await page.evaluate(() => {
+      const sc = window.PPP.app.state.score;
+      const hands = new Set(sc.notes.filter(n => !n.rest).map(n => n.hand));
+      return {
+        engine: (((window.PPP.app.state.importSource || {}).arrangement || {}).engine || ''),
+        notes: sc.notes.filter(n => !n.rest).length,
+        measures: window.PPP.Score.count(sc),
+        hands: Array.from(hands)
+      };
+    });
+    ok('a g8 arrangement is applied: G8a\'s realizer, not the legacy wire-JSON round trip',
+      g8Review.engine === 'ppp.g8a' && g8Review.notes > 0 && g8Review.measures === r.measures,
+      JSON.stringify(g8Review));
+    ok('both hands are real (not toScore\'s own hand:\'r\' default - the app substitutes the graph\'s real limb back in)',
+      g8Review.hands.indexOf('l') > -1 && g8Review.hands.indexOf('r') > -1, JSON.stringify(g8Review.hands));
+
+    await page.evaluate(() => { window.PPP.arranger = 'legacy'; });
+    await page.select('[data-arrangement-level]', 'intermediate');
+    await page.select('[data-arrangement-style]', 'jazz');
+    await page.click('[data-apply-arrangement]');
+    await sleep(900);
+    const jazzAgain = await page.evaluate(() => ({
+      style: (((window.PPP.app.state.importSource || {}).arrangement || {}).style || ''),
+      notes: window.PPP.app.state.score.notes.filter(n => !n.rest).length,
+      measures: window.PPP.Score.count(window.PPP.app.state.score)
+    }));
+    ok('switching through g8 and back to legacy leaves the legacy path byte-identical (same jazz plan, same result as before g8 was ever touched)',
+      JSON.stringify(jazzAgain) === JSON.stringify(jazzReview), JSON.stringify(jazzAgain) + ' vs ' + JSON.stringify(jazzReview));
+
     await page.select('[data-arrangement-level]', 'original');
     await page.select('[data-arrangement-style]', 'balanced');
     await page.click('[data-apply-arrangement]');

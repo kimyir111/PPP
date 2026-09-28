@@ -9,8 +9,17 @@
    playability awareness beyond a crude simultaneous-note cap); this module is graph/G5-aware:
    callers are expected to check the result against playability/reach.js's real MAX_SPAN
    before accepting a voicing (realize/patterns.js does this).
+
+   G8b note (docs/GOALS/G08B_LEGACY_RETIREMENT.md): this module has no internal `require()`
+   calls (no dependencies), so the UMD wrapper below is a pure packaging change needed to
+   let the app load it via <script> - no logic below this point was touched.
    ========================================================================== */
-'use strict';
+(function (root, factory) {
+  'use strict';
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else { const M = root.PPPRealizeModules = root.PPPRealizeModules || {}; M.theory = factory(); }
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
 
 /* Interval sets (semitones from root), matching every quality songgraph/harmony.js's
    fitChord can return (its 9 candidate qualities). An unknown/null quality falls back to a
@@ -131,6 +140,7 @@ function clampSpan(midis, maxSpan, maxIters) {
   return out;
 }
 
-module.exports = {
-  CHORD_INTERVALS, intervalsFor, targetPcs, nearestWithPc, freshVoicing, leadVoicing, clampSpan, permutations
-};
+  return {
+    CHORD_INTERVALS, intervalsFor, targetPcs, nearestWithPc, freshVoicing, leadVoicing, clampSpan, permutations
+  };
+});
