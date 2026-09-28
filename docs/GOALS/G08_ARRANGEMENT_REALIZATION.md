@@ -175,6 +175,48 @@ this without checking the roadmap again at that time).
 
 ## 14. Implementation record
 
+**Lead decision (2026-09-28), read this first.** This worktree had a genuine multi-writer
+collision beyond what either entry below fully accounts for: the implementer's own dispatched
+"research" sub-agents did not all stay read-only, and at least three concurrent processes wrote
+real code to this shared worktree at once — the two implementations documented in full below
+(`arrangement/g8a-*` and `realize/`), plus a third set of plain-named files
+(`arrangement/realize.js`/`patterns.js`/`voicing.js`/`spell.js`, wired into the already-merged
+G7b `arrangement/index.js`) and an incomplete fourth attempt still extending that third set's
+evaluation harness when it ran out of turns (parked in a git stash, not committed, not deleted —
+`git stash list` on this branch). None of this reflects a decision by the Lead to run agents this
+way; it is exactly `parallel-sessions-one-file.md`'s documented risk, generalized from "one app
+file" to "one goal worktree" by a sub-agent overstepping a research-only mandate.
+
+**Kept: the `realize/` implementation** (the second entry below). Reasons: its own evaluation
+harness reuses the existing, standard G4a reference corpus (`tests/engrave/corpus.json`) rather
+than a self-picked sample; it found and fixed three methodological bugs IN THE HARNESS ITSELF
+before trusting any number from it — most notably that `scoregraph/legacy-score.js`'s `fromScore`
+never sets a hand `limb`, which silently made a first, unfixed run of the comparison report "0
+hard violations" for every legacy engine (an empty result set dressed as a clean pass, not a real
+finding) — the kind of deep, easy-to-miss correctness bug that speaks to real diligence; and it is
+explicit about which of its own numbers to trust least (harmony agreement, the metric that moved
+most between the two independently-built harnesses). **Discarded**: `arrangement/g8a-*.js` and
+its tests/harness (the first entry below — kept as a real, valuable, independently-corroborating
+data point, not deleted from this record, even though its code is deleted from the tree), and the
+plain-named `arrangement/realize.js`/`patterns.js`/`voicing.js`/`spell.js` set (never given its own
+record by any process before running out of turns — its wiring into `arrangement/index.js` was
+reverted back to G7b's original shape; its own incomplete, uncommitted harness fix — a real bug,
+`ScoreArranger.arrange()` hanging indefinitely on a real corpus file, `all-hail-the-power.musicxml`
+— is preserved only in the git stash referenced above, not lost, but not acted on since the
+implementation it extends was not kept).
+
+**The substantive finding stands regardless of which implementation is kept, and is the most
+important content in this section**: two independently-built realizers, using two independently-
+built comparison harnesses, on different file samples, both found that G8 v1's deterministic
+pattern library does **not** meet §7's "better than all three legacy engines on every metric" bar
+— specifically, it does not clearly beat the in-app `ScoreArranger`, which both runs found has
+better (or tied) hard-violation and G6-level-accuracy behavior than either G8a implementation. Both
+runs agree G8a clearly beats the other two, weaker legacy engines (`arrange_score.py`,
+`audio-score.js`). This was reported to the user plainly (not narrowed to favorable metrics), and
+the user chose to keep the better-evidenced implementation and continue tuning its density policy
+against G6's real per-stage bands, rather than accept the current numbers or restart from scratch.
+Further tuning work continues in this same section, below both original entries.
+
 ### G8a — Realizer + comparative harness, one of two independent implementations (2026-09-28)
 
 **IMPORTANT — read this before anything else in this section.** This worktree (`D:/PPP-g8`,

@@ -27,11 +27,10 @@ tests/engrave/out/
 !songgraph/tools/
 # ... and the Arrangement Planner's (corpus sanity/coverage/perf check, G07B)
 !arrangement/tools/
-# ... and the G8a realizer's comparative evaluation harness (vs. all 3 legacy engines, G08)
-!tests/arrangement/tools/
-# ... and this session's own independent G8a realizer + comparative harness, kept under a
-# distinct realize/ namespace (a second, concurrent G8a implementation landed in this same
-# worktree mid-session - docs/GOALS/G08_ARRANGEMENT_REALIZATION.md section 14 names both)
+# ... and the G8a realizer's comparative evaluation harness (vs. all 3 legacy engines, G08).
+# Two concurrent implementations landed in this worktree mid-session (docs/GOALS/
+# G08_ARRANGEMENT_REALIZATION.md §14); the Lead kept this one (realize/) after independent
+# review - see §14's "Lead decision" note.
 !realize/tools/
 tests/realize/out/
 tests/bench/.cache/

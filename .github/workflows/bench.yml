@@ -33,6 +33,7 @@ jobs:
       - run: node difficulty/tools/train.js --check  # G6a: the committed leave-one-book-out and hold-out evaluation reproduces (G06 §11)
       - run: npm run test:songgraph                  # G7a: key regions, harmony, melody/bass, sections/phrases, voice roles, energy, span round trips, mutation suite (G07)
       - run: npm run test:arrangement-planner         # G7b: texture ladder, deterministic search, real-corpus coverage, mutation suite (G07B)
+      - run: npm run test:realize                     # G8a: the deterministic realizer, golden determinism, mutation suite (G08)
       - run: node tests/engrave/tools/make-e-fixtures.js --check   # the E fixtures are the generator's (G04 §22.1)
       - run: node tests/engrave/tools/make-corpus.js --check       # the R corpus manifest is the rule's (G04 §22.2)
       - run: node tests/engrave/tools/make-metrics.js --check      # G4b: the layout's glyph metrics are the pinned font's (G04 §18.2)
