@@ -140,11 +140,21 @@ every training piece `difficulty/weights/g6a-v1.json`'s anchors came from. Group
 real feature vectors by the same book/stage the anchors already use gives a genuine,
 evidence-based ceiling ("real method-book pieces at this stage don't exceed X") with no
 model inversion needed. **One real correction made while building this**: a straight p90
-ceiling degenerates for `chordLoad`/`keyLoad` at stage 1 (measured: p50=p90=0 - only 1 of
-54 real Beyer anchors is ever nonzero), which would reject *any* real chord at all despite
-the corpus itself containing one (chordLoad 1.16). Switched those two features' ceiling to
+ceiling degenerates for `chordLoad`/`keyLoad` at stage 1 (measured: p50=p90=0 for both).
+Independent review corrected the original count here: `keyLoad` really is nonzero in only
+1 of 54 real Beyer anchors (value 1), but `chordLoad` is nonzero in **5** of 54 (0.02, 0.069,
+0.094, 0.229, 1.159) — either way p90 is 0 for both, which would reject *any* real chord at
+all despite the corpus itself containing several. Switched those two features' ceiling to
 the real *max* instead of p90 (continuous features - range, notesPerBeatRH/LH - keep p90);
-`plan.js`'s `densityOk` check documents why. **Stage 4 (czerny299) has zero real anchors at
+`plan.js`'s `densityOk` check documents why. **Known limitation from using a max ceiling**
+(independent review, 2026-09-28): for an anchor piece itself, `x <= max(set containing x)`
+is tautologically true, so evaluating an anchor against a band built partly from its own
+value can pass trivially — measured impact today is 1 of 169 successful plans
+(`beyer/064.mxl`, `keyLoad` exactly at the stage-1 max), negligible now but worth a
+leave-one-out or held-out-anchor discipline in `reference.js` before G8/G9 lean more heavily
+on these bands with possibly smaller per-stage anchor sets. Not fixed here — flagged as
+follow-up work, the same way G6's missing 4th fold was flagged rather than blocking merge.
+**Stage 4 (czerny299) has zero real anchors at
 all** — confirmed directly (`node -e` count in `reference.js`'s header), the same
 licence-quarantine G7a's §4 already found (and G6's own "missing 4th fold" gap, on record
 before this phase). `reference.js`'s `bandsForStage(4)` returns stage 3's real band with
