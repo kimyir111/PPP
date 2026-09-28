@@ -5,9 +5,9 @@ The operational roadmap for everything after G4a: order, dependencies, gates, an
 | | |
 | --- | --- |
 | Owner | The **Lead / Orchestrator** session. Implementers, reviewers and fixers read it. Only the Lead edits it. |
-| Updated | 2026-09-28 — thirty-second edition (Lead): **G7a (SongGraph core) merged** (PR #76, `bbadfd6`) — key regions, harmony, melody/bass ID, sections, phrases/cadences, voice roles, energy, all in one pass (no split needed). Beats hymn-SATB ground truth (harmony 89.2%/93.1%, melody 100%, bass 99%) with leakage specifically checked and ruled out. Node-only, no deploy needed. Current: G7b (Arrangement Planner) |
-| Base | `origin/main` = `bbadfd6`, deployed as `6c63338` (G7a itself needs no deploy) |
-| Active | **G4, MX-2, G5 and G6 all live. G7a merged.** Next: G7b (§14, §15). |
+| Updated | 2026-09-28 — thirty-third edition (Lead): **G7 is completely done — G7b (Arrangement Planner) merged** (PR #79, `b344688`). Rejected inverting G6's model for plan-level bounds (unsound), built real empirical bands from G6's own training data instead; honestly classified all 10 G0 Step 14 invariants rather than overclaiming. Node-only, no deploy needed. Current: G8 v1 (deterministic pattern-library realizer -- no D-3 decision needed yet; D-3 is only for v2, decided once v1's real numbers exist, per §5.6) |
+| Base | `origin/main` = `b344688`, deployed as `6c63338` (G7 needs no deploy) |
+| Active | **G4, MX-2, G5, G6 and G7 all fully merged.** Next: G8 v1 (§14, §15). |
 | Lead worktree | `D:/PPP-lead`, branch `lead-roadmap`. The Lead writes docs only, never in an implementer's worktree. |
 | How this relates to other docs | `docs/CURRENT_STATE.md` says what is true now, with measurements. `docs/DECISIONS.md` says why. `docs/GOALS/Gxx_*.md` is the contract for one Goal: design, acceptance and implementation record. **This document says in what order, behind which gates, and what comes next.** It does not repeat the goal specs. On detail, the spec wins. On sequencing, this document wins. |
 
@@ -590,7 +590,9 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 
 ## 14. Current task
 
-**G4 "Professional Engraving", MX-2, G5 (playability and fingering) and G6 (difficulty) are all completely done and deployed. G7a (SongGraph core) is merged, not yet deployed (Node-only, no deploy needed until G7b).** Full G4 blow-by-blow is in `docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md` §32-§52 and `docs/DECISIONS.md`'s G4-* rows; G5's is in `docs/GOALS/G05_PLAYABILITY_FINGERING.md` §11; G6's is in `docs/GOALS/G06_DIFFICULTY.md` §11; G7's is in `docs/GOALS/G07_SONGGRAPH_CORE.md` §12 -- this section only tracks what's still open.
+**G4 "Professional Engraving", MX-2, G5 (playability and fingering), G6 (difficulty) and G7 (SongGraph + Arrangement Planner) are all completely done.** G4-G6 are deployed; G7 is Node-only and needs no deploy. Full G4 blow-by-blow is in `docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md` §32-§52 and `docs/DECISIONS.md`'s G4-* rows; G5's is in `docs/GOALS/G05_PLAYABILITY_FINGERING.md` §11; G6's is in `docs/GOALS/G06_DIFFICULTY.md` §11; G7a's is in `docs/GOALS/G07_SONGGRAPH_CORE.md` §12; G7b's is in `docs/GOALS/G07B_ARRANGEMENT_PLANNER.md` §11 -- this section only tracks what's still open.
+
+- **G7b** (PR #79, `fd74d06`/`e2efc52`, squashed `b344688`): given a piece's SongGraph and a target (level, style, hand profile, sections, key), finds an `ArrangementPlan` by deterministic search under G5/G6 constraints -- writes no notes (G8's job). Rejected inverting G6's trained difficulty model for plan-level bounds (mathematically unsound: non-negative weights + possibly-negative feature z-scores means a partial sum isn't a real bound) and built real empirical per-stage bands from G6's own training data instead. Rejected the design doc's own suggested texture vocabulary (block chords/Alberti/arpeggiated) since G7a has no rhythmic-pattern feature to distinguish them -- used a "full/partial/reduced" voice-retention ladder instead. Classified all 10 G0 Step 14 arrangement invariants explicitly (real-and-checked / structurally-guaranteed-of-the-plan / partial-proxy / deferred-to-G8) rather than overclaiming. **169/369 corpus files plannable at their own G6-assessed level (67/100 hymns), 0 crashes across 3,321 attempts, 400/400 determinism checks identical, 49ms worst-case (budget 200ms).** Two honest negative findings reported, not tuned away: Hanon fails at every hand profile (both voices land in the same hand by real register, doubling its attack rate past the corpus band); czerny299's low coverage is the same licence-quarantine data gap G6/G7a already found, not a planner defect. Independent review: READY_TO_MERGE, found one small (1/169, 0.6%) real circularity in max-based ceilings for anchor pieces evaluated against bands built partly from themselves -- documented as follow-up for G8/G9, not fixed now (negligible today). One MINOR doc-accuracy fix applied. Node-only, not loaded by the app.
 
 - **G7a** (PR #76, `9d6315f`/`79c82ca`, squashed `bbadfd6`): built the SongGraph's core analyses over a ScoreGraph in one pass (no split needed) -- key regions (reusing G3's existing `regionKeys()` directly), harmony per beat window, melody/bass identification with confidence, exact-repeat section detection, cadence-based phrase detection, voice-role classification, an energy/density curve. New `ops.addSection`/`addPhrase` (the only promotion path into the previously schema-only `Structure.sections`/`phrases`), reusing G1's already-built `resolveSpan`/`spanOf`/`fingerprint`/`scoreRef` machinery rather than rebuilding it. **Corrected a stale roadmap assumption before implementation**: the "550 printed chord symbols" ground truth is real as a count but 100% concentrated in licence-quarantined `czerny299` files (effectively zero usable) -- hymn SATB (a real, independent 4-voice texture, not a reduction) is the actual usable ground truth. Measured against it: **harmony 89.2% root+quality / 93.1% root-only, melody 100.0%, bass 99.0%**. No ground truth exists anywhere in the repo for sections/phrases/energy (confirmed, not assumed) -- exercised by mutation tests instead. Independent review specifically checked the unusually strong 100%/99% figures for leakage and confirmed none (the detectors never read SATB voice-label conventions, only the eval/test code does); found and the Lead fixed one MAJOR test-quality gap (a committed regression test for a real, already-fixed bug didn't actually discriminate it on its small synthetic fixture -- added a test against the real `amazing-grace.musicxml` file instead, verified to fail under the reverted bug and pass under the fix). Performance 53ms worst-case, budget 500ms. Node-only, not loaded by the app.
 
@@ -604,9 +606,13 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 
 ## 15. Next task
 
-**Start G7b** (Arrangement Planner), then:
+**Start G8 v1** (deterministic pattern-library realizer -- §5.6's v1 scope: a texture pattern library,
+voice leading, limbs/fingering from G5, output provenance `generated`). No D-3 decision needed for v1;
+D-3 (LLM vs trained/local model vs deterministic-only) is only for v2, decided once v1's real measured
+results exist (roadmap §5.6, §18 D-3). Then, once v1 is measured:
 
-1. G8 (Arrangement realization)
+1. Present D-3 to the user for G8 v2
+2. G9 (multi-candidate, critics, repair)
 
 ## 16. Stop conditions
 
