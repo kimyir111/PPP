@@ -27,6 +27,12 @@ tests/engrave/out/
 !songgraph/tools/
 # ... and the Arrangement Planner's (corpus sanity/coverage/perf check, G07B)
 !arrangement/tools/
+# ... and the G8a realizer's comparative evaluation harness (vs. all 3 legacy engines, G08).
+# Two concurrent implementations landed in this worktree mid-session (docs/GOALS/
+# G08_ARRANGEMENT_REALIZATION.md §14); the Lead kept this one (realize/) after independent
+# review - see §14's "Lead decision" note.
+!realize/tools/
+tests/realize/out/
 tests/bench/.cache/
 __pycache__/
 # Local experiments; holds copyrighted audio and PDFs that must never be committed.
