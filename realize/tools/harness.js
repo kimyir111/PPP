@@ -25,6 +25,7 @@ const WEIGHTS = require(path.join(REPO, 'difficulty/weights/g6a-v1.json'));
 const H = require(path.join(REPO, 'tests/engrave/helpers.js'));
 const L = require(path.join(REPO, 'realize/tools/legacy.js'));
 const M = require(path.join(REPO, 'realize/tools/metrics.js'));
+const CAND = require(path.join(REPO, 'candidates/index.js'));
 
 const LEGACY_LEVELS = ['beginner', 'intermediate', 'advanced', 'original'];
 const HAND_PROFILES = ['large', 'medium', 'small'];
@@ -100,6 +101,41 @@ async function runFile(rel, opts) {
     row.g8a = scoreGraphCandidate(g8.graph, 'g8a:' + rel, found.profile, found.targetLevel, sg.harmony, origMelody);
   }
 
+  /* ---- G9a best-of-N (docs/GOALS/G09_CANDIDATES_CRITICS_REPAIR.md §5/§6): the SAME
+     (targetLevel, handProfile) G8a's own single-realization search above already found
+     for this file - so best-of-N and single-realization are compared at the exact same
+     request, never a more favorable target/profile silently substituted for one side.
+     Enumeration+scoring is done once; ablations (opts.ablateCritics) re-run only the cheap
+     `select()` step against the SAME already-scored candidates with one critic's weight
+     zeroed - no re-planning/re-realizing per ablation. */
+  if (opts.g9a) {
+    const request = { targetLevel: found.targetLevel, handProfile: found.profile, sections: 'all' };
+    const t1 = Date.now();
+    const enumerated = CAND.enumerate(g, sg, request, { n: opts.n || 8, reference: opts.reference });
+    const scored = CAND.scoreCandidates(enumerated.candidates, g, sg, request, { reference: opts.reference });
+    row.g9aMs = Date.now() - t1;
+    row.g9aTried = enumerated.tried.length;
+    row.g9aScored = scored.length;
+    const sel = CAND.select(scored, request, {});
+    if (!sel.ok) { row.g9a = { error: sel.reason }; }
+    else {
+      row.g9aPattern = sel.selected.spec;
+      row.g9aExplanation = sel.explanation;
+      row.g9a = scoreGraphCandidate(sel.selected.graph, rel + ':g9a', found.profile, found.targetLevel, sg.harmony, origMelody);
+    }
+    if (opts.ablateCritics && opts.ablateCritics.length && scored.length) {
+      row.g9aAblate = {};
+      opts.ablateCritics.forEach(critic => {
+        const weights = Object.assign({}, CAND.DEFAULT_WEIGHTS); weights[critic] = 0;
+        const abl = CAND.select(scored, request, { weights: weights });
+        row.g9aAblate[critic] = abl.ok
+          ? scoreGraphCandidate(abl.selected.graph, rel + ':g9a-ablate-' + critic, found.profile, found.targetLevel, sg.harmony, origMelody)
+          : { error: abl.reason };
+        if (abl.ok) row.g9aAblate[critic].pattern = abl.selected.spec;
+      });
+    }
+  }
+
   /* ---- legacy engines: same wire score, same fair per-engine level search ---- */
   const ws = L.wireScoreOf(g, path.basename(rel));
 
@@ -144,50 +180,66 @@ function scoreGraphCandidate(graph, id, profile, target, origHarmony, origMelody
 
 function mean(xs) { const v = xs.filter(x => typeof x === 'number' && Number.isFinite(x)); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; }
 
-function summarize(rows) {
-  const engines = ['g8a', 'arrangeScorePy', 'scoreArranger', 'audioScore'];
+/* One engine's summary row, given its own per-file entry accessor `get(r) -> entry|undefined`
+   (used for both the five top-level engines and, from `main()`, each G6-level-critic
+   ablation variant under `row.g9aAblate[critic]` - same shape, same computation, so an
+   ablation's numbers are directly comparable to the real g9a row). */
+function summarizeEntries(ok, get) {
+  const entries = ok.map(get).filter(Boolean).filter(e => !e.error);
+  const out = {
+    n: entries.length,
+    hardViolationsZero: entries.filter(e => e.hard && e.hard.hard === 0).length,
+    hardViolationsMean: mean(entries.map(e => e.hard && e.hard.hard)),
+    meanMelody: mean(entries.map(e => e.melody)),
+    meanHarmonyRootQuality: mean(entries.map(e => e.harmony && e.harmony.rootQuality)),
+    meanHarmonyRootOnly: mean(entries.map(e => e.harmony && e.harmony.rootOnly)),
+    engraveSilentZero: entries.filter(e => e.engrave && e.engrave.silent === 0).length,
+    engraveHardLayoutZero: entries.filter(e => e.engrave && e.engrave.hardLayout === 0).length,
+    engraveOk: entries.filter(e => e.engrave && !e.engrave.error).length
+  };
+  const withTarget = ok.filter(r => { const e = get(r); return e && !e.error && e.g6Level != null; });
+  out.levelWithin1 = withTarget.filter(r => Math.abs(get(r).g6Level - r.target) <= 1).length;
+  out.levelMeanAbsDiff = mean(withTarget.map(r => Math.abs(get(r).g6Level - r.target)));
+  out.nWithLevel = withTarget.length;
+  return out;
+}
+
+function summarize(rows, opts) {
+  opts = opts || {};
+  const engines = ['g8a', 'g9a', 'arrangeScorePy', 'scoreArranger', 'audioScore'];
   const ok = rows.filter(r => !r.error);
   const sum = { files: rows.length, ok: ok.length, errors: rows.filter(r => r.error).map(r => r.file + ': ' + r.error) };
-  engines.forEach(eng => {
-    const entries = ok.map(r => r[eng]).filter(Boolean).filter(e => !e.error);
-    sum[eng] = {
-      n: entries.length,
-      hardViolationsZero: entries.filter(e => e.hard && e.hard.hard === 0).length,
-      hardViolationsMean: mean(entries.map(e => e.hard && e.hard.hard)),
-      meanMelody: mean(entries.map(e => e.melody)),
-      meanHarmonyRootQuality: mean(entries.map(e => e.harmony && e.harmony.rootQuality)),
-      meanHarmonyRootOnly: mean(entries.map(e => e.harmony && e.harmony.rootOnly)),
-      engraveSilentZero: entries.filter(e => e.engrave && e.engrave.silent === 0).length,
-      engraveHardLayoutZero: entries.filter(e => e.engrave && e.engrave.hardLayout === 0).length,
-      engraveOk: entries.filter(e => e.engrave && !e.engrave.error).length
-    };
-  });
-  /* level-within-1 needs the row's own target, computed properly here (the placeholder above is discarded) */
-  engines.forEach(eng => {
-    const withTarget = ok.filter(r => r[eng] && !r[eng].error && r[eng].g6Level != null);
-    sum[eng].levelWithin1 = withTarget.filter(r => Math.abs(r[eng].g6Level - r.target) <= 1).length;
-    sum[eng].levelMeanAbsDiff = mean(withTarget.map(r => Math.abs(r[eng].g6Level - r.target)));
-    sum[eng].nWithLevel = withTarget.length;
-  });
+  engines.forEach(eng => { sum[eng] = summarizeEntries(ok, r => r[eng]); });
+  if (opts.ablateCritics && opts.ablateCritics.length) {
+    sum.g9aAblate = {};
+    opts.ablateCritics.forEach(critic => {
+      sum.g9aAblate[critic] = summarizeEntries(ok, r => r.g9aAblate && r.g9aAblate[critic]);
+    });
+  }
   return sum;
 }
 
 async function main() {
   const args = process.argv.slice(2);
-  const sampleN = args.indexOf('--sample') >= 0 ? Number(args[args.indexOf('--sample') + 1]) : null;
-  const outPath = args.indexOf('--out') >= 0 ? args[args.indexOf('--out') + 1] : path.join(__dirname, '..', '..', 'tests', 'realize', 'out', 'harness.json');
-  const pattern = args.indexOf('--pattern') >= 0 ? args[args.indexOf('--pattern') + 1] : 'auto';
+  const flag = name => args.indexOf(name) >= 0;
+  const opt = (name, dflt) => args.indexOf(name) >= 0 ? args[args.indexOf(name) + 1] : dflt;
+  const sampleN = flag('--sample') ? Number(opt('--sample')) : null;
+  const outPath = opt('--out', path.join(__dirname, '..', '..', 'tests', 'realize', 'out', 'harness.json'));
+  const pattern = opt('--pattern', 'auto');
+  const g9a = flag('--g9a'); /* docs/GOALS/G09_CANDIDATES_CRITICS_REPAIR.md §5/§6 central measurement */
+  const n = flag('--n') ? Number(opt('--n')) : 8;
+  const ablateCritics = flag('--ablate-critics') ? opt('--ablate-critics').split(',') : [];
   const files = sampleFiles(sampleN);
-  console.log('running harness over', files.length, 'files, pattern=', pattern);
+  console.log('running harness over', files.length, 'files, pattern=', pattern, g9a ? ('g9a n=' + n + (ablateCritics.length ? ' ablate=' + ablateCritics.join(',') : '')) : '(g9a off)');
   const rows = [];
   for (const f of files) {
     const t0 = Date.now();
-    const row = await runFile(f, { pattern: pattern });
+    const row = await runFile(f, { pattern: pattern, g9a: g9a, n: n, ablateCritics: ablateCritics });
     row.ms = Date.now() - t0;
-    console.log(f, row.error ? ('ERROR: ' + row.error) : ('ok in ' + row.ms + 'ms'));
+    console.log(f, row.error ? ('ERROR: ' + row.error) : ('ok in ' + row.ms + 'ms' + (row.g9aMs != null ? (' (g9a ' + row.g9aMs + 'ms, ' + row.g9aScored + ' candidates)') : '')));
     rows.push(row);
   }
-  const summary = summarize(rows);
+  const summary = summarize(rows, { ablateCritics: ablateCritics });
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(outPath, JSON.stringify({ summary: summary, rows: rows }, null, 1));
   console.log('written', outPath);

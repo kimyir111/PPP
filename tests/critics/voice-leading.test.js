@@ -1,0 +1,87 @@
+/* Critics — voice-leading smells (docs/GOALS/G09_CANDIDATES_CRITICS_REPAIR.md §9 mutation
+   suite: "a planted parallel fifth must be caught by the voice-leading critic"). Uses
+   tests/scoregraph/g3-helpers.js's `mk()` (the same hand-written-graph fixture builder G3's
+   own test suite uses) to plant EXACT, hand-picked pitch sequences - never a real corpus
+   file for these cases, since the point is to know in advance what the critic must find. */
+'use strict';
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const path = require('path');
+const REPO = path.resolve(__dirname, '..', '..');
+const { mk } = require(path.join(REPO, 'tests/scoregraph/g3-helpers.js'));
+const VL = require(path.join(REPO, 'critics/voice-leading.js'));
+
+test('mutation: parallel perfect fifths between the outer voices are caught', () => {
+  /* RH G4->A4 (67->69), LH C4->D4 (60->62): both a real perfect fifth (7 semitones) at
+     each of the two chords, both voices moving up by the SAME whole step - textbook
+     parallel fifths. */
+  const g = mk({ time: [2, 4], rh: 'G4:q A4:q', lh: 'C4:q D4:q' });
+  const smells = VL.voiceLeadingSmells(g);
+  assert.ok(smells.parallels.length >= 1, 'expected at least one planted parallel fifth, got ' + JSON.stringify(smells.parallels));
+  assert.equal(smells.parallels[0].interval, 'fifth');
+});
+
+test('mutation: parallel octaves between the outer voices are caught', () => {
+  /* RH C5->D5 (72->74), LH C4->D4 (60->62): both exactly an octave apart, both moving up
+     by the same whole step. */
+  const g = mk({ time: [2, 4], rh: 'C5:q D5:q', lh: 'C4:q D4:q' });
+  const smells = VL.voiceLeadingSmells(g);
+  assert.ok(smells.parallels.length >= 1, 'expected at least one planted parallel octave');
+  assert.equal(smells.parallels[0].interval, 'octave/unison');
+});
+
+test('negative control: contrary motion into a perfect fifth is NOT a smell', () => {
+  /* RH descends C5->B4 (72->71), LH ascends C3->D3 (48->50): both perfect intervals
+     (C5/C3 = 2 octaves = unison-class; B4/D3 is NOT perfect, so this pair only touches one
+     perfect interval, not two in a row - a clean negative control, no parallel motion
+     between two perfect intervals at all). */
+  const g = mk({ time: [2, 4], rh: 'C5:q B4:q', lh: 'C3:q D3:q' });
+  const smells = VL.voiceLeadingSmells(g);
+  assert.equal(smells.parallels.length, 0, 'contrary motion (or non-perfect intervals) must not be flagged: ' + JSON.stringify(smells.parallels));
+});
+
+test('negative control: a held outer voice (oblique motion) into a repeated perfect interval is NOT a smell', () => {
+  /* LH holds C3 (48) across both chords (oblique motion - only RH moves), even though
+     both chords happen to be perfect fifths (G3/C3-ish) - real oblique motion into a
+     perfect interval is textbook-legal, unlike similar motion. */
+  const g = mk({ time: [2, 4], rh: 'G3:q G3:q', lh: 'C3:q C3:q' });
+  const smells = VL.voiceLeadingSmells(g);
+  assert.equal(smells.parallels.length, 0, 'no motion at all in either voice must not be flagged: ' + JSON.stringify(smells.parallels));
+});
+
+test('mutation: a large leap in a genuinely inner voice is caught', () => {
+  /* A 3-voice texture: RH melody voice1 stays put at C6/72 (outer/top every chord), LH
+     bass stays put at C3/48 (outer/bottom every chord), RH voice2 (genuinely inner - its
+     midi is strictly between 48 and 72 at BOTH chords, so it is never the outer voice)
+     leaps D4/50 -> B5/71, 21 semitones, well past LARGE_LEAP (12). */
+  const g = mk({ time: [2, 4], rh: 'C6:q C6:q', rh2: 'D4:q B5:q', lh: 'C3:q C3:q' });
+  const smells = VL.voiceLeadingSmells(g);
+  assert.ok(smells.innerLeaps.length >= 1, 'expected the planted 23-semitone inner leap: ' + JSON.stringify(smells.innerLeaps));
+});
+
+test('negative control: a large leap in the outer (melody) voice is NOT flagged as an inner leap', () => {
+  const g = mk({ time: [2, 4], rh: 'C4:q C6:q', lh: 'C3:q C3:q' });
+  const smells = VL.voiceLeadingSmells(g);
+  assert.equal(smells.innerLeaps.length, 0, 'a melody/outer-voice leap is not an inner-voice smell: ' + JSON.stringify(smells.innerLeaps));
+});
+
+test('mutation: voice crossing (two voices of one part swapping relative order) is caught', () => {
+  /* rh (whole-piece avg higher, by construction - it starts and stays high in bar 1-2 of
+     3) and rh2 (avg lower) swap at the middle chord: rh dips to C4 while rh2 rises to C6 -
+     a real crossing against their own whole-piece average order. */
+  const g = mk({ time: [3, 4], rh: 'C6:q C4:q C6:q', rh2: 'C4:q C6:q C4:q' });
+  const smells = VL.voiceLeadingSmells(g);
+  assert.ok(smells.crossings.length >= 1, 'expected the planted crossing: ' + JSON.stringify(smells.crossings));
+});
+
+test('negative control: two voices that never swap relative order are never flagged as crossing', () => {
+  const g = mk({ time: [2, 4], rh: 'C6:q C6:q', rh2: 'C4:q C4:q' });
+  const smells = VL.voiceLeadingSmells(g);
+  assert.equal(smells.crossings.length, 0);
+});
+
+test('voiceLeadingSmells is deterministic (same graph, same result, repeat call)', () => {
+  const g = mk({ time: [2, 4], rh: 'G4:q A4:q', lh: 'C4:q D4:q' });
+  const a = VL.voiceLeadingSmells(g), b = VL.voiceLeadingSmells(g);
+  assert.equal(JSON.stringify(a), JSON.stringify(b));
+});
