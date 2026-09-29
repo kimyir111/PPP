@@ -9227,6 +9227,7 @@ const ScoreArranger = (() => {
         const d = Math.min.apply(null, out.map(x => Math.abs(x.midi - n.midi)));
         if (d > distance) { best = n; distance = d; }
       });
+      if (!best) break; /* same-pitch duplicates in a group (unison across voices) leave nothing unused to take */
       take(best);
     }
     return out;

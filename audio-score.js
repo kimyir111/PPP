@@ -178,6 +178,7 @@
           const d = chosen.length ? Math.min.apply(null, chosen.map(c => Math.abs(c.midi - n.midi))) : 0;
           if (d > distance) { best = n; distance = d; }
         });
+        if (!best) break; /* unison across voices: every distinct pitch is already taken */
         take(best);
       }
       chosen.sort((a, b) => a.midi - b.midi).forEach(n => out.push(Object.assign({}, n)));
