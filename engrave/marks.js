@@ -226,7 +226,8 @@
       } else {
         p3 = tieEnd(I, th, side, false);
         const earlier = fe && S.sysOf(K.events.get(fe).m) !== undefined && S.sysOf(K.events.get(fe).m) < si;
-        p0 = [Math.min(earlier ? S.startX : Math.max(S.startX, p3[0] - CV.TIE.stub), p3[0]), p3[1]];
+        const nominal = earlier ? S.startX : Math.max(S.startX, p3[0] - CV.TIE.stub);
+        p0 = [nominal < p3[0] ? nominal : p3[0] - CV.TIE.stub, p3[1]];
         part = 'end';
       }
       const c = CV.arc(p0, p3, CV.tieHeight(Math.abs(p3[0] - p0[0])), side);
