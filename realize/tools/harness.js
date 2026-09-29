@@ -11,7 +11,7 @@
    measured G6 position lands closest - the same fairness G8a's own search gets, never a
    fixed guess); score all four on the SAME five metrics (realize/tools/metrics.js).
 
-   node realize/tools/harness.js [--sample N] [--out path.json]
+   node realize/tools/harness.js [--sample N] [--out path.json] [--g9a [--repair]] [--held-out N]
    ========================================================================== */
 'use strict';
 const fs = require('fs');
@@ -26,6 +26,9 @@ const H = require(path.join(REPO, 'tests/engrave/helpers.js'));
 const L = require(path.join(REPO, 'realize/tools/legacy.js'));
 const M = require(path.join(REPO, 'realize/tools/metrics.js'));
 const CAND = require(path.join(REPO, 'candidates/index.js'));
+const CRIT = require(path.join(REPO, 'critics/index.js'));
+const REPAIR = require(path.join(REPO, 'repair/index.js'));
+const VLC = require(path.join(REPO, 'critics/voice-leading.js'));
 
 const LEGACY_LEVELS = ['beginner', 'intermediate', 'advanced', 'original'];
 const HAND_PROFILES = ['large', 'medium', 'small'];
@@ -143,7 +146,11 @@ async function runFile(rel, opts) {
     const enumerated = CAND.enumerate(g, sg, request, { n: opts.g9aN, levelOffsets: opts.levelOffsets, reference: opts.reference });
     const cheapScored = CAND.scoreCandidates(enumerated.candidates, g, sg, request, { reference: opts.reference, skipEngrave: true });
     const engraveCache = new Map(); /* real engrave results are reused by the ablation re-selections below (the gate never mutates cheapScored) */
-    const sel = CAND.selectWithEngraveGate(cheapScored, g, sg, request, { topKForEngrave: opts.topKForEngrave, engraveCache: engraveCache });
+    /* `opts.weights` (--weights k=v,...): selection weights overriding CAND.DEFAULT_WEIGHTS for the g9a row AND
+       as the base every ablation zeroes one critic of; needed to measure a critic whose DEFAULT weight is already 0
+       (voiceLeading): --weights voiceLeading=1 --ablate-critics voiceLeading compares weight 1 against weight 0. */
+    const baseWeights = Object.assign({}, CAND.DEFAULT_WEIGHTS, opts.weights || {});
+    const sel = CAND.selectWithEngraveGate(cheapScored, g, sg, request, { weights: baseWeights, topKForEngrave: opts.topKForEngrave, engraveCache: engraveCache });
     row.g9aMs = Date.now() - t1;
     row.g9aTried = enumerated.tried.length;
     row.g9aScored = cheapScored.length;
@@ -155,10 +162,43 @@ async function runFile(rel, opts) {
       row.g9aExplanation = sel.explanation;
       row.g9a = scoreGraphCandidate(sel.selected.graph, rel + ':g9a', found.profile, found.targetLevel, sg.harmony, origMelody);
     }
+    /* ---- G9b repair (docs/GOALS/G09 §5, §12 "G9b - repair"; `--repair`, additive): the graph G9a
+       selected, repaired per measure under the REQUEST's hand profile, scored on the same five
+       metrics as every other row, plus the critic scores before/after (the goal's real question:
+       does repair improve the selected candidate's critic scores without regressing any metric). */
+    if (opts.repair && sel.ok) {
+      const t2 = Date.now();
+      const rr = REPAIR.repairSelection(sel, g, sg, request, { reference: opts.reference });
+      row.g9aRepairMs = Date.now() - t2;
+      const rep = rr.report;
+      row.g9aRepairReport = {
+        accepted: rep.accepted, rolledBack: rep.rolledBack, unplannable: rep.unplannable, sweeps: rep.sweeps, truncated: rep.truncated,
+        fallback: rep.fallback, byOp: rep.byOp, repairedMeasures: rep.repairedMeasures.length, rolledBackMeasures: rep.rolledBackMeasures.length,
+        rollbackReasons: rep.units.filter(u => !u.ok).map(u => ({ op: u.op, measure: u.measure, reasons: u.reasons }))
+      };
+      const criticCtx = graph => {
+        const ev = CRIT.evaluate(graph, { profile: found.profile, targetLevel: found.targetLevel, stage: rr.ctx.stage, origHarmony: sg.harmony,
+          origMelodyNotes: rr.ctx.origMelody, reference: opts.reference, skipEngrave: true });
+        const c = ev.critics;
+        return {
+          hard: c.hard && c.hard.hard, level: c.level, melody: c.melody,
+          harmonyRootQuality: c.harmony && c.harmony.rootQuality,
+          voiceLeading: c.voiceLeading && c.voiceLeading.count,
+          parallels: c.voiceLeading && c.voiceLeading.parallels.length,
+          innerLeaps: c.voiceLeading && c.voiceLeading.innerLeaps.length,
+          crossings: c.voiceLeading && c.voiceLeading.crossings.length,
+          registerDensityOverage: c.registerDensity && c.registerDensity.overage
+        };
+      };
+      row.g9aCriticsBefore = criticCtx(sel.selected.graph);
+      row.g9aCriticsAfter = criticCtx(rr.graph);
+      row.g9aRepairChanged = rr.changed;
+      row.g9aRepair = scoreGraphCandidate(rr.graph, rel + ':g9a-repair', found.profile, found.targetLevel, sg.harmony, origMelody);
+    }
     if (opts.ablateCritics && opts.ablateCritics.length && cheapScored.length) {
       row.g9aAblate = {};
       opts.ablateCritics.forEach(critic => {
-        const weights = Object.assign({}, CAND.DEFAULT_WEIGHTS); weights[critic] = 0;
+        const weights = Object.assign({}, baseWeights); weights[critic] = 0;
         const abl = CAND.selectWithEngraveGate(cheapScored, g, sg, request, { weights: weights, topKForEngrave: opts.topKForEngrave, engraveCache: engraveCache });
         row.g9aAblate[critic] = abl.ok
           ? scoreGraphCandidate(abl.selected.graph, rel + ':g9a-ablate-' + critic, found.profile, found.targetLevel, sg.harmony, origMelody)
@@ -206,6 +246,7 @@ function scoreGraphCandidate(graph, id, profile, target, origHarmony, origMelody
   try { out.melody = M.melodyPreservation(origMelody, M.graphNoteList(graph)); } catch (e) { out.melodyError = String(e && e.message || e); }
   try { out.harmony = M.harmonyAgreement(origHarmony, graph); } catch (e) { out.harmonyError = String(e && e.message || e); }
   try { out.engrave = M.engraveMetrics(graph, id); } catch (e) { out.engraveError = String(e && e.message || e); }
+  try { out.smells = VLC.voiceLeadingSmells(graph).count; } catch (e) { out.smellsError = String(e && e.message || e); } /* corrected voice-leading count, reported for every engine, never a selection input here */
   out.level = out.g6Level;
   return out;
 }
@@ -222,6 +263,7 @@ function summarizeEntries(ok, get) {
     n: entries.length,
     hardViolationsZero: entries.filter(e => e.hard && e.hard.hard === 0).length,
     hardViolationsMean: mean(entries.map(e => e.hard && e.hard.hard)),
+    voiceLeadingSmellsSum: entries.reduce((a, e) => a + (typeof e.smells === 'number' ? e.smells : 0), 0),
     meanMelody: mean(entries.map(e => e.melody)),
     meanHarmonyRootQuality: mean(entries.map(e => e.harmony && e.harmony.rootQuality)),
     meanHarmonyRootOnly: mean(entries.map(e => e.harmony && e.harmony.rootOnly)),
@@ -236,12 +278,47 @@ function summarizeEntries(ok, get) {
   return out;
 }
 
+/* G9b: repair counts and the critic scores before/after, over the files that reached repair */
+function summarizeRepair(ok) {
+  const rs = ok.filter(r => r.g9aRepairReport);
+  const sumOf = f => rs.reduce((a, r) => a + (f(r) || 0), 0);
+  const byOp = {};
+  rs.forEach(r => Object.keys(r.g9aRepairReport.byOp || {}).forEach(op => {
+    const o = byOp[op] = byOp[op] || { accepted: 0, rolledBack: 0 };
+    o.accepted += r.g9aRepairReport.byOp[op].accepted; o.rolledBack += r.g9aRepairReport.byOp[op].rolledBack;
+  }));
+  const crit = k => ({ before: sumOf(r => r.g9aCriticsBefore && r.g9aCriticsBefore[k]), after: sumOf(r => r.g9aCriticsAfter && r.g9aCriticsAfter[k]) });
+  const files = pred => rs.filter(pred).length;
+  return {
+    files: rs.length,
+    filesWithAcceptedRepair: files(r => r.g9aRepairReport.accepted > 0),
+    filesWithRolledBackRepair: files(r => r.g9aRepairReport.rolledBack > 0),
+    filesWithFallback: files(r => r.g9aRepairReport.fallback),
+    filesTruncated: files(r => r.g9aRepairReport.truncated),
+    unitsAccepted: sumOf(r => r.g9aRepairReport.accepted),
+    unitsRolledBack: sumOf(r => r.g9aRepairReport.rolledBack),
+    unplannableSmells: sumOf(r => r.g9aRepairReport.unplannable),
+    measuresRepaired: sumOf(r => r.g9aRepairReport.repairedMeasures),
+    measuresRolledBack: sumOf(r => r.g9aRepairReport.rolledBackMeasures),
+    byOp: byOp,
+    filesWithSmellsBefore: files(r => r.g9aCriticsBefore && r.g9aCriticsBefore.voiceLeading > 0),
+    filesWithSmellsAfter: files(r => r.g9aCriticsAfter && r.g9aCriticsAfter.voiceLeading > 0),
+    smells: crit('voiceLeading'), parallels: crit('parallels'), innerLeaps: crit('innerLeaps'), crossings: crit('crossings'),
+    registerDensityOverageSum: crit('registerDensityOverage'),
+    hardSum: crit('hard'),
+    meanHarmonyRootQuality: { before: mean(rs.map(r => r.g9aCriticsBefore && r.g9aCriticsBefore.harmonyRootQuality)), after: mean(rs.map(r => r.g9aCriticsAfter && r.g9aCriticsAfter.harmonyRootQuality)) },
+    meanLevel: { before: mean(rs.map(r => r.g9aCriticsBefore && r.g9aCriticsBefore.level)), after: mean(rs.map(r => r.g9aCriticsAfter && r.g9aCriticsAfter.level)) },
+    meanRepairMs: mean(rs.map(r => r.g9aRepairMs))
+  };
+}
+
 function summarize(rows, opts) {
   opts = opts || {};
-  const engines = ['g8a', 'g9a', 'arrangeScorePy', 'scoreArranger', 'audioScore'];
+  const engines = ['g8a', 'g9a'].concat(opts.repair ? ['g9aRepair'] : [], ['arrangeScorePy', 'scoreArranger', 'audioScore']);
   const ok = rows.filter(r => !r.error);
   const sum = { files: rows.length, ok: ok.length, errors: rows.filter(r => r.error).map(r => r.file + ': ' + r.error) };
   engines.forEach(eng => { sum[eng] = summarizeEntries(ok, r => r[eng]); });
+  if (opts.repair) sum.repair = summarizeRepair(ok);
   if (opts.ablateCritics && opts.ablateCritics.length) {
     sum.g9aAblate = {};
     opts.ablateCritics.forEach(critic => {
@@ -260,11 +337,18 @@ async function main() {
   const outPath = opt('--out', path.join(__dirname, '..', '..', 'tests', 'realize', 'out', 'harness.json'));
   const pattern = opt('--pattern', 'auto');
   const g9a = flag('--g9a'); /* docs/GOALS/G09_CANDIDATES_CRITICS_REPAIR.md §5/§6 central measurement */
+  const repair = flag('--repair'); /* G9b: also repair the graph G9a selected (needs --g9a) */
+  if (repair && !g9a) throw new Error('--repair needs --g9a (it repairs the graph G9a selected)');
   const g9aN = flag('--n') ? Number(opt('--n')) : undefined; /* undefined -> candidates/index.js's own default (24, round 2) */
   const levelOffsets = flag('--level-offsets') ? opt('--level-offsets').split(',').map(Number) : undefined;
   const topKForEngrave = flag('--top-k') ? Number(opt('--top-k')) : undefined;
   const ablateCritics = flag('--ablate-critics') ? opt('--ablate-critics').split(',') : [];
-  const runOpts = { pattern: pattern, g9a: g9a, g9aN: g9aN, levelOffsets: levelOffsets, topKForEngrave: topKForEngrave, ablateCritics: ablateCritics };
+  let weights;
+  if (flag('--weights')) {
+    weights = {};
+    opt('--weights').split(',').forEach(kv => { const [k, v] = kv.split('='); if (!(k in CAND.DEFAULT_WEIGHTS) || !isFinite(Number(v))) throw new Error('--weights: bad entry ' + kv); weights[k] = Number(v); });
+  }
+  const runOpts = { weights: weights, pattern: pattern, g9a: g9a, repair: repair, g9aN: g9aN, levelOffsets: levelOffsets, topKForEngrave: topKForEngrave, ablateCritics: ablateCritics };
   /* child mode: one file, row written to --row-out (the parent gives each file its own process and a time limit,
      so a legacy engine that never returns on one file is recorded as a timeout instead of stalling the sweep) */
   if (flag('--one')) {
@@ -275,7 +359,7 @@ async function main() {
   const timeoutS = Number(opt('--timeout-s', 300));
   const files = heldOutCount != null ? heldOutFiles(heldOutCount) : sampleFiles(sampleN);
   console.log('running harness over', files.length, heldOutCount != null ? '(held-out slice)' : '(round-1 sample)', 'files, pattern=', pattern,
-    g9a ? ('g9a n=' + (g9aN || 24) + ' offsets=' + (levelOffsets || [0, -1, 1]).join(',') + ' topK=' + (topKForEngrave || 3) + (ablateCritics.length ? ' ablate=' + ablateCritics.join(',') : '')) : '(g9a off)');
+    (repair ? '+repair ' : '') + (g9a ? ('g9a n=' + (g9aN || 24) + ' offsets=' + (levelOffsets || [0, -1, 1]).join(',') + ' topK=' + (topKForEngrave || 3) + (ablateCritics.length ? ' ablate=' + ablateCritics.join(',') : '')) : '(g9a off)'));
   const rows = [];
   for (const f of files) {
     const t0 = Date.now();
@@ -291,10 +375,10 @@ async function main() {
     else row = JSON.parse(fs.readFileSync(rowPath, 'utf8'));
     try { fs.unlinkSync(rowPath); } catch (e) { /* already gone */ }
     row.ms = Date.now() - t0;
-    console.log(f, row.error ? ('ERROR: ' + row.error) : ('ok in ' + row.ms + 'ms' + (row.g9aMs != null ? (' (g9a ' + row.g9aMs + 'ms, ' + row.g9aScored + ' candidates, ' + row.g9aEngraveChecked + ' engrave-checked)') : '')));
+    console.log(f, row.error ? ('ERROR: ' + row.error) : ('ok in ' + row.ms + 'ms' + (row.g9aMs != null ? (' (g9a ' + row.g9aMs + 'ms, ' + row.g9aScored + ' candidates, ' + row.g9aEngraveChecked + ' engrave-checked' + (row.g9aRepairReport ? ', repair ' + row.g9aRepairMs + 'ms +' + row.g9aRepairReport.accepted + '/-' + row.g9aRepairReport.rolledBack : '') + ')') : '')));
     rows.push(row);
   }
-  const summary = summarize(rows, { ablateCritics: ablateCritics });
+  const summary = summarize(rows, { ablateCritics: ablateCritics, repair: repair });
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(outPath, JSON.stringify({ summary: summary, rows: rows }, null, 1));
   console.log('written', outPath);
