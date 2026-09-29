@@ -60,8 +60,7 @@
      G8a's realize() builds - one `Piano` part, two staves - so a single part-wide pass is
      correct here, unlike voiceRolesOf's own per-part scoring which intentionally treats
      each `part` as one texture). */
-  function slicesOf(g) {
-    const notes = U.noteWindows(g);
+  function slicesFromNotes(notes) {
     const byOnset = new Map();
     notes.forEach(n => {
       const k = R.format(n.w0);
@@ -70,9 +69,15 @@
     });
     return Array.from(byOnset.values()).sort((a, b) => R.cmp(a.w0, b.w0));
   }
+  function slicesOf(g) { return slicesFromNotes(U.noteWindows(g)); }
 
   function outerOf(slice) {
-    if (!slice.notes.length) return null;
+    /* two outer voices need at least two attacking notes: a slice with ONE note has no
+       outer PAIR (hi === lo is one voice, not a unison between two), so it is skipped.
+       G9b correction (docs/GOALS/G09 §12 "G9b - repair"): G9a counted a lone melody note
+       moving stepwise as a "parallel unison/octave" at every step of any texture whose
+       other hand was resting or sustaining, inflating the count by orders of magnitude. */
+    if (slice.notes.length < 2) return null;
     let hi = -Infinity, lo = Infinity;
     slice.notes.forEach(n => { if (n.midi > hi) hi = n.midi; if (n.midi < lo) lo = n.midi; });
     return { w0: slice.w0, hi: hi, lo: lo };
@@ -139,15 +144,30 @@
      planSection: "a real average pitch cannot cross itself" - applied here within a hand
      instead of across hands). A pair with no real average difference (both voices average
      the same register, or one is silent) is skipped - "expected order" is undefined. */
-  function voiceCrossings(g) {
-    const found = [];
+  /* every voice's whole-piece average register, per part: {partId: {voiceId: avgMidi|null}} */
+  function voiceAveragesOf(g) {
+    const out = {};
     g.parts.forEach(part => {
       const stats = VOICES.perPartVoiceStats(g, part);
       const avg = {};
       Object.keys(stats).forEach(v => { avg[v] = stats[v].total ? stats[v].sumMidi / stats[v].total : null; });
-      const notes = U.noteWindows(g, { part: part.id });
+      out[part.id] = avg;
+    });
+    return out;
+  }
+
+  /* `notes` = songgraph/util.js noteWindows-shaped notes (each carries partId); `avgByPart` =
+     voiceAveragesOf(g). Split from voiceCrossings(g) in G9b so a repair can re-detect on a
+     hypothetical note list without building a graph; voiceCrossings(g) is unchanged in behaviour. */
+  function voiceCrossingsFromNotes(notes, avgByPart) {
+    const found = [];
+    Object.keys(avgByPart).forEach(partId => {
+      const avg = avgByPart[partId];
       const byOnset = new Map();
-      notes.forEach(n => { const k = R.format(n.w0); if (!byOnset.has(k)) byOnset.set(k, []); byOnset.get(k).push(n); });
+      notes.forEach(n => {
+        if (n.partId !== partId) return;
+        const k = R.format(n.w0); if (!byOnset.has(k)) byOnset.set(k, []); byOnset.get(k).push(n);
+      });
       Array.from(byOnset.keys()).sort().forEach(k => {
         const list = byOnset.get(k);
         for (let i = 0; i < list.length; i++) {
@@ -158,7 +178,7 @@
             if (aAvg == null || bAvg == null || aAvg === bAvg) continue;
             const expectAAbove = aAvg > bAvg, actualAAbove = A.midi > B.midi;
             if (expectAAbove !== actualAAbove) {
-              found.push({ w0: k, part: part.id, voices: [A.voiceId, B.voiceId].sort(), midis: [A.midi, B.midi] });
+              found.push({ w0: k, part: partId, voices: [A.voiceId, B.voiceId].sort(), midis: [A.midi, B.midi] });
             }
           }
         }
@@ -166,14 +186,18 @@
     });
     return found;
   }
+  function voiceCrossings(g) { return voiceCrossingsFromNotes(U.noteWindows(g), voiceAveragesOf(g)); }
 
-  function voiceLeadingSmells(g) {
-    const slices = slicesOf(g);
+  function smellsFromNotes(notes, avgByPart) {
+    const slices = slicesFromNotes(notes);
     const parallels = parallelFifthsOctaves(slices);
     const innerLeaps = innerVoiceLeaps(slices);
-    const crossings = voiceCrossings(g);
+    const crossings = voiceCrossingsFromNotes(notes, avgByPart);
     return { parallels: parallels, innerLeaps: innerLeaps, crossings: crossings, count: parallels.length + innerLeaps.length + crossings.length };
   }
 
-  return Object.freeze({ LARGE_LEAP, slicesOf, parallelFifthsOctaves, innerVoiceLeaps, voiceCrossings, voiceLeadingSmells });
+  function voiceLeadingSmells(g) { return smellsFromNotes(U.noteWindows(g), voiceAveragesOf(g)); }
+
+  return Object.freeze({ LARGE_LEAP, slicesOf, slicesFromNotes, outerOf, parallelFifthsOctaves, innerVoiceLeaps, voiceCrossings,
+    voiceAveragesOf, voiceCrossingsFromNotes, smellsFromNotes, voiceLeadingSmells });
 });

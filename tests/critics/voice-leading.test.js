@@ -85,3 +85,15 @@ test('voiceLeadingSmells is deterministic (same graph, same result, repeat call)
   const a = VL.voiceLeadingSmells(g), b = VL.voiceLeadingSmells(g);
   assert.equal(JSON.stringify(a), JSON.stringify(b));
 });
+
+test('regression (G9b correction): a lone melody note moving stepwise is NOT a parallel unison/octave', () => {
+  /* G9a's outerOf treated a slice with ONE note as hi === lo (a "unison") and so counted every same-direction
+     step of a single line as a parallel octave (hundreds per file). Two outer voices need two attacking notes. */
+  const restLH = mk({ time: [2, 4], rh: 'C5:q D5:q', lh: 'r:h' });
+  assert.equal(VL.voiceLeadingSmells(restLH).parallels.length, 0, 'a melody over a resting hand has no outer pair');
+  const heldLH = mk({ time: [2, 4], rh: 'C5:q D5:q', lh: 'C3:h' });
+  assert.equal(VL.voiceLeadingSmells(heldLH).parallels.length, 0, 'a melody over a sustained bass: only one attack at the second onset');
+  /* the real unison of two voices is still a parallel */
+  const real = mk({ time: [2, 4], rh: 'C5:q D5:q', lh: 'C5:q D5:q' });
+  assert.equal(VL.voiceLeadingSmells(real).parallels.length, 1);
+});

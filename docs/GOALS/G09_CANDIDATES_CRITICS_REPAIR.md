@@ -524,3 +524,134 @@ above. Held-out (32 files walked, 11 scored, 3 timeouts): G9a harmony 0.932 / 0.
 0.255, hard 11/11 zero, melody 1.000 - identical. This is expected: the harness requests are hand profile `large`, where
 the request-profile filter accepts a superset of what the candidate-profile filter did and the gate/badness fixes only
 matter when a critic errors or the pool is empty, neither of which happened on these samples.
+
+### G9b - repair (2026-09-30)
+
+Node-only, nothing the app loads (§2/§10 unchanged); `git diff --stat origin/main` shows no app or server file. Done directly
+(Read/Grep/Bash and ad hoc Node scripts in this worktree); no sub-agent was dispatched.
+
+**What was built**
+- `repair/plan.js` - the note-level planner: given a note list it proposes one *unit* (the edits to one measure) per detected smell,
+  under declared constraints. `repair/index.js` - `repair(graph, ctx, opts)`, `repairSelection(selection, g, sg, request)`: applies a
+  unit with `scoregraph/ops.js` `edit()` on a private copy, judges it against the real critics, commits it or discards it.
+- `tests/repair/repair.test.js` (17 tests) + `npm run test:repair`. `realize/tools/harness.js` gained `--repair` (additive; needs
+  `--g9a`) with a `g9aRepair` row and a `repair` summary block.
+- Outside `repair/`: `critics/voice-leading.js` (correction + refactor, below) and one added export (`overageOf`) in
+  `critics/register-density.js`. `scoregraph/schema.js` is **unchanged** (`repaired` in `PROV_OPS` and `repair` in `SOURCE_KINDS` already existed).
+
+**Ops - each detects only what a G9a critic detects.** Every pitch edit is an octave displacement (+-12/+-24) of one head: same letter,
+same alteration, only `oct` changes, so spelling and pitch-class content are untouched.
+1. `parallel` - `voice-leading.parallels`: the non-melody outer note of the second slice moves an octave (for a chord's lowest note
+   this is the re-voicing: the chord turns one inversion).
+2. `innerLeap` - `voice-leading.innerLeaps`: an endpoint moves an octave towards the other.
+3. `crossing` - `voice-leading.crossings`: one of the pair moves 1-2 octaves to restore the order.
+4. `dropDoubling` - `register-density` chord load: in a measure whose chord load exceeds the stage's ceiling, drop an octave doubling
+   (LH: the upper duplicate; RH: the lower one). It does **not** touch notes-per-beat/density overage - that would mean deleting notes.
+
+**Never touched / constraints (declared before any measurement):** a note that matches the request's original melody (same match as
+`melodyPreservation`, tolerance 0.15 quarter; with no melody given, the top note of each onset slice); a head any tie, arpeggio or
+performance link refers to; a grace note. A candidate must keep the moved note's own-line interval to its neighbours <= max(old, 9
+semitones) (this is what stops an octave-doubled scale run being "fixed" into octave leaps - such a smell is left in place and
+reported as `unplannable`); stay inside the piece's own overall pitch range and 21..108; not duplicate a pitch in the same hand
+attack; introduce no new hand crossing; strictly reduce the note-level smell count without raising any category.
+Tie-break is deterministic (fewest smells after, smallest shift, fixed candidate order).
+
+**Rollback and guarantees (how each is tested)**
+- *Per-measure rollback, "worse" defined up front* (header of `repair/index.js`), compared with the graph the unit was applied to, over
+  every measure (an edit can land in the next): G5 hard-violation count for the **request's** hand profile, total or any code, up; any
+  smell category up, or the unit's own target not reduced; per-measure harmony (root+quality windows) down; per-measure original-melody
+  notes matched down; per-measure register/density overage up. Cumulatively against the input: piece density overage up; |level -
+  target| grown by more than 0.05. A failing unit is thrown away (never committed, so there is nothing to undo). The G5 filter and
+  melody are re-checked on the final graph; a failure returns the input object.
+- *Never adds a hard violation*: `tests/repair` "rollback" plants a re-voicing that lowers the smell count but makes a 20-semitone LH
+  span, proves the unit really does add a hard violation when forced, and shows it is rolled back and the input comes back as the
+  same object; a second test shows the same re-voicing accepted for `large` and rolled back for `small` (request profile, not the
+  candidate's). A property check (ad hoc script, not committed) repaired every enumerated candidate of both samples under all three
+  hand profiles: 255 runs (16-file sample: 45 changed, 162 units accepted, 3 rolled back) and 294 runs (held-out: 90 changed, 378
+  accepted, 68 rolled back, 62 of those 68 by the hard guard's `SPAN`) with **zero** violations of: hard count not above the input's,
+  melody preservation not below, harmony root+quality not below, smell count not above, idempotence, no fallback.
+- *Provenance*: each edited head gets head-level `op: repaired` plus `asp.pitch`; its event gets `asp.pitch` (an event-level op would be
+  inherited by untouched sibling heads - caught by a test); a dropped-doubling's event gets `asp.exists`. Source `{kind:'repair',
+  tool:'ppp.g9b-repair'}`. Fingering is then recomputed once for the whole graph (`fingerGraph`, inferred heads only), since an octave
+  shift changes what the finger DP sees - so unrepaired heads' fingers can also change; no metric covers fingering.
+- *Melody, harmony*: melody notes are never edited (test asserts preservation 1.0 and that only whole-octave moves happened); harmony
+  root+quality is unchanged on every measured file, and guarded per measure.
+- *Determinism, idempotence*: sweeps repeat until one accepts nothing; test asserts byte-identical output twice and that repairing a
+  repaired graph returns the same object.
+
+**Measurement** (`--sample 16 --g9a --repair --timeout-s 120`, then `--held-out 32 ...`; outputs written outside the repo). Ops were
+designed looking only at the 16-file sample; the held-out slice was run once, after the code was frozen, and is reported as is.
+G9a's own 16-file numbers reproduce the round-2 record exactly (harmony 0.975/0.978, level 10/12, 0.317).
+
+| 16-file sample, 12 scored | G9a | **G9a + repair** | ScoreArranger |
+|---|---|---|---|
+| hard violations (zero-files, mean) | 12/12, 0 | 12/12, 0 | 10/12, 0.92 |
+| melody | 1.000 | 1.000 | 0.985 |
+| harmony root+quality / root-only | 0.975 / 0.978 | 0.975 / 0.978 | 0.947 / 0.956 |
+| level within +-1, mean abs diff | 10/12, 0.317 | 10/12, 0.317 | 10/12, 0.304 |
+| engrave L1/L2 | 12/12 | 12/12 | 12/12 |
+| voice-leading smells (files with any) | 26 (2) | 19 (1) | - |
+| register/density overage (sum) | 0.339 | 0.339 | - |
+
+| Held-out, 32 walked, 14 scored, 0 timeouts | G9a | **G9a + repair** | ScoreArranger |
+|---|---|---|---|
+| hard violations (zero-files, mean) | 14/14, 0 | 14/14, 0 | 9/14, 1.50 |
+| melody | 1.000 | 1.000 | 0.974 |
+| harmony root+quality / root-only | 0.9345 / 0.9651 | 0.9345 / 0.9651 | 0.966 / 0.969 |
+| level within +-1, mean abs diff | 14/14, 0.2079 | 14/14, **0.2086** | 14/14, 0.451 |
+| engrave L1/L2 | 14/14 | 14/14 | 14/14 |
+| voice-leading smells (files with any) | 42 (6) | 27 (5) | - |
+| by category: parallels / inner leaps / crossings | 20 / 2 / 20 | 16 / 1 / 10 | - |
+| register/density overage (sum) | 0 | 0 | - |
+
+Repair counts. 16-file sample: 1 of 12 files repaired (6 units, 6 measures, all `parallel`), 0 rolled back, 19 smells left as
+`unplannable` (all `beyer/007`: a verbatim LH doubling the melody in octaves through a scale run). Held-out: 5 of 14 files repaired
+(14 units / 13 measures: parallel 3, crossing 10, innerLeap 1); 3 files had rollbacks (14 units / 7 measures: parallel 8, crossing 4,
+innerLeap 2 - 12 by the G5 hard guard `SPAN`, 2 because the graph-level recount showed the smell count not falling); 14 smells left
+unplannable; no fallback and no truncation on either sample. `dropDoubling` never fired on real data (the only over-band feature on
+either sample was notes-per-beat/density on `sonatina/003`, which it cannot fix) - it is tested on planted fixtures only. Repair cost
+20 ms mean on the 16-file sample, 71 ms mean (434 ms max) on the held-out slice.
+
+**Stated plainly.** Repair does what it is built to do and nothing else: on the held-out slice it removed 15 of 42 counted smells
+(crossings 20 -> 10), and no other measured metric moved except mean level distance by +0.0007 (0.2079 -> 0.2086: one file,
+`sonatina/004`, assessed 0.01 further from its target, inside the declared 0.05 slack). On the 16-file sample it changed one file.
+The only thing it improved is the voice-leading smell count - the critic its own ops are written against - so this is *not*
+independent evidence that the output is better music; it shows only that the smells the critic can see are fixable at no measured
+cost. Whether a hymn with the bass re-voiced sounds better is exactly what H-8/H-9 (§5 G9c) are for. It also does not touch the
+gap that matters for §6: harmony still loses to ScoreArranger on the held-out slice (0.9345 vs 0.966), and repair cannot change that
+(harmony is a guard here, not a target).
+
+**Corrections to the design text and to G9a, found while reading the code**
+1. **G9a's voice-leading critic counted a lone note as a "parallel octave".** `outerOf` treated a slice with one attacking note as
+   hi === lo (a unison) so every same-direction step of a single line was a parallel. Fixed in `critics/voice-leading.js` (two
+   outer voices need two attacking notes; a test pins it; a real two-voice unison is still a parallel). On the round-2 selected graphs of
+   the 16-file sample the count falls from 844 to 26. Selection is unaffected (`voiceLeading` weight is 0 by default): re-running G9a
+   reproduced the round-2 row exactly. **Consequence for §12 G9a round 1:** its load-bearing ablation ("removing voiceLeading is a
+   Pareto improvement") was measured on the inflated count and is probably an artifact of it; that was not re-measured here, and the
+   weight stays 0, so nobody should read the old ablation as a finding about voice-leading. The critic still compares only attack
+   slices (a sustained bass under a moving melody is invisible to it), so the corrected count under-reports rather than over-reports.
+2. **§4 says G3's rollback loop is reusable; only part of it is.** `pro-critic.js` `fingerprint`/`diff` are reused (a structural check
+   over the components a pitch edit may not change). `C.check(before, after, may)` cannot be used: it deletes `onsets` (and every FIXED
+   component) from what a pass may declare, and `onsets`/`sound`/`place` carry pitch. G3's shape - "run all, find the offending
+   measures, re-run without them" - is also not used as such: repair units are applied one at a time and the rejected one is simply
+   not committed (same per-measure guarantee, simpler, and adjacent units cannot mask each other's failure).
+3. **§5's example "drop a doubling that breaks a density band" is narrower than it reads.** Only chord load is fixable that way;
+   the register/density critic's over-band features on real files are notes-per-beat and density, which need notes removed.
+4. Real corpus, both samples: the smells that exist are almost all parallels between outer voices (16-file: 26 parallels, 0 leaps,
+   0 crossings). Crossings (20) and inner leaps (2) appear only on the held-out slice.
+5. The held-out slice scores 14 files now (round 2 recorded 11 with 3 legacy timeouts): TD15 (#93, merged before this branch) fixed
+   the `ScoreArranger` hang on `christ-arose`, `god-rest-ye-merry` and `burgmuller25/019`, so all three now score. G9a's own code is
+   unchanged; its held-out numbers are re-stated above for the 14-file set (harmony 0.9345/0.9651, level 0.2079), not the 11-file ones.
+
+**Deviations from the brief:** the G5 filter runs over the whole graph and is compared measure by measure (VELOCITY and holds cross
+measure lines), not only on the edited measure; an extra piece-level level/density guard; `--repair` requires `--g9a`;
+`opts.seedUnits` is a public test hook; `critics/` was edited (item 1) though the brief was silent on it.
+
+**Known limits.** (a) The planner does not pre-check hand span, so on the held-out slice 12 of 28 attempted units were wasted on a
+candidate the G5 guard then rejected, where another shift might have worked; a span check in `bestShift` is the obvious follow-up
+(not done after the held-out run, to keep it a single untuned look). (b) The note-level crossing check uses the input's register
+averages; the real critic recomputes them, so 2 held-out units passed the planner and failed the recount (rolled back correctly).
+(c) Only octave displacement and dropping a doubling exist: no chord-tone substitution, no rhythm change, no inner-voice re-spelling.
+(d) A repair is judged on the measures' critics, not on how it sounds. (e) Melody protection is by onset+pitch match, so an
+accompaniment note that coincides with a melody note is also protected (conservative). (f) `sonatina/003`'s density overage and
+`beyer/007`'s octave-doubled run stay as they were, by design.

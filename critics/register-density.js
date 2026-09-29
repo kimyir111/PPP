@@ -89,5 +89,5 @@
     return { overage: overage, detail: detail, band: { stage: band.stage, extrapolated: band.extrapolated } };
   }
 
-  return Object.freeze({ P90_KEYS, MAX_KEYS, densityBand, registerDensity });
+  return Object.freeze({ P90_KEYS, MAX_KEYS, densityBand, overageOf, registerDensity });
 });
