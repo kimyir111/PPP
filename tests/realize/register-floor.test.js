@@ -111,8 +111,13 @@ test('realize: with the floor (default) no arranged note is below E2, under ever
     assert.equal(PLA.analyzeGraph(on.graph, { profile: 'large' }).totals.hard, 0, pattern + ': the floor adds no hard violation');
   }
   assert.ok(anyOffBelow, 'fixture assumption: the unfloored realizer really does put arranged notes below E2 here (the H-8 defect)');
+  /* the old ('wide') stride geometry leaves the floor to raise notes afterwards; the close geometry (the default since the
+     left-hand-jump fix) places its bass at or above the floor itself, so the post-hoc raise has nothing left to do */
+  const wide = REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'pop', stride: 'wide' });
+  assert.ok(wide.report.floor.notesRaised > 0 && wide.report.floor.eventsRaised > 0, 'the report counts what was raised');
+  assert.ok(lowest(wide.graph) >= 40);
   const pop = REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'pop' });
-  assert.ok(pop.report.floor.notesRaised > 0 && pop.report.floor.eventsRaised > 0, 'the report counts what was raised');
+  assert.equal(pop.report.floor.notesRaised, 0, 'close stride: the bass is placed above the floor, nothing to raise');
   assert.ok(lowest(pop.graph) >= 40);
 });
 
@@ -136,7 +141,7 @@ test('realize: a piece that goes lower itself keeps its own low notes exactly as
 
 test('realize: the floor is overridable - a lower floor changes fewer notes, null changes none', async () => {
   const f = await planOf(REQ.passMeNot);
-  const at = n => REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'pop', registerFloor: n });
+  const at = n => REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'pop', stride: 'wide', registerFloor: n }); /* wide: the floor does the raising */
   const off = at(null), f36 = at(36), f40 = at(40);
   assert.ok(floorOf(off.graph, f.source, 40).below > 0);
   assert.equal(floorOf(f36.graph, f.source, 36).below, 0);
@@ -148,14 +153,14 @@ test('realize: the floor is overridable - a lower floor changes fewer notes, nul
 test('realize: graceful degradation - a raise that would put the bass at or above the melody is skipped and counted, still valid', async () => {
   const f = await planOf(REQ.sonatina025);
   /* an absurdly high floor forces every raised bass past the right hand's melody */
-  const r = REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'pop', registerFloor: 84 });
+  const r = REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'pop', stride: 'wide', registerFloor: 84 });
   assert.ok(r.ok);
   assert.ok(r.report.floor.eventsDegraded > 0, 'some events could not be raised without crossing the melody');
   assert.ok(r.report.floor.notesDegraded > 0);
   assert.ok(floorOf(r.graph, f.source, 84).below > 0, 'they stay as generated');
   assert.equal(M.melodyPreservation(M.originalMelodyNotes(f.g, f.plan), M.graphNoteList(r.graph)), 1);
   /* and at the real floor nothing is degraded on this piece */
-  const real = REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'pop' });
+  const real = REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'pop', stride: 'wide' });
   assert.equal(real.report.floor.eventsDegraded, 0);
 });
 

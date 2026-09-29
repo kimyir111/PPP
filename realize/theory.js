@@ -127,6 +127,21 @@ function floorMidis(midis, floor, maxSpan) {
   return { midis: midis.map(m => m + up), raised: midis.length, merged: 0, shifted: true };
 }
 
+/* A chord voiced CLOSE ABOVE a bass note (the stride / oom-pah geometry, docs/GOALS/G09 section 12 "G9 left-hand jumps"):
+   each of the chord's pitch classes at its single MIDI instance in (bass, bass + 12], sorted ascending. Every pitch class
+   occurs exactly once in an octave window, so the voicing is fixed by the bass note and the pitch classes: the lowest chord
+   note is 1..11 above the bass (3..9 for a triad whose root or fifth is the bass) and the top is at most an octave above it
+   (a chord tone that is the bass's own pitch class sits exactly at bass + 12). A repeated pitch class collapses to one note. */
+function foldAbove(bass, pcs) {
+  const out = [];
+  pcs.forEach(pc => {
+    const up = (((pc - bass) % 12) + 12) % 12;
+    const m = bass + (up === 0 ? 12 : up);
+    if (out.indexOf(m) < 0) out.push(m);
+  });
+  return out.sort((a, b) => a - b);
+}
+
 /* All permutations of [0..n-1], n small (<=4 in every real caller - a 7th chord at most). */
 function permutations(n) {
   if (n <= 1) return [[0]];
@@ -175,6 +190,6 @@ function clampSpan(midis, maxSpan, maxIters) {
 
   return {
     CHORD_INTERVALS, intervalsFor, targetPcs, nearestWithPc, freshVoicing, leadVoicing, clampSpan, permutations,
-    REGISTER_FLOOR, floorMidis
+    REGISTER_FLOOR, floorMidis, foldAbove
   };
 });

@@ -49,6 +49,19 @@ function span(midis) { const s = sortAsc(midis); return s[s.length - 1] - s[0]; 
 
 function fitSpan(midis, maxSpan) { return span(midis) <= maxSpan ? midis : TH.clampSpan(midis, maxSpan); }
 
+/* ---- stride geometry (docs/GOALS/G09 section 12 "G9 left-hand jumps (post H-8 re-look)") ----
+   `pop` and `waltz` put a bass note below a chord. They used to voice the chord by smooth voice leading around the section's
+   left-hand register midpoint and put the bass an octave under that midpoint, so the chord sat 8 to 20 semitones above the
+   bass (mean 16-17 measured): every bass-to-chord and chord-to-bass step was an octave or more (the reviewer's "the distance
+   between the low notes, an octave or a tenth, is too far"). 'close' (the default) voices the chord just above its bass
+   (theory.foldAbove: every chord tone in (bass, bass + 12]), and takes the bass no lower than the register floor when one is
+   given. `opts.stride: 'wide'` is the old geometry, kept only so the change can be measured and tested against it. */
+function closeStride(opts) { return opts.stride !== 'wide'; }
+function strideLo(opts) { return closeStride(opts) && opts.floor != null ? { lo: opts.floor } : undefined; }
+function closeChord(bass, w, opts) {
+  return TH.foldAbove(bass, TH.targetPcs(w.root == null ? 0 : w.root, w.quality || 'maj', opts.count));
+}
+
 /* ---- block chords: one voiced chord struck per beat window, held for its full length ---- */
 function block(windows, prevMidis, opts) {
   const events = [];
@@ -94,11 +107,12 @@ function ballad(windows, prevMidis, opts) {
    derives `display` from the exact duration; see its header). */
 function pop(windows, prevMidis, opts) {
   const events = [];
+  const close = closeStride(opts), lo = strideLo(opts);
   windows.forEach((w, i) => {
-    const chord = fitSpan(chordOf(prevMidis, w, opts.anchor, opts.count), opts.maxSpan);
-    const rootMidi = TH.nearestWithPc(w.root == null ? (prevMidis ? prevMidis[0] % 12 : 0) : w.root, opts.anchor - 12);
-    const fifthMidi = TH.nearestWithPc(((w.root == null ? 0 : w.root) + 7) % 12, rootMidi);
+    const rootMidi = TH.nearestWithPc(w.root == null ? (prevMidis ? prevMidis[0] % 12 : 0) : w.root, opts.anchor - 12, lo);
+    const fifthMidi = TH.nearestWithPc(((w.root == null ? 0 : w.root) + 7) % 12, rootMidi, lo);
     const bassNote = i % 2 === 0 ? rootMidi : fifthMidi;
+    const chord = close ? closeChord(rootMidi, w, opts) : fitSpan(chordOf(prevMidis, w, opts.anchor, opts.count), opts.maxSpan);
     const half = R.div(R.sub(w.w1, w.w0), R.make(2, 1));
     events.push({ at: w.w0, dur: half, midis: [bassNote] });
     if (i % 2 === 1) events.push({ at: R.add(w.w0, half), dur: half, midis: fitSpan(chord, opts.maxSpan) });
@@ -113,7 +127,16 @@ function pop(windows, prevMidis, opts) {
    cross-rhythm (bass then chord on every later beat window), not a destructive rebarring. */
 function waltz(windows, prevMidis, opts) {
   const events = [];
+  const close = closeStride(opts), lo = strideLo(opts);
+  let bass = null; /* the measure's bass note (close geometry: every chord of the measure is voiced just above it) */
   windows.forEach((w, i) => {
+    if (close) {
+      if (i === 0 || bass == null) bass = TH.nearestWithPc(w.root == null ? (prevMidis ? prevMidis[0] % 12 : 0) : w.root, opts.anchor - 12, lo);
+      const chord = closeChord(bass, w, opts);
+      events.push({ at: w.w0, dur: R.sub(w.w1, w.w0), midis: i === 0 ? [bass] : chord });
+      prevMidis = chord;
+      return;
+    }
     const chord = fitSpan(chordOf(prevMidis, w, opts.anchor, opts.count), opts.maxSpan);
     if (i === 0) {
       const rootMidi = TH.nearestWithPc(w.root == null ? chord[0] % 12 : w.root, opts.anchor - 12);

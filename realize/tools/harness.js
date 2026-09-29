@@ -11,7 +11,7 @@
    measured G6 position lands closest - the same fairness G8a's own search gets, never a
    fixed guess); score all four on the SAME five metrics (realize/tools/metrics.js).
 
-   node realize/tools/harness.js [--sample N] [--out path.json] [--g9a [--repair]] [--held-out N] [--register-floor N|off]
+   node realize/tools/harness.js [--sample N] [--out path.json] [--g9a [--repair]] [--held-out N] [--register-floor N|off] [--stride wide|close]
    ========================================================================== */
 'use strict';
 const fs = require('fs');
@@ -121,7 +121,7 @@ async function runFile(rel, opts) {
 
   /* ---- G8a ---- */
   const t0 = Date.now();
-  const g8 = REALIZE.realize(g, sg, found.plan, { pattern: opts.pattern || 'auto', registerFloor: opts.registerFloor });
+  const g8 = REALIZE.realize(g, sg, found.plan, { pattern: opts.pattern || 'auto', registerFloor: opts.registerFloor, stride: opts.stride });
   row.g8aMs = Date.now() - t0;
   if (!g8.ok) { row.g8a = { error: g8.reason + ' ' + JSON.stringify(g8.detail).slice(0, 200) }; }
   else {
@@ -146,7 +146,7 @@ async function runFile(rel, opts) {
   if (opts.g9a) {
     const request = { targetLevel: found.targetLevel, handProfile: found.profile, sections: 'all' };
     const t1 = Date.now();
-    const enumerated = CAND.enumerate(g, sg, request, { n: opts.g9aN, levelOffsets: opts.levelOffsets, reference: opts.reference, registerFloor: opts.registerFloor });
+    const enumerated = CAND.enumerate(g, sg, request, { n: opts.g9aN, levelOffsets: opts.levelOffsets, reference: opts.reference, registerFloor: opts.registerFloor, stride: opts.stride });
     const cheapScored = CAND.scoreCandidates(enumerated.candidates, g, sg, request, { reference: opts.reference, skipEngrave: true, registerFloor: opts.registerFloor });
     const engraveCache = new Map(); /* real engrave results are reused by the ablation re-selections below (the gate never mutates cheapScored) */
     /* `opts.weights` (--weights k=v,...): selection weights overriding CAND.DEFAULT_WEIGHTS for the g9a row AND
@@ -385,7 +385,11 @@ async function main() {
     registerFloor = v === 'off' ? null : Number(v);
     if (registerFloor !== null && !Number.isFinite(registerFloor)) throw new Error('--register-floor: expected a MIDI number or off, got ' + v);
   }
-  const runOpts = { registerFloor: registerFloor, weights: weights, pattern: pattern, g9a: g9a, repair: repair, g9aN: g9aN, levelOffsets: levelOffsets, topKForEngrave: topKForEngrave, ablateCritics: ablateCritics };
+  /* --stride wide: the pre-fix stride geometry (pop/waltz chord voiced around the register midpoint, bass an octave under it),
+     for a before/after on the same code. Default: close (chord voiced just above its bass). */
+  const stride = opt('--stride', undefined);
+  if (stride !== undefined && stride !== 'wide' && stride !== 'close') throw new Error('--stride: expected wide or close, got ' + stride);
+  const runOpts = { stride: stride, registerFloor: registerFloor, weights: weights, pattern: pattern, g9a: g9a, repair: repair, g9aN: g9aN, levelOffsets: levelOffsets, topKForEngrave: topKForEngrave, ablateCritics: ablateCritics };
   /* child mode: one file, row written to --row-out (the parent gives each file its own process and a time limit,
      so a legacy engine that never returns on one file is recorded as a timeout instead of stalling the sweep) */
   if (flag('--one')) {

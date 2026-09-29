@@ -70,5 +70,59 @@
 
   function leftHandJump(graph, opts) { return ofNotes(RF.notesOf(graph), opts); }
 
-  return Object.freeze({ SPLIT_MIDI, JUMP_SEMITONES, G2, bassLine, ofNotes, leftHandJump });
+  /* ---- the repair guard's questions (repair/plan.js, repair/index.js): would an edit CREATE a jump? ----
+     A jump is identified by its two onsets ("fromKey>toKey"), so the same step before and after an edit is the same jump
+     and a step whose bass an edit changed is a new jump only if it was not one before. */
+  const keyOf = q => Math.round(q * 1e6);
+
+  /* the identities of every jump of a plain note list [{onsetQ, midi}] */
+  function jumpIds(notes, opts) {
+    opts = opts || {};
+    const jump = opts.jumpSemitones == null ? JUMP_SEMITONES : opts.jumpSemitones;
+    const line = bassLine(notes, opts.splitMidi == null ? SPLIT_MIDI : opts.splitMidi);
+    const ids = new Set();
+    for (let i = 1; i < line.length; i++) if (Math.abs(line[i].bass - line[i - 1].bass) >= jump) ids.add(keyOf(line[i - 1].onsetQ) + '>' + keyOf(line[i].onsetQ));
+    return ids;
+  }
+  /* how many jumps `after` has that `before` did not (same onsets, edited pitches) */
+  function newJumps(before, after, opts) {
+    const b = jumpIds(before, opts);
+    let n = 0;
+    jumpIds(after, opts).forEach(id => { if (!b.has(id)) n++; });
+    return n;
+  }
+
+  /* a per-state index for asking the same question about ONE note moved, without rebuilding the whole line each time */
+  function bassIndex(notes, opts) {
+    const split = opts && opts.splitMidi != null ? opts.splitMidi : SPLIT_MIDI;
+    const lows = new Map();
+    notes.forEach(n => { if (n.midi < split) { const k = keyOf(n.onsetQ); if (!lows.has(k)) lows.set(k, []); lows.get(k).push(n.midi); } });
+    return { split: split, jump: opts && opts.jumpSemitones != null ? opts.jumpSemitones : JUMP_SEMITONES, lows: lows, keys: Array.from(lows.keys()).sort((a, b) => a - b) };
+  }
+  function stepsAround(idx, key, lowsAtKey) {
+    const keys = idx.keys;
+    let lo = 0, hi = keys.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (keys[mid] < key) lo = mid + 1; else hi = mid; }
+    const prev = lo > 0 ? keys[lo - 1] : null;
+    const next = lo < keys.length && keys[lo] === key ? (lo + 1 < keys.length ? keys[lo + 1] : null) : (lo < keys.length ? keys[lo] : null);
+    const bassOf = k => k === key ? (lowsAtKey.length ? Math.min.apply(null, lowsAtKey) : null) : Math.min.apply(null, idx.lows.get(k));
+    const step = (a, b) => { const x = bassOf(a), y = bassOf(b); return x == null || y == null ? null : { id: a + '>' + b, jump: Math.abs(x - y) >= idx.jump }; };
+    const out = [];
+    if (lowsAtKey.length) { if (prev != null) out.push(step(prev, key)); if (next != null) out.push(step(key, next)); }
+    else if (prev != null && next != null) out.push(step(prev, next));
+    return out.filter(Boolean);
+  }
+  /* would moving a note from `from` to `to` (both MIDI, at onsetQ) create a jump that was not there? */
+  function createsJump(idx, onsetQ, from, to) {
+    const key = keyOf(onsetQ);
+    const before = (idx.lows.get(key) || []).slice();
+    const after = before.slice();
+    const at = after.indexOf(from);
+    if (at >= 0) after.splice(at, 1);
+    if (to < idx.split) after.push(to);
+    const was = stepsAround(idx, key, before);
+    return stepsAround(idx, key, after).some(s => s.jump && !was.some(w => w.id === s.id && w.jump));
+  }
+
+  return Object.freeze({ SPLIT_MIDI, JUMP_SEMITONES, G2, bassLine, ofNotes, leftHandJump, jumpIds, newJumps, bassIndex, createsJump });
 });

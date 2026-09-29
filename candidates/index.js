@@ -155,7 +155,7 @@
         planCache.set(planCacheKey, planResult);
       }
       if (!planResult.ok) { tried.push({ spec: spec, ok: false, stage: 'plan', reason: planResult.reason }); continue; }
-      const realized = REALIZE.realize(g, sg, planResult.plan, { pattern: spec.pattern, reference: opts.reference, registerFloor: opts.registerFloor });
+      const realized = REALIZE.realize(g, sg, planResult.plan, { pattern: spec.pattern, reference: opts.reference, registerFloor: opts.registerFloor, stride: opts.stride });
       if (!realized.ok) { tried.push({ spec: spec, ok: false, stage: 'realize', reason: realized.reason }); continue; }
       const fp = SER.fingerprint(realized.graph);
       if (seenFingerprints.has(fp)) { tried.push({ spec: spec, ok: false, stage: 'dedup', reason: 'DUPLICATE_OF_EARLIER_CANDIDATE', fingerprint: fp }); continue; }
@@ -225,6 +225,10 @@
      keeps every candidate's generated notes at or above E2, so the critic reads 0 on every candidate that is not degraded
      (measured: 0 degraded in 184 candidates over the two samples) - there is nothing for selection to separate, and a hard
      filter would only turn a degraded piece into "no arrangement". `--weights registerFloor=1` counts it. */
+  /* `leftHandJump` (post-H-8 re-look, docs/GOALS/G09 section 12 "G9 left-hand jumps") is REPORT ONLY too: weight 0. The standing
+     rule is no further tuning of selection; the fix for the reviewer's "awkward hand position" is the realizer's stride geometry
+     (realize/patterns.js), and the critic measures it. `--weights leftHandJump=1` counts it (a jump rate of JUMP_RATE_CAP or more
+     is the worst score). */
   const DEFAULT_WEIGHTS = Object.freeze({ level: 1, melody: 1, harmony: 1, engrave: 1, voiceLeading: 0, registerDensity: 1, registerFloor: 0, leftHandJump: 0 });
   const LEVEL_CAP = 3;      /* a 3-course-position miss is already "as bad as it gets" for this term */
   const ENGRAVE_CAP = 5;    /* 5 combined L1/L2 violations likewise */
@@ -373,6 +377,7 @@
       '|' + JSON.stringify((opts && opts.reference) || null) +
       '|' + JSON.stringify((opts && opts.planOpts) || null) +
       '|' + JSON.stringify(opts && opts.registerFloor !== undefined ? opts.registerFloor : 'default') +
+      '|' + JSON.stringify((opts && opts.stride) || 'default') +
       '|' + (opts && opts.fullEngrave ? 'full' : 'gate');
   }
 

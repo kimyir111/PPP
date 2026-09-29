@@ -56,14 +56,14 @@
   'use strict';
   if (typeof module === 'object' && module.exports) {
     module.exports = factory(require('../scoregraph/rational.js'), require('../scoregraph/pitch.js'),
-      require('../songgraph/util.js'), require('../critics/voice-leading.js'));
+      require('../songgraph/util.js'), require('../critics/voice-leading.js'), require('../critics/left-hand-jump.js'));
   } else {
     const SG = root.PPPScoreGraphModules || {};
     const SGG = root.PPPSongGraphModules || {};
     const M = root.PPPRepairModules = root.PPPRepairModules || {};
-    M.plan = factory(SG.rational, SG.pitch, SGG.util, (root.PPPCriticsModules || {}).voiceLeading);
+    M.plan = factory(SG.rational, SG.pitch, SGG.util, (root.PPPCriticsModules || {}).voiceLeading, (root.PPPCriticsModules || {}).leftHandJump);
   }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (R, P, U, VL) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (R, P, U, VL, LHJ) {
   'use strict';
 
   const SMOOTH_MAX = 9;         /* semitones: a major sixth - the widest line-leap a repair may introduce */
@@ -115,7 +115,9 @@
        so the G6 `range` feature cannot grow */
     const pieceRange = { lo: Infinity, hi: -Infinity };
     notes.forEach(n => { if (n.midi < pieceRange.lo) pieceRange.lo = n.midi; if (n.midi > pieceRange.hi) pieceRange.hi = n.midi; });
-    return { notes: notes, pieceRange: pieceRange, avgByPart: VL.voiceAveragesOf(g), floor: ctx.registerFloor == null ? null : ctx.registerFloor };
+    return { notes: notes, pieceRange: pieceRange, avgByPart: VL.voiceAveragesOf(g), floor: ctx.registerFloor == null ? null : ctx.registerFloor,
+      /* left-hand jump guard (G9 post-H-8 re-look): on unless ctx.leftHandJumpGuard === false; the index is built lazily */
+      lhGuard: ctx.leftHandJumpGuard !== false, lhIdx: null };
   }
 
   function smellsOf(state, notes) { return VL.smellsFromNotes(notes || state.notes, state.avgByPart); }
@@ -167,7 +169,17 @@
     const others = state.notes.filter(x => x !== n && R.eq(x.w0, n.w0) && x.limb && x.limb !== n.limb && (x.limb === 'RH' || x.limb === 'LH'));
     if (n.limb === 'LH') { if (others.some(x => newMidi >= x.midi && n.midi < x.midi)) return false; }
     else if (n.limb === 'RH') { if (others.some(x => newMidi <= x.midi && n.midi > x.midi)) return false; }
-    return smoothOk(state, n, newMidi);
+    if (!smoothOk(state, n, newMidi)) return false;
+    return !createsLeftHandJump(state, n, newMidi);
+  }
+
+  /* the left-hand jump guard (G9 post-H-8 re-look): an edit may not create a jump (the lowest note below middle C moving an
+     octave or more between consecutive onsets, critics/left-hand-jump.js) that was not there before. It may move a note out
+     of a jump, or leave one in place; it may never add one. `ctx.leftHandJumpGuard: false` turns it off. */
+  function createsLeftHandJump(state, n, newMidi) {
+    if (!state.lhGuard) return false;
+    if (!state.lhIdx) state.lhIdx = LHJ.bassIndex(state.notes);
+    return LHJ.createsJump(state.lhIdx, n.onsetQ, n.midi, newMidi);
   }
 
   function withShift(notes, n, newMidi) {
@@ -295,5 +307,5 @@
     return units;
   }
 
-  return Object.freeze({ SMOOTH_MAX, MELODY_TOL_Q, CATS, belowFloor, annotate, smellsOf, listSmells, smellKey, planSmell, planDropDoubling, movable });
+  return Object.freeze({ SMOOTH_MAX, MELODY_TOL_Q, CATS, belowFloor, createsLeftHandJump, annotate, smellsOf, listSmells, smellKey, planSmell, planDropDoubling, movable });
 });

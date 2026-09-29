@@ -14,6 +14,8 @@
                    the notes a repair may never touch, and the melody the guard re-checks
      registerFloor the register floor's guard (G9 post-H-8; default realize/theory.js REGISTER_FLOOR, `null` = off): no
                    edit may put a note below it, or lower than it was when it is already below it (`BELOW_FLOOR`)
+     leftHandJumpGuard  default on; `false` turns it off (G9 post-H-8 re-look): a repair may not create a left-hand jump (the lowest
+                   note below middle C moving an octave or more between consecutive onsets) that was not there (`LEFT_HAND_JUMP`)
      harmony       the ORIGINAL piece's `sg.harmony`: what per-measure harmony agreement is scored
                    against (default: the input graph's own harmony, i.e. "do not change the reading")
    opts
@@ -68,6 +70,7 @@
     module.exports = factory(require('../scoregraph/ops.js'), require('../scoregraph/pitch.js'), require('../scoregraph/rational.js'),
       require('../scoregraph/pro-critic.js'), require('../songgraph/util.js'), require('../songgraph/harmony.js'),
       require('../critics/metrics.js'), require('../critics/voice-leading.js'), require('../critics/register-density.js'),
+      require('../critics/left-hand-jump.js'), require('../critics/register-floor.js'),
       require('../playability/index.js'), require('../difficulty/index.js'), require('./plan.js'), require('../realize/theory.js'));
   } else {
     const SG = root.PPPScoreGraphModules || {};
@@ -75,9 +78,9 @@
     const CM = root.PPPCriticsModules || {};
     const M = root.PPPRepairModules || {};
     root.PPPRepair = factory(SG.ops, SG.pitch, SG.rational, SG.proCritic, SGG.util, SGG.harmony, CM.metrics, CM.voiceLeading,
-      CM.registerDensity, root.PPPPlayability, root.PPPDifficulty, M.plan, (root.PPPRealizeModules || {}).theory);
+      CM.registerDensity, CM.leftHandJump, CM.registerFloor, root.PPPPlayability, root.PPPDifficulty, M.plan, (root.PPPRealizeModules || {}).theory);
   }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (OPS, P, R, PC, U, HARM, METRICS, VL, RD, PLA, DIFF, PLAN, TH) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (OPS, P, R, PC, U, HARM, METRICS, VL, RD, LHJ, RF, PLA, DIFF, PLAN, TH) {
   'use strict';
 
   const VERSION = '1.0.0';
@@ -245,6 +248,9 @@
     let res;
     try { res = applyUnit(cur, unit); } catch (e) { return { ok: false, reasons: ['OP_ERROR:' + (e.code || e.message)] }; }
     if (!res.changed) return { ok: false, reasons: ['NOOP'] };
+    /* the left-hand jump guard, checked on the applied unit itself (so a seeded/test unit is held to it too): a repair never
+       creates a jump (bass moving an octave or more between consecutive onsets) that the graph did not already have */
+    if (ctx.leftHandJumpGuard !== false && LHJ.newJumps(RF.notesOf(cur), RF.notesOf(res.graph)) > 0) return { ok: false, reasons: ['LEFT_HAND_JUMP'] };
     const fp = PC.fingerprint(res.graph);
     const structural = PC.diff(prevFp, fp, STRUCTURAL);
     if (structural.length) return { ok: false, reasons: structural.map(x => 'STRUCTURE:' + x.component) };
@@ -365,7 +371,7 @@
     const ctx = {
       profile: request.handProfile, targetLevel: request.targetLevel,
       stage: REF.stageForPosition(request.targetLevel, opts.reference), reference: opts.reference,
-      origMelody: METRICS.originalMelodyNotes(g, sel.plan), harmony: sg.harmony, registerFloor: opts.registerFloor
+      origMelody: METRICS.originalMelodyNotes(g, sel.plan), harmony: sg.harmony, registerFloor: opts.registerFloor, leftHandJumpGuard: opts.leftHandJumpGuard
     };
     const r = repair(sel.graph, ctx, opts);
     return Object.assign({ ok: true, ctx: ctx }, r);
