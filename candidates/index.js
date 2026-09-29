@@ -73,10 +73,13 @@
    `run(g, sg, request, opts)` does enumerate -> score -> select in one call - the entry
    point `realize/tools/harness.js`'s own G9a comparison mode and this module's own tests
    use. `opts`: `n` (default 8), `weights` (critic weight overrides, for ablations - see
-   `tests/critics/ablation.test.js`), `reference` (G6 reference-data override, threaded to
+   `tests/critics/candidates-gate.test.js`), `reference` (G6 reference-data override, threaded to
    `critics/register-density.js` exactly as `realize/index.js`'s own `opts.reference`
    already is - the same G8b browser-`require()` fix, reused here rather than
-   reinvented), `cache` (a Map, see CACHING below; omit for a fresh, uncached run). */
+   reinvented), `cache` (a Map, see CACHING below; omit for a fresh, uncached run), `engraveCache` (a Map,
+   keyed by candidate fingerprint, that lets repeated gate calls over the same pool reuse a
+   real engrave result instead of recomputing it - the gate never mutates the caller's
+   scored candidates). */
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports) {
@@ -182,7 +185,10 @@
     }
     return candidates.map(c => {
       const ctx = {
-        profile: c.spec.handProfile, targetLevel: request.targetLevel, stage: stage,
+        /* the G5 hard filter uses the REQUEST's own hand profile, never the candidate's:
+           enumeration appends OTHER hand profiles' plans as texture variety, but a candidate
+           is only acceptable if it is playable for the hands the user actually asked for. */
+        profile: request.handProfile, targetLevel: request.targetLevel, stage: stage,
         origHarmony: sg.harmony, origMelodyNotes: origMelodyOf(c.plan), reference: opts.reference,
         id: 'candidate:' + specKey(c.spec), skipEngrave: !!opts.skipEngrave
       };
@@ -217,17 +223,28 @@
   const ENGRAVE_CAP = 5;    /* 5 combined L1/L2 violations likewise */
   const SMELL_CAP = 10;     /* 10 combined voice-leading smells likewise */
 
-  function badnessOf(scores, targetLevel, weights) {
+  /* A score that is absent (`undefined`) or whose critic recorded an error (`<name>Error`,
+     or an `engrave` result carrying `.error`) counts as the WORST (1) - never as perfect, so a
+     failed critic can never make a candidate look better than a clean one. `null` is
+     different and deliberate: `melody`/`harmony` are `null` when the ORIGINAL has nothing to
+     compare against (no declared melody notes / no harmony windows - not applicable, no
+     defect), and `engrave` is `null` only when deliberately deferred (`flags.deferEngrave`,
+     the cheap phase of the engrave gate, where it is uniformly absent for every candidate). */
+  function badnessOf(scores, targetLevel, weights, flags) {
+    flags = flags || {};
     const w = Object.assign({}, DEFAULT_WEIGHTS, weights);
-    const levelBad = scores.level == null ? 1 : Math.min(1, Math.abs(scores.level - targetLevel) / LEVEL_CAP);
-    const melodyBad = scores.melody == null ? 0 : 1 - scores.melody;
-    const harmonyBad = (scores.harmony && scores.harmony.rootQuality != null) ? 1 - scores.harmony.rootQuality : 0;
+    const failed = key => scores[key] === undefined || scores[key + 'Error'] != null;
+    const levelBad = (scores.level == null || scores.levelError != null) ? 1 : Math.min(1, Math.abs(scores.level - targetLevel) / LEVEL_CAP);
+    const melodyBad = failed('melody') ? 1 : scores.melody == null ? 0 : 1 - scores.melody;
+    const harmonyBad = (failed('harmony') || !scores.harmony) ? 1 : scores.harmony.rootQuality == null ? 0 : 1 - scores.harmony.rootQuality;
     const eg = scores.engrave;
-    const engraveBad = (eg && !eg.error) ? Math.min(1, ((eg.silent || 0) + (eg.hardLayout || 0)) / ENGRAVE_CAP) : 0;
+    const engraveBad = eg == null ? ((flags.deferEngrave && eg === null) ? 0 : 1)
+      : eg.error ? 1
+      : Math.min(1, ((eg.silent || 0) + (eg.hardLayout || 0)) / ENGRAVE_CAP);
     const vl = scores.voiceLeading;
-    const voiceLeadingBad = vl ? Math.min(1, vl.count / SMELL_CAP) : 0;
+    const voiceLeadingBad = (failed('voiceLeading') || !vl) ? 1 : Math.min(1, vl.count / SMELL_CAP);
     const rd = scores.registerDensity;
-    const registerDensityBad = rd ? Math.min(1, rd.overage) : 0;
+    const registerDensityBad = (failed('registerDensity') || !rd) ? 1 : Math.min(1, rd.overage);
     const parts = { level: levelBad, melody: melodyBad, harmony: harmonyBad, engrave: engraveBad, voiceLeading: voiceLeadingBad, registerDensity: registerDensityBad };
     let total = 0;
     Object.keys(parts).forEach(k => { total += (w[k] == null ? 1 : w[k]) * parts[k]; });
@@ -260,6 +277,7 @@
      the same way a re-run with the same inputs would resolve it). */
   function select(scored, request, opts) {
     opts = opts || {};
+    if (!scored.length) return { ok: false, reason: 'NO_CANDIDATES', discarded: [] };
     const survivors = scored.filter(c => c.hardOk);
     const discarded = scored.filter(c => !c.hardOk);
     if (!survivors.length) return { ok: false, reason: 'ALL_CANDIDATES_HAVE_HARD_VIOLATIONS', discarded: discarded };
@@ -276,11 +294,10 @@
        1. filter hard violations (same rule as select()); rank the real survivors by CHEAP
           badness alone (engrave contributes 0 - badnessOf's existing "no engrave data"
           handling, unchanged); take the first `topK` of that ranking.
-       2. compute the REAL `engrave` critic for exactly those `topK` candidates (mutating
-          their own `scores.engrave` in place - they remain the SAME objects inside the
-          caller's `cheapScored` array, so a caller inspecting the full scored list afterward
-          sees real engrave numbers for the top-K and `null` for the rest, honestly, not
-          silently backfilled), then call the ordinary, already-tested `select()` on just
+       2. compute the REAL `engrave` critic for exactly those `topK` candidates (on COPIES -
+          the caller's `cheapScored` array is never mutated and keeps `engrave: null` for
+          every candidate; the real numbers appear on `selected`/`ranked` in the result),
+          then call the ordinary, already-tested `select()` on just
           that top-K to pick the final winner - reusing its tie-break/explanation logic
           rather than a second selection mechanism.
      `discarded` in the result is the FULL hard-violation set from the WHOLE candidate pool
@@ -293,18 +310,31 @@
   function selectWithEngraveGate(cheapScored, g, sg, request, opts) {
     opts = opts || {};
     const topK = opts.topKForEngrave == null ? TOP_K_FOR_ENGRAVE_DEFAULT : opts.topKForEngrave;
+    if (!cheapScored.length) return { ok: false, reason: 'NO_CANDIDATES', discarded: [], notEngraveChecked: [] };
     const survivors = cheapScored.filter(c => c.hardOk);
     const hardDiscarded = cheapScored.filter(c => !c.hardOk);
     if (!survivors.length) return { ok: false, reason: 'ALL_CANDIDATES_HAVE_HARD_VIOLATIONS', discarded: hardDiscarded, notEngraveChecked: [] };
     const cheapRanked = survivors
-      .map(c => Object.assign({}, c, { cheapBadness: badnessOf(c.scores, request.targetLevel, opts.weights) }))
+      .map(c => Object.assign({}, c, { cheapBadness: badnessOf(c.scores, request.targetLevel, opts.weights, { deferEngrave: true }) }))
       .sort((a, b) => (a.cheapBadness.total - b.cheapBadness.total) || (a.index - b.index));
-    const gated = cheapRanked.slice(0, topK);
     const notEngraveChecked = cheapRanked.slice(topK);
-    gated.forEach(c => {
-      if (c.scores.engrave && !c.scores.engrave.error) return; /* already real (e.g. a repeat call - ablation re-selection over the same pool) - never recomputed */
-      try { c.scores.engrave = CRIT.metrics.engraveMetrics(c.graph, 'candidate:' + specKey(c.spec) + ':gate'); }
-      catch (e) { c.scores.engrave = { error: String(e && e.message || e) }; }
+    /* the gate never mutates the caller's scored candidates (a cached or re-used pool stays
+       exactly as scoreCandidates returned it): each gated member is a COPY carrying its own
+       `scores` with the real engrave result. A result the candidate already carries, or one
+       memoised in `opts.engraveCache` (keyed by fingerprint - e.g. ablation re-selection over
+       the same pool), is reused, never recomputed. */
+    const gated = cheapRanked.slice(0, topK).map(c => {
+      let eg = c.scores.engrave;
+      if (!(eg && !eg.error)) {
+        const memo = opts.engraveCache && opts.engraveCache.get(c.fingerprint);
+        if (memo) eg = memo;
+        else {
+          try { eg = CRIT.metrics.engraveMetrics(c.graph, 'candidate:' + specKey(c.spec) + ':gate'); }
+          catch (e) { eg = { error: String(e && e.message || e) }; }
+          if (opts.engraveCache && c.fingerprint != null && !eg.error) opts.engraveCache.set(c.fingerprint, eg);
+        }
+      }
+      return Object.assign({}, c, { scores: Object.assign({}, c.scores, { engrave: eg }) });
     });
     const finalSel = select(gated, request, opts);
     if (!finalSel.ok) return finalSel; /* structurally unreachable (every `gated` member already passed hardOk), kept for safety */
@@ -326,7 +356,10 @@
     return SER.fingerprint(g) + '|' + JSON.stringify(request) + '|' + (opts && opts.n != null ? opts.n : 24) +
       '|' + JSON.stringify((opts && opts.levelOffsets) || LEVEL_OFFSETS_DEFAULT) +
       '|' + (opts && opts.topKForEngrave != null ? opts.topKForEngrave : TOP_K_FOR_ENGRAVE_DEFAULT) +
-      '|' + JSON.stringify((opts && opts.weights) || null);
+      '|' + JSON.stringify((opts && opts.weights) || null) +
+      '|' + JSON.stringify((opts && opts.reference) || null) +
+      '|' + JSON.stringify((opts && opts.planOpts) || null) +
+      '|' + (opts && opts.fullEngrave ? 'full' : 'gate');
   }
 
   /* `run()`'s production pipeline (round 2, default): enumerate -> score the six cheap
@@ -339,7 +372,7 @@
     opts = opts || {};
     if (opts.cache) {
       const key = cacheKey(g, request, opts);
-      if (opts.cache.has(key)) return opts.cache.get(key);
+      if (opts.cache.has(key)) return Object.assign({}, opts.cache.get(key)); /* a copy: a caller mutating its result never poisons the cache */
       const result = runUncached(g, sg, request, opts);
       opts.cache.set(key, result);
       return result;

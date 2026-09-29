@@ -63,6 +63,11 @@ function sampleFiles(n) {
    still clears the "~20 reachable files" the task asked for; the real reachable count is
    reported, not assumed. */
 function heldOutFiles(count) {
+  const total = JSON.parse(fs.readFileSync(path.join(REPO, 'tests', 'engrave', 'corpus.json'), 'utf8')).files.length;
+  if (16 + count >= total) {
+    throw new Error('--held-out ' + count + ' is too large: 16 + ' + count + ' >= manifest length ' + total +
+      ' (sampleFiles then returns manifest order, so the slice would no longer be disjoint from the round-1 sample); use at most ' + (total - 17));
+  }
   return sampleFiles(16 + count).slice(16);
 }
 
@@ -131,13 +136,14 @@ async function runFile(rel, opts) {
      (opts.ablateCritics) re-run only `selectWithEngraveGate` against the SAME already
      cheap-scored candidate pool with one critic's weight zeroed - no re-planning/
      re-realizing per ablation (real engrave numbers already computed for a candidate are
-     never recomputed, `selectWithEngraveGate`'s own skip-if-already-real check). */
+     never recomputed, via the shared `engraveCache` Map passed to `selectWithEngraveGate`). */
   if (opts.g9a) {
     const request = { targetLevel: found.targetLevel, handProfile: found.profile, sections: 'all' };
     const t1 = Date.now();
     const enumerated = CAND.enumerate(g, sg, request, { n: opts.g9aN, levelOffsets: opts.levelOffsets, reference: opts.reference });
     const cheapScored = CAND.scoreCandidates(enumerated.candidates, g, sg, request, { reference: opts.reference, skipEngrave: true });
-    const sel = CAND.selectWithEngraveGate(cheapScored, g, sg, request, { topKForEngrave: opts.topKForEngrave });
+    const engraveCache = new Map(); /* real engrave results are reused by the ablation re-selections below (the gate never mutates cheapScored) */
+    const sel = CAND.selectWithEngraveGate(cheapScored, g, sg, request, { topKForEngrave: opts.topKForEngrave, engraveCache: engraveCache });
     row.g9aMs = Date.now() - t1;
     row.g9aTried = enumerated.tried.length;
     row.g9aScored = cheapScored.length;
@@ -153,7 +159,7 @@ async function runFile(rel, opts) {
       row.g9aAblate = {};
       opts.ablateCritics.forEach(critic => {
         const weights = Object.assign({}, CAND.DEFAULT_WEIGHTS); weights[critic] = 0;
-        const abl = CAND.selectWithEngraveGate(cheapScored, g, sg, request, { weights: weights, topKForEngrave: opts.topKForEngrave });
+        const abl = CAND.selectWithEngraveGate(cheapScored, g, sg, request, { weights: weights, topKForEngrave: opts.topKForEngrave, engraveCache: engraveCache });
         row.g9aAblate[critic] = abl.ok
           ? scoreGraphCandidate(abl.selected.graph, rel + ':g9a-ablate-' + critic, found.profile, found.targetLevel, sg.harmony, origMelody)
           : { error: abl.reason };
@@ -283,6 +289,7 @@ async function main() {
     if (child.error && child.error.code === 'ETIMEDOUT') row = { file: f, error: 'timeout after ' + timeoutS + 's (an engine did not return)', timedOut: true };
     else if (!fs.existsSync(rowPath)) row = { file: f, error: 'child failed: ' + String(child.stderr || child.error || child.status).slice(0, 300) };
     else row = JSON.parse(fs.readFileSync(rowPath, 'utf8'));
+    try { fs.unlinkSync(rowPath); } catch (e) { /* already gone */ }
     row.ms = Date.now() - t0;
     console.log(f, row.error ? ('ERROR: ' + row.error) : ('ok in ' + row.ms + 'ms' + (row.g9aMs != null ? (' (g9a ' + row.g9aMs + 'ms, ' + row.g9aScored + ' candidates, ' + row.g9aEngraveChecked + ' engrave-checked)') : '')));
     rows.push(row);

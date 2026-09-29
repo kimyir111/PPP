@@ -293,8 +293,10 @@ is reported plainly per this task's own instruction not to tune around an unfavo
 finding silently or narrow the sample to make it look better.
 
 **Selection-objective overlap, disclosed explicitly (per this task's own instruction):**
-`harmonyAgreement` and `levelOfGraph` are BOTH used as selection critics AND reported as
-acceptance metrics. Any improvement on those two is therefore expected and partly "by
+`harmonyAgreement`, `melodyPreservation` and `levelOfGraph` are ALL used as selection
+critics AND reported as acceptance metrics (this paragraph originally named only harmony and
+level; melody is also a weight-1 selection term - corrected in the round-2 fix pass, see
+"Round 2 fix pass" below). Any improvement on those is therefore expected and partly "by
 construction" of the selection objective, not independent evidence of a better arranger —
 exactly the trap this task warned about. **Harmony's narrow improvement (0.929→0.949) is
 the metric most attributable to selection itself** (harmony is directly optimized and moved
@@ -303,9 +305,11 @@ optimized, is the more informative result**: even with level explicitly in the s
 objective, best-of-N could not move the bucketed ±1 pass rate at all on this sample —
 evidence that the candidate POOL (pattern × hand-profile variants of the same underlying
 G7b plan) simply does not contain enough level-accuracy diversity to close this gap, not
-that selection failed to look for it. **Hard violations, melody preservation and engrave
-are NOT selection-objective overlap** in the interesting sense: melody is 1.000 by
-construction of G8a's realize() (verbatim copy) regardless of which candidate is picked;
+that selection failed to look for it. **Hard violations and engrave
+are NOT selection-objective overlap** in the interesting sense (hard violations are a filter,
+not a score; engrave is uninformative here). Melody IS a selection term, but is 1.000 on
+this sample by construction of G8a's realize() (verbatim copy) regardless of which candidate
+is picked, so selecting on it changes nothing here;
 hard violations were already 0/12→12/12 at G8a's single-realization baseline after G8a's
 own final tuning round (§14 above), so best-of-N's "win" here is inherited, not newly
 produced by selection; engrave is 0/0 for literally every candidate in this sample (bare
@@ -454,12 +458,13 @@ and selects by assessed closeness to the REQUESTED target (never a candidate's o
 `selectWithEngraveGate` runs the real engraver on the cheap-scored top-3 only; ablations reuse the cheap-scored pool.
 `realize/tools/harness.js` gained `--held-out N` (the next N files of the same deterministic stratified walk, disjoint
 from the round-1 16-file sample by construction) and a per-file child process with `--timeout-s`, so a legacy engine
-that never returns is recorded as a timeout instead of stalling the sweep. `tests/critics` 21/21.
+that never returns is recorded as a timeout instead of stalling the sweep. `tests/critics` 21/21 at the time (29/29 after the fix pass below).
 
 **Tuning sample (round-1's 16 files, 12 reachable, tuned against):** G9a vs ScoreArranger — hard violations 12/12 zero
 vs 10/12; melody 1.000 vs 0.985; harmony root+quality 0.975 vs 0.947 (root-only 0.978 vs 0.956); level within ±1
-10/12 vs 10/12 (mean |diff| 0.317 vs 0.304); engrave tied. All five tied or beaten — but this is the sample the
-tuning looked at, so it is optimistic.
+10/12 vs 10/12 (mean |diff| 0.317 vs 0.304); engrave tied. "All five tied or beaten" is loose: level within ±1 is tied
+10/12, but mean level diff is 0.317 (G9a) vs 0.304 (ScoreArranger), i.e. G9a is slightly WORSE there. This is also the
+sample the tuning looked at, so it is optimistic.
 
 **Disjoint held-out (32 files walked; 11 scored; 3 timeouts; rest have no reachable G7b plan):**
 
@@ -482,3 +487,40 @@ sample and the numbers carry wide uncertainty.
 `catalog/hymns/christ-arose.musicxml`, `catalog/hymns/god-rest-ye-merry.musicxml` and
 `catalog/method/burgmuller25/019.mxl` (`beginner` on christ-arose takes 11 ms). Not yet checked whether the app runs the
 same code path; if it does, arranging those pieces at intermediate could freeze the browser.
+
+**Round 2 fix pass (2026-09-30, after independent review) - selection-objective overlap, stated plainly.** The overlap
+disclosure above (round 1 and round 2) was understated. `badnessOf` minimises |DIFF level - target|, using the same
+`levelOfGraph` the harness reports as the level metric; and melody and harmony are also selection terms, scored by the
+same functions (`melodyPreservation`, `harmonyAgreement`) the harness reports. So G9a's melody, harmony and level results
+are best-of-N ON THE EVALUATION METRICS THEMSELVES, not independent evidence of a better arranger. The comparison is also
+unequal: each legacy engine gets a best-of-4 over its own native levels chosen by level closeness only, while G9a gets up
+to 24 candidates (9 pattern/profile specs x 3 planning-level offsets, capped at 24) chosen by all three evaluation metrics together (plus
+register/density and, for the top 3, engrave). The held-out level improvement (0.62 -> 0.25) and the harmony movement
+should be read with that in mind; only hard violations (a structural filter, not a score) and engrave are outside the
+selection objective. Separately: the harness only ever exercises hand profile `large` (`findG8Plan` tries `large` first
+and all 12 + 11 scored files in these two runs used it), so nothing measured here says anything about `medium` or `small` hands.
+
+Correctness fixes in this pass (no tuning of weights or of the arrangement; the user decided there is none):
+1. The G5 hard-violation filter now uses the REQUEST's hand profile (`ctx.profile = request.handProfile`), not the
+   candidate's own profile - enumeration appends other hand profiles' plans, and a candidate is only acceptable if it is
+   playable for the hands actually asked for (mutation test: request `small`, a 12-semitone dyad, filtered).
+2. `badnessOf` no longer treats a failed critic as perfect: an errored/absent engrave, melody, harmony, voice-leading,
+   register-density or level score counts as the worst (1). `null` remains neutral only where it means not-applicable
+   (no original melody notes / no harmony windows) or deliberately deferred (`deferEngrave`, the cheap phase of the gate).
+3. Empty pool returns `NO_CANDIDATES` (not `ALL_CANDIDATES_HAVE_HARD_VIOLATIONS`); the cache key now includes `reference`,
+   `planOpts` and the `fullEngrave` mode, a cache hit returns a copy, and the engrave gate no longer mutates the caller's
+   scored candidates (an optional `engraveCache` Map lets ablation re-selection reuse real engrave results).
+4. `harness.js`: the per-file temp row file is deleted after reading; `--held-out` throws a clear error when 16+count >=
+   the manifest length (61), where `sampleFiles` would return manifest order and disjointness would break; `legacy.js`:
+   the `arrange_score.py` child has a 120 s timeout so a hung Python process cannot orphan.
+5. Tests: new `tests/critics/candidates-gate.test.js` (top-K gating, skip-if-already-real, empty pool, ablation by a zeroed
+   weight, an errored engrave cannot win, badnessOf worst-on-missing, cache key/copy) and a request-profile mutation test;
+   `tests/critics` is now 29/29 (was 21/21). The header comment that cited a non-existent `ablation.test.js` now names
+   `candidates-gate.test.js`.
+
+**Re-measurement after these fixes: the numbers did not change.** 16-file sample (12 scored): G9a harmony root+quality
+0.975 / root-only 0.978, level within ±1 10/12, mean |diff| 0.317, hard 12/12 zero, melody 1.000 - identical to the table
+above. Held-out (32 files walked, 11 scored, 3 timeouts): G9a harmony 0.932 / 0.966, level within ±1 11/11, mean |diff|
+0.255, hard 11/11 zero, melody 1.000 - identical. This is expected: the harness requests are hand profile `large`, where
+the request-profile filter accepts a superset of what the candidate-profile filter did and the gate/badness fixes only
+matter when a critic errors or the pool is empty, neither of which happened on these samples.

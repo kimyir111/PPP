@@ -130,3 +130,21 @@ test('an unreachable request never reaches candidate scoring with a fabricated p
   assert.equal(res.scored.length, 0);
   assert.ok(res.tried.every(t => !t.ok));
 });
+
+test('mutation: the hard filter uses the REQUEST\'s hand profile - a candidate that violates at "small" but not "large" is filtered for a small request', () => {
+  /* C4+C5 is a 12-semitone one-hand dyad: over MAX_SPAN 10 (small), within 12/14 (medium/large).
+     The candidate's OWN spec says 'large' (as an enumeration-appended other-profile plan would),
+     so scoring by the candidate's own profile would wrongly accept it for a small-handed request. */
+  const wide = mk({ time: [1, 4], rh: 'C4+C5:q', lh: 'C3:q' });
+  const plan = { part: 'P1', sections: [] }; /* no melody sections: originalMelodyNotes never touches the graph */
+  const cand = { index: 0, spec: { handProfile: 'large', pattern: 'auto' }, plan: plan, graph: wide, fingerprint: 'wide' };
+  const sg = { harmony: [] };
+  const small = CAND.scoreCandidates([cand], wide, sg, { targetLevel: 1, handProfile: 'small' }, { skipEngrave: true });
+  assert.equal(small[0].hardOk, false, 'violates at the requested (small) profile -> must be filtered');
+  assert.equal(small[0].scores.hard.byCode.SPAN, 1);
+  const large = CAND.scoreCandidates([cand], wide, sg, { targetLevel: 1, handProfile: 'large' }, { skipEngrave: true });
+  assert.equal(large[0].hardOk, true, 'the same candidate is fine for a large-handed request');
+  const sel = CAND.select(small, { targetLevel: 1, handProfile: 'small' }, {});
+  assert.equal(sel.ok, false);
+  assert.equal(sel.reason, 'ALL_CANDIDATES_HAVE_HARD_VIOLATIONS');
+});
