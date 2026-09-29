@@ -30,6 +30,7 @@ const CRIT = require(path.join(REPO, 'critics/index.js'));
 const REPAIR = require(path.join(REPO, 'repair/index.js'));
 const VLC = require(path.join(REPO, 'critics/voice-leading.js'));
 const RFC = require(path.join(REPO, 'critics/register-floor.js'));
+const LHJ = require(path.join(REPO, 'critics/left-hand-jump.js'));
 
 const LEGACY_LEVELS = ['beginner', 'intermediate', 'advanced', 'original'];
 const HAND_PROFILES = ['large', 'medium', 'small'];
@@ -190,7 +191,8 @@ async function runFile(rel, opts) {
           innerLeaps: c.voiceLeading && c.voiceLeading.innerLeaps.length,
           crossings: c.voiceLeading && c.voiceLeading.crossings.length,
           registerDensityOverage: c.registerDensity && c.registerDensity.overage,
-          floorBelow: c.registerFloor && c.registerFloor.below
+          floorBelow: c.registerFloor && c.registerFloor.below,
+          lhJumps: c.leftHandJump && c.leftHandJump.jumps, lhSteps: c.leftHandJump && c.leftHandJump.steps
         };
       };
       row.g9aCriticsBefore = criticCtx(sel.selected.graph);
@@ -253,6 +255,9 @@ function scoreGraphCandidate(graph, id, profile, target, origHarmony, origMelody
   /* G9 post-H-8: arranged notes below the register floor (E2). `sourceNotes` = the original piece's notes: a note the
      source has is never counted as arranged. Reported for every engine; never a selection input. */
   try { out.floor = RFC.registerFloor(graph, { sourceNotes: sourceNotes }); } catch (e) { out.floorError = String(e && e.message || e); }
+  /* G9 post-H-8 re-look: left-hand jump rate (share of left-hand steps whose bass moves an octave or more) and the
+     notes below G2, for every engine; never a selection input here. */
+  try { out.lhj = LHJ.leftHandJump(graph); } catch (e) { out.lhjError = String(e && e.message || e); }
   out.level = out.g6Level;
   return out;
 }
@@ -274,6 +279,15 @@ function summarizeEntries(ok, get) {
     floorBelowArranged: entries.reduce((a, e) => a + (e.floor ? e.floor.below : 0), 0),
     floorBelowSource: entries.reduce((a, e) => a + (e.floor ? e.floor.belowSource : 0), 0),
     floorFilesWithArrangedBelow: entries.filter(e => e.floor && e.floor.below > 0).length,
+    /* G9 post-H-8 re-look: left-hand jumps (a bass move of an octave or more between consecutive left-hand onsets).
+       Pooled = all jumps / all steps; mean/max are over files; the count of files at or above the review's flagged floor (18%) */
+    lhJumps: entries.reduce((a, e) => a + (e.lhj ? e.lhj.jumps : 0), 0),
+    lhSteps: entries.reduce((a, e) => a + (e.lhj ? e.lhj.steps : 0), 0),
+    lhJumpRatePooled: (() => { const st = entries.reduce((a, e) => a + (e.lhj ? e.lhj.steps : 0), 0); return st ? entries.reduce((a, e) => a + (e.lhj ? e.lhj.jumps : 0), 0) / st : null; })(),
+    lhJumpRateMeanPerFile: mean(entries.map(e => e.lhj && e.lhj.rate)),
+    lhJumpRateMaxPerFile: entries.reduce((a, e) => (e.lhj && e.lhj.rate > a ? e.lhj.rate : a), 0),
+    lhJumpFilesAtOrOver18pc: entries.filter(e => e.lhj && e.lhj.rate >= 0.18).length,
+    notesBelowG2: entries.reduce((a, e) => a + (e.lhj ? e.lhj.belowG2 : 0), 0),
     meanMelody: mean(entries.map(e => e.melody)),
     meanHarmonyRootQuality: mean(entries.map(e => e.harmony && e.harmony.rootQuality)),
     meanHarmonyRootOnly: mean(entries.map(e => e.harmony && e.harmony.rootOnly)),
@@ -316,6 +330,7 @@ function summarizeRepair(ok) {
     smells: crit('voiceLeading'), parallels: crit('parallels'), innerLeaps: crit('innerLeaps'), crossings: crit('crossings'),
     registerDensityOverageSum: crit('registerDensityOverage'),
     floorBelowSum: crit('floorBelow'),
+    lhJumps: crit('lhJumps'), lhSteps: crit('lhSteps'),
     hardSum: crit('hard'),
     meanHarmonyRootQuality: { before: mean(rs.map(r => r.g9aCriticsBefore && r.g9aCriticsBefore.harmonyRootQuality)), after: mean(rs.map(r => r.g9aCriticsAfter && r.g9aCriticsAfter.harmonyRootQuality)) },
     meanLevel: { before: mean(rs.map(r => r.g9aCriticsBefore && r.g9aCriticsBefore.level)), after: mean(rs.map(r => r.g9aCriticsAfter && r.g9aCriticsAfter.level)) },
@@ -330,6 +345,9 @@ function summarize(rows, opts) {
   const sum = { files: rows.length, ok: ok.length, errors: rows.filter(r => r.error).map(r => r.file + ': ' + r.error) };
   engines.forEach(eng => { sum[eng] = summarizeEntries(ok, r => r[eng]); });
   if (opts.repair) sum.repair = summarizeRepair(ok);
+  /* the pattern the G9a selection picked, per file (before repair: repair never changes the pattern), as a histogram */
+  sum.selectedPatternHistogram = {};
+  ok.forEach(r => { if (r.g9aPattern) sum.selectedPatternHistogram[r.g9aPattern.pattern] = (sum.selectedPatternHistogram[r.g9aPattern.pattern] || 0) + 1; });
   if (opts.ablateCritics && opts.ablateCritics.length) {
     sum.g9aAblate = {};
     opts.ablateCritics.forEach(critic => {
