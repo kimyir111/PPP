@@ -859,3 +859,130 @@ simultaneous notes in one staff show odd stems or tails (items 3 and 5); a low n
 **What this does and does not show:** it shows two concrete defects in the arranged output, one per arm, that the harness cannot see (the harness scores
 hand span and level, not register floor). It does not show G9 is better or worse overall: one reviewer, 16 pieces, an arm that is often guessable from density
 (see the G9c section), a level miss that differs between arms, and no preference in 6 items. H-9 has not been run.
+
+### G9 register floor (post H-8)
+
+The fix for the defect H-8 found in G9's output (a bass that goes too low). Node-only: `git diff --stat origin/main` shows no app or server
+file and no roadmap file. It does touch `realize/theory.js` and `realize/index.js`, which the app also loads for the `PPP.arranger` switch; the
+switch defaults to `legacy`, so nothing visible changes until the user flips it. The legacy arm and G5's hard-violation definitions are
+untouched. Done directly by one writer; no sub-agent was dispatched.
+
+**1. Where the low notes came from (measured before changing anything).** For the eight pieces the reviewer named (plus burgmuller25/019 as
+a control), G9 (best-of-N, then repair, at the H-8 packet's own requests) was re-run and every note below E2 (MIDI 40) was classified as
+source (the same pitch at the same onset exists in the original piece) or generated. The counts reproduced the reviewer's exactly (98, 45, 22,
+21 after repair, 17, 8, 6, 4 after repair).
+- **In all eight, every low note was generated, none was source, and every one was the bass of the `pop` or `waltz` pattern.** Both place the
+  bass at `nearestWithPc(root, anchor - 12)`, one octave under the midpoint of the section's left-hand band (often 48), so the bass lands
+  anywhere from 30 to 42 depending on the root. Per piece: sonatina/025 pop 98, pass-me-not pop 45, beyer/061 pop 22, burgmuller25/006 pop 22
+  (21 after repair), burgmuller25/016 waltz 17, nearer-my-god waltz 8, what-child-is-this waltz 6, beyer/020 waltz 5 (4 after repair).
+- Over the pool of candidates each piece offered, `block`, `broken`, `ballad` and `hymn` had no generated low note on these pieces (`auto` had a
+  few in two: 3 in beyer/061, 6 in what-child-is-this); on sonatina/025 pop had 98, waltz 14, the rest 0. G9a picked the pop or waltz candidate
+  because nothing scored register.
+- **Not the cause:** an octave doubling of the bass (the realizer generates none; the `dropDoubling` repair op only removes one), the bass
+  placed relative to the melody, other hand profiles (all nine were chosen at `large`, the request's own), and repair (in these nine pieces it
+  never increased the count, and `repair/plan.js` already refuses to go below the piece's own lowest note).
+- burgmuller25/019: its 14 notes below E2 are source (`hymn` copies the voices verbatim; the piece itself goes down to MIDI 25), which is why
+  both arms had them. One of the 14 is a source note that repair lifted from 25 to 37 (see below).
+
+**2. What changed.**
+- `realize/theory.js`: `REGISTER_FLOOR = 40` (E2), a named constant commented with where it comes from (the H-8 review), and
+  `floorMidis(midis, floor, maxSpan)`.
+- `realize/index.js`: every event a pattern generates goes through `floorMidis` just before its heads are written; the copied melody voice and
+  every `hymn` voice are copied verbatim, never floored. `opts.registerFloor` overrides the floor; `null` turns it off (the pre-floor
+  behaviour exactly: verified below). `report.floor` counts what happened (`eventsRaised`, `notesRaised`, `notesMerged`, `eventsShifted`,
+  `eventsDegraded`, `notesDegraded`).
+- `critics/register-floor.js` (new) and `critics/index.js`: the critic `registerFloor` = arranged notes below the floor (`belowSource` reports
+  source notes below it, never a defect). `candidates/index.js` feeds it the original piece's notes and threads `opts.registerFloor` to the
+  realizer. Its selection weight is **0** (report only): the realizer already makes every non-degraded candidate read 0, so there is nothing
+  for selection to separate, and no weight had to be tuned. It is not a hard filter, because a degraded piece would then have no arrangement at
+  all. `--weights registerFloor=1` counts it.
+- `repair/plan.js`, `repair/index.js`: the guard `belowFloor(from, to, floor)`: a repair may never put a note below the floor, nor lower a note
+  that is already below it; it may move one up, even if still short of the floor. Checked in the planner (`candidateOk`) and again on the unit
+  itself in `tryUnit`, so a seeded unit is held to it too (reason `BELOW_FLOOR`). `ctx.registerFloor` overrides it, `null` turns it off.
+- `realize/tools/harness.js`: `--register-floor N|off`, and the new metric on every engine's row and in the summary (`floorBelowArranged`,
+  `floorBelowSource`, `floorFilesWithArrangedBelow`, and before/after repair).
+
+**3. Floor semantics.** Applies to notes the realizer GENERATES, per event: (1) each pitch below the floor is raised by whole octaves (pitch
+class kept); a pitch landing on one the event already has is merged into it (same key, so no pitch class is lost); (2) if that would break the
+event's span for the hand profile (G5's `MAX_SPAN`), the whole event is instead shifted up by the fewest octaves that clear the floor
+(intervals and span kept). Source notes are never touched: the melody voice and `hymn` voices are byte-identical at any floor, so a piece that
+itself goes below E2 keeps those notes as written. **Degradation:** if the raise would put a left-hand note at or above the melody note the
+right hand is sounding then (a hand crossing the source did not have), the event is left as generated and counted in `report.floor`. Pitch
+classes and onsets of every attack are unchanged (tested). The floor is applied to what is written, not to the state the next chord is voice-led
+from. Deterministic and idempotent (a floored event is already at the floor; tested).
+
+**4. Numbers, before and after** (`node realize/tools/harness.js --sample 16 --g9a --repair --timeout-s 120` and `--held-out 32 ... --timeout-s
+180`; outputs kept outside the repo). "Before" is a clean checkout of `59709c0`; the same run of this code with `--register-floor off` gave
+identical values on every metric of every engine, so the off path is the old behaviour. 12 of 16 and 14 of 32 files have a reachable G7b plan
+(the rest are "no reachable G7b plan"; none timed out). The rows are G9 after repair (`g9aRepair`), the arm H-8 showed.
+
+| | 16-file sample before | after | 32-file held-out before | after |
+|---|---|---|---|---|
+| hard violations (files at 0) | 12/12 | 12/12 | 14/14 | 14/14 |
+| G6 level within +-1 / mean distance to target | 10/12 / 0.3167 | 10/12 / **0.3258** | 14/14 / 0.2086 | 14/14 / **0.3386** |
+| melody preservation (mean) | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
+| harmony root+quality / root-only | 0.9753 / 0.9778 | 0.9753 / 0.9778 | 0.9345 / 0.9651 | **0.9316 / 0.9619** |
+| engrave silent / hard layout (files at 0) | 12/12, 12/12 | 12/12, 12/12 | 14/14, 14/14 | 14/14, 14/14 |
+| arranged notes below E2 (files with any) | 96 (1) | **0 (0)** | 178 (8) | **1 (1)** |
+| source notes below E2 (unchanged by design) | 10 | 10 | 14 | 14 |
+
+**Hard violations, melody and both engraving counts did not move. Two metrics regressed slightly, and I did not tune around them.**
+(a) **G6 level, mean distance to the target:** +0.0091 on the 16-file sample (still 10/12 within +-1) and **+0.1300 on the held-out slice
+(0.2086 to 0.3386; still 14/14 within +-1)**. (b) **Harmony agreement on the held-out slice:** root+quality -0.0029, root-only -0.0032 (16-file
+sample: unchanged). G8a alone (no selection) moved the other way on the same runs: level distance 0.7150 to 0.6592 (16) and 0.5229 to 0.5100
+(held-out); harmony 0.9294/0.9457 to 0.9305/0.9468 (16), unchanged (held-out).
+
+Where the held-out level distance comes from: 5 of the 14 files moved (a sixth, nearer-my-god, only changed pattern), for two causes. Same
+pattern, lower assessed level: burgmuller25/006 (pop, 3.46 to 3.10) and czerny599/027 (pop, 3.38 to 2.87); the 16-file sample's all-creatures
+did the same (2.87 to 2.76). Selection moved to another pattern: sonatina/004 and burgmuller25/016 (waltz to pop; harmony in 016 0.861 to
+0.806) and pass-me-not (pop to auto, level 3.46 to 2.87). For czerny599/027 and burgmuller25/006 the G6 features that fell are the ones a very
+low bass feeds: `range` (60 to 46 and 55 to 48), `strainRate` (6.9 to 0.9 and 7.1 to 5.2), `strainPeak` and `fingerCostLH`. So G6 rated the
+old low-bass arrangements HARDER because they were awkward to play, which is what the reviewer said; the floored ones are measurably easier
+by G6, so they land further from a target set at the piece's own original level. That reading of the feature deltas is measured but is an
+interpretation, not a test. Whether the old level closeness was partly an artefact of awkward low notes, and whether G9a should compensate
+with a level offset, is a question for the Lead.
+
+The eight named pieces at the H-8 packet's own requests (G9 after repair; arranged notes below E2, lowest note, pattern G9a chose):
+
+| piece | before | after | lowest before to after | pattern |
+|---|---|---|---|---|
+| method/sonatina/025 | 98 | 0 | 30 to 40 | pop to waltz |
+| hymns/pass-me-not | 45 | 0 | 32 to 44 | pop to auto |
+| method/beyer/061 | 22 | 0 | 36 to 42 | pop |
+| method/burgmuller25/006 | 21 | 0 | 33 to 40 | pop |
+| method/burgmuller25/016 | 17 | 0 | 30 to 40 | waltz to pop |
+| hymns/nearer-my-god | 8 | 0 | 31 to 43 | waltz to pop |
+| hymns/what-child-is-this | 6 | 0 | 35 to 40 | waltz |
+| method/beyer/020 | 4 | 0 | 38 to 40 | waltz |
+| (control) method/burgmuller25/019 | 1 (+13 source) | 1 (+13 source) | 25 to 25 | hymn |
+
+Per file in the two samples (the harness's own requests), arranged notes below E2 before to after: 16-file sample: all-creatures 96 to 0, the
+other 11 reachable files 0 to 0. Held-out: sonatina/004 39 to 0, czerny599/027 46 to 0, burgmuller25/006 21 to 0, burgmuller25/016 17 to 0,
+nearer-my-god 8 to 0, pass-me-not 45 to 0, christ-arose 1 to 0, burgmuller25/019 1 to 1, the other 6 files 0 to 0.
+
+**Still below E2 in the G9 output, and why.** 16-file sample: 0 arranged, 10 source (sonatina/001 6, gymnopedie-1 4: the source's own notes).
+Held-out: 14 source (burgmuller25/019 13, czerny849/023 1) and **1 arranged, which is not a degraded event**: in burgmuller25/019 (a `hymn`
+piece, so every note is a copy of the source) repair lifted one source note from MIDI 25 to 37 (allowed: an upward move), and because it no
+longer equals a source note the critic counts it as arranged while it is still under the floor. **Degraded events: 0.** Across the 184
+candidates the two samples enumerate (`enumerate`, default pool) the floor raised 3,398 notes in 3,345 events (pop 2,059; `auto` 921, which
+resolves per section to waltz, block or broken; waltz 330; ballad 59; broken 15; block 14; hymn 0), merged 0, shifted a whole event 0 times and
+degraded 0. So the merge, whole-event-shift and degradation paths are exercised only by unit tests (synthetic events, and an absurd floor of
+84), not by any corpus piece: protective code, not measured behaviour.
+
+**Tests** (all pass): `tests/realize/register-floor.test.js` (11: the constant; `floorMidis` for a single note, a chord, a merge, the span
+fallback, the no-op, idempotence; the floor on sonatina/025 under every pattern with pitch classes, onsets, melody and G5 hard violations
+checked, and the unfloored realizer shown to be low there; burgmuller25/019's source notes byte-identical even at floor 100; the override;
+degradation at floor 84; determinism), `tests/critics/register-floor.test.js` (8: counting, source versus arranged, no source given, the
+option, an empty graph, determinism, `evaluate`, weight 0 in selection, and G9a plus G9b end to end on sonatina/025 and pass-me-not with the
+floor on and off), `tests/repair/register-floor.test.js` (5: the `belowFloor` truth table; a planted octave-down refused with the guard and
+accepted without it; an upward move of a low note allowed and a downward one refused; the default floor; determinism and idempotence).
+`test:realize`, `test:critics`, `test:repair`, `test:review`, `test:arrangement-planner`, `test:playability`, `test:difficulty` and
+`test:songgraph` all pass.
+
+**Known limits.** (1) The G6-level and held-out-harmony regressions above are real and unresolved. (2) The floor is one MIDI number (E2),
+chosen from one reviewer's reaction to 8 flagged pieces; the reviewer said "too low" and "hard to read", not "below E2". (3) It does not address
+the wide left-hand chords in the legacy arm, the engraving of very low or high notes (TD16/TD17), or readability just above the floor.
+(4) The critic cannot tell an arranged note from a source note a repair moved; the one such note is counted as arranged. (5) A generated note
+equal to a source note (same onset, same pitch) counts as source. (6) No human has re-reviewed it: all that is shown is that the notes the
+reviewer called too low are gone and the five metrics moved as above; whether the floored bass reads better is unknown until the next review.
+(7) `realize/` is loaded by the app; the change reaches users only through the `PPP.arranger` switch, which defaults to `legacy`. Not deployed.

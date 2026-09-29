@@ -40,6 +40,8 @@
        voice at the previous / next onset may not exceed max(its old interval, SMOOTH_MAX);
        this is what keeps a stepwise run (an octave-doubled scale, say) from being "fixed"
        into a row of octave leaps - such a smell is left in place instead;
+     - the register floor (`ctx.registerFloor`, realize/theory.js REGISTER_FLOOR unless overridden): no edit puts a
+       note below the floor, or lower than it was when it already sits below it (`belowFloor`);
      - the new pitch stays inside the piece's own existing overall pitch range (so the G6
        `range` feature cannot grow), inside 21..108, and does not duplicate a pitch
        already in the same event;
@@ -113,7 +115,7 @@
        so the G6 `range` feature cannot grow */
     const pieceRange = { lo: Infinity, hi: -Infinity };
     notes.forEach(n => { if (n.midi < pieceRange.lo) pieceRange.lo = n.midi; if (n.midi > pieceRange.hi) pieceRange.hi = n.midi; });
-    return { notes: notes, pieceRange: pieceRange, avgByPart: VL.voiceAveragesOf(g) };
+    return { notes: notes, pieceRange: pieceRange, avgByPart: VL.voiceAveragesOf(g), floor: ctx.registerFloor == null ? null : ctx.registerFloor };
   }
 
   function smellsOf(state, notes) { return VL.smellsFromNotes(notes || state.notes, state.avgByPart); }
@@ -150,7 +152,13 @@
     });
   }
 
+  /* the register floor's repair guard (G9 post-H-8): an edit may never put a note below the floor, or lower
+     than it already was when it is below the floor (a note the source or the realizer left down there may be
+     moved UP, even if that is still short of the floor, never further down). `floor` null: no guard. */
+  function belowFloor(from, to, floor) { return floor != null && to < floor && to < from; }
+
   function candidateOk(state, n, newMidi) {
+    if (belowFloor(n.midi, newMidi, state.floor)) return false;
     if (newMidi < MIDI_LO || newMidi > MIDI_HI || newMidi === n.midi) return false;
     if (newMidi < state.pieceRange.lo || newMidi > state.pieceRange.hi) return false;
     /* not a pitch already in the same event or the same hand attack */
@@ -287,5 +295,5 @@
     return units;
   }
 
-  return Object.freeze({ SMOOTH_MAX, MELODY_TOL_Q, CATS, annotate, smellsOf, listSmells, smellKey, planSmell, planDropDoubling, movable });
+  return Object.freeze({ SMOOTH_MAX, MELODY_TOL_Q, CATS, belowFloor, annotate, smellsOf, listSmells, smellKey, planSmell, planDropDoubling, movable });
 });

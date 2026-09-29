@@ -207,6 +207,28 @@ function hymnHandsReachable(origPart, hands, measureIds, oldIdx, measureOffset, 
   });
 }
 
+/* The notes (absolute time, as plain numbers) of one source voice over a section's measures. */
+function sectionVoiceNotes(origPart, voiceId, measureIds, oldIdx, measureOffset) {
+  const mset = new Set(measureIds), out = [];
+  origPart.events.forEach(e => {
+    if (e.kind !== 'note' || e.grace || e.voice !== voiceId || !mset.has(e.m)) return;
+    const w0 = R.add(measureOffset[oldIdx.get(e.m)], R.parse(e.at));
+    const t0 = R.toNumber(w0), t1 = R.toNumber(R.add(w0, R.parse(e.dur)));
+    (e.heads || []).forEach(h => out.push({ w0: t0, w1: t1, midi: P.midi(h.pitch) }));
+  });
+  return out;
+}
+
+/* Would moving `before` to `after` (a left-hand event at [at, at+dur)) newly put its top note at or above the
+   lowest melody note sounding during it? Only a NEW crossing counts: one already there is not the floor's doing. */
+function raisedCrossesMelody(melodyNotes, at, dur, before, after) {
+  if (!melodyNotes.length) return false;
+  const t0 = R.toNumber(at), t1 = t0 + R.toNumber(dur);
+  let low = Infinity;
+  melodyNotes.forEach(n => { if (n.w0 < t1 - 1e-9 && n.w1 > t0 + 1e-9 && n.midi < low) low = n.midi; });
+  return low !== Infinity && Math.max.apply(null, after) >= low && Math.max.apply(null, before) < low;
+}
+
 /* count/subdivision policy by G6 stage - TUNED against arrangement/reference.js's REAL
    per-stage bands (docs/GOALS/G08 §14's tuning round, replacing the original flat "stage<=1
    dyad, stage>=2 always a fixed triad" rule the design doc flagged as worth checking against
@@ -348,6 +370,11 @@ function realize(g, sg, plan, opts) {
 
   const profile = REACH.profileOf(plan.request.handProfile);
   const maxSpan = REACH.MAX_SPAN[profile];
+  /* Register floor (theory.js REGISTER_FLOOR, from the H-8 review): the lowest note this realization GENERATES.
+     `opts.registerFloor` overrides it; `null` turns it off. Copied source voices are never touched. */
+  const floor = opts.registerFloor === null || opts.registerFloor === false ? null
+    : (opts.registerFloor == null ? TH.REGISTER_FLOOR : opts.registerFloor);
+  const floorStats = { floor: floor, eventsRaised: 0, notesRaised: 0, notesMerged: 0, eventsShifted: 0, eventsDegraded: 0, notesDegraded: 0 };
 
   const b = B.builder({
     id: (g.id || 'sg') + '-g8a', meta: Object.assign({}, g.meta || {}),
@@ -398,7 +425,7 @@ function realize(g, sg, plan, opts) {
   const headMap = new Map();
   let prevMidis = null; /* threaded across the WHOLE piece, not reset per section - real
     "voice leading between successive harmony windows" across a section boundary too. */
-  const report = { sections: [], patternCounts: {} };
+  const report = { sections: [], patternCounts: {}, floor: floorStats };
 
   for (const sec of plan.sections) {
     const i0 = oldIdx.get(sec.section.from), i1 = oldIdx.get(sec.section.to);
@@ -449,6 +476,10 @@ function realize(g, sg, plan, opts) {
     const regBand = accompHand === 'RH' ? sec.voicing.registerRH : sec.voicing.registerLH;
     const anchor = regBand ? Math.round((regBand.lo + regBand.hi) / 2) : (accompHand === 'LH' ? 48 : 72);
 
+    /* the melody hand's own notes (verbatim source), for the floor's crossing check below */
+    const melodyNotes = floor != null && accompHand === 'LH' && melodyVoiceId
+      ? sectionVoiceNotes(origPart, melodyVoiceId, measureIds, oldIdx, measureOffset) : [];
+
     measureIdxs.forEach(mi => {
       const oldM = oldMeasures[mi];
       const windows = harmonyByMeasure.get(oldM.id) || [];
@@ -477,7 +508,23 @@ function realize(g, sg, plan, opts) {
           if (clamped) return;
           throw new Error('G8a: pattern ' + policy.pattern + ' produced a non-notatable duration ' + R.format(dur));
         }
-        const heads = ev.midis.map(m => ({ pitch: keyTrack.spellAt(m, mi), prov: prov() }));
+        /* register floor: move generated notes below `floor` up whole octaves (theory.floorMidis). Left as
+           generated (and counted) if the raise would put a left-hand note at or above the melody note the
+           right hand is sounding then: a hand crossing the source did not have. */
+        let midis = ev.midis;
+        if (floor != null) {
+          const f = TH.floorMidis(midis, floor, maxSpan);
+          if (f.midis !== midis) {
+            if (raisedCrossesMelody(melodyNotes, ev.at, ev.dur, midis, f.midis)) {
+              floorStats.eventsDegraded++; floorStats.notesDegraded += midis.filter(m => m < floor).length;
+            } else {
+              floorStats.eventsRaised++; floorStats.notesRaised += f.raised; floorStats.notesMerged += f.merged;
+              if (f.shifted) floorStats.eventsShifted++;
+              midis = f.midis;
+            }
+          }
+        }
+        const heads = midis.map(m => ({ pitch: keyTrack.spellAt(m, mi), prov: prov() }));
         b.event(part, {
           kind: 'note', m: newMeasureId.get(oldM.id), at: R.format(at), dur: R.format(dur),
           voice: accompVoiceId, staff: accompStaffId, display: disp, heads: heads, prov: prov()

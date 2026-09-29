@@ -70,6 +70,9 @@
    §5's "select one survivor with a human-readable explanation naming which critics
    decided it."
 
+   `opts.registerFloor` (post-H-8) is threaded to `realize()` and the register-floor critic (default
+   realize/theory.js REGISTER_FLOOR = 40; `null` = the pre-floor behaviour).
+
    `run(g, sg, request, opts)` does enumerate -> score -> select in one call - the entry
    point `realize/tools/harness.js`'s own G9a comparison mode and this module's own tests
    use. `opts`: `n` (default 8), `weights` (critic weight overrides, for ablations - see
@@ -152,7 +155,7 @@
         planCache.set(planCacheKey, planResult);
       }
       if (!planResult.ok) { tried.push({ spec: spec, ok: false, stage: 'plan', reason: planResult.reason }); continue; }
-      const realized = REALIZE.realize(g, sg, planResult.plan, { pattern: spec.pattern, reference: opts.reference });
+      const realized = REALIZE.realize(g, sg, planResult.plan, { pattern: spec.pattern, reference: opts.reference, registerFloor: opts.registerFloor });
       if (!realized.ok) { tried.push({ spec: spec, ok: false, stage: 'realize', reason: realized.reason }); continue; }
       const fp = SER.fingerprint(realized.graph);
       if (seenFingerprints.has(fp)) { tried.push({ spec: spec, ok: false, stage: 'dedup', reason: 'DUPLICATE_OF_EARLIER_CANDIDATE', fingerprint: fp }); continue; }
@@ -177,6 +180,7 @@
   function scoreCandidates(candidates, g, sg, request, opts) {
     opts = opts || {};
     const stage = REF.stageForPosition(request.targetLevel, opts.reference);
+    const sourceNotes = CRIT.metrics.graphNoteList(g); /* the original piece's notes: the register-floor critic never counts one of them */
     const melodyCache = new Map(); /* keyed by plan identity (object reference is stable - one plan per (handProfile, planTargetLevel), shared across pattern variants) */
     function origMelodyOf(plan) {
       let notes = melodyCache.get(plan);
@@ -190,7 +194,8 @@
            is only acceptable if it is playable for the hands the user actually asked for. */
         profile: request.handProfile, targetLevel: request.targetLevel, stage: stage,
         origHarmony: sg.harmony, origMelodyNotes: origMelodyOf(c.plan), reference: opts.reference,
-        id: 'candidate:' + specKey(c.spec), skipEngrave: !!opts.skipEngrave
+        id: 'candidate:' + specKey(c.spec), skipEngrave: !!opts.skipEngrave,
+        sourceNotes: sourceNotes, registerFloor: opts.registerFloor
       };
       const ev = CRIT.evaluate(c.graph, ctx);
       return Object.assign({}, c, { scores: ev.critics, hardOk: ev.hardOk });
@@ -216,10 +221,15 @@
      the user's decision (docs/GOALS/G09 section 12). The critic is still computed and
      reported every time; `opts.weights: {voiceLeading: 1}` (harness: `--weights
      voiceLeading=1`) restores it. */
-  const DEFAULT_WEIGHTS = Object.freeze({ level: 1, melody: 1, harmony: 1, engrave: 1, voiceLeading: 0, registerDensity: 1 });
+  /* `registerFloor` (post-H-8, docs/GOALS/G09 section 12 "G9 register floor") is REPORT ONLY: weight 0. The realizer itself
+     keeps every candidate's generated notes at or above E2, so the critic reads 0 on every candidate that is not degraded
+     (measured: 0 degraded in 184 candidates over the two samples) - there is nothing for selection to separate, and a hard
+     filter would only turn a degraded piece into "no arrangement". `--weights registerFloor=1` counts it. */
+  const DEFAULT_WEIGHTS = Object.freeze({ level: 1, melody: 1, harmony: 1, engrave: 1, voiceLeading: 0, registerDensity: 1, registerFloor: 0 });
   const LEVEL_CAP = 3;      /* a 3-course-position miss is already "as bad as it gets" for this term */
   const ENGRAVE_CAP = 5;    /* 5 combined L1/L2 violations likewise */
   const SMELL_CAP = 10;     /* 10 combined voice-leading smells likewise */
+  const FLOOR_CAP = 10;     /* 10 arranged notes below the register floor likewise (weight 0 by default: report only) */
 
   /* A score that is absent (`undefined`) or whose critic recorded an error (`<name>Error`,
      or an `engrave` result carrying `.error`) counts as the WORST (1) - never as perfect, so a
@@ -243,7 +253,9 @@
     const voiceLeadingBad = (failed('voiceLeading') || !vl) ? 1 : Math.min(1, vl.count / SMELL_CAP);
     const rd = scores.registerDensity;
     const registerDensityBad = (failed('registerDensity') || !rd) ? 1 : Math.min(1, rd.overage);
-    const parts = { level: levelBad, melody: melodyBad, harmony: harmonyBad, engrave: engraveBad, voiceLeading: voiceLeadingBad, registerDensity: registerDensityBad };
+    const rf = scores.registerFloor;
+    const registerFloorBad = (failed('registerFloor') || !rf) ? 1 : Math.min(1, rf.below / FLOOR_CAP);
+    const parts = { level: levelBad, melody: melodyBad, harmony: harmonyBad, engrave: engraveBad, voiceLeading: voiceLeadingBad, registerDensity: registerDensityBad, registerFloor: registerFloorBad };
     let total = 0;
     Object.keys(parts).forEach(k => { total += (w[k] == null ? 1 : w[k]) * parts[k]; });
     return { total: total, parts: parts, weights: w };
@@ -357,6 +369,7 @@
       '|' + JSON.stringify((opts && opts.weights) || null) +
       '|' + JSON.stringify((opts && opts.reference) || null) +
       '|' + JSON.stringify((opts && opts.planOpts) || null) +
+      '|' + JSON.stringify(opts && opts.registerFloor !== undefined ? opts.registerFloor : 'default') +
       '|' + (opts && opts.fullEngrave ? 'full' : 'gate');
   }
 
