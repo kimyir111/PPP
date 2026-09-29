@@ -446,3 +446,39 @@ itself — the realizer — is byte-for-byte unchanged, confirmed by the pre/pos
 diff above) and the additive `--g9a` harness extension. No app file touched (Node-only,
 per §2/§10). G9b (repair), G9c (review tooling/H-8/H-9), G9d (AI-4) and G9e (app
 integration/flip) are untouched, per their own explicit exclusion from this phase.
+
+### G9a round 2 — engrave-gated selection, target-closeness selection, disjoint held-out sweep (2026-09-30)
+
+Changes (Node-only, no app file): `candidates/index.js` enumerates n=24 candidates at level offsets [0,-1,1]
+and selects by assessed closeness to the REQUESTED target (never a candidate's own planning target);
+`selectWithEngraveGate` runs the real engraver on the cheap-scored top-3 only; ablations reuse the cheap-scored pool.
+`realize/tools/harness.js` gained `--held-out N` (the next N files of the same deterministic stratified walk, disjoint
+from the round-1 16-file sample by construction) and a per-file child process with `--timeout-s`, so a legacy engine
+that never returns is recorded as a timeout instead of stalling the sweep. `tests/critics` 21/21.
+
+**Tuning sample (round-1's 16 files, 12 reachable, tuned against):** G9a vs ScoreArranger — hard violations 12/12 zero
+vs 10/12; melody 1.000 vs 0.985; harmony root+quality 0.975 vs 0.947 (root-only 0.978 vs 0.956); level within ±1
+10/12 vs 10/12 (mean |diff| 0.317 vs 0.304); engrave tied. All five tied or beaten — but this is the sample the
+tuning looked at, so it is optimistic.
+
+**Disjoint held-out (32 files walked; 11 scored; 3 timeouts; rest have no reachable G7b plan):**
+
+| Metric | G8a | **G9a** | ScoreArranger |
+|---|---|---|---|
+| hard violations (zero-files, mean) | 11/11, 0 | **11/11, 0** | 8/11, 0.82 |
+| melody | 1.000 | **1.000** | 0.973 |
+| harmony root+quality / root-only | 0.928 / 0.964 | **0.932 / 0.966** | 0.971 / 0.974 |
+| level within ±1, mean \|diff\| | 11/11, 0.623 | **11/11, 0.255** | 11/11, 0.570 |
+| engrave L1/L2 | 11/11 | **11/11** | 11/11 |
+
+**Stated plainly:** on held-out data G9a beats or ties ScoreArranger on 4 of 5 metrics and **still loses on harmony**
+(0.932 vs 0.971; root-only 0.966 vs 0.974). The tuning sample's harmony win (0.975) shrank to 0.932 on unseen files, which
+is the overfitting the disjoint sweep exists to catch. Harmony is versus G8a only +0.004 on held-out. The level
+improvement (0.62 -> 0.25) is partly by construction: level closeness is the selection objective. The held-out scored
+set is 11 files, below the ~20 the plan asked for, because most of the slice is unreachable by G7b; that is a small
+sample and the numbers carry wide uncertainty.
+
+**Legacy hang found (tech debt, not G9a):** `ScoreArranger` at level `intermediate` did not return within 180-600 s on
+`catalog/hymns/christ-arose.musicxml`, `catalog/hymns/god-rest-ye-merry.musicxml` and
+`catalog/method/burgmuller25/019.mxl` (`beginner` on christ-arose takes 11 ms). Not yet checked whether the app runs the
+same code path; if it does, arranging those pieces at intermediate could freeze the browser.

@@ -84,6 +84,38 @@ test('candidates/index.js finds real, distinct candidates on a real multi-voice 
   assert.equal(fps.size, res.scored.length, 'every scored candidate must be a genuinely distinct realization (dedup already ran in enumerate())');
 });
 
+test('round 2: selection uses the REQUESTED target level, never a candidate\'s own internal planning target', () => {
+  /* docs/GOALS/G09_CANDIDATES_CRITICS_REPAIR.md §12 "round 2": "select by how close the
+     output's ASSESSED level is to the REQUESTED target - never the internal planning
+     target." Two synthetic candidates, deliberately crossed: A was PLANNED far off the
+     requested target (levelOffset +3, planTargetLevel 5) but its OUTPUT happens to land
+     assessed-CLOSE to the real request (2.1 vs a requested 2); B was PLANNED exactly on
+     the requested target (levelOffset 0, planTargetLevel 2) but its OUTPUT drifted far
+     (4.5). If selection used the planning target, B would win (it WAS planned at the
+     request); if it uses the requested target vs. the ASSESSED output (the required
+     behaviour), A must win. `badnessOf`/`select()` never even take `planTargetLevel` or
+     `spec.levelOffset` as a parameter - this test proves the observable behaviour matches
+     that structural guarantee, not just that the code happens not to reference the field. */
+  const request = { targetLevel: 2 };
+  const perfect = { melody: 1, harmony: { rootQuality: 1 }, engrave: null, voiceLeading: { count: 0 }, registerDensity: { overage: 0 } };
+  const candA = { index: 0, spec: { handProfile: 'large', pattern: 'auto', levelOffset: 3 }, planTargetLevel: 5, scores: Object.assign({ level: 2.1 }, perfect), hardOk: true };
+  const candB = { index: 1, spec: { handProfile: 'large', pattern: 'hymn', levelOffset: 0 }, planTargetLevel: 2, scores: Object.assign({ level: 4.5 }, perfect), hardOk: true };
+  const sel = CAND.select([candA, candB], request, {});
+  assert.equal(sel.ok, true);
+  assert.equal(sel.selected.index, 0, 'the candidate assessed CLOSER to the requested target must win, even though it was PLANNED further from it');
+  assert.equal(sel.selected.planTargetLevel, 5, 'sanity: the winner really is the one planned off-target (proves this is not vacuously true because both had the same planTargetLevel)');
+});
+
+test('round 2: enumerate() plans some real candidates at a levelOffset from the requested target, and every candidate is still scored against the SAME requested target', async () => {
+  const { g, sg, request } = await findRequest('catalog/hymns/all-glory-laud.musicxml');
+  const enumerated = CAND.enumerate(g, sg, request, {});
+  const planTargets = new Set(enumerated.candidates.map(c => c.planTargetLevel));
+  assert.ok(planTargets.size > 1, 'expected more than one distinct planTargetLevel to produce a real, distinct candidate on this file, got ' + JSON.stringify([...planTargets]));
+  assert.ok(enumerated.candidates.some(c => c.planTargetLevel !== request.targetLevel), 'expected at least one real candidate planned at a nonzero levelOffset');
+  const scored = CAND.scoreCandidates(enumerated.candidates, g, sg, request, {});
+  scored.forEach(c => assert.equal(typeof c.scores.level, 'number', 'every candidate\'s OUTPUT must be independently assessed, regardless of its own planTargetLevel'));
+});
+
 test('an unreachable request never reaches candidate scoring with a fabricated plan (the planner itself refuses first)', async () => {
   /* The SAME "planted unreachable target" discipline tests/realize/realize.test.js's own
      mutation test uses (a deliberately absurd, far-negative target at the strictest hand

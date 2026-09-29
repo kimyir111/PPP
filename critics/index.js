@@ -24,7 +24,16 @@
    for selection purposes - `evaluate` still computes and returns every critic's real
    number even when `hardOk` is false (useful for diagnostics/reporting a discarded
    candidate's real numbers), but never blends the hard-violation count into a weighted
-   score itself. */
+   score itself.
+
+   `ctx.skipEngrave` (G9a round 2, docs/GOALS/G09 §12 "round 2": engrave (G4 L2) is ~85-90%
+   of one candidate's scoring cost, measured, and round 1's own ablation found it has zero
+   discriminative power on the round-1 sample - `candidates/index.js` uses this to score
+   every enumerated candidate on the six CHEAP critics first and run engrave only as a gate
+   on a small top-K, not on every candidate) skips the `engrave` critic entirely
+   (`out.engrave = null`, not an error - `badnessOf`'s existing "no engrave data ->
+   engraveBad 0" handling already treats `null` the same way it already treats a computed
+   0/0 result, so this is not a new code path in the scorer, just a cheaper input to it). */
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports) {
@@ -45,7 +54,8 @@
     try { out.level = METRICS.levelOfGraph(graph); } catch (e) { out.levelError = String(e && e.message || e); }
     try { out.melody = METRICS.melodyPreservation(ctx.origMelodyNotes || [], METRICS.graphNoteList(graph)); } catch (e) { out.melodyError = String(e && e.message || e); }
     try { out.harmony = METRICS.harmonyAgreement(ctx.origHarmony || [], graph); } catch (e) { out.harmonyError = String(e && e.message || e); }
-    try { out.engrave = METRICS.engraveMetrics(graph, ctx.id || 'candidate'); } catch (e) { out.engrave = { error: String(e && e.message || e) }; }
+    if (ctx.skipEngrave) { out.engrave = null; }
+    else { try { out.engrave = METRICS.engraveMetrics(graph, ctx.id || 'candidate'); } catch (e) { out.engrave = { error: String(e && e.message || e) }; } }
     try { out.voiceLeading = VL.voiceLeadingSmells(graph); } catch (e) { out.voiceLeadingError = String(e && e.message || e); }
     try { out.registerDensity = RD.registerDensity(graph, ctx.stage, { reference: ctx.reference }); } catch (e) { out.registerDensityError = String(e && e.message || e); }
     const hardOk = !!out.hard && !out.hard.error && out.hard.hard === 0;

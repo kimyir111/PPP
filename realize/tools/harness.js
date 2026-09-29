@@ -49,6 +49,23 @@ function sampleFiles(n) {
   return out;
 }
 
+/* Round 2's disjoint held-out slice (docs/GOALS/G09_CANDIDATES_CRITICS_REPAIR.md §12
+   "round 2", overfitting guard): `sampleFiles` walks the SAME manifest's strata in the
+   SAME round-robin order every time (deterministic, no randomness) - the round-1 16-file
+   sample is exactly its first 16 files. `heldOutFiles(count)` takes the NEXT `count` files
+   of that same deterministic walk (`sampleFiles(16 + count).slice(16)`) - disjoint from
+   the round-1 sample BY CONSTRUCTION (the same prefix/suffix of one fixed ordering, never
+   a second, independently-drawn sample that could accidentally overlap), stratified the
+   same way the original sample was (round-robin across the manifest's own hymns/method-
+   book strata). Some of these files will have no reachable G7b plan at any level/profile
+   tried (a real G7b coverage limit, the same kind round 1's own sample hit) - `count` is
+   chosen generously (round 1's reachability rate was 12/16, 75%) so the SCORED subset
+   still clears the "~20 reachable files" the task asked for; the real reachable count is
+   reported, not assumed. */
+function heldOutFiles(count) {
+  return sampleFiles(16 + count).slice(16);
+}
+
 function findG8Plan(g, sg, ownPosition) {
   for (const lvl of [ownPosition, ownPosition + 1, ownPosition - 1, ownPosition + 2]) {
     for (const profile of HAND_PROFILES) {
@@ -101,33 +118,42 @@ async function runFile(rel, opts) {
     row.g8a = scoreGraphCandidate(g8.graph, 'g8a:' + rel, found.profile, found.targetLevel, sg.harmony, origMelody);
   }
 
-  /* ---- G9a best-of-N (docs/GOALS/G09_CANDIDATES_CRITICS_REPAIR.md §5/§6): the SAME
-     (targetLevel, handProfile) G8a's own single-realization search above already found
-     for this file - so best-of-N and single-realization are compared at the exact same
-     request, never a more favorable target/profile silently substituted for one side.
-     Enumeration+scoring is done once; ablations (opts.ablateCritics) re-run only the cheap
-     `select()` step against the SAME already-scored candidates with one critic's weight
-     zeroed - no re-planning/re-realizing per ablation. */
+  /* ---- G9a best-of-N (docs/GOALS/G09_CANDIDATES_CRITICS_REPAIR.md §5/§6, round 2 in §12):
+     the SAME (targetLevel, handProfile) G8a's own single-realization search above already
+     found for this file - so best-of-N and single-realization are compared at the exact
+     same REQUESTED target, never a more favorable one silently substituted for one side.
+     `request.targetLevel` here is what `scoreCandidates`/`badnessOf` score every candidate
+     against, REGARDLESS of which internal `planTargetLevel` (requested +/- an offset)
+     actually produced it - round 2's own "select by assessed closeness to the requested
+     target, never the planning target" rule. Enumeration+cheap-scoring is done once;
+     `opts.g9aN`/`opts.levelOffsets`/`opts.topKForEngrave` thread through to
+     `candidates/index.js`'s round-2 defaults (n=24, offsets [0,-1,1], topK=3). Ablations
+     (opts.ablateCritics) re-run only `selectWithEngraveGate` against the SAME already
+     cheap-scored candidate pool with one critic's weight zeroed - no re-planning/
+     re-realizing per ablation (real engrave numbers already computed for a candidate are
+     never recomputed, `selectWithEngraveGate`'s own skip-if-already-real check). */
   if (opts.g9a) {
     const request = { targetLevel: found.targetLevel, handProfile: found.profile, sections: 'all' };
     const t1 = Date.now();
-    const enumerated = CAND.enumerate(g, sg, request, { n: opts.n || 8, reference: opts.reference });
-    const scored = CAND.scoreCandidates(enumerated.candidates, g, sg, request, { reference: opts.reference });
+    const enumerated = CAND.enumerate(g, sg, request, { n: opts.g9aN, levelOffsets: opts.levelOffsets, reference: opts.reference });
+    const cheapScored = CAND.scoreCandidates(enumerated.candidates, g, sg, request, { reference: opts.reference, skipEngrave: true });
+    const sel = CAND.selectWithEngraveGate(cheapScored, g, sg, request, { topKForEngrave: opts.topKForEngrave });
     row.g9aMs = Date.now() - t1;
     row.g9aTried = enumerated.tried.length;
-    row.g9aScored = scored.length;
-    const sel = CAND.select(scored, request, {});
+    row.g9aScored = cheapScored.length;
+    row.g9aEngraveChecked = sel.ok ? sel.ranked.length : 0;
+    row.g9aNotEngraveChecked = sel.ok ? sel.notEngraveChecked.length : 0;
     if (!sel.ok) { row.g9a = { error: sel.reason }; }
     else {
       row.g9aPattern = sel.selected.spec;
       row.g9aExplanation = sel.explanation;
       row.g9a = scoreGraphCandidate(sel.selected.graph, rel + ':g9a', found.profile, found.targetLevel, sg.harmony, origMelody);
     }
-    if (opts.ablateCritics && opts.ablateCritics.length && scored.length) {
+    if (opts.ablateCritics && opts.ablateCritics.length && cheapScored.length) {
       row.g9aAblate = {};
       opts.ablateCritics.forEach(critic => {
         const weights = Object.assign({}, CAND.DEFAULT_WEIGHTS); weights[critic] = 0;
-        const abl = CAND.select(scored, request, { weights: weights });
+        const abl = CAND.selectWithEngraveGate(cheapScored, g, sg, request, { weights: weights, topKForEngrave: opts.topKForEngrave });
         row.g9aAblate[critic] = abl.ok
           ? scoreGraphCandidate(abl.selected.graph, rel + ':g9a-ablate-' + critic, found.profile, found.targetLevel, sg.harmony, origMelody)
           : { error: abl.reason };
@@ -224,19 +250,41 @@ async function main() {
   const flag = name => args.indexOf(name) >= 0;
   const opt = (name, dflt) => args.indexOf(name) >= 0 ? args[args.indexOf(name) + 1] : dflt;
   const sampleN = flag('--sample') ? Number(opt('--sample')) : null;
+  const heldOutCount = flag('--held-out') ? Number(opt('--held-out')) : null;
   const outPath = opt('--out', path.join(__dirname, '..', '..', 'tests', 'realize', 'out', 'harness.json'));
   const pattern = opt('--pattern', 'auto');
   const g9a = flag('--g9a'); /* docs/GOALS/G09_CANDIDATES_CRITICS_REPAIR.md §5/§6 central measurement */
-  const n = flag('--n') ? Number(opt('--n')) : 8;
+  const g9aN = flag('--n') ? Number(opt('--n')) : undefined; /* undefined -> candidates/index.js's own default (24, round 2) */
+  const levelOffsets = flag('--level-offsets') ? opt('--level-offsets').split(',').map(Number) : undefined;
+  const topKForEngrave = flag('--top-k') ? Number(opt('--top-k')) : undefined;
   const ablateCritics = flag('--ablate-critics') ? opt('--ablate-critics').split(',') : [];
-  const files = sampleFiles(sampleN);
-  console.log('running harness over', files.length, 'files, pattern=', pattern, g9a ? ('g9a n=' + n + (ablateCritics.length ? ' ablate=' + ablateCritics.join(',') : '')) : '(g9a off)');
+  const runOpts = { pattern: pattern, g9a: g9a, g9aN: g9aN, levelOffsets: levelOffsets, topKForEngrave: topKForEngrave, ablateCritics: ablateCritics };
+  /* child mode: one file, row written to --row-out (the parent gives each file its own process and a time limit,
+     so a legacy engine that never returns on one file is recorded as a timeout instead of stalling the sweep) */
+  if (flag('--one')) {
+    const row = await runFile(opt('--one'), runOpts);
+    fs.writeFileSync(opt('--row-out'), JSON.stringify(row));
+    return;
+  }
+  const timeoutS = Number(opt('--timeout-s', 300));
+  const files = heldOutCount != null ? heldOutFiles(heldOutCount) : sampleFiles(sampleN);
+  console.log('running harness over', files.length, heldOutCount != null ? '(held-out slice)' : '(round-1 sample)', 'files, pattern=', pattern,
+    g9a ? ('g9a n=' + (g9aN || 24) + ' offsets=' + (levelOffsets || [0, -1, 1]).join(',') + ' topK=' + (topKForEngrave || 3) + (ablateCritics.length ? ' ablate=' + ablateCritics.join(',') : '')) : '(g9a off)');
   const rows = [];
   for (const f of files) {
     const t0 = Date.now();
-    const row = await runFile(f, { pattern: pattern, g9a: g9a, n: n, ablateCritics: ablateCritics });
+    const rowPath = path.join(require('os').tmpdir(), 'ppp-harness-row-' + process.pid + '.json');
+    try { fs.unlinkSync(rowPath); } catch (e) { /* none yet */ }
+    const child = require('child_process').spawnSync(process.execPath, [__filename].concat(args.filter((a, i) => {
+      const prev = args[i - 1];
+      return !['--held-out', '--sample', '--out', '--timeout-s'].includes(a) && !['--held-out', '--sample', '--out', '--timeout-s'].includes(prev);
+    }), ['--one', f, '--row-out', rowPath]), { timeout: timeoutS * 1000, stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8' });
+    let row;
+    if (child.error && child.error.code === 'ETIMEDOUT') row = { file: f, error: 'timeout after ' + timeoutS + 's (an engine did not return)', timedOut: true };
+    else if (!fs.existsSync(rowPath)) row = { file: f, error: 'child failed: ' + String(child.stderr || child.error || child.status).slice(0, 300) };
+    else row = JSON.parse(fs.readFileSync(rowPath, 'utf8'));
     row.ms = Date.now() - t0;
-    console.log(f, row.error ? ('ERROR: ' + row.error) : ('ok in ' + row.ms + 'ms' + (row.g9aMs != null ? (' (g9a ' + row.g9aMs + 'ms, ' + row.g9aScored + ' candidates)') : '')));
+    console.log(f, row.error ? ('ERROR: ' + row.error) : ('ok in ' + row.ms + 'ms' + (row.g9aMs != null ? (' (g9a ' + row.g9aMs + 'ms, ' + row.g9aScored + ' candidates, ' + row.g9aEngraveChecked + ' engrave-checked)') : '')));
     rows.push(row);
   }
   const summary = summarize(rows, { ablateCritics: ablateCritics });
@@ -247,4 +295,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch(e => { console.error(e.stack || e); process.exit(1); });
-module.exports = { sampleFiles, runFile, summarize };
+module.exports = { sampleFiles, heldOutFiles, runFile, summarize };
