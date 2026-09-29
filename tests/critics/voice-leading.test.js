@@ -97,3 +97,22 @@ test('regression (G9b correction): a lone melody note moving stepwise is NOT a p
   const real = mk({ time: [2, 4], rh: 'C5:q D5:q', lh: 'C5:q D5:q' });
   assert.equal(VL.voiceLeadingSmells(real).parallels.length, 1);
 });
+
+test('regression (G9b review): a lone BASS or lone MELODY note leaping is still an outer voice, NOT an inner leap', () => {
+  /* the G9b two-note-slice rule belongs to parallel detection only; a one-note slice is still outer for the
+     leap smell. (An earlier G9b draft returned null from outerOf for it, turning every lone bass/melody leap
+     into an "inner" leap: C4 C6 C4 C6 counted 3.) */
+  const lone = mk({ time: [4, 4], rh: 'C4:q C6:q C4:q C6:q', lh: 'r:w' });
+  assert.equal(VL.voiceLeadingSmells(lone).innerLeaps.length, 0, 'lone melody leaps over a resting hand: ' + JSON.stringify(VL.voiceLeadingSmells(lone).innerLeaps));
+  const loneBass = mk({ time: [4, 4], rh: 'r:w', lh: 'C2:q C4:q C2:q C4:q' });
+  assert.equal(VL.voiceLeadingSmells(loneBass).innerLeaps.length, 0, 'lone bass leaps under a resting hand');
+  /* a bass note alone at one onset, a chord at the next (the beyer/001 waltz shape): the lone note is the bass */
+  const waltz = mk({ time: [2, 4], rh: 'r:q E5+G5:q', lh: 'C2:q C4+E4:q' });
+  assert.equal(VL.voiceLeadingSmells(waltz).innerLeaps.length, 0, 'a lone bass note leaping to a chord: ' + JSON.stringify(VL.voiceLeadingSmells(waltz).innerLeaps));
+  /* the planted true inner-voice leap is still one, and its parallel count is unaffected */
+  const inner = mk({ time: [2, 4], rh: 'C6:q C6:q', rh2: 'D4:q B5:q', lh: 'C3:q C3:q' });
+  assert.equal(VL.voiceLeadingSmells(inner).innerLeaps.length, 1);
+  /* and the original bug stays fixed: a lone melody note is not a parallel octave */
+  assert.equal(VL.voiceLeadingSmells(lone).parallels.length, 0);
+  assert.equal(VL.voiceLeadingSmells(mk({ time: [2, 4], rh: 'C5:q D5:q', lh: 'r:h' })).parallels.length, 0);
+});

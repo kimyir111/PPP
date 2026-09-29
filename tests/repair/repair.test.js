@@ -256,6 +256,23 @@ test('judge: each declared definition of "got worse" is enforced (synthetic snap
   assert.ok(REP.judge(dropSnap(), dropSnap(), drop, base(), ctx).some(x => x.startsWith('CHORD_EXCESS_NOT_DOWN')));
 });
 
+/* ---------------------------------------------------------------- locked heads */
+test('gliss heads are locked like tie and arpeggio heads: a glissando end is never moved', () => {
+  const PLAN = require(path.join(REPO, 'repair/plan.js'));
+  const g = mk({ time: [2, 4], rh: 'C5:q D5:q', lh: 'C3+G3:q D3+A3:q' });
+  assert.equal(REP.repair(g, ctxOf(g), {}).changed, true, 'control: without the spanner the planted parallel is repaired');
+  const lh = U.noteWindows(g).filter(n => n.midi < 60);
+  const lo1 = lh.filter(n => n.midi === 48)[0], lo2 = lh.filter(n => n.midi === 50)[0];
+  const gl = JSON.parse(JSON.stringify(g));
+  gl.parts[0].spanners = (gl.parts[0].spanners || []).concat([{ id: 'sp_gl1', type: 'gliss', from: lo1.headId, to: lo2.headId }]);
+  const state = PLAN.annotate(gl, ctxOf(gl));
+  const locked = state.notes.filter(n => n.locked).map(n => n.headId).sort();
+  assert.deepEqual(locked, [lo1.headId, lo2.headId].sort(), 'exactly the two gliss ends are locked');
+  const r = REP.repair(gl, ctxOf(gl), {});
+  assert.equal(r.changed, false, 'the bass note that would have been re-voiced is a gliss end, so nothing moves');
+  assert.equal(r.graph, gl);
+});
+
 /* ---------------------------------------------------------------- determinism, idempotence */
 test('determinism and idempotence: same input -> byte-identical output; repairing a repaired graph changes nothing', () => {
   const g = mk({ time: [2, 4], rh: 'C5:q D5:q', lh: 'C3+G3:q D3+A3:q' });

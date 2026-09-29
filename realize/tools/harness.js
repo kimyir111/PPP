@@ -28,6 +28,7 @@ const M = require(path.join(REPO, 'realize/tools/metrics.js'));
 const CAND = require(path.join(REPO, 'candidates/index.js'));
 const CRIT = require(path.join(REPO, 'critics/index.js'));
 const REPAIR = require(path.join(REPO, 'repair/index.js'));
+const VLC = require(path.join(REPO, 'critics/voice-leading.js'));
 
 const LEGACY_LEVELS = ['beginner', 'intermediate', 'advanced', 'original'];
 const HAND_PROFILES = ['large', 'medium', 'small'];
@@ -145,7 +146,11 @@ async function runFile(rel, opts) {
     const enumerated = CAND.enumerate(g, sg, request, { n: opts.g9aN, levelOffsets: opts.levelOffsets, reference: opts.reference });
     const cheapScored = CAND.scoreCandidates(enumerated.candidates, g, sg, request, { reference: opts.reference, skipEngrave: true });
     const engraveCache = new Map(); /* real engrave results are reused by the ablation re-selections below (the gate never mutates cheapScored) */
-    const sel = CAND.selectWithEngraveGate(cheapScored, g, sg, request, { topKForEngrave: opts.topKForEngrave, engraveCache: engraveCache });
+    /* `opts.weights` (--weights k=v,...): selection weights overriding CAND.DEFAULT_WEIGHTS for the g9a row AND
+       as the base every ablation zeroes one critic of; needed to measure a critic whose DEFAULT weight is already 0
+       (voiceLeading): --weights voiceLeading=1 --ablate-critics voiceLeading compares weight 1 against weight 0. */
+    const baseWeights = Object.assign({}, CAND.DEFAULT_WEIGHTS, opts.weights || {});
+    const sel = CAND.selectWithEngraveGate(cheapScored, g, sg, request, { weights: baseWeights, topKForEngrave: opts.topKForEngrave, engraveCache: engraveCache });
     row.g9aMs = Date.now() - t1;
     row.g9aTried = enumerated.tried.length;
     row.g9aScored = cheapScored.length;
@@ -193,7 +198,7 @@ async function runFile(rel, opts) {
     if (opts.ablateCritics && opts.ablateCritics.length && cheapScored.length) {
       row.g9aAblate = {};
       opts.ablateCritics.forEach(critic => {
-        const weights = Object.assign({}, CAND.DEFAULT_WEIGHTS); weights[critic] = 0;
+        const weights = Object.assign({}, baseWeights); weights[critic] = 0;
         const abl = CAND.selectWithEngraveGate(cheapScored, g, sg, request, { weights: weights, topKForEngrave: opts.topKForEngrave, engraveCache: engraveCache });
         row.g9aAblate[critic] = abl.ok
           ? scoreGraphCandidate(abl.selected.graph, rel + ':g9a-ablate-' + critic, found.profile, found.targetLevel, sg.harmony, origMelody)
@@ -241,6 +246,7 @@ function scoreGraphCandidate(graph, id, profile, target, origHarmony, origMelody
   try { out.melody = M.melodyPreservation(origMelody, M.graphNoteList(graph)); } catch (e) { out.melodyError = String(e && e.message || e); }
   try { out.harmony = M.harmonyAgreement(origHarmony, graph); } catch (e) { out.harmonyError = String(e && e.message || e); }
   try { out.engrave = M.engraveMetrics(graph, id); } catch (e) { out.engraveError = String(e && e.message || e); }
+  try { out.smells = VLC.voiceLeadingSmells(graph).count; } catch (e) { out.smellsError = String(e && e.message || e); } /* corrected voice-leading count, reported for every engine, never a selection input here */
   out.level = out.g6Level;
   return out;
 }
@@ -257,6 +263,7 @@ function summarizeEntries(ok, get) {
     n: entries.length,
     hardViolationsZero: entries.filter(e => e.hard && e.hard.hard === 0).length,
     hardViolationsMean: mean(entries.map(e => e.hard && e.hard.hard)),
+    voiceLeadingSmellsSum: entries.reduce((a, e) => a + (typeof e.smells === 'number' ? e.smells : 0), 0),
     meanMelody: mean(entries.map(e => e.melody)),
     meanHarmonyRootQuality: mean(entries.map(e => e.harmony && e.harmony.rootQuality)),
     meanHarmonyRootOnly: mean(entries.map(e => e.harmony && e.harmony.rootOnly)),
@@ -336,7 +343,12 @@ async function main() {
   const levelOffsets = flag('--level-offsets') ? opt('--level-offsets').split(',').map(Number) : undefined;
   const topKForEngrave = flag('--top-k') ? Number(opt('--top-k')) : undefined;
   const ablateCritics = flag('--ablate-critics') ? opt('--ablate-critics').split(',') : [];
-  const runOpts = { pattern: pattern, g9a: g9a, repair: repair, g9aN: g9aN, levelOffsets: levelOffsets, topKForEngrave: topKForEngrave, ablateCritics: ablateCritics };
+  let weights;
+  if (flag('--weights')) {
+    weights = {};
+    opt('--weights').split(',').forEach(kv => { const [k, v] = kv.split('='); if (!(k in CAND.DEFAULT_WEIGHTS) || !isFinite(Number(v))) throw new Error('--weights: bad entry ' + kv); weights[k] = Number(v); });
+  }
+  const runOpts = { weights: weights, pattern: pattern, g9a: g9a, repair: repair, g9aN: g9aN, levelOffsets: levelOffsets, topKForEngrave: topKForEngrave, ablateCritics: ablateCritics };
   /* child mode: one file, row written to --row-out (the parent gives each file its own process and a time limit,
      so a legacy engine that never returns on one file is recorded as a timeout instead of stalling the sweep) */
   if (flag('--one')) {

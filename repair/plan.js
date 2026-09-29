@@ -33,7 +33,7 @@
    * a note that matches the request's ORIGINAL melody (onset within 0.15 quarter, same
      pitch - the exact match `critics/metrics.js melodyPreservation` scores). With no melody
      given, the top note of every onset slice is protected instead (conservative).
-   * a head that any tie, arpeggio or performance-layer link refers to (moving it would
+   * a head that any tie, glissando, arpeggio or performance-layer link refers to (moving it would
      change what the tie joins) and a grace note.
    Constraints every candidate must meet, declared here up front:
      - a same-line smoothness bound: the moved note's interval to the nearest note of its own
@@ -78,7 +78,7 @@
     (g.performances || []).forEach(pf => (pf.notes || []).forEach(pn => { if (pn.link !== undefined) locked.add(pn.link); }));
     g.parts.forEach(part => {
       (part.spanners || []).forEach(s => {
-        if (s.type === 'tie') { if (s.from !== undefined) locked.add(s.from); if (s.to !== undefined) locked.add(s.to); }
+        if (s.type === 'tie' || s.type === 'gliss') { if (s.from !== undefined) locked.add(s.from); if (s.to !== undefined) locked.add(s.to); }
         else if (s.type === 'arpeggio') (s.heads || []).forEach(h => locked.add(h));
       });
       part.events.forEach(e => {
@@ -195,7 +195,7 @@
   function planParallel(state, before, s) {
     const slice = VL.slicesFromNotes(state.notes).find(x => R.format(x.w0) === s.w0);
     if (!slice) return null;
-    const outer = VL.outerOf(slice);
+    const outer = VL.outerPairOf(slice);
     if (!outer) return null;
     const lows = slice.notes.filter(n => n.midi === outer.lo), highs = slice.notes.filter(n => n.midi === outer.hi);
     const cands = [];

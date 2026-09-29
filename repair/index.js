@@ -335,7 +335,10 @@
     catch (e) { report.fallback = 'FINGERING_FAILED: ' + String(e && e.message || e); return { graph: g, changed: false, report: report }; }
     let final;
     try { final = snapshot(out, ctx, cfg); } catch (e) { report.fallback = 'FINAL_SNAPSHOT_FAILED: ' + String(e && e.message || e); return { graph: g, changed: false, report: report }; }
-    if (final.hard.total > snap0.hard.total || (snap0.melody && final.melody.matched < snap0.melody.matched)) {
+    /* per code: no G5 hard-violation code's count may rise (a total that stays level could hide one code
+       rising while another falls) */
+    const codeUp = Object.keys(final.hard.byCode || {}).some(c => (final.hard.byCode[c] || 0) > ((snap0.hard.byCode || {})[c] || 0));
+    if (final.hard.total > snap0.hard.total || codeUp || (snap0.melody && final.melody.matched < snap0.melody.matched)) {
       report.fallback = 'FINAL_CHECK_FAILED'; report.after = report.before; return { graph: g, changed: false, report: report };
     }
     report.after = summary(final);

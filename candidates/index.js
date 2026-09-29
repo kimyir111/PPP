@@ -199,25 +199,23 @@
 
   /* ---- badness (see header): every critic normalized to ~0 (perfect) .. ~1 (bad).
 
-     `voiceLeading`'s default weight is 0, decided in round 2 (docs/GOALS/G09 §12 "round
-     2"), BEFORE that round's held-out slice was run - not left at round 1's flat 1. Round
-     1 shipped voiceLeading at weight 1 and separately disclosed (as a recommendation, not
-     acted on) that ablating it to 0 was Pareto-better on the round-1 16-file sample (level
-     AND harmony both improved, hard/melody/engrave unchanged - no metric regressed).
-     Round 2's own ablation, run independently on the SAME sample under the NEW offset-axis
-     + engrave-gated pipeline, replicated the identical Pareto-dominated shape. Two
-     consistent replications under two different pipeline configurations, with zero
-     metrics regressing either time, is a clear enough signal to act on now rather than
-     defer a second time - the round-1-shaped voice-leading-smell count (parallel
-     motion/leaps/crossings, uncalibrated for rate or context) is not yet a reliable
-     selection signal on this codebase's simple accompaniment textures (see
-     critics/voice-leading.js's own header and docs/GOALS/G09 §12 round 1's ablation note
-     for why: a single-note-per-beat bass mirroring the melody's contour is textbook
-     parallel motion by definition, not necessarily a real quality problem at G6 stage 1).
-     This is a real decision made BEFORE viewing the held-out sample below, on the 16-file
-     sample alone, exactly as this round's own instructions require being explicit about.
-     The critic itself is unchanged, still fully computed and reported every time (`opts.
-     weights: {voiceLeading: 1}` restores it for any caller/test that wants it). */
+     `voiceLeading`'s default weight is 0, decided in round 2 (docs/GOALS/G09 section 12
+     "round 2") before that round's held-out slice was run. THE STATED REASON NO LONGER HOLDS.
+     The decision cited round 1's ablation ("removing voiceLeading is Pareto-better on the
+     16-file sample") and round 2's "replication" of it; both were measured while
+     critics/voice-leading.js counted a lone note as a parallel octave (844 inflated vs 26
+     real parallels on the 16-file selected graphs), so they were one artifact measured
+     twice, not two findings (docs/GOALS/G09 section 12, "Voice-leading ablation,
+     re-measured"). Re-measured with the corrected critic (weight 1 vs 0, same cheap-scored
+     pool): weight 1 lowers the smells on the selected graphs (16-file 26 -> 20, held-out
+     40 -> 9) with hard/melody/engrave unchanged, at a cost that differs by sample - none on
+     level and 0.0011 of harmony on the 16-file sample; on held-out, mean level distance
+     0.2079 -> 0.3007 (still 14/14 within +-1) while harmony rises 0.9345 -> 0.9392. That is a
+     trade-off, not a Pareto win for either setting. The weight is left at 0 only because
+     changing it after seeing both samples would be tuning on them; whether to raise it is
+     the user's decision (docs/GOALS/G09 section 12). The critic is still computed and
+     reported every time; `opts.weights: {voiceLeading: 1}` (harness: `--weights
+     voiceLeading=1`) restores it. */
   const DEFAULT_WEIGHTS = Object.freeze({ level: 1, melody: 1, harmony: 1, engrave: 1, voiceLeading: 0, registerDensity: 1 });
   const LEVEL_CAP = 3;      /* a 3-course-position miss is already "as bad as it gets" for this term */
   const ENGRAVE_CAP = 5;    /* 5 combined L1/L2 violations likewise */

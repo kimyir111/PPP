@@ -72,15 +72,25 @@
   function slicesOf(g) { return slicesFromNotes(U.noteWindows(g)); }
 
   function outerOf(slice) {
-    /* two outer voices need at least two attacking notes: a slice with ONE note has no
-       outer PAIR (hi === lo is one voice, not a unison between two), so it is skipped.
-       G9b correction (docs/GOALS/G09 §12 "G9b - repair"): G9a counted a lone melody note
-       moving stepwise as a "parallel unison/octave" at every step of any texture whose
-       other hand was resting or sustaining, inflating the count by orders of magnitude. */
-    if (slice.notes.length < 2) return null;
+    /* the highest and lowest attacking pitch of a slice; a lone note is BOTH (hi === lo), which is
+       what `innerVoiceLeaps` needs: a lone melody or lone bass note is still an OUTER voice there
+       (exempt from the inner-leap smell), exactly as in G9a. */
+    if (!slice.notes.length) return null;
     let hi = -Infinity, lo = Infinity;
     slice.notes.forEach(n => { if (n.midi > hi) hi = n.midi; if (n.midi < lo) lo = n.midi; });
     return { w0: slice.w0, hi: hi, lo: lo };
+  }
+
+  /* the outer PAIR, for parallel-motion detection only: two outer voices need at least two
+     attacking notes (a one-note slice has no pair - hi === lo is one voice, not a unison between
+     two), so it returns null. G9b correction (docs/GOALS/G09 section 12 "G9b - repair"): G9a counted
+     a lone melody note moving stepwise as a "parallel unison/octave" at every step of any texture
+     whose other hand was resting or sustaining, inflating the count by orders of magnitude. The
+     correction applies to parallels ONLY; an earlier G9b draft put it in outerOf and so also made a
+     lone bass/melody note an INNER voice for the leap smell (reviewer-found regression). */
+  function outerPairOf(slice) {
+    if (slice.notes.length < 2) return null;
+    return outerOf(slice);
   }
 
   /* Consecutive-slice parallel perfect 5ths/8ves between the two outer voices: both slices
@@ -89,7 +99,7 @@
      in the SAME direction (similar motion; contrary motion into/out of a perfect interval
      is the textbook-approved way to reach one, not a smell). */
   function parallelFifthsOctaves(slices) {
-    const outer = slices.map(outerOf);
+    const outer = slices.map(outerPairOf);
     const found = [];
     for (let i = 1; i < outer.length; i++) {
       const a = outer[i - 1], b = outer[i];
@@ -198,6 +208,6 @@
 
   function voiceLeadingSmells(g) { return smellsFromNotes(U.noteWindows(g), voiceAveragesOf(g)); }
 
-  return Object.freeze({ LARGE_LEAP, slicesOf, slicesFromNotes, outerOf, parallelFifthsOctaves, innerVoiceLeaps, voiceCrossings,
+  return Object.freeze({ LARGE_LEAP, slicesOf, slicesFromNotes, outerOf, outerPairOf, parallelFifthsOctaves, innerVoiceLeaps, voiceCrossings,
     voiceAveragesOf, voiceCrossingsFromNotes, smellsFromNotes, voiceLeadingSmells });
 });
