@@ -60,7 +60,7 @@ test('both scores of every item render with real size, and the page makes no net
   glyphs.forEach(n => assert.ok(n > 50, 'the score has drawn marks'));
   assert.deepEqual(requests, [], 'nothing was requested from the network');
   assert.deepEqual(errors, []);
-  assert.equal(await page.$eval('#progress', e => e.textContent), '0 of 2 items rated');
+  assert.equal(await page.$eval('#progress', e => e.textContent), '0 / 2 문항 평가함');
   await page.close();
 });
 
@@ -73,9 +73,9 @@ test('the form works, ratings survive a reload, and the export is valid JSON in 
   await page.click('article[data-item="i01"] input[data-issue="thin-muddy"][data-side="Y"]');
   await page.type('article[data-item="i01"] textarea[data-side="X"]', 'bar 5 jumps');
   await page.type('#role', 'test pianist');
-  assert.equal(await page.$eval('#progress', e => e.textContent), '1 of 2 items rated');
+  assert.equal(await page.$eval('#progress', e => e.textContent), '1 / 2 문항 평가함');
   await page.reload({ waitUntil: 'load' });
-  assert.equal(await page.$eval('#progress', e => e.textContent), '1 of 2 items rated', 'the count survives');
+  assert.equal(await page.$eval('#progress', e => e.textContent), '1 / 2 문항 평가함', 'the count survives');
   assert.equal(await page.$eval('input[name="pref-i01"][value="Y"]', e => e.checked), true);
   assert.equal(await page.$eval('article[data-item="i01"] input[data-issue="too-hard"][data-side="X"]', e => e.checked), true);
   assert.equal(await page.$eval('article[data-item="i01"] textarea[data-side="X"]', e => e.value), 'bar 5 jumps');
@@ -110,24 +110,24 @@ test('Clear ratings erases them (after the confirm)', { skip }, async () => {
   await page.reload({ waitUntil: 'load' });
   page.on('dialog', d => d.accept());
   await page.click('input[name="pref-i02"][value="same"]');
-  assert.equal(await page.$eval('#progress', e => e.textContent), '1 of 2 items rated');
+  assert.equal(await page.$eval('#progress', e => e.textContent), '1 / 2 문항 평가함');
   await page.click('#clear-btn');
-  assert.equal(await page.$eval('#progress', e => e.textContent), '0 of 2 items rated');
+  assert.equal(await page.$eval('#progress', e => e.textContent), '0 / 2 문항 평가함');
   await page.reload({ waitUntil: 'load' });
-  assert.equal(await page.$eval('#progress', e => e.textContent), '0 of 2 items rated');
+  assert.equal(await page.$eval('#progress', e => e.textContent), '0 / 2 문항 평가함');
   await page.close();
 });
 
 test('Play starts and Stop stops a synthesised playback without an error (audio itself is not heard here)', { skip }, async () => {
   const { page, errors, requests } = await open();
   await page.click('article[data-item="i01"] button[data-play="X"]');
-  assert.equal(await page.$eval('article[data-item="i01"] button[data-play="X"]', e => e.textContent), 'Stop');
+  assert.equal(await page.$eval('article[data-item="i01"] button[data-play="X"]', e => e.textContent), '정지');
   /* starting the other one stops the first */
   await page.click('article[data-item="i01"] button[data-play="Y"]');
-  assert.equal(await page.$eval('article[data-item="i01"] button[data-play="X"]', e => e.textContent), 'Play');
-  assert.equal(await page.$eval('article[data-item="i01"] button[data-play="Y"]', e => e.textContent), 'Stop');
+  assert.equal(await page.$eval('article[data-item="i01"] button[data-play="X"]', e => e.textContent), '재생');
+  assert.equal(await page.$eval('article[data-item="i01"] button[data-play="Y"]', e => e.textContent), '정지');
   await page.click('article[data-item="i01"] button[data-play="Y"]');
-  assert.equal(await page.$eval('article[data-item="i01"] button[data-play="Y"]', e => e.textContent), 'Play');
+  assert.equal(await page.$eval('article[data-item="i01"] button[data-play="Y"]', e => e.textContent), '재생');
   assert.deepEqual(errors, []); assert.deepEqual(requests, []);
   await page.close();
 });
@@ -135,7 +135,7 @@ test('Play starts and Stop stops a synthesised playback without an error (audio 
 test('with storage refused the page still works (it just does not remember)', { skip }, async () => {
   const { page, errors } = await open({ noStorage: true });
   await page.click('input[name="pref-i01"][value="X"]');
-  assert.equal(await page.$eval('#progress', e => e.textContent), '1 of 2 items rated');
+  assert.equal(await page.$eval('#progress', e => e.textContent), '1 / 2 문항 평가함');
   assert.equal(JSON.parse(await page.$eval('#export-json', e => e.value)).ratings[0].preference, 'X');
   assert.deepEqual(errors, []);
   await page.close();
@@ -149,9 +149,9 @@ test('an H-9 page: pass/fail per arrangement, complete only when both are marked
   await page.evaluate(() => window.localStorage.clear());
   await page.reload({ waitUntil: 'load' });
   await page.click('input[name="pass-i01-X"][value="pass"]');
-  assert.equal(await page.$eval('#progress', e => e.textContent), '0 of 2 items rated', 'one side is not enough');
+  assert.equal(await page.$eval('#progress', e => e.textContent), '0 / 2 문항 평가함', 'one side is not enough');
   await page.click('input[name="pass-i01-Y"][value="fail"]');
-  assert.equal(await page.$eval('#progress', e => e.textContent), '1 of 2 items rated');
+  assert.equal(await page.$eval('#progress', e => e.textContent), '1 / 2 문항 평가함');
   const o = await page.evaluate(() => window.__pppReview.exportObject());
   assert.equal(o.ratings[0].X.pass, true); assert.equal(o.ratings[0].Y.pass, false); assert.equal(o.ratings[1].X.pass, null);
   assert.deepEqual(errors, []);
@@ -185,8 +185,7 @@ test('the page does not claim both arrangements hit the requested level', { skip
   const page = await browser.newPage();
   await page.goto(url, { waitUntil: 'load' });
   const text = await page.evaluate(() => document.body.innerText);
-  assert.ok(!/aimed at/i.test(text), 'the old "aimed at" wording is gone');
-  assert.ok(/requested at level/i.test(text) && /Neither is guaranteed to land exactly there/.test(text));
-  assert.ok(/requested at the same difficulty level \(neither is guaranteed to land exactly on it\)/.test(text));
+  assert.ok(!/겨냥/.test(text), 'no claim that both aim at the level');
+  assert.ok(/난이도 [0-9.]+ 수준으로 요청/.test(text) && /정확히 그 난이도가 되리라는 보장은 없습니다/.test(text));
   await page.close();
 });
