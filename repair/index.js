@@ -12,6 +12,8 @@
      reference     G6 reference-data override (browser require() fix, as everywhere in G8/G9)
      origMelody    `critics/metrics.js originalMelodyNotes(g, plan)` of the plan that made this graph:
                    the notes a repair may never touch, and the melody the guard re-checks
+     registerFloor the register floor's guard (G9 post-H-8; default realize/theory.js REGISTER_FLOOR, `null` = off): no
+                   edit may put a note below it, or lower than it was when it is already below it (`BELOW_FLOOR`)
      harmony       the ORIGINAL piece's `sg.harmony`: what per-measure harmony agreement is scored
                    against (default: the input graph's own harmony, i.e. "do not change the reading")
    opts
@@ -66,16 +68,16 @@
     module.exports = factory(require('../scoregraph/ops.js'), require('../scoregraph/pitch.js'), require('../scoregraph/rational.js'),
       require('../scoregraph/pro-critic.js'), require('../songgraph/util.js'), require('../songgraph/harmony.js'),
       require('../critics/metrics.js'), require('../critics/voice-leading.js'), require('../critics/register-density.js'),
-      require('../playability/index.js'), require('../difficulty/index.js'), require('./plan.js'));
+      require('../playability/index.js'), require('../difficulty/index.js'), require('./plan.js'), require('../realize/theory.js'));
   } else {
     const SG = root.PPPScoreGraphModules || {};
     const SGG = root.PPPSongGraphModules || {};
     const CM = root.PPPCriticsModules || {};
     const M = root.PPPRepairModules || {};
     root.PPPRepair = factory(SG.ops, SG.pitch, SG.rational, SG.proCritic, SGG.util, SGG.harmony, CM.metrics, CM.voiceLeading,
-      CM.registerDensity, root.PPPPlayability, root.PPPDifficulty, M.plan);
+      CM.registerDensity, root.PPPPlayability, root.PPPDifficulty, M.plan, (root.PPPRealizeModules || {}).theory);
   }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (OPS, P, R, PC, U, HARM, METRICS, VL, RD, PLA, DIFF, PLAN) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (OPS, P, R, PC, U, HARM, METRICS, VL, RD, PLA, DIFF, PLAN, TH) {
   'use strict';
 
   const VERSION = '1.0.0';
@@ -237,6 +239,9 @@
   }
 
   function tryUnit(cur, unit, ctx, cfg, prevSnap, prevFp, base0) {
+    /* the register floor's guard, checked on the unit itself (so a seeded/test unit is held to it too): a repair
+       never moves a note below the floor, or further down when it is already below it */
+    if (unit.edits.some(ed => !ed.drop && PLAN.belowFloor(ed.from, ed.to, cfg.floor))) return { ok: false, reasons: ['BELOW_FLOOR'] };
     let res;
     try { res = applyUnit(cur, unit); } catch (e) { return { ok: false, reasons: ['OP_ERROR:' + (e.code || e.message)] }; }
     if (!res.changed) return { ok: false, reasons: ['NOOP'] };
@@ -262,6 +267,9 @@
     ctx = ctx || {}; opts = opts || {};
     const cfg = Object.assign({}, DEFAULTS, opts);
     cfg.refHarmony = ctx.harmony || HARM.harmonyOf(g);
+    /* register floor: `ctx.registerFloor` (default realize/theory.js REGISTER_FLOOR; null = no guard) */
+    cfg.floor = ctx.registerFloor === null ? null : (ctx.registerFloor == null ? TH.REGISTER_FLOOR : ctx.registerFloor);
+    ctx = Object.assign({}, ctx, { registerFloor: cfg.floor });
     cfg.band = ctx.stage != null ? RD.densityBand(ctx.stage, ctx.reference) : null;
     const t0 = Date.now();
     const measureNumber = new Map(g.timeline.measures.map(m => [m.id, m.number]));
@@ -357,7 +365,7 @@
     const ctx = {
       profile: request.handProfile, targetLevel: request.targetLevel,
       stage: REF.stageForPosition(request.targetLevel, opts.reference), reference: opts.reference,
-      origMelody: METRICS.originalMelodyNotes(g, sel.plan), harmony: sg.harmony
+      origMelody: METRICS.originalMelodyNotes(g, sel.plan), harmony: sg.harmony, registerFloor: opts.registerFloor
     };
     const r = repair(sel.graph, ctx, opts);
     return Object.assign({ ok: true, ctx: ctx }, r);

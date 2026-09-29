@@ -94,6 +94,39 @@ function freshVoicing(root, quality, count, anchor) {
   return out;
 }
 
+/* ---- register floor (G9 post-H-8, docs/GOALS/G09 section 12 "G9 register floor") ----
+   REGISTER_FLOOR is the lowest MIDI note the realizer will GENERATE (E2 = 40; the bottom line of the bass
+   staff is G2 = 43, so E2 is already two ledger lines under it). It comes from the user's first blind human
+   review (H-8, 2026-09-30): G9 arrangements the reviewer marked "awkward hand position" had a lowest note of
+   MIDI 34 on average and 24.9 notes below E2 (unflagged: 39 and 6.1); the reviewer called those bass notes
+   "too low" and they are hard to read on many ledger lines. Nothing before this constant had a register floor
+   (G5's hard violations are about hand span). It applies to notes the realizer GENERATES only; notes copied
+   from the source piece are kept exactly as written, however low. Overridable: `realize(..., {registerFloor:
+   n})`, `null` turns it off; `critics/register-floor.js` and `repair/` read the same constant. */
+const REGISTER_FLOOR = 40;
+
+/* One generated event's pitches, with everything below `floor` moved UP by whole octaves (so every pitch
+   class is kept). Order: (1) each low pitch is raised on its own (an inversion; a pitch that lands on one the
+   event already has is merged into it - the same key, so no pitch class is lost); (2) if that pushes the
+   event past `maxSpan` (G5's reach for the hand profile) the WHOLE event is instead shifted up by the fewest
+   octaves that clear the floor (intervals and span unchanged). Returns {midis, raised, merged, shifted}; an
+   event already at or above the floor comes back untouched (same array). */
+function floorMidis(midis, floor, maxSpan) {
+  if (floor == null || !midis.some(m => m < floor)) return { midis: midis, raised: 0, merged: 0, shifted: false };
+  const out = [];
+  let raised = 0, merged = 0;
+  midis.forEach(m => {
+    let v = m;
+    if (v < floor) { v += 12 * Math.ceil((floor - v) / 12); raised++; }
+    if (out.indexOf(v) >= 0) { merged++; return; }
+    out.push(v);
+  });
+  const span = a => Math.max.apply(null, a) - Math.min.apply(null, a);
+  if (maxSpan == null || span(out) <= maxSpan) return { midis: out, raised: raised, merged: merged, shifted: false };
+  const up = 12 * Math.ceil((floor - Math.min.apply(null, midis)) / 12);
+  return { midis: midis.map(m => m + up), raised: midis.length, merged: 0, shifted: true };
+}
+
 /* All permutations of [0..n-1], n small (<=4 in every real caller - a 7th chord at most). */
 function permutations(n) {
   if (n <= 1) return [[0]];
@@ -141,6 +174,7 @@ function clampSpan(midis, maxSpan, maxIters) {
 }
 
   return {
-    CHORD_INTERVALS, intervalsFor, targetPcs, nearestWithPc, freshVoicing, leadVoicing, clampSpan, permutations
+    CHORD_INTERVALS, intervalsFor, targetPcs, nearestWithPc, freshVoicing, leadVoicing, clampSpan, permutations,
+    REGISTER_FLOOR, floorMidis
   };
 });

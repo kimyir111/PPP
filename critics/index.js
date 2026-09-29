@@ -1,6 +1,7 @@
 /* ============================================================================
    PPP Critics (docs/GOALS/G09_CANDIDATES_CRITICS_REPAIR.md §4) — the seven deterministic
-   critics G9a's candidate selection scores every surviving candidate with.
+   critics G9a's candidate selection scores every surviving candidate with, plus an eighth,
+   REPORT-ONLY one (`registerFloor`, post-H-8: arranged notes below E2, weight 0 in selection).
 
    Five are PROMOTED, verbatim, from G8a's comparison harness (`critics/metrics.js`, moved
    from `realize/tools/metrics.js` - see that file's header): G5 hard violations, G6 level,
@@ -37,15 +38,15 @@
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory(require('./metrics.js'), require('./voice-leading.js'), require('./register-density.js'));
+    module.exports = factory(require('./metrics.js'), require('./voice-leading.js'), require('./register-density.js'), require('./register-floor.js'));
   } else {
     const M = root.PPPCriticsModules = root.PPPCriticsModules || {};
-    root.PPPCritics = factory(M.metrics, M.voiceLeading, M.registerDensity);
+    root.PPPCritics = factory(M.metrics, M.voiceLeading, M.registerDensity, M.registerFloor);
   }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (METRICS, VL, RD) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (METRICS, VL, RD, RF) {
   'use strict';
 
-  const NAMES = Object.freeze(['hard', 'level', 'melody', 'harmony', 'engrave', 'voiceLeading', 'registerDensity']);
+  const NAMES = Object.freeze(['hard', 'level', 'melody', 'harmony', 'engrave', 'voiceLeading', 'registerDensity', 'registerFloor']);
 
   function evaluate(graph, ctx) {
     ctx = ctx || {};
@@ -58,9 +59,12 @@
     else { try { out.engrave = METRICS.engraveMetrics(graph, ctx.id || 'candidate'); } catch (e) { out.engrave = { error: String(e && e.message || e) }; } }
     try { out.voiceLeading = VL.voiceLeadingSmells(graph); } catch (e) { out.voiceLeadingError = String(e && e.message || e); }
     try { out.registerDensity = RD.registerDensity(graph, ctx.stage, { reference: ctx.reference }); } catch (e) { out.registerDensityError = String(e && e.message || e); }
+    /* G9 post-H-8: arranged notes below the register floor (ctx.sourceNotes = the original piece's notes, so a
+       source note is never counted; ctx.registerFloor overrides the default, realize/theory.js REGISTER_FLOOR) */
+    try { out.registerFloor = RF.registerFloor(graph, { sourceNotes: ctx.sourceNotes, floor: ctx.registerFloor }); } catch (e) { out.registerFloorError = String(e && e.message || e); }
     const hardOk = !!out.hard && !out.hard.error && out.hard.hard === 0;
     return { critics: out, hardOk: hardOk };
   }
 
-  return Object.freeze({ NAMES, metrics: METRICS, voiceLeading: VL, registerDensity: RD, evaluate });
+  return Object.freeze({ NAMES, metrics: METRICS, voiceLeading: VL, registerDensity: RD, registerFloor: RF, evaluate });
 });

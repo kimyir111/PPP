@@ -11,7 +11,7 @@
    measured G6 position lands closest - the same fairness G8a's own search gets, never a
    fixed guess); score all four on the SAME five metrics (realize/tools/metrics.js).
 
-   node realize/tools/harness.js [--sample N] [--out path.json] [--g9a [--repair]] [--held-out N]
+   node realize/tools/harness.js [--sample N] [--out path.json] [--g9a [--repair]] [--held-out N] [--register-floor N|off]
    ========================================================================== */
 'use strict';
 const fs = require('fs');
@@ -29,6 +29,7 @@ const CAND = require(path.join(REPO, 'candidates/index.js'));
 const CRIT = require(path.join(REPO, 'critics/index.js'));
 const REPAIR = require(path.join(REPO, 'repair/index.js'));
 const VLC = require(path.join(REPO, 'critics/voice-leading.js'));
+const RFC = require(path.join(REPO, 'critics/register-floor.js'));
 
 const LEGACY_LEVELS = ['beginner', 'intermediate', 'advanced', 'original'];
 const HAND_PROFILES = ['large', 'medium', 'small'];
@@ -114,16 +115,17 @@ async function runFile(rel, opts) {
   row.target = found.targetLevel; row.profile = found.profile; row.stage = found.plan.stage;
 
   const origMelody = M.originalMelodyNotes(g, found.plan);
+  const sourceNotes = M.graphNoteList(g);
   row.origMelodyNotes = origMelody.length;
 
   /* ---- G8a ---- */
   const t0 = Date.now();
-  const g8 = REALIZE.realize(g, sg, found.plan, { pattern: opts.pattern || 'auto' });
+  const g8 = REALIZE.realize(g, sg, found.plan, { pattern: opts.pattern || 'auto', registerFloor: opts.registerFloor });
   row.g8aMs = Date.now() - t0;
   if (!g8.ok) { row.g8a = { error: g8.reason + ' ' + JSON.stringify(g8.detail).slice(0, 200) }; }
   else {
     row.g8aPattern = g8.report.patternCounts;
-    row.g8a = scoreGraphCandidate(g8.graph, 'g8a:' + rel, found.profile, found.targetLevel, sg.harmony, origMelody);
+    row.g8a = scoreGraphCandidate(g8.graph, 'g8a:' + rel, found.profile, found.targetLevel, sg.harmony, origMelody, sourceNotes);
   }
 
   /* ---- G9a best-of-N (docs/GOALS/G09_CANDIDATES_CRITICS_REPAIR.md §5/§6, round 2 in §12):
@@ -143,8 +145,8 @@ async function runFile(rel, opts) {
   if (opts.g9a) {
     const request = { targetLevel: found.targetLevel, handProfile: found.profile, sections: 'all' };
     const t1 = Date.now();
-    const enumerated = CAND.enumerate(g, sg, request, { n: opts.g9aN, levelOffsets: opts.levelOffsets, reference: opts.reference });
-    const cheapScored = CAND.scoreCandidates(enumerated.candidates, g, sg, request, { reference: opts.reference, skipEngrave: true });
+    const enumerated = CAND.enumerate(g, sg, request, { n: opts.g9aN, levelOffsets: opts.levelOffsets, reference: opts.reference, registerFloor: opts.registerFloor });
+    const cheapScored = CAND.scoreCandidates(enumerated.candidates, g, sg, request, { reference: opts.reference, skipEngrave: true, registerFloor: opts.registerFloor });
     const engraveCache = new Map(); /* real engrave results are reused by the ablation re-selections below (the gate never mutates cheapScored) */
     /* `opts.weights` (--weights k=v,...): selection weights overriding CAND.DEFAULT_WEIGHTS for the g9a row AND
        as the base every ablation zeroes one critic of; needed to measure a critic whose DEFAULT weight is already 0
@@ -160,7 +162,7 @@ async function runFile(rel, opts) {
     else {
       row.g9aPattern = sel.selected.spec;
       row.g9aExplanation = sel.explanation;
-      row.g9a = scoreGraphCandidate(sel.selected.graph, rel + ':g9a', found.profile, found.targetLevel, sg.harmony, origMelody);
+      row.g9a = scoreGraphCandidate(sel.selected.graph, rel + ':g9a', found.profile, found.targetLevel, sg.harmony, origMelody, sourceNotes);
     }
     /* ---- G9b repair (docs/GOALS/G09 §5, §12 "G9b - repair"; `--repair`, additive): the graph G9a
        selected, repaired per measure under the REQUEST's hand profile, scored on the same five
@@ -168,7 +170,7 @@ async function runFile(rel, opts) {
        does repair improve the selected candidate's critic scores without regressing any metric). */
     if (opts.repair && sel.ok) {
       const t2 = Date.now();
-      const rr = REPAIR.repairSelection(sel, g, sg, request, { reference: opts.reference });
+      const rr = REPAIR.repairSelection(sel, g, sg, request, { reference: opts.reference, registerFloor: opts.registerFloor });
       row.g9aRepairMs = Date.now() - t2;
       const rep = rr.report;
       row.g9aRepairReport = {
@@ -178,7 +180,7 @@ async function runFile(rel, opts) {
       };
       const criticCtx = graph => {
         const ev = CRIT.evaluate(graph, { profile: found.profile, targetLevel: found.targetLevel, stage: rr.ctx.stage, origHarmony: sg.harmony,
-          origMelodyNotes: rr.ctx.origMelody, reference: opts.reference, skipEngrave: true });
+          origMelodyNotes: rr.ctx.origMelody, reference: opts.reference, skipEngrave: true, sourceNotes: sourceNotes });
         const c = ev.critics;
         return {
           hard: c.hard && c.hard.hard, level: c.level, melody: c.melody,
@@ -187,13 +189,14 @@ async function runFile(rel, opts) {
           parallels: c.voiceLeading && c.voiceLeading.parallels.length,
           innerLeaps: c.voiceLeading && c.voiceLeading.innerLeaps.length,
           crossings: c.voiceLeading && c.voiceLeading.crossings.length,
-          registerDensityOverage: c.registerDensity && c.registerDensity.overage
+          registerDensityOverage: c.registerDensity && c.registerDensity.overage,
+          floorBelow: c.registerFloor && c.registerFloor.below
         };
       };
       row.g9aCriticsBefore = criticCtx(sel.selected.graph);
       row.g9aCriticsAfter = criticCtx(rr.graph);
       row.g9aRepairChanged = rr.changed;
-      row.g9aRepair = scoreGraphCandidate(rr.graph, rel + ':g9a-repair', found.profile, found.targetLevel, sg.harmony, origMelody);
+      row.g9aRepair = scoreGraphCandidate(rr.graph, rel + ':g9a-repair', found.profile, found.targetLevel, sg.harmony, origMelody, sourceNotes);
     }
     if (opts.ablateCritics && opts.ablateCritics.length && cheapScored.length) {
       row.g9aAblate = {};
@@ -201,7 +204,7 @@ async function runFile(rel, opts) {
         const weights = Object.assign({}, baseWeights); weights[critic] = 0;
         const abl = CAND.selectWithEngraveGate(cheapScored, g, sg, request, { weights: weights, topKForEngrave: opts.topKForEngrave, engraveCache: engraveCache });
         row.g9aAblate[critic] = abl.ok
-          ? scoreGraphCandidate(abl.selected.graph, rel + ':g9a-ablate-' + critic, found.profile, found.targetLevel, sg.harmony, origMelody)
+          ? scoreGraphCandidate(abl.selected.graph, rel + ':g9a-ablate-' + critic, found.profile, found.targetLevel, sg.harmony, origMelody, sourceNotes)
           : { error: abl.reason };
         if (abl.ok) row.g9aAblate[critic].pattern = abl.selected.spec;
       });
@@ -216,14 +219,14 @@ async function runFile(rel, opts) {
     if (res.error) return { error: res.error };
     const proj = L.graphFromLegacyNotes(ws.measures, res.notes, ws.tempo, rel + ':asp');
     if (!proj.ok) return { error: 'projection failed: ' + JSON.stringify(proj.unsupported).slice(0, 200) };
-    return scoreGraphCandidate(proj.graph, rel + ':asp', found.profile, found.targetLevel, sg.harmony, origMelody);
+    return scoreGraphCandidate(proj.graph, rel + ':asp', found.profile, found.targetLevel, sg.harmony, origMelody, sourceNotes);
   }, found.targetLevel);
 
   row.scoreArranger = bestLegacyRun(level => {
     const res = L.runScoreArranger(ws, level, 'balanced');
     const proj = L.graphFromLegacyNotes(ws.measures, res.notes, ws.tempo, rel + ':sa');
     if (!proj.ok) return { error: 'projection failed: ' + JSON.stringify(proj.unsupported).slice(0, 200) };
-    return scoreGraphCandidate(proj.graph, rel + ':sa', found.profile, found.targetLevel, sg.harmony, origMelody);
+    return scoreGraphCandidate(proj.graph, rel + ':sa', found.profile, found.targetLevel, sg.harmony, origMelody, sourceNotes);
   }, found.targetLevel);
 
   /* audio-score.js: no ScoreGraph, no rhythm/hands (docs/GOALS/G08 §14) - metrics 1/3 only */
@@ -239,7 +242,7 @@ async function runFile(rel, opts) {
   return row;
 }
 
-function scoreGraphCandidate(graph, id, profile, target, origHarmony, origMelody) {
+function scoreGraphCandidate(graph, id, profile, target, origHarmony, origMelody, sourceNotes) {
   const out = {};
   try { out.hard = M.hardViolationsOfGraph(graph, profile); } catch (e) { out.hardError = String(e && e.message || e); }
   try { out.g6Level = M.levelOfGraph(graph); } catch (e) { out.g6LevelError = String(e && e.message || e); }
@@ -247,6 +250,9 @@ function scoreGraphCandidate(graph, id, profile, target, origHarmony, origMelody
   try { out.harmony = M.harmonyAgreement(origHarmony, graph); } catch (e) { out.harmonyError = String(e && e.message || e); }
   try { out.engrave = M.engraveMetrics(graph, id); } catch (e) { out.engraveError = String(e && e.message || e); }
   try { out.smells = VLC.voiceLeadingSmells(graph).count; } catch (e) { out.smellsError = String(e && e.message || e); } /* corrected voice-leading count, reported for every engine, never a selection input here */
+  /* G9 post-H-8: arranged notes below the register floor (E2). `sourceNotes` = the original piece's notes: a note the
+     source has is never counted as arranged. Reported for every engine; never a selection input. */
+  try { out.floor = RFC.registerFloor(graph, { sourceNotes: sourceNotes }); } catch (e) { out.floorError = String(e && e.message || e); }
   out.level = out.g6Level;
   return out;
 }
@@ -264,6 +270,10 @@ function summarizeEntries(ok, get) {
     hardViolationsZero: entries.filter(e => e.hard && e.hard.hard === 0).length,
     hardViolationsMean: mean(entries.map(e => e.hard && e.hard.hard)),
     voiceLeadingSmellsSum: entries.reduce((a, e) => a + (typeof e.smells === 'number' ? e.smells : 0), 0),
+    /* G9 post-H-8: notes below the register floor (E2) - the arranged ones (the engine's own notes) and the source ones */
+    floorBelowArranged: entries.reduce((a, e) => a + (e.floor ? e.floor.below : 0), 0),
+    floorBelowSource: entries.reduce((a, e) => a + (e.floor ? e.floor.belowSource : 0), 0),
+    floorFilesWithArrangedBelow: entries.filter(e => e.floor && e.floor.below > 0).length,
     meanMelody: mean(entries.map(e => e.melody)),
     meanHarmonyRootQuality: mean(entries.map(e => e.harmony && e.harmony.rootQuality)),
     meanHarmonyRootOnly: mean(entries.map(e => e.harmony && e.harmony.rootOnly)),
@@ -305,6 +315,7 @@ function summarizeRepair(ok) {
     filesWithSmellsAfter: files(r => r.g9aCriticsAfter && r.g9aCriticsAfter.voiceLeading > 0),
     smells: crit('voiceLeading'), parallels: crit('parallels'), innerLeaps: crit('innerLeaps'), crossings: crit('crossings'),
     registerDensityOverageSum: crit('registerDensityOverage'),
+    floorBelowSum: crit('floorBelow'),
     hardSum: crit('hard'),
     meanHarmonyRootQuality: { before: mean(rs.map(r => r.g9aCriticsBefore && r.g9aCriticsBefore.harmonyRootQuality)), after: mean(rs.map(r => r.g9aCriticsAfter && r.g9aCriticsAfter.harmonyRootQuality)) },
     meanLevel: { before: mean(rs.map(r => r.g9aCriticsBefore && r.g9aCriticsBefore.level)), after: mean(rs.map(r => r.g9aCriticsAfter && r.g9aCriticsAfter.level)) },
@@ -348,7 +359,15 @@ async function main() {
     weights = {};
     opt('--weights').split(',').forEach(kv => { const [k, v] = kv.split('='); if (!(k in CAND.DEFAULT_WEIGHTS) || !isFinite(Number(v))) throw new Error('--weights: bad entry ' + kv); weights[k] = Number(v); });
   }
-  const runOpts = { weights: weights, pattern: pattern, g9a: g9a, repair: repair, g9aN: g9aN, levelOffsets: levelOffsets, topKForEngrave: topKForEngrave, ablateCritics: ablateCritics };
+  /* --register-floor <n|off>: the realizer's register floor (default realize/theory.js REGISTER_FLOOR = 40; `off` = the
+     pre-floor behaviour, for a before/after on the same code). Threaded to the realizer, the critic and repair. */
+  let registerFloor;
+  if (flag('--register-floor')) {
+    const v = opt('--register-floor');
+    registerFloor = v === 'off' ? null : Number(v);
+    if (registerFloor !== null && !Number.isFinite(registerFloor)) throw new Error('--register-floor: expected a MIDI number or off, got ' + v);
+  }
+  const runOpts = { registerFloor: registerFloor, weights: weights, pattern: pattern, g9a: g9a, repair: repair, g9aN: g9aN, levelOffsets: levelOffsets, topKForEngrave: topKForEngrave, ablateCritics: ablateCritics };
   /* child mode: one file, row written to --row-out (the parent gives each file its own process and a time limit,
      so a legacy engine that never returns on one file is recorded as a timeout instead of stalling the sweep) */
   if (flag('--one')) {
