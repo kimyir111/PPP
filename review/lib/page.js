@@ -16,10 +16,10 @@
 'use strict';
 
 const ISSUES = [
-  ['too-hard', 'Too hard'], ['too-easy', 'Too easy'], ['wrong-harmony', 'Wrong harmony'], ['melody-unclear', 'Melody unclear'],
-  ['awkward-hand', 'Awkward hand position'], ['thin-muddy', 'Thin / muddy']
+  ['too-hard', '너무 어려움'], ['too-easy', '너무 쉬움'], ['wrong-harmony', '화성이 이상함'], ['melody-unclear', '멜로디가 잘 안 들림'],
+  ['awkward-hand', '손 위치가 불편함'], ['thin-muddy', '소리가 빈약하거나 탁함']
 ];
-const STAGE_NAMES = { 1: 'first steps', 2: 'elementary', 3: 'intermediate', 4: 'upper intermediate' };
+const STAGE_NAMES = { 1: '입문', 2: '초급', 3: '중급', 4: '중상급' };
 
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 /* JSON safe inside a <script> element */
@@ -113,7 +113,7 @@ const JS = `
   function refresh(){
     var n = 0;
     DATA.order.forEach(function(id){ if (ratings[id] && isDone(ratings[id])) n++; });
-    document.getElementById('progress').textContent = n + ' of ' + DATA.order.length + ' items rated';
+    document.getElementById('progress').textContent = n + ' / ' + DATA.order.length + ' 문항 평가함';
     document.getElementById('export-json').value = JSON.stringify(exportObject(), null, 1);
   }
   function onChange(ev){
@@ -129,14 +129,14 @@ const JS = `
     if (!live) return;
     live.nodes.forEach(function(n){ try { n.stop(); } catch (e) {} });
     clearTimeout(live.timer);
-    live.btn.textContent = 'Play'; live.btn.setAttribute('aria-pressed', 'false');
+    live.btn.textContent = '재생'; live.btn.setAttribute('aria-pressed', 'false');
     live = null;
   }
   function playSound(id, side, btn, speed){
     if (live && live.btn === btn) { stopSound(); return; }
     stopSound();
     var Ctor = window.AudioContext || window.webkitAudioContext;
-    if (!Ctor) { alert('This browser has no Web Audio.'); return; }
+    if (!Ctor) { alert('이 브라우저는 소리 재생(Web Audio)을 지원하지 않습니다.'); return; }
     if (!AC) AC = new Ctor();
     if (AC.state === 'suspended') AC.resume();
     var it = DATA.items[id], notes = it[side];
@@ -162,7 +162,7 @@ const JS = `
       a.start(t); b.start(t); a.stop(t + dur + 0.3); b.stop(t + dur + 0.3);
       nodes.push(a, b);
     });
-    btn.textContent = 'Stop'; btn.setAttribute('aria-pressed', 'true');
+    btn.textContent = '정지'; btn.setAttribute('aria-pressed', 'true');
     live = { nodes: nodes, btn: btn, timer: setTimeout(function(){ if (live && live.btn === btn) stopSound(); }, (it.totalQ * spq + 0.8) * 1000) };
   }
 
@@ -194,7 +194,7 @@ const JS = `
       setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500);
     });
     document.getElementById('clear-btn').addEventListener('click', function(){
-      if (!window.confirm('Erase every rating on this page?')) return;
+      if (!window.confirm('이 페이지의 평가를 모두 지울까요?')) return;
       ratings = {}; role = ''; roleBox.value = '';
       try { window.localStorage.removeItem(KEY); } catch (e) {}
       Array.prototype.forEach.call(document.querySelectorAll('article.item'), function(card){ writeItem(card, blank()); });
@@ -212,20 +212,20 @@ function issueBoxes(id, side) {
 }
 
 function panel(mode, it, side) {
-  const head = '<div class="tools"><h3>Arrangement ' + side + '</h3>' +
-    '<button type="button" data-play="' + side + '" aria-pressed="false">Play</button>' +
-    '<label>Speed <select data-speed="' + side + '"><option value="1">100%</option><option value="0.8">80%</option><option value="0.6">60%</option></select></label></div>';
-  const svg = '<div class="paper" role="img" aria-label="Score of arrangement ' + side + ' of ' + esc(it.title) + '">' + it[side].svg + '</div>';
+  const head = '<div class="tools"><h3>편곡 ' + side + '</h3>' +
+    '<button type="button" data-play="' + side + '" aria-pressed="false">재생</button>' +
+    '<label>속도 <select data-speed="' + side + '"><option value="1">100%</option><option value="0.8">80%</option><option value="0.6">60%</option></select></label></div>';
+  const svg = '<div class="paper" role="img" aria-label="편곡 ' + side + '의 악보: ' + esc(it.title) + '">' + it[side].svg + '</div>';
   let form;
   if (mode === 'h8') {
-    form = '<fieldset><legend>What is wrong with ' + side + '?</legend><div class="opts">' + issueBoxes(it.id, side) + '</div>' +
-      '<label for="t-' + it.id + side + '">Short note (what is wrong, and where)</label>' +
-      '<textarea id="t-' + it.id + side + '" data-side="' + side + '" maxlength="600" placeholder="e.g. bar 5, left hand jumps too far"></textarea></fieldset>';
+    form = '<fieldset><legend>' + side + '는 무엇이 문제인가요?</legend><div class="opts">' + issueBoxes(it.id, side) + '</div>' +
+      '<label for="t-' + it.id + side + '">짧은 메모 (무엇이 문제이고 어디인지)</label>' +
+      '<textarea id="t-' + it.id + side + '" data-side="' + side + '" maxlength="600" placeholder="예: 5마디, 왼손이 너무 멀리 뜀"></textarea></fieldset>';
   } else {
-    form = '<fieldset><legend>Would you give ' + side + ' to a student?</legend><div class="opts">' +
-      '<label><input type="radio" name="pass-' + it.id + '-' + side + '" value="pass"> Pass</label>' +
-      '<label><input type="radio" name="pass-' + it.id + '-' + side + '" value="fail"> Fail</label></div>' +
-      '<label for="t-' + it.id + side + '">Optional note</label>' +
+    form = '<fieldset><legend>' + side + '를 학생에게 줄 수 있나요?</legend><div class="opts">' +
+      '<label><input type="radio" name="pass-' + it.id + '-' + side + '" value="pass"> 통과</label>' +
+      '<label><input type="radio" name="pass-' + it.id + '-' + side + '" value="fail"> 실패</label></div>' +
+      '<label for="t-' + it.id + side + '">메모 (선택)</label>' +
       '<textarea id="t-' + it.id + side + '" data-side="' + side + '" maxlength="600"></textarea></fieldset>';
   }
   return '<div class="panel">' + head + svg + form + '</div>';
@@ -233,35 +233,35 @@ function panel(mode, it, side) {
 
 function itemCard(mode, it) {
   const stage = Math.floor(it.targetLevel);
-  const aim = 'Both arrangements were requested at level ' + it.targetLevel.toFixed(2) + ' on the difficulty scale (1 = first steps, 2 = elementary, 3 = intermediate, 4 = upper intermediate)' +
-    (STAGE_NAMES[stage] ? ' - about "' + STAGE_NAMES[stage] + '"' : '') + '. Neither is guaranteed to land exactly there: either may come out somewhat easier or harder than requested, so mark "too easy" or "too hard" only if it would be so for a student at about that level. ' + it.measures + ' bars, hand size: ' + it.handProfile + '.';
-  const pref = '<fieldset class="pref"><legend>' + (mode === 'h8' ? 'Which arrangement is better?' : 'Which do you prefer? (optional)') + '</legend><div class="opts">' +
-    '<label><input type="radio" name="pref-' + it.id + '" value="X"> X is better</label>' +
-    '<label><input type="radio" name="pref-' + it.id + '" value="Y"> Y is better</label>' +
-    '<label><input type="radio" name="pref-' + it.id + '" value="same"> No difference</label></div></fieldset>';
-  return '<article class="item" data-item="' + it.id + '"><h2>' + esc(it.id.replace('i', 'Item ')) + ' - ' + esc(it.title) + (it.composer ? ' <small>(' + esc(it.composer) + ')</small>' : '') + '</h2>' +
+  const aim = '두 편곡 모두 난이도 ' + it.targetLevel.toFixed(2) + ' 수준으로 요청했습니다 (난이도 척도: 1 = 입문, 2 = 초급, 3 = 중급, 4 = 중상급)' +
+    (STAGE_NAMES[stage] ? ' - 대략 "' + STAGE_NAMES[stage] + '" 정도' : '') + '. 어느 쪽도 정확히 그 난이도가 되리라는 보장은 없습니다. 요청보다 조금 쉽거나 어렵게 나올 수 있으니, "너무 쉬움"이나 "너무 어려움"은 그 수준의 학생에게 실제로 그럴 때만 표시해 주세요. ' + it.measures + '마디, 손 크기: ' + ({ large: '큰 손', medium: '보통 손', small: '작은 손' }[it.handProfile] || it.handProfile) + '.';
+  const pref = '<fieldset class="pref"><legend>' + (mode === 'h8' ? '어느 편곡이 더 나은가요?' : '어느 쪽이 더 마음에 드나요? (선택)') + '</legend><div class="opts">' +
+    '<label><input type="radio" name="pref-' + it.id + '" value="X"> X가 더 낫다</label>' +
+    '<label><input type="radio" name="pref-' + it.id + '" value="Y"> Y가 더 낫다</label>' +
+    '<label><input type="radio" name="pref-' + it.id + '" value="same"> 차이 없음</label></div></fieldset>';
+  return '<article class="item" data-item="' + it.id + '"><h2>' + esc(it.id.replace('i', '문항 ')) + ' - ' + esc(it.title) + (it.composer ? ' <small>(' + esc(it.composer) + ')</small>' : '') + '</h2>' +
     '<p class="aim">' + esc(aim) + '</p>' + panel(mode, it, 'X') + panel(mode, it, 'Y') + pref + '</article>';
 }
 
 const INTRO = {
-  h8: '<p>For each item you are given two arrangements, <b>X</b> and <b>Y</b>, of the same piece for piano, requested at the same difficulty level (neither is guaranteed to land exactly on it). Read each score, press <b>Play</b> to hear it, then say which arrangement is better and tick what is wrong with each one. Which arrangement is X and which is Y is not stated and changes from item to item. The sound is a plain synthesised piano (the same notes as the score), so judge the notes, not the timbre.</p>',
-  h9: '<p>For each item you are given two arrangements, <b>X</b> and <b>Y</b>, of the same piece for piano, requested at the same difficulty level (neither is guaranteed to land exactly on it). Read each score, press <b>Play</b> to hear it, and mark each arrangement <b>Pass</b> (you would give it to a student at that level as it stands) or <b>Fail</b>. Which arrangement is X and which is Y is not stated and changes from item to item. The sound is a plain synthesised piano (the same notes as the score), so judge the notes, not the timbre.</p>'
+  h8: '<p>문항마다 같은 곡의 피아노 편곡 두 개, <b>X</b>와 <b>Y</b>가 나옵니다. 둘 다 같은 난이도로 요청했습니다 (어느 쪽도 정확히 그 난이도가 되리라는 보장은 없습니다). 악보를 읽고 <b>재생</b>을 눌러 들어본 뒤, 어느 편곡이 더 나은지 고르고 각각의 문제점을 체크해 주세요. 어느 쪽이 X이고 어느 쪽이 Y인지는 알려주지 않으며 문항마다 바뀝니다. 소리는 악보와 같은 음을 단순한 합성 피아노로 낸 것이니, 음색이 아니라 음 자체를 판단해 주세요.</p>',
+  h9: '<p>문항마다 같은 곡의 피아노 편곡 두 개, <b>X</b>와 <b>Y</b>가 나옵니다. 둘 다 같은 난이도로 요청했습니다 (어느 쪽도 정확히 그 난이도가 되리라는 보장은 없습니다). 악보를 읽고 <b>재생</b>을 눌러 들어본 뒤, 각 편곡을 <b>통과</b>(그 수준의 학생에게 지금 그대로 줄 수 있음) 또는 <b>실패</b>로 표시해 주세요. 어느 쪽이 X이고 어느 쪽이 Y인지는 알려주지 않으며 문항마다 바뀝니다. 소리는 악보와 같은 음을 단순한 합성 피아노로 낸 것이니, 음색이 아니라 음 자체를 판단해 주세요.</p>'
 };
-const TITLE = { h8: 'Blind review H-8 (diagnostic)', h9: 'Blind review H-9 (pass / fail)' };
+const TITLE = { h8: '블라인드 검토 H-8 (진단)', h9: '블라인드 검토 H-9 (통과 / 실패)' };
 
 /* data: { mode, packetId, items: [{id, title, composer, targetLevel, handProfile, measures, tempo, totalQ, X:{svg,notes}, Y:{svg,notes}}] } */
 function pageHtml(data) {
   const mode = data.mode;
   const payload = { packetId: data.packetId, mode: mode, order: data.items.map(i => i.id), items: {} };
   data.items.forEach(i => { payload.items[i.id] = { tempo: i.tempo, totalQ: i.totalQ, X: i.X.notes, Y: i.Y.notes }; });
-  return '<!DOCTYPE html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+  return '<!DOCTYPE html>\n<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
     '<title>' + esc(TITLE[mode]) + ' - ' + esc(data.packetId) + '</title><style>' + CSS + '</style></head><body>\n' +
     '<header class="bar"><h1>' + esc(TITLE[mode]) + '</h1><span class="progress" id="progress" aria-live="polite"></span>' +
-    '<button type="button" id="export-btn">Download ratings (JSON)</button><button type="button" class="ghost" id="clear-btn">Clear ratings</button></header>\n' +
-    '<main><section class="intro"><h2 style="margin-top:0;font-size:18px">How this works</h2>' + INTRO[mode] +
-    '<p>Your ratings are saved in this browser as you go, so you can close the page and come back to it on the same computer. When you have finished, press <b>Download ratings (JSON)</b> and send that file back. Nothing is uploaded.</p>' +
-    '<label for="role">Your role (for example "pianist" or "teacher"; not your name)<input type="text" id="role" autocomplete="off"></label>' +
-    '<details><summary>Ratings as text (copy from here if the download is blocked)</summary><textarea id="export-json" readonly></textarea></details></section>\n' +
+    '<button type="button" id="export-btn">평가 내려받기 (JSON)</button><button type="button" class="ghost" id="clear-btn">평가 지우기</button></header>\n' +
+    '<main><section class="intro"><h2 style="margin-top:0;font-size:18px">진행 방법</h2>' + INTRO[mode] +
+    '<p>평가는 하는 대로 이 브라우저에 저장되므로, 페이지를 닫았다가 같은 컴퓨터에서 다시 열어 이어서 할 수 있습니다. 다 끝나면 <b>평가 내려받기 (JSON)</b>를 눌러 그 파일을 보내 주세요. 어디에도 업로드되지 않습니다.</p>' +
+    '<label for="role">역할 (예: "피아니스트", "선생님"; 이름은 적지 마세요)<input type="text" id="role" autocomplete="off"></label>' +
+    '<details><summary>평가를 텍스트로 보기 (내려받기가 막혔을 때 여기서 복사하세요)</summary><textarea id="export-json" readonly></textarea></details></section>\n' +
     data.items.map(i => itemCard(mode, i)).join('\n') + '\n</main>\n' +
     '<script id="packet-data" type="application/json">' + scriptJson(payload) + '</script>\n<script>' + JS + '</script>\n</body></html>\n';
 }
