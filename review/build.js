@@ -2,13 +2,15 @@
 /* ============================================================================
    G9c - the blind-review packet builder (docs/GOALS/G09_CANDIDATES_CRITICS_REPAIR.md, section 12 "G9c - blind review tooling").
 
-     node review/build.js --mode h8|h9 --seed <secret> --out <dir> [--key-out <dir>] [--items items.json] [--list]
+     node review/build.js --mode h8|h9 --out <dir> --key-out <dir> [--seed <secret>] [--items items.json] [--list]
 
-   --seed      a SECRET string (>= 4 chars). It decides which arrangement is X and which is Y and the order of the items, and it
-               is written only to the key file. Keep it out of anything the reviewer sees.
+   --seed      optional; a SECRET string of at least 20 characters. Omit it and a random one is made. It decides which arrangement
+               is X and which is Y and the order of the items, and it is written only to the key file. (A short seed can be guessed
+               from the manifest's item order, so short seeds are refused.)
    --out       the packet directory (index.html + manifest.json): what the reviewer gets. MUST be outside every git working tree
                (the repository is refused, and so is any other checkout) - generated packets and keys are never committed.
-   --key-out   the key directory (key.json): NEVER give it to the reviewer. Default: a sibling of --out named <out>-key.
+   --key-out   REQUIRED, the key directory (key.json): NEVER give it to the reviewer. It must not be inside the packet's parent
+               directory (nor the packet inside the key's), so that zipping the folder that holds the packet cannot ship the key.
    --items     a JSON list of {file, targetLevel, handProfile} instead of the documented input rule (tests and special reviews).
    --list      print the chosen items and stop (no packet is written).
 
@@ -17,6 +19,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const crypto = require('crypto');
 const { spawnSync } = require('child_process');
 const REPO = path.resolve(__dirname, '..');
 const BLIND = require('./lib/blind.js');
@@ -25,6 +28,8 @@ const PAGE = require('./lib/page.js');
 const SELECT = require('./lib/select.js');
 
 const FORMAT = 'ppp-review-packet/1', KEY_FORMAT = 'ppp-review-key/1';
+/* decode.js's strata: G9 counts as fuller/sparser at this note-count ratio, and one arm as missing the level by more at this gap */
+const FULLER_RATIO = 1.1, MISS_GAP = 0.1;
 const REVIEW_NAME = { h8: 'H-8', h9: 'H-9' };
 
 /* ---- where output may go ---- */
@@ -60,9 +65,13 @@ function assertOutsideRepo(p, what) {
   return real;
 }
 function planOutputs(out, keyOut) {
+  if (!keyOut) throw new Error('--key-out is required (a directory for the key, kept apart from the packet; there is no default because a default beside the packet gets zipped with it)');
   const outDir = assertOutsideRepo(out, '--out');
-  const keyDir = assertOutsideRepo(keyOut || path.join(path.dirname(path.resolve(out)), path.basename(path.resolve(out)) + '-key'), '--key-out');
-  if (within(outDir, keyDir) || within(keyDir, outDir)) throw new Error('the key directory and the packet directory must be separate (neither inside the other): ' + keyDir + ' / ' + outDir);
+  const keyDir = assertOutsideRepo(keyOut, '--key-out');
+  /* not merely "not nested": the key may not sit inside the folder that holds the packet (a sibling, say), or a zip of that folder ships it */
+  if (within(outDir, keyDir) || within(keyDir, outDir) || within(path.dirname(outDir), keyDir) || within(path.dirname(keyDir), outDir)) {
+    throw new Error('the key directory and the packet directory must be separate trees: neither inside the other, and neither inside the other parent directory (a zip of the packet folder would carry the key): ' + keyDir + ' / ' + outDir);
+  }
   return { outDir: outDir, keyDir: keyDir };
 }
 
@@ -78,6 +87,7 @@ async function buildPacket(opts) {
   if (!opts.out) throw new Error('--out is required');
   /* refuse before doing any work */
   const dirs = planOutputs(opts.out, opts.keyOut);
+  const seed = opts.seed == null ? crypto.randomBytes(16).toString('hex') : String(opts.seed); /* random when not given; lives in the key only */
   const log = opts.log || (() => {});
   const cache = opts.cache || new Map();
 
@@ -95,7 +105,7 @@ async function buildPacket(opts) {
     arranged = sel.items; skipped = sel.skipped;
   }
 
-  const shown = BLIND.assign(arranged.map(r => Object.assign({}, r.item, { _r: r })), opts.seed);
+  const shown = BLIND.assign(arranged.map(r => Object.assign({}, r.item, { _r: r })), seed);
   const items = [], keyItems = {};
   shown.forEach(s => {
     const r = s.item._r;
@@ -105,14 +115,31 @@ async function buildPacket(opts) {
       Y: NEUTRAL.render(r.measures, r.tempo, arm[s.y].notes, s.id + 'Y-')
     };
     const totalQ = r.measures.reduce((a, m) => a + m.lenQ, 0);
+    /* confounds the reviewer cannot be told about, kept for decode.js (key only): density, hand balance, and who missed the target */
+    const dg = NEUTRAL.density(r.measures, r.g9.notes), dl = NEUTRAL.density(r.measures, r.legacy.notes);
+    const missG = Math.abs(r.g9.level - r.item.targetLevel), missL = Math.abs(r.legacy.level - r.item.targetLevel);
+    const ratio = dl.notes ? dg.notes / dl.notes : null;
     items.push({ id: s.id, title: r.title, composer: r.composer, file: r.file, targetLevel: r.item.targetLevel, handProfile: r.item.handProfile,
       measures: r.measures.length, tempo: r.tempo, totalQ: totalQ, X: drawn.X, Y: drawn.Y });
     keyItems[s.id] = {
       X: s.x, Y: s.y, file: r.file, title: r.title, targetLevel: r.item.targetLevel, handProfile: r.item.handProfile, tier: r.tier, stratum: r.stratum,
       g9: { measuredLevel: r.g9.level, hardViolations: r.g9.hard, chosenSpec: r.g9.spec, repairedUnits: r.g9.repairedUnits, changedByRepair: r.g9.changedByRepair, soundingNotes: (s.x === 'g9' ? drawn.X : drawn.Y).notes.length },
-      legacy: { engine: r.legacy.engine, level: r.legacy.levelName, measuredLevel: r.legacy.level, levelDistanceToTarget: r.legacy.levelDistance, soundingNotes: (s.x === 'legacy' ? drawn.X : drawn.Y).notes.length }
+      legacy: { engine: r.legacy.engine, level: r.legacy.levelName, measuredLevel: r.legacy.level, levelDistanceToTarget: r.legacy.levelDistance, soundingNotes: (s.x === 'legacy' ? drawn.X : drawn.Y).notes.length },
+      strata: {
+        drawnNotes: { g9: dg.notes, legacy: dl.notes }, leftHandNotes: { g9: dg.leftHand, legacy: dl.leftHand },
+        noteRatio: ratio, fuller: ratio == null ? 'similar' : ratio >= FULLER_RATIO ? 'g9' : ratio <= 1 / FULLER_RATIO ? 'legacy' : 'similar',
+        levelMiss: { g9: missG, legacy: missL }, missedMore: missG - missL > MISS_GAP ? 'g9' : missL - missG > MISS_GAP ? 'legacy' : 'similar'
+      }
     };
   });
+
+  /* no side of any item may repeat a side of another item (a repeated score would reveal the arm without the key) */
+  const sides = new Set();
+  items.forEach(i => ['X', 'Y'].forEach(l => {
+    const sig = BLIND.sha256(i[l].svg.split(i.id + l + '-').join('p-') + JSON.stringify(i[l].notes)); /* glyph ids name the item and label: compare without them */
+    if (sides.has(sig)) throw new Error('item ' + i.id + ' side ' + l + ' is identical to a side of another item; refusing (it would reveal which arrangement is which)');
+    sides.add(sig);
+  }));
 
   const packetId = BLIND.sha256(JSON.stringify({ mode: mode, items: items.map(i => [i.id, i.X.svg, i.Y.svg, i.X.notes, i.Y.notes]) })).slice(0, 12);
   const html = PAGE.pageHtml({ mode: mode, packetId: packetId, items: items });
@@ -129,7 +156,8 @@ async function buildPacket(opts) {
     note: 'index.html is the whole review: open it in a browser, rate, and use its download button. This manifest lists what is inside.'
   };
   const key = {
-    format: KEY_FORMAT, review: REVIEW_NAME[mode], mode: mode, packetId: packetId, seed: String(opts.seed), builtFrom: gitCommit(),
+    format: KEY_FORMAT, review: REVIEW_NAME[mode], mode: mode, packetId: packetId, seed: seed, builtFrom: gitCommit(),
+    strataNote: 'strata (note-count ratio, left-hand notes, level miss) are for decode.js only; the packet says none of it',
     assignment: 'per item: X is G9 when the item\'s rank by HMAC-SHA256(seed, "xy|" + file|level|hand) is even (review/lib/blind.js); order by HMAC(seed, "order|" + ...)',
     items: keyItems,
     inputs: { rule: 'review/README.md, "Which pieces"', skipped: skipped },
@@ -151,7 +179,7 @@ async function main() {
   const args = process.argv.slice(2);
   const opt = (n, d) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : d; };
   const flag = n => args.indexOf(n) >= 0;
-  if (flag('--help') || !flag('--mode')) { console.log(fs.readFileSync(__filename, 'utf8').split('\n').slice(2, 17).join('\n')); return; }
+  if (flag('--help') || !flag('--mode')) { console.log(fs.readFileSync(__filename, 'utf8').split('\n').slice(2, 18).join('\n')); return; }
   const mode = opt('--mode');
   const t0 = Date.now();
   if (flag('--list')) {
@@ -169,4 +197,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch(e => { console.error(e.message || e); process.exit(1); });
-module.exports = { buildPacket, planOutputs, assertOutsideRepo, FORMAT, KEY_FORMAT };
+module.exports = { buildPacket, planOutputs, assertOutsideRepo, FORMAT, KEY_FORMAT, FULLER_RATIO, MISS_GAP };

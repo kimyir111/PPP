@@ -66,13 +66,36 @@ function neutralNotes(measures, notes) {
   return withAccidentals(measures, kept);
 }
 
-/* [startQ, durQ, midi] per sounding note, in quarters from the start of the piece (audio + page data) */
+/* [startQ, durQ, midi] per SOUNDING note, in quarters from the start of the piece (audio + page data). The drawn score keeps every
+   note as it is; the sound must not do what one hand cannot: (1) a note flagged as the end of a tie, starting exactly where a
+   same-pitch note ends, is joined to it (a tied continuation is not re-struck) - both arms, though only G9's carry tie flags today;
+   (2) two notes with the same pitch starting together are one key struck once (G9 puts the same pitch in both hands at one onset,
+   which would otherwise sound louder than the legacy arm); the longer one is kept. */
 function audioNotes(measures, notes) {
   const startQ = []; let acc = 0;
   measures.forEach(m => { startQ.push(acc); acc += m.lenQ; });
   const r = v => Math.round(v * 1000) / 1000;
-  return neutralNotes(measures, notes).map(n => [r(startQ[n.m - 1] + n.b), r(n.dur), n.midi])
-    .sort((a, b) => a[0] - b[0] || a[2] - b[2] || a[1] - b[1]);
+  const list = notes.filter(n => !n.rest && n.midi != null).map(n => ({ s: startQ[n.m - 1] + n.b, d: n.dur, midi: n.midi, tieStop: !!n.tieStop }))
+    .sort((a, b) => a.s - b.s || a.midi - b.midi || b.d - a.d);
+  const out = [], last = new Map();
+  list.forEach(n => {
+    const prev = last.get(n.midi);
+    if (n.tieStop && prev && Math.abs(prev.s + prev.d - n.s) < 1e-6) { prev.d += n.d; return; }
+    const o = { s: n.s, d: n.d, midi: n.midi };
+    out.push(o); last.set(n.midi, o);
+  });
+  const seen = new Map();
+  out.forEach(o => {
+    const k = r(o.s) + '|' + o.midi, p = seen.get(k);
+    if (!p) seen.set(k, o); else if (o.d > p.d) p.d = o.d, p.dead = false, o.dead = true; else o.dead = true;
+  });
+  return out.filter(o => !o.dead).map(o => [r(o.s), r(o.d), o.midi]).sort((a, b) => a[0] - b[0] || a[2] - b[2] || a[1] - b[1]);
+}
+
+/* how many notes are drawn, and how many of them in the left hand (staff 2): the density the reviewer can see (kept in the key) */
+function density(measures, notes) {
+  const n = neutralNotes(measures, notes);
+  return { notes: n.length, leftHand: n.filter(x => x.staff === 2).length };
 }
 
 /* the engraved SVG of a note list, as a string with nothing that names an engine or a graph */
@@ -93,4 +116,4 @@ function render(measures, tempo, notes, idPrefix) {
   return { svg: svgOf(measures, tempo, notes, idPrefix), notes: audioNotes(measures, notes) };
 }
 
-module.exports = { neutralNotes, audioNotes, svgOf, render };
+module.exports = { neutralNotes, audioNotes, density, svgOf, render };

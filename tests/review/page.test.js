@@ -22,7 +22,7 @@ const skip = puppeteer ? false : 'puppeteer is not installed';
 let browser, packet, url;
 before(async () => {
   if (!puppeteer) return;
-  packet = await buildPacket({ mode: 'h8', seed: 'page-test-seed-1', out: path.join(tmpDir('page'), 'p'), items: ITEMS.slice(0, 2), cache: CACHE });
+  packet = await buildPacket({ mode: 'h8', seed: 'page-test-seed-1-0123456789', out: path.join(tmpDir('page'), 'p'), keyOut: path.join(tmpDir('pagek'), 'key'), items: ITEMS.slice(0, 2), cache: CACHE });
   url = pathToFileURL(packet.files.html).href;
   browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--autoplay-policy=no-user-gesture-required'] });
 });
@@ -142,7 +142,7 @@ test('with storage refused the page still works (it just does not remember)', { 
 });
 
 test('an H-9 page: pass/fail per arrangement, complete only when both are marked', { skip }, async () => {
-  const p9 = await buildPacket({ mode: 'h9', seed: 'page-test-seed-2', out: path.join(tmpDir('page9'), 'p'), items: ITEMS.slice(0, 2), cache: CACHE });
+  const p9 = await buildPacket({ mode: 'h9', seed: 'page-test-seed-2-0123456789', out: path.join(tmpDir('page9'), 'p'), keyOut: path.join(tmpDir('page9k'), 'key'), items: ITEMS.slice(0, 2), cache: CACHE });
   const page = await browser.newPage();
   const errors = []; page.on('pageerror', e => errors.push(String(e)));
   await page.goto(pathToFileURL(p9.files.html).href, { waitUntil: 'load' });
@@ -156,5 +156,37 @@ test('an H-9 page: pass/fail per arrangement, complete only when both are marked
   assert.equal(o.ratings[0].X.pass, true); assert.equal(o.ratings[0].Y.pass, false); assert.equal(o.ratings[1].X.pass, null);
   assert.deepEqual(errors, []);
   await page.evaluate(() => window.localStorage.clear());
+  await page.close();
+});
+
+test('the real Download button writes a real file through the browser\'s own download path (no stub)', { skip }, async () => {
+  const dir = tmpDir('dl');
+  const client = await browser.target().createCDPSession();
+  await client.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: dir });
+  const page = await browser.newPage();
+  await page.goto(url, { waitUntil: 'load' });
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload({ waitUntil: 'load' });
+  await page.click('input[name="pref-i02"][value="X"]');
+  await page.click('#export-btn');
+  let file = null;
+  for (let i = 0; i < 100 && !file; i++) {
+    await new Promise(r => setTimeout(r, 100));
+    file = fs.readdirSync(dir).find(f => /^ratings-h8-[0-9a-f]{12}\.json$/.test(f));
+  }
+  assert.ok(file, 'a ratings file appeared in the download folder; found ' + JSON.stringify(fs.readdirSync(dir)));
+  const o = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
+  assert.equal(o.packetId, packet.packetId); assert.equal(o.ratings[1].preference, 'X');
+  await page.evaluate(() => window.localStorage.clear());
+  await page.close();
+});
+
+test('the page does not claim both arrangements hit the requested level', { skip }, async () => {
+  const page = await browser.newPage();
+  await page.goto(url, { waitUntil: 'load' });
+  const text = await page.evaluate(() => document.body.innerText);
+  assert.ok(!/aimed at/i.test(text), 'the old "aimed at" wording is gone');
+  assert.ok(/requested at level/i.test(text) && /Neither is guaranteed to land exactly there/.test(text));
+  assert.ok(/requested at the same difficulty level \(neither is guaranteed to land exactly on it\)/.test(text));
   await page.close();
 });

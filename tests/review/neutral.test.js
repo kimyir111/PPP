@@ -60,6 +60,31 @@ test('the drawing carries no data-* attribute, no graph fingerprint, no fingerin
   assert.ok(ids.length > 0 && ids.every(i => i.startsWith('i07X-')));
 });
 
+test('audio: a pitch struck by both hands at one onset sounds once (the drawn score keeps both)', () => {
+  const both = [note(1, 0, 'C4', 60, { dur: 2, type: 'half' }), note(1, 0, 'C4', 60, { staff: 2, hand: 'l', voice: 2 }), note(1, 1, 'E4', 64)];
+  assert.deepEqual(N.audioNotes(measures(0), both), [[0, 2, 60], [1, 1, 64]], 'one C4, the longer duration kept');
+  assert.equal(N.neutralNotes(measures(0), both).length, 3, 'the drawing still has all three notes');
+  /* the same for the other arm's style of notes */
+  assert.deepEqual(N.audioNotes(measures(0), both.slice().reverse()), N.audioNotes(measures(0), both));
+});
+
+test('audio: a tied continuation is joined to the note it continues, not re-struck; a repeated note that is not tied is', () => {
+  /* C4 half in bar 1 beats 2-4 tied across the barline to a quarter in bar 2, then a plain repeat of C4 */
+  const tied = [note(1, 2, 'C4', 60, { dur: 2, type: 'half', tieStart: true }), note(2, 0, 'C4', 60, { tieStop: true }), note(2, 1, 'C4', 60)];
+  assert.deepEqual(N.audioNotes(measures(0), tied), [[2, 3, 60], [5, 1, 60]]);
+  /* a tieStop flag with nothing ending where it starts is just a note */
+  assert.deepEqual(N.audioNotes(measures(0), [note(1, 0, 'C4', 60, { tieStop: true })]), [[0, 1, 60]]);
+  /* the drawing does not merge (both arms alike); tied notes stay two drawn notes */
+  assert.equal(N.neutralNotes(measures(0), tied).length, 3);
+  /* an arm without tie flags (the legacy engine's shape) is unchanged */
+  assert.deepEqual(N.audioNotes(measures(0), [note(1, 0, 'C4', 60), note(1, 1, 'C4', 60)]), [[0, 1, 60], [1, 1, 60]]);
+});
+
+test('density: drawn notes and the left-hand share, from the same neutral notes', () => {
+  const ns = [note(1, 0, 'C4', 60), note(1, 0, 'C3', 48, { staff: 2, hand: 'l' }), note(1, 0, 'G3', 55, { staff: 2, hand: 'l' })];
+  assert.deepEqual(N.density(measures(0), ns), { notes: 3, leftHand: 2 });
+});
+
 test('audio notes are [startQ, durQ, midi] from the measure list, rests excluded, sorted', () => {
   const ns = [note(2, 1, 'G4', 67, { dur: 2 }), note(1, 0, 'C4', 60), { m: 1, b: 2, dur: 1, rest: true }];
   assert.deepEqual(N.audioNotes(measures(0), ns), [[0, 1, 60], [5, 2, 67]]);

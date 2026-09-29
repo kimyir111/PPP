@@ -3,7 +3,10 @@
    Everything that decides which arrangement the reviewer sees as X and which as Y, and in what order the items appear, comes
    from HMAC-SHA256 keyed with a SECRET seed given at build time (`--seed`). The rule is public (this file); without the seed it
    cannot be replayed, and the seed is written to the KEY file only - never to the packet the reviewer opens (the M-H1 lesson,
-   docs/DECISIONS.md G4-D2-19: a manifest that stated the seed and the rule let a reviewer recompute every X/Y).
+   docs/DECISIONS.md G4-D2-19: a manifest that stated the seed and the rule let a reviewer recompute every X/Y). The shown order is
+   itself an HMAC sort and the manifest lists the pieces in that order, so a WEAK seed can be recovered from the manifest alone by
+   a dictionary guess (a review found `hello` in one guess): seeds under MIN_SEED_LENGTH characters are refused, and the builder
+   makes a random one when none is given.
 
      order      items are shown sorted by HMAC(seed, 'order|' + itemKey)
      assignment items sorted by HMAC(seed, 'xy|' + itemKey); the ones at even ranks show the G9 arm as X, the others as Y, so
@@ -18,11 +21,12 @@ const crypto = require('crypto');
 
 const hmac = (seed, label) => crypto.createHmac('sha256', String(seed)).update(label).digest('hex');
 const sha256 = s => crypto.createHash('sha256').update(s).digest('hex');
+const MIN_SEED_LENGTH = 20;
 const itemKey = it => it.file + '|' + Number(it.targetLevel).toFixed(2) + '|' + it.handProfile;
 
 /* items -> [{ id, key, item, x: 'g9'|'legacy', y: the other }] in the order the reviewer sees them */
 function assign(items, seed) {
-  if (seed == null || String(seed).length < 4) throw new Error('a secret --seed of at least 4 characters is required');
+  if (seed == null || String(seed).length < MIN_SEED_LENGTH) throw new Error('the seed must be at least ' + MIN_SEED_LENGTH + ' characters (a short seed can be guessed from the manifest item order); omit --seed to get a random one');
   const keyed = items.map(it => ({ item: it, key: itemKey(it) }));
   const keys = new Set(keyed.map(k => k.key));
   if (keys.size !== keyed.length) throw new Error('two items with the same file, level and hand profile');
@@ -36,4 +40,4 @@ function assign(items, seed) {
 }
 function cmp(a, b) { return a < b ? -1 : a > b ? 1 : 0; }
 
-module.exports = { assign, itemKey, hmac, sha256 };
+module.exports = { assign, itemKey, hmac, sha256, MIN_SEED_LENGTH };

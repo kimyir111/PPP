@@ -12,8 +12,8 @@
      - at the level reviewed the two arms are not the same notes (a piece both G9 and the legacy engine leave alone at that level
        gives nothing to compare);
      - both arms draw through review/lib/neutral.js.
-   H-8 reviews a piece at two levels where two exist (see `levelItems`); pieces are taken until there are 16 items, and only if fewer
-   than 8 pieces have two levels are single-level ones used to fill the rest.
+   H-8 reviews a piece at a second level only where BOTH arms change between the two levels (see `levelItems`); pieces are taken in
+   the order above until there are 16 items, so H-8 is 16 items over more than 8 pieces.
 
    Order in which files are tried (the first that qualify are taken, until the mode's count is met):
      1. an overlap preference, so the review says as much as it can about pieces G9 was NOT tuned on:
@@ -92,11 +92,13 @@ function sameNotes(a, b) {
 }
 
 /* The levels a piece is reviewed at. Candidate targets are the request level G9 is measured at (offset 0) and the offsets in
-   SECOND_LEVEL_OFFSETS above it; a target is usable only if both arms are ok and give different notes. Walking them in order, a
-   usable target is kept if it is the first, or if G9's arrangement there is really fuller than the last one kept (level at least
-   MIN_LEVEL_GAP higher, or MIN_NOTE_GROWTH times the notes) with different notes. Up to `want` are kept. (At a piece's own level
-   both arms often just return the piece; at many higher targets both stay where they were - so which levels exist is a fact
-   about the pieces, found by running them.) */
+   SECOND_LEVEL_OFFSETS above it; a target is usable only if both arms are ok and give different notes there. Walking them in
+   order, a usable target is kept if it is the first. A SECOND target is kept only if BOTH arms changed: G9's arrangement is
+   really fuller than at the first (G6 level at least MIN_LEVEL_GAP higher, or MIN_NOTE_GROWTH times the notes) with different
+   notes, AND the legacy arm's notes differ from the legacy notes at the first level. (Review finding, G9c: ScoreArranger has only
+   four native levels and usually returns the same notes at two nearby targets; two items of one piece then showed a byte-identical
+   legacy side, which gave the arm away without the key, and made 16 items cover fewer pieces.) So a piece gets a second item
+   only when no side of it repeats; otherwise one level per piece. */
 async function levelItems(file, found, cache, want) {
   const kept = [];
   const offsets = want > 1 ? [0].concat(SECOND_LEVEL_OFFSETS) : [0];
@@ -109,7 +111,7 @@ async function levelItems(file, found, cache, want) {
       const prev = kept[kept.length - 1];
       const n = x => x.g9.notes.filter(q => !q.rest).length;
       const fuller = r.g9.level - prev.g9.level >= MIN_LEVEL_GAP || n(r) >= MIN_NOTE_GROWTH * n(prev);
-      if (!fuller || sameNotes(r.g9.notes, prev.g9.notes)) continue;
+      if (!fuller || sameNotes(r.g9.notes, prev.g9.notes) || sameNotes(r.legacy.notes, prev.legacy.notes)) continue;
     }
     kept.push(r);
   }
@@ -133,7 +135,6 @@ async function selectItems(mode, opts) {
   const strata = corpus().strata;
   const stratumOf = f => (strata.find(s => s.files.indexOf(f) >= 0) || {}).name;
   const chosen = [], skipped = [];
-  const single = []; /* qualifying pieces with no distinct second level (H-8 falls back on these only if it must) */
   const take = (entries, file) => { entries.forEach(r => { r.tier = tier(file); r.stratum = stratumOf(file); chosen.push(r); }); };
   for (const file of order) {
     if (chosen.length >= spec.items) break;
@@ -148,17 +149,10 @@ async function selectItems(mode, opts) {
     const lv = await levelItems(file, found, cache, spec.twoLevels ? 2 : 1);
     if (lv.failed) { skipped.push({ file: file, reason: lv.failed }); continue; }
     if (!lv.kept.length) { skipped.push({ file: file, reason: 'both arms give the same notes at every level tried' }); continue; }
-    if (lv.kept.length === 2 || !spec.twoLevels) {
-      take(lv.kept, file);
-      log('  ' + mode + ' ' + file + ' (tier ' + tier(file) + ', level' + (lv.kept.length > 1 ? 's ' : ' ') + lv.kept.map(r => r.item.targetLevel).join(' & ') + ')');
-    } else single.push({ file: file, first: lv.kept[0] });
-  }
-  /* H-8 fallback: fewer than 8 pieces have a second level, so fill up to 16 items with single-level pieces in the same order */
-  if (spec.twoLevels) {
-    single.forEach(x => {
-      if (chosen.length < spec.items) { take([x.first], x.file); log('  ' + mode + ' ' + x.file + ' (tier ' + tier(x.file) + ', level ' + x.first.item.targetLevel + ', single)'); }
-    });
-    single.slice(0).forEach(x => { if (chosen.indexOf(x.first) < 0) skipped.push({ file: x.file, reason: 'no distinct second level (not needed to fill the mode)' }); });
+    /* a two-level piece adds two items unless only one place is left */
+    const entries = chosen.length + lv.kept.length <= spec.items ? lv.kept : lv.kept.slice(0, 1);
+    take(entries, file);
+    log('  ' + mode + ' ' + file + ' (tier ' + tier(file) + ', level' + (entries.length > 1 ? 's ' : ' ') + entries.map(r => r.item.targetLevel).join(' & ') + ')');
   }
   if (chosen.length < spec.items) throw new Error(mode + ': only ' + chosen.length + ' of ' + spec.items + ' items qualify; skipped: ' + JSON.stringify(skipped));
   return { mode: mode, items: chosen, skipped: skipped };

@@ -233,8 +233,8 @@ function panel(mode, it, side) {
 
 function itemCard(mode, it) {
   const stage = Math.floor(it.targetLevel);
-  const aim = 'Both arrangements are aimed at level ' + it.targetLevel.toFixed(2) + ' on the difficulty scale (1 = first steps, 2 = elementary, 3 = intermediate, 4 = upper intermediate)' +
-    (STAGE_NAMES[stage] ? ' - about "' + STAGE_NAMES[stage] + '"' : '') + '. ' + it.measures + ' bars, hand size: ' + it.handProfile + '.';
+  const aim = 'Both arrangements were requested at level ' + it.targetLevel.toFixed(2) + ' on the difficulty scale (1 = first steps, 2 = elementary, 3 = intermediate, 4 = upper intermediate)' +
+    (STAGE_NAMES[stage] ? ' - about "' + STAGE_NAMES[stage] + '"' : '') + '. Neither is guaranteed to land exactly there: either may come out somewhat easier or harder than requested, so mark "too easy" or "too hard" only if it would be so for a student at about that level. ' + it.measures + ' bars, hand size: ' + it.handProfile + '.';
   const pref = '<fieldset class="pref"><legend>' + (mode === 'h8' ? 'Which arrangement is better?' : 'Which do you prefer? (optional)') + '</legend><div class="opts">' +
     '<label><input type="radio" name="pref-' + it.id + '" value="X"> X is better</label>' +
     '<label><input type="radio" name="pref-' + it.id + '" value="Y"> Y is better</label>' +
@@ -244,8 +244,8 @@ function itemCard(mode, it) {
 }
 
 const INTRO = {
-  h8: '<p>For each item you are given two arrangements, <b>X</b> and <b>Y</b>, of the same piece for piano, aimed at the same difficulty level. Read each score, press <b>Play</b> to hear it, then say which arrangement is better and tick what is wrong with each one. Which arrangement is X and which is Y is not stated and changes from item to item. The sound is a plain synthesised piano (the same notes as the score), so judge the notes, not the timbre.</p>',
-  h9: '<p>For each item you are given two arrangements, <b>X</b> and <b>Y</b>, of the same piece for piano, aimed at the same difficulty level. Read each score, press <b>Play</b> to hear it, and mark each arrangement <b>Pass</b> (you would give it to a student at that level as it stands) or <b>Fail</b>. Which arrangement is X and which is Y is not stated and changes from item to item. The sound is a plain synthesised piano (the same notes as the score), so judge the notes, not the timbre.</p>'
+  h8: '<p>For each item you are given two arrangements, <b>X</b> and <b>Y</b>, of the same piece for piano, requested at the same difficulty level (neither is guaranteed to land exactly on it). Read each score, press <b>Play</b> to hear it, then say which arrangement is better and tick what is wrong with each one. Which arrangement is X and which is Y is not stated and changes from item to item. The sound is a plain synthesised piano (the same notes as the score), so judge the notes, not the timbre.</p>',
+  h9: '<p>For each item you are given two arrangements, <b>X</b> and <b>Y</b>, of the same piece for piano, requested at the same difficulty level (neither is guaranteed to land exactly on it). Read each score, press <b>Play</b> to hear it, and mark each arrangement <b>Pass</b> (you would give it to a student at that level as it stands) or <b>Fail</b>. Which arrangement is X and which is Y is not stated and changes from item to item. The sound is a plain synthesised piano (the same notes as the score), so judge the notes, not the timbre.</p>'
 };
 const TITLE = { h8: 'Blind review H-8 (diagnostic)', h9: 'Blind review H-9 (pass / fail)' };
 

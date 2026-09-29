@@ -11,17 +11,17 @@ const asMap = a => Object.fromEntries(a.map(s => [s.key, s.x + '@' + s.id]));
 
 test('the same items and seed give the same assignment and order, however the caller listed the items', () => {
   const items = fake(12);
-  const a = B.assign(items, 'secret-one');
+  const a = B.assign(items, 'secret-one-0123456789abc');
   const shuffled = items.slice().reverse();
   [3, 7, 1, 9].forEach(i => shuffled.push(shuffled.splice(i, 1)[0]));
-  const b = B.assign(shuffled, 'secret-one');
+  const b = B.assign(shuffled, 'secret-one-0123456789abc');
   assert.deepEqual(asMap(a), asMap(b));
   assert.deepEqual(a.map(s => s.key), b.map(s => s.key), 'the shown order is the same too');
 });
 
 test('a different seed gives a different assignment and a different order', () => {
   const items = fake(16);
-  const a = B.assign(items, 'secret-one'), b = B.assign(items, 'secret-two');
+  const a = B.assign(items, 'secret-one-0123456789abc'), b = B.assign(items, 'secret-two-0123456789abc');
   const xs = s => Object.fromEntries(s.map(x => [x.key, x.x]));
   assert.notDeepEqual(xs(a), xs(b), 'X/Y assignment differs');
   assert.notDeepEqual(a.map(s => s.key), b.map(s => s.key), 'shown order differs');
@@ -29,7 +29,7 @@ test('a different seed gives a different assignment and a different order', () =
 
 test('the split is as even as it can be (position bias cannot pass for a preference)', () => {
   [4, 7, 12, 13, 16].forEach(n => {
-    ['s1-abcd', 's2-abcd', 's3-abcd'].forEach(seed => {
+    ['s1-abcd-0123456789abcdef', 's2-abcd-0123456789abcdef', 's3-abcd-0123456789abcdef'].forEach(seed => {
       const g9x = B.assign(fake(n), seed).filter(s => s.x === 'g9').length;
       assert.ok(Math.abs(g9x - n / 2) <= 0.5, 'n=' + n + ' seed=' + seed + ': ' + g9x + ' items have G9 as X');
     });
@@ -37,7 +37,7 @@ test('the split is as even as it can be (position bias cannot pass for a prefere
 });
 
 test('every item has G9 on exactly one side, and ids are i01.. in shown order', () => {
-  const a = B.assign(fake(10), 'secret-one');
+  const a = B.assign(fake(10), 'secret-one-0123456789abc');
   a.forEach((s, i) => {
     assert.equal(s.id, 'i' + String(i + 1).padStart(2, '0'));
     assert.deepEqual([s.x, s.y].sort(), ['g9', 'legacy']);
@@ -48,12 +48,15 @@ test('a missing or trivial seed is refused, and so are duplicate items', () => {
   assert.throws(() => B.assign(fake(3), ''), /seed/);
   assert.throws(() => B.assign(fake(3), null), /seed/);
   assert.throws(() => B.assign(fake(3), 'ab'), /seed/);
+  assert.throws(() => B.assign(fake(3), 'hello'), /seed/, 'a dictionary word is refused');
+  assert.throws(() => B.assign(fake(3), 'x'.repeat(B.MIN_SEED_LENGTH - 1)), /at least 20/);
+  assert.doesNotThrow(() => B.assign(fake(3), 'x'.repeat(B.MIN_SEED_LENGTH)));
   const items = fake(3); items.push(Object.assign({}, items[0]));
-  assert.throws(() => B.assign(items, 'secret-one'), /same file/);
+  assert.throws(() => B.assign(items, 'secret-one-0123456789abc'), /same file/);
 });
 
 test('the assignment is keyed: without the seed the public rule (unkeyed hash) does not reproduce it', () => {
-  const items = fake(16), a = B.assign(items, 'a-long-secret-seed');
+  const items = fake(16), a = B.assign(items, 'a-long-secret-seed-xyz');
   /* a reviewer who knew the rule but not the seed would try an unkeyed hash of the item key, or of key+guess: none should match X/Y on all 16 */
   const crypto = require('crypto');
   const tries = [k => k, k => 'xy|' + k, k => '|' + k].map(f => it => parseInt(crypto.createHash('sha256').update(f(it)).digest('hex').slice(0, 8), 16) % 2 === 0);

@@ -15,21 +15,28 @@ Nothing here touches the app or the server. Nothing generated is committed.
 ## Build a packet
 
 ```
-node review/build.js --mode h8 --seed <secret> --out <dir> [--key-out <dir>]
-node review/build.js --mode h9 --seed <secret> --out <dir> [--key-out <dir>]
+node review/build.js --mode h8 --out <packet-dir> --key-out <key-dir> [--seed <secret>]
+node review/build.js --mode h9 --out <packet-dir> --key-out <key-dir> [--seed <secret>]
 node review/build.js --mode h8 --list            # show which pieces would be used, write nothing
-node review/build.js --mode h9 --seed s --out d --items items.json   # your own [{file, targetLevel, handProfile}] list
+node review/build.js --mode h9 --out d --key-out k --items items.json   # your own [{file, targetLevel, handProfile}] list
 ```
 
-- `--seed` is a secret string (at least 4 characters). Pick it, note it, do not give it to the reviewer. It is written to
-  the key file only.
+- `--seed` is optional. Leave it out and a random 32-hex-character one is made (the best choice: nobody has to remember it,
+  it is in the key). If you give one it must be at least **20 characters** and secret: the shown order is a plain HMAC sort and the
+  manifest lists the pieces in it, so a short or dictionary seed can be guessed from the manifest alone (a review recovered
+  `hello` in one guess). Either way it is written to the key file only.
 - `--out` becomes the **packet**: `index.html` (the whole review, one self-contained file) and `manifest.json`. **It must be
-  outside every git working tree**; the build refuses (before doing any work) a path in this repository or in any other
-  checkout, and refuses a key directory inside the packet directory or the reverse.
-- `--key-out` becomes the **key**: `key.json`. Default is a sibling of `--out` named `<out>-key`. **Never give the key to the
-  reviewer.**
-- A full build takes about a minute (it runs the real G9 pipeline and the legacy engine on every piece; H-9 also has to run
-  the H-8 selection first, to avoid reusing its pieces).
+  outside every git working tree**; the build refuses (before doing any work) a path in this repository or in any other checkout.
+- `--key-out` is **required** (no default) and becomes the **key**: `key.json`. It must be a different tree from `--out`: not
+  inside it, not containing it, and not inside its parent folder (so `--out X/h8 --key-out X/h8-key` is refused: zipping `X` to
+  send the packet would ship the key). Example: `--out %TEMP%\review\h8 --key-out %TEMP%\review-keys\h8`. **Never give the key to
+  the reviewer.**
+- A full build takes 1-2.5 minutes (it runs the real G9 pipeline and the legacy engine on every piece; H-9 also runs the H-8
+  selection first, to avoid reusing its pieces). The build refuses any packet in which a side (drawing or sound) of one item
+  is identical to a side of another item.
+- Sound: notes that are the continuation of a tie are joined, and one pitch struck by both hands at one onset sounds once, for
+  both arms (the drawn score is unchanged).
+
 
 Give the reviewer the packet directory (or just `index.html`). When they send back the exported ratings file:
 
@@ -37,10 +44,14 @@ Give the reviewer the packet directory (or just `index.html`). When they send ba
 node review/decode.js --key <key-dir>/key.json --ratings ratings-h8-<id>.json [--out summary.json]
 ```
 
-`decode.js` refuses a key and ratings that are not the same packet or mode, then reports per arm (G9 vs legacy): preference
-counts (ties counted), G9's share of decisive items with a 95% Wilson interval and an exact sign test, H-8 issue tags and
-notes, H-9 pass rates with intervals and the paired both/only/neither table with an exact McNemar test. It sets no pass
-threshold: what H-9 must show before a flip is the user's decision.
+`decode.js` refuses a key and ratings that are not the same packet or mode, then reports per arm (G9 vs legacy):
+preference item counts (ties counted) and, for the test, **piece-level** counts (two items of one piece are not independent, so a
+piece counts once: G9 if it won more of its items, legacy if fewer, else a tie; a 95% Wilson interval and an exact sign test over
+the decisive pieces; no item-level p-value), H-8 issue tags and notes, H-9 pass rates over pieces (a piece passes an arm only if
+every rated item of it passes) with intervals and the paired both/only/neither table with an exact McNemar test. It also splits
+the preference and pass numbers **by note-count ratio (G9 fuller / similar / legacy fuller) and by which arm missed the requested
+level by more** (numbers the builder keeps in the key, never in the packet), descriptive only, and prints the confounds and
+caveats. It sets no pass threshold: what H-9 must show before a flip is the user's decision.
 
 ## What the reviewer does
 
@@ -69,7 +80,9 @@ For an item `(file, target G6 level, hand profile)`:
   (it has hung on real pieces before, TD15); a timeout drops the piece, it is never a result.
 
 The **target level is a request, not a promise**: G7b cannot plan below a piece's own level, and both arms often sit at or
-below the target (the key records each arm's measured level). The reviewer is told the target only as "aimed at level N".
+below the target, ScoreArranger more than G9 (on the sample packets the mean absolute miss was about 0.5 for ScoreArranger
+against 0.2-0.3 for G9; the key records each arm's measured level). The page says the level was *requested*, that neither arm is
+guaranteed to land on it, and to mark "too easy / too hard" only if it would be so for a student at about that level.
 
 ## How the blinding works
 
@@ -82,21 +95,25 @@ below the target (the key records each arm's measured level). The reviewer is to
   measure, beat, duration, pitch spelling, staff and hand are kept; voices are re-derived from the notes alone; printed
   accidentals are recomputed from the spelling and key for both; one measure list, one tempo, one engraving configuration; the
   SVG has every `data-*` attribute (event ids, graph fingerprint) removed and per-drawing glyph ids that name only the item and
-  the label. What is deliberately **not** shown: G9's own fingering, tempo marks, voice/beam structure, and ties (a tied note is
-  two struck notes, in the drawing and in the sound, on both sides). So the review judges **the notes an arranger chose**, not
-  how well an engine notates them.
+  the label. What is deliberately **not** shown: G9's own fingering, tempo marks, voice/beam structure, and ties in the
+  drawing (a tied note is two drawn notes on both sides; in the sound a tied continuation is joined to the note it continues).
+  So the review judges **the notes an arranger chose**, not how well an engine notates them.
 - **The packet** is two files. The manifest lists the pieces and levels and gives X and Y the same two fields
-  (`label`, `bars`); it has no seed, no rule, no engine name, no per-arrangement count, size or level.
+  (`label`, `bars`); it has no seed, no rule, no engine name, no per-arrangement count, size or level. No side of any item
+  is identical to a side of another item (checked at build time and in a test).
 - **Tests** (`npm run test:review`): a byte-level scan of every packet file for `g9`, `legacy`, `scorearranger`,
   `arrange_score`, `selected`, `repaired`, `repair`, `candidate`, `critic`, `realiz`, `engine`, ... and for the seed; identical
   packets for the same seed whatever order the items are listed in; a different seed changes assignment and order; the split
-  is even; an unkeyed guess does not reproduce it; identical field sets for X and Y in the manifest, the page data and the SVG
-  roots; no `data-*`, fingering or tempo marks in any SVG; no external URL, request or import in the page; the key is
-  outside the packet directory.
+  is even; an unkeyed guess does not reproduce it; seeds under 20 characters are refused and an omitted seed is random and
+  only in the key; no side of any item repeats a side of another; identical field sets for X and Y in the manifest, the page
+  data and the SVG roots; no `data-*`, fingering or tempo marks in any SVG; no external URL, request or import in the page; the
+  key directory is required and may not sit in the packet's folder; a real (not stubbed) browser download of the ratings.
 
-**What blinding does not hide: the music.** G9 usually writes a fuller texture (more notes) than ScoreArranger, and a reader can
-see that. The tooling closes every channel except the notes; it cannot make two different arrangements look alike. A reviewer
-who guesses G9 from density is still judging the notes, but the preference is then not independent of the guess.
+**What blinding does not hide: the music.** G9 usually writes a fuller texture (more notes, almost all of the extra ones in
+the left hand) than ScoreArranger, and a reader can see that: on the sample packets "the fuller one is G9" was right for 12 of
+the 13 H-8 items and 10 of the 11 H-9 items whose densities clearly differed. The tooling closes every other channel; it cannot
+make two different arrangements look alike. A preference for the fuller arrangement is therefore not independent of that guess -
+which is why `decode.js` splits by density and by level miss.
 
 ## Which pieces
 
@@ -112,20 +129,26 @@ arms are not the very same notes; both draw. Files are then tried in a fixed ord
 2. Within a preference group the corpus strata (hymns, beyer, czerny599, ...) are taken round-robin, and inside a stratum by
    `sha256("g9c-inputs-v1:" + path)` (a public constant that only orders candidates; unrelated to the secret seed).
 
-H-8 wants two levels per piece: candidate targets are the request level and +1, +1.5, +2 above it; a target is kept only if
-both arms give different notes there, and a second one only if G9's arrangement is really fuller (G6 level at least 0.25 higher,
-or at least 1.1x the notes). Pieces with two levels are taken first (up to 8); only if fewer than 8 exist are single-level
-pieces used to reach 16 items. **Overlap with the measurement samples is stated in the key file (`tier` per item) and in the
-G09 section 12 record; any tier-2 piece makes that item optimistic for G9.**
+H-8 may show a piece at a second, higher level (candidate targets: the request level and +1, +1.5, +2 above it), but **only if
+both arms change**: at the second level G9's arrangement is really fuller (G6 level at least 0.25 higher, or at least 1.1x the
+notes) AND the legacy notes differ from the legacy notes at the first level. (A first version required only G9 to change;
+ScoreArranger has four native levels and usually returned identical notes at both targets, so a repeated score gave the arm away
+and 16 items covered 9 pieces - an independent review's blocker.) Otherwise one level per piece. Pieces are taken in the order above
+until there are 16 items. **On the current corpus no piece has such a second level, so H-8 is 16 items over 16 different pieces
+(one level each) - the "8 inputs x 2 levels" shape is gone, and that is the price of independent items.** H-9 is 16 pieces.
+**Overlap with the measurement samples is stated in the key file (`tier` per item) and in the G09 section 12 record; any tier-2
+piece makes that item optimistic for G9.**
 
 ## Ratings: what they can and cannot show
 
-They can show, for these pieces and this reviewer, whether the notes G9 chose are preferred to ScoreArranger's, and where each
-falls short (H-8), and what share of each arm a teacher would hand to a student (H-9). They cannot show: that G9 is better in
-general (about 16 items, one reviewer: wide intervals, and the pieces are the ones G7b can plan, at hand profile `large`, against
-one legacy engine); why one was preferred; anything about touch, pedalling, phrasing or fingering (the sound is a plain synth of
-the notes, and fingering is not shown); or that the difference would survive the notation each engine would produce in the app.
-The H-9 bar for flipping the default is not fixed here.
+**What H-8/H-9 can and cannot support.** They can say whether *this reviewer* prefers G9's notes to ScoreArranger's on
+G7b-plannable pieces at hand profile large, where each arm falls short (H-8), and what share of each arm this reviewer would
+hand to a student (H-9). They **cannot** show that G9 is generally better: blinding does not hide the arm on most items, and
+preference is confounded with density (G9 is fuller), left-heavy voicing (the extra notes are left hand) and level miss
+(ScoreArranger misses the requested level more), none of which the design separates; the reviewer is one person, with about 16
+units and wide intervals, on one legacy engine. They say nothing about touch, pedalling, phrasing, fingering (not shown), small
+or medium hands (only `large` is reachable), or whether the difference would survive the notation each engine would produce in
+the app. The H-9 bar for flipping the default is not fixed here.
 
 ## Files
 

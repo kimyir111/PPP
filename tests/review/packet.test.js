@@ -10,10 +10,9 @@ const { REPO, ITEMS, CACHE, tmpDir, readAll } = require('./helpers.js');
 const { buildPacket } = require(path.join(REPO, 'review/build.js'));
 const { decode } = require(path.join(REPO, 'review/decode.js'));
 
-const SEED = 'test-secret-seed-alpha';
+const SEED = 'test-secret-seed-alpha-0123456789';
 const build = (mode, seed, items, tag) => {
-  const out = tmpDir(tag);
-  return buildPacket({ mode: mode, seed: seed, out: path.join(out, 'packet'), items: items || ITEMS, cache: CACHE });
+  return buildPacket({ mode: mode, seed: seed, out: path.join(tmpDir(tag), 'packet'), keyOut: path.join(tmpDir(tag + 'k'), 'key'), items: items || ITEMS, cache: CACHE });
 };
 const json = f => JSON.parse(fs.readFileSync(f, 'utf8'));
 
@@ -30,9 +29,9 @@ test('determinism: the same seed and items give a byte-identical packet and key,
 });
 
 test('a different seed changes the assignment or the order (and the key records the seed it used)', async () => {
-  const d = await build('h8', 'test-secret-seed-beta', ITEMS, 'd');
+  const d = await build('h8', 'test-secret-seed-beta-0123456789', ITEMS, 'd');
   const ka = json(A.files.key), kd = json(d.files.key);
-  assert.equal(ka.seed, SEED); assert.equal(kd.seed, 'test-secret-seed-beta');
+  assert.equal(ka.seed, SEED); assert.equal(kd.seed, 'test-secret-seed-beta-0123456789');
   const sig = k => Object.keys(k.items).map(id => id + ':' + k.items[id].file + ':' + k.items[id].X).join('|');
   assert.notEqual(sig(ka), sig(kd));
   assert.notEqual(A.packetId, d.packetId);
@@ -160,7 +159,9 @@ test('decode round trip: ratings written in X/Y terms come back attributed to th
     }) };
   const o = decode(k, ratings);
   assert.equal(o.preference.g9, ITEMS.length); assert.equal(o.preference.legacy, 0);
-  assert.equal(o.pass.g9.pass, ITEMS.length); assert.equal(o.pass.legacy.fail, ITEMS.length);
+  assert.equal(o.preference.pieces.g9, ITEMS.length); assert.equal(o.pieces, ITEMS.length);
+  assert.equal(o.pass.g9.items.pass, ITEMS.length); assert.equal(o.pass.legacy.items.fail, ITEMS.length);
+  assert.equal(o.pass.g9.pieces.pass, ITEMS.length); assert.equal(o.pass.legacy.pieces.fail, ITEMS.length);
   assert.deepEqual(o.issues.legacy, { 'too-hard': ITEMS.length, 'thin-muddy': ITEMS.length }); assert.deepEqual(o.issues.g9, {});
   assert.equal(o.notes.legacy.length, ITEMS.length); assert.equal(o.notes.g9.length, 0);
   assert.equal(o.paired.onlyG9Passes, ITEMS.length);
@@ -169,11 +170,13 @@ test('decode round trip: ratings written in X/Y terms come back attributed to th
   const flipped = JSON.parse(JSON.stringify(ratings));
   flipped.ratings.forEach(r => { r.preference = r.preference === 'X' ? 'Y' : 'X'; });
   assert.equal(decode(k, flipped).preference.legacy, ITEMS.length);
+  assert.equal(decode(k, flipped).preference.pieces.legacy, ITEMS.length);
   /* "no difference" and unrated items are counted, not dropped */
   const partial = JSON.parse(JSON.stringify(ratings));
   partial.ratings[0].preference = 'same'; partial.ratings.pop();
   const p = decode(k, partial);
   assert.equal(p.preference.noDifference, 1); assert.equal(p.preference.unrated, 1); assert.equal(p.items, ITEMS.length);
+  assert.equal(p.preference.pieces.tie, 1); assert.equal(p.preference.pieces.unrated, 1);
 });
 
 test('decode refuses a key and ratings that are not the same packet or mode, and unknown or repeated items', () => {
@@ -188,11 +191,83 @@ test('decode refuses a key and ratings that are not the same packet or mode, and
 });
 
 test('a H-9 packet builds too: pass/fail form, one level per item', async () => {
-  const h9 = await build('h9', 'test-secret-seed-gamma', ITEMS.slice(0, 2), 'h9');
+  const h9 = await build('h9', 'test-secret-seed-gamma-0123456789', ITEMS.slice(0, 2), 'h9');
   const html = fs.readFileSync(h9.files.html, 'utf8');
   assert.ok(/name="pass-i01-X"/.test(html) && /name="pass-i01-Y"/.test(html));
   assert.ok(!/data-issue="too-hard"/.test(html), 'the H-9 form has no issue checkboxes');
   const h8 = fs.readFileSync(A.files.html, 'utf8');
   assert.ok(/data-issue="too-hard"/.test(h8) && /data-issue="thin-muddy"/.test(h8) && !/<input type="radio" name="pass-/.test(h8));
   assert.equal(json(h9.files.manifest).review, 'H-9');
+});
+
+test('no side of any item is byte-identical to a side of another item (a repeated score would give the arm away)', () => {
+  [A, A9].forEach(P => {
+    const html = fs.readFileSync(P.files.html, 'utf8');
+    const svgs = html.match(/<svg[\s\S]*?<\/svg>/g);
+    /* glyph ids carry the item and label, so compare with them removed */
+    const norm = s => s.replace(/i\d\d[XY]-/g, 'p-');
+    assert.equal(new Set(svgs.map(norm)).size, svgs.length, 'two drawings are the same');
+    const data = JSON.parse(html.match(/<script id="packet-data" type="application\/json">([\s\S]*?)<\/script>/)[1]);
+    const sounds = [];
+    Object.keys(data.items).forEach(id => ['X', 'Y'].forEach(l => sounds.push(JSON.stringify(data.items[id][l]))));
+    assert.equal(new Set(sounds).size, sounds.length, 'two sounds are the same');
+  });
+});
+
+test('the builder refuses a packet in which one piece appears at two levels with the same legacy notes', async () => {
+  /* ScoreArranger has four native levels and gives the same notes at these two targets: showing both would repeat a side */
+  const two = [{ file: 'catalog/hymns/god-rest-ye-merry.musicxml', targetLevel: 2.87, handProfile: 'large' }, { file: 'catalog/hymns/god-rest-ye-merry.musicxml', targetLevel: 3.87, handProfile: 'large' }];
+  await assert.rejects(build('h8', SEED, two, 'rep'), /identical to a side of another item/);
+});
+
+test('the seed: too short is refused; omitted means random, kept in the key only, and different each time', async () => {
+  const out = () => path.join(tmpDir('rs'), 'p'), key = () => path.join(tmpDir('rk'), 'key');
+  await assert.rejects(buildPacket({ mode: 'h9', seed: 'hello', out: out(), keyOut: key(), items: ITEMS.slice(0, 1), cache: CACHE }), /at least 20/);
+  const a = await buildPacket({ mode: 'h9', out: out(), keyOut: key(), items: ITEMS, cache: CACHE });
+  const b = await buildPacket({ mode: 'h9', out: out(), keyOut: key(), items: ITEMS, cache: CACHE });
+  const ka = json(a.files.key), kb = json(b.files.key);
+  assert.match(ka.seed, /^[0-9a-f]{32}$/); assert.notEqual(ka.seed, kb.seed);
+  Object.values(readAll(a.outDir)).forEach(buf => assert.equal(buf.toString('utf8').indexOf(ka.seed), -1, 'the random seed is not in the packet'));
+});
+
+test('the key records, per item, the strata decode.js splits by (density ratio, left-hand notes, level miss); the packet records none', () => {
+  const k = json(A.files.key);
+  Object.values(k.items).forEach(it => {
+    const s = it.strata;
+    assert.ok(s.drawnNotes.g9 > 0 && s.drawnNotes.legacy > 0);
+    assert.ok(s.leftHandNotes.g9 >= 0 && s.leftHandNotes.g9 <= s.drawnNotes.g9);
+    assert.ok(Math.abs(s.noteRatio - s.drawnNotes.g9 / s.drawnNotes.legacy) < 1e-9);
+    assert.ok(['g9', 'similar', 'legacy'].includes(s.fuller) && ['g9', 'similar', 'legacy'].includes(s.missedMore));
+    assert.ok(s.levelMiss.g9 >= 0 && s.levelMiss.legacy >= 0);
+  });
+  const packetText = Object.values(readAll(A.outDir)).map(b => b.toString('utf8')).join('\n');
+  assert.ok(packetText.indexOf('noteRatio') < 0 && packetText.indexOf('levelMiss') < 0 && packetText.indexOf('leftHand') < 0);
+});
+
+test('decode: two items of one piece count once in the test; strata split by density and level miss', () => {
+  const st = (fuller, more) => ({ drawnNotes: { g9: 100, legacy: 80 }, leftHandNotes: { g9: 60, legacy: 40 }, noteRatio: 1.25, fuller: fuller, levelMiss: { g9: 0.1, legacy: 0.6 }, missedMore: more });
+  const item = (X, file, strata) => ({ X: X, Y: X === 'g9' ? 'legacy' : 'g9', file: file, title: 't', targetLevel: 3, handProfile: 'large', tier: 0, strata: strata });
+  const key = { format: 'ppp-review-key/1', mode: 'h8', packetId: 'abc', items: {
+    i01: item('g9', 'a.mxl', st('g9', 'legacy')), i02: item('legacy', 'a.mxl', st('g9', 'legacy')),
+    i03: item('g9', 'b.mxl', st('similar', 'similar')), i04: item('legacy', 'c.mxl', st('legacy', 'g9')) } };
+  const pick = (id, arm) => { const x = key.items[id].X === arm ? 'X' : 'Y'; return x; };
+  const ratings = { format: 'ppp-review-ratings/1', packetId: 'abc', mode: 'h8', ratings: [
+    { id: 'i01', preference: pick('i01', 'g9') }, { id: 'i02', preference: pick('i02', 'g9') },     /* piece a: G9 twice */
+    { id: 'i03', preference: pick('i03', 'legacy') },                                                 /* piece b: legacy */
+    { id: 'i04', preference: 'same' }                                                                 /* piece c: tie */
+  ].map(r => Object.assign({ X: {}, Y: {} }, r)) };
+  const o = decode(key, ratings);
+  assert.equal(o.items, 4); assert.equal(o.pieces, 3);
+  assert.equal(o.preference.g9, 2); assert.equal(o.preference.legacy, 1); assert.equal(o.preference.noDifference, 1);
+  assert.deepEqual([o.preference.pieces.g9, o.preference.pieces.legacy, o.preference.pieces.tie], [1, 1, 1], 'a piece counts once whatever its item count');
+  assert.equal(o.preference.pieces.decisive, 2); assert.equal(o.preference.pieces.signTestP, 1);
+  assert.equal('signTestP' in o.preference, false, 'no item-level p-value');
+  assert.match(o.clusteringNote, /4 items cover 3 pieces/);
+  assert.equal(o.strata.byDensity['g9 fuller (note ratio >= 1.1)'].items, 2);
+  assert.equal(o.strata.byDensity['g9 fuller (note ratio >= 1.1)'].preference.g9, 2);
+  assert.equal(o.strata.byDensity['similar (0.9 to 1.1)'].preference.legacy, 1);
+  assert.equal(o.strata.byLevelMiss['legacy missed by more'].items, 2);
+  assert.equal(o.strata.byLevelMiss['G9 missed the requested level by more'].preference.noDifference, 1);
+  assert.equal(o.confounds.itemsG9Fuller, 2); assert.equal(o.confounds.leftHandShareOfG9ExtraNotes, 1);
+  assert.ok(o.caveats.some(c => /guessable|density/i.test(c)) && o.caveats.some(c => /not independent|per piece|pieces/i.test(c)));
 });
