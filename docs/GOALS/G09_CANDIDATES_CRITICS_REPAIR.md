@@ -195,4 +195,332 @@ changes — G9a/b/d are Node-only.
 
 ## 12. Implementation record
 
-(Grows here as G9a lands.)
+### G9a — candidates, critics, selection, central measurement (2026-09-28)
+
+Node-only, not loaded by the app (§2/§10 unchanged). All investigation was done directly
+(Read/Grep/Bash on the real files, plus small ad hoc Node scripts run against this
+worktree), per the hard process constraint above — no sub-agent was dispatched for any
+part of this phase.
+
+**What was built:**
+- `critics/metrics.js` — the five G8a-harness metric functions (`hardViolationsOfGraph`,
+  `levelOfGraph`, `melodyPreservation`, `harmonyAgreement`, `engraveMetrics`, plus their
+  shared helpers), **moved verbatim** from `realize/tools/metrics.js` (only the `REPO`
+  path-resolution depth changed, one `..` fewer). `realize/tools/metrics.js` is now a
+  2-line re-export (`module.exports = require('../../critics/metrics.js')`) — confirmed by
+  `require()` identity in `tests/critics/metrics-promotion.test.js` that it is the SAME
+  module object, not a second implementation. Re-ran `realize/tools/harness.js --sample 16`
+  immediately after the move and diffed the JSON summary byte-for-byte against a pre-move
+  run: `g8a`/`arrangeScorePy`/`scoreArranger` summaries were identical — **the promotion
+  changed no number**, confirmed, not assumed.
+- `critics/voice-leading.js` (NEW) — parallel perfect fifths/octaves between the two OUTER
+  voices (the highest/lowest sounding pitch at each onset slice, not one fixed voice id),
+  large (>12-semitone) leaps in a voice that is genuinely inner at BOTH leap endpoints, and
+  voice crossings within a part (two voices' relative pitch order reversed from their own
+  real whole-piece average register, via `songgraph/voices.js`'s existing
+  `perPartVoiceStats` — confirmed first, per §4's instruction, that neither
+  `scoregraph/pro-voice.js` (G3 engraving cleanup, no pitch-relationship check at all) nor
+  `songgraph/voices.js` (melody/bass/inner ROLE classification, no smell detection) already
+  computes any of this — genuinely new). Built on `songgraph/util.js`'s existing
+  `noteWindows` (read-only reuse). 9 unit tests incl. 5 mutation + 4 negative controls, all
+  passing on hand-written `tests/scoregraph/g3-helpers.js` `mk()` fixtures with exact,
+  known pitch sequences.
+- `critics/register-density.js` (NEW) — `difficulty/features.js`'s real `featuresOf(graph)
+  .piece` (notesPerBeatRH/LH, chordLoad, range, keyLoad, densityRH/LH — exactly
+  `arrangement/reference.js`'s own `BAND_KEYS`) against `REF.bandsForStage(stage)`, using
+  the SAME p90-for-continuous/max-for-spike ceiling convention `arrangement/plan.js`'s own
+  `planSection` already established (reused, not reinvented). Genuinely independent of
+  G7b's plan-time density gate: that gate checks the RETAINED VOICES' notes before any
+  accompaniment exists; this critic checks the REALIZED candidate's actual generated notes
+  — different information (G8a's own tuning record, §14 above, shows realized density can
+  diverge from plan-time estimates).
+- `critics/index.js` — `evaluate(graph, ctx) -> {critics, hardOk}`, composing all seven.
+  `hardOk` is a boolean gate; the other six scores are always computed and returned even
+  when `hardOk` is false (useful for reporting a discarded candidate's real numbers), but
+  never blended into a weighted score — the structural filter-vs-score rule (§2) is
+  enforced in `candidates/index.js`'s `select()`, not here.
+- `candidates/index.js` (NEW) — `enumerate()`, `scoreCandidates()`, `select()`, `run()`.
+  Enumeration order (deterministic, no randomness anywhere): the request's own
+  `handProfile` walked across all 7 `realize()` pattern values (`'auto'` +
+  `PATTERN_NAMES`), THEN the other two hand profiles (`playability/reach.js`'s own
+  `PROFILES` order) each at `pattern:'auto'` — up to 9 specs, capped at `n` (default 8).
+  Candidates are deduped by `scoregraph/serialize.js`'s real `fingerprint()` (reused
+  directly, not a new canonicalization). `select()` computes a 0(perfect)–~1(bad)
+  "badness" per critic (level: `|diff|/3` capped at 1; melody: `1-preservation`; harmony:
+  `1-rootQuality`; engrave: combined L1/L2 count /5 capped at 1; voiceLeading: smell count
+  /10 capped at 1; registerDensity: overage capped at 1), sums with a flat default weight
+  of 1 each (`DEFAULT_WEIGHTS`, deliberately NOT tuned — see ablations below), picks the
+  minimum, ties broken by the fixed enumeration index. `explain()` names, in order of
+  contribution, which critics separated the winner from the runner-up. In-memory caching
+  by `(fingerprint(g), request, n, weights)` is implemented (`opts.cache`, a Map the caller
+  owns) — cheap to add (one existing `fingerprint()` call), so added now rather than
+  deferred to G9e as the design doc allowed.
+- `realize/tools/harness.js` extended (additive, opt-in `--g9a` flag; the pre-existing
+  `g8a`/`arrangeScorePy`/`scoreArranger`/`audioScore` code paths and CLI defaults are
+  **unchanged** — confirmed via the byte-for-byte summary diff above) with a `g9a` row
+  computed at the exact SAME `(targetLevel, handProfile)` G8a's own per-file search already
+  found (`found.targetLevel`/`found.profile`) — best-of-N and single-realization G8a are
+  therefore compared on the literal same request, never a more favorable one substituted.
+  `--ablate-critics a,b,c` re-runs only `select()` (cheap — no re-plan/re-realize) with
+  each named critic's weight zeroed, against the SAME already-scored candidate pool.
+
+**THE CENTRAL MEASUREMENT** — best-of-N (N=8 requested) vs. the three legacy engines vs.
+G8a's own single-realization, on the SAME `realize/tools/harness.js`, the SAME 16-file
+stratified sample (`tests/engrave/corpus.json`), the SAME 12/16-file scored subset (4 files
+have no reachable G7b plan at any level/profile tried — a G7b coverage limit, unchanged by
+this phase, identical exclusion set to every prior G8 measurement on this sample):
+
+| Metric | G8a (single) | **G9a best-of-N** | arrange_score.py | ScoreArranger | audio-score.js |
+|---|---|---|---|---|---|
+| G5 hard violations (%zero, mean) | 100% (12/12), 0 | **100% (12/12), 0** | 0% (0/12), 37.25 | 83% (10/12), 0.917 | 8% (1/12), 77.25 |
+| G6 level within ±1 (%), mean \|diff\| | 66.7% (8/12), 0.715 | **66.7% (8/12), 0.6425** | 58% (7/12), 0.811 | 83% (10/12), 0.304 | N/A |
+| melody preservation (mean) | 1.000 | **1.000** | 0.927 | 0.985 | 0.946 |
+| harmony root+quality / root-only | 0.929 / 0.946 | **0.949 / 0.954** | 0.520 / 0.653 | 0.947 / 0.956 | N/A |
+| engrave L1 silent / L2 hard (all-zero rate) | 12/12, 12/12 | **12/12, 12/12** | 12/12, 12/12 | 12/12, 12/12 | N/A |
+
+**Stated plainly: best-of-N does NOT beat `ScoreArranger` on every metric — it beats/ties on
+the SAME 3 of 5 metrics G8a's single realization already did (hard violations, melody,
+engrave), narrowly flips harmony root+quality from a loss (0.929) to a win (0.949 vs.
+0.947) while root-only stays a narrow loss (0.954 vs. 0.956), and leaves G6 level-within-±1
+completely unmoved on the metric the roadmap's own bucketed pass/fail form uses (still
+66.7% vs. ScoreArranger's 83%) — only the finer mean-\|diff\| form improved (0.715 -> 0.6425,
+still nearly double ScoreArranger's 0.304).** The roadmap's own hypothesis for G9 — "generate
+several candidates, score them, pick the best, and this closes the gap to ScoreArranger" —
+is **not supported by this measurement**: best-of-N is a small, real, but narrow
+improvement over G8a's already-tuned single realization, not a phase change. The dominant
+remaining gap (G6 level accuracy) is untouched by candidate selection on this sample. This
+is reported plainly per this task's own instruction not to tune around an unfavorable
+finding silently or narrow the sample to make it look better.
+
+**Selection-objective overlap, disclosed explicitly (per this task's own instruction):**
+`harmonyAgreement`, `melodyPreservation` and `levelOfGraph` are ALL used as selection
+critics AND reported as acceptance metrics (this paragraph originally named only harmony and
+level; melody is also a weight-1 selection term - corrected in the round-2 fix pass, see
+"Round 2 fix pass" below). Any improvement on those is therefore expected and partly "by
+construction" of the selection objective, not independent evidence of a better arranger —
+exactly the trap this task warned about. **Harmony's narrow improvement (0.929→0.949) is
+the metric most attributable to selection itself** (harmony is directly optimized and moved
+the most of any metric). **Level's near-non-movement, despite ALSO being directly
+optimized, is the more informative result**: even with level explicitly in the selection
+objective, best-of-N could not move the bucketed ±1 pass rate at all on this sample —
+evidence that the candidate POOL (pattern × hand-profile variants of the same underlying
+G7b plan) simply does not contain enough level-accuracy diversity to close this gap, not
+that selection failed to look for it. **Hard violations and engrave
+are NOT selection-objective overlap** in the interesting sense (hard violations are a filter,
+not a score; engrave is uninformative here). Melody IS a selection term, but is 1.000 on
+this sample by construction of G8a's realize() (verbatim copy) regardless of which candidate
+is picked, so selecting on it changes nothing here;
+hard violations were already 0/12→12/12 at G8a's single-realization baseline after G8a's
+own final tuning round (§14 above), so best-of-N's "win" here is inherited, not newly
+produced by selection; engrave is 0/0 for literally every candidate in this sample (bare
+ScoreGraphs with no dynamics/pedals/lyrics rarely trigger L1/L2 at all — the same
+"structurally uninformative here" caveat §14 already recorded for G8a). **The only metric
+where best-of-N's number is NOT mostly explained by "inherited from G8a" or "by
+construction" is harmony — and that is also the one metric most directly selected on.**
+
+**Ablations** (re-`select()` on the SAME already-scored 16-file candidate pool, one
+critic's weight zeroed at a time — cheap, no re-planning/re-realizing):
+
+| Ablation (critic weight → 0) | level within±1 (%, mean\|diff\|) | harmony root+quality / root-only |
+|---|---|---|
+| none (default, all weight 1) | 66.7% (8/12), 0.6425 | 0.949 / 0.954 |
+| level | 66.7% (8/12), **0.6725 (worse)** | 0.949 / 0.954 (unchanged) |
+| harmony | **75% (9/12), 0.591 (better)** | 0.922 / 0.952 (rootQuality worse, as expected) |
+| **voiceLeading** | **75% (9/12), 0.464 (better)** | **0.965 / 0.967 (both better)** |
+| registerDensity | 75% (9/12), 0.573 (better) | 0.936 / 0.954 (mixed) |
+| melody | identical to default (melody is 1.000 for every surviving candidate — zero discriminative power on this sample) |
+| engrave | identical to default (0/0 for every surviving candidate — zero discriminative power on this sample) |
+
+**The load-bearing ablation finding**: removing `voiceLeading` from selection **improves
+BOTH level (66.7%→75%, mean\|diff\| 0.6425→0.464) AND harmony (both sub-metrics) at
+identical hard-violation/melody/engrave outcomes** — a Pareto improvement on this sample.
+This means the voice-leading critic, at its current flat weight of 1 and its current
+raw-count-based badness (`count/10` capped at 1), is actively steering selection AWAY from
+the candidates that are also better on level and harmony, on this specific 16-file sample.
+Investigated further (not just measured and left): the earlier hand test on
+`catalog/method/beyer/007.mxl` (§12 development note, not corpus-wide) found 23 planted-
+sounding "parallel octave" events from a single realize() output — but these were REAL,
+structural, not a bug: a single-note-per-beat LH bass (G8a's own stage-1 `STAGE1_COUNT=1`
+policy, §14 above) very often doubles the melody's own contour at some fixed octave
+displacement, which is textbook parallel motion by definition, on almost every beat of a
+simple, mostly-stepwise tune. **This is a real, disclosed limitation of the CURRENT
+voice-leading critic's weighting, not a bug in its detection logic** (the mutation tests
+confirm the detector itself is correct): a flat per-smell count does not distinguish an
+occasional, genuinely bad parallel motion from a systematic, low-severity byproduct of a
+deliberately simple single-note bass texture. **Recommendation for the Lead, not acted on
+silently here**: either (a) lower `voiceLeading`'s default weight relative to `level`/
+`harmony`, or (b) change its scoring from a raw count to a rate (smells per real harmonic
+change, so a piece with many beats is not penalized merely for having more beats), before
+this critic is trusted for a production selection decision. Not changed in this phase
+because doing so ON THIS SAME 16-FILE SAMPLE that informed the observation would be tuning
+to the test set without independent validation — exactly what this task's own instructions
+warn against. The flat weight of 1 is kept as the shipped default, with this finding
+recorded for whoever tunes G9's weights next (plausibly folded into G9b's repair work,
+which already needs to reason about voice-leading faults).
+
+**Performance** (design doc §8's own "measure the G4 L2 engrave cost first, it's likely the
+most expensive critic" — confirmed, not assumed): per-candidate critic cost on a real
+mid-size file (`sonatina/001.mxl`, 38 measures): hard violations 3ms, level 7ms, melody
+2ms, harmony 1ms, voiceLeading 3ms, registerDensity 10ms — **engrave (G4 L2 via
+`tests/engrave/tools/bench.js`'s `measure()`) 212ms cold / 148ms warm, i.e. 85-90% of one
+candidate's total scoring cost**, exactly the "measure it first" the design doc called for.
+End-to-end N=8 (enumerate + realize + score all 6 non-filter critics + select) on the
+16-file sample ranged **53ms (a file with only 1 real candidate — see below) to 2628ms**
+(`sonatina/003.mxl`, 8 real candidates scored); on the single largest reachable file found
+in a broader sweep (`sonatina/013.mxl`, 86 measures — note G8a's own §14 record used
+`sonatina/020.mxl` as its worst-case fixture, which has NO reachable G7b plan at any level/
+profile, confirmed unchanged here; `013` is the largest REACHABLE file found), N=8 (6
+candidates actually scored, all discarded — see below) took **6132ms**. All comfortably
+under the roadmap's ≤10s budget. **This plausibly fits in-browser too** (a few seconds on
+the largest real corpus file, well under 10s), though the biggest files sit close enough to
+several seconds that a progress indicator or off-main-thread execution (a Web Worker) would
+still be the right UX choice — a G9e decision, not a performance blocker for G9a. The "on
+the helper or server" placement the roadmap assumed is **not required purely on
+performance grounds**, contrary to that assumption.
+
+**N=8 utilization, an honest limitation of the enumeration design**: across the 12 scored
+files, the number of REAL, DISTINCT candidates actually found ranged 1–8 (mean 5.75/8,
+71.9% of the requested N). Two files (`beyer/001.mxl`, `beyer/007.mxl`) produced only ONE
+real candidate — **a genuine, disclosed corpus-check finding, not a bug**: both are simple
+2-voice, G6-stage-1 pieces, and `realize/index.js`'s own `policyForStage(stage, ...)`
+(§14 above) **unconditionally returns `{pattern:'block', ...}` for any `stage <= 1`,
+discarding whatever pattern was actually requested** (including an EXPLICIT `'hymn'` or
+`'broken'` request — `resolvePattern` honours the explicit request, but `policyForStage`
+then silently overrides it for low-stage sections). This is a genuine correction to this
+design doc's own framing in §4/§5 ("candidates are an enumerable product of [plan's texture
+ladder] and [realize's pattern]"): **at G6 stage 1, the pattern axis contributes ZERO real
+candidate diversity** — every one of the 7 pattern values realizes to the byte-identical
+graph, confirmed directly (not assumed) via `scoregraph/serialize.js`'s `fingerprint()`
+during a live run. Hand-profile variation is the only source of diversity at stage 1, and
+it too is often exhausted (a simple piece frequently realizes identically at `medium` and
+`large`, since neither profile's tighter `MAX_SPAN` changes anything for it). `sonatina/013
+.mxl` (86 measures) got 6 real, distinct candidates, but **ALL SIX had a real G5 hard
+violation** and `select()` correctly returned `ok:false` — this is the SAME real,
+pre-existing SPAN violation §14's final tuning round already disclosed as unfixed on this
+exact file (byte-identical before/after that round); best-of-N candidate diversity across
+pattern/hand-profile does not touch it, because it is a structural feature of this piece's
+own voice content at every texture this request's `handProfile` search reaches, not
+something a different pattern choice changes.
+
+**Tests**: new `npm run test:critics` (`tests/critics/**/*.test.js`), **not folded into
+`test:realize`** — decided and documented here: `critics/` and `candidates/` are their own
+modules with their own concerns (critic correctness and selection determinism), distinct
+from `realize/`'s own concern (does `realize()` build a valid, deterministic graph from a
+plan) — folding them together would blur which suite is guarding which promise, the same
+reasoning `test:arrangement-planner` and `test:realize` are already kept separate for
+adjacent-but-distinct modules. 19/19 passing: 9 voice-leading (5 mutation + 4 negative
+control, on hand-written `mk()` fixtures with known planted pitch sequences), 3
+register-density (incl. a synthetic no-reference-data case returning cleanly rather than
+throwing), 5 candidates/selection mutation (a planted 2-octave-dyad hard violation is
+filtered before scoring and never outweighs a clean candidate's worse other-critic scores;
+if EVERY candidate has a hard violation, `select()` reports `ALL_CANDIDATES_HAVE_HARD_
+VIOLATIONS` rather than picking one anyway; a real corpus file's full `enumerate→score→
+select` pipeline run twice is byte-for-byte identical, including the selected candidate's
+own `fingerprint()`; a real multi-voice file yields genuinely distinct, deduped candidates;
+an unreachable request — the SAME planted-unreachable-target discipline `tests/realize/
+realize.test.js`'s own mutation test uses — never reaches scoring with a fabricated plan),
+2 metrics-promotion sanity (`require()` identity, not just value equality, between the old
+path and the new one). `test:realize` (16/16), `test:arrangement-planner` (17/17),
+`test:songgraph` (45/45), `test:playability` (32/32), `test:difficulty` (34/34) all
+re-verified green after this phase's changes.
+
+**Design-doc corrections** (verified fresh against the real repo, per §11's own
+instruction):
+1. §4/§5's framing of "candidates are an enumerable product of the texture ladder and the
+   realize pattern" is only fully true at G6 stage 2+; at stage 1, `realize/index.js`'s
+   `policyForStage` forces every pattern to `'block'` regardless of request (see above) —
+   candidate diversity at stage 1 comes from hand-profile variation alone, and even that is
+   often degenerate for simple pieces. Corrected here, not silently worked around.
+2. `arrangement/plan.js`'s `REF.ref().stageForPosition(position)` **clamps** an
+   out-of-range HIGH `targetLevel` to the highest real stage rather than refusing the
+   request (discovered while writing an "unreachable" mutation test at `targetLevel: 999`,
+   which unexpectedly succeeded) — only an extreme LOW target reliably fails, matching
+   `tests/realize/realize.test.js`'s own existing `-50` convention, which this phase's own
+   mutation test adopted once the high-end assumption proved wrong. Not a bug (plan.js is
+   read-only here per scope), but worth the next implementer knowing before writing a
+   similar "absurd target" test.
+3. No correction needed to §3's three stale-roadmap-assumption corrections (H-8/H-9 not
+   run, AI-4 data volume, `'balanced'` routing) — all re-verified true, unchanged by this
+   phase (G9a touches none of them; they remain live for G9c/d/e).
+
+**Scope discipline**: no change to `songgraph/`, `arrangement/`, `playability/`,
+`difficulty/` internals (read/call only, confirmed by `git status`/diff review before
+committing); `realize/` touched only for the metric-function move (`realize/index.js`
+itself — the realizer — is byte-for-byte unchanged, confirmed by the pre/post-move harness
+diff above) and the additive `--g9a` harness extension. No app file touched (Node-only,
+per §2/§10). G9b (repair), G9c (review tooling/H-8/H-9), G9d (AI-4) and G9e (app
+integration/flip) are untouched, per their own explicit exclusion from this phase.
+
+### G9a round 2 — engrave-gated selection, target-closeness selection, disjoint held-out sweep (2026-09-30)
+
+Changes (Node-only, no app file): `candidates/index.js` enumerates n=24 candidates at level offsets [0,-1,1]
+and selects by assessed closeness to the REQUESTED target (never a candidate's own planning target);
+`selectWithEngraveGate` runs the real engraver on the cheap-scored top-3 only; ablations reuse the cheap-scored pool.
+`realize/tools/harness.js` gained `--held-out N` (the next N files of the same deterministic stratified walk, disjoint
+from the round-1 16-file sample by construction) and a per-file child process with `--timeout-s`, so a legacy engine
+that never returns is recorded as a timeout instead of stalling the sweep. `tests/critics` 21/21 at the time (29/29 after the fix pass below).
+
+**Tuning sample (round-1's 16 files, 12 reachable, tuned against):** G9a vs ScoreArranger — hard violations 12/12 zero
+vs 10/12; melody 1.000 vs 0.985; harmony root+quality 0.975 vs 0.947 (root-only 0.978 vs 0.956); level within ±1
+10/12 vs 10/12 (mean |diff| 0.317 vs 0.304); engrave tied. "All five tied or beaten" is loose: level within ±1 is tied
+10/12, but mean level diff is 0.317 (G9a) vs 0.304 (ScoreArranger), i.e. G9a is slightly WORSE there. This is also the
+sample the tuning looked at, so it is optimistic.
+
+**Disjoint held-out (32 files walked; 11 scored; 3 timeouts; rest have no reachable G7b plan):**
+
+| Metric | G8a | **G9a** | ScoreArranger |
+|---|---|---|---|
+| hard violations (zero-files, mean) | 11/11, 0 | **11/11, 0** | 8/11, 0.82 |
+| melody | 1.000 | **1.000** | 0.973 |
+| harmony root+quality / root-only | 0.928 / 0.964 | **0.932 / 0.966** | 0.971 / 0.974 |
+| level within ±1, mean \|diff\| | 11/11, 0.623 | **11/11, 0.255** | 11/11, 0.570 |
+| engrave L1/L2 | 11/11 | **11/11** | 11/11 |
+
+**Stated plainly:** on held-out data G9a beats or ties ScoreArranger on 4 of 5 metrics and **still loses on harmony**
+(0.932 vs 0.971; root-only 0.966 vs 0.974). The tuning sample's harmony win (0.975) shrank to 0.932 on unseen files, which
+is the overfitting the disjoint sweep exists to catch. Harmony is versus G8a only +0.004 on held-out. The level
+improvement (0.62 -> 0.25) is partly by construction: level closeness is the selection objective. The held-out scored
+set is 11 files, below the ~20 the plan asked for, because most of the slice is unreachable by G7b; that is a small
+sample and the numbers carry wide uncertainty.
+
+**Legacy hang found (tech debt, not G9a):** `ScoreArranger` at level `intermediate` did not return within 180-600 s on
+`catalog/hymns/christ-arose.musicxml`, `catalog/hymns/god-rest-ye-merry.musicxml` and
+`catalog/method/burgmuller25/019.mxl` (`beginner` on christ-arose takes 11 ms). Not yet checked whether the app runs the
+same code path; if it does, arranging those pieces at intermediate could freeze the browser.
+
+**Round 2 fix pass (2026-09-30, after independent review) - selection-objective overlap, stated plainly.** The overlap
+disclosure above (round 1 and round 2) was understated. `badnessOf` minimises |DIFF level - target|, using the same
+`levelOfGraph` the harness reports as the level metric; and melody and harmony are also selection terms, scored by the
+same functions (`melodyPreservation`, `harmonyAgreement`) the harness reports. So G9a's melody, harmony and level results
+are best-of-N ON THE EVALUATION METRICS THEMSELVES, not independent evidence of a better arranger. The comparison is also
+unequal: each legacy engine gets a best-of-4 over its own native levels chosen by level closeness only, while G9a gets up
+to 24 candidates (9 pattern/profile specs x 3 planning-level offsets, capped at 24) chosen by all three evaluation metrics together (plus
+register/density and, for the top 3, engrave). The held-out level improvement (0.62 -> 0.25) and the harmony movement
+should be read with that in mind; only hard violations (a structural filter, not a score) and engrave are outside the
+selection objective. Separately: the harness only ever exercises hand profile `large` (`findG8Plan` tries `large` first
+and all 12 + 11 scored files in these two runs used it), so nothing measured here says anything about `medium` or `small` hands.
+
+Correctness fixes in this pass (no tuning of weights or of the arrangement; the user decided there is none):
+1. The G5 hard-violation filter now uses the REQUEST's hand profile (`ctx.profile = request.handProfile`), not the
+   candidate's own profile - enumeration appends other hand profiles' plans, and a candidate is only acceptable if it is
+   playable for the hands actually asked for (mutation test: request `small`, a 12-semitone dyad, filtered).
+2. `badnessOf` no longer treats a failed critic as perfect: an errored/absent engrave, melody, harmony, voice-leading,
+   register-density or level score counts as the worst (1). `null` remains neutral only where it means not-applicable
+   (no original melody notes / no harmony windows) or deliberately deferred (`deferEngrave`, the cheap phase of the gate).
+3. Empty pool returns `NO_CANDIDATES` (not `ALL_CANDIDATES_HAVE_HARD_VIOLATIONS`); the cache key now includes `reference`,
+   `planOpts` and the `fullEngrave` mode, a cache hit returns a copy, and the engrave gate no longer mutates the caller's
+   scored candidates (an optional `engraveCache` Map lets ablation re-selection reuse real engrave results).
+4. `harness.js`: the per-file temp row file is deleted after reading; `--held-out` throws a clear error when 16+count >=
+   the manifest length (61), where `sampleFiles` would return manifest order and disjointness would break; `legacy.js`:
+   the `arrange_score.py` child has a 120 s timeout so a hung Python process cannot orphan.
+5. Tests: new `tests/critics/candidates-gate.test.js` (top-K gating, skip-if-already-real, empty pool, ablation by a zeroed
+   weight, an errored engrave cannot win, badnessOf worst-on-missing, cache key/copy) and a request-profile mutation test;
+   `tests/critics` is now 29/29 (was 21/21). The header comment that cited a non-existent `ablation.test.js` now names
+   `candidates-gate.test.js`.
+
+**Re-measurement after these fixes: the numbers did not change.** 16-file sample (12 scored): G9a harmony root+quality
+0.975 / root-only 0.978, level within ±1 10/12, mean |diff| 0.317, hard 12/12 zero, melody 1.000 - identical to the table
+above. Held-out (32 files walked, 11 scored, 3 timeouts): G9a harmony 0.932 / 0.966, level within ±1 11/11, mean |diff|
+0.255, hard 11/11 zero, melody 1.000 - identical. This is expected: the harness requests are hand profile `large`, where
+the request-profile filter accepts a superset of what the candidate-profile filter did and the gate/badness fixes only
+matter when a critic errors or the pool is empty, neither of which happened on these samples.

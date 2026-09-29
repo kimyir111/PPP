@@ -80,7 +80,7 @@ function runArrangeScorePy(jobs) {
   const payload = JSON.stringify({ jobs: jobs });
   const out = execFileSync(process.platform === 'win32' ? 'python' : 'python3',
     [path.join(__dirname, 'legacy-arrange-score.py')],
-    { input: payload, maxBuffer: 256 * 1024 * 1024 }).toString();
+    { input: payload, maxBuffer: 256 * 1024 * 1024, timeout: 120000, killSignal: 'SIGKILL' }).toString();
   return JSON.parse(out).results;
 }
 
