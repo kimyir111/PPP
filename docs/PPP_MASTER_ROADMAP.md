@@ -585,6 +585,7 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 | TD12 | `Score.form` ignores D.S., D.C. and Fine; grace notes are not played | G4 draws jumps and graces the player ignores; G11a parity | G11a |
 | TD13 | Runtime CDN dependencies (React, Babel, pdf.js, tfjs, fonts) | Offline use, determinism | G13 |
 | TD14 | ~~A latent `engrave/marks.js` tie-endpoint bug~~ — **FIXED, MERGED** (#92, squashed to `856a165`, 2026-09-29). Root cause was two-fold, both in the same `be-still-my-soul.musicxml` tie into a note with its own printed accidental, first note of a new system: (1) `tests/engrave/l2.js`'s endpoint checker never widened the "own head" box with the note's own accidental for a tie-end (only did so with dot/flag for a tie-start), so a correctly-routed `marks.js` endpoint measured as out-of-bounds; (2) a genuine `marks.js` bug — a cross-system tie-end's stub start (`p0`) was pinned to the system's start X with no floor against the landing point, producing a backwards, accidental-crossing curve when the note's own accidental overhangs left of the system margin. A same-day independent review (Sonnet) approved with one non-blocking finding (the first fix's `p0` clamp could collapse the stub to zero visible length on the phone breakpoint for this exact note); fixed in a same-PR follow-up giving the degenerate case the standard `CV.TIE.stub` length instead. `test:engrave` 200/201 both before and after (the 1 remaining failure is a pre-existing, unrelated `A27` layout-hash-drift that reproduces on an unmodified checkout). Corpus-wide scan confirmed `be-still-my-soul` is the only hymn hit by this pattern; two Czerny method ties were already marginally (imperceptibly) affected pre-existing, no regression | `test:engrave`'s full-corpus zero-target gate | Done |
+| TD15 | The app's legacy `ScoreArranger` never returns at level `intermediate` on `christ-arose.musicxml`, `god-rest-ye-merry.musicxml` and `burgmuller25/019.mxl` (180-600 s+, `beginner` is 11 ms); reproduced on the plain converted Score, so it is probably reachable in the app (a browser freeze). Found by G9a's held-out sweep | Any arrangement of those pieces; G9a/G8 legacy baselines | In progress (worktree `D:/PPP-td15`, Sonnet implementer, then independent review; app-affecting) |
 
 ---
 
@@ -610,7 +611,7 @@ The order of evidence: **automatic tests → mutation → metrics and gates → 
 
 ## 15. Next task
 
-**G9a** (in progress): N candidates from the real G7b/G8a knobs, seven deterministic critics (five
+**G9a** (DONE, pending review and merge; branch `g9-multicandidate-critics`, `d260ac0`): measured result, held-out (11 scored files, disjoint from the tuning sample): best-of-N beats or ties ScoreArranger on 4 of 5 metrics and still LOSES on harmony (0.932 vs 0.971); the tuning sample showed a harmony win (0.975 vs 0.947) that did not hold on unseen files. User decision 2026-09-30: no further tuning; accept as is. The next open item is **G9b**. Original G9a scope: N candidates from the real G7b/G8a knobs, seven deterministic critics (five
 promoted from G8a's harness, two new), hard constraints as filters, deterministic selection with an
 explanation — then **best-of-N measured head-to-head against all three legacy engines on G8a's same
 harness and 16-file sample**. That number decides whether G9's approach works at all. Then:
