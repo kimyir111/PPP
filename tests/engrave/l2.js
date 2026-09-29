@@ -1007,6 +1007,11 @@ function curvesAndMarks(eng, plan, opts, m, C) {
           const after = objsOf(h.event).filter(o => o.system === h.system && o.staffKey === h.staffKey && !!o.grace === !!h.grace &&
             ((o.kind === 'dot' && Math.abs(cyOf(o.box) - cy) <= 0.75 * f) || (o.kind === 'flag' && o.box[1] < cy + 0.75 * f && o.box[3] > cy - 0.75 * f)));
           if (after.length) b = unionBox([b].concat(after.map(o => o.box)));
+        } else {
+          const cy = cyOf(h.box);
+          const before = objsOf(h.event).filter(o => o.system === h.system && o.staffKey === h.staffKey && !!o.grace === !!h.grace &&
+            o.kind === 'accidental' && o.box[1] < cy + 0.75 * f && o.box[3] > cy - 0.75 * f);
+          if (before.length) b = unionBox([b].concat(before.map(o => o.box)));
         }
         const d = pointGap(p, b) / f;
         endMax = Math.max(endMax, d);
