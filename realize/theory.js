@@ -105,6 +105,10 @@ function freshVoicing(root, quality, count, anchor) {
    n})`, `null` turns it off; `critics/register-floor.js` and `repair/` read the same constant. */
 const REGISTER_FLOOR = 40;
 
+/* C3 (MIDI 48): below it a second or third between two sounding notes reads as a muddy cluster (critics/low-register-cluster.js;
+   the 'open' stride geometry keeps the chord's tones at or above it when its bass is below it). */
+const CLUSTER_BELOW = 48;
+
 /* One generated event's pitches, with everything below `floor` moved UP by whole octaves (so every pitch
    class is kept). Order: (1) each low pitch is raised on its own (an inversion; a pitch that lands on one the
    event already has is merged into it - the same key, so no pitch class is lost); (2) if that pushes the
@@ -190,6 +194,6 @@ function clampSpan(midis, maxSpan, maxIters) {
 
   return {
     CHORD_INTERVALS, intervalsFor, targetPcs, nearestWithPc, freshVoicing, leadVoicing, clampSpan, permutations,
-    REGISTER_FLOOR, floorMidis, foldAbove
+    REGISTER_FLOOR, CLUSTER_BELOW, floorMidis, foldAbove
   };
 });

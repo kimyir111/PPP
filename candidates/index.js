@@ -227,13 +227,14 @@
      filter would only turn a degraded piece into "no arrangement". `--weights registerFloor=1` counts it. */
   /* `leftHandJump` (post-H-8 re-look, docs/GOALS/G09 section 12 "G9 left-hand jumps") is REPORT ONLY too: weight 0. The standing
      rule is no further tuning of selection; the fix for the reviewer's "awkward hand position" is the realizer's stride geometry
-     (realize/patterns.js), and the critic measures it. `--weights leftHandJump=1` counts it (a jump rate of JUMP_RATE_CAP or more
+     (realize/patterns.js), and the critic measures it. `--weights lowRegisterCluster=1` counts the low-register cluster rate the same way. `--weights leftHandJump=1` counts it (a jump rate of JUMP_RATE_CAP or more
      is the worst score). */
-  const DEFAULT_WEIGHTS = Object.freeze({ level: 1, melody: 1, harmony: 1, engrave: 1, voiceLeading: 0, registerDensity: 1, registerFloor: 0, leftHandJump: 0 });
+  const DEFAULT_WEIGHTS = Object.freeze({ level: 1, melody: 1, harmony: 1, engrave: 1, voiceLeading: 0, registerDensity: 1, registerFloor: 0, leftHandJump: 0, lowRegisterCluster: 0 });
   const LEVEL_CAP = 3;      /* a 3-course-position miss is already "as bad as it gets" for this term */
   const ENGRAVE_CAP = 5;    /* 5 combined L1/L2 violations likewise */
   const SMELL_CAP = 10;     /* 10 combined voice-leading smells likewise */
   const JUMP_RATE_CAP = 0.25; /* a quarter of the left-hand steps an octave or more apart is already "as bad as it gets" (weight 0 by default: report only) */
+  const CLUSTER_RATE_CAP = 0.5; /* half the chord attacks a low second or third is "as bad as it gets" (weight 0 by default: report only) */
   const FLOOR_CAP = 10;     /* 10 arranged notes below the register floor likewise (weight 0 by default: report only) */
 
   /* A score that is absent (`undefined`) or whose critic recorded an error (`<name>Error`,
@@ -262,7 +263,9 @@
     const registerFloorBad = (failed('registerFloor') || !rf) ? 1 : Math.min(1, rf.below / FLOOR_CAP);
     const lj = scores.leftHandJump;
     const leftHandJumpBad = (failed('leftHandJump') || !lj) ? 1 : Math.min(1, lj.rate / JUMP_RATE_CAP);
-    const parts = { level: levelBad, melody: melodyBad, harmony: harmonyBad, engrave: engraveBad, voiceLeading: voiceLeadingBad, registerDensity: registerDensityBad, registerFloor: registerFloorBad, leftHandJump: leftHandJumpBad };
+    const lc = scores.lowRegisterCluster;
+    const lowRegisterClusterBad = (failed('lowRegisterCluster') || !lc) ? 1 : Math.min(1, lc.clusterRate / CLUSTER_RATE_CAP);
+    const parts = { level: levelBad, melody: melodyBad, harmony: harmonyBad, engrave: engraveBad, voiceLeading: voiceLeadingBad, registerDensity: registerDensityBad, registerFloor: registerFloorBad, leftHandJump: leftHandJumpBad, lowRegisterCluster: lowRegisterClusterBad };
     let total = 0;
     Object.keys(parts).forEach(k => { total += (w[k] == null ? 1 : w[k]) * parts[k]; });
     return { total: total, parts: parts, weights: w };

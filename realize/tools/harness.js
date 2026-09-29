@@ -31,6 +31,7 @@ const REPAIR = require(path.join(REPO, 'repair/index.js'));
 const VLC = require(path.join(REPO, 'critics/voice-leading.js'));
 const RFC = require(path.join(REPO, 'critics/register-floor.js'));
 const LHJ = require(path.join(REPO, 'critics/left-hand-jump.js'));
+const LRC = require(path.join(REPO, 'critics/low-register-cluster.js'));
 
 const LEGACY_LEVELS = ['beginner', 'intermediate', 'advanced', 'original'];
 const HAND_PROFILES = ['large', 'medium', 'small'];
@@ -258,6 +259,8 @@ function scoreGraphCandidate(graph, id, profile, target, origHarmony, origMelody
   /* G9 post-H-8 re-look: left-hand jump rate (share of left-hand steps whose bass moves an octave or more) and the
      notes below G2, for every engine; never a selection input here. */
   try { out.lhj = LHJ.leftHandJump(graph); } catch (e) { out.lhjError = String(e && e.message || e); }
+  /* low-register clusters (a second or third whose lower note is below C3) and low bass-then-chord pairs, every engine, report only */
+  try { out.cluster = LRC.lowRegisterCluster(graph); } catch (e) { out.clusterError = String(e && e.message || e); }
   out.level = out.g6Level;
   return out;
 }
@@ -287,6 +290,14 @@ function summarizeEntries(ok, get) {
     lhJumpRateMeanPerFile: mean(entries.map(e => e.lhj && e.lhj.rate)),
     lhJumpRateMaxPerFile: entries.reduce((a, e) => (e.lhj && e.lhj.rate > a ? e.lhj.rate : a), 0),
     lhJumpFilesAtOrOver18pc: entries.filter(e => e.lhj && e.lhj.rate >= 0.18).length,
+    /* low-register clusters, pooled over files (chord attacks with a second or third whose lower note is below C3) */
+    clusterAttacks: entries.reduce((a, e) => a + (e.cluster ? e.cluster.clusterAttacks : 0), 0),
+    chordAttacks: entries.reduce((a, e) => a + (e.cluster ? e.cluster.chordAttacks : 0), 0),
+    clusterRatePooled: (() => { const c = entries.reduce((a, e) => a + (e.cluster ? e.cluster.chordAttacks : 0), 0); return c ? entries.reduce((a, e) => a + (e.cluster ? e.cluster.clusterAttacks : 0), 0) / c : null; })(),
+    clusterRateMeanPerFile: mean(entries.map(e => e.cluster && e.cluster.clusterRate)),
+    closeBassChords: entries.reduce((a, e) => a + (e.cluster ? e.cluster.closeBassChords : 0), 0),
+    bassChordPairs: entries.reduce((a, e) => a + (e.cluster ? e.cluster.bassChordPairs : 0), 0),
+    notesBelowFSharp2: entries.reduce((a, e) => a + (e.cluster ? e.cluster.notesBelow42 : 0), 0),
     notesBelowG2: entries.reduce((a, e) => a + (e.lhj ? e.lhj.belowG2 : 0), 0),
     meanMelody: mean(entries.map(e => e.melody)),
     meanHarmonyRootQuality: mean(entries.map(e => e.harmony && e.harmony.rootQuality)),
@@ -388,7 +399,7 @@ async function main() {
   /* --stride wide: the pre-fix stride geometry (pop/waltz chord voiced around the register midpoint, bass an octave under it),
      for a before/after on the same code. Default: close (chord voiced just above its bass). */
   const stride = opt('--stride', undefined);
-  if (stride !== undefined && stride !== 'wide' && stride !== 'close') throw new Error('--stride: expected wide or close, got ' + stride);
+  if (stride !== undefined && !['wide', 'close', 'open'].includes(stride)) throw new Error('--stride: expected wide, close or open (default open), got ' + stride);
   const runOpts = { stride: stride, registerFloor: registerFloor, weights: weights, pattern: pattern, g9a: g9a, repair: repair, g9aN: g9aN, levelOffsets: levelOffsets, topKForEngrave: topKForEngrave, ablateCritics: ablateCritics };
   /* child mode: one file, row written to --row-out (the parent gives each file its own process and a time limit,
      so a legacy engine that never returns on one file is recorded as a timeout instead of stalling the sweep) */
