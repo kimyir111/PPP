@@ -386,4 +386,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch(e => { console.error(e.stack || e); process.exit(1); });
-module.exports = { sampleFiles, heldOutFiles, runFile, summarize };
+module.exports = { sampleFiles, heldOutFiles, runFile, summarize, findG8Plan, bestLegacyRun };

@@ -700,3 +700,105 @@ unchanged, whole-octave moves only, provenance, determinism, idempotence) and re
    once on the repaired graph, so an unrepaired head's inferred fingering can also change. The reviewer's cross-profile runs saw 759 and
    1,633 heads change fingering across the two samples' candidate sets (their count; not re-derived here). No acceptance metric covers
    fingering, so whether this makes fingerings better or worse is **unmeasured**.
+
+### G9c - blind review tooling (2026-09-30)
+
+Step 1 of G9c: the tooling only. **No review was run and none needs the user's time yet**; `docs/PPP_MASTER_ROADMAP.md` and every
+other roadmap file are untouched. Node-only, nothing the app or server loads (`git diff --stat origin/main` shows no app or server
+file; the only existing code file touched is `realize/tools/harness.js`, which now also exports `findG8Plan` and `bestLegacyRun`
+so the builder reuses them instead of copying them). Everything was done directly; no sub-agent was dispatched.
+
+**What it is.** `review/` builds, for a list of `(input file, G6 level, hand profile)` items, a blind packet comparing two
+arrangements of the same piece at the same target: the **current G9 pipeline** (G9a `run` - best-of-N with the engrave gate - then
+G9b `repairSelection`, all defaults, at the request `{targetLevel, handProfile, sections:'all'}`, the wiring `harness.js runFile`
+uses for `g9aRepair`) against the **legacy comparator: the app's in-page `ScoreArranger`** at the one of its four native levels
+whose measured G6 position is closest to the same target (`harness.js bestLegacyRun`). ScoreArranger is compared because it is the
+strongest legacy engine on the harness metrics (G8a/G9 measurements above) and is the engine the app runs in the page;
+`arrange_score.py` and `audio-score.js` did worse, so beating ScoreArranger is the conservative test. It runs in a child process
+with a 120 s limit (TD15: it has hung on real pieces); a timeout drops the piece.
+
+**Build and use.** `node review/build.js --mode h8|h9 --seed <secret> --out <dir> [--key-out <dir>]`; details in `review/README.md`.
+`--out` must be outside every git working tree (the repository and any other checkout are refused before any work; the key
+directory may not nest with the packet directory); nothing generated is committed. The packet is `index.html` (one self-contained
+offline page: inline CSS/JS, both scores as engraved SVG drawn Node-side by `engrave/`, a small Web Audio synth per arrangement,
+the rating form, `localStorage` persistence, a JSON download button plus the same JSON in a box) and `manifest.json`. The key
+(`key.json`, holding the seed, which of X/Y is G9 per item, each arm's measured level, and the input tier) goes to a separate
+directory. `node review/decode.js --key ... --ratings ...` joins them: per-arm preference counts with a Wilson interval and exact
+sign test, H-8 issue tags and notes, H-9 pass rates and the paired McNemar table. It sets no pass threshold (the H-9 bar for the
+flip is the user's decision).
+
+**How the user will review.** Open `index.html` from disk. H-8 (diagnostic): per item, X and Y as scores plus Play, then "which is
+better" and, per arrangement, issue boxes (too hard, too easy, wrong harmony, melody unclear, awkward hand position, thin/muddy)
+and a short note. H-9: Pass/Fail per arrangement ("would you give this to a student"), optional preference. Download the ratings
+file and send it back. The reviewer names a role, not a person. The roadmap's own time estimates for H-8/H-9 are unchanged and
+untested here.
+
+**How the blinding works, and how it is tested.** Assignment and shown order come from HMAC-SHA256 keyed with the secret seed
+(`review/lib/blind.js`; the rule is public, replaying it needs the seed, which is written only to the key). Assignment is balanced
+(items ranked by the HMAC, even ranks show G9 as X), so position bias cannot pass for a preference. Both arms are re-drawn through
+ONE path (`review/lib/neutral.js`): flat notes only (measure, beat, duration, pitch spelling, staff, hand), voices re-derived from
+the notes, one measure list/tempo/layout config, every `data-*` attribute removed from the SVG, glyph ids naming only item and
+label. `npm run test:review` includes: a byte-level scan of every packet file for `g9`, `legacy`, `scorearranger`,
+`arrange_score`, `selected`, `repaired`, `repair`, `candidate`, `critic`, `realiz`, `engine`, pattern names and the seed (it caught
+a real `ppp-g9c-...` format string in the first draft); byte-identical packet and key for the same seed and items in any listing
+order; a different seed changes assignment and order; the split is even; an unkeyed guess does not reproduce it; identical
+field sets for X and Y in the manifest, the page data and the SVG root attributes; no `data-*`, fingering, tempo or dynamic marks
+in any SVG; no external URL, request, import or `<link>`; the key is not reachable from the packet directory; `--out`/`--key-out`
+inside the repository (existing or not, absolute or relative) or in another git working tree is refused; decode attributes ratings
+to the right arm, flips correctly, counts ties/unrated, refuses a mismatched packet or mode; the legacy level recorded in the key is
+the argmin re-derived independently; and, in headless Chrome, both scores of every item render, the form works, ratings survive
+a reload, the export is valid JSON in the documented shape, Play/Stop run without error, no network request is made, and the
+page still works when the browser refuses storage.
+
+**What is NOT hidden, measured on the two sample packets: the music.** A reader who guessed "the fuller arrangement is G9" would
+have been right on 14 of 16 H-8 items (more notes: 14 of the 15 with a difference) and 11 of 16 H-9 items (11 of 15). G9's
+texture is usually denser than ScoreArranger's, and no tooling can make two different arrangements look alike; the tests close
+every other channel. A preference for the denser arrangement is therefore not independent of the guess, and the ratings do not
+say WHY one was preferred.
+
+**Inputs (the documented rule; `review/lib/select.js`, `review/README.md` "Which pieces").** Pool = the 61 files of
+`tests/engrave/corpus.json`. Usable only if it really runs: 8-40 bars; a G7b plan exists (`findG8Plan`; 27 of the 61 have none,
+the binding limit); G9 returns an arrangement; ScoreArranger returns at all four levels within the limit (no timeouts); the two
+arms are not the same notes at the level reviewed. Of the 34 reachable files, 5 fall outside 8-40 bars and 3 give identical arms
+at every level (`czerny599/035`, `czerny849/023`, `sonatina/001`), leaving about 26 usable pieces. Files are tried in a fixed
+order - tier 0 (never in any G9 measurement, 13 files) before tier 1 (the 32-file held-out slice) before tier 2 (the 16-file
+tuning sample), strata round-robin, `sha256("g9c-inputs-v1:" + path)` inside a stratum - and H-9 additionally prefers pieces not
+used for H-8. **Overlap with the measurement samples, stated plainly:** the two sample packets built for this step have H-8 = 16
+items over 9 pieces (7 with two levels, 2 with one), of which 4 items are tier 0, 6 tier 1 and **6 items (3 pieces:
+`hymns/all-glory-laud`, `method/czerny599/013`, `gymnopedie-1`) are from the tuning sample**, so those are optimistic for G9;
+H-9 = 16 pieces, 5 tier 0, 10 tier 1, **1 tier 2** (`hymns/all-creatures`), and 4 of them (`nearer-my-god`, `god-rest-ye-merry`,
+`what-child-is-this`, `when-i-survey`) are also in H-8. A 16-item H-9 with no tuning-sample piece and no H-8 repeat does not
+exist in this corpus; the rule spends the repeats before the tuning sample. Every piece is at hand profile `large` (the only
+profile `findG8Plan` returns on this corpus, as in every G9 measurement), so nothing reviewed says anything about medium or small
+hands.
+
+**Why H-8 is not "8 inputs x 2 levels" everywhere.** G7b cannot plan below a piece's own level, and at most higher targets G9
+and ScoreArranger both simply stay where they were (e.g. `what-child-is-this` at 3.46 and at 4.46 are the same notes). A second
+level is kept only if G9's arrangement there is really fuller (G6 level at least 0.25 higher, or 1.1x the notes) and the two arms
+differ; 7 pieces qualify, so H-8 is 7 x 2 + 2 single-level = 16 items, not 8 x 2. At a piece's own level the two arms are often
+identical (`beyer/007`, `beyer/020`, `czerny599/010` ...), so those pieces appear only at a higher level or not at all.
+
+**Findings while building (not fixed; they matter for G9e).**
+1. **A realized (G8a/G9) graph carries no printed-accidental information.** In `what-child-is-this` at 3.46 the G9 graph has 47
+   altered heads and 0 with `head.acc`; engraved as it is, it draws 0 accidentals (the original graph: 39 altered heads, 8 printed,
+   16 accidentals drawn) - a chromatic D# in D major reads as D natural. ScoreArranger's output carries the app's own accidental
+   marks. The review packet recomputes accidentals from spelling and key for both arms (`neutral.js`), so it is unaffected, but
+   **G9e must not put a G9 graph on screen through the engraver without deciding where the accidentals come from.**
+2. **Both arms often do not reach the requested target**: on the sample packets G9 measured from 0.2 above to 1.1 below it and
+   ScoreArranger from on target to 1.3 below (`findG8Plan` often returns the piece's own level + 1 as the request, which neither
+   can reach); the key records both measured levels. The reviewer is told the target only as an aim.
+3. G9's fingering is not shown (and not judged) by design; ties are shown as re-struck notes on both sides.
+
+**Sample run (proof the tools work end to end; outputs under the OS temp dir, not committed).** Real H-8 and H-9 packets built
+(in parallel, about 150 s each including the selection walk; H-8 packet 1.7 MB, H-9 packet 2.3 MB). Headless Chrome (puppeteer) on
+both: 16 items and 32 scores per page, every score rendered with real size, page load about 0.55 s, no console error, no external
+request; a rating survived a reload; the download button produced valid JSON (`ratings-<mode>-<packet id>.json`) that `decode.js`
+joined with the key. **Audio: Play/Stop were exercised and raised no error, but nobody has listened to the synth; whether it
+sounds acceptable is unverified.**
+
+**Limits.** One reviewer; about 16 items per review (wide intervals); only G7b-reachable pieces at hand profile large; one
+legacy engine; the pieces are public-domain catalog scores already in the repository (nothing new is copied anywhere);
+`localStorage` is per browser, so the reviewer must finish on one computer or export as they go; tied notes are re-struck;
+the seed is passed on the command line (visible in the process list and shell history of the builder's machine, not to the
+reviewer). An independent review of this builder is still owed before a packet is trusted (the M-H1 precedent found two real
+leaks that way).
