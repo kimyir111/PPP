@@ -831,3 +831,31 @@ engine; the pieces are public-domain catalog scores already in the repository (n
 per browser, so the reviewer must finish on one computer or export as they go; the sound is a plain synth; a `--seed` given on the
 command line is visible in the builder machine's process list and shell history (omit it to avoid that). A second independent
 review of the revised builder is advisable before a packet is trusted.
+
+### H-8 result (2026-09-30, first blind human review; one reviewer, the user)
+
+Packet `a6c3d082e300`: 16 pieces at one level each, hand profile large, G9 (best-of-N plus repair) against the legacy ScoreArranger, 15 of 16 rated
+(item 12 left without a preference). The reviewer's notes are in Korean; the substance is below.
+
+**Preference (counts only; too few and too confounded for a test):** G9 5, legacy 4, no difference 6, unrated 1. Piece-level sign test p = 1.
+G9 was preferred on 4 of 5 hymns it won (when-i-survey, the-strife-is-oer, god-rest-ye-merry, christ-arose) and czerny599/032; legacy was
+preferred on four method pieces (beyer/038, sonatina/025, burgmuller25/006, beyer/020), all four where G9 was flagged awkward-hand. Where legacy
+missed the requested level by more (9 items), the reviewer preferred legacy 4 times and G9 once.
+
+**What the reviewer flagged (this is the useful part):** "awkward hand position" on 8 G9 arrangements and 7 legacy arrangements, with different causes,
+checked against the note data of the packet:
+- **G9's problem is a bass that goes too low.** Flagged G9 arrangements: lowest note mean MIDI 34, mean 24.9 notes below E2 (MIDI 40); unflagged G9: lowest
+  mean 39, 6.1 notes below E2. Worst cases: sonatina/025 (lowest MIDI 30, 98 notes below E2), pass-me-not (45), beyer/061 (22), burgmuller25/016 (17). The
+  reviewer's words: the low notes are "too low". No current critic or hard filter has a register floor (G5's hard violations are about hand span, and the
+  register-and-density critic scores overage against G7b's per-stage bands, not the floor), so G9 scored 0 hard violations on all of them.
+- **Legacy's problem is wide left-hand chords** (a tenth or more between simultaneous left-hand notes: 5 groups in nearer-my-god, 3 in god-rest-ye-merry,
+  4 in christ-arose): flagged legacy arrangements have mean maximum left-hand span 11.9 semitones against 4.4 unflagged. The reviewer: "an octave or tenth
+  is too far".
+- **Both arms:** burgmuller25/019 has its lowest notes at MIDI 25 in BOTH arms (the source piece itself goes that low).
+
+**Engraving findings that affect both arms (not G9 quality):** high notes are drawn on many ledger lines with no 8va (items 11 and 12) and low notes with no 8vb;
+simultaneous notes in one staff show odd stems or tails (items 3 and 5); a low note's drawing looked wrong (item 1). Recorded as TD16 and TD17 in the roadmap.
+
+**What this does and does not show:** it shows two concrete defects in the arranged output, one per arm, that the harness cannot see (the harness scores
+hand span and level, not register floor). It does not show G9 is better or worse overall: one reviewer, 16 pieces, an arm that is often guessable from density
+(see the G9c section), a level miss that differs between arms, and no preference in 6 items. H-9 has not been run.
