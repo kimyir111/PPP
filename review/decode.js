@@ -49,12 +49,14 @@ function decode(key, ratings) {
   if (key.packetId !== ratings.packetId) throw new Error('the key is for packet ' + key.packetId + ' but the ratings are for packet ' + ratings.packetId);
   if (key.mode !== ratings.mode) throw new Error('mode mismatch: key ' + key.mode + ', ratings ' + ratings.mode);
   const seen = new Set();
+  if (!Array.isArray(ratings.ratings)) throw new Error('the ratings file has no ratings list');
   const rows = ratings.ratings.map(r => {
     const k = key.items[r.id];
     if (!k) throw new Error('rating for an item the key does not have: ' + r.id);
     if (seen.has(r.id)) throw new Error('item rated twice: ' + r.id);
     seen.add(r.id);
     const arms = { [k.X]: r.X || {}, [k.Y]: r.Y || {} };
+    if (r.preference != null && !['X', 'Y', 'same'].includes(r.preference)) throw new Error('invalid preference for item ' + r.id + ': ' + JSON.stringify(r.preference));
     const pref = r.preference === 'X' ? k.X : r.preference === 'Y' ? k.Y : r.preference === 'same' ? 'same' : null;
     return { id: r.id, file: k.file, targetLevel: k.targetLevel, tier: k.tier, preference: pref, g9: arms.g9, legacy: arms.legacy, xIs: k.X, strata: k.strata || null };
   });

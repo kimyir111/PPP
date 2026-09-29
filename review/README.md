@@ -134,8 +134,8 @@ both arms change**: at the second level G9's arrangement is really fuller (G6 le
 notes) AND the legacy notes differ from the legacy notes at the first level. (A first version required only G9 to change;
 ScoreArranger has four native levels and usually returned identical notes at both targets, so a repeated score gave the arm away
 and 16 items covered 9 pieces - an independent review's blocker.) Otherwise one level per piece. Pieces are taken in the order above
-until there are 16 items. **On the current corpus no piece has such a second level, so H-8 is 16 items over 16 different pieces
-(one level each) - the "8 inputs x 2 levels" shape is gone, and that is the price of independent items.** H-9 is 16 pieces.
+until there are 16 items. **On the current corpus the selection order never reaches a piece with such a second level (one piece, gymnopedie-1, would qualify, but it is 60th of 61 in the order), so H-8 is 16 items over 16 different pieces
+(one level each) - the "8 inputs x 2 levels" shape is gone, and that is the price of independent items.** H-9 is 16 pieces; about 13 of them are also in H-8, so someone doing both reviews sees most pieces twice. Prefer the random seed (omit --seed): the 20-character check is length only.
 **Overlap with the measurement samples is stated in the key file (`tier` per item) and in the G09 section 12 record; any tier-2
 piece makes that item optimistic for G9.**
 
