@@ -57,6 +57,7 @@
     try { out.hard = METRICS.hardViolationsOfGraph(graph, ctx.profile); } catch (e) { out.hard = { error: String(e && e.message || e) }; }
     try { out.level = METRICS.levelOfGraph(graph); } catch (e) { out.levelError = String(e && e.message || e); }
     try { out.melody = METRICS.melodyPreservation(ctx.origMelodyNotes || [], METRICS.graphNoteList(graph)); } catch (e) { out.melodyError = String(e && e.message || e); }
+    try { out.melodyTopLine = METRICS.melodyTopLine(ctx.origMelodyNotes || [], METRICS.graphNoteList(graph)); } catch (e) { out.melodyTopLineError = String(e && e.message || e); } /* report only */
     try { out.harmony = METRICS.harmonyAgreement(ctx.origHarmony || [], graph); } catch (e) { out.harmonyError = String(e && e.message || e); }
     if (ctx.skipEngrave) { out.engrave = null; }
     else { try { out.engrave = METRICS.engraveMetrics(graph, ctx.id || 'candidate'); } catch (e) { out.engrave = { error: String(e && e.message || e) }; } }

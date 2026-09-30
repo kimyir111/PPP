@@ -388,7 +388,7 @@ test('hand-chords guard on the real case (opt-in model both): god-rest-ye-merry,
   const g = await H.graphOf('catalog/hymns/god-rest-ye-merry.musicxml');
   const sg = SGG.analyze(g);
   const req = { targetLevel: 2.87, handProfile: 'large', sections: 'all' };
-  const sel = CAND.run(g, sg, req, { last: { handChordsModel: 'both', handMaxNotes: null } }); /* the pass before the single-note criterion: this test is about the older guard */
+  const sel = CAND.run(g, sg, req, { last: { handChordsModel: 'both' } });
   assert.ok(sel.ok && sel.selected.report.handChords && sel.selected.report.handChords.active, 'fixture: the selected candidate came out of the pass');
   const before = VC.violationKeys(sel.selected.graph);
   const grew = rr => { const after = VC.violationKeys(rr.graph); let n = 0; after.forEach(k => { if (!before.has(k) && k.indexOf('cross:') !== 0) n++; }); return n; };
@@ -430,7 +430,7 @@ test('single-note guard: repairSelection carries handMaxNotes into the context, 
     const g = await H.graphOf(file);
     const sg = SGG.analyze(g);
     const req = { targetLevel: lvl, handProfile: 'large', sections: 'all' };
-    const sel = CAND.run(g, sg, req, {});
+    const sel = CAND.run(g, sg, req, { singleNoteHands: true });
     assert.ok(sel.ok && sel.selected.report.handChords.active && sel.selected.report.handChords.handMaxNotes === 1, file + ': the candidate came out of the single-note pass');
     const before = VC.verticalClash(sel.selected.graph);
     assert.equal(before.handMaxLH <= 1 && before.handMaxRH <= 1, true, file + ': the candidate has one note per hand');
@@ -444,6 +444,6 @@ test('single-note guard: repairSelection carries handMaxNotes into the context, 
   const g = await H.graphOf('catalog/hymns/christ-arose.musicxml');
   const sg = SGG.analyze(g);
   const req = { targetLevel: 2.76, handProfile: 'large', sections: 'all' };
-  const sel = CAND.run(g, sg, req, { last: { handMaxNotes: null } });
-  assert.equal(REP.repairSelection(sel, g, sg, req, {}).ctx.handMaxNotes, undefined);
+  const sel = CAND.run(g, sg, req, {});
+  assert.equal(REP.repairSelection(sel, g, sg, req, {}).ctx.handMaxNotes, undefined, 'the default candidates carry no single-note guard');
 });

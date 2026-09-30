@@ -134,22 +134,23 @@ test('off by default for a direct realize() call: nothing changes unless handCho
   assert.throws(() => REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'hymn', handChords: true, handMaxNotes: 0 }), /handMaxNotes/);
 });
 
-test('candidates/ pass 1 at stages 1-3 by default and not at stage 4; opts.last can turn it off', async () => {
+test('candidates/ do NOT pass handMaxNotes by default (origin/main behaviour); opts.last.handMaxNotes: 1 is the stage-3-gated counterfactual (stage 4 untouched)', async () => {
   const f = await planOf('catalog/hymns/pass-me-not.musicxml', 3.87);
   const req = { targetLevel: 3.87, handProfile: 'large', sections: 'all' };
-  const on = CAND.enumerate(f.g, f.sg, req, { n: 8 });
-  assert.ok(on.candidates.some(c => c.plan.stage <= 3) && on.candidates.some(c => c.plan.stage === 4), 'fixture: both stage bands occur');
-  on.candidates.forEach(c => {
-    const hc = c.report.handChords;
-    assert.equal(hc.handMaxNotes, 1, 'the request reaches the report');
-    assert.equal(hc.active, c.plan.stage <= 3);
+  const def = CAND.enumerate(f.g, f.sg, req, { n: 8 });
+  const off = CAND.enumerate(f.g, f.sg, req, { n: 8, singleNoteHands: false });
+  assert.deepEqual(def.candidates.map(c => c.fingerprint), off.candidates.map(c => c.fingerprint), 'singleNoteHands false = the default');
+  def.candidates.forEach(c => assert.equal(c.report.handChords.handMaxNotes, undefined, 'the default carries no single-note request'));
+  assert.ok(def.candidates.some(c => { const pm = perHand(c.graph); return pm.LH > 1 || pm.RH > 1; }), 'the default candidates hold multi-note chords');
+  const gated = CAND.enumerate(f.g, f.sg, req, { n: 8, last: { handMaxNotes: 1 } });
+  assert.ok(gated.candidates.some(c => c.plan.stage <= 3) && gated.candidates.some(c => c.plan.stage === 4), 'fixture: both stage bands occur');
+  gated.candidates.forEach(c => {
+    assert.equal(c.report.handChords.handMaxNotes, 1);
+    assert.equal(c.report.handChords.active, c.plan.stage <= 3);
     const pm = perHand(c.graph);
     if (c.plan.stage <= 3) assert.ok(pm.LH <= 1 && pm.RH <= 1, 'stage ' + c.plan.stage + ' candidate: one note per hand (' + JSON.stringify(pm) + ')');
   });
-  const s4 = on.candidates.filter(c => c.plan.stage === 4);
-  assert.ok(s4.some(c => { const pm = perHand(c.graph); return pm.LH > 1 || pm.RH > 1; }), 'stage 4 is not thinned');
-  const off = CAND.enumerate(f.g, f.sg, req, { n: 8, last: { handMaxNotes: null } });
-  off.candidates.forEach(c => assert.equal(c.report.handChords.handMaxNotes, undefined));
+  assert.ok(gated.candidates.filter(c => c.plan.stage === 4).some(c => { const pm = perHand(c.graph); return pm.LH > 1 || pm.RH > 1; }), 'stage 4 is not thinned');
 });
 
 test('christ-arose (hymn, stage 3), N = 1: one note per hand at every onset, only removal, melody top and bass kept, durations intact, deterministic', async () => {
