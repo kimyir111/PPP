@@ -40,7 +40,7 @@ function extractSource() {
   if (!acc) throw new Error('app-single extraction: PPP.arranger accessor not found');
   return {
     body:
-      line('ARRANGER_LEVEL_TO_STAGE') + line('ARRANGER_HAND_PROFILES') + "let ARRANGER_MODE = 'legacy';\n" +
+      line('ARRANGER_LEVEL_TO_STAGE') + line('ARRANGER_HAND_PROFILES') + line('ARRANGER_MODE') + /* the app's own default, not a copy of it */
       scripts[0] +
       'const SINGLE_CACHE = new Map();\n' + line('SINGLE_CACHE_MAX') +
       fn('singleRoute', false) + fn('arrangeSingleNote', true) + fn('graphToReviewScore', false) +
