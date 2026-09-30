@@ -381,12 +381,14 @@ function realize(g, sg, plan, opts) {
     : (opts.registerFloor == null ? TH.REGISTER_FLOOR : opts.registerFloor);
   const floorStats = { floor: floor, eventsRaised: 0, notesRaised: 0, notesMerged: 0, eventsShifted: 0, eventsDegraded: 0, notesDegraded: 0 };
   /* The three last-defect-round fixes (docs/GOALS/G09 section 12 "G9 last defect round"), each ON by default and each switched off by its
-     own option set to false (the old behaviour exactly, for a before/after on one code base and for the tests):
+     own option set to false (the old behaviour exactly, for a before/after on one code base and for the tests); `diatonicLow` is the
+     exception: OFF by default for a direct realize() call (the app's g8 path, where it cost harmony: fur-elise 0.917 to 0.333) and turned ON
+     by candidates/index.js, where selection absorbs it (<= 0.003 harmony):
        opts.compoundBeat  broken / ballad / pop split a compound beat window in three parts (realize/patterns.js isCompound)
-       opts.diatonicLow   stages <= theory.DIATONIC_MAX_STAGE: a chord with an unsounded tone outside the key becomes a diatonic chord
+       opts.diatonicLow   (default OFF; `true` turns it on) stages <= theory.DIATONIC_MAX_STAGE: a chord with an unsounded tone outside the key becomes a diatonic chord
        opts.leftShape     the accompaniment chord is thinned by stage (block), kept at or under theory.LH_CHORD_TOP and free of close
                           seconds below middle C (left hand; the stack cap applies to either hand) */
-  const compoundBeat = opts.compoundBeat !== false, diatonicLow = opts.diatonicLow !== false, leftShape = opts.leftShape !== false;
+  const compoundBeat = opts.compoundBeat !== false, diatonicLow = opts.diatonicLow === true, leftShape = opts.leftShape !== false;
   const diatonicStats = { maxStage: TH.DIATONIC_MAX_STAGE, active: diatonicLow && plan.stage <= TH.DIATONIC_MAX_STAGE, windows: 0, substituted: 0 };
 
   const b = B.builder({

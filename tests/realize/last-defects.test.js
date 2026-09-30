@@ -152,7 +152,7 @@ test('diatonicSubstitute: an unsounded tone outside the key becomes a diatonic c
 test('beyer/020 (stage 2): no left-hand tone outside C major that the source does not sound; the old output had them', async () => {
   const f = await planOf('catalog/method/beyer/020.mxl', 2.55);
   assert.equal(f.plan.stage, 2);
-  const base = { pattern: 'auto', noStride: true };
+  const base = { pattern: 'auto', noStride: true, diatonicLow: true };
   const on = REALIZE.realize(f.g, f.sg, f.plan, base);
   const off = REALIZE.realize(f.g, f.sg, f.plan, Object.assign({}, base, { diatonicLow: false, leftShape: false }));
   assert.ok(on.ok && off.ok);
@@ -173,14 +173,14 @@ test('the diatonic rule is gated by stage: active at 1 and 2, inactive (output i
   assert.equal(TH.DIATONIC_MAX_STAGE, 2);
   const hi = await planOf('catalog/method/beyer/061.mxl', 3.6);
   assert.ok(hi.plan.stage >= 3);
-  const a = REALIZE.realize(hi.g, hi.sg, hi.plan, { pattern: 'broken', noStride: true });
+  const a = REALIZE.realize(hi.g, hi.sg, hi.plan, { pattern: 'broken', noStride: true, diatonicLow: true });
   const b = REALIZE.realize(hi.g, hi.sg, hi.plan, { pattern: 'broken', noStride: true, diatonicLow: false });
   assert.equal(a.report.diatonic.active, false);
   assert.equal(a.report.diatonic.substituted, 0);
   assert.equal(fp(a), fp(b));
   const lo = await planOf('catalog/method/beyer/061.mxl', 2.24);
   assert.equal(lo.plan.stage, 2);
-  const c = REALIZE.realize(lo.g, lo.sg, lo.plan, { pattern: 'block', noStride: true });
+  const c = REALIZE.realize(lo.g, lo.sg, lo.plan, { pattern: 'block', noStride: true, diatonicLow: true });
   assert.ok(c.report.diatonic.active && c.report.diatonic.windows > 0);
   assert.ok(c.report.diatonic.substituted > 0, 'beyer/061 has windows read as chromatic chords (Bmaj, Dmaj) the source does not sound');
 });
@@ -282,13 +282,13 @@ test('the stack cap is by stage: one note at stage 1, a triad from stage 2; brok
 
 test('the switches each restore the previous behaviour; none changes the melody, the right hand or a verbatim (hymn) voice', async () => {
   const f = await planOf('catalog/method/beyer/020.mxl', 2.55);
-  const base = REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'block', noStride: true });
+  const base = REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'block', noStride: true, diatonicLow: true });
   const allOff = REALIZE.realize(f.g, f.sg, f.plan, Object.assign({ pattern: 'block', noStride: true }, OFF));
   assert.notEqual(fp(base), fp(allOff));
   /* a 4/4 piece: the compound rule alone changes nothing */
   assert.equal(fp(REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'block', noStride: true, diatonicLow: false, leftShape: false })), fp(allOff));
-  assert.notEqual(fp(REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'block', noStride: true, compoundBeat: false, leftShape: false })), fp(allOff), 'the diatonic rule alone changes this piece');
-  assert.notEqual(fp(REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'block', noStride: true, compoundBeat: false, diatonicLow: false })), fp(allOff), 'the shape alone changes this piece');
+  assert.notEqual(fp(REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'block', noStride: true, diatonicLow: true, compoundBeat: false, leftShape: false })), fp(allOff), 'the diatonic rule alone changes this piece');
+  assert.notEqual(fp(REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'block', noStride: true, compoundBeat: false })), fp(allOff), 'the shape alone changes this piece');
   assert.deepEqual(rh(base.graph), rh(allOff.graph), 'right hand identical with and without every fix');
   assert.equal(M.melodyPreservation(M.originalMelodyNotes(f.g, f.plan), M.graphNoteList(base.graph)), 1);
   const hy = REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'hymn' });
@@ -306,4 +306,19 @@ test('determinism: the same request gives the same graph; no hard violation, mel
       assert.ok(Math.min.apply(null, lhEvents(a.graph).map(e => e.midis[0])) >= TH.REGISTER_FLOOR, file + ' ' + pattern + ': floor');
     }
   }
+});
+
+test('diatonicLow is OFF for a direct realize() call (the app g8 path) and ON from candidates/', async () => {
+  const f = await planOf('catalog/method/beyer/020.mxl', 2.55);
+  const direct = REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'block', noStride: true });
+  assert.equal(direct.report.diatonic.active, false);
+  assert.equal(direct.report.diatonic.substituted, 0);
+  assert.equal(fp(direct), fp(REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'block', noStride: true, diatonicLow: false })));
+  assert.equal(REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'block', noStride: true, diatonicLow: true }).report.diatonic.active, true);
+  const CAND = require(path.join(REPO, 'candidates/index.js'));
+  const en = CAND.enumerate(f.g, f.sg, { targetLevel: 2.55, handProfile: 'large', sections: 'all' }, { patterns: ['block'] });
+  assert.ok(en.candidates.length > 0);
+  assert.ok(en.candidates.every(c => c.report.diatonic.active === (c.plan.stage <= TH.DIATONIC_MAX_STAGE)), 'candidates turn it on (for stages 1-2)');
+  const en2 = CAND.enumerate(f.g, f.sg, { targetLevel: 2.55, handProfile: 'large', sections: 'all' }, { patterns: ['block'], last: { diatonicLow: false } });
+  assert.ok(en2.candidates.every(c => c.report.diatonic.active === false), 'and opts.last overrides it');
 });

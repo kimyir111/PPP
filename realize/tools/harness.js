@@ -415,10 +415,11 @@ async function main() {
   const allowStride = flag('--allow-stride');
   const patterns = flag('--patterns') ? opt('--patterns').split(',') : undefined;
   if (patterns) CAND.patternsFor({ patterns: patterns }); /* validates the names */
-  /* --no-compound-beat / --no-diatonic-low / --no-left-shape: switch one last-defect-round fix off (realize/index.js; the old behaviour, for a before/after) */
+  /* --no-compound-beat / --no-diatonic-low / --no-left-shape: switch one last-defect-round fix off; --diatonic-low: switch it on in the plain realizer (G8a row; realize/index.js; the old behaviour, for a before/after) */
   const last = {};
   if (flag('--no-compound-beat')) last.compoundBeat = false;
-  if (flag('--no-diatonic-low')) last.diatonicLow = false;
+  if (flag('--no-diatonic-low')) last.diatonicLow = false; /* candidates default: ON */
+  if (flag('--diatonic-low')) last.diatonicLow = true; /* plain realizer default: OFF */
   if (flag('--no-left-shape')) last.leftShape = false;
   const runOpts = { last: last, allowStride: allowStride, patterns: patterns, stride: stride, registerFloor: registerFloor, weights: weights, pattern: pattern, g9a: g9a, repair: repair, g9aN: g9aN, levelOffsets: levelOffsets, topKForEngrave: topKForEngrave, ablateCritics: ablateCritics };
   /* child mode: one file, row written to --row-out (the parent gives each file its own process and a time limit,
