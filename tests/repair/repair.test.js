@@ -388,7 +388,7 @@ test('hand-chords guard on the real case (opt-in model both): god-rest-ye-merry,
   const g = await H.graphOf('catalog/hymns/god-rest-ye-merry.musicxml');
   const sg = SGG.analyze(g);
   const req = { targetLevel: 2.87, handProfile: 'large', sections: 'all' };
-  const sel = CAND.run(g, sg, req, { last: { handChordsModel: 'both' } });
+  const sel = CAND.run(g, sg, req, { last: { handChordsModel: 'both', handMaxNotes: null } }); /* the pass before the single-note criterion: this test is about the older guard */
   assert.ok(sel.ok && sel.selected.report.handChords && sel.selected.report.handChords.active, 'fixture: the selected candidate came out of the pass');
   const before = VC.violationKeys(sel.selected.graph);
   const grew = rr => { const after = VC.violationKeys(rr.graph); let n = 0; after.forEach(k => { if (!before.has(k) && k.indexOf('cross:') !== 0) n++; }); return n; };
@@ -422,4 +422,28 @@ test('hand-chords guard is only for candidates that went through the pass: a can
   assert.ok(sel.ok && !sel.selected.report.handChords);
   const rr = REP.repairSelection(sel, g, sg, req, {});
   assert.ok(!rr.report.units.some(u => (u.reasons || []).indexOf('HAND_CHORD_UP') >= 0), 'the new reason never appears');
+});
+
+/* ---- G9 single-note hands (docs/GOALS/G09 section 12 "post user review 5"): repair must not bring a second note back into a hand ---- */
+test('single-note guard: repairSelection carries handMaxNotes into the context, and the repaired hymns hold no hand with more notes at an onset than the candidate did (repair only moves a note by octaves or drops a doubling, so it cannot add one)', async () => {
+  for (const [file, lvl] of [['catalog/hymns/christ-arose.musicxml', 2.76], ['catalog/hymns/all-glory-laud.musicxml', 2.76], ['catalog/hymns/god-rest-ye-merry.musicxml', 2.87]]) {
+    const g = await H.graphOf(file);
+    const sg = SGG.analyze(g);
+    const req = { targetLevel: lvl, handProfile: 'large', sections: 'all' };
+    const sel = CAND.run(g, sg, req, {});
+    assert.ok(sel.ok && sel.selected.report.handChords.active && sel.selected.report.handChords.handMaxNotes === 1, file + ': the candidate came out of the single-note pass');
+    const before = VC.verticalClash(sel.selected.graph);
+    assert.equal(before.handMaxLH <= 1 && before.handMaxRH <= 1, true, file + ': the candidate has one note per hand');
+    const rr = REP.repairSelection(sel, g, sg, req, {});
+    assert.equal(rr.ctx.handMaxNotes, 1);
+    assert.equal(VC.newViolations(sel.selected.graph, rr.graph, { maxNotes: 1 }).multi, 0, file + ': no new multi-note chord');
+    const after = VC.verticalClash(rr.graph);
+    assert.ok(after.handMaxLH <= 1 && after.handMaxRH <= 1, file + ': still one note per hand after repair');
+  }
+  /* a candidate made without the single-note pass carries no such guard */
+  const g = await H.graphOf('catalog/hymns/christ-arose.musicxml');
+  const sg = SGG.analyze(g);
+  const req = { targetLevel: 2.76, handProfile: 'large', sections: 'all' };
+  const sel = CAND.run(g, sg, req, { last: { handMaxNotes: null } });
+  assert.equal(REP.repairSelection(sel, g, sg, req, {}).ctx.handMaxNotes, undefined);
 });

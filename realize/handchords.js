@@ -35,6 +35,14 @@
         farthest from the nearest protected note of the group, then the higher pitch, then the id.
    A violation whose involved notes are all protected is left and counted (`stats.unfixable`). Removing a note never creates a second or widens a span,
    so one ascending pass is enough and thin() is idempotent: thin(thin(x)) removes nothing.
+
+   SINGLE-NOTE HANDS (`opts.maxNotes`, number >= 1; undefined/null = off; docs/GOALS/G09 section 12 "G9 single-note hands (post user review 5: the teacher's criterion)").
+   The teacher's criterion for students at the levels we generate is that ONE HAND PLAYS ONE NOTE AT A TIME. With maxNotes = N, before the rules above run, every hand (the
+   staff a note is written on, 'RH' / 'LH') keeps at most N of the notes it sounds at every onset (held notes counted): the least important go first, never a `keep` note.
+   With no protected note in the group the survivors are the top notes of the right hand and the lowest notes of the left hand (`low` heads, a melody event's own extra heads,
+   go before anything). A hand whose protected notes are more than N (the melody and the bass in one hand, two bass voices) is left and counted (`stats.maxNotes.unfixable`).
+   A removed note goes with its whole tie chain (as above: nothing shortened or moved), deterministic, idempotent. The rules above then run on what is left (the cross-hand
+   seconds; the limb rules find nothing more to do at N = 1).
    ========================================================================== */
 (function (root, factory) {
   'use strict';
@@ -93,6 +101,23 @@
     return out;
   }
 
+  /* per hand, the written notes of the hands at their onsets (a hand's moment of at least one attack): how many onsets, how many held two or more notes (`multi`),
+     how many held more than N (`over`), the most notes at once (`max`), and the mean notes sounding at an onset (`perOnset`) */
+  function countMax(notes, times, removed, N) {
+    const out = { LH: { onsets: 0, multi: 0, over: 0, max: 0, sum: 0, perOnset: 0 }, RH: { onsets: 0, multi: 0, over: 0, max: 0, sum: 0, perOnset: 0 } };
+    times.forEach(t => ['LH', 'RH'].forEach(h => {
+      const list = notes.filter(n => !removed.has(n.chain) && n.hand === h && n.on <= t + EPS && n.off > t + EPS);
+      if (!list.some(n => Math.abs(n.on - t) <= EPS)) return;
+      const c = out[h];
+      c.onsets++; c.sum += list.length;
+      if (list.length > 1) c.multi++;
+      if (list.length > N) c.over++;
+      if (list.length > c.max) c.max = list.length;
+    }));
+    ['LH', 'RH'].forEach(h => { out[h].perOnset = out[h].onsets ? out[h].sum / out[h].onsets : 0; });
+    return out;
+  }
+
   function sumChords(c) { return Object.keys(c).reduce((a, k) => a + c[k].chords, 0); }
 
   function thin(notes, opts) {
@@ -107,6 +132,31 @@
     notes.forEach(n => { if (n.keep) keepChain.add(n.chain); if (n.low) lowChain.add(n.chain); });
     const removed = new Set(); /* chains */
     const before = count(notes, models, times, removed);
+    let maxStats = null;
+    if (opts.maxNotes != null) {
+      const N = opts.maxNotes;
+      if (!(typeof N === 'number' && Number.isInteger(N) && N >= 1)) throw new Error('handchords: opts.maxNotes must be an integer >= 1 (got ' + N + ')');
+      const beforeMax = countMax(notes, times, removed, N);
+      times.forEach(t => {
+        ['RH', 'LH'].forEach(h => {
+          for (let guard = 0; guard < 256; guard++) {
+            const list = notes.filter(n => !removed.has(n.chain) && n.hand === h && n.on <= t + EPS && n.off > t + EPS);
+            if (list.length <= N) break;
+            const cands = list.filter(n => !keepChain.has(n.chain));
+            if (!cands.length) break; /* only protected notes left: counted below */
+            /* removed first: a melody event's extra head, then (right hand) the lower note, (left hand) the higher note, then the id */
+            const key = n => [lowChain.has(n.chain) ? 0 : 1, h === 'RH' ? n.midi : -n.midi];
+            cands.sort((a, b) => {
+              const ka = key(a), kb = key(b);
+              for (let i = 0; i < ka.length; i++) if (ka[i] !== kb[i]) return ka[i] - kb[i];
+              return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+            });
+            removed.add(cands[0].chain);
+          }
+        });
+      });
+      maxStats = { n: N, before: beforeMax, removedNotes: notes.filter(n => removed.has(n.chain)).length, removedChains: removed.size };
+    }
 
     times.forEach(t => {
       models.forEach(mdl => {
@@ -143,6 +193,7 @@
     });
 
     const after = count(notes, models, times, removed);
+    if (maxStats) { maxStats.after = countMax(notes, times, removed, maxStats.n); maxStats.unfixable = maxStats.after.LH.over + maxStats.after.RH.over; }
     const removedNotes = notes.filter(n => removed.has(n.chain));
     const tally = c => {
       const o = { second: 0, octave: 0, chords: 0 };
@@ -155,6 +206,7 @@
       stats: {
         model: model, notes: notes.length, removedNotes: removedNotes.length, removedChains: removed.size,
         before: before, after: after, violationsBefore: sumChords(before), violationsAfter: sumChords(after),
+        maxNotes: maxStats,
         unfixable: sumChords(after), unfixableSeconds: tally(after).second, unfixableOctave: tally(after).octave,
         /* the chords left, by grouping: the hands as written (a real one-hand chord) and the pitch grouping (two hands' notes stacked near middle C) */
         unfixableLimb: sumChords(Object.keys(after).filter(k => k.indexOf('limb:') === 0).reduce((o, k) => { o[k] = after[k]; return o; }, {})),
