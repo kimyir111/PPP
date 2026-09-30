@@ -145,8 +145,12 @@ one path for both arms, reading only the notes:
   shorter than `CLEF_MIN_RUN` = 2 measures with notes is folded into its neighbours; a measure with no notes keeps the clef.
   Neither arm uses the source's clefs. (Before, both arms were drawn with the source's clefs, so a left hand played low under a
   treble-clef source sat on ledger lines.)
-- **Not fixed here:** the 8va/8vb pass (TD16) still fires for a left hand that sits around G3-F4 (two ledger lines either
-  clef); slurs, dynamics and fingering are not drawn; sextuplet-like 1/12 notes from ScoreArranger have no tuplet mark.
+- **Order.** The per-measure clefs are written into the graph first and the 8va/8vb pass (TD16, `realize/ottava.js`,
+  unchanged) runs on that graph, so it counts ledger lines against the clef the drawing uses (a test checks every line against the
+  drawn clef, both arms alike).
+- **Not fixed here:** TD16 still fires for a left hand that sits at exactly two ledger lines in the clef drawn (E4/F4 over the
+  bass staff, A3 and lower under the treble one, sustained for a bar): that is its rule, no clef choice avoids it for a hand
+  that spans G3-F4, and its constants are not tuned here; slurs, dynamics and fingering are not drawn; sextuplet-like 1/12 notes from ScoreArranger have no tuplet mark.
 
 ## Which pieces
 

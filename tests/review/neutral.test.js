@@ -258,3 +258,56 @@ test('spacing: on a dense piece (sixteenths) consecutive onsets in the same staf
   assert.ok(Math.min.apply(null, wide) >= 2.0, 'wide: tightest gap ' + Math.min.apply(null, wide));
   assert.ok(Math.min.apply(null, narrow) >= 1.4, 'narrow: tightest gap ' + Math.min.apply(null, narrow));
 });
+
+/* ---- the ottava pass reads the clef the drawing uses (clefs are written into the graph first, then addOttava runs) ---- */
+test('ottava is evaluated against the drawn clef: a low left hand written under a treble-clef source gets the bass clef and NO ottava; the source-clef graph would get an 8vb', () => {
+  const OTTAVA = require(path.join(REPO, 'realize/ottava.js'));
+  const L = require(path.join(REPO, 'realize/tools/legacy.js'));
+  const src = measuresOf(4).map(m => Object.assign({}, m, { clefs: { 1: 'treble', 2: 'treble' } })); /* a source that writes its left hand in treble */
+  const pitches = [['C3', 48], ['E3', 52], ['G3', 55], ['E3', 52]];
+  const notes = [];
+  for (let m = 1; m <= 4; m++) for (let i = 0; i < 4; i++) { notes.push(lh(m, i, pitches[i][0], pitches[i][1])); notes.push(note(m, i, 'E4', 64)); }
+  const spans = g => g.parts[0].spanners.filter(s => s.type === 'ottava');
+  const p = N.prepare(src, 100, notes);
+  assert.equal(spans(p.graph).length, 0, 'C3-G3 is comfortably on the bass staff: no line');
+  assert.deepEqual(p.graph.parts[0].clefs.filter(c => c.staff === p.graph.parts[0].staves[1].id).map(c => c.sign), ['F'], 'the graph carries the drawn (bass) clef');
+  /* the order the review used to have: the source's clef map, then the pass: an 8vb under a G clef */
+  const old = L.graphFromLegacyNotes(src, N.neutralNotes(src, notes), 100, 'x').graph;
+  assert.ok(spans(OTTAVA.addOttava(old).graph).length >= 1, 'against the source clef (treble) the same notes would get an 8vb');
+});
+
+test('ottava and the drawn clef agree: every line is justified (a note needing 2+ ledger lines) against the clef in force at that measure, both arms alike', () => {
+  const STEP = { C: 0, D: 1, E: 2, F: 3, G: 4, A: 5, B: 6 };
+  const CL = { G: [30, 38], F: [18, 26] };
+  const linesOf = (h, clef) => { const d = 7 * h.pitch.oct + STEP[h.pitch.step], [lo, hi] = CL[clef]; return d > hi ? Math.floor((d - hi) / 2) : d < lo ? Math.floor((lo - d) / 2) : 0; };
+  const ms = measuresOf(8);
+  const notes = [];
+  /* right hand high (E6..C7) in bars 1-4, left hand low in bars 1-4 (E1..G2) and mid (G3-D4) in bars 5-8, right hand mid throughout after */
+  const hi = [['E6', 88], ['G6', 91], ['C7', 96], ['G6', 91]], lo = [['E1', 28], ['G1', 31], ['C2', 36], ['G1', 31]], mid = [['G3', 55], ['B3', 59], ['D4', 62], ['C4', 60]];
+  for (let m = 1; m <= 8; m++) for (let i = 0; i < 4; i++) {
+    notes.push(m <= 4 ? note(m, i, hi[i][0], hi[i][1]) : note(m, i, 'E4', 64));
+    notes.push(m <= 4 ? lh(m, i, lo[i][0], lo[i][1]) : lh(m, i, mid[i][0], mid[i][1]));
+  }
+  const g9Style = notes.map(n => Object.assign({}, n, { finger: 3, sgHead: 'h', voice: n.voice + 4 }));
+  const legacyStyle = notes.slice().reverse().map(n => Object.assign({}, n, { abs: 1, writtenP: n.p, ottavaShift: 0 }));
+  const summary = arm => {
+    const p = N.prepare(ms, 100, arm), part = p.graph.parts[0], drawn = N.lowerClefs(ms, N.neutralNotes(ms, arm, { split: true }));
+    const mi = new Map(p.graph.timeline.measures.map((m, i) => [m.id, i]));
+    const sp = part.spanners.filter(s => s.type === 'ottava');
+    sp.forEach(s => {
+      const si = part.staves.findIndex(x => x.id === s.staff);
+      const from = mi.get(s.from.m), to = mi.get(s.to.m);
+      let worst = 0;
+      part.events.filter(e => e.kind === 'note' && e.staff === s.staff && mi.get(e.m) >= from && mi.get(e.m) <= to).forEach(e => e.heads.forEach(h => {
+        worst = Math.max(worst, linesOf(h, si === 0 ? 'G' : drawn[mi.get(e.m)] === 'treble' ? 'G' : 'F'));
+      }));
+      assert.ok(worst >= 2, 'a line on staff ' + (si + 1) + ' whose notes need at most ' + worst + ' ledger lines in the drawn clef');
+    });
+    return sp.map(s => [part.staves.findIndex(x => x.id === s.staff) + 1, s.shift, mi.get(s.from.m), mi.get(s.to.m)]);
+  };
+  const a = summary(g9Style), b = summary(legacyStyle);
+  assert.deepEqual(a, b, 'the same lines for both arms');
+  assert.ok(a.some(x => x[0] === 1 && x[1] > 0), 'a genuinely high right hand still gets an 8va (or 15ma)');
+  assert.ok(a.some(x => x[0] === 2 && x[1] < 0), 'a genuinely low left hand still gets an 8vb (or 15mb)');
+  assert.ok(!a.some(x => x[0] === 2 && x[2] >= 4), 'a left hand at G3-D4 (bars 5-8) gets no line');
+});
