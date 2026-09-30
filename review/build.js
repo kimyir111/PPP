@@ -32,6 +32,20 @@ const FORMAT = 'ppp-review-packet/1', KEY_FORMAT = 'ppp-review-key/1';
 const FULLER_RATIO = 1.1, MISS_GAP = 0.1;
 const REVIEW_NAME = { h8: 'H-8', h9: 'H-9' };
 
+/* The app's sampled piano (audio/piano, Salamander Yamaha C5, CC BY 3.0), read from the repository at build time and embedded ONCE per
+   page as base64 (the page decodes it with atob; it fetches nothing, so it works from disk and inside an Artifact page). The order is
+   the app's PIANO.names: one recording every minor third from A0 (MIDI 21). */
+const PIANO_NAMES = ['A0', 'C1', 'Ds1', 'Fs1', 'A1', 'C2', 'Ds2', 'Fs2', 'A2', 'C3', 'Ds3', 'Fs3', 'A3', 'C4', 'Ds4',
+  'Fs4', 'A4', 'C5', 'Ds5', 'Fs5', 'A5', 'C6', 'Ds6', 'Fs6', 'A6', 'C7', 'Ds7', 'Fs7', 'A7', 'C8'];
+function readPianoSamples(dir) {
+  const base = dir || path.join(REPO, 'audio', 'piano');
+  return PIANO_NAMES.map(n => {
+    const f = path.join(base, n + '.mp3');
+    if (!fs.existsSync(f)) throw new Error('piano sample missing: ' + f + ' (the review page embeds all ' + PIANO_NAMES.length + ' recordings)');
+    return fs.readFileSync(f).toString('base64');
+  });
+}
+
 /* ---- where output may go ---- */
 function nearestExisting(p) {
   let cur = path.resolve(p);
@@ -142,7 +156,7 @@ async function buildPacket(opts) {
   }));
 
   const packetId = BLIND.sha256(JSON.stringify({ mode: mode, items: items.map(i => [i.id, i.X.svg, i.Y.svg, i.X.svgNarrow, i.Y.svgNarrow, i.X.notes, i.Y.notes]) })).slice(0, 12);
-  const html = PAGE.pageHtml({ mode: mode, packetId: packetId, items: items });
+  const html = PAGE.pageHtml({ mode: mode, packetId: packetId, items: items, samples: readPianoSamples() });
   /* What the reviewer may see about the packet. Nothing about how X and Y were assigned or made: no seed, no rule, no engine
      name, no per-arrangement count, size or level (those would tell the two apart). Both labels carry the same fields. */
   const manifest = {
@@ -197,4 +211,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch(e => { console.error(e.message || e); process.exit(1); });
-module.exports = { buildPacket, planOutputs, assertOutsideRepo, FORMAT, KEY_FORMAT, FULLER_RATIO, MISS_GAP };
+module.exports = { buildPacket, readPianoSamples, PIANO_NAMES, planOutputs, assertOutsideRepo, FORMAT, KEY_FORMAT, FULLER_RATIO, MISS_GAP };

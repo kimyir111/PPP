@@ -31,4 +31,32 @@ function readAll(dir) {
   return out;
 }
 
-module.exports = { REPO, ITEMS, CACHE, tmpDir, readAll };
+/* The page carries the app's piano recordings as one base64 block (<script id="piano-samples" type="application/json">). Word scans
+   (the leak scan: "g9", "repair", "pattern", "seed" ...) must not read random base64, where a short word turns up by chance in 1.9 MB
+   of it, so they read the page WITHOUT that block. It is safe to leave out because the block is checked here to be nothing but a JSON
+   list of 30 base64 strings (a closed alphabet with no spaces, letters cannot form text a reviewer reads, and the page never shows
+   it), each of which is an MP3 whose bytes are the repository's own recording for that key, the same 30 on every page. The scan
+   therefore still covers every byte that a reviewer could read or that could carry a word: all of the rest of the file, and the
+   block's shape and content. Returns { rest, blob } (rest has the block replaced by a fixed marker). */
+const PIANO_NAMES = ['A0', 'C1', 'Ds1', 'Fs1', 'A1', 'C2', 'Ds2', 'Fs2', 'A2', 'C3', 'Ds3', 'Fs3', 'A3', 'C4', 'Ds4', 'Fs4', 'A4', 'C5', 'Ds5', 'Fs5', 'A5', 'C6', 'Ds6', 'Fs6', 'A6', 'C7', 'Ds7', 'Fs7', 'A7', 'C8'];
+const AUDIO_BLOCK = /<script id="piano-samples" type="application\/json">([\s\S]*?)<\/script>/;
+function splitAudio(html) {
+  const m = html.match(AUDIO_BLOCK);
+  if (!m) return { rest: html, blob: null };
+  return { rest: html.replace(AUDIO_BLOCK, '<script id="piano-samples">[audio block]</script>'), blob: m[1] };
+}
+/* the block is exactly the 30 repository recordings, in order, as base64 (throws an assertion message otherwise) */
+function checkAudioBlob(blob) {
+  const assert = require('node:assert/strict');
+  assert.ok(/^\["[A-Za-z0-9+/=]+"(,"[A-Za-z0-9+/=]+"){29}\]$/.test(blob), 'the audio block is a JSON list of exactly 30 base64 strings and nothing else');
+  const list = JSON.parse(blob);
+  list.forEach((b64, k) => {
+    const bytes = Buffer.from(b64, 'base64');
+    const file = fs.readFileSync(path.join(REPO, 'audio', 'piano', PIANO_NAMES[k] + '.mp3'));
+    assert.ok(bytes.equals(file), 'sample ' + k + ' (' + PIANO_NAMES[k] + ') is the repository recording');
+    assert.ok((bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33) || (bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0), 'sample ' + k + ' is an MP3');
+  });
+  return list;
+}
+
+module.exports = { REPO, ITEMS, CACHE, tmpDir, readAll, splitAudio, checkAudioBlob, PIANO_NAMES };
