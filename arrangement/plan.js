@@ -188,7 +188,22 @@
 
   /* ---- one section ---- */
 
-  function planSection(g, sg, section, partId, request, refBands, stage) {
+  /* ---- the relaxed pass (docs/GOALS/G09 §12 "G9e refusals") ----
+     `opts.relax` (0 = off, the default and the exact behaviour above; 1 or 2) is for a caller that WILL keep one note per hand (candidates/ with
+     singleNoteHands): the strict checks below measure the SOURCE notes of the retained voices, but the realizer then thins every hand to one note
+     at every onset, so a dense piano cover (a hand holding an octave plus a chord, six or more keys, two voices a tenth apart) was refused for chords
+     that would never be played. A section is planned STRICT first, with exactly the search above, and only when no rung of the strict search fits does
+     a relaxed search run, for that section only:
+       relax 1  reach and chordLoad on the THINNED view: a hand's simultaneous count is min(count, 1) and its span 0, extra keys per beat 0; the density
+                ceilings (notes per beat, range, key signature) are the strict ones;
+       relax 2  also the density ceiling at the stage's real MAXIMUM (band.notesPerBeatRH/LH.max instead of p90) and the range ceiling dropped (a one-note
+                hand over a wide range is played with 8va/8vb marks and a hand move, not a stretch).
+     A section planned with a relaxed search carries `relaxed: 1 | 2`, and so does the plan (the highest tier any section needed). A strict plan has
+     neither field, so its object is what it always was. Nothing else changes: no voice is invented, the melody/bass identification is G7a's. */
+  const THIN_SIM = sim => ({ span: 0, count: Math.min(1, sim.count) });
+
+  function planSection(g, sg, section, partId, request, refBands, stage, relax) {
+    relax = relax === 1 || relax === 2 ? relax : 0;
     const mbAll = sg.melodyBass.parts.find(p => p.part === partId);
     const rolesAll = sg.voiceRoles.parts.find(p => p.part === partId);
     if (!mbAll || !rolesAll || !rolesAll.roles.length) return fail('NO_VOICES', { part: partId });
@@ -208,7 +223,8 @@
     const rungs = TEX.rungsFrom(ladder, maxExtra);
 
     const attempts = [];
-    for (const rung of rungs) {
+    const tiers = relax === 2 ? [0, 1, 2] : relax === 1 ? [0, 1] : [0]; /* strict first; a relaxed tier only when no rung fits the one before it */
+    for (const tier of tiers) for (const rung of rungs) {
       const voiceNotes = new Map(rung.voiceIds.map(v => [v, allNotes.filter(n => n.voiceId === v)]));
       /* Hand assignment is by each RETAINED voice's own real register in this section
          (higher -> RH, lower -> LH), not by role label - this stays correct even when
@@ -227,16 +243,26 @@
       rung.voiceIds.slice().sort((a, b) => (avg.get(b) - avg.get(a)) || (a < b ? -1 : 1)).forEach(v => {
         hands[avg.get(v) >= HAND_SPLIT_MIDI ? 'RH' : 'LH'].push(v);
       });
+      /* relaxed tiers only: keep the hands in order. With both voices on one side of middle C the split above leaves one hand empty, and realize/index.js rebalanceHands then moves the
+         LOWER voice of the busy hand across: right for two voices in RH (the bass goes to LH), but with both in LH it puts the bass in the RIGHT hand under the melody in the left (a
+         crossing: the right hand below the left at 20-40% of the moments on hanon/007, 008, 009...). The strict tier never gets this far for such a section (its reach check refuses two
+         voices an octave apart), so only the relaxed tiers do the split themselves, in the direction that keeps RH above LH: the lowest voice of an all-RH section goes to LH, the
+         highest voice of an all-LH section goes to RH. (A strict section is unchanged: its output is byte for byte what it was.) */
+      if (tier >= 1) {
+        if (hands.LH.length === 0 && hands.RH.length >= 2) hands.LH.push(hands.RH.pop());
+        else if (hands.RH.length === 0 && hands.LH.length >= 2) hands.RH.push(hands.LH.shift());
+      }
 
       const notesFor = hand => hands[hand].reduce((acc, v) => acc.concat(voiceNotes.get(v)), []);
       const rhNotes = notesFor('RH'), lhNotes = notesFor('LH');
-      const rhSim = maxSimultaneous(rhNotes), lhSim = maxSimultaneous(lhNotes);
+      const rhSim = tier >= 1 ? THIN_SIM(maxSimultaneous(rhNotes)) : maxSimultaneous(rhNotes);
+      const lhSim = tier >= 1 ? THIN_SIM(maxSimultaneous(lhNotes)) : maxSimultaneous(lhNotes);
       const profile = REACH.profileOf(request.handProfile);
       const maxSpan = REACH.MAX_SPAN[profile], maxKeys = REACH.MAX_KEYS;
       const reachOk = rhSim.span <= maxSpan && lhSim.span <= maxSpan && rhSim.count <= maxKeys && lhSim.count <= maxKeys;
 
       const npbRH = notesPerBeat(rhNotes, beats), npbLH = notesPerBeat(lhNotes, beats);
-      const chordLoad = extraKeysPerBeat(rhNotes, beats) + extraKeysPerBeat(lhNotes, beats);
+      const chordLoad = tier >= 1 ? 0 : extraKeysPerBeat(rhNotes, beats) + extraKeysPerBeat(lhNotes, beats);
       const allRegNotes = rhNotes.concat(lhNotes);
       const reg = registerOf(allRegNotes);
       const range = reg ? reg.hi - reg.lo : 0;
@@ -251,10 +277,13 @@
          real, committed stage-1 piece). Using the real max instead keeps this a genuine
          "a real piece at this stage has done this" bound rather than a degenerate one. */
       const band = refBands;
-      const densityOk = !band || (
+      const densityOk = !band || (tier >= 2 ? (
+        npbRH <= band.notesPerBeatRH.max && npbLH <= band.notesPerBeatLH.max &&
+        chordLoad <= band.chordLoad.max && keyLoad <= band.keyLoad.max
+      ) : (
         npbRH <= band.notesPerBeatRH.p90 && npbLH <= band.notesPerBeatLH.p90 &&
         chordLoad <= band.chordLoad.max && range <= band.range.p90 && keyLoad <= band.keyLoad.max
-      );
+      ));
 
       const attempt = {
         tier: rung.tier, extraKept: rung.extraKept, dropped: rung.dropped,
@@ -262,9 +291,10 @@
         budget: { ok: densityOk, notesPerBeatRH: npbRH, notesPerBeatLH: npbLH, chordLoad: chordLoad, range: range, keyLoad: keyLoad, band: band },
         registerRH: registerOf(rhNotes), registerLH: registerOf(lhNotes)
       };
+      if (tier > 0) attempt.relaxed = tier;
       attempts.push(attempt);
       if (reachOk && densityOk) {
-        return {
+        return Object.assign({
           ok: true,
           section: { from: section.from, to: section.to, label: section.label },
           confidenceTier: confidenceTier, degraded: degradeConf,
@@ -279,7 +309,7 @@
           density: attempt.budget,
           attempts: attempts,
           explanation: explainSection(section, attempt, mbAll, confidenceTier, degradeConf, stage, request)
-        };
+        }, tier > 0 ? { relaxed: tier } : {});
       }
     }
     return fail('UNREACHABLE', { section: section, part: partId, handProfile: request.handProfile, attempts: attempts });
@@ -303,6 +333,10 @@
         ': RH ' + attempt.budget.notesPerBeatRH.toFixed(2) + '<=' + attempt.budget.band.notesPerBeatRH.p90.toFixed(2) +
         ' notes/beat, LH ' + attempt.budget.notesPerBeatLH.toFixed(2) + '<=' + attempt.budget.band.notesPerBeatLH.p90.toFixed(2) +
         ' notes/beat, range ' + attempt.budget.range + '<=' + attempt.budget.band.range.p90 + ' semitones (p90 of ' + attempt.budget.band.n + ' real method-book pieces).');
+    }
+    if (attempt.relaxed) {
+      parts.push('RELAXED (relax ' + attempt.relaxed + '): no rung fit the strict search, so this section was planned for a caller that keeps one note per hand - reach and chord load on the thinned view' +
+        (attempt.relaxed >= 2 ? ', density ceiling at the stage maximum, range ceiling dropped' : '') + '; the output can read harder than the requested level.');
     }
     if (degraded) {
       parts.push('DEGRADED: melody confidence ' + mb.melodyConf.toFixed(2) + (mb.bassVoice != null ? ', bass confidence ' + mb.bassConf.toFixed(2) : '') +
@@ -347,15 +381,16 @@
 
     const planned = [];
     for (const section of sections) {
-      const r = planSection(g, sg, section, part.id, request, band, stage);
+      const r = planSection(g, sg, section, part.id, request, band, stage, opts.relax);
       if (!r.ok) return fail(r.reason, Object.assign({ section: section }, r.detail));
       planned.push(r);
     }
 
     const degraded = planned.some(p => p.degraded);
+    const relaxed = planned.reduce((m, p) => Math.max(m, p.relaxed || 0), 0);
     return {
       ok: true,
-      plan: {
+      plan: Object.assign({
         version: version,
         request: request,
         part: part.id,
@@ -366,7 +401,7 @@
         deferredToG8: ['arr.no_invented_legato', 'arr.invented_pitches=0 (realized)', 'arr.metre_preserved (realized)',
           'arr.tempo_preserved (realized)', 'arr.melody_retention (realized fraction)', 'arr.bass_retention (realized fraction)',
           'arr.density_ratio (realized value)']
-      }
+      }, relaxed ? { relaxed: relaxed } : {})
     };
   }
 

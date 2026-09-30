@@ -1711,6 +1711,15 @@
                 <sc-if value="{{ hasSongArrangeStatus }}" hint-placeholder-val="{{ false }}">
                   <p style="margin:0;color:var(--ink3);font-size:12.5px;line-height:1.5;">{{ songArrangeStatus }}</p>
                 </sc-if>
+                <sc-if value="{{ hasSingleRefusal }}" hint-placeholder-val="{{ false }}">
+                  <div data-single-refusal="1" role="alert" style="border: 1px solid var(--bad); border-radius: 12px; background: var(--bg); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px;">
+                    <p style="margin: 0; color: var(--ink); font-size: 13px; line-height: 1.55;">{{ singleRefusalText }}</p>
+                    <div style="display: flex; gap: 9px; flex-wrap: wrap;">
+                      <button type="button" onClick="{{ saveStandardAfterRefusal }}" data-single-refusal-save style="padding:9px 14px;border-radius:10px;border:1px solid var(--accent);background:var(--surface);color:var(--accent);font-family:inherit;font-weight:650;cursor:pointer;">{{ singleRefusalSaveLabel }}</button>
+                      <button type="button" onClick="{{ dismissSingleRefusal }}" data-single-refusal-cancel style="padding:9px 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink2);font-family:inherit;cursor:pointer;">{{ singleRefusalDismissLabel }}</button>
+                    </div>
+                  </div>
+                </sc-if>
                 <div style="display:flex;gap:9px;justify-content:flex-end;flex-wrap:wrap;">
                   <button onClick="{{ closeSongArranger }}" style="padding:10px 15px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink2);font-family:inherit;cursor:pointer;">{{ cancelLabel }}</button>
                   <button onClick="{{ aiSongArrangement }}" data-ai-song-arrangement style="padding:10px 15px;border-radius:10px;border:1px solid var(--accent);background:var(--surface);color:var(--accent);font-family:inherit;font-weight:650;cursor:pointer;">{{ songArrangeAiLabel }}</button>
@@ -4738,20 +4747,25 @@ async function arrangeSingleNote(builtGraph, plan) {
     window.PPPCriticsModules.metrics.setWeights(reference.weights); /* the G6a weights the page already fetched (critics/metrics.js has no file to read) */
     const sg = SGG.analyze(builtGraph);
     const baseStage = ARRANGER_LEVEL_TO_STAGE[plan && plan.level] || 2;
-    let request = null;
+    let request = null, relax = 0;
+    /* G9e refusals: the strict search first, over every level and hand profile, exactly as before. Only when it finds no plan at all is it run again with
+       relax 2 (arrangement/plan.js: reach and chord load on the one-note-per-hand view, then the stage's maximum density and no range ceiling, section by
+       section and only for a section the strict search cannot fit), which is why a piece that was arranged before is arranged the same way now. */
     outer:
-    for (const targetLevel of [baseStage, baseStage + 1, baseStage - 1, baseStage + 2]) {
-      for (const handProfile of ARRANGER_HAND_PROFILES) {
-        let r;
-        try { r = ARR.plan(builtGraph, sg, { targetLevel: targetLevel, handProfile: handProfile, sections: 'all' }, { reference: reference }); }
-        catch (e) { continue; }
-        if (r && r.ok) { request = { targetLevel: targetLevel, handProfile: handProfile, sections: 'all' }; break outer; }
+    for (const tier of [0, 2]) {
+      for (const targetLevel of [baseStage, baseStage + 1, baseStage - 1, baseStage + 2]) {
+        for (const handProfile of ARRANGER_HAND_PROFILES) {
+          let r;
+          try { r = ARR.plan(builtGraph, sg, { targetLevel: targetLevel, handProfile: handProfile, sections: 'all' }, tier ? { reference: reference, relax: tier } : { reference: reference }); }
+          catch (e) { continue; }
+          if (r && r.ok) { request = { targetLevel: targetLevel, handProfile: handProfile, sections: 'all' }; relax = tier; break outer; }
+        }
       }
     }
     if (!request) return { ok: false, reason: 'UNREACHABLE' };
     await singleTick();
     /* runAsync: the same pipeline and result as run(), with the thread handed back after every candidate (a hymn is about 10 of them) */
-    const sel = await CAND.runAsync(builtGraph, sg, request, { singleNoteHands: true, skipEngrave: true, reference: reference, yield: singleTick });
+    const sel = await CAND.runAsync(builtGraph, sg, request, Object.assign({ singleNoteHands: true, skipEngrave: true, reference: reference, yield: singleTick }, relax ? { relax: relax } : {}));
     if (!sel.ok) return { ok: false, reason: sel.reason || 'NO_SELECTION' };
     await singleTick();
     const rr = REPAIR.repairSelection(sel, builtGraph, sg, request, { REF: (window.PPPArrangementModules || {}).reference, reference: reference });
@@ -4763,7 +4777,10 @@ async function arrangeSingleNote(builtGraph, plan) {
     if (OTT) {
       try { const o = OTT.addOttava(graph); if (o && o.graph && !o.fallback) graph = o.graph; } catch (e) { /* an 8va line is a nicety: the graph without it is still right */ }
     }
-    const out = { ok: true, graph: graph, degraded: !!(sel.selected.plan && sel.selected.plan.degraded), report: { spec: sel.selected.spec, repaired: !!rr.changed, request: request } };
+    /* levelNote: the chosen candidate was planned by the relaxed pass (some passage has more notes than the level's strict search allows, which the one-note-per-hand pass then thins):
+       the result can be harder than the level asked for, and the screens say so */
+    const levelNote = sel.selected.plan && sel.selected.plan.relaxed ? 'relaxed-plan' : null;
+    const out = { ok: true, graph: graph, degraded: !!(sel.selected.plan && sel.selected.plan.degraded), levelNote: levelNote, report: Object.assign({ spec: sel.selected.spec, repaired: !!rr.changed, request: request }, levelNote ? { relaxed: sel.selected.plan.relaxed } : {}) };
     if (key) { SINGLE_CACHE.set(key, out); while (SINGLE_CACHE.size > SINGLE_CACHE_MAX) SINGLE_CACHE.delete(SINGLE_CACHE.keys().next().value); }
     return Object.assign({ ms: Date.now() - t0 }, out);
   } catch (e) {
@@ -14114,7 +14131,7 @@ class Component extends DCLogic {
       bpm: +S.lockBpm || S.score.tempo || 80,
       firstDownbeat: S.lockDownbeat == null ? 0 : +S.lockDownbeat
     };
-    let built, base, arranged, g8Degraded = false, singleFailure = null, standardInstead = false;
+    let built, base, arranged, g8Degraded = false, singleFailure = null, standardInstead = false, levelNote = null;
     try {
       built = A.toMusicXml({
         notes: heard.notes, pedals: heard.pedals,
@@ -14130,6 +14147,7 @@ class Component extends DCLogic {
           engraveRemember(arranged, sn.graph, 'g9-single');
           arranged.source = { arrangement: { engine: 'ppp.g9-single' } };
           g8Degraded = sn.degraded;
+          levelNote = sn.levelNote || null;
         } else {
           singleFailure = sn.reason || 'unknown';
           /* what the option-off request would have done: a balanced/melody/accompaniment texture is written by the rhythm rewriter (rewriteFromHeard),
@@ -14190,7 +14208,7 @@ class Component extends DCLogic {
       tempo: arranged.tempo, barStarts: built.stats.barStarts,
       arrangement: Object.assign({}, arranged.source && arranged.source.arrangement || {}, {
         level: plan.level, style: plan.style, source: plan.source || 'local'
-      }, singleFailure ? { singleFallback: singleFailure } : {}),
+      }, singleFailure ? { singleFallback: singleFailure } : {}, levelNote ? { levelNote: levelNote } : {}),
       arrangementOriginalNotes: built.stats.notes,
       arrangementNotes: arranged.notes.filter(n => !n.rest).length
     });
@@ -14204,13 +14222,13 @@ class Component extends DCLogic {
     this.setState({
       importReport: report, importSource: source,
       arrangementLevel: plan.level, arrangementStyle: plan.style,
-      arrangementBusy: false, arrangementStatus: singleNotice || (source.arrangement.engine === 'ppp.g9-single' ? '' : arrangementStatus) || '', /* an AI line about a texture says nothing true of a one-note-per-hand result */
+      arrangementBusy: false, arrangementStatus: singleNotice || (levelNote ? this.levelNoteText() : '') || (source.arrangement.engine === 'ppp.g9-single' ? '' : arrangementStatus) || '', /* an AI line about a texture says nothing true of a one-note-per-hand result; the harder-than-chosen note stays on the screen like the fallback notice */
       reviewFrom: Score.first(arranged)
     }, () => this.saveNow());
     if (singleNotice) this.say(singleNotice);
-    else if (source.arrangement.engine === 'ppp.g9-single') this.say(g8Degraded
+    else if (source.arrangement.engine === 'ppp.g9-single') this.say((g8Degraded
       ? tx('Created a {{level}} arrangement. Some passages had low melody/bass confidence, so PPP kept them simple rather than guess.', { level: tx(plan.level) })
-      : tx('Created a {{level}} one-note-per-hand arrangement.', { level: tx(plan.level) }));
+      : tx('Created a {{level}} one-note-per-hand arrangement.', { level: tx(plan.level) })) + (levelNote ? ' ' + this.levelNoteText() : ''));
     else this.say(g8Degraded
       ? tx('Created a {{level}} arrangement. Some passages had low melody/bass confidence, so PPP kept them simple rather than guess.', { level: tx(plan.level) })
       : tx('Created a {{level}} {{style}} arrangement.', { level: tx(plan.level), style: this.arrangementStyleName(plan.style) }));
@@ -14776,6 +14794,18 @@ class Component extends DCLogic {
     if (this.state.songArrange && this.state.songArrange.busy) return;
     this.setState({ songArrange: null });
   }
+  /* G9e refusals: the piece was planned by the relaxed pass (arrangement/plan.js relax), so it can be harder than the level asked for */
+  levelNoteText() { return tx('This piece has many notes, so the arrangement may be a little harder than the level you chose.'); }
+  /* G9e refusals: a piece the one-note-per-hand arranger cannot make is NOT saved as the standard arrangement behind the person's back: the window stays open with the
+     notice and two choices (saveStandardAfterRefusal saves the standard copy, dismissSingleRefusal keeps the window open with the options free to change). */
+  async saveStandardAfterRefusal() {
+    const d = this.state.songArrange;
+    if (!d || d.busy || !d.singleRefusal) return;
+    const r = d.singleRefusal;
+    this.patchSongArranger({ singleRefusal: null });
+    await this.saveSongArrangement(r.plan, r.provider, { standardAfter: { reason: r.reason } });
+  }
+  dismissSingleRefusal() { this.patchSongArranger({ singleRefusal: null }); }
   patchSongArranger(patch) {
     this.setState(st => st.songArrange ? { songArrange: Object.assign({}, st.songArrange, patch) } : null);
   }
@@ -14786,7 +14816,7 @@ class Component extends DCLogic {
       return { songArrange: Object.assign({}, d, {
         style: style,
         copyTitle: d.autoTitle ? this.songArrangeAutoTitle(d, { style: style }) : d.copyTitle,
-        status: ''
+        status: '', singleRefusal: null
       }) };
     });
   }
@@ -14797,7 +14827,7 @@ class Component extends DCLogic {
       return { songArrange: Object.assign({}, d, {
         level: level,
         copyTitle: d.autoTitle ? this.songArrangeAutoTitle(d, { level: level }) : d.copyTitle,
-        status: ''
+        status: '', singleRefusal: null
       }) };
     });
   }
@@ -14813,7 +14843,7 @@ class Component extends DCLogic {
     const packed = packScore(raw);
     return Score.finalize(unpackScore(JSON.parse(JSON.stringify(packed))));
   }
-  async saveSongArrangement(plan, provider) {
+  async saveSongArrangement(plan, provider, saveOpts) {
     const d = this.state.songArrange;
     if (!d) return false;
     const sourceScore = this.scoreForArrangement(d.songId);
@@ -14824,11 +14854,16 @@ class Component extends DCLogic {
     plan = ScoreArranger.norm(Object.assign({}, plan || {}, { source: provider ? 'ai' : (plan && plan.source) }));
     let title = (d.autoTitle ? this.arrangementCopyTitle(d.songTitle, plan.style, singleRoute(plan)) : String(d.copyTitle || '').trim())
       || this.arrangementCopyTitle(d.songTitle, plan.style, singleRoute(plan));
-    let arranged, usedFallback = false, usedSingle = false, singleFailure = null;
-    if (singleRoute(plan)) {
+    let arranged, usedFallback = false, usedSingle = false, singleFailure = null, levelNote = null;
+    if (saveOpts && saveOpts.standardAfter) {
+      /* the person pressed "Save the standard arrangement" after a refusal: no second try of the one-note-per-hand arranger */
+      singleFailure = saveOpts.standardAfter.reason || 'unknown';
+      if (d.autoTitle) title = this.arrangementCopyTitle(d.songTitle, plan.style, false);
+    } else if (singleRoute(plan)) {
       /* G9e-lite: one note per hand, from the graph of the open song (PPPEngrave.app.resolve: the importer's own, the kept one, or
-         the one rebuilt from its Score). A piece it cannot make (9 of 20 catalogue pieces) is NOT a dead end: the standard arrangement is made below,
-         by the very path the option-off copy takes, and saved under a title that does not say one note per hand; the notice says so. */
+         the one rebuilt from its Score). A piece it cannot make is NOT a dead end, and since G9e refusals NOT a silent fallback either: the window stays open with a
+         notice and two choices, and the standard arrangement (the very path the option-off copy takes, saved under a title that does not say one note per hand)
+         is made by saveStandardAfterRefusal, on the person's click. */
       this.patchSongArranger({ busy: true, status: tx('Writing one note per hand…') });
       let sn = { ok: false, reason: 'NO_GRAPH' };
       try {
@@ -14836,15 +14871,16 @@ class Component extends DCLogic {
         if (src && src.graph) sn = await arrangeSingleNote(src.graph, plan);
       } catch (e) { sn = { ok: false, reason: 'SINGLE_CRASH', message: e && e.message }; }
       if (!sn.ok) {
-        singleFailure = sn.reason || 'unknown';
-        /* the suggested title said one-note-per-hand: this copy is the standard arrangement, so the title says that (a title the person typed stays) */
-        if (d.autoTitle) title = this.arrangementCopyTitle(d.songTitle, plan.style, false);
+        /* G9e refusals: nothing is saved. The window stays open with the notice (which does not go away by itself) and the choice; the standard arrangement is saved only on its click */
+        this.patchSongArranger({ busy: false, status: '', singleRefusal: { reason: sn.reason || 'unknown', plan: plan, provider: provider || null } });
+        return false;
       } else {
+        levelNote = sn.levelNote || null;
         arranged = graphToReviewScore(sn.graph, title);
         /* legacy-score.js takes the title of the graph's own meta over the name it is given: the copy is named what the person typed */
         arranged.title = title;
         engraveRemember(arranged, sn.graph, 'g9-single');
-        arranged.source = { arrangement: { engine: 'ppp.g9-single', level: plan.level, style: plan.style, source: plan.source || 'local' } };
+        arranged.source = { arrangement: Object.assign({ engine: 'ppp.g9-single', level: plan.level, style: plan.style, source: plan.source || 'local' }, levelNote ? { levelNote: levelNote } : {}) };
         usedSingle = true;
       }
     }
@@ -14894,12 +14930,13 @@ class Component extends DCLogic {
     if (this._thumbs) delete this._thumbs[id];
     this.setState({ songArrange: null });
     const saved = tx('Saved {{title}} as a new song. The original was not changed.', { title: arranged.title });
-    this.say(singleFailure ? tx('This piece could not be made in one-note-per-hand mode, so the standard arrangement was saved.') + ' ' + saved : saved);
+    this.say(singleFailure ? tx('This piece could not be made in one-note-per-hand mode, so the standard arrangement was saved.') + ' ' + saved : saved + (levelNote ? ' ' + this.levelNoteText() : ''));
     return true;
   }
   async createSongArrangement() {
     const d = this.state.songArrange;
     if (!d || d.busy) return;
+    if (d.singleRefusal) this.patchSongArranger({ singleRefusal: null });
     await this.saveSongArrangement({ level: d.level, style: d.style, source: 'local' });
   }
   async aiSongArrangement() {
@@ -14908,6 +14945,7 @@ class Component extends DCLogic {
     const score = this.scoreForArrangement(d.songId);
     if (!score) return this.patchSongArranger({ status: tx('That song could not be opened.') });
     const local = ScoreArranger.recommend(score, d.level);
+    if (d.singleRefusal) this.patchSongArranger({ singleRefusal: null });
     let plan = local, provider = null;
     this.patchSongArranger({ busy: true, status: tx('AI is analysing the melody, harmony and rhythm…') });
     try {
@@ -17263,7 +17301,8 @@ class Component extends DCLogic {
       arrangementBusy: !!S.arrangementBusy,
       arrangementStatus: S.arrangementStatus || '',
       hasArrangementStatus: !!S.arrangementStatus,
-      setArrangementLevel: e => this.setState({ arrangementLevel: e.target.value }),
+      /* the "harder than the level you chose" note is about the level that was applied: choosing another level takes it off the screen (other notices stay) */
+      setArrangementLevel: e => { const level = e.target.value; this.setState(st => ({ arrangementLevel: level, arrangementStatus: st.arrangementStatus && st.arrangementStatus === this.levelNoteText() ? '' : st.arrangementStatus })); },
       setArrangementStyle: e => this.setState({ arrangementStyle: e.target.value }),
       /* G9e-lite: the switch (pressed = on, which is the default). Reads PPP.arranger itself, so it also shows a mode set from the console; session only, not remembered. */
       singleNoteLabel: tx('One note per hand'),
@@ -17279,8 +17318,9 @@ class Component extends DCLogic {
         /* turning it on starts the download of its scripts and data now, so that Apply does not wait for them */
         this.warmSingleModules();
         /* the Song Arranger's suggested copy title follows the mode, unless the person has typed their own */
-        this.setState(st => st.songArrange && st.songArrange.autoTitle
-          ? { songArrange: Object.assign({}, st.songArrange, { copyTitle: this.songArrangeAutoTitle(st.songArrange) }) } : {});
+        /* a refusal notice was about the mode that has just been switched: it goes */
+        this.setState(st => st.songArrange
+          ? { songArrange: Object.assign({}, st.songArrange, { singleRefusal: null }, st.songArrange.autoTitle ? { copyTitle: this.songArrangeAutoTitle(st.songArrange) } : {}) } : {});
       },
       applyArrangement: () => this.applyArrangement(),
       aiArrangement: () => this.aiArrangement(),
@@ -17935,6 +17975,12 @@ class Component extends DCLogic {
       arrangementJazz: tx('Jazz'), arrangementBallad: tx('Ballad'), arrangementPop: tx('Pop piano'),
       arrangementWaltz: tx('Waltz'), arrangementBossa: tx('Bossa nova'), arrangementCinematic: tx('Cinematic'),
       songArrangeStatus: songArrange.status || '', hasSongArrangeStatus: !!songArrange.status,
+      hasSingleRefusal: !!songArrange.singleRefusal,
+      singleRefusalText: tx('This piece could not be made in one-note-per-hand mode, so nothing was saved. You can save the standard arrangement instead, in which a hand may play two or more notes at once.'),
+      singleRefusalSaveLabel: tx('Save the standard arrangement'),
+      singleRefusalDismissLabel: tx('Dismiss'), /* not 'Cancel': the window's own Cancel closes it */
+      saveStandardAfterRefusal: () => this.saveStandardAfterRefusal(),
+      dismissSingleRefusal: () => this.dismissSingleRefusal(),
       songArrangeCreateLabel: songArrange.busy ? tx('Creating…') : tx('Create new song'),
       songArrangeAiLabel: songArrange.busy ? tx('AI is arranging…') : tx('AI custom arrangement'),
       closeLabel: tx('Close'), cancelLabel: tx('Cancel'),

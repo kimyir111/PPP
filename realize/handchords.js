@@ -43,6 +43,11 @@
    go before anything). A hand whose protected notes are more than N (the melody and the bass in one hand, two bass voices) is left and counted (`stats.maxNotes.unfixable`).
    A removed note goes with its whole tie chain (as above: nothing shortened or moved), deterministic, idempotent. The rules above then run on what is left (the cross-hand
    seconds; the limb rules find nothing more to do at N = 1).
+   `opts.dropBass` (default off; only with maxNotes; docs/GOALS/G09 section 12 "G9e refusals"): a hand whose notes at an onset are all protected and more than N (the melody's
+   top note AND a bass note in one hand: a bass voice in the treble staff under a melody in the same staff, or the melody in the bass staff) used to be left and counted, which
+   let a dyad through in a result the pipeline called a success. With dropBass the MELODY's top note stays (it is what the listener follows) and the other protected notes of
+   that hand go, the least important first (right hand: the lower; left hand: the higher), until N are left. Each one counts in stats.maxNotes.droppedBass. A `note.mel` flag
+   marks the melody's top head (the caller sets it; absent = never the one that stays). With it off nothing changes.
    ========================================================================== */
 (function (root, factory) {
   'use strict';
@@ -133,6 +138,7 @@
     const removed = new Set(); /* chains */
     const before = count(notes, models, times, removed);
     let maxStats = null;
+    let droppedBass = 0;
     if (opts.maxNotes != null) {
       const N = opts.maxNotes;
       if (!(typeof N === 'number' && Number.isInteger(N) && N >= 1)) throw new Error('handchords: opts.maxNotes must be an integer >= 1 (got ' + N + ')');
@@ -142,7 +148,9 @@
           for (let guard = 0; guard < 256; guard++) {
             const list = notes.filter(n => !removed.has(n.chain) && n.hand === h && n.on <= t + EPS && n.off > t + EPS);
             if (list.length <= N) break;
-            const cands = list.filter(n => !keepChain.has(n.chain));
+            let cands = list.filter(n => !keepChain.has(n.chain));
+            let viaBass = false;
+            if (!cands.length && opts.dropBass) { cands = list.filter(n => !n.mel); viaBass = cands.length > 0; } /* dropBass: the melody's top note is sacred; a protected bass that shares its hand goes */
             if (!cands.length) break; /* only protected notes left: counted below */
             /* removed first: a melody event's extra head, then (right hand) the lower note, (left hand) the higher note, then the id */
             const key = n => [lowChain.has(n.chain) ? 0 : 1, h === 'RH' ? n.midi : -n.midi];
@@ -152,10 +160,11 @@
               return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
             });
             removed.add(cands[0].chain);
+            if (viaBass) droppedBass++;
           }
         });
       });
-      maxStats = { n: N, before: beforeMax, removedNotes: notes.filter(n => removed.has(n.chain)).length, removedChains: removed.size };
+      maxStats = { n: N, before: beforeMax, removedNotes: notes.filter(n => removed.has(n.chain)).length, removedChains: removed.size, droppedBass: droppedBass };
     }
 
     times.forEach(t => {

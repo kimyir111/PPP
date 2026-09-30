@@ -459,7 +459,7 @@ function fillRests(b, part, voiceId, staffId, oldMeasures, newMeasureId) {
 /* The hand-chords pass (see realize()'s opts.handChords and realize/handchords.js): builds the note list of the written part, asks handchords.thin what goes,
    and removes exactly those heads (a whole tie chain each). An event left with no head becomes a rest of the same length and display (as a hymn-thinned note
    does); a tie that loses an end goes. Nothing else is touched: no pitch, onset or duration of a kept note moves. Returns the pass's statistics. */
-function applyHandChords(HC, part, tags, staffIds, oldMeasures, newMeasureId, measureOffset, model, maxNotes) {
+function applyHandChords(HC, part, tags, staffIds, oldMeasures, newMeasureId, measureOffset, model, maxNotes, dropBass) {
   const mOff = new Map();
   oldMeasures.forEach((m, i) => mOff.set(newMeasureId.get(m.id), measureOffset[i]));
   const tieTo = new Set(), tieFrom = new Map();
@@ -484,7 +484,7 @@ function applyHandChords(HC, part, tags, staffIds, oldMeasures, newMeasureId, me
     const bassLow = bassHeads && bassHeads.length ? bassHeads.reduce((a, h) => (P.midi(h.pitch) < P.midi(a.pitch) ? h : a)) : null;
     e.heads.forEach(h => notes.push({
       id: h.id, hand: hand, on: on, off: off, midi: P.midi(h.pitch), cont: tieTo.has(h.id), chain: find(h.id),
-      keep: h === melTop || (maxNotes != null ? h === bassLow : tags.bass.has(h.id)), low: tags.melody.has(h.id) && h !== melTop
+      keep: h === melTop || (maxNotes != null ? h === bassLow : tags.bass.has(h.id)), low: tags.melody.has(h.id) && h !== melTop, mel: h === melTop
     }));
   });
   /* the bass of a generated left-hand event: its lowest head, in the events whose lowest note is the lowest of their harmony window */
@@ -497,7 +497,7 @@ function applyHandChords(HC, part, tags, staffIds, oldMeasures, newMeasureId, me
     lows.forEach(x => { if (P.midi(x.low.pitch) === min) keepIds.add(x.low.id); });
   });
   notes.forEach(n => { if (keepIds.has(n.id)) n.keep = true; });
-  const res = HC.thin(notes, maxNotes != null ? { model: model, maxNotes: maxNotes } : { model: model });
+  const res = HC.thin(notes, maxNotes != null ? { model: model, maxNotes: maxNotes, dropBass: dropBass === true } : { model: model });
   const gone = new Set(res.removedIds);
   let emptied = 0;
   if (gone.size) {
@@ -557,7 +557,9 @@ function realize(g, sg, plan, opts) {
                              octave-plus rule too; opt-in): which groups of notes are searched (realize/handchords.js)
        opts.handMaxNotes     (default off = null/undefined; an integer >= 1; needs opts.handChords) the teacher's criterion (docs/GOALS/G09 section 12 "G9 single-note hands (post user
                              review 5: the teacher's criterion)"): every written hand keeps at most N notes at every onset, at the same stages; never the top note of a melody-voice
-                             event, never the bass; candidates/ passes 1. Durations and ties of the rest untouched. */
+                             event, never the bass; candidates/ passes 1. Durations and ties of the rest untouched.
+       opts.handDropBass     (default off; needs opts.handMaxNotes) when the melody's top note and a protected bass note share one hand at an onset, the bass note goes instead of the
+                             hand keeping both (a dyad the pipeline would report as a success): docs/GOALS/G09 section 12 "G9e refusals". candidates/ passes true with singleNoteHands. */
   const handMaxNotes = opts.handMaxNotes == null ? null : opts.handMaxNotes;
   if (handMaxNotes != null && !(Number.isInteger(handMaxNotes) && handMaxNotes >= 1)) throw new Error('realize: opts.handMaxNotes must be an integer >= 1 (got ' + handMaxNotes + ')');
   /* opts.handMaxNotesMaxStage (default HAND_CHORDS_MAX_STAGE = 3; 1..4): the highest plan stage the single-note pass runs at (4 = also the plan's hardest stage; a measurement switch, off in
@@ -808,7 +810,7 @@ function realize(g, sg, plan, opts) {
   [[rhV1, rhSt], [rhV2, rhSt], [lhV1, lhSt], [lhV2, lhSt]].forEach(([v, st]) => { if (v) fillRests(b, part, v.id, st.id, oldMeasures, newMeasureId); });
 
   /* source-copied hand chords (handchords.js): the final pass over the written notes, before the graph is sealed and fingered */
-  if (handChords) report.handChords = Object.assign(report.handChords, applyHandChords(HC, part, hcTags, { rh: rhSt.id, lh: lhSt.id }, oldMeasures, newMeasureId, measureOffset, opts.handChordsModel || HAND_CHORDS_DEFAULT_MODEL, handMaxNotes));
+  if (handChords) report.handChords = Object.assign(report.handChords, applyHandChords(HC, part, hcTags, { rh: rhSt.id, lh: lhSt.id }, oldMeasures, newMeasureId, measureOffset, opts.handChordsModel || HAND_CHORDS_DEFAULT_MODEL, handMaxNotes, handMaxNotes != null && opts.handDropBass === true));
 
   let built;
   try { built = b.finish(); } catch (e) { return fail('BUILD_FAILED', String(e && e.message || e)); }

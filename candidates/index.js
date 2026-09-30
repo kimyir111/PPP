@@ -82,6 +82,12 @@
    (critics/metrics.js `engraveMetrics` is Node-only). The top-K is then chosen by the cheap critics alone and `select()` treats engrave as deferred (it adds
    the same 0 to every candidate), so the winner is the best cheap-critic candidate. Measured on the corpus this equals the gated winner (G9 §12, G9e-lite).
 
+   `opts.relax` (G9e refusals, 1 or 2, default off; ignored without `opts.singleNoteHands`): handed to plan() (arrangement/plan.js), which then falls back to its relaxed search - reach and chord load on the
+   one-note-per-hand view, at 2 also the stage's maximum density and no range ceiling - for a section the strict search cannot fit, and only for that section. It takes effect only when NO spec of the
+   enumeration has a strict plan (a piece with any strict plan is enumerated exactly as without the option, candidate for candidate), and the app passes it only when its own strict search found no plan at
+   any level either, so a piece that was arranged before is arranged the same way; the chosen candidate's `plan.relaxed` says whether the relaxed search was used. With singleNoteHands
+   the realizer is also given `handDropBass` (realize/handchords.js dropBass: a bass note that shares a hand with the melody's top note is removed instead of leaving a dyad).
+
    `run(g, sg, request, opts)` does enumerate -> score -> select in one call - the entry
    point `realize/tools/harness.js`'s own G9a comparison mode and this module's own tests
    use. `opts`: `n` (default 8), `weights` (critic weight overrides, for ablations - see
@@ -135,6 +141,10 @@
      noise, not a consistent direction, so bracketing 0 (rather than only going one way)
      is what the measurement actually supports. 0 is always tried first (see specOrder). */
   const LEVEL_OFFSETS_DEFAULT = Object.freeze([0, -1, 1]);
+  /* G9e refusals: the most two-hand moments (as a fraction) at which a relaxed-plan candidate's right hand may sound below its left (critics/metrics.js handCrossing). Measured, not tuned to
+     a sample's outcome: 1% is about two moments in a 225-moment Hanon exercise, where the single held note across a section boundary is the one the verbatim pattern makes; the strict
+     successes on origin/main average 0.15% (3 of 309 above 5%). */
+  const HAND_CROSSING_MAX = 0.01;
   const TOP_K_FOR_ENGRAVE_DEFAULT = 3; /* an engineering budget choice, not tuned to any sample - see header */
 
   /* ---- deterministic enumeration order (see header) ---- */
@@ -170,6 +180,22 @@
     const n = opts.n == null ? 24 : opts.n;
     const specs = specOrder(request, opts);
     const planCache = new Map();
+    /* G9e refusals: `opts.relax` (1 or 2, default off) is handed to plan() as its own opts.relax - the relaxed planning pass (arrangement/plan.js), which only makes sense when one note per
+       hand is enforced afterwards, so it is IGNORED without `opts.singleNoteHands` (every other output stays what it was). It is used only when no spec of the enumeration has a strict plan (below);
+       plan() is then strict first, section by section, so a section the strict search can fit is planned exactly as it is without the option. */
+    const basePlanOpts = opts.planOpts || (opts.reference ? { reference: opts.reference } : undefined);
+    let planOpts = basePlanOpts;
+    if (opts.relax && opts.singleNoteHands) {
+      /* ... and only when NO spec of this enumeration has a strict plan: if one does, the piece is a strict piece and every spec plans strictly, exactly as without the option (the strict plans
+         are kept, so nothing is planned twice). */
+      let anyStrict = false;
+      specs.forEach(spec => {
+        const planTargetLevel = request.targetLevel + (spec.levelOffset || 0), key = spec.handProfile + '@' + planTargetLevel;
+        if (!planCache.has(key)) planCache.set(key, ARR.planner.plan(g, sg, Object.assign({}, request, { handProfile: spec.handProfile, targetLevel: planTargetLevel }), basePlanOpts));
+        if (planCache.get(key).ok) anyStrict = true;
+      });
+      if (!anyStrict) { planCache.clear(); planOpts = Object.assign({}, basePlanOpts, { relax: opts.relax }); }
+    }
     const seenFingerprints = new Set();
     const candidates = [];
     const tried = [];
@@ -180,11 +206,11 @@
       const planCacheKey = spec.handProfile + '@' + planTargetLevel;
       let planResult = planCache.get(planCacheKey);
       if (planResult === undefined) {
-        planResult = ARR.planner.plan(g, sg, Object.assign({}, request, { handProfile: spec.handProfile, targetLevel: planTargetLevel }), opts.planOpts || (opts.reference ? { reference: opts.reference } : undefined)); /* G9e-lite: the browser has no Node require() fallback for the G6 reference, so opts.reference reaches plan() too */
+        planResult = ARR.planner.plan(g, sg, Object.assign({}, request, { handProfile: spec.handProfile, targetLevel: planTargetLevel }), planOpts); /* G9e-lite: the browser has no Node require() fallback for the G6 reference, so opts.reference reaches plan() too */
         planCache.set(planCacheKey, planResult);
       }
       if (!planResult.ok) { tried.push({ spec: spec, ok: false, stage: 'plan', reason: planResult.reason }); continue; }
-      const realized = REALIZE.realize(g, sg, planResult.plan, Object.assign({ pattern: spec.pattern, reference: opts.reference, registerFloor: opts.registerFloor, stride: opts.stride, noStride: !opts.allowStride, diatonicLow: true, hymnThin: true, handChords: true }, opts.singleNoteHands ? { handMaxNotes: 1, handMaxNotesMaxStage: 4 } : {}, opts.last));
+      const realized = REALIZE.realize(g, sg, planResult.plan, Object.assign({ pattern: spec.pattern, reference: opts.reference, registerFloor: opts.registerFloor, stride: opts.stride, noStride: !opts.allowStride, diatonicLow: true, hymnThin: true, handChords: true }, opts.singleNoteHands ? { handMaxNotes: 1, handMaxNotesMaxStage: 4, handDropBass: true } : {}, opts.last));
       if (!realized.ok) { tried.push({ spec: spec, ok: false, stage: 'realize', reason: realized.reason }); continue; }
       const fp = SER.fingerprint(realized.graph);
       if (seenFingerprints.has(fp)) { tried.push({ spec: spec, ok: false, stage: 'dedup', reason: 'DUPLICATE_OF_EARLIER_CANDIDATE', fingerprint: fp }); continue; }
@@ -231,6 +257,16 @@
         sourceNotes: sourceNotes, registerFloor: opts.registerFloor
       };
       const ev = CRIT.evaluate(c.graph, ctx);
+      /* G9e refusals: a candidate planned by the RELAXED pass must also keep the hands in order (the right hand's lowest sounding note below the left hand's highest at no more than
+         HAND_CROSSING_MAX of the two-hand moments): a structural filter like the G5 one, never a score, and only for a relaxed plan, so a strict candidate is judged exactly as before. The
+         relaxed pass makes pieces whose generated accompaniment or voice split can land under the melody (hanon: the right hand below the left at 20-40% of the moments); the verbatim-voice
+         pattern of the same enumeration mostly does not (a held note across a section boundary is one moment in about 225). */
+      if (c.plan && c.plan.relaxed && ev.hardOk) {
+        let hc = null;
+        try { hc = CRIT.metrics.handCrossing(c.graph); } catch (e) { hc = null; }
+        const scores = Object.assign({}, ev.critics, { handCrossing: hc });
+        return Object.assign({}, c, { scores: scores, hardOk: !!hc && hc.rate <= HAND_CROSSING_MAX });
+      }
       return Object.assign({}, c, { scores: ev.critics, hardOk: ev.hardOk });
     });
   }
@@ -418,7 +454,7 @@
       '|' + (opts && opts.topKForEngrave != null ? opts.topKForEngrave : TOP_K_FOR_ENGRAVE_DEFAULT) +
       '|' + JSON.stringify((opts && opts.weights) || null) +
       '|' + JSON.stringify((opts && opts.reference) || null) +
-      '|' + JSON.stringify((opts && opts.planOpts) || null) +
+      '|' + JSON.stringify((opts && opts.planOpts) || null) + (opts && opts.relax && opts.singleNoteHands ? '|relax' + opts.relax : '') +
       '|' + JSON.stringify(opts && opts.registerFloor !== undefined ? opts.registerFloor : 'default') +
       '|' + JSON.stringify((opts && opts.stride) || 'default') +
       '|' + JSON.stringify(patternsFor(opts)) + '|' + (opts && opts.allowStride ? 'stride' : 'nostride') +
@@ -490,7 +526,7 @@
   }
 
   return Object.freeze({
-    PATTERNS, ALL_PATTERNS, STRIDE_PATTERNS, patternsFor, LEVEL_OFFSETS_DEFAULT, TOP_K_FOR_ENGRAVE_DEFAULT,
+    PATTERNS, ALL_PATTERNS, STRIDE_PATTERNS, patternsFor, LEVEL_OFFSETS_DEFAULT, TOP_K_FOR_ENGRAVE_DEFAULT, HAND_CROSSING_MAX,
     specOrder, patternProfileSpecs, specKey, enumerate, scoreCandidates, badnessOf, select, selectWithEngraveGate, explain, run, runAsync,
     DEFAULT_WEIGHTS
   });

@@ -93,6 +93,34 @@ function hardViolationsOfAudioNotes(notes, profile) {
   return { hard: r.totals.hard, byCode: r.totals.byCode };
 }
 
+/* ---- 1b. hand order (docs/GOALS/G09 section 12 "G9e refusals"): how often the right hand plays BELOW the left ----
+   handCrossing(graph) -> { moments, crossed, rate }: at every onset of either hand, the notes each hand SOUNDS (held ones included); a moment needs both hands sounding, and is crossed
+   when the right hand's lowest note is below the left hand's highest. Pure function of the graph. A report, and the filter candidates/ applies to a candidate planned by the relaxed
+   pass (a zero-tolerance structural filter there, never a score). */
+function handCrossing(graph) {
+  const mStart = new Map(); let acc = R.ZERO;
+  graph.timeline.measures.forEach(m => { mStart.set(m.id, acc); acc = R.add(acc, R.parse(m.dur)); });
+  const notes = [];
+  graph.parts.forEach(part => part.events.forEach(e => {
+    if (e.kind !== 'note' || e.grace) return;
+    const on = R.toNumber(R.add(mStart.get(e.m), R.parse(e.at))), off = on + R.toNumber(R.parse(e.dur));
+    (e.heads || []).forEach(h => notes.push({ hand: SG.pitch.limbOf(part, e, h), midi: SG.pitch.midi(h.pitch), on: on, off: off }));
+  }));
+  const EPS = 1e-9;
+  let moments = 0, crossed = 0;
+  Array.from(new Set(notes.map(n => n.on))).forEach(t => {
+    let rhLow = Infinity, lhHigh = -Infinity;
+    notes.forEach(n => {
+      if (!(n.on <= t + EPS && n.off > t + EPS)) return;
+      if (n.hand === 'RH') rhLow = Math.min(rhLow, n.midi); else if (n.hand === 'LH') lhHigh = Math.max(lhHigh, n.midi);
+    });
+    if (rhLow === Infinity || lhHigh === -Infinity) return;
+    moments++;
+    if (rhLow < lhHigh) crossed++;
+  });
+  return { moments: moments, crossed: crossed, rate: moments ? crossed / moments : 0 };
+}
+
 /* ---- 2. G6 level vs. target ---- */
 function levelOfGraph(graph) {
   if (!WEIGHTS) throw new Error('critics/metrics: no G6a weights (call setWeights(weights) in the browser)');
@@ -198,7 +226,7 @@ function engraveMetrics(graph, id) {
 }
 
 return {
-  setWeights, hardViolationsOfGraph, hardViolationsOfAudioNotes, levelOfGraph,
+  setWeights, hardViolationsOfGraph, hardViolationsOfAudioNotes, handCrossing, levelOfGraph,
   graphNoteList, legacyNoteList, audioNoteList, originalMelodyNotes, melodyPreservation, melodyTopLine,
   harmonyAgreement, engraveMetrics
 };

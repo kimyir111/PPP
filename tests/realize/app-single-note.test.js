@@ -151,11 +151,13 @@ test('one note per hand: every onset of both hands on the four hymns at all four
 });
 
 test('refusals are results, never throws and never another engine: unreachable, no reference, scripts missing, a graph that is not one', async () => {
-  const unreachable = mk({ time: [4, 4], rh: 'C6:q D6:q E6:q F6:q', lh: 'C2+C4:q G1+G3:q C2+C4:q G1+G3:q' });
-  const r1 = await nodeApp.arrangeSingleNote(unreachable, { level: 'advanced' });
-  assert.equal(r1.ok, false); assert.equal(r1.reason, 'UNREACHABLE');
-  const real = await nodeApp.arrangeSingleNote(await mxl('catalog/method/sonatina/020.mxl'), { level: 'beginner' });
-  assert.equal(real.ok, false, 'sonatina/020 has no reachable plan at any level (G09 section 12: 22 of 48 sample files have none)');
+  /* G9e refusals: a two-octave-wide one-bar piece (C1 to F6) had no strict plan; the relaxed pass (range ignored, one note per hand) now makes it, and says so */
+  const wide = mk({ time: [4, 4], rh: 'C6:q D6:q E6:q F6:q', lh: 'C2+C4:q G1+G3:q C2+C4:q G1+G3:q' });
+  const r1 = await nodeApp.arrangeSingleNote(wide, { level: 'advanced' });
+  assert.equal(r1.ok, true); assert.equal(r1.levelNote, 'relaxed-plan');
+  /* what stays refused: czerny849/009 has no plan at any level, even relaxed (too fast for the levels; docs/GOALS/G09 section 12 "G9e refusals") */
+  const real = await nodeApp.arrangeSingleNote(await mxl('catalog/method/czerny849/009.mxl'), { level: 'beginner' });
+  assert.equal(real.ok, false, 'czerny849/009 has no reachable plan at any level, relaxed or not');
   assert.equal(real.reason, 'UNREACHABLE');
   const noRef = E.make({ window: E.nodeWindow(), loadArrangerReference: () => Promise.resolve(null) });
   assert.deepEqual(await noRef.arrangeSingleNote(hymn('christ-arose'), { level: 'beginner' }), { ok: false, reason: 'REFERENCE_UNAVAILABLE' });

@@ -1,0 +1,32 @@
+{
+ "madeFrom": "origin/main 8a7a65a: app arrangeSingleNote (PPP.arranger single), sha-256 of JSON.stringify(graph), first 16 hex; tests/realize/g9e-refusals.test.js",
+ "hashes": {
+  "catalog/method/beyer/003.mxl|intermediate": "1325d43dba0694ee",
+  "catalog/method/beyer/017.mxl|advanced": "4bbf5a463e137ac2",
+  "catalog/method/beyer/038.mxl|intermediate": "dbce95e030b52cf3",
+  "catalog/method/beyer/054.mxl|advanced": "7ebb1a764a65d5f0",
+  "catalog/method/burgmuller25/003.mxl|intermediate": "11b28a43b2ea8b8e",
+  "catalog/method/burgmuller25/006.mxl|intermediate": "85d21a377416e678",
+  "catalog/method/burgmuller25/007.mxl|beginner": "dbb3707831c07a41",
+  "catalog/method/czerny299/006.mxl|intermediate": "2141930f11f93811",
+  "catalog/method/czerny299/010.mxl|beginner": "9432bd34fa441046",
+  "catalog/method/czerny599/003.mxl|beginner": "bb293e6d23290b88",
+  "catalog/method/czerny599/012.mxl|intermediate": "146e1c39055baeea",
+  "catalog/method/czerny599/032.mxl|beginner": "e92f41d9cba6f56d",
+  "catalog/method/czerny599/041.mxl|intermediate": "747c5abe943db343",
+  "catalog/method/czerny849/003.mxl|advanced": "3e0e1e6ab84dbd62",
+  "catalog/method/czerny849/019.mxl|intermediate": "0e4b40779ff3ca66",
+  "catalog/method/czerny849/023.mxl|advanced": "db53c40388fca22e",
+  "catalog/method/sonatina/001.mxl|intermediate": "1adc7ae36ffcfc8f",
+  "catalog/method/sonatina/004.mxl|advanced": "29e9bdc2c12601e7",
+  "catalog/method/sonatina/008.mxl|intermediate": "d8de0f7bbe57affc",
+  "catalog/method/sonatina/017.mxl|advanced": "a51b12aca4ba9485",
+  "hymn:christ-arose|intermediate": "483d8a07131a56a3",
+  "hymn:nearer-my-god|beginner": "e38ae4670d54891f",
+  "hymn:pass-me-not|advanced": "8efd96ae059f04de",
+  "hymn:all-creatures|intermediate": "cfbaed863ac1ac4c"
+ },
+ "leaks": {
+  "catalog/method/burgmuller25/001.mxl|intermediate": 1
+ }
+}
