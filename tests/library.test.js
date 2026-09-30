@@ -101,6 +101,8 @@ const ok = (name, cond, detail) => {
     arrangerUi.open && arrangerUi.levels.includes('beginner') &&
       ['jazz', 'ballad', 'pop', 'waltz', 'bossa', 'cinematic'].every(x => arrangerUi.styles.includes(x)),
     JSON.stringify(arrangerUi));
+  /* the texture engines below are the standard ('legacy') arranger's; 'single' (one note per hand) has been the default since G9e default-on and ignores the texture */
+  await page.evaluate(() => { window.PPP.arranger = 'legacy'; });
   await page.select('[data-song-arrange-level]', 'beginner');
   await page.select('[data-song-arrange-style]', 'jazz');
   await page.click('[data-create-song-arrangement]');

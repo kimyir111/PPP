@@ -52,7 +52,8 @@ const PNG = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, ...new Array(64).fi
   await page.setRequestInterception(true);
   page.on('request', req => { if (/\/arrange-score\b/.test(req.url())) req.abort(); else req.continue(); });
   await page.setViewport({ width: 1400, height: 900 });
-  const boot = async () => { await page.waitForFunction(() => window.PPP && window.PPP.app && window.PPPEngrave, { timeout: 30000 }); await sleep(800); };
+  /* these paths are the standard ('legacy') arranger's: 'single' has been the app's default since G9e default-on, so it is set explicitly */
+  const boot = async () => { await page.waitForFunction(() => window.PPP && window.PPP.app && window.PPPEngrave, { timeout: 30000 }); await page.evaluate(() => { window.PPP.arranger = 'legacy'; }); await sleep(800); };
   await page.goto(URL, { waitUntil: 'networkidle2' });
   await boot();
   /* a clean store for this run */

@@ -66,7 +66,7 @@ G08_ARRANGEMENT_REALIZATION.md` §10) would inform any future flip discussion, n
 
 ## 4. Scope
 
-- **New `PPP.arranger` switch**: `'legacy'` (default) | `'g8'` (a third value, `'single'`, was added later by G9e-lite: see the note at the end of §11) (or whichever value name reads best,
+- **New `PPP.arranger` switch**: `'legacy'` (default) | `'g8'` (a third value, `'single'`, was added later by G9e-lite: see the note at the end of §11; since G9e default-on, 2026-09-30, the default is `'single'`, see docs/GOALS/G09 §12) (or whichever value name reads best,
   consistent with `'inferred'`/`'g6'`'s naming style — your call, document why).
 - **Wire G8a in** at the real arrangement call site(s) found in §3, gated by the switch: when `'g8'`,
   call `realize()` on the graph already in scope (per the review screen's `built.graph`, once TD2 is

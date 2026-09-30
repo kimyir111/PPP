@@ -766,6 +766,8 @@ const helperHealth = () => new Promise(resolve => {
     await sleep(800);
     const afterLock = await page.evaluate(() => !!document.querySelector('[data-recording]'));
     ok('rewrite rebuilds notation from the notes already heard', afterLock);
+    /* 'single' (one note per hand) has been the default arranger since G9e default-on; the texture checks below are the standard ('legacy') arranger's */
+    const defaultArranger = await page.evaluate(() => { const d = window.PPP.arranger; window.PPP.arranger = 'legacy'; return d; });
     await page.select('[data-arrangement-level]', 'beginner');
     await page.select('[data-arrangement-style]', 'melody');
     await page.click('[data-apply-arrangement]');
@@ -808,7 +810,7 @@ const helperHealth = () => new Promise(resolve => {
       window.PPP.arranger = saved;
       return { defaultMode: saved, typoMode: typo };
     });
-    ok('PPP.arranger defaults to \'legacy\'', g8Switch.defaultMode === 'legacy', g8Switch.defaultMode);
+    ok('PPP.arranger defaults to \'single\' (G9e default-on; read before this suite set \'legacy\' above)', defaultArranger === 'single', defaultArranger);
     ok('an unrecognized value falls back to \'legacy\' (G4-F2-1\'s convention)', g8Switch.typoMode === 'legacy', g8Switch.typoMode);
 
     await page.evaluate(() => { window.PPP.arranger = 'g8'; });

@@ -1,7 +1,7 @@
 /* G9e-lite (docs/GOALS/G09_CANDIDATES_CRITICS_REPAIR.md section 12): the app's opt-in `PPP.arranger = 'single'` (one note per hand), tested
    against the app's own source (extracted, never reimplemented: tests/realize/app-single-extract.js) and the real modules, with no browser:
 
-     - the mode switch: 'legacy' default, 'g8', 'single', anything else is 'legacy'; which requests the option takes (never "original")
+     - the mode switch: 'single' default (G9e default-on), 'g8', 'legacy', anything else is 'legacy'; which requests the option takes (never "original")
      - every script the option loads on first use loads in a BARE vm context (no require, no module, no document), after the page's own
        scripts, and the pipeline run there gives byte-for-byte the graph the Node require() modules give
      - what comes out: one note per hand at every onset, both hands used, on the four hymns at all four levels
@@ -9,7 +9,7 @@
        not load, a graph that is not one
      - the cache, and a graph with no tempo list (a real gap this round found in realize())
 
-   The page-driven half (default output identical to origin/main, the control, the lazily loaded scripts, the failure notice on screen)
+   The page-driven half (legacy output identical to origin/main, the control on by default, the background-loaded scripts, the failure notice on screen)
    is tests/single-note-app.test.js (npm run test:single-note-app). */
 'use strict';
 const { test } = require('node:test');
@@ -43,9 +43,11 @@ function attacksPerHand(score) {
   return [...by.values()];
 }
 
-test('PPP.arranger: legacy by default; g8 and single are accepted; anything else is legacy (G4-F2-1\'s convention)', () => {
+test('PPP.arranger: single by default (G9e default-on); g8, legacy and single are accepted; anything else is legacy (G4-F2-1\'s convention)', () => {
   const app = E.make({ window: E.nodeWindow(), loadArrangerReference: refLoader });
-  assert.equal(app.PPP.arranger, 'legacy');
+  assert.equal(app.PPP.arranger, 'single');
+  assert.equal(app.getMode(), 'single');
+  app.PPP.arranger = 'legacy'; assert.equal(app.PPP.arranger, 'legacy');
   app.PPP.arranger = 'single'; assert.equal(app.PPP.arranger, 'single');
   app.PPP.arranger = 'g8'; assert.equal(app.PPP.arranger, 'g8');
   app.PPP.arranger = 'single'; assert.equal(app.PPP.arranger, 'single');

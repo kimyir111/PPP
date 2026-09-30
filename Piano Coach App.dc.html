@@ -4559,16 +4559,19 @@ function loadDifficultyWeights() {
    'g8' is 'legacy' (G4-F2-1's convention). G8a's own numbers (docs/GOALS/G08 §14: 3 of 5
    metrics tied-or-beaten against the in-app ScoreArranger, not 5 of 5) are why this stays off
    by default - see docs/GOALS/G08B_LEGACY_RETIREMENT.md.
-   G9e-lite (docs/GOALS/G09 §12): 'single' is a third, OPT-IN mode, switched on by the "One note per hand
-   (experimental)" control in the two arrangement screens (or from the console). It hands the same
+   G9e-lite (docs/GOALS/G09 §12): 'single' is a third mode, switched off and on by the "One note per hand
+   (experimental)" control in the two arrangement screens (or from the console). Since G9e default-on
+   (user decision 2026-09-30) it is what a fresh page starts in, and switching the control off is how a person
+   gets the standard ('legacy') arrangement; its scripts are then fetched in the background after the page has
+   settled (warmSingleModules), never on the way to the first paint. It hands the same
    built.graph (or, in the Song Arranger, the open song's graph) to G7a analyze -> G7b plan -> G9a
    candidates.run with { singleNoteHands: true } (one note per hand at every stage; the melody's top note and
    the bass are never removed) -> G9b repair -> TD16 8va/8vb -> the same graphToReviewScore the 'g8' path uses.
    It covers every style in those two screens (the style choice has no effect, as in 'g8'), so it also takes
    effect for the review screen's default 'balanced' style, which 'g8' does not (G08b §11); the difficulty
    "Original transcription" is never arranged. Any value other than 'g8' or 'single' is 'legacy'. */
-let ARRANGER_MODE = 'legacy';
-let ARRANGER_MODE_BEFORE_SINGLE = 'legacy'; /* what the chip returns to when it is switched off (a console-set 'g8' is not lost) */
+let ARRANGER_MODE = 'single'; /* G9e default-on (user decision 2026-09-30, docs/GOALS/G09 §12): 'single' is what a fresh page arranges with */
+let ARRANGER_MODE_BEFORE_SINGLE = 'legacy'; /* what the chip returns to when it is switched off: the standard (legacy) arrangement, or a console-set 'g8' */
 /* The two real, already-committed files arrangement/reference.js's real per-stage bands need
    (difficulty/weights/g6a-v1.json - the SAME file loadDifficultyWeights() above already
    fetches, reused rather than fetched twice; difficulty/tools/dataset/method-books.json, G6's
@@ -4667,9 +4670,9 @@ function graphToReviewScore(g, title) {
 /* ============================ G9e-lite: one note per hand (PPP.arranger = 'single') ============================
    The G9 pipeline the review packets were made with, run in the page: candidates.run({singleNoteHands: true}) ->
    repairSelection -> lower-staff clefs -> addOttava. Its scripts (candidates, critics, repair, handchords, clefs, ottava: about 185 KB) are
-   NOT in the page's script list: they are fetched the first time the option is used, in this order (each file's own
-   header says which it needs before it; all are UMD, none calls Node's require in the browser). Nothing is loaded
-   for a person who never turns the option on. */
+   NOT in the page's script list: they are fetched in the background once the page has settled (warmSingleModules), or by the
+   first arrangement if that comes sooner, in this order (each file's own header says which it needs before it; all are UMD,
+   none calls Node's require in the browser). Nothing is loaded while another mode (legacy, g8) is set. */
 const SINGLE_SCRIPTS = [
   'realize/handchords.js', 'realize/clefs.js', 'realize/ottava.js',
   'critics/voice-leading.js', 'critics/register-density.js', 'critics/register-floor.js', 'critics/left-hand-jump.js',
@@ -9563,7 +9566,7 @@ window.PPP = {
   /* G06 §11 G6b: 'legacy' (default) | 'g6'. Any other value is 'legacy' (G4-F2-1's convention). */
   get difficulty() { return DIFFICULTY_MODE; },
   set difficulty(v) { DIFFICULTY_MODE = v === 'g6' ? 'g6' : 'legacy'; },
-  /* G08b §11: 'legacy' (default) | 'g8' | 'single' (G9e-lite: one note per hand, opt-in). Any other value is 'legacy' (G4-F2-1's convention). */
+  /* G08b §11: 'single' (default since G9e default-on: one note per hand) | 'legacy' | 'g8'. Any other value is 'legacy' (G4-F2-1's convention). */
   get arranger() { return ARRANGER_MODE; },
   set arranger(v) { ARRANGER_MODE = v === 'g8' ? 'g8' : v === 'single' ? 'single' : 'legacy'; },
   pitchToMidi, midiToFreq, keyName,
@@ -11672,6 +11675,14 @@ class Component extends DCLogic {
        unlocked by the first click or key anywhere — so a MIDI keyboard, which
        cannot unlock it itself, is audible from the start. */
     this._pianoLoad = setTimeout(() => PianoSamples.load(), 1200);
+    /* 'single' is the default arranger (G9e default-on): its scripts and reference data come in the background once the page has settled
+       and is idle, not on the way to the first paint. An arrangement asked for sooner waits for the same download (loadSingleModules and
+       loadArrangerReference share what is in flight), and a failed download is simply asked for again then. */
+    this._singleWarm = setTimeout(() => {
+      this._singleWarm = null;
+      if (typeof requestIdleCallback === 'function') this._singleWarmIdle = requestIdleCallback(() => { this._singleWarmIdle = null; this.warmSingleModules(); }, { timeout: 5000 });
+      else this.warmSingleModules();
+    }, 2500);
     /* a touch only counts as a gesture when the finger lifts — iOS will not
        start sound from pointerdown, and a context created then can stay dead */
     this._unlockOn = ['pointerup', 'click', 'touchend', 'keydown'];
@@ -11756,6 +11767,8 @@ class Component extends DCLogic {
     if (this._midiOut) this._midiOut.panic();
     if (this._midi) this._midi.release();
     clearTimeout(this._pianoLoad);
+    clearTimeout(this._singleWarm);
+    if (this._singleWarmIdle && typeof cancelIdleCallback === 'function') cancelIdleCallback(this._singleWarmIdle);
     (this._unlockOn || []).forEach(t => window.removeEventListener(t, this._unlock, true));
     if (this._piano) this._piano.close();
   }
@@ -12554,6 +12567,13 @@ class Component extends DCLogic {
   /* Browsers only skip the MIDI prompt after the person has allowed it once.
      If that grant is still in place, open access on load so seating a cable
      is enough — no Connect click. */
+  /* the one-note-per-hand arranger's scripts and reference data, fetched ahead of the first arrangement; a no-op while another mode is set.
+     Never throws and never rejects: a failed download is left for the arrangement that needs it to ask again. */
+  warmSingleModules() {
+    if (ARRANGER_MODE !== 'single') return;
+    loadSingleModules();
+    loadArrangerReference();
+  }
   warmMidiIfAllowed() {
     const m = this.midiLayer();
     if (!m.supported()) return;
@@ -17210,7 +17230,7 @@ class Component extends DCLogic {
       hasArrangementStatus: !!S.arrangementStatus,
       setArrangementLevel: e => this.setState({ arrangementLevel: e.target.value }),
       setArrangementStyle: e => this.setState({ arrangementStyle: e.target.value }),
-      /* G9e-lite: the opt-in. Reads PPP.arranger itself, so it also shows a mode set from the console; session only, not remembered. */
+      /* G9e-lite: the switch (pressed = on, which is the default). Reads PPP.arranger itself, so it also shows a mode set from the console; session only, not remembered. */
       singleNoteLabel: tx('One note per hand (experimental)'),
       singleNoteHint: tx('The right hand plays the melody as one line; the left hand plays an accompaniment one note at a time. No hand plays two or more notes together, but depending on the piece the left hand may play more notes, and some of the original harmony can be lost.'),
       singleNotePressed: ARRANGER_MODE === 'single' ? 'true' : 'false',
