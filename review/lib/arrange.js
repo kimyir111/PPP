@@ -53,7 +53,7 @@ async function arrangeItem(item, opts) {
   const request = { targetLevel: target, handProfile: profile, sections: 'all' };
 
   /* ---- G9 arm ---- */
-  const sel = CAND.run(g, sg, request, {});
+  const sel = CAND.run(g, sg, request, opts.singleNoteHands ? { singleNoteHands: true } : {});
   if (!sel.ok) return { ok: false, reason: 'g9-no-selection: ' + sel.reason };
   const rr = REPAIR.repairSelection(sel, g, sg, request);
   if (!rr.ok || !rr.graph) return { ok: false, reason: 'g9-repair-failed' };

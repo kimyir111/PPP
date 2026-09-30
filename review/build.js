@@ -2,7 +2,7 @@
 /* ============================================================================
    G9c - the blind-review packet builder (docs/GOALS/G09_CANDIDATES_CRITICS_REPAIR.md, section 12 "G9c - blind review tooling").
 
-     node review/build.js --mode h8|h9 --out <dir> --key-out <dir> [--seed <secret>] [--items items.json] [--list]
+     node review/build.js --mode h8|h9 --out <dir> --key-out <dir> [--seed <secret>] [--items items.json] [--single-note-hands] [--list]
 
    --seed      optional; a SECRET string of at least 20 characters. Omit it and a random one is made. It decides which arrangement
                is X and which is Y and the order of the items, and it is written only to the key file. (A short seed can be guessed
@@ -12,6 +12,8 @@
    --key-out   REQUIRED, the key directory (key.json): NEVER give it to the reviewer. It must not be inside the packet's parent
                directory (nor the packet inside the key's), so that zipping the folder that holds the packet cannot ship the key.
    --items     a JSON list of {file, targetLevel, handProfile} instead of the documented input rule (tests and special reviews).
+   --single-note-hands  the G9 arm only (the legacy arm is unchanged): no two-note chord in either hand at ANY stage (candidates `singleNoteHands`,
+               docs/GOALS/G09 section 12 "G9 single-note hands"); recorded in key.json, never in the packet.
    --list      print the chosen items and stop (no packet is written).
 
    Nothing here touches the app or the server; it only reads the repository and writes the two directories above. */
@@ -104,6 +106,7 @@ async function buildPacket(opts) {
   const seed = opts.seed == null ? crypto.randomBytes(16).toString('hex') : String(opts.seed); /* random when not given; lives in the key only */
   const log = opts.log || (() => {});
   const cache = opts.cache || new Map();
+  if (opts.singleNoteHands) cache.arrangeOpts = { singleNoteHands: true }; /* the G9 arm only; recorded in the key, never in the packet */
 
   let arranged, skipped = [];
   if (opts.items) {
@@ -170,7 +173,7 @@ async function buildPacket(opts) {
     note: 'index.html is the whole review: open it in a browser, rate, and use its download button. This manifest lists what is inside.'
   };
   const key = {
-    format: KEY_FORMAT, review: REVIEW_NAME[mode], mode: mode, packetId: packetId, seed: seed, builtFrom: gitCommit(),
+    format: KEY_FORMAT, review: REVIEW_NAME[mode], mode: mode, packetId: packetId, seed: seed, builtFrom: gitCommit(), singleNoteHands: !!opts.singleNoteHands,
     strataNote: 'strata (note-count ratio, left-hand notes, level miss) are for decode.js only; the packet says none of it',
     assignment: 'per item: X is G9 when the item\'s rank by HMAC-SHA256(seed, "xy|" + file|level|hand) is even (review/lib/blind.js); order by HMAC(seed, "order|" + ...)',
     items: keyItems,
@@ -202,7 +205,7 @@ async function main() {
     return;
   }
   const items = flag('--items') ? JSON.parse(fs.readFileSync(opt('--items'), 'utf8')) : undefined;
-  const r = await buildPacket({ mode: mode, seed: opt('--seed'), out: opt('--out'), keyOut: opt('--key-out'), items: items, log: m => console.log(m) });
+  const r = await buildPacket({ mode: mode, seed: opt('--seed'), out: opt('--out'), keyOut: opt('--key-out'), items: items, singleNoteHands: flag('--single-note-hands'), log: m => console.log(m) });
   const size = f => (fs.statSync(f).size / 1024).toFixed(0) + ' KB';
   console.log('\npacket: ' + r.files.html + ' (' + size(r.files.html) + '), ' + r.count + ' items, id ' + r.packetId);
   console.log('        ' + r.files.manifest);

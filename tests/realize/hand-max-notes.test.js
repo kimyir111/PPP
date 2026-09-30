@@ -218,3 +218,18 @@ test('the critic counts what the pass counts: handChords per hand, and the multi
   assert.equal(VC.newViolations(before.graph, a.graph, { maxNotes: 1 }).multi, 0, 'removing them is not');
   assert.equal(VC.newViolations(a.graph, before.graph).multi, undefined, 'without opts.maxNotes the key is not looked for');
 });
+
+test('candidates singleNoteHands (default false): one note per hand at EVERY stage, and a separate cache entry', async () => {
+  const f = await planOf('catalog/hymns/pass-me-not.musicxml', 3.87);
+  const req = { targetLevel: 3.87, handProfile: 'large', sections: 'all' };
+  const on = CAND.enumerate(f.g, f.sg, req, { n: 8, singleNoteHands: true });
+  assert.ok(on.candidates.some(c => c.plan.stage === 4), 'fixture: a stage-4 candidate exists');
+  on.candidates.forEach(c => { const pm = perHand(c.graph); assert.ok(pm.LH <= 1 && pm.RH <= 1, 'stage ' + c.plan.stage + ' ' + JSON.stringify(pm)); assert.equal(c.report.handChords.active, true); });
+  const def = CAND.enumerate(f.g, f.sg, req, { n: 8 });
+  assert.ok(def.candidates.some(c => c.plan.stage === 4 && !c.report.handChords.active), 'the default leaves stage 4 alone');
+  const cache = new Map();
+  const a = CAND.run(f.g, f.sg, req, { cache: cache });
+  const b = CAND.run(f.g, f.sg, req, { cache: cache, singleNoteHands: true });
+  assert.equal(cache.size, 2, 'two cache keys');
+  assert.notEqual(SER.fingerprint(a.selected.graph), SER.fingerprint(b.selected.graph));
+});
