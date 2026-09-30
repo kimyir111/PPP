@@ -82,7 +82,11 @@ sequence here instead of `Math.random`), `PianoSamples.pick` (nearest recording,
 app's default velocity 80 (mezzo-forte), both arms alike; a note is held for its written length (ties already joined) and let go
 by the damper; the whole phrase is put on the audio clock at once, so chords land together and the tempo holds while the page is
 busy. If the recordings cannot be decoded (or the page has no sample block) a small additive synth plays the same notes; a key
-whose own recording failed borrows a neighbour's. With no Web Audio at all the page says so and plays nothing (as before; a synth
+whose own recording failed borrows a neighbour's. The tap itself does what the app's `wake` / `unlock` / `ping` do (create or resume the `AudioContext` and start a one-frame silent buffer, all
+before anything is awaited), because iOS only accepts sound from a tap that does so; then the recordings decode, then the player is built, and
+only then is the 0.12 s lead before the first note taken, so a slow phone cannot make the first chord late. A phrase that plays to
+its end is not cut by a final silence (the top octaves' dampers take up to 0.6 s); only Stop silences. The page ends with the CC BY 3.0
+credit for the recordings, in Korean and English. With no Web Audio at all the page says so and plays nothing (as before; a synth
 cannot run without it either). `window.__pppReview.sound` exposes the decoded samples, the last play and an offline render for the tests.
 
 ## The two arrangements

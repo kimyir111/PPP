@@ -63,6 +63,8 @@ textarea{width:100%;font:inherit;padding:8px;border:1px solid var(--line);border
 details{margin:16px 0}
 details textarea{min-height:140px;font:13px/1.4 ui-monospace,Menlo,Consolas,monospace}
 .done{color:var(--ok);font-weight:600}
+footer.credit{margin:8px 0 24px;font-size:13px;color:var(--muted)}
+footer.credit p{margin:2px 0}
 @media (max-width:640px){main{padding:10px}.intro,article.item{padding:12px}}
 `;
 
@@ -350,33 +352,56 @@ const JS = `
     }
     setBtn(run.btn, '재생', false);
   }
+  /* a phrase that has played to its end: the button goes back, and nothing is cut. Every note was already let go by its own damper
+     (up to 0.6 s for the top octaves, which ring on), so a last silence here would chop the final high notes. */
+  function finishSound(run){
+    if (live !== run) return;
+    live = null;
+    setBtn(run.btn, '재생', false);
+  }
   function begin(run, id, side, speed, decoded){
-    var it = DATA.items[id], notes = it[side], spq = 60 / (it.tempo * speed);
-    var t0 = AC.currentTime + 0.12, result = null;
+    var it = DATA.items[id], notes = it[side], spq = 60 / (it.tempo * speed), result = null, t0;
     if (decoded) {
       try {
-        if (!player || player.ac !== AC) player = makePlayer(AC);
+        if (!player || player.ac !== AC) player = makePlayer(AC);     /* built first: the lead below starts after this work, not before */
         player.voices = []; player.keys = {};
+        t0 = AC.currentTime + 0.12;
         result = pianoPhrase(player, notes, t0, spq);
       } catch (e) {     /* the sampler failed part way: what it started is let go, and the synth plays the notes instead */
         try { if (player) silence(player, 0.02); } catch (e2) {}
         result = null;
       }
     }
-    if (!result) result = synthPhrase(AC, notes, t0, spq);
+    if (!result) { t0 = AC.currentTime + 0.12; result = synthPhrase(AC, notes, t0, spq); }
     run.result = result;
     lastRun = { mode: result.mode, voices: result.voices, notes: notes.length, id: id, side: side };
     setBtn(run.btn, '정지', true);
     var ms = (Math.max(it.totalQ * spq + t0, result.end) - AC.currentTime) * 1000 + 300;
-    run.timer = setTimeout(function(){ if (live === run) stopSound(); }, ms);
+    run.timer = setTimeout(function(){ finishSound(run); }, ms);
+  }
+  /* The app's wake / unlock / ping: iOS takes "the page may use sound" only from a silent buffer started inside the tap itself, and
+     playSound runs it before anything is awaited (the recordings decode after this, and the first real note comes later). */
+  function pingAudio(ac){
+    try {
+      var buf = ac.createBuffer(1, 1, ac.sampleRate || 44100), src = ac.createBufferSource();
+      src.buffer = buf; src.connect(ac.destination); src.start(0);
+    } catch (e) {}
+  }
+  function unlockAudio(ac){
+    if (ac.state !== 'running' && ac.resume) {
+      try { var p = ac.resume(); if (p && p.then) p.then(function(){ pingAudio(ac); }, function(){}); } catch (e) {}
+    }
+    pingAudio(ac);
   }
   function playSound(id, side, btn, speed){
     if (live && live.btn === btn) { stopSound(); return; }
     stopSound();
     var Ctor = window.AudioContext || window.webkitAudioContext;
     if (!Ctor) { alert('이 브라우저는 소리 재생(Web Audio)을 지원하지 않습니다.'); return; }
-    if (!AC) { try { AC = new Ctor(); } catch (e) { alert('이 브라우저는 소리 재생(Web Audio)을 지원하지 않습니다.'); return; } }
-    if (AC.state === 'suspended') { try { AC.resume(); } catch (e) {} }
+    if (!AC || AC.state === 'closed') {
+      try { AC = new Ctor({ latencyHint: 'interactive' }); } catch (e) { try { AC = new Ctor(); } catch (e2) { AC = null; alert('이 브라우저는 소리 재생(Web Audio)을 지원하지 않습니다.'); return; } }
+    }
+    unlockAudio(AC);     /* synchronously, in the tap: before the decode below */
     var run = { btn: btn, timer: null, result: null };
     live = run;
     setBtn(btn, samples.done ? '정지' : '소리 불러오는 중...', true);
@@ -480,6 +505,9 @@ const INTRO = {
   h8: '<p>문항마다 같은 곡의 피아노 편곡 두 개, <b>X</b>와 <b>Y</b>가 나옵니다. 둘 다 같은 난이도로 요청했습니다 (어느 쪽도 정확히 그 난이도가 되리라는 보장은 없습니다). 악보를 읽고 <b>재생</b>을 눌러 들어본 뒤, 어느 편곡이 더 나은지 고르고 각각의 문제점을 체크해 주세요. 어느 쪽이 X이고 어느 쪽이 Y인지는 알려주지 않으며 문항마다 바뀝니다. 소리는 악보와 같은 음을 PPP 앱의 피아노 소리(녹음된 그랜드 피아노)로 들려주는 것입니다. 처음 재생할 때는 소리를 불러오느라 잠깐 걸릴 수 있습니다. 페달과 강약 표현은 넣지 않고 모든 음을 같은 세기로 치니, 음색이 아니라 음 자체를 판단해 주세요.</p>',
   h9: '<p>문항마다 같은 곡의 피아노 편곡 두 개, <b>X</b>와 <b>Y</b>가 나옵니다. 둘 다 같은 난이도로 요청했습니다 (어느 쪽도 정확히 그 난이도가 되리라는 보장은 없습니다). 악보를 읽고 <b>재생</b>을 눌러 들어본 뒤, 각 편곡을 <b>통과</b>(그 수준의 학생에게 지금 그대로 줄 수 있음) 또는 <b>실패</b>로 표시해 주세요. 어느 쪽이 X이고 어느 쪽이 Y인지는 알려주지 않으며 문항마다 바뀝니다. 소리는 악보와 같은 음을 PPP 앱의 피아노 소리(녹음된 그랜드 피아노)로 들려주는 것입니다. 처음 재생할 때는 소리를 불러오느라 잠깐 걸릴 수 있습니다. 페달과 강약 표현은 넣지 않고 모든 음을 같은 세기로 치니, 음색이 아니라 음 자체를 판단해 주세요.</p>'
 };
+/* CC BY 3.0 asks for credit: the piano recordings (wording of audio/piano/README.md; no link, the page carries no URL) */
+const CREDIT = '<footer class="credit"><p>피아노 소리: Salamander Grand Piano V3, Alexander Holm 녹음 (Yamaha C5), CC BY 3.0 (Creative Commons Attribution 3.0) 라이선스. PPP 앱과 같은 녹음입니다.</p>' +
+  '<p lang="en">Piano sound: Salamander Grand Piano V3 by Alexander Holm (a Yamaha C5), licensed under CC BY 3.0 (Creative Commons Attribution 3.0). The same recordings the PPP app uses.</p></footer>';
 const TITLE = { h8: '블라인드 검토 H-8 (진단)', h9: '블라인드 검토 H-9 (통과 / 실패)' };
 
 /* data: { mode, packetId, samples: [30 base64 mp3 strings, embedded once; see build.js readPianoSamples], items: [{id, title, composer, targetLevel, handProfile, measures, tempo, totalQ, X:{svg,svgNarrow,notes}, Y:{svg,svgNarrow,notes}}] } */
@@ -495,7 +523,7 @@ function pageHtml(data) {
     '<p>평가는 하는 대로 이 브라우저에 저장되므로, 페이지를 닫았다가 같은 컴퓨터에서 다시 열어 이어서 할 수 있습니다. 다 끝나면 <b>평가 내려받기 (JSON)</b>를 눌러 그 파일을 보내 주세요. 어디에도 업로드되지 않습니다.</p>' +
     '<label for="role">역할 (예: "피아니스트", "선생님"; 이름은 적지 마세요)<input type="text" id="role" autocomplete="off"></label>' +
     '<details><summary>평가를 텍스트로 보기 (내려받기가 막혔을 때 여기서 복사하세요)</summary><textarea id="export-json" readonly></textarea></details></section>\n' +
-    data.items.map(i => itemCard(mode, i)).join('\n') + '\n</main>\n' +
+    data.items.map(i => itemCard(mode, i)).join('\n') + '\n' + CREDIT + '\n</main>\n' +
     (data.samples && data.samples.length ? '<script id="piano-samples" type="application/json">' + scriptJson(data.samples) + '</script>\n' : '') +
     '<script id="packet-data" type="application/json">' + scriptJson(payload) + '</script>\n<script>' + JS + '</script>\n</body></html>\n';
 }

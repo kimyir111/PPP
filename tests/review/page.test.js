@@ -315,6 +315,88 @@ test('as an Artifact-style fragment (no doctype, html, head or body tags) with e
   await page.close();
 });
 
+/* a spy for the audio calls, installed before the page's own script runs */
+const SPY = function () {
+  window.__log = []; window.__gainHolds = 0; window.__srcStarts = [];
+  const log = (...a) => window.__log.push(a.join(':'));
+  const AC0 = window.AudioContext;
+  window.AudioContext = class extends AC0 {
+    constructor(...a) { super(...a); log('ctor'); }
+    resume() { log('resume'); return super.resume(); }
+    createBufferSource() {
+      const src = super.createBufferSource(), start = src.start.bind(src), ctx = this;
+      src.start = function (when, off) { log('start', src.buffer ? src.buffer.length : 'none'); window.__srcStarts.push({ len: src.buffer ? src.buffer.length : 0, when: when, at: ctx.currentTime }); return start.apply(null, arguments); };
+      return src;
+    }
+    createConvolver() { const c = super.createConvolver(); const t = performance.now(); while (performance.now() - t < 150); window.__convolverDoneAt = this.currentTime; log('player-built'); return c; }
+  };
+  const dec = OfflineAudioContext.prototype.decodeAudioData;
+  OfflineAudioContext.prototype.decodeAudioData = function () { const p = dec.apply(this, arguments); p.then(() => log('decode-done'), () => {}); return p; };
+  const hold = AudioParam.prototype.cancelAndHoldAtTime;
+  if (hold) AudioParam.prototype.cancelAndHoldAtTime = function () { window.__gainHolds++; return hold.apply(this, arguments); };
+};
+
+test('iOS unlock: the AudioContext is created and a silent buffer is started synchronously inside the tap, before the recordings decode', { skip }, async () => {
+  const { page, errors } = await open({ init: SPY });
+  const sync = await page.evaluate(() => { document.querySelector('article[data-item="i01"] button[data-play="X"]').click(); return window.__log.slice(); });
+  assert.ok(sync.includes('ctor'), 'the context was made in the tap: ' + JSON.stringify(sync));
+  assert.ok(sync.includes('start:1'), 'a one-frame silent buffer was started in the tap: ' + JSON.stringify(sync));
+  assert.ok(sync.indexOf('ctor') < sync.indexOf('start:1'));
+  assert.ok(!sync.includes('decode-done') && !sync.includes('player-built'), 'nothing of the decode or the player had happened yet');
+  await waitText(page, PLAY('i01'), '정지');
+  const all = await page.evaluate(() => window.__log.slice());
+  assert.ok(all.indexOf('decode-done') > all.indexOf('start:1'), 'the decode finished after the unlock: ' + JSON.stringify(all));
+  assert.equal(all.filter(x => x === 'ctor').length, 1);
+  /* a second press reuses the context and unlocks again in its own tap */
+  await page.click(PLAY('i01'));
+  const again = await page.evaluate(() => { const n0 = window.__log.length; document.querySelector('article[data-item="i01"] button[data-play="X"]').click(); return window.__log.slice(n0); });
+  assert.ok(again.includes('start:1') && !again.includes('ctor'));
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('the lead before the first note is taken after the player and decode are ready (a slow player build cannot make the first chord late)', { skip }, async () => {
+  const { page, errors } = await open({ init: SPY });
+  await page.click(PLAY('i01')); await waitText(page, PLAY('i01'), '정지');
+  const r = await page.evaluate(() => ({ built: window.__convolverDoneAt, real: window.__srcStarts.filter(s => s.len > 1000) }));
+  assert.ok(r.real.length > 20, 'the notes were started');
+  const first = Math.min(...r.real.map(s => s.when));
+  assert.ok(first >= r.built + 0.119, 'first note at ' + first + ' is at least 0.12 s after the player was built at ' + r.built);
+  r.real.forEach(s => assert.ok(s.when >= s.at, 'no note is started in the past'));
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('a phrase that plays to its end is not cut by a final silence (the last high notes ring out their damper release); Stop still silences', { skip }, async () => {
+  const { page, errors } = await open({ init: '(' + SPY.toString() + ')();' +
+    /* only the long end-of-phrase timer is hurried, so the natural end can be seen */
+    'window.__st = window.setTimeout; window.setTimeout = function (f, ms) { return window.__st.call(window, f, ms > 2000 ? 300 : ms); };' });
+  await page.click(PLAY('i01')); await waitText(page, PLAY('i01'), '정지');
+  const scheduled = await page.evaluate(() => window.__gainHolds);
+  assert.ok(scheduled >= await page.evaluate(() => window.__pppReview.sound.lastRun().voices), 'at least one damper release per note while scheduling (a re-struck key also stops its old string)');
+  await waitText(page, PLAY('i01'), '재생');
+  assert.equal(await page.evaluate(() => window.__gainHolds), scheduled, 'the natural end released nothing more: no silence() cut the tail');
+  assert.equal(await page.$eval(PLAY('i01'), e => e.getAttribute('aria-pressed')), 'false');
+  /* pressing Stop during a play does call silence (the spy sees the extra releases) */
+  await page.evaluate(() => { window.setTimeout = function () { return 0; }; });
+  await page.click(PLAY('i01')); await waitText(page, PLAY('i01'), '정지');
+  await new Promise(r => setTimeout(r, 1500));     /* some notes are sounding by now */
+  const before = await page.evaluate(() => window.__gainHolds);
+  await page.click(PLAY('i01'));
+  assert.ok(await page.evaluate(() => window.__gainHolds) > before, 'Stop released the sounding voices');
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('the page credits the piano recordings (CC BY 3.0) in Korean and English at the bottom, with no link', { skip }, async () => {
+  const { page } = await open();
+  const r = await page.evaluate(() => { const f = document.querySelector('footer.credit'); return { text: f.innerText, last: f === document.querySelector('main').lastElementChild, english: !!f.querySelector('[lang="en"]') }; });
+  assert.ok(r.last, 'the credit is the last thing on the page');
+  assert.ok(/피아노 소리/.test(r.text) && /Salamander/.test(r.text) && /Alexander Holm/.test(r.text) && /CC BY 3\.0/.test(r.text) && /Piano sound/.test(r.text) && r.english);
+  assert.ok(!/https?:|\/\//.test(r.text));
+  await page.close();
+});
+
 test('with storage refused the page still works (it just does not remember)', { skip }, async () => {
   const { page, errors } = await open({ noStorage: true });
   await page.click('input[name="pref-i01"][value="X"]');
