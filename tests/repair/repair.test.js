@@ -370,7 +370,7 @@ test('clash guard: a harsh pair (minor second, major seventh, minor ninth) is a 
 test('clash guard on the real case: christ-arose at profile small, repair used to move D3 to D4 beside C4 (a left-hand second that was 0); now it is rolled back', async () => {
   const g = await H.graphOf('catalog/hymns/christ-arose.musicxml'), sg = SGG.analyze(g);
   const req = { targetLevel: 2.76, handProfile: 'small', sections: 'all' };
-  const sel = CAND.run(g, sg, req, {});
+  const sel = CAND.run(g, sg, req, { last: { handChords: false } }); /* the candidate as it was before the hand-chords pass (docs/GOALS/G09 "post user review 4"): this test is about the older guard */
   assert.ok(sel.ok);
   assert.equal(VC.verticalClash(sel.selected.graph).seconds, 0, 'before repair: no second');
   const off = REP.repairSelection(sel, g, sg, req, { clashGuard: false });
@@ -381,4 +381,45 @@ test('clash guard on the real case: christ-arose at profile small, repair used t
   assert.ok(on.report.units.some(u => !u.ok && u.reasons.includes('SECOND_UP')), 'the second-creating unit is in the report as rolled back');
   const again = REP.repair(on.graph, on.ctx, {});
   assert.equal(again.graph, on.graph, 'idempotent');
+});
+
+/* ---- G9 source-copied hand chords (docs/GOALS/G09 section 12 "post user review 4"): repair may not bring a removed chord back ---- */
+test('hand-chords guard on the real case (opt-in model both): god-rest-ye-merry, a candidate that went through the pass: repair writes no violating chord, and without the guard it writes two', async () => {
+  const g = await H.graphOf('catalog/hymns/god-rest-ye-merry.musicxml');
+  const sg = SGG.analyze(g);
+  const req = { targetLevel: 2.87, handProfile: 'large', sections: 'all' };
+  const sel = CAND.run(g, sg, req, { last: { handChordsModel: 'both' } });
+  assert.ok(sel.ok && sel.selected.report.handChords && sel.selected.report.handChords.active, 'fixture: the selected candidate came out of the pass');
+  const before = VC.violationKeys(sel.selected.graph);
+  const grew = rr => { const after = VC.violationKeys(rr.graph); let n = 0; after.forEach(k => { if (!before.has(k) && k.indexOf('cross:') !== 0) n++; }); return n; };
+  const guarded = REP.repairSelection(sel, g, sg, req, {});
+  assert.equal(grew(guarded), 0, 'no violating chord is new');
+  assert.ok(guarded.report.units.some(u => !u.ok && (u.reasons || []).indexOf('HAND_CHORD_UP') >= 0), 'the guard refused the edits that would have written one');
+  const loose = REP.repairSelection(sel, g, sg, req, { handChordsGuard: false });
+  assert.ok(grew(loose) >= 1, 'the fixture is real: without the guard repair writes a violating chord (' + grew(loose) + ')');
+  const again = REP.repairSelection(sel, g, sg, req, {});
+  assert.equal(SER.fingerprint(again.graph), SER.fingerprint(guarded.graph), 'deterministic');
+});
+
+test('hand-chords guard with the default model watches the hands as written and cross-hand seconds only: repair adds none of either on the hymns', async () => {
+  for (const [file, lvl] of [['catalog/hymns/god-rest-ye-merry.musicxml', 2.87], ['catalog/hymns/pass-me-not.musicxml', 3.87], ['catalog/hymns/christ-arose.musicxml', 2.76]]) {
+    const g = await H.graphOf(file);
+    const sg = SGG.analyze(g);
+    const req = { targetLevel: lvl, handProfile: 'large', sections: 'all' };
+    const sel = CAND.run(g, sg, req, {});
+    assert.ok(sel.ok && sel.selected.report.handChords.model === 'limbSeconds');
+    const before = VC.violationKeys(sel.selected.graph);
+    const rr = REP.repairSelection(sel, g, sg, req, {});
+    VC.violationKeys(rr.graph).forEach(k => { if (k.indexOf('pitch:') !== 0) assert.ok(before.has(k), file + ': a new violating chord ' + k); });
+  }
+});
+
+test('hand-chords guard is only for candidates that went through the pass: a candidate made with the pass off keeps the old behaviour', async () => {
+  const g = await H.graphOf('catalog/hymns/god-rest-ye-merry.musicxml');
+  const sg = SGG.analyze(g);
+  const req = { targetLevel: 2.87, handProfile: 'large', sections: 'all' };
+  const sel = CAND.run(g, sg, req, { last: { handChords: false } });
+  assert.ok(sel.ok && !sel.selected.report.handChords);
+  const rr = REP.repairSelection(sel, g, sg, req, {});
+  assert.ok(!rr.report.units.some(u => (u.reasons || []).indexOf('HAND_CHORD_UP') >= 0), 'the new reason never appears');
 });

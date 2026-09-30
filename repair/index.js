@@ -18,6 +18,9 @@
                    note below middle C moving an octave or more between consecutive onsets) that was not there (`LEFT_HAND_JUMP`)
      clashGuard    default on; `false` turns it off: a repair may not create a one-hand simultaneous second, a one-hand span of an octave or more (stages <= 3) or a
                    harsh vertical pair (minor second, major seventh, minor ninth) that was not there (`SECOND_UP`, `OCTAVE_CHORD_UP`, `HARSH_PAIR_UP`)
+     handChordsGuard  (set by repairSelection for a candidate that went through realize()'s handChords pass; `opts.handChordsGuard: false` turns it off) a repair may not
+                   write a violating chord (in the groupings the pass searched: the hands as written, seconds between the two hands' notes, or the pitch grouping around middle C) that the
+                   graph did not have (`HAND_CHORD_UP`); `clashStage` is then the plan's stage, for the two guards above
      harmony       the ORIGINAL piece's `sg.harmony`: what per-measure harmony agreement is scored
                    against (default: the input graph's own harmony, i.e. "do not change the reading")
    opts
@@ -259,8 +262,16 @@
     if (ctx.clashGuard !== false) {
       const created = VCL.newClashes(cur, res.graph);
       const reasons = [];
-      if (ctx.stage != null && ctx.stage <= TH.NO_SECONDS_MAX_STAGE) { if (created.seconds > 0) reasons.push('SECOND_UP'); if (created.octave > 0) reasons.push('OCTAVE_CHORD_UP'); }
+      const clashStage = ctx.clashStage != null ? ctx.clashStage : ctx.stage;
+      if (clashStage != null && clashStage <= TH.NO_SECONDS_MAX_STAGE) { if (created.seconds > 0) reasons.push('SECOND_UP'); if (created.octave > 0) reasons.push('OCTAVE_CHORD_UP'); }
       if (created.harsh > 0) reasons.push('HARSH_PAIR_UP');
+      /* G9 source-copied hand chords (docs/GOALS/G09 section 12 "post user review 4"): when the candidate came out of realize()'s `handChords` pass (repairSelection sets
+         ctx.handChordsGuard), a repair may not write ANY violating chord the graph did not have, in either grouping (the hands as written and the pitch grouping around
+         middle C), by identity (an edit that clears one chord and makes another is refused) */
+      if (ctx.handChordsGuard && !reasons.length) {
+        const nv = VCL.newViolations(cur, res.graph);
+        if ((ctx.handChordsKinds || ['limb', 'pitch']).some(k => nv[k] > 0)) reasons.push('HAND_CHORD_UP');
+      }
       if (reasons.length) return { ok: false, reasons: reasons };
     }
     const fp = PC.fingerprint(res.graph);
@@ -385,6 +396,15 @@
       stage: REF.stageForPosition(request.targetLevel, opts.reference), reference: opts.reference,
       origMelody: METRICS.originalMelodyNotes(g, sel.plan), harmony: sg.harmony, registerFloor: opts.registerFloor, leftHandJumpGuard: opts.leftHandJumpGuard, clashGuard: opts.clashGuard
     };
+    /* the candidate came out of the hand-chords pass (candidates/ turns it on): repair may not bring a violating chord back (ctx.handChordsGuard), at the plan's
+       stage (the pass ran at plan.stage, which can be below the request's stage when the candidate was planned at a lower offset) */
+    if (sel.report && sel.report.handChords && sel.report.handChords.active && opts.handChordsGuard !== false) {
+      ctx.handChordsGuard = true;
+      /* which groupings the pass searched (realize/handchords.js MODEL_RULES): the guard watches the same ones */
+      const rules = { limb: ['limb'], limbSeconds: ['limb', 'cross'], pitch: ['pitch'], both: ['limb', 'pitch'] };
+      ctx.handChordsKinds = rules[sel.report.handChords.model] || ['limb', 'cross'];
+      ctx.clashStage = sel.plan && sel.plan.stage != null ? Math.min(ctx.stage, sel.plan.stage) : ctx.stage;
+    }
     const r = repair(sel.graph, ctx, opts);
     return Object.assign({ ok: true, ctx: ctx }, r);
   }

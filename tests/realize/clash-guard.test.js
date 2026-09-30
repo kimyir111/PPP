@@ -266,7 +266,7 @@ test('hymn thinning is off by default for a direct call (a verbatim copy stays v
   const sel = CAND.run(f.g, f.sg, { targetLevel: 2.76, handProfile: 'large', sections: 'all' }, { patterns: ['hymn'], n: 1, levelOffsets: [0], topKForEngrave: 1 });
   assert.ok(sel.ok);
   assert.equal(VC.verticalClash(sel.selected.graph).octaveChordsLH, 0);
-  const keep = CAND.run(f.g, f.sg, { targetLevel: 2.76, handProfile: 'large', sections: 'all' }, { patterns: ['hymn'], n: 1, levelOffsets: [0], topKForEngrave: 1, last: { hymnThin: false } });
+  const keep = CAND.run(f.g, f.sg, { targetLevel: 2.76, handProfile: 'large', sections: 'all' }, { patterns: ['hymn'], n: 1, levelOffsets: [0], topKForEngrave: 1, last: { hymnThin: false, handChords: false } }); /* the hand-chords pass would also thin the copy (docs/GOALS/G09 post user review 4) */
   assert.equal(keep.ok, false, 'opts.last.hymnThin:false keeps the verbatim copy, which has G5 hard violations (span) at profile large: no survivor');
   assert.equal(keep.reason, 'ALL_CANDIDATES_HAVE_HARD_VIOLATIONS');
   assert.equal(keep.discarded[0].scores.hard.hard, 3);
