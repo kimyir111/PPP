@@ -123,6 +123,23 @@ function melodyPreservation(originalNotes, candidateNotes, tolQ) {
   return matched / originalNotes.length;
 }
 
+/* melody TOP-LINE preservation (report only; G9 single-note hands, docs/GOALS/G09 section 12): the share of the original melody's onsets whose TOP head is still
+   sounded (same pitch, onset within tolQ). `melodyPreservation` above counts every head of a melody voice written in chords, so it falls when an arrangement keeps
+   the tune and drops the chord notes under it (czerny599/010 1.000 to 0.357 with one note per hand); this one is the tune alone. null when there is no melody. */
+function melodyTopLine(originalNotes, candidateNotes, tolQ) {
+  tolQ = tolQ == null ? 0.15 : tolQ;
+  if (!originalNotes.length) return null;
+  const tops = [];
+  originalNotes.slice().sort((a, b) => a.onsetQ - b.onsetQ).forEach(o => {
+    const last = tops[tops.length - 1];
+    if (last && Math.abs(last.onsetQ - o.onsetQ) <= 1e-6) { if (o.midi > last.midi) last.midi = o.midi; }
+    else tops.push({ onsetQ: o.onsetQ, midi: o.midi });
+  });
+  let matched = 0;
+  tops.forEach(o => { if (candidateNotes.some(c => c.midi === o.midi && Math.abs(c.onsetQ - o.onsetQ) <= tolQ)) matched++; });
+  return matched / tops.length;
+}
+
 /* ---- 4. harmony agreement against the ORIGINAL piece's own sg.harmony (same windows,
    since a legitimate candidate preserves the original meter/measures - checked, not
    assumed: window count mismatch is reported as 0 agreement over the shorter length,
@@ -149,6 +166,6 @@ function engraveMetrics(graph, id) {
 
 module.exports = {
   hardViolationsOfGraph, hardViolationsOfAudioNotes, levelOfGraph,
-  graphNoteList, legacyNoteList, audioNoteList, originalMelodyNotes, melodyPreservation,
+  graphNoteList, legacyNoteList, audioNoteList, originalMelodyNotes, melodyPreservation, melodyTopLine,
   harmonyAgreement, engraveMetrics
 };

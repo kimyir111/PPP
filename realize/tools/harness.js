@@ -149,7 +149,7 @@ async function runFile(rel, opts) {
   if (opts.g9a) {
     const request = { targetLevel: found.targetLevel, handProfile: found.profile, sections: 'all' };
     const t1 = Date.now();
-    const enumerated = CAND.enumerate(g, sg, request, { n: opts.g9aN, levelOffsets: opts.levelOffsets, reference: opts.reference, registerFloor: opts.registerFloor, stride: opts.stride, patterns: opts.patterns, allowStride: opts.allowStride, last: opts.last });
+    const enumerated = CAND.enumerate(g, sg, request, { n: opts.g9aN, levelOffsets: opts.levelOffsets, reference: opts.reference, registerFloor: opts.registerFloor, stride: opts.stride, patterns: opts.patterns, allowStride: opts.allowStride, singleNoteHands: opts.singleNoteHands, last: opts.last });
     const cheapScored = CAND.scoreCandidates(enumerated.candidates, g, sg, request, { reference: opts.reference, skipEngrave: true, registerFloor: opts.registerFloor });
     const engraveCache = new Map(); /* real engrave results are reused by the ablation re-selections below (the gate never mutates cheapScored) */
     /* `opts.weights` (--weights k=v,...): selection weights overriding CAND.DEFAULT_WEIGHTS for the g9a row AND
@@ -169,7 +169,7 @@ async function runFile(rel, opts) {
       /* the realizer's hand-chords pass (realize/handchords.js) on the selected candidate: notes removed, chords fixed, chords left (unfixable) */
       const hcr = sel.selected.report && sel.selected.report.handChords;
       row.g9aHandChords = hcr ? { active: hcr.active, notes: hcr.notes, removedNotes: hcr.removedNotes, removedChains: hcr.removedChains, eventsToRests: hcr.eventsToRests,
-        violationsBefore: hcr.violationsBefore, violationsAfter: hcr.violationsAfter, unfixable: hcr.unfixable, unfixableSeconds: hcr.unfixableSeconds, unfixableOctave: hcr.unfixableOctave, unfixableLimb: hcr.unfixableLimb, unfixablePitch: hcr.unfixablePitch, unfixableCross: hcr.unfixableCross, model: hcr.model } : null;
+        violationsBefore: hcr.violationsBefore, violationsAfter: hcr.violationsAfter, unfixable: hcr.unfixable, unfixableSeconds: hcr.unfixableSeconds, unfixableOctave: hcr.unfixableOctave, unfixableLimb: hcr.unfixableLimb, unfixablePitch: hcr.unfixablePitch, unfixableCross: hcr.unfixableCross, model: hcr.model, maxNotes: hcr.maxNotes || null, handMaxNotes: hcr.handMaxNotes == null ? null : hcr.handMaxNotes } : null;
       row.g9a = scoreGraphCandidate(sel.selected.graph, rel + ':g9a', found.profile, found.targetLevel, sg.harmony, origMelody, sourceNotes);
     }
     /* ---- G9b repair (docs/GOALS/G09 §5, §12 "G9b - repair"; `--repair`, additive): the graph G9a
@@ -256,6 +256,7 @@ function scoreGraphCandidate(graph, id, profile, target, origHarmony, origMelody
   try { out.hard = M.hardViolationsOfGraph(graph, profile); } catch (e) { out.hardError = String(e && e.message || e); }
   try { out.g6Level = M.levelOfGraph(graph); } catch (e) { out.g6LevelError = String(e && e.message || e); }
   try { out.melody = M.melodyPreservation(origMelody, M.graphNoteList(graph)); } catch (e) { out.melodyError = String(e && e.message || e); }
+  try { out.melodyTopLine = M.melodyTopLine(origMelody, M.graphNoteList(graph)); } catch (e) { out.melodyTopLineError = String(e && e.message || e); } /* report only: the tune's top line, not every chord head */
   try { out.harmony = M.harmonyAgreement(origHarmony, graph); } catch (e) { out.harmonyError = String(e && e.message || e); }
   try { out.engrave = M.engraveMetrics(graph, id); } catch (e) { out.engraveError = String(e && e.message || e); }
   try { out.smells = VLC.voiceLeadingSmells(graph).count; } catch (e) { out.smellsError = String(e && e.message || e); } /* corrected voice-leading count, reported for every engine, never a selection input here */
@@ -338,6 +339,11 @@ function summarizeEntries(ok, get) {
     vclPitchOctaveChordsHigh: entries.reduce((a, e) => a + (e.vcl ? e.vcl.pitchOctaveChordsHigh : 0), 0),
     vclPitchSecondsLow: entries.reduce((a, e) => a + (e.vcl ? e.vcl.pitchSecondsLow : 0), 0),
     vclPitchSecondsHigh: entries.reduce((a, e) => a + (e.vcl ? e.vcl.pitchSecondsHigh : 0), 0),
+    /* G9 single-note hands: onsets at which a hand sounds two or more notes (written hands), and the most at once */
+    vclHandChordsLH: entries.reduce((a, e) => a + (e.vcl ? e.vcl.handChordsLH : 0), 0),
+    vclHandChordsRH: entries.reduce((a, e) => a + (e.vcl ? e.vcl.handChordsRH : 0), 0),
+    vclHandMaxLH: entries.reduce((a, e) => Math.max(a, e.vcl ? e.vcl.handMaxLH : 0), 0),
+    vclHandMaxRH: entries.reduce((a, e) => Math.max(a, e.vcl ? e.vcl.handMaxRH : 0), 0),
     vclCrossSeconds: entries.reduce((a, e) => a + (e.vcl ? e.vcl.crossSeconds : 0), 0),
     vclPitchViolations: entries.reduce((a, e) => a + (e.vcl ? e.vcl.pitchViolations : 0), 0),
     onsetsLH: entries.reduce((a, e) => a + (e.vcl ? e.vcl.onsetsLH : 0), 0),
@@ -348,6 +354,7 @@ function summarizeEntries(ok, get) {
     notesPerOnsetRH: (() => { const o = entries.reduce((a, e) => a + (e.vcl ? e.vcl.onsetsRH : 0), 0); return o ? entries.reduce((a, e) => a + (e.vcl ? e.vcl.notesRH : 0), 0) / o : null; })(),
     totalNotesWritten: entries.reduce((a, e) => a + (e.vcl ? e.vcl.notesLH + e.vcl.notesRH : 0), 0),
     meanMelody: mean(entries.map(e => e.melody)),
+    meanMelodyTopLine: mean(entries.map(e => e.melodyTopLine)),
     meanHarmonyRootQuality: mean(entries.map(e => e.harmony && e.harmony.rootQuality)),
     meanHarmonyRootOnly: mean(entries.map(e => e.harmony && e.harmony.rootOnly)),
     engraveSilentZero: entries.filter(e => e.engrave && e.engrave.silent === 0).length,
@@ -474,8 +481,12 @@ async function main() {
      switches it on in the plain realizer (G8a row; default OFF), --hand-chords-model limb|limbSeconds|pitch|both picks which groups of notes are searched (default limbSeconds) */
   if (flag('--no-hand-chords')) last.handChords = false;
   if (flag('--hand-chords')) last.handChords = true;
+  /* G9 single-note hands (post user review 5): --single-note-hands = candidates `singleNoteHands` (one note per written hand at every stage, the teacher's criterion; default OFF = origin/main);
+     --hand-max-notes <n|off>: at most n notes per written hand at stages <= 3 through opts.last (a measurement switch) */
+  if (flag('--hand-max-notes')) { const v = opt('--hand-max-notes'); last.handMaxNotes = v === 'off' ? null : Number(v); if (last.handMaxNotes !== null && !(Number.isInteger(last.handMaxNotes) && last.handMaxNotes >= 1)) throw new Error('--hand-max-notes: an integer >= 1 or off, got ' + v); }
+  if (flag('--hand-max-notes-max-stage')) last.handMaxNotesMaxStage = Number(opt('--hand-max-notes-max-stage')); /* 4 = also the plan's hardest stage (a counterfactual; default 3) */
   if (flag('--hand-chords-model')) { last.handChordsModel = opt('--hand-chords-model'); if (!['limb', 'limbSeconds', 'pitch', 'both'].includes(last.handChordsModel)) throw new Error('--hand-chords-model: limb, limbSeconds, pitch or both'); }
-  const runOpts = { last: last, allowStride: allowStride, patterns: patterns, stride: stride, registerFloor: registerFloor, weights: weights, pattern: pattern, g9a: g9a, repair: repair, g9aN: g9aN, levelOffsets: levelOffsets, topKForEngrave: topKForEngrave, ablateCritics: ablateCritics };
+  const runOpts = { singleNoteHands: flag('--single-note-hands'), last: last, allowStride: allowStride, patterns: patterns, stride: stride, registerFloor: registerFloor, weights: weights, pattern: pattern, g9a: g9a, repair: repair, g9aN: g9aN, levelOffsets: levelOffsets, topKForEngrave: topKForEngrave, ablateCritics: ablateCritics };
   /* child mode: one file, row written to --row-out (the parent gives each file its own process and a time limit,
      so a legacy engine that never returns on one file is recorded as a timeout instead of stalling the sweep) */
   if (flag('--one')) {

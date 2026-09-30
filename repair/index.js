@@ -269,8 +269,10 @@
          ctx.handChordsGuard), a repair may not write ANY violating chord the graph did not have, in either grouping (the hands as written and the pitch grouping around
          middle C), by identity (an edit that clears one chord and makes another is refused) */
       if (ctx.handChordsGuard && !reasons.length) {
-        const nv = VCL.newViolations(cur, res.graph);
+        const nv = VCL.newViolations(cur, res.graph, ctx.handMaxNotes != null ? { maxNotes: ctx.handMaxNotes } : undefined);
         if ((ctx.handChordsKinds || ['limb', 'pitch']).some(k => nv[k] > 0)) reasons.push('HAND_CHORD_UP');
+        /* single-note hands (G9 post user review 5): a hand may not hold more notes at an onset than the pass allowed (a chord made bigger is a new one) */
+        if (ctx.handMaxNotes != null && nv.multi > 0) reasons.push('HAND_NOTES_UP');
       }
       if (reasons.length) return { ok: false, reasons: reasons };
     }
@@ -403,6 +405,7 @@
       /* which groupings the pass searched (realize/handchords.js MODEL_RULES): the guard watches the same ones */
       const rules = { limb: ['limb'], limbSeconds: ['limb', 'cross'], pitch: ['pitch'], both: ['limb', 'pitch'] };
       ctx.handChordsKinds = rules[sel.report.handChords.model] || ['limb', 'cross'];
+      if (sel.report.handChords.handMaxNotes != null) ctx.handMaxNotes = sel.report.handChords.handMaxNotes;
       ctx.clashStage = sel.plan && sel.plan.stage != null ? Math.min(ctx.stage, sel.plan.stage) : ctx.stage;
     }
     const r = repair(sel.graph, ctx, opts);

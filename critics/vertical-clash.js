@@ -119,6 +119,8 @@
       pitchViolations: 0, pitchViolationsLow: 0, pitchViolationsHigh: 0,
       /* cross-hand seconds: all sounding notes of both hands together hold a second (two noteheads 1-2 semitones apart, whatever side of middle C, whichever hands) */
       crossSeconds: 0,
+      /* one-hand multi-note chords (G9 single-note hands, docs/GOALS/G09 section 12 post user review 5): an onset at which a hand sounds two or more notes (an attack among them), per hand; `handMax` = the most at once */
+      handChords: 0, handChordsLH: 0, handChordsRH: 0, handMaxLH: 0, handMaxRH: 0,
       /* notes written per onset, per hand: an onset is a moment the hand starts at least one note (tie continuations included, as critics/left-hand-thickness.js does) */
       onsetsLH: 0, notesLH: 0, onsetsRH: 0, notesRH: 0, notesPerOnsetLH: 0, notesPerOnsetRH: 0
     };
@@ -140,8 +142,10 @@
       if (harsh) out.harshOnsets++;
       ['LH', 'RH'].forEach(hand => {
         const h = s.sounding.filter(n => n.hand === hand);
+        if (h.length > out['handMax' + hand] && h.some(n => att.has(n))) out['handMax' + hand] = h.length;
         if (h.length < 2 || !h.some(n => att.has(n))) return;
         out.handOnsets++;
+        out.handChords++; out['handChords' + hand]++;
         const m = h.map(n => n.midi).sort((a, b) => a - b);
         if (m[m.length - 1] - m[0] >= OCTAVE_SEMITONES) { out.octaveChords++; out['octaveChords' + hand]++; }
         let second = false;
@@ -185,8 +189,9 @@
 
   /* The violating chords, by identity: a Set of 'limb:LH:<onset>:second' ... 'pitch:low:<onset>:octave' keys (a chord of one group at one onset with a second,
      and/or with a span of an octave or more, for the hands as written and for the pitch grouping). */
-  function violationKeys(g) {
+  function violationKeys(g, vopts) {
     const keys = new Set();
+    const maxNotes = vopts && vopts.maxNotes != null ? vopts.maxNotes : null;
     slices(notesOf(g)).forEach(s => {
       const att = new Set(s.attack);
       const check = (tag, list) => {
@@ -197,6 +202,8 @@
         for (let i = 1; i < m.length; i++) { const d = m[i] - m[i - 1]; if (d > 0 && d <= SECOND_MAX) { keys.add(tag + ':' + t + ':second'); break; }}
       };
       ['LH', 'RH'].forEach(hand => check('limb:' + hand, s.sounding.filter(n => n.hand === hand)));
+      /* a hand holding more than `maxNotes` notes (opts.maxNotes; the key carries the count, so a chord made bigger is a new key) */
+      if (maxNotes != null) ['LH', 'RH'].forEach(hand => { const list = s.sounding.filter(n => n.hand === hand); if (list.length > maxNotes && list.some(n => att.has(n))) keys.add('multi:' + hand + ':' + Math.round(s.t / EPS) + ':' + list.length); });
       ['low', 'high'].forEach(grp => check('pitch:' + grp, s.sounding.filter(n => (n.midi < PITCH_SPLIT) === (grp === 'low'))));
       /* cross: both hands together, seconds only */
       { const all = s.sounding.filter(n => n.hand === 'LH' || n.hand === 'RH');
@@ -210,9 +217,10 @@
 
   /* the violating chords `after` has that `before` did not (exact, by identity, both groupings): { limb, pitch } counts. An edit that clears one chord and makes another
      is 1, not 0 (newClashes above counts the net change). */
-  function newViolations(before, after) {
-    const a = violationKeys(before), b = violationKeys(after);
+  function newViolations(before, after, vopts) {
+    const a = violationKeys(before, vopts), b = violationKeys(after, vopts);
     const out = { limb: 0, pitch: 0, cross: 0 };
+    if (vopts && vopts.maxNotes != null) out.multi = 0;
     b.forEach(k => { if (!a.has(k)) out[k.slice(0, k.indexOf(':'))]++; });
     return out;
   }

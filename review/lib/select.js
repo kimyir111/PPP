@@ -81,8 +81,10 @@ const keyOf = it => it.file + '|' + it.targetLevel.toFixed(2) + '|' + it.handPro
 
 /* `cache`: a Map key -> arrangeItem result, shared by the selection and the build (and by H-9's look at H-8) */
 async function arrangeCached(item, cache) {
-  const k = keyOf(item);
-  if (!cache.has(k)) cache.set(k, await arrangeItem(item));
+  /* `cache.arrangeOpts` (set by build.js for --single-note-hands): options for the G9 arm only; part of the cache key */
+  const ao = cache.arrangeOpts || {};
+  const k = keyOf(item) + (ao.singleNoteHands ? '|single' : '');
+  if (!cache.has(k)) cache.set(k, await arrangeItem(item, ao));
   return cache.get(k);
 }
 
