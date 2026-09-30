@@ -21,10 +21,14 @@
      - "Original transcription" is not arranged; its copy title does not say one note per hand (the suggestion follows the level)
      - the copy is saved under the title the person typed (or the one suggested), on the card and in the score
      - the texture note ("Texture choices don't apply in one-note-per-hand mode") beside the texture control, only when the mode applies (ko/ja/zh in the catalogs)
-     - refusals and failed downloads: an unreachable piece (sonatina/020 and happy-birthday have no plan at any level), option scripts (the candidates
-       one, or another of the fourteen) or reference data that cannot be loaded (also when it is the warm-up that fails: no error, and the next
-       arrangement asks again). Both screens give the STANDARD arrangement instead, with the notice: the Song Arranger saves it as a copy
-       (titled as a standard copy), the review screen shows it, marked in its source; both are what the option-off request gives
+     - formerly refused pieces (G9e refusals): happy-birthday (no plan at any level under the strict search) and sonatina/020 on the review screen are now
+       made one note per hand, marked levelNote 'relaxed-plan', with a sentence that stays on the review screen and is in the success toast (ko/ja/zh in the
+       catalogs); the library card says one-note-per-hand; a piece that needs no relaxation has no such note
+     - refusals and failed downloads: a piece that stays unreachable (czerny849/009), option scripts (the candidates one, or another of the fourteen) or
+       reference data that cannot be loaded (also when it is the warm-up that fails: no error, and the next arrangement asks again). The Song Arranger
+       saves NOTHING behind the person's back: its window stays open with a notice that does not go away and two choices ('Save the standard arrangement',
+       'Cancel'); the standard copy (titled as a standard copy) is saved on the click. The review screen shows the STANDARD arrangement instead, with a
+       notice that stays on the screen, marked in its source; both are what the option-off request gives
 
    The recognition review screen needs a recording and a transcription helper; here the heard notes are injected into the page (made from a hymn's own
    notes), and everything after that - the level and texture pickers, the control, Apply - is the real UI.
@@ -52,6 +56,7 @@ const ok = (name, cond, detail) => {
 const HYMN = n => path.join(REPO, 'catalog', 'hymns', n + '.musicxml');
 const HAPPY = path.join(REPO, 'catalog', 'happy-birthday.musicxml');
 const SONATINA_020 = path.join(REPO, 'catalog', 'method', 'sonatina', '020.mxl');
+const CZERNY_849_009 = path.join(REPO, 'catalog', 'method', 'czerny849', '009.mxl'); /* no plan even relaxed (too fast for the levels): the refusal that stays (G9e refusals) */
 const OPTION_FILES = /\/(critics\/|candidates\/|repair\/|realize\/(ottava|handchords|clefs))|method-books\.json|weights\/g6a/;
 const LEVELS = ['beginner', 'intermediate', 'advanced', 'original'];
 /* a local helper: nothing serves it here, and production has none by design (server.js proxyHelper answers /helper/ with 503) */
@@ -518,57 +523,148 @@ async function identityHashes(browser) {
       await kb.close();
     }
 
+    console.log('\n── formerly refused pieces: now one note per hand, and the screens say when it may be harder than the level ──');
+    /* G9e refusals (docs/GOALS/G09 section 12): a dense piece has no plan under the strict search (a hand's source chords, key count, density, range) although the
+       one-note-per-hand pass would never play them; arrangement/plan.js relax 2 plans it, and the result says it may be harder than the level that was chosen */
+    const NOTE_HARD = 'This piece has many notes, so the arrangement may be a little harder than the level you chose.';
+    {
+      const hp = await openPage(browser);
+      const hid = await addSong(hp, HAPPY);
+      const h1 = await overlayArrange(hp, hid, 'intermediate', 'balanced');
+      const hcard = h1.saved ? await hp.evaluate(i => { const s = window.PPP.app.libraryRead().songs.find(x => x.id === i); return { title: s.title, composer: s.composer, arr: s.arrangement }; }, h1.id) : null;
+      ok('Song Arranger, happy-birthday (it had no plan at any level): saved as a one-note-per-hand arrangement, marked as planned by the relaxed pass, no fallback',
+        h1.saved && h1.slot.importSource.arrangement.engine === 'ppp.g9-single' && h1.slot.importSource.arrangement.levelNote === 'relaxed-plan' && !h1.slot.importSource.arrangement.singleFallback && h1.slot.importSource.provider === 'PPP one-note-per-hand arranger', h1.saved ? JSON.stringify(h1.slot.importSource.arrangement) : h1.status);
+      ok('its library card says one-note-per-hand, not "Balanced piano arrangement" (title and composer line)', !!hcard && /one-note-per-hand arrangement$/.test(hcard.title) && !/Balanced piano/.test(hcard.title + ' ' + hcard.composer) && /PPP one-note-per-hand arrangement/.test(hcard.composer), JSON.stringify(hcard));
+      ok('the toast carries the harder-than-chosen sentence after the saved message', h1.saved && h1.toast.indexOf('Saved ') === 0 && h1.toast.indexOf(NOTE_HARD) > 0, h1.toast);
+      ok('no hand starts two notes, both hands are used', h1.saved && h1.attacks.perAttack.filter(n => n > 1).length === 0 && h1.attacks.hands === 'lr' && h1.attacks.notes > 20, h1.saved ? JSON.stringify({ hands: h1.attacks.hands, notes: h1.attacks.notes }) : '');
+      ok('no page or console error', hp.__rec.pageErrors.length === 0 && hp.__rec.consoleErrors.length === 0, JSON.stringify(hp.__rec.pageErrors.concat(hp.__rec.consoleErrors)));
+      await hp.close();
+      ok('a piece that needs no relaxation (the four hymns above) has no such note, in its source or its toast', Object.keys(made).every(k => made[k].saved && !made[k].slot.importSource.arrangement.levelNote && !/harder than the level/.test(made[k].toast)), Object.keys(made).map(k => made[k].toast).join(' | '));
+
+      /* the review screen: sonatina/020 (refused there before) is made, and the note stays on the screen, under the controls, like the fallback notice */
+      const sr = await openPage(browser);
+      await loadReview(sr, SONATINA_020, 'sonatina 020');
+      await sleep(600);
+      const sa = await reviewApply(sr, 'advanced', 'balanced');
+      ok('review screen, sonatina/020 (refused there before): one note per hand, marked with the relaxed pass, no fallback', sa.arrangement.engine === 'ppp.g9-single' && sa.arrangement.levelNote === 'relaxed-plan' && !sa.arrangement.singleFallback && sa.perAttack.filter(n => n > 1).length === 0 && sa.hands === 'lr', JSON.stringify(sa.arrangement));
+      ok('the note is on the screen under the controls (persistent), and in the success message', sa.status === NOTE_HARD && (await sr.evaluate(() => document.querySelector('[data-arrangement]').innerText.indexOf('may be a little harder than the level you chose') > -1)) && sa.toast.indexOf(NOTE_HARD) > 0, JSON.stringify({ status: sa.status, toast: sa.toast }));
+      await sleep(4000);
+      ok('and still there after the message has gone', await sr.evaluate(() => document.querySelector('[data-arrangement]').innerText.indexOf('may be a little harder than the level you chose') > -1));
+      await loadReview(sr, HYMN('christ-arose'), 'christ-arose');
+      const ca = await reviewApply(sr, 'intermediate', 'balanced');
+      ok('a piece that needs no relaxation has no note (christ-arose)', ca.arrangement.engine === 'ppp.g9-single' && !ca.arrangement.levelNote && ca.status === '' && !/harder than the level/.test(ca.toast), JSON.stringify({ arr: ca.arrangement, status: ca.status }));
+      ok('no page or console error', sr.__rec.pageErrors.length === 0 && sr.__rec.consoleErrors.length === 0, JSON.stringify(sr.__rec.pageErrors.concat(sr.__rec.consoleErrors)));
+      await sr.close();
+      const ck = await openPage(browser, { locale: 'ko-KR' });
+      const koCat = JSON.parse(fs.readFileSync(path.join(REPO, 'i18n', 'ko-KR.json'), 'utf8')).content;
+      await loadReview(ck, SONATINA_020, 'sonatina 020');
+      const ka = await reviewApply(ck, 'advanced', 'balanced');
+      ok('in Korean the note is the catalog\'s sentence', ka.status === koCat[NOTE_HARD] && /음이 많아/.test(ka.status), ka.status);
+      await ck.close();
+      const cats = {};
+      for (const loc of ['ko-KR', 'ja-JP', 'zh-CN']) cats[loc] = JSON.parse(fs.readFileSync(path.join(REPO, 'i18n', loc + '.json'), 'utf8')).content;
+      const KEYS2 = [NOTE_HARD, 'Save the standard arrangement', 'This piece could not be made in one-note-per-hand mode, so nothing was saved. You can save the standard arrangement instead, in which a hand may play two or more notes at once.'];
+      ok('the three new sentences are in the ko, ja and zh catalogs, translated', Object.keys(cats).every(l => KEYS2.every(k => typeof cats[l][k] === 'string' && cats[l][k].length > 4 && cats[l][k] !== k)), JSON.stringify(Object.keys(cats).map(l => KEYS2.map(k => !!cats[l][k]))));
+    }
+
     console.log('\n── refusals ──');
-    /* the Song Arranger is not a dead end: a piece the option cannot make is saved as the STANDARD arrangement (what the chip off makes), with the notice */
+    /* G9e refusals: the Song Arranger does NOT save the standard arrangement behind the person's back. A piece the option still cannot make (czerny849/009 has no plan
+       even relaxed; or scripts that did not load) leaves the window open with a notice that stays, and two choices; the standard copy is saved only on the click */
     const fp = await openPage(browser);
-    const fid = await addSong(fp, SONATINA_020);
+    const fid = await addSong(fp, CZERNY_849_009);
     const keysBefore = await songKeys(fp);
     const fr = await overlayArrange(fp, fid, 'intermediate', 'balanced');
-    ok('Song Arranger, an unreachable piece (sonatina/020): the standard arrangement is saved as a copy, marked (singleFallback), never labelled one-note-per-hand',
-      fr.saved && fr.slot.importSource.arrangement.singleFallback === 'UNREACHABLE' && fr.slot.importSource.arrangement.engine !== 'ppp.g9-single' && fr.slot.importSource.provider !== 'PPP one-note-per-hand arranger' && (await songKeys(fp)).length === keysBefore.length + 1, fr.saved ? JSON.stringify(fr.slot.importSource.arrangement) : fr.status);
-    ok('its title is a standard copy\'s, not the suggested one-note-per-hand one, and the notice says what happened', fr.saved && /one-note-per-hand/.test(fr.inputTitle) && !/one-note-per-hand arrangement$/.test(fr.cardTitle) && fr.cardTitle === fr.scoreTitle && /so the standard arrangement was saved/.test(fr.toast), JSON.stringify({ input: fr.inputTitle, card: fr.cardTitle, toast: fr.toast }));
+    const refusal = () => fp.evaluate(() => {
+      const b = document.querySelector('[data-single-refusal]');
+      if (!b) return null;
+      const r = b.getBoundingClientRect(), save = b.querySelector('[data-single-refusal-save]'), cancel = b.querySelector('[data-single-refusal-cancel]');
+      return { text: b.innerText, role: b.getAttribute('role'), visible: r.width > 0 && r.height > 0, save: save && save.innerText.trim(), cancel: cancel && cancel.innerText.trim(), saveVisible: !!save && save.getBoundingClientRect().height > 0 };
+    });
+    const box1 = await refusal();
+    ok('Song Arranger, a piece that stays refused (czerny849/009): nothing is saved, the window stays open, with the notice and the two choices',
+      !fr.saved && fr.open && !!box1 && box1.visible && box1.role === 'alert' && box1.saveVisible && box1.save === 'Save the standard arrangement' && box1.cancel === 'Cancel' && /could not be made in one-note-per-hand mode, so nothing was saved/.test(box1.text) && (await songKeys(fp)).length === keysBefore.length,
+      JSON.stringify({ saved: fr.saved, open: fr.open, box: box1, keys: (await songKeys(fp)).length - keysBefore.length }));
+    await sleep(4500); /* the toast lasts 2.8 s */
+    ok('the notice does not go away by itself (there 4.5 s later, after every toast)', !!(await refusal()));
+    await fp.select('[data-song-arrange-level]', 'beginner'); await sleep(250);
+    ok('changing the level clears it (the request it was about is gone)', (await refusal()) === null);
+    await fp.click('[data-create-song-arrangement]');
+    await fp.waitForSelector('[data-single-refusal]', { timeout: 90000 });
+    await fp.click('[data-song-arranger] [data-single-note-option]'); await sleep(250);
+    ok('turning the chip off clears it too (the notice was about that mode)', (await refusal()) === null && (await fp.evaluate(() => window.PPP.arranger)) === 'legacy');
+    await fp.click('[data-song-arranger] [data-single-note-option]'); await sleep(250);
+    await fp.click('[data-create-song-arrangement]');
+    await fp.waitForSelector('[data-single-refusal]', { timeout: 90000 });
+    await fp.click('[data-single-refusal-cancel]'); await sleep(250);
+    ok('Cancel dismisses the notice, keeps the window open and saves nothing', (await refusal()) === null && (await fp.evaluate(() => !!document.querySelector('[data-song-arranger]'))) && (await songKeys(fp)).length === keysBefore.length);
+    await fp.click('[data-create-song-arrangement]');
+    await fp.waitForSelector('[data-single-refusal]', { timeout: 90000 });
+    await fp.click('[data-single-refusal-save]');
+    await fp.waitForFunction(() => !document.querySelector('[data-song-arranger]'), { timeout: 60000 });
+    const sv = await fp.evaluate(() => { const t = window.PPP.app.state.toast || ''; return { toast: t }; });
+    const afterKeys = await songKeys(fp);
+    const newKey = afterKeys.filter(k => keysBefore.indexOf(k) < 0)[0];
+    const svSlot = newKey ? JSON.parse(await fp.evaluate(k => localStorage.getItem(k), newKey)) : null;
+    const svCard = newKey ? await fp.evaluate(i => (window.PPP.app.libraryRead().songs.find(x => x.id === i) || {}).title, newKey.replace('ppp.song.v1.', '')) : null;
+    ok('"Save the standard arrangement" saves the standard copy, marked (singleFallback), never labelled one-note-per-hand, and says so',
+      afterKeys.length === keysBefore.length + 1 && !!svSlot && svSlot.importSource.arrangement.singleFallback === 'UNREACHABLE' && svSlot.importSource.arrangement.engine !== 'ppp.g9-single' && svSlot.importSource.provider !== 'PPP one-note-per-hand arranger' && !/one-note-per-hand arrangement$/.test(svCard) && /so the standard arrangement was saved/.test(sv.toast),
+      JSON.stringify({ keys: afterKeys.length - keysBefore.length, arr: svSlot && svSlot.importSource.arrangement, card: svCard, toast: sv.toast }));
+    /* the chip off gives the same standard arrangement at once (the person asked for it), with no notice */
+    const svNotes = newKey ? await fp.evaluate(i => JSON.stringify(window.PPP.app.scoreForArrangement(i).notes.map(n => [n.hand, n.m, n.b, n.midi, n.dur, n.rest ? 1 : 0])), newKey.replace('ppp.song.v1.', '')) : '';
+    const fc = await overlayArrange(fp, fid, 'beginner', 'balanced', 'chip');
+    await fp.evaluate(() => { window.PPP.arranger = 'single'; });
+    ok('the same notes as the chip-off request makes (one standard path, not another engine); the chip off saves at once, with no notice', fc.saved && fc.mode === 'legacy' && !(fc.slot.importSource.arrangement || {}).singleFallback && fc.notesHash === sha(svNotes), JSON.stringify({ chipSaved: fc.saved, same: fc.saved && fc.notesHash === sha(svNotes) }));
+    ok('no page or console error', fp.__rec.pageErrors.length === 0 && fp.__rec.consoleErrors.length === 0, JSON.stringify(fp.__rec.pageErrors.concat(fp.__rec.consoleErrors)));
     await fp.close();
 
-    /* happy-birthday: no plan at any level. The copy is the same notes the chip-off request makes, in both screens */
-    const hp = await openPage(browser);
-    const hid = await addSong(hp, HAPPY);
-    const h1 = await overlayArrange(hp, hid, 'intermediate', 'balanced');
-    ok('Song Arranger, happy-birthday (no plan at any level): a standard copy is saved with the notice, not nothing', h1.saved && h1.slot.importSource.arrangement.singleFallback === 'UNREACHABLE' && h1.slot.importSource.arrangement.engine !== 'ppp.g9-single' && !/one-note-per-hand arrangement$/.test(h1.cardTitle) && /standard arrangement was saved/.test(h1.toast), JSON.stringify({ card: h1.cardTitle, toast: h1.toast, arr: h1.saved && h1.slot.importSource.arrangement }));
-    const h1t = await overlayArrange(hp, hid, 'beginner', 'jazz', null, 'Typed HB copy');
-    ok('and a title the person typed is kept for it', h1t.saved && h1t.cardTitle === 'Typed HB copy' && h1t.slot.importSource.arrangement.singleFallback === 'UNREACHABLE', JSON.stringify({ card: h1t.cardTitle }));
-    const h2 = await overlayArrange(hp, hid, 'intermediate', 'balanced', 'chip');
-    ok('the same notes as the chip-off request makes (one standard path, not another engine)', h2.saved && h2.mode === 'legacy' && h2.notesHash === h1.notesHash, h1.notesHash + ' vs ' + h2.notesHash);
-    ok('no page or console error', hp.__rec.pageErrors.length === 0 && hp.__rec.consoleErrors.length === 0, JSON.stringify(hp.__rec.pageErrors.concat(hp.__rec.consoleErrors)));
-    await hp.close();
+    /* scripts that cannot be loaded (also "crashes": same path): the same persistent notice, and when the network is back the next Create works */
+    {
+      const bp0 = await openPage(browser, { block: /\/candidates\/index\.js/ });
+      const bid = await addSong(bp0, HYMN('christ-arose'));
+      const k0 = await songKeys(bp0);
+      const b0 = await overlayArrange(bp0, bid, 'intermediate', 'balanced');
+      const bx = await bp0.evaluate(() => { const b = document.querySelector('[data-single-refusal]'); return b && b.innerText; });
+      ok('Song Arranger, the option\'s scripts cannot be loaded: nothing saved, the notice and the choice in the window', !b0.saved && b0.open && !!bx && /nothing was saved/.test(bx) && (await songKeys(bp0)).length === k0.length, JSON.stringify({ saved: b0.saved, open: b0.open, box: bx }));
+      bp0.__rec.blockOn = false; /* the network is back */
+      await bp0.click('[data-create-song-arrangement]');
+      await bp0.waitForFunction(() => !document.querySelector('[data-song-arranger]'), { timeout: 90000 });
+      const k1 = await songKeys(bp0);
+      const fresh1 = k1.filter(x => k0.indexOf(x) < 0)[0];
+      const slot1 = fresh1 ? JSON.parse(await bp0.evaluate(k => localStorage.getItem(k), fresh1)) : null;
+      ok('the failure was not kept: the next Create gives one note per hand, with no reload', !!slot1 && slot1.importSource.arrangement.engine === 'ppp.g9-single' && !slot1.importSource.arrangement.singleFallback, JSON.stringify(slot1 && slot1.importSource.arrangement));
+      await bp0.close();
+    }
 
-    /* (the review screen builds its graph from heard notes, not from the catalogue file: happy-birthday IS reachable there, sonatina/020 is not) */
+    /* the review screen keeps its fallback: the standard arrangement is shown (a person is looking at it), with a notice that stays under the controls */
     const hr = await openPage(browser);
-    await loadReview(hr, SONATINA_020, 'sonatina 020');
+    await loadReview(hr, CZERNY_849_009, 'czerny 849 009');
     const same = [];
     const fbk = {};
     for (const st of ['balanced', 'jazz']) {
       const f = await reviewApply(hr, 'advanced', st);
       fbk[st] = f;
-      await loadReview(hr, SONATINA_020, 'sonatina 020');
+      await loadReview(hr, CZERNY_849_009, 'czerny 849 009');
     }
     await hr.click('[data-arrangement] [data-single-note-option]'); await sleep(250);
     for (const st of ['balanced', 'jazz']) {
       const l = await reviewApply(hr, 'advanced', st);
-      await loadReview(hr, SONATINA_020, 'sonatina 020');
+      await loadReview(hr, CZERNY_849_009, 'czerny 849 009');
       same.push(JSON.stringify(JSON.parse(fbk[st].packed).score.notes) === JSON.stringify(JSON.parse(l.packed).score.notes));
     }
-    ok('review screen, sonatina/020, balanced and jazz: the refusal gives the same notes the chip off gives (balanced by the rhythm rewriter, jazz by the arranger, as with the chip off), marked singleFallback, with the notice',
-      fbk.balanced.arrangement.singleFallback === 'UNREACHABLE' && fbk.jazz.arrangement.singleFallback === 'UNREACHABLE' && same.every(Boolean) && fbk.balanced.arrangement.engine !== 'ppp.g9-single' && /standard arrangement is shown/.test(fbk.balanced.status), JSON.stringify({ same: same, b: fbk.balanced.arrangement, j: fbk.jazz.arrangement }));
+    ok('review screen, czerny849/009, balanced and jazz: the refusal gives the same notes the chip off gives (balanced by the rhythm rewriter, jazz by the arranger, as with the chip off), marked singleFallback, with the notice',
+      !!fbk.balanced.arrangement.singleFallback && !!fbk.jazz.arrangement.singleFallback && same.every(Boolean) && fbk.balanced.arrangement.engine !== 'ppp.g9-single' && /standard arrangement is shown/.test(fbk.balanced.status), JSON.stringify({ same: same, b: fbk.balanced.arrangement, j: fbk.jazz.arrangement }));
     await hr.close();
 
     const fr2 = await openPage(browser);
-    await loadReview(fr2, SONATINA_020, 'sonatina 020');
+    await loadReview(fr2, CZERNY_849_009, 'czerny 849 009');
     await sleep(600);
     const fb = await reviewApply(fr2, 'advanced', 'balanced');
-    ok('review screen, an unreachable piece: the standard arrangement is shown, marked so in its source (singleFallback), not labelled one-note-per-hand',
-      fb.arrangement.singleFallback === 'UNREACHABLE' && fb.arrangement.engine !== 'ppp.g9-single' && fb.notes > 100, JSON.stringify(fb.arrangement));
+    ok('review screen, a piece that stays refused: the standard arrangement is shown, marked so in its source (singleFallback), not labelled one-note-per-hand',
+      !!fb.arrangement.singleFallback && fb.arrangement.engine !== 'ppp.g9-single' && fb.notes > 100, JSON.stringify(fb.arrangement));
     ok('and the notice stays on the screen, under the controls', fb.status === 'This piece could not be made in one-note-per-hand mode, so the standard arrangement is shown.' &&
       (await fr2.evaluate(() => document.querySelector('[data-arrangement]').innerText.indexOf('so the standard arrangement is shown') > -1)), fb.status);
+    await sleep(4000);
+    ok('and is still there after the message has gone', await fr2.evaluate(() => document.querySelector('[data-arrangement]').innerText.indexOf('so the standard arrangement is shown') > -1));
     ok('nothing was thrown for it', fr2.__rec.pageErrors.length === 0 && fr2.__rec.consoleErrors.length === 0, JSON.stringify(fr2.__rec.pageErrors.concat(fr2.__rec.consoleErrors)));
     await fr2.close();
 

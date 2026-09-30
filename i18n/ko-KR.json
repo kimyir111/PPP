@@ -1929,6 +1929,9 @@
     "Created a {{level}} one-note-per-hand arrangement.": "{{level}} 한 손 단음 편곡을 만들었습니다.",
     "PPP one-note-per-hand arrangement": "PPP 한 손 단음 편곡",
     "Created a {{level}} arrangement. Some passages had low melody/bass confidence, so PPP kept them simple rather than guess.": "{{level}} 편곡을 만들었습니다. 멜로디와 베이스를 확신하기 어려운 구간은 추측하지 않고 단순하게 두었습니다.",
-    "{{title}} · one-note-per-hand arrangement": "{{title}} · 한 손 단음 편곡"
+    "{{title}} · one-note-per-hand arrangement": "{{title}} · 한 손 단음 편곡",
+    "This piece has many notes, so the arrangement may be a little harder than the level you chose.": "이 곡은 음이 많아 고른 난이도보다 조금 어려울 수 있어요.",
+    "This piece could not be made in one-note-per-hand mode, so nothing was saved. You can save the standard arrangement instead, in which a hand may play two or more notes at once.": "이 곡은 한 손 단음 모드로 만들 수 없어 아무것도 저장하지 않았어요. 대신 기본 편곡을 저장할 수 있지만, 기본 편곡에서는 한 손이 두 음 이상을 동시에 칠 수 있어요.",
+    "Save the standard arrangement": "기본 편곡 저장"
   }
 }
