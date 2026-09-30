@@ -1222,3 +1222,77 @@ cluster rate.
 - **Block chords are thick.** beyer/061 (now a block texture) has 2.73 left-hand notes per onset, 75% of onsets with three or more, 175 left-hand notes against 27 for legacy, and two left-hand chords spanning more than an octave; christ-arose is unchanged at 3.0 per onset. Whether a reviewer finds those chords hard is not known: the block arrangements in the two reviews were easy pieces.
 - **Three of the 11 are now the source copied back.** sonatina/025 and burgmuller25/006 have left hands identical to the source and to legacy, and nearer-my-god is half a hymn copy, so for those the arrangement is the source. That is a valid outcome of best-of-N (the copy has zero invented notes) but it says nothing about the arranger's own skill on those pieces.
 - **The evidence table is thinner than it looks.** All 11 re-review pieces are also in the original 16, so the 21 ratings cover at most 16 distinct pieces, and three pieces (nearer-my-god, burgmuller25/016, sonatina/025) appear under different patterns in the two reviews, not two. The 0-of-7 for non-stride patterns comes mostly from easy pieces and near-source hymn copies. The doc's confidence should be read at that strength: a strong signal about the stride family, not a demonstration that the other patterns work.
+
+### TD16 auto 8va/8vb for arranged output
+
+Notes far above or below a staff were printed on many ledger lines with no octave line, in both arms. The reviewer flagged it twice ("8va is still not shown, there are very high
+notes"; "too extremely low or high notes are written on the staff as they are"). This adds G3's automatic 8va (G03 section 13.3, off since D2 because the app played 8va an octave off, fixed
+by MX-1 and live since 2026-09-26) to arranged graphs, as a small reusable function, and wires it into the blind-review drawing path. Node-only: `git diff --stat origin/main` shows no app,
+server, roadmap or `engrave/` file. One writer; no sub-agent was dispatched.
+
+**1. What was measured.** 34 items (the 16 H-8 key items, plus the 16-file sample and the 32-file held-out slice at the request level `findG8Plan` finds, minus repeats; 32 distinct pieces; 22 of the
+48 sample and held-out files have no reachable G7b plan, so they have no arrangement and are not in it), each arranged with today's code (`review/lib/arrange.js arrangeItem`: G9a best-of-N plus G9b repair, and ScoreArranger
+at the closest of its four levels), then projected the way `review/lib/neutral.js` draws them. Ledger lines are counted on the clef actually in force at each note (the projected graph carries the original piece's
+clef changes; a first count with the opening clefs only overstated the low left hand and was discarded). Notes per ledger-line count:
+
+| clef, side | G9: 1 / 2 / 3 / 4 / 5+ lines | legacy: 1 / 2 / 3 / 4 / 5+ lines |
+|---|---|---|
+| treble, above | 187 / 130 / 49 / 33 / 49 | 191 / 130 / 49 / 33 / 49 |
+| treble, below | 352 / 192 / 96 / 44 / 12 | 293 / 63 / 0 / 0 / 0 |
+| bass, above | 535 / 288 / 83 / 36 / 50 | 577 / 188 / 51 / 37 / 53 |
+| bass, below | 70 / 8 / 5 / 1 / 3 | 29 / 7 / 5 / 1 / 4 |
+| **notes on 3 or more lines** | **461 of 8,835 (5.2%)** | **282 of 7,743 (3.6%)** |
+| notes on 2 or more lines | 1,079 (12.2%) | 670 (8.7%) |
+
+The pieces with the most notes on 3+ lines: czerny849/023 (both arms, 162), czerny599/049 (both arms, 71), czerny849/002 (G9 98, legacy 20), czerny599/027 (G9 36), burgmuller25/016 (G9 23, legacy 14).
+Two things the numbers say that were not obvious. (a) G9 has 152 notes on 3+ lines below a **treble** staff and legacy has none: the projected graph keeps the original piece's clef map, so where the
+original wrote the left hand in treble clef and G9 puts a low bass there (czerny849/002, czerny599/027, burgmuller25/016, beyer/020), the notes hang under a G clef. That is a clef problem more
+than an octave problem (see the limits). (b) Notes above a **bass** staff (a left hand playing above G4) are the biggest group in both arms.
+
+**2. The rule** (`realize/ottava.js`, constants in `OTTAVA_RULE`). Ledger lines are counted on the sounding pitch against the clef of the note's own staff at that onset (treble G or bass F only; a staff with
+another clef, or one that already has an ottava line, is skipped). Per staff and direction (8va above, 8vb below):
+- A note is *high* at 2 or more ledger lines (`highLines`) and a *seed* at 3 or more (`seedLines`). Notes at one onset on one staff are one group.
+- A run is a stretch of high groups, each within 1/2 whole note (two quarter beats, `bridge`) of the end of the one before. A group between two high ones joins only if it would still read well moved
+  (*fit*: after the shift a high note needs at most 2 lines, `keepHigh`, and any other note it covers at most 1, `keepOther`). A group that fails the test ends the run.
+- A run gets a line when it holds a seed and either two onsets or a note on 4 or more lines (`loneLines`; a lone 3-line note gets nothing), or, with no seed, when it lasts at least one whole note
+  (four quarter beats, `sustain`) with two onsets.
+- 8va/8vb, unless a note would still need 3 lines after it; then 15ma/15mb (`maxShift` 2).
+- The line starts at the run's first onset and ends where its last group ends, or where the staff's next note starts if that is sooner, so it covers exactly the notes it was made for (the engraver
+  moves by staff and onset).
+
+Why: 3 lines is where a note stops being readable at a glance (E6 on a treble staff); a printed edition uses 8va for a phrase there and for a longer stretch on 2 lines, and does not mark a
+single E6. The 2-line sustained case is the "several beats" rule; the 4-line lone case keeps a single G6 from being left on 4 lines. The constants are engraving-practice defaults, not tuned to any metric.
+
+Result on the same 34 items: **no note on 3 or more ledger lines is left in either arm; the most is 2.** Notes still on 2 lines: G9 105 (from 1,079), legacy 110 (from 670). 18 of 34 G9 arrangements and 16 of 34
+legacy ones get at least one line (60 and 59 lines; 1,588 of 8,835 and 894 of 7,743 notes drawn shifted, bridged notes included). It runs in 1 to 70 ms per graph and never fell back.
+
+**3. What it is and how it is checked.** `addOttava(graph, { rule })` returns `{ graph, changed, fallback, spans, report }` (the graph itself when there is nothing to do). It is one G3 pass run through
+`scoregraph/pro.js professionalize` with only that pass, so `pro-critic.js` fingerprints the graph before and after (every component but `ottava` must be equal: sounding notes, onsets, staff and voice,
+spelling, marks, pedal, timeline), the validator must find no new error or notation warning (`W-OTTAVA-OVERLAP` included), and anything else returns the input (`fallback: true`). G3's own permission
+table is bypassed on purpose (an arranged graph is `generated`, which G3 never rewrites, and an ottava line is the one thing added). The graph keeps the sounding pitch; only the engraver's written pitch
+moves. Deterministic and idempotent (a second run finds the staff already marked).
+
+**4. Wiring.** (a) `review/lib/neutral.js svgOf` calls `addOttava` on the projected graph before `E.plan`, the same call for both arms; `render(..., { ottava: false })` draws without, for comparison.
+`audioNotes` is made from the flat notes, so the packet's sound is unchanged by construction (tested). (b) `realize/ottava.js` is the reusable function for a later G9e integration
+(`addOttava(rr.graph)` after repair). It is Node-only and not loaded by the app, and not re-exported from `realize/index.js` (which the app loads). Nothing else changed: `candidates/`, `repair/`, the
+harness and its metrics do not call it, so selection and every harness number are byte-identical (the engrave metrics on the arranged graph are not run with it, so no delta is reported).
+
+**5. Drawn and looked at.** Packets were built with `review/build.js --mode h8 --items` (one item per packet; two pieces whose arms are identical, sonatina/025 and czerny849/023, are refused by the builder and were drawn
+directly through `svgOf`), and screenshotted with puppeteer: burgmuller25/016, /006, /003, /019, beyer/061, /020, czerny849/002, /023, czerny599/027, sonatina/025. Seen: the label ("8va", "8vb", "15ma") at the left of a
+dashed line with a closing hook at the last covered note; heads at the written position (an 8va over a bass staff writes E4 as E3, an 8vb under a treble-clef left hand writes G3 as G4); the line above the treble staff,
+below the staff for 8vb, and between the staves above the bass staff; "(8)" and "(15)" continue a line onto the next system; no line overlapped a stem, beam, ledger line or another mark, and none reached a note it does not
+cover. Not perfect: the "8va" label sits close to the first covered head where a note comes just before it, without touching. The engraver drew everything correctly; nothing to report about `engrave/`.
+
+**6. Tests.** `tests/realize/ottava.test.js` (10: a 3-line phrase gets 8va over exactly its notes and is drawn an octave down, a 1-line phrase gets nothing, a low bass gets 8vb, a lone 3-line note gets nothing and a
+lone 4-line note does, a 2-line passage needs four beats, 15ma, the end of the line and the bridge, a full note-list comparison and the G3 critic, deterministic and idempotent, constants overridable) and
+`tests/review/ottava.test.js` (4: labels drawn and a plain drawing byte-identical to the no-pass drawing, audio list equal with and without, both arms one path, no data attribute or engine name).
+
+**7. Known limits.**
+- **A clef change is the older answer, and it is not made here.** Where the projected graph keeps a treble clef under a low bass (152 G9 notes, above), the result is an 8vb under a G clef: readable and
+  correct, but a printed score would write bass clef. 8va over a bass staff (the largest group) is likewise legal, not usual. Fixing the clef map for the G9 arm (G9e, or a clef step) would remove most of the
+  8vb cases.
+- No human has seen this. The constants are practice defaults; the sustained-2-line rule is the one most likely to be too eager (sonatina/025 gets an 8va over one bar of D6). To make it stricter raise
+  `sustain` or set `highLines` to 3.
+- Bridged notes can end on one ledger line (900 of the 8,835 G9 notes are on one line after the pass, 1,144 before).
+- Cross-staff heads use the head's staff; the review path has none, and the pass was not exercised on them.
+- 15ma appears in czerny849/023 and czerny599/049 only (notes to E7).
