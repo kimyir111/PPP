@@ -10,6 +10,10 @@
        voice numbers are discarded), then split into layers by legacy.js `sanitizeLegacyNotes` (interval scheduling on note
        times), so a chord and a two-voice texture come out the same way whichever engine wrote them;
      - one measure list (the original piece's), one tempo, one engraving configuration;
+     - TD16: both graphs then get the same automatic 8va/8vb pass (realize/ottava.js `addOttava`, one rule, default constants):
+       notes far above or below a staff print an octave (two for 15ma) away under a line and label, as a printed score would,
+       instead of on many ledger lines. The graph keeps the sounding pitch and the audio list is made from the flat notes, so
+       the sound is the same with or without it (`render(..., { ottava: false })` draws without, for comparison and tests);
      - the SVG has every data-* attribute removed (event and graph ids, the graph fingerprint) and the root's px size;
        glyph ids carry a per-drawing prefix that names only the item and the label X/Y.
 
@@ -22,6 +26,7 @@ const path = require('path');
 const REPO = path.resolve(__dirname, '..', '..');
 const L = require(path.join(REPO, 'realize/tools/legacy.js'));
 const E = require(path.join(REPO, 'engrave/index.js'));
+const OTTAVA = require(path.join(REPO, 'realize/ottava.js'));
 
 /* Printed accidentals, recomputed for BOTH arms from the pitch spelling and the measure's key signature. The engraver prints an
    accidental only where a head carries `acc` (scoregraph/legacy-score.js fromScore), and the two engines differ in whether they
@@ -99,10 +104,13 @@ function density(measures, notes) {
 }
 
 /* the engraved SVG of a note list, as a string with nothing that names an engine or a graph */
-function svgOf(measures, tempo, notes, idPrefix) {
+function svgOf(measures, tempo, notes, idPrefix, opts) {
   const proj = L.graphFromLegacyNotes(measures, neutralNotes(measures, notes), tempo, 'review');
   if (!proj.ok) throw new Error('neutral projection failed: ' + JSON.stringify(proj.unsupported || proj).slice(0, 200));
-  const plan = E.plan(proj.graph);
+  /* the same pass on either arm (`addOttava` gives the graph itself back when there is nothing to do, or when its own critic
+     objects, so a piece it cannot improve is drawn exactly as before) */
+  const graph = opts && opts.ottava === false ? proj.graph : OTTAVA.addOttava(proj.graph).graph;
+  const plan = E.plan(graph);
   const eng = E.layout.engrave(plan, { breakpoint: 'desktop' });
   let svg = E.svg(eng, plan, { idPrefix: idPrefix });
   svg = svg.replace(/ data-[a-z-]+="[^"]*"/g, '');
@@ -112,8 +120,8 @@ function svgOf(measures, tempo, notes, idPrefix) {
 }
 
 /* one arm -> what the packet embeds: the drawing and the sound, both from the same neutral notes */
-function render(measures, tempo, notes, idPrefix) {
-  return { svg: svgOf(measures, tempo, notes, idPrefix), notes: audioNotes(measures, notes) };
+function render(measures, tempo, notes, idPrefix, opts) {
+  return { svg: svgOf(measures, tempo, notes, idPrefix, opts), notes: audioNotes(measures, notes) };
 }
 
 module.exports = { neutralNotes, audioNotes, density, svgOf, render };
