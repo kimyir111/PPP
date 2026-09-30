@@ -49,6 +49,40 @@ function span(midis) { const s = sortAsc(midis); return s[s.length - 1] - s[0]; 
 
 function fitSpan(midis, maxSpan) { return span(midis) <= maxSpan ? midis : TH.clampSpan(midis, maxSpan); }
 
+/* ---- last G9 defect round (docs/GOALS/G09 section 12 "G9 last defect round") ----
+   `opts.shape` (set by realize/index.js; absent = the old voicing, so direct pattern calls are unchanged) = { maxStack, top, floor, state }
+   (`state.prev` = the chord written just before, so a re-placed chord stays close to it):
+   what the chord of one window looks like once it is written. `shapeChord` thins a STACK to `maxStack` notes (root, fifth, third, in that
+   order; block only, since broken and ballad sound one note at a time; maxStack is 3 from stage 2, so a triad is kept whole) and re-places the notes by whole octaves so the left-hand chord has
+   no second below middle C (no third below C3; a STACK only: the notes of broken and ballad do not sound together, and keeping them out of close position would only spread the arpeggio into leaps), has its top at or under `top` and stays in the hand's span (theory.settleChord). The
+   voice-leading state the next window is led from is the UNSHAPED chord, so thinning never changes where the following chord starts. */
+function shapeChord(chord, w, opts, stack) {
+  const sh = opts.shape;
+  if (!sh) return chord;
+  const settle = c => (sh.top != null || sh.floor != null)
+    ? TH.settleChord(c, { top: sh.top, floor: sh.floor, maxSpan: opts.maxSpan, prev: sh.state && sh.state.prev, cluster: !!stack }) : c;
+  let out = stack && sh.maxStack != null ? TH.thinChord(chord, rootOf(w), sh.maxStack) : chord;
+  out = settle(out);
+  /* a stack that cannot be placed legally (top, seconds, span) falls back to the dyad, root and fifth, for this window only */
+  if (stack && out.length > 2 && (sh.top != null || sh.floor != null) &&
+      !TH.chordLegal(out, { top: sh.top, floor: sh.floor, maxSpan: opts.maxSpan, cluster: true })) {
+    out = settle(TH.thinChord(chord, rootOf(w), 2));
+  }
+  if (sh.state) sh.state.prev = out;
+  return out;
+}
+
+/* ---- compound meter (docs/GOALS/G09 section 12 "G9 last defect round") ----
+   A beat window of a compound meter (6/8, 9/8, 12/8 and 6/4: a dotted value) has a numerator of 3 (3/8, 3/4; 3/16 ...). Splitting it into the
+   binary 2 or 4 parts the patterns were written for gives dotted eighths that cut across the beat (nearer-my-god, 6/4: 8 per bar). A
+   compound window is split in THREE equal parts instead (eighths in a dotted-quarter beat, quarters in a dotted-half beat): counted
+   "1 2 3" inside the beat, and every part is a plain note value. `isCompound` is on by default; `opts.compound === false` restores the old split. */
+function isCompound(w, opts) {
+  if (opts.compound === false) return false;
+  const d = R.sub(w.w1, w.w0);
+  return d.n > 0 && d.n % 3 === 0;
+}
+
 /* ---- stride geometry (docs/GOALS/G09 section 12 "G9 left-hand jumps (post H-8 re-look)") ----
    `pop` and `waltz` put a bass note below a chord. They used to voice the chord by smooth voice leading around the section's
    left-hand register midpoint and put the bass an octave under that midpoint, so the chord sat 8 to 20 semitones above the
@@ -80,7 +114,7 @@ function block(windows, prevMidis, opts) {
   const events = [];
   windows.forEach(w => {
     const chord = fitSpan(chordOf(prevMidis, w, opts.anchor, opts.count), opts.maxSpan);
-    events.push({ at: w.w0, dur: R.sub(w.w1, w.w0), midis: chord });
+    events.push({ at: w.w0, dur: R.sub(w.w1, w.w0), midis: shapeChord(chord, w, opts, true) });
     prevMidis = chord;
   });
   return { events, prevMidis };
@@ -91,8 +125,11 @@ function broken(windows, prevMidis, opts) {
   const events = [];
   windows.forEach(w => {
     const chord = fitSpan(chordOf(prevMidis, w, opts.anchor, opts.count), opts.maxSpan);
-    const s = sortAsc(chord);
-    const seq = s.length >= 3 ? [s[0], s[s.length - 1], s[1], s[s.length - 1]] : [s[0], s[s.length - 1], s[0], s[s.length - 1]];
+    const s = sortAsc(shapeChord(chord, w, opts, false));
+    const last = s[s.length - 1];
+    /* a compound beat: low, high, mid (three parts); a simple beat: low, high, mid, high (four) */
+    const seq = isCompound(w, opts) ? (s.length >= 3 ? [s[0], last, s[1]] : [s[0], last, s[0]])
+      : (s.length >= 3 ? [s[0], last, s[1], last] : [s[0], last, s[0], last]);
     const step = R.div(R.sub(w.w1, w.w0), R.make(seq.length, 1));
     seq.forEach((m, i) => events.push({ at: R.add(w.w0, R.mul(step, R.make(i, 1))), dur: step, midis: [m] }));
     prevMidis = chord;
@@ -105,8 +142,10 @@ function ballad(windows, prevMidis, opts) {
   const events = [];
   windows.forEach(w => {
     const chord = fitSpan(chordOf(prevMidis, w, opts.anchor, opts.count), opts.maxSpan);
-    const s = sortAsc(chord);
-    const seq = s.length > 2 ? s.concat(s.slice(1, -1).reverse()) : s;
+    const s = sortAsc(shapeChord(chord, w, opts, false));
+    /* a compound beat: one rolling pass up the chord in three parts (a two-note chord goes up and back: low, high, low) */
+    const seq = isCompound(w, opts) ? (s.length >= 3 ? s.slice(0, 3) : [s[0], s[s.length - 1], s[0]])
+      : (s.length > 2 ? s.concat(s.slice(1, -1).reverse()) : s);
     const step = R.div(R.sub(w.w1, w.w0), R.make(seq.length, 1));
     seq.forEach((m, i) => events.push({ at: R.add(w.w0, R.mul(step, R.make(i, 1))), dur: step, midis: [m] }));
     prevMidis = chord;
@@ -126,10 +165,13 @@ function pop(windows, prevMidis, opts) {
     const fifthMidi = TH.nearestWithPc(((w.root == null ? 0 : w.root) + 7) % 12, rootMidi, lo);
     const bassNote = i % 2 === 0 ? rootMidi : fifthMidi;
     const chord = close ? closeChord(rootMidi, w, opts) : fitSpan(chordOf(prevMidis, w, opts.anchor, opts.count), opts.maxSpan);
-    const half = R.div(R.sub(w.w1, w.w0), R.make(2, 1));
+    /* a simple beat splits in two halves; a compound beat (see isCompound) in a long two thirds and a short third, so no part is a dotted eighth */
+    const whole = R.sub(w.w1, w.w0);
+    const half = isCompound(w, opts) ? R.div(R.mul(whole, R.make(2, 1)), R.make(3, 1)) : R.div(whole, R.make(2, 1));
+    const rest = R.sub(whole, half);
     events.push({ at: w.w0, dur: half, midis: [bassNote] });
-    if (i % 2 === 1) events.push({ at: R.add(w.w0, half), dur: half, midis: close ? chord : fitSpan(chord, opts.maxSpan) });
-    else events.push({ at: R.add(w.w0, half), dur: half, midis: [bassNote] });
+    if (i % 2 === 1) events.push({ at: R.add(w.w0, half), dur: rest, midis: close ? chord : fitSpan(chord, opts.maxSpan) });
+    else events.push({ at: R.add(w.w0, half), dur: rest, midis: [bassNote] });
     prevMidis = chord;
   });
   return { events, prevMidis };

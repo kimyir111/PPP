@@ -98,8 +98,10 @@ test('realize: with the floor (default) no arranged note is below E2, under ever
   const f = await planOf(REQ.sonatina025);
   let anyOffBelow = false;
   for (const pattern of ['auto', 'block', 'broken', 'ballad', 'pop', 'waltz']) {
-    const on = REALIZE.realize(f.g, f.sg, f.plan, { pattern });
-    const off = REALIZE.realize(f.g, f.sg, f.plan, { pattern, registerFloor: null });
+    /* leftShape: false: the last-defect-round chord shaping re-places arpeggio chords by the floor too (tests/realize/last-defects.test.js),
+       so the floor's own "never changes a pitch class or an onset" is checked without it, exactly as before that round */
+    const on = REALIZE.realize(f.g, f.sg, f.plan, { pattern, leftShape: false });
+    const off = REALIZE.realize(f.g, f.sg, f.plan, { pattern, registerFloor: null, leftShape: false });
     assert.ok(on.ok && off.ok, pattern);
     assert.equal(floorOf(on.graph, f.source).below, 0, pattern + ': no arranged note below the floor');
     assert.equal(on.report.floor.floor, 40);
