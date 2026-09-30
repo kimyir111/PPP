@@ -136,5 +136,12 @@
 
   function verticalClash(graph, opts) { return ofNotes(notesOf(graph), opts); }
 
-  return Object.freeze({ OCTAVE_SEMITONES, SECOND_MAX, isHarshInterval, notesOf, slices, ofNotes, verticalClash });
+  /* What an edit CREATED: how many more harsh pairs, one-hand octave-plus chords and one-hand seconds `after` has than `before` (each at least 0; a count that
+     fell or stayed is 0). repair/index.js uses it so a repair never writes what the clash guard removed: { harsh, octave, seconds }. */
+  function newClashes(before, after) {
+    const a = verticalClash(before), b = verticalClash(after);
+    return { harsh: Math.max(0, b.harshPairs - a.harshPairs), octave: Math.max(0, b.octaveChords - a.octaveChords), seconds: Math.max(0, b.seconds - a.seconds) };
+  }
+
+  return Object.freeze({ OCTAVE_SEMITONES, SECOND_MAX, isHarshInterval, notesOf, slices, ofNotes, verticalClash, newClashes });
 });

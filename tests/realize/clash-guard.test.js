@@ -237,6 +237,19 @@ test('hymn thinning (stage 2): the tenor goes where it stacks an octave on the b
   assert.equal(PLA.analyzeGraph(thin.graph, { profile: 'large' }).totals.hard, 0);
 });
 
+test('hymn thinning keeps the LOWEST SOUNDING left-hand note at every onset (the protection also covers a tenor under the bass at a voice crossing)', async () => {
+  for (const [file, lvl] of [['catalog/hymns/all-creatures.musicxml', 3.88], ['catalog/hymns/christ-arose.musicxml', 2.76], ['catalog/hymns/god-rest-ye-merry.musicxml', 2.87]]) {
+    const f = await planOf(file, lvl);
+    const verbatim = REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'hymn' }), thin = REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'hymn', hymnThin: true });
+    const lowAt = (graph, t) => { const l = VC.notesOf(graph).filter(n => n.hand === 'LH' && n.on <= t + 1e-6 && n.off > t + 1e-6).map(n => n.midi); return l.length ? Math.min.apply(null, l) : null; };
+    const times = Array.from(new Set(VC.notesOf(verbatim.graph).filter(n => n.hand === 'LH' && !n.cont).map(n => n.on.toFixed(4)))).map(Number);
+    let checked = 0;
+    times.forEach(t => { assert.equal(lowAt(thin.graph, t), lowAt(verbatim.graph, t), file + ': the lowest sounding left-hand note at quarter ' + t + ' is kept'); checked++; });
+    assert.ok(checked > 20, file + ': ' + checked + ' onsets checked');
+    assert.ok(thin.report.clash.hymnNotesDropped > 0);
+  }
+});
+
 test('hymn thinning is off by default for a direct call (a verbatim copy stays verbatim), on from candidates/, and gated to stages 1-3', async () => {
   const f = await planOf('catalog/hymns/christ-arose.musicxml', 2.76);
   assert.equal(fp(REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'hymn' })), fp(REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'hymn', hymnThin: false })), 'default = off');

@@ -25,6 +25,7 @@ const VL = require(path.join(REPO, 'critics/voice-leading.js'));
 const M = require(path.join(REPO, 'critics/metrics.js'));
 const CAND = require(path.join(REPO, 'candidates/index.js'));
 const REP = require(path.join(REPO, 'repair/index.js'));
+const VC = require(path.join(REPO, 'critics/vertical-clash.js'));
 
 /* the first voice of the fixture (the RH melody line) as the original-melody note list */
 function melodyOf(g, voiceIndex) {
@@ -319,4 +320,65 @@ test('real corpus: repair of the selected candidate keeps melody, adds no hard v
   const again = REP.repair(r.graph, r.ctx, {});
   assert.equal(again.changed, false, 'idempotent');
   assert.equal(again.graph, r.graph);
+});
+
+/* ---------------------------------------------------------------- the clash guard's guard (G9 clash guard, docs/GOALS/G09 section 12) */
+function seededUnit(g, from, to) {
+  const n = U.noteWindows(g).find(x => x.midi === from);
+  return { op: 'parallel', m: n.m, key: 'planted-' + from, smellsBefore: 1, smellsAfter: 0, edits: [{ headId: n.headId, eventId: n.eventId, from: from, to: to, pitch: n.pitch }] };
+}
+const tryClash = (g, from, to, extra) => REP.repair(g, ctxOf(g, extra), { seedUnits: [seededUnit(g, from, to)], maxTrials: 1 });
+
+test('clash guard: a planted edit that creates a one-hand second (D3 to D4 beside C4) is rolled back at stage 2 and 3; stage 4 and the switch do not apply it', () => {
+  const g = mk({ time: [2, 4], rh: 'E5:q F5:q', lh: 'C4+D3:q G3+B2:q' });
+  [2, 3].forEach(stage => {
+    const r = tryClash(g, 50, 62, { stage: stage });
+    assert.equal(r.graph, g, 'stage ' + stage + ': the input comes back as the very same object');
+    assert.equal(r.report.accepted, 0);
+    assert.deepEqual(r.report.units[0].reasons, ['SECOND_UP']);
+  });
+  /* the edit really creates the second: this is not a vacuous rollback */
+  const forced = REP.applyUnit(g, seededUnit(g, 50, 62)).graph;
+  assert.equal(VC.verticalClash(g).seconds, 0);
+  assert.equal(VC.verticalClash(forced).seconds, 1);
+  assert.ok(!(tryClash(g, 50, 62, { stage: 4 }).report.units[0].reasons || []).includes('SECOND_UP'), 'stage 4: the old rules, the guard is not applied');
+  assert.ok(!(tryClash(g, 50, 62, { stage: 2, clashGuard: false }).report.units[0].reasons || []).includes('SECOND_UP'), 'clashGuard: false turns it off');
+});
+
+test('clash guard: an edit that creates a one-hand octave-plus chord is rolled back at stage 2; an edit that keeps the span under an octave is not stopped by it', () => {
+  const g = mk({ time: [2, 4], rh: 'E5:q F5:q', lh: 'C3+G3:q G2+D3:q' });
+  const r = tryClash(g, 55, 67, { stage: 2 }); /* G3 to G4: C3..G4 = 19 semitones */
+  assert.equal(r.graph, g);
+  assert.ok(r.report.units[0].reasons.includes('OCTAVE_CHORD_UP'), JSON.stringify(r.report.units[0].reasons));
+  const fine = tryClash(g, 55, 43, { stage: 2 }); /* G3 to G2: C3 and G2 are a fourth apart, no octave chord */
+  assert.ok(!(fine.report.units[0].reasons || []).some(x => /^(SECOND|OCTAVE)/.test(x)), 'a clean edit is judged by the ordinary checks only');
+});
+
+test('clash guard: a harsh pair (minor second, major seventh, minor ninth) is a pitch-class relation, so a whole-octave repair can neither create nor remove one; the guard counts it anyway', () => {
+  const g = mk({ time: [2, 4], rh: 'C4:q E4:q', lh: 'B2:q G2:q' });
+  const moved = REP.applyUnit(g, seededUnit(g, 47, 59)).graph; /* B2 to B3: the pair with C4 is a minor ninth before and a minor second after */
+  assert.equal(VC.verticalClash(g).harshPairs, 1);
+  assert.equal(VC.verticalClash(moved).harshPairs, 1, 'same count after the octave move');
+  assert.deepEqual(VC.newClashes(g, moved), { harsh: 0, octave: 0, seconds: 0 });
+  /* a planted NEW pair (a different pitch class) is counted by newClashes, which is what repair/index.js reads */
+  const worse = mk({ time: [2, 4], rh: 'C4:q E4:q', lh: 'B2:q F#3:q' });
+  assert.equal(VC.newClashes(g, worse).harsh, 0, 'F#3 against E4 is 10 semitones, a minor seventh: not harsh');
+  const clashing = mk({ time: [2, 4], rh: 'C4:q E4:q', lh: 'B2:q F3:q' });
+  assert.equal(VC.newClashes(g, clashing).harsh, 1, 'F3 against E4 is a major seventh: counted');
+});
+
+test('clash guard on the real case: christ-arose at profile small, repair used to move D3 to D4 beside C4 (a left-hand second that was 0); now it is rolled back', async () => {
+  const g = await H.graphOf('catalog/hymns/christ-arose.musicxml'), sg = SGG.analyze(g);
+  const req = { targetLevel: 2.76, handProfile: 'small', sections: 'all' };
+  const sel = CAND.run(g, sg, req, {});
+  assert.ok(sel.ok);
+  assert.equal(VC.verticalClash(sel.selected.graph).seconds, 0, 'before repair: no second');
+  const off = REP.repairSelection(sel, g, sg, req, { clashGuard: false });
+  assert.ok(VC.verticalClash(off.graph).seconds >= 1, 'the old repair creates a second');
+  const on = REP.repairSelection(sel, g, sg, req, {});
+  assert.equal(VC.verticalClash(on.graph).seconds, 0, 'the guarded repair leaves none');
+  assert.equal(VC.verticalClash(on.graph).octaveChords, 0);
+  assert.ok(on.report.units.some(u => !u.ok && u.reasons.includes('SECOND_UP')), 'the second-creating unit is in the report as rolled back');
+  const again = REP.repair(on.graph, on.ctx, {});
+  assert.equal(again.graph, on.graph, 'idempotent');
 });
