@@ -224,8 +224,8 @@ function sectionVoiceNotes(origPart, voiceId, measureIds, oldIdx, measureOffset)
    A verbatim `hymn` section copies every kept voice into its hand, so one hand can hold a tenor and a bass a tenth apart (an octave or more at
    once is very hard, the user's third review) or two voices a second apart. At stages <= theory.HYMN_THIN_MAX_STAGE the copy is thinned where one
    hand's SIMULTANEOUS notes (held notes included) span an octave or more or hold a second: a note of an UNPROTECTED voice is dropped (written as a
-   rest of the same length, a whole tied chain at once). Protected: the section's melody voice, the lowest voice of the left hand (the bass) and the lowest SOUNDING left-hand note at every onset (a
-   tenor under the bass at a voice crossing is then protected too); a melody or bass note is never dropped or moved. Which note goes: first one whose pitch class another note of the hand also sounds (a doubling:
+   rest of the same length, a whole tied chain at once). Protected: the section's melody voice and the lowest voice of the left hand (the bass);
+   a melody or bass note is never dropped or moved. Which note goes: first one whose pitch class another note of the hand also sounds (a doubling:
    harmony agreement cannot lose a tone), else the one farthest from the protected note it is stacked on. A violation that only protected notes make is
    left (counted). Deterministic. Returns {drops: Set of source events, dropped: events, unresolved: violations left}. */
 function hymnThinDrops(origPart, hands, measureIds, melodyVoiceId, oldIdx, measureOffset) {
@@ -253,19 +253,6 @@ function hymnThinDrops(origPart, hands, measureIds, melodyVoiceId, oldIdx, measu
   if (melodyVoiceId) protectedVoices.add(melodyVoiceId);
   const lh = hands.LH.map(v => ({ v: v, a: avg(v) })).filter(x => x.a != null).sort((a, c) => a.a - c.a);
   if (lh.length) protectedVoices.add(lh[0].v); /* the bass */
-  /* the LOWEST SOUNDING note of the left hand at every onset is protected as well (not only the bass voice): at a voice crossing the tenor can sit under the
-     bass, and dropping it would drop the sounding bass. The whole tied chain of such a note is protected, so an earlier decision cannot take it away either. */
-  const protectedChains = new Set();
-  Array.from(new Set(entries.map(x => x.w0))).forEach(t => {
-    let low = null, lowMidi = Infinity;
-    entries.forEach(x => {
-      if (x.hand !== 'LH' || !(x.w0 <= t + 1e-9 && x.w1 > t + 1e-9)) return;
-      const m = Math.min.apply(null, x.midis);
-      if (m < lowMidi) { lowMidi = m; low = x; }
-    });
-    if (low) protectedChains.add(find(low));
-  });
-  const isProtected = n => protectedVoices.has(n.x.voice) || protectedChains.has(find(n.x));
   const dropped = new Set(); /* chain roots */
   const isDropped = x => dropped.has(find(x));
   const times = Array.from(new Set(entries.map(x => x.w0))).sort((a, c) => a - c);
@@ -284,8 +271,8 @@ function hymnThinDrops(origPart, hands, measureIds, melodyVoiceId, oldIdx, measu
         const notes = [];
         sounding.forEach(x => x.midis.forEach(m => notes.push({ m: m, x: x })));
         if (!violates(notes)) return;
-        const prot = notes.filter(isProtected);
-        const cands = notes.filter(n => !isProtected(n));
+        const prot = notes.filter(n => protectedVoices.has(n.x.voice));
+        const cands = notes.filter(n => !protectedVoices.has(n.x.voice));
         if (!cands.length) { out.unresolved++; return; }
         const pcCount = new Map(); notes.forEach(n => { const pc = ((n.m % 12) + 12) % 12; pcCount.set(pc, (pcCount.get(pc) || 0) + 1); });
         const distFromProt = n => prot.length ? Math.min.apply(null, prot.map(p => Math.abs(p.m - n.m))) : 0;

@@ -237,7 +237,7 @@ test('hymn thinning (stage 2): the tenor goes where it stacks an octave on the b
   assert.equal(PLA.analyzeGraph(thin.graph, { profile: 'large' }).totals.hard, 0);
 });
 
-test('hymn thinning keeps the LOWEST SOUNDING left-hand note at every onset (the protection also covers a tenor under the bass at a voice crossing)', async () => {
+test('hymn thinning keeps the LOWEST SOUNDING left-hand pitch at every onset (a check on the bass voice protection; a separate lowest-sounding-note protection was tried and not adopted, see the doc)', async () => {
   for (const [file, lvl] of [['catalog/hymns/all-creatures.musicxml', 3.88], ['catalog/hymns/christ-arose.musicxml', 2.76], ['catalog/hymns/god-rest-ye-merry.musicxml', 2.87]]) {
     const f = await planOf(file, lvl);
     const verbatim = REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'hymn' }), thin = REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'hymn', hymnThin: true });
