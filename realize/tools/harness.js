@@ -32,6 +32,7 @@ const VLC = require(path.join(REPO, 'critics/voice-leading.js'));
 const RFC = require(path.join(REPO, 'critics/register-floor.js'));
 const LHJ = require(path.join(REPO, 'critics/left-hand-jump.js'));
 const LRC = require(path.join(REPO, 'critics/low-register-cluster.js'));
+const LHT = require(path.join(REPO, 'critics/left-hand-thickness.js'));
 
 const LEGACY_LEVELS = ['beginner', 'intermediate', 'advanced', 'original'];
 const HAND_PROFILES = ['large', 'medium', 'small'];
@@ -122,7 +123,7 @@ async function runFile(rel, opts) {
 
   /* ---- G8a ---- */
   const t0 = Date.now();
-  const g8 = REALIZE.realize(g, sg, found.plan, { pattern: opts.pattern || 'auto', registerFloor: opts.registerFloor, stride: opts.stride });
+  const g8 = REALIZE.realize(g, sg, found.plan, Object.assign({ pattern: opts.pattern || 'auto', registerFloor: opts.registerFloor, stride: opts.stride }, opts.last));
   row.g8aMs = Date.now() - t0;
   if (!g8.ok) { row.g8a = { error: g8.reason + ' ' + JSON.stringify(g8.detail).slice(0, 200) }; }
   else {
@@ -147,7 +148,7 @@ async function runFile(rel, opts) {
   if (opts.g9a) {
     const request = { targetLevel: found.targetLevel, handProfile: found.profile, sections: 'all' };
     const t1 = Date.now();
-    const enumerated = CAND.enumerate(g, sg, request, { n: opts.g9aN, levelOffsets: opts.levelOffsets, reference: opts.reference, registerFloor: opts.registerFloor, stride: opts.stride, patterns: opts.patterns, allowStride: opts.allowStride });
+    const enumerated = CAND.enumerate(g, sg, request, { n: opts.g9aN, levelOffsets: opts.levelOffsets, reference: opts.reference, registerFloor: opts.registerFloor, stride: opts.stride, patterns: opts.patterns, allowStride: opts.allowStride, last: opts.last });
     const cheapScored = CAND.scoreCandidates(enumerated.candidates, g, sg, request, { reference: opts.reference, skipEngrave: true, registerFloor: opts.registerFloor });
     const engraveCache = new Map(); /* real engrave results are reused by the ablation re-selections below (the gate never mutates cheapScored) */
     /* `opts.weights` (--weights k=v,...): selection weights overriding CAND.DEFAULT_WEIGHTS for the g9a row AND
@@ -261,6 +262,8 @@ function scoreGraphCandidate(graph, id, profile, target, origHarmony, origMelody
   try { out.lhj = LHJ.leftHandJump(graph); } catch (e) { out.lhjError = String(e && e.message || e); }
   /* low-register clusters (a second or third whose lower note is below C3) and low bass-then-chord pairs, every engine, report only */
   try { out.cluster = LRC.lowRegisterCluster(graph); } catch (e) { out.clusterError = String(e && e.message || e); }
+  /* G9 last defect round: left-hand notes per onset, onsets of 3+ notes, seconds below C4, chord tops at E4 or above; every engine, report only */
+  try { out.lht = LHT.leftHandThickness(graph); } catch (e) { out.lhtError = String(e && e.message || e); }
   out.level = out.g6Level;
   return out;
 }
@@ -299,6 +302,13 @@ function summarizeEntries(ok, get) {
     bassChordPairs: entries.reduce((a, e) => a + (e.cluster ? e.cluster.bassChordPairs : 0), 0),
     notesBelowFSharp2: entries.reduce((a, e) => a + (e.cluster ? e.cluster.notesBelow42 : 0), 0),
     notesBelowG2: entries.reduce((a, e) => a + (e.lhj ? e.lhj.belowG2 : 0), 0),
+    /* left-hand thickness (critics/left-hand-thickness.js), pooled over files */
+    lhOnsets: entries.reduce((a, e) => a + (e.lht ? e.lht.onsets : 0), 0),
+    lhNotes: entries.reduce((a, e) => a + (e.lht ? e.lht.notes : 0), 0),
+    lhNotesPerOnset: (() => { const o = entries.reduce((a, e) => a + (e.lht ? e.lht.onsets : 0), 0); return o ? entries.reduce((a, e) => a + (e.lht ? e.lht.notes : 0), 0) / o : null; })(),
+    lhOnsets3plus: entries.reduce((a, e) => a + (e.lht ? e.lht.onsets3plus : 0), 0),
+    lhSecondsBelowC4: entries.reduce((a, e) => a + (e.lht ? e.lht.secondsBelowC4 : 0), 0),
+    lhTopsAtOrAboveE4: entries.reduce((a, e) => a + (e.lht ? e.lht.topsAtOrAboveE4 : 0), 0),
     meanMelody: mean(entries.map(e => e.melody)),
     meanHarmonyRootQuality: mean(entries.map(e => e.harmony && e.harmony.rootQuality)),
     meanHarmonyRootOnly: mean(entries.map(e => e.harmony && e.harmony.rootOnly)),
@@ -405,7 +415,12 @@ async function main() {
   const allowStride = flag('--allow-stride');
   const patterns = flag('--patterns') ? opt('--patterns').split(',') : undefined;
   if (patterns) CAND.patternsFor({ patterns: patterns }); /* validates the names */
-  const runOpts = { allowStride: allowStride, patterns: patterns, stride: stride, registerFloor: registerFloor, weights: weights, pattern: pattern, g9a: g9a, repair: repair, g9aN: g9aN, levelOffsets: levelOffsets, topKForEngrave: topKForEngrave, ablateCritics: ablateCritics };
+  /* --no-compound-beat / --no-diatonic-low / --no-left-shape: switch one last-defect-round fix off (realize/index.js; the old behaviour, for a before/after) */
+  const last = {};
+  if (flag('--no-compound-beat')) last.compoundBeat = false;
+  if (flag('--no-diatonic-low')) last.diatonicLow = false;
+  if (flag('--no-left-shape')) last.leftShape = false;
+  const runOpts = { last: last, allowStride: allowStride, patterns: patterns, stride: stride, registerFloor: registerFloor, weights: weights, pattern: pattern, g9a: g9a, repair: repair, g9aN: g9aN, levelOffsets: levelOffsets, topKForEngrave: topKForEngrave, ablateCritics: ablateCritics };
   /* child mode: one file, row written to --row-out (the parent gives each file its own process and a time limit,
      so a legacy engine that never returns on one file is recorded as a timeout instead of stalling the sweep) */
   if (flag('--one')) {

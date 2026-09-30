@@ -146,6 +146,153 @@ function foldAbove(bass, pcs) {
   return out.sort((a, b) => a - b);
 }
 
+/* ---- last G9 defect round (docs/GOALS/G09 section 12 "G9 last defect round"): chord thickness and register of the accompaniment ----
+   Three named limits, all from the user's blind reviews and two blind AI teacher judges (beyer/061 and beyer/020: left-hand block chords of
+   3 notes on every beat with a close second below middle C and a chord top at E4 or above, which draws an 8va over the bass staff).
+   STACK_MAX_BY_STAGE: the most notes one block chord may stack per onset, by G6 stage (1 first steps ... 4 upper intermediate). Stage 1 is one
+   note (realize/index.js STAGE1_COUNT already), stage 2 a dyad (root and fifth first: arrangement/reference.js's stage-2 chordLoad band has a
+   median of 1.09 extra notes per beat, i.e. a dyad, and a p90 of 1.83), stage 3 and 4 a triad (their p90 is 1.69). It caps a STACK only:
+   broken and ballad sound one note at a time and keep the triad's three tones.
+   LH_CHORD_TOP: the highest note a left-hand accompaniment chord may have (middle C, the first ledger line above the bass staff): above it a
+   bass-clef chord needs two ledger lines or an 8va (TD16 draws one), which the reviewers called confusing.
+   SECOND_BELOW: no two left-hand notes of one chord a second apart (1 or 2 semitones) when the lower one is under middle C; the existing
+   CLUSTER_BELOW also keeps a third apart out below C3 (the same low-register-cluster rule critics/low-register-cluster.js measures). */
+const STACK_MAX_BY_STAGE = Object.freeze({ 1: 1, 2: 2, 3: 3, 4: 3 });
+const LH_CHORD_TOP = 60;
+const SECOND_BELOW = 60;
+
+function maxStackForStage(stage) { return STACK_MAX_BY_STAGE[stage] != null ? STACK_MAX_BY_STAGE[stage] : (stage > 4 ? 3 : 1); }
+
+/* rank of a chord tone by its pitch class above the chord root: root 0, fifth (dim, perfect or augmented) 1, third 2, seventh and anything else 3 */
+function roleRank(pc, root) {
+  const d = (((pc - root) % 12) + 12) % 12;
+  if (d === 0) return 0;
+  if (d === 6 || d === 7 || d === 8) return 1;
+  if (d === 3 || d === 4) return 2;
+  return 3;
+}
+
+/* `midis` (one chord of `root`) thinned to at most `maxNotes` notes: the root is kept first, then the fifth, then the third, then the
+   seventh; among notes of one rank (a doubled tone) the lower is kept. Returned ascending. A chord already within the cap comes back
+   as the same array. */
+function thinChord(midis, root, maxNotes) {
+  if (maxNotes == null || midis.length <= maxNotes) return midis;
+  const order = midis.map((m, i) => ({ m: m, rank: roleRank(((m % 12) + 12) % 12, root) })).sort((a, b) => a.rank - b.rank || a.m - b.m);
+  /* a distinct pitch class beats a doubling: doubles sort after the first instance of their pitch class */
+  const seen = new Set(), firsts = [], dups = [];
+  order.forEach(o => { const pc = ((o.m % 12) + 12) % 12; if (seen.has(pc)) dups.push(o); else { seen.add(pc); firsts.push(o); } });
+  return firsts.concat(dups).slice(0, maxNotes).map(o => o.m).sort((a, b) => a - b);
+}
+
+/* How many of a chord's simultaneous pairs are a cluster for a left hand: a second (<= 2 semitones) whose lower note is under
+   SECOND_BELOW, or a third (<= 4) whose lower note is under CLUSTER_BELOW. */
+function clusterPairs(midis) {
+  const s = midis.slice().sort((a, b) => a - b);
+  let n = 0;
+  for (let i = 0; i < s.length; i++) for (let j = i + 1; j < s.length; j++) {
+    const d = s[j] - s[i];
+    if (d <= 0) continue;
+    if ((d <= 2 && s[i] < SECOND_BELOW) || (d <= 4 && s[i] < CLUSTER_BELOW)) n++;
+  }
+  return n;
+}
+
+/* One left-hand chord's pitches re-placed by whole octaves (every pitch class kept, the notes' number unchanged) so that it has no cluster
+   (clusterPairs; `opts.cluster === false` skips that test, for an arpeggio, whose notes do not sound together), its top is at or under `top`, it is within `maxSpan` and its lowest note is at or over `floor`. Candidates are ranked by,
+   in order: the span being over `maxSpan`; the number of cluster pairs; how far the top is over `top` (plus how far the lowest is under
+   `floor`); a bass leap of an octave or more from `prev` (the chord written just before, when there is one: the left-hand jump the reviewers
+   flagged); then the distance of its lowest and highest notes from `prev` (or, with no `prev`, the sum of semitone distances between the
+   sorted notes and the placement given). So a chord that is fine where it stands is kept only when nothing legal is closer to the chord
+   before it. Deterministic. Not exactly idempotent when no placement is fully legal (it then returns the best of the same search). */
+function settleChord(midis, opts) {
+  opts = opts || {};
+  const floor = opts.floor == null ? 0 : opts.floor, top = opts.top == null ? 127 : opts.top, maxSpan = opts.maxSpan == null ? 127 : opts.maxSpan;
+  const prev = opts.prev && opts.prev.length ? opts.prev.slice().sort((a, b) => a - b) : null;
+  const spanOf = a => Math.max.apply(null, a) - Math.min.apply(null, a);
+  const cost = a => {
+    const s = a.slice().sort((x, y) => x - y);
+    return [spanOf(s) > maxSpan ? 1 : 0, opts.cluster === false ? 0 : clusterPairs(s), Math.max(0, s[s.length - 1] - top) + Math.max(0, floor - s[0])];
+  };
+  const base = midis.slice().sort((a, b) => a - b);
+  const c0 = cost(base);
+  if (!prev && c0[0] === 0 && c0[1] === 0 && c0[2] === 0) return midis;
+  /* every note at every octave placement between floor-12 and top+12 */
+  const choices = base.map(m => {
+    const pc = ((m % 12) + 12) % 12, out = [];
+    for (let v = pc; v <= 127; v += 12) if (v >= floor - 12 && v <= top + 12) out.push(v);
+    return out.length ? out : [m];
+  });
+  const lexLess = (x, y) => { for (let k = 0; k < x.length; k++) if (x[k] !== y[k]) return x[k] < y[k]; return false; };
+  const moveOf = a => prev
+    ? Math.abs(a[0] - prev[0]) + Math.abs(a[a.length - 1] - prev[prev.length - 1])
+    : a.reduce((t, v, k) => t + Math.abs(v - base[k]), 0);
+  let best = null, bestKey = null;
+  const pick = [];
+  (function rec(i) {
+    if (i === choices.length) {
+      const a = pick.slice().sort((x, y) => x - y);
+      if (a.some((v, k) => k && v === a[k - 1])) return; /* two notes on one key: not a chord of this size */
+      const c = cost(a);
+      const leap = prev && Math.abs(a[0] - prev[0]) >= 12 ? 1 : 0;
+      const key = c.concat([leap, moveOf(a), a.reduce((t, v, k) => t + Math.abs(v - base[k]), 0), a[0]]);
+      if (!bestKey || lexLess(key, bestKey)) { best = a; bestKey = key; }
+      return;
+    }
+    choices[i].forEach(v => { pick[i] = v; rec(i + 1); });
+  })(0);
+  if (!best) return midis;
+  return !prev && best.every((v, k) => v === base[k]) ? midis : best;
+}
+
+/* ---- chromatic harmony at low stages (docs/GOALS/G09 section 12 "G9 last defect round") ----
+   songgraph/harmony.js (G7a) names a chord for every beat window from the pitch classes SOUNDING in it. On a thin window (two notes, or one)
+   several chords fit equally and the bass tie-break picks one by its root: beyer/020 has C (melody) over E (left hand) on beats 1 and 3, and G7a
+   reads E augmented (E G# C) there, not C major; the realizer then wrote the G# the source never has (E-G#-C, then E-G-C on the next beat: a
+   sharp and a natural alternating under a plain C-major melody). DIATONIC_MAX_STAGE: at stages 1 and 2 (first steps, elementary) a chord with
+   a tone outside the key that the SOURCE does not itself sound in that window is replaced by a diatonic chord (every tone in the key's own
+   set); stage 3 and 4 students read accidentals and keep the inferred chord. */
+const DIATONIC_MAX_STAGE = 2;
+const MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11];
+const MINOR_SCALE_WITH_LEADING_TONE = [0, 2, 3, 5, 7, 8, 10, 11]; /* natural minor plus the raised seventh every minor key's V uses */
+const SUBSTITUTE_QUALITIES = Object.freeze(['maj', 'min', 'dim', 'dom7']); /* in preference order, triads before the seventh */
+const DEGREE_PREFERENCE = Object.freeze({ 0: 0, 7: 1, 5: 2, 9: 3, 2: 4, 4: 5, 11: 6 }); /* semitones above the tonic: I V IV vi ii iii vii, anything else after */
+
+/* The key's pitch-class set (written key signature) and tonic. */
+function keyPcs(fifths, mode) {
+  const minor = mode === 'minor';
+  const tonic = ((((7 * (fifths || 0)) % 12) + 12) % 12 + (minor ? 9 : 0)) % 12;
+  return { tonic: tonic, set: new Set((minor ? MINOR_SCALE_WITH_LEADING_TONE : MAJOR_SCALE).map(iv => (tonic + iv) % 12)) };
+}
+
+/* The pitch classes of a chord as it will actually sound: its `count` tones (targetPcs), thinned to `stackMax` by thinChord. */
+function playedPcs(root, quality, count, stackMax) {
+  const distinct = [];
+  targetPcs(root, quality, count).forEach(pc => { if (distinct.indexOf(pc) < 0) distinct.push(pc); });
+  return stackMax == null ? distinct : thinChord(distinct, root, stackMax);
+}
+
+/* The diatonic chord {root, quality} to play in place of a chord that has a tone outside the key which the source does not sound
+   (`srcPcs`, an array of the pitch classes the source sounds in the window), or null when the chord is fine as it is. The candidates are
+   every maj/min/dim triad and dom7 whose tones are all in the key. Ranking: (1) most of the source's own pitch classes covered; (2) holds the
+   inferred root (the bass stays sensible); (3) shares most tones with the inferred chord; (4) I V IV vi ii iii vii; (5) triad before seventh. */
+function diatonicSubstitute(root, quality, played, key, srcPcs) {
+  const src = new Set(srcPcs);
+  if (!played.some(pc => !key.set.has(pc) && !src.has(pc))) return null;
+  const inferred = new Set(intervalsFor(quality).map(iv => (root + iv) % 12));
+  let best = null, bestKey = null;
+  for (let r = 0; r < 12; r++) SUBSTITUTE_QUALITIES.forEach((q, qi) => {
+    const pcs = intervalsFor(q).map(iv => (r + iv) % 12);
+    if (!pcs.every(pc => key.set.has(pc))) return;
+    const cover = pcs.filter(pc => src.has(pc)).length;
+    const holdsRoot = pcs.indexOf(root) >= 0 ? 1 : 0;
+    const shared = pcs.filter(pc => inferred.has(pc)).length;
+    const deg = DEGREE_PREFERENCE[(r - key.tonic + 12) % 12];
+    const k = [-cover, -holdsRoot, -shared, deg == null ? 7 : deg, qi];
+    if (!bestKey || k.some((v, i) => { for (let j = 0; j < i; j++) if (k[j] !== bestKey[j]) return false; return v < bestKey[i]; })) { best = { root: r, quality: q }; bestKey = k; }
+  });
+  return best;
+}
+
 /* All permutations of [0..n-1], n small (<=4 in every real caller - a 7th chord at most). */
 function permutations(n) {
   if (n <= 1) return [[0]];
@@ -194,6 +341,8 @@ function clampSpan(midis, maxSpan, maxIters) {
 
   return {
     CHORD_INTERVALS, intervalsFor, targetPcs, nearestWithPc, freshVoicing, leadVoicing, clampSpan, permutations,
-    REGISTER_FLOOR, CLUSTER_BELOW, floorMidis, foldAbove
+    REGISTER_FLOOR, CLUSTER_BELOW, floorMidis, foldAbove,
+    STACK_MAX_BY_STAGE, LH_CHORD_TOP, SECOND_BELOW, maxStackForStage, roleRank, thinChord, clusterPairs, settleChord,
+    DIATONIC_MAX_STAGE, keyPcs, playedPcs, diatonicSubstitute
   };
 });

@@ -178,7 +178,7 @@
         planCache.set(planCacheKey, planResult);
       }
       if (!planResult.ok) { tried.push({ spec: spec, ok: false, stage: 'plan', reason: planResult.reason }); continue; }
-      const realized = REALIZE.realize(g, sg, planResult.plan, { pattern: spec.pattern, reference: opts.reference, registerFloor: opts.registerFloor, stride: opts.stride, noStride: !opts.allowStride });
+      const realized = REALIZE.realize(g, sg, planResult.plan, Object.assign({ pattern: spec.pattern, reference: opts.reference, registerFloor: opts.registerFloor, stride: opts.stride, noStride: !opts.allowStride }, opts.last));
       if (!realized.ok) { tried.push({ spec: spec, ok: false, stage: 'realize', reason: realized.reason }); continue; }
       const fp = SER.fingerprint(realized.graph);
       if (seenFingerprints.has(fp)) { tried.push({ spec: spec, ok: false, stage: 'dedup', reason: 'DUPLICATE_OF_EARLIER_CANDIDATE', fingerprint: fp }); continue; }
@@ -405,6 +405,7 @@
       '|' + JSON.stringify(opts && opts.registerFloor !== undefined ? opts.registerFloor : 'default') +
       '|' + JSON.stringify((opts && opts.stride) || 'default') +
       '|' + JSON.stringify(patternsFor(opts)) + '|' + (opts && opts.allowStride ? 'stride' : 'nostride') +
+      '|' + JSON.stringify((opts && opts.last) || null) +
       '|' + (opts && opts.fullEngrave ? 'full' : 'gate');
   }
 

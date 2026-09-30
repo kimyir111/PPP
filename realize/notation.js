@@ -81,6 +81,7 @@ function keyTracker(g) {
     return found;
   }
   return {
+    keyAt(measureIdx) { const k = keyEventAt(measureIdx); return { fifths: k.fifths || 0, mode: k.mode || 'major' }; },
     tableAt(measureIdx) { const k = keyEventAt(measureIdx); return tableFor(k.fifths, k.mode); },
     spellAt(midi, measureIdx) { return spellMidiFromTable(midi, this.tableAt(measureIdx)); }
   };

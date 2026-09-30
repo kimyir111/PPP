@@ -380,6 +380,14 @@ function realize(g, sg, plan, opts) {
   const floor = opts.registerFloor === null || opts.registerFloor === false ? null
     : (opts.registerFloor == null ? TH.REGISTER_FLOOR : opts.registerFloor);
   const floorStats = { floor: floor, eventsRaised: 0, notesRaised: 0, notesMerged: 0, eventsShifted: 0, eventsDegraded: 0, notesDegraded: 0 };
+  /* The three last-defect-round fixes (docs/GOALS/G09 section 12 "G9 last defect round"), each ON by default and each switched off by its
+     own option set to false (the old behaviour exactly, for a before/after on one code base and for the tests):
+       opts.compoundBeat  broken / ballad / pop split a compound beat window in three parts (realize/patterns.js isCompound)
+       opts.diatonicLow   stages <= theory.DIATONIC_MAX_STAGE: a chord with an unsounded tone outside the key becomes a diatonic chord
+       opts.leftShape     the accompaniment chord is thinned by stage (block), kept at or under theory.LH_CHORD_TOP and free of close
+                          seconds below middle C (left hand; the stack cap applies to either hand) */
+  const compoundBeat = opts.compoundBeat !== false, diatonicLow = opts.diatonicLow !== false, leftShape = opts.leftShape !== false;
+  const diatonicStats = { maxStage: TH.DIATONIC_MAX_STAGE, active: diatonicLow && plan.stage <= TH.DIATONIC_MAX_STAGE, windows: 0, substituted: 0 };
 
   const b = B.builder({
     id: (g.id || 'sg') + '-g8a', meta: Object.assign({}, g.meta || {}),
@@ -427,10 +435,28 @@ function realize(g, sg, plan, opts) {
   harmonyByMeasure.forEach(list => list.sort((a, c) => R.cmp(a.w0, c.w0)));
 
   const keyTrack = NOTATION.keyTracker(g);
+  /* every source note as {w0, w1, pc} (plain numbers, whole notes from the piece's start), built on first use: the pitch classes the
+     source itself sounds in a harmony window (see diatonicWindows) */
+  let sourceTimes = null;
+  const sourcePcsIn = (w0, w1) => {
+    if (!sourceTimes) {
+      sourceTimes = [];
+      g.parts.forEach(pt => pt.events.forEach(e => {
+        if (e.kind !== 'note' || e.grace || !oldIdx.has(e.m)) return;
+        const a = R.toNumber(R.add(measureOffset[oldIdx.get(e.m)], R.parse(e.at)));
+        const b = a + R.toNumber(R.parse(e.dur));
+        (e.heads || []).forEach(h => { if (h.pitch) sourceTimes.push({ w0: a, w1: b, pc: ((P.midi(h.pitch) % 12) + 12) % 12 }); });
+      }));
+    }
+    const a = R.toNumber(w0), b = R.toNumber(w1), out = new Set();
+    sourceTimes.forEach(n => { if (n.w0 < b - 1e-9 && n.w1 > a + 1e-9) out.add(n.pc); });
+    return Array.from(out);
+  };
   const headMap = new Map();
   let prevMidis = null; /* threaded across the WHOLE piece, not reset per section - real
     "voice leading between successive harmony windows" across a section boundary too. */
-  const report = { sections: [], patternCounts: {}, floor: floorStats };
+  const report = { sections: [], patternCounts: {}, floor: floorStats, diatonic: diatonicStats };
+  const shapeState = { prev: null }; /* the accompaniment chord written last, across measures and sections (theory.settleChord keeps the next one close to it) */
 
   for (const sec of plan.sections) {
     const i0 = oldIdx.get(sec.section.from), i1 = oldIdx.get(sec.section.to);
@@ -481,15 +507,31 @@ function realize(g, sg, plan, opts) {
     const regBand = accompHand === 'RH' ? sec.voicing.registerRH : sec.voicing.registerLH;
     const anchor = regBand ? Math.round((regBand.lo + regBand.hi) / 2) : (accompHand === 'LH' ? 48 : 72);
 
+    /* the written shape of the accompaniment chord (leftShape): the stack cap for this stage on either hand, and on the left hand the top
+       bound, the floor (so a re-placed chord is not lower than what is written) and no close seconds (theory.settleChord) */
+    const shape = leftShape ? { maxStack: TH.maxStackForStage(plan.stage), top: accompHand === 'LH' ? TH.LH_CHORD_TOP : null, floor: accompHand === 'LH' ? floor : null, state: shapeState } : undefined;
+
     /* the melody hand's own notes (verbatim source), for the floor's crossing check below */
     const melodyNotes = floor != null && accompHand === 'LH' && melodyVoiceId
       ? sectionVoiceNotes(origPart, melodyVoiceId, measureIds, oldIdx, measureOffset) : [];
 
     measureIdxs.forEach(mi => {
       const oldM = oldMeasures[mi];
-      const windows = harmonyByMeasure.get(oldM.id) || [];
+      let windows = harmonyByMeasure.get(oldM.id) || [];
       if (!windows.length) return;
-      const r = PAT.run(policy.pattern, windows, prevMidis, { anchor: anchor, count: policy.count, maxSpan: maxSpan, floor: floor, stride: opts.stride });
+      if (diatonicStats.active) {
+        const key = TH.keyPcs(keyTrack.keyAt(mi).fifths, keyTrack.keyAt(mi).mode);
+        windows = windows.map(w => {
+          if (w.root == null) return w;
+          diatonicStats.windows++;
+          const played = TH.playedPcs(w.root, w.quality || 'maj', policy.count, policy.pattern === 'block' && shape ? shape.maxStack : null);
+          const sub = TH.diatonicSubstitute(w.root, w.quality || 'maj', played, key, sourcePcsIn(w.w0, w.w1));
+          if (!sub) return w;
+          diatonicStats.substituted++;
+          return Object.assign({}, w, { root: sub.root, quality: sub.quality });
+        });
+      }
+      const r = PAT.run(policy.pattern, windows, prevMidis, { anchor: anchor, count: policy.count, maxSpan: maxSpan, floor: floor, stride: opts.stride, compound: compoundBeat, shape: shape });
       prevMidis = r.prevMidis;
       const measureDur = R.parse(oldM.dur);
       r.events.forEach(ev => {
