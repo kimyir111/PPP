@@ -3,7 +3,8 @@
    critics G9a's candidate selection scores every surviving candidate with, plus three
    REPORT-ONLY ones (post-H-8, weight 0 in selection): `registerFloor` (arranged notes below E2) and
    `leftHandJump` (the share of left-hand steps whose bass moves an octave or more) and
-   `lowRegisterCluster` (chord attacks with a second or third whose lower note is below C3).
+   `lowRegisterCluster` (chord attacks with a second or third whose lower note is below C3) and `verticalClash` (harsh minor-second /
+   major-seventh pairs per onset, one-hand octave-plus chords and one-hand seconds, G9 clash guard).
 
    Five are PROMOTED, verbatim, from G8a's comparison harness (`critics/metrics.js`, moved
    from `realize/tools/metrics.js` - see that file's header): G5 hard violations, G6 level,
@@ -40,15 +41,15 @@
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory(require('./metrics.js'), require('./voice-leading.js'), require('./register-density.js'), require('./register-floor.js'), require('./left-hand-jump.js'), require('./low-register-cluster.js'));
+    module.exports = factory(require('./metrics.js'), require('./voice-leading.js'), require('./register-density.js'), require('./register-floor.js'), require('./left-hand-jump.js'), require('./low-register-cluster.js'), require('./vertical-clash.js'));
   } else {
     const M = root.PPPCriticsModules = root.PPPCriticsModules || {};
-    root.PPPCritics = factory(M.metrics, M.voiceLeading, M.registerDensity, M.registerFloor, M.leftHandJump, M.lowRegisterCluster);
+    root.PPPCritics = factory(M.metrics, M.voiceLeading, M.registerDensity, M.registerFloor, M.leftHandJump, M.lowRegisterCluster, M.verticalClash);
   }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (METRICS, VL, RD, RF, LHJ, LRC) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (METRICS, VL, RD, RF, LHJ, LRC, VCL) {
   'use strict';
 
-  const NAMES = Object.freeze(['hard', 'level', 'melody', 'harmony', 'engrave', 'voiceLeading', 'registerDensity', 'registerFloor', 'leftHandJump', 'lowRegisterCluster']);
+  const NAMES = Object.freeze(['hard', 'level', 'melody', 'harmony', 'engrave', 'voiceLeading', 'registerDensity', 'registerFloor', 'leftHandJump', 'lowRegisterCluster', 'verticalClash']);
 
   function evaluate(graph, ctx) {
     ctx = ctx || {};
@@ -68,9 +69,11 @@
     try { out.leftHandJump = LHJ.leftHandJump(graph); } catch (e) { out.leftHandJumpError = String(e && e.message || e); }
     /* G9 post-H-8 re-look: low-register cluster rate (report only; pure function of the graph) */
     try { out.lowRegisterCluster = LRC.lowRegisterCluster(graph); } catch (e) { out.lowRegisterClusterError = String(e && e.message || e); }
+    /* G9 clash guard: harsh vertical pairs and one-hand octave-plus chords and seconds (report only; ctx.sourceNotes splits the pairs into arranged ones) */
+    try { out.verticalClash = VCL.verticalClash(graph, { sourceNotes: ctx.sourceNotes }); } catch (e) { out.verticalClashError = String(e && e.message || e); }
     const hardOk = !!out.hard && !out.hard.error && out.hard.hard === 0;
     return { critics: out, hardOk: hardOk };
   }
 
-  return Object.freeze({ NAMES, metrics: METRICS, voiceLeading: VL, registerDensity: RD, registerFloor: RF, leftHandJump: LHJ, lowRegisterCluster: LRC, evaluate });
+  return Object.freeze({ NAMES, metrics: METRICS, voiceLeading: VL, registerDensity: RD, registerFloor: RF, leftHandJump: LHJ, lowRegisterCluster: LRC, verticalClash: VCL, evaluate });
 });

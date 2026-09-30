@@ -190,8 +190,8 @@ test('realize: the left-hand jump rate of pop and waltz falls from the flagged r
   let wideJ = 0, wideS = 0, closeJ = 0, closeS = 0;
   for (const [file, level, pattern] of PIECES) {
     const f = await fixture(file, level);
-    const wide = REALIZE.realize(f.g, f.sg, f.plan, { pattern, stride: 'wide' });
-    const close = REALIZE.realize(f.g, f.sg, f.plan, { pattern });
+    const wide = REALIZE.realize(f.g, f.sg, f.plan, { pattern, stride: 'wide', melodyClash: false });
+    const close = REALIZE.realize(f.g, f.sg, f.plan, { pattern, melodyClash: false }); /* the geometry is measured without the melody clash guard (which can move a stride bass tone) */
     assert.ok(wide.ok && close.ok, file);
     const w = LHJ.leftHandJump(wide.graph), c = LHJ.leftHandJump(close.graph);
     assert.ok(c.rate < w.rate, file + ': ' + c.rate + ' vs ' + w.rate);
