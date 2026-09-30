@@ -1,7 +1,9 @@
 /* G9c: the reviewer's page - ONE self-contained HTML file per packet (inline CSS and JS, no network, no fonts or scripts from
    anywhere, opens from disk).
 
-   Per item: the two arrangements X and Y as engraved scores (SVG, drawn Node-side by engrave/, see neutral.js), a Play button
+   Per item: the two arrangements X and Y as engraved scores (SVG, drawn Node-side by engrave/, see neutral.js; each is embedded
+   twice, laid out for a wide and for a narrow screen, and a media query at 720 px shows one, so a phone needs no sideways
+   scrolling; the rating logic and the sound never read the drawings), a Play button
    for each (a small Web Audio synth of the same notes the score shows; nothing is loaded), and a form.
      H-8 (diagnostic): which is better (X / Y / no difference), and per arrangement: issue checkboxes (too hard, too easy, wrong
                        harmony, melody unclear, awkward hand position, thin/muddy) and a short "what is wrong" text.
@@ -46,8 +48,10 @@ article.item h2{font-size:18px;margin:0 0 2px}
 .panel h3{font-size:16px;margin:0 8px 8px 0;display:inline-block}
 .tools{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;vertical-align:middle}
 .tools select{font:inherit;padding:6px;border-radius:6px;border:1px solid var(--line)}
-.paper{background:#fffef9;color:#111;border:1px solid var(--line);border-radius:6px;overflow-x:auto;margin:8px 0}
-.paper svg{display:block;width:100%;min-width:640px;height:auto}
+.paper{background:#fffef9;color:#111;border:1px solid var(--line);border-radius:6px;margin:8px 0}
+.paper svg{display:block;width:100%;height:auto}
+.paper .narrow{display:none}
+@media (max-width:720px){.paper .wide{display:none}.paper .narrow{display:block}}
 fieldset{border:1px solid var(--line);border-radius:8px;margin:8px 0;padding:8px 12px}
 legend{padding:0 6px;font-weight:600;font-size:14px}
 .opts{display:flex;flex-wrap:wrap;gap:6px 18px}
@@ -215,7 +219,8 @@ function panel(mode, it, side) {
   const head = '<div class="tools"><h3>편곡 ' + side + '</h3>' +
     '<button type="button" data-play="' + side + '" aria-pressed="false">재생</button>' +
     '<label>속도 <select data-speed="' + side + '"><option value="1">100%</option><option value="0.8">80%</option><option value="0.6">60%</option></select></label></div>';
-  const svg = '<div class="paper" role="img" aria-label="편곡 ' + side + '의 악보: ' + esc(it.title) + '">' + it[side].svg + '</div>';
+  /* the same music drawn twice, for a wide and for a narrow screen (neutral.js); CSS shows one, so a phone reads a score laid out for its width */
+  const svg = '<div class="paper" role="img" aria-label="편곡 ' + side + '의 악보: ' + esc(it.title) + '"><div class="wide">' + it[side].svg + '</div><div class="narrow">' + it[side].svgNarrow + '</div></div>';
   let form;
   if (mode === 'h8') {
     form = '<fieldset><legend>' + side + '는 무엇이 문제인가요?</legend><div class="opts">' + issueBoxes(it.id, side) + '</div>' +
@@ -249,7 +254,7 @@ const INTRO = {
 };
 const TITLE = { h8: '블라인드 검토 H-8 (진단)', h9: '블라인드 검토 H-9 (통과 / 실패)' };
 
-/* data: { mode, packetId, items: [{id, title, composer, targetLevel, handProfile, measures, tempo, totalQ, X:{svg,notes}, Y:{svg,notes}}] } */
+/* data: { mode, packetId, items: [{id, title, composer, targetLevel, handProfile, measures, tempo, totalQ, X:{svg,svgNarrow,notes}, Y:{svg,svgNarrow,notes}}] } */
 function pageHtml(data) {
   const mode = data.mode;
   const payload = { packetId: data.packetId, mode: mode, order: data.items.map(i => i.id), items: {} };

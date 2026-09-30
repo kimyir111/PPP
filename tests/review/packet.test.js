@@ -83,7 +83,7 @@ test('the reviewer manifest gives X and Y the same fields, and states neither se
 test('X and Y are drawn by one path: identical root attributes, no data-* attributes, no engine-only marks', () => {
   const html = fs.readFileSync(A.files.html, 'utf8');
   const svgs = html.match(/<svg[\s\S]*?<\/svg>/g);
-  assert.equal(svgs.length, ITEMS.length * 2);
+  assert.equal(svgs.length, ITEMS.length * 4, 'per item: X and Y, each drawn wide and narrow');
   svgs.forEach(s => {
     assert.ok(!/ data-[a-z]/.test(s), 'an svg still has a data-* attribute');
     assert.ok(!/ppp-fingering|ppp-tempo|ppp-dynamic|ppp-pedal|<title|<desc/.test(s), 'an svg carries a mark or text an engine may have added');
@@ -98,11 +98,42 @@ test('X and Y are drawn by one path: identical root attributes, no data-* attrib
     const ids = s => [...new Set((s.match(/ id="([^"]+)"/g) || []).map(x => x.replace(/^ id="(i\d\d[XY])-.*$/, '$1')))];
     assert.equal(ids(svgs[i]).length <= 1 && ids(svgs[i + 1]).length <= 1, true);
   }
+  /* every glyph id on the page is unique (two drawings per side, per-drawing prefixes), and each drawing only uses its own */
+  const allIds = (html.match(/ id="(i\d\d[XY]-[^"]+)"/g) || []);
+  assert.equal(new Set(allIds).size, allIds.length, 'a glyph id repeats on the page');
+  svgs.forEach(s => {
+    const own = new Set([...s.matchAll(/ id="([^"]+)"/g)].map(m => m[1]));
+    [...s.matchAll(/href="#([^"]+)"/g)].forEach(m => assert.ok(own.has(m[1]), 'a drawing references a glyph it does not define: ' + m[1]));
+  });
   /* the page data has the same shape for X and Y: [startQ, durQ, midi] triples */
   const data = JSON.parse(html.match(/<script id="packet-data" type="application\/json">([\s\S]*?)<\/script>/)[1]);
   Object.keys(data.items).forEach(id => {
     assert.deepEqual(Object.keys(data.items[id]), ['tempo', 'totalQ', 'X', 'Y']);
     ['X', 'Y'].forEach(side => data.items[id][side].forEach(n => { assert.equal(n.length, 3); n.forEach(v => assert.ok(Number.isFinite(v))); }));
+  });
+});
+
+test('each side is embedded twice (wide, narrow) as the same music; a 720 px media query shows one; no forced minimum width', () => {
+  const html = fs.readFileSync(A.files.html, 'utf8');
+  assert.ok(/@media \(max-width:720px\)\{\.paper \.wide\{display:none\}\.paper \.narrow\{display:block\}\}/.test(html), 'the media query is there');
+  assert.ok(!/min-width\s*:\s*640px/.test(html), 'the sideways-scrolling minimum width is gone');
+  assert.ok(!/\.paper\{[^}]*overflow-x/.test(html), 'the score box does not scroll sideways');
+  const panels = html.match(/<div class="paper"[\s\S]*?<\/svg><\/div><\/div>/g);
+  assert.equal(panels.length, ITEMS.length * 2);
+  const count = (s, re) => (s.match(re) || []).length;
+  panels.forEach(p => {
+    const w = p.match(/<div class="wide">([\s\S]*?)<\/div><div class="narrow">([\s\S]*)<\/div><\/div>$/);
+    assert.ok(w, 'a wide then a narrow drawing');
+    const wide = w[1], narrow = w[2];
+    const vbw = s => +s.match(/viewBox="0 0 ([\d.]+)/)[1];
+    assert.ok(vbw(narrow) < 0.6 * vbw(wide), 'the narrow drawing is laid out for a narrow width (fewer staff spaces across)');
+    /* the same music: the same heads, rests and ties, whichever way it is broken into systems */
+    const heads = x => count(x, /href="#[^"]*-notehead[A-Za-z]*"/g);
+    assert.ok(heads(wide) > 0);
+    assert.equal(heads(narrow), heads(wide));
+    assert.equal(count(narrow, /href="#[^"]*-rest[A-Za-z0-9]*"/g), count(wide, /href="#[^"]*-rest[A-Za-z0-9]*"/g));
+    assert.equal(count(narrow, /class="[^"]*ppp-tie[^"]*"/g), count(wide, /class="[^"]*ppp-tie[^"]*"/g));
+    assert.ok(count(narrow, /class="ppp-system"/g) >= count(wide, /class="ppp-system"/g), 'a narrow screen never has fewer systems');
   });
 });
 

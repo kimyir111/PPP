@@ -35,7 +35,10 @@ node review/build.js --mode h9 --out d --key-out k --items items.json   # your o
   selection first, to avoid reusing its pieces). The build refuses any packet in which a side (drawing or sound) of one item
   is identical to a side of another item.
 - Sound: notes that are the continuation of a tie are joined, and one pitch struck by both hands at one onset sounds once, for
-  both arms (the drawn score is unchanged).
+  both arms (the drawn score is unchanged). The sound is made from the arm's own notes and is not touched by any drawing rule.
+- Size: each side is embedded twice (wide and narrow drawing), about 0.3 MB per item; a 16-item packet is about 5 MB.
+  **Packets built before this change (`D:/PPP-review/*`) are obsolete**: their scores lack rests and ties, are drawn 4 bars to a
+  system, and force a 640 px minimum width. Rebuild them.
 
 
 Give the reviewer the packet directory (or just `index.html`). When they send back the exported ratings file:
@@ -95,9 +98,10 @@ guaranteed to land on it, and to mark "too easy / too hard" only if it would be 
   measure, beat, duration, pitch spelling, staff and hand are kept; voices are re-derived from the notes alone; printed
   accidentals are recomputed from the spelling and key for both; one measure list, one tempo, one engraving configuration; the
   SVG has every `data-*` attribute (event ids, graph fingerprint) removed and per-drawing glyph ids that name only the item and
-  the label. What is deliberately **not** shown: G9's own fingering, tempo marks, voice/beam structure, and ties in the
-  drawing (a tied note is two drawn notes on both sides; in the sound a tied continuation is joined to the note it continues).
-  So the review judges **the notes an arranger chose**, not how well an engine notates them.
+  the label. What is deliberately **not** shown: G9's own fingering, tempo marks and voice/beam structure. So the review judges
+  **the notes an arranger chose**, not how well an engine notates them.
+- **The drawing shows what the notes are** (see "Review page fidelity" below): rests, ties, a per-measure lower-staff clef,
+  fewer bars per system, and a second drawing laid out for a phone.
 - **The packet** is two files. The manifest lists the pieces and levels and gives X and Y the same two fields
   (`label`, `bars`); it has no seed, no rule, no engine name, no per-arrangement count, size or level. No side of any item
   is identical to a side of another item (checked at build time and in a test).
@@ -114,6 +118,35 @@ the left hand) than ScoreArranger, and a reader can see that: on the sample pack
 the 13 H-8 items and 10 of the 11 H-9 items whose densities clearly differed. The tooling closes every other channel; it cannot
 make two different arrangements look alike. A preference for the fuller arrangement is therefore not independent of that guess -
 which is why `decode.js` splits by density and by level miss.
+
+## Review page fidelity (rests, ties, spacing, phone, clef)
+
+An investigation found the page itself misrepresented both arms' scores; all of this is in `lib/neutral.js` / `lib/page.js`,
+one path for both arms, reading only the notes:
+
+- **Rests.** Each staff's silent stretches (gaps between its notes and to the bar end; the engines' own rest entries are
+  ignored, so both arms follow one rule) are drawn as rests: a silent bar is a whole-bar rest, other gaps are cut at the beats
+  and written as the largest value that fits and starts on a multiple of its own length (compound meters: dotted values per
+  beat). A gap that is not on a 1/64 grid (a triplet edge; ScoreArranger writes some sextuplets as plain 16ths of length 1/12) is
+  left alone, never approximated.
+- **Ties.** A `tieStart` note and a `tieStop` note of the same pitch and staff that meet exactly are drawn tied; an unpaired
+  flag is dropped; a tied continuation prints no accidental of its own; a note that runs past its barline is cut into tied pieces
+  of ordinary values (it would otherwise vanish). Only G9's notes carry tie flags today (ScoreArranger re-strikes), so ties appear
+  on G9's side only: that is the music, and the sound already joins them.
+- **Spacing.** The wide drawing is the desktop configuration with `barsPerSystem: 2` (the engraver's default is 4, which
+  packed 16th runs under 2 staff spaces apart; the engraver treats the number as a target and may still fit a third bar where
+  they are sparse). The narrow drawing is the engraver's own phone configuration (`screenConfig(720)`: 40 staff spaces, 2 bars a
+  system, what the app uses at 720 px or less). `page.js` embeds both and a `@media (max-width:720px)` rule shows one; the old
+  `min-width:640px` and the sideways-scrolling box are gone. Glyph ids are per drawing (`i01X-...` and `i01X-n-...`). Ratings and
+  sound never read the drawings.
+- **Clef.** The upper staff is always treble. The lower staff's clef is chosen per measure from its notes: low = MIDI <= 60
+  (`CLEF_LOW_MAX_MIDI`); it opens in bass if at least `CLEF_OPEN_LOW` = 0.5 of the first measure's notes are low; it changes
+  only at a barline and only when at least `CLEF_SWITCH_SHARE` = 0.75 of a measure's notes are on the other side; a stretch
+  shorter than `CLEF_MIN_RUN` = 2 measures with notes is folded into its neighbours; a measure with no notes keeps the clef.
+  Neither arm uses the source's clefs. (Before, both arms were drawn with the source's clefs, so a left hand played low under a
+  treble-clef source sat on ledger lines.)
+- **Not fixed here:** the 8va/8vb pass (TD16) still fires for a left hand that sits around G3-F4 (two ledger lines either
+  clef); slurs, dynamics and fingering are not drawn; sextuplet-like 1/12 notes from ScoreArranger have no tuplet mark.
 
 ## Which pieces
 
@@ -155,4 +188,5 @@ the app. The H-9 bar for flipping the default is not fixed here.
 - `build.js` - packet builder CLI and `buildPacket()`; `decode.js` - ratings + key.
 - `lib/select.js` - the input rule; `lib/arrange.js` - the two arms; `lib/legacy-worker.js` - ScoreArranger in a child
   process; `lib/neutral.js` - the one drawing path; `lib/blind.js` - the assignment; `lib/page.js` - the reviewer page.
-- Tests: `tests/review/` (`npm run test:review`).
+- Tests: `tests/review/` (`npm run test:review`), including rest and tie counts, the clef rule, the two layouts and the media
+  query, and that the sound list is unchanged by any drawing rule.

@@ -136,12 +136,12 @@ async function buildPacket(opts) {
   /* no side of any item may repeat a side of another item (a repeated score would reveal the arm without the key) */
   const sides = new Set();
   items.forEach(i => ['X', 'Y'].forEach(l => {
-    const sig = BLIND.sha256(i[l].svg.split(i.id + l + '-').join('p-') + JSON.stringify(i[l].notes)); /* glyph ids name the item and label: compare without them */
+    const sig = BLIND.sha256((i[l].svg + i[l].svgNarrow).split(i.id + l + '-').join('p-') + JSON.stringify(i[l].notes)); /* glyph ids name the item and label: compare without them */
     if (sides.has(sig)) throw new Error('item ' + i.id + ' side ' + l + ' is identical to a side of another item; refusing (it would reveal which arrangement is which)');
     sides.add(sig);
   }));
 
-  const packetId = BLIND.sha256(JSON.stringify({ mode: mode, items: items.map(i => [i.id, i.X.svg, i.Y.svg, i.X.notes, i.Y.notes]) })).slice(0, 12);
+  const packetId = BLIND.sha256(JSON.stringify({ mode: mode, items: items.map(i => [i.id, i.X.svg, i.Y.svg, i.X.svgNarrow, i.Y.svgNarrow, i.X.notes, i.Y.notes]) })).slice(0, 12);
   const html = PAGE.pageHtml({ mode: mode, packetId: packetId, items: items });
   /* What the reviewer may see about the packet. Nothing about how X and Y were assigned or made: no seed, no rule, no engine
      name, no per-arrangement count, size or level (those would tell the two apart). Both labels carry the same fields. */

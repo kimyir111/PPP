@@ -51,16 +51,45 @@ async function open(opts) {
   return { page, errors, requests };
 }
 
-test('both scores of every item render with real size, and the page makes no network request', { skip }, async () => {
+test('both scores of every item render with real size (one drawing per side is shown), and the page makes no network request', { skip }, async () => {
   const { page, errors, requests } = await open();
   const boxes = await page.$$eval('article.item svg', els => els.map(e => { const r = e.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; }));
-  assert.equal(boxes.length, 4, 'two items, two scores each');
-  boxes.forEach(b => { assert.ok(b[0] > 300 && b[1] > 100, 'an svg has a real size: ' + b); });
+  assert.equal(boxes.length, 8, 'two items, two scores each, each drawn wide and narrow');
+  assert.equal(boxes.filter(b => b[0] > 0).length, 4, 'a wide window shows the wide drawing of each side only');
+  boxes.filter(b => b[0] > 0).forEach(b => { assert.ok(b[0] > 300 && b[1] > 100, 'an svg has a real size: ' + b); });
   const glyphs = await page.$$eval('article.item svg', els => els.map(e => e.querySelectorAll('use, path').length));
   glyphs.forEach(n => assert.ok(n > 50, 'the score has drawn marks'));
   assert.deepEqual(requests, [], 'nothing was requested from the network');
   assert.deepEqual(errors, []);
   assert.equal(await page.$eval('#progress', e => e.textContent), '0 / 2 문항 평가함');
+  await page.close();
+});
+
+test('phone width (400 px): the narrow drawing is shown, the page and the score box need no sideways scrolling, staff spaces are not tiny', { skip }, async () => {
+  const page = await browser.newPage();
+  await page.setViewport({ width: 400, height: 800 });
+  await page.goto(url, { waitUntil: 'load' });
+  const r = await page.evaluate(() => {
+    const vis = [...document.querySelectorAll('article.item .paper')].map(p => {
+      const svgs = [...p.querySelectorAll('svg')].filter(s => s.getBoundingClientRect().width > 0);
+      const s = svgs[0], vb = s.viewBox.baseVal;
+      return { shown: svgs.length, inNarrow: !!s.closest('.narrow'), boxW: p.clientWidth, scrollW: p.scrollWidth, pxPerSp: s.getBoundingClientRect().width / vb.width };
+    });
+    return { vis: vis, docScroll: document.documentElement.scrollWidth, docClient: document.documentElement.clientWidth };
+  });
+  assert.equal(r.docScroll, r.docClient, 'the page does not scroll sideways');
+  assert.equal(r.vis.length, 4);
+  r.vis.forEach(v => {
+    assert.equal(v.shown, 1); assert.equal(v.inNarrow, true);
+    assert.ok(v.scrollW <= v.boxW, 'the score box does not scroll sideways');
+    assert.ok(v.pxPerSp >= 7, 'a staff space is at least 7 px at 400 px wide (was 6.2 at the forced 640 px, scrolled): ' + v.pxPerSp);
+  });
+  await page.setViewport({ width: 721, height: 800 });
+  const wide = await page.$$eval('article.item .paper', ps => ps.map(p => !!([...p.querySelectorAll('svg')].find(s => s.getBoundingClientRect().width > 0) || { closest: () => null }).closest('.wide')));
+  assert.ok(wide.every(Boolean), 'just above the breakpoint the wide drawing is shown');
+  await page.setViewport({ width: 720, height: 800 });
+  const narrow = await page.$$eval('article.item .paper', ps => ps.map(p => !!([...p.querySelectorAll('svg')].find(s => s.getBoundingClientRect().width > 0) || { closest: () => null }).closest('.narrow')));
+  assert.ok(narrow.every(Boolean), 'at 720 px the narrow drawing is shown (the engraver phone breakpoint)');
   await page.close();
 });
 
