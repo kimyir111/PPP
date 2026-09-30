@@ -121,7 +121,8 @@ function stripId(x) { const o = Object.assign({}, x); delete o.id; return o; }
    "start simple" floor G7b's own texture ladder uses for stage 1). Factored out of
    resolvePattern so the real-span downgrade below (see hymnHandsReachable) can fall back to
    the SAME structural choice a non-'hymn' section would have gotten, not a fixed guess. */
-function structuralFallback(g, oldMeasureIdx) {
+function structuralFallback(g, oldMeasureIdx, noStride) {
+  if (noStride) return 'block'; /* opts.noStride: the triple-meter 'waltz' choice is a stride pattern (see realize()'s opts.noStride) */
   try {
     const m = g.timeline.measures[oldMeasureIdx];
     const meter = T.meterAt(g, m.id);
@@ -139,11 +140,11 @@ function structuralFallback(g, oldMeasureIdx) {
        hymnHandsReachable (below) finds this specific voice-to-hand combination for real
        genuinely unplayable, in which case the caller downgrades to structuralFallback.
      - otherwise structuralFallback's own choice. */
-function resolvePattern(requested, section, g, oldMeasureIdx) {
+function resolvePattern(requested, section, g, oldMeasureIdx, noStride) {
   if (requested && requested !== 'auto') return PATTERN_NAMES.indexOf(requested) >= 0 ? requested : 'block';
   const kept = section.hands.RH.length + section.hands.LH.length;
   if (kept >= 3) return 'hymn';
-  return structuralFallback(g, oldMeasureIdx);
+  return structuralFallback(g, oldMeasureIdx, noStride);
 }
 
 /* ---- a real gap this tuning round found (docs/GOALS/G08 §14), not assumed ----
@@ -364,6 +365,10 @@ function fillRests(b, part, voiceId, staffId, oldMeasures, newMeasureId) {
   });
 }
 
+/* `opts.noStride` (default off, so direct realize() calls and their tests are unchanged; candidates/ turns it on unless the caller
+   opts in to stride patterns): an 'auto' section that would resolve to the stride pattern 'waltz' (a triple meter) resolves to 'block'
+   instead. An explicit `opts.pattern` of 'pop' or 'waltz' is still honoured (that is how the stride patterns stay selectable). `auto`
+   never resolves to 'pop': the only stride outcome of 'auto' is the triple-meter 'waltz'. */
 function realize(g, sg, plan, opts) {
   opts = opts || {};
   if (!plan || !plan.sections || !plan.sections.length) return fail('BAD_PLAN', 'plan has no sections');
@@ -433,7 +438,7 @@ function realize(g, sg, plan, opts) {
     const measureIdxs = []; for (let i = i0; i <= i1; i++) measureIdxs.push(i);
     const measureIds = measureIdxs.map(i => oldMeasures[i].id);
 
-    const basePattern = resolvePattern(opts.pattern, sec, g, i0);
+    const basePattern = resolvePattern(opts.pattern, sec, g, i0, opts.noStride);
     let policy = policyForStage(plan.stage, basePattern, opts.reference);
 
     const hands = rebalanceHands(origPart, measureIds, sec.hands);
@@ -445,7 +450,7 @@ function realize(g, sg, plan, opts) {
        `tests/realize/realize.test.js`'s own explicit-hymn fidelity check). */
     if (policy.pattern === 'hymn' && (!opts.pattern || opts.pattern === 'auto') &&
         !hymnHandsReachable(origPart, hands, measureIds, oldIdx, measureOffset, maxSpan, REACH.MAX_KEYS)) {
-      policy = policyForStage(plan.stage, structuralFallback(g, i0), opts.reference);
+      policy = policyForStage(plan.stage, structuralFallback(g, i0, opts.noStride), opts.reference);
     }
     report.patternCounts[policy.pattern] = (report.patternCounts[policy.pattern] || 0) + 1;
 
