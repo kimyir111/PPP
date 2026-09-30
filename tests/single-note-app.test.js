@@ -41,7 +41,7 @@ const ok = (name, cond, detail) => {
 };
 const HYMN = n => path.join(REPO, 'catalog', 'hymns', n + '.musicxml');
 const SONATINA_020 = path.join(REPO, 'catalog', 'method', 'sonatina', '020.mxl');
-const OPTION_FILES = /\/(critics\/|candidates\/|repair\/|realize\/(ottava|handchords))|method-books\.json|weights\/g6a/;
+const OPTION_FILES = /\/(critics\/|candidates\/|repair\/|realize\/(ottava|handchords|clefs))|method-books\.json|weights\/g6a/;
 const LEVELS = ['beginner', 'intermediate', 'advanced', 'original'];
 
 const sha = s => crypto.createHash('sha256').update(s).digest('hex').slice(0, 16);
@@ -67,9 +67,10 @@ async function openPage(browser, o) {
     /* the page's own health check of a local helper nothing serves here: refused, so the legacy engine is the browser one on every machine */
     if (/:8788\//.test(u)) return req.abort();
     if (o.block && o.block.test(u)) { rec.blocked.push(u); return req.abort(); }
+    if (o.failFirst && o.failFirst.re.test(u) && rec.blocked.length < o.failFirst.n) { rec.blocked.push(u); return req.abort(); } /* the first n requests fail: a blip */
     req.continue();
   });
-  page.on('console', m => { if (m.type() === 'error' && !/:8788\//.test(JSON.stringify(m.location())) && !(o.block && /Failed to load resource/.test(m.text()))) rec.consoleErrors.push(m.text()); });
+  page.on('console', m => { if (m.type() === 'error' && !/:8788\//.test(JSON.stringify(m.location())) && !((o.block || o.failFirst) && /Failed to load resource/.test(m.text()))) rec.consoleErrors.push(m.text()); });
   page.on('pageerror', e => rec.pageErrors.push(e.message));
   await page.setViewport({ width: o.width || 1100, height: o.height || 1000 });
   await page.goto(BASE, { waitUntil: 'networkidle2', timeout: 60000 });
@@ -269,7 +270,7 @@ async function identityHashes(browser) {
     const ko = JSON.parse(fs.readFileSync(path.join(REPO, 'i18n', 'ko-KR.json'), 'utf8')).content;
     await loadReview(kp, HYMN('christ-arose'), 'christ-arose');
     const kt = await kp.evaluate(() => { const b = document.querySelector('[data-arrangement] [data-single-note-option]'); const p = b && b.parentElement.querySelector('p'); return { label: b && b.innerText.trim(), hint: p && p.innerText.trim() }; });
-    ok('in Korean the control reads 한 손 단음 (실험), with its explanation, from the catalog', kt.label === '한 손 단음 (실험)' && kt.label === ko['One note per hand (experimental)'] && /한 손에 한 번에 한 음/.test(kt.hint || ''), JSON.stringify(kt));
+    ok('in Korean the control reads 한 손 단음 (실험), with its explanation, from the catalog', kt.label === '한 손 단음 (실험)' && kt.label === ko['One note per hand (experimental)'] && /한 손에 두 음 이상이 동시에/.test(kt.hint || '') && /화성 일부가 빠질 수 있습니다/.test(kt.hint || ''), JSON.stringify(kt));
     await kp.close();
 
     console.log('\n── the option on: the Song Arranger, four hymns ──');
@@ -288,8 +289,8 @@ async function identityHashes(browser) {
     }
     const asked = op.__rec.requests.slice(before).filter(u => OPTION_FILES.test(u));
     const names = asked.map(u => u.split('?')[0]);
-    const wantScripts = ['/realize/handchords.js', '/realize/ottava.js', '/critics/voice-leading.js', '/critics/register-density.js', '/critics/register-floor.js', '/critics/left-hand-jump.js', '/critics/low-register-cluster.js', '/critics/vertical-clash.js', '/critics/metrics.js', '/critics/index.js', '/candidates/index.js', '/repair/plan.js', '/repair/index.js'];
-    ok('the option\'s 13 scripts were requested once each, only after it was turned on', wantScripts.every(s => names.filter(n => n === s).length === 1), names.join(' '));
+    const wantScripts = ['/realize/handchords.js', '/realize/clefs.js', '/realize/ottava.js', '/critics/voice-leading.js', '/critics/register-density.js', '/critics/register-floor.js', '/critics/left-hand-jump.js', '/critics/low-register-cluster.js', '/critics/vertical-clash.js', '/critics/metrics.js', '/critics/index.js', '/candidates/index.js', '/repair/plan.js', '/repair/index.js'];
+    ok('the option\'s 14 scripts were requested once each, only after it was turned on', wantScripts.every(s => names.filter(n => n === s).length === 1), names.join(' '));
     ok('and so was the reference data (G6a weights, method books), once each', names.filter(n => /method-books\.json$/.test(n)).length === 1 && names.filter(n => /g6a-v1\.json$/.test(n)).length <= 1, names.filter(n => /json$/.test(n)).join(' '));
     const others = op.__rec.requests.slice(before).filter(u => !OPTION_FILES.test(u) && /\.(js|json)(\?|$)/.test(u) && !/engrave\/|i18n|catalog\//.test(u));
     ok('no other script or data request came with it', others.length === 0, others.join(' '));
@@ -358,6 +359,28 @@ async function identityHashes(browser) {
     ok('no page or console error on the review screen', rv.__rec.pageErrors.length === 0 && rv.__rec.consoleErrors.length === 0, JSON.stringify(rv.__rec.pageErrors.concat(rv.__rec.consoleErrors)));
     await rv.close();
 
+    console.log('\n── the chip, from the keyboard; the mode it returns to ──');
+    {
+      const kb = await openPage(browser);
+      await loadReview(kb, HYMN('christ-arose'), 'christ-arose');
+      await kb.focus('[data-arrangement] [data-single-note-option]');
+      await kb.keyboard.press('Space');
+      await sleep(300);
+      const s1 = await kb.evaluate(() => ({ pressed: document.querySelector('[data-single-note-option]').getAttribute('aria-pressed'), mode: window.PPP.arranger, playing: !!window.PPP.app.state.playing }));
+      ok('Space on the focused chip presses it (and does not start playback)', s1.pressed === 'true' && s1.mode === 'single' && !s1.playing, JSON.stringify(s1));
+      await kb.keyboard.press('Enter');
+      await sleep(300);
+      const s2 = await kb.evaluate(() => ({ pressed: document.querySelector('[data-single-note-option]').getAttribute('aria-pressed'), mode: window.PPP.arranger }));
+      ok('Enter presses it again: off, back to legacy', s2.pressed === 'false' && s2.mode === 'legacy', JSON.stringify(s2));
+      await kb.evaluate(() => { window.PPP.arranger = 'g8'; });
+      await kb.click('[data-arrangement] [data-single-note-option]'); await sleep(200);
+      const s3 = await kb.evaluate(() => window.PPP.arranger);
+      await kb.click('[data-arrangement] [data-single-note-option]'); await sleep(200);
+      const s4 = await kb.evaluate(() => window.PPP.arranger);
+      ok('switching the chip off returns to the mode that was set before (a console-set g8 is not lost)', s3 === 'single' && s4 === 'g8', s3 + ' then ' + s4);
+      await kb.close();
+    }
+
     console.log('\n── refusals ──');
     const fp = await openPage(browser);
     const fid = await addSong(fp, SONATINA_020);
@@ -388,6 +411,18 @@ async function identityHashes(browser) {
     ok('option scripts that cannot be loaded (candidates/index.js refused): the same notice and the standard arrangement, not a blank screen or a silent switch',
       nb.arrangement.singleFallback === 'SINGLE_NOT_LOADED' && /standard arrangement is shown/.test(nb.status) && bp.__rec.blocked.length > 0, JSON.stringify(nb.arrangement));
     await bp.close();
+
+    /* a blip in the reference data must not cost the whole session: the first two requests for method-books.json fail (the chip's prefetch and the first Apply) */
+    const rp2 = await openPage(browser, { failFirst: { re: /method-books\.json/, n: 2 } });
+    await loadReview(rp2, HYMN('christ-arose'), 'christ-arose');
+    await rp2.click('[data-arrangement] [data-single-note-option]');
+    await sleep(800);
+    const b1 = await reviewApply(rp2, 'intermediate', 'balanced');
+    ok('reference data that could not be fetched (twice): the notice and the standard arrangement (REFERENCE_UNAVAILABLE)', b1.arrangement.singleFallback === 'REFERENCE_UNAVAILABLE' && /standard arrangement is shown/.test(b1.status), JSON.stringify(b1.arrangement));
+    await loadReview(rp2, HYMN('christ-arose'), 'christ-arose');
+    const b2 = await reviewApply(rp2, 'intermediate', 'balanced');
+    ok('the next Apply asks again and works, with no reload', b2.arrangement.engine === 'ppp.g9-single' && b2.perAttack.filter(n => n > 1).length === 0, JSON.stringify(b2.arrangement));
+    await rp2.close();
   } catch (e) {
     ok('the suite ran to the end', false, e && e.stack || String(e));
   } finally {

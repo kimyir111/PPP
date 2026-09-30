@@ -70,15 +70,8 @@ const LAYOUT = Object.freeze({
    (0.25 and 2 were tried first: on the 12 pieces they made 11 and 6 clef changes and more 8va/8vb lines than before,
    because mid-range bars differ by only a line or two between the clefs.) A measure with no note on the staff keeps the clef in force (nothing to read); a change is only ever made at a barline. The
    graph is given these clefs BEFORE the ottava pass runs, so 8va/8vb is judged against the clef that is drawn. */
-const CLEF_SAVE_SHARE = 0.5, CLEF_SAVE_MIN = 4, CLEF_MIN_RUN = 2;
-const STEP_INDEX = { C: 0, D: 1, E: 2, F: 3, G: 4, A: 5, B: 6 };
-const CLEF_STAFF = { treble: [30, 38], bass: [18, 26] }; /* diatonic index (7 * octave + step) of the bottom and top line */
-function ledgerLines(p, clef) {
-  const m = /^([A-G])(?:#{0,3}|b{0,3})(-?\d+)$/.exec(p || '');
-  if (!m) return 0;
-  const d = 7 * Number(m[2]) + STEP_INDEX[m[1]], lo = CLEF_STAFF[clef][0], hi = CLEF_STAFF[clef][1];
-  return d > hi ? Math.floor((d - hi) / 2) : d < lo ? Math.floor((lo - d) / 2) : 0;
-}
+/* the rule's code lives in realize/clefs.js (the app uses it too, G9e-lite); the constants and `ledgerLines` are re-exported below as before */
+const { CLEF_SAVE_SHARE, CLEF_SAVE_MIN, CLEF_MIN_RUN, ledgerLines, lowerClefs } = require(path.join(REPO, 'realize/clefs.js'));
 
 /* Printed accidentals, recomputed for BOTH arms from the pitch spelling and the measure's key signature. The engraver prints an
    accidental only where a head carries `acc` (scoregraph/legacy-score.js fromScore), and the two engines differ in whether they
@@ -179,43 +172,6 @@ function neutralNotes(measures, notes, opts) {
   return withAccidentals(measures, kept);
 }
 
-/* C. the clef of the lower staff in every measure ('treble' | 'bass'), from that staff's notes alone (see the CLEF_* constants) */
-function lowerClefs(measures, notes) {
-  const cost = measures.map(() => ({ treble: 0, bass: 0, n: 0 }));
-  notes.forEach(x => {
-    if (x.staff !== 2 || !cost[x.m - 1]) return;
-    const c = cost[x.m - 1];
-    c.n++; c.treble += ledgerLines(x.p, 'treble'); c.bass += ledgerLines(x.p, 'bass');
-  });
-  const idx = []; /* the measures that have lower-staff notes */
-  cost.forEach((c, i) => { if (c.n) idx.push(i); });
-  if (!idx.length) return measures.map(() => 'bass');
-  const wins = (c, cur) => { const other = cur === 'bass' ? 'treble' : 'bass', gain = c[cur] - c[other]; return gain >= CLEF_SAVE_MIN && gain >= CLEF_SAVE_SHARE * c[cur]; };
-  const seq = [];
-  idx.forEach((i, k) => {
-    const cur = k === 0 ? 'bass' : seq[k - 1];
-    seq.push(wins(cost[i], cur) ? (cur === 'bass' ? 'treble' : 'bass') : cur);
-  });
-  /* fold a stretch shorter than CLEF_MIN_RUN into its neighbours (the shortest, earliest first, until none is left) */
-  for (;;) {
-    const runs = [];
-    seq.forEach((c, k) => { if (runs.length && runs[runs.length - 1].clef === c) runs[runs.length - 1].len++; else runs.push({ clef: c, from: k, len: 1 }); });
-    if (runs.length < 2) break;
-    let pick = -1;
-    runs.forEach((r, j) => { if (r.len < CLEF_MIN_RUN && (pick < 0 || r.len < runs[pick].len)) pick = j; });
-    if (pick < 0) break;
-    const r = runs[pick], to = pick === 0 ? runs[1].clef : runs[pick - 1].clef;
-    for (let k = r.from; k < r.from + r.len; k++) seq[k] = to;
-  }
-  const out = new Array(measures.length);
-  let cur = seq[0];
-  for (let i = 0; i < measures.length; i++) {
-    const k = idx.indexOf(i);
-    if (k >= 0) cur = seq[k];
-    out[i] = cur;
-  }
-  return out;
-}
 /* the measure list both arms are drawn from: the piece's own bars and keys and times, and the clefs of this rule (no clef change
    inside a bar; the source's own clef marks are not used) */
 function measuresWithClefs(measures, notes) {

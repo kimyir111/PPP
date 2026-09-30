@@ -4568,6 +4568,7 @@ function loadDifficultyWeights() {
    effect for the review screen's default 'balanced' style, which 'g8' does not (G08b §11); the difficulty
    "Original transcription" is never arranged. Any value other than 'g8' or 'single' is 'legacy'. */
 let ARRANGER_MODE = 'legacy';
+let ARRANGER_MODE_BEFORE_SINGLE = 'legacy'; /* what the chip returns to when it is switched off (a console-set 'g8' is not lost) */
 /* The two real, already-committed files arrangement/reference.js's real per-stage bands need
    (difficulty/weights/g6a-v1.json - the SAME file loadDifficultyWeights() above already
    fetches, reused rather than fetched twice; difficulty/tools/dataset/method-books.json, G6's
@@ -4581,15 +4582,18 @@ let ARRANGER_REFERENCE = null;
 let _arrangerReferencePromise = null;
 function loadArrangerReference() {
   if (ARRANGER_REFERENCE) return Promise.resolve(ARRANGER_REFERENCE);
-  if (_arrangerReferencePromise) return _arrangerReferencePromise;
+  if (_arrangerReferencePromise) return _arrangerReferencePromise; /* a fetch in flight is shared */
+  const getJson = url => (typeof fetch === 'function'
+    ? fetch(url, { cache: 'force-cache' }).then(r => (r.ok ? r.json() : null)).catch(() => null)
+    : Promise.resolve(null));
   _arrangerReferencePromise = Promise.all([
-    loadDifficultyWeights(),
-    typeof fetch === 'function'
-      ? fetch('./difficulty/tools/dataset/method-books.json', { cache: 'force-cache' }).then(r => (r.ok ? r.json() : null)).catch(() => null)
-      : Promise.resolve(null)
+    /* loadDifficultyWeights() keeps a failed fetch for the session (G6b's own behaviour, left as it is): when it gives nothing, ask again here */
+    loadDifficultyWeights().then(w => w || getJson('./difficulty/weights/g6a-v1.json')),
+    getJson('./difficulty/tools/dataset/method-books.json')
   ]).then(([weights, dataset]) => {
-    ARRANGER_REFERENCE = (weights && dataset) ? { weights: weights, dataset: dataset } : null;
-    return ARRANGER_REFERENCE;
+    if (weights && dataset) { ARRANGER_REFERENCE = { weights: weights, dataset: dataset }; return ARRANGER_REFERENCE; }
+    _arrangerReferencePromise = null; /* a failure is not kept: the next use asks again */
+    return null;
   });
   return _arrangerReferencePromise;
 }
@@ -4662,12 +4666,12 @@ function graphToReviewScore(g, title) {
 
 /* ============================ G9e-lite: one note per hand (PPP.arranger = 'single') ============================
    The G9 pipeline the review packets were made with, run in the page: candidates.run({singleNoteHands: true}) ->
-   repairSelection -> addOttava. Its scripts (candidates, critics, repair, handchords, ottava: about 180 KB) are
+   repairSelection -> lower-staff clefs -> addOttava. Its scripts (candidates, critics, repair, handchords, clefs, ottava: about 185 KB) are
    NOT in the page's script list: they are fetched the first time the option is used, in this order (each file's own
    header says which it needs before it; all are UMD, none calls Node's require in the browser). Nothing is loaded
    for a person who never turns the option on. */
 const SINGLE_SCRIPTS = [
-  'realize/handchords.js', 'realize/ottava.js',
+  'realize/handchords.js', 'realize/clefs.js', 'realize/ottava.js',
   'critics/voice-leading.js', 'critics/register-density.js', 'critics/register-floor.js', 'critics/left-hand-jump.js',
   'critics/low-register-cluster.js', 'critics/vertical-clash.js', 'critics/metrics.js', 'critics/index.js',
   'candidates/index.js', 'repair/plan.js', 'repair/index.js'
@@ -4742,6 +4746,9 @@ async function arrangeSingleNote(builtGraph, plan) {
     const rr = REPAIR.repairSelection(sel, builtGraph, sg, request, { REF: (window.PPPArrangementModules || {}).reference, reference: reference });
     if (!rr.ok || !rr.graph) return { ok: false, reason: 'REPAIR_FAILED' };
     let graph = rr.graph;
+    /* the lower staff's clef per measure (treble where the left hand lies in the treble register), BEFORE the 8va/8vb pass, which reads the clef that is drawn */
+    const CLF = (window.PPPRealizeModules || {}).clefs;
+    if (CLF) { try { graph = CLF.applyLowerClefs(graph).graph; } catch (e) { /* the graph with its bass clef is still right */ } }
     if (OTT) {
       try { const o = OTT.addOttava(graph); if (o && o.graph && !o.fallback) graph = o.graph; } catch (e) { /* an 8va line is a nicety: the graph without it is still right */ }
     }
@@ -13480,6 +13487,8 @@ class Component extends DCLogic {
     if (e.key === 'Escape' && this.state.shareDlg) { this.closeShareDialog(); return; }
     const t = e.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    /* the one-note-per-hand chip is a button: Space and Enter press it, they do not start playback */
+    if (t && t.closest && t.closest('[data-single-note-option]') && (e.key === ' ' || e.key === 'Enter')) return;
     if (e.key === 'Escape' && this.state.screen === 'learn' && this.state.learnFocus) { this.toggleLearnFocus(); return; }
     /* On Piano Basics the letter row is a piano (A S D F… from Do) and the
        space bar taps the rhythm, so no practice shortcut fires there. */
@@ -14160,7 +14169,7 @@ class Component extends DCLogic {
     this.setState({
       importReport: report, importSource: source,
       arrangementLevel: plan.level, arrangementStyle: plan.style,
-      arrangementBusy: false, arrangementStatus: singleNotice || arrangementStatus || '',
+      arrangementBusy: false, arrangementStatus: singleNotice || (source.arrangement.engine === 'ppp.g9-single' ? '' : arrangementStatus) || '', /* an AI line about a texture says nothing true of a one-note-per-hand result */
       reviewFrom: Score.first(arranged)
     }, () => this.saveNow());
     if (singleNotice) this.say(singleNotice);
@@ -14804,7 +14813,7 @@ class Component extends DCLogic {
     const id = 'song-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     const source = Object.assign({}, arranged.source || {}, {
       kind: 'arrangement', parentSongId: d.songId, parentTitle: sourceScore.title,
-      provider: provider || (usedSingle ? 'PPP one-note-per-hand arranger' : usedFallback ? 'PPP browser fallback' : 'PPP harmonic arranger'), createdAt: Clock.now()
+      provider: usedSingle ? 'PPP one-note-per-hand arranger' : (provider || (usedFallback ? 'PPP browser fallback' : 'PPP harmonic arranger')), createdAt: Clock.now()
     });
     arranged.source = source;
     arranged.composer = [sourceScore.composer, usedSingle ? tx('PPP one-note-per-hand arrangement') : tx('PPP {{style}} arrangement', { style: this.arrangementStyleName(plan.style) })]
@@ -17203,11 +17212,12 @@ class Component extends DCLogic {
       setArrangementStyle: e => this.setState({ arrangementStyle: e.target.value }),
       /* G9e-lite: the opt-in. Reads PPP.arranger itself, so it also shows a mode set from the console; session only, not remembered. */
       singleNoteLabel: tx('One note per hand (experimental)'),
-      singleNoteHint: tx('Writes the melody in the right hand and one bass line in the left, one note at a time in each hand. Easier to read, but plainer, and often easier than the level you choose. The texture choice does not apply, and "Original transcription" is not arranged.'),
+      singleNoteHint: tx('The right hand plays the melody as one line; the left hand plays an accompaniment one note at a time. No hand plays two or more notes together, but depending on the piece the left hand may play more notes, and some of the original harmony can be lost.'),
       singleNotePressed: ARRANGER_MODE === 'single' ? 'true' : 'false',
       singleNoteStyle: this.chip(ARRANGER_MODE === 'single') + ';align-self:flex-start;',
       toggleSingleNote: () => {
-        ARRANGER_MODE = ARRANGER_MODE === 'single' ? 'legacy' : 'single';
+        if (ARRANGER_MODE === 'single') ARRANGER_MODE = ARRANGER_MODE_BEFORE_SINGLE;
+        else { ARRANGER_MODE_BEFORE_SINGLE = ARRANGER_MODE; ARRANGER_MODE = 'single'; }
         /* turning it on starts the download of its scripts and data now, so that Apply does not wait for them */
         if (ARRANGER_MODE === 'single') { loadSingleModules(); loadArrangerReference(); }
         /* the Song Arranger's suggested copy title follows the mode, unless the person has typed their own */

@@ -51,6 +51,16 @@ function extractSource() {
   };
 }
 
+/* the app's reference loaders (G6a weights + method-books dataset), closed over a stub `fetch` */
+function makeReferenceLoader(fetchStub) {
+  const html = appHtml();
+  const line = name => { const m = new RegExp('^(?:let|const) ' + name + ' = .*$', 'm').exec(html); if (!m) throw new Error('not found: ' + name); return m[0] + '\n'; };
+  const fn = name => { const i = html.indexOf('\nfunction ' + name + '('); const end = html.indexOf('\n}\n', i); if (i < 0 || end < 0) throw new Error('not found: ' + name); return html.slice(i + 1, end + 2); };
+  const body = line('DIFFICULTY_WEIGHTS') + line('_difficultyWeightsPromise') + fn('loadDifficultyWeights') + line('ARRANGER_REFERENCE') + line('_arrangerReferencePromise') + fn('loadArrangerReference') +
+    'return { loadArrangerReference, loadDifficultyWeights };';
+  return new Function('fetch', body)(fetchStub);
+}
+
 function make(deps) {
   const src = extractSource();
   const factory = new Function('window', 'tx', 'Score', 'loadArrangerReference', 'loadSingleModules', 'singleTick', src.body);
@@ -72,7 +82,7 @@ function nodeWindow() {
     PPPCandidates: R('candidates/index.js'), PPPRepair: R('repair/index.js'),
     PPPCriticsModules: { metrics: R('critics/metrics.js') },
     PPPArrangementModules: { reference: R('arrangement/reference.js') },
-    PPPRealizeModules: { ottava: R('realize/ottava.js') },
+    PPPRealizeModules: { ottava: R('realize/ottava.js'), clefs: R('realize/clefs.js') },
     PPPScoreGraphModules: { serialize: R('scoregraph/serialize.js'), legacyScore: R('scoregraph/legacy-score.js'), pitch: R('scoregraph/pitch.js') }
   };
 }
@@ -96,4 +106,4 @@ function browserWindow() {
   return ctx;
 }
 
-module.exports = { make, reference, nodeWindow, browserWindow, scriptListOfPage, extractSource, REPO, appFinalize };
+module.exports = { make, makeReferenceLoader, reference, nodeWindow, browserWindow, scriptListOfPage, extractSource, REPO, appFinalize };

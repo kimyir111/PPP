@@ -1920,7 +1920,7 @@
     "This score could not be prepared for printing.": "이 악보는 인쇄용으로 준비하지 못했어요.",
     "This passage could not be engraved.": "이 부분은 악보로 그리지 못했어요.",
     "One note per hand (experimental)": "한 손 단음 (실험)",
-    "Writes the melody in the right hand and one bass line in the left, one note at a time in each hand. Easier to read, but plainer, and often easier than the level you choose. The texture choice does not apply, and \"Original transcription\" is not arranged.": "오른손은 멜로디, 왼손은 베이스 한 줄로, 한 손에 한 번에 한 음만 씁니다. 읽기는 쉽지만 화음이 단순해지고, 고른 난이도보다 쉬워지는 경우가 많습니다. 편곡 스타일 선택은 적용되지 않고, \"원본 채보\"는 편곡하지 않으므로 이 옵션이 적용되지 않습니다.",
+    "The right hand plays the melody as one line; the left hand plays an accompaniment one note at a time. No hand plays two or more notes together, but depending on the piece the left hand may play more notes, and some of the original harmony can be lost.": "오른손은 멜로디 한 줄, 왼손은 음을 하나씩 이어 치는 반주로 만듭니다. 한 손에 두 음 이상이 동시에 나오지 않지만, 곡에 따라 왼손 음이 더 많아지고 원곡의 화성 일부가 빠질 수 있습니다.",
     "Writing one note per hand…": "한 손에 한 음씩 쓰는 중…",
     "This piece could not be made in one-note-per-hand mode, so the standard arrangement is shown.": "이 곡은 한 손 단음 모드로 만들 수 없어 기본 편곡을 보여줍니다.",
     "This piece could not be made in one-note-per-hand mode. Turn the option off to make the standard arrangement.": "이 곡은 한 손 단음 모드로 만들 수 없습니다. 기본 편곡을 만들려면 이 옵션을 끄세요.",

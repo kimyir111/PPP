@@ -1918,7 +1918,7 @@
     "This score could not be prepared for printing.": "この楽譜は印刷用に準備できませんでした。",
     "This passage could not be engraved.": "この部分は楽譜として描画できませんでした。",
     "One note per hand (experimental)": "片手単音（実験）",
-    "Writes the melody in the right hand and one bass line in the left, one note at a time in each hand. Easier to read, but plainer, and often easier than the level you choose. The texture choice does not apply, and \"Original transcription\" is not arranged.": "右手はメロディ、左手はベース1本で、片手ごとに一度に1音だけ書きます。読みやすくなりますが、和音が単純になり、選んだ難易度より易しくなることがよくあります。編曲スタイルの選択は適用されず、「元の採譜」は編曲しないためこのオプションは適用されません。",
+    "The right hand plays the melody as one line; the left hand plays an accompaniment one note at a time. No hand plays two or more notes together, but depending on the piece the left hand may play more notes, and some of the original harmony can be lost.": "右手はメロディ1本、左手は音を1つずつつなぐ伴奏にします。片手で2音以上が同時に鳴ることはありませんが、曲によっては左手の音が増え、元の和声の一部が失われることがあります。",
     "Writing one note per hand…": "片手1音ずつ書いています…",
     "This piece could not be made in one-note-per-hand mode, so the standard arrangement is shown.": "この曲は片手単音モードで作れなかったため、標準の編曲を表示しています。",
     "This piece could not be made in one-note-per-hand mode. Turn the option off to make the standard arrangement.": "この曲は片手単音モードで作れません。標準の編曲を作るにはこのオプションをオフにしてください。",

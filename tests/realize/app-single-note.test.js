@@ -190,3 +190,53 @@ test('a graph read from a file with no tempo list is arranged (realize() used to
   const again = await E.make({ window: E.nodeWindow(), loadArrangerReference: refLoader }).arrangeSingleNote(stripped, { level: 'beginner' });
   assert.equal(again.ok, true, JSON.stringify(again));
 });
+
+test('the reference loader keeps only a success: one failed fetch does not poison the session (the next use asks again)', async () => {
+  const W = ref.weights, D = ref.dataset;
+  const ok = body => ({ ok: true, json: () => Promise.resolve(body) });
+  /* 1. the dataset fetch fails once (a blip), then works */
+  let calls = [];
+  let failDataset = 1;
+  const fetch1 = url => { calls.push(url); if (/method-books/.test(url) && failDataset-- > 0) return Promise.reject(new Error('offline')); return Promise.resolve(ok(/g6a/.test(url) ? W : D)); };
+  const L1 = E.makeReferenceLoader(fetch1);
+  assert.equal(await L1.loadArrangerReference(), null, 'the first attempt fails');
+  const second = await L1.loadArrangerReference();
+  assert.ok(second && second.dataset === D && second.weights === W, 'the second attempt asks again and succeeds');
+  const n = calls.length;
+  assert.equal(await L1.loadArrangerReference(), second, 'a success is kept');
+  assert.equal(calls.length, n, 'and not fetched again');
+  /* 2. the weights fetch fails once: the loader retries it itself (loadDifficultyWeights keeps its failure, G6b, unchanged) */
+  let failW = 1;
+  const fetch2 = url => { if (/g6a/.test(url) && failW-- > 0) return Promise.resolve({ ok: false, json: () => Promise.resolve(null) }); return Promise.resolve(ok(/g6a/.test(url) ? W : D)); };
+  const L2 = E.makeReferenceLoader(fetch2);
+  const r2 = await L2.loadArrangerReference();
+  assert.ok(r2 && r2.weights === W, 'a failed weights fetch is asked for again in the same call');
+  /* 3. both fail, then a request in flight is shared while it is pending */
+  let pending = 0;
+  const fetch3 = url => { pending++; return new Promise(res => setTimeout(() => res(ok(/g6a/.test(url) ? W : D)), 20)); };
+  const L3 = E.makeReferenceLoader(fetch3);
+  const [a, b] = await Promise.all([L3.loadArrangerReference(), L3.loadArrangerReference()]);
+  assert.equal(a, b);
+  assert.equal(pending, 2, 'two files, fetched once for two simultaneous callers');
+  /* 4. no fetch at all: null, and still retried later */
+  const L4 = E.makeReferenceLoader(undefined);
+  assert.equal(await L4.loadArrangerReference(), null);
+});
+
+test('the lower staff\'s clef: a piece whose left hand lies in the treble register gets treble clefs (few changes), a hymn keeps its bass clef', async () => {
+  const beyer = await nodeApp.arrangeSingleNote(await mxl('catalog/method/beyer/020.mxl'), { level: 'beginner' });
+  assert.equal(beyer.ok, true);
+  const lowerClefs = g => { const p = g.parts[0], st = p.staves.find(s => s.limb === 'LH'); return p.clefs.filter(c => c.staff === st.id).map(c => g.timeline.measures.findIndex(m => m.id === c.m) + 1 + ':' + c.sign).join(' '); };
+  assert.equal(lowerClefs(beyer.graph), '1:G', 'beyer/020: treble all the way');
+  const lowerOttava = g => g.parts[0].spanners.filter(s => s.type === 'ottava' && s.staff === g.parts[0].staves.find(x => x.limb === 'LH').id).length;
+  assert.equal(lowerOttava(beyer.graph), 0, 'no 8va over the left hand');
+  const burg = await nodeApp.arrangeSingleNote(await mxl('catalog/method/burgmuller25/016.mxl'), { level: 'advanced' });
+  assert.equal(burg.ok, true);
+  assert.equal(lowerClefs(burg.graph), '1:F 3:G 10:F 12:G', 'burgmuller25/016: the rule of review/lib/neutral.js, four signs in 18 bars');
+  const hy = await nodeApp.arrangeSingleNote(hymn('christ-arose'), { level: 'intermediate' });
+  assert.equal(lowerClefs(hy.graph), '1:F', 'a hymn is untouched');
+  /* the review Score carries it */
+  const score = nodeApp.graphToReviewScore(burg.graph, 'b');
+  assert.equal(score.measures[2].clefs[2], 'treble');
+  assert.equal(score.measures[9].clefs[2], 'bass');
+});

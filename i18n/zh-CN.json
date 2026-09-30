@@ -1918,7 +1918,7 @@
     "This score could not be prepared for printing.": "无法为打印准备此乐谱。",
     "This passage could not be engraved.": "无法将此段落绘制为乐谱。",
     "One note per hand (experimental)": "单手单音（实验）",
-    "Writes the melody in the right hand and one bass line in the left, one note at a time in each hand. Easier to read, but plainer, and often easier than the level you choose. The texture choice does not apply, and \"Original transcription\" is not arranged.": "右手弹旋律，左手弹一条低音线，每只手一次只弹一个音。更容易读谱，但和声更简单，往往比所选难度更容易。编配风格选项不适用，“原始转谱”不做编配，因此此选项对其无效。",
+    "The right hand plays the melody as one line; the left hand plays an accompaniment one note at a time. No hand plays two or more notes together, but depending on the piece the left hand may play more notes, and some of the original harmony can be lost.": "右手弹一条旋律，左手弹逐个音连续的伴奏。任何一只手都不会同时弹两个或更多的音，但视曲子而定，左手的音可能变多，原曲的部分和声可能丢失。",
     "Writing one note per hand…": "正在按每手一个音来写…",
     "This piece could not be made in one-note-per-hand mode, so the standard arrangement is shown.": "这首曲子无法用单手单音模式生成，因此显示标准编配。",
     "This piece could not be made in one-note-per-hand mode. Turn the option off to make the standard arrangement.": "这首曲子无法用单手单音模式生成。要生成标准编配，请关闭此选项。",
