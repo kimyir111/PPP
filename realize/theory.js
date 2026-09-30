@@ -105,6 +105,10 @@ function freshVoicing(root, quality, count, anchor) {
    n})`, `null` turns it off; `critics/register-floor.js` and `repair/` read the same constant. */
 const REGISTER_FLOOR = 40;
 
+/* C3 (MIDI 48): below it a second or third between two sounding notes reads as a muddy cluster (critics/low-register-cluster.js;
+   the 'open' stride geometry keeps the chord's tones at or above it when its bass is below it). */
+const CLUSTER_BELOW = 48;
+
 /* One generated event's pitches, with everything below `floor` moved UP by whole octaves (so every pitch
    class is kept). Order: (1) each low pitch is raised on its own (an inversion; a pitch that lands on one the
    event already has is merged into it - the same key, so no pitch class is lost); (2) if that pushes the
@@ -125,6 +129,21 @@ function floorMidis(midis, floor, maxSpan) {
   if (maxSpan == null || span(out) <= maxSpan) return { midis: out, raised: raised, merged: merged, shifted: false };
   const up = 12 * Math.ceil((floor - Math.min.apply(null, midis)) / 12);
   return { midis: midis.map(m => m + up), raised: midis.length, merged: 0, shifted: true };
+}
+
+/* A chord voiced CLOSE ABOVE a bass note (the stride / oom-pah geometry, docs/GOALS/G09 section 12 "G9 left-hand jumps"):
+   each of the chord's pitch classes at its single MIDI instance in (bass, bass + 12], sorted ascending. Every pitch class
+   occurs exactly once in an octave window, so the voicing is fixed by the bass note and the pitch classes: the lowest chord
+   note is 1..11 above the bass (3..9 for a triad whose root or fifth is the bass) and the top is at most an octave above it
+   (a chord tone that is the bass's own pitch class sits exactly at bass + 12). A repeated pitch class collapses to one note. */
+function foldAbove(bass, pcs) {
+  const out = [];
+  pcs.forEach(pc => {
+    const up = (((pc - bass) % 12) + 12) % 12;
+    const m = bass + (up === 0 ? 12 : up);
+    if (out.indexOf(m) < 0) out.push(m);
+  });
+  return out.sort((a, b) => a - b);
 }
 
 /* All permutations of [0..n-1], n small (<=4 in every real caller - a 7th chord at most). */
@@ -175,6 +194,6 @@ function clampSpan(midis, maxSpan, maxIters) {
 
   return {
     CHORD_INTERVALS, intervalsFor, targetPcs, nearestWithPc, freshVoicing, leadVoicing, clampSpan, permutations,
-    REGISTER_FLOOR, floorMidis
+    REGISTER_FLOOR, CLUSTER_BELOW, floorMidis, foldAbove
   };
 });

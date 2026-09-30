@@ -484,7 +484,7 @@ function realize(g, sg, plan, opts) {
       const oldM = oldMeasures[mi];
       const windows = harmonyByMeasure.get(oldM.id) || [];
       if (!windows.length) return;
-      const r = PAT.run(policy.pattern, windows, prevMidis, { anchor: anchor, count: policy.count, maxSpan: maxSpan });
+      const r = PAT.run(policy.pattern, windows, prevMidis, { anchor: anchor, count: policy.count, maxSpan: maxSpan, floor: floor, stride: opts.stride });
       prevMidis = r.prevMidis;
       const measureDur = R.parse(oldM.dur);
       r.events.forEach(ev => {

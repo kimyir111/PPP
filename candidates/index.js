@@ -155,7 +155,7 @@
         planCache.set(planCacheKey, planResult);
       }
       if (!planResult.ok) { tried.push({ spec: spec, ok: false, stage: 'plan', reason: planResult.reason }); continue; }
-      const realized = REALIZE.realize(g, sg, planResult.plan, { pattern: spec.pattern, reference: opts.reference, registerFloor: opts.registerFloor });
+      const realized = REALIZE.realize(g, sg, planResult.plan, { pattern: spec.pattern, reference: opts.reference, registerFloor: opts.registerFloor, stride: opts.stride });
       if (!realized.ok) { tried.push({ spec: spec, ok: false, stage: 'realize', reason: realized.reason }); continue; }
       const fp = SER.fingerprint(realized.graph);
       if (seenFingerprints.has(fp)) { tried.push({ spec: spec, ok: false, stage: 'dedup', reason: 'DUPLICATE_OF_EARLIER_CANDIDATE', fingerprint: fp }); continue; }
@@ -225,10 +225,16 @@
      keeps every candidate's generated notes at or above E2, so the critic reads 0 on every candidate that is not degraded
      (measured: 0 degraded in 184 candidates over the two samples) - there is nothing for selection to separate, and a hard
      filter would only turn a degraded piece into "no arrangement". `--weights registerFloor=1` counts it. */
-  const DEFAULT_WEIGHTS = Object.freeze({ level: 1, melody: 1, harmony: 1, engrave: 1, voiceLeading: 0, registerDensity: 1, registerFloor: 0 });
+  /* `leftHandJump` (post-H-8 re-look, docs/GOALS/G09 section 12 "G9 left-hand jumps") is REPORT ONLY too: weight 0. The standing
+     rule is no further tuning of selection; the fix for the reviewer's "awkward hand position" is the realizer's stride geometry
+     (realize/patterns.js), and the critic measures it. `--weights lowRegisterCluster=1` counts the low-register cluster rate the same way. `--weights leftHandJump=1` counts it (a jump rate of JUMP_RATE_CAP or more
+     is the worst score). */
+  const DEFAULT_WEIGHTS = Object.freeze({ level: 1, melody: 1, harmony: 1, engrave: 1, voiceLeading: 0, registerDensity: 1, registerFloor: 0, leftHandJump: 0, lowRegisterCluster: 0 });
   const LEVEL_CAP = 3;      /* a 3-course-position miss is already "as bad as it gets" for this term */
   const ENGRAVE_CAP = 5;    /* 5 combined L1/L2 violations likewise */
   const SMELL_CAP = 10;     /* 10 combined voice-leading smells likewise */
+  const JUMP_RATE_CAP = 0.25; /* a quarter of the left-hand steps an octave or more apart is already "as bad as it gets" (weight 0 by default: report only) */
+  const CLUSTER_RATE_CAP = 0.5; /* half the chord attacks a low second or third is "as bad as it gets" (weight 0 by default: report only) */
   const FLOOR_CAP = 10;     /* 10 arranged notes below the register floor likewise (weight 0 by default: report only) */
 
   /* A score that is absent (`undefined`) or whose critic recorded an error (`<name>Error`,
@@ -255,7 +261,11 @@
     const registerDensityBad = (failed('registerDensity') || !rd) ? 1 : Math.min(1, rd.overage);
     const rf = scores.registerFloor;
     const registerFloorBad = (failed('registerFloor') || !rf) ? 1 : Math.min(1, rf.below / FLOOR_CAP);
-    const parts = { level: levelBad, melody: melodyBad, harmony: harmonyBad, engrave: engraveBad, voiceLeading: voiceLeadingBad, registerDensity: registerDensityBad, registerFloor: registerFloorBad };
+    const lj = scores.leftHandJump;
+    const leftHandJumpBad = (failed('leftHandJump') || !lj) ? 1 : Math.min(1, lj.rate / JUMP_RATE_CAP);
+    const lc = scores.lowRegisterCluster;
+    const lowRegisterClusterBad = (failed('lowRegisterCluster') || !lc) ? 1 : Math.min(1, lc.clusterRate / CLUSTER_RATE_CAP);
+    const parts = { level: levelBad, melody: melodyBad, harmony: harmonyBad, engrave: engraveBad, voiceLeading: voiceLeadingBad, registerDensity: registerDensityBad, registerFloor: registerFloorBad, leftHandJump: leftHandJumpBad, lowRegisterCluster: lowRegisterClusterBad };
     let total = 0;
     Object.keys(parts).forEach(k => { total += (w[k] == null ? 1 : w[k]) * parts[k]; });
     return { total: total, parts: parts, weights: w };
@@ -370,6 +380,7 @@
       '|' + JSON.stringify((opts && opts.reference) || null) +
       '|' + JSON.stringify((opts && opts.planOpts) || null) +
       '|' + JSON.stringify(opts && opts.registerFloor !== undefined ? opts.registerFloor : 'default') +
+      '|' + JSON.stringify((opts && opts.stride) || 'default') +
       '|' + (opts && opts.fullEngrave ? 'full' : 'gate');
   }
 

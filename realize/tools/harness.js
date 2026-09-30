@@ -11,7 +11,7 @@
    measured G6 position lands closest - the same fairness G8a's own search gets, never a
    fixed guess); score all four on the SAME five metrics (realize/tools/metrics.js).
 
-   node realize/tools/harness.js [--sample N] [--out path.json] [--g9a [--repair]] [--held-out N] [--register-floor N|off]
+   node realize/tools/harness.js [--sample N] [--out path.json] [--g9a [--repair]] [--held-out N] [--register-floor N|off] [--stride wide|close]
    ========================================================================== */
 'use strict';
 const fs = require('fs');
@@ -30,6 +30,8 @@ const CRIT = require(path.join(REPO, 'critics/index.js'));
 const REPAIR = require(path.join(REPO, 'repair/index.js'));
 const VLC = require(path.join(REPO, 'critics/voice-leading.js'));
 const RFC = require(path.join(REPO, 'critics/register-floor.js'));
+const LHJ = require(path.join(REPO, 'critics/left-hand-jump.js'));
+const LRC = require(path.join(REPO, 'critics/low-register-cluster.js'));
 
 const LEGACY_LEVELS = ['beginner', 'intermediate', 'advanced', 'original'];
 const HAND_PROFILES = ['large', 'medium', 'small'];
@@ -120,7 +122,7 @@ async function runFile(rel, opts) {
 
   /* ---- G8a ---- */
   const t0 = Date.now();
-  const g8 = REALIZE.realize(g, sg, found.plan, { pattern: opts.pattern || 'auto', registerFloor: opts.registerFloor });
+  const g8 = REALIZE.realize(g, sg, found.plan, { pattern: opts.pattern || 'auto', registerFloor: opts.registerFloor, stride: opts.stride });
   row.g8aMs = Date.now() - t0;
   if (!g8.ok) { row.g8a = { error: g8.reason + ' ' + JSON.stringify(g8.detail).slice(0, 200) }; }
   else {
@@ -145,7 +147,7 @@ async function runFile(rel, opts) {
   if (opts.g9a) {
     const request = { targetLevel: found.targetLevel, handProfile: found.profile, sections: 'all' };
     const t1 = Date.now();
-    const enumerated = CAND.enumerate(g, sg, request, { n: opts.g9aN, levelOffsets: opts.levelOffsets, reference: opts.reference, registerFloor: opts.registerFloor });
+    const enumerated = CAND.enumerate(g, sg, request, { n: opts.g9aN, levelOffsets: opts.levelOffsets, reference: opts.reference, registerFloor: opts.registerFloor, stride: opts.stride });
     const cheapScored = CAND.scoreCandidates(enumerated.candidates, g, sg, request, { reference: opts.reference, skipEngrave: true, registerFloor: opts.registerFloor });
     const engraveCache = new Map(); /* real engrave results are reused by the ablation re-selections below (the gate never mutates cheapScored) */
     /* `opts.weights` (--weights k=v,...): selection weights overriding CAND.DEFAULT_WEIGHTS for the g9a row AND
@@ -190,7 +192,8 @@ async function runFile(rel, opts) {
           innerLeaps: c.voiceLeading && c.voiceLeading.innerLeaps.length,
           crossings: c.voiceLeading && c.voiceLeading.crossings.length,
           registerDensityOverage: c.registerDensity && c.registerDensity.overage,
-          floorBelow: c.registerFloor && c.registerFloor.below
+          floorBelow: c.registerFloor && c.registerFloor.below,
+          lhJumps: c.leftHandJump && c.leftHandJump.jumps, lhSteps: c.leftHandJump && c.leftHandJump.steps
         };
       };
       row.g9aCriticsBefore = criticCtx(sel.selected.graph);
@@ -253,6 +256,11 @@ function scoreGraphCandidate(graph, id, profile, target, origHarmony, origMelody
   /* G9 post-H-8: arranged notes below the register floor (E2). `sourceNotes` = the original piece's notes: a note the
      source has is never counted as arranged. Reported for every engine; never a selection input. */
   try { out.floor = RFC.registerFloor(graph, { sourceNotes: sourceNotes }); } catch (e) { out.floorError = String(e && e.message || e); }
+  /* G9 post-H-8 re-look: left-hand jump rate (share of left-hand steps whose bass moves an octave or more) and the
+     notes below G2, for every engine; never a selection input here. */
+  try { out.lhj = LHJ.leftHandJump(graph); } catch (e) { out.lhjError = String(e && e.message || e); }
+  /* low-register clusters (a second or third whose lower note is below C3) and low bass-then-chord pairs, every engine, report only */
+  try { out.cluster = LRC.lowRegisterCluster(graph); } catch (e) { out.clusterError = String(e && e.message || e); }
   out.level = out.g6Level;
   return out;
 }
@@ -274,6 +282,23 @@ function summarizeEntries(ok, get) {
     floorBelowArranged: entries.reduce((a, e) => a + (e.floor ? e.floor.below : 0), 0),
     floorBelowSource: entries.reduce((a, e) => a + (e.floor ? e.floor.belowSource : 0), 0),
     floorFilesWithArrangedBelow: entries.filter(e => e.floor && e.floor.below > 0).length,
+    /* G9 post-H-8 re-look: left-hand jumps (a bass move of an octave or more between consecutive left-hand onsets).
+       Pooled = all jumps / all steps; mean/max are over files; the count of files at or above the review's flagged floor (18%) */
+    lhJumps: entries.reduce((a, e) => a + (e.lhj ? e.lhj.jumps : 0), 0),
+    lhSteps: entries.reduce((a, e) => a + (e.lhj ? e.lhj.steps : 0), 0),
+    lhJumpRatePooled: (() => { const st = entries.reduce((a, e) => a + (e.lhj ? e.lhj.steps : 0), 0); return st ? entries.reduce((a, e) => a + (e.lhj ? e.lhj.jumps : 0), 0) / st : null; })(),
+    lhJumpRateMeanPerFile: mean(entries.map(e => e.lhj && e.lhj.rate)),
+    lhJumpRateMaxPerFile: entries.reduce((a, e) => (e.lhj && e.lhj.rate > a ? e.lhj.rate : a), 0),
+    lhJumpFilesAtOrOver18pc: entries.filter(e => e.lhj && e.lhj.rate >= 0.18).length,
+    /* low-register clusters, pooled over files (chord attacks with a second or third whose lower note is below C3) */
+    clusterAttacks: entries.reduce((a, e) => a + (e.cluster ? e.cluster.clusterAttacks : 0), 0),
+    chordAttacks: entries.reduce((a, e) => a + (e.cluster ? e.cluster.chordAttacks : 0), 0),
+    clusterRatePooled: (() => { const c = entries.reduce((a, e) => a + (e.cluster ? e.cluster.chordAttacks : 0), 0); return c ? entries.reduce((a, e) => a + (e.cluster ? e.cluster.clusterAttacks : 0), 0) / c : null; })(),
+    clusterRateMeanPerFile: mean(entries.map(e => e.cluster && e.cluster.clusterRate)),
+    closeBassChords: entries.reduce((a, e) => a + (e.cluster ? e.cluster.closeBassChords : 0), 0),
+    bassChordPairs: entries.reduce((a, e) => a + (e.cluster ? e.cluster.bassChordPairs : 0), 0),
+    notesBelowFSharp2: entries.reduce((a, e) => a + (e.cluster ? e.cluster.notesBelow42 : 0), 0),
+    notesBelowG2: entries.reduce((a, e) => a + (e.lhj ? e.lhj.belowG2 : 0), 0),
     meanMelody: mean(entries.map(e => e.melody)),
     meanHarmonyRootQuality: mean(entries.map(e => e.harmony && e.harmony.rootQuality)),
     meanHarmonyRootOnly: mean(entries.map(e => e.harmony && e.harmony.rootOnly)),
@@ -316,6 +341,7 @@ function summarizeRepair(ok) {
     smells: crit('voiceLeading'), parallels: crit('parallels'), innerLeaps: crit('innerLeaps'), crossings: crit('crossings'),
     registerDensityOverageSum: crit('registerDensityOverage'),
     floorBelowSum: crit('floorBelow'),
+    lhJumps: crit('lhJumps'), lhSteps: crit('lhSteps'),
     hardSum: crit('hard'),
     meanHarmonyRootQuality: { before: mean(rs.map(r => r.g9aCriticsBefore && r.g9aCriticsBefore.harmonyRootQuality)), after: mean(rs.map(r => r.g9aCriticsAfter && r.g9aCriticsAfter.harmonyRootQuality)) },
     meanLevel: { before: mean(rs.map(r => r.g9aCriticsBefore && r.g9aCriticsBefore.level)), after: mean(rs.map(r => r.g9aCriticsAfter && r.g9aCriticsAfter.level)) },
@@ -330,6 +356,9 @@ function summarize(rows, opts) {
   const sum = { files: rows.length, ok: ok.length, errors: rows.filter(r => r.error).map(r => r.file + ': ' + r.error) };
   engines.forEach(eng => { sum[eng] = summarizeEntries(ok, r => r[eng]); });
   if (opts.repair) sum.repair = summarizeRepair(ok);
+  /* the pattern the G9a selection picked, per file (before repair: repair never changes the pattern), as a histogram */
+  sum.selectedPatternHistogram = {};
+  ok.forEach(r => { if (r.g9aPattern) sum.selectedPatternHistogram[r.g9aPattern.pattern] = (sum.selectedPatternHistogram[r.g9aPattern.pattern] || 0) + 1; });
   if (opts.ablateCritics && opts.ablateCritics.length) {
     sum.g9aAblate = {};
     opts.ablateCritics.forEach(critic => {
@@ -367,7 +396,11 @@ async function main() {
     registerFloor = v === 'off' ? null : Number(v);
     if (registerFloor !== null && !Number.isFinite(registerFloor)) throw new Error('--register-floor: expected a MIDI number or off, got ' + v);
   }
-  const runOpts = { registerFloor: registerFloor, weights: weights, pattern: pattern, g9a: g9a, repair: repair, g9aN: g9aN, levelOffsets: levelOffsets, topKForEngrave: topKForEngrave, ablateCritics: ablateCritics };
+  /* --stride wide: the pre-fix stride geometry (pop/waltz chord voiced around the register midpoint, bass an octave under it),
+     for a before/after on the same code. Default: close (chord voiced just above its bass). */
+  const stride = opt('--stride', undefined);
+  if (stride !== undefined && !['wide', 'close', 'open'].includes(stride)) throw new Error('--stride: expected wide, close or open (default open), got ' + stride);
+  const runOpts = { stride: stride, registerFloor: registerFloor, weights: weights, pattern: pattern, g9a: g9a, repair: repair, g9aN: g9aN, levelOffsets: levelOffsets, topKForEngrave: topKForEngrave, ablateCritics: ablateCritics };
   /* child mode: one file, row written to --row-out (the parent gives each file its own process and a time limit,
      so a legacy engine that never returns on one file is recorded as a timeout instead of stalling the sweep) */
   if (flag('--one')) {

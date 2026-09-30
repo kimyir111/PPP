@@ -986,3 +986,145 @@ the wide left-hand chords in the legacy arm, the engraving of very low or high n
 equal to a source note (same onset, same pitch) counts as source. (6) No human has re-reviewed it: all that is shown is that the notes the
 reviewer called too low are gone and the five metrics moved as above; whether the floored bass reads better is unknown until the next review.
 (7) `realize/` is loaded by the app; the change reaches users only through the `PPP.arranger` switch, which defaults to `legacy`. Not deployed.
+
+### G9 left-hand jumps (post H-8 re-look)
+
+The fix for the defect the register floor did not fix: the bass of G9's `pop` and `waltz` arrangements leaping an octave or more between consecutive
+left-hand onsets. Node-only: `git diff --stat origin/main` shows no app, server or roadmap file. It touches `realize/patterns.js`, `realize/theory.js`
+and `realize/index.js`, which the app also loads for the `PPP.arranger` switch; the switch defaults to `legacy`, so nothing visible changes until the
+user flips it. The legacy arm, G5's hard-violation definitions and the selection weights and level offsets are untouched. One writer; no sub-agent was
+dispatched. This section was revised after an independent review (two MAJOR findings, both confirmed and fixed below).
+
+**1. What was found (measured before changing anything).** The re-review packet (`D:/PPP-review-keys/h8b`, 11 pieces at their request levels, hand
+profile large, after the E2 floor) reproduced: G9 (best-of-N plus repair) had 95 left-hand octave-jumps in 1175 steps (8.1%) and 120 notes below G2
+(MIDI 43), the legacy ScoreArranger 11 in 541 (2.0%) and 3. The proxy is `critics/left-hand-jump.js`: at every onset that has a note below middle C
+(MIDI 60) the BASS is the lowest such note; a step is between consecutive such onsets; a JUMP is a step of 12 semitones or more.
+- **The register floor fixed the wrong main cause.** It removed the extreme low notes (E2, MIDI 40) but left the geometry that makes the jumps: after the
+  floor, the same 11 pieces still had 8.1% jumps. beyer/038 (flagged, lowest note MIDI 43) had 30%.
+- **The source is the stride geometry of `pop` and `waltz`, and only those.** Over every candidate G9a enumerates (request's own hand profile, all level
+  offsets; sample 16, held-out 32 and the 11 packet pieces), the left-hand jump rate by pattern before the fix:
+
+  | pattern | 11 packet pieces | held-out 14 files | 16-file sample (12) |
+  |---|---|---|---|
+  | pop | 9.8% (142/1454) | 10.4% (185/1772) | 1.0% (21/2155) |
+  | waltz | 17.6% (118/669) | 18.7% (135/723) | 4.2% (34/807) |
+  | block, broken, ballad | 0.0-0.2% | 0.0% | 0.0% |
+  | auto (resolves to block, broken, hymn per section) | 0.3% | 2.1% | 0.3% |
+  | hymn (a verbatim copy of the source voices) | 1.1% | 6.9% | 5.5% |
+
+  Of the steps of 12 semitones or more between consecutive left-hand events, all but one in `pop`/`waltz` were bass-to-chord or chord-to-bass (packet pop
+  242 of 243, packet waltz 147 of 147, held-out pop 348 of 348); there were none in block, broken and ballad. Cause: both patterns put the bass at
+  `nearestWithPc(root, anchor - 12)`, an octave under the section's left-hand register midpoint, and voice-led the chord around the midpoint. Over the
+  bass-then-chord pairs, `pop`: the chord's top note was 15.5 (packet) and 17.1 (held-out) semitones above the bass on average and its lowest note 7.5
+  and 9.0 above (`waltz`: 16.9 and 18.2, lowest 8.8 and 10.2); 59-74% of chords topped the bass by more than an octave. Not the cause: `broken` and
+  `ballad` (0% at every stage), the hand profile, and repair.
+- **What G9a picked.** Selected-pattern histogram before the fix: 11 packet pieces pop 4, waltz 4, block 1, auto 2; held-out (14 files) pop 5, hymn 5,
+  auto 3, block 1; 16-file sample (12) hymn 7, auto 3, ballad 1, block 1. Nothing scored register or hand distance, so a stride pattern won on the
+  method pieces the reviewer flagged.
+
+**2. What changed.**
+- `realize/theory.js`: `foldAbove(bass, pcs)`, a chord voiced close above its bass: each pitch class at its single instance in (bass, bass + 12],
+  ascending; and `CLUSTER_BELOW = 48` (C3), the line under which a second or third between two notes reads as a cluster.
+- `realize/patterns.js`: `pop` and `waltz` take a new stride geometry, `opts.stride` (threaded from the realizer, the candidate enumeration and the
+  harness `--stride`): `'wide'` is the old geometry, kept only to measure and test against; `'close'` (first version of this fix) is the chord folded above its
+  bass; **`'open'` is the default**. Every chord is voiced above its window's root bass (in `waltz`, the measure's bass) and the bass is placed as before
+  (`nearestWithPc(root, anchor - 12)`) but not below the register floor. `'open'` differs from `'close'` only when the bass is below C3: the chord is folded above
+  `min(max(bass + 4, 47), bass + 5)`, so for a bass from F#2 to B2 every chord tone is at or above C3 and at least a fifth over the bass, and for E2 and F2 the start
+  is capped so the bass-to-chord step stays under an octave. Above C3 it equals `'close'` (tested).
+- **MAJOR 1 fix: the span fit.** The first version's close path skipped `fitSpan`, so a chord with a seventh (root, third, seventh, a one-semitone gap
+  around the octave) could span 11 and break the `small` profile's 10. `closeChord` now moves the lowest tone up an octave (an inversion, every pitch class
+  kept) while the span is over the profile's `maxSpan`. Before: `waltz` at `small` on real files gave hard violations in 2 of 20 files (6 violations);
+  `pop`, and `medium` and `large`, gave 0. After: 0 for `pop` and `waltz` at `small` (20 files) and `medium` (26 files), all three geometries.
+- **Silent window (root null):** the close path takes root 0 for the bass and the chord alike (`rootOf`); the old path took the bass's pitch class from the
+  previous chord's first voice, which is now the chord's third, so it was not kept. Rare, and not meaningful either way; stated here.
+- `critics/left-hand-jump.js` and **`critics/low-register-cluster.js` (new, MAJOR 2)**, both wired in `critics/index.js`, both **weight 0** in
+  `candidates/index.js` `DEFAULT_WEIGHTS` (report only; `--weights leftHandJump=1` / `lowRegisterCluster=1` count them): no selection weight or level offset
+  was tuned. The cluster critic reports `clusterAttacks / chordAttacks` (two notes at one onset a second or third apart, lower note below C3),
+  `closeBassChords / bassChordPairs` (a left-hand bass below C3 followed by a chord whose lowest note is within a third of it) and `notesBelow42`. The harness
+  rows carry both for every engine, per file, with pooled and per-file figures in each summary, and the selected-pattern histogram. Note the definition:
+  the independent review counted 15.1% (wide), 37.3% (close) and 3.7% (legacy) on the 11; this critic's denominators differ (every chord attack, not only
+  left-hand ones) and it reads 7.9%, 19.6% and 1.7%; the ratios are the same.
+- `repair/plan.js`, `repair/index.js`: the guard `createsLeftHandJump`: a repair may not move a note so that it creates a jump (identified by its two
+  onsets) that was not there. Planner and applied unit; reason `LEFT_HAND_JUMP`; `ctx.leftHandJumpGuard: false` turns it off.
+- `realize/tools/harness.js`: `--stride wide|close|open`, and the metrics above.
+- Not applied: **the floor is still E2 (40).** G2 (43) is measured with the geometry below and would fix the two remaining items (christ-arose, the E2/F2 basses).
+
+**3. Alternatives measured (11 re-review pieces at the request levels of `D:/PPP-review-keys/h8b/key.json`, hand profile large; G9 = best-of-N plus repair).**
+"jumps" = pooled left-hand jump rate (max piece), "cluster" = pooled low-register cluster rate (max piece), "closeBC" = close bass-chord pairs.
+
+| | jumps | cluster | closeBC | notes < G2 | level +-1 / distance | harmony rq / ro | pattern histogram |
+|---|---|---|---|---|---|---|---|
+| wide (before) | 7.9% (30%) | 7.9% (59%) | 14/114 | 120 | 11/11 / 0.4036 | 0.9235 / 0.9594 | pop 4, waltz 4, block 1, auto 2 |
+| close (first version of this fix) | 1.3% (10%) | 19.6% (59%) | 30/140 | 100 | 11/11 / 0.4555 | 0.9312 / 0.9629 | pop 3, waltz 3, auto 3, block 1, hymn 1 |
+| open uncapped (chord always at or above C3) | 2.7% (18%) | 6.1% (59%) | 1/140 | 94 | 11/11 / 0.4445 | 0.9306 / 0.9622 | same |
+| **open (default: capped at bass + 5)** | **2.2% (10%)** | **7.3% (59%)** | **2/140** | 94 | 11/11 / **0.4445** | 0.9306 / 0.9622 | pop 3, waltz 3, auto 3, block 1, hymn 1 |
+| close + floor G2 | 0.5% (2%) | 12.0% (29%) | 25/108 | 0 | 11/11 / 0.5255 | 0.9417 / 0.9625 | pop 2, waltz 3, auto 4, block 1, hymn 1 |
+| open + floor G2 | 0.5% (2%) | 1.6% (15%) | 0/108 | 0 | 11/11 / 0.5227 | 0.9410 / 0.9618 | same |
+| legacy ScoreArranger | 2.0% (6%) | 1.7% (22%) | 1/49 | 3 | 11/11 / 0.6945 | 0.9801 / 0.9900 | |
+| the source pieces | 2.0% (6%) | 1.7% (22%) | 1/47 | 3 | | | |
+
+Hard violations 11/11 files at 0, melody 1.0000 and both engraving counts 11/11 in every G9 row above (legacy: hard 6/11). Chosen: **`open`** at floor E2. It is
+the smallest change that meets both targets: jump rate near legacy's (2.2% against 2.0%, no piece above 10%) and clusters down from 19.6% to 7.3% with the chords over
+a low bass no longer within a third of it (close bass-chords 30 to 2 of 140). `open` uncapped is the same idea but lets a jump appear at 18% on one piece; the G2 floor
+removes both remaining items but costs level distance (+0.078 on the 11 against `open`), which is a Lead decision, not a default.
+
+Per piece, `open` (jump %, cluster %; wide before in brackets; legacy): beyer/061 3% (2%), 0% (10%), legacy 0% and 0%; burgmuller25/016 8% (0%), 0% (10%), legacy 3% and 22%;
+the-strife-is-oer 0%, 0%; nearer-my-god 0% (13%), 0%; beyer/038 0% (30%), 0%; christ-arose 0%, **59% (59%)**, legacy 0%; sonatina/025 0% (23%), 1% (0%); what-child-is-this 10%
+(30%), **16% (0%)**, legacy 5% and 0%; pass-me-not 0%; burgmuller25/006 0% (11%) (now `hymn`); beyer/020 8% (30%), 2% (0%). The two pieces above 10% on clusters:
+- **christ-arose, 59% before and after: not the stride.** Its G9 selection is `auto` at the small hand profile (block chords voiced around a low left-hand midpoint; 36 notes under G2),
+  the wide geometry has the same 59%, legacy reads 0%, and on the held-out slice it is the only file with a cluster (47 of 47). The fix does not touch `block`. The G2 floor
+  brings the packet's worst piece to 15%.
+- **what-child-is-this, 16%:** a waltz in E minor; all 8 of its cluster chords sit over bass E2 (40), where the start is capped at bass + 5 (for example 40 then 47, 51, 54), so a third under C3 remains. The G2 floor removes it (E2 is then raised).
+
+Other samples, G9 after repair (`node realize/tools/harness.js --sample 16 --g9a --repair --timeout-s 120` and `--held-out 32 ... --timeout-s 180`; outputs outside the repo;
+12 of 16 and 14 of 32 files have a reachable G7b plan). "before" is `--stride wide` on this code (origin/main's geometry with the repair guard on):
+
+| | 16-file: before (wide) | close | **open** | open + G2 | held-out: before (wide) | close | **open** | open + G2 |
+|---|---|---|---|---|---|---|---|---|
+| hard violations (files at 0) | 12/12 | 12/12 | 12/12 | 12/12 | 14/14 | 14/14 | 14/14 | 14/14 |
+| level within +-1 / mean distance | 10/12 / 0.3258 | same | same | 10/12 / 0.3375 | 14/14 / 0.3379 | 14/14 / 0.3836 | 14/14 / **0.3786** | 14/14 / 0.4164 |
+| melody | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
+| harmony root+quality / root-only | 0.9753 / 0.9778 | same | same | 0.9729 / 0.9753 | 0.9316 / 0.9619 | 0.9470 / 0.9698 | **0.9470 / 0.9698** | 0.9519 / 0.9717 |
+| engrave silent / hard layout (files at 0) | 12/12, 12/12 | same | same | same | 14/14, 14/14 | same | same | same |
+| jump rate pooled (max file) | 2.9% (29%) | 2.9% (29%) | 2.9% (29%) | 2.9% (29%) | 4.8% (13%) | 6.6% (26%) | **7.3% (26%)** | 6.7% (26%) |
+| jump rate, non-`hymn` selections | 0.2% | 0.2% | 0.2% | 0.2% | 4.9% (41/831) | 1.4% | **2.7% (14/513)** | 0.7% |
+| cluster rate pooled (legacy) | 2.3% (0.0%) | 2.3% | 2.3% | 2.3% | 4.8% (1.0%) | 5.4% | **4.1%** | 1.1% |
+| notes below G2 (source included) | 43 | 43 | 43 | 13 | 125 | 88 | 88 | 38 |
+| selected pattern | hymn 7, auto 3, ballad 1, block 1 | same | same | same | pop 5, hymn 5, auto 3, block 1 | hymn 7, auto 3, pop 3, block 1 | hymn 7, auto 3, pop 3, block 1 | hymn 7, auto 3, pop 2, block 1, waltz 1 |
+
+(The origin/main baseline without the guard is the same on every metric except held-out distance 0.3386 and a jump rate of 5.4%: repair created a jump in that run, 55 to 56, and the guard now
+prevents it: like for like the held-out before figure is 4.8%.)
+
+**Against the previous tip (`78a21aa`, the `close` first version): five metrics.** 16-file sample: no metric moved. Held-out: hard, melody, engraving, level distance (0.3786), harmony (0.9470 / 0.9698) did
+not move; the pooled jump rate went from 6.6% to 7.3% (one more piece near 8%: burgmuller25/016 3% to 8%; the 26% file is unchanged). 11 packet pieces: level distance 0.4491 to 0.4445 (better),
+harmony root+quality 0.9312 to 0.9306 (-0.0006) and root-only 0.9629 to 0.9622 (-0.0007), jump rate 1.3% to 2.2%. Nothing else moved.
+
+**What the G6 level and the jump rate did, said exactly.** (a) G6 mean level distance against the target, versus before the fix: 16-file sample unchanged, held-out 0.3379 to 0.3786 (+0.0407; still 14/14 within +-1), the 11
+pieces 0.4036 to 0.4445 (+0.0409; still 11/11). The held-out rise is two selection flips to a verbatim `hymn` copy, not a general easing of the stride: **sonatina/004** (pop, level 3.26, badness 0.310 before; after the fix the `pop`
+candidate reads 3.10 and badness 0.363, the `hymn` copy at 2.87 and 0.333 wins by a margin of 0.030) and **burgmuller25/006** (before the fix `pop` won by a margin of 0.004 over the same `hymn` copy; after, `pop` reads 2.91,
+badness 0.393, and `hymn` wins by 0.057 over a `waltz`). Both `hymn` copies sit at a distance of exactly 1.00 from the target (3.87 and 3.76 against 2.87 and 2.76), the edge of the +-1 band. Across the 70 `pop`/`waltz`
+(file, spec) pairs the enumeration produces on the three sets (paired, same spec; the sets overlap on some files), the level change was small and mixed: mean -0.017 for `pop` (13 lower, 8 higher, 16 unchanged of 37) and -0.056 for `waltz` (13 lower, 2 higher, 18
+unchanged of 33). That does not establish that the closer stride is "easier to play"; only that it shifts G6 slightly and that the winner changed on two files by small badness margins.
+(b) The held-out pooled jump rate went from 4.8% (like for like) to 7.3%, and the worst file from 13% to 26%, because of sonatina/004: it was `pop` at 9% and is now `hymn` (verbatim copy) at 26%. Its source has a 26% left-hand
+jump rate and legacy has 26% too; legacy's rate equals the source's on every piece (fur-elise 20%, gymnopedie-1 29%, sonatina/001 16%, sonatina/004 26%). Over what G9 generates (non-`hymn`), the held-out rate fell from 4.9% to 2.7%. On the held-out slice all 47 cluster chords of the `open` result are in christ-arose.
+A repair can also shift a `hymn` copy slightly (burgmuller25/019: 3 jumps before repair, 2 after). This is a finding for the Lead: selection now copies a source whose own bass leaps rather than generating a stride.
+
+**The floor, measured with the geometry (`--register-floor 43`; not applied).** With `open`: jump 0.5% (max 2%), cluster 1.6% (max 15%), 0 notes under G2 on the packet; held-out cluster 1.1%, 38 notes under G2. Cost:
+level distance 0.4445 to 0.5227 (+0.078) on the 11, 0.3786 to 0.4164 (+0.038) held-out, 0.3258 to 0.3375 (+0.012) on the 16-file sample; harmony rises on the 11 (0.9410 / 0.9618 against 0.9306 / 0.9622) and
+held-out (0.9519 / 0.9717) and falls slightly on the 16-file sample (0.9729 / 0.9753); always within +-1. `REGISTER_FLOOR = 43` in `realize/theory.js` is the one-number change; the tests use the constant.
+
+**What the guard did in the corpus.** It never fired on the two samples (0 `LEFT_HAND_JUMP` rollbacks), so it is unit-tested protection, not measured behaviour, but it is not inert in effect: the held-out
+jump count with `--stride wide` is 50 with the guard and 56 without it (repair created a jump without it).
+
+**Tests** (all pass): `tests/realize/stride-geometry.test.js` (19: `foldAbove` bounds over every bass and quality; the synthetic progression within (root bass, root bass + 12] for `close`, and the old geometry shown to break it;
+**a sweep over hand profiles small, medium and large, every quality, root, anchor and geometry: every chord fits the profile's span and the floor holds**; pitch classes equal to the old geometry; the open geometry keeps a chord over
+a low bass at or above C3 and at least a fifth up, `close` does not; `open` equals `close` above C3; **real files at `small` and `medium`: pop and waltz give zero hard violations (20 and 26 files)**; the six flagged pieces' jump rate
+against `wide` (pooled 21% to 4.7%) with melody untouched and pitch classes kept; the other patterns byte-identical; the melody-crossing degradation still covers block, broken and ballad through the floor, and pop and waltz place
+their own bass; determinism), `tests/critics/left-hand-jump.test.js` (15), **`tests/critics/low-register-cluster.test.js` (9: planted defect, negative control, thresholds, the bass-chord pairs, a real graph, `evaluate`, weight 0, and `open`
+against `close` on three pieces)**, `tests/repair/left-hand-jump.test.js` (5). `tests/realize/register-floor.test.js` had three assertions that exercised the post-hoc raise through `pop`; they use `stride: 'wide'`.
+
+**Known limits.** (1) christ-arose keeps its 59% cluster rate (block chords, not the stride) and what-child-is-this 16%; the G2 floor is the measured remedy and costs level distance. (2) About 2.7% of non-`hymn` steps still jump
+(a root moving up from the top of the bass window wraps down nine to eleven semitones). A voice-led bass with a wider band was tried and measured no better. (3) The cluster critic's definition is not the review's exactly (see above).
+(4) The proxy is pitch-based; tied continuations are not told apart from attacks. (5) `pop` voices its chord over the root bass, not the alternating fifth. (6) The realizer places the stride bass at the floor itself with no melody-crossing
+check (only an unrealistic floor crosses; the check remains for block, broken, ballad and `wide`). (7) No human has re-reviewed the result. (8) `realize/` is loaded by the app; the change reaches users only through the `PPP.arranger`
+switch, which defaults to `legacy`. Not deployed.
