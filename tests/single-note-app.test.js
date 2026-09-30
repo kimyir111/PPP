@@ -7,8 +7,9 @@
 
    What this checks (the two screens where a person arranges a piece: the Song Arranger in My Songs, and the recognition review screen):
      - the switch: single by default, 'legacy' and 'g8' accepted, anything else legacy
-     - the option's 14 scripts and 2 data files are NOT on the way to the first paint: none is requested before the first paint and the load event,
-       they arrive in the background afterwards, once each; an arrangement asked for while they are still in flight waits for them (no second request)
+     - the option's 14 scripts and 2 data files (16 requests) are asked for only when a screen that arranges opens (the Song Arranger, the recognition
+       review), never by a page that does not arrange, and then once each, after the first paint; an arrangement asked for while they are still
+       in flight waits for them (no second request); a script that fails to load is asked for again with the ones after it, nothing before it twice
      - the identity guarantee moved: with PPP.arranger = 'legacy' the arrangement the real entry points make is identical to what origin/main made
        (sha-256 of the saved score, tests/fixtures/g9e-legacy-identity.json, made from a build of origin/main 14a76f8, PPP.arranger = 'legacy'),
        also after the background load has finished, and after the chip was pressed off in the page
@@ -17,10 +18,13 @@
      - on by default: christ-arose, nearer-my-god, pass-me-not and all-creatures come out with no hand starting two notes at once, both hands used,
        drawn by the engraver (no fallback), with a sounding note list, and no console or page error; the review screen does it for the default
        'balanced' texture too (which 'g8' never did)
-     - "Original transcription" is not arranged
-     - refusals and failed downloads: an unreachable piece (sonatina/020 has no plan at any level), option scripts or reference data that cannot be
-       loaded (also when it is the background load that fails: no error, and the next arrangement asks again). The Song Arranger saves nothing
-       and says so; the review screen shows the standard arrangement, marked as such in its source, with the notice on screen
+     - "Original transcription" is not arranged; its copy title does not say one note per hand (the suggestion follows the level)
+     - the copy is saved under the title the person typed (or the one suggested), on the card and in the score
+     - the texture note ("Texture choices don't apply in one-note-per-hand mode") beside the texture control, only when the mode applies (ko/ja/zh in the catalogs)
+     - refusals and failed downloads: an unreachable piece (sonatina/020 and happy-birthday have no plan at any level), option scripts (the candidates
+       one, or another of the fourteen) or reference data that cannot be loaded (also when it is the warm-up that fails: no error, and the next
+       arrangement asks again). Both screens give the STANDARD arrangement instead, with the notice: the Song Arranger saves it as a copy
+       (titled as a standard copy), the review screen shows it, marked in its source; both are what the option-off request gives
 
    The recognition review screen needs a recording and a transcription helper; here the heard notes are injected into the page (made from a hymn's own
    notes), and everything after that - the level and texture pickers, the control, Apply - is the real UI.
@@ -46,6 +50,7 @@ const ok = (name, cond, detail) => {
   if (!cond) errors.push(name + (detail ? ' — ' + detail : ''));
 };
 const HYMN = n => path.join(REPO, 'catalog', 'hymns', n + '.musicxml');
+const HAPPY = path.join(REPO, 'catalog', 'happy-birthday.musicxml');
 const SONATINA_020 = path.join(REPO, 'catalog', 'method', 'sonatina', '020.mxl');
 const OPTION_FILES = /\/(critics\/|candidates\/|repair\/|realize\/(ottava|handchords|clefs))|method-books\.json|weights\/g6a/;
 const LEVELS = ['beginner', 'intermediate', 'advanced', 'original'];
@@ -108,7 +113,7 @@ async function addSong(page, file) {
 const songKeys = page => page.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('ppp.song.v1.')));
 
 /* the real Song Arranger: open it on a song card, pick the level and texture, press Create. Returns what happened. */
-async function overlayArrange(page, songId, level, style, chip) {
+async function overlayArrange(page, songId, level, style, chip, typed) {
   await page.evaluate(() => window.__pppTest.nav('My Songs'));
   await sleep(250);
   await page.evaluate(i => document.querySelector('[data-arrange-song="' + i + '"]').click(), songId);
@@ -116,6 +121,8 @@ async function overlayArrange(page, songId, level, style, chip) {
   if (chip) { await page.click('[data-song-arranger] [data-single-note-option]'); await sleep(250); } /* the real chip, pressed once */
   await page.select('[data-song-arrange-level]', level);
   await page.select('[data-song-arrange-style]', style);
+  if (typed) { await page.$eval('[data-song-arrange-title]', el => { el.focus(); el.select(); }); await page.keyboard.type(typed); await sleep(150); }
+  const inputTitle = await page.evaluate(() => (document.querySelector('[data-song-arrange-title]') || {}).value);
   const before = await songKeys(page);
   await page.click('[data-create-song-arrangement]');
   /* finished: the dialog closed (saved), or it is idle again with a notice (refused) */
@@ -125,22 +132,30 @@ async function overlayArrange(page, songId, level, style, chip) {
     const b = document.querySelector('[data-create-song-arrangement]');
     return !!b && !/Creating/.test(b.innerText) && /could not be made|could not be opened|unavailable|could not be created/.test(d.innerText);
   }, { timeout: 90000 });
+  const toast = await page.evaluate(() => window.PPP.app.state.toast || '');
   await sleep(300);
   const mode = await page.evaluate(() => window.PPP.arranger);
   const after = await songKeys(page);
   const fresh = after.filter(k => before.indexOf(k) < 0)[0] || null;
   const open = await page.evaluate(() => !!document.querySelector('[data-song-arranger]'));
   const status = open ? await page.evaluate(() => document.querySelector('[data-song-arranger]').innerText) : '';
-  if (!fresh) return { saved: false, open: open, status: status, mode: mode };
+  if (!fresh) return { saved: false, open: open, status: status, mode: mode, toast: toast, inputTitle: inputTitle };
   const id = fresh.replace('ppp.song.v1.', '');
   const slot = JSON.parse(await page.evaluate(k => localStorage.getItem(k), fresh));
+  const titles = await page.evaluate(i => ({
+    card: (window.PPP.app.libraryRead().songs.find(x => x.id === i) || {}).title,
+    score: window.PPP.app.scoreForArrangement(i).title,
+    shelf: document.body.innerText
+  }), id);
+  const notesHash = await page.evaluate(i => JSON.stringify(window.PPP.app.scoreForArrangement(i).notes.map(n => [n.hand, n.m, n.b, n.midi, n.dur, n.rest ? 1 : 0])), id);
   const attacks = await page.evaluate(i => {
     const s = window.PPP.app.scoreForArrangement(i);
     const by = new Map();
     s.notes.filter(n => !n.rest).forEach(n => { const k = n.hand + '|' + n.m + '|' + n.b; by.set(k, (by.get(k) || 0) + 1); });
     return { perAttack: [...by.values()], hands: [...new Set(s.notes.filter(n => !n.rest).map(n => n.hand))].sort().join(''), notes: s.notes.filter(n => !n.rest).length };
   }, id);
-  return { saved: true, id: id, slot: slot, open: open, mode: mode, hash: sha(JSON.stringify(strip(slot.score))), attacks: attacks };
+  return { saved: true, id: id, slot: slot, open: open, mode: mode, toast: toast, inputTitle: inputTitle, cardTitle: titles.card, scoreTitle: titles.score, shelf: titles.shelf,
+    notesHash: sha(notesHash), hash: sha(JSON.stringify(strip(slot.score))), attacks: attacks };
 }
 
 /* the recognition review screen, with heard notes made from a file's own notes */
@@ -177,7 +192,7 @@ async function reviewApply(page, level, style) {
     const by = new Map();
     sc.notes.filter(n => !n.rest).forEach(n => { const k = n.hand + '|' + n.m + '|' + n.b; by.set(k, (by.get(k) || 0) + 1); });
     return {
-      arrangement: s.importSource.arrangement, status: s.arrangementStatus, say: (document.querySelector('[role=status], [aria-live]') || {}).innerText || '',
+      arrangement: s.importSource.arrangement, status: s.arrangementStatus, toast: s.toast || '', say: (document.querySelector('[role=status], [aria-live]') || {}).innerText || '',
       packed: JSON.stringify({ score: P.packScore(sc), arr: s.importSource.arrangement, n: s.importSource.arrangementNotes }),
       perAttack: [...by.values()], hands: [...new Set(sc.notes.filter(n => !n.rest).map(n => n.hand))].sort().join(''),
       notes: sc.notes.filter(n => !n.rest).length, via: window.PPPEngrave.app.resolveSync(sc).via,
@@ -227,7 +242,14 @@ async function identityHashes(browser) {
     ok('PPP.arranger is single at page load (G9e default-on)', sw.start === 'single', sw.start);
     ok('\'legacy\', \'g8\' and \'single\' are accepted', sw.legacy === 'legacy' && sw.g8 === 'g8' && sw.single === 'single', JSON.stringify(sw));
     ok('any other value is legacy (G4-F2-1)', sw.typo === 'legacy' && sw.undef === 'legacy', JSON.stringify(sw));
-    /* the option's files arrive in the background after the page has settled: wait for them, then read WHEN the browser asked for them */
+    /* a page that does not arrange asks for none of the option's files, however long it stays (no timer starts a download) */
+    await sleep(4500);
+    const idle = page0.__rec.requests.filter(r => OPTION_FILES.test(r));
+    ok('a fresh page that never opens an arranging screen requests none of the option\'s 16 files, 5 s after load', idle.length === 0, idle.join(', '));
+    /* the Song Arranger opens on the sample: now they come */
+    await page0.evaluate(() => window.__pppTest.nav('My Songs'));
+    await sleep(250);
+    await page0.evaluate(() => document.querySelector('[data-arrange-song="demo"]').click());
     await page0.waitForFunction(() => !!(window.PPPCandidates && window.PPPRepair), { timeout: 30000 }).catch(() => {});
     await sleep(300);
     const timing = await page0.evaluate(re => {
@@ -236,20 +258,20 @@ async function identityHashes(browser) {
       const mine = performance.getEntriesByType('resource').filter(r => rx.test(r.name));
       return { n: mine.length, first: Math.min.apply(null, mine.map(r => r.startTime)), fcp: fcp, loadEnd: nav.loadEventEnd, dcl: nav.domContentLoadedEventEnd };
     }, OPTION_FILES.source);
-    ok('the option\'s scripts and reference data do come in the background (16 requests: 14 scripts, the weights, the method books)', timing.n === 16, JSON.stringify(timing));
-    ok('and not on the way to the first paint: the first of them is asked for after the first paint and after the load event', timing.fcp > 0 && timing.first > timing.fcp && timing.first > timing.loadEnd, JSON.stringify(timing));
+    ok('opening the Song Arranger asks for them (16 requests: 14 scripts, the weights, the method books)', timing.n === 16, JSON.stringify(timing));
+    ok('and that is after the first paint and after the load event', timing.fcp > 0 && timing.first > timing.fcp && timing.first > timing.loadEnd, JSON.stringify(timing));
     const own = page0.__rec.requests.filter(r => OPTION_FILES.test(r)).map(r => r.split('?')[0]);
     ok('each of them was requested exactly once', OPTION_SCRIPTS.every(f => own.filter(n => n === f).length === 1) && own.filter(n => /method-books\.json$/.test(n)).length === 1 && own.filter(n => /g6a-v1\.json$/.test(n)).length === 1, own.join(' '));
-    ok('no page or console error at load or in the background load', page0.__rec.pageErrors.length === 0 && page0.__rec.consoleErrors.length === 0, JSON.stringify(page0.__rec.pageErrors.concat(page0.__rec.consoleErrors)));
+    ok('no page or console error at load or in the download', page0.__rec.pageErrors.length === 0 && page0.__rec.consoleErrors.length === 0, JSON.stringify(page0.__rec.pageErrors.concat(page0.__rec.consoleErrors)));
     await page0.close();
 
     console.log('\n── the identity guarantee: with PPP.arranger = \'legacy\' the output is origin/main\'s ──');
-    const got = await identityHashes(browser);
+    const got = process.env.G9E_FAST === '1' ? null : await identityHashes(browser); /* G9E_FAST=1: development only, skips the slow identity recipe */
     if (process.env.G9E_WRITE_GOLDEN === '1') {
       fs.writeFileSync(GOLDEN, JSON.stringify({ madeFrom: 'origin/main 14a76f8 (PPP.arranger = \'legacy\', then the default)', hashes: got }, null, 1) + '\n');
       console.log('  wrote ' + GOLDEN + ' (' + Object.keys(got).length + ' hashes)');
       await browser.close(); await srv.close(); process.exit(0);
-    } else {
+    } else if (got) {
       const want = JSON.parse(fs.readFileSync(GOLDEN, 'utf8')).hashes;
       const keys = Object.keys(want);
       const bad = keys.filter(k => want[k] !== got[k]);
@@ -355,8 +377,7 @@ async function identityHashes(browser) {
     const goldenNow = process.env.G9E_WRITE_GOLDEN === '1' ? null : JSON.parse(fs.readFileSync(GOLDEN, 'utf8')).hashes;
     {
       const vp = await openPage(browser);
-      /* the background load has finished before legacy is asked for: it must not disturb the standard arrangement */
-      await vp.waitForFunction(() => !!(window.PPPCandidates && window.PPPRepair), { timeout: 30000 });
+      /* the option's first arrangement below loads its scripts before legacy is asked for: they must not disturb the standard arrangement */
       const vid = await addSong(vp, HYMN('christ-arose'));
       const on1 = await overlayArrange(vp, vid, 'intermediate', 'balanced');
       ok('fresh page, Song Arranger: the default arrangement is one note per hand', on1.saved && on1.mode === 'single' && on1.slot.importSource.arrangement.engine === 'ppp.g9-single', on1.saved ? on1.mode + ' ' + on1.slot.importSource.arrangement.engine : on1.status);
@@ -370,6 +391,87 @@ async function identityHashes(browser) {
       ok('"Original transcription" with the default on: not arranged, the origin/main copy', og2.saved && og2.slot.importSource.arrangement.engine !== 'ppp.g9-single' && (goldenNow === null || og2.hash === wantO), (og2.hash || og2.status) + ' vs ' + wantO);
       ok('no page or console error', vp.__rec.pageErrors.length === 0 && vp.__rec.consoleErrors.length === 0, JSON.stringify(vp.__rec.pageErrors.concat(vp.__rec.consoleErrors)));
       await vp.close();
+    }
+
+    console.log('\n── the copy\'s title: what is typed (or suggested) is what is saved; the suggestion follows the level ──');
+    {
+      const tp = await openPage(browser);
+      const tid = await addSong(tp, HYMN('christ-arose'));
+      await tp.evaluate(() => window.__pppTest.nav('My Songs'));
+      await sleep(250);
+      await tp.evaluate(i => document.querySelector('[data-arrange-song="' + i + '"]').click(), tid);
+      await sleep(300);
+      const titleNow = () => tp.evaluate(() => document.querySelector('[data-song-arrange-title]').value);
+      const t1 = await titleNow();
+      await tp.select('[data-song-arrange-level]', 'original'); await sleep(250);
+      const t2 = await titleNow();
+      await tp.select('[data-song-arrange-level]', 'beginner'); await sleep(250);
+      const t3 = await titleNow();
+      await tp.select('[data-song-arrange-style]', 'jazz'); await sleep(250);
+      const t4 = await titleNow();
+      ok('the suggested title says one-note-per-hand for a level that goes to it, not for "Original transcription", and follows the level back and forth', /one-note-per-hand/.test(t1) && !/one-note-per-hand/.test(t2) && / Balanced piano arrangement$/.test(t2) && /one-note-per-hand/.test(t3) && /one-note-per-hand/.test(t4), JSON.stringify([t1, t2, t3, t4]));
+      await tp.$eval('[data-song-arrange-title]', el => { el.focus(); el.select(); }); await tp.keyboard.type('My own name'); await sleep(200);
+      await tp.select('[data-song-arrange-level]', 'original'); await sleep(250);
+      ok('a title the person typed is not touched by a level change', (await titleNow()) === 'My own name', await titleNow());
+      await tp.evaluate(() => window.PPP.app.closeSongArranger());
+      await sleep(200);
+      const a1 = await overlayArrange(tp, tid, 'intermediate', 'balanced');
+      ok('the copy saved in one-note-per-hand mode has the suggested title, on the card and in the score (not the original\'s)', a1.saved && a1.slot.importSource.arrangement.engine === 'ppp.g9-single' && /one-note-per-hand/.test(a1.inputTitle) && a1.cardTitle === a1.inputTitle && a1.scoreTitle === a1.inputTitle && a1.slot.fileName === a1.inputTitle, JSON.stringify({ input: a1.inputTitle, card: a1.cardTitle, score: a1.scoreTitle }));
+      const a2 = await overlayArrange(tp, tid, 'advanced', 'balanced', null, 'Typed 한 손 title');
+      ok('and with a title the person typed, that is the card\'s and the score\'s title', a2.saved && a2.cardTitle === 'Typed 한 손 title' && a2.scoreTitle === 'Typed 한 손 title' && a2.shelf.indexOf('Typed 한 손 title') > -1, JSON.stringify({ card: a2.cardTitle, score: a2.scoreTitle }));
+      const a3 = await overlayArrange(tp, tid, 'original', 'balanced');
+      ok('"Original transcription": the input and the saved title agree, and neither says one note per hand', a3.saved && !/one-note-per-hand/.test(a3.inputTitle) && a3.cardTitle === a3.inputTitle && a3.scoreTitle === a3.inputTitle, JSON.stringify({ input: a3.inputTitle, card: a3.cardTitle, score: a3.scoreTitle }));
+      ok('no page or console error', tp.__rec.pageErrors.length === 0 && tp.__rec.consoleErrors.length === 0, JSON.stringify(tp.__rec.pageErrors.concat(tp.__rec.consoleErrors)));
+      await tp.close();
+    }
+
+    console.log('\n── the texture note: the texture choices do nothing in this mode, and the screens say so ──');
+    {
+      const NOTE = 'Texture choices don\'t apply in one-note-per-hand mode; turn it off to use them.';
+      const xp = await openPage(browser);
+      await loadReview(xp, HYMN('christ-arose'), 'christ-arose');
+      const note = () => xp.evaluate(() => { const e = document.querySelector('[data-arrangement] [data-texture-note]'); return e ? e.innerText.trim() : null; });
+      const n1 = await note();
+      await xp.select('[data-arrangement-level]', 'original'); await sleep(250);
+      const n2 = await note();
+      await xp.select('[data-arrangement-level]', 'advanced'); await sleep(250);
+      const n3 = await note();
+      await xp.click('[data-arrangement] [data-single-note-option]'); await sleep(250);
+      const n4 = await note();
+      await xp.click('[data-arrangement] [data-single-note-option]'); await sleep(250);
+      const n5 = await note();
+      ok('review screen: the note is beside the texture control when the mode applies (default, level advanced)', n1 === NOTE && n3 === NOTE && n5 === NOTE, JSON.stringify([n1, n3, n5]));
+      ok('and absent for "Original transcription" and when the chip is off', n2 === null && n4 === null, JSON.stringify([n2, n4]));
+      const jz = await reviewApply(xp, 'advanced', 'jazz');
+      ok('the success message of a one-note-per-hand result claims no texture (jazz was chosen)', jz.arrangement.engine === 'ppp.g9-single' && /one-note-per-hand/.test(jz.toast) && !/jazz/i.test(jz.toast + ' ' + jz.status), JSON.stringify({ toast: jz.toast, status: jz.status }));
+      await xp.close();
+
+      const sp = await openPage(browser);
+      const sid = await addSong(sp, HYMN('christ-arose'));
+      await sp.evaluate(() => window.__pppTest.nav('My Songs'));
+      await sleep(250);
+      await sp.evaluate(i => document.querySelector('[data-arrange-song="' + i + '"]').click(), sid);
+      await sleep(300);
+      const hint = () => sp.evaluate(() => document.querySelector('[data-song-style-hint]').innerText.trim());
+      const h1 = await hint();
+      await sp.select('[data-song-arrange-level]', 'original'); await sleep(250);
+      const h2 = await hint();
+      await sp.select('[data-song-arrange-level]', 'beginner'); await sleep(250);
+      await sp.click('[data-song-arranger] [data-single-note-option]'); await sleep(250);
+      const h3 = await hint();
+      ok('Song Arranger: beside the texture control the note replaces the texture\'s description while the mode applies', h1 === NOTE, h1);
+      ok('and for "Original transcription" and with the chip off the texture\'s own description is there', h2 !== NOTE && h3 !== NOTE && h2.length > 20 && h3.length > 20 && !/one-note-per-hand/.test(h2 + h3), JSON.stringify([h2, h3]));
+      await sp.close();
+
+      const cat = {};
+      for (const loc of ['ko-KR', 'ja-JP', 'zh-CN']) cat[loc] = JSON.parse(fs.readFileSync(path.join(REPO, 'i18n', loc + '.json'), 'utf8')).content;
+      const KEYS = [NOTE, 'This piece could not be made in one-note-per-hand mode, so the standard arrangement was saved.'];
+      ok('the note and the saved-standard-copy notice are in the ko, ja and zh catalogs, translated (not the English)', Object.keys(cat).every(l => KEYS.every(k => typeof cat[l][k] === 'string' && cat[l][k].length > 5 && cat[l][k] !== k)), JSON.stringify(Object.keys(cat).map(l => KEYS.map(k => !!cat[l][k]))));
+      const kx = await openPage(browser, { locale: 'ko-KR' });
+      await loadReview(kx, HYMN('christ-arose'), 'christ-arose');
+      const kn = await kx.evaluate(() => { const e = document.querySelector('[data-arrangement] [data-texture-note]'); return e ? e.innerText.trim() : null; });
+      ok('in Korean the note on the review screen is the catalog\'s', kn === cat['ko-KR'][NOTE], String(kn));
+      await kx.close();
     }
 
     console.log('\n── on by default: the recognition review screen ──');
@@ -417,12 +519,47 @@ async function identityHashes(browser) {
     }
 
     console.log('\n── refusals ──');
+    /* the Song Arranger is not a dead end: a piece the option cannot make is saved as the STANDARD arrangement (what the chip off makes), with the notice */
     const fp = await openPage(browser);
     const fid = await addSong(fp, SONATINA_020);
     const keysBefore = await songKeys(fp);
     const fr = await overlayArrange(fp, fid, 'intermediate', 'balanced');
-    ok('Song Arranger, an unreachable piece (sonatina/020): nothing is saved, the dialog stays open and says why in words the person can act on', !fr.saved && fr.open && /could not be made in one-note-per-hand mode\. Turn the option off/.test(fr.status) && (await songKeys(fp)).length === keysBefore.length, fr.status.split('\n').filter(l => /one-note/.test(l)).join(' | '));
+    ok('Song Arranger, an unreachable piece (sonatina/020): the standard arrangement is saved as a copy, marked (singleFallback), never labelled one-note-per-hand',
+      fr.saved && fr.slot.importSource.arrangement.singleFallback === 'UNREACHABLE' && fr.slot.importSource.arrangement.engine !== 'ppp.g9-single' && fr.slot.importSource.provider !== 'PPP one-note-per-hand arranger' && (await songKeys(fp)).length === keysBefore.length + 1, fr.saved ? JSON.stringify(fr.slot.importSource.arrangement) : fr.status);
+    ok('its title is a standard copy\'s, not the suggested one-note-per-hand one, and the notice says what happened', fr.saved && /one-note-per-hand/.test(fr.inputTitle) && !/one-note-per-hand arrangement$/.test(fr.cardTitle) && fr.cardTitle === fr.scoreTitle && /so the standard arrangement was saved/.test(fr.toast), JSON.stringify({ input: fr.inputTitle, card: fr.cardTitle, toast: fr.toast }));
     await fp.close();
+
+    /* happy-birthday: no plan at any level. The copy is the same notes the chip-off request makes, in both screens */
+    const hp = await openPage(browser);
+    const hid = await addSong(hp, HAPPY);
+    const h1 = await overlayArrange(hp, hid, 'intermediate', 'balanced');
+    ok('Song Arranger, happy-birthday (no plan at any level): a standard copy is saved with the notice, not nothing', h1.saved && h1.slot.importSource.arrangement.singleFallback === 'UNREACHABLE' && h1.slot.importSource.arrangement.engine !== 'ppp.g9-single' && !/one-note-per-hand arrangement$/.test(h1.cardTitle) && /standard arrangement was saved/.test(h1.toast), JSON.stringify({ card: h1.cardTitle, toast: h1.toast, arr: h1.saved && h1.slot.importSource.arrangement }));
+    const h1t = await overlayArrange(hp, hid, 'beginner', 'jazz', null, 'Typed HB copy');
+    ok('and a title the person typed is kept for it', h1t.saved && h1t.cardTitle === 'Typed HB copy' && h1t.slot.importSource.arrangement.singleFallback === 'UNREACHABLE', JSON.stringify({ card: h1t.cardTitle }));
+    const h2 = await overlayArrange(hp, hid, 'intermediate', 'balanced', 'chip');
+    ok('the same notes as the chip-off request makes (one standard path, not another engine)', h2.saved && h2.mode === 'legacy' && h2.notesHash === h1.notesHash, h1.notesHash + ' vs ' + h2.notesHash);
+    ok('no page or console error', hp.__rec.pageErrors.length === 0 && hp.__rec.consoleErrors.length === 0, JSON.stringify(hp.__rec.pageErrors.concat(hp.__rec.consoleErrors)));
+    await hp.close();
+
+    /* (the review screen builds its graph from heard notes, not from the catalogue file: happy-birthday IS reachable there, sonatina/020 is not) */
+    const hr = await openPage(browser);
+    await loadReview(hr, SONATINA_020, 'sonatina 020');
+    const same = [];
+    const fbk = {};
+    for (const st of ['balanced', 'jazz']) {
+      const f = await reviewApply(hr, 'advanced', st);
+      fbk[st] = f;
+      await loadReview(hr, SONATINA_020, 'sonatina 020');
+    }
+    await hr.click('[data-arrangement] [data-single-note-option]'); await sleep(250);
+    for (const st of ['balanced', 'jazz']) {
+      const l = await reviewApply(hr, 'advanced', st);
+      await loadReview(hr, SONATINA_020, 'sonatina 020');
+      same.push(JSON.stringify(JSON.parse(fbk[st].packed).score.notes) === JSON.stringify(JSON.parse(l.packed).score.notes));
+    }
+    ok('review screen, sonatina/020, balanced and jazz: the refusal gives the same notes the chip off gives (balanced by the rhythm rewriter, jazz by the arranger, as with the chip off), marked singleFallback, with the notice',
+      fbk.balanced.arrangement.singleFallback === 'UNREACHABLE' && fbk.jazz.arrangement.singleFallback === 'UNREACHABLE' && same.every(Boolean) && fbk.balanced.arrangement.engine !== 'ppp.g9-single' && /standard arrangement is shown/.test(fbk.balanced.status), JSON.stringify({ same: same, b: fbk.balanced.arrangement, j: fbk.jazz.arrangement }));
+    await hr.close();
 
     const fr2 = await openPage(browser);
     await loadReview(fr2, SONATINA_020, 'sonatina 020');
@@ -451,6 +588,23 @@ async function identityHashes(browser) {
     ok('no page error in all of it', bp.__rec.pageErrors.length === 0, JSON.stringify(bp.__rec.pageErrors));
     await bp.close();
 
+    /* one of the OTHER scripts fails (not candidates/index.js, whose global is what the old check looked for): the session must not be poisoned, and what loaded
+       before the failure is not fetched again when the network is back */
+    const np = await openPage(browser, { block: /\/critics\/vertical-clash\.js/ });
+    await loadReview(np, HYMN('christ-arose'), 'christ-arose');
+    await np.waitForFunction(() => performance.getEntriesByType('resource').some(x => /candidates\/index\.js/.test(x.name)), { timeout: 30000 }).catch(() => {});
+    await sleep(1500);
+    const m1 = await reviewApply(np, 'intermediate', 'balanced');
+    ok('one script of the fourteen refused (critics/vertical-clash.js) while the others load: the notice and the standard arrangement, no crash', m1.arrangement.singleFallback === 'SINGLE_NOT_LOADED' && /standard arrangement is shown/.test(m1.status) && np.__rec.pageErrors.length === 0, JSON.stringify(m1.arrangement));
+    np.__rec.blockOn = false;
+    await loadReview(np, HYMN('christ-arose'), 'christ-arose');
+    const m2 = await reviewApply(np, 'intermediate', 'balanced');
+    ok('when it is back the next Apply recovers, with no reload: one note per hand', m2.arrangement.engine === 'ppp.g9-single' && !m2.arrangement.singleFallback && m2.perAttack.filter(n => n > 1).length === 0, JSON.stringify(m2.arrangement));
+    const nn = np.__rec.requests.filter(u => OPTION_FILES.test(u)).map(u => u.split('?')[0]);
+    const cnt = f => nn.filter(n => n === f).length;
+    ok('the scripts before the failed one were fetched once, the failed one and those after it again', ['/realize/handchords.js', '/realize/clefs.js', '/realize/ottava.js', '/critics/voice-leading.js', '/critics/register-density.js', '/critics/register-floor.js', '/critics/left-hand-jump.js', '/critics/low-register-cluster.js'].every(f => cnt(f) === 1) && cnt('/critics/vertical-clash.js') >= 2 && ['/critics/metrics.js', '/critics/index.js', '/candidates/index.js', '/repair/plan.js', '/repair/index.js'].every(f => cnt(f) >= 2), nn.map(u => u.replace(/^\//, '')).join(' '));
+    await np.close();
+
     /* a blip in the reference data (whether the background load or the first Apply asks) must not cost the whole session */
     const rp2 = await openPage(browser, { failWhile: /method-books\.json/ });
     await loadReview(rp2, HYMN('christ-arose'), 'christ-arose');
@@ -462,23 +616,24 @@ async function identityHashes(browser) {
     ok('the next Apply asks again and works, with no reload', b2.arrangement.engine === 'ppp.g9-single' && b2.perAttack.filter(n => n > 1).length === 0, JSON.stringify(b2.arrangement));
     await rp2.close();
 
-    console.log('\n── an arrangement asked for while the background load is still in flight ──');
+    console.log('\n── an arrangement asked for while the download is still in flight ──');
     {
-      /* every file of the option is held 3 s; the page is used at once: the background load is started by hand (what the timer does at 2.5 s), then Apply */
+      /* every file of the option is held 3 s; opening the review screen starts the download, Apply is pressed at once */
       const ra = await openPage(browser, { until: 'domcontentloaded', delay: { re: OPTION_FILES, ms: 3000 } });
-      await ra.waitForFunction(() => !!(window.PPP && window.PPP.app && window.PPP.app.warmSingleModules), { timeout: 30000 });
-      await ra.evaluate(() => window.PPP.app.warmSingleModules());
-      await sleep(300);
+      await ra.waitForFunction(() => !!(window.PPP && window.PPP.app), { timeout: 30000 });
+      await sleep(500);
+      const early = ra.__rec.requests.filter(u => OPTION_FILES.test(u)).length;
       await loadReview(ra, HYMN('christ-arose'), 'christ-arose');
       const pre = await ra.evaluate(() => ({ loaded: !!(window.PPPCandidates && window.PPPRepair), mode: window.PPP.arranger }));
       const t0 = Date.now();
       const rr = await reviewApply(ra, 'intermediate', 'balanced');
       const names2 = ra.__rec.requests.filter(u => OPTION_FILES.test(u)).map(u => u.split('?')[0]);
+      ok('nothing was requested before a screen that arranges opened', early === 0, String(early));
       ok('precondition: Apply was pressed while the files were still in flight', pre.loaded === false && pre.mode === 'single', JSON.stringify(pre));
       ok('Apply waited for the same download: one note per hand, and every script and data file was asked for exactly once', rr.arrangement.engine === 'ppp.g9-single' && !rr.arrangement.singleFallback && OPTION_SCRIPTS.every(f => names2.filter(n => n === f).length === 1) && names2.filter(n => /method-books\.json$/.test(n)).length === 1 && names2.filter(n => /g6a-v1\.json$/.test(n)).length === 1, JSON.stringify({ engine: rr.arrangement.engine, n: names2.length, ms: Date.now() - t0 }));
-      await sleep(3500); /* the page's own timer for the background load has fired by now: it finds everything there and asks for nothing */
+      await sleep(3500);
       const names3 = ra.__rec.requests.filter(u => OPTION_FILES.test(u));
-      ok('and the page\'s own background timer, firing afterwards, asked for nothing more (16 requests in all)', names3.length === 16, String(names3.length));
+      ok('and nothing asked for more afterwards (16 requests in all)', names3.length === 16, String(names3.length));
       ok('no page or console error', ra.__rec.pageErrors.length === 0 && ra.__rec.consoleErrors.length === 0, JSON.stringify(ra.__rec.pageErrors.concat(ra.__rec.consoleErrors)));
       await ra.close();
     }

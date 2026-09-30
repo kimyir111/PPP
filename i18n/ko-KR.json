@@ -1924,6 +1924,8 @@
     "Writing one note per hand…": "한 손에 한 음씩 쓰는 중…",
     "This piece could not be made in one-note-per-hand mode, so the standard arrangement is shown.": "이 곡은 한 손 단음 모드로 만들 수 없어 기본 편곡을 보여줍니다.",
     "This piece could not be made in one-note-per-hand mode. Turn the option off to make the standard arrangement.": "이 곡은 한 손 단음 모드로 만들 수 없습니다. 기본 편곡을 만들려면 이 옵션을 끄세요.",
+    "This piece could not be made in one-note-per-hand mode, so the standard arrangement was saved.": "이 곡은 한 손 단음 모드로 만들 수 없어 기본 편곡을 저장했습니다.",
+    "Texture choices don't apply in one-note-per-hand mode; turn it off to use them.": "한 손 단음 모드에서는 편곡 스타일 선택이 적용되지 않아요. 스타일을 쓰려면 이 모드를 끄세요.",
     "Created a {{level}} one-note-per-hand arrangement.": "{{level}} 한 손 단음 편곡을 만들었습니다.",
     "PPP one-note-per-hand arrangement": "PPP 한 손 단음 편곡",
     "Created a {{level}} arrangement. Some passages had low melody/bass confidence, so PPP kept them simple rather than guess.": "{{level}} 편곡을 만들었습니다. 멜로디와 베이스를 확신하기 어려운 구간은 추측하지 않고 단순하게 두었습니다.",

@@ -1700,7 +1700,7 @@
                     </select>
                   </label>
                 </div>
-                <div style="border: 1px solid var(--line); border-radius: 12px; background: var(--bg); padding: 12px 14px; color: var(--ink2); font-size: 12.5px; line-height: 1.55;">{{ songArrangeStyleHint }}</div>
+                <div style="border: 1px solid var(--line); border-radius: 12px; background: var(--bg); padding: 12px 14px; color: var(--ink2); font-size: 12.5px; line-height: 1.55;" data-song-style-hint="1">{{ songArrangeStyleHint }}</div>
                 <div data-single-note-row="1" style="display: flex; flex-direction: column; align-items: flex-start; gap: 5px;">
                   <button type="button" onClick="{{ toggleSingleNote }}" data-single-note-option aria-pressed="{{ singleNotePressed }}" style="{{ singleNoteStyle }}">{{ singleNoteLabel }}</button>
                   <p style="margin: 0; font-size: 12px; line-height: 1.45; color: var(--ink3);">{{ singleNoteHint }}</p>
@@ -2335,6 +2335,9 @@
                     <button onClick="{{ applyArrangement }}" data-easier data-apply-arrangement style="padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">{{ arrangementApply }}</button>
                     <button onClick="{{ aiArrangement }}" data-ai-arrangement style="padding: 10px 14px; border-radius: 10px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 13px; font-weight: 650; cursor: pointer;">{{ arrangementAi }}</button>
                   </div>
+                  <sc-if value="{{ showTextureNote }}" hint-placeholder-val="{{ false }}">
+                    <p data-texture-note="1" style="margin: 0; font-size: 12px; line-height: 1.45; color: var(--ink3);">{{ textureNote }}</p>
+                  </sc-if>
                   <div data-single-note-row="1" style="display: flex; flex-direction: column; align-items: flex-start; gap: 5px;">
                     <button type="button" onClick="{{ toggleSingleNote }}" data-single-note-option aria-pressed="{{ singleNotePressed }}" style="{{ singleNoteStyle }}">{{ singleNoteLabel }}</button>
                     <p style="margin: 0; font-size: 12px; line-height: 1.45; color: var(--ink3);">{{ singleNoteHint }}</p>
@@ -4559,11 +4562,12 @@ function loadDifficultyWeights() {
    'g8' is 'legacy' (G4-F2-1's convention). G8a's own numbers (docs/GOALS/G08 §14: 3 of 5
    metrics tied-or-beaten against the in-app ScoreArranger, not 5 of 5) are why this stays off
    by default - see docs/GOALS/G08B_LEGACY_RETIREMENT.md.
-   G9e-lite (docs/GOALS/G09 §12): 'single' is a third mode, switched off and on by the "One note per hand
-   (experimental)" control in the two arrangement screens (or from the console). Since G9e default-on
+   G9e-lite (docs/GOALS/G09 §12): 'single' is a third mode, switched off and on by the "One note per hand"
+   control in the two arrangement screens (or from the console). Since G9e default-on
    (user decision 2026-09-30) it is what a fresh page starts in, and switching the control off is how a person
-   gets the standard ('legacy') arrangement; its scripts are then fetched in the background after the page has
-   settled (warmSingleModules), never on the way to the first paint. It hands the same
+   gets the standard ('legacy') arrangement; its scripts are fetched when an arranging screen opens
+   (warmSingleModules: the Song Arranger, the recognition review), or by the first arrangement, never
+   for a page that does not arrange. It hands the same
    built.graph (or, in the Song Arranger, the open song's graph) to G7a analyze -> G7b plan -> G9a
    candidates.run with { singleNoteHands: true } (one note per hand at every stage; the melody's top note and
    the bass are never removed) -> G9b repair -> TD16 8va/8vb -> the same graphToReviewScore the 'g8' path uses.
@@ -4680,19 +4684,23 @@ const SINGLE_SCRIPTS = [
   'candidates/index.js', 'repair/plan.js', 'repair/index.js'
 ];
 let _singleScriptsPromise = null;
+const _singleLoaded = new Set(); /* the scripts of the list that have loaded (and so run) */
 function loadSingleModules() {
-  if (window.PPPCandidates && window.PPPRepair) return Promise.resolve(true);
-  if (_singleScriptsPromise) return _singleScriptsPromise;
-  /* all requested at once, executed in list order (async = false); a failure clears the promise so the next try asks again */
-  _singleScriptsPromise = Promise.all(SINGLE_SCRIPTS.map(src => new Promise((resolve, reject) => {
+  /* ready only when EVERY script has loaded: a run where one of the twelve others failed is not ready, even though candidates and repair are there */
+  if (SINGLE_SCRIPTS.every(src => _singleLoaded.has(src))) return Promise.resolve(true);
+  if (_singleScriptsPromise) return _singleScriptsPromise; /* a download in flight is shared: nothing is asked for twice */
+  /* Requested at once, executed in list order (async = false). A failed script is asked for again the next time, and so is every script after
+     it in the list (they may have run without it, so they run again after it): what has loaded before the first failure is never fetched twice. */
+  const todo = SINGLE_SCRIPTS.slice(SINGLE_SCRIPTS.findIndex(src => !_singleLoaded.has(src)));
+  _singleScriptsPromise = Promise.all(todo.map(src => new Promise(resolve => {
     const el = document.createElement('script');
     el.src = './' + src + '?v=1';
     el.async = false;
-    el.onload = () => resolve(src);
-    el.onerror = () => reject(new Error(src));
+    el.onload = () => { _singleLoaded.add(src); resolve(true); };
+    el.onerror = () => { _singleLoaded.delete(src); resolve(false); };
     document.head.appendChild(el);
-  }))).then(() => !!(window.PPPCandidates && window.PPPRepair), () => false)
-    .then(ok => { if (!ok) _singleScriptsPromise = null; return ok; });
+  }))).then(results => results.every(Boolean) && !!(window.PPPCandidates && window.PPPRepair))
+    .then(ok => { _singleScriptsPromise = null; return ok; });
   return _singleScriptsPromise;
 }
 /* the last few results, by (graph fingerprint, level): choosing the same level again, or switching the option off and on, is instant */
@@ -11675,14 +11683,6 @@ class Component extends DCLogic {
        unlocked by the first click or key anywhere — so a MIDI keyboard, which
        cannot unlock it itself, is audible from the start. */
     this._pianoLoad = setTimeout(() => PianoSamples.load(), 1200);
-    /* 'single' is the default arranger (G9e default-on): its scripts and reference data come in the background once the page has settled
-       and is idle, not on the way to the first paint. An arrangement asked for sooner waits for the same download (loadSingleModules and
-       loadArrangerReference share what is in flight), and a failed download is simply asked for again then. */
-    this._singleWarm = setTimeout(() => {
-      this._singleWarm = null;
-      if (typeof requestIdleCallback === 'function') this._singleWarmIdle = requestIdleCallback(() => { this._singleWarmIdle = null; this.warmSingleModules(); }, { timeout: 5000 });
-      else this.warmSingleModules();
-    }, 2500);
     /* a touch only counts as a gesture when the finger lifts — iOS will not
        start sound from pointerdown, and a context created then can stay dead */
     this._unlockOn = ['pointerup', 'click', 'touchend', 'keydown'];
@@ -11742,6 +11742,7 @@ class Component extends DCLogic {
       if (this.state.sidebarOpen) this.setState({ sidebarOpen: false });
       /* what others have shared changes while you are away from it */
       if (this.state.screen === 'shared') this.loadShared(!!this.state.sharedList);
+      if (this.state.screen === 'review') this.warmSingleModules();
     }
     /* signing in or out changes which shared scores are yours */
     const uid = this.state.user ? this.state.user.id : null;
@@ -11767,8 +11768,6 @@ class Component extends DCLogic {
     if (this._midiOut) this._midiOut.panic();
     if (this._midi) this._midi.release();
     clearTimeout(this._pianoLoad);
-    clearTimeout(this._singleWarm);
-    if (this._singleWarmIdle && typeof cancelIdleCallback === 'function') cancelIdleCallback(this._singleWarmIdle);
     (this._unlockOn || []).forEach(t => window.removeEventListener(t, this._unlock, true));
     if (this._piano) this._piano.close();
   }
@@ -12567,8 +12566,10 @@ class Component extends DCLogic {
   /* Browsers only skip the MIDI prompt after the person has allowed it once.
      If that grant is still in place, open access on load so seating a cable
      is enough — no Connect click. */
-  /* the one-note-per-hand arranger's scripts and reference data, fetched ahead of the first arrangement; a no-op while another mode is set.
-     Never throws and never rejects: a failed download is left for the arrangement that needs it to ask again. */
+  /* the one-note-per-hand arranger's scripts and reference data (about 420 KB, 16 requests), fetched ahead of the first arrangement: called when a screen
+     that arranges opens (the Song Arranger, the recognition review) and by the chip. A page that never arranges never asks for them. A no-op while another
+     mode is set. Never throws and never rejects: a failed download is left for the arrangement that needs it to ask again; an arrangement asked for
+     before it has finished waits for the same download (loadSingleModules and loadArrangerReference share what is in flight). */
   warmSingleModules() {
     if (ARRANGER_MODE !== 'single') return;
     loadSingleModules();
@@ -14113,7 +14114,7 @@ class Component extends DCLogic {
       bpm: +S.lockBpm || S.score.tempo || 80,
       firstDownbeat: S.lockDownbeat == null ? 0 : +S.lockDownbeat
     };
-    let built, base, arranged, g8Degraded = false, singleFailure = null;
+    let built, base, arranged, g8Degraded = false, singleFailure = null, standardInstead = false;
     try {
       built = A.toMusicXml({
         notes: heard.notes, pedals: heard.pedals,
@@ -14129,10 +14130,17 @@ class Component extends DCLogic {
           engraveRemember(arranged, sn.graph, 'g9-single');
           arranged.source = { arrangement: { engine: 'ppp.g9-single' } };
           g8Degraded = sn.degraded;
-        } else singleFailure = sn.reason || 'unknown';
+        } else {
+          singleFailure = sn.reason || 'unknown';
+          /* what the option-off request would have done: a balanced/melody/accompaniment texture is written by the rhythm rewriter (rewriteFromHeard),
+             a rich texture by the arranger below. The same engine is used here, so a refusal gives exactly the arrangement the chip off gives. */
+          standardInstead = !(ScoreArranger.styles.indexOf(plan.style) > -1 && plan.style !== 'balanced');
+        }
       }
       if (arranged) {
         /* the one-note-per-hand result above */
+      } else if (standardInstead) {
+        /* handled after this block */
       } else if (ARRANGER_MODE === 'g8') {
         /* G08b §4 S4 fix (roadmap TD2): built.graph is already a real ScoreGraph - hand it
            straight to G7a's songgraph analyze(), G7b's plan(), and G8a's realize(). No
@@ -14166,6 +14174,13 @@ class Component extends DCLogic {
     } catch (e) {
       this.say((e && e.message) || tx('The arrangement could not be created.'));
       this.setState({ arrangementBusy: false });
+      return;
+    }
+    if (standardInstead) {
+      const notice = tx('This piece could not be made in one-note-per-hand mode, so the standard arrangement is shown.');
+      this.setState({ arrangementBusy: false });
+      this.rewriteFromHeard({ arrangement: plan, arrangementStatus: notice, singleFallback: singleFailure });
+      this.say(notice);
       return;
     }
     arranged.composer = S.score.composer || '';
@@ -14376,7 +14391,8 @@ class Component extends DCLogic {
       transcriptionVersion: TRANSCRIPTION_VERSION,
       status: report.level === 'poor' ? 'low-confidence' : 'transcribed',
       easy: !!(arrangement && arrangement.level === 'beginner'),
-      arrangement: built.stats.arrangement || null,
+      arrangement: built.stats.arrangement && extra.singleFallback
+        ? Object.assign({}, built.stats.arrangement, { singleFallback: extra.singleFallback }) : (built.stats.arrangement || null),
       arrangementOriginalNotes: built.stats.originalNotes || built.stats.notes,
       arrangementNotes: built.stats.notes
     });
@@ -14736,6 +14752,11 @@ class Component extends DCLogic {
       cinematic: 'Adds open fifths, octave bass and wide arpeggios for a spacious sound.'
     }[style] || 'Keeps the written rhythm and melody while limiting thick chords for the selected level.');
   }
+  /* the Song Arranger's suggested copy title: one-note-per-hand only when this level goes to the one-note-per-hand arranger ("Original transcription" does not) */
+  songArrangeAutoTitle(d, patch) {
+    const x = Object.assign({}, d, patch || {});
+    return this.arrangementCopyTitle(x.songTitle, x.style, singleRoute({ level: x.level }));
+  }
   arrangementCopyTitle(title, style, single) {
     /* G9e-lite: the texture style does not apply to a one-note-per-hand copy, so its name does not say one */
     if (single) return tx('{{title}} · one-note-per-hand arrangement', { title: title });
@@ -14746,14 +14767,10 @@ class Component extends DCLogic {
     const title = id === (this.state.songId || 'demo') ? this.state.score.title : card && card.title;
     if (!title) return;
     const style = 'balanced';
-    this.setState({
-      songArrange: {
-        songId: id, songTitle: title, level: 'intermediate', style: style,
-        copyTitle: this.arrangementCopyTitle(title, style, ARRANGER_MODE === 'single'), autoTitle: true,
-        busy: false, status: ''
-      },
-      armedRemove: null
-    });
+    const d = { songId: id, songTitle: title, level: 'intermediate', style: style, autoTitle: true, busy: false, status: '' };
+    d.copyTitle = this.songArrangeAutoTitle(d);
+    this.setState({ songArrange: d, armedRemove: null });
+    this.warmSingleModules(); /* the arranging screen is open: its scripts come now, so Create does not wait for them */
   }
   closeSongArranger() {
     if (this.state.songArrange && this.state.songArrange.busy) return;
@@ -14768,7 +14785,18 @@ class Component extends DCLogic {
       if (!d) return null;
       return { songArrange: Object.assign({}, d, {
         style: style,
-        copyTitle: d.autoTitle ? this.arrangementCopyTitle(d.songTitle, style, ARRANGER_MODE === 'single') : d.copyTitle,
+        copyTitle: d.autoTitle ? this.songArrangeAutoTitle(d, { style: style }) : d.copyTitle,
+        status: ''
+      }) };
+    });
+  }
+  setSongArrangeLevel(level) {
+    this.setState(st => {
+      const d = st.songArrange;
+      if (!d) return null;
+      return { songArrange: Object.assign({}, d, {
+        level: level,
+        copyTitle: d.autoTitle ? this.songArrangeAutoTitle(d, { level: level }) : d.copyTitle,
         status: ''
       }) };
     });
@@ -14794,12 +14822,13 @@ class Component extends DCLogic {
       return false;
     }
     plan = ScoreArranger.norm(Object.assign({}, plan || {}, { source: provider ? 'ai' : (plan && plan.source) }));
-    const title = (d.autoTitle ? this.arrangementCopyTitle(d.songTitle, plan.style, singleRoute(plan)) : String(d.copyTitle || '').trim())
+    let title = (d.autoTitle ? this.arrangementCopyTitle(d.songTitle, plan.style, singleRoute(plan)) : String(d.copyTitle || '').trim())
       || this.arrangementCopyTitle(d.songTitle, plan.style, singleRoute(plan));
-    let arranged, usedFallback = false, usedSingle = false;
+    let arranged, usedFallback = false, usedSingle = false, singleFailure = null;
     if (singleRoute(plan)) {
       /* G9e-lite: one note per hand, from the graph of the open song (PPPEngrave.app.resolve: the importer's own, the kept one, or
-         the one rebuilt from its Score). A copy made here is saved to My Songs, so a refusal saves nothing: the dialog stays open and says why. */
+         the one rebuilt from its Score). A piece it cannot make (9 of 20 catalogue pieces) is NOT a dead end: the standard arrangement is made below,
+         by the very path the option-off copy takes, and saved under a title that does not say one note per hand; the notice says so. */
       this.patchSongArranger({ busy: true, status: tx('Writing one note per hand…') });
       let sn = { ok: false, reason: 'NO_GRAPH' };
       try {
@@ -14807,13 +14836,17 @@ class Component extends DCLogic {
         if (src && src.graph) sn = await arrangeSingleNote(src.graph, plan);
       } catch (e) { sn = { ok: false, reason: 'SINGLE_CRASH', message: e && e.message }; }
       if (!sn.ok) {
-        this.patchSongArranger({ busy: false, status: tx('This piece could not be made in one-note-per-hand mode. Turn the option off to make the standard arrangement.') });
-        return false;
+        singleFailure = sn.reason || 'unknown';
+        /* the suggested title said one-note-per-hand: this copy is the standard arrangement, so the title says that (a title the person typed stays) */
+        if (d.autoTitle) title = this.arrangementCopyTitle(d.songTitle, plan.style, false);
+      } else {
+        arranged = graphToReviewScore(sn.graph, title);
+        /* legacy-score.js takes the title of the graph's own meta over the name it is given: the copy is named what the person typed */
+        arranged.title = title;
+        engraveRemember(arranged, sn.graph, 'g9-single');
+        arranged.source = { arrangement: { engine: 'ppp.g9-single', level: plan.level, style: plan.style, source: plan.source || 'local' } };
+        usedSingle = true;
       }
-      arranged = graphToReviewScore(sn.graph, title);
-      engraveRemember(arranged, sn.graph, 'g9-single');
-      arranged.source = { arrangement: { engine: 'ppp.g9-single', level: plan.level, style: plan.style, source: plan.source || 'local' } };
-      usedSingle = true;
     }
     if (!arranged) this.patchSongArranger({ busy: true, status: tx('Planning harmony and connecting the chord voicings across the whole score…') });
     if (!arranged) try {
@@ -14835,6 +14868,7 @@ class Component extends DCLogic {
       kind: 'arrangement', parentSongId: d.songId, parentTitle: sourceScore.title,
       provider: usedSingle ? 'PPP one-note-per-hand arranger' : (provider || (usedFallback ? 'PPP browser fallback' : 'PPP harmonic arranger')), createdAt: Clock.now()
     });
+    if (singleFailure) source.arrangement = Object.assign({}, source.arrangement || {}, { singleFallback: singleFailure });
     arranged.source = source;
     arranged.composer = [sourceScore.composer, usedSingle ? tx('PPP one-note-per-hand arrangement') : tx('PPP {{style}} arrangement', { style: this.arrangementStyleName(plan.style) })]
       .filter(Boolean).join(' · ');
@@ -14859,7 +14893,8 @@ class Component extends DCLogic {
     }
     if (this._thumbs) delete this._thumbs[id];
     this.setState({ songArrange: null });
-    this.say(tx('Saved {{title}} as a new song. The original was not changed.', { title: arranged.title }));
+    const saved = tx('Saved {{title}} as a new song. The original was not changed.', { title: arranged.title });
+    this.say(singleFailure ? tx('This piece could not be made in one-note-per-hand mode, so the standard arrangement was saved.') + ' ' + saved : saved);
     return true;
   }
   async createSongArrangement() {
@@ -17233,16 +17268,19 @@ class Component extends DCLogic {
       /* G9e-lite: the switch (pressed = on, which is the default). Reads PPP.arranger itself, so it also shows a mode set from the console; session only, not remembered. */
       singleNoteLabel: tx('One note per hand'),
       singleNoteHint: tx('The right hand plays the melody as one line; the left hand plays an accompaniment one note at a time. No hand plays two or more notes together, but depending on the piece the left hand may play more notes, and some of the original harmony can be lost.'),
+      /* the texture choices do nothing in this mode (any level but "Original transcription"): said beside them, not only in the docs */
+      showTextureNote: singleRoute({ level: S.arrangementLevel || 'intermediate' }),
+      textureNote: tx('Texture choices don\'t apply in one-note-per-hand mode; turn it off to use them.'),
       singleNotePressed: ARRANGER_MODE === 'single' ? 'true' : 'false',
       singleNoteStyle: this.chip(ARRANGER_MODE === 'single') + ';align-self:flex-start;',
       toggleSingleNote: () => {
         if (ARRANGER_MODE === 'single') ARRANGER_MODE = ARRANGER_MODE_BEFORE_SINGLE;
         else { ARRANGER_MODE_BEFORE_SINGLE = ARRANGER_MODE; ARRANGER_MODE = 'single'; }
         /* turning it on starts the download of its scripts and data now, so that Apply does not wait for them */
-        if (ARRANGER_MODE === 'single') { loadSingleModules(); loadArrangerReference(); }
+        this.warmSingleModules();
         /* the Song Arranger's suggested copy title follows the mode, unless the person has typed their own */
         this.setState(st => st.songArrange && st.songArrange.autoTitle
-          ? { songArrange: Object.assign({}, st.songArrange, { copyTitle: this.arrangementCopyTitle(st.songArrange.songTitle, st.songArrange.style, ARRANGER_MODE === 'single') }) } : {});
+          ? { songArrange: Object.assign({}, st.songArrange, { copyTitle: this.songArrangeAutoTitle(st.songArrange) }) } : {});
       },
       applyArrangement: () => this.applyArrangement(),
       aiArrangement: () => this.aiArrangement(),
@@ -17888,7 +17926,10 @@ class Component extends DCLogic {
       songArrangeHint: tx('A new song will be created in My Songs. The original score and its practice progress will not be changed.'),
       songArrangeLevel: songArrange.level || 'intermediate',
       songArrangeStyle: songArrange.style || 'balanced',
-      songArrangeStyleHint: this.arrangementStyleHint(songArrange.style || 'balanced'),
+      /* in one-note-per-hand mode the texture's own description would describe something that will not happen */
+      songArrangeStyleHint: singleRoute({ level: songArrange.level || 'intermediate' })
+        ? tx('Texture choices don\'t apply in one-note-per-hand mode; turn it off to use them.')
+        : this.arrangementStyleHint(songArrange.style || 'balanced'),
       songArrangeCopyTitle: songArrange.copyTitle || '',
       arrangementCopyTitleLabel: tx('New song title'),
       arrangementJazz: tx('Jazz'), arrangementBallad: tx('Ballad'), arrangementPop: tx('Pop piano'),
@@ -17898,7 +17939,7 @@ class Component extends DCLogic {
       songArrangeAiLabel: songArrange.busy ? tx('AI is arranging…') : tx('AI custom arrangement'),
       closeLabel: tx('Close'), cancelLabel: tx('Cancel'),
       closeSongArranger: () => this.closeSongArranger(),
-      setSongArrangeLevel: e => this.patchSongArranger({ level: e.target.value, status: '' }),
+      setSongArrangeLevel: e => this.setSongArrangeLevel(e.target.value),
       setSongArrangeStyle: e => this.setSongArrangeStyle(e.target.value),
       setSongArrangeCopyTitle: e => this.patchSongArranger({ copyTitle: e.target.value, autoTitle: false }),
       createSongArrangement: () => this.createSongArrangement(),
