@@ -6,7 +6,7 @@ const { test, before } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
-const { REPO, ITEMS, CACHE, tmpDir, readAll } = require('./helpers.js');
+const { REPO, ITEMS, CACHE, tmpDir, readAll, splitAudio, checkAudioBlob } = require('./helpers.js');
 const { buildPacket } = require(path.join(REPO, 'review/build.js'));
 const { decode } = require(path.join(REPO, 'review/decode.js'));
 
@@ -45,7 +45,10 @@ test('leak scan (H-8 and H-9 packets): no file in the packet contains a word tha
 function scanPacket(P, words) {
   const files = readAll(P.outDir);
   Object.keys(files).forEach(f => {
-    const text = files[f].toString('utf8').toLowerCase();
+    /* the piano recordings (one base64 block) are checked for what they are, then left out of the word scan: see helpers.js splitAudio */
+    const parts = splitAudio(files[f].toString('utf8'));
+    if (parts.blob !== null) checkAudioBlob(parts.blob);
+    const text = parts.rest.toLowerCase();
     words.forEach(w => {
       /* 'g8' and 'g9' name the goals; as a bare substring they also match a glyph id such as "flag8thdown" (a note flag), which is not a leak:
          they count only when not preceded by a letter or digit */
@@ -56,6 +59,34 @@ function scanPacket(P, words) {
     assert.ok(text.indexOf('seed') < 0, f + ' mentions a seed');
   });
 }
+
+test('the piano recordings are embedded once per page, all 30, byte-for-byte the repository files (read at build time; no copies are committed)', () => {
+  [A, A9].forEach(P => {
+    const html = fs.readFileSync(P.files.html, 'utf8');
+    assert.equal((html.match(/id="piano-samples"/g) || []).length, 1, 'one block per page, not one per item or per side');
+    const { blob } = splitAudio(html);
+    const list = checkAudioBlob(blob);
+    assert.equal(list.length, 30);
+    /* each recording's bytes occur once in the page */
+    list.forEach(b => assert.equal(html.split(b.slice(0, 200)).length - 1, 1));
+    /* the page is the score pages plus about 1.75 MB of recordings, no more */
+    const audioBytes = Buffer.byteLength(blob);
+    assert.ok(audioBytes > 1.5e6 && audioBytes < 2.0e6, 'the recordings are about 1.75 MB as base64: ' + audioBytes);
+    assert.ok(fs.readdirSync(path.join(REPO, 'review')).every(f => !/\.mp3$/.test(f)), 'no mp3 copy in review/');
+  });
+  const { readPianoSamples } = require(path.join(REPO, 'review/build.js'));
+  assert.throws(() => readPianoSamples(path.join(tmpDir('nosamples'), 'none')), /piano sample missing/);
+});
+
+test('the word scan leaves out only the audio block, and what it leaves out is checked: a corrupted block is caught, and a word in the rest is still caught', () => {
+  const html = fs.readFileSync(A.files.html, 'utf8');
+  const { rest, blob } = splitAudio(html);
+  assert.ok(rest.length < html.length - 1.5e6 && rest.indexOf('piano-samples') >= 0 && /^<!DOCTYPE/.test(rest));
+  assert.doesNotThrow(() => checkAudioBlob(blob));
+  assert.throws(() => checkAudioBlob(blob.replace('"', '"legacy ')), /base64 strings and nothing else/);
+  assert.throws(() => checkAudioBlob(blob.replace(/^\["/, '["AAAA').replace(/"\]$/, 'AAAA"]')), /repository recording/);
+  assert.ok(splitAudio(html.replace('</main>', '<p>legacy</p></main>')).rest.toLowerCase().indexOf('legacy') >= 0, 'a word anywhere else stays in the scanned part');
+});
 
 test('the key (and the seed) are outside the packet directory and are not reachable from it', () => {
   assert.ok(path.relative(A.outDir, A.keyDir).startsWith('..'), 'the key directory is not inside the packet directory');

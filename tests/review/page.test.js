@@ -1,6 +1,9 @@
 /* G9c: the reviewer page in a real browser (headless Chrome via puppeteer): both scores render, the form works, ratings survive a
    reload, export is valid JSON, playback starts and stops, nothing is requested from the network, and the page still works when
-   the browser refuses storage. Skipped (with a reason) if puppeteer cannot be found. Audio is started and stopped, not heard. */
+   the browser refuses storage. The sound is the app's sampled piano: all 30 recordings are embedded once and decode, Play schedules one voice per
+   note, the plain synth takes over when decoding fails, a phrase renders offline without clipping, and the page works as an Artifact-style
+   fragment with every request blocked. Skipped (with a reason) if puppeteer cannot be found. Audio is started, stopped and rendered offline,
+   not heard. */
 'use strict';
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
@@ -30,6 +33,7 @@ after(async () => { if (browser) await browser.close(); });
 
 async function open(opts) {
   const page = await browser.newPage();
+  if (opts && opts.init) await page.evaluateOnNewDocument(opts.init);
   const errors = [], requests = [];
   page.on('pageerror', e => errors.push(String(e && e.message || e)));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
@@ -47,7 +51,7 @@ async function open(opts) {
     HTMLAnchorElement.prototype.click = function () { window.__lastDownload = { name: this.download, href: this.href }; };
   }, !!(opts && opts.noStorage));
   await page.setViewport({ width: 1100, height: 900 });
-  await page.goto(url, { waitUntil: 'load' });
+  await page.goto(opts && opts.url ? opts.url : url, { waitUntil: 'load' });
   return { page, errors, requests };
 }
 
@@ -147,17 +151,167 @@ test('Clear ratings erases them (after the confirm)', { skip }, async () => {
   await page.close();
 });
 
-test('Play starts and Stop stops a synthesised playback without an error (audio itself is not heard here)', { skip }, async () => {
+const PLAY = id => 'article[data-item="' + id + '"] button[data-play="X"]';
+const textOf = async (page, sel) => page.$eval(sel, e => e.textContent);
+const waitText = (page, sel, text) => page.waitForFunction((sel, text) => document.querySelector(sel).textContent === text, { timeout: 20000 }, sel, text);
+
+test('Play starts and Stop stops a sampled-piano playback without an error (the recordings load on the first press; audio itself is not heard here)', { skip }, async () => {
   const { page, errors, requests } = await open();
   await page.click('article[data-item="i01"] button[data-play="X"]');
-  assert.equal(await page.$eval('article[data-item="i01"] button[data-play="X"]', e => e.textContent), '정지');
+  await waitText(page, PLAY('i01'), '정지');
   /* starting the other one stops the first */
   await page.click('article[data-item="i01"] button[data-play="Y"]');
-  assert.equal(await page.$eval('article[data-item="i01"] button[data-play="X"]', e => e.textContent), '재생');
-  assert.equal(await page.$eval('article[data-item="i01"] button[data-play="Y"]', e => e.textContent), '정지');
+  assert.equal(await textOf(page, PLAY('i01')), '재생');
+  await waitText(page, 'article[data-item="i01"] button[data-play="Y"]', '정지');
   await page.click('article[data-item="i01"] button[data-play="Y"]');
   assert.equal(await page.$eval('article[data-item="i01"] button[data-play="Y"]', e => e.textContent), '재생');
+  assert.equal(await page.$eval('article[data-item="i01"] button[data-play="Y"]', e => e.getAttribute('aria-pressed')), 'false');
   assert.deepEqual(errors, []); assert.deepEqual(requests, []);
+  await page.close();
+});
+
+test('the piano samples: embedded once, all 30 decode to real recordings (the first press shows the loading label), one voice is scheduled per note, the note list is the packet list', { skip }, async () => {
+  const html = fs.readFileSync(packet.files.html, 'utf8');
+  assert.equal((html.match(/id="piano-samples"/g) || []).length, 1, 'one sample block per page, not per item');
+  const { page, errors, requests } = await open();
+  await page.evaluate(() => { window.__texts = []; const b = document.querySelector('article[data-item="i01"] button[data-play="X"]'); new MutationObserver(() => window.__texts.push(b.textContent)).observe(b, { childList: true, characterData: true, subtree: true }); });
+  assert.equal(await page.evaluate(() => window.__pppReview.sound.samples.done), false, 'nothing is decoded before the first Play (no audio work at page load)');
+  await page.click(PLAY('i01'));
+  await waitText(page, PLAY('i01'), '정지');
+  const r = await page.evaluate(() => {
+    const S = window.__pppReview.sound, list = S.samples.list;
+    return { texts: window.__texts, got: S.samples.got, last: S.lastRun(), notes: S.notes('i01', 'X'),
+      bufs: list.map(s => { if (!s) return null; const d = s.buffer.getChannelData(0); let pk = 0; for (let i = 0; i < d.length; i++) { const v = Math.abs(d[i]); if (v > pk) pk = v; } return { dur: s.buffer.duration, peak: pk, ch: s.buffer.numberOfChannels, onset: s.onset }; }) };
+  });
+  assert.equal(r.texts[0], '소리 불러오는 중...', 'the button says the sound is loading while it decodes');
+  assert.equal(r.texts[r.texts.length - 1], '정지');
+  assert.equal(r.got, 30); assert.equal(r.bufs.length, 30);
+  r.bufs.forEach((b, k) => { assert.ok(b, 'sample ' + k + ' decoded'); assert.ok(b.dur > 3 && b.dur < 9.5, 'sample ' + k + ' plausible length ' + b.dur); assert.ok(b.peak > 0.05 && b.peak <= 1.0, 'sample ' + k + ' has sound: ' + b.peak); assert.ok(b.onset >= 0 && b.onset < 0.1, 'hammer onset ' + b.onset); });
+  assert.equal(r.last.mode, 'samples'); assert.equal(r.last.voices, r.notes.length); assert.ok(r.notes.length > 20);
+  /* the page's note list is exactly the packet's [startQ, durQ, midi] list */
+  const data = JSON.parse(html.match(/<script id="packet-data" type="application\/json">([\s\S]*?)<\/script>/)[1]);
+  assert.deepEqual(r.notes, data.items.i01.X);
+  assert.deepEqual(errors, []); assert.deepEqual(requests, []);
+  await page.close();
+});
+
+test('the nearest-recording pick is the app pick (one every minor third from A0, pitched by at most a semitone)', { skip }, async () => {
+  const { page } = await open();
+  await page.evaluate(() => window.__pppReview.sound.load());
+  const picks = await page.evaluate(() => { const S = window.__pppReview.sound, out = []; for (let m = 21; m <= 108; m++) { const p = S.pick(m); out.push([m, Math.round(12 * Math.log2(p.rate) * 1000) / 1000]); } return out; });
+  picks.forEach(([m, semis]) => assert.ok(Math.abs(semis) <= 1.0001, 'key ' + m + ' pitched ' + semis + ' semitones'));
+  assert.equal(picks.find(p => p[0] === 21)[1], 0);
+  assert.equal(picks.find(p => p[0] === 60)[1], 0, 'middle C has its own recording');
+  assert.equal(picks.find(p => p[0] === 61)[1], 1, 'C#4 is C4 up a semitone');
+  assert.equal(picks.find(p => p[0] === 62)[1], -1, 'D4 is Ds4 down a semitone');
+  await page.close();
+});
+
+test('every speed and both sides play through the sampler, one voice per note', { skip }, async () => {
+  const { page, errors } = await open();
+  for (const [id, side, sp] of [['i01', 'X', '0.6'], ['i01', 'Y', '0.8'], ['i02', 'X', '1'], ['i02', 'Y', '0.6']]) {
+    await page.select('article[data-item="' + id + '"] select[data-speed="' + side + '"]', sp);
+    const sel = 'article[data-item="' + id + '"] button[data-play="' + side + '"]';
+    await page.click(sel); await waitText(page, sel, '정지');
+    const lr = await page.evaluate(() => window.__pppReview.sound.lastRun());
+    assert.equal(lr.mode, 'samples'); assert.equal(lr.id, id); assert.equal(lr.side, side);
+    assert.equal(lr.voices, await page.evaluate((id, side) => window.__pppReview.sound.notes(id, side).length, id, side));
+    await page.click(sel); assert.equal(await textOf(page, sel), '재생');
+  }
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('stopping while the sound is still loading cancels that play (nothing starts afterwards)', { skip }, async () => {
+  const { page, errors } = await open();
+  await page.evaluate(() => { const o = window.OfflineAudioContext.prototype.decodeAudioData; window.OfflineAudioContext.prototype.decodeAudioData = function () { const a = arguments, self = this; return new Promise(r => setTimeout(r, 400)).then(() => o.apply(self, a)); }; });
+  await page.click(PLAY('i01'));
+  assert.equal(await textOf(page, PLAY('i01')), '소리 불러오는 중...');
+  await page.click(PLAY('i01'));
+  assert.equal(await textOf(page, PLAY('i01')), '재생');
+  await new Promise(r => setTimeout(r, 1500));
+  assert.equal(await textOf(page, PLAY('i01')), '재생', 'it did not start after the stop');
+  assert.equal(await page.evaluate(() => window.__pppReview.sound.lastRun()), null);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('if the recordings cannot be decoded the plain synth plays the same notes (a note is never silent)', { skip }, async () => {
+  /* decodeAudioData refuses everything */
+  const { page, errors, requests } = await open({ init: function () { const fail = function () { return Promise.reject(new Error('decode refused')); }; ['BaseAudioContext', 'OfflineAudioContext', 'AudioContext'].forEach(function (n) { if (window[n]) window[n].prototype.decodeAudioData = fail; }); } });
+  await page.click(PLAY('i01'));
+  await waitText(page, PLAY('i01'), '정지');
+  const r = await page.evaluate(() => ({ last: window.__pppReview.sound.lastRun(), got: window.__pppReview.sound.samples.got, n: window.__pppReview.sound.notes('i01', 'X').length }));
+  assert.equal(r.got, 0); assert.equal(r.last.mode, 'synth'); assert.equal(r.last.voices, r.n);
+  await page.click(PLAY('i01')); assert.equal(await textOf(page, PLAY('i01')), '재생');
+  const off = await page.evaluate(async () => { const x = await window.__pppReview.sound.renderOffline('i01', 'X', 1, 'samples', 6); const d = x.buffer.getChannelData(0); let pk = 0; for (let i = 0; i < d.length; i++) pk = Math.max(pk, Math.abs(d[i])); return { mode: x.mode, peak: pk }; });
+  assert.equal(off.mode, 'synth'); assert.ok(off.peak > 0.05, 'the synth fallback is not silent');
+  assert.deepEqual(errors, []); assert.deepEqual(requests, []);
+  await page.close();
+  /* a page with no sample block at all does the same */
+  const { page: p2, errors: e2 } = await open();
+  await p2.evaluate(() => { document.getElementById('piano-samples').remove(); });
+  await p2.click(PLAY('i02')); await waitText(p2, PLAY('i02'), '정지');
+  assert.equal((await p2.evaluate(() => window.__pppReview.sound.lastRun())).mode, 'synth');
+  assert.deepEqual(e2, []);
+  await p2.close();
+});
+
+test('one corrupted recording: a neighbour is pitched to cover its keys and the others still play (not the synth)', { skip }, async () => {
+  const { page, errors } = await open();
+  await page.evaluate(() => { const el = document.getElementById('piano-samples'), a = JSON.parse(el.textContent); a[17] = 'AAAA'; el.textContent = JSON.stringify(a); });
+  await page.click(PLAY('i01')); await waitText(page, PLAY('i01'), '정지');
+  const r = await page.evaluate(() => { const S = window.__pppReview.sound; return { got: S.samples.got, last: S.lastRun(), semis: 12 * Math.log2(S.pick(72).rate) }; });
+  assert.equal(r.got, 29); assert.equal(r.last.mode, 'samples');
+  assert.ok(Math.abs(Math.abs(r.semis) - 3) < 1e-6, 'C5 is covered by a neighbour three semitones away: ' + r.semis);
+  assert.deepEqual(errors, []);
+  await page.close();
+});
+
+test('a phrase rendered offline through the sampler (the code Play uses) is audible and does not clip, and is not the synth', { skip }, async () => {
+  const { page } = await open();
+  const out = {};
+  for (const mode of ['samples', 'synth']) {
+    out[mode] = await page.evaluate(async (mode) => {
+      const x = await window.__pppReview.sound.renderOffline('i01', 'X', 1, mode, 12);
+      const d = x.buffer.getChannelData(0); let pk = 0, sum = 0, clip = 0;
+      for (let i = 0; i < d.length; i++) { const a = Math.abs(d[i]); if (a > pk) pk = a; sum += d[i] * d[i]; if (a >= 0.999) clip++; }
+      /* brightness: the share of the energy in the first difference (a crude high-pass) */
+      let hp = 0; for (let i = 1; i < d.length; i++) { const v = d[i] - d[i - 1]; hp += v * v; }
+      return { mode: x.mode, voices: x.voices, notes: x.notes, peak: pk, rms: Math.sqrt(sum / d.length), clip: clip, hf: hp / sum };
+    }, mode);
+  }
+  assert.equal(out.samples.mode, 'samples'); assert.equal(out.synth.mode, 'synth');
+  assert.equal(out.samples.voices, out.samples.notes); assert.ok(out.samples.notes > 10);
+  assert.ok(out.samples.peak > 0.1 && out.samples.peak < 0.999 && out.samples.clip === 0, 'audible and not clipping: ' + JSON.stringify(out.samples));
+  assert.ok(out.samples.rms > 0.02, 'not near-silent: ' + out.samples.rms);
+  assert.ok(Math.abs(out.samples.hf - out.synth.hf) > 0.0001 || Math.abs(out.samples.rms - out.synth.rms) > 0.001, 'it is not the synth');
+  await page.close();
+});
+
+test('as an Artifact-style fragment (no doctype, html, head or body tags) with every request blocked: the page works, plays and remembers', { skip }, async () => {
+  const html = fs.readFileSync(packet.files.html, 'utf8');
+  const style = html.match(/<style>[\s\S]*?<\/style>/)[0], body = html.match(/<body>([\s\S]*)<\/body>/)[1];
+  const fragment = style + body;
+  assert.ok(!/<!doctype|<html[\s>]|<head[\s>]|<body[\s>]/i.test(fragment));
+  const f = path.join(tmpDir('frag'), 'wrapped.html');
+  fs.writeFileSync(f, '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>' + fragment + '</body></html>');
+  const { page, errors, requests } = await open({ url: pathToFileURL(f).href, init: function () {
+    window.fetch = function () { throw new Error('fetch is blocked'); };
+    window.XMLHttpRequest = function () { throw new Error('XHR is blocked'); };
+  } });
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload({ waitUntil: 'load' });
+  assert.equal(await page.$eval('#progress', e => e.textContent), '0 / 2 문항 평가함');
+  await page.click(PLAY('i02')); await waitText(page, PLAY('i02'), '정지');
+  const lr = await page.evaluate(() => window.__pppReview.sound.lastRun());
+  assert.equal(lr.mode, 'samples'); assert.equal(await page.evaluate(() => window.__pppReview.sound.samples.got), 30);
+  await page.click(PLAY('i02'));
+  await page.click('input[name="pref-i01"][value="X"]');
+  await page.reload({ waitUntil: 'load' });
+  assert.equal(await page.$eval('#progress', e => e.textContent), '1 / 2 문항 평가함');
+  assert.deepEqual(errors, []); assert.deepEqual(requests, []);
+  await page.evaluate(() => window.localStorage.clear());
   await page.close();
 });
 

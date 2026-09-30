@@ -4,7 +4,9 @@
    Per item: the two arrangements X and Y as engraved scores (SVG, drawn Node-side by engrave/, see neutral.js; each is embedded
    twice, laid out for a wide and for a narrow screen, and a media query at 720 px shows one, so a phone needs no sideways
    scrolling; the rating logic and the sound never read the drawings), a Play button
-   for each (a small Web Audio synth of the same notes the score shows; nothing is loaded), and a form.
+   for each (the same notes played on the PPP app's own sampled grand piano: the 30 Salamander recordings travel inside the page,
+   once per page as base64, and the sampler is a port of the app's PIANO, pianoAttack, pianoDamp, pianoRoom, PianoSamples and
+   PianoPlayer; if they cannot be decoded a small Web Audio synth plays the notes instead), and a form.
      H-8 (diagnostic): which is better (X / Y / no difference), and per arrangement: issue checkboxes (too hard, too easy, wrong
                        harmony, melody unclear, awkward hand position, thin/muddy) and a short "what is wrong" text.
      H-9 (pass/fail):  per arrangement: would you give this to a student - pass or fail (and an optional note); an optional
@@ -127,47 +129,273 @@ const JS = `
     persist(); refresh();
   }
 
-  /* ---- sound: a small additive synth of the notes the score shows (no samples, no network) ---- */
-  var AC = null, live = null;
+  /* ---- sound: the PPP app's sampled grand piano, ported from Piano Coach App.dc.html (PIANO, pianoAttack, pianoDamp,
+     pianoRoom, PianoSamples, PianoPlayer.strike/release/prune/silence). The 30 recordings (a Yamaha C5 every minor third,
+     A0 ... C8) are embedded in the page as base64 and decoded from those bytes on the first Play press; nothing is fetched.
+     The notes are the same list the score shows. Every note is struck at one fixed mezzo-forte velocity, held for its written
+     length and let go like a damper. If the recordings cannot be decoded, the small synth below plays the same notes. ---- */
+  var PIANO = { low: 21, step: 3, count: 30, decodeRate: 32000, velocity: 80, maxVoices: 72 };
+  var AC = null, live = null, lastRun = null, player = null;
+
+  /* where the hammer lands in a recording (MP3 decoders disagree about the silence before it, so it is measured) */
+  function pianoAttack(buf){
+    var d = buf.getChannelData(0), sr = buf.sampleRate;
+    var n = Math.min(d.length, Math.floor(sr * 0.3)), peak = 0, i;
+    for (i = 0; i < n; i++) { var v = d[i] < 0 ? -d[i] : d[i]; if (v > peak) peak = v; }
+    var th = peak * 0.03;
+    for (i = 0; i < n; i++) if ((d[i] < 0 ? -d[i] : d[i]) > th) return Math.max(0, i / sr - 0.002);
+    return 0;
+  }
+  /* how fast a damper silences a string: slower in the bass, hardly at all at the top, where a piano has no dampers */
+  function pianoDamp(midi){ return midi >= 89 ? 0.6 : midi < 40 ? 0.14 : midi < 60 ? 0.1 : 0.075; }
+  /* a small room, so a close-miked sample does not sound played in a cupboard (the app's noise is random; this one is a fixed
+     sequence, so every play and every test render has the same room) */
+  function pianoRoom(ac){
+    var sr = ac.sampleRate, len = Math.floor(sr * 1.6), buf = ac.createBuffer(2, len, sr), rng = 1;
+    for (var c = 0; c < 2; c++) {
+      var d = buf.getChannelData(c), lp = 0;
+      for (var i = 0; i < len; i++) {
+        var t = i / sr;
+        rng = (rng * 1664525 + 1013904223) >>> 0;
+        lp += ((rng / 2147483648 - 1) - lp) * 0.3;     /* take the fizz off the top */
+        d[i] = t < 0.008 ? 0 : lp * Math.exp(-t * 4);
+      }
+    }
+    return buf;
+  }
+
+  /* the decoded recordings: list[k] = { buffer, onset } once decoded */
+  var samples = { list: [], loading: null, done: false, got: 0 };
+  function base64Bytes(s){
+    var bin = atob(s), n = bin.length, u = new Uint8Array(n);
+    for (var i = 0; i < n; i++) u[i] = bin.charCodeAt(i);
+    return u.buffer;
+  }
+  function loadSamples(){
+    if (samples.loading) return samples.loading;
+    var blob = null;
+    try { var el = document.getElementById('piano-samples'); blob = el ? JSON.parse(el.textContent) : null; } catch (e) { blob = null; }
+    var finish = function(n){ samples.done = true; samples.got = n; return n > 0; };
+    if (!blob || !blob.length) { samples.loading = Promise.resolve(finish(0)); return samples.loading; }
+    /* an offline context decodes without asking for the speakers; its buffers play in any context */
+    var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext, ctx = null;
+    try { if (OAC) ctx = new OAC(2, 1, PIANO.decodeRate); } catch (e) { ctx = null; }
+    if (!ctx) ctx = AC;
+    if (!ctx || typeof ctx.decodeAudioData !== 'function') { samples.loading = Promise.resolve(finish(0)); return samples.loading; }
+    var decode = function(ab){ return new Promise(function(ok, fail){
+      var p = ctx.decodeAudioData(ab, ok, fail);     /* old Safari only calls back */
+      if (p && p.then) p.then(ok, fail);
+    }); };
+    samples.loading = Promise.all(blob.map(function(b64, k){
+      return Promise.resolve().then(function(){ return decode(base64Bytes(b64)); })
+        .then(function(buf){ samples.list[k] = { buffer: buf, onset: pianoAttack(buf) }; return 1; })
+        .catch(function(){ samples.list[k] = null; return 0; });
+    })).then(function(r){ return finish(r.reduce(function(a, b){ return a + b; }, 0)); }, function(){ return finish(0); });
+    return samples.loading;
+  }
+  /* the nearest recording to a key and how far to pitch it: at most a semitone, or a neighbour's if that one did not decode */
+  function pickSample(midi){
+    var n = PIANO.count, k0 = Math.max(0, Math.min(n - 1, Math.round((midi - PIANO.low) / PIANO.step)));
+    var order = [k0, k0 - 1, k0 + 1];
+    for (var i = 0; i < order.length; i++) {
+      var k = order[i], s = k >= 0 && k < n ? samples.list[k] : null;
+      if (s) return { buffer: s.buffer, onset: s.onset, rate: Math.pow(2, (midi - (PIANO.low + k * PIANO.step)) / 12) };
+    }
+    return null;
+  }
+
+  /* the plain synth: plays when the recordings cannot be decoded, and for a single key none of whose neighbours decoded */
+  function synthNote(ac, dest, t, dur, midi){
+    var f = 440 * Math.pow(2, (midi - 69) / 12), nodes = [];
+    var env = ac.createGain();
+    env.gain.setValueAtTime(0.0001, t);
+    env.gain.linearRampToValueAtTime(0.9, t + 0.008);
+    env.gain.exponentialRampToValueAtTime(0.35, t + Math.min(dur, 1.6));
+    env.gain.setValueAtTime(0.35, t + dur);
+    env.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.25);
+    env.connect(dest);
+    var a = ac.createOscillator(); a.type = 'triangle'; a.frequency.value = f;
+    var b = ac.createOscillator(); b.type = 'sine'; b.frequency.value = f * 2;
+    var bg = ac.createGain(); bg.gain.value = 0.3;
+    a.connect(env); b.connect(bg); bg.connect(env);
+    a.start(t); b.start(t); a.stop(t + dur + 0.3); b.stop(t + dur + 0.3);
+    nodes.push(a, b);
+    return nodes;
+  }
+  function synthPhrase(ac, notes, t0, spq){
+    var master = ac.createGain(); master.gain.value = 0.16;
+    var comp = ac.createDynamicsCompressor();
+    master.connect(comp); comp.connect(ac.destination);
+    var nodes = [], end = t0;
+    notes.forEach(function(n){
+      var t = t0 + n[0] * spq, dur = Math.max(n[1] * spq, 0.18);
+      nodes = nodes.concat(synthNote(ac, master, t, dur, n[2]));
+      end = Math.max(end, t + dur + 0.3);
+    });
+    return { mode: 'synth', voices: notes.length, nodes: nodes, end: end };
+  }
+
+  /* one player per audio context: a limiter (not an effect: ten notes at once must not clip), the bus at the app's 1.4, and the
+     small room at the app's 0.22 wet */
+  function makePlayer(ac){
+    var lim = ac.createDynamicsCompressor();
+    lim.threshold.value = -8; lim.knee.value = 6; lim.ratio.value = 12;
+    lim.attack.value = 0.002; lim.release.value = 0.2;
+    lim.connect(ac.destination);
+    var bus = ac.createGain(); bus.gain.value = 1.4; bus.connect(lim);
+    try {
+      var room = ac.createConvolver(); room.buffer = pianoRoom(ac);
+      var wet = ac.createGain(); wet.gain.value = 0.22;
+      bus.connect(room); room.connect(wet); wet.connect(lim);
+    } catch (e) { /* dry is still a piano */ }
+    var spare = ac.createGain(); spare.gain.value = 0.16; spare.connect(bus);
+    return { ac: ac, bus: bus, spare: spare, voices: [], keys: {} };
+  }
+  function prune(P, now, at){
+    if (P.voices.length >= 24) P.voices = P.voices.filter(function(v){ return v.end > now; });
+    var t = at == null ? now : at;
+    /* voices scheduled for later are cheap and are not polyphony yet: steal only voices that overlap the new strike */
+    var active = P.voices.filter(function(v){ return v.t <= t && v.off > t && v.end > t; });
+    while (active.length >= PIANO.maxVoices) release(P, active.shift(), t, 0.02);
+  }
+  /* press a key at when, velocity 1-127 */
+  function strike(P, midi, when, vel){
+    var ac = P.ac, now = ac.currentTime, t = when == null || when < now ? now : when;
+    prune(P, now, t);
+    var v = Math.max(0.05, Math.min(1, vel / 127));
+    var out = ac.createGain(), tone = ac.createBiquadFilter();
+    tone.type = 'lowpass';
+    /* a soft blow is a darker sound, not only a quieter one */
+    tone.frequency.value = Math.min(18000, 700 * Math.pow(2, v * 4.6));
+    tone.Q.value = 0.5;
+    tone.connect(out);
+    var s = pickSample(midi);
+    if (!s) {     /* nothing decoded near this key: the synth, so the note is not silent */
+      out.connect(P.spare);
+      var sv = { midi: midi, t: t, off: t + 0.6, end: t + 0.9, out: out, srcs: synthNote(ac, tone, t, 0.6, midi) };
+      P.voices.push(sv);
+      return sv;
+    }
+    out.connect(P.bus);
+    var voice = { midi: midi, t: t, off: Infinity, end: t, out: out, srcs: [] };
+    var peak = 0.95 * Math.pow(v, 1.6), g = out.gain;
+    g.setValueAtTime(0, t);
+    var src = ac.createBufferSource();
+    src.buffer = s.buffer;
+    src.playbackRate.value = s.rate;
+    src.connect(tone);
+    var life = (s.buffer.duration - s.onset) / s.rate;
+    g.linearRampToValueAtTime(peak, t + 0.003);
+    /* the recordings stop short of silence; fade before one runs out */
+    g.setTargetAtTime(0, t + Math.max(0.1, life - 1.8), 0.45);
+    src.start(t, s.onset);
+    voice.end = t + life;
+    voice.srcs.push(src);
+    src.stop(voice.end + 0.05);
+    src.onended = function(){ try { out.disconnect(); } catch (e) {} };
+    /* one string per key: striking it again stops what it was still sounding */
+    var prev = P.keys[midi];
+    if (prev && prev.t < t && prev.end > t) release(P, prev, t, 0.04);
+    P.keys[midi] = voice;
+    P.voices.push(voice);
+    return voice;
+  }
+  /* let a key go at when; tau is how fast the damper works */
+  function release(P, voice, when, tau){
+    if (!voice) return;
+    var now = P.ac.currentTime, t = when == null || when < now ? now : when;
+    if (t < voice.t) t = voice.t;
+    if (voice.off <= t || voice.end <= t) return;
+    voice.off = t;
+    var k = tau != null ? tau : pianoDamp(voice.midi), g = voice.out.gain;
+    try {
+      if (g.cancelAndHoldAtTime) g.cancelAndHoldAtTime(t); else g.cancelScheduledValues(t);
+      g.setTargetAtTime(0, t, k);
+    } catch (e) {}
+    voice.end = Math.min(voice.end, t + k * 7) + 0.02;
+    voice.srcs.forEach(function(x){ try { x.stop(voice.end); } catch (e) {} });
+  }
+  /* stop: what sounds is let go quickly, what was still to come never plays */
+  function silence(P, tau){
+    var now = P.ac.currentTime;
+    P.voices = P.voices.filter(function(v){
+      if (v.t <= now) return true;
+      v.srcs.forEach(function(x){ try { x.stop(); } catch (e) {} });
+      try { v.out.disconnect(); } catch (e) {}
+      return false;
+    });
+    P.voices.forEach(function(v){ release(P, v, now, tau == null ? 0.06 : tau); });
+    P.voices = []; P.keys = {};
+  }
+  /* the whole phrase goes onto the audio clock at once, so a chord's notes land together and the tempo holds whatever the page
+     is doing; each note is held for its written length (ties already joined) */
+  function pianoPhrase(P, notes, t0, spq){
+    var end = t0;
+    notes.forEach(function(n){
+      var t = t0 + n[0] * spq, hold = Math.max(n[1], 0.05) * spq;
+      release(P, strike(P, n[2], t, PIANO.velocity), t + hold);
+      end = Math.max(end, t + hold + 0.6);
+    });
+    return { mode: 'samples', voices: notes.length, player: P, end: end };
+  }
+
+  function setBtn(btn, text, on){ btn.textContent = text; btn.setAttribute('aria-pressed', on ? 'true' : 'false'); }
   function stopSound(){
     if (!live) return;
-    live.nodes.forEach(function(n){ try { n.stop(); } catch (e) {} });
-    clearTimeout(live.timer);
-    live.btn.textContent = '재생'; live.btn.setAttribute('aria-pressed', 'false');
-    live = null;
+    var run = live; live = null;
+    clearTimeout(run.timer);
+    if (run.result) {
+      if (run.result.player) { try { silence(run.result.player, 0.06); } catch (e) {} }
+      if (run.result.nodes) run.result.nodes.forEach(function(n){ try { n.stop(); } catch (e) {} });
+    }
+    setBtn(run.btn, '재생', false);
+  }
+  function begin(run, id, side, speed, decoded){
+    var it = DATA.items[id], notes = it[side], spq = 60 / (it.tempo * speed);
+    var t0 = AC.currentTime + 0.12, result = null;
+    if (decoded) {
+      try {
+        if (!player || player.ac !== AC) player = makePlayer(AC);
+        player.voices = []; player.keys = {};
+        result = pianoPhrase(player, notes, t0, spq);
+      } catch (e) {     /* the sampler failed part way: what it started is let go, and the synth plays the notes instead */
+        try { if (player) silence(player, 0.02); } catch (e2) {}
+        result = null;
+      }
+    }
+    if (!result) result = synthPhrase(AC, notes, t0, spq);
+    run.result = result;
+    lastRun = { mode: result.mode, voices: result.voices, notes: notes.length, id: id, side: side };
+    setBtn(run.btn, '정지', true);
+    var ms = (Math.max(it.totalQ * spq + t0, result.end) - AC.currentTime) * 1000 + 300;
+    run.timer = setTimeout(function(){ if (live === run) stopSound(); }, ms);
   }
   function playSound(id, side, btn, speed){
     if (live && live.btn === btn) { stopSound(); return; }
     stopSound();
     var Ctor = window.AudioContext || window.webkitAudioContext;
     if (!Ctor) { alert('이 브라우저는 소리 재생(Web Audio)을 지원하지 않습니다.'); return; }
-    if (!AC) AC = new Ctor();
-    if (AC.state === 'suspended') AC.resume();
-    var it = DATA.items[id], notes = it[side];
-    var spq = 60 / (it.tempo * speed);
-    var t0 = AC.currentTime + 0.12, nodes = [];
-    var master = AC.createGain(); master.gain.value = 0.16;
-    var comp = AC.createDynamicsCompressor();
-    master.connect(comp); comp.connect(AC.destination);
-    notes.forEach(function(n){
-      var t = t0 + n[0] * spq, dur = Math.max(n[1] * spq, 0.18);
-      var f = 440 * Math.pow(2, (n[2] - 69) / 12);
-      var env = AC.createGain();
-      env.gain.setValueAtTime(0.0001, t);
-      env.gain.linearRampToValueAtTime(0.9, t + 0.008);
-      env.gain.exponentialRampToValueAtTime(0.35, t + Math.min(dur, 1.6));
-      env.gain.setValueAtTime(0.35, t + dur);
-      env.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.25);
-      env.connect(master);
-      var a = AC.createOscillator(); a.type = 'triangle'; a.frequency.value = f;
-      var b = AC.createOscillator(); b.type = 'sine'; b.frequency.value = f * 2;
-      var bg = AC.createGain(); bg.gain.value = 0.3;
-      a.connect(env); b.connect(bg); bg.connect(env);
-      a.start(t); b.start(t); a.stop(t + dur + 0.3); b.stop(t + dur + 0.3);
-      nodes.push(a, b);
+    if (!AC) { try { AC = new Ctor(); } catch (e) { alert('이 브라우저는 소리 재생(Web Audio)을 지원하지 않습니다.'); return; } }
+    if (AC.state === 'suspended') { try { AC.resume(); } catch (e) {} }
+    var run = { btn: btn, timer: null, result: null };
+    live = run;
+    setBtn(btn, samples.done ? '정지' : '소리 불러오는 중...', true);
+    loadSamples().then(function(ok){ return ok; }, function(){ return false; }).then(function(ok){
+      if (live !== run) return;     /* stopped, or another Play pressed, while the recordings were loading */
+      begin(run, id, side, speed, ok);
     });
-    btn.textContent = '정지'; btn.setAttribute('aria-pressed', 'true');
-    live = { nodes: nodes, btn: btn, timer: setTimeout(function(){ if (live && live.btn === btn) stopSound(); }, (it.totalQ * spq + 0.8) * 1000) };
+  }
+  /* what the page tests look at: the decoded recordings, the last play, and an offline render of a phrase through the same code */
+  function renderOffline(id, side, speed, mode, seconds){
+    var it = DATA.items[id], spq = 60 / (it.tempo * (speed || 1));
+    var notes = seconds ? it[side].filter(function(n){ return n[0] * spq < seconds - 0.5; }) : it[side];
+    var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext, sr = 44100, last = 0;
+    notes.forEach(function(n){ last = Math.max(last, (n[0] + n[1]) * spq); });
+    var ac = new OAC(2, Math.ceil((last + 3) * sr), sr);
+    return (mode === 'synth' ? Promise.resolve(false) : loadSamples()).then(function(ok){
+      var res = ok ? pianoPhrase(makePlayer(ac), notes, 0.05, spq) : synthPhrase(ac, notes, 0.05, spq);
+      return ac.startRendering().then(function(buf){ return { buffer: buf, mode: res.mode, voices: res.voices, notes: notes.length }; });
+    });
   }
 
   function init(){
@@ -205,7 +433,7 @@ const JS = `
       refresh();
     });
     refresh();
-    window.__pppReview = { exportObject: exportObject, key: KEY };
+    window.__pppReview = { exportObject: exportObject, key: KEY, sound: { load: loadSamples, samples: samples, pick: pickSample, lastRun: function(){ return lastRun; }, renderOffline: renderOffline, notes: function(id, side){ return DATA.items[id][side]; } } };
   }
   init();
 })();
@@ -249,12 +477,12 @@ function itemCard(mode, it) {
 }
 
 const INTRO = {
-  h8: '<p>문항마다 같은 곡의 피아노 편곡 두 개, <b>X</b>와 <b>Y</b>가 나옵니다. 둘 다 같은 난이도로 요청했습니다 (어느 쪽도 정확히 그 난이도가 되리라는 보장은 없습니다). 악보를 읽고 <b>재생</b>을 눌러 들어본 뒤, 어느 편곡이 더 나은지 고르고 각각의 문제점을 체크해 주세요. 어느 쪽이 X이고 어느 쪽이 Y인지는 알려주지 않으며 문항마다 바뀝니다. 소리는 악보와 같은 음을 단순한 합성 피아노로 낸 것이니, 음색이 아니라 음 자체를 판단해 주세요.</p>',
-  h9: '<p>문항마다 같은 곡의 피아노 편곡 두 개, <b>X</b>와 <b>Y</b>가 나옵니다. 둘 다 같은 난이도로 요청했습니다 (어느 쪽도 정확히 그 난이도가 되리라는 보장은 없습니다). 악보를 읽고 <b>재생</b>을 눌러 들어본 뒤, 각 편곡을 <b>통과</b>(그 수준의 학생에게 지금 그대로 줄 수 있음) 또는 <b>실패</b>로 표시해 주세요. 어느 쪽이 X이고 어느 쪽이 Y인지는 알려주지 않으며 문항마다 바뀝니다. 소리는 악보와 같은 음을 단순한 합성 피아노로 낸 것이니, 음색이 아니라 음 자체를 판단해 주세요.</p>'
+  h8: '<p>문항마다 같은 곡의 피아노 편곡 두 개, <b>X</b>와 <b>Y</b>가 나옵니다. 둘 다 같은 난이도로 요청했습니다 (어느 쪽도 정확히 그 난이도가 되리라는 보장은 없습니다). 악보를 읽고 <b>재생</b>을 눌러 들어본 뒤, 어느 편곡이 더 나은지 고르고 각각의 문제점을 체크해 주세요. 어느 쪽이 X이고 어느 쪽이 Y인지는 알려주지 않으며 문항마다 바뀝니다. 소리는 악보와 같은 음을 PPP 앱의 피아노 소리(녹음된 그랜드 피아노)로 들려주는 것입니다. 처음 재생할 때는 소리를 불러오느라 잠깐 걸릴 수 있습니다. 페달과 강약 표현은 넣지 않고 모든 음을 같은 세기로 치니, 음색이 아니라 음 자체를 판단해 주세요.</p>',
+  h9: '<p>문항마다 같은 곡의 피아노 편곡 두 개, <b>X</b>와 <b>Y</b>가 나옵니다. 둘 다 같은 난이도로 요청했습니다 (어느 쪽도 정확히 그 난이도가 되리라는 보장은 없습니다). 악보를 읽고 <b>재생</b>을 눌러 들어본 뒤, 각 편곡을 <b>통과</b>(그 수준의 학생에게 지금 그대로 줄 수 있음) 또는 <b>실패</b>로 표시해 주세요. 어느 쪽이 X이고 어느 쪽이 Y인지는 알려주지 않으며 문항마다 바뀝니다. 소리는 악보와 같은 음을 PPP 앱의 피아노 소리(녹음된 그랜드 피아노)로 들려주는 것입니다. 처음 재생할 때는 소리를 불러오느라 잠깐 걸릴 수 있습니다. 페달과 강약 표현은 넣지 않고 모든 음을 같은 세기로 치니, 음색이 아니라 음 자체를 판단해 주세요.</p>'
 };
 const TITLE = { h8: '블라인드 검토 H-8 (진단)', h9: '블라인드 검토 H-9 (통과 / 실패)' };
 
-/* data: { mode, packetId, items: [{id, title, composer, targetLevel, handProfile, measures, tempo, totalQ, X:{svg,svgNarrow,notes}, Y:{svg,svgNarrow,notes}}] } */
+/* data: { mode, packetId, samples: [30 base64 mp3 strings, embedded once; see build.js readPianoSamples], items: [{id, title, composer, targetLevel, handProfile, measures, tempo, totalQ, X:{svg,svgNarrow,notes}, Y:{svg,svgNarrow,notes}}] } */
 function pageHtml(data) {
   const mode = data.mode;
   const payload = { packetId: data.packetId, mode: mode, order: data.items.map(i => i.id), items: {} };
@@ -268,6 +496,7 @@ function pageHtml(data) {
     '<label for="role">역할 (예: "피아니스트", "선생님"; 이름은 적지 마세요)<input type="text" id="role" autocomplete="off"></label>' +
     '<details><summary>평가를 텍스트로 보기 (내려받기가 막혔을 때 여기서 복사하세요)</summary><textarea id="export-json" readonly></textarea></details></section>\n' +
     data.items.map(i => itemCard(mode, i)).join('\n') + '\n</main>\n' +
+    (data.samples && data.samples.length ? '<script id="piano-samples" type="application/json">' + scriptJson(data.samples) + '</script>\n' : '') +
     '<script id="packet-data" type="application/json">' + scriptJson(payload) + '</script>\n<script>' + JS + '</script>\n</body></html>\n';
 }
 

@@ -36,7 +36,9 @@ node review/build.js --mode h9 --out d --key-out k --items items.json   # your o
   is identical to a side of another item.
 - Sound: notes that are the continuation of a tie are joined, and one pitch struck by both hands at one onset sounds once, for
   both arms (the drawn score is unchanged). The sound is made from the arm's own notes and is not touched by any drawing rule.
-- Size: each side is embedded twice (wide and narrow drawing), about 0.3 MB per item; a 16-item packet is about 5 MB.
+  The instrument is the PPP app's own sampled grand piano (see "The sound", below).
+- Size: each side is embedded twice (wide and narrow drawing), about 0.25 MB per item, plus the piano recordings once per page
+  (1.67 MB as base64); a 16-item packet is about 5.7 MB (H-8) to 6.5 MB (H-9), an 11-item one about 4.2 MB.
   **Packets built before this change (`D:/PPP-review/*`) are obsolete**: their scores lack rests and ties, are drawn 4 bars to a
   system, and force a 640 px minimum width. Rebuild them.
 
@@ -59,12 +61,29 @@ caveats. It sets no pass threshold: what H-9 must show before a flip is the user
 ## What the reviewer does
 
 Open `index.html` from disk in any current browser (no network, no server). For each item: read the X and Y scores, press
-Play on each (a plain Web Audio synth of the same notes; speed 100/80/60%), and fill in the form - H-8: which is better,
+Play on each (the same notes on the app's own sampled piano; speed 100/80/60%; the first Play takes a moment to load the sound, and the button says "소리 불러오는 중..." meanwhile), and fill in the form - H-8: which is better,
 and per arrangement the issue boxes (too hard, too easy, wrong harmony, melody unclear, awkward hand position, thin/muddy)
 plus a short note; H-9: Pass/Fail per arrangement (and an optional preference). Ratings are kept in the browser's
 `localStorage` as they go (so the page can be closed and reopened on the same computer); **Download ratings (JSON)** writes
 the file to send back (the same JSON is also shown in a box to copy, in case a download is blocked). The reviewer names
 their role, not themselves.
+
+## The sound
+
+The review page plays the app's piano, not a synth: the 30 Salamander Yamaha C5 recordings from `audio/piano/` (one every minor
+third from A0, CC BY 3.0) are read by `build.js` (`readPianoSamples`, at build time; no copy is committed) and embedded ONCE per
+page as a base64 JSON list in `<script id="piano-samples">`. `lib/page.js` decodes them from those bytes (`atob`, then
+`decodeAudioData` on an `OfflineAudioContext` at 32 kHz, on the first Play press; nothing is fetched, so it works from disk and inside
+an Artifact page) and is a port of `Piano Coach App.dc.html`'s `PIANO`, `pianoAttack` (skip the silence before the hammer),
+`pianoDamp` (release times 0.075 / 0.1 / 0.14 / 0.6 s by register), `pianoRoom` (small reverb at 0.22 wet; its noise is a fixed
+sequence here instead of `Math.random`), `PianoSamples.pick` (nearest recording, pitched by at most a semitone) and
+`PianoPlayer.strike / release / prune / silence` (per-voice lowpass by velocity, limiter, bus gain 1.4, one string per key,
+72 voices). Differences from the app, all because the review has no dynamics, pedal or hands: every note is struck at the
+app's default velocity 80 (mezzo-forte), both arms alike; a note is held for its written length (ties already joined) and let go
+by the damper; the whole phrase is put on the audio clock at once, so chords land together and the tempo holds while the page is
+busy. If the recordings cannot be decoded (or the page has no sample block) a small additive synth plays the same notes; a key
+whose own recording failed borrows a neighbour's. With no Web Audio at all the page says so and plays nothing (as before; a synth
+cannot run without it either). `window.__pppReview.sound` exposes the decoded samples, the last play and an offline render for the tests.
 
 ## The two arrangements
 
@@ -193,6 +212,7 @@ the app. The H-9 bar for flipping the default is not fixed here.
 
 - `build.js` - packet builder CLI and `buildPacket()`; `decode.js` - ratings + key.
 - `lib/select.js` - the input rule; `lib/arrange.js` - the two arms; `lib/legacy-worker.js` - ScoreArranger in a child
-  process; `lib/neutral.js` - the one drawing path; `lib/blind.js` - the assignment; `lib/page.js` - the reviewer page.
+  process; `lib/neutral.js` - the one drawing path; `lib/blind.js` - the assignment; `lib/page.js` - the reviewer page
+  (forms, both drawings, and the sampled-piano player).
 - Tests: `tests/review/` (`npm run test:review`), including rest and tie counts, the clef rule, the two layouts and the media
   query, and that the sound list is unchanged by any drawing rule.
