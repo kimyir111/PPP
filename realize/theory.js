@@ -150,14 +150,16 @@ function foldAbove(bass, pcs) {
    Three named limits, all from the user's blind reviews and two blind AI teacher judges (beyer/061 and beyer/020: left-hand block chords of
    3 notes on every beat with a close second below middle C and a chord top at E4 or above, which draws an 8va over the bass staff).
    STACK_MAX_BY_STAGE: the most notes one block chord may stack per onset, by G6 stage (1 first steps ... 4 upper intermediate). Stage 1 is one
-   note (realize/index.js STAGE1_COUNT already), stage 2 a dyad (root and fifth first: arrangement/reference.js's stage-2 chordLoad band has a
-   median of 1.09 extra notes per beat, i.e. a dyad, and a p90 of 1.83), stage 3 and 4 a triad (their p90 is 1.69). It caps a STACK only:
-   broken and ballad sound one note at a time and keep the triad's three tones.
+   note (realize/index.js STAGE1_COUNT already); stages 2, 3 and 4 a triad. A first version of this round capped stage 2 at a dyad (root and
+   fifth); measured, it dropped the third and lost harmony agreement on the fully sounded SATB hymns (all-creatures 0.853 to 0.794, all-glory-laud
+   0.931 to 0.806, christ-arose 0.975 to 0.813, god-rest-ye-merry 0.975 to 0.800; docs/GOALS/G09 section 12), so the triad is back and the
+   thickness is fixed by register instead (LH_CHORD_TOP, no seconds). A window whose triad cannot be placed legally falls back to the dyad
+   for that window only (patterns.js shapeChord). The cap applies to a STACK only: broken and ballad sound one note at a time.
    LH_CHORD_TOP: the highest note a left-hand accompaniment chord may have (middle C, the first ledger line above the bass staff): above it a
    bass-clef chord needs two ledger lines or an 8va (TD16 draws one), which the reviewers called confusing.
    SECOND_BELOW: no two left-hand notes of one chord a second apart (1 or 2 semitones) when the lower one is under middle C; the existing
    CLUSTER_BELOW also keeps a third apart out below C3 (the same low-register-cluster rule critics/low-register-cluster.js measures). */
-const STACK_MAX_BY_STAGE = Object.freeze({ 1: 1, 2: 2, 3: 3, 4: 3 });
+const STACK_MAX_BY_STAGE = Object.freeze({ 1: 1, 2: 3, 3: 3, 4: 3 });
 const LH_CHORD_TOP = 60;
 const SECOND_BELOW = 60;
 
@@ -184,6 +186,18 @@ function thinChord(midis, root, maxNotes) {
   return firsts.concat(dups).slice(0, maxNotes).map(o => o.m).sort((a, b) => a - b);
 }
 
+/* Is this chord fully legal for the accompaniment hand (what settleChord looks for): within `maxSpan`, no cluster pair (unless
+   `opts.cluster === false`), top at or under `top`, lowest at or over `floor`? */
+function chordLegal(midis, opts) {
+  opts = opts || {};
+  const s = midis.slice().sort((a, b) => a - b);
+  if (opts.maxSpan != null && s[s.length - 1] - s[0] > opts.maxSpan) return false;
+  if (opts.cluster !== false && clusterPairs(s) > 0) return false;
+  if (opts.top != null && s[s.length - 1] > opts.top) return false;
+  if (opts.floor != null && s[0] < opts.floor) return false;
+  return true;
+}
+
 /* How many of a chord's simultaneous pairs are a cluster for a left hand: a second (<= 2 semitones) whose lower note is under
    SECOND_BELOW, or a third (<= 4) whose lower note is under CLUSTER_BELOW. */
 function clusterPairs(midis) {
@@ -202,8 +216,8 @@ function clusterPairs(midis) {
    in order: the span being over `maxSpan`; the number of cluster pairs; how far the top is over `top` (plus how far the lowest is under
    `floor`); a bass leap of an octave or more from `prev` (the chord written just before, when there is one: the left-hand jump the reviewers
    flagged); then the distance of its lowest and highest notes from `prev` (or, with no `prev`, the sum of semitone distances between the
-   sorted notes and the placement given). So a chord that is fine where it stands is kept only when nothing legal is closer to the chord
-   before it. Deterministic. Not exactly idempotent when no placement is fully legal (it then returns the best of the same search). */
+   sorted notes and the placement given). A chord that already satisfies all of the above is kept exactly as voice-led (measured: re-placing legal chords by `prev`
+   cost harmony agreement on the SATB hymns and gained nothing on jumps); `prev` only chooses among the placements of a chord that had to move. Deterministic. Not exactly idempotent when no placement is fully legal (it then returns the best of the same search). */
 function settleChord(midis, opts) {
   opts = opts || {};
   const floor = opts.floor == null ? 0 : opts.floor, top = opts.top == null ? 127 : opts.top, maxSpan = opts.maxSpan == null ? 127 : opts.maxSpan;
@@ -215,7 +229,7 @@ function settleChord(midis, opts) {
   };
   const base = midis.slice().sort((a, b) => a - b);
   const c0 = cost(base);
-  if (!prev && c0[0] === 0 && c0[1] === 0 && c0[2] === 0) return midis;
+  if (c0[0] === 0 && c0[1] === 0 && c0[2] === 0) return midis;
   /* every note at every octave placement between floor-12 and top+12 */
   const choices = base.map(m => {
     const pc = ((m % 12) + 12) % 12, out = [];
@@ -342,7 +356,7 @@ function clampSpan(midis, maxSpan, maxIters) {
   return {
     CHORD_INTERVALS, intervalsFor, targetPcs, nearestWithPc, freshVoicing, leadVoicing, clampSpan, permutations,
     REGISTER_FLOOR, CLUSTER_BELOW, floorMidis, foldAbove,
-    STACK_MAX_BY_STAGE, LH_CHORD_TOP, SECOND_BELOW, maxStackForStage, roleRank, thinChord, clusterPairs, settleChord,
+    STACK_MAX_BY_STAGE, LH_CHORD_TOP, SECOND_BELOW, maxStackForStage, roleRank, thinChord, clusterPairs, chordLegal, settleChord,
     DIATONIC_MAX_STAGE, keyPcs, playedPcs, diatonicSubstitute
   };
 });

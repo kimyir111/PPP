@@ -38,7 +38,7 @@ test('an empty input is all zeros; the critic is not one of evaluate\'s ten', ()
   assert.equal(CRIT.NAMES.indexOf('leftHandThickness'), -1, 'report only: evaluate and the selection weights are untouched');
 });
 
-test('on a realized piece it reads the left hand only, and the thickness fix lowers every rate it reports', async () => {
+test('on a realized piece it reads the left hand only, and the shape fix removes the seconds and the tops it reports', async () => {
   const g = await H.graphOf('catalog/method/beyer/061.mxl');
   const sg = SGG.analyze(g);
   const p = ARR.planner.plan(g, sg, { targetLevel: 2.24, handProfile: 'large', sections: 'all' });
@@ -47,7 +47,6 @@ test('on a realized piece it reads the left hand only, and the thickness fix low
   const off = REALIZE.realize(g, sg, p.plan, { pattern: 'block', noStride: true, compoundBeat: false, diatonicLow: false, leftShape: false });
   const a = LHT.leftHandThickness(on.graph), b = LHT.leftHandThickness(off.graph);
   assert.ok(a.onsets > 0 && a.onsets === b.onsets, 'same onsets, only thinner');
-  assert.ok(a.notesPerOnset < b.notesPerOnset);
   assert.ok(a.secondsBelowC4 < b.secondsBelowC4 && a.topsAtOrAboveE4 < b.topsAtOrAboveE4);
   assert.deepEqual(LHT.leftHandThickness(on.graph), a, 'deterministic');
 });

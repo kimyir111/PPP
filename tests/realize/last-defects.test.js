@@ -196,8 +196,8 @@ test('thinChord: root first, then fifth, then third, then seventh; a chord withi
   assert.deepEqual(TH.thinChord([52, 56, 60], 4, 2), [52, 60], 'augmented: its fifth (C) counts as the fifth');
   assert.deepEqual(TH.thinChord([48, 55, 60], 0, 2), [48, 55], 'a doubled root is dropped before the fifth');
   assert.deepEqual(TH.thinChord([60, 52, 55], 0, 2), [55, 60], 'input order does not matter; the higher duplicate root is what stays with the fifth');
-  assert.deepEqual(TH.STACK_MAX_BY_STAGE, { 1: 1, 2: 2, 3: 3, 4: 3 });
-  assert.equal(TH.maxStackForStage(2), 2);
+  assert.deepEqual(TH.STACK_MAX_BY_STAGE, { 1: 1, 2: 3, 3: 3, 4: 3 }, 'a triad from stage 2 (the dyad cap lost harmony on the SATB hymns)');
+  assert.equal(TH.maxStackForStage(2), 3);
 });
 
 test('settleChord: a legal chord stays; a high one drops an octave; seconds below C4 and thirds below C3 are avoided; pitch classes and count kept', () => {
@@ -230,31 +230,42 @@ test('settleChord: a legal chord stays; a high one drops an octave; seconds belo
   }
 });
 
-test('settleChord: given the chord written before it, it does not leap an octave from that bass when a legal placement is close', () => {
+test('settleChord: a chord that has to move stays close to the chord written before it; one that is legal is not touched', () => {
   const o = { top: 60, floor: 40, maxSpan: 14 };
-  const prev = [43, 50];
-  const s = TH.settleChord([55, 59], Object.assign({ prev: prev }, o));
-  assert.ok(Math.abs(s[0] - prev[0]) < 12, 'bass ' + prev[0] + ' -> ' + s[0]);
+  const prev = [43, 50, 55];
+  const legal = [48, 55, 60];
+  assert.equal(TH.settleChord(legal, Object.assign({ prev: prev }, o)), legal, 'legal: the same array, prev or not');
+  const s = TH.settleChord([55, 59, 62], Object.assign({ prev: prev }, o)); /* top D4 is over the bound */
+  assert.ok(Math.max.apply(null, s) <= 60 && Math.abs(s[0] - prev[0]) < 12, 'bass ' + prev[0] + ' -> ' + s[0] + ' (' + s.join() + ')');
 });
 
-test('beyer/061 at stage 2: the block chord is a dyad at most, at or under middle C, never a second below C4; the old output was a triad on every onset', async () => {
+test('beyer/061 at stage 2: the block chord is a triad at most, at or under middle C, never a second below C4; the old output had seconds and tops at E4 or above', async () => {
   const f = await planOf('catalog/method/beyer/061.mxl', 2.24);
   assert.equal(f.plan.stage, 2);
   const on = REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'block', noStride: true });
   const off = REALIZE.realize(f.g, f.sg, f.plan, Object.assign({ pattern: 'block', noStride: true }, OFF));
   assert.ok(on.ok && off.ok);
   const a = LHT.leftHandThickness(on.graph), b = LHT.leftHandThickness(off.graph);
-  assert.ok(b.notesPerOnset > 2.9 && b.onsets3plus === b.onsets, 'fixture: the old output is a triad on every onset (' + b.notesPerOnset.toFixed(2) + ')');
-  assert.ok(b.secondsBelowC4 > 0 && b.topsAtOrAboveE4 > 0, 'fixture: and had seconds below C4 and tops at E4 or above');
-  assert.ok(a.notesPerOnset <= 2 && a.onsets3plus === 0, 'at most a dyad');
+  assert.ok(b.secondsBelowC4 > 0 && b.topsAtOrAboveE4 > 0, 'fixture: the old output had seconds below C4 and tops at E4 or above');
+  assert.ok(a.notesPerOnset > 2.5 && a.notesPerOnset <= 3, 'a triad is kept (' + a.notesPerOnset.toFixed(2) + ')');
   assert.equal(a.secondsBelowC4, 0);
   assert.equal(a.topsAtOrAboveE4, 0);
   assert.equal(a.clusterAttacks, 0);
-  lhEvents(on.graph).forEach(e => assert.ok(e.midis[e.midis.length - 1] <= TH.LH_CHORD_TOP && e.midis[0] >= TH.REGISTER_FLOOR, e.midis.join()));
+  lhEvents(on.graph).forEach(e => assert.ok(e.midis.length <= 3 && e.midis[e.midis.length - 1] <= TH.LH_CHORD_TOP && e.midis[0] >= TH.REGISTER_FLOOR, e.midis.join()));
   assert.equal(PLA.analyzeGraph(on.graph, { profile: 'large' }).totals.hard, 0);
 });
 
-test('the stack cap is by stage: one note at stage 1, two at stage 2; broken and ballad keep their triad tones (one note at a time) under middle C', async () => {
+test('block: a triad that cannot be placed legally falls back to the dyad (root and fifth) for that window only', () => {
+  const win = (root, quality) => ({ w0: R.ZERO, w1: R.make(1, 4), root: root, quality: quality });
+  const opts = { anchor: 48, count: 3, maxSpan: 14, shape: { maxStack: 3, top: 52, floor: 40, state: { prev: null } } };
+  /* D minor in 40..52: D3, F2, A2 only, F2-A2 is a third below C3 */
+  const r = PAT.run('block', [win(2, 'min'), win(0, 'maj')], null, opts);
+  assert.deepEqual(r.events[0].midis.map(m => m % 12).sort((a, b) => a - b), [2, 9], 'D minor: root and fifth');
+  assert.equal(r.events[1].midis.length, 3, 'C major fits: the triad stays');
+  assert.ok(r.events.every(e => Math.max.apply(null, e.midis) <= 52));
+});
+
+test('the stack cap is by stage: one note at stage 1, a triad from stage 2; broken and ballad keep their triad tones (one note at a time) under middle C', async () => {
   const s1 = await planOf('catalog/method/beyer/020.mxl', 1.5);
   assert.equal(s1.plan.stage, 1);
   assert.equal(LHT.leftHandThickness(REALIZE.realize(s1.g, s1.sg, s1.plan, { pattern: 'auto', noStride: true }).graph).notesPerOnset, 1);
@@ -265,6 +276,7 @@ test('the stack cap is by stage: one note at stage 1, two at stage 2; broken and
     assert.ok(new Set(evs.slice(0, 4).map(e => e.midis[0] % 12)).size >= 2, pattern + ': more than one tone of the chord sounds in a beat');
     assert.ok(Math.max.apply(null, evs.map(e => e.midis[0])) <= TH.LH_CHORD_TOP, pattern + ': top at or under middle C');
   });
+  assert.equal(TH.maxStackForStage(2), 3);
   assert.equal(TH.maxStackForStage(3), 3, 'a stage-3 stack may be a triad');
 });
 

@@ -53,15 +53,21 @@ function fitSpan(midis, maxSpan) { return span(midis) <= maxSpan ? midis : TH.cl
    `opts.shape` (set by realize/index.js; absent = the old voicing, so direct pattern calls are unchanged) = { maxStack, top, floor, state }
    (`state.prev` = the chord written just before, so a re-placed chord stays close to it):
    what the chord of one window looks like once it is written. `shapeChord` thins a STACK to `maxStack` notes (root, fifth, third, in that
-   order; block only, since broken and ballad sound one note at a time) and re-places the notes by whole octaves so the left-hand chord has
+   order; block only, since broken and ballad sound one note at a time; maxStack is 3 from stage 2, so a triad is kept whole) and re-places the notes by whole octaves so the left-hand chord has
    no second below middle C (no third below C3; a STACK only: the notes of broken and ballad do not sound together, and keeping them out of close position would only spread the arpeggio into leaps), has its top at or under `top` and stays in the hand's span (theory.settleChord). The
    voice-leading state the next window is led from is the UNSHAPED chord, so thinning never changes where the following chord starts. */
 function shapeChord(chord, w, opts, stack) {
   const sh = opts.shape;
   if (!sh) return chord;
-  let out = chord;
-  if (stack && sh.maxStack != null) out = TH.thinChord(out, rootOf(w), sh.maxStack);
-  if (sh.top != null || sh.floor != null) out = TH.settleChord(out, { top: sh.top, floor: sh.floor, maxSpan: opts.maxSpan, prev: sh.state && sh.state.prev, cluster: !!stack });
+  const settle = c => (sh.top != null || sh.floor != null)
+    ? TH.settleChord(c, { top: sh.top, floor: sh.floor, maxSpan: opts.maxSpan, prev: sh.state && sh.state.prev, cluster: !!stack }) : c;
+  let out = stack && sh.maxStack != null ? TH.thinChord(chord, rootOf(w), sh.maxStack) : chord;
+  out = settle(out);
+  /* a stack that cannot be placed legally (top, seconds, span) falls back to the dyad, root and fifth, for this window only */
+  if (stack && out.length > 2 && (sh.top != null || sh.floor != null) &&
+      !TH.chordLegal(out, { top: sh.top, floor: sh.floor, maxSpan: opts.maxSpan, cluster: true })) {
+    out = settle(TH.thinChord(chord, rootOf(w), 2));
+  }
   if (sh.state) sh.state.prev = out;
   return out;
 }
