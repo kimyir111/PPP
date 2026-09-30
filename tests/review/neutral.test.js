@@ -163,18 +163,23 @@ test('a note that runs past its barline is split into tied pieces of ordinary va
   assert.deepEqual(r.notes, [[2, 3, 60]], 'the sound is the note as given');
 });
 
-test('clef rule: upper staff treble always; lower staff bass or treble per measure from its notes, with the named hysteresis and minimum run', () => {
+test('clef rule: upper staff treble always; lower staff bass or treble per measure by fewer ledger lines, with the named advantage and minimum run', () => {
   const ms = measuresOf(8);
-  const bar = (m, midis) => midis.map((mi, i) => lh(m, i, 'C3', mi));
+  const midiOf = nm => { const m = /^([A-G])(#|b)?(\d)$/.exec(nm); return 12 * (Number(m[3]) + 1) + { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0); };
+  const bar = (m, names) => names.map((nm, i) => lh(m, i, nm, midiOf(nm)));
   const clefsOf = spec => N.lowerClefs(ms, spec.flatMap((mm, i) => mm ? bar(i + 1, mm) : []));
-  assert.equal(N.CLEF_LOW_MAX_MIDI, 60); assert.equal(N.CLEF_OPEN_LOW, 0.5); assert.equal(N.CLEF_SWITCH_SHARE, 0.75); assert.equal(N.CLEF_MIN_RUN, 2);
-  const low = [48, 52, 55, 43], high = [64, 67, 72, 65], mixed = [55, 60, 64, 67];
+  assert.equal(N.CLEF_SAVE_SHARE, 0.5); assert.equal(N.CLEF_SAVE_MIN, 4); assert.equal(N.CLEF_MIN_RUN, 2);
+  /* ledger lines as realize/ottava.js counts them: treble staff E4..F5, bass staff G2..A3 */
+  assert.deepEqual([['C4', 'treble'], ['A3', 'treble'], ['G3', 'treble'], ['E4', 'treble'], ['A5', 'treble'], ['C4', 'bass'], ['E4', 'bass'], ['A3', 'bass'], ['E2', 'bass'], ['C2', 'bass']].map(x => N.ledgerLines(x[0], x[1])),
+    [1, 2, 2, 0, 1, 1, 2, 0, 1, 2]);
+  const low = ['C3', 'E3', 'G3', 'C3'], high = ['E4', 'G4', 'C5', 'F4'], marginal = ['G3', 'D4', 'B3', 'D4', 'G3', 'F4', 'D4', 'F4'] /* 7 lines in bass, 5 in treble */;
   assert.deepEqual(clefsOf(new Array(8).fill(low)), new Array(8).fill('bass'));
   assert.deepEqual(clefsOf(new Array(8).fill(high)), new Array(8).fill('treble'), 'a left hand written high opens in treble');
-  assert.equal(clefsOf([[60, 60, 60, 60]])[0], 'bass', 'middle C stays in the bass clef');
-  /* the change needs 75 % of the measure on the other side, and a stretch of at least 2 measures with notes */
+  assert.equal(clefsOf([['C4', 'C4', 'C4', 'C4']])[0], 'bass', 'a tie (middle C: one line either way) stays bass, the clef at the start');
+  /* a change needs the other clef to save at least 50 % and at least 4 lines over the measure, and a stretch of at least 2 measures with notes */
   assert.deepEqual(clefsOf([low, low, low, high, high, high, high, high]), ['bass', 'bass', 'bass', 'treble', 'treble', 'treble', 'treble', 'treble']);
-  assert.deepEqual(clefsOf([low, low, low, mixed, mixed, low, low, low]), new Array(8).fill('bass'), 'a mixed bar (half each) changes nothing');
+  assert.deepEqual(clefsOf([low, low, low, marginal, marginal, low, low, low]), new Array(8).fill('bass'), 'a bar that is only a little cheaper in the other clef changes nothing');
+  assert.deepEqual(clefsOf([high, high, high, marginal, marginal, high, high, high]), new Array(8).fill('treble'), 'and the clef in force wins the same way from treble');
   assert.deepEqual(clefsOf([low, low, high, low, low, low, low, low]), new Array(8).fill('bass'), 'a single high bar is folded in (no pair of clef signs for one bar)');
   assert.deepEqual(clefsOf([low, low, low, low, low, low, low, high]), new Array(8).fill('bass'), 'and so is a single last bar');
   /* a silent bar keeps the clef in force; a staff with no notes at all is bass */

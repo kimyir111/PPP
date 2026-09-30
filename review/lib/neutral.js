@@ -28,9 +28,10 @@
        starts) are drawn tied; a flag with no partner is dropped. A note that crosses a barline is split at the barlines into
        tied pieces of ordinary values (splitAcrossBars) instead of being lost from the drawing. The sound is made from the
        raw notes and is not touched by any of this (audioNotes): it already joins tied continuations.
-     - CLEF: the upper staff is always treble. The lower staff's clef is chosen per measure from its notes (lowerClefs, its
-       constants are named CLEF_*), so the arranged left hand is not drawn under a G clef on ledger lines just because the
-       source wrote its left hand in treble; the source's own clefs are not used by either arm.
+     - CLEF: the upper staff is always treble. The lower staff's clef is chosen per measure from its notes (lowerClefs; the
+       clef that needs fewer ledger lines, constants named CLEF_*), so the arranged left hand is not drawn under a G clef on
+       ledger lines just because the source wrote its left hand in treble; the source's own clefs are not used by either arm.
+       The clefs go into the graph before the 8va/8vb pass, which so reads the clef that is drawn.
      - TWO DRAWINGS: each arm is engraved twice from one plan, once for a wide screen (LAYOUT.wide: the desktop configuration,
        2 bars a system) and once for a narrow one (LAYOUT.narrow: the engraver's phone configuration, the one the app uses at
        720 px or less). They are the same music; the page shows one by a media query.
@@ -56,18 +57,28 @@ const LAYOUT = Object.freeze({
   get narrow() { return E.layout.screenConfig(NARROW_VIEWPORT_PX); }
 });
 
-/* the lower staff's clef rule (C): per measure, from that staff's notes alone.
-     CLEF_LOW_MAX_MIDI      60 = middle C: a note at or below it is "low" (middle C is the bass staff's first ledger line and the
-                            usual left-hand note; it stays in the bass clef), one above it "high"
-     CLEF_OPEN_LOW          0.5: the staff opens in the bass clef when at least this share of the first measure's notes that
-                            has any is low, in the treble clef otherwise (a tie goes to the bass clef, the left hand's usual)
-     CLEF_SWITCH_SHARE      0.75: hysteresis - the clef changes only when at least this share of a measure's notes belongs to the
-                            OTHER clef (low share >= 0.75 turns treble to bass, high share >= 0.75 turns bass to treble);
-                            a measure in between keeps the clef it has
-     CLEF_MIN_RUN           2: a stretch in the other clef shorter than this many measures WITH lower-staff notes is not worth
-                            the two clef signs; it is folded into its neighbours (the ottava pass carries its extreme notes)
-   A measure with no note on the staff keeps the clef in force (nothing to read); a change is only ever made at a barline. */
-const CLEF_LOW_MAX_MIDI = 60, CLEF_OPEN_LOW = 0.5, CLEF_SWITCH_SHARE = 0.75, CLEF_MIN_RUN = 2;
+/* the lower staff's clef rule (C): per measure, from that staff's notes alone, the way an engraver picks: the clef that needs
+   FEWER ledger lines. A note's ledger lines are counted as realize/ottava.js counts them (diatonic steps beyond the staff's
+   outer line, two steps to a line): treble staff E4..F5, bass staff G2..A3 (so a treble note needs 1 line at C4 and 2 at A3,
+   a bass note 1 at C4 and 2 at E4). The measure's cost in a clef is the SUM of its notes' lines.
+     CLEF_SAVE_SHARE    0.5:  a change needs a clear advantage - the other clef's cost is at least this share below the cost
+                        of the clef in force ...
+     CLEF_SAVE_MIN      4:    ... and at least this many ledger lines below it, over the measure. Otherwise (a tie, or a small
+                        gain) the clef in force stays; the staff opens in bass unless treble wins by the same margin.
+     CLEF_MIN_RUN       2:    a stretch in the other clef shorter than this many measures WITH lower-staff notes is not worth
+                        the two clef signs; it is folded into its neighbours (the ottava pass carries any extreme notes)
+   (0.25 and 2 were tried first: on the 12 pieces they made 11 and 6 clef changes and more 8va/8vb lines than before,
+   because mid-range bars differ by only a line or two between the clefs.) A measure with no note on the staff keeps the clef in force (nothing to read); a change is only ever made at a barline. The
+   graph is given these clefs BEFORE the ottava pass runs, so 8va/8vb is judged against the clef that is drawn. */
+const CLEF_SAVE_SHARE = 0.5, CLEF_SAVE_MIN = 4, CLEF_MIN_RUN = 2;
+const STEP_INDEX = { C: 0, D: 1, E: 2, F: 3, G: 4, A: 5, B: 6 };
+const CLEF_STAFF = { treble: [30, 38], bass: [18, 26] }; /* diatonic index (7 * octave + step) of the bottom and top line */
+function ledgerLines(p, clef) {
+  const m = /^([A-G])(?:#{0,3}|b{0,3})(-?\d+)$/.exec(p || '');
+  if (!m) return 0;
+  const d = 7 * Number(m[2]) + STEP_INDEX[m[1]], lo = CLEF_STAFF[clef][0], hi = CLEF_STAFF[clef][1];
+  return d > hi ? Math.floor((d - hi) / 2) : d < lo ? Math.floor((lo - d) / 2) : 0;
+}
 
 /* Printed accidentals, recomputed for BOTH arms from the pitch spelling and the measure's key signature. The engraver prints an
    accidental only where a head carries `acc` (scoregraph/legacy-score.js fromScore), and the two engines differ in whether they
@@ -170,23 +181,20 @@ function neutralNotes(measures, notes, opts) {
 
 /* C. the clef of the lower staff in every measure ('treble' | 'bass'), from that staff's notes alone (see the CLEF_* constants) */
 function lowerClefs(measures, notes) {
-  const count = measures.map(() => ({ low: 0, all: 0 }));
+  const cost = measures.map(() => ({ treble: 0, bass: 0, n: 0 }));
   notes.forEach(x => {
-    if (x.staff !== 2 || !count[x.m - 1]) return;
-    count[x.m - 1].all++;
-    if (x.midi <= CLEF_LOW_MAX_MIDI) count[x.m - 1].low++;
+    if (x.staff !== 2 || !cost[x.m - 1]) return;
+    const c = cost[x.m - 1];
+    c.n++; c.treble += ledgerLines(x.p, 'treble'); c.bass += ledgerLines(x.p, 'bass');
   });
   const idx = []; /* the measures that have lower-staff notes */
-  count.forEach((c, i) => { if (c.all) idx.push(i); });
+  cost.forEach((c, i) => { if (c.n) idx.push(i); });
   if (!idx.length) return measures.map(() => 'bass');
-  const share = i => count[i].low / count[i].all;
+  const wins = (c, cur) => { const other = cur === 'bass' ? 'treble' : 'bass', gain = c[cur] - c[other]; return gain >= CLEF_SAVE_MIN && gain >= CLEF_SAVE_SHARE * c[cur]; };
   const seq = [];
   idx.forEach((i, k) => {
-    if (k === 0) { seq.push(share(i) >= CLEF_OPEN_LOW ? 'bass' : 'treble'); return; }
-    const cur = seq[k - 1];
-    if (cur === 'treble' && share(i) >= CLEF_SWITCH_SHARE) seq.push('bass');
-    else if (cur === 'bass' && 1 - share(i) >= CLEF_SWITCH_SHARE) seq.push('treble');
-    else seq.push(cur);
+    const cur = k === 0 ? 'bass' : seq[k - 1];
+    seq.push(wins(cost[i], cur) ? (cur === 'bass' ? 'treble' : 'bass') : cur);
   });
   /* fold a stretch shorter than CLEF_MIN_RUN into its neighbours (the shortest, earliest first, until none is left) */
   for (;;) {
@@ -365,4 +373,4 @@ function render(measures, tempo, notes, idPrefix, opts) {
 }
 
 module.exports = { neutralNotes, audioNotes, density, svgOf, render, prepare, lowerClefs, measuresWithClefs, splitAcrossBars, restPieces, addRests, LAYOUT,
-  NARROW_VIEWPORT_PX, CLEF_LOW_MAX_MIDI, CLEF_OPEN_LOW, CLEF_SWITCH_SHARE, CLEF_MIN_RUN };
+  NARROW_VIEWPORT_PX, CLEF_SAVE_SHARE, CLEF_SAVE_MIN, CLEF_MIN_RUN, ledgerLines };

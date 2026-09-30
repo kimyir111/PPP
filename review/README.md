@@ -139,12 +139,14 @@ one path for both arms, reading only the notes:
   system, what the app uses at 720 px or less). `page.js` embeds both and a `@media (max-width:720px)` rule shows one; the old
   `min-width:640px` and the sideways-scrolling box are gone. Glyph ids are per drawing (`i01X-...` and `i01X-n-...`). Ratings and
   sound never read the drawings.
-- **Clef.** The upper staff is always treble. The lower staff's clef is chosen per measure from its notes: low = MIDI <= 60
-  (`CLEF_LOW_MAX_MIDI`); it opens in bass if at least `CLEF_OPEN_LOW` = 0.5 of the first measure's notes are low; it changes
-  only at a barline and only when at least `CLEF_SWITCH_SHARE` = 0.75 of a measure's notes are on the other side; a stretch
-  shorter than `CLEF_MIN_RUN` = 2 measures with notes is folded into its neighbours; a measure with no notes keeps the clef.
-  Neither arm uses the source's clefs. (Before, both arms were drawn with the source's clefs, so a left hand played low under a
-  treble-clef source sat on ledger lines.)
+- **Clef.** The upper staff is always treble. The lower staff's clef is chosen per measure by what an engraver looks at, the
+  clef that needs fewer ledger lines: each note's lines are counted as `realize/ottava.js` counts them (treble staff E4..F5,
+  bass staff G2..A3; two diatonic steps to a line) and summed over the measure. The staff opens in bass; it changes only at a
+  barline and only when the other clef costs at least `CLEF_SAVE_SHARE` = 0.5 less and at least `CLEF_SAVE_MIN` = 4 lines less
+  than the clef in force (a tie or a small gain keeps it); a stretch shorter than `CLEF_MIN_RUN` = 2 measures with notes is
+  folded into its neighbours; a measure with no notes keeps the clef. Neither arm uses the source's clefs. (The first try, 0.25
+  and 2 lines, made 11 and 6 clef changes on the 12 pieces and more 8va/8vb lines, because mid-range bars differ by only a
+  line or two.)
 - **Order.** The per-measure clefs are written into the graph first and the 8va/8vb pass (TD16, `realize/ottava.js`,
   unchanged) runs on that graph, so it counts ledger lines against the clef the drawing uses (a test checks every line against the
   drawn clef, both arms alike).
