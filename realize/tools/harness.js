@@ -169,7 +169,7 @@ async function runFile(rel, opts) {
       /* the realizer's hand-chords pass (realize/handchords.js) on the selected candidate: notes removed, chords fixed, chords left (unfixable) */
       const hcr = sel.selected.report && sel.selected.report.handChords;
       row.g9aHandChords = hcr ? { active: hcr.active, notes: hcr.notes, removedNotes: hcr.removedNotes, removedChains: hcr.removedChains, eventsToRests: hcr.eventsToRests,
-        violationsBefore: hcr.violationsBefore, violationsAfter: hcr.violationsAfter, unfixable: hcr.unfixable, unfixableSeconds: hcr.unfixableSeconds, unfixableOctave: hcr.unfixableOctave, unfixableLimb: hcr.unfixableLimb, unfixablePitch: hcr.unfixablePitch } : null;
+        violationsBefore: hcr.violationsBefore, violationsAfter: hcr.violationsAfter, unfixable: hcr.unfixable, unfixableSeconds: hcr.unfixableSeconds, unfixableOctave: hcr.unfixableOctave, unfixableLimb: hcr.unfixableLimb, unfixablePitch: hcr.unfixablePitch, unfixableCross: hcr.unfixableCross, model: hcr.model } : null;
       row.g9a = scoreGraphCandidate(sel.selected.graph, rel + ':g9a', found.profile, found.targetLevel, sg.harmony, origMelody, sourceNotes);
     }
     /* ---- G9b repair (docs/GOALS/G09 §5, §12 "G9b - repair"; `--repair`, additive): the graph G9a
@@ -338,6 +338,7 @@ function summarizeEntries(ok, get) {
     vclPitchOctaveChordsHigh: entries.reduce((a, e) => a + (e.vcl ? e.vcl.pitchOctaveChordsHigh : 0), 0),
     vclPitchSecondsLow: entries.reduce((a, e) => a + (e.vcl ? e.vcl.pitchSecondsLow : 0), 0),
     vclPitchSecondsHigh: entries.reduce((a, e) => a + (e.vcl ? e.vcl.pitchSecondsHigh : 0), 0),
+    vclCrossSeconds: entries.reduce((a, e) => a + (e.vcl ? e.vcl.crossSeconds : 0), 0),
     vclPitchViolations: entries.reduce((a, e) => a + (e.vcl ? e.vcl.pitchViolations : 0), 0),
     onsetsLH: entries.reduce((a, e) => a + (e.vcl ? e.vcl.onsetsLH : 0), 0),
     notesLH: entries.reduce((a, e) => a + (e.vcl ? e.vcl.notesLH : 0), 0),
@@ -407,7 +408,7 @@ function summarize(rows, opts) {
   { const hs = ok.map(r => r.g9aHandChords).filter(Boolean);
     const sumH = k => hs.reduce((a, h) => a + (h[k] || 0), 0);
     sum.handChords = { files: hs.length, filesActive: hs.filter(h => h.active).length, notes: sumH('notes'), removedNotes: sumH('removedNotes'), removedChains: sumH('removedChains'), eventsToRests: sumH('eventsToRests'),
-      violationsBefore: sumH('violationsBefore'), violationsAfter: sumH('violationsAfter'), unfixable: sumH('unfixable'), unfixableSeconds: sumH('unfixableSeconds'), unfixableOctave: sumH('unfixableOctave'), unfixableLimb: sumH('unfixableLimb'), unfixablePitch: sumH('unfixablePitch') }; }
+      violationsBefore: sumH('violationsBefore'), violationsAfter: sumH('violationsAfter'), unfixable: sumH('unfixable'), unfixableSeconds: sumH('unfixableSeconds'), unfixableOctave: sumH('unfixableOctave'), unfixableLimb: sumH('unfixableLimb'), unfixablePitch: sumH('unfixablePitch'), unfixableCross: sumH('unfixableCross') }; }
   /* the pattern the G9a selection picked, per file (before repair: repair never changes the pattern), as a histogram */
   sum.selectedPatternHistogram = {};
   ok.forEach(r => { if (r.g9aPattern) sum.selectedPatternHistogram[r.g9aPattern.pattern] = (sum.selectedPatternHistogram[r.g9aPattern.pattern] || 0) + 1; });
@@ -470,10 +471,10 @@ async function main() {
   if (flag('--no-hymn-thin')) last.hymnThin = false;
   if (flag('--hymn-thin')) last.hymnThin = true;
   /* G9 source-copied hand chords (docs/GOALS/G09 section 12 "post user review 4"): --no-hand-chords switches the pass off for candidates (default ON there), --hand-chords
-     switches it on in the plain realizer (G8a row; default OFF), --hand-chords-model limb|pitch|both picks which groups of notes count as one hand (default both) */
+     switches it on in the plain realizer (G8a row; default OFF), --hand-chords-model limb|limbSeconds|pitch|both picks which groups of notes are searched (default limbSeconds) */
   if (flag('--no-hand-chords')) last.handChords = false;
   if (flag('--hand-chords')) last.handChords = true;
-  if (flag('--hand-chords-model')) { last.handChordsModel = opt('--hand-chords-model'); if (!['limb', 'pitch', 'both'].includes(last.handChordsModel)) throw new Error('--hand-chords-model: limb, pitch or both'); }
+  if (flag('--hand-chords-model')) { last.handChordsModel = opt('--hand-chords-model'); if (!['limb', 'limbSeconds', 'pitch', 'both'].includes(last.handChordsModel)) throw new Error('--hand-chords-model: limb, limbSeconds, pitch or both'); }
   const runOpts = { last: last, allowStride: allowStride, patterns: patterns, stride: stride, registerFloor: registerFloor, weights: weights, pattern: pattern, g9a: g9a, repair: repair, g9aN: g9aN, levelOffsets: levelOffsets, topKForEngrave: topKForEngrave, ablateCritics: ablateCritics };
   /* child mode: one file, row written to --row-out (the parent gives each file its own process and a time limit,
      so a legacy engine that never returns on one file is recorded as a timeout instead of stalling the sweep) */

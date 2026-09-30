@@ -79,6 +79,7 @@ function fail(reason, detail) { return { ok: false, reason: reason, detail: deta
 
 /* realize/handchords.js is Node-side tooling (not in the app's script list): loaded only when opts.handChords asks for it */
 const HAND_CHORDS_MAX_STAGE = 3; /* = handchords.js HAND_CHORDS_MAX_STAGE (the tests check they agree) */
+const HAND_CHORDS_DEFAULT_MODEL = 'limbSeconds'; /* = handchords.js DEFAULT_MODEL */
 function loadHandChords() {
   if (typeof require === 'function') return require('./handchords.js');
   const M = (typeof globalThis !== 'undefined' && globalThis.PPPRealizeModules) || {};
@@ -548,7 +549,8 @@ function realize(g, sg, plan, opts) {
        opts.handChords       (default OFF; `true` turns it on) at stages <= HAND_CHORDS_MAX_STAGE (3), a final pass over the written notes removes, from any chord of one
                              hand that holds a second (1 or 2 semitones) or spans an octave or more, the least important notes: never the top note of a melody-voice
                              event, never the bass; durations and ties of the rest untouched (realize/handchords.js thin)
-       opts.handChordsModel  'both' (default), 'limb' or 'pitch': which groups of notes count as "one hand" (realize/handchords.js) */
+       opts.handChordsModel  'limbSeconds' (default: the hands as written, plus seconds between the two hands' notes), 'limb', 'pitch' or 'both' (the pitch grouping's
+                             octave-plus rule too; opt-in): which groups of notes are searched (realize/handchords.js) */
   const handChords = opts.handChords === true && plan.stage <= HAND_CHORDS_MAX_STAGE;
   const HC = handChords ? loadHandChords() : null;
   const hcTags = handChords ? { melody: new Set(), bass: new Set(), gen: [] } : null;
@@ -628,7 +630,7 @@ function realize(g, sg, plan, opts) {
   let prevMidis = null; /* threaded across the WHOLE piece, not reset per section - real
     "voice leading between successive harmony windows" across a section boundary too. */
   const report = { sections: [], patternCounts: {}, floor: floorStats, diatonic: diatonicStats, clash: clashStats };
-  if (opts.handChords === true) report.handChords = { active: handChords, model: opts.handChordsModel || 'both', maxStage: HAND_CHORDS_MAX_STAGE };
+  if (opts.handChords === true) report.handChords = { active: handChords, model: opts.handChordsModel || HAND_CHORDS_DEFAULT_MODEL, maxStage: HAND_CHORDS_MAX_STAGE };
   const shapeState = { prev: null }; /* the accompaniment chord written last, across measures and sections (theory.settleChord keeps the next one close to it) */
 
   for (const sec of plan.sections) {
@@ -792,7 +794,7 @@ function realize(g, sg, plan, opts) {
   [[rhV1, rhSt], [rhV2, rhSt], [lhV1, lhSt], [lhV2, lhSt]].forEach(([v, st]) => { if (v) fillRests(b, part, v.id, st.id, oldMeasures, newMeasureId); });
 
   /* source-copied hand chords (handchords.js): the final pass over the written notes, before the graph is sealed and fingered */
-  if (handChords) report.handChords = Object.assign(report.handChords, applyHandChords(HC, part, hcTags, { rh: rhSt.id, lh: lhSt.id }, oldMeasures, newMeasureId, measureOffset, opts.handChordsModel || 'both'));
+  if (handChords) report.handChords = Object.assign(report.handChords, applyHandChords(HC, part, hcTags, { rh: rhSt.id, lh: lhSt.id }, oldMeasures, newMeasureId, measureOffset, opts.handChordsModel || HAND_CHORDS_DEFAULT_MODEL));
 
   let built;
   try { built = b.finish(); } catch (e) { return fail('BUILD_FAILED', String(e && e.message || e)); }

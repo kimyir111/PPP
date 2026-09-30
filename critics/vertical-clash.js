@@ -14,6 +14,7 @@
      octaveChordRate,
      seconds, secondsLH, secondsRH, secondsRate,                one-hand chords with two adjacent notes 1 or 2 semitones apart
      violations, violationsLH, violationsRH,                    one-hand chords with a second OR an octave-plus span (a chord with both is one)
+     crossSeconds                                               onsets where all notes of both hands together hold a second
      pitchHandOnsets, pitchOctaveChords[Low|High], pitchSeconds[Low|High], pitchViolations[Low|High]
                                                                 the same counts with the two "hands" taken as the notes below middle C and the notes at or above it
                                                                 (PITCH_SPLIT = 60: how the reviewer, who sees no hand labels, groups what is stacked near the staves' boundary)
@@ -116,6 +117,8 @@
       /* the same counts with the two "hands" taken as the notes below middle C (low) and at or above it (high): how a reader groups what is stacked near the staves' boundary */
       pitchHandOnsets: 0, pitchOctaveChords: 0, pitchOctaveChordsLow: 0, pitchOctaveChordsHigh: 0, pitchSeconds: 0, pitchSecondsLow: 0, pitchSecondsHigh: 0,
       pitchViolations: 0, pitchViolationsLow: 0, pitchViolationsHigh: 0,
+      /* cross-hand seconds: all sounding notes of both hands together hold a second (two noteheads 1-2 semitones apart, whatever side of middle C, whichever hands) */
+      crossSeconds: 0,
       /* notes written per onset, per hand: an onset is a moment the hand starts at least one note (tie continuations included, as critics/left-hand-thickness.js does) */
       onsetsLH: 0, notesLH: 0, onsetsRH: 0, notesRH: 0, notesPerOnsetLH: 0, notesPerOnsetRH: 0
     };
@@ -146,6 +149,11 @@
         if (second) { out.seconds++; out['seconds' + hand]++; }
         if (second || m[m.length - 1] - m[0] >= OCTAVE_SEMITONES) { out.violations++; out['violations' + hand]++; }
       });
+      { const all = s.sounding.filter(n => n.hand === 'LH' || n.hand === 'RH');
+        if (all.length >= 2 && all.some(n => att.has(n))) {
+          const m = all.map(n => n.midi).sort((a, b) => a - b);
+          for (let i = 1; i < m.length; i++) { const d = m[i] - m[i - 1]; if (d > 0 && d <= SECOND_MAX) { out.crossSeconds++; break; } }
+        } }
       ['low', 'high'].forEach(grp => {
         const h = s.sounding.filter(n => (n.midi < PITCH_SPLIT) === (grp === 'low'));
         if (h.length < 2 || !h.some(n => att.has(n))) return;
@@ -190,6 +198,12 @@
       };
       ['LH', 'RH'].forEach(hand => check('limb:' + hand, s.sounding.filter(n => n.hand === hand)));
       ['low', 'high'].forEach(grp => check('pitch:' + grp, s.sounding.filter(n => (n.midi < PITCH_SPLIT) === (grp === 'low'))));
+      /* cross: both hands together, seconds only */
+      { const all = s.sounding.filter(n => n.hand === 'LH' || n.hand === 'RH');
+        if (all.length >= 2 && all.some(n => att.has(n))) {
+          const m = all.map(n => n.midi).sort((a, b) => a - b);
+          for (let i = 1; i < m.length; i++) { const d = m[i] - m[i - 1]; if (d > 0 && d <= SECOND_MAX) { keys.add('cross:all:' + Math.round(s.t / EPS) + ':second'); break; } }
+        } }
     });
     return keys;
   }
@@ -198,8 +212,8 @@
      is 1, not 0 (newClashes above counts the net change). */
   function newViolations(before, after) {
     const a = violationKeys(before), b = violationKeys(after);
-    const out = { limb: 0, pitch: 0 };
-    b.forEach(k => { if (!a.has(k)) out[k.slice(0, 5) === 'limb:' ? 'limb' : 'pitch']++; });
+    const out = { limb: 0, pitch: 0, cross: 0 };
+    b.forEach(k => { if (!a.has(k)) out[k.slice(0, k.indexOf(':'))]++; });
     return out;
   }
 

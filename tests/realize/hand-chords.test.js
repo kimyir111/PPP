@@ -5,7 +5,9 @@
    middle C (the notes below C4 / at or above it: how the reviewer reads the page) 6 seconds and 33 octave chords, nearly all of it a voice of one hand
    sounding beside or an octave under a voice of the other hand. realize/handchords.js removes the least important note(s); realize() runs it behind
    `opts.handChords` (default OFF for a direct call, ON from candidates/).
-   Part 1 is the pure pass on hand-built note lists; part 2 is realize() on real hymns. */
+   Part 1 is the pure pass on hand-built note lists; part 2 is realize() on real hymns.
+   Default model 'limbSeconds' (after the independent review of the first version): the hands as written, plus seconds between the two hands' notes (B3 under C4,
+   C#4 under D#4); the pitch grouping's octave-plus rule is the opt-in models 'pitch' and 'both' (the first version's default, whose numbers the tests below keep). */
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -108,14 +110,37 @@ test('only chords with an attack count: a held pair that clashes is not a chord 
   assert.equal(r.stats.violationsAfter, 0);
 });
 
-test('the models: a left-hand tenor C#4 under a right-hand alto D#4 is a second only for the pitch grouping', () => {
+test('the models: a left-hand tenor C#4 under a right-hand alto D#4 is a second for the default and for pitch/both, not for limb', () => {
   const build = () => [n('LH', 61, { id: 'tenor' }), n('RH', 63, { id: 'alto' }), n('RH', 70, { id: 'mel', keep: true })];
   assert.equal(HC.thin(build(), { model: 'limb' }).removedIds.length, 0, 'the hands as written: no violation');
-  const p = HC.thin(build(), { model: 'pitch' });
-  assert.deepEqual(ids(p), ['tenor'], 'pitch grouping: C#4 and D#4 are one stacked second; the one farther from the melody goes');
-  const b = HC.thin(build(), { model: 'both' });
-  assert.deepEqual(ids(b), ids(p));
+  assert.deepEqual(ids(HC.thin(build(), { model: 'limbSeconds' })), ['tenor'], 'the default: the one farther from the melody goes');
+  assert.deepEqual(ids(HC.thin(build())), ['tenor'], 'and it is the default');
+  assert.deepEqual(ids(HC.thin(build(), { model: 'pitch' })), ['tenor']);
+  assert.deepEqual(ids(HC.thin(build(), { model: 'both' })), ['tenor']);
+  assert.equal(HC.DEFAULT_MODEL, 'limbSeconds');
   assert.throws(() => HC.thin([], { model: 'nope' }), /unknown model/);
+});
+
+test('the boundary: B3 under C4 is a second across the split at 60 for the default, which the pitch grouping cannot see', () => {
+  const build = () => [n('LH', 59, { id: 'tenor' }), n('RH', 60, { id: 'alto' }), n('RH', 67, { id: 'mel', keep: true })];
+  assert.deepEqual(ids(HC.thin(build())), ['tenor'], 'default: the one farther from the melody goes');
+  assert.equal(HC.thin(build(), { model: 'pitch' }).removedIds.length, 0, 'pitch grouping: B3 and C4 are on different sides of 60, not adjacent');
+  assert.equal(HC.thin(build(), { model: 'limb' }).removedIds.length, 0);
+});
+
+test('octave-plus across the two hands is NOT removed by the default, only by the opt-in models', () => {
+  const build = () => [n('LH', 60, { id: 'tenor' }), n('RH', 69, { id: 'alto' }), n('RH', 72, { id: 'mel', keep: true })]; /* C4 A4 C5 */
+  assert.equal(HC.thin(build()).removedIds.length, 0, 'default: each hand holds a third at most');
+  assert.equal(HC.thin(build(), { model: 'limb' }).removedIds.length, 0);
+  assert.deepEqual(ids(HC.thin(build(), { model: 'pitch' })), ['tenor']);
+  assert.deepEqual(ids(HC.thin(build(), { model: 'both' })), ['tenor']);
+});
+
+test('a cross-hand second needs an attack and two notes; a same-hand octave still counts in the default (limb)', () => {
+  const held = [n('LH', 61, { on: 0, off: 2, cont: true }), n('RH', 63, { on: 0, off: 2, cont: true })];
+  assert.equal(HC.thin(held).removedIds.length, 0, 'no attack: not a chord');
+  const oct = [n('RH', 60), n('RH', 72)];
+  assert.equal(HC.thin(oct).removedIds.length, 1, 'limb octave-plus is in the default');
 });
 
 test('deterministic and idempotent: same input, same removals; the survivors need no further removal', () => {
@@ -161,13 +186,13 @@ test('options off = origin/main byte for byte: a direct realize() call (default,
 });
 
 test('a direct realize() call has no hand-chords report (the pass is off); candidates/ turns it on, and opts.last can turn it off', async () => {
-  const f = await planOf('catalog/hymns/christ-arose.musicxml', 2.76);
+  const f = await planOf('catalog/hymns/pass-me-not.musicxml', 3.87);
   const direct = REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'hymn' });
   assert.equal(direct.report.handChords, undefined);
-  const req = { targetLevel: 2.76, handProfile: 'large', sections: 'all' };
+  const req = { targetLevel: 3.87, handProfile: 'large', sections: 'all' };
   const on = CAND.enumerate(f.g, f.sg, req, { n: 6 });
   assert.ok(on.candidates.length > 0);
-  on.candidates.forEach(c => { assert.ok(c.report.handChords, 'every candidate carries the report'); assert.equal(c.report.handChords.active, c.plan.stage <= 3); });
+  on.candidates.forEach(c => { assert.ok(c.report.handChords, 'every candidate carries the report'); assert.equal(c.report.handChords.active, c.plan.stage <= 3); assert.equal(c.report.handChords.model, 'limbSeconds', 'the default model'); });
   const off = CAND.enumerate(f.g, f.sg, req, { n: 6, last: { handChords: false } });
   off.candidates.forEach(c => assert.equal(c.report.handChords, undefined));
   assert.notDeepEqual(on.candidates.map(c => c.fingerprint), off.candidates.map(c => c.fingerprint), 'the pass changes at least one candidate of this piece');
@@ -176,12 +201,12 @@ test('a direct realize() call has no hand-chords report (the pass is off); candi
 /* the notes of a graph as a comparable list */
 const noteKeys = g => VC.notesOf(g).map(x => [x.on, x.off, x.midi, x.hand, x.cont].join('|')).sort();
 
-test('christ-arose (hymn, stage 3): violations removed, only notes removed, nothing shortened, melody top and bass intact, deterministic', async () => {
+test('christ-arose, opt-in model both (hymn, stage 3): violations removed, only notes removed, nothing shortened, melody top and bass intact, deterministic', async () => {
   const f = await planOf('catalog/hymns/christ-arose.musicxml', 2.76);
   assert.ok(f.plan.stage <= 3);
   const before = REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'hymn', hymnThin: true });
-  const a = REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'hymn', hymnThin: true, handChords: true });
-  const b = REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'hymn', hymnThin: true, handChords: true });
+  const a = REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'hymn', hymnThin: true, handChords: true, handChordsModel: 'both' });
+  const b = REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'hymn', hymnThin: true, handChords: true, handChordsModel: 'both' });
   assert.equal(fp(a), fp(b), 'deterministic');
   const hc = a.report.handChords;
   assert.equal(hc.active, true);
@@ -208,6 +233,26 @@ test('christ-arose (hymn, stage 3): violations removed, only notes removed, noth
   lb.forEach((midi, k) => assert.equal(la.get(k), midi, 'the bass at ' + k + ' is kept'));
 });
 
+test('pass-me-not, the DEFAULT model (hymn, stage 3): the four cross-hand seconds go (C#4 tenor under D#4 alto), nothing else; only removal; melody and bass kept', async () => {
+  const f = await planOf('catalog/hymns/pass-me-not.musicxml', 3.87);
+  const before = REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'hymn', hymnThin: true });
+  const a = REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'hymn', hymnThin: true, handChords: true });
+  const hc = a.report.handChords;
+  assert.equal(hc.model, 'limbSeconds');
+  const vb = VC.verticalClash(before.graph), va = VC.verticalClash(a.graph);
+  assert.ok(vb.crossSeconds >= 4, 'fixture: the copy has cross-hand seconds (' + vb.crossSeconds + ')');
+  assert.equal(va.crossSeconds, 0); assert.equal(va.pitchSeconds, 0);
+  assert.equal(hc.violationsBefore, vb.violations + vb.crossSeconds, 'the pass counts what the critic counts');
+  assert.equal(hc.violationsAfter, va.violations + va.crossSeconds);
+  assert.equal(hc.removedNotes, hc.removedChains);
+  assert.ok(hc.removedNotes <= 6, 'a handful of notes, not a thinned hymn (' + hc.removedNotes + ')');
+  const kb = noteKeys(before.graph), ka = noteKeys(a.graph);
+  const pool = new Map(); kb.forEach(k => pool.set(k, (pool.get(k) || 0) + 1));
+  ka.forEach(k => { const c = pool.get(k) || 0; assert.ok(c > 0, 'a note that was not there: ' + k); pool.set(k, c - 1); });
+  assert.equal(kb.length - ka.length, hc.removedNotes);
+  assert.equal(M.melodyPreservation(M.originalMelodyNotes(f.g, f.plan), M.graphNoteList(a.graph)), 1);
+});
+
 test('the pass also runs on a generated (block) realization and on an auto one; violations fall, nothing is added', async () => {
   for (const [file, lvl, pattern] of [['catalog/hymns/god-rest-ye-merry.musicxml', 2.87, 'block'], ['catalog/hymns/pass-me-not.musicxml', 3.87, 'auto']]) {
     const f = await planOf(file, lvl);
@@ -229,11 +274,13 @@ test('stage gate: at stage 4 the pass does not run and the graph is the same as 
   assert.equal(HC.HAND_CHORDS_MAX_STAGE, 3);
 });
 
-test('the three models give different realizations on christ-arose (limb: the hands as written need none; pitch and both remove the same)', async () => {
+test('the four models on christ-arose: limb and the default need none (no cross-hand second there), pitch and both remove the same octave-plus notes', async () => {
   const f = await planOf('catalog/hymns/christ-arose.musicxml', 2.76);
-  const run = model => REALIZE.realize(f.g, f.sg, f.plan, { pattern: 'hymn', hymnThin: true, handChords: true, handChordsModel: model });
-  const l = run('limb'), p = run('pitch'), b = run('both');
+  const run = model => REALIZE.realize(f.g, f.sg, f.plan, Object.assign({ pattern: 'hymn', hymnThin: true, handChords: true }, model ? { handChordsModel: model } : {}));
+  const l = run('limb'), d = run(), p = run('pitch'), b = run('both');
   assert.equal(l.report.handChords.removedNotes, 0, 'hymnThin already cleared the hands as written on this piece');
+  assert.equal(d.report.handChords.removedNotes, 0, 'no cross-hand second on this piece');
+  assert.equal(fp(d), fp(run('limbSeconds')), 'the default is limbSeconds');
   assert.ok(p.report.handChords.removedNotes > 0);
   assert.equal(fp(p), fp(b));
 });

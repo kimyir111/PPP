@@ -183,6 +183,18 @@ test('violationKeys / newViolations: an edit that clears one chord and writes an
   const nv = VC.newViolations(before, after);
   assert.equal(nv.limb, 1, 'the second moved from onset 0 to onset 1: one chord is new');
   assert.equal(nv.pitch, 1);
-  assert.deepEqual(VC.newViolations(before, before), { limb: 0, pitch: 0 });
+  assert.equal(nv.cross, 1, 'and in the cross-hand grouping');
+  assert.deepEqual(VC.newViolations(before, before), { limb: 0, pitch: 0, cross: 0 });
   assert.equal(VC.PITCH_SPLIT, require(path.join(REPO, 'realize/handchords.js')).HAND_PITCH_SPLIT, 'the critic and the pass group at the same pitch');
+});
+
+test('cross-hand seconds: B3 (left hand) under C4 (right hand) is one across the split at 60; two hands an octave apart are not; needs an attack', () => {
+  const g = score([{ hand: 'LH', at: at[0], dur: '1/4', midis: [59] }, { hand: 'RH', at: at[0], dur: '1/4', midis: [60, 67] },   /* B3 | C4 G4 */
+    { hand: 'LH', at: at[1], dur: '1/4', midis: [48] }, { hand: 'RH', at: at[1], dur: '1/4', midis: [60, 67] }]);                  /* C3 | C4 G4: no second */
+  const v = VC.verticalClash(g);
+  assert.equal(v.crossSeconds, 1);
+  assert.equal(v.seconds, 0, 'one hand at a time: none');
+  assert.equal(v.pitchSeconds, 0, 'the pitch grouping cannot see it: 59 and 60 are on different sides of the split');
+  const keys = VC.violationKeys(g);
+  assert.ok(Array.from(keys).some(k => k.indexOf('cross:all:') === 0 && k.endsWith(':second')));
 });
