@@ -550,6 +550,8 @@ async function identityHashes(browser) {
       ok('the note is on the screen under the controls (persistent), and in the success message', sa.status === NOTE_HARD && (await sr.evaluate(() => document.querySelector('[data-arrangement]').innerText.indexOf('may be a little harder than the level you chose') > -1)) && sa.toast.indexOf(NOTE_HARD) > 0, JSON.stringify({ status: sa.status, toast: sa.toast }));
       await sleep(4000);
       ok('and still there after the message has gone', await sr.evaluate(() => document.querySelector('[data-arrangement]').innerText.indexOf('may be a little harder than the level you chose') > -1));
+      await sr.select('[data-arrangement-level]', 'beginner'); await sleep(250);
+      ok('choosing another level takes the note off the screen (it was about the level that was applied)', await sr.evaluate(() => document.querySelector('[data-arrangement]').innerText.indexOf('may be a little harder than the level you chose') < 0));
       await loadReview(sr, HYMN('christ-arose'), 'christ-arose');
       const ca = await reviewApply(sr, 'intermediate', 'balanced');
       ok('a piece that needs no relaxation has no note (christ-arose)', ca.arrangement.engine === 'ppp.g9-single' && !ca.arrangement.levelNote && ca.status === '' && !/harder than the level/.test(ca.toast), JSON.stringify({ arr: ca.arrangement, status: ca.status }));
@@ -563,8 +565,8 @@ async function identityHashes(browser) {
       await ck.close();
       const cats = {};
       for (const loc of ['ko-KR', 'ja-JP', 'zh-CN']) cats[loc] = JSON.parse(fs.readFileSync(path.join(REPO, 'i18n', loc + '.json'), 'utf8')).content;
-      const KEYS2 = [NOTE_HARD, 'Save the standard arrangement', 'This piece could not be made in one-note-per-hand mode, so nothing was saved. You can save the standard arrangement instead, in which a hand may play two or more notes at once.'];
-      ok('the three new sentences are in the ko, ja and zh catalogs, translated', Object.keys(cats).every(l => KEYS2.every(k => typeof cats[l][k] === 'string' && cats[l][k].length > 4 && cats[l][k] !== k)), JSON.stringify(Object.keys(cats).map(l => KEYS2.map(k => !!cats[l][k]))));
+      const KEYS2 = [NOTE_HARD, 'Save the standard arrangement', 'Dismiss', 'This piece could not be made in one-note-per-hand mode, so nothing was saved. You can save the standard arrangement instead, in which a hand may play two or more notes at once.'];
+      ok('the new sentences and the Dismiss label are in the ko, ja and zh catalogs, translated', Object.keys(cats).every(l => KEYS2.every(k => typeof cats[l][k] === 'string' && cats[l][k].length > 1 && cats[l][k] !== k)), JSON.stringify(Object.keys(cats).map(l => KEYS2.map(k => !!cats[l][k]))));
     }
 
     console.log('\n── refusals ──');
@@ -582,7 +584,7 @@ async function identityHashes(browser) {
     });
     const box1 = await refusal();
     ok('Song Arranger, a piece that stays refused (czerny849/009): nothing is saved, the window stays open, with the notice and the two choices',
-      !fr.saved && fr.open && !!box1 && box1.visible && box1.role === 'alert' && box1.saveVisible && box1.save === 'Save the standard arrangement' && box1.cancel === 'Cancel' && /could not be made in one-note-per-hand mode, so nothing was saved/.test(box1.text) && (await songKeys(fp)).length === keysBefore.length,
+      !fr.saved && fr.open && !!box1 && box1.visible && box1.role === 'alert' && box1.saveVisible && box1.save === 'Save the standard arrangement' && box1.cancel === 'Dismiss' && (await fp.evaluate(() => [...document.querySelectorAll('[data-song-arranger] button')].filter(b => b.innerText.trim() === 'Cancel').length)) === 1 && /could not be made in one-note-per-hand mode, so nothing was saved/.test(box1.text) && (await songKeys(fp)).length === keysBefore.length,
       JSON.stringify({ saved: fr.saved, open: fr.open, box: box1, keys: (await songKeys(fp)).length - keysBefore.length }));
     await sleep(4500); /* the toast lasts 2.8 s */
     ok('the notice does not go away by itself (there 4.5 s later, after every toast)', !!(await refusal()));

@@ -131,18 +131,113 @@ test('plan(): a dense piano cover is refused by the strict search at every level
   });
 });
 
-test('plan(): relax 1 alone (the thinned view, strict density) plans a piece whose only obstacle is its chords', async () => {
-  /* a method piece the strict search refuses whose refusal is reach/chordLoad: relax 1 is enough, and is preferred over relax 2 (the tiers are tried in order) */
+test('plan(): relax 1 alone (the thinned view, strict density) plans beyer/013, which the strict search refuses at every level, and relax 2 uses the lower tier where it is enough', async () => {
   const g = await mxl('catalog/method/beyer/013.mxl'), sg = SGG.analyze(g);
-  let one = 0, strictOk = 0;
+  let planned = 0;
   for (const lvl of [1, 2, 3, 4]) for (const hp of ['large', 'medium', 'small']) {
     const s = ARR.plan(g, sg, REQ(lvl, hp), { reference: ref });
     const a = ARR.plan(g, sg, REQ(lvl, hp), { reference: ref, relax: 1 });
     const b = ARR.plan(g, sg, REQ(lvl, hp), { reference: ref, relax: 2 });
-    if (s.ok) { strictOk++; continue; }
-    if (a.ok) { one++; assert.equal(a.plan.relaxed, 1); assert.ok(b.ok && b.plan.relaxed === 1, 'relax 2 uses the lower tier where it is enough'); }
+    assert.equal(s.ok, false, 'strict ' + lvl + ' ' + hp);
+    if (!a.ok) continue;
+    planned++;
+    assert.equal(a.plan.relaxed, 1);
+    assert.ok(b.ok && b.plan.relaxed === 1, 'relax 2 uses the lower tier where it is enough');
+    assert.equal(JSON.stringify(a.plan), JSON.stringify(b.plan), 'and is then the very same plan as relax 1');
   }
-  assert.ok(one + strictOk > 0);
+  assert.equal(planned, 12, 'relax 1 plans beyer/013 at every level and hand profile');
+});
+
+test('plan(): per section - beyer/013 has sections the strict search fits (planned exactly as strict) and one it does not (relaxed 1)', async () => {
+  const g = await mxl('catalog/method/beyer/013.mxl'), sg = SGG.analyze(g);
+  const r = ARR.plan(g, sg, REQ(2, 'large'), { reference: ref, relax: 1 });
+  assert.ok(r.ok);
+  const flags = r.plan.sections.map(s => s.relaxed || 0);
+  assert.ok(flags.some(f => f === 0) && flags.some(f => f === 1), 'a mix of strict and relaxed sections: ' + flags.join(''));
+  assert.equal(r.plan.relaxed, 1);
+  const secs = ARR.planner.resolveSections(sg, r.plan.request);
+  r.plan.sections.forEach((planned, i) => {
+    const strictOnly = ARR.planner.planSection(g, sg, secs[i], r.plan.part, r.plan.request, r.plan.band, r.plan.stage, 0);
+    if (!planned.relaxed) assert.equal(JSON.stringify(strictOnly), JSON.stringify(planned), 'section ' + i + ' is the strict section, byte for byte');
+    else { assert.equal(strictOnly.ok, false); assert.equal(strictOnly.reason, 'UNREACHABLE'); assert.ok(/RELAXED/.test(planned.explanation)); }
+  });
+});
+
+/* ================================================================ hand order (the review's major finding) */
+test('metrics.handCrossing: the right hand below the left is counted at the moments both hands sound, held notes included; hands in order are 0', () => {
+  const { mk } = require(path.join(REPO, 'tests', 'scoregraph', 'g3-helpers.js'));
+  const inOrder = MET.handCrossing(mk({ time: [4, 4], rh: 'C5:q D5:q E5:q F5:q', lh: 'C3:q D3:q E3:q F3:q' }));
+  assert.deepEqual([inOrder.moments, inOrder.crossed, inOrder.rate], [4, 0, 0]);
+  const swapped = MET.handCrossing(mk({ time: [4, 4], rh: 'C3:q D3:q E3:q F3:q', lh: 'C5:q D5:q E5:q F5:q' }));
+  assert.deepEqual([swapped.moments, swapped.crossed, swapped.rate], [4, 4, 1]);
+  const held = MET.handCrossing(mk({ time: [4, 4], rh: 'C3:h E5:q E5:q', lh: 'C4:q D4:q E4:q F4:q' })); /* the right hand holds a C3 under the left hand's moving line */
+  assert.equal(held.moments, 4); assert.equal(held.crossed, 2, 'the held low note counts while the left hand sounds above it');
+});
+
+test('candidates: a relaxed-plan candidate whose right hand sounds below its left at more than HAND_CROSSING_MAX of the moments is discarded like a G5 violation (a strict one is never judged by it)', async () => {
+  const g = await mxl('catalog/method/hanon/001.mxl'), sg = SGG.analyze(g);
+  const sel = CAND.run(g, sg, REQ(3, 'large'), { singleNoteHands: true, skipEngrave: true, reference: ref, relax: 2 });
+  assert.equal(sel.ok, true);
+  const crossedOut = sel.scored.filter(c => !c.hardOk);
+  assert.ok(crossedOut.length >= 3, 'the generated-accompaniment candidates are out: ' + crossedOut.length);
+  crossedOut.forEach(c => { assert.ok(c.scores.handCrossing.rate > CAND.HAND_CROSSING_MAX); assert.equal(c.scores.hard.hard, 0, 'not a G5 violation: the crossing filter did it'); });
+  assert.equal(sel.selected.spec.pattern, 'hymn', 'the verbatim-voice candidate is what is left');
+  assert.ok(sel.selected.scores.handCrossing.rate <= CAND.HAND_CROSSING_MAX);
+  /* every candidate there is relaxed; the strict hymn (christ-arose) carries no handCrossing score at all */
+  const strict = CAND.run(hymn('christ-arose'), SGG.analyze(hymn('christ-arose')), REQ(2, 'large'), { singleNoteHands: true, skipEngrave: true, reference: ref, relax: 2 });
+  assert.ok(strict.scored.every(c => !('handCrossing' in c.scores)));
+  /* a piece whose every candidate crosses is refused, not arranged with the hands crossed */
+  const h6 = CAND.run(await mxl('catalog/method/hanon/006.mxl'), SGG.analyze(await mxl('catalog/method/hanon/006.mxl')), REQ(3, 'large'), { singleNoteHands: true, skipEngrave: true, reference: ref, relax: 2 });
+  assert.equal(h6.ok, false); assert.equal(h6.reason, 'ALL_CANDIDATES_HAVE_HARD_VIOLATIONS');
+});
+
+/* at every onset of either hand, the notes each hand sounds (held ones included): how often the right hand's lowest is below the left hand's highest, and, at onsets where both hands
+   attack, the right hand's highest below the left hand's lowest */
+function crossing(graph) {
+  const part = graph.parts[0];
+  const mStart = new Map(); let acc = R.ZERO;
+  graph.timeline.measures.forEach(m => { mStart.set(m.id, acc); acc = R.add(acc, R.parse(m.dur)); });
+  const notes = [];
+  part.events.forEach(ev => {
+    if (ev.kind !== 'note' || ev.grace) return;
+    (ev.heads || []).forEach(h => { const on = R.toNumber(R.add(mStart.get(ev.m), R.parse(ev.at))); notes.push({ hand: PX.limbOf(part, ev, h), midi: PX.midi(h.pitch), on: on, off: on + R.toNumber(R.parse(ev.dur)) }); });
+  });
+  const out = { both: 0, crossed: 0, bothAtk: 0, crossedAtk: 0 };
+  [...new Set(notes.map(n => n.on))].forEach(t => {
+    const a = notes.filter(n => n.hand === 'RH' && n.on <= t + 1e-9 && n.off > t + 1e-9), b = notes.filter(n => n.hand === 'LH' && n.on <= t + 1e-9 && n.off > t + 1e-9);
+    if (!a.length || !b.length) return;
+    out.both++;
+    if (Math.min.apply(null, a.map(n => n.midi)) < Math.max.apply(null, b.map(n => n.midi))) out.crossed++;
+    if (a.some(n => Math.abs(n.on - t) < 1e-9) && b.some(n => Math.abs(n.on - t) < 1e-9)) { out.bothAtk++; if (Math.max.apply(null, a.map(n => n.midi)) < Math.min.apply(null, b.map(n => n.midi))) out.crossedAtk++; }
+  });
+  return out;
+}
+
+test('plan(): a relaxed section never leaves one hand empty with two or more voices in the other (realize would move the LOWER voice across, putting the bass in the right hand)', async () => {
+  for (const g of [SYN.pieceA(), SYN.pieceB(), await mxl('catalog/method/hanon/007.mxl'), await mxl('catalog/method/hanon/009.mxl')]) {
+    const sg = SGG.analyze(g);
+    let relaxedSections = 0;
+    for (const lvl of [3, 4]) {
+      const r = ARR.plan(g, sg, REQ(lvl, 'large'), { reference: ref, relax: 2 });
+      assert.ok(r.ok);
+      r.plan.sections.filter(s => s.relaxed).forEach(s => {
+        relaxedSections++;
+        assert.ok(!(s.hands.RH.length === 0 && s.hands.LH.length >= 2) && !(s.hands.LH.length === 0 && s.hands.RH.length >= 2), 'hands ' + JSON.stringify(s.hands));
+      });
+    }
+    assert.ok(relaxedSections > 0);
+  }
+});
+
+test('app arrangeSingleNote: hand crossing - the right hand below the left - is at most 1% of the moments on the Hanon exercises the relaxed pass makes (it was 20 to 40%), and never at a moment where both hands attack', async () => {
+  for (const name of ['001', '002', '007', '011', '016']) {
+    const res = await app.arrangeSingleNote(await mxl('catalog/method/hanon/' + name + '.mxl'), { level: 'intermediate' });
+    assert.equal(res.ok, true, name);
+    const c = crossing(res.graph);
+    assert.ok(c.both > 100, name + ' has two-hand moments');
+    assert.ok(c.crossed / c.both <= CAND.HAND_CROSSING_MAX, 'hanon/' + name + ': crossed ' + c.crossed + ' of ' + c.both);
+    assert.equal(c.crossedAtk, 0, 'hanon/' + name + ': no simultaneous attack with the right hand below the left');
+  }
 });
 
 /* ================================================================ candidates */

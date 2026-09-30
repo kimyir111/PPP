@@ -1716,7 +1716,7 @@
                     <p style="margin: 0; color: var(--ink); font-size: 13px; line-height: 1.55;">{{ singleRefusalText }}</p>
                     <div style="display: flex; gap: 9px; flex-wrap: wrap;">
                       <button type="button" onClick="{{ saveStandardAfterRefusal }}" data-single-refusal-save style="padding:9px 14px;border-radius:10px;border:1px solid var(--accent);background:var(--surface);color:var(--accent);font-family:inherit;font-weight:650;cursor:pointer;">{{ singleRefusalSaveLabel }}</button>
-                      <button type="button" onClick="{{ dismissSingleRefusal }}" data-single-refusal-cancel style="padding:9px 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink2);font-family:inherit;cursor:pointer;">{{ cancelLabel }}</button>
+                      <button type="button" onClick="{{ dismissSingleRefusal }}" data-single-refusal-cancel style="padding:9px 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink2);font-family:inherit;cursor:pointer;">{{ singleRefusalDismissLabel }}</button>
                     </div>
                   </div>
                 </sc-if>
@@ -17301,7 +17301,8 @@ class Component extends DCLogic {
       arrangementBusy: !!S.arrangementBusy,
       arrangementStatus: S.arrangementStatus || '',
       hasArrangementStatus: !!S.arrangementStatus,
-      setArrangementLevel: e => this.setState({ arrangementLevel: e.target.value }),
+      /* the "harder than the level you chose" note is about the level that was applied: choosing another level takes it off the screen (other notices stay) */
+      setArrangementLevel: e => { const level = e.target.value; this.setState(st => ({ arrangementLevel: level, arrangementStatus: st.arrangementStatus && st.arrangementStatus === this.levelNoteText() ? '' : st.arrangementStatus })); },
       setArrangementStyle: e => this.setState({ arrangementStyle: e.target.value }),
       /* G9e-lite: the switch (pressed = on, which is the default). Reads PPP.arranger itself, so it also shows a mode set from the console; session only, not remembered. */
       singleNoteLabel: tx('One note per hand'),
@@ -17977,6 +17978,7 @@ class Component extends DCLogic {
       hasSingleRefusal: !!songArrange.singleRefusal,
       singleRefusalText: tx('This piece could not be made in one-note-per-hand mode, so nothing was saved. You can save the standard arrangement instead, in which a hand may play two or more notes at once.'),
       singleRefusalSaveLabel: tx('Save the standard arrangement'),
+      singleRefusalDismissLabel: tx('Dismiss'), /* not 'Cancel': the window's own Cancel closes it */
       saveStandardAfterRefusal: () => this.saveStandardAfterRefusal(),
       dismissSingleRefusal: () => this.dismissSingleRefusal(),
       songArrangeCreateLabel: songArrange.busy ? tx('Creating…') : tx('Create new song'),

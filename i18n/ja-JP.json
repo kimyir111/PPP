@@ -1930,6 +1930,7 @@
     "{{title}} · one-note-per-hand arrangement": "{{title}} · 片手単音編曲",
     "This piece has many notes, so the arrangement may be a little harder than the level you chose.": "この曲は音が多いため、選んだレベルより少し難しくなることがあります。",
     "This piece could not be made in one-note-per-hand mode, so nothing was saved. You can save the standard arrangement instead, in which a hand may play two or more notes at once.": "この曲は片手単音モードで作れなかったため、何も保存していません。代わりに標準の編曲を保存できますが、標準の編曲では片手で2音以上を同時に弾く場面があります。",
-    "Save the standard arrangement": "標準の編曲を保存"
+    "Save the standard arrangement": "標準の編曲を保存",
+    "Dismiss": "通知を閉じる"
   }
 }

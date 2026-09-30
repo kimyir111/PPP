@@ -243,6 +243,15 @@
       rung.voiceIds.slice().sort((a, b) => (avg.get(b) - avg.get(a)) || (a < b ? -1 : 1)).forEach(v => {
         hands[avg.get(v) >= HAND_SPLIT_MIDI ? 'RH' : 'LH'].push(v);
       });
+      /* relaxed tiers only: keep the hands in order. With both voices on one side of middle C the split above leaves one hand empty, and realize/index.js rebalanceHands then moves the
+         LOWER voice of the busy hand across: right for two voices in RH (the bass goes to LH), but with both in LH it puts the bass in the RIGHT hand under the melody in the left (a
+         crossing: the right hand below the left at 20-40% of the moments on hanon/007, 008, 009...). The strict tier never gets this far for such a section (its reach check refuses two
+         voices an octave apart), so only the relaxed tiers do the split themselves, in the direction that keeps RH above LH: the lowest voice of an all-RH section goes to LH, the
+         highest voice of an all-LH section goes to RH. (A strict section is unchanged: its output is byte for byte what it was.) */
+      if (tier >= 1) {
+        if (hands.LH.length === 0 && hands.RH.length >= 2) hands.LH.push(hands.RH.pop());
+        else if (hands.RH.length === 0 && hands.LH.length >= 2) hands.RH.push(hands.LH.shift());
+      }
 
       const notesFor = hand => hands[hand].reduce((acc, v) => acc.concat(voiceNotes.get(v)), []);
       const rhNotes = notesFor('RH'), lhNotes = notesFor('LH');

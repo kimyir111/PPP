@@ -141,6 +141,10 @@
      noise, not a consistent direction, so bracketing 0 (rather than only going one way)
      is what the measurement actually supports. 0 is always tried first (see specOrder). */
   const LEVEL_OFFSETS_DEFAULT = Object.freeze([0, -1, 1]);
+  /* G9e refusals: the most two-hand moments (as a fraction) at which a relaxed-plan candidate's right hand may sound below its left (critics/metrics.js handCrossing). Measured, not tuned to
+     a sample's outcome: 1% is about two moments in a 225-moment Hanon exercise, where the single held note across a section boundary is the one the verbatim pattern makes; the strict
+     successes on origin/main average 0.15% (3 of 309 above 5%). */
+  const HAND_CROSSING_MAX = 0.01;
   const TOP_K_FOR_ENGRAVE_DEFAULT = 3; /* an engineering budget choice, not tuned to any sample - see header */
 
   /* ---- deterministic enumeration order (see header) ---- */
@@ -253,6 +257,16 @@
         sourceNotes: sourceNotes, registerFloor: opts.registerFloor
       };
       const ev = CRIT.evaluate(c.graph, ctx);
+      /* G9e refusals: a candidate planned by the RELAXED pass must also keep the hands in order (the right hand's lowest sounding note below the left hand's highest at no more than
+         HAND_CROSSING_MAX of the two-hand moments): a structural filter like the G5 one, never a score, and only for a relaxed plan, so a strict candidate is judged exactly as before. The
+         relaxed pass makes pieces whose generated accompaniment or voice split can land under the melody (hanon: the right hand below the left at 20-40% of the moments); the verbatim-voice
+         pattern of the same enumeration mostly does not (a held note across a section boundary is one moment in about 225). */
+      if (c.plan && c.plan.relaxed && ev.hardOk) {
+        let hc = null;
+        try { hc = CRIT.metrics.handCrossing(c.graph); } catch (e) { hc = null; }
+        const scores = Object.assign({}, ev.critics, { handCrossing: hc });
+        return Object.assign({}, c, { scores: scores, hardOk: !!hc && hc.rate <= HAND_CROSSING_MAX });
+      }
       return Object.assign({}, c, { scores: ev.critics, hardOk: ev.hardOk });
     });
   }
@@ -512,7 +526,7 @@
   }
 
   return Object.freeze({
-    PATTERNS, ALL_PATTERNS, STRIDE_PATTERNS, patternsFor, LEVEL_OFFSETS_DEFAULT, TOP_K_FOR_ENGRAVE_DEFAULT,
+    PATTERNS, ALL_PATTERNS, STRIDE_PATTERNS, patternsFor, LEVEL_OFFSETS_DEFAULT, TOP_K_FOR_ENGRAVE_DEFAULT, HAND_CROSSING_MAX,
     specOrder, patternProfileSpecs, specKey, enumerate, scoreCandidates, badnessOf, select, selectWithEngraveGate, explain, run, runAsync,
     DEFAULT_WEIGHTS
   });
