@@ -66,7 +66,7 @@ G08_ARRANGEMENT_REALIZATION.md` §10) would inform any future flip discussion, n
 
 ## 4. Scope
 
-- **New `PPP.arranger` switch**: `'legacy'` (default) | `'g8'` (or whichever value name reads best,
+- **New `PPP.arranger` switch**: `'legacy'` (default) | `'g8'` (a third value, `'single'`, was added later by G9e-lite: see the note at the end of §11) (or whichever value name reads best,
   consistent with `'inferred'`/`'g6'`'s naming style — your call, document why).
 - **Wire G8a in** at the real arrangement call site(s) found in §3, gated by the switch: when `'g8'`,
   call `realize()` on the graph already in scope (per the review screen's `built.graph`, once TD2 is
@@ -442,3 +442,5 @@ untouched - only the UMD-wrapper packaging and the one `opts.reference`-threadin
 described above, both disclosed, both confirmed behaviour-preserving for every existing Node
 caller by the full existing test suite passing unchanged. No production flip; `PPP.arranger`
 stays `'legacy'` by default, unchanged from this doc's own §1/§9.
+
+**Update, G9e-lite (2026-09-30): `PPP.arranger` now has three modes.** `'legacy'` (default), `'g8'` (this phase, unchanged) and `'single'` (docs/GOALS/G09 §12, "G9e-lite: single-note option in the app": one note per hand through G9's candidates, repair and TD16, opt-in from a control on the review screen and the Song Arranger). Any other value is `'legacy'`. `'single'` closes the gap disclosed above for its own path: it is routed before the review screen's `'balanced'` choice, so the default texture takes it; `'g8'` still does not. `arrange_score.py` and the wire-score round trip are still the primary engine of the default and are not retired.

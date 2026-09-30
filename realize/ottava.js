@@ -40,12 +40,20 @@
    Deterministic (no clock, no randomness, no id order), idempotent (a staff that already has an ottava line is not touched, so
    the second run finds nothing to add), and the output of a graph with nothing to do is the graph itself.
    ========================================================================== */
+/* G9e-lite: also a browser <script> (after scoregraph/rational.js, ops.js and pro.js; global root.PPPRealizeModules.ottava). Node: unchanged. */
+(function (root, factory) {
+  'use strict';
+  if (typeof module === 'object' && module.exports) {
+    const path = require('path');
+    const SGDIR = path.resolve(__dirname, '..', 'scoregraph');
+    module.exports = factory(require(path.join(SGDIR, 'rational.js')), require(path.join(SGDIR, 'ops.js')), require(path.join(SGDIR, 'pro.js')));
+  } else {
+    const SG = root.PPPScoreGraphModules || {};
+    const M = root.PPPRealizeModules = root.PPPRealizeModules || {};
+    M.ottava = factory(SG.rational, SG.ops, SG.pro);
+  }
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (R, O, PRO) {
 'use strict';
-const path = require('path');
-const SGDIR = path.resolve(__dirname, '..', 'scoregraph');
-const R = require(path.join(SGDIR, 'rational.js'));
-const O = require(path.join(SGDIR, 'ops.js'));
-const PRO = require(path.join(SGDIR, 'pro.js'));
 
 /* the named threshold constants (see the header); a caller (or a test) may override any of them through opts.rule */
 const OTTAVA_RULE = Object.freeze({
@@ -245,4 +253,5 @@ function addOttava(g, opts) {
   return { graph: r.graph, changed: changed, fallback: !!r.report.fallback, spans: changed ? spans : [], report: r.report };
 }
 
-module.exports = { addOttava, OTTAVA_RULE, CLEF_LINES };
+return { addOttava, OTTAVA_RULE, CLEF_LINES };
+});

@@ -1916,6 +1916,15 @@
     "PPP needs at least four notes to write a score, and this MIDI file has fewer.": "PPP が楽譜を作るには 4 つ以上の音が必要ですが、この MIDI ファイルの音はそれより少ないです。",
     "Engraving…": "楽譜を描画中…",
     "This score could not be prepared for printing.": "この楽譜は印刷用に準備できませんでした。",
-    "This passage could not be engraved.": "この部分は楽譜として描画できませんでした。"
+    "This passage could not be engraved.": "この部分は楽譜として描画できませんでした。",
+    "One note per hand (experimental)": "片手単音（実験）",
+    "The right hand plays the melody as one line; the left hand plays an accompaniment one note at a time. No hand plays two or more notes together, but depending on the piece the left hand may play more notes, and some of the original harmony can be lost.": "右手はメロディ1本、左手は音を1つずつつなぐ伴奏にします。片手で2音以上が同時に鳴ることはありませんが、曲によっては左手の音が増え、元の和声の一部が失われることがあります。",
+    "Writing one note per hand…": "片手1音ずつ書いています…",
+    "This piece could not be made in one-note-per-hand mode, so the standard arrangement is shown.": "この曲は片手単音モードで作れなかったため、標準の編曲を表示しています。",
+    "This piece could not be made in one-note-per-hand mode. Turn the option off to make the standard arrangement.": "この曲は片手単音モードで作れません。標準の編曲を作るにはこのオプションをオフにしてください。",
+    "Created a {{level}} one-note-per-hand arrangement.": "{{level}}の片手単音編曲を作成しました。",
+    "PPP one-note-per-hand arrangement": "PPP 片手単音編曲",
+    "Created a {{level}} arrangement. Some passages had low melody/bass confidence, so PPP kept them simple rather than guess.": "{{level}}の編曲を作成しました。メロディやベースに自信が持てない箇所は、推測せずに簡素なままにしました。",
+    "{{title}} · one-note-per-hand arrangement": "{{title}} · 片手単音編曲"
   }
 }
