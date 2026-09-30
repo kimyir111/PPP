@@ -33,6 +33,7 @@ const RFC = require(path.join(REPO, 'critics/register-floor.js'));
 const LHJ = require(path.join(REPO, 'critics/left-hand-jump.js'));
 const LRC = require(path.join(REPO, 'critics/low-register-cluster.js'));
 const LHT = require(path.join(REPO, 'critics/left-hand-thickness.js'));
+const VCL = require(path.join(REPO, 'critics/vertical-clash.js'));
 
 const LEGACY_LEVELS = ['beginner', 'intermediate', 'advanced', 'original'];
 const HAND_PROFILES = ['large', 'medium', 'small'];
@@ -264,6 +265,8 @@ function scoreGraphCandidate(graph, id, profile, target, origHarmony, origMelody
   try { out.cluster = LRC.lowRegisterCluster(graph); } catch (e) { out.clusterError = String(e && e.message || e); }
   /* G9 last defect round: left-hand notes per onset, onsets of 3+ notes, seconds below C4, chord tops at E4 or above; every engine, report only */
   try { out.lht = LHT.leftHandThickness(graph); } catch (e) { out.lhtError = String(e && e.message || e); }
+  /* G9 clash guard: harsh vertical pairs per onset, one-hand octave-plus chords and one-hand seconds, every engine, report only */
+  try { out.vcl = VCL.verticalClash(graph, { sourceNotes: sourceNotes }); } catch (e) { out.vclError = String(e && e.message || e); }
   out.level = out.g6Level;
   return out;
 }
@@ -309,6 +312,18 @@ function summarizeEntries(ok, get) {
     lhOnsets3plus: entries.reduce((a, e) => a + (e.lht ? e.lht.onsets3plus : 0), 0),
     lhSecondsBelowC4: entries.reduce((a, e) => a + (e.lht ? e.lht.secondsBelowC4 : 0), 0),
     lhTopsAtOrAboveE4: entries.reduce((a, e) => a + (e.lht ? e.lht.topsAtOrAboveE4 : 0), 0),
+    /* vertical clashes and one-hand spans (critics/vertical-clash.js), pooled over files */
+    vclOnsets: entries.reduce((a, e) => a + (e.vcl ? e.vcl.onsets : 0), 0),
+    vclHarshPairs: entries.reduce((a, e) => a + (e.vcl ? e.vcl.harshPairs : 0), 0),
+    vclHarshPerOnset: (() => { const o = entries.reduce((a, e) => a + (e.vcl ? e.vcl.onsets : 0), 0); return o ? entries.reduce((a, e) => a + (e.vcl ? e.vcl.harshPairs : 0), 0) / o : null; })(),
+    vclHarshArranged: entries.reduce((a, e) => a + (e.vcl && e.vcl.harshArranged ? e.vcl.harshArranged : 0), 0),
+    vclHandOnsets: entries.reduce((a, e) => a + (e.vcl ? e.vcl.handOnsets : 0), 0),
+    vclOctaveChords: entries.reduce((a, e) => a + (e.vcl ? e.vcl.octaveChords : 0), 0),
+    vclOctaveChordsLH: entries.reduce((a, e) => a + (e.vcl ? e.vcl.octaveChordsLH : 0), 0),
+    vclOctaveChordsRH: entries.reduce((a, e) => a + (e.vcl ? e.vcl.octaveChordsRH : 0), 0),
+    vclSeconds: entries.reduce((a, e) => a + (e.vcl ? e.vcl.seconds : 0), 0),
+    vclSecondsLH: entries.reduce((a, e) => a + (e.vcl ? e.vcl.secondsLH : 0), 0),
+    vclSecondsRH: entries.reduce((a, e) => a + (e.vcl ? e.vcl.secondsRH : 0), 0),
     meanMelody: mean(entries.map(e => e.melody)),
     meanHarmonyRootQuality: mean(entries.map(e => e.harmony && e.harmony.rootQuality)),
     meanHarmonyRootOnly: mean(entries.map(e => e.harmony && e.harmony.rootOnly)),
@@ -421,6 +436,12 @@ async function main() {
   if (flag('--no-diatonic-low')) last.diatonicLow = false; /* candidates default: ON */
   if (flag('--diatonic-low')) last.diatonicLow = true; /* plain realizer default: OFF */
   if (flag('--no-left-shape')) last.leftShape = false;
+  /* G9 clash guard (docs/GOALS/G09 section 12): --no-melody-clash / --no-hand-guard switch one off; --no-hymn-thin switches the hymn thinning off for candidates
+     (default ON there) and --hymn-thin switches it on in the plain realizer (G8a row; default OFF) */
+  if (flag('--no-melody-clash')) last.melodyClash = false;
+  if (flag('--no-hand-guard')) last.handGuard = false;
+  if (flag('--no-hymn-thin')) last.hymnThin = false;
+  if (flag('--hymn-thin')) last.hymnThin = true;
   const runOpts = { last: last, allowStride: allowStride, patterns: patterns, stride: stride, registerFloor: registerFloor, weights: weights, pattern: pattern, g9a: g9a, repair: repair, g9aN: g9aN, levelOffsets: levelOffsets, topKForEngrave: topKForEngrave, ablateCritics: ablateCritics };
   /* child mode: one file, row written to --row-out (the parent gives each file its own process and a time limit,
      so a legacy engine that never returns on one file is recorded as a timeout instead of stalling the sweep) */

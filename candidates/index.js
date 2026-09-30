@@ -178,7 +178,7 @@
         planCache.set(planCacheKey, planResult);
       }
       if (!planResult.ok) { tried.push({ spec: spec, ok: false, stage: 'plan', reason: planResult.reason }); continue; }
-      const realized = REALIZE.realize(g, sg, planResult.plan, Object.assign({ pattern: spec.pattern, reference: opts.reference, registerFloor: opts.registerFloor, stride: opts.stride, noStride: !opts.allowStride, diatonicLow: true }, opts.last));
+      const realized = REALIZE.realize(g, sg, planResult.plan, Object.assign({ pattern: spec.pattern, reference: opts.reference, registerFloor: opts.registerFloor, stride: opts.stride, noStride: !opts.allowStride, diatonicLow: true, hymnThin: true }, opts.last));
       if (!realized.ok) { tried.push({ spec: spec, ok: false, stage: 'realize', reason: realized.reason }); continue; }
       const fp = SER.fingerprint(realized.graph);
       if (seenFingerprints.has(fp)) { tried.push({ spec: spec, ok: false, stage: 'dedup', reason: 'DUPLICATE_OF_EARLIER_CANDIDATE', fingerprint: fp }); continue; }
@@ -252,14 +252,18 @@
      rule is no further tuning of selection; the fix for the reviewer's "awkward hand position" is the realizer's stride geometry
      (realize/patterns.js), and the critic measures it. `--weights lowRegisterCluster=1` counts the low-register cluster rate the same way. `--weights leftHandJump=1` counts it (a jump rate of JUMP_RATE_CAP or more
      is the worst score). */
-  const DEFAULT_WEIGHTS = Object.freeze({ level: 1, melody: 1, harmony: 1, engrave: 1, voiceLeading: 0, registerDensity: 1, registerFloor: 0, leftHandJump: 0, lowRegisterCluster: 0 });
+  const DEFAULT_WEIGHTS = Object.freeze({ level: 1, melody: 1, harmony: 1, engrave: 1, voiceLeading: 0, registerDensity: 1, registerFloor: 0, leftHandJump: 0, lowRegisterCluster: 0, verticalClash: 0 });
   const LEVEL_CAP = 3;      /* a 3-course-position miss is already "as bad as it gets" for this term */
   const ENGRAVE_CAP = 5;    /* 5 combined L1/L2 violations likewise */
   const SMELL_CAP = 10;     /* 10 combined voice-leading smells likewise */
   const JUMP_RATE_CAP = 0.25; /* a quarter of the left-hand steps an octave or more apart is already "as bad as it gets" (weight 0 by default: report only) */
   const CLUSTER_RATE_CAP = 0.5; /* half the chord attacks a low second or third is "as bad as it gets" (weight 0 by default: report only) */
+  const CLASH_RATE_CAP = 0.25; /* a quarter of the onsets with a harsh minor-second / major-seventh pair is "as bad as it gets" (weight 0 by default: report only) */
   const FLOOR_CAP = 10;     /* 10 arranged notes below the register floor likewise (weight 0 by default: report only) */
 
+  /* `verticalClash` (G9 clash guard, docs/GOALS/G09 section 12 "G9 clash guard, seconds and one-hand spans (post user review 3)") is REPORT ONLY: weight 0, no
+     tuning of selection (standing rule); the fix is in the realizer (melody clash guard, no seconds and a span cap for a generated stack, hymn thinning), the critic
+     measures it. `--weights verticalClash=1` counts the harsh-pair rate. */
   /* A score that is absent (`undefined`) or whose critic recorded an error (`<name>Error`,
      or an `engrave` result carrying `.error`) counts as the WORST (1) - never as perfect, so a
      failed critic can never make a candidate look better than a clean one. `null` is
@@ -288,7 +292,9 @@
     const leftHandJumpBad = (failed('leftHandJump') || !lj) ? 1 : Math.min(1, lj.rate / JUMP_RATE_CAP);
     const lc = scores.lowRegisterCluster;
     const lowRegisterClusterBad = (failed('lowRegisterCluster') || !lc) ? 1 : Math.min(1, lc.clusterRate / CLUSTER_RATE_CAP);
-    const parts = { level: levelBad, melody: melodyBad, harmony: harmonyBad, engrave: engraveBad, voiceLeading: voiceLeadingBad, registerDensity: registerDensityBad, registerFloor: registerFloorBad, leftHandJump: leftHandJumpBad, lowRegisterCluster: lowRegisterClusterBad };
+    const vc = scores.verticalClash;
+    const verticalClashBad = (failed('verticalClash') || !vc) ? 1 : Math.min(1, vc.harshPerOnset / CLASH_RATE_CAP);
+    const parts = { level: levelBad, melody: melodyBad, harmony: harmonyBad, engrave: engraveBad, voiceLeading: voiceLeadingBad, registerDensity: registerDensityBad, registerFloor: registerFloorBad, leftHandJump: leftHandJumpBad, lowRegisterCluster: lowRegisterClusterBad, verticalClash: verticalClashBad };
     let total = 0;
     Object.keys(parts).forEach(k => { total += (w[k] == null ? 1 : w[k]) * parts[k]; });
     return { total: total, parts: parts, weights: w };

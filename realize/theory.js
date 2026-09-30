@@ -192,7 +192,7 @@ function chordLegal(midis, opts) {
   opts = opts || {};
   const s = midis.slice().sort((a, b) => a - b);
   if (opts.maxSpan != null && s[s.length - 1] - s[0] > opts.maxSpan) return false;
-  if (opts.cluster !== false && clusterPairs(s) > 0) return false;
+  if (opts.cluster !== false && clusterPairs(s, opts.secondBelow) > 0) return false;
   if (opts.top != null && s[s.length - 1] > opts.top) return false;
   if (opts.floor != null && s[0] < opts.floor) return false;
   return true;
@@ -200,13 +200,14 @@ function chordLegal(midis, opts) {
 
 /* How many of a chord's simultaneous pairs are a cluster for a left hand: a second (<= 2 semitones) whose lower note is under
    SECOND_BELOW, or a third (<= 4) whose lower note is under CLUSTER_BELOW. */
-function clusterPairs(midis) {
+function clusterPairs(midis, secondBelow) {
+  const sb = secondBelow == null ? SECOND_BELOW : secondBelow; /* the clash guard passes 128 (a second anywhere) at stages 1-3 */
   const s = midis.slice().sort((a, b) => a - b);
   let n = 0;
   for (let i = 0; i < s.length; i++) for (let j = i + 1; j < s.length; j++) {
     const d = s[j] - s[i];
     if (d <= 0) continue;
-    if ((d <= 2 && s[i] < SECOND_BELOW) || (d <= 4 && s[i] < CLUSTER_BELOW)) n++;
+    if ((d <= 2 && s[i] < sb) || (d <= 4 && s[i] < CLUSTER_BELOW)) n++;
   }
   return n;
 }
@@ -225,7 +226,7 @@ function settleChord(midis, opts) {
   const spanOf = a => Math.max.apply(null, a) - Math.min.apply(null, a);
   const cost = a => {
     const s = a.slice().sort((x, y) => x - y);
-    return [spanOf(s) > maxSpan ? 1 : 0, opts.cluster === false ? 0 : clusterPairs(s), Math.max(0, s[s.length - 1] - top) + Math.max(0, floor - s[0])];
+    return [spanOf(s) > maxSpan ? 1 : 0, opts.cluster === false ? 0 : clusterPairs(s, opts.secondBelow), Math.max(0, s[s.length - 1] - top) + Math.max(0, floor - s[0])];
   };
   const base = midis.slice().sort((a, b) => a - b);
   const c0 = cost(base);
@@ -307,6 +308,116 @@ function diatonicSubstitute(root, quality, played, key, srcPcs) {
   return best;
 }
 
+/* ---- clash guard, seconds and one-hand spans (docs/GOALS/G09 section 12 "G9 clash guard, seconds and one-hand spans (post user review 3)") ----
+   The user's third look at G9 output: "notes stuck together (a second)", "an octave or more at once in one hand is very hard", "the harmony got weirder".
+   Measured causes (section 12): a generated left-hand tone a semitone (pitch-class interval 1 or 11) off the melody note sounding with it (the harmony
+   window is a beat or a dotted half and the melody moves through it: all-creatures 12 of 13 harsh pairs); a generated maj7 stack that contains its own
+   major seventh (root + 7th, C E B); generated stacks voiced up to 13 semitones (F2 B2 G3) although the stack only had to stay inside the hand's span
+   (14 at profile large); a few seconds inside copied source voices. Each has a named limit and a stage gate; stage 4 keeps the old rules.
+   HARSH_PC_INTERVALS: a minor second, a major seventh and a minor ninth are all pitch-class interval 1 or 11 (the octave does not soften them).
+   MELODY_CLASH_MAX_STAGE: a generated tone that is HARSH against a melody note sounding with it is dropped (or, for a single note, replaced by another
+   tone of the same chord) at every stage up to this one, unless the source itself sounds both pitch classes together there.
+   NO_SECONDS_MAX_STAGE: a generated one-hand stack has no second (1 or 2 semitones between adjacent tones) anywhere in the register (the old rule was
+   "no second below middle C"), and STACK_CLASH_MAX_STAGE: no harsh pair between its own tones (a maj7 stack gives its seventh up for the fifth).
+   SPAN_CAP_MAX_STAGE and ONE_HAND_SPAN_CAP: a generated one-hand stack spans at most 10 semitones (under an octave), whatever the hand profile allows.
+   HYMN_THIN_MAX_STAGE: a verbatim `hymn` section is thinned where one hand's simultaneous notes span an octave or more or hold a second. */
+const HARSH_PC_INTERVALS = Object.freeze([1, 11]);
+const MELODY_CLASH_MAX_STAGE = 4;
+const NO_SECONDS_MAX_STAGE = 3;
+const STACK_CLASH_MAX_STAGE = 3;
+const SPAN_CAP_MAX_STAGE = 3;
+const ONE_HAND_SPAN_CAP = 10;
+const HYMN_THIN_MAX_STAGE = 3;
+const ANY_SECOND = 128;
+const SECOND_MAX_SEMITONES = 2; /* a second: 1 or 2 semitones between adjacent tones of one hand */
+const OCTAVE_SEMITONES = 12; /* clusterPairs' `secondBelow` for "a second anywhere" */
+
+function isHarshPair(a, b) {
+  const pc = ((Math.abs(a - b) % 12) + 12) % 12;
+  return pc === HARSH_PC_INTERVALS[0] || pc === HARSH_PC_INTERVALS[1];
+}
+
+/* the clash guard's limits that apply to a generated stack at `stage`: {secondBelow, spanCap, stackClash} (null/false = the old rule) */
+function handGuardFor(stage) {
+  return {
+    secondBelow: stage <= NO_SECONDS_MAX_STAGE ? ANY_SECOND : null,
+    spanCap: stage <= SPAN_CAP_MAX_STAGE ? ONE_HAND_SPAN_CAP : null,
+    stackClash: stage <= STACK_CLASH_MAX_STAGE
+  };
+}
+
+/* A stack (one chord of `root`, `midis`) with no harsh pair between its own tones: while two tones are a minor second or a major seventh apart
+   (pitch class), the higher-ranked one (seventh before third before fifth before root; the higher note of a tie) is replaced by the chord's
+   fifth (root + 7) at the octave nearest to it, or dropped when the fifth is already there. A chord without such a pair comes back as the same
+   array; a maj7 voiced root + third + seventh (C E B) becomes C E G. Deterministic. */
+function unclashStack(midis, root) {
+  let cur = midis;
+  for (let guard = 0; guard < 4; guard++) {
+    let bad = null;
+    const s = cur.slice().sort((a, b) => a - b);
+    for (let i = 0; i < s.length && !bad; i++) for (let j = i + 1; j < s.length && !bad; j++) if (isHarshPair(s[i], s[j])) bad = [s[i], s[j]];
+    if (!bad) return cur;
+    const rank = m => roleRank(((m % 12) + 12) % 12, root);
+    const drop = rank(bad[0]) > rank(bad[1]) ? bad[0] : (rank(bad[1]) > rank(bad[0]) ? bad[1] : bad[1]);
+    const rest = cur.filter(m => m !== drop);
+    const fifthPc = (((root + 7) % 12) + 12) % 12;
+    if (rest.some(m => ((m % 12) + 12) % 12 === fifthPc)) cur = rest.sort((a, b) => a - b);
+    else {
+      const f = nearestWithPc(fifthPc, drop);
+      const cand = rest.concat([f]);
+      /* the fifth must not clash itself; otherwise drop the tone */
+      cur = cand.some((m, i) => cand.some((n, k) => k > i && isHarshPair(m, n))) ? rest.sort((a, b) => a - b) : cand.sort((a, b) => a - b);
+    }
+    if (cur.length === 0) return midis;
+  }
+  return cur;
+}
+
+/* A stack of a seventh chord (root, third, seventh: targetPcs for a 4-tone quality at count 3) with its seventh replaced by the chord's fifth (root + 7) at the
+   octave nearest the seventh: root, third, fifth. null when no tone has the seventh's rank or the fifth is already in the chord. */
+function fifthForSeventh(midis, root) {
+  const seventh = midis.filter(m => roleRank(((m % 12) + 12) % 12, root) === 3);
+  if (seventh.length !== 1) return null;
+  const fifthPc = (((root + 7) % 12) + 12) % 12;
+  if (midis.some(m => ((m % 12) + 12) % 12 === fifthPc)) return null;
+  return midis.filter(m => m !== seventh[0]).concat([nearestWithPc(fifthPc, seventh[0])]).sort((a, b) => a - b);
+}
+
+/* One generated event's tones against the melody notes sounding with it. `clashes[i]` says tone i is harsh against one of them (and the source does not
+   sound that pair). Returns {midis, dropped, replaced, unresolved}: the tones that do not clash, when any remain; when every tone clashes, ONE tone: the
+   chord's own pitch class (`chordPcs`, root first) that clashes with no melody note (`clashesWith(midi)`), at the octave nearest to the first tone and not
+   under `floor`; when every chord pitch class clashes the event is left as it is (unresolved). An event with no clash comes back as the same array. */
+function guardTones(midis, clashesWith, chordPcs, floor) {
+  const bad = midis.map(m => clashesWith(m));
+  if (!bad.some(Boolean)) return { midis: midis, dropped: 0, replaced: 0, unresolved: 0 };
+  const keep = midis.filter((m, i) => !bad[i]);
+  if (keep.length) return { midis: keep, dropped: midis.length - keep.length, replaced: 0, unresolved: 0 };
+  const near = midis[0];
+  let best = null, bestD = Infinity;
+  (chordPcs || []).forEach(pc => {
+    const base = near - ((((near - pc) % 12) + 12) % 12); /* the note with this pitch class at or under `near` */
+    [base - 12, base, base + 12, base + 24].forEach(c => {
+      if (floor != null && c < floor) return;
+      if (c < 0 || c > 127 || clashesWith(c)) return;
+      const d = Math.abs(c - near);
+      if (d < bestD || (d === bestD && c < best)) { best = c; bestD = d; }
+    });
+  });
+  if (best == null) return { midis: midis, dropped: 0, replaced: 0, unresolved: 1 };
+  return { midis: [best], dropped: midis.length - 1, replaced: 1, unresolved: 0 };
+}
+
+/* The melody clash guard for one generated event sounding over [t0, t1) (plain numbers, whole notes): `melody` = the melody notes {w0, w1, midi}, `sourceSoundsPc(pc, a, b)`
+   = does the SOURCE piece sound pitch class `pc` anywhere in [a, b). A tone is clashing when it is HARSH against a melody note sounding with it and the source does
+   not itself sound that tone's pitch class during the overlap of the two (the source's own clash is left alone). Returns guardTones' result
+   ({midis, dropped, replaced, unresolved}); the same `midis` array when nothing clashes. `chordPcs` = the window's chord pitch classes, for a replacement. */
+function guardEvent(midis, t0, t1, melody, sourceSoundsPc, chordPcs, floor) {
+  const over = melody.filter(n => n.w0 < t1 - 1e-9 && n.w1 > t0 + 1e-9);
+  if (!over.length) return { midis: midis, dropped: 0, replaced: 0, unresolved: 0 };
+  const clashesWith = m => over.some(n => isHarshPair(m, n.midi) && !sourceSoundsPc(((m % 12) + 12) % 12, Math.max(t0, n.w0), Math.min(t1, n.w1)));
+  return guardTones(midis, clashesWith, chordPcs, floor);
+}
+
 /* All permutations of [0..n-1], n small (<=4 in every real caller - a 7th chord at most). */
 function permutations(n) {
   if (n <= 1) return [[0]];
@@ -357,6 +468,8 @@ function clampSpan(midis, maxSpan, maxIters) {
     CHORD_INTERVALS, intervalsFor, targetPcs, nearestWithPc, freshVoicing, leadVoicing, clampSpan, permutations,
     REGISTER_FLOOR, CLUSTER_BELOW, floorMidis, foldAbove,
     STACK_MAX_BY_STAGE, LH_CHORD_TOP, SECOND_BELOW, maxStackForStage, roleRank, thinChord, clusterPairs, chordLegal, settleChord,
-    DIATONIC_MAX_STAGE, keyPcs, playedPcs, diatonicSubstitute
+    DIATONIC_MAX_STAGE, keyPcs, playedPcs, diatonicSubstitute,
+    HARSH_PC_INTERVALS, MELODY_CLASH_MAX_STAGE, NO_SECONDS_MAX_STAGE, STACK_CLASH_MAX_STAGE, SPAN_CAP_MAX_STAGE, ONE_HAND_SPAN_CAP, HYMN_THIN_MAX_STAGE, ANY_SECOND, SECOND_MAX_SEMITONES, OCTAVE_SEMITONES,
+    isHarshPair, handGuardFor, unclashStack, fifthForSeventh, guardTones, guardEvent
   };
 });

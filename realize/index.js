@@ -220,6 +220,76 @@ function sectionVoiceNotes(origPart, voiceId, measureIds, oldIdx, measureOffset)
   return out;
 }
 
+/* ---- hymn thinning (docs/GOALS/G09 section 12 "G9 clash guard, seconds and one-hand spans (post user review 3)") ----
+   A verbatim `hymn` section copies every kept voice into its hand, so one hand can hold a tenor and a bass a tenth apart (an octave or more at
+   once is very hard, the user's third review) or two voices a second apart. At stages <= theory.HYMN_THIN_MAX_STAGE the copy is thinned where one
+   hand's SIMULTANEOUS notes (held notes included) span an octave or more or hold a second: a note of an UNPROTECTED voice is dropped (written as a
+   rest of the same length, a whole tied chain at once). Protected: the section's melody voice and the lowest voice of the left hand (the bass);
+   a melody or bass note is never dropped or moved. Which note goes: first one whose pitch class another note of the hand also sounds (a doubling:
+   harmony agreement cannot lose a tone), else the one farthest from the protected note it is stacked on. A violation that only protected notes make is
+   left (counted). Deterministic. Returns {drops: Set of source events, dropped: events, unresolved: violations left}. */
+function hymnThinDrops(origPart, hands, measureIds, melodyVoiceId, oldIdx, measureOffset) {
+  const mset = new Set(measureIds);
+  const out = { drops: new Set(), dropped: 0, unresolved: 0 };
+  const evOfHead = new Map();
+  const entries = [];
+  origPart.events.forEach(e => {
+    if (e.kind !== 'note' || e.grace || !mset.has(e.m)) return;
+    const hand = hands.RH.indexOf(e.voice) >= 0 ? 'RH' : (hands.LH.indexOf(e.voice) >= 0 ? 'LH' : null);
+    if (!hand) return;
+    const w0 = R.toNumber(R.add(measureOffset[oldIdx.get(e.m)], R.parse(e.at)));
+    const ent = { e: e, hand: hand, voice: e.voice, w0: w0, w1: w0 + R.toNumber(R.parse(e.dur)), midis: (e.heads || []).map(h => P.midi(h.pitch)), chain: null };
+    ent.chain = ent; /* union-find parent */
+    entries.push(ent);
+    (e.heads || []).forEach(h => evOfHead.set(h.id, ent));
+  });
+  const find = x => { while (x.chain !== x) { x.chain = x.chain.chain; x = x.chain; } return x; };
+  origPart.spanners.filter(sp => sp.type === 'tie').forEach(sp => {
+    const a = evOfHead.get(sp.from), c = evOfHead.get(sp.to);
+    if (a && c) { const ra = find(a), rc = find(c); if (ra !== rc) rc.chain = ra; }
+  });
+  const avg = v => { const l = []; entries.forEach(x => { if (x.voice === v) x.midis.forEach(m => l.push(m)); }); return l.length ? l.reduce((a, c) => a + c, 0) / l.length : null; };
+  const protectedVoices = new Set();
+  if (melodyVoiceId) protectedVoices.add(melodyVoiceId);
+  const lh = hands.LH.map(v => ({ v: v, a: avg(v) })).filter(x => x.a != null).sort((a, c) => a.a - c.a);
+  if (lh.length) protectedVoices.add(lh[0].v); /* the bass */
+  const dropped = new Set(); /* chain roots */
+  const isDropped = x => dropped.has(find(x));
+  const times = Array.from(new Set(entries.map(x => x.w0))).sort((a, c) => a - c);
+  const violates = notes => {
+    if (notes.length < 2) return false;
+    const sorted = notes.map(n => n.m).sort((a, c) => a - c);
+    if (sorted[sorted.length - 1] - sorted[0] >= TH.OCTAVE_SEMITONES) return true;
+    for (let i = 1; i < sorted.length; i++) { const d = sorted[i] - sorted[i - 1]; if (d > 0 && d <= TH.SECOND_MAX_SEMITONES) return true; }
+    return false;
+  };
+  times.forEach(t => {
+    ['RH', 'LH'].forEach(hand => {
+      for (let guard = 0; guard < 8; guard++) {
+        const sounding = entries.filter(x => x.hand === hand && x.w0 <= t + 1e-9 && x.w1 > t + 1e-9 && !isDropped(x));
+        if (!sounding.some(x => Math.abs(x.w0 - t) < 1e-9)) return;
+        const notes = [];
+        sounding.forEach(x => x.midis.forEach(m => notes.push({ m: m, x: x })));
+        if (!violates(notes)) return;
+        const prot = notes.filter(n => protectedVoices.has(n.x.voice));
+        const cands = notes.filter(n => !protectedVoices.has(n.x.voice));
+        if (!cands.length) { out.unresolved++; return; }
+        const pcCount = new Map(); notes.forEach(n => { const pc = ((n.m % 12) + 12) % 12; pcCount.set(pc, (pcCount.get(pc) || 0) + 1); });
+        const distFromProt = n => prot.length ? Math.min.apply(null, prot.map(p => Math.abs(p.m - n.m))) : 0;
+        cands.sort((a, c) => {
+          const ra = pcCount.get(((a.m % 12) + 12) % 12) > 1 ? 0 : 1, rc = pcCount.get(((c.m % 12) + 12) % 12) > 1 ? 0 : 1;
+          return (ra - rc) || (distFromProt(c) - distFromProt(a)) || (a.x.voice < c.x.voice ? -1 : a.x.voice > c.x.voice ? 1 : 0);
+        });
+        /* the first candidate whose removal clears the violation (a whole tied chain goes with it); else the first one, and look again */
+        const fixing = cands.find(cn => !violates(notes.filter(n => find(n.x) !== find(cn.x))));
+        dropped.add(find((fixing || cands[0]).x));
+      }
+    });
+  });
+  entries.forEach(x => { if (isDropped(x)) { out.drops.add(x.e); out.dropped++; } });
+  return out;
+}
+
 /* Would moving `before` to `after` (a left-hand event at [at, at+dur)) newly put its top note at or above the
    lowest melody note sounding during it? Only a NEW crossing counts: one already there is not the floor's doing. */
 function raisedCrossesMelody(melodyNotes, at, dur, before, after) {
@@ -325,13 +395,15 @@ function copyEventShape(e, newMeasureId, newVoice, newStaff) {
    id -> new head id) is shared and accumulated across the whole piece by the caller so a
    tie spanning a section boundary still resolves (a tie is a graph-wide spanner, not a
    per-section one). */
-function copyVoiceVerbatim(b, part, oldPart, oldVoiceId, measureIds, newMeasureId, newVoiceId, newStaffId, headMap) {
+function copyVoiceVerbatim(b, part, oldPart, oldVoiceId, measureIds, newMeasureId, newVoiceId, newStaffId, headMap, skip) {
   const mset = new Set(measureIds);
   const evs = oldPart.events.filter(e => e.voice === oldVoiceId && mset.has(e.m));
   evs.sort((a, c) => (measureIds.indexOf(a.m) - measureIds.indexOf(c.m)) || R.cmp(R.parse(a.at), R.parse(c.at)));
   evs.forEach(e => {
     const x = copyEventShape(e, newMeasureId.get(e.m), newVoiceId, newStaffId);
     x.prov = { src: SOURCE_ID.id, op: 'generated' };
+    /* hymn thinning (hymnThinDrops): a note the thinning drops is written as a rest of the same length, so the voice still tiles its measure */
+    if (skip && skip.has(e)) { x.kind = 'rest'; b.event(part, x); return; }
     if (e.kind === 'note') x.heads = e.heads.map(h => ({ pitch: h.pitch, prov: { src: SOURCE_ID.id, op: 'generated' } }));
     const ne = b.event(part, x);
     if (e.kind === 'note') e.heads.forEach((h, i) => headMap.set(h.id, ne.heads[i].id));
@@ -389,6 +461,18 @@ function realize(g, sg, plan, opts) {
        opts.leftShape     the accompaniment chord is thinned by stage (block), kept at or under theory.LH_CHORD_TOP and free of close
                           seconds below middle C (left hand; the stack cap applies to either hand) */
   const compoundBeat = opts.compoundBeat !== false, diatonicLow = opts.diatonicLow === true, leftShape = opts.leftShape !== false;
+  /* The clash guard (docs/GOALS/G09 section 12 "G9 clash guard, seconds and one-hand spans (post user review 3)"), three switches; `false` restores the
+     previous behaviour exactly. melodyClash and handGuard are ON by default; hymnThin is OFF for a direct realize() call (an explicit `hymn` pattern is a
+     verbatim copy, and the app's g8 path keeps it) and ON only from candidates/ (as diatonicLow is), where selection absorbs what it costs:
+       opts.melodyClash  a generated tone a semitone off (pitch-class interval 1 or 11) a melody note sounding with it is dropped, or for a single note
+                         replaced by another tone of its chord, unless the source itself sounds that pair (every stage <= theory.MELODY_CLASH_MAX_STAGE)
+       opts.handGuard    a generated one-hand stack has no second anywhere and spans at most theory.ONE_HAND_SPAN_CAP (10) semitones, and no harsh pair between its own
+                         tones (stages <= 3; stage 4 keeps the old rules); needs leftShape (the stack is shaped there)
+       opts.hymnThin     (default OFF; `true` turns it on) a verbatim `hymn` section (stages <= theory.HYMN_THIN_MAX_STAGE) drops unprotected notes where one hand's simultaneous notes span an
+                         octave or more or hold a second (hymnThinDrops); melody and bass are never touched */
+  const melodyClash = opts.melodyClash !== false, handGuard = opts.handGuard !== false, hymnThin = opts.hymnThin === true;
+  const clashStats = { melodyActive: melodyClash && plan.stage <= TH.MELODY_CLASH_MAX_STAGE, events: 0, eventsWithClash: 0, tonesDropped: 0, eventsReplaced: 0, unresolved: 0,
+    hymnThinActive: hymnThin && plan.stage <= TH.HYMN_THIN_MAX_STAGE, hymnNotesDropped: 0, hymnUnresolved: 0 };
   const diatonicStats = { maxStage: TH.DIATONIC_MAX_STAGE, active: diatonicLow && plan.stage <= TH.DIATONIC_MAX_STAGE, windows: 0, substituted: 0 };
 
   const b = B.builder({
@@ -440,7 +524,7 @@ function realize(g, sg, plan, opts) {
   /* every source note as {w0, w1, pc} (plain numbers, whole notes from the piece's start), built on first use: the pitch classes the
      source itself sounds in a harmony window (see diatonicWindows) */
   let sourceTimes = null;
-  const sourcePcsIn = (w0, w1) => {
+  const sourceTimesOf = () => {
     if (!sourceTimes) {
       sourceTimes = [];
       g.parts.forEach(pt => pt.events.forEach(e => {
@@ -450,14 +534,19 @@ function realize(g, sg, plan, opts) {
         (e.heads || []).forEach(h => { if (h.pitch) sourceTimes.push({ w0: a, w1: b, pc: ((P.midi(h.pitch) % 12) + 12) % 12 }); });
       }));
     }
+    return sourceTimes;
+  };
+  const sourcePcsIn = (w0, w1) => {
     const a = R.toNumber(w0), b = R.toNumber(w1), out = new Set();
-    sourceTimes.forEach(n => { if (n.w0 < b - 1e-9 && n.w1 > a + 1e-9) out.add(n.pc); });
+    sourceTimesOf().forEach(n => { if (n.w0 < b - 1e-9 && n.w1 > a + 1e-9) out.add(n.pc); });
     return Array.from(out);
   };
+  /* does the source sound pitch class `pc` at any time in [a, b) (plain numbers)? */
+  const sourceSoundsPc = (pc, a, b) => sourceTimesOf().some(n => n.pc === pc && n.w0 < b - 1e-9 && n.w1 > a + 1e-9);
   const headMap = new Map();
   let prevMidis = null; /* threaded across the WHOLE piece, not reset per section - real
     "voice leading between successive harmony windows" across a section boundary too. */
-  const report = { sections: [], patternCounts: {}, floor: floorStats, diatonic: diatonicStats };
+  const report = { sections: [], patternCounts: {}, floor: floorStats, diatonic: diatonicStats, clash: clashStats };
   const shapeState = { prev: null }; /* the accompaniment chord written last, across measures and sections (theory.settleChord keeps the next one close to it) */
 
   for (const sec of plan.sections) {
@@ -488,11 +577,14 @@ function realize(g, sg, plan, opts) {
     const accompHand = melodyHand === 'RH' ? 'LH' : 'RH';
 
     if (policy.pattern === 'hymn') {
+      /* hymn thinning: drop unprotected notes where one hand's simultaneous notes span an octave or more or hold a second (stages <= HYMN_THIN_MAX_STAGE) */
+      const thin = clashStats.hymnThinActive ? hymnThinDrops(origPart, hands, measureIds, sec.melody && sec.melody.voice, oldIdx, measureOffset) : null;
+      if (thin) { clashStats.hymnNotesDropped += thin.dropped; clashStats.hymnUnresolved += thin.unresolved; }
       ['RH', 'LH'].forEach(hand => {
         const staffId = hand === 'RH' ? rhSt.id : lhSt.id;
         hands[hand].forEach((vid, slot) => {
           const vObj = voiceObj(hand, slot);
-          copyVoiceVerbatim(b, part, origPart, vid, measureIds, newMeasureId, vObj.id, staffId, headMap);
+          copyVoiceVerbatim(b, part, origPart, vid, measureIds, newMeasureId, vObj.id, staffId, headMap, thin && thin.drops.size ? thin.drops : null);
         });
       });
       report.sections.push({ label: sec.section.label, pattern: policy.pattern, degraded: sec.degraded, melodyHand: melodyHand });
@@ -511,10 +603,12 @@ function realize(g, sg, plan, opts) {
 
     /* the written shape of the accompaniment chord (leftShape): the stack cap for this stage on either hand, and on the left hand the top
        bound, the floor (so a re-placed chord is not lower than what is written) and no close seconds (theory.settleChord) */
-    const shape = leftShape ? { maxStack: TH.maxStackForStage(plan.stage), top: accompHand === 'LH' ? TH.LH_CHORD_TOP : null, floor: accompHand === 'LH' ? floor : null, state: shapeState } : undefined;
+    const hg = handGuard ? TH.handGuardFor(plan.stage) : { secondBelow: null, spanCap: null, stackClash: false };
+    const shape = leftShape ? { maxStack: TH.maxStackForStage(plan.stage), top: accompHand === 'LH' ? TH.LH_CHORD_TOP : null, floor: accompHand === 'LH' ? floor : null, state: shapeState,
+      secondBelow: hg.secondBelow, spanCap: hg.spanCap, stackClash: hg.stackClash } : undefined;
 
-    /* the melody hand's own notes (verbatim source), for the floor's crossing check below */
-    const melodyNotes = floor != null && accompHand === 'LH' && melodyVoiceId
+    /* the melody hand's own notes (verbatim source), for the floor's crossing check and the melody clash guard below */
+    const melodyNotes = ((floor != null && accompHand === 'LH') || clashStats.melodyActive) && melodyVoiceId
       ? sectionVoiceNotes(origPart, melodyVoiceId, measureIds, oldIdx, measureOffset) : [];
 
     measureIdxs.forEach(mi => {
@@ -561,6 +655,19 @@ function realize(g, sg, plan, opts) {
            generated (and counted) if the raise would put a left-hand note at or above the melody note the
            right hand is sounding then: a hand crossing the source did not have. */
         let midis = ev.midis;
+        /* melody clash guard: a generated tone a semitone off (pitch class 1 or 11) a melody note sounding with it goes, unless the source sounds that pair */
+        if (clashStats.melodyActive && melodyNotes.length) {
+          const t0 = R.toNumber(ev.at), t1 = t0 + R.toNumber(ev.dur);
+          clashStats.events++;
+          const win = windows.find(w => R.cmp(w.w0, ev.at) <= 0 && R.cmp(ev.at, w.w1) < 0);
+          const wroot = win && win.root != null ? win.root : 0;
+          const chordPcs = TH.intervalsFor(win && win.quality || 'maj').map(iv => (((wroot + iv) % 12) + 12) % 12);
+          const gd = TH.guardEvent(midis, t0, t1, melodyNotes, sourceSoundsPc, chordPcs, floor);
+          if (gd.midis !== midis || gd.unresolved) {
+            clashStats.eventsWithClash++; clashStats.tonesDropped += gd.dropped; clashStats.eventsReplaced += gd.replaced; clashStats.unresolved += gd.unresolved;
+            midis = gd.midis;
+          }
+        }
         if (floor != null) {
           const f = TH.floorMidis(midis, floor, maxSpan);
           if (f.midis !== midis) {

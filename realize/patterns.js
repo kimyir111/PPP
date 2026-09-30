@@ -55,18 +55,33 @@ function fitSpan(midis, maxSpan) { return span(midis) <= maxSpan ? midis : TH.cl
    what the chord of one window looks like once it is written. `shapeChord` thins a STACK to `maxStack` notes (root, fifth, third, in that
    order; block only, since broken and ballad sound one note at a time; maxStack is 3 from stage 2, so a triad is kept whole) and re-places the notes by whole octaves so the left-hand chord has
    no second below middle C (no third below C3; a STACK only: the notes of broken and ballad do not sound together, and keeping them out of close position would only spread the arpeggio into leaps), has its top at or under `top` and stays in the hand's span (theory.settleChord). The
-   voice-leading state the next window is led from is the UNSHAPED chord, so thinning never changes where the following chord starts. */
+   voice-leading state the next window is led from is the UNSHAPED chord, so thinning never changes where the following chord starts.
+   Clash guard (docs/GOALS/G09 section 12 "G9 clash guard, seconds and one-hand spans (post user review 3)"): `shape.secondBelow` (a second anywhere), `shape.spanCap`
+   (10 semitones) and `shape.stackClash` (no harsh pair between a stack's own tones) come from theory.handGuardFor(stage) and are absent (the old rules) at stage 4 and with
+   `opts.handGuard: false`; a seventh chord that cannot be placed under them falls back to root, third, fifth before the dyad. */
 function shapeChord(chord, w, opts, stack) {
   const sh = opts.shape;
   if (!sh) return chord;
-  const settle = c => (sh.top != null || sh.floor != null)
-    ? TH.settleChord(c, { top: sh.top, floor: sh.floor, maxSpan: opts.maxSpan, prev: sh.state && sh.state.prev, cluster: !!stack }) : c;
-  let out = stack && sh.maxStack != null ? TH.thinChord(chord, rootOf(w), sh.maxStack) : chord;
+  /* the clash guard's limits (theory.handGuardFor; absent = the old rules): a second anywhere and a span under an octave for a STACK,
+     and no harsh pair between a stack's own tones */
+  const spanCap = stack && sh.spanCap != null ? Math.min(opts.maxSpan, sh.spanCap) : opts.maxSpan;
+  const secondBelow = stack ? sh.secondBelow : undefined;
+  const guarded = stack && (sh.secondBelow != null || sh.spanCap != null);
+  const active = sh.top != null || sh.floor != null || guarded;
+  const settle = c => active
+    ? TH.settleChord(c, { top: sh.top, floor: sh.floor, maxSpan: spanCap, secondBelow: secondBelow, prev: sh.state && sh.state.prev, cluster: !!stack }) : c;
+  let out = stack && sh.stackClash ? TH.unclashStack(chord, rootOf(w)) : chord;
+  out = stack && sh.maxStack != null ? TH.thinChord(out, rootOf(w), sh.maxStack) : out;
   out = settle(out);
   /* a stack that cannot be placed legally (top, seconds, span) falls back to the dyad, root and fifth, for this window only */
-  if (stack && out.length > 2 && (sh.top != null || sh.floor != null) &&
-      !TH.chordLegal(out, { top: sh.top, floor: sh.floor, maxSpan: opts.maxSpan, cluster: true })) {
-    out = settle(TH.thinChord(chord, rootOf(w), 2));
+  if (stack && out.length > 2 && active &&
+      !TH.chordLegal(out, { top: sh.top, floor: sh.floor, maxSpan: spanCap, secondBelow: secondBelow, cluster: true })) {
+    /* the clash guard's extra step (stages with the guard on): a seventh chord (root, third, seventh) that cannot be placed legally first tries the
+       triad with the FIFTH for its seventh (the seventh is what makes the voicing wide and close; root-third-fifth always places), then the dyad */
+    const tri = guarded ? TH.fifthForSeventh(chord, rootOf(w)) : null;
+    const triSettled = tri ? settle(tri) : null;
+    out = triSettled && TH.chordLegal(triSettled, { top: sh.top, floor: sh.floor, maxSpan: spanCap, secondBelow: secondBelow, cluster: true })
+      ? triSettled : settle(TH.thinChord(chord, rootOf(w), 2));
   }
   if (sh.state) sh.state.prev = out;
   return out;

@@ -25,7 +25,9 @@ const M = require(path.join(REPO, 'critics/metrics.js'));
 const LHT = require(path.join(REPO, 'critics/left-hand-thickness.js'));
 const H = require(path.join(REPO, 'tests/engrave/helpers.js'));
 
-const OFF = { compoundBeat: false, diatonicLow: false, leftShape: false };
+/* the three last-defect-round switches off; the clash guard (melodyClash, handGuard) is switched off too here, so that `OFF` is still origin/main 387b4c5's behaviour and these tests stay about their own rules */
+const OFF = { compoundBeat: false, diatonicLow: false, leftShape: false, melodyClash: false, handGuard: false };
+const NO_CLASH = { melodyClash: false, handGuard: false };
 async function planOf(file, targetLevel, handProfile) {
   const g = await H.graphOf(file);
   const sg = SGG.analyze(g);
@@ -268,10 +270,10 @@ test('block: a triad that cannot be placed legally falls back to the dyad (root 
 test('the stack cap is by stage: one note at stage 1, a triad from stage 2; broken and ballad keep their triad tones (one note at a time) under middle C', async () => {
   const s1 = await planOf('catalog/method/beyer/020.mxl', 1.5);
   assert.equal(s1.plan.stage, 1);
-  assert.equal(LHT.leftHandThickness(REALIZE.realize(s1.g, s1.sg, s1.plan, { pattern: 'auto', noStride: true }).graph).notesPerOnset, 1);
+  assert.equal(LHT.leftHandThickness(REALIZE.realize(s1.g, s1.sg, s1.plan, Object.assign({ pattern: 'auto', noStride: true }, NO_CLASH)).graph).notesPerOnset, 1);
   const s2 = await planOf('catalog/method/beyer/061.mxl', 2.24);
   ['broken', 'ballad'].forEach(pattern => {
-    const evs = lhEvents(REALIZE.realize(s2.g, s2.sg, s2.plan, { pattern, noStride: true }).graph);
+    const evs = lhEvents(REALIZE.realize(s2.g, s2.sg, s2.plan, Object.assign({ pattern, noStride: true }, NO_CLASH)).graph);
     assert.ok(evs.every(e => e.midis.length === 1), pattern + ': single notes');
     assert.ok(new Set(evs.slice(0, 4).map(e => e.midis[0] % 12)).size >= 2, pattern + ': more than one tone of the chord sounds in a beat');
     assert.ok(Math.max.apply(null, evs.map(e => e.midis[0])) <= TH.LH_CHORD_TOP, pattern + ': top at or under middle C');

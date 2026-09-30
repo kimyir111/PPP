@@ -16,6 +16,8 @@
                    edit may put a note below it, or lower than it was when it is already below it (`BELOW_FLOOR`)
      leftHandJumpGuard  default on; `false` turns it off (G9 post-H-8 re-look): a repair may not create a left-hand jump (the lowest
                    note below middle C moving an octave or more between consecutive onsets) that was not there (`LEFT_HAND_JUMP`)
+     clashGuard    default on; `false` turns it off: a repair may not create a one-hand simultaneous second, a one-hand span of an octave or more (stages <= 3) or a
+                   harsh vertical pair (minor second, major seventh, minor ninth) that was not there (`SECOND_UP`, `OCTAVE_CHORD_UP`, `HARSH_PAIR_UP`)
      harmony       the ORIGINAL piece's `sg.harmony`: what per-measure harmony agreement is scored
                    against (default: the input graph's own harmony, i.e. "do not change the reading")
    opts
@@ -70,7 +72,7 @@
     module.exports = factory(require('../scoregraph/ops.js'), require('../scoregraph/pitch.js'), require('../scoregraph/rational.js'),
       require('../scoregraph/pro-critic.js'), require('../songgraph/util.js'), require('../songgraph/harmony.js'),
       require('../critics/metrics.js'), require('../critics/voice-leading.js'), require('../critics/register-density.js'),
-      require('../critics/left-hand-jump.js'), require('../critics/register-floor.js'),
+      require('../critics/left-hand-jump.js'), require('../critics/register-floor.js'), require('../critics/vertical-clash.js'),
       require('../playability/index.js'), require('../difficulty/index.js'), require('./plan.js'), require('../realize/theory.js'));
   } else {
     const SG = root.PPPScoreGraphModules || {};
@@ -78,9 +80,9 @@
     const CM = root.PPPCriticsModules || {};
     const M = root.PPPRepairModules || {};
     root.PPPRepair = factory(SG.ops, SG.pitch, SG.rational, SG.proCritic, SGG.util, SGG.harmony, CM.metrics, CM.voiceLeading,
-      CM.registerDensity, CM.leftHandJump, CM.registerFloor, root.PPPPlayability, root.PPPDifficulty, M.plan, (root.PPPRealizeModules || {}).theory);
+      CM.registerDensity, CM.leftHandJump, CM.registerFloor, CM.verticalClash, root.PPPPlayability, root.PPPDifficulty, M.plan, (root.PPPRealizeModules || {}).theory);
   }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (OPS, P, R, PC, U, HARM, METRICS, VL, RD, LHJ, RF, PLA, DIFF, PLAN, TH) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (OPS, P, R, PC, U, HARM, METRICS, VL, RD, LHJ, RF, VCL, PLA, DIFF, PLAN, TH) {
   'use strict';
 
   const VERSION = '1.0.0';
@@ -251,6 +253,16 @@
     /* the left-hand jump guard, checked on the applied unit itself (so a seeded/test unit is held to it too): a repair never
        creates a jump (bass moving an octave or more between consecutive onsets) that the graph did not already have */
     if (ctx.leftHandJumpGuard !== false && LHJ.newJumps(RF.notesOf(cur), RF.notesOf(res.graph)) > 0) return { ok: false, reasons: ['LEFT_HAND_JUMP'] };
+    /* the clash guard's guard (G9 clash guard, docs/GOALS/G09 section 12): a repair never creates a one-hand simultaneous second or a one-hand span of an
+       octave or more (at the stages where the realizer's `handGuard` applies: ctx.stage <= theory.NO_SECONDS_MAX_STAGE; with no stage given only the harsh-pair part runs), nor a harsh vertical pair
+       (minor second, major seventh, minor ninth), that the graph did not already have (`SECOND_UP`, `OCTAVE_CHORD_UP`, `HARSH_PAIR_UP`). `ctx.clashGuard: false` turns it off. */
+    if (ctx.clashGuard !== false) {
+      const created = VCL.newClashes(cur, res.graph);
+      const reasons = [];
+      if (ctx.stage != null && ctx.stage <= TH.NO_SECONDS_MAX_STAGE) { if (created.seconds > 0) reasons.push('SECOND_UP'); if (created.octave > 0) reasons.push('OCTAVE_CHORD_UP'); }
+      if (created.harsh > 0) reasons.push('HARSH_PAIR_UP');
+      if (reasons.length) return { ok: false, reasons: reasons };
+    }
     const fp = PC.fingerprint(res.graph);
     const structural = PC.diff(prevFp, fp, STRUCTURAL);
     if (structural.length) return { ok: false, reasons: structural.map(x => 'STRUCTURE:' + x.component) };
@@ -371,7 +383,7 @@
     const ctx = {
       profile: request.handProfile, targetLevel: request.targetLevel,
       stage: REF.stageForPosition(request.targetLevel, opts.reference), reference: opts.reference,
-      origMelody: METRICS.originalMelodyNotes(g, sel.plan), harmony: sg.harmony, registerFloor: opts.registerFloor, leftHandJumpGuard: opts.leftHandJumpGuard
+      origMelody: METRICS.originalMelodyNotes(g, sel.plan), harmony: sg.harmony, registerFloor: opts.registerFloor, leftHandJumpGuard: opts.leftHandJumpGuard, clashGuard: opts.clashGuard
     };
     const r = repair(sel.graph, ctx, opts);
     return Object.assign({ ok: true, ctx: ctx }, r);
