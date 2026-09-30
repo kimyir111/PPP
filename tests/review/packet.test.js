@@ -49,7 +49,7 @@ function scanPacket(P, words) {
     words.forEach(w => {
       /* 'g8' and 'g9' name the goals; as a bare substring they also match a glyph id such as "flag8thdown" (a note flag), which is not a leak:
          they count only when not preceded by a letter or digit */
-      const at = /^g\d$/.test(w) ? text.search(new RegExp('(^|[^a-z0-9])' + w)) : text.indexOf(w);
+      const at = w === 'g8' ? text.search(/(?<!fla)g8/) : text.indexOf(w);
       assert.ok(at < 0, f + ' contains "' + w + '" at ' + at + ': ' + JSON.stringify(text.slice(Math.max(0, at - 30), at + 30)));
     });
     assert.ok(text.indexOf(SEED.toLowerCase()) < 0, f + ' contains the seed');
