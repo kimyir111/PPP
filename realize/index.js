@@ -77,6 +77,22 @@ const PATTERN_NAMES = ['hymn', 'block', 'broken', 'ballad', 'pop', 'waltz'];
 
 function fail(reason, detail) { return { ok: false, reason: reason, detail: detail || null }; }
 
+/* realize/handchords.js is Node-side tooling (not in the app's script list): loaded only when opts.handChords asks for it */
+const HAND_CHORDS_MAX_STAGE = 3; /* = handchords.js HAND_CHORDS_MAX_STAGE (the tests check they agree) */
+function loadHandChords() {
+  if (typeof require === 'function') return require('./handchords.js');
+  const M = (typeof globalThis !== 'undefined' && globalThis.PPPRealizeModules) || {};
+  if (!M.handchords) throw new Error('realize: opts.handChords needs realize/handchords.js');
+  return M.handchords;
+}
+
+/* the mean midi of one source voice over a set of measures (null if it has no note): which left-hand voice is the bass */
+function voiceAvgMidi(origPart, voiceId, mset) {
+  const vals = [];
+  origPart.events.forEach(e => { if (e.kind === 'note' && !e.grace && e.voice === voiceId && mset.has(e.m)) (e.heads || []).forEach(h => vals.push(P.midi(h.pitch))); });
+  return vals.length ? vals.reduce((a, c) => a + c, 0) / vals.length : null;
+}
+
 /* A real gap found by this module's own tests (docs/GOALS/G08 §14), not assumed: G7b's
    plan-level reach check (arrangement/plan.js's `maxSimultaneous`) samples span only at
    each hand's own distinct onsets, so it can miss a real hard violation that only shows up
@@ -395,7 +411,7 @@ function copyEventShape(e, newMeasureId, newVoice, newStaff) {
    id -> new head id) is shared and accumulated across the whole piece by the caller so a
    tie spanning a section boundary still resolves (a tie is a graph-wide spanner, not a
    per-section one). */
-function copyVoiceVerbatim(b, part, oldPart, oldVoiceId, measureIds, newMeasureId, newVoiceId, newStaffId, headMap, skip) {
+function copyVoiceVerbatim(b, part, oldPart, oldVoiceId, measureIds, newMeasureId, newVoiceId, newStaffId, headMap, skip, tags) {
   const mset = new Set(measureIds);
   const evs = oldPart.events.filter(e => e.voice === oldVoiceId && mset.has(e.m));
   evs.sort((a, c) => (measureIds.indexOf(a.m) - measureIds.indexOf(c.m)) || R.cmp(R.parse(a.at), R.parse(c.at)));
@@ -407,6 +423,8 @@ function copyVoiceVerbatim(b, part, oldPart, oldVoiceId, measureIds, newMeasureI
     if (e.kind === 'note') x.heads = e.heads.map(h => ({ pitch: h.pitch, prov: { src: SOURCE_ID.id, op: 'generated' } }));
     const ne = b.event(part, x);
     if (e.kind === 'note') e.heads.forEach((h, i) => headMap.set(h.id, ne.heads[i].id));
+    /* handChords: the ids of the heads written for a tagged voice (the melody voice, the bass voice), sets in `tags` */
+    if (tags && e.kind === 'note') tags.forEach(set => ne.heads.forEach(h => set.add(h.id)));
   });
 }
 
@@ -435,6 +453,60 @@ function fillRests(b, part, voiceId, staffId, oldMeasures, newMeasureId) {
       display: { type: 'whole', measureRest: true }, prov: { src: SOURCE_ID.id, op: 'generated' }
     });
   });
+}
+
+/* The hand-chords pass (see realize()'s opts.handChords and realize/handchords.js): builds the note list of the written part, asks handchords.thin what goes,
+   and removes exactly those heads (a whole tie chain each). An event left with no head becomes a rest of the same length and display (as a hymn-thinned note
+   does); a tie that loses an end goes. Nothing else is touched: no pitch, onset or duration of a kept note moves. Returns the pass's statistics. */
+function applyHandChords(HC, part, tags, staffIds, oldMeasures, newMeasureId, measureOffset, model) {
+  const mOff = new Map();
+  oldMeasures.forEach((m, i) => mOff.set(newMeasureId.get(m.id), measureOffset[i]));
+  const tieTo = new Set(), tieFrom = new Map();
+  part.spanners.forEach(sp => { if (sp.type === 'tie' && sp.from !== undefined && sp.to !== undefined) { tieTo.add(sp.to); tieFrom.set(sp.from, sp.to); } });
+  /* a tie chain = the heads joined by ties (union-find on head ids) */
+  const parent = new Map();
+  const find = x => { let r = x; while (parent.get(r) !== r) r = parent.get(r); while (parent.get(x) !== r) { const n = parent.get(x); parent.set(x, r); x = n; } return r; };
+  const noteEvents = part.events.filter(e => e.kind === 'note' && !e.grace && mOff.has(e.m));
+  noteEvents.forEach(e => e.heads.forEach(h => parent.set(h.id, h.id)));
+  tieFrom.forEach((to, from) => { if (parent.has(from) && parent.has(to)) { const a = find(from), c = find(to); if (a !== c) parent.set(c, a); } });
+  const notes = [];
+  noteEvents.forEach(e => {
+    const w0 = R.add(mOff.get(e.m), R.parse(e.at));
+    const on = R.toNumber(w0) * 4, off = on + R.toNumber(R.parse(e.dur)) * 4;
+    const hand = e.staff === staffIds.rh ? 'RH' : 'LH';
+    /* protected: the top head of a melody-voice event; `low`: its other heads (a harmony note or an octave doubling inside the melody's own event) */
+    const mel = e.heads.filter(h => tags.melody.has(h.id));
+    const melTop = mel.length ? mel.reduce((a, h) => (P.midi(h.pitch) > P.midi(a.pitch) ? h : a)) : null;
+    e.heads.forEach(h => notes.push({
+      id: h.id, hand: hand, on: on, off: off, midi: P.midi(h.pitch), cont: tieTo.has(h.id), chain: find(h.id),
+      keep: h === melTop || tags.bass.has(h.id), low: tags.melody.has(h.id) && h !== melTop
+    }));
+  });
+  /* the bass of a generated left-hand event: its lowest head, in the events whose lowest note is the lowest of their harmony window */
+  const byWin = new Map();
+  tags.gen.forEach(g => { if (!byWin.has(g.win)) byWin.set(g.win, []); byWin.get(g.win).push(g); });
+  const keepIds = new Set();
+  byWin.forEach(list => {
+    const lows = list.map(g => ({ g: g, low: g.ev.heads.reduce((a, h) => (P.midi(h.pitch) < P.midi(a.pitch) ? h : a)) }));
+    const min = Math.min.apply(null, lows.map(x => P.midi(x.low.pitch)));
+    lows.forEach(x => { if (P.midi(x.low.pitch) === min) keepIds.add(x.low.id); });
+  });
+  notes.forEach(n => { if (keepIds.has(n.id)) n.keep = true; });
+  const res = HC.thin(notes, { model: model });
+  const gone = new Set(res.removedIds);
+  let emptied = 0;
+  if (gone.size) {
+    noteEvents.forEach(e => {
+      if (!e.heads.some(h => gone.has(h.id))) return;
+      e.heads = e.heads.filter(h => !gone.has(h.id));
+      if (!e.heads.length) { e.kind = 'rest'; delete e.heads; emptied++; }
+    });
+    for (let i = part.spanners.length - 1; i >= 0; i--) {
+      const sp = part.spanners[i];
+      if (sp.type === 'tie' && (gone.has(sp.from) || gone.has(sp.to))) part.spanners.splice(i, 1);
+    }
+  }
+  return Object.assign({ eventsToRests: emptied }, res.stats);
 }
 
 /* `opts.noStride` (default off, so direct realize() calls and their tests are unchanged; candidates/ turns it on unless the caller
@@ -471,6 +543,15 @@ function realize(g, sg, plan, opts) {
        opts.hymnThin     (default OFF; `true` turns it on) a verbatim `hymn` section (stages <= theory.HYMN_THIN_MAX_STAGE) drops unprotected notes where one hand's simultaneous notes span an
                          octave or more or hold a second (hymnThinDrops); melody and bass are never touched */
   const melodyClash = opts.melodyClash !== false, handGuard = opts.handGuard !== false, hymnThin = opts.hymnThin === true;
+  /* Source-copied hand chords (docs/GOALS/G09 section 12 "G9 source-copied hand chords (post user review 4)"), one more switch, OFF for a direct realize()
+     call (so the app's g8 path and every existing test are byte for byte as before) and ON only from candidates/ (as hymnThin and diatonicLow are):
+       opts.handChords       (default OFF; `true` turns it on) at stages <= HAND_CHORDS_MAX_STAGE (3), a final pass over the written notes removes, from any chord of one
+                             hand that holds a second (1 or 2 semitones) or spans an octave or more, the least important notes: never the top note of a melody-voice
+                             event, never the bass; durations and ties of the rest untouched (realize/handchords.js thin)
+       opts.handChordsModel  'both' (default), 'limb' or 'pitch': which groups of notes count as "one hand" (realize/handchords.js) */
+  const handChords = opts.handChords === true && plan.stage <= HAND_CHORDS_MAX_STAGE;
+  const HC = handChords ? loadHandChords() : null;
+  const hcTags = handChords ? { melody: new Set(), bass: new Set(), gen: [] } : null;
   const clashStats = { melodyActive: melodyClash && plan.stage <= TH.MELODY_CLASH_MAX_STAGE, events: 0, eventsWithClash: 0, tonesDropped: 0, eventsReplaced: 0, unresolved: 0,
     hymnThinActive: hymnThin && plan.stage <= TH.HYMN_THIN_MAX_STAGE, hymnNotesDropped: 0, hymnUnresolved: 0 };
   const diatonicStats = { maxStage: TH.DIATONIC_MAX_STAGE, active: diatonicLow && plan.stage <= TH.DIATONIC_MAX_STAGE, windows: 0, substituted: 0 };
@@ -547,6 +628,7 @@ function realize(g, sg, plan, opts) {
   let prevMidis = null; /* threaded across the WHOLE piece, not reset per section - real
     "voice leading between successive harmony windows" across a section boundary too. */
   const report = { sections: [], patternCounts: {}, floor: floorStats, diatonic: diatonicStats, clash: clashStats };
+  if (opts.handChords === true) report.handChords = { active: handChords, model: opts.handChordsModel || 'both', maxStage: HAND_CHORDS_MAX_STAGE };
   const shapeState = { prev: null }; /* the accompaniment chord written last, across measures and sections (theory.settleChord keeps the next one close to it) */
 
   for (const sec of plan.sections) {
@@ -580,11 +662,19 @@ function realize(g, sg, plan, opts) {
       /* hymn thinning: drop unprotected notes where one hand's simultaneous notes span an octave or more or hold a second (stages <= HYMN_THIN_MAX_STAGE) */
       const thin = clashStats.hymnThinActive ? hymnThinDrops(origPart, hands, measureIds, sec.melody && sec.melody.voice, oldIdx, measureOffset) : null;
       if (thin) { clashStats.hymnNotesDropped += thin.dropped; clashStats.hymnUnresolved += thin.unresolved; }
+      /* handChords: the melody voice and the bass voice (the lowest-averaging left-hand voice, as hymnThinDrops takes it) are tagged as their heads are written */
+      let bassVoiceId = null;
+      if (handChords) {
+        const mset = new Set(measureIds);
+        const lhv = hands.LH.map(v => ({ v: v, a: voiceAvgMidi(origPart, v, mset) })).filter(x => x.a != null).sort((a, c) => a.a - c.a);
+        if (lhv.length) bassVoiceId = lhv[0].v;
+      }
       ['RH', 'LH'].forEach(hand => {
         const staffId = hand === 'RH' ? rhSt.id : lhSt.id;
         hands[hand].forEach((vid, slot) => {
           const vObj = voiceObj(hand, slot);
-          copyVoiceVerbatim(b, part, origPart, vid, measureIds, newMeasureId, vObj.id, staffId, headMap, thin && thin.drops.size ? thin.drops : null);
+          const tags = handChords ? [].concat(vid === melodyVoiceId ? [hcTags.melody] : [], hand === 'LH' && vid === bassVoiceId ? [hcTags.bass] : []) : null;
+          copyVoiceVerbatim(b, part, origPart, vid, measureIds, newMeasureId, vObj.id, staffId, headMap, thin && thin.drops.size ? thin.drops : null, tags && tags.length ? tags : null);
         });
       });
       report.sections.push({ label: sec.section.label, pattern: policy.pattern, degraded: sec.degraded, melodyHand: melodyHand });
@@ -593,7 +683,7 @@ function realize(g, sg, plan, opts) {
 
     if (melodyVoiceId) {
       const staffId = melodyHand === 'RH' ? rhSt.id : lhSt.id;
-      copyVoiceVerbatim(b, part, origPart, melodyVoiceId, measureIds, newMeasureId, voiceObj(melodyHand, 0).id, staffId, headMap);
+      copyVoiceVerbatim(b, part, origPart, melodyVoiceId, measureIds, newMeasureId, voiceObj(melodyHand, 0).id, staffId, headMap, null, handChords ? [hcTags.melody] : null);
     }
 
     const accompStaffId = accompHand === 'RH' ? rhSt.id : lhSt.id;
@@ -681,10 +771,12 @@ function realize(g, sg, plan, opts) {
           }
         }
         const heads = midis.map(m => ({ pitch: keyTrack.spellAt(m, mi), prov: prov() }));
-        b.event(part, {
+        const genEv = b.event(part, {
           kind: 'note', m: newMeasureId.get(oldM.id), at: R.format(at), dur: R.format(dur),
           voice: accompVoiceId, staff: accompStaffId, display: disp, heads: heads, prov: prov()
         });
+        /* handChords: a generated left-hand event, with the harmony window it belongs to (its bass is the lowest note of the window) */
+        if (handChords && accompHand === 'LH') hcTags.gen.push({ ev: genEv, win: mi + ':' + windows.findIndex(w => R.cmp(w.w0, ev.at) <= 0 && R.cmp(ev.at, w.w1) < 0) });
       });
     });
 
@@ -698,6 +790,9 @@ function realize(g, sg, plan, opts) {
     .forEach(s => b.spanner(part, { type: 'tie', from: headMap.get(s.from), to: headMap.get(s.to) }));
 
   [[rhV1, rhSt], [rhV2, rhSt], [lhV1, lhSt], [lhV2, lhSt]].forEach(([v, st]) => { if (v) fillRests(b, part, v.id, st.id, oldMeasures, newMeasureId); });
+
+  /* source-copied hand chords (handchords.js): the final pass over the written notes, before the graph is sealed and fingered */
+  if (handChords) report.handChords = Object.assign(report.handChords, applyHandChords(HC, part, hcTags, { rh: rhSt.id, lh: lhSt.id }, oldMeasures, newMeasureId, measureOffset, opts.handChordsModel || 'both'));
 
   let built;
   try { built = b.finish(); } catch (e) { return fail('BUILD_FAILED', String(e && e.message || e)); }

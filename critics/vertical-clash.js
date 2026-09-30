@@ -13,7 +13,14 @@
      handOnsets, octaveChords, octaveChordsLH, octaveChordsRH,   one-hand chords spanning OCTAVE_SEMITONES (12) or more
      octaveChordRate,
      seconds, secondsLH, secondsRH, secondsRate,                one-hand chords with two adjacent notes 1 or 2 semitones apart
+     violations, violationsLH, violationsRH,                    one-hand chords with a second OR an octave-plus span (a chord with both is one)
+     pitchHandOnsets, pitchOctaveChords[Low|High], pitchSeconds[Low|High], pitchViolations[Low|High]
+                                                                the same counts with the two "hands" taken as the notes below middle C and the notes at or above it
+                                                                (PITCH_SPLIT = 60: how the reviewer, who sees no hand labels, groups what is stacked near the staves' boundary)
+     onsetsLH, notesLH, notesPerOnsetLH, onsetsRH, notesRH, notesPerOnsetRH    written notes per onset for each hand
      sourceKnown }
+   (G9 source-copied hand chords, docs/GOALS/G09 section 12 "post user review 4": on the 8 hymns the drawn hands held 1 second and 0 octave chords while the
+   pitch grouping held 6 seconds and 33 octave chords; realize/handchords.js removes both, and `violationKeys` / `newViolations` let repair prove it adds none.)
 
    Definitions. A NOTE is a head of a note event (grace notes excluded) with its onset, end and hand (scoregraph/pitch.js limbOf:
    the head's, else the voice's, else the staff's). A head that is the `to` end of a tie is a CONTINUATION: it sounds but is not
@@ -44,6 +51,7 @@
 
   const OCTAVE_SEMITONES = 12;
   const SECOND_MAX = 2;
+  const PITCH_SPLIT = 60; /* the reader's grouping: notes below middle C / at or above it (= realize/handchords.js HAND_PITCH_SPLIT) */
   const EPS = 1e-6;
 
   function isHarshInterval(a, b) {
@@ -102,8 +110,18 @@
     const out = {
       onsets: 0, harshPairs: 0, harshOnsets: 0, harshPerOnset: 0, harshArranged: sourceKnown ? 0 : null,
       handOnsets: 0, octaveChords: 0, octaveChordsLH: 0, octaveChordsRH: 0, octaveChordRate: 0,
-      seconds: 0, secondsLH: 0, secondsRH: 0, secondsRate: 0, sourceKnown: sourceKnown
+      seconds: 0, secondsLH: 0, secondsRH: 0, secondsRate: 0, sourceKnown: sourceKnown,
+      /* chords of one hand with a second OR an octave or more, each counted once (a chord with both is one) */
+      violations: 0, violationsLH: 0, violationsRH: 0,
+      /* the same counts with the two "hands" taken as the notes below middle C (low) and at or above it (high): how a reader groups what is stacked near the staves' boundary */
+      pitchHandOnsets: 0, pitchOctaveChords: 0, pitchOctaveChordsLow: 0, pitchOctaveChordsHigh: 0, pitchSeconds: 0, pitchSecondsLow: 0, pitchSecondsHigh: 0,
+      pitchViolations: 0, pitchViolationsLow: 0, pitchViolationsHigh: 0,
+      /* notes written per onset, per hand: an onset is a moment the hand starts at least one note (tie continuations included, as critics/left-hand-thickness.js does) */
+      onsetsLH: 0, notesLH: 0, onsetsRH: 0, notesRH: 0, notesPerOnsetLH: 0, notesPerOnsetRH: 0
     };
+    const starts = { LH: new Map(), RH: new Map() };
+    notes.forEach(n => { if (n.hand !== 'LH' && n.hand !== 'RH') return; const k = Math.round(n.on / EPS); starts[n.hand].set(k, (starts[n.hand].get(k) || 0) + 1); });
+    ['LH', 'RH'].forEach(h => { starts[h].forEach(c => { out['onsets' + h]++; out['notes' + h] += c; }); out['notesPerOnset' + h] = out['onsets' + h] ? out['notes' + h] / out['onsets' + h] : 0; });
     slices(notes).forEach(s => {
       out.onsets++;
       const att = new Set(s.attack);
@@ -126,6 +144,20 @@
         let second = false;
         for (let i = 1; i < m.length; i++) { const d = m[i] - m[i - 1]; if (d > 0 && d <= SECOND_MAX) second = true; }
         if (second) { out.seconds++; out['seconds' + hand]++; }
+        if (second || m[m.length - 1] - m[0] >= OCTAVE_SEMITONES) { out.violations++; out['violations' + hand]++; }
+      });
+      ['low', 'high'].forEach(grp => {
+        const h = s.sounding.filter(n => (n.midi < PITCH_SPLIT) === (grp === 'low'));
+        if (h.length < 2 || !h.some(n => att.has(n))) return;
+        out.pitchHandOnsets++;
+        const m = h.map(n => n.midi).sort((a, b) => a - b);
+        const G = grp === 'low' ? 'Low' : 'High';
+        const oct = m[m.length - 1] - m[0] >= OCTAVE_SEMITONES;
+        let second = false;
+        for (let i = 1; i < m.length; i++) { const d = m[i] - m[i - 1]; if (d > 0 && d <= SECOND_MAX) second = true; }
+        if (oct) { out.pitchOctaveChords++; out['pitchOctaveChords' + G]++; }
+        if (second) { out.pitchSeconds++; out['pitchSeconds' + G]++; }
+        if (oct || second) { out.pitchViolations++; out['pitchViolations' + G]++; }
       });
     });
     out.harshPerOnset = out.onsets ? out.harshPairs / out.onsets : 0;
@@ -143,5 +175,33 @@
     return { harsh: Math.max(0, b.harshPairs - a.harshPairs), octave: Math.max(0, b.octaveChords - a.octaveChords), seconds: Math.max(0, b.seconds - a.seconds) };
   }
 
-  return Object.freeze({ OCTAVE_SEMITONES, SECOND_MAX, isHarshInterval, notesOf, slices, ofNotes, verticalClash, newClashes });
+  /* The violating chords, by identity: a Set of 'limb:LH:<onset>:second' ... 'pitch:low:<onset>:octave' keys (a chord of one group at one onset with a second,
+     and/or with a span of an octave or more, for the hands as written and for the pitch grouping). */
+  function violationKeys(g) {
+    const keys = new Set();
+    slices(notesOf(g)).forEach(s => {
+      const att = new Set(s.attack);
+      const check = (tag, list) => {
+        if (list.length < 2 || !list.some(n => att.has(n))) return;
+        const m = list.map(n => n.midi).sort((a, b) => a - b);
+        const t = Math.round(s.t / EPS);
+        if (m[m.length - 1] - m[0] >= OCTAVE_SEMITONES) keys.add(tag + ':' + t + ':octave');
+        for (let i = 1; i < m.length; i++) { const d = m[i] - m[i - 1]; if (d > 0 && d <= SECOND_MAX) { keys.add(tag + ':' + t + ':second'); break; }}
+      };
+      ['LH', 'RH'].forEach(hand => check('limb:' + hand, s.sounding.filter(n => n.hand === hand)));
+      ['low', 'high'].forEach(grp => check('pitch:' + grp, s.sounding.filter(n => (n.midi < PITCH_SPLIT) === (grp === 'low'))));
+    });
+    return keys;
+  }
+
+  /* the violating chords `after` has that `before` did not (exact, by identity, both groupings): { limb, pitch } counts. An edit that clears one chord and makes another
+     is 1, not 0 (newClashes above counts the net change). */
+  function newViolations(before, after) {
+    const a = violationKeys(before), b = violationKeys(after);
+    const out = { limb: 0, pitch: 0 };
+    b.forEach(k => { if (!a.has(k)) out[k.slice(0, 5) === 'limb:' ? 'limb' : 'pitch']++; });
+    return out;
+  }
+
+  return Object.freeze({ OCTAVE_SEMITONES, SECOND_MAX, PITCH_SPLIT, isHarshInterval, notesOf, slices, ofNotes, verticalClash, newClashes, violationKeys, newViolations });
 });

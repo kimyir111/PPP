@@ -131,3 +131,58 @@ test('real pieces: the source hymn itself has octave chords and harsh pairs; an 
   assert.equal(off.octaveChordsLH, 12); assert.equal(on.octaveChordsLH, 0);
   assert.ok(off.harshArranged > on.harshArranged);
 });
+
+/* ---- G9 source-copied hand chords (docs/GOALS/G09 section 12 "post user review 4"): the pitch grouping, chords with either defect once, notes per onset per hand ---- */
+test('planted defect: a left-hand tenor C#4 beside a right-hand alto D#4 is a second in the pitch grouping only (the hands as written have none)', () => {
+  const g = score([{ hand: 'LH', at: at[0], dur: '1/4', midis: [61] },         /* C#4, a left-hand note (the tenor) */
+    { hand: 'RH', at: at[0], dur: '1/4', midis: [63, 70] }]);                   /* D#4 and A#4, right hand */
+  const v = VC.verticalClash(g);
+  assert.equal(v.seconds, 0, 'one hand at a time: none'); assert.equal(v.octaveChords, 0);
+  assert.equal(v.pitchSecondsHigh, 1, 'C#4 and D#4 at or above middle C'); assert.equal(v.pitchSecondsLow, 0); assert.equal(v.pitchSeconds, 1);
+  assert.equal(v.pitchViolations, 1); assert.equal(v.violations, 0);
+});
+
+test('planted defect: a left-hand C4 with a right-hand A4 and C5 is an octave chord in the pitch grouping only; a bass G2 with a right-hand B3 is one in the low group', () => {
+  const g = score([{ hand: 'LH', at: at[0], dur: '1/4', midis: [60] }, { hand: 'RH', at: at[0], dur: '1/4', midis: [69, 72] },   /* C4 A4 C5: exactly an octave C4..C5 */
+    { hand: 'LH', at: at[1], dur: '1/4', midis: [43] }, { hand: 'RH', at: at[1], dur: '1/4', midis: [59, 67] }]);                      /* G2 | B3 G4: G2..B3 is 16 in the low group */
+  const v = VC.verticalClash(g);
+  assert.equal(v.octaveChords, 0);
+  assert.equal(v.pitchOctaveChordsHigh, 1); assert.equal(v.pitchOctaveChordsLow, 1); assert.equal(v.pitchOctaveChords, 2);
+});
+
+test('negative control: the same notes spread so that neither grouping holds a second or an octave are counted as nothing', () => {
+  const g = score([{ hand: 'LH', at: at[0], dur: '1/4', midis: [43, 55] }, { hand: 'RH', at: at[0], dur: '1/4', midis: [64, 71] }]); /* G2 G3 | E4 B4: 12 low? 43..55 is exactly 12 */
+  const v = VC.verticalClash(g);
+  assert.equal(v.octaveChordsLH, 1, 'G2 G3 is an octave (12): a left-hand violation');
+  const ok = score([{ hand: 'LH', at: at[0], dur: '1/4', midis: [43, 54] }, { hand: 'RH', at: at[0], dur: '1/4', midis: [64, 71] }]); /* G2 F#3 (11) | E4 B4 (7) */
+  const w = VC.verticalClash(ok);
+  assert.equal(w.violations, 0); assert.equal(w.pitchViolations, 0);
+});
+
+test('a chord with a second and an octave is ONE violation (violations counts chords, not defects), per hand', () => {
+  const g = score([{ hand: 'RH', at: at[0], dur: '1/4', midis: [60, 61, 75] }, { hand: 'LH', at: at[0], dur: '1/4', midis: [40, 52] }]);
+  const v = VC.verticalClash(g);
+  assert.equal(v.secondsRH, 1); assert.equal(v.octaveChordsRH, 1); assert.equal(v.violationsRH, 1, 'once');
+  assert.equal(v.octaveChordsLH, 1); assert.equal(v.violationsLH, 1); assert.equal(v.violations, 2);
+});
+
+test('notes per onset, per hand: an onset is a moment the hand starts a note; tie continuations count as written notes', () => {
+  const g = score([{ hand: 'LH', at: at[0], dur: '1/4', midis: [48, 55, 52] }, { hand: 'LH', at: at[1], dur: '1/4', midis: [48] },
+    { hand: 'RH', at: at[0], dur: '1/4', midis: [72] }, { hand: 'RH', at: at[1], dur: '1/4', midis: [74] }, { hand: 'RH', at: at[2], dur: '1/4', midis: [76] }]);
+  const v = VC.verticalClash(g);
+  assert.equal(v.onsetsLH, 2); assert.equal(v.notesLH, 4); assert.equal(v.notesPerOnsetLH, 2);
+  assert.equal(v.onsetsRH, 3); assert.equal(v.notesRH, 3); assert.equal(v.notesPerOnsetRH, 1);
+  const e = VC.ofNotes([]);
+  assert.equal(e.notesPerOnsetLH, 0); assert.equal(e.notesPerOnsetRH, 0); assert.equal(e.pitchViolations, 0);
+});
+
+test('violationKeys / newViolations: an edit that clears one chord and writes another is 1 new, not 0 (newClashes counts the net change)', () => {
+  const before = score([{ hand: 'RH', at: at[0], dur: '1/4', midis: [72, 73] }, { hand: 'RH', at: at[1], dur: '1/4', midis: [72, 76] }]);
+  const after = score([{ hand: 'RH', at: at[0], dur: '1/4', midis: [72, 76] }, { hand: 'RH', at: at[1], dur: '1/4', midis: [72, 73] }]);
+  assert.equal(VC.newClashes(before, after).seconds, 0, 'the net count is unchanged');
+  const nv = VC.newViolations(before, after);
+  assert.equal(nv.limb, 1, 'the second moved from onset 0 to onset 1: one chord is new');
+  assert.equal(nv.pitch, 1);
+  assert.deepEqual(VC.newViolations(before, before), { limb: 0, pitch: 0 });
+  assert.equal(VC.PITCH_SPLIT, require(path.join(REPO, 'realize/handchords.js')).HAND_PITCH_SPLIT, 'the critic and the pass group at the same pitch');
+});
