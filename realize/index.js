@@ -595,7 +595,7 @@ function realize(g, sg, plan, opts) {
   /* A TempoEvent's optional `display` can carry a per-part text override (`display[].part`)
      - dropped here (this is a brand-new graph with its own new part ids; the tempo VALUE,
      not its display override, is what "tempo preserved" (G08 §7) is actually about). */
-  g.timeline.tempos.forEach(t => { const x = stripId(t); delete x.display; b.tempo(Object.assign(x, { m: newMeasureId.get(t.m) })); });
+  (g.timeline.tempos || []).forEach(t => { /* G9e-lite: a graph read from a file with no tempo mark has no tempos list at all */ const x = stripId(t); delete x.display; b.tempo(Object.assign(x, { m: newMeasureId.get(t.m) })); });
 
   const part = b.part({ name: 'Piano', instrument: { kind: 'piano', family: 'keyboard' } });
   const rhSt = b.staff(part, { limb: 'RH' }), lhSt = b.staff(part, { limb: 'LH' });

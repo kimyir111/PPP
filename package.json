@@ -22,6 +22,7 @@
     "test:critics": "node --test \"tests/critics/**/*.test.js\"",
     "test:repair": "node --test \"tests/repair/**/*.test.js\"",
     "test:review": "node --test \"tests/review/**/*.test.js\"",
+    "test:single-note-app": "node tests/single-note-app.test.js",
     "test:scoregraph:perf": "node -e \"process.env.PPP_PERF='1'; require('child_process').execFileSync(process.execPath, ['--test', 'tests/scoregraph/g3-perf.test.js'], { stdio: 'inherit', env: process.env })\"",
     "test:arranger": "python tests/arranger_test.py",
     "omr": "node omr-service.js",

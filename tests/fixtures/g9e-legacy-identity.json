@@ -1,0 +1,26 @@
+{
+ "madeFrom": "origin/main 14a76f8 (default PPP.arranger)",
+ "hashes": {
+  "overlay|christ-arose|beginner|balanced": "9847de6c4c2843b2",
+  "overlay|christ-arose|intermediate|balanced": "9f1c611bc9155402",
+  "overlay|christ-arose|advanced|balanced": "38383c16fb37bf8c",
+  "overlay|christ-arose|original|balanced": "fa5e7a7f717960f1",
+  "overlay|christ-arose|intermediate|jazz": "815c1ec7627fdc09",
+  "overlay|nearer-my-god|beginner|balanced": "d0521618d22fdad2",
+  "overlay|nearer-my-god|intermediate|balanced": "21f96c4a82d17a68",
+  "overlay|nearer-my-god|advanced|balanced": "6ccb2f31c3429265",
+  "overlay|nearer-my-god|original|balanced": "8e76ccfd72ce3116",
+  "overlay|nearer-my-god|intermediate|jazz": "e094192ebdc7ee6f",
+  "overlay|pass-me-not|beginner|balanced": "15bd052230b0ea89",
+  "overlay|pass-me-not|intermediate|balanced": "ad8c92441ab21416",
+  "overlay|pass-me-not|advanced|balanced": "8914eac558ef3df4",
+  "overlay|pass-me-not|original|balanced": "41e46b7fafc71736",
+  "overlay|pass-me-not|intermediate|jazz": "2d728ce984951fdf",
+  "review|christ-arose|beginner|balanced": "b487dc0e42d05d96",
+  "review|christ-arose|intermediate|balanced": "a72bd8318991c546",
+  "review|christ-arose|advanced|balanced": "00613a2ef638dcb8",
+  "review|christ-arose|original|balanced": "6a16643bc9ad84a3",
+  "review|christ-arose|intermediate|jazz": "e2f3a8bf0e561660",
+  "review|christ-arose|beginner|ballad": "48d605330b695f8b"
+ }
+}

@@ -1916,6 +1916,15 @@
     "PPP needs at least four notes to write a score, and this MIDI file has fewer.": "PPP 至少需要四个音符才能写出乐谱，而这个 MIDI 文件的音符少于四个。",
     "Engraving…": "正在绘制乐谱…",
     "This score could not be prepared for printing.": "无法为打印准备此乐谱。",
-    "This passage could not be engraved.": "无法将此段落绘制为乐谱。"
+    "This passage could not be engraved.": "无法将此段落绘制为乐谱。",
+    "One note per hand (experimental)": "单手单音（实验）",
+    "Writes the melody in the right hand and one bass line in the left, one note at a time in each hand. Easier to read, but plainer, and often easier than the level you choose. The texture choice does not apply, and \"Original transcription\" is not arranged.": "右手弹旋律，左手弹一条低音线，每只手一次只弹一个音。更容易读谱，但和声更简单，往往比所选难度更容易。编配风格选项不适用，“原始转谱”不做编配，因此此选项对其无效。",
+    "Writing one note per hand…": "正在按每手一个音来写…",
+    "This piece could not be made in one-note-per-hand mode, so the standard arrangement is shown.": "这首曲子无法用单手单音模式生成，因此显示标准编配。",
+    "This piece could not be made in one-note-per-hand mode. Turn the option off to make the standard arrangement.": "这首曲子无法用单手单音模式生成。要生成标准编配，请关闭此选项。",
+    "Created a {{level}} one-note-per-hand arrangement.": "已创建{{level}}单手单音编配。",
+    "PPP one-note-per-hand arrangement": "PPP 单手单音编配",
+    "Created a {{level}} arrangement. Some passages had low melody/bass confidence, so PPP kept them simple rather than guess.": "已创建{{level}}编配。旋律或低音把握不大的段落，PPP 没有去猜，保持了简单。",
+    "{{title}} · one-note-per-hand arrangement": "{{title}} · 单手单音编配"
   }
 }

@@ -3,7 +3,8 @@
    candidate arrangements from the real knobs G7b's planner and G8a's realizer already
    have, score them with `critics/index.js`, filter by G5 hard violations (a structural
    filter, never a score - G9 §2), and select one survivor with a human-readable
-   explanation. Node-only, not loaded by the app (per G9 §10).
+   explanation. Node-only until G9e-lite: the app now loads it lazily, and only when the opt-in `PPP.arranger = 'single'` is used (G9 §12,
+   "G9e-lite"); there it runs with `opts.skipEngrave` (below).
 
    ---- the enumerable product (no new generation machinery, G9 §4) ----
    The three real knobs this module composes, unmodified:
@@ -76,6 +77,10 @@
 
    `opts.registerFloor` (post-H-8) is threaded to `realize()` and the register-floor critic (default
    realize/theory.js REGISTER_FLOOR = 40; `null` = the pre-floor behaviour).
+
+   `opts.skipEngrave` (G9e-lite, default off = the gate above, byte for byte): do not run the engrave critic at all - the browser has no layout benchmark
+   (critics/metrics.js `engraveMetrics` is Node-only). The top-K is then chosen by the cheap critics alone and `select()` treats engrave as deferred (it adds
+   the same 0 to every candidate), so the winner is the best cheap-critic candidate. Measured on the corpus this equals the gated winner (G9 §12, G9e-lite).
 
    `run(g, sg, request, opts)` does enumerate -> score -> select in one call - the entry
    point `realize/tools/harness.js`'s own G9a comparison mode and this module's own tests
@@ -160,7 +165,7 @@
      below never read `planTargetLevel`, only `request.targetLevel` and the candidate's own
      OUTPUT `scores.level`, so this structurally cannot leak the planning target into
      selection). */
-  function enumerate(g, sg, request, opts) {
+  function* enumerateSteps(g, sg, request, opts) {
     opts = opts || {};
     const n = opts.n == null ? 24 : opts.n;
     const specs = specOrder(request, opts);
@@ -169,12 +174,13 @@
     const candidates = [];
     const tried = [];
     for (let i = 0; i < specs.length && candidates.length < n; i++) {
+      if (i > 0) yield; /* a step boundary: runAsync hands the thread back to the page here; enumerate() below just carries on */
       const spec = specs[i];
       const planTargetLevel = request.targetLevel + (spec.levelOffset || 0);
       const planCacheKey = spec.handProfile + '@' + planTargetLevel;
       let planResult = planCache.get(planCacheKey);
       if (planResult === undefined) {
-        planResult = ARR.planner.plan(g, sg, Object.assign({}, request, { handProfile: spec.handProfile, targetLevel: planTargetLevel }), opts.planOpts);
+        planResult = ARR.planner.plan(g, sg, Object.assign({}, request, { handProfile: spec.handProfile, targetLevel: planTargetLevel }), opts.planOpts || (opts.reference ? { reference: opts.reference } : undefined)); /* G9e-lite: the browser has no Node require() fallback for the G6 reference, so opts.reference reaches plan() too */
         planCache.set(planCacheKey, planResult);
       }
       if (!planResult.ok) { tried.push({ spec: spec, ok: false, stage: 'plan', reason: planResult.reason }); continue; }
@@ -194,6 +200,10 @@
        a request's own primary hand profile alone already supplies all N candidates). */
     for (let i = tried.length; i < specs.length; i++) tried.push({ spec: specs[i], ok: false, stage: 'not-tried', reason: 'N_ALREADY_MET' });
     return { candidates: candidates, tried: tried };
+  }
+  function enumerate(g, sg, request, opts) {
+    const it = enumerateSteps(g, sg, request, opts);
+    for (;;) { const s = it.next(); if (s.done) return s.value; }
   }
 
   /* ---- scoring ---- `opts.skipEngrave` (round 2, see header): every score here is keyed
@@ -331,7 +341,7 @@
     const discarded = scored.filter(c => !c.hardOk);
     if (!survivors.length) return { ok: false, reason: 'ALL_CANDIDATES_HAVE_HARD_VIOLATIONS', discarded: discarded };
     const ranked = survivors
-      .map(c => Object.assign({}, c, { badness: badnessOf(c.scores, request.targetLevel, opts.weights) }))
+      .map(c => Object.assign({}, c, { badness: badnessOf(c.scores, request.targetLevel, opts.weights, opts.deferEngrave ? { deferEngrave: true } : undefined) }))
       .sort((a, b) => (a.badness.total - b.badness.total) || (a.index - b.index));
     const selected = ranked[0], runnerUp = ranked[1] || null;
     return { ok: true, selected: selected, runnerUp: runnerUp, ranked: ranked, discarded: discarded, explanation: explain(selected, runnerUp) };
@@ -374,6 +384,7 @@
        the same pool), is reused, never recomputed. */
     const gated = cheapRanked.slice(0, topK).map(c => {
       let eg = c.scores.engrave;
+      if (opts.skipEngrave) return c; /* engrave stays null (deferred) */
       if (!(eg && !eg.error)) {
         const memo = opts.engraveCache && opts.engraveCache.get(c.fingerprint);
         if (memo) eg = memo;
@@ -385,11 +396,11 @@
       }
       return Object.assign({}, c, { scores: Object.assign({}, c.scores, { engrave: eg }) });
     });
-    const finalSel = select(gated, request, opts);
+    const finalSel = select(gated, request, opts.skipEngrave ? Object.assign({}, opts, { deferEngrave: true }) : opts);
     if (!finalSel.ok) return finalSel; /* structurally unreachable (every `gated` member already passed hardOk), kept for safety */
     return Object.assign({}, finalSel, {
       discarded: hardDiscarded, notEngraveChecked: notEngraveChecked, cheapRanked: cheapRanked, topK: topK,
-      explanation: finalSel.explanation + ' (engrave checked for the top ' + gated.length + ' of ' + survivors.length + ' hard-violation-free candidates.)'
+      explanation: finalSel.explanation + (opts.skipEngrave ? ' (engrave not run; the top ' + gated.length + ' of ' + survivors.length + ' hard-violation-free candidates ranked on the cheap critics.)' : ' (engrave checked for the top ' + gated.length + ' of ' + survivors.length + ' hard-violation-free candidates.)')
     });
   }
 
@@ -412,7 +423,7 @@
       '|' + JSON.stringify((opts && opts.stride) || 'default') +
       '|' + JSON.stringify(patternsFor(opts)) + '|' + (opts && opts.allowStride ? 'stride' : 'nostride') +
       '|' + JSON.stringify((opts && opts.last) || null) + '|' + (opts && opts.singleNoteHands ? 'single' : 'default') +
-      '|' + (opts && opts.fullEngrave ? 'full' : 'gate');
+      '|' + (opts && opts.fullEngrave ? 'full' : 'gate') + (opts && opts.skipEngrave ? '|noengrave' : '');
   }
 
   /* `run()`'s production pipeline (round 2, default): enumerate -> score the six cheap
@@ -437,7 +448,7 @@
     const enumerated = enumerate(g, sg, request, opts);
     if (opts.fullEngrave) {
       const scored = scoreCandidates(enumerated.candidates, g, sg, request, opts);
-      const selection = select(scored, request, opts);
+      const selection = select(scored, request, opts.skipEngrave ? Object.assign({}, opts, { deferEngrave: true }) : opts);
       return Object.assign({ tried: enumerated.tried, scored: scored }, selection);
     }
     const cheapScored = scoreCandidates(enumerated.candidates, g, sg, request, Object.assign({}, opts, { skipEngrave: true }));
@@ -445,9 +456,42 @@
     return Object.assign({ tried: enumerated.tried, scored: cheapScored }, selection);
   }
 
+  /* G9e-lite: run() for a page that must stay responsive. The same pipeline, the same result (tested equal to run() on real files), but the
+     thread is given back with `await opts.yield()` (default: no wait) between the candidates it realizes and between the candidates it scores,
+     instead of one block of 0.2 to 6 s. The caller supplies the yield (the app uses a MessageChannel tick). Nothing else differs; in particular
+     the cache, the gate and the skipEngrave switch are the same ones. */
+  async function runAsync(g, sg, request, opts) {
+    opts = opts || {};
+    if (opts.cache) {
+      const key = cacheKey(g, request, opts);
+      if (opts.cache.has(key)) return Object.assign({}, opts.cache.get(key));
+      const result = await runUncachedAsync(g, sg, request, opts);
+      opts.cache.set(key, result);
+      return result;
+    }
+    return runUncachedAsync(g, sg, request, opts);
+  }
+
+  async function runUncachedAsync(g, sg, request, opts) {
+    const tick = typeof opts.yield === 'function' ? opts.yield : () => Promise.resolve();
+    const it = enumerateSteps(g, sg, request, opts);
+    let step;
+    for (;;) { step = it.next(); if (step.done) break; await tick(); }
+    const enumerated = step.value;
+    const scoreOpts = opts.fullEngrave ? opts : Object.assign({}, opts, { skipEngrave: true });
+    const scored = [];
+    for (const c of enumerated.candidates) { scoreCandidates([c], g, sg, request, scoreOpts).forEach(x => scored.push(x)); await tick(); }
+    if (opts.fullEngrave) {
+      const selection = select(scored, request, opts.skipEngrave ? Object.assign({}, opts, { deferEngrave: true }) : opts);
+      return Object.assign({ tried: enumerated.tried, scored: scored }, selection);
+    }
+    const selection = selectWithEngraveGate(scored, g, sg, request, opts);
+    return Object.assign({ tried: enumerated.tried, scored: scored }, selection);
+  }
+
   return Object.freeze({
     PATTERNS, ALL_PATTERNS, STRIDE_PATTERNS, patternsFor, LEVEL_OFFSETS_DEFAULT, TOP_K_FOR_ENGRAVE_DEFAULT,
-    specOrder, patternProfileSpecs, specKey, enumerate, scoreCandidates, badnessOf, select, selectWithEngraveGate, explain, run,
+    specOrder, patternProfileSpecs, specKey, enumerate, scoreCandidates, badnessOf, select, selectWithEngraveGate, explain, run, runAsync,
     DEFAULT_WEIGHTS
   });
 });

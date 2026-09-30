@@ -38,18 +38,48 @@
    (both computable from a bare note list) and reported as N/A, with the reason stated, on
    2/4/5 - a structural exclusion, not a favorable one dropped quietly (docs/GOALS/G08 §14
    states this plainly, per the task's "report real numbers honestly" instruction). */
+/* G9e-lite (the app's single-note option): this file also loads in the browser, as a plain <script> after scoregraph/, playability/,
+   difficulty/, songgraph/harmony.js and before critics/index.js (browser global root.PPPCriticsModules.metrics). In Node nothing changes: the same
+   requires, the same functions, the same numbers. The browser has no tests/ tools, so there: `engraveMetrics` (the Node layout benchmark) and
+   `hardViolationsOfAudioNotes` throw, `levelOfGraph` needs the G6a weights from `setWeights(weights)` (the app passes the file it already fetched;
+   Node reads difficulty/weights/g6a-v1.json as before), and `candidates/index.js` is asked not to run the engrave gate (`opts.skipEngrave`). */
+(function (root, factory) {
+  'use strict';
+  if (typeof module === 'object' && module.exports) {
+    const path = require('path');
+    const REPO = path.resolve(__dirname, '..');
+    module.exports = factory({
+      R: require(path.join(REPO, 'scoregraph/rational.js')),
+      pitch: require(path.join(REPO, 'scoregraph/pitch.js')),
+      PLA: require(path.join(REPO, 'playability/index.js')),
+      PLAAN: require(path.join(REPO, 'playability/analyze.js')),
+      attacksFromAudioScoreNotes: require(path.join(REPO, 'tests/playability/arranger-adapters.js')).attacksFromAudioScoreNotes,
+      DIFF: require(path.join(REPO, 'difficulty/index.js')),
+      WEIGHTS: require(path.join(REPO, 'difficulty/weights/g6a-v1.json')),
+      HARM: require(path.join(REPO, 'songgraph/harmony.js')),
+      bench: require(path.join(REPO, 'tests/engrave/tools/bench.js'))
+    });
+  } else {
+    const SGM = root.PPPScoreGraphModules || {};
+    const M = root.PPPCriticsModules = root.PPPCriticsModules || {};
+    M.metrics = factory({
+      R: SGM.rational, pitch: SGM.pitch, PLA: root.PPPPlayability, PLAAN: (root.PPPPlayabilityModules || {}).analyze,
+      attacksFromAudioScoreNotes: null, DIFF: root.PPPDifficulty, WEIGHTS: null,
+      HARM: (root.PPPSongGraphModules || {}).harmony, bench: null
+    });
+  }
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (DEPS) {
 'use strict';
-const path = require('path');
-const REPO = path.resolve(__dirname, '..');
-const R = require(path.join(REPO, 'scoregraph/rational.js'));
-const SG = { pitch: require(path.join(REPO, 'scoregraph/pitch.js')) };
-const PLA = require(path.join(REPO, 'playability/index.js'));
-const PLAAN = require(path.join(REPO, 'playability/analyze.js'));
-const { attacksFromAudioScoreNotes } = require(path.join(REPO, 'tests/playability/arranger-adapters.js'));
-const DIFF = require(path.join(REPO, 'difficulty/index.js'));
-const WEIGHTS = require(path.join(REPO, 'difficulty/weights/g6a-v1.json'));
-const HARM = require(path.join(REPO, 'songgraph/harmony.js'));
-const bench = require(path.join(REPO, 'tests/engrave/tools/bench.js'));
+const R = DEPS.R;
+const SG = { pitch: DEPS.pitch };
+const PLA = DEPS.PLA;
+const PLAAN = DEPS.PLAAN;
+const attacksFromAudioScoreNotes = DEPS.attacksFromAudioScoreNotes;
+const DIFF = DEPS.DIFF;
+let WEIGHTS = DEPS.WEIGHTS;
+const HARM = DEPS.HARM;
+const bench = DEPS.bench;
+function setWeights(w) { WEIGHTS = w; }
 
 /* ---- 1. G5 hard violations ---- */
 function hardViolationsOfGraph(graph, profile) {
@@ -57,6 +87,7 @@ function hardViolationsOfGraph(graph, profile) {
   return { hard: r.totals.hard, byCode: r.totals.byCode };
 }
 function hardViolationsOfAudioNotes(notes, profile) {
+  if (!attacksFromAudioScoreNotes) throw new Error('critics/metrics: hardViolationsOfAudioNotes is Node-only');
   const attacks = attacksFromAudioScoreNotes(notes);
   const r = PLAAN.analyze(attacks, { profile: profile });
   return { hard: r.totals.hard, byCode: r.totals.byCode };
@@ -64,6 +95,7 @@ function hardViolationsOfAudioNotes(notes, profile) {
 
 /* ---- 2. G6 level vs. target ---- */
 function levelOfGraph(graph) {
+  if (!WEIGHTS) throw new Error('critics/metrics: no G6a weights (call setWeights(weights) in the browser)');
   return DIFF.assess(graph, WEIGHTS).level.position;
 }
 
@@ -159,13 +191,15 @@ function harmonyAgreement(originalHarmony, candidateGraph) {
 /* ---- 5. engraving L1/L2, via tests/engrave/tools/bench.js's own exported `measure()` -
    no new instrumentation (docs/GOALS/G08 §5's own instruction). ---- */
 function engraveMetrics(graph, id) {
+  if (!bench) throw new Error('critics/metrics: engraveMetrics is Node-only (the layout benchmark); pass skipEngrave to candidates.run in the browser');
   const row = bench.measure({ id: id, graph: graph });
   if (row.m['eg.error']) return { error: row.error || 'eg.error', silent: null, hardLayout: null };
   return { silent: row.m['eg.ledger.silent'], hardLayout: row.m['eg.layout.hard_violations'] };
 }
 
-module.exports = {
-  hardViolationsOfGraph, hardViolationsOfAudioNotes, levelOfGraph,
+return {
+  setWeights, hardViolationsOfGraph, hardViolationsOfAudioNotes, levelOfGraph,
   graphNoteList, legacyNoteList, audioNoteList, originalMelodyNotes, melodyPreservation, melodyTopLine,
   harmonyAgreement, engraveMetrics
 };
+});
