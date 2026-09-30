@@ -17231,7 +17231,7 @@ class Component extends DCLogic {
       setArrangementLevel: e => this.setState({ arrangementLevel: e.target.value }),
       setArrangementStyle: e => this.setState({ arrangementStyle: e.target.value }),
       /* G9e-lite: the switch (pressed = on, which is the default). Reads PPP.arranger itself, so it also shows a mode set from the console; session only, not remembered. */
-      singleNoteLabel: tx('One note per hand (experimental)'),
+      singleNoteLabel: tx('One note per hand'),
       singleNoteHint: tx('The right hand plays the melody as one line; the left hand plays an accompaniment one note at a time. No hand plays two or more notes together, but depending on the piece the left hand may play more notes, and some of the original harmony can be lost.'),
       singleNotePressed: ARRANGER_MODE === 'single' ? 'true' : 'false',
       singleNoteStyle: this.chip(ARRANGER_MODE === 'single') + ';align-self:flex-start;',
