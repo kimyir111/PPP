@@ -110,7 +110,7 @@ test('pipeline: G9a + G9b on the worst H-8 pieces leave 0 arranged notes below E
     assert.ok(rr.ok);
     assert.equal(RF.registerFloor(rr.graph, { sourceNotes: src }).below, 0, c.file + ': after repair');
     /* with the floor off the same request DOES put arranged notes low (so the assertion above is not vacuous) */
-    const off = CAND.run(graph, sg, request, { registerFloor: null });
+    const off = CAND.run(graph, sg, request, { registerFloor: null, allowStride: true }); /* the low bass came from the stride patterns, which are no longer in the default set */
     assert.ok(off.ok);
     assert.ok(RF.registerFloor(off.selected.graph, { sourceNotes: src }).below > 0, c.file + ': fixture assumption, the pre-floor pipeline is low here');
   }

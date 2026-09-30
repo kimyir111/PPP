@@ -27,6 +27,10 @@
        lets SELECTION pick whichever offset's OUTPUT lands assessed-closest to the
        REQUESTED target - never by the internal planning target, which is not even visible
        to `badnessOf`/`select()` (see SELECTION below).
+   POST-H-8 (docs/GOALS/G09 §12, "G9 without stride patterns"): the default walk is auto, hymn, block, broken, ballad (`PATTERNS`); the stride
+   patterns pop and waltz are opt-in (`opts.allowStride`, or `opts.patterns`), and 'auto' is realized with `noStride` so it never resolves to the
+   triple-meter waltz by default. The 7-value / 9-spec wording below describes the old set (`ALL_PATTERNS`).
+
    The request's OWN handProfile (what the request actually asked for) is always the
    primary axis, walked across every one of the 7 pattern values first (in
    `realize/index.js`'s own PATTERN_NAMES order, 'auto' first); only once those are
@@ -99,7 +103,26 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (ARR, REALIZE, CRIT, REACH, REF, SER) {
   'use strict';
 
-  const PATTERNS = ['auto'].concat(REALIZE.PATTERN_NAMES); /* auto, hymn, block, broken, ballad, pop, waltz */
+  /* Every pattern the realizer has: auto, hymn, block, broken, ballad, pop, waltz. Kept so the old candidate set stays reproducible. */
+  const ALL_PATTERNS = Object.freeze(['auto'].concat(REALIZE.PATTERN_NAMES));
+  /* The stride patterns (left hand alternating bass and chord) are NOT enumerated by default (docs/GOALS/G09 §12, "G9 without stride patterns").
+     In the two blind reviews (H-8 and its re-review) the reviewer flagged G9's arrangement as an awkward hand position or too hard on 12 of 14
+     stride-pattern selections (waltz 6 of 8, pop 6 of 6) and on 0 of 7 selections with any other pattern, and never preferred G9 over legacy where it
+     selected pop or waltz (0 of 14); two fixes to the stride geometry (register floor, closer voicing) did not change that. The code and its critics
+     stay; `opts.allowStride: true` (harness `--allow-stride`) or an explicit `opts.patterns` list brings them back. */
+  const STRIDE_PATTERNS = Object.freeze(['pop', 'waltz']);
+  const PATTERNS = Object.freeze(ALL_PATTERNS.filter(p => STRIDE_PATTERNS.indexOf(p) < 0)); /* the default: auto, hymn, block, broken, ballad */
+
+  /* The patterns one enumeration walks. `opts.patterns` (an array, in the order given) wins; else `opts.allowStride` restores the full old set;
+     else the default. An unknown name throws (a typo must not silently shrink the set). */
+  function patternsFor(opts) {
+    if (opts && opts.patterns != null) {
+      if (!Array.isArray(opts.patterns) || !opts.patterns.length) throw new Error('candidates: opts.patterns must be a non-empty array');
+      opts.patterns.forEach(p => { if (ALL_PATTERNS.indexOf(p) < 0) throw new Error('candidates: unknown pattern ' + p + ' (one of ' + ALL_PATTERNS.join(', ') + ')'); });
+      return opts.patterns.slice();
+    }
+    return opts && opts.allowStride ? ALL_PATTERNS.slice() : PATTERNS.slice();
+  }
 
   /* Round 2 (docs/GOALS/G09 §12): offsets on G6's real position scale, chosen from the
      round-2 bias measurement on the round-1 16-file sample (mean signed error ~0.008,
@@ -110,16 +133,16 @@
   const TOP_K_FOR_ENGRAVE_DEFAULT = 3; /* an engineering budget choice, not tuned to any sample - see header */
 
   /* ---- deterministic enumeration order (see header) ---- */
-  function patternProfileSpecs(request) {
+  function patternProfileSpecs(request, opts) {
     const primary = request.handProfile;
-    const specs = PATTERNS.map(p => ({ handProfile: primary, pattern: p }));
+    const specs = patternsFor(opts).map(p => ({ handProfile: primary, pattern: p }));
     REACH.PROFILES.forEach(p => { if (p !== primary) specs.push({ handProfile: p, pattern: 'auto' }); });
     return specs;
   }
 
   function specOrder(request, opts) {
     const offsets = (opts && opts.levelOffsets) || LEVEL_OFFSETS_DEFAULT;
-    const base = patternProfileSpecs(request);
+    const base = patternProfileSpecs(request, opts);
     const out = [];
     offsets.forEach(off => base.forEach(s => out.push(Object.assign({ levelOffset: off }, s))));
     return out;
@@ -155,7 +178,7 @@
         planCache.set(planCacheKey, planResult);
       }
       if (!planResult.ok) { tried.push({ spec: spec, ok: false, stage: 'plan', reason: planResult.reason }); continue; }
-      const realized = REALIZE.realize(g, sg, planResult.plan, { pattern: spec.pattern, reference: opts.reference, registerFloor: opts.registerFloor, stride: opts.stride });
+      const realized = REALIZE.realize(g, sg, planResult.plan, { pattern: spec.pattern, reference: opts.reference, registerFloor: opts.registerFloor, stride: opts.stride, noStride: !opts.allowStride });
       if (!realized.ok) { tried.push({ spec: spec, ok: false, stage: 'realize', reason: realized.reason }); continue; }
       const fp = SER.fingerprint(realized.graph);
       if (seenFingerprints.has(fp)) { tried.push({ spec: spec, ok: false, stage: 'dedup', reason: 'DUPLICATE_OF_EARLIER_CANDIDATE', fingerprint: fp }); continue; }
@@ -381,6 +404,7 @@
       '|' + JSON.stringify((opts && opts.planOpts) || null) +
       '|' + JSON.stringify(opts && opts.registerFloor !== undefined ? opts.registerFloor : 'default') +
       '|' + JSON.stringify((opts && opts.stride) || 'default') +
+      '|' + JSON.stringify(patternsFor(opts)) + '|' + (opts && opts.allowStride ? 'stride' : 'nostride') +
       '|' + (opts && opts.fullEngrave ? 'full' : 'gate');
   }
 
@@ -415,7 +439,7 @@
   }
 
   return Object.freeze({
-    PATTERNS, LEVEL_OFFSETS_DEFAULT, TOP_K_FOR_ENGRAVE_DEFAULT,
+    PATTERNS, ALL_PATTERNS, STRIDE_PATTERNS, patternsFor, LEVEL_OFFSETS_DEFAULT, TOP_K_FOR_ENGRAVE_DEFAULT,
     specOrder, patternProfileSpecs, specKey, enumerate, scoreCandidates, badnessOf, select, selectWithEngraveGate, explain, run,
     DEFAULT_WEIGHTS
   });

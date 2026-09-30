@@ -1128,3 +1128,91 @@ against `close` on three pieces)**, `tests/repair/left-hand-jump.test.js` (5). `
 (4) The proxy is pitch-based; tied continuations are not told apart from attacks. (5) `pop` voices its chord over the root bass, not the alternating fifth. (6) The realizer places the stride bass at the floor itself with no melody-crossing
 check (only an unrealistic floor crosses; the check remains for block, broken, ballad and `wide`). (7) No human has re-reviewed the result. (8) `realize/` is loaded by the app; the change reaches users only through the `PPP.arranger`
 switch, which defaults to `legacy`. Not deployed.
+
+### G9 without stride patterns (post H-8 re-review)
+
+G9's candidate set no longer contains the stride patterns `pop` and `waltz` by default. Node-only: `git diff --stat origin/main` shows no app, server or roadmap file. It
+touches `candidates/index.js`, `realize/index.js` (one option, off by default), `realize/tools/harness.js` and tests. The legacy arm, the selection weights, the level
+offsets and the hard-violation definitions are untouched (standing rule: no tuning). One writer; no sub-agent was dispatched.
+
+**1. Evidence (two blind reviews by one reviewer, the user: H-8 with 16 pieces, and its re-review with 5 pieces rated so far).** The arrangements the reviewer flagged
+"awkward hand position" or "too hard", grouped by the pattern G9a selected (`g9.chosenSpec.pattern` in the keys):
+
+| selected pattern | G9 arrangements | flagged |
+|---|---|---|
+| waltz | 8 | 6 |
+| pop | 6 | 6 |
+| **stride patterns together** | **14** | **12** |
+| block | 3 | 0 |
+| ballad | 1 | 0 |
+| hymn | 2 | 0 |
+| auto | 1 | 0 |
+| **other patterns together** | **7** | **0** |
+
+Preference: where G9 had selected pop or waltz the reviewer preferred G9 in 0 of 14 (legacy 7, no difference 6 to 7); with the other patterns G9 was preferred in 5 of 7 and never lost.
+**Limits of this evidence:** n is small (21 arrangements), it is one reviewer, and the pattern is partly confounded with the piece (two pieces appear under different patterns across
+the two reviews, and the stride patterns were mostly selected on method pieces, which are harder for other reasons too). It is not a test. What it does show: the two earlier fixes (the
+E2 register floor and the closer `open` stride voicing, PR #102 and #103) each moved a measured proxy, and the reviewer still found the stride arrangements hard (nearer-my-god at a
+left-hand jump rate of 0% was still flagged: "the low hand hopping is hard"). So the stride family itself, the left hand alternating bass and chord, is the working suspect, not its
+interval sizes.
+
+**2. What changed.**
+- `candidates/index.js`: `STRIDE_PATTERNS = ['pop', 'waltz']` (with the reason above as a comment); `PATTERNS` is now the default walk, `auto, hymn, block, broken, ballad`;
+  `ALL_PATTERNS` is the old seven-value set; `patternsFor(opts)` picks the list. Opt-in to the old set: `opts.allowStride: true` (on `enumerate` and `run`), or an explicit
+  `opts.patterns` array (an unknown name throws). Both are in the cache key. The enumeration order is the old order with the stride specs removed (tested).
+- **How `auto` was handled.** `auto` can resolve to a stride pattern inside the realizer: `realize/index.js` `structuralFallback` returns `waltz` for a genuinely triple meter
+  (`auto` never resolves to `pop`). A new realizer option `opts.noStride` (default off, so direct `realize()` calls, the app's `PPP.arranger` path and every realizer test behave as
+  before) makes that fallback `block` instead (which `policyForStage` may still subdivide into `broken` at stages 3 and 4, as for any `auto` block section). An explicit
+  `opts.pattern` of `pop` or `waltz` is still honoured with `noStride` on. `candidates/` passes `noStride: !opts.allowStride`, so the default candidate set contains no stride texture,
+  including through `auto`; `allowStride` restores `auto`'s triple-meter waltz too. With an explicit `opts.patterns` list that names `pop` or `waltz` the named candidates are
+  enumerated but `auto` stays stride-free unless `allowStride` is also set.
+- `realize/tools/harness.js`: `--allow-stride` (the old set, for comparison), `--patterns a,b,c`; `scoreGraphCandidate` is exported. The harness's G8a arm is unchanged
+  (the realizer's own `auto`).
+- The default set is 5 patterns plus 2 other hand profiles = 7 specs per level offset (21 with three offsets), so the old cap `n = 24` no longer truncates the walk (the old 27 specs lost the
+  last three). Duplicates by fingerprint are still dropped, so a request has 2 to 9 candidates.
+- Tests: `tests/critics/candidates-no-stride.test.js` (new, 7): constants and `patternsFor`; the default specs and the old order; no candidate resolves to a stride texture on a
+  triple-meter hymn, `beyer/061` and `nearer-my-god`, and the opt-in restores both textures; `auto` gives waltz for a direct `realize()`, block with `noStride`, and an explicit
+  `waltz` survives `noStride`; an explicit list; determinism and the cache; the selection after repair is never a stride texture. Two existing tests encoded the old default and were
+  adjusted, nothing else: `tests/critics/register-floor.test.js` (the "floor off, the pipeline is low" non-vacuity check now runs with `allowStride: true`, since the low bass came
+  from the stride patterns), and `tests/review/packet.test.js` (the leak scan searched the word `g8` as a bare substring, which matched the note-flag glyph id `flag8thdown` in a
+  packet drawn from the new selections; `g8` and `g9` now count only when not preceded by a letter or digit; every other word is unchanged).
+
+**3. Numbers, before (`--allow-stride`, the old set) and after (default).** G9 after repair, `node realize/tools/harness.js --sample 16 --g9a --repair --timeout-s 120` and
+`--held-out 32 --g9a --repair --timeout-s 180`, outputs outside the repo; the 11 pieces are the re-review items of `D:/PPP-review-keys/h8d/key.json` (built from `03f2549`) at their
+request levels, hand profile large, run through `candidates.run` and `repair.repairSelection`. "Jump" is the pooled left-hand jump rate (max file), "cluster" the pooled low-register
+cluster rate.
+
+| | 16-file sample (12 reachable), before = after | held-out (14 reachable): before | held-out: after | 11 re-review pieces: before | 11 re-review pieces: after |
+|---|---|---|---|---|---|
+| hard violations (files at 0) | 12/12 | 14/14 | 14/14 | 11/11 | 11/11 |
+| level within +-1 / mean distance | 10/12 / 0.3258 | 14/14 / 0.3786 | 14/14 / **0.3957** (+0.0171) | 11/11 / 0.4445 | 11/11 / **0.4718** (+0.0273) |
+| melody | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
+| harmony root+quality / root-only | 0.9753 / 0.9778 | 0.9470 / 0.9698 | 0.9726 / 0.9765 (+0.0256 / +0.0067) | 0.9306 / 0.9622 | 0.9357 / **0.9428** (+0.0051 / -0.0194) |
+| engrave silent / hard layout (files at 0) | 12/12, 12/12 | 14/14, 14/14 | 14/14, 14/14 | 11/11, 11/11 | 11/11, 11/11 |
+| jump (max file) | 2.9% (29%) | 7.3% (26%) | 5.2% (26%) | 2.2% (10%) | 0.3% (1.8%) |
+| cluster | 2.3% | 4.1% | 4.1% | 7.4% | **8.3%** |
+| close bass-chords / pairs | 0/14 | 3/76 | 1/29 | 2/140 | 1/25 |
+| notes below E2 (arranged) | 0 | 1 | 1 | 0 | 0 |
+| notes below G2 | 43 | 88 | 77 | 94 | 59 |
+| selected pattern | hymn 7, auto 3, ballad 1, block 1 | hymn 7, pop 3, auto 3, block 1 | hymn 7, auto 6, block 1 | waltz 3, pop 3, auto 3, block 1, hymn 1 | auto 8, hymn 2, block 1 |
+
+- **16-file sample: no metric moved.** Its old selections contained no stride pattern, so the change is inert there.
+- **Held-out: three files changed** (czerny599/027, burgmuller25/016, nearer-my-god; all three were `pop`, now `auto` resolving to a block, broken or hymn texture). Regression, said
+  exactly: the level distance rose 0.3786 to 0.3957 (+0.0171; still 14/14 within +-1; for example nearer-my-god 2.40 to 2.24 against target 2.40, czerny599/027 2.87 to 2.79 against 3.62).
+  Harmony rose (+0.0256 root+quality). Hard, melody and engraving did not move.
+- **11 re-review pieces: six changed** (what-child-is-this, sonatina/025, nearer-my-god, burgmuller25/016, beyer/020, beyer/061: exactly the six that had a stride, waltz 3 and pop 3; now
+  hymn 1 and auto 5, resolving to block, broken or hymn). Regressions, said exactly: level distance 0.4445 to 0.4718 (+0.0273; 11/11 still within +-1); **harmony root-only 0.9622 to
+  0.9428 (-0.0194)** while root+quality rose (+0.0051); the pooled cluster rate rose 7.4% to 8.3%, all of it beyer/061 (now a block texture at 21.9% where the pop had 0%; christ-arose
+  stays at 58.8%, unchanged). Improved: jump rate 2.2% to 0.3%, notes below G2 94 to 59. sonatina/025 is now a verbatim `hymn` copy at level 2.40 against target 3.40 (distance exactly 1.00).
+- **Unreachable: none.** All 11 pieces have 2 to 9 candidates without the stride patterns and a selection; 5 of 11 did not change selection (the-strife-is-oer, beyer/038, pass-me-not,
+  burgmuller25/006, christ-arose). Selected instead, for the six changed: what-child-is-this `auto` (a hymn copy) at level offset -1 (level 3.46 against a 3.10 stride waltz before);
+  sonatina/025 `hymn`; nearer-my-god `auto` (hymn and broken) at +1; burgmuller25/016 `auto` (broken); beyer/020 `auto` (block); beyer/061 `auto` (block) at -1.
+
+**4. Known limits.**
+- The stride code (`realize/patterns.js` `pop` and `waltz`, the `stride` geometries, and the register-floor, left-hand-jump and low-register-cluster critics and the repair guard) all stay; it is
+  now opt-in (`allowStride`, `--allow-stride`, `--patterns`). Nothing was deleted, so it can be restored for a preference test.
+- Nothing here shows the non-stride arrangements are good. It shows only that this reviewer did not flag them in 7 of 7 and preferred G9 in 5 of 7 (n small, one reviewer, confounded with
+  piece). The selection now leans on `hymn` copies (verbatim source voices, which keep the source's own left-hand jumps: held-out sonatina/004 at 26%) and block or broken `auto` textures.
+- The cost is measured above and not compensated for: a small rise in level distance, a lower root-only harmony on the 11, and one piece (beyer/061) with a higher cluster rate. No weight or
+  offset was changed to offset them.
+- No human has re-reviewed this change. Not deployed; `realize/` is loaded by the app, and with `noStride` off by default nothing the app does changes.

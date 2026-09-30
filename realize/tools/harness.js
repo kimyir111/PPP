@@ -11,7 +11,7 @@
    measured G6 position lands closest - the same fairness G8a's own search gets, never a
    fixed guess); score all four on the SAME five metrics (realize/tools/metrics.js).
 
-   node realize/tools/harness.js [--sample N] [--out path.json] [--g9a [--repair]] [--held-out N] [--register-floor N|off] [--stride wide|close]
+   node realize/tools/harness.js [--sample N] [--out path.json] [--g9a [--repair]] [--held-out N] [--register-floor N|off] [--stride wide|close|open] [--allow-stride | --patterns a,b,c]
    ========================================================================== */
 'use strict';
 const fs = require('fs');
@@ -147,7 +147,7 @@ async function runFile(rel, opts) {
   if (opts.g9a) {
     const request = { targetLevel: found.targetLevel, handProfile: found.profile, sections: 'all' };
     const t1 = Date.now();
-    const enumerated = CAND.enumerate(g, sg, request, { n: opts.g9aN, levelOffsets: opts.levelOffsets, reference: opts.reference, registerFloor: opts.registerFloor, stride: opts.stride });
+    const enumerated = CAND.enumerate(g, sg, request, { n: opts.g9aN, levelOffsets: opts.levelOffsets, reference: opts.reference, registerFloor: opts.registerFloor, stride: opts.stride, patterns: opts.patterns, allowStride: opts.allowStride });
     const cheapScored = CAND.scoreCandidates(enumerated.candidates, g, sg, request, { reference: opts.reference, skipEngrave: true, registerFloor: opts.registerFloor });
     const engraveCache = new Map(); /* real engrave results are reused by the ablation re-selections below (the gate never mutates cheapScored) */
     /* `opts.weights` (--weights k=v,...): selection weights overriding CAND.DEFAULT_WEIGHTS for the g9a row AND
@@ -400,7 +400,12 @@ async function main() {
      for a before/after on the same code. Default: close (chord voiced just above its bass). */
   const stride = opt('--stride', undefined);
   if (stride !== undefined && !['wide', 'close', 'open'].includes(stride)) throw new Error('--stride: expected wide, close or open (default open), got ' + stride);
-  const runOpts = { stride: stride, registerFloor: registerFloor, weights: weights, pattern: pattern, g9a: g9a, repair: repair, g9aN: g9aN, levelOffsets: levelOffsets, topKForEngrave: topKForEngrave, ablateCritics: ablateCritics };
+  /* --allow-stride: enumerate the stride patterns (pop, waltz) and let 'auto' pick the triple-meter waltz, as before the post-H-8 change.
+     --patterns a,b,c: enumerate exactly these patterns, in this order. */
+  const allowStride = flag('--allow-stride');
+  const patterns = flag('--patterns') ? opt('--patterns').split(',') : undefined;
+  if (patterns) CAND.patternsFor({ patterns: patterns }); /* validates the names */
+  const runOpts = { allowStride: allowStride, patterns: patterns, stride: stride, registerFloor: registerFloor, weights: weights, pattern: pattern, g9a: g9a, repair: repair, g9aN: g9aN, levelOffsets: levelOffsets, topKForEngrave: topKForEngrave, ablateCritics: ablateCritics };
   /* child mode: one file, row written to --row-out (the parent gives each file its own process and a time limit,
      so a legacy engine that never returns on one file is recorded as a timeout instead of stalling the sweep) */
   if (flag('--one')) {
@@ -438,4 +443,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch(e => { console.error(e.stack || e); process.exit(1); });
-module.exports = { sampleFiles, heldOutFiles, runFile, summarize, findG8Plan, bestLegacyRun };
+module.exports = { sampleFiles, heldOutFiles, runFile, summarize, findG8Plan, bestLegacyRun, scoreGraphCandidate };
