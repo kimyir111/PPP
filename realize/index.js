@@ -564,7 +564,7 @@ function realize(g, sg, plan, opts) {
                              event, never the bass; candidates/ passes 1. Durations and ties of the rest untouched.
        opts.handDropBass     (default off; needs opts.handMaxNotes) when the melody's top note and a protected bass note share one hand at an onset, the bass note goes instead of the
                              hand keeping both (a dyad the pipeline would report as a success): docs/GOALS/G09 section 12 "G9e refusals". candidates/ passes true with singleNoteHands. */
-  /* opts.orderedHands (default OFF; `true` turns it on; candidates/ passes it with singleNoteHands): when one hand is left idle, the hands keep their order (rebalanceHands: the
+  /* opts.orderedHands (default OFF; `true` turns it on; candidates/ does NOT pass it, a user decision: it changes the winner on 8 Hanon pieces): when one hand is left idle, the hands keep their order (rebalanceHands: the
      highest voice of an all-left-hand section goes to the right hand, instead of the lowest: docs/GOALS/G09 section 12 "G9f final-review fixes") */
   const handMaxNotes = opts.handMaxNotes == null ? null : opts.handMaxNotes;
   if (handMaxNotes != null && !(Number.isInteger(handMaxNotes) && handMaxNotes >= 1)) throw new Error('realize: opts.handMaxNotes must be an integer >= 1 (got ' + handMaxNotes + ')');

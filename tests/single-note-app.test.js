@@ -27,7 +27,7 @@
      - a stray note (G9e stray-note rescue): a piece whose only obstacle is a note no hand can reach in the time between its neighbours (tests/fixtures/g9e-stray-note.musicxml: a
        [C4, F4] chord between A6 and D6 in the melody voice, twice) was refused with ALL_CANDIDATES_HAVE_HARD_VIOLATIONS; it is now made one note per hand with the stray notes left
        out, marked (arrangement.rescued = how many), with a sentence in the Song Arranger's toast and on the review screen (ko/ja/zh in the catalogs)
-     - small gaps (G9f): tests/fixtures/g9f-small-gaps.musicxml has a 64th rest between its right-hand notes (32 of them); the saved arrangement has no 32nd or 64th rest
+     - small gaps (G9f): tests/fixtures/g9f-small-gaps.musicxml (a printed score with a 64th rest between its right-hand notes, 32 of them) keeps them; only a transcription is tidied
      - refusals and failed downloads: a piece that stays unreachable (czerny849/009), option scripts (the candidates one, or another of the fourteen) or
        reference data that cannot be loaded (also when it is the warm-up that fails: no error, and the next arrangement asks again). The Song Arranger
        saves NOTHING behind the person's back: its window stays open with a notice that does not go away and two choices ('Save the standard arrangement',
@@ -623,15 +623,17 @@ async function identityHashes(browser) {
       ok('both forms of the sentence are in the ko, ja and zh catalogs, translated, with {{n}}', Object.keys(cats2).every(l => [NOTE_STRAY1, NOTE_STRAY].every(k => typeof cats2[l][k] === 'string' && cats2[l][k] !== k && cats2[l][k].indexOf('{{n}}') > -1)), JSON.stringify(Object.keys(cats2).map(l => cats2[l][NOTE_STRAY])));
     }
 
-    console.log('\n── small gaps between notes: no 32nd or 64th rest is drawn between notes (G9f) ──');
-    /* G9f (docs/GOALS/G09 section 12 "G9f final-review fixes"): a transcription's note lengths are what a player did, so the arrangement kept 64th and 32nd rests between right-hand
-       notes (the 90-bar audio piece: 102 of 169 gaps shorter than a 16th, rests hanging below the staff). tests/fixtures/g9f-small-gaps.musicxml has a 64th rest after the first
-       eighth of every beat (32 of them, between notes). Arranged one note per hand, the saved song has none: the note before the gap is lengthened by it. */
+    console.log('\n── small gaps between notes: a printed score keeps its short rests, only a transcription is tidied (G9f) ──');
+    /* G9f (docs/GOALS/G09 section 12 "G9f final-review fixes"): a transcription's note lengths are what a player did, so its arrangement kept 64th and 32nd rests between right-hand
+       notes (the 90-bar audio piece: 102 of 169 gaps shorter than a 16th, rests hanging below the staff); repair/index.js closeSmallGaps tidies them, but ONLY for a transcription (the
+       graph's provenance says audio-score; tests/repair/g9f-gaps.test.js covers that case: the stored real transcription and a recording-marked copy of the fixture). Here the same notes
+       arrive as a MusicXML file, a printed score: tests/fixtures/g9f-small-gaps.musicxml has a 64th rest after the first eighth of every beat (32 of them, between notes), and they are
+       what its edition wrote: the saved arrangement keeps them, all 72 notes and no overlap. */
     {
       const gp = await openPage(browser);
       const gid = await addSong(gp, SMALL_GAPS);
       const g1 = await overlayArrange(gp, gid, 'intermediate', 'balanced');
-      ok('Song Arranger, a piece with a 64th rest between its notes: saved as a one-note-per-hand arrangement, no fallback',
+      ok('Song Arranger, a printed score with a 64th rest between its notes: saved as a one-note-per-hand arrangement, no fallback',
         g1.saved && g1.slot.importSource.arrangement.engine === 'ppp.g9-single' && !g1.slot.importSource.arrangement.singleFallback, g1.saved ? JSON.stringify(g1.slot.importSource.arrangement) : JSON.stringify(g1.status));
       const gs = g1.saved ? await gp.evaluate(i => {
         const sc = window.PPP.app.scoreForArrangement(i);
@@ -642,7 +644,7 @@ async function identityHashes(browser) {
         for (let k = 0; k < rh.length - 1; k++) { const a = rh[k], b = rh[k + 1]; if (a.m === b.m && a.b + a.dur > b.b + 1e-9) overlapping++; }
         return { rests: rests.length, byType: by, notes: sc.notes.filter(n => !n.rest).length, rh: rh.length, overlapping: overlapping };
       }, g1.id) : null;
-      ok('the saved song has no 32nd or 64th rest (it had 32 64th rests before): none between notes, none anywhere', !!gs && !(gs.byType['64th'] || gs.byType['32nd']) && gs.rests === 0, JSON.stringify(gs));
+      ok('the printed score\'s 32 64th rests are left exactly as written (nothing is tidied unless the graph says transcription)', !!gs && gs.byType['64th'] === 32 && gs.rests === 32, JSON.stringify(gs));
       ok('every note is still there (72 of the 72 the source has: 64 right hand, 8 left hand) and no right-hand note passes the next one', !!gs && gs.notes === 72 && gs.rh === 64 && gs.overlapping === 0, JSON.stringify(gs));
       ok('no page or console error', gp.__rec.pageErrors.length === 0 && gp.__rec.consoleErrors.length === 0, JSON.stringify(gp.__rec.pageErrors.concat(gp.__rec.consoleErrors)));
       await gp.close();

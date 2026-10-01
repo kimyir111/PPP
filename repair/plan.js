@@ -29,13 +29,14 @@
                    fix for notesPerBeat/density overage: that would need notes deleted, so it
                    is left alone (declared in the doc, not silently ignored).
 
-   ---- never repaired: what the SOURCE does (G9f) ----
+   ---- never repaired away from the source (G9f) ----
    A smell that the source graph has too, at the same place, is not the arrangement's doing, and a repair must not change notes the source itself wrote that way
-   (hanon/010 is built on deliberate parallel octaves between the hands: the `parallel` move used to break ten of them). `ctx.sourceSmells` (the source graph's
-   own critics/voice-leading.js smells; repair/index.js repairSelection supplies it, `opts.sourceGuard: false` turns it off) lists them; a detected smell is left
-   alone when the source has the SAME one: the same onset (w0) and, mod an octave, the same pitches (parallel: both slices' outer pair and the interval; innerLeap:
-   the two notes of the leap; crossing: the two notes sounding). The smell stays counted and in the report; it is only never planned. The same rule
-   covers all three voice-leading moves (parallel, innerLeap, crossing). dropDoubling (chord load) is a different smell and keeps its rule.
+   (hanon/010 is built on deliberate parallel octaves between the hands). `ctx.sourceSmells` (the source graph's own critics/voice-leading.js smells) and
+   `ctx.sourcePitchAt` (the pitches the source sounds at each onset); repair/index.js repairSelection supplies both, `opts.sourceGuard: false` turns it off. "The same" is:
+   the same onset and, for a parallel, the same interval and (mod an octave) the same pitches of both slices' outer pair; for an inner leap and a crossing, the exact
+   pitches. Such a smell is still planned, but only towards the source: a candidate move is allowed only if the new pitch is nearer than the old one to a pitch of the same pitch class that the source sounds at that onset. So an
+   arrangement that IS the source is left alone, and one the realizer put an octave away from it can still be brought back. The smell stays counted. dropDoubling
+   (chord load) is a different smell and keeps its rule.
 
    ---- never touched ----
    * a note that matches the request's ORIGINAL melody (onset within 0.15 quarter, same
@@ -127,15 +128,20 @@
       /* left-hand jump guard (G9 post-H-8 re-look): on unless ctx.leftHandJumpGuard === false; the index is built lazily */
       lhGuard: ctx.leftHandJumpGuard !== false, lhIdx: null,
       /* the smells the source graph itself has (G9f): never planned */
-      srcKeys: ctx.sourceSmells ? sourceKeysOf(ctx.sourceSmells) : null };
+      srcKeys: ctx.sourceSmells ? sourceKeysOf(ctx.sourceSmells) : null,
+      /* the pitches the source sounds at each onset ({w0 -> Set of midi}): what a source-matched smell may be moved TOWARDS */
+      srcPitchAt: ctx.sourcePitchAt || null };
   }
 
-  /* the identity of a smell, octave-free, for the "the source has it too" rule (G9f): {w0, pitch classes} */
+  /* the identity of a smell, for the "the source has it too" rule (G9f). A parallel is the relation between the two outer voices, so it is compared modulo an octave
+     (an arrangement that sits an octave from its source still has the source's parallel octaves): {w0, interval, the pitch classes of both slices' outer pair}. An inner
+     leap and a crossing are compared by the EXACT pitches ({w0, from, to} and {w0, the two midis}): a coincidence of pitch classes (two inner voices of a hymn that share
+     {C, A}) is not the same smell */
   const pc = m => ((m % 12) + 12) % 12;
   function smellId(kind, s) {
     if (kind === 'parallel') return 'P|' + s.w0 + '|' + s.interval + '|' + [s.from.hi, s.from.lo, s.to.hi, s.to.lo].map(pc).join(',');
-    if (kind === 'innerLeap') return 'L|' + s.w0 + '|' + pc(s.from) + ',' + pc(s.to);
-    return 'X|' + s.w0 + '|' + s.midis.map(pc).sort((a, b) => a - b).join(',');
+    if (kind === 'innerLeap') return 'L|' + s.w0 + '|' + s.from + ',' + s.to;
+    return 'X|' + s.w0 + '|' + s.midis.slice().sort((a, b) => a - b).join(',');
   }
   /* the set of smell identities of a smells result (VL.smellsFromNotes / voiceLeadingSmells) */
   function sourceKeysOf(sm) {
@@ -220,10 +226,22 @@
 
   /* choose the best candidate {note, shift} for a smell: strictly fewer smells, none of the three
      categories up; tie-break as documented in the header */
-  function bestShift(state, before, cands, op, key) {
+  function towardSource(state, n, newMidi) {
+    const set = state.srcPitchAt && state.srcPitchAt.get(R.format(n.w0));
+    if (!set) return false;
+    const same = Array.from(set).filter(x => ((x % 12) + 12) % 12 === n.pc);
+    if (!same.length) return false;
+    const dist = m => Math.min.apply(null, same.map(x => Math.abs(x - m)));
+    return dist(newMidi) < dist(n.midi);
+  }
+
+  function bestShift(state, before, cands, op, key, fromSource) {
     let best = null;
     cands.forEach((c, order) => {
       if (!movable(c.note) || !candidateOk(state, c.note, c.note.midi + c.shift)) return;
+      /* a smell the source has too (G9f) is repaired ONLY towards the source: the new pitch must be nearer than the old one to a pitch of the same pitch class that the source sounds at that
+         onset (a source pitch itself is distance 0). An arrangement that IS the source cannot get nearer, so it is left; one the realizer put octaves away from it may be brought back. */
+      if (fromSource && !towardSource(state, c.note, c.note.midi + c.shift)) return;
       const after = smellsOf(state, withShift(state.notes, c.note, c.note.midi + c.shift));
       if (!(after.count < before.count) || !noRise(after, before)) return;
       const score = [after.count, Math.abs(c.shift), order];
@@ -239,7 +257,7 @@
   const SHIFTS_HIGH = [-12, 12, -24, 24];
 
   /* ---- one smell -> one unit (or null: not repairable within the constraints) ---- */
-  function planParallel(state, before, s) {
+  function planParallel(state, before, s, fromSource) {
     const slice = VL.slicesFromNotes(state.notes).find(x => R.format(x.w0) === s.w0);
     if (!slice) return null;
     const outer = VL.outerPairOf(slice);
@@ -248,10 +266,10 @@
     const cands = [];
     lows.forEach(n => SHIFTS_LOW.forEach(sh => cands.push({ note: n, shift: sh })));
     highs.forEach(n => SHIFTS_HIGH.forEach(sh => cands.push({ note: n, shift: sh })));
-    return bestShift(state, before, cands, 'parallel', 'parallel|' + s.w0);
+    return bestShift(state, before, cands, 'parallel', 'parallel|' + s.w0, fromSource);
   }
 
-  function planInnerLeap(state, before, s) {
+  function planInnerLeap(state, before, s, fromSource) {
     const seq = state.notes.filter(n => n.voiceId === s.voiceId && R.format(n.w0) === s.w0 && n.midi === s.to);
     const b = seq[0];
     if (!b) return null;
@@ -263,14 +281,14 @@
     if (a) cands.push({ note: a, shift: towardB });
     cands.push({ note: b, shift: towardA * 2 });
     if (a) cands.push({ note: a, shift: towardB * 2 });
-    return bestShift(state, before, cands, 'innerLeap', 'leap|' + s.voiceId + '|' + s.w0);
+    return bestShift(state, before, cands, 'innerLeap', 'leap|' + s.voiceId + '|' + s.w0, fromSource);
   }
 
-  function planCrossing(state, before, s) {
+  function planCrossing(state, before, s, fromSource) {
     const at = state.notes.filter(n => n.partId === s.part && R.format(n.w0) === s.w0 && s.voices.indexOf(n.voiceId) >= 0);
     const cands = [];
     at.forEach(n => [12, -12, 24, -24].forEach(sh => cands.push({ note: n, shift: sh })));
-    return bestShift(state, before, cands, 'crossing', 'cross|' + s.part + '|' + s.w0 + '|' + s.voices.join(','));
+    return bestShift(state, before, cands, 'crossing', 'cross|' + s.part + '|' + s.w0 + '|' + s.voices.join(','), fromSource);
   }
 
   /* every detected smell, in score order (then category order): the planner walks this list */
@@ -278,7 +296,7 @@
     const sm = smellsOf(state);
     const out = [];
     const src = state.srcKeys;
-    const add = (kind, s) => { if (!(src && src.has(smellId(kind, s)))) out.push({ kind: kind, s: s }); };
+    const add = (kind, s) => out.push(src && src.has(smellId(kind, s)) ? { kind: kind, s: s, src: true } : { kind: kind, s: s });
     sm.parallels.forEach(s => add('parallel', s));
     sm.innerLeaps.forEach(s => add('innerLeap', s));
     sm.crossings.forEach(s => add('crossing', s));
@@ -295,9 +313,9 @@
   }
 
   function planSmell(state, before, item) {
-    if (item.kind === 'parallel') return planParallel(state, before, item.s);
-    if (item.kind === 'innerLeap') return planInnerLeap(state, before, item.s);
-    return planCrossing(state, before, item.s);
+    if (item.kind === 'parallel') return planParallel(state, before, item.s, item.src);
+    if (item.kind === 'innerLeap') return planInnerLeap(state, before, item.s, item.src);
+    return planCrossing(state, before, item.s, item.src);
   }
 
   /* dropDoubling proposals for one measure (`m` is a measure id): every same-hand attack in that
