@@ -976,11 +976,136 @@
     return pieces(pos, len, bar, beat);
   }
 
+  /* ------------------------------------------------------- exact bars (docs/GOALS/G09 section 12, "Recording notation: tuplets and the grid")
+     The quantiser leaves onsets and releases on three lattices at once: the 16th grid (6 ticks), a 32nd lattice (3) and the thirds of a triplet beat (8). A note on the 32nd lattice (a G3 at
+     3.625 beats lasting 3/8 of a beat), a release between two lattices and a gap of an eighth of a beat that no rest is written for gave the teacher's piece 38 bars whose values do not
+     add up. For a recording in a simple-time bar (a quarter-note beat) with opts.exactBars, every onset and every release is put on ONE grid per beat:
+       - a triplet beat (a beat with an onset on a third: 8 or 16 ticks into it): the thirds, 0 / 8 / 16 / 24;
+       - any other beat: the 16th grid, 0 / 6 / 12 / 18 / 24 - except a beat that holds a genuine 32nd run (see snapOnsets), which keeps the 32nd lattice (a multiple of 3).
+     An onset on the 32nd lattice moves to the 16th-grid point beside it (3 ticks = 1/32 of a whole note at most, 0.05 s at 162 bpm), the one nearer its measured time, unless another onset
+     already sits on that point (a run: 0, 3, 6): then it stays. Every note keeps its order, none is lost, none is shortened below a 16th (a third in a triplet beat) unless it was. */
+  const exactGrid = (q, bars, bar) => {
+    const trip = new Set(), fast = new Set();
+    q.forEach(n => {
+      const j = Math.floor(n.tick / Q), o = n.tick - j * Q;
+      if (o === 8 || o === 16) trip.add(j); else if (o % 6) fast.add(j);
+    });
+    const valid = p => {
+      const j = Math.floor(p / Q), o = p - j * Q;
+      if (!o) return true;
+      return trip.has(j) ? o % 8 === 0 : (fast.has(j) ? o % 3 === 0 : o % 6 === 0);
+    };
+    /* the nearest valid point to p in [lo, hi], a tie going to the later one; null when there is none */
+    const nearest = (p, lo, hi) => {
+      for (let d = 0; d <= Q; d++) {
+        if (p + d <= hi && p + d >= lo && valid(p + d)) return p + d;
+        if (p - d >= lo && p - d <= hi && valid(p - d)) return p - d;
+      }
+      return null;
+    };
+    return { trip: trip, fast: fast, valid: valid, nearest: nearest, bars: bars, bar: bar, last: bars * bar };
+  };
+
+  /* every onset on the grid. Returns {moved, maxShift, onsets}: how many distinct onsets moved and the largest move (ticks). `beats`, `origin` and `perBeat` give each note's measured position in ticks. */
+  function snapOnsets(q, bars, bar, beats, origin, perBeat) {
+    const last = bars * bar;
+    const ticks = Array.from(new Set(q.map(n => n.tick))).sort((a, b) => a - b);
+    const tripBeat = new Set();
+    ticks.forEach(t => { const o = t - Math.floor(t / Q) * Q; if (o === 8 || o === 16) tripBeat.add(Math.floor(t / Q)); });
+    /* where each distinct onset was measured, in ticks (the mean of its notes: a clustered attack shares one tick) */
+    const measured = new Map();
+    q.forEach(n => {
+      const at = n.attack != null ? n.attack : n.on;
+      const x = at != null && isFinite(at) ? beatPosition(beats, at) * perBeat - origin : n.tick;
+      const m = measured.get(n.tick) || { sum: 0, n: 0 };
+      m.sum += x; m.n++; measured.set(n.tick, m);
+    });
+    const onGrid = t => { const j = Math.floor(t / Q), o = t - j * Q; return !o || (tripBeat.has(j) ? o % 8 === 0 : o % 6 === 0); };
+    const taken = new Set();                            /* the points an onset sits on or has moved to */
+    ticks.forEach(t => { if (onGrid(t)) taken.add(t); });
+    /* the onsets of each staff, and the staves that have a note at each onset: a genuine 32nd run is told apart per staff */
+    const staffTicks = [null, new Set(), new Set()], staffsAt = new Map();
+    q.forEach(n => {
+      if (n.staff === 1 || n.staff === 2) staffTicks[n.staff].add(n.tick);
+      if (!staffsAt.has(n.tick)) staffsAt.set(n.tick, new Set());
+      staffsAt.get(n.tick).add(n.staff);
+    });
+    /* the notes (staff|pitch) at each point, as they stand: two notes of one hand with one pitch may not meet on a point (one chord holds a pitch once) */
+    const heldAt = new Map();
+    q.forEach(n => { if (!heldAt.has(n.tick)) heldAt.set(n.tick, new Set()); heldAt.get(n.tick).add(n.staff + '|' + n.midi); });
+    const collides = (t, k) => { const there = heldAt.get(k); return !!there && Array.from(heldAt.get(t)).some(x => there.has(x)); };
+    const map = new Map();
+    let moved = 0, maxShift = 0, kept = 0, merged = 0;
+    ticks.forEach(t => {
+      if (onGrid(t)) { map.set(t, t); return; }
+      const j = Math.floor(t / Q), step = tripBeat.has(j) ? 8 : 6;
+      const m = measured.get(t), x = m.sum / m.n;
+      /* the grid points within a step either side, the nearest to its measured time first */
+      const c = [];
+      for (let k = Math.floor((t - step) / step) * step; k <= t + step; k += step) if (k >= 0 && k < last && Math.abs(k - t) < step && onGrid(k)) c.push(k);
+      c.sort((a, b) => Math.abs(a - x) - Math.abs(b - x) || a - b);
+      const free = c.find(k => !taken.has(k));
+      let to = t;
+      if (free !== undefined) to = free;
+      else {
+        /* both neighbours are taken: a 32nd-lattice onset is a genuine run when every staff that plays it also played a note a 32nd before (so no silence of a staff ends on an odd 32nd: a
+           rest would need a 32nd piece); then it stays on the 32nd lattice. Anything else goes to the nearer neighbour (two notes of a staff that meet there are one chord). */
+        const run = t % 3 === 0 && !tripBeat.has(j) && Array.from(staffsAt.get(t)).every(st => st >= 1 && staffTicks[st].has(t - 3));
+        const meet = c.find(k => !collides(t, k));
+        if (run || meet === undefined) kept++;              /* (a pitch that would be lost where two notes meet also stays) */
+        else { to = meet; merged++; }
+      }
+      if (to !== t) { if (!heldAt.has(to)) heldAt.set(to, new Set()); heldAt.get(t).forEach(x => heldAt.get(to).add(x)); }
+      taken.add(to);
+      if (to !== t) { moved++; maxShift = Math.max(maxShift, Math.abs(to - t)); }
+      map.set(t, to);
+    });
+    q.forEach(n => { n._tick0 = n.tick; n.tick = map.get(n.tick); n.endTick = Math.max(n.endTick, n.tick + 1); });
+    return { moved: moved, maxShift: maxShift, onsets: ticks.length, kept32nd: kept, merged: merged };
+  }
+
+  /* the written length of a note that starts at `start` and was released at `end` (ticks): the nearest plain value, or a third / two thirds of a beat, that ends on the grid and fits in `room`; null when none does */
+  function readableEndExact(start, end, room, bar, grid) {
+    const len = end - start;
+    const vals = [72, 48, 36, 24, 18, 16, 12, 9, 8, 6, 3].filter(v => v <= room && v < bar && grid.valid(start + v) &&
+      ((v !== 9 && v !== 3) || grid.fast.has(Math.floor(start / Q)) || grid.fast.has(Math.floor((start + v) / Q))));
+    if (!vals.length) return null;
+    vals.sort((a, b) => Math.abs(a - len) - Math.abs(b - len) || a - b);
+    return start + vals[0];
+  }
+
+  /* A span [a0, a0 + len) of one voice in ticks that does not cross a bar line, as the values it is written with: a triplet beat's third / two thirds (8 / 16) for the part that starts or ends inside
+     one, the ordinary pieces for the rest (nothing starts or ends off the grid, so these never need a value that is not 3, 6, 9, 12, 18, 24 ...). `kind`: 'note' (an exact plain value is one symbol
+     even over a beat line) or 'rest' (nothing crosses a beat unless it starts on one). */
+  function exactPieces(a0, len, bar, grid, kind) {
+    const out = [];
+    const barStart = Math.floor(a0 / bar) * bar;
+    let pos = a0, rem = len;
+    while (rem > 0) {
+      const j = Math.floor(pos / Q), off = pos - j * Q;
+      if (grid.trip.has(j) && !(off === 0 && rem >= Q)) {
+        const take = Math.min(rem, (j + 1) * Q - pos);
+        out.push(take); pos += take; rem -= take;
+        continue;
+      }
+      const end = pos + rem, k = Math.floor(end / Q);
+      let lim = rem;
+      if (end % Q && grid.trip.has(k)) lim = k * Q - pos;
+      const rel = pos - barStart, G = kind === 'rest' ? gapsLib() : null;
+      if (G && G.tile && rel % 3 === 0 && lim % 3 === 0) {
+        /* a silence is written the way scoregraph/gaps.js mergeRests writes it (the standard tiling on the beat grid), so that pass finds nothing to change */
+        G.tile(rel / 3, (rel + lim) / 3, 8, false, bar / 3, false).forEach(pc => out.push(pc.len * 3));
+      } else (kind === 'note' ? notePieces : pieces)(rel, lim, bar, Q).forEach(v => out.push(v));
+      pos += lim; rem -= lim;
+    }
+    return out;
+  }
+
   function esc(s) {
     return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
   }
 
-  function staffEvents(notes, staff, bar, beat, allowBarTies) {
+  function staffEvents(notes, staff, bar, beat, allowBarTies, grid) {
     const mine = notes.filter(n => n.staff === staff);
     const byTick = {};
     const onsets = [];
@@ -1005,7 +1130,7 @@
         /* Close only a tiny release gap, and only if doing so remains one
            symbol. This cleans up detector jitter without manufacturing a tie. */
         if (gap <= Math.max(1, Math.round(span * 0.2)) &&
-            notePieces(local, span, bar, beat).length === 1) end = next;
+            (grid ? exactPieces(t, span, bar, grid, 'note').length : notePieces(local, span, bar, beat).length) === 1) end = next;
       }
       end = Math.min(end, next);
       /* A key-up inferred from audio is not evidence that the composer wrote
@@ -1016,6 +1141,29 @@
       if (!allowBarTies) {
         const local = ((t % bar) + bar) % bar;
         end = Math.min(end, t + (bar - local));
+      }
+      if (grid) {
+        /* exact bars: the release on the grid (a plain value, or a third of a beat), never past the next onset or the bar line the note is clamped to */
+        const loc = ((t % bar) + bar) % bar, boundary = t + (bar - loc);
+        const cap = Math.min(next, allowBarTies ? grid.last : boundary);
+        if (end > cap) end = cap;
+        if (end >= boundary - 1e-6) {
+          /* a note that reaches the bar line (or, with a symbolic grid, crosses it) keeps its end when that is a point of the grid */
+          if (!grid.valid(end)) { const nr = grid.nearest(end, t + 1, cap); end = nr === null ? cap : nr; }
+        } else {
+          /* inside the bar the nearest single readable value, as readableEnd chooses it (a note is not tied over a beat to fill a silence it was released before) */
+          const r = readableEndExact(t, end, Math.min(next, boundary) - t, bar, grid);
+          if (r !== null) end = r;
+          else { const nr = grid.nearest(end, t + 1, cap); end = nr === null ? cap : nr; }
+        }
+        /* no silence shorter than a 16th, and none that starts on an odd 32nd (a rest would need a 32nd piece): the note rings up to the next onset, or to the next point of the 16th grid */
+        if (end < cap) {
+          const j = Math.floor(end / Q);
+          if (!grid.trip.has(j) && (end - j * Q) % 6 === 3 && grid.valid(end + 3)) end += 3;
+          if (next !== Infinity && end < next && next - end < 6) end = next;
+        }
+        events.push({ start: t, end: end, notes: ns, tuplet: ns.some(n => n.tuplet) });
+        return;
       }
       end = readableEnd(t, end, next, bar, beat, ns.some(n => n.tuplet));
       if (end <= t) end = Math.min(t + 6, next);
@@ -1196,6 +1344,7 @@
     const { title, key, beatsPerBar, beatType, bpm, bars, events1, events2, pedals, table } = model;
     const beatTicks = beatType >= 8 && beatsPerBar % 3 === 0 ? Q * 3 / 2 : Q;
     const bar = Math.round(beatsPerBar * (4 / beatType) * Q);
+    const grid = model.grid || null;                        /* exact bars: every value on the beat's grid; the tuplets are written by scoregraph/rec-tuplet.js */
     const W = t => R.format(R.make(t, Q * 4));            /* ticks (Q a quarter) as whole notes */
     const b = SG.builder({ id: model.scoreId || 'sg-audio', meta: { title: title } });
     /* what the notes came from, which is not always a microphone: a MIDI file says so (G02 §7.6) */
@@ -1245,7 +1394,7 @@
       const accState = {};
       const rest = (from, to) => {
         const full = from === 0 && to === bar;
-        pieces(from, to - from, bar, beatTicks).forEach(v => {
+        (grid ? exactPieces(barStart + from, to - from, bar, grid, 'rest') : pieces(from, to - from, bar, beatTicks)).forEach(v => {
           /* issue 19 kept as it is: a rest inside a triplet is printed with its plain value */
           const t = full ? (TYPES[bar] || TYPES[v] || ['whole', 0]) : (TYPES[v] || ['16th', 0]);
           const display = { type: t[0] };
@@ -1259,10 +1408,10 @@
         const s = ev.start - barStart, e = ev.end - barStart;
         if (s > cursor) rest(cursor, s);
         let pos = s;
-        const parts = notePieces(s, e - s, bar, beatTicks);
+        const parts = grid ? exactPieces(barStart + s, e - s, bar, grid, 'note') : notePieces(s, e - s, bar, beatTicks);
         const anyTuplet = ev.tuplet || parts.some(v => tupletOf(v));
         parts.forEach((v, pi2) => {
-          const tu = tupletOf(v);
+          const tu = grid ? null : tupletOf(v);
           const t = tu ? [tu.type, 0] : (TYPES[v] || ['16th', 0]);
           const tieStop = pi2 > 0 || ev.tieIn, tieStart = pi2 < parts.length - 1 || ev.tieOut;
           const display = t[1] ? { type: t[0], dots: t[1] } : { type: t[0] };
@@ -1418,8 +1567,14 @@
     });
     const notationBeat = beatType >= 8 && beatsPerBar % 3 === 0 ? Q * 3 / 2 : Q;
     const allowBarTies = extra.quantizer === 'pm2s';
-    const events1 = staffEvents(q, 1, bar, notationBeat, allowBarTies);
-    const events2 = staffEvents(q, 2, bar, notationBeat, allowBarTies);
+    /* exact bars (see exactGrid): a recording in a simple-time bar with opts.exactBars; the library default and a MIDI file write the score as they always did */
+    let grid = null, gridReport = null;
+    if (opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4 && ticksPerBeat === Q && tupletLib() && tupletLib().addTriplets) {
+      gridReport = snapOnsets(q, bars, bar, beats, origin, ticksPerBeat);
+      grid = exactGrid(q, bars, bar);
+    }
+    const events1 = staffEvents(q, 1, bar, notationBeat, allowBarTies, grid);
+    const events2 = staffEvents(q, 2, bar, notationBeat, allowBarTies, grid);
 
     const title = (opts.title || extra.title || 'Transcribed recording').trim() || 'Transcribed recording';
     const ibi = ibiOf(beats);
@@ -1433,7 +1588,7 @@
     const roundBpm = Math.round(clamp(bpm, 30, 240));
     const model = {
       title: title, key: key, beatsPerBar: beatsPerBar, beatType: beatType, bpm: roundBpm,
-      bars: bars, events1: events1, events2: events2, pedals: pedals, table: table
+      bars: bars, events1: events1, events2: events2, pedals: pedals, table: table, grid: grid
     };
 
     const tickToSec = tick => {
@@ -1515,18 +1670,19 @@
     let graph = built.graph, graphIssues = built.issues;
     const exactOn = !!opts.exactBars && (model.sourceKind || 'audio-score') === 'audio-score' && !!(tupletLib() && tupletLib().addTriplets);
     const gaps = (opts.closeGaps === undefined ? CLOSE_GAPS_DEFAULT : !!opts.closeGaps) && (model.sourceKind || 'audio-score') === 'audio-score' ? gapsLib() : null;
+    /* one tuplet over each triplet beat, rests inside it included (it replaces the one-note tuplets of the beats it describes): opts.exactBars (below: "exact bars"). BEFORE the gaps pass: a rest
+       that a tuplet holds is not touched by mergeRests (a quarter rest and the triplet rest after it are not one dotted rest with a hole) */
+    if (exactOn) {
+      const tu = tupletLib().addTriplets(graph);
+      if (tu.changed) { graph = tu.graph; graphIssues = tu.issues || graphIssues; }
+      result.tupletReport = tu.stats;
+    }
     if (gaps) {
       /* the gaps closed, then each silence written once: "consecutive rests" (scoregraph/gaps.js mergeRests; a page with an older gaps.js has no tidyRests and closes the gaps only) */
       const cg = gaps.tidyRests ? gaps.tidyRests(graph) : gaps.closeSmallGaps(graph);
       if (cg.changed) { graph = cg.graph; graphIssues = cg.issues || graphIssues; }
       result.gapReport = cg.stats; /* beside the graph, not in stats (the benchmark snapshots stats) */
       if (cg.rests) result.restReport = cg.rests;
-    }
-    /* one tuplet over each triplet beat, rests inside it included (it replaces the one-note tuplets of the beats it describes): opts.exactBars (below: "exact bars") */
-    if (exactOn) {
-      const tu = tupletLib().addTriplets(graph);
-      if (tu.changed) { graph = tu.graph; graphIssues = tu.issues || graphIssues; }
-      result.tupletReport = tu.stats;
     }
     /* G3 (docs/GOALS/G03 §5.1): the notation passes between the graph and the file. 'off' writes the graph as
        built; 'shadow' runs G3 and reports what it would change (proReport) but writes the graph as built; 'on'
@@ -1537,6 +1693,7 @@
       result.proReport = pro.report;
       if (professional === 'on' && pro.graph !== graph) { graph = pro.graph; graphIssues = pro.issues; }
     }
+    if (gridReport) result.gridReport = gridReport;            /* beside the graph, not in stats (the benchmark snapshots stats) */
     result.xml = scoreGraph().musicxml.export(graph, { software: 'PPP audio transcription' }).xml;
     result.graph = graph;
     result.graphIssues = graphIssues;

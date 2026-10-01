@@ -440,12 +440,13 @@
     const closeOpt = opts.closeGaps === undefined ? 'auto' : opts.closeGaps;
     if (single && r.graph && (closeOpt === true || (closeOpt === 'auto' && isTranscription(g)))) {
       /* the gaps closed and the silences written once, to a fixed point (scoregraph/gaps.js tidyRests); a page whose gaps.js is older has only the closing */
-      const tr = GAPS && GAPS.tidyRests ? GAPS.tidyRests(r.graph) : (() => { const c = closeSmallGaps(r.graph); return { graph: c.graph, stats: c.stats }; })();
       /* "Recording notation: tuplets and the grid" (docs/GOALS/G09 section 12): the arrangement copies the events of a recording verbatim, and the copy has no tuplet (realize/ copies ties only), so
-         the bracket of every triplet beat is written again here, on the finished arrangement of a transcription (scoregraph/rec-tuplet.js; a page that has not loaded it: none) */
-      const tt = RECTUP && RECTUP.addTriplets ? RECTUP.addTriplets(tr.graph) : null;
-      const gOut = tt && tt.changed ? tt.graph : tr.graph;
-      return Object.assign({ ok: true, ctx: ctx }, r, { graph: gOut, report: r.report ? Object.assign({}, r.report, { closedGaps: tr.stats }, tr.rests ? { mergedRests: tr.rests } : {}, tt ? { tuplets: tt.stats } : {}) : r.report });
+         the bracket of every triplet beat is written again here, on the finished arrangement of a transcription (scoregraph/rec-tuplet.js; a page that has not loaded it: none). BEFORE the gaps
+         pass: a rest a tuplet holds is left as it is by mergeRests (a quarter rest and the triplet rest after it are not one dotted rest with a hole) */
+      const tt = RECTUP && RECTUP.addTriplets ? RECTUP.addTriplets(r.graph) : null;
+      const g1 = tt && tt.changed ? tt.graph : r.graph;
+      const tr = GAPS && GAPS.tidyRests ? GAPS.tidyRests(g1) : (() => { const c = closeSmallGaps(g1); return { graph: c.graph, stats: c.stats }; })();
+      return Object.assign({ ok: true, ctx: ctx }, r, { graph: tr.graph, report: r.report ? Object.assign({}, r.report, { closedGaps: tr.stats }, tr.rests ? { mergedRests: tr.rests } : {}, tt ? { tuplets: tt.stats } : {}) : r.report });
     }
     return Object.assign({ ok: true, ctx: ctx }, r);
   }
