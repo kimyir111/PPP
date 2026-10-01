@@ -4780,7 +4780,9 @@ async function arrangeSingleNote(builtGraph, plan) {
     /* levelNote: the chosen candidate was planned by the relaxed pass (some passage has more notes than the level's strict search allows, which the one-note-per-hand pass then thins):
        the result can be harder than the level asked for, and the screens say so */
     const levelNote = sel.selected.plan && sel.selected.plan.relaxed ? 'relaxed-plan' : null;
-    const out = { ok: true, graph: graph, degraded: !!(sel.selected.plan && sel.selected.plan.degraded), levelNote: levelNote, report: Object.assign({ spec: sel.selected.spec, repaired: !!rr.changed, request: request }, levelNote ? { relaxed: sel.selected.plan.relaxed } : {}) };
+    /* rescued: the notes the stray-note rescue left out (candidates/index.js strayRescue: a note that no hand could reach in the time between its neighbours, which would otherwise have refused the whole piece); null when none */
+    const rescued = sel.selected.rescued && sel.selected.rescued.length ? sel.selected.rescued : null;
+    const out = { ok: true, graph: graph, degraded: !!(sel.selected.plan && sel.selected.plan.degraded), levelNote: levelNote, rescued: rescued, report: Object.assign({ spec: sel.selected.spec, repaired: !!rr.changed, request: request }, levelNote ? { relaxed: sel.selected.plan.relaxed } : {}, rescued ? { rescued: rescued } : {}) };
     if (key) { SINGLE_CACHE.set(key, out); while (SINGLE_CACHE.size > SINGLE_CACHE_MAX) SINGLE_CACHE.delete(SINGLE_CACHE.keys().next().value); }
     return Object.assign({ ms: Date.now() - t0 }, out);
   } catch (e) {
@@ -14131,7 +14133,7 @@ class Component extends DCLogic {
       bpm: +S.lockBpm || S.score.tempo || 80,
       firstDownbeat: S.lockDownbeat == null ? 0 : +S.lockDownbeat
     };
-    let built, base, arranged, g8Degraded = false, singleFailure = null, standardInstead = false, levelNote = null;
+    let built, base, arranged, g8Degraded = false, singleFailure = null, standardInstead = false, levelNote = null, rescued = null;
     try {
       built = A.toMusicXml({
         notes: heard.notes, pedals: heard.pedals,
@@ -14148,6 +14150,7 @@ class Component extends DCLogic {
           arranged.source = { arrangement: { engine: 'ppp.g9-single' } };
           g8Degraded = sn.degraded;
           levelNote = sn.levelNote || null;
+          rescued = sn.rescued || null;
         } else {
           singleFailure = sn.reason || 'unknown';
           /* what the option-off request would have done: a balanced/melody/accompaniment texture is written by the rhythm rewriter (rewriteFromHeard),
@@ -14208,7 +14211,7 @@ class Component extends DCLogic {
       tempo: arranged.tempo, barStarts: built.stats.barStarts,
       arrangement: Object.assign({}, arranged.source && arranged.source.arrangement || {}, {
         level: plan.level, style: plan.style, source: plan.source || 'local'
-      }, singleFailure ? { singleFallback: singleFailure } : {}, levelNote ? { levelNote: levelNote } : {}),
+      }, singleFailure ? { singleFallback: singleFailure } : {}, levelNote ? { levelNote: levelNote } : {}, rescued ? { rescued: rescued.length } : {}),
       arrangementOriginalNotes: built.stats.notes,
       arrangementNotes: arranged.notes.filter(n => !n.rest).length
     });
@@ -14222,13 +14225,13 @@ class Component extends DCLogic {
     this.setState({
       importReport: report, importSource: source,
       arrangementLevel: plan.level, arrangementStyle: plan.style,
-      arrangementBusy: false, arrangementStatus: singleNotice || (levelNote ? this.levelNoteText() : '') || (source.arrangement.engine === 'ppp.g9-single' ? '' : arrangementStatus) || '', /* an AI line about a texture says nothing true of a one-note-per-hand result; the harder-than-chosen note stays on the screen like the fallback notice */
+      arrangementBusy: false, arrangementStatus: singleNotice || this.singleNoticeText(levelNote, rescued) || (source.arrangement.engine === 'ppp.g9-single' ? '' : arrangementStatus) || '', /* an AI line about a texture says nothing true of a one-note-per-hand result; the harder-than-chosen note stays on the screen like the fallback notice */
       reviewFrom: Score.first(arranged)
     }, () => this.saveNow());
     if (singleNotice) this.say(singleNotice);
     else if (source.arrangement.engine === 'ppp.g9-single') this.say((g8Degraded
       ? tx('Created a {{level}} arrangement. Some passages had low melody/bass confidence, so PPP kept them simple rather than guess.', { level: tx(plan.level) })
-      : tx('Created a {{level}} one-note-per-hand arrangement.', { level: tx(plan.level) })) + (levelNote ? ' ' + this.levelNoteText() : ''));
+      : tx('Created a {{level}} one-note-per-hand arrangement.', { level: tx(plan.level) })) + (levelNote || rescued ? ' ' + this.singleNoticeText(levelNote, rescued) : ''));
     else this.say(g8Degraded
       ? tx('Created a {{level}} arrangement. Some passages had low melody/bass confidence, so PPP kept them simple rather than guess.', { level: tx(plan.level) })
       : tx('Created a {{level}} {{style}} arrangement.', { level: tx(plan.level), style: this.arrangementStyleName(plan.style) }));
@@ -14796,6 +14799,14 @@ class Component extends DCLogic {
   }
   /* G9e refusals: the piece was planned by the relaxed pass (arrangement/plan.js relax), so it can be harder than the level asked for */
   levelNoteText() { return tx('This piece has many notes, so the arrangement may be a little harder than the level you chose.'); }
+  /* G9e stray-note rescue: notes the arranger left out because no hand could play them in the time between their neighbours (candidates/index.js strayRescue) */
+  rescuedText(n) { return tx(n === 1 ? '{{n}} note was left out because it could not be played smoothly.' : '{{n}} notes were left out because they could not be played smoothly.', { n: n }); }
+  /* the one line a one-note-per-hand result can carry: the level note and/or the left-out notes ('' when neither); remembered, so that choosing another level can take exactly it off the screen */
+  singleNoticeText(levelNote, rescued) {
+    const text = [levelNote ? this.levelNoteText() : '', rescued && rescued.length ? this.rescuedText(rescued.length) : ''].filter(Boolean).join(' ');
+    this._singleNoticeText = text || null;
+    return text;
+  }
   /* G9e refusals: a piece the one-note-per-hand arranger cannot make is NOT saved as the standard arrangement behind the person's back: the window stays open with the
      notice and two choices (saveStandardAfterRefusal saves the standard copy, dismissSingleRefusal keeps the window open with the options free to change). */
   async saveStandardAfterRefusal() {
@@ -14854,7 +14865,7 @@ class Component extends DCLogic {
     plan = ScoreArranger.norm(Object.assign({}, plan || {}, { source: provider ? 'ai' : (plan && plan.source) }));
     let title = (d.autoTitle ? this.arrangementCopyTitle(d.songTitle, plan.style, singleRoute(plan)) : String(d.copyTitle || '').trim())
       || this.arrangementCopyTitle(d.songTitle, plan.style, singleRoute(plan));
-    let arranged, usedFallback = false, usedSingle = false, singleFailure = null, levelNote = null;
+    let arranged, usedFallback = false, usedSingle = false, singleFailure = null, levelNote = null, rescued = null;
     if (saveOpts && saveOpts.standardAfter) {
       /* the person pressed "Save the standard arrangement" after a refusal: no second try of the one-note-per-hand arranger */
       singleFailure = saveOpts.standardAfter.reason || 'unknown';
@@ -14876,11 +14887,12 @@ class Component extends DCLogic {
         return false;
       } else {
         levelNote = sn.levelNote || null;
+        rescued = sn.rescued || null;
         arranged = graphToReviewScore(sn.graph, title);
         /* legacy-score.js takes the title of the graph's own meta over the name it is given: the copy is named what the person typed */
         arranged.title = title;
         engraveRemember(arranged, sn.graph, 'g9-single');
-        arranged.source = { arrangement: Object.assign({ engine: 'ppp.g9-single', level: plan.level, style: plan.style, source: plan.source || 'local' }, levelNote ? { levelNote: levelNote } : {}) };
+        arranged.source = { arrangement: Object.assign({ engine: 'ppp.g9-single', level: plan.level, style: plan.style, source: plan.source || 'local' }, levelNote ? { levelNote: levelNote } : {}, rescued ? { rescued: rescued.length } : {}) };
         usedSingle = true;
       }
     }
@@ -14930,7 +14942,7 @@ class Component extends DCLogic {
     if (this._thumbs) delete this._thumbs[id];
     this.setState({ songArrange: null });
     const saved = tx('Saved {{title}} as a new song. The original was not changed.', { title: arranged.title });
-    this.say(singleFailure ? tx('This piece could not be made in one-note-per-hand mode, so the standard arrangement was saved.') + ' ' + saved : saved + (levelNote ? ' ' + this.levelNoteText() : ''));
+    this.say(singleFailure ? tx('This piece could not be made in one-note-per-hand mode, so the standard arrangement was saved.') + ' ' + saved : saved + (levelNote || rescued ? ' ' + this.singleNoticeText(levelNote, rescued) : ''));
     return true;
   }
   async createSongArrangement() {
@@ -17302,7 +17314,7 @@ class Component extends DCLogic {
       arrangementStatus: S.arrangementStatus || '',
       hasArrangementStatus: !!S.arrangementStatus,
       /* the "harder than the level you chose" note is about the level that was applied: choosing another level takes it off the screen (other notices stay) */
-      setArrangementLevel: e => { const level = e.target.value; this.setState(st => ({ arrangementLevel: level, arrangementStatus: st.arrangementStatus && st.arrangementStatus === this.levelNoteText() ? '' : st.arrangementStatus })); },
+      setArrangementLevel: e => { const level = e.target.value; this.setState(st => ({ arrangementLevel: level, arrangementStatus: st.arrangementStatus && (st.arrangementStatus === this.levelNoteText() || st.arrangementStatus === this._singleNoticeText) ? '' : st.arrangementStatus })); },
       setArrangementStyle: e => this.setState({ arrangementStyle: e.target.value }),
       /* G9e-lite: the switch (pressed = on, which is the default). Reads PPP.arranger itself, so it also shows a mode set from the console; session only, not remembered. */
       singleNoteLabel: tx('One note per hand'),

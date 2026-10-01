@@ -24,6 +24,9 @@
      - formerly refused pieces (G9e refusals): happy-birthday (no plan at any level under the strict search) and sonatina/020 on the review screen are now
        made one note per hand, marked levelNote 'relaxed-plan', with a sentence that stays on the review screen and is in the success toast (ko/ja/zh in the
        catalogs); the library card says one-note-per-hand; a piece that needs no relaxation has no such note
+     - a stray note (G9e stray-note rescue): a piece whose only obstacle is a note no hand can reach in the time between its neighbours (tests/fixtures/g9e-stray-note.musicxml: a
+       [C4, F4] chord between A6 and D6 in the melody voice, twice) was refused with ALL_CANDIDATES_HAVE_HARD_VIOLATIONS; it is now made one note per hand with the stray notes left
+       out, marked (arrangement.rescued = how many), with a sentence in the Song Arranger's toast and on the review screen (ko/ja/zh in the catalogs)
      - refusals and failed downloads: a piece that stays unreachable (czerny849/009), option scripts (the candidates one, or another of the fourteen) or
        reference data that cannot be loaded (also when it is the warm-up that fails: no error, and the next arrangement asks again). The Song Arranger
        saves NOTHING behind the person's back: its window stays open with a notice that does not go away and two choices ('Save the standard arrangement',
@@ -56,6 +59,7 @@ const ok = (name, cond, detail) => {
 const HYMN = n => path.join(REPO, 'catalog', 'hymns', n + '.musicxml');
 const HAPPY = path.join(REPO, 'catalog', 'happy-birthday.musicxml');
 const SONATINA_020 = path.join(REPO, 'catalog', 'method', 'sonatina', '020.mxl');
+const STRAY = path.join(REPO, 'tests', 'fixtures', 'g9e-stray-note.musicxml'); /* G9e stray-note rescue: melody A6 / [C4, F4] chord / D6, twice; refused before the rescue */
 const CZERNY_849_009 = path.join(REPO, 'catalog', 'method', 'czerny849', '009.mxl'); /* no plan even relaxed (too fast for the levels): the refusal that stays (G9e refusals) */
 const OPTION_FILES = /\/(critics\/|candidates\/|repair\/|realize\/(ottava|handchords|clefs))|method-books\.json|weights\/g6a/;
 const LEVELS = ['beginner', 'intermediate', 'advanced', 'original'];
@@ -569,6 +573,54 @@ async function identityHashes(browser) {
       ok('the new sentences and the Dismiss label are in the ko, ja and zh catalogs, translated', Object.keys(cats).every(l => KEYS2.every(k => typeof cats[l][k] === 'string' && cats[l][k].length > 1 && cats[l][k] !== k)), JSON.stringify(Object.keys(cats).map(l => KEYS2.map(k => !!cats[l][k]))));
     }
 
+    console.log('\n── a stray note: the piece is made with it left out, and the screens say so ──');
+    /* G9e stray-note rescue (docs/GOALS/G09 section 12): one note per hand keeps one note of the chord that sits between two high melody notes, and no hand can make that shift in the
+       time (VELOCITY); every candidate had that one violation and the piece was refused. candidates/index.js strayRescue leaves the note out (its event becomes a rest). */
+    const NOTE_STRAY1 = '{{n}} note was left out because it could not be played smoothly.', NOTE_STRAY = '{{n}} notes were left out because they could not be played smoothly.';
+    const STRAY_TEXT = NOTE_STRAY.replace('{{n}}', '2');
+    {
+      const sp = await openPage(browser);
+      const sid = await addSong(sp, STRAY);
+      const s1 = await overlayArrange(sp, sid, 'intermediate', 'balanced');
+      ok('Song Arranger, the stray-note piece: saved as a one-note-per-hand arrangement, no fallback, marked with the two notes left out',
+        s1.saved && s1.slot.importSource.arrangement.engine === 'ppp.g9-single' && s1.slot.importSource.arrangement.rescued === 2 && !s1.slot.importSource.arrangement.singleFallback && !s1.slot.importSource.arrangement.levelNote, s1.saved ? JSON.stringify(s1.slot.importSource.arrangement) : JSON.stringify({ open: s1.open, status: s1.status }));
+      ok('the toast carries the sentence after the saved message', s1.saved && s1.toast.indexOf('Saved ') === 0 && s1.toast.indexOf(STRAY_TEXT) > 0, s1.toast);
+      ok('no hand starts two notes, both hands are used, and the rest of the piece is there (50 of the 54 notes of the source: the other note of each chord thinned, and the two left out)', s1.saved && s1.attacks.perAttack.filter(n => n > 1).length === 0 && s1.attacks.hands === 'lr' && s1.attacks.notes === 50, s1.saved ? JSON.stringify(s1.attacks) : '');
+      const sn = s1.saved ? await sp.evaluate(i => window.PPP.app.scoreForArrangement(i).notes.filter(n => !n.rest && n.hand === 'r').map(n => n.midi), s1.id) : [];
+      ok('the [C4, F4] chord is not in the right hand and A6 and D6 are (twice each)', s1.saved && !sn.includes(60) && !sn.includes(65) && sn.filter(x => x === 93).length === 2 && sn.filter(x => x === 86).length === 2, JSON.stringify(sn));
+      ok('the library card still says one-note-per-hand', s1.saved && /one-note-per-hand arrangement$/.test(s1.cardTitle), s1.cardTitle);
+      ok('no page or console error', sp.__rec.pageErrors.length === 0 && sp.__rec.consoleErrors.length === 0, JSON.stringify(sp.__rec.pageErrors.concat(sp.__rec.consoleErrors)));
+      const pl = await sp.evaluate(() => [1, 2, 5].map(n => window.PPP.app.rescuedText(n)));
+      ok('the sentence is singular for one note and plural for more (two keys, as the app does elsewhere)', pl[0] === NOTE_STRAY1.replace('{{n}}', '1') && pl[1] === NOTE_STRAY.replace('{{n}}', '2') && pl[2] === NOTE_STRAY.replace('{{n}}', '5'), JSON.stringify(pl));
+      await sp.close();
+
+      /* the review screen: the graph built from the heard notes */
+      const rs = await openPage(browser);
+      await loadReview(rs, STRAY, 'stray note');
+      await sleep(600);
+      const ra = await reviewApply(rs, 'intermediate', 'balanced');
+      ok('review screen, the stray-note piece: one note per hand, marked with the two notes left out, no fallback', ra.arrangement.engine === 'ppp.g9-single' && ra.arrangement.rescued === 2 && !ra.arrangement.singleFallback && ra.perAttack.filter(n => n > 1).length === 0 && ra.hands === 'lr', JSON.stringify({ arr: ra.arrangement, hands: ra.hands }));
+      ok('the sentence is on the screen under the controls (persistent), and in the success message', ra.status === STRAY_TEXT && (await rs.evaluate(() => document.querySelector('[data-arrangement]').innerText.indexOf('2 notes were left out because') > -1)) && ra.toast.indexOf(STRAY_TEXT) > 0, JSON.stringify({ status: ra.status, toast: ra.toast }));
+      await sleep(4000);
+      ok('and still there after the message has gone', await rs.evaluate(() => document.querySelector('[data-arrangement]').innerText.indexOf('2 notes were left out because') > -1));
+      await rs.select('[data-arrangement-level]', 'beginner'); await sleep(250);
+      ok('choosing another level takes it off the screen (it was about the arrangement that was applied)', await rs.evaluate(() => document.querySelector('[data-arrangement]').innerText.indexOf('left out because') < 0));
+      await loadReview(rs, HYMN('christ-arose'), 'christ-arose');
+      const rc = await reviewApply(rs, 'intermediate', 'balanced');
+      ok('a piece with nothing left out has no such sentence or mark (christ-arose)', rc.arrangement.engine === 'ppp.g9-single' && rc.arrangement.rescued === undefined && rc.status === '' && !/left out because/.test(rc.toast), JSON.stringify({ arr: rc.arrangement, status: rc.status }));
+      ok('no page or console error', rs.__rec.pageErrors.length === 0 && rs.__rec.consoleErrors.length === 0, JSON.stringify(rs.__rec.pageErrors.concat(rs.__rec.consoleErrors)));
+      await rs.close();
+      const kp = await openPage(browser, { locale: 'ko-KR' });
+      const koCat2 = JSON.parse(fs.readFileSync(path.join(REPO, 'i18n', 'ko-KR.json'), 'utf8')).content;
+      await loadReview(kp, STRAY, 'stray note');
+      const kr = await reviewApply(kp, 'intermediate', 'balanced');
+      ok('in Korean the sentence is the catalog\'s, with the count filled in', kr.status === koCat2[NOTE_STRAY].replace('{{n}}', '2') && /부드럽게 치기 어려운 음 2개/.test(kr.status), kr.status);
+      await kp.close();
+      const cats2 = {};
+      for (const loc of ['ko-KR', 'ja-JP', 'zh-CN']) cats2[loc] = JSON.parse(fs.readFileSync(path.join(REPO, 'i18n', loc + '.json'), 'utf8')).content;
+      ok('both forms of the sentence are in the ko, ja and zh catalogs, translated, with {{n}}', Object.keys(cats2).every(l => [NOTE_STRAY1, NOTE_STRAY].every(k => typeof cats2[l][k] === 'string' && cats2[l][k] !== k && cats2[l][k].indexOf('{{n}}') > -1)), JSON.stringify(Object.keys(cats2).map(l => cats2[l][NOTE_STRAY])));
+    }
+
     console.log('\n── refusals ──');
     /* G9e refusals: the Song Arranger does NOT save the standard arrangement behind the person's back. A piece the option still cannot make (czerny849/009 has no plan
        even relaxed; or scripts that did not load) leaves the window open with a notice that stays, and two choices; the standard copy is saved only on the click */
@@ -637,32 +689,35 @@ async function identityHashes(browser) {
       await bp0.close();
     }
 
+    /* the review screen's refused piece: czerny849/009 was refused there too until the stray-note rescue, which now makes it (its heard-note graph has two low notes, 70 and 69, among
+       98 to 101 in measure 11); a hymn with no plan at any level is what stays unreachable on this path */
+    const HYMN_REFUSED = HYMN('beneath-the-cross');
     /* the review screen keeps its fallback: the standard arrangement is shown (a person is looking at it), with a notice that stays under the controls */
     const hr = await openPage(browser);
-    await loadReview(hr, CZERNY_849_009, 'czerny 849 009');
+    await loadReview(hr, HYMN_REFUSED, 'beneath the cross');
     const same = [];
     const fbk = {};
     for (const st of ['balanced', 'jazz']) {
       const f = await reviewApply(hr, 'advanced', st);
       fbk[st] = f;
-      await loadReview(hr, CZERNY_849_009, 'czerny 849 009');
+      await loadReview(hr, HYMN_REFUSED, 'beneath the cross');
     }
     await hr.click('[data-arrangement] [data-single-note-option]'); await sleep(250);
     for (const st of ['balanced', 'jazz']) {
       const l = await reviewApply(hr, 'advanced', st);
-      await loadReview(hr, CZERNY_849_009, 'czerny 849 009');
+      await loadReview(hr, HYMN_REFUSED, 'beneath the cross');
       same.push(JSON.stringify(JSON.parse(fbk[st].packed).score.notes) === JSON.stringify(JSON.parse(l.packed).score.notes));
     }
-    ok('review screen, czerny849/009, balanced and jazz: the refusal gives the same notes the chip off gives (balanced by the rhythm rewriter, jazz by the arranger, as with the chip off), marked singleFallback, with the notice',
+    ok('review screen, beneath-the-cross, balanced and jazz: the refusal gives the same notes the chip off gives (balanced by the rhythm rewriter, jazz by the arranger, as with the chip off), marked singleFallback, with the notice',
       !!fbk.balanced.arrangement.singleFallback && !!fbk.jazz.arrangement.singleFallback && same.every(Boolean) && fbk.balanced.arrangement.engine !== 'ppp.g9-single' && /standard arrangement is shown/.test(fbk.balanced.status), JSON.stringify({ same: same, b: fbk.balanced.arrangement, j: fbk.jazz.arrangement }));
     await hr.close();
 
     const fr2 = await openPage(browser);
-    await loadReview(fr2, CZERNY_849_009, 'czerny 849 009');
+    await loadReview(fr2, HYMN_REFUSED, 'beneath the cross');
     await sleep(600);
     const fb = await reviewApply(fr2, 'advanced', 'balanced');
     ok('review screen, a piece that stays refused: the standard arrangement is shown, marked so in its source (singleFallback), not labelled one-note-per-hand',
-      !!fb.arrangement.singleFallback && fb.arrangement.engine !== 'ppp.g9-single' && fb.notes > 100, JSON.stringify(fb.arrangement));
+      !!fb.arrangement.singleFallback && fb.arrangement.engine !== 'ppp.g9-single' && fb.notes > 30, JSON.stringify(fb.arrangement));
     ok('and the notice stays on the screen, under the controls', fb.status === 'This piece could not be made in one-note-per-hand mode, so the standard arrangement is shown.' &&
       (await fr2.evaluate(() => document.querySelector('[data-arrangement]').innerText.indexOf('so the standard arrangement is shown') > -1)), fb.status);
     await sleep(4000);
