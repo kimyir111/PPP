@@ -35,6 +35,9 @@
      - left-hand run rests: a seeded left-hand run of 16ths with about one note in eight not heard (the transcription writes a lone 16th rest in it) through "Rewrite the rhythm", Accept and the
        Song Arranger's one-note copy: no lone 16th rest of the left hand between two notes in the Score, the graph or the DOM, the previous note an eighth, the same note onsets and pitches, the right
        hand's rests untouched, a valid graph; the control (written without the pass) has them
+     - recording notation (tuplets and the grid): a seeded 10-bar piece with triplet beats (three eighths, a rest and two eighths, a quarter and an eighth) and straight 16ths in both hands through
+       "Rewrite the rhythm", Accept and the Song Arranger's one-note copy: every voice of every bar adds up as the Score draws it (drawn values with the tuplet ratio), tuplet brackets in the
+       Score and the DOM, a valid graph with no W-DISPLAY-DURATION, a strike for every heard note; the control (written without exact bars) has bars that do not add up
      - refusals and failed downloads: a piece that stays unreachable (czerny849/009), option scripts (the candidates one, or another of the fourteen) or
        reference data that cannot be loaded (also when it is the warm-up that fails: no error, and the next arrangement asks again). The Song Arranger
        saves NOTHING behind the person's back: its window stays open with a notice that does not go away and two choices ('Save the standard arrangement',
@@ -874,6 +877,93 @@ async function identityHashes(browser) {
       }
       ok('no page or console error', lp.__rec.pageErrors.length === 0 && lp.__rec.consoleErrors.length === 0, JSON.stringify(lp.__rec.pageErrors.concat(lp.__rec.consoleErrors)));
       await lp.close();
+    }
+
+    console.log('\n── recording notation: tuplets and the grid, in the review screen, the saved transcription and its one-note copy (docs/GOALS/G09 section 12) ──');
+    /* A recording with a triplet feel was drawn with NO tuplet (a third of a beat is an eighth, two thirds a quarter, so a bar showed up to six beats) and with onsets on a 32nd lattice that no
+       plain value expresses (the teacher's 90-bar piece: 59 of 90 right-hand bars did not add up as drawn, 28 were right). The app asks audio-score.js for exact bars at its four recording call
+       sites (opts.exactBars): one tuplet over each triplet beat, rests inside it, every onset and release on the beat's grid. Here the heard notes of a seeded 10-bar piece (120 bpm, 4/4: triplet
+       beats of three eighths, a rest and two eighths, a quarter and an eighth, straight 16ths in both hands, every onset a few milliseconds off, a few of them on the 32nd lattice) go through the
+       real screens: "Rewrite the rhythm", Accept (the saved transcription) and the Song Arranger's one-note copy. In each: every voice of every bar adds up as the Score draws it (the sum of the
+       drawn values with the tuplet ratio is the bar, each event starts where the ones before end and lasts what it is drawn as), the graph the page draws is valid with no W-DISPLAY-DURATION,
+       tuplet brackets are in the DOM, and the player has a strike for every heard note; the control (written without exact bars) has bars that do not add up. */
+    {
+      const tp = await openPage(browser);
+      await tp.evaluate(() => {
+        const P = window.PPP, A = P.app;
+        let s = 11; const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+        const notes = [], B = 0.5, T = B / 3;                           /* 120 bpm: a beat is 0.5 s */
+        const add = (t, len, midi, vel) => notes.push({ on: Math.max(0, t + (rnd() - 0.5) * 0.02), off: t + len, midi: midi, vel: vel || 80 });
+        for (let b = 0; b < 10; b++) {
+          const t0 = b * 4 * B;
+          for (let beat = 0; beat < 4; beat++) {
+            const t = t0 + beat * B, pick = (b + beat) % 4;
+            if (pick === 0) { for (let i = 0; i < 3; i++) add(t + i * T, T * 0.9, 72 + 2 * i); }                                   /* three eighths of a triplet beat */
+            else if (pick === 1) { add(t + T, T * 0.9, 79); add(t + 2 * T, T * 0.9, 77); }                                         /* a rest and two eighths */
+            else if (pick === 2) { add(t, 2 * T * 0.95, 76); add(t + 2 * T, T * 0.9, 74); }                                       /* a quarter and an eighth */
+            else { for (let i = 0; i < 4; i++) add(t + i * B / 4, B / 4 * 0.85, 71 + i); }                                      /* straight 16ths */
+            /* left hand: a bass note on each beat, the thirds in a triplet beat, 16ths in the others */
+            if (pick === 3) { for (let i = 0; i < 4; i++) add(t + i * B / 4, B / 4 * 0.9, [43, 50, 55, 50][i], 60); }
+            else { for (let i = 0; i < 3; i++) add(t + i * T, T * 0.9, [43, 50, 55][i], 60); }
+          }
+        }
+        const A0 = window.PPPAudioScore, lock = { beats: 4, beatType: 4, bpm: 120, firstDownbeat: 0 };
+        const mk = o => A0.toMusicXml({ notes: notes, pedals: [], title: 'triplets' }, Object.assign({ title: 'triplets', lock: lock }, o));
+        /* the control: the library's own output (what the app wrote before exact bars) */
+        const control = mk({ closeGaps: true, exactBars: false });
+        window.__tupControl = { warnings: window.PPPScoreGraph.validate(control.graph).issues.filter(i => i.code === 'W-DISPLAY-DURATION').length,
+          tuplets: control.graph.parts[0].spanners.filter(x => x.type === 'tuplet').length };
+        window.__tupHeard = notes.length;
+        A._recording = { url: '', barStarts: [0] };
+        A._heard = { notes: notes, pedals: [], duration: notes[notes.length - 1].off };
+        A.adoptScore(P.parseMusicXML(control.xml, 'triplets'));
+        A.setState({ screen: 'review', lockMetre: '4/4', lockBpm: 120, lockDownbeat: 0, importSource: { kind: 'audio', name: 'triplets.mp3', status: 'transcribed', tempo: 120, amt: 'onsets-and-frames' },
+          importReport: { confidence: 0.9, level: 'good', issues: [], suspectMeasures: [], summary: null, advice: null, measures: 10, notes: notes.length, staves: 2, tempo: 120 } });
+      });
+      await sleep(500);
+      /* the Score's own bars: per staff, voice and measure, the drawn values (with the tuplet ratio) add up to the measure, with no hole or overlap, each event lasting what it is drawn as */
+      const probeBars = () => tp.evaluate(() => {
+        const sc = window.PPP.app.state.score, TV = { whole: 4, half: 2, quarter: 1, eighth: 0.5, '16th': 0.25, '32nd': 0.125, '64th': 0.0625 }, near = (a, b) => Math.abs(a - b) < 1e-6;
+        const lenQ = new Map(sc.measures.map(m => [m.number, m.lenQ])), by = new Map();
+        sc.notes.forEach(n => { const k = n.staff + '|' + n.voice + '|' + n.m; if (!by.has(k)) by.set(k, new Map()); const ev = by.get(k), kb = n.b.toFixed(6); if (!ev.has(kb)) ev.set(kb, n); });
+        let total = 0, good = 0; const bad = [];
+        by.forEach((ev, k) => {
+          const list = Array.from(ev.values()).sort((a, b) => a.b - b.b); let cur = 0, ok1 = true;
+          list.forEach(n => { const base = TV[n.type] * (2 - Math.pow(2, -(n.dots || 0))), drawn = n.tm ? base * n.tm.n / n.tm.a : base; if (!near(n.b, cur) || !near(n.dur, drawn)) ok1 = false; cur = n.b + n.dur; });
+          if (!near(cur, lenQ.get(+k.split('|')[2]))) ok1 = false;
+          total++; if (ok1) good++; else bad.push(k);
+        });
+        const rs = window.PPPEngrave.app.resolveSync(sc), g = rs.graph, issues = window.PPPScoreGraph.validate(g).issues;
+        return { voiceBars: total, good: good, bad: bad.slice(0, 6), via: rs.via, domBrackets: document.querySelectorAll('g.ppp-tuplet').length, tupletStarts: sc.notes.filter(n => n.tupletStart).length,
+          warnDisplay: issues.filter(i => i.code === 'W-DISPLAY-DURATION').length, errors: issues.filter(i => /^E-/.test(i.code)).length,
+          strikes: window.PPP.PianoScore.of(sc).strikes.length, notes: sc.notes.filter(n => !n.rest).length };
+      });
+      const c0 = await probeBars();
+      const tctl = await tp.evaluate(() => ({ c: window.__tupControl, heard: window.__tupHeard }));
+      ok('control: the heard notes written without exact bars have bars that do not add up and no bracket per beat', c0.good < c0.voiceBars && tctl.c.warnings >= 10, JSON.stringify({ c0: c0, ctl: tctl.c }));
+      await tp.click('[data-lock-rewrite]');
+      await tp.waitForFunction(() => /Rewrote the rhythm/.test((window.PPP.app.state.toast || '') + document.body.innerText), { timeout: 30000 });
+      await sleep(1500);
+      const t1 = await probeBars();
+      ok('"Rewrite the rhythm": every voice of every bar adds up as the Score draws it (' + t1.voiceBars + ' voice-bars), tuplet brackets are in the Score and the DOM, a valid graph with no W-DISPLAY-DURATION',
+        t1.voiceBars >= 20 && t1.good === t1.voiceBars && t1.tupletStarts >= 10 && t1.domBrackets >= 10 && t1.warnDisplay === 0 && t1.errors === 0 && t1.via === 'live', JSON.stringify(t1));
+      ok('the player has a strike for every heard note (what is drawn is what is played)', t1.strikes >= tctl.heard * 0.9 && t1.strikes <= tctl.heard, JSON.stringify({ strikes: t1.strikes, heard: tctl.heard }));
+      await tp.evaluate(() => { const b = [...document.querySelectorAll('button')].find(x => /Accept and practise/.test(x.innerText)); if (b) b.click(); });
+      await sleep(2500);
+      const tsid = await tp.evaluate(() => window.PPP.app.state.songId);
+      const t2 = await probeBars();
+      ok('the saved transcription: every voice-bar adds up, brackets drawn, valid', !!tsid && t2.good === t2.voiceBars && t2.domBrackets >= 10 && t2.warnDisplay === 0 && t2.errors === 0, JSON.stringify(t2));
+      const tcop = await overlayArrange(tp, tsid, 'intermediate', 'balanced');
+      ok('Song Arranger on the saved transcription: saved as a one-note-per-hand arrangement', tcop.saved && tcop.slot.importSource.arrangement.engine === 'ppp.g9-single' && !tcop.slot.importSource.arrangement.singleFallback, tcop.saved ? JSON.stringify(tcop.slot.importSource.arrangement) : JSON.stringify(tcop.status));
+      if (tcop.saved) {
+        await tp.evaluate(() => window.__pppTest.nav('My Songs')); await sleep(600);
+        await tp.evaluate(i => { const b = document.querySelector('[data-open-song="' + i + '"]'); if (b) b.click(); }, tcop.id); await sleep(3000);
+        await tp.evaluate(() => { const t = [...document.querySelectorAll('main [role=tab]')].find(x => /Start to finish/.test(x.innerText)); if (t) t.click(); }); await sleep(2500);
+        const t3 = await probeBars();
+        ok('the one-note copy: every voice-bar adds up as drawn (the copy keeps the brackets), brackets in the DOM, valid, no W-DISPLAY-DURATION', t3.good === t3.voiceBars && t3.tupletStarts >= 5 && t3.domBrackets >= 5 && t3.warnDisplay === 0 && t3.errors === 0, JSON.stringify(t3));
+      }
+      ok('no page or console error', tp.__rec.pageErrors.length === 0 && tp.__rec.consoleErrors.length === 0, JSON.stringify(tp.__rec.pageErrors.concat(tp.__rec.consoleErrors)));
+      await tp.close();
     }
 
     console.log('\n── refusals ──');

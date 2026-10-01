@@ -214,3 +214,33 @@ test('the MusicXML of an exact build reads back as the same score (brackets, res
   assert.deepEqual(drawnBars(back.graph), [], 'the file adds up too');
   assert.equal(JSON.stringify(r.graph.performances[0].notes.map(n => [n.on, n.off, n.vel, n.midi])), JSON.stringify(off.graph.performances[0].notes.map(n => [n.on, n.off, n.vel, n.midi])), 'what was heard is the same');
 });
+
+test('a symbolic grid input (the local PM2S path: ticks, notes that cross the bar line keep their ties) adds up too', () => {
+  let total = 0;
+  for (let seed = 1; seed <= 20; seed++) {
+    const rnd = rng(seed), notes = [];
+    for (let b = 0; b < 8; b++) for (let beat = 0; beat < 4; beat++) {
+      const t0 = (b * 4 + beat) * 24, k = rnd();
+      const pos = k < 0.3 ? [0, 8, 16] : k < 0.7 ? [0, 6, 12, 18] : k < 0.8 ? [0, 3, 6, 9, 12, 15, 18, 21] : [0];
+      pos.forEach(p => { if (rnd() < 0.85) { const len = [3, 6, 8, 12, 16, 24, 30, 48][Math.floor(rnd() * 8)]; notes.push({ tick: t0 + p, endTick: t0 + p + len, midi: 60 + Math.floor(rnd() * 24), vel: 80, tuplet: p % 8 === 0 && p % 6 !== 0 }); } });
+      if (rnd() < 0.8) notes.push({ tick: t0, endTick: t0 + Math.floor(rnd() * 60) + 6, midi: 40 + Math.floor(rnd() * 12), vel: 70 });
+    }
+    const r = A.toMusicXml({ grid: { notes: notes, ticksPerQuarter: 24, beatsPerBar: 4, beatType: 4, bpm: 120 }, title: 'g' }, { title: 'g', closeGaps: true, exactBars: true });
+    total += r.graph.timeline.measures.length * 2;
+    assert.deepEqual(drawnBars(r.graph), [], 'seed ' + seed);
+    assert.equal(GAPS.tidyRests(r.graph).graph, r.graph, 'a fixed point: ' + seed);
+    assert.deepEqual(errorsOf(r.graph), []);
+  }
+  assert.ok(total >= 300);
+});
+
+test('other simple metres (2/4, 3/4, 5/4) add up too', () => {
+  [2, 3, 5].forEach(n => {
+    for (let seed = 1; seed <= 8; seed++) {
+      const rec = recording(seed, { runs: seed % 3 === 0, bpm: 80 });
+      const r = A.toMusicXml({ notes: rec.notes, pedals: [], title: 'p' }, { title: 'p', lock: { bpm: rec.bpm, beatsPerBar: n, beatType: 4, firstDownbeat: 0 }, closeGaps: true, exactBars: true });
+      assert.deepEqual(drawnBars(r.graph), [], n + '/4 seed ' + seed);
+      assert.equal(GAPS.tidyRests(r.graph).graph, r.graph);
+    }
+  });
+});

@@ -982,8 +982,11 @@
      add up. For a recording in a simple-time bar (a quarter-note beat) with opts.exactBars, every onset and every release is put on ONE grid per beat:
        - a triplet beat (a beat with an onset on a third: 8 or 16 ticks into it): the thirds, 0 / 8 / 16 / 24;
        - any other beat: the 16th grid, 0 / 6 / 12 / 18 / 24 - except a beat that holds a genuine 32nd run (see snapOnsets), which keeps the 32nd lattice (a multiple of 3).
-     An onset on the 32nd lattice moves to the 16th-grid point beside it (3 ticks = 1/32 of a whole note at most, 0.05 s at 162 bpm), the one nearer its measured time, unless another onset
-     already sits on that point (a run: 0, 3, 6): then it stays. Every note keeps its order, none is lost, none is shortened below a 16th (a third in a triplet beat) unless it was. */
+     An onset on the 32nd lattice moves to the 16th-grid point beside it (3 ticks = 1/32 of a whole note at most, 0.05 s at 162 bpm), the one nearer its measured time, unless another onset already
+     sits on that point (a run: 0, 3, 6): then it stays when every hand that plays it also played a note a 32nd before (a genuine run: nothing is silent before it, so no rest needs a 32nd piece), and
+     otherwise goes to the nearer point, two notes of a hand that meet there being one chord (a pitch the chord already holds is not given up: that onset stays). Every note keeps its order, none is
+     lost, and a note of a plain length is never shorter than a 16th (a third in a triplet beat) in the score unless it was: the release is the nearest plain value on the grid, as readableEnd
+     chose it, and a silence is the standard tiling (scoregraph/gaps.js tile), never a piece shorter than a 16th, so the gaps pass has nothing to close or omit. */
   const exactGrid = (q, bars, bar) => {
     const trip = new Set(), fast = new Set();
     q.forEach(n => {
@@ -1060,19 +1063,13 @@
       if (to !== t) { moved++; maxShift = Math.max(maxShift, Math.abs(to - t)); }
       map.set(t, to);
     });
-    q.forEach(n => { n._tick0 = n.tick; n.tick = map.get(n.tick); n.endTick = Math.max(n.endTick, n.tick + 1); });
+    q.forEach(n => { n.tick = map.get(n.tick); n.endTick = Math.max(n.endTick, n.tick + 1); });
     return { moved: moved, maxShift: maxShift, onsets: ticks.length, kept32nd: kept, merged: merged };
   }
 
   /* the written length of a note that starts at `start` and was released at `end` (ticks): the nearest plain value, or a third / two thirds of a beat, that ends on the grid and fits in `room`; null when none does */
-  function readableEndExact(start, end, room, bar, grid) {
-    const len = end - start;
-    const vals = [72, 48, 36, 24, 18, 16, 12, 9, 8, 6, 3].filter(v => v <= room && v < bar && grid.valid(start + v) &&
-      ((v !== 9 && v !== 3) || grid.fast.has(Math.floor(start / Q)) || grid.fast.has(Math.floor((start + v) / Q))));
-    if (!vals.length) return null;
-    vals.sort((a, b) => Math.abs(a - len) - Math.abs(b - len) || a - b);
-    return start + vals[0];
-  }
+  /* what a tie costs when the release is put on the grid (in ticks of distance from the heard release): a note that starts on a third of a triplet beat has little else to reach */
+  const CHAIN_COST = 13, CHAIN_COST_TRIP = 3;
 
   /* A span [a0, a0 + len) of one voice in ticks that does not cross a bar line, as the values it is written with: a triplet beat's third / two thirds (8 / 16) for the part that starts or ends inside
      one, the ordinary pieces for the rest (nothing starts or ends off the grid, so these never need a value that is not 3, 6, 9, 12, 18, 24 ...). `kind`: 'note' (an exact plain value is one symbol
@@ -1151,10 +1148,19 @@
           /* a note that reaches the bar line (or, with a symbolic grid, crosses it) keeps its end when that is a point of the grid */
           if (!grid.valid(end)) { const nr = grid.nearest(end, t + 1, cap); end = nr === null ? cap : nr; }
         } else {
-          /* inside the bar the nearest single readable value, as readableEnd chooses it (a note is not tied over a beat to fill a silence it was released before) */
-          const r = readableEndExact(t, end, Math.min(next, boundary) - t, bar, grid);
-          if (r !== null) end = r;
-          else { const nr = grid.nearest(end, t + 1, cap); end = nr === null ? cap : nr; }
+          /* inside the bar: the point of the grid nearest the release, where a length that needs a tie (two pieces) costs an extra CHAIN_COST ticks, so a note is not tied over a beat to fill a
+             silence it was released before (readableEnd's rule: the nearest single readable value) unless that value is further from the release than the cost of the tie. A note that starts on a
+             third of a triplet beat can reach no single value but the beat's end, so its tie costs little: it keeps the length it was heard with (the next beat's grid) instead of being cut to a third. */
+          const e0 = end, hi = Math.min(next, boundary);
+          const inTrip = grid.trip.has(Math.floor(t / Q)) && t % Q !== 0;
+          const pen = inTrip ? CHAIN_COST_TRIP : CHAIN_COST;
+          let bestP = null, bestCost = Infinity, bestN = 0;
+          for (let p = t + 1; p <= hi; p++) {
+            if (!grid.valid(p)) continue;
+            const np = exactPieces(t, p - t, bar, grid, 'note').length, cost = Math.abs(p - e0) + pen * (np - 1);
+            if (cost < bestCost - 1e-9 || (Math.abs(cost - bestCost) < 1e-9 && np < bestN)) { bestP = p; bestCost = cost; bestN = np; }
+          }
+          end = bestP === null ? cap : bestP;
         }
         /* no silence shorter than a 16th, and none that starts on an odd 32nd (a rest would need a 32nd piece): the note rings up to the next onset, or to the next point of the 16th grid */
         if (end < cap) {
