@@ -357,6 +357,33 @@ test('app arrangeSingleNote: strict-success panel, 24 pieces, hashes exactly as 
   }
 });
 
+/* a long imported title: scoregraph/legacy-score.js idOf cuts the graph id at 64 characters, and the realizer added '-g8a' to it (68 > the validator's 64), so
+   EVERY candidate failed to build (BUILD_FAILED -> NO_CANDIDATES) and the app refused the piece at every level, whatever its music (a 90-measure piano
+   transcription titled 'Looping the Rooms feat. Hatsune Miku - rusino (Piano)'; 141 of 147 runs of the method panel with a 64-character id). */
+test('app arrangeSingleNote: a 64-character graph id (a long imported title) makes the same arrangement as a short one, for strict and relaxed pieces', async () => {
+  const LONG = 'legacy:xml:' + 'a'.repeat(53);
+  assert.equal(LONG.length, 64);
+  const panel = [...Object.keys(STRICT.hashes).slice(0, 6), 'catalog/method/hanon/001.mxl|intermediate', 'catalog/happy-birthday.musicxml|beginner'];
+  for (const k of panel) {
+    const [file, level] = k.split('|');
+    const shortG = await load(file), longG = JSON.parse(JSON.stringify(shortG));
+    longG.id = LONG;
+    const a = await app.arrangeSingleNote(shortG, { level: level });
+    const b = await app.arrangeSingleNote(longG, { level: level });
+    assert.equal(a.ok, true, k + ' short id ' + a.reason);
+    assert.equal(b.ok, true, k + ' 64-character id ' + b.reason);
+    assert.ok(/^[A-Za-z0-9._:-]{1,64}$/.test(b.graph.id), k + ' output id is valid: ' + b.graph.id.length);
+    const strip = g => Object.assign({}, g, { id: 'x' });
+    assert.equal(sha(strip(b.graph)), sha(strip(a.graph)), k + ': only the id differs');
+  }
+  /* an id that is already 60 characters keeps the id it always had */
+  const g60 = JSON.parse(JSON.stringify(await load('catalog/method/beyer/003.mxl')));
+  g60.id = 'p'.repeat(60);
+  const r60 = await app.arrangeSingleNote(g60, { level: 'intermediate' });
+  assert.equal(r60.ok, true);
+  assert.equal(r60.graph.id, 'p'.repeat(60) + '-g8a');
+});
+
 test('app arrangeSingleNote: a dense cover and a formerly refused method piece succeed with the note, no hand starts two notes, no hard violation', async () => {
   for (const name of ['synth:pieceA', 'synth:pieceB', 'catalog/method/hanon/001.mxl', 'catalog/method/czerny599/001.mxl', 'catalog/happy-birthday.musicxml']) {
     for (const level of ['beginner', 'intermediate', 'advanced']) {
