@@ -430,16 +430,17 @@ Every song of yours in My Songs has a **Share** button (the built-in sample does
 a dialog with two separate things:
 
 - **Post to Shared Scores** lists the song in the Shared Scores tab, where anyone can find it and
-  **Add to My Songs**. **Take down** unlists it; its link keeps working.
+  **Add to My Songs**. **Take down** unlists it; its link keeps working. Needs an account.
 - **Send a link** — copy it, or send it to X, Facebook, LINE, Threads or email, or through the
   phone's own share sheet (**Other apps…**, which is where KakaoTalk is). The link is made the
   first time one is sent, and sending it never posts the song. **Stop sharing** (asked twice)
-  deletes the copy, and the link stops working.
+  deletes the copy, and the link stops working. **No account is needed** for this part (see
+  *Guest links* below).
 
 Only the notes are sent: never the practice history, the memory record, the recording, or the
 file name — a YouTube source is kept as its link, since the video is public. The server keeps
-the copy (`data/shares.json` locally, the `ppp_shares` table on Postgres), so sharing your own
-songs needs an account; anyone can open a link or add a posted score, signed in or not. A link
+the copy (`data/shares.json` locally, the `ppp_shares` table on Postgres); posting needs an
+account, a link does not, and anyone can open a link or add a posted score, signed in or not. A link
 is `/?share=<id>`: it opens straight onto the score without the sign-in gate, and the server puts
 the title in the page's Open Graph tags so a post shows what it links to. Sharing again sends the
 notes as they are now, under the same link.
@@ -447,10 +448,24 @@ notes as they are now, under the same link.
 | Route | |
 | --- | --- |
 | `GET /api/shares` | Posted scores, newest first, with a two-bar preview each. `?mine=1`: yours, posted or not. |
-| `POST /api/shares` | Share a song (signed in). One copy per song: sharing it again updates it. |
-| `GET /api/shares/:id` | One share, with its score. Anyone with the id. |
-| `PATCH /api/shares/:id` | `{ listed }` — post or take down. Owner only. |
-| `DELETE /api/shares/:id` | Stop sharing. Owner only. |
+| `POST /api/shares` | Share a song (signed in, or a guest with `X-PPP-Guest`). One copy per song: sharing it again updates it. |
+| `GET /api/shares/:id` | One share, with its score. Anyone with the id (404 once a guest link has expired). |
+| `PATCH /api/shares/:id` | `{ listed }` — post or take down. Account owner only. |
+| `DELETE /api/shares/:id` | Stop sharing. The account owner, or for a guest link the browser whose `X-PPP-Guest` made it. |
+
+### Guest links (no account)
+
+Signed out, **Share** still makes a link: the dialog shows it with Copy and the social buttons, and
+a small hint says that posting to Shared Scores and managing links from any device need an account.
+The browser makes a random 64-hex secret (`localStorage` `ppp-guest-key`) and sends it as
+`X-PPP-Guest`; the server stores only `owner_id = 'g_' + the first 24 hex of sha256(secret)`, never
+the secret. A guest link is **always unlisted** (a guest cannot post, list or set a genre), shows
+as shared by "Guest", is marked `noindex`, and **expires after 90 days**. The same browser can
+share the same song again (same link) and **Stop sharing** it; where `localStorage` is blocked the
+key lives only until the page closes, and the dialog says so. Limits (`share-guest.js`): 20 links per
+browser, 10 creates per client address per hour (200 for the whole server), the same 4 MB per score
+as accounts, and 1000 guest links / 100 MB in all (a new one is refused with 503 when full; expired
+ones are swept on the next guest create). Signed-in sharing is unchanged (200 shares, listing).
 
 On Render without `DATABASE_URL` the file store is wiped when the instance sleeps, and shared
 scores go with it; connect Postgres to keep them.

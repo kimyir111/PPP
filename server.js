@@ -527,6 +527,14 @@ function publicUser(u) {
 const SHARE_MAX_BYTES = 4 * 1024 * 1024;
 const SHARES_PER_USER = 200;
 const SHARE_LIST_LIMIT = 250;
+/* Guest link sharing (share-guest.js): the limits that keep a public write endpoint small. */
+const guestShare = require('./share-guest');
+const GUEST = guestShare.GUEST;
+const guestLimits = {
+  ip: guestShare.slidingWindow(GUEST.PER_IP_PER_HOUR, GUEST.HOUR_MS),
+  all: guestShare.slidingWindow(GUEST.GLOBAL_PER_HOUR, GUEST.HOUR_MS)
+};
+const DATA_DIR = process.env.PPP_DATA_DIR ? path.resolve(process.env.PPP_DATA_DIR) : path.join(ROOT, 'data');
 
 function newShareId() {
   return crypto.randomBytes(9).toString('base64url');
@@ -544,19 +552,30 @@ function validScore(s) {
 
 /* What the list shows: no score, only the preview drawn on its card. */
 function shareCard(row, viewer) {
-  return {
+  const mine = ownsShare(viewer, row);
+  const card = {
     id: row.id, title: row.title, composer: row.composer, kind: row.kind, genre: row.genre || '',
-    measures: row.measures, owner: row.ownerName, mine: !!(viewer && viewer.id === row.ownerId),
-    songKey: viewer && viewer.id === row.ownerId ? row.songKey : undefined,
+    measures: row.measures, owner: row.ownerName, mine: mine,
+    songKey: mine ? row.songKey : undefined,
     listed: !!row.listed, preview: row.preview || null,
     createdAt: row.createdAt, updatedAt: row.updatedAt
   };
+  /* only a guest link has an end date */
+  if (row.expiresAt) card.expiresAt = row.expiresAt;
+  return card;
+}
+
+/* The viewer of a request: the signed-in user, and the guest key's owner id when the request carries one.
+   A guest key never gives the rights of an account; it only names the links its own browser made. */
+function ownsShare(viewer, row) {
+  if (!viewer) return false;
+  return viewer.id === row.ownerId || (!!viewer.guestId && guestShare.sameOwner(viewer.guestId, row.ownerId));
 }
 
 /* ---------------- store ---------------- */
 function fileStore() {
-  const file = path.join(ROOT, 'data', 'store.json');
-  const sharesFile = path.join(ROOT, 'data', 'shares.json');
+  const file = path.join(DATA_DIR, 'store.json');
+  const sharesFile = path.join(DATA_DIR, 'shares.json');
   const dir = path.dirname(file);
   function load() {
     try { return JSON.parse(fs.readFileSync(file, 'utf8')); }
@@ -618,6 +637,18 @@ function fileStore() {
     },
     async deleteShare(id) {
       saveShares(loadShares().filter(r => r.id !== id));
+    },
+    /* guest links past their end date */
+    async deleteExpiredShares(nowMs) {
+      const rows = loadShares();
+      const keep = rows.filter(r => !guestShare.expired(r, nowMs));
+      if (keep.length !== rows.length) saveShares(keep);
+      return rows.length - keep.length;
+    },
+    /* what every guest link together holds: how many, and their scores' size */
+    async guestUsage() {
+      const rows = loadShares().filter(r => guestShare.isGuestOwner(r.ownerId));
+      return { count: rows.length, bytes: rows.reduce((n, r) => n + JSON.stringify(r.score || null).length, 0) };
     }
   };
   function loadShares() {
@@ -660,7 +691,7 @@ function postgresStore(url) {
         );
         CREATE TABLE IF NOT EXISTS ppp_shares (
           id TEXT PRIMARY KEY,
-          owner_id TEXT NOT NULL REFERENCES ppp_users(id) ON DELETE CASCADE,
+          owner_id TEXT NOT NULL,
           owner_name TEXT NOT NULL,
           song_key TEXT NOT NULL,
           title TEXT NOT NULL,
@@ -677,6 +708,15 @@ function postgresStore(url) {
         CREATE INDEX IF NOT EXISTS ppp_shares_listed ON ppp_shares (listed, updated_at DESC);
         CREATE UNIQUE INDEX IF NOT EXISTS ppp_shares_owner_song ON ppp_shares (owner_id, song_key);
         ALTER TABLE ppp_shares ADD COLUMN IF NOT EXISTS genre TEXT NOT NULL DEFAULT '';
+        ALTER TABLE ppp_shares ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
+        CREATE INDEX IF NOT EXISTS ppp_shares_expires ON ppp_shares (expires_at) WHERE expires_at IS NOT NULL;
+        /* A guest's links belong to 'g_' + a hash, not to a user row: drop the owner foreign key an
+           earlier version made (whatever it was named). Idempotent. */
+        DO $$ DECLARE c text; BEGIN
+          FOR c IN SELECT conname FROM pg_constraint WHERE conrelid = 'ppp_shares'::regclass AND contype = 'f' LOOP
+            EXECUTE format('ALTER TABLE ppp_shares DROP CONSTRAINT %I', c);
+          END LOOP;
+        END $$;
       `);
     },
     async findByEmail(email) {
@@ -737,26 +777,35 @@ function postgresStore(url) {
     },
     async putShare(row) {
       await q(
-        `INSERT INTO ppp_shares (id, owner_id, owner_name, song_key, title, composer, genre, kind, measures, listed, preview, score, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        `INSERT INTO ppp_shares (id, owner_id, owner_name, song_key, title, composer, genre, kind, measures, listed, preview, score, created_at, updated_at, expires_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
          ON CONFLICT (id) DO UPDATE SET owner_name = EXCLUDED.owner_name, title = EXCLUDED.title,
            composer = EXCLUDED.composer, genre = EXCLUDED.genre, kind = EXCLUDED.kind, measures = EXCLUDED.measures,
            listed = EXCLUDED.listed, preview = EXCLUDED.preview, score = EXCLUDED.score,
-           updated_at = EXCLUDED.updated_at`,
+           updated_at = EXCLUDED.updated_at, expires_at = EXCLUDED.expires_at`,
         [row.id, row.ownerId, row.ownerName, row.songKey, row.title, row.composer, row.genre || '', row.kind,
           row.measures, row.listed, row.preview == null ? null : JSON.stringify(row.preview), JSON.stringify(row.score),
-          row.createdAt, row.updatedAt]
+          row.createdAt, row.updatedAt, row.expiresAt || null]
       );
       return row;
     },
     async deleteShare(id) {
       await q('DELETE FROM ppp_shares WHERE id = $1', [id]);
+    },
+    async deleteExpiredShares(nowMs) {
+      const r = await q('DELETE FROM ppp_shares WHERE expires_at IS NOT NULL AND expires_at <= $1', [new Date(nowMs).toISOString()]);
+      return r.rowCount || 0;
+    },
+    async guestUsage() {
+      /* the guest rows are the ones with an end date; pg_column_size is the stored (compressed) size */
+      const r = await q('SELECT count(*)::int AS n, coalesce(sum(pg_column_size(score)), 0)::float8 AS bytes FROM ppp_shares WHERE expires_at IS NOT NULL');
+      return { count: r.rows[0].n, bytes: Number(r.rows[0].bytes) };
     }
   };
 }
 
 const SHARE_COLS = 'id, owner_id AS "ownerId", owner_name AS "ownerName", song_key AS "songKey", title, composer, genre, kind, '
-  + 'measures, listed, preview, created_at AS "createdAt", updated_at AS "updatedAt"';
+  + 'measures, listed, preview, created_at AS "createdAt", updated_at AS "updatedAt", expires_at AS "expiresAt"';
 
 const store = process.env.DATABASE_URL ? postgresStore(process.env.DATABASE_URL) : fileStore();
 
@@ -952,7 +1001,7 @@ async function handleApi(req, res, url) {
   }
 
   if (method === 'POST' && p === '/api/auth/login') {
-    const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+    const ip = guestShare.clientIp(req);
     if (tooMany(ip)) return jsonError(res, 429, 'Too many attempts. Try again later.');
     let body;
     try { body = JSON.parse((await readBody(req)).toString('utf8') || '{}'); }
@@ -1011,6 +1060,11 @@ async function handleShares(req, res, url) {
   const method = req.method;
   const p = url.pathname;
   const user = await currentUser(req);
+  /* A guest key, when the request carries one that is a key at all. It never stands in for an account. */
+  const guestHeader = req.headers[GUEST.HEADER];
+  const guestId = guestShare.guestOwnerId(typeof guestHeader === 'string' ? guestHeader : '');
+  const viewer = user || guestId ? { id: user ? user.id : guestId, guestId: guestId } : null;
+  const nowMs = Date.now();
 
   if (p === '/api/shares' && method === 'GET') {
     const mine = url.searchParams.get('mine') === '1';
@@ -1020,12 +1074,20 @@ async function handleShares(req, res, url) {
       q: clipText(url.searchParams.get('q'), 80),
       limit: SHARE_LIST_LIMIT
     });
-    send(res, 200, { shares: rows.map(r => shareCard(r, user)) }, { 'Cache-Control': 'no-store' });
+    send(res, 200, { shares: rows.map(r => shareCard(r, viewer)) }, { 'Cache-Control': 'no-store' });
     return;
   }
 
   if (p === '/api/shares' && method === 'POST') {
-    if (!user) return jsonError(res, 401, 'Sign in to share your scores.');
+    if (!user && !guestId) return jsonError(res, 401, 'Sign in to share your scores.');
+    /* no account: an unlisted link only, and the public write is rationed before the body is even read */
+    const guest = !user;
+    if (guest) {
+      const ip = guestShare.clientIp(req).slice(0, 64) || 'unknown';
+      if (!guestLimits.ip.take(ip) || !guestLimits.all.take('all')) {
+        return jsonError(res, 429, 'Too many links were made from here just now. Try again in a little while.');
+      }
+    }
     let raw, body;
     try { raw = await readBody(req, SHARE_MAX_BYTES); }
     catch (e) { return jsonError(res, 413, 'That score is too large to share.'); }
@@ -1036,8 +1098,21 @@ async function handleShares(req, res, url) {
     if (!songKey) return jsonError(res, 422, 'That is not a score PPP can share.');
     const title = clipText(body.title || body.score.title, 120);
     if (!title) return jsonError(res, 422, 'A shared score needs a title.');
-    const prev = await store.findShare(user.id, songKey);
-    if (!prev && await store.countShares(user.id) >= SHARES_PER_USER) {
+    const ownerId = guest ? guestId : user.id;
+    /* expired guest links are swept as guests make new ones, before the room left is counted */
+    if (guest) await store.deleteExpiredShares(nowMs);
+    const prev = await store.findShare(ownerId, songKey);
+    if (guest) {
+      if (!prev) {
+        if (await store.countShares(ownerId) >= GUEST.PER_GUEST) {
+          return jsonError(res, 429, 'This browser has made as many guest links as PPP keeps. Stop sharing one, or sign in.');
+        }
+        const used = await store.guestUsage();
+        if (used.count >= GUEST.TOTAL_SHARES || used.bytes + raw.length > GUEST.TOTAL_BYTES) {
+          return jsonError(res, 503, 'Guest links are full right now. Try again later, or sign in to share.');
+        }
+      }
+    } else if (!prev && await store.countShares(user.id) >= SHARES_PER_USER) {
       return jsonError(res, 429, 'You have shared as many scores as PPP keeps for one account.');
     }
     const preview = validScore(body.preview) && body.preview.measures.length <= 4
@@ -1045,30 +1120,34 @@ async function handleShares(req, res, url) {
     const now = new Date().toISOString();
     const row = {
       id: prev ? prev.id : newShareId(),
-      ownerId: user.id, ownerName: user.displayName, songKey: songKey,
-      title: title, composer: clipText(body.composer, 160), genre: clipText(body.genre, 32), kind: clipText(body.kind, 24),
+      ownerId: ownerId, ownerName: guest ? GUEST.OWNER_NAME : user.displayName, songKey: songKey,
+      title: title, composer: clipText(body.composer, 160), genre: guest ? '' : clipText(body.genre, 32), kind: clipText(body.kind, 24),
       measures: body.score.measures.length,
-      /* sending a link never takes a posted score down, and never posts one */
-      listed: typeof body.listed === 'boolean' ? body.listed : !!(prev && prev.listed),
+      /* sending a link never takes a posted score down, and never posts one; a guest's link is never posted */
+      listed: guest ? false : typeof body.listed === 'boolean' ? body.listed : !!(prev && prev.listed),
       preview: preview, score: body.score,
       createdAt: prev ? prev.createdAt : now, updatedAt: now
     };
+    if (guest) row.expiresAt = guestShare.expiryFor(nowMs);
     await store.putShare(row);
-    send(res, prev ? 200 : 201, Object.assign(shareCard(row, user), { url: '/?share=' + row.id }));
+    send(res, prev ? 200 : 201, Object.assign(shareCard(row, viewer), { url: '/?share=' + row.id }));
     return;
   }
 
   const m = /^\/api\/shares\/([\w-]{6,32})$/.exec(p);
   if (!m) return jsonError(res, 404, 'Not found');
   const row = await store.getShare(m[1]);
-  if (!row) return jsonError(res, 404, 'That shared score is no longer there.');
+  if (!row || guestShare.expired(row, nowMs)) return jsonError(res, 404, 'That shared score is no longer there.');
 
   if (method === 'GET') {
-    send(res, 200, Object.assign(shareCard(row, user), { score: row.score, url: '/?share=' + row.id }),
+    send(res, 200, Object.assign(shareCard(row, viewer), { score: row.score, url: '/?share=' + row.id }),
       { 'Cache-Control': 'no-store' });
     return;
   }
-  if (!user || user.id !== row.ownerId) return jsonError(res, 403, 'Only the person who shared it can change that.');
+  /* the account that shared it may change it; the guest key that made a guest link may take it down, nothing more */
+  const userOwns = !!user && user.id === row.ownerId;
+  const guestOwns = !!guestId && guestShare.isGuestOwner(row.ownerId) && guestShare.sameOwner(guestId, row.ownerId);
+  if (!userOwns && !(method === 'DELETE' && guestOwns)) return jsonError(res, 403, 'Only the person who shared it can change that.');
   if (method === 'PATCH') {
     let body;
     try { body = JSON.parse((await readBody(req)).toString('utf8') || '{}'); }
@@ -1077,7 +1156,7 @@ async function handleShares(req, res, url) {
     row.listed = body.listed;
     row.updatedAt = new Date().toISOString();
     await store.putShare(row);
-    send(res, 200, Object.assign(shareCard(row, user), { url: '/?share=' + row.id }));
+    send(res, 200, Object.assign(shareCard(row, viewer), { url: '/?share=' + row.id }));
     return;
   }
   if (method === 'DELETE') {
@@ -1098,12 +1177,14 @@ async function shareMeta(id, req) {
   if (!/^[\w-]{6,32}$/.test(id || '')) return '';
   let row = null;
   try { row = await store.getShare(id); } catch (e) { row = null; }
-  if (!row) return '';
+  if (!row || guestShare.expired(row, Date.now())) return '';
   const proto = String(req.headers['x-forwarded-proto'] || (COOKIE_SECURE ? 'https' : 'http')).split(',')[0].trim();
   const link = proto + '://' + (req.headers.host || 'localhost') + '/?share=' + encodeURIComponent(row.id);
   const title = row.title + (row.composer ? ' · ' + row.composer : '');
   const desc = row.measures + (row.measures === 1 ? ' bar' : ' bars') + ' · shared by ' + row.ownerName + ' on PPP — Piano Practice Partner';
   return [
+    /* a guest link is for the people it was sent to, not for a search engine */
+    guestShare.isGuestOwner(row.ownerId) ? '<meta name="robots" content="noindex">' : '',
     '<title>' + escapeHtml(title + ' — PPP') + '</title>',
     '<meta name="description" content="' + escapeHtml(desc) + '">',
     '<meta property="og:type" content="website">',
@@ -1114,7 +1195,7 @@ async function shareMeta(id, req) {
     '<meta name="twitter:card" content="summary">',
     '<meta name="twitter:title" content="' + escapeHtml(title) + '">',
     '<meta name="twitter:description" content="' + escapeHtml(desc) + '">'
-  ].join('\n');
+  ].filter(Boolean).join('\n');
 }
 
 /* The local helper (OMR, transcription, coach) binds 127.0.0.1:8788. A tablet
