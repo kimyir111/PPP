@@ -24,7 +24,8 @@
 
    A second pass, mergeRests (docs/GOALS/G09 section 12, "consecutive rests"), writes ONE silence as one rest (or the standard tiling): two rests of one voice that follow each other with no note
    between them (a dotted 16th rest and a 16th rest in a row; a dotted 16th rest between two 16ths) are merged and written again with the values a printed edition uses on the beat grid (see
-   mergeRests below). tidyRests = closeSmallGaps, then mergeRests.
+   mergeRests below). A third pass, fillRunRests ("left-hand run rests", docs/GOALS/G09 section 12), is the teacher's decision for the LEFT hand of a recording: a lone 16th rest between two
+   notes of a 16th-note run is deleted and the note before it is lengthened to an eighth (see fillRunRests below). tidyRests = closeSmallGaps, then mergeRests, then fillRunRests, to a fixed point.
 
    Used by repair/index.js (G9f: the last step of a one-note-per-hand arrangement of a transcription) and by audio-score.js (the recording-to-score path, so the review screen, the saved
    transcription song and every arranger's input are clean at the source). Node and browser (a <script> after scoregraph/ops.js and rational.js).
@@ -392,22 +393,136 @@
     return { graph: res.graph, changed: true, stats: stats, issues: res.issues };
   }
 
-  /* what the recording paths call: the gaps closed, then each silence written once (the reports of the two kept apart) */
+  /* ---------------------------------------------------------------- left-hand run rests (docs/GOALS/G09 section 12, "Left-hand run rests")
+
+       fillRunRests(graph) -> { graph, changed, stats, issues }
+
+     A recording's left hand is usually one continuous run of 16th notes (an arpeggio, an Alberti pattern). The transcription drops a note now and then (the player's hand did not
+     sound it, or the model missed it), and what is left is a lone 16th rest between two 16ths of the run; drawn, it looks like a broken pattern. The teacher's decision (explicit):
+     "delete the rest and extend the previous note". For the LEFT-HAND staff only (a staff whose `limb` is 'LH'; a piano part that names no limb on any staff and has exactly two staves: the
+     lower one), a rest is removed and the note before it lengthened to an eighth when ALL of these hold:
+       - the rest is exactly one 16th (a plain 16th: 1/16 of a whole note, not dotted, not in a tuplet), not a measure rest, not hidden, and nothing but a beam refers to it;
+       - ONE note ends exactly where the rest starts, in the same measure, staff and voice: a plain 16th (1/16, not dotted, not in a tuplet), a single head (not a chord), not a grace note,
+         not tied to or from anything, nothing else (a spanner, a direction) refers to it;
+       - a note of the same staff and voice STARTS exactly where the rest ends (a lone rest between two notes; when the rest ends the bar, the first note of the next bar). The last bar of the
+         hand, with no note after it, keeps its rest;
+       - nothing else of the voice lies in the rest's span, and no other note of the staff (another voice) starts inside it: the lengthened note never rings past the next onset of the hand.
+     The rests of the right hand (the melody's: they are meaningful) and every other length (an eighth, a 32nd, a dotted 16th) are never touched.
+     The note keeps its onset and pitch; its length goes from 1/16 to 1/8 and its written value from 16th to eighth, so it rings exactly 1/16 of a whole note longer (a quarter of a beat in 4/4),
+     and stops where the next note of the hand starts, as the silence did (the pedal is as it was; a note never crosses a barline). A beam over the run keeps its notes (the rest leaves it);
+     the edit validates the graph. Idempotent (the result has no such rest: a second run returns the very same object), a fixed point with closeSmallGaps and mergeRests (tidyRests loops),
+     never a throw (a graph the pass does not understand comes back as it is, with `stats.failed`). Gated like the others (a recording's callers). */
+  const FILL_SOURCE = Object.freeze({ kind: 'repair', tool: 'ppp.run-rests', version: '1.0.0' });
+  const SIXTEENTH = R.make(1, 16);
+
+  /* the staves of a part that carry the left hand: those with limb 'LH'; a part that names no limb on any staff and has exactly two: the lower one (the second) */
+  function leftHandStaves(part) {
+    const staves = Array.isArray(part.staves) ? part.staves : [];
+    const lh = staves.filter(s => s && s.limb === 'LH').map(s => s.id);
+    if (lh.length) return new Set(lh);
+    return staves.length === 2 && !staves.some(s => s && s.limb) ? new Set([staves[1].id]) : new Set();
+  }
+
+  /* the fills to make: [{part, rest: event, note: event}] */
+  function runRestFills(g, stats) {
+    const out = [];
+    const mIndex = new Map(g.timeline.measures.map((m, i) => [m.id, i]));
+    const mDur = new Map(g.timeline.measures.map(m => [m.id, R.parse(m.dur)]));
+    g.parts.forEach(part => {
+      const lh = leftHandStaves(part);
+      if (!lh.size) return;
+      /* what a spanner or a direction refers to: a tuplet (events), a tie (heads), anything else but a beam (events, from, to) */
+      const tupleted = new Set(), tied = new Set(), referred = new Set();
+      part.spanners.forEach(s => {
+        if (s.type === 'tuplet') (s.events || []).forEach(id => tupleted.add(id));
+        else if (s.type === 'tie') { if (s.from !== undefined) tied.add(s.from); if (s.to !== undefined) tied.add(s.to); }
+        else if (s.type !== 'beam') { (s.events || []).forEach(id => referred.add(id)); [s.from, s.to].forEach(x => { if (typeof x === 'string') referred.add(x); }); }
+      });
+      part.directions.forEach(d => { if (d.event !== undefined) referred.add(d.event); });
+      const byKey = new Map();                                    /* staff|measure -> the events of the staff in the measure (grace notes left out) */
+      part.events.forEach(e => {
+        if ((e.kind !== 'note' && e.kind !== 'rest') || e.grace || !lh.has(e.staff)) return;
+        const k = e.staff + '|' + e.m;
+        if (!byKey.has(k)) byKey.set(k, []);
+        byKey.get(k).push(e);
+      });
+      const plain16 = e => e.display && e.display.type === '16th' && !e.display.dots && R.eq(R.parse(e.dur), SIXTEENTH) && !tupleted.has(e.id);
+      byKey.forEach(evs => {
+        evs.forEach(r => {
+          if (r.kind !== 'rest' || !plain16(r) || r.display.measureRest || r.hidden || r.fermata || r.lyrics || r.arts || r.orn || referred.has(r.id)) return;
+          const mi = mIndex.get(r.m);
+          if (mi === undefined) return;
+          const on = R.parse(r.at), off = R.add(on, SIXTEENTH);
+          if (R.gt(off, mDur.get(r.m))) return;
+          const before = evs.filter(e => e.kind === 'note' && e.voice === r.voice && R.eq(R.add(R.parse(e.at), R.parse(e.dur)), on));
+          if (before.length !== 1) { stats.skipped++; return; }
+          const p = before[0];
+          if (!plain16(p) || (p.heads || []).length !== 1 || tied.has(p.heads[0].id) || referred.has(p.id)) { stats.skipped++; return; }
+          /* the note after: in the measure at the rest's end, or (the rest ends the bar) the first note of the voice in the next bar */
+          let after;
+          if (R.lt(off, mDur.get(r.m))) after = evs.filter(e => e.kind === 'note' && e.voice === r.voice && R.eq(R.parse(e.at), off));
+          else {
+            const nextM = g.timeline.measures[mi + 1];
+            after = (nextM ? byKey.get(r.staff + '|' + nextM.id) || [] : []).filter(e => e.kind === 'note' && e.voice === r.voice && R.eq(R.parse(e.at), R.ZERO));
+          }
+          if (!after.length) { stats.skipped++; return; }
+          /* nothing else of the voice in the rest's span, no other note of the staff starting in it */
+          const busy = evs.some(e => e !== r && e !== p && ((e.kind === 'note' && R.ge(R.parse(e.at), on) && R.lt(R.parse(e.at), off))
+            || (e.voice === r.voice && R.lt(R.parse(e.at), off) && R.gt(R.add(R.parse(e.at), R.parse(e.dur)), on))));
+          if (busy) { stats.skipped++; return; }
+          out.push({ part: part, rest: r, note: p });
+        });
+      });
+    });
+    return out;
+  }
+
+  function fillRunRests(g) {
+    try { return fillRunRestsUnsafe(g); } catch (e) { /* never a throw (a graph this pass does not understand is returned as it is) */ return { graph: g, changed: false, stats: { fills: 0, notesLengthened: 0, restsRemoved: 0, skipped: 0, failed: String(e && e.message || e).slice(0, 120) } }; }
+  }
+  function fillRunRestsUnsafe(g) {
+    const stats = { fills: 0, notesLengthened: 0, restsRemoved: 0, skipped: 0 };
+    const fills = runRestFills(g, stats);
+    if (!fills.length) return { graph: g, changed: false, stats: stats };
+    const eighth = R.format(R.make(1, 8));
+    const res = OPS.edit(g, d => {
+      const gone = [];
+      fills.forEach(f => {
+        const e = d.event(f.note.id);
+        e.dur = eighth;
+        e.display = Object.assign({}, e.display, { type: 'eighth' });
+        delete e.display.dots;
+        d.markProv(e, ['rhythm'], 'repaired');
+        gone.push(f.rest.id);
+        stats.fills++; stats.notesLengthened++;
+      });
+      stats.restsRemoved = gone.length;
+      d.removeEvents(gone);
+      d.touch();
+    }, { source: FILL_SOURCE });
+    return { graph: res.graph, changed: true, stats: stats, issues: res.issues };
+  }
+
+  /* what the recording paths call: the gaps closed, each silence written once (the reports of the two kept apart), then the lone 16th rests of the left hand's runs filled */
   function tidyRests(g) {
-    /* to a fixed point: a hole the merging leaves can turn a gap that closeSmallGaps skipped (a rest of the note's own voice reached past it) into one it closes, so the pair runs again until
-       neither changes anything (a note only gets longer, never past the next onset: it ends; the cap is a guard). `stats` is the first closing's, `rests` the merging's, summed. */
+    /* to a fixed point: a hole the merging leaves can turn a gap that closeSmallGaps skipped (a rest of the note's own voice reached past it) into one it closes, so the passes run again until
+       none changes anything (a note only gets longer, never past the next onset: it ends; the cap is a guard). `stats` is the first closing's, `rests` the merging's, summed; `fill` is the
+       run rests' (summed). */
     let cur = g, first = null, changed = false, issues;
     const rests = { runs: 0, restsBefore: 0, restsAfter: 0, skipped: 0 };
+    const fill = { fills: 0, notesLengthened: 0, restsRemoved: 0, skipped: 0 };
     for (let i = 0; i < 6; i++) {
-      const a = closeSmallGaps(cur), b = mergeRests(a.graph);
+      const a = closeSmallGaps(cur), b = mergeRests(a.graph), c = fillRunRests(b.graph);
       if (!first) first = a.stats;
       rests.runs += b.stats.runs; rests.restsBefore += b.stats.restsBefore; rests.restsAfter += b.stats.restsAfter; rests.skipped = b.stats.skipped;
       if (b.stats.failed) rests.failed = b.stats.failed;
-      if (!a.changed && !b.changed) break;
-      changed = true; cur = b.graph; issues = b.changed ? b.issues : a.issues;
+      fill.fills += c.stats.fills; fill.notesLengthened += c.stats.notesLengthened; fill.restsRemoved += c.stats.restsRemoved; fill.skipped = c.stats.skipped;
+      if (c.stats.failed) fill.failed = c.stats.failed;
+      if (!a.changed && !b.changed && !c.changed) break;
+      changed = true; cur = c.graph; issues = c.changed ? c.issues : b.changed ? b.issues : a.issues;
     }
-    return { graph: cur, changed: changed, stats: first, rests: rests, issues: issues };
+    return { graph: cur, changed: changed, stats: first, rests: rests, fill: fill, issues: issues };
   }
 
-  return Object.freeze({ GAP_LIMIT, GAP_SOURCE, RESTS_SOURCE, plainValue, smallGaps, isTranscription, closeSmallGaps, mergeRests, tidyRests, tile, restRuns });
+  return Object.freeze({ GAP_LIMIT, GAP_SOURCE, RESTS_SOURCE, plainValue, smallGaps, isTranscription, closeSmallGaps, mergeRests, tidyRests, tile, restRuns, FILL_SOURCE, fillRunRests, leftHandStaves });
 });

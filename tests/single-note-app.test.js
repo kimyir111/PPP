@@ -32,6 +32,9 @@
        the drawn graph and the DOM), the same notes, none shorter, the same strikes; the same notes written without the pass have them
      - consecutive rests: the same kind of heard notes (a seeded 10-bar piece whose silences come in several pieces) through "Rewrite the rhythm", Accept (the saved transcription) and the Song Arranger's
        one-note copy: no run of rests that is not in the standard tiling (gaps.restRuns), no dotted 16th, 32nd or 64th rest in the graph or the DOM, the same notes; the control has them
+     - left-hand run rests: a seeded left-hand run of 16ths with about one note in eight not heard (the transcription writes a lone 16th rest in it) through "Rewrite the rhythm", Accept and the
+       Song Arranger's one-note copy: no lone 16th rest of the left hand between two notes in the Score, the graph or the DOM, the previous note an eighth, the same note onsets and pitches, the right
+       hand's rests untouched, a valid graph; the control (written without the pass) has them
      - refusals and failed downloads: a piece that stays unreachable (czerny849/009), option scripts (the candidates one, or another of the fourteen) or
        reference data that cannot be loaded (also when it is the warm-up that fails: no error, and the next arrangement asks again). The Song Arranger
        saves NOTHING behind the person's back: its window stays open with a notice that does not go away and two choices ('Save the standard arrangement',
@@ -795,6 +798,82 @@ async function identityHashes(browser) {
       }
       ok('no page or console error', cp.__rec.pageErrors.length === 0 && cp.__rec.consoleErrors.length === 0, JSON.stringify(cp.__rec.pageErrors.concat(cp.__rec.consoleErrors)));
       await cp.close();
+    }
+
+    console.log('\n── left-hand run rests: a lone 16th rest inside a left-hand 16th run is deleted and the note before it lengthened (docs/GOALS/G09 section 12) ──');
+    /* The teacher's copy of a YouTube transcription had 5 lone 16th rests inside the left hand's continuous 16th-note run (a broken-looking arpeggio). Their decision: "delete the rest and
+       extend the previous note". scoregraph/gaps.js fillRunRests (a part of tidyRests, run with the gap closing at the recording call sites and last in the one-note pipeline of a
+       transcription). Here the heard notes of a seeded 10-bar piece (a right-hand melody, a left-hand arpeggio of 16ths with about one note in eight not heard) go through the real screens:
+       "Rewrite the rhythm", Accept (the saved transcription) and the Song Arranger's one-note copy. In each: no lone 16th rest of the LEFT hand between two of its notes (Score, graph, DOM),
+       the same notes (onsets and pitches), the right hand's rests as they are, a valid graph; the control (written without the pass) has them. */
+    {
+      const lp = await openPage(browser);
+      await lp.evaluate(() => {
+        const P = window.PPP, A = P.app;
+        let s = 3; const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+        const notes = [];
+        for (let b = 0; b < 10; b++) {
+          const t0 = b * 2;
+          notes.push({ on: t0 + 0.25, off: t0 + 1.9, midi: 76 + (b % 3), vel: 80 });
+          for (let k = 0; k < 16; k++) {
+            if (rnd() < 0.12 && k > 0 && !(b === 9 && k === 15)) continue;
+            notes.push({ on: t0 + k * 0.125, off: t0 + k * 0.125 + 0.118, midi: [48, 52, 55, 52][k % 4], vel: 60 });
+          }
+        }
+        const A0 = window.PPPAudioScore, lock = { beats: 4, beatType: 4, bpm: 120, firstDownbeat: 0 };
+        const mk = o => A0.toMusicXml({ notes: notes, pedals: [], title: 'lh-run' }, Object.assign({ title: 'lh-run', lock: lock }, o));
+        const control = mk({ closeGaps: false });
+        const lhIds = new Set(control.graph.parts[0].staves.filter(s => s.limb === 'LH').map(s => s.id));
+        window.__lhCtl = { rests: control.graph.parts[0].events.filter(e => e.kind === 'rest' && lhIds.has(e.staff) && e.display.type === '16th' && !e.display.dots).length,
+          /* the right hand's rests with the earlier passes (closing, merging) but not the fill: what the fill must leave alone */
+          rhRests: (() => { const G = window.PPPScoreGraphModules.gaps, g2 = G.mergeRests(G.closeSmallGaps(control.graph).graph).graph; return g2.parts[0].events.filter(e => e.kind === 'rest' && !lhIds.has(e.staff)).length; })() };
+        A._recording = { url: '', barStarts: [0] };
+        A._heard = { notes: notes, pedals: [], duration: notes[notes.length - 1].off };
+        A.adoptScore(P.parseMusicXML(mk({ closeGaps: false }).xml, 'lh-run'));
+        A.setState({ screen: 'review', lockMetre: '4/4', lockBpm: 120, lockDownbeat: 0, importSource: { kind: 'audio', name: 'lh-run.mp3', status: 'transcribed', tempo: 120, amt: 'onsets-and-frames' },
+          importReport: { confidence: 0.9, level: 'good', issues: [], suspectMeasures: [], summary: null, advice: null, measures: 10, notes: notes.length, staves: 2, tempo: 120 } });
+      });
+      await sleep(500);
+      const probeLh = () => lp.evaluate(() => {
+        const sc = window.PPP.app.state.score, EPS = 1e-6;
+        const lh = sc.notes.filter(n => n.staff === 2 && !n.chord), lhNotes = lh.filter(n => !n.rest);
+        const lone = lh.filter(r => r.rest && r.type === '16th' && !r.dots && Math.abs(r.dur - 0.25) < EPS
+          && lhNotes.some(n => Math.abs((n.abs + n.dur) - r.abs) < EPS) && lhNotes.some(n => Math.abs(n.abs - (r.abs + r.dur)) < EPS));
+        const rs = window.PPPEngrave.app.resolveSync(sc), g = rs.graph, part = g.parts[0];
+        const lhIds = new Set(part.staves.filter(s => s.limb === 'LH').map(s => s.id));
+        const gl = part.events.filter(e => e.kind === 'rest' && lhIds.has(e.staff) && e.display.type === '16th' && !e.display.dots).length;
+        let domLone = 0;
+        document.querySelectorAll('g.ppp-note[data-rest="1"]').forEach(el => { const o = (el.getAttribute('data-onset') || '').split('|'); if (o[2] === '2' && lone.some(l => String(l.m) === o[0] && Math.abs(l.b - Number(o[1])) < 1e-3)) domLone++; });
+        const sig = sc.notes.filter(n => !n.rest).map(n => [n.m, n.b, n.p, n.staff].join('|')).sort();
+        return { lone: lone.length, graphLh16thRests: gl, domLone: domLone, via: rs.via, notes: sig.length, sigHash: sig.join(',').length, sig: sig,
+          rhRests: part.events.filter(e => e.kind === 'rest' && !lhIds.has(e.staff)).length,
+          eighths: lhNotes.filter(n => n.type === 'eighth').length,
+          errors: window.PPPScoreGraph.validate(g).issues.filter(i => /^E-/.test(i.code)).length };
+      });
+      const lctl = await lp.evaluate(() => window.__lhCtl);
+      ok('control: the heard notes written without the pass have lone 16th rests in the left hand', lctl.rests >= 3, JSON.stringify(lctl));
+      await lp.click('[data-lock-rewrite]');
+      await lp.waitForFunction(() => /Rewrote the rhythm/.test((window.PPP.app.state.toast || '') + document.body.innerText), { timeout: 30000 });
+      await sleep(1500);
+      const lrr = await probeLh();
+      ok('"Rewrite the rhythm": no lone 16th rest between left-hand notes in the Score, the graph or the DOM; the previous notes are eighths; a valid graph', lrr.lone === 0 && lrr.graphLh16thRests === 0 && lrr.domLone === 0 && lrr.eighths >= 3 && lrr.errors === 0, JSON.stringify(Object.assign({}, lrr, { sig: undefined })));
+      ok('the right hand\'s rests are as the control wrote them', lrr.rhRests === lctl.rhRests, JSON.stringify({ lrr: lrr.rhRests, ctl: lctl.rhRests }));
+      await lp.evaluate(() => { const b = [...document.querySelectorAll('button')].find(x => /Accept and practise/.test(x.innerText)); if (b) b.click(); });
+      await sleep(2500);
+      const lsid = await lp.evaluate(() => window.PPP.app.state.songId);
+      const lsv = await probeLh();
+      ok('the saved transcription: no lone 16th rest in the left hand (Score, graph, DOM), the same notes (onsets and pitches) as the rewrite', !!lsid && lsv.lone === 0 && lsv.graphLh16thRests === 0 && lsv.domLone === 0 && lsv.errors === 0 && JSON.stringify(lsv.sig) === JSON.stringify(lrr.sig), JSON.stringify(Object.assign({}, lsv, { sig: undefined })));
+      const lcop = await overlayArrange(lp, lsid, 'intermediate', 'balanced');
+      ok('Song Arranger on the saved transcription: saved as a one-note-per-hand arrangement', lcop.saved && lcop.slot.importSource.arrangement.engine === 'ppp.g9-single' && !lcop.slot.importSource.arrangement.singleFallback, lcop.saved ? JSON.stringify(lcop.slot.importSource.arrangement) : JSON.stringify(lcop.status));
+      if (lcop.saved) {
+        await lp.evaluate(() => window.__pppTest.nav('My Songs')); await sleep(600);
+        await lp.evaluate(i => { const b = document.querySelector('[data-open-song="' + i + '"]'); if (b) b.click(); }, lcop.id); await sleep(3000);
+        await lp.evaluate(() => { const t = [...document.querySelectorAll('main [role=tab]')].find(x => /Start to finish/.test(x.innerText)); if (t) t.click(); }); await sleep(2500);
+        const lcc = await probeLh();
+        ok('the copy: no lone 16th rest in the left hand (Score, graph, DOM), a valid graph, its notes', lcc.lone === 0 && lcc.graphLh16thRests === 0 && lcc.domLone === 0 && lcc.errors === 0 && lcc.notes >= lrr.notes * 0.9, JSON.stringify(Object.assign({}, lcc, { sig: undefined })));
+      }
+      ok('no page or console error', lp.__rec.pageErrors.length === 0 && lp.__rec.consoleErrors.length === 0, JSON.stringify(lp.__rec.pageErrors.concat(lp.__rec.consoleErrors)));
+      await lp.close();
     }
 
     console.log('\n── refusals ──');
