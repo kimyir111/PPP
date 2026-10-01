@@ -470,7 +470,8 @@ The same browser can share the same song again (same link) and **Stop sharing** 
 | Links per browser (per key) | 20 |
 | Creates per client address | 30 per hour (a class or school may share an address) |
 | Creates for the whole server | 200 per hour; only requests that would really make a link count |
-| Requests that fail validation | 60 per hour per address, a budget of their own |
+| Requests that fail validation, or that the store fails | 60 per hour per address, a budget of their own |
+| What is not a score | a NUL or lone surrogate in any text, nesting deeper than 64 containers (a real score is about 4 deep): 422, for accounts too |
 | One guest request (score + preview) | 1 MB (accounts keep 4 MB); a preview over 24 KB is dropped |
 | All guest links together | 1000 links and 50 MB, previews counted; a new one past that is 503 `guest-full`, and a re-send that would grow past it too |
 | Lifetime | 30 days from the last send; expired links are 404 at once and swept at start, every 6 hours, and on each guest create |
@@ -479,9 +480,12 @@ Creates take turns (a Postgres advisory lock; one event-loop turn on the file st
 cannot be raced, and sending one song twice at once is an update, never a 500.
 
 The client address is never taken from what the client writes: on Render (`RENDER` set) it is
-`True-Client-IP`, then `CF-Connecting-IP`; otherwise the `X-Forwarded-For` entry `PPP_PROXY_HOPS`
+`CF-Connecting-IP` (the header Cloudflare is documented to set itself), then `True-Client-IP`; otherwise the `X-Forwarded-For` entry `PPP_PROXY_HOPS`
 (default 1) places from the right; otherwise the socket. The login limit uses the same function.
-Check the first guest create after a deploy against Render's real headers. Signed-in sharing is
+The server logs one line at boot saying how it reads the address, and one line at the first guest
+request saying which source that request used: check it after a deploy against Render's real headers.
+Store failures are logged as one line each (at most 5 a minute), never a stack per request, and a
+Postgres connection that dies is dropped and replaced without taking the server down. Signed-in sharing is
 unchanged (200 shares, listing, 4 MB). One consequence of the Postgres change: `ppp_shares.owner_id`
 no longer has a foreign key (a guest owner is not a user), so **deleting an account does not delete
 its shares by itself** — whoever adds account deletion must delete them explicitly.

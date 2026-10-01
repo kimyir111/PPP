@@ -30,7 +30,7 @@ const ok = (name, cond, detail) => {
 function req(port, method, p, opts) {
   opts = opts || {};
   return new Promise((resolve, reject) => {
-    const body = opts.body == null ? null : Buffer.from(JSON.stringify(opts.body));
+    const body = opts.body == null ? null : Buffer.from(typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body));
     const headers = {};
     if (body) { headers['Content-Type'] = 'application/json'; headers['Content-Length'] = body.length; }
     if (opts.ip) headers['X-Forwarded-For'] = opts.ip;
@@ -160,6 +160,44 @@ async function start() {
     ok('10 guests-at-once for the same song: 200/201 only (never a 500), one 201, one row', racers.every(r => r.status === 200 || r.status === 201) && racers.filter(r => r.status === 201).length === 1
       && (await one('SELECT count(*)::int AS n FROM ppp_shares WHERE owner_id = $1', [G.guestOwnerId(same)]))[0].n === 1, racers.map(r => r.status).join());
 
+    console.log('\n── what Postgres cannot hold ──');
+    const NUL = String.fromCharCode(0);
+    const nulGuest = await post(P(), secretOf(), { songKey: 'nul', title: 'T', score: smallScore('N', { lyric: 'a' + NUL + 'b' }) }, '10.9.0.1');
+    const surGuest = await post(P(), secretOf(), { songKey: 'sur', title: 'T', score: smallScore('N', { lyric: String.fromCharCode(0xd800) }) }, '10.9.0.2');
+    ok('a NUL or a lone surrogate in a guest score is 422 (Postgres would have refused it with a 500)', nulGuest.status === 422 && surGuest.status === 422, nulGuest.status + '/' + surGuest.status);
+    const rawNest = n => '{"songKey":"deep","title":"T","score":{"measures":[{}],"notes":[],"x":' + '['.repeat(n) + ']'.repeat(n) + '}}';
+    const deep = await req(P(), 'POST', '/api/shares', { guest: secretOf(), ip: '10.9.0.3', body: rawNest(4753) });
+    ok('a score nested 4753 deep (accepted before, and then unreadable) is 422', deep.status === 422, deep.status + '');
+    const ok50 = await req(P(), 'POST', '/api/shares', { guest: secretOf(), ip: '10.9.0.4', body: rawNest(50) });
+    ok('50 deep is stored, and reads back', ok50.status === 201 && (await req(P(), 'GET', '/api/shares/' + ok50.body.id)).status === 200, ok50.status + '');
+
+    console.log('\n── a backend that is killed ──');
+    const killOthers = async () => one(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = current_database() AND pid <> pg_backend_pid()`);
+    await killOthers();
+    await new Promise(r => setTimeout(r, 500));
+    ok('every idle connection of the server killed: the server stays up', (await req(P(), 'GET', '/health')).status === 200);
+    const afterIdle = await post(P(), secretOf(), { songKey: 'idle', title: 'After idle kill', score: smallScore() }, '10.9.1.1');
+    ok('and the next guest create works', afterIdle.status === 201, afterIdle.status + '');
+
+    /* hold the guest lock from here, start a create (it BEGINs and waits for the lock), kill its backend, release */
+    await db.query('SELECT pg_advisory_lock($1)', [727001]);
+    const pending = post(P(), secretOf(), { songKey: 'mid', title: 'Killed mid-transaction', score: smallScore() }, '10.9.1.2');
+    let waiting = [];
+    for (let i = 0; i < 40 && !waiting.length; i++) {
+      await new Promise(r => setTimeout(r, 100));
+      waiting = await one(`SELECT pid FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock' AND wait_event = 'advisory'`);
+    }
+    ok('the create is waiting on the lock inside its transaction', waiting.length === 1, String(waiting.length));
+    await db.query('SELECT pg_terminate_backend($1)', [waiting[0].pid]);
+    const killed = await Promise.race([pending, new Promise(r => setTimeout(() => r({ status: 'hung' }), 8000))]);
+    await db.query('SELECT pg_advisory_unlock($1)', [727001]);
+    ok('the request whose backend died is answered (500), not left hanging', killed.status === 500, String(killed.status));
+    ok('the server is still up', (await req(P(), 'GET', '/health')).status === 200);
+    const afterMid = await post(P(), secretOf(), { songKey: 'after-mid', title: 'After the kill', score: smallScore() }, '10.9.1.3');
+    ok('and the next guest create works', afterMid.status === 201, afterMid.status + '');
+    const parAfter = await Promise.all(Array.from({ length: 8 }, (_, i) => post(P(), secretOf(), { songKey: 'pa' + i, title: 'PA' + i, score: smallScore() }, '10.9.2.' + i)));
+    ok('and 8 at once all work (the dead connection was dropped, not reused)', parAfter.every(r => r.status === 201), parAfter.map(r => r.status).join());
+
     console.log('\n── an account on Postgres ──');
     const su = await req(P(), 'POST', '/api/auth/signup', { body: { email: 'pg-' + Date.now() + '@example.com', password: 'practice-ok', displayName: 'PG User' } });
     const cookie = (su.headers['set-cookie'] || []).map(x => x.split(';')[0]).join('; ');
@@ -169,6 +207,8 @@ async function start() {
     ok('listed as asked, no end date, bytes 0', (await one(`SELECT listed, expires_at IS NULL AS open FROM ppp_shares WHERE song_key = 'u-same'`))[0].listed === true && (await one(`SELECT expires_at IS NULL AS open FROM ppp_shares WHERE song_key = 'u-same'`))[0].open === true);
     const accOne = await req(P(), 'POST', '/api/shares', { cookie: cookie, body: { songKey: 'u2', title: 'U2', score: smallScore('U2') } });
     ok('an account\'s ordinary create is 201', accOne.status === 201 && accOne.body.listed === false && accOne.body.expiresAt === undefined);
+    const accNul = await req(P(), 'POST', '/api/shares', { cookie: cookie, body: { songKey: 'u-nul', title: 'N', score: smallScore('N', { lyric: 'a' + NUL + 'b' }) } });
+    ok('an account\'s NUL is a 422 (it was a 500)', accNul.status === 422, accNul.status + '');
     ok('an account\'s measures:[null] is 422', (await req(P(), 'POST', '/api/shares', { cookie: cookie, body: { songKey: 'nn', title: 'N', score: { measures: [null], notes: [] } } })).status === 422);
   } finally {
     if (srv) await srv.close();

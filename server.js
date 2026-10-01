@@ -546,6 +546,21 @@ const GUEST_DRAIN_BYTES = 16 * 1024 * 1024;
 const GUEST_TOO_BIG = 'That score is too large to share as a guest. Sign in to share larger scores.';
 /* a constant for pg_advisory_xact_lock: guest creates take turns */
 const GUEST_LOCK_KEY = 727001;
+
+/* A store failure is one line in the log, and at most a few lines a minute, not a stack per request: a request that
+   makes the store fail can be sent over and over. */
+const storeLog = { t: 0, n: 0, dropped: 0 };
+function logStoreError(e) {
+  const now = Date.now();
+  if (now - storeLog.t > 60000) {
+    if (storeLog.dropped) console.error('Share store errors not logged in the last minute: ' + storeLog.dropped);
+    storeLog.t = now; storeLog.n = 0; storeLog.dropped = 0;
+  }
+  if (storeLog.n++ < 5) console.error('Share store error: ' + ((e && (e.code || e.name)) || 'error') + ' ' + String((e && e.message) || e).split('\n')[0].slice(0, 200));
+  else storeLog.dropped++;
+}
+/* where the client address came from, said once (after a deploy, to check it against the real headers) */
+let guestSourceLogged = false;
 const DATA_DIR = process.env.PPP_DATA_DIR ? path.resolve(process.env.PPP_DATA_DIR) : path.join(ROOT, 'data');
 
 function newShareId() {
@@ -701,6 +716,8 @@ function postgresStore(url) {
         ssl: /render\.com|sslmode=require/i.test(url) ? { rejectUnauthorized: false } : undefined,
         max: 5
       });
+      /* a backend that goes away while idle (a restart, a killed session) must not take the server down */
+      pool.on('error', e => logStoreError(e));
     }
     return pool;
   }
@@ -835,6 +852,10 @@ function postgresStore(url) {
        and the caps (per browser, count, bytes) cannot be raced. build(prev) returns the row. */
     async guestUpsert(ownerId, songKey, build, nowMs) {
       const c = await getPool().connect();
+      /* an error on a checked-out connection (its backend was killed) is an event, and an unhandled one ends the process */
+      let broken = false;
+      const onError = e => { broken = true; logStoreError(e); };
+      c.on('error', onError);
       try {
         await c.query('BEGIN');
         await c.query('SELECT pg_advisory_xact_lock($1)', [GUEST_LOCK_KEY]);
@@ -850,10 +871,12 @@ function postgresStore(url) {
         await c.query('COMMIT');
         return { row: row, created: !prev };
       } catch (e) {
-        try { await c.query('ROLLBACK'); } catch (e2) { /* the connection is gone */ }
+        try { await c.query('ROLLBACK'); } catch (e2) { broken = true; /* the connection is gone */ }
         throw e;
       } finally {
-        c.release();
+        c.removeListener('error', onError);
+        /* a connection that errored is destroyed, not handed to the next request */
+        c.release(broken || undefined);
       }
     }
   };
@@ -1142,7 +1165,9 @@ async function handleShares(req, res, url) {
     const guest = !user;
     let ip = null;
     if (guest) {
-      ip = guestShare.clientIp(req) || 'unknown';
+      const who = guestShare.clientAddress(req);
+      ip = who.ip || 'unknown';
+      if (!guestSourceLogged) { guestSourceLogged = true; console.log('Guest links: the first request named its client from ' + who.source); }
       if (!guestLimits.ip.peek(ip) || !guestLimits.fails.peek(ip) || !guestLimits.all.peek('all')) {
         return jsonError(res, 429, 'Too many links were made from here just now. Try again in a little while.');
       }
@@ -1156,7 +1181,9 @@ async function handleShares(req, res, url) {
     catch (e) { return refuse(413, guest ? GUEST_TOO_BIG : 'That score is too large to share.'); }
     try { body = JSON.parse(raw.toString('utf8') || '{}'); }
     catch (e) { return refuse(400, 'Invalid JSON'); }
-    if (!body || !validScore(body.score)) return refuse(422, 'That is not a score PPP can share.');
+    /* a NUL, a lone surrogate or a nesting of more than 64 cannot be stored (or read back): it is not a score */
+    if (!body || typeof body !== 'object' || guestShare.inspect(body)) return refuse(422, 'That is not a score PPP can share.');
+    if (!validScore(body.score)) return refuse(422, 'That is not a score PPP can share.');
     const songKey = clipText(body.songKey, 80);
     if (!songKey) return refuse(422, 'That is not a score PPP can share.');
     const title = clipText(body.title || body.score.title, 120);
@@ -1199,9 +1226,12 @@ async function handleShares(req, res, url) {
       let out;
       try { out = await store.guestUpsert(ownerId, songKey, buildRow, nowMs); }
       catch (e) {
+        /* whatever the store says, this request made nothing: give the budget back, and charge the address */
         guestLimits.ip.release(ip); guestLimits.all.release('all');
         if (e instanceof RangeError) return refuse(422, 'That is not a score PPP can share.');
-        throw e;
+        guestLimits.fails.take(ip);
+        logStoreError(e);
+        return jsonError(res, 500, 'Server error');
       }
       if (out.refuse) {
         /* a refused link made nothing: give the budget back, but charge the address for asking */
@@ -1213,12 +1243,13 @@ async function handleShares(req, res, url) {
       return;
     }
 
-    let prev = await store.findShare(user.id, songKey);
-    if (!prev && await store.countShares(user.id) >= SHARES_PER_USER) {
-      return jsonError(res, 429, 'You have shared as many scores as PPP keeps for one account.');
-    }
-    let row = buildRow(prev);
+    let prev, row;
     try {
+      prev = await store.findShare(user.id, songKey);
+      if (!prev && await store.countShares(user.id) >= SHARES_PER_USER) {
+        return jsonError(res, 429, 'You have shared as many scores as PPP keeps for one account.');
+      }
+      row = buildRow(prev);
       try { await store.putShare(row); }
       catch (e) {
         /* the same song sent twice at once: the second is an update of the first, not an error */
@@ -1230,7 +1261,8 @@ async function handleShares(req, res, url) {
       }
     } catch (e) {
       if (e instanceof RangeError) return jsonError(res, 422, 'That is not a score PPP can share.');
-      throw e;
+      logStoreError(e);
+      return jsonError(res, 500, 'Server error');
     }
     send(res, prev ? 200 : 201, Object.assign(shareCard(row, viewer), { url: '/?share=' + row.id }));
     return;
@@ -1433,6 +1465,8 @@ store.ready().then(() => {
   setInterval(sweepGuestShares, GUEST.SWEEP_MS).unref();
   server.listen(PORT, HOST, () => {
     console.log('PPP listening on http://' + HOST + ':' + PORT);
+    console.log('Guest links: the client address is read from ' + (process.env.RENDER ? 'CF-Connecting-IP, then True-Client-IP, then ' : '')
+      + 'X-Forwarded-For (' + (Math.max(1, parseInt(process.env.PPP_PROXY_HOPS, 10) || 1)) + ' from the right), then the socket');
     if (HOST === '127.0.0.1' || HOST === 'localhost') startHelperIfMissing();
   });
 }).catch(err => {

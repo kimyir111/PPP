@@ -28,6 +28,8 @@ const GUEST = {
   HOUR_MS: 60 * 60 * 1000,
   /* the most a limiter table remembers; the oldest key is forgotten first */
   MAX_KEYS: 10000,
+  /* a posted score may nest this deep (a real one is a handful of levels); deeper is refused, and cannot be read back */
+  MAX_DEPTH: 64,
   /* one guest link: the request (score, preview and the rest) may be this big; the preview alone this big */
   MAX_BYTES: 1024 * 1024,
   PREVIEW_MAX_BYTES: 24 * 1024,
@@ -128,28 +130,60 @@ function slidingWindow(limit, windowMs, clock, maxKeys) {
   };
 }
 
-/* How a request names its client. Nothing the client writes may name it:
-   1. on Render (RENDER is set), the headers its edge sets: True-Client-IP, then CF-Connecting-IP;
+/* How a request names its client, and where the name came from. Nothing the client writes may name it:
+   1. on Render (RENDER is set), the headers its edge sets: CF-Connecting-IP (the one Cloudflare is documented to set
+      itself), then True-Client-IP;
    2. else the X-Forwarded-For entry `hops` places from the RIGHT (PPP_PROXY_HOPS, default 1: the address the one
       proxy in front of this server appended), never the first, which the client writes;
    3. else the socket address.
-   The login limit uses this too. `env` is for tests. */
-function clientIp(req, env) {
+   `env` is for tests. */
+function clientAddress(req, env) {
   env = env || process.env;
   const h = req.headers || {};
   const one = v => String(Array.isArray(v) ? v[0] : v == null ? '' : v).trim();
   if (env.RENDER) {
-    const direct = one(h['true-client-ip']) || one(h['cf-connecting-ip']);
-    if (direct) return direct.slice(0, 64);
+    const cf = one(h['cf-connecting-ip']);
+    if (cf) return { ip: cf.slice(0, 64), source: 'cf-connecting-ip' };
+    const tc = one(h['true-client-ip']);
+    if (tc) return { ip: tc.slice(0, 64), source: 'true-client-ip' };
   }
   const hops = Math.max(1, parseInt(env.PPP_PROXY_HOPS, 10) || 1);
   const xff = one(h['x-forwarded-for']);
   if (xff) {
     const list = xff.split(',').map(x => x.trim());
     const at = list[list.length - hops];
-    if (at) return at.slice(0, 64);
+    if (at) return { ip: at.slice(0, 64), source: 'x-forwarded-for (' + hops + ' from the right)' };
   }
-  return String((req.socket && req.socket.remoteAddress) || '').slice(0, 64);
+  return { ip: String((req.socket && req.socket.remoteAddress) || '').slice(0, 64), source: 'socket' };
+}
+/* The login limit uses this too. */
+function clientIp(req, env) { return clientAddress(req, env).ip; }
+
+/* NUL and lone surrogates are legal in a JSON text but cannot be stored (Postgres refuses them): they are not a score. */
+const BAD_TEXT = /\u0000|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+
+/* Walk a posted value (iteratively: it may be nested 200000 deep) and say what is wrong with it, or null:
+   'text' (NUL or a lone surrogate in a string or a key) or 'depth' (nested more than maxDepth containers). */
+function inspect(root, maxDepth) {
+  const limit = maxDepth || GUEST.MAX_DEPTH;
+  const stack = [root, 0];
+  while (stack.length) {
+    const depth = stack.pop();
+    const v = stack.pop();
+    if (typeof v === 'string') { if (BAD_TEXT.test(v)) return 'text'; continue; }
+    if (!v || typeof v !== 'object') continue;
+    if (depth >= limit) return 'depth';
+    if (Array.isArray(v)) {
+      for (let i = 0; i < v.length; i++) stack.push(v[i], depth + 1);
+    } else {
+      const keys = Object.keys(v);
+      for (let i = 0; i < keys.length; i++) {
+        if (BAD_TEXT.test(keys[i])) return 'text';
+        stack.push(v[keys[i]], depth + 1);
+      }
+    }
+  }
+  return null;
 }
 
 /* The one place that decides whether a guest link may be stored. `prev` is this browser's row for this song (or null),
@@ -173,4 +207,4 @@ function rowBytes(score, preview) {
   return Buffer.byteLength(JSON.stringify(score)) + (preview == null ? 0 : Buffer.byteLength(JSON.stringify(preview)));
 }
 
-module.exports = { GUEST, validSecret, guestOwnerId, isGuestOwner, sameOwner, expiryFor, expired, slidingWindow, clientIp, decide, rowBytes };
+module.exports = { GUEST, validSecret, guestOwnerId, isGuestOwner, sameOwner, expiryFor, expired, slidingWindow, clientIp, clientAddress, inspect, decide, rowBytes };

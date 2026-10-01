@@ -101,11 +101,26 @@ function rules() {
   ok('a bad hop count falls back to 1', G.clientIp(reqOf({ 'x-forwarded-for': 'x, 1.2.3.4' }), { PPP_PROXY_HOPS: 'banana' }) === '1.2.3.4'
     && G.clientIp(reqOf({ 'x-forwarded-for': 'x, 1.2.3.4' }), { PPP_PROXY_HOPS: '0' }) === '1.2.3.4');
   ok('with no header it is the socket address', G.clientIp(reqOf({}, '10.1.1.1'), {}) === '10.1.1.1');
-  ok('on Render, True-Client-IP wins, then CF-Connecting-IP; off Render they are ignored',
-    G.clientIp(reqOf({ 'true-client-ip': '7.7.7.7', 'cf-connecting-ip': '8.8.8.8', 'x-forwarded-for': '1.1.1.1' }), { RENDER: 'true' }) === '7.7.7.7'
-    && G.clientIp(reqOf({ 'cf-connecting-ip': '8.8.8.8', 'x-forwarded-for': '1.1.1.1' }), { RENDER: 'true' }) === '8.8.8.8'
+  ok('on Render, CF-Connecting-IP wins, then True-Client-IP; off Render they are ignored',
+    G.clientIp(reqOf({ 'true-client-ip': '7.7.7.7', 'cf-connecting-ip': '8.8.8.8', 'x-forwarded-for': '1.1.1.1' }), { RENDER: 'true' }) === '8.8.8.8'
+    && G.clientIp(reqOf({ 'true-client-ip': '7.7.7.7', 'x-forwarded-for': '1.1.1.1' }), { RENDER: 'true' }) === '7.7.7.7'
     && G.clientIp(reqOf({ 'x-forwarded-for': '1.1.1.1' }), { RENDER: 'true' }) === '1.1.1.1'
-    && G.clientIp(reqOf({ 'true-client-ip': '7.7.7.7', 'x-forwarded-for': '1.1.1.1' }), {}) === '1.1.1.1');
+    && G.clientIp(reqOf({ 'cf-connecting-ip': '8.8.8.8', 'true-client-ip': '7.7.7.7', 'x-forwarded-for': '1.1.1.1' }), {}) === '1.1.1.1');
+  ok('and it says where the address came from',
+    G.clientAddress(reqOf({ 'cf-connecting-ip': '8.8.8.8' }), { RENDER: '1' }).source === 'cf-connecting-ip'
+    && G.clientAddress(reqOf({ 'true-client-ip': '7.7.7.7' }), { RENDER: '1' }).source === 'true-client-ip'
+    && /^x-forwarded-for/.test(G.clientAddress(reqOf({ 'x-forwarded-for': 'a, b' }), {}).source)
+    && G.clientAddress(reqOf({}), {}).source === 'socket');
+
+  console.log('\n── what cannot be stored: NUL, lone surrogates, nesting too deep ──');
+  const nest = n => { let a = []; for (let i = 0; i < n; i++) a = [a]; return a; };
+  ok('a NUL, a lone high surrogate and a lone low surrogate in a string are found', G.inspect({ a: ['x' + String.fromCharCode(0) + 'y'] }) === 'text'
+    && G.inspect({ a: String.fromCharCode(0xd800) }) === 'text' && G.inspect({ a: 'x' + String.fromCharCode(0xdc00) }) === 'text');
+  const keyWithNul = {}; keyWithNul['k' + String.fromCharCode(0)] = 1;
+  ok('in a key too', G.inspect(keyWithNul) === 'text');
+  ok('Korean, Japanese, accents and an emoji (a proper surrogate pair) are text', G.inspect({ a: '한글 かな é 😀 𝄞' }) === null);
+  ok('nesting up to 64 containers is allowed, 65 is not', G.inspect(nest(63)) === null && G.inspect(nest(64)) === 'depth');
+  ok('and 200000 levels is judged without overflowing the stack', G.inspect(JSON.parse('['.repeat(200000) + ']'.repeat(200000))) === 'depth');
 
   console.log('\n── what may be stored: a re-send is held to the caps as growth ──');
   const GG = G.GUEST;
@@ -164,15 +179,17 @@ const secretOf = () => crypto.randomBytes(32).toString('hex');
 let ipN = 0;
 const nextIp = () => '203.0.113.' + (++ipN);
 
-async function server(extraEnv, preRows) {
+async function server(extraEnv, preRows, capture) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ppp-guest-share-'));
   const port = await freePort();
   if (preRows) fs.writeFileSync(path.join(dir, 'shares.json'), JSON.stringify({ shares: preRows }));
   const env = Object.assign({}, process.env, { NODE_ENV: 'production', HOST: '127.0.0.1', PORT: String(port), PPP_DATA_DIR: dir, DATABASE_URL: '' });
   delete env.RENDER; delete env.PPP_PROXY_HOPS;
   const child = spawn(process.execPath, ['server.js'], {
-    cwd: path.resolve(__dirname, '..'), stdio: 'ignore', env: Object.assign(env, extraEnv || {})
+    cwd: path.resolve(__dirname, '..'), stdio: capture ? ['ignore', 'pipe', 'pipe'] : 'ignore', env: Object.assign(env, extraEnv || {})
   });
+  const log = { text: '' };
+  if (capture) { child.stdout.on('data', d => { log.text += d; }); child.stderr.on('data', d => { log.text += d; }); }
   let exited = false;
   child.on('exit', () => { exited = true; });
   const t0 = Date.now();
@@ -182,7 +199,7 @@ async function server(extraEnv, preRows) {
     if (Date.now() - t0 > 20000) { child.kill(); throw new Error('server.js did not come up'); }
     await new Promise(r => setTimeout(r, 120));
   }
-  return { port: port, dir: dir, close: () => new Promise(res => { if (exited) return res(); child.on('exit', () => res()); child.kill(); }) };
+  return { port: port, dir: dir, log: log, close: () => new Promise(res => { if (exited) return res(); child.on('exit', () => res()); child.kill(); }) };
 }
 
 const sharesFile = dir => path.join(dir, 'shares.json');
@@ -355,6 +372,38 @@ async function main() {
     const sameAddr = await post(P, secretOf(), { songKey: 'f-ok', title: 'Valid but from the bad address', score: smallScore() }, '198.19.0.2');
     ok('...and a valid request from it waits too', sameAddr.status === 429);
 
+    console.log('\n── a score that cannot be stored is a 422, and charged ──');
+    const NUL = String.fromCharCode(0);
+    const nulIn = (where, ip) => {
+      const body = { songKey: 'nul', title: 'T', score: smallScore('N') };
+      if (where === 'score') body.score.notes[0].lyric = 'a' + NUL + 'b';
+      if (where === 'title') body.title = 'T' + NUL;
+      if (where === 'composer') body.composer = 'C' + NUL;
+      if (where === 'songKey') body.songKey = 'k' + NUL;
+      if (where === 'preview') body.preview = smallScore('P', { pad: 'a' + NUL });
+      if (where === 'key') body.score['k' + NUL] = 1;
+      if (where === 'surrogate') body.score.notes[0].lyric = String.fromCharCode(0xd800);
+      return post(P, secretOf(), body, ip);
+    };
+    const nulAnswers = [];
+    for (const where of ['score', 'title', 'composer', 'songKey', 'preview', 'key', 'surrogate']) nulAnswers.push((await nulIn(where, nextIp())).status);
+    ok('a NUL (in the score, title, composer, song key, preview or a key) or a lone surrogate is 422, not 500', nulAnswers.every(x => x === 422), nulAnswers.join(' '));
+    const nulRaw = await req(P, 'POST', '/api/shares', { guest: secretOf(), ip: nextIp(), body: '{"songKey":"r","title":"T","score":{"measures":[{}],"notes":[],"x":"a\\u0000b"}}' });
+    ok('written as the JSON escape \\u0000 it is the same 422', nulRaw.status === 422, nulRaw.status + '');
+    const nul80 = [];
+    for (let i = 0; i < 80; i++) nul80.push((await nulIn('score', '198.51.200.1')).status);
+    ok('80 NUL requests from one address: 60 answered 422, then the failure budget says 429', nul80.slice(0, 60).every(x => x === 422) && nul80.slice(60).every(x => x === 429), nul80.filter((x, i) => i === 0 || nul80[i - 1] !== x).join(' then '));
+    const burst = await Promise.all(Array.from({ length: 250 }, (_, i) => nulIn('score', '198.51.' + (201 + Math.floor(i / 200)) + '.' + (i % 200))));
+    const afterBurst = await post(P, secretOf(), { songKey: 'after-burst', title: 'An honest guest', score: smallScore() }, '198.51.210.1');
+    ok('250 NUL requests at once (from 250 addresses) are all 422, and an honest guest is still served (the server-wide budget is untouched)', burst.every(r => r.status === 422) && afterBurst.status === 201, burst.filter(r => r.status !== 422).length + ' not 422; honest ' + afterBurst.status);
+    const nestN = n => { let a = []; for (let i = 0; i < n; i++) a = [a]; return a; };
+    const d40 = await post(P, secretOf(), { songKey: 'd40', title: 'T', score: smallScore('D', { x: nestN(40) }) }, nextIp());
+    const d65 = await post(P, secretOf(), { songKey: 'd65', title: 'T', score: smallScore('D', { x: nestN(65) }) }, nextIp());
+    const d4753 = await req(P, 'POST', '/api/shares', { guest: secretOf(), ip: nextIp(), body: '{"songKey":"d4753","title":"T","score":{"measures":[{}],"notes":[],"x":' + '['.repeat(4753) + ']'.repeat(4753) + '}}' });
+    ok('a score nested 40 deep is fine, 65 deep and 4753 deep are 422', d40.status === 201 && d65.status === 422 && d4753.status === 422, d40.status + '/' + d65.status + '/' + d4753.status);
+    const gotDeep = await req(P, 'GET', '/api/shares/' + d40.body.id);
+    ok('and the one that was kept reads back', gotDeep.status === 200);
+
     console.log('\n── end dates ──');
     const C = secretOf(), gc = G.guestOwnerId(C);
     const created2 = await post(P, C, { songKey: 'exp-live', title: 'Will live', score: smallScore() }, nextIp());
@@ -468,6 +517,9 @@ async function main() {
     ok('PATCH listed:false still works for the owner', unl.status === 200 && unl.body.listed === false);
     const accRace = await Promise.all(Array.from({ length: 8 }, (_, i) => U('POST', '/api/shares', { songKey: 'u-race', title: 'Race ' + i, score: smallScore('Race') })));
     ok('an account sending the same song 8 times at once: only 200/201 and one link', accRace.every(r => r.status === 200 || r.status === 201) && new Set(accRace.map(r => r.body.id)).size === 1, accRace.map(r => r.status).join());
+    const accNul = await U('POST', '/api/shares', { songKey: 'u-nul', title: 'T', score: smallScore('N', { lyric: 'a' + String.fromCharCode(0) + 'b' }) });
+    const accDeep = await U('POST', '/api/shares', { songKey: 'u-deep', title: 'T', score: smallScore('N', { x: nestN(65) }) });
+    ok('an account\'s NUL is a 422 (it was a 500), and so is a score nested 65 deep', accNul.status === 422 && accDeep.status === 422, accNul.status + '/' + accDeep.status);
     const withKey = await U('POST', '/api/shares', { songKey: 'u2', title: 'Both', listed: true, score: smallScore() }, { guest: secretOf() });
     ok('with a session and a guest key, the account wins: owned by the account, listed as asked', withKey.status === 201 && withKey.body.listed === true && withKey.body.owner === 'Real User');
     const again2 = await U('POST', '/api/shares', { songKey: 'u2', title: 'Both', score: smallScore() });
@@ -508,12 +560,12 @@ async function proxies() {
   console.log('\n── on Render: the edge\'s own headers ──');
   srv = await server({ RENDER: 'true' });
   try {
-    const viaTrue = [];
-    for (let i = 0; i < 32; i++) viaTrue.push((await req(srv.port, 'POST', '/api/shares', { guest: secretOf(), ip: 'made-up-' + i + ', 10.0.0.' + i, headers: { 'True-Client-IP': '192.0.2.50' }, body: mk(i) })).status);
-    ok('True-Client-IP names the client: 30 pass, then 429, whatever X-Forwarded-For says', viaTrue.slice(0, 30).every(x => x === 201) && viaTrue[30] === 429 && viaTrue[31] === 429, viaTrue.join(' '));
     const viaCf = [];
-    for (let i = 0; i < 32; i++) viaCf.push((await req(srv.port, 'POST', '/api/shares', { guest: secretOf(), ip: 'made-up-' + i, headers: { 'CF-Connecting-IP': '192.0.2.60' }, body: mk('c' + i) })).status);
-    ok('without it, CF-Connecting-IP does', viaCf.slice(0, 30).every(x => x === 201) && viaCf[30] === 429, viaCf.join(' '));
+    for (let i = 0; i < 32; i++) viaCf.push((await req(srv.port, 'POST', '/api/shares', { guest: secretOf(), ip: 'made-up-' + i + ', 10.0.0.' + i, headers: { 'CF-Connecting-IP': '192.0.2.60', 'True-Client-IP': '203.0.113.' + (100 + i) }, body: mk('c' + i) })).status);
+    ok('CF-Connecting-IP names the client, ahead of True-Client-IP and X-Forwarded-For: 30 pass, then 429', viaCf.slice(0, 30).every(x => x === 201) && viaCf[30] === 429 && viaCf[31] === 429, viaCf.join(' '));
+    const viaTrue = [];
+    for (let i = 0; i < 32; i++) viaTrue.push((await req(srv.port, 'POST', '/api/shares', { guest: secretOf(), ip: 'made-up-' + i, headers: { 'True-Client-IP': '192.0.2.50' }, body: mk(i) })).status);
+    ok('without it, True-Client-IP does', viaTrue.slice(0, 30).every(x => x === 201) && viaTrue[30] === 429, viaTrue.join(' '));
     const other = await req(srv.port, 'POST', '/api/shares', { guest: secretOf(), ip: 'made-up-0', headers: { 'True-Client-IP': '192.0.2.51' }, body: mk('other') });
     ok('another client address is not held up', other.status === 201, other.status + '');
     const xffOnly = [];
@@ -533,6 +585,32 @@ async function proxies() {
     const link = readRows(srv.dir).find(r => r.ownerId && r.ownerId.indexOf('g_') === 0);
     ok('reading a link and taking one down are not rationed', (await req(srv.port, 'GET', '/api/shares/' + link.id)).status === 200);
     ok('the table of addresses is bounded (the server holds at most 10000 per window)', G.GUEST.MAX_KEYS === 10000);
+  } finally { await srv.close(); try { fs.rmSync(srv.dir, { recursive: true, force: true }); } catch (e) { /* temp */ } }
+
+  console.log('\n── a store that fails: charged, and one line in the log ──');
+  srv = await server(null, null, true);
+  try {
+    /* the shares file becomes a directory: every write to it fails, the way a full or broken disk would */
+    await new Promise(r => setTimeout(r, 1500));
+    fs.rmSync(sharesFile(srv.dir), { force: true });
+    fs.mkdirSync(sharesFile(srv.dir));
+    const answers = [];
+    for (let i = 0; i < 75; i++) answers.push((await post(srv.port, secretOf(), mk('fail' + i), '198.51.100.9')).status);
+    ok('a guest create that the store fails is 500, and the address is charged: 60 of them, then 429', answers.slice(0, 60).every(x => x === 500) && answers.slice(60).every(x => x === 429), answers.filter((x, i) => i === 0 || answers[i - 1] !== x).join(' then '));
+    const others = [];
+    for (let i = 0; i < 8; i++) others.push((await post(srv.port, secretOf(), mk('o' + i), '198.51.100.' + (20 + i))).status);
+    ok('while another address is only told 500 (the server-wide budget was given back)', others.every(x => x === 500), others.join(' '));
+    await new Promise(r => setTimeout(r, 300));
+    const lines = srv.log.text.split('\n');
+    const errLines = lines.filter(l => /Share store error/.test(l));
+    ok('the log has at most 5 one-line store errors in a minute, and no stack traces', errLines.length >= 1 && errLines.length <= 5 && !lines.some(l => /^\s+at /.test(l)), errLines.length + ' lines');
+    ok('the log says once where the client address came from, and how it is read at boot',
+      lines.filter(l => /the first request named its client from x-forwarded-for/.test(l)).length === 1 && lines.some(l => /Guest links: the client address is read from X-Forwarded-For \(1 from the right\)/.test(l)));
+    const accountAnswers = [];
+    const su = await req(srv.port, 'POST', '/api/auth/signup', { body: { email: 'store-fail-' + Date.now() + '@example.com', password: 'practice-ok', displayName: 'Store Fail' }, ip: '198.51.100.99' });
+    const cookie = (su.headers['set-cookie'] || []).map(c => c.split(';')[0]).join('; ');
+    for (let i = 0; i < 3; i++) accountAnswers.push((await req(srv.port, 'POST', '/api/shares', { cookie: cookie, body: mk('acc' + i) })).status);
+    ok('an account whose share the store fails is told 500 in one line too (no crash, no stack)', accountAnswers.every(x => x === 500) && !srv.log.text.split('\n').some(l => /^\s+at /.test(l)), accountAnswers.join(' '));
   } finally { await srv.close(); try { fs.rmSync(srv.dir, { recursive: true, force: true }); } catch (e) { /* temp */ } }
 
   console.log('\n── expired guest rows are swept when the server starts ──');
