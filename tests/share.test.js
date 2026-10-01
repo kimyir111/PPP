@@ -102,6 +102,7 @@ const recordOpens = page => page.evaluateOnNewDocument(() => {
   ok('and the copyright line stays visible', guestDlg.fine, guestDlg.text.slice(-160));
   ok('it says the link is unlisted and expires', /not listed/.test(guestDlg.text) && /30 days/.test(guestDlg.text));
   ok('and no wall: nothing says "Sign in to share your scores"', !/Sign in to share your scores/.test(guestDlg.text));
+  ok('and it does not warn that the browser cannot keep a key, before any key exists (storage works)', !/cannot keep a key/.test(guestDlg.text), guestDlg.text.slice(0, 200));
   await page.evaluate(() => document.querySelector('[data-share-net="x"]').click());
   await page.waitForFunction(() => !!document.querySelector('[data-share-link]'), { timeout: 8000 }).catch(() => {});
   const gLink = await page.evaluate(() => (document.querySelector('[data-share-link]') || {}).textContent || '');

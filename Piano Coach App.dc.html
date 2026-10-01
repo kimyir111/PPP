@@ -11558,7 +11558,14 @@ const GuestKey = (() => {
     },
     /* will the key still be here after this page closes? */
     persistent() {
-      try { return valid(localStorage.getItem(LS)); } catch (e) { return false; }
+      try {
+        if (valid(localStorage.getItem(LS))) return true;
+        /* no key yet (it is made on the first send): can this browser keep one? */
+        localStorage.setItem(LS, 'probe');
+        const ok = localStorage.getItem(LS) === 'probe';
+        localStorage.removeItem(LS);
+        return ok;
+      } catch (e) { return false; }
     }
   };
 })();
