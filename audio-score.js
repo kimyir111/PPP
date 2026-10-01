@@ -1179,6 +1179,14 @@
       return typeof module === 'object' && module.exports ? require('./scoregraph/gaps.js') : (global && global.PPPScoreGraphModules && global.PPPScoreGraphModules.gaps) || null;
     } catch (e) { return null; }
   }
+  /* "Recording notation: tuplets and the grid" (docs/GOALS/G09 section 12): scoregraph/rec-tuplet.js, the pass that writes one tuplet over each triplet beat. Asked for with opts.exactBars (the app
+     does, with closeGaps, at its four recording call sites; off by default for the same reason closeGaps is: the goldens, the benchmark's snapshots and the G3/G4 contracts are about toMusicXml's own
+     output); only for a recording (a MIDI file is the player's own); a page that has not loaded it writes the score as before. */
+  function tupletLib() {
+    try {
+      return typeof module === 'object' && module.exports ? require('./scoregraph/rec-tuplet.js') : (global && global.PPPScoreGraphModules && global.PPPScoreGraphModules.recTuplet) || null;
+    } catch (e) { return null; }
+  }
   const ACCIDENTAL_NAME = { '-2': 'flat-flat', '-1': 'flat', '0': 'natural', '1': 'sharp', '2': 'double-sharp' };
 
   /* heard: {notes: [{on, off, midi, vel, staff, tick}] (every note after clean; staff and tick once placed),
@@ -1505,6 +1513,7 @@
     const built = buildGraph(model, { notes: heardNotes, pedals: extra.pedals || [],
       controls: extra.controls || [], barSeconds: barSeconds });
     let graph = built.graph, graphIssues = built.issues;
+    const exactOn = !!opts.exactBars && (model.sourceKind || 'audio-score') === 'audio-score' && !!(tupletLib() && tupletLib().addTriplets);
     const gaps = (opts.closeGaps === undefined ? CLOSE_GAPS_DEFAULT : !!opts.closeGaps) && (model.sourceKind || 'audio-score') === 'audio-score' ? gapsLib() : null;
     if (gaps) {
       /* the gaps closed, then each silence written once: "consecutive rests" (scoregraph/gaps.js mergeRests; a page with an older gaps.js has no tidyRests and closes the gaps only) */
@@ -1512,6 +1521,12 @@
       if (cg.changed) { graph = cg.graph; graphIssues = cg.issues || graphIssues; }
       result.gapReport = cg.stats; /* beside the graph, not in stats (the benchmark snapshots stats) */
       if (cg.rests) result.restReport = cg.rests;
+    }
+    /* one tuplet over each triplet beat, rests inside it included (it replaces the one-note tuplets of the beats it describes): opts.exactBars (below: "exact bars") */
+    if (exactOn) {
+      const tu = tupletLib().addTriplets(graph);
+      if (tu.changed) { graph = tu.graph; graphIssues = tu.issues || graphIssues; }
+      result.tupletReport = tu.stats;
     }
     /* G3 (docs/GOALS/G03 §5.1): the notation passes between the graph and the file. 'off' writes the graph as
        built; 'shadow' runs G3 and reports what it would change (proReport) but writes the graph as built; 'on'

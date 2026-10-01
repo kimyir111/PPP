@@ -77,16 +77,16 @@
       require('../critics/metrics.js'), require('../critics/voice-leading.js'), require('../critics/register-density.js'),
       require('../critics/left-hand-jump.js'), require('../critics/register-floor.js'), require('../critics/vertical-clash.js'),
       require('../playability/index.js'), require('../difficulty/index.js'), require('./plan.js'), require('../realize/theory.js'),
-      require('../scoregraph/gaps.js'));
+      require('../scoregraph/gaps.js'), require('../scoregraph/rec-tuplet.js'));
   } else {
     const SG = root.PPPScoreGraphModules || {};
     const SGG = root.PPPSongGraphModules || {};
     const CM = root.PPPCriticsModules || {};
     const M = root.PPPRepairModules || {};
     root.PPPRepair = factory(SG.ops, SG.pitch, SG.rational, SG.proCritic, SGG.util, SGG.harmony, CM.metrics, CM.voiceLeading,
-      CM.registerDensity, CM.leftHandJump, CM.registerFloor, CM.verticalClash, root.PPPPlayability, root.PPPDifficulty, M.plan, (root.PPPRealizeModules || {}).theory, SG.gaps);
+      CM.registerDensity, CM.leftHandJump, CM.registerFloor, CM.verticalClash, root.PPPPlayability, root.PPPDifficulty, M.plan, (root.PPPRealizeModules || {}).theory, SG.gaps, SG.recTuplet);
   }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (OPS, P, R, PC, U, HARM, METRICS, VL, RD, LHJ, RF, VCL, PLA, DIFF, PLAN, TH, GAPS) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (OPS, P, R, PC, U, HARM, METRICS, VL, RD, LHJ, RF, VCL, PLA, DIFF, PLAN, TH, GAPS, RECTUP) {
   'use strict';
 
   const VERSION = '1.0.0';
@@ -441,7 +441,11 @@
     if (single && r.graph && (closeOpt === true || (closeOpt === 'auto' && isTranscription(g)))) {
       /* the gaps closed and the silences written once, to a fixed point (scoregraph/gaps.js tidyRests); a page whose gaps.js is older has only the closing */
       const tr = GAPS && GAPS.tidyRests ? GAPS.tidyRests(r.graph) : (() => { const c = closeSmallGaps(r.graph); return { graph: c.graph, stats: c.stats }; })();
-      return Object.assign({ ok: true, ctx: ctx }, r, { graph: tr.graph, report: r.report ? Object.assign({}, r.report, { closedGaps: tr.stats }, tr.rests ? { mergedRests: tr.rests } : {}) : r.report });
+      /* "Recording notation: tuplets and the grid" (docs/GOALS/G09 section 12): the arrangement copies the events of a recording verbatim, and the copy has no tuplet (realize/ copies ties only), so
+         the bracket of every triplet beat is written again here, on the finished arrangement of a transcription (scoregraph/rec-tuplet.js; a page that has not loaded it: none) */
+      const tt = RECTUP && RECTUP.addTriplets ? RECTUP.addTriplets(tr.graph) : null;
+      const gOut = tt && tt.changed ? tt.graph : tr.graph;
+      return Object.assign({ ok: true, ctx: ctx }, r, { graph: gOut, report: r.report ? Object.assign({}, r.report, { closedGaps: tr.stats }, tr.rests ? { mergedRests: tr.rests } : {}, tt ? { tuplets: tt.stats } : {}) : r.report });
     }
     return Object.assign({ ok: true, ctx: ctx }, r);
   }
