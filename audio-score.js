@@ -1507,9 +1507,11 @@
     let graph = built.graph, graphIssues = built.issues;
     const gaps = (opts.closeGaps === undefined ? CLOSE_GAPS_DEFAULT : !!opts.closeGaps) && (model.sourceKind || 'audio-score') === 'audio-score' ? gapsLib() : null;
     if (gaps) {
-      const cg = gaps.closeSmallGaps(graph);
+      /* the gaps closed, then each silence written once: "consecutive rests" (scoregraph/gaps.js mergeRests; a page with an older gaps.js has no tidyRests and closes the gaps only) */
+      const cg = gaps.tidyRests ? gaps.tidyRests(graph) : gaps.closeSmallGaps(graph);
       if (cg.changed) { graph = cg.graph; graphIssues = cg.issues || graphIssues; }
       result.gapReport = cg.stats; /* beside the graph, not in stats (the benchmark snapshots stats) */
+      if (cg.rests) result.restReport = cg.rests;
     }
     /* G3 (docs/GOALS/G03 §5.1): the notation passes between the graph and the file. 'off' writes the graph as
        built; 'shadow' runs G3 and reports what it would change (proReport) but writes the graph as built; 'on'

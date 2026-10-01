@@ -22,6 +22,10 @@
    Idempotent: a graph this pass has run on has no gap left, so a second run returns the very same object. Never a throw: a graph the pass does not understand (an edit the
    validator refuses) comes back as it is, with `stats.failed` saying why.
 
+   A second pass, mergeRests (docs/GOALS/G09 section 12, "consecutive rests"), writes ONE silence as one rest (or the standard tiling): two rests of one voice that follow each other with no note
+   between them (a dotted 16th rest and a 16th rest in a row; a dotted 16th rest between two 16ths) are merged and written again with the values a printed edition uses on the beat grid (see
+   mergeRests below). tidyRests = closeSmallGaps, then mergeRests.
+
    Used by repair/index.js (G9f: the last step of a one-note-per-hand arrangement of a transcription) and by audio-score.js (the recording-to-score path, so the review screen, the saved
    transcription song and every arranger's input are clean at the source). Node and browser (a <script> after scoregraph/ops.js and rational.js).
    ========================================================================== */
@@ -135,5 +139,223 @@
     return { graph: res.graph, changed: true, stats: stats, issues: res.issues };
   }
 
-  return Object.freeze({ GAP_LIMIT, GAP_SOURCE, plainValue, smallGaps, isTranscription, closeSmallGaps });
+  /* ---------------------------------------------------------------- consecutive rests (docs/GOALS/G09 section 12, "consecutive rests")
+
+       mergeRests(graph) -> { graph, changed, stats, issues }
+
+     A silence of one voice is written by audio-score.js (and by the arrangement that copies it) one piece at a time, so one stretch of silence comes out as two rests in a row (the user's
+     bar: a dotted 16th rest and a 16th rest, one after the other, before a quarter note; a dotted 16th rest inside a beamed 16th group). A printed edition writes ONE rest for a
+     silence, or the standard tiling of it on the beat grid. Per voice and measure, a RUN is rests that follow each other with no event of the voice between them (a rest that is the whole
+     measure alone is not touched; neither is a rest a beam, tuplet or direction refers to). The run's silence [a, b) is written again:
+
+     1. a and b both on the 32nd grid (a multiple of 1/32 of a whole note): the standard tiling, the one with the fewest pieces (then the fewest dots, then the longer value first), each piece a
+        value that (a) fits in what is left, (b) starts on a multiple of its own length (an eighth rest at the half beat, a quarter rest on a beat, a half rest on beats 1 and 3 of 4/4), (c) does not cross a beat line unless it starts on a beat
+        (a dotted eighth rest may also END on a beat: a 16th note, then a dotted eighth rest that fills the beat). The values are whole, dotted half, half, dotted quarter, quarter, dotted
+        eighth, eighth, 16th and 32nd; NO dotted rest shorter than a dotted eighth (a dotted 16th rest is a 16th and a 32nd). In a compound metre (6/8, 9/8, 12/8) a value stays inside one
+        beat (the dotted quarter) unless it is a whole number of beats and starts on one. A 32nd piece that this leaves at the start or the end of the silence is not written when a note of
+        the hand follows (the sound is untouched: no note changes; the rule closeSmallGaps already applies to the pieces it finds); at the end of the hand's last measure with a note it is
+        kept. A silence that is the whole measure in several pieces becomes one measure rest.
+     2. a or b off the 32nd grid (a triplet position at one end, a straight one at the other: the quantiser's mixed grids; no standard tiling exists): ONE rest from the start of the silence,
+        written as the longest plain value (at most one dot; a 16th or longer, no dotted value shorter than a dotted eighth) that is not longer than the silence, when the silence is less than
+        a 16th longer than that value (what is left is not written, like the 32nd piece above: a hole, an I-VOICE-GAP info; the rest event is exactly the value it shows) and no beat line lies
+        inside it unless it starts on a beat. Anything else is a tuplet silence and stays as it is (only triplet pieces; a quarter rest and a triplet eighth rest: 4/3 of a beat), except that
+        the pieces at its start that end on the 32nd grid (a dotted 16th rest before a triplet rest) are a silence of their own, written by rule 1.
+
+     Never a note, a pitch, an onset or a note length: only rest events change (a rest keeps its id when the new tiling has a piece for it; the others are removed or added). Gated like
+     closeSmallGaps (its callers: a recording, repair/index.js's transcription gate). Idempotent: a graph this pass has run on has every run in its standard tiling, so a second run returns
+     the very same object. Never a throw: a graph the pass does not understand comes back as it is, with `stats.failed` saying why. */
+  const RESTS_SOURCE = Object.freeze({ kind: 'repair', tool: 'ppp.consecutive-rests', version: '1.0.0' });
+  const TICKS = 96;                      /* a whole note is 96 ticks: audio-score's grid (a 32nd = 3 ticks, a triplet 16th = 4) */
+  const U32 = 3;                         /* ticks in a 32nd */
+  /* rest values in 32nd units, longest first: [units, type, dots] */
+  const REST_VALUES = Object.freeze([[32, 'whole', 0], [24, 'half', 1], [16, 'half', 0], [12, 'quarter', 1], [8, 'quarter', 0], [6, 'eighth', 1], [4, 'eighth', 0], [2, '16th', 0], [1, '32nd', 0]]);
+
+  function ticksOf(r) { const x = r.n * TICKS / r.d; return Number.isInteger(x) ? x : null; }
+  function wholes(t) { return R.format(R.make(t, TICKS)); }
+
+  /* the beat of a measure in 32nd units: simple metres one beat value, compound (6/8, 9/8, 12/8: three eighths) a dotted beat; additive and unusual metres: null (left alone) */
+  function beatUnits(meter) {
+    if (!meter || !Array.isArray(meter.beats) || meter.beats.length !== 1 || !Number.isInteger(meter.beatType)) return null;
+    if (Array.isArray(meter.groups) && meter.groups.length) return null;
+    const n = meter.beats[0], bt = meter.beatType;
+    const compound = bt >= 8 && n % 3 === 0;
+    if (bt >= 8 && !compound && n > 4) return null;                        /* 5/8, 7/8: additive */
+    const u = 32 / bt * (compound ? 3 : 1);
+    return Number.isInteger(u) && u >= 2 ? { B: u, compound: compound } : null;
+  }
+
+  /* the standard tiling of [a, b) (32nd units, measure-relative) in a measure of `len` units whose beat is B: [{at, len, type, dots}] */
+  function tile(a, b, B, compound, len, wholeMeasure) {
+    if (wholeMeasure) { const full = REST_VALUES.find(v => v[0] === len); return [{ at: a, len: len, type: full ? full[1] : 'whole', dots: full ? full[2] : 0, measureRest: true }]; }
+    const out = [];
+    let pos = a;
+    const allowed = (v, p) => {
+      const units = v[0], onBeat = p % B === 0;
+      if (v[2] > 0) {
+        if (units < 6) return false;
+        if (onBeat) return !compound || units % B === 0 || units === 6;
+        return units === 6 && (p + 6) % B === 0 && p % 2 === 0;           /* a dotted eighth rest that fills the rest of the beat */
+      }
+      if (units === 32) return p === 0 && units === len;
+      if (compound) return units <= 8 && p % units === 0 && (p % B) + units <= B;
+      if (p % units !== 0) return false;
+      return onBeat || (p % B) + units <= B;
+    };
+    /* the tiling with the fewest pieces (then the fewest dots, then the longer value first): two quarter rests, not a dotted quarter and an eighth, for beats 2 and 3 */
+    const memo = new Map();
+    const best = p => {
+      if (p >= b) return { cost: 0, v: null };
+      if (memo.has(p)) return memo.get(p);
+      let res = null;
+      REST_VALUES.forEach(v => {
+        if (p + v[0] > b || p + v[0] > len || !allowed(v, p)) return;
+        const c = 1000 + v[2] * 10 + best(p + v[0]).cost;
+        if (!res || c < res.cost) res = { cost: c, v: v };
+      });
+      if (!res) res = { cost: 1e6, v: REST_VALUES[REST_VALUES.length - 1] };     /* never: a 32nd is always allowed */
+      memo.set(p, res);
+      return res;
+    };
+    while (pos < b) {
+      const v = best(pos).v;
+      out.push({ at: pos, len: v[0], type: v[1], dots: v[2] });
+      pos += v[0];
+    }
+    return out;
+  }
+
+  /* the plain value that stands for a silence of `t` ticks that is not on the 32nd grid: the longest value (a 16th or longer, a dotted one a dotted eighth or longer) not longer than it, if
+     the silence is less than a 16th longer than that value; else null */
+  function plainFor(t) {
+    for (let i = 1; i < REST_VALUES.length - 1; i++) {
+      const v = REST_VALUES[i], vt = v[0] * U32;
+      if (vt <= t) return t - vt < 2 * U32 ? v : null;
+    }
+    return null;
+  }
+
+  /* the runs whose silence is not written the way mergeRests writes it: [{part, m, voice, staff, run: [rest events], pieces: [{at, len, type, dots, measureRest}]}] (ticks) */
+  function restRuns(g, stats) {
+    const out = [];
+    const mIndex = new Map(g.timeline.measures.map((m, i) => [m.id, i]));
+    const meterOf = [];
+    const byM = new Map((g.timeline.meters || []).map(x => [x.m, x]));
+    let cur = null;
+    g.timeline.measures.forEach((m, i) => { if (byM.has(m.id)) cur = byM.get(m.id); meterOf[i] = cur; });
+    g.parts.forEach(part => {
+      const used = new Set();
+      part.spanners.forEach(s => { (s.events || []).forEach(id => used.add(id)); [s.from, s.to].forEach(x => { if (typeof x === 'string') used.add(x); }); });
+      part.directions.forEach(d => { if (d.event !== undefined) used.add(d.event); });
+      const lastNoted = new Map(), noteOn = new Map();
+      part.events.forEach(e => {
+        if (e.kind !== 'note' || e.grace) return;
+        const i = mIndex.get(e.m);
+        if (i === undefined) return;
+        if (!lastNoted.has(e.staff) || lastNoted.get(e.staff) < i) lastNoted.set(e.staff, i);
+        const k = e.staff + '|' + e.m;
+        if (!noteOn.has(k)) noteOn.set(k, []);
+        noteOn.get(k).push(ticksOf(R.parse(e.at)));
+      });
+      const by = new Map();
+      part.events.forEach(e => {
+        if (e.kind !== 'rest' || e.grace || !e.staff) return;
+        const k = e.voice + '|' + e.m;
+        if (!by.has(k)) by.set(k, []);
+        by.get(k).push(e);
+      });
+      by.forEach(list => {
+        list.sort((x, y) => R.cmp(R.parse(x.at), R.parse(y.at)));
+        const mi = mIndex.get(list[0].m);
+        if (mi === undefined) return;
+        const meter = meterOf[mi], bu = beatUnits(meter);
+        const mt = ticksOf(R.parse(g.timeline.measures[mi].dur));
+        const nomT = meter && meter.beats ? ticksOf(R.make(meter.beats.reduce((s, x) => s + x, 0), meter.beatType)) : null;
+        if (!bu || mt === null || mt % U32 !== 0 || mt !== nomT) { stats.skipped++; return; }   /* a pickup or short measure, an additive metre, a measure off the grid */
+        let run = [];
+        const handle = r0 => {
+          const last = r0[r0.length - 1];
+          const a = ticksOf(R.parse(r0[0].at)), b = ticksOf(R.add(R.parse(last.at), R.parse(last.dur)));
+          if (a === null || b === null) { stats.skipped++; return; }
+          if (r0.some(r => !r.display || !r.display.type || r.display.measureRest || used.has(r.id) || r.hidden || r.fermata || r.lyrics || r.arts || r.orn)) return;
+          const wholeMeasure = a === 0 && b === mt;
+          if (wholeMeasure && r0.length === 1) return;                       /* a measure rest is what it is */
+          const bounded = (noteOn.get(last.staff + '|' + last.m) || []).some(on => on !== null && on >= b) || mi < (lastNoted.has(last.staff) ? lastNoted.get(last.staff) : -1);
+          let pieces;
+          if (a % U32 === 0 && b % U32 === 0) {
+            pieces = tile(a / U32, b / U32, bu.B, bu.compound, mt / U32, wholeMeasure).map(p => ({ at: p.at * U32, len: p.len * U32, type: p.type, dots: p.dots, measureRest: p.measureRest }));
+            if (bounded && !wholeMeasure) pieces = pieces.filter(p => !(p.len === U32 && p.type === '32nd'));
+          } else {
+            /* mixed grids: one rest of the exact length, or a tuplet silence that stays */
+            const v = plainFor(b - a), B = bu.B * U32;
+            if (r0.length >= 2 && r0.some(r => { const t = ticksOf(R.parse(r.dur)); return t !== null && t % U32 === 0; }) && v && (a % B === 0 || Math.floor(a / B) === Math.floor((b - 1) / B)))
+              pieces = [{ at: a, len: v[0] * U32, type: v[1], dots: v[2] }];   /* the rest is the plain value from the start of the silence; what is left (less than a 16th) is a hole */
+            else {
+              /* no single rest: the pieces that end on the 32nd grid (a dotted 16th rest before a triplet rest) are a silence of their own, the rest of the run is a tuplet silence and stays */
+              if (a % U32 === 0) for (let i = r0.length - 2; i >= 0; i--) { const e = ticksOf(R.add(R.parse(r0[i].at), R.parse(r0[i].dur))); if (e !== null && e % U32 === 0) { handle(r0.slice(0, i + 1)); return; } }
+              return;
+            }
+          }
+          const same = pieces.length === r0.length && pieces.every((p, i) => {
+            const r = r0[i], d = r.display;
+            return ticksOf(R.parse(r.at)) === p.at && ticksOf(R.parse(r.dur)) === p.len && d.type === p.type && (d.dots || 0) === p.dots && !!d.measureRest === !!p.measureRest;
+          });
+          if (same) return;
+          out.push({ part: part, m: last.m, voice: last.voice, staff: last.staff, run: r0, pieces: pieces });
+        };
+        const flush = () => { if (run.length) { const r0 = run; run = []; handle(r0); } };
+        list.forEach(r => {
+          const prev = run[run.length - 1];
+          if (prev && !R.eq(R.add(R.parse(prev.at), R.parse(prev.dur)), R.parse(r.at))) flush();
+          run.push(r);
+        });
+        flush();
+      });
+    });
+    return out;
+  }
+
+  function mergeRests(g) {
+    try { return mergeRestsUnsafe(g); } catch (e) { /* never a throw (a graph this pass does not understand is returned as it is) */ return { graph: g, changed: false, stats: { runs: 0, restsBefore: 0, restsAfter: 0, skipped: 0, failed: String(e && e.message || e).slice(0, 120) } }; }
+  }
+  function mergeRestsUnsafe(g) {
+    const stats = { runs: 0, restsBefore: 0, restsAfter: 0, skipped: 0 };
+    const runs = restRuns(g, stats);
+    if (!runs.length) return { graph: g, changed: false, stats: stats };
+    const res = OPS.edit(g, d => {
+      const gone = [];
+      runs.forEach(rn => {
+        stats.runs++;
+        stats.restsBefore += rn.run.length;
+        stats.restsAfter += rn.pieces.length;
+        const part = d.doc.parts.find(x => x.id === rn.part.id);
+        rn.pieces.forEach((p, i) => {
+          const display = { type: p.type };
+          if (p.dots) display.dots = p.dots;
+          if (p.measureRest) display.measureRest = true;
+          let e;
+          if (i < rn.run.length) {
+            e = d.event(rn.run[i].id);
+            e.at = wholes(p.at); e.dur = wholes(p.len); e.display = display;
+          } else {
+            const x = { kind: 'rest', m: rn.m, at: wholes(p.at), dur: wholes(p.len), voice: rn.voice, staff: rn.staff, display: display };
+            if (rn.run[0].prov) x.prov = JSON.parse(JSON.stringify(rn.run[0].prov));
+            e = d.event(d.addEvent(part, x));
+          }
+          d.markProv(e, ['rhythm'], 'repaired');
+        });
+        for (let i = rn.pieces.length; i < rn.run.length; i++) gone.push(rn.run[i].id);
+      });
+      d.removeEvents(gone);
+      d.touch();
+    }, { source: RESTS_SOURCE });
+    return { graph: res.graph, changed: true, stats: stats, issues: res.issues };
+  }
+
+  /* what the recording paths call: the gaps closed, then each silence written once (the reports of the two kept apart) */
+  function tidyRests(g) {
+    const a = closeSmallGaps(g), b = mergeRests(a.graph);
+    return { graph: b.graph, changed: a.changed || b.changed, stats: a.stats, rests: b.stats, issues: b.changed ? b.issues : a.issues };
+  }
+
+  return Object.freeze({ GAP_LIMIT, GAP_SOURCE, RESTS_SOURCE, plainValue, smallGaps, isTranscription, closeSmallGaps, mergeRests, tidyRests, tile, restRuns });
 });
