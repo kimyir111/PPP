@@ -32,6 +32,7 @@
 <script src="./scoregraph/pro-beam.js?v=8"></script>
 <script src="./scoregraph/pro-marks.js?v=8"></script>
 <script src="./scoregraph/pro.js?v=8"></script>
+<script src="./scoregraph/gaps.js?v=1"></script>
 <script src="./scoregraph/index.js?v=9"></script>
 <!-- G05 §11 G5c: the fingering DP (G5b), ported to the ScoreGraph. Only used when PPP.fingering === 'inferred'. -->
 <script src="./playability/reach.js?v=1"></script>
@@ -64,7 +65,7 @@
 <script src="./realize/patterns.js?v=1"></script>
 <script src="./realize/notation.js?v=1"></script>
 <script src="./realize/index.js?v=1"></script>
-<script src="./audio-score.js?v=9"></script>
+<script src="./audio-score.js?v=10"></script>
 <!-- G4a (docs/GOALS/G04 §8.5): where the renderer's ScoreGraph comes from, and what it must draw. Draws nothing yet. -->
 <script src="./engrave/ledger.js?v=3"></script>
 <script src="./engrave/glyphs.js?v=3"></script>
@@ -7591,7 +7592,7 @@ const Import = {
         notes: heard.notes, pedals: heard.pedals,
         beats: heard.beats, downbeats: heard.downbeats,
         grid: heard.grid, title: title
-      }, { title: title, easy: what.mode === 'arrange' });
+      }, { title: title, easy: what.mode === 'arrange', closeGaps: true });
     } catch (e) {
       throw importError(e.code || 'no-notes',
         e.code === 'no-notes' ? tx('No piano notes were heard in this recording.') : e.message,
@@ -14072,7 +14073,7 @@ class Component extends DCLogic {
       built = window.PPPAudioScore.toMusicXml({
         notes: heard.notes, pedals: heard.pedals,
         beats: heard.beats, downbeats: heard.downbeats
-      }, { title: S.score.title, lock: lock, arrangement: arrangement });
+      }, { title: S.score.title, lock: lock, arrangement: arrangement, closeGaps: true });
     } catch (e) {
       this.say((e && e.message) || tx('The rhythm could not be rewritten.'));
       return;
@@ -14138,7 +14139,7 @@ class Component extends DCLogic {
       built = A.toMusicXml({
         notes: heard.notes, pedals: heard.pedals,
         beats: heard.beats, downbeats: heard.downbeats
-      }, { title: S.score.title, lock: lock });
+      }, { title: S.score.title, lock: lock, closeGaps: true });
       if (singleRoute(plan)) {
         /* G9e-lite: one note per hand, from the same unarranged built.graph. A refusal is NOT a silent legacy result: the
            standard arrangement below is then shown with a notice that stays on screen, and the result is marked in its source. */
@@ -14394,7 +14395,7 @@ class Component extends DCLogic {
       built = window.PPPAudioScore.toMusicXml({
         notes: heard.notes, pedals: heard.pedals,
         beats: heard.beats, downbeats: heard.downbeats
-      }, { title: S.score.title, lock: lock, arrangement: arrangement });
+      }, { title: S.score.title, lock: lock, arrangement: arrangement, closeGaps: true });
     } catch (e) {
       this.say((e && e.message) || tx('The rhythm could not be rewritten.'));
       return;
