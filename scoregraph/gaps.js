@@ -152,18 +152,20 @@
         value that (a) fits in what is left, (b) starts on a multiple of its own length (an eighth rest at the half beat, a quarter rest on a beat, a half rest on beats 1 and 3 of 4/4), (c) does not cross a beat line unless it starts on a beat
         (a dotted eighth rest may also END on a beat: a 16th note, then a dotted eighth rest that fills the beat). The values are whole, dotted half, half, dotted quarter, quarter, dotted
         eighth, eighth, 16th and 32nd; NO dotted rest shorter than a dotted eighth (a dotted 16th rest is a 16th and a 32nd). In a compound metre (6/8, 9/8, 12/8) a value stays inside one
-        beat (the dotted quarter) unless it is a whole number of beats and starts on one. A 32nd piece that this leaves at the start or the end of the silence is not written when a note of
+        beat (the dotted quarter) unless it is a whole number of beats and starts on one. In 4/4 nothing that starts after beat 1 crosses the middle of the bar (beats 2-4 are a quarter and a
+        half rest). A 32nd piece that this leaves at the start or the end of the silence is not written when a note of
         the hand follows (the sound is untouched: no note changes; the rule closeSmallGaps already applies to the pieces it finds); at the end of the hand's last measure with a note it is
-        kept. A silence that is the whole measure in several pieces becomes one measure rest.
+        kept. Only a remainder shorter than a 16th is ever a hole: a silence of a 16th or more always keeps a rest (a 16th that starts on an odd 32nd is one plain 16th rest; across a beat line it
+        stays the two 32nd rests). A silence that is the whole measure in several pieces becomes one measure rest.
      2. a or b off the 32nd grid (a triplet position at one end, a straight one at the other: the quantiser's mixed grids; no standard tiling exists): ONE rest from the start of the silence,
         written as the longest plain value (at most one dot; a 16th or longer, no dotted value shorter than a dotted eighth) that is not longer than the silence, when the silence is less than
         a 16th longer than that value (what is left is not written, like the 32nd piece above: a hole, an I-VOICE-GAP info; the rest event is exactly the value it shows) and no beat line lies
-        inside it unless it starts on a beat. Anything else is a tuplet silence and stays as it is (only triplet pieces; a quarter rest and a triplet eighth rest: 4/3 of a beat), except that
+        inside it unless it starts on a beat; a half rest only on beat 1 or 3 of 4/4, nothing from after beat 1 across its middle (a lone dotted 16th rest on a triplet position is a 16th rest too). Anything else is a tuplet silence and stays as it is (only triplet pieces; a quarter rest and a triplet eighth rest: 4/3 of a beat), except that
         the pieces at its start that end on the 32nd grid (a dotted 16th rest before a triplet rest) are a silence of their own, written by rule 1.
 
      Never a note, a pitch, an onset or a note length: only rest events change (a rest keeps its id when the new tiling has a piece for it; the others are removed or added). Gated like
-     closeSmallGaps (its callers: a recording, repair/index.js's transcription gate). Idempotent: a graph this pass has run on has every run in its standard tiling, so a second run returns
-     the very same object. Never a throw: a graph the pass does not understand comes back as it is, with `stats.failed` saying why. */
+     closeSmallGaps (its callers: a recording, repair/index.js's transcription gate). Idempotent: it runs to a fixed point (a silence written once can leave a neighbour that is now a run of its
+     own), so a second run returns the very same object; tidyRests runs the closing and the merging to a fixed point together. Never a throw: a graph the pass does not understand comes back as it is, with `stats.failed` saying why. */
   const RESTS_SOURCE = Object.freeze({ kind: 'repair', tool: 'ppp.consecutive-rests', version: '1.0.0' });
   const TICKS = 96;                      /* a whole note is 96 ticks: audio-score's grid (a 32nd = 3 ticks, a triplet 16th = 4) */
   const U32 = 3;                         /* ticks in a 32nd */
@@ -189,8 +191,10 @@
     if (wholeMeasure) { const full = REST_VALUES.find(v => v[0] === len); return [{ at: a, len: len, type: full ? full[1] : 'whole', dots: full ? full[2] : 0, measureRest: true }]; }
     const out = [];
     let pos = a;
+    const four = !compound && len === 4 * B;
     const allowed = (v, p) => {
       const units = v[0], onBeat = p % B === 0;
+      if (four && p > 0 && p < 2 * B && p + units > 2 * B) return false;    /* in 4/4 a rest that starts after beat 1 does not cross the middle of the bar (beats 2-4: a quarter and a half rest) */
       if (v[2] > 0) {
         if (units < 6) return false;
         if (onBeat) return !compound || units % B === 0 || units === 6;
@@ -226,10 +230,13 @@
 
   /* the plain value that stands for a silence of `t` ticks that is not on the 32nd grid: the longest value (a 16th or longer, a dotted one a dotted eighth or longer) not longer than it, if
      the silence is less than a 16th longer than that value; else null */
-  function plainFor(t) {
+  function plainFor(t, a, Bt, mt, compound) {
     for (let i = 1; i < REST_VALUES.length - 1; i++) {
       const v = REST_VALUES[i], vt = v[0] * U32;
-      if (vt <= t) return t - vt < 2 * U32 ? v : null;
+      if (vt > t) continue;
+      if (compound ? (v[2] === 0 && v[0] > 8) : (v[2] === 0 && v[0] >= 16 && a % (2 * Bt) !== 0)) continue;      /* a half rest only on beat 1 or 3 of 4/4 */
+      if (!compound && mt === 4 * Bt && a > 0 && a < 2 * Bt && a + vt > 2 * Bt) continue;                         /* nothing that starts after beat 1 crosses the middle of 4/4 */
+      return t - vt < 2 * U32 ? v : null;
     }
     return null;
   }
@@ -272,6 +279,20 @@
         const nomT = meter && meter.beats ? ticksOf(R.make(meter.beats.reduce((s, x) => s + x, 0), meter.beatType)) : null;
         if (!bu || mt === null || mt % U32 !== 0 || mt !== nomT) { stats.skipped++; return; }   /* a pickup or short measure, an additive metre, a measure off the grid */
         let run = [];
+        /* the standard tiling of [a, b) (ticks, both on the 32nd grid), a 32nd left at either end not written when a note follows; a silence of a 16th or more always keeps a rest: one 16th rest from its start */
+        const straight = (a, b, wholeMeasure, bounded) => {
+          let pieces = tile(a / U32, b / U32, bu.B, bu.compound, mt / U32, wholeMeasure).map(p => ({ at: p.at * U32, len: p.len * U32, type: p.type, dots: p.dots, measureRest: p.measureRest }));
+          if (bounded && !wholeMeasure) {
+            pieces = pieces.filter(p => !(p.len === U32 && p.type === '32nd'));
+            if (!pieces.length && b - a >= 2 * U32) {
+              /* a 16th that starts on an odd 32nd: one plain 16th rest (nothing may vanish: only a remainder shorter than a 16th is a hole); across a beat line it is the two 32nd rests it was */
+              const Bt = bu.B * U32;
+              pieces = Math.floor(a / Bt) === Math.floor((a + 2 * U32 - 1) / Bt) ? [{ at: a, len: 2 * U32, type: '16th', dots: 0 }]
+                : tile(a / U32, b / U32, bu.B, bu.compound, mt / U32, false).map(p => ({ at: p.at * U32, len: p.len * U32, type: p.type, dots: p.dots }));
+            }
+          }
+          return pieces;
+        };
         const handle = r0 => {
           const last = r0[r0.length - 1];
           const a = ticksOf(R.parse(r0[0].at)), b = ticksOf(R.add(R.parse(last.at), R.parse(last.dur)));
@@ -282,16 +303,20 @@
           const bounded = (noteOn.get(last.staff + '|' + last.m) || []).some(on => on !== null && on >= b) || mi < (lastNoted.has(last.staff) ? lastNoted.get(last.staff) : -1);
           let pieces;
           if (a % U32 === 0 && b % U32 === 0) {
-            pieces = tile(a / U32, b / U32, bu.B, bu.compound, mt / U32, wholeMeasure).map(p => ({ at: p.at * U32, len: p.len * U32, type: p.type, dots: p.dots, measureRest: p.measureRest }));
-            if (bounded && !wholeMeasure) pieces = pieces.filter(p => !(p.len === U32 && p.type === '32nd'));
+            pieces = straight(a, b, wholeMeasure, bounded);
           } else {
             /* mixed grids: one rest of the exact length, or a tuplet silence that stays */
-            const v = plainFor(b - a), B = bu.B * U32;
-            if (r0.length >= 2 && r0.some(r => { const t = ticksOf(R.parse(r.dur)); return t !== null && t % U32 === 0; }) && v && (a % B === 0 || Math.floor(a / B) === Math.floor((b - 1) / B)))
-              pieces = [{ at: a, len: v[0] * U32, type: v[1], dots: v[2] }];   /* the rest is the plain value from the start of the silence; what is left (less than a 16th) is a hole */
+            const B = bu.B * U32, v = plainFor(b - a, a, B, mt, bu.compound);
+            const hasStraight = r0.some(r => { const t = ticksOf(R.parse(r.dur)); return t !== null && t % U32 === 0; })
+              || (a % U32 === 0 && r0.slice(0, -1).some(r => { const e = ticksOf(R.add(R.parse(r.at), R.parse(r.dur))); return e !== null && e % U32 === 0; }));   /* a piece on the 32nd grid, or pieces that end on it: not only triplet pieces */
+            /* a lone dotted 16th rest (a dotted rest shorter than a dotted eighth) that starts on a triplet position is a plain 16th rest too */
+            const loneSmallDotted = r0.length === 1 && r0[0].display.dots > 0 && b - a < 6 * U32;
+            if (((r0.length >= 2 && hasStraight) || loneSmallDotted) && v && (a % B === 0 || Math.floor(a / B) === Math.floor((b - 1) / B)))
+              /* the rest is the plain value from the start of the silence; what is left (less than a 16th) is a hole. From a point on the 32nd grid it is written by rule 1 (so a second run finds it as it is) */
+              pieces = a % U32 === 0 ? straight(a, a + v[0] * U32, false, bounded) : [{ at: a, len: v[0] * U32, type: v[1], dots: v[2] }];
             else {
-              /* no single rest: the pieces that end on the 32nd grid (a dotted 16th rest before a triplet rest) are a silence of their own, the rest of the run is a tuplet silence and stays */
-              if (a % U32 === 0) for (let i = r0.length - 2; i >= 0; i--) { const e = ticksOf(R.add(R.parse(r0[i].at), R.parse(r0[i].dur))); if (e !== null && e % U32 === 0) { handle(r0.slice(0, i + 1)); return; } }
+              /* no single rest: the pieces that end on the 32nd grid (a dotted 16th rest before a triplet rest) are a silence of their own, and what follows them is a run of its own (it starts on the 32nd grid: it may be one rest) */
+              if (a % U32 === 0) for (let i = r0.length - 2; i >= 0; i--) { const e = ticksOf(R.add(R.parse(r0[i].at), R.parse(r0[i].dur))); if (e !== null && e % U32 === 0) { handle(r0.slice(0, i + 1)); handle(r0.slice(i + 1)); return; } }
               return;
             }
           }
@@ -315,7 +340,20 @@
   }
 
   function mergeRests(g) {
-    try { return mergeRestsUnsafe(g); } catch (e) { /* never a throw (a graph this pass does not understand is returned as it is) */ return { graph: g, changed: false, stats: { runs: 0, restsBefore: 0, restsAfter: 0, skipped: 0, failed: String(e && e.message || e).slice(0, 120) } }; }
+    /* to a fixed point: a silence written once can leave a neighbour that is now a run of its own (a piece before a triplet rest, a hole), so the pass runs again until it changes nothing (a few
+       times at most: each run replaces rests by fewer or standard ones; the cap is a guard). */
+    try {
+      let cur = g, changed = false, issues;
+      const stats = { runs: 0, restsBefore: 0, restsAfter: 0, skipped: 0 };
+      for (let i = 0; i < 5; i++) {
+        const r = mergeRestsUnsafe(cur);
+        stats.skipped = r.stats.skipped;
+        if (!r.changed) break;
+        stats.runs += r.stats.runs; stats.restsBefore += r.stats.restsBefore; stats.restsAfter += r.stats.restsAfter;
+        changed = true; cur = r.graph; issues = r.issues;
+      }
+      return changed ? { graph: cur, changed: true, stats: stats, issues: issues } : { graph: g, changed: false, stats: stats };
+    } catch (e) { /* never a throw (a graph this pass does not understand is returned as it is) */ return { graph: g, changed: false, stats: { runs: 0, restsBefore: 0, restsAfter: 0, skipped: 0, failed: String(e && e.message || e).slice(0, 120) } }; }
   }
   function mergeRestsUnsafe(g) {
     const stats = { runs: 0, restsBefore: 0, restsAfter: 0, skipped: 0 };
@@ -335,7 +373,10 @@
           let e;
           if (i < rn.run.length) {
             e = d.event(rn.run[i].id);
-            e.at = wholes(p.at); e.dur = wholes(p.len); e.display = display;
+            /* the other fields of the printed shape stay (only the value, its dots and the measure-rest mark are written) */
+            const keep = Object.assign({}, e.display);
+            delete keep.dots; delete keep.measureRest;
+            e.at = wholes(p.at); e.dur = wholes(p.len); e.display = Object.assign(keep, display);
           } else {
             const x = { kind: 'rest', m: rn.m, at: wholes(p.at), dur: wholes(p.len), voice: rn.voice, staff: rn.staff, display: display };
             if (rn.run[0].prov) x.prov = JSON.parse(JSON.stringify(rn.run[0].prov));
@@ -353,8 +394,19 @@
 
   /* what the recording paths call: the gaps closed, then each silence written once (the reports of the two kept apart) */
   function tidyRests(g) {
-    const a = closeSmallGaps(g), b = mergeRests(a.graph);
-    return { graph: b.graph, changed: a.changed || b.changed, stats: a.stats, rests: b.stats, issues: b.changed ? b.issues : a.issues };
+    /* to a fixed point: a hole the merging leaves can turn a gap that closeSmallGaps skipped (a rest of the note's own voice reached past it) into one it closes, so the pair runs again until
+       neither changes anything (a note only gets longer, never past the next onset: it ends; the cap is a guard). `stats` is the first closing's, `rests` the merging's, summed. */
+    let cur = g, first = null, changed = false, issues;
+    const rests = { runs: 0, restsBefore: 0, restsAfter: 0, skipped: 0 };
+    for (let i = 0; i < 6; i++) {
+      const a = closeSmallGaps(cur), b = mergeRests(a.graph);
+      if (!first) first = a.stats;
+      rests.runs += b.stats.runs; rests.restsBefore += b.stats.restsBefore; rests.restsAfter += b.stats.restsAfter; rests.skipped = b.stats.skipped;
+      if (b.stats.failed) rests.failed = b.stats.failed;
+      if (!a.changed && !b.changed) break;
+      changed = true; cur = b.graph; issues = b.changed ? b.issues : a.issues;
+    }
+    return { graph: cur, changed: changed, stats: first, rests: rests, issues: issues };
   }
 
   return Object.freeze({ GAP_LIMIT, GAP_SOURCE, RESTS_SOURCE, plainValue, smallGaps, isTranscription, closeSmallGaps, mergeRests, tidyRests, tile, restRuns });

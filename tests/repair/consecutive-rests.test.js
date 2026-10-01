@@ -95,11 +95,15 @@ test('property: every silence [a, b) of a 4/4 bar, as one piece or as 32nd piece
           pos = at + len;
           const dotted = name.indexOf('.') > -1;
           if (dotted) assert.ok(l >= 6, 'no dotted rest shorter than a dotted eighth:' + what);
-          if (!dotted && l < 32) assert.equal(u % l, 0, 'an undotted rest starts on a multiple of its own length:' + what);
-          if (u % 8 !== 0) assert.ok(Math.floor(u / 8) === Math.floor((u + l - 1) / 8) || (dotted && (u + l) % 8 === 0), 'crosses a beat line without starting on a beat:' + what);
+          /* the one exception: a silence of exactly a 16th that starts on an odd 32nd is a plain 16th rest from its start (never two 32nd pieces that are both left out: it would vanish) */
+          const oddSixteenth = b - a === 2 && out.length === 1 && u === a && l === 2;
+          if (!dotted && l < 32 && !oddSixteenth) assert.equal(u % l, 0, 'an undotted rest starts on a multiple of its own length:' + what);
+          if (u > 0 && u < 16 && u + l > 16) assert.fail('a rest that starts after beat 1 crosses the middle of the bar:' + what);
+          if (u % 8 !== 0 && l > 1) assert.ok(Math.floor(u / 8) === Math.floor((u + l - 1) / 8) || (dotted && (u + l) % 8 === 0), 'crosses a beat line without starting on a beat:' + what);
         });
-        /* at most a 32nd is left at the end; a silence of two 32nds that starts off the 32nd grid of the beat (a 16th long, starting on an odd 32nd) is two 32nd pieces, both left out (as closeSmallGaps leaves them) */
-        assert.ok((b * 3 - pos <= 3 || (!out.length && b - a === 2)) && b * 3 - pos >= 0, 'at most a 32nd is left at the end:' + what);
+        /* only a remainder shorter than a 16th is a hole: a silence of a 16th or more always has a rest, and what is left at the end is at most a 32nd */
+        if (b - a >= 2) assert.ok(out.length >= 1, 'a silence of a 16th or more keeps a rest:' + what);
+        assert.ok(b * 3 - pos <= 3 && b * 3 - pos >= 0, 'at most a 32nd is left at the end:' + what);
         assert.deepEqual(notes(r.graph), notes(g));
         assert.equal(merged(r.graph).graph, r.graph, 'idempotent:' + what);
         checked++;
@@ -153,6 +157,90 @@ test('meters: 3/4 (a half rest only on beat 1) and 6/8 (a dotted quarter is the 
   /* 6/8: a 3/8 silence on the second beat is one dotted quarter rest (it is the beat) */
   const six = mk({ time: [6, 8], rh: 'C5:q. r:8 r:8 r:8', lh: 'C3:h.' });
   assert.deepEqual(rests(merged(six).graph, 1), [[36, 36, 'quarter.']]);
+});
+
+test('a silence of a 16th or more never vanishes: a 16th rest that starts on an odd 32nd is a plain 16th rest (the teacher\'s bar 47), across a beat line it stays two 32nd rests', () => {
+  /* n 33-39, r 39-45 (a 16th, starts on the odd 32nd 13), n 45-72 (ticks): before this rule both 32nd pieces were left out and no rest was drawn between the notes */
+  const g = mk({ rh: L(['A4', 11], ['C5', 2], ['r', 1], ['r', 1], ['D5', 9], ['E5', 8]), lh: 'C3:w' });
+  const r = merged(g);
+  assert.equal(r.changed, true, 'the two 32nd rests of that 16th are written as the 16th rest');
+  assert.deepEqual(rests(r.graph, 1), [[39, 6, '16th']]);
+  assert.deepEqual(notes(r.graph), notes(g));
+  assert.equal(merged(r.graph).graph, r.graph, 'idempotent');
+  assert.equal(V.validate(r.graph).issues.filter(i => i.code === 'I-VOICE-GAP').length, 0, 'no hole: nothing is left over');
+  /* a 16th that straddles a beat line (7/32 to 9/32) is two 32nd rests, as it was */
+  const across = mk({ rh: L(['A4', 7], ['r', 2], ['D5', 23]), lh: 'C3:w' });
+  assert.deepEqual(rests(merged(across).graph, 1), [[21, 3, '32nd'], [24, 3, '32nd']]);
+  /* only a remainder shorter than a 16th is a hole: a 3/32 silence that starts on an odd 32nd is a 16th rest and a hole of a 32nd */
+  const three = mk({ rh: L(['A4', 11], ['r', 3], ['D5', 18]), lh: 'C3:w' });
+  assert.deepEqual(rests(merged(three).graph, 1), [[36, 6, '16th']]);
+});
+
+test('a mixed-grid silence never makes a half rest start on beat 2, or a dotted rest from beat 2 cross the middle of 4/4', () => {
+  /* beats 2-4 and a triplet 16th (76 ticks), then a note: a half rest at beat 2 would be 48 + 4 */
+  const g = mk({ rh: 'C5:q r:q r:q r:16=1/24 E5:q=5/24', lh: 'C3:w' });
+  merged(g).graph.parts[0].events.filter(e => e.kind === 'rest' && e.display.type === 'half' && !e.display.dots).forEach(e => assert.equal(ticks(e.at) % 48, 0, 'a half rest on beat 1 or 3 only'));
+  assert.deepEqual(rests(merged(g).graph, 1).filter(x => x[2] === 'half'), []);
+  /* and in the pure-grid tiling beats 2-4 are a quarter and a half rest, not a dotted half */
+  const h = mk({ rh: L(['C5', 8], ['r', 24]), lh: 'C3:w' });
+  assert.deepEqual(rests(merged(h).graph, 1), [[24, 24, 'quarter'], [48, 48, 'half']]);
+  const j = mk({ rh: L(['C5', 8], ['r', 12], ['D5', 12]), lh: 'C3:w' });
+  rests(merged(j).graph, 1).forEach(([at, len]) => assert.ok(!(at > 0 && at < 48 && at + len > 48), 'does not cross the middle of the bar from after beat 1'));
+});
+
+test('the other fields of a reused rest\'s printed shape are kept (a written position)', () => {
+  const g = mk({ rh: 'C5:16 r:16. r:16. D5:q E5:h', lh: 'C3:w' });
+  const c = JSON.parse(JSON.stringify(g));
+  const first = c.parts[0].events.filter(e => e.kind === 'rest').sort((a, b) => ticks(a.at) - ticks(b.at))[0];
+  first.display.pos = { step: 'B', oct: 4 };
+  const r = merged(c);
+  assert.equal(r.changed, true);
+  const out = r.graph.parts[0].events.filter(e => e.kind === 'rest' && e.voice === first.voice);
+  assert.equal(out.length, 1);
+  assert.deepEqual(out[0].display, { type: 'eighth', dots: 1, pos: { step: 'B', oct: 4 } });
+});
+
+test('idempotence: tidyRests and mergeRests are fixed points over random bars on the 32nd grid and with triplet positions, in 4/4 and 6/8; notes only get longer and never move', () => {
+  let s = 5;
+  const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+  const bar = (total, lens) => { const out = []; let left = total, tries = 0; while (left > 0) { const l = lens[Math.floor(rnd() * lens.length)]; if (l <= left) { out.push([rnd() < 0.5 ? 'n' : 'r', l]); left -= l; } else if (++tries > 50) return null; } return out; };
+  const T = x => R.format(R.make(x, 96));
+  let cases = 0;
+  for (let it = 0; it < 700; it++) {
+    const meter = it % 3 === 2 ? [6, 8] : [4, 4], total = meter[0] === 6 ? 72 : 96;
+    const lens = it % 2 ? [3, 6, 9, 12, 18, 24, 4, 8, 16, 12, 6, 3] : [3, 6, 9, 12, 18, 24, 3, 6, 12, 48];
+    const bars = [bar(total, lens), bar(total, lens), bar(total, lens)];
+    if (bars.some(b => !b)) continue;
+    const line = bars.map((b, bi) => b.map((x, i) => (x[0] === 'n' ? ['C5', 'D5', 'E5', 'F5', 'G5'][(i + bi) % 5] : 'r') + ':q=' + T(x[1])).join(' ')).join(' | ');
+    const g = mk({ time: meter, rh: line, lh: bars.map(() => meter[0] === 6 ? 'C3:h.' : 'C3:w').join(' | ') });
+    const m1 = merged(g);
+    assert.equal(merged(m1.graph).graph, m1.graph, 'mergeRests is a fixed point: ' + line);
+    const t1 = GAPS.tidyRests(g);
+    assert.equal(GAPS.tidyRests(t1.graph).graph, t1.graph, 'tidyRests is a fixed point: ' + line);
+    assert.equal(GAPS.closeSmallGaps(t1.graph).graph, t1.graph, 'nothing left to close: ' + line);
+    assert.equal(V.validate(t1.graph).issues.filter(i => /^E-/.test(i.code)).length, 0, line);
+    const before = new Map(notes(g).map(x => [x.split('|').slice(0, 3).join('|'), x]));
+    notes(t1.graph).forEach(x => { const k = x.split('|').slice(0, 3).join('|'); assert.ok(before.has(k), 'a note kept its onset: ' + line); });
+    cases++;
+  }
+  assert.ok(cases > 300, 'cases ' + cases);
+});
+
+test('recordings: tidyRests of a recording\'s graph is a fixed point (the app writes it once at the source, the arranger runs it again on what it copies)', () => {
+  let s = 21;
+  const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+  const LOCK = { bpm: 120, beatsPerBar: 4, beatType: 4, firstDownbeat: 0 };
+  for (let k = 0; k < 40; k++) {
+    const heard = [];
+    for (let b = 0; b < 6; b++) {
+      const t0 = b * 2; let t = 0;
+      heard.push({ on: t0, off: t0 + 0.9, midi: 48, vel: 70 });
+      while (t < 2 - 1e-9) { const ioi = [2, 3, 4, 5, 6, 8, 12][Math.floor(rnd() * 7)] * 0.0625; if (t + ioi > 2 + 1e-9) break; heard.push({ on: t0 + t + (rnd() - 0.5) * 0.02, off: t0 + t + ioi * (0.2 + 0.7 * rnd()), midi: 72 + Math.floor(rnd() * 8), vel: 80 }); t += ioi; }
+    }
+    const out = A.toMusicXml({ notes: heard, pedals: [], title: 'fuzz' }, { title: 'fuzz', lock: LOCK, closeGaps: true });
+    assert.equal(GAPS.tidyRests(out.graph).graph, out.graph, 'recording ' + k);
+    assert.equal(GAPS.restRuns(out.graph, { skipped: 0 }).length, 0, 'recording ' + k);
+  }
 });
 
 test('a graph with nothing to merge comes back as the same object; garbage never throws', () => {
@@ -230,6 +318,7 @@ test('the one-note pipeline gate: a printed score is not merged, a transcription
   const auto = run(asRecording, undefined);
   assert.ok(auto.report.mergedRests, 'a transcription: run by default');
   assert.equal(GAPS.restRuns(auto.graph, { skipped: 0 }).length, 0, 'no run left that is not in the standard tiling');
+  assert.equal(GAPS.tidyRests(auto.graph).graph, auto.graph, 'running the pass again on the arrangement changes nothing (the source was already tidied, the arrangement is a fixed point)');
   assert.equal(run(asRecording, { closeGaps: false }).report.mergedRests, undefined);
   assert.equal(REP.mergeRests, GAPS.mergeRests, 'one function');
 });

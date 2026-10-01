@@ -439,8 +439,9 @@
        its edition wrote and are left exactly as written. */
     const closeOpt = opts.closeGaps === undefined ? 'auto' : opts.closeGaps;
     if (single && r.graph && (closeOpt === true || (closeOpt === 'auto' && isTranscription(g)))) {
-      const cg = closeSmallGaps(r.graph), mr = mergeRests(cg.graph);
-      return Object.assign({ ok: true, ctx: ctx }, r, { graph: mr.graph, report: r.report ? Object.assign({}, r.report, { closedGaps: cg.stats, mergedRests: mr.stats }) : r.report });
+      /* the gaps closed and the silences written once, to a fixed point (scoregraph/gaps.js tidyRests); a page whose gaps.js is older has only the closing */
+      const tr = GAPS && GAPS.tidyRests ? GAPS.tidyRests(r.graph) : (() => { const c = closeSmallGaps(r.graph); return { graph: c.graph, stats: c.stats }; })();
+      return Object.assign({ ok: true, ctx: ctx }, r, { graph: tr.graph, report: r.report ? Object.assign({}, r.report, { closedGaps: tr.stats }, tr.rests ? { mergedRests: tr.rests } : {}) : r.report });
     }
     return Object.assign({ ok: true, ctx: ctx }, r);
   }
