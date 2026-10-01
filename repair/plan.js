@@ -29,6 +29,14 @@
                    fix for notesPerBeat/density overage: that would need notes deleted, so it
                    is left alone (declared in the doc, not silently ignored).
 
+   ---- never repaired: what the SOURCE does (G9f) ----
+   A smell that the source graph has too, at the same place, is not the arrangement's doing, and a repair must not change notes the source itself wrote that way
+   (hanon/010 is built on deliberate parallel octaves between the hands: the `parallel` move used to break ten of them). `ctx.sourceSmells` (the source graph's
+   own critics/voice-leading.js smells; repair/index.js repairSelection supplies it, `opts.sourceGuard: false` turns it off) lists them; a detected smell is left
+   alone when the source has the SAME one: the same onset (w0) and, mod an octave, the same pitches (parallel: both slices' outer pair and the interval; innerLeap:
+   the two notes of the leap; crossing: the two notes sounding). The smell stays counted and in the report; it is only never planned. The same rule
+   covers all three voice-leading moves (parallel, innerLeap, crossing). dropDoubling (chord load) is a different smell and keeps its rule.
+
    ---- never touched ----
    * a note that matches the request's ORIGINAL melody (onset within 0.15 quarter, same
      pitch - the exact match `critics/metrics.js melodyPreservation` scores). With no melody
@@ -117,7 +125,26 @@
     notes.forEach(n => { if (n.midi < pieceRange.lo) pieceRange.lo = n.midi; if (n.midi > pieceRange.hi) pieceRange.hi = n.midi; });
     return { notes: notes, pieceRange: pieceRange, avgByPart: VL.voiceAveragesOf(g), floor: ctx.registerFloor == null ? null : ctx.registerFloor,
       /* left-hand jump guard (G9 post-H-8 re-look): on unless ctx.leftHandJumpGuard === false; the index is built lazily */
-      lhGuard: ctx.leftHandJumpGuard !== false, lhIdx: null };
+      lhGuard: ctx.leftHandJumpGuard !== false, lhIdx: null,
+      /* the smells the source graph itself has (G9f): never planned */
+      srcKeys: ctx.sourceSmells ? sourceKeysOf(ctx.sourceSmells) : null };
+  }
+
+  /* the identity of a smell, octave-free, for the "the source has it too" rule (G9f): {w0, pitch classes} */
+  const pc = m => ((m % 12) + 12) % 12;
+  function smellId(kind, s) {
+    if (kind === 'parallel') return 'P|' + s.w0 + '|' + s.interval + '|' + [s.from.hi, s.from.lo, s.to.hi, s.to.lo].map(pc).join(',');
+    if (kind === 'innerLeap') return 'L|' + s.w0 + '|' + pc(s.from) + ',' + pc(s.to);
+    return 'X|' + s.w0 + '|' + s.midis.map(pc).sort((a, b) => a - b).join(',');
+  }
+  /* the set of smell identities of a smells result (VL.smellsFromNotes / voiceLeadingSmells) */
+  function sourceKeysOf(sm) {
+    const out = new Set();
+    if (!sm) return out;
+    (sm.parallels || []).forEach(s => out.add(smellId('parallel', s)));
+    (sm.innerLeaps || []).forEach(s => out.add(smellId('innerLeap', s)));
+    (sm.crossings || []).forEach(s => out.add(smellId('crossing', s)));
+    return out;
   }
 
   function smellsOf(state, notes) { return VL.smellsFromNotes(notes || state.notes, state.avgByPart); }
@@ -250,9 +277,11 @@
   function listSmells(state) {
     const sm = smellsOf(state);
     const out = [];
-    sm.parallels.forEach(s => out.push({ kind: 'parallel', s: s }));
-    sm.innerLeaps.forEach(s => out.push({ kind: 'innerLeap', s: s }));
-    sm.crossings.forEach(s => out.push({ kind: 'crossing', s: s }));
+    const src = state.srcKeys;
+    const add = (kind, s) => { if (!(src && src.has(smellId(kind, s)))) out.push({ kind: kind, s: s }); };
+    sm.parallels.forEach(s => add('parallel', s));
+    sm.innerLeaps.forEach(s => add('innerLeap', s));
+    sm.crossings.forEach(s => add('crossing', s));
     const w = x => R.toNumber(R.parse(x.s.w0));
     out.sort((a, b) => (w(a) - w(b)) || (a.kind < b.kind ? -1 : a.kind > b.kind ? 1 : 0));
     return { smells: sm, list: out };
@@ -307,5 +336,5 @@
     return units;
   }
 
-  return Object.freeze({ SMOOTH_MAX, MELODY_TOL_Q, CATS, belowFloor, createsLeftHandJump, annotate, smellsOf, listSmells, smellKey, planSmell, planDropDoubling, movable });
+  return Object.freeze({ SMOOTH_MAX, MELODY_TOL_Q, CATS, belowFloor, createsLeftHandJump, annotate, smellId, sourceKeysOf, smellsOf, listSmells, smellKey, planSmell, planDropDoubling, movable });
 });

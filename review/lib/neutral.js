@@ -216,6 +216,7 @@ const UNITS = 64; /* a whole note is 64 units: every rest starts and ends on a 6
 const REST_VALUES = [[64, 'whole', 0], [48, 'half', 1], [32, 'half', 0], [24, 'quarter', 1], [16, 'quarter', 0], [12, 'eighth', 1], [8, 'eighth', 0],
   [6, '16th', 1], [4, '16th', 0], [3, '32nd', 1], [2, '32nd', 0], [1, '64th', 0]];
 const restDisplay = u => { const v = REST_VALUES.find(x => x[0] === u); return v ? (v[2] ? { type: v[1], dots: v[2] } : { type: v[1] }) : null; };
+const SHORTEST_GAP = 4; /* units (a 16th): a smaller gap between two notes of a staff is not drawn as a rest */
 const BINARY_REST = [32, 16, 8, 4, 2, 1]; /* no whole rest inside a bar: the whole rest is the whole-bar rest */
 
 /* the rests for the silent stretch [a, b) of a measure (units), measure length `len` units, beat `beat` units, `compound` when
@@ -233,7 +234,11 @@ function restPieces(a, b, len, beat, compound) {
     const inBeat = beat - (x % beat);
     if (compound && x % beat === 0 && x + beat <= b && restDisplay(beat)) { out.push({ at: x, dur: beat, display: restDisplay(beat) }); x += beat; continue; }
     const cap = compound ? Math.min(b - x, inBeat) : b - x;
-    const u = BINARY_REST.find(v => v <= cap && x % v === 0);
+    /* an eighth-note silence that starts on the second sixteenth of a quarter and ends before the quarter does (16th note, eighth rest, 16th note: how a
+       dropped note in a run of sixteenths is written) is ONE eighth rest, not two 16th rests that the beam would run across. Only that exact silence: a gap
+       of any other length keeps the cut it always had. Simple meters only (a compound beat is cut above). */
+    const inside = v => !compound && v === 8 && b - x === 8 && x % 16 === 4 && x % beat + 8 <= beat;
+    const u = BINARY_REST.find(v => v <= cap && (x % v === 0 || inside(v)));
     out.push({ at: x, dur: u, display: restDisplay(u) });
     x += u;
   }
@@ -264,7 +269,9 @@ function addRests(graph, measures) {
       spans.sort((p, q) => p[0] - q[0] || p[1] - q[1]);
       const gaps = [];
       let cur = 0;
-      spans.forEach(sp => { if (sp[0] > cur) gaps.push([cur, sp[0]]); cur = Math.max(cur, sp[1]); });
+      /* a gap shorter than a sixteenth between two notes of the staff is how the notes were played (lifted a little), not a rest to write: left as
+         space, so no 32nd or 64th rest is drawn between notes (a gap at the start of the measure, or at its end, is still a rest) */
+      spans.forEach(sp => { if (sp[0] > cur && !(cur > 0 && sp[0] - cur < SHORTEST_GAP)) gaps.push([cur, sp[0]]); cur = Math.max(cur, sp[1]); });
       if (cur < len) gaps.push([cur, len]);
       if (!gaps.length) return;
       const t = measures[i].time || {};

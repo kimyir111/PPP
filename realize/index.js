@@ -108,7 +108,7 @@ function voiceAvgMidi(origPart, voiceId, mset) {
    leave one hand idle while the other juggles two independent lines when redistributing is
    free), not a narrow patch for this one file - see docs/GOALS/G08 §14 for what this
    changed in the real corpus numbers. */
-function rebalanceHands(origPart, measureIds, hands) {
+function rebalanceHands(origPart, measureIds, hands, ordered) {
   const ms = new Set(measureIds);
   const avgMidi = voiceId => {
     const vals = [];
@@ -124,9 +124,13 @@ function rebalanceHands(origPart, measureIds, hands) {
     const withAvg = out[hand].map(v => ({ v: v, avg: avgMidi(v) })).filter(x => x.avg != null);
     if (withAvg.length < 2) return;
     withAvg.sort((a, b) => a.avg - b.avg);
-    const lowest = withAvg[0].v;
-    out[hand] = out[hand].filter(v => v !== lowest);
-    out[other] = [lowest];
+    /* `ordered` (G9f, opts.orderedHands): the voice that crosses to the idle hand is the one that keeps the right hand above the left: the LOWEST of an all-right-hand
+       section (it goes to the left hand), the HIGHEST of an all-left-hand one (it goes to the right hand). Without it the lowest always crosses, which for two voices in
+       the left hand puts the bass in the RIGHT hand under the other voice (hanon/010's last bar: the source's C3 in the right hand and C2 in the left became C2 right,
+       C3 left); the old rule is kept for every caller that does not ask (the app's g8 path, direct realize() calls, tests). */
+    const moved = ordered && hand === 'LH' ? withAvg[withAvg.length - 1].v : withAvg[0].v;
+    out[hand] = out[hand].filter(v => v !== moved);
+    out[other] = [moved];
   });
   return out;
 }
@@ -560,6 +564,8 @@ function realize(g, sg, plan, opts) {
                              event, never the bass; candidates/ passes 1. Durations and ties of the rest untouched.
        opts.handDropBass     (default off; needs opts.handMaxNotes) when the melody's top note and a protected bass note share one hand at an onset, the bass note goes instead of the
                              hand keeping both (a dyad the pipeline would report as a success): docs/GOALS/G09 section 12 "G9e refusals". candidates/ passes true with singleNoteHands. */
+  /* opts.orderedHands (default OFF; `true` turns it on; candidates/ passes it with singleNoteHands): when one hand is left idle, the hands keep their order (rebalanceHands: the
+     highest voice of an all-left-hand section goes to the right hand, instead of the lowest: docs/GOALS/G09 section 12 "G9f final-review fixes") */
   const handMaxNotes = opts.handMaxNotes == null ? null : opts.handMaxNotes;
   if (handMaxNotes != null && !(Number.isInteger(handMaxNotes) && handMaxNotes >= 1)) throw new Error('realize: opts.handMaxNotes must be an integer >= 1 (got ' + handMaxNotes + ')');
   /* opts.handMaxNotesMaxStage (default HAND_CHORDS_MAX_STAGE = 3; 1..4): the highest plan stage the single-note pass runs at (4 = also the plan's hardest stage; a measurement switch, off in
@@ -659,7 +665,7 @@ function realize(g, sg, plan, opts) {
     const basePattern = resolvePattern(opts.pattern, sec, g, i0, opts.noStride);
     let policy = policyForStage(plan.stage, basePattern, opts.reference);
 
-    const hands = rebalanceHands(origPart, measureIds, sec.hands);
+    const hands = rebalanceHands(origPart, measureIds, sec.hands, opts.orderedHands === true);
 
     /* Real-check 'hymn' mode's own "already-checked reach" assumption (see
        hymnHandsReachable's header above) before trusting it - never assumed, and only ever
