@@ -1938,6 +1938,7 @@
     "Texture choices don't apply in one-note-per-hand mode; turn it off to use them.": "한 손 단음 모드에서는 편곡 스타일 선택이 적용되지 않아요. 스타일을 쓰려면 이 모드를 끄세요.",
     "Created a {{level}} one-note-per-hand arrangement.": "{{level}} 한 손 단음 편곡을 만들었습니다.",
     "PPP one-note-per-hand arrangement": "PPP 한 손 단음 편곡",
+    "build {{build}}": "빌드 {{build}}",
     "Created a {{level}} arrangement. Some passages had low melody/bass confidence, so PPP kept them simple rather than guess.": "{{level}} 편곡을 만들었습니다. 멜로디와 베이스를 확신하기 어려운 구간은 추측하지 않고 단순하게 두었습니다.",
     "{{title}} · one-note-per-hand arrangement": "{{title}} · 한 손 단음 편곡",
     "This piece has many notes, so the arrangement may be a little harder than the level you chose.": "이 곡은 음이 많아 고른 난이도보다 조금 어려울 수 있어요.",

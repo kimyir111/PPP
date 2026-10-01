@@ -14960,7 +14960,9 @@ class Component extends DCLogic {
     });
     if (singleFailure) source.arrangement = Object.assign({}, source.arrangement || {}, { singleFallback: singleFailure });
     arranged.source = source;
-    arranged.composer = [sourceScore.composer, usedSingle ? tx('PPP one-note-per-hand arrangement') : tx('PPP {{style}} arrangement', { style: this.arrangementStyleName(plan.style) })]
+    /* which build made this copy (the server puts it in the page): a screenshot of the song then says whether it is an old copy */
+    const buildTag = typeof window !== 'undefined' && window.PPP_BUILD ? tx('build {{build}}', { build: window.PPP_BUILD }) : '';
+    arranged.composer = [sourceScore.composer, usedSingle ? tx('PPP one-note-per-hand arrangement') : tx('PPP {{style}} arrangement', { style: this.arrangementStyleName(plan.style) }), buildTag]
       .filter(Boolean).join(' · ');
     const first = arranged.sections[0] || { from: Score.first(arranged), to: Score.last(arranged) };
     const slot = {

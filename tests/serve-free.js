@@ -40,7 +40,7 @@ async function startServer(opts) {
   const port = await freePort();
   const child = spawn(process.execPath, ['server.js'], {
     cwd: root, stdio: 'ignore',
-    env: Object.assign({}, process.env, { NODE_ENV: 'production', HOST: '127.0.0.1', PORT: String(port) })
+    env: Object.assign({}, process.env, { NODE_ENV: 'production', HOST: '127.0.0.1', PORT: String(port) }, opts.env || {})
   });
   let exited = false;
   child.on('exit', () => { exited = true; });
