@@ -4705,7 +4705,7 @@ function loadSingleModules() {
   const todo = SINGLE_SCRIPTS.slice(SINGLE_SCRIPTS.findIndex(src => !_singleLoaded.has(src)));
   _singleScriptsPromise = Promise.all(todo.map(src => new Promise(resolve => {
     const el = document.createElement('script');
-    el.src = './' + src + '?v=2';
+    el.src = './' + src + '?v=3';
     el.async = false;
     el.onload = () => { _singleLoaded.add(src); resolve(true); };
     el.onerror = () => { _singleLoaded.delete(src); resolve(false); };
