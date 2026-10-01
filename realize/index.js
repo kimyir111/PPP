@@ -574,7 +574,8 @@ function realize(g, sg, plan, opts) {
   const diatonicStats = { maxStage: TH.DIATONIC_MAX_STAGE, active: diatonicLow && plan.stage <= TH.DIATONIC_MAX_STAGE, windows: 0, substituted: 0 };
 
   const b = B.builder({
-    id: (g.id || 'sg') + '-g8a', meta: Object.assign({}, g.meta || {}),
+    /* the graph id is at most 64 characters (scoregraph/validate.js): a long imported title's id (legacy-score.js idOf, cut at 64) plus this suffix broke the build of every candidate */
+    id: String(g.id || 'sg').slice(0, 60) + '-g8a', meta: Object.assign({}, g.meta || {}),
     source: Object.assign({}, SOURCE)
   });
   SOURCE_ID = b.doc.provenance.sources[0];
