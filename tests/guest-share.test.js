@@ -40,7 +40,7 @@ function rules() {
   ok('owners compare equal only when they are the same string', G.sameOwner(id, id) && !G.sameOwner(id, G.guestOwnerId('b'.repeat(40))) && !G.sameOwner(id, 'g_') && !G.sameOwner(id, null));
 
   const T0 = Date.parse('2026-10-01T00:00:00Z');
-  ok('a guest link lives 90 days', Date.parse(G.expiryFor(T0)) - T0 === 90 * 24 * 3600 * 1000);
+  ok('a guest link lives 30 days', Date.parse(G.expiryFor(T0)) - T0 === 30 * 24 * 3600 * 1000);
   const row = { expiresAt: G.expiryFor(T0) };
   ok('before its end date it is live; at and after, it is expired',
     !G.expired(row, T0) && !G.expired(row, T0 + G.GUEST.TTL_MS - 1) && G.expired(row, T0 + G.GUEST.TTL_MS) && G.expired(row, T0 + G.GUEST.TTL_MS + 1));
@@ -66,11 +66,61 @@ function rules() {
   now += 5000;
   w3.take('late');
   ok('idle keys are dropped, so the table cannot grow for ever', w3.size() < 10, String(w3.size()));
-  ok('the client address is the first X-Forwarded-For entry, else the socket, as the login limit finds it',
-    G.clientIp({ headers: { 'x-forwarded-for': '1.2.3.4, 10.0.0.1' }, socket: { remoteAddress: '::1' } }) === '1.2.3.4'
-    && G.clientIp({ headers: {}, socket: { remoteAddress: '::1' } }) === '::1');
-  ok('the limits are the ones the design names',
-    G.GUEST.PER_GUEST === 20 && G.GUEST.PER_IP_PER_HOUR === 10 && G.GUEST.TTL_MS === 90 * 86400000 && G.GUEST.TOTAL_SHARES === 1000);
+  const reqOf = (headers, ip) => ({ headers: headers, socket: { remoteAddress: ip || '::1' } });
+  /* peek records nothing; a refused hit adds no key; the table is bounded; release gives a hit back */
+  now = T0;
+  const w4 = G.slidingWindow(1, 1000, () => now);
+  const peeked = w4.peek('p') && w4.size() === 0;
+  w4.take('p');
+  const refusedKeys = [w4.take('p'), w4.take('p'), w4.peek('p')];
+  ok('peek records nothing, and a refused hit is not recorded', peeked && refusedKeys.join() === 'false,false,false' && w4.size() === 1);
+  w4.release('p');
+  ok('release gives the newest hit back', w4.peek('p') === true && w4.size() === 0);
+  const w5 = G.slidingWindow(1, 3600000, () => now, 100);
+  for (let i = 0; i < 5000; i++) w5.take('spoof-' + i);
+  ok('a table with a bound never holds more keys than it, however many addresses are made up', w5.size() === 100, String(w5.size()));
+  const w6 = G.slidingWindow(1, 3600000, () => now, 100);
+  w6.take('real'); w6.take('real');
+  for (let i = 0; i < 99; i++) w6.take('a' + i);
+  w6.take('real');
+  for (let i = 0; i < 50; i++) w6.take('b' + i);
+  ok('the oldest key is the one dropped, the newest are kept', w6.size() === 100 && w6.take('real') === true && w6.take('b49') === false);
+  const w7 = G.slidingWindow(1, 1000, () => now, 100000);
+  const t0w = process.hrtime.bigint();
+  for (let i = 0; i < 20000; i++) w7.take('k' + (i % 50));
+  const ms = Number(process.hrtime.bigint() - t0w) / 1e6;
+  ok('a take is cheap (20000 takes over 50 keys in well under a second)', ms < 500, ms.toFixed(0) + ' ms');
+
+  console.log('\n── the client address: nothing the client writes names it ──');
+  ok('behind one proxy the address is the LAST X-Forwarded-For entry; the first (client-written) is ignored',
+    G.clientIp(reqOf({ 'x-forwarded-for': '6.6.6.6, 1.2.3.4' }), {}) === '1.2.3.4'
+    && G.clientIp(reqOf({ 'x-forwarded-for': 'a, b, c, 9.9.9.9' }), {}) === '9.9.9.9');
+  ok('with PPP_PROXY_HOPS=2 it is the entry two from the right',
+    G.clientIp(reqOf({ 'x-forwarded-for': '6.6.6.6, 1.2.3.4, 10.0.0.1' }), { PPP_PROXY_HOPS: '2' }) === '1.2.3.4'
+    && G.clientIp(reqOf({ 'x-forwarded-for': '1.2.3.4' }), { PPP_PROXY_HOPS: '2' }) === '::1');
+  ok('a bad hop count falls back to 1', G.clientIp(reqOf({ 'x-forwarded-for': 'x, 1.2.3.4' }), { PPP_PROXY_HOPS: 'banana' }) === '1.2.3.4'
+    && G.clientIp(reqOf({ 'x-forwarded-for': 'x, 1.2.3.4' }), { PPP_PROXY_HOPS: '0' }) === '1.2.3.4');
+  ok('with no header it is the socket address', G.clientIp(reqOf({}, '10.1.1.1'), {}) === '10.1.1.1');
+  ok('on Render, True-Client-IP wins, then CF-Connecting-IP; off Render they are ignored',
+    G.clientIp(reqOf({ 'true-client-ip': '7.7.7.7', 'cf-connecting-ip': '8.8.8.8', 'x-forwarded-for': '1.1.1.1' }), { RENDER: 'true' }) === '7.7.7.7'
+    && G.clientIp(reqOf({ 'cf-connecting-ip': '8.8.8.8', 'x-forwarded-for': '1.1.1.1' }), { RENDER: 'true' }) === '8.8.8.8'
+    && G.clientIp(reqOf({ 'x-forwarded-for': '1.1.1.1' }), { RENDER: 'true' }) === '1.1.1.1'
+    && G.clientIp(reqOf({ 'true-client-ip': '7.7.7.7', 'x-forwarded-for': '1.1.1.1' }), {}) === '1.1.1.1');
+
+  console.log('\n── what may be stored: a re-send is held to the caps as growth ──');
+  const GG = G.GUEST;
+  ok('a new link under every cap is allowed', G.decide(null, 0, { count: 5, bytes: 1000 }, 1000) === null);
+  ok('a browser at 20 may not make a 21st, but may re-send one of its 20', G.decide(null, 20, { count: 20, bytes: 0 }, 1).status === 429 && G.decide({ bytes: 1 }, 20, { count: 20, bytes: 1 }, 1) === null);
+  ok('the count cap: 1000 held, a new one is 503 (code guest-full)', (() => { const d = G.decide(null, 0, { count: 1000, bytes: 0 }, 1); return d.status === 503 && d.code === 'guest-full'; })());
+  ok('the byte cap counts a new link in full', G.decide(null, 0, { count: 1, bytes: GG.TOTAL_BYTES - 10 }, 11).status === 503 && G.decide(null, 0, { count: 1, bytes: GG.TOTAL_BYTES - 10 }, 10) === null);
+  ok('a tiny link re-sent at 1 MB is a growth of 1 MB less its old size, and is refused when that passes the cap',
+    G.decide({ bytes: 500 }, 1, { count: 1, bytes: GG.TOTAL_BYTES - 1000 }, GG.MAX_BYTES).status === 503
+    && G.decide({ bytes: GG.MAX_BYTES }, 1, { count: 1, bytes: GG.TOTAL_BYTES }, GG.MAX_BYTES) === null);
+  const pv = { measures: [{}], notes: [{ m: 1 }] };
+  ok('what a row holds counts its preview too', G.rowBytes({ a: 1 }, pv) === Buffer.byteLength(JSON.stringify({ a: 1 })) + Buffer.byteLength(JSON.stringify(pv)) && G.rowBytes({ a: 1 }, null) < G.rowBytes({ a: 1 }, pv));
+  ok('the limits are the ones named',
+    GG.PER_GUEST === 20 && GG.PER_IP_PER_HOUR === 30 && GG.GLOBAL_PER_HOUR === 200 && GG.TTL_MS === 30 * 86400000 && GG.TOTAL_SHARES === 1000
+    && GG.TOTAL_BYTES === 50 * 1024 * 1024 && GG.MAX_BYTES === 1024 * 1024 && GG.PREVIEW_MAX_BYTES === 24 * 1024);
 }
 
 /* ---------- the server ---------- */
@@ -114,12 +164,14 @@ const secretOf = () => crypto.randomBytes(32).toString('hex');
 let ipN = 0;
 const nextIp = () => '203.0.113.' + (++ipN);
 
-async function server() {
+async function server(extraEnv, preRows) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ppp-guest-share-'));
   const port = await freePort();
+  if (preRows) fs.writeFileSync(path.join(dir, 'shares.json'), JSON.stringify({ shares: preRows }));
+  const env = Object.assign({}, process.env, { NODE_ENV: 'production', HOST: '127.0.0.1', PORT: String(port), PPP_DATA_DIR: dir, DATABASE_URL: '' });
+  delete env.RENDER; delete env.PPP_PROXY_HOPS;
   const child = spawn(process.execPath, ['server.js'], {
-    cwd: path.resolve(__dirname, '..'), stdio: 'ignore',
-    env: Object.assign({}, process.env, { NODE_ENV: 'production', HOST: '127.0.0.1', PORT: String(port), PPP_DATA_DIR: dir, DATABASE_URL: '' })
+    cwd: path.resolve(__dirname, '..'), stdio: 'ignore', env: Object.assign(env, extraEnv || {})
   });
   let exited = false;
   child.on('exit', () => { exited = true; });
@@ -154,9 +206,9 @@ async function main() {
     ok('a guest create is 201', c.status === 201, c.status + ' ' + JSON.stringify(c.body).slice(0, 120));
     const id = c.body && c.body.id;
     ok('it comes back unlisted whatever the body said (listed:true, genre ignored)', c.body.listed === false && c.body.genre === '', JSON.stringify({ l: c.body.listed, g: c.body.genre }));
-    ok('named Guest, mine, with a link and an end date 90 days out',
+    ok('named Guest, mine, with a link and an end date 30 days out',
       c.body.owner === 'Guest' && c.body.mine === true && c.body.url === '/?share=' + id
-      && Math.abs(Date.parse(c.body.expiresAt) - (Date.now() + 90 * 86400000)) < 120000, c.body.expiresAt);
+      && Math.abs(Date.parse(c.body.expiresAt) - (Date.now() + 30 * 86400000)) < 120000, c.body.expiresAt);
     ok('the answer never carries the secret or the owner id', c.text.indexOf(A) < 0 && c.text.indexOf('g_') < 0 && !('ownerId' in c.body));
 
     /* the library seeds (PPP Library) are in the file too; look at this link's row */
@@ -209,9 +261,28 @@ async function main() {
     ok('no song key: 422', noKey.status === 422, noKey.status + '');
     const long = await post(P, A, { songKey: 'k-long', title: 'T'.repeat(500), composer: 'C'.repeat(500), score: smallScore() }, ipA);
     ok('title and composer are clipped (120, 160) as for an account', long.status === 201 && long.body.title.length === 120 && long.body.composer.length === 160, long.body && long.body.title.length + '/' + long.body.composer.length);
-    const big = await req(P, 'POST', '/api/shares', { guest: A, ip: ipA, tolerateReset: true,
-      body: JSON.stringify({ songKey: 'big', title: 'Big', score: smallScore('Big', { pad: 'x'.repeat(4 * 1024 * 1024 + 10) }) }) });
-    ok('a body over 4 MB is refused: 413', big.status === 413 || big.status === 'reset', String(big.status));
+    const bigBody = n => JSON.stringify({ songKey: 'big', title: 'Big', score: smallScore('Big', { pad: 'x'.repeat(n) }) });
+    const big = await req(P, 'POST', '/api/shares', { guest: A, ip: ipA, tolerateReset: true, body: bigBody(1024 * 1024 + 10) });
+    ok('a guest body over 1 MB is refused with a real 413 JSON answer (not a reset)', big.status === 413 && /too large/.test(big.body.error) && /guest/.test(big.body.error), big.status + ' ' + big.text.slice(0, 80));
+    const huge = await req(P, 'POST', '/api/shares', { guest: A, ip: ipA, tolerateReset: true, body: bigBody(20 * 1024 * 1024) });
+    ok('one far over the limit is refused too (413, or the connection is cut)', huge.status === 413 || huge.status === 'reset', String(huge.status));
+    const nearly = await post(P, A, { songKey: 'nearly', title: 'Nearly 1 MB', score: smallScore('Nearly', { pad: 'x'.repeat(900 * 1024) }) }, ipA);
+    ok('900 KB of score is fine for a guest', nearly.status === 201, nearly.status + '');
+    const withPreview = await post(P, A, { songKey: 'pv', title: 'With a preview', score: smallScore('P'), preview: smallScore('P') }, ipA);
+    const pvRow = readRows(srv.dir).find(r => r.id === withPreview.body.id);
+    ok('a small preview is kept, and counted in the row\'s bytes', withPreview.status === 201 && !!pvRow.preview && pvRow.bytes === G.rowBytes(smallScore('P'), smallScore('P')), pvRow && String(pvRow.bytes));
+    const bigPreview = await post(P, A, { songKey: 'pv2', title: 'Big preview', score: smallScore('P'), preview: smallScore('P', { pad: 'x'.repeat(30 * 1024) }) }, ipA);
+    const pvRow2 = readRows(srv.dir).find(r => r.id === bigPreview.body.id);
+    ok('a preview over 24 KB is dropped, and not counted', bigPreview.status === 201 && pvRow2.preview === null && pvRow2.bytes === G.rowBytes(smallScore('P'), null), pvRow2 && String(pvRow2.bytes));
+    const nullMeasure = await post(P, A, { songKey: 'nm', title: 'T', score: { measures: [null], notes: [] } }, ipA);
+    const nullNote = await post(P, A, { songKey: 'nn', title: 'T', score: { measures: [{}], notes: [null] } }, ipA);
+    ok('measures:[null] and notes:[null] are 422, not stored', nullMeasure.status === 422 && nullNote.status === 422 && !readRows(srv.dir).some(r => r.songKey === 'nm' || r.songKey === 'nn'), nullMeasure.status + '/' + nullNote.status);
+    const deep = await req(P, 'POST', '/api/shares', { guest: A, ip: ipA, tolerateReset: true,
+      body: '{"songKey":"deep","title":"T","score":{"measures":[{}],"notes":[],"x":' + '['.repeat(200000) + ']'.repeat(200000) + '}}' });
+    ok('JSON nested far too deep is a 4xx, not a 500', deep.status >= 400 && deep.status < 500, String(deep.status));
+    const deepPreview = await req(P, 'POST', '/api/shares', { guest: A, ip: ipA, tolerateReset: true,
+      body: '{"songKey":"deep2","title":"T","score":{"measures":[{}],"notes":[]},"preview":{"measures":[{}],"notes":[],"x":' + '['.repeat(200000) + ']'.repeat(200000) + '}}' });
+    ok('and so is a preview nested too deep', deepPreview.status >= 400 && deepPreview.status < 500, String(deepPreview.status));
 
     console.log('\n── taking a link down ──');
     const del = (guest, ip) => req(P, 'DELETE', '/api/shares/' + id, { guest: guest, ip: ip });
@@ -251,15 +322,38 @@ async function main() {
     console.log('\n── how many one address may make in an hour ──');
     const ipC = '192.0.2.77';
     const results = [];
-    for (let i = 0; i < 12; i++) results.push((await post(P, secretOf(), { songKey: 'ip-' + i, title: 'Ip ' + i, score: smallScore() }, ipC)).status);
-    ok('10 go through, the 11th and 12th are 429', results.slice(0, 10).every(s => s === 201) && results[10] === 429 && results[11] === 429, results.join(' '));
+    for (let i = 0; i < 32; i++) results.push((await post(P, secretOf(), { songKey: 'ip-' + i, title: 'Ip ' + i, score: smallScore() }, ipC)).status);
+    ok('30 go through, the 31st and 32nd are 429', results.slice(0, 30).every(s => s === 201) && results[30] === 429 && results[31] === 429, results.join(' '));
     const fresh = await post(P, secretOf(), { songKey: 'ip-x', title: 'Other address', score: smallScore() }, '192.0.2.78');
     ok('another address is not held up', fresh.status === 201, fresh.status + '');
-    const viaOne = await post(P, A, { songKey: 'ip-y', title: 'Chain', score: smallScore() }, '192.0.2.79, 10.0.0.1');
-    const viaTwo = await post(P, A, { songKey: 'ip-z', title: 'Chain', score: smallScore() }, '192.0.2.79, 10.0.0.9');
-    ok('the address is the first X-Forwarded-For entry (as the login limit reads it)', viaOne.status === 201 && viaTwo.status === 201);
     const bodyLess = await req(P, 'POST', '/api/shares', { ip: ipC });
     ok('a refused address cannot even make the server read a body, but an unkeyed request is still the old 401', bodyLess.status === 401, bodyLess.status + '');
+
+    console.log('\n── a spoofed X-Forwarded-For does not name the client ──');
+    /* one real address behind one proxy: the proxy appends it; whatever the client wrote in front is ignored */
+    const spoof = [];
+    for (let i = 0; i < 32; i++) spoof.push((await post(P, secretOf(), { songKey: 'sp-' + i, title: 'Spoof ' + i, score: smallScore() }, 'fake-' + i + '-' + crypto.randomBytes(4).toString('hex') + ', 192.0.2.150')).status);
+    ok('rotating made-up first entries gets nowhere: the 31st from the same real address is still 429', spoof.slice(0, 30).every(s => s === 201) && spoof[30] === 429 && spoof[31] === 429, spoof.join(' '));
+    const viaTwo = await post(P, secretOf(), { songKey: 'sp-z', title: 'Other real address', score: smallScore() }, 'same-first, 192.0.2.151');
+    ok('a different real (last) address has its own budget', viaTwo.status === 201, viaTwo.status + '');
+    const manyEntries = await post(P, secretOf(), { songKey: 'sp-many', title: 'Long chain', score: smallScore() }, 'a, b, c, d, e, f, 192.0.2.152');
+    ok('a long client-written chain is still read from the right', manyEntries.status === 201);
+
+    console.log('\n── garbage cannot burn the budget honest guests share ──');
+    /* 260 requests that fail validation, each from an address of its own: before, they used up the server-wide 200 per hour */
+    let garbage = 0;
+    for (let i = 0; i < 260; i++) {
+      const r = await post(P, secretOf(), { songKey: 'g-' + i, title: 'T', score: { measures: [], notes: [] } }, '198.18.' + Math.floor(i / 200) + '.' + (i % 200));
+      if (r.status === 422) garbage++;
+    }
+    ok('260 invalid requests are all answered 422 (none was a 429)', garbage === 260, String(garbage));
+    const honest = await post(P, secretOf(), { songKey: 'honest', title: 'Honest guest', score: smallScore() }, '198.19.0.1');
+    ok('and an honest guest still gets a link afterwards', honest.status === 201, honest.status + '');
+    const failures = [];
+    for (let i = 0; i < 62; i++) failures.push((await post(P, secretOf(), { songKey: 'f-' + i, title: 'T', score: { measures: [], notes: [] } }, '198.19.0.2')).status);
+    ok('one address that keeps sending garbage runs out of its small budget: 60 answered 422, then 429', failures.slice(0, 60).every(s => s === 422) && failures[60] === 429, failures.slice(58).join(' '));
+    const sameAddr = await post(P, secretOf(), { songKey: 'f-ok', title: 'Valid but from the bad address', score: smallScore() }, '198.19.0.2');
+    ok('...and a valid request from it waits too', sameAddr.status === 429);
 
     console.log('\n── end dates ──');
     const C = secretOf(), gc = G.guestOwnerId(C);
@@ -285,26 +379,79 @@ async function main() {
     ok('sharing a song whose old link ran out makes a new link', redo.status === 201 && redo.body.id !== 'expiredRow02', redo.status + ' ' + (redo.body && redo.body.id));
 
     console.log('\n── what all guests together may hold ──');
-    const filler = (n, bytes) => ({
-      id: 'fill' + String(n).padStart(8, '0'), ownerId: 'g_' + String(n).padStart(24, '0').replace(/\D/g, '0'), ownerName: 'Guest', songKey: 'f', title: 'Filler', composer: '', genre: '',
-      kind: '', measures: 2, listed: false, preview: null, score: bytes ? Object.assign(smallScore(), { pad: 'x'.repeat(bytes) }) : smallScore(),
+    const filler = (n, bytes, owner) => ({
+      id: 'fill' + String(n).padStart(8, '0'), ownerId: owner || ('g_' + ('f' + n).padStart(24, '0').slice(-24).replace(/[^0-9a-f]/g, '0')), ownerName: 'Guest', songKey: 'f', title: 'Filler', composer: '', genre: '',
+      kind: '', measures: 2, listed: false, preview: null, score: smallScore(), bytes: bytes || 100,
       createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 86400000).toISOString()
     });
     const keep = readRows(srv.dir);
-    const room1000 = Math.max(0, G.GUEST.TOTAL_SHARES - keep.filter(r => G.isGuestOwner(r.ownerId)).length);
+    const guestsNow = keep.filter(r => G.isGuestOwner(r.ownerId)).length;
     const fill = [];
-    for (let i = 0; i < room1000; i++) fill.push(filler(i));
+    for (let i = 0; i < G.GUEST.TOTAL_SHARES - guestsNow; i++) fill.push(filler(i));
     writeRows(srv.dir, keep.concat(fill));
     const full = await post(P, secretOf(), { songKey: 'full', title: 'One too many', score: smallScore() }, nextIp());
-    ok('with 1000 guest links in all, a new one is refused: 503', full.status === 503 && /full/i.test(full.body.error), full.status + '');
+    ok('with 1000 guest links in all, a new one is refused: 503 with the code the app reads', full.status === 503 && /full/i.test(full.body.error) && full.body.code === 'guest-full', full.status + '');
     const upd2 = await post(P, C, { songKey: 'exp-live', title: 'Edited while full', score: smallScore() }, nextIp());
     ok('but a guest may still update a link they already have', upd2.status === 200, upd2.status + '');
-    writeRows(srv.dir, keep.concat([filler(1, 99 * 1024 * 1024)]));
-    const tooBig = await post(P, secretOf(), { songKey: 'bytes', title: 'Over the bytes', score: smallScore('x', { pad: 'y'.repeat(2 * 1024 * 1024) }) }, nextIp());
-    ok('with ~99 MB held, another 2 MB link would pass 100 MB: 503', tooBig.status === 503, tooBig.status + '');
+
+    /* bytes: the old bug - fill the cap, then re-send tiny links at full size */
+    const rowsBase = readRows(srv.dir).filter(r => !String(r.id).startsWith('fill'));
+    writeRows(srv.dir, rowsBase);
+    const E = secretOf();
+    const tiny = [];
+    for (let i = 0; i < 3; i++) tiny.push((await post(P, E, { songKey: 'tiny-' + i, title: 'Tiny ' + i, score: smallScore() }, nextIp())).body.id);
+    const mineNow = readRows(srv.dir);
+    const held = mineNow.filter(r => G.isGuestOwner(r.ownerId)).reduce((n, r) => n + (r.bytes != null ? r.bytes : 0), 0);
+    const spare = 800 * 1024;
+    writeRows(srv.dir, mineNow.concat([filler(1, G.GUEST.TOTAL_BYTES - held - spare)]));
+    const growBig = (i, kb) => post(P, E, { songKey: 'tiny-' + i, title: 'Tiny ' + i, score: smallScore('Tiny', { pad: 'x'.repeat(kb * 1024) }) }, nextIp());
+    const g1 = await growBig(0, 700);
+    ok('there is room for one re-send that grows to 700 KB: 200', g1.status === 200, g1.status + '');
+    const g2 = await growBig(1, 700);
+    const g3 = await growBig(2, 700);
+    ok('but the other two re-sends, which would pass 50 MB in all, are refused: 503 (a tiny link cannot be re-sent at full size past the cap)', g2.status === 503 && g3.status === 503, g2.status + '/' + g3.status);
+    const heldAfter = readRows(srv.dir).filter(r => G.isGuestOwner(r.ownerId)).reduce((n, r) => n + r.bytes, 0);
+    ok('the bytes held never passed the cap', heldAfter <= G.GUEST.TOTAL_BYTES, heldAfter + ' of ' + G.GUEST.TOTAL_BYTES);
+    const shrink = await growBig(0, 1);
+    ok('a re-send that shrinks is always welcome', shrink.status === 200, shrink.status + '');
+    const withPrev = await post(P, E, { songKey: 'tiny-0', title: 'Tiny 0', score: smallScore('Tiny', { pad: 'x'.repeat(100 * 1024) }), preview: smallScore('P', { pad: 'y'.repeat(20 * 1024) }) }, nextIp());
+    ok('a re-send with a preview counts the preview in its growth', withPrev.status === 200 && readRows(srv.dir).find(r => r.id === tiny[0]).bytes === G.rowBytes(smallScore('Tiny', { pad: 'x'.repeat(100 * 1024) }), smallScore('P', { pad: 'y'.repeat(20 * 1024) })));
+    writeRows(srv.dir, rowsBase);
     const smallOk = await post(P, secretOf(), { songKey: 'bytes-ok', title: 'Small', score: smallScore() }, nextIp());
-    ok('a small one still fits', smallOk.status === 201, smallOk.status + '');
-    writeRows(srv.dir, keep);
+    ok('with the filler gone, a new link fits again', smallOk.status === 201, smallOk.status + '');
+
+    console.log('\n── guests creating at the same moment cannot race the caps ──');
+    writeRows(srv.dir, rowsBase);
+    const F = secretOf();
+    const parallel = await Promise.all(Array.from({ length: 30 }, (_, i) => post(P, F, { songKey: 'par-' + i, title: 'Par ' + i, score: smallScore() }, '100.64.1.' + i)));
+    const made = parallel.filter(r => r.status === 201).length, refused = parallel.filter(r => r.status === 429).length;
+    ok('30 at once with one key: exactly 20 made, 10 refused (429), none lost to an error', made === 20 && refused === 10, made + ' made, ' + refused + ' refused, others ' + parallel.map(r => r.status).filter(x => x !== 201 && x !== 429).join());
+    ok('and the file holds exactly 20 for that browser', readRows(srv.dir).filter(r => r.ownerId === G.guestOwnerId(F)).length === 20);
+
+    writeRows(srv.dir, rowsBase);
+    const baseGuests = rowsBase.filter(r => G.isGuestOwner(r.ownerId)).length;
+    const slots = 5;
+    const fill2 = [];
+    for (let i = 0; i < G.GUEST.TOTAL_SHARES - baseGuests - slots; i++) fill2.push(filler(i + 5000));
+    writeRows(srv.dir, rowsBase.concat(fill2));
+    const par2 = await Promise.all(Array.from({ length: 20 }, (_, i) => post(P, secretOf(), { songKey: 'cnt-' + i, title: 'Cnt ' + i, score: smallScore() }, '100.64.2.' + i)));
+    ok('with 5 places left, 20 guests at once: exactly 5 get one, 15 are 503', par2.filter(r => r.status === 201).length === slots && par2.filter(r => r.status === 503).length === 20 - slots, par2.map(r => r.status).join());
+    ok('and the count never passed 1000', readRows(srv.dir).filter(r => G.isGuestOwner(r.ownerId)).length === G.GUEST.TOTAL_SHARES);
+
+    writeRows(srv.dir, rowsBase);
+    const heldBase = rowsBase.filter(r => G.isGuestOwner(r.ownerId)).reduce((n, r) => n + (r.bytes || 0), 0);
+    const one = G.rowBytes(smallScore('B', { pad: 'z'.repeat(300 * 1024) }), null);
+    const roomFor = 3;
+    writeRows(srv.dir, rowsBase.concat([filler(9, G.GUEST.TOTAL_BYTES - heldBase - roomFor * one - 1000)]));
+    const par3 = await Promise.all(Array.from({ length: 12 }, (_, i) => post(P, secretOf(), { songKey: 'byt-' + i, title: 'B', score: smallScore('B', { pad: 'z'.repeat(300 * 1024) }) }, '100.64.3.' + i)));
+    ok('with room for 3 big links, 12 at once: exactly 3 are made and 9 are 503', par3.filter(r => r.status === 201).length === roomFor && par3.filter(r => r.status === 503).length === 12 - roomFor, par3.map(r => r.status).join());
+    ok('and the bytes never passed 50 MB', readRows(srv.dir).filter(r => G.isGuestOwner(r.ownerId)).reduce((n, r) => n + (r.bytes != null ? r.bytes : 0), 0) <= G.GUEST.TOTAL_BYTES);
+    writeRows(srv.dir, rowsBase);
+
+    const same = secretOf();
+    const racers = await Promise.all(Array.from({ length: 10 }, (_, i) => post(P, same, { songKey: 'same-song', title: 'Same ' + i, score: smallScore() }, '100.64.4.' + i)));
+    ok('10 at once for the same song: one row, answers 200/201 only (never a 500), one link', racers.every(r => r.status === 200 || r.status === 201) && racers.filter(r => r.status === 201).length === 1 && new Set(racers.map(r => r.body.id)).size === 1
+      && readRows(srv.dir).filter(r => r.ownerId === G.guestOwnerId(same)).length === 1, racers.map(r => r.status).join());
 
     console.log('\n── an account is not changed ──');
     const email = 'guest-share-' + Date.now() + '@example.com';
@@ -319,6 +466,8 @@ async function main() {
     ok('GET ?mine=1 lists it, and none of the guest links', (await U('GET', '/api/shares?mine=1')).body.shares.map(s => s.id).join() === up.body.id);
     const unl = await U('PATCH', '/api/shares/' + up.body.id, { listed: false });
     ok('PATCH listed:false still works for the owner', unl.status === 200 && unl.body.listed === false);
+    const accRace = await Promise.all(Array.from({ length: 8 }, (_, i) => U('POST', '/api/shares', { songKey: 'u-race', title: 'Race ' + i, score: smallScore('Race') })));
+    ok('an account sending the same song 8 times at once: only 200/201 and one link', accRace.every(r => r.status === 200 || r.status === 201) && new Set(accRace.map(r => r.body.id)).size === 1, accRace.map(r => r.status).join());
     const withKey = await U('POST', '/api/shares', { songKey: 'u2', title: 'Both', listed: true, score: smallScore() }, { guest: secretOf() });
     ok('with a session and a guest key, the account wins: owned by the account, listed as asked', withKey.status === 201 && withKey.body.listed === true && withKey.body.owner === 'Real User');
     const again2 = await U('POST', '/api/shares', { songKey: 'u2', title: 'Both', score: smallScore() });
@@ -343,7 +492,61 @@ async function main() {
   }
 }
 
-main().then(() => {
+/* ---------- behind a proxy, the whole-server budget, the sweep at start ---------- */
+async function proxies() {
+  const mk = (n, extra) => Object.assign({ songKey: 'px-' + n, title: 'Px ' + n, score: smallScore() }, extra || {});
+
+  console.log('\n── the right hop, from the right ──');
+  let srv = await server({ PPP_PROXY_HOPS: '2' });
+  try {
+    const out = [];
+    for (let i = 0; i < 32; i++) out.push((await post(srv.port, secretOf(), mk(i), 'spoof' + i + ', 192.0.2.40, 10.9.9.' + i)).status);
+    ok('with PPP_PROXY_HOPS=2 the address is the second from the right: 30 pass, then 429, whatever the other entries say', out.slice(0, 30).every(x => x === 201) && out[30] === 429 && out[31] === 429, out.join(' '));
+    ok('another address in that place has its own budget', (await post(srv.port, secretOf(), mk('o'), 'spoof, 192.0.2.41, 10.9.9.1')).status === 201);
+  } finally { await srv.close(); try { fs.rmSync(srv.dir, { recursive: true, force: true }); } catch (e) { /* temp */ } }
+
+  console.log('\n── on Render: the edge\'s own headers ──');
+  srv = await server({ RENDER: 'true' });
+  try {
+    const viaTrue = [];
+    for (let i = 0; i < 32; i++) viaTrue.push((await req(srv.port, 'POST', '/api/shares', { guest: secretOf(), ip: 'made-up-' + i + ', 10.0.0.' + i, headers: { 'True-Client-IP': '192.0.2.50' }, body: mk(i) })).status);
+    ok('True-Client-IP names the client: 30 pass, then 429, whatever X-Forwarded-For says', viaTrue.slice(0, 30).every(x => x === 201) && viaTrue[30] === 429 && viaTrue[31] === 429, viaTrue.join(' '));
+    const viaCf = [];
+    for (let i = 0; i < 32; i++) viaCf.push((await req(srv.port, 'POST', '/api/shares', { guest: secretOf(), ip: 'made-up-' + i, headers: { 'CF-Connecting-IP': '192.0.2.60' }, body: mk('c' + i) })).status);
+    ok('without it, CF-Connecting-IP does', viaCf.slice(0, 30).every(x => x === 201) && viaCf[30] === 429, viaCf.join(' '));
+    const other = await req(srv.port, 'POST', '/api/shares', { guest: secretOf(), ip: 'made-up-0', headers: { 'True-Client-IP': '192.0.2.51' }, body: mk('other') });
+    ok('another client address is not held up', other.status === 201, other.status + '');
+    const xffOnly = [];
+    for (let i = 0; i < 31; i++) xffOnly.push((await post(srv.port, secretOf(), mk('x' + i), 'first-' + i + ', 192.0.2.70')).status);
+    ok('with neither header on Render, the last X-Forwarded-For entry is used', xffOnly.slice(0, 30).every(x => x === 201) && xffOnly[30] === 429, xffOnly.join(' '));
+  } finally { await srv.close(); try { fs.rmSync(srv.dir, { recursive: true, force: true }); } catch (e) { /* temp */ } }
+
+  console.log('\n── the server-wide budget ──');
+  srv = await server();
+  try {
+    const all = [];
+    for (let i = 0; i < 201; i++) all.push((await post(srv.port, secretOf(), mk(i), '172.16.' + Math.floor(i / 100) + '.' + (i % 100))).status);
+    ok('200 creates an hour from 200 addresses are fine, the 201st is 429', all.slice(0, 200).every(x => x === 201) && all[200] === 429, all.slice(195).join(' '));
+    const keyed = secretOf();
+    const one = await post(srv.port, keyed, mk('z'), '172.17.0.1');
+    ok('and still 429 from a fresh address (it is the whole server\'s budget)', one.status === 429, one.status + '');
+    const link = readRows(srv.dir).find(r => r.ownerId && r.ownerId.indexOf('g_') === 0);
+    ok('reading a link and taking one down are not rationed', (await req(srv.port, 'GET', '/api/shares/' + link.id)).status === 200);
+    ok('the table of addresses is bounded (the server holds at most 10000 per window)', G.GUEST.MAX_KEYS === 10000);
+  } finally { await srv.close(); try { fs.rmSync(srv.dir, { recursive: true, force: true }); } catch (e) { /* temp */ } }
+
+  console.log('\n── expired guest rows are swept when the server starts ──');
+  const row = (id, owner, expires) => ({ id: id, ownerId: owner, ownerName: 'Guest', songKey: id, title: id, composer: '', genre: '', kind: '', measures: 2, listed: false,
+    preview: null, score: smallScore(), bytes: 100, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), expiresAt: expires });
+  const gOwner = G.guestOwnerId(secretOf());
+  srv = await server(null, [row('expired-start1', gOwner, new Date(Date.now() - 5000).toISOString()), row('live-at-start1', gOwner, new Date(Date.now() + 86400000).toISOString())]);
+  try {
+    const rows = readRows(srv.dir);
+    ok('the expired row is gone before the first request, the live one stays', !rows.some(r => r.id === 'expired-start1') && rows.some(r => r.id === 'live-at-start1'));
+  } finally { await srv.close(); try { fs.rmSync(srv.dir, { recursive: true, force: true }); } catch (e) { /* temp */ } }
+}
+
+main().then(proxies).then(() => {
   console.log('\n────────────────────────────────────────');
   if (errors.length) {
     console.log(errors.length + ' PROBLEM(S):');

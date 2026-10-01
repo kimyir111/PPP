@@ -100,7 +100,7 @@ const recordOpens = page => page.evaluateOnNewDocument(() => {
   ok('it does not offer posting to Shared Scores, and says why in one line', !guestDlg.post && guestDlg.signIn && /Posting to Shared Scores needs an account/.test(guestDlg.hint), guestDlg.hint);
   ok('the optional sign-in hint has the Login button', await page.evaluate(() => /^Sign in$/.test(((document.querySelector('[data-share-signin] button') || {}).textContent || '').trim())));
   ok('and the copyright line stays visible', guestDlg.fine, guestDlg.text.slice(-160));
-  ok('it says the link is unlisted and expires', /not listed/.test(guestDlg.text) && /90 days/.test(guestDlg.text));
+  ok('it says the link is unlisted and expires', /not listed/.test(guestDlg.text) && /30 days/.test(guestDlg.text));
   ok('and no wall: nothing says "Sign in to share your scores"', !/Sign in to share your scores/.test(guestDlg.text));
   await page.evaluate(() => document.querySelector('[data-share-net="x"]').click());
   await page.waitForFunction(() => !!document.querySelector('[data-share-link]'), { timeout: 8000 }).catch(() => {});
@@ -146,6 +146,48 @@ const recordOpens = page => page.evaluateOnNewDocument(() => {
   await page.evaluate(() => window.__pppTest.nav('My Songs'));
   await sleep(300);
   ok('and the card is back to Share', (await page.evaluate(id => document.querySelector('[data-share-song="' + id + '"]').textContent.trim(), songId)) === 'Share');
+
+  console.log('\n── the server\'s own words are shown, in every language, not "could not reach the server" ──');
+  {
+    const full = { error: 'Guest links are full right now. Try again later, or sign in to share.', code: 'guest-full' };
+    const perBrowser = { error: 'This browser has made as many guest links as PPP keeps. Stop sharing one, or sign in.' };
+    const tooMany = { error: 'Too many links were made from here just now. Try again in a little while.' };
+    const tooBig = { error: 'That score is too large to share as a guest. Sign in to share larger scores.' };
+    const cases = [
+      ['503 guest links are full', 503, full, { 'en-US': /Guest links are full right now/, 'ko-KR': /게스트 링크가 가득 찼어요/, 'ja-JP': /ゲストリンクがいっぱいです/, 'zh-CN': /访客链接目前已满/ }],
+      ['429 one browser has 20', 429, perBrowser, { 'en-US': /as many guest links/, 'ko-KR': /게스트 링크 수를 다 채웠어요/, 'ja-JP': /ゲストリンクの上限/, 'zh-CN': /访客链接数量已达上限/ }],
+      ['429 too many from one address', 429, tooMany, { 'en-US': /Too many links were made/, 'ko-KR': /링크가 너무 많이 만들어졌어요/, 'ja-JP': /リンクが多すぎます/, 'zh-CN': /链接太多了/ }],
+      ['413 too large for a guest', 413, tooBig, { 'en-US': /too large to share as a guest/, 'ko-KR': /게스트로는 이렇게 큰 악보/, 'ja-JP': /ゲストではこの大きさ/, 'zh-CN': /访客无法分享这么大/ }]
+    ];
+    let fake = null;
+    const handler = r => {
+      if (fake && r.method() === 'POST' && /\/api\/shares$/.test(r.url())) r.respond({ status: fake.status, contentType: 'application/json', body: JSON.stringify(fake.body) });
+      else r.continue();
+    };
+    await page.setRequestInterception(true);
+    page.on('request', handler);
+    for (const [name, status, body, byLocale] of cases) {
+      const seen = [];
+      for (const loc of Object.keys(byLocale)) {
+        await page.evaluate(l => window.PPP_I18N.setLocale(l), loc);
+        fake = { status: status, body: body };
+        await page.evaluate(id => document.querySelector('[data-share-song="' + id + '"]').click(), songId);
+        await sleep(200);
+        await page.evaluate(() => document.querySelector('[data-share-net="x"]').click());
+        await page.waitForFunction(() => !!document.querySelector('[data-share-error]'), { timeout: 5000 }).catch(() => {});
+        const shown = await page.evaluate(() => (document.querySelector('[data-share-error]') || {}).textContent || '');
+        if (!byLocale[loc].test(shown) || /Could not reach|서버에 연결/.test(shown)) seen.push(loc + ': ' + shown.slice(0, 60));
+        await page.keyboard.press('Escape');
+        await sleep(120);
+      }
+      ok(name + ' reads right in en, ko, ja and zh', !seen.length, seen.join(' | '));
+    }
+    fake = null;
+    page.off('request', handler);
+    await page.setRequestInterception(false);
+    await page.evaluate(() => window.PPP_I18N.setLocale('en-US'));
+    await sleep(200);
+  }
 
   console.log('\n── a browser that cannot keep the key ──');
   {

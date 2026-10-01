@@ -406,21 +406,26 @@ function findYtDlp() {
     .catch(() => null);
 }
 
-function readBody(req, limit) {
+/* `drain`, when given, is how much of an oversized body is read and thrown away so the caller can still answer 413 on
+   an open connection (a browser shows a reset, not the answer, when the server hangs up mid-upload). Beyond it the
+   connection is cut as before. Either way the promise rejects with code TOO_LARGE. */
+function readBody(req, limit, drain) {
   const max = limit || 2 * 1024 * 1024;
   return new Promise((resolve, reject) => {
-    const chunks = [];
-    let n = 0;
+    let chunks = [];
+    let n = 0, over = false;
+    const tooLarge = () => { const e = new Error('payload too large'); e.code = 'TOO_LARGE'; return e; };
     req.on('data', c => {
       n += c.length;
       if (n > max) {
+        if (drain && n <= drain) { over = true; chunks = []; return; }
         req.destroy();
-        reject(new Error('payload too large'));
+        reject(tooLarge());
         return;
       }
       chunks.push(c);
     });
-    req.on('end', () => resolve(Buffer.concat(chunks)));
+    req.on('end', () => (over ? reject(tooLarge()) : resolve(Buffer.concat(chunks))));
     req.on('error', reject);
   });
 }
@@ -531,9 +536,16 @@ const SHARE_LIST_LIMIT = 250;
 const guestShare = require('./share-guest');
 const GUEST = guestShare.GUEST;
 const guestLimits = {
+  /* creates per address; creates for the whole server; requests that failed validation, per address */
   ip: guestShare.slidingWindow(GUEST.PER_IP_PER_HOUR, GUEST.HOUR_MS),
-  all: guestShare.slidingWindow(GUEST.GLOBAL_PER_HOUR, GUEST.HOUR_MS)
+  all: guestShare.slidingWindow(GUEST.GLOBAL_PER_HOUR, GUEST.HOUR_MS),
+  fails: guestShare.slidingWindow(GUEST.FAILS_PER_IP_PER_HOUR, GUEST.HOUR_MS)
 };
+/* an oversized guest body is read this far and thrown away, so the answer is a 413 and not a reset */
+const GUEST_DRAIN_BYTES = 16 * 1024 * 1024;
+const GUEST_TOO_BIG = 'That score is too large to share as a guest. Sign in to share larger scores.';
+/* a constant for pg_advisory_xact_lock: guest creates take turns */
+const GUEST_LOCK_KEY = 727001;
 const DATA_DIR = process.env.PPP_DATA_DIR ? path.resolve(process.env.PPP_DATA_DIR) : path.join(ROOT, 'data');
 
 function newShareId() {
@@ -546,8 +558,10 @@ function clipText(value, max) {
 
 /* Just enough of a score to be one: measures and notes as arrays. */
 function validScore(s) {
+  const isObj = x => !!x && typeof x === 'object';
   return !!(s && typeof s === 'object' && Array.isArray(s.measures) && s.measures.length
-    && s.measures.length <= 5000 && Array.isArray(s.notes));
+    && s.measures.length <= 5000 && Array.isArray(s.notes)
+    && s.measures.every(isObj) && s.notes.every(isObj));
 }
 
 /* What the list shows: no score, only the preview drawn on its card. */
@@ -645,10 +659,26 @@ function fileStore() {
       if (keep.length !== rows.length) saveShares(keep);
       return rows.length - keep.length;
     },
-    /* what every guest link together holds: how many, and their scores' size */
-    async guestUsage() {
-      const rows = loadShares().filter(r => guestShare.isGuestOwner(r.ownerId));
-      return { count: rows.length, bytes: rows.reduce((n, r) => n + JSON.stringify(r.score || null).length, 0) };
+    /* Make or replace a guest's link, or refuse it. Everything from "what is held" to "written" happens in one turn of
+       the event loop, so guests take turns: the caps cannot be raced. build(prev) returns the row. */
+    async guestUpsert(ownerId, songKey, build, nowMs) {
+      let rows = loadShares();
+      const live = rows.filter(r => !guestShare.expired(r, nowMs));
+      const swept = live.length !== rows.length;
+      rows = live;
+      const prev = rows.find(r => r.ownerId === ownerId && r.songKey === songKey) || null;
+      const guests = rows.filter(r => guestShare.isGuestOwner(r.ownerId));
+      const usage = {
+        count: guests.length,
+        bytes: guests.reduce((n, r) => n + (r.bytes != null ? r.bytes : guestShare.rowBytes(r.score, r.preview)), 0)
+      };
+      const row = build(prev);
+      const refuse = guestShare.decide(prev, guests.filter(r => r.ownerId === ownerId).length, usage, row.bytes);
+      if (refuse) { if (swept) saveShares(rows); return { refuse: refuse }; }
+      rows = rows.filter(r => r.id !== row.id);
+      rows.push(row);
+      saveShares(rows);
+      return { row: row, created: !prev };
     }
   };
   function loadShares() {
@@ -663,7 +693,7 @@ function fileStore() {
 
 function postgresStore(url) {
   let pool = null;
-  async function q(sql, params) {
+  function getPool() {
     if (!pool) {
       const { Pool } = require('pg');
       pool = new Pool({
@@ -672,8 +702,20 @@ function postgresStore(url) {
         max: 5
       });
     }
-    return pool.query(sql, params);
+    return pool;
   }
+  async function q(sql, params) {
+    return getPool().query(sql, params);
+  }
+  const INSERT_SHARE = `INSERT INTO ppp_shares (id, owner_id, owner_name, song_key, title, composer, genre, kind, measures, listed, preview, score, created_at, updated_at, expires_at, bytes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+         ON CONFLICT (id) DO UPDATE SET owner_name = EXCLUDED.owner_name, title = EXCLUDED.title,
+           composer = EXCLUDED.composer, genre = EXCLUDED.genre, kind = EXCLUDED.kind, measures = EXCLUDED.measures,
+           listed = EXCLUDED.listed, preview = EXCLUDED.preview, score = EXCLUDED.score,
+           updated_at = EXCLUDED.updated_at, expires_at = EXCLUDED.expires_at, bytes = EXCLUDED.bytes`;
+  const shareParams = row => [row.id, row.ownerId, row.ownerName, row.songKey, row.title, row.composer, row.genre || '', row.kind,
+    row.measures, row.listed, row.preview == null ? null : JSON.stringify(row.preview), JSON.stringify(row.score),
+    row.createdAt, row.updatedAt, row.expiresAt || null, row.bytes || 0];
   return {
     async ready() {
       await q(`
@@ -709,12 +751,15 @@ function postgresStore(url) {
         CREATE UNIQUE INDEX IF NOT EXISTS ppp_shares_owner_song ON ppp_shares (owner_id, song_key);
         ALTER TABLE ppp_shares ADD COLUMN IF NOT EXISTS genre TEXT NOT NULL DEFAULT '';
         ALTER TABLE ppp_shares ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
+        ALTER TABLE ppp_shares ADD COLUMN IF NOT EXISTS bytes INTEGER NOT NULL DEFAULT 0;
         CREATE INDEX IF NOT EXISTS ppp_shares_expires ON ppp_shares (expires_at) WHERE expires_at IS NOT NULL;
-        /* A guest's links belong to 'g_' + a hash, not to a user row: drop the owner foreign key an
-           earlier version made (whatever it was named). Idempotent. */
+        /* A guest's links belong to 'g_' + a hash, not to a user row: drop the foreign key on owner_id that an
+           earlier version made (whatever it was named, and only that one). Idempotent. Deleting an account
+           therefore no longer deletes its shares by itself: whoever deletes accounts must delete them too. */
         DO $$ DECLARE c text; BEGIN
-          FOR c IN SELECT conname FROM pg_constraint WHERE conrelid = 'ppp_shares'::regclass AND contype = 'f' LOOP
-            EXECUTE format('ALTER TABLE ppp_shares DROP CONSTRAINT %I', c);
+          FOR c IN SELECT k.conname FROM pg_constraint k JOIN pg_attribute a ON a.attrelid = k.conrelid AND a.attnum = ANY (k.conkey)
+                   WHERE k.conrelid = 'ppp_shares'::regclass AND k.contype = 'f' AND a.attname = 'owner_id' LOOP
+            EXECUTE format('ALTER TABLE ppp_shares DROP CONSTRAINT IF EXISTS %I', c);
           END LOOP;
         END $$;
       `);
@@ -776,17 +821,7 @@ function postgresStore(url) {
       return r.rows[0].n;
     },
     async putShare(row) {
-      await q(
-        `INSERT INTO ppp_shares (id, owner_id, owner_name, song_key, title, composer, genre, kind, measures, listed, preview, score, created_at, updated_at, expires_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-         ON CONFLICT (id) DO UPDATE SET owner_name = EXCLUDED.owner_name, title = EXCLUDED.title,
-           composer = EXCLUDED.composer, genre = EXCLUDED.genre, kind = EXCLUDED.kind, measures = EXCLUDED.measures,
-           listed = EXCLUDED.listed, preview = EXCLUDED.preview, score = EXCLUDED.score,
-           updated_at = EXCLUDED.updated_at, expires_at = EXCLUDED.expires_at`,
-        [row.id, row.ownerId, row.ownerName, row.songKey, row.title, row.composer, row.genre || '', row.kind,
-          row.measures, row.listed, row.preview == null ? null : JSON.stringify(row.preview), JSON.stringify(row.score),
-          row.createdAt, row.updatedAt, row.expiresAt || null]
-      );
+      await q(INSERT_SHARE, shareParams(row));
       return row;
     },
     async deleteShare(id) {
@@ -796,16 +831,36 @@ function postgresStore(url) {
       const r = await q('DELETE FROM ppp_shares WHERE expires_at IS NOT NULL AND expires_at <= $1', [new Date(nowMs).toISOString()]);
       return r.rowCount || 0;
     },
-    async guestUsage() {
-      /* the guest rows are the ones with an end date; pg_column_size is the stored (compressed) size */
-      const r = await q('SELECT count(*)::int AS n, coalesce(sum(pg_column_size(score)), 0)::float8 AS bytes FROM ppp_shares WHERE expires_at IS NOT NULL');
-      return { count: r.rows[0].n, bytes: Number(r.rows[0].bytes) };
+    /* Make or replace a guest's link, or refuse it: one transaction under an advisory lock, so guests take turns
+       and the caps (per browser, count, bytes) cannot be raced. build(prev) returns the row. */
+    async guestUpsert(ownerId, songKey, build, nowMs) {
+      const c = await getPool().connect();
+      try {
+        await c.query('BEGIN');
+        await c.query('SELECT pg_advisory_xact_lock($1)', [GUEST_LOCK_KEY]);
+        await c.query('DELETE FROM ppp_shares WHERE expires_at IS NOT NULL AND expires_at <= $1', [new Date(nowMs).toISOString()]);
+        const prev = (await c.query('SELECT ' + SHARE_COLS + ' FROM ppp_shares WHERE owner_id = $1 AND song_key = $2', [ownerId, songKey])).rows[0] || null;
+        const mine = (await c.query('SELECT count(*)::int AS n FROM ppp_shares WHERE owner_id = $1', [ownerId])).rows[0].n;
+        /* the guest rows are the ones with an end date */
+        const u = (await c.query('SELECT count(*)::int AS n, coalesce(sum(bytes), 0)::float8 AS bytes FROM ppp_shares WHERE expires_at IS NOT NULL')).rows[0];
+        const row = build(prev);
+        const refuse = guestShare.decide(prev, mine, { count: u.n, bytes: Number(u.bytes) }, row.bytes);
+        if (refuse) { await c.query('COMMIT'); return { refuse: refuse }; }
+        await c.query(INSERT_SHARE, shareParams(row));
+        await c.query('COMMIT');
+        return { row: row, created: !prev };
+      } catch (e) {
+        try { await c.query('ROLLBACK'); } catch (e2) { /* the connection is gone */ }
+        throw e;
+      } finally {
+        c.release();
+      }
     }
   };
 }
 
 const SHARE_COLS = 'id, owner_id AS "ownerId", owner_name AS "ownerName", song_key AS "songKey", title, composer, genre, kind, '
-  + 'measures, listed, preview, created_at AS "createdAt", updated_at AS "updatedAt", expires_at AS "expiresAt"';
+  + 'measures, listed, preview, created_at AS "createdAt", updated_at AS "updatedAt", expires_at AS "expiresAt", bytes';
 
 const store = process.env.DATABASE_URL ? postgresStore(process.env.DATABASE_URL) : fileStore();
 
@@ -1080,56 +1135,103 @@ async function handleShares(req, res, url) {
 
   if (p === '/api/shares' && method === 'POST') {
     if (!user && !guestId) return jsonError(res, 401, 'Sign in to share your scores.');
-    /* no account: an unlisted link only, and the public write is rationed before the body is even read */
+    /* no account: an unlisted link only. The public write is rationed before the body is read (is there room
+       left for this address and for the server?), counted once the request proves to be a real share, and
+       requests that fail validation get a small budget of their own, so they are neither free nor able to
+       burn the budget honest guests share. */
     const guest = !user;
+    let ip = null;
     if (guest) {
-      const ip = guestShare.clientIp(req).slice(0, 64) || 'unknown';
-      if (!guestLimits.ip.take(ip) || !guestLimits.all.take('all')) {
+      ip = guestShare.clientIp(req) || 'unknown';
+      if (!guestLimits.ip.peek(ip) || !guestLimits.fails.peek(ip) || !guestLimits.all.peek('all')) {
         return jsonError(res, 429, 'Too many links were made from here just now. Try again in a little while.');
       }
     }
+    const refuse = (status, message, extra) => {
+      if (guest) guestLimits.fails.take(ip);
+      return jsonError(res, status, message, extra);
+    };
     let raw, body;
-    try { raw = await readBody(req, SHARE_MAX_BYTES); }
-    catch (e) { return jsonError(res, 413, 'That score is too large to share.'); }
+    try { raw = await readBody(req, guest ? GUEST.MAX_BYTES : SHARE_MAX_BYTES, guest ? GUEST_DRAIN_BYTES : undefined); }
+    catch (e) { return refuse(413, guest ? GUEST_TOO_BIG : 'That score is too large to share.'); }
     try { body = JSON.parse(raw.toString('utf8') || '{}'); }
-    catch (e) { return jsonError(res, 400, 'Invalid JSON'); }
-    if (!body || !validScore(body.score)) return jsonError(res, 422, 'That is not a score PPP can share.');
+    catch (e) { return refuse(400, 'Invalid JSON'); }
+    if (!body || !validScore(body.score)) return refuse(422, 'That is not a score PPP can share.');
     const songKey = clipText(body.songKey, 80);
-    if (!songKey) return jsonError(res, 422, 'That is not a score PPP can share.');
+    if (!songKey) return refuse(422, 'That is not a score PPP can share.');
     const title = clipText(body.title || body.score.title, 120);
-    if (!title) return jsonError(res, 422, 'A shared score needs a title.');
+    if (!title) return refuse(422, 'A shared score needs a title.');
     const ownerId = guest ? guestId : user.id;
-    /* expired guest links are swept as guests make new ones, before the room left is counted */
-    if (guest) await store.deleteExpiredShares(nowMs);
-    const prev = await store.findShare(ownerId, songKey);
+    const previewMax = guest ? GUEST.PREVIEW_MAX_BYTES : 96 * 1024;
+    let preview = null, bytes = 0;
+    try {
+      preview = validScore(body.preview) && body.preview.measures.length <= 4
+        && JSON.stringify(body.preview).length < previewMax ? body.preview : null;
+      if (guest) bytes = guestShare.rowBytes(body.score, preview);
+    } catch (e) {
+      /* nested too deep to be written down: not a score */
+      if (e instanceof RangeError) return refuse(422, 'That is not a score PPP can share.');
+      throw e;
+    }
+    const buildRow = prev => {
+      const now = new Date().toISOString();
+      const r = {
+        id: prev ? prev.id : newShareId(),
+        ownerId: ownerId, ownerName: guest ? GUEST.OWNER_NAME : user.displayName, songKey: songKey,
+        title: title, composer: clipText(body.composer, 160), genre: guest ? '' : clipText(body.genre, 32), kind: clipText(body.kind, 24),
+        measures: body.score.measures.length,
+        /* sending a link never takes a posted score down, and never posts one; a guest's link is never posted */
+        listed: guest ? false : typeof body.listed === 'boolean' ? body.listed : !!(prev && prev.listed),
+        preview: preview, score: body.score,
+        createdAt: prev ? prev.createdAt : now, updatedAt: now
+      };
+      if (guest) { r.expiresAt = guestShare.expiryFor(nowMs); r.bytes = bytes; }
+      return r;
+    };
+
     if (guest) {
-      if (!prev) {
-        if (await store.countShares(ownerId) >= GUEST.PER_GUEST) {
-          return jsonError(res, 429, 'This browser has made as many guest links as PPP keeps. Stop sharing one, or sign in.');
-        }
-        const used = await store.guestUsage();
-        if (used.count >= GUEST.TOTAL_SHARES || used.bytes + raw.length > GUEST.TOTAL_BYTES) {
-          return jsonError(res, 503, 'Guest links are full right now. Try again later, or sign in to share.');
-        }
+      /* this request is a real share now: it counts */
+      if (!guestLimits.ip.take(ip)) return jsonError(res, 429, 'Too many links were made from here just now. Try again in a little while.');
+      if (!guestLimits.all.take('all')) {
+        guestLimits.ip.release(ip);
+        return jsonError(res, 429, 'Too many links were made from here just now. Try again in a little while.');
       }
-    } else if (!prev && await store.countShares(user.id) >= SHARES_PER_USER) {
+      let out;
+      try { out = await store.guestUpsert(ownerId, songKey, buildRow, nowMs); }
+      catch (e) {
+        guestLimits.ip.release(ip); guestLimits.all.release('all');
+        if (e instanceof RangeError) return refuse(422, 'That is not a score PPP can share.');
+        throw e;
+      }
+      if (out.refuse) {
+        /* a refused link made nothing: give the budget back, but charge the address for asking */
+        guestLimits.ip.release(ip); guestLimits.all.release('all');
+        guestLimits.fails.take(ip);
+        return jsonError(res, out.refuse.status, out.refuse.error, out.refuse.code ? { code: out.refuse.code } : undefined);
+      }
+      send(res, out.created ? 201 : 200, Object.assign(shareCard(out.row, viewer), { url: '/?share=' + out.row.id }));
+      return;
+    }
+
+    let prev = await store.findShare(user.id, songKey);
+    if (!prev && await store.countShares(user.id) >= SHARES_PER_USER) {
       return jsonError(res, 429, 'You have shared as many scores as PPP keeps for one account.');
     }
-    const preview = validScore(body.preview) && body.preview.measures.length <= 4
-      && JSON.stringify(body.preview).length < 96 * 1024 ? body.preview : null;
-    const now = new Date().toISOString();
-    const row = {
-      id: prev ? prev.id : newShareId(),
-      ownerId: ownerId, ownerName: guest ? GUEST.OWNER_NAME : user.displayName, songKey: songKey,
-      title: title, composer: clipText(body.composer, 160), genre: guest ? '' : clipText(body.genre, 32), kind: clipText(body.kind, 24),
-      measures: body.score.measures.length,
-      /* sending a link never takes a posted score down, and never posts one; a guest's link is never posted */
-      listed: guest ? false : typeof body.listed === 'boolean' ? body.listed : !!(prev && prev.listed),
-      preview: preview, score: body.score,
-      createdAt: prev ? prev.createdAt : now, updatedAt: now
-    };
-    if (guest) row.expiresAt = guestShare.expiryFor(nowMs);
-    await store.putShare(row);
+    let row = buildRow(prev);
+    try {
+      try { await store.putShare(row); }
+      catch (e) {
+        /* the same song sent twice at once: the second is an update of the first, not an error */
+        if (!e || e.code !== '23505') throw e;
+        prev = await store.findShare(user.id, songKey);
+        if (!prev) throw e;
+        row = buildRow(prev);
+        await store.putShare(row);
+      }
+    } catch (e) {
+      if (e instanceof RangeError) return jsonError(res, 422, 'That is not a score PPP can share.');
+      throw e;
+    }
     send(res, prev ? 200 : 201, Object.assign(shareCard(row, viewer), { url: '/?share=' + row.id }));
     return;
   }
@@ -1318,9 +1420,17 @@ function startHelperIfMissing() {
   });
 }
 
+/* Expired guest links are invisible at once (a GET is 404), but their rows are kept until swept: at start, and every few hours. */
+function sweepGuestShares() {
+  return Promise.resolve(store.deleteExpiredShares(Date.now()))
+    .catch(e => console.error('Guest link sweep failed:', e.message));
+}
+
 store.ready().then(() => {
   seedSharedScores().catch(e => console.error('Seed library skipped:', e.message));
+  return sweepGuestShares();
 }).then(() => {
+  setInterval(sweepGuestShares, GUEST.SWEEP_MS).unref();
   server.listen(PORT, HOST, () => {
     console.log('PPP listening on http://' + HOST + ':' + PORT);
     if (HOST === '127.0.0.1' || HOST === 'localhost') startHelperIfMissing();

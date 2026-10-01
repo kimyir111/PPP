@@ -460,12 +460,31 @@ a small hint says that posting to Shared Scores and managing links from any devi
 The browser makes a random 64-hex secret (`localStorage` `ppp-guest-key`) and sends it as
 `X-PPP-Guest`; the server stores only `owner_id = 'g_' + the first 24 hex of sha256(secret)`, never
 the secret. A guest link is **always unlisted** (a guest cannot post, list or set a genre), shows
-as shared by "Guest", is marked `noindex`, and **expires after 90 days**. The same browser can
-share the same song again (same link) and **Stop sharing** it; where `localStorage` is blocked the
-key lives only until the page closes, and the dialog says so. Limits (`share-guest.js`): 20 links per
-browser, 10 creates per client address per hour (200 for the whole server), the same 4 MB per score
-as accounts, and 1000 guest links / 100 MB in all (a new one is refused with 503 when full; expired
-ones are swept on the next guest create). Signed-in sharing is unchanged (200 shares, listing).
+as shared by "Guest", is marked `noindex`, and **expires after 30 days; sending it again renews it**.
+The same browser can share the same song again (same link) and **Stop sharing** it; where
+`localStorage` is blocked the key lives only until the page closes, and the dialog says so. Limits
+(`share-guest.js`; the server enforces all of them):
+
+| | |
+| --- | --- |
+| Links per browser (per key) | 20 |
+| Creates per client address | 30 per hour (a class or school may share an address) |
+| Creates for the whole server | 200 per hour; only requests that would really make a link count |
+| Requests that fail validation | 60 per hour per address, a budget of their own |
+| One guest request (score + preview) | 1 MB (accounts keep 4 MB); a preview over 24 KB is dropped |
+| All guest links together | 1000 links and 50 MB, previews counted; a new one past that is 503 `guest-full`, and a re-send that would grow past it too |
+| Lifetime | 30 days from the last send; expired links are 404 at once and swept at start, every 6 hours, and on each guest create |
+
+Creates take turns (a Postgres advisory lock; one event-loop turn on the file store), so the caps
+cannot be raced, and sending one song twice at once is an update, never a 500.
+
+The client address is never taken from what the client writes: on Render (`RENDER` set) it is
+`True-Client-IP`, then `CF-Connecting-IP`; otherwise the `X-Forwarded-For` entry `PPP_PROXY_HOPS`
+(default 1) places from the right; otherwise the socket. The login limit uses the same function.
+Check the first guest create after a deploy against Render's real headers. Signed-in sharing is
+unchanged (200 shares, listing, 4 MB). One consequence of the Postgres change: `ppp_shares.owner_id`
+no longer has a foreign key (a guest owner is not a user), so **deleting an account does not delete
+its shares by itself** — whoever adds account deletion must delete them explicitly.
 
 On Render without `DATABASE_URL` the file store is wiped when the instance sleeps, and shared
 scores go with it; connect Postgres to keep them.

@@ -15061,7 +15061,9 @@ class Component extends DCLogic {
         if (r.ok && body) return body;
         /* an older server, or a page not served by PPP's server at all */
         const missing = !body || (r.status === 404 && body.error === 'Not found');
-        const err = new Error(tx(r.status >= 500 ? 'Could not reach the server.'
+        /* the one 5xx that is an answer, not an outage: guest links are full */
+        const full = r.status === 503 && !!body && body.code === 'guest-full' && typeof body.error === 'string';
+        const err = new Error(tx(full ? body.error : r.status >= 500 ? 'Could not reach the server.'
           : missing ? 'Sharing needs the PPP server.' : body.error));
         err.status = r.status;
         throw err;
@@ -15108,7 +15110,10 @@ class Component extends DCLogic {
       genre: card.genre || '', kind: card.kind || '',
       listed: listed, score: score, preview: preview
     });
-    if (new Blob([body]).size > 4 * 1024 * 1024) return Promise.reject(new Error(tx('That score is too large to share.')));
+    /* an account may share 4 MB; a guest link holds 1 MB */
+    if (new Blob([body]).size > (guest ? 1024 * 1024 : 4 * 1024 * 1024)) {
+      return Promise.reject(new Error(tx(guest ? 'That score is too large to share as a guest. Sign in to share larger scores.' : 'That score is too large to share.')));
+    }
     if (guest) GuestKey.ensure();
     return this.shareApi('', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body })
       .then(row => { this.rememberShare(songId, row); return row; });
@@ -15713,8 +15718,8 @@ class Component extends DCLogic {
       shareCanLink: true,
       shareLinkHeading: tx('Send a link'),
       shareLinkNote: guest
-        ? tx(sh ? 'Anyone with the link can open it. It is not listed in Shared Scores, and it stops working after 90 days.'
-          : 'A link is made the first time you send one. It is not listed anywhere, and it stops working after 90 days.')
+        ? tx(sh ? 'Anyone with the link can open it. It is not listed in Shared Scores, and it stops working after 30 days.'
+          : 'A link is made the first time you send one. It is not listed anywhere, and it stops working after 30 days.')
           + (guestHint && !GuestKey.persistent() ? ' ' + tx('This browser cannot keep a key for this link, so you can only take it down until you close this page.') : '')
         : tx(sh ? 'Anyone with the link can open it, posted or not.' : 'A link is made the first time you send one. Sending it does not post the song.'),
       shareHasLink: !!sh, shareLinkText: sh ? this.shareLink(sh.id) : '',
