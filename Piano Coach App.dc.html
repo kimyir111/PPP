@@ -2488,12 +2488,6 @@
           </div>
           <button type="button" data-share-close onClick="{{ closeShare }}" aria-label="{{ shareCloseLabel }}" style="width: 32px; height: 32px; flex: none; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 17px; line-height: 1; cursor: pointer;">×</button>
         </div>
-        <sc-if value="{{ shareNeedsSignIn }}" hint-placeholder-val="{{ false }}">
-          <div data-share-signin style="display: flex; flex-direction: column; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg);">
-            <p style="margin: 0; font-size: 13px; line-height: 1.55; color: var(--ink2);">{{ shareSignInNote }}</p>
-            <button onClick="{{ shareSignIn }}" style="{{ shareSignInStyle }}">{{ shareSignInLabel }}</button>
-          </div>
-        </sc-if>
         <sc-if value="{{ shareCanPost }}" hint-placeholder-val="{{ true }}">
           <section style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg);">
             <div style="font-size: 13.5px; font-weight: 600;">{{ sharePostHeading }}</div>
@@ -2517,6 +2511,12 @@
               </sc-for>
             </div>
           </section>
+        </sc-if>
+        <sc-if value="{{ shareNeedsSignIn }}" hint-placeholder-val="{{ false }}">
+          <div data-share-signin style="display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border: 1px dashed var(--line); border-radius: 14px; background: transparent;">
+            <p style="margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--ink2);">{{ shareSignInNote }}</p>
+            <button onClick="{{ shareSignIn }}" style="{{ shareSignInStyle }}">{{ shareSignInLabel }}</button>
+          </div>
         </sc-if>
         <sc-if value="{{ shareHasError }}" hint-placeholder-val="{{ false }}">
           <p role="alert" data-share-error data-no-i18n="1" style="margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--bad);">{{ shareError }}</p>
@@ -11529,6 +11529,40 @@ const SHARE_TARGETS = {
   email: (u, t) => 'mailto:?subject=' + encodeURIComponent(t) + '&body=' + encodeURIComponent(t + '\n' + u)
 };
 
+/* Guest link sharing: with no account, the browser keeps a random secret (localStorage) and sends it as
+   X-PPP-Guest. The server keeps only a one-way name made from it, never the secret. The secret is what
+   lets this browser share the same song again to the same link, and stop sharing it later. Where
+   localStorage is unavailable the key lives only until the page closes (persistent() is then false). */
+const GuestKey = (() => {
+  const LS = 'ppp-guest-key';
+  const valid = k => typeof k === 'string' && /^[A-Za-z0-9_-]{32,128}$/.test(k);
+  let mem = null;
+  const fresh = () => {
+    const a = new Uint8Array(32);
+    try { crypto.getRandomValues(a); } catch (e) { for (let i = 0; i < a.length; i++) a[i] = Math.floor(Math.random() * 256); }
+    return Array.from(a, b => (b < 16 ? '0' : '') + b.toString(16)).join('');
+  };
+  return {
+    /* the key this browser has, if any; never makes one */
+    peek() {
+      try { const k = localStorage.getItem(LS); if (valid(k)) return k; } catch (e) { /* no storage */ }
+      return mem;
+    },
+    ensure() {
+      const have = this.peek();
+      if (have) return have;
+      const k = fresh();
+      try { localStorage.setItem(LS, k); if (localStorage.getItem(LS) === k) return k; } catch (e) { /* no storage */ }
+      mem = k;
+      return k;
+    },
+    /* will the key still be here after this page closes? */
+    persistent() {
+      try { return valid(localStorage.getItem(LS)); } catch (e) { return false; }
+    }
+  };
+})();
+
 class Component extends DCLogic {
   state = (() => {
     const score = buildDemoScore();
@@ -15016,14 +15050,20 @@ class Component extends DCLogic {
      from. The server keeps that copy. A posted copy is listed in Shared
      Scores for anyone to add; every copy, posted or not, opens by its link. */
   shareApi(path, opts) {
-    return fetch('/api/shares' + (path || ''), Object.assign({ credentials: 'include', cache: 'no-store' }, opts))
+    const o = Object.assign({ credentials: 'include', cache: 'no-store' }, opts);
+    /* a guest key, if this browser has one, names the links it made; it never stands in for an account */
+    const guestKey = GuestKey.peek();
+    if (guestKey) o.headers = Object.assign({}, o.headers, { 'X-PPP-Guest': guestKey });
+    return fetch('/api/shares' + (path || ''), o)
       .catch(() => { throw new Error(tx('Could not reach the server.')); })
       .then(async r => {
         const body = await r.json().catch(() => null);
         if (r.ok && body) return body;
         /* an older server, or a page not served by PPP's server at all */
         const missing = !body || (r.status === 404 && body.error === 'Not found');
-        const err = new Error(tx(r.status >= 500 ? 'Could not reach the server.'
+        /* the one 5xx that is an answer, not an outage: guest links are full */
+        const full = r.status === 503 && !!body && body.code === 'guest-full' && typeof body.error === 'string';
+        const err = new Error(tx(full ? body.error : r.status >= 500 ? 'Could not reach the server.'
           : missing ? 'Sharing needs the PPP server.' : body.error));
         err.status = r.status;
         throw err;
@@ -15054,9 +15094,11 @@ class Component extends DCLogic {
   }
   /* Send a song to the server: posted to Shared Scores (listed true), taken
      down (false), or only given a link (left out). Each send carries the
-     score as it is now, so a song changed since it was shared is updated. */
+     score as it is now, so a song changed since it was shared is updated.
+     With no account only a link can be made (an unlisted guest link). */
   publishSong(songId, listed) {
-    if (!this.state.user) return Promise.reject(new Error(tx('Sign in to share your scores.')));
+    const guest = !this.state.user;
+    if (guest && listed) return Promise.reject(new Error(tx('Posting to Shared Scores needs an account.')));
     const score = this.shareScoreOf(songId);
     if (!score) return Promise.reject(new Error(tx('That song could not be shared.')));
     const preview = openingBars(score, 2);
@@ -15068,7 +15110,11 @@ class Component extends DCLogic {
       genre: card.genre || '', kind: card.kind || '',
       listed: listed, score: score, preview: preview
     });
-    if (new Blob([body]).size > 4 * 1024 * 1024) return Promise.reject(new Error(tx('That score is too large to share.')));
+    /* an account may share 4 MB; a guest link holds 1 MB */
+    if (new Blob([body]).size > (guest ? 1024 * 1024 : 4 * 1024 * 1024)) {
+      return Promise.reject(new Error(tx(guest ? 'That score is too large to share as a guest. Sign in to share larger scores.' : 'That score is too large to share.')));
+    }
+    if (guest) GuestKey.ensure();
     return this.shareApi('', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body })
       .then(row => { this.rememberShare(songId, row); return row; });
   }
@@ -15077,7 +15123,8 @@ class Component extends DCLogic {
     const lib = this.libraryRead();
     const card = lib.songs.find(s => s.id === songId);
     if (!card) return;
-    if (row) card.share = { id: row.id, listed: !!row.listed };
+    /* guest: made with no account; it stays on the card when a sign-in finds no account row for it */
+    if (row) card.share = row.expiresAt ? { id: row.id, listed: !!row.listed, guest: true } : { id: row.id, listed: !!row.listed };
     else delete card.share;
     this.libraryWrite(lib);
   }
@@ -15091,6 +15138,8 @@ class Component extends DCLogic {
       if (JSON.stringify(want) === JSON.stringify(card.share || null)) return;
       /* a list cut short cannot say a song is not shared */
       if (!want && list.length >= 100) return;
+      /* a link made as a guest is not in an account's list, and is still shared */
+      if (!want && card.share && card.share.guest) return;
       if (want) card.share = want; else delete card.share;
       changed = true;
     });
@@ -15274,7 +15323,7 @@ class Component extends DCLogic {
   postShared(on) {
     const t = this.shareTarget();
     if (!t || !t.mine || t.d.busy) return;
-    if (!this.state.user) return this.patchShareDialog({ error: tx('Sign in to share your scores.') });
+    if (!this.state.user) return this.patchShareDialog({ error: tx('Posting to Shared Scores needs an account.') });
     this.patchShareDialog({ busy: 'post', error: '', armStop: false });
     /* posting sends the notes as they are now */
     const run = on && t.card ? this.publishSong(t.card.id, true)
@@ -15295,15 +15344,17 @@ class Component extends DCLogic {
     if (!t || !t.mine || !t.share || t.d.busy) return;
     if (!t.d.armStop) return this.patchShareDialog({ armStop: true });
     this.patchShareDialog({ busy: 'stop', error: '' });
+    const stopped = () => {
+      if (t.card) this.rememberShare(t.card.id, null);
+      if (t.card) this.patchShareDialog({ busy: null, armStop: false, shareId: null, listed: false, copied: false });
+      else this.closeShareDialog();
+      this.say(tx('Stopped sharing. The link no longer opens it.'));
+      if (this.state.sharedList) this.loadShared(true);
+    };
     this.shareApi('/' + encodeURIComponent(t.share.id), { method: 'DELETE' })
-      .then(() => {
-        if (t.card) this.rememberShare(t.card.id, null);
-        if (t.card) this.patchShareDialog({ busy: null, armStop: false, shareId: null, listed: false, copied: false });
-        else this.closeShareDialog();
-        this.say(tx('Stopped sharing. The link no longer opens it.'));
-        if (this.state.sharedList) this.loadShared(true);
-      })
-      .catch(e => this.patchShareDialog({ busy: null, error: e.message }));
+      .then(stopped)
+      /* already gone (a guest link past its end date, or taken down elsewhere): that is what was asked for */
+      .catch(e => { if (e && e.status === 404) stopped(); else this.patchShareDialog({ busy: null, error: e.message }); });
   }
   /* Render values for the Shared Scores page. */
   /* ============================ method books ============================
@@ -15605,7 +15656,7 @@ class Component extends DCLogic {
       note = S.sharedError || tx('Could not reach the server.');
       act = { label: tx('Try again'), on: () => this.loadShared() };
     } else if (mine && !S.user) {
-      note = tx('Sign in to see the scores you have shared.');
+      note = tx('Sign in to see the scores you have shared. Links you sent as a guest stay on their song in My Songs.');
       act = { label: tx('Sign in'), on: () => this.setState({ guest: false }) };
     } else if (!S.sharedList) note = tx('Loading shared scores…');
     else if (!list.length) {
@@ -15638,8 +15689,9 @@ class Component extends DCLogic {
     const S = this.state, t = this.shareTarget();
     if (!t) return { shareOpen: false };
     const d = t.d, sh = t.share;
-    /* your own song needs an account: it keeps the copy, so you can take it down */
-    const needSignIn = !S.user && !!t.card;
+    /* no account: the link is still made (an unlisted guest link); only posting to Shared Scores needs one */
+    const guest = !S.user;
+    const guestHint = guest && !!t.card;
     const posted = !!(sh && sh.listed);
     const primary = 'align-self:flex-start;padding:10px 16px;border-radius:10px;border:0;background:var(--accent);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;';
     const plain = 'align-self:flex-start;padding:9px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;';
@@ -15653,19 +15705,23 @@ class Component extends DCLogic {
     if (typeof navigator !== 'undefined' && navigator.share) nets.unshift(['native', 'Other apps…', '↗', 'background:var(--accent-3);color:var(--accent);']);
     return {
       shareOpen: true, shareTitle: t.title, shareHeading: tx('Share'), shareCloseLabel: tx('Close'), closeShare: () => this.closeShareDialog(),
-      shareNeedsSignIn: needSignIn,
-      shareSignInNote: tx('Sign in to share your scores. Your account keeps the shared copy, so you can take it down later.'),
-      shareSignInLabel: tx('Sign in'), shareSignInStyle: primary, shareSignIn: () => this.setState({ shareDlg: null, guest: false }),
-      shareCanPost: t.mine && !needSignIn,
+      shareNeedsSignIn: guestHint,
+      shareSignInNote: tx('Posting to Shared Scores needs an account. Sign in to also post it there and manage your links from any device.'),
+      shareSignInLabel: tx('Sign in'), shareSignInStyle: plain, shareSignIn: () => this.setState({ shareDlg: null, guest: false }),
+      shareCanPost: t.mine && !guest,
       sharePostHeading: tx('Shared Scores'),
       sharePostNote: tx(posted ? 'Posted — anyone using PPP can find it in Shared Scores and add it to their songs.'
         : 'Post it, and anyone using PPP can find it in Shared Scores and add it to their songs.'),
       sharePostLabel: d.busy === 'post' ? tx(posted ? 'Taking down…' : 'Posting…') : tx(posted ? 'Take down' : 'Post to Shared Scores'),
       sharePostStyle: posted ? plain : primary, sharePostedAttr: posted ? 'true' : 'false',
       sharePost: () => this.postShared(!posted),
-      shareCanLink: !needSignIn,
+      shareCanLink: true,
       shareLinkHeading: tx('Send a link'),
-      shareLinkNote: tx(sh ? 'Anyone with the link can open it, posted or not.' : 'A link is made the first time you send one. Sending it does not post the song.'),
+      shareLinkNote: guest
+        ? tx(sh ? 'Anyone with the link can open it. It is not listed in Shared Scores, and it stops working after 30 days.'
+          : 'A link is made the first time you send one. It is not listed anywhere, and it stops working after 30 days.')
+          + (guestHint && !GuestKey.persistent() ? ' ' + tx('This browser cannot keep a key for this link, so you can only take it down until you close this page.') : '')
+        : tx(sh ? 'Anyone with the link can open it, posted or not.' : 'A link is made the first time you send one. Sending it does not post the song.'),
       shareHasLink: !!sh, shareLinkText: sh ? this.shareLink(sh.id) : '',
       shareCopyLabel: tx(d.busy === 'link' ? 'Making the link…' : d.copied ? 'Copied' : 'Copy link'), shareCopyStyle: plain.replace('align-self:flex-start;', 'flex:none;'),
       shareCopy: () => this.sendShare('copy'),
@@ -15674,7 +15730,7 @@ class Component extends DCLogic {
         style: 'display:flex;align-items:center;gap:8px;padding:8px 12px 8px 8px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;',
         glyphStyle: 'width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-size:12px;font-weight:700;line-height:1;' + look
       })),
-      shareCanStop: t.mine && !!sh && !!S.user,
+      shareCanStop: t.mine && !!sh,
       shareStopLabel: d.busy === 'stop' ? tx('Stopping…') : tx(d.armStop ? 'Stop sharing? The link will stop working.' : 'Stop sharing'),
       shareStopStyle: 'align-self:flex-start;padding:8px 12px;border-radius:9px;font-family:inherit;font-size:12px;cursor:pointer;border:1px solid '
         + (d.armStop ? 'var(--bad);background:var(--bad);color:#fff;' : 'var(--line);background:transparent;color:var(--ink3);'),
