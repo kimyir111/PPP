@@ -28,6 +28,8 @@
        [C4, F4] chord between A6 and D6 in the melody voice, twice) was refused with ALL_CANDIDATES_HAVE_HARD_VIOLATIONS; it is now made one note per hand with the stray notes left
        out, marked (arrangement.rescued = how many), with a sentence in the Song Arranger's toast and on the review screen (ko/ja/zh in the catalogs)
      - small gaps (G9f): tests/fixtures/g9f-small-gaps.musicxml (a printed score with a 64th rest between its right-hand notes, 32 of them) keeps them; only a transcription is tidied
+     - transcription rests at the source: the review screen's "Rewrite the rhythm" of heard notes (seeded run on the 32nd grid) writes a score with no 32nd or 64th rest (Score,
+       the drawn graph and the DOM), the same notes, none shorter, the same strikes; the same notes written without the pass have them
      - refusals and failed downloads: a piece that stays unreachable (czerny849/009), option scripts (the candidates one, or another of the fourteen) or
        reference data that cannot be loaded (also when it is the warm-up that fails: no error, and the next arrangement asks again). The Song Arranger
        saves NOTHING behind the person's back: its window stays open with a notice that does not go away and two choices ('Save the standard arrangement',
@@ -223,6 +225,10 @@ async function identityHashes(browser) {
   }
   await page.close();
   const rp = await openPage(browser, { mode: 'legacy' });
+  /* the review screen's heard notes are a recording (made from the hymn, each held 95% of its length), and the app now closes a recording's sub-16th gaps (docs/GOALS/G09 section 12,
+     'Transcription rests at the source'): the golden is origin/main's, so the closing is switched off here, which is what compares everything else (the arrangers, the layout of the copy)
+     with origin/main. The closing itself is checked in its own section below. */
+  await rp.evaluate(() => { const A = window.PPPAudioScore, f = A.toMusicXml; A.toMusicXml = (i, o) => f.call(A, i, Object.assign({}, o, { closeGaps: false })); });
   await loadReview(rp, HYMN('christ-arose'), 'christ-arose');
   for (const [level, style] of LEVELS.map(l => [l, 'balanced']).concat([['intermediate', 'jazz'], ['beginner', 'ballad']])) {
     const r = await reviewApply(rp, level, style);
@@ -648,6 +654,65 @@ async function identityHashes(browser) {
       ok('every note is still there (72 of the 72 the source has: 64 right hand, 8 left hand) and no right-hand note passes the next one', !!gs && gs.notes === 72 && gs.rh === 64 && gs.overlapping === 0, JSON.stringify(gs));
       ok('no page or console error', gp.__rec.pageErrors.length === 0 && gp.__rec.consoleErrors.length === 0, JSON.stringify(gp.__rec.pageErrors.concat(gp.__rec.consoleErrors)));
       await gp.close();
+    }
+
+    console.log('\n── transcription rests at the source: the review screen\'s rewrite of a recording (docs/GOALS/G09 section 12) ──');
+    /* A recording's notes keep the lengths they were heard with, so the score the review screen draws had a 32nd or 64th rest after most notes of a fast run (the user's 90-bar
+       YouTube piece: 90 + 64). The app asks audio-score.js to close those gaps at its four recording call sites (scoregraph/gaps.js). Here the heard notes of a seeded 6-bar piece
+       (120 bpm, a run on the 32nd grid, each note held 55-85% of its gap) are injected into the review screen and "Rewrite the rhythm" (the real button, the real toMusicXml call)
+       writes the score: the Score the screen holds, the graph the page draws and the rest glyphs in the DOM have no 32nd or 64th rest, every note is where it was, none is shorter,
+       and the player's strikes are the same notes. The same heard notes written the way the library does by default (closeGaps off) have them: the control. */
+    {
+      const rp = await openPage(browser);
+      await rp.evaluate(() => {
+        const P = window.PPP, A = P.app;
+        let s = 3; const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+        const pat = [72, 74, 76, 77, 79, 77, 76, 74, 72, 71, 72, 74, 76, 74, 72, 71], notes = [];
+        for (let b = 0; b < 6; b++) {
+          const t0 = b * 2; notes.push({ on: t0, off: t0 + 0.93, midi: 48, vel: 70 }); notes.push({ on: t0 + 1, off: t0 + 1.93, midi: 43, vel: 70 });
+          let t = 0, i = 0;
+          while (t < 2 - 1e-9) {
+            const r = rnd(), ioi32 = r < 0.55 ? 4 : r < 0.7 ? 3 : r < 0.8 ? 5 : r < 0.9 ? 2 : 8, ioi = ioi32 * 0.0625;
+            if (t + ioi > 2 + 1e-9) break;
+            notes.push({ on: t0 + t + (rnd() - 0.5) * 0.01, off: t0 + t + ioi * (0.55 + 0.3 * rnd()), midi: pat[i % 16], vel: 80 }); t += ioi; i++;
+          }
+        }
+        const A0 = window.PPPAudioScore;
+        const mk = o => A0.toMusicXml({ notes: notes, pedals: [] }, Object.assign({ title: 'run', lock: { beats: 4, beatType: 4, bpm: 120, firstDownbeat: 0 } }, o));
+        const control = P.parseMusicXML(mk({ closeGaps: false }).xml, 'run');
+        window.__gapsControl = control.notes.filter(n => n.rest).reduce((m, n) => { m[n.type] = (m[n.type] || 0) + 1; return m; }, {});
+        window.__gapsControlNotes = control.notes.filter(n => !n.rest).map(n => n.m + '|' + (Math.round(n.b * 1e4) / 1e4) + '|' + n.midi + '|' + n.dur);
+        window.__gapsControlStrikes = P.PianoScore.of(control).strikes.length;
+        A._recording = { url: '', barStarts: [0] };
+        A._heard = { notes: notes, pedals: [], duration: notes[notes.length - 1].off };
+        A.adoptScore(P.parseMusicXML(mk({ closeGaps: false }).xml, 'run'));
+        A.setState({ screen: 'review', lockMetre: '4/4', lockBpm: 120, lockDownbeat: 0, importSource: { kind: 'audio', name: 'run.mp3', status: 'transcribed', tempo: 120, amt: 'onsets-and-frames' },
+          importReport: { confidence: 0.9, level: 'good', issues: [], suspectMeasures: [], summary: null, advice: null, measures: 6, notes: notes.length, staves: 2, tempo: 120 } });
+      });
+      await sleep(500);
+      await rp.click('[data-lock-rewrite]');
+      await rp.waitForFunction(() => /Rewrote the rhythm/.test((window.PPP.app.state.toast || '') + document.body.innerText), { timeout: 30000 });
+      await sleep(1500);
+      const rr = await rp.evaluate(() => {
+        const P = window.PPP, S = P.app.state, sc = S.score;
+        const rests = sc.notes.filter(n => n.rest).reduce((m, n) => { m[n.type] = (m[n.type] || 0) + 1; return m; }, {});
+        const rs = window.PPPEngrave.app.resolveSync(sc), g = rs.graph;
+        const byId = new Map(g.parts[0].events.map(e => [e.id, e]));
+        const dom = {}; document.querySelectorAll('g.ppp-note[data-rest="1"]').forEach(el => { const e = byId.get(el.getAttribute('data-ev')); const k = e ? e.display.type : '?'; dom[k] = (dom[k] || 0) + 1; });
+        const notes = sc.notes.filter(n => !n.rest).map(n => n.m + '|' + (Math.round(n.b * 1e4) / 1e4) + '|' + n.midi + '|' + n.dur);
+        return { rests: rests, via: rs.via, dom: dom, notes: notes, strikes: P.PianoScore.of(sc).strikes.length, domHeads: document.querySelectorAll('path.vf-notehead:not(.vf-rest)').length };
+      });
+      const control = await rp.evaluate(() => ({ rests: window.__gapsControl, notes: window.__gapsControlNotes, strikes: window.__gapsControlStrikes }));
+      const small = o => (o['32nd'] || 0) + (o['64th'] || 0);
+      ok('control: the heard notes written without the pass have 32nd and 64th rests (the "before")', small(control.rests) >= 8, JSON.stringify(control.rests));
+      ok('"Rewrite the rhythm": the Score has no 32nd or 64th rest', small(rr.rests) === 0 && Object.keys(rr.rests).length > 0, JSON.stringify(rr.rests));
+      ok('the page draws the kept graph (live) and it has none either; no rest glyph of a 32nd or 64th in the DOM', rr.via === 'live' && small(rr.dom) === 0, JSON.stringify({ via: rr.via, dom: rr.dom }));
+      const key = x => x.split('|').slice(0, 3).join('|'), dur = x => +x.split('|')[3];
+      const m0 = new Map(control.notes.map(x => [key(x), dur(x)]));
+      ok('every note is where it was with its pitch (' + control.notes.length + ' notes), none is shorter, none longer than a 16th more', rr.notes.length === control.notes.length && rr.notes.every(x => m0.has(key(x)) && dur(x) >= m0.get(key(x)) - 1e-6 && dur(x) - m0.get(key(x)) < 0.25 + 1e-6), JSON.stringify({ a: rr.notes.length, b: control.notes.length }));
+      ok('the player has the same strikes as for the unclosed score (what is drawn is what is played)', rr.strikes === control.strikes && rr.strikes > 0, JSON.stringify({ strikes: rr.strikes, control: control.strikes }));
+      ok('no page or console error', rp.__rec.pageErrors.length === 0 && rp.__rec.consoleErrors.length === 0, JSON.stringify(rp.__rec.pageErrors.concat(rp.__rec.consoleErrors)));
+      await rp.close();
     }
 
     console.log('\n── refusals ──');

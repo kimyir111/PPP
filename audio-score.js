@@ -1166,6 +1166,19 @@
     }
     return scoreGraphLib;
   }
+  /* "Transcription rests at the source" (docs/GOALS/G09 section 12): scoregraph/gaps.js, the pass G9f runs on a one-note arrangement of a transcription. It is run here, on the graph a RECORDING's
+     heard notes became (sourceKind 'audio-score'), so the review screen, the saved transcription song, the 'original' copy and every arranger's input have no 32nd or 64th rest between notes:
+     a gap shorter than a 16th after a note lengthens that note (never shortening, never moving an onset or a pitch, never over a barline or the hand's next onset), and a 32nd or 64th rest among
+     the pieces of a longer silence with a note after it is not drawn. A MIDI file (sourceKind 'midi-file') is the player's own file and is left as it is.
+     Off by default in the library, like G3 below: the committed goldens, the benchmark's snapshots and the G3/G4 contracts on "the recording graphs" (one source, no per-entity provenance)
+     are about toMusicXml's own output; the APP asks for it (opts.closeGaps: true at its four recording call sites). A page that has not loaded scoregraph/gaps.js (an old cached page)
+     writes the score as it did before: this never throws. */
+  const CLOSE_GAPS_DEFAULT = false;
+  function gapsLib() {
+    try {
+      return typeof module === 'object' && module.exports ? require('./scoregraph/gaps.js') : (global && global.PPPScoreGraphModules && global.PPPScoreGraphModules.gaps) || null;
+    } catch (e) { return null; }
+  }
   const ACCIDENTAL_NAME = { '-2': 'flat-flat', '-1': 'flat', '0': 'natural', '1': 'sharp', '2': 'double-sharp' };
 
   /* heard: {notes: [{on, off, midi, vel, staff, tick}] (every note after clean; staff and tick once placed),
@@ -1492,6 +1505,12 @@
     const built = buildGraph(model, { notes: heardNotes, pedals: extra.pedals || [],
       controls: extra.controls || [], barSeconds: barSeconds });
     let graph = built.graph, graphIssues = built.issues;
+    const gaps = (opts.closeGaps === undefined ? CLOSE_GAPS_DEFAULT : !!opts.closeGaps) && (model.sourceKind || 'audio-score') === 'audio-score' ? gapsLib() : null;
+    if (gaps) {
+      const cg = gaps.closeSmallGaps(graph);
+      if (cg.changed) { graph = cg.graph; graphIssues = cg.issues || graphIssues; }
+      result.gapReport = cg.stats; /* beside the graph, not in stats (the benchmark snapshots stats) */
+    }
     /* G3 (docs/GOALS/G03 §5.1): the notation passes between the graph and the file. 'off' writes the graph as
        built; 'shadow' runs G3 and reports what it would change (proReport) but writes the graph as built; 'on'
        writes G3's graph. The report never goes into stats (the benchmark's snapshots). */
