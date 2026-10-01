@@ -952,6 +952,7 @@ function safePath(urlPath) {
   return abs;
 }
 
+const BUILD_ID = String(process.env.RENDER_GIT_COMMIT || process.env.PPP_BUILD || '').replace(/[^0-9a-f]/gi, '').slice(0, 7);
 async function serveStatic(req, res, urlPath, url) {
   if (urlPath === '/' || urlPath === '/index.html') {
     const app = path.join(ROOT, 'Piano Coach App.dc.html');
@@ -963,6 +964,14 @@ async function serveStatic(req, res, urlPath, url) {
       html = Buffer.from(/<meta charset="utf-8">/i.test(text)
         ? text.replace(/<meta charset="utf-8">/i, m => m + '\n' + meta)
         : text.replace(/<head>/i, m => m + '\n' + meta));
+    }
+    if (BUILD_ID) {
+      /* the commit this server runs, for the page to stamp on what it makes (and for a person to read): Render sets RENDER_GIT_COMMIT */
+      const text = html.toString('utf8');
+      const tag = '<script>window.PPP_BUILD=' + JSON.stringify(BUILD_ID) + ';</script>';
+      html = Buffer.from(/<meta charset="utf-8">/i.test(text)
+        ? text.replace(/<meta charset="utf-8">/i, m => m + '\n' + tag)
+        : text.replace(/<head>/i, m => m + '\n' + tag));
     }
     send(res, 200, html, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
     return;

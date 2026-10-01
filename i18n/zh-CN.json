@@ -1936,6 +1936,7 @@
     "Texture choices don't apply in one-note-per-hand mode; turn it off to use them.": "单手单音模式下不会应用编配风格选择；要使用风格，请关闭此模式。",
     "Created a {{level}} one-note-per-hand arrangement.": "已创建{{level}}单手单音编配。",
     "PPP one-note-per-hand arrangement": "PPP 单手单音编配",
+    "build {{build}}": "版本 {{build}}",
     "Created a {{level}} arrangement. Some passages had low melody/bass confidence, so PPP kept them simple rather than guess.": "已创建{{level}}编配。旋律或低音把握不大的段落，PPP 没有去猜，保持了简单。",
     "{{title}} · one-note-per-hand arrangement": "{{title}} · 单手单音编配",
     "This piece has many notes, so the arrangement may be a little harder than the level you chose.": "这首曲子音符较多，编配可能比你选择的难度稍难一些。",
