@@ -55,7 +55,8 @@ async function arrangeItem(item, opts) {
   /* ---- G9 arm ---- */
   const sel = CAND.run(g, sg, request, opts.singleNoteHands ? { singleNoteHands: true } : {});
   if (!sel.ok) return { ok: false, reason: 'g9-no-selection: ' + sel.reason };
-  const rr = REPAIR.repairSelection(sel, g, sg, request);
+  /* an item that is a transcription saved as a file (item.transcription: true) has its sub-16th gaps closed like the app's own transcriptions (repair/index.js closeSmallGaps) */
+  const rr = REPAIR.repairSelection(sel, g, sg, request, item.transcription ? { closeGaps: true } : {});
   if (!rr.ok || !rr.graph) return { ok: false, reason: 'g9-repair-failed' };
   const g9graph = rr.graph;
   const name = path.basename(file);

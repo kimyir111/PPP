@@ -119,7 +119,7 @@ test('rests: every silent stretch of a staff is drawn as rests (a whole-bar rest
   assert.equal(part.events.filter(e => e.kind === 'note').length, 4, 'no note was added or lost');
 });
 
-test('rest values: cut at the beats, the largest value that starts on a multiple of its own length; compound beats are dotted; a gap off the 1/64 grid is left alone', () => {
+test('rest values: cut at the beats, the largest value that starts on a multiple of its own length; compound beats are dotted; a silence beside an off-grid note is drawn from the grid lines inside it', () => {
   const pieces = (a, b, len, beat, comp) => N.restPieces(a, b, len, beat, comp).map(x => x.at + '+' + x.dur + (x.display.dots ? 'd' : '') + (x.display.measureRest ? 'M' : ''));
   assert.deepEqual(pieces(0, 64, 64, 16, false), ['0+64M'], 'a silent 4/4 bar is one whole-bar rest');
   assert.deepEqual(pieces(16, 64, 64, 16, false), ['16+16', '32+32'], 'beat 2 alone, then a half rest on beat 3 (never a half rest on beat 2)');
@@ -128,10 +128,13 @@ test('rest values: cut at the beats, the largest value that starts on a multiple
   assert.deepEqual(pieces(0, 48, 48, 16, false), ['0+48dM'], 'a silent 3/4 bar: one dotted-half whole-bar rest');
   assert.deepEqual(pieces(0, 48, 96, 24, true), ['0+24d', '24+24d'], '6/8: a dotted quarter per beat');
   assert.deepEqual(pieces(24, 36, 96, 24, true), ['24+8', '32+4'], 'a part beat in compound time is cut inside the beat');
-  /* an off-grid note (a triplet's edge) means that staff-measure gets no rests, and it is counted */
+  /* an off-grid note (a triplet's edge): its silence is drawn from the first grid line after the note before it to the last grid line before the next, and counted; it is not skipped */
   const trip = [0, 1, 2].map(i => note(1, i / 3, 'C4', 60, { dur: 1 / 3, type: 'eighth' }));
   const p = N.prepare(measuresOf(1), 100, trip.concat([lh(1, 0, 'C3', 48, { dur: 4, type: 'whole' })]));
-  assert.ok(p.stats.skippedGaps >= 1);
+  assert.equal(p.stats.skippedGaps, 0);
+  assert.ok(p.stats.offGrid >= 1);
+  const rh = p.graph.parts[0].events.filter(e => e.kind === 'rest' && p.graph.parts[0].staves.findIndex(s => s.id === e.staff) === 0).map(e => e.at + '+' + e.dur);
+  assert.deepEqual(rh.sort(), ['1/2+1/2', '1/4+1/4'], 'beats 2 to 4 (a quarter rest, then a half rest on beat 3): the silence after the triplet starts on the grid');
 });
 
 test('ties: a tieStart and a tieStop of one pitch that meet are drawn tied (in a bar or across a barline); an unpaired flag is dropped', () => {
@@ -315,4 +318,52 @@ test('ottava and the drawn clef agree: every line is justified (a note needing 2
   assert.ok(a.some(x => x[0] === 1 && x[1] > 0), 'a genuinely high right hand still gets an 8va (or 15ma)');
   assert.ok(a.some(x => x[0] === 2 && x[1] < 0), 'a genuinely low left hand still gets an 8vb (or 15mb)');
   assert.ok(!a.some(x => x[0] === 2 && x[2] >= 4), 'a left hand at G3-D4 (bars 5-8) gets no line');
+});
+
+/* ---- G9f final-review fixes: an eighth rest between two 16ths, and no rest for a gap shorter than a 16th between two notes ---- */
+test('rest values: the silence of one eighth that starts on the second sixteenth of a quarter is ONE eighth rest; every other cut is what it was', () => {
+  const pieces = (a, b, len, beat, comp) => N.restPieces(a, b, len, beat, comp).map(x => x.at + '+' + x.dur + (x.display.dots ? 'd' : ''));
+  assert.deepEqual(pieces(4, 12, 64, 16, false), ['4+8'], '16th note, eighth rest, 16th note (a dropped note in a run of sixteenths)');
+  assert.deepEqual(pieces(20, 28, 64, 16, false), ['20+8'], 'the same on beat 2');
+  assert.deepEqual(pieces(36, 44, 64, 16, false), ['36+8'], 'and in the second half of the bar');
+  /* not that exact silence: the old cut */
+  assert.deepEqual(pieces(4, 16, 64, 16, false), ['4+4', '8+8'], 'a dotted eighth up to the beat: 16th then eighth, as before');
+  assert.deepEqual(pieces(12, 20, 64, 16, false), ['12+4', '16+4'], 'an eighth across a beat line is cut at the beat');
+  assert.deepEqual(pieces(4, 20, 64, 16, false), ['4+4', '8+8', '16+4'], 'a longer silence is cut as before');
+  assert.deepEqual(pieces(8, 16, 64, 16, false), ['8+8'], 'an eighth on the second eighth: as before');
+  assert.deepEqual(pieces(4, 12, 24, 8, false), ['4+4', '8+4'], 'in x/8 (the beat is an eighth) the eighth rest would cross the beat: cut as before');
+  assert.deepEqual(pieces(28, 36, 96, 24, true), ['28+4', '32+4'], 'compound time is cut at the beat as before');
+});
+
+test('rests drawn: a gap shorter than a 16th between two notes of a staff has no rest (no 32nd or 64th rest between notes); a 16th gap is still a rest, and no piece shorter than a 16th is drawn anywhere (start or end of a bar, or the remainder of a longer silence)', () => {
+  const ms = measuresOf(2);
+  const restsOf = (p, bar) => {
+    const part = p.graph.parts[0];
+    return part.events.filter(e => e.kind === 'rest' && p.graph.timeline.measures.findIndex(m => m.id === e.m) === bar && part.staves.findIndex(s => s.id === e.staff) === 0)
+      .map(e => e.at + '+' + e.dur + (e.display.measureRest ? 'M' : '')).sort();
+  };
+  const sixteenths = (m, from, to, skip) => { const out = []; for (let i = from; i < to; i++) if (!(skip || []).includes(i)) out.push(note(m, i * 0.25, 'C5', 72, { dur: 0.25, type: '16th' })); return out; };
+  const lhBars = [lh(1, 0, 'C3', 48, { dur: 4, type: 'whole' }), lh(2, 0, 'C3', 48, { dur: 4, type: 'whole' })];
+  /* bar 1: sixteenths 0..3 of the first beat, the second one dropped: 16th, ONE eighth rest, 16th; then the other three beats are quarters */
+  const dropped = sixteenths(1, 0, 4, [1, 2]).concat([1, 2, 3].map(b => note(1, b, 'D5', 74)));
+  const p1 = N.prepare(ms, 100, dropped.concat(lhBars));
+  assert.deepEqual(restsOf(p1, 0), ['1/16+1/8'], 'one eighth rest, not two 16th rests');
+  /* bar 2: a 32nd between two notes (note 0-1/4 of a quarter then a note 1/8 of a quarter later, then notes to the bar end) - no rest;
+     a gap of exactly a 16th - a rest; a gap of a 64th at the bar's end - a rest */
+  const bar2 = [note(2, 0, 'C5', 72, { dur: 0.75, type: 'eighth', dots: 1 }),          /* ends at 3/4 of a quarter; the next note starts at 7/8: a 32nd gap */
+    note(2, 0.875, 'D5', 74, { dur: 0.125, type: '32nd' }),
+    note(2, 1, 'E5', 76, { dur: 0.75, type: 'eighth', dots: 1 }),                       /* then a gap of 1/4 quarter (a 16th) */
+    note(2, 2, 'F5', 77, { dur: 1, type: 'quarter' }),
+    note(2, 3, 'G5', 79, { dur: 0.9375, type: 'quarter' })];                             /* ends 1/16 of a quarter before the bar's end: a 64th at the end */
+  const p2 = N.prepare(ms, 100, bar2.concat(lhBars));
+  assert.deepEqual(restsOf(p2, 1), ['7/16+1/16'], 'no rest for the 32nd gap or the 64th at the end of the bar; the 16th gap is a rest');
+  assert.equal(p2.graph.parts[0].events.filter(e => e.kind === 'note').length, 5 + 2, 'no note was added or lost');
+  /* a gap at the start of the bar (no note of the bar before it) is still a rest */
+  const p3 = N.prepare(ms, 100, [note(1, 0.125, 'C5', 72, { dur: 0.875, type: 'eighth', dots: 2 }), note(1, 1, 'D5', 74, { dur: 3, type: 'whole', dots: 1 })].concat(lhBars));
+  assert.deepEqual(restsOf(p3, 0).filter(r => r.startsWith('0+')), [], 'no 32nd rest at the start of the bar either');
+  /* a silence that does not start on the grid: its remainder shorter than a 16th is not drawn, the rest of it is (1 unit + 2 units + a 16th + an eighth: only the last two) */
+  assert.deepEqual(N.restPieces(1, 16, 64, 16, false).map(x => x.at + '+' + x.dur), ['4+4', '8+8']);
+  assert.deepEqual(N.restPieces(1, 12, 64, 16, false).map(x => x.at + '+' + x.dur), ['4+8'], 'the eighth rest on the second sixteenth, the 64th and 32nd before it are not drawn');
+  assert.deepEqual(N.restPieces(60, 64, 64, 16, false).map(x => x.at + '+' + x.dur), ['60+4']);
+  assert.deepEqual(N.restPieces(61, 64, 64, 16, false), [], 'a silence of three 64ths at the end of a bar: nothing');
 });

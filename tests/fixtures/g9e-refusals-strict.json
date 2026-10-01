@@ -1,5 +1,5 @@
 {
- "madeFrom": "origin/main 8a7a65a: app arrangeSingleNote (PPP.arranger single), sha-256 of JSON.stringify(graph), first 16 hex; tests/realize/g9e-refusals.test.js",
+ "madeFrom": "origin/main 8a7a65a (G9f re-pinned catalog/method/sonatina/004.mxl|advanced to 6b893715296f214d: the source guard in repair/plan.js leaves the left-hand D4 at measure 17 where the source has it; repair used to move it to D3, see docs G9f): app arrangeSingleNote (PPP.arranger single), sha-256 of JSON.stringify(graph), first 16 hex; tests/realize/g9e-refusals.test.js",
  "hashes": {
   "catalog/method/beyer/003.mxl|intermediate": "1325d43dba0694ee",
   "catalog/method/beyer/017.mxl|advanced": "4bbf5a463e137ac2",
@@ -18,7 +18,7 @@
   "catalog/method/czerny849/019.mxl|intermediate": "0e4b40779ff3ca66",
   "catalog/method/czerny849/023.mxl|advanced": "db53c40388fca22e",
   "catalog/method/sonatina/001.mxl|intermediate": "1adc7ae36ffcfc8f",
-  "catalog/method/sonatina/004.mxl|advanced": "29e9bdc2c12601e7",
+  "catalog/method/sonatina/004.mxl|advanced": "6b893715296f214d",
   "catalog/method/sonatina/008.mxl|intermediate": "d8de0f7bbe57affc",
   "catalog/method/sonatina/017.mxl|advanced": "a51b12aca4ba9485",
   "hymn:christ-arose|intermediate": "483d8a07131a56a3",
