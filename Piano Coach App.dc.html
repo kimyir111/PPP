@@ -32,7 +32,7 @@
 <script src="./scoregraph/pro-beam.js?v=8"></script>
 <script src="./scoregraph/pro-marks.js?v=8"></script>
 <script src="./scoregraph/pro.js?v=8"></script>
-<script src="./scoregraph/gaps.js?v=1"></script>
+<script src="./scoregraph/gaps.js?v=2"></script>
 <script src="./scoregraph/index.js?v=9"></script>
 <!-- G05 §11 G5c: the fingering DP (G5b), ported to the ScoreGraph. Only used when PPP.fingering === 'inferred'. -->
 <script src="./playability/reach.js?v=1"></script>
@@ -65,7 +65,7 @@
 <script src="./realize/patterns.js?v=1"></script>
 <script src="./realize/notation.js?v=1"></script>
 <script src="./realize/index.js?v=1"></script>
-<script src="./audio-score.js?v=10"></script>
+<script src="./audio-score.js?v=11"></script>
 <!-- G4a (docs/GOALS/G04 §8.5): where the renderer's ScoreGraph comes from, and what it must draw. Draws nothing yet. -->
 <script src="./engrave/ledger.js?v=3"></script>
 <script src="./engrave/glyphs.js?v=3"></script>
@@ -4704,7 +4704,7 @@ function loadSingleModules() {
   const todo = SINGLE_SCRIPTS.slice(SINGLE_SCRIPTS.findIndex(src => !_singleLoaded.has(src)));
   _singleScriptsPromise = Promise.all(todo.map(src => new Promise(resolve => {
     const el = document.createElement('script');
-    el.src = './' + src + '?v=1';
+    el.src = './' + src + '?v=2';
     el.async = false;
     el.onload = () => { _singleLoaded.add(src); resolve(true); };
     el.onerror = () => { _singleLoaded.delete(src); resolve(false); };

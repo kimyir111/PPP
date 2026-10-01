@@ -30,6 +30,8 @@
      - small gaps (G9f): tests/fixtures/g9f-small-gaps.musicxml (a printed score with a 64th rest between its right-hand notes, 32 of them) keeps them; only a transcription is tidied
      - transcription rests at the source: the review screen's "Rewrite the rhythm" of heard notes (seeded run on the 32nd grid) writes a score with no 32nd or 64th rest (Score,
        the drawn graph and the DOM), the same notes, none shorter, the same strikes; the same notes written without the pass have them
+     - consecutive rests: the same kind of heard notes (a seeded 10-bar piece whose silences come in several pieces) through "Rewrite the rhythm", Accept (the saved transcription) and the Song Arranger's
+       one-note copy: no run of rests that is not in the standard tiling (gaps.restRuns), no dotted 16th, 32nd or 64th rest in the graph or the DOM, the same notes; the control has them
      - refusals and failed downloads: a piece that stays unreachable (czerny849/009), option scripts (the candidates one, or another of the fourteen) or
        reference data that cannot be loaded (also when it is the warm-up that fails: no error, and the next arrangement asks again). The Song Arranger
        saves NOTHING behind the person's back: its window stays open with a notice that does not go away and two choices ('Save the standard arrangement',
@@ -713,6 +715,86 @@ async function identityHashes(browser) {
       ok('the player has the same strikes as for the unclosed score (what is drawn is what is played)', rr.strikes === control.strikes && rr.strikes > 0, JSON.stringify({ strikes: rr.strikes, control: control.strikes }));
       ok('no page or console error', rp.__rec.pageErrors.length === 0 && rp.__rec.consoleErrors.length === 0, JSON.stringify(rp.__rec.pageErrors.concat(rp.__rec.consoleErrors)));
       await rp.close();
+    }
+
+    console.log('\n── consecutive rests: one silence is one rest, in the review screen, the saved transcription and its one-note copy (docs/GOALS/G09 section 12) ──');
+    /* The teacher's score of a YouTube transcription had two small dotted rests in a row before a quarter note, and a dotted 16th rest inside a beamed 16th group: audio-score.js writes a
+       silence one piece at a time. scoregraph/gaps.js mergeRests (run with the gap closing at the four recording call sites, and last in the one-note pipeline of a transcription)
+       writes each silence once, in the standard tiling on the beat grid. Here the heard notes of a seeded 10-bar piece (120 bpm, a run on the 32nd grid, each note held 25-85% of its
+       gap, so silences come in several pieces) go through the real screens: "Rewrite the rhythm", Accept (the saved transcription), and the Song Arranger's one-note copy. In each:
+       no run of rests is left that is not in the standard tiling (gaps.restRuns), no dotted 16th (or 32nd, 64th) rest in the graph or the DOM, the same notes; the control (the same
+       heard notes written without the pass) has the runs. */
+    {
+      const cp = await openPage(browser);
+      await cp.evaluate(() => {
+        const P = window.PPP, A = P.app;
+        let s = 7; const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+        const pat = [72, 74, 76, 77, 79, 77, 76, 74, 72, 71, 72, 74, 76, 74, 72, 71], notes = [];
+        for (let b = 0; b < 10; b++) {
+          const t0 = b * 2; notes.push({ on: t0, off: t0 + 0.93, midi: 48, vel: 70 }); notes.push({ on: t0 + 1, off: t0 + 1.93, midi: 43, vel: 70 });
+          let t = 0, i = 0;
+          while (t < 2 - 1e-9) {
+            const r = rnd(), ioi32 = r < 0.45 ? 4 : r < 0.6 ? 3 : r < 0.7 ? 5 : r < 0.8 ? 2 : r < 0.9 ? 8 : 12, ioi = ioi32 * 0.0625;
+            if (t + ioi > 2 + 1e-9) break;
+            notes.push({ on: t0 + t + (rnd() - 0.5) * 0.01, off: t0 + t + ioi * (0.25 + 0.6 * rnd()), midi: pat[i % 16], vel: 80 }); t += ioi; i++;
+          }
+        }
+        const A0 = window.PPPAudioScore, lock = { beats: 4, beatType: 4, bpm: 120, firstDownbeat: 0 };
+        const mk = o => A0.toMusicXml({ notes: notes, pedals: [], title: 'run' }, Object.assign({ title: 'run', lock: lock }, o));
+        const gaps = window.PPPScoreGraphModules.gaps;
+        const small = g => g.parts[0].events.filter(e => e.kind === 'rest' && ((e.display.dots && e.display.type === '16th') || /^(32nd|64th)$/.test(e.display.type))).length;
+        const control = mk({ closeGaps: false });
+        window.__ctl = { runs: gaps.restRuns(control.graph, { skipped: 0 }).length, small: small(control.graph), notes: control.graph.parts[0].events.filter(e => e.kind === 'note').length };
+        /* the control with only the gaps closed (what the app wrote before this change): the runs are still there */
+        const gapsOnly = gaps.closeSmallGaps(control.graph).graph;
+        window.__ctl.runsGapsOnly = gaps.restRuns(gapsOnly, { skipped: 0 }).length;
+        window.__ctl.smallGapsOnly = small(gapsOnly);
+        A._recording = { url: '', barStarts: [0] };
+        A._heard = { notes: notes, pedals: [], duration: notes[notes.length - 1].off };
+        A.adoptScore(P.parseMusicXML(mk({ closeGaps: false }).xml, 'run'));
+        A.setState({ screen: 'review', lockMetre: '4/4', lockBpm: 120, lockDownbeat: 0, importSource: { kind: 'audio', name: 'run.mp3', status: 'transcribed', tempo: 120, amt: 'onsets-and-frames' },
+          importReport: { confidence: 0.9, level: 'good', issues: [], suspectMeasures: [], summary: null, advice: null, measures: 10, notes: notes.length, staves: 2, tempo: 120 } });
+      });
+      await sleep(500);
+      const probe = () => cp.evaluate(() => {
+        const P = window.PPP, S = P.app.state, sc = S.score, gaps = window.PPPScoreGraphModules.gaps;
+        const rs = window.PPPEngrave.app.resolveSync(sc), g = rs.graph, byId = new Map(g.parts[0].events.map(e => [e.id, e]));
+        const small = e => e && e.kind === 'rest' && ((e.display.dots && e.display.type === '16th') || /^(32nd|64th)$/.test(e.display.type));
+        let domSmall = 0, domRests = 0;
+        document.querySelectorAll('g.ppp-note[data-rest="1"]').forEach(el => { domRests++; if (small(byId.get(el.getAttribute('data-ev')))) domSmall++; });
+        return { via: rs.via, runs: gaps.restRuns(g, { skipped: 0 }).length, small: g.parts[0].events.filter(small).length, domSmall: domSmall, domRests: domRests,
+          notes: g.parts[0].events.filter(e => e.kind === 'note').length, scoreNotes: sc.notes.filter(n => !n.rest).length, scoreRests: sc.notes.filter(n => n.rest).length,
+          errors: window.PPPScoreGraph.validate(g).issues.filter(i => /^E-/.test(i.code)).length, strikes: P.PianoScore.of(sc).strikes.length };
+      });
+      const ctl = await cp.evaluate(() => window.__ctl);
+      ok('control: the heard notes written without the pass have runs of rests that are not in the standard tiling, and dotted 16th rests', ctl.runs >= 4 && ctl.small >= 4, JSON.stringify(ctl));
+      ok('control: with only the gaps closed (what the app wrote before) the runs are still there', ctl.runsGapsOnly >= 3, JSON.stringify(ctl));
+      await cp.click('[data-lock-rewrite]');
+      await cp.waitForFunction(() => /Rewrote the rhythm/.test((window.PPP.app.state.toast || '') + document.body.innerText), { timeout: 30000 });
+      await sleep(1500);
+      const rr = await probe();
+      ok('"Rewrite the rhythm": the page draws the kept graph (live); no run of rests is left that is not in the standard tiling', rr.via === 'live' && rr.runs === 0, JSON.stringify(rr));
+      ok('no dotted 16th, 32nd or 64th rest in the graph or in the DOM (the glyphs drawn)', rr.small === 0 && rr.domSmall === 0 && rr.domRests > 0, JSON.stringify(rr));
+      ok('the same notes (' + ctl.notes + ' note events in the graph), a valid graph, the player has strikes', rr.notes === ctl.notes && rr.errors === 0 && rr.strikes > 0, JSON.stringify({ rr: rr, ctl: ctl }));
+      /* Accept: the saved transcription */
+      await cp.evaluate(() => { const b = [...document.querySelectorAll('button')].find(x => /Accept and practise/.test(x.innerText)); if (b) b.click(); });
+      await sleep(2500);
+      const sid = await cp.evaluate(() => window.PPP.app.state.songId);
+      const sv = await probe();
+      ok('the saved transcription (after Accept): no run of rests left, no dotted 16th/32nd/64th rest in the graph or DOM, the same notes', !!sid && sv.runs === 0 && sv.small === 0 && sv.domSmall === 0 && sv.notes === ctl.notes, JSON.stringify(sv));
+      /* the Song Arranger's one-note copy of that transcription */
+      const cop = await overlayArrange(cp, sid, 'intermediate', 'balanced');
+      ok('Song Arranger on the saved transcription: saved as a one-note-per-hand arrangement', cop.saved && cop.slot.importSource.arrangement.engine === 'ppp.g9-single' && !cop.slot.importSource.arrangement.singleFallback, cop.saved ? JSON.stringify(cop.slot.importSource.arrangement) : JSON.stringify(cop.status));
+      if (cop.saved) {
+        await cp.evaluate(() => window.__pppTest.nav('My Songs')); await sleep(600);
+        await cp.evaluate(i => { const b = document.querySelector('[data-open-song="' + i + '"]'); if (b) b.click(); }, cop.id); await sleep(3000);
+        await cp.evaluate(() => { const t = [...document.querySelectorAll('main [role=tab]')].find(x => /Start to finish/.test(x.innerText)); if (t) t.click(); }); await sleep(2500);
+        const cc = await probe();
+        ok('the copy: no run of rests left that is not in the standard tiling, no dotted 16th/32nd/64th rest in the graph or DOM', cc.runs === 0 && cc.small === 0 && cc.domSmall === 0 && cc.domRests > 0, JSON.stringify(cc));
+        ok('the copy has its notes and a valid graph', cc.notes >= ctl.notes * 0.9 && cc.errors === 0, JSON.stringify({ cc: cc, ctl: ctl }));
+      }
+      ok('no page or console error', cp.__rec.pageErrors.length === 0 && cp.__rec.consoleErrors.length === 0, JSON.stringify(cp.__rec.pageErrors.concat(cp.__rec.consoleErrors)));
+      await cp.close();
     }
 
     console.log('\n── refusals ──');

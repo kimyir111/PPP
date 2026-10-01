@@ -395,6 +395,8 @@
 
   /* a page that has not loaded scoregraph/gaps.js (an old cached page): no gap is closed, nothing throws */
   const closeSmallGaps = GAPS ? GAPS.closeSmallGaps : (g => ({ graph: g, changed: false, stats: { gaps: 0, notesLengthened: 0, restsRemoved: 0, rewritten: 0, longest: '0', omitted: 0, skipped: 0, failed: 'scoregraph/gaps.js is not loaded' } }));
+  /* "consecutive rests" (docs/GOALS/G09 section 12): the silences written once, after the gaps are closed (the same gate); a page whose gaps.js is older has no mergeRests: nothing is merged */
+  const mergeRests = GAPS && GAPS.mergeRests ? GAPS.mergeRests : (g => ({ graph: g, changed: false, stats: { runs: 0, restsBefore: 0, restsAfter: 0, skipped: 0, failed: 'scoregraph/gaps.js has no mergeRests' } }));
   const isTranscription = GAPS ? GAPS.isTranscription : (g => !!(g && g.provenance && (g.provenance.sources || []).some(x => x.kind === 'audio-score')));
 
   /* Repair the graph `candidates/index.js` selected. `selection` is `run()`'s / `select()`'s result
@@ -437,11 +439,12 @@
        its edition wrote and are left exactly as written. */
     const closeOpt = opts.closeGaps === undefined ? 'auto' : opts.closeGaps;
     if (single && r.graph && (closeOpt === true || (closeOpt === 'auto' && isTranscription(g)))) {
-      const cg = closeSmallGaps(r.graph);
-      return Object.assign({ ok: true, ctx: ctx }, r, { graph: cg.graph, report: r.report ? Object.assign({}, r.report, { closedGaps: cg.stats }) : r.report });
+      /* the gaps closed and the silences written once, to a fixed point (scoregraph/gaps.js tidyRests); a page whose gaps.js is older has only the closing */
+      const tr = GAPS && GAPS.tidyRests ? GAPS.tidyRests(r.graph) : (() => { const c = closeSmallGaps(r.graph); return { graph: c.graph, stats: c.stats }; })();
+      return Object.assign({ ok: true, ctx: ctx }, r, { graph: tr.graph, report: r.report ? Object.assign({}, r.report, { closedGaps: tr.stats }, tr.rests ? { mergedRests: tr.rests } : {}) : r.report });
     }
     return Object.assign({ ok: true, ctx: ctx }, r);
   }
 
-  return Object.freeze({ VERSION, SOURCE, LEVEL_SLACK, STRUCTURAL, DEFAULTS, snapshot, judge, applyUnit, tryUnit, repair, repairSelection, closeSmallGaps, isTranscription, plan: PLAN });
+  return Object.freeze({ VERSION, SOURCE, LEVEL_SLACK, STRUCTURAL, DEFAULTS, snapshot, judge, applyUnit, tryUnit, repair, repairSelection, closeSmallGaps, mergeRests, isTranscription, plan: PLAN });
 });
