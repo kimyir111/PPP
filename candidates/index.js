@@ -88,6 +88,11 @@
    any level either, so a piece that was arranged before is arranged the same way; the chosen candidate's `plan.relaxed` says whether the relaxed search was used. With singleNoteHands
    the realizer is also given `handDropBass` (realize/handchords.js dropBass: a bass note that shares a hand with the melody's top note is removed instead of leaving a dyad).
 
+   `opts.strayRescue` (G9e stray-note rescue, default on with `singleNoteHands`, `false` = off; a last resort): when NO candidate survives the hard-violation filter and a candidate's every
+   hard violation is a VELOCITY (a hand shift too fast for the time between two attacks), the offending single note is left out (its event becomes a rest, as handchords/dropBass does) and
+   the candidate is scored again; `selected.rescued` lists what was left out ([{m, at, sec, hand, pitch, why}], also `report.rescued`). A piece with any surviving candidate is selected exactly
+   as before, so every result that exists without it is byte for byte the same. docs/GOALS/G09 section 12, "G9e stray-note rescue".
+
    `run(g, sg, request, opts)` does enumerate -> score -> select in one call - the entry
    point `realize/tools/harness.js`'s own G9a comparison mode and this module's own tests
    use. `opts`: `n` (default 8), `weights` (critic weight overrides, for ablations - see
@@ -103,15 +108,16 @@
   if (typeof module === 'object' && module.exports) {
     module.exports = factory(
       require('../arrangement/index.js'), require('../realize/index.js'), require('../critics/index.js'),
-      require('../playability/reach.js'), require('../arrangement/reference.js'), require('../scoregraph/serialize.js'));
+      require('../playability/reach.js'), require('../arrangement/reference.js'), require('../scoregraph/serialize.js'),
+      require('../scoregraph/ops.js'), require('../playability/index.js'));
   } else {
     const AR = root.PPPArrangementModules || {};
     const PP = root.PPPPlayabilityModules || {};
     const M = root.PPPRealizeModules || {};
     const SG = root.PPPScoreGraphModules || {};
-    root.PPPCandidates = factory(root.PPPArrangement, root.PPPRealize, root.PPPCritics, PP.reach, AR.reference, SG.serialize);
+    root.PPPCandidates = factory(root.PPPArrangement, root.PPPRealize, root.PPPCritics, PP.reach, AR.reference, SG.serialize, SG.ops, root.PPPPlayability);
   }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (ARR, REALIZE, CRIT, REACH, REF, SER) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (ARR, REALIZE, CRIT, REACH, REF, SER, OPS, PLA) {
   'use strict';
 
   /* Every pattern the realizer has: auto, hymn, block, broken, ballad, pop, waltz. Kept so the old candidate set stays reproducible. */
@@ -269,6 +275,100 @@
       }
       return Object.assign({}, c, { scores: ev.critics, hardOk: ev.hardOk });
     });
+  }
+
+  /* ---- G9e stray-note rescue (last resort; only with opts.singleNoteHands) ----
+     A real piano transcription leaves a few notes in the melody voice that are not melody: a chord of the other hand that audio-score.js's voice split put into the top voice, between
+     two high notes. One note per hand keeps one of that chord's notes, and it then sits two or more octaves from both neighbours: a hand shift the G5 filter rejects (playability/
+     analyze.js VELOCITY). The note is in every candidate (it is the melody voice's own), so ONE such note refused a whole piece (measured: 1 violation in 1,894 events, every candidate
+     discarded), and repair never touches a melody note.
+     This runs only when NO candidate survived the filter, and only on a candidate whose every hard violation is a VELOCITY. For the first violation the two notes of the hand that could
+     be the stray (the one it lands on and the one before it) are tried out: the note whose removal leaves the fewest hard violations (and none but VELOCITY) goes, the more isolated one
+     when equal. The note is LEFT OUT, not moved: an octave move writes a pitch the source does not have at that place, and a note that is not there is a smaller, honest change (the
+     arrangement already leaves notes out). Its event becomes a rest of the same length; a note that is tied, linked to the performance layer, or sounds with another in its hand is never
+     taken, and then the note next to it is not taken in its place (the candidate stays refused). At most RESCUE_MAX_DROPS notes go: a piece with more violations than that is not a stray-note piece. A piece with any survivor is selected
+     exactly as before, so every piece that was arranged is arranged byte for byte the same. */
+  const RESCUE_MAX_DROPS = 8; /* an engineering bound ("a few"), not tuned to any sample */
+  const RESCUE_SOURCE = Object.freeze({ kind: 'repair', tool: 'ppp.g9e-stray-note', version: '1.0.0' });
+  function strayRescue(g, profile) {
+    if (!OPS || !PLA || !PLA.graph || !PLA.analyze || !PLA.fingering) return null;
+    const EPS = 1e-9;
+    const locked = new Set();
+    (g.parts || []).forEach(part => (part.spanners || []).forEach(sp => { if (sp.type === 'tie') { locked.add(sp.from); locked.add(sp.to); } }));
+    (g.performances || []).forEach(pf => (pf.notes || []).forEach(pn => { if (pn.link !== undefined) locked.add(pn.link); }));
+    const hardOf = attacks => PLA.analyze(attacks, { profile: profile }).events.filter(e => e.hard.length);
+    const total = events => events.reduce((n, e) => n + e.hard.length, 0);
+    const onlyVelocity = events => events.every(e => e.hard.every(h => h.code === 'VELOCITY'));
+    const mean = xs => xs.reduce((s, x) => s + x, 0) / xs.length;
+    const measureNumber = new Map(g.timeline.measures.map(m => [m.id, m.number]));
+    let cur = g;
+    const rescued = [];
+    for (;;) {
+      const attacks = PLA.graph.attacksOf(cur);
+      const bad = hardOf(attacks);
+      if (!bad.length) break;
+      if (!onlyVelocity(bad) || rescued.length >= RESCUE_MAX_DROPS) return null;
+      const e0 = bad[0];
+      const hand = attacks.filter(a => a.limb === e0.limb);
+      const i = hand.findIndex(a => Math.abs(a.onsetSec - e0.onsetSec) < EPS);
+      if (i < 0) return null;
+      let best = null;
+      [i, i - 1].forEach(k => {
+        const a = hand[k];
+        if (!a) return;
+        const rest = hardOf(attacks.filter(y => y !== a));
+        if (!onlyVelocity(rest) || !(total(rest) < total(bad))) return; /* it must clear something and make nothing new */
+        const left = hand[k - 1], right = hand[k + 1], x = mean(a.midis);
+        const iso = (left ? Math.abs(x - mean(left.midis)) : 0) + (right ? Math.abs(x - mean(right.midis)) : 0);
+        if (!best || total(rest) < best.hard || (total(rest) === best.hard && iso > best.iso + EPS)) best = { a: a, hard: total(rest), iso: iso };
+      });
+      /* the stray is the best of the two even when it cannot be taken (a chord, a tied or linked note): the note next to it is never left out in its place */
+      if (!best || best.a.heads.length !== 1 || locked.has(best.a.heads[0].id)) return null;
+      const head = best.a.heads[0];
+      let eventId = null, ev0 = null;
+      cur.parts.forEach(part => part.events.forEach(ev => { if ((ev.heads || []).some(h => h.id === head.id)) { eventId = ev.id; ev0 = ev; } }));
+      if (eventId === null) return null;
+      let res;
+      try {
+        res = OPS.edit(cur, d => {
+          const e = d.event(eventId), src = d.source();
+          e.kind = 'rest'; delete e.heads;
+          e.prov = Object.assign({}, e.prov || {});
+          e.prov.asp = Object.assign({}, e.prov.asp || {}, { exists: { src: src, op: 'repaired' } });
+          d.retire(head.id, null);
+          d.reindex();
+          d.touch();
+        }, { source: RESCUE_SOURCE });
+      } catch (err) { return null; }
+      if (!res || !res.changed) return null;
+      rescued.push({ m: measureNumber.get(ev0.m) || ev0.m, at: ev0.at, sec: Math.round(best.a.onsetSec * 1000) / 1000, hand: best.a.limb, pitch: head.midi, why: 'VELOCITY' });
+      cur = res.graph;
+    }
+    if (!rescued.length) return null;
+    /* the notes a finger DP sees changed: fingering is computed once more, as repair() does */
+    try { cur = PLA.fingering.fingerGraph(cur, { source: PLA.fingering.SOURCE }).graph; } catch (err) { /* the graph with the fingering it had is still right */ }
+    return { graph: cur, rescued: rescued };
+  }
+  /* `scored` (scoreCandidates' result, none hardOk) -> the same list with each VELOCITY-only candidate replaced by its rescued, re-scored self where that clears the filter (the same
+     filter, handCrossing included, as any candidate). Anything else is returned as it was; when nothing was rescued the very same array comes back. */
+  function rescueScored(scored, g, sg, request, scoreOpts) {
+    let any = false;
+    const out = scored.map(c => {
+      const codes = c.scores && c.scores.hard && c.scores.hard.byCode ? Object.keys(c.scores.hard.byCode) : [];
+      if (c.hardOk || !codes.length || codes.some(k => k !== 'VELOCITY')) return c;
+      const r = strayRescue(c.graph, request.handProfile);
+      if (!r) return c;
+      const moved = Object.assign({}, c, { graph: r.graph, fingerprint: SER.fingerprint(r.graph), rescued: r.rescued, report: Object.assign({}, c.report, { rescued: r.rescued }) });
+      const again = scoreCandidates([moved], g, sg, request, scoreOpts)[0];
+      if (again.hardOk) { any = true; return again; }
+      return c;
+    });
+    return any ? out : scored;
+  }
+  /* the rescue runs only for a single-note request in which no candidate survived (and is off with opts.strayRescue === false) */
+  function needsRescue(scored, opts) { return !!opts.singleNoteHands && opts.strayRescue !== false && scored.length > 0 && !scored.some(c => c.hardOk); }
+  function maybeRescue(scored, g, sg, request, opts, scoreOpts) {
+    return needsRescue(scored, opts) ? rescueScored(scored, g, sg, request, scoreOpts) : scored;
   }
 
   /* ---- badness (see header): every critic normalized to ~0 (perfect) .. ~1 (bad).
@@ -458,7 +558,7 @@
       '|' + JSON.stringify(opts && opts.registerFloor !== undefined ? opts.registerFloor : 'default') +
       '|' + JSON.stringify((opts && opts.stride) || 'default') +
       '|' + JSON.stringify(patternsFor(opts)) + '|' + (opts && opts.allowStride ? 'stride' : 'nostride') +
-      '|' + JSON.stringify((opts && opts.last) || null) + '|' + (opts && opts.singleNoteHands ? 'single' : 'default') +
+      '|' + JSON.stringify((opts && opts.last) || null) + '|' + (opts && opts.singleNoteHands ? 'single' + (opts.strayRescue === false ? '-norescue' : '') : 'default') +
       '|' + (opts && opts.fullEngrave ? 'full' : 'gate') + (opts && opts.skipEngrave ? '|noengrave' : '');
   }
 
@@ -483,11 +583,12 @@
   function runUncached(g, sg, request, opts) {
     const enumerated = enumerate(g, sg, request, opts);
     if (opts.fullEngrave) {
-      const scored = scoreCandidates(enumerated.candidates, g, sg, request, opts);
+      const scored = maybeRescue(scoreCandidates(enumerated.candidates, g, sg, request, opts), g, sg, request, opts, opts);
       const selection = select(scored, request, opts.skipEngrave ? Object.assign({}, opts, { deferEngrave: true }) : opts);
       return Object.assign({ tried: enumerated.tried, scored: scored }, selection);
     }
-    const cheapScored = scoreCandidates(enumerated.candidates, g, sg, request, Object.assign({}, opts, { skipEngrave: true }));
+    const cheapOpts = Object.assign({}, opts, { skipEngrave: true });
+    const cheapScored = maybeRescue(scoreCandidates(enumerated.candidates, g, sg, request, cheapOpts), g, sg, request, opts, cheapOpts);
     const selection = selectWithEngraveGate(cheapScored, g, sg, request, opts);
     return Object.assign({ tried: enumerated.tried, scored: cheapScored }, selection);
   }
@@ -517,6 +618,12 @@
     const scoreOpts = opts.fullEngrave ? opts : Object.assign({}, opts, { skipEngrave: true });
     const scored = [];
     for (const c of enumerated.candidates) { scoreCandidates([c], g, sg, request, scoreOpts).forEach(x => scored.push(x)); await tick(); }
+    if (needsRescue(scored, opts)) {
+      /* one candidate at a time, the thread handed back between them (the same result as maybeRescue: each candidate is rescued on its own) */
+      const rescuedList = [];
+      for (const c of scored.slice()) { rescuedList.push(rescueScored([c], g, sg, request, scoreOpts)[0]); await tick(); }
+      scored.length = 0; rescuedList.forEach(x => scored.push(x));
+    }
     if (opts.fullEngrave) {
       const selection = select(scored, request, opts.skipEngrave ? Object.assign({}, opts, { deferEngrave: true }) : opts);
       return Object.assign({ tried: enumerated.tried, scored: scored }, selection);
@@ -527,7 +634,7 @@
 
   return Object.freeze({
     PATTERNS, ALL_PATTERNS, STRIDE_PATTERNS, patternsFor, LEVEL_OFFSETS_DEFAULT, TOP_K_FOR_ENGRAVE_DEFAULT, HAND_CROSSING_MAX,
-    specOrder, patternProfileSpecs, specKey, enumerate, scoreCandidates, badnessOf, select, selectWithEngraveGate, explain, run, runAsync,
+    specOrder, patternProfileSpecs, specKey, enumerate, scoreCandidates, badnessOf, select, selectWithEngraveGate, explain, run, runAsync, strayRescue,
     DEFAULT_WEIGHTS
   });
 });
