@@ -42,12 +42,9 @@ const REAL = JSON.parse(fs.readFileSync(path.join(REPO, 'tests/fixtures/g9e-tran
 const HEARD = JSON.parse(fs.readFileSync(path.join(REPO, 'tests/fixtures/g9e-transcription-stray-note.heard.json'), 'utf8'));
 const LEVELS = ['beginner', 'intermediate', 'advanced'];
 const STAGE = { beginner: 1, intermediate: 2, advanced: 3 };
-/* the notes the rescue leaves out of the real piece, in the candidate the app selects (hymn pattern): the stray chord of measure 12 and three left-hand notes (a 32-semitone
-   shift in 0.185 s where the hand needs 0.216 s, and two like it) */
-const REAL_DROPPED = [
-  { m: '12', at: '7/12', hand: 'RH', pitch: 65 }, { m: '30', at: '1/4', hand: 'LH', pitch: 36 },
-  { m: '50', at: '7/16', hand: 'LH', pitch: 68 }, { m: '62', at: '9/32', hand: 'LH', pitch: 36 }
-];
+/* the one note the rescue leaves out of the real piece: the stray chord's 65 of measure 12. (The hymn-pattern candidate has three more violations, in the left hand, none of them at
+   an outlier, so it is not rescued and stays out of selection: the candidate the app selects is the ballad pattern.) */
+const REAL_DROPPED = [{ m: '12', at: '7/12', hand: 'RH', pitch: 65 }];
 const brief = list => list.map(x => ({ m: x.m, at: x.at, hand: x.hand, pitch: x.pitch }));
 
 /* the same piece the page's graph of the investigation was: 8 bars, a melody around C5..G6, a left hand of half notes; bars 3 and 6 carry the stray [C4, F4] chord between A6 and D6
@@ -150,13 +147,12 @@ test('real transcription: only the reported notes are missing (each is a rest no
   assert.ok(chosen.graph.provenance.sources.some(s => s.tool === 'ppp.g9e-stray-note'));
 });
 
-test('real transcription, the review screen\'s path: the graph built from the heard notes is made too, with the same stray chord left out', async () => {
+test('real transcription, the review screen\'s path: the graph built from the heard notes is made too, with the same stray note left out', async () => {
   const built = AUDIO.toMusicXml({ notes: HEARD.notes, pedals: [], beats: [], downbeats: [] }, { title: 'Looping the Rooms', lock: { beats: 4, beatType: 4, bpm: 162, firstDownbeat: -0.371 } });
   assert.ok(built.graph);
   const r = await app.arrangeSingleNote(built.graph, { level: 'intermediate' });
   assert.equal(r.ok, true, r.reason);
-  assert.equal(r.rescued.length, 4);
-  assert.deepEqual(r.rescued.map(x => [x.m, x.hand, x.pitch]), [['12', 'RH', 65], ['30', 'LH', 36], ['50', 'LH', 68], ['62', 'LH', 36]]);
+  assert.deepEqual(r.rescued.map(x => [x.m, x.hand, x.pitch]), [['12', 'RH', 65]]);
   assertClean(check(r.graph, r.report.request.handProfile), 'review path');
 });
 
@@ -227,7 +223,7 @@ test('strayRescue: not a chord, not a tied note, not a graph with another kind o
   const span = mk({ time: [4, 4], rh: 'C6:q A6:16 C4:16 D6:8 C4+C6:q r:q', lh: 'C3:w' });
   assert.ok(PLA.analyzeGraph(span, { profile: LARGE }).events.some(e => e.hard.some(h => h.code === 'SPAN')));
   assert.equal(CAND.strayRescue(span, LARGE), null, 'another hard violation (SPAN) means no rescue at all');
-  const bar = 'A6:16 C4:16 A6:16 C4:16 r:q r:h';
+  const bar = 'A6:8 A6:16 C4:16 A6:8 A6:16 C4:16 r:q r:q';
   const six = mk({ time: [4, 4], rh: [bar, bar, bar].join(' | '), lh: 'C3:w | C3:w | C3:w' });
   const r6 = CAND.strayRescue(six, LARGE);
   assert.equal(r6.rescued.length, 6, 'six strays go');
@@ -236,6 +232,109 @@ test('strayRescue: not a chord, not a tied note, not a graph with another kind o
   assert.equal(CAND.strayRescue(ten, LARGE), null, 'twenty are not a stray-note piece');
   const clean = mk({ time: [4, 4], rh: 'C5:q D5:q E5:q F5:q', lh: 'C3:w' });
   assert.equal(CAND.strayRescue(clean, LARGE), null, 'a graph with no violation is returned as null: nothing was rescued');
+});
+
+/* the review's reproductions of the first version: a stray at the LAST attack, two adjacent strays, and a note inside a wide figure */
+test('strayRescue: a stray at the last or the first attack of the hand goes, not the legitimate note next to it', () => {
+  const last = mk({ time: [4, 4], rh: 'C6:q D6:q E6:8 D6:16 C3:16 r:q', lh: 'C3:w' });
+  assert.ok(vel(last).length > 0);
+  const r = CAND.strayRescue(last, LARGE);
+  assert.deepEqual(r.rescued.map(x => x.pitch), [48], 'the C3 goes (D6 stays)');
+  assert.equal(vel(r.graph).length, 0);
+  assert.deepEqual(notesOf(r.graph).filter(n => n.limb === 'RH').map(n => n.midi), [84, 86, 88, 86]);
+  const first = mk({ time: [4, 4], rh: 'C3:16 D6:16 E6:8 D6:q r:q r:q', lh: 'C3:w' });
+  assert.ok(vel(first).length > 0);
+  const f = CAND.strayRescue(first, LARGE);
+  assert.deepEqual(f.rescued.map(x => x.pitch), [48], 'a stray first note goes (D6 stays)');
+  assert.deepEqual(notesOf(f.graph).filter(n => n.limb === 'RH').map(n => n.midi), [86, 88, 86]);
+});
+
+test('strayRescue: two adjacent strays go together (a chord split over two attacks), the notes around them stay', () => {
+  const two = mk({ time: [4, 4], rh: 'C6:q A6:16 C4:32 F3:32 D6:8 E6:q r:q', lh: 'C3:w' });
+  assert.ok(vel(two).length > 0);
+  const r = CAND.strayRescue(two, LARGE);
+  assert.deepEqual(r.rescued.map(x => x.pitch), [60, 53]);
+  assert.equal(vel(r.graph).length, 0);
+  assert.deepEqual(notesOf(r.graph).filter(n => n.limb === 'RH').map(n => n.midi), [84, 93, 86, 88]);
+  /* three adjacent are not a stray: the run is at most two */
+  const three = mk({ time: [4, 4], rh: 'C6:q A6:16 C4:32 F3:32 B3:32 r:32 D6:8 E6:q r:8 r:16', lh: 'C3:w' });
+  assert.equal(CAND.strayRescue(three, LARGE), null);
+});
+
+test('strayRescue: a note inside a regular wide figure is no outlier and is never taken (czerny849/010: 60 69 77 50 60 69 78)', () => {
+  const fig = mk({ time: [4, 4], rh: 'C4:16 A4:16 F5:16 D3:16 C4:16 A4:16 F#5:16 r:q r:q r:16', lh: 'C3:w' });
+  assert.ok(vel(fig).length > 0);
+  assert.equal(CAND.strayRescue(fig, LARGE), null, 'the D3 is part of the figure: the piece stays refused');
+});
+
+test('strayRescue: random melodies with planted strays - the legitimate notes are not dropped (fuzz, seeded)', () => {
+  let seed = 7;
+  const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+  const pick = a => a[Math.floor(rnd() * a.length)];
+  const NAMES = ['C', 'D', 'E', 'F', 'G', 'A', 'B'], PCN = { 0: 'C', 2: 'D', 4: 'E', 5: 'F', 7: 'G', 9: 'A', 11: 'B', 1: 'C#', 3: 'D#', 6: 'F#', 8: 'G#', 10: 'A#' };
+  let triggered = 0, legit = 0, dropped = 0;
+  for (let it = 0; it < 300; it++) {
+    const notes = []; let deg = 35 + Math.floor(rnd() * 7);
+    const bars = 4 + Math.floor(rnd() * 6);
+    for (let b = 0; b < bars; b++) {
+      let left = 16;
+      while (left > 0) {
+        const d = pick([4, 2, 1].filter(x => x <= left));
+        notes.push({ deg: deg, dur: d }); left -= d;
+        deg = Math.max(31, Math.min(47, deg + pick([-2, -1, -1, 0, 1, 1, 2])));
+      }
+    }
+    const cand = [];
+    for (let k = 0; k < notes.length - 1; k++) if (k === 0 || notes[k - 1].dur === 1) cand.push(k);
+    const strays = new Set();
+    for (let t = 0; t < 1 + Math.floor(rnd() * 2); t++) {
+      const k = pick(cand);
+      [k].concat(rnd() < 0.25 && k + 2 < notes.length ? [k + 1] : []).forEach(j => { strays.add(j); notes[j].low = 48 + Math.floor(rnd() * 18); });
+    }
+    /* strays at least three notes apart: a stray, a melody note, a stray is the pattern of a trill, which nothing can tell from a melody */
+    const sorted = [...strays].sort((a, b) => a - b);
+    if (sorted.some((x, i) => i && x - sorted[i - 1] > 1 && x - sorted[i - 1] < 3)) continue;
+    let acc = 0; const toks = [];
+    notes.forEach(n => {
+      const m = n.low, nm = m != null ? PCN[m % 12] + (Math.floor(m / 12) - 1) : NAMES[((n.deg % 7) + 7) % 7] + Math.floor(n.deg / 7);
+      toks.push(nm + ':' + { 4: 'q', 2: '8', 1: '16' }[n.dur]); acc += n.dur; if (acc % 16 === 0) toks.push('|');
+    });
+    const line = toks.join(' ').replace(/ \|$/, '').split(' | ').map(x => x.replace(/ \|$/, '')).join(' | ');
+    const g = mk({ time: [4, 4], rh: line, lh: Array.from({ length: line.split('|').length }, () => 'C3:w').join(' | ') });
+    if (!vel(g).length) continue;
+    const r = CAND.strayRescue(g, LARGE);
+    if (!r) continue;
+    triggered++;
+    const rh = g.parts[0].events.filter(e => e.kind === 'note' && e.staff === g.parts[0].staves[0].id), after = new Map(r.graph.parts[0].events.map(e => [e.id, e]));
+    rh.forEach((e, i) => { if (after.get(e.id).kind === 'rest') { dropped++; if (!strays.has(i)) legit++; } });
+    assert.equal(vel(r.graph).length, 0);
+  }
+  assert.ok(triggered >= 80, 'the rescue was exercised: ' + triggered);
+  assert.equal(legit, 0, legit + ' legitimate notes dropped of ' + dropped);
+});
+
+test('fewestDrops: among the candidates the rescue cleared, those that left out more notes are discarded; nothing else is touched', () => {
+  const mkc = (index, n, hardOk) => ({ index: index, hardOk: hardOk !== false, rescued: n ? new Array(n).fill({}) : undefined });
+  const list = [mkc(0, 1), mkc(1, 4), mkc(2, 1), mkc(3, 2), mkc(4, 0, false)];
+  const out = CAND.fewestDrops(list);
+  assert.deepEqual(out.map(c => c.hardOk), [true, false, true, false, false]);
+  assert.deepEqual(out.filter(c => c.rescueExtra).map(c => c.index), [1, 3]);
+  const same = [mkc(0, 2), mkc(1, 2)];
+  assert.equal(CAND.fewestDrops(same), same, 'equal counts: the very same list');
+  const none = [mkc(0, 0, false)];
+  assert.equal(CAND.fewestDrops(none), none);
+});
+
+test('real transcription: the left-hand notes of the hymn candidate are no outliers, so that candidate is not rescued and the app\'s result leaves out the one stray note only', () => {
+  const sg = SGG.analyze(REAL);
+  const sel = CAND.run(REAL, sg, REQ('intermediate'), Object.assign({ relax: 2 }, RUN));
+  assert.equal(sel.ok, true);
+  const hymn = sel.scored.find(c => c.spec.pattern === 'hymn');
+  assert.equal(hymn.hardOk, false, 'four violations, three of them not at a stray: refused as before');
+  assert.ok(!('rescued' in hymn));
+  assert.equal(sel.selected.rescued.length, 1);
+  assert.equal(sel.selected.rescued[0].pitch, 65);
+  sel.scored.filter(c => c.hardOk).forEach(c => assert.equal(c.rescued.length, 1));
 });
 
 /* ================================================================ nothing else changes */

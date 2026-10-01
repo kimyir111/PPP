@@ -14800,7 +14800,7 @@ class Component extends DCLogic {
   /* G9e refusals: the piece was planned by the relaxed pass (arrangement/plan.js relax), so it can be harder than the level asked for */
   levelNoteText() { return tx('This piece has many notes, so the arrangement may be a little harder than the level you chose.'); }
   /* G9e stray-note rescue: notes the arranger left out because no hand could play them in the time between their neighbours (candidates/index.js strayRescue) */
-  rescuedText(n) { return tx('This piece has notes that cannot be played, so {{n}} left out.', { n: n }); }
+  rescuedText(n) { return tx(n === 1 ? '{{n}} note was left out because it could not be played smoothly.' : '{{n}} notes were left out because they could not be played smoothly.', { n: n }); }
   /* the one line a one-note-per-hand result can carry: the level note and/or the left-out notes ('' when neither); remembered, so that choosing another level can take exactly it off the screen */
   singleNoticeText(levelNote, rescued) {
     const text = [levelNote ? this.levelNoteText() : '', rescued && rescued.length ? this.rescuedText(rescued.length) : ''].filter(Boolean).join(' ');
