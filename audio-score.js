@@ -1349,6 +1349,13 @@
       return typeof module === 'object' && module.exports ? require('./scoregraph/rec-tuplet.js') : (global && global.PPPScoreGraphModules && global.PPPScoreGraphModules.recTuplet) || null;
     } catch (e) { return null; }
   }
+  /* "Hands v2" (docs/GOALS/G10_AUDIO_TO_SCORE.md section 8, stage S4, G10a-2): rec/hands.js, asked for with opts.hands === 'v2' (off by default: without it
+     the hands are assignHands' as always). Asked for and not loaded is an error, never a silent legacy split: a measurement must know which ran. */
+  function handsLib() {
+    const lib = typeof module === 'object' && module.exports ? require('./rec/hands.js') : (global && global.PPPRecHands) || null;
+    if (!lib) { const e = new Error('opts.hands v2: rec/hands.js is not loaded'); e.code = 'E-HANDS-NO-LIB'; throw e; }
+    return lib;
+  }
   const ACCIDENTAL_NAME = { '-2': 'flat-flat', '-1': 'flat', '0': 'natural', '1': 'sharp', '2': 'double-sharp' };
 
   /* heard: {notes: [{on, off, midi, vel, staff, tick}] (every note after clean; staff and tick once placed),
@@ -1554,7 +1561,7 @@
 
     const key = estimateKey(notes);
     const table = spellingTable(key);
-    assignHands(q);
+    const handsReport = opts.hands === 'v2' ? handsLib().assignQ(q, {}).report : (assignHands(q), null);
 
     const pedals = [];
     const held = [];
@@ -1708,6 +1715,7 @@
       if (professional === 'on' && pro.graph !== graph) { graph = pro.graph; graphIssues = pro.issues; }
     }
     if (gridReport) result.gridReport = gridReport;            /* beside the graph, not in stats (the benchmark snapshots stats) */
+    if (handsReport) result.handsReport = handsReport;         /* the same: only with opts.hands === 'v2' */
     result.xml = scoreGraph().musicxml.export(graph, { software: 'PPP audio transcription' }).xml;
     result.graph = graph;
     result.graphIssues = graphIssues;
