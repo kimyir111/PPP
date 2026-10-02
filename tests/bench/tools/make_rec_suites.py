@@ -25,6 +25,10 @@ from pppbench import suite as suite_mod, util  # noqa: E402
 
 util.setup_stdio()
 OPTS = {"legacy": {}, "app": {"closeGaps": True, "exactBars": True}}
+# G10a-2 (docs/GOALS/G10 section 8, stage S3): the grid stage alone. `v2-grid` is the app's options with rec/grid.js placing the
+# onsets (opts.grid 'v2': audio-score.js keeps its beats, tempo and metre, only the grid of each beat and the onsets on it change),
+# measured against `app` on the very same performances
+GRID_OPTS = {"app": OPTS["app"], "v2-grid": {"closeGaps": True, "exactBars": True, "grid": "v2"}}
 
 # (profile, beats): the rows of each tier
 SMOKE = [("cover", "none"), ("cover-pedal", "none"), ("human-real", "none")]
@@ -34,6 +38,13 @@ ROBUST = [("cover-alt", "none"), ("cover-alt", "oracle-noisy")]
 MUTATION = [("cover", "none"), ("human", "oracle")]    # human + oracle beats: the family where G0 passes a quarter of the cases, so rec.usable can move
 FULL = [("cover", "none"), ("cover-pedal", "none"), ("human-real", "none"), ("swing", "none"), ("cover+of", "none"),
         ("cover-pedal+helper", "oracle-noisy")]
+# rec-grid: the grid stage judged where the time skeleton is given (oracle beats: the stage alone; oracle-noisy: the helper's
+# beats) and on the production path (beats none), with the swing family (long-short eighths written straight) and the browser
+# model's error overlay
+GRID = [("cover", "oracle"), ("cover", "oracle-noisy"), ("human-real", "oracle"), ("cover+of", "oracle"), ("swing", "oracle"),
+        ("cover-pedal+helper", "oracle-noisy"), ("cover", "none")]
+GRID_FULL = [("cover", "oracle"), ("cover", "oracle-noisy"), ("human-real", "oracle"), ("swing", "oracle"), ("cover+of", "oracle"),
+             ("cover-alt", "oracle")]
 
 REC_GATE = {
     "rec.usable": {"dir": "up", "tol": -0.005},
@@ -75,10 +86,10 @@ def gate(base: dict, scale: float = 1.0, holdout: bool = False) -> dict:
     return g
 
 
-def rows(table, seeds):
+def rows(table, seeds, opts_axis=None):
     out = []
     for profile, beats in table:
-        for name, opts in OPTS.items():
+        for name, opts in (opts_axis or OPTS).items():
             out.append({"profile": profile, "beats": beats, "seeds": seeds, "opt_name": name, "opts": opts})
     return out
 
@@ -114,6 +125,17 @@ def build() -> dict:
                          description="Nightly/manual: every lint-clean reference, hold-out included (seeds 11, 12), x the humanizer's "
                                      "families x legacy / app; the hold-out is reported as an aggregate",
                          gate=gate(suite_mod.GATE_FULL, holdout=True)),
+        "rec-grid": dict(base, name="rec-grid", references=core["references"], matrix=rows(GRID, [1], GRID_OPTS),
+                         description="G10a-2 grid stage (S3, rec/grid.js): the core references x the humanizer's families with the beats "
+                                     "given (oracle, oracle-noisy) and as production finds them (none), the swing family included, x stage "
+                                     "options app / v2-grid (the app's options with rec/grid.js placing the onsets)",
+                         gate=gate(suite_mod.GATE_CORE)),
+        "rec-grid-full": dict(base, name="rec-grid-full", references=full["references"], holdout_seeds=[11, 12],
+                              matrix=rows(GRID_FULL, [1, 2], GRID_OPTS),
+                              description="Nightly/manual: the grid stage on every lint-clean reference, hold-out included (seeds 11, 12), "
+                                          "oracle beats (and cover oracle-noisy; cover-alt, the uncalibrated robustness family) x app / v2-grid; "
+                                          "the hold-out is reported as an aggregate",
+                              gate=gate(suite_mod.GATE_FULL, holdout=True)),
     }
 
 

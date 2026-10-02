@@ -29,7 +29,9 @@ from typing import Dict, List, Optional, Sequence, Tuple
 from . import util
 
 ENTRY = "audio-score.js"
-SUT_TREES: Tuple[str, ...] = ("scoregraph",)
+SUT_TREES: Tuple[str, ...] = ("scoregraph", "rec")
+# G10a-2: the rec/ stages load committed model weights (rec/grid-model.json) with require(): part of the snapshot
+DATA_TREES: Tuple[str, ...] = ("rec",)
 
 
 class SutError(Exception):
@@ -39,7 +41,7 @@ class SutError(Exception):
 
 
 def _is_module(rel: str) -> bool:
-    return rel.endswith(".js")
+    return rel.endswith(".js") or (rel.endswith(".json") and rel.split("/", 1)[0] in DATA_TREES)
 
 
 def sut_files(entry: str) -> List[str]:
