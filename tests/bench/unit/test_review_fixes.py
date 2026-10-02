@@ -187,15 +187,21 @@ class KnownFailuresAreMeasured(unittest.TestCase):
     def test_counts(self):
         kf = known_defects.audit()
         k = kf["classes"]
-        self.assertEqual(k["key_signature_playback"]["by_collection"]["hymns"], 89)
+        # MX-2 (ca70a03) regenerated the hymn catalogue: the hymn defects of these classes are gone (G0 baseline values
+        # in brackets: key_signature_playback hymns 89, tie_without_stop hymns 10, bar_accidental_not_carried hymns 10 /
+        # 18 notes). What is left, measured at ab00e01, is non-hymn files.
+        self.assertNotIn("hymns", k["key_signature_playback"]["by_collection"])
+        self.assertEqual((k["key_signature_playback"]["files_affected"], k["key_signature_playback"]["items"]), (3, 6))
         self.assertEqual(kf["files_by_collection"]["hymns"], 100)
-        self.assertEqual(k["tie_without_stop"]["by_collection"]["hymns"], 10)
+        self.assertNotIn("hymns", k["tie_without_stop"]["by_collection"])
+        self.assertEqual((k["tie_without_stop"]["files_affected"], k["tie_without_stop"]["items"]), (6, 20))
         self.assertGreaterEqual(k["octave_shift_playback"]["files_affected"], 29)
         # in time order across voices, as the page is read (the review's document-order count was 21)
         self.assertEqual((k["bar_accidental_not_carried"]["by_collection"], k["bar_accidental_not_carried"]["items"]),
-                         ({"hymns": 10}, 18))
-        for c in ("key_signature_playback", "tie_without_stop", "bar_accidental_not_carried", "octave_shift_playback"):
+                         ({}, 0))
+        for c in ("key_signature_playback", "tie_without_stop", "octave_shift_playback"):
             self.assertEqual(k[c]["status"], "KNOWN_FAILURE", c)
+        self.assertNotEqual(k["bar_accidental_not_carried"]["status"], "KNOWN_FAILURE")   # empty since MX-2
 
 
 class EditedReferenceIsInputDrift(unittest.TestCase):

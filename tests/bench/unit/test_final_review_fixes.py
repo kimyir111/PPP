@@ -99,9 +99,15 @@ class WholeScoreSequences(unittest.TestCase):
         self.assertEqual(m["critical.key"], 0.0)
 
     def test_an_untrusted_key_is_not_trusted_bar_by_bar_either(self):
-        rid = next(r.id for r in corpus.load_corpus() if "struct.key.fifths_exact" in r.expect.get("skip_metrics", ()))
-        e, c, p, row = case(rid, "deadpan", "oracle")
-        m = metrics(e, c, p, row)
+        # MX-2 (ca70a03) regenerated the hymns, so no registered reference has an untrusted key any more (this test
+        # used to take the first hymn whose registry entry skipped the key metrics; there are none left). The rule
+        # lives in evaluate._finish: a reference the registry skips is skipped bar by bar too. A reference with a real
+        # key change (the test above) is judged with the skip list the registry would write for an untrusted key.
+        e, c, p, row = case("method/burgmuller25/015", "deadpan", "oracle")
+        self.assertEqual([r.id for r in corpus.load_corpus() if r.expect.get("skip_metrics")], [])   # MX-2: none left
+        self.assertIsNotNone(metrics(e, c, p, row)["struct.key.timeline_accuracy"])                   # judged when trusted
+        r = dict(row, xml=row["xml"])
+        m = evaluate.evaluate_timed(c, p, r, skip_metrics=corpus.KEY_METRICS)[0]
         self.assertIsNone(m["struct.key.fifths_exact"])
         self.assertIsNone(m["struct.key.timeline_accuracy"])
         self.assertIsNone(m["critical.key"])
