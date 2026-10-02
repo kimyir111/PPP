@@ -331,6 +331,27 @@ hold-out seeds 11 and 12; nightly), `rec-mutation` (`python tests/bench/run.py m
 per metric, each must be a REGRESSION that names its metric, the no-op byte-identical; nightly). After G10a-1 the options
 axis gains `v2`.
 
+## The real-AMT tier (`replay-of`, G10a-0 step 5)
+
+The humanizer's performances rendered to audio and transcribed by the model users get: the browser's Onsets & Frames
+(`Import.pianoAmtNotes`: tfjs 2.8.6, 30-s windows, the app's isolated-transient filter), run headless in this tree's page.
+`tools/of_replay.js` drives it (a manual refresh, when the model, the renderer or the humanizer changes; not CI):
+
+```sh
+export PPP_TRANSCRIBE_PYTHON=<the transcribe venv's python: numpy; ffmpeg on PATH>  PPP_BENCH_NODE_MODULES=<a node_modules with puppeteer>
+node tests/bench/tools/of_replay.js --n 20 --max-seconds 45          # render, transcribe, write tests/bench/replay-of/*.json
+python tests/bench/run.py run --suite replay-of                       # replay them in seconds, Node only (replay-of-app: with the app's options)
+python tests/bench/run.py update-baseline --suite replay-of --reason "..."   # and replay-of-app
+```
+
+It renders `cover-pedal` performances with `render_piano.py` (the damper pedal keeps a note sounding to the pedal-up, a short
+deterministic synthetic room; without a pedal and without `--room` the renderer is byte-identical to the one that made the helper
+fixtures), serves the page on a free port with `NODE_ENV=production` (`tests/serve-free.js`: nothing on 8788, never 8777) and writes
+one fixture per piece: the heard **notes** only (`engine: onsets-and-frames`), the truth, the render and the model in `provenance`;
+the WAV never leaves the work directory. Pedal is not scored (O&F writes none and no reference marks it). Domain gap, stated in
+the design: sampled piano without sympathetic resonance, one microphone position, a synthetic room; the tier tests the model's
+systematic behaviour (dropped isolated notes, octave ghosts, offsets), not real-world accuracy.
+
 ## Known production failures (measured, not fixed)
 
 `run.py known-defects`, every `results.json` and every `summary.md` count the defects in the
@@ -405,6 +426,7 @@ generalisation to unseen pieces, not to real playing.
 | `mutation` | 171 | `mutation-check` only |
 | `golden` | 17 snapshots | `golden` |
 | `replay-public` | 6 fixtures | CI gate (needs only Node) |
+| `replay-of`, `replay-of-app` | the fixtures of `tests/bench/replay-of` (20), library default / the app's options | the real-AMT tier (G10a-0): the production browser model on rendered audio, replayed from committed heard notes; CI gate (needs only Node). G0 metrics only (no `rec.*`) |
 | `omr-live` | 4 fixtures | T1, needs the app server + helper with Audiveris |
 
 **How far from synthetic the inputs are** (§17 M11):

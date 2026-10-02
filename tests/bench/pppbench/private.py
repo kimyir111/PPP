@@ -55,7 +55,9 @@ def load_cases(suite: Dict[str, Any]) -> List[Dict[str, Any]]:
     if suite.get("fixtures") == "replay":
         cases = []
         refs = corpus.by_id(corpus.load_corpus())
-        for path in sorted(glob.glob(os.path.join(REPLAY_DIR, "*.json"))):
+        # a replay suite reads tests/bench/replay unless it names another directory (replay-of: G10a-0's O&F fixtures)
+        fixture_dir = os.path.join(util.bench_root(), suite["dir"]) if suite.get("dir") else REPLAY_DIR
+        for path in sorted(glob.glob(os.path.join(fixture_dir, "*.json"))):
             fx = util.load_json(path)
             entry = refs[fx["reference"]]
             cases.append({"id": fx["id"], "kind": "replay", "reference_path": entry.abspath, "expect": entry.expect,
@@ -101,6 +103,8 @@ def run_private(suite: Dict[str, Any], args) -> int:
               + (" — record fixtures with `run.py record-replay` (tests/bench/README.md, Replay)" if suite.get("fixtures") == "replay" else ""))
         return 0
     t0 = time.perf_counter()
+    # a replay suite may ask for stage options (replay-of-app: what the app passes); none: the library default as before
+    opts = {"title": "bench", **((suite.get("stage") or {}).get("opts") or {})}
     jobs, perfs, canons = [], {}, {}
     for c in cases:
         canon = musicxml.read_score(c["reference_path"], ottava=corpus.REFERENCE_OTTAVA)   # truth is the music
@@ -114,9 +118,9 @@ def run_private(suite: Dict[str, Any], args) -> int:
             hr = c["helper_result"]
             inp = {k: hr[k] for k in ("notes", "pedals", "beats", "downbeats", "beatConfidence", "grid") if k in hr}
             inp["title"] = "bench"
-            perfs[c["id"]] = Performance(input=inp, opts={"title": "bench"}, truth=[],
+            perfs[c["id"]] = Performance(input=inp, opts=opts, truth=[],
                                          expected=_expected(canon, c["expect"], c["bar_starts"]), timemap=tm, start_s=0.0)
-            jobs.append({"id": c["id"], "input": inp, "opts": {"title": "bench"}})
+            jobs.append({"id": c["id"], "input": inp, "opts": opts})
     sut = os.path.abspath(args.audio_score or stages.default_audio_score())
     notated = stages.notate_batch(jobs, audio_score=sut) if jobs else {"results": {}, "meta": {}}
     rows = []
