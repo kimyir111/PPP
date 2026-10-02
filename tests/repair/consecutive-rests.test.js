@@ -277,7 +277,12 @@ test('a recording\'s transcription: no run is left that is not in the standard t
   assert.ok(GAPS.restRuns(onlyGaps.graph, { skipped: 0 }).length > 3, 'with only the gaps closed, runs are left that are not in the standard tiling');
   assert.equal(GAPS.restRuns(closed.graph, { skipped: 0 }).length, 0, 'none is left');
   assert.ok(closed.restReport && closed.restReport.runs > 3, JSON.stringify(closed.restReport));
-  assert.deepEqual(notes(closed.graph), notes(onlyGaps.graph), 'the notes are those closeSmallGaps leaves: not a note changed by the merging');
+  /* the notes are those closeSmallGaps leaves, not a note changed by the merging; the one change is fillRunRests': a note before a deleted lone 16th rest is 1/16 longer ("Right-hand run rests") */
+  const noteRows = g => g.parts[0].events.filter(e => e.kind === 'note').map(e => ({ key: e.m + '|' + e.staff + '|' + e.at + '|' + e.heads.map(h => h.pitch.step + (h.pitch.alter || 0) + h.pitch.oct).join('+'), dur: R.parse(e.dur) }));
+  const gapsOnly = new Map(noteRows(onlyGaps.graph).map(r => [r.key, r.dur]));
+  const closedRows = noteRows(closed.graph);
+  assert.equal(closedRows.length, gapsOnly.size);
+  closedRows.forEach(r => { assert.ok(gapsOnly.has(r.key), 'same note: ' + r.key); const d = R.sub(r.dur, gapsOnly.get(r.key)); assert.ok(R.sign(d) >= 0 && R.le(d, R.make(1, 16)), 'a note changes by nothing or by at most the filled 16th: ' + r.key); });
   assert.equal(merged(closed.graph).graph, closed.graph, 'idempotent');
   assert.equal(GAPS.tidyRests(closed.graph).graph, closed.graph);
   assert.equal(V.validate(closed.graph).issues.filter(i => /^E-/.test(i.code)).length, 0);
