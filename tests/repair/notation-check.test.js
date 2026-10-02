@@ -1,4 +1,4 @@
-/* The notation checker (scoregraph/notation-check.js; docs/GOALS/G09 section 12, "Recording durations from onsets"): its own tests. Each class is planted in a small graph written
+/* The notation checker (scoregraph/tools/notation-check.js; docs/GOALS/G09 section 12, "Recording durations from onsets"): its own tests. Each class is planted in a small graph written
    by hand (so the checker is proved to SEE it, not only to say "0" on clean data), the same graph is read through the graph adapter and through the Score adapter (the page's own
    Score from the MusicXML the graph writes), a clean recording is 0 in classes 1-7, the script runs, REST_MIN is adjustable. */
 'use strict';
@@ -6,7 +6,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('path');
 const REPO = path.resolve(__dirname, '..', '..');
-const C = require(path.join(REPO, 'scoregraph/notation-check.js'));
+const C = require(path.join(REPO, 'scoregraph/tools/notation-check.js'));
 const SG = require(path.join(REPO, 'scoregraph/index.js'));
 const A = require(path.join(REPO, 'audio-score.js'));
 const { recording } = require('./rec-synth.js');
@@ -162,11 +162,11 @@ test('a recording written from onsets has no violation in classes 1-7; the same 
   const fs = require('fs'), os = require('os'), cp = require('child_process');
   const f = path.join(os.tmpdir(), 'nc-' + process.pid + '.json');
   fs.writeFileSync(f, JSON.stringify(mk({}).graph));
-  const ok = cp.spawnSync(process.execPath, [path.join(REPO, 'scoregraph/notation-check.js'), f], { encoding: 'utf8' });
+  const ok = cp.spawnSync(process.execPath, [path.join(REPO, 'scoregraph/tools/notation-check.js'), f], { encoding: 'utf8' });
   assert.equal(ok.status, 0, ok.stdout + ok.stderr);
   assert.match(ok.stdout, /classes 1-7 total: 0/);
   fs.writeFileSync(f, JSON.stringify(mk({ onsetDurations: false }).graph));
-  const bad = cp.spawnSync(process.execPath, [path.join(REPO, 'scoregraph/notation-check.js'), f, '--items'], { encoding: 'utf8' });
+  const bad = cp.spawnSync(process.execPath, [path.join(REPO, 'scoregraph/tools/notation-check.js'), f, '--items'], { encoding: 'utf8' });
   assert.equal(bad.status, 1);
   assert.match(bad.stdout, /class 1 \{/);
   fs.unlinkSync(f);

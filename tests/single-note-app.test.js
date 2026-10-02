@@ -39,7 +39,7 @@
        "Rewrite the rhythm", Accept and the Song Arranger's one-note copy: every voice of every bar adds up as the Score draws it (drawn values with the tuplet ratio), tuplet brackets in the
        Score and the DOM, a valid graph with no W-DISPLAY-DURATION, a strike for every heard note; the control (written without exact bars) has bars that do not add up
      - recording durations from onsets (root cause of the wedged rests): a seeded 10-bar piece whose notes are all released early (eighths, triplet beats, chords, a bar-crossing 16th, a real quarter
-       rest) through "Rewrite the rhythm", Accept, the Song Arranger's one-note copy and a reload: scoregraph/notation-check.js (injected) finds nothing in classes 1-7 in the Score or the graph the
+       rest) through "Rewrite the rhythm", Accept, the Song Arranger's one-note copy and a reload: scoregraph/tools/notation-check.js (injected) finds nothing in classes 1-7 in the Score or the graph the
        page draws; the control (heard releases) has rests between notes; the real rest stays; a strike for every heard note
      - refusals and failed downloads: a piece that stays unreachable (czerny849/009), option scripts (the candidates one, or another of the fourteen) or
        reference data that cannot be loaded (also when it is the warm-up that fails: no error, and the next arrangement asks again). The Song Arranger
@@ -1068,12 +1068,12 @@ async function identityHashes(browser) {
     /* Root cause of the "wedged" rests: a recording's onsets are heard well and its releases are not, so the silence between a heard release and the next onset became a rest. audio-score.js now
        writes a note until the next onset of its voice unless the silence is at least REST_MIN (an eighth). Here the heard notes of a seeded 10-bar piece (120 bpm; every note released well
        before the next one: eighths heard for half their length, triplet beats, quarters, chords, a note on the last 16th of a bar followed a 16th into the next, a real quarter rest) go
-       through the real screens: "Rewrite the rhythm", Accept (the saved transcription), the Song Arranger's one-note copy, and all of them again after a reload. In each, scoregraph/notation-check.js
+       through the real screens: "Rewrite the rhythm", Accept (the saved transcription), the Song Arranger's one-note copy, and all of them again after a reload. In each, scoregraph/tools/notation-check.js
        (injected in the page) scans EVERY bar and voice of the page's own Score and of the graph it draws: classes 1-7 (rest between notes shorter than an eighth, rest shorter than a 16th, rests
        that are not the standard tiling, dotted small rest, bar that does not add up, drawn value not the length, tuplet incomplete) are 0, and so are the validator's errors; the real rest is
        still there; the player has a strike for every heard note; the control (heard releases, no gaps pass) has rests between notes. The 'original' level copy (the legacy engine) is reported. */
     {
-      const NC_SRC = fs.readFileSync(path.join(__dirname, '..', 'scoregraph', 'notation-check.js'), 'utf8');
+      const NC_SRC = fs.readFileSync(path.join(__dirname, '..', 'scoregraph', 'tools', 'notation-check.js'), 'utf8');
       const ncPage = async pg => { await pg.evaluate(src => { (0, eval)(src); }, NC_SRC); };
       const op = await openPage(browser);
       await ncPage(op);

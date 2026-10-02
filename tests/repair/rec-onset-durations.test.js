@@ -14,7 +14,7 @@ const SG = require(path.join(REPO, 'scoregraph/index.js'));
 const R = require(path.join(REPO, 'scoregraph/rational.js'));
 const GAPS = require(path.join(REPO, 'scoregraph/gaps.js'));
 const RT = require(path.join(REPO, 'scoregraph/rec-tuplet.js'));
-const C = require(path.join(REPO, 'scoregraph/notation-check.js'));
+const C = require(path.join(REPO, 'scoregraph/tools/notation-check.js'));
 const { recording } = require('./rec-synth.js');
 const HEARD = JSON.parse(fs.readFileSync(path.join(REPO, 'tests/fixtures/g9e-transcription-stray-note.heard.json'), 'utf8'));
 

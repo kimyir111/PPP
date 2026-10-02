@@ -26,7 +26,7 @@
 (function (root, factory) {
   'use strict';
   let gaps = null, rational = null;
-  if (typeof module === 'object' && module.exports) { try { gaps = require('./gaps.js'); } catch (e) { gaps = null; } try { rational = require('./rational.js'); } catch (e) { rational = null; } }
+  if (typeof module === 'object' && module.exports) { try { gaps = require('../gaps.js'); } catch (e) { gaps = null; } try { rational = require('../rational.js'); } catch (e) { rational = null; } }
   else { const M = root.PPPScoreGraphModules || {}; gaps = M.gaps || null; rational = M.rational || null; }
   const api = factory(gaps, rational);
   if (typeof module === 'object' && module.exports) module.exports = api;
@@ -289,12 +289,12 @@
   return Object.freeze({ REST_MIN, U, CLASS_NAMES, checkGraph, checkScore, checkEvents, graphEvents, scoreEvents, summarize, counts });
 });
 
-/* the script: node scoregraph/notation-check.js <graph.json | score.json> [--rest-min 0.125] [--items] */
+/* the script: node scoregraph/tools/notation-check.js <graph.json | score.json> [--rest-min 0.125] [--items] */
 if (typeof module === 'object' && module.exports && require.main === module) {
   const fs = require('fs');
   const argv = process.argv.slice(2);
   const file = argv.find(a => !a.startsWith('--') && !/^[\d.]+$/.test(a));
-  if (!file) { console.log('usage: node scoregraph/notation-check.js <graph.json | score.json> [--rest-min 0.125] [--items]'); process.exit(2); }
+  if (!file) { console.log('usage: node scoregraph/tools/notation-check.js <graph.json | score.json> [--rest-min 0.125] [--items]'); process.exit(2); }
   const C = module.exports;
   const j = JSON.parse(fs.readFileSync(file, 'utf8'));
   const i = argv.indexOf('--rest-min');
