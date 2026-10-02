@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional, Tuple
 
 from . import align, musicxml, semantic
-from .metrics import composite, critical, notation, notation_quality, notes, pedal, readability, structure
+from .metrics import composite, critical, notation, notation_quality, notes, pedal, readability, rec, structure
 from .timemap import PredTime, StatsShapeError
 
 # id(ref) -> (ref, its readability). The entry holds the reference itself: an id is only unique while its
@@ -69,11 +69,12 @@ INPUT_PEDALS = object()   # truth_pedals default: the performer's pedal is the i
 
 
 def evaluate_timed(ref, perf, row: Dict[str, Any], *, window_s: float = 0.30,
-                   skip_metrics=(), truth_pedals=INPUT_PEDALS) -> Tuple[Dict[str, Optional[float]], Dict[str, int], Dict[str, Any]]:
+                   skip_metrics=(), truth_pedals=INPUT_PEDALS, rec_extra=None) -> Tuple[Dict[str, Optional[float]], Dict[str, int], Dict[str, Any]]:
     """Returns (metrics, counts, predicted). Raises CaseError.
 
     ``truth_pedals``: the performance's own pedal when the input's is a guess (replay: a list, or None
-    when unknown); see metrics/pedal.py."""
+    when unknown); see metrics/pedal.py. ``rec_extra``: a dict (possibly empty) asks for the recording metrics
+    of G10a-0 (metrics/rec.py) - the adapter's notation-checker counts, bar chords and the stability; None: none."""
     if not row.get("ok"):
         raise CaseError("NOTATE_" + str(row.get("code") or "exception").upper().replace("-", "_"), row.get("error") or "")
     try:
@@ -105,7 +106,11 @@ def evaluate_timed(ref, perf, row: Dict[str, Any], *, window_s: float = 0.30,
     metrics.update(readability.compute(ctx))
     metrics.update(notation_quality.compute(ctx))   # G03 §20.3, informational
     metrics.update(pedal.compute(ctx))
+    if rec_extra is not None:
+        metrics.update(rec.compute(ctx, rec_extra))
     _finish(metrics, skip_metrics, symbolic=False)
+    if rec_extra is not None:
+        metrics.update(rec.finish(metrics))
     counts = {"ref": len(ref_played), "pred": len(pred_played), "pairs": len(pairs), "input": len(inp)}
     predicted = predicted_summary(pred, stats)
     predicted["semantic"] = semantic.digest(pred)

@@ -55,7 +55,7 @@ def generate(suite: Dict[str, Any], refs: Optional[List[corpus.RefEntry]] = None
             file_sha[entry.path] = util.content_sha256(entry.abspath)
         canon = corpus.read_reference(entry)
         c.tags = corpus.derived_tags(entry, canon) + [f"profile:{c.profile}", f"beats:{c.beats}", f"seed:{c.seed}"] + \
-            (["holdout"] if c.holdout else [])
+            ([f"opts:{c.opt_name}"] if c.opt_name else []) + (["holdout"] if c.holdout else [])
         p = perform.perform(canon, c.ref_id, c.profile, c.beats, c.seed, expect=entry.expect,
                             case_opts=stage_case_opts(stage_opts, c.opts), opt_name=c.opt_name)
         perfs[c.id] = p
@@ -120,7 +120,12 @@ def run_suite(suite: Dict[str, Any], *, audio_score: Optional[str] = None, out_d
                            "\nIf the change is intended: run.py relock --suite <name> --reason \"...\", then rebaseline.")
     sut = os.path.abspath(audio_score or stages.default_audio_score())
     jobs = [{"id": c.id, "input": perfs[c.id].input, "opts": perfs[c.id].opts} for c in cases]
-    notated = stages.notate_batch(jobs, audio_score=sut)
+    use_rec = bool(suite.get("rec"))        # a suite that asks for the recording metrics (G10a-0, metrics/rec.py)
+    notated = stages.notate_batch(jobs, audio_score=sut, check=use_rec)
+    rec_extra = {}
+    if use_rec:
+        from . import recrun
+        rec_extra = recrun.extras(cases, perfs, notated["results"], by, sut)
     t_not = time.perf_counter()
     window = (suite.get("align") or {}).get("window_s", 0.30)
     results_cases, per_case_ms, artifacts = [], {}, {}
@@ -136,7 +141,8 @@ def run_suite(suite: Dict[str, Any], *, audio_score: Optional[str] = None, out_d
         try:
             metrics, counts, predicted = evaluate.evaluate_timed(ref, p, row, window_s=window,
                                                                  skip_metrics=entry.expect.get("skip_metrics", ()),
-                                                                 **({"truth_pedals": p.truth_pedals} if p.has_truth_pedals else {}))
+                                                                 **({"truth_pedals": p.truth_pedals} if p.has_truth_pedals else {}),
+                                                                 **({"rec_extra": rec_extra[c.id]} if use_rec else {}))
             rec.update(metrics=metrics, counts=counts, predicted=predicted)
         except evaluate.CaseError as exc:
             rec.update(status="error", error_code=exc.code, error=str(exc)[:300])

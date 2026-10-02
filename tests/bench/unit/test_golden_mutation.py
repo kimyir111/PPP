@@ -4,7 +4,7 @@ import re
 import unittest
 from contextlib import redirect_stdout
 
-from pppbench import golden, mutation, stages, util
+from pppbench import golden, mutation, stages, suite as suite_mod, util
 
 
 class Golden(unittest.TestCase):
@@ -92,7 +92,7 @@ class Golden(unittest.TestCase):
 class Mutation(unittest.TestCase):
     def test_every_anchor_occurs_exactly_once(self):
         root = os.path.dirname(stages.default_audio_score())
-        for m in mutation.MUTATIONS:
+        for m in mutation.MUTATIONS + mutation.REC_MUTATIONS:
             with open(os.path.join(root, *mutation.target(m).split("/")), "rb") as handle:
                 src = util.normalise_eol(handle.read()).decode("utf-8")
             for find, _ in mutation.edits(m):
@@ -108,6 +108,36 @@ class Mutation(unittest.TestCase):
         self.assertTrue(path.startswith(mutation.MUT_DIR))
         self.assertIn("/* noop mutation */", util.read_text(path))
         self.assertNotIn("noop mutation", util.read_text(stages.default_audio_score()))
+
+
+class RecMutations(unittest.TestCase):
+    """G10a-0: every recording metric has a planted defect that must be flagged by name (mutation-check --rec)."""
+
+    def test_every_recording_metric_is_named_by_a_mutation(self):
+        from tools import make_rec_suites
+        named = {x for m in mutation.REC_MUTATIONS for x in m["metrics"]}
+        for metric in make_rec_suites.REC_GATE:
+            self.assertIn(metric, named, metric)
+        for m in mutation.REC_MUTATIONS:
+            if m["expect"] == "REGRESSION":
+                self.assertTrue(any(x.startswith("rec.") for x in m["metrics"]), m["id"])
+
+    def test_ids_are_unique_and_the_noop_is_last(self):
+        ids = [m["id"] for m in mutation.REC_MUTATIONS]
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertEqual(mutation.REC_MUTATIONS[-1]["id"], "MUT-NOOP")
+        self.assertEqual(mutation.REC_MUTATIONS[-1]["expect"], "PASS")
+
+    def test_the_suite_exists_and_asks_for_the_recording_metrics(self):
+        s = suite_mod.load_suite("rec-mutation")
+        self.assertTrue(s["rec"])
+        for k in make_rec_gate_keys():
+            self.assertIn(k, s["gate"]["metrics"], k)
+
+
+def make_rec_gate_keys():
+    from tools import make_rec_suites
+    return make_rec_suites.REC_GATE.keys()
 
 
 if __name__ == "__main__":

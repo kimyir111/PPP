@@ -15,6 +15,11 @@
    scoregraph/ library beside it (docs/GOALS/G01 §15.4), and the bench
    refuses a run whose module closure leaves its snapshot.
 
+   --check (off by default; without it every output line is byte-identical to before) adds to each ok row
+   "check": {"counts": {"1": n, ... "10": n}, "bars": n} - the SUT's own scoregraph/tools/notation-check.js on the graph
+   toMusicXml returned (G09 classes 1-10); null when the module is missing. (The bar chords of a graph come from
+   rec-harmony.js, which is a metric tool outside the SUT: stages.notate_batch runs it on the --emit-graph file.)
+
    --emit-graph (off by default; out.jsonl is the same with it) writes, per
    job, the ScoreGraph toMusicXml returned: {"id", "graph" (canonical text),
    "fingerprint", "issues": [{severity, code}]} (G01 A40). */
@@ -33,6 +38,7 @@ const sut = path.resolve(arg('--audio-score') || process.env.PPP_BENCH_AUDIO_SCO
 const inPath = arg('--in');
 const outPath = arg('--out');
 const graphPath = arg('--emit-graph');
+const doCheck = process.argv.indexOf('--check') >= 0;
 if (!inPath || !outPath) {
   process.stderr.write('usage: notate.js --in jobs.jsonl --out out.jsonl [--audio-score path]\n');
   process.exit(2);
@@ -52,6 +58,14 @@ function emitGraph(id, r) {
   fs.writeSync(graphs, JSON.stringify(Object.assign({ id: id }, g || { graph: null }, { issues: issues })) + '\n');
 }
 
+function tryRequire(p) { try { return require(p); } catch (e) { return null; } }
+const NC = doCheck ? tryRequire(path.join(path.dirname(sut), 'scoregraph', 'tools', 'notation-check.js')) : null;
+function checkRow(row, r) {
+  row.check = null;
+  if (!r.graph || !NC) return;
+  try { const rep = NC.checkGraph(r.graph); const counts = {}; Object.keys(rep.classes).forEach(k => { counts[k] = rep.classes[k].count; }); row.check = { counts: counts, bars: rep.bars }; } catch (e) { row.check = null; }
+}
+
 for (const line of lines) {
   const job = JSON.parse(line);
   const t0 = process.hrtime.bigint();
@@ -60,6 +74,7 @@ for (const line of lines) {
     const r = A.toMusicXml(job.input, job.opts || {});
     row = { id: job.id, ok: true, xml: r.xml, stats: r.stats };
     if (graphs) emitGraph(job.id, r);
+    if (doCheck) checkRow(row, r);
   } catch (e) {
     row = { id: job.id, ok: false, error: String(e && e.message || e), code: (e && e.code) || null };
   }

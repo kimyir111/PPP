@@ -66,6 +66,9 @@ class Verdict:
         return {"PASS": 0, "REGRESSION": 1}.get(self.status, 2)
 
 
+AGGREGATE_ONLY = ("full", "rec-full")   # nightly suites: the baseline holds aggregates, not a row per case
+
+
 def baseline_path(name: str) -> str:
     return os.path.join(BASELINE_DIR, name + ".json")
 
@@ -73,8 +76,8 @@ def baseline_path(name: str) -> str:
 def baseline_path_for(suite: Dict[str, Any]) -> str:
     if suite_mod.is_private(suite):
         return os.path.join(os.path.dirname(suite["_path"]), "baseline.json")
-    if suite["name"] == "full":
-        return os.path.join(BASELINE_DIR, "full.aggregates.json")
+    if suite["name"] in AGGREGATE_ONLY:
+        return os.path.join(BASELINE_DIR, suite["name"] + ".aggregates.json")
     return baseline_path(suite["name"])
 
 
@@ -402,7 +405,7 @@ def cli_update_baseline(args) -> int:
         print("ERROR NOT_WORKTREE_SUT: the last run used a different audio-score.js; a baseline must come from the repository's SUT")
         return 2
     prev = load_baseline(suite)
-    base = baseline_from_results(results, run, reason=args.reason, previous=prev, full=suite["name"] == "full",
+    base = baseline_from_results(results, run, reason=args.reason, previous=prev, full=suite["name"] in AGGREGATE_ONLY,
                                  gate=suite.get("gate"))
     path = baseline_path_for(suite)
     util.dump_json(base, path)
