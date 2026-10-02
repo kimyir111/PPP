@@ -236,7 +236,7 @@ async function identityHashes(browser) {
   /* the review screen's heard notes are a recording (made from the hymn, each held 95% of its length), and the app now closes a recording's sub-16th gaps (docs/GOALS/G09 section 12,
      'Transcription rests at the source'): the golden is origin/main's, so the closing is switched off here, which is what compares everything else (the arrangers, the layout of the copy)
      with origin/main. The closing itself is checked in its own section below. */
-  await rp.evaluate(() => { const A = window.PPPAudioScore, f = A.toMusicXml; A.toMusicXml = (i, o) => f.call(A, i, Object.assign({}, o, { closeGaps: false })); });
+  await rp.evaluate(() => { const A = window.PPPAudioScore, f = A.toMusicXml; A.toMusicXml = (i, o) => f.call(A, i, Object.assign({}, o, { closeGaps: false, exactBars: false })); });
   await loadReview(rp, HYMN('christ-arose'), 'christ-arose');
   for (const [level, style] of LEVELS.map(l => [l, 'balanced']).concat([['intermediate', 'jazz'], ['beginner', 'ballad']])) {
     const r = await reviewApply(rp, level, style);
@@ -715,9 +715,14 @@ async function identityHashes(browser) {
       ok('control: the heard notes written without the pass have 32nd and 64th rests (the "before")', small(control.rests) >= 8, JSON.stringify(control.rests));
       ok('"Rewrite the rhythm": the Score has no 32nd or 64th rest', small(rr.rests) === 0 && Object.keys(rr.rests).length > 0, JSON.stringify(rr.rests));
       ok('the page draws the kept graph (live) and it has none either; no rest glyph of a 32nd or 64th in the DOM', rr.via === 'live' && small(rr.dom) === 0, JSON.stringify({ via: rr.via, dom: rr.dom }));
-      const key = x => x.split('|').slice(0, 3).join('|'), dur = x => +x.split('|')[3];
-      const m0 = new Map(control.notes.map(x => [key(x), dur(x)]));
-      ok('every note is where it was with its pitch (' + control.notes.length + ' notes), none is shorter, none longer than a 16th more', rr.notes.length === control.notes.length && rr.notes.every(x => m0.has(key(x)) && dur(x) >= m0.get(key(x)) - 1e-6 && dur(x) - m0.get(key(x)) < 0.25 + 1e-6), JSON.stringify({ a: rr.notes.length, b: control.notes.length }));
+      /* the page asks for exact bars too (docs/GOALS/G09 section 12, "Recording notation: tuplets and the grid"): an onset on the 32nd lattice goes to the 16th grid, 1/32 of a whole note (0.125 quarter) at most, so a note
+         is where it was to within that, with its pitch, and none is lost */
+      const abs = x => { const f = x.split('|'); return +f[0] * 4 + +f[1]; };
+      const byPitch = list => { const m = new Map(); list.forEach(x => { const k = x.split('|')[2]; if (!m.has(k)) m.set(k, []); m.get(k).push(abs(x)); }); m.forEach(v => v.sort((a, b) => a - b)); return m; };
+      const p0 = byPitch(control.notes), p1 = byPitch(rr.notes);
+      let moved = 0, worst = 0, lost = rr.notes.length === control.notes.length ? 0 : 1;
+      p0.forEach((v, k) => { const w = p1.get(k) || []; if (w.length !== v.length) lost++; v.forEach((t, i) => { if (w[i] !== undefined) { const d = Math.abs(w[i] - t); if (d > 1e-6) moved++; worst = Math.max(worst, d); } }); });
+      ok('every note is where it was with its pitch (' + control.notes.length + ' notes) to within 1/32 of a whole note (the onsets are on the grid now), none lost', lost === 0 && worst <= 0.125 + 1e-6, JSON.stringify({ a: rr.notes.length, b: control.notes.length, moved: moved, worst: worst }));
       ok('the player has the same strikes as for the unclosed score (what is drawn is what is played)', rr.strikes === control.strikes && rr.strikes > 0, JSON.stringify({ strikes: rr.strikes, control: control.strikes }));
       ok('no page or console error', rp.__rec.pageErrors.length === 0 && rp.__rec.consoleErrors.length === 0, JSON.stringify(rp.__rec.pageErrors.concat(rp.__rec.consoleErrors)));
       await rp.close();
@@ -951,6 +956,9 @@ async function identityHashes(browser) {
       await tp.evaluate(() => { const b = [...document.querySelectorAll('button')].find(x => /Accept and practise/.test(x.innerText)); if (b) b.click(); });
       await sleep(2500);
       const tsid = await tp.evaluate(() => window.PPP.app.state.songId);
+      await tp.evaluate(() => window.__pppTest.nav('My Songs')); await sleep(600);
+      await tp.evaluate(i => { const b = document.querySelector('[data-open-song="' + i + '"]'); if (b) b.click(); }, tsid); await sleep(3000);
+      await tp.evaluate(() => { const t = [...document.querySelectorAll('main [role=tab]')].find(x => /Start to finish/.test(x.innerText)); if (t) t.click(); }); await sleep(2500);
       const t2 = await probeBars();
       ok('the saved transcription: every voice-bar adds up, brackets drawn, valid', !!tsid && t2.good === t2.voiceBars && t2.domBrackets >= 10 && t2.warnDisplay === 0 && t2.errors === 0, JSON.stringify(t2));
       const tcop = await overlayArrange(tp, tsid, 'intermediate', 'balanced');
