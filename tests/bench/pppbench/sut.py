@@ -29,7 +29,9 @@ from typing import Dict, List, Optional, Sequence, Tuple
 from . import util
 
 ENTRY = "audio-score.js"
-SUT_TREES: Tuple[str, ...] = ("scoregraph",)
+# scoregraph/ is what audio-score.js loads; the others are the one-note arranger's modules, which the rec-arrange suites (G10c-0) arrange the
+# recordings with: a mutant or an A/B side supplies them too, so the arranger a result names is the arranger that ran
+SUT_TREES: Tuple[str, ...] = ("scoregraph", "songgraph", "arrangement", "candidates", "repair", "realize", "critics", "playability", "difficulty")
 
 
 class SutError(Exception):

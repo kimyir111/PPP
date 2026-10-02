@@ -1,0 +1,138 @@
+{
+ "cases": [
+  {
+   "id": "method/hanon/005|cover|none|s1|opt:app",
+   "input_sha256": "3597871ee161b81e760dd8831f3b983129ddd736b428a0ad793d69c35a9bcb4a",
+   "reference_sha256": "98c63eab3855db91b107a45302a40588612ff85865582c2efe459a4fb5937925"
+  },
+  {
+   "id": "method/hanon/007|cover|none|s1|opt:app",
+   "input_sha256": "f7ea122aaf517f9e13233251b7fd9e835ee47499bc16704688d86e70f216c304",
+   "reference_sha256": "c3ab15c17851508c53be254999966b319ccde56ba0b3046c8e7e0320f12ec3c2"
+  },
+  {
+   "id": "micro/M01-waltz-3-4|cover|none|s1|opt:app",
+   "input_sha256": "d66a758adff870804110be0901923ff3163cbdda2c68972a55d1273cf3eaec52",
+   "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
+   "id": "micro/M02-alberti-4-4|cover|none|s1|opt:app",
+   "input_sha256": "f266b6ff7007e9dd23dd951733d5906419051a62949640b1c172e582bc5fe206",
+   "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
+  },
+  {
+   "id": "micro/M03-jig-6-8|cover|none|s1|opt:app",
+   "input_sha256": "19937979189d23476b012d94d2ff788a747a628dec6fc24aa318d0007f47b552",
+   "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
+   "id": "micro/M04-triplets-4-4|cover|none|s1|opt:app",
+   "input_sha256": "575a1d8c6aa5d82302b11e705c3e71366c43f2be52a4034b5b0bde8656cbee18",
+   "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
+  },
+  {
+   "id": "micro/M05-32nds-120|cover|none|s1|opt:app",
+   "input_sha256": "6378147fb5a43158a5003300e36055318dbd95f509fe8c54bdf64c0bea675ba5",
+   "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
+   "id": "micro/M06-32nds-176|cover|none|s1|opt:app",
+   "input_sha256": "990b80bc05cb36186b292877700d037badd62ec9aa6bb7848ab3eb090a0d435c",
+   "reference_sha256": "0ef2b8c3583ff7ff57a1705c679917b670c90fdfa04c5b73a46c956aade0b522"
+  },
+  {
+   "id": "micro/M07-pickup-3-4|cover|none|s1|opt:app",
+   "input_sha256": "a0b5a3f14c0bcfa24568fb086a542a4a3957cc4867de7aeef314dd5dcb5f9d29",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
+   "id": "micro/M08-pickup-4-4|cover|none|s1|opt:app",
+   "input_sha256": "9aaa1461c70cba8b6e5c7550391b7a7ec66e8c46759e3dc6920554e5335ae4fe",
+   "reference_sha256": "5535e3fca8be8702a15c955c9778b0bbd5ba7cbfa0064c9e03bdac70be2371d6"
+  },
+  {
+   "id": "micro/M09-syncopation-ties|cover|none|s1|opt:app",
+   "input_sha256": "be1b885e39e44a150af2204723cb0823ffd1f54c4d172e1197202881bb2c9817",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
+   "id": "micro/M10-dotted|cover|none|s1|opt:app",
+   "input_sha256": "0997d8d1a68da18407be250c5d1a90f1d020b3a2a73392ba4ab16c5c6c6741a7",
+   "reference_sha256": "c492ffd50e9792199368de1e3875e04e37bbe559710391025e05ae3363230546"
+  },
+  {
+   "id": "micro/M11-harmonic-minor|cover|none|s1|opt:app",
+   "input_sha256": "171194b3a9f1fdfeaaabe51a9e9a66a8f7b0696267e4264daa4da1cdafea2c8d",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
+   "id": "micro/M12-flats-db|cover|none|s1|opt:app",
+   "input_sha256": "c92ab438d267634a0751e0652390a920dcafe93a5cbea79640d1f063426f8ace",
+   "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
+   "id": "micro/M13-sharps-chromatic|cover|none|s1|opt:app",
+   "input_sha256": "60cae9548bfe39725036735f2ebd7a42b9f6486abe07ac059a62ebdda7a9ac6a",
+   "reference_sha256": "f9b6832e7860f333398a4295a1c2e801c3dc4058475d142cc4cb1fe9fa92f5b8"
+  },
+  {
+   "id": "micro/M14-melody-in-bass|cover|none|s1|opt:app",
+   "input_sha256": "792fbd5e68b4df08dd4e28747f2e89b245e6a94ccc67d0d2b7e65d71f5d937e9",
+   "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  },
+  {
+   "id": "micro/M15-wide-chords|cover|none|s1|opt:app",
+   "input_sha256": "118e538e2690d487ea2037105a1af907c4a98a5db99e1cd24fd79de7f03b07ad",
+   "reference_sha256": "a30597236725b84802daa9e9c11bd57928631c14a362b495d853ef449be80c88"
+  },
+  {
+   "id": "micro/M16-long-notes-rests|cover|none|s1|opt:app",
+   "input_sha256": "4b8479633d270f0e0561c1da04609b20a4c7c74ba846b5a038aa65e29542c958",
+   "reference_sha256": "41ef7ad0bd2b8dca61db85c27917cd29de4e38a8f325d1116f928768aadc4d01"
+  },
+  {
+   "id": "micro/M17-march-2-4|cover|none|s1|opt:app",
+   "input_sha256": "97c9b25fc71e4f0c67be7a5e942806837643813b1db0d1d7e1bc3bd1d4945183",
+   "reference_sha256": "97fee0da3be86edfeb652e0b240ce285ebb5e4a8ee689f62baf2c25908670a04"
+  },
+  {
+   "id": "micro/M18-alla-breve|cover|none|s1|opt:app",
+   "input_sha256": "cb935daf36d68507801328500682d4928ae72a7b8e26dc3ab24ac29185e059e6",
+   "reference_sha256": "45ca99a1c07a07ab5532dc3b0b52e5767432c64e894c381bfd62977789dd6121"
+  },
+  {
+   "id": "micro/M19-fast-3-8|cover|none|s1|opt:app",
+   "input_sha256": "acb0633f28810ea1030c8936633650b638d9013777431450c475b115ff557c35",
+   "reference_sha256": "d855ef7dde656f3d9cd43cf08149f14cb1955a4dd2d4bec86ac0f3627f50631d"
+  },
+  {
+   "id": "micro/M20-compound-12-8|cover|none|s1|opt:app",
+   "input_sha256": "7f731d74c51e0924a2ac70804b513fd6a2100d03fa12ca5043d0fbc836401dd6",
+   "reference_sha256": "d15acc5c30128e2cbb9f3dfa4f3775ad93418b3903c4051df99ac77bd8dd5903"
+  },
+  {
+   "id": "micro/M21-five-four|cover|none|s1|opt:app",
+   "input_sha256": "fbf3f17a9f1a012187f1e0c6c87fa7f247e67c9e9bf9407a84672b0010ab0ef9",
+   "reference_sha256": "d617097c51e74a8588ea52784577d5505f928e2456fef44cc36878ad4e1ad6bc"
+  },
+  {
+   "id": "micro/M22-tempo-change|cover|none|s1|opt:app",
+   "input_sha256": "df08a63eb676fd8d92275d8546d2769ee7301a70419b86f80a30087e5486568d",
+   "reference_sha256": "5acc11ae930eec34635589b56b0e6980811d6ec23302d9ae56fede56a5052566"
+  },
+  {
+   "id": "micro/M23-repeated-notes|cover|none|s1|opt:app",
+   "input_sha256": "aa3f824885b46d90bf79f6ba9c07335e1c3815d4e6786218b65b5a90954d6a00",
+   "reference_sha256": "9d979f9d256151c2e939c95759953c26ffdc3538535582b4680bbf7b5200c125"
+  },
+  {
+   "id": "micro/M24-block-chords|cover|none|s1|opt:app",
+   "input_sha256": "fab074a3016bc98819ae6f4fd301eafe3a8e092d0cb4c9ae39ec2fe1cac9d40c",
+   "reference_sha256": "b8bdf18977486f83e048285291004354fb79b9ac2d777738ef62119693bff60c"
+  }
+ ],
+ "generator": "perform/2+humanize/1",
+ "reader": "reader/5",
+ "schema": "ppp.bench-lock/1",
+ "suite_sha256": "c810c5f2edcf7654bbf29622a205bc699d5db3385ce9aa8847a1121f6c612896"
+}

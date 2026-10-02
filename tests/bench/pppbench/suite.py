@@ -180,6 +180,9 @@ def suite_sha256(suite: Dict[str, Any]) -> str:
     """Hash of what decides the cases. Reference and subset lists are sets: their order does not
     change a single case, so it does not change the hash either (§17 m1)."""
     fields = {k: suite.get(k) for k in CASE_FIELDS}
+    for k in ("rec_arrange", "replay_dirs"):      # G10c-0: only a suite that has them hashes them, so no other suite's hash moves
+        if suite.get(k):
+            fields[k] = suite[k]
     if isinstance(fields.get("references"), list):
         fields["references"] = sorted(fields["references"])
     if isinstance(fields.get("subsets"), dict):
@@ -268,7 +271,11 @@ def verify_lock(suite: Dict[str, Any], rows: List[Dict[str, str]], lock: Optiona
 def cli_relock(args) -> int:
     from . import runner
     suite = load_suite(args.suite)
-    rows = runner.generate(suite)[1]
+    if suite.get("rec_arrange"):
+        from . import recarrange
+        rows = recarrange.generate(suite, corpus.load_corpus(), None)[1]
+    else:
+        rows = runner.generate(suite)[1]
     lock = make_lock(suite, rows)
     util.dump_json(lock, lock_path(suite))
     print(f"relocked {suite['name']}: {len(rows)} cases — reason: {args.reason}")

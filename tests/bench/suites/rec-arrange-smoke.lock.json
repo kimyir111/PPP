@@ -1,0 +1,168 @@
+{
+ "cases": [
+  {
+   "id": "catalog/gymnopedie-1|cover+of|none|s1|opt:app",
+   "input_sha256": "ca7587f830ef2498641946232a9882b210630f2d07af0e362e2658f2523021e2",
+   "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
+  },
+  {
+   "id": "catalog/gymnopedie-1|cover|none|s1|opt:app",
+   "input_sha256": "99ddd4ece7bd8631111f1b3a22131c381e8a4eabe44d9ac4b1a233615dc2a78c",
+   "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
+  },
+  {
+   "id": "catalog/happy-birthday|cover+of|none|s1|opt:app",
+   "input_sha256": "08460fbdbb57ad38e49d7e73a76b1861c3eaaeac21cb93cd79f0b44bb9cdff13",
+   "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
+  },
+  {
+   "id": "catalog/happy-birthday|cover|none|s1|opt:app",
+   "input_sha256": "a71d347cc93b7301d92120c350c4a76c3668a37ba7f9675baabb032789d946db",
+   "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
+  },
+  {
+   "id": "hymns/i-know-whom|cover+of|none|s1|opt:app",
+   "input_sha256": "5555a096ce4a896d71d60f3eda597ff3bf901100a4e087e8c7761d2f6474fa2b",
+   "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
+  },
+  {
+   "id": "hymns/i-know-whom|cover|none|s1|opt:app",
+   "input_sha256": "a9e28a5a0fb3193e4915728d0b3f5def186f3a8b0e4d32e59507421f8bac05d1",
+   "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
+  },
+  {
+   "id": "hymns/we-gather-together|cover+of|none|s1|opt:app",
+   "input_sha256": "fad8afaf05e2ab9ea555b8b87576b135a64ee7181907a7d90f6e905357dbe332",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
+  },
+  {
+   "id": "hymns/we-gather-together|cover|none|s1|opt:app",
+   "input_sha256": "96ae7f8f155cd8bbbcd795cf6fd99b58e5644d8930867d5cbb50d79c1f3dee59",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
+  },
+  {
+   "id": "method/czerny599/040|cover+of|none|s1|opt:app",
+   "input_sha256": "c7bf297335e11290ec2d17dd524702445044ee45c0fbe42707ef902d722d49dd",
+   "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
+  },
+  {
+   "id": "method/czerny599/040|cover|none|s1|opt:app",
+   "input_sha256": "c7204fdbe6e4bb3b606c6edc5992b6c512af21a9c456bd01ced133245fd982bd",
+   "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
+  },
+  {
+   "id": "method/sonatina/027|cover+of|none|s1|opt:app",
+   "input_sha256": "cb569c5a82ba16d0d39e9c03f33ac5a687ccbfb7958e120856b9da7c78473e53",
+   "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
+  },
+  {
+   "id": "method/sonatina/027|cover|none|s1|opt:app",
+   "input_sha256": "c13db20c0f7a8b94c5ce4e616a86bb4557c50a624209c352445e0cf63f5d547c",
+   "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
+  },
+  {
+   "id": "micro/M01-waltz-3-4|cover+of|none|s1|opt:app",
+   "input_sha256": "babafe693b38a43cd1a78c347504cebff2f685af07b5527f9d3877374710ab39",
+   "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
+   "id": "micro/M01-waltz-3-4|cover|none|s1|opt:app",
+   "input_sha256": "d66a758adff870804110be0901923ff3163cbdda2c68972a55d1273cf3eaec52",
+   "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
+   "id": "micro/M02-alberti-4-4|cover+of|none|s1|opt:app",
+   "input_sha256": "99d203f179860df34fde0fbc61b5fddd170c688cbe232c49ad2b18f1fe5d5fbe",
+   "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
+  },
+  {
+   "id": "micro/M02-alberti-4-4|cover|none|s1|opt:app",
+   "input_sha256": "f266b6ff7007e9dd23dd951733d5906419051a62949640b1c172e582bc5fe206",
+   "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
+  },
+  {
+   "id": "micro/M03-jig-6-8|cover+of|none|s1|opt:app",
+   "input_sha256": "b545c9781b7291e94a2f42f7ced72ba34742fac0a4aead84a3687df20ebabad9",
+   "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
+   "id": "micro/M03-jig-6-8|cover|none|s1|opt:app",
+   "input_sha256": "19937979189d23476b012d94d2ff788a747a628dec6fc24aa318d0007f47b552",
+   "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
+   "id": "micro/M04-triplets-4-4|cover+of|none|s1|opt:app",
+   "input_sha256": "ed4461c63e81c8a0b56a6c60e42f71677babcbdb1bf3c6bde2b5cdac719a246d",
+   "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
+  },
+  {
+   "id": "micro/M04-triplets-4-4|cover|none|s1|opt:app",
+   "input_sha256": "575a1d8c6aa5d82302b11e705c3e71366c43f2be52a4034b5b0bde8656cbee18",
+   "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
+  },
+  {
+   "id": "micro/M05-32nds-120|cover+of|none|s1|opt:app",
+   "input_sha256": "cef298813573501592d5fbdccc8cb9cb38d13052df945067feb4f61425df5294",
+   "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
+   "id": "micro/M05-32nds-120|cover|none|s1|opt:app",
+   "input_sha256": "6378147fb5a43158a5003300e36055318dbd95f509fe8c54bdf64c0bea675ba5",
+   "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
+   "id": "micro/M07-pickup-3-4|cover+of|none|s1|opt:app",
+   "input_sha256": "d69a2b4aca12f7a04b1ac7621ea48b1caed2e59e898cd2e8f5778aa81b61a98e",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
+   "id": "micro/M07-pickup-3-4|cover|none|s1|opt:app",
+   "input_sha256": "a0b5a3f14c0bcfa24568fb086a542a4a3957cc4867de7aeef314dd5dcb5f9d29",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
+   "id": "micro/M09-syncopation-ties|cover+of|none|s1|opt:app",
+   "input_sha256": "758dc73226952b5ce94e2360d4f02380e5e82ea47abacc2dad80a87214d8f941",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
+   "id": "micro/M09-syncopation-ties|cover|none|s1|opt:app",
+   "input_sha256": "be1b885e39e44a150af2204723cb0823ffd1f54c4d172e1197202881bb2c9817",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
+   "id": "micro/M11-harmonic-minor|cover+of|none|s1|opt:app",
+   "input_sha256": "e53213128d6dd7a4ea2082d9f451321562f01f58e3fb5e22c1959fa893f1fc49",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
+   "id": "micro/M11-harmonic-minor|cover|none|s1|opt:app",
+   "input_sha256": "171194b3a9f1fdfeaaabe51a9e9a66a8f7b0696267e4264daa4da1cdafea2c8d",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
+   "id": "micro/M12-flats-db|cover+of|none|s1|opt:app",
+   "input_sha256": "17a65c7fe572b6d7747baca9b3b43d0bb9b803144cf5af4575374c973d13c08d",
+   "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
+   "id": "micro/M12-flats-db|cover|none|s1|opt:app",
+   "input_sha256": "c92ab438d267634a0751e0652390a920dcafe93a5cbea79640d1f063426f8ace",
+   "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
+   "id": "micro/M14-melody-in-bass|cover+of|none|s1|opt:app",
+   "input_sha256": "8f4f1e7da5ab3a1b54f269ca290f1aff47100af2188bd1d69fa97f673dd8dd14",
+   "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  },
+  {
+   "id": "micro/M14-melody-in-bass|cover|none|s1|opt:app",
+   "input_sha256": "792fbd5e68b4df08dd4e28747f2e89b245e6a94ccc67d0d2b7e65d71f5d937e9",
+   "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  }
+ ],
+ "generator": "perform/2+humanize/1",
+ "reader": "reader/5",
+ "schema": "ppp.bench-lock/1",
+ "suite_sha256": "8909c12b118601a2a7cb2b37fbb44d9f41bbe2bc78f6fd39a1e7dd7c29cee50e"
+}
