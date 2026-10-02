@@ -2,7 +2,7 @@
  "align": {
   "window_s": 0.3
  },
- "description": "G10 recording smoke: the 16 smoke references x cover, cover-pedal, human-real (beats none) x stage options legacy / app; the recording metrics (rec.*) on top of G0's",
+ "description": "G10 recording smoke: the 16 smoke references x cover, cover-pedal, human-real (beats none) x stage options legacy / app / v2; the recording metrics (rec.*) on top of G0's",
  "gate": {
   "case_fail_drop": 10.0,
   "case_flip_max": 1,
@@ -284,6 +284,19 @@
   },
   {
    "beats": "none",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
+   },
+   "profile": "cover",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "none",
    "opt_name": "legacy",
    "opts": {},
    "profile": "cover-pedal",
@@ -305,6 +318,19 @@
   },
   {
    "beats": "none",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
+   },
+   "profile": "cover-pedal",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "none",
    "opt_name": "legacy",
    "opts": {},
    "profile": "human-real",
@@ -318,6 +344,19 @@
    "opts": {
     "closeGaps": true,
     "exactBars": true
+   },
+   "profile": "human-real",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "none",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
    },
    "profile": "human-real",
    "seeds": [
