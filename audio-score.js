@@ -1349,6 +1349,15 @@
       return typeof module === 'object' && module.exports ? require('./scoregraph/rec-tuplet.js') : (global && global.PPPScoreGraphModules && global.PPPScoreGraphModules.recTuplet) || null;
     } catch (e) { return null; }
   }
+  /* G10a-2 (docs/GOALS/G10_AUDIO_TO_SCORE.md section 8, stage S3): rec/grid.js, the grid of each beat decided from the evidence of all its onsets (straight 16ths, 32nds, triplets, swung eighths)
+     and every onset placed on it. Asked for with opts.grid: 'v2' only (the benchmark's 'v2-grid' stage options; no app call site passes it): it replaces this file's onset placement
+     (tripletBeats / snapStraightBest / snapTriplet in quantize, and snapOnsets with exactBars) in finish() for a recording in a simple-time bar, AFTER the beats, the tempo and the metre
+     were decided as before, so only the grid stage changes. Without the option nothing here runs and nothing is loaded. A page without rec/grid.js writes the score as before. */
+  function gridLib() {
+    try {
+      return typeof module === 'object' && module.exports ? require('./rec/grid.js') : (global && global.PPPRecGrid) || null;
+    } catch (e) { return null; }
+  }
   const ACCIDENTAL_NAME = { '-2': 'flat-flat', '-1': 'flat', '0': 'natural', '1': 'sharp', '2': 'double-sharp' };
 
   /* heard: {notes: [{on, off, midi, vel, staff, tick}] (every note after clean; staff and tick once placed),
@@ -1543,6 +1552,13 @@
     const beatType = extra.beatType || 4;
     const ticksPerBeat = extra.ticksPerBeat || Q;
     const bar = Math.round(beatsPerBar * (4 / beatType) * Q);
+    /* opts.grid 'v2' (see gridLib): the onsets of a recording in a simple-time bar placed again by rec/grid.js on the same beats (ticks from beats[0], as quantize places them) */
+    let gridV2 = null;
+    if (opts.grid === 'v2' && extra.quantizer === 'heuristic' && beatType === 4 && ticksPerBeat === Q && (opts.sourceKind || 'audio-score') === 'audio-score' && gridLib()) {
+      gridV2 = gridLib().legacyQ(notes, beats, opts.lock && opts.lock.grid === '16th' ? { kinds: ['16', '32'] } : {});
+      q = gridV2.q;
+      extra = Object.assign({}, extra, { errSum: gridV2.errSum });
+    }
     const firstTick = Math.min.apply(null, q.map(n => n.tick));
     let origin = extra.origin != null ? extra.origin : 0;
     while (origin > firstTick) origin -= bar;
@@ -1584,7 +1600,8 @@
     /* exact bars (see exactGrid): a recording in a simple-time bar with opts.exactBars; the library default and a MIDI file write the score as they always did */
     let grid = null, gridReport = null;
     if (opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4 && ticksPerBeat === Q && tupletLib() && tupletLib().addTriplets) {
-      gridReport = snapOnsets(q, bars, bar, beats, origin, ticksPerBeat);
+      /* with rec/grid.js the onsets are already on one grid per beat: snapOnsets' work is done */
+      gridReport = gridV2 ? { v2: gridV2.report } : snapOnsets(q, bars, bar, beats, origin, ticksPerBeat);
       grid = exactGrid(q, bars, bar, opts.onsetDurations === false ? 0 : Math.round((opts.restMin !== undefined ? +opts.restMin : REST_MIN) * 4 * Q));
     }
     const events1 = staffEvents(q, 1, bar, notationBeat, allowBarTies, grid);
@@ -1708,6 +1725,7 @@
       if (professional === 'on' && pro.graph !== graph) { graph = pro.graph; graphIssues = pro.issues; }
     }
     if (gridReport) result.gridReport = gridReport;            /* beside the graph, not in stats (the benchmark snapshots stats) */
+    if (gridV2) result.gridPlan = { plan: gridV2.plan, report: gridV2.report };   /* rec/grid.js's GridPlan (opts.grid 'v2'), beside the graph too */
     result.xml = scoreGraph().musicxml.export(graph, { software: 'PPP audio transcription' }).xml;
     result.graph = graph;
     result.graphIssues = graphIssues;
