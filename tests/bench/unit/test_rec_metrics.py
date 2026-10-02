@@ -223,7 +223,7 @@ class RunsThroughTheRunner(unittest.TestCase):
         a = self.run_one("catalog/gymnopedie-1|cover-pedal")
         b = self.run_one("catalog/gymnopedie-1|cover-pedal")
         self.assertEqual(json.dumps(a["cases"], sort_keys=True), json.dumps(b["cases"], sort_keys=True))
-        self.assertEqual(len(a["cases"]), 2)                                              # legacy and app options
+        self.assertEqual(len(a["cases"]), 3)                                              # legacy, app and v2 options (G10a-1)
         for c in a["cases"]:
             self.assertEqual(c["status"], "ok")
             m = c["metrics"]
@@ -232,9 +232,9 @@ class RunsThroughTheRunner(unittest.TestCase):
                 self.assertIn(k, m, k)
             self.assertIn(m["rec.usable"], (0.0, 1.0))
             self.assertTrue(0.0 <= m["rec.stability"] <= 1.0)
-            self.assertIn("opts:legacy" if c["id"].endswith("legacy") else "opts:app", c["tags"])
+            self.assertIn("opts:" + c["id"].rsplit("opt:", 1)[1], c["tags"])
 
-    def test_the_legacy_and_app_options_get_the_same_performance(self):
+    def test_the_legacy_app_and_v2_options_get_the_same_performance(self):
         r = self.run_one("catalog/gymnopedie-1|cover-pedal")
         self.assertEqual(len({c["counts"]["input"] for c in r["cases"]}), 1)
 

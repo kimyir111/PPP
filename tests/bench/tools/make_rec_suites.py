@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""Write the recording suites (G10a-0, docs/GOALS/G10 section 7.6): rec-smoke, rec-core, rec-robust, rec-full and
-rec-mutation (the sensitivity check of the recording metrics).
+"""Write the recording suites (G10a-0, docs/GOALS/G10 section 7.6): rec-smoke, rec-core, rec-robust, rec-full,
+rec-mutation (the sensitivity check of the recording metrics) and rec-mutation-v2 (G10a-1: of the v2 time skeleton).
 
     python tests/bench/tools/make_rec_suites.py            # writes tests/bench/suites/rec-*.json
     python tests/bench/tools/make_rec_suites.py --check    # the committed files are this tool's output (exit 1 if not)
 
 Every suite sets ``"rec": true`` (the recording metrics of metrics/rec.py are computed) and runs the humanizer's
-families on the references of smoke / core / full, in the two stage-option sets of docs/GOALS/G10 section 7.6:
-``legacy`` (the library default, ``{}``) and ``app`` (what the app passes, closeGaps + exactBars). The beats axis is
-``none`` (production: the browser's onset tracker) and ``oracle-noisy`` (the helper's beats). After G10a-1 the options
-axis gains ``v2``. The legacy / app pair sees the very same performance (the humanizer's stream does not depend on
-the options name).
+families on the references of smoke / core / full, in the three stage-option sets of docs/GOALS/G10 section 7.6:
+``legacy`` (the library default, ``{}``), ``app`` (what the app passes today, closeGaps + exactBars) and, from G10a-1,
+``v2`` (the app's options with the recording conversion v2, ``recording: 'v2'``: what the app will pass when
+PPP.recording is 'v2', G10a-4). The beats axis is ``none`` (production: the browser's onset tracker) and
+``oracle-noisy`` (the helper's beats). The three option sets see the very same performance (the humanizer's stream
+does not depend on the options name).
 """
 
 import argparse
@@ -24,7 +25,7 @@ sys.path.insert(0, os.path.dirname(HERE))
 from pppbench import suite as suite_mod, util  # noqa: E402
 
 util.setup_stdio()
-OPTS = {"legacy": {}, "app": {"closeGaps": True, "exactBars": True}}
+OPTS = {"legacy": {}, "app": {"closeGaps": True, "exactBars": True}, "v2": {"closeGaps": True, "exactBars": True, "recording": "v2"}}
 
 # (profile, beats): the rows of each tier
 SMOKE = [("cover", "none"), ("cover-pedal", "none"), ("human-real", "none")]
@@ -75,10 +76,12 @@ def gate(base: dict, scale: float = 1.0, holdout: bool = False) -> dict:
     return g
 
 
-def rows(table, seeds):
+def rows(table, seeds, names=None):
     out = []
     for profile, beats in table:
         for name, opts in OPTS.items():
+            if names is not None and name not in names:
+                continue
             out.append({"profile": profile, "beats": beats, "seeds": seeds, "opt_name": name, "opts": opts})
     return out
 
@@ -87,32 +90,37 @@ def build() -> dict:
     smoke = suite_mod.load_suite("smoke")
     core = suite_mod.load_suite("core")
     full = suite_mod.load_suite("full")
+    mutation_refs = sorted(set([r for r in core["references"] if r.startswith("micro/")] + core["subsets"]["amt-subset"]))
     base = {"schema": "ppp.bench-suite/1", "kind": "synthetic-notation", "stage": {"name": "notate", "opts": {}},
             "align": {"window_s": 0.30}, "rec": True, "subsets": {}}
     return {
         "rec-smoke": dict(base, name="rec-smoke", references=smoke["references"], matrix=rows(SMOKE, [1]),
                           description="G10 recording smoke: the 16 smoke references x cover, cover-pedal, human-real (beats none) x "
-                                      "stage options legacy / app; the recording metrics (rec.*) on top of G0's",
+                                      "stage options legacy / app / v2; the recording metrics (rec.*) on top of G0's",
                           gate=gate(suite_mod.GATE_SMOKE, 4.0)),
         "rec-core": dict(base, name="rec-core", references=core["references"], matrix=rows(CORE, [1]),
                          description="G10 recording gate: the core references x the calibrated humanizer's families (cover, cover-pedal, "
                                      "human-real, and the browser model's and the helper's error overlays; swing is in rec-full) x beats none "
-                                     "(production) / oracle-noisy (helper) x stage options legacy / app",
+                                     "(production) / oracle-noisy (helper) x stage options legacy / app / v2",
                          gate=gate(suite_mod.GATE_CORE)),
         "rec-robust": dict(base, name="rec-robust", references=core["references"], matrix=rows(ROBUST, [1]),
                            description="G10 recording robustness: the core references x cover-alt, an independent family (triangular "
                                        "jitter, no voicing, early-release-heavy; not calibrated), beats none / oracle-noisy, "
-                                       "legacy / app",
+                                       "legacy / app / v2",
                            gate=gate(suite_mod.GATE_CORE)),
-        "rec-mutation": dict(base, name="rec-mutation", references=sorted(set(
-                                 [r for r in core["references"] if r.startswith("micro/")] + core["subsets"]["amt-subset"])),
-                             matrix=rows(MUTATION, [1]),
+        "rec-mutation": dict(base, name="rec-mutation", references=mutation_refs,
+                             matrix=rows(MUTATION, [1], ("legacy", "app")),
                              description="Gate sensitivity of the recording metrics (mutation-check --rec): the 24 micro pieces and 60 core "
                                          "references x cover (beats none), human (oracle beats) x legacy / app",
                              gate=gate(suite_mod.GATE_CORE)),
+        "rec-mutation-v2": dict(base, name="rec-mutation-v2", references=mutation_refs,
+                                matrix=rows(MUTATION, [1], ("v2",)),
+                                description="Gate sensitivity of the v2 time skeleton (G10a-1, mutation-check --rec): the rec-mutation "
+                                            "references and rows with the v2 options only",
+                                gate=gate(suite_mod.GATE_CORE)),
         "rec-full": dict(base, name="rec-full", references=full["references"], holdout_seeds=[11, 12], matrix=rows(FULL, [1, 2]),
                          description="Nightly/manual: every lint-clean reference, hold-out included (seeds 11, 12), x the humanizer's "
-                                     "families x legacy / app; the hold-out is reported as an aggregate",
+                                     "families x legacy / app / v2; the hold-out is reported as an aggregate",
                          gate=gate(suite_mod.GATE_FULL, holdout=True)),
     }
 

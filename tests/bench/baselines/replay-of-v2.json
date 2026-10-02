@@ -1,0 +1,3563 @@
+{
+ "aggregates": {
+  "all": {
+   "amt.mean_onset_error_ms": {
+    "mean": 5.078,
+    "n": 20
+   },
+   "amt.note_f1": {
+    "mean": 0.958083,
+    "n": 20
+   },
+   "amt.offset_f1": {
+    "mean": 0.597716,
+    "n": 20
+   },
+   "cases": 20,
+   "critical.accidentals": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "critical.beat_placement": {
+    "mean": 0.7,
+    "n": 20
+   },
+   "critical.hands": {
+    "mean": 0.65,
+    "n": 20
+   },
+   "critical.key": {
+    "mean": 0.9,
+    "n": 20
+   },
+   "critical.meter": {
+    "mean": 0.75,
+    "n": 20
+   },
+   "critical.note_values": {
+    "mean": 0.55,
+    "n": 20
+   },
+   "critical.pitch_integrity": {
+    "mean": 0.55,
+    "n": 20
+   },
+   "critical.playback_tempo": {
+    "mean": 0.9,
+    "n": 20
+   },
+   "critical.structure": {
+    "mean": 0.7,
+    "n": 20
+   },
+   "errors": {
+    "by_code": {},
+    "count": 0
+   },
+   "notation.accidentals.courtesy_per_100": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "notation.accidentals.courtesy_per_100.delta": {
+    "mean": -0.088219,
+    "n": 20
+   },
+   "notation.accidentals.missing": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "notation.accidentals.missing.delta": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "notation.accidentals.required_recall": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "notation.accidentals.required_recall.delta": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "notation.duration.accuracy": {
+    "mean": 0.80375,
+    "n": 20
+   },
+   "notation.duration.accuracy_ref": {
+    "mean": 0.742432,
+    "n": 20
+   },
+   "notation.duration.page_accuracy": {
+    "mean": 0.80375,
+    "n": 20
+   },
+   "notation.hand.accuracy": {
+    "mean": 0.806443,
+    "n": 20
+   },
+   "notation.hand.accuracy_ref": {
+    "mean": 0.742548,
+    "n": 20
+   },
+   "notation.ioi.accuracy": {
+    "mean": 0.933301,
+    "n": 20
+   },
+   "notation.ioi.accuracy_strict": {
+    "mean": 0.834464,
+    "n": 20
+   },
+   "notation.metrical_scale": {
+    "mean": 1.025,
+    "n": 20
+   },
+   "notation.note_shape.consistency": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "notation.note_shape.consistency.delta": {
+    "mean": 0.005,
+    "n": 20
+   },
+   "notation.note_shape.mismatches": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "notation.note_shape.mismatches.delta": {
+    "mean": -0.1,
+    "n": 20
+   },
+   "notation.onset_pos.accuracy": {
+    "mean": 0.733348,
+    "n": 20
+   },
+   "notation.onset_pos.accuracy_ref": {
+    "mean": 0.683079,
+    "n": 20
+   },
+   "notation.pedal.marks": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "notation.spelling.accuracy": {
+    "mean": 0.99955,
+    "n": 20
+   },
+   "notation.spelling.accuracy_ref": {
+    "mean": 0.925173,
+    "n": 20
+   },
+   "notation.ties.extra_per_100": {
+    "mean": 2.143938,
+    "n": 20
+   },
+   "notation.tuplets.false_per_100": {
+    "mean": 2.24148,
+    "n": 20
+   },
+   "notes.identity.f1": {
+    "mean": 0.958083,
+    "n": 20
+   },
+   "notes.identity.precision": {
+    "mean": 0.995456,
+    "n": 20
+   },
+   "notes.identity.precision_micro": {
+    "mean": 0.994977,
+    "n": 20
+   },
+   "notes.identity.recall": {
+    "mean": 0.925586,
+    "n": 20
+   },
+   "notes.identity.recall_micro": {
+    "mean": 0.901669,
+    "n": 20
+   },
+   "notes.input_fidelity.f1": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "notes.onset.f1_50ms": {
+    "mean": 0.890212,
+    "n": 20
+   },
+   "notes.timing.median_abs_ms": {
+    "mean": 18.012917,
+    "n": 20
+   },
+   "nq.acc.redundant_rate": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.acc.redundant_rate.delta": {
+    "mean": -0.000188,
+    "n": 20
+   },
+   "nq.beam.coverage": {
+    "mean": 0.0,
+    "n": 18
+   },
+   "nq.beam.coverage.delta": {
+    "mean": 0.0,
+    "n": 11
+   },
+   "nq.ned": {
+    "mean": 0.665755,
+    "n": 20
+   },
+   "nq.range.ledger4_rate": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.range.ledger4_rate.delta": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.rest.per_measure_delta": {
+    "mean": 0.271422,
+    "n": 20
+   },
+   "nq.rhythm.hidden_beat_rate": {
+    "mean": 0.0075,
+    "n": 20
+   },
+   "nq.rhythm.hidden_beat_rate.delta": {
+    "mean": 0.004481,
+    "n": 20
+   },
+   "nq.rhythm.short_rate_delta": {
+    "mean": 0.00122,
+    "n": 20
+   },
+   "nq.shape.tm_missing": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.shape.tm_missing.delta": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.shape.tm_missing.r17": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.shape.tm_missing.unexpected": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.spell.context_odd": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.spell.context_odd.delta": {
+    "mean": -0.206612,
+    "n": 20
+   },
+   "nq.spell.mixed_bar_rate": {
+    "mean": 0.001563,
+    "n": 20
+   },
+   "nq.spell.mixed_bar_rate.delta": {
+    "mean": 0.001563,
+    "n": 20
+   },
+   "nq.tie.mergeable.cross_voice": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.tie.mergeable.defect": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.tie.mergeable.partial_chord": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.tie.mergeable.r17": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.tie.mergeable.required_beat_split": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.tie.mergeable.required_h6": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.tie.mergeable.required_h7": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.tie.mergeable_rate": {
+    "mean": 0.0,
+    "n": 13
+   },
+   "nq.tuplet.group_complete": {
+    "mean": 1.0,
+    "n": 7
+   },
+   "nq.tuplet.one_note.r17": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.tuplet.one_note.unexpected": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.tuplet.one_note_rate": {
+    "mean": 0.0,
+    "n": 7
+   },
+   "nq.voice.poly_recall": {
+    "mean": 0.0,
+    "n": 12
+   },
+   "read.accidentals_per_note": {
+    "mean": 0.013463,
+    "n": 20
+   },
+   "read.accidentals_per_note.delta": {
+    "mean": 0.002633,
+    "n": 20
+   },
+   "read.bar_completeness": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "read.bar_completeness.delta": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "read.bar_integrity": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "read.bar_integrity.delta": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "read.ledger_lines.heavy_rate": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "read.ledger_lines.heavy_rate.delta": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "read.max_chord_size": {
+    "mean": 2.7,
+    "n": 20
+   },
+   "read.max_chord_size.delta": {
+    "mean": 1.05,
+    "n": 20
+   },
+   "read.over_span_rate": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "read.over_span_rate.delta": {
+    "mean": -0.01903,
+    "n": 20
+   },
+   "read.rests_per_measure": {
+    "mean": 0.493297,
+    "n": 20
+   },
+   "read.rests_per_measure.delta": {
+    "mean": 0.271422,
+    "n": 20
+   },
+   "read.short_notes_rate": {
+    "mean": 0.001258,
+    "n": 20
+   },
+   "read.short_notes_rate.delta": {
+    "mean": 0.001258,
+    "n": 20
+   },
+   "read.ties_per_note": {
+    "mean": 0.020602,
+    "n": 20
+   },
+   "read.ties_per_note.delta": {
+    "mean": 0.009684,
+    "n": 20
+   },
+   "read.tuplets_per_note": {
+    "mean": 0.021621,
+    "n": 20
+   },
+   "read.tuplets_per_note.delta": {
+    "mean": 0.021621,
+    "n": 20
+   },
+   "sqi": {
+    "mean": 83.966508,
+    "n": 20
+   },
+   "struct.downbeat.f1": {
+    "mean": 0.828905,
+    "n": 20
+   },
+   "struct.form.order_exact": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "struct.form.plays_per_bar": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "struct.key.fifths_exact": {
+    "mean": 0.9,
+    "n": 20
+   },
+   "struct.key.mirex": {
+    "mean": 0.915,
+    "n": 20
+   },
+   "struct.key.timeline_accuracy": {
+    "mean": 0.9,
+    "n": 20
+   },
+   "struct.measure_numbers.app_onset_accuracy": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "struct.measure_numbers.valid": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "struct.measures.count_exact": {
+    "mean": 0.7,
+    "n": 20
+   },
+   "struct.measures.count_ratio": {
+    "mean": 0.929228,
+    "n": 20
+   },
+   "struct.measures.extra_empty_edge": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "struct.stats_consistent": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "struct.tempo.mark_consistent": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "struct.tempo.marks_written": {
+    "mean": 2.0,
+    "n": 20
+   },
+   "struct.tempo.metrical_ok": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "struct.tempo.ok_effective": {
+    "mean": 0.9,
+    "n": 20
+   },
+   "struct.tempo.ok_written": {
+    "mean": 0.9,
+    "n": 20
+   },
+   "struct.tempo.present": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "struct.tempo.ratio_effective": {
+    "mean": 1.019196,
+    "n": 20
+   },
+   "struct.tempo.timeline_accuracy": {
+    "mean": 0.9,
+    "n": 20
+   },
+   "struct.time_sig.exact": {
+    "mean": 0.75,
+    "n": 20
+   },
+   "struct.time_sig.score": {
+    "mean": 0.775,
+    "n": 20
+   },
+   "struct.time_sig.timeline_accuracy": {
+    "mean": 0.75,
+    "n": 20
+   },
+   "usable": {
+    "mean": 0.05,
+    "n": 20
+   }
+  },
+  "by_tag": {
+   "input:rendered": {
+    "amt.mean_onset_error_ms": {
+     "mean": 5.078,
+     "n": 20
+    },
+    "amt.note_f1": {
+     "mean": 0.958083,
+     "n": 20
+    },
+    "amt.offset_f1": {
+     "mean": 0.597716,
+     "n": 20
+    },
+    "cases": 20,
+    "critical.accidentals": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "critical.beat_placement": {
+     "mean": 0.7,
+     "n": 20
+    },
+    "critical.hands": {
+     "mean": 0.65,
+     "n": 20
+    },
+    "critical.key": {
+     "mean": 0.9,
+     "n": 20
+    },
+    "critical.meter": {
+     "mean": 0.75,
+     "n": 20
+    },
+    "critical.note_values": {
+     "mean": 0.55,
+     "n": 20
+    },
+    "critical.pitch_integrity": {
+     "mean": 0.55,
+     "n": 20
+    },
+    "critical.playback_tempo": {
+     "mean": 0.9,
+     "n": 20
+    },
+    "critical.structure": {
+     "mean": 0.7,
+     "n": 20
+    },
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.accidentals.courtesy_per_100": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "notation.accidentals.courtesy_per_100.delta": {
+     "mean": -0.088219,
+     "n": 20
+    },
+    "notation.accidentals.missing": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "notation.accidentals.missing.delta": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "notation.accidentals.required_recall": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "notation.accidentals.required_recall.delta": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.80375,
+     "n": 20
+    },
+    "notation.duration.accuracy_ref": {
+     "mean": 0.742432,
+     "n": 20
+    },
+    "notation.duration.page_accuracy": {
+     "mean": 0.80375,
+     "n": 20
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.806443,
+     "n": 20
+    },
+    "notation.hand.accuracy_ref": {
+     "mean": 0.742548,
+     "n": 20
+    },
+    "notation.ioi.accuracy": {
+     "mean": 0.933301,
+     "n": 20
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 0.834464,
+     "n": 20
+    },
+    "notation.metrical_scale": {
+     "mean": 1.025,
+     "n": 20
+    },
+    "notation.note_shape.consistency": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "notation.note_shape.consistency.delta": {
+     "mean": 0.005,
+     "n": 20
+    },
+    "notation.note_shape.mismatches": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "notation.note_shape.mismatches.delta": {
+     "mean": -0.1,
+     "n": 20
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.733348,
+     "n": 20
+    },
+    "notation.onset_pos.accuracy_ref": {
+     "mean": 0.683079,
+     "n": 20
+    },
+    "notation.pedal.marks": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "notation.spelling.accuracy": {
+     "mean": 0.99955,
+     "n": 20
+    },
+    "notation.spelling.accuracy_ref": {
+     "mean": 0.925173,
+     "n": 20
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 2.143938,
+     "n": 20
+    },
+    "notation.tuplets.false_per_100": {
+     "mean": 2.24148,
+     "n": 20
+    },
+    "notes.identity.f1": {
+     "mean": 0.958083,
+     "n": 20
+    },
+    "notes.identity.precision": {
+     "mean": 0.995456,
+     "n": 20
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.994977,
+     "n": 20
+    },
+    "notes.identity.recall": {
+     "mean": 0.925586,
+     "n": 20
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.901669,
+     "n": 20
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.890212,
+     "n": 20
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 18.012917,
+     "n": 20
+    },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": -0.000188,
+     "n": 20
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.beam.coverage.delta": {
+     "mean": 0.0,
+     "n": 11
+    },
+    "nq.ned": {
+     "mean": 0.665755,
+     "n": 20
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 0.271422,
+     "n": 20
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.0075,
+     "n": 20
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.004481,
+     "n": 20
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.00122,
+     "n": 20
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": -0.206612,
+     "n": 20
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.001563,
+     "n": 20
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.001563,
+     "n": 20
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.0,
+     "n": 13
+    },
+    "nq.tuplet.group_complete": {
+     "mean": 1.0,
+     "n": 7
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.tuplet.one_note_rate": {
+     "mean": 0.0,
+     "n": 7
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 12
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.013463,
+     "n": 20
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.002633,
+     "n": 20
+    },
+    "read.bar_completeness": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "read.bar_completeness.delta": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "read.ledger_lines.heavy_rate": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "read.ledger_lines.heavy_rate.delta": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "read.max_chord_size": {
+     "mean": 2.7,
+     "n": 20
+    },
+    "read.max_chord_size.delta": {
+     "mean": 1.05,
+     "n": 20
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "read.over_span_rate.delta": {
+     "mean": -0.01903,
+     "n": 20
+    },
+    "read.rests_per_measure": {
+     "mean": 0.493297,
+     "n": 20
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 0.271422,
+     "n": 20
+    },
+    "read.short_notes_rate": {
+     "mean": 0.001258,
+     "n": 20
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.001258,
+     "n": 20
+    },
+    "read.ties_per_note": {
+     "mean": 0.020602,
+     "n": 20
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.009684,
+     "n": 20
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.021621,
+     "n": 20
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.021621,
+     "n": 20
+    },
+    "sqi": {
+     "mean": 83.966508,
+     "n": 20
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.828905,
+     "n": 20
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.key.fifths_exact": {
+     "mean": 0.9,
+     "n": 20
+    },
+    "struct.key.mirex": {
+     "mean": 0.915,
+     "n": 20
+    },
+    "struct.key.timeline_accuracy": {
+     "mean": 0.9,
+     "n": 20
+    },
+    "struct.measure_numbers.app_onset_accuracy": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.measure_numbers.valid": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.7,
+     "n": 20
+    },
+    "struct.measures.count_ratio": {
+     "mean": 0.929228,
+     "n": 20
+    },
+    "struct.measures.extra_empty_edge": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "struct.stats_consistent": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.tempo.marks_written": {
+     "mean": 2.0,
+     "n": 20
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.9,
+     "n": 20
+    },
+    "struct.tempo.ok_written": {
+     "mean": 0.9,
+     "n": 20
+    },
+    "struct.tempo.present": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 1.019196,
+     "n": 20
+    },
+    "struct.tempo.timeline_accuracy": {
+     "mean": 0.9,
+     "n": 20
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.75,
+     "n": 20
+    },
+    "struct.time_sig.score": {
+     "mean": 0.775,
+     "n": 20
+    },
+    "struct.time_sig.timeline_accuracy": {
+     "mean": 0.75,
+     "n": 20
+    },
+    "usable": {
+     "mean": 0.05,
+     "n": 20
+    }
+   },
+   "kind:replay": {
+    "amt.mean_onset_error_ms": {
+     "mean": 5.078,
+     "n": 20
+    },
+    "amt.note_f1": {
+     "mean": 0.958083,
+     "n": 20
+    },
+    "amt.offset_f1": {
+     "mean": 0.597716,
+     "n": 20
+    },
+    "cases": 20,
+    "critical.accidentals": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "critical.beat_placement": {
+     "mean": 0.7,
+     "n": 20
+    },
+    "critical.hands": {
+     "mean": 0.65,
+     "n": 20
+    },
+    "critical.key": {
+     "mean": 0.9,
+     "n": 20
+    },
+    "critical.meter": {
+     "mean": 0.75,
+     "n": 20
+    },
+    "critical.note_values": {
+     "mean": 0.55,
+     "n": 20
+    },
+    "critical.pitch_integrity": {
+     "mean": 0.55,
+     "n": 20
+    },
+    "critical.playback_tempo": {
+     "mean": 0.9,
+     "n": 20
+    },
+    "critical.structure": {
+     "mean": 0.7,
+     "n": 20
+    },
+    "errors": {
+     "by_code": {},
+     "count": 0
+    },
+    "notation.accidentals.courtesy_per_100": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "notation.accidentals.courtesy_per_100.delta": {
+     "mean": -0.088219,
+     "n": 20
+    },
+    "notation.accidentals.missing": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "notation.accidentals.missing.delta": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "notation.accidentals.required_recall": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "notation.accidentals.required_recall.delta": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "notation.duration.accuracy": {
+     "mean": 0.80375,
+     "n": 20
+    },
+    "notation.duration.accuracy_ref": {
+     "mean": 0.742432,
+     "n": 20
+    },
+    "notation.duration.page_accuracy": {
+     "mean": 0.80375,
+     "n": 20
+    },
+    "notation.hand.accuracy": {
+     "mean": 0.806443,
+     "n": 20
+    },
+    "notation.hand.accuracy_ref": {
+     "mean": 0.742548,
+     "n": 20
+    },
+    "notation.ioi.accuracy": {
+     "mean": 0.933301,
+     "n": 20
+    },
+    "notation.ioi.accuracy_strict": {
+     "mean": 0.834464,
+     "n": 20
+    },
+    "notation.metrical_scale": {
+     "mean": 1.025,
+     "n": 20
+    },
+    "notation.note_shape.consistency": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "notation.note_shape.consistency.delta": {
+     "mean": 0.005,
+     "n": 20
+    },
+    "notation.note_shape.mismatches": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "notation.note_shape.mismatches.delta": {
+     "mean": -0.1,
+     "n": 20
+    },
+    "notation.onset_pos.accuracy": {
+     "mean": 0.733348,
+     "n": 20
+    },
+    "notation.onset_pos.accuracy_ref": {
+     "mean": 0.683079,
+     "n": 20
+    },
+    "notation.pedal.marks": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "notation.spelling.accuracy": {
+     "mean": 0.99955,
+     "n": 20
+    },
+    "notation.spelling.accuracy_ref": {
+     "mean": 0.925173,
+     "n": 20
+    },
+    "notation.ties.extra_per_100": {
+     "mean": 2.143938,
+     "n": 20
+    },
+    "notation.tuplets.false_per_100": {
+     "mean": 2.24148,
+     "n": 20
+    },
+    "notes.identity.f1": {
+     "mean": 0.958083,
+     "n": 20
+    },
+    "notes.identity.precision": {
+     "mean": 0.995456,
+     "n": 20
+    },
+    "notes.identity.precision_micro": {
+     "mean": 0.994977,
+     "n": 20
+    },
+    "notes.identity.recall": {
+     "mean": 0.925586,
+     "n": 20
+    },
+    "notes.identity.recall_micro": {
+     "mean": 0.901669,
+     "n": 20
+    },
+    "notes.input_fidelity.f1": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "notes.onset.f1_50ms": {
+     "mean": 0.890212,
+     "n": 20
+    },
+    "notes.timing.median_abs_ms": {
+     "mean": 18.012917,
+     "n": 20
+    },
+    "nq.acc.redundant_rate": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.acc.redundant_rate.delta": {
+     "mean": -0.000188,
+     "n": 20
+    },
+    "nq.beam.coverage": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "nq.beam.coverage.delta": {
+     "mean": 0.0,
+     "n": 11
+    },
+    "nq.ned": {
+     "mean": 0.665755,
+     "n": 20
+    },
+    "nq.range.ledger4_rate": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.range.ledger4_rate.delta": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.rest.per_measure_delta": {
+     "mean": 0.271422,
+     "n": 20
+    },
+    "nq.rhythm.hidden_beat_rate": {
+     "mean": 0.0075,
+     "n": 20
+    },
+    "nq.rhythm.hidden_beat_rate.delta": {
+     "mean": 0.004481,
+     "n": 20
+    },
+    "nq.rhythm.short_rate_delta": {
+     "mean": 0.00122,
+     "n": 20
+    },
+    "nq.shape.tm_missing": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.shape.tm_missing.delta": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.shape.tm_missing.r17": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.shape.tm_missing.unexpected": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.spell.context_odd": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.spell.context_odd.delta": {
+     "mean": -0.206612,
+     "n": 20
+    },
+    "nq.spell.mixed_bar_rate": {
+     "mean": 0.001563,
+     "n": 20
+    },
+    "nq.spell.mixed_bar_rate.delta": {
+     "mean": 0.001563,
+     "n": 20
+    },
+    "nq.tie.mergeable.cross_voice": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.tie.mergeable.defect": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.tie.mergeable.partial_chord": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.tie.mergeable.r17": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.tie.mergeable.required_beat_split": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.tie.mergeable.required_h6": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.tie.mergeable.required_h7": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.tie.mergeable_rate": {
+     "mean": 0.0,
+     "n": 13
+    },
+    "nq.tuplet.group_complete": {
+     "mean": 1.0,
+     "n": 7
+    },
+    "nq.tuplet.one_note.r17": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.tuplet.one_note.unexpected": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "nq.tuplet.one_note_rate": {
+     "mean": 0.0,
+     "n": 7
+    },
+    "nq.voice.poly_recall": {
+     "mean": 0.0,
+     "n": 12
+    },
+    "read.accidentals_per_note": {
+     "mean": 0.013463,
+     "n": 20
+    },
+    "read.accidentals_per_note.delta": {
+     "mean": 0.002633,
+     "n": 20
+    },
+    "read.bar_completeness": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "read.bar_completeness.delta": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "read.bar_integrity": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "read.bar_integrity.delta": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "read.ledger_lines.heavy_rate": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "read.ledger_lines.heavy_rate.delta": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "read.max_chord_size": {
+     "mean": 2.7,
+     "n": 20
+    },
+    "read.max_chord_size.delta": {
+     "mean": 1.05,
+     "n": 20
+    },
+    "read.over_span_rate": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "read.over_span_rate.delta": {
+     "mean": -0.01903,
+     "n": 20
+    },
+    "read.rests_per_measure": {
+     "mean": 0.493297,
+     "n": 20
+    },
+    "read.rests_per_measure.delta": {
+     "mean": 0.271422,
+     "n": 20
+    },
+    "read.short_notes_rate": {
+     "mean": 0.001258,
+     "n": 20
+    },
+    "read.short_notes_rate.delta": {
+     "mean": 0.001258,
+     "n": 20
+    },
+    "read.ties_per_note": {
+     "mean": 0.020602,
+     "n": 20
+    },
+    "read.ties_per_note.delta": {
+     "mean": 0.009684,
+     "n": 20
+    },
+    "read.tuplets_per_note": {
+     "mean": 0.021621,
+     "n": 20
+    },
+    "read.tuplets_per_note.delta": {
+     "mean": 0.021621,
+     "n": 20
+    },
+    "sqi": {
+     "mean": 83.966508,
+     "n": 20
+    },
+    "struct.downbeat.f1": {
+     "mean": 0.828905,
+     "n": 20
+    },
+    "struct.form.order_exact": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.form.plays_per_bar": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.key.fifths_exact": {
+     "mean": 0.9,
+     "n": 20
+    },
+    "struct.key.mirex": {
+     "mean": 0.915,
+     "n": 20
+    },
+    "struct.key.timeline_accuracy": {
+     "mean": 0.9,
+     "n": 20
+    },
+    "struct.measure_numbers.app_onset_accuracy": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.measure_numbers.valid": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.measures.count_exact": {
+     "mean": 0.7,
+     "n": 20
+    },
+    "struct.measures.count_ratio": {
+     "mean": 0.929228,
+     "n": 20
+    },
+    "struct.measures.extra_empty_edge": {
+     "mean": 0.0,
+     "n": 20
+    },
+    "struct.stats_consistent": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.tempo.mark_consistent": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.tempo.marks_written": {
+     "mean": 2.0,
+     "n": 20
+    },
+    "struct.tempo.metrical_ok": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.tempo.ok_effective": {
+     "mean": 0.9,
+     "n": 20
+    },
+    "struct.tempo.ok_written": {
+     "mean": 0.9,
+     "n": 20
+    },
+    "struct.tempo.present": {
+     "mean": 1.0,
+     "n": 20
+    },
+    "struct.tempo.ratio_effective": {
+     "mean": 1.019196,
+     "n": 20
+    },
+    "struct.tempo.timeline_accuracy": {
+     "mean": 0.9,
+     "n": 20
+    },
+    "struct.time_sig.exact": {
+     "mean": 0.75,
+     "n": 20
+    },
+    "struct.time_sig.score": {
+     "mean": 0.775,
+     "n": 20
+    },
+    "struct.time_sig.timeline_accuracy": {
+     "mean": 0.75,
+     "n": 20
+    },
+    "usable": {
+     "mean": 0.05,
+     "n": 20
+    }
+   }
+  }
+ },
+ "anchor": {
+  "aggregates_all": {
+   "amt.mean_onset_error_ms": {
+    "mean": 5.078,
+    "n": 20
+   },
+   "amt.note_f1": {
+    "mean": 0.958083,
+    "n": 20
+   },
+   "amt.offset_f1": {
+    "mean": 0.597716,
+    "n": 20
+   },
+   "critical.accidentals": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "critical.beat_placement": {
+    "mean": 0.7,
+    "n": 20
+   },
+   "critical.hands": {
+    "mean": 0.65,
+    "n": 20
+   },
+   "critical.key": {
+    "mean": 0.9,
+    "n": 20
+   },
+   "critical.meter": {
+    "mean": 0.75,
+    "n": 20
+   },
+   "critical.note_values": {
+    "mean": 0.55,
+    "n": 20
+   },
+   "critical.pitch_integrity": {
+    "mean": 0.55,
+    "n": 20
+   },
+   "critical.playback_tempo": {
+    "mean": 0.9,
+    "n": 20
+   },
+   "critical.structure": {
+    "mean": 0.7,
+    "n": 20
+   },
+   "notation.accidentals.courtesy_per_100": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "notation.accidentals.courtesy_per_100.delta": {
+    "mean": -0.088219,
+    "n": 20
+   },
+   "notation.accidentals.missing": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "notation.accidentals.missing.delta": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "notation.accidentals.required_recall": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "notation.accidentals.required_recall.delta": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "notation.duration.accuracy": {
+    "mean": 0.80375,
+    "n": 20
+   },
+   "notation.duration.accuracy_ref": {
+    "mean": 0.742432,
+    "n": 20
+   },
+   "notation.duration.page_accuracy": {
+    "mean": 0.80375,
+    "n": 20
+   },
+   "notation.hand.accuracy": {
+    "mean": 0.806443,
+    "n": 20
+   },
+   "notation.hand.accuracy_ref": {
+    "mean": 0.742548,
+    "n": 20
+   },
+   "notation.ioi.accuracy": {
+    "mean": 0.933301,
+    "n": 20
+   },
+   "notation.ioi.accuracy_strict": {
+    "mean": 0.834464,
+    "n": 20
+   },
+   "notation.metrical_scale": {
+    "mean": 1.025,
+    "n": 20
+   },
+   "notation.note_shape.consistency": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "notation.note_shape.consistency.delta": {
+    "mean": 0.005,
+    "n": 20
+   },
+   "notation.note_shape.mismatches": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "notation.note_shape.mismatches.delta": {
+    "mean": -0.1,
+    "n": 20
+   },
+   "notation.onset_pos.accuracy": {
+    "mean": 0.733348,
+    "n": 20
+   },
+   "notation.onset_pos.accuracy_ref": {
+    "mean": 0.683079,
+    "n": 20
+   },
+   "notation.pedal.marks": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "notation.spelling.accuracy": {
+    "mean": 0.99955,
+    "n": 20
+   },
+   "notation.spelling.accuracy_ref": {
+    "mean": 0.925173,
+    "n": 20
+   },
+   "notation.ties.extra_per_100": {
+    "mean": 2.143938,
+    "n": 20
+   },
+   "notation.tuplets.false_per_100": {
+    "mean": 2.24148,
+    "n": 20
+   },
+   "notes.identity.f1": {
+    "mean": 0.958083,
+    "n": 20
+   },
+   "notes.identity.precision": {
+    "mean": 0.995456,
+    "n": 20
+   },
+   "notes.identity.precision_micro": {
+    "mean": 0.994977,
+    "n": 20
+   },
+   "notes.identity.recall": {
+    "mean": 0.925586,
+    "n": 20
+   },
+   "notes.identity.recall_micro": {
+    "mean": 0.901669,
+    "n": 20
+   },
+   "notes.input_fidelity.f1": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "notes.onset.f1_50ms": {
+    "mean": 0.890212,
+    "n": 20
+   },
+   "notes.timing.median_abs_ms": {
+    "mean": 18.012917,
+    "n": 20
+   },
+   "nq.acc.redundant_rate": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.acc.redundant_rate.delta": {
+    "mean": -0.000188,
+    "n": 20
+   },
+   "nq.beam.coverage": {
+    "mean": 0.0,
+    "n": 18
+   },
+   "nq.beam.coverage.delta": {
+    "mean": 0.0,
+    "n": 11
+   },
+   "nq.ned": {
+    "mean": 0.665755,
+    "n": 20
+   },
+   "nq.range.ledger4_rate": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.range.ledger4_rate.delta": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.rest.per_measure_delta": {
+    "mean": 0.271422,
+    "n": 20
+   },
+   "nq.rhythm.hidden_beat_rate": {
+    "mean": 0.0075,
+    "n": 20
+   },
+   "nq.rhythm.hidden_beat_rate.delta": {
+    "mean": 0.004481,
+    "n": 20
+   },
+   "nq.rhythm.short_rate_delta": {
+    "mean": 0.00122,
+    "n": 20
+   },
+   "nq.shape.tm_missing": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.shape.tm_missing.delta": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.shape.tm_missing.r17": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.shape.tm_missing.unexpected": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.spell.context_odd": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.spell.context_odd.delta": {
+    "mean": -0.206612,
+    "n": 20
+   },
+   "nq.spell.mixed_bar_rate": {
+    "mean": 0.001563,
+    "n": 20
+   },
+   "nq.spell.mixed_bar_rate.delta": {
+    "mean": 0.001563,
+    "n": 20
+   },
+   "nq.tie.mergeable.cross_voice": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.tie.mergeable.defect": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.tie.mergeable.partial_chord": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.tie.mergeable.r17": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.tie.mergeable.required_beat_split": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.tie.mergeable.required_h6": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.tie.mergeable.required_h7": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.tie.mergeable_rate": {
+    "mean": 0.0,
+    "n": 13
+   },
+   "nq.tuplet.group_complete": {
+    "mean": 1.0,
+    "n": 7
+   },
+   "nq.tuplet.one_note.r17": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.tuplet.one_note.unexpected": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "nq.tuplet.one_note_rate": {
+    "mean": 0.0,
+    "n": 7
+   },
+   "nq.voice.poly_recall": {
+    "mean": 0.0,
+    "n": 12
+   },
+   "read.accidentals_per_note": {
+    "mean": 0.013463,
+    "n": 20
+   },
+   "read.accidentals_per_note.delta": {
+    "mean": 0.002633,
+    "n": 20
+   },
+   "read.bar_completeness": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "read.bar_completeness.delta": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "read.bar_integrity": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "read.bar_integrity.delta": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "read.ledger_lines.heavy_rate": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "read.ledger_lines.heavy_rate.delta": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "read.max_chord_size": {
+    "mean": 2.7,
+    "n": 20
+   },
+   "read.max_chord_size.delta": {
+    "mean": 1.05,
+    "n": 20
+   },
+   "read.over_span_rate": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "read.over_span_rate.delta": {
+    "mean": -0.01903,
+    "n": 20
+   },
+   "read.rests_per_measure": {
+    "mean": 0.493297,
+    "n": 20
+   },
+   "read.rests_per_measure.delta": {
+    "mean": 0.271422,
+    "n": 20
+   },
+   "read.short_notes_rate": {
+    "mean": 0.001258,
+    "n": 20
+   },
+   "read.short_notes_rate.delta": {
+    "mean": 0.001258,
+    "n": 20
+   },
+   "read.ties_per_note": {
+    "mean": 0.020602,
+    "n": 20
+   },
+   "read.ties_per_note.delta": {
+    "mean": 0.009684,
+    "n": 20
+   },
+   "read.tuplets_per_note": {
+    "mean": 0.021621,
+    "n": 20
+   },
+   "read.tuplets_per_note.delta": {
+    "mean": 0.021621,
+    "n": 20
+   },
+   "sqi": {
+    "mean": 83.966508,
+    "n": 20
+   },
+   "struct.downbeat.f1": {
+    "mean": 0.828905,
+    "n": 20
+   },
+   "struct.form.order_exact": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "struct.form.plays_per_bar": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "struct.key.fifths_exact": {
+    "mean": 0.9,
+    "n": 20
+   },
+   "struct.key.mirex": {
+    "mean": 0.915,
+    "n": 20
+   },
+   "struct.key.timeline_accuracy": {
+    "mean": 0.9,
+    "n": 20
+   },
+   "struct.measure_numbers.app_onset_accuracy": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "struct.measure_numbers.valid": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "struct.measures.count_exact": {
+    "mean": 0.7,
+    "n": 20
+   },
+   "struct.measures.count_ratio": {
+    "mean": 0.929228,
+    "n": 20
+   },
+   "struct.measures.extra_empty_edge": {
+    "mean": 0.0,
+    "n": 20
+   },
+   "struct.stats_consistent": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "struct.tempo.mark_consistent": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "struct.tempo.marks_written": {
+    "mean": 2.0,
+    "n": 20
+   },
+   "struct.tempo.metrical_ok": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "struct.tempo.ok_effective": {
+    "mean": 0.9,
+    "n": 20
+   },
+   "struct.tempo.ok_written": {
+    "mean": 0.9,
+    "n": 20
+   },
+   "struct.tempo.present": {
+    "mean": 1.0,
+    "n": 20
+   },
+   "struct.tempo.ratio_effective": {
+    "mean": 1.019196,
+    "n": 20
+   },
+   "struct.tempo.timeline_accuracy": {
+    "mean": 0.9,
+    "n": 20
+   },
+   "struct.time_sig.exact": {
+    "mean": 0.75,
+    "n": 20
+   },
+   "struct.time_sig.score": {
+    "mean": 0.775,
+    "n": 20
+   },
+   "struct.time_sig.timeline_accuracy": {
+    "mean": 0.75,
+    "n": 20
+   },
+   "usable": {
+    "mean": 0.05,
+    "n": 20
+   }
+  },
+  "date": "2026-10-02",
+  "git_sha": "2e09fade3a3d5888e91308e9e8b46bed8a2b82cc",
+  "versions": {
+   "generator": "perform/2",
+   "metrics": "metrics/6",
+   "reader": "reader/5",
+   "sqi": "sqi/2"
+  }
+ },
+ "cases": {
+  "replay/catalog/fur-elise|salamander-v2|cover-pedal|s1|of": {
+   "error_code": null,
+   "metrics": {
+    "critical.accidentals": 1.0,
+    "critical.beat_placement": 0.0,
+    "critical.hands": 1.0,
+    "critical.key": 1.0,
+    "critical.meter": 0.0,
+    "critical.note_values": 1.0,
+    "critical.pedal": null,
+    "critical.pitch_integrity": 1.0,
+    "critical.playback_tempo": 0.0,
+    "critical.structure": 0.0,
+    "notation.accidentals.courtesy_per_100": 0.0,
+    "notation.accidentals.required_recall": 1.0,
+    "notation.duration.accuracy": 0.944444,
+    "notation.duration.accuracy_ref": 0.944444,
+    "notation.duration.page_accuracy": 0.944444,
+    "notation.hand.accuracy": 1.0,
+    "notation.hand.accuracy_ref": 1.0,
+    "notation.ioi.accuracy": 1.0,
+    "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
+    "notation.onset_pos.accuracy": 0.111111,
+    "notation.onset_pos.accuracy_ref": 0.111111,
+    "notation.pedal.f1": null,
+    "notation.pedal.false_per_min": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 1.0,
+    "notation.ties.extra_per_100": 0.0,
+    "notation.tuplets.f1": null,
+    "notation.tuplets.false_per_100": 0.0,
+    "notes.identity.f1": 1.0,
+    "notes.onset.f1_50ms": 1.0,
+    "read.bar_completeness": 1.0,
+    "read.bar_integrity": 1.0,
+    "read.ledger_lines.heavy_rate": 0.0,
+    "sqi": 66.111111,
+    "struct.downbeat.f1": 0.285714,
+    "struct.form.order_exact": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
+    "struct.measure_numbers.app_onset_accuracy": 1.0,
+    "struct.measure_numbers.valid": 1.0,
+    "struct.measures.count_exact": 0.0,
+    "struct.measures.extra_empty_edge": 0.0,
+    "struct.stats_consistent": 1.0,
+    "struct.tempo.ok_effective": 0.0,
+    "struct.tempo.ok_written": 0.0,
+    "struct.tempo.present": 1.0,
+    "struct.tempo.timeline_accuracy": 0.0,
+    "struct.time_sig.exact": 0.0,
+    "struct.time_sig.score": 0.0,
+    "struct.time_sig.timeline_accuracy": 0.0,
+    "usable": 0.0
+   },
+   "semantic": "03420f09022279ce",
+   "sqi": 66.111111,
+   "status": "ok"
+  },
+  "replay/hymns/all-hail-the-power|salamander-v2|cover-pedal|s1|of": {
+   "error_code": null,
+   "metrics": {
+    "critical.accidentals": 1.0,
+    "critical.beat_placement": 1.0,
+    "critical.hands": 1.0,
+    "critical.key": 1.0,
+    "critical.meter": 1.0,
+    "critical.note_values": 0.0,
+    "critical.pedal": null,
+    "critical.pitch_integrity": 0.0,
+    "critical.playback_tempo": 1.0,
+    "critical.structure": 1.0,
+    "notation.accidentals.courtesy_per_100": 0.0,
+    "notation.accidentals.required_recall": 1.0,
+    "notation.duration.accuracy": 0.771084,
+    "notation.duration.accuracy_ref": 0.677249,
+    "notation.duration.page_accuracy": 0.771084,
+    "notation.hand.accuracy": 0.837349,
+    "notation.hand.accuracy_ref": 0.73545,
+    "notation.ioi.accuracy": 0.836735,
+    "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
+    "notation.onset_pos.accuracy": 0.921687,
+    "notation.onset_pos.accuracy_ref": 0.809524,
+    "notation.pedal.f1": null,
+    "notation.pedal.false_per_min": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 0.878307,
+    "notation.ties.extra_per_100": 6.024096,
+    "notation.tuplets.f1": null,
+    "notation.tuplets.false_per_100": 0.0,
+    "notes.identity.f1": 0.935211,
+    "notes.onset.f1_50ms": 0.771831,
+    "read.bar_completeness": 1.0,
+    "read.bar_integrity": 1.0,
+    "read.ledger_lines.heavy_rate": 0.0,
+    "sqi": 87.732948,
+    "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
+    "struct.measure_numbers.app_onset_accuracy": 1.0,
+    "struct.measure_numbers.valid": 1.0,
+    "struct.measures.count_exact": 1.0,
+    "struct.measures.extra_empty_edge": 0.0,
+    "struct.stats_consistent": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.tempo.ok_written": 1.0,
+    "struct.tempo.present": 1.0,
+    "struct.tempo.timeline_accuracy": 1.0,
+    "struct.time_sig.exact": 1.0,
+    "struct.time_sig.score": 1.0,
+    "struct.time_sig.timeline_accuracy": 1.0,
+    "usable": 0.0
+   },
+   "semantic": "ab7a80b596402511",
+   "sqi": 87.732948,
+   "status": "ok"
+  },
+  "replay/hymns/come-thou-fount|salamander-v2|cover-pedal|s1|of": {
+   "error_code": null,
+   "metrics": {
+    "critical.accidentals": 1.0,
+    "critical.beat_placement": 0.0,
+    "critical.hands": 1.0,
+    "critical.key": 1.0,
+    "critical.meter": 0.0,
+    "critical.note_values": 1.0,
+    "critical.pedal": null,
+    "critical.pitch_integrity": 0.0,
+    "critical.playback_tempo": 1.0,
+    "critical.structure": 0.0,
+    "notation.accidentals.courtesy_per_100": 0.0,
+    "notation.accidentals.required_recall": 1.0,
+    "notation.duration.accuracy": 0.921466,
+    "notation.duration.accuracy_ref": 0.718367,
+    "notation.duration.page_accuracy": 0.921466,
+    "notation.hand.accuracy": 0.921466,
+    "notation.hand.accuracy_ref": 0.718367,
+    "notation.ioi.accuracy": 0.967742,
+    "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
+    "notation.onset_pos.accuracy": 0.062827,
+    "notation.onset_pos.accuracy_ref": 0.04898,
+    "notation.pedal.f1": null,
+    "notation.pedal.false_per_min": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 0.779592,
+    "notation.ties.extra_per_100": 0.0,
+    "notation.tuplets.f1": null,
+    "notation.tuplets.false_per_100": 2.083333,
+    "notes.identity.f1": 0.874142,
+    "notes.onset.f1_50ms": 0.851259,
+    "read.bar_completeness": 1.0,
+    "read.bar_integrity": 1.0,
+    "read.ledger_lines.heavy_rate": 0.0,
+    "sqi": 66.160257,
+    "struct.downbeat.f1": 0.285714,
+    "struct.form.order_exact": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
+    "struct.measure_numbers.app_onset_accuracy": 1.0,
+    "struct.measure_numbers.valid": 1.0,
+    "struct.measures.count_exact": 0.0,
+    "struct.measures.extra_empty_edge": 0.0,
+    "struct.stats_consistent": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.tempo.ok_written": 1.0,
+    "struct.tempo.present": 1.0,
+    "struct.tempo.timeline_accuracy": 1.0,
+    "struct.time_sig.exact": 0.0,
+    "struct.time_sig.score": 0.0,
+    "struct.time_sig.timeline_accuracy": 0.0,
+    "usable": 0.0
+   },
+   "semantic": "1742b49328a05a61",
+   "sqi": 66.160257,
+   "status": "ok"
+  },
+  "replay/hymns/come-thou-long|salamander-v2|cover-pedal|s1|of": {
+   "error_code": null,
+   "metrics": {
+    "critical.accidentals": 1.0,
+    "critical.beat_placement": 0.0,
+    "critical.hands": 0.0,
+    "critical.key": 1.0,
+    "critical.meter": 0.0,
+    "critical.note_values": 1.0,
+    "critical.pedal": null,
+    "critical.pitch_integrity": 1.0,
+    "critical.playback_tempo": 1.0,
+    "critical.structure": 0.0,
+    "notation.accidentals.courtesy_per_100": 0.0,
+    "notation.accidentals.required_recall": 1.0,
+    "notation.duration.accuracy": 0.820896,
+    "notation.duration.accuracy_ref": 0.743243,
+    "notation.duration.page_accuracy": 0.820896,
+    "notation.hand.accuracy": 0.751244,
+    "notation.hand.accuracy_ref": 0.68018,
+    "notation.ioi.accuracy": 0.951807,
+    "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
+    "notation.onset_pos.accuracy": 0.049751,
+    "notation.onset_pos.accuracy_ref": 0.045045,
+    "notation.pedal.f1": null,
+    "notation.pedal.false_per_min": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 0.905405,
+    "notation.ties.extra_per_100": 0.0,
+    "notation.tuplets.f1": null,
+    "notation.tuplets.false_per_100": 4.477612,
+    "notes.identity.f1": 0.950355,
+    "notes.onset.f1_50ms": 0.879433,
+    "read.bar_completeness": 1.0,
+    "read.bar_integrity": 1.0,
+    "read.ledger_lines.heavy_rate": 0.0,
+    "sqi": 72.962101,
+    "struct.downbeat.f1": 0.638298,
+    "struct.form.order_exact": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
+    "struct.measure_numbers.app_onset_accuracy": 1.0,
+    "struct.measure_numbers.valid": 1.0,
+    "struct.measures.count_exact": 0.0,
+    "struct.measures.extra_empty_edge": 0.0,
+    "struct.stats_consistent": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.tempo.ok_written": 1.0,
+    "struct.tempo.present": 1.0,
+    "struct.tempo.timeline_accuracy": 1.0,
+    "struct.time_sig.exact": 0.0,
+    "struct.time_sig.score": 0.5,
+    "struct.time_sig.timeline_accuracy": 0.0,
+    "usable": 0.0
+   },
+   "semantic": "7bc365863a8e16d9",
+   "sqi": 72.962101,
+   "status": "ok"
+  },
+  "replay/hymns/hark-the-voice|salamander-v2|cover-pedal|s1|of": {
+   "error_code": null,
+   "metrics": {
+    "critical.accidentals": 1.0,
+    "critical.beat_placement": 1.0,
+    "critical.hands": 1.0,
+    "critical.key": 1.0,
+    "critical.meter": 1.0,
+    "critical.note_values": 1.0,
+    "critical.pedal": null,
+    "critical.pitch_integrity": 1.0,
+    "critical.playback_tempo": 1.0,
+    "critical.structure": 1.0,
+    "notation.accidentals.courtesy_per_100": 0.0,
+    "notation.accidentals.required_recall": 1.0,
+    "notation.duration.accuracy": 0.887387,
+    "notation.duration.accuracy_ref": 0.81405,
+    "notation.duration.page_accuracy": 0.887387,
+    "notation.hand.accuracy": 0.833333,
+    "notation.hand.accuracy_ref": 0.764463,
+    "notation.ioi.accuracy": 0.96875,
+    "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
+    "notation.onset_pos.accuracy": 0.981982,
+    "notation.onset_pos.accuracy_ref": 0.900826,
+    "notation.pedal.f1": null,
+    "notation.pedal.false_per_min": null,
+    "notation.spelling.accuracy": 0.990991,
+    "notation.spelling.accuracy_ref": 0.909091,
+    "notation.ties.extra_per_100": 1.801802,
+    "notation.tuplets.f1": null,
+    "notation.tuplets.false_per_100": 0.0,
+    "notes.identity.f1": 0.950749,
+    "notes.onset.f1_50ms": 0.90364,
+    "read.bar_completeness": 1.0,
+    "read.bar_integrity": 1.0,
+    "read.ledger_lines.heavy_rate": 0.0,
+    "sqi": 92.545464,
+    "struct.downbeat.f1": 0.967742,
+    "struct.form.order_exact": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
+    "struct.measure_numbers.app_onset_accuracy": 1.0,
+    "struct.measure_numbers.valid": 1.0,
+    "struct.measures.count_exact": 1.0,
+    "struct.measures.extra_empty_edge": 0.0,
+    "struct.stats_consistent": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.tempo.ok_written": 1.0,
+    "struct.tempo.present": 1.0,
+    "struct.tempo.timeline_accuracy": 1.0,
+    "struct.time_sig.exact": 1.0,
+    "struct.time_sig.score": 1.0,
+    "struct.time_sig.timeline_accuracy": 1.0,
+    "usable": 1.0
+   },
+   "semantic": "73c234bd5d15faad",
+   "sqi": 92.545464,
+   "status": "ok"
+  },
+  "replay/hymns/holy-holy-holy|salamander-v2|cover-pedal|s1|of": {
+   "error_code": null,
+   "metrics": {
+    "critical.accidentals": 1.0,
+    "critical.beat_placement": 1.0,
+    "critical.hands": 1.0,
+    "critical.key": 1.0,
+    "critical.meter": 1.0,
+    "critical.note_values": 1.0,
+    "critical.pedal": null,
+    "critical.pitch_integrity": 0.0,
+    "critical.playback_tempo": 1.0,
+    "critical.structure": 1.0,
+    "notation.accidentals.courtesy_per_100": 0.0,
+    "notation.accidentals.required_recall": 1.0,
+    "notation.duration.accuracy": 0.823864,
+    "notation.duration.accuracy_ref": 0.714286,
+    "notation.duration.page_accuracy": 0.823864,
+    "notation.hand.accuracy": 0.909091,
+    "notation.hand.accuracy_ref": 0.788177,
+    "notation.ioi.accuracy": 0.964912,
+    "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
+    "notation.onset_pos.accuracy": 0.982955,
+    "notation.onset_pos.accuracy_ref": 0.852217,
+    "notation.pedal.f1": null,
+    "notation.pedal.false_per_min": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 0.866995,
+    "notation.ties.extra_per_100": 1.704545,
+    "notation.tuplets.f1": null,
+    "notation.tuplets.false_per_100": 3.954802,
+    "notes.identity.f1": 0.926316,
+    "notes.onset.f1_50ms": 0.873684,
+    "read.bar_completeness": 1.0,
+    "read.bar_integrity": 1.0,
+    "read.ledger_lines.heavy_rate": 0.0,
+    "sqi": 90.318296,
+    "struct.downbeat.f1": 0.967742,
+    "struct.form.order_exact": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
+    "struct.measure_numbers.app_onset_accuracy": 1.0,
+    "struct.measure_numbers.valid": 1.0,
+    "struct.measures.count_exact": 1.0,
+    "struct.measures.extra_empty_edge": 0.0,
+    "struct.stats_consistent": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.tempo.ok_written": 1.0,
+    "struct.tempo.present": 1.0,
+    "struct.tempo.timeline_accuracy": 1.0,
+    "struct.time_sig.exact": 1.0,
+    "struct.time_sig.score": 1.0,
+    "struct.time_sig.timeline_accuracy": 1.0,
+    "usable": 0.0
+   },
+   "semantic": "afc057fb28758a22",
+   "sqi": 90.318296,
+   "status": "ok"
+  },
+  "replay/hymns/i-know-whom|salamander-v2|cover-pedal|s1|of": {
+   "error_code": null,
+   "metrics": {
+    "critical.accidentals": 1.0,
+    "critical.beat_placement": 0.0,
+    "critical.hands": 1.0,
+    "critical.key": 1.0,
+    "critical.meter": 1.0,
+    "critical.note_values": 0.0,
+    "critical.pedal": null,
+    "critical.pitch_integrity": 0.0,
+    "critical.playback_tempo": 1.0,
+    "critical.structure": 0.0,
+    "notation.accidentals.courtesy_per_100": 0.0,
+    "notation.accidentals.required_recall": 1.0,
+    "notation.duration.accuracy": 0.768889,
+    "notation.duration.accuracy_ref": 0.65283,
+    "notation.duration.page_accuracy": 0.768889,
+    "notation.hand.accuracy": 0.853333,
+    "notation.hand.accuracy_ref": 0.724528,
+    "notation.ioi.accuracy": 0.814286,
+    "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
+    "notation.onset_pos.accuracy": 0.484444,
+    "notation.onset_pos.accuracy_ref": 0.411321,
+    "notation.pedal.f1": null,
+    "notation.pedal.false_per_min": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 0.849057,
+    "notation.ties.extra_per_100": 9.777778,
+    "notation.tuplets.f1": null,
+    "notation.tuplets.false_per_100": 11.061947,
+    "notes.identity.f1": 0.916497,
+    "notes.onset.f1_50ms": 0.708758,
+    "read.bar_completeness": 1.0,
+    "read.bar_integrity": 1.0,
+    "read.ledger_lines.heavy_rate": 0.0,
+    "sqi": 80.661475,
+    "struct.downbeat.f1": 0.5,
+    "struct.form.order_exact": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
+    "struct.measure_numbers.app_onset_accuracy": 1.0,
+    "struct.measure_numbers.valid": 1.0,
+    "struct.measures.count_exact": 0.0,
+    "struct.measures.extra_empty_edge": 0.0,
+    "struct.stats_consistent": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.tempo.ok_written": 1.0,
+    "struct.tempo.present": 1.0,
+    "struct.tempo.timeline_accuracy": 1.0,
+    "struct.time_sig.exact": 1.0,
+    "struct.time_sig.score": 1.0,
+    "struct.time_sig.timeline_accuracy": 1.0,
+    "usable": 0.0
+   },
+   "semantic": "990fc58c135f63be",
+   "sqi": 80.661475,
+   "status": "ok"
+  },
+  "replay/hymns/jesus-christ-is-risen|salamander-v2|cover-pedal|s1|of": {
+   "error_code": null,
+   "metrics": {
+    "critical.accidentals": 1.0,
+    "critical.beat_placement": 1.0,
+    "critical.hands": 1.0,
+    "critical.key": 1.0,
+    "critical.meter": 1.0,
+    "critical.note_values": 0.0,
+    "critical.pedal": null,
+    "critical.pitch_integrity": 1.0,
+    "critical.playback_tempo": 1.0,
+    "critical.structure": 1.0,
+    "notation.accidentals.courtesy_per_100": 0.0,
+    "notation.accidentals.required_recall": 1.0,
+    "notation.duration.accuracy": 0.695473,
+    "notation.duration.accuracy_ref": 0.635338,
+    "notation.duration.page_accuracy": 0.695473,
+    "notation.hand.accuracy": 0.872428,
+    "notation.hand.accuracy_ref": 0.796992,
+    "notation.ioi.accuracy": 0.811765,
+    "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
+    "notation.onset_pos.accuracy": 0.90535,
+    "notation.onset_pos.accuracy_ref": 0.827068,
+    "notation.pedal.f1": null,
+    "notation.pedal.false_per_min": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 0.913534,
+    "notation.ties.extra_per_100": 0.823045,
+    "notation.tuplets.f1": null,
+    "notation.tuplets.false_per_100": 10.245902,
+    "notes.identity.f1": 0.952941,
+    "notes.onset.f1_50ms": 0.85098,
+    "read.bar_completeness": 1.0,
+    "read.bar_integrity": 1.0,
+    "read.ledger_lines.heavy_rate": 0.0,
+    "sqi": 88.473463,
+    "struct.downbeat.f1": 0.967742,
+    "struct.form.order_exact": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
+    "struct.measure_numbers.app_onset_accuracy": 1.0,
+    "struct.measure_numbers.valid": 1.0,
+    "struct.measures.count_exact": 1.0,
+    "struct.measures.extra_empty_edge": 0.0,
+    "struct.stats_consistent": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.tempo.ok_written": 1.0,
+    "struct.tempo.present": 1.0,
+    "struct.tempo.timeline_accuracy": 1.0,
+    "struct.time_sig.exact": 1.0,
+    "struct.time_sig.score": 1.0,
+    "struct.time_sig.timeline_accuracy": 1.0,
+    "usable": 0.0
+   },
+   "semantic": "be6d386460ada801",
+   "sqi": 88.473463,
+   "status": "ok"
+  },
+  "replay/hymns/joyful-joyful|salamander-v2|cover-pedal|s1|of": {
+   "error_code": null,
+   "metrics": {
+    "critical.accidentals": 1.0,
+    "critical.beat_placement": 1.0,
+    "critical.hands": 1.0,
+    "critical.key": 1.0,
+    "critical.meter": 1.0,
+    "critical.note_values": 1.0,
+    "critical.pedal": null,
+    "critical.pitch_integrity": 0.0,
+    "critical.playback_tempo": 1.0,
+    "critical.structure": 1.0,
+    "notation.accidentals.courtesy_per_100": 0.0,
+    "notation.accidentals.required_recall": 1.0,
+    "notation.duration.accuracy": 0.846847,
+    "notation.duration.accuracy_ref": 0.758065,
+    "notation.duration.page_accuracy": 0.846847,
+    "notation.hand.accuracy": 0.855856,
+    "notation.hand.accuracy_ref": 0.766129,
+    "notation.ioi.accuracy": 0.90625,
+    "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
+    "notation.onset_pos.accuracy": 0.95045,
+    "notation.onset_pos.accuracy_ref": 0.850806,
+    "notation.pedal.f1": null,
+    "notation.pedal.false_per_min": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 0.895161,
+    "notation.ties.extra_per_100": 3.603604,
+    "notation.tuplets.f1": null,
+    "notation.tuplets.false_per_100": 0.0,
+    "notes.identity.f1": 0.944681,
+    "notes.onset.f1_50ms": 0.821277,
+    "read.bar_completeness": 1.0,
+    "read.bar_integrity": 1.0,
+    "read.ledger_lines.heavy_rate": 0.0,
+    "sqi": 90.435956,
+    "struct.downbeat.f1": 0.967742,
+    "struct.form.order_exact": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
+    "struct.measure_numbers.app_onset_accuracy": 1.0,
+    "struct.measure_numbers.valid": 1.0,
+    "struct.measures.count_exact": 1.0,
+    "struct.measures.extra_empty_edge": 0.0,
+    "struct.stats_consistent": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.tempo.ok_written": 1.0,
+    "struct.tempo.present": 1.0,
+    "struct.tempo.timeline_accuracy": 1.0,
+    "struct.time_sig.exact": 1.0,
+    "struct.time_sig.score": 1.0,
+    "struct.time_sig.timeline_accuracy": 1.0,
+    "usable": 0.0
+   },
+   "semantic": "6a3ec37bc3fbfbbb",
+   "sqi": 90.435956,
+   "status": "ok"
+  },
+  "replay/hymns/nearer-my-god|salamander-v2|cover-pedal|s1|of": {
+   "error_code": null,
+   "metrics": {
+    "critical.accidentals": 1.0,
+    "critical.beat_placement": 0.0,
+    "critical.hands": 1.0,
+    "critical.key": 1.0,
+    "critical.meter": 0.0,
+    "critical.note_values": 1.0,
+    "critical.pedal": null,
+    "critical.pitch_integrity": 0.0,
+    "critical.playback_tempo": 0.0,
+    "critical.structure": 0.0,
+    "notation.accidentals.courtesy_per_100": 0.0,
+    "notation.accidentals.required_recall": 1.0,
+    "notation.duration.accuracy": 0.878981,
+    "notation.duration.accuracy_ref": 0.793103,
+    "notation.duration.page_accuracy": 0.878981,
+    "notation.hand.accuracy": 0.866242,
+    "notation.hand.accuracy_ref": 0.781609,
+    "notation.ioi.accuracy": 0.976744,
+    "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
+    "notation.onset_pos.accuracy": 0.318471,
+    "notation.onset_pos.accuracy_ref": 0.287356,
+    "notation.pedal.f1": null,
+    "notation.pedal.false_per_min": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 0.902299,
+    "notation.ties.extra_per_100": 0.0,
+    "notation.tuplets.f1": null,
+    "notation.tuplets.false_per_100": 0.0,
+    "notes.identity.f1": 0.942943,
+    "notes.onset.f1_50ms": 0.918919,
+    "read.bar_completeness": 1.0,
+    "read.bar_integrity": 1.0,
+    "read.ledger_lines.heavy_rate": 0.0,
+    "sqi": 63.195266,
+    "struct.downbeat.f1": 0.967742,
+    "struct.form.order_exact": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
+    "struct.measure_numbers.app_onset_accuracy": 1.0,
+    "struct.measure_numbers.valid": 1.0,
+    "struct.measures.count_exact": 0.0,
+    "struct.measures.extra_empty_edge": 0.0,
+    "struct.stats_consistent": 1.0,
+    "struct.tempo.ok_effective": 0.0,
+    "struct.tempo.ok_written": 0.0,
+    "struct.tempo.present": 1.0,
+    "struct.tempo.timeline_accuracy": 0.0,
+    "struct.time_sig.exact": 0.0,
+    "struct.time_sig.score": 0.0,
+    "struct.time_sig.timeline_accuracy": 0.0,
+    "usable": 0.0
+   },
+   "semantic": "5cbe74a52b21c26a",
+   "sqi": 63.195266,
+   "status": "ok"
+  },
+  "replay/hymns/no-not-one|salamander-v2|cover-pedal|s1|of": {
+   "error_code": null,
+   "metrics": {
+    "critical.accidentals": 1.0,
+    "critical.beat_placement": 1.0,
+    "critical.hands": 1.0,
+    "critical.key": 1.0,
+    "critical.meter": 1.0,
+    "critical.note_values": 0.0,
+    "critical.pedal": null,
+    "critical.pitch_integrity": 0.0,
+    "critical.playback_tempo": 1.0,
+    "critical.structure": 1.0,
+    "notation.accidentals.courtesy_per_100": 0.0,
+    "notation.accidentals.required_recall": 1.0,
+    "notation.duration.accuracy": 0.708696,
+    "notation.duration.accuracy_ref": 0.626923,
+    "notation.duration.page_accuracy": 0.708696,
+    "notation.hand.accuracy": 0.834783,
+    "notation.hand.accuracy_ref": 0.738462,
+    "notation.ioi.accuracy": 0.875,
+    "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
+    "notation.onset_pos.accuracy": 0.93913,
+    "notation.onset_pos.accuracy_ref": 0.830769,
+    "notation.pedal.f1": null,
+    "notation.pedal.false_per_min": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 0.884615,
+    "notation.ties.extra_per_100": 3.043478,
+    "notation.tuplets.f1": null,
+    "notation.tuplets.false_per_100": 8.695652,
+    "notes.identity.f1": 0.938776,
+    "notes.onset.f1_50ms": 0.820408,
+    "read.bar_completeness": 1.0,
+    "read.bar_integrity": 1.0,
+    "read.ledger_lines.heavy_rate": 0.0,
+    "sqi": 88.063972,
+    "struct.downbeat.f1": 0.83871,
+    "struct.form.order_exact": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
+    "struct.measure_numbers.app_onset_accuracy": 1.0,
+    "struct.measure_numbers.valid": 1.0,
+    "struct.measures.count_exact": 1.0,
+    "struct.measures.extra_empty_edge": 0.0,
+    "struct.stats_consistent": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.tempo.ok_written": 1.0,
+    "struct.tempo.present": 1.0,
+    "struct.tempo.timeline_accuracy": 1.0,
+    "struct.time_sig.exact": 1.0,
+    "struct.time_sig.score": 1.0,
+    "struct.time_sig.timeline_accuracy": 1.0,
+    "usable": 0.0
+   },
+   "semantic": "99a68e170e99ffef",
+   "sqi": 88.063972,
+   "status": "ok"
+  },
+  "replay/hymns/take-my-life|salamander-v2|cover-pedal|s1|of": {
+   "error_code": null,
+   "metrics": {
+    "critical.accidentals": 1.0,
+    "critical.beat_placement": 1.0,
+    "critical.hands": 1.0,
+    "critical.key": 1.0,
+    "critical.meter": 1.0,
+    "critical.note_values": 1.0,
+    "critical.pedal": null,
+    "critical.pitch_integrity": 0.0,
+    "critical.playback_tempo": 1.0,
+    "critical.structure": 1.0,
+    "notation.accidentals.courtesy_per_100": 0.0,
+    "notation.accidentals.required_recall": 1.0,
+    "notation.duration.accuracy": 0.844828,
+    "notation.duration.accuracy_ref": 0.720588,
+    "notation.duration.page_accuracy": 0.844828,
+    "notation.hand.accuracy": 0.827586,
+    "notation.hand.accuracy_ref": 0.705882,
+    "notation.ioi.accuracy": 0.9,
+    "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
+    "notation.onset_pos.accuracy": 0.956897,
+    "notation.onset_pos.accuracy_ref": 0.816176,
+    "notation.pedal.f1": null,
+    "notation.pedal.false_per_min": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 0.852941,
+    "notation.ties.extra_per_100": 4.310345,
+    "notation.tuplets.f1": null,
+    "notation.tuplets.false_per_100": 4.310345,
+    "notes.identity.f1": 0.920635,
+    "notes.onset.f1_50ms": 0.896825,
+    "read.bar_completeness": 1.0,
+    "read.bar_integrity": 1.0,
+    "read.ledger_lines.heavy_rate": 0.0,
+    "sqi": 88.184757,
+    "struct.downbeat.f1": 0.967742,
+    "struct.form.order_exact": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
+    "struct.measure_numbers.app_onset_accuracy": 1.0,
+    "struct.measure_numbers.valid": 1.0,
+    "struct.measures.count_exact": 1.0,
+    "struct.measures.extra_empty_edge": 0.0,
+    "struct.stats_consistent": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.tempo.ok_written": 1.0,
+    "struct.tempo.present": 1.0,
+    "struct.tempo.timeline_accuracy": 1.0,
+    "struct.time_sig.exact": 1.0,
+    "struct.time_sig.score": 1.0,
+    "struct.time_sig.timeline_accuracy": 1.0,
+    "usable": 0.0
+   },
+   "semantic": "4d855f9addd5e8c5",
+   "sqi": 88.184757,
+   "status": "ok"
+  },
+  "replay/hymns/we-gather-together|salamander-v2|cover-pedal|s1|of": {
+   "error_code": null,
+   "metrics": {
+    "critical.accidentals": 1.0,
+    "critical.beat_placement": 1.0,
+    "critical.hands": 1.0,
+    "critical.key": 1.0,
+    "critical.meter": 1.0,
+    "critical.note_values": 1.0,
+    "critical.pedal": null,
+    "critical.pitch_integrity": 0.0,
+    "critical.playback_tempo": 1.0,
+    "critical.structure": 1.0,
+    "notation.accidentals.courtesy_per_100": 0.0,
+    "notation.accidentals.required_recall": 1.0,
+    "notation.duration.accuracy": 0.900585,
+    "notation.duration.accuracy_ref": 0.806283,
+    "notation.duration.page_accuracy": 0.900585,
+    "notation.hand.accuracy": 0.900585,
+    "notation.hand.accuracy_ref": 0.806283,
+    "notation.ioi.accuracy": 0.96,
+    "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
+    "notation.onset_pos.accuracy": 0.982456,
+    "notation.onset_pos.accuracy_ref": 0.879581,
+    "notation.pedal.f1": null,
+    "notation.pedal.false_per_min": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 0.895288,
+    "notation.ties.extra_per_100": 1.754386,
+    "notation.tuplets.f1": null,
+    "notation.tuplets.false_per_100": 0.0,
+    "notes.identity.f1": 0.934426,
+    "notes.onset.f1_50ms": 0.89071,
+    "read.bar_completeness": 1.0,
+    "read.bar_integrity": 1.0,
+    "read.ledger_lines.heavy_rate": 0.0,
+    "sqi": 92.084336,
+    "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
+    "struct.measure_numbers.app_onset_accuracy": 1.0,
+    "struct.measure_numbers.valid": 1.0,
+    "struct.measures.count_exact": 1.0,
+    "struct.measures.extra_empty_edge": 0.0,
+    "struct.stats_consistent": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.tempo.ok_written": 1.0,
+    "struct.tempo.present": 1.0,
+    "struct.tempo.timeline_accuracy": 1.0,
+    "struct.time_sig.exact": 1.0,
+    "struct.time_sig.score": 1.0,
+    "struct.time_sig.timeline_accuracy": 1.0,
+    "usable": 0.0
+   },
+   "semantic": "5b06021a448f3233",
+   "sqi": 92.084336,
+   "status": "ok"
+  },
+  "replay/method/beyer/025|salamander-v2|cover-pedal|s1|of": {
+   "error_code": null,
+   "metrics": {
+    "critical.accidentals": 1.0,
+    "critical.beat_placement": 0.0,
+    "critical.hands": 0.0,
+    "critical.key": 1.0,
+    "critical.meter": 0.0,
+    "critical.note_values": 1.0,
+    "critical.pedal": null,
+    "critical.pitch_integrity": 1.0,
+    "critical.playback_tempo": 1.0,
+    "critical.structure": 0.0,
+    "notation.accidentals.courtesy_per_100": 0.0,
+    "notation.accidentals.required_recall": 1.0,
+    "notation.duration.accuracy": 0.819277,
+    "notation.duration.accuracy_ref": 0.819277,
+    "notation.duration.page_accuracy": 0.819277,
+    "notation.hand.accuracy": 0.759036,
+    "notation.hand.accuracy_ref": 0.759036,
+    "notation.ioi.accuracy": 0.87234,
+    "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
+    "notation.onset_pos.accuracy": 0.072289,
+    "notation.onset_pos.accuracy_ref": 0.072289,
+    "notation.pedal.f1": null,
+    "notation.pedal.false_per_min": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 1.0,
+    "notation.ties.extra_per_100": 6.024096,
+    "notation.tuplets.f1": null,
+    "notation.tuplets.false_per_100": 0.0,
+    "notes.identity.f1": 1.0,
+    "notes.onset.f1_50ms": 0.915663,
+    "read.bar_completeness": 1.0,
+    "read.bar_integrity": 1.0,
+    "read.ledger_lines.heavy_rate": 0.0,
+    "sqi": 70.590874,
+    "struct.downbeat.f1": 0.285714,
+    "struct.form.order_exact": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
+    "struct.measure_numbers.app_onset_accuracy": 1.0,
+    "struct.measure_numbers.valid": 1.0,
+    "struct.measures.count_exact": 0.0,
+    "struct.measures.extra_empty_edge": 0.0,
+    "struct.stats_consistent": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.tempo.ok_written": 1.0,
+    "struct.tempo.present": 1.0,
+    "struct.tempo.timeline_accuracy": 1.0,
+    "struct.time_sig.exact": 0.0,
+    "struct.time_sig.score": 0.0,
+    "struct.time_sig.timeline_accuracy": 0.0,
+    "usable": 0.0
+   },
+   "semantic": "692d81d26302f48d",
+   "sqi": 70.590874,
+   "status": "ok"
+  },
+  "replay/method/beyer/027|salamander-v2|cover-pedal|s1|of": {
+   "error_code": null,
+   "metrics": {
+    "critical.accidentals": 1.0,
+    "critical.beat_placement": 1.0,
+    "critical.hands": 0.0,
+    "critical.key": 1.0,
+    "critical.meter": 1.0,
+    "critical.note_values": 0.0,
+    "critical.pedal": null,
+    "critical.pitch_integrity": 1.0,
+    "critical.playback_tempo": 1.0,
+    "critical.structure": 1.0,
+    "notation.accidentals.courtesy_per_100": 0.0,
+    "notation.accidentals.required_recall": 1.0,
+    "notation.duration.accuracy": 0.666667,
+    "notation.duration.accuracy_ref": 0.659574,
+    "notation.duration.page_accuracy": 0.666667,
+    "notation.hand.accuracy": 0.752688,
+    "notation.hand.accuracy_ref": 0.744681,
+    "notation.ioi.accuracy": 1.0,
+    "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.onset_pos.accuracy_ref": 0.989362,
+    "notation.pedal.f1": null,
+    "notation.pedal.false_per_min": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 0.989362,
+    "notation.ties.extra_per_100": 0.0,
+    "notation.tuplets.f1": null,
+    "notation.tuplets.false_per_100": 0.0,
+    "notes.identity.f1": 0.994652,
+    "notes.onset.f1_50ms": 0.973262,
+    "read.bar_completeness": 1.0,
+    "read.bar_integrity": 1.0,
+    "read.ledger_lines.heavy_rate": 0.0,
+    "sqi": 93.722835,
+    "struct.downbeat.f1": 0.9375,
+    "struct.form.order_exact": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
+    "struct.measure_numbers.app_onset_accuracy": 1.0,
+    "struct.measure_numbers.valid": 1.0,
+    "struct.measures.count_exact": 1.0,
+    "struct.measures.extra_empty_edge": 0.0,
+    "struct.stats_consistent": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.tempo.ok_written": 1.0,
+    "struct.tempo.present": 1.0,
+    "struct.tempo.timeline_accuracy": 1.0,
+    "struct.time_sig.exact": 1.0,
+    "struct.time_sig.score": 1.0,
+    "struct.time_sig.timeline_accuracy": 1.0,
+    "usable": 0.0
+   },
+   "semantic": "c0928494e98a3323",
+   "sqi": 93.722835,
+   "status": "ok"
+  },
+  "replay/method/beyer/028|salamander-v2|cover-pedal|s1|of": {
+   "error_code": null,
+   "metrics": {
+    "critical.accidentals": 1.0,
+    "critical.beat_placement": 1.0,
+    "critical.hands": 0.0,
+    "critical.key": 1.0,
+    "critical.meter": 1.0,
+    "critical.note_values": 0.0,
+    "critical.pedal": null,
+    "critical.pitch_integrity": 1.0,
+    "critical.playback_tempo": 1.0,
+    "critical.structure": 1.0,
+    "notation.accidentals.courtesy_per_100": 0.0,
+    "notation.accidentals.required_recall": 1.0,
+    "notation.duration.accuracy": 0.726316,
+    "notation.duration.accuracy_ref": 0.726316,
+    "notation.duration.page_accuracy": 0.726316,
+    "notation.hand.accuracy": 0.684211,
+    "notation.hand.accuracy_ref": 0.684211,
+    "notation.ioi.accuracy": 0.967742,
+    "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
+    "notation.onset_pos.accuracy": 0.989474,
+    "notation.onset_pos.accuracy_ref": 0.989474,
+    "notation.pedal.f1": null,
+    "notation.pedal.false_per_min": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 1.0,
+    "notation.ties.extra_per_100": 2.105263,
+    "notation.tuplets.f1": null,
+    "notation.tuplets.false_per_100": 0.0,
+    "notes.identity.f1": 1.0,
+    "notes.onset.f1_50ms": 0.968421,
+    "read.bar_completeness": 1.0,
+    "read.bar_integrity": 1.0,
+    "read.ledger_lines.heavy_rate": 0.0,
+    "sqi": 93.624788,
+    "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
+    "struct.measure_numbers.app_onset_accuracy": 1.0,
+    "struct.measure_numbers.valid": 1.0,
+    "struct.measures.count_exact": 1.0,
+    "struct.measures.extra_empty_edge": 0.0,
+    "struct.stats_consistent": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.tempo.ok_written": 1.0,
+    "struct.tempo.present": 1.0,
+    "struct.tempo.timeline_accuracy": 1.0,
+    "struct.time_sig.exact": 1.0,
+    "struct.time_sig.score": 1.0,
+    "struct.time_sig.timeline_accuracy": 1.0,
+    "usable": 0.0
+   },
+   "semantic": "2c864d94b4713cd1",
+   "sqi": 93.624788,
+   "status": "ok"
+  },
+  "replay/method/beyer/029|salamander-v2|cover-pedal|s1|of": {
+   "error_code": null,
+   "metrics": {
+    "critical.accidentals": 1.0,
+    "critical.beat_placement": 1.0,
+    "critical.hands": 0.0,
+    "critical.key": 1.0,
+    "critical.meter": 1.0,
+    "critical.note_values": 0.0,
+    "critical.pedal": null,
+    "critical.pitch_integrity": 1.0,
+    "critical.playback_tempo": 1.0,
+    "critical.structure": 1.0,
+    "notation.accidentals.courtesy_per_100": 0.0,
+    "notation.accidentals.required_recall": 1.0,
+    "notation.duration.accuracy": 0.757576,
+    "notation.duration.accuracy_ref": 0.757576,
+    "notation.duration.page_accuracy": 0.757576,
+    "notation.hand.accuracy": 0.545455,
+    "notation.hand.accuracy_ref": 0.545455,
+    "notation.ioi.accuracy": 1.0,
+    "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.onset_pos.accuracy_ref": 1.0,
+    "notation.pedal.f1": null,
+    "notation.pedal.false_per_min": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 1.0,
+    "notation.ties.extra_per_100": 0.0,
+    "notation.tuplets.f1": null,
+    "notation.tuplets.false_per_100": 0.0,
+    "notes.identity.f1": 1.0,
+    "notes.onset.f1_50ms": 1.0,
+    "read.bar_completeness": 1.0,
+    "read.bar_integrity": 1.0,
+    "read.ledger_lines.heavy_rate": 0.0,
+    "sqi": 93.030303,
+    "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
+    "struct.measure_numbers.app_onset_accuracy": 1.0,
+    "struct.measure_numbers.valid": 1.0,
+    "struct.measures.count_exact": 1.0,
+    "struct.measures.extra_empty_edge": 0.0,
+    "struct.stats_consistent": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.tempo.ok_written": 1.0,
+    "struct.tempo.present": 1.0,
+    "struct.tempo.timeline_accuracy": 1.0,
+    "struct.time_sig.exact": 1.0,
+    "struct.time_sig.score": 1.0,
+    "struct.time_sig.timeline_accuracy": 1.0,
+    "usable": 0.0
+   },
+   "semantic": "5bcc56e053c6b624",
+   "sqi": 93.030303,
+   "status": "ok"
+  },
+  "replay/method/beyer/031|salamander-v2|cover-pedal|s1|of": {
+   "error_code": null,
+   "metrics": {
+    "critical.accidentals": 1.0,
+    "critical.beat_placement": 1.0,
+    "critical.hands": 0.0,
+    "critical.key": 1.0,
+    "critical.meter": 1.0,
+    "critical.note_values": 0.0,
+    "critical.pedal": null,
+    "critical.pitch_integrity": 1.0,
+    "critical.playback_tempo": 1.0,
+    "critical.structure": 1.0,
+    "notation.accidentals.courtesy_per_100": 0.0,
+    "notation.accidentals.required_recall": 1.0,
+    "notation.duration.accuracy": 0.583333,
+    "notation.duration.accuracy_ref": 0.572727,
+    "notation.duration.page_accuracy": 0.583333,
+    "notation.hand.accuracy": 0.722222,
+    "notation.hand.accuracy_ref": 0.709091,
+    "notation.ioi.accuracy": 0.967742,
+    "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
+    "notation.onset_pos.accuracy": 0.990741,
+    "notation.onset_pos.accuracy_ref": 0.972727,
+    "notation.pedal.f1": null,
+    "notation.pedal.false_per_min": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 0.981818,
+    "notation.ties.extra_per_100": 0.925926,
+    "notation.tuplets.f1": null,
+    "notation.tuplets.false_per_100": 0.0,
+    "notes.identity.f1": 0.990826,
+    "notes.onset.f1_50ms": 0.908257,
+    "read.bar_completeness": 1.0,
+    "read.bar_integrity": 1.0,
+    "read.ledger_lines.heavy_rate": 0.0,
+    "sqi": 91.812115,
+    "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
+    "struct.measure_numbers.app_onset_accuracy": 1.0,
+    "struct.measure_numbers.valid": 1.0,
+    "struct.measures.count_exact": 1.0,
+    "struct.measures.extra_empty_edge": 0.0,
+    "struct.stats_consistent": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.tempo.ok_written": 1.0,
+    "struct.tempo.present": 1.0,
+    "struct.tempo.timeline_accuracy": 1.0,
+    "struct.time_sig.exact": 1.0,
+    "struct.time_sig.score": 1.0,
+    "struct.time_sig.timeline_accuracy": 1.0,
+    "usable": 0.0
+   },
+   "semantic": "15bbf0f3cad50f0e",
+   "sqi": 91.812115,
+   "status": "ok"
+  },
+  "replay/method/beyer/033|salamander-v2|cover-pedal|s1|of": {
+   "error_code": null,
+   "metrics": {
+    "critical.accidentals": 1.0,
+    "critical.beat_placement": 1.0,
+    "critical.hands": 0.0,
+    "critical.key": 0.0,
+    "critical.meter": 1.0,
+    "critical.note_values": 1.0,
+    "critical.pedal": null,
+    "critical.pitch_integrity": 1.0,
+    "critical.playback_tempo": 1.0,
+    "critical.structure": 1.0,
+    "notation.accidentals.courtesy_per_100": 0.0,
+    "notation.accidentals.required_recall": 1.0,
+    "notation.duration.accuracy": 0.953488,
+    "notation.duration.accuracy_ref": 0.953488,
+    "notation.duration.page_accuracy": 0.953488,
+    "notation.hand.accuracy": 0.5,
+    "notation.hand.accuracy_ref": 0.5,
+    "notation.ioi.accuracy": 0.952381,
+    "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
+    "notation.onset_pos.accuracy": 0.976744,
+    "notation.onset_pos.accuracy_ref": 0.976744,
+    "notation.pedal.f1": null,
+    "notation.pedal.false_per_min": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 1.0,
+    "notation.ties.extra_per_100": 0.0,
+    "notation.tuplets.f1": null,
+    "notation.tuplets.false_per_100": 0.0,
+    "notes.identity.f1": 0.988506,
+    "notes.onset.f1_50ms": 0.91954,
+    "read.bar_completeness": 1.0,
+    "read.bar_integrity": 1.0,
+    "read.ledger_lines.heavy_rate": 0.0,
+    "sqi": 83.479971,
+    "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
+    "struct.key.fifths_exact": 0.0,
+    "struct.key.timeline_accuracy": 0.0,
+    "struct.measure_numbers.app_onset_accuracy": 1.0,
+    "struct.measure_numbers.valid": 1.0,
+    "struct.measures.count_exact": 1.0,
+    "struct.measures.extra_empty_edge": 0.0,
+    "struct.stats_consistent": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.tempo.ok_written": 1.0,
+    "struct.tempo.present": 1.0,
+    "struct.tempo.timeline_accuracy": 1.0,
+    "struct.time_sig.exact": 1.0,
+    "struct.time_sig.score": 1.0,
+    "struct.time_sig.timeline_accuracy": 1.0,
+    "usable": 0.0
+   },
+   "semantic": "1c82aca3137a2c5e",
+   "sqi": 83.479971,
+   "status": "ok"
+  },
+  "replay/method/beyer/037|salamander-v2|cover-pedal|s1|of": {
+   "error_code": null,
+   "metrics": {
+    "critical.accidentals": 1.0,
+    "critical.beat_placement": 1.0,
+    "critical.hands": 1.0,
+    "critical.key": 0.0,
+    "critical.meter": 1.0,
+    "critical.note_values": 0.0,
+    "critical.pedal": null,
+    "critical.pitch_integrity": 1.0,
+    "critical.playback_tempo": 1.0,
+    "critical.structure": 1.0,
+    "notation.accidentals.courtesy_per_100": 0.0,
+    "notation.accidentals.required_recall": 1.0,
+    "notation.duration.accuracy": 0.754902,
+    "notation.duration.accuracy_ref": 0.754902,
+    "notation.duration.page_accuracy": 0.754902,
+    "notation.hand.accuracy": 0.901961,
+    "notation.hand.accuracy_ref": 0.901961,
+    "notation.ioi.accuracy": 0.971831,
+    "notation.note_shape.consistency": 1.0,
+    "notation.note_shape.mismatches": 0.0,
+    "notation.onset_pos.accuracy": 0.990196,
+    "notation.onset_pos.accuracy_ref": 0.990196,
+    "notation.pedal.f1": null,
+    "notation.pedal.false_per_min": null,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 1.0,
+    "notation.ties.extra_per_100": 0.980392,
+    "notation.tuplets.f1": null,
+    "notation.tuplets.false_per_100": 0.0,
+    "notes.identity.f1": 1.0,
+    "notes.onset.f1_50ms": 0.931373,
+    "read.bar_completeness": 1.0,
+    "read.bar_integrity": 1.0,
+    "read.ledger_lines.heavy_rate": 0.0,
+    "sqi": 86.139878,
+    "struct.downbeat.f1": 1.0,
+    "struct.form.order_exact": 1.0,
+    "struct.key.fifths_exact": 0.0,
+    "struct.key.timeline_accuracy": 0.0,
+    "struct.measure_numbers.app_onset_accuracy": 1.0,
+    "struct.measure_numbers.valid": 1.0,
+    "struct.measures.count_exact": 1.0,
+    "struct.measures.extra_empty_edge": 0.0,
+    "struct.stats_consistent": 1.0,
+    "struct.tempo.ok_effective": 1.0,
+    "struct.tempo.ok_written": 1.0,
+    "struct.tempo.present": 1.0,
+    "struct.tempo.timeline_accuracy": 1.0,
+    "struct.time_sig.exact": 1.0,
+    "struct.time_sig.score": 1.0,
+    "struct.time_sig.timeline_accuracy": 1.0,
+    "usable": 0.0
+   },
+   "semantic": "1fedf942f9e194a2",
+   "sqi": 86.139878,
+   "status": "ok"
+  }
+ },
+ "history": [
+  {
+   "audio_score_sha256": "743f0341b2cfea56318804bc6971c6fe2fe9142f75785c378584b75919530743",
+   "date": "2026-10-02",
+   "git_sha": "2e09fade3a3d5888e91308e9e8b46bed8a2b82cc",
+   "reason": "G10a-1: the real-AMT tier with the recording conversion v2 (first baseline)",
+   "sqi_all": 83.966508,
+   "usable_all": 0.05
+  }
+ ],
+ "known_failures": {
+  "classes": {
+   "bar_accidental_not_carried": {
+    "by_collection": {},
+    "examples": [],
+    "files_affected": 0,
+    "files_in_scope": 329,
+    "impact": "An accidental earlier in the bar still holds on the page, but the file plays the note without it.",
+    "in_scope_by_collection": {
+     "catalog": 3,
+     "hymns": 100,
+     "method/beyer": 65,
+     "method/burgmuller25": 15,
+     "method/czerny299": 10,
+     "method/czerny599": 56,
+     "method/czerny849": 28,
+     "method/hanon": 20,
+     "method/sonatina": 28,
+     "samples": 4
+    },
+    "items": 0,
+    "status": "NONE",
+    "title": "In-bar accidentals that are not carried",
+    "unit": "notes"
+   },
+   "bar_integrity": {
+    "by_collection": {
+     "hymns": 12,
+     "method/czerny599": 4,
+     "method/sonatina": 8
+    },
+    "examples": [
+     "catalog/hymns/all-glory-laud.musicxml",
+     "catalog/hymns/awake-my-soul.musicxml",
+     "catalog/hymns/be-still-my-soul.musicxml",
+     "catalog/hymns/for-all-the-saints.musicxml",
+     "catalog/hymns/i-need-thee.musicxml"
+    ],
+    "files_affected": 24,
+    "files_in_scope": 329,
+    "impact": "Bars whose content does not fit the time signature (the app's own validation rule).",
+    "in_scope_by_collection": {
+     "catalog": 3,
+     "hymns": 100,
+     "method/beyer": 65,
+     "method/burgmuller25": 15,
+     "method/czerny299": 10,
+     "method/czerny599": 56,
+     "method/czerny849": 28,
+     "method/hanon": 20,
+     "method/sonatina": 28,
+     "samples": 4
+    },
+    "items": 88,
+    "status": "KNOWN_FAILURE",
+    "title": "Overfull, underfull or empty bars",
+    "unit": "bars"
+   },
+   "bar_numbering": {
+    "by_collection": {},
+    "examples": [],
+    "files_affected": 0,
+    "files_in_scope": 329,
+    "impact": "The app finds bars by number: a repeated number lays bars over each other, a skipped or reordered one shows wrong bar numbers.",
+    "in_scope_by_collection": {
+     "catalog": 3,
+     "hymns": 100,
+     "method/beyer": 65,
+     "method/burgmuller25": 15,
+     "method/czerny299": 10,
+     "method/czerny599": 56,
+     "method/czerny849": 28,
+     "method/hanon": 20,
+     "method/sonatina": 28,
+     "samples": 4
+    },
+    "items": 0,
+    "status": "NONE",
+    "title": "Bar numbers that do not count up by one",
+    "unit": "files"
+   },
+   "grace_notes_dropped": {
+    "by_collection": {
+     "method/burgmuller25": 1,
+     "method/czerny299": 1,
+     "method/czerny849": 2,
+     "method/sonatina": 13
+    },
+    "examples": [
+     "catalog/method/burgmuller25/003.mxl",
+     "catalog/method/czerny299/010.mxl",
+     "catalog/method/czerny849/007.mxl",
+     "catalog/method/czerny849/017.mxl",
+     "catalog/method/sonatina/002.mxl"
+    ],
+    "files_affected": 17,
+    "files_in_scope": 329,
+    "impact": "parseMusicXML skips <grace> notes: they are neither shown nor played. A known limitation, not a data error.",
+    "in_scope_by_collection": {
+     "catalog": 3,
+     "hymns": 100,
+     "method/beyer": 65,
+     "method/burgmuller25": 15,
+     "method/czerny299": 10,
+     "method/czerny599": 56,
+     "method/czerny849": 28,
+     "method/hanon": 20,
+     "method/sonatina": 28,
+     "samples": 4
+    },
+    "items": 244,
+    "status": "KNOWN_LIMITATION",
+    "title": "Grace notes the app skips",
+    "unit": "notes"
+   },
+   "incomplete_bars": {
+    "by_collection": {
+     "hymns": 7,
+     "method/czerny599": 4,
+     "method/sonatina": 1
+    },
+    "examples": [
+     "catalog/hymns/all-glory-laud.musicxml",
+     "catalog/hymns/for-all-the-saints.musicxml",
+     "catalog/hymns/i-need-thee.musicxml",
+     "catalog/hymns/in-the-bleak-midwinter.musicxml",
+     "catalog/hymns/now-thank-we-all.musicxml"
+    ],
+    "files_affected": 12,
+    "files_in_scope": 329,
+    "impact": "A staff's notes and rests stop before the bar ends, or a bar is short (not a pickup, its complement, or half of a bar split at a repeat sign, an ending or a double/final bar line): the app draws the bar short. Stricter than bar_integrity, the app's own check.",
+    "in_scope_by_collection": {
+     "catalog": 3,
+     "hymns": 100,
+     "method/beyer": 65,
+     "method/burgmuller25": 15,
+     "method/czerny299": 10,
+     "method/czerny599": 56,
+     "method/czerny849": 28,
+     "method/hanon": 20,
+     "method/sonatina": 28,
+     "samples": 4
+    },
+    "items": 42,
+    "status": "KNOWN_FAILURE",
+    "title": "Bars a staff does not fill",
+    "unit": "bars"
+   },
+   "key_signature_playback": {
+    "by_collection": {
+     "method/czerny849": 1,
+     "samples": 2
+    },
+    "examples": [
+     "catalog/method/czerny849/017.mxl",
+     "samples/chords-sample.musicxml",
+     "samples/vocal-piano.musicxml"
+    ],
+    "files_affected": 3,
+    "files_in_scope": 155,
+    "impact": "The page shows the key signature (e.g. F# in G major) but the note has no <alter> and no printed accidental, so the app plays another note (F natural) than the page shows. Cause in the hymns: catalog/hymns/abc-to-musicxml.js writes <alter> only for explicit ABC accidentals; in the other files a natural sign is missing.",
+    "in_scope_by_collection": {
+     "catalog": 2,
+     "hymns": 89,
+     "method/beyer": 1,
+     "method/burgmuller25": 10,
+     "method/czerny299": 1,
+     "method/czerny599": 17,
+     "method/czerny849": 16,
+     "method/sonatina": 16,
+     "samples": 3
+    },
+    "items": 6,
+    "status": "KNOWN_FAILURE",
+    "title": "Notes played against the printed key signature (hymn converter)",
+    "unit": "notes"
+   },
+   "note_shape_mismatch": {
+    "by_collection": {
+     "catalog": 1,
+     "hymns": 2,
+     "method/burgmuller25": 1
+    },
+    "examples": [
+     "catalog/fur-elise.musicxml",
+     "catalog/hymns/all-creatures.musicxml",
+     "catalog/hymns/the-lords-my-shepherd.musicxml",
+     "catalog/method/burgmuller25/019.mxl"
+    ],
+    "files_affected": 4,
+    "files_in_scope": 329,
+    "impact": "The app draws a note from <type> and <dot> and plays its <duration>; where they disagree the page shows another rhythm than the app plays (e.g. an undotted whole note that lasts six beats).",
+    "in_scope_by_collection": {
+     "catalog": 3,
+     "hymns": 100,
+     "method/beyer": 65,
+     "method/burgmuller25": 15,
+     "method/czerny299": 10,
+     "method/czerny599": 56,
+     "method/czerny849": 28,
+     "method/hanon": 20,
+     "method/sonatina": 28,
+     "samples": 4
+    },
+    "items": 8,
+    "status": "KNOWN_FAILURE",
+    "title": "Printed note shapes that say another length",
+    "unit": "notes/rests"
+   },
+   "octave_shift_playback": {
+    "by_collection": {
+     "method/burgmuller25": 2,
+     "method/czerny299": 9,
+     "method/czerny849": 16,
+     "method/sonatina": 2,
+     "samples": 1
+    },
+    "examples": [
+     "catalog/method/burgmuller25/015.mxl",
+     "catalog/method/burgmuller25/021.mxl",
+     "catalog/method/czerny299/001.mxl",
+     "catalog/method/czerny299/002.mxl",
+     "catalog/method/czerny299/003.mxl"
+    ],
+    "files_affected": 30,
+    "files_in_scope": 30,
+    "impact": "MusicXML keeps the sounding pitch in <pitch> and marks an 8va with octave-shift type=\"down\"; the app treats <pitch> as written and subtracts an octave, so these notes very likely play an octave low (melodic steps at the 8va boundaries: median 3 semitones as written, 10 the app's way). Correctness fixture C10/C11 records the deviation; confirm once by ear in the app.",
+    "in_scope_by_collection": {
+     "method/burgmuller25": 2,
+     "method/czerny299": 9,
+     "method/czerny849": 16,
+     "method/sonatina": 2,
+     "samples": 1
+    },
+    "items": 2229,
+    "status": "KNOWN_FAILURE",
+    "title": "8va/8vb passages read the app's way",
+    "unit": "notes"
+   },
+   "tempo_marks_disagree": {
+    "by_collection": {
+     "method/burgmuller25": 2,
+     "method/czerny299": 1,
+     "method/hanon": 1
+    },
+    "examples": [
+     "catalog/method/burgmuller25/001.mxl",
+     "catalog/method/burgmuller25/018.mxl",
+     "catalog/method/czerny299/010.mxl",
+     "catalog/method/hanon/001.mxl"
+    ],
+    "files_affected": 4,
+    "files_in_scope": 329,
+    "impact": "The app's score tempo (practice tempo, metronome, tempo %) is the <sound tempo>; its player follows the printed mark written at the same place (PianoScore.tempoMap). The two disagree.",
+    "in_scope_by_collection": {
+     "catalog": 3,
+     "hymns": 100,
+     "method/beyer": 65,
+     "method/burgmuller25": 15,
+     "method/czerny299": 10,
+     "method/czerny599": 56,
+     "method/czerny849": 28,
+     "method/hanon": 20,
+     "method/sonatina": 28,
+     "samples": 4
+    },
+    "items": 4,
+    "status": "KNOWN_FAILURE",
+    "title": "Files whose <sound tempo> and printed tempo disagree",
+    "unit": "files"
+   },
+   "tie_without_stop": {
+    "by_collection": {
+     "method/burgmuller25": 1,
+     "method/sonatina": 4,
+     "samples": 1
+    },
+    "examples": [
+     "catalog/method/burgmuller25/021.mxl",
+     "catalog/method/sonatina/010.mxl",
+     "catalog/method/sonatina/014.mxl",
+     "catalog/method/sonatina/015.mxl",
+     "catalog/method/sonatina/025.mxl"
+    ],
+    "files_affected": 6,
+    "files_in_scope": 50,
+    "impact": "The tied note is struck again instead of held (the app joins a tie only at a matching tie-stop). Cause: abc-to-musicxml.js writes <tie type=\"start\"> and never the stop.",
+    "in_scope_by_collection": {
+     "hymns": 10,
+     "method/beyer": 1,
+     "method/burgmuller25": 10,
+     "method/czerny299": 7,
+     "method/czerny849": 4,
+     "method/sonatina": 16,
+     "samples": 2
+    },
+    "items": 20,
+    "status": "KNOWN_FAILURE",
+    "title": "Tie starts that never stop",
+    "unit": "ties"
+   },
+   "wrong_printed_accidental": {
+    "by_collection": {},
+    "examples": [],
+    "files_affected": 0,
+    "files_in_scope": 329,
+    "impact": "The printed accidental and the played pitch disagree.",
+    "in_scope_by_collection": {
+     "catalog": 3,
+     "hymns": 100,
+     "method/beyer": 65,
+     "method/burgmuller25": 15,
+     "method/czerny299": 10,
+     "method/czerny599": 56,
+     "method/czerny849": 28,
+     "method/hanon": 20,
+     "method/sonatina": 28,
+     "samples": 4
+    },
+    "items": 0,
+    "status": "NONE",
+    "title": "Printed accidentals naming another pitch",
+    "unit": "notes"
+   }
+  },
+  "files_by_collection": {
+   "catalog": 3,
+   "hymns": 100,
+   "method/beyer": 65,
+   "method/burgmuller25": 15,
+   "method/czerny299": 10,
+   "method/czerny599": 56,
+   "method/czerny849": 28,
+   "method/hanon": 20,
+   "method/sonatina": 28,
+   "samples": 4
+  },
+  "files_scanned": 329,
+  "scope": "committed scores under catalog/ and samples/",
+  "version": "known-defects/3"
+ },
+ "lock_sha256": "7f0457b78645bacc73e27746f3501ff5d9933d669317389b6c07bf9b9dedab3b",
+ "recorded": {
+  "audio_score_sha256": "743f0341b2cfea56318804bc6971c6fe2fe9142f75785c378584b75919530743",
+  "date": "2026-10-02",
+  "git_dirty": true,
+  "git_sha": "2e09fade3a3d5888e91308e9e8b46bed8a2b82cc",
+  "node": "v24.17.0",
+  "platform": "win32",
+  "python": "3.13.5"
+ },
+ "schema": "ppp.bench-baseline/1",
+ "suite": "replay-of-v2",
+ "suite_sha256": "78b4f0df7b029a3cbf172d358a234dca901009b57bf2152d22742b9399735066",
+ "versions": {
+  "generator": "perform/2",
+  "metrics": "metrics/6",
+  "reader": "reader/5",
+  "sqi": "sqi/2"
+ }
+}
