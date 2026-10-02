@@ -163,15 +163,33 @@ test('a recording: exactBars writes one tuplet per triplet beat (rests inside), 
   assert.deepEqual(on.stats, plain.stats);
 });
 
-test('the arrangement of a transcription writes the tuplets again (repair/index.js, scoregraph/rec-tuplet.js is loaded by it), a printed score\'s arrangement does not', () => {
-  assert.equal(typeof REP.isTranscription, 'function');
-  const on = build({ closeGaps: true, exactBars: true });
-  assert.equal(RT.isTranscription(on.graph), true);
-  /* the repair step's own call is on the arrangement the realizer writes: here, its pass on a graph that lost its tuplets */
-  const stripped = JSON.parse(JSON.stringify(on.graph));
-  stripped.parts[0].spanners = stripped.parts[0].spanners.filter(s => s.type !== 'tuplet');
-  const r = RT.addTriplets(require(path.join(REPO, 'scoregraph/index.js')).parse(JSON.stringify(stripped)));
-  assert.equal(tuplets(r.graph).length, tuplets(on.graph).length, 'the same tuplets come back');
+test('the one-note pipeline gate: the arrangement of a transcription gets the tuplets written again (report.tuplets), the arrangement of a printed score does not', async () => {
+  const CAND = require(path.join(REPO, 'candidates/index.js'));
+  const SGG = require(path.join(REPO, 'songgraph/index.js'));
+  const rhBar = n => 'C5:8' + T8 + ' D5:8' + T8 + ' E5:8' + T8 + ' ' + ['F5:q G5:h', 'G5:q F5:h', 'E5:q D5:h', 'C5:q C5:h'][n % 4];
+  const spec = { rh: Array.from({ length: 8 }, (_, i) => rhBar(i)).join(' | '), lh: Array.from({ length: 8 }, (_, i) => ['C3:h G3:h', 'F2:h C3:h', 'G2:h D3:h', 'C3:h G2:h'][i % 4]).join(' | ') };
+  const recording = mk(spec), printed = mk(Object.assign({ op: 'imported' }, spec));
+  assert.equal(REP.isTranscription(recording), true);
+  assert.equal(REP.isTranscription(printed), false);
+  const request = { targetLevel: 2, handProfile: 'large', sections: 'all' };
+  const run = (graph, o) => {
+    const sg = SGG.analyze(graph);
+    let sel = CAND.run(graph, sg, request, { singleNoteHands: true });
+    if (!sel.ok) sel = CAND.run(graph, sg, request, { singleNoteHands: true, relax: 2 });
+    assert.ok(sel.ok, 'a plan');
+    return REP.repairSelection(sel, graph, sg, request, o);
+  };
+  const rec = run(recording, undefined);
+  assert.ok(rec.report.tuplets && rec.report.tuplets.tuplets > 0, 'a transcription: the pass ran: ' + JSON.stringify(rec.report.tuplets));
+  assert.ok(tuplets(rec.graph).length >= 8, 'a bracket per triplet beat of the arrangement: ' + tuplets(rec.graph).length);
+  assert.equal(count(rec.graph, 'W-DISPLAY-DURATION'), 0);
+  assert.equal(RT.addTriplets(rec.graph).graph, rec.graph, 'a fixed point');
+  assert.equal(GAPS.tidyRests(rec.graph).graph, rec.graph, 'and of the gaps passes');
+  const pr = run(printed, undefined);
+  assert.equal(pr.report.tuplets, undefined, 'a printed score: not run');
+  assert.equal(tuplets(pr.graph).length, 0, 'the arrangement of a printed score has no tuplet added');
+  assert.equal(pr.graph.provenance.sources.some(x => x.tool === 'ppp.recording-tuplets'), false);
+  assert.equal(run(recording, { closeGaps: false }).report.tuplets, undefined, 'closeGaps: false asks for neither');
 });
 
 test('the page loads the pass between gaps.js and index.js, and its scripts in a bare context write the same score as Node', () => {
