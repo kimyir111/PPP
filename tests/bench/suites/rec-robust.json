@@ -2,7 +2,7 @@
  "align": {
   "window_s": 0.3
  },
- "description": "G10 recording robustness: the core references x cover-alt, an independent family (triangular jitter, no voicing, early-release-heavy; not calibrated), beats none / oracle-noisy, legacy / app",
+ "description": "G10 recording robustness: the core references x cover-alt, an independent family (triangular jitter, no voicing, early-release-heavy; not calibrated), beats none / oracle-noisy, legacy / app / v2",
  "gate": {
   "case_fail_drop": 10.0,
   "case_flip_max": 2,
@@ -288,6 +288,19 @@
    ]
   },
   {
+   "beats": "none",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
+   },
+   "profile": "cover-alt",
+   "seeds": [
+    1
+   ]
+  },
+  {
    "beats": "oracle-noisy",
    "opt_name": "legacy",
    "opts": {},
@@ -302,6 +315,19 @@
    "opts": {
     "closeGaps": true,
     "exactBars": true
+   },
+   "profile": "cover-alt",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "oracle-noisy",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
    },
    "profile": "cover-alt",
    "seeds": [

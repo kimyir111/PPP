@@ -34,6 +34,8 @@ tests/engrave/out/
 # G08_ARRANGEMENT_REALIZATION.md §14); the Lead kept this one (realize/) after independent
 # review - see §14's "Lead decision" note.
 !realize/tools/
+# ... and the recording conversion v2's trainer and its committed evaluation (rec/, G10a-1)
+!rec/tools/
 tests/realize/out/
 tests/bench/.cache/
 __pycache__/

@@ -151,7 +151,9 @@ def cmd_golden(args) -> int:
 def cmd_mutation(args) -> int:
     from pppbench import mutation
     if getattr(args, "rec", False):          # G10a-0: the recording metrics' planted defects, on the rec-mutation suite
-        return mutation.run_mutation_check(mutation.REC_MUTATIONS, "rec-mutation")
+        a = mutation.run_mutation_check(mutation.REC_MUTATIONS, "rec-mutation")
+        b = mutation.run_mutation_check(mutation.REC_V2_MUTATIONS, "rec-mutation-v2", out_name="mutation-v2")   # G10a-1
+        return max(a, b)
     return mutation.run_mutation_check()
 
 
@@ -241,7 +243,8 @@ def main(argv=None) -> int:
                    help="G3 (G03 A35): check every difference is one G3a may make; with --bless, bless only then")
     p.set_defaults(fn=cmd_golden)
     p = sub.add_parser("mutation-check")
-    p.add_argument("--rec", action="store_true", help="the recording metrics' mutations (G10a-0), on the rec-mutation suite")
+    p.add_argument("--rec", action="store_true", help="the recording metrics' mutations (G10a-0), on the rec-mutation suite, and "
+                   "the v2 time skeleton's (G10a-1), on rec-mutation-v2")
     p.set_defaults(fn=cmd_mutation)
     p = sub.add_parser("human-set", help="the G3 human review set (G03 §21, A36)")
     p.add_argument("--build", action="store_true")

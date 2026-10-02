@@ -1,0 +1,237 @@
+{
+ "schema": "ppp.rec-time-skeleton-evaluation/1",
+ "weights_sha256": "eada10d5f62a8a89b6f5e6f60e81607b5110b1c0b0fdbf36113f0592caa26b76",
+ "note": "skeleton right = metre, quarter tempo within 4 % and >= 90 % of the bar lines; reachable = some reading of the pulse tracks is right",
+ "train": {
+  "n": 2570,
+  "right": 0.668093,
+  "metre": 0.715953,
+  "tempo": 0.868872,
+  "reachable": 0.90428,
+  "byMetre": {
+   "12/8": {
+    "n": 10,
+    "right": 0,
+    "metre": 0,
+    "tempo": 0.9,
+    "reachable": 1
+   },
+   "2/2": {
+    "n": 50,
+    "right": 0,
+    "metre": 0,
+    "tempo": 0.6,
+    "reachable": 1
+   },
+   "2/4": {
+    "n": 400,
+    "right": 0.1925,
+    "metre": 0.21,
+    "tempo": 0.72,
+    "reachable": 0.7025
+   },
+   "3/2": {
+    "n": 10,
+    "right": 0,
+    "metre": 0,
+    "tempo": 1,
+    "reachable": 0
+   },
+   "3/4": {
+    "n": 420,
+    "right": 0.742857,
+    "metre": 0.788095,
+    "tempo": 0.933333,
+    "reachable": 0.997619
+   },
+   "3/8": {
+    "n": 90,
+    "right": 0.533333,
+    "metre": 0.544444,
+    "tempo": 0.766667,
+    "reachable": 0.933333
+   },
+   "4/4": {
+    "n": 1340,
+    "right": 0.876866,
+    "metre": 0.94403,
+    "tempo": 0.942537,
+    "reachable": 0.970149
+   },
+   "5/4": {
+    "n": 10,
+    "right": 0,
+    "metre": 0,
+    "tempo": 0.8,
+    "reachable": 0
+   },
+   "6/4": {
+    "n": 50,
+    "right": 0,
+    "metre": 0,
+    "tempo": 0.28,
+    "reachable": 0
+   },
+   "6/8": {
+    "n": 180,
+    "right": 0.572222,
+    "metre": 0.605556,
+    "tempo": 0.777778,
+    "reachable": 0.944444
+   },
+   "9/8": {
+    "n": 10,
+    "right": 0.2,
+    "metre": 0.2,
+    "tempo": 1,
+    "reachable": 1
+   }
+  }
+ },
+ "holdout": {
+  "n": 312,
+  "right": 0.644231,
+  "metre": 0.682692,
+  "tempo": 0.86859,
+  "reachable": 0.884615,
+  "byMetre": {
+   "2/4": {
+    "n": 60,
+    "right": 0.183333,
+    "metre": 0.183333,
+    "tempo": 0.633333,
+    "reachable": 0.783333
+   },
+   "3/2": {
+    "n": 6,
+    "right": 0,
+    "metre": 0,
+    "tempo": 0,
+    "reachable": 0
+   },
+   "3/4": {
+    "n": 66,
+    "right": 0.681818,
+    "metre": 0.69697,
+    "tempo": 0.878788,
+    "reachable": 1
+   },
+   "3/8": {
+    "n": 18,
+    "right": 0.611111,
+    "metre": 0.611111,
+    "tempo": 1,
+    "reachable": 1
+   },
+   "4/4": {
+    "n": 150,
+    "right": 0.853333,
+    "metre": 0.926667,
+    "tempo": 0.966667,
+    "reachable": 0.926667
+   },
+   "6/4": {
+    "n": 6,
+    "right": 0,
+    "metre": 0,
+    "tempo": 1,
+    "reachable": 0
+   },
+   "6/8": {
+    "n": 6,
+    "right": 1,
+    "metre": 1,
+    "tempo": 1,
+    "reachable": 1
+   }
+  }
+ },
+ "cv": {
+  "folds": 5,
+  "by": "reference (fnv1a32(id) % 5)",
+  "n": 2570,
+  "right": 0.61284,
+  "metre": 0.668482,
+  "tempo": 0.857198,
+  "reachable": 0.90428,
+  "byMetre": {
+   "12/8": {
+    "n": 10,
+    "right": 0,
+    "metre": 0,
+    "tempo": 0.9,
+    "reachable": 1
+   },
+   "2/2": {
+    "n": 50,
+    "right": 0,
+    "metre": 0,
+    "tempo": 0.6,
+    "reachable": 1
+   },
+   "2/4": {
+    "n": 400,
+    "right": 0.195,
+    "metre": 0.2125,
+    "tempo": 0.745,
+    "reachable": 0.7025
+   },
+   "3/2": {
+    "n": 10,
+    "right": 0,
+    "metre": 0,
+    "tempo": 1,
+    "reachable": 0
+   },
+   "3/4": {
+    "n": 420,
+    "right": 0.635714,
+    "metre": 0.688095,
+    "tempo": 0.919048,
+    "reachable": 0.997619
+   },
+   "3/8": {
+    "n": 90,
+    "right": 0.322222,
+    "metre": 0.344445,
+    "tempo": 0.722222,
+    "reachable": 0.933333
+   },
+   "4/4": {
+    "n": 1340,
+    "right": 0.827612,
+    "metre": 0.90597,
+    "tempo": 0.921642,
+    "reachable": 0.970149
+   },
+   "5/4": {
+    "n": 10,
+    "right": 0,
+    "metre": 0,
+    "tempo": 0.9,
+    "reachable": 0
+   },
+   "6/4": {
+    "n": 50,
+    "right": 0,
+    "metre": 0,
+    "tempo": 0.24,
+    "reachable": 0
+   },
+   "6/8": {
+    "n": 180,
+    "right": 0.511111,
+    "metre": 0.55,
+    "tempo": 0.772222,
+    "reachable": 0.944445
+   },
+   "9/8": {
+    "n": 10,
+    "right": 0,
+    "metre": 0,
+    "tempo": 1,
+    "reachable": 1
+   }
+  }
+ }
+}

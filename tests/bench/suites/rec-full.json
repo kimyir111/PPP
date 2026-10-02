@@ -2,7 +2,7 @@
  "align": {
   "window_s": 0.3
  },
- "description": "Nightly/manual: every lint-clean reference, hold-out included (seeds 11, 12), x the humanizer's families x legacy / app; the hold-out is reported as an aggregate",
+ "description": "Nightly/manual: every lint-clean reference, hold-out included (seeds 11, 12), x the humanizer's families x legacy / app / v2; the hold-out is reported as an aggregate",
  "gate": {
   "case_fail_drop": 10.0,
   "case_flip_max": 2,
@@ -297,6 +297,20 @@
   },
   {
    "beats": "none",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
+   },
+   "profile": "cover",
+   "seeds": [
+    1,
+    2
+   ]
+  },
+  {
+   "beats": "none",
    "opt_name": "legacy",
    "opts": {},
    "profile": "cover-pedal",
@@ -320,6 +334,20 @@
   },
   {
    "beats": "none",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
+   },
+   "profile": "cover-pedal",
+   "seeds": [
+    1,
+    2
+   ]
+  },
+  {
+   "beats": "none",
    "opt_name": "legacy",
    "opts": {},
    "profile": "human-real",
@@ -334,6 +362,20 @@
    "opts": {
     "closeGaps": true,
     "exactBars": true
+   },
+   "profile": "human-real",
+   "seeds": [
+    1,
+    2
+   ]
+  },
+  {
+   "beats": "none",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
    },
    "profile": "human-real",
    "seeds": [
@@ -357,6 +399,20 @@
    "opts": {
     "closeGaps": true,
     "exactBars": true
+   },
+   "profile": "swing",
+   "seeds": [
+    1,
+    2
+   ]
+  },
+  {
+   "beats": "none",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
    },
    "profile": "swing",
    "seeds": [
@@ -380,6 +436,20 @@
    "opts": {
     "closeGaps": true,
     "exactBars": true
+   },
+   "profile": "cover+of",
+   "seeds": [
+    1,
+    2
+   ]
+  },
+  {
+   "beats": "none",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
    },
    "profile": "cover+of",
    "seeds": [
@@ -403,6 +473,20 @@
    "opts": {
     "closeGaps": true,
     "exactBars": true
+   },
+   "profile": "cover-pedal+helper",
+   "seeds": [
+    1,
+    2
+   ]
+  },
+  {
+   "beats": "oracle-noisy",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
    },
    "profile": "cover-pedal+helper",
    "seeds": [

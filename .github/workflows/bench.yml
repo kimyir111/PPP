@@ -34,6 +34,8 @@ jobs:
       - run: npm run test:songgraph                  # G7a: key regions, harmony, melody/bass, sections/phrases, voice roles, energy, span round trips, mutation suite (G07)
       - run: npm run test:arrangement-planner         # G7b: texture ladder, deterministic search, real-corpus coverage, mutation suite (G07B)
       - run: npm run test:realize                     # G8a: the deterministic realizer, golden determinism, mutation suite (G08)
+      - run: npm run test:rec                         # G10a-1: rec/ S0-S2 (attacks, pulse tracks, the metre model) and toMusicXml recording 'v2'
+      - run: node rec/tools/train.js --check          # G10a-1 (AI-5a): the committed weights and evaluation are what the training makes (G10 section 18)
       - run: node tests/engrave/tools/make-e-fixtures.js --check   # the E fixtures are the generator's (G04 §22.1)
       - run: node tests/engrave/tools/make-corpus.js --check       # the R corpus manifest is the rule's (G04 §22.2)
       - run: node tests/engrave/tools/make-metrics.js --check      # G4b: the layout's glyph metrics are the pinned font's (G04 §18.2)
@@ -71,6 +73,7 @@ jobs:
       - run: python tests/bench/run.py run --suite replay-public   # exits with the replay verdict
       - run: python tests/bench/run.py run --suite replay-of       # G10a-0: the production browser model (Onsets & Frames) on rendered audio, replayed from committed notes
       - run: python tests/bench/run.py run --suite replay-of-app   # the same fixtures with the app's options
+      - run: python tests/bench/run.py run --suite replay-of-v2    # G10a-1: and with the recording conversion v2
       - run: npm run test:transcription-core && npm run test:arranger
       - if: always()
         uses: actions/upload-artifact@v4
@@ -175,3 +178,4 @@ jobs:
             tests/bench/out/rec-full/summary.md
             tests/bench/out/rec-full/run.json
             tests/bench/out/mutation/mutation-report.json
+            tests/bench/out/mutation-v2/mutation-report.json

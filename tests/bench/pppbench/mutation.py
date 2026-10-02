@@ -43,8 +43,8 @@ from . import compare, runner, stages, suite as suite_mod, sut as sut_mod, util
 # and metrics; what the file says is the same defect as before.
 SG_MEASURES = "    for (let i = 0; i < bars; i++) mid.push(b.measure({ number: String(i + 1), dur: W(bar) }).id);"
 SG_METER = "    b.meter({ m: mid[0], beats: [beatsPerBar], beatType: beatType });"
-SG_TEMPO = ("    b.tempo({ m: mid[0], at: '0', qpm: String(bpm), mark: mark, "
-            "display: [{ part: part.id, staff: st[1], placement: 'above' }] });")
+SG_TEMPO = ("    b.tempo({ m: mid[0], at: '0', qpm: model.qpm != null ? model.qpm : String(bpm), mark: mark, "
+            "display: [{ part: part.id, staff: st[1], placement: 'above' }] });")   # G10a-1: model.qpm is v2's (issue 1)
 SG_CLEF_RH = "    b.clef(part, { staff: st[1], m: mid[0], at: '0', sign: 'G' });"
 SG_CLEF_LH = "    b.clef(part, { staff: st[2], m: mid[0], at: '0', sign: 'F' });"
 SG_KEY_STATE = "      const state = keyAlters(key.fifths);             /* read only here */"
@@ -423,6 +423,45 @@ REC_MUTATIONS: List[Dict[str, Any]] = [
      "expect": "PASS", "metrics": []},
 ]
 
+# G10a-1: the recording conversion v2 (rec/), one planted defect per decision of its time skeleton (the metre model's
+# accents, the bar lines, the tempo octave, issue 1's compound tempo, the helper's beats, the on-beat quantiser fix), on
+# the rec-mutation-v2 suite (the rec-mutation references and rows with the v2 options only: a v2 defect is not diluted by
+# rows it cannot touch, and the legacy mutations above keep their own suite)
+REC_V2_MUTATIONS: List[Dict[str, Any]] = [
+    {"id": "REC-V2-NO-ACCENTS", "v2": True,           # the metre model ignores the beat accents (where bass, harmony, long notes fall)
+     "file": "rec/metre.js",
+     "find": "      sc[i] = model.score(row, W.weights);",
+     "replace": "      for (let k = 6; k <= 10; k++) row[k] = 0;\n      sc[i] = model.score(row, W.weights);",
+     "expect": "REGRESSION", "metrics": ["critical.meter", "struct.downbeat.f1", "rec.metre.f1"]},
+    {"id": "REC-V2-BAR-LINE-LATE", "v2": True,        # the chosen reading's bar lines written one beat late
+     "file": "rec/metre.js",
+     "find": "    const startQ = bar0 * m.barQ;",
+     "replace": "    const startQ = bar0 * m.barQ + m.unitQ;",
+     "all": True, "expect": "REGRESSION", "metrics": ["critical.beat_placement", "struct.downbeat.f1"]},
+    {"id": "REC-V2-HALF-TEMPO", "v2": True,           # the written beat twice as long as the reading's: the tempo octave one down
+     "file": "rec/metre.js",
+     "find": "out.push(beats.timeAt(tr.beats, (startQ + k * m.unitQ + best.phi) / best.rho));",
+     "replace": "out.push(beats.timeAt(tr.beats, (startQ + 2 * k * m.unitQ + best.phi) / best.rho));",
+     "all": True, "expect": "REGRESSION", "metrics": ["critical.playback_tempo"]},
+    {"id": "REC-V2-ISSUE-1-BACK", "v2": True,         # issue 1 again: a compound metre plays its dotted-quarter bpm as quarters
+     "find": "    const v2Compound = extra.recording === 'v2' && beatType >= 8 && beatsPerBar % 3 === 0;",
+     "replace": "    const v2Compound = false;",
+     "expect": "REGRESSION", "metrics": ["critical.playback_tempo", "struct.tempo.ok_effective"]},
+    {"id": "REC-V2-NO-AUDIO-BEATS", "v2": True,       # the helper's beats and downbeats are not read (the human/oracle rows)
+     "file": "rec/index.js",
+     "find": "    const audio = opts.beats ? beats.audioTrack(opts.beats, att) : null;",
+     "replace": "    const audio = null;",
+     "expect": "REGRESSION", "metrics": ["critical.meter", "critical.beat_placement", "struct.downbeat.f1"]},
+    {"id": "REC-V2-LATE-ON-BEAT", "v2": True,         # the quantiser's floor slip back in v2: an onset on a beat written a beat late
+     "find": "      const r = quantize(clustered, beats, trip, true);",
+     "replace": "      const r = quantize(clustered, beats, trip, false);",
+     "expect": "REGRESSION", "metrics": ["critical.pitch_integrity", "notes.identity.f1", "rec.onset_f1"]},
+    {"id": "MUT-NOOP",
+     "find": "  const api = {",
+     "replace": "  /* noop mutation */\n  const api = {",
+     "expect": "PASS", "metrics": []},
+]
+
 MUT_DIR = os.path.join(runner.CACHE_DIR, "mutations")
 
 
@@ -470,7 +509,7 @@ def write_mutant(mut: Dict[str, Any], sut: str) -> str:
         raise AnchorMissing(f"{exc}. Update the anchor in tests/bench/pppbench/mutation.py") from exc
 
 
-def run_mutation_check(mutations=None, suite_name: str = "mutation") -> int:
+def run_mutation_check(mutations=None, suite_name: str = "mutation", out_name: str = "mutation") -> int:
     if suite_name == "rec-mutation" and mutations is None:
         mutations = REC_MUTATIONS
     suite = suite_mod.load_suite(suite_name)
@@ -482,7 +521,7 @@ def run_mutation_check(mutations=None, suite_name: str = "mutation") -> int:
     except AnchorMissing as exc:
         print(f"ERROR {AnchorMissing.code}: {exc}")
         return 2
-    out_root = os.path.join(runner.OUT_DIR, "mutation")
+    out_root = os.path.join(runner.OUT_DIR, out_name)
     # one original per group: the SUT as it is, and for a base (G3 on) the SUT with the base edits alone
     originals: Dict[str, Any] = {}
     for key in sorted({m.get("base") or "" for m in mutations}):
