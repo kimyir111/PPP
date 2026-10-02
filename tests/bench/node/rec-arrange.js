@@ -266,7 +266,7 @@ async function runJob(job, refs) {
   const sha = crypto.createHash('sha256').update(fs.readFileSync(sut)).digest('hex');
   /* the SUT's own modules: those loaded from its directory that are SUT files (the ruler's, the tests' and this tool are not) */
   const inside = f => { const r = path.relative(sutDir, f); return r && !r.startsWith('..') && !path.isAbsolute(r); };
-  const sutTrees = ['scoregraph', 'songgraph', 'arrangement', 'candidates', 'repair', 'realize', 'critics', 'playability', 'difficulty'];
+  const sutTrees = ['scoregraph', 'rec', 'songgraph', 'arrangement', 'candidates', 'repair', 'realize', 'critics', 'playability', 'difficulty'];
   const sutModules = Object.keys(require.cache).filter(f => inside(f)).map(f => path.relative(sutDir, f).split(path.sep).join('/'))
     .filter(r => r.endsWith('.js') && (r === path.basename(sut) || sutTrees.indexOf(r.split('/')[0]) >= 0)).sort();
   fs.writeSync(out, JSON.stringify({ meta: { audio_score_path: sut, audio_score_sha256: sha, node: process.version, sut_modules: sutModules, sut_outside: [] } }) + '\n');

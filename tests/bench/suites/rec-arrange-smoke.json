@@ -2,7 +2,7 @@
  "align": {
   "window_s": 0.3
  },
- "description": "G10c-0 smoke: the 16 smoke references x cover, cover+of (the browser model's errors), beats none, with the app's options, arranged the way the app does at the three levels and measured against the true score (melody, harmony, levels, left hand, register, hard violations, checker classes)",
+ "description": "G10c-0 smoke: the 16 smoke references x cover, cover+of (the browser model's errors), beats none, with the app's options and with the recording conversion v2, arranged the way the app does at the three levels and measured against the true score (melody, harmony, levels, left hand, register, hard violations, checker classes)",
  "gate": {
   "case_fail_drop": 10.0,
   "case_flip_max": 1,
@@ -115,10 +115,36 @@
   },
   {
    "beats": "none",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
+   },
+   "profile": "cover",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "none",
    "opt_name": "app",
    "opts": {
     "closeGaps": true,
     "exactBars": true
+   },
+   "profile": "cover+of",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "none",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
    },
    "profile": "cover+of",
    "seeds": [

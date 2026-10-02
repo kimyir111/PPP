@@ -2,7 +2,7 @@
  "align": {
   "window_s": 0.3
  },
- "description": "Nightly: every core reference x cover, cover+of with the app's options, arranged and measured (aggregates only)",
+ "description": "Nightly: every core reference x cover, cover+of with the app's options and v2, arranged and measured (aggregates only)",
  "gate": {
   "case_fail_drop": 10.0,
   "case_flip_max": 1,
@@ -115,10 +115,36 @@
   },
   {
    "beats": "none",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
+   },
+   "profile": "cover",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "none",
    "opt_name": "app",
    "opts": {
     "closeGaps": true,
     "exactBars": true
+   },
+   "profile": "cover+of",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "none",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
    },
    "profile": "cover+of",
    "seeds": [

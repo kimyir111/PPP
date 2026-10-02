@@ -2,7 +2,7 @@
  "align": {
   "window_s": 0.3
  },
- "description": "G10 recording gate: the core references x the calibrated humanizer's families (cover, cover-pedal, human-real, and the browser model's and the helper's error overlays; swing is in rec-full) x beats none (production) / oracle-noisy (helper) x stage options legacy / app",
+ "description": "G10 recording gate: the core references x the calibrated humanizer's families (cover, cover-pedal, human-real, and the browser model's and the helper's error overlays; swing is in rec-full) x beats none (production) / oracle-noisy (helper) x stage options legacy / app / v2",
  "gate": {
   "case_fail_drop": 10.0,
   "case_flip_max": 2,
@@ -288,6 +288,19 @@
    ]
   },
   {
+   "beats": "none",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
+   },
+   "profile": "cover",
+   "seeds": [
+    1
+   ]
+  },
+  {
    "beats": "oracle-noisy",
    "opt_name": "legacy",
    "opts": {},
@@ -309,6 +322,19 @@
    ]
   },
   {
+   "beats": "oracle-noisy",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
+   },
+   "profile": "cover",
+   "seeds": [
+    1
+   ]
+  },
+  {
    "beats": "none",
    "opt_name": "legacy",
    "opts": {},
@@ -323,6 +349,19 @@
    "opts": {
     "closeGaps": true,
     "exactBars": true
+   },
+   "profile": "cover-pedal",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "none",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
    },
    "profile": "cover-pedal",
    "seeds": [
@@ -344,6 +383,19 @@
    "opts": {
     "closeGaps": true,
     "exactBars": true
+   },
+   "profile": "human-real",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "none",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
    },
    "profile": "human-real",
    "seeds": [
@@ -365,6 +417,19 @@
    "opts": {
     "closeGaps": true,
     "exactBars": true
+   },
+   "profile": "cover+of",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "none",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
    },
    "profile": "cover+of",
    "seeds": [
@@ -386,6 +451,19 @@
    "opts": {
     "closeGaps": true,
     "exactBars": true
+   },
+   "profile": "cover-pedal+helper",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "oracle-noisy",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
    },
    "profile": "cover-pedal+helper",
    "seeds": [

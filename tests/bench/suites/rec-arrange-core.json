@@ -2,7 +2,7 @@
  "align": {
   "window_s": 0.3
  },
- "description": "G10c-0 gate: the small and middle-sized core references (every micro piece, the catalogue, hymns, method books; hanon in full) x cover (beats none, the app's options), plus the 20 real-AMT fixtures of replay-of (the production browser model's heard notes on rendered audio), arranged at the three levels and measured against the true score",
+ "description": "G10c-0 gate: the small and middle-sized core references (every micro piece, the catalogue, hymns, method books; hanon in full) x cover (beats none, the app's options and v2), plus the 20 real-AMT fixtures of replay-of (the production browser model's heard notes on rendered audio), arranged at the three levels and measured against the true score",
  "gate": {
   "case_fail_drop": 10.0,
   "case_flip_max": 1,
@@ -107,6 +107,19 @@
    "opts": {
     "closeGaps": true,
     "exactBars": true
+   },
+   "profile": "cover",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "none",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
    },
    "profile": "cover",
    "seeds": [
