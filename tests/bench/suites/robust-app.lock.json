@@ -1,0 +1,1418 @@
+{
+ "cases": [
+  {
+   "id": "catalog/fur-elise|human-alt|none|s1",
+   "input_sha256": "a116997a401e13818e9646ca4a8f6e364fdcce192a410617772fbc183018be64",
+   "reference_sha256": "f769a8d4827193185f8bf9f8daa1b17c96a496b48bc4c3dbaa8030ba353e2659"
+  },
+  {
+   "id": "catalog/fur-elise|human-alt|oracle|s1",
+   "input_sha256": "c0d8b93cc9d1197574ca34f5ceec5910bd1fc0d462c01bd3d147f43163826a3b",
+   "reference_sha256": "f769a8d4827193185f8bf9f8daa1b17c96a496b48bc4c3dbaa8030ba353e2659"
+  },
+  {
+   "id": "catalog/gymnopedie-1|human-alt|none|s1",
+   "input_sha256": "d5a3b9551879efc2e9ecc037d9fdf118e6d3b8ed2aaa7cde1070e7fa6f5c2a89",
+   "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
+  },
+  {
+   "id": "catalog/gymnopedie-1|human-alt|oracle|s1",
+   "input_sha256": "bd96858dd30a2c2f5155a09851387e90e8038b765cfe0cf9035a11bd20ff222d",
+   "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
+  },
+  {
+   "id": "catalog/happy-birthday|human-alt|none|s1",
+   "input_sha256": "f9fdd122af063612d0a5143ec20c0acf75a66abfb55bcbca2c0e4eb3c7e5e7fe",
+   "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
+  },
+  {
+   "id": "catalog/happy-birthday|human-alt|oracle|s1",
+   "input_sha256": "037ffc68b8f8ebe14229f382e5387fa5d8b618d23f9b974655c818595584bf2b",
+   "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
+  },
+  {
+   "id": "hymns/all-hail-the-power|human-alt|none|s1",
+   "input_sha256": "4b460a0102c1ef5dff49654646ccccf526b1e704bfe416c0bee41d8e13df709f",
+   "reference_sha256": "5abd674a00eca0cf867d84317f9f5e931512363437bb63dbf37d1abef3760ea8"
+  },
+  {
+   "id": "hymns/all-hail-the-power|human-alt|oracle|s1",
+   "input_sha256": "267e1750b7d567ff23abaa6d80f9fcfef620d2c359badef1380350cfa88dafcd",
+   "reference_sha256": "5abd674a00eca0cf867d84317f9f5e931512363437bb63dbf37d1abef3760ea8"
+  },
+  {
+   "id": "hymns/angels-we-have-heard|human-alt|none|s1",
+   "input_sha256": "9494ace41a9199278d0e84599beb8c15a89e1cd1e567f95c005efe75905673be",
+   "reference_sha256": "50de0c6a744e8020ee85b7c9279e4bf87b57a5216a47921bfc4bba37a5af8212"
+  },
+  {
+   "id": "hymns/angels-we-have-heard|human-alt|oracle|s1",
+   "input_sha256": "9910d9bdd32c3ed1b105502bbe0f5fb4e0daba6b2200a49185853609d889917d",
+   "reference_sha256": "50de0c6a744e8020ee85b7c9279e4bf87b57a5216a47921bfc4bba37a5af8212"
+  },
+  {
+   "id": "hymns/beneath-the-cross|human-alt|none|s1",
+   "input_sha256": "ab20d3724c73c8d03cafe4dbd5a37251bb76c229ecb28dead1e2bbe12670d2eb",
+   "reference_sha256": "3ea56e55e7016a6ef41d06c1a9d6d1c6d487f9b176a08240d19481f84a589d22"
+  },
+  {
+   "id": "hymns/beneath-the-cross|human-alt|oracle|s1",
+   "input_sha256": "9e8d55e1376b38441b585cb46ce9f36b141a929f282e6b1d86b54874ce05da8a",
+   "reference_sha256": "3ea56e55e7016a6ef41d06c1a9d6d1c6d487f9b176a08240d19481f84a589d22"
+  },
+  {
+   "id": "hymns/blessed-assurance|human-alt|none|s1",
+   "input_sha256": "44a976c93d6bb47af091c47038ec0b3d7441f705639cefce311befbd93a4adb0",
+   "reference_sha256": "fefacac57d9d359038c679d2683839b82e9150664d8c3e95e4424e25d1204814"
+  },
+  {
+   "id": "hymns/blessed-assurance|human-alt|oracle|s1",
+   "input_sha256": "d502648f3c256a3f47c43adaf61202036c1f917fb90c293106252be7aaf91849",
+   "reference_sha256": "fefacac57d9d359038c679d2683839b82e9150664d8c3e95e4424e25d1204814"
+  },
+  {
+   "id": "hymns/come-holy-spirit|human-alt|none|s1",
+   "input_sha256": "af1ff5f3a1f613ed7b874bfa5d7f1c6a41e9b8e96c80523ceb617abc96c211c3",
+   "reference_sha256": "436dc2b0366e47f591cfa9fb53d219997c3624cad6db413f12232120c5fcad1f"
+  },
+  {
+   "id": "hymns/come-holy-spirit|human-alt|oracle|s1",
+   "input_sha256": "c5fa3a96bbedb5cbf018553361c7cf2b4e31de353331d1609a03aff30c73e55d",
+   "reference_sha256": "436dc2b0366e47f591cfa9fb53d219997c3624cad6db413f12232120c5fcad1f"
+  },
+  {
+   "id": "hymns/come-thou-fount|human-alt|none|s1",
+   "input_sha256": "3ef4d962a8073a570460db10c0c9d811627e5c7eca7061f4702849648268f0c0",
+   "reference_sha256": "dba85c5feda981d5d505f83bbc295b947378939e0abbb2e236b0f6b7469754eb"
+  },
+  {
+   "id": "hymns/come-thou-fount|human-alt|oracle|s1",
+   "input_sha256": "1f82ca9b642071f8687a1bc3177fe07621c3b4670a27b05459518b96c4197739",
+   "reference_sha256": "dba85c5feda981d5d505f83bbc295b947378939e0abbb2e236b0f6b7469754eb"
+  },
+  {
+   "id": "hymns/come-thou-long|human-alt|none|s1",
+   "input_sha256": "77cb41cf3d46394656dac2cae532b5b9ef89af55ebe1a2a90236916d051e0d34",
+   "reference_sha256": "293cafb6be163edcbdd3433b65baf1376be0c8bffd893a7a7b436d8213a497c9"
+  },
+  {
+   "id": "hymns/come-thou-long|human-alt|oracle|s1",
+   "input_sha256": "e1fc7ef6beff51df34ae3069ca9b9b6e2122cbe3722ff0a65d4ee57459348b2c",
+   "reference_sha256": "293cafb6be163edcbdd3433b65baf1376be0c8bffd893a7a7b436d8213a497c9"
+  },
+  {
+   "id": "hymns/go-to-dark-gethsemane|human-alt|none|s1",
+   "input_sha256": "3c9f6ad0bc9029a5e76cfd20a3b3b84d12c22c27425b2a424c9369fb196034af",
+   "reference_sha256": "77a678a4488c5f9878ae3e0a8685a371f3be63b28271bf03dd80b1c0f825d06a"
+  },
+  {
+   "id": "hymns/go-to-dark-gethsemane|human-alt|oracle|s1",
+   "input_sha256": "cef77a84df2f2f3457556d5c2a75d6d2ae0c0dda976828b82e78c2e98f048c13",
+   "reference_sha256": "77a678a4488c5f9878ae3e0a8685a371f3be63b28271bf03dd80b1c0f825d06a"
+  },
+  {
+   "id": "hymns/god-rest-ye-merry|human-alt|none|s1",
+   "input_sha256": "d7f9bc701ea321c232147ef3f8138c5df0a8ede557594ddaeca125b8d5ef8de1",
+   "reference_sha256": "55456218b523d3dbf8c6a0491920e3e750e3d1c5b06b5f4e1a7656ac865cbeea"
+  },
+  {
+   "id": "hymns/god-rest-ye-merry|human-alt|oracle|s1",
+   "input_sha256": "dd38c98c4153415b2f47856bf5b8a635b49c9d054fb1a1ebf9ef71e61d09b074",
+   "reference_sha256": "55456218b523d3dbf8c6a0491920e3e750e3d1c5b06b5f4e1a7656ac865cbeea"
+  },
+  {
+   "id": "hymns/god-will-take-care|human-alt|none|s1",
+   "input_sha256": "ee6bd07a87e26e7b67395e72d31372783e05c4d12aea5e7320d73b8fe7007199",
+   "reference_sha256": "cff1016e6d83b88665582d52617471f97d9636e01510518d4e73546d990f0c28"
+  },
+  {
+   "id": "hymns/god-will-take-care|human-alt|oracle|s1",
+   "input_sha256": "887350359d0073a43eed9d4d8bf0a49a14df6fe2a12a13a4e4f119eadf709d61",
+   "reference_sha256": "cff1016e6d83b88665582d52617471f97d9636e01510518d4e73546d990f0c28"
+  },
+  {
+   "id": "hymns/hark-the-voice|human-alt|none|s1",
+   "input_sha256": "28494bedc7c0da7550561bd2bba54628b597d52a39ceb13d1663cb6133d520b6",
+   "reference_sha256": "2109a0e1a9120f0451f8ba4dfaaf09e0963a65afb72a8137b440628868163cff"
+  },
+  {
+   "id": "hymns/hark-the-voice|human-alt|oracle|s1",
+   "input_sha256": "e28f2f5d71f88bdf9016bf9354e47ac995550b960640f0a15ca08d11c798c401",
+   "reference_sha256": "2109a0e1a9120f0451f8ba4dfaaf09e0963a65afb72a8137b440628868163cff"
+  },
+  {
+   "id": "hymns/holy-holy-holy|human-alt|none|s1",
+   "input_sha256": "5f977e3062f418681250f05d7acac68a4cc19f5303d048ba7a946cb6d6a29e94",
+   "reference_sha256": "caf89c6e8a4a8075d11601d48413f8f2780896269e1c95996bad8be98cb329f6"
+  },
+  {
+   "id": "hymns/holy-holy-holy|human-alt|oracle|s1",
+   "input_sha256": "12ffde4d0042e5bb09ea026606d3cc8edee4cd18819e0b292c3ec3d7bc4829d8",
+   "reference_sha256": "caf89c6e8a4a8075d11601d48413f8f2780896269e1c95996bad8be98cb329f6"
+  },
+  {
+   "id": "hymns/how-firm-a-foundation|human-alt|none|s1",
+   "input_sha256": "627bd36cb0fc5b4b4f8c662243e7fda37597d39b450467f8f9126d75a3542768",
+   "reference_sha256": "dbdb9244e5287c8de5772e2a27bd3c1c9dee8ef02f0ed8927cbd674484e2cb04"
+  },
+  {
+   "id": "hymns/how-firm-a-foundation|human-alt|oracle|s1",
+   "input_sha256": "11b93e95191341f12c77391f02c2ace054591cc6808f6bc6c6577de8a195f885",
+   "reference_sha256": "dbdb9244e5287c8de5772e2a27bd3c1c9dee8ef02f0ed8927cbd674484e2cb04"
+  },
+  {
+   "id": "hymns/hyfrydol-alleluia|human-alt|none|s1",
+   "input_sha256": "02e020196bf1c6a8b43defc93721cd84d95b9a472440a32c9016d48527361b5f",
+   "reference_sha256": "bc7ad064aeb38ce0ca92f798602a02dd1ffe749ce85a3edce5a500a769ea6d1a"
+  },
+  {
+   "id": "hymns/hyfrydol-alleluia|human-alt|oracle|s1",
+   "input_sha256": "586e023efbdf06b2b0d3ffa1f90732873acfe808e8f036c6ba248bd451f88884",
+   "reference_sha256": "bc7ad064aeb38ce0ca92f798602a02dd1ffe749ce85a3edce5a500a769ea6d1a"
+  },
+  {
+   "id": "hymns/i-am-jesus-little-lamb|human-alt|none|s1",
+   "input_sha256": "98ba8b8b0d21fdc2978e8a2e205e75f9f600169624982e60b2c3efaadfe35e3d",
+   "reference_sha256": "e87397d0c527491e747e3e24d78ce2921db44a140c20de9fd045279c70a6e26f"
+  },
+  {
+   "id": "hymns/i-am-jesus-little-lamb|human-alt|oracle|s1",
+   "input_sha256": "2bfa30fee2684c86a37e9a6dce40a23f49b4937f431354219aab15e6d9d4e4de",
+   "reference_sha256": "e87397d0c527491e747e3e24d78ce2921db44a140c20de9fd045279c70a6e26f"
+  },
+  {
+   "id": "hymns/i-know-whom|human-alt|none|s1",
+   "input_sha256": "bab0c90934016477401bd44a32d2a9a62179e157287e854902e87a67ca86f66d",
+   "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
+  },
+  {
+   "id": "hymns/i-know-whom|human-alt|oracle|s1",
+   "input_sha256": "2d87f5df65f1b9edeef10f596120826d77b348e4bae7a616568fc648a7f5dc7a",
+   "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
+  },
+  {
+   "id": "hymns/immortal-invisible|human-alt|none|s1",
+   "input_sha256": "1524811a6b0c2aac5c30781205ffd4a81b4b89c5bce7693d87c40122f91b8999",
+   "reference_sha256": "e316e0fa2db60671990b012e50c5789e489f18ae9507bbaee9c4687cb595abc9"
+  },
+  {
+   "id": "hymns/immortal-invisible|human-alt|oracle|s1",
+   "input_sha256": "0778593416dfef07e3af267b3cbbeac8ba9b4d0aefaf1e309bc9ebe1ec896280",
+   "reference_sha256": "e316e0fa2db60671990b012e50c5789e489f18ae9507bbaee9c4687cb595abc9"
+  },
+  {
+   "id": "hymns/jesus-christ-is-risen|human-alt|none|s1",
+   "input_sha256": "98a5fb4da5f2738a5404ad9638f8f52a0f3cacd924f63f820b27691778f08932",
+   "reference_sha256": "44afb25e658c94de6af37fea078462789f695a3410731f92e26eb3e3d51355ab"
+  },
+  {
+   "id": "hymns/jesus-christ-is-risen|human-alt|oracle|s1",
+   "input_sha256": "e5337a988e5ac6d33e58f7de02dbfc206bfd3644278e76fe5de9c1432b9d5d63",
+   "reference_sha256": "44afb25e658c94de6af37fea078462789f695a3410731f92e26eb3e3d51355ab"
+  },
+  {
+   "id": "hymns/jesus-is-all-the-world|human-alt|none|s1",
+   "input_sha256": "648f44e06c484e565b7a4f475efc25b85a321d426bf499a1ed9bf6d662ec74b4",
+   "reference_sha256": "2d9e65219ee6e351ab477e61c20bb3d8f32e5f22fe89111deb410d109b89654e"
+  },
+  {
+   "id": "hymns/jesus-is-all-the-world|human-alt|oracle|s1",
+   "input_sha256": "b522402651c57adbf1c05484a2840621d8a26040325ef8367f89ea06f4e3cffa",
+   "reference_sha256": "2d9e65219ee6e351ab477e61c20bb3d8f32e5f22fe89111deb410d109b89654e"
+  },
+  {
+   "id": "hymns/jesus-shall-reign|human-alt|none|s1",
+   "input_sha256": "ecf8e965183c2e5fc116f1191e72e790246e30e3b1a4eddd4f26f38f60723f49",
+   "reference_sha256": "af69d4c2692a0ac2b45feb60bc1d66808529f31ec9cf40ea9962909592dcaff6"
+  },
+  {
+   "id": "hymns/jesus-shall-reign|human-alt|oracle|s1",
+   "input_sha256": "d4305aee73e012b83ac9367c91786b8c22f68569bb83bc37e20711d1d5678441",
+   "reference_sha256": "af69d4c2692a0ac2b45feb60bc1d66808529f31ec9cf40ea9962909592dcaff6"
+  },
+  {
+   "id": "hymns/joy-to-the-world|human-alt|none|s1",
+   "input_sha256": "42a61b4b01d3604e5503c9867e572f1d49123e704818f204c3c22b8b23d739c1",
+   "reference_sha256": "c30b56e3025a9d99847192abf3f12fcad7db296f58895d60c18213553937596d"
+  },
+  {
+   "id": "hymns/joy-to-the-world|human-alt|oracle|s1",
+   "input_sha256": "8b7b0c6fc75b8e1f8fd5535363e67c1ddf4eb402a023150fdfe7e81eafa8acf9",
+   "reference_sha256": "c30b56e3025a9d99847192abf3f12fcad7db296f58895d60c18213553937596d"
+  },
+  {
+   "id": "hymns/joyful-joyful|human-alt|none|s1",
+   "input_sha256": "7fe81f20e7eec2b64a7caf05d99123f29dbb6fc493d7b48514d07caa3157fb8b",
+   "reference_sha256": "a59548c46970464ece547be3f19f569e5ec4da18861d7fba423388d6463ad56a"
+  },
+  {
+   "id": "hymns/joyful-joyful|human-alt|oracle|s1",
+   "input_sha256": "cd055aca7197587cb8e066362b55aa6488feed03f6ea72610741156276943f06",
+   "reference_sha256": "a59548c46970464ece547be3f19f569e5ec4da18861d7fba423388d6463ad56a"
+  },
+  {
+   "id": "hymns/lamp-of-our-feet|human-alt|none|s1",
+   "input_sha256": "a838ef689fe364292c9dd2f711dbc555eb2b16f2067374930290011f5bcf3a11",
+   "reference_sha256": "f94b9350077a829bfba6d6f2cd3b4102ef9fdedefd7e40472556ead8d0512c58"
+  },
+  {
+   "id": "hymns/lamp-of-our-feet|human-alt|oracle|s1",
+   "input_sha256": "c68099d1ab91fbed3cd9520b7a4f2985a396053a07a9185f5352a36ac6a6932a",
+   "reference_sha256": "f94b9350077a829bfba6d6f2cd3b4102ef9fdedefd7e40472556ead8d0512c58"
+  },
+  {
+   "id": "hymns/lo-he-comes|human-alt|none|s1",
+   "input_sha256": "093926eb2c35e8ea83121f56156855a552af5b71daa88aeeac091bbf8896c711",
+   "reference_sha256": "95bf92686a6dd2c4b6e25956c8605be22d220583ece3ad0be0587f7c02c94e48"
+  },
+  {
+   "id": "hymns/lo-he-comes|human-alt|oracle|s1",
+   "input_sha256": "47c2deb0d4ebc625946e9e2c5e7ae871829eb67608550fc6bb81d738feade3e9",
+   "reference_sha256": "95bf92686a6dd2c4b6e25956c8605be22d220583ece3ad0be0587f7c02c94e48"
+  },
+  {
+   "id": "hymns/midnight-clear|human-alt|none|s1",
+   "input_sha256": "f733196529d85656aa1ed884b8d5bb37505a3eba56f5b8aa9721f1f32700d695",
+   "reference_sha256": "c91335e8443360d45b4808c880da11b080244c8401929ead4becbdc19a1b50d6"
+  },
+  {
+   "id": "hymns/midnight-clear|human-alt|oracle|s1",
+   "input_sha256": "7c4ef02cc9a79fc25e810fd5442b7afb9c614c73b5286618d6131e1c145cf7fb",
+   "reference_sha256": "c91335e8443360d45b4808c880da11b080244c8401929ead4becbdc19a1b50d6"
+  },
+  {
+   "id": "hymns/my-faith-looks-up|human-alt|none|s1",
+   "input_sha256": "505f971e5bebd362291e0b9313df4c08c9eb1a781928cfb7a76e89ca4c0c4eda",
+   "reference_sha256": "958c18d875237ea25c3ea0b499b1de6c8b4e55d1038d1ab2650e4cbb3ff5546b"
+  },
+  {
+   "id": "hymns/my-faith-looks-up|human-alt|oracle|s1",
+   "input_sha256": "9873fd88f87cf19bf97800e63c3b7da8470a668d0ce77c2aa35bc5aaf3095633",
+   "reference_sha256": "958c18d875237ea25c3ea0b499b1de6c8b4e55d1038d1ab2650e4cbb3ff5546b"
+  },
+  {
+   "id": "hymns/my-hope-is-built|human-alt|none|s1",
+   "input_sha256": "06d34b3cf7f1e19ea3a0172befbd2deefa51147d38679ba25cf911dc49192995",
+   "reference_sha256": "04e2f4612dcaa97964d4c15fa0acdc37df59af4d3bdb889fa73d4f2686fc46ce"
+  },
+  {
+   "id": "hymns/my-hope-is-built|human-alt|oracle|s1",
+   "input_sha256": "9da61db500f5091a63b2a5f1e84afa119b1818dbbc0749c0307344ea49f8dfc1",
+   "reference_sha256": "04e2f4612dcaa97964d4c15fa0acdc37df59af4d3bdb889fa73d4f2686fc46ce"
+  },
+  {
+   "id": "hymns/nearer-my-god|human-alt|none|s1",
+   "input_sha256": "6997930df5712f45c1c4099e130a5ee07dc4083d284931cee6545a7cd76d1611",
+   "reference_sha256": "7ec99f24f09e486fa5c14af5ddb62cfee8c94f8622b54bf94bf29073f90e274c"
+  },
+  {
+   "id": "hymns/nearer-my-god|human-alt|oracle|s1",
+   "input_sha256": "087fb25aeff9ae93ee6a2192dbcf27100ec9669e86638e386497bdf83e2d39d7",
+   "reference_sha256": "7ec99f24f09e486fa5c14af5ddb62cfee8c94f8622b54bf94bf29073f90e274c"
+  },
+  {
+   "id": "hymns/no-not-one|human-alt|none|s1",
+   "input_sha256": "fba99db6842dd19bfa9fea90ff99a89f6118a280692f2893931db6b236dd75b5",
+   "reference_sha256": "8341c37ebe79e140849bef5a6e4db9d3d2e50291074c3a9d36c1e50d6aa6601c"
+  },
+  {
+   "id": "hymns/no-not-one|human-alt|oracle|s1",
+   "input_sha256": "37dea1da836562c00213e35ec0dd353c0a5eea8f132fdd0d96e73e3a3d0bcc7d",
+   "reference_sha256": "8341c37ebe79e140849bef5a6e4db9d3d2e50291074c3a9d36c1e50d6aa6601c"
+  },
+  {
+   "id": "hymns/o-holy-spirit-enter|human-alt|none|s1",
+   "input_sha256": "21a2827bff5596543cca341e7198bedca4e7ec9c02a575d3436ae39b60e2601d",
+   "reference_sha256": "43b0b9b78e0c04e2c376be680eae41c2ec799703fd09273e9c4bebce40f2ecdc"
+  },
+  {
+   "id": "hymns/o-holy-spirit-enter|human-alt|oracle|s1",
+   "input_sha256": "5dd20658ad2c8a5d8163bbf688d5800de4673280aa25b4b9d2298d0fe2671a9f",
+   "reference_sha256": "43b0b9b78e0c04e2c376be680eae41c2ec799703fd09273e9c4bebce40f2ecdc"
+  },
+  {
+   "id": "hymns/pass-me-not|human-alt|none|s1",
+   "input_sha256": "3a43cb33af8687a7dde7df6f2d4caf6c25ba19bc332c2a7f8e1c6a441e21ccc3",
+   "reference_sha256": "2d02a60484f009e6842d1c52f3e9dfe0e845f0b437e68a51c9ad1b20c7fa8b12"
+  },
+  {
+   "id": "hymns/pass-me-not|human-alt|oracle|s1",
+   "input_sha256": "635d5b95c2d3d960a66db9e6d6addb37babbdd29c3b80e67d0a38d0771899bc9",
+   "reference_sha256": "2d02a60484f009e6842d1c52f3e9dfe0e845f0b437e68a51c9ad1b20c7fa8b12"
+  },
+  {
+   "id": "hymns/rescue-the-perishing|human-alt|none|s1",
+   "input_sha256": "8bf5489c8180abc17015cee4439ee7fe35dbcf2175fdeb1c46ee2245dfc29760",
+   "reference_sha256": "6ce430f11945c9800ad7e7d97ce991b32a1066f9da9c980a271cad68c9798f27"
+  },
+  {
+   "id": "hymns/rescue-the-perishing|human-alt|oracle|s1",
+   "input_sha256": "c3b7231baaac78f65082f68eb277640502350d561c458c916aab4865fa4fccf9",
+   "reference_sha256": "6ce430f11945c9800ad7e7d97ce991b32a1066f9da9c980a271cad68c9798f27"
+  },
+  {
+   "id": "hymns/silent-night|human-alt|none|s1",
+   "input_sha256": "e4aa2117388062abcf5ed77f5d1ecdf1ecfb21889644159780a485a9063a656c",
+   "reference_sha256": "43029b1b6d8e1282a4c23339516b591f8e80c822714680e65f0e61fe8060d570"
+  },
+  {
+   "id": "hymns/silent-night|human-alt|oracle|s1",
+   "input_sha256": "2630dead702d3f7fd399ab3d23d464f85921dee79ab770b273f792cc7c6aad77",
+   "reference_sha256": "43029b1b6d8e1282a4c23339516b591f8e80c822714680e65f0e61fe8060d570"
+  },
+  {
+   "id": "hymns/take-my-life|human-alt|none|s1",
+   "input_sha256": "08111087307b25700dbd57e764976f3c5fb9bdb838d9fe55fc62db17702f00bd",
+   "reference_sha256": "0bee9653ca9516ac08720df7ec4593392599c02673f93bcf1e707dee8d5fe4e5"
+  },
+  {
+   "id": "hymns/take-my-life|human-alt|oracle|s1",
+   "input_sha256": "73e2e71b8e2f0f3bbfb2c49e79cc707bb539f16c473540f2328eb18676bcec0a",
+   "reference_sha256": "0bee9653ca9516ac08720df7ec4593392599c02673f93bcf1e707dee8d5fe4e5"
+  },
+  {
+   "id": "hymns/the-churchs-one-foundation|human-alt|none|s1",
+   "input_sha256": "36a8fa1a31a3bf911ec65224281a6639087800a74e98fd02fb77b53abd3739fd",
+   "reference_sha256": "4845a251a83141522b72e2167da1b7e5b9b74f31972585e4999ad8d9ce4406e9"
+  },
+  {
+   "id": "hymns/the-churchs-one-foundation|human-alt|oracle|s1",
+   "input_sha256": "d74ee410a5cf4f1cecc6ca0965995270b2add689f54ae878db1b7c60f5fe6cc3",
+   "reference_sha256": "4845a251a83141522b72e2167da1b7e5b9b74f31972585e4999ad8d9ce4406e9"
+  },
+  {
+   "id": "hymns/the-lords-my-shepherd|human-alt|none|s1",
+   "input_sha256": "4a6e51fa950cc057879cb08223599e819ec49420b78c4a92842b24c569c1015a",
+   "reference_sha256": "8aafd7bf3bbb87b90c02499c8a28755b658e3b0ec77a6f3682ed49eee460e769"
+  },
+  {
+   "id": "hymns/the-lords-my-shepherd|human-alt|oracle|s1",
+   "input_sha256": "9198d75edcded5277929e800598b8deffef2ab8932bb06298af8c3c9b68b3bbd",
+   "reference_sha256": "8aafd7bf3bbb87b90c02499c8a28755b658e3b0ec77a6f3682ed49eee460e769"
+  },
+  {
+   "id": "hymns/to-god-be-the-glory|human-alt|none|s1",
+   "input_sha256": "5c81bae522d7ed6dbb047e960da304ed8e5bfaa1ba4f8824a709e4f0430242de",
+   "reference_sha256": "4933985e57546f4b5051906060c5bcb95ca137d153fc8fbf78f37ddde9b03ac3"
+  },
+  {
+   "id": "hymns/to-god-be-the-glory|human-alt|oracle|s1",
+   "input_sha256": "51adf683c8768677e3c70b5f7d3d70829524def25ec8936f6fe6fb51d824cebd",
+   "reference_sha256": "4933985e57546f4b5051906060c5bcb95ca137d153fc8fbf78f37ddde9b03ac3"
+  },
+  {
+   "id": "hymns/under-his-wings|human-alt|none|s1",
+   "input_sha256": "661ae3c46ecbe9de1ca90fbb6b12566fdab04b65ff59ad1ec2f940bb19c97753",
+   "reference_sha256": "412192c62e5e19d242faae2b310c0fe1735c06bbb5b990584eba18b7a5e08992"
+  },
+  {
+   "id": "hymns/under-his-wings|human-alt|oracle|s1",
+   "input_sha256": "a7f2c363cbc3ac61175b192c5cc1f8ff8fcca34c27c5e3f6e8625f7c81b43a2b",
+   "reference_sha256": "412192c62e5e19d242faae2b310c0fe1735c06bbb5b990584eba18b7a5e08992"
+  },
+  {
+   "id": "hymns/we-gather-together|human-alt|none|s1",
+   "input_sha256": "9b0748c865febfc02614ce724529d98d3c74fefed4866abc827f647c450cc9f0",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
+  },
+  {
+   "id": "hymns/we-gather-together|human-alt|oracle|s1",
+   "input_sha256": "f00cc34adea39cfaffb600757f3606abf4b9db34ef6913b3768eccd9989a3f6b",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
+  },
+  {
+   "id": "hymns/what-child-is-this|human-alt|none|s1",
+   "input_sha256": "2636962f175070a3b5e590da05a739a175c6b81e2cb30b7c8bf7be6e1535308f",
+   "reference_sha256": "c384d096a44416fc83b206c52815942f27de411d858a2a2bdaa1c398e98f49c0"
+  },
+  {
+   "id": "hymns/what-child-is-this|human-alt|oracle|s1",
+   "input_sha256": "ac55d5c7f00670218924029215863f937a8c3d8899e4c70772d8fc4121347aa4",
+   "reference_sha256": "c384d096a44416fc83b206c52815942f27de411d858a2a2bdaa1c398e98f49c0"
+  },
+  {
+   "id": "method/beyer/016|human-alt|none|s1",
+   "input_sha256": "de25b759fbe4dbca0d91dc26631347729eedc5e12c82a655e5ddee3e9e82d6f6",
+   "reference_sha256": "486e3d5a2e51f529ab0cac638fe56b61adc979c917b1b7f2df9b99d463af0e4d"
+  },
+  {
+   "id": "method/beyer/016|human-alt|oracle|s1",
+   "input_sha256": "3993ba6b77413bf44f508c841b810e2669e1e01afb313a1822b68b10d9f7d3db",
+   "reference_sha256": "486e3d5a2e51f529ab0cac638fe56b61adc979c917b1b7f2df9b99d463af0e4d"
+  },
+  {
+   "id": "method/beyer/025|human-alt|none|s1",
+   "input_sha256": "646b430967fe39f44d57482110990bca1199bc35dbc4ba81e3ada52e50c07266",
+   "reference_sha256": "8b10978b278af0f66f907e6dec53a91c5532a36b42197c99936440b95dd27683"
+  },
+  {
+   "id": "method/beyer/025|human-alt|oracle|s1",
+   "input_sha256": "b8310445ff201cc24757d03b372e8a346844f9a2c452bbd014b22a20aa5b0dff",
+   "reference_sha256": "8b10978b278af0f66f907e6dec53a91c5532a36b42197c99936440b95dd27683"
+  },
+  {
+   "id": "method/beyer/027|human-alt|none|s1",
+   "input_sha256": "086dfc8052ec3cb2b27516142b7ab5cd946e7f1a3245857eb2be3c4041c83f99",
+   "reference_sha256": "c834cfa0203b9db35dfc376675d96986108fc944a16c2e4be2009d6129e77e98"
+  },
+  {
+   "id": "method/beyer/027|human-alt|oracle|s1",
+   "input_sha256": "1a4ad1a46f49c964096d89919ecb13c921a2af09a33766930317a19e8dc0a071",
+   "reference_sha256": "c834cfa0203b9db35dfc376675d96986108fc944a16c2e4be2009d6129e77e98"
+  },
+  {
+   "id": "method/beyer/028|human-alt|none|s1",
+   "input_sha256": "73f3c1b152487cfe52a2464284b63f2599929c34208d912adda8a6c0cb8b3f8f",
+   "reference_sha256": "dc07aefd13a5bd4c46abf3afbf03ad5f70db648150473a08e66ca161a2b96cce"
+  },
+  {
+   "id": "method/beyer/028|human-alt|oracle|s1",
+   "input_sha256": "24c846792c2835984236b6f22a07aa7230f60b2573bc6b73c70cb15bb909242f",
+   "reference_sha256": "dc07aefd13a5bd4c46abf3afbf03ad5f70db648150473a08e66ca161a2b96cce"
+  },
+  {
+   "id": "method/beyer/029|human-alt|none|s1",
+   "input_sha256": "f79977c95baeb3a54a1c7ce8ecb0b229b6bc107f6a88dc70a22787d22e6161cc",
+   "reference_sha256": "d277166d6b38a31ea701a2f6da8f450d2feaebc1389aa197818f336b5195b2ca"
+  },
+  {
+   "id": "method/beyer/029|human-alt|oracle|s1",
+   "input_sha256": "d0da7ce736208014f36ee3ca29ea9450adf134bc3a6bc5875385879525a31635",
+   "reference_sha256": "d277166d6b38a31ea701a2f6da8f450d2feaebc1389aa197818f336b5195b2ca"
+  },
+  {
+   "id": "method/beyer/031|human-alt|none|s1",
+   "input_sha256": "f287f29c44796cb8a7974b66cb7794b2415780e2f7b5bef495876949462b45c5",
+   "reference_sha256": "29cd49d05f1fd79eacb964795ac06b1b0a1e59c0ca0e287d6d45dbc219b20d9a"
+  },
+  {
+   "id": "method/beyer/031|human-alt|oracle|s1",
+   "input_sha256": "15332909b342eff05ea2d83a767e94dbff14765c5a8b06ca84ac627452c8530d",
+   "reference_sha256": "29cd49d05f1fd79eacb964795ac06b1b0a1e59c0ca0e287d6d45dbc219b20d9a"
+  },
+  {
+   "id": "method/beyer/032|human-alt|none|s1",
+   "input_sha256": "8fcf3b2f0e87589bee60e2274d6f0ee43a57758228dd06dc8507880d87f7fe30",
+   "reference_sha256": "56878db5562e7f6d4f820eaf30a171ccab81cbdfffb18dad2d7fb51c8d800561"
+  },
+  {
+   "id": "method/beyer/032|human-alt|oracle|s1",
+   "input_sha256": "2faa5b40e5a31ee6dbc929724df5dc7819be7a1a1ccc126f8499d53c08e9eeb3",
+   "reference_sha256": "56878db5562e7f6d4f820eaf30a171ccab81cbdfffb18dad2d7fb51c8d800561"
+  },
+  {
+   "id": "method/beyer/033|human-alt|none|s1",
+   "input_sha256": "38f9ec5d565dae3cc1109bc865c347de9df1931e2349e5db4818e376bf21d1a4",
+   "reference_sha256": "a23540dd68112f2be19db9cb2a73b1039bb7ec075a63a287bbbfeaa89f46c52f"
+  },
+  {
+   "id": "method/beyer/033|human-alt|oracle|s1",
+   "input_sha256": "6976a58442a3af30a529cf7354cb58ed2e908424ceb6955e92fbe033c2b61e84",
+   "reference_sha256": "a23540dd68112f2be19db9cb2a73b1039bb7ec075a63a287bbbfeaa89f46c52f"
+  },
+  {
+   "id": "method/beyer/034|human-alt|none|s1",
+   "input_sha256": "b701332ab975a262e5dbe951fce7e8bc2d5236b505ecc3825367f44fba10142a",
+   "reference_sha256": "3b1f3c7428011db7e9fd16af11db4ada0e50206439bb212c87c1e0c7832a7ed5"
+  },
+  {
+   "id": "method/beyer/034|human-alt|oracle|s1",
+   "input_sha256": "94745d8b96585aeea4f0bf29069de1e78b0d4dca7d365e34ea402683793282f1",
+   "reference_sha256": "3b1f3c7428011db7e9fd16af11db4ada0e50206439bb212c87c1e0c7832a7ed5"
+  },
+  {
+   "id": "method/beyer/035|human-alt|none|s1",
+   "input_sha256": "aaba25a1271e61788e3bbf4971f5936601c56b4a5b87881555daa3ce01a2c0ea",
+   "reference_sha256": "91fc2660b7b2370c66e05b72135187eea5aa6e21d41e5edd39fa9cd3d736d4b3"
+  },
+  {
+   "id": "method/beyer/035|human-alt|oracle|s1",
+   "input_sha256": "99ee09053d1379b73c0bc5ec1a36ac356552f1b766af537495684ab7dc5d9fc0",
+   "reference_sha256": "91fc2660b7b2370c66e05b72135187eea5aa6e21d41e5edd39fa9cd3d736d4b3"
+  },
+  {
+   "id": "method/beyer/036|human-alt|none|s1",
+   "input_sha256": "e6cea23e25fef2c92d8799b9cb3a1931907868975833bf0054ecc5b5b18092f9",
+   "reference_sha256": "3871b187ff9621298bc788ec96e0a9ca1f34b2464af3ffe78c1656c63976a56b"
+  },
+  {
+   "id": "method/beyer/036|human-alt|oracle|s1",
+   "input_sha256": "856aea7960c50e0713b2534ee07525256680fca956c7365bb6673190bcb8b87e",
+   "reference_sha256": "3871b187ff9621298bc788ec96e0a9ca1f34b2464af3ffe78c1656c63976a56b"
+  },
+  {
+   "id": "method/beyer/037|human-alt|none|s1",
+   "input_sha256": "07cc0bc3587c1353cad37215fb875d067be9164cf0bbc4257ccfb15a905f6861",
+   "reference_sha256": "bae41722ab39d7a4a6a67429d6f6dd25446f3b73a03a99c38a01099f7e3f41ba"
+  },
+  {
+   "id": "method/beyer/037|human-alt|oracle|s1",
+   "input_sha256": "9cebc8abbfb493917307ae825b4ae710f1e8fdb5ac7f166f67deff6ae6f0650e",
+   "reference_sha256": "bae41722ab39d7a4a6a67429d6f6dd25446f3b73a03a99c38a01099f7e3f41ba"
+  },
+  {
+   "id": "method/beyer/052|human-alt|none|s1",
+   "input_sha256": "89fad42e83fa9fc545d49beacdb554afa5ed22de45418b48ed562c0f44fe4ffa",
+   "reference_sha256": "a10464ed521802b7055ed82e5ea58f20e332388c1f335d083e8bb4bb7505f35a"
+  },
+  {
+   "id": "method/beyer/052|human-alt|oracle|s1",
+   "input_sha256": "bf0697e242b6a4ac324162c28e95dec858878f27626e079ca5b1a4c727d369e2",
+   "reference_sha256": "a10464ed521802b7055ed82e5ea58f20e332388c1f335d083e8bb4bb7505f35a"
+  },
+  {
+   "id": "method/beyer/053|human-alt|none|s1",
+   "input_sha256": "39feeb8a796d79d7019f2fad6305d0c2e90bb39bf5c3219dfc9d5eb711dc301d",
+   "reference_sha256": "d28b0eecc5c3de4bbb2f36c0b480da270e9abab1abcb325e8a77b231af2fcc02"
+  },
+  {
+   "id": "method/beyer/053|human-alt|oracle|s1",
+   "input_sha256": "eb4fc2d63bed5e4c95903b5a885375c127e597194ef4bb86c5f202df97f4e70c",
+   "reference_sha256": "d28b0eecc5c3de4bbb2f36c0b480da270e9abab1abcb325e8a77b231af2fcc02"
+  },
+  {
+   "id": "method/beyer/059|human-alt|none|s1",
+   "input_sha256": "33be9486be3eb0e785d6df89499ac581d363c03c9442616974492013f06d4845",
+   "reference_sha256": "45e6f44c79a322eaba2c462fa3d42aff8c563c9dc3a54d6cab37549114c0dc27"
+  },
+  {
+   "id": "method/beyer/059|human-alt|oracle|s1",
+   "input_sha256": "e910a342f04a17e2da0a612e8d6f9bee10f84d745d288249bdd2825bce26a3c5",
+   "reference_sha256": "45e6f44c79a322eaba2c462fa3d42aff8c563c9dc3a54d6cab37549114c0dc27"
+  },
+  {
+   "id": "method/beyer/067|human-alt|none|s1",
+   "input_sha256": "87d668e64d88909b23d0d8ed48984a3ae944dccc2a9d95d50d7b9a067f5f2e88",
+   "reference_sha256": "a9a116fdf99bd4e1e4c508373fd5a03cd0d54415f9133155c10a16e64c1c437d"
+  },
+  {
+   "id": "method/beyer/067|human-alt|oracle|s1",
+   "input_sha256": "13c6f8c750614be2206b748faea6aaa3e83687a703bb595bed1b755c6caa45f7",
+   "reference_sha256": "a9a116fdf99bd4e1e4c508373fd5a03cd0d54415f9133155c10a16e64c1c437d"
+  },
+  {
+   "id": "method/burgmuller25/003|human-alt|none|s1",
+   "input_sha256": "10d7f5ac5dd261910f0f6b62833b73f5dbb1ab689723b40a66c1b058f8ac57b1",
+   "reference_sha256": "9f8e0cb0de9b1a3255664eaa4b5c6df9e4750a6e855647ad1ff42e68fc342462"
+  },
+  {
+   "id": "method/burgmuller25/003|human-alt|oracle|s1",
+   "input_sha256": "b72c19e6866b9a908bc651393237735c68773c8d0f8dad6efc4f16348560721a",
+   "reference_sha256": "9f8e0cb0de9b1a3255664eaa4b5c6df9e4750a6e855647ad1ff42e68fc342462"
+  },
+  {
+   "id": "method/burgmuller25/005|human-alt|none|s1",
+   "input_sha256": "188db4dd828c681696028ca21c24b9be50169ae4df6d9bca98ea3484c32194d9",
+   "reference_sha256": "e9d8eac6a6dea29e420ad33bcb77a593651170a5ef42a1c1d2e6610ed29f4fe2"
+  },
+  {
+   "id": "method/burgmuller25/005|human-alt|oracle|s1",
+   "input_sha256": "12c553a4d9038679dac691f8eed472111d98f322780317b280e5664c5664fc49",
+   "reference_sha256": "e9d8eac6a6dea29e420ad33bcb77a593651170a5ef42a1c1d2e6610ed29f4fe2"
+  },
+  {
+   "id": "method/burgmuller25/006|human-alt|none|s1",
+   "input_sha256": "af151fe6caa17138167a206c96bfec73d206c639eb3e3ee927e5040d9bb2de9e",
+   "reference_sha256": "8770a88f0d49b477d0e64410b3cd244a0066d4b99cb8eee7d0fa2327b7740e90"
+  },
+  {
+   "id": "method/burgmuller25/006|human-alt|oracle|s1",
+   "input_sha256": "34c59ccf470d95f976de28780f5b006ef44f599337c447113498e6ad0e3caabf",
+   "reference_sha256": "8770a88f0d49b477d0e64410b3cd244a0066d4b99cb8eee7d0fa2327b7740e90"
+  },
+  {
+   "id": "method/burgmuller25/013|human-alt|none|s1",
+   "input_sha256": "8e7cb0b777345de0b2e53fafbeacaeac7b2c443d36d1b9eb348965264b0a2606",
+   "reference_sha256": "a458a58c5771ffd054a7f796a1fe1936bdac23a532927e6e3a29752dfd5d5381"
+  },
+  {
+   "id": "method/burgmuller25/013|human-alt|oracle|s1",
+   "input_sha256": "8ee1dd269a574dba24ff9ce736a1b9f69a1c75fc9fcc10f51742cf2c63c7eb2d",
+   "reference_sha256": "a458a58c5771ffd054a7f796a1fe1936bdac23a532927e6e3a29752dfd5d5381"
+  },
+  {
+   "id": "method/burgmuller25/015|human-alt|none|s1",
+   "input_sha256": "71d569ce34d4f44a34226b01d5c025ee8575580d1c125536dffda2c8dc71ceab",
+   "reference_sha256": "6048e56e991223ff1f7ab015de33c1e64ac5f0faa3c65050517c9843695befc0"
+  },
+  {
+   "id": "method/burgmuller25/015|human-alt|oracle|s1",
+   "input_sha256": "57f4a6bc93134b8798021d0d34111a806e2497d53f636f3eaf5e3d6ba2586add",
+   "reference_sha256": "6048e56e991223ff1f7ab015de33c1e64ac5f0faa3c65050517c9843695befc0"
+  },
+  {
+   "id": "method/burgmuller25/016|human-alt|none|s1",
+   "input_sha256": "35d2105120c942a8afde39b747cc923511f9c25b4fb6d6d33ce9a070930356ac",
+   "reference_sha256": "df36b014c9dc5891b4f41f9f59edf04e4ee45ea14b11fe7efe70710ae4849e74"
+  },
+  {
+   "id": "method/burgmuller25/016|human-alt|oracle|s1",
+   "input_sha256": "3448cd327d7a9a1a1d7369d40b8a05f613a3655481875c66add6c0ddaac22964",
+   "reference_sha256": "df36b014c9dc5891b4f41f9f59edf04e4ee45ea14b11fe7efe70710ae4849e74"
+  },
+  {
+   "id": "method/burgmuller25/019|human-alt|none|s1",
+   "input_sha256": "0887f942b8756e84a365f55f0914d25f716e7275762e93a646de70d05e58dfa5",
+   "reference_sha256": "1e18374256b086aa53c1f4af94a47ef5bb076271f8b7cb2986c428d2d2fd7b50"
+  },
+  {
+   "id": "method/burgmuller25/019|human-alt|oracle|s1",
+   "input_sha256": "be560c547569d9c2758602791086ae084bc806c3145da486486005cb88a04cfa",
+   "reference_sha256": "1e18374256b086aa53c1f4af94a47ef5bb076271f8b7cb2986c428d2d2fd7b50"
+  },
+  {
+   "id": "method/burgmuller25/021|human-alt|none|s1",
+   "input_sha256": "585c13e33861a1b35cff014ebfffcfb085086d997c4ae8d5276921404644cef8",
+   "reference_sha256": "8192a18aba25e9a5ebca2d3959fbe6a30c5d45abcff26eb8c3f34697a333275e"
+  },
+  {
+   "id": "method/burgmuller25/021|human-alt|oracle|s1",
+   "input_sha256": "b757bb2f95da7670da1986df1d11abf92b046ff7f866405132d7cc6067e58f1a",
+   "reference_sha256": "8192a18aba25e9a5ebca2d3959fbe6a30c5d45abcff26eb8c3f34697a333275e"
+  },
+  {
+   "id": "method/burgmuller25/023|human-alt|none|s1",
+   "input_sha256": "280f36759260465a888679a65756d6081792591251fe9cc2ad5b0c98dd396662",
+   "reference_sha256": "c5aef652ceccf87fb2962aba69d6d40bae2be4f51d2c715dc4c218b25e1db659"
+  },
+  {
+   "id": "method/burgmuller25/023|human-alt|oracle|s1",
+   "input_sha256": "39fb395a05c1a0dd0027f5d432af3a33a9ebd763661371bf8ed7fdc3a4e2200f",
+   "reference_sha256": "c5aef652ceccf87fb2962aba69d6d40bae2be4f51d2c715dc4c218b25e1db659"
+  },
+  {
+   "id": "method/czerny599/021|human-alt|none|s1",
+   "input_sha256": "70fb47aa35dc912d733ec11b003c3dcc8a29c54b53349c4c74cfc451f7cdb717",
+   "reference_sha256": "942ee463bcdcd323dff1c095169de060f742fc259fab8506cc7011778ce33e7d"
+  },
+  {
+   "id": "method/czerny599/021|human-alt|oracle|s1",
+   "input_sha256": "f26c90d5ba2d4b12f06a18c366ac39e77fa167315f7fffe47deec9f4803e2dd3",
+   "reference_sha256": "942ee463bcdcd323dff1c095169de060f742fc259fab8506cc7011778ce33e7d"
+  },
+  {
+   "id": "method/czerny599/022|human-alt|none|s1",
+   "input_sha256": "b29e48373b349ec3328ddaf32aaec2b6d1a8ad7ead804575cfdae0ca5204977f",
+   "reference_sha256": "a086ca0f163cc4bb85881cc661d1f2390eb50cee9d2783ac50acfcdedd28298f"
+  },
+  {
+   "id": "method/czerny599/022|human-alt|oracle|s1",
+   "input_sha256": "8115387568f8fc4c10460ed555561c263e9088480a03e6a2e939c80b6447104c",
+   "reference_sha256": "a086ca0f163cc4bb85881cc661d1f2390eb50cee9d2783ac50acfcdedd28298f"
+  },
+  {
+   "id": "method/czerny599/023|human-alt|none|s1",
+   "input_sha256": "6f8ba521d114c62be7cb6908348ab04725919f7eb917098231fae0b08bc12e1b",
+   "reference_sha256": "b89e0b7905d326140886339bb3ef64a79b8b00c4af095ca6d9b111b6618ebafb"
+  },
+  {
+   "id": "method/czerny599/023|human-alt|oracle|s1",
+   "input_sha256": "3ed3b8ac93957e2dc782b04b84be4c5eead033ade00558521bdfae9cf8a00ad0",
+   "reference_sha256": "b89e0b7905d326140886339bb3ef64a79b8b00c4af095ca6d9b111b6618ebafb"
+  },
+  {
+   "id": "method/czerny599/024|human-alt|none|s1",
+   "input_sha256": "4bf4a571ee5e144f786056fb5e444a5bd638ef5446d298ee8eed1f454e54f3cf",
+   "reference_sha256": "c861977d2773c5f408d86b10a6d7210e78ae1263a4177ef43771ac9a263741ed"
+  },
+  {
+   "id": "method/czerny599/024|human-alt|oracle|s1",
+   "input_sha256": "f16f6f9d3beb39cc63b8e609a06e6a1e5099abd0e4c7d05e6b398071965f03ea",
+   "reference_sha256": "c861977d2773c5f408d86b10a6d7210e78ae1263a4177ef43771ac9a263741ed"
+  },
+  {
+   "id": "method/czerny599/026|human-alt|none|s1",
+   "input_sha256": "5a07f8917bf02919308b71502c36d8108bf09263d0c816a40a35ac1d173e57e0",
+   "reference_sha256": "40f2e306e2ab6009341675f4a4314634632b3fb6597a558569fcfbefff003824"
+  },
+  {
+   "id": "method/czerny599/026|human-alt|oracle|s1",
+   "input_sha256": "765937557b9c3a1b013650b358f6d4c6c895d0740b30f4c567ee4762bbaf8269",
+   "reference_sha256": "40f2e306e2ab6009341675f4a4314634632b3fb6597a558569fcfbefff003824"
+  },
+  {
+   "id": "method/czerny599/027|human-alt|none|s1",
+   "input_sha256": "226407f5c98a78d4821ca49c93e7b2f8c8bb7e6f5e2e90ffbb0cab7c722c1348",
+   "reference_sha256": "78d42e33e006a3dd69ca52e2b17b07a4b827142a967e3622e43ec7fec5725534"
+  },
+  {
+   "id": "method/czerny599/027|human-alt|oracle|s1",
+   "input_sha256": "bd62324ad17d09aea10b1d3c25222f64a9bbedfd48038da61999a7a958dce43a",
+   "reference_sha256": "78d42e33e006a3dd69ca52e2b17b07a4b827142a967e3622e43ec7fec5725534"
+  },
+  {
+   "id": "method/czerny599/030|human-alt|none|s1",
+   "input_sha256": "213735520f5bd984f5df5120383a7e59cd046a0a4e26dee723832bf6bf4c7e81",
+   "reference_sha256": "3d7a198f2d995be0b76deb35de354b9746e7f897f473b0b92be17d6878d7623f"
+  },
+  {
+   "id": "method/czerny599/030|human-alt|oracle|s1",
+   "input_sha256": "595ef060117703c7204724a7421d17e30bf971c439a07955c251b6ec7957b9c8",
+   "reference_sha256": "3d7a198f2d995be0b76deb35de354b9746e7f897f473b0b92be17d6878d7623f"
+  },
+  {
+   "id": "method/czerny599/034|human-alt|none|s1",
+   "input_sha256": "30718b9b4f92dba6737042714c2614458706c09f2506968c3065fe612af71704",
+   "reference_sha256": "a098bc978c903337d49926c21d14c0b8a65f172a465e9e90ac9577dc1034f226"
+  },
+  {
+   "id": "method/czerny599/034|human-alt|oracle|s1",
+   "input_sha256": "b84f39ddc05e7046d790eed62e2bf403367c3851f961e521c8bb766aa676ae6c",
+   "reference_sha256": "a098bc978c903337d49926c21d14c0b8a65f172a465e9e90ac9577dc1034f226"
+  },
+  {
+   "id": "method/czerny599/035|human-alt|none|s1",
+   "input_sha256": "d38c54ace32c41690f6d6383a3527c305c4735ac03916152e619e37ef35c7753",
+   "reference_sha256": "8676a9feace41a8db8aebd85084fa05404e7e808cfe84ca3470ec587b130a3b9"
+  },
+  {
+   "id": "method/czerny599/035|human-alt|oracle|s1",
+   "input_sha256": "9f43d624fc89153f31ad5ba24d9a415aa6399065cbabc0321d64c257ab1d6e2b",
+   "reference_sha256": "8676a9feace41a8db8aebd85084fa05404e7e808cfe84ca3470ec587b130a3b9"
+  },
+  {
+   "id": "method/czerny599/036|human-alt|none|s1",
+   "input_sha256": "58bc13d586503bd58a2b6c0b937900c29c9d1c882687ed7a2def675d29ac078e",
+   "reference_sha256": "de6e581978135a709a510a0c42a4560032f94d3f0c38ad72204d9308e508f3ea"
+  },
+  {
+   "id": "method/czerny599/036|human-alt|oracle|s1",
+   "input_sha256": "541068b5e2191cff5bb7bea291206bb8b1b9339a6be97e2f16b3811692e21e1f",
+   "reference_sha256": "de6e581978135a709a510a0c42a4560032f94d3f0c38ad72204d9308e508f3ea"
+  },
+  {
+   "id": "method/czerny599/037|human-alt|none|s1",
+   "input_sha256": "9cbcf0ea8a570ef1298375c2f1330f93ebae474bac253ab8356836037e8f8bde",
+   "reference_sha256": "17b43362b4e4dcd71e3a62d22b7f8a6f05ea5633e54b56a82f8c83f7ea9def08"
+  },
+  {
+   "id": "method/czerny599/037|human-alt|oracle|s1",
+   "input_sha256": "415e5054a7a5dff8a3b47f910bf56f126e63fda96a3d5d438c526da0340926b3",
+   "reference_sha256": "17b43362b4e4dcd71e3a62d22b7f8a6f05ea5633e54b56a82f8c83f7ea9def08"
+  },
+  {
+   "id": "method/czerny599/040|human-alt|none|s1",
+   "input_sha256": "2d1340c58e9dc50611a1cc4ab1f9ae6a9c1df2cb512d3bea475e3980c9978727",
+   "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
+  },
+  {
+   "id": "method/czerny599/040|human-alt|oracle|s1",
+   "input_sha256": "61fe8ed6d1e0fbd2314e67cd9a6ba724c62ccf9b75f893488d2177d899edb589",
+   "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
+  },
+  {
+   "id": "method/czerny599/042|human-alt|none|s1",
+   "input_sha256": "68fcf6d92ae6311d3903d728e0eeb3eb5e6da07550df9059da63ecb2ffa763bf",
+   "reference_sha256": "6393e6f224a2b109c6793d35569729261cf763511446af029df28275bb42ff4e"
+  },
+  {
+   "id": "method/czerny599/042|human-alt|oracle|s1",
+   "input_sha256": "1aa307a4da98a7cad481593b1ef591eddefd2301dfd606832e3243707e32b75b",
+   "reference_sha256": "6393e6f224a2b109c6793d35569729261cf763511446af029df28275bb42ff4e"
+  },
+  {
+   "id": "method/czerny599/045|human-alt|none|s1",
+   "input_sha256": "121cc8caa2b5fa3821ffbe2f96c88943271b3a8a671830e1c05a19970049806b",
+   "reference_sha256": "1ccceb4d5be2d323e0b73001dfefe1755282752fb0f959743fc57a8b809d0a40"
+  },
+  {
+   "id": "method/czerny599/045|human-alt|oracle|s1",
+   "input_sha256": "f088a76141f2d32f67cac622acf4e8161c5abd3d9504dc217c100da17e42ee38",
+   "reference_sha256": "1ccceb4d5be2d323e0b73001dfefe1755282752fb0f959743fc57a8b809d0a40"
+  },
+  {
+   "id": "method/czerny599/048|human-alt|none|s1",
+   "input_sha256": "21ed72e11784237d32fdbd84c02b48624dcd77083de341063d0709e10a4a110c",
+   "reference_sha256": "5d02c1653d29fec1e69924921ee4b08d15b559cf9ab3b13713e4c503e96aaa89"
+  },
+  {
+   "id": "method/czerny599/048|human-alt|oracle|s1",
+   "input_sha256": "32faa0fdd31038d87f319cc71edcff3d0c85440d34a9447e12deca132da1e4bf",
+   "reference_sha256": "5d02c1653d29fec1e69924921ee4b08d15b559cf9ab3b13713e4c503e96aaa89"
+  },
+  {
+   "id": "method/czerny599/049|human-alt|none|s1",
+   "input_sha256": "85df1e91face3b03000739ea54236458fd580af417954a4198d6a2d9e3f1164c",
+   "reference_sha256": "042770975a6b771f7879bc1a2c5f95eafa5f596c7b17841222d7876aab37567a"
+  },
+  {
+   "id": "method/czerny599/049|human-alt|oracle|s1",
+   "input_sha256": "60053d48d12de3929e4905a8dba36dac5d3bf59ce9040abcdf5295824de7c912",
+   "reference_sha256": "042770975a6b771f7879bc1a2c5f95eafa5f596c7b17841222d7876aab37567a"
+  },
+  {
+   "id": "method/czerny849/001|human-alt|none|s1",
+   "input_sha256": "0e5564481b8acbe821027e03d9deaffaf307176e27d42b673619b0b54b81932f",
+   "reference_sha256": "302add4d3e497f0371daf6776c51252f1d7d18189c59e42aa3e8642bf4374164"
+  },
+  {
+   "id": "method/czerny849/001|human-alt|oracle|s1",
+   "input_sha256": "be3104649c462ea5209cb4feaf8e14f6f61f76394dc027b2647ce5b8cfca3497",
+   "reference_sha256": "302add4d3e497f0371daf6776c51252f1d7d18189c59e42aa3e8642bf4374164"
+  },
+  {
+   "id": "method/czerny849/002|human-alt|none|s1",
+   "input_sha256": "df79d8e4a9d8255b47dfb7ace64a71c8820ec2d319938835f22468eee59dd2c3",
+   "reference_sha256": "b37116cc2a4d093b8bcd0d40a82121d690d82ae454e7c88ee26eddf9e52c949e"
+  },
+  {
+   "id": "method/czerny849/002|human-alt|oracle|s1",
+   "input_sha256": "7d88a541b2842e26e17693be0fa9df430ff21ac18803265b3ea73644999234ff",
+   "reference_sha256": "b37116cc2a4d093b8bcd0d40a82121d690d82ae454e7c88ee26eddf9e52c949e"
+  },
+  {
+   "id": "method/czerny849/005|human-alt|none|s1",
+   "input_sha256": "644c238c4d20d2ed9c1a78edd0577e523b197b31453952fad7d1146438eccb07",
+   "reference_sha256": "5427f762b8d709be18221d1c4b4cc21cfe0489cda10afe27d974b570cd6a393b"
+  },
+  {
+   "id": "method/czerny849/005|human-alt|oracle|s1",
+   "input_sha256": "fad6345fcdc857edab68f9df75971df2a4b81bd7e864b20911fdc4f6a423b2ca",
+   "reference_sha256": "5427f762b8d709be18221d1c4b4cc21cfe0489cda10afe27d974b570cd6a393b"
+  },
+  {
+   "id": "method/czerny849/006|human-alt|none|s1",
+   "input_sha256": "a165baf2dab5ef96ef4333eb77195a9ec4c7e844e83b5ac16defbb2d02eba781",
+   "reference_sha256": "9a027c47a2a9b94e642c73986cd022c01315024a311d555ee756e27de1086623"
+  },
+  {
+   "id": "method/czerny849/006|human-alt|oracle|s1",
+   "input_sha256": "3f696ebbd78e5c37cdacf5d47053b1b1bc175622295e9c039b76160cfa5acc81",
+   "reference_sha256": "9a027c47a2a9b94e642c73986cd022c01315024a311d555ee756e27de1086623"
+  },
+  {
+   "id": "method/czerny849/007|human-alt|none|s1",
+   "input_sha256": "b3639092d60b61c1c85919ea28290f5d17486c2a20dcce64d48bb729e70906db",
+   "reference_sha256": "e08e13ecaaa891bb35278e748f50aa3f06f5d92e885570961775c1b5a69f5a46"
+  },
+  {
+   "id": "method/czerny849/007|human-alt|oracle|s1",
+   "input_sha256": "31b44e90aca4a7efc4942468227f2adc59f5cba32b1a3596e0ce50e6456d46ad",
+   "reference_sha256": "e08e13ecaaa891bb35278e748f50aa3f06f5d92e885570961775c1b5a69f5a46"
+  },
+  {
+   "id": "method/czerny849/008|human-alt|none|s1",
+   "input_sha256": "60b396875c176b799c846f634ab0b0fafe864bf1fe423734dee00969ebfa9b4a",
+   "reference_sha256": "c5c9111ec19bfb3f030d47f1994c1edb92e659200a7f95ad9ef9ad9611c627c2"
+  },
+  {
+   "id": "method/czerny849/008|human-alt|oracle|s1",
+   "input_sha256": "90ed355a79ad7cb3c98a4c643807e006f726a58bcf0f9d475ee6133651553591",
+   "reference_sha256": "c5c9111ec19bfb3f030d47f1994c1edb92e659200a7f95ad9ef9ad9611c627c2"
+  },
+  {
+   "id": "method/czerny849/011|human-alt|none|s1",
+   "input_sha256": "e3a9086dd4242f8c23ee4727a7859b7e1324505e2fe6b0bc5113e075e4dba0d8",
+   "reference_sha256": "26c75db747518c3aaa692ab99e637989fe1b8a33ae61e5e2df27e009d6207a67"
+  },
+  {
+   "id": "method/czerny849/011|human-alt|oracle|s1",
+   "input_sha256": "c5b765059551183ded4a3907fa3cde985f1c740011bccad79b79a55aedf731b3",
+   "reference_sha256": "26c75db747518c3aaa692ab99e637989fe1b8a33ae61e5e2df27e009d6207a67"
+  },
+  {
+   "id": "method/czerny849/013|human-alt|none|s1",
+   "input_sha256": "cc1d650c405c693408e127fada9bc58de5f4386129a178422d14cc1a73930238",
+   "reference_sha256": "9a398d50dccdc57da42dbdb97f0ed725e7e7bd0bbe70a026a526866c1c1abd50"
+  },
+  {
+   "id": "method/czerny849/013|human-alt|oracle|s1",
+   "input_sha256": "758b388c9fe5af60ddde4ee9cbc79b1add7b696d154a9e9377a6ea82afdb9fc2",
+   "reference_sha256": "9a398d50dccdc57da42dbdb97f0ed725e7e7bd0bbe70a026a526866c1c1abd50"
+  },
+  {
+   "id": "method/czerny849/019|human-alt|none|s1",
+   "input_sha256": "03daf292d03a13c9107d7eab1d6c6dd436b46f337e25ca837dca4cbd4c691897",
+   "reference_sha256": "8d2755fae8fc7de928b5f312f8e8a47cbc043ccb161edbf7cd6a0d93cc854524"
+  },
+  {
+   "id": "method/czerny849/019|human-alt|oracle|s1",
+   "input_sha256": "101a9e4366e8c19c8ecb37170fd167da72816d99936583ca27598192493f3925",
+   "reference_sha256": "8d2755fae8fc7de928b5f312f8e8a47cbc043ccb161edbf7cd6a0d93cc854524"
+  },
+  {
+   "id": "method/czerny849/020|human-alt|none|s1",
+   "input_sha256": "9f1a6efa507b0370a21bcb5731030b2e81400cbcf57139c3dda2cecf9aaa3ac5",
+   "reference_sha256": "053c6a88af4d8aa04ba0b5fedba8761d35b1c83646739226c66b485a5260259f"
+  },
+  {
+   "id": "method/czerny849/020|human-alt|oracle|s1",
+   "input_sha256": "ff1c4df37c55a762f2d14e60724051f66a3a450d961293eacacdbf6b9e006a92",
+   "reference_sha256": "053c6a88af4d8aa04ba0b5fedba8761d35b1c83646739226c66b485a5260259f"
+  },
+  {
+   "id": "method/hanon/001|human-alt|none|s1",
+   "input_sha256": "3fedd2e88dc77d149b3f59f7e3a7f48c80aee7a5513083909aedde654fe75d65",
+   "reference_sha256": "c8c6581e03f18fd90f5514a9c4e218e6974cd81f07200273d4647aea0d28cdde"
+  },
+  {
+   "id": "method/hanon/001|human-alt|oracle|s1",
+   "input_sha256": "9dce3640657b3562b16aed5a20102d49e06ec2d755cd35da0268f59497a4ae25",
+   "reference_sha256": "c8c6581e03f18fd90f5514a9c4e218e6974cd81f07200273d4647aea0d28cdde"
+  },
+  {
+   "id": "method/hanon/002|human-alt|none|s1",
+   "input_sha256": "f1cf7feb1b956fb8511d43541a006594e000913039e9554e824768373418a282",
+   "reference_sha256": "c9986d3b5c031e8890fcd262f9773d648ddaa681724a5d494105b6b8f9007b10"
+  },
+  {
+   "id": "method/hanon/002|human-alt|oracle|s1",
+   "input_sha256": "071f55fe1b6b7e21314f32924a9cd23e581e02d0e12ca6aadaf93ea041684a6d",
+   "reference_sha256": "c9986d3b5c031e8890fcd262f9773d648ddaa681724a5d494105b6b8f9007b10"
+  },
+  {
+   "id": "method/hanon/004|human-alt|none|s1",
+   "input_sha256": "ea97c717c5920381e0d363d859e128364b31bcc6f9214ca676e7e1c82b59a03b",
+   "reference_sha256": "df325c896e06722466612e4553363dc0784da4300023e5d65c6aca9c06447b64"
+  },
+  {
+   "id": "method/hanon/004|human-alt|oracle|s1",
+   "input_sha256": "e65178f16c2158f5ec87e8c0778620cf9a486e64037a5128204a902f8c7344e4",
+   "reference_sha256": "df325c896e06722466612e4553363dc0784da4300023e5d65c6aca9c06447b64"
+  },
+  {
+   "id": "method/hanon/005|human-alt|none|s1",
+   "input_sha256": "e9e874bce663ec3ba3ee7aa119b916b76c2c200cf2e02cfc96a517d93529245f",
+   "reference_sha256": "98c63eab3855db91b107a45302a40588612ff85865582c2efe459a4fb5937925"
+  },
+  {
+   "id": "method/hanon/005|human-alt|oracle|s1",
+   "input_sha256": "4c707a23d18422355c1f5ed0a02dc7591b139efc384cd8847094225cf145e716",
+   "reference_sha256": "98c63eab3855db91b107a45302a40588612ff85865582c2efe459a4fb5937925"
+  },
+  {
+   "id": "method/hanon/007|human-alt|none|s1",
+   "input_sha256": "9c91360728be27000320e0c778209e654c940ebb323559026d7689a0d76c219f",
+   "reference_sha256": "c3ab15c17851508c53be254999966b319ccde56ba0b3046c8e7e0320f12ec3c2"
+  },
+  {
+   "id": "method/hanon/007|human-alt|oracle|s1",
+   "input_sha256": "f1598171cb3fa4f13de5cc1b99ced869bedf52b497039ce0bf0b924f737ab0e4",
+   "reference_sha256": "c3ab15c17851508c53be254999966b319ccde56ba0b3046c8e7e0320f12ec3c2"
+  },
+  {
+   "id": "method/hanon/008|human-alt|none|s1",
+   "input_sha256": "f0112004467eff82ecbe05be663058d387b0133b20a32a8db117f4261104b702",
+   "reference_sha256": "132c293ea69731489411e720fc0e31b79cc7b7500b1cad1ffa3a452cc88b6c50"
+  },
+  {
+   "id": "method/hanon/008|human-alt|oracle|s1",
+   "input_sha256": "560d6affe68de7b404cbf661cb38ad6169dc33ebcbb2482770a73f8520758d62",
+   "reference_sha256": "132c293ea69731489411e720fc0e31b79cc7b7500b1cad1ffa3a452cc88b6c50"
+  },
+  {
+   "id": "method/hanon/009|human-alt|none|s1",
+   "input_sha256": "96112da44f35d3421344ef6d0a2fe874ae8d7dbd04fcc4f6ce7748a2b70394fe",
+   "reference_sha256": "95bb42235fe7539fe6918e37cb21de3372b2568d6ac9b42f2bebb4c8e1a783a6"
+  },
+  {
+   "id": "method/hanon/009|human-alt|oracle|s1",
+   "input_sha256": "c7e98e06a159ec4053c247fc8346f4ba702bff350096aa74ce9d896f2ebd996b",
+   "reference_sha256": "95bb42235fe7539fe6918e37cb21de3372b2568d6ac9b42f2bebb4c8e1a783a6"
+  },
+  {
+   "id": "method/hanon/020|human-alt|none|s1",
+   "input_sha256": "8b88f4bcc42a47a62ae6b30124a77d9d75309b21296a83783267950917ee9836",
+   "reference_sha256": "fe215688218cf43dfa30c1519a0399727cc2417cd9b6843bd230c3eba3af5b1d"
+  },
+  {
+   "id": "method/hanon/020|human-alt|oracle|s1",
+   "input_sha256": "1a46110de87c4686195faf5445670d7970aed03c6483edd71de7bbf1e9ee2b5f",
+   "reference_sha256": "fe215688218cf43dfa30c1519a0399727cc2417cd9b6843bd230c3eba3af5b1d"
+  },
+  {
+   "id": "method/sonatina/002|human-alt|none|s1",
+   "input_sha256": "88904cc6f30ce755c927642687ca8d3cfcbf9418a7f264d6e6585847595c1686",
+   "reference_sha256": "522e3509e91dddd6eae008447228c3fec0b644a3a1f1f1b1e46f8a525e67f14a"
+  },
+  {
+   "id": "method/sonatina/002|human-alt|oracle|s1",
+   "input_sha256": "db67970e2385522db4d35ea7257c3856a9bbc1ff6adcda82c110a673311b3a98",
+   "reference_sha256": "522e3509e91dddd6eae008447228c3fec0b644a3a1f1f1b1e46f8a525e67f14a"
+  },
+  {
+   "id": "method/sonatina/003|human-alt|none|s1",
+   "input_sha256": "e1b58ca47921e3ca02e48b2277f5877edeb36662f1e71668df67b25903196aa8",
+   "reference_sha256": "fe44d09c2c78b76b5bdd5bbed7ef7a8f84cb9c5afd30c129d6ae0a015d2bbfdb"
+  },
+  {
+   "id": "method/sonatina/003|human-alt|oracle|s1",
+   "input_sha256": "b71a581e965576cc85559ef478146478b449b103ca221729818a26759d05738c",
+   "reference_sha256": "fe44d09c2c78b76b5bdd5bbed7ef7a8f84cb9c5afd30c129d6ae0a015d2bbfdb"
+  },
+  {
+   "id": "method/sonatina/006|human-alt|none|s1",
+   "input_sha256": "e52315d5d930f000dc6250fa2dddd79b4e597d503dd62889d2bf8043fa4700aa",
+   "reference_sha256": "8ceade7f5739f8b19a6d56b04a9848af6a83c52dbce1ab1879b14a7e199a8596"
+  },
+  {
+   "id": "method/sonatina/006|human-alt|oracle|s1",
+   "input_sha256": "0ab5520ecc6e50203feb19a032192f552fd67d91d3436da4e9120bfb31b9ba5d",
+   "reference_sha256": "8ceade7f5739f8b19a6d56b04a9848af6a83c52dbce1ab1879b14a7e199a8596"
+  },
+  {
+   "id": "method/sonatina/009|human-alt|none|s1",
+   "input_sha256": "73000f43f3afc5f3d984d939f50f56d916725343663b0ba148deabc01de7183c",
+   "reference_sha256": "54a82d996f7d675e5c75c601ba7378261aeafda7a1dd46e57f9c906f1f0c7fe9"
+  },
+  {
+   "id": "method/sonatina/009|human-alt|oracle|s1",
+   "input_sha256": "db10bea75c603351174a6b001fd8748e34bcd87d7ce980cb5bfd363412c7cb7f",
+   "reference_sha256": "54a82d996f7d675e5c75c601ba7378261aeafda7a1dd46e57f9c906f1f0c7fe9"
+  },
+  {
+   "id": "method/sonatina/010|human-alt|none|s1",
+   "input_sha256": "8a03573ad859d12add2cc6bfe55d24047f74a06a289e913ae2bea7320531b26b",
+   "reference_sha256": "79ef0942030acc887f16dc8fd18d7fb4a5635acc919b4c31b6947b0158f7fbd5"
+  },
+  {
+   "id": "method/sonatina/010|human-alt|oracle|s1",
+   "input_sha256": "e7d39a14afd3f4c3f3befe53e9779e98f18899ef80cdef168825d98d2c063466",
+   "reference_sha256": "79ef0942030acc887f16dc8fd18d7fb4a5635acc919b4c31b6947b0158f7fbd5"
+  },
+  {
+   "id": "method/sonatina/012|human-alt|none|s1",
+   "input_sha256": "2157c95297e68196e5059bcc0c20e28fb66f8164c374668d126db92daed00f8a",
+   "reference_sha256": "142a548fad83cc061f64da7cb8ea6c5f5f619f95be0059632e9abc71bd554a3b"
+  },
+  {
+   "id": "method/sonatina/012|human-alt|oracle|s1",
+   "input_sha256": "c892af245821127b7e22b5c57d3c9914519f6797ee6c9eb760ab1da9411c1921",
+   "reference_sha256": "142a548fad83cc061f64da7cb8ea6c5f5f619f95be0059632e9abc71bd554a3b"
+  },
+  {
+   "id": "method/sonatina/014|human-alt|none|s1",
+   "input_sha256": "a995e5c34aea3d4e437327f4a04ebaa23cdb462aca08a723c54b3bf80460b4e9",
+   "reference_sha256": "ffc2f04a5cb66d0da85fda7125cb0ffe8417508206b7a03f94f6198b9c24b683"
+  },
+  {
+   "id": "method/sonatina/014|human-alt|oracle|s1",
+   "input_sha256": "32658f20cf18cf63b380beada61eda11d18ce86894b8c459b479a4657242cc82",
+   "reference_sha256": "ffc2f04a5cb66d0da85fda7125cb0ffe8417508206b7a03f94f6198b9c24b683"
+  },
+  {
+   "id": "method/sonatina/017|human-alt|none|s1",
+   "input_sha256": "60f26ce1a15d9d528b2c4fd1e29e1f2848319a9dcc76983490a7c728f1cda709",
+   "reference_sha256": "a26f6a4b07e92e12e29ebc34b082b81f5647412dce1e1d7be8a8a4b398cc1b49"
+  },
+  {
+   "id": "method/sonatina/017|human-alt|oracle|s1",
+   "input_sha256": "f4f81b24bba5687d41bf9dbe99a44bd14d895c4dcba2c4029d5c397775a9124a",
+   "reference_sha256": "a26f6a4b07e92e12e29ebc34b082b81f5647412dce1e1d7be8a8a4b398cc1b49"
+  },
+  {
+   "id": "method/sonatina/018|human-alt|none|s1",
+   "input_sha256": "a3e8e6eb7cc463808dc53b1cd4d737352494f31b673fde21d7629620260088fe",
+   "reference_sha256": "6ef1bebd219019b3ce9b480c48e8334d84ead655662e5cdc45f013ec070065b4"
+  },
+  {
+   "id": "method/sonatina/018|human-alt|oracle|s1",
+   "input_sha256": "bfa3e5d492b24d6a88ef1b9530bb53689784a33fa96a6da2e758af38eaf54477",
+   "reference_sha256": "6ef1bebd219019b3ce9b480c48e8334d84ead655662e5cdc45f013ec070065b4"
+  },
+  {
+   "id": "method/sonatina/021|human-alt|none|s1",
+   "input_sha256": "cd1286a18e27b35a0d35f0f7a5511a6ddd2ac6fca8211fcb2266385055738cfd",
+   "reference_sha256": "0741cee4dbc9c6a8229e475964e8fcfbf51911e23a94eb9f18bcddd722e46800"
+  },
+  {
+   "id": "method/sonatina/021|human-alt|oracle|s1",
+   "input_sha256": "898cd086667fb0b7a156d6a2ad844eef241d42c5872e7354edd33d2ac729f179",
+   "reference_sha256": "0741cee4dbc9c6a8229e475964e8fcfbf51911e23a94eb9f18bcddd722e46800"
+  },
+  {
+   "id": "method/sonatina/025|human-alt|none|s1",
+   "input_sha256": "24a82652a6d10d66d15fd70659837411619a0ab8d49d3a5d1b5ffda04f720113",
+   "reference_sha256": "1a49a672964763a03823a1372ef506c88ba469ceba4c79bab3c02163df9c0d05"
+  },
+  {
+   "id": "method/sonatina/025|human-alt|oracle|s1",
+   "input_sha256": "4d6a55746531b0ada2e012f998a1d7387a25c5346c9fc931b4b05788b1e69bf1",
+   "reference_sha256": "1a49a672964763a03823a1372ef506c88ba469ceba4c79bab3c02163df9c0d05"
+  },
+  {
+   "id": "method/sonatina/026|human-alt|none|s1",
+   "input_sha256": "5ff3addf725c62932646986885fd40d586cba66652bf9553a05639cb6c7c979a",
+   "reference_sha256": "e683c1d3bb8d7b8641906a4af181f6b10e9c2b5e44bf694935c8a34c2dda6aa7"
+  },
+  {
+   "id": "method/sonatina/026|human-alt|oracle|s1",
+   "input_sha256": "e950000d52888fb51d6c4c76f6f11f5e6a0ecf649eb5720e5f54ca57491b0c9d",
+   "reference_sha256": "e683c1d3bb8d7b8641906a4af181f6b10e9c2b5e44bf694935c8a34c2dda6aa7"
+  },
+  {
+   "id": "method/sonatina/027|human-alt|none|s1",
+   "input_sha256": "493466500f10e8c7fc13c84c92543250d54d84acdee9d2e76d498a6868c8010c",
+   "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
+  },
+  {
+   "id": "method/sonatina/027|human-alt|oracle|s1",
+   "input_sha256": "772cf1cf2f80da7b28e216d900ea02c9b4c7534e4ac7a93f4c42f2b9b70cf2ae",
+   "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
+  },
+  {
+   "id": "method/sonatina/028|human-alt|none|s1",
+   "input_sha256": "a2448c973dba97abc2a73b4e10660d9b7607601d1e5064ca38b362467d956bec",
+   "reference_sha256": "0072b82c8a461f1841618570b3226fa16b690416c896a5edcff7285d03facd15"
+  },
+  {
+   "id": "method/sonatina/028|human-alt|oracle|s1",
+   "input_sha256": "deda4d8b87dd0cea7daa7ad85fb3f6bb73f413094ad3d5cfc67f1d6c0827c0da",
+   "reference_sha256": "0072b82c8a461f1841618570b3226fa16b690416c896a5edcff7285d03facd15"
+  },
+  {
+   "id": "micro/M01-waltz-3-4|human-alt|none|s1",
+   "input_sha256": "20de6ea0bfc6d5919498d63724274a551ab32e7e3827c8eada5a931f5d5a2b4f",
+   "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
+   "id": "micro/M01-waltz-3-4|human-alt|oracle|s1",
+   "input_sha256": "94d3cdf5ea10f146978bc8ec17beb572892604927ca93301dc5f87fd8b2c1d23",
+   "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
+   "id": "micro/M02-alberti-4-4|human-alt|none|s1",
+   "input_sha256": "9d50c139f11051fde458ab56a8cf7b425c5484090984047b352f98a5145d5187",
+   "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
+  },
+  {
+   "id": "micro/M02-alberti-4-4|human-alt|oracle|s1",
+   "input_sha256": "a685de1ef7f6c675e9e940b33382074cd0a32b236a948b651e36c5fa403b32aa",
+   "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
+  },
+  {
+   "id": "micro/M03-jig-6-8|human-alt|none|s1",
+   "input_sha256": "0cbd04b88ed8899b8d65bf155dd927492de31ccbe9dc63ced0177dfea62418a1",
+   "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
+   "id": "micro/M03-jig-6-8|human-alt|oracle|s1",
+   "input_sha256": "86ded2421c5fed34df8d7f4ef54fb63744baacb6c467c01c4973da1d91076de4",
+   "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
+   "id": "micro/M04-triplets-4-4|human-alt|none|s1",
+   "input_sha256": "cbf3d7465c39c4d65fc08cc67fa4fc7562fc28652ef37220c6caa6f0974fe7d9",
+   "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
+  },
+  {
+   "id": "micro/M04-triplets-4-4|human-alt|oracle|s1",
+   "input_sha256": "2da1d7817bc054dea8fc2ea2836ed62b3b361216ba900e1be9195a1b3c1f95c6",
+   "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
+  },
+  {
+   "id": "micro/M05-32nds-120|human-alt|none|s1",
+   "input_sha256": "ceed081b5389081f5b7a5821eb53c7e44fb497d7fcc3e49d0b1495ee5790a7e3",
+   "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
+   "id": "micro/M05-32nds-120|human-alt|oracle|s1",
+   "input_sha256": "ef6f04450b8ec84531566a18a9d13c091a4e8a89f6936b86a183b5babb804c9e",
+   "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
+   "id": "micro/M06-32nds-176|human-alt|none|s1",
+   "input_sha256": "05602ae48cd2c05aef2a685964910e9b5bf20887c28c089d76c5666712f20abd",
+   "reference_sha256": "0ef2b8c3583ff7ff57a1705c679917b670c90fdfa04c5b73a46c956aade0b522"
+  },
+  {
+   "id": "micro/M06-32nds-176|human-alt|oracle|s1",
+   "input_sha256": "ddda9f4139decf0a7ffb12e55b031930b492e798848249941450e34f0a902581",
+   "reference_sha256": "0ef2b8c3583ff7ff57a1705c679917b670c90fdfa04c5b73a46c956aade0b522"
+  },
+  {
+   "id": "micro/M07-pickup-3-4|human-alt|none|s1",
+   "input_sha256": "c194a33b5c0b754f9df224533c27c68be85e52b7c54b91b0788601f0049b1fcd",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
+   "id": "micro/M07-pickup-3-4|human-alt|oracle|s1",
+   "input_sha256": "62cdc6f1af0725b72fb638f8e00ef9454cf3afb7a1fe2c7225c7a4d7ddc1a497",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
+   "id": "micro/M08-pickup-4-4|human-alt|none|s1",
+   "input_sha256": "4bc3782c85e6bcbcd4741b624625c807f8389c15a29219bff3f0d08158bf0335",
+   "reference_sha256": "5535e3fca8be8702a15c955c9778b0bbd5ba7cbfa0064c9e03bdac70be2371d6"
+  },
+  {
+   "id": "micro/M08-pickup-4-4|human-alt|oracle|s1",
+   "input_sha256": "50af660701b1451500e5c2cc9658b54f5958164f3a8e816e4411396cd3546bdc",
+   "reference_sha256": "5535e3fca8be8702a15c955c9778b0bbd5ba7cbfa0064c9e03bdac70be2371d6"
+  },
+  {
+   "id": "micro/M09-syncopation-ties|human-alt|none|s1",
+   "input_sha256": "327bd43ecd19a72fd4a3c0ff24c175d60315f9c96eb5315776d84a6e89d7419f",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
+   "id": "micro/M09-syncopation-ties|human-alt|oracle|s1",
+   "input_sha256": "8402150afe1c7063b0a469b4cd13d86eb2f6153550d893f121f8a0564e770a9b",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
+   "id": "micro/M10-dotted|human-alt|none|s1",
+   "input_sha256": "0536910221cc2b60c1d1bd51a116d0c2a9969c3aba9227046d19439872ce33d0",
+   "reference_sha256": "c492ffd50e9792199368de1e3875e04e37bbe559710391025e05ae3363230546"
+  },
+  {
+   "id": "micro/M10-dotted|human-alt|oracle|s1",
+   "input_sha256": "7c4290ffec33d1bc925e05a2d18d532b2d8d7c89bef2fc15202f2e9e70990116",
+   "reference_sha256": "c492ffd50e9792199368de1e3875e04e37bbe559710391025e05ae3363230546"
+  },
+  {
+   "id": "micro/M11-harmonic-minor|human-alt|none|s1",
+   "input_sha256": "3a78a7e2bf2e5db8e58945aa934953d2b2e897a9eada1e1a623aac420f61a0c1",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
+   "id": "micro/M11-harmonic-minor|human-alt|oracle|s1",
+   "input_sha256": "339e19ee16186f505da149bb6294e92f6d0de5066cd480dbdd62a62960aad6bd",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
+   "id": "micro/M12-flats-db|human-alt|none|s1",
+   "input_sha256": "e9485f70081913d4f7d3c7fd03eb70ed68a764c36bcdc90767d7f97276a8c4f0",
+   "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
+   "id": "micro/M12-flats-db|human-alt|oracle|s1",
+   "input_sha256": "03610e11c16019fb00215d7388b40a54c43f290a480efc0454a8017d9e96e9a0",
+   "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
+   "id": "micro/M13-sharps-chromatic|human-alt|none|s1",
+   "input_sha256": "9dbec271bdcaa6412683f9e2c83fe44e3c755ad73323dd7cd40c47deffd37791",
+   "reference_sha256": "f9b6832e7860f333398a4295a1c2e801c3dc4058475d142cc4cb1fe9fa92f5b8"
+  },
+  {
+   "id": "micro/M13-sharps-chromatic|human-alt|oracle|s1",
+   "input_sha256": "6ad20aaa40347bb1415aa16d08fcbbe00284af5d16866008e804aac820190535",
+   "reference_sha256": "f9b6832e7860f333398a4295a1c2e801c3dc4058475d142cc4cb1fe9fa92f5b8"
+  },
+  {
+   "id": "micro/M14-melody-in-bass|human-alt|none|s1",
+   "input_sha256": "b66c71ba5dabcd728eae527e4672e740625cd00c743a36a8079e24e46b99e126",
+   "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  },
+  {
+   "id": "micro/M14-melody-in-bass|human-alt|oracle|s1",
+   "input_sha256": "b382b176e9238c57a7a50ebbaa531cee5d43a2b7da3434a9485a81f385d087bd",
+   "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  },
+  {
+   "id": "micro/M15-wide-chords|human-alt|none|s1",
+   "input_sha256": "1aef105f6657d0718ae2b41c4572f4728746c4a61fae804d0f3051c9150d70ac",
+   "reference_sha256": "a30597236725b84802daa9e9c11bd57928631c14a362b495d853ef449be80c88"
+  },
+  {
+   "id": "micro/M15-wide-chords|human-alt|oracle|s1",
+   "input_sha256": "39d7663b13d993daac5b7e49f682296a0e6a3df9b95be6b30f8f0e3da0fcfd30",
+   "reference_sha256": "a30597236725b84802daa9e9c11bd57928631c14a362b495d853ef449be80c88"
+  },
+  {
+   "id": "micro/M16-long-notes-rests|human-alt|none|s1",
+   "input_sha256": "aff6f64b8925f01b0280ed31d44d52a5783812c42dd9ba857145beb5a86421b6",
+   "reference_sha256": "41ef7ad0bd2b8dca61db85c27917cd29de4e38a8f325d1116f928768aadc4d01"
+  },
+  {
+   "id": "micro/M16-long-notes-rests|human-alt|oracle|s1",
+   "input_sha256": "be395e3b06962b5a7eec54e3894dc8879f7cb63e1987408c25639668aba310e7",
+   "reference_sha256": "41ef7ad0bd2b8dca61db85c27917cd29de4e38a8f325d1116f928768aadc4d01"
+  },
+  {
+   "id": "micro/M17-march-2-4|human-alt|none|s1",
+   "input_sha256": "5655b22cd798e42d0be9e6f8eee9d061e2e32bff3edb210b2d6e2a64be877064",
+   "reference_sha256": "97fee0da3be86edfeb652e0b240ce285ebb5e4a8ee689f62baf2c25908670a04"
+  },
+  {
+   "id": "micro/M17-march-2-4|human-alt|oracle|s1",
+   "input_sha256": "f4fe01d0814251e8e1e2b3fc23144cd86768777fda07da5bd366060d702804ea",
+   "reference_sha256": "97fee0da3be86edfeb652e0b240ce285ebb5e4a8ee689f62baf2c25908670a04"
+  },
+  {
+   "id": "micro/M18-alla-breve|human-alt|none|s1",
+   "input_sha256": "24f7ee9573a878017f3d1b1fa1d80e4ee55b3121c51565a62c8694795eee58df",
+   "reference_sha256": "45ca99a1c07a07ab5532dc3b0b52e5767432c64e894c381bfd62977789dd6121"
+  },
+  {
+   "id": "micro/M18-alla-breve|human-alt|oracle|s1",
+   "input_sha256": "e799191b4ee3bc36d9f542a62d25a74bbbd27e331f4efe9a16190534ad54891a",
+   "reference_sha256": "45ca99a1c07a07ab5532dc3b0b52e5767432c64e894c381bfd62977789dd6121"
+  },
+  {
+   "id": "micro/M19-fast-3-8|human-alt|none|s1",
+   "input_sha256": "291be0740e6a1ebd6c4382479910d72cf6dc884fd9bf1594a84ee96d75490a7a",
+   "reference_sha256": "d855ef7dde656f3d9cd43cf08149f14cb1955a4dd2d4bec86ac0f3627f50631d"
+  },
+  {
+   "id": "micro/M19-fast-3-8|human-alt|oracle|s1",
+   "input_sha256": "5246748b18e011e4bbe0bdcd85e435f4e427950a9e1d1f8c5f06fc02520a504f",
+   "reference_sha256": "d855ef7dde656f3d9cd43cf08149f14cb1955a4dd2d4bec86ac0f3627f50631d"
+  },
+  {
+   "id": "micro/M20-compound-12-8|human-alt|none|s1",
+   "input_sha256": "92492aabe39bb356a054d84fec136b9c3c6dcd266904256e31248f1cad641e40",
+   "reference_sha256": "d15acc5c30128e2cbb9f3dfa4f3775ad93418b3903c4051df99ac77bd8dd5903"
+  },
+  {
+   "id": "micro/M20-compound-12-8|human-alt|oracle|s1",
+   "input_sha256": "17356fbd801b62fb8b3a6a7cb5c966801ecd104aedad23ed7ae0717bff14c858",
+   "reference_sha256": "d15acc5c30128e2cbb9f3dfa4f3775ad93418b3903c4051df99ac77bd8dd5903"
+  },
+  {
+   "id": "micro/M21-five-four|human-alt|none|s1",
+   "input_sha256": "2081d25b69e02e392a93e037c3dc01cac5c5e5e6331f84190c7da0b2ede4121b",
+   "reference_sha256": "d617097c51e74a8588ea52784577d5505f928e2456fef44cc36878ad4e1ad6bc"
+  },
+  {
+   "id": "micro/M21-five-four|human-alt|oracle|s1",
+   "input_sha256": "145718533dce697b522f9dd3b21b5458bf9db4feacdefc7d79759db1f370177d",
+   "reference_sha256": "d617097c51e74a8588ea52784577d5505f928e2456fef44cc36878ad4e1ad6bc"
+  },
+  {
+   "id": "micro/M22-tempo-change|human-alt|none|s1",
+   "input_sha256": "97c8939a3d4feafe10e35b5774f04b994683dd4c80a220085013c02b4f8bfb22",
+   "reference_sha256": "5acc11ae930eec34635589b56b0e6980811d6ec23302d9ae56fede56a5052566"
+  },
+  {
+   "id": "micro/M22-tempo-change|human-alt|oracle|s1",
+   "input_sha256": "211c552216384ee40c49951dc431565c4aa1391968b7f7601cbe97b98a1c8ecf",
+   "reference_sha256": "5acc11ae930eec34635589b56b0e6980811d6ec23302d9ae56fede56a5052566"
+  },
+  {
+   "id": "micro/M23-repeated-notes|human-alt|none|s1",
+   "input_sha256": "5d8398198aef5bf941c9e0aeef4fb1c5dce9b0c220673a3a8dc93185cebc65c2",
+   "reference_sha256": "9d979f9d256151c2e939c95759953c26ffdc3538535582b4680bbf7b5200c125"
+  },
+  {
+   "id": "micro/M23-repeated-notes|human-alt|oracle|s1",
+   "input_sha256": "c5e08f4a9794306354cbcd7780dae04b41c232172e2145ba965b30a8acd1a361",
+   "reference_sha256": "9d979f9d256151c2e939c95759953c26ffdc3538535582b4680bbf7b5200c125"
+  },
+  {
+   "id": "micro/M24-block-chords|human-alt|none|s1",
+   "input_sha256": "c5066c2c4d1cae2c685fc48b8bc6c105222433f20f8fc34050fd404d79efaaf3",
+   "reference_sha256": "b8bdf18977486f83e048285291004354fb79b9ac2d777738ef62119693bff60c"
+  },
+  {
+   "id": "micro/M24-block-chords|human-alt|oracle|s1",
+   "input_sha256": "f7a6ced6f9c5685d25c085197abc528102764d6f08909a059d0739712099052d",
+   "reference_sha256": "b8bdf18977486f83e048285291004354fb79b9ac2d777738ef62119693bff60c"
+  },
+  {
+   "id": "samples/prelude-fragment|human-alt|none|s1",
+   "input_sha256": "f0b2bd89e60dd2bc18df75c105bbf2aae9c78e9df4293d229979c5de46ba1ae4",
+   "reference_sha256": "7d68240714c731a827448aa58185c58aea15b9c739c15d8d7bd100efea8a5913"
+  },
+  {
+   "id": "samples/prelude-fragment|human-alt|oracle|s1",
+   "input_sha256": "5c99270b39f37d0037aa419dcd579ccf3d54c550707bbaa8d152fb1fb5285d55",
+   "reference_sha256": "7d68240714c731a827448aa58185c58aea15b9c739c15d8d7bd100efea8a5913"
+  }
+ ],
+ "generator": "perform/2",
+ "reader": "reader/5",
+ "schema": "ppp.bench-lock/1",
+ "suite_sha256": "8da074522836295644cbe0c10083fb9ca2d9c56b838720e7f6961ecb4b93d258"
+}

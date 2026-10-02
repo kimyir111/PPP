@@ -28,6 +28,14 @@ def out_dir_for(suite: Dict[str, Any]) -> str:
     return os.path.join(OUT_DIR, suite["name"])
 
 
+def stage_case_opts(stage_opts: Dict[str, Any], row_opts: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """The suite's ``stage.opts`` under the matrix row's own ``opts`` (the row wins). A suite with no stage opts
+    gives exactly the row's opts (None stays None), so every existing suite and lock is unchanged."""
+    if not stage_opts:
+        return row_opts
+    return {**stage_opts, **(row_opts or {})}
+
+
 def generate(suite: Dict[str, Any], refs: Optional[List[corpus.RefEntry]] = None, filter_: Optional[str] = None):
     """Expand cases and build their synthetic performances. Returns (cases, lock rows, perfs).
 
@@ -39,6 +47,7 @@ def generate(suite: Dict[str, Any], refs: Optional[List[corpus.RefEntry]] = None
     cases = suite_mod.expand(suite, refs)
     if filter_:
         cases = [c for c in cases if filter_ in c.id]
+    stage_opts = (suite.get("stage") or {}).get("opts") or {}   # what the suite asks of toMusicXml (G10a-0: the app's options)
     rows, perfs, file_sha = [], {}, {}
     for c in cases:
         entry = by[c.ref_id]
@@ -48,7 +57,7 @@ def generate(suite: Dict[str, Any], refs: Optional[List[corpus.RefEntry]] = None
         c.tags = corpus.derived_tags(entry, canon) + [f"profile:{c.profile}", f"beats:{c.beats}", f"seed:{c.seed}"] + \
             (["holdout"] if c.holdout else [])
         p = perform.perform(canon, c.ref_id, c.profile, c.beats, c.seed, expect=entry.expect,
-                            case_opts=c.opts, opt_name=c.opt_name)
+                            case_opts=stage_case_opts(stage_opts, c.opts), opt_name=c.opt_name)
         perfs[c.id] = p
         rows.append({"id": c.id, "reference_sha256": file_sha[entry.path],
                      "input_sha256": suite_mod.input_sha256(p.input, p.opts)})

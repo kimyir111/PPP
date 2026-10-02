@@ -55,6 +55,12 @@ jobs:
       - run: python tests/bench/run.py check --suite core
       - run: python tests/bench/run.py run --suite robust
       - run: python tests/bench/run.py check --suite robust
+      - run: python tests/bench/run.py run --suite smoke-app      # the app's options (closeGaps, exactBars): what users get (G10a-0)
+      - run: python tests/bench/run.py check --suite smoke-app
+      - run: python tests/bench/run.py run --suite core-app
+      - run: python tests/bench/run.py check --suite core-app
+      - run: python tests/bench/run.py run --suite robust-app
+      - run: python tests/bench/run.py check --suite robust-app
       - run: python tests/bench/run.py run --suite replay-public   # exits with the replay verdict
       - run: npm run test:transcription-core && npm run test:arranger
       - if: always()
@@ -66,6 +72,8 @@ jobs:
             tests/bench/out/core/results.json
             tests/bench/out/core/run.json
             tests/bench/out/robust/summary.md
+            tests/bench/out/core-app/summary.md
+            tests/bench/out/robust-app/summary.md
             tests/bench/out/replay-public/summary.md
             tests/bench/out/correctness/report.json
 
