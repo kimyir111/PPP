@@ -20,6 +20,9 @@ One JSON object per performance (a reference x profile x beats profile x seed):
               ``n`` the reference onsets in the beat, the bar index, the beat in the bar and the written onset fractions
               of the beat (distinct, sorted; tuplet rests included).
 
+    cwindows  compound metres only (6/8, 9/8, 12/8; the metre's beat a dotted quarter): the same rows per dotted-quarter
+              beat, fractions of the dotted quarter, labels C8 (eighths), C16 (sixteenths), C32 (finer), CT (a tuplet)
+
 Labels (the finest grid the written beat needs; tuplet rests count, as in rec.tuplet):
     T3   a 3:2 tuplet on the thirds of the beat          T6   a tuplet with an onset on a sixth (triplet 16ths)
     S32  a straight onset off the 16th grid (32nd)       S16  everything else (16ths, eighths, quarters, an empty beat)
@@ -109,6 +112,49 @@ def windows_of(canon, perf, notes):
     return out
 
 
+def clabel_of(fracs, tuplet_fracs) -> str:
+    """The grid a dotted-quarter beat needs (fractions of the dotted quarter): C8 eighths (thirds), C16 sixteenths
+    (sixths), C32 anything finer, CT a tuplet (a duplet, a triplet of 16ths)."""
+    if tuplet_fracs:
+        return "CT"
+    if all((f * 3).denominator == 1 for f in fracs):
+        return "C8"
+    if all((f * 6).denominator == 1 for f in fracs):
+        return "C16"
+    return "C32"
+
+
+def cwindows_of(canon, perf):
+    """Compound metres (x/8 with a multiple of three beats, the metre's beat a dotted quarter): every dotted-quarter beat
+    of every bar, as windows_of (fractions in dotted quarters). Empty for any other metre."""
+    t = canon.primary_time()
+    if not (t[1] == 8 and t[0] % 3 == 0):
+        return []
+    tm = perf.timemap
+    events = [(s.onset_q, bool(s.tuplet)) for s in canon.sounding] + [(r.onset_q, True) for r in canon.rests if r.tuplet]
+    events.sort()
+    out = []
+    unit = Fraction(3, 2)
+    for m in canon.measures:
+        if m.time != t:
+            continue
+        b = 0
+        while m.start_q + b * unit < m.start_q + m.len_q:
+            q0 = m.start_q + b * unit
+            q1 = min(q0 + unit, m.start_q + m.len_q)
+            fr, tf, n = [], [], 0
+            for q, tup in events:
+                if q0 <= q < q1:
+                    f = (q - q0) / unit
+                    (tf if tup else fr).append(f)
+                    n += 1
+            fracs = sorted({round(float(f), 6) for f in fr + tf})
+            out.append([float(q0), float(q1), util.round_t(tm.sec(q0)), util.round_t(tm.sec(q1)),
+                        clabel_of(fr + tf, tf), 0, n, m.index, b, fracs])
+            b += 1
+    return out
+
+
 SOUND_Q = {}
 
 
@@ -153,7 +199,7 @@ def main() -> int:
                                "holdout": bool(entry.holdout), "time": list(canon.primary_time()),
                                "qpm": p.expected["qpm"], "notes": notes,
                                "inBeats": p.input.get("beats"), "inDownbeats": p.input.get("downbeats"),
-                               "windows": windows_of(canon, p, raw)}
+                               "windows": windows_of(canon, p, raw), "cwindows": cwindows_of(canon, p)}
                         handle.write(json.dumps(row, separators=(",", ":")) + "\n")
                         n_cases += 1
     print(f"wrote {n_cases} performances of {len(ids)} references to {args.out}")

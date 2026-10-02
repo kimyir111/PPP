@@ -1355,8 +1355,8 @@
   }
   /* G10a-2 (docs/GOALS/G10_AUDIO_TO_SCORE.md section 8, stage S3): rec/grid.js, the grid of each beat decided from the evidence of all its onsets (straight 16ths, 32nds, triplets, swung eighths)
      and every onset placed on it. The recording conversion v2's stage S3 (recordingV2, opts.recording 'v2'): it replaces this file's onset placement (tripletBeats / snapStraightBest /
-     snapTriplet in quantize, and snapOnsets with exactBars) for a simple-time skeleton. opts.grid 'legacy' keeps G10a-1's S3 (the legacy quantiser) under v2, for comparison. Legacy (no
-     opts.recording) never loads it. A page without rec/grid.js writes v2 with the legacy quantiser. */
+     snapTriplet in quantize and snapOnsets with exactBars for a simple-time skeleton, quantizeCompound for a compound one). opts.grid 'legacy' keeps G10a-1's S3 (the legacy quantisers)
+     under v2, for comparison. Legacy (no opts.recording) never loads it. A page without rec/grid.js writes v2 with the legacy quantisers. */
   function gridLib() {
     try {
       return typeof module === 'object' && module.exports ? require('./rec/grid.js') : (global && global.PPPRecGrid) || null;
@@ -1817,13 +1817,14 @@
     const beats = sk.beats;
     const compound = !!sk.metre.compound;
     let q, errSum, gridV2 = null;
-    if (compound) {
+    if (opts.grid !== 'legacy' && gridLib()) {
+      /* S3 (G10a-2): the grid of each beat and the onsets on it, rec/grid.js on the skeleton's beats (ticks from beats[0], as quantize and quantizeCompound
+         place them: 24 a quarter, 36 a dotted quarter) */
+      gridV2 = gridLib().legacyQ(clustered, beats, { compound: compound });
+      q = gridV2.q; errSum = gridV2.errSum;
+    } else if (compound) {
       q = quantizeCompound(clustered, beats);
       errSum = q.reduce((s, n) => s + n.err, 0);
-    } else if (opts.grid !== 'legacy' && gridLib()) {
-      /* S3 (G10a-2): the grid of each beat and the onsets on it, rec/grid.js on the skeleton's beats (ticks from beats[0], as quantize places them) */
-      gridV2 = gridLib().legacyQ(clustered, beats, {});
-      q = gridV2.q; errSum = gridV2.errSum;
     } else {
       const trip = tripletBeats(clustered, beats);
       const r = quantize(clustered, beats, trip, true);

@@ -98,6 +98,22 @@ function quarterFrame(row, noisy) {
   return { beats: beats, q0: W[0][0] };
 }
 
+/* The same for a compound metre (6/8, 9/8, 12/8, 3/8): one beat per dotted quarter (the cwindows' true times), every window
+   a dotted quarter long (a pickup of another length leaves the performance out), else null. q0 is in quarters; a beat is
+   1.5 quarters. */
+function compoundFrame(row, noisy) {
+  const W = row.cwindows || [];
+  if (!W.length || W.some(w => Math.abs(w[1] - w[0] - 1.5) > 1e-9)) return null;
+  for (let i = 1; i < W.length; i++) if (Math.abs(W[i][0] - W[i - 1][1]) > 1e-9) return null;
+  const beats = W.map(w => w[2]).concat([W[W.length - 1][3]]);
+  if (noisy) {
+    const r = lcg(fnv(row.id + '|cbeats'));
+    for (let i = 0; i < beats.length; i++) beats[i] += (r() * 2 - 1) * 0.02;
+    for (let i = 1; i < beats.length; i++) if (beats[i] <= beats[i - 1] + 0.05) beats[i] = beats[i - 1] + 0.05;
+  }
+  return { beats: beats, q0: W[0][0], unit: 1.5, compound: true };
+}
+
 /* the heard notes as the SUT sees them before its quantiser: audio-score.js clean() rules, then clusterNotes */
 function clustered(row) {
   const notes = row.notes.map((n, i) => ({ on: Math.max(0, n[0]), off: Math.max(n[0] + 0.03, n[1]), midi: n[2], vel: n[3], _i: i }))
@@ -165,7 +181,24 @@ const LEGACY = (function () {
     q.forEach(n => { const key = n.attack.toFixed(4); if (byAtt[key] == null) byAtt[key] = n.tick; else n.tick = byAtt[key]; });
     return q.map(n => ({ tick: n.tick, kind: n.trip ? '3' : (n.sub === 8 ? '32' : '16') }));
   }
-  return { ticks: ticks };
+  /* audio-score.js quantizeCompound (verbatim, the onset part): 36 ticks a dotted-quarter beat, 16ths or 32nds per onset */
+  function compoundTicks(notes, beats) {
+    const q = notes.map(n => {
+      const tOn = n.attack != null ? n.attack : n.on;
+      const pos = A._.beatPosition(beats, tOn);
+      const coarse = Math.round(pos * 6) / 6;
+      const fine = Math.round(pos * 12) / 12;
+      const spb = spbAt(beats, pos);
+      const coarseCost = Math.abs(pos - coarse) * spb;
+      const fineCost = Math.abs(pos - fine) * spb + 0.012;
+      const useFine = fineCost + 1e-6 < coarseCost;
+      return { tick: Math.round((useFine ? fine : coarse) * 36), attack: tOn };
+    });
+    const byAtt = {};
+    q.forEach(n => { const key = n.attack.toFixed(4); if (byAtt[key] == null) byAtt[key] = n.tick; else n.tick = byAtt[key]; });
+    return q.map(n => ({ tick: n.tick }));
+  }
+  return { ticks: ticks, compoundTicks: compoundTicks };
 })();
 
 /* the written grid of each beat from per-note ticks: '3' when a note is written on a third, '32' on an odd 32nd, else straight */
@@ -221,6 +254,54 @@ function score(row, frame, cl, ticks, st) {
     const wq = frame.q0 + ticks[i].tick / 24;
     if (Math.abs(wq - tq) < 1e-6) st.posOk++;
   });
+}
+
+/* a compound performance: per dotted-quarter beat with a heard onset, the written kind ('c16' when an onset is on an odd 16th
+   of the beat, 6 / 18 / 30 ticks of 36, else 'c8') against the true one, and the onset positions */
+function scoreCompound(row, frame, cl, ticks, st) {
+  const W = row.cwindows;
+  const per = new Map();
+  ticks.forEach(t => { const k = Math.floor(t.tick / 36), o = t.tick - k * 36; if (o % 12) per.set(k, 'c16'); else if (!per.has(k)) per.set(k, 'c8'); });
+  const heardBeat = new Set(cl.map(n => Math.floor(A._.beatPosition(frame.beats, n.attack) + 1 / 16)));
+  W.forEach((w, k) => {
+    if (!heardBeat.has(k)) return;
+    const tr = w[4] === 'C8' ? 'c8' : 'c16';
+    const got = per.get(k) || 'c8';
+    st.beats++;
+    if (tr === got) st.kindOk++;
+    addConf(st, w[4], got);
+    if (tr === 'c16' && got === 'c16') st.b32.tp++; else if (got === 'c16') st.b32.fp++; else if (tr === 'c16') st.b32.fn++;
+  });
+  cl.forEach((n, i) => {
+    const tq = row.notes[n._i][4];
+    if (tq === null || tq === undefined) return;
+    st.notes++;
+    const wq = frame.q0 + ticks[i].tick / 36 * 1.5;
+    if (Math.abs(wq - tq) < 1e-6) st.posOk++;
+  });
+}
+function evaluateCompound(rows, label, opts) {
+  const all = { legacy: newStats(), v2: newStats() };
+  let n = 0, skipped = 0;
+  rows.forEach(row => {
+    if (!(row.cwindows && row.cwindows.length)) return;
+    const frame = compoundFrame(row, opts.noisy);
+    if (!frame) { skipped++; return; }
+    const cl = clustered(row);
+    if (cl.length < 4) { skipped++; return; }
+    n++;
+    scoreCompound(row, frame, cl, LEGACY.compoundTicks(cl, frame.beats), all.legacy);
+    const r = G.plan(frame.beats, cl, { model: opts.model, compound: true });
+    scoreCompound(row, frame, cl, r.onsets.map(o => ({ tick: o.tick })), all.v2);
+  });
+  const f = x => x.toFixed(4);
+  ['legacy', 'v2'].forEach(k => {
+    const st = all[k];
+    console.log(`${(label + ' compound ' + k).padEnd(34)} perf ${n} (skipped ${skipped}) beats ${st.beats}  kind ${f(st.kindOk / Math.max(1, st.beats))}  16th-beats P ${f(st.b32.tp / Math.max(1, st.b32.tp + st.b32.fp))} R ${f(st.b32.tp / Math.max(1, st.b32.tp + st.b32.fn))}  onset pos ${f(st.posOk / Math.max(1, st.notes))}`);
+  });
+  if (has('--confusion')) { console.log('legacy', JSON.stringify(all.legacy.conf)); console.log('v2', JSON.stringify(all.v2.conf)); }
+  all.performances = n;
+  return all;
 }
 
 function report(name, st) {
@@ -376,11 +457,49 @@ function fit(rows) {
   const keep = res.slice(0, Math.floor(res.length * 0.98));
   const sigma = Math.sqrt(keep.reduce((s, r) => s + r * r, 0) / keep.length);
   const far = res.filter(r => Math.abs(r) > 4 * sigma).length;
+  /* compound metres: the eighths / 16ths patterns of every dotted-quarter beat and the chain over them (a beat that needs a
+     32nd or a tuplet counts in the chain as a 16th beat, with no pattern) */
+  const cpat = { c8: new Array(8).fill(0), c16: new Array(64).fill(0) };
+  const ccount = { c8: 0, c16: 0 }, csame = { c8: 0, c16: 0 }, cfrom = { c8: 0, c16: 0 };
+  const SIX = [0, 1 / 6, 1 / 3, 0.5, 2 / 3, 5 / 6], THIRDS = [0, 1 / 3, 2 / 3];
+  rows.forEach(row => {
+    const frame = compoundFrame(row, false);
+    if (!frame) return;
+    const W = row.cwindows;
+    const cl = clustered(row);
+    const heardFr = new Map();
+    G._.onsetsOf(cl, SLOT_GAP).forEach(o => {
+      const c = new Map();
+      o.notes.forEach(i => { const t = row.notes[cl[i]._i][4]; if (t !== null && t !== undefined) c.set(t, (c.get(t) || 0) + 1); });
+      if (!c.size) return;
+      const tq = Array.from(c.entries()).sort((a, b) => b[1] - a[1] || a[0] - b[0])[0][0];
+      const wi = Math.floor((tq - frame.q0) / 1.5 + 1e-9);
+      if (wi < 0 || wi >= W.length) return;
+      if (!heardFr.has(wi)) heardFr.set(wi, []);
+      heardFr.get(wi).push((tq - W[wi][0]) / 1.5);
+    });
+    let prev = null;
+    W.forEach((w, wi) => {
+      if (!w[6]) return;
+      const k = w[4] === 'C8' ? 'c8' : 'c16';
+      const fr = heardFr.get(wi) || [];
+      if ((w[4] === 'C8' || w[4] === 'C16') && fr.length) cpat[k][maskOf(fr, k === 'c8' ? THIRDS : SIX)]++;
+      ccount[k]++;
+      if (prev !== null) { cfrom[prev]++; if (prev === k) csame[prev]++; }
+      prev = k;
+    });
+  });
   const total = kinds.reduce((s, k) => s + count[k], 0);
   const prior = {}, stay = {};
   const table = c => { const N = c.reduce((a, b) => a + b, 0); return c.map(x => round6((x + 1) / (N + c.length))); };
   const patterns = { '16': table(pat['16']), '3': table(pat['3']), 'swing8': table(pat['swing8']), '32even': table(pat['32even']),
-    '32odd': odd.map(c => round6((c + 1) / (n32 + 2))) };
+    '32odd': odd.map(c => round6((c + 1) / (n32 + 2))), c8: table(cpat.c8), c16: table(cpat.c16) };
+  const ctotal = ccount.c8 + ccount.c16;
+  ['c8', 'c16'].forEach(k => {
+    prior[k] = round6((ccount[k] + 1) / (ctotal + 2));
+    const pSame = (csame[k] + 1) / (cfrom[k] + 2);
+    stay[k] = round6(Math.max(0, Math.min(0.999, (pSame - prior[k]) / (1 - prior[k]))));
+  });
   kinds.forEach(k => {
     prior[k] = round6((count[k] + 1) / (total + kinds.length));
   });
@@ -463,8 +582,11 @@ function main() {
       what: 'the grid stage alone: the true beat times given (and moved by up to +-20 ms), legacy quantiser vs the model, pooled counts',
       sets: {} };
     ['holdout', 'robust', 'open'].forEach(name => {
+      const comp = st => ({ beats: st.beats, kind: round6(st.kindOk / Math.max(1, st.beats)), b16: pr(st.b32), onsetPos: round6(st.posOk / Math.max(1, st.notes)), notes: st.notes });
+      const c0 = evaluateCompound(data[name], name, opts), c1 = evaluateCompound(data[name], name, Object.assign({}, opts, { noisy: true }));
       out.sets[name] = { data: DATA[name].join(' '), beats: evalSummary(evaluate(data[name], name, opts)),
-        noisyBeats: evalSummary(evaluate(data[name], name, Object.assign({}, opts, { noisy: true }))) };
+        noisyBeats: evalSummary(evaluate(data[name], name, Object.assign({}, opts, { noisy: true }))),
+        compound: { performances: c0.performances, beats: { legacy: comp(c0.legacy), model: comp(c0.v2) }, noisyBeats: { legacy: comp(c1.legacy), model: comp(c1.v2) } } };
     });
     const etext = JSON.stringify(out, null, 1) + '\n';
     if (check) {
@@ -476,7 +598,7 @@ function main() {
   }
   if (has('--train-eval')) evaluate(data.train, 'train', opts);
   if (has('--fallback')) opts.model = G.FALLBACK;
-  evals.forEach(p => evaluate(load(p), 'eval ' + path.basename(p), opts));
+  evals.forEach(p => { const rows = load(p); evaluate(rows, 'eval ' + path.basename(p), opts); evaluateCompound(rows, path.basename(p), opts); });
   if (!given && !arg('--train')) fs.rmSync(dir, { recursive: true, force: true });
   process.exit(bad ? 1 : 0);
 }

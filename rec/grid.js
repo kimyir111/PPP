@@ -64,6 +64,9 @@
   const VERSION = '0.1.0';
   const SCHEMA = 'ppp.rec-grid-model/1';
   const KINDS = ['16', '32', '3', 'swing8'];
+  /* a compound metre's beat is a dotted quarter: its eighths (thirds) or its 16ths (sixths; a duplet's half is one of them) */
+  const CKINDS = ['c8', 'c16'];
+  const SIXTHS = [0, 1 / 6, 1 / 3, 0.5, 2 / 3, 5 / 6];
   const LN_SQRT_2PI = 0.9189385332046727;
   const WINDOW_EARLY = 1 / 16;      /* an onset this close before a beat (in beats) is that beat's onset */
   const SWING_POINTS = [0.6, 0.625, 0.65, 0.675, 0.7];
@@ -74,7 +77,8 @@
     switch (kind) {
       case '16': return { pts: [0, 0.25, 0.5, 0.75], written: [0, 0.25, 0.5, 0.75] };
       case '32': return { pts: [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875], written: [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875] };
-      case '3': return { pts: [0, 1 / 3, 2 / 3], written: [0, 1 / 3, 2 / 3] };
+      case '3': case 'c8': return { pts: [0, 1 / 3, 2 / 3], written: [0, 1 / 3, 2 / 3] };
+      case 'c16': return { pts: SIXTHS, written: SIXTHS };
       case 'swing8': {
         const s = swing || 0.65;
         return { pts: [0, s / 2, s, s + (1 - s) / 2], written: [0, 0.25, 0.5, 0.75] };
@@ -96,10 +100,12 @@
       '3': [0.01, 0.04, 0.01, 0.04, 0.01, 0.20, 0.04, 0.65],
       'swing8': [0.02, 0.05, 0.02, 0.02, 0.02, 0.60, 0.02, 0.02, 0.02, 0.05, 0.02, 0.02, 0.02, 0.02, 0.02, 0.06],
       '32even': [0.01, 0.30, 0.01, 0.01, 0.01, 0.25, 0.01, 0.01, 0.01, 0.05, 0.01, 0.01, 0.01, 0.04, 0.01, 0.25],
-      '32odd': [0.5, 0.5, 0.5, 0.5]
+      '32odd': [0.5, 0.5, 0.5, 0.5],
+      'c8': [0.01, 0.3, 0.01, 0.1, 0.01, 0.2, 0.02, 0.35],
+      'c16': (function () { const t = []; for (let m = 0; m < 64; m++) t.push(m === 63 ? 0.2 : m === 1 ? 0.1 : 0.7 / 62); return t; })()
     },
-    prior: { '16': 0.955, '32': 0.015, '3': 0.025, 'swing8': 0.005 },
-    stay: { '16': 0.98, '32': 0.85, '3': 0.85, 'swing8': 0.9 },
+    prior: { '16': 0.955, '32': 0.015, '3': 0.025, 'swing8': 0.005, 'c8': 0.85, 'c16': 0.15 },
+    stay: { '16': 0.98, '32': 0.85, '3': 0.85, 'swing8': 0.9, 'c8': 0.9, 'c16': 0.8 },
     minSpacing32: 0.055
   };
 
@@ -204,6 +210,7 @@
     odd.forEach(r => { none *= 1 - r; });
     const out = {
       '16': lg(P['16']), '3': lg(P['3']), 'swing8': lg(P['swing8']), '32even': lg(P['32even']),
+      'c8': P.c8 ? lg(P.c8) : null, 'c16': P.c16 ? lg(P.c16) : null,
       oddUse: odd.map(r => logp(r)), oddSkip: odd.map(r => logp(1 - r)), oddNorm: -Math.log(Math.max(1e-12, 1 - none)),
       early: logp(model.early), notEarly: logp(1 - model.early), out: Math.log(model.outlier), split: Math.log(model.split)
     };
@@ -348,8 +355,11 @@
   function plan(beats, notes, opts) {
     opts = opts || {};
     const model = modelOf(opts);
-    const TPB = opts.ticksPerBeat || 24;
-    const kinds = (opts.kinds || model.kinds || KINDS).filter(k => KINDS.indexOf(k) >= 0);
+    const compound = !!opts.compound;
+    const TPB = opts.ticksPerBeat || (compound ? 36 : 24);
+    const kinds = compound ? (opts.kinds || CKINDS).filter(k => CKINDS.indexOf(k) >= 0 && model.patterns[k])
+      : (opts.kinds || model.kinds || KINDS).filter(k => KINDS.indexOf(k) >= 0);
+    if (!kinds.length) throw new Error('rec/grid: the model has no grid kind for ' + (compound ? 'a compound' : 'a simple') + ' metre');
     if (!beats || beats.length < 2) throw new Error('rec/grid: needs at least two beats');
     const onsets = onsetsOf(notes || [], model.slotGap);
     const per = beatsOf(onsets, beats);
@@ -447,6 +457,7 @@
     return k + best;
   }
   function legacyQ(notes, beats, opts) {
+    if (opts && opts.compound) return legacyQCompound(notes, beats, opts);
     opts = Object.assign({}, opts || {}, { ticksPerBeat: 24 });
     const Q = 24;
     const r = plan(beats, notes, opts);
@@ -470,6 +481,26 @@
         midi: n.midi, vel: n.vel, on: n.on, off: n.off, attack: tOn,
         tick: o.tick, endTick: endTick, err: o.err, tuplet: trip, subdivision: sub, lenTicks: Math.max(1, endTick - o.tick),
         dTick: beatPosition(beats, n.on) * Q - o.tick                   /* heard minus written, in ticks (writable() reads it) */
+      };
+    });
+    return { q: q, errSum: errSum, plan: r.beats, report: r.report };
+  }
+  /* a compound metre (beats are dotted quarters, 36 ticks): q notes as audio-score.js quantizeCompound returns them, the
+     onsets placed by plan() on the eighths or the 16ths of each beat, the release as quantizeCompound snaps it */
+  function legacyQCompound(notes, beats, opts) {
+    opts = Object.assign({}, opts, { ticksPerBeat: 36, compound: true });
+    const T = 36;
+    const r = plan(beats, notes, opts);
+    let errSum = 0;
+    const q = notes.map((n, i) => {
+      const o = r.onsets[i];
+      const tOn = n.attack != null ? n.attack : n.on;
+      const endTick = Math.max(o.tick + 6, Math.round(snapEnd(beatPosition(beats, n.off), 4) * T));
+      errSum += o.err;
+      return {
+        midi: n.midi, vel: n.vel, on: n.on, off: n.off, attack: tOn,
+        tick: o.tick, endTick: endTick, err: o.err, subdivision: 6, tuplet: false, lenTicks: endTick - o.tick,
+        dTick: beatPosition(beats, n.on) * T - o.tick
       };
     });
     return { q: q, errSum: errSum, plan: r.beats, report: r.report };
@@ -509,7 +540,7 @@
   }
 
   return {
-    VERSION: VERSION, SCHEMA: SCHEMA, KINDS: KINDS, FALLBACK: FALLBACK,
+    VERSION: VERSION, SCHEMA: SCHEMA, KINDS: KINDS, CKINDS: CKINDS, FALLBACK: FALLBACK,
     plan: plan, legacyQ: legacyQ, writable: writable, setModel: setModel,
     _: { gridOf: gridOf, matchPattern: matchPattern, beatPosition: beatPosition, onsetsOf: onsetsOf, beatsOf: beatsOf,
       beatLikelihoods: beatLikelihoods, smooth: smooth, modelOf: modelOf, WINDOW_EARLY: WINDOW_EARLY, SWING_POINTS: SWING_POINTS }
