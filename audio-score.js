@@ -27,6 +27,9 @@
   const FPS = 100;            /* onset envelope frames per second */
   const Q = 24;               /* ticks per quarter: 16ths (6), 32nds (3), triplet 8ths (8) */
   const SUB = 4;              /* ordinary 16ths per quarter */
+  /* DURATIONS FROM ONSETS (docs/GOALS/G09 section 12): in a recording with opts.exactBars a note lasts until the next onset of its voice, and a rest is written only for a silence of at least REST_MIN
+     (a fraction of a whole note: 1/8, an eighth) between its heard release and that onset. opts.restMin changes it, opts.onsetDurations: false writes the heard releases as before. */
+  const REST_MIN = 1 / 8;
   const MIN_BPM = 40, MAX_BPM = 200;
   const CLUSTER_S = 0.05;     /* rolled-chord window, seconds */
 
@@ -987,7 +990,7 @@
      otherwise goes to the nearer point, two notes of a hand that meet there being one chord (a pitch the chord already holds is not given up: that onset stays). Every note keeps its order, none is
      lost, and a note of a plain length is never shorter than a 16th (a third in a triplet beat) in the score unless it was: the release is the nearest plain value on the grid, as readableEnd
      chose it, and a silence is the standard tiling (scoregraph/gaps.js tile), never a piece shorter than a 16th, so the gaps pass has nothing to close or omit. */
-  const exactGrid = (q, bars, bar) => {
+  const exactGrid = (q, bars, bar, restMin) => {
     const trip = new Set(), fast = new Set();
     q.forEach(n => {
       const j = Math.floor(n.tick / Q), o = n.tick - j * Q;
@@ -1006,7 +1009,7 @@
       }
       return null;
     };
-    return { trip: trip, fast: fast, valid: valid, nearest: nearest, bars: bars, bar: bar, last: bars * bar };
+    return { trip: trip, fast: fast, valid: valid, nearest: nearest, bars: bars, bar: bar, last: bars * bar, restMin: restMin || 0 };
   };
 
   /* every onset on the grid. Returns {moved, maxShift, onsets}: how many distinct onsets moved and the largest move (ticks). `beats`, `origin` and `perBeat` give each note's measured position in ticks. */
@@ -1168,6 +1171,11 @@
           if (!grid.trip.has(j) && (end - j * Q) % 6 === 3 && grid.valid(end + 3)) end += 3;
           if (next !== Infinity && end < next && next - end < 6) end = next;
         }
+        /* DURATIONS FROM ONSETS (docs/GOALS/G09 section 12, "Recording durations from onsets"): the onsets are what the model heard well, the releases are not (a pedal, a room, a weak key-up). A note lasts until
+           the next onset of its voice (legato, the inter-onset interval, on the grid the onsets are on) unless the silence between its release and that onset is long enough to be a rest on purpose: at
+           least grid.restMin (REST_MIN, an eighth). A shorter silence is measurement noise and is not written, so no 16th, 32nd or triplet-third rest is ever drawn between two notes of a hand. The note
+           may cross a barline then (a tie: the same notation as a note held into the next bar); with no note after it (the end of the hand's last bar with a note) the release stays as heard. */
+        if (grid.restMin > 0 && next !== Infinity && end < next && next - end < grid.restMin) end = next;
         events.push({ start: t, end: end, notes: ns, tuplet: ns.some(n => n.tuplet) });
         return;
       }
@@ -1577,7 +1585,7 @@
     let grid = null, gridReport = null;
     if (opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4 && ticksPerBeat === Q && tupletLib() && tupletLib().addTriplets) {
       gridReport = snapOnsets(q, bars, bar, beats, origin, ticksPerBeat);
-      grid = exactGrid(q, bars, bar);
+      grid = exactGrid(q, bars, bar, opts.onsetDurations === false ? 0 : Math.round((opts.restMin !== undefined ? +opts.restMin : REST_MIN) * 4 * Q));
     }
     const events1 = staffEvents(q, 1, bar, notationBeat, allowBarTies, grid);
     const events2 = staffEvents(q, 2, bar, notationBeat, allowBarTies, grid);
@@ -2066,7 +2074,7 @@
     arrangementProfile: arrangementProfile,
     recommendArrangement: recommendArrangement,
     normaliseArrangement: normaliseArrangement,
-    _: { estimateKey, spellingTable, spell, pieces, notePieces, snap: snap16, beatPosition, stabilizeBeats, meterAndPhase, centreSplit, clusterNotes, simplifyNotes, arrangeNotes, arrangementProfile, recommendArrangement, normaliseArrangement, SUB, Q }
+    _: { estimateKey, spellingTable, spell, pieces, notePieces, snap: snap16, beatPosition, stabilizeBeats, meterAndPhase, centreSplit, clusterNotes, simplifyNotes, arrangeNotes, arrangementProfile, recommendArrangement, normaliseArrangement, SUB, Q, REST_MIN }
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (global) global.PPPAudioScore = api;
