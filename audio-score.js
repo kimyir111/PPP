@@ -1606,8 +1606,9 @@
     /* exact bars (see exactGrid): a recording in a simple-time bar with opts.exactBars; the library default and a MIDI file write the score as they always did */
     let grid = null, gridReport = null;
     if (opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4 && ticksPerBeat === Q && tupletLib() && tupletLib().addTriplets) {
-      /* with rec/grid.js the onsets are already on one grid per beat: snapOnsets' work is done */
-      gridReport = gridV2 ? { v2: gridV2.report } : snapOnsets(q, bars, bar, beats, origin, ticksPerBeat);
+      /* with rec/grid.js the onsets are already on one grid per beat: snapOnsets' work is done but for its "genuine run" rule (a staff silent before
+         an odd-32nd onset cannot be written: no rest shorter than a 16th), applied now that the hands are known */
+      gridReport = gridV2 ? Object.assign({ v2: gridV2.report }, gridLib().writable(q)) : snapOnsets(q, bars, bar, beats, origin, ticksPerBeat);
       grid = exactGrid(q, bars, bar, opts.onsetDurations === false ? 0 : Math.round((opts.restMin !== undefined ? +opts.restMin : REST_MIN) * 4 * Q));
     }
     const events1 = staffEvents(q, 1, bar, notationBeat, allowBarTies, grid);

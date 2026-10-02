@@ -1,42 +1,53 @@
 #!/usr/bin/env node
 /* G10a-2 S3 (docs/GOALS/G10 section 8, AI-5b): train the per-beat grid model of rec/grid.js, and measure it against
-   the legacy quantiser on the stage alone (the true beat times given, so the time skeleton cannot hide or cause an
+   the legacy quantiser on the stage alone (the true beat times given, so the time skeleton can neither hide nor cause an
    error).
 
-     node tests/bench/tools/train_grid.js --train T.jsonl [--eval E.jsonl ...] [--noisy] [--write] [--check]
+     node tests/bench/tools/train_grid.js --write       regenerate the training data, fit, write rec/weights/ai5b-grid-v1.json
+     node tests/bench/tools/train_grid.js --check       regenerate and fit; exit 1 unless the committed weights are exactly that
+     node tests/bench/tools/train_grid.js --evaluate [--write|--check]
+                                                         also the stage-level evaluation (rec/tools/ai5b-grid-v1.evaluation.json):
+                                                         legacy vs the model on the hold-out references, the robustness family
+                                                         and the training references' other seeds, true and +-20 ms beats
+     node tests/bench/tools/train_grid.js --data DIR    reuse DIR's data files (development; --check always regenerates)
+     node tests/bench/tools/train_grid.js --eval E.jsonl [--noisy] [--by-tempo] [--confusion] [--legacy-only]
+                                                         development: print the evaluation of the fitted model on E.jsonl
 
-   T.jsonl / E.jsonl: tests/bench/tools/grid_data.py output (humanized performances of the catalogue with the true grid
-   of every beat). The training set is the NON-hold-out references only (grid_data.py --refs train refuses a hold-out
-   one); the hold-out references (--refs holdout) are for --eval only. No external data, no audio, no note-level data
-   committed: the weights file holds counts turned into probabilities.
-
-     --write   write rec/grid-model.json (what the stage ships) and print the evaluation
-     --check   exit 1 unless the committed rec/grid-model.json is exactly what this computes from T.jsonl
-     --noisy   evaluate with every beat time moved by up to +-20 ms (the oracle-noisy beats' jitter; deterministic)
-     --legacy-only   only the legacy quantiser's numbers
+   The data: tests/bench/tools/grid_data.py (Python, the benchmark's own performer and humanizer, LCG-deterministic):
+   humanized performances of the licence-clean catalogue with the true grid of every beat. TRAINING = every lint-clean
+   NON-hold-out reference (grid_data.py --refs train refuses a hold-out one) x cover, cover-pedal, human-real, swing,
+   cover+of x seeds 101 and 102 (seeds no suite uses, as G10a-1's AI-5a). cover-alt (the robustness family) is never
+   trained on. No external data, no audio, no user material, no note-level data committed: the weights file holds counts
+   turned into probabilities (a few hundred numbers).
 
    ---- What is learned (all by counting; deterministic, no iteration, no random start) ----
-   occupancy  per grid kind and grid point: the share of beats of that kind whose written truth has an onset there
-              (Laplace-smoothed). Kind of a true beat: S16 -> '16', S32 -> '32', T3 and T6 -> '3' (the writer has no
-              sextuplet: a triplet-16th beat is best written on the thirds), a straight beat the swing family played
-              long-short -> 'swing8'.
-   prior      the kinds' shares among beats that hold an onset; stay: the chance that the next beat with an onset
-              keeps the kind, as the chain of rec/grid.js models it (stay + (1 - stay) * prior).
-   sigmaSec   the timing noise: the root mean square of heard onset minus true time (seconds; the largest 2 % trimmed),
-              over every family; rec/grid.js adapts it to each piece from its own residuals.
+   patterns   per grid kind, P(the set of its grid points that hold a heard onset): '16' and 'swing8' over the four 16th
+              points (16 patterns), '3' over the thirds (8), '32' as the 16th-point pattern (16) times independent
+              occupancies of the four odd 32nds, at least one of them. Counted on the HEARD onsets of the true beats (a
+              written onset the transcription lost or merged is not heard), Laplace-smoothed. Kind of a true beat: S16 -> '16',
+              S32 -> '32', T3 -> '3', a straight beat the swing family played long-short -> 'swing8'; a T6 beat (triplet
+              16ths, which the writer cannot write) is '3' for the chain but has no pattern.
+   prior      the kinds' shares among beats that hold an onset; stay: the chance that the next beat with an onset keeps the
+              kind, as the chain of rec/grid.js models it (stay + (1 - stay) * prior).
+   sigmaSec   the timing noise: the root mean square of heard onset minus true time (seconds; the largest 2 % trimmed);
+              rec/grid.js adapts it to each piece from its own residuals.
    outlier    the share of heard onsets no written note explains (an AMT ghost) or more than 4 sigma off.
    early      the share of beats whose next beat's first onset was heard inside this beat (before the window edge).
+   split      of the onsets at most JOIN_GAP after the one before, the share that sound the same written onset (a chord
+              heard a frame apart): the cost of joining them.
+   chordSigmaSec  the spread of such a chord: the root mean square offset of its onsets from their mean (seconds), times
+              sqrt(2) (an offset from a mean of two is half the gap's spread).
    minSpacing32  the shortest 32nd (seconds) of any true 32nd beat, times 0.9: below it a 32nd is no hypothesis.
 
    ---- The legacy quantiser, for comparison only ----
-   legacyBeats() is a verbatim copy of audio-score.js tripletBeats / snapStraight / snapStraightBest / snapTriplet /
-   the onset part of quantize (audio-score.js is not modified and does not export them). A beat is '3' when
-   tripletBeats flags it, '32' when one of its onsets took the 32nd lattice, else '16'.
+   LEGACY below is a verbatim copy of audio-score.js tripletBeats / snapStraight / snapStraightBest / snapTriplet / the onset
+   part of quantize (audio-score.js does not export them). A beat is '3' when tripletBeats flags it, '32' when one of its
+   onsets took the 32nd lattice, else '16'.
 
    ---- Measures (per beat that holds a heard onset; and per heard note) ----
-   kind accuracy (a straight beat written straight counts as right whether '16' or 'swing8': both write a 16th grid),
-   triplet-beat precision / recall (a beat with an onset WRITTEN on a third vs a true T3/T6 beat), 32nd P/R, and the
-   onset position accuracy: the written onset (beat + fraction) equals the true written onset. Pooled counts. */
+   kind accuracy, triplet-beat precision / recall (a beat with an onset WRITTEN on a third vs a true T3/T6 beat), 32nd P/R,
+   the onset position accuracy (the written onset, beat + fraction, equals the true written onset) and, on the swing
+   family, the share of swung straight beats written straight. Pooled counts. */
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -44,7 +55,18 @@ const path = require('path');
 const REPO = path.resolve(__dirname, '..', '..', '..');
 const A = require(path.join(REPO, 'audio-score.js'));
 const G = require(path.join(REPO, 'rec', 'grid.js'));
-const MODEL_PATH = path.join(REPO, 'rec', 'grid-model.json');
+const MODEL_PATH = path.join(REPO, 'rec', 'weights', 'ai5b-grid-v1.json');
+const EVAL_PATH = path.join(REPO, 'rec', 'tools', 'ai5b-grid-v1.evaluation.json');
+const DATASET = path.join(REPO, 'tests', 'bench', 'tools', 'grid_data.py');
+const { spawnSync } = require('child_process');
+const os = require('os');
+/* the data files: [name, grid_data.py arguments] */
+const DATA = {
+  train: ['--refs', 'train', '--profiles', 'cover,cover-pedal,human-real,swing,cover+of', '--beats', 'oracle', '--seeds', '101,102'],
+  holdout: ['--refs', 'holdout', '--profiles', 'cover,cover-pedal,human-real,swing,cover+of,cover-alt', '--beats', 'oracle', '--seeds', '11,12'],
+  robust: ['--refs', 'train', '--profiles', 'cover-alt', '--beats', 'oracle', '--seeds', '103'],
+  open: ['--refs', 'train', '--profiles', 'cover,human-real,swing,cover+of', '--beats', 'oracle', '--seeds', '104']
+};
 const MODEL_VERSION = '1.0.0';
 const SLOT_GAP = 0.004;            /* seconds: notes closer than this are one onset (one frame of a transcription) */
 const JOIN_GAP = 0.04;             /* seconds: an onset this close after the one before may be the same written onset (a chord heard a frame apart) */
@@ -234,6 +256,7 @@ function evaluate(rows, label, opts) {
   });
   report('ALL legacy', all.legacy);
   if (!opts.legacyOnly) report('ALL v2', all.v2);
+  all.byProfile = byProfile; all.performances = rows.length - skipped;
   if (has('--by-tempo')) ['legacy', 'v2'].forEach(s => Object.keys(all[s].byTempo || {}).sort().forEach(b => { const x = all[s].byTempo[b]; x.notes = 1; report(s + ' ' + b, x); }));
   if (has('--confusion')) { console.log('legacy', JSON.stringify(all.legacy.conf)); if (!opts.legacyOnly) console.log('v2', JSON.stringify(all.v2.conf)); }
   return all;
@@ -326,22 +349,28 @@ function fit(rows) {
   /* split: of the onsets rec/grid.js makes that are at most JOIN_GAP after the onset before them, the share that sounds the
      same written onset as that onset (a chord heard a frame apart) */
   let splitSame = 0, splitAll = 0;
+  const chordDev = [];                          /* offsets (s) of the onsets of one written onset from their mean, chained within JOIN_GAP */
   rows.forEach(row => {
     const frame = quarterFrame(row, false);
     if (!frame) return;
     const cl = clustered(row);
     const ons = G._.onsetsOf(cl, SLOT_GAP);
-    let prevTq = null, prevT = -Infinity;
+    let prevTq = null, prevT = -Infinity, group = [];
+    const flushGroup = () => { if (group.length > 1) { const m = group.reduce((a, b) => a + b, 0) / group.length; group.forEach(t => chordDev.push(t - m)); } group = []; };
     ons.forEach(o => {
       const c = new Map();
       o.notes.forEach(i => { const t = row.notes[cl[i]._i][4]; if (t !== null && t !== undefined) c.set(t, (c.get(t) || 0) + 1); });
       const tq = c.size ? Array.from(c.entries()).sort((a, b) => b[1] - a[1] || a[0] - b[0])[0][0] : null;
+      const same = tq !== null && prevTq !== null && Math.abs(tq - prevTq) < 1e-9;
       if (o.t - prevT <= JOIN_GAP) {
         splitAll++;
-        if (tq !== null && prevTq !== null && Math.abs(tq - prevTq) < 1e-9) splitSame++;
+        if (same) splitSame++;
       }
+      if (!(same && o.t - prevT <= JOIN_GAP)) flushGroup();
+      group.push(o.t);
       prevTq = tq; prevT = o.t;
     });
+    flushGroup();
   });
   res.sort((a, b) => Math.abs(a) - Math.abs(b));
   const keep = res.slice(0, Math.floor(res.length * 0.98));
@@ -360,7 +389,7 @@ function fit(rows) {
     stay[k] = round6(Math.max(0, Math.min(0.999, (pSame - prior[k]) / (1 - prior[k]))));
   });
   return {
-    schema: G.SCHEMA, version: MODEL_VERSION,
+    schema: G.SCHEMA, name: 'ai5b-grid', version: MODEL_VERSION,
     trainedOn: { tool: 'tests/bench/tools/train_grid.js', rows: rows.length, beatsWithOnsets: total, refs: new Set(rows.map(r => r.ref)).size,
       profiles: Array.from(new Set(rows.map(r => r.profile))).sort(), holdout: rows.filter(r => r.holdout).length },
     kinds: kinds.slice(),
@@ -368,33 +397,88 @@ function fit(rows) {
     outlier: round6((unexplained + far + 1) / (heard + 2)),
     early: round6((early + 1) / (windows + 2)),
     split: round6((splitSame + 1) / (splitAll + 2)), slotGap: SLOT_GAP, joinGap: JOIN_GAP,
+    chordSigmaSec: round6(Math.sqrt(chordDev.reduce((a, d) => a + d * d, 0) / Math.max(1, chordDev.length)) * Math.sqrt(2)),
     patterns: patterns, prior: prior, stay: stay,
     minSpacing32: round6(Number.isFinite(min32) ? min32 * 0.9 : G.FALLBACK.minSpacing32)
   };
 }
 
+function python() {
+  const given = arg('--python') || process.env.PPP_PYTHON;
+  const cands = given ? [given] : ['python3', 'python'];
+  for (const c of cands) { const r = spawnSync(c, ['--version'], { encoding: 'utf8' }); if (r.status === 0) return c; }
+  throw new Error('no Python found for ' + DATASET + ' (give --python)');
+}
+/* the data files in `dir`, regenerated unless `reuse` and present */
+function dataset(dir, names, reuse) {
+  const py = reuse ? null : python();
+  const out = {};
+  names.forEach(name => {
+    const f = path.join(dir, 'grid-' + name + '.jsonl');
+    if (!(reuse && fs.existsSync(f))) {
+      const r = spawnSync(py || python(), [DATASET].concat(DATA[name], ['--out', f]), { cwd: REPO, encoding: 'utf8',
+        env: Object.assign({}, process.env, { PYTHONIOENCODING: 'utf-8' }), maxBuffer: 1 << 26 });
+      if (r.status !== 0) throw new Error('grid_data.py failed: ' + (r.stderr || '').slice(-1500));
+    }
+    out[name] = load(f);
+  });
+  return out;
+}
+const pr = c => ({ P: c.tp + c.fp ? round6(c.tp / (c.tp + c.fp)) : 1, R: c.tp + c.fn ? round6(c.tp / (c.tp + c.fn)) : null, tp: c.tp, fp: c.fp, fn: c.fn });
+function summary(st) {
+  return { beats: st.beats, kind: round6(st.kindOk / Math.max(1, st.beats)), triplet: pr(st.trip), b32: pr(st.b32),
+    onsetPos: round6(st.posOk / Math.max(1, st.notes)), notes: st.notes, swingStraight: st.sw.n ? round6(st.sw.straight / st.sw.n) : null, swingBeats: st.sw.n };
+}
+function evalSummary(all) {
+  const by = {};
+  Array.from(all.byProfile.keys()).sort().forEach(p => { by[p] = { legacy: summary(all.byProfile.get(p).legacy), model: summary(all.byProfile.get(p).v2) }; });
+  return { performances: all.performances, all: { legacy: summary(all.legacy), model: summary(all.v2) }, byProfile: by };
+}
+
 function main() {
-  const trainPath = arg('--train');
   const evals = args('--eval');
   const opts = { noisy: has('--noisy'), legacyOnly: has('--legacy-only') };
-  let model = null;
-  if (trainPath) {
-    const rows = load(trainPath);
-    if (rows.some(r => r.holdout)) { console.error('the training set holds a hold-out reference'); process.exit(2); }
-    model = fit(rows);
-    if (has('--check')) {
-      const have = JSON.parse(fs.readFileSync(MODEL_PATH, 'utf8'));
-      const same = JSON.stringify(have) === JSON.stringify(model);
-      console.log(same ? 'rec/grid-model.json: same' : 'rec/grid-model.json: DIFFERS from what the training data gives');
-      process.exit(same ? 0 : 1);
-    }
-    if (has('--write')) { fs.writeFileSync(MODEL_PATH, JSON.stringify(model, null, 1) + '\n'); console.log('wrote ' + path.relative(REPO, MODEL_PATH)); }
-    if (has('--print')) console.log(JSON.stringify(model, null, 1));
-    opts.model = model;
-    if (!has('--no-train-eval')) evaluate(rows, 'train ' + path.basename(trainPath), opts);
+  const check = has('--check'), write = has('--write'), doEval = has('--evaluate');
+  const given = arg('--data') || arg('--train-dir');
+  const dir = given || fs.mkdtempSync(path.join(os.tmpdir(), 'ppp-grid-'));
+  if (given) fs.mkdirSync(dir, { recursive: true });
+  const names = ['train'].concat(doEval ? ['holdout', 'robust', 'open'] : []);
+  let data;
+  if (arg('--train')) data = { train: load(arg('--train')) };            /* development: a given training file */
+  else data = dataset(dir, names, !!given && !check);
+  if (data.train.some(r => r.holdout)) { console.error('the training set holds a hold-out reference'); process.exit(2); }
+  const model = fit(data.train);
+  const text = JSON.stringify(model, null, 1) + '\n';
+  let bad = 0;
+  if (check) {
+    const same = fs.existsSync(MODEL_PATH) && fs.readFileSync(MODEL_PATH, 'utf8').replace(/\r\n/g, '\n') === text;
+    console.log((same ? 'same ' : 'DIFFERS ') + path.relative(REPO, MODEL_PATH).split(path.sep).join('/'));
+    bad += !same;
   }
+  if (write) { fs.writeFileSync(MODEL_PATH, text); console.log('wrote ' + path.relative(REPO, MODEL_PATH).split(path.sep).join('/')); }
+  if (has('--print')) console.log(text);
+  opts.model = model;
+  if (doEval) {
+    const out = { schema: 'ppp.rec-grid-evaluation/1', model: model.name + '@' + model.version, tool: 'tests/bench/tools/train_grid.js --evaluate',
+      what: 'the grid stage alone: the true beat times given (and moved by up to +-20 ms), legacy quantiser vs the model, pooled counts',
+      sets: {} };
+    ['holdout', 'robust', 'open'].forEach(name => {
+      out.sets[name] = { data: DATA[name].join(' '), beats: evalSummary(evaluate(data[name], name, opts)),
+        noisyBeats: evalSummary(evaluate(data[name], name, Object.assign({}, opts, { noisy: true }))) };
+    });
+    const etext = JSON.stringify(out, null, 1) + '\n';
+    if (check) {
+      const same = fs.existsSync(EVAL_PATH) && fs.readFileSync(EVAL_PATH, 'utf8').replace(/\r\n/g, '\n') === etext;
+      console.log((same ? 'same ' : 'DIFFERS ') + path.relative(REPO, EVAL_PATH).split(path.sep).join('/'));
+      bad += !same;
+    }
+    if (write) { fs.writeFileSync(EVAL_PATH, etext); console.log('wrote ' + path.relative(REPO, EVAL_PATH).split(path.sep).join('/')); }
+  }
+  if (has('--train-eval')) evaluate(data.train, 'train', opts);
   if (has('--fallback')) opts.model = G.FALLBACK;
   evals.forEach(p => evaluate(load(p), 'eval ' + path.basename(p), opts));
+  if (!given && !arg('--train')) fs.rmSync(dir, { recursive: true, force: true });
+  process.exit(bad ? 1 : 0);
 }
 
 main();

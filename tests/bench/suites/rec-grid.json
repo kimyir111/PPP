@@ -2,7 +2,7 @@
  "align": {
   "window_s": 0.3
  },
- "description": "G10a-2 grid stage (S3, rec/grid.js): the core references x the humanizer's families with the beats given (oracle, oracle-noisy) and as production finds them (none), the swing family included, x stage options app / v2-grid (the app's options with rec/grid.js placing the onsets)",
+ "description": "G10a-2 grid stage (S3, rec/grid.js): the core references x the humanizer's families with the beats given (oracle, oracle-noisy) and as production finds them (none), the swing family included, x stage options v2-s3legacy (v2 with G10a-1's legacy quantiser) / v2 (v2 with rec/grid.js)",
  "gate": {
   "case_fail_drop": 10.0,
   "case_flip_max": 2,
@@ -268,10 +268,12 @@
  "matrix": [
   {
    "beats": "oracle",
-   "opt_name": "app",
+   "opt_name": "v2-s3legacy",
    "opts": {
     "closeGaps": true,
-    "exactBars": true
+    "exactBars": true,
+    "grid": "legacy",
+    "recording": "v2"
    },
    "profile": "cover",
    "seeds": [
@@ -280,11 +282,11 @@
   },
   {
    "beats": "oracle",
-   "opt_name": "v2-grid",
+   "opt_name": "v2",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
-    "grid": "v2"
+    "recording": "v2"
    },
    "profile": "cover",
    "seeds": [
@@ -293,10 +295,12 @@
   },
   {
    "beats": "oracle-noisy",
-   "opt_name": "app",
+   "opt_name": "v2-s3legacy",
    "opts": {
     "closeGaps": true,
-    "exactBars": true
+    "exactBars": true,
+    "grid": "legacy",
+    "recording": "v2"
    },
    "profile": "cover",
    "seeds": [
@@ -305,11 +309,11 @@
   },
   {
    "beats": "oracle-noisy",
-   "opt_name": "v2-grid",
+   "opt_name": "v2",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
-    "grid": "v2"
+    "recording": "v2"
    },
    "profile": "cover",
    "seeds": [
@@ -318,10 +322,12 @@
   },
   {
    "beats": "oracle",
-   "opt_name": "app",
+   "opt_name": "v2-s3legacy",
    "opts": {
     "closeGaps": true,
-    "exactBars": true
+    "exactBars": true,
+    "grid": "legacy",
+    "recording": "v2"
    },
    "profile": "human-real",
    "seeds": [
@@ -330,11 +336,11 @@
   },
   {
    "beats": "oracle",
-   "opt_name": "v2-grid",
+   "opt_name": "v2",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
-    "grid": "v2"
+    "recording": "v2"
    },
    "profile": "human-real",
    "seeds": [
@@ -343,23 +349,12 @@
   },
   {
    "beats": "oracle",
-   "opt_name": "app",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true
-   },
-   "profile": "cover+of",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "oracle",
-   "opt_name": "v2-grid",
+   "opt_name": "v2-s3legacy",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
-    "grid": "v2"
+    "grid": "legacy",
+    "recording": "v2"
    },
    "profile": "cover+of",
    "seeds": [
@@ -368,10 +363,25 @@
   },
   {
    "beats": "oracle",
-   "opt_name": "app",
+   "opt_name": "v2",
    "opts": {
     "closeGaps": true,
-    "exactBars": true
+    "exactBars": true,
+    "recording": "v2"
+   },
+   "profile": "cover+of",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "oracle",
+   "opt_name": "v2-s3legacy",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "grid": "legacy",
+    "recording": "v2"
    },
    "profile": "swing",
    "seeds": [
@@ -380,11 +390,11 @@
   },
   {
    "beats": "oracle",
-   "opt_name": "v2-grid",
+   "opt_name": "v2",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
-    "grid": "v2"
+    "recording": "v2"
    },
    "profile": "swing",
    "seeds": [
@@ -393,10 +403,12 @@
   },
   {
    "beats": "oracle-noisy",
-   "opt_name": "app",
+   "opt_name": "v2-s3legacy",
    "opts": {
     "closeGaps": true,
-    "exactBars": true
+    "exactBars": true,
+    "grid": "legacy",
+    "recording": "v2"
    },
    "profile": "cover-pedal+helper",
    "seeds": [
@@ -405,11 +417,11 @@
   },
   {
    "beats": "oracle-noisy",
-   "opt_name": "v2-grid",
+   "opt_name": "v2",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
-    "grid": "v2"
+    "recording": "v2"
    },
    "profile": "cover-pedal+helper",
    "seeds": [
@@ -418,10 +430,12 @@
   },
   {
    "beats": "none",
-   "opt_name": "app",
+   "opt_name": "v2-s3legacy",
    "opts": {
     "closeGaps": true,
-    "exactBars": true
+    "exactBars": true,
+    "grid": "legacy",
+    "recording": "v2"
    },
    "profile": "cover",
    "seeds": [
@@ -430,11 +444,11 @@
   },
   {
    "beats": "none",
-   "opt_name": "v2-grid",
+   "opt_name": "v2",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
-    "grid": "v2"
+    "recording": "v2"
    },
    "profile": "cover",
    "seeds": [

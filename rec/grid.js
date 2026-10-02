@@ -16,8 +16,8 @@
              the legacy wrap the quarter-note beats audio-score.js decided). Beat k spans [beats[k], beats[k+1]).
      notes   heard notes [{on, attack?}] (attack: the clustered onset of a chord, audio-score.js clusterNotes; a
              note without one is its own attack). Notes with the same attack are one onset.
-     opts    { model        the weights JSON (rec/grid-model.json); default: the committed file in Node, the global
-                            PPPRecGridModel in a page, else the built-in defaults below (the deterministic fallback)
+     opts    { model        the weights JSON (rec/weights/ai5b-grid-v1.json); default: the committed file in Node, the
+                            global PPPRecGridModel in a page, else the built-in defaults below (the deterministic fallback)
                kinds        the grid kinds allowed (default all of KINDS); e.g. ['16','32'] for a lock that says 16ths
                ticksPerBeat ticks of one beat in the output (default 24: a 16th is 6, a 32nd 3, a triplet eighth 8)
                beatsPerBar, downbeat   the metre (S2) when known: a beat index that is a downbeat; used for the
@@ -53,7 +53,7 @@
   'use strict';
   if (typeof module === 'object' && module.exports) {
     let model = null;
-    try { model = require('./grid-model.json'); } catch (e) { model = null; }
+    try { model = require('./weights/ai5b-grid-v1.json'); } catch (e) { model = null; }
     module.exports = factory(model);
   } else {
     root.PPPRecGrid = factory(root.PPPRecGridModel || null);
@@ -86,10 +86,10 @@
   /* The built-in parameters: the deterministic fallback when no weights file is loaded (and the starting point of
      the training script). Hand-set, plausible; the trained file replaces every one. */
   const FALLBACK = {
-    schema: SCHEMA, version: 'fallback',
+    schema: SCHEMA, name: 'fallback', version: '0',
     kinds: KINDS.slice(),
     sigmaSec: 0.028, sigmaPrior: 30, sigmaMin: 0.008, sigmaMax: 0.06,
-    outlier: 0.004, early: 0.03, split: 0.3, slotGap: 0.004, joinGap: 0.04,
+    outlier: 0.004, early: 0.03, split: 0.9, slotGap: 0.004, joinGap: 0.04, chordSigmaSec: 0.015,
     /* occupancy patterns: P(the set of grid points that hold a heard onset | kind), bit k = point k of the kind's grid */
     patterns: {
       '16': [0.01, 0.30, 0.01, 0.01, 0.01, 0.25, 0.01, 0.01, 0.01, 0.05, 0.01, 0.01, 0.01, 0.04, 0.01, 0.25],
@@ -137,9 +137,12 @@
      needOdd: at least one point flagged odd must be used (a 32nd beat has an onset off the 16th grid).
      Returns {ll, at}: the log likelihood and, per onset, the index of its point (-1: an outlier). */
   const MAX_GROUP = 8;
-  function matchPattern(fs, canJoin, points, needOdd, sigmaB, lnOut, lnSplit) {
+  function matchPattern(fs, canJoin, points, needOdd, sigmaB, lnOut, lnSplit, chordB) {
     const n = fs.length, m = points.length;
     const lnNorm = -Math.log(sigmaB) - LN_SQRT_2PI;
+    /* every onset is an observation: an onset that joins a group pays log(split) and the density of its offset from the
+       group's mean (the chord's spread, chordB), so a group is scored like separate onsets would be, density for density */
+    const lnNormC = -Math.log(chordB) - LN_SQRT_2PI, inv2C = 0.5 / (chordB * chordB);
     const size = (n + 1) * (m + 1);
     const D = [new Float64Array(size).fill(-Infinity), new Float64Array(size).fill(-Infinity)];
     const B = [new Int16Array(size), new Int16Array(size)];      /* code: 1 skip, 2 outlier, 10 + L group; + 100 * previous flag */
@@ -159,12 +162,14 @@
             if (s > D[f][x]) { D[f][x] = s; B[f][x] = 2 + 100 * f; }
             if (j < m) {
               const pt = points[j], nf = f || (pt.odd ? 1 : 0);
-              let sum = 0;
+              let sum = 0, sumsq = 0;
               for (let L = 1; L <= MAX_GROUP && i + L <= n; L++) {
                 if (L > 1 && !canJoin[i + L - 1]) break;
-                sum += fs[i + L - 1];
-                const d = (sum / L - pt.pos) / sigmaB;
-                const s2 = cur + pt.lnUse + lnNorm - 0.5 * d * d + (L - 1) * lnSplit, y = at(i + L, j + 1);
+                const fx = fs[i + L - 1];
+                sum += fx; sumsq += fx * fx;
+                const mean = sum / L, spread = Math.max(0, sumsq - L * mean * mean);
+                const d = (mean - pt.pos) / sigmaB;
+                const s2 = cur + pt.lnUse + lnNorm - 0.5 * d * d + (L - 1) * (lnSplit + lnNormC) - spread * inv2C, y = at(i + L, j + 1);
                 if (s2 > D[nf][y]) { D[nf][y] = s2; B[nf][y] = 10 + L + 100 * f; }
               }
             }
@@ -251,6 +256,7 @@
      Returns {kind: {ll, heard: [per onset heard point or null], written: [per onset written fraction or null], swing}}. */
   function beatLikelihoods(fs, kinds, model, sigmaB, beatSec, canJoin) {
     const lg = logsOf(model);
+    const chordB = Math.max(1e-4, (model.chordSigmaSec || 0.015) / beatSec);
     const n = fs.length;
     const out = {};
     const keep = (kind, ll, r, pts, extra) => {
@@ -273,7 +279,7 @@
             else pts.push({ pos: g.pts[k], written: g.written[k], forced: false, lnUse: lg.oddUse[(k - 1) / 2], lnSkip: lg.oddSkip[(k - 1) / 2], odd: true });
           }
           pts.push({ pos: 1, written: 1, forced: false, lnUse: lg.early, lnSkip: lg.notEarly, odd: false });
-          const r = matchPattern(fs, canJoin, pts, true, sigmaB, lg.out, lg.split);
+          const r = matchPattern(fs, canJoin, pts, true, sigmaB, lg.out, lg.split, chordB);
           keep('32', r.ll + lg['32even'][e] + lg.oddNorm, r, pts);
         }
         return;
@@ -285,7 +291,7 @@
         for (let mask = 0; mask < table.length; mask++) {
           if (popcount(mask) > n) continue;
           const pts = patternPoints(g.pts, g.written, mask, lg);
-          const r = matchPattern(fs, canJoin, pts, false, sigmaB, lg.out, lg.split);
+          const r = matchPattern(fs, canJoin, pts, false, sigmaB, lg.out, lg.split, chordB);
           keep(kind, r.ll + table[mask] - (sw === null ? 0 : Math.log(SWING_POINTS.length)), r, pts, sw === null ? null : { swing: sw });
         }
       });
@@ -420,7 +426,7 @@
     return {
       beats: planOut,
       onsets: out,
-      report: { version: VERSION, model: model.version, sigmaSec: sigmaSec, beats: counts, lowConf: lowConf }
+      report: { version: VERSION, model: (model.name || 'grid') + '@' + model.version, sigmaSec: Math.round(sigmaSec * 1e6) / 1e6, beats: counts, lowConf: lowConf }
     };
   }
 
@@ -462,15 +468,49 @@
       errSum += o.err;
       return {
         midi: n.midi, vel: n.vel, on: n.on, off: n.off, attack: tOn,
-        tick: o.tick, endTick: endTick, err: o.err, tuplet: trip, subdivision: sub, lenTicks: Math.max(1, endTick - o.tick)
+        tick: o.tick, endTick: endTick, err: o.err, tuplet: trip, subdivision: sub, lenTicks: Math.max(1, endTick - o.tick),
+        dTick: beatPosition(beats, n.on) * Q - o.tick                   /* heard minus written, in ticks (writable() reads it) */
       };
     });
     return { q: q, errSum: errSum, plan: r.beats, report: r.report };
   }
 
+  /* The legacy exact-bars writer (audio-score.js exactGrid / staffEvents) writes no piece shorter than a 16th for a silence,
+     so a staff that is silent before an onset on an odd 32nd cannot be written (a 32nd rest; notation-check class 5). The
+     grid stage places onsets before the hands are known; once they are (q[].staff), an odd-32nd onset of a staff that
+     played no note a 32nd before it moves to the nearer 16th point of its beat (the measured time decides; a point where
+     the staff already holds the same pitch is not taken). This is audio-score.js snapOnsets' "genuine run" rule and
+     nothing more: an odd-32nd onset that continues a run of its staff stays where the grid stage put it. Ticks: 24 per
+     beat. Mutates q; returns {moved}. */
+  function writable(q) {
+    const Q = 24;
+    const at = new Map();                                   /* staff|tick -> notes */
+    q.forEach(n => { const k = n.staff + '|' + n.tick; if (!at.has(k)) at.set(k, []); at.get(k).push(n); });
+    let moved = 0;
+    const keys = Array.from(at.keys()).map(k => { const [s, t] = k.split('|'); return [+s, +t]; }).sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+    keys.forEach(([s, t]) => {
+      const o = ((t % Q) + Q) % Q;
+      if (o % 6 !== 3 || o % 8 === 0) return;               /* not an odd 32nd (a triplet third is 8 or 16) */
+      if (at.has(s + '|' + (t - 3))) return;                 /* continues a run of its staff */
+      const ns = at.get(s + '|' + t);
+      if (!ns || !ns.length) return;
+      const x = t + ns.reduce((a, n) => a + (n.dTick || 0), 0) / ns.length;      /* where it was heard */
+      const cands = [t - 3, t + 3].sort((a, b) => Math.abs(a - x) - Math.abs(b - x) || a - b);
+      const pitches = new Set(ns.map(n => n.midi));
+      const to = cands.find(c => !(at.get(s + '|' + c) || []).some(n => pitches.has(n.midi)));
+      if (to === undefined) return;
+      ns.forEach(n => { n.tick = to; n.endTick = Math.max(n.endTick, to + 1); n.subdivision = 4; });
+      at.delete(s + '|' + t);
+      if (!at.has(s + '|' + to)) at.set(s + '|' + to, []);
+      at.get(s + '|' + to).push(...ns);
+      moved++;
+    });
+    return { moved: moved };
+  }
+
   return {
     VERSION: VERSION, SCHEMA: SCHEMA, KINDS: KINDS, FALLBACK: FALLBACK,
-    plan: plan, legacyQ: legacyQ, setModel: setModel,
+    plan: plan, legacyQ: legacyQ, writable: writable, setModel: setModel,
     _: { gridOf: gridOf, matchPattern: matchPattern, beatPosition: beatPosition, onsetsOf: onsetsOf, beatsOf: beatsOf,
       beatLikelihoods: beatLikelihoods, smooth: smooth, modelOf: modelOf, WINDOW_EARLY: WINDOW_EARLY, SWING_POINTS: SWING_POINTS }
   };

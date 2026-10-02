@@ -2,7 +2,7 @@
  "align": {
   "window_s": 0.3
  },
- "description": "Nightly/manual: the grid stage on every lint-clean reference, hold-out included (seeds 11, 12), oracle beats (and cover oracle-noisy; cover-alt, the uncalibrated robustness family) x app / v2-grid; the hold-out is reported as an aggregate",
+ "description": "Nightly/manual: the grid stage on every lint-clean reference, hold-out included (seeds 11, 12), oracle beats (and cover oracle-noisy; cover-alt, the uncalibrated robustness family) x v2-s3legacy / v2; the hold-out is reported as an aggregate",
  "gate": {
   "case_fail_drop": 10.0,
   "case_flip_max": 2,
@@ -274,10 +274,12 @@
  "matrix": [
   {
    "beats": "oracle",
-   "opt_name": "app",
+   "opt_name": "v2-s3legacy",
    "opts": {
     "closeGaps": true,
-    "exactBars": true
+    "exactBars": true,
+    "grid": "legacy",
+    "recording": "v2"
    },
    "profile": "cover",
    "seeds": [
@@ -287,24 +289,11 @@
   },
   {
    "beats": "oracle",
-   "opt_name": "v2-grid",
+   "opt_name": "v2",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
-    "grid": "v2"
-   },
-   "profile": "cover",
-   "seeds": [
-    1,
-    2
-   ]
-  },
-  {
-   "beats": "oracle-noisy",
-   "opt_name": "app",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true
+    "recording": "v2"
    },
    "profile": "cover",
    "seeds": [
@@ -314,11 +303,26 @@
   },
   {
    "beats": "oracle-noisy",
-   "opt_name": "v2-grid",
+   "opt_name": "v2-s3legacy",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
-    "grid": "v2"
+    "grid": "legacy",
+    "recording": "v2"
+   },
+   "profile": "cover",
+   "seeds": [
+    1,
+    2
+   ]
+  },
+  {
+   "beats": "oracle-noisy",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
    },
    "profile": "cover",
    "seeds": [
@@ -328,10 +332,12 @@
   },
   {
    "beats": "oracle",
-   "opt_name": "app",
+   "opt_name": "v2-s3legacy",
    "opts": {
     "closeGaps": true,
-    "exactBars": true
+    "exactBars": true,
+    "grid": "legacy",
+    "recording": "v2"
    },
    "profile": "human-real",
    "seeds": [
@@ -341,11 +347,11 @@
   },
   {
    "beats": "oracle",
-   "opt_name": "v2-grid",
+   "opt_name": "v2",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
-    "grid": "v2"
+    "recording": "v2"
    },
    "profile": "human-real",
    "seeds": [
@@ -355,10 +361,12 @@
   },
   {
    "beats": "oracle",
-   "opt_name": "app",
+   "opt_name": "v2-s3legacy",
    "opts": {
     "closeGaps": true,
-    "exactBars": true
+    "exactBars": true,
+    "grid": "legacy",
+    "recording": "v2"
    },
    "profile": "swing",
    "seeds": [
@@ -368,11 +376,11 @@
   },
   {
    "beats": "oracle",
-   "opt_name": "v2-grid",
+   "opt_name": "v2",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
-    "grid": "v2"
+    "recording": "v2"
    },
    "profile": "swing",
    "seeds": [
@@ -382,24 +390,12 @@
   },
   {
    "beats": "oracle",
-   "opt_name": "app",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true
-   },
-   "profile": "cover+of",
-   "seeds": [
-    1,
-    2
-   ]
-  },
-  {
-   "beats": "oracle",
-   "opt_name": "v2-grid",
+   "opt_name": "v2-s3legacy",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
-    "grid": "v2"
+    "grid": "legacy",
+    "recording": "v2"
    },
    "profile": "cover+of",
    "seeds": [
@@ -409,10 +405,26 @@
   },
   {
    "beats": "oracle",
-   "opt_name": "app",
+   "opt_name": "v2",
    "opts": {
     "closeGaps": true,
-    "exactBars": true
+    "exactBars": true,
+    "recording": "v2"
+   },
+   "profile": "cover+of",
+   "seeds": [
+    1,
+    2
+   ]
+  },
+  {
+   "beats": "oracle",
+   "opt_name": "v2-s3legacy",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "grid": "legacy",
+    "recording": "v2"
    },
    "profile": "cover-alt",
    "seeds": [
@@ -422,11 +434,11 @@
   },
   {
    "beats": "oracle",
-   "opt_name": "v2-grid",
+   "opt_name": "v2",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
-    "grid": "v2"
+    "recording": "v2"
    },
    "profile": "cover-alt",
    "seeds": [
