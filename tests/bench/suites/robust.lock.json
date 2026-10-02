@@ -32,63 +32,63 @@
   },
   {
    "id": "hymns/all-hail-the-power|human-alt|none|s1",
-   "input_sha256": "cf3cdeeaf8270cf6e45e67aa3d65450b444d53942bcd61e4663ce971ba02cab4",
-   "reference_sha256": "d9419f6f4505a204f2036f7626cb8b4369c6e6978c95c0c3f38c5936c862f65f"
+   "input_sha256": "115bac29a697ed23cad4fece101bda8b081011d45fca9b31b48e41259f324eb3",
+   "reference_sha256": "5abd674a00eca0cf867d84317f9f5e931512363437bb63dbf37d1abef3760ea8"
   },
   {
    "id": "hymns/all-hail-the-power|human-alt|oracle|s1",
-   "input_sha256": "91057b211df063ddbb16650f0f3cf995d6a1b1bedf46d71cfbef4ac8fe12e227",
-   "reference_sha256": "d9419f6f4505a204f2036f7626cb8b4369c6e6978c95c0c3f38c5936c862f65f"
+   "input_sha256": "2de4c3f6ef61151983d0e23fcdccdd7b7b944f7fc161261ef8ea4d133fd34fb7",
+   "reference_sha256": "5abd674a00eca0cf867d84317f9f5e931512363437bb63dbf37d1abef3760ea8"
   },
   {
    "id": "hymns/angels-we-have-heard|human-alt|none|s1",
-   "input_sha256": "4713bb142835835ed654f345e62aa82df0112e76efb0c91d79602960e997f3fa",
-   "reference_sha256": "a1f7f7b9716fe7bcae7c3ca62626c857b26b17723418faf3f3925fd9c2fd5cc5"
+   "input_sha256": "114998b9217be792b979213339cdc560229540cf95da7c69595bdaf065e26308",
+   "reference_sha256": "50de0c6a744e8020ee85b7c9279e4bf87b57a5216a47921bfc4bba37a5af8212"
   },
   {
    "id": "hymns/angels-we-have-heard|human-alt|oracle|s1",
-   "input_sha256": "52e653eb5c1741f02f52a9ce396c80943fbe0572018f0f80db36edb57314bc85",
-   "reference_sha256": "a1f7f7b9716fe7bcae7c3ca62626c857b26b17723418faf3f3925fd9c2fd5cc5"
+   "input_sha256": "12027b6ab01d9e741f9ef710013d469f0ce585cd4bdc1881d91eb2a3d75dc5a4",
+   "reference_sha256": "50de0c6a744e8020ee85b7c9279e4bf87b57a5216a47921bfc4bba37a5af8212"
   },
   {
    "id": "hymns/beneath-the-cross|human-alt|none|s1",
-   "input_sha256": "47b5f421e25864ca78c0bea5deb8a4faafd95f0ec633e9a53a9777d80d8a7c4a",
-   "reference_sha256": "4b52a862ad61b5069fc32b5238344d78776491a47975d2c0c6db4bc259cc12a6"
+   "input_sha256": "e7bdb1bd02d95e5fad6791b7f6f56b714aecbb410d3484cb3664af8b53fe734a",
+   "reference_sha256": "3ea56e55e7016a6ef41d06c1a9d6d1c6d487f9b176a08240d19481f84a589d22"
   },
   {
    "id": "hymns/beneath-the-cross|human-alt|oracle|s1",
-   "input_sha256": "6fd564047943bb6248a55c291ba6377c1d6374ef096e1b09d7538fdb05bdf2b3",
-   "reference_sha256": "4b52a862ad61b5069fc32b5238344d78776491a47975d2c0c6db4bc259cc12a6"
+   "input_sha256": "44c37b37c5b9b57c21c0539e23181f06cf96a755d7bbe1ec0230babd4b92321b",
+   "reference_sha256": "3ea56e55e7016a6ef41d06c1a9d6d1c6d487f9b176a08240d19481f84a589d22"
   },
   {
    "id": "hymns/blessed-assurance|human-alt|none|s1",
-   "input_sha256": "c2d4bc3081a24a81a04cac7d54722af9c071ac573382d781e8fc4d9d119ff049",
-   "reference_sha256": "78efa66a3f336be042b393d082cc68703900780c63106394a8f000cbf8a56a89"
+   "input_sha256": "da827f82631bf4fe2a49cf2d24d8d1ebd1c67251231d0fdc387fecb9d42abf69",
+   "reference_sha256": "fefacac57d9d359038c679d2683839b82e9150664d8c3e95e4424e25d1204814"
   },
   {
    "id": "hymns/blessed-assurance|human-alt|oracle|s1",
-   "input_sha256": "4bd6d8aba800053f3f07b5ba70402a0f21b4b6f685aa9c8fb3375c4064a748ed",
-   "reference_sha256": "78efa66a3f336be042b393d082cc68703900780c63106394a8f000cbf8a56a89"
+   "input_sha256": "2906744f38d1d149f834196ea5134cd56cebd5ab12f5c1d42c930942b3fc5a8b",
+   "reference_sha256": "fefacac57d9d359038c679d2683839b82e9150664d8c3e95e4424e25d1204814"
   },
   {
    "id": "hymns/come-holy-spirit|human-alt|none|s1",
-   "input_sha256": "dfa5dace6ecfe41446078b71fe60887754f8393754b221a2b757a8c3ef1af228",
-   "reference_sha256": "89dac546b6d3a3c8ad33c4b31f33797692137be4867f53f89f3abc8a438a3024"
+   "input_sha256": "f7e4430f90b9990b382713ed83f9bdfd6baff0ec3d99cada876768eeefe55ec6",
+   "reference_sha256": "436dc2b0366e47f591cfa9fb53d219997c3624cad6db413f12232120c5fcad1f"
   },
   {
    "id": "hymns/come-holy-spirit|human-alt|oracle|s1",
-   "input_sha256": "2bf52cd63b92fc27b9499a50fd0601395e5f37d4847ae80b2a25e3df46d9fcf2",
-   "reference_sha256": "89dac546b6d3a3c8ad33c4b31f33797692137be4867f53f89f3abc8a438a3024"
+   "input_sha256": "ecb457b8a6cf31f2b5703fbd1cd01910b676b1bfbe834999b5986f1f1ec7b740",
+   "reference_sha256": "436dc2b0366e47f591cfa9fb53d219997c3624cad6db413f12232120c5fcad1f"
   },
   {
    "id": "hymns/come-thou-fount|human-alt|none|s1",
-   "input_sha256": "f4cc3af559ba8956784a6cc9f5226454ef37a43ff4a5c52a5a83061587846e17",
-   "reference_sha256": "12d1731332944adda7ce761732f43170462610ed47886e0cfaa67bfe578a8633"
+   "input_sha256": "bff3a82f3e02b868a570b3ac74c3db6bf0a0ec7251e837da01134d02e5724685",
+   "reference_sha256": "dba85c5feda981d5d505f83bbc295b947378939e0abbb2e236b0f6b7469754eb"
   },
   {
    "id": "hymns/come-thou-fount|human-alt|oracle|s1",
-   "input_sha256": "c0ee43fea6971482124cebf0ea3a7a0ac41934a576932d8c96345ec6bf9b39e8",
-   "reference_sha256": "12d1731332944adda7ce761732f43170462610ed47886e0cfaa67bfe578a8633"
+   "input_sha256": "3ba16024b205b97387bf966d6b7a28a440194064268e89868d3f8b79daebb038",
+   "reference_sha256": "dba85c5feda981d5d505f83bbc295b947378939e0abbb2e236b0f6b7469754eb"
   },
   {
    "id": "hymns/come-thou-long|human-alt|none|s1",
@@ -102,73 +102,73 @@
   },
   {
    "id": "hymns/go-to-dark-gethsemane|human-alt|none|s1",
-   "input_sha256": "02029d22890882206c26b097ec0156d2935e717d973133de0b2e2444cdb26644",
-   "reference_sha256": "228d6faf7d24db74915ba0cc28d71aed6b462ff558428b9d46fa97419c9dd4e7"
+   "input_sha256": "127d1da54d2c811e7dbb80233b2efbcc4df1492823c308b6ca7291ef914d2079",
+   "reference_sha256": "77a678a4488c5f9878ae3e0a8685a371f3be63b28271bf03dd80b1c0f825d06a"
   },
   {
    "id": "hymns/go-to-dark-gethsemane|human-alt|oracle|s1",
-   "input_sha256": "9b8b694a47bf35931309dfeb5912874356d74fc6d105483c0315965ed8a93f22",
-   "reference_sha256": "228d6faf7d24db74915ba0cc28d71aed6b462ff558428b9d46fa97419c9dd4e7"
+   "input_sha256": "495e7b50f21860f54c75993dde178d4b9f7b210134fb606345f81b18f73099c8",
+   "reference_sha256": "77a678a4488c5f9878ae3e0a8685a371f3be63b28271bf03dd80b1c0f825d06a"
   },
   {
    "id": "hymns/god-rest-ye-merry|human-alt|none|s1",
-   "input_sha256": "4e4e64977d1fe5f2e364cac69995db01b762598677c60fe0a5c3122322d72960",
-   "reference_sha256": "25b6d11c1ab98ca13cb2e3be4b1efad503a67c26e42486b33a9a440cf5cbefb3"
+   "input_sha256": "452c3093a1e40ee1abba6fe8f86b07a426cbfd1eeb22e9762ceda74323fd258c",
+   "reference_sha256": "55456218b523d3dbf8c6a0491920e3e750e3d1c5b06b5f4e1a7656ac865cbeea"
   },
   {
    "id": "hymns/god-rest-ye-merry|human-alt|oracle|s1",
-   "input_sha256": "192904834bfe48a8975f5db855ebf74180568ff98f23aebcd29238141cdebde1",
-   "reference_sha256": "25b6d11c1ab98ca13cb2e3be4b1efad503a67c26e42486b33a9a440cf5cbefb3"
+   "input_sha256": "071ef5c4a78d45f009e043ae3fc93e4e88bc01921c20970d3537957ccb9b7bf0",
+   "reference_sha256": "55456218b523d3dbf8c6a0491920e3e750e3d1c5b06b5f4e1a7656ac865cbeea"
   },
   {
    "id": "hymns/god-will-take-care|human-alt|none|s1",
-   "input_sha256": "98ba86eb0522e4a1ed71b5b04966752a87f8dc86217982fd2bf4a2123d4de05a",
-   "reference_sha256": "3de7bc3ee24ccac0cb5de02af06d415985833b30f702e50c746b51e26930438f"
+   "input_sha256": "630f778e7f56fb8868b9e6ee35faf87d32fa76a332c7f00138164b89c389452b",
+   "reference_sha256": "cff1016e6d83b88665582d52617471f97d9636e01510518d4e73546d990f0c28"
   },
   {
    "id": "hymns/god-will-take-care|human-alt|oracle|s1",
-   "input_sha256": "0814ce8f48621176882a0d6b94ec5692e7dc6a5bdbef0a08453ebbee15f2c5f0",
-   "reference_sha256": "3de7bc3ee24ccac0cb5de02af06d415985833b30f702e50c746b51e26930438f"
+   "input_sha256": "b0c0e658ee8a92d4dd0c960a36cd17bf31de341fa96b8add1d1d1122b9a06330",
+   "reference_sha256": "cff1016e6d83b88665582d52617471f97d9636e01510518d4e73546d990f0c28"
   },
   {
    "id": "hymns/hark-the-voice|human-alt|none|s1",
-   "input_sha256": "25edd4c7d0be2cd47d3f25e4e47412c11a37d6e7c708a61976cd8d0c7a10fe5c",
-   "reference_sha256": "641f1a9f81aa046025eee2b98e8cd6bf7782e875bf2c8321de119bf40378643c"
+   "input_sha256": "9d5ff760aac426a305f478300be683346c3fd85c3f4211e47062033fab8140f4",
+   "reference_sha256": "2109a0e1a9120f0451f8ba4dfaaf09e0963a65afb72a8137b440628868163cff"
   },
   {
    "id": "hymns/hark-the-voice|human-alt|oracle|s1",
-   "input_sha256": "cc835552bf6e09243e3be940f6a1e1d2918e6c2228e1427149309b5870dd9b7c",
-   "reference_sha256": "641f1a9f81aa046025eee2b98e8cd6bf7782e875bf2c8321de119bf40378643c"
+   "input_sha256": "abb19ba8eb0006195d1e168f0364779d3def43e4d472bf445c71e66028886210",
+   "reference_sha256": "2109a0e1a9120f0451f8ba4dfaaf09e0963a65afb72a8137b440628868163cff"
   },
   {
    "id": "hymns/holy-holy-holy|human-alt|none|s1",
-   "input_sha256": "f30fbf58f0a4e4ae0a58a6ac188220eb79a53ea461fbe87754d931df9d5fd4d7",
-   "reference_sha256": "c50d6ba77fc80e38684f02f19b08646b87b5e3d1204b6fb6fe8e14369863dc9d"
+   "input_sha256": "3e078f1dc2cf1c215ddc4e84355dc40d4b3343d4ed8ab4bbfd737da5af90288d",
+   "reference_sha256": "caf89c6e8a4a8075d11601d48413f8f2780896269e1c95996bad8be98cb329f6"
   },
   {
    "id": "hymns/holy-holy-holy|human-alt|oracle|s1",
-   "input_sha256": "a3bc0154974e5c5f1e32698120cb576e0e85a3b237b179ad6b60cc48acd88a55",
-   "reference_sha256": "c50d6ba77fc80e38684f02f19b08646b87b5e3d1204b6fb6fe8e14369863dc9d"
+   "input_sha256": "cb568f7a4bf1cd89c3f6bbcd31dd1214dab352f124c8a5239d1b59f545268fec",
+   "reference_sha256": "caf89c6e8a4a8075d11601d48413f8f2780896269e1c95996bad8be98cb329f6"
   },
   {
    "id": "hymns/how-firm-a-foundation|human-alt|none|s1",
-   "input_sha256": "dfc757416dffccdcb3de656bfbbae200576ba1909e4d38055274aa1c08be9b49",
-   "reference_sha256": "e0d7391b14226669dbfed9ac6dce4293308ae2ad79920158748bcaafe9dfdbc2"
+   "input_sha256": "3aef7e32f5fbe750819c4b58dbeaf8ef276f29344ab513f7447deac751e63006",
+   "reference_sha256": "dbdb9244e5287c8de5772e2a27bd3c1c9dee8ef02f0ed8927cbd674484e2cb04"
   },
   {
    "id": "hymns/how-firm-a-foundation|human-alt|oracle|s1",
-   "input_sha256": "da6e1bac64736e9996b8a54b31f2a27ec49dceda91d24404eb829a9cd7325b1b",
-   "reference_sha256": "e0d7391b14226669dbfed9ac6dce4293308ae2ad79920158748bcaafe9dfdbc2"
+   "input_sha256": "fc403686099162c3e39097eb46e5977b3220eb0faab6a73e489cae73a1990f28",
+   "reference_sha256": "dbdb9244e5287c8de5772e2a27bd3c1c9dee8ef02f0ed8927cbd674484e2cb04"
   },
   {
    "id": "hymns/hyfrydol-alleluia|human-alt|none|s1",
-   "input_sha256": "adb9cab5a017e604f04df68262abb60e5723a4483b8bb71b10fb00660660380b",
-   "reference_sha256": "dcd6d510f1bf3eb34d7c50c3fbb6992b479f467b8e037f677ba60c9b08e2f3e9"
+   "input_sha256": "4dec257bb7e068d9e2ba6143cab53be63202b01ac162d2d8ac9386694d981249",
+   "reference_sha256": "bc7ad064aeb38ce0ca92f798602a02dd1ffe749ce85a3edce5a500a769ea6d1a"
   },
   {
    "id": "hymns/hyfrydol-alleluia|human-alt|oracle|s1",
-   "input_sha256": "00790332a1e26345c9fa4e99102e0a9840ddef85c9d66bb9d2bbf235436b7e13",
-   "reference_sha256": "dcd6d510f1bf3eb34d7c50c3fbb6992b479f467b8e037f677ba60c9b08e2f3e9"
+   "input_sha256": "66b8cd3fbaf1cacefbb6f72b74231a56c618ea1d19d97e53ee1120692259b344",
+   "reference_sha256": "bc7ad064aeb38ce0ca92f798602a02dd1ffe749ce85a3edce5a500a769ea6d1a"
   },
   {
    "id": "hymns/i-am-jesus-little-lamb|human-alt|none|s1",
@@ -182,23 +182,23 @@
   },
   {
    "id": "hymns/i-know-whom|human-alt|none|s1",
-   "input_sha256": "83ba300fc6ae4f6babce7a19ae627d8e3044eab46f0fd102b134350d55cbb47c",
-   "reference_sha256": "41521cf8a2621e5cd7c0db4ae971e9bb10326efe09955006bbbf3ef446efe587"
+   "input_sha256": "91067f9f74a5773628218a2f2001eaf43fdaaee1007c1799d1b7c8c1817dbe5d",
+   "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
   },
   {
    "id": "hymns/i-know-whom|human-alt|oracle|s1",
-   "input_sha256": "761a0fdbaf9a638396420013b83d8df8d512f9ef3331611ccbbd524f8cff124c",
-   "reference_sha256": "41521cf8a2621e5cd7c0db4ae971e9bb10326efe09955006bbbf3ef446efe587"
+   "input_sha256": "a6b9ceccfe11bb888a0e169336c89c7eaf5b8b55ee00fb3f9f9505edecf04f89",
+   "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
   },
   {
    "id": "hymns/immortal-invisible|human-alt|none|s1",
-   "input_sha256": "de08dae8f1c33c9e981cb391ae7262d10e74f3ac4b259f4ae48456f091ff9b0a",
-   "reference_sha256": "60ee63c8fa138b7063f9a96eec0dce19e2f1516cf17d4c4b8f7755b827023b33"
+   "input_sha256": "a4661ef37aee101db7d4c993a78a22a80fe3086a7cd7fc63393ab941ee870c62",
+   "reference_sha256": "e316e0fa2db60671990b012e50c5789e489f18ae9507bbaee9c4687cb595abc9"
   },
   {
    "id": "hymns/immortal-invisible|human-alt|oracle|s1",
-   "input_sha256": "7b3e9893a5476f19a0258698ea5a7f4a9a525fcab3484df2cb19f5c0df596253",
-   "reference_sha256": "60ee63c8fa138b7063f9a96eec0dce19e2f1516cf17d4c4b8f7755b827023b33"
+   "input_sha256": "9a99a9729a1eb3a6fe4e9ea099786f5e0b18e0042d6f34401cd98e8202967fcb",
+   "reference_sha256": "e316e0fa2db60671990b012e50c5789e489f18ae9507bbaee9c4687cb595abc9"
   },
   {
    "id": "hymns/jesus-christ-is-risen|human-alt|none|s1",
@@ -212,223 +212,223 @@
   },
   {
    "id": "hymns/jesus-is-all-the-world|human-alt|none|s1",
-   "input_sha256": "b708c6c22d764c19c4aa6b884588eb161f6be4c57d267b5b8f94332925ea949c",
-   "reference_sha256": "6b3f2c33e9dcf138bbede86ede158c1bdf4a2e57a4813bb0b09681a978642320"
+   "input_sha256": "5bae25468eddeb27a3935afa310efe52543c72621eefcd506d2b97022f466491",
+   "reference_sha256": "2d9e65219ee6e351ab477e61c20bb3d8f32e5f22fe89111deb410d109b89654e"
   },
   {
    "id": "hymns/jesus-is-all-the-world|human-alt|oracle|s1",
-   "input_sha256": "ab71e38e0c602773ba7275a92ae10a825d39024b9fd3350030d54827a49319f2",
-   "reference_sha256": "6b3f2c33e9dcf138bbede86ede158c1bdf4a2e57a4813bb0b09681a978642320"
+   "input_sha256": "ce2aa23bedf6c8edea924be69f86a28f7349013646e92ea25aab15355038bec3",
+   "reference_sha256": "2d9e65219ee6e351ab477e61c20bb3d8f32e5f22fe89111deb410d109b89654e"
   },
   {
    "id": "hymns/jesus-shall-reign|human-alt|none|s1",
-   "input_sha256": "30aade325a1c704ea8afddea52a1570e8f8d27b2d70a5605c6f7d6e7ee57a8ba",
-   "reference_sha256": "4d2ea8f3393c7fac7f516d1dd7b1c01ff2ae58b684324f3ba68109a537aed6ce"
+   "input_sha256": "399b9dc97a4144402dfa79078a12ba3f231a5c73ba59800c24ca294bec570edc",
+   "reference_sha256": "af69d4c2692a0ac2b45feb60bc1d66808529f31ec9cf40ea9962909592dcaff6"
   },
   {
    "id": "hymns/jesus-shall-reign|human-alt|oracle|s1",
-   "input_sha256": "26e1c538b56c6167b0657c131d6a475a85e61691919b1634cfbd64bb2c7a3487",
-   "reference_sha256": "4d2ea8f3393c7fac7f516d1dd7b1c01ff2ae58b684324f3ba68109a537aed6ce"
+   "input_sha256": "25cf01c2488a3fe784bf83c277d4e1c3f1105598270397b1c809ec8ac0b34220",
+   "reference_sha256": "af69d4c2692a0ac2b45feb60bc1d66808529f31ec9cf40ea9962909592dcaff6"
   },
   {
    "id": "hymns/joy-to-the-world|human-alt|none|s1",
-   "input_sha256": "fed9852dc4ca63385682414015252479944a32c870edea153f3fdcbede280361",
-   "reference_sha256": "aa73fc44da36da6f6ec01cdcd1f7425e4059469d1df524c2ceffa471d51525b1"
+   "input_sha256": "8d351c790b59930d040df0d0d0a426dc7fec823bde10a12f43660b0f8ceac908",
+   "reference_sha256": "c30b56e3025a9d99847192abf3f12fcad7db296f58895d60c18213553937596d"
   },
   {
    "id": "hymns/joy-to-the-world|human-alt|oracle|s1",
-   "input_sha256": "0a7e0c9e16791d3c6d7029450a757aecaabf83e8d8c8b1ff59b00552ed02609d",
-   "reference_sha256": "aa73fc44da36da6f6ec01cdcd1f7425e4059469d1df524c2ceffa471d51525b1"
+   "input_sha256": "e6c69c6224afb653bb2e3d7867a76a82893baf83a4ef594c63a0d536c2d70f55",
+   "reference_sha256": "c30b56e3025a9d99847192abf3f12fcad7db296f58895d60c18213553937596d"
   },
   {
    "id": "hymns/joyful-joyful|human-alt|none|s1",
-   "input_sha256": "d286abfc3c1423871762fb6bb35cae9038ba51e358570b82903c7d12022b1f2a",
-   "reference_sha256": "41df4924c5cf298c032543cccab0a4b3f70e3875667722e96b8d8e47a74756f2"
+   "input_sha256": "4092f9f892cebf450355bb9d46e41b0ab5d1f4e1698cb87dc1f905a3511a3270",
+   "reference_sha256": "a59548c46970464ece547be3f19f569e5ec4da18861d7fba423388d6463ad56a"
   },
   {
    "id": "hymns/joyful-joyful|human-alt|oracle|s1",
-   "input_sha256": "1b758dd493c92ee6fc502c55a67d58647e0e6903bbdd283576c0c7ffabd9e0fc",
-   "reference_sha256": "41df4924c5cf298c032543cccab0a4b3f70e3875667722e96b8d8e47a74756f2"
+   "input_sha256": "d2bde04f32bd141ebc1a6dd0caa0dc6ab520c509fd7c6656ac01c100f0a419a8",
+   "reference_sha256": "a59548c46970464ece547be3f19f569e5ec4da18861d7fba423388d6463ad56a"
   },
   {
    "id": "hymns/lamp-of-our-feet|human-alt|none|s1",
-   "input_sha256": "7ad2b89b3ce846f3695d3a304949accc5d3e4a0553fb5e24927e51239bfbf791",
-   "reference_sha256": "70779ec9a745a99e555b4acf9d311eaeaf07758f32087e24bfbe7a289ced2c7c"
+   "input_sha256": "12bfacb18c0c7c1d2c6ba641f94817bfb8f7d10a68ea7dd190f37c99b417bc89",
+   "reference_sha256": "f94b9350077a829bfba6d6f2cd3b4102ef9fdedefd7e40472556ead8d0512c58"
   },
   {
    "id": "hymns/lamp-of-our-feet|human-alt|oracle|s1",
-   "input_sha256": "68e3a157be890726459ba1f6058bcc755a79f22e84d53cb84b253658689d94ac",
-   "reference_sha256": "70779ec9a745a99e555b4acf9d311eaeaf07758f32087e24bfbe7a289ced2c7c"
+   "input_sha256": "e22b860632b0efdba14cc8d8a57c2e36f67c57733077fd06a14f732dc881f79a",
+   "reference_sha256": "f94b9350077a829bfba6d6f2cd3b4102ef9fdedefd7e40472556ead8d0512c58"
   },
   {
    "id": "hymns/lo-he-comes|human-alt|none|s1",
-   "input_sha256": "e4f04de61b6514e766b8e900891c8fa426f0571a6afdf157553fd7d3dd084085",
-   "reference_sha256": "0cd408fee4aa8293ba8e1392f610d1a0835d2293dde32dc981dede3291747931"
+   "input_sha256": "81c79b0eb3770f4de6355c38dd2050da93a0d5fe3f0f9decbd9be127bd197365",
+   "reference_sha256": "95bf92686a6dd2c4b6e25956c8605be22d220583ece3ad0be0587f7c02c94e48"
   },
   {
    "id": "hymns/lo-he-comes|human-alt|oracle|s1",
-   "input_sha256": "5f395fb452ce57b5febe132c0f8e54cb9b7680c5bb950446d34b99c7c069dc30",
-   "reference_sha256": "0cd408fee4aa8293ba8e1392f610d1a0835d2293dde32dc981dede3291747931"
+   "input_sha256": "b24576b73358d58332cfbc9b4333596585eed9e041c0df071383289630474c41",
+   "reference_sha256": "95bf92686a6dd2c4b6e25956c8605be22d220583ece3ad0be0587f7c02c94e48"
   },
   {
    "id": "hymns/midnight-clear|human-alt|none|s1",
-   "input_sha256": "b09433001f36b9df1098c3c44d05afae0de8490506a5240a3e5f985fbcf14ec2",
-   "reference_sha256": "3d4a1402440a5c141e5abddc4e678a1e70665b5599cb4e66c2c5a0a7f9f0d12f"
+   "input_sha256": "af97093dcad37538b7cc60ee24be88002f9c4bcb8f503631eae983b789a1a870",
+   "reference_sha256": "c91335e8443360d45b4808c880da11b080244c8401929ead4becbdc19a1b50d6"
   },
   {
    "id": "hymns/midnight-clear|human-alt|oracle|s1",
-   "input_sha256": "d0fd00cd22048f569a615d4b5f96e58a55f7272c57d8faf85d0f66769a03f855",
-   "reference_sha256": "3d4a1402440a5c141e5abddc4e678a1e70665b5599cb4e66c2c5a0a7f9f0d12f"
+   "input_sha256": "6c6b027ce4657711fb82acb4375ea56d3b96187e6fe416cfd976618592c3c065",
+   "reference_sha256": "c91335e8443360d45b4808c880da11b080244c8401929ead4becbdc19a1b50d6"
   },
   {
    "id": "hymns/my-faith-looks-up|human-alt|none|s1",
-   "input_sha256": "aa70f13275748e6d82c9af51ef1dd10e9758c72b14718c53a7ffb94a0c448b61",
-   "reference_sha256": "1e0a55ee3b64116c94ee11dd230329401cae5dc913e3e825dd3e4f8a3780479d"
+   "input_sha256": "f74c164b1582cf19df138a657f39e98232e8c58c5b12d308f647538d2a4d4b0f",
+   "reference_sha256": "958c18d875237ea25c3ea0b499b1de6c8b4e55d1038d1ab2650e4cbb3ff5546b"
   },
   {
    "id": "hymns/my-faith-looks-up|human-alt|oracle|s1",
-   "input_sha256": "2bf9cbe08eb84a1cbbba14b43d92827018e12a2df44ee2bfbc6b98ac64d8a4e0",
-   "reference_sha256": "1e0a55ee3b64116c94ee11dd230329401cae5dc913e3e825dd3e4f8a3780479d"
+   "input_sha256": "70f3f6cb891c588070efb33016f48a09cd0e8bb3b933ebccf045a5147dc8748f",
+   "reference_sha256": "958c18d875237ea25c3ea0b499b1de6c8b4e55d1038d1ab2650e4cbb3ff5546b"
   },
   {
    "id": "hymns/my-hope-is-built|human-alt|none|s1",
-   "input_sha256": "447ababe9864d58b02425ebf2c60c8c22d8b32ea09d4496319fbdf0bc6277663",
-   "reference_sha256": "bad1d533aa640976909217efbb8e93fcd09ea1d61f4119262259751910715c5a"
+   "input_sha256": "30d448d48573b2ff02a1025fd6fce12d98846ae366285002ca25f226e33ca8df",
+   "reference_sha256": "04e2f4612dcaa97964d4c15fa0acdc37df59af4d3bdb889fa73d4f2686fc46ce"
   },
   {
    "id": "hymns/my-hope-is-built|human-alt|oracle|s1",
-   "input_sha256": "9e3a9f8d9ab0e52acaf365ca1b8659d01e56b2f78f0edad8801c1de81eaf822a",
-   "reference_sha256": "bad1d533aa640976909217efbb8e93fcd09ea1d61f4119262259751910715c5a"
+   "input_sha256": "c4bec4b2912f28af38709b8fea5d1a627aff642596829409f4590362460a1d7e",
+   "reference_sha256": "04e2f4612dcaa97964d4c15fa0acdc37df59af4d3bdb889fa73d4f2686fc46ce"
   },
   {
    "id": "hymns/nearer-my-god|human-alt|none|s1",
-   "input_sha256": "d8abd681436b02f0565a31c088b6ebac13cc7450d0583d80efbc65be2d175c00",
-   "reference_sha256": "3cce59ade3d4038c83289fae2f5a97a5051e57ef4395719da2dafe08672b7506"
+   "input_sha256": "8f935734a49dc5af3f9e838c1ff5ff432a8a3f579a4da36679625a5eeed6ca62",
+   "reference_sha256": "7ec99f24f09e486fa5c14af5ddb62cfee8c94f8622b54bf94bf29073f90e274c"
   },
   {
    "id": "hymns/nearer-my-god|human-alt|oracle|s1",
-   "input_sha256": "af2548d8224c84156e8381b940a6f80199b97f831c1d01224ecb79eec3607566",
-   "reference_sha256": "3cce59ade3d4038c83289fae2f5a97a5051e57ef4395719da2dafe08672b7506"
+   "input_sha256": "e3eb2da4c01f51025a46c125595258179c2a897bbc1edf6d5b205293a911e713",
+   "reference_sha256": "7ec99f24f09e486fa5c14af5ddb62cfee8c94f8622b54bf94bf29073f90e274c"
   },
   {
    "id": "hymns/no-not-one|human-alt|none|s1",
-   "input_sha256": "df6ee8986bb8b18448715dcbf227c7c5b8988483aaf6192a34618fffee83f6ba",
-   "reference_sha256": "e93aad86c0f08d1b56b24db05135182f5c098707ee393eb9af240ae54c1ed78c"
+   "input_sha256": "7e35c8de4117fe537ebf1ca9bcf82f36f3902bd3fe9a7bbd255acd246adc441d",
+   "reference_sha256": "8341c37ebe79e140849bef5a6e4db9d3d2e50291074c3a9d36c1e50d6aa6601c"
   },
   {
    "id": "hymns/no-not-one|human-alt|oracle|s1",
-   "input_sha256": "bb7ca3499d059fceb89d5f743960527099ec20905f443b64dcbd8f0bd4a391e8",
-   "reference_sha256": "e93aad86c0f08d1b56b24db05135182f5c098707ee393eb9af240ae54c1ed78c"
+   "input_sha256": "226082e2ed5610df55c723be526514b8b66e586b8678b3f206c8c6d919176e15",
+   "reference_sha256": "8341c37ebe79e140849bef5a6e4db9d3d2e50291074c3a9d36c1e50d6aa6601c"
   },
   {
    "id": "hymns/o-holy-spirit-enter|human-alt|none|s1",
-   "input_sha256": "3f4081f1758281709ce8d2284ac38359ed232f483f0e0f10ab18c5c549ec8ebb",
-   "reference_sha256": "522049faa0b4d69133d4289cad9b252235f276dd6c07754c22775a1ee012a6c6"
+   "input_sha256": "77871f27dddc51a74e769d0d103c836799e48de328c0dfd8e13f8199d3deec67",
+   "reference_sha256": "43b0b9b78e0c04e2c376be680eae41c2ec799703fd09273e9c4bebce40f2ecdc"
   },
   {
    "id": "hymns/o-holy-spirit-enter|human-alt|oracle|s1",
-   "input_sha256": "03a9edd31df5831d018c801fb066f510e30b714214e8cf17dbeb9f8bee469f6d",
-   "reference_sha256": "522049faa0b4d69133d4289cad9b252235f276dd6c07754c22775a1ee012a6c6"
+   "input_sha256": "782eb493fb0c0c4a7f03169fc3b11e4bfdb88682dd35d4d828acfade74e022c1",
+   "reference_sha256": "43b0b9b78e0c04e2c376be680eae41c2ec799703fd09273e9c4bebce40f2ecdc"
   },
   {
    "id": "hymns/pass-me-not|human-alt|none|s1",
-   "input_sha256": "873009d02d6ac03d41089474029dbc74b478b5edd94623d72d3a2769deb04872",
-   "reference_sha256": "0629deb823d635421c8744e4e73eac084a4066603c7f6675559de086cf5a0363"
+   "input_sha256": "081906af45314277190441f10607bdcf75c82b83a3a28c96e3aa08f0af87c585",
+   "reference_sha256": "2d02a60484f009e6842d1c52f3e9dfe0e845f0b437e68a51c9ad1b20c7fa8b12"
   },
   {
    "id": "hymns/pass-me-not|human-alt|oracle|s1",
-   "input_sha256": "cacb6e0a80d9f8fee503af420d2185e9045878cb9823593e5afad126623d1827",
-   "reference_sha256": "0629deb823d635421c8744e4e73eac084a4066603c7f6675559de086cf5a0363"
+   "input_sha256": "785770ef06e328363ed2951845d7c4a46d2a93732af1eb565edafdb75b971619",
+   "reference_sha256": "2d02a60484f009e6842d1c52f3e9dfe0e845f0b437e68a51c9ad1b20c7fa8b12"
   },
   {
    "id": "hymns/rescue-the-perishing|human-alt|none|s1",
-   "input_sha256": "ce0e5c1e9704db2df942eec65f9ac6a9d0c49e3ec332d58202f02fc81231140b",
-   "reference_sha256": "6f2ff4d275c3951a07e30d636e0b62da9f7c0e90d303ec3dc351cf1f47c68e81"
+   "input_sha256": "801a890e26f6bfb9c5bfa33b7374bd86e00692b7581dc1c6183a44dfcd264884",
+   "reference_sha256": "6ce430f11945c9800ad7e7d97ce991b32a1066f9da9c980a271cad68c9798f27"
   },
   {
    "id": "hymns/rescue-the-perishing|human-alt|oracle|s1",
-   "input_sha256": "09066e7eb161d06b6b0ca9a3b1d4a06160b3bdbb1f62e96224f684f190fee190",
-   "reference_sha256": "6f2ff4d275c3951a07e30d636e0b62da9f7c0e90d303ec3dc351cf1f47c68e81"
+   "input_sha256": "73bc24c090d5f4cd0d665eec8c496eb1a15b5b412a8ed2350c9f122d6e3b96d4",
+   "reference_sha256": "6ce430f11945c9800ad7e7d97ce991b32a1066f9da9c980a271cad68c9798f27"
   },
   {
    "id": "hymns/silent-night|human-alt|none|s1",
-   "input_sha256": "e792f0a1c56eb1a1e7ed2afc897a6c7e0090b18de29fde70613088d4defc715c",
-   "reference_sha256": "82d6a3d6953b98ebe0e1d93bdfcd0590a82c4f502cd235444eb6388c92240d84"
+   "input_sha256": "930e9bf1c8a5599f1b3304713db49bc8bfe108c040b2af21885c3dc94b51a026",
+   "reference_sha256": "43029b1b6d8e1282a4c23339516b591f8e80c822714680e65f0e61fe8060d570"
   },
   {
    "id": "hymns/silent-night|human-alt|oracle|s1",
-   "input_sha256": "c598cdbeebf90a977497f9bc95fc49dfd044c0b8d4c9bf2d1135d7e3dc8d26c9",
-   "reference_sha256": "82d6a3d6953b98ebe0e1d93bdfcd0590a82c4f502cd235444eb6388c92240d84"
+   "input_sha256": "dce61c2d60b35b358e0dc62c8c40ab7865de7f31eb104d6c3240172c944aa56a",
+   "reference_sha256": "43029b1b6d8e1282a4c23339516b591f8e80c822714680e65f0e61fe8060d570"
   },
   {
    "id": "hymns/take-my-life|human-alt|none|s1",
-   "input_sha256": "08335a1e42f6defe4167fc6bfd34ae4dd5ede87234645929bb915897e76c556c",
-   "reference_sha256": "2d314b524c6effa9092e0477036b2e1aa57a693be9fd52b0ca0134f695581850"
+   "input_sha256": "c0ea319807dd19455bb09924c5ba32ddd48f13a8547f9ecb9b2feea0e56206ba",
+   "reference_sha256": "0bee9653ca9516ac08720df7ec4593392599c02673f93bcf1e707dee8d5fe4e5"
   },
   {
    "id": "hymns/take-my-life|human-alt|oracle|s1",
-   "input_sha256": "268a8a76bf1c39cc83ea659e194b06aa44222a3dcae0b188e4c88e02f62b29b9",
-   "reference_sha256": "2d314b524c6effa9092e0477036b2e1aa57a693be9fd52b0ca0134f695581850"
+   "input_sha256": "52afca26fdf1b4325a8bf52c6e816bfadd73469895d18c77c4b7013270460b2a",
+   "reference_sha256": "0bee9653ca9516ac08720df7ec4593392599c02673f93bcf1e707dee8d5fe4e5"
   },
   {
    "id": "hymns/the-churchs-one-foundation|human-alt|none|s1",
-   "input_sha256": "80128dd441ff79a9850b69b21a55c9f150af450657b4ea0a8eee0cd6df5406d4",
-   "reference_sha256": "7bf265a97e864287f3dfe06e2a3b5d39283b7466ecff812207505f1600776369"
+   "input_sha256": "ad926a9d71d773e25180c9af6d22e6c1d715f1491bcdd43fdaf07b02b99193fd",
+   "reference_sha256": "4845a251a83141522b72e2167da1b7e5b9b74f31972585e4999ad8d9ce4406e9"
   },
   {
    "id": "hymns/the-churchs-one-foundation|human-alt|oracle|s1",
-   "input_sha256": "0feb67e00039be208a127484f0816113134356325e1b4e064d01dde90f5d3d0d",
-   "reference_sha256": "7bf265a97e864287f3dfe06e2a3b5d39283b7466ecff812207505f1600776369"
+   "input_sha256": "7a03379b13d245671bce7f97f4f4027dc1c9ec9a7df6663501d25906c5614b54",
+   "reference_sha256": "4845a251a83141522b72e2167da1b7e5b9b74f31972585e4999ad8d9ce4406e9"
   },
   {
    "id": "hymns/the-lords-my-shepherd|human-alt|none|s1",
-   "input_sha256": "6a0864d6d663879fa946c64b25c2350c4710b9279a35e26e8738a5f00b866e8e",
-   "reference_sha256": "eddf4dfe146c746c8f1c7eb53229931550a0529af367ba121958d74cff349f4f"
+   "input_sha256": "b22ae449ea840e351586913e32b48312c66bc1393589b0a23d7bba3c446ae574",
+   "reference_sha256": "8aafd7bf3bbb87b90c02499c8a28755b658e3b0ec77a6f3682ed49eee460e769"
   },
   {
    "id": "hymns/the-lords-my-shepherd|human-alt|oracle|s1",
-   "input_sha256": "67a17aec8a4148604b9052885783911ff89accc4209199e0eb94b18f651eca95",
-   "reference_sha256": "eddf4dfe146c746c8f1c7eb53229931550a0529af367ba121958d74cff349f4f"
+   "input_sha256": "c9a85c5b1ffb1a167b8406d28311f4fdd814db07caf44f96f3850f854a17f0ad",
+   "reference_sha256": "8aafd7bf3bbb87b90c02499c8a28755b658e3b0ec77a6f3682ed49eee460e769"
   },
   {
    "id": "hymns/to-god-be-the-glory|human-alt|none|s1",
-   "input_sha256": "5dd0033d4ba9e5dcc3012c447e1485aea8cc3d0f690fca1756d54832833bd72d",
-   "reference_sha256": "d829c95f5b21ea0e6d172b74cc45ec984357ae2406100a3c070ffea35f416cb3"
+   "input_sha256": "a43811ce0dbdfcf8886b70d39aea193601e1cf795ca645b049f7b491da5b5079",
+   "reference_sha256": "4933985e57546f4b5051906060c5bcb95ca137d153fc8fbf78f37ddde9b03ac3"
   },
   {
    "id": "hymns/to-god-be-the-glory|human-alt|oracle|s1",
-   "input_sha256": "32251203ad409211701e6c2cb6b809fbfa4da49c086978e50d3fc23f5e3184b3",
-   "reference_sha256": "d829c95f5b21ea0e6d172b74cc45ec984357ae2406100a3c070ffea35f416cb3"
+   "input_sha256": "15ea4c67cf4b743c5f0acd4ce139f90b753ca4dcd09aad7b33eba355d07e5b2a",
+   "reference_sha256": "4933985e57546f4b5051906060c5bcb95ca137d153fc8fbf78f37ddde9b03ac3"
   },
   {
    "id": "hymns/under-his-wings|human-alt|none|s1",
-   "input_sha256": "2dc5dbfd802ce5738659b0fd50332c40d4ed86905b04243087790a213d667858",
-   "reference_sha256": "6c85edfa576a5a51fa2093a619ede5654a399a9ab21123e9ff5f420467b01405"
+   "input_sha256": "6b6b330a79168f95b98283f2e50766cc567077088047b35c6815ebbc43a5bc51",
+   "reference_sha256": "412192c62e5e19d242faae2b310c0fe1735c06bbb5b990584eba18b7a5e08992"
   },
   {
    "id": "hymns/under-his-wings|human-alt|oracle|s1",
-   "input_sha256": "b19ea4873ecf3ec0214ff8ce65875bca603aa9f129a3a7459bdcd245dca78a7f",
-   "reference_sha256": "6c85edfa576a5a51fa2093a619ede5654a399a9ab21123e9ff5f420467b01405"
+   "input_sha256": "d7cd354e7a46f6f5148882bdc5f9b0ad462636d57d512852cda479b89fb200d5",
+   "reference_sha256": "412192c62e5e19d242faae2b310c0fe1735c06bbb5b990584eba18b7a5e08992"
   },
   {
    "id": "hymns/we-gather-together|human-alt|none|s1",
-   "input_sha256": "b52899c068487b13ad6378ea106f6bc7dadcbeaada58e21b3fef95d9fc4b4365",
-   "reference_sha256": "3b4c372d3f5bb03e67873976aa3b1a672f00f58bdea4994a68bb7cbf77d9e51f"
+   "input_sha256": "90f431e0e1daf4971ad047709a8f4c60783c7d84a599fdca5bfb07f8d52cdaf6",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
   },
   {
    "id": "hymns/we-gather-together|human-alt|oracle|s1",
-   "input_sha256": "295552cae386400e5aba182af9c04d7c85132e0c72bcee9f58b3ba386979fab9",
-   "reference_sha256": "3b4c372d3f5bb03e67873976aa3b1a672f00f58bdea4994a68bb7cbf77d9e51f"
+   "input_sha256": "707bb1c8bbf57f0790fa8fb5b9621a58edb74a5d01492cc0dba9ee1ac9656173",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
   },
   {
    "id": "hymns/what-child-is-this|human-alt|none|s1",
-   "input_sha256": "2a60fafec8eec2b7a3224084da24cd2e4d9485864c6653147b70d2b5a27fc1be",
-   "reference_sha256": "76931b6d3836e44a45ca17cbddaef33874bff55bdd097189f749b06d1432fcbc"
+   "input_sha256": "0d97b3960079d0146f483717653219809d7b017e65dcb53d87de13bb030389e4",
+   "reference_sha256": "c384d096a44416fc83b206c52815942f27de411d858a2a2bdaa1c398e98f49c0"
   },
   {
    "id": "hymns/what-child-is-this|human-alt|oracle|s1",
-   "input_sha256": "32bc409da7db3e3dddfc6a13156c1aaff7dca6d28190b1d9311c312e5f409182",
-   "reference_sha256": "76931b6d3836e44a45ca17cbddaef33874bff55bdd097189f749b06d1432fcbc"
+   "input_sha256": "6a646a6338b5162d2e4701cd6e444e5dabde63788c3f84131951f8535de913e8",
+   "reference_sha256": "c384d096a44416fc83b206c52815942f27de411d858a2a2bdaa1c398e98f49c0"
   },
   {
    "id": "method/beyer/016|human-alt|none|s1",
@@ -1412,7 +1412,7 @@
   }
  ],
  "generator": "perform/2",
- "reader": "reader/4",
+ "reader": "reader/5",
  "schema": "ppp.bench-lock/1",
  "suite_sha256": "e6f751ea6d3330a890ddbce22c6a704249b9573e51fb9b51997bad7e027d8076"
 }
