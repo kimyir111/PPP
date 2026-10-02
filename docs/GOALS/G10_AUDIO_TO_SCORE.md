@@ -562,3 +562,62 @@ the roadmap if so).
 1. The G10a-3 gate in section 10 ("rec.usable on rec-core >= 0.45 (app path today 0.248)") is WITHDRAWN: 0.248 was G0's synthetic 'human' profile, not the calibrated families; on them the app path today is G0 usable 0.015 and rec.usable 0.001 (0.007 / 0.003 with production's beats none). The gate numbers are re-set from these baselines after G10a-1 (a1 reports its own movement); until then a phase is accepted by relative improvement over this baseline on rec-core and replay-of with no regression of the checker classes, plus the hold-out slice. cover+of fails pitch integrity in 73% of cases: the +of overlay values (misses, ghosts, merges) are unmeasured and likely harsher than real; calibrate them from replay-of.
 2. The app's options (closeGaps / exactBars, #132-#134) LOWER onset F1 on real-AMT (0.832 -> 0.751) and note values (0.10 -> 0.05) on the replay-of tier: the exact-bars snap moves onsets (up to a 32nd) and costs accuracy against the true score on real transcriptions even though the drawn bars add up; the G10a-2 grid stage must be judged on this tier, not on bar sums alone.
 3. TD20: the system under test crashes (E-SPAN-ORDER in the graph builder) on a pedal that starts after the last note (found by rec-full on method/czerny599/001); the humanizer avoids it for now; to be fixed in a G10a phase that touches audio-score.js.
+
+## 18. G10a-1: the time skeleton (2026-10-03; implementer on Opus, AI-5a)
+
+Worktree `D:/PPP-g10a1`, branch `g10a-1` from `origin/main` `2e09fad`. Measurement first: the baselines were reproduced
+before anything changed, the error analysis below decided what S0-S2 had to fix, and every step was measured.
+
+### 18.1 Baselines reproduced
+
+At `2e09fad`, unchanged tree: `run` + `check` of rec-smoke, rec-core, rec-robust, replay-of and replay-of-app all
+PASS, and every aggregate of each `results.json` equals the committed baseline's (0 differing keys; rec-core 1,692
+cases in 2 min 39 s). The figures below are those runs.
+
+### 18.2 Error analysis of the time skeleton (rec-core, the app's options, beats `none` = production)
+
+`python tests/bench/tools/rec_skeleton_report.py tests/bench/out/rec-core/results.json` (new, reads a run, computes nothing
+new about the music). 564 cases, **559 unusable; 528 fail at least one skeleton gate** (metre, playback tempo, beat
+placement, structure); only 12 fail nothing else (on the calibrated families every other gate fails too, mainly note values:
+E3's 169 "skeleton only" was G0's synthetic `human` profile).
+
+| | metre | playback tempo | beat placement | structure | downbeat F1 |
+| --- | --- | --- | --- | --- | --- |
+| legacy, beats none | 0.420 | 0.420 | 0.034 | 0.344 | 0.410 |
+| app, beats none (production) | **0.426** | **0.426** | **0.069** | 0.301 | 0.403 |
+| app, oracle-noisy (helper) | 0.674 | 0.546 | 0.284 | 0.688 | 0.833 |
+
+(The section 10 row of a1 quotes metre 0.486, beat placement 0.351, tempo 0.475 "today": those were G0's `human` profile
+before G10a-0; the calibrated families start lower.)
+
+**Metre written for each true metre** (app, none; cases): 4/4 → 4/4 185, 6/8 26, 3/4 9 · 3/4 → 4/4 57, 3/4 28, 6/8 23 ·
+**2/4 → 6/8 48, 4/4 47, 3/4 1** · 6/8 → 6/8 27, 4/4 21, 3/4 16 · 3/8 → 6/8 22, 4/4 10, 3/4 4 · 2/2 → 4/4 10, 3/4 4, 6/8 2 ·
+6/4, 3/2, 5/4, 9/8, 12/8 (24 cases) never right.
+
+**Written tempo / true tempo**: 4/4 x1 144, x2 31, x2/3 12, x1/2 9 ... · 3/4 x1 51, x2 29, x2/3 18 · 2/4 x1 38, x2/3 29, x2 19 ·
+**6/8 x2/3 20, x2 20, x4/3 13, x1 7** · **3/8 x2/3 19** · 9/8, 12/8 x2/3. The x2/3 rows are **issue 1** (a compound metre prints
+dotted quarter = bpm but plays bpm quarters: every 6/8, 3/8, 9/8 and 12/8 piece written in a compound metre plays 2/3 of its
+tempo, playback tempo fails in 92-100 % of them); the x2 rows are the tempo octave.
+
+**Causes, read in the code** (`audio-score.js`):
+- `compoundVsThree` scores a three-quarter grouping's dotted-quarter points (ticks 0 and 36) 2.2 times higher than its quarters:
+  a 2/4 piece in eighths has notes on both, so 48 of 96 2/4 cases (and 22 of 36 3/8) become 6/8 bars of three quarters.
+- `meterAndPhase` prefers four unless three is 8 % stronger: 3/4 → 4/4 (57) and 6/8 → 4/4 (21).
+- `estimatePeriod`'s prior around 100 bpm and `tryFastTempo` decide the tempo octave from the onset envelope alone (the x2 and
+  x1/2 rows).
+- the bar phase is the accent phase of `meterAndPhase` on quarters: **when metre and tempo are both right (159 cases) the bar
+  lines are right (downbeat F1 >= 0.9) in only 47**; the rest fail beat placement on the phase.
+- a quantiser inconsistency (found while building v2, kept in legacy): `quantize` floors a beat position with 1e-9 of slack but
+  `snapStraight` without it, so an onset a hair before a beat is written one beat late.
+
+**What a perfect skeleton buys with today's S3-S10** (a scratch run, app options, beats none, `opts.lock` = the score's metre,
+quarter tempo and first bar line, constant tempo): metre 1.000, playback tempo 0.801 (the compound pieces still fail: issue 1
+is in the writer), beat placement 0.553 (cover 0.745, cover-pedal 0.723, human-real 0 - a constant tempo cannot follow its
+drift), usable 0.113. So the a1 targets of section 10 are bounded by the stages after S2: beat placement >= 0.60 is above what
+even a perfect constant-tempo skeleton gives with the legacy grid, and usable stays near 0.1 until note values (S6) move.
+
+**The 2/4 problem is also a notation question.** 2/4 against 4/4 (and 2/2 against 4/4) differ by where the composer drew the
+bar line every other beat, not by what is heard; the catalogue's 2/4 pieces are mostly method etudes (Hanon, Czerny, Beyer),
+its 4/4 mostly hymns. A model can only use the tempo, the density of accents and the phrase rhythm. Together with the metres
+v2 does not model (6/4, 3/2, 5/4: 16 core cases) about a fifth of rec-core is a convention or unmodelled metre: a metre gate of
+0.80 from onsets alone is not reachable on this corpus (section 18.6).
