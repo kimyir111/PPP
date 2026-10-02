@@ -1,0 +1,274 @@
+{
+ "helper_result": {
+  "duration": 8.394,
+  "engine": "onsets-and-frames",
+  "notes": [
+   {
+    "midi": 76,
+    "off": 2.24,
+    "on": 1.76,
+    "vel": 69
+   },
+   {
+    "midi": 75,
+    "off": 2.56,
+    "on": 1.984,
+    "vel": 71
+   },
+   {
+    "midi": 76,
+    "off": 2.784,
+    "on": 2.24,
+    "vel": 69
+   },
+   {
+    "midi": 75,
+    "off": 3.84,
+    "on": 2.56,
+    "vel": 66
+   },
+   {
+    "midi": 76,
+    "off": 4.8,
+    "on": 2.784,
+    "vel": 72
+   },
+   {
+    "midi": 71,
+    "off": 3.36,
+    "on": 3.008,
+    "vel": 66
+   },
+   {
+    "midi": 45,
+    "off": 4.8,
+    "on": 3.232,
+    "vel": 66
+   },
+   {
+    "midi": 74,
+    "off": 4.8,
+    "on": 3.232,
+    "vel": 71
+   },
+   {
+    "midi": 72,
+    "off": 4.864,
+    "on": 3.488,
+    "vel": 72
+   },
+   {
+    "midi": 52,
+    "off": 4.768,
+    "on": 3.744,
+    "vel": 70
+   },
+   {
+    "midi": 69,
+    "off": 4.832,
+    "on": 3.744,
+    "vel": 68
+   },
+   {
+    "midi": 57,
+    "off": 4.832,
+    "on": 4.256,
+    "vel": 63
+   },
+   {
+    "midi": 60,
+    "off": 6.4,
+    "on": 5.216,
+    "vel": 59
+   },
+   {
+    "midi": 64,
+    "off": 6.368,
+    "on": 5.76,
+    "vel": 74
+   },
+   {
+    "midi": 45,
+    "off": 7.872,
+    "on": 6.272,
+    "vel": 65
+   },
+   {
+    "midi": 69,
+    "off": 7.808,
+    "on": 6.272,
+    "vel": 75
+   },
+   {
+    "midi": 52,
+    "off": 7.808,
+    "on": 6.752,
+    "vel": 69
+   },
+   {
+    "midi": 57,
+    "off": 7.84,
+    "on": 7.232,
+    "vel": 63
+   }
+  ],
+  "qualityTier": "browser-fallback",
+  "truncated": false
+ },
+ "id": "replay/catalog/fur-elise|salamander-v2|cover-pedal|s1|of",
+ "provenance": {
+  "git_sha": "db15e4677f567b3cde8173c1196260fbeb9c0359",
+  "model": "magenta onsets_frames_uni (tfjs 2.8.6, @magenta/music 1.23.1)",
+  "recorded_at": "2026-10-02T13:39:48+00:00",
+  "runner": "tests/bench/tools/of_replay.js",
+  "seconds": 27.7
+ },
+ "reference": "catalog/fur-elise",
+ "reference_sha256": "f769a8d4827193185f8bf9f8daa1b17c96a496b48bc4c3dbaa8030ba353e2659",
+ "render": {
+  "profile": "cover-pedal",
+  "qpm": 60.0,
+  "renderer": "render_piano.py/2 (Salamander Grand Piano V3, CC BY 3.0; damper pedal, synthetic room)",
+  "seed": 1,
+  "start_s": 1.75
+ },
+ "schema": "ppp.replay-case/1",
+ "truth": {
+  "bar_starts_s": [
+   1.75,
+   3.25,
+   4.75,
+   6.25,
+   7.75
+  ],
+  "notes": [
+   {
+    "midi": 76,
+    "off": 2.208,
+    "on": 1.792,
+    "ref_sounding_id": 0
+   },
+   {
+    "midi": 75,
+    "off": 2.528,
+    "on": 1.984,
+    "ref_sounding_id": 1
+   },
+   {
+    "midi": 76,
+    "off": 2.752,
+    "on": 2.24,
+    "ref_sounding_id": 2
+   },
+   {
+    "midi": 75,
+    "off": 3.232,
+    "on": 2.56,
+    "ref_sounding_id": 3
+   },
+   {
+    "midi": 76,
+    "off": 3.232,
+    "on": 2.784,
+    "ref_sounding_id": 4
+   },
+   {
+    "midi": 71,
+    "off": 3.232,
+    "on": 3.008,
+    "ref_sounding_id": 5
+   },
+   {
+    "midi": 45,
+    "off": 4.736,
+    "on": 3.232,
+    "ref_sounding_id": 7
+   },
+   {
+    "midi": 74,
+    "off": 4.736,
+    "on": 3.264,
+    "ref_sounding_id": 6
+   },
+   {
+    "midi": 72,
+    "off": 4.736,
+    "on": 3.488,
+    "ref_sounding_id": 8
+   },
+   {
+    "midi": 52,
+    "off": 4.736,
+    "on": 3.744,
+    "ref_sounding_id": 10
+   },
+   {
+    "midi": 69,
+    "off": 4.736,
+    "on": 3.776,
+    "ref_sounding_id": 9
+   },
+   {
+    "midi": 57,
+    "off": 4.736,
+    "on": 4.256,
+    "ref_sounding_id": 11
+   },
+   {
+    "midi": 60,
+    "off": 6.24,
+    "on": 5.248,
+    "ref_sounding_id": 12
+   },
+   {
+    "midi": 64,
+    "off": 6.24,
+    "on": 5.76,
+    "ref_sounding_id": 13
+   },
+   {
+    "midi": 45,
+    "off": 7.744,
+    "on": 6.272,
+    "ref_sounding_id": 15
+   },
+   {
+    "midi": 69,
+    "off": 7.744,
+    "on": 6.304,
+    "ref_sounding_id": 14
+   },
+   {
+    "midi": 52,
+    "off": 7.744,
+    "on": 6.752,
+    "ref_sounding_id": 16
+   },
+   {
+    "midi": 57,
+    "off": 7.744,
+    "on": 7.232,
+    "ref_sounding_id": 17
+   }
+  ],
+  "pedals": null,
+  "pedals_used": [
+   {
+    "off": 3.23,
+    "on": 1.8
+   },
+   {
+    "off": 4.73,
+    "on": 3.3
+   },
+   {
+    "off": 6.23,
+    "on": 4.8
+   },
+   {
+    "off": 7.73,
+    "on": 6.3
+   }
+  ]
+ }
+}
