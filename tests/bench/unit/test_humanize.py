@@ -134,6 +134,17 @@ class CoverPedal(unittest.TestCase):
         a, b = calibration.extract(flats_c, FRAME), calibration.extract(flats_p, FRAME)
         self.assertGreater(b["releasesByHand"]["RH"]["overlapsNextOnset"], a["releasesByHand"]["RH"]["overlapsNextOnset"])
 
+    def test_no_pedal_is_pressed_after_the_last_attack_and_none_is_shorter_than_a_quarter_second(self):
+        """A pedal that starts after the last note crashed the SUT's graph builder (E-SPAN-ORDER, found by rec-full on
+        method/czerny599/001); a real performer has no reason to press it there, and the humanizer does not."""
+        for prof in ("cover-pedal", "cover-pedal+helper"):
+            _, p = make("method/czerny599/001", prof)
+            last = max(n["on"] for n in p.input["notes"])
+            self.assertTrue(p.input["pedals"], prof)
+            for sp in p.input["pedals"]:
+                self.assertLess(sp["on"], last, prof)
+                self.assertGreater(sp["off"] - sp["on"], humanize.MIN_PEDAL_S, prof)
+
 
 class HumanReal(unittest.TestCase):
     def test_finer_clock_and_drifting_tempo(self):
@@ -237,6 +248,26 @@ class OfOverlay(unittest.TestCase):
         out, err = humanize.overlay_of(notes, util.Lcg(5), FRAME)
         self.assertGreater(err["merged"], 10)                                  # ~20 % of 199 pairs, minus ghosts
         self.assertLess(err["merged"], 80)
+
+
+class CoverAlt(unittest.TestCase):
+    """The independent family of the robust suite: not calibrated, early-release-heavy, triangular jitter, flat velocity."""
+
+    def test_it_is_a_different_performer_on_the_same_clock(self):
+        for n in make("method/czerny599/027", "cover-alt")[1].input["notes"]:
+            self.assertTrue(on_frames(n["on"], FRAME) and on_frames(n["off"], FRAME), n)
+        a = calibration.extract(calibration.humanize_pieces("cover-alt", REFS[:4]), FRAME)
+        b = calibration.extract(calibration.humanize_pieces("cover", REFS[:4]), FRAME)
+        self.assertGreater(a["releasesByHand"]["RH"]["releasedBeforeNextOnset"], b["releasesByHand"]["RH"]["releasedBeforeNextOnset"] + 0.15)
+        self.assertGreater(a["velocity"]["sd"], b["velocity"]["sd"] + 2.0)             # no voicing but a wider noise
+        self.assertAlmostEqual(a["velocity"]["mean"], 70.0, delta=2.0)
+        self.assertEqual(a["chords"]["spreadMoreThanOneFrame"], 0)
+
+    def test_its_jitter_is_triangular_not_normal(self):
+        """Two uniforms averaged never reach the tails a normal would (here: no onset more than 60 ms + 1.5 frames from its place)."""
+        c, p = make("method/hanon/004", "cover-alt")
+        worst = max(abs(n["on"] - t["nominal_on"]) for n, t in zip(p.input["notes"], p.truth))
+        self.assertLessEqual(worst, 0.060 + 1.5 * FRAME + 1e-6)          # the jitter, the rounding to a frame and a chord's frame
 
 
 class HelperOverlay(unittest.TestCase):

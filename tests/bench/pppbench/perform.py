@@ -152,7 +152,8 @@ def perform(canon, ref_id: str, profile: str, beats: str, seed: int, *, expect: 
     start_s = 1.0 + 0.25 * (fnv1a32(ref_id) % 5)
     case_base = f"{ref_id}|{profile}|{beats}" + (f"|opt:{opt_name}" if opt_name else "")
     # the humanizer's base performance is the same with and without overlays: its stream is named by the base only
-    perf_base = case_base if hum is None else f"{ref_id}|{hum.base}|{beats}" + (f"|opt:{opt_name}" if opt_name else "")
+    # (not the stage-options name either: legacy and app options get the very same performance)
+    perf_base = case_base if hum is None else f"{ref_id}|{hum.base}|{beats}"
     rng = Lcg(fnv1a32(perf_base) ^ ((seed * 0x9E3779B1) & 0xFFFFFFFF))
     marks = reference_marks(canon, qpm, bool(expect.get("tempo_qpm")) and canon.effective_qpm is not None)
     if hum is None:

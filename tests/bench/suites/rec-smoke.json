@@ -1,0 +1,354 @@
+{
+ "align": {
+  "window_s": 0.3
+ },
+ "description": "G10 recording smoke: the 16 smoke references x cover, cover-pedal, human-real (beats none) x stage options legacy / app; the recording metrics (rec.*) on top of G0's",
+ "gate": {
+  "case_fail_drop": 10.0,
+  "case_flip_max": 1,
+  "case_warn_drop": 2.0,
+  "metrics": {
+   "critical.accidentals": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "critical.beat_placement": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "critical.hands": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "critical.key": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "critical.meter": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "critical.note_values": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "critical.pedal": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "critical.pitch_integrity": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "critical.playback_tempo": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "critical.structure": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "notation.duration.accuracy": {
+    "dir": "up",
+    "tol": -0.012
+   },
+   "notation.duration.page_accuracy": {
+    "dir": "up",
+    "tol": -0.012
+   },
+   "notation.hand.accuracy": {
+    "dir": "up",
+    "tol": -0.012
+   },
+   "notation.ioi.accuracy": {
+    "dir": "up",
+    "tol": -0.012
+   },
+   "notation.note_shape.consistency": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "notation.onset_pos.accuracy": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "notation.onset_pos.accuracy_ref": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "notation.ties.extra_per_100": {
+    "dir": "down",
+    "tol": 2.0
+   },
+   "notation.tuplets.f1": {
+    "dir": "up",
+    "tol": -0.04
+   },
+   "notation.tuplets.false_per_100": {
+    "dir": "down",
+    "tol": 2.0
+   },
+   "notes.identity.f1": {
+    "dir": "up",
+    "tol": -0.008
+   },
+   "notes.onset.f1_50ms": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "read.bar_completeness": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "read.bar_integrity": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "rec.check.1": {
+    "dir": "down",
+    "tol": 0.2
+   },
+   "rec.check.2": {
+    "dir": "down",
+    "tol": 0.2
+   },
+   "rec.check.3": {
+    "dir": "down",
+    "tol": 0.2
+   },
+   "rec.check.4": {
+    "dir": "down",
+    "tol": 0.2
+   },
+   "rec.check.5": {
+    "dir": "down",
+    "tol": 0.2
+   },
+   "rec.check.6": {
+    "dir": "down",
+    "tol": 0.2
+   },
+   "rec.check.7": {
+    "dir": "down",
+    "tol": 0.2
+   },
+   "rec.harmony.agreement": {
+    "dir": "up",
+    "tol": -0.04
+   },
+   "rec.metre.f1": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "rec.mv2h": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "rec.onset_f1": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "rec.rest.false_per_100_bars": {
+    "dir": "down",
+    "tol": 1.0
+   },
+   "rec.rest.precision": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "rec.rest.recall": {
+    "dir": "up",
+    "tol": -0.04
+   },
+   "rec.stability": {
+    "dir": "down",
+    "tol": 0.04
+   },
+   "rec.tuplet.false_per_100_beats": {
+    "dir": "down",
+    "tol": 1.0
+   },
+   "rec.tuplet.precision": {
+    "dir": "up",
+    "tol": -0.04
+   },
+   "rec.tuplet.recall": {
+    "dir": "up",
+    "tol": -0.04
+   },
+   "rec.usable": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "rec.voice.f1": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "sqi": {
+    "dir": "up",
+    "tol": -1.2
+   },
+   "struct.downbeat.f1": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "struct.form.order_exact": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "struct.measures.count_exact": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "struct.stats_consistent": {
+    "dir": "up",
+    "tol": 0.0
+   },
+   "struct.tempo.ok_effective": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "struct.time_sig.exact": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "usable": {
+    "dir": "up",
+    "tol": -0.02
+   }
+  },
+  "subgroups": {
+   "mean_abs": 0.01,
+   "mean_per_case": 0.25,
+   "metrics": {
+    "critical.accidentals": "rate",
+    "critical.beat_placement": "rate",
+    "critical.hands": "rate",
+    "critical.key": "rate",
+    "critical.meter": "rate",
+    "critical.note_values": "rate",
+    "critical.pedal": "rate",
+    "critical.pitch_integrity": "rate",
+    "critical.playback_tempo": "rate",
+    "critical.structure": "rate",
+    "notation.duration.accuracy": "mean",
+    "notation.duration.page_accuracy": "mean",
+    "notation.hand.accuracy": "mean",
+    "notation.ioi.accuracy": "mean",
+    "notation.note_shape.consistency": "mean",
+    "notation.onset_pos.accuracy": "mean",
+    "notes.identity.f1": "mean",
+    "rec.mv2h": "mean",
+    "rec.onset_f1": "mean",
+    "rec.rest.precision": "mean",
+    "rec.usable": "rate",
+    "rec.voice.f1": "mean",
+    "sqi": "sqi",
+    "struct.tempo.ok_effective": "rate",
+    "struct.time_sig.exact": "rate",
+    "usable": "rate"
+   },
+   "min_cases": 8,
+   "prefixes": [
+    "set:",
+    "profile:",
+    "beats:",
+    "opts:"
+   ],
+   "rate_abs": 0.02,
+   "sqi_abs": 1.0
+  }
+ },
+ "kind": "synthetic-notation",
+ "matrix": [
+  {
+   "beats": "none",
+   "opt_name": "legacy",
+   "opts": {},
+   "profile": "cover",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "none",
+   "opt_name": "app",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true
+   },
+   "profile": "cover",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "none",
+   "opt_name": "legacy",
+   "opts": {},
+   "profile": "cover-pedal",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "none",
+   "opt_name": "app",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true
+   },
+   "profile": "cover-pedal",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "none",
+   "opt_name": "legacy",
+   "opts": {},
+   "profile": "human-real",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "none",
+   "opt_name": "app",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true
+   },
+   "profile": "human-real",
+   "seeds": [
+    1
+   ]
+  }
+ ],
+ "name": "rec-smoke",
+ "rec": true,
+ "references": [
+  "catalog/gymnopedie-1",
+  "catalog/happy-birthday",
+  "hymns/i-know-whom",
+  "hymns/we-gather-together",
+  "method/czerny599/040",
+  "method/sonatina/027",
+  "micro/M01-waltz-3-4",
+  "micro/M02-alberti-4-4",
+  "micro/M03-jig-6-8",
+  "micro/M04-triplets-4-4",
+  "micro/M05-32nds-120",
+  "micro/M07-pickup-3-4",
+  "micro/M09-syncopation-ties",
+  "micro/M11-harmonic-minor",
+  "micro/M12-flats-db",
+  "micro/M14-melody-in-bass"
+ ],
+ "schema": "ppp.bench-suite/1",
+ "stage": {
+  "name": "notate",
+  "opts": {}
+ },
+ "subsets": {}
+}

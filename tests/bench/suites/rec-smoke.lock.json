@@ -1,0 +1,488 @@
+{
+ "cases": [
+  {
+   "id": "catalog/gymnopedie-1|cover-pedal|none|s1|opt:app",
+   "input_sha256": "5ab36fa4ee99547399b0ad1608d8b410923fedb55962bc6c8c650c3c8990cbb4",
+   "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
+  },
+  {
+   "id": "catalog/gymnopedie-1|cover-pedal|none|s1|opt:legacy",
+   "input_sha256": "d186028002ba8f6ec73df62036c87a46dc0318f4d5215c820d2e1450b4379e7d",
+   "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
+  },
+  {
+   "id": "catalog/gymnopedie-1|cover|none|s1|opt:app",
+   "input_sha256": "99ddd4ece7bd8631111f1b3a22131c381e8a4eabe44d9ac4b1a233615dc2a78c",
+   "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
+  },
+  {
+   "id": "catalog/gymnopedie-1|cover|none|s1|opt:legacy",
+   "input_sha256": "eb97e98546d7a63adac8b9dd29ac84679d824a70647f4ac4a9250060cfbcbee1",
+   "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
+  },
+  {
+   "id": "catalog/gymnopedie-1|human-real|none|s1|opt:app",
+   "input_sha256": "f9f8d455cbce2f5c78ba968c4b8f65caa8bf8ef9d9092a3cd8a7c56bc16e1b10",
+   "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
+  },
+  {
+   "id": "catalog/gymnopedie-1|human-real|none|s1|opt:legacy",
+   "input_sha256": "fd21c68edcbc46d705b4ebcd02dbd10550eb02972084027a1aaf2a760bd0d5dc",
+   "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
+  },
+  {
+   "id": "catalog/happy-birthday|cover-pedal|none|s1|opt:app",
+   "input_sha256": "a227951e65bdade486fb83773f77dcac2e5f7f7a74a911dd6e5f4b4da5879815",
+   "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
+  },
+  {
+   "id": "catalog/happy-birthday|cover-pedal|none|s1|opt:legacy",
+   "input_sha256": "d94fccaaf048ce29024ba18d051a77135bed093c99cb032b45e26722c02c899e",
+   "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
+  },
+  {
+   "id": "catalog/happy-birthday|cover|none|s1|opt:app",
+   "input_sha256": "a71d347cc93b7301d92120c350c4a76c3668a37ba7f9675baabb032789d946db",
+   "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
+  },
+  {
+   "id": "catalog/happy-birthday|cover|none|s1|opt:legacy",
+   "input_sha256": "6772369f829cc1fba5caa41b1186fbddd0a6fe2f8a5cd971b452725d0f8845dc",
+   "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
+  },
+  {
+   "id": "catalog/happy-birthday|human-real|none|s1|opt:app",
+   "input_sha256": "eb5f2de9ff346142a1c12a8f86c80cb81a853b755bcee952c75ee789bffb68b9",
+   "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
+  },
+  {
+   "id": "catalog/happy-birthday|human-real|none|s1|opt:legacy",
+   "input_sha256": "37b6db8f7743a0bb2af4eb2248c11ad5beb02d6e6c99a1bc7af6b464d9cd0ffe",
+   "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
+  },
+  {
+   "id": "hymns/i-know-whom|cover-pedal|none|s1|opt:app",
+   "input_sha256": "4808b95bb50644a6d579d12b7f82e3a3614ea6540ef9a83d4208dc736aaef309",
+   "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
+  },
+  {
+   "id": "hymns/i-know-whom|cover-pedal|none|s1|opt:legacy",
+   "input_sha256": "aa93d4f8222d0ae9407fab0768752fa9f4243631c068caca936072f191f62d2b",
+   "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
+  },
+  {
+   "id": "hymns/i-know-whom|cover|none|s1|opt:app",
+   "input_sha256": "a9e28a5a0fb3193e4915728d0b3f5def186f3a8b0e4d32e59507421f8bac05d1",
+   "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
+  },
+  {
+   "id": "hymns/i-know-whom|cover|none|s1|opt:legacy",
+   "input_sha256": "97884d331e6de7f202b78a8c1cb0dee6525012d7fefe9082ae976ee235001275",
+   "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
+  },
+  {
+   "id": "hymns/i-know-whom|human-real|none|s1|opt:app",
+   "input_sha256": "bdaf0ec0e6dfc154b73a49383fd204cd24e244afa4e7dbc78baba5f2b8626270",
+   "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
+  },
+  {
+   "id": "hymns/i-know-whom|human-real|none|s1|opt:legacy",
+   "input_sha256": "55b56a3b112a4162fa8d75d8fd21abc7c49df4eab4a114de71b0b55ba1a39457",
+   "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
+  },
+  {
+   "id": "hymns/we-gather-together|cover-pedal|none|s1|opt:app",
+   "input_sha256": "a4ec59106cd2895f9267fa0fc42a8975563fba8d95c1be077c25a4cc3621b1c0",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
+  },
+  {
+   "id": "hymns/we-gather-together|cover-pedal|none|s1|opt:legacy",
+   "input_sha256": "4d8414b6dfb97d6518386c74afbd045279d889ccf25024590de109bc6800681d",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
+  },
+  {
+   "id": "hymns/we-gather-together|cover|none|s1|opt:app",
+   "input_sha256": "96ae7f8f155cd8bbbcd795cf6fd99b58e5644d8930867d5cbb50d79c1f3dee59",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
+  },
+  {
+   "id": "hymns/we-gather-together|cover|none|s1|opt:legacy",
+   "input_sha256": "4149882d6b7e09af5647929de944fe7cb1bbae58f15a040e2c434cdec2284214",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
+  },
+  {
+   "id": "hymns/we-gather-together|human-real|none|s1|opt:app",
+   "input_sha256": "25d0970af588067739bf54dda4b3665bc3202bf67e36496f53431f61f8a71e31",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
+  },
+  {
+   "id": "hymns/we-gather-together|human-real|none|s1|opt:legacy",
+   "input_sha256": "b74dc6f724665117d1145954e6611ebb3f76347868871571039f3e1ff1d7b775",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
+  },
+  {
+   "id": "method/czerny599/040|cover-pedal|none|s1|opt:app",
+   "input_sha256": "2b2dba1c69df2dbdf9931b8e8e1a2171ab6f7f8e73ee1c39fac8fe1167a232bc",
+   "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
+  },
+  {
+   "id": "method/czerny599/040|cover-pedal|none|s1|opt:legacy",
+   "input_sha256": "3d8475e56ef663983fb3382aae066a0387390294955019bd83a59cbd4acb82c9",
+   "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
+  },
+  {
+   "id": "method/czerny599/040|cover|none|s1|opt:app",
+   "input_sha256": "c7204fdbe6e4bb3b606c6edc5992b6c512af21a9c456bd01ced133245fd982bd",
+   "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
+  },
+  {
+   "id": "method/czerny599/040|cover|none|s1|opt:legacy",
+   "input_sha256": "b9c396e156f897966bd1ab47e50a477447bf4bcc2c2e3f59099bfd7bca88e4eb",
+   "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
+  },
+  {
+   "id": "method/czerny599/040|human-real|none|s1|opt:app",
+   "input_sha256": "6f820fef2c716f17db02c7edb33131a4322e6883f7b5ae240efd074d06f2e24b",
+   "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
+  },
+  {
+   "id": "method/czerny599/040|human-real|none|s1|opt:legacy",
+   "input_sha256": "dbb40301d257aa601079649b64939427dba2171ce011aaaee69d778c1ce42684",
+   "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
+  },
+  {
+   "id": "method/sonatina/027|cover-pedal|none|s1|opt:app",
+   "input_sha256": "f5b854157fa6e05caa678221e0ce90755ac92c56cf8b534cfbfffff984d7ed0d",
+   "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
+  },
+  {
+   "id": "method/sonatina/027|cover-pedal|none|s1|opt:legacy",
+   "input_sha256": "653c24e0c0760fcac9516685c3af7fc5fbf10d15ad50b7d7fd5ba836a4f2ce80",
+   "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
+  },
+  {
+   "id": "method/sonatina/027|cover|none|s1|opt:app",
+   "input_sha256": "c13db20c0f7a8b94c5ce4e616a86bb4557c50a624209c352445e0cf63f5d547c",
+   "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
+  },
+  {
+   "id": "method/sonatina/027|cover|none|s1|opt:legacy",
+   "input_sha256": "39bf8e262c32d6c5201e23e27d29eb32af90be0089e39c1ce3ec36fa7932de21",
+   "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
+  },
+  {
+   "id": "method/sonatina/027|human-real|none|s1|opt:app",
+   "input_sha256": "b531ca069f6d5e82633578a7dc5a22d16dfd251cf0a510bbc8cb07d5e7085b11",
+   "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
+  },
+  {
+   "id": "method/sonatina/027|human-real|none|s1|opt:legacy",
+   "input_sha256": "697790b8122b12af00badcfd84843296dc54a92871c6e2535b0e29c6c44b5c0e",
+   "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
+  },
+  {
+   "id": "micro/M01-waltz-3-4|cover-pedal|none|s1|opt:app",
+   "input_sha256": "4a5a4b50bb89498ad059f08ff8c8150417d4552666653036f56ab6399f0e0387",
+   "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
+   "id": "micro/M01-waltz-3-4|cover-pedal|none|s1|opt:legacy",
+   "input_sha256": "d58a968dc2c5abf873f4770f613c3be36f3f14b908551cbb9a49d7bb051648e4",
+   "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
+   "id": "micro/M01-waltz-3-4|cover|none|s1|opt:app",
+   "input_sha256": "d66a758adff870804110be0901923ff3163cbdda2c68972a55d1273cf3eaec52",
+   "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
+   "id": "micro/M01-waltz-3-4|cover|none|s1|opt:legacy",
+   "input_sha256": "139f5cc4293580b5cbb5f5522f16646222f4d127a7843f3a8451d3d07f9b51e6",
+   "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
+   "id": "micro/M01-waltz-3-4|human-real|none|s1|opt:app",
+   "input_sha256": "83e3f053ef1042985329c97e2c46493fed03d0b05fe1bd269e01a735751acbce",
+   "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
+   "id": "micro/M01-waltz-3-4|human-real|none|s1|opt:legacy",
+   "input_sha256": "6607374694b050bf5172c75698a99a35d69b1cce30819fca452cb272c1b8806d",
+   "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
+   "id": "micro/M02-alberti-4-4|cover-pedal|none|s1|opt:app",
+   "input_sha256": "a6c234a014936f7e7e18352f6db56e584766f45cdf1acac49cccf738b77aee91",
+   "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
+  },
+  {
+   "id": "micro/M02-alberti-4-4|cover-pedal|none|s1|opt:legacy",
+   "input_sha256": "d9e3dc5a739efb5d06d085addbff48891d0b0cf193b6a518d23ded16e17de990",
+   "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
+  },
+  {
+   "id": "micro/M02-alberti-4-4|cover|none|s1|opt:app",
+   "input_sha256": "f266b6ff7007e9dd23dd951733d5906419051a62949640b1c172e582bc5fe206",
+   "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
+  },
+  {
+   "id": "micro/M02-alberti-4-4|cover|none|s1|opt:legacy",
+   "input_sha256": "96837d75df0b412a1ee91fa5bc0edff286282dbdf8c3a2461a6999cf2178854e",
+   "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
+  },
+  {
+   "id": "micro/M02-alberti-4-4|human-real|none|s1|opt:app",
+   "input_sha256": "7c6a654da2c0435b8dbc8ff8638e4b15787b5eb130805923e0b8fec6156190d7",
+   "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
+  },
+  {
+   "id": "micro/M02-alberti-4-4|human-real|none|s1|opt:legacy",
+   "input_sha256": "305cfaf4f3eaf9ad7666ff9d2ba0f3f663debcb666dc07df0fa4b1d254cde221",
+   "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
+  },
+  {
+   "id": "micro/M03-jig-6-8|cover-pedal|none|s1|opt:app",
+   "input_sha256": "a7e36d550076ca230ffaf331019de4f0a2cabde32a64997470f3795f6f23b3e2",
+   "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
+   "id": "micro/M03-jig-6-8|cover-pedal|none|s1|opt:legacy",
+   "input_sha256": "3fbe9d05763e36a9489a3d981aad8f29a33843085947745a66311dbc50d49936",
+   "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
+   "id": "micro/M03-jig-6-8|cover|none|s1|opt:app",
+   "input_sha256": "19937979189d23476b012d94d2ff788a747a628dec6fc24aa318d0007f47b552",
+   "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
+   "id": "micro/M03-jig-6-8|cover|none|s1|opt:legacy",
+   "input_sha256": "e484eb2d60d11051eed9042c48929344d2e7a3cb63399e45ca60daaa001e9920",
+   "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
+   "id": "micro/M03-jig-6-8|human-real|none|s1|opt:app",
+   "input_sha256": "eb79acd81831b8f709129959bbbc32e2585521bf9fdd88df3108c7a4b88a62d0",
+   "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
+   "id": "micro/M03-jig-6-8|human-real|none|s1|opt:legacy",
+   "input_sha256": "a2c68cd04ae097eee295f960d0ce1412ffe7e32af50c11b7d490e469e68fd6c8",
+   "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
+   "id": "micro/M04-triplets-4-4|cover-pedal|none|s1|opt:app",
+   "input_sha256": "9aa03fa23ed3998b53f38d04f3e7cd8e62a7fb8d11426e21e5be53b176b388a8",
+   "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
+  },
+  {
+   "id": "micro/M04-triplets-4-4|cover-pedal|none|s1|opt:legacy",
+   "input_sha256": "12b8f15f5ce53e94f89c1ac9f33b7770ab9cbc31eccff14649c0be120d2b9df6",
+   "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
+  },
+  {
+   "id": "micro/M04-triplets-4-4|cover|none|s1|opt:app",
+   "input_sha256": "575a1d8c6aa5d82302b11e705c3e71366c43f2be52a4034b5b0bde8656cbee18",
+   "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
+  },
+  {
+   "id": "micro/M04-triplets-4-4|cover|none|s1|opt:legacy",
+   "input_sha256": "868d209851a563f1e77daf0c37dcf35336a3e82cbbc8ba3d1b35445aff68b197",
+   "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
+  },
+  {
+   "id": "micro/M04-triplets-4-4|human-real|none|s1|opt:app",
+   "input_sha256": "19bad2a898b7e319b6b499b5082c9fc8d9b68cc9ef8f47048b25f805170dd189",
+   "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
+  },
+  {
+   "id": "micro/M04-triplets-4-4|human-real|none|s1|opt:legacy",
+   "input_sha256": "fe22de239cbc03aa0b9ef5de4a5b0afabbff01b88afc8cebaa6abfac1cb2ed95",
+   "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
+  },
+  {
+   "id": "micro/M05-32nds-120|cover-pedal|none|s1|opt:app",
+   "input_sha256": "559daf069339e09db16aa78f8740dfb4ec880861739cd66f4fd8abc2c06efa90",
+   "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
+   "id": "micro/M05-32nds-120|cover-pedal|none|s1|opt:legacy",
+   "input_sha256": "bdc464f486439ab18f965dc1b8751d4d95ebd95197efb99676b4c75994b4c3de",
+   "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
+   "id": "micro/M05-32nds-120|cover|none|s1|opt:app",
+   "input_sha256": "6378147fb5a43158a5003300e36055318dbd95f509fe8c54bdf64c0bea675ba5",
+   "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
+   "id": "micro/M05-32nds-120|cover|none|s1|opt:legacy",
+   "input_sha256": "6430fa1f188e67ce3a20c6e1109f0c5badedb6a3a1253e44e6b22d36e00c9395",
+   "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
+   "id": "micro/M05-32nds-120|human-real|none|s1|opt:app",
+   "input_sha256": "c6f4523e1a8fd9fa1655498e557f2eaf10fbaedaf9ab5522b7b4741f4199c6d1",
+   "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
+   "id": "micro/M05-32nds-120|human-real|none|s1|opt:legacy",
+   "input_sha256": "6f27eeb2efbca7d90946f704138ee57b7487aaf60b3caedfce5eaa5375cbf35f",
+   "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
+   "id": "micro/M07-pickup-3-4|cover-pedal|none|s1|opt:app",
+   "input_sha256": "77269e7cd965a25d79d9f68a45c9e515affd5815f8d6b703674093a168c7412a",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
+   "id": "micro/M07-pickup-3-4|cover-pedal|none|s1|opt:legacy",
+   "input_sha256": "dfe5a132fde09b39eccb1f92ca148baddc722a3908a28c35dc7c8a50408882b8",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
+   "id": "micro/M07-pickup-3-4|cover|none|s1|opt:app",
+   "input_sha256": "a0b5a3f14c0bcfa24568fb086a542a4a3957cc4867de7aeef314dd5dcb5f9d29",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
+   "id": "micro/M07-pickup-3-4|cover|none|s1|opt:legacy",
+   "input_sha256": "c0bec7b471d5cf3c60f4e9847116d141801764d0de4546bd95e59198f059e0cb",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
+   "id": "micro/M07-pickup-3-4|human-real|none|s1|opt:app",
+   "input_sha256": "5cafa964c9f43802cda13fd81475a665cd0578e3a3d3c57139a870d83dc9e3dd",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
+   "id": "micro/M07-pickup-3-4|human-real|none|s1|opt:legacy",
+   "input_sha256": "b5813bf9254f9eb58eb90adde1560a125b3e883ab31a3106bce58b4c52d797f0",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
+   "id": "micro/M09-syncopation-ties|cover-pedal|none|s1|opt:app",
+   "input_sha256": "e00bb6d0a15efbe0b3cf6a0701774741df68bfe5a6195a20d09843258ad09ba9",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
+   "id": "micro/M09-syncopation-ties|cover-pedal|none|s1|opt:legacy",
+   "input_sha256": "a5aeea9058f021da08bc950dacf80f16bb149482c2818fd08e7564a79a7eaa6a",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
+   "id": "micro/M09-syncopation-ties|cover|none|s1|opt:app",
+   "input_sha256": "be1b885e39e44a150af2204723cb0823ffd1f54c4d172e1197202881bb2c9817",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
+   "id": "micro/M09-syncopation-ties|cover|none|s1|opt:legacy",
+   "input_sha256": "205d27adf4e40d198456ce64eff1a33c0c8d5985c65c4627e09a72f4177394da",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
+   "id": "micro/M09-syncopation-ties|human-real|none|s1|opt:app",
+   "input_sha256": "ab880501ec21d51d0f3f63cfd7754061fb6137d4fda357f7fec052608bdfdc59",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
+   "id": "micro/M09-syncopation-ties|human-real|none|s1|opt:legacy",
+   "input_sha256": "24ff379a5ed0095b40e5068071d5d1d053af12291b6972b49c8db88efc820167",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
+   "id": "micro/M11-harmonic-minor|cover-pedal|none|s1|opt:app",
+   "input_sha256": "ffc80c050a7dcbdb40ec5b6b1735071a432c9af813e39203d83150e710efa404",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
+   "id": "micro/M11-harmonic-minor|cover-pedal|none|s1|opt:legacy",
+   "input_sha256": "54e6846b8a97e77411e941ac9a16f94e02ac064820fa5b0ab013614f2656be8f",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
+   "id": "micro/M11-harmonic-minor|cover|none|s1|opt:app",
+   "input_sha256": "171194b3a9f1fdfeaaabe51a9e9a66a8f7b0696267e4264daa4da1cdafea2c8d",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
+   "id": "micro/M11-harmonic-minor|cover|none|s1|opt:legacy",
+   "input_sha256": "86ed7d6bf10e029def04ef055c310d385dc96bb817616d63d8b1197843bf3c38",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
+   "id": "micro/M11-harmonic-minor|human-real|none|s1|opt:app",
+   "input_sha256": "1d857faae4ff8a13dadec6e6acc48afeeaad57e0c0efb7d5531c6d11972d1317",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
+   "id": "micro/M11-harmonic-minor|human-real|none|s1|opt:legacy",
+   "input_sha256": "09224bb41a6164bba819aea0a2fee915075ad733d373711cfc867a232bf7c9e5",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
+   "id": "micro/M12-flats-db|cover-pedal|none|s1|opt:app",
+   "input_sha256": "ce452d03be5c7fb35a5129089b93926c503164c4aef540b3fcae567d50fba8f8",
+   "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
+   "id": "micro/M12-flats-db|cover-pedal|none|s1|opt:legacy",
+   "input_sha256": "d2943515312c76416d040eb696b89f5cf9a3701effb1d495f0ec5027a81c8228",
+   "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
+   "id": "micro/M12-flats-db|cover|none|s1|opt:app",
+   "input_sha256": "c92ab438d267634a0751e0652390a920dcafe93a5cbea79640d1f063426f8ace",
+   "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
+   "id": "micro/M12-flats-db|cover|none|s1|opt:legacy",
+   "input_sha256": "16da5deb53dd4d0eec2aa7f4d88cfb35149d28a9a6f8aa2b63294a57de1e63d7",
+   "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
+   "id": "micro/M12-flats-db|human-real|none|s1|opt:app",
+   "input_sha256": "f0197c2cebe196591203eac4e2385c513e7a30d2b306e9ef85f37ee1bebb1590",
+   "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
+   "id": "micro/M12-flats-db|human-real|none|s1|opt:legacy",
+   "input_sha256": "d6d91990fc288c1764da21189e604d045227b13b8bbc59e53c55c7f3aa08bb18",
+   "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
+   "id": "micro/M14-melody-in-bass|cover-pedal|none|s1|opt:app",
+   "input_sha256": "d7fd9ede2798a91e45bdc2c6f501a4842f2378fa825393c1183581b9832fa1de",
+   "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  },
+  {
+   "id": "micro/M14-melody-in-bass|cover-pedal|none|s1|opt:legacy",
+   "input_sha256": "919cf4061f6bbf1b7bd4f21aac0a79dc73df795a0aa5f561eb5170c9c7dcc924",
+   "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  },
+  {
+   "id": "micro/M14-melody-in-bass|cover|none|s1|opt:app",
+   "input_sha256": "792fbd5e68b4df08dd4e28747f2e89b245e6a94ccc67d0d2b7e65d71f5d937e9",
+   "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  },
+  {
+   "id": "micro/M14-melody-in-bass|cover|none|s1|opt:legacy",
+   "input_sha256": "1c48eb5326bfead6600aee14a822c92585e2621756903f22623480c42a6cd080",
+   "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  },
+  {
+   "id": "micro/M14-melody-in-bass|human-real|none|s1|opt:app",
+   "input_sha256": "c54dffd47d1ec4ea09a2fc1bdfba4a2357706d669f3e0fa1af134e69c539af5b",
+   "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  },
+  {
+   "id": "micro/M14-melody-in-bass|human-real|none|s1|opt:legacy",
+   "input_sha256": "017e066db236a5156f758e899e081a4ef48b80ff442d285557fa0afe4830bda8",
+   "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  }
+ ],
+ "generator": "perform/2+humanize/1",
+ "reader": "reader/5",
+ "schema": "ppp.bench-lock/1",
+ "suite_sha256": "86fca7e2623a1d4a9f39c87931bc911c0b0383c63bd62e47c00e8cd36be03d4c"
+}

@@ -371,6 +371,58 @@ MUTATIONS: List[Dict[str, Any]] = [
 # the G3 group goes before the plain no-op, which stays last (the unit tests read it as MUTATIONS[-1])
 MUTATIONS = MUTATIONS[:-1] + G3_MUTATIONS + MUTATIONS[-1:]
 
+# G10a-0 (docs/GOALS/G10 section 15 step 3): one planted defect per recording metric (metrics/rec.py), run on the
+# `rec-mutation` suite (the recording path with the app's options and the library default, which is where the
+# defect has to show). Each must be a REGRESSION that names its metric; the no-op must leave results.json byte
+# identical. rec.check.<class> is a family: the planted defects below move classes 1, 2, 3, 5, 6 and 7.
+REC_MUTATIONS: List[Dict[str, Any]] = [
+    {"id": "REC-REST-MIN-ZERO",           # the shortest rest an exact bar writes: an eighth -> none, so a 16th rest sits between notes
+     "find": "  const REST_MIN = 1 / 8;",
+     "replace": "  const REST_MIN = 0;",
+     "all": True, "expect": "REGRESSION", "metrics": ["rec.rest.false_per_100_bars", "rec.check.1"]},
+    {"id": "REC-NO-TRAILING-RESTS",       # the silence at the end of a bar is never written
+     "replacements": [(SG_TRAILING_REST, "      /* mutation: no trailing rests */")],
+     "all": True, "expect": "REGRESSION", "metrics": ["rec.rest.recall"]},
+    {"id": "REC-EXACT-BARS-OFF",          # the app's exact bars switched off: the library's bars, as they were before G9
+     "replacements": [("    if (opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4",
+                       "    if (false && opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4"),
+                      ("    const exactOn = !!opts.exactBars &&", "    const exactOn = false && !!opts.exactBars &&")],
+     "all": True, "expect": "REGRESSION", "metrics": ["rec.check.2", "rec.check.5", "rec.check.6", "rec.check.7"]},
+    {"id": "REC-TRIPLETS-EVERYWHERE",     # every beat with two onsets is called a triplet beat
+     "find": "      if (e3 * 1.02 < e16 && (off16 >= 2 || (fs.length % 3 === 0 && fs.length >= 3))) flags[+k] = true;",
+     "replace": "      flags[+k] = true;",
+     "all": True, "expect": "REGRESSION", "metrics": ["rec.tuplet.precision", "rec.tuplet.false_per_100_beats"]},
+    {"id": "REC-NO-TRIPLETS",             # no beat is ever a triplet beat
+     "find": "      if (e3 * 1.02 < e16 && (off16 >= 2 || (fs.length % 3 === 0 && fs.length >= 3))) flags[+k] = true;",
+     "replace": "      if (false) flags[+k] = true;",
+     "all": True, "expect": "REGRESSION", "metrics": ["rec.tuplet.recall"]},
+    {"id": "REC-VOICE-MERGE",             # both hands written as one voice: every note on the upper staff
+     "find": "groups[g].notes.forEach(n => { n.staff = n.midi >= s ? 1 : 2; });",
+     "replace": "groups[g].notes.forEach(n => { n.staff = 1; });",
+     "all": True, "expect": "REGRESSION", "metrics": ["rec.voice.f1", "rec.usable"]},
+    {"id": "REC-BAR-PHASE",               # the bar line one beat late: every note in the wrong place of the wrong bar
+     "find": "      if (beatType === 4) origin = (pick.phase || 0) * Q;",
+     "replace": "      if (beatType === 4) origin = ((pick.phase || 0) + 1) * Q;",
+     "all": True, "expect": "REGRESSION", "metrics": ["rec.onset_f1", "rec.metre.f1", "rec.harmony.agreement", "rec.mv2h"]},
+    {"id": "REC-PHASE-FROM-MILLISECONDS",  # the bar line depends on the milliseconds of the first onset: 10 ms of noise moves it
+     "find": "      if (beatType === 4) origin = (pick.phase || 0) * Q;",
+     "replace": "      if (beatType === 4) origin = (((pick.phase || 0) + (Math.floor(input.notes[0].on * 1000) % 3)) % Math.max(1, beatsPerBar)) * Q;",
+     "all": True, "expect": "REGRESSION", "metrics": ["rec.stability"]},
+    {"id": "REC-DOTTED-16TH-REST",       # a 16th rest printed with a dot (class 4: a dotted rest shorter than a dotted eighth)
+     "replacements": [(SG_REST_TYPE, "          const t0 = full ? (TYPES[bar] || TYPES[v] || ['whole', 0]) : (TYPES[v] || ['16th', 0]);\n"
+                                     "          const t = (!full && t0[0] === '16th') ? ['16th', 1] : t0;")],
+     "all": True, "expect": "REGRESSION", "metrics": ["rec.check.4"]},
+    {"id": "REC-RESTS-NOT-TIDIED",        # the rest-tidying pass (scoregraph/gaps.js tidyRests) does nothing
+     "file": "scoregraph/gaps.js",
+     "find": "  function tidyRests(g) {",
+     "replace": "  function tidyRests(g) { if (g) return { graph: g, changed: false, stats: {}, rests: null, issues: null };",
+     "all": True, "expect": "REGRESSION", "metrics": ["rec.check.3", "rec.rest.precision"]},
+    {"id": "MUT-NOOP",
+     "find": "  const api = {",
+     "replace": "  /* noop mutation */\n  const api = {",
+     "expect": "PASS", "metrics": []},
+]
+
 MUT_DIR = os.path.join(runner.CACHE_DIR, "mutations")
 
 
@@ -419,6 +471,8 @@ def write_mutant(mut: Dict[str, Any], sut: str) -> str:
 
 
 def run_mutation_check(mutations=None, suite_name: str = "mutation") -> int:
+    if suite_name == "rec-mutation" and mutations is None:
+        mutations = REC_MUTATIONS
     suite = suite_mod.load_suite(suite_name)
     gate = suite.get("gate") or {}
     sut = stages.default_audio_score()
@@ -456,7 +510,8 @@ def run_mutation_check(mutations=None, suite_name: str = "mutation") -> int:
         if m["expect"] == "PASS":
             passed = v.status == "PASS" and sha == orig_sha
         else:
-            passed = v.status == "REGRESSION" and bool(hit)
+            # G10a-0's recording mutations name the metrics they must move: every one of them has to be flagged
+            passed = v.status == "REGRESSION" and (len(hit) == len(m["metrics"]) if m.get("all") else bool(hit))
         ok_all &= passed
         moved = {k: (d["baseline"], d["value"]) for k, d in v.deltas.items() if abs(d["delta"]) > 1e-9}
         rows.append({"id": m["id"], "expect": m["expect"], "status": v.status, "exit": v.exit_code, "ok": passed,

@@ -305,6 +305,32 @@ error). The 20 references were chosen once by `calibration.select_references` fr
 closest to the real piece's attack rate. To refresh a calibration file: `node tests/bench/node/perf-stats.js <graph>
 --engine NAME --source "..." --out tests/bench/corpus/calibration/<name>.json` (the graph stays private).
 
+## Recording metrics and suites (G10a-0, `rec.*`)
+
+The G0 gates judge a recording's score against the written truth; the `rec.*` metrics (`pppbench/metrics/rec.py`, version
+`rec/1`) are what a teacher sees in the rests, tuplets, voices and bars, and are computed only by suites that say
+`"rec": true`: every other suite's `results.json` is unchanged.
+
+| metric | definition |
+| --- | --- |
+| `rec.onset_f1` | pitch + written position (same bar after G0's bar offset, same place in the bar) F1 |
+| `rec.rest.precision` / `.recall` / `.false_per_100_bars` | predicted rest spans against the truth's silences (a stretch of a staff-bar where nothing sounds, at least a 16th); a rest overlapping a truth silence by less than half its length is false. One-staff references: the whole score is the staff. Precision is 1 when nothing is rested, recall n/a when the truth has no silence |
+| `rec.tuplet.precision` / `.recall` / `.false_per_100_beats` | quarter-note beats holding a tuplet note or rest, prediction against truth |
+| `rec.voice.f1` | consecutive-note pairs of every (staff, voice), prediction against truth (the MV2H voice sub-score) |
+| `rec.check.<1-10>` | `scoregraph/tools/notation-check.js` class counts per 100 bars of the predicted graph (run inside the SUT adapter with `notate.js --check`) |
+| `rec.harmony.agreement` | share of truth bars whose chord (`songgraph/harmony.js`, root + quality, the bar's most frequent window) the prediction has in the aligned bar |
+| `rec.stability` | share of bars whose written notation changes when every onset and release moves by up to +-10 ms (three seeds; bar by bar, so a moved bar line changes every bar after it) |
+| `rec.metre.f1` / `rec.mv2h` | bar, beat and sub-beat boundaries within 70 ms; MV2H-like mean of onset F1 (50 ms), voice F1, metre F1, value accuracy and harmony agreement |
+| `rec.usable` | every applicable G0 critical gate passes, notation-check classes 1-7 are 0, false rests <= 5 per 100 bars, false triplet beats <= 2 per 100 beats |
+
+Suites (`tools/make_rec_suites.py` writes them; every one runs the stage options `legacy` = library default and `app` = what
+the app passes, with the very same performance, and is tagged `opts:legacy` / `opts:app`): `rec-smoke` (16 references x
+cover, cover-pedal, human-real; CI), `rec-core` (141 core references x the humanizer's families x beats none / oracle-noisy;
+CI), `rec-robust` (the same references x `cover-alt`, an independent uncalibrated family; CI), `rec-full` (all references,
+hold-out seeds 11 and 12; nightly), `rec-mutation` (`python tests/bench/run.py mutation-check --rec`: one planted defect
+per metric, each must be a REGRESSION that names its metric, the no-op byte-identical; nightly). After G10a-1 the options
+axis gains `v2`.
+
 ## Known production failures (measured, not fixed)
 
 `run.py known-defects`, every `results.json` and every `summary.md` count the defects in the

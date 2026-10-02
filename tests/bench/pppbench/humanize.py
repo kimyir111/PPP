@@ -12,6 +12,10 @@ profiles whose noise is drawn from committed *aggregate* tables measured on real
                 an independent family so nothing is tuned to one cover
   swing         cover with straight eighths played long-short (1.6-2:1) in half of the 4-bar blocks; the truth
                 stays as written
+  cover-alt     the independent family for the robust suites (G10 section 7.6): the cover's clock and frame, but a
+                triangular jitter, no voicing, a flat velocity and an early-release-heavy table that is NOT calibrated
+                (65 % of the notes end before the next onset, against 27-31 % measured): a change tuned to the
+                calibrated family's habits shows up as a difference between the two
 
   overlays      ``+of``      the production browser model's errors on top (isolated short notes dropped, inner chord
                              notes missed, octave ghosts, repeated-note merges, no pedal)
@@ -41,16 +45,22 @@ COVER_FILE = "cover-of-2026-10.json"
 HELPER_FILE = "replay-helper.json"
 
 VERSION = "humanize/1"
-BASES = ("cover", "cover-pedal", "human-real", "swing")
+BASES = ("cover", "cover-pedal", "human-real", "swing", "cover-alt")
 OVERLAYS = ("of", "helper")
 KNOT_N = 20                         # the tables hold the 21 quantiles p0, p5 ... p100
 TAIL_MS = 600.0                     # an offset-error table's extremes are clipped (one outlier is not a distribution)
 
 # Fitted (see the module docstring).
 JITTER_SD = {"cover": 0.0243, "human-real": 0.015}
+ALT_JITTER = 0.06                   # cover-alt: half-width of each of the two uniforms averaged (sd 24.5 ms)
+ALT_RATIO = [0.05, 0.10, 0.15, 0.20, 0.30, 0.40, 0.50, 0.55, 0.60, 0.70, 0.80, 0.90, 0.95, 1.00, 1.10, 1.30, 1.60, 2.00,
+             2.60, 3.50, 6.00]      # cover-alt release ratios (p0 ... p100), both hands: invented, early-release-heavy
 VEL = {"cover": {"base": 65.0, "noise": 5.9, "top": 3.0, "bottom": 1.0, "accent": 0.0},
-       "human-real": {"base": 64.0, "noise": 12.0, "top": 12.0, "bottom": 6.0, "accent": 6.0}}
+       "human-real": {"base": 64.0, "noise": 12.0, "top": 12.0, "bottom": 6.0, "accent": 6.0},
+       "cover-alt": {"base": 70.0, "noise": 10.0, "top": 0.0, "bottom": 0.0, "accent": 0.0},
+       "cover-alt": {"base": 70.0, "noise": 10.0, "top": 0.0, "bottom": 0.0, "accent": 0.0}}
 ROLL_P, ROLL_STEP = 0.25, 0.012     # human-real: rolled chords, as the `human` profile
+MIN_PEDAL_S = 0.25                  # no pedal change shorter than this (a bar of a quarter of a second has none)
 MERGE_P = 0.2                       # +of: a repeated note one frame after the previous release merges (not measured: a guess)
 SWING_BLOCK = 4                     # bars; each block swings with probability one half
 RITARD_DEPTH = 0.30                 # human-real: the last two beats of a phrase slow down by up to 30 %
@@ -181,10 +191,11 @@ def render(canon, spec: Spec, rng: Lcg, tm, case_base: str, seed: int):
     cal = calibration(COVER_FILE)
     frame = spec.frame
     base = spec.base
-    jit_sd = JITTER_SD["human-real" if base == "human-real" else "cover"]
-    vel = VEL["human-real" if base == "human-real" else "cover"]
+    fam = base if base in ("human-real", "cover-alt") else "cover"
+    jit_sd = JITTER_SD.get(fam, 0.0)
+    vel = VEL[fam]
     chord_p = cal["chords"]["spreadOneFrame"]
-    rel_tab = release_tables()
+    rel_tab = {"RH": ALT_RATIO, "LH": ALT_RATIO} if base == "cover-alt" else release_tables()
     warp = _swing_map(spec, rng, canon)
 
     def quant(t: float) -> float:
@@ -220,7 +231,11 @@ def render(canon, spec: Spec, rng: Lcg, tm, case_base: str, seed: int):
             for s in g:
                 heard[s.id] = quant(nominal_on[s.id] + jit_sd * norm(rng) + roll.get(s.id, 0.0))
             continue
-        t = quant(nominal_on[g[0].id] + jit_sd * norm(rng))
+        if base == "cover-alt":                                  # triangular: two uniforms averaged
+            jit = (rng.uniform(-ALT_JITTER, ALT_JITTER) + rng.uniform(-ALT_JITTER, ALT_JITTER)) / 2
+        else:
+            jit = jit_sd * norm(rng)
+        t = quant(nominal_on[g[0].id] + jit)
         cut = len(g)
         if len(g) >= 2 and rng.next() < chord_p:
             cut = 1 + int(rng.next() * (len(g) - 1))      # notes from `cut` up sound one frame later
@@ -270,12 +285,13 @@ def render(canon, spec: Spec, rng: Lcg, tm, case_base: str, seed: int):
 
     pedals: List[Dict[str, float]] = []
     spans: List[Tuple[float, float]] = []
+    last_on = max(heard.values())             # no pedal is pressed after the last attack (the SUT's graph builder refuses it)
     if base == "cover-pedal":
         for m in canon.measures:
             if m.implicit and m.index == 0:
                 continue
             down, up = tm.sec(m.start_q) + 0.05, tm.sec(m.start_q + m.len_q) - 0.02
-            if up > down:
+            if up > down + MIN_PEDAL_S and down < last_on:
                 pedals.append({"on": round_t(down), "off": round_t(up)})
                 spans.append((down, quant(up)))
     by_pitch: Dict[int, List[Tuple[float, int]]] = {}
@@ -386,6 +402,7 @@ def overlay_helper(notes: List[Dict[str, Any]], pedals: List[Dict[str, float]], 
                             "_truth": {"ref": None, "nominal_on": on, "nominal_off": on + length}})
                 err["ghosts"] += 1
     invented: List[Dict[str, float]] = []
+    last_on = max((n["on"] for n in notes), default=0.0)
     if rng.next() < 5.0 / 6.0:
         for m in canon.measures:
             if m.implicit and m.index == 0:
@@ -393,6 +410,6 @@ def overlay_helper(notes: List[Dict[str, Any]], pedals: List[Dict[str, float]], 
             if rng.next() < 0.7:
                 lo, hi = tm.sec(m.start_q), tm.sec(m.start_q + m.len_q)      # not aligned with the bar, unlike a played pedal
                 down, up = lo + (hi - lo) * (0.02 + 0.15 * rng.next()), hi - (hi - lo) * (0.02 + 0.10 * rng.next())
-                if up > down:
+                if up > down + MIN_PEDAL_S and down < last_on:
                     invented.append({"on": round_t(down), "off": round_t(up)})
     return out, invented, err

@@ -17,7 +17,7 @@ jobs:
   gate:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 50                  # was 20: the gate grew (G10a-0 rec suites, the unit tests of the humanizer)
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }                 # the ScoreGraph tests compare package.json with the G1 base commit
@@ -61,6 +61,13 @@ jobs:
       - run: python tests/bench/run.py check --suite core-app
       - run: python tests/bench/run.py run --suite robust-app
       - run: python tests/bench/run.py check --suite robust-app
+      - run: python tests/bench/tools/make_rec_suites.py --check   # the committed rec-* suites are the generator's (G10a-0)
+      - run: python tests/bench/run.py run --suite rec-smoke       # G10a-0: the recording metrics on the calibrated humanizer
+      - run: python tests/bench/run.py check --suite rec-smoke
+      - run: python tests/bench/run.py run --suite rec-core
+      - run: python tests/bench/run.py check --suite rec-core
+      - run: python tests/bench/run.py run --suite rec-robust
+      - run: python tests/bench/run.py check --suite rec-robust
       - run: python tests/bench/run.py run --suite replay-public   # exits with the replay verdict
       - run: npm run test:transcription-core && npm run test:arranger
       - if: always()
@@ -74,6 +81,8 @@ jobs:
             tests/bench/out/robust/summary.md
             tests/bench/out/core-app/summary.md
             tests/bench/out/robust-app/summary.md
+            tests/bench/out/rec-core/summary.md
+            tests/bench/out/rec-robust/summary.md
             tests/bench/out/replay-public/summary.md
             tests/bench/out/correctness/report.json
 
@@ -139,3 +148,28 @@ jobs:
             tests/engrave/out/legacy-geometry.json
             tests/engrave/out/page/page-check.json
             tests/engrave/out/print/print-check.json
+
+  nightly-rec:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      # G10a-0: the recording metrics' gate sensitivity (one planted defect per metric, each must be a REGRESSION that names it)
+      # and the full recording suite with its hold-out aggregate
+      - run: python tests/bench/run.py mutation-check --rec
+      - run: python tests/bench/run.py run --suite rec-full
+      - run: python tests/bench/run.py check --suite rec-full
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-rec-full
+          path: |
+            tests/bench/out/rec-full/summary.md
+            tests/bench/out/rec-full/run.json
+            tests/bench/out/mutation/mutation-report.json
