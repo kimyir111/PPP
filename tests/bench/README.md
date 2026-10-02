@@ -277,6 +277,34 @@ Profiles: `deadpan` (exact), `human` (±15 ms, varied releases, rolled chords), 
 legato pedal each bar), `human-alt` (the robustness family below). Beats: `none` (the onset tracker),
 `oracle` (perfect Beat This), `oracle-noisy` (±20 ms, 5 % missing), `lowconf` (confidence 0.3).
 
+## The calibrated humanizer (G10a-0, `perform/3`)
+
+`pppbench/humanize.py` adds profiles beside the original six (which are byte-identical; `suite.generator_version`
+keeps `perform/2` for every suite that uses only them, so no existing lock, baseline or `results.json` moves). Their
+noise comes from committed **aggregate** tables measured on real transcriptions (`corpus/calibration/`: quantiles,
+shares, moments; no note, no title; a real piece never enters the repository, G10-D15):
+
+| profile | what it is |
+| --- | --- |
+| `cover` | an Onsets & Frames transcription of a steady sequenced cover: 32-ms frames, one jitter per attack, chords one frame apart, releases that overlap the next onset 70 % of the time, no pedal |
+| `cover-pedal` | `cover` with the damper as the mechanism of the overlap: pedal spans per bar, a note sounds to the pedal |
+| `human-real` | an independent family: 10-ms clock, drift 3-6 % and phrase-end ritardandi, rolled chords, wider velocity |
+| `swing` | `cover` with straight eighths played long-short (1.6-2:1) in half of the 4-bar blocks; the truth stays as written |
+| `+of` | overlay: the production browser model's errors (isolated notes under 55 ms dropped, inner chord notes missed, octave ghosts, repeated-note merges, no pedal) |
+| `+helper` | overlay: the helper ensemble's measured errors from the six replay fixtures (onset +9 ms, an offset-error table, 1.9 % missed, 3.3 % extra, a pedal that was never played) |
+
+`node/perf-stats.js` computes the statistics from a ScoreGraph's performance layer (or from a flat input) and, with
+`--replay`, the helper's errors from the replay fixtures. `unit/test_calibration.py` humanizes 20 fixed references
+with `cover`, extracts the same statistics and asserts the bands of G10 section 7.3. Departures from the design text,
+all in that test and `pppbench/calibration.py`: release statistics are measured on *free* notes (no re-strike of
+their own pitch within the hand's next 12 attacks, chosen on onsets and pitches only: a key cannot be struck while
+held, so the humanizer cuts such notes itself and the real table must not contain that cut twice); a chord one frame
+apart is one attack; the gap-median band is one frame (35 ms; two adjacent medians on a 32-ms clock are 32 ms apart);
+ratio quantiles have a floor of 0.06; the onset jitter is *fitted* (the real residual of 28 ms includes the beat map's
+error). The 20 references were chosen once by `calibration.select_references` from the steady, rest-free core pieces
+closest to the real piece's attack rate. To refresh a calibration file: `node tests/bench/node/perf-stats.js <graph>
+--engine NAME --source "..." --out tests/bench/corpus/calibration/<name>.json` (the graph stays private).
+
 ## Known production failures (measured, not fixed)
 
 `run.py known-defects`, every `results.json` and every `summary.md` count the defects in the

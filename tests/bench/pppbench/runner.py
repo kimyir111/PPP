@@ -135,7 +135,8 @@ def run_suite(suite: Dict[str, Any], *, audio_score: Optional[str] = None, out_d
                "metrics": {}, "counts": {}, "predicted": None}
         try:
             metrics, counts, predicted = evaluate.evaluate_timed(ref, p, row, window_s=window,
-                                                                 skip_metrics=entry.expect.get("skip_metrics", ()))
+                                                                 skip_metrics=entry.expect.get("skip_metrics", ()),
+                                                                 **({"truth_pedals": p.truth_pedals} if p.has_truth_pedals else {}))
             rec.update(metrics=metrics, counts=counts, predicted=predicted)
         except evaluate.CaseError as exc:
             rec.update(status="error", error_code=exc.code, error=str(exc)[:300])
@@ -146,7 +147,7 @@ def run_suite(suite: Dict[str, Any], *, audio_score: Optional[str] = None, out_d
     from . import known_defects
     results = {
         "schema": "ppp.bench-results/1", "suite": suite["name"], "suite_sha256": suite_mod.suite_sha256(suite),
-        "lock_sha256": util.content_sha256(lock_file) if lock else None, "versions": dict(VERSIONS),
+        "lock_sha256": util.content_sha256(lock_file) if lock else None, "versions": {**VERSIONS, "generator": suite_mod.generator_version(suite)},
         "filtered": bool(filter_), "aggregates": aggregate.aggregate(results_cases),
         "known_failures": known_defects.audit(), "exclusions": exclusions_summary(refs), "cases": results_cases,
     }

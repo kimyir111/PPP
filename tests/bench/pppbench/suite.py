@@ -7,7 +7,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from . import GENERATOR_VERSION, READER_VERSION, corpus, util, version_compatible
+from . import GENERATOR_VERSION, READER_VERSION, corpus, humanize, util, version_compatible
 
 SUITES_DIR = os.path.join(util.bench_root(), "suites")
 CASE_FIELDS = ("kind", "stage", "references", "matrix", "subsets", "align", "holdout_seeds", "cases", "fixtures")
@@ -227,8 +227,15 @@ def input_sha256(inp: Dict[str, Any], opts: Dict[str, Any]) -> str:
     return util.sha256_bytes(util.dumps_json({"input": inp, "opts": opts}).encode("utf-8"))
 
 
+def generator_version(suite: Dict[str, Any]) -> str:
+    """``perform/2`` for every suite of the original profiles (their results.json, locks and baselines are untouched
+    by the humanizer); ``perform/2+humanize/1`` for a suite that uses one of the humanizer's profiles (G10a-0)."""
+    profiles = {row.get("profile", "") for row in (suite.get("matrix") or [])}
+    return GENERATOR_VERSION + ("+" + humanize.VERSION if any(humanize.parse(p) for p in profiles) else "")
+
+
 def make_lock(suite: Dict[str, Any], rows: List[Dict[str, str]]) -> Dict[str, Any]:
-    return {"schema": "ppp.bench-lock/1", "suite_sha256": suite_sha256(suite), "generator": GENERATOR_VERSION,
+    return {"schema": "ppp.bench-lock/1", "suite_sha256": suite_sha256(suite), "generator": generator_version(suite),
             "reader": READER_VERSION, "cases": sorted(rows, key=lambda r: r["id"])}
 
 
@@ -240,7 +247,7 @@ def verify_lock(suite: Dict[str, Any], rows: List[Dict[str, str]], lock: Optiona
     drifts = []
     if lock.get("suite_sha256") != suite_sha256(suite):
         drifts.append("suite definition changed since the lock was written")
-    for k, v in (("generator", GENERATOR_VERSION), ("reader", READER_VERSION)):
+    for k, v in (("generator", generator_version(suite)), ("reader", READER_VERSION)):
         if not version_compatible(k, v, lock.get(k)):
             drifts.append(f"{k} version {lock.get(k)} in the lock, {v} now")
     locked = {c["id"]: c for c in lock.get("cases", [])}

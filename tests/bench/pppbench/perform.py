@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from fractions import Fraction
 from typing import Any, Dict, List, Optional, Tuple
 
+from . import humanize
 from .util import Lcg, fnv1a32, round_t
 
 PROFILES: Dict[str, Dict[str, Any]] = {
@@ -68,8 +69,10 @@ class TimeMap:
     score's tempo marks and an optional triangle-wave tempo drift."""
 
     def __init__(self, end_q: Fraction, qpm: float, start_s: float, drift: float = 0.0, period: float = 14.0,
-                 marks: Optional[List[Tuple[Fraction, float]]] = None):
+                 marks: Optional[List[Tuple[Fraction, float]]] = None,
+                 ritards: Optional[List[Tuple[Fraction, Fraction, float]]] = None):
         self.qpm, self.start_s, self.drift, self.period = float(qpm), float(start_s), float(drift), float(period)
+        self.ritards = [(float(a), float(b), float(d)) for a, b, d in (ritards or [])]   # (q0, q1, depth): G10a-0
         self.marks = sorted(marks or [], key=lambda m: m[0])
         self.n = int(end_q * STEPS_PER_Q) + 8 * STEPS_PER_Q
         dq = 1.0 / STEPS_PER_Q
@@ -90,7 +93,11 @@ class TimeMap:
 
     def _spq(self, tempo: float, q: float) -> float:
         m = 1.0 + self.drift * tri(q / self.period) if self.drift else 1.0
-        return 60.0 / (tempo * m)
+        v = 60.0 / (tempo * m)
+        for a, b, depth in self.ritards:       # a phrase-end ritardando: seconds per quarter grow linearly by `depth`
+            if a <= q < b:
+                v = v * (1.0 + depth * (q - a) / (b - a))
+        return v
 
     def sec(self, q) -> float:
         """Seconds at quarter position ``q`` (exact Fraction arithmetic for the grid index)."""
@@ -115,6 +122,8 @@ class Performance:
     timemap: TimeMap
     start_s: float
     errors: Optional[Dict[str, int]] = None   # AMT profile: notes dropped, ghosts added, repeats merged
+    truth_pedals: Any = None                   # the pedal the performer really used, when the input's is a guess (+helper)
+    has_truth_pedals: bool = False
 
 
 def reference_marks(canon, qpm: float, override: bool) -> List[Tuple[Fraction, float]]:
@@ -136,14 +145,23 @@ def reference_marks(canon, qpm: float, override: bool) -> List[Tuple[Fraction, f
 def perform(canon, ref_id: str, profile: str, beats: str, seed: int, *, expect: Optional[Dict[str, Any]] = None,
             case_opts: Optional[Dict[str, Any]] = None, opt_name: Optional[str] = None) -> Performance:
     expect = expect or {}
-    prof = PROFILES[profile]
+    hum = humanize.parse(profile)          # G10a-0: a humanizer profile, or None for one of the original profiles
+    prof = PROFILES[profile] if hum is None else {"drift": 0.0, "period": 14, "amt": False}
     bprof = BEAT_PROFILES[beats]
     qpm = float(expect.get("tempo_qpm") or canon.effective_qpm or 100)
     start_s = 1.0 + 0.25 * (fnv1a32(ref_id) % 5)
     case_base = f"{ref_id}|{profile}|{beats}" + (f"|opt:{opt_name}" if opt_name else "")
-    rng = Lcg(fnv1a32(case_base) ^ ((seed * 0x9E3779B1) & 0xFFFFFFFF))
+    # the humanizer's base performance is the same with and without overlays: its stream is named by the base only
+    perf_base = case_base if hum is None else f"{ref_id}|{hum.base}|{beats}" + (f"|opt:{opt_name}" if opt_name else "")
+    rng = Lcg(fnv1a32(perf_base) ^ ((seed * 0x9E3779B1) & 0xFFFFFFFF))
     marks = reference_marks(canon, qpm, bool(expect.get("tempo_qpm")) and canon.effective_qpm is not None)
-    tm = TimeMap(canon.end_q, qpm, start_s, prof["drift"], prof["period"], marks)
+    if hum is None:
+        tm = TimeMap(canon.end_q, qpm, start_s, prof["drift"], prof["period"], marks)
+    else:
+        drift, ritards = humanize.timing(hum, rng, canon)
+        tm = TimeMap(canon.end_q, qpm, start_s, drift, 14, marks, ritards)
+    if hum is not None:
+        return _humanized(canon, hum, ref_id, beats, seed, case_base, case_opts, expect, qpm, start_s, tm, rng, bprof)
 
     played = sorted(canon.played(), key=lambda s: (s.onset_q, s.staff, s.midi))
     groups: Dict[Tuple[Fraction, str], List[Any]] = {}
@@ -237,6 +255,14 @@ def perform(canon, ref_id: str, profile: str, beats: str, seed: int, *, expect: 
                            "pedals": pedals, "title": "bench"}
     truth = [n["_truth"] for n in notes]
 
+    return _assemble(canon, inp, truth, errors if prof["amt"] else None, tm, start_s, expect, qpm, bprof, case_base, seed,
+                     case_opts)
+
+
+def _assemble(canon, inp, truth, errors, tm, start_s, expect, qpm, bprof, case_base, seed, case_opts,
+              truth_pedals=None, has_truth_pedals=False) -> "Performance":
+    """Beat information, the lock options and what the metrics expect: the same for every profile."""
+    measures = canon.measures
     # beat information
     time = tuple(expect["time"]) if expect.get("time") else canon.primary_time()
     anchor = next((m.start_q for m in measures if not m.implicit), Fraction(0))
@@ -278,7 +304,31 @@ def perform(canon, ref_id: str, profile: str, beats: str, seed: int, *, expect: 
         "bar_starts": [round_t(t) for t in bar_starts],
     }
     return Performance(input=inp, opts=opts, truth=truth, expected=expected, timemap=tm, start_s=start_s,
-                       errors=errors if prof["amt"] else None)
+                       errors=errors, truth_pedals=truth_pedals, has_truth_pedals=has_truth_pedals)
+
+
+def _humanized(canon, hum, ref_id, beats, seed, case_base, case_opts, expect, qpm, start_s, tm, rng, bprof) -> "Performance":
+    """A humanizer profile (G10a-0): the calibrated base performance, then its overlays, each on its own stream."""
+    notes, pedals = humanize.render(canon, hum, rng, tm, case_base, seed)
+    errors: Optional[Dict[str, int]] = None
+    truth_pedals, has_truth = None, False
+    for ov in hum.overlays:
+        orng = Lcg(fnv1a32(f"{case_base}|overlay:{ov}") ^ ((seed * 0x9E3779B1) & 0xFFFFFFFF))
+        if ov == "of":
+            notes, e = humanize.overlay_of(notes, orng, hum.frame)
+            pedals = []                                       # the browser model hears no pedal
+        else:
+            notes, invented, e = humanize.overlay_helper(notes, pedals, orng, canon, tm)
+            truth_pedals, has_truth = pedals, True            # what was really played; the helper's pedal is a guess
+            pedals = invented
+        errors = {k: (errors or {}).get(k, 0) + v for k, v in e.items()}
+    for n in notes:
+        n["on"], n["off"] = round_t(n["on"]), round_t(n["off"])
+    notes.sort(key=lambda n: (n["on"], n["midi"], n["off"]))
+    inp: Dict[str, Any] = {"notes": [{"on": n["on"], "off": n["off"], "midi": n["midi"], "vel": n["vel"]} for n in notes],
+                           "pedals": pedals, "title": "bench"}
+    return _assemble(canon, inp, [n["_truth"] for n in notes], errors, tm, start_s, expect, qpm, bprof, case_base, seed,
+                     case_opts, truth_pedals, has_truth)
 
 
 def _noisy(times: List[float], rng: Lcg, bprof: Dict[str, Any]) -> List[float]:
