@@ -268,11 +268,15 @@ test('recordings: a right-hand 16th figure with dropped notes, through audio-sco
     return ev.filter(r => r.kind === 'rest' && r.display.type === '16th' && !r.display.dots && ev.some(n => n.kind === 'note' && n.voice === r.voice && R.eq(R.add(R.parse(n.at), R.parse(n.dur)), R.parse(r.at)) && n.m === r.m)
       && ev.some(n => n.kind === 'note' && n.voice === r.voice && (R.eq(R.parse(n.at), R.add(R.parse(r.at), R.parse(r.dur))) && n.m === r.m))).length;
   };
-  const plain = make({}), closed = make({ closeGaps: true });
+  /* the fill is for what is written from the HEARD releases (onsetDurations: false: songs written before "Recording durations from onsets", and the control); from onsets there is no lone 16th rest to fill */
+  const plain = make({ onsetDurations: false }), closed = make({ closeGaps: true, onsetDurations: false }), fromOnsets = make({ closeGaps: true });
   assert.ok(loneRests(plain.graph, rhStaff) > 3, 'the control has lone 16th rests in the right hand: ' + loneRests(plain.graph, rhStaff));
   assert.ok(loneRests(plain.graph, lhStaff) > 3, 'and in the left hand: ' + loneRests(plain.graph, lhStaff));
   assert.equal(loneRests(closed.graph, rhStaff), 0, 'none is left in the right hand');
   assert.equal(loneRests(closed.graph, lhStaff), 0, 'none is left in the left hand');
+  assert.equal(loneRests(fromOnsets.graph, rhStaff) + loneRests(fromOnsets.graph, lhStaff), 0, 'written from onsets: none to begin with');
+  assert.ok(!fromOnsets.graph.provenance.sources.some(x => x.tool === 'ppp.run-rests'), 'and the fill has nothing to do');
+  assert.deepEqual(drawnBad(fromOnsets.graph), []);
   assert.deepEqual(drawnBad(plain.graph), [], 'the control adds up too');
   assert.deepEqual(drawnBad(closed.graph), [], 'every voice-bar still adds up as drawn after the fill');
   assert.equal(errors(closed.graph).length, 0);
