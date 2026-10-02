@@ -1,10 +1,9 @@
 /* "Left-hand run rests" (docs/GOALS/G09_CANDIDATES_CRITICS_REPAIR.md section 12): the teacher's copy of their YouTube transcription had a continuous left-hand run of 16th notes
    with 5 lone 16th rests inside it (m2 @3.25 and @3.75, m4 @1.5, m34 @3.25, m37 @1.25: a broken-looking arpeggio). Their decision: "delete the rest and extend the previous note".
-   scoregraph/gaps.js fillRunRests (a part of tidyRests):
-     - LEFT-HAND staff only (limb 'LH'; a two-staff part with no limb: the lower staff); the right hand's rests are the melody's and are never touched
-     - a lone plain 16th rest with a plain 16th note of the same voice ending where it starts and a note of the voice starting where it ends (at the end of a bar: the first note of the next bar)
-       -> the rest is removed, the note before it becomes an eighth (it rings exactly 1/16 of a whole note longer, never past the next onset, never across a barline)
-     - not for another length, a tied / chord / tuplet / other-voice note, a bar end with no note after it, a span another voice of the staff starts a note in
+   scoregraph/gaps.js fillRunRests (a part of tidyRests), now ONE rule for both hands (tests/repair/rh-run-rests.test.js has the right hand and the generalised previous note):
+     - a lone plain 16th rest with a note of the same voice ending where it starts (drawn as what it lasts, plain value after the lengthening) and a note of the voice starting where it ends
+       (at the end of a bar: the first note of the next bar) -> the rest is removed, the note before it is 1/16 of a whole note longer (a 16th becomes an eighth), never past the next onset, never across a barline
+     - not for another length of rest, a tied / tuplet / other-voice note (a chord with no tied head is lengthened as a whole), a bar end with no note after it, a span another voice of the staff starts a note in
      - onsets and pitches never change; idempotent; a fixed point with closeSmallGaps and mergeRests; gated like them (a printed score and a MIDI source are untouched) */
 'use strict';
 const { test } = require('node:test');
@@ -93,43 +92,15 @@ test('the teacher\'s five rests: m2 @3.25 and @3.75, m4 @1.5, m34 @3.25, m37 @1.
   assert.deepEqual(restsAt(t.graph), []);
 });
 
-test('the right hand is never touched: its rests are the melody\'s', () => {
-  const g = mk({ rh: pat('nnnrnnnnnrnnnnnr'), lh: 'C3:w' });
-  const r = fill(g);
-  assert.equal(r.changed, false);
-  assert.equal(r.graph, g);
-  assert.equal(GAPS.tidyRests(g).fill.fills, 0);
-  /* both hands in one bar: only the left hand's rest goes */
+test('both hands: the same rule fills a lone 16th rest in the right hand and in the left hand', () => {
   const both = mk({ rh: pat('nnnrnnnnnrnnnnnr'), lh: pat('nnnnnnnnnnnrnnnn') });
   const b = fill(both);
-  assert.equal(b.stats.fills, 1);
+  assert.equal(b.stats.fills, 3, 'two right-hand rests and one left-hand rest (the third right-hand rest ends the last bar: no note after it, so it stays)');
+  assert.deepEqual(restsAt(b.graph), [], 'the left hand has no rest');
   const rhRests = x => x.parts[0].events.filter(e => e.kind === 'rest' && e.staff !== lhStaff(x)).length;
-  assert.equal(rhRests(b.graph), 3);
-  assert.equal(rhRests(b.graph), rhRests(both), 'the three right-hand rests are as they were');
-  assert.deepEqual(restsAt(b.graph), []);
-});
-
-test('which staff is the left hand: limb LH; with no limb at all, the lower of two staves; nothing otherwise', () => {
-  const g = mk({ rh: 'C5:w', lh: 'C3:w' });
-  const part = g.parts[0];
-  assert.deepEqual([...GAPS.leftHandStaves(part)], [part.staves[1].id]);
-  assert.equal(part.staves[1].limb, 'LH');
-  const noLimb = JSON.parse(JSON.stringify(part));
-  noLimb.staves.forEach(s => { delete s.limb; });
-  assert.deepEqual([...GAPS.leftHandStaves(noLimb)], [noLimb.staves[1].id], 'two staves without a limb: the lower one');
-  const oneStaff = JSON.parse(JSON.stringify(part));
-  oneStaff.staves = oneStaff.staves.slice(0, 1); delete oneStaff.staves[0].limb;
-  assert.equal(GAPS.leftHandStaves(oneStaff).size, 0, 'one staff without a limb: none');
-  const rhOnly = JSON.parse(JSON.stringify(part));
-  rhOnly.staves.forEach(s => { s.limb = 'RH'; });
-  assert.equal(GAPS.leftHandStaves(rhOnly).size, 0, 'limbs that name no left hand: none');
-  /* a graph whose staves carry no limb fills in the lower staff just the same, and not in the upper */
-  const bare = JSON.parse(JSON.stringify(mk({ rh: pat('nnnrnnnnnnnnnnnn'), lh: pat('nnnnrnnnnnnnnnnn') })));
-  bare.parts[0].staves.forEach(s => { delete s.limb; });
-  const r = fill(bare);
-  assert.equal(r.stats.fills, 1);
-  assert.equal(r.graph.parts[0].events.filter(e => e.kind === 'rest').length, 1, 'the right hand\'s rest stays');
-  assert.equal(r.graph.parts[0].events.find(e => e.kind === 'rest').staff, bare.parts[0].staves[0].id);
+  assert.equal(rhRests(both), 3);
+  assert.equal(rhRests(b.graph), 1, 'the last right-hand rest ends the bar (no note after it)');
+  assert.equal(errors(b.graph).length, 0);
 });
 
 test('not touched: a rest of another length (dotted 16th, eighth, 32nd), a note before it that is not a plain 16th, a rest with no note before it, two rests in a row', () => {
@@ -137,9 +108,8 @@ test('not touched: a rest of another length (dotted 16th, eighth, 32nd), a note 
     'a dotted 16th rest': bar('n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'r:16.', 'D3:32'),
     'an eighth rest': bar('n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'r:8'),
     'a 32nd rest': bar('n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'D3:32', 'r:32', 'r:32', 'D3:32'),
-    'an eighth note before the rest': bar('n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'E3:8', 'r'),
+    'a quarter note before the rest (5/16 is not a plain value)': bar('E3:q', 'r', 'F3:16'),
     'a dotted 16th note before the rest': bar('n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'E3:16.', 'r', 'D3:32'),
-    'a 32nd note before the rest': bar('n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'C3:32', 'D3:32', 'r', 'n', 'n'),
     'no note before the rest (the start of a bar)': bar('r', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n'),
     'two rests in a row': bar('n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'n', 'r', 'r', 'n')
   };
@@ -152,13 +122,13 @@ test('not touched: a rest of another length (dotted 16th, eighth, 32nd), a note 
   });
 });
 
-test('not touched: a note before the rest that is tied, a chord, in a tuplet, a grace note, or in another voice', () => {
+test('not touched: a note before the rest that is tied (or a chord with a tied head), in a tuplet, a grace note, or in another voice', () => {
   const head = 'C3:16 E3:16 G3:16 E3:16 C3:16 E3:16 G3:16 E3:16 C3:16 E3:16 G3:16 E3:16 ';
   /* control: the same bar untied is filled */
   assert.equal(fill(one(head + 'D3:16 r:16 E3:16 F3:16')).changed, true, 'control');
   /* tied from the note before (a tie into it) */
   assert.equal(fill(one(head + 'D3:16~ D3:16 r:16 E3:16')).changed, false, 'a tie into the note before the rest');
-  assert.equal(fill(one(head + 'C3+G3:16 r:16 E3:16 F3:16')).changed, false, 'a chord');
+  assert.equal(fill(one(head + 'C3+G3:16~ C3+G3:16 r:16 E3:16')).changed, false, 'a chord tied into the chord before the rest');
   /* a tuplet: three 16ths in the time of two (2/3 of a 16th each), the rest is one of them */
   assert.equal(fill(one('C3:16 E3:16 G3:16 E3:16 C3:16 E3:16 G3:16 E3:16 C3:8 3s[ D3:16 E3:16 r:16] F3:16 G3:16 A3:16 B3:16')).changed, false, 'a note or a rest inside a tuplet');
   /* a grace note at the start of the next bar is not the note after the rest */

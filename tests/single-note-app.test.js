@@ -884,6 +884,93 @@ async function identityHashes(browser) {
       await lp.close();
     }
 
+    console.log('\n── right-hand run rests: the same rule for the right hand (docs/GOALS/G09 section 12, "Right-hand run rests") ──');
+    /* The teacher's next copy showed the left-hand problem in the RIGHT hand (bar 11: a dotted eighth, a 16th rest, a 16th, a 16th rest, two 16ths). fillRunRests is one rule for both hands: a lone 16th rest
+       between two notes of a voice is deleted and the note (or chord) before it lengthened by that 16th when the result is a plain written value. Here the heard notes of a seeded 10-bar piece (a
+       right-hand run of 16ths with about one note in seven not heard, a held left-hand note) go through the real screens: "Rewrite the rhythm", Accept (the saved transcription) and the Song Arranger's
+       one-note copy. In each: no lone 16th rest of EITHER hand between two of its notes (Score, graph, DOM), the same notes (onsets and pitches), every bar adds up as the Score draws it, a valid graph; the
+       control (written without the pass) has the rests. */
+    {
+      const rp = await openPage(browser);
+      await rp.evaluate(() => {
+        const P = window.PPP, A = P.app;
+        let s = 9; const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+        const notes = [];
+        for (let b = 0; b < 10; b++) {
+          const t0 = b * 2;
+          notes.push({ on: t0, off: t0 + 1.9, midi: 48 + (b % 3), vel: 70 });
+          for (let k = 0; k < 16; k++) {
+            if (rnd() < 0.15 && k > 0 && !(b === 9 && k === 15)) continue;
+            notes.push({ on: t0 + k * 0.125, off: t0 + k * 0.125 + 0.118, midi: [76, 79, 83, 79][k % 4] + (k > 7 ? 2 : 0), vel: 80 });
+          }
+        }
+        const A0 = window.PPPAudioScore, lock = { beats: 4, beatType: 4, bpm: 120, firstDownbeat: 0 };
+        const mk = o => A0.toMusicXml({ notes: notes, pedals: [], title: 'rh-run' }, Object.assign({ title: 'rh-run', lock: lock }, o));
+        const control = mk({ closeGaps: false });
+        const rhIds = new Set(control.graph.parts[0].staves.filter(s => s.limb !== 'LH').map(s => s.id));
+        window.__rhCtl = { rests: control.graph.parts[0].events.filter(e => e.kind === 'rest' && rhIds.has(e.staff) && e.display.type === '16th' && !e.display.dots).length };
+        A._recording = { url: '', barStarts: [0] };
+        A._heard = { notes: notes, pedals: [], duration: notes[notes.length - 1].off };
+        A.adoptScore(P.parseMusicXML(mk({ closeGaps: false }).xml, 'rh-run'));
+        A.setState({ screen: 'review', lockMetre: '4/4', lockBpm: 120, lockDownbeat: 0, importSource: { kind: 'audio', name: 'rh-run.mp3', status: 'transcribed', tempo: 120, amt: 'onsets-and-frames' },
+          importReport: { confidence: 0.9, level: 'good', issues: [], suspectMeasures: [], summary: null, advice: null, measures: 10, notes: notes.length, staves: 2, tempo: 120 } });
+      });
+      await sleep(500);
+      const probeRh = () => rp.evaluate(() => {
+        const sc = window.PPP.app.state.score, EPS = 1e-6;
+        const loneOf = staff => {
+          const hand = sc.notes.filter(n => n.staff === staff), hn = hand.filter(n => !n.rest);
+          return hand.filter(r => r.rest && r.type === '16th' && !r.dots && Math.abs(r.dur - 0.25) < EPS
+            && hn.some(n => Math.abs((n.abs + n.dur) - r.abs) < EPS) && hn.some(n => Math.abs(n.abs - (r.abs + r.dur)) < EPS));
+        };
+        const lone1 = loneOf(1), lone2 = loneOf(2);
+        const rs = window.PPPEngrave.app.resolveSync(sc), g = rs.graph, part = g.parts[0];
+        /* the graph's lone 16th rests: a plain 16th rest with a note of its voice ending where it starts and one starting where it ends, in the same bar (a rest that starts a bar after a note of the bar before cannot be filled) */
+        const gevs = part.events.filter(e => (e.kind === 'note' || e.kind === 'rest') && !e.grace), fr = x => { const [a, b] = String(x).split('/'); return Number(a) / Number(b || 1); };
+        const gl = gevs.filter(r => r.kind === 'rest' && r.display.type === '16th' && !r.display.dots && gevs.some(n => n.kind === 'note' && n.staff === r.staff && n.voice === r.voice && n.m === r.m && Math.abs(fr(n.at) + fr(n.dur) - fr(r.at)) < EPS)
+          && gevs.some(n => n.kind === 'note' && n.staff === r.staff && n.voice === r.voice && n.m === r.m && Math.abs(fr(n.at) - fr(r.at) - fr(r.dur)) < EPS)).length;
+        let domLone = 0;
+        document.querySelectorAll('g.ppp-note[data-rest="1"]').forEach(el => { const o = (el.getAttribute('data-onset') || '').split('|'); const L = o[2] === '1' ? lone1 : lone2; if (L.some(l => String(l.m) === o[0] && Math.abs(l.b - Number(o[1])) < 1e-3)) domLone++; });
+        const sig = sc.notes.filter(n => !n.rest).map(n => [n.m, n.b, n.p, n.staff].join('|')).sort();
+        /* every voice of every bar adds up as drawn */
+        const TV = { whole: 4, half: 2, quarter: 1, eighth: 0.5, '16th': 0.25, '32nd': 0.125, '64th': 0.0625 };
+        const lenQ = new Map(sc.measures.map(m => [m.number, m.lenQ])), by = new Map();
+        sc.notes.forEach(n => { const k = n.staff + '|' + n.voice + '|' + n.m; if (!by.has(k)) by.set(k, new Map()); if (!by.get(k).has(n.b.toFixed(6))) by.get(k).set(n.b.toFixed(6), n); });
+        let bad = 0;
+        by.forEach((ev, k) => {
+          let cur = 0, ok2 = true;
+          Array.from(ev.values()).sort((a, b) => a.b - b.b).forEach(n => { const d = TV[n.type] * (2 - Math.pow(2, -(n.dots || 0))) * (n.tm ? n.tm.n / n.tm.a : 1); if (Math.abs(n.b - cur) > EPS || Math.abs(n.dur - d) > EPS) ok2 = false; cur = n.b + n.dur; });
+          if (Math.abs(cur - lenQ.get(+k.split('|')[2])) > EPS) ok2 = false;
+          if (!ok2) bad++;
+        });
+        return { lone1: lone1.length, lone2: lone2.length, graph16thRests: gl, domLone: domLone, via: rs.via, notes: sig.length, sig: sig, badBars: bad,
+          errors: window.PPPScoreGraph.validate(g).issues.filter(i => /^E-/.test(i.code)).length };
+      });
+      const rctl = await rp.evaluate(() => window.__rhCtl);
+      ok('control: the heard notes written without the pass have lone 16th rests in the right hand', rctl.rests >= 3, JSON.stringify(rctl));
+      await rp.click('[data-lock-rewrite]');
+      await rp.waitForFunction(() => /Rewrote the rhythm/.test((window.PPP.app.state.toast || '') + document.body.innerText), { timeout: 30000 });
+      await sleep(1500);
+      const rrr = await probeRh();
+      ok('"Rewrite the rhythm": no lone 16th rest between notes of either hand in the Score, the graph or the DOM; every bar adds up as drawn; a valid graph', rrr.lone1 === 0 && rrr.lone2 === 0 && rrr.graph16thRests === 0 && rrr.domLone === 0 && rrr.badBars === 0 && rrr.errors === 0, JSON.stringify(Object.assign({}, rrr, { sig: undefined })));
+      await rp.evaluate(() => { const b = [...document.querySelectorAll('button')].find(x => /Accept and practise/.test(x.innerText)); if (b) b.click(); });
+      await sleep(2500);
+      const rsid = await rp.evaluate(() => window.PPP.app.state.songId);
+      const rsv = await probeRh();
+      ok('the saved transcription: no lone 16th rest in either hand (Score, graph, DOM), the same notes as the rewrite, every bar adds up', !!rsid && rsv.lone1 === 0 && rsv.lone2 === 0 && rsv.graph16thRests === 0 && rsv.domLone === 0 && rsv.badBars === 0 && rsv.errors === 0 && JSON.stringify(rsv.sig) === JSON.stringify(rrr.sig), JSON.stringify(Object.assign({}, rsv, { sig: undefined })));
+      const rcop = await overlayArrange(rp, rsid, 'intermediate', 'balanced');
+      ok('Song Arranger on the saved transcription: saved as a one-note-per-hand arrangement', rcop.saved && rcop.slot.importSource.arrangement.engine === 'ppp.g9-single' && !rcop.slot.importSource.arrangement.singleFallback, rcop.saved ? JSON.stringify(rcop.slot.importSource.arrangement) : JSON.stringify(rcop.status));
+      if (rcop.saved) {
+        await rp.evaluate(() => window.__pppTest.nav('My Songs')); await sleep(600);
+        await rp.evaluate(i => { const b = document.querySelector('[data-open-song="' + i + '"]'); if (b) b.click(); }, rcop.id); await sleep(3000);
+        await rp.evaluate(() => { const t = [...document.querySelectorAll('main [role=tab]')].find(x => /Start to finish/.test(x.innerText)); if (t) t.click(); }); await sleep(2500);
+        const rcc = await probeRh();
+        ok('the copy: no lone 16th rest in either hand (Score, graph, DOM), a valid graph, its notes', rcc.lone1 === 0 && rcc.lone2 === 0 && rcc.graph16thRests === 0 && rcc.domLone === 0 && rcc.errors === 0 && rcc.notes >= rrr.notes * 0.9, JSON.stringify(Object.assign({}, rcc, { sig: undefined })));
+      }
+      ok('no page or console error', rp.__rec.pageErrors.length === 0 && rp.__rec.consoleErrors.length === 0, JSON.stringify(rp.__rec.pageErrors.concat(rp.__rec.consoleErrors)));
+      await rp.close();
+    }
+
     console.log('\n── recording notation: tuplets and the grid, in the review screen, the saved transcription and its one-note copy (docs/GOALS/G09 section 12) ──');
     /* A recording with a triplet feel was drawn with NO tuplet (a third of a beat is an eighth, two thirds a quarter, so a bar showed up to six beats) and with onsets on a 32nd lattice that no
        plain value expresses (the teacher's 90-bar piece: 59 of 90 right-hand bars did not add up as drawn, 28 were right). The app asks audio-score.js for exact bars at its four recording call

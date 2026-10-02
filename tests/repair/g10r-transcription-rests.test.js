@@ -67,7 +67,8 @@ test('a recording\'s transcription has no 32nd or 64th rest between its notes (a
     assert.ok(e1, 'note kept: ' + k);
     const d = R.sub(R.parse(e1.dur), R.parse(e0.dur));
     assert.ok(R.sign(d) >= 0, 'never shortened: ' + k);
-    if (R.sign(d) > 0) { lengthened++; assert.ok(R.lt(d, R.make(1, 16)), 'by less than a 16th: ' + k); }
+    /* by less than a 16th (the gap closing), and by a 16th more where fillRunRests deleted a lone 16th rest after the note ("Right-hand run rests": both hands) */
+    if (R.sign(d) > 0) { lengthened++; assert.ok(R.lt(d, R.make(1, 8)), 'by less than a 16th plus a filled 16th rest: ' + k); }
     assert.ok(R.le(R.add(R.parse(e1.at), R.parse(e1.dur)), mDur.get(e1.m)), 'never past its barline: ' + k);
   });
   assert.ok(lengthened >= 10);
@@ -124,9 +125,15 @@ test('sound: a lengthened note rings at most one 16th longer and stops at the ha
   const m0 = noteMap(off.graph);
   let max = R.ZERO;
   noteMap(on.graph).forEach((e, k) => { const d = R.sub(R.parse(e.dur), R.parse(m0.get(k).dur)); if (R.gt(d, max)) max = d; });
-  assert.ok(R.lt(max, R.make(1, 16)));
-  /* a whole note is two seconds at 120 bpm: the longest addition is under a 16th = 0.125 s */
-  assert.ok(R.toNumber(max) * 2 < 0.125, 'under 0.125 s at 120 bpm (a whole note is 2 s)');
+  /* the gap closing alone (no run-rest fill): under a 16th */
+  const closing = (() => { let cur = off.graph; for (let i = 0; i < 6; i++) { const a = GAPS.closeSmallGaps(cur), b = GAPS.mergeRests(a.graph); if (!a.changed && !b.changed) break; cur = b.graph; } return cur; })();
+  let maxClose = R.ZERO;
+  noteMap(closing).forEach((e, k) => { const d = R.sub(R.parse(e.dur), R.parse(m0.get(k).dur)); if (R.gt(d, maxClose)) maxClose = d; });
+  assert.ok(R.lt(maxClose, R.make(1, 16)));
+  /* a whole note is two seconds at 120 bpm: the longest addition of the closing is under a 16th = 0.125 s */
+  assert.ok(R.toNumber(maxClose) * 2 < 0.125, 'under 0.125 s at 120 bpm (a whole note is 2 s)');
+  /* with the lone 16th rests of both hands deleted (fillRunRests) a note rings one more 16th, still up to the hand's next onset: under 0.25 s */
+  assert.ok(R.lt(max, R.make(1, 8)));
 });
 
 test('the page runs it too: the page\'s own scripts in a bare context (no require, no module) give the same score as Node', () => {
