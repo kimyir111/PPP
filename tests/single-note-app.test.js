@@ -38,6 +38,9 @@
      - recording notation (tuplets and the grid): a seeded 10-bar piece with triplet beats (three eighths, a rest and two eighths, a quarter and an eighth) and straight 16ths in both hands through
        "Rewrite the rhythm", Accept and the Song Arranger's one-note copy: every voice of every bar adds up as the Score draws it (drawn values with the tuplet ratio), tuplet brackets in the
        Score and the DOM, a valid graph with no W-DISPLAY-DURATION, a strike for every heard note; the control (written without exact bars) has bars that do not add up
+     - recording durations from onsets (root cause of the wedged rests): a seeded 10-bar piece whose notes are all released early (eighths, triplet beats, chords, a bar-crossing 16th, a real quarter
+       rest) through "Rewrite the rhythm", Accept, the Song Arranger's one-note copy and a reload: scoregraph/notation-check.js (injected) finds nothing in classes 1-7 in the Score or the graph the
+       page draws; the control (heard releases) has rests between notes; the real rest stays; a strike for every heard note
      - refusals and failed downloads: a piece that stays unreachable (czerny849/009), option scripts (the candidates one, or another of the fourteen) or
        reference data that cannot be loaded (also when it is the warm-up that fails: no error, and the next arrangement asks again). The Song Arranger
        saves NOTHING behind the person's back: its window stays open with a notice that does not go away and two choices ('Save the standard arrangement',
@@ -1059,6 +1062,106 @@ async function identityHashes(browser) {
       }
       ok('no page or console error', tp.__rec.pageErrors.length === 0 && tp.__rec.consoleErrors.length === 0, JSON.stringify(tp.__rec.pageErrors.concat(tp.__rec.consoleErrors)));
       await tp.close();
+    }
+
+    console.log('\n── recording durations from onsets: no rest between two notes of a hand, in the review screen, the saved transcription, its one-note copy and after a reload (docs/GOALS/G09 section 12) ──');
+    /* Root cause of the "wedged" rests: a recording's onsets are heard well and its releases are not, so the silence between a heard release and the next onset became a rest. audio-score.js now
+       writes a note until the next onset of its voice unless the silence is at least REST_MIN (an eighth). Here the heard notes of a seeded 10-bar piece (120 bpm; every note released well
+       before the next one: eighths heard for half their length, triplet beats, quarters, chords, a note on the last 16th of a bar followed a 16th into the next, a real quarter rest) go
+       through the real screens: "Rewrite the rhythm", Accept (the saved transcription), the Song Arranger's one-note copy, and all of them again after a reload. In each, scoregraph/notation-check.js
+       (injected in the page) scans EVERY bar and voice of the page's own Score and of the graph it draws: classes 1-7 (rest between notes shorter than an eighth, rest shorter than a 16th, rests
+       that are not the standard tiling, dotted small rest, bar that does not add up, drawn value not the length, tuplet incomplete) are 0, and so are the validator's errors; the real rest is
+       still there; the player has a strike for every heard note; the control (heard releases, no gaps pass) has rests between notes. The 'original' level copy (the legacy engine) is reported. */
+    {
+      const NC_SRC = fs.readFileSync(path.join(__dirname, '..', 'scoregraph', 'notation-check.js'), 'utf8');
+      const ncPage = async pg => { await pg.evaluate(src => { (0, eval)(src); }, NC_SRC); };
+      const op = await openPage(browser);
+      await ncPage(op);
+      await op.evaluate(() => {
+        const P = window.PPP, A = P.app;
+        let s = 21; const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+        const notes = [], B = 0.5;                                     /* 120 bpm: a beat is 0.5 s */
+        const add = (beat, len, midi, vel) => notes.push({ on: Math.max(0, beat * B + (rnd() - 0.5) * 0.012), off: (beat + len) * B, midi: midi, vel: vel || 80 });
+        for (let b = 0; b < 10; b++) {
+          const t = b * 4, kind = b % 5;
+          if (kind === 0) { for (let i = 0; i < 8; i++) add(t + i / 2, 0.27, 72 + (i % 4) * 2); }                                                  /* eighths, each heard for half its length */
+          else if (kind === 1) { for (let k = 0; k < 2; k++) for (let i = 0; i < 3; i++) add(t + k + i / 3, 0.2, 76 - i * 2); add(t + 2, 0.8, 74); add(t + 3, 0.3, 72); add(t + 3.5, 0.3, 71); }   /* two triplet beats */
+          else if (kind === 2) { add(t, 0.7, 72); add(t + 1, 0.7, 74); add(t + 3, 0.7, 76); }                                                       /* beat 3 is a real rest */
+          else if (kind === 3) { [60, 64, 67].forEach((m, i) => add(t, 0.6 + i * 0.03, m + 12)); add(t + 1, 0.4, 74); [62, 65, 69].forEach((m, i) => add(t + 2, 0.6 + i * 0.03, m + 12)); add(t + 3, 0.4, 72); }
+          else { add(t, 3.7, 72); add(t + 3.75, 0.1, 74); }                                                                                         /* the last 16th of the bar, the next starts a 16th into the next bar */
+          if (kind === 4 && b < 9) add(t + 4.25, 0.5, 76);
+          for (let i = 0; i < 4; i++) add(t + i, 0.6, [43, 50, 48, 55][i], 60);                                                                       /* a bass quarter on each beat, released early */
+        }
+        const A0 = window.PPPAudioScore, lock = { beats: 4, beatType: 4, bpm: 120, firstDownbeat: 0 };
+        const mk = o => A0.toMusicXml({ notes: notes, pedals: [], title: 'onsets' }, Object.assign({ title: 'onsets', lock: lock }, o));
+        const NC = window.PPPScoreGraphModules.notationCheck;
+        const control = mk({ closeGaps: false, exactBars: true, onsetDurations: false });
+        const cc = NC.checkGraph(control.graph);
+        window.__odControl = { c1: cc.classes[1].count, rests: cc.rests };
+        window.__odHeard = notes.length;
+        A._recording = { url: '', barStarts: [0] };
+        A._heard = { notes: notes, pedals: [], duration: notes[notes.length - 1].off };
+        A.adoptScore(P.parseMusicXML(control.xml, 'onsets'));
+        A.setState({ screen: 'review', lockMetre: '4/4', lockBpm: 120, lockDownbeat: 0, importSource: { kind: 'audio', name: 'onsets.mp3', status: 'transcribed', tempo: 120, amt: 'onsets-and-frames' },
+          importReport: { confidence: 0.9, level: 'good', issues: [], suspectMeasures: [], summary: null, advice: null, measures: 10, notes: notes.length, staves: 2, tempo: 120 } });
+      });
+      await sleep(500);
+      const probeNC = pg => pg.evaluate(() => {
+        const NC = window.PPPScoreGraphModules.notationCheck, sc = window.PPP.app.state.score;
+        const a = NC.checkScore(sc), rs = window.PPPEngrave.app.resolveSync(sc), b = NC.checkGraph(rs.graph);
+        const issues = window.PPPScoreGraph.validate(rs.graph).issues;
+        const bad = [1, 2, 3, 4, 5, 6, 7].filter(c => a.classes[c].count || b.classes[c].count).map(c => c + ':' + a.classes[c].count + '/' + b.classes[c].count);
+        return { score: NC.counts(a), graph: NC.counts(b), total: a.total, graphTotal: b.total, bad: bad, rests: a.rests, notes: a.notes, quarterRests: sc.notes.filter(n => n.rest && n.type === 'quarter' && !n.tm).length,
+          errors: issues.filter(i => /^E-/.test(i.code)).length, via: rs.via, strikes: window.PPP.PianoScore.of(sc).strikes.length, sig: sc.notes.filter(n => !n.rest).map(n => [n.m, n.b, n.p, n.staff].join('|')).sort().join(';'),
+          items: [1, 2, 3, 4, 5, 6, 7].reduce((o, c) => { if (a.classes[c].items.length) o[c] = a.classes[c].items.slice(0, 3); return o; }, {}) };
+      });
+      const sigOf = r => r.sig;
+      const odc = await op.evaluate(() => ({ c: window.__odControl, heard: window.__odHeard }));
+      ok('control: the same heard notes written with their heard releases (onsetDurations: false, no gaps pass) have rests between notes (class 1)', odc.c.c1 >= 8, JSON.stringify(odc));
+      await op.click('[data-lock-rewrite]');
+      await op.waitForFunction(() => /Rewrote the rhythm/.test((window.PPP.app.state.toast || '') + document.body.innerText), { timeout: 30000 });
+      await sleep(1500);
+      const r1 = await probeNC(op);
+      ok('"Rewrite the rhythm": the checker finds nothing in classes 1-7, in the Score or in the graph the page draws (' + r1.notes + ' notes, ' + r1.rests + ' rests); a valid graph', r1.total === 0 && r1.graphTotal === 0 && r1.errors === 0 && r1.via === 'live', JSON.stringify(Object.assign({}, r1, { sig: undefined })));
+      ok('the real rest (beat 3 of bars 3 and 8: a quarter) is still there, and the player has a strike for every heard note', r1.quarterRests >= 2 && r1.strikes >= odc.heard * 0.95 && r1.strikes <= odc.heard, JSON.stringify({ q: r1.quarterRests, strikes: r1.strikes, heard: odc.heard }));
+      await op.evaluate(() => { const b = [...document.querySelectorAll('button')].find(x => /Accept and practise/.test(x.innerText)); if (b) b.click(); });
+      await sleep(2500);
+      const osid = await op.evaluate(() => window.PPP.app.state.songId);
+      const openSaved = async (pg, id) => {
+        await pg.evaluate(() => window.__pppTest.nav('My Songs')); await sleep(600);
+        await pg.evaluate(i => { const b = document.querySelector('[data-open-song="' + i + '"]'); if (b) b.click(); }, id); await sleep(3000);
+        await pg.evaluate(() => { const t = [...document.querySelectorAll('main [role=tab]')].find(x => /Start to finish/.test(x.innerText)); if (t) t.click(); }); await sleep(2500);
+      };
+      const r2 = await probeNC(op);
+      ok('the saved transcription: classes 1-7 are 0 (Score and graph), the same notes as the rewrite, valid', !!osid && r2.total === 0 && r2.graphTotal === 0 && r2.errors === 0 && sigOf(r2) === sigOf(r1), JSON.stringify(Object.assign({}, r2, { sig: undefined })));
+      const ocop = await overlayArrange(op, osid, 'intermediate', 'balanced');
+      ok('Song Arranger on the saved transcription: saved as a one-note-per-hand arrangement', ocop.saved && ocop.slot.importSource.arrangement.engine === 'ppp.g9-single' && !ocop.slot.importSource.arrangement.singleFallback, ocop.saved ? JSON.stringify(ocop.slot.importSource.arrangement) : JSON.stringify(ocop.status));
+      let copyId = null;
+      if (ocop.saved) {
+        copyId = ocop.id;
+        await openSaved(op, copyId);
+        const r3 = await probeNC(op);
+        ok('the one-note copy: classes 1-7 are 0 (Score and graph), valid; a quarter rest is still drawn', r3.total === 0 && r3.graphTotal === 0 && r3.errors === 0 && r3.quarterRests >= 1 && r3.notes >= r1.notes * 0.5, JSON.stringify(Object.assign({}, r3, { sig: undefined })));
+        console.log('  (information: the copy\'s class 8, the same pitch struck by both hands: ' + r3.score[8] + '; class 9, rests inside a run: ' + r3.score[9] + ')');
+      }
+      /* the 'original' level: the legacy engine rebuilds the notes and writes no rests; reported, not asserted */
+      const oorig = await overlayArrange(op, osid, 'original', 'balanced');
+      if (oorig.saved) { await openSaved(op, oorig.id); const ro = await probeNC(op); console.log('  (information: the "original" level copy, the legacy engine, classes 1-7 as Score/graph counts: ' + JSON.stringify(ro.bad) + ', rests ' + ro.rests + ')'); }
+      /* a reload: the saved transcription and the copy come back from the store */
+      await op.reload({ waitUntil: 'networkidle2' });
+      await op.waitForFunction(() => !!(window.PPP && window.PPP.app), { timeout: 60000 });
+      await ncPage(op);
+      await sleep(1500);
+      await openSaved(op, osid);
+      const r4 = await probeNC(op);
+      ok('after a reload, the saved transcription: classes 1-7 are 0 (Score and graph)', r4.total === 0 && r4.graphTotal === 0 && r4.errors === 0 && sigOf(r4) === sigOf(r1), JSON.stringify(Object.assign({}, r4, { sig: undefined })));
+      if (copyId) {
+        await openSaved(op, copyId);
+        const r5 = await probeNC(op);
+        ok('after a reload, the one-note copy: classes 1-7 are 0 in the Score; the graph (projected from the Score, no tuplet unit: its tuplet class is information) has none in classes 1-6', r5.total === 0 && r5.errors === 0 && [1, 2, 3, 4, 5, 6].every(c => r5.graph[c] === 0), JSON.stringify(Object.assign({}, r5, { sig: undefined })));
+      }
+      ok('no page or console error', op.__rec.pageErrors.length === 0 && op.__rec.consoleErrors.length === 0, JSON.stringify(op.__rec.pageErrors.concat(op.__rec.consoleErrors)));
+      await op.close();
     }
 
     console.log('\n── refusals ──');
