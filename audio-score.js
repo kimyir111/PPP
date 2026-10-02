@@ -600,11 +600,15 @@
     return flags;
   }
 
-  function quantize(notes, beats, trip) {
+  /* exact (v2 only, G10a-1): an onset within 1e-9 of a beat is ON the beat. Legacy floors the position with 1e-9 of slack
+     here but without it in snapStraight, so an onset a hair before a beat (a beat grid interpolated through the onsets
+     themselves, as v2's is) was written one beat late; legacy keeps that, byte for byte */
+  function quantize(notes, beats, trip, exact) {
     let errSum = 0;
     const q = notes.map(n => {
       const tOn = n.attack != null ? n.attack : n.on;
-      const pos = beatPosition(beats, tOn);
+      let pos = beatPosition(beats, tOn);
+      if (exact) { const r = Math.round(pos); if (Math.abs(pos - r) < 1e-9) pos = r; }
       const k = Math.floor(pos + 1e-9);
       const useTrip = !!(trip && trip[k]);
       const a = useTrip ? snapTriplet(pos, spbAt(beats, pos)) : snapStraightBest(pos, spbAt(beats, pos));
@@ -1350,9 +1354,9 @@
     } catch (e) { return null; }
   }
   /* G10a-2 (docs/GOALS/G10_AUDIO_TO_SCORE.md section 8, stage S3): rec/grid.js, the grid of each beat decided from the evidence of all its onsets (straight 16ths, 32nds, triplets, swung eighths)
-     and every onset placed on it. Asked for with opts.grid: 'v2' only (the benchmark's 'v2-grid' stage options; no app call site passes it): it replaces this file's onset placement
-     (tripletBeats / snapStraightBest / snapTriplet in quantize, and snapOnsets with exactBars) in finish() for a recording in a simple-time bar, AFTER the beats, the tempo and the metre
-     were decided as before, so only the grid stage changes. Without the option nothing here runs and nothing is loaded. A page without rec/grid.js writes the score as before. */
+     and every onset placed on it. The recording conversion v2's stage S3 (recordingV2, opts.recording 'v2'): it replaces this file's onset placement (tripletBeats / snapStraightBest /
+     snapTriplet in quantize, and snapOnsets with exactBars) for a simple-time skeleton. opts.grid 'legacy' keeps G10a-1's S3 (the legacy quantiser) under v2, for comparison. Legacy (no
+     opts.recording) never loads it. A page without rec/grid.js writes v2 with the legacy quantiser. */
   function gridLib() {
     try {
       return typeof module === 'object' && module.exports ? require('./rec/grid.js') : (global && global.PPPRecGrid) || null;
@@ -1383,9 +1387,11 @@
     b.meter({ m: mid[0], beats: [beatsPerBar], beatType: beatType });
     b.key({ m: mid[0], at: '0', fifths: key.fifths, mode: key.mode });
     const compound = beatType >= 8 && beatsPerBar % 3 === 0;
-    /* issue 1 kept as it is: a compound tempo plays bpm quarters a minute but prints dotted quarter = bpm */
+    /* issue 1 kept as it is in legacy: a compound tempo plays bpm quarters a minute but prints dotted quarter = bpm. The
+       recording conversion v2 (opts.recording 'v2', G10a-1) sets model.qpm: the quarters a minute that dotted quarter =
+       bpm means (3 bpm / 2), so what is printed is what plays */
     const mark = compound ? { unit: 'quarter', dots: 1, perMinute: String(bpm) } : { unit: 'quarter', perMinute: String(bpm) };
-    b.tempo({ m: mid[0], at: '0', qpm: String(bpm), mark: mark, display: [{ part: part.id, staff: st[1], placement: 'above' }] });
+    b.tempo({ m: mid[0], at: '0', qpm: model.qpm != null ? model.qpm : String(bpm), mark: mark, display: [{ part: part.id, staff: st[1], placement: 'above' }] });
     b.clef(part, { staff: st[1], m: mid[0], at: '0', sign: 'G' });
     b.clef(part, { staff: st[2], m: mid[0], at: '0', sign: 'F' });
 
@@ -1552,13 +1558,8 @@
     const beatType = extra.beatType || 4;
     const ticksPerBeat = extra.ticksPerBeat || Q;
     const bar = Math.round(beatsPerBar * (4 / beatType) * Q);
-    /* opts.grid 'v2' (see gridLib): the onsets of a recording in a simple-time bar placed again by rec/grid.js on the same beats (ticks from beats[0], as quantize places them) */
-    let gridV2 = null;
-    if (opts.grid === 'v2' && extra.quantizer === 'heuristic' && beatType === 4 && ticksPerBeat === Q && (opts.sourceKind || 'audio-score') === 'audio-score' && gridLib()) {
-      gridV2 = gridLib().legacyQ(notes, beats, opts.lock && opts.lock.grid === '16th' ? { kinds: ['16', '32'] } : {});
-      q = gridV2.q;
-      extra = Object.assign({}, extra, { errSum: gridV2.errSum });
-    }
+    /* v2's stage S3 (rec/grid.js, G10a-2): the onsets are already on one grid per beat */
+    const gridV2 = extra.gridV2 || null;
     const firstTick = Math.min.apply(null, q.map(n => n.tick));
     let origin = extra.origin != null ? extra.origin : 0;
     while (origin > firstTick) origin -= bar;
@@ -1585,6 +1586,11 @@
          G0 writer left an unpaired <pedal> mark. A press with no release (off Infinity) is not this:
          it is finite once clamped and still lasts to the last tick (G01 §26 F2). */
       if (isNaN(a) || isNaN(b) || b - a < 6 || b <= 0 || a >= bars * bar) return;
+      /* TD20, fixed for v2 only (G10a-1; legacy keeps it, docs/GOALS/G10 section 17): a press in the score's last tick has
+         its release clamped to that tick (bars * bar - 1 below), a span that ends where it starts, and the graph builder
+         threw E-SPAN-ORDER for the whole score. Such a press has nothing left to sustain in the score: it is not written
+         (the performance layer keeps it) */
+      if (extra.recording === 'v2' && Math.min(bars * bar - 1, b) <= Math.max(0, a)) return;
       held.push([a, b]);
     });
     held.sort((x, y) => x[0] - y[0]);
@@ -1621,6 +1627,9 @@
       title: title, key: key, beatsPerBar: beatsPerBar, beatType: beatType, bpm: roundBpm,
       bars: bars, events1: events1, events2: events2, pedals: pedals, table: table, grid: grid
     };
+    /* v2 (G10a-1): issue 1 fixed - a compound metre's printed dotted quarter = bpm plays 3 bpm / 2 quarters a minute */
+    const v2Compound = extra.recording === 'v2' && beatType >= 8 && beatsPerBar % 3 === 0;
+    if (extra.recording === 'v2') model.qpm = v2Compound ? (roundBpm % 2 ? (3 * roundBpm) + '/2' : String(3 * roundBpm / 2)) : String(roundBpm);
 
     const tickToSec = tick => {
       const pos = (tick + origin) / ticksPerBeat;
@@ -1644,7 +1653,7 @@
     const result = {
       xml: null,
       stats: {
-        notes: notes.length, bars: bars, beatsPerBar: beatsPerBar, beatType: beatType, tempo: roundBpm,
+        notes: notes.length, bars: bars, beatsPerBar: beatsPerBar, beatType: beatType, tempo: v2Compound ? 1.5 * roundBpm : roundBpm,
         key: key, keyMargin: key.margin, meterContrast: extra.meterContrast || 1,
         gridError: errSum / Math.max(1, notes.length),
         tempoVariation: cv,
@@ -1678,6 +1687,10 @@
     if (opts.sourceInput) model.sourceInput = opts.sourceInput;
     model.params = { beatSource: result.stats.beatSource, quantizer: result.stats.quantizer };
     if (extra.tempoAlias) model.params.tempoAlias = extra.tempoAlias;
+    /* v2: the time skeleton is inferred by a learned model; the graph's provenance says which, and how sure it was */
+    if (extra.recording === 'v2') model.params.recording = { pipeline: 'v2', skeleton: extra.recSkeleton || null };
+    /* and which grid model placed the onsets (S3, G10a-2), with how many beats it was unsure of */
+    if (gridV2) model.params.recording.grid = { model: gridV2.report.model, lowConf: gridV2.report.lowConf, beats: gridV2.plan.length };
     if (extra.arrangement) model.params.arrangement = extra.arrangement;
     /* where each heard note was written: the placed note with the same onset, release and pitch */
     const placed = new Map();
@@ -1725,7 +1738,8 @@
       if (professional === 'on' && pro.graph !== graph) { graph = pro.graph; graphIssues = pro.issues; }
     }
     if (gridReport) result.gridReport = gridReport;            /* beside the graph, not in stats (the benchmark snapshots stats) */
-    if (gridV2) result.gridPlan = { plan: gridV2.plan, report: gridV2.report };   /* rec/grid.js's GridPlan (opts.grid 'v2'), beside the graph too */
+    if (extra.recReport) result.recReport = extra.recReport;   /* v2's time skeleton report (G10a-1), beside the graph too */
+    if (gridV2) result.gridPlan = { plan: gridV2.plan, report: gridV2.report };   /* rec/grid.js's GridPlan (S3, G10a-2), beside the graph too */
     result.xml = scoreGraph().musicxml.export(graph, { software: 'PPP audio transcription' }).xml;
     result.graph = graph;
     result.graphIssues = graphIssues;
@@ -1785,6 +1799,46 @@
     });
   }
 
+  /* ------------------------------------------------------------ v2 (G10a-1) */
+  /* rec/ (the browser loads rec/*.js before this file and the weights as window.PPPRecWeights); null when it is absent */
+  function recLib() {
+    try {
+      return typeof module === 'object' && module.exports ? require('./rec/index.js') : (global && global.PPPRec) || null;
+    } catch (e) { return null; }
+  }
+  /* the score of a recording on rec/'s time skeleton, or null (the caller then writes it the legacy way) */
+  function recordingV2(input, opts, clustered, timingClustered, timingNotes, arrangementPlan) {
+    const lib = recLib();
+    if (!lib) return null;
+    /* the skeleton is read from the whole performance (an arrangement must not change the tempo or the metre) */
+    const sk = lib.skeleton(timingClustered, { weights: opts.recWeights, beats: input.beats, downbeats: input.downbeats });
+    if (!sk) return null;
+    const beats = sk.beats;
+    const compound = !!sk.metre.compound;
+    let q, errSum, gridV2 = null;
+    if (compound) {
+      q = quantizeCompound(clustered, beats);
+      errSum = q.reduce((s, n) => s + n.err, 0);
+    } else if (opts.grid !== 'legacy' && gridLib()) {
+      /* S3 (G10a-2): the grid of each beat and the onsets on it, rec/grid.js on the skeleton's beats (ticks from beats[0], as quantize places them) */
+      gridV2 = gridLib().legacyQ(clustered, beats, {});
+      q = gridV2.q; errSum = gridV2.errSum;
+    } else {
+      const trip = tripletBeats(clustered, beats);
+      const r = quantize(clustered, beats, trip, true);
+      q = r.q; errSum = r.errSum;
+    }
+    return finish(q, clustered, beats, opts, {
+      beatsPerBar: sk.metre.beats, beatType: sk.metre.beatType, origin: 0, heard: timingNotes,
+      pedals: input.pedals, controls: input.controls, title: input.title, quantizer: 'heuristic',
+      beatSource: sk.report.chosen.audio ? 'audio-v2' : 'onset-v2', errSum: errSum, meterContrast: 1 + sk.conf,
+      ticksPerBeat: compound ? 36 : Q, tactus: compound ? 'dotted-quarter' : 'quarter',
+      arrangement: arrangementPlan, originalNotes: timingNotes.length,
+      recording: 'v2', recSkeleton: { model: sk.model.name + '@' + sk.model.version, conf: Math.round(sk.conf * 1000) / 1000, metre: sk.metre.key },
+      recReport: sk, gridV2: gridV2
+    });
+  }
+
   /* ------------------------------------------------------------ the whole */
   function toMusicXml(input, opts) {
     opts = opts || {};
@@ -1806,6 +1860,15 @@
     timingClustered.forEach(n => { if (!onsets.length || n.attack - onsets[onsets.length - 1] > 0.03) onsets.push(n.attack); });
 
     const lock = opts.lock || null;
+    /* The recording conversion v2 (docs/GOALS/G10 sections 6 and 8, G10a-1): rec/ decides the time skeleton - the
+       beats, the metre, the bar lines, the pickup and the tempo - with a model learned from the catalogue, and the
+       quantiser and writer below write the score on it (S3-S10 stay as they are until G10a-2/3). Only when asked
+       (opts.recording 'v2') and only for a recording the caller has not already fixed (no lock, no stated metre);
+       a page without rec/ or its weights, or a performance rec/ cannot read, is written exactly as before. */
+    if (opts.recording === 'v2' && !lock && !opts.beatsPerBar) {
+      const written = recordingV2(input, opts, clustered, timingClustered, timingNotes, arrangementPlan);
+      if (written) return written;
+    }
     let beats, beatSource = 'onset', beatRepairs = 0;
 
     if (lock && (lock.bpm || lock.firstDownbeat != null) && (lock.beats || lock.beatsPerBar)) {
@@ -2092,7 +2155,7 @@
     arrangementProfile: arrangementProfile,
     recommendArrangement: recommendArrangement,
     normaliseArrangement: normaliseArrangement,
-    _: { estimateKey, spellingTable, spell, pieces, notePieces, snap: snap16, beatPosition, stabilizeBeats, meterAndPhase, centreSplit, clusterNotes, simplifyNotes, arrangeNotes, arrangementProfile, recommendArrangement, normaliseArrangement, SUB, Q, REST_MIN }
+    _: { estimateKey, spellingTable, spell, pieces, notePieces, snap: snap16, beatPosition, stabilizeBeats, meterAndPhase, centreSplit, clusterNotes, simplifyNotes, arrangeNotes, arrangementProfile, recommendArrangement, normaliseArrangement, SUB, Q, REST_MIN, clean, quantize }
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (global) global.PPPAudioScore = api;

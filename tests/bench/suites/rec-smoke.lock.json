@@ -11,6 +11,11 @@
    "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
   },
   {
+   "id": "catalog/gymnopedie-1|cover-pedal|none|s1|opt:v2",
+   "input_sha256": "2ed23db1f750de2c24707dc4f06cddd6c3f3963b4d39c080edf4a4bfdcb19550",
+   "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
+  },
+  {
    "id": "catalog/gymnopedie-1|cover|none|s1|opt:app",
    "input_sha256": "99ddd4ece7bd8631111f1b3a22131c381e8a4eabe44d9ac4b1a233615dc2a78c",
    "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
@@ -18,6 +23,11 @@
   {
    "id": "catalog/gymnopedie-1|cover|none|s1|opt:legacy",
    "input_sha256": "eb97e98546d7a63adac8b9dd29ac84679d824a70647f4ac4a9250060cfbcbee1",
+   "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
+  },
+  {
+   "id": "catalog/gymnopedie-1|cover|none|s1|opt:v2",
+   "input_sha256": "ae4ed12cd8909feba2871f4eccf9677848c5b121f4c757352d76eef31bbb039e",
    "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
   },
   {
@@ -31,6 +41,11 @@
    "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
   },
   {
+   "id": "catalog/gymnopedie-1|human-real|none|s1|opt:v2",
+   "input_sha256": "8994f6d68123753b88066c6faa91cb6d21e7cd328d78e3f0544e276ac07d5bfc",
+   "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
+  },
+  {
    "id": "catalog/happy-birthday|cover-pedal|none|s1|opt:app",
    "input_sha256": "a227951e65bdade486fb83773f77dcac2e5f7f7a74a911dd6e5f4b4da5879815",
    "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
@@ -38,6 +53,11 @@
   {
    "id": "catalog/happy-birthday|cover-pedal|none|s1|opt:legacy",
    "input_sha256": "d94fccaaf048ce29024ba18d051a77135bed093c99cb032b45e26722c02c899e",
+   "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
+  },
+  {
+   "id": "catalog/happy-birthday|cover-pedal|none|s1|opt:v2",
+   "input_sha256": "640a98bf28b20222a28809be1bd7124a3e1b173a44e8a1b523532660aa0ce621",
    "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
   },
   {
@@ -51,6 +71,11 @@
    "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
   },
   {
+   "id": "catalog/happy-birthday|cover|none|s1|opt:v2",
+   "input_sha256": "9586b4ba32912a61bd476a6f1190d7d8c5c7f1f4d768e167811d407bc186b05d",
+   "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
+  },
+  {
    "id": "catalog/happy-birthday|human-real|none|s1|opt:app",
    "input_sha256": "eb5f2de9ff346142a1c12a8f86c80cb81a853b755bcee952c75ee789bffb68b9",
    "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
@@ -58,6 +83,11 @@
   {
    "id": "catalog/happy-birthday|human-real|none|s1|opt:legacy",
    "input_sha256": "37b6db8f7743a0bb2af4eb2248c11ad5beb02d6e6c99a1bc7af6b464d9cd0ffe",
+   "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
+  },
+  {
+   "id": "catalog/happy-birthday|human-real|none|s1|opt:v2",
+   "input_sha256": "086f54a553c20da65acc536edaa7b22972f597bbf17ac54190857bbe6f66a78d",
    "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
   },
   {
@@ -71,6 +101,11 @@
    "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
   },
   {
+   "id": "hymns/i-know-whom|cover-pedal|none|s1|opt:v2",
+   "input_sha256": "4a5ca0b2fb16fc45acf01e4f5d8be88e3b7e3738d837c9f06568866c6ac2859c",
+   "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
+  },
+  {
    "id": "hymns/i-know-whom|cover|none|s1|opt:app",
    "input_sha256": "a9e28a5a0fb3193e4915728d0b3f5def186f3a8b0e4d32e59507421f8bac05d1",
    "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
@@ -78,6 +113,11 @@
   {
    "id": "hymns/i-know-whom|cover|none|s1|opt:legacy",
    "input_sha256": "97884d331e6de7f202b78a8c1cb0dee6525012d7fefe9082ae976ee235001275",
+   "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
+  },
+  {
+   "id": "hymns/i-know-whom|cover|none|s1|opt:v2",
+   "input_sha256": "24c4b0a16a9bd3cf5f8dc7a214f727eb32500d954dc3d06f7fd2961248f23aa2",
    "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
   },
   {
@@ -91,6 +131,11 @@
    "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
   },
   {
+   "id": "hymns/i-know-whom|human-real|none|s1|opt:v2",
+   "input_sha256": "61ea09be14e920841f470923566da7a381af81f547b17c5870658e76dd247b96",
+   "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
+  },
+  {
    "id": "hymns/we-gather-together|cover-pedal|none|s1|opt:app",
    "input_sha256": "a4ec59106cd2895f9267fa0fc42a8975563fba8d95c1be077c25a4cc3621b1c0",
    "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
@@ -98,6 +143,11 @@
   {
    "id": "hymns/we-gather-together|cover-pedal|none|s1|opt:legacy",
    "input_sha256": "4d8414b6dfb97d6518386c74afbd045279d889ccf25024590de109bc6800681d",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
+  },
+  {
+   "id": "hymns/we-gather-together|cover-pedal|none|s1|opt:v2",
+   "input_sha256": "c931429489ca3c34d7904c7625e4865e95389811d0cf66c8e3b14d56f4089451",
    "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
   },
   {
@@ -111,6 +161,11 @@
    "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
   },
   {
+   "id": "hymns/we-gather-together|cover|none|s1|opt:v2",
+   "input_sha256": "00da606d4beacac17063971172b1099634d59eb991672641f38d57f0ee8ad295",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
+  },
+  {
    "id": "hymns/we-gather-together|human-real|none|s1|opt:app",
    "input_sha256": "25d0970af588067739bf54dda4b3665bc3202bf67e36496f53431f61f8a71e31",
    "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
@@ -118,6 +173,11 @@
   {
    "id": "hymns/we-gather-together|human-real|none|s1|opt:legacy",
    "input_sha256": "b74dc6f724665117d1145954e6611ebb3f76347868871571039f3e1ff1d7b775",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
+  },
+  {
+   "id": "hymns/we-gather-together|human-real|none|s1|opt:v2",
+   "input_sha256": "524aef6b6ee93020b737b3bf1c85eb4f4b40d8c7b65315612faf9fbfccee73fe",
    "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
   },
   {
@@ -131,6 +191,11 @@
    "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
   },
   {
+   "id": "method/czerny599/040|cover-pedal|none|s1|opt:v2",
+   "input_sha256": "b3f54ce18642d3641d4d6266795968f578777ab59837efe3fedae28828981368",
+   "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
+  },
+  {
    "id": "method/czerny599/040|cover|none|s1|opt:app",
    "input_sha256": "c7204fdbe6e4bb3b606c6edc5992b6c512af21a9c456bd01ced133245fd982bd",
    "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
@@ -138,6 +203,11 @@
   {
    "id": "method/czerny599/040|cover|none|s1|opt:legacy",
    "input_sha256": "b9c396e156f897966bd1ab47e50a477447bf4bcc2c2e3f59099bfd7bca88e4eb",
+   "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
+  },
+  {
+   "id": "method/czerny599/040|cover|none|s1|opt:v2",
+   "input_sha256": "c2211fc3514b903203f519ab3862c83fb922a887a1e40230638e50f494df5233",
    "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
   },
   {
@@ -151,6 +221,11 @@
    "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
   },
   {
+   "id": "method/czerny599/040|human-real|none|s1|opt:v2",
+   "input_sha256": "1613572045a462812489bbf10ddac30a41e2f185345754c81cfdc3c24b107e4b",
+   "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
+  },
+  {
    "id": "method/sonatina/027|cover-pedal|none|s1|opt:app",
    "input_sha256": "f5b854157fa6e05caa678221e0ce90755ac92c56cf8b534cfbfffff984d7ed0d",
    "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
@@ -158,6 +233,11 @@
   {
    "id": "method/sonatina/027|cover-pedal|none|s1|opt:legacy",
    "input_sha256": "653c24e0c0760fcac9516685c3af7fc5fbf10d15ad50b7d7fd5ba836a4f2ce80",
+   "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
+  },
+  {
+   "id": "method/sonatina/027|cover-pedal|none|s1|opt:v2",
+   "input_sha256": "c47bb68530f7bc7050b0e7f4a1b9ecff22301c47c1c122a3db95d132754a360e",
    "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
   },
   {
@@ -171,6 +251,11 @@
    "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
   },
   {
+   "id": "method/sonatina/027|cover|none|s1|opt:v2",
+   "input_sha256": "c89f26f4b1da70343b40c5ee6b283028058e327765756c8e6a832534d2c32a71",
+   "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
+  },
+  {
    "id": "method/sonatina/027|human-real|none|s1|opt:app",
    "input_sha256": "b531ca069f6d5e82633578a7dc5a22d16dfd251cf0a510bbc8cb07d5e7085b11",
    "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
@@ -178,6 +263,11 @@
   {
    "id": "method/sonatina/027|human-real|none|s1|opt:legacy",
    "input_sha256": "697790b8122b12af00badcfd84843296dc54a92871c6e2535b0e29c6c44b5c0e",
+   "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
+  },
+  {
+   "id": "method/sonatina/027|human-real|none|s1|opt:v2",
+   "input_sha256": "af10edb720ced09f71be56960fe8167bbfaa0a462e047e648b7b26fe4c32bfca",
    "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
   },
   {
@@ -191,6 +281,11 @@
    "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
   },
   {
+   "id": "micro/M01-waltz-3-4|cover-pedal|none|s1|opt:v2",
+   "input_sha256": "4f318a12e728439cc6b72d9a3c36b197483c77ec7d6622d4717d5232294f4a6f",
+   "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
    "id": "micro/M01-waltz-3-4|cover|none|s1|opt:app",
    "input_sha256": "d66a758adff870804110be0901923ff3163cbdda2c68972a55d1273cf3eaec52",
    "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
@@ -198,6 +293,11 @@
   {
    "id": "micro/M01-waltz-3-4|cover|none|s1|opt:legacy",
    "input_sha256": "139f5cc4293580b5cbb5f5522f16646222f4d127a7843f3a8451d3d07f9b51e6",
+   "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
+   "id": "micro/M01-waltz-3-4|cover|none|s1|opt:v2",
+   "input_sha256": "dddc5eb6e70c7cb9fe6b225a81279af9b54fa03640a0c21bfa8dd2f647cfce32",
    "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
   },
   {
@@ -211,6 +311,11 @@
    "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
   },
   {
+   "id": "micro/M01-waltz-3-4|human-real|none|s1|opt:v2",
+   "input_sha256": "a5a2bff7d2b99327f7038a63ec278918129174a600b3d49e0b148857ec58fbfb",
+   "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
    "id": "micro/M02-alberti-4-4|cover-pedal|none|s1|opt:app",
    "input_sha256": "a6c234a014936f7e7e18352f6db56e584766f45cdf1acac49cccf738b77aee91",
    "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
@@ -218,6 +323,11 @@
   {
    "id": "micro/M02-alberti-4-4|cover-pedal|none|s1|opt:legacy",
    "input_sha256": "d9e3dc5a739efb5d06d085addbff48891d0b0cf193b6a518d23ded16e17de990",
+   "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
+  },
+  {
+   "id": "micro/M02-alberti-4-4|cover-pedal|none|s1|opt:v2",
+   "input_sha256": "4110fa77395a51d9095cfd4e0101cf8c28e3fe44a7c7fc6a0ee08423ad6e15fd",
    "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
   },
   {
@@ -231,6 +341,11 @@
    "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
   },
   {
+   "id": "micro/M02-alberti-4-4|cover|none|s1|opt:v2",
+   "input_sha256": "fe9b0aca194964e32a7e8b62a426db5d1c5aca1a113101168ce20fc4c3496c87",
+   "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
+  },
+  {
    "id": "micro/M02-alberti-4-4|human-real|none|s1|opt:app",
    "input_sha256": "7c6a654da2c0435b8dbc8ff8638e4b15787b5eb130805923e0b8fec6156190d7",
    "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
@@ -238,6 +353,11 @@
   {
    "id": "micro/M02-alberti-4-4|human-real|none|s1|opt:legacy",
    "input_sha256": "305cfaf4f3eaf9ad7666ff9d2ba0f3f663debcb666dc07df0fa4b1d254cde221",
+   "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
+  },
+  {
+   "id": "micro/M02-alberti-4-4|human-real|none|s1|opt:v2",
+   "input_sha256": "0469a4a4b73f1b8db2bfc308857d3bec17adafebb67dbdde4b9979c6b296fce4",
    "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
   },
   {
@@ -251,6 +371,11 @@
    "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
   },
   {
+   "id": "micro/M03-jig-6-8|cover-pedal|none|s1|opt:v2",
+   "input_sha256": "0e8424e37c05f15a4b3a786d799f6567b772f75cba6a6f42c237c4cdae945ef2",
+   "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
    "id": "micro/M03-jig-6-8|cover|none|s1|opt:app",
    "input_sha256": "19937979189d23476b012d94d2ff788a747a628dec6fc24aa318d0007f47b552",
    "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
@@ -258,6 +383,11 @@
   {
    "id": "micro/M03-jig-6-8|cover|none|s1|opt:legacy",
    "input_sha256": "e484eb2d60d11051eed9042c48929344d2e7a3cb63399e45ca60daaa001e9920",
+   "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
+   "id": "micro/M03-jig-6-8|cover|none|s1|opt:v2",
+   "input_sha256": "6256cb6e8dc255f451e281e42cfe12d519d7e5ee0869a7867c7734f5c359eb10",
    "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
   },
   {
@@ -271,6 +401,11 @@
    "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
   },
   {
+   "id": "micro/M03-jig-6-8|human-real|none|s1|opt:v2",
+   "input_sha256": "ee30071fad1edfecc4e18fa2bb40fe23aad60169ef08030a6db7d6016436b52e",
+   "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
    "id": "micro/M04-triplets-4-4|cover-pedal|none|s1|opt:app",
    "input_sha256": "9aa03fa23ed3998b53f38d04f3e7cd8e62a7fb8d11426e21e5be53b176b388a8",
    "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
@@ -278,6 +413,11 @@
   {
    "id": "micro/M04-triplets-4-4|cover-pedal|none|s1|opt:legacy",
    "input_sha256": "12b8f15f5ce53e94f89c1ac9f33b7770ab9cbc31eccff14649c0be120d2b9df6",
+   "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
+  },
+  {
+   "id": "micro/M04-triplets-4-4|cover-pedal|none|s1|opt:v2",
+   "input_sha256": "8204b118bc1d3f9147f68660faaa326bd0aef335a01ffb87787c3aeab91bf463",
    "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
   },
   {
@@ -291,6 +431,11 @@
    "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
   },
   {
+   "id": "micro/M04-triplets-4-4|cover|none|s1|opt:v2",
+   "input_sha256": "b3389e29bfb8bb5dc5d5c2d790bfb8b048c652d4936ffc31346aa3c934af868b",
+   "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
+  },
+  {
    "id": "micro/M04-triplets-4-4|human-real|none|s1|opt:app",
    "input_sha256": "19bad2a898b7e319b6b499b5082c9fc8d9b68cc9ef8f47048b25f805170dd189",
    "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
@@ -298,6 +443,11 @@
   {
    "id": "micro/M04-triplets-4-4|human-real|none|s1|opt:legacy",
    "input_sha256": "fe22de239cbc03aa0b9ef5de4a5b0afabbff01b88afc8cebaa6abfac1cb2ed95",
+   "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
+  },
+  {
+   "id": "micro/M04-triplets-4-4|human-real|none|s1|opt:v2",
+   "input_sha256": "a1929f36388a7d51bc0f8ad5e7e90923dca7661d1d243b13f622510bc7490cc3",
    "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
   },
   {
@@ -311,6 +461,11 @@
    "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
   },
   {
+   "id": "micro/M05-32nds-120|cover-pedal|none|s1|opt:v2",
+   "input_sha256": "785b745f14add297dd015cc513567a023c46809166089dde876836fc318471d9",
+   "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
    "id": "micro/M05-32nds-120|cover|none|s1|opt:app",
    "input_sha256": "6378147fb5a43158a5003300e36055318dbd95f509fe8c54bdf64c0bea675ba5",
    "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
@@ -318,6 +473,11 @@
   {
    "id": "micro/M05-32nds-120|cover|none|s1|opt:legacy",
    "input_sha256": "6430fa1f188e67ce3a20c6e1109f0c5badedb6a3a1253e44e6b22d36e00c9395",
+   "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
+   "id": "micro/M05-32nds-120|cover|none|s1|opt:v2",
+   "input_sha256": "11c9f276f7e60f04d44ec88afe059d76bd0de59aec363ec0a7dbff571bc6e8ed",
    "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
   },
   {
@@ -331,6 +491,11 @@
    "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
   },
   {
+   "id": "micro/M05-32nds-120|human-real|none|s1|opt:v2",
+   "input_sha256": "f4528dd2d9e76343384ea1342e454262e69a3fbc81134e044708ef57794af036",
+   "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
    "id": "micro/M07-pickup-3-4|cover-pedal|none|s1|opt:app",
    "input_sha256": "77269e7cd965a25d79d9f68a45c9e515affd5815f8d6b703674093a168c7412a",
    "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
@@ -338,6 +503,11 @@
   {
    "id": "micro/M07-pickup-3-4|cover-pedal|none|s1|opt:legacy",
    "input_sha256": "dfe5a132fde09b39eccb1f92ca148baddc722a3908a28c35dc7c8a50408882b8",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
+   "id": "micro/M07-pickup-3-4|cover-pedal|none|s1|opt:v2",
+   "input_sha256": "b6764514d135ee0bc2703431d75a0403ba49243e20ea82b5ce3cb8e062a038a2",
    "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
   },
   {
@@ -351,6 +521,11 @@
    "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
   },
   {
+   "id": "micro/M07-pickup-3-4|cover|none|s1|opt:v2",
+   "input_sha256": "024ca5d5af5328e69d95937953d42b49db60b9f762062d19a9b8139f6ba8d3ad",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
    "id": "micro/M07-pickup-3-4|human-real|none|s1|opt:app",
    "input_sha256": "5cafa964c9f43802cda13fd81475a665cd0578e3a3d3c57139a870d83dc9e3dd",
    "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
@@ -358,6 +533,11 @@
   {
    "id": "micro/M07-pickup-3-4|human-real|none|s1|opt:legacy",
    "input_sha256": "b5813bf9254f9eb58eb90adde1560a125b3e883ab31a3106bce58b4c52d797f0",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
+   "id": "micro/M07-pickup-3-4|human-real|none|s1|opt:v2",
+   "input_sha256": "07c13af6ddefd8964fe5274e1bd38086980305cda6d4d454a3888f9bf806e031",
    "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
   },
   {
@@ -371,6 +551,11 @@
    "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
   },
   {
+   "id": "micro/M09-syncopation-ties|cover-pedal|none|s1|opt:v2",
+   "input_sha256": "2ef25eb254dd41b4efb3258369144c4839498b0064771f4a4b92d1bbdbe7b725",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
    "id": "micro/M09-syncopation-ties|cover|none|s1|opt:app",
    "input_sha256": "be1b885e39e44a150af2204723cb0823ffd1f54c4d172e1197202881bb2c9817",
    "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
@@ -378,6 +563,11 @@
   {
    "id": "micro/M09-syncopation-ties|cover|none|s1|opt:legacy",
    "input_sha256": "205d27adf4e40d198456ce64eff1a33c0c8d5985c65c4627e09a72f4177394da",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
+   "id": "micro/M09-syncopation-ties|cover|none|s1|opt:v2",
+   "input_sha256": "e554847d6a8e228dcfc52d10bdb31ac34ee4736e1ffe88be72919d855528a8c9",
    "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
   },
   {
@@ -391,6 +581,11 @@
    "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
   },
   {
+   "id": "micro/M09-syncopation-ties|human-real|none|s1|opt:v2",
+   "input_sha256": "af64cdc038153f6e8f67700c8823e9b2facfa2eae5674d3ad6426bc1cc51fd0b",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
    "id": "micro/M11-harmonic-minor|cover-pedal|none|s1|opt:app",
    "input_sha256": "ffc80c050a7dcbdb40ec5b6b1735071a432c9af813e39203d83150e710efa404",
    "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
@@ -398,6 +593,11 @@
   {
    "id": "micro/M11-harmonic-minor|cover-pedal|none|s1|opt:legacy",
    "input_sha256": "54e6846b8a97e77411e941ac9a16f94e02ac064820fa5b0ab013614f2656be8f",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
+   "id": "micro/M11-harmonic-minor|cover-pedal|none|s1|opt:v2",
+   "input_sha256": "ff13dd2b28a7b8baec0b46e9f7a1c1f88ea6f3c4d88e9448f6d7af9c34a0b258",
    "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
   },
   {
@@ -411,6 +611,11 @@
    "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
   },
   {
+   "id": "micro/M11-harmonic-minor|cover|none|s1|opt:v2",
+   "input_sha256": "f5bbf4472e2c30b12e4261b50109653a05c535f2d79b69e29b3d8c772300d70a",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
    "id": "micro/M11-harmonic-minor|human-real|none|s1|opt:app",
    "input_sha256": "1d857faae4ff8a13dadec6e6acc48afeeaad57e0c0efb7d5531c6d11972d1317",
    "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
@@ -418,6 +623,11 @@
   {
    "id": "micro/M11-harmonic-minor|human-real|none|s1|opt:legacy",
    "input_sha256": "09224bb41a6164bba819aea0a2fee915075ad733d373711cfc867a232bf7c9e5",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
+   "id": "micro/M11-harmonic-minor|human-real|none|s1|opt:v2",
+   "input_sha256": "7e5720dd1217878591e8a9f2db7f279f29be5e5296f40eb8dfd4f3537ace079f",
    "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
   },
   {
@@ -431,6 +641,11 @@
    "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
   },
   {
+   "id": "micro/M12-flats-db|cover-pedal|none|s1|opt:v2",
+   "input_sha256": "8bc5708cdf91b9b677a393b639606afa7d37df7e158c3233a1b4d400547f0daa",
+   "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
    "id": "micro/M12-flats-db|cover|none|s1|opt:app",
    "input_sha256": "c92ab438d267634a0751e0652390a920dcafe93a5cbea79640d1f063426f8ace",
    "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
@@ -438,6 +653,11 @@
   {
    "id": "micro/M12-flats-db|cover|none|s1|opt:legacy",
    "input_sha256": "16da5deb53dd4d0eec2aa7f4d88cfb35149d28a9a6f8aa2b63294a57de1e63d7",
+   "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
+   "id": "micro/M12-flats-db|cover|none|s1|opt:v2",
+   "input_sha256": "7599930f5e362f1c2d0fb17925bbca4f00d0835004c399db2656cd30f2799da8",
    "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
   },
   {
@@ -451,6 +671,11 @@
    "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
   },
   {
+   "id": "micro/M12-flats-db|human-real|none|s1|opt:v2",
+   "input_sha256": "5cc37c67669117a6fa5c97ae2f8c1e95a7297c73ab7d3e4b53b89dcfc6c95c11",
+   "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
    "id": "micro/M14-melody-in-bass|cover-pedal|none|s1|opt:app",
    "input_sha256": "d7fd9ede2798a91e45bdc2c6f501a4842f2378fa825393c1183581b9832fa1de",
    "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
@@ -458,6 +683,11 @@
   {
    "id": "micro/M14-melody-in-bass|cover-pedal|none|s1|opt:legacy",
    "input_sha256": "919cf4061f6bbf1b7bd4f21aac0a79dc73df795a0aa5f561eb5170c9c7dcc924",
+   "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  },
+  {
+   "id": "micro/M14-melody-in-bass|cover-pedal|none|s1|opt:v2",
+   "input_sha256": "c54ac02d186a130e99b9b341d3a43b1ae8feae34e4da981833c89d4ae94176ae",
    "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
   },
   {
@@ -471,6 +701,11 @@
    "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
   },
   {
+   "id": "micro/M14-melody-in-bass|cover|none|s1|opt:v2",
+   "input_sha256": "2314f0254f2b90c2b0738c5216727d1d20537606e10e3a4c3c4cd97d66831124",
+   "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  },
+  {
    "id": "micro/M14-melody-in-bass|human-real|none|s1|opt:app",
    "input_sha256": "c54dffd47d1ec4ea09a2fc1bdfba4a2357706d669f3e0fa1af134e69c539af5b",
    "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
@@ -479,10 +714,15 @@
    "id": "micro/M14-melody-in-bass|human-real|none|s1|opt:legacy",
    "input_sha256": "017e066db236a5156f758e899e081a4ef48b80ff442d285557fa0afe4830bda8",
    "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  },
+  {
+   "id": "micro/M14-melody-in-bass|human-real|none|s1|opt:v2",
+   "input_sha256": "c0f964d5caa753876da5d1006436c048d32ab033330d36f4604163d3874e83a2",
+   "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
   }
  ],
  "generator": "perform/2+humanize/1",
  "reader": "reader/5",
  "schema": "ppp.bench-lock/1",
- "suite_sha256": "86fca7e2623a1d4a9f39c87931bc911c0b0383c63bd62e47c00e8cd36be03d4c"
+ "suite_sha256": "90359278d17b4352f81cce8a018a9b2143ccccde6531122144a7b7db771d085f"
 }

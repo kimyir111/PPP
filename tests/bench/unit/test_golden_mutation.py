@@ -122,6 +122,18 @@ class RecMutations(unittest.TestCase):
             if m["expect"] == "REGRESSION":
                 self.assertTrue(any(x.startswith("rec.") for x in m["metrics"]), m["id"])
 
+    def test_every_v2_decision_has_a_planted_defect(self):
+        """G10a-1: the time skeleton's decisions (metre, bar lines, tempo octave, the compound tempo of issue 1, the helper's
+        beats, the on-beat quantiser fix) each have a mutation that must be flagged on a critical gate or a structure metric."""
+        v2 = mutation.REC_V2_MUTATIONS
+        self.assertEqual({m["id"] for m in v2[:-1]}, {"REC-V2-NO-ACCENTS", "REC-V2-BAR-LINE-LATE", "REC-V2-HALF-TEMPO", "REC-V2-ISSUE-1-BACK",
+                                                      "REC-V2-NO-AUDIO-BEATS", "REC-V2-LATE-ON-BEAT"})
+        self.assertEqual((v2[-1]["id"], v2[-1]["expect"]), ("MUT-NOOP", "PASS"))
+        self.assertFalse([m for m in mutation.REC_MUTATIONS if m.get("v2")])
+        for m in v2[:-1]:
+            self.assertEqual(m["expect"], "REGRESSION")
+            self.assertTrue(any(x.startswith(("critical.", "struct.", "notes.")) for x in m["metrics"]), m["id"])
+
     def test_ids_are_unique_and_the_noop_is_last(self):
         ids = [m["id"] for m in mutation.REC_MUTATIONS]
         self.assertEqual(len(ids), len(set(ids)))

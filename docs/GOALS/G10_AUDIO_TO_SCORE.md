@@ -562,3 +562,254 @@ the roadmap if so).
 1. The G10a-3 gate in section 10 ("rec.usable on rec-core >= 0.45 (app path today 0.248)") is WITHDRAWN: 0.248 was G0's synthetic 'human' profile, not the calibrated families; on them the app path today is G0 usable 0.015 and rec.usable 0.001 (0.007 / 0.003 with production's beats none). The gate numbers are re-set from these baselines after G10a-1 (a1 reports its own movement); until then a phase is accepted by relative improvement over this baseline on rec-core and replay-of with no regression of the checker classes, plus the hold-out slice. cover+of fails pitch integrity in 73% of cases: the +of overlay values (misses, ghosts, merges) are unmeasured and likely harsher than real; calibrate them from replay-of.
 2. The app's options (closeGaps / exactBars, #132-#134) LOWER onset F1 on real-AMT (0.832 -> 0.751) and note values (0.10 -> 0.05) on the replay-of tier: the exact-bars snap moves onsets (up to a 32nd) and costs accuracy against the true score on real transcriptions even though the drawn bars add up; the G10a-2 grid stage must be judged on this tier, not on bar sums alone.
 3. TD20: the system under test crashes (E-SPAN-ORDER in the graph builder) on a pedal that starts after the last note (found by rec-full on method/czerny599/001); the humanizer avoids it for now; to be fixed in a G10a phase that touches audio-score.js.
+
+## 18. G10a-1: the time skeleton (2026-10-03; implementer on Opus, AI-5a)
+
+Worktree `D:/PPP-g10a1`, branch `g10a-1` from `origin/main` `2e09fad`. Measurement first: the baselines were reproduced
+before anything changed, the error analysis below decided what S0-S2 had to fix, and every step was measured.
+
+### 18.1 Baselines reproduced
+
+At `2e09fad`, unchanged tree: `run` + `check` of rec-smoke, rec-core, rec-robust, replay-of and replay-of-app all
+PASS, and every aggregate of each `results.json` equals the committed baseline's (0 differing keys; rec-core 1,692
+cases in 2 min 39 s). The figures below are those runs.
+
+### 18.2 Error analysis of the time skeleton (rec-core, the app's options, beats `none` = production)
+
+`python tests/bench/tools/rec_skeleton_report.py tests/bench/out/rec-core/results.json` (new, reads a run, computes nothing
+new about the music). 564 cases, **559 unusable; 528 fail at least one skeleton gate** (metre, playback tempo, beat
+placement, structure); only 12 fail nothing else (on the calibrated families every other gate fails too, mainly note values:
+E3's 169 "skeleton only" was G0's synthetic `human` profile).
+
+| | metre | playback tempo | beat placement | structure | downbeat F1 |
+| --- | --- | --- | --- | --- | --- |
+| legacy, beats none | 0.420 | 0.420 | 0.034 | 0.344 | 0.410 |
+| app, beats none (production) | **0.426** | **0.426** | **0.069** | 0.301 | 0.403 |
+| app, oracle-noisy (helper) | 0.674 | 0.546 | 0.284 | 0.688 | 0.833 |
+
+(The section 10 row of a1 quotes metre 0.486, beat placement 0.351, tempo 0.475 "today": those were G0's `human` profile
+before G10a-0; the calibrated families start lower.)
+
+**Metre written for each true metre** (app, none; cases): 4/4 → 4/4 185, 6/8 26, 3/4 9 · 3/4 → 4/4 57, 3/4 28, 6/8 23 ·
+**2/4 → 6/8 48, 4/4 47, 3/4 1** · 6/8 → 6/8 27, 4/4 21, 3/4 16 · 3/8 → 6/8 22, 4/4 10, 3/4 4 · 2/2 → 4/4 10, 3/4 4, 6/8 2 ·
+6/4, 3/2, 5/4, 9/8, 12/8 (24 cases) never right.
+
+**Written tempo / true tempo**: 4/4 x1 144, x2 31, x2/3 12, x1/2 9 ... · 3/4 x1 51, x2 29, x2/3 18 · 2/4 x1 38, x2/3 29, x2 19 ·
+**6/8 x2/3 20, x2 20, x4/3 13, x1 7** · **3/8 x2/3 19** · 9/8, 12/8 x2/3. The x2/3 rows are **issue 1** (a compound metre prints
+dotted quarter = bpm but plays bpm quarters: every 6/8, 3/8, 9/8 and 12/8 piece written in a compound metre plays 2/3 of its
+tempo, playback tempo fails in 92-100 % of them); the x2 rows are the tempo octave.
+
+**Causes, read in the code** (`audio-score.js`):
+- `compoundVsThree` scores a three-quarter grouping's dotted-quarter points (ticks 0 and 36) 2.2 times higher than its quarters:
+  a 2/4 piece in eighths has notes on both, so 48 of 96 2/4 cases (and 22 of 36 3/8) become 6/8 bars of three quarters.
+- `meterAndPhase` prefers four unless three is 8 % stronger: 3/4 → 4/4 (57) and 6/8 → 4/4 (21).
+- `estimatePeriod`'s prior around 100 bpm and `tryFastTempo` decide the tempo octave from the onset envelope alone (the x2 and
+  x1/2 rows).
+- the bar phase is the accent phase of `meterAndPhase` on quarters: **when metre and tempo are both right (159 cases) the bar
+  lines are right (downbeat F1 >= 0.9) in only 47**; the rest fail beat placement on the phase.
+- a quantiser inconsistency (found while building v2, kept in legacy): `quantize` floors a beat position with 1e-9 of slack but
+  `snapStraight` without it, so an onset a hair before a beat is written one beat late.
+
+**What a perfect skeleton buys with today's S3-S10** (a scratch run, app options, beats none, `opts.lock` = the score's metre,
+quarter tempo and first bar line, constant tempo): metre 1.000, playback tempo 0.801 (the compound pieces still fail: issue 1
+is in the writer), beat placement 0.553 (cover 0.745, cover-pedal 0.723, human-real 0 - a constant tempo cannot follow its
+drift), usable 0.113. So the a1 targets of section 10 are bounded by the stages after S2: beat placement >= 0.60 is above what
+even a perfect constant-tempo skeleton gives with the legacy grid, and usable stays near 0.1 until note values (S6) move.
+
+**The 2/4 problem is also a notation question.** 2/4 against 4/4 (and 2/2 against 4/4) differ by where the composer drew the
+bar line every other beat, not by what is heard; the catalogue's 2/4 pieces are mostly method etudes (Hanon, Czerny, Beyer),
+its 4/4 mostly hymns. A model can only use the tempo, the density of accents and the phrase rhythm. Together with the metres
+v2 does not model (6/4, 3/2, 5/4: 16 core cases) about a fifth of rec-core is a convention or unmodelled metre: a metre gate of
+0.80 from onsets alone is not reachable on this corpus (section 18.6).
+
+### 18.3 What was built (S0-S2 behind `opts.recording: 'v2'`)
+
+`toMusicXml(input, { recording: 'v2' })` (and nothing else: no lock, no stated metre) hands the cleaned, clustered notes to
+`rec/` and writes the score on the skeleton it returns with the **legacy** quantiser and writer (S3-S10 are G10a-2/3). Without
+the option, with `'legacy'`, with a lock or `beatsPerBar`, on a page without `rec/` or its weights, or when `rec/` cannot read
+the performance (fewer than four attacks), the legacy path runs, byte for byte. The app is not touched (`PPP.recording` is
+G10a-4).
+
+| Stage | File | What it does |
+| --- | --- | --- |
+| S0 | `rec/attacks.js` | `cleanNotes` = audio-score.js `clean()` (a test asserts equality); one attack per clustered onset; per attack, classes read the same way on a score and a performance (bass change, IOI against the piece's median, fuller chord). No note is dropped or added beyond legacy's clean. |
+| S1 | `rec/beats.js` | Up to 6 pulse tracks: the strongest periods of the attack-pair interval histogram (0.18-1.6 s), each followed by a DP over 10-ms frames (Ellis; step 0.6-1.5 periods, stiffness 100). A track is a time warp, not a decision. The helper's audio beats, when given, become one more track (gaps filled). |
+| S2 | `rec/metre.js`, `rec/model.js` | Every reading (track x quarters per tracked beat x metre in {2/4, 3/4, 4/4, 2/2, 3/8, 6/8, 9/8, 12/8} x bar phase in eighths; quarter tempo 36-260: ~1,000-2,000 readings) is scored by a learned log-linear model; the best wins; its posterior and the posterior mass on readings with the same bar lines are the confidence. |
+| issue 1 | `audio-score.js` `finish`/`buildGraph` | v2 only: a compound metre prints dotted quarter = bpm and plays 3 bpm / 2 quarters (`qpm` written as a rational, so the validator's W-TEMPO-MARK-MISMATCH is gone). |
+| TD20 | `audio-score.js` `finish` | v2 only: a pedal pressed in the score's last tick is not written as a mark (it ended where it started: E-SPAN-ORDER threw the whole score away); the performance layer keeps it. Legacy keeps TD20 (the design: pre-existing defects are fixed inside v2, never in legacy). |
+| quantiser | `audio-score.js` `quantize` | v2 only: an onset within 1e-9 of a beat is on it (v2's written beats run through the onsets, so legacy's floor slip, which writes such an onset one beat late, hit v2 constantly: pitch integrity fell from 0.80 to 0.75 before this). |
+| provenance | the graph's source `params.recording` | `{pipeline: 'v2', skeleton: {model: 'ai5a@v1', conf, metre}}`; `stats.beatSource` `onset-v2` / `audio-v2`; the full skeleton (posterior per metre, tracks, the chosen reading) as `result.recReport` beside the graph (not in stats). |
+
+**The model (AI-5a).** Tables counted from the catalogue truth (`tests/bench/tools/rec_dataset.py --truth`: the lint-clean,
+licence-evidenced references, **hold-out excluded**, read with the benchmark's own reader): per metre family and metrical level a
+Beta prior on how full each level is (a Beta-binomial marginal, so a dense etude is not a different metre than a hymn), where
+first and last onsets fall, per-level ratios of the attack classes, and per metre and beat class (downbeat / mid-bar / other)
+the log-likelihood ratio of a beat's accent evidence (an onset and how long until the next, a bass change, a harmony change, a
+fuller chord, the four jointly), smoothed towards the family; per metre a log-normal of the quarter tempo. 25 weights (the
+features of `rec/model.js` FEATURES) fitted by `rec/tools/train.js`: the conditional-logit likelihood of the right readings among
+all readings of 2,570 humanized performances of the same references (`perform/3` cover, cover-pedal, human-real, cover+of at
+seeds 101-102, no beats; cover and cover-pedal+helper at seed 103 with helper-like beats - seeds no suite uses), L2 1e-4,
+Newton. Weights file `rec/weights/ai5a-v1.json`, 31 KB (budget 200 KB), its sha256 in the file and in `result.recReport`, its
+name and version in every v2 graph's provenance; evaluation `rec/tools/ai5a-v1.evaluation.json`. `node rec/tools/train.js
+--check` regenerates the data set (Python, the humanizer's LCG) and the fit (Node) and compares both files byte for byte: the
+same on Windows, on Linux (Docker) and in CI.
+No external data, no recording, no user material; the teacher's piece was not used.
+
+| skeleton right (metre + tempo +-4 % + 90 % of bar lines) | n | right | metre | tempo | some track can be read right |
+| --- | --- | --- | --- | --- | --- |
+| training performances (in sample) | 2,570 | 0.668 | 0.716 | 0.869 | 0.904 |
+| 5-fold cross-validation by reference (out of fold) | 2,570 | **0.613** | 0.668 | 0.857 | 0.904 |
+| hold-out references (never seen) | 312 | **0.644** | 0.683 | 0.869 | 0.885 |
+
+**Budget (section 11).** 147-s, 1,070-note piece: 100 ms for S0-S2 in Node (was 235 ms before two optimisations that leave
+every feature value identical: a step-penalty table in the DP, no allocation per reading); a synthetic 180-s, 1,800-note piece
+~150 ms. Whole `toMusicXml` with v2 on rec-core: median 46 ms, max 400 ms per case (the legacy writer's share included). Not
+measured in the page (G10a-4).
+
+### 18.4 What was tried and lost (measured, kept out)
+
+Measured on the skeleton score above (5-fold CV by reference unless said), each decision in `rec/` names its reason:
+- **Per-metre slot tables** (onset and hazard per 1/24-quarter slot of each metre): they learned the catalogue's textures, not
+  metres (2/4 = Hanon's running 16ths gave a 16th slot a 52 % hazard, 4/4 = hymns 12 %): every hymn read as 4/4, every 16th
+  etude as 2/4. Replaced by family-level tables with a piece's own fill integrated out.
+- **Evidence as sums** (a proper log-likelihood per attack and per beat): the fit shrank them to near zero (misspecified
+  independence: one tracking slip costs a whole piece) and accuracy fell (rec-core skeleton 0.456 as means, 0.410 with the
+  square root, 0.392 nearer sums, before the clip). Means under-weight
+  long clear pieces (a synthetic 24-bar waltz at 0.47 posterior); clipped per-beat ratios times the square root of the beats won
+  by 0.010 on CV (lost 0.035 on the 312 hold-out cases: within their noise) and is what ships.
+- **More candidate periods** (normalised per second, the tatum's multiples): more performances with no right track (88 and 104
+  of 564 against 82); 6 tracks with stiffness 100 (62) instead of 4 with 50 (82) ship.
+- **A joint 40-cell table of the beat evidence alone**: +0.05 in sample, nothing out of fold (memorised the pieces); kept only
+  next to the four separate ratios, where CV gained +0.02. **Whole-bar rhythm patterns** (eighth-resolution bar masks against
+  their independent model): weight -0.04, CV -0.004; dropped. The catalogue's 6/8 is 83 % running eighths, so a jig's
+  quarter-eighth bar is not "typical 6/8" to any table learned here.
+- **Per-feature diagnostics** on performances with the true pulse given (`--oracle`): the beat-accent ratios prefer the right
+  grouping over a wrong one in most pairs (the onset/duration ratio in 80-100 % except between compound metres); S2 alone still
+  reaches only 0.54 on rec-core, mostly because of the first-onset and metre priors (18.6).
+
+### 18.5 Results: legacy / app / v2 side by side
+
+Every rec suite now runs three option sets on the very same performances (`opts:legacy` the library default, `opts:app`
+what the app passes today, `opts:v2` the app's options with `recording: 'v2'`); the legacy and app rows are byte-identical to
+the G10a-0 baselines (every case's metrics and predicted summary: rec-smoke 96, rec-core 1,692, rec-robust 564 of 564).
+
+**rec-core** (141 references x the calibrated families):
+
+| beats | options | n | usable | rec.usable | metre | tempo | beat pl. | structure | values | hands | pitch | downbeat F1 | rec.metre.f1 | rec.onset_f1 | rec.mv2h | stability (lower is better) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| none | legacy | 564 | 0.005 | 0.000 | 0.420 | 0.420 | 0.034 | 0.344 | 0.011 | 0.826 | 0.803 | 0.410 | 0.555 | 0.188 | 0.591 | 0.818 |
+| none | app (production) | 564 | 0.009 | 0.002 | 0.426 | 0.426 | 0.069 | 0.301 | 0.034 | 0.826 | 0.801 | 0.403 | 0.551 | 0.201 | 0.593 | 0.773 |
+| none | **v2** | 564 | **0.089** | **0.016** | **0.585** | **0.849** | **0.457** | **0.585** | **0.243** | 0.824 | 0.794 | **0.761** | **0.836** | **0.554** | **0.746** | **0.342** |
+| oracle-noisy | legacy | 282 | 0.004 | 0.000 | 0.699 | 0.574 | 0.124 | 0.709 | 0.032 | 0.826 | 0.918 | 0.855 | 0.842 | 0.474 | 0.705 | 0.407 |
+| oracle-noisy | app | 282 | 0.028 | 0.000 | 0.674 | 0.546 | 0.284 | 0.688 | 0.096 | 0.833 | 0.926 | 0.833 | 0.819 | 0.489 | 0.707 | 0.335 |
+| oracle-noisy | **v2** | 282 | **0.074** | 0.000 | **0.780** | **0.865** | **0.557** | **0.865** | **0.270** | 0.823 | 0.933 | **0.956** | **0.937** | **0.760** | **0.805** | **0.236** |
+
+Checker classes 1-7 per 100 bars (notation-check.js; none / oracle-noisy): app 8.4 / 1.1 / 6.3 / 0.3 / 19.8 / 15.0 / 32.8 and
+5.6 / 0.9 / 5.4 / 0.4 / 15.8 / 8.5 / 19.7; **v2 0.8 / 0.5 / 1.8 / 0.0 / 7.1 / 2.4 / 1.3 and 1.3 / 0.3 / 1.0 / 0.1 / 10.1 / 4.0 / 1.5**:
+lower in every class on rec-core and rec-robust (a bar that is right needs fewer repairs).
+
+**By metre** (v2, beats none, against app): 4/4 metre 0.932 (0.841), beat placement 0.664 (0.132); 3/4 0.676 (0.259), 0.630
+(0.065); 6/8 0.547 (0.422), 0.422 (0.031), tempo 0.750 (0.078: issue 1); 3/8 0.389 (0), tempo 0.722 (0.056); **2/4 0.031
+(0)**, 2/2 0 (0), and 6/4, 3/2, 5/4, 9/8, 12/8 0 (not modelled, or a single catalogue piece). Every metre class with a
+modelled metre is above 0 % usable except 2/4 and 2/2 (simple-duple 0 %; see 18.6).
+
+**rec-robust** (cover-alt, an independent, uncalibrated family): beats none, app -> v2: metre 0.482 -> 0.596, tempo 0.447 ->
+0.823, beat placement 0.028 -> 0.454, structure 0.291 -> 0.596, usable 0.000 -> 0.028, stability 0.846 -> 0.388; oracle-noisy:
+metre 0.681 -> 0.801, tempo 0.539 -> 0.879, beat placement 0.277 -> 0.589, usable 0.021 -> 0.064.
+
+**rec-smoke** (beats none): app -> v2 usable 0.042 -> 0.250, rec.usable 0.021 -> 0.083, metre 0.500 -> 0.708, beat placement
+0.167 -> 0.625.
+
+**Real-AMT tier** (`replay-of`: the browser's Onsets & Frames on rendered audio, 20 fixtures; new suite `replay-of-v2`):
+
+| | usable | metre | tempo | beat pl. | structure | values | hands | pitch | downbeat F1 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| replay-of (library) | 0.00 | 0.65 | 0.50 | 0.00 | 0.45 | 0.10 | 0.65 | 0.55 | 0.353 |
+| replay-of-app (production) | 0.00 | 0.65 | 0.50 | 0.00 | 0.45 | 0.05 | 0.65 | 0.55 | 0.353 |
+| **replay-of-v2** | **0.05** | **0.75** | **0.90** | **0.70** | **0.70** | **0.55** | 0.65 | 0.55 | **0.829** |
+
+(The 20 references of `replay-of` are open references, in the training set of the tables; the humanized performances behind
+them are seed 1 rendered and re-transcribed, which the training never saw.)
+
+**What did not move or moved back.** Hands (S4, legacy) 0.826 -> 0.824 and pitch integrity 0.801 -> 0.794 on rec-core/none:
+different ticks change the legacy hand split and the 300-ms matching near the thresholds (hands: 17 cases lost, 13 won; pitch:
+19 lost, 17 won, mostly `cover+of` near 0.95; no systematic cause found). On rec-smoke the class 2 count (a rest shorter than a
+16th) rises 0.3 -> 1.2 per 100 bars: three cases v2 reads as 6/8 (two 2/4 Czerny pieces, the 4/4 triplet micro piece), where the
+legacy compound writer has no exact-bar grid (S3/S6, G10a-2/3). `rec.usable` stays near 0 because note values (S6) and the
+rest/tuplet rules still fail; the time skeleton was the first wall, not the last.
+
+**Usable by metre class** (rec-core, beats none; legacy / app / v2): simple-quadruple 0.005 / 0.014 / **0.132**, simple-triple
+0.018 / 0.018 / **0.089**, compound-duple 0 / 0 / **0.125**, compound-single 0 / 0 / **0.083**; still 0 % with v2: simple-duple
+(112 cases: 2/4 and 2/2), compound-triple and compound-quadruple (9/8 and 12/8: one catalogue piece each, 4 cases each) and
+irregular (6/4, 5/4: not modelled). The section 10 target "every metre class > 0 %" is met for the four classes that have
+enough catalogue pieces to learn from, and not for the others.
+
+### 18.6 Against the a1 targets, and what could not be improved
+
+| a1 target (section 10) | measured (rec-core, beats none) | verdict |
+| --- | --- | --- |
+| `critical.meter` >= 0.80 (0.486 "today") | 0.426 -> **0.585** | relative gain +0.16; the number is not reachable this way (below) |
+| `beat_placement` >= 0.60 (0.351) | 0.069 -> **0.457** | x6.6; bounded by S3 (a perfect constant-tempo skeleton gives 0.553 with today's grid) |
+| `playback_tempo` >= 0.80 (0.475) | 0.426 -> **0.849** | **met** (issue 1 and the tempo octave) |
+| every metre class > 0 % usable | 4 of 8 classes | not met for simple-duple and the classes without training pieces |
+| no gate regression with oracle beats | metre 0.674 -> 0.780, tempo, placement, structure, values up; hands 0.833 -> 0.823 | met except hands (-0.010, S4 churn) |
+| hold-out reported | 18.8 | |
+| teacher tier: metre/tempo unchanged or explained | not run (the teacher's graph is private, outside this worktree) | for the Lead |
+| <= 300 ms for a 3-min piece in Node | ~150 ms (S0-S2) | met |
+
+**Why metre >= 0.80 contradicts the design (roadmap stop condition 3: reported, not forced).** (1) 2/4 against 4/4 and 2/2 against
+4/4 are notation conventions, not something heard: even with the true pulse given (a development model fitted that way), 2/4 was
+right in 17 % of rec-core cases, and 112 of 564 rec-core cases are simple-duple; the catalogue's 2/4 pieces are method etudes,
+its 4/4 hymns, and the tables can only tell them apart by texture, which section 18.4 shows generalises worse. (2) Metres with one
+or no catalogue piece (6/4, 3/2, 5/4, 9/8, 12/8: 24 cases) cannot be learned from licence-clean data in this corpus (D-4 is the
+user's decision). (3) A one-beat pickup is outweighed by the first-onset prior (85 % of the catalogue starts on a downbeat): 3/4
+hymns with a pickup become 4/4 (3/4 -> 4/4 is still the largest single confusion, 19 of 108 cases with the true pulse). Without
+(1) and (2) (136 of 564 cases, 24 %) a model that is right on everything else scores 0.76; v2 scores 0.585 overall and 0.764 on
+the four metres it can learn (4/4 0.932, 3/4 0.676, 6/8 0.547, 3/8 0.389). **A metre gate for G10a should be per metre class,
+relative to this baseline.**
+
+**Not improved, and why:**
+- **Pickups** (above): the right fix is evidence of the pickup itself (a short first bar is completed by the last one; phrase
+  lengths), not a weaker prior; a1 records it as a todo test (`tests/rec/stages.test.js`).
+- **2/4 vs 4/4**: bar-length conventions need phrase and harmony-rhythm models beyond one bar; a convention prior (2/4 below
+  some tempo, say) would be fitting the catalogue's books, not music.
+- **S1 reachability**: in 11 % of rec-core performances no track can be read right (Hanon's even 16ths with the cover profile's
+  24-ms jitter; Czerny 849 at 200 qpm): a DP whose tempo state is explicit (a bar-pointer HMM) is the next step if a2 needs it.
+- **Hands, pitch integrity** did not move (S4, legacy): the hand split is a2's.
+
+### 18.7 What G10a-2 (grid + hands) should expect
+
+- The skeleton is now right often enough that S3's own errors show: with the metre, tempo and bar lines right, beat placement is
+  0.80 (cover), 0.79 (cover-pedal), 0.95 (human-real) on rec-core; the rest is the grid (16th vs triplet vs 32nd snaps, exact
+  bars) and the AMT. On replay-of the gap between the app's and the library's options (G10a-0 correction 2) remains.
+- **Compound metres have no exact-bar grid** (the legacy writer applies exact bars to x/4 only): v2 writes many more 6/8 and 3/8
+  bars than legacy, with the rests of the old compound writer (rec-smoke class 2). S3 must cover compound beats.
+- `result.recReport` (the skeleton, its posterior per metre and per reading) and the graph's provenance carry what an uncertain-
+  bar flag (G10a-4) needs; a2's grid classifier can condition on the reading (beat unit, compound or not).
+- Hands are the next blocker after the skeleton (S4 untouched: 0.824 on rec-core/none); the v2 path calls the legacy
+  `assignHands` on v2's ticks.
+- The training pipeline (`rec_dataset.py` + `rec/tools/train.js --check` in the gate) is reusable for AI-5b: same data rules
+  (hold-out excluded, seeds no suite uses), same determinism check.
+
+### 18.8 Verification
+
+- **Legacy byte-identical.** `run.py ab --a git:2e09fad --b worktree` + `ab_identical.py` on smoke, core, robust, smoke-app,
+  core-app, robust-app, replay-public, replay-of and replay-of-app: every case the same (status, metrics, semantic projection);
+  golden, correctness and sg-roundtrip unchanged; the legacy and app rows of every rec suite equal the G10a-0 baselines case by
+  case (rec-full: the aggregates); the 975 `arrangeSingleNote` requests of the app's one-note glue (325 catalogue pieces x three
+  levels) give the same graphs as a clean `git archive` of `2e09fad` (933 arrangements, 42 refusals with the same codes).
+- **Mutation coverage.** `mutation-check --rec`: the ten recording-metric defects of G10a-0 still caught on `rec-mutation`
+  (legacy and app rows); on the new `rec-mutation-v2` (the same references and rows, v2 only) each v2 decision has a planted
+  defect, each a REGRESSION naming its metric: accents ignored (critical.meter 0.714 -> 0.685, downbeat F1, rec.metre.f1),
+  bar lines a beat late (beat placement 0.655 -> 0.018), the tempo octave halved (playback tempo 0.869 -> 0.024), issue 1
+  back (playback tempo 0.869 -> 0.762), the helper's beats ignored (metre 0.714 -> 0.613), the on-beat quantiser slip back
+  (pitch integrity 0.988 -> 0.982); the no-ops byte-identical.
+- **Determinism.** `rec/tools/train.js --check` byte-identical on Windows (Python 3.13.5, Node 24.17) and Linux
+  (`node:24-bookworm`, Python 3.11.2, Node 24.21, offline; and in CI); the `results.json` of rec-smoke (`c20547b101fbb0c5`),
+  rec-core (`fb3fab4f8275e437`), rec-robust (`a18ebf2921f5d2a3`) and replay-of-v2 (`89ac8eecf04e8c2a`) byte-identical over three
+  runs on Windows and one on Linux (Docker, the README's recipe), every `check` PASS.
+- **Hold-out slice** (`rec-full`, seeds 11 and 12, 52 references never in the tables or the fit; app -> v2): usable 0.014 ->
+  0.087, metre 0.502 -> 0.671, tempo 0.449 -> 0.853, beat placement 0.106 -> 0.500, structure 0.373 -> 0.639, note values
+  0.043 -> 0.210, downbeat F1 0.472 -> 0.781, stability 0.712 -> 0.323; hands 0.753 -> 0.744, pitch 0.857 -> 0.854. The open
+  references move the same way (metre 0.537 -> 0.695): the gain is not memorised pieces.
+- **Not run here:** the teacher tier (the private graph is the Lead's; G10-D15) and the page (G10a-4).

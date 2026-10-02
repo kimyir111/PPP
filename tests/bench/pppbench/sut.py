@@ -15,6 +15,10 @@ one or more of its files. ``notate.js`` reports the modules Node actually loaded
 refuses a run whose module closure leaves the snapshot: a snapshot that misses a module is an error,
 never a silent mix of two versions.
 
+From G10a-1 the recording conversion v2 (``rec/``, docs/GOALS/G10 section 6) is part of the snapshot too: its
+modules and its learned weights (``rec/weights/*.json``, which Node loads with ``require`` and so appear in the
+module closure) - a change to the model's weights is a change to the SUT like a change to its code.
+
 Only these paths are the SUT; the rest of the repository (the app, the server, the Python pipeline) is
 not copied.
 """
@@ -30,8 +34,6 @@ from . import util
 
 ENTRY = "audio-score.js"
 SUT_TREES: Tuple[str, ...] = ("scoregraph", "rec")
-# G10a-2: the rec/ stages load committed model weights (rec/grid-model.json) with require(): part of the snapshot
-DATA_TREES: Tuple[str, ...] = ("rec",)
 
 
 class SutError(Exception):
@@ -41,7 +43,8 @@ class SutError(Exception):
 
 
 def _is_module(rel: str) -> bool:
-    return rel.endswith(".js") or (rel.endswith(".json") and rel.split("/", 1)[0] in DATA_TREES)
+    """A JavaScript module, or a JSON file of rec/ (the weights its model requires)."""
+    return rel.endswith(".js") or (rel.endswith(".json") and rel.startswith("rec/"))
 
 
 def sut_files(entry: str) -> List[str]:
