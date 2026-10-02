@@ -70,7 +70,8 @@ def unpaired_ties(path):
 class CorpusOpenTies(unittest.TestCase):
     def test_open_ties_in_the_graph_are_the_unpaired_ties_of_the_file(self):
         """A22: every committed score's W-TIE-OPEN count is the number of <tie> elements its own reading leaves
-        unpaired (the eleven files whose starts and stops do not balance, and all the others)."""
+        unpaired (the files whose starts and stops do not balance, and all the others). MX-2 (ca70a03) wrote the missing
+        tie stops into the hymns: the unbalanced files fell from at least 11 to 1 (measured at ab00e01)."""
         files = sg_roundtrip.corpus_files()
         rows = sg_roundtrip.run_node([{"id": p, "xml": sg_roundtrip.xml_text(musicxml.read_bytes(os.path.join(REPO, p))),
                                        "name": os.path.basename(p), "sha256": "", "container": "musicxml"} for p in files])
@@ -83,7 +84,7 @@ class CorpusOpenTies(unittest.TestCase):
             if len(re.findall(r'<tie\s+type="start"', data)) != len(re.findall(r'<tie\s+type="stop"', data)):
                 unbalanced += 1
             self.assertEqual(row["issues"].get("W-TIE-OPEN", 0), unpaired_ties(p), p)
-        self.assertGreaterEqual(unbalanced, 11)
+        self.assertEqual(unbalanced, 1)   # was >= 11 before MX-2 (ca70a03); the one left is the correctness fixture C02
 
 
 if __name__ == "__main__":

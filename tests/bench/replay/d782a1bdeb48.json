@@ -1,11 +1,8 @@
 {
  "helper_result": {
-  "beatConfidence": 0.94796,
   "beatEngine": "beat-this",
-  "beatIbiCv": 0.02227,
-  "beatIbiMedian": 0.6,
   "beats": [
-   1.5,
+   1.52,
    2.1,
    2.7,
    3.3,
@@ -35,7 +32,7 @@
    17.72,
    18.3,
    18.92,
-   19.5,
+   19.52,
    20.12,
    20.7,
    21.32,
@@ -56,9 +53,8 @@
   ],
   "device": "cuda",
   "downbeats": [
-   1.5,
+   1.52,
    2.1,
-   3.3,
    3.9,
    5.7,
    7.5,
@@ -79,97 +75,6 @@
   "ensemble": {
    "accepted": 183,
    "agreement": 1,
-   "candidatePolicy": "primary-floor+cross-model-agreement+bracketed-fast-run",
-   "candidateRegions": [
-    {
-     "count": 2,
-     "end": 3.9067,
-     "models": [
-      "piano-transcription"
-     ],
-     "pitchMax": 74,
-     "pitchMin": 69,
-     "reason": "model-disagreement",
-     "start": 3.9023
-    },
-    {
-     "count": 3,
-     "end": 6.9067,
-     "models": [
-      "piano-transcription"
-     ],
-     "pitchMax": 76,
-     "pitchMin": 69,
-     "reason": "model-disagreement",
-     "start": 6.904
-    },
-    {
-     "count": 2,
-     "end": 7.5037,
-     "models": [
-      "piano-transcription"
-     ],
-     "pitchMax": 74,
-     "pitchMin": 69,
-     "reason": "model-disagreement",
-     "start": 7.5031
-    },
-    {
-     "count": 4,
-     "end": 11.7267,
-     "models": [
-      "piano-transcription"
-     ],
-     "pitchMax": 76,
-     "pitchMin": 68,
-     "reason": "model-disagreement",
-     "start": 11.6951
-    },
-    {
-     "count": 2,
-     "end": 14.7148,
-     "models": [
-      "piano-transcription"
-     ],
-     "pitchMax": 76,
-     "pitchMin": 72,
-     "reason": "model-disagreement",
-     "start": 14.7129
-    },
-    {
-     "count": 2,
-     "end": 15.913,
-     "models": [
-      "piano-transcription"
-     ],
-     "pitchMax": 76,
-     "pitchMin": 72,
-     "reason": "model-disagreement",
-     "start": 15.9051
-    },
-    {
-     "count": 2,
-     "end": 21.9085,
-     "models": [
-      "piano-transcription"
-     ],
-     "pitchMax": 74,
-     "pitchMin": 69,
-     "reason": "model-disagreement",
-     "start": 21.9066
-    },
-    {
-     "count": 2,
-     "end": 28.8127,
-     "models": [
-      "piano-transcription"
-     ],
-     "pitchMax": 74,
-     "pitchMin": 69,
-     "reason": "model-disagreement",
-     "start": 28.7984
-    }
-   ],
    "fastRecovered": 0,
    "models": [
     "transkun",
@@ -181,7 +86,7 @@
   },
   "model": "TransKun V2 + Kong et al. high-resolution piano transcription",
   "modelFailures": [],
-  "ms": 13582,
+  "ms": 15177,
   "notes": [
    {
     "confidence": 1,
@@ -190,56 +95,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 1.9727,
-    "on": 1.5083,
-    "support": 2,
-    "vel": 71
-   },
-   {
-    "confidence": 1,
-    "midi": 69,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 1.9492,
-    "on": 1.5086,
-    "support": 2,
-    "vel": 79
-   },
-   {
-    "confidence": 1,
-    "midi": 53,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 1.9456,
-    "on": 1.5151,
-    "support": 2,
-    "vel": 64
-   },
-   {
-    "confidence": 1,
-    "midi": 50,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 1.9524,
-    "on": 1.5153,
-    "support": 2,
-    "vel": 70
-   },
-   {
-    "confidence": 1,
-    "midi": 62,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 2.8239,
-    "on": 2.1035,
+    "off": 1.9724,
+    "on": 1.5082,
     "support": 2,
     "vel": 72
    },
@@ -250,10 +107,70 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 3.005,
-    "on": 2.1058,
+    "off": 1.9727,
+    "on": 1.5087,
+    "support": 2,
+    "vel": 80
+   },
+   {
+    "confidence": 1,
+    "midi": 54,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 1.9724,
+    "on": 1.5139,
+    "support": 2,
+    "vel": 68
+   },
+   {
+    "confidence": 1,
+    "midi": 50,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 1.9724,
+    "on": 1.5142,
+    "support": 2,
+    "vel": 73
+   },
+   {
+    "confidence": 1,
+    "midi": 62,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 2.789,
+    "on": 2.1029,
+    "support": 2,
+    "vel": 73
+   },
+   {
+    "confidence": 1,
+    "midi": 69,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 2.9633,
+    "on": 2.105,
     "support": 2,
     "vel": 78
+   },
+   {
+    "confidence": 1,
+    "midi": 54,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 2.7861,
+    "on": 2.1089,
+    "support": 2,
+    "vel": 67
    },
    {
     "confidence": 1,
@@ -263,21 +180,9 @@
      "transkun"
     ],
     "off": 2.8174,
-    "on": 2.1099,
+    "on": 2.1134,
     "support": 2,
-    "vel": 71
-   },
-   {
-    "confidence": 1,
-    "midi": 53,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 3.0044,
-    "on": 2.1148,
-    "support": 2,
-    "vel": 64
+    "vel": 72
    },
    {
     "confidence": 1,
@@ -286,8 +191,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 3.2476,
-    "on": 3.0009,
+    "off": 3.2131,
+    "on": 3.0008,
     "support": 2,
     "vel": 76
    },
@@ -298,10 +203,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 3.2431,
+    "off": 3.2225,
     "on": 3.0011,
     "support": 2,
-    "vel": 74
+    "vel": 73
    },
    {
     "confidence": 1,
@@ -310,10 +215,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 3.2336,
-    "on": 3.0057,
+    "off": 3.2236,
+    "on": 3.0053,
     "support": 2,
-    "vel": 67
+    "vel": 68
    },
    {
     "confidence": 1,
@@ -322,10 +227,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 3.3019,
-    "on": 3.0214,
+    "off": 3.2927,
+    "on": 3.0226,
     "support": 2,
-    "vel": 63
+    "vel": 64
    },
    {
     "confidence": 1,
@@ -334,10 +239,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 3.8197,
-    "on": 3.3012,
+    "off": 3.825,
+    "on": 3.3018,
     "support": 2,
-    "vel": 67
+    "vel": 68
    },
    {
     "confidence": 1,
@@ -346,8 +251,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 3.8781,
-    "on": 3.3077,
+    "off": 3.8783,
+    "on": 3.3059,
     "support": 2,
     "vel": 77
    },
@@ -358,34 +263,34 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 3.7898,
-    "on": 3.3085,
+    "off": 3.7784,
+    "on": 3.3063,
     "support": 2,
     "vel": 72
    },
    {
     "confidence": 1,
-    "midi": 53,
+    "midi": 54,
     "models": [
      "piano-transcription",
      "transkun"
     ],
-    "off": 3.8657,
-    "on": 3.3205,
+    "off": 3.8539,
+    "on": 3.3135,
     "support": 2,
-    "vel": 64
+    "vel": 68
    },
    {
     "confidence": 1,
-    "midi": 65,
+    "midi": 66,
     "models": [
      "piano-transcription",
      "transkun"
     ],
-    "off": 4.4549,
-    "on": 3.8979,
+    "off": 4.4438,
+    "on": 3.8965,
     "support": 2,
-    "vel": 70
+    "vel": 72
    },
    {
     "confidence": 1,
@@ -394,10 +299,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 4.4266,
-    "on": 3.9048,
+    "off": 4.4036,
+    "on": 3.9047,
     "support": 2,
-    "vel": 63
+    "vel": 62
    },
    {
     "confidence": 1,
@@ -406,10 +311,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 4.5028,
-    "on": 3.9055,
+    "off": 4.4983,
+    "on": 3.9058,
     "support": 2,
-    "vel": 68
+    "vel": 70
    },
    {
     "confidence": 1,
@@ -418,8 +323,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 4.4271,
-    "on": 3.9082,
+    "off": 4.4268,
+    "on": 3.9076,
     "support": 2,
     "vel": 68
    },
@@ -430,8 +335,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 5.0933,
-    "on": 4.5084,
+    "off": 5.094,
+    "on": 4.508,
     "support": 2,
     "vel": 76
    },
@@ -443,7 +348,7 @@
      "transkun"
     ],
     "off": 4.9586,
-    "on": 4.5117,
+    "on": 4.511,
     "support": 2,
     "vel": 62
    },
@@ -454,10 +359,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 4.9636,
-    "on": 4.5121,
+    "off": 4.929,
+    "on": 4.5114,
     "support": 2,
-    "vel": 72
+    "vel": 71
    },
    {
     "confidence": 1,
@@ -466,8 +371,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 4.8356,
-    "on": 4.5147,
+    "off": 4.8377,
+    "on": 4.5148,
     "support": 2,
     "vel": 68
    },
@@ -478,10 +383,22 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 5.5278,
-    "on": 5.1061,
+    "off": 5.5251,
+    "on": 5.1062,
     "support": 2,
     "vel": 66
+   },
+   {
+    "confidence": 1,
+    "midi": 54,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 5.5735,
+    "on": 5.1123,
+    "support": 2,
+    "vel": 68
    },
    {
     "confidence": 1,
@@ -490,22 +407,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 5.6799,
-    "on": 5.113,
+    "off": 5.6804,
+    "on": 5.1131,
     "support": 2,
     "vel": 81
-   },
-   {
-    "confidence": 1,
-    "midi": 53,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 5.5497,
-    "on": 5.1137,
-    "support": 2,
-    "vel": 62
    },
    {
     "confidence": 1,
@@ -514,8 +419,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 5.5029,
-    "on": 5.121,
+    "off": 5.5607,
+    "on": 5.1202,
     "support": 2,
     "vel": 68
    },
@@ -526,8 +431,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 6.5856,
-    "on": 5.7042,
+    "off": 6.5294,
+    "on": 5.7044,
     "support": 2,
     "vel": 76
    },
@@ -539,7 +444,7 @@
      "transkun"
     ],
     "off": 6.3639,
-    "on": 5.7055,
+    "on": 5.7052,
     "support": 2,
     "vel": 68
    },
@@ -551,7 +456,7 @@
      "transkun"
     ],
     "off": 6.5498,
-    "on": 5.7067,
+    "on": 5.7065,
     "support": 2,
     "vel": 72
    },
@@ -562,8 +467,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 6.3703,
-    "on": 5.7123,
+    "off": 6.3818,
+    "on": 5.7124,
     "support": 2,
     "vel": 68
    },
@@ -574,10 +479,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 6.8478,
-    "on": 6.6101,
+    "off": 6.8468,
+    "on": 6.6114,
     "support": 2,
-    "vel": 68
+    "vel": 66
    },
    {
     "confidence": 1,
@@ -586,8 +491,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 6.8266,
-    "on": 6.6189,
+    "off": 6.8235,
+    "on": 6.6192,
     "support": 2,
     "vel": 69
    },
@@ -598,22 +503,22 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 6.8822,
-    "on": 6.6195,
+    "off": 6.7933,
+    "on": 6.6205,
     "support": 2,
-    "vel": 70
+    "vel": 71
    },
    {
     "confidence": 1,
-    "midi": 65,
+    "midi": 66,
     "models": [
      "piano-transcription",
      "transkun"
     ],
-    "off": 6.9088,
-    "on": 6.6238,
+    "off": 6.9001,
+    "on": 6.6227,
     "support": 2,
-    "vel": 72
+    "vel": 73
    },
    {
     "confidence": 1,
@@ -622,10 +527,22 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 7.4192,
-    "on": 6.8983,
+    "off": 7.4531,
+    "on": 6.8953,
     "support": 2,
-    "vel": 66
+    "vel": 64
+   },
+   {
+    "confidence": 1,
+    "midi": 61,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 7.4659,
+    "on": 6.9026,
+    "support": 2,
+    "vel": 72
    },
    {
     "confidence": 1,
@@ -634,22 +551,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 7.363,
-    "on": 6.9023,
+    "off": 7.5124,
+    "on": 6.9035,
     "support": 2,
-    "vel": 78
-   },
-   {
-    "confidence": 1,
-    "midi": 60,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 7.3285,
-    "on": 6.9041,
-    "support": 2,
-    "vel": 74
+    "vel": 80
    },
    {
     "confidence": 1,
@@ -659,9 +564,21 @@
      "transkun"
     ],
     "off": 8.054,
-    "on": 7.5019,
+    "on": 7.4981,
     "support": 2,
     "vel": 72
+   },
+   {
+    "confidence": 1,
+    "midi": 66,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 8.1125,
+    "on": 7.5015,
+    "support": 2,
+    "vel": 74
    },
    {
     "confidence": 1,
@@ -670,22 +587,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 8.033,
-    "on": 7.5026,
+    "off": 8.0342,
+    "on": 7.5036,
     "support": 2,
-    "vel": 70
-   },
-   {
-    "confidence": 1,
-    "midi": 65,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 8.3894,
-    "on": 7.5031,
-    "support": 2,
-    "vel": 74
+    "vel": 72
    },
    {
     "confidence": 1,
@@ -694,22 +599,22 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 8.101,
-    "on": 7.5091,
+    "off": 8.0869,
+    "on": 7.5076,
     "support": 2,
-    "vel": 64
+    "vel": 66
    },
    {
     "confidence": 1,
-    "midi": 53,
+    "midi": 54,
     "models": [
      "piano-transcription",
      "transkun"
     ],
-    "off": 8.6449,
-    "on": 8.1126,
+    "off": 8.6674,
+    "on": 8.1114,
     "support": 2,
-    "vel": 63
+    "vel": 67
    },
    {
     "confidence": 1,
@@ -718,8 +623,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 8.6579,
-    "on": 8.1168,
+    "off": 8.655,
+    "on": 8.1166,
     "support": 2,
     "vel": 76
    },
@@ -730,8 +635,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 8.6329,
-    "on": 8.1173,
+    "off": 8.641,
+    "on": 8.1168,
     "support": 2,
     "vel": 70
    },
@@ -742,7 +647,7 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 9.2255,
+    "off": 9.2252,
     "on": 8.7,
     "support": 2,
     "vel": 78
@@ -754,10 +659,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 9.2576,
-    "on": 8.705,
+    "off": 9.2464,
+    "on": 8.7054,
     "support": 2,
-    "vel": 63
+    "vel": 62
    },
    {
     "confidence": 1,
@@ -766,32 +671,32 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 9.2664,
-    "on": 8.7127,
+    "off": 9.2941,
+    "on": 8.7113,
     "support": 2,
     "vel": 66
    },
    {
     "confidence": 1,
-    "midi": 65,
+    "midi": 66,
     "models": [
      "piano-transcription",
      "transkun"
     ],
-    "off": 9.2625,
-    "on": 8.7217,
+    "off": 9.2796,
+    "on": 8.7201,
     "support": 2,
-    "vel": 66
+    "vel": 68
    },
    {
     "confidence": 1,
-    "midi": 48,
+    "midi": 49,
     "models": [
      "piano-transcription",
      "transkun"
     ],
     "off": 10.1151,
-    "on": 9.2968,
+    "on": 9.2957,
     "support": 2,
     "vel": 68
    },
@@ -802,8 +707,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 10.1586,
-    "on": 9.2989,
+    "off": 10.173,
+    "on": 9.2985,
     "support": 2,
     "vel": 80
    },
@@ -814,8 +719,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 10.1333,
-    "on": 9.3157,
+    "off": 10.1383,
+    "on": 9.3183,
     "support": 2,
     "vel": 62
    },
@@ -826,20 +731,20 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 10.1164,
-    "on": 9.3224,
+    "off": 10.1273,
+    "on": 9.3227,
     "support": 2,
-    "vel": 72
+    "vel": 74
    },
    {
     "confidence": 1,
-    "midi": 48,
+    "midi": 49,
     "models": [
      "piano-transcription",
      "transkun"
     ],
-    "off": 10.4166,
-    "on": 10.1983,
+    "off": 10.4305,
+    "on": 10.1987,
     "support": 2,
     "vel": 64
    },
@@ -850,10 +755,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 10.4494,
-    "on": 10.203,
+    "off": 10.4499,
+    "on": 10.2035,
     "support": 2,
-    "vel": 75
+    "vel": 76
    },
    {
     "confidence": 1,
@@ -863,7 +768,7 @@
      "transkun"
     ],
     "off": 10.4216,
-    "on": 10.2106,
+    "on": 10.2118,
     "support": 2,
     "vel": 72
    },
@@ -874,20 +779,20 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 10.4557,
+    "off": 10.4565,
     "on": 10.2189,
     "support": 2,
-    "vel": 61
+    "vel": 60
    },
    {
     "confidence": 1,
-    "midi": 48,
+    "midi": 49,
     "models": [
      "piano-transcription",
      "transkun"
     ],
-    "off": 11.0802,
-    "on": 10.4933,
+    "off": 11.0555,
+    "on": 10.4932,
     "support": 2,
     "vel": 66
    },
@@ -898,46 +803,34 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 11.0224,
-    "on": 10.498,
+    "off": 11.0227,
+    "on": 10.5,
+    "support": 2,
+    "vel": 77
+   },
+   {
+    "confidence": 1,
+    "midi": 73,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 11.0348,
+    "on": 10.5045,
     "support": 2,
     "vel": 76
    },
    {
     "confidence": 1,
-    "midi": 72,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 10.8835,
-    "on": 10.5056,
-    "support": 2,
-    "vel": 74
-   },
-   {
-    "confidence": 1,
     "midi": 57,
     "models": [
      "piano-transcription",
      "transkun"
     ],
-    "off": 11.0187,
-    "on": 10.5163,
+    "off": 11.0349,
+    "on": 10.5198,
     "support": 2,
     "vel": 58
-   },
-   {
-    "confidence": 1,
-    "midi": 57,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 11.6645,
-    "on": 11.1033,
-    "support": 2,
-    "vel": 65
    },
    {
     "confidence": 1,
@@ -946,10 +839,34 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 11.8561,
-    "on": 11.104,
+    "off": 11.8528,
+    "on": 11.1032,
     "support": 2,
-    "vel": 73
+    "vel": 72
+   },
+   {
+    "confidence": 1,
+    "midi": 57,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 11.6855,
+    "on": 11.1038,
+    "support": 2,
+    "vel": 64
+   },
+   {
+    "confidence": 1,
+    "midi": 66,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 11.6625,
+    "on": 11.1147,
+    "support": 2,
+    "vel": 72
    },
    {
     "confidence": 1,
@@ -958,22 +875,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 11.6771,
-    "on": 11.1145,
+    "off": 11.6816,
+    "on": 11.1154,
     "support": 2,
-    "vel": 63
-   },
-   {
-    "confidence": 1,
-    "midi": 65,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 11.673,
-    "on": 11.1155,
-    "support": 2,
-    "vel": 68
+    "vel": 66
    },
    {
     "confidence": 1,
@@ -983,9 +888,9 @@
      "transkun"
     ],
     "off": 12.2391,
-    "on": 11.694,
+    "on": 11.6939,
     "support": 2,
-    "vel": 80
+    "vel": 79
    },
    {
     "confidence": 1,
@@ -994,8 +899,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 12.2777,
-    "on": 11.7066,
+    "off": 12.2809,
+    "on": 11.7065,
     "support": 2,
     "vel": 68
    },
@@ -1006,8 +911,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 12.2658,
-    "on": 11.7256,
+    "off": 12.2559,
+    "on": 11.7258,
     "support": 2,
     "vel": 60
    },
@@ -1018,22 +923,22 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 12.289,
-    "on": 12.0236,
+    "off": 12.5921,
+    "on": 12.0233,
     "support": 2,
     "vel": 72
    },
    {
     "confidence": 1,
-    "midi": 72,
+    "midi": 73,
     "models": [
      "piano-transcription",
      "transkun"
     ],
-    "off": 12.8169,
-    "on": 12.3047,
+    "off": 12.8625,
+    "on": 12.3041,
     "support": 2,
-    "vel": 78
+    "vel": 82
    },
    {
     "confidence": 1,
@@ -1042,8 +947,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 12.8491,
-    "on": 12.308,
+    "off": 12.815,
+    "on": 12.3099,
     "support": 2,
     "vel": 76
    },
@@ -1054,416 +959,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 12.8765,
-    "on": 12.315,
-    "support": 2,
-    "vel": 66
-   },
-   {
-    "confidence": 1,
-    "midi": 57,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 12.8127,
-    "on": 12.3197,
-    "support": 2,
-    "vel": 62
-   },
-   {
-    "confidence": 1,
-    "midi": 57,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 13.7515,
-    "on": 12.8966,
-    "support": 2,
-    "vel": 66
-   },
-   {
-    "confidence": 1,
-    "midi": 50,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 13.7508,
-    "on": 12.9,
-    "support": 2,
-    "vel": 70
-   },
-   {
-    "confidence": 1,
-    "midi": 65,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 13.674,
-    "on": 12.9058,
-    "support": 2,
-    "vel": 68
-   },
-   {
-    "confidence": 1,
-    "midi": 71,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 13.7501,
-    "on": 12.9133,
-    "support": 2,
-    "vel": 78
-   },
-   {
-    "confidence": 1,
-    "midi": 62,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 14.0498,
-    "on": 13.8051,
-    "support": 2,
-    "vel": 70
-   },
-   {
-    "confidence": 1,
-    "midi": 47,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 14.0312,
-    "on": 13.8056,
-    "support": 2,
-    "vel": 64
-   },
-   {
-    "confidence": 1,
-    "midi": 69,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 14.0519,
-    "on": 13.8084,
-    "support": 2,
-    "vel": 74
-   },
-   {
-    "confidence": 1,
-    "midi": 65,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 14.0634,
-    "on": 13.8089,
-    "support": 2,
-    "vel": 66
-   },
-   {
-    "confidence": 1,
-    "midi": 52,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 14.7018,
-    "on": 14.112,
-    "support": 2,
-    "vel": 73
-   },
-   {
-    "confidence": 1,
-    "midi": 68,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 14.5409,
-    "on": 14.1144,
-    "support": 2,
-    "vel": 78
-   },
-   {
-    "confidence": 1,
-    "midi": 71,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 14.5566,
-    "on": 14.1149,
-    "support": 2,
-    "vel": 76
-   },
-   {
-    "confidence": 1,
-    "midi": 62,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 14.52,
-    "on": 14.1214,
-    "support": 2,
-    "vel": 74
-   },
-   {
-    "confidence": 1,
-    "midi": 64,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 15.7526,
-    "on": 14.7101,
-    "support": 2,
-    "vel": 80
-   },
-   {
-    "confidence": 1,
-    "midi": 45,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 15.8837,
-    "on": 14.7116,
-    "support": 2,
-    "vel": 72
-   },
-   {
-    "confidence": 1,
-    "midi": 60,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 15.769,
-    "on": 14.713,
-    "support": 2,
-    "vel": 76
-   },
-   {
-    "confidence": 1,
-    "midi": 69,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 15.7688,
-    "on": 14.7163,
-    "support": 2,
-    "vel": 76
-   },
-   {
-    "confidence": 1,
-    "midi": 64,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 16.4351,
-    "on": 15.9024,
-    "support": 2,
-    "vel": 78
-   },
-   {
-    "confidence": 1,
-    "midi": 69,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 16.4351,
-    "on": 15.9113,
-    "support": 2,
-    "vel": 74
-   },
-   {
-    "confidence": 1,
-    "midi": 57,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 16.4525,
-    "on": 15.9136,
-    "support": 2,
-    "vel": 63
-   },
-   {
-    "confidence": 1,
-    "midi": 60,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 16.313,
-    "on": 15.9139,
-    "support": 2,
-    "vel": 68
-   },
-   {
-    "confidence": 1,
-    "midi": 69,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 17.3428,
-    "on": 16.5016,
-    "support": 2,
-    "vel": 78
-   },
-   {
-    "confidence": 1,
-    "midi": 64,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 17.262,
-    "on": 16.503,
-    "support": 2,
-    "vel": 78
-   },
-   {
-    "confidence": 1,
-    "midi": 60,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 17.052,
-    "on": 16.5117,
-    "support": 2,
-    "vel": 73
-   },
-   {
-    "confidence": 1,
-    "midi": 55,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 17.2784,
-    "on": 16.5172,
-    "support": 2,
-    "vel": 70
-   },
-   {
-    "confidence": 1,
-    "midi": 64,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 17.649,
-    "on": 17.4114,
-    "support": 2,
-    "vel": 76
-   },
-   {
-    "confidence": 1,
-    "midi": 59,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 17.6111,
-    "on": 17.417,
-    "support": 2,
-    "vel": 74
-   },
-   {
-    "confidence": 1,
-    "midi": 71,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 17.6438,
-    "on": 17.4185,
-    "support": 2,
-    "vel": 76
-   },
-   {
-    "confidence": 1,
-    "midi": 55,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 17.6211,
-    "on": 17.4187,
-    "support": 2,
-    "vel": 71
-   },
-   {
-    "confidence": 1,
-    "midi": 72,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 18.1768,
-    "on": 17.7037,
-    "support": 2,
-    "vel": 76
-   },
-   {
-    "confidence": 1,
-    "midi": 57,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 18.1813,
-    "on": 17.7126,
-    "support": 2,
-    "vel": 63
-   },
-   {
-    "confidence": 1,
-    "midi": 55,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 18.3039,
-    "on": 17.7129,
-    "support": 2,
-    "vel": 66
-   },
-   {
-    "confidence": 1,
-    "midi": 64,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 18.2672,
-    "on": 17.7139,
-    "support": 2,
-    "vel": 72
-   },
-   {
-    "confidence": 1,
-    "midi": 53,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 18.8078,
-    "on": 18.3075,
+    "off": 12.885,
+    "on": 12.3147,
     "support": 2,
     "vel": 67
    },
@@ -1474,8 +971,416 @@
      "piano-transcription",
      "transkun"
     ],
+    "off": 12.813,
+    "on": 12.3198,
+    "support": 2,
+    "vel": 62
+   },
+   {
+    "confidence": 1,
+    "midi": 57,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 13.7658,
+    "on": 12.8973,
+    "support": 2,
+    "vel": 66
+   },
+   {
+    "confidence": 1,
+    "midi": 50,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 13.7555,
+    "on": 12.9004,
+    "support": 2,
+    "vel": 70
+   },
+   {
+    "confidence": 1,
+    "midi": 66,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 13.7435,
+    "on": 12.9064,
+    "support": 2,
+    "vel": 71
+   },
+   {
+    "confidence": 1,
+    "midi": 71,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 13.7543,
+    "on": 12.9155,
+    "support": 2,
+    "vel": 77
+   },
+   {
+    "confidence": 1,
+    "midi": 47,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 14.0262,
+    "on": 13.8061,
+    "support": 2,
+    "vel": 66
+   },
+   {
+    "confidence": 1,
+    "midi": 62,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 14.0501,
+    "on": 13.8067,
+    "support": 2,
+    "vel": 70
+   },
+   {
+    "confidence": 1,
+    "midi": 69,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 14.0589,
+    "on": 13.8097,
+    "support": 2,
+    "vel": 76
+   },
+   {
+    "confidence": 1,
+    "midi": 66,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 14.0849,
+    "on": 13.8105,
+    "support": 2,
+    "vel": 68
+   },
+   {
+    "confidence": 1,
+    "midi": 52,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 14.7153,
+    "on": 14.1126,
+    "support": 2,
+    "vel": 74
+   },
+   {
+    "confidence": 1,
+    "midi": 68,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 14.5537,
+    "on": 14.1143,
+    "support": 2,
+    "vel": 78
+   },
+   {
+    "confidence": 1,
+    "midi": 71,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 14.567,
+    "on": 14.1151,
+    "support": 2,
+    "vel": 76
+   },
+   {
+    "confidence": 1,
+    "midi": 62,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 14.5313,
+    "on": 14.1218,
+    "support": 2,
+    "vel": 74
+   },
+   {
+    "confidence": 1,
+    "midi": 45,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 15.7755,
+    "on": 14.711,
+    "support": 2,
+    "vel": 70
+   },
+   {
+    "confidence": 1,
+    "midi": 64,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 15.7576,
+    "on": 14.711,
+    "support": 2,
+    "vel": 80
+   },
+   {
+    "confidence": 1,
+    "midi": 61,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 15.7426,
+    "on": 14.7131,
+    "support": 2,
+    "vel": 76
+   },
+   {
+    "confidence": 1,
+    "midi": 69,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 15.7576,
+    "on": 14.716,
+    "support": 2,
+    "vel": 76
+   },
+   {
+    "confidence": 1,
+    "midi": 64,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 16.4354,
+    "on": 15.9026,
+    "support": 2,
+    "vel": 78
+   },
+   {
+    "confidence": 1,
+    "midi": 69,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 16.4354,
+    "on": 15.9107,
+    "support": 2,
+    "vel": 75
+   },
+   {
+    "confidence": 1,
+    "midi": 61,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 16.4404,
+    "on": 15.9145,
+    "support": 2,
+    "vel": 68
+   },
+   {
+    "confidence": 1,
+    "midi": 57,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 16.4951,
+    "on": 15.9164,
+    "support": 2,
+    "vel": 62
+   },
+   {
+    "confidence": 1,
+    "midi": 69,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 17.3499,
+    "on": 16.5012,
+    "support": 2,
+    "vel": 80
+   },
+   {
+    "confidence": 1,
+    "midi": 64,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 17.262,
+    "on": 16.5024,
+    "support": 2,
+    "vel": 78
+   },
+   {
+    "confidence": 1,
+    "midi": 61,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 17.2482,
+    "on": 16.5102,
+    "support": 2,
+    "vel": 72
+   },
+   {
+    "confidence": 1,
+    "midi": 55,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 17.267,
+    "on": 16.5164,
+    "support": 2,
+    "vel": 68
+   },
+   {
+    "confidence": 1,
+    "midi": 64,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 17.6331,
+    "on": 17.411,
+    "support": 2,
+    "vel": 76
+   },
+   {
+    "confidence": 1,
+    "midi": 59,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 17.613,
+    "on": 17.4171,
+    "support": 2,
+    "vel": 74
+   },
+   {
+    "confidence": 1,
+    "midi": 71,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 17.6353,
+    "on": 17.4187,
+    "support": 2,
+    "vel": 76
+   },
+   {
+    "confidence": 1,
+    "midi": 55,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 17.6376,
+    "on": 17.419,
+    "support": 2,
+    "vel": 72
+   },
+   {
+    "confidence": 1,
+    "midi": 73,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 18.2522,
+    "on": 17.7029,
+    "support": 2,
+    "vel": 79
+   },
+   {
+    "confidence": 1,
+    "midi": 55,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 18.2865,
+    "on": 17.7131,
+    "support": 2,
+    "vel": 63
+   },
+   {
+    "confidence": 1,
+    "midi": 57,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 18.2583,
+    "on": 17.7132,
+    "support": 2,
+    "vel": 62
+   },
+   {
+    "confidence": 1,
+    "midi": 64,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 18.2625,
+    "on": 17.7136,
+    "support": 2,
+    "vel": 73
+   },
+   {
+    "confidence": 1,
+    "midi": 54,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 18.7848,
+    "on": 18.3073,
+    "support": 2,
+    "vel": 71
+   },
+   {
+    "confidence": 1,
+    "midi": 57,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
     "off": 18.8247,
-    "on": 18.313,
+    "on": 18.3108,
     "support": 2,
     "vel": 68
    },
@@ -1486,10 +1391,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 18.8016,
-    "on": 18.3216,
+    "off": 18.7901,
+    "on": 18.3204,
     "support": 2,
-    "vel": 73
+    "vel": 74
    },
    {
     "confidence": 1,
@@ -1498,34 +1403,22 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 18.8219,
-    "on": 18.3231,
+    "off": 19.3916,
+    "on": 18.3206,
     "support": 2,
     "vel": 76
    },
    {
     "confidence": 1,
-    "midi": 53,
+    "midi": 54,
     "models": [
      "piano-transcription",
      "transkun"
     ],
     "off": 19.3635,
-    "on": 18.8971,
+    "on": 18.8981,
     "support": 2,
-    "vel": 64
-   },
-   {
-    "confidence": 1,
-    "midi": 62,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 19.3869,
-    "on": 18.9129,
-    "support": 2,
-    "vel": 69
+    "vel": 66
    },
    {
     "confidence": 1,
@@ -1534,10 +1427,22 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 19.4263,
-    "on": 18.9148,
+    "off": 19.3917,
+    "on": 18.9099,
     "support": 2,
     "vel": 57
+   },
+   {
+    "confidence": 1,
+    "midi": 62,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 19.3637,
+    "on": 18.9111,
+    "support": 2,
+    "vel": 68
    },
    {
     "confidence": 1,
@@ -1546,22 +1451,22 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 19.3802,
-    "on": 18.9189,
+    "off": 19.3685,
+    "on": 18.9177,
     "support": 2,
     "vel": 76
    },
    {
     "confidence": 1,
-    "midi": 53,
+    "midi": 54,
     "models": [
      "piano-transcription",
      "transkun"
     ],
-    "off": 20.0395,
-    "on": 19.501,
+    "off": 20.0485,
+    "on": 19.5002,
     "support": 2,
-    "vel": 64
+    "vel": 68
    },
    {
     "confidence": 1,
@@ -1571,9 +1476,9 @@
      "transkun"
     ],
     "off": 19.9055,
-    "on": 19.5057,
+    "on": 19.5015,
     "support": 2,
-    "vel": 68
+    "vel": 70
    },
    {
     "confidence": 1,
@@ -1582,10 +1487,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 20.0649,
-    "on": 19.5131,
+    "off": 20.0697,
+    "on": 19.5094,
     "support": 2,
-    "vel": 58
+    "vel": 60
    },
    {
     "confidence": 1,
@@ -1594,8 +1499,20 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 19.8786,
-    "on": 19.5157,
+    "off": 19.9404,
+    "on": 19.515,
+    "support": 2,
+    "vel": 74
+   },
+   {
+    "confidence": 1,
+    "midi": 62,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 21.2742,
+    "on": 20.1224,
     "support": 2,
     "vel": 72
    },
@@ -1606,19 +1523,7 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 21.2387,
-    "on": 20.122,
-    "support": 2,
-    "vel": 70
-   },
-   {
-    "confidence": 1,
-    "midi": 62,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 21.3138,
+    "off": 21.2257,
     "on": 20.1227,
     "support": 2,
     "vel": 70
@@ -1630,8 +1535,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 21.1155,
-    "on": 20.1237,
+    "off": 21.1255,
+    "on": 20.1239,
     "support": 2,
     "vel": 76
    },
@@ -1642,7 +1547,7 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 21.2502,
+    "off": 21.2452,
     "on": 20.1241,
     "support": 2,
     "vel": 74
@@ -1654,22 +1559,22 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 21.2727,
+    "off": 21.3013,
     "on": 20.994,
     "support": 2,
-    "vel": 73
+    "vel": 74
    },
    {
     "confidence": 1,
-    "midi": 60,
+    "midi": 61,
     "models": [
      "piano-transcription",
      "transkun"
     ],
-    "off": 21.561,
-    "on": 21.3037,
+    "off": 21.5613,
+    "on": 21.3027,
     "support": 2,
-    "vel": 69
+    "vel": 67
    },
    {
     "confidence": 1,
@@ -1678,8 +1583,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 21.568,
-    "on": 21.3043,
+    "off": 21.573,
+    "on": 21.3048,
     "support": 2,
     "vel": 68
    },
@@ -1690,10 +1595,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 21.5899,
-    "on": 21.3223,
+    "off": 21.5927,
+    "on": 21.3206,
     "support": 2,
-    "vel": 72
+    "vel": 70
    },
    {
     "confidence": 1,
@@ -1702,10 +1607,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 21.8807,
-    "on": 21.6062,
+    "off": 21.8521,
+    "on": 21.607,
     "support": 2,
-    "vel": 78
+    "vel": 77
    },
    {
     "confidence": 1,
@@ -1714,58 +1619,58 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 21.8693,
-    "on": 21.6137,
+    "off": 21.8792,
+    "on": 21.6138,
     "support": 2,
-    "vel": 70
+    "vel": 68
    },
    {
     "confidence": 1,
-    "midi": 60,
+    "midi": 61,
     "models": [
      "piano-transcription",
      "transkun"
     ],
-    "off": 21.8509,
-    "on": 21.6191,
+    "off": 21.8616,
+    "on": 21.6197,
     "support": 2,
-    "vel": 67
+    "vel": 68
    },
    {
     "confidence": 1,
-    "midi": 65,
+    "midi": 66,
     "models": [
      "piano-transcription",
      "transkun"
     ],
-    "off": 22.487,
+    "off": 22.4718,
     "on": 21.9028,
     "support": 2,
     "vel": 72
    },
    {
     "confidence": 1,
-    "midi": 50,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 22.4529,
-    "on": 21.9092,
-    "support": 2,
-    "vel": 70
-   },
-   {
-    "confidence": 1,
     "midi": 62,
     "models": [
      "piano-transcription",
      "transkun"
     ],
-    "off": 22.4532,
-    "on": 21.9096,
+    "off": 22.4631,
+    "on": 21.9079,
     "support": 2,
     "vel": 72
+   },
+   {
+    "confidence": 1,
+    "midi": 50,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 22.4348,
+    "on": 21.9119,
+    "support": 2,
+    "vel": 71
    },
    {
     "confidence": 1,
@@ -1774,10 +1679,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 22.4582,
-    "on": 21.917,
+    "off": 22.4542,
+    "on": 21.9187,
     "support": 2,
-    "vel": 59
+    "vel": 58
    },
    {
     "confidence": 1,
@@ -1787,43 +1692,7 @@
      "transkun"
     ],
     "off": 23.0378,
-    "on": 22.5162,
-    "support": 2,
-    "vel": 75
-   },
-   {
-    "confidence": 1,
-    "midi": 53,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 23.0428,
-    "on": 22.5215,
-    "support": 2,
-    "vel": 64
-   },
-   {
-    "confidence": 1,
-    "midi": 50,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 23.0378,
-    "on": 22.5219,
-    "support": 2,
-    "vel": 69
-   },
-   {
-    "confidence": 1,
-    "midi": 62,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 23.6672,
-    "on": 23.1089,
+    "on": 22.5161,
     "support": 2,
     "vel": 76
    },
@@ -1834,22 +1703,58 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 23.6823,
-    "on": 23.1127,
+    "off": 23.0375,
+    "on": 22.5215,
     "support": 2,
-    "vel": 68
+    "vel": 69
    },
    {
     "confidence": 1,
-    "midi": 53,
+    "midi": 54,
     "models": [
      "piano-transcription",
      "transkun"
     ],
-    "off": 23.7024,
-    "on": 23.1199,
+    "off": 23.0428,
+    "on": 22.5256,
     "support": 2,
-    "vel": 64
+    "vel": 66
+   },
+   {
+    "confidence": 1,
+    "midi": 62,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 23.6628,
+    "on": 23.109,
+    "support": 2,
+    "vel": 77
+   },
+   {
+    "confidence": 1,
+    "midi": 50,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 23.693,
+    "on": 23.1131,
+    "support": 2,
+    "vel": 69
+   },
+   {
+    "confidence": 1,
+    "midi": 54,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 23.7121,
+    "on": 23.1182,
+    "support": 2,
+    "vel": 68
    },
    {
     "confidence": 1,
@@ -1858,8 +1763,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 24.5615,
-    "on": 23.7041,
+    "off": 24.5648,
+    "on": 23.7039,
     "support": 2,
     "vel": 75
    },
@@ -1870,8 +1775,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 24.5661,
-    "on": 23.7171,
+    "off": 24.5659,
+    "on": 23.7156,
     "support": 2,
     "vel": 70
    },
@@ -1882,10 +1787,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 24.5759,
-    "on": 23.7173,
+    "off": 24.5767,
+    "on": 23.7163,
     "support": 2,
-    "vel": 65
+    "vel": 66
    },
    {
     "confidence": 1,
@@ -1894,10 +1799,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 24.552,
-    "on": 23.7198,
+    "off": 24.5638,
+    "on": 23.7189,
     "support": 2,
-    "vel": 70
+    "vel": 71
    },
    {
     "confidence": 1,
@@ -1906,22 +1811,34 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 24.8656,
-    "on": 24.6045,
+    "off": 24.8195,
+    "on": 24.603,
     "support": 2,
-    "vel": 67
+    "vel": 68
    },
    {
     "confidence": 1,
-    "midi": 53,
+    "midi": 54,
     "models": [
      "piano-transcription",
      "transkun"
     ],
-    "off": 24.8904,
-    "on": 24.6069,
+    "off": 24.8312,
+    "on": 24.6079,
     "support": 2,
-    "vel": 64
+    "vel": 68
+   },
+   {
+    "confidence": 1,
+    "midi": 69,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 24.8321,
+    "on": 24.608,
+    "support": 2,
+    "vel": 80
    },
    {
     "confidence": 1,
@@ -1931,21 +1848,9 @@
      "transkun"
     ],
     "off": 24.843,
-    "on": 24.6091,
+    "on": 24.6103,
     "support": 2,
     "vel": 70
-   },
-   {
-    "confidence": 1,
-    "midi": 69,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 24.8431,
-    "on": 24.6102,
-    "support": 2,
-    "vel": 78
    },
    {
     "confidence": 1,
@@ -1954,10 +1859,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 25.1686,
-    "on": 24.8974,
+    "off": 25.156,
+    "on": 24.8971,
     "support": 2,
-    "vel": 71
+    "vel": 72
    },
    {
     "confidence": 1,
@@ -1966,10 +1871,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 25.1413,
-    "on": 24.9019,
+    "off": 25.1294,
+    "on": 24.9012,
     "support": 2,
-    "vel": 76
+    "vel": 77
    },
    {
     "confidence": 1,
@@ -1978,10 +1883,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 25.1443,
-    "on": 24.9123,
+    "off": 25.144,
+    "on": 24.9121,
     "support": 2,
-    "vel": 69
+    "vel": 70
    },
    {
     "confidence": 1,
@@ -1990,10 +1895,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 25.139,
-    "on": 24.9176,
+    "off": 25.1388,
+    "on": 24.9178,
     "support": 2,
-    "vel": 67
+    "vel": 68
    },
    {
     "confidence": 1,
@@ -2002,10 +1907,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 25.4557,
-    "on": 25.2005,
+    "off": 25.4603,
+    "on": 25.1998,
     "support": 2,
-    "vel": 67
+    "vel": 68
    },
    {
     "confidence": 1,
@@ -2014,8 +1919,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 25.4777,
-    "on": 25.205,
+    "off": 25.4841,
+    "on": 25.2047,
     "support": 2,
     "vel": 64
    },
@@ -2026,8 +1931,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 25.4656,
-    "on": 25.2189,
+    "off": 25.4691,
+    "on": 25.2186,
     "support": 2,
     "vel": 66
    },
@@ -2038,22 +1943,22 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 25.468,
-    "on": 25.2193,
+    "off": 25.4842,
+    "on": 25.2187,
     "support": 2,
     "vel": 72
    },
    {
     "confidence": 1,
-    "midi": 48,
+    "midi": 49,
     "models": [
      "piano-transcription",
      "transkun"
     ],
-    "off": 26.6877,
-    "on": 25.5014,
+    "off": 26.6613,
+    "on": 25.5025,
     "support": 2,
-    "vel": 68
+    "vel": 70
    },
    {
     "confidence": 1,
@@ -2062,8 +1967,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 26.2719,
-    "on": 25.5043,
+    "off": 26.2493,
+    "on": 25.5042,
     "support": 2,
     "vel": 78
    },
@@ -2074,10 +1979,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 26.5449,
-    "on": 25.5072,
+    "off": 26.5439,
+    "on": 25.5063,
     "support": 2,
-    "vel": 76
+    "vel": 77
    },
    {
     "confidence": 1,
@@ -2086,8 +1991,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 26.0521,
-    "on": 25.5095,
+    "off": 26.0516,
+    "on": 25.5111,
     "support": 2,
     "vel": 70
    },
@@ -2098,8 +2003,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 26.6719,
-    "on": 26.1254,
+    "off": 26.6253,
+    "on": 26.1252,
     "support": 2,
     "vel": 62
    },
@@ -2110,20 +2015,20 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 26.6971,
-    "on": 26.4083,
+    "off": 26.688,
+    "on": 26.4082,
     "support": 2,
-    "vel": 73
+    "vel": 74
    },
    {
     "confidence": 1,
-    "midi": 65,
+    "midi": 66,
     "models": [
      "piano-transcription",
      "transkun"
     ],
-    "off": 26.9622,
-    "on": 26.7083,
+    "off": 26.9357,
+    "on": 26.7069,
     "support": 2,
     "vel": 70
    },
@@ -2135,7 +2040,7 @@
      "transkun"
     ],
     "off": 26.9945,
-    "on": 26.7119,
+    "on": 26.7101,
     "support": 2,
     "vel": 60
    },
@@ -2146,8 +2051,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 26.9849,
-    "on": 26.7191,
+    "off": 26.9844,
+    "on": 26.7186,
     "support": 2,
     "vel": 68
    },
@@ -2158,10 +2063,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 26.9732,
-    "on": 26.7198,
+    "off": 26.9402,
+    "on": 26.721,
     "support": 2,
-    "vel": 68
+    "vel": 69
    },
    {
     "confidence": 1,
@@ -2170,10 +2075,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 27.2335,
-    "on": 27.0091,
+    "off": 27.2675,
+    "on": 27.0088,
     "support": 2,
-    "vel": 67
+    "vel": 68
    },
    {
     "confidence": 1,
@@ -2182,10 +2087,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 27.2551,
-    "on": 27.0104,
+    "off": 27.2463,
+    "on": 27.0105,
     "support": 2,
-    "vel": 56
+    "vel": 54
    },
    {
     "confidence": 1,
@@ -2194,22 +2099,22 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 27.2354,
-    "on": 27.0152,
+    "off": 27.2452,
+    "on": 27.0153,
     "support": 2,
-    "vel": 66
+    "vel": 67
    },
    {
     "confidence": 1,
-    "midi": 65,
+    "midi": 66,
     "models": [
      "piano-transcription",
      "transkun"
     ],
-    "off": 27.2912,
-    "on": 27.0164,
+    "off": 27.2903,
+    "on": 27.0167,
     "support": 2,
-    "vel": 70
+    "vel": 72
    },
    {
     "confidence": 1,
@@ -2218,10 +2123,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 27.8425,
-    "on": 27.3144,
+    "off": 27.8455,
+    "on": 27.3143,
     "support": 2,
-    "vel": 75
+    "vel": 76
    },
    {
     "confidence": 1,
@@ -2231,9 +2136,9 @@
      "transkun"
     ],
     "off": 27.8174,
-    "on": 27.3168,
+    "on": 27.3176,
     "support": 2,
-    "vel": 71
+    "vel": 72
    },
    {
     "confidence": 1,
@@ -2242,8 +2147,8 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 27.7019,
-    "on": 27.318,
+    "off": 27.7156,
+    "on": 27.3185,
     "support": 2,
     "vel": 72
    },
@@ -2254,10 +2159,10 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 27.8405,
-    "on": 27.323,
+    "off": 27.8195,
+    "on": 27.3235,
     "support": 2,
-    "vel": 71
+    "vel": 72
    },
    {
     "confidence": 1,
@@ -2266,34 +2171,22 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 28.7491,
-    "on": 27.8998,
+    "off": 28.7528,
+    "on": 27.9001,
+    "support": 2,
+    "vel": 68
+   },
+   {
+    "confidence": 1,
+    "midi": 61,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 28.8005,
+    "on": 27.9005,
     "support": 2,
     "vel": 70
-   },
-   {
-    "confidence": 1,
-    "midi": 60,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 28.7487,
-    "on": 27.9002,
-    "support": 2,
-    "vel": 72
-   },
-   {
-    "confidence": 1,
-    "midi": 64,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 28.7745,
-    "on": 27.9053,
-    "support": 2,
-    "vel": 76
    },
    {
     "confidence": 1,
@@ -2302,8 +2195,56 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 28.7728,
-    "on": 27.9055,
+    "off": 28.7753,
+    "on": 27.9046,
+    "support": 2,
+    "vel": 66
+   },
+   {
+    "confidence": 1,
+    "midi": 64,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 28.777,
+    "on": 27.9048,
+    "support": 2,
+    "vel": 76
+   },
+   {
+    "confidence": 1,
+    "midi": 62,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 29.0394,
+    "on": 28.801,
+    "support": 2,
+    "vel": 76
+   },
+   {
+    "confidence": 1,
+    "midi": 50,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 29.0033,
+    "on": 28.8118,
+    "support": 2,
+    "vel": 68
+   },
+   {
+    "confidence": 1,
+    "midi": 54,
+    "models": [
+     "piano-transcription",
+     "transkun"
+    ],
+    "off": 29.0381,
+    "on": 28.8124,
     "support": 2,
     "vel": 66
    },
@@ -2314,120 +2255,72 @@
      "piano-transcription",
      "transkun"
     ],
-    "off": 29.0396,
-    "on": 28.8006,
+    "off": 31.3828,
+    "on": 29.1134,
     "support": 2,
-    "vel": 76
+    "vel": 81
    },
    {
     "confidence": 1,
-    "midi": 53,
+    "midi": 54,
     "models": [
      "piano-transcription",
      "transkun"
     ],
-    "off": 29.0618,
-    "on": 28.812,
-    "support": 2,
-    "vel": 63
-   },
-   {
-    "confidence": 1,
-    "midi": 50,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 29.0357,
-    "on": 28.8175,
+    "off": 31.0528,
+    "on": 29.1139,
     "support": 2,
     "vel": 68
    },
    {
     "confidence": 1,
-    "midi": 53,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 30.2856,
-    "on": 29.113,
-    "support": 2,
-    "vel": 64
-   },
-   {
-    "confidence": 1,
-    "midi": 62,
-    "models": [
-     "piano-transcription",
-     "transkun"
-    ],
-    "off": 31.3831,
-    "on": 29.1132,
-    "support": 2,
-    "vel": 80
-   },
-   {
-    "confidence": 1,
     "midi": 50,
     "models": [
      "piano-transcription",
      "transkun"
     ],
-    "off": 30.2978,
-    "on": 29.1141,
+    "off": 31.3945,
+    "on": 29.1146,
     "support": 2,
-    "vel": 70
+    "vel": 72
    }
   ],
   "pedals": [
    {
-    "off": 5.050521,
+    "off": 5.05,
     "on": 4.723958
    },
    {
-    "off": 5.677083,
+    "off": 5.676563,
     "on": 5.328646
    },
    {
-    "off": 6.604167,
-    "on": 5.931771
+    "off": 6.602604,
+    "on": 5.910417
    },
    {
-    "off": 7.490104,
-    "on": 7.116667
+    "off": 11.666667,
+    "on": 11.296354
    },
    {
-    "off": 11.063542,
-    "on": 10.66875
-   },
-   {
-    "off": 11.667188,
-    "on": 11.273958
-   },
-   {
-    "off": 14.057813,
-    "on": 13.944271
+    "off": 14.05625,
+    "on": 13.94375
    },
    {
     "off": 14.684375,
-    "on": 14.336979
+    "on": 14.3375
    },
    {
-    "off": 16.476042,
-    "on": 16.103125
+    "off": 17.38125,
+    "on": 16.799479
    },
    {
-    "off": 17.379687,
-    "on": 16.729688
-   },
-   {
-    "off": 17.683854,
+    "off": 17.700521,
     "on": 17.542188
    },
    {
-    "off": 18.889063,
-    "on": 18.517708
+    "off": 18.890104,
+    "on": 18.540625
    },
    {
     "off": 19.470833,
@@ -2435,45 +2328,33 @@
    },
    {
     "off": 20.050521,
-    "on": 19.701563
+    "on": 19.725
+   },
+   {
+    "off": 21.257292,
+    "on": 21.140625
    },
    {
     "off": 21.602604,
-    "on": 21.465104
+    "on": 21.465625
    },
    {
-    "off": 21.882292,
-    "on": 21.769792
-   },
-   {
-    "off": 22.485417,
-    "on": 22.324479
-   },
-   {
-    "off": 23.091667,
-    "on": 22.88125
-   },
-   {
-    "off": 24.858854,
-    "on": 24.763021
+    "off": 24.859375,
+    "on": 24.740104
    },
    {
     "off": 25.160937,
     "on": 25.042188
    },
    {
-    "off": 27.25,
-    "on": 27.178125
-   },
-   {
-    "off": 29.08125,
-    "on": 28.966667
+    "off": 29.082292,
+    "on": 28.943229
    }
   ],
   "sourceDuration": 30.91,
   "taskMode": "faithful-transcription",
   "title": "ppp-bench-d782a1bdeb48",
-  "totalMs": 16996,
+  "totalMs": 18085,
   "truncated": false,
   "uncertainNotes": [
    {
@@ -2482,8 +2363,8 @@
     "models": [
      "piano-transcription"
     ],
-    "off": 3.2849,
-    "on": 3.0137,
+    "off": 3.31,
+    "on": 3.0139,
     "support": 1,
     "vel": 60
    },
@@ -2493,21 +2374,10 @@
     "models": [
      "piano-transcription"
     ],
-    "off": 4.5051,
-    "on": 3.9023,
+    "off": 4.49,
+    "on": 3.9001,
     "support": 1,
-    "vel": 59
-   },
-   {
-    "confidence": 0.5,
-    "midi": 74,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 3.9367,
-    "on": 3.9067,
-    "support": 1,
-    "vel": 63
+    "vel": 62
    },
    {
     "confidence": 0.5,
@@ -2515,98 +2385,10 @@
     "models": [
      "piano-transcription"
     ],
-    "off": 6.79,
-    "on": 5.7065,
+    "off": 6.61,
+    "on": 5.7067,
     "support": 1,
     "vel": 65
-   },
-   {
-    "confidence": 0.5,
-    "midi": 76,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 7.23,
-    "on": 6.904,
-    "support": 1,
-    "vel": 68
-   },
-   {
-    "confidence": 0.5,
-    "midi": 72,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 7.57,
-    "on": 6.9053,
-    "support": 1,
-    "vel": 63
-   },
-   {
-    "confidence": 0.5,
-    "midi": 69,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 7.49,
-    "on": 6.9067,
-    "support": 1,
-    "vel": 61
-   },
-   {
-    "confidence": 0.5,
-    "midi": 74,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 8.13,
-    "on": 7.5031,
-    "support": 1,
-    "vel": 64
-   },
-   {
-    "confidence": 0.5,
-    "midi": 69,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 8.69,
-    "on": 7.5037,
-    "support": 1,
-    "vel": 58
-   },
-   {
-    "confidence": 0.5,
-    "midi": 76,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 10.49,
-    "on": 10.1979,
-    "support": 1,
-    "vel": 64
-   },
-   {
-    "confidence": 0.5,
-    "midi": 76,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 11.14,
-    "on": 10.5038,
-    "support": 1,
-    "vel": 68
-   },
-   {
-    "confidence": 0.5,
-    "midi": 76,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 12.01,
-    "on": 11.6951,
-    "support": 1,
-    "vel": 63
    },
    {
     "confidence": 0.5,
@@ -2614,85 +2396,8 @@
     "models": [
      "piano-transcription"
     ],
-    "off": 12.2889,
-    "on": 11.7198,
-    "support": 1,
-    "vel": 49
-   },
-   {
-    "confidence": 0.5,
-    "midi": 68,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 11.7541,
-    "on": 11.7241,
-    "support": 1,
-    "vel": 49
-   },
-   {
-    "confidence": 0.5,
-    "midi": 74,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 11.96,
-    "on": 11.7267,
-    "support": 1,
-    "vel": 39
-   },
-   {
-    "confidence": 0.5,
-    "midi": 69,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 13.1,
-    "on": 12.3209,
-    "support": 1,
-    "vel": 57
-   },
-   {
-    "confidence": 0.5,
-    "midi": 76,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 15.9,
-    "on": 14.7129,
-    "support": 1,
-    "vel": 69
-   },
-   {
-    "confidence": 0.5,
-    "midi": 72,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 15.9,
-    "on": 14.7148,
-    "support": 1,
-    "vel": 68
-   },
-   {
-    "confidence": 0.5,
-    "midi": 76,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 16.49,
-    "on": 15.9051,
-    "support": 1,
-    "vel": 65
-   },
-   {
-    "confidence": 0.5,
-    "midi": 72,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 16.67,
-    "on": 15.913,
+    "off": 6.89,
+    "on": 6.6173,
     "support": 1,
     "vel": 63
    },
@@ -2702,43 +2407,21 @@
     "models": [
      "piano-transcription"
     ],
-    "off": 17.4,
-    "on": 16.5034,
+    "off": 7.5172,
+    "on": 6.9029,
     "support": 1,
     "vel": 68
    },
    {
     "confidence": 0.5,
-    "midi": 76,
+    "midi": 73,
     "models": [
      "piano-transcription"
     ],
-    "off": 17.71,
-    "on": 17.4136,
+    "off": 7.53,
+    "on": 6.9077,
     "support": 1,
-    "vel": 70
-   },
-   {
-    "confidence": 0.5,
-    "midi": 76,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 18.32,
-    "on": 17.7151,
-    "support": 1,
-    "vel": 65
-   },
-   {
-    "confidence": 0.5,
-    "midi": 69,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 18.91,
-    "on": 18.3161,
-    "support": 1,
-    "vel": 63
+    "vel": 62
    },
    {
     "confidence": 0.5,
@@ -2746,63 +2429,8 @@
     "models": [
      "piano-transcription"
     ],
-    "off": 19.85,
-    "on": 19.5047,
-    "support": 1,
-    "vel": 61
-   },
-   {
-    "confidence": 0.5,
-    "midi": 64,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 21.24,
-    "on": 20.1254,
-    "support": 1,
-    "vel": 61
-   },
-   {
-    "confidence": 0.5,
-    "midi": 69,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 21.6,
-    "on": 21.3102,
-    "support": 1,
-    "vel": 64
-   },
-   {
-    "confidence": 0.5,
-    "midi": 74,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 22.46,
-    "on": 21.9066,
-    "support": 1,
-    "vel": 65
-   },
-   {
-    "confidence": 0.5,
-    "midi": 69,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 22.4892,
-    "on": 21.9085,
-    "support": 1,
-    "vel": 57
-   },
-   {
-    "confidence": 0.5,
-    "midi": 76,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 26.37,
-    "on": 25.5042,
+    "off": 8.1,
+    "on": 7.5012,
     "support": 1,
     "vel": 67
    },
@@ -2812,21 +2440,10 @@
     "models": [
      "piano-transcription"
     ],
-    "off": 26.6744,
-    "on": 26.1246,
+    "off": 8.13,
+    "on": 7.5064,
     "support": 1,
-    "vel": 56
-   },
-   {
-    "confidence": 0.5,
-    "midi": 76,
-    "models": [
-     "piano-transcription"
-    ],
-    "off": 30.63,
-    "on": 27.9053,
-    "support": 1,
-    "vel": 69
+    "vel": 61
    },
    {
     "confidence": 0.5,
@@ -2834,8 +2451,30 @@
     "models": [
      "piano-transcription"
     ],
-    "off": 30.97,
-    "on": 28.7984,
+    "off": 8.68,
+    "on": 8.1124,
+    "support": 1,
+    "vel": 65
+   },
+   {
+    "confidence": 0.5,
+    "midi": 76,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 9.89,
+    "on": 9.3195,
+    "support": 1,
+    "vel": 65
+   },
+   {
+    "confidence": 0.5,
+    "midi": 76,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 10.49,
+    "on": 10.2046,
     "support": 1,
     "vel": 65
    },
@@ -2845,16 +2484,258 @@
     "models": [
      "piano-transcription"
     ],
-    "off": 28.8427,
-    "on": 28.8127,
+    "off": 10.5,
+    "on": 10.2192,
     "support": 1,
-    "vel": 56
+    "vel": 58
+   },
+   {
+    "confidence": 0.5,
+    "midi": 76,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 11.0946,
+    "on": 10.503,
+    "support": 1,
+    "vel": 68
+   },
+   {
+    "confidence": 0.5,
+    "midi": 69,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 11.1,
+    "on": 10.5131,
+    "support": 1,
+    "vel": 59
+   },
+   {
+    "confidence": 0.5,
+    "midi": 69,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 11.7117,
+    "on": 11.1052,
+    "support": 1,
+    "vel": 60
+   },
+   {
+    "confidence": 0.5,
+    "midi": 76,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 12.01,
+    "on": 11.6948,
+    "support": 1,
+    "vel": 64
+   },
+   {
+    "confidence": 0.5,
+    "midi": 71,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 12.2951,
+    "on": 11.718,
+    "support": 1,
+    "vel": 50
+   },
+   {
+    "confidence": 0.5,
+    "midi": 68,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 12.29,
+    "on": 11.7223,
+    "support": 1,
+    "vel": 48
+   },
+   {
+    "confidence": 0.5,
+    "midi": 69,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 12.9013,
+    "on": 12.3157,
+    "support": 1,
+    "vel": 55
+   },
+   {
+    "confidence": 0.5,
+    "midi": 76,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 15.89,
+    "on": 14.7113,
+    "support": 1,
+    "vel": 67
+   },
+   {
+    "confidence": 0.5,
+    "midi": 73,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 15.9,
+    "on": 14.7156,
+    "support": 1,
+    "vel": 66
+   },
+   {
+    "confidence": 0.5,
+    "midi": 76,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 16.49,
+    "on": 15.9048,
+    "support": 1,
+    "vel": 66
+   },
+   {
+    "confidence": 0.5,
+    "midi": 73,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 17.36,
+    "on": 15.914,
+    "support": 1,
+    "vel": 61
+   },
+   {
+    "confidence": 0.5,
+    "midi": 76,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 17.4,
+    "on": 16.5036,
+    "support": 1,
+    "vel": 68
+   },
+   {
+    "confidence": 0.5,
+    "midi": 76,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 18.29,
+    "on": 17.4129,
+    "support": 1,
+    "vel": 70
+   },
+   {
+    "confidence": 0.5,
+    "midi": 69,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 18.26,
+    "on": 17.7181,
+    "support": 1,
+    "vel": 58
+   },
+   {
+    "confidence": 0.5,
+    "midi": 69,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 18.91,
+    "on": 18.3156,
+    "support": 1,
+    "vel": 65
+   },
+   {
+    "confidence": 0.5,
+    "midi": 69,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 21.6,
+    "on": 21.3074,
+    "support": 1,
+    "vel": 62
+   },
+   {
+    "confidence": 0.5,
+    "midi": 74,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 22.21,
+    "on": 21.9053,
+    "support": 1,
+    "vel": 65
+   },
+   {
+    "confidence": 0.5,
+    "midi": 69,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 22.48,
+    "on": 21.9133,
+    "support": 1,
+    "vel": 61
+   },
+   {
+    "confidence": 0.5,
+    "midi": 67,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 25.21,
+    "on": 24.9136,
+    "support": 1,
+    "vel": 64
+   },
+   {
+    "confidence": 0.5,
+    "midi": 69,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 26.6756,
+    "on": 26.1243,
+    "support": 1,
+    "vel": 55
+   },
+   {
+    "confidence": 0.5,
+    "midi": 76,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 28.82,
+    "on": 27.9047,
+    "support": 1,
+    "vel": 68
+   },
+   {
+    "confidence": 0.5,
+    "midi": 74,
+    "models": [
+     "piano-transcription"
+    ],
+    "off": 30.28,
+    "on": 28.7963,
+    "support": 1,
+    "vel": 68
    }
   ]
  },
  "id": "replay/hymns/we-gather-together|salamander-v1|human|s1",
  "provenance": {
-  "git_sha": "f0e1a8627ab4183e3c7d586984bc9b420efbed13",
+  "git_sha": "c82dcde50c37d3b115345c730ce49049e255d379",
   "helper": {
    "amt": "ensemble",
    "amtEngines": [
@@ -2866,11 +2747,11 @@
    "service": "ppp-local",
    "version": 5
   },
-  "recorded_at": "2026-09-21T15:22:38+00:00",
+  "recorded_at": "2026-10-02T10:49:44+00:00",
   "seconds": 18.1
  },
  "reference": "hymns/we-gather-together",
- "reference_sha256": "3b4c372d3f5bb03e67873976aa3b1a672f00f58bdea4994a68bb7cbf77d9e51f",
+ "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52",
  "render": {
   "profile": "human",
   "qpm": 100.0,
@@ -2914,7 +2795,7 @@
     "ref_sounding_id": 1
    },
    {
-    "midi": 53,
+    "midi": 54,
     "off": 2.033,
     "on": 1.5018,
     "ref_sounding_id": 3
@@ -2938,7 +2819,7 @@
     "ref_sounding_id": 5
    },
    {
-    "midi": 53,
+    "midi": 54,
     "off": 2.9796,
     "on": 2.1002,
     "ref_sounding_id": 7
@@ -2992,13 +2873,13 @@
     "ref_sounding_id": 13
    },
    {
-    "midi": 53,
+    "midi": 54,
     "off": 3.8407,
     "on": 3.3114,
     "ref_sounding_id": 15
    },
    {
-    "midi": 65,
+    "midi": 66,
     "off": 4.4317,
     "on": 3.8859,
     "ref_sounding_id": 17
@@ -3058,7 +2939,7 @@
     "ref_sounding_id": 25
    },
    {
-    "midi": 53,
+    "midi": 54,
     "off": 5.6522,
     "on": 5.1028,
     "ref_sounding_id": 26
@@ -3112,7 +2993,7 @@
     "ref_sounding_id": 35
    },
    {
-    "midi": 65,
+    "midi": 66,
     "off": 6.8777,
     "on": 6.6125,
     "ref_sounding_id": 33
@@ -3124,7 +3005,7 @@
     "ref_sounding_id": 38
    },
    {
-    "midi": 60,
+    "midi": 61,
     "off": 7.4384,
     "on": 6.8878,
     "ref_sounding_id": 36
@@ -3136,7 +3017,7 @@
     "ref_sounding_id": 37
    },
    {
-    "midi": 60,
+    "midi": 61,
     "off": 7.4736,
     "on": 6.9105,
     "ref_sounding_id": 39
@@ -3154,7 +3035,7 @@
     "ref_sounding_id": 42
    },
    {
-    "midi": 65,
+    "midi": 66,
     "off": 8.0515,
     "on": 7.4907,
     "ref_sounding_id": 41
@@ -3166,7 +3047,7 @@
     "ref_sounding_id": 43
    },
    {
-    "midi": 53,
+    "midi": 54,
     "off": 8.6557,
     "on": 8.0947,
     "ref_sounding_id": 47
@@ -3208,7 +3089,7 @@
     "ref_sounding_id": 50
    },
    {
-    "midi": 65,
+    "midi": 66,
     "off": 9.2369,
     "on": 8.7121,
     "ref_sounding_id": 48
@@ -3220,7 +3101,7 @@
     "ref_sounding_id": 53
    },
    {
-    "midi": 48,
+    "midi": 49,
     "off": 10.1616,
     "on": 9.2896,
     "ref_sounding_id": 54
@@ -3238,7 +3119,7 @@
     "ref_sounding_id": 52
    },
    {
-    "midi": 48,
+    "midi": 49,
     "off": 10.4766,
     "on": 10.1878,
     "ref_sounding_id": 58
@@ -3262,7 +3143,7 @@
     "ref_sounding_id": 59
    },
    {
-    "midi": 48,
+    "midi": 49,
     "off": 11.0499,
     "on": 10.4877,
     "ref_sounding_id": 62
@@ -3274,7 +3155,7 @@
     "ref_sounding_id": 60
    },
    {
-    "midi": 72,
+    "midi": 73,
     "off": 11.0747,
     "on": 10.4984,
     "ref_sounding_id": 61
@@ -3298,7 +3179,7 @@
     "ref_sounding_id": 65
    },
    {
-    "midi": 65,
+    "midi": 66,
     "off": 11.6338,
     "on": 11.1071,
     "ref_sounding_id": 64
@@ -3334,7 +3215,7 @@
     "ref_sounding_id": 71
    },
    {
-    "midi": 72,
+    "midi": 73,
     "off": 12.8721,
     "on": 12.297,
     "ref_sounding_id": 73
@@ -3370,7 +3251,7 @@
     "ref_sounding_id": 78
    },
    {
-    "midi": 65,
+    "midi": 66,
     "off": 13.7705,
     "on": 12.8956,
     "ref_sounding_id": 76
@@ -3388,7 +3269,7 @@
     "ref_sounding_id": 83
    },
    {
-    "midi": 65,
+    "midi": 66,
     "off": 14.0606,
     "on": 13.7972,
     "ref_sounding_id": 80
@@ -3442,7 +3323,7 @@
     "ref_sounding_id": 88
    },
    {
-    "midi": 60,
+    "midi": 61,
     "off": 15.822,
     "on": 14.705,
     "ref_sounding_id": 91
@@ -3466,7 +3347,7 @@
     "ref_sounding_id": 93
    },
    {
-    "midi": 60,
+    "midi": 61,
     "off": 16.4625,
     "on": 15.9041,
     "ref_sounding_id": 95
@@ -3490,7 +3371,7 @@
     "ref_sounding_id": 96
    },
    {
-    "midi": 60,
+    "midi": 61,
     "off": 17.3373,
     "on": 16.4998,
     "ref_sounding_id": 99
@@ -3526,7 +3407,7 @@
     "ref_sounding_id": 101
    },
    {
-    "midi": 72,
+    "midi": 73,
     "off": 18.243,
     "on": 17.6948,
     "ref_sounding_id": 105
@@ -3550,7 +3431,7 @@
     "ref_sounding_id": 104
    },
    {
-    "midi": 53,
+    "midi": 54,
     "off": 18.8443,
     "on": 18.2944,
     "ref_sounding_id": 110
@@ -3574,7 +3455,7 @@
     "ref_sounding_id": 109
    },
    {
-    "midi": 53,
+    "midi": 54,
     "off": 19.4442,
     "on": 18.8855,
     "ref_sounding_id": 114
@@ -3598,7 +3479,7 @@
     "ref_sounding_id": 113
    },
    {
-    "midi": 53,
+    "midi": 54,
     "off": 20.0383,
     "on": 19.4866,
     "ref_sounding_id": 118
@@ -3658,7 +3539,7 @@
     "ref_sounding_id": 128
    },
    {
-    "midi": 60,
+    "midi": 61,
     "off": 21.5735,
     "on": 21.2913,
     "ref_sounding_id": 125
@@ -3688,7 +3569,7 @@
     "ref_sounding_id": 131
    },
    {
-    "midi": 60,
+    "midi": 61,
     "off": 21.8483,
     "on": 21.6104,
     "ref_sounding_id": 129
@@ -3700,7 +3581,7 @@
     "ref_sounding_id": 132
    },
    {
-    "midi": 65,
+    "midi": 66,
     "off": 22.4574,
     "on": 21.8885,
     "ref_sounding_id": 134
@@ -3730,7 +3611,7 @@
     "ref_sounding_id": 137
    },
    {
-    "midi": 53,
+    "midi": 54,
     "off": 23.0512,
     "on": 22.5095,
     "ref_sounding_id": 140
@@ -3766,7 +3647,7 @@
     "ref_sounding_id": 143
    },
    {
-    "midi": 53,
+    "midi": 54,
     "off": 23.6687,
     "on": 23.1103,
     "ref_sounding_id": 144
@@ -3802,7 +3683,7 @@
     "ref_sounding_id": 151
    },
    {
-    "midi": 53,
+    "midi": 54,
     "off": 24.8769,
     "on": 24.5964,
     "ref_sounding_id": 152
@@ -3868,7 +3749,7 @@
     "ref_sounding_id": 158
    },
    {
-    "midi": 48,
+    "midi": 49,
     "off": 26.664,
     "on": 25.4898,
     "ref_sounding_id": 163
@@ -3904,7 +3785,7 @@
     "ref_sounding_id": 166
    },
    {
-    "midi": 65,
+    "midi": 66,
     "off": 26.9338,
     "on": 26.6947,
     "ref_sounding_id": 168
@@ -3946,7 +3827,7 @@
     "ref_sounding_id": 173
    },
    {
-    "midi": 65,
+    "midi": 66,
     "off": 27.2701,
     "on": 27.0063,
     "ref_sounding_id": 172
@@ -3976,7 +3857,7 @@
     "ref_sounding_id": 175
    },
    {
-    "midi": 60,
+    "midi": 61,
     "off": 28.7331,
     "on": 27.8861,
     "ref_sounding_id": 179
@@ -4006,7 +3887,7 @@
     "ref_sounding_id": 184
    },
    {
-    "midi": 53,
+    "midi": 54,
     "off": 29.0605,
     "on": 28.8029,
     "ref_sounding_id": 186
@@ -4024,7 +3905,7 @@
     "ref_sounding_id": 185
    },
    {
-    "midi": 53,
+    "midi": 54,
     "off": 30.2424,
     "on": 29.1015,
     "ref_sounding_id": 190
@@ -4047,6 +3928,7 @@
     "on": 29.1076,
     "ref_sounding_id": 187
    }
-  ]
+  ],
+  "pedals": []
  }
 }

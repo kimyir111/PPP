@@ -92,14 +92,16 @@ test('hotspots: a one-note pickup is ranked by the share of a bar it is, not by 
 
 /* G06 §7: measured with difficulty/tools/perf.js (warm: G6's own features + inference <= 4 ms per piece; with
    the G5 run it makes on key-normalised attacks, <= 18 ms). One cold run here, with CI headroom, the way
-   tests/playability/playability.test.js guards G5's own budget on the same piece. */
-test('performance: the longest method piece (sonatina/020, 1,401 attacks) is assessed in <= 100 ms, cold', async () => {
+   tests/playability/playability.test.js guards G5's own budget on the same piece.
+   G10a-0: the budget was 100 ms; a GitHub runner took 118 ms cold (a dev machine is several times faster), so the bound is 250 ms -
+   still an order of magnitude under what a regression to a per-attack O(n^2) pass would cost. */
+test('performance: the longest method piece (sonatina/020, 1,401 attacks) is assessed in <= 250 ms, cold', async () => {
   const g = await graphOf('catalog/method/sonatina/020.mxl');
   const W = weights();
   const t0 = process.hrtime.bigint();
   D.assess(g, W);
   const ms = Number(process.hrtime.bigint() - t0) / 1e6;
-  assert.ok(ms <= 100, 'assess took ' + ms.toFixed(1) + ' ms');
+  assert.ok(ms <= 250, 'assess took ' + ms.toFixed(1) + ' ms');
 });
 
 test('hotspots: the one busy, chromatic, right-hand bar is the top hotspot, and its hand is the right hand', () => {
