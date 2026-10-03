@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Write the recording suites (G10a-0, docs/GOALS/G10 section 7.6): rec-smoke, rec-core, rec-robust, rec-full,
 rec-mutation (the sensitivity check of the recording metrics), rec-mutation-v2 (G10a-1: of the v2 time skeleton and, from
-G10a-2, of its grid stage) and rec-grid (G10a-2: v2 with and without its grid stage, rec/grid.js), and G10c-0's rec-arrange-smoke,
+G10a-2, of its grid stage) and rec-grid (G10a-2: v2 with and without its grid stage, rec/grid.js), rec-hands and rec-keys (measurement suites of S4 and S8 on the app's path), and G10c-0's rec-arrange-smoke,
 rec-arrange-core, rec-arrange-mutation and rec-arrange-full (what the one-note arranger does to recordings: docs/GOALS/G10
 section 9; tests/bench/pppbench/recarrange.py).
 
@@ -37,6 +37,12 @@ GRID_OPTS = {"v2-s3legacy": {"closeGaps": True, "exactBars": True, "recording": 
 # G10a-2 stage S4 in isolation: the app's path (the legacy time skeleton and grid) with only the hands of rec/hands.js
 # (opts.hands 'v2'). Its own suite, rec-hands, a measurement suite (not in the CI gate: v2's rows carry S4 there)
 HANDS_OPTS = {"app-hands": {"closeGaps": True, "exactBars": True, "hands": "v2"}}
+# G10a-3 stage S8 in isolation (rec/key.js, docs/GOALS/G10 section 22): v2 with the legacy key and spelling (`v2-keylegacy`, opts.keys
+# 'legacy': the arm before S8) and the app's path with only S8 swapped (`app-keys`, opts.keys 'v2'). Its own suite, rec-keys, a measurement
+# suite (nightly, not in the CI gate); each row plays the performance of the option set it is compared with (perform_as)
+KEYS_OPTS = {"v2-keylegacy": {"closeGaps": True, "exactBars": True, "recording": "v2", "keys": "legacy"},
+             "app-keys": {"closeGaps": True, "exactBars": True, "keys": "v2"}}
+KEYS_AS = {"v2-keylegacy": "v2", "app-keys": "app"}
 
 # (profile, beats): the rows of each tier
 SMOKE = [("cover", "none"), ("cover-pedal", "none"), ("human-real", "none")]
@@ -99,8 +105,9 @@ def rows(table, seeds, names=None, opts_table=None, perform_as=None):
             if names is not None and name not in names:
                 continue
             row = {"profile": profile, "beats": beats, "seeds": seeds, "opt_name": name, "opts": opts}
-            if perform_as:
-                row["perform_as"] = perform_as      # the very performance of the rows named perform_as (pppbench/suite.py Case)
+            pa = perform_as.get(name) if isinstance(perform_as, dict) else perform_as
+            if pa:
+                row["perform_as"] = pa              # the very performance of the rows named perform_as (pppbench/suite.py Case)
             out.append(row)
     return out
 
@@ -143,6 +150,13 @@ def build() -> dict:
                                       "rec-robust's cases with the app's options and only the hands of rec/hands.js (opts.hands "
                                       "'v2'); the very performances of their opts:app rows, so tools/hands_ab.py compares them case by case",
                           gate=gate(suite_mod.GATE_CORE)),
+        "rec-keys": dict(base, name="rec-keys", references=core["references"],
+                         matrix=rows(CORE + ROBUST, [1], opts_table=KEYS_OPTS, perform_as=KEYS_AS),
+                         description="G10a-3 stage S8 in isolation (a measurement suite, nightly, not in the CI gate): rec-core's and rec-robust's "
+                                     "cases with v2 and the legacy key and spelling (v2-keylegacy, opts.keys 'legacy') and with the app's options "
+                                     "and only the key stage of rec/key.js (app-keys, opts.keys 'v2'); the very performances of their v2 / app "
+                                     "rows, so the rec-core / rec-robust rows are the other arm",
+                         gate=gate(suite_mod.GATE_CORE)),
         "rec-full": dict(base, name="rec-full", references=full["references"], holdout_seeds=[11, 12], matrix=rows(FULL, [1, 2]),
                          description="Nightly/manual: every lint-clean reference, hold-out included (seeds 11, 12), x the humanizer's "
                                      "families x legacy / app / v2; the hold-out is reported as an aggregate",
