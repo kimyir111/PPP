@@ -10,8 +10,10 @@ families on the references of smoke / core / full, in the three stage-option set
 ``legacy`` (the library default, ``{}``), ``app`` (what the app passes today, closeGaps + exactBars) and, from G10a-1,
 ``v2`` (the app's options with the recording conversion v2, ``recording: 'v2'``: what the app will pass when
 PPP.recording is 'v2', G10a-4). The beats axis is ``none`` (production: the browser's onset tracker) and
-``oracle-noisy`` (the helper's beats). The three option sets see the very same performance (the humanizer's stream
-does not depend on the options name).
+``oracle-noisy`` (the helper's beats). The three option sets see the same base performance, but the +of / +helper
+overlays and the oracle-noisy beats are drawn on streams named by the option name (G10a-2 found it): those rows of
+different option sets are different draws. A row with ``perform_as`` plays the performance of the named option set
+(rec-hands, G10a-2: the app's very performances with only the hands swapped).
 """
 
 import argparse

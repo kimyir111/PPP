@@ -2,7 +2,7 @@
  "align": {
   "window_s": 0.3
  },
- "description": "G10a-2 stage S4: rec-core's and rec-robust's cases with the app's options and the hands of rec/hands.js (opts.hands 'v2'); the same performances as their opts:app rows, so tools/hands_report.py compares them case by case",
+ "description": "G10a-2 stage S4 in isolation (a measurement suite, not in the CI gate): rec-core's and rec-robust's cases with the app's options and only the hands of rec/hands.js (opts.hands 'v2'); the very performances of their opts:app rows, so tools/hands_ab.py compares them case by case",
  "gate": {
   "case_fail_drop": 10.0,
   "case_flip_max": 2,
@@ -268,7 +268,7 @@
  "matrix": [
   {
    "beats": "none",
-   "opt_name": "v2-hands",
+   "opt_name": "app-hands",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
@@ -282,7 +282,7 @@
   },
   {
    "beats": "oracle-noisy",
-   "opt_name": "v2-hands",
+   "opt_name": "app-hands",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
@@ -296,7 +296,7 @@
   },
   {
    "beats": "none",
-   "opt_name": "v2-hands",
+   "opt_name": "app-hands",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
@@ -310,7 +310,7 @@
   },
   {
    "beats": "none",
-   "opt_name": "v2-hands",
+   "opt_name": "app-hands",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
@@ -324,7 +324,7 @@
   },
   {
    "beats": "none",
-   "opt_name": "v2-hands",
+   "opt_name": "app-hands",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
@@ -338,7 +338,7 @@
   },
   {
    "beats": "oracle-noisy",
-   "opt_name": "v2-hands",
+   "opt_name": "app-hands",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
@@ -352,7 +352,7 @@
   },
   {
    "beats": "none",
-   "opt_name": "v2-hands",
+   "opt_name": "app-hands",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
@@ -366,7 +366,7 @@
   },
   {
    "beats": "oracle-noisy",
-   "opt_name": "v2-hands",
+   "opt_name": "app-hands",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
