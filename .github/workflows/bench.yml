@@ -39,6 +39,7 @@ jobs:
       - run: node rec/tools/train.js --check          # G10a-1 (AI-5a): the committed weights and evaluation are what the training makes (G10 section 18)
       - run: python tests/bench/tools/hands_data.py && node tests/bench/tools/train_hands.js --check   # G10a-2 (AI-5b, S4): the hand model and its evaluation are what the training makes (G10 section 19)
       - run: node tests/bench/tools/train_grid.js --check   # G10a-2 (AI-5b): the grid stage's committed weights are what the training makes (G10 section 20)
+      - run: python tests/bench/tools/key_data.py && node rec/tools/key-eval.js --check   # G10a-3 (S8): the key stage's committed evaluation on the catalogue truth is what the code makes (G10 section 22)
       - run: node tests/engrave/tools/make-e-fixtures.js --check   # the E fixtures are the generator's (G04 §22.1)
       - run: node tests/engrave/tools/make-corpus.js --check       # the R corpus manifest is the rule's (G04 §22.2)
       - run: node tests/engrave/tools/make-metrics.js --check      # G4b: the layout's glyph metrics are the pinned font's (G04 §18.2)

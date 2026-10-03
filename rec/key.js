@@ -135,7 +135,7 @@
       const lowest = g => g.idx.reduce((m, i) => Math.min(m, notes[i].midi), 999);
       const firstTick = ev.groups[0].tick, lastTick = ev.groups[ev.groups.length - 1].tick;
       const firstGs = ev.groups.filter(g => g.tick === firstTick);
-      /* the last bass: the lowest note struck in the last beat of the piece (the final chord, whatever hand strikes its bass) */
+      /* the last bass: the lowest note struck at the piece's last onset (LAST_SPAN ticks back from it: 0, the best of 0 / 12 / 24 / 48 / 96 on the catalogue) */
       const lastGs = ev.groups.filter(g => g.tick >= lastTick - (opts.lastSpan != null ? opts.lastSpan : c.LAST_SPAN));
       firstBass = mod12(Math.min.apply(null, firstGs.map(lowest)));
       lastBass = mod12(Math.min.apply(null, lastGs.map(lowest)));
@@ -181,9 +181,9 @@
   }
 
   /* ---------------------------------------------------------- the regions */
-  /* the tonal key of every bar: windows scored by the correlation and fit (no cues of the ends), a Viterbi from the first
-     key whose change costs CHANGE plus FIFTH a fifth; a key lasts at least MIN bars. Bars without a window (a piece shorter
-     than WINDOW + HOP bars) keep the first key. Returns [{fifths, mode, tonic}] per bar. */
+  /* the tonal key of every bar: windows scored by the correlation and fit (no cues of the ends), a Viterbi with a free start
+     whose change costs CHANGE plus FIFTH a fifth; a key lasts at least MIN bars. Bars without a window (a piece shorter than
+     WINDOW + HOP bars) keep the first key. Returns [{fifths, mode, tonic}] per bar. */
   function barKeys(notes, ev, barOf, bars, first, c) {
     const out = [];
     for (let i = 0; i < bars; i++) out.push(first);
