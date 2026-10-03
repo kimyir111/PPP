@@ -1353,6 +1353,25 @@
       return typeof module === 'object' && module.exports ? require('./scoregraph/rec-tuplet.js') : (global && global.PPPScoreGraphModules && global.PPPScoreGraphModules.recTuplet) || null;
     } catch (e) { return null; }
   }
+  /* The hands (docs/GOALS/G10_AUDIO_TO_SCORE.md section 8, stage S4, G10a-2): rec/'s S4 (rec/hands.js, through rec/index.js) writes the
+     staff of every note for the recording conversion v2 (opts.recording 'v2'), or on any path with opts.hands 'v2' (a measurement:
+     the app's path with only S4 swapped); opts.hands 'legacy' keeps assignHands under v2. Without either, the hands are assignHands'
+     as always. Asked for by name and not loaded is an error (a measurement must know which ran); under v2 without the option, a
+     page whose rec/ has no hand model keeps assignHands and the report says so. */
+  function writeHands(q, opts, extra) {
+    const mode = opts.hands || (extra.recording === 'v2' ? 'v2' : 'legacy');
+    if (mode !== 'v2') { assignHands(q); return null; }
+    const lib = recLib();
+    const H = lib && lib.hands;
+    try {
+      if (!H) { const e = new Error('rec/hands.js (S4) is not loaded'); e.code = 'E-HANDS-NO-LIB'; throw e; }
+      return H.assignQ(q, {}).report;
+    } catch (e) {
+      if (opts.hands === 'v2' || !(e.code === 'E-HANDS-NO-LIB' || e.code === 'E-HANDS-NO-MODEL')) throw e;
+      assignHands(q);
+      return { fallback: 'legacy', code: e.code };
+    }
+  }
   const ACCIDENTAL_NAME = { '-2': 'flat-flat', '-1': 'flat', '0': 'natural', '1': 'sharp', '2': 'double-sharp' };
 
   /* heard: {notes: [{on, off, midi, vel, staff, tick}] (every note after clean; staff and tick once placed),
@@ -1560,7 +1579,7 @@
 
     const key = estimateKey(notes);
     const table = spellingTable(key);
-    assignHands(q);
+    const handsReport = writeHands(q, opts, extra);
 
     const pedals = [];
     const held = [];
@@ -1725,6 +1744,7 @@
     }
     if (gridReport) result.gridReport = gridReport;            /* beside the graph, not in stats (the benchmark snapshots stats) */
     if (extra.recReport) result.recReport = extra.recReport;   /* v2's time skeleton report (G10a-1), beside the graph too */
+    if (handsReport) result.handsReport = handsReport;         /* the same: v2's hands (S4, G10a-2) */
     result.xml = scoreGraph().musicxml.export(graph, { software: 'PPP audio transcription' }).xml;
     result.graph = graph;
     result.graphIssues = graphIssues;
