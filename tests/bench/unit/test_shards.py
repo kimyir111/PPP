@@ -192,6 +192,12 @@ class MergeIsTheWholeRun(unittest.TestCase):
         err = self.merge_error([os.path.join(self.dir, "empty")])
         self.assertEqual(err.code, "SHARD_MISSING")
 
+    def test_a_rec_arrange_suite_is_not_sharded(self):
+        ra = suite_mod.load_suite("rec-arrange-smoke")
+        with self.assertRaises(runner.RunError) as e:
+            runner.run_suite(ra, shard=(1, 2), quiet=True, out_dir=os.path.join(self.dir, "ra"))
+        self.assertEqual(e.exception.code, "BAD_SHARD")
+
     def test_cli_run_refuses_a_shard_with_filter_and_a_bad_spec(self):
         base = dict(suite=None, suite_file=self.suite["_path"], audio_score=None, out=None, filter=None, reveal_holdout=False, jobs=1)
         for extra in (dict(shard="2/4", filter="micro/M01"), dict(shard="0/4"), dict(shard="x")):
@@ -213,7 +219,7 @@ class WorkflowAgrees(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         with open(os.path.join(util.repo_root(), ".github", "workflows", "bench.yml"), encoding="utf-8") as handle:
-            cls.text = handle.read()
+            cls.text = handle.read().replace(chr(13) + chr(10), chr(10))     # a CRLF checkout reads the same
 
     def test_the_matrix_and_the_shard_flag_and_the_artifacts_name_the_same_count(self):
         import re
@@ -254,6 +260,13 @@ class WorkflowAgrees(unittest.TestCase):
         self.assertTrue(used)
         for name in used:
             self.assertIn(name, scripts, f"the workflow runs npm run {name}")
+
+    def test_the_rec_arrange_nightly_steps_are_in_the_recording_job(self):
+        """G10c-0 put these in the nightly (the gate runs only rec-arrange-smoke): a merge of two branches must keep all of them."""
+        body = self.text.split("\n  nightly-rec:\n", 1)[1].split("\n  nightly-rec-shard:\n", 1)[0]
+        for step in ("mutation-check --rec\n", "mutation-check --rec-arrange\n", "run --suite rec-arrange-core",
+                     "check --suite rec-arrange-core", "run --suite rec-arrange-full", "check --suite rec-arrange-full"):
+            self.assertIn(step, body, step)
 
     def test_the_merge_waits_for_the_shards_and_nothing_runs_rec_full_whole(self):
         import re

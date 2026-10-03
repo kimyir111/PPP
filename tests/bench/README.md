@@ -394,7 +394,8 @@ python tests/bench/run.py check --suite rec-full             # as ever (the hold
   A shard of 1/4 of `rec-full`: 6.4 minutes, 3.6 GB of Python (4.6 GB with Node), on the machine above.
 - A shard writes `shard.json` (its case rows, every float at full precision) and `run.json`. It writes no `results.json` and no
   `summary.md`, so `check` and `update-baseline` cannot take a shard for a result. `--shard` is for a synthetic suite's whole
-  run: it refuses `--filter`, replay and OMR suites, and a lock that differs from the shard's inputs is INPUT_DRIFT as ever.
+  run: it refuses `--filter`, replay and OMR suites, the `rec-arrange-*` suites (their runner, `recarrange.py`, runs whole; the
+  largest has 282 cases) and a lock that differs from the shard's inputs is INPUT_DRIFT as ever.
 - **`merge-shards`** writes the run's `results.json` and `run.json` - **byte for byte** the `results.json` an unsharded run
   writes (the aggregates are computed by the same function from the same unrounded numbers; `unit/test_shards.py` compares the
   bytes of a whole and a merged small recording suite, and a merge of 6-decimal rows would differ in the sixth digit). Its
@@ -430,6 +431,39 @@ one fixture per piece: the heard **notes** only (`engine: onsets-and-frames`), t
 the WAV never leaves the work directory. Pedal is not scored (O&F writes none and no reference marks it). Domain gap, stated in
 the design: sampled piano without sympathetic resonance, one microphone position, a synthetic room; the tier tests the model's
 systematic behaviour (dropped isolated notes, octave ghosts, offsets), not real-world accuracy.
+
+## The arranger on recordings (`rec-arrange`, G10c-0)
+
+What the one-note arranger (`arrangeSingleNote`, the Song Arranger's default) does to a recording, against the true score.
+A `rec-arrange-*` suite (`"rec_arrange": true`) builds the same cases as a `rec` suite (the humanizer's families over the
+references, with the stage options of each matrix row: `app` and `v2`), builds the recording graph with `toMusicXml`, arranges
+it the way the app does (`tests/realize/app-single-extract.js`: the app's own glue, run in Node) at the three levels, and measures
+the arrangements (`node/rec-arrange.js`, the pure part in `node/rec-arrange-metrics.js`, unit-tested in `node/rec-arrange.test.js`):
+
+| metric (per case: the mean over the levels the arranger made) | what it counts |
+| --- | --- |
+| `arr.made` | share of the three levels that were made (the others are refusals) |
+| `arr.melody.kept` / `.cross` / `.lost` | of the true melody notes the transcription heard: in the right hand (same pitch, onset within 0.15 quarter) / only in the left / nowhere |
+| `arr.melody.gap_rate` | of the same notes: the right hand sounds nothing at the onset (a rest in the melody staff) |
+| `arr.harmony.agreement` | share of the true score's beat windows (G7a root + quality) whose chord the arrangement has |
+| `arr.level.distinct`, `arr.level.distance` | 0 when the three levels are one arrangement; mean Jaccard distance of their notes |
+| `arr.lh.notes_per_bar`, `arr.rh.above_c6` | left-hand attacks per bar; share of right-hand attacks above C6 |
+| `arr.hard.violations` | G5 hard violations at the request's hand profile |
+| `arr.check.1` .. `7` | the notation checker's acceptance classes per 100 bars |
+| `src.*`, `clean.*` | information: the recording graph before arranging (`src.melody.in_lh` is the hand split's error); the same measures on the true score's own arrangement |
+
+The true melody is SongGraph's melody voice of the true score (the top head of each event), matched to the heard notes by pitch and
+time (one to one, 0.2 s), so a note the transcription never heard is an upstream error and is not charged to the arranger
+(`src.melody.heard`). The system under test is `audio-score.js` and the arranger's modules (`pppbench/sut.py` `SUT_TREES`); the
+ruler (the true score's analysis, harmony, the checker, hard violations) is always this repository's own, so a planted defect in the
+arranger cannot move its own measure.
+
+```sh
+python tests/bench/run.py run --suite rec-arrange-smoke    # 16 references x cover, cover+of x app, v2: ~1 min; CI
+python tests/bench/run.py run --suite rec-arrange-core     # 64 small and middle-sized core references x cover + the 20 replay-of fixtures x app, v2: ~2-3 min; CI
+python tests/bench/run.py run --suite rec-arrange-full     # every core reference x cover x app, v2 (aggregates only): nightly
+python tests/bench/run.py mutation-check --rec-arrange     # one planted defect per metric in the arranger (rec-arrange-mutation); nightly
+```
 
 ## Known production failures (measured, not fixed)
 

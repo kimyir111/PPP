@@ -423,6 +423,81 @@ REC_MUTATIONS: List[Dict[str, Any]] = [
      "expect": "PASS", "metrics": []},
 ]
 
+# G10c-0 (docs/GOALS/G10 section 21): one planted defect per rec-arrange metric (tests/bench/node/rec-arrange.js), run on the
+# `rec-arrange-mutation` suite. The defects are in the arranger (the SUT's realize/, candidates/, scoregraph/, audio-score.js); the ruler (the
+# repository's own songgraph/, playability/, the checker) is never mutated, so a defect cannot move its own measure. Each must be a REGRESSION that
+# names every metric listed; the no-op must leave results.json byte identical.
+REALIZE = "realize/index.js"
+ARR_TAGGED_BEAT2 = "(tags && e.kind === 'note' && e.at === '1/4')"        # a note of the melody or the bass voice that starts on the second beat of a quarter-beat bar
+REC_ARRANGE_MUTATIONS: List[Dict[str, Any]] = [
+    {"id": "ARR-MELODY-DROPPED",         # the melody and bass notes on beat 2 are written as rests: melody gaps, melody lost
+     "file": REALIZE,
+     "find": "    if (skip && skip.has(e)) { x.kind = 'rest'; b.event(part, x); return; }",
+     "replace": "    if ((skip && skip.has(e)) || " + ARR_TAGGED_BEAT2 + ") { x.kind = 'rest'; b.event(part, x); return; }",
+     "all": True, "expect": "REGRESSION", "metrics": ["arr.melody.kept", "arr.melody.lost", "arr.melody.gap_rate"]},
+    {"id": "ARR-MELODY-TO-LEFT-HAND",     # the melody voice is written in the left hand: the hand split's error, everywhere
+     "file": REALIZE,
+     "find": "    const melodyHand = melodyVoiceId && hands.RH.indexOf(melodyVoiceId) >= 0 ? 'RH'\n      : (melodyVoiceId && hands.LH.indexOf(melodyVoiceId) >= 0 ? 'LH' : 'RH');",
+     "replace": "    const melodyHand = melodyVoiceId ? 'LH' : 'RH';",
+     "all": True, "expect": "REGRESSION", "metrics": ["arr.melody.cross", "arr.melody.gap_rate"]},
+    {"id": "ARR-LEVELS-COLLAPSE",         # every request is arranged for the same target level: the three levels are one arrangement
+     "file": "candidates/index.js",
+     "find": "  async function runUncachedAsync(g, sg, request, opts) {\n",
+     "replace": "  async function runUncachedAsync(g, sg, request, opts) {\n    request = Object.assign({}, request, { targetLevel: 2.5 });\n",
+     "all": True, "expect": "REGRESSION", "metrics": ["arr.level.distinct", "arr.level.distance"]},
+    {"id": "ARR-LEFT-HAND-DENSE",         # the one-note-per-hand pass is off: the left hand keeps the cover's chords and runs
+     "file": "candidates/index.js",
+     "find": "opts.singleNoteHands ? { handMaxNotes: 1, handMaxNotesMaxStage: 4, handDropBass: true } : {}",
+     "replace": "{}",
+     "all": True, "expect": "REGRESSION", "metrics": ["arr.lh.notes_per_bar"]},
+    {"id": "ARR-RIGHT-HAND-TOO-HIGH",     # the melody and bass notes on beat 2 are written two octaves up: the right hand climbs above C6, a hand shift of two octaves
+     "file": REALIZE,
+     "find": "    if (e.kind === 'note') x.heads = e.heads.map(h => ({ pitch: h.pitch, prov: { src: SOURCE_ID.id, op: 'generated' } }));",
+     "replace": "    if (e.kind === 'note') x.heads = e.heads.map(h => ({ pitch: " + ARR_TAGGED_BEAT2 + " ? Object.assign({}, h.pitch, { oct: h.pitch.oct + 2 }) : h.pitch, prov: { src: SOURCE_ID.id, op: 'generated' } }));",
+     "all": True, "expect": "REGRESSION", "metrics": ["arr.rh.above_c6", "arr.hard.violations"]},
+    {"id": "ARR-NO-PLAN",                 # the planner never finds a plan: every level is a refusal
+     "file": "candidates/index.js",
+     "find": "  async function runUncachedAsync(g, sg, request, opts) {\n",
+     "replace": "  async function runUncachedAsync(g, sg, request, opts) {\n    if (g) return { ok: false, reason: 'MUTATION' };\n",
+     "all": True, "expect": "REGRESSION", "metrics": ["arr.made"]},
+    {"id": "ARR-HARMONY-LOST",            # the left hand is written as rests: the chords go with the bass
+     "file": REALIZE,
+     "find": "    if (skip && skip.has(e)) { x.kind = 'rest'; b.event(part, x); return; }",
+     "replace": "    if ((skip && skip.has(e)) || (oldPart.staves[1] && oldPart.voices.find(v => v.id === oldVoiceId).staff === oldPart.staves[1].id)) { x.kind = 'rest'; b.event(part, x); return; }",
+     "all": True, "expect": "REGRESSION", "metrics": ["arr.harmony.agreement"]},
+    {"id": "ARR-REST-MIN-ZERO",           # no shortest rest: a 16th rest sits between notes of the arranged copy too
+     "replacements": [("  const REST_MIN = 1 / 8;", "  const REST_MIN = 0;")],
+     "all": True, "expect": "REGRESSION", "metrics": ["arr.check.1"]},
+    {"id": "ARR-GAPS-NOT-CLOSED",         # the sub-16th gaps are never closed (scoregraph/gaps.js): tiny rests in the recording and its arrangement
+     "file": "scoregraph/gaps.js",
+     "find": "  const GAP_LIMIT = R.make(1, 16);",
+     "replace": "  const GAP_LIMIT = R.make(0, 1);",
+     "all": True, "expect": "REGRESSION", "metrics": ["arr.check.2"]},
+    {"id": "ARR-RESTS-NOT-TIDIED",        # the rest-tidying pass does nothing: runs of rests stay runs
+     "file": "scoregraph/gaps.js",
+     "find": "  function tidyRests(g) {",
+     "replace": "  function tidyRests(g) { if (g) return { graph: g, changed: false, stats: {}, rests: null, issues: null };",
+     "all": True, "expect": "REGRESSION", "metrics": ["arr.check.3"]},
+    {"id": "ARR-DOTTED-16TH-REST",        # a 16th rest printed with a dot (class 4)
+     "replacements": [(SG_REST_TYPE, "          const t0 = full ? (TYPES[bar] || TYPES[v] || ['whole', 0]) : (TYPES[v] || ['16th', 0]);\n"
+                                     "          const t = (!full && t0[0] === '16th') ? ['16th', 1] : t0;")],
+     "all": True, "expect": "REGRESSION", "metrics": ["arr.check.4"]},
+    {"id": "ARR-EXACT-BARS-OFF",          # the app's exact bars switched off: the bars of the recording do not add up as drawn
+     "replacements": [("    if (opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4",
+                       "    if (false && opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4"),
+                      ("    const exactOn = !!opts.exactBars &&", "    const exactOn = false && !!opts.exactBars &&")],
+     "all": True, "expect": "REGRESSION", "metrics": ["arr.check.5", "arr.check.6"]},
+    {"id": "ARR-TUPLET-RATIO",           # the bracket of a triplet beat is written 4:3 (class 7: a tuplet that is not a triplet)
+     "file": "scoregraph/rec-tuplet.js",
+     "find": "          groups.push({ events: ids, actual: 3, normal: 2, unit: { type: 'eighth' }, isNew: true });",
+     "replace": "          groups.push({ events: ids, actual: 4, normal: 3, unit: { type: 'eighth' }, isNew: true });",
+     "all": True, "expect": "REGRESSION", "metrics": ["arr.check.7"]},
+    {"id": "MUT-NOOP",
+     "find": "  const api = {",
+     "replace": "  /* noop mutation */\n  const api = {",
+     "expect": "PASS", "metrics": []},
+]
+
 # G10a-1: the recording conversion v2 (rec/), one planted defect per decision of its time skeleton (the metre model's
 # accents, the bar lines, the tempo octave, issue 1's compound tempo, the helper's beats, the on-beat quantiser fix), on
 # the rec-mutation-v2 suite (the rec-mutation references and rows with the v2 options only: a v2 defect is not diluted by
@@ -559,6 +634,8 @@ def write_mutant(mut: Dict[str, Any], sut: str) -> str:
 def run_mutation_check(mutations=None, suite_name: str = "mutation", out_name: str = "mutation") -> int:
     if suite_name == "rec-mutation" and mutations is None:
         mutations = REC_MUTATIONS
+    if suite_name == "rec-arrange-mutation" and mutations is None:
+        mutations = REC_ARRANGE_MUTATIONS
     suite = suite_mod.load_suite(suite_name)
     gate = suite.get("gate") or {}
     sut = stages.default_audio_score()

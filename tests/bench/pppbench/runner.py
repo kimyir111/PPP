@@ -145,6 +145,12 @@ def run_suite(suite: Dict[str, Any], *, audio_score: Optional[str] = None, out_d
               check_lock: bool = True, quiet: bool = False, shard: Optional[Tuple[int, int]] = None) -> Dict[str, Any]:
     """``shard=(K, N)``: only the K-th of N shards of the suite's cases, written as a shard (``shard.json``, ``run.json``) that
     ``merge_shards`` joins with the others into the very results.json of the whole run (docs: tests/bench/README.md)."""
+    if suite.get("rec_arrange"):           # G10c-0: the arranger's behaviour on recordings (pppbench/recarrange.py), same result shape
+        if shard:
+            raise RunError("BAD_SHARD", "--shard is not implemented for a rec-arrange suite (its runner, recarrange.py, runs whole)")
+        from . import recarrange
+        return recarrange.run_suite(suite, audio_score=audio_score, out_dir=out_dir, filter_=filter_, reveal_holdout=reveal_holdout,
+                                    write_cases=write_cases, check_lock=check_lock, quiet=quiet)
     t0 = time.perf_counter()
     started = datetime.now(timezone.utc).isoformat(timespec="seconds")
     refs = corpus.load_corpus()
