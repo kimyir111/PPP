@@ -1,0 +1,1512 @@
+{
+ "schema": "ppp.rec-grid-evaluation/1",
+ "model": "ai5b-grid@1.0.0",
+ "tool": "tests/bench/tools/train_grid.js --evaluate",
+ "what": "the grid stage alone: the true beat times given (and moved by up to +-20 ms), legacy quantiser vs the model, pooled counts",
+ "sets": {
+  "holdout": {
+   "data": "--refs holdout --profiles cover,cover-pedal,human-real,swing,cover+of,cover-alt --beats oracle --seeds 11,12",
+   "beats": {
+    "performances": 564,
+    "all": {
+     "legacy": {
+      "beats": 30625,
+      "kind": 0.760914,
+      "triplet": {
+       "P": 0.365205,
+       "R": 0.300807,
+       "tp": 783,
+       "fp": 1361,
+       "fn": 1820
+      },
+      "b32": {
+       "P": 0.082221,
+       "R": 0.876736,
+       "tp": 505,
+       "fp": 5637,
+       "fn": 71
+      },
+      "onsetPos": 0.827153,
+      "notes": 132643,
+      "swingStraight": 0.2,
+      "swingBeats": 1145
+     },
+     "model": {
+      "beats": 30625,
+      "kind": 0.969012,
+      "triplet": {
+       "P": 0.946146,
+       "R": 0.688436,
+       "tp": 1792,
+       "fp": 102,
+       "fn": 811
+      },
+      "b32": {
+       "P": 0.403804,
+       "R": 0.958333,
+       "tp": 552,
+       "fp": 815,
+       "fn": 24
+      },
+      "onsetPos": 0.952987,
+      "notes": 132643,
+      "swingStraight": 0.979039,
+      "swingBeats": 1145
+     }
+    },
+    "byProfile": {
+     "cover": {
+      "legacy": {
+       "beats": 5098,
+       "kind": 0.749313,
+       "triplet": {
+        "P": 0.425926,
+        "R": 0.317972,
+        "tp": 138,
+        "fp": 186,
+        "fn": 296
+       },
+       "b32": {
+        "P": 0.075221,
+        "R": 0.885417,
+        "tp": 85,
+        "fp": 1045,
+        "fn": 11
+       },
+       "onsetPos": 0.821829,
+       "notes": 22456,
+       "swingStraight": null,
+       "swingBeats": 0
+      },
+      "model": {
+       "beats": 5098,
+       "kind": 0.97195,
+       "triplet": {
+        "P": 0.986799,
+        "R": 0.68894,
+        "tp": 299,
+        "fp": 4,
+        "fn": 135
+       },
+       "b32": {
+        "P": 0.40708,
+        "R": 0.958333,
+        "tp": 92,
+        "fp": 134,
+        "fn": 4
+       },
+       "onsetPos": 0.956582,
+       "notes": 22456,
+       "swingStraight": null,
+       "swingBeats": 0
+      }
+     },
+     "cover+of": {
+      "legacy": {
+       "beats": 5069,
+       "kind": 0.758335,
+       "triplet": {
+        "P": 0.436893,
+        "R": 0.311778,
+        "tp": 135,
+        "fp": 174,
+        "fn": 298
+       },
+       "b32": {
+        "P": 0.0723,
+        "R": 0.802083,
+        "tp": 77,
+        "fp": 988,
+        "fn": 19
+       },
+       "onsetPos": 0.829249,
+       "notes": 20363,
+       "swingStraight": null,
+       "swingBeats": 0
+      },
+      "model": {
+       "beats": 5069,
+       "kind": 0.961334,
+       "triplet": {
+        "P": 0.847262,
+        "R": 0.678984,
+        "tp": 294,
+        "fp": 53,
+        "fn": 139
+       },
+       "b32": {
+        "P": 0.40708,
+        "R": 0.958333,
+        "tp": 92,
+        "fp": 134,
+        "fn": 4
+       },
+       "onsetPos": 0.952512,
+       "notes": 20363,
+       "swingStraight": null,
+       "swingBeats": 0
+      }
+     },
+     "cover-alt": {
+      "legacy": {
+       "beats": 5069,
+       "kind": 0.756954,
+       "triplet": {
+        "P": 0.416667,
+        "R": 0.334101,
+        "tp": 145,
+        "fp": 203,
+        "fn": 289
+       },
+       "b32": {
+        "P": 0.082936,
+        "R": 0.90625,
+        "tp": 87,
+        "fp": 962,
+        "fn": 9
+       },
+       "onsetPos": 0.828821,
+       "notes": 22456,
+       "swingStraight": null,
+       "swingBeats": 0
+      },
+      "model": {
+       "beats": 5069,
+       "kind": 0.971197,
+       "triplet": {
+        "P": 0.980392,
+        "R": 0.691244,
+        "tp": 300,
+        "fp": 6,
+        "fn": 134
+       },
+       "b32": {
+        "P": 0.403509,
+        "R": 0.958333,
+        "tp": 92,
+        "fp": 136,
+        "fn": 4
+       },
+       "onsetPos": 0.956404,
+       "notes": 22456,
+       "swingStraight": null,
+       "swingBeats": 0
+      }
+     },
+     "cover-pedal": {
+      "legacy": {
+       "beats": 5078,
+       "kind": 0.740843,
+       "triplet": {
+        "P": 0.39185,
+        "R": 0.288018,
+        "tp": 125,
+        "fp": 194,
+        "fn": 309
+       },
+       "b32": {
+        "P": 0.072853,
+        "R": 0.875,
+        "tp": 84,
+        "fp": 1069,
+        "fn": 12
+       },
+       "onsetPos": 0.816352,
+       "notes": 22456,
+       "swingStraight": null,
+       "swingBeats": 0
+      },
+      "model": {
+       "beats": 5078,
+       "kind": 0.971052,
+       "triplet": {
+        "P": 0.970874,
+        "R": 0.691244,
+        "tp": 300,
+        "fp": 9,
+        "fn": 134
+       },
+       "b32": {
+        "P": 0.40708,
+        "R": 0.958333,
+        "tp": 92,
+        "fp": 134,
+        "fn": 4
+       },
+       "onsetPos": 0.953598,
+       "notes": 22456,
+       "swingStraight": null,
+       "swingBeats": 0
+      }
+     },
+     "human-real": {
+      "legacy": {
+       "beats": 5228,
+       "kind": 0.927888,
+       "triplet": {
+        "P": 0.89441,
+        "R": 0.331797,
+        "tp": 144,
+        "fp": 17,
+        "fn": 290
+       },
+       "b32": {
+        "P": 0.208716,
+        "R": 0.947917,
+        "tp": 91,
+        "fp": 345,
+        "fn": 5
+       },
+       "onsetPos": 0.947453,
+       "notes": 22456,
+       "swingStraight": null,
+       "swingBeats": 0
+      },
+      "model": {
+       "beats": 5228,
+       "kind": 0.972265,
+       "triplet": {
+        "P": 1,
+        "R": 0.691244,
+        "tp": 300,
+        "fp": 0,
+        "fn": 134
+       },
+       "b32": {
+        "P": 0.39485,
+        "R": 0.958333,
+        "tp": 92,
+        "fp": 141,
+        "fn": 4
+       },
+       "onsetPos": 0.969629,
+       "notes": 22456,
+       "swingStraight": null,
+       "swingBeats": 0
+      }
+     },
+     "swing": {
+      "legacy": {
+       "beats": 5083,
+       "kind": 0.627385,
+       "triplet": {
+        "P": 0.140556,
+        "R": 0.221198,
+        "tp": 96,
+        "fp": 587,
+        "fn": 338
+       },
+       "b32": {
+        "P": 0.061879,
+        "R": 0.84375,
+        "tp": 81,
+        "fp": 1228,
+        "fn": 15
+       },
+       "onsetPos": 0.719407,
+       "notes": 22456,
+       "swingStraight": 0.2,
+       "swingBeats": 1145
+      },
+      "model": {
+       "beats": 5083,
+       "kind": 0.966162,
+       "triplet": {
+        "P": 0.908815,
+        "R": 0.68894,
+        "tp": 299,
+        "fp": 30,
+        "fn": 135
+       },
+       "b32": {
+        "P": 0.403509,
+        "R": 0.958333,
+        "tp": 92,
+        "fp": 136,
+        "fn": 4
+       },
+       "onsetPos": 0.92915,
+       "notes": 22456,
+       "swingStraight": 0.979039,
+       "swingBeats": 1145
+      }
+     }
+    }
+   },
+   "noisyBeats": {
+    "performances": 564,
+    "all": {
+     "legacy": {
+      "beats": 30493,
+      "kind": 0.74604,
+      "triplet": {
+       "P": 0.356253,
+       "R": 0.296581,
+       "tp": 772,
+       "fp": 1395,
+       "fn": 1831
+      },
+      "b32": {
+       "P": 0.076793,
+       "R": 0.868056,
+       "tp": 500,
+       "fp": 6011,
+       "fn": 76
+      },
+      "onsetPos": 0.818159,
+      "notes": 132643,
+      "swingStraight": 0.215721,
+      "swingBeats": 1145
+     },
+     "model": {
+      "beats": 30493,
+      "kind": 0.968714,
+      "triplet": {
+       "P": 0.941207,
+       "R": 0.688821,
+       "tp": 1793,
+       "fp": 112,
+       "fn": 810
+      },
+      "b32": {
+       "P": 0.404989,
+       "R": 0.958333,
+       "tp": 552,
+       "fp": 811,
+       "fn": 24
+      },
+      "onsetPos": 0.951712,
+      "notes": 132643,
+      "swingStraight": 0.979039,
+      "swingBeats": 1145
+     }
+    },
+    "byProfile": {
+     "cover": {
+      "legacy": {
+       "beats": 5066,
+       "kind": 0.729767,
+       "triplet": {
+        "P": 0.41896,
+        "R": 0.315668,
+        "tp": 137,
+        "fp": 190,
+        "fn": 297
+       },
+       "b32": {
+        "P": 0.066116,
+        "R": 0.833333,
+        "tp": 80,
+        "fp": 1130,
+        "fn": 16
+       },
+       "onsetPos": 0.811765,
+       "notes": 22456,
+       "swingStraight": null,
+       "swingBeats": 0
+      },
+      "model": {
+       "beats": 5066,
+       "kind": 0.971575,
+       "triplet": {
+        "P": 0.983553,
+        "R": 0.68894,
+        "tp": 299,
+        "fp": 5,
+        "fn": 135
+       },
+       "b32": {
+        "P": 0.40708,
+        "R": 0.958333,
+        "tp": 92,
+        "fp": 134,
+        "fn": 4
+       },
+       "onsetPos": 0.954222,
+       "notes": 22456,
+       "swingStraight": null,
+       "swingBeats": 0
+      }
+     },
+     "cover+of": {
+      "legacy": {
+       "beats": 5035,
+       "kind": 0.736445,
+       "triplet": {
+        "P": 0.4,
+        "R": 0.300231,
+        "tp": 130,
+        "fp": 195,
+        "fn": 303
+       },
+       "b32": {
+        "P": 0.067485,
+        "R": 0.802083,
+        "tp": 77,
+        "fp": 1064,
+        "fn": 19
+       },
+       "onsetPos": 0.815057,
+       "notes": 20363,
+       "swingStraight": null,
+       "swingBeats": 0
+      },
+      "model": {
+       "beats": 5035,
+       "kind": 0.960675,
+       "triplet": {
+        "P": 0.842407,
+        "R": 0.678984,
+        "tp": 294,
+        "fp": 55,
+        "fn": 139
+       },
+       "b32": {
+        "P": 0.40708,
+        "R": 0.958333,
+        "tp": 92,
+        "fp": 134,
+        "fn": 4
+       },
+       "onsetPos": 0.9504,
+       "notes": 20363,
+       "swingStraight": null,
+       "swingBeats": 0
+      }
+     },
+     "cover-alt": {
+      "legacy": {
+       "beats": 5053,
+       "kind": 0.738571,
+       "triplet": {
+        "P": 0.393048,
+        "R": 0.33871,
+        "tp": 147,
+        "fp": 227,
+        "fn": 287
+       },
+       "b32": {
+        "P": 0.076097,
+        "R": 0.885417,
+        "tp": 85,
+        "fp": 1032,
+        "fn": 11
+       },
+       "onsetPos": 0.814482,
+       "notes": 22456,
+       "swingStraight": null,
+       "swingBeats": 0
+      },
+      "model": {
+       "beats": 5053,
+       "kind": 0.970513,
+       "triplet": {
+        "P": 0.96463,
+        "R": 0.691244,
+        "tp": 300,
+        "fp": 11,
+        "fn": 134
+       },
+       "b32": {
+        "P": 0.40708,
+        "R": 0.958333,
+        "tp": 92,
+        "fp": 134,
+        "fn": 4
+       },
+       "onsetPos": 0.955201,
+       "notes": 22456,
+       "swingStraight": null,
+       "swingBeats": 0
+      }
+     },
+     "cover-pedal": {
+      "legacy": {
+       "beats": 5058,
+       "kind": 0.726374,
+       "triplet": {
+        "P": 0.39557,
+        "R": 0.288018,
+        "tp": 125,
+        "fp": 191,
+        "fn": 309
+       },
+       "b32": {
+        "P": 0.069444,
+        "R": 0.885417,
+        "tp": 85,
+        "fp": 1139,
+        "fn": 11
+       },
+       "onsetPos": 0.805843,
+       "notes": 22456,
+       "swingStraight": null,
+       "swingBeats": 0
+      },
+      "model": {
+       "beats": 5058,
+       "kind": 0.970739,
+       "triplet": {
+        "P": 0.967742,
+        "R": 0.691244,
+        "tp": 300,
+        "fp": 10,
+        "fn": 134
+       },
+       "b32": {
+        "P": 0.40708,
+        "R": 0.958333,
+        "tp": 92,
+        "fp": 134,
+        "fn": 4
+       },
+       "onsetPos": 0.952351,
+       "notes": 22456,
+       "swingStraight": null,
+       "swingBeats": 0
+      }
+     },
+     "human-real": {
+      "legacy": {
+       "beats": 5214,
+       "kind": 0.913502,
+       "triplet": {
+        "P": 0.865385,
+        "R": 0.31106,
+        "tp": 135,
+        "fp": 21,
+        "fn": 299
+       },
+       "b32": {
+        "P": 0.184158,
+        "R": 0.96875,
+        "tp": 93,
+        "fp": 412,
+        "fn": 3
+       },
+       "onsetPos": 0.943311,
+       "notes": 22456,
+       "swingStraight": null,
+       "swingBeats": 0
+      },
+      "model": {
+       "beats": 5214,
+       "kind": 0.97219,
+       "triplet": {
+        "P": 1,
+        "R": 0.691244,
+        "tp": 300,
+        "fp": 0,
+        "fn": 134
+       },
+       "b32": {
+        "P": 0.39485,
+        "R": 0.958333,
+        "tp": 92,
+        "fp": 141,
+        "fn": 4
+       },
+       "onsetPos": 0.969585,
+       "notes": 22456,
+       "swingStraight": null,
+       "swingBeats": 0
+      }
+     },
+     "swing": {
+      "legacy": {
+       "beats": 5067,
+       "kind": 0.626604,
+       "triplet": {
+        "P": 0.146487,
+        "R": 0.225806,
+        "tp": 98,
+        "fp": 571,
+        "fn": 336
+       },
+       "b32": {
+        "P": 0.060883,
+        "R": 0.833333,
+        "tp": 80,
+        "fp": 1234,
+        "fn": 16
+       },
+       "onsetPos": 0.718204,
+       "notes": 22456,
+       "swingStraight": 0.215721,
+       "swingBeats": 1145
+      },
+      "model": {
+       "beats": 5067,
+       "kind": 0.96645,
+       "triplet": {
+        "P": 0.906344,
+        "R": 0.691244,
+        "tp": 300,
+        "fp": 31,
+        "fn": 134
+       },
+       "b32": {
+        "P": 0.40708,
+        "R": 0.958333,
+        "tp": 92,
+        "fp": 134,
+        "fn": 4
+       },
+       "onsetPos": 0.928393,
+       "notes": 22456,
+       "swingStraight": 0.979039,
+       "swingBeats": 1145
+      }
+     }
+    }
+   },
+   "compound": {
+    "performances": 48,
+    "beats": {
+     "legacy": {
+      "beats": 1668,
+      "kind": 0.857914,
+      "b16": {
+       "P": 0.795866,
+       "R": 1,
+       "tp": 924,
+       "fp": 237,
+       "fn": 0
+      },
+      "onsetPos": 0.875926,
+      "notes": 12017
+     },
+     "model": {
+      "beats": 1668,
+      "kind": 0.998201,
+      "b16": {
+       "P": 1,
+       "R": 0.996753,
+       "tp": 921,
+       "fp": 0,
+       "fn": 3
+      },
+      "onsetPos": 0.998419,
+      "notes": 12017
+     }
+    },
+    "noisyBeats": {
+     "legacy": {
+      "beats": 1667,
+      "kind": 0.841032,
+      "b16": {
+       "P": 0.777124,
+       "R": 1,
+       "tp": 924,
+       "fp": 265,
+       "fn": 0
+      },
+      "onsetPos": 0.857785,
+      "notes": 12017
+     },
+     "model": {
+      "beats": 1667,
+      "kind": 0.9988,
+      "b16": {
+       "P": 1,
+       "R": 0.997835,
+       "tp": 922,
+       "fp": 0,
+       "fn": 2
+      },
+      "onsetPos": 0.997171,
+      "notes": 12017
+     }
+    }
+   }
+  },
+  "robust": {
+   "data": "--refs train --profiles cover-alt --beats oracle --seeds 103",
+   "beats": {
+    "performances": 226,
+    "all": {
+     "legacy": {
+      "beats": 13968,
+      "kind": 0.762099,
+      "triplet": {
+       "P": 0.241667,
+       "R": 0.258599,
+       "tp": 203,
+       "fp": 637,
+       "fn": 582
+      },
+      "b32": {
+       "P": 0.047423,
+       "R": 0.808917,
+       "tp": 127,
+       "fp": 2551,
+       "fn": 30
+      },
+      "onsetPos": 0.825262,
+      "notes": 55958,
+      "swingStraight": null,
+      "swingBeats": 0
+     },
+     "model": {
+      "beats": 13968,
+      "kind": 0.980742,
+      "triplet": {
+       "P": 0.964789,
+       "R": 0.698089,
+       "tp": 548,
+       "fp": 20,
+       "fn": 237
+      },
+      "b32": {
+       "P": 0.37859,
+       "R": 0.923567,
+       "tp": 145,
+       "fp": 238,
+       "fn": 12
+      },
+      "onsetPos": 0.9614,
+      "notes": 55958,
+      "swingStraight": null,
+      "swingBeats": 0
+     }
+    },
+    "byProfile": {
+     "cover-alt": {
+      "legacy": {
+       "beats": 13968,
+       "kind": 0.762099,
+       "triplet": {
+        "P": 0.241667,
+        "R": 0.258599,
+        "tp": 203,
+        "fp": 637,
+        "fn": 582
+       },
+       "b32": {
+        "P": 0.047423,
+        "R": 0.808917,
+        "tp": 127,
+        "fp": 2551,
+        "fn": 30
+       },
+       "onsetPos": 0.825262,
+       "notes": 55958,
+       "swingStraight": null,
+       "swingBeats": 0
+      },
+      "model": {
+       "beats": 13968,
+       "kind": 0.980742,
+       "triplet": {
+        "P": 0.964789,
+        "R": 0.698089,
+        "tp": 548,
+        "fp": 20,
+        "fn": 237
+       },
+       "b32": {
+        "P": 0.37859,
+        "R": 0.923567,
+        "tp": 145,
+        "fp": 238,
+        "fn": 12
+       },
+       "onsetPos": 0.9614,
+       "notes": 55958,
+       "swingStraight": null,
+       "swingBeats": 0
+      }
+     }
+    }
+   },
+   "noisyBeats": {
+    "performances": 226,
+    "all": {
+     "legacy": {
+      "beats": 13909,
+      "kind": 0.739665,
+      "triplet": {
+       "P": 0.236693,
+       "R": 0.266242,
+       "tp": 209,
+       "fp": 674,
+       "fn": 576
+      },
+      "b32": {
+       "P": 0.043121,
+       "R": 0.802548,
+       "tp": 126,
+       "fp": 2796,
+       "fn": 31
+      },
+      "onsetPos": 0.809982,
+      "notes": 55958,
+      "swingStraight": null,
+      "swingBeats": 0
+     },
+     "model": {
+      "beats": 13909,
+      "kind": 0.980013,
+      "triplet": {
+       "P": 0.961404,
+       "R": 0.698089,
+       "tp": 548,
+       "fp": 22,
+       "fn": 237
+      },
+      "b32": {
+       "P": 0.375321,
+       "R": 0.929936,
+       "tp": 146,
+       "fp": 243,
+       "fn": 11
+      },
+      "onsetPos": 0.958594,
+      "notes": 55958,
+      "swingStraight": null,
+      "swingBeats": 0
+     }
+    },
+    "byProfile": {
+     "cover-alt": {
+      "legacy": {
+       "beats": 13909,
+       "kind": 0.739665,
+       "triplet": {
+        "P": 0.236693,
+        "R": 0.266242,
+        "tp": 209,
+        "fp": 674,
+        "fn": 576
+       },
+       "b32": {
+        "P": 0.043121,
+        "R": 0.802548,
+        "tp": 126,
+        "fp": 2796,
+        "fn": 31
+       },
+       "onsetPos": 0.809982,
+       "notes": 55958,
+       "swingStraight": null,
+       "swingBeats": 0
+      },
+      "model": {
+       "beats": 13909,
+       "kind": 0.980013,
+       "triplet": {
+        "P": 0.961404,
+        "R": 0.698089,
+        "tp": 548,
+        "fp": 22,
+        "fn": 237
+       },
+       "b32": {
+        "P": 0.375321,
+        "R": 0.929936,
+        "tp": 146,
+        "fp": 243,
+        "fn": 11
+       },
+       "onsetPos": 0.958594,
+       "notes": 55958,
+       "swingStraight": null,
+       "swingBeats": 0
+      }
+     }
+    }
+   },
+   "compound": {
+    "performances": 28,
+    "beats": {
+     "legacy": {
+      "beats": 1354,
+      "kind": 0.784343,
+      "b16": {
+       "P": 0.625483,
+       "R": 0.997947,
+       "tp": 486,
+       "fp": 291,
+       "fn": 1
+      },
+      "onsetPos": 0.767976,
+      "notes": 10180
+     },
+     "model": {
+      "beats": 1354,
+      "kind": 0.997046,
+      "b16": {
+       "P": 1,
+       "R": 0.991786,
+       "tp": 483,
+       "fp": 0,
+       "fn": 4
+      },
+      "onsetPos": 0.918566,
+      "notes": 10180
+     }
+    },
+    "noisyBeats": {
+     "legacy": {
+      "beats": 1353,
+      "kind": 0.760532,
+      "b16": {
+       "P": 0.600742,
+       "R": 0.997947,
+       "tp": 486,
+       "fp": 323,
+       "fn": 1
+      },
+      "onsetPos": 0.746267,
+      "notes": 10180
+     },
+     "model": {
+      "beats": 1353,
+      "kind": 0.997044,
+      "b16": {
+       "P": 0.997938,
+       "R": 0.99384,
+       "tp": 484,
+       "fp": 1,
+       "fn": 3
+      },
+      "onsetPos": 0.918271,
+      "notes": 10180
+     }
+    }
+   }
+  },
+  "open": {
+   "data": "--refs train --profiles cover,human-real,swing,cover+of --beats oracle --seeds 104",
+   "beats": {
+    "performances": 904,
+    "all": {
+     "legacy": {
+      "beats": 56327,
+      "kind": 0.790864,
+      "triplet": {
+       "P": 0.228823,
+       "R": 0.265391,
+       "tp": 832,
+       "fp": 2804,
+       "fn": 2303
+      },
+      "b32": {
+       "P": 0.058496,
+       "R": 0.83758,
+       "tp": 526,
+       "fp": 8466,
+       "fn": 102
+      },
+      "onsetPos": 0.842959,
+      "notes": 218555,
+      "swingStraight": 0.201765,
+      "swingBeats": 3172
+     },
+     "model": {
+      "beats": 56327,
+      "kind": 0.974417,
+      "triplet": {
+       "P": 0.869818,
+       "R": 0.669219,
+       "tp": 2098,
+       "fp": 314,
+       "fn": 1037
+      },
+      "b32": {
+       "P": 0.372524,
+       "R": 0.928344,
+       "tp": 583,
+       "fp": 982,
+       "fn": 45
+      },
+      "onsetPos": 0.958047,
+      "notes": 218555,
+      "swingStraight": 0.967213,
+      "swingBeats": 3172
+     }
+    },
+    "byProfile": {
+     "cover": {
+      "legacy": {
+       "beats": 14039,
+       "kind": 0.773132,
+       "triplet": {
+        "P": 0.252163,
+        "R": 0.259873,
+        "tp": 204,
+        "fp": 605,
+        "fn": 581
+       },
+       "b32": {
+        "P": 0.052368,
+        "R": 0.866242,
+        "tp": 136,
+        "fp": 2461,
+        "fn": 21
+       },
+       "onsetPos": 0.83493,
+       "notes": 55958,
+       "swingStraight": null,
+       "swingBeats": 0
+      },
+      "model": {
+       "beats": 14039,
+       "kind": 0.980056,
+       "triplet": {
+        "P": 0.961404,
+        "R": 0.698089,
+        "tp": 548,
+        "fp": 22,
+        "fn": 237
+       },
+       "b32": {
+        "P": 0.373737,
+        "R": 0.942675,
+        "tp": 148,
+        "fp": 248,
+        "fn": 9
+       },
+       "onsetPos": 0.962508,
+       "notes": 55958,
+       "swingStraight": null,
+       "swingBeats": 0
+      }
+     },
+     "cover+of": {
+      "legacy": {
+       "beats": 13906,
+       "kind": 0.783187,
+       "triplet": {
+        "P": 0.270942,
+        "R": 0.265385,
+        "tp": 207,
+        "fp": 557,
+        "fn": 573
+       },
+       "b32": {
+        "P": 0.04876,
+        "R": 0.751592,
+        "tp": 118,
+        "fp": 2302,
+        "fn": 39
+       },
+       "onsetPos": 0.843235,
+       "notes": 50681,
+       "swingStraight": null,
+       "swingBeats": 0
+      },
+      "model": {
+       "beats": 13906,
+       "kind": 0.965626,
+       "triplet": {
+        "P": 0.737609,
+        "R": 0.648718,
+        "tp": 506,
+        "fp": 180,
+        "fn": 274
+       },
+       "b32": {
+        "P": 0.368,
+        "R": 0.878981,
+        "tp": 138,
+        "fp": 237,
+        "fn": 19
+       },
+       "onsetPos": 0.958071,
+       "notes": 50681,
+       "swingStraight": null,
+       "swingBeats": 0
+      }
+     },
+     "human-real": {
+      "legacy": {
+       "beats": 14396,
+       "kind": 0.940747,
+       "triplet": {
+        "P": 0.846154,
+        "R": 0.336306,
+        "tp": 264,
+        "fp": 48,
+        "fn": 521
+       },
+       "b32": {
+        "P": 0.167038,
+        "R": 0.955414,
+        "tp": 150,
+        "fp": 748,
+        "fn": 7
+       },
+       "onsetPos": 0.959309,
+       "notes": 55958,
+       "swingStraight": null,
+       "swingBeats": 0
+      },
+      "model": {
+       "beats": 14396,
+       "kind": 0.982426,
+       "triplet": {
+        "P": 1,
+        "R": 0.699363,
+        "tp": 549,
+        "fp": 0,
+        "fn": 236
+       },
+       "b32": {
+        "P": 0.382353,
+        "R": 0.993631,
+        "tp": 156,
+        "fp": 252,
+        "fn": 1
+       },
+       "onsetPos": 0.980896,
+       "notes": 55958,
+       "swingStraight": null,
+       "swingBeats": 0
+      }
+     },
+     "swing": {
+      "legacy": {
+       "beats": 13986,
+       "kind": 0.662019,
+       "triplet": {
+        "P": 0.089663,
+        "R": 0.2,
+        "tp": 157,
+        "fp": 1594,
+        "fn": 628
+       },
+       "b32": {
+        "P": 0.039649,
+        "R": 0.77707,
+        "tp": 122,
+        "fp": 2955,
+        "fn": 35
+       },
+       "onsetPos": 0.73439,
+       "notes": 55958,
+       "swingStraight": 0.201765,
+       "swingBeats": 3172
+      },
+      "model": {
+       "beats": 13986,
+       "kind": 0.969255,
+       "triplet": {
+        "P": 0.815486,
+        "R": 0.630573,
+        "tp": 495,
+        "fp": 112,
+        "fn": 290
+       },
+       "b32": {
+        "P": 0.365285,
+        "R": 0.898089,
+        "tp": 141,
+        "fp": 245,
+        "fn": 16
+       },
+       "onsetPos": 0.930716,
+       "notes": 55958,
+       "swingStraight": 0.967213,
+       "swingBeats": 3172
+      }
+     }
+    }
+   },
+   "noisyBeats": {
+    "performances": 904,
+    "all": {
+     "legacy": {
+      "beats": 56050,
+      "kind": 0.767939,
+      "triplet": {
+       "P": 0.226456,
+       "R": 0.269133,
+       "tp": 844,
+       "fp": 2883,
+       "fn": 2292
+      },
+      "b32": {
+       "P": 0.051994,
+       "R": 0.834395,
+       "tp": 524,
+       "fp": 9554,
+       "fn": 104
+      },
+      "onsetPos": 0.828496,
+      "notes": 218555,
+      "swingStraight": 0.20769,
+      "swingBeats": 3173
+     },
+     "model": {
+      "beats": 56050,
+      "kind": 0.972168,
+      "triplet": {
+       "P": 0.845209,
+       "R": 0.658163,
+       "tp": 2064,
+       "fp": 378,
+       "fn": 1072
+      },
+      "b32": {
+       "P": 0.369483,
+       "R": 0.933121,
+       "tp": 586,
+       "fp": 1000,
+       "fn": 42
+      },
+      "onsetPos": 0.954323,
+      "notes": 218555,
+      "swingStraight": 0.959975,
+      "swingBeats": 3173
+     }
+    },
+    "byProfile": {
+     "cover": {
+      "legacy": {
+       "beats": 13960,
+       "kind": 0.744413,
+       "triplet": {
+        "P": 0.248462,
+        "R": 0.257325,
+        "tp": 202,
+        "fp": 611,
+        "fn": 583
+       },
+       "b32": {
+        "P": 0.045825,
+        "R": 0.859873,
+        "tp": 135,
+        "fp": 2811,
+        "fn": 22
+       },
+       "onsetPos": 0.814504,
+       "notes": 55958,
+       "swingStraight": null,
+       "swingBeats": 0
+      },
+      "model": {
+       "beats": 13960,
+       "kind": 0.980158,
+       "triplet": {
+        "P": 0.969805,
+        "R": 0.695541,
+        "tp": 546,
+        "fp": 17,
+        "fn": 239
+       },
+       "b32": {
+        "P": 0.374372,
+        "R": 0.949045,
+        "tp": 149,
+        "fp": 249,
+        "fn": 8
+       },
+       "onsetPos": 0.959756,
+       "notes": 55958,
+       "swingStraight": null,
+       "swingBeats": 0
+      }
+     },
+     "cover+of": {
+      "legacy": {
+       "beats": 13818,
+       "kind": 0.756405,
+       "triplet": {
+        "P": 0.262172,
+        "R": 0.268886,
+        "tp": 210,
+        "fp": 591,
+        "fn": 571
+       },
+       "b32": {
+        "P": 0.044623,
+        "R": 0.77707,
+        "tp": 122,
+        "fp": 2612,
+        "fn": 35
+       },
+       "onsetPos": 0.823346,
+       "notes": 50681,
+       "swingStraight": null,
+       "swingBeats": 0
+      },
+      "model": {
+       "beats": 13818,
+       "kind": 0.960921,
+       "triplet": {
+        "P": 0.685835,
+        "R": 0.62612,
+        "tp": 489,
+        "fp": 224,
+        "fn": 292
+       },
+       "b32": {
+        "P": 0.374332,
+        "R": 0.89172,
+        "tp": 140,
+        "fp": 234,
+        "fn": 17
+       },
+       "onsetPos": 0.952329,
+       "notes": 50681,
+       "swingStraight": null,
+       "swingBeats": 0
+      }
+     },
+     "human-real": {
+      "legacy": {
+       "beats": 14344,
+       "kind": 0.924568,
+       "triplet": {
+        "P": 0.819572,
+        "R": 0.341401,
+        "tp": 268,
+        "fp": 59,
+        "fn": 517
+       },
+       "b32": {
+        "P": 0.131579,
+        "R": 0.923567,
+        "tp": 145,
+        "fp": 957,
+        "fn": 12
+       },
+       "onsetPos": 0.95418,
+       "notes": 55958,
+       "swingStraight": null,
+       "swingBeats": 0
+      },
+      "model": {
+       "beats": 14344,
+       "kind": 0.981107,
+       "triplet": {
+        "P": 1,
+        "R": 0.699363,
+        "tp": 549,
+        "fp": 0,
+        "fn": 236
+       },
+       "b32": {
+        "P": 0.366197,
+        "R": 0.993631,
+        "tp": 156,
+        "fp": 270,
+        "fn": 1
+       },
+       "onsetPos": 0.979324,
+       "notes": 55958,
+       "swingStraight": null,
+       "swingBeats": 0
+      }
+     },
+     "swing": {
+      "legacy": {
+       "beats": 13928,
+       "kind": 0.641657,
+       "triplet": {
+        "P": 0.091825,
+        "R": 0.208917,
+        "tp": 164,
+        "fp": 1622,
+        "fn": 621
+       },
+       "b32": {
+        "P": 0.037015,
+        "R": 0.77707,
+        "tp": 122,
+        "fp": 3174,
+        "fn": 35
+       },
+       "onsetPos": 0.72147,
+       "notes": 55958,
+       "swingStraight": 0.20769,
+       "swingBeats": 3173
+      },
+      "model": {
+       "beats": 13928,
+       "kind": 0.966111,
+       "triplet": {
+        "P": 0.777958,
+        "R": 0.611465,
+        "tp": 480,
+        "fp": 137,
+        "fn": 305
+       },
+       "b32": {
+        "P": 0.363402,
+        "R": 0.898089,
+        "tp": 141,
+        "fp": 247,
+        "fn": 16
+       },
+       "onsetPos": 0.925694,
+       "notes": 55958,
+       "swingStraight": 0.959975,
+       "swingBeats": 3173
+      }
+     }
+    }
+   },
+   "compound": {
+    "performances": 112,
+    "beats": {
+     "legacy": {
+      "beats": 5406,
+      "kind": 0.837403,
+      "b16": {
+       "P": 0.690417,
+       "R": 0.994867,
+       "tp": 1938,
+       "fp": 869,
+       "fn": 10
+      },
+      "onsetPos": 0.816131,
+      "notes": 39713
+     },
+     "model": {
+      "beats": 5406,
+      "kind": 0.995191,
+      "b16": {
+       "P": 0.997412,
+       "R": 0.98922,
+       "tp": 1927,
+       "fp": 5,
+       "fn": 21
+      },
+      "onsetPos": 0.924735,
+      "notes": 39713
+     }
+    },
+    "noisyBeats": {
+     "legacy": {
+      "beats": 5404,
+      "kind": 0.805699,
+      "b16": {
+       "P": 0.650874,
+       "R": 0.994353,
+       "tp": 1937,
+       "fp": 1039,
+       "fn": 11
+      },
+      "onsetPos": 0.797069,
+      "notes": 39713
+     },
+     "model": {
+      "beats": 5404,
+      "kind": 0.994819,
+      "b16": {
+       "P": 0.995356,
+       "R": 0.990246,
+       "tp": 1929,
+       "fp": 9,
+       "fn": 19
+      },
+      "onsetPos": 0.923828,
+      "notes": 39713
+     }
+    }
+   }
+  }
+ }
+}
