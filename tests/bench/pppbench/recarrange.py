@@ -4,7 +4,7 @@ A suite with ``"rec_arrange": true`` runs the same cases as a ``rec`` suite (the
 the stage options of each matrix row), but instead of judging the score of the recording it arranges the recording the way the
 app does (``arrangeSingleNote`` at the three levels, tests/bench/node/rec-arrange.js) and measures the arrangements against the
 true score: the melody, the harmony, the level spread, the left hand, the register, the hard violations and the checker
-classes (metric names and definitions in rec-arrange.js and in docs/GOALS/G10 section 17, "G10c-0").
+classes (metric names and definitions in rec-arrange.js and in docs/GOALS/G10 section 20).
 
 A suite may also name ``replay_dirs`` (tests/bench/<dir>, as ``replay-of``): every fixture there is a case too, the heard notes
 of the production browser model on rendered audio, run with each of the matrix rows' stage options.

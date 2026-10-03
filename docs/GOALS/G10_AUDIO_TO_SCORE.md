@@ -1036,7 +1036,7 @@ rec.voice.f1 0.725 -> 0.802, rest recall 0.540 -> 0.525, notation-check class 7 
   performances. Rows with the same option name (v2 vs v2 + S4 here) were never affected.
 ## 20. G10c-0: what the one-note arranger does to recordings (2026-10-03; implementer on Sonnet)
 
-Worktree `D:/PPP-g10c0`, branch `g10-c0` from main `2e09fad`, merged with main `e2c066b` (G10a-1) before the PRs. Two PRs: (a) the
+Worktree `D:/PPP-g10c0`, branch `g10-c0` from main `2e09fad`, merged with main `afdb23b` (G10a-1 and G10a-2 hands) before the PRs. Two PRs: (a) the
 `rec-arrange` benchmark (tests, tools and baselines only: no app, no `audio-score.js`, no engine file), (b) the interim melody guard.
 This section records (a); (b) is appended by its PR.
 
@@ -1061,49 +1061,54 @@ modules (`pppbench/sut.py` `SUT_TREES`: songgraph, arrangement, candidates, repa
 scoregraph and rec), so an A/B or a mutant carries the arranger a result names; the ruler (the true score's analysis, the checker,
 hard violations) is always the repository's own, so a planted defect cannot move its own measure.
 
-### 20.2 Baseline (main `e2c066b`; `rec-arrange-core`, 84 cases per stage-option row: `cover` on 64 references and the 20 `replay-of` fixtures)
+### 20.2 Baseline (main `afdb23b`, after G10a-1 and G10a-2 hands; `rec-arrange-core`, 84 cases per stage-option row: `cover` on 64 references and the 20 `replay-of` fixtures)
 
-| metric | legacy (library default) | app (what the app passes) | v2 (`recording:'v2'`) | clean (the true score's own arrangement) |
-| --- | --- | --- | --- | --- |
-| `arr.made` (levels made, of 3) | 0.988 | 0.988 | 0.988 | 0.964 |
-| `arr.melody.kept` (true melody notes in the right hand) | 0.942 | 0.942 | 0.943 | 1.000 |
-| `arr.melody.cross` (only in the left hand) | 0.0048 | 0.0049 | 0.0047 | 0.0001 |
-| `arr.melody.lost` | 0.053 | 0.054 | 0.052 | 0.000 |
-| `arr.melody.gap_rate` (right hand silent at a melody onset) | 0.0271 | 0.0272 | 0.0232 | 0.000 |
-| `arr.harmony.agreement` (true beat windows' chord kept) | 0.560 | 0.571 | 0.691 | 0.864 |
-| `arr.level.distinct` (0 = the three levels are one arrangement) | 0.115 | 0.108 | 0.229 | 0.265 |
-| `arr.level.distance` | 0.104 | 0.089 | 0.199 | 0.236 |
-| `arr.lh.notes_per_bar` | 4.05 | 3.95 | 5.77 | 5.99 |
-| `arr.rh.above_c6` | 0.0188 | 0.0189 | 0.0190 | 0.0140 |
-| `arr.hard.violations` | 0 | 0 | 0 | 0 |
-| checker classes per 100 bars 1 / 2 / 3 / 4 / 5 / 6 / 7 | 25.1 / 2.7 / 4.2 / 0.6 / 74.6 / 94.4 / 1.0 | 5.7 / 0.7 / 3.9 / 0.1 / 16.5 / 30.2 / 0 | 0.4 / 0.2 / 1.6 / 0 / 4.3 / 2.1 / 0 | 2.8 / 0 / 8.7 / 0 / 9.7 / 45.0 / 0 |
-| `src.melody.in_lh` (the hand split's error, before arranging) | 0.0345 | 0.0345 | 0.0330 | |
-| `src.harmony.agreement` (the recording graph itself) | 0.668 | 0.683 | 0.817 | |
+The branch was first measured on `e2c066b` (legacy, app, v2 = G10a-1); S4 (G10a-2 hands) then became part of `recording:'v2'`, so the gate's v2 row is now "v2 + S4" and the old v2 is reproduced here with `hands:'legacy'`. The legacy and app columns did not move.
 
-Where the melody gaps are (app row): methods 0.063 (hanon: 0.14-0.58 in six exercises, where the hand split puts the whole texture in
-the left staff), hymns 0.006, micro pieces 0.001, the real-AMT fixtures 0.005. The legacy row is not a path the app takes; the gate
+| metric | legacy (library default) | app (what the app passes) | v2, hands legacy (G10a-1) | v2 + S4 (main now: `recording:'v2'`) | clean (the true score's own arrangement) |
+| --- | --- | --- | --- | --- | --- |
+| `arr.made` (levels made, of 3) | 0.988 | 0.988 | 0.988 | 0.988 | 0.964 |
+| `arr.melody.kept` (true melody notes in the right hand) | 0.942 | 0.942 | 0.943 | 0.965 | 1.000 |
+| `arr.melody.cross` (only in the left hand) | 0.0048 | 0.0049 | 0.0047 | 0.0099 | 0.0001 |
+| `arr.melody.lost` | 0.053 | 0.054 | 0.052 | 0.025 | 0.000 |
+| `arr.melody.gap_rate` (right hand silent at a melody onset) | 0.0271 | 0.0272 | 0.0232 | 0.0083 | 0.000 |
+| `arr.harmony.agreement` (true beat windows' chord kept) | 0.560 | 0.571 | 0.691 | 0.750 | 0.864 |
+| `arr.level.distinct` (0 = the three levels are one arrangement) | 0.114 | 0.108 | 0.229 | 0.241 | 0.265 |
+| `arr.level.distance` | 0.104 | 0.089 | 0.199 | 0.220 | 0.236 |
+| `arr.lh.notes_per_bar` | 4.05 | 3.95 | 5.77 | 6.21 | 5.99 |
+| `arr.rh.above_c6` | 0.0188 | 0.0189 | 0.0190 | 0.0183 | 0.0140 |
+| `arr.hard.violations` | 0 | 0 | 0 | 0 | 0 |
+| checker classes per 100 bars 1 / 2 / 3 / 4 / 5 / 6 / 7 | 25.1 / 2.7 / 4.2 / 0.6 / 74.6 / 94.4 / 1.0 | 5.7 / 0.7 / 3.9 / 0.1 / 16.5 / 30.2 / 0 | 0.4 / 0.2 / 1.6 / 0 / 4.3 / 2.1 / 0 | 0.5 / 0.2 / 1.7 / 0 / 4.8 / 2.5 / 0 | 2.8 / 0 / 8.7 / 0 / 9.7 / 45.0 / 0 |
+| `src.melody.in_lh` (the hand split's error, before arranging) | 0.0345 | 0.0345 | 0.0330 | 0.0202 | |
+| `src.harmony.agreement` (the recording graph itself) | 0.668 | 0.683 | 0.817 | 0.852 | |
+
+Where the melody gaps are (app row; v2 + S4 in brackets): methods 0.063 (0.008) (hanon: 0.14-0.58 in six exercises, where the hand split puts the whole texture in
+the left staff), hymns 0.007 (0.002), micro pieces 0.001 (0.003), the real-AMT fixtures 0.005 (0.010: S4 leaves more holes than the old hands on those 20, from 0.002
+under v2 with the old hands). The legacy row is not a path the app takes; the gate
 suites leave it out (the table is a one-off).
 
 ### 20.3 What the baseline says
 
 1. **The levels collapse, as the design said.** On the app's recordings the three levels differ by 0.09 (Jaccard) and
    `arr.level.distinct` is 0.108 (0 = one arrangement, 1 = three different ones); the clean score's own arrangement spreads them 2.6 times as much
-   (0.236). v2 doubles the spread (0.199): its bars and tempo give the planner a real density per section.
+   (0.236). v2 doubles the spread (0.199), v2 + S4 reaches 0.220 (distinct 0.241): its bars, tempo and hands give the planner a real density per section.
 2. **The melody gap is real and concentrated.** 2.7 % of the true melody notes the transcription heard meet a silent right hand in
    the arrangement; the hand split put 3.5 % of them in the left staff, and the arranger keeps few of those there (cross 0.5 %: most
-   are dropped by the one-note-per-hand thinning, `lost` 5.4 %). A clean score has 0 on all three.
+   are dropped by the one-note-per-hand thinning, `lost` 5.4 %). A clean score has 0 on all three. **S4 closes most of it under v2**:
+   the hand split's error falls to 2.0 % of the heard melody (`src.melody.in_lh`), `lost` to 2.5 % and the melody gap rate to 0.8 % (v2 with the old hands 2.3 %), at the
+   price of more notes the arranger keeps in the left hand (`cross` 0.5 -> 1.0 %).
 3. **Hard violations are 0 everywhere**: the G5 filter, not the recording, decides; the cost of a recording shows as refusals
    (`arr.made` 0.988: micro/M12-flats-db is unreachable in both rows) and as bare arrangements.
-4. **v2 helps the arranger more than any arranger change measured so far**: harmony 0.571 -> 0.691, level distinct 0.108 -> 0.229,
-   checker classes 5 and 6 (bars that do not add up, a drawn value that is not the length) 16.5 / 30.2 -> 4.3 / 2.1 per 100 bars.
-   Left-hand notes per bar rise (3.95 -> 5.77, the clean 5.99): the recording's left hand is written fuller and the arranger keeps it.
+4. **v2 helps the arranger more than any arranger change measured so far**: harmony 0.571 -> 0.691 (v2 + S4 0.750; the clean 0.864), level distinct
+   0.108 -> 0.229 (0.241), checker classes 5 and 6 (bars that do not add up, a drawn value that is not the length) 16.5 / 30.2 -> 4.3 / 2.1 (4.8 / 2.5) per 100 bars.
+   Left-hand notes per bar rise (3.95 -> 5.77 -> 6.21, the clean 5.99): the recording's left hand is written fuller and the arranger keeps it.
 5. **The checker classes of an arrangement are not 0** (class 5 and 6, 16.5 and 30.2 per 100 bars on app): the arranger's copy of a
    recording's events has bars that do not add up as drawn; the clean score's own arrangement has them too (9.7 and 45.0), so they
    are the realizer's, not the recording's. Not this phase's to fix; the v2 recording lowers them.
 
 ### 20.4 Determinism and sensitivity
 
-- `results.json` of `rec-arrange-smoke` (`6f6bce30f78ec8d5`) and `rec-arrange-core` (`a2260b1d035534f1`): byte-identical over three
+- `results.json` of `rec-arrange-smoke` (`71de18a84d52a0cc`) and `rec-arrange-core` (`d5c95527f53c5ed5`), on main `afdb23b`: byte-identical over three
   runs on Windows (Python 3.13.5, Node 24.17); Linux (Docker `node:24-bookworm`, offline, Python 3.11, the README's recipe, an LF clone of the commit): the same two hashes, both `check` PASS.
 - `mutation-check --rec-arrange`: 13 planted defects, one per metric (melody dropped, melody written in the left hand, levels collapsed,
   one-note pass off, right hand two octaves up, planner finds no plan, left hand silent, no shortest rest, gaps never closed, rests

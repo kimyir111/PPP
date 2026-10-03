@@ -423,7 +423,7 @@ REC_MUTATIONS: List[Dict[str, Any]] = [
      "expect": "PASS", "metrics": []},
 ]
 
-# G10c-0 (docs/GOALS/G10 section 17, "G10c-0"): one planted defect per rec-arrange metric (tests/bench/node/rec-arrange.js), run on the
+# G10c-0 (docs/GOALS/G10 section 20): one planted defect per rec-arrange metric (tests/bench/node/rec-arrange.js), run on the
 # `rec-arrange-mutation` suite. The defects are in the arranger (the SUT's realize/, candidates/, scoregraph/, audio-score.js); the ruler (the
 # repository's own songgraph/, playability/, the checker) is never mutated, so a defect cannot move its own measure. Each must be a REGRESSION that
 # names every metric listed; the no-op must leave results.json byte identical.
