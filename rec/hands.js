@@ -5,8 +5,9 @@
    staff 2 = left hand = lower staff, as everywhere in PPP). A pure function: no I/O, no clock, no random,
    the same output on every platform (Node and the page).
 
-     assign(notes, opts) -> {staff: [1|2 per note], conf: [0..1 per note], report}
-     assignQ(q, ctx)     -> report; writes q[i].staff (the audio-score.js hook, opts.hands === 'v2')
+     assign(notes, opts) -> {staff: [1|2 per note, 0 for a note without a pitch], conf: [0..1 per note], report}
+     assignQ(q, ctx)     -> the same; writes q[i].staff (audio-score.js finish(): opts.recording 'v2', or opts.hands 'v2')
+     report: {version, model, style ('piano'|'chorale'), groups, notes, right, left, lowConfidence (conf < opts.lowConf, 0.75)}
 
    notes: [{midi, tick?, on?, attack?, staff?}] in any order. Notes that start together form an onset group:
    the same `tick` when every note has a finite tick (a quantized score), otherwise attacks within
@@ -18,9 +19,10 @@
 
    The model. Within one onset group the hands do not cross: the lowest k notes are the left hand's, the rest the
    right hand's (k = 0..n; a crossing inside one attack is 71 of 223,823 reference pairs on rec-core). Across
-   groups a beam Viterbi carries each hand's last position (the lowest and highest note it last played, and
-   when) and scores each choice by learned costs (-log frequencies counted on the licence-clean catalogue's
-   written hands; tests/bench/tools/train_hands.js), each table with a weight chosen by measurement:
+   groups a beam Viterbi (opts.model.params.beam states) carries each hand's last notes (lowest, highest), when it
+   played, how many notes and its previous inter-onset interval, and scores each choice by learned costs (-log
+   frequencies counted on the licence-clean catalogue's written hands; tests/bench/tools/train_hands.js), each
+   table with a weight chosen by measurement:
      part   how many notes each hand takes, given the group's size and shape (a bare octave or a wide pair is
             often one note per hand: parallel octaves; four-part chords are often two and two)
      span   the stretch of a hand's notes, per hand and count
@@ -28,8 +30,12 @@
      reg    the register of each note, per hand
      gap    the distance between the hands' notes when both play
      rel    where a hand's new notes are against the other hand's position (hands keep apart, rarely cross)
-   conf per note: a logistic of the cost margin to the best choice that puts that note in the other hand,
-   from the same incoming state (local, an approximation of the posterior).
+     cnt    a hand's note count after its previous count (texture continuity: a hand playing sixths goes on)
+     ioi    a hand's new inter-onset interval over its previous one (rhythm continuity)
+   Each hand starts at the piece's lower / upper quartile pitch. Two styles, each a full set of tables: piano, and
+   chorale (four parts on two staves, tenor and bass below: the hymnal's convention); a piece is decoded under both
+   and the cheaper path's style is the piece's. conf per note: a logistic of the cost margin to the best choice
+   that puts that note in the other hand, from the same incoming state (local, an approximation of the posterior).
 
    The weights are data (rec/weights/hands-v1.json, schema ppp.rec-hands-model/1), loaded by Node from rec/weights/,
    or in a page from opts.model / setModel(json) / window.PPPRecHandsWeights. No model, no guess: assign throws
@@ -52,8 +58,8 @@
   const RH = 1, LH = 2;
 
   /* ------------------------------------------------------------ table layout (shared with the trainer) */
-  /* Group shapes for the part table: 0 one note; 1-5 two notes by interval (<= 4, 5-9, 10-11, 12 or 24 = a bare
-     octave, 13-16, other wide); 7.. three, four, five, six or more notes. */
+  /* Group shapes for the part table: 0 one note; 1-6 two notes by interval (1: <= 4, 2: 5-9, 3: 10-11, 4: 12 or 24
+     = a bare octave, 5: 13-16, 6: wider); 7 three notes, 8 four, 9 five or more. */
   const SHAPES = 10;
   function shapeOf(p) {
     const n = p.length;
