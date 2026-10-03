@@ -813,3 +813,91 @@ relative to this baseline.**
   0.043 -> 0.210, downbeat F1 0.472 -> 0.781, stability 0.712 -> 0.323; hands 0.753 -> 0.744, pitch 0.857 -> 0.854. The open
   references move the same way (metre 0.537 -> 0.695): the gain is not memorised pieces.
 - **Not run here:** the teacher tier (the private graph is the Lead's; G10-D15) and the page (G10a-4).
+
+## 19. G10c-0: what the one-note arranger does to recordings (2026-10-03; implementer on Sonnet)
+
+Worktree `D:/PPP-g10c0`, branch `g10-c0` from main `2e09fad`, merged with main `e2c066b` (G10a-1) before the PRs. Two PRs: (a) the
+`rec-arrange` benchmark (tests, tools and baselines only: no app, no `audio-score.js`, no engine file), (b) the interim melody guard.
+This section records (a); (b) is appended by its PR.
+
+### 19.1 The benchmark
+
+`"rec_arrange": true` suites (`pppbench/recarrange.py`, `tests/bench/node/rec-arrange.js`, the pure metrics in
+`rec-arrange-metrics.js`) build the same cases as a `rec` suite (calibrated humanizer `perform/3` over the catalogue, the stage
+options of each matrix row), build the recording graph with the app's options, arrange it **the way the app does** (the app's own
+`arrangeSingleNote` glue, `tests/realize/app-single-extract.js`, at beginner / intermediate / advanced), and measure the arrangements
+against the TRUE score: its melody (SongGraph's melody voice of the true score, the top head of each event), its harmony (G7a on
+the true score), its own arrangement by the same pipeline (the `clean.*` columns: the ceiling). True melody notes are matched to the
+heard notes by pitch and time (one to one, 0.2 s), so a note the transcription never heard is charged to the transcription
+(`src.melody.heard` 0.984), not to the arranger. Metrics (a case's value is the mean over the levels made): `arr.made`,
+`arr.melody.kept / cross / lost / gap_rate`, `arr.harmony.agreement`, `arr.level.distinct / distance`, `arr.lh.notes_per_bar`,
+`arr.rh.above_c6`, `arr.hard.violations`, `arr.check.1..7`; definitions in the header of `rec-arrange.js` and in the README.
+
+Suites: `rec-arrange-smoke` (16 smoke references x cover, cover+of x app, v2: 64 cases, about 1 min), `rec-arrange-core` (64 small and
+middle-sized core references x cover, plus the 20 real-AMT fixtures of `replay-of`, x app, v2: 168 cases, about 2.5 min), both in the
+`bench` gate; `rec-arrange-full` (all 141 core references x cover x app, v2: 282 cases, about 8 min, aggregates only) and
+`mutation-check --rec-arrange` (13 planted defects, about 6 min) in `nightly-rec`. The system under test now includes the arranger's
+modules (`pppbench/sut.py` `SUT_TREES`: songgraph, arrangement, candidates, repair, realize, critics, playability, difficulty, with
+scoregraph and rec), so an A/B or a mutant carries the arranger a result names; the ruler (the true score's analysis, the checker,
+hard violations) is always the repository's own, so a planted defect cannot move its own measure.
+
+### 19.2 Baseline (main `e2c066b`; `rec-arrange-core`, 84 cases per stage-option row: `cover` on 64 references and the 20 `replay-of` fixtures)
+
+| metric | legacy (library default) | app (what the app passes) | v2 (`recording:'v2'`) | clean (the true score's own arrangement) |
+| --- | --- | --- | --- | --- |
+| `arr.made` (levels made, of 3) | 0.988 | 0.988 | 0.988 | 0.964 |
+| `arr.melody.kept` (true melody notes in the right hand) | 0.942 | 0.942 | 0.943 | 1.000 |
+| `arr.melody.cross` (only in the left hand) | 0.0048 | 0.0049 | 0.0047 | 0.0001 |
+| `arr.melody.lost` | 0.053 | 0.054 | 0.052 | 0.000 |
+| `arr.melody.gap_rate` (right hand silent at a melody onset) | 0.0271 | 0.0272 | 0.0232 | 0.000 |
+| `arr.harmony.agreement` (true beat windows' chord kept) | 0.560 | 0.571 | 0.691 | 0.864 |
+| `arr.level.distinct` (0 = the three levels are one arrangement) | 0.115 | 0.108 | 0.229 | 0.265 |
+| `arr.level.distance` | 0.104 | 0.089 | 0.199 | 0.236 |
+| `arr.lh.notes_per_bar` | 4.05 | 3.95 | 5.77 | 5.99 |
+| `arr.rh.above_c6` | 0.0188 | 0.0189 | 0.0190 | 0.0140 |
+| `arr.hard.violations` | 0 | 0 | 0 | 0 |
+| checker classes per 100 bars 1 / 2 / 3 / 4 / 5 / 6 / 7 | 25.1 / 2.7 / 4.2 / 0.6 / 74.6 / 94.4 / 1.0 | 5.7 / 0.7 / 3.9 / 0.1 / 16.5 / 30.2 / 0 | 0.4 / 0.2 / 1.6 / 0 / 4.3 / 2.1 / 0 | 2.8 / 0 / 8.7 / 0 / 9.7 / 45.0 / 0 |
+| `src.melody.in_lh` (the hand split's error, before arranging) | 0.0345 | 0.0345 | 0.0330 | |
+| `src.harmony.agreement` (the recording graph itself) | 0.668 | 0.683 | 0.817 | |
+
+Where the melody gaps are (app row): methods 0.063 (hanon: 0.14-0.58 in six exercises, where the hand split puts the whole texture in
+the left staff), hymns 0.006, micro pieces 0.001, the real-AMT fixtures 0.005. The legacy row is not a path the app takes; the gate
+suites leave it out (the table is a one-off).
+
+### 19.3 What the baseline says
+
+1. **The levels collapse, as the design said.** On the app's recordings the three levels differ by 0.09 (Jaccard) and
+   `arr.level.distinct` is 0.108 (0 = one arrangement, 1 = three different ones); the clean score's own arrangement spreads them 2.6 times as much
+   (0.236). v2 doubles the spread (0.199): its bars and tempo give the planner a real density per section.
+2. **The melody gap is real and concentrated.** 2.7 % of the true melody notes the transcription heard meet a silent right hand in
+   the arrangement; the hand split put 3.5 % of them in the left staff, and the arranger keeps few of those there (cross 0.5 %: most
+   are dropped by the one-note-per-hand thinning, `lost` 5.4 %). A clean score has 0 on all three.
+3. **Hard violations are 0 everywhere**: the G5 filter, not the recording, decides; the cost of a recording shows as refusals
+   (`arr.made` 0.988: micro/M12-flats-db is unreachable in both rows) and as bare arrangements.
+4. **v2 helps the arranger more than any arranger change measured so far**: harmony 0.571 -> 0.691, level distinct 0.108 -> 0.229,
+   checker classes 5 and 6 (bars that do not add up, a drawn value that is not the length) 16.5 / 30.2 -> 4.3 / 2.1 per 100 bars.
+   Left-hand notes per bar rise (3.95 -> 5.77, the clean 5.99): the recording's left hand is written fuller and the arranger keeps it.
+5. **The checker classes of an arrangement are not 0** (class 5 and 6, 16.5 and 30.2 per 100 bars on app): the arranger's copy of a
+   recording's events has bars that do not add up as drawn; the clean score's own arrangement has them too (9.7 and 45.0), so they
+   are the realizer's, not the recording's. Not this phase's to fix; the v2 recording lowers them.
+
+### 19.4 Determinism and sensitivity
+
+- `results.json` of `rec-arrange-smoke` (`6f6bce30f78ec8d5`) and `rec-arrange-core` (`a2260b1d035534f1`): byte-identical over three
+  runs on Windows (Python 3.13.5, Node 24.17); Linux (Docker `node:24-bookworm`, offline, Python 3.11, the README's recipe, an LF clone of the commit): the same two hashes, both `check` PASS.
+- `mutation-check --rec-arrange`: 13 planted defects, one per metric (melody dropped, melody written in the left hand, levels collapsed,
+  one-note pass off, right hand two octaves up, planner finds no plan, left hand silent, no shortest rest, gaps never closed, rests
+  not tidied, dotted 16th rest, exact bars off, a 4:3 bracket), each a REGRESSION naming its metric; the no-op byte-identical.
+- 9 unit tests (`tests/bench/unit/test_rec_arrange.py`) and 8 pure-metric tests (`tests/bench/node/rec-arrange.test.js`).
+
+### 19.5 Limits and departures from the design
+
+- Section 9 asks the melody to be "preserved (vs the clean arrangement's melody)". The benchmark measures it against the TRUE melody
+  (SongGraph's melody voice of the true score, the top head of each event), which is the clean arrangement's own source: equal for a
+  hymn or a method piece with a clear top line, different where the melody is not the top of its voice (a figure over a melody).
+- `legacy` is not in the gates (no app path passes it). The stage-option axis is app and v2, as G10a-1 left it.
+- Real AMT enters through the 20 `replay-of` fixtures (the production browser model on rendered audio). They are clean: few hand split
+  errors (gap rate 0.005 against about 0.03 on `cover`), so they guard against a regression more than they measure the effect. The
+  teacher's piece (private) is not in this PR; its aggregates come with the guard.
+- `rec-arrange-core` leaves out the 700- to 1,000-note sonatinas and czernys (one arrangement costs up to a minute); `rec-arrange-full`
+  has them.
