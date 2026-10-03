@@ -1402,6 +1402,27 @@
     q.forEach((n, i) => { n.sp = r.spell[i]; });
     return r;
   }
+  /* The pedal marks (docs/GOALS/G10_AUDIO_TO_SCORE.md section 8, stage S9, G10a-3): a heard pedal is written as a mark only when the heard notes agree with it (rec/pedal.js: long enough, holding notes,
+     their releases at its end), the mark where those releases are; the pedal the browser model does not hear is never invented, and every heard span stays in the performance layer whatever is written.
+     The recording conversion v2's S9 (opts.recording 'v2'), or on any path with opts.pedal 'v2' (a measurement: the app's path with only S9 swapped); opts.pedal 'legacy' writes every heard span under v2.
+     Not for a MIDI file: its controller events are the player's own (sourceKind 'midi-file'). Asked for by name and not loaded is an error; under v2 without the option, a page without rec/pedal.js writes
+     every span. */
+  function pedalLib() {
+    try {
+      return typeof module === 'object' && module.exports ? require('./rec/pedal.js') : (global && global.PPPRecPedal) || null;
+    } catch (e) { return null; }
+  }
+  function pedalSpans(opts, extra) {
+    const heard = extra.pedals || [];
+    const mode = opts.pedal || (extra.recording === 'v2' ? 'v2' : 'legacy');
+    if (mode !== 'v2' || (opts.sourceKind || 'audio-score') !== 'audio-score') return null;
+    const lib = pedalLib();
+    if (!lib) {
+      if (opts.pedal === 'v2') { const e = new Error('rec/pedal.js (S9) is not loaded'); e.code = 'E-PEDAL-NO-LIB'; throw e; }
+      return null;
+    }
+    return lib.analyse(heard, extra.heard || [], {});
+  }
   const ACCIDENTAL_NAME = { '-2': 'flat-flat', '-1': 'flat', '0': 'natural', '1': 'sharp', '2': 'double-sharp' };
 
   /* heard: {notes: [{on, off, midi, vel, staff, tick}] (every note after clean; staff and tick once placed),
@@ -1633,10 +1654,15 @@
 
     const pedals = [];
     const held = [];
-    (extra.pedals || []).forEach(p => {
+    /* S9 (G10a-3): the spans the heard notes agree with; null = every heard span, as before */
+    const pedalV2 = pedalSpans(opts, extra);
+    /* v2 (G10a-3): a beat is ticksPerBeat ticks - 36 in a compound skeleton - so a mark's tick is a beat position times that. Legacy multiplies by Q whatever the beat is (a compound piece's marks land a third
+       early: 24 ticks for a 36-tick beat; found on rec-core, kept as it is in legacy like the other defects of section 17) */
+    const pedalTicks = extra.recording === 'v2' || pedalV2 ? ticksPerBeat : Q;
+    (pedalV2 ? pedalV2.spans : (extra.pedals || [])).forEach(p => {
       const pp = beatPosition(beats, p.on);
-      const a = Math.round(pp * Q) - origin;
-      const b = Math.round(snapEnd(beatPosition(beats, p.off)) * Q) - origin;
+      const a = Math.round(pp * pedalTicks) - origin;
+      const b = Math.round(snapEnd(beatPosition(beats, p.off)) * pedalTicks) - origin;
       /* A press or release that is not a number leaves no position to write the mark at, the same way
          clean() drops a note whose times are not finite. The three range tests beside it cannot see
          that — every comparison against NaN is false — so it has to be asked for. Without it the pedal
@@ -1648,7 +1674,7 @@
          its release clamped to that tick (bars * bar - 1 below), a span that ends where it starts, and the graph builder
          threw E-SPAN-ORDER for the whole score. Such a press has nothing left to sustain in the score: it is not written
          (the performance layer keeps it) */
-      if (extra.recording === 'v2' && Math.min(bars * bar - 1, b) <= Math.max(0, a)) return;
+      if ((extra.recording === 'v2' || pedalV2) && Math.min(bars * bar - 1, b) <= Math.max(0, a)) return;
       held.push([a, b]);
     });
     held.sort((x, y) => x[0] - y[0]);
@@ -1756,6 +1782,8 @@
     if (gridV2) model.params.recording.grid = { model: gridV2.report.model, lowConf: gridV2.report.lowConf, beats: gridV2.plan.length };
     /* and which key stage wrote the key and the spelling (S8, G10a-3), with how many tonal regions and written key changes it found */
     if (keyV2) model.params.keys = { model: keyV2.report.version, regions: keyV2.regions.length, changes: keyV2.changes.length };
+    /* and which pedal policy wrote the marks (S9, G10a-3): the spans heard, written, and dropped by reason */
+    if (pedalV2) model.params.pedal = { model: pedalV2.report.version, heard: pedalV2.report.heard, kept: pedalV2.report.kept, dropped: pedalV2.report.dropped };
     if (extra.arrangement) model.params.arrangement = extra.arrangement;
     /* where each heard note was written: the placed note with the same onset, release and pitch */
     const placed = new Map();
@@ -1806,6 +1834,7 @@
     if (extra.recReport) result.recReport = extra.recReport;   /* v2's time skeleton report (G10a-1), beside the graph too */
     if (handsReport) result.handsReport = handsReport;         /* the same: v2's hands (S4, G10a-2) */
     if (keyV2) result.keyReport = { report: keyV2.report, key: keyV2.key, regions: keyV2.regions, changes: keyV2.changes };   /* and v2's key stage (S8, G10a-3) */
+    if (pedalV2) result.pedalReport = { report: pedalV2.report, spans: pedalV2.spans, dropped: pedalV2.dropped };   /* and v2's pedal policy (S9, G10a-3) */
     if (gridV2) result.gridPlan = { plan: gridV2.plan, report: gridV2.report };   /* rec/grid.js's GridPlan (S3, G10a-2), beside the graph too */
     result.xml = scoreGraph().musicxml.export(graph, { software: 'PPP audio transcription' }).xml;
     result.graph = graph;

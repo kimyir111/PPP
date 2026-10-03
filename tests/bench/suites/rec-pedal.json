@@ -2,7 +2,7 @@
  "align": {
   "window_s": 0.3
  },
- "description": "G10 recording gate: the core references x the calibrated humanizer's families (cover, cover-pedal, human-real, and the browser model's and the helper's error overlays; swing is in rec-full) x beats none (production) / oracle-noisy (helper) x stage options legacy / app / v2",
+ "description": "G10a-3 stage S9 in isolation (a measurement suite, nightly, not in the CI gate): rec-core's pedal families (cover-pedal, cover-pedal+helper) with v2 and every heard pedal span written (v2-pedallegacy, opts.pedal 'legacy') and with the app's options and only the pedal policy of rec/pedal.js (app-pedal, opts.pedal 'v2'); the very performances of the v2 / app rows",
  "gate": {
   "case_fail_drop": 10.0,
   "case_flip_max": 2,
@@ -277,76 +277,14 @@
  "matrix": [
   {
    "beats": "none",
-   "opt_name": "legacy",
-   "opts": {},
-   "profile": "cover",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
-   "opt_name": "app",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true
-   },
-   "profile": "cover",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
-   "opt_name": "v2",
+   "opt_name": "v2-pedallegacy",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
+    "pedal": "legacy",
     "recording": "v2"
    },
-   "profile": "cover",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "oracle-noisy",
-   "opt_name": "legacy",
-   "opts": {},
-   "profile": "cover",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "oracle-noisy",
-   "opt_name": "app",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true
-   },
-   "profile": "cover",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "oracle-noisy",
-   "opt_name": "v2",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true,
-    "recording": "v2"
-   },
-   "profile": "cover",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
-   "opt_name": "legacy",
-   "opts": {},
+   "perform_as": "v2",
    "profile": "cover-pedal",
    "seeds": [
     1
@@ -354,101 +292,28 @@
   },
   {
    "beats": "none",
-   "opt_name": "app",
+   "opt_name": "app-pedal",
    "opts": {
     "closeGaps": true,
-    "exactBars": true
+    "exactBars": true,
+    "pedal": "v2"
    },
+   "perform_as": "app",
    "profile": "cover-pedal",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
-   "opt_name": "v2",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true,
-    "recording": "v2"
-   },
-   "profile": "cover-pedal",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
-   "opt_name": "legacy",
-   "opts": {},
-   "profile": "human-real",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
-   "opt_name": "app",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true
-   },
-   "profile": "human-real",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
-   "opt_name": "v2",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true,
-    "recording": "v2"
-   },
-   "profile": "human-real",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
-   "opt_name": "legacy",
-   "opts": {},
-   "profile": "cover+of",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
-   "opt_name": "app",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true
-   },
-   "profile": "cover+of",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
-   "opt_name": "v2",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true,
-    "recording": "v2"
-   },
-   "profile": "cover+of",
    "seeds": [
     1
    ]
   },
   {
    "beats": "oracle-noisy",
-   "opt_name": "legacy",
-   "opts": {},
+   "opt_name": "v2-pedallegacy",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "pedal": "legacy",
+    "recording": "v2"
+   },
+   "perform_as": "v2",
    "profile": "cover-pedal+helper",
    "seeds": [
     1
@@ -456,31 +321,20 @@
   },
   {
    "beats": "oracle-noisy",
-   "opt_name": "app",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true
-   },
-   "profile": "cover-pedal+helper",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "oracle-noisy",
-   "opt_name": "v2",
+   "opt_name": "app-pedal",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
-    "recording": "v2"
+    "pedal": "v2"
    },
+   "perform_as": "app",
    "profile": "cover-pedal+helper",
    "seeds": [
     1
    ]
   }
  ],
- "name": "rec-core",
+ "name": "rec-pedal",
  "rec": true,
  "references": [
   "catalog/fur-elise",

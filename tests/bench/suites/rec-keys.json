@@ -76,6 +76,14 @@
     "dir": "up",
     "tol": -0.005
    },
+   "notation.pedal.f1": {
+    "dir": "up",
+    "tol": -0.01
+   },
+   "notation.pedal.false_per_min": {
+    "dir": "down",
+    "tol": 0.05
+   },
    "notation.ties.extra_per_100": {
     "dir": "down",
     "tol": 0.5
@@ -237,6 +245,7 @@
     "notation.ioi.accuracy": "mean",
     "notation.note_shape.consistency": "mean",
     "notation.onset_pos.accuracy": "mean",
+    "notation.pedal.f1": "mean",
     "notes.identity.f1": "mean",
     "rec.mv2h": "mean",
     "rec.onset_f1": "mean",

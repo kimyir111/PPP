@@ -1452,3 +1452,69 @@ Case by case on rec-core's v2 rows (846): `critical.key` 57 cases up, 20 down (f
 ### 22.8 Determinism, Linux, budget
 
 Three runs on Windows (Python 3.13.5, Node 24.17) of rec-smoke (`2e1858dece716f79`), rec-robust (`089ae487b849efe9`), replay-of-v2 (`5615c28ea3180b9a`) and rec-core (`4e3fa72f2565703b`) give byte-identical `results.json`; the same four on Linux (`node:24-bookworm`, offline, an LF clone of the pushed commit, the README's recipe) give the same four hashes and every `check` PASS; `python tests/bench/tools/key_data.py && node rec/tools/key-eval.js --check` is "same" on Linux, `npm run test:rec` passes there (62 tests, one skipped by its own todo). The key stage costs about 5 ms for a 1,800-note piece (section 11's budget for the whole v2 conversion is 300 ms).
+## 23. G10a-3 (lane B), S9: pedal marks (2026-10-04; implementer on Sonnet, code only: no model)
+
+Worktree `D:/PPP-g10a3keys`, branch `g10-a3-pedal` from `origin/main` `638f56b` (a second PR of lane B, independent of S8's: `g10-a3-keys`, section 22). The stage is `rec/pedal.js`, its hook in `audio-score.js` is its own commit (`opts.pedal`, behind `recording: 'v2'`), legacy lines untouched. Measurement first.
+
+### 23.1 Baselines reproduced
+At `074f078` (= `638f56b` for these suites), unchanged tree: `run` + `check` of rec-smoke, rec-core, rec-robust and replay-of-v2 PASS. rec-core v2 rows, the families with a pedal: cover-pedal (the performer's own pedal is the input and the truth) pedal F1 0.906, false marks per minute 8.7, `critical.pedal` 0.858 (legacy 0.974 / 2.8 / 0.964: **v2 was worse than the library default**); cover-pedal+helper (the helper's invented pedal is the input, the played pedal the truth) F1 0.458, false marks per minute 13.2, `critical.pedal` 0.504. Replay of the six rendered fixtures (TransKun + Kong; nothing was played): 26.2 false marks per minute.
+
+### 23.2 Error analysis (by cause)
+
+**1. The compound tick unit: found, and the cause of v2's loss.** `finish()` turns a pedal's time into a bar position as `round(beatPosition * Q)`, Q = 24 ticks a quarter, whatever the beat is. A compound skeleton's beat is a dotted quarter (36 ticks), so every mark of a 6/8, 3/8, 9/8 or 12/8 piece lands a third early and drifts further from its bar with every bar. Pedal F1 by metre class on rec-core, cover-pedal (legacy / v2 before / v2 after): compound-duple 0.995 / 0.626 / 0.992, compound-single 0.933 / 0.563 / 0.988, compound-quadruple 1.000 / 0.375 / 1.000, irregular 1.000 / 0.774 / 0.988; the simple metres are fine (0.92-1.00). Legacy has the very same line and the same defect for every piece it reads in a compound pulse - which includes the 2/4 pieces it reads as 6/8 (G10 section 18.2): **23 rec-core cases of the library default and of the app's options move when it is fixed**. It is fixed in v2 only, as briefed (legacy and the app keep it: section 17's rule); `opts.pedal: 'v2'` turns it on for the app's path.
+
+**2. The helper's pedal is a guess, and what the notes can say about it.** A pedal that sustains something ends with the sound, so the heard releases of the notes it held coincide with its end (the humanizer's cover-pedal family builds this in, as a physical pedal does). On rec-core's two pedal families, spans by the number of notes released within 80 ms of the span's end: the performer's own spans median 7 (10th percentile 4), the helper-invented spans 1 (90th percentile 4), the invented spans that match a played change within the metric's 150 ms 3. The real helper's false spans (the 42 spans of the six fixtures) are different: **short** (median 0.35 s, a tenth under 0.1 s) and often **self-consistent**: TransKun's note offsets already follow its own pedal, so on two fixtures every false span has notes released at its end.
+
+**3. The trade-off the first measurements showed.** In the synthetic helper family the invented spans are noisy copies of the played pedal (70 % of the bars, edges 2-17 % of a bar off), so a strict agreement test throws away true positives with the false ones: releases within 80 ms of the span's end keep a fifth of the invented spans (and two thirds of those within 150 ms of a played change), lowering F1 from 0.444 to 0.294 and the share of cases past the `critical.pedal` gate from 0.46 to 0.26 while false marks per minute fall from 9.2 to 1.8. With the tolerance at the helper's own measured offset error (|p90| 191 ms, G10 E8: 0.2 s) and the mark moved to where the released notes are, F1 rises (0.444 -> 0.484) and false marks per minute fall (9.2 -> 4.3): the notes are better evidence for the pedal's end than the helper's own edge. A piece-level gate (write nothing when under half of a piece's spans agree) was worse on every count (F1 0.17, gate 0.24).
+
+**4. A repeated-note passage loses its pedal.** Micro M23 (the same pitches struck again and again): 99 of its 112 notes are released one frame before their own pitch is struck again, so they cannot ring to the pedal's end; the first version of the policy dropped all four true spans (pedal F1 1.0 -> 0.0). A note released by the re-strike of its own pitch says nothing about the pedal and is now left out of the count.
+
+**5. No pedal gate guarded false marks.** The recording suites gated `critical.pedal` only; `notation.pedal.f1` and `notation.pedal.false_per_min` (G10 issue 17's metric) were not in their gate, so no planted defect could name them. They are now.
+
+### 23.3 What was built
+`rec/pedal.js` (UMD, pure, deterministic; no model, no weights): `analyse(pedals, notes, opts) -> {spans, dropped, report}`. A heard span is written when it is a pedal (at least 0.4 s), holds notes that can tell (those not released by the re-strike of their own pitch within 80 ms), and its end is confirmed: at least 2 of those notes and 20 % of them are released within 0.2 s of the span's end; the mark then goes at the lower median of those releases. Overlapping spans are one pedal; a press without a release lasts to the last note; a span that is not a number is dropped. Reasons (`short`, `nothing`, `blind`, `weak`, `invalid`) are counted in `result.pedalReport` and in the graph's provenance (`params.pedal`). The heard pedal is never touched: `buildGraph` writes every heard span into the performance layer. The browser model hears none, so no marks are ever invented; a MIDI file's controllers (`sourceKind: 'midi-file'`) are exact and never judged.
+Hook (`audio-score.js`, own commit): `pedalSpans()` in `finish()` (v2 default, `opts.pedal: 'legacy'` writes every span under v2, `'v2'` swaps only S9 on any path), the skeleton's tick unit for the marks under v2, and the TD20 guard extended to the policy's path. The legacy line of the loop, `(extra.pedals || []).forEach(p => {`, is now `(pedalV2 ? pedalV2.spans : (extra.pedals || [])).forEach(p => {`: the two planted defects that anchor on it (`ADV-NO-PEDAL`, `tests/bench/review/adversarial.py`) follow it.
+
+### 23.4 Results
+
+rec-core (v2 rows, `perform_as` keeps the pairs on the same performances; before = `origin/main`):
+
+| family, beats | n | pedal F1 | false marks / min | critical.pedal |
+| --- | --- | --- | --- | --- |
+| cover-pedal, none | 141 | 0.906 -> **0.992** (legacy 0.974) | 8.7 -> **0.03** | 0.858 -> **1.000** |
+| cover-pedal+helper, oracle-noisy | 141 | 0.458 -> **0.529** (legacy 0.452) | 13.2 -> **5.4** | 0.504 -> **0.645** |
+
+Case by case on rec-core's v2 rows (846): `critical.pedal` 44 up, 4 down (four +helper cases at the gate's edge: F1 0.52-0.60 -> 0.40-0.48); pedal F1 78 up, 43 down; G0 usable 25 up, 1 down. The tick unit alone (`v2-pedallegacy`, every span written) gives cover-pedal F1 0.9996 and helper-family F1 0.497 / false 8.8; the policy takes the helper family to 0.529 / 5.4 and costs the played pedal 0.007 F1.
+
+| suite | pedal F1 | false marks / min | critical.pedal |
+| --- | --- | --- | --- |
+| **hold-out slice** (52 references never used, seeds 11 and 12; cover-pedal / cover-pedal+helper) | 0.960 -> 0.992 / 0.454 -> 0.485 | 4.4 -> 0.06 / 12.7 -> 5.5 | 0.942 -> 1.000 / 0.558 -> 0.577 |
+| rec-smoke (cover-pedal) | 0.916 -> 1.000 | 6.7 -> 0.0 | 0.875 -> 1.000 |
+| **replay-public (the six rendered fixtures: the real helper's pedal, none was played)**: marks per piece, false marks / min | - | 26.2 -> **3.9** (11.7 -> 1.3 marks) | - |
+| S9 alone on the app's path (`rec-pedal`, `app-pedal`; cover-pedal / helper family) | 0.974 -> 0.991 / 0.446 -> 0.513 | 2.8 -> 0.10 / 10.5 -> 4.9 | 0.965 -> 1.000 / 0.497 -> 0.624 |
+
+replay-of-v2 (the browser's O&F: no pedal) is unchanged: nothing is invented.
+
+### 23.5 Tried and kept out
+- A tolerance of 80, 100 or 150 ms for the agreement (the mark moves to the releases in all of them): helper-family F1 0.294 / 0.345 / 0.440 (0.484 shipped, 0.444 with every span written) at false marks per minute 1.8 / 2.4 / 3.7 (4.3) and the share of cases past the gate 0.26 / 0.33 / 0.48 (0.57; 0.46 with every span written).
+- A share of 30 %, three releases instead of two, or both: helper-family F1 0.477 / 0.456 / 0.454 (0.484), played-pedal F1 0.993 / 0.968 / 0.968 (0.993), false marks per minute 4.0 / 3.5 / 3.5 (4.3).
+- A span floor of 0.3 s: 12.2 false marks per minute on the fixtures (the policy's own arithmetic on the raw helper output) against 3.3 at 0.4 s, with the same synthetic numbers; 0.7 s starts to cost the played pedal (F1 0.972).
+- No re-strike rule: the repeated-note piece loses its gate (and the fixtures keep 4.1 marks a minute against 3.3).
+- A piece-level gate (23.2 point 3).
+
+### 23.6 Verification
+- **Legacy byte-identical.** `run.py ab --a git:origin/main --b worktree` and `ab_identical.py`: smoke 44, core 553, robust 282, smoke-app 44, core-app 553, robust-app 282, replay-public 6, replay-of 20, replay-of-app 20 cases, every one the same; the legacy and app rows of rec-core (846 + 846) identical, the 180 cases that change are all `opts:v2` rows (a first version that fixed the tick unit for every path moved 23 legacy and app cases: it is gated on v2 now); `git diff --stat origin/main` touches none of `scoregraph/ songgraph/ arrangement/ candidates/ repair/ realize/ critics/ playability/ difficulty/`.
+- **Rebaselined, with the reason recorded in each file:** rec-smoke, rec-core, rec-robust, rec-grid, rec-arrange-smoke, replay-of-v2 (v2 rows only), and the new `replay-public-v2` (in the gate: the helper's real pedal with the policy). `notation.pedal.f1` and `notation.pedal.false_per_min` join the gate of the recording suites (not rec-full's: its aggregate baseline is nightly).
+- **Tests:** `tests/rec/pedal.test.js` (10: no pedals no marks, a confirmed pedal with the mark at the releases, a pedal no note agrees with, every decision of the policy, the tolerance, the re-strike rule, overlapping and invalid spans, a press without release, sorted and disjoint spans, the report adds up) and `tests/rec/pedal-v2.test.js` (5: the marks and the provenance, an invented pedal kept out of the score and in the performance layer, the library default and the app never see the policy, a compound skeleton's marks land on their bars - it fails with the old tick unit -, and the edge cases: after the last note, pressed in the last tick, zero length, overlapping, before the first note, not numbers, no release, a span over the whole piece; none throws, none reaches the graph as a span the validator refuses).
+- **Mutation coverage.** `mutation-check --rec` has a new group on a new suite, `rec-mutation-pedal` (the two pedal families over the rec-mutation references): five planted defects, each a REGRESSION naming its metric (S9 not used: false marks / min 2.53 -> 4.43; no agreement: 3.59; no re-strike rule: critical.pedal 0.8095 -> 0.7976; the mark not moved to the releases: F1 0.7608 -> 0.7455; the old tick unit: F1 0.7608 -> 0.7274), the no-op byte-identical. The span floor and the merging of overlapping spans are decisions the synthetic families do not exercise (the short false spans are the real helper's: `replay-public-v2`): `tests/rec/pedal.test.js`.
+- **Determinism and Linux:** see 23.8.
+
+### 23.7 Limits, and what the next phases need
+- **The real helper's pedal still leaves 3.9 false marks a minute on pedal-free audio** (1.3 marks a piece: 4 of the 42 spans): the notes cannot refute a pedal the same model's offsets already follow. The span floor of 0.4 s and the re-strike rule were chosen with these 42 spans in sight (the synthetic families do not move with them): a small sample, and no recording with a real pedal exists to tell a good pedal from a bad one (M11). More needs evidence from outside the note list: the helper returning each model's pedal and a confidence, or sustain evidence from the audio itself (U3, G10a-4).
+- **A real pedal is only written when the model's note offsets follow it.** A recording whose notes are not extended by the pedal, with a pedal the model heard anyway, gets no marks; the heard pedal stays in the performance layer and "Play as recorded" (G10a-4) can use it.
+- **Four helper-family cases lose the pedal gate** (F1 within 0.1 of 0.5) and 44 gain it; the helper family's input is a synthetic guess of the helper's behaviour.
+- **For G10a-4:** the page must load `rec/pedal.js` (it registers `window.PPPRecPedal`); `result.pedalReport` says what was heard, written and dropped, by reason, and the graph's `params.pedal` has the counts. `rec/index.js` is not touched. **For lane A:** the hook sits in the pedal block of `finish()`, before the writers; nothing in lane A's voices or silence stages reads pedals.
+- **The legacy compound tick defect is live on the production path** (23.2 point 1): 3/8, 6/8 and the 2/4 pieces read as 6/8 get pedal marks a third early today. `opts.pedal: 'v2'` fixes it for the app's path (`app-pedal`) if the Lead wants it before G10a-4.
+
+### 23.8 Determinism, Linux, budget
+DETERMINISM_PLACEHOLDER

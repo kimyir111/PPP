@@ -160,6 +160,20 @@ class RecMutations(unittest.TestCase):
         self.assertTrue(s["rec"])
         self.assertEqual({r["opt_name"] for r in s["matrix"]}, {"v2"})
 
+    def test_every_s9_decision_has_a_planted_defect(self):
+        """G10a-3: the pedal policy's decisions the benchmark can see (the policy used at all, the notes' agreement, the mark at the releases,
+        the compound tick unit) each have a mutation on rec-mutation-pedal; the no-op is last."""
+        ms = mutation.REC_PEDAL_MUTATIONS
+        self.assertEqual({m["id"] for m in ms[:-1]}, {"REC-V2-PEDAL-LEGACY", "REC-V2-PEDAL-NO-AGREEMENT", "REC-V2-PEDAL-NO-RESTRIKE",
+                                                      "REC-V2-PEDAL-NO-SNAP", "REC-V2-PEDAL-TICK-UNIT"})
+        self.assertEqual((ms[-1]["id"], ms[-1]["expect"]), ("MUT-NOOP", "PASS"))
+        for m in ms[:-1]:
+            self.assertEqual(m["expect"], "REGRESSION")
+            self.assertTrue(any(x.split(":")[-1].startswith(("notation.pedal.", "critical.pedal")) for x in m["metrics"]), m["id"])
+        s = suite_mod.load_suite("rec-mutation-pedal")
+        self.assertTrue(s["rec"])
+        self.assertEqual({r["opt_name"] for r in s["matrix"]}, {"v2"})
+
     def test_ids_are_unique_and_the_noop_is_last(self):
         ids = [m["id"] for m in mutation.REC_MUTATIONS]
         self.assertEqual(len(ids), len(set(ids)))
