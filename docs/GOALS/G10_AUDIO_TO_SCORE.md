@@ -1034,3 +1034,227 @@ rec.voice.f1 0.725 -> 0.802, rest recall 0.540 -> 0.525, notation-check class 7 
   (`perform.py`), so legacy / app / v2 rows of those families (3 of rec-core's 6 rows) are different draws, not the same input as
   the G10a-0/a1 records say; the rec-hands suite uses the new matrix-row field `perform_as` to replay the app rows' very
   performances. Rows with the same option name (v2 vs v2 + S4 here) were never affected.
+
+## 20. G10a-2 (grid): the grid of each beat, stage S3 (2026-10-03; implementer on Opus, AI-5b)
+
+Worktree `D:/PPP-g10a2grid`, branch `g10-a2grid` from `origin/main` `2e09fad`, `origin/main` `e2c066b` (G10a-1) merged in.
+The hands half of G10a-2 (S4) is section 19; this section is S3, measured on top of it after `afdb23b` was merged in. Measurement first, as in section 18.
+
+### 20.1 Baselines reproduced
+
+At `2e09fad`: rec-smoke, rec-core, replay-of and replay-of-app `run` + `check` PASS. After merging `e2c066b`, `v2` (G10a-1's
+skeleton with the legacy quantisers) is the "before" of every v2 number below; its committed baselines are the reference.
+
+### 20.2 Error analysis of the legacy grid stage
+
+**The stage alone** (`tests/bench/tools/train_grid.js --evaluate`: the true beat times given, so neither the skeleton nor the
+writer can hide or cause an error; a verbatim copy of `tripletBeats` / `snapStraightBest` / `snapTriplet` / `quantize` /
+`quantizeCompound` against the model; hold-out references, every family, 30,625 quarter beats with an onset):
+
+| | legacy | the cause, read in the code and the data |
+| --- | --- | --- |
+| right grid per beat | 0.761 | per-onset decisions with hand-set costs, no beat-level evidence, no prior |
+| false 32nd beats | 5,637 (18 % of beats; 32nd P 0.082) | `snapStraightBest` takes the 32nd lattice whenever an onset is more than half a 32nd off (24-ms jitter at 100-150 qpm is enough); this is what `snapOnsets` (exact bars) then has to undo, at a cost in onset accuracy (G10a-0 correction 2) |
+| triplet beats | P 0.365, R 0.301 | `tripletBeats` flags a beat when two onsets are > 0.08 beat off the 16th grid and thirds fit better: jitter does that at fast tempi; three onsets that merged or split look the same |
+| attacks | 6 % of heard attacks (cover family) sound two different written onsets | `clusterNotes`' 50-ms window merges two 16ths that the timing noise brought within 50 ms; its run detector splits chords heard a frame apart |
+| swung eighths written straight | 20 % | swing reads as quarter-eighth triplets |
+| compound beats (dotted quarters) | right grid 0.858, onsets 0.876 | `quantizeCompound` treats every 16th point like an eighth point |
+| triplet 16ths (T6) | 2.6 % of beats | no writer for them (the exact-bars writer and `rec-tuplet.js` write thirds only) |
+
+End to end, in legacy the triplet flags also feed `compoundTactus` (2/4 pieces became 6/8 in 24 of 48 oracle-noisy cases);
+in v2, S2 decides the metre before S3, so that coupling is gone.
+
+### 20.3 What was built: `rec/grid.js` as v2's S3
+
+`toMusicXml(input, {recording: 'v2'})` now places its onsets with `rec/grid.js` on G10a-1's skeleton (simple and compound);
+`opts.grid: 'legacy'` keeps G10a-1's legacy quantisers under v2 (the "v2-s3legacy" rows). Without `opts.recording` nothing
+loads it: legacy and the app's options are byte-identical (20.6).
+
+**The model** (generative per beat, all parameters counted; `rec/weights/ai5b-grid-v1.json`, 2.7 KB):
+- grid kinds of a quarter beat: `16`, `32`, `3` (triplet eighths), `swing8` (straight eighths heard long-short, 1.5:1 to 2:1,
+  written straight); of a dotted-quarter beat: `c8` (eighths), `c16` (16ths; a duplet's half is one of them);
+- per kind, the probability of each **occupancy pattern** (which grid points hold a heard onset: 16 patterns for `16`,
+  `swing8`, 8 for `3`, 64 for `c16`; `32` = a 16th pattern times independent odd 32nds, at least one) - learned on the heard
+  onsets, so an AMT miss or merge is in the table; an earlier independent-occupancy version under-rated dense 16th beats ten
+  times and wrote them as 32nds;
+- the onsets are `clusterNotes`' attacks (a rolled chord stays one), split where two frames of an attack are more than 40 ms
+  apart or continue each other by step (two 16ths merged by the 50-ms window; a fast run the run detector missed);
+- the onsets of a beat matched in order to exactly the pattern's points (a dynamic program), each point taking a group of
+  onsets heard at most 40 ms apart that neither repeat nor continue by step a pitch of the one before (a chord heard over
+  two frames, not a run), every onset scored as a density
+  (Gaussian timing noise; a joined onset by its offset from the group's mean) - without that accounting a finer grid won
+  wherever chords were spread, and whole Hanon pieces flipped to 32nds under 10 ms of noise;
+- the next beat's first onset may be heard early (a point of every kind); an onset no point explains is an outlier;
+- the timing noise is the learned one, then the piece's own (the first pass's residuals, pooled with 30 pseudo-onsets);
+- an HMM over the beats with onsets (learned priors and stay probabilities, forward-backward) gives each beat's kind and
+  confidence;
+- the snap is the matching itself (no onset moves past another; a chord's onsets share a tick).
+
+Writer constraints kept: once the hands are known, `writable()` applies `snapOnsets`' genuine-run rule and nothing more (an
+odd-32nd onset of a staff that played nothing a 32nd before moves to the 16th grid: the exact-bars writer has no 32nd rest).
+
+**Training (AI-5b).** `tests/bench/tools/grid_data.py` (the benchmark's own performer and humanizer, LCG) writes humanized
+performances of every lint-clean **non-hold-out** reference x cover, cover-pedal, human-real, swing, cover+of x seeds 101-102
+(no suite uses them; cover-alt is never trained on) with the true grid of every beat; `node tests/bench/tools/train_grid.js
+--write` counts the tables. `--check` (in the gate) regenerates the data and refits: byte-identical. No external data, no
+audio, no user material, no note-level data committed. **Budget:** 95 ms for a 3-minute 1,800-note piece in Node (S0-S2 take
+~150 ms: the v2 total stays under the 300 ms of section 11); weights 2.7 KB.
+
+**The interface** (for G10a-3's `rec/index.js` and the writer):
+```
+PPPRecGrid.plan(beats, notes, {compound, kinds, model, ticksPerBeat}) ->
+  { beats: [{beat, kind: '16'|'32'|'3'|'swing8'|'c8'|'c16', conf, post: {kind: p}, n, swing?}],   // GridPlan
+    onsets: [{beat, tick, frac, kind, err}],     // per input note, same order; tick from beats[0] (24 or 36 a beat)
+    report: {version, model, sigmaSec, beats: {kind: count}, lowConf} }
+PPPRecGrid.legacyQ(notes, beats, {compound}) -> {q, errSum, plan, report}   // audio-score.js quantize/quantizeCompound's note shape
+PPPRecGrid.writable(q) -> {moved}                                            // the exact-bars writer's run rule, after S4
+```
+`beats` = the skeleton's written beats (quarters, or dotted quarters with `compound: true`); `notes` = cleaned, clustered notes
+(`attack` optional). The graph's provenance carries `params.recording.grid = {model, lowConf, beats}`; `result.gridPlan` holds
+the plan beside the graph (not in stats) - per-beat `conf` is what an uncertain-bar flag (G10a-4) needs.
+
+### 20.4 Tried and dropped (measured)
+
+- Independent occupancy probabilities per grid point (dense 16th beats ten times too unlikely: 32nd P 0.12 in sample).
+- Joined onsets scored without a density (32nd flips; rec-grid stability worse than legacy on Hanon); fixed, not dropped.
+- Onsets as every distinct note time (slots) instead of `clusterNotes`' attacks split at 40 ms: +0.003 stage accuracy, but
+  a different chord grouping than S0's; the attacks are kept.
+- No early downbeat on the piece's last beat (it lost a hymn's last chord played early: 17 -> 16 bars). Reverted.
+- Swing up to 2.33:1 (dotted eighth + 16th read as swing and written straight: micro M10). Limited to 2:1.
+- The benchmark-only hook `opts.grid: 'v2'` on the legacy pipeline (the brief's "v2-grid" axis): replaced by wiring into v2
+  when G10a-1 merged (the Lead's instruction); it never touched the legacy path.
+
+### 20.5 Results
+
+**The stage alone** (true beats; `rec/tools/ai5b-grid-v1.evaluation.json`; legacy -> model):
+
+| set | beats | right grid | triplet P / R | 32nd P / R | onsets on the true written position | swung written straight | compound onsets |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| hold-out references (52, 6 families) | 30,625 | 0.761 -> **0.969** | 0.365 / 0.301 -> **0.956 / 0.689** | 0.082 / 0.877 -> 0.400 / 0.958 | 0.827 -> **0.955** | 0.20 -> **0.98** | 0.876 -> **0.999** |
+| hold-out, beats +-20 ms | 30,493 | 0.746 -> 0.968 | 0.356 / 0.297 -> 0.951 / 0.689 | 0.077 -> 0.395 | 0.818 -> 0.954 | 0.22 -> 0.99 | 0.858 -> 0.998 |
+| robustness family cover-alt (never trained) | 13,968 | 0.762 -> 0.981 | 0.242 / 0.259 -> 0.984 / 0.699 | 0.047 -> 0.383 | 0.825 -> 0.966 | - | 0.768 -> 0.921 |
+| open references, seed 104 | 56,327 | 0.791 -> 0.975 | 0.229 / 0.265 -> 0.884 / 0.671 | 0.058 -> 0.381 | 0.843 -> 0.961 | 0.20 -> 0.98 | 0.816 -> 0.926 |
+
+Triplet recall stops at 0.69 because of T6 (triplet 16ths): on the hold-out set 804 of the model's 810 missed triplet beats and
+802 of its 828 false 32nd beats are T6 beats written as 32nds (the writer has no sextuplet); plain triplet beats (T3) are
+found at 0.997.
+
+**rec-grid** (CI; core references; the very same performance and skeleton on both sides, S4 = `rec/hands.js` on both;
+v2-s3legacy -> v2):
+
+| row | usable | rec.tuplet P | R | false/100 beats | onset_pos | rec.onset_f1 | onset F1 50 ms | classes 5 / 6 / 7 per 100 bars | stability | note values | beat placement | hands |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| cover, oracle | 0.142 -> **0.326** | 0.484 -> **0.982** | 0.260 -> 0.401 | 3.92 -> 0.28 | 0.797 -> **0.844** | 0.792 -> 0.839 | 0.932 -> 0.978 | 10.3/3.7/1.2 -> 5.6/0/0 | 0.232 -> 0.168 | 0.184 -> 0.440 | 0.645 -> 0.809 | 0.979 -> 0.979 |
+| human-real, oracle | 0.262 -> 0.291 | 0.870 -> 0.993 | 0.150 -> 0.206 | 0.83 -> 0.23 | 0.819 -> 0.825 | 0.814 -> 0.819 | 0.983 -> 0.984 | 6.8/0.5/0.3 -> 6.1/0/0 | 0.152 -> 0.125 | 0.348 -> 0.411 | 0.773 -> 0.794 | 0.986 -> 0.986 |
+| cover+of, oracle | 0.036 -> 0.092 | 0.486 -> 0.931 | 0.190 -> 0.617 | 3.82 -> 1.33 | 0.789 -> 0.834 | 0.743 -> 0.784 | 0.880 -> 0.921 | 11.1/3.4/1.3 -> 5.0/0/0 | 0.219 -> 0.162 | 0.106 -> 0.270 | 0.624 -> 0.780 | 0.972 -> 0.986 |
+| swing, oracle | 0.043 -> **0.220** | 0.398 -> 0.942 | 0.168 -> 0.294 | 6.92 -> 1.10 | 0.708 -> **0.781** | 0.703 -> 0.776 | 0.876 -> 0.942 | 14.3/6.4/2.3 -> 6.4/0/0 | 0.269 -> 0.195 | 0.078 -> 0.305 | 0.404 -> 0.731 | 0.986 -> 0.979 |
+| cover, none (production) | 0.050 -> 0.114 | 0.417 -> 0.914 | 0.215 -> 0.253 | 5.78 -> 2.45 | 0.552 -> 0.582 | 0.548 -> 0.578 | 0.890 -> 0.919 | 8.7/3.6/1.8 -> 4.1/0/0 | 0.394 -> 0.306 | 0.128 -> 0.291 | 0.426 -> 0.525 | 0.986 -> 0.986 |
+
+**rec-core** (v2 with S4 and the legacy quantisers, `afdb23b` -> v2 with S4 and `rec/grid.js`; legacy and app rows identical
+case by case):
+
+| beats | usable | rec.usable | rec.tuplet P | R | false/100 beats | onset_pos | rec.onset_f1 | classes 5 / 6 / 7 | stability | note values | beat placement | hands | pitch |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| none (564) | 0.112 -> **0.156** | 0.028 -> 0.048 | 0.519 -> **0.905** | 0.200 -> 0.290 | 4.60 -> 1.81 | 0.565 -> 0.589 | 0.554 -> 0.577 | 7.2/2.4/1.3 -> **4.0/0/0** | 0.346 -> 0.268 | 0.268 -> 0.418 | 0.457 -> 0.543 | 0.980 -> 0.982 | 0.796 -> 0.800 |
+| oracle-noisy (282) | 0.103 -> **0.262** | 0.000 -> 0.057 | 0.448 -> **0.968** | 0.224 -> 0.376 | 4.66 -> 0.91 | 0.775 -> **0.835** | 0.761 -> 0.820 | 10.2/3.8/1.6 -> **3.7/0/0** | 0.232 -> 0.173 | 0.326 -> 0.585 | 0.560 -> 0.791 | 0.975 -> 0.979 | 0.936 -> 0.947 |
+
+Other v2 gates on rec-core (none / oracle-noisy): structure 0.592 -> 0.606 / 0.862 -> 0.894, rest precision 0.190 -> 0.202 /
+0.191 -> 0.211, voice F1 0.798 -> 0.815 / 0.791 -> 0.812, MV2H 0.763 -> 0.785 / 0.824 -> 0.865; metre, tempo and key unchanged
+(S3 does not touch the skeleton); accidentals 0.995 -> 0.991 / 0.979 -> 0.989.
+
+**rec-robust** (cover-alt; v2 + S4 -> v2 + S4 + S3): none: usable 0.028 -> 0.113, tuplet P 0.406 -> 0.920, R 0.183 -> 0.346,
+onset_pos 0.569 -> 0.596, stability 0.391 -> 0.306, note values 0.071 -> 0.255, classes 5/6/7 11.8/4.3/3.2 -> 7.3/2.5/9.8;
+oracle-noisy: usable 0.078 -> 0.241, tuplet P 0.475 -> 0.981, onset_pos 0.786 -> 0.842, classes 14.7/5.7/2.3 -> 7.5/0/0;
+hands 0.986 / 0.972 unchanged. The class 7 rise on none is one case (czerny849/002, which v2 writes in 2/2: the triplets are
+now found, and the writer, exact bars and `rec-tuplet.js` both x/4-only, brackets them note by note).
+
+**rec-smoke** (v2): usable 0.271 -> 0.312, rec.usable 0.104 -> 0.146, tuplet P 0.708 -> 0.979, onset_pos 0.701 -> 0.723,
+classes 4.3/1.9/1.3 -> 2.5/0/0, stability 0.216 -> 0.185.
+
+**The real-AMT tier** (replay-of: the browser's Onsets & Frames on rendered audio, 20 fixtures):
+
+| | usable | onset F1 (50 ms) | onset_pos | IOI | values (duration acc.) | note values gate | structure | hands | false tuplets / 100 notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| library default | 0 | 0.832 | 0.141 | 0.541 | 0.487 | 0.10 | 0.45 | 0.65 | 4.49 |
+| app options (production) | 0 | **0.751** | 0.173 | 0.641 | 0.511 | 0.05 | 0.45 | 0.65 | 11.38 |
+| v2 (G10a-1: legacy S3, legacy S4) | 0.05 | 0.890 | 0.733 | 0.933 | 0.804 | 0.55 | 0.70 | 0.65 | 2.24 |
+| v2 + S4 (section 19) | 0.25 | 0.890 | 0.733 | 0.933 | 0.870 | 0.80 | 0.70 | 0.95 | 2.16 |
+| **v2 + S4 + S3 (`rec/grid.js`)** | **0.30** | **0.901** | **0.748** | **0.976** | **0.905** | **0.95** | **0.75** | 0.95 | **0** |
+
+G10a-0's correction 2 (the app's exact-bars snap costs onset accuracy on real transcriptions: 0.832 -> 0.751) does not apply to
+v2's grid stage: it places onsets once, per beat, and the writer's only remaining move is the genuine-run rule.
+
+**Hold-out slice** (the 52 hold-out references, never in the tables; seeds 11 and 12; a scratch suite of rec-full's rows plus
+cover with oracle beats, v2 + S4 -> v2 + S4 + S3, paired rows):
+
+| beats | n | usable | rec.usable | rec.tuplet P | R | false/100 beats | onset_pos | onset F1 50 ms | classes 5 / 6 / 7 | stability | note values | beat placement | hands |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| none | 520 | 0.112 -> **0.154** | 0.027 -> 0.044 | 0.489 -> **0.877** | 0.230 -> **0.644** | 5.52 -> 2.63 | 0.564 -> 0.601 | 0.890 -> 0.918 | 2.4/0.9/0.5 -> 0.8/0/0 | 0.343 -> 0.274 | 0.221 -> 0.365 | 0.467 -> 0.552 | 0.942 -> 0.942 |
+| oracle | 104 | 0.144 -> **0.212** | 0 -> 0.048 | 0.505 -> **0.971** | 0.281 -> **0.649** | 4.24 -> 0.93 | 0.795 -> 0.832 | 0.945 -> 0.985 | 4.6/1.6/0.9 -> 1.1/0/0 | 0.252 -> 0.181 | 0.164 -> 0.308 | 0.702 -> 0.817 | 0.971 -> 0.962 |
+
+The nightly rec-full (11,196 cases, every reference, hold-out included) moves the same way and is rebaselined (its legacy
+and app aggregates identical): usable 0.052 -> 0.073, rec.usable 0.009 -> 0.015, beat placement 0.243 -> 0.273, note values
+0.127 -> 0.177, rec.tuplet P 0.404 -> 0.533, R 0.214 -> 0.258, onset F1 (50 ms) 0.836 -> 0.845, stability 0.585 -> 0.564 (all
+options pooled, so legacy and app dilute every number).
+
+### 20.6 Verification
+
+- **Legacy byte-identical.** The legacy and app rows of rec-smoke, rec-core and rec-robust equal their baselines case by case
+  (0 of 2,352 differing); replay-of and replay-of-app PASS unchanged; the 975 `arrangeSingleNote` requests of the app's one-note glue (325 catalogue pieces x three levels) give the same graphs and refusals as a clean `git archive` of `origin/main` (933 arrangements and 42 refusals on both sides, 0 of 975 differing; measured against `e2c066b` before S4 merged: neither stage touches the arrangers or the one-note glue); `run.py ab --a git:origin/main` + `ab_identical.py` on core, core-app, smoke-app and replay-of-app: every case the same (status, metrics, semantic projection). Without `opts.recording` the code path is
+  the old one (`gridV2` null; `rec/grid.js` is not even required: a test asserts it).
+- **Mutation coverage.** `mutation-check --rec`: rec-mutation (legacy, app) PASS unchanged; rec-mutation-v2 PASS with all
+  fifteen v2 decisions (G10a-1's six, S4's four, S3's five) and the no-op byte-identical. The grid's: no triplets
+  (rec.tuplet.recall 0.167 -> 0, notation.tuplets.f1 0.164 -> 0), a triplet bias (precision 0.964 -> 0.780, false triplet
+  beats 1.10 -> 4.75 per 100), no chord groups (tuplet precision 0.964 -> 0.952, false rests, identity on micro pieces), no
+  chain across beats (tuplet precision 0.964 -> 0.881), and G10a-1's on-beat slip, now guarded where v2 decides it
+  (`rec/grid.js`'s early window: pitch integrity 0.988 -> 0.018). (Main's own nightly `mutation-check` failed in 14 s and its
+  nightly-rec runner was shut down on 2026-10-02, before this work; not touched here.)
+- **Determinism.** Three runs on Windows (Python 3.13.5, Node 24.17) and one on Linux (`node:24-bookworm`, offline, the
+  README's recipe) give byte-identical `results.json`: rec-grid `a602d5330bde73be`, rec-smoke `8a753c64be5f5027`, replay-of-v2
+  `5615c28ea3180b9a`; `train_grid.js --check` "same" on both (the data regenerated by the humanizer's LCG, the fit by counting).
+- Unit tests: `tests/rec/grid.test.js` (straight 16ths stay straight, a triplet beat among straight ones, swing written
+  straight, a chord over two frames, the fallback without weights, the legacy note shape, the budget) and
+  `tests/rec/grid-v2.test.js` (the v2 wiring, `grid: 'legacy'`, legacy never loads the module, a compound skeleton's eighths,
+  the run rule against class 5).
+
+### 20.7 Against the a2 targets, limits, and what the next phases need
+
+| a2 target (section 10, S3 part; relative per section 17) | measured | verdict |
+| --- | --- | --- |
+| `rec.tuplet` P >= 0.9 | rec-core 0.905 (none) / 0.968 (oracle-noisy); rec-grid oracle 0.982 | **met** |
+| `rec.tuplet` R >= 0.9 | 0.290 / 0.376 (rec-core); stage alone 0.689 | **not met**: T6 (no writer), the skeleton (with beats none the windows are wrong: R 0.25 on cover/none), and the few triplet pieces of the core (10) |
+| onset_pos up | up on every suite and row (rec-core +0.024 / +0.060; replay-of-v2 +0.015) | met |
+| micro 32nd / tuplet pieces not worse | rec-grid: M04 triplets recall 0.56 -> 1.0 (cover, oracle), 0 -> 1.0 (cover+of); M05 / M06 32nds onset_pos up in 7 of 8 rows, their false triplet beats gone, no class 5; a fast run is not merged onto one tick (point 4) | met; the micro drops of the v2 gate rows are point 3 |
+| classes 5-7 down | 0 for classes 6 and 7 on rec-core; class 5 roughly halved | met (rec-robust class 7: the 2/2 writer) |
+
+**Limits and contradictions with the design (stop condition 3 reported, not forced).**
+1. **Tuplet recall >= 0.9 is not reachable by S3 alone.** Triplet 16ths need a sextuplet writer (S7: `exactGrid`,
+   `exactPieces`, `rec-tuplet.js` write thirds only), and 2/2 and compound bars have no exact-bar grid at all; plain triplet
+   beats are found at 0.997 when the beats are right. The recall gate should be on writable kinds, or wait for G10a-3's writer.
+2. **Hands.** Before S4 merged, S3 lowered legacy `assignHands`' accuracy slightly (rec-core 0.824 -> 0.819, Hanon 0.770 ->
+   0.758): the legacy split scores a group by pitch span only (an octave pair in one hand costs nothing) and had found Hanon's
+   split from groups holding two merged written onsets, which S3 now separates (forcing every legacy cluster back onto one tick
+   restores it exactly, 0.863). With S4 (`rec/hands.js`) the effect is gone: hands 0.980 -> 0.982 / 0.975 -> 0.979 on rec-core.
+3. **Micro drops the gate flagged** (rebaselined with this reason): M10-dotted when v2's skeleton reads it as 6/8 (beats none:
+   the `c8` grid of a wrong compound metre loses its dotted 16ths; with the right skeleton 2 of 32 dotted beats still read as
+   swing); M23-repeated-notes cover+of (an AMT-merged repeated 16th leaves three onsets on thirds: read as a triplet beat);
+   M04 rows where the skeleton is wrong (onset accuracy < 0.1 before and after); M06-32nds cover / none (onset_pos 0.667 ->
+   0.593, hand accuracy 0.889 -> 0.815: 32nds the transcription put in one frame, point 4); 6 critical.accidentals flips on
+   rec-core (net 0.995 -> 0.991 on none, 0.979 -> 0.989 on oracle-noisy: notes on other ticks change a bar's accidental state).
+4. **Fast runs and one tick** (the S4 agent's report: v2 writes a fast 32nd run's notes on one tick, micro M05 / M06). Measured
+   as written onsets merged onto another's tick in those 8 performances: legacy quantiser 6-14, `rec/grid.js` before the fix
+   2-18 (32nds a frame apart kept in one `clusterNotes` attack when its run detector missed them), now 1-8: an attack whose
+   frames continue each other by step is a run, not a chord, and such onsets are never joined. The rest are notes the
+   transcription put in the very same frame (two written 32nds heard in one 32-ms frame), which no timing can separate.
+5. The swing family is 1 of 5 training families (prior 4.5 % of beats): real swing frequency is unknown; the teacher tier
+   (private) should show how often `swing8` fires on the teacher's piece (its 14 % of attacks off every grid, E5).
+
+**For S4 (`rec/hands.js`).** S3 hands over `q` (legacy shape) with `tick` per note: notes of one written onset share a tick
+(a chord heard a frame apart is joined), two written onsets that `clusterNotes` merged are separated, a run is never one tick
+unless the transcription heard its notes in one frame. `result.gridPlan.plan[k].conf` is per beat if S4 wants to weigh
+uncertain beats. S3 runs before S4 (`legacyQ`), the writer's run rule (`writable`) after it.
+
+**For G10a-3 (S5-S10 and `rec/index.js`).** `rec/grid.js` is pure and self-contained; `rec/index.js` can call
+`PPPRecGrid.plan(skeleton.beats, notes, {compound: skeleton.metre.compound})` and get the GridPlan and onset ticks; the
+writer must learn sextuplets, x/2 and compound exact bars for the remaining tuplet recall and the 2/2 brackets;
+`writable()` is a writer constraint that can go when the writer writes 32nd rests or S6 decides silences.
