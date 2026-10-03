@@ -57,7 +57,7 @@ def generate(suite: Dict[str, Any], refs: Optional[List[corpus.RefEntry]] = None
         c.tags = corpus.derived_tags(entry, canon) + [f"profile:{c.profile}", f"beats:{c.beats}", f"seed:{c.seed}"] + \
             ([f"opts:{c.opt_name}"] if c.opt_name else []) + (["holdout"] if c.holdout else [])
         p = perform.perform(canon, c.ref_id, c.profile, c.beats, c.seed, expect=entry.expect,
-                            case_opts=stage_case_opts(stage_opts, c.opts), opt_name=c.opt_name)
+                            case_opts=stage_case_opts(stage_opts, c.opts), opt_name=c.perform_as or c.opt_name)
         perfs[c.id] = p
         rows.append({"id": c.id, "reference_sha256": file_sha[entry.path],
                      "input_sha256": suite_mod.input_sha256(p.input, p.opts)})
