@@ -37,6 +37,12 @@ GRID_OPTS = {"v2-s3legacy": {"closeGaps": True, "exactBars": True, "recording": 
 # G10a-2 stage S4 in isolation: the app's path (the legacy time skeleton and grid) with only the hands of rec/hands.js
 # (opts.hands 'v2'). Its own suite, rec-hands, a measurement suite (not in the CI gate: v2's rows carry S4 there)
 HANDS_OPTS = {"app-hands": {"closeGaps": True, "exactBars": True, "hands": "v2"}}
+# G10a-3 stage S9 in isolation (rec/pedal.js, docs/GOALS/G10 section 23): v2 writing every heard pedal span (`v2-pedallegacy`, opts.pedal
+# 'legacy': the arm before the policy) and the app's path with only S9 swapped (`app-pedal`, opts.pedal 'v2'). Its own suite, rec-pedal, a
+# measurement suite (nightly, not in the CI gate); each row plays the performance of the option set it is compared with (perform_as)
+PEDAL_OPTS = {"v2-pedallegacy": {"closeGaps": True, "exactBars": True, "recording": "v2", "pedal": "legacy"},
+              "app-pedal": {"closeGaps": True, "exactBars": True, "pedal": "v2"}}
+PEDAL_AS = {"v2-pedallegacy": "v2", "app-pedal": "app"}
 
 # (profile, beats): the rows of each tier
 SMOKE = [("cover", "none"), ("cover-pedal", "none"), ("human-real", "none")]
@@ -51,6 +57,10 @@ FULL = [("cover", "none"), ("cover-pedal", "none"), ("human-real", "none"), ("sw
 # the browser model's error overlay, and the production path (beats none). The oracle-noisy rows are in rec-core: their beat
 # noise is drawn per options name, so they would not pair here
 GRID = [("cover", "oracle"), ("human-real", "oracle"), ("cover+of", "oracle"), ("swing", "oracle"), ("cover", "none")]
+
+# rec-pedal (G10a-3): the families that have a pedal (the performer's own, and the helper's invented one); rec-mutation-pedal: the same on the
+# rec-mutation references (a compound piece among them: the tick unit of the marks), v2 options only
+PEDAL_ROWS = [("cover-pedal", "none"), ("cover-pedal+helper", "oracle-noisy")]
 
 REC_GATE = {
     "rec.usable": {"dir": "up", "tol": -0.005},
@@ -137,6 +147,18 @@ def build() -> dict:
                                 description="Gate sensitivity of the v2 time skeleton (G10a-1, mutation-check --rec): the rec-mutation "
                                             "references and rows with the v2 options only",
                                 gate=gate(suite_mod.GATE_CORE)),
+        "rec-pedal": dict(base, name="rec-pedal", references=core["references"],
+                          matrix=rows(PEDAL_ROWS, [1], opts_table=PEDAL_OPTS, perform_as=PEDAL_AS),
+                          description="G10a-3 stage S9 in isolation (a measurement suite, nightly, not in the CI gate): rec-core's pedal families "
+                                      "(cover-pedal, cover-pedal+helper) with v2 and every heard pedal span written (v2-pedallegacy, opts.pedal "
+                                      "'legacy') and with the app's options and only the pedal policy of rec/pedal.js (app-pedal, opts.pedal 'v2'); "
+                                      "the very performances of the v2 / app rows",
+                          gate=gate(suite_mod.GATE_CORE)),
+        "rec-mutation-pedal": dict(base, name="rec-mutation-pedal", references=mutation_refs,
+                                   matrix=rows(PEDAL_ROWS, [1], ("v2",)),
+                                   description="Gate sensitivity of the pedal policy S9 (G10a-3, mutation-check --rec): the rec-mutation references x "
+                                               "cover-pedal (beats none) and cover-pedal+helper (oracle-noisy), v2 options only",
+                                   gate=gate(suite_mod.GATE_CORE)),
         "rec-hands": dict(base, name="rec-hands", references=core["references"],
                           matrix=rows(CORE + ROBUST, [1], opts_table=HANDS_OPTS, perform_as="app"),
                           description="G10a-2 stage S4 in isolation (a measurement suite, not in the CI gate): rec-core's and "

@@ -248,7 +248,7 @@ MUTATIONS: List[Dict[str, Any]] = [
      "replacements": [(SG_ACCIDENTAL, "            /* mutation: no accidentals */")],
      "expect": "REGRESSION", "metrics": ["notation.accidentals.required_recall"]},
     {"id": "ADV-NO-PEDAL",
-     "find": "    (extra.pedals || []).forEach(p => {",
+     "find": "    (pedalV2 ? pedalV2.spans : (extra.pedals || [])).forEach(p => {",
      "replace": "    ([]).forEach(p => {",
      "expect": "REGRESSION", "metrics": ["notation.pedal.f1"]},
     {"id": "ADV-GLOBAL-TEMPO",
@@ -578,6 +578,36 @@ REC_V2_MUTATIONS: List[Dict[str, Any]] = [
      "find": "    emit(L.part + g.shape * (CAP + 1) * (CAP + 1) + Math.min(nL, CAP) * (CAP + 1) + Math.min(nR, CAP));",
      "replace": "    /* mutation: no partition prior */",
      "expect": "REGRESSION", "metrics": ["notation.hand.accuracy"]},
+    {"id": "MUT-NOOP",
+     "find": "  const api = {",
+     "replace": "  /* noop mutation */\n  const api = {",
+     "expect": "PASS", "metrics": []},
+]
+
+# G10a-3: S9, the pedal policy of rec/pedal.js, on its own suite (rec-mutation-pedal: v2 rows of the two pedal families over the rec-mutation
+# references, a compound piece among them). One planted defect per decision the benchmark can see: the policy used at all, the agreement of
+# the notes, the mark placed at the releases, the tick unit of the marks (a compound skeleton's beat is 36 ticks). The span floor
+# (MIN_SPAN) and the merging of overlapping spans are decisions the synthetic families do not exercise (their spans are long and disjoint;
+# the short false spans are the real helper's, tests/bench/suites/replay-public-v2.json): tests/rec/pedal.test.js and pedal-v2.test.js
+REC_PEDAL_MUTATIONS: List[Dict[str, Any]] = [
+    {"id": "REC-V2-PEDAL-LEGACY", "v2": True,         # v2 writes every heard pedal span again (S9 not used)
+     "find": "    const mode = opts.pedal || (extra.recording === 'v2' ? 'v2' : 'legacy');",
+     "replace": "    const mode = opts.pedal || 'legacy';",
+     "expect": "REGRESSION", "metrics": ["notation.pedal.false_per_min", "critical.pedal", "notation.pedal.f1"]},
+    {"id": "REC-V2-PEDAL-NO-AGREEMENT", "v2": True,    # a long span is written whether or not the notes' releases agree with its end
+     "file": "rec/pedal.js",
+     "find": "      if (ends.length < minAt || share < minShare) { drop(s, 'weak'); return; }",
+     "replace": "      /* mutation: no agreement */",
+     "expect": "REGRESSION", "metrics": ["notation.pedal.false_per_min", "micro:notation.pedal.false_per_min"]},
+    {"id": "REC-V2-PEDAL-NO-SNAP", "v2": True,         # the mark stays where the helper put the pedal-up, not where the releases it held are
+     "file": "rec/pedal.js",
+     "find": "      let off = ends[Math.floor((ends.length - 1) / 2)];",
+     "replace": "      let off = s.off;",
+     "expect": "REGRESSION", "metrics": ["notation.pedal.f1", "critical.pedal", "micro:notation.pedal.f1"]},
+    {"id": "REC-V2-PEDAL-TICK-UNIT", "v2": True,       # the marks' tick is a beat times 24 again, in a compound skeleton too (a third early)
+     "find": "      const a = Math.round(pp * pedalTicks) - origin;",
+     "replace": "      const a = Math.round(pp * Q) - origin;",
+     "expect": "REGRESSION", "metrics": ["notation.pedal.f1", "critical.pedal", "micro:notation.pedal.f1"]},
     {"id": "MUT-NOOP",
      "find": "  const api = {",
      "replace": "  /* noop mutation */\n  const api = {",

@@ -1,0 +1,2828 @@
+{
+ "cases": [
+  {
+   "id": "catalog/fur-elise|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "6744e0c697e88328bcc634291ad71c1701d82c3bda4bdd7c74880d03879dc336",
+   "reference_sha256": "f769a8d4827193185f8bf9f8daa1b17c96a496b48bc4c3dbaa8030ba353e2659"
+  },
+  {
+   "id": "catalog/fur-elise|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "d15785b22296c755be8bf8ec278e3675cb1055b0b93d01faaaab0b4680205e72",
+   "reference_sha256": "f769a8d4827193185f8bf9f8daa1b17c96a496b48bc4c3dbaa8030ba353e2659"
+  },
+  {
+   "id": "catalog/fur-elise|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "efef419b83ccf8779a8772f1b4d9d32e5522eda29a1e24d6ad61419a970b71d9",
+   "reference_sha256": "f769a8d4827193185f8bf9f8daa1b17c96a496b48bc4c3dbaa8030ba353e2659"
+  },
+  {
+   "id": "catalog/fur-elise|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "da14049e5d07fbdb06b90a25175eaf3bdc828fcad9f5e99f115ffb8cd749e2c7",
+   "reference_sha256": "f769a8d4827193185f8bf9f8daa1b17c96a496b48bc4c3dbaa8030ba353e2659"
+  },
+  {
+   "id": "catalog/gymnopedie-1|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "1e427e8a13c71d0467efd9f991ea225a03bb70c3a4c99db00d14a42bf3bfe2df",
+   "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
+  },
+  {
+   "id": "catalog/gymnopedie-1|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "d9ba38e9bd65157b19eeac053999c613bc781f57d17654a101c1379dfaac797b",
+   "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
+  },
+  {
+   "id": "catalog/gymnopedie-1|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "01ea20f7bc6486516cd1c7060d4a21d02784b14ae0847a7dddcf5f4a10841a16",
+   "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
+  },
+  {
+   "id": "catalog/gymnopedie-1|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "447c5e1572bb76f3bc891edd5b26537ac7200922012a3034bc79318c2a39dab7",
+   "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
+  },
+  {
+   "id": "catalog/happy-birthday|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "4972210e41624ee7a403c02f1a2ef6e4c06485357f6b841b5292978bed49b882",
+   "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
+  },
+  {
+   "id": "catalog/happy-birthday|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "5e98d418866b0f10c70eb0f619cf94c0dd579ea2687b6bd1a6f6011d7539202e",
+   "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
+  },
+  {
+   "id": "catalog/happy-birthday|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "588a3a6f25fe819843d64d7b2c7e0438d072df40f0ce51aac557838e0188e0c7",
+   "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
+  },
+  {
+   "id": "catalog/happy-birthday|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "34e940afdfa5be99e0a168ca617727b3b9fa10d23a77e739985d67c6ca82966f",
+   "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
+  },
+  {
+   "id": "hymns/all-hail-the-power|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "8a42dbea809a1ca5ce7a4a50f4dfd36c33b32c0d3f4381d14e8ebd1578d0dbf0",
+   "reference_sha256": "5abd674a00eca0cf867d84317f9f5e931512363437bb63dbf37d1abef3760ea8"
+  },
+  {
+   "id": "hymns/all-hail-the-power|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "1c8f799dc5b7500b18c30d9e29436e8fa63d771d493d057fb61d6241b106f4c6",
+   "reference_sha256": "5abd674a00eca0cf867d84317f9f5e931512363437bb63dbf37d1abef3760ea8"
+  },
+  {
+   "id": "hymns/all-hail-the-power|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "431b378e04e662c46c68c5622673dff539afe6c428a926c69fb17aeb5accd881",
+   "reference_sha256": "5abd674a00eca0cf867d84317f9f5e931512363437bb63dbf37d1abef3760ea8"
+  },
+  {
+   "id": "hymns/all-hail-the-power|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "847a3934a0810aaaae356148fdfb4bce11ea3d05a30d3fe745f7e12e6e39e349",
+   "reference_sha256": "5abd674a00eca0cf867d84317f9f5e931512363437bb63dbf37d1abef3760ea8"
+  },
+  {
+   "id": "hymns/angels-we-have-heard|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "a1adb8afb1c27f3def0b6b09451397c6b01270d467d4a54761fd5c95addb81a6",
+   "reference_sha256": "50de0c6a744e8020ee85b7c9279e4bf87b57a5216a47921bfc4bba37a5af8212"
+  },
+  {
+   "id": "hymns/angels-we-have-heard|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "d8429fa0bf4bac76c094f76702374ef207a396174affa2e03504757867b11bb7",
+   "reference_sha256": "50de0c6a744e8020ee85b7c9279e4bf87b57a5216a47921bfc4bba37a5af8212"
+  },
+  {
+   "id": "hymns/angels-we-have-heard|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "9129e6eb74ab9ae1f4d8c8449e438d769c488e73d950b0332da53033c2bad53a",
+   "reference_sha256": "50de0c6a744e8020ee85b7c9279e4bf87b57a5216a47921bfc4bba37a5af8212"
+  },
+  {
+   "id": "hymns/angels-we-have-heard|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "513c2362e4403e01a59be9f66ae172fb16d0ed2fab6085d2d551fd21e0c8e7b8",
+   "reference_sha256": "50de0c6a744e8020ee85b7c9279e4bf87b57a5216a47921bfc4bba37a5af8212"
+  },
+  {
+   "id": "hymns/beneath-the-cross|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "cfbf7a39ec6ed7a48c9f4983abb8dfe3e5202ea78a7795807313c3f9bace125b",
+   "reference_sha256": "3ea56e55e7016a6ef41d06c1a9d6d1c6d487f9b176a08240d19481f84a589d22"
+  },
+  {
+   "id": "hymns/beneath-the-cross|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "94e7a8fbe5749412700f26b9df6c8049a88fb7eefdb946a046502736c319d6e0",
+   "reference_sha256": "3ea56e55e7016a6ef41d06c1a9d6d1c6d487f9b176a08240d19481f84a589d22"
+  },
+  {
+   "id": "hymns/beneath-the-cross|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "36cf9aa21ed884fc3de192d8b006cf9de54ec90307739526b9370bfba2ce9933",
+   "reference_sha256": "3ea56e55e7016a6ef41d06c1a9d6d1c6d487f9b176a08240d19481f84a589d22"
+  },
+  {
+   "id": "hymns/beneath-the-cross|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "d4518c496ab08d53c199d018e3dd1ffa39db9ddbe719153b1d0cbd735c5e8267",
+   "reference_sha256": "3ea56e55e7016a6ef41d06c1a9d6d1c6d487f9b176a08240d19481f84a589d22"
+  },
+  {
+   "id": "hymns/blessed-assurance|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "e62ae8bb200ddcc13135faca0e04ab90b0e03a25855b4cbc6af04ac1e429eb7a",
+   "reference_sha256": "fefacac57d9d359038c679d2683839b82e9150664d8c3e95e4424e25d1204814"
+  },
+  {
+   "id": "hymns/blessed-assurance|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "e8a5cf966e642cdc06904ed69f62feee6ed533720ddc18542768bdca6aad3c8e",
+   "reference_sha256": "fefacac57d9d359038c679d2683839b82e9150664d8c3e95e4424e25d1204814"
+  },
+  {
+   "id": "hymns/blessed-assurance|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "74bb378642dae529e3ded54493658663908c3c376d5055dc1151dbe1dfb03c22",
+   "reference_sha256": "fefacac57d9d359038c679d2683839b82e9150664d8c3e95e4424e25d1204814"
+  },
+  {
+   "id": "hymns/blessed-assurance|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "c4dd3e7bbb1085cb1afc4dce27f8b20f2d2a21374018856f99e310f42107bd4c",
+   "reference_sha256": "fefacac57d9d359038c679d2683839b82e9150664d8c3e95e4424e25d1204814"
+  },
+  {
+   "id": "hymns/come-holy-spirit|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "0d54cc5491313d15458683fd7675fd4035bb87c8ae91539f6f4ca03925ae89a7",
+   "reference_sha256": "436dc2b0366e47f591cfa9fb53d219997c3624cad6db413f12232120c5fcad1f"
+  },
+  {
+   "id": "hymns/come-holy-spirit|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "c20ffd7fa7bb397ce66ea78a2547ca38e6aabf8566b4bcc9569632d1b4680b8c",
+   "reference_sha256": "436dc2b0366e47f591cfa9fb53d219997c3624cad6db413f12232120c5fcad1f"
+  },
+  {
+   "id": "hymns/come-holy-spirit|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "e5230f7946d78849991c21703c172073eb1e609c843b8b3550702f315c048f06",
+   "reference_sha256": "436dc2b0366e47f591cfa9fb53d219997c3624cad6db413f12232120c5fcad1f"
+  },
+  {
+   "id": "hymns/come-holy-spirit|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "3469ad478c94553dc5e377d8b64eb2b821cc716619122fdbf5cdfb07ac058943",
+   "reference_sha256": "436dc2b0366e47f591cfa9fb53d219997c3624cad6db413f12232120c5fcad1f"
+  },
+  {
+   "id": "hymns/come-thou-fount|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "d92a0caf5ec3df0532a824ede89c5f4e173de6ed2ddc505c6fb6b402f284e3d7",
+   "reference_sha256": "dba85c5feda981d5d505f83bbc295b947378939e0abbb2e236b0f6b7469754eb"
+  },
+  {
+   "id": "hymns/come-thou-fount|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "852dce7cd94da917c1a05b069b3fb5404fb203c61e6fc7439f34585a004a9e64",
+   "reference_sha256": "dba85c5feda981d5d505f83bbc295b947378939e0abbb2e236b0f6b7469754eb"
+  },
+  {
+   "id": "hymns/come-thou-fount|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "7b906fec4d4e60cd399a0b063cf3f37d87745e96a0f128be828e8e5726759bb6",
+   "reference_sha256": "dba85c5feda981d5d505f83bbc295b947378939e0abbb2e236b0f6b7469754eb"
+  },
+  {
+   "id": "hymns/come-thou-fount|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "b8273296e22b385952a37dd92333fb5af9378e3300688a739f6f149f814cc300",
+   "reference_sha256": "dba85c5feda981d5d505f83bbc295b947378939e0abbb2e236b0f6b7469754eb"
+  },
+  {
+   "id": "hymns/come-thou-long|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "a3aec9b29a6eb53ceaa0131145ce2ecf9bbf05b281b0320cef3df980dad14410",
+   "reference_sha256": "293cafb6be163edcbdd3433b65baf1376be0c8bffd893a7a7b436d8213a497c9"
+  },
+  {
+   "id": "hymns/come-thou-long|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "519b270f124b76bf30930d608b896027e3a394ae51ced220a4ddc6a8c2ebb3b1",
+   "reference_sha256": "293cafb6be163edcbdd3433b65baf1376be0c8bffd893a7a7b436d8213a497c9"
+  },
+  {
+   "id": "hymns/come-thou-long|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "5195fbd0d33979f97438eaa5ce734eac8eb692b96df31e0de71a68916dd7224d",
+   "reference_sha256": "293cafb6be163edcbdd3433b65baf1376be0c8bffd893a7a7b436d8213a497c9"
+  },
+  {
+   "id": "hymns/come-thou-long|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "76ee7a7dcd9ebda1b81afc67e91b1d2d1bc30a0ae61ede906dc2aba92a79a72b",
+   "reference_sha256": "293cafb6be163edcbdd3433b65baf1376be0c8bffd893a7a7b436d8213a497c9"
+  },
+  {
+   "id": "hymns/go-to-dark-gethsemane|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "8ca24ae9189af48c872fde1a814e8c63fc21567edf2c088cf0c38eae4ff3a1b7",
+   "reference_sha256": "77a678a4488c5f9878ae3e0a8685a371f3be63b28271bf03dd80b1c0f825d06a"
+  },
+  {
+   "id": "hymns/go-to-dark-gethsemane|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "ee36ba91b773a9d3c62cc38747c237d59b112b31658afe67e71f29577649e07c",
+   "reference_sha256": "77a678a4488c5f9878ae3e0a8685a371f3be63b28271bf03dd80b1c0f825d06a"
+  },
+  {
+   "id": "hymns/go-to-dark-gethsemane|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "66cdf008e56ba727c6c8d30096457f5974d52d51268282d9cdf48c1d53a8e42b",
+   "reference_sha256": "77a678a4488c5f9878ae3e0a8685a371f3be63b28271bf03dd80b1c0f825d06a"
+  },
+  {
+   "id": "hymns/go-to-dark-gethsemane|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "c6b0f789f77354f596fc3ec115d9790a750de0f385354e8a08630eef7608673b",
+   "reference_sha256": "77a678a4488c5f9878ae3e0a8685a371f3be63b28271bf03dd80b1c0f825d06a"
+  },
+  {
+   "id": "hymns/god-rest-ye-merry|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "2a7fd4bbec5d76c809ddc2a1a74b68827bf7317115d418ea45981a1758144642",
+   "reference_sha256": "55456218b523d3dbf8c6a0491920e3e750e3d1c5b06b5f4e1a7656ac865cbeea"
+  },
+  {
+   "id": "hymns/god-rest-ye-merry|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "1d5ae9b2850b69eabf77223a0ab491cd656ee17c1ecb43c1971c187b2174dad7",
+   "reference_sha256": "55456218b523d3dbf8c6a0491920e3e750e3d1c5b06b5f4e1a7656ac865cbeea"
+  },
+  {
+   "id": "hymns/god-rest-ye-merry|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "45bf49cd66c29897121221c910c60a3082a959465c1576f1de869df788a7511c",
+   "reference_sha256": "55456218b523d3dbf8c6a0491920e3e750e3d1c5b06b5f4e1a7656ac865cbeea"
+  },
+  {
+   "id": "hymns/god-rest-ye-merry|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "62a28c971c69be32c67ec679687188e6b78a008ee2fb4818ee87755c880de3cc",
+   "reference_sha256": "55456218b523d3dbf8c6a0491920e3e750e3d1c5b06b5f4e1a7656ac865cbeea"
+  },
+  {
+   "id": "hymns/god-will-take-care|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "4a2ac1d943b518b39da5a5dd6573ba3527cc31a4850aa22fd3b6f1b298e768e5",
+   "reference_sha256": "cff1016e6d83b88665582d52617471f97d9636e01510518d4e73546d990f0c28"
+  },
+  {
+   "id": "hymns/god-will-take-care|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "aa1385846ff67dfe0b3d669d3f72c6b18a380cf51e97dc23b5c6b808ed484a2c",
+   "reference_sha256": "cff1016e6d83b88665582d52617471f97d9636e01510518d4e73546d990f0c28"
+  },
+  {
+   "id": "hymns/god-will-take-care|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "ef268a40f3a61546b6566a193880413aef804f1067879a58aa128e5e86aadc49",
+   "reference_sha256": "cff1016e6d83b88665582d52617471f97d9636e01510518d4e73546d990f0c28"
+  },
+  {
+   "id": "hymns/god-will-take-care|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "11ac717d0895c06af0c30b4acaf5e84d2e166fc467231db0087f6deb4c4e589c",
+   "reference_sha256": "cff1016e6d83b88665582d52617471f97d9636e01510518d4e73546d990f0c28"
+  },
+  {
+   "id": "hymns/hark-the-voice|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "b965c90f256756ddd55b69632146917f430a80dbf6b9ab3af940c60bf1509505",
+   "reference_sha256": "2109a0e1a9120f0451f8ba4dfaaf09e0963a65afb72a8137b440628868163cff"
+  },
+  {
+   "id": "hymns/hark-the-voice|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "2fd55eb52645b526c0d5d0cc32901fd66fc272be265832fd02d3dd6adda555a9",
+   "reference_sha256": "2109a0e1a9120f0451f8ba4dfaaf09e0963a65afb72a8137b440628868163cff"
+  },
+  {
+   "id": "hymns/hark-the-voice|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "6f65976f41cdb33b2ecb015a364bf4c8785ceef0d745cca93b22301868d3f9b5",
+   "reference_sha256": "2109a0e1a9120f0451f8ba4dfaaf09e0963a65afb72a8137b440628868163cff"
+  },
+  {
+   "id": "hymns/hark-the-voice|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "dd4e703039a68d27bd4e801ad16fe3c7dabdb598956e3614969d0aefab7bb79f",
+   "reference_sha256": "2109a0e1a9120f0451f8ba4dfaaf09e0963a65afb72a8137b440628868163cff"
+  },
+  {
+   "id": "hymns/holy-holy-holy|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "00701ca16105d20fda2b24a86172fdc2a81dbd8eb871c0fcf7568d7dbc034391",
+   "reference_sha256": "caf89c6e8a4a8075d11601d48413f8f2780896269e1c95996bad8be98cb329f6"
+  },
+  {
+   "id": "hymns/holy-holy-holy|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "ae75e492e317f9dde188d01648e30d8502b8bd63b245937ba7454a23e93d06ff",
+   "reference_sha256": "caf89c6e8a4a8075d11601d48413f8f2780896269e1c95996bad8be98cb329f6"
+  },
+  {
+   "id": "hymns/holy-holy-holy|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "6bae9e6fa260a982558cc017b9504d106a6bc7c24634454cc74f9dff8555e1d0",
+   "reference_sha256": "caf89c6e8a4a8075d11601d48413f8f2780896269e1c95996bad8be98cb329f6"
+  },
+  {
+   "id": "hymns/holy-holy-holy|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "06893e794825baf46600d8e91705d840e449a2fb3de5503d6b975dbe6770af7c",
+   "reference_sha256": "caf89c6e8a4a8075d11601d48413f8f2780896269e1c95996bad8be98cb329f6"
+  },
+  {
+   "id": "hymns/how-firm-a-foundation|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "3a7b5f0c588780cb64cbab782300d21fcf68124b2f9736df81c4c53187fc6128",
+   "reference_sha256": "dbdb9244e5287c8de5772e2a27bd3c1c9dee8ef02f0ed8927cbd674484e2cb04"
+  },
+  {
+   "id": "hymns/how-firm-a-foundation|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "a11ee5506dfd0e0d22e9fffac7d6433fac1afcd91bea44e1357bbe6ad9a1eb87",
+   "reference_sha256": "dbdb9244e5287c8de5772e2a27bd3c1c9dee8ef02f0ed8927cbd674484e2cb04"
+  },
+  {
+   "id": "hymns/how-firm-a-foundation|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "347232acf4b481c17cc7c440b547cd30386adbf7772244f887c68e46db1801e9",
+   "reference_sha256": "dbdb9244e5287c8de5772e2a27bd3c1c9dee8ef02f0ed8927cbd674484e2cb04"
+  },
+  {
+   "id": "hymns/how-firm-a-foundation|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "a56dda0c7597dc3959d997f543486089e98d6cddd064b2d3da73eb1f6065e53e",
+   "reference_sha256": "dbdb9244e5287c8de5772e2a27bd3c1c9dee8ef02f0ed8927cbd674484e2cb04"
+  },
+  {
+   "id": "hymns/hyfrydol-alleluia|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "96664025630306edd3bf640eb4b61c89633886630f7b3f184c6d0dbf1d04d77e",
+   "reference_sha256": "bc7ad064aeb38ce0ca92f798602a02dd1ffe749ce85a3edce5a500a769ea6d1a"
+  },
+  {
+   "id": "hymns/hyfrydol-alleluia|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "16040c696d95d199c8c2b9e0f4bac09ef00bac90ced23592babc69a4d8bca7f0",
+   "reference_sha256": "bc7ad064aeb38ce0ca92f798602a02dd1ffe749ce85a3edce5a500a769ea6d1a"
+  },
+  {
+   "id": "hymns/hyfrydol-alleluia|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "003585c2f6b2ecab06f3f8b3d0309a30d93a0a0e4ae69d37ddf60fc6af089ba7",
+   "reference_sha256": "bc7ad064aeb38ce0ca92f798602a02dd1ffe749ce85a3edce5a500a769ea6d1a"
+  },
+  {
+   "id": "hymns/hyfrydol-alleluia|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "f4663799ed2470317cb87f8557ee3c562efdc1da3fec69ef9bc77ec11f85dfa1",
+   "reference_sha256": "bc7ad064aeb38ce0ca92f798602a02dd1ffe749ce85a3edce5a500a769ea6d1a"
+  },
+  {
+   "id": "hymns/i-am-jesus-little-lamb|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "1dea00fbaf9f621de38bdd3682c3da8033782654dd6b6addb4eddbc9b93f5365",
+   "reference_sha256": "e87397d0c527491e747e3e24d78ce2921db44a140c20de9fd045279c70a6e26f"
+  },
+  {
+   "id": "hymns/i-am-jesus-little-lamb|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "56f38d8d4e59cc675f4321085b86fae60760e3c155900e0c4a349ace09f4e497",
+   "reference_sha256": "e87397d0c527491e747e3e24d78ce2921db44a140c20de9fd045279c70a6e26f"
+  },
+  {
+   "id": "hymns/i-am-jesus-little-lamb|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "3e5fcd220b63ab6dc9260cc23cdf190cd80fc3ef2b695cd0cc39ae2fcbeb7ef9",
+   "reference_sha256": "e87397d0c527491e747e3e24d78ce2921db44a140c20de9fd045279c70a6e26f"
+  },
+  {
+   "id": "hymns/i-am-jesus-little-lamb|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "6e332fe40178836478329f2cc06a624b42133c4afd1a950ab70c51e10f6a0f93",
+   "reference_sha256": "e87397d0c527491e747e3e24d78ce2921db44a140c20de9fd045279c70a6e26f"
+  },
+  {
+   "id": "hymns/i-know-whom|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "a253c109bbb5f6b451611fd8e544200bfc6e28e4afcddcd4651ebb9390ab997a",
+   "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
+  },
+  {
+   "id": "hymns/i-know-whom|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "4ddb08b97d3d3d8335c44bf79419d644da030cee96b8accf95f4ad631a764716",
+   "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
+  },
+  {
+   "id": "hymns/i-know-whom|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "c225098d931903e5672b37259649368c6334891aa8a267a11ca86d205c5fe91d",
+   "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
+  },
+  {
+   "id": "hymns/i-know-whom|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "4729c640dc7f405ba277746a4f2abaa9c5ec2320aca1630bfb6063320a863297",
+   "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
+  },
+  {
+   "id": "hymns/immortal-invisible|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "bd4ebb474460767a7f3a5745ab5f9b29d3c39250089f7fa53f5f64b0567ffd0c",
+   "reference_sha256": "e316e0fa2db60671990b012e50c5789e489f18ae9507bbaee9c4687cb595abc9"
+  },
+  {
+   "id": "hymns/immortal-invisible|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "dd4b770d4c7a4b87cca90e13ecfeaa82fa898618eda0a4eb29cdd7fd4496c67d",
+   "reference_sha256": "e316e0fa2db60671990b012e50c5789e489f18ae9507bbaee9c4687cb595abc9"
+  },
+  {
+   "id": "hymns/immortal-invisible|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "b3451495c7a3b6c8d5ffe204be92f97891e5d6c283dcb280fe1ae3165cefb6ea",
+   "reference_sha256": "e316e0fa2db60671990b012e50c5789e489f18ae9507bbaee9c4687cb595abc9"
+  },
+  {
+   "id": "hymns/immortal-invisible|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "d646541d1393e424349789f17861911fc7f2c8a7130eb2a84cd400911ca44223",
+   "reference_sha256": "e316e0fa2db60671990b012e50c5789e489f18ae9507bbaee9c4687cb595abc9"
+  },
+  {
+   "id": "hymns/jesus-christ-is-risen|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "a9bba66e2d5bb6dc30583a0329f178226baabb5681833befac829bf7ce20576b",
+   "reference_sha256": "44afb25e658c94de6af37fea078462789f695a3410731f92e26eb3e3d51355ab"
+  },
+  {
+   "id": "hymns/jesus-christ-is-risen|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "e4de4d71aff7bc2450bcf2ad2a573d4a27a528335fdbbfea6267ce27ea22029e",
+   "reference_sha256": "44afb25e658c94de6af37fea078462789f695a3410731f92e26eb3e3d51355ab"
+  },
+  {
+   "id": "hymns/jesus-christ-is-risen|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "77a0866f1fc402e856125eb3da5e8e1ca97edfb8d35ecac8893d7285f063dfa7",
+   "reference_sha256": "44afb25e658c94de6af37fea078462789f695a3410731f92e26eb3e3d51355ab"
+  },
+  {
+   "id": "hymns/jesus-christ-is-risen|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "103f6edd00e86ff1e24327e7a3f6bffdd3988c35bfb4816f04c73582ba5ff252",
+   "reference_sha256": "44afb25e658c94de6af37fea078462789f695a3410731f92e26eb3e3d51355ab"
+  },
+  {
+   "id": "hymns/jesus-is-all-the-world|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "044f204906e0d6eeaca6c4f1d3a316b4bc3ec4ab099b7ec26ead4119593569be",
+   "reference_sha256": "2d9e65219ee6e351ab477e61c20bb3d8f32e5f22fe89111deb410d109b89654e"
+  },
+  {
+   "id": "hymns/jesus-is-all-the-world|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "61a85f52088463b5e6592723dc720945106e0f3e9194f7f35c21e39cb4fa2a94",
+   "reference_sha256": "2d9e65219ee6e351ab477e61c20bb3d8f32e5f22fe89111deb410d109b89654e"
+  },
+  {
+   "id": "hymns/jesus-is-all-the-world|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "6c3e1a4d0b37603e5d8b94ec353630231b2ef987bd86d57e8d48394e2b9c0679",
+   "reference_sha256": "2d9e65219ee6e351ab477e61c20bb3d8f32e5f22fe89111deb410d109b89654e"
+  },
+  {
+   "id": "hymns/jesus-is-all-the-world|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "da70b4da23aaf8c23489d2fc25d1f5a3667ff43fa9de6e0c6843a506bb107eb8",
+   "reference_sha256": "2d9e65219ee6e351ab477e61c20bb3d8f32e5f22fe89111deb410d109b89654e"
+  },
+  {
+   "id": "hymns/jesus-shall-reign|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "81305750c72d5de966ab0e96b9973c01a54530d1d66002aae551ad18ec7e9482",
+   "reference_sha256": "af69d4c2692a0ac2b45feb60bc1d66808529f31ec9cf40ea9962909592dcaff6"
+  },
+  {
+   "id": "hymns/jesus-shall-reign|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "ac43e4c830bc56fae9338c5f1801bdf74d2d4b2ae947fbc89deef67b92877b4c",
+   "reference_sha256": "af69d4c2692a0ac2b45feb60bc1d66808529f31ec9cf40ea9962909592dcaff6"
+  },
+  {
+   "id": "hymns/jesus-shall-reign|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "54f1d0233d122b6bf68a072d40d862111d24a73e0847d178e478c3e02046579a",
+   "reference_sha256": "af69d4c2692a0ac2b45feb60bc1d66808529f31ec9cf40ea9962909592dcaff6"
+  },
+  {
+   "id": "hymns/jesus-shall-reign|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "d9f3f6977b5347900883e2073a52cf1e3254de1041c63cca94a11d650ebd1087",
+   "reference_sha256": "af69d4c2692a0ac2b45feb60bc1d66808529f31ec9cf40ea9962909592dcaff6"
+  },
+  {
+   "id": "hymns/joy-to-the-world|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "f598c677b9a1afcc557750c20ea5bea8996a12a38200defac2153d751bf91c4e",
+   "reference_sha256": "c30b56e3025a9d99847192abf3f12fcad7db296f58895d60c18213553937596d"
+  },
+  {
+   "id": "hymns/joy-to-the-world|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "74c0cb6f44e211f4c4d06fb0cad05c7c29bde62a14bde7e8ecabae7c0d5a43fe",
+   "reference_sha256": "c30b56e3025a9d99847192abf3f12fcad7db296f58895d60c18213553937596d"
+  },
+  {
+   "id": "hymns/joy-to-the-world|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "8e84064dd9be3e682cd6e28d9b10dcde9ea1352c756df4e6bf53967f8002cee3",
+   "reference_sha256": "c30b56e3025a9d99847192abf3f12fcad7db296f58895d60c18213553937596d"
+  },
+  {
+   "id": "hymns/joy-to-the-world|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "78c91493a078af190c798e03e771f04cffb30109a75e267060636ba72c2da52f",
+   "reference_sha256": "c30b56e3025a9d99847192abf3f12fcad7db296f58895d60c18213553937596d"
+  },
+  {
+   "id": "hymns/joyful-joyful|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "7d16f9a196321071ee36304ba36404101846ba63dddebbe9b521c3347e57e3e7",
+   "reference_sha256": "a59548c46970464ece547be3f19f569e5ec4da18861d7fba423388d6463ad56a"
+  },
+  {
+   "id": "hymns/joyful-joyful|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "511a3f3a68ed2d455dabf22a495f63c286663967c99976d63f141d31a6f56903",
+   "reference_sha256": "a59548c46970464ece547be3f19f569e5ec4da18861d7fba423388d6463ad56a"
+  },
+  {
+   "id": "hymns/joyful-joyful|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "873d1c4066d0e3c61fd317979a5731e07f39e56d2be831ee176a366468b402a2",
+   "reference_sha256": "a59548c46970464ece547be3f19f569e5ec4da18861d7fba423388d6463ad56a"
+  },
+  {
+   "id": "hymns/joyful-joyful|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "4dc9151081c4a35d88da768ea06f6fa673c7666da847d9f49a1020a092af7f47",
+   "reference_sha256": "a59548c46970464ece547be3f19f569e5ec4da18861d7fba423388d6463ad56a"
+  },
+  {
+   "id": "hymns/lamp-of-our-feet|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "cc4c2fa3fa3926407606e8b224b09315005fa9f46ce86663650b20dd6d63663b",
+   "reference_sha256": "f94b9350077a829bfba6d6f2cd3b4102ef9fdedefd7e40472556ead8d0512c58"
+  },
+  {
+   "id": "hymns/lamp-of-our-feet|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "36c994c7decd95bb2bc2cda4a7c8331a06aa40166f7b87d8cf3fbdb6fafac439",
+   "reference_sha256": "f94b9350077a829bfba6d6f2cd3b4102ef9fdedefd7e40472556ead8d0512c58"
+  },
+  {
+   "id": "hymns/lamp-of-our-feet|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "39511e69307253c5809d70407cdd6d560f3dd3fcc2d73aa737cc6dae87b6b4d6",
+   "reference_sha256": "f94b9350077a829bfba6d6f2cd3b4102ef9fdedefd7e40472556ead8d0512c58"
+  },
+  {
+   "id": "hymns/lamp-of-our-feet|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "f3972f434c68f1b4a28491ecab5a7e45c95bef74fa20c8d2a743ea437ffeac41",
+   "reference_sha256": "f94b9350077a829bfba6d6f2cd3b4102ef9fdedefd7e40472556ead8d0512c58"
+  },
+  {
+   "id": "hymns/lo-he-comes|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "6de6fc2bdea98576deef33a4183052c73e87baf8fbb5d31409bf1055134a665e",
+   "reference_sha256": "95bf92686a6dd2c4b6e25956c8605be22d220583ece3ad0be0587f7c02c94e48"
+  },
+  {
+   "id": "hymns/lo-he-comes|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "f9d7aa886771b7cdb62240b0236e5251a2b84ae67e6065eaec3fd40e410c32bf",
+   "reference_sha256": "95bf92686a6dd2c4b6e25956c8605be22d220583ece3ad0be0587f7c02c94e48"
+  },
+  {
+   "id": "hymns/lo-he-comes|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "2303c385f85290262c66fb229069840ccb9adc3830ca8de5dbe69152589cb18c",
+   "reference_sha256": "95bf92686a6dd2c4b6e25956c8605be22d220583ece3ad0be0587f7c02c94e48"
+  },
+  {
+   "id": "hymns/lo-he-comes|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "1fc705c33623b86d4d2a687465eb8b936059736917428f25c2f3aa3e90959768",
+   "reference_sha256": "95bf92686a6dd2c4b6e25956c8605be22d220583ece3ad0be0587f7c02c94e48"
+  },
+  {
+   "id": "hymns/midnight-clear|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "b503aabed8ff939e370926a83d11d47e75268130a8bcb100d2e0acd300cceb28",
+   "reference_sha256": "c91335e8443360d45b4808c880da11b080244c8401929ead4becbdc19a1b50d6"
+  },
+  {
+   "id": "hymns/midnight-clear|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "10b0e3c1d9188fd0cb4ef0e474943c55d497d98c361ea166655e11987fd044cf",
+   "reference_sha256": "c91335e8443360d45b4808c880da11b080244c8401929ead4becbdc19a1b50d6"
+  },
+  {
+   "id": "hymns/midnight-clear|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "af92eacbe0a1a5d0f53304c9cfa3082ed8bdcea65d922f5aa1076d92516375d6",
+   "reference_sha256": "c91335e8443360d45b4808c880da11b080244c8401929ead4becbdc19a1b50d6"
+  },
+  {
+   "id": "hymns/midnight-clear|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "95a52342f6435a119d1e632a698c9cc4aa71d68700f93daf73605ee9437fc51b",
+   "reference_sha256": "c91335e8443360d45b4808c880da11b080244c8401929ead4becbdc19a1b50d6"
+  },
+  {
+   "id": "hymns/my-faith-looks-up|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "63c6114b89001ba8712205f8549682d80d6043e046ab2f8741976b8a91ae9d02",
+   "reference_sha256": "958c18d875237ea25c3ea0b499b1de6c8b4e55d1038d1ab2650e4cbb3ff5546b"
+  },
+  {
+   "id": "hymns/my-faith-looks-up|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "0a94531b6eeada62cd9d57e2f115ae9a9e63d295d63a72919a7471290591840f",
+   "reference_sha256": "958c18d875237ea25c3ea0b499b1de6c8b4e55d1038d1ab2650e4cbb3ff5546b"
+  },
+  {
+   "id": "hymns/my-faith-looks-up|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "b639852039399f02690659d2b26e62a31f80b6ac5c8854dcec51e93ea29d83ea",
+   "reference_sha256": "958c18d875237ea25c3ea0b499b1de6c8b4e55d1038d1ab2650e4cbb3ff5546b"
+  },
+  {
+   "id": "hymns/my-faith-looks-up|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "a6436131e08ce738b032026779efb4d18215d140c8e8f6e71d0d398d23b197d8",
+   "reference_sha256": "958c18d875237ea25c3ea0b499b1de6c8b4e55d1038d1ab2650e4cbb3ff5546b"
+  },
+  {
+   "id": "hymns/my-hope-is-built|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "bd0c7f5086686e844e0c60a67cf2f0387f95566825d2e04a1923949d8e43bf1a",
+   "reference_sha256": "04e2f4612dcaa97964d4c15fa0acdc37df59af4d3bdb889fa73d4f2686fc46ce"
+  },
+  {
+   "id": "hymns/my-hope-is-built|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "71241f97799bbe54dc63b54a6744f74dec8d28eaa737fd22230319ee6ed97454",
+   "reference_sha256": "04e2f4612dcaa97964d4c15fa0acdc37df59af4d3bdb889fa73d4f2686fc46ce"
+  },
+  {
+   "id": "hymns/my-hope-is-built|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "677cbd0589c25c2996e2182392c5fe378530a97d8e816fc3d1886d6c46baf98e",
+   "reference_sha256": "04e2f4612dcaa97964d4c15fa0acdc37df59af4d3bdb889fa73d4f2686fc46ce"
+  },
+  {
+   "id": "hymns/my-hope-is-built|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "8b3a92fd4c159f69f0eba7099277ec8541106341abf76e8118377305b3e351bb",
+   "reference_sha256": "04e2f4612dcaa97964d4c15fa0acdc37df59af4d3bdb889fa73d4f2686fc46ce"
+  },
+  {
+   "id": "hymns/nearer-my-god|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "f25e98e7502fd70ea5f8e292daf59b64eccbfd866b718936e3d4297e265c60e4",
+   "reference_sha256": "7ec99f24f09e486fa5c14af5ddb62cfee8c94f8622b54bf94bf29073f90e274c"
+  },
+  {
+   "id": "hymns/nearer-my-god|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "4264050796c10900164ebbb201b4470fc90bf497cb651bb3ed7c563fb62183ca",
+   "reference_sha256": "7ec99f24f09e486fa5c14af5ddb62cfee8c94f8622b54bf94bf29073f90e274c"
+  },
+  {
+   "id": "hymns/nearer-my-god|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "47755b6c00088bc9816ca42b7d38b0cb359c95d160204f47c4e5b8112a6cbc8b",
+   "reference_sha256": "7ec99f24f09e486fa5c14af5ddb62cfee8c94f8622b54bf94bf29073f90e274c"
+  },
+  {
+   "id": "hymns/nearer-my-god|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "65aa86fda850ee0969cd2a446fe247eae379ba597cec1ab2799c909d6aba8806",
+   "reference_sha256": "7ec99f24f09e486fa5c14af5ddb62cfee8c94f8622b54bf94bf29073f90e274c"
+  },
+  {
+   "id": "hymns/no-not-one|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "52b44f8e67bb98fce619027d527f5aa9e0e9c6f69ba9df6b6467d3fe4263be57",
+   "reference_sha256": "8341c37ebe79e140849bef5a6e4db9d3d2e50291074c3a9d36c1e50d6aa6601c"
+  },
+  {
+   "id": "hymns/no-not-one|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "d7d2adb3fb1ad22734cab205a41e2d469c7728a5689dc32182f8e1dd50500190",
+   "reference_sha256": "8341c37ebe79e140849bef5a6e4db9d3d2e50291074c3a9d36c1e50d6aa6601c"
+  },
+  {
+   "id": "hymns/no-not-one|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "7d26ef31727fa75f50ca9520eb849cc8da17075cbcfdb8d560fdaccc42223d12",
+   "reference_sha256": "8341c37ebe79e140849bef5a6e4db9d3d2e50291074c3a9d36c1e50d6aa6601c"
+  },
+  {
+   "id": "hymns/no-not-one|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "6bdd1f536885a5b127e54f1c7f28282f915b87a1f14be92952c56c9b9c860830",
+   "reference_sha256": "8341c37ebe79e140849bef5a6e4db9d3d2e50291074c3a9d36c1e50d6aa6601c"
+  },
+  {
+   "id": "hymns/o-holy-spirit-enter|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "1079f61c94cac43a35a752ac28f89e42c7b4940354084a2ceb82ca5593af1e33",
+   "reference_sha256": "43b0b9b78e0c04e2c376be680eae41c2ec799703fd09273e9c4bebce40f2ecdc"
+  },
+  {
+   "id": "hymns/o-holy-spirit-enter|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "15049274fc9bf0056ccdf6f110e3d13ce324fac0c22d6d9970cff4a016fd9a81",
+   "reference_sha256": "43b0b9b78e0c04e2c376be680eae41c2ec799703fd09273e9c4bebce40f2ecdc"
+  },
+  {
+   "id": "hymns/o-holy-spirit-enter|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "a79b64777f28d8744bb1231e73788fd7b7d8fcd2cb183397dda56c52a42b43c0",
+   "reference_sha256": "43b0b9b78e0c04e2c376be680eae41c2ec799703fd09273e9c4bebce40f2ecdc"
+  },
+  {
+   "id": "hymns/o-holy-spirit-enter|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "659ed641fb9ebd786f9eb8d3dc2dd9d3efa9406909394e7d151120c9b2531b1a",
+   "reference_sha256": "43b0b9b78e0c04e2c376be680eae41c2ec799703fd09273e9c4bebce40f2ecdc"
+  },
+  {
+   "id": "hymns/pass-me-not|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "3a963104c8a6cf19d94bd98b9b770c087abc6feddee1a046054812c741d5d421",
+   "reference_sha256": "2d02a60484f009e6842d1c52f3e9dfe0e845f0b437e68a51c9ad1b20c7fa8b12"
+  },
+  {
+   "id": "hymns/pass-me-not|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "131640c7869278c660b14307a3c52ea0a5716e0640cd1ed91c805e10927549bf",
+   "reference_sha256": "2d02a60484f009e6842d1c52f3e9dfe0e845f0b437e68a51c9ad1b20c7fa8b12"
+  },
+  {
+   "id": "hymns/pass-me-not|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "0268d04b17473f5b6856b46740bd84f64f01e565867f089702a3b6bb675f7aaf",
+   "reference_sha256": "2d02a60484f009e6842d1c52f3e9dfe0e845f0b437e68a51c9ad1b20c7fa8b12"
+  },
+  {
+   "id": "hymns/pass-me-not|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "d9b42a032f812b9517ce4a83557466460bd79cbb1336c32db455bc1b2e97588f",
+   "reference_sha256": "2d02a60484f009e6842d1c52f3e9dfe0e845f0b437e68a51c9ad1b20c7fa8b12"
+  },
+  {
+   "id": "hymns/rescue-the-perishing|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "4bb8a3f17629cb15ed68c1599a40abae47c6cc69ae5728c9aefe513fe81d673f",
+   "reference_sha256": "6ce430f11945c9800ad7e7d97ce991b32a1066f9da9c980a271cad68c9798f27"
+  },
+  {
+   "id": "hymns/rescue-the-perishing|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "3c34e74ed46c5f8d8a62e5dab7d670511e42f6c6583f5bd6aa42523a01bb25ff",
+   "reference_sha256": "6ce430f11945c9800ad7e7d97ce991b32a1066f9da9c980a271cad68c9798f27"
+  },
+  {
+   "id": "hymns/rescue-the-perishing|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "6149fcfd970bdef2aec61c0ec2a77fcb637e67b2aa01f13b0b595a3b4ff3b71f",
+   "reference_sha256": "6ce430f11945c9800ad7e7d97ce991b32a1066f9da9c980a271cad68c9798f27"
+  },
+  {
+   "id": "hymns/rescue-the-perishing|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "a9cda40b0f4270050d6ed56346545c5e66c4e5d07d108bf094095bbc6789ec31",
+   "reference_sha256": "6ce430f11945c9800ad7e7d97ce991b32a1066f9da9c980a271cad68c9798f27"
+  },
+  {
+   "id": "hymns/silent-night|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "bcb09032906c2d1ba511dbca50f44c3f71bb1847c7724224278eee64e0703b77",
+   "reference_sha256": "43029b1b6d8e1282a4c23339516b591f8e80c822714680e65f0e61fe8060d570"
+  },
+  {
+   "id": "hymns/silent-night|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "8c2679260d40726bfef7102a5a477caf3ec069cd74fc67866e5c2045bd83b1e0",
+   "reference_sha256": "43029b1b6d8e1282a4c23339516b591f8e80c822714680e65f0e61fe8060d570"
+  },
+  {
+   "id": "hymns/silent-night|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "16fe18f90795c6857b58bdbb800046d1a6e2a114c98b14185b018c1052f43d94",
+   "reference_sha256": "43029b1b6d8e1282a4c23339516b591f8e80c822714680e65f0e61fe8060d570"
+  },
+  {
+   "id": "hymns/silent-night|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "861d959959830121fb35723fc40ac561e84cfa363ab8b10239cbfd4371b7a490",
+   "reference_sha256": "43029b1b6d8e1282a4c23339516b591f8e80c822714680e65f0e61fe8060d570"
+  },
+  {
+   "id": "hymns/take-my-life|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "c0312a115e55ba6d7ad6c8742bc87f5482b3b897eab239ddb39fa269130815a9",
+   "reference_sha256": "0bee9653ca9516ac08720df7ec4593392599c02673f93bcf1e707dee8d5fe4e5"
+  },
+  {
+   "id": "hymns/take-my-life|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "2e1c6dd9bb2b8831cce12a2d7bf13933b6d4ca4b15c46579533cee0c987703fd",
+   "reference_sha256": "0bee9653ca9516ac08720df7ec4593392599c02673f93bcf1e707dee8d5fe4e5"
+  },
+  {
+   "id": "hymns/take-my-life|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "85f95fbf716e432f75d3ad98c0647b0a3343db587e4c9619e87479154f7b4f17",
+   "reference_sha256": "0bee9653ca9516ac08720df7ec4593392599c02673f93bcf1e707dee8d5fe4e5"
+  },
+  {
+   "id": "hymns/take-my-life|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "692bc60a333ebd74a2bdc15bddfa6e55af35d9144948a0eb719b61e0b9324825",
+   "reference_sha256": "0bee9653ca9516ac08720df7ec4593392599c02673f93bcf1e707dee8d5fe4e5"
+  },
+  {
+   "id": "hymns/the-churchs-one-foundation|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "737bb4f0a7a6b0af2cebb2c885859adcfaebdd8434097a5e542a81b31e47ecfe",
+   "reference_sha256": "4845a251a83141522b72e2167da1b7e5b9b74f31972585e4999ad8d9ce4406e9"
+  },
+  {
+   "id": "hymns/the-churchs-one-foundation|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "630809da2ee7c4c84a70cef53fcbf044e85a4d980b9f61b46d1a935b1681de11",
+   "reference_sha256": "4845a251a83141522b72e2167da1b7e5b9b74f31972585e4999ad8d9ce4406e9"
+  },
+  {
+   "id": "hymns/the-churchs-one-foundation|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "5f420a11b7c0715fa79938165056e6a5ed8fa131a454cc74d6a65a2c3b8688fe",
+   "reference_sha256": "4845a251a83141522b72e2167da1b7e5b9b74f31972585e4999ad8d9ce4406e9"
+  },
+  {
+   "id": "hymns/the-churchs-one-foundation|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "fd091f88c7827e36f2c0d159737e69e29dad2ed3afa87235b5b8100242a7289a",
+   "reference_sha256": "4845a251a83141522b72e2167da1b7e5b9b74f31972585e4999ad8d9ce4406e9"
+  },
+  {
+   "id": "hymns/the-lords-my-shepherd|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "7d3ece90e5425abf749c57d7fa393ea38d59190206e01c8623652ae7899eaa7d",
+   "reference_sha256": "8aafd7bf3bbb87b90c02499c8a28755b658e3b0ec77a6f3682ed49eee460e769"
+  },
+  {
+   "id": "hymns/the-lords-my-shepherd|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "4aad6c6b264bef05057c490f876a988d3a7ca1b262baa0a0e5d6ac617f6685c5",
+   "reference_sha256": "8aafd7bf3bbb87b90c02499c8a28755b658e3b0ec77a6f3682ed49eee460e769"
+  },
+  {
+   "id": "hymns/the-lords-my-shepherd|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "816a4006141cec6c4185438ef53c4a207152c7719882feb78a9799ea03abc505",
+   "reference_sha256": "8aafd7bf3bbb87b90c02499c8a28755b658e3b0ec77a6f3682ed49eee460e769"
+  },
+  {
+   "id": "hymns/the-lords-my-shepherd|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "cf62b859748680c0ccaee9ec8b600c012bfd888f1307f9f12bb20d16c0c5e262",
+   "reference_sha256": "8aafd7bf3bbb87b90c02499c8a28755b658e3b0ec77a6f3682ed49eee460e769"
+  },
+  {
+   "id": "hymns/to-god-be-the-glory|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "d05903223f430cc596d120b3bc731a365e050b7028c4b4cb4cfd1dfdac65f03c",
+   "reference_sha256": "4933985e57546f4b5051906060c5bcb95ca137d153fc8fbf78f37ddde9b03ac3"
+  },
+  {
+   "id": "hymns/to-god-be-the-glory|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "f4c17ba0823bef1bf4ccac304db2bcdc9fc98ef266c53e453fc92621960826bf",
+   "reference_sha256": "4933985e57546f4b5051906060c5bcb95ca137d153fc8fbf78f37ddde9b03ac3"
+  },
+  {
+   "id": "hymns/to-god-be-the-glory|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "1438e189455d8950c01db4b741cc6238fe9a9f21e9616ed05d2e2ff7ebd2b8f7",
+   "reference_sha256": "4933985e57546f4b5051906060c5bcb95ca137d153fc8fbf78f37ddde9b03ac3"
+  },
+  {
+   "id": "hymns/to-god-be-the-glory|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "2a887cfc3d6a7bf870c393df481c50446133138ad3a0ed1c6d47c4ccab987a31",
+   "reference_sha256": "4933985e57546f4b5051906060c5bcb95ca137d153fc8fbf78f37ddde9b03ac3"
+  },
+  {
+   "id": "hymns/under-his-wings|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "e871b89eacbbacdd4625825ff4e7ed5309572a9f82c03745c5979aadbd5e8d91",
+   "reference_sha256": "412192c62e5e19d242faae2b310c0fe1735c06bbb5b990584eba18b7a5e08992"
+  },
+  {
+   "id": "hymns/under-his-wings|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "af1836bbb22f5832db3765751ab8395283d827d38913872e48945315c3eb61fc",
+   "reference_sha256": "412192c62e5e19d242faae2b310c0fe1735c06bbb5b990584eba18b7a5e08992"
+  },
+  {
+   "id": "hymns/under-his-wings|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "07c77006cb6cca1095d7ede720bbea43ecd6dd0db8a746d26bfdf58a761099c5",
+   "reference_sha256": "412192c62e5e19d242faae2b310c0fe1735c06bbb5b990584eba18b7a5e08992"
+  },
+  {
+   "id": "hymns/under-his-wings|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "cf60248d8dc7bf9e7225668623560a2a503007b74d0e55e452465e10d1e64c9d",
+   "reference_sha256": "412192c62e5e19d242faae2b310c0fe1735c06bbb5b990584eba18b7a5e08992"
+  },
+  {
+   "id": "hymns/we-gather-together|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "8e42b2cf61631a6092e993d61474a4d3833a083ded7a26044489d9e77e7d1a79",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
+  },
+  {
+   "id": "hymns/we-gather-together|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "7d47dd7f8f34f67a111910eb6841ec01f267eddf99e7622ad58f53cb34058d16",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
+  },
+  {
+   "id": "hymns/we-gather-together|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "cc69c02d40e2ae8fba93bf20c51f167d3bdbe5173e6b1fd1f52c1610b6b0d41a",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
+  },
+  {
+   "id": "hymns/we-gather-together|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "99a85c7bae8828f553cdfaf3cdf988c05c4261bbd916e8a7b54467e56d40516d",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
+  },
+  {
+   "id": "hymns/what-child-is-this|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "1db350b445a995ccf5cf0dee93c71166e740b863be5eecc5a11a893fd461a8f2",
+   "reference_sha256": "c384d096a44416fc83b206c52815942f27de411d858a2a2bdaa1c398e98f49c0"
+  },
+  {
+   "id": "hymns/what-child-is-this|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "8dd6e81b7432a830ed8a94d704a1347c67e13de257b8735fbd4671171f3adddc",
+   "reference_sha256": "c384d096a44416fc83b206c52815942f27de411d858a2a2bdaa1c398e98f49c0"
+  },
+  {
+   "id": "hymns/what-child-is-this|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "c41a4c33d41f034bdc0da2f42dfbb0084e2f36f9e473400e0405501750c4c469",
+   "reference_sha256": "c384d096a44416fc83b206c52815942f27de411d858a2a2bdaa1c398e98f49c0"
+  },
+  {
+   "id": "hymns/what-child-is-this|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "18d5a6dbb0b88fa2f53c70a5bbaeafc6379af7eb419c78667b8fc211fb7db6f2",
+   "reference_sha256": "c384d096a44416fc83b206c52815942f27de411d858a2a2bdaa1c398e98f49c0"
+  },
+  {
+   "id": "method/beyer/016|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "9b957341d07185a73d91a36f70e0fa23bc8015a705edaefc15979802611e4943",
+   "reference_sha256": "486e3d5a2e51f529ab0cac638fe56b61adc979c917b1b7f2df9b99d463af0e4d"
+  },
+  {
+   "id": "method/beyer/016|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "b97ae91049e8f882d42ac2a76588fcb1342c6bd4e160a9384dc6724376c7079f",
+   "reference_sha256": "486e3d5a2e51f529ab0cac638fe56b61adc979c917b1b7f2df9b99d463af0e4d"
+  },
+  {
+   "id": "method/beyer/016|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "58e329ec254c78e9a19a7c9b967bf60055c3b7d23e2384c0c5e5a9ce366d53d2",
+   "reference_sha256": "486e3d5a2e51f529ab0cac638fe56b61adc979c917b1b7f2df9b99d463af0e4d"
+  },
+  {
+   "id": "method/beyer/016|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "f9a9c160a9613f7c3d2aeff7f13ea7895867837f35a9eb40abb918372c0100e2",
+   "reference_sha256": "486e3d5a2e51f529ab0cac638fe56b61adc979c917b1b7f2df9b99d463af0e4d"
+  },
+  {
+   "id": "method/beyer/025|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "2b47a379415d343bf3acfe6e74b8c8d9f236f53802f5226ada4a810531614eab",
+   "reference_sha256": "8b10978b278af0f66f907e6dec53a91c5532a36b42197c99936440b95dd27683"
+  },
+  {
+   "id": "method/beyer/025|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "bafa8495c0e3bd67d14c0f2049367e5942933f208bd4d14177c75061983c073f",
+   "reference_sha256": "8b10978b278af0f66f907e6dec53a91c5532a36b42197c99936440b95dd27683"
+  },
+  {
+   "id": "method/beyer/025|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "5baed7548ff19e956e420f4502d347177e8543dd4d5f3d70789f206370b05539",
+   "reference_sha256": "8b10978b278af0f66f907e6dec53a91c5532a36b42197c99936440b95dd27683"
+  },
+  {
+   "id": "method/beyer/025|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "8a90627d6c80ef5af55adf4ac01dbf3e6d11ab4b069f6e6c6f4de101c8ed9988",
+   "reference_sha256": "8b10978b278af0f66f907e6dec53a91c5532a36b42197c99936440b95dd27683"
+  },
+  {
+   "id": "method/beyer/027|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "044ebf1cc34fbfe7f98f05dda0803ba37456db2cdfc1d504d61ee47be686bb7a",
+   "reference_sha256": "c834cfa0203b9db35dfc376675d96986108fc944a16c2e4be2009d6129e77e98"
+  },
+  {
+   "id": "method/beyer/027|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "be9f7c2e398065b7c61c1f0971f9aa2aa335038bf0a3a4465a23d85da192bbfa",
+   "reference_sha256": "c834cfa0203b9db35dfc376675d96986108fc944a16c2e4be2009d6129e77e98"
+  },
+  {
+   "id": "method/beyer/027|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "7d7b0b3cb4c8fc26744df6381d05d982d7f8989796ce2800dfb68db26dec0886",
+   "reference_sha256": "c834cfa0203b9db35dfc376675d96986108fc944a16c2e4be2009d6129e77e98"
+  },
+  {
+   "id": "method/beyer/027|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "05773a637e5567b59b9f03f7e888c647ecb1edbf0cd14068619a5c2e0a0fa8db",
+   "reference_sha256": "c834cfa0203b9db35dfc376675d96986108fc944a16c2e4be2009d6129e77e98"
+  },
+  {
+   "id": "method/beyer/028|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "0d06fe922461c924f3731e3aa89694ea30dc8fb9720c5d62ce753cd7d5729740",
+   "reference_sha256": "dc07aefd13a5bd4c46abf3afbf03ad5f70db648150473a08e66ca161a2b96cce"
+  },
+  {
+   "id": "method/beyer/028|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "6fcfe8990b17b8ac30a1a1ceb24168e17d37ed13f65776b25da81a3c69f909bb",
+   "reference_sha256": "dc07aefd13a5bd4c46abf3afbf03ad5f70db648150473a08e66ca161a2b96cce"
+  },
+  {
+   "id": "method/beyer/028|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "6cd2c8690ef672c3a6e4581e39fce01317d35556ea1dd12ef9b9a5c195f84caa",
+   "reference_sha256": "dc07aefd13a5bd4c46abf3afbf03ad5f70db648150473a08e66ca161a2b96cce"
+  },
+  {
+   "id": "method/beyer/028|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "78963dcc90190e17837d0253eefd84026218c0d828afb109369fd83100a4eba5",
+   "reference_sha256": "dc07aefd13a5bd4c46abf3afbf03ad5f70db648150473a08e66ca161a2b96cce"
+  },
+  {
+   "id": "method/beyer/029|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "56d3067c2d73e1db51fae8d42f7c198e7169fbdada8d7b8d1193a3076afb310e",
+   "reference_sha256": "d277166d6b38a31ea701a2f6da8f450d2feaebc1389aa197818f336b5195b2ca"
+  },
+  {
+   "id": "method/beyer/029|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "6ca18fea443ca8ba19a420d216408a582d06e56bd49207258b93cf6e36eae627",
+   "reference_sha256": "d277166d6b38a31ea701a2f6da8f450d2feaebc1389aa197818f336b5195b2ca"
+  },
+  {
+   "id": "method/beyer/029|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "6297772635b825a8cd50a956eada1185a15f0d1d9385c081f2f3a2a94b071f66",
+   "reference_sha256": "d277166d6b38a31ea701a2f6da8f450d2feaebc1389aa197818f336b5195b2ca"
+  },
+  {
+   "id": "method/beyer/029|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "4b95d88cb5606e9c75d49612ded39b67b6b8869aac47eb80bdfbffaf8cf47103",
+   "reference_sha256": "d277166d6b38a31ea701a2f6da8f450d2feaebc1389aa197818f336b5195b2ca"
+  },
+  {
+   "id": "method/beyer/031|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "497df9b8d86b7030d94c571c0879285bbafe746b0d33cc6afd715ec95edee009",
+   "reference_sha256": "29cd49d05f1fd79eacb964795ac06b1b0a1e59c0ca0e287d6d45dbc219b20d9a"
+  },
+  {
+   "id": "method/beyer/031|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "0a17afeb06e664aafa2f7ad25a4243d7e4a80eae1b125933548ee86d26bc442e",
+   "reference_sha256": "29cd49d05f1fd79eacb964795ac06b1b0a1e59c0ca0e287d6d45dbc219b20d9a"
+  },
+  {
+   "id": "method/beyer/031|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "86290ad6bd77a059ff320ba9f5e39057025049b5fd2d3152f25416309df0253d",
+   "reference_sha256": "29cd49d05f1fd79eacb964795ac06b1b0a1e59c0ca0e287d6d45dbc219b20d9a"
+  },
+  {
+   "id": "method/beyer/031|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "1f04273e0ec09b5ede52c0c804f51ba65fb16fce7c7001658b8918cd2d55300d",
+   "reference_sha256": "29cd49d05f1fd79eacb964795ac06b1b0a1e59c0ca0e287d6d45dbc219b20d9a"
+  },
+  {
+   "id": "method/beyer/032|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "c69dc5487a5de839388579eba841cd81f54ef506c1b8f7ca3c34d04ff3502537",
+   "reference_sha256": "56878db5562e7f6d4f820eaf30a171ccab81cbdfffb18dad2d7fb51c8d800561"
+  },
+  {
+   "id": "method/beyer/032|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "030ceed9e7663d1ebe7c9a4fb040dce6d88b88886bbfbdd6aa3a86f899347461",
+   "reference_sha256": "56878db5562e7f6d4f820eaf30a171ccab81cbdfffb18dad2d7fb51c8d800561"
+  },
+  {
+   "id": "method/beyer/032|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "582b1446e774ef800adcaca9d639c43effd040dd131edf430130c78975ce81c0",
+   "reference_sha256": "56878db5562e7f6d4f820eaf30a171ccab81cbdfffb18dad2d7fb51c8d800561"
+  },
+  {
+   "id": "method/beyer/032|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "637b23e157ef066630c110465b7a0e2b0a740a79963162f04289016cadcbff36",
+   "reference_sha256": "56878db5562e7f6d4f820eaf30a171ccab81cbdfffb18dad2d7fb51c8d800561"
+  },
+  {
+   "id": "method/beyer/033|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "ab3f541563e40a3eb67d0011fdd2474a1d975643ad7de207e2dc09ced81a7bda",
+   "reference_sha256": "a23540dd68112f2be19db9cb2a73b1039bb7ec075a63a287bbbfeaa89f46c52f"
+  },
+  {
+   "id": "method/beyer/033|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "6784366d8653d48b256e2ff14da86cc6b6a98752957eb69cfe60ba3f83f8336d",
+   "reference_sha256": "a23540dd68112f2be19db9cb2a73b1039bb7ec075a63a287bbbfeaa89f46c52f"
+  },
+  {
+   "id": "method/beyer/033|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "f562acabc2f6eed40381db5e898c5a7e1aa664f638364e937ff9a9ddb88ec5c6",
+   "reference_sha256": "a23540dd68112f2be19db9cb2a73b1039bb7ec075a63a287bbbfeaa89f46c52f"
+  },
+  {
+   "id": "method/beyer/033|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "a22dcf13f6731c68c794ffe83e9566ca67fc413d67dc125bdc76253b9e5719ff",
+   "reference_sha256": "a23540dd68112f2be19db9cb2a73b1039bb7ec075a63a287bbbfeaa89f46c52f"
+  },
+  {
+   "id": "method/beyer/034|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "b691d70393fdb9099030c9c15eca387dea771a9b1f944013cc4a1f3a0eed5984",
+   "reference_sha256": "3b1f3c7428011db7e9fd16af11db4ada0e50206439bb212c87c1e0c7832a7ed5"
+  },
+  {
+   "id": "method/beyer/034|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "9ebc698293c7349971b7a37fb5fc6a4ea2f28f47bf6a9bf252bda772dd90de31",
+   "reference_sha256": "3b1f3c7428011db7e9fd16af11db4ada0e50206439bb212c87c1e0c7832a7ed5"
+  },
+  {
+   "id": "method/beyer/034|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "c9010afc15edc884f7dd96cb25be78a411a859058cb9b73ab86ba24fb2840730",
+   "reference_sha256": "3b1f3c7428011db7e9fd16af11db4ada0e50206439bb212c87c1e0c7832a7ed5"
+  },
+  {
+   "id": "method/beyer/034|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "230ba1c5726f36cbb5cddff8c57478061f7e85159adcaf190348d0b875c712c4",
+   "reference_sha256": "3b1f3c7428011db7e9fd16af11db4ada0e50206439bb212c87c1e0c7832a7ed5"
+  },
+  {
+   "id": "method/beyer/035|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "f2ff44da30048f1973f22f220402ee65d675133e1c76d4a4976c1fdbb362b38e",
+   "reference_sha256": "91fc2660b7b2370c66e05b72135187eea5aa6e21d41e5edd39fa9cd3d736d4b3"
+  },
+  {
+   "id": "method/beyer/035|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "a02de77b24e5fdc564ae4e57ff31c06b0edca2235c5cce83c2e4057068f6c712",
+   "reference_sha256": "91fc2660b7b2370c66e05b72135187eea5aa6e21d41e5edd39fa9cd3d736d4b3"
+  },
+  {
+   "id": "method/beyer/035|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "2bee80c6841b431ea4d514182b3339ae2edc99b91af5f0a1c0e612025a2c5011",
+   "reference_sha256": "91fc2660b7b2370c66e05b72135187eea5aa6e21d41e5edd39fa9cd3d736d4b3"
+  },
+  {
+   "id": "method/beyer/035|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "6b71b62e50689d0c8207be611995dc6668b72bae6ec9c0c25da37fada4ffd055",
+   "reference_sha256": "91fc2660b7b2370c66e05b72135187eea5aa6e21d41e5edd39fa9cd3d736d4b3"
+  },
+  {
+   "id": "method/beyer/036|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "17df38ec4d671943be287aa1014eb7976bf3997e17026a37bafcbfae3d93eda3",
+   "reference_sha256": "3871b187ff9621298bc788ec96e0a9ca1f34b2464af3ffe78c1656c63976a56b"
+  },
+  {
+   "id": "method/beyer/036|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "81d4099046b8a8f6a852a0168a42803b0a0b071458bdfa7ab0f460120f404741",
+   "reference_sha256": "3871b187ff9621298bc788ec96e0a9ca1f34b2464af3ffe78c1656c63976a56b"
+  },
+  {
+   "id": "method/beyer/036|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "6c935eaa8d8897b5f61390def67161e01d8da1d328aa3a8bc55a3577353a669b",
+   "reference_sha256": "3871b187ff9621298bc788ec96e0a9ca1f34b2464af3ffe78c1656c63976a56b"
+  },
+  {
+   "id": "method/beyer/036|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "1b64d117556e59c6e483a1d8b761e8a46d69439fb207e873b2f679601a0c994f",
+   "reference_sha256": "3871b187ff9621298bc788ec96e0a9ca1f34b2464af3ffe78c1656c63976a56b"
+  },
+  {
+   "id": "method/beyer/037|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "faf5146f9944330cc24696e022d37c66142dbe85f1cdb92f958afe2ebb5daa16",
+   "reference_sha256": "bae41722ab39d7a4a6a67429d6f6dd25446f3b73a03a99c38a01099f7e3f41ba"
+  },
+  {
+   "id": "method/beyer/037|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "2677ac9312efbfd73fcdf094459e9fbe1d7a2ade135b591a4024093fb75447ad",
+   "reference_sha256": "bae41722ab39d7a4a6a67429d6f6dd25446f3b73a03a99c38a01099f7e3f41ba"
+  },
+  {
+   "id": "method/beyer/037|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "b268b10d06e575a42af143efa56877696b93b7069bda81c7e582de63eb761d71",
+   "reference_sha256": "bae41722ab39d7a4a6a67429d6f6dd25446f3b73a03a99c38a01099f7e3f41ba"
+  },
+  {
+   "id": "method/beyer/037|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "8a3bb6bb084c54006c654ed38c01d7d762acc08c4201ca59c5aa9095258a7051",
+   "reference_sha256": "bae41722ab39d7a4a6a67429d6f6dd25446f3b73a03a99c38a01099f7e3f41ba"
+  },
+  {
+   "id": "method/beyer/052|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "9fb03665d87bafa60c13c5c1f45d14ce7f74cbad15680aa501ae8689bc57b00a",
+   "reference_sha256": "a10464ed521802b7055ed82e5ea58f20e332388c1f335d083e8bb4bb7505f35a"
+  },
+  {
+   "id": "method/beyer/052|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "e51b700536f663ccf3ed79f39385a45c85c60ff9c7bfb7497fb04ddbe2a33ef0",
+   "reference_sha256": "a10464ed521802b7055ed82e5ea58f20e332388c1f335d083e8bb4bb7505f35a"
+  },
+  {
+   "id": "method/beyer/052|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "4a86c864069660ac5b2c1f123c430bdc23e07787f496f28cc6269502749bb66c",
+   "reference_sha256": "a10464ed521802b7055ed82e5ea58f20e332388c1f335d083e8bb4bb7505f35a"
+  },
+  {
+   "id": "method/beyer/052|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "f5aa714f8716853205b2a4427d0261e9431b01dcbf5dc00c48f3dcb4dfdf9c1a",
+   "reference_sha256": "a10464ed521802b7055ed82e5ea58f20e332388c1f335d083e8bb4bb7505f35a"
+  },
+  {
+   "id": "method/beyer/053|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "2b17a74b6eaf1a9d267a5e15d27854e0d272ed300ce66eac9e8c54b613c5b56a",
+   "reference_sha256": "d28b0eecc5c3de4bbb2f36c0b480da270e9abab1abcb325e8a77b231af2fcc02"
+  },
+  {
+   "id": "method/beyer/053|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "d3bb3d36138f0ee0e4fc79dacd7477d9b983f03f7a6feb4960f91e2b5865a140",
+   "reference_sha256": "d28b0eecc5c3de4bbb2f36c0b480da270e9abab1abcb325e8a77b231af2fcc02"
+  },
+  {
+   "id": "method/beyer/053|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "7e4844b97d3caabeb5c47cfec27accab919a78580c18577775fcab2838c43317",
+   "reference_sha256": "d28b0eecc5c3de4bbb2f36c0b480da270e9abab1abcb325e8a77b231af2fcc02"
+  },
+  {
+   "id": "method/beyer/053|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "51ec29c3f8c841b6ce111560abd38794206ec3198ca940fadc4bae8387a331be",
+   "reference_sha256": "d28b0eecc5c3de4bbb2f36c0b480da270e9abab1abcb325e8a77b231af2fcc02"
+  },
+  {
+   "id": "method/beyer/059|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "e57d274da25bc4ad83fd48e6b60111965c8365a06a538a5bd04ab186a3f86b06",
+   "reference_sha256": "45e6f44c79a322eaba2c462fa3d42aff8c563c9dc3a54d6cab37549114c0dc27"
+  },
+  {
+   "id": "method/beyer/059|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "946ecc2b447393438e0f1614b9cb2e0e53303d6a95f21b9bd192af7cc47f1b48",
+   "reference_sha256": "45e6f44c79a322eaba2c462fa3d42aff8c563c9dc3a54d6cab37549114c0dc27"
+  },
+  {
+   "id": "method/beyer/059|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "4687ed97bab2614502784b732bd8d8e014299444b3717a179f8e599c60db7e88",
+   "reference_sha256": "45e6f44c79a322eaba2c462fa3d42aff8c563c9dc3a54d6cab37549114c0dc27"
+  },
+  {
+   "id": "method/beyer/059|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "c3b53d27d3549a888b465f5110ce616a460925aa20128b3a0390f0857ea20478",
+   "reference_sha256": "45e6f44c79a322eaba2c462fa3d42aff8c563c9dc3a54d6cab37549114c0dc27"
+  },
+  {
+   "id": "method/beyer/067|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "cfe7256588b73987e826b722c80b86c10ded8ccf09148b2ca07cd6c79f65f36f",
+   "reference_sha256": "a9a116fdf99bd4e1e4c508373fd5a03cd0d54415f9133155c10a16e64c1c437d"
+  },
+  {
+   "id": "method/beyer/067|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "4df08a21a321bf81320c235d3421ca951d7d1235712605ea051609e4f2f16d58",
+   "reference_sha256": "a9a116fdf99bd4e1e4c508373fd5a03cd0d54415f9133155c10a16e64c1c437d"
+  },
+  {
+   "id": "method/beyer/067|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "07c5c5609e06fc787c877d2be28ef14da4673e105e67b02473528cccd7e738f3",
+   "reference_sha256": "a9a116fdf99bd4e1e4c508373fd5a03cd0d54415f9133155c10a16e64c1c437d"
+  },
+  {
+   "id": "method/beyer/067|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "0f56f0ff6d7cf5204c2bec54c587d4c829d9c3eb18d3ce0c7dbed3fa0b9ed879",
+   "reference_sha256": "a9a116fdf99bd4e1e4c508373fd5a03cd0d54415f9133155c10a16e64c1c437d"
+  },
+  {
+   "id": "method/burgmuller25/003|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "0568e097da617cb9e7913da72cfc3ffe791c03fa066cde7bbb40ad7767cca348",
+   "reference_sha256": "9f8e0cb0de9b1a3255664eaa4b5c6df9e4750a6e855647ad1ff42e68fc342462"
+  },
+  {
+   "id": "method/burgmuller25/003|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "4a277eef6f9999df822641725ea953e2d8acebdd9f870bb8fb5ebf51961c0507",
+   "reference_sha256": "9f8e0cb0de9b1a3255664eaa4b5c6df9e4750a6e855647ad1ff42e68fc342462"
+  },
+  {
+   "id": "method/burgmuller25/003|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "872d3001e21fd6c3fa2aa39b9baa850d4a9fce22511cb1f943e1f1a57f803f1d",
+   "reference_sha256": "9f8e0cb0de9b1a3255664eaa4b5c6df9e4750a6e855647ad1ff42e68fc342462"
+  },
+  {
+   "id": "method/burgmuller25/003|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "3eb3ef49885d2601f1d597818ef08ac1a31bfe4951cb5fc3e67f1bcef2fe4fab",
+   "reference_sha256": "9f8e0cb0de9b1a3255664eaa4b5c6df9e4750a6e855647ad1ff42e68fc342462"
+  },
+  {
+   "id": "method/burgmuller25/005|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "c88c157f92d956b2a6b5ae5c1970875bad54b2ef0236c74d3f6aca46b4693639",
+   "reference_sha256": "e9d8eac6a6dea29e420ad33bcb77a593651170a5ef42a1c1d2e6610ed29f4fe2"
+  },
+  {
+   "id": "method/burgmuller25/005|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "6d6401531460ce0a54dfb1f275514deaaa5e75b3464f6bb9540f29527d70e61b",
+   "reference_sha256": "e9d8eac6a6dea29e420ad33bcb77a593651170a5ef42a1c1d2e6610ed29f4fe2"
+  },
+  {
+   "id": "method/burgmuller25/005|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "dc3141daf07a04a1179120df8fafa63fb67a018dfa94abd62f6cbf0ff90fc8fc",
+   "reference_sha256": "e9d8eac6a6dea29e420ad33bcb77a593651170a5ef42a1c1d2e6610ed29f4fe2"
+  },
+  {
+   "id": "method/burgmuller25/005|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "c323f1f023b6e6232424eed698af5e47991a3f6dacaac03a7046de8af861eb75",
+   "reference_sha256": "e9d8eac6a6dea29e420ad33bcb77a593651170a5ef42a1c1d2e6610ed29f4fe2"
+  },
+  {
+   "id": "method/burgmuller25/006|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "cd1b4a61f821cbc17d9748154f3e5dcbeaab249ace6997fa62eaa7d040a6ebf3",
+   "reference_sha256": "8770a88f0d49b477d0e64410b3cd244a0066d4b99cb8eee7d0fa2327b7740e90"
+  },
+  {
+   "id": "method/burgmuller25/006|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "be726b5124928e7ad9153e6f4cba39aca0d65595370b176c2b2213ef802e2312",
+   "reference_sha256": "8770a88f0d49b477d0e64410b3cd244a0066d4b99cb8eee7d0fa2327b7740e90"
+  },
+  {
+   "id": "method/burgmuller25/006|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "c7035421c0ca3ac0fae2c27f4bbee0c1106767678204d7f1a4423b823684f6d1",
+   "reference_sha256": "8770a88f0d49b477d0e64410b3cd244a0066d4b99cb8eee7d0fa2327b7740e90"
+  },
+  {
+   "id": "method/burgmuller25/006|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "3d25d188ddb79045f7109ad60dde406805fb5d2662a04a7f24881a220492758e",
+   "reference_sha256": "8770a88f0d49b477d0e64410b3cd244a0066d4b99cb8eee7d0fa2327b7740e90"
+  },
+  {
+   "id": "method/burgmuller25/013|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "40b704c7b7b5415a80b89cc25341eb8614a95918cb952d9593b478a6fef41c20",
+   "reference_sha256": "a458a58c5771ffd054a7f796a1fe1936bdac23a532927e6e3a29752dfd5d5381"
+  },
+  {
+   "id": "method/burgmuller25/013|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "d108b7998e3babe3e4b6e5403e52d931506e11370c21f4f5f757a5ce3bc992bd",
+   "reference_sha256": "a458a58c5771ffd054a7f796a1fe1936bdac23a532927e6e3a29752dfd5d5381"
+  },
+  {
+   "id": "method/burgmuller25/013|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "fb28a819920d50869afe02c23c275a1abaa1887dc4fe49d4b2325c634313d4bd",
+   "reference_sha256": "a458a58c5771ffd054a7f796a1fe1936bdac23a532927e6e3a29752dfd5d5381"
+  },
+  {
+   "id": "method/burgmuller25/013|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "41f19866c5f6010b971aabcc5ab9f7bc25261b49cf4ca2ca722c9961bec044eb",
+   "reference_sha256": "a458a58c5771ffd054a7f796a1fe1936bdac23a532927e6e3a29752dfd5d5381"
+  },
+  {
+   "id": "method/burgmuller25/015|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "f3985ed828ff190302b71a0b17b4f4c1755827405b9f4af4b968df244200942d",
+   "reference_sha256": "6048e56e991223ff1f7ab015de33c1e64ac5f0faa3c65050517c9843695befc0"
+  },
+  {
+   "id": "method/burgmuller25/015|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "5e864de74aeb47c8ff32a2ce0106173ea1242a344e968c44b70303cbf5a85766",
+   "reference_sha256": "6048e56e991223ff1f7ab015de33c1e64ac5f0faa3c65050517c9843695befc0"
+  },
+  {
+   "id": "method/burgmuller25/015|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "290fd529e3ed04b1e6598809967b412b146c028e0942a154e9f5751c9217ca0f",
+   "reference_sha256": "6048e56e991223ff1f7ab015de33c1e64ac5f0faa3c65050517c9843695befc0"
+  },
+  {
+   "id": "method/burgmuller25/015|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "bcaa9ef1f364cf6183d3789b27f0ed6eb0bd4ad33c8eb59cb586632843145872",
+   "reference_sha256": "6048e56e991223ff1f7ab015de33c1e64ac5f0faa3c65050517c9843695befc0"
+  },
+  {
+   "id": "method/burgmuller25/016|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "a2d49d31635f37a023b6391c9beee879d01262821765091902553721bd7a80c3",
+   "reference_sha256": "df36b014c9dc5891b4f41f9f59edf04e4ee45ea14b11fe7efe70710ae4849e74"
+  },
+  {
+   "id": "method/burgmuller25/016|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "8b3c497df81a084cdbab593f0a3c94467ac77b622de273dc88bd98baffa7a9d1",
+   "reference_sha256": "df36b014c9dc5891b4f41f9f59edf04e4ee45ea14b11fe7efe70710ae4849e74"
+  },
+  {
+   "id": "method/burgmuller25/016|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "cc08b2ecb71b6d8956447d4cd99d79efaaa13bb9ee0bf4b2743bc2cf67b367e7",
+   "reference_sha256": "df36b014c9dc5891b4f41f9f59edf04e4ee45ea14b11fe7efe70710ae4849e74"
+  },
+  {
+   "id": "method/burgmuller25/016|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "3a6489a6016b7a4f4a10c7c8c76ebbb7b0de95f92f0bb8898e967e72c81e100c",
+   "reference_sha256": "df36b014c9dc5891b4f41f9f59edf04e4ee45ea14b11fe7efe70710ae4849e74"
+  },
+  {
+   "id": "method/burgmuller25/019|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "d3135f3d5f0c4f99de2b35c83b83aa3012ae8feddc9f4ad987ddf5843e96f60c",
+   "reference_sha256": "1e18374256b086aa53c1f4af94a47ef5bb076271f8b7cb2986c428d2d2fd7b50"
+  },
+  {
+   "id": "method/burgmuller25/019|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "c05cfe3174ec78478f8bd6aed2522874ce7fb04ec42a16cd0fa19a971fc73c68",
+   "reference_sha256": "1e18374256b086aa53c1f4af94a47ef5bb076271f8b7cb2986c428d2d2fd7b50"
+  },
+  {
+   "id": "method/burgmuller25/019|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "0773548cdb76706c5032b3129d6cb2acbf06bf27469bbf1912d307ba8cde82b9",
+   "reference_sha256": "1e18374256b086aa53c1f4af94a47ef5bb076271f8b7cb2986c428d2d2fd7b50"
+  },
+  {
+   "id": "method/burgmuller25/019|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "bc961f07c88825c73d64e099c31c53710071d0cc50b6b2caadf0f87d35248edc",
+   "reference_sha256": "1e18374256b086aa53c1f4af94a47ef5bb076271f8b7cb2986c428d2d2fd7b50"
+  },
+  {
+   "id": "method/burgmuller25/021|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "7a8c1a5221ba9096ee603368c0b8c460d2401489823699e549553032f7903d70",
+   "reference_sha256": "8192a18aba25e9a5ebca2d3959fbe6a30c5d45abcff26eb8c3f34697a333275e"
+  },
+  {
+   "id": "method/burgmuller25/021|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "b7c62f6182e6356980e10ae94152cf270b9b7f7afa2f353ebcee400767a46a64",
+   "reference_sha256": "8192a18aba25e9a5ebca2d3959fbe6a30c5d45abcff26eb8c3f34697a333275e"
+  },
+  {
+   "id": "method/burgmuller25/021|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "7273269b8a5197d337a9a1a2cdf0ffe18f10991066bde113ef9c7f238406f308",
+   "reference_sha256": "8192a18aba25e9a5ebca2d3959fbe6a30c5d45abcff26eb8c3f34697a333275e"
+  },
+  {
+   "id": "method/burgmuller25/021|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "65b82d1b8e29db3a5ac07e09a3c8e285b54cff4900655ac78e8e8b10a26fe294",
+   "reference_sha256": "8192a18aba25e9a5ebca2d3959fbe6a30c5d45abcff26eb8c3f34697a333275e"
+  },
+  {
+   "id": "method/burgmuller25/023|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "796cea0ba0f65918eae04d966f549d30bf030c56bbb7628411d8e72692034ae5",
+   "reference_sha256": "c5aef652ceccf87fb2962aba69d6d40bae2be4f51d2c715dc4c218b25e1db659"
+  },
+  {
+   "id": "method/burgmuller25/023|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "3248b9e27f16ab927717ee874f74a6c4b8cc29da0dfa5eaca73dc7237b631d00",
+   "reference_sha256": "c5aef652ceccf87fb2962aba69d6d40bae2be4f51d2c715dc4c218b25e1db659"
+  },
+  {
+   "id": "method/burgmuller25/023|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "56f4d511b2b2025b3e5af661277f77d0dc7b1776038b3f06521b24786c132db4",
+   "reference_sha256": "c5aef652ceccf87fb2962aba69d6d40bae2be4f51d2c715dc4c218b25e1db659"
+  },
+  {
+   "id": "method/burgmuller25/023|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "c32f0da4438f81c53756873c446fa477c97e2109d6e038bd896f90f0b31077fe",
+   "reference_sha256": "c5aef652ceccf87fb2962aba69d6d40bae2be4f51d2c715dc4c218b25e1db659"
+  },
+  {
+   "id": "method/czerny599/021|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "52c670ef6e7b304d2fb337bba265e8252908a8102510f433c8b9e40d7e221106",
+   "reference_sha256": "942ee463bcdcd323dff1c095169de060f742fc259fab8506cc7011778ce33e7d"
+  },
+  {
+   "id": "method/czerny599/021|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "6d647cc3ba7b3459b157c92aec0bf23d7daacf201a1e3ef8c43eeaae9225e0a8",
+   "reference_sha256": "942ee463bcdcd323dff1c095169de060f742fc259fab8506cc7011778ce33e7d"
+  },
+  {
+   "id": "method/czerny599/021|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "33d8216c80b296430050e419a4726ae3cca17e1acc508480c3b4ce8463951365",
+   "reference_sha256": "942ee463bcdcd323dff1c095169de060f742fc259fab8506cc7011778ce33e7d"
+  },
+  {
+   "id": "method/czerny599/021|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "48e14eb9d9d714033c9e1f53038dbbbad92c3a5539e7704450da351e1dba6967",
+   "reference_sha256": "942ee463bcdcd323dff1c095169de060f742fc259fab8506cc7011778ce33e7d"
+  },
+  {
+   "id": "method/czerny599/022|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "53f1e1e877fd268f3cbf61b9d4dcbd23d5afdd7f20521cc22793cc9ead135270",
+   "reference_sha256": "a086ca0f163cc4bb85881cc661d1f2390eb50cee9d2783ac50acfcdedd28298f"
+  },
+  {
+   "id": "method/czerny599/022|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "b90fcf182ce42c1b19519d4804cc399fbcfce322fe537c0467c7cce4b1dca274",
+   "reference_sha256": "a086ca0f163cc4bb85881cc661d1f2390eb50cee9d2783ac50acfcdedd28298f"
+  },
+  {
+   "id": "method/czerny599/022|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "9eece001a3ecab0154863d58377605a85d7be160337bd9a26557b140e1477d2a",
+   "reference_sha256": "a086ca0f163cc4bb85881cc661d1f2390eb50cee9d2783ac50acfcdedd28298f"
+  },
+  {
+   "id": "method/czerny599/022|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "8e633c90539c5dc23f0f25fe92fa4d908aebb2960ab8e47ef180d11266057a46",
+   "reference_sha256": "a086ca0f163cc4bb85881cc661d1f2390eb50cee9d2783ac50acfcdedd28298f"
+  },
+  {
+   "id": "method/czerny599/023|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "18db0e2ae15cf55dc65a53606a1b44ac5c72deee67af824704d2f86926994b5c",
+   "reference_sha256": "b89e0b7905d326140886339bb3ef64a79b8b00c4af095ca6d9b111b6618ebafb"
+  },
+  {
+   "id": "method/czerny599/023|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "7b17ebed93dc8359848dba8df0553eda7aab8f7bec94e6ef3f1953ae5b651f7d",
+   "reference_sha256": "b89e0b7905d326140886339bb3ef64a79b8b00c4af095ca6d9b111b6618ebafb"
+  },
+  {
+   "id": "method/czerny599/023|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "0fc1d8c3d0fd035cc56a80c74de794b42866685cef0b88a64b2802af39cccefa",
+   "reference_sha256": "b89e0b7905d326140886339bb3ef64a79b8b00c4af095ca6d9b111b6618ebafb"
+  },
+  {
+   "id": "method/czerny599/023|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "2c5e77007c544609058d1baf66ed39afbf65233b1694ee2e2b5c00302a7e9038",
+   "reference_sha256": "b89e0b7905d326140886339bb3ef64a79b8b00c4af095ca6d9b111b6618ebafb"
+  },
+  {
+   "id": "method/czerny599/024|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "45ac954b04a5c248779b74b2d6f3882d98917ced74144aa4d60d8d9e56c2dbc4",
+   "reference_sha256": "c861977d2773c5f408d86b10a6d7210e78ae1263a4177ef43771ac9a263741ed"
+  },
+  {
+   "id": "method/czerny599/024|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "4d387cf84fa39b58b7da6e7a0c45e15de2ac69479f8df9fa2765afcac422e48f",
+   "reference_sha256": "c861977d2773c5f408d86b10a6d7210e78ae1263a4177ef43771ac9a263741ed"
+  },
+  {
+   "id": "method/czerny599/024|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "44dd74985aa56a951f0c0137d359eca1170cbacdc0fc54e9fc63ff38a6aeff92",
+   "reference_sha256": "c861977d2773c5f408d86b10a6d7210e78ae1263a4177ef43771ac9a263741ed"
+  },
+  {
+   "id": "method/czerny599/024|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "986930f0d724cc69f0528a7dc94bf090e8b0ff7f9ed558bd2a300bc160085051",
+   "reference_sha256": "c861977d2773c5f408d86b10a6d7210e78ae1263a4177ef43771ac9a263741ed"
+  },
+  {
+   "id": "method/czerny599/026|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "f44fb0dfccf5dfb6ee259dfb62c9daa36dd8d2e0176cc684d5913e8360d2994d",
+   "reference_sha256": "40f2e306e2ab6009341675f4a4314634632b3fb6597a558569fcfbefff003824"
+  },
+  {
+   "id": "method/czerny599/026|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "029594378cddf23ecfc3775c6e86ea6f54a223d376b8cf37080bd14c6b0c45c4",
+   "reference_sha256": "40f2e306e2ab6009341675f4a4314634632b3fb6597a558569fcfbefff003824"
+  },
+  {
+   "id": "method/czerny599/026|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "992b4b4dbf1f0c4a1dd24575e2744816a00876584269fd101ff706aefb76627a",
+   "reference_sha256": "40f2e306e2ab6009341675f4a4314634632b3fb6597a558569fcfbefff003824"
+  },
+  {
+   "id": "method/czerny599/026|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "b82d16bc78342f6ec63191c502f9b7f4abbbab413de0e58ce8adbf596d3defa9",
+   "reference_sha256": "40f2e306e2ab6009341675f4a4314634632b3fb6597a558569fcfbefff003824"
+  },
+  {
+   "id": "method/czerny599/027|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "d12820a2ee68dec7d247f480380f9749a3f62e086f57af43964394c82f1ab6df",
+   "reference_sha256": "78d42e33e006a3dd69ca52e2b17b07a4b827142a967e3622e43ec7fec5725534"
+  },
+  {
+   "id": "method/czerny599/027|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "72d1bd764744627c6017a6e64cfebbffc073ecbc1372c129e7953e4c6233ffe6",
+   "reference_sha256": "78d42e33e006a3dd69ca52e2b17b07a4b827142a967e3622e43ec7fec5725534"
+  },
+  {
+   "id": "method/czerny599/027|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "99bfea38acbc7f2bec72d68458a10b27a1d897b7151a872b2b87dc0372a3b986",
+   "reference_sha256": "78d42e33e006a3dd69ca52e2b17b07a4b827142a967e3622e43ec7fec5725534"
+  },
+  {
+   "id": "method/czerny599/027|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "f94a7b3ad60506960a828a2bd9252d9e22d0611096a242d1ae81b132d7c65186",
+   "reference_sha256": "78d42e33e006a3dd69ca52e2b17b07a4b827142a967e3622e43ec7fec5725534"
+  },
+  {
+   "id": "method/czerny599/030|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "f2d0a1dba1db0f28a95d1e7f3ad61f4d4d2a28ad293963d2f2cd9be1314a1651",
+   "reference_sha256": "3d7a198f2d995be0b76deb35de354b9746e7f897f473b0b92be17d6878d7623f"
+  },
+  {
+   "id": "method/czerny599/030|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "6fcabe8be7a503d614f0e4e3a69cf35cd94fc98f9b631ed8bf8e0e1129ab8c7b",
+   "reference_sha256": "3d7a198f2d995be0b76deb35de354b9746e7f897f473b0b92be17d6878d7623f"
+  },
+  {
+   "id": "method/czerny599/030|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "bddff8364deae275ba426851707dc73cba0653e045a4ba28d5d4665030b0a2b4",
+   "reference_sha256": "3d7a198f2d995be0b76deb35de354b9746e7f897f473b0b92be17d6878d7623f"
+  },
+  {
+   "id": "method/czerny599/030|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "f888485a9b015c7ceafe1005d7d9c4aa85c2b83d2561edbef3e0a618736526e1",
+   "reference_sha256": "3d7a198f2d995be0b76deb35de354b9746e7f897f473b0b92be17d6878d7623f"
+  },
+  {
+   "id": "method/czerny599/034|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "b1969be1fa27c5a0821dda66ad004c385eca7457b92160685647106a433635ef",
+   "reference_sha256": "a098bc978c903337d49926c21d14c0b8a65f172a465e9e90ac9577dc1034f226"
+  },
+  {
+   "id": "method/czerny599/034|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "891e66ed1387c891556a18d7eb2d07c4a1a52133975bf1f46d61b0854e490283",
+   "reference_sha256": "a098bc978c903337d49926c21d14c0b8a65f172a465e9e90ac9577dc1034f226"
+  },
+  {
+   "id": "method/czerny599/034|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "f10ccc42a7a5d5e83dfa21dee73eca111d3ca3852a802108346efff01743a823",
+   "reference_sha256": "a098bc978c903337d49926c21d14c0b8a65f172a465e9e90ac9577dc1034f226"
+  },
+  {
+   "id": "method/czerny599/034|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "e5063cc1b4f0ccd8b7b11d7468766b2b45c42e09f0ad7168a0abeb318efbee0d",
+   "reference_sha256": "a098bc978c903337d49926c21d14c0b8a65f172a465e9e90ac9577dc1034f226"
+  },
+  {
+   "id": "method/czerny599/035|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "ae292f211ed2aa9b63fd2b2b34e348db14a8c331115afe21bf430971b3f711db",
+   "reference_sha256": "8676a9feace41a8db8aebd85084fa05404e7e808cfe84ca3470ec587b130a3b9"
+  },
+  {
+   "id": "method/czerny599/035|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "86fb11c9d739a352e934287260ab35482ae6f11098c0d941119a9c7c79b53f1d",
+   "reference_sha256": "8676a9feace41a8db8aebd85084fa05404e7e808cfe84ca3470ec587b130a3b9"
+  },
+  {
+   "id": "method/czerny599/035|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "f8f6ae371b48b29d81949fe95a7ad0cc92e1f16b272022b2d7dc5487505c4d70",
+   "reference_sha256": "8676a9feace41a8db8aebd85084fa05404e7e808cfe84ca3470ec587b130a3b9"
+  },
+  {
+   "id": "method/czerny599/035|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "32783cbcc9f442e8df001f99d845bf942c7da86ecd534d8142f536c7c605756f",
+   "reference_sha256": "8676a9feace41a8db8aebd85084fa05404e7e808cfe84ca3470ec587b130a3b9"
+  },
+  {
+   "id": "method/czerny599/036|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "f4a8c254b960dec3742470103d8af563dadbd356673fa2ce37a3251cd8f31524",
+   "reference_sha256": "de6e581978135a709a510a0c42a4560032f94d3f0c38ad72204d9308e508f3ea"
+  },
+  {
+   "id": "method/czerny599/036|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "611b777acffbb779eaea5be744925b9f010ad7cc8cc0a7a0f9d7f4e215e26056",
+   "reference_sha256": "de6e581978135a709a510a0c42a4560032f94d3f0c38ad72204d9308e508f3ea"
+  },
+  {
+   "id": "method/czerny599/036|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "4ddbfa424afcb3fb0fda8cc9ae12f22a8a980afa01a1bc7dea058b24c6ab69e0",
+   "reference_sha256": "de6e581978135a709a510a0c42a4560032f94d3f0c38ad72204d9308e508f3ea"
+  },
+  {
+   "id": "method/czerny599/036|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "1b5143ca7884eae137976ee2a955968738ceebcc9b82ac5d52ee06e328c01334",
+   "reference_sha256": "de6e581978135a709a510a0c42a4560032f94d3f0c38ad72204d9308e508f3ea"
+  },
+  {
+   "id": "method/czerny599/037|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "5031436f350ff675d8812944186111611576d099f1dc764c2c4270b5024957a8",
+   "reference_sha256": "17b43362b4e4dcd71e3a62d22b7f8a6f05ea5633e54b56a82f8c83f7ea9def08"
+  },
+  {
+   "id": "method/czerny599/037|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "f29880e53ce2407aa64a310f84aab424ddd2b4da7e58d1042ff86af62761c78e",
+   "reference_sha256": "17b43362b4e4dcd71e3a62d22b7f8a6f05ea5633e54b56a82f8c83f7ea9def08"
+  },
+  {
+   "id": "method/czerny599/037|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "2bb87aba2d5cb4bc2a0852fd74772aa32a4fd6dbe74923e22c646121075243c1",
+   "reference_sha256": "17b43362b4e4dcd71e3a62d22b7f8a6f05ea5633e54b56a82f8c83f7ea9def08"
+  },
+  {
+   "id": "method/czerny599/037|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "b93c4b6ed00861da231ec258d9c1f21f0fe539f15cde3eba6bec1726fbe57b12",
+   "reference_sha256": "17b43362b4e4dcd71e3a62d22b7f8a6f05ea5633e54b56a82f8c83f7ea9def08"
+  },
+  {
+   "id": "method/czerny599/040|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "b74e49a72c7c6c1731ebaf40ac17387fdbb5ddc262d90b5cc035da76d40cda54",
+   "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
+  },
+  {
+   "id": "method/czerny599/040|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "cbccb29b7e004ff71dacd055e918dfe26355a5bc436e80b17e9345ee4a31aad3",
+   "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
+  },
+  {
+   "id": "method/czerny599/040|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "b4b536d20b9d23b7c440e66ac15b0912357d7b3448c32e2eeabe02be49c69714",
+   "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
+  },
+  {
+   "id": "method/czerny599/040|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "6682ad6aeb796938406390d7905a8576023c6b9e11caa89c48fb8441564185dd",
+   "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
+  },
+  {
+   "id": "method/czerny599/042|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "ac59b3b25e7c77e827efbd17bb05e973f9c592abe0af48114e45dd8f5ec1df3b",
+   "reference_sha256": "6393e6f224a2b109c6793d35569729261cf763511446af029df28275bb42ff4e"
+  },
+  {
+   "id": "method/czerny599/042|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "8aec0877af1b4828be3d5db26b784bea1b802f23b38597680558f71080fde166",
+   "reference_sha256": "6393e6f224a2b109c6793d35569729261cf763511446af029df28275bb42ff4e"
+  },
+  {
+   "id": "method/czerny599/042|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "53f60e3e5ae714ada66c00a188f1f0a4d748874df85122b6f57c9e857b17158c",
+   "reference_sha256": "6393e6f224a2b109c6793d35569729261cf763511446af029df28275bb42ff4e"
+  },
+  {
+   "id": "method/czerny599/042|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "c6ee88cbb2385daafd7da872c404d57540ac2221632f4f505676a700b8e3cafa",
+   "reference_sha256": "6393e6f224a2b109c6793d35569729261cf763511446af029df28275bb42ff4e"
+  },
+  {
+   "id": "method/czerny599/045|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "0ec66d8e792f0589287b8214cb2c25b4d6cfc1275157421193333ca7bcc7d1d6",
+   "reference_sha256": "1ccceb4d5be2d323e0b73001dfefe1755282752fb0f959743fc57a8b809d0a40"
+  },
+  {
+   "id": "method/czerny599/045|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "294129728b12fc8716eddd323bbc5a7845d888f3cc22e4bd69c8b43f3e38a8ea",
+   "reference_sha256": "1ccceb4d5be2d323e0b73001dfefe1755282752fb0f959743fc57a8b809d0a40"
+  },
+  {
+   "id": "method/czerny599/045|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "48d1e2279961ec007d30db565560ddd4b8536d6070edb11c7a9585f9c83d3427",
+   "reference_sha256": "1ccceb4d5be2d323e0b73001dfefe1755282752fb0f959743fc57a8b809d0a40"
+  },
+  {
+   "id": "method/czerny599/045|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "35000ee4e377bbd522b196c9f942c44ad0b6d932b20c725ef8b89610f3a68470",
+   "reference_sha256": "1ccceb4d5be2d323e0b73001dfefe1755282752fb0f959743fc57a8b809d0a40"
+  },
+  {
+   "id": "method/czerny599/048|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "130207db8082cd2428dd51ec5ecd39cc46dd125d359b27090a7d0f88600fe569",
+   "reference_sha256": "5d02c1653d29fec1e69924921ee4b08d15b559cf9ab3b13713e4c503e96aaa89"
+  },
+  {
+   "id": "method/czerny599/048|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "3019627fa7e3e2bde4fbdafe7f1d1d31e183edcd9379599bd5ca7bfb7de6871f",
+   "reference_sha256": "5d02c1653d29fec1e69924921ee4b08d15b559cf9ab3b13713e4c503e96aaa89"
+  },
+  {
+   "id": "method/czerny599/048|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "9ba5a8f0974b93057102f4483895e35278beb8486a56fb81d77ffd23516e0d42",
+   "reference_sha256": "5d02c1653d29fec1e69924921ee4b08d15b559cf9ab3b13713e4c503e96aaa89"
+  },
+  {
+   "id": "method/czerny599/048|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "0f451cf0b722009bcf0ad32abf0ea9904515bbcaeac7ede337f79bfe7eab2569",
+   "reference_sha256": "5d02c1653d29fec1e69924921ee4b08d15b559cf9ab3b13713e4c503e96aaa89"
+  },
+  {
+   "id": "method/czerny599/049|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "e496533380978e1973e465f474e85c113de73a11a209610a24677b918106a64f",
+   "reference_sha256": "042770975a6b771f7879bc1a2c5f95eafa5f596c7b17841222d7876aab37567a"
+  },
+  {
+   "id": "method/czerny599/049|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "ff79d177ee27c85fa259645140bb3ea7d343621cb800aaf5b46e56d6a8edd482",
+   "reference_sha256": "042770975a6b771f7879bc1a2c5f95eafa5f596c7b17841222d7876aab37567a"
+  },
+  {
+   "id": "method/czerny599/049|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "093b8b574db7d1aab110d8968815d3819bed0cdab06f7e7c9b76799bccbc92d7",
+   "reference_sha256": "042770975a6b771f7879bc1a2c5f95eafa5f596c7b17841222d7876aab37567a"
+  },
+  {
+   "id": "method/czerny599/049|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "6a5f3bf2ddddae47b0f21e94ee5f84a2da3c796e0a85d4f8e4908dd8f66fbebf",
+   "reference_sha256": "042770975a6b771f7879bc1a2c5f95eafa5f596c7b17841222d7876aab37567a"
+  },
+  {
+   "id": "method/czerny849/001|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "929285f9ff5b8c7c9a63bd9b6b9dfa1b576f67c2b5fa2a28e8491bb80d242945",
+   "reference_sha256": "302add4d3e497f0371daf6776c51252f1d7d18189c59e42aa3e8642bf4374164"
+  },
+  {
+   "id": "method/czerny849/001|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "ab5900f951b90b5c220c9c4514fb5d63b4e38d53f62fda91d826618076e646ba",
+   "reference_sha256": "302add4d3e497f0371daf6776c51252f1d7d18189c59e42aa3e8642bf4374164"
+  },
+  {
+   "id": "method/czerny849/001|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "12563ba0f09fb193428999488146676bf50f8d2163d38e59eb94d4189e7193a9",
+   "reference_sha256": "302add4d3e497f0371daf6776c51252f1d7d18189c59e42aa3e8642bf4374164"
+  },
+  {
+   "id": "method/czerny849/001|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "a7b6e46305d29795a33ab6bb21360f57ccdec21c187b9087e953ba8a65e9a3c1",
+   "reference_sha256": "302add4d3e497f0371daf6776c51252f1d7d18189c59e42aa3e8642bf4374164"
+  },
+  {
+   "id": "method/czerny849/002|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "5198c4b684f297ff101d317d49cbebb572ec0886e2d70fb0c2d9f30e0e88d222",
+   "reference_sha256": "b37116cc2a4d093b8bcd0d40a82121d690d82ae454e7c88ee26eddf9e52c949e"
+  },
+  {
+   "id": "method/czerny849/002|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "9a5cdde8692fdf204d6ba47a1ddea2e88f0f1e6a87f4d29286c5a88b99f1329f",
+   "reference_sha256": "b37116cc2a4d093b8bcd0d40a82121d690d82ae454e7c88ee26eddf9e52c949e"
+  },
+  {
+   "id": "method/czerny849/002|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "28b8815d4c1b5862c7c2fbb501bc1f692eb30e828f53bba5f850d3e9b3e6d241",
+   "reference_sha256": "b37116cc2a4d093b8bcd0d40a82121d690d82ae454e7c88ee26eddf9e52c949e"
+  },
+  {
+   "id": "method/czerny849/002|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "218a325d9a93b78d72abd76d30c7d5800f0413a2874fda2c28a6a17f58fe798f",
+   "reference_sha256": "b37116cc2a4d093b8bcd0d40a82121d690d82ae454e7c88ee26eddf9e52c949e"
+  },
+  {
+   "id": "method/czerny849/005|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "e3e26057cd9e217de60b3c4d778cb91c28fd92f46d4594ba1231f7a5ae6bb0bb",
+   "reference_sha256": "5427f762b8d709be18221d1c4b4cc21cfe0489cda10afe27d974b570cd6a393b"
+  },
+  {
+   "id": "method/czerny849/005|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "2ae9fab80350d1ad5d86efcde9049a2db9348beb20f65ee60edd2a0f315a05ce",
+   "reference_sha256": "5427f762b8d709be18221d1c4b4cc21cfe0489cda10afe27d974b570cd6a393b"
+  },
+  {
+   "id": "method/czerny849/005|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "3e13fd5eee3450e25eef29c07e3333789b20b28283e2189580acbf96ea46d019",
+   "reference_sha256": "5427f762b8d709be18221d1c4b4cc21cfe0489cda10afe27d974b570cd6a393b"
+  },
+  {
+   "id": "method/czerny849/005|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "ede5f29ca7ffb1b535fa7f53d4122913fb01307e6dac41160cb89013333304d2",
+   "reference_sha256": "5427f762b8d709be18221d1c4b4cc21cfe0489cda10afe27d974b570cd6a393b"
+  },
+  {
+   "id": "method/czerny849/006|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "19c984d73f2a3c5b69f1df718102209f30b4cd86c4446e7a4c09015b1178ac92",
+   "reference_sha256": "9a027c47a2a9b94e642c73986cd022c01315024a311d555ee756e27de1086623"
+  },
+  {
+   "id": "method/czerny849/006|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "c9917a96bd8a8efa411e9d554da28e2a330cff44950495a722c618022508a294",
+   "reference_sha256": "9a027c47a2a9b94e642c73986cd022c01315024a311d555ee756e27de1086623"
+  },
+  {
+   "id": "method/czerny849/006|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "edc5d272fb24d580a8a61f7ed0bcbb562c2061555f69423ffc721c7873aaf07e",
+   "reference_sha256": "9a027c47a2a9b94e642c73986cd022c01315024a311d555ee756e27de1086623"
+  },
+  {
+   "id": "method/czerny849/006|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "3e1194df779cfe1356ae65ad131f9e4cc7a1f6e18eb75b644e1a27f9280e7190",
+   "reference_sha256": "9a027c47a2a9b94e642c73986cd022c01315024a311d555ee756e27de1086623"
+  },
+  {
+   "id": "method/czerny849/007|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "4a78f31ecab88d4690ca96ef26a5ffb21b4d437abd11446bcfe0df3eace1faf0",
+   "reference_sha256": "e08e13ecaaa891bb35278e748f50aa3f06f5d92e885570961775c1b5a69f5a46"
+  },
+  {
+   "id": "method/czerny849/007|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "2d2ad6cdfb31f841d779274f4f2b2301462fcd3a807643a896812b3f17ecf486",
+   "reference_sha256": "e08e13ecaaa891bb35278e748f50aa3f06f5d92e885570961775c1b5a69f5a46"
+  },
+  {
+   "id": "method/czerny849/007|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "c6a62788b878de00f12affd777a4e249a4808ad35bec37246ea82360eef00b1e",
+   "reference_sha256": "e08e13ecaaa891bb35278e748f50aa3f06f5d92e885570961775c1b5a69f5a46"
+  },
+  {
+   "id": "method/czerny849/007|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "0d22c359b22e3c9f5ed90b87e7cad74a2fe522915c6b67b7d623412090f6013b",
+   "reference_sha256": "e08e13ecaaa891bb35278e748f50aa3f06f5d92e885570961775c1b5a69f5a46"
+  },
+  {
+   "id": "method/czerny849/008|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "b2b10b02c2f20e7b4e8ac209ba958b94e57d2479f35d86a704626abb06aee31b",
+   "reference_sha256": "c5c9111ec19bfb3f030d47f1994c1edb92e659200a7f95ad9ef9ad9611c627c2"
+  },
+  {
+   "id": "method/czerny849/008|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "a94140f642cfa71904cee5d10acc3b4bba6376e610277728d58e7bf3e6f77fe5",
+   "reference_sha256": "c5c9111ec19bfb3f030d47f1994c1edb92e659200a7f95ad9ef9ad9611c627c2"
+  },
+  {
+   "id": "method/czerny849/008|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "3e2e64370924928e6a6bb8091b0d17b5c1ef155e1c1059d491f61f9713821b0d",
+   "reference_sha256": "c5c9111ec19bfb3f030d47f1994c1edb92e659200a7f95ad9ef9ad9611c627c2"
+  },
+  {
+   "id": "method/czerny849/008|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "d4bf3679f3fd8161780b86419ec2f20c3f13488618459ee3d57e4db76dbd7d17",
+   "reference_sha256": "c5c9111ec19bfb3f030d47f1994c1edb92e659200a7f95ad9ef9ad9611c627c2"
+  },
+  {
+   "id": "method/czerny849/011|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "9579dd177d5b9e9c43ecf7234707739ead0f151abb5b0b19a92a8036ee504217",
+   "reference_sha256": "26c75db747518c3aaa692ab99e637989fe1b8a33ae61e5e2df27e009d6207a67"
+  },
+  {
+   "id": "method/czerny849/011|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "873c07b2cfea7284fa81f9abf6c3f89a65bc2b4b738978ef68a5d90e53586938",
+   "reference_sha256": "26c75db747518c3aaa692ab99e637989fe1b8a33ae61e5e2df27e009d6207a67"
+  },
+  {
+   "id": "method/czerny849/011|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "becdcbb662e65a55696f3cbe43975f4530ef7d41dfae688f405d604b8fb4e500",
+   "reference_sha256": "26c75db747518c3aaa692ab99e637989fe1b8a33ae61e5e2df27e009d6207a67"
+  },
+  {
+   "id": "method/czerny849/011|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "7285af01582de0ebff34f875a8cb7e740349ac6611e0967dab3ac473db686d15",
+   "reference_sha256": "26c75db747518c3aaa692ab99e637989fe1b8a33ae61e5e2df27e009d6207a67"
+  },
+  {
+   "id": "method/czerny849/013|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "fdd342c83d2df6350bb5347a5bb10f22a01e2c241448474240d78ccdc47b82fb",
+   "reference_sha256": "9a398d50dccdc57da42dbdb97f0ed725e7e7bd0bbe70a026a526866c1c1abd50"
+  },
+  {
+   "id": "method/czerny849/013|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "7f72b031f96fc007f4a4e8e1b08b11fd15312e55a6404f059f0281bd116e1b15",
+   "reference_sha256": "9a398d50dccdc57da42dbdb97f0ed725e7e7bd0bbe70a026a526866c1c1abd50"
+  },
+  {
+   "id": "method/czerny849/013|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "c4f8038b2c70e5028bb453eea3bea4801c357216c8942d8601701141292f0370",
+   "reference_sha256": "9a398d50dccdc57da42dbdb97f0ed725e7e7bd0bbe70a026a526866c1c1abd50"
+  },
+  {
+   "id": "method/czerny849/013|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "fa49c6116c4e54dd588ec8ad29a05b7af6ef89c3c98ffc50501d2bffc8b577d0",
+   "reference_sha256": "9a398d50dccdc57da42dbdb97f0ed725e7e7bd0bbe70a026a526866c1c1abd50"
+  },
+  {
+   "id": "method/czerny849/019|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "a479c2ff4569aa6ad9d59b0c90d40779e519d3d15cd3d8de574908cf6a429cc0",
+   "reference_sha256": "8d2755fae8fc7de928b5f312f8e8a47cbc043ccb161edbf7cd6a0d93cc854524"
+  },
+  {
+   "id": "method/czerny849/019|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "91813d7e6bbf5aa3a6ef9c87e3e8abe13231e6677cbeec4c84d775fed040aa63",
+   "reference_sha256": "8d2755fae8fc7de928b5f312f8e8a47cbc043ccb161edbf7cd6a0d93cc854524"
+  },
+  {
+   "id": "method/czerny849/019|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "6ab30f642f587c4a770b4fa65fc5cc0b37ac5407f99a6839533bef1e7d0e9d50",
+   "reference_sha256": "8d2755fae8fc7de928b5f312f8e8a47cbc043ccb161edbf7cd6a0d93cc854524"
+  },
+  {
+   "id": "method/czerny849/019|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "e98c1a91a7acc721711917035a6433574d1cab99fa3acae9c5a265b69ec57d54",
+   "reference_sha256": "8d2755fae8fc7de928b5f312f8e8a47cbc043ccb161edbf7cd6a0d93cc854524"
+  },
+  {
+   "id": "method/czerny849/020|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "4aea2508ef0cf73f953c84f70b18585642fe8ddc38237f5a20bf2d2c6b69df24",
+   "reference_sha256": "053c6a88af4d8aa04ba0b5fedba8761d35b1c83646739226c66b485a5260259f"
+  },
+  {
+   "id": "method/czerny849/020|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "8486b420cd50bda205fec6019d7244f7c892341d5515102e93351cfca772f0b9",
+   "reference_sha256": "053c6a88af4d8aa04ba0b5fedba8761d35b1c83646739226c66b485a5260259f"
+  },
+  {
+   "id": "method/czerny849/020|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "abbd595a5d0aaceba861fc2713f2bb2ea852b9c784678f7c5c926fc15575ae74",
+   "reference_sha256": "053c6a88af4d8aa04ba0b5fedba8761d35b1c83646739226c66b485a5260259f"
+  },
+  {
+   "id": "method/czerny849/020|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "0ee772cbf68f0c17d0987185d3261cc57b7931d077d7f2c350ccb3ecf8b782be",
+   "reference_sha256": "053c6a88af4d8aa04ba0b5fedba8761d35b1c83646739226c66b485a5260259f"
+  },
+  {
+   "id": "method/hanon/001|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "8d71a19b2e7df7c4cc2c24daaa784be7d0f508c238fabdea9ee73b3281ce196a",
+   "reference_sha256": "c8c6581e03f18fd90f5514a9c4e218e6974cd81f07200273d4647aea0d28cdde"
+  },
+  {
+   "id": "method/hanon/001|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "f76552e3348fd4aee06f7085dabe7bf136e054e4019b3d6cd97e751f38c4b9e7",
+   "reference_sha256": "c8c6581e03f18fd90f5514a9c4e218e6974cd81f07200273d4647aea0d28cdde"
+  },
+  {
+   "id": "method/hanon/001|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "9af559850f7453f82b065ff91b0931e4302e1d3da39fd2c97db8f356a55f3260",
+   "reference_sha256": "c8c6581e03f18fd90f5514a9c4e218e6974cd81f07200273d4647aea0d28cdde"
+  },
+  {
+   "id": "method/hanon/001|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "0ff84c827f0719ac08787872f110c7ab992413e3ba909be4f1306d67f4a3087b",
+   "reference_sha256": "c8c6581e03f18fd90f5514a9c4e218e6974cd81f07200273d4647aea0d28cdde"
+  },
+  {
+   "id": "method/hanon/002|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "ec20c7a32b884a7e0bd6ff4392d0d64e5bdcacac349ec7fecc69f593a3baf9dc",
+   "reference_sha256": "c9986d3b5c031e8890fcd262f9773d648ddaa681724a5d494105b6b8f9007b10"
+  },
+  {
+   "id": "method/hanon/002|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "2df2913d164f9da7e024e3a6d22403581c7d66c6ff65bd3664b4c95eb37ef3ec",
+   "reference_sha256": "c9986d3b5c031e8890fcd262f9773d648ddaa681724a5d494105b6b8f9007b10"
+  },
+  {
+   "id": "method/hanon/002|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "146a926b3e2cfd50491a4ec900465cebe96132fb8f79105ac7f9ce14ed0449da",
+   "reference_sha256": "c9986d3b5c031e8890fcd262f9773d648ddaa681724a5d494105b6b8f9007b10"
+  },
+  {
+   "id": "method/hanon/002|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "f80e178f7b3a7445100430eab2bbd0778aaafecadcfb74e1c85df46d55201185",
+   "reference_sha256": "c9986d3b5c031e8890fcd262f9773d648ddaa681724a5d494105b6b8f9007b10"
+  },
+  {
+   "id": "method/hanon/004|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "e461a48e713eb2cb02447d3aec6a5444062d517651e5fe8e41a21124b7ebf072",
+   "reference_sha256": "df325c896e06722466612e4553363dc0784da4300023e5d65c6aca9c06447b64"
+  },
+  {
+   "id": "method/hanon/004|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "89527b4a002bc0d3a902123dae0e4beb02928893120aff2539b7171e967d8242",
+   "reference_sha256": "df325c896e06722466612e4553363dc0784da4300023e5d65c6aca9c06447b64"
+  },
+  {
+   "id": "method/hanon/004|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "5db03b0d963d6e9c268828dcccd7fdd4856fea538bac575b5ca44c6109c9ca74",
+   "reference_sha256": "df325c896e06722466612e4553363dc0784da4300023e5d65c6aca9c06447b64"
+  },
+  {
+   "id": "method/hanon/004|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "4ce64c1cd03106642451aebaa6b9f9067ab9e69e656572fa50970c2dc3aaaf84",
+   "reference_sha256": "df325c896e06722466612e4553363dc0784da4300023e5d65c6aca9c06447b64"
+  },
+  {
+   "id": "method/hanon/005|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "c82104134c675f37b27ebc14f4cb5f2c6198834771daec90f49e7703b3ffe57e",
+   "reference_sha256": "98c63eab3855db91b107a45302a40588612ff85865582c2efe459a4fb5937925"
+  },
+  {
+   "id": "method/hanon/005|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "6c2e25429c9e11d1ff6f96ca0928147b09493bd7311e9af43fbfecb952c2dc1a",
+   "reference_sha256": "98c63eab3855db91b107a45302a40588612ff85865582c2efe459a4fb5937925"
+  },
+  {
+   "id": "method/hanon/005|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "63c9740e00949fa6c53515198e992d3642307e1a694410f14fa3e268345025b5",
+   "reference_sha256": "98c63eab3855db91b107a45302a40588612ff85865582c2efe459a4fb5937925"
+  },
+  {
+   "id": "method/hanon/005|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "337535830744d8e8f1c937aa860e8630577155bfbc23a01ea5058c9c6c7299ad",
+   "reference_sha256": "98c63eab3855db91b107a45302a40588612ff85865582c2efe459a4fb5937925"
+  },
+  {
+   "id": "method/hanon/007|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "62c21124b927164b937bb8ef3bca2bb541d3434d096425807d8bdd6859227d7a",
+   "reference_sha256": "c3ab15c17851508c53be254999966b319ccde56ba0b3046c8e7e0320f12ec3c2"
+  },
+  {
+   "id": "method/hanon/007|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "28fcce8f40ac45e6146e7c114a11dd22e7af6603cf9d331618a85ee03c32cca6",
+   "reference_sha256": "c3ab15c17851508c53be254999966b319ccde56ba0b3046c8e7e0320f12ec3c2"
+  },
+  {
+   "id": "method/hanon/007|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "0f3930065fcf2c5fddcf8253731e982ee6c69afcddfcc02e759566096377bdd9",
+   "reference_sha256": "c3ab15c17851508c53be254999966b319ccde56ba0b3046c8e7e0320f12ec3c2"
+  },
+  {
+   "id": "method/hanon/007|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "6ccf780ded3cf84c8d7b6df4b4c2414ed259b6dd64d3064bb0b44b7fb6979037",
+   "reference_sha256": "c3ab15c17851508c53be254999966b319ccde56ba0b3046c8e7e0320f12ec3c2"
+  },
+  {
+   "id": "method/hanon/008|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "239af9b0277b51f77dd92fba93d04737c4cc1d23c59011a6ffbd6be66b74d768",
+   "reference_sha256": "132c293ea69731489411e720fc0e31b79cc7b7500b1cad1ffa3a452cc88b6c50"
+  },
+  {
+   "id": "method/hanon/008|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "82c5cf5146d12f13bc78bfded11debd19b056989df212fce9489f16f7e53ff5e",
+   "reference_sha256": "132c293ea69731489411e720fc0e31b79cc7b7500b1cad1ffa3a452cc88b6c50"
+  },
+  {
+   "id": "method/hanon/008|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "4e51e9db23962cba51887cad1a5dd7168b79a11b441302fb63719686a27f0870",
+   "reference_sha256": "132c293ea69731489411e720fc0e31b79cc7b7500b1cad1ffa3a452cc88b6c50"
+  },
+  {
+   "id": "method/hanon/008|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "a502b51ff29c9caf1fe36b5db446aa816a63e54b5f8ace1a53f4bd5a130c7ec2",
+   "reference_sha256": "132c293ea69731489411e720fc0e31b79cc7b7500b1cad1ffa3a452cc88b6c50"
+  },
+  {
+   "id": "method/hanon/009|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "3947150ca0488ed101f9af95a1a942810ccde2ca26263b4e582d821385eb4f6f",
+   "reference_sha256": "95bb42235fe7539fe6918e37cb21de3372b2568d6ac9b42f2bebb4c8e1a783a6"
+  },
+  {
+   "id": "method/hanon/009|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "477b5b1fb565fc8b97b468d39d2efa386e186003f6bcb3c3545affec35473b2f",
+   "reference_sha256": "95bb42235fe7539fe6918e37cb21de3372b2568d6ac9b42f2bebb4c8e1a783a6"
+  },
+  {
+   "id": "method/hanon/009|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "e06e0de0c3ac1a55692b672457b790f6871e1cb26f75af18a3f79d6df4cf2710",
+   "reference_sha256": "95bb42235fe7539fe6918e37cb21de3372b2568d6ac9b42f2bebb4c8e1a783a6"
+  },
+  {
+   "id": "method/hanon/009|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "d9d2352e3b2216494b3475b3123d4e6bd3f7cc5b96fda2df56ed7da6acad2784",
+   "reference_sha256": "95bb42235fe7539fe6918e37cb21de3372b2568d6ac9b42f2bebb4c8e1a783a6"
+  },
+  {
+   "id": "method/hanon/020|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "3f484c90327cacf1dba499545d3bd6f431147128251513f39b4faa72fd8ae48a",
+   "reference_sha256": "fe215688218cf43dfa30c1519a0399727cc2417cd9b6843bd230c3eba3af5b1d"
+  },
+  {
+   "id": "method/hanon/020|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "acd93783d04de10a8d366d5df50e2d2d2bb7b0dbcac2238183221a0dfd66091a",
+   "reference_sha256": "fe215688218cf43dfa30c1519a0399727cc2417cd9b6843bd230c3eba3af5b1d"
+  },
+  {
+   "id": "method/hanon/020|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "01eb0e73f5823a4b86d6601417172473efdba94f77de2ac0f91fe156e0c2a417",
+   "reference_sha256": "fe215688218cf43dfa30c1519a0399727cc2417cd9b6843bd230c3eba3af5b1d"
+  },
+  {
+   "id": "method/hanon/020|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "1bc9c76ff911d66d3e0b210bb8dd556fda1ed6d942ee3d8a023f626294a8f49f",
+   "reference_sha256": "fe215688218cf43dfa30c1519a0399727cc2417cd9b6843bd230c3eba3af5b1d"
+  },
+  {
+   "id": "method/sonatina/002|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "6cbf8fd68a322c4f9ebc48750d6d5deabbcd9d0fd822ebd39da45e389b6ba9d4",
+   "reference_sha256": "522e3509e91dddd6eae008447228c3fec0b644a3a1f1f1b1e46f8a525e67f14a"
+  },
+  {
+   "id": "method/sonatina/002|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "516a20b6e70952138f0ecf5322a83b2b7dac5a3c42dbb62942f37af63c399d90",
+   "reference_sha256": "522e3509e91dddd6eae008447228c3fec0b644a3a1f1f1b1e46f8a525e67f14a"
+  },
+  {
+   "id": "method/sonatina/002|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "78d0f789e5d2ef56e829c850f6d1b8da3d5dea59851660e6c2cb66b1d290a7d5",
+   "reference_sha256": "522e3509e91dddd6eae008447228c3fec0b644a3a1f1f1b1e46f8a525e67f14a"
+  },
+  {
+   "id": "method/sonatina/002|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "23ef98278be59bc0e264139ce675f715950efea8231091a79ea6df2199b22312",
+   "reference_sha256": "522e3509e91dddd6eae008447228c3fec0b644a3a1f1f1b1e46f8a525e67f14a"
+  },
+  {
+   "id": "method/sonatina/003|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "cc6211245f3727233a64b02948e2cfe0918fca94922a7a872a03baa04a71ad6e",
+   "reference_sha256": "fe44d09c2c78b76b5bdd5bbed7ef7a8f84cb9c5afd30c129d6ae0a015d2bbfdb"
+  },
+  {
+   "id": "method/sonatina/003|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "f89c2f8c213f68d672277a17a736c02faa435f645cccc940a4eacb41ff5b0fc8",
+   "reference_sha256": "fe44d09c2c78b76b5bdd5bbed7ef7a8f84cb9c5afd30c129d6ae0a015d2bbfdb"
+  },
+  {
+   "id": "method/sonatina/003|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "ca503686bb420b8d1a721b3fc4b750ee3c6c057602702ce1747ce1e93b29e5e3",
+   "reference_sha256": "fe44d09c2c78b76b5bdd5bbed7ef7a8f84cb9c5afd30c129d6ae0a015d2bbfdb"
+  },
+  {
+   "id": "method/sonatina/003|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "865ce9c61691853ede5f44bb06dcfee531f988b6206bfc2ba3d298a399f12aa7",
+   "reference_sha256": "fe44d09c2c78b76b5bdd5bbed7ef7a8f84cb9c5afd30c129d6ae0a015d2bbfdb"
+  },
+  {
+   "id": "method/sonatina/006|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "31ba840aa1dc9ab39ef19414003609c0c649ebfa9a87ca848c370a6dfa5d5a15",
+   "reference_sha256": "8ceade7f5739f8b19a6d56b04a9848af6a83c52dbce1ab1879b14a7e199a8596"
+  },
+  {
+   "id": "method/sonatina/006|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "89e98f53ac04e5ec11b2b6b0f371ce3bb8f1dccb278652137ef4009c80ba54f5",
+   "reference_sha256": "8ceade7f5739f8b19a6d56b04a9848af6a83c52dbce1ab1879b14a7e199a8596"
+  },
+  {
+   "id": "method/sonatina/006|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "5626ff91bb0372c1de56930401ef4cb991daacc0fc6501dd9e83aa1c88d9ac1e",
+   "reference_sha256": "8ceade7f5739f8b19a6d56b04a9848af6a83c52dbce1ab1879b14a7e199a8596"
+  },
+  {
+   "id": "method/sonatina/006|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "49e90a02feeda6899bb94af6f03e5b6aa8a2b5d04c433de784795757923b3825",
+   "reference_sha256": "8ceade7f5739f8b19a6d56b04a9848af6a83c52dbce1ab1879b14a7e199a8596"
+  },
+  {
+   "id": "method/sonatina/009|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "0895cdca2da71782c94e85a753588579debb0e79a80ac4c1285fb78ace5be479",
+   "reference_sha256": "54a82d996f7d675e5c75c601ba7378261aeafda7a1dd46e57f9c906f1f0c7fe9"
+  },
+  {
+   "id": "method/sonatina/009|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "f2bf4acdad852c9b101cdc2265e854b89bb68c2685116adfab2eafc543799572",
+   "reference_sha256": "54a82d996f7d675e5c75c601ba7378261aeafda7a1dd46e57f9c906f1f0c7fe9"
+  },
+  {
+   "id": "method/sonatina/009|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "1e532a9be7c8aaba8c42cd53be9af09bfa49298b8a235c3ba0c8a6a1d3e06a61",
+   "reference_sha256": "54a82d996f7d675e5c75c601ba7378261aeafda7a1dd46e57f9c906f1f0c7fe9"
+  },
+  {
+   "id": "method/sonatina/009|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "560fa39860b4ed2bea4fca12c0ce223d85ed87a7b332995159375bab78dafb92",
+   "reference_sha256": "54a82d996f7d675e5c75c601ba7378261aeafda7a1dd46e57f9c906f1f0c7fe9"
+  },
+  {
+   "id": "method/sonatina/010|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "254737dde7ef10427724e0216a301b592d265d5b55d17323986169f7e12ce188",
+   "reference_sha256": "79ef0942030acc887f16dc8fd18d7fb4a5635acc919b4c31b6947b0158f7fbd5"
+  },
+  {
+   "id": "method/sonatina/010|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "6b370da5dc4a20b591541e6e7927e4b15860cfa8eb03779b8b7d90d3f6794f8d",
+   "reference_sha256": "79ef0942030acc887f16dc8fd18d7fb4a5635acc919b4c31b6947b0158f7fbd5"
+  },
+  {
+   "id": "method/sonatina/010|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "da91475eb4d499033f0299a3d851b7db3e1ffb171a8ce14b683111ce5667c263",
+   "reference_sha256": "79ef0942030acc887f16dc8fd18d7fb4a5635acc919b4c31b6947b0158f7fbd5"
+  },
+  {
+   "id": "method/sonatina/010|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "da0f4fcf99a0003e80e9c3c6890669127b8bdd3051d5a9712fbcbc142bd54461",
+   "reference_sha256": "79ef0942030acc887f16dc8fd18d7fb4a5635acc919b4c31b6947b0158f7fbd5"
+  },
+  {
+   "id": "method/sonatina/012|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "beccf417bf0b9232c67e0001dfd2067d03b5e3dabb4f7c8b19ebdec872605df8",
+   "reference_sha256": "142a548fad83cc061f64da7cb8ea6c5f5f619f95be0059632e9abc71bd554a3b"
+  },
+  {
+   "id": "method/sonatina/012|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "e34e5c5b3bba52adbcf82637fa03593d64aad70bf0a8d7b536e91ffb807f8660",
+   "reference_sha256": "142a548fad83cc061f64da7cb8ea6c5f5f619f95be0059632e9abc71bd554a3b"
+  },
+  {
+   "id": "method/sonatina/012|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "12cf1670e7cdc6128b15d7e6bc5fd27d78d90d132ff19f53ca8ef5f033b47e83",
+   "reference_sha256": "142a548fad83cc061f64da7cb8ea6c5f5f619f95be0059632e9abc71bd554a3b"
+  },
+  {
+   "id": "method/sonatina/012|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "5a56170bf834678c908068794a9ca8029b329468a4983f60978b3a98a188312a",
+   "reference_sha256": "142a548fad83cc061f64da7cb8ea6c5f5f619f95be0059632e9abc71bd554a3b"
+  },
+  {
+   "id": "method/sonatina/014|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "44c1b25972f8e4407f391f79cee2eab05ef0585f29f0b8d4b0562a412d8aaafe",
+   "reference_sha256": "ffc2f04a5cb66d0da85fda7125cb0ffe8417508206b7a03f94f6198b9c24b683"
+  },
+  {
+   "id": "method/sonatina/014|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "7dc8c9d5738f40e3defe4f53b03dd2c5d900c665eedf05c52f9439d5af2dd240",
+   "reference_sha256": "ffc2f04a5cb66d0da85fda7125cb0ffe8417508206b7a03f94f6198b9c24b683"
+  },
+  {
+   "id": "method/sonatina/014|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "4a80764aebad8a0e47644a349d0c11ed097c4b334b26c222e24cdec85d8c46d2",
+   "reference_sha256": "ffc2f04a5cb66d0da85fda7125cb0ffe8417508206b7a03f94f6198b9c24b683"
+  },
+  {
+   "id": "method/sonatina/014|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "1066de325953bc9a34f5f6a84561e0807239db7f143fe08eb85e9e1e44a15f48",
+   "reference_sha256": "ffc2f04a5cb66d0da85fda7125cb0ffe8417508206b7a03f94f6198b9c24b683"
+  },
+  {
+   "id": "method/sonatina/017|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "50a1e9db0dadc0cda884ff7af5d36a4489765ce6bd55de37b4a99be5b234c1ce",
+   "reference_sha256": "a26f6a4b07e92e12e29ebc34b082b81f5647412dce1e1d7be8a8a4b398cc1b49"
+  },
+  {
+   "id": "method/sonatina/017|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "3dd252353c5c64b69f73d96dec77f31a1c3a25ead4856eaaac331ecfa3974ca9",
+   "reference_sha256": "a26f6a4b07e92e12e29ebc34b082b81f5647412dce1e1d7be8a8a4b398cc1b49"
+  },
+  {
+   "id": "method/sonatina/017|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "eed7e021ad881daf7235a2a9b940289a4672102824d8d51856b57d62aeb21d6e",
+   "reference_sha256": "a26f6a4b07e92e12e29ebc34b082b81f5647412dce1e1d7be8a8a4b398cc1b49"
+  },
+  {
+   "id": "method/sonatina/017|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "15e7f66f916bd43da90b62f4e34c037a26d859919ab9140cd97bf82f2cf592a9",
+   "reference_sha256": "a26f6a4b07e92e12e29ebc34b082b81f5647412dce1e1d7be8a8a4b398cc1b49"
+  },
+  {
+   "id": "method/sonatina/018|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "509af5a7eb2245f833a9e1bdcf40ae6421e74932f60465af50c5ef6253f557a5",
+   "reference_sha256": "6ef1bebd219019b3ce9b480c48e8334d84ead655662e5cdc45f013ec070065b4"
+  },
+  {
+   "id": "method/sonatina/018|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "648ecead69ec1a46a1084d4fd3de53c0db4011bdc5d19a60982387e3158cc538",
+   "reference_sha256": "6ef1bebd219019b3ce9b480c48e8334d84ead655662e5cdc45f013ec070065b4"
+  },
+  {
+   "id": "method/sonatina/018|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "c62720d0c0cbefb87f1c5e685c6a9b48bcead16f7c9193e47dc56c9d075e2a69",
+   "reference_sha256": "6ef1bebd219019b3ce9b480c48e8334d84ead655662e5cdc45f013ec070065b4"
+  },
+  {
+   "id": "method/sonatina/018|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "fcb5fa7dbbe3ae7fb48dd1ee71f4f926ca8c8ef2d6ddcd1d6aa6146d928ddc49",
+   "reference_sha256": "6ef1bebd219019b3ce9b480c48e8334d84ead655662e5cdc45f013ec070065b4"
+  },
+  {
+   "id": "method/sonatina/021|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "b48c7a24fd50fb8f056b2071d67c8f7fee7064027ca91ff54497007732530aa1",
+   "reference_sha256": "0741cee4dbc9c6a8229e475964e8fcfbf51911e23a94eb9f18bcddd722e46800"
+  },
+  {
+   "id": "method/sonatina/021|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "4df9bcda731633ccd253c8eaa5a139a50130135759a20f73f641cfd7328b8f6c",
+   "reference_sha256": "0741cee4dbc9c6a8229e475964e8fcfbf51911e23a94eb9f18bcddd722e46800"
+  },
+  {
+   "id": "method/sonatina/021|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "c6d06b35e244bb2e2cde19e6a857910d987c4a4e51b5a5fd671c781638e3af42",
+   "reference_sha256": "0741cee4dbc9c6a8229e475964e8fcfbf51911e23a94eb9f18bcddd722e46800"
+  },
+  {
+   "id": "method/sonatina/021|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "dc875fb51a2da30ff59cc96ad3365550cf2767b317be6f4f74ac8651ea5c964a",
+   "reference_sha256": "0741cee4dbc9c6a8229e475964e8fcfbf51911e23a94eb9f18bcddd722e46800"
+  },
+  {
+   "id": "method/sonatina/025|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "9c1502033dd18d8b2a228319dadfc9740a8ede4ccaf7051b1d86c14dd8e899a6",
+   "reference_sha256": "1a49a672964763a03823a1372ef506c88ba469ceba4c79bab3c02163df9c0d05"
+  },
+  {
+   "id": "method/sonatina/025|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "6e459dc4741182d021ddca4fe6b9942095577a64f9427af4491c5e6a1fa89d7c",
+   "reference_sha256": "1a49a672964763a03823a1372ef506c88ba469ceba4c79bab3c02163df9c0d05"
+  },
+  {
+   "id": "method/sonatina/025|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "6eb430b9d60b4543d1563402bcd81eaa51b43b04bf681f2e20979d2084f9d8b5",
+   "reference_sha256": "1a49a672964763a03823a1372ef506c88ba469ceba4c79bab3c02163df9c0d05"
+  },
+  {
+   "id": "method/sonatina/025|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "aae8a683d3573aafff23830f5b44188a1333efd078b280e44a48b592b85ee3ad",
+   "reference_sha256": "1a49a672964763a03823a1372ef506c88ba469ceba4c79bab3c02163df9c0d05"
+  },
+  {
+   "id": "method/sonatina/026|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "211aca5b4672d4ea7d133bf405127f48558acf6464e026bfe7d0a92acd26f7be",
+   "reference_sha256": "e683c1d3bb8d7b8641906a4af181f6b10e9c2b5e44bf694935c8a34c2dda6aa7"
+  },
+  {
+   "id": "method/sonatina/026|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "0ecfd218814c0f7bae1f031d738befc417ea6f744ad6d93daf221a4e4c0cfe9d",
+   "reference_sha256": "e683c1d3bb8d7b8641906a4af181f6b10e9c2b5e44bf694935c8a34c2dda6aa7"
+  },
+  {
+   "id": "method/sonatina/026|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "52ce52de85fa346775ecbd79ee54ff558be1fca122b47e4a2dcbf1a436ecffeb",
+   "reference_sha256": "e683c1d3bb8d7b8641906a4af181f6b10e9c2b5e44bf694935c8a34c2dda6aa7"
+  },
+  {
+   "id": "method/sonatina/026|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "f040c57b60d785e3441c83820840601402ff523ac2d04ccea88b6cdf6b6a6620",
+   "reference_sha256": "e683c1d3bb8d7b8641906a4af181f6b10e9c2b5e44bf694935c8a34c2dda6aa7"
+  },
+  {
+   "id": "method/sonatina/027|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "2fd85ddb8def763e9f10ca088ab0be1f35fbbafe7eabd3984c4fbaba9de32570",
+   "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
+  },
+  {
+   "id": "method/sonatina/027|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "5adcf0825d60d57dfc5fd70faa6731a088d69dbf98963ab852bb5ebae900e62c",
+   "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
+  },
+  {
+   "id": "method/sonatina/027|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "6d8fbddf713445603bd354d25d742b282f7239a1e07fbbb885b5325a1537edd7",
+   "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
+  },
+  {
+   "id": "method/sonatina/027|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "47ad4efe73318b50086c50c9f4f5e793681d281c6b02cd5bce530cc085a793ed",
+   "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
+  },
+  {
+   "id": "method/sonatina/028|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "a195525ef4e0b3166f08acc02605d4cba41d00436f12957b6b35f51d58d9701b",
+   "reference_sha256": "0072b82c8a461f1841618570b3226fa16b690416c896a5edcff7285d03facd15"
+  },
+  {
+   "id": "method/sonatina/028|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "5ded2201823f640609ce029bf78fd646954c4da6a52ed42be44ecabff87bf723",
+   "reference_sha256": "0072b82c8a461f1841618570b3226fa16b690416c896a5edcff7285d03facd15"
+  },
+  {
+   "id": "method/sonatina/028|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "fd20b1e179d44a61c62df6d02a6261eb874104b39d1ad1e8cd17dae3132e5262",
+   "reference_sha256": "0072b82c8a461f1841618570b3226fa16b690416c896a5edcff7285d03facd15"
+  },
+  {
+   "id": "method/sonatina/028|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "0c2923b38898327374f228e78be0886fdf9cae34f1042fdf95e313ec849fe306",
+   "reference_sha256": "0072b82c8a461f1841618570b3226fa16b690416c896a5edcff7285d03facd15"
+  },
+  {
+   "id": "micro/M01-waltz-3-4|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "1aa909f5fa8f2dde61d4dd723cdce54dd68c6f84e2a75eda83b50669c91f2663",
+   "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
+   "id": "micro/M01-waltz-3-4|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "a50a77108377dbdc3658ea703067859b968bd7b3f5aefa34ff33d29aebb507b4",
+   "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
+   "id": "micro/M01-waltz-3-4|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "67b4751c3ba9458e2b974baca24d8a1270df91bfa5e80564919ec139d075483b",
+   "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
+   "id": "micro/M01-waltz-3-4|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "2910226ef8f0821b9f2f8c5e28d32f7f533257cce7ef7d0559e3dd7bca6b3bc5",
+   "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
+   "id": "micro/M02-alberti-4-4|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "3773df5c5db8edc45434880baac6d67a4c8b5fc6ca54938328a9410e41a8f230",
+   "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
+  },
+  {
+   "id": "micro/M02-alberti-4-4|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "23ac62f9bf36d1773705488783fbc313edd2eee3a2d98de7cc07d1fcbd7915e3",
+   "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
+  },
+  {
+   "id": "micro/M02-alberti-4-4|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "2fa7ba60b470d89346f34a5f531dbbbbf02a8aa076bb84aed3fb44d70f4b99ac",
+   "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
+  },
+  {
+   "id": "micro/M02-alberti-4-4|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "960c6549d28d8aba3582ee35dfb0b0217dcc89f024d5c8486e82ffddb363e748",
+   "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
+  },
+  {
+   "id": "micro/M03-jig-6-8|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "d54a9247263fb1707b778f3200ed0b37be31cc8336779a127f55c9bf6138439b",
+   "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
+   "id": "micro/M03-jig-6-8|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "f14e7659ba59f89f7f1996d6fb3d89843ae3422c58c7f3f83c9469ce438c8097",
+   "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
+   "id": "micro/M03-jig-6-8|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "35d5764af15f00606742b7ac09560d93a189ae598d43e906ca4b6ac5a7b14730",
+   "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
+   "id": "micro/M03-jig-6-8|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "f7a4541ce313e39dc600cf8ced527099c46a6bca7e2627315cc390924d04ab4a",
+   "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
+   "id": "micro/M04-triplets-4-4|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "dbe06b80a8854cdd5749a96e41876e024a76d40ee195c9897758de821a572d0e",
+   "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
+  },
+  {
+   "id": "micro/M04-triplets-4-4|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "c00d4481b663bd0aa91f8bc75b29054eee61bd9697e813175f987660add30811",
+   "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
+  },
+  {
+   "id": "micro/M04-triplets-4-4|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "dbfd5f1b4f45ed0be9dddd381e07033bc5d46c66a45aed4de95b463ce528c533",
+   "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
+  },
+  {
+   "id": "micro/M04-triplets-4-4|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "5c9e817c4113c276e2579de9d500b15f78bc235b13f9c81a18ec782bbed494b8",
+   "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
+  },
+  {
+   "id": "micro/M05-32nds-120|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "ccd108d0ca66aadd06845fb8b95c8c84ee72a54ab592ecb5c105ce218e786353",
+   "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
+   "id": "micro/M05-32nds-120|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "50c527852c9543b597641e2e81544f203e278cda0f139cef8caff0c92f03a0d6",
+   "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
+   "id": "micro/M05-32nds-120|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "3208a03cc255c7c57bb3b30462a578b9707ace8124dab9a065d378da868bc061",
+   "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
+   "id": "micro/M05-32nds-120|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "7cf7de16ba20ce2e18161d0167d62cc15b130439549534b6f50010915520b666",
+   "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
+   "id": "micro/M06-32nds-176|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "4f8c71ee1aa5095afaf8ed9b0240f9725919ddc3d96126633c074d1c42d438f7",
+   "reference_sha256": "0ef2b8c3583ff7ff57a1705c679917b670c90fdfa04c5b73a46c956aade0b522"
+  },
+  {
+   "id": "micro/M06-32nds-176|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "1875d414732f887b24f9cda66dacd740e899ffa49facb8f7523016fed6d46210",
+   "reference_sha256": "0ef2b8c3583ff7ff57a1705c679917b670c90fdfa04c5b73a46c956aade0b522"
+  },
+  {
+   "id": "micro/M06-32nds-176|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "dad09c6740cf205f729b5ba9f155c084ab49851b6eb08225b07632795436fbb1",
+   "reference_sha256": "0ef2b8c3583ff7ff57a1705c679917b670c90fdfa04c5b73a46c956aade0b522"
+  },
+  {
+   "id": "micro/M06-32nds-176|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "db62db226bfdb81e48351157f3c506ce792464c770a6a35391f9c33ab38dd3fa",
+   "reference_sha256": "0ef2b8c3583ff7ff57a1705c679917b670c90fdfa04c5b73a46c956aade0b522"
+  },
+  {
+   "id": "micro/M07-pickup-3-4|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "f8bd70e1254d96ec2ccae5141e9266620871a50504b41038a871318d7b69fc94",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
+   "id": "micro/M07-pickup-3-4|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "34f2ae3c69bfea9c6aa07ecace1641c7bae45ac959654ceba75ee7d0a7ca27d0",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
+   "id": "micro/M07-pickup-3-4|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "3017de59f28805b1e682204172c6e751af9fac5c41925a3b950e2d6785b0e3bb",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
+   "id": "micro/M07-pickup-3-4|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "269e9bfb3d1837f4661c9b4df0806ad42c150aba30f85e04b9c6bed53856d494",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
+   "id": "micro/M08-pickup-4-4|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "e3e51ea8f0f6195cf998993f565c0c08b0ccd1caef004ab66f6dcad16fdd12c0",
+   "reference_sha256": "5535e3fca8be8702a15c955c9778b0bbd5ba7cbfa0064c9e03bdac70be2371d6"
+  },
+  {
+   "id": "micro/M08-pickup-4-4|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "a155fb3912a5ef54940fe60ab383937924cd50ef05f9b7172895e3e96dba19d7",
+   "reference_sha256": "5535e3fca8be8702a15c955c9778b0bbd5ba7cbfa0064c9e03bdac70be2371d6"
+  },
+  {
+   "id": "micro/M08-pickup-4-4|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "ca7a9db3689a8f189b87067a9514f888725bbf0cc24fd1dd749c51bc4a8574fc",
+   "reference_sha256": "5535e3fca8be8702a15c955c9778b0bbd5ba7cbfa0064c9e03bdac70be2371d6"
+  },
+  {
+   "id": "micro/M08-pickup-4-4|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "0a3eb430428f44cb031533b5a6d7dfd1cbc7c6c708a6225c2f0bcaa2f9745f42",
+   "reference_sha256": "5535e3fca8be8702a15c955c9778b0bbd5ba7cbfa0064c9e03bdac70be2371d6"
+  },
+  {
+   "id": "micro/M09-syncopation-ties|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "4875ffd75098aa320111dc52ccb9489588df15fc96a89b2c73445aa0b50047e9",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
+   "id": "micro/M09-syncopation-ties|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "475bf8b9600687bf66d3b407139bd6e8ae65271e93df0a09b6b947b5d198494c",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
+   "id": "micro/M09-syncopation-ties|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "47cc061c13935d745ea00e15038e8a948d9ff89abbec701919c85ab62acd9bfe",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
+   "id": "micro/M09-syncopation-ties|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "cd496d7ec6ba9d7bf0c832a6bf68dd02f8ef0d22a95897874658a3d2c9d9df56",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
+   "id": "micro/M10-dotted|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "df7c2c74c0c61dda40f3486312b75ca85c4cd5a69a47c4b09604ee82105bf301",
+   "reference_sha256": "c492ffd50e9792199368de1e3875e04e37bbe559710391025e05ae3363230546"
+  },
+  {
+   "id": "micro/M10-dotted|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "e59ca1e09fa7a8315c51eacd903e2016bd4c1e8b594d4aee149898693c80b4bb",
+   "reference_sha256": "c492ffd50e9792199368de1e3875e04e37bbe559710391025e05ae3363230546"
+  },
+  {
+   "id": "micro/M10-dotted|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "1b405a308688ecf817c5b612002cfdd57bea850262b79b9346c27f1b95d42cec",
+   "reference_sha256": "c492ffd50e9792199368de1e3875e04e37bbe559710391025e05ae3363230546"
+  },
+  {
+   "id": "micro/M10-dotted|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "8d2932976cc83a481fb86de62757489c8f64d62c9b55c8f8f23ca3d46acb9e1f",
+   "reference_sha256": "c492ffd50e9792199368de1e3875e04e37bbe559710391025e05ae3363230546"
+  },
+  {
+   "id": "micro/M11-harmonic-minor|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "babfe1d812e1d0ac9095f72270f612992062ecbe52949fc6cef0833d8394afef",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
+   "id": "micro/M11-harmonic-minor|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "e62354b201123817b4fdc129b66e9f31a001004b87e6b49bcdf88d6f86c471c3",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
+   "id": "micro/M11-harmonic-minor|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "22a73b524116bd89c132414c3e32192944a28b7a375fc1f78c54bb546eaf12a2",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
+   "id": "micro/M11-harmonic-minor|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "f141f30d3a07298510862ed15bd9556ad4857ae3f3dc04b4b21242c013105f18",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
+   "id": "micro/M12-flats-db|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "3113be825b2cdf90fb544bace0d2909bd06ffadb09c1dacf271bb1e9c8bb41c8",
+   "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
+   "id": "micro/M12-flats-db|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "9da213540c19782e123392cd178c6f62e0e8b115ebeacad9fdb5b6e05642256b",
+   "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
+   "id": "micro/M12-flats-db|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "49df03e732f7e617eded3306ef58b9b5cb4b44e5fd1fcda4deb5bbb3997eb12a",
+   "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
+   "id": "micro/M12-flats-db|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "c5f680f24f9fe0a8102c4d9e104aa3f23f46f73031a289cec826312f7ae8ae38",
+   "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
+   "id": "micro/M13-sharps-chromatic|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "c43dc586f186b212ce6f28de70a6a42ad4507f11d87e4f3ad1b15df16a068ea5",
+   "reference_sha256": "f9b6832e7860f333398a4295a1c2e801c3dc4058475d142cc4cb1fe9fa92f5b8"
+  },
+  {
+   "id": "micro/M13-sharps-chromatic|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "227777b033aa5157e184e76670e5f95897f75bf5d9912bb379a7c3800cd7c778",
+   "reference_sha256": "f9b6832e7860f333398a4295a1c2e801c3dc4058475d142cc4cb1fe9fa92f5b8"
+  },
+  {
+   "id": "micro/M13-sharps-chromatic|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "b1ffa41fc2a239c87fe463e4f3798ff5a94cfa241f73b3547c22b6b3cdfb9060",
+   "reference_sha256": "f9b6832e7860f333398a4295a1c2e801c3dc4058475d142cc4cb1fe9fa92f5b8"
+  },
+  {
+   "id": "micro/M13-sharps-chromatic|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "c104609d88f3244a14863b313aba9e2715d1e66f763b6401c25f3ee2c4cb392e",
+   "reference_sha256": "f9b6832e7860f333398a4295a1c2e801c3dc4058475d142cc4cb1fe9fa92f5b8"
+  },
+  {
+   "id": "micro/M14-melody-in-bass|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "974ac98bd9445a5af5a53760cc98ad337a59776c60c34d23293b94a086bc38bb",
+   "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  },
+  {
+   "id": "micro/M14-melody-in-bass|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "600fbdcd2aaa916f4ae3bef806d9164ef6442f47360be030efd9ee3ff5ca170d",
+   "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  },
+  {
+   "id": "micro/M14-melody-in-bass|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "98457d5b923967e354a5093e554aec58046355d590c423e4687a9750cc6694db",
+   "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  },
+  {
+   "id": "micro/M14-melody-in-bass|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "ef2c5f9588a53fdec2ff1a377f5cf23a16b2293aea5656f7cd9ad5f23264ae7d",
+   "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  },
+  {
+   "id": "micro/M15-wide-chords|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "df3727696ab401ce47469537bd459b0a5b7829d26e923b2f2d9884b1d38b1a86",
+   "reference_sha256": "a30597236725b84802daa9e9c11bd57928631c14a362b495d853ef449be80c88"
+  },
+  {
+   "id": "micro/M15-wide-chords|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "e4ff929188c70f883cc9addd352f8aebf04405ca51a9e1ca30693a27feb757fc",
+   "reference_sha256": "a30597236725b84802daa9e9c11bd57928631c14a362b495d853ef449be80c88"
+  },
+  {
+   "id": "micro/M15-wide-chords|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "45b779416ece191be9ec8588b8ab44f4917d5769044a3dea4f54340d48318cdb",
+   "reference_sha256": "a30597236725b84802daa9e9c11bd57928631c14a362b495d853ef449be80c88"
+  },
+  {
+   "id": "micro/M15-wide-chords|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "5f05408e7598a885875d78b0b696b289538eb172128a03bb781840d5f098b14d",
+   "reference_sha256": "a30597236725b84802daa9e9c11bd57928631c14a362b495d853ef449be80c88"
+  },
+  {
+   "id": "micro/M16-long-notes-rests|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "d60ac7710f1ed46eed2fc42734e257beec233f2b40519104fbae71ce0a0e0a9d",
+   "reference_sha256": "41ef7ad0bd2b8dca61db85c27917cd29de4e38a8f325d1116f928768aadc4d01"
+  },
+  {
+   "id": "micro/M16-long-notes-rests|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "9ecc58329c315e8a826768f6e4fb8338b1a621d01b0e7b59c74a8dd2399c18f0",
+   "reference_sha256": "41ef7ad0bd2b8dca61db85c27917cd29de4e38a8f325d1116f928768aadc4d01"
+  },
+  {
+   "id": "micro/M16-long-notes-rests|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "b1c8f2c48d77b3d11df2eb5e7227f82056857e3da5ae96ecbb62c932f54bb453",
+   "reference_sha256": "41ef7ad0bd2b8dca61db85c27917cd29de4e38a8f325d1116f928768aadc4d01"
+  },
+  {
+   "id": "micro/M16-long-notes-rests|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "73fea4e752ceabe28975060909e973290e6bc068c22bddc5222679ce5d909dde",
+   "reference_sha256": "41ef7ad0bd2b8dca61db85c27917cd29de4e38a8f325d1116f928768aadc4d01"
+  },
+  {
+   "id": "micro/M17-march-2-4|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "c605067f5ff66648d03c717922da948f1d7df9a6762b5a014e450d8cd838fa7b",
+   "reference_sha256": "97fee0da3be86edfeb652e0b240ce285ebb5e4a8ee689f62baf2c25908670a04"
+  },
+  {
+   "id": "micro/M17-march-2-4|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "9c9d096f46a210a5790351942c11ded4bb0ceaed1c4039f10cc69484c5369f27",
+   "reference_sha256": "97fee0da3be86edfeb652e0b240ce285ebb5e4a8ee689f62baf2c25908670a04"
+  },
+  {
+   "id": "micro/M17-march-2-4|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "63e17b460cb94c7d67c91ca3ad7bb2eecce80fc1b0b9663a93c14efc61e75378",
+   "reference_sha256": "97fee0da3be86edfeb652e0b240ce285ebb5e4a8ee689f62baf2c25908670a04"
+  },
+  {
+   "id": "micro/M17-march-2-4|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "4a03cfa3df56fc207dec37b916f16014263668ca3f9ac3362a8721b0ab1ead34",
+   "reference_sha256": "97fee0da3be86edfeb652e0b240ce285ebb5e4a8ee689f62baf2c25908670a04"
+  },
+  {
+   "id": "micro/M18-alla-breve|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "c4ad3e7486e0b2f7f780c8272c889144a024e7d2eae6655bb88196920c3e74aa",
+   "reference_sha256": "45ca99a1c07a07ab5532dc3b0b52e5767432c64e894c381bfd62977789dd6121"
+  },
+  {
+   "id": "micro/M18-alla-breve|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "68e8d89df8ac6cd61efd19afaf210805a06c6201a35e4169912f50f2f9950123",
+   "reference_sha256": "45ca99a1c07a07ab5532dc3b0b52e5767432c64e894c381bfd62977789dd6121"
+  },
+  {
+   "id": "micro/M18-alla-breve|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "7b1bb4f112c8ef8c62b66d84d42c982b061825efabe8570e1389afc57019aa4f",
+   "reference_sha256": "45ca99a1c07a07ab5532dc3b0b52e5767432c64e894c381bfd62977789dd6121"
+  },
+  {
+   "id": "micro/M18-alla-breve|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "cca78741fbaeb8c225ee8ac8e5aa725e3f929c13fef5c2cfa2d117a34614d0a9",
+   "reference_sha256": "45ca99a1c07a07ab5532dc3b0b52e5767432c64e894c381bfd62977789dd6121"
+  },
+  {
+   "id": "micro/M19-fast-3-8|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "174720139b6448456bf75f7a8152285b3c9bdda7e356a3d7de23f5df637bfa41",
+   "reference_sha256": "d855ef7dde656f3d9cd43cf08149f14cb1955a4dd2d4bec86ac0f3627f50631d"
+  },
+  {
+   "id": "micro/M19-fast-3-8|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "974e6d0ba3402a418de1f7131277bda0e0020c03f6ae53ed307e659009cf476f",
+   "reference_sha256": "d855ef7dde656f3d9cd43cf08149f14cb1955a4dd2d4bec86ac0f3627f50631d"
+  },
+  {
+   "id": "micro/M19-fast-3-8|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "027ff4dfc66c1f5a399e344b423d99490bc65b58e7308dd542bf318a68343aed",
+   "reference_sha256": "d855ef7dde656f3d9cd43cf08149f14cb1955a4dd2d4bec86ac0f3627f50631d"
+  },
+  {
+   "id": "micro/M19-fast-3-8|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "fe60127587b81c8f18639b7161879a1081a8487bfd8faee95b29475c1005daa4",
+   "reference_sha256": "d855ef7dde656f3d9cd43cf08149f14cb1955a4dd2d4bec86ac0f3627f50631d"
+  },
+  {
+   "id": "micro/M20-compound-12-8|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "f2cfd2c27ab1d2a64ade5a0b11af0bdfa3daae21e450e3bb42a83a6b0bcc683b",
+   "reference_sha256": "d15acc5c30128e2cbb9f3dfa4f3775ad93418b3903c4051df99ac77bd8dd5903"
+  },
+  {
+   "id": "micro/M20-compound-12-8|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "87e5aeab43afba96d6b3fb1610a84de9598e187e965c0a6f19411b37780b69ce",
+   "reference_sha256": "d15acc5c30128e2cbb9f3dfa4f3775ad93418b3903c4051df99ac77bd8dd5903"
+  },
+  {
+   "id": "micro/M20-compound-12-8|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "2b00f7a34e6fac651669b57ca795e802b2f7e189e52c0f0916bb0ad7a93134aa",
+   "reference_sha256": "d15acc5c30128e2cbb9f3dfa4f3775ad93418b3903c4051df99ac77bd8dd5903"
+  },
+  {
+   "id": "micro/M20-compound-12-8|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "d90a27320b5073082542952df92efec3f890b48c3a5fd61e719e6fa805dd6b8f",
+   "reference_sha256": "d15acc5c30128e2cbb9f3dfa4f3775ad93418b3903c4051df99ac77bd8dd5903"
+  },
+  {
+   "id": "micro/M21-five-four|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "a5a44c4d7fa3be83cc3202c582da5aff983ecd1624de2bf2772ea516533d98d4",
+   "reference_sha256": "d617097c51e74a8588ea52784577d5505f928e2456fef44cc36878ad4e1ad6bc"
+  },
+  {
+   "id": "micro/M21-five-four|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "880726db8e3b98f7a497bf1774b572679c737f3a8f665568ef36893cf9856da8",
+   "reference_sha256": "d617097c51e74a8588ea52784577d5505f928e2456fef44cc36878ad4e1ad6bc"
+  },
+  {
+   "id": "micro/M21-five-four|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "5271af3e7d97bc5d53a0594af6a9c3ef60191f38daec811ae7025551b2317749",
+   "reference_sha256": "d617097c51e74a8588ea52784577d5505f928e2456fef44cc36878ad4e1ad6bc"
+  },
+  {
+   "id": "micro/M21-five-four|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "2282240b87b90a426b16f721fabb1cad944626ff0c7007cd8f67b35853cff607",
+   "reference_sha256": "d617097c51e74a8588ea52784577d5505f928e2456fef44cc36878ad4e1ad6bc"
+  },
+  {
+   "id": "micro/M22-tempo-change|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "b1416bca89733425bc6a897d2829c94d62ea88823e463acb6308e6e6ce5f75ac",
+   "reference_sha256": "5acc11ae930eec34635589b56b0e6980811d6ec23302d9ae56fede56a5052566"
+  },
+  {
+   "id": "micro/M22-tempo-change|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "ef3c4d98f7d574748a2178c0cf0576eb86c79ff05d71a5dbe85ce72ddeda5fc1",
+   "reference_sha256": "5acc11ae930eec34635589b56b0e6980811d6ec23302d9ae56fede56a5052566"
+  },
+  {
+   "id": "micro/M22-tempo-change|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "3143b8e69066bdc4db8d60e98bce66dac5df27af21b32a79dc29908a2171f22f",
+   "reference_sha256": "5acc11ae930eec34635589b56b0e6980811d6ec23302d9ae56fede56a5052566"
+  },
+  {
+   "id": "micro/M22-tempo-change|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "bce426cc81bb40a8f9d1d15837d2bc2173eea600b8e3eebc555798fd1f85ba59",
+   "reference_sha256": "5acc11ae930eec34635589b56b0e6980811d6ec23302d9ae56fede56a5052566"
+  },
+  {
+   "id": "micro/M23-repeated-notes|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "11649b1903bcaea6cdcf0b24eb9744577ef09bf09a80234e02ca03a7fd260fc5",
+   "reference_sha256": "9d979f9d256151c2e939c95759953c26ffdc3538535582b4680bbf7b5200c125"
+  },
+  {
+   "id": "micro/M23-repeated-notes|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "301f8ebafd7421c8d84c06e282db8c2b2eb83079b9ccbe1bc14eda825a00d341",
+   "reference_sha256": "9d979f9d256151c2e939c95759953c26ffdc3538535582b4680bbf7b5200c125"
+  },
+  {
+   "id": "micro/M23-repeated-notes|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "7e1400a95421978a2b2616c260229f18631b91e87f8f833682e54a6e4bb6c109",
+   "reference_sha256": "9d979f9d256151c2e939c95759953c26ffdc3538535582b4680bbf7b5200c125"
+  },
+  {
+   "id": "micro/M23-repeated-notes|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "4e757dd30038dcdd9767b6f51cd14db66176153a0d91eaef1f577c9376be95ef",
+   "reference_sha256": "9d979f9d256151c2e939c95759953c26ffdc3538535582b4680bbf7b5200c125"
+  },
+  {
+   "id": "micro/M24-block-chords|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "e3bf2a0d90b01876cbd02d4c6735d06c4162120fa34493316d79ee58af865a98",
+   "reference_sha256": "b8bdf18977486f83e048285291004354fb79b9ac2d777738ef62119693bff60c"
+  },
+  {
+   "id": "micro/M24-block-chords|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "08382a8ecaaa8aa43a2d8f9d843606afc42decf68b72115f04fd5f0d4361ae7d",
+   "reference_sha256": "b8bdf18977486f83e048285291004354fb79b9ac2d777738ef62119693bff60c"
+  },
+  {
+   "id": "micro/M24-block-chords|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "4ab1cecea714637b72ca3270b904315bbfcbe0aa078e270d5c43d83a7597df8f",
+   "reference_sha256": "b8bdf18977486f83e048285291004354fb79b9ac2d777738ef62119693bff60c"
+  },
+  {
+   "id": "micro/M24-block-chords|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "591441934d70774cf482421464ef007860fc1cdb99e6b80477588f6153ea2641",
+   "reference_sha256": "b8bdf18977486f83e048285291004354fb79b9ac2d777738ef62119693bff60c"
+  },
+  {
+   "id": "samples/prelude-fragment|cover-pedal+helper|oracle-noisy|s1|opt:app-pedal",
+   "input_sha256": "b367d2bda1eebeaca6a15fd2af17332ecdba0ca23924de9f3fb6a3fe8ef5af2b",
+   "reference_sha256": "7d68240714c731a827448aa58185c58aea15b9c739c15d8d7bd100efea8a5913"
+  },
+  {
+   "id": "samples/prelude-fragment|cover-pedal+helper|oracle-noisy|s1|opt:v2-pedallegacy",
+   "input_sha256": "6fbee26b1df15bdeb04cabdcbd7da98538e15c75636acc6a926b8c9a324cb4a9",
+   "reference_sha256": "7d68240714c731a827448aa58185c58aea15b9c739c15d8d7bd100efea8a5913"
+  },
+  {
+   "id": "samples/prelude-fragment|cover-pedal|none|s1|opt:app-pedal",
+   "input_sha256": "eaeafbe78c4afdc9d6329571452cda7ce67dfcce969a0e81128cd6dc9ee5fbb7",
+   "reference_sha256": "7d68240714c731a827448aa58185c58aea15b9c739c15d8d7bd100efea8a5913"
+  },
+  {
+   "id": "samples/prelude-fragment|cover-pedal|none|s1|opt:v2-pedallegacy",
+   "input_sha256": "21283fd0ecc93122d84b8e778d85a1bbeae43e110f6596759e3f30827fd25efd",
+   "reference_sha256": "7d68240714c731a827448aa58185c58aea15b9c739c15d8d7bd100efea8a5913"
+  }
+ ],
+ "generator": "perform/2+humanize/1",
+ "reader": "reader/5",
+ "schema": "ppp.bench-lock/1",
+ "suite_sha256": "cc67ed0b3b6646927325bf9960500a272e39157cf67eec6e2b9569af184e5b08"
+}
