@@ -1276,10 +1276,10 @@ heard notes by pitch and time (one to one, 0.2 s), so a note the transcription n
 `arr.melody.kept / cross / lost / gap_rate`, `arr.harmony.agreement`, `arr.level.distinct / distance`, `arr.lh.notes_per_bar`,
 `arr.rh.above_c6`, `arr.hard.violations`, `arr.check.1..7`; definitions in the header of `rec-arrange.js` and in the README.
 
-Suites: `rec-arrange-smoke` (16 smoke references x cover, cover+of x app, v2: 64 cases, about 1 min), `rec-arrange-core` (64 small and
-middle-sized core references x cover, plus the 20 real-AMT fixtures of `replay-of`, x app, v2: 168 cases, about 2.5 min), both in the
-`bench` gate; `rec-arrange-full` (all 141 core references x cover x app, v2: 282 cases, about 8 min, aggregates only) and
-`mutation-check --rec-arrange` (13 planted defects, about 6 min) in `nightly-rec`. The system under test now includes the arranger's
+Suites: `rec-arrange-smoke` (16 smoke references x cover, cover+of x app, v2: 64 cases, about 1.5 min) is in the `bench` gate. `rec-arrange-core` (64 small and
+middle-sized core references x cover, plus the 20 real-AMT fixtures of `replay-of`, x app, v2: 168 cases, about 3-5 min), `rec-arrange-full` (all 141 core
+references x cover x app, v2: 282 cases, about 8 min, aggregates only) and `mutation-check --rec-arrange` (13 planted defects, about 6 min) run in `nightly-rec`:
+the gate is at its 50-minute limit (a first run with core in it was cancelled by the timeout, in `rec-grid`), so the heavier two are nightly. The system under test now includes the arranger's
 modules (`pppbench/sut.py` `SUT_TREES`: songgraph, arrangement, candidates, repair, realize, critics, playability, difficulty, with
 scoregraph and rec), so an A/B or a mutant carries the arranger a result names; the ruler (the true score's analysis, the checker,
 hard violations) is always the repository's own, so a planted defect cannot move its own measure.

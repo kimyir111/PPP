@@ -74,8 +74,6 @@ jobs:
       - run: python tests/bench/run.py check --suite rec-robust
       - run: python tests/bench/run.py run --suite rec-arrange-smoke   # G10c-0: what the one-note arranger does to recordings, against the true score
       - run: python tests/bench/run.py check --suite rec-arrange-smoke
-      - run: python tests/bench/run.py run --suite rec-arrange-core    # the same on the core's small references and the 20 real-AMT fixtures of replay-of
-      - run: python tests/bench/run.py check --suite rec-arrange-core
       - run: python tests/bench/run.py run --suite rec-grid        # G10a-2: v2 with and without its grid stage (rec/grid.js), oracle beats and swing included
       - run: python tests/bench/run.py check --suite rec-grid
       - run: python tests/bench/run.py run --suite replay-public   # exits with the replay verdict
@@ -96,7 +94,7 @@ jobs:
             tests/bench/out/robust-app/summary.md
             tests/bench/out/rec-core/summary.md
             tests/bench/out/rec-robust/summary.md
-            tests/bench/out/rec-arrange-core/summary.md
+            tests/bench/out/rec-arrange-smoke/summary.md
             tests/bench/out/rec-grid/summary.md
             tests/bench/out/replay-public/summary.md
             tests/bench/out/correctness/report.json
@@ -182,6 +180,8 @@ jobs:
       - run: python tests/bench/run.py check --suite rec-full
       # G10c-0: the rec-arrange metrics' gate sensitivity (one planted defect per metric in the arranger) and the full suite (aggregates)
       - run: python tests/bench/run.py mutation-check --rec-arrange
+      - run: python tests/bench/run.py run --suite rec-arrange-core    # the core's small references and the 20 real-AMT fixtures of replay-of (about 5 minutes: not in the gate, which is at its 50-minute limit)
+      - run: python tests/bench/run.py check --suite rec-arrange-core
       - run: python tests/bench/run.py run --suite rec-arrange-full
       - run: python tests/bench/run.py check --suite rec-arrange-full
       - if: always()
@@ -191,6 +191,7 @@ jobs:
           path: |
             tests/bench/out/rec-full/summary.md
             tests/bench/out/rec-full/run.json
+            tests/bench/out/rec-arrange-core/summary.md
             tests/bench/out/rec-arrange-full/summary.md
             tests/bench/out/rec-arrange-full/run.json
             tests/bench/out/mutation/mutation-report.json
