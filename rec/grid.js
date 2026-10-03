@@ -71,6 +71,7 @@
   const WINDOW_EARLY = 1 / 16;      /* an onset this close before a beat (in beats) is that beat's onset */
   /* where a swung second eighth is heard: long-short ratios 1.5, 1.63, 1.78 and 2 to 1 (no further: a dotted eighth and a 16th,
      3 to 1, must stay a dotted rhythm) */
+  const SLOT = 0.008;               /* seconds: notes this close are one frame of a transcription */
   const SWING_POINTS = [0.6, 0.62, 0.64, 2 / 3];
 
   /* the grid points of each kind (fractions of a beat, the next beat's start 1.0 excluded: it is shared, below) and
@@ -245,15 +246,29 @@
     const out = [];
     by.forEach(idx => {
       idx.sort((a, b) => notes[a].on - notes[b].on || a - b);
-      let cur = [idx[0]];
-      for (let x = 1; x < idx.length; x++) {
-        if (notes[idx[x]].on - notes[idx[x - 1]].on > joinGap) { out.push({ notes: cur }); cur = []; }
-        cur.push(idx[x]);
+      /* the attack's frames (notes less than SLOT apart), then a new onset where a frame comes more than joinGap after the one
+         before, or continues it by step (a fast run inside one 50-ms cluster: 32nds a frame apart) */
+      const frames = [];
+      idx.forEach(i => {
+        const f = frames[frames.length - 1];
+        if (f && notes[i].on - notes[f.notes[f.notes.length - 1]].on <= SLOT) f.notes.push(i); else frames.push({ notes: [i] });
+      });
+      let cur = frames[0].notes.slice();
+      for (let x = 1; x < frames.length; x++) {
+        const prev = frames[x - 1], fr = frames[x];
+        if (notes[fr.notes[0]].on - notes[prev.notes[prev.notes.length - 1]].on > joinGap || stepOf(notes, prev, fr)) { out.push({ notes: cur }); cur = []; }
+        cur.push(...fr.notes);
       }
       out.push({ notes: cur });
     });
     out.forEach(o => { o.t = o.notes.reduce((s, i) => s + notes[i].on, 0) / o.notes.length; });
     return out.sort((a, b) => a.t - b.t || a.notes[0] - b.notes[0]);
+  }
+
+  /* b repeats a pitch of a, or continues it by step (every pitch of b within two semitones of a pitch of a) */
+  function stepOf(notes, a, b) {
+    if (b.notes.some(i => a.notes.some(j => notes[i].midi === notes[j].midi))) return true;
+    return b.notes.every(i => a.notes.some(j => Math.abs(notes[i].midi - notes[j].midi) <= 2));
   }
 
   /* per beat: the onsets it holds, as fractions */
@@ -383,9 +398,10 @@
       entries = keys.map(k => {
         const idx = per.get(k);
         const fs = idx.map(i => onsets[i].f);
-        /* an onset may join the one before (one written onset heard twice) when it is close enough and repeats none of its pitches */
-        const canJoin = idx.map((i, x) => x > 0 && onsets[i].t - onsets[idx[x - 1]].t <= model.joinGap &&
-          !onsets[i].notes.some(a => onsets[idx[x - 1]].notes.some(b => notes[a].midi === notes[b].midi)));
+        /* an onset may join the one before (one written onset heard twice: a chord heard a frame apart) when it is close enough,
+           repeats none of its pitches, and is not the next step of a run (every pitch of it a tone or less from one of the onset
+           before: a fast scale's next note, which a chord's later frame is not) */
+        const canJoin = idx.map((i, x) => x > 0 && onsets[i].t - onsets[idx[x - 1]].t <= model.joinGap && !stepOf(notes, onsets[idx[x - 1]], onsets[i]));
         const bs = beatLen(beats, k);
         const sigmaB = Math.max(1e-4, sigmaSec / bs);
         return { beat: k, idx: idx, fs: fs, sec: bs, lik: beatLikelihoods(fs, kinds, model, sigmaB, bs, canJoin) };
