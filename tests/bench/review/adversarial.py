@@ -316,20 +316,27 @@ def check_data() -> None:
         inherit, inherit_files = inherit + k, inherit_files + (k > 0)
     results, summary = _core_results()
     kf = ((results.get("known_failures") or {}).get("classes") or {})
-    got = {"key signature": (kf.get("key_signature_playback") or {}).get("by_collection", {}).get("hymns"),
-           "ties": (kf.get("tie_without_stop") or {}).get("by_collection", {}).get("hymns"),
-           "bar accidentals": ((kf.get("bar_accidental_not_carried") or {}).get("by_collection"),
-                               (kf.get("bar_accidental_not_carried") or {}).get("items"))}
-    want = {"key signature": keysig, "ties": files, "bar accidentals": ({"hymns": inherit_files}, inherit)}
-    reported = (got == want
-                and all(kf.get(c, {}).get("status") == "KNOWN_FAILURE"
-                        for c in ("key_signature_playback", "tie_without_stop", "bar_accidental_not_carried"))
+    classes = ("key_signature_playback", "tie_without_stop", "bar_accidental_not_carried")
+
+    def hymn_files(cls):
+        # a collection with no affected file is not listed: MX-2 (ca70a03) regenerated the hymns, so none is, and absent means 0
+        return int(((kf.get(cls) or {}).get("by_collection") or {}).get("hymns") or 0)
+
+    got = {"key signature": hymn_files("key_signature_playback"), "ties": hymn_files("tie_without_stop"),
+           "bar accidentals": hymn_files("bar_accidental_not_carried")}
+    want = {"key signature": keysig, "ties": files, "bar accidentals": inherit_files}
+    # the benchmark's notes of bar accidentals are over every committed file, the review's over the hymns only: at least
+    notes_ok = int((kf.get("bar_accidental_not_carried") or {}).get("items") or 0) >= inherit
+    # a class is a KNOWN_FAILURE while some committed file has it and NONE when none does (since MX-2 the hymns have none of the three)
+    status = {c: ((kf.get(c) or {}).get("status"), int((kf.get(c) or {}).get("items") or 0)) for c in classes}
+    status_ok = all(st == ("KNOWN_FAILURE" if items else "NONE") for st, items in status.values())
+    reported = (got == want and notes_ok and status_ok
                 and summary is not None and "Known production failures" in summary)
     report("catalog hymn defects are measured by the benchmark", bool(reported),
            f"independent count: {keysig}/{len(hymns)} hymns ignore their key signature, {files} hymns carry {starts} "
-           f"tie starts and {stops} stops, {inherit} notes lose a bar accidental; benchmark report (hymn files): "
-           f"{got} (want {want}: files, and for bar accidentals (files by collection, notes)); summary lists them: "
-           f"{summary is not None and 'Known production failures' in summary}")
+           f"tie starts and {stops} stops, {inherit} notes lose a bar accidental; benchmark report (hymn files, absent = 0): "
+           f"{got} (want {want}); bar-accidental notes >= {inherit}: {notes_ok}; class status (status, items): {status}; "
+           f"summary lists them: {summary is not None and 'Known production failures' in summary}")
 
     # octave-shift: is <pitch> sounding (MusicXML) or written (the app's reading)?
     tracked = util.tracked_files()

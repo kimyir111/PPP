@@ -17,7 +17,8 @@ jobs:
   gate:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
-    timeout-minutes: 50                  # was 20: the gate grew (G10a-0 rec suites, the unit tests of the humanizer)
+    timeout-minutes: 80                  # was 50, was 20: the gate grew (G10a-0 rec suites, the humanizer's unit tests, rec-grid); it took
+                                         # 25-44 minutes on the last runs of main (44.1 on 2026-10-03), so 50 was one slow runner from red
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }                 # the ScoreGraph tests compare package.json with the G1 base commit
@@ -102,9 +103,12 @@ jobs:
   nightly:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 100                 # was 45, when `full` took minutes and the job stopped at its first failing step; run to the
+                                         # end it is ~42 min locally (mutation-check 11, full 7, adversarial 9, final_review 12) and
+                                         # 1.1-1.5x that on a runner
     steps:
       - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }                 # test:scoregraph compares package.json with the G1 base commit (aff7080), like the gate
       - uses: actions/setup-node@v4
         with: { node-version: '24' }
       - uses: actions/setup-python@v5
@@ -129,24 +133,23 @@ jobs:
       # G04 §21.5, §24.8 (G4f-1): the gate job's npm run test:engrave already carries the whole mutation suite
       # (M1-M25, G04 §23) and bench.js check --suite r - both stay in the gate because they measured well inside
       # A41's <= 90 s budget (G4f-1's record, docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md §40). This job reconfirms the
-      # full suite independently of the gate, then carries the checks that need a live page and puppeteer (A43's
-      # legacy-vs-engrave comparison, A35-A37's CPU 4x throttle) - the gate stays Node-only and npm-install-free by
-      # design; this job is where the expensive, browser-dependent evidence lives. The three engrave/puppeteer
-      # steps run continue-on-error: this is their first time in CI (previously local-only tools, G04 §21.5 marks
-      # legacy-geometry.js and the perf tools "로컬") - a runner-specific hiccup (Chrome download, a missing system
+      # full suite independently of the gate, then carries the checks that need a live page and puppeteer (A35-A37's
+      # CPU 4x throttle, A38-A40's print pipeline) - the gate stays Node-only and npm-install-free by
+      # design; this job is where the expensive, browser-dependent evidence lives. The two puppeteer
+      # steps run continue-on-error: this was their first time in CI (previously local-only tools, G04 §21.5 marks
+      # the perf tools "로컬") - a runner-specific hiccup (Chrome download, a missing system
       # font affecting text metrics) should not turn nightly red before the Lead has seen a first real run; the
-      # uploaded JSON keeps the result visible either way (G4-F3).
+      # uploaded JSON keeps the result visible either way (G4-F3). A third step, A43's legacy-vs-engrave comparison
+      # (tests/engrave/tools/legacy-geometry.js), was removed with the legacy renderer (G4 #54, 4962251): its
+      # continue-on-error hid "Cannot find module" on the first nightly that reached it (2026-10-03).
       - run: npm run test:engrave                          # the full mutation suite (all 25, G04 §23), reconfirmed apart from the gate
       - run: npm run test:scoregraph
-      - run: npm ci                                        # puppeteer, for the three steps below only
+      - run: npm ci                                        # puppeteer, for the two steps below only
       - name: serve this tree for the puppeteer tools
         run: |
           NODE_ENV=production HOST=127.0.0.1 PORT=8801 node server.js &
           for i in $(seq 1 30); do curl -sf http://127.0.0.1:8801/ > /dev/null && break; sleep 1; done
           curl -sf http://127.0.0.1:8801/ > /dev/null || { echo "the server never came up - failing this step so it is not confused with a puppeteer-tool hiccup (Lead re-check, G4f-1)"; exit 1; }
-      - name: A43 - legacy vs engrave (tests/engrave/tools/legacy-geometry.js)
-        continue-on-error: true
-        run: node tests/engrave/tools/legacy-geometry.js --url http://127.0.0.1:8801 --suite r --out tests/engrave/out/legacy-geometry.json
       - name: A35-A37 - page performance at CPU 1x and 4x (tests/engrave/tools/page-check.js)
         continue-on-error: true
         run: node tests/engrave/tools/page-check.js --url http://127.0.0.1:8801 --part perf,a31 --cpu 1,4 --out tests/engrave/out/page
@@ -158,14 +161,21 @@ jobs:
         with:
           name: bench-g4f
           path: |
-            tests/engrave/out/legacy-geometry.json
             tests/engrave/out/page/page-check.json
             tests/engrave/out/print/print-check.json
 
+  # The recording nightly is four jobs. rec-full (11,196 cases, G10a-0..2) used to run in one process on one runner and was
+  # killed ("The runner has received a shutdown signal", 2026-10-02, 14 minutes in): the run holds every case's performance
+  # and notation in memory (13.7 GB of python on the measuring machine) and then forks its stability pool of 4 workers off that
+  # heap, which a 16 GB runner cannot take (docs: tests/bench/README.md, "Sharded runs"). So: the sensitivity checks and the
+  # rec-arrange suites (nightly-rec: mutation-check --rec and --rec-arrange, rec-arrange-core and -full), rec-full as a matrix of N
+  # shards (nightly-rec-shard), and the merge, which checks the baseline like the unsharded run did (nightly-rec-full). The shard
+  # count is in two places - the matrix and --shard K/4 - and merge-shards refuses a run that is not exactly the shards it was
+  # told of.
   nightly-rec:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 90                  # mutation-check --rec alone took 22 minutes on a runner (2026-10-03), the rec-arrange steps come on top
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
@@ -174,16 +184,67 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.13' }
       # G10a-0: the recording metrics' gate sensitivity (one planted defect per metric, each must be a REGRESSION that names it)
-      # and the full recording suite with its hold-out aggregate
       - run: python tests/bench/run.py mutation-check --rec
-      - run: python tests/bench/run.py run --suite rec-full
-      - run: python tests/bench/run.py check --suite rec-full
       # G10c-0: the rec-arrange metrics' gate sensitivity (one planted defect per metric in the arranger) and the full suite (aggregates)
       - run: python tests/bench/run.py mutation-check --rec-arrange
-      - run: python tests/bench/run.py run --suite rec-arrange-core    # the core's small references and the 20 real-AMT fixtures of replay-of (about 5 minutes: not in the gate, which is at its 50-minute limit)
+      - run: python tests/bench/run.py run --suite rec-arrange-core    # the core's small references and the 20 real-AMT fixtures of replay-of (about 5 minutes: not in the gate, which is near its time limit)
       - run: python tests/bench/run.py check --suite rec-arrange-core
       - run: python tests/bench/run.py run --suite rec-arrange-full
       - run: python tests/bench/run.py check --suite rec-arrange-full
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-rec-checks
+          path: |
+            tests/bench/out/mutation/mutation-report.json
+            tests/bench/out/mutation-v2/mutation-report.json
+            tests/bench/out/mutation-arrange/mutation-report.json
+            tests/bench/out/rec-arrange-core/summary.md
+            tests/bench/out/rec-arrange-full/summary.md
+            tests/bench/out/rec-arrange-full/run.json
+
+  nightly-rec-shard:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false                   # one shard's trouble must not hide what the others measured
+      matrix:
+        shard: [1, 2, 3, 4]              # keep in step with --shard K/4 below
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: python tests/bench/run.py run --suite rec-full --shard ${{ matrix.shard }}/4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rec-full-shard-${{ matrix.shard }}
+          path: |
+            tests/bench/out/rec-full/shards/${{ matrix.shard }}-of-4/shard.json
+            tests/bench/out/rec-full/shards/${{ matrix.shard }}-of-4/run.json
+          retention-days: 3              # an input of the merge, not a result
+
+  nightly-rec-full:
+    needs: nightly-rec-shard
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: rec-full-shard-*
+          path: tests/bench/out/rec-full/shards     # one directory per shard artifact, each holding its shard.json and run.json
+      - run: python tests/bench/run.py merge-shards --suite rec-full    # the whole run's results.json and run.json; refuses anything but N shards of this commit
+      - run: python tests/bench/run.py check --suite rec-full           # the hold-out aggregate and the baseline, as the unsharded run did
       - if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -191,8 +252,3 @@ jobs:
           path: |
             tests/bench/out/rec-full/summary.md
             tests/bench/out/rec-full/run.json
-            tests/bench/out/rec-arrange-core/summary.md
-            tests/bench/out/rec-arrange-full/summary.md
-            tests/bench/out/rec-arrange-full/run.json
-            tests/bench/out/mutation/mutation-report.json
-            tests/bench/out/mutation-v2/mutation-report.json
