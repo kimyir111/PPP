@@ -6,6 +6,8 @@
     python tests/bench/run.py select-core
     python tests/bench/run.py run   --suite smoke|core|full|mutation [--audio-score PATH] [--filter S] [--reveal-holdout]
     python tests/bench/run.py run   --suite-file PATH           # private suite, outputs beside it
+    python tests/bench/run.py run   --suite rec-full --shard 2/4   # one of four shards (CI); then merge-shards, then check
+    python tests/bench/run.py merge-shards --suite rec-full     # the shards of out/rec-full/shards/ -> out/rec-full/results.json
     python tests/bench/run.py check --suite core                # exit 0 PASS, 1 REGRESSION, 2 ERROR
     python tests/bench/run.py check --suite core --g3           # + the G3 gate (G03 §20.4): exit 1 when it fails
     python tests/bench/run.py g3-r17 --suite core --reason "..."   # record the G3 gate's per-case R17 baseline (§29 M6)
@@ -94,6 +96,11 @@ def cmd_select(args) -> int:
 def cmd_run(args) -> int:
     from pppbench import runner
     return runner.cli_run(args)
+
+
+def cmd_merge_shards(args) -> int:
+    from pppbench import runner
+    return runner.cli_merge_shards(args)
 
 
 def cmd_check(args) -> int:
@@ -213,7 +220,14 @@ def main(argv=None) -> int:
     p.add_argument("--filter")
     p.add_argument("--reveal-holdout", action="store_true")
     p.add_argument("--out")
+    p.add_argument("--shard", metavar="K/N", help="only the K-th of N shards of the suite's cases (CI runs a big suite as a matrix); "
+                   "writes out/<suite>/shards/K-of-N/, which merge-shards joins")
     p.set_defaults(fn=cmd_run)
+    p = sub.add_parser("merge-shards", help="join the shards of one run of a suite into its results.json (then: check)")
+    p.add_argument("--suite", required=True)
+    p.add_argument("--out")
+    p.add_argument("dirs", nargs="*", help="the shard directories (default: every out/<suite>/shards/*/ holding a shard.json)")
+    p.set_defaults(fn=cmd_merge_shards)
     p = sub.add_parser("check")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--suite")

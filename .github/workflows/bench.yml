@@ -159,10 +159,17 @@ jobs:
             tests/engrave/out/page/page-check.json
             tests/engrave/out/print/print-check.json
 
+  # The recording nightly is three jobs. rec-full (11,196 cases, G10a-0..2) used to run in one process on one runner and was
+  # killed ("The runner has received a shutdown signal", 2026-10-02, 14 minutes in): the run holds every case's performance
+  # and notation in memory (13.7 GB of python on the measuring machine) and then forks its stability pool of 4 workers off that
+  # heap, which a 16 GB runner cannot take (docs: tests/bench/README.md, "Sharded runs"). So: the sensitivity check
+  # (nightly-rec), the suite as a matrix of N shards (nightly-rec-shard), and the merge, which checks the baseline like the
+  # unsharded run did (nightly-rec-full). The shard count is in two places - the matrix and --shard K/4 - and merge-shards
+  # refuses a run that is not exactly the shards it was told of.
   nightly-rec:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
@@ -171,10 +178,57 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.13' }
       # G10a-0: the recording metrics' gate sensitivity (one planted defect per metric, each must be a REGRESSION that names it)
-      # and the full recording suite with its hold-out aggregate
       - run: python tests/bench/run.py mutation-check --rec
-      - run: python tests/bench/run.py run --suite rec-full
-      - run: python tests/bench/run.py check --suite rec-full
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-rec-mutation
+          path: |
+            tests/bench/out/mutation/mutation-report.json
+            tests/bench/out/mutation-v2/mutation-report.json
+
+  nightly-rec-shard:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false                   # one shard's trouble must not hide what the others measured
+      matrix:
+        shard: [1, 2, 3, 4]              # keep in step with --shard K/4 below
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: python tests/bench/run.py run --suite rec-full --shard ${{ matrix.shard }}/4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rec-full-shard-${{ matrix.shard }}
+          path: |
+            tests/bench/out/rec-full/shards/${{ matrix.shard }}-of-4/shard.json
+            tests/bench/out/rec-full/shards/${{ matrix.shard }}-of-4/run.json
+          retention-days: 3              # an input of the merge, not a result
+
+  nightly-rec-full:
+    needs: nightly-rec-shard
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: rec-full-shard-*
+          path: tests/bench/out/rec-full/shards     # one directory per shard artifact, each holding its shard.json and run.json
+      - run: python tests/bench/run.py merge-shards --suite rec-full    # the whole run's results.json and run.json; refuses anything but N shards of this commit
+      - run: python tests/bench/run.py check --suite rec-full           # the hold-out aggregate and the baseline, as the unsharded run did
       - if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -182,5 +236,3 @@ jobs:
           path: |
             tests/bench/out/rec-full/summary.md
             tests/bench/out/rec-full/run.json
-            tests/bench/out/mutation/mutation-report.json
-            tests/bench/out/mutation-v2/mutation-report.json

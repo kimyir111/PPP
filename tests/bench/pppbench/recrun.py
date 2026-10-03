@@ -90,8 +90,14 @@ def extras(cases, perfs, rows: Dict[str, Dict[str, Any]], by_entry: Dict[str, An
             todo.append((c.id, row["xml"], runs))
     workers = min(4, os.cpu_count() or 1)
     if workers > 1 and len(todo) >= 200:
+        import multiprocessing
         from concurrent.futures import ProcessPoolExecutor
-        with ProcessPoolExecutor(max_workers=workers) as pool:
+        # "spawn" on every platform (Windows always did): a worker forked on Linux starts as a copy of this process, whose heap
+        # holds the run's every case (13.7 GB for the whole rec-full) and which is copied page by page as the worker's garbage
+        # collector and reference counts touch it. In a 16 GiB, 4-CPU Linux container the whole rec-full had the kernel
+        # OOM-kill a worker here and the pool then hung for good (tests/bench/README.md, "Sharded runs"); a shard's heap is a
+        # quarter of that, and a spawned worker starts empty either way
+        with ProcessPoolExecutor(max_workers=workers, mp_context=multiprocessing.get_context("spawn")) as pool:
             shares = list(pool.map(_stability_job, [(x, r) for _, x, r in todo], chunksize=16))
     else:
         shares = [_stability_job((x, r)) for _, x, r in todo]

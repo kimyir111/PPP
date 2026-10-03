@@ -32,6 +32,8 @@ npm run test:bench           # unit tests + golden snapshots + musical correctne
 python tests/bench/run.py list                        # corpus, suites, baselines
 python tests/bench/run.py lint-corpus                 # check the reference registry
 python tests/bench/run.py run   --suite core          # writes tests/bench/out/core/
+python tests/bench/run.py run   --suite rec-full --shard 2/4   # the nightly runs rec-full as 4 shards (below)
+python tests/bench/run.py merge-shards --suite rec-full        # the shards of out/rec-full/shards/ -> out/rec-full/results.json
 python tests/bench/run.py check --suite core          # exit 0 PASS · 1 REGRESSION · 2 ERROR
 python tests/bench/run.py run   --suite robust        # a variant of the synthetic performer (see Tiers)
 python tests/bench/run.py ab --suite core --a git:HEAD --b worktree   # what did my change do? (any suite, fixture suites too)
@@ -367,6 +369,46 @@ performance and skeleton on both sides. `train_grid.js --evaluate` measures the 
 copy of the legacy quantisers (`rec/tools/ai5b-grid-v1.evaluation.json`). `rec-mutation-v2` carries one planted defect per grid
 decision (no triplets, a triplet bias, no chord groups, no chain, the on-beat window). Results: G10 section 20.
 
+## Sharded runs (`run --shard K/N`, `merge-shards`; the nightly `rec-full`)
+
+`rec-full` is 11,196 cases (every reference, hold-out included, x the humanizer's families x legacy / app / v2). One run holds
+every case's performance, notation and metrics in one Python process and then starts the stability probe's worker pool from
+that heap. Measured (the unsharded run, Windows, 16 cores, Python 3.13): 19.4 minutes, **13.7 GB** of Python at its peak
+(14.5 GB with its Node workers). A GitHub-hosted runner has 16 GB for everything. The nightly of 2026-10-02 passed
+`mutation-check --rec`, then died 14 minutes into `run --suite rec-full` with "The runner has received a shutdown signal"
+(the workflow's own timeout is 120 minutes). The same run in a Linux container capped at the runner's 16 GiB and 4 CPUs
+(Python 3.11, the same fork start method as the runner's 3.13) reached the cap about 9 minutes in; the kernel OOM-killed one
+stability worker (`memory.events`: `oom_kill 1`) and the pool never recovered (the parent blocked forever in a pipe write). So
+the nightly runs it as shards, in the `nightly-rec-shard` matrix of `.github/workflows/bench.yml`, and merges them in
+`nightly-rec-full`:
+
+```sh
+python tests/bench/run.py run --suite rec-full --shard 2/4   # -> out/rec-full/shards/2-of-4/{shard.json,run.json}
+python tests/bench/run.py merge-shards --suite rec-full      # every out/rec-full/shards/*/ -> out/rec-full/{results.json,run.json}
+python tests/bench/run.py check --suite rec-full             # as ever (the hold-out aggregate and the baseline)
+```
+
+- **Shard K of N** is every N-th case of the suite's id-sorted case list, from the K-th: the shards partition the suite exactly
+  and each holds the same mix of references, profiles and option sets, so about the same work. A case's row is a function of
+  that case alone (its performance, notation, metrics and stability probe), so it is the same in a shard as in the whole run.
+  A shard of 1/4 of `rec-full`: 6.4 minutes, 3.6 GB of Python (4.6 GB with Node), on the machine above.
+- A shard writes `shard.json` (its case rows, every float at full precision) and `run.json`. It writes no `results.json` and no
+  `summary.md`, so `check` and `update-baseline` cannot take a shard for a result. `--shard` is for a synthetic suite's whole
+  run: it refuses `--filter`, replay and OMR suites, and a lock that differs from the shard's inputs is INPUT_DRIFT as ever.
+- **`merge-shards`** writes the run's `results.json` and `run.json` - **byte for byte** the `results.json` an unsharded run
+  writes (the aggregates are computed by the same function from the same unrounded numbers; `unit/test_shards.py` compares the
+  bytes of a whole and a merged small recording suite, and a merge of 6-decimal rows would differ in the sixth digit). Its
+  `run.json` has the SUT of the shards, `cases`, `errors`, `shards`, and `timing.total_s` = the longest shard (they run side by
+  side; `timing.shard_total_s` lists them). It refuses, with exit 2, anything that is not exactly one complete run of this
+  checkout: `SHARD_MISSING` (a shard not there, or none), `SHARD_DUPLICATE`, `SHARD_MISMATCH` (suite definition, lock, metric
+  versions, commit, SUT snapshot or runtime differ between shards or from this checkout), `SHARD_INCOMPLETE` (the union of the
+  rows is not the committed lock's cases).
+- **Rebaselining `rec-full`**: run the shards (here, or take the nightly's `rec-full-shard-*` artifacts into
+  `out/rec-full/shards/<name>/`), `merge-shards`, then `update-baseline --suite rec-full --reason ...` as for any suite.
+- The shard count is written in the workflow's matrix, in `--shard K/4` and in the artifact paths; `unit/test_shards.py` checks
+  that they agree. The stability pool uses the `spawn` start method on every platform (a forked worker would start as a copy of
+  a heap that large).
+
 ## The real-AMT tier (`replay-of`, G10a-0 step 5)
 
 The humanizer's performances rendered to audio and transcribed by the model users get: the browser's Onsets & Frames
@@ -619,6 +661,8 @@ Keep them outside the repository. A suite file there, e.g. `C:/private/ppp-bench
 | `MUTATION_ANCHOR_MISSING` | A mutation's search string is no longer in `audio-score.js` exactly once. | Update the anchor in `pppbench/mutation.py`. |
 | `NOTATE_NO_NOTES`, `NOTATE_…` | `toMusicXml` threw for that case. | A new one is a regression. |
 | `FILTERED_RUN` | `--filter` runs cannot be checked or baselined. | Run the whole suite. |
+| `BAD_SHARD` | `--shard` is not `K/N` with 1 <= K <= N, or it was given with `--filter` or to a replay / OMR suite. | Fix the flag; shard only the whole run of a synthetic suite. |
+| `SHARD_MISSING`, `SHARD_DUPLICATE`, `SHARD_MISMATCH`, `SHARD_INCOMPLETE` | `merge-shards` was not given exactly the N shards of one run of this checkout (see "Sharded runs"). | Run or download the missing shard; run every shard on the same commit. |
 
 ## Layout
 

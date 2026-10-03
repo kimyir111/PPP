@@ -9,7 +9,7 @@ import os
 import subprocess
 import sys
 from fractions import Fraction
-from typing import Any
+from typing import Any, Optional
 
 
 def setup_stdio() -> None:
@@ -94,7 +94,8 @@ def F(x: Any) -> Fraction:
     return Fraction(x)
 
 
-def _normalise(obj: Any) -> Any:
+def _normalise(obj: Any, digits: Optional[int] = 6) -> Any:
+    """``obj`` as plain JSON types; floats rounded to ``digits`` decimals (``None``: kept exactly)."""
     if isinstance(obj, bool) or obj is None or isinstance(obj, str):
         return obj
     if isinstance(obj, int):
@@ -104,20 +105,32 @@ def _normalise(obj: Any) -> Any:
     if isinstance(obj, float):
         if not math.isfinite(obj):
             raise ValueError("NaN/Inf cannot be written to benchmark JSON")
-        value = round(obj, 6)
+        value = obj if digits is None else round(obj, digits)
         return 0.0 if value == 0 else value
     if isinstance(obj, dict):
-        return {str(k): _normalise(v) for k, v in obj.items()}
+        return {str(k): _normalise(v, digits) for k, v in obj.items()}
     if isinstance(obj, (list, tuple)):
-        return [_normalise(v) for v in obj]
+        return [_normalise(v, digits) for v in obj]
     if hasattr(obj, "to_json"):
-        return _normalise(obj.to_json())
+        return _normalise(obj.to_json(), digits)
     raise TypeError(f"cannot serialise {type(obj).__name__}")
 
 
 def dumps_json(obj: Any) -> str:
     """Deterministic JSON text: sorted keys, 6-decimal floats, trailing newline."""
     return json.dumps(_normalise(obj), sort_keys=True, ensure_ascii=False, indent=1, allow_nan=False) + "\n"
+
+
+def dumps_json_exact(obj: Any) -> str:
+    """Compact deterministic JSON text with every float at full precision (``repr`` round-trips a float exactly): what a
+    benchmark shard hands to ``merge_shards``, which must aggregate the very numbers the whole run would have."""
+    return json.dumps(_normalise(obj, None), sort_keys=True, ensure_ascii=False, allow_nan=False, separators=(",", ":")) + "\n"
+
+
+def write_text(path: str, text: str) -> None:
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    with open(path, "w", encoding="utf-8", newline="\n") as handle:
+        handle.write(text)
 
 
 def dump_json(obj: Any, path: str) -> None:
