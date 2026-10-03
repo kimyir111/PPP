@@ -418,8 +418,9 @@ non-hold-out catalogue; evidence is onsets, not releases). `opts.keys: 'legacy'`
 reference's key signatures and written spellings) and `node rec/tools/key-eval.js [--list|--grid|--write|--check]` measures the stage
 alone on truth notes against the legacy estimator (`rec/tools/key-v1.evaluation.json`, `--check` in the gate). `rec-keys` (a
 measurement suite, not in the gate) is rec-core's and rec-robust's cases with `v2-keylegacy` (v2 without S8, the v2 rows'
-performances) and `app-keys` (the app's options and only S8, the app rows' performances). `rec-mutation-v2` carries four planted
-defects (S8 not used, no diatonic fit, the table's flats written as sharps, the tied-over accidental state); the regions, the written
+performances) and `app-keys` (the app's options and only S8, the app rows' performances). `rec-mutation-keys` (v2 rows of the
+families where S8's decisions show; `mutation-check --rec`) carries four planted defects (S8 not used, no diatonic fit, the table's flats
+written as sharps, the tied-over accidental state); the regions, the written
 key changes, the cues of the piece's ends and the signature prior are planted through the stage's weights in `tests/rec/key.test.js`.
 Results: docs/GOALS/G10_AUDIO_TO_SCORE.md section 22.
 
