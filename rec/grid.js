@@ -95,7 +95,7 @@
     schema: SCHEMA, name: 'fallback', version: '0',
     kinds: KINDS.slice(),
     sigmaSec: 0.028, sigmaPrior: 30, sigmaMin: 0.008, sigmaMax: 0.06,
-    outlier: 0.004, early: 0.03, split: 0.9, slotGap: 0.004, joinGap: 0.04, chordSigmaSec: 0.015,
+    outlier: 0.004, early: 0.03, split: 0.5, joinGap: 0.04, chordSigmaSec: 0.015,
     /* occupancy patterns: P(the set of grid points that hold a heard onset | kind), bit k = point k of the kind's grid */
     patterns: {
       '16': [0.01, 0.30, 0.01, 0.01, 0.01, 0.25, 0.01, 0.01, 0.01, 0.05, 0.01, 0.01, 0.01, 0.04, 0.01, 0.25],
@@ -221,30 +221,39 @@
   }
 
   /* the points of one occupancy pattern of a kind (bit k = point k of the kind's grid is occupied), plus the early downbeat */
-  function patternPoints(heard, written, mask, lg, last) {
+  function patternPoints(heard, written, mask, lg) {
     const pts = [];
     for (let k = 0; k < heard.length; k++) if (mask & (1 << k)) pts.push({ pos: heard[k], written: written[k], forced: true, lnUse: 0, lnSkip: 0, odd: false });
-    if (!last) pts.push({ pos: 1, written: 1, forced: false, lnUse: lg.early, lnSkip: lg.notEarly, odd: false });
+    pts.push({ pos: 1, written: 1, forced: false, lnUse: lg.early, lnSkip: lg.notEarly, odd: false });
     return pts;
   }
   const popcount = x => { let c = 0; while (x) { c += x & 1; x >>= 1; } return c; };
 
-  /* The onsets the stage places: the heard notes grouped by their OWN onset times (notes less than slotGap apart are one
-     onset: one frame of a transcription), not by audio-score.js's 50-ms clusters - two written onsets a 16th apart at a
-     fast tempo fall into one cluster when the timing noise brings them together, and a run detector splits chords heard a
-     frame apart. Which onsets are one written onset (a chord heard over two frames, a rolled chord) is the matching's
-     decision (matchBeat joins an onset to the point of the onset before it when they are at most joinGap apart).
-     Returns [{t, notes: [note index]}] in time order. */
-  function onsetsOf(notes, slotGap) {
-    const idx = notes.map((n, i) => i).sort((a, b) => notes[a].on - notes[b].on || a - b);
+  /* The onsets the stage places: audio-score.js's attacks (clusterNotes: the notes of one chord, within 50 ms, a rolled
+     chord included) split where two of an attack's notes are more than joinGap apart: two written onsets a 16th apart at a
+     fast tempo fall into one 50-ms cluster when the timing noise brings them together, while the notes of one chord in a
+     transcription are at most a frame (32 ms) apart. Onsets that clusterNotes kept apart but that are at most joinGap
+     apart (a chord inside a run, which its run detector splits) may still be one written onset: that is the matching's
+     decision (matchPattern's groups). Returns [{t, notes: [note index]}] in time order; t is the mean onset of the notes. */
+  function onsetsOf(notes, joinGap) {
+    const by = new Map();
+    notes.forEach((n, i) => {
+      const key = (n.attack != null ? n.attack : n.on).toFixed(4);
+      if (!by.has(key)) by.set(key, []);
+      by.get(key).push(i);
+    });
     const out = [];
-    let cur = null;
-    idx.forEach(i => {
-      if (cur && notes[i].on - notes[cur.notes[cur.notes.length - 1]].on <= slotGap) cur.notes.push(i);
-      else { cur = { notes: [i] }; out.push(cur); }
+    by.forEach(idx => {
+      idx.sort((a, b) => notes[a].on - notes[b].on || a - b);
+      let cur = [idx[0]];
+      for (let x = 1; x < idx.length; x++) {
+        if (notes[idx[x]].on - notes[idx[x - 1]].on > joinGap) { out.push({ notes: cur }); cur = []; }
+        cur.push(idx[x]);
+      }
+      out.push({ notes: cur });
     });
     out.forEach(o => { o.t = o.notes.reduce((s, i) => s + notes[i].on, 0) / o.notes.length; });
-    return out;
+    return out.sort((a, b) => a.t - b.t || a.notes[0] - b.notes[0]);
   }
 
   /* per beat: the onsets it holds, as fractions */
@@ -263,9 +272,7 @@
   /* The likelihood of every allowed kind for one beat: the best occupancy pattern of the kind (its learned probability)
      times the best matching of the onsets to exactly those points. swing8 takes the best of its long-short points.
      Returns {kind: {ll, heard: [per onset heard point or null], written: [per onset written fraction or null], swing}}. */
-  /* last: the piece's last beat with an onset (no early downbeat: nothing follows it, and an onset moved past it would open
-     a bar of its own) */
-  function beatLikelihoods(fs, kinds, model, sigmaB, beatSec, canJoin, last) {
+  function beatLikelihoods(fs, kinds, model, sigmaB, beatSec, canJoin) {
     const lg = logsOf(model);
     const chordB = Math.max(1e-4, (model.chordSigmaSec || 0.015) / beatSec);
     const n = fs.length;
@@ -289,7 +296,7 @@
             if (k % 2 === 0) { if (e & (1 << (k / 2))) pts.push({ pos: g.pts[k], written: g.written[k], forced: true, lnUse: 0, lnSkip: 0, odd: false }); }
             else pts.push({ pos: g.pts[k], written: g.written[k], forced: false, lnUse: lg.oddUse[(k - 1) / 2], lnSkip: lg.oddSkip[(k - 1) / 2], odd: true });
           }
-          if (!last) pts.push({ pos: 1, written: 1, forced: false, lnUse: lg.early, lnSkip: lg.notEarly, odd: false });
+          pts.push({ pos: 1, written: 1, forced: false, lnUse: lg.early, lnSkip: lg.notEarly, odd: false });
           const r = matchPattern(fs, canJoin, pts, true, sigmaB, lg.out, lg.split, chordB);
           keep('32', r.ll + lg['32even'][e] + lg.oddNorm, r, pts);
         }
@@ -301,7 +308,7 @@
         const table = lg[kind];
         for (let mask = 0; mask < table.length; mask++) {
           if (popcount(mask) > n) continue;
-          const pts = patternPoints(g.pts, g.written, mask, lg, last);
+          const pts = patternPoints(g.pts, g.written, mask, lg);
           const r = matchPattern(fs, canJoin, pts, false, sigmaB, lg.out, lg.split, chordB);
           keep(kind, r.ll + table[mask] - (sw === null ? 0 : Math.log(SWING_POINTS.length)), r, pts, sw === null ? null : { swing: sw });
         }
@@ -365,7 +372,7 @@
       : (opts.kinds || model.kinds || KINDS).filter(k => KINDS.indexOf(k) >= 0);
     if (!kinds.length) throw new Error('rec/grid: the model has no grid kind for ' + (compound ? 'a compound' : 'a simple') + ' metre');
     if (!beats || beats.length < 2) throw new Error('rec/grid: needs at least two beats');
-    const onsets = onsetsOf(notes || [], model.slotGap);
+    const onsets = onsetsOf(notes || [], model.joinGap);
     const per = beatsOf(onsets, beats);
     const keys = Array.from(per.keys()).sort((a, b) => a - b);
     let sigmaSec = model.sigmaSec;
@@ -381,7 +388,7 @@
           !onsets[i].notes.some(a => onsets[idx[x - 1]].notes.some(b => notes[a].midi === notes[b].midi)));
         const bs = beatLen(beats, k);
         const sigmaB = Math.max(1e-4, sigmaSec / bs);
-        return { beat: k, idx: idx, fs: fs, sec: bs, last: k === keys[keys.length - 1], lik: beatLikelihoods(fs, kinds, model, sigmaB, bs, canJoin, k === keys[keys.length - 1]) };
+        return { beat: k, idx: idx, fs: fs, sec: bs, lik: beatLikelihoods(fs, kinds, model, sigmaB, bs, canJoin) };
       });
       const posts = smooth(entries, kinds, model);
       entries.forEach((e, t) => {
@@ -422,7 +429,7 @@
         if (heardPt === null) {
           /* an outlier: the nearest point of the beat's grid (the next beat's start included) */
           let bd = Infinity;
-          (e.last ? g.pts : g.pts.concat([1])).forEach((pt, pj) => { const d = Math.abs(f - pt); if (d < bd - 1e-12) { bd = d; heardPt = pt; written = pj < g.written.length ? g.written[pj] : 1; } });
+          g.pts.concat([1]).forEach((pt, pj) => { const d = Math.abs(f - pt); if (d < bd - 1e-12) { bd = d; heardPt = pt; written = pj < g.written.length ? g.written[pj] : 1; } });
         }
         const beat = written >= 1 ? e.beat + 1 : e.beat;
         const frac = written >= 1 ? 0 : written;

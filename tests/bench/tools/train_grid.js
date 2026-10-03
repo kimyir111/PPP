@@ -68,7 +68,6 @@ const DATA = {
   open: ['--refs', 'train', '--profiles', 'cover,human-real,swing,cover+of', '--beats', 'oracle', '--seeds', '104']
 };
 const MODEL_VERSION = '1.0.0';
-const SLOT_GAP = 0.004;            /* seconds: notes closer than this are one onset (one frame of a transcription) */
 const JOIN_GAP = 0.04;             /* seconds: an onset this close after the one before may be the same written onset (a chord heard a frame apart) */
 
 function arg(name) { const i = process.argv.indexOf(name); return i >= 0 ? process.argv[i + 1] : null; }
@@ -373,7 +372,7 @@ function fit(rows) {
        written onsets (an attack sounding several written onsets - a merge - counts its most common one) */
     const heardFr = new Map();
     const byAtt = new Map();
-    G._.onsetsOf(cl, SLOT_GAP).forEach((o, x) => { byAtt.set(x, o.notes.map(i => row.notes[cl[i]._i][4])); });
+    G._.onsetsOf(cl, JOIN_GAP).forEach((o, x) => { byAtt.set(x, o.notes.map(i => row.notes[cl[i]._i][4])); });
     byAtt.forEach(tqs => {
       const c = new Map();
       tqs.forEach(t => { if (t !== null && t !== undefined) c.set(t, (c.get(t) || 0) + 1); });
@@ -389,7 +388,7 @@ function fit(rows) {
        the early downbeat point explains (without it the empty pattern would have no mass and such an onset would be
        forced onto a 32nd) */
     const seen = new Set();
-    const onsT = G._.onsetsOf(cl, SLOT_GAP);
+    const onsT = G._.onsetsOf(cl, JOIN_GAP);
     G._.beatsOf(onsT, frame.beats);
     onsT.forEach(o => seen.add(o.beat));
     let prev = null;
@@ -415,7 +414,7 @@ function fit(rows) {
       if (k === '32') min32 = Math.min(min32, (w[3] - w[2]) / 8);
     });
     /* timing residuals (heard onset minus the true time of its written onset, linear in its window) */
-    G._.onsetsOf(cl, SLOT_GAP).forEach(o => {
+    G._.onsetsOf(cl, JOIN_GAP).forEach(o => {
       const tqs = o.notes.map(i => row.notes[cl[i]._i][4]);
       heard++;
       const known = tqs.filter(t => t !== null && t !== undefined);
@@ -446,7 +445,7 @@ function fit(rows) {
     const frame = quarterFrame(row, false);
     if (!frame) return;
     const cl = clustered(row);
-    const ons = G._.onsetsOf(cl, SLOT_GAP);
+    const ons = G._.onsetsOf(cl, JOIN_GAP);
     let prevTq = null, prevT = -Infinity, group = [];
     const flushGroup = () => { if (group.length > 1) { const m = group.reduce((a, b) => a + b, 0) / group.length; group.forEach(t => chordDev.push(t - m)); } group = []; };
     ons.forEach(o => {
@@ -479,7 +478,7 @@ function fit(rows) {
     const W = row.cwindows;
     const cl = clustered(row);
     const heardFr = new Map();
-    G._.onsetsOf(cl, SLOT_GAP).forEach(o => {
+    G._.onsetsOf(cl, JOIN_GAP).forEach(o => {
       const c = new Map();
       o.notes.forEach(i => { const t = row.notes[cl[i]._i][4]; if (t !== null && t !== undefined) c.set(t, (c.get(t) || 0) + 1); });
       if (!c.size) return;
@@ -526,7 +525,7 @@ function fit(rows) {
     sigmaSec: round6(sigma), sigmaPrior: 30, sigmaMin: 0.008, sigmaMax: 0.06,
     outlier: round6((unexplained + far + 1) / (heard + 2)),
     early: round6((early + 1) / (windows + 2)),
-    split: round6((splitSame + 1) / (splitAll + 2)), slotGap: SLOT_GAP, joinGap: JOIN_GAP,
+    split: round6((splitSame + 1) / (splitAll + 2)), joinGap: JOIN_GAP,
     chordSigmaSec: round6(Math.sqrt(chordDev.reduce((a, d) => a + d * d, 0) / Math.max(1, chordDev.length)) * Math.sqrt(2)),
     patterns: patterns, prior: prior, stay: stay,
     minSpacing32: round6(Number.isFinite(min32) ? min32 * 0.9 : G.FALLBACK.minSpacing32)
