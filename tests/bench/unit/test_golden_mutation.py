@@ -130,13 +130,18 @@ class RecMutations(unittest.TestCase):
                     "REC-V2-LATE-ON-BEAT"}
         # G10a-2: S4's decisions (S4 used at all, the hands' motion, the piece's style, the partition prior)
         hands = {"REC-V2-HANDS-LEGACY", "REC-V2-HANDS-NO-MOTION", "REC-V2-HANDS-ONE-STYLE", "REC-V2-HANDS-NO-PART-PRIOR"}
-        self.assertEqual({m["id"] for m in v2[:-1]}, skeleton | hands)
+        # G10a-2: S3's decisions (triplet beats at all, the triplet evidence, chord groups, the chain over beats); the on-beat
+        # window, G10a-1's LATE-ON-BEAT, now lives in rec/grid.js too
+        grid = {"REC-V2-GRID-NO-TRIPLETS", "REC-V2-GRID-TRIPLET-BIAS", "REC-V2-GRID-NO-CHORDS", "REC-V2-GRID-NO-CHAIN"}
+        self.assertEqual({m["id"] for m in v2[:-1]}, skeleton | hands | grid)
         self.assertEqual((v2[-1]["id"], v2[-1]["expect"]), ("MUT-NOOP", "PASS"))
         self.assertFalse([m for m in mutation.REC_MUTATIONS if m.get("v2")])
         for m in v2[:-1]:
             self.assertEqual(m["expect"], "REGRESSION")
             if m["id"] in hands:
                 self.assertIn("notation.hand.accuracy", m["metrics"], m["id"])
+            elif m["id"] in grid:
+                self.assertTrue(any(x.startswith(("rec.tuplet.", "notation.tuplets.")) for x in m["metrics"]), m["id"])
             else:
                 self.assertTrue(any(x.startswith(("critical.", "struct.", "notes.")) for x in m["metrics"]), m["id"])
 
