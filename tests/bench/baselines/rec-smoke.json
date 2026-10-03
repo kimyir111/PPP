@@ -15,7 +15,7 @@
     "n": 144
    },
    "critical.key": {
-    "mean": 0.958333,
+    "mean": 0.972222,
     "n": 144
    },
    "critical.meter": {
@@ -339,11 +339,11 @@
     "n": 27
    },
    "read.accidentals_per_note": {
-    "mean": 0.009359,
+    "mean": 0.009086,
     "n": 144
    },
    "read.accidentals_per_note.delta": {
-    "mean": -0.00098,
+    "mean": -0.001253,
     "n": 144
    },
    "read.bar_completeness": {
@@ -511,7 +511,7 @@
     "n": 144
    },
    "sqi": {
-    "mean": 77.029256,
+    "mean": 77.168144,
     "n": 144
    },
    "struct.downbeat.f1": {
@@ -527,15 +527,15 @@
     "n": 144
    },
    "struct.key.fifths_exact": {
-    "mean": 0.958333,
+    "mean": 0.972222,
     "n": 144
    },
    "struct.key.mirex": {
-    "mean": 0.966667,
+    "mean": 0.977778,
     "n": 135
    },
    "struct.key.timeline_accuracy": {
-    "mean": 0.958333,
+    "mean": 0.972222,
     "n": 144
    },
    "struct.measure_numbers.app_onset_accuracy": {
@@ -627,7 +627,7 @@
      "n": 144
     },
     "critical.key": {
-     "mean": 0.958333,
+     "mean": 0.972222,
      "n": 144
     },
     "critical.meter": {
@@ -951,11 +951,11 @@
      "n": 27
     },
     "read.accidentals_per_note": {
-     "mean": 0.009359,
+     "mean": 0.009086,
      "n": 144
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.00098,
+     "mean": -0.001253,
      "n": 144
     },
     "read.bar_completeness": {
@@ -1123,7 +1123,7 @@
      "n": 144
     },
     "sqi": {
-     "mean": 77.029256,
+     "mean": 77.168144,
      "n": 144
     },
     "struct.downbeat.f1": {
@@ -1139,15 +1139,15 @@
      "n": 144
     },
     "struct.key.fifths_exact": {
-     "mean": 0.958333,
+     "mean": 0.972222,
      "n": 144
     },
     "struct.key.mirex": {
-     "mean": 0.966667,
+     "mean": 0.977778,
      "n": 135
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.958333,
+     "mean": 0.972222,
      "n": 144
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -1238,7 +1238,7 @@
      "n": 9
     },
     "critical.key": {
-     "mean": 0.666667,
+     "mean": 0.777778,
      "n": 9
     },
     "critical.meter": {
@@ -1542,11 +1542,11 @@
      "n": 4
     },
     "read.accidentals_per_note": {
-     "mean": 0.017722,
+     "mean": 0.013353,
      "n": 9
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.006486,
+     "mean": 0.002117,
      "n": 9
     },
     "read.bar_completeness": {
@@ -1706,7 +1706,7 @@
      "n": 9
     },
     "sqi": {
-     "mean": 62.1052,
+     "mean": 63.216311,
      "n": 9
     },
     "struct.downbeat.f1": {
@@ -1722,15 +1722,15 @@
      "n": 9
     },
     "struct.key.fifths_exact": {
-     "mean": 0.666667,
+     "mean": 0.777778,
      "n": 9
     },
     "struct.key.mirex": {
-     "mean": 0.833333,
+     "mean": 0.888889,
      "n": 9
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.666667,
+     "mean": 0.777778,
      "n": 9
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -4173,7 +4173,7 @@
      "n": 18
     },
     "critical.key": {
-     "mean": 0.833333,
+     "mean": 0.888889,
      "n": 18
     },
     "critical.meter": {
@@ -4649,7 +4649,7 @@
      "n": 18
     },
     "sqi": {
-     "mean": 73.509424,
+     "mean": 74.06498,
      "n": 18
     },
     "struct.downbeat.f1": {
@@ -4665,15 +4665,15 @@
      "n": 18
     },
     "struct.key.fifths_exact": {
-     "mean": 0.833333,
+     "mean": 0.888889,
      "n": 18
     },
     "struct.key.mirex": {
-     "mean": 0.666667,
+     "mean": 0.777778,
      "n": 9
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.833333,
+     "mean": 0.888889,
      "n": 18
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -5363,7 +5363,7 @@
      "n": 27
     },
     "critical.key": {
-     "mean": 0.888889,
+     "mean": 0.925926,
      "n": 27
     },
     "critical.meter": {
@@ -5671,11 +5671,11 @@
      "n": 11
     },
     "read.accidentals_per_note": {
-     "mean": 0.024823,
+     "mean": 0.023366,
      "n": 27
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.004608,
+     "mean": -0.006065,
      "n": 27
     },
     "read.bar_completeness": {
@@ -5839,7 +5839,7 @@
      "n": 27
     },
     "sqi": {
-     "mean": 68.445258,
+     "mean": 68.815628,
      "n": 27
     },
     "struct.downbeat.f1": {
@@ -5855,15 +5855,15 @@
      "n": 27
     },
     "struct.key.fifths_exact": {
-     "mean": 0.888889,
+     "mean": 0.925926,
      "n": 27
     },
     "struct.key.mirex": {
-     "mean": 0.916667,
+     "mean": 0.944444,
      "n": 18
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.888889,
+     "mean": 0.925926,
      "n": 27
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -7116,7 +7116,7 @@
      "n": 54
     },
     "critical.key": {
-     "mean": 0.944444,
+     "mean": 0.962963,
      "n": 54
     },
     "critical.meter": {
@@ -7608,7 +7608,7 @@
      "n": 54
     },
     "sqi": {
-     "mean": 82.649646,
+     "mean": 82.834831,
      "n": 54
     },
     "struct.downbeat.f1": {
@@ -7624,15 +7624,15 @@
      "n": 54
     },
     "struct.key.fifths_exact": {
-     "mean": 0.944444,
+     "mean": 0.962963,
      "n": 54
     },
     "struct.key.mirex": {
-     "mean": 0.944444,
+     "mean": 0.962963,
      "n": 54
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.944444,
+     "mean": 0.962963,
      "n": 54
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -9488,7 +9488,7 @@
      "n": 18
     },
     "critical.key": {
-     "mean": 0.833333,
+     "mean": 0.888889,
      "n": 18
     },
     "critical.meter": {
@@ -9796,11 +9796,11 @@
      "n": 11
     },
     "read.accidentals_per_note": {
-     "mean": 0.037234,
+     "mean": 0.035049,
      "n": 18
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.006913,
+     "mean": -0.009097,
      "n": 18
     },
     "read.bar_completeness": {
@@ -9964,7 +9964,7 @@
      "n": 18
     },
     "sqi": {
-     "mean": 65.112331,
+     "mean": 65.667887,
      "n": 18
     },
     "struct.downbeat.f1": {
@@ -9980,15 +9980,15 @@
      "n": 18
     },
     "struct.key.fifths_exact": {
-     "mean": 0.833333,
+     "mean": 0.888889,
      "n": 18
     },
     "struct.key.mirex": {
-     "mean": 0.833333,
+     "mean": 0.888889,
      "n": 9
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.833333,
+     "mean": 0.888889,
      "n": 18
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -10079,7 +10079,7 @@
      "n": 63
     },
     "critical.key": {
-     "mean": 0.952381,
+     "mean": 0.968254,
      "n": 63
     },
     "critical.meter": {
@@ -10575,7 +10575,7 @@
      "n": 63
     },
     "sqi": {
-     "mean": 82.644335,
+     "mean": 82.803065,
      "n": 63
     },
     "struct.downbeat.f1": {
@@ -10591,15 +10591,15 @@
      "n": 63
     },
     "struct.key.fifths_exact": {
-     "mean": 0.952381,
+     "mean": 0.968254,
      "n": 63
     },
     "struct.key.mirex": {
-     "mean": 0.952381,
+     "mean": 0.968254,
      "n": 63
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.952381,
+     "mean": 0.968254,
      "n": 63
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -11281,7 +11281,7 @@
      "n": 18
     },
     "critical.key": {
-     "mean": 0.833333,
+     "mean": 0.888889,
      "n": 18
     },
     "critical.meter": {
@@ -11589,11 +11589,11 @@
      "n": 11
     },
     "read.accidentals_per_note": {
-     "mean": 0.037234,
+     "mean": 0.035049,
      "n": 18
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.006913,
+     "mean": -0.009097,
      "n": 18
     },
     "read.bar_completeness": {
@@ -11757,7 +11757,7 @@
      "n": 18
     },
     "sqi": {
-     "mean": 65.112331,
+     "mean": 65.667887,
      "n": 18
     },
     "struct.downbeat.f1": {
@@ -11773,15 +11773,15 @@
      "n": 18
     },
     "struct.key.fifths_exact": {
-     "mean": 0.833333,
+     "mean": 0.888889,
      "n": 18
     },
     "struct.key.mirex": {
-     "mean": 0.833333,
+     "mean": 0.888889,
      "n": 9
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.833333,
+     "mean": 0.888889,
      "n": 18
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -12463,7 +12463,7 @@
      "n": 63
     },
     "critical.key": {
-     "mean": 0.952381,
+     "mean": 0.968254,
      "n": 63
     },
     "critical.meter": {
@@ -12959,7 +12959,7 @@
      "n": 63
     },
     "sqi": {
-     "mean": 82.644335,
+     "mean": 82.803065,
      "n": 63
     },
     "struct.downbeat.f1": {
@@ -12975,15 +12975,15 @@
      "n": 63
     },
     "struct.key.fifths_exact": {
-     "mean": 0.952381,
+     "mean": 0.968254,
      "n": 63
     },
     "struct.key.mirex": {
-     "mean": 0.952381,
+     "mean": 0.968254,
      "n": 63
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.952381,
+     "mean": 0.968254,
      "n": 63
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -13657,7 +13657,7 @@
      "n": 126
     },
     "critical.key": {
-     "mean": 0.952381,
+     "mean": 0.968254,
      "n": 126
     },
     "critical.meter": {
@@ -13981,11 +13981,11 @@
      "n": 27
     },
     "read.accidentals_per_note": {
-     "mean": 0.001939,
+     "mean": 0.001627,
      "n": 126
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.000389,
+     "mean": 7.7e-05,
      "n": 126
     },
     "read.bar_completeness": {
@@ -14153,7 +14153,7 @@
      "n": 126
     },
     "sqi": {
-     "mean": 77.053427,
+     "mean": 77.212157,
      "n": 126
     },
     "struct.downbeat.f1": {
@@ -14169,15 +14169,15 @@
      "n": 126
     },
     "struct.key.fifths_exact": {
-     "mean": 0.952381,
+     "mean": 0.968254,
      "n": 126
     },
     "struct.key.mirex": {
-     "mean": 0.964286,
+     "mean": 0.97619,
      "n": 126
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.952381,
+     "mean": 0.968254,
      "n": 126
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -16648,7 +16648,7 @@
      "n": 48
     },
     "critical.key": {
-     "mean": 0.958333,
+     "mean": 1.0,
      "n": 48
     },
     "critical.meter": {
@@ -16972,11 +16972,11 @@
      "n": 9
     },
     "read.accidentals_per_note": {
-     "mean": 0.009776,
+     "mean": 0.008957,
      "n": 48
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.000563,
+     "mean": -0.001382,
      "n": 48
     },
     "read.bar_completeness": {
@@ -17144,7 +17144,7 @@
      "n": 48
     },
     "sqi": {
-     "mean": 88.483642,
+     "mean": 88.900309,
      "n": 48
     },
     "struct.downbeat.f1": {
@@ -17160,15 +17160,15 @@
      "n": 48
     },
     "struct.key.fifths_exact": {
-     "mean": 0.958333,
+     "mean": 1.0,
      "n": 48
     },
     "struct.key.mirex": {
-     "mean": 0.966667,
+     "mean": 1.0,
      "n": 45
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.958333,
+     "mean": 1.0,
      "n": 48
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -17259,7 +17259,7 @@
      "n": 48
     },
     "critical.key": {
-     "mean": 0.875,
+     "mean": 0.916667,
      "n": 48
     },
     "critical.meter": {
@@ -17567,11 +17567,11 @@
      "n": 9
     },
     "read.accidentals_per_note": {
-     "mean": 0.011108,
+     "mean": 0.010288,
      "n": 48
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.000768,
+     "mean": -5.1e-05,
      "n": 48
     },
     "read.bar_completeness": {
@@ -17739,7 +17739,7 @@
      "n": 48
     },
     "sqi": {
-     "mean": 75.158298,
+     "mean": 75.574964,
      "n": 48
     },
     "struct.downbeat.f1": {
@@ -17755,15 +17755,15 @@
      "n": 48
     },
     "struct.key.fifths_exact": {
-     "mean": 0.875,
+     "mean": 0.916667,
      "n": 48
     },
     "struct.key.mirex": {
-     "mean": 0.9,
+     "mean": 0.933333,
      "n": 45
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.875,
+     "mean": 0.916667,
      "n": 48
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -19060,7 +19060,7 @@
      "n": 144
     },
     "critical.key": {
-     "mean": 0.958333,
+     "mean": 0.972222,
      "n": 144
     },
     "critical.meter": {
@@ -19384,11 +19384,11 @@
      "n": 27
     },
     "read.accidentals_per_note": {
-     "mean": 0.009359,
+     "mean": 0.009086,
      "n": 144
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.00098,
+     "mean": -0.001253,
      "n": 144
     },
     "read.bar_completeness": {
@@ -19556,7 +19556,7 @@
      "n": 144
     },
     "sqi": {
-     "mean": 77.029256,
+     "mean": 77.168144,
      "n": 144
     },
     "struct.downbeat.f1": {
@@ -19572,15 +19572,15 @@
      "n": 144
     },
     "struct.key.fifths_exact": {
-     "mean": 0.958333,
+     "mean": 0.972222,
      "n": 144
     },
     "struct.key.mirex": {
-     "mean": 0.966667,
+     "mean": 0.977778,
      "n": 135
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.958333,
+     "mean": 0.972222,
      "n": 144
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -20841,7 +20841,7 @@
      "n": 18
     },
     "critical.key": {
-     "mean": 0.833333,
+     "mean": 0.888889,
      "n": 18
     },
     "critical.meter": {
@@ -21149,11 +21149,11 @@
      "n": 11
     },
     "read.accidentals_per_note": {
-     "mean": 0.037234,
+     "mean": 0.035049,
      "n": 18
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.006913,
+     "mean": -0.009097,
      "n": 18
     },
     "read.bar_completeness": {
@@ -21317,7 +21317,7 @@
      "n": 18
     },
     "sqi": {
-     "mean": 65.112331,
+     "mean": 65.667887,
      "n": 18
     },
     "struct.downbeat.f1": {
@@ -21333,15 +21333,15 @@
      "n": 18
     },
     "struct.key.fifths_exact": {
-     "mean": 0.833333,
+     "mean": 0.888889,
      "n": 18
     },
     "struct.key.mirex": {
-     "mean": 0.833333,
+     "mean": 0.888889,
      "n": 9
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.833333,
+     "mean": 0.888889,
      "n": 18
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -21432,7 +21432,7 @@
      "n": 90
     },
     "critical.key": {
-     "mean": 0.966667,
+     "mean": 0.977778,
      "n": 90
     },
     "critical.meter": {
@@ -21928,7 +21928,7 @@
      "n": 90
     },
     "sqi": {
-     "mean": 79.814163,
+     "mean": 79.925274,
      "n": 90
     },
     "struct.downbeat.f1": {
@@ -21944,15 +21944,15 @@
      "n": 90
     },
     "struct.key.fifths_exact": {
-     "mean": 0.966667,
+     "mean": 0.977778,
      "n": 90
     },
     "struct.key.mirex": {
-     "mean": 0.966667,
+     "mean": 0.977778,
      "n": 90
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.966667,
+     "mean": 0.977778,
      "n": 90
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -22630,7 +22630,7 @@
      "n": 45
     },
     "critical.key": {
-     "mean": 0.933333,
+     "mean": 0.955556,
      "n": 45
     },
     "critical.meter": {
@@ -22938,11 +22938,11 @@
      "n": 27
     },
     "read.accidentals_per_note": {
-     "mean": 0.00543,
+     "mean": 0.004556,
      "n": 45
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.001089,
+     "mean": 0.000215,
      "n": 45
     },
     "read.bar_completeness": {
@@ -23106,7 +23106,7 @@
      "n": 45
     },
     "sqi": {
-     "mean": 76.245237,
+     "mean": 76.467459,
      "n": 45
     },
     "struct.downbeat.f1": {
@@ -23122,15 +23122,15 @@
      "n": 45
     },
     "struct.key.fifths_exact": {
-     "mean": 0.933333,
+     "mean": 0.955556,
      "n": 45
     },
     "struct.key.mirex": {
-     "mean": 0.966667,
+     "mean": 0.977778,
      "n": 45
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.933333,
+     "mean": 0.955556,
      "n": 45
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -23221,7 +23221,7 @@
      "n": 90
     },
     "critical.key": {
-     "mean": 0.966667,
+     "mean": 0.977778,
      "n": 90
     },
     "critical.meter": {
@@ -23713,7 +23713,7 @@
      "n": 90
     },
     "sqi": {
-     "mean": 78.312244,
+     "mean": 78.423355,
      "n": 90
     },
     "struct.downbeat.f1": {
@@ -23729,15 +23729,15 @@
      "n": 90
     },
     "struct.key.fifths_exact": {
-     "mean": 0.966667,
+     "mean": 0.977778,
      "n": 90
     },
     "struct.key.mirex": {
-     "mean": 0.966667,
+     "mean": 0.977778,
      "n": 90
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.966667,
+     "mean": 0.977778,
      "n": 90
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -23828,7 +23828,7 @@
      "n": 144
     },
     "critical.key": {
-     "mean": 0.958333,
+     "mean": 0.972222,
      "n": 144
     },
     "critical.meter": {
@@ -24152,11 +24152,11 @@
      "n": 27
     },
     "read.accidentals_per_note": {
-     "mean": 0.009359,
+     "mean": 0.009086,
      "n": 144
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.00098,
+     "mean": -0.001253,
      "n": 144
     },
     "read.bar_completeness": {
@@ -24324,7 +24324,7 @@
      "n": 144
     },
     "sqi": {
-     "mean": 77.029256,
+     "mean": 77.168144,
      "n": 144
     },
     "struct.downbeat.f1": {
@@ -24340,15 +24340,15 @@
      "n": 144
     },
     "struct.key.fifths_exact": {
-     "mean": 0.958333,
+     "mean": 0.972222,
      "n": 144
     },
     "struct.key.mirex": {
-     "mean": 0.966667,
+     "mean": 0.977778,
      "n": 135
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.958333,
+     "mean": 0.972222,
      "n": 144
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -28083,7 +28083,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 0.0,
     "critical.hands": 1.0,
-    "critical.key": 0.0,
+    "critical.key": 1.0,
     "critical.meter": 0.0,
     "critical.note_values": 1.0,
     "critical.pedal": null,
@@ -28131,11 +28131,11 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.993763,
-    "sqi": 70.005895,
+    "sqi": 80.005895,
     "struct.downbeat.f1": 0.666667,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 0.0,
-    "struct.key.timeline_accuracy": 0.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 0.0,
@@ -28147,8 +28147,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "d8c224626e235534",
-   "sqi": 70.005895,
+   "semantic": "281c269c8d3a252f",
+   "sqi": 80.005895,
    "status": "ok"
   },
   "method/czerny599/040|human-real|none|s1|opt:app": {
@@ -33411,7 +33411,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
-    "critical.key": 0.0,
+    "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 0.0,
     "critical.pedal": null,
@@ -33459,11 +33459,11 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 1.0,
-    "sqi": 86.875,
+    "sqi": 96.875,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 0.0,
-    "struct.key.timeline_accuracy": 0.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 1.0,
@@ -33475,8 +33475,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "d4b4a0b257f51ee8",
-   "sqi": 86.875,
+   "semantic": "648a1fc5c424f142",
+   "sqi": 96.875,
    "status": "ok"
   },
   "micro/M09-syncopation-ties|human-real|none|s1|opt:app": {
@@ -35740,6 +35740,14 @@
    "reason": "G10a-2: v2's stage S3 is rec/grid.js (the grid of each beat, AI-5b), on top of S4 (afdb23b); legacy and app rows unchanged case by case; v2 rows move (G10 section 20)",
    "sqi_all": 77.029256,
    "usable_all": 0.131944
+  },
+  {
+   "audio_score_sha256": "7682f733ad574ef9020896400a8f4025b26f650f00876675f2b1d8bd211270eb",
+   "date": "2026-10-03",
+   "git_sha": "6712a447e6dc26c877917e6653df7d40e2917260",
+   "reason": "G10a-3 S8 (rec/key.js, docs/GOALS/G10 section 22): v2 writes its own key signature, spelling and accidentals; legacy and app rows unchanged. v2 critical.key up (57 cases gained, 20 lost on rec-core: what-child-is-this, beyer/032, burgmuller25/015 and 023, czerny849/013 had the right key under the legacy estimator), critical.accidentals fixed (tied-over head no longer counts as in force)",
+   "sqi_all": 77.168144,
+   "usable_all": 0.131944
   }
  ],
  "known_failures": {
@@ -36085,10 +36093,10 @@
  },
  "lock_sha256": "99fac9e2449d5f1518e69df897b54e5a529698bd5c33f8c40a05bf3a5a3748d5",
  "recorded": {
-  "audio_score_sha256": "026597c651a913660ff6ec6142d3f0c54be8125c831c929ceddf9a669c3c8c23",
+  "audio_score_sha256": "7682f733ad574ef9020896400a8f4025b26f650f00876675f2b1d8bd211270eb",
   "date": "2026-10-03",
-  "git_dirty": true,
-  "git_sha": "25e656711808b0bacaee43f366fdce03b3f2c36a",
+  "git_dirty": false,
+  "git_sha": "6712a447e6dc26c877917e6653df7d40e2917260",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"

@@ -3,7 +3,7 @@
   "all": {
    "cases": 846,
    "critical.accidentals": {
-    "mean": 0.98227,
+    "mean": 0.985816,
     "n": 846
    },
    "critical.beat_placement": {
@@ -15,7 +15,7 @@
     "n": 846
    },
    "critical.key": {
-    "mean": 0.904255,
+    "mean": 0.919622,
     "n": 846
    },
    "critical.meter": {
@@ -51,19 +51,19 @@
     "n": 846
    },
    "notation.accidentals.missing": {
-    "mean": 0.055556,
+    "mean": 0.048463,
     "n": 846
    },
    "notation.accidentals.missing.delta": {
-    "mean": 0.055556,
+    "mean": 0.048463,
     "n": 846
    },
    "notation.accidentals.required_recall": {
-    "mean": 0.998136,
+    "mean": 0.998376,
     "n": 846
    },
    "notation.accidentals.required_recall.delta": {
-    "mean": -0.001864,
+    "mean": -0.001624,
     "n": 846
    },
    "notation.duration.accuracy": {
@@ -131,11 +131,11 @@
     "n": 846
    },
    "notation.spelling.accuracy": {
-    "mean": 0.997139,
+    "mean": 0.997237,
     "n": 846
    },
    "notation.spelling.accuracy_ref": {
-    "mean": 0.98159,
+    "mean": 0.981686,
     "n": 846
    },
    "notation.ties.extra_per_100": {
@@ -251,11 +251,11 @@
     "n": 846
    },
    "nq.spell.mixed_bar_rate": {
-    "mean": 0.00326,
+    "mean": 0.003136,
     "n": 846
    },
    "nq.spell.mixed_bar_rate.delta": {
-    "mean": 0.001417,
+    "mean": 0.001292,
     "n": 846
    },
    "nq.tie.mergeable.cross_voice": {
@@ -323,11 +323,11 @@
     "n": 360
    },
    "read.accidentals_per_note": {
-    "mean": 0.018957,
+    "mean": 0.018439,
     "n": 846
    },
    "read.accidentals_per_note.delta": {
-    "mean": -0.001004,
+    "mean": -0.001521,
     "n": 846
    },
    "read.bar_completeness": {
@@ -495,7 +495,7 @@
     "n": 846
    },
    "sqi": {
-    "mean": 73.936729,
+    "mean": 74.067235,
     "n": 846
    },
    "struct.downbeat.f1": {
@@ -511,15 +511,15 @@
     "n": 846
    },
    "struct.key.fifths_exact": {
-    "mean": 0.911348,
+    "mean": 0.92435,
     "n": 846
    },
    "struct.key.mirex": {
-    "mean": 0.941827,
+    "mean": 0.945513,
     "n": 624
    },
    "struct.key.timeline_accuracy": {
-    "mean": 0.909408,
+    "mean": 0.923351,
     "n": 846
    },
    "struct.measure_numbers.app_onset_accuracy": {
@@ -591,7 +591,7 @@
     "n": 846
    },
    "usable": {
-    "mean": 0.062648,
+    "mean": 0.06383,
     "n": 846
    }
   },
@@ -599,7 +599,7 @@
    "beats:none": {
     "cases": 423,
     "critical.accidentals": {
-     "mean": 0.985816,
+     "mean": 0.98818,
      "n": 423
     },
     "critical.beat_placement": {
@@ -611,7 +611,7 @@
      "n": 423
     },
     "critical.key": {
-     "mean": 0.907801,
+     "mean": 0.919622,
      "n": 423
     },
     "critical.meter": {
@@ -647,19 +647,19 @@
      "n": 423
     },
     "notation.accidentals.missing": {
-     "mean": 0.028369,
+     "mean": 0.023641,
      "n": 423
     },
     "notation.accidentals.missing.delta": {
-     "mean": 0.028369,
+     "mean": 0.023641,
      "n": 423
     },
     "notation.accidentals.required_recall": {
-     "mean": 0.99806,
+     "mean": 0.998242,
      "n": 423
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": -0.00194,
+     "mean": -0.001758,
      "n": 423
     },
     "notation.duration.accuracy": {
@@ -727,11 +727,11 @@
      "n": 423
     },
     "notation.spelling.accuracy": {
-     "mean": 0.997138,
+     "mean": 0.997235,
      "n": 423
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.981653,
+     "mean": 0.981748,
      "n": 423
     },
     "notation.ties.extra_per_100": {
@@ -847,11 +847,11 @@
      "n": 423
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.003356,
+     "mean": 0.003305,
      "n": 423
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": 0.001512,
+     "mean": 0.001461,
      "n": 423
     },
     "nq.tie.mergeable.cross_voice": {
@@ -919,11 +919,11 @@
      "n": 180
     },
     "read.accidentals_per_note": {
-     "mean": 0.01912,
+     "mean": 0.018669,
      "n": 423
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.00084,
+     "mean": -0.001291,
      "n": 423
     },
     "read.bar_completeness": {
@@ -1091,7 +1091,7 @@
      "n": 423
     },
     "sqi": {
-     "mean": 70.272757,
+     "mean": 70.367793,
      "n": 423
     },
     "struct.downbeat.f1": {
@@ -1107,15 +1107,15 @@
      "n": 423
     },
     "struct.key.fifths_exact": {
-     "mean": 0.914894,
+     "mean": 0.92435,
      "n": 423
     },
     "struct.key.mirex": {
-     "mean": 0.934615,
+     "mean": 0.940705,
      "n": 312
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.912954,
+     "mean": 0.923703,
      "n": 423
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -1194,7 +1194,7 @@
    "beats:oracle-noisy": {
     "cases": 423,
     "critical.accidentals": {
-     "mean": 0.978723,
+     "mean": 0.983452,
      "n": 423
     },
     "critical.beat_placement": {
@@ -1206,7 +1206,7 @@
      "n": 423
     },
     "critical.key": {
-     "mean": 0.900709,
+     "mean": 0.919622,
      "n": 423
     },
     "critical.meter": {
@@ -1242,19 +1242,19 @@
      "n": 423
     },
     "notation.accidentals.missing": {
-     "mean": 0.082742,
+     "mean": 0.073286,
      "n": 423
     },
     "notation.accidentals.missing.delta": {
-     "mean": 0.082742,
+     "mean": 0.073286,
      "n": 423
     },
     "notation.accidentals.required_recall": {
-     "mean": 0.998212,
+     "mean": 0.99851,
      "n": 423
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": -0.001788,
+     "mean": -0.00149,
      "n": 423
     },
     "notation.duration.accuracy": {
@@ -1322,11 +1322,11 @@
      "n": 423
     },
     "notation.spelling.accuracy": {
-     "mean": 0.997139,
+     "mean": 0.99724,
      "n": 423
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.981526,
+     "mean": 0.981625,
      "n": 423
     },
     "notation.ties.extra_per_100": {
@@ -1442,11 +1442,11 @@
      "n": 423
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.003165,
+     "mean": 0.002966,
      "n": 423
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": 0.001321,
+     "mean": 0.001123,
      "n": 423
     },
     "nq.tie.mergeable.cross_voice": {
@@ -1514,11 +1514,11 @@
      "n": 180
     },
     "read.accidentals_per_note": {
-     "mean": 0.018793,
+     "mean": 0.018209,
      "n": 423
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.001167,
+     "mean": -0.001751,
      "n": 423
     },
     "read.bar_completeness": {
@@ -1686,7 +1686,7 @@
      "n": 423
     },
     "sqi": {
-     "mean": 77.6007,
+     "mean": 77.766678,
      "n": 423
     },
     "struct.downbeat.f1": {
@@ -1702,15 +1702,15 @@
      "n": 423
     },
     "struct.key.fifths_exact": {
-     "mean": 0.907801,
+     "mean": 0.92435,
      "n": 423
     },
     "struct.key.mirex": {
-     "mean": 0.949038,
+     "mean": 0.950321,
      "n": 312
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.905862,
+     "mean": 0.922999,
      "n": 423
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -1782,7 +1782,7 @@
      "n": 423
     },
     "usable": {
-     "mean": 0.08747,
+     "mean": 0.089835,
      "n": 423
     }
    },
@@ -1801,7 +1801,7 @@
      "n": 96
     },
     "critical.key": {
-     "mean": 0.8125,
+     "mean": 0.791667,
      "n": 96
     },
     "critical.meter": {
@@ -2261,7 +2261,7 @@
      "n": 96
     },
     "sqi": {
-     "mean": 77.433858,
+     "mean": 77.225525,
      "n": 96
     },
     "struct.downbeat.f1": {
@@ -2277,15 +2277,15 @@
      "n": 96
     },
     "struct.key.fifths_exact": {
-     "mean": 0.8125,
+     "mean": 0.791667,
      "n": 96
     },
     "struct.key.mirex": {
-     "mean": 0.8625,
+     "mean": 0.866667,
      "n": 96
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.8125,
+     "mean": 0.791667,
      "n": 96
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -2376,7 +2376,7 @@
      "n": 54
     },
     "critical.key": {
-     "mean": 0.888889,
+     "mean": 0.87037,
      "n": 54
     },
     "critical.meter": {
@@ -2492,11 +2492,11 @@
      "n": 54
     },
     "notation.spelling.accuracy": {
-     "mean": 0.982599,
+     "mean": 0.982481,
      "n": 54
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.962241,
+     "mean": 0.962123,
      "n": 54
     },
     "notation.ties.extra_per_100": {
@@ -2612,11 +2612,11 @@
      "n": 54
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.006629,
+     "mean": 0.008252,
      "n": 54
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": 0.005934,
+     "mean": 0.007557,
      "n": 54
     },
     "nq.tie.mergeable.cross_voice": {
@@ -2684,11 +2684,11 @@
      "n": 30
     },
     "read.accidentals_per_note": {
-     "mean": 0.041065,
+     "mean": 0.040924,
      "n": 54
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.01037,
+     "mean": -0.010511,
      "n": 54
     },
     "read.bar_completeness": {
@@ -2856,7 +2856,7 @@
      "n": 54
     },
     "sqi": {
-     "mean": 74.667622,
+     "mean": 74.111479,
      "n": 54
     },
     "struct.downbeat.f1": {
@@ -2872,15 +2872,15 @@
      "n": 54
     },
     "struct.key.fifths_exact": {
-     "mean": 1.0,
+     "mean": 0.944444,
      "n": 54
     },
     "struct.key.mirex": {
-     "mean": 1.0,
+     "mean": 0.958333,
      "n": 24
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.969609,
+     "mean": 0.928797,
      "n": 54
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -2952,7 +2952,7 @@
      "n": 54
     },
     "usable": {
-     "mean": 0.111111,
+     "mean": 0.092593,
      "n": 54
     }
    },
@@ -2971,7 +2971,7 @@
      "n": 96
     },
     "critical.key": {
-     "mean": 0.875,
+     "mean": 0.916667,
      "n": 96
     },
     "critical.meter": {
@@ -3263,11 +3263,11 @@
      "n": 12
     },
     "read.accidentals_per_note": {
-     "mean": 0.017876,
+     "mean": 0.016974,
      "n": 96
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.002548,
+     "mean": -0.00345,
      "n": 96
     },
     "read.bar_completeness": {
@@ -3431,7 +3431,7 @@
      "n": 96
     },
     "sqi": {
-     "mean": 77.695141,
+     "mean": 78.111807,
      "n": 96
     },
     "struct.downbeat.f1": {
@@ -3447,15 +3447,15 @@
      "n": 96
     },
     "struct.key.fifths_exact": {
-     "mean": 0.875,
+     "mean": 0.916667,
      "n": 96
     },
     "struct.key.mirex": {
-     "mean": 0.9375,
+     "mean": 0.958333,
      "n": 96
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.875,
+     "mean": 0.916667,
      "n": 96
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -3534,7 +3534,7 @@
    "book:czerny849": {
     "cases": 60,
     "critical.accidentals": {
-     "mean": 0.933333,
+     "mean": 0.95,
      "n": 60
     },
     "critical.beat_placement": {
@@ -3546,7 +3546,7 @@
      "n": 60
     },
     "critical.key": {
-     "mean": 0.7,
+     "mean": 0.783333,
      "n": 60
     },
     "critical.meter": {
@@ -3582,19 +3582,19 @@
      "n": 60
     },
     "notation.accidentals.missing": {
-     "mean": 0.183333,
+     "mean": 0.15,
      "n": 60
     },
     "notation.accidentals.missing.delta": {
-     "mean": 0.183333,
+     "mean": 0.15,
      "n": 60
     },
     "notation.accidentals.required_recall": {
-     "mean": 0.994589,
+     "mean": 0.995402,
      "n": 60
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": -0.005411,
+     "mean": -0.004598,
      "n": 60
     },
     "notation.duration.accuracy": {
@@ -3662,11 +3662,11 @@
      "n": 60
     },
     "notation.spelling.accuracy": {
-     "mean": 0.996935,
+     "mean": 0.996965,
      "n": 60
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.948538,
+     "mean": 0.948567,
      "n": 60
     },
     "notation.ties.extra_per_100": {
@@ -3854,11 +3854,11 @@
      "n": 48
     },
     "read.accidentals_per_note": {
-     "mean": 0.030342,
+     "mean": 0.028251,
      "n": 60
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.006781,
+     "mean": 0.00469,
      "n": 60
     },
     "read.bar_completeness": {
@@ -4026,7 +4026,7 @@
      "n": 60
     },
     "sqi": {
-     "mean": 59.15998,
+     "mean": 59.993461,
      "n": 60
     },
     "struct.downbeat.f1": {
@@ -4042,11 +4042,11 @@
      "n": 60
     },
     "struct.key.fifths_exact": {
-     "mean": 0.7,
+     "mean": 0.783333,
      "n": 60
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.7,
+     "mean": 0.783333,
      "n": 60
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -4688,7 +4688,7 @@
    "book:sonatina": {
     "cases": 84,
     "critical.accidentals": {
-     "mean": 0.904762,
+     "mean": 0.928571,
      "n": 84
     },
     "critical.beat_placement": {
@@ -4700,7 +4700,7 @@
      "n": 84
     },
     "critical.key": {
-     "mean": 0.75,
+     "mean": 0.833333,
      "n": 84
     },
     "critical.meter": {
@@ -4736,19 +4736,19 @@
      "n": 84
     },
     "notation.accidentals.missing": {
-     "mean": 0.321429,
+     "mean": 0.27381,
      "n": 84
     },
     "notation.accidentals.missing.delta": {
-     "mean": 0.321429,
+     "mean": 0.27381,
      "n": 84
     },
     "notation.accidentals.required_recall": {
-     "mean": 0.992425,
+     "mean": 0.994256,
      "n": 84
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": -0.007575,
+     "mean": -0.005744,
      "n": 84
     },
     "notation.duration.accuracy": {
@@ -4816,11 +4816,11 @@
      "n": 84
     },
     "notation.spelling.accuracy": {
-     "mean": 0.993724,
+     "mean": 0.994393,
      "n": 84
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.991835,
+     "mean": 0.992503,
      "n": 84
     },
     "notation.ties.extra_per_100": {
@@ -4936,11 +4936,11 @@
      "n": 84
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.004503,
+     "mean": 0.004949,
      "n": 84
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": 0.001909,
+     "mean": 0.002356,
      "n": 84
     },
     "nq.tie.mergeable.cross_voice": {
@@ -5008,11 +5008,11 @@
      "n": 24
     },
     "read.accidentals_per_note": {
-     "mean": 0.039545,
+     "mean": 0.038436,
      "n": 84
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.001151,
+     "mean": -0.002261,
      "n": 84
     },
     "read.bar_completeness": {
@@ -5180,7 +5180,7 @@
      "n": 84
     },
     "sqi": {
-     "mean": 69.333418,
+     "mean": 70.170093,
      "n": 84
     },
     "struct.downbeat.f1": {
@@ -5196,11 +5196,11 @@
      "n": 84
     },
     "struct.key.fifths_exact": {
-     "mean": 0.75,
+     "mean": 0.833333,
      "n": 84
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.75,
+     "mean": 0.833333,
      "n": 84
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -5272,7 +5272,7 @@
      "n": 84
     },
     "usable": {
-     "mean": 0.107143,
+     "mean": 0.130952,
      "n": 84
     }
    },
@@ -5291,7 +5291,7 @@
      "n": 258
     },
     "critical.key": {
-     "mean": 1.0,
+     "mean": 0.984496,
      "n": 258
     },
     "critical.meter": {
@@ -5407,11 +5407,11 @@
      "n": 258
     },
     "notation.spelling.accuracy": {
-     "mean": 0.997947,
+     "mean": 0.99814,
      "n": 258
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.967925,
+     "mean": 0.968111,
      "n": 258
     },
     "notation.ties.extra_per_100": {
@@ -5523,11 +5523,11 @@
      "n": 258
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.002683,
+     "mean": 0.001789,
      "n": 258
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": 0.000335,
+     "mean": -0.000559,
      "n": 258
     },
     "nq.tie.mergeable.cross_voice": {
@@ -5587,11 +5587,11 @@
      "n": 240
     },
     "read.accidentals_per_note": {
-     "mean": 0.016578,
+     "mean": 0.016447,
      "n": 258
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.004257,
+     "mean": -0.004388,
      "n": 258
     },
     "read.bar_completeness": {
@@ -5755,7 +5755,7 @@
      "n": 258
     },
     "sqi": {
-     "mean": 76.199268,
+     "mean": 76.045163,
      "n": 258
     },
     "struct.downbeat.f1": {
@@ -5771,15 +5771,15 @@
      "n": 258
     },
     "struct.key.fifths_exact": {
-     "mean": 1.0,
+     "mean": 0.984496,
      "n": 258
     },
     "struct.key.mirex": {
-     "mean": 0.967442,
+     "mean": 0.96124,
      "n": 258
     },
     "struct.key.timeline_accuracy": {
-     "mean": 1.0,
+     "mean": 0.984496,
      "n": 258
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -5851,14 +5851,14 @@
      "n": 258
     },
     "usable": {
-     "mean": 0.007752,
+     "mean": 0.003876,
      "n": 258
     }
    },
    "feature:fast-runs": {
     "cases": 168,
     "critical.accidentals": {
-     "mean": 0.934524,
+     "mean": 0.952381,
      "n": 168
     },
     "critical.beat_placement": {
@@ -5870,7 +5870,7 @@
      "n": 168
     },
     "critical.key": {
-     "mean": 0.767857,
+     "mean": 0.833333,
      "n": 168
     },
     "critical.meter": {
@@ -5906,19 +5906,19 @@
      "n": 168
     },
     "notation.accidentals.missing": {
-     "mean": 0.172619,
+     "mean": 0.136905,
      "n": 168
     },
     "notation.accidentals.missing.delta": {
-     "mean": 0.172619,
+     "mean": 0.136905,
      "n": 168
     },
     "notation.accidentals.required_recall": {
-     "mean": 0.995613,
+     "mean": 0.996819,
      "n": 168
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": -0.004387,
+     "mean": -0.003181,
      "n": 168
     },
     "notation.duration.accuracy": {
@@ -5986,11 +5986,11 @@
      "n": 168
     },
     "notation.spelling.accuracy": {
-     "mean": 0.995191,
+     "mean": 0.995535,
      "n": 168
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.973715,
+     "mean": 0.974059,
      "n": 168
     },
     "notation.ties.extra_per_100": {
@@ -6106,11 +6106,11 @@
      "n": 168
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.006329,
+     "mean": 0.007074,
      "n": 168
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": 0.001477,
+     "mean": 0.002222,
      "n": 168
     },
     "nq.tie.mergeable.cross_voice": {
@@ -6178,11 +6178,11 @@
      "n": 78
     },
     "read.accidentals_per_note": {
-     "mean": 0.030591,
+     "mean": 0.029197,
      "n": 168
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.00166,
+     "mean": 0.000267,
      "n": 168
     },
     "read.bar_completeness": {
@@ -6350,7 +6350,7 @@
      "n": 168
     },
     "sqi": {
-     "mean": 67.129632,
+     "mean": 67.667065,
      "n": 168
     },
     "struct.downbeat.f1": {
@@ -6366,7 +6366,7 @@
      "n": 168
     },
     "struct.key.fifths_exact": {
-     "mean": 0.803571,
+     "mean": 0.857143,
      "n": 168
     },
     "struct.key.mirex": {
@@ -6374,7 +6374,7 @@
      "n": 42
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.793803,
+     "mean": 0.852113,
      "n": 168
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -6446,7 +6446,7 @@
      "n": 168
     },
     "usable": {
-     "mean": 0.059524,
+     "mean": 0.071429,
      "n": 168
     }
    },
@@ -7012,7 +7012,7 @@
    "feature:ottava": {
     "cases": 48,
     "critical.accidentals": {
-     "mean": 0.916667,
+     "mean": 0.9375,
      "n": 48
     },
     "critical.beat_placement": {
@@ -7024,7 +7024,7 @@
      "n": 48
     },
     "critical.key": {
-     "mean": 0.6875,
+     "mean": 0.770833,
      "n": 48
     },
     "critical.meter": {
@@ -7060,19 +7060,19 @@
      "n": 48
     },
     "notation.accidentals.missing": {
-     "mean": 0.229167,
+     "mean": 0.1875,
      "n": 48
     },
     "notation.accidentals.missing.delta": {
-     "mean": 0.229167,
+     "mean": 0.1875,
      "n": 48
     },
     "notation.accidentals.required_recall": {
-     "mean": 0.996358,
+     "mean": 0.997374,
      "n": 48
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": -0.003642,
+     "mean": -0.002626,
      "n": 48
     },
     "notation.duration.accuracy": {
@@ -7140,11 +7140,11 @@
      "n": 48
     },
     "notation.spelling.accuracy": {
-     "mean": 0.991633,
+     "mean": 0.992836,
      "n": 48
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.975338,
+     "mean": 0.976541,
      "n": 48
     },
     "notation.ties.extra_per_100": {
@@ -7260,11 +7260,11 @@
      "n": 48
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.013188,
+     "mean": 0.015795,
      "n": 48
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": -0.000414,
+     "mean": 0.002194,
      "n": 48
     },
     "nq.tie.mergeable.cross_voice": {
@@ -7332,11 +7332,11 @@
      "n": 30
     },
     "read.accidentals_per_note": {
-     "mean": 0.044545,
+     "mean": 0.042268,
      "n": 48
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.007546,
+     "mean": 0.00527,
      "n": 48
     },
     "read.bar_completeness": {
@@ -7504,7 +7504,7 @@
      "n": 48
     },
     "sqi": {
-     "mean": 63.964772,
+     "mean": 64.387456,
      "n": 48
     },
     "struct.downbeat.f1": {
@@ -7520,11 +7520,11 @@
      "n": 48
     },
     "struct.key.fifths_exact": {
-     "mean": 0.8125,
+     "mean": 0.854167,
      "n": 48
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.77831,
+     "mean": 0.836564,
      "n": 48
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -7596,7 +7596,7 @@
      "n": 48
     },
     "usable": {
-     "mean": 0.041667,
+     "mean": 0.0625,
      "n": 48
     }
    },
@@ -7615,7 +7615,7 @@
      "n": 264
     },
     "critical.key": {
-     "mean": 0.988636,
+     "mean": 0.984848,
      "n": 264
     },
     "critical.meter": {
@@ -7731,11 +7731,11 @@
      "n": 264
     },
     "notation.spelling.accuracy": {
-     "mean": 0.998199,
+     "mean": 0.99832,
      "n": 264
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.965876,
+     "mean": 0.96599,
      "n": 264
     },
     "notation.ties.extra_per_100": {
@@ -7847,11 +7847,11 @@
      "n": 264
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.002622,
+     "mean": 0.001748,
      "n": 264
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": 0.000328,
+     "mean": -0.000546,
      "n": 264
     },
     "nq.tie.mergeable.cross_voice": {
@@ -7911,11 +7911,11 @@
      "n": 240
     },
     "read.accidentals_per_note": {
-     "mean": 0.016094,
+     "mean": 0.015715,
      "n": 264
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.002921,
+     "mean": -0.0033,
      "n": 264
     },
     "read.bar_completeness": {
@@ -8079,7 +8079,7 @@
      "n": 264
     },
     "sqi": {
-     "mean": 76.869689,
+     "mean": 76.832381,
      "n": 264
     },
     "struct.downbeat.f1": {
@@ -8095,15 +8095,15 @@
      "n": 264
     },
     "struct.key.fifths_exact": {
-     "mean": 0.988636,
+     "mean": 0.984848,
      "n": 264
     },
     "struct.key.mirex": {
-     "mean": 0.946591,
+     "mean": 0.946212,
      "n": 264
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.988636,
+     "mean": 0.984848,
      "n": 264
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -8194,7 +8194,7 @@
      "n": 12
     },
     "critical.key": {
-     "mean": 0.75,
+     "mean": 0.833333,
      "n": 12
     },
     "critical.meter": {
@@ -8482,11 +8482,11 @@
      "n": 7
     },
     "read.accidentals_per_note": {
-     "mean": 0.005746,
+     "mean": 0.003663,
      "n": 12
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.005746,
+     "mean": 0.003663,
      "n": 12
     },
     "read.bar_completeness": {
@@ -8646,7 +8646,7 @@
      "n": 12
     },
     "sqi": {
-     "mean": 62.498358,
+     "mean": 63.331691,
      "n": 12
     },
     "struct.downbeat.f1": {
@@ -8662,15 +8662,15 @@
      "n": 12
     },
     "struct.key.fifths_exact": {
-     "mean": 0.75,
+     "mean": 0.833333,
      "n": 12
     },
     "struct.key.mirex": {
-     "mean": 0.5,
+     "mean": 0.666667,
      "n": 6
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.75,
+     "mean": 0.833333,
      "n": 12
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -8749,7 +8749,7 @@
    "feature:ties": {
     "cases": 108,
     "critical.accidentals": {
-     "mean": 0.953704,
+     "mean": 0.962963,
      "n": 108
     },
     "critical.beat_placement": {
@@ -8761,7 +8761,7 @@
      "n": 108
     },
     "critical.key": {
-     "mean": 0.833333,
+     "mean": 0.87963,
      "n": 108
     },
     "critical.meter": {
@@ -8797,19 +8797,19 @@
      "n": 108
     },
     "notation.accidentals.missing": {
-     "mean": 0.166667,
+     "mean": 0.148148,
      "n": 108
     },
     "notation.accidentals.missing.delta": {
-     "mean": 0.166667,
+     "mean": 0.148148,
      "n": 108
     },
     "notation.accidentals.required_recall": {
-     "mean": 0.997414,
+     "mean": 0.997866,
      "n": 108
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": -0.002586,
+     "mean": -0.002134,
      "n": 108
     },
     "notation.duration.accuracy": {
@@ -8877,11 +8877,11 @@
      "n": 108
     },
     "notation.spelling.accuracy": {
-     "mean": 0.991414,
+     "mean": 0.991949,
      "n": 108
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.975406,
+     "mean": 0.975941,
      "n": 108
     },
     "notation.ties.extra_per_100": {
@@ -8997,11 +8997,11 @@
      "n": 108
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.009344,
+     "mean": 0.010503,
      "n": 108
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": 0.003976,
+     "mean": 0.005135,
      "n": 108
     },
     "nq.tie.mergeable.cross_voice": {
@@ -9069,11 +9069,11 @@
      "n": 60
     },
     "read.accidentals_per_note": {
-     "mean": 0.040543,
+     "mean": 0.039681,
      "n": 108
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.002383,
+     "mean": -0.003245,
      "n": 108
     },
     "read.bar_completeness": {
@@ -9241,7 +9241,7 @@
      "n": 108
     },
     "sqi": {
-     "mean": 70.333463,
+     "mean": 70.613915,
      "n": 108
     },
     "struct.downbeat.f1": {
@@ -9257,7 +9257,7 @@
      "n": 108
     },
     "struct.key.fifths_exact": {
-     "mean": 0.888889,
+     "mean": 0.916667,
      "n": 108
     },
     "struct.key.mirex": {
@@ -9265,7 +9265,7 @@
      "n": 42
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.873693,
+     "mean": 0.908843,
      "n": 108
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -9337,14 +9337,14 @@
      "n": 108
     },
     "usable": {
-     "mean": 0.046296,
+     "mean": 0.055556,
      "n": 108
     }
    },
    "feature:tuplets": {
     "cases": 60,
     "critical.accidentals": {
-     "mean": 0.883333,
+     "mean": 0.933333,
      "n": 60
     },
     "critical.beat_placement": {
@@ -9356,7 +9356,7 @@
      "n": 60
     },
     "critical.key": {
-     "mean": 0.7,
+     "mean": 0.8,
      "n": 60
     },
     "critical.meter": {
@@ -9392,19 +9392,19 @@
      "n": 60
     },
     "notation.accidentals.missing": {
-     "mean": 0.216667,
+     "mean": 0.116667,
      "n": 60
     },
     "notation.accidentals.missing.delta": {
-     "mean": 0.216667,
+     "mean": 0.116667,
      "n": 60
     },
     "notation.accidentals.required_recall": {
-     "mean": 0.991917,
+     "mean": 0.995294,
      "n": 60
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": -0.008083,
+     "mean": -0.004706,
      "n": 60
     },
     "notation.duration.accuracy": {
@@ -9472,11 +9472,11 @@
      "n": 60
     },
     "notation.spelling.accuracy": {
-     "mean": 0.992777,
+     "mean": 0.994146,
      "n": 60
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.965674,
+     "mean": 0.967043,
      "n": 60
     },
     "notation.ties.extra_per_100": {
@@ -9592,11 +9592,11 @@
      "n": 60
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.012739,
+     "mean": 0.013364,
      "n": 60
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": 0.003017,
+     "mean": 0.003642,
      "n": 60
     },
     "nq.tie.mergeable.cross_voice": {
@@ -9664,11 +9664,11 @@
      "n": 30
     },
     "read.accidentals_per_note": {
-     "mean": 0.031633,
+     "mean": 0.029556,
      "n": 60
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.006453,
+     "mean": 0.004376,
      "n": 60
     },
     "read.bar_completeness": {
@@ -9836,7 +9836,7 @@
      "n": 60
     },
     "sqi": {
-     "mean": 59.530011,
+     "mean": 60.536857,
      "n": 60
     },
     "struct.downbeat.f1": {
@@ -9852,7 +9852,7 @@
      "n": 60
     },
     "struct.key.fifths_exact": {
-     "mean": 0.7,
+     "mean": 0.8,
      "n": 60
     },
     "struct.key.mirex": {
@@ -9860,7 +9860,7 @@
      "n": 6
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.7,
+     "mean": 0.8,
      "n": 60
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -9932,14 +9932,14 @@
      "n": 60
     },
     "usable": {
-     "mean": 0.016667,
+     "mean": 0.033333,
      "n": 60
     }
    },
    "key:-1": {
     "cases": 90,
     "critical.accidentals": {
-     "mean": 0.944444,
+     "mean": 0.977778,
      "n": 90
     },
     "critical.beat_placement": {
@@ -9951,7 +9951,7 @@
      "n": 90
     },
     "critical.key": {
-     "mean": 0.933333,
+     "mean": 0.955556,
      "n": 90
     },
     "critical.meter": {
@@ -9987,19 +9987,19 @@
      "n": 90
     },
     "notation.accidentals.missing": {
-     "mean": 0.122222,
+     "mean": 0.055556,
      "n": 90
     },
     "notation.accidentals.missing.delta": {
-     "mean": 0.122222,
+     "mean": 0.055556,
      "n": 90
     },
     "notation.accidentals.required_recall": {
-     "mean": 0.996277,
+     "mean": 0.998528,
      "n": 90
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": -0.003723,
+     "mean": -0.001472,
      "n": 90
     },
     "notation.duration.accuracy": {
@@ -10067,11 +10067,11 @@
      "n": 90
     },
     "notation.spelling.accuracy": {
-     "mean": 0.99792,
+     "mean": 0.997939,
      "n": 90
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.989562,
+     "mean": 0.989582,
      "n": 90
     },
     "notation.ties.extra_per_100": {
@@ -10259,11 +10259,11 @@
      "n": 36
     },
     "read.accidentals_per_note": {
-     "mean": 0.03,
+     "mean": 0.029889,
      "n": 90
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.004935,
+     "mean": -0.005045,
      "n": 90
     },
     "read.bar_completeness": {
@@ -10431,7 +10431,7 @@
      "n": 90
     },
     "sqi": {
-     "mean": 74.12346,
+     "mean": 74.345781,
      "n": 90
     },
     "struct.downbeat.f1": {
@@ -10447,7 +10447,7 @@
      "n": 90
     },
     "struct.key.fifths_exact": {
-     "mean": 0.933333,
+     "mean": 0.955556,
      "n": 90
     },
     "struct.key.mirex": {
@@ -10455,7 +10455,7 @@
      "n": 54
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.933333,
+     "mean": 0.955556,
      "n": 90
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -10546,7 +10546,7 @@
      "n": 60
     },
     "critical.key": {
-     "mean": 0.75,
+     "mean": 0.816667,
      "n": 60
     },
     "critical.meter": {
@@ -10854,11 +10854,11 @@
      "n": 36
     },
     "read.accidentals_per_note": {
-     "mean": 0.022951,
+     "mean": 0.02214,
      "n": 60
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.005187,
+     "mean": -0.005999,
      "n": 60
     },
     "read.bar_completeness": {
@@ -11026,7 +11026,7 @@
      "n": 60
     },
     "sqi": {
-     "mean": 68.821696,
+     "mean": 69.488363,
      "n": 60
     },
     "struct.downbeat.f1": {
@@ -11042,15 +11042,15 @@
      "n": 60
     },
     "struct.key.fifths_exact": {
-     "mean": 0.75,
+     "mean": 0.816667,
      "n": 60
     },
     "struct.key.mirex": {
-     "mean": 0.9375,
+     "mean": 0.958333,
      "n": 48
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.75,
+     "mean": 0.816667,
      "n": 60
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -11141,7 +11141,7 @@
      "n": 48
     },
     "critical.key": {
-     "mean": 0.875,
+     "mean": 0.854167,
      "n": 48
     },
     "critical.meter": {
@@ -11257,11 +11257,11 @@
      "n": 48
     },
     "notation.spelling.accuracy": {
-     "mean": 0.998653,
+     "mean": 0.998521,
      "n": 48
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.976886,
+     "mean": 0.976753,
      "n": 48
     },
     "notation.ties.extra_per_100": {
@@ -11373,11 +11373,11 @@
      "n": 48
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.0,
+     "mean": 0.001826,
      "n": 48
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": -0.000781,
+     "mean": 0.001045,
      "n": 48
     },
     "nq.tie.mergeable.cross_voice": {
@@ -11437,11 +11437,11 @@
      "n": 36
     },
     "read.accidentals_per_note": {
-     "mean": 0.017763,
+     "mean": 0.017605,
      "n": 48
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.001117,
+     "mean": -0.001276,
      "n": 48
     },
     "read.bar_completeness": {
@@ -11605,7 +11605,7 @@
      "n": 48
     },
     "sqi": {
-     "mean": 72.002875,
+     "mean": 71.377214,
      "n": 48
     },
     "struct.downbeat.f1": {
@@ -11621,15 +11621,15 @@
      "n": 48
     },
     "struct.key.fifths_exact": {
-     "mean": 1.0,
+     "mean": 0.9375,
      "n": 48
     },
     "struct.key.mirex": {
-     "mean": 1.0,
+     "mean": 0.97619,
      "n": 42
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.96581,
+     "mean": 0.919897,
      "n": 48
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -11701,7 +11701,7 @@
      "n": 48
     },
     "usable": {
-     "mean": 0.020833,
+     "mean": 0.0,
      "n": 48
     }
    },
@@ -12874,7 +12874,7 @@
      "n": 384
     },
     "critical.key": {
-     "mean": 0.890625,
+     "mean": 0.90625,
      "n": 384
     },
     "critical.meter": {
@@ -12990,11 +12990,11 @@
      "n": 384
     },
     "notation.spelling.accuracy": {
-     "mean": 0.997663,
+     "mean": 0.997891,
      "n": 384
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.985202,
+     "mean": 0.985427,
      "n": 384
     },
     "notation.ties.extra_per_100": {
@@ -13110,11 +13110,11 @@
      "n": 384
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.004548,
+     "mean": 0.004045,
      "n": 384
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": 0.003083,
+     "mean": 0.002579,
      "n": 384
     },
     "nq.tie.mergeable.cross_voice": {
@@ -13182,11 +13182,11 @@
      "n": 66
     },
     "read.accidentals_per_note": {
-     "mean": 0.016103,
+     "mean": 0.015474,
      "n": 384
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.001711,
+     "mean": 0.001082,
      "n": 384
     },
     "read.bar_completeness": {
@@ -13354,7 +13354,7 @@
      "n": 384
     },
     "sqi": {
-     "mean": 73.855512,
+     "mean": 74.012885,
      "n": 384
     },
     "struct.downbeat.f1": {
@@ -13370,15 +13370,15 @@
      "n": 384
     },
     "struct.key.fifths_exact": {
-     "mean": 0.890625,
+     "mean": 0.90625,
      "n": 384
     },
     "struct.key.mirex": {
-     "mean": 0.909302,
+     "mean": 0.918605,
      "n": 258
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.890625,
+     "mean": 0.90625,
      "n": 384
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -13450,7 +13450,7 @@
      "n": 384
     },
     "usable": {
-     "mean": 0.088542,
+     "mean": 0.091146,
      "n": 384
     }
    },
@@ -13469,7 +13469,7 @@
      "n": 144
     },
     "critical.key": {
-     "mean": 0.958333,
+     "mean": 0.972222,
      "n": 144
     },
     "critical.meter": {
@@ -13777,11 +13777,11 @@
      "n": 90
     },
     "read.accidentals_per_note": {
-     "mean": 0.0177,
+     "mean": 0.017174,
      "n": 144
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.00013,
+     "mean": -0.000396,
      "n": 144
     },
     "read.bar_completeness": {
@@ -13949,7 +13949,7 @@
      "n": 144
     },
     "sqi": {
-     "mean": 75.810881,
+     "mean": 75.94977,
      "n": 144
     },
     "struct.downbeat.f1": {
@@ -13965,15 +13965,15 @@
      "n": 144
     },
     "struct.key.fifths_exact": {
-     "mean": 0.958333,
+     "mean": 0.972222,
      "n": 144
     },
     "struct.key.mirex": {
-     "mean": 0.947222,
+     "mean": 0.951852,
      "n": 108
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.958333,
+     "mean": 0.972222,
      "n": 144
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -14045,7 +14045,7 @@
      "n": 144
     },
     "usable": {
-     "mean": 0.034722,
+     "mean": 0.041667,
      "n": 144
     }
    },
@@ -14360,11 +14360,11 @@
      "n": 54
     },
     "read.accidentals_per_note": {
-     "mean": 0.017107,
+     "mean": 0.016281,
      "n": 66
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.001952,
+     "mean": -0.002778,
      "n": 66
     },
     "read.bar_completeness": {
@@ -14548,7 +14548,7 @@
      "n": 66
     },
     "struct.key.mirex": {
-     "mean": 0.93,
+     "mean": 0.92,
      "n": 60
     },
     "struct.key.timeline_accuracy": {
@@ -15773,7 +15773,7 @@
    "metre-class:compound-duple": {
     "cases": 96,
     "critical.accidentals": {
-     "mean": 0.96875,
+     "mean": 0.979167,
      "n": 96
     },
     "critical.beat_placement": {
@@ -15785,7 +15785,7 @@
      "n": 96
     },
     "critical.key": {
-     "mean": 0.875,
+     "mean": 0.885417,
      "n": 96
     },
     "critical.meter": {
@@ -15821,19 +15821,19 @@
      "n": 96
     },
     "notation.accidentals.missing": {
-     "mean": 0.145833,
+     "mean": 0.125,
      "n": 96
     },
     "notation.accidentals.missing.delta": {
-     "mean": 0.145833,
+     "mean": 0.125,
      "n": 96
     },
     "notation.accidentals.required_recall": {
-     "mean": 0.997564,
+     "mean": 0.998072,
      "n": 96
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": -0.002436,
+     "mean": -0.001928,
      "n": 96
     },
     "notation.duration.accuracy": {
@@ -15901,11 +15901,11 @@
      "n": 96
     },
     "notation.spelling.accuracy": {
-     "mean": 0.994907,
+     "mean": 0.995114,
      "n": 96
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.985608,
+     "mean": 0.985815,
      "n": 96
     },
     "notation.ties.extra_per_100": {
@@ -16093,11 +16093,11 @@
      "n": 60
     },
     "read.accidentals_per_note": {
-     "mean": 0.026817,
+     "mean": 0.026735,
      "n": 96
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.006019,
+     "mean": -0.0061,
      "n": 96
     },
     "read.bar_completeness": {
@@ -16265,7 +16265,7 @@
      "n": 96
     },
     "sqi": {
-     "mean": 68.24035,
+     "mean": 68.345549,
      "n": 96
     },
     "struct.downbeat.f1": {
@@ -16281,15 +16281,15 @@
      "n": 96
     },
     "struct.key.fifths_exact": {
-     "mean": 0.875,
+     "mean": 0.885417,
      "n": 96
     },
     "struct.key.mirex": {
-     "mean": 1.0,
+     "mean": 0.983333,
      "n": 60
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.875,
+     "mean": 0.885417,
      "n": 96
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -16361,7 +16361,7 @@
      "n": 96
     },
     "usable": {
-     "mean": 0.135417,
+     "mean": 0.125,
      "n": 96
     }
    },
@@ -16939,7 +16939,7 @@
      "n": 54
     },
     "critical.key": {
-     "mean": 0.777778,
+     "mean": 0.833333,
      "n": 54
     },
     "critical.meter": {
@@ -17055,11 +17055,11 @@
      "n": 54
     },
     "notation.spelling.accuracy": {
-     "mean": 0.999806,
+     "mean": 0.999355,
      "n": 54
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.992722,
+     "mean": 0.99227,
      "n": 54
     },
     "notation.ties.extra_per_100": {
@@ -17175,11 +17175,11 @@
      "n": 54
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.0,
+     "mean": 0.001623,
      "n": 54
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": -0.000694,
+     "mean": 0.000929,
      "n": 54
     },
     "nq.tie.mergeable.cross_voice": {
@@ -17247,11 +17247,11 @@
      "n": 12
     },
     "read.accidentals_per_note": {
-     "mean": 0.043213,
+     "mean": 0.041436,
      "n": 54
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.010343,
+     "mean": 0.008566,
      "n": 54
     },
     "read.bar_completeness": {
@@ -17419,7 +17419,7 @@
      "n": 54
     },
     "sqi": {
-     "mean": 64.214002,
+     "mean": 64.396929,
      "n": 54
     },
     "struct.downbeat.f1": {
@@ -17435,7 +17435,7 @@
      "n": 54
     },
     "struct.key.fifths_exact": {
-     "mean": 0.888889,
+     "mean": 0.907407,
      "n": 54
     },
     "struct.key.mirex": {
@@ -17443,7 +17443,7 @@
      "n": 24
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.858498,
+     "mean": 0.89176,
      "n": 54
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -17515,7 +17515,7 @@
      "n": 54
     },
     "usable": {
-     "mean": 0.148148,
+     "mean": 0.166667,
      "n": 54
     }
    },
@@ -18676,7 +18676,7 @@
    "metre-class:simple-duple": {
     "cases": 168,
     "critical.accidentals": {
-     "mean": 0.970238,
+     "mean": 0.982143,
      "n": 168
     },
     "critical.beat_placement": {
@@ -18688,7 +18688,7 @@
      "n": 168
     },
     "critical.key": {
-     "mean": 0.910714,
+     "mean": 0.940476,
      "n": 168
     },
     "critical.meter": {
@@ -18724,19 +18724,19 @@
      "n": 168
     },
     "notation.accidentals.missing": {
-     "mean": 0.059524,
+     "mean": 0.035714,
      "n": 168
     },
     "notation.accidentals.missing.delta": {
-     "mean": 0.059524,
+     "mean": 0.035714,
      "n": 168
     },
     "notation.accidentals.required_recall": {
-     "mean": 0.997464,
+     "mean": 0.99838,
      "n": 168
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": -0.002536,
+     "mean": -0.00162,
      "n": 168
     },
     "notation.duration.accuracy": {
@@ -18996,11 +18996,11 @@
      "n": 30
     },
     "read.accidentals_per_note": {
-     "mean": 0.010409,
+     "mean": 0.010115,
      "n": 168
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.001268,
+     "mean": -0.001562,
      "n": 168
     },
     "read.bar_completeness": {
@@ -19168,7 +19168,7 @@
      "n": 168
     },
     "sqi": {
-     "mean": 67.591778,
+     "mean": 67.889397,
      "n": 168
     },
     "struct.downbeat.f1": {
@@ -19184,15 +19184,15 @@
      "n": 168
     },
     "struct.key.fifths_exact": {
-     "mean": 0.910714,
+     "mean": 0.940476,
      "n": 168
     },
     "struct.key.mirex": {
-     "mean": 0.907692,
+     "mean": 0.920513,
      "n": 78
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.910714,
+     "mean": 0.940476,
      "n": 168
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -19283,7 +19283,7 @@
      "n": 330
     },
     "critical.key": {
-     "mean": 0.954545,
+     "mean": 0.969697,
      "n": 330
     },
     "critical.meter": {
@@ -19399,11 +19399,11 @@
      "n": 330
     },
     "notation.spelling.accuracy": {
-     "mean": 0.99632,
+     "mean": 0.996586,
      "n": 330
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.976693,
+     "mean": 0.976955,
      "n": 330
     },
     "notation.ties.extra_per_100": {
@@ -19519,11 +19519,11 @@
      "n": 330
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.003181,
+     "mean": 0.002596,
      "n": 330
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": 0.002189,
+     "mean": 0.001603,
      "n": 330
     },
     "nq.tie.mergeable.cross_voice": {
@@ -19591,11 +19591,11 @@
      "n": 150
     },
     "read.accidentals_per_note": {
-     "mean": 0.018845,
+     "mean": 0.018467,
      "n": 330
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.00048,
+     "mean": -0.000858,
      "n": 330
     },
     "read.bar_completeness": {
@@ -19763,7 +19763,7 @@
      "n": 330
     },
     "sqi": {
-     "mean": 80.24218,
+     "mean": 80.395003,
      "n": 330
     },
     "struct.downbeat.f1": {
@@ -19779,15 +19779,15 @@
      "n": 330
     },
     "struct.key.fifths_exact": {
-     "mean": 0.954545,
+     "mean": 0.969697,
      "n": 330
     },
     "struct.key.mirex": {
-     "mean": 0.973913,
+     "mean": 0.977536,
      "n": 276
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.954545,
+     "mean": 0.969697,
      "n": 330
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -19859,7 +19859,7 @@
      "n": 330
     },
     "usable": {
-     "mean": 0.036364,
+     "mean": 0.039394,
      "n": 330
     }
    },
@@ -19878,7 +19878,7 @@
      "n": 168
     },
     "critical.key": {
-     "mean": 0.839286,
+     "mean": 0.833333,
      "n": 168
     },
     "critical.meter": {
@@ -20186,11 +20186,11 @@
      "n": 90
     },
     "read.accidentals_per_note": {
-     "mean": 0.015568,
+     "mean": 0.014617,
      "n": 168
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.002462,
+     "mean": -0.003413,
      "n": 168
     },
     "read.bar_completeness": {
@@ -20358,7 +20358,7 @@
      "n": 168
     },
     "sqi": {
-     "mean": 76.246918,
+     "mean": 76.187394,
      "n": 168
     },
     "struct.downbeat.f1": {
@@ -20374,15 +20374,15 @@
      "n": 168
     },
     "struct.key.fifths_exact": {
-     "mean": 0.839286,
+     "mean": 0.833333,
      "n": 168
     },
     "struct.key.mirex": {
-     "mean": 0.859615,
+     "mean": 0.867949,
      "n": 156
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.839286,
+     "mean": 0.833333,
      "n": 168
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -21611,7 +21611,7 @@
    "metre:2/4": {
     "cases": 144,
     "critical.accidentals": {
-     "mean": 0.972222,
+     "mean": 0.986111,
      "n": 144
     },
     "critical.beat_placement": {
@@ -21623,7 +21623,7 @@
      "n": 144
     },
     "critical.key": {
-     "mean": 0.895833,
+     "mean": 0.930556,
      "n": 144
     },
     "critical.meter": {
@@ -21659,19 +21659,19 @@
      "n": 144
     },
     "notation.accidentals.missing": {
-     "mean": 0.055556,
+     "mean": 0.027778,
      "n": 144
     },
     "notation.accidentals.missing.delta": {
-     "mean": 0.055556,
+     "mean": 0.027778,
      "n": 144
     },
     "notation.accidentals.required_recall": {
-     "mean": 0.997736,
+     "mean": 0.998804,
      "n": 144
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": -0.002264,
+     "mean": -0.001196,
      "n": 144
     },
     "notation.duration.accuracy": {
@@ -21931,11 +21931,11 @@
      "n": 12
     },
     "read.accidentals_per_note": {
-     "mean": 0.01063,
+     "mean": 0.010287,
      "n": 144
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.001268,
+     "mean": -0.001611,
      "n": 144
     },
     "read.bar_completeness": {
@@ -22103,7 +22103,7 @@
      "n": 144
     },
     "sqi": {
-     "mean": 68.189286,
+     "mean": 68.536508,
      "n": 144
     },
     "struct.downbeat.f1": {
@@ -22119,15 +22119,15 @@
      "n": 144
     },
     "struct.key.fifths_exact": {
-     "mean": 0.895833,
+     "mean": 0.930556,
      "n": 144
     },
     "struct.key.mirex": {
-     "mean": 0.88,
+     "mean": 0.896667,
      "n": 60
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.895833,
+     "mean": 0.930556,
      "n": 144
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -22785,7 +22785,7 @@
      "n": 162
     },
     "critical.key": {
-     "mean": 0.833333,
+     "mean": 0.82716,
      "n": 162
     },
     "critical.meter": {
@@ -23093,11 +23093,11 @@
      "n": 84
     },
     "read.accidentals_per_note": {
-     "mean": 0.016145,
+     "mean": 0.015159,
      "n": 162
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.002553,
+     "mean": -0.00354,
      "n": 162
     },
     "read.bar_completeness": {
@@ -23265,7 +23265,7 @@
      "n": 162
     },
     "sqi": {
-     "mean": 76.7754,
+     "mean": 76.713671,
      "n": 162
     },
     "struct.downbeat.f1": {
@@ -23281,15 +23281,15 @@
      "n": 162
     },
     "struct.key.fifths_exact": {
-     "mean": 0.833333,
+     "mean": 0.82716,
      "n": 162
     },
     "struct.key.mirex": {
-     "mean": 0.854,
+     "mean": 0.862667,
      "n": 150
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.833333,
+     "mean": 0.82716,
      "n": 162
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -23380,7 +23380,7 @@
      "n": 54
     },
     "critical.key": {
-     "mean": 0.777778,
+     "mean": 0.833333,
      "n": 54
     },
     "critical.meter": {
@@ -23496,11 +23496,11 @@
      "n": 54
     },
     "notation.spelling.accuracy": {
-     "mean": 0.999806,
+     "mean": 0.999355,
      "n": 54
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.992722,
+     "mean": 0.99227,
      "n": 54
     },
     "notation.ties.extra_per_100": {
@@ -23616,11 +23616,11 @@
      "n": 54
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.0,
+     "mean": 0.001623,
      "n": 54
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": -0.000694,
+     "mean": 0.000929,
      "n": 54
     },
     "nq.tie.mergeable.cross_voice": {
@@ -23688,11 +23688,11 @@
      "n": 12
     },
     "read.accidentals_per_note": {
-     "mean": 0.043213,
+     "mean": 0.041436,
      "n": 54
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.010343,
+     "mean": 0.008566,
      "n": 54
     },
     "read.bar_completeness": {
@@ -23860,7 +23860,7 @@
      "n": 54
     },
     "sqi": {
-     "mean": 64.214002,
+     "mean": 64.396929,
      "n": 54
     },
     "struct.downbeat.f1": {
@@ -23876,7 +23876,7 @@
      "n": 54
     },
     "struct.key.fifths_exact": {
-     "mean": 0.888889,
+     "mean": 0.907407,
      "n": 54
     },
     "struct.key.mirex": {
@@ -23884,7 +23884,7 @@
      "n": 24
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.858498,
+     "mean": 0.89176,
      "n": 54
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -23956,7 +23956,7 @@
      "n": 54
     },
     "usable": {
-     "mean": 0.148148,
+     "mean": 0.166667,
      "n": 54
     }
    },
@@ -23975,7 +23975,7 @@
      "n": 330
     },
     "critical.key": {
-     "mean": 0.954545,
+     "mean": 0.969697,
      "n": 330
     },
     "critical.meter": {
@@ -24091,11 +24091,11 @@
      "n": 330
     },
     "notation.spelling.accuracy": {
-     "mean": 0.99632,
+     "mean": 0.996586,
      "n": 330
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.976693,
+     "mean": 0.976955,
      "n": 330
     },
     "notation.ties.extra_per_100": {
@@ -24211,11 +24211,11 @@
      "n": 330
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.003181,
+     "mean": 0.002596,
      "n": 330
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": 0.002189,
+     "mean": 0.001603,
      "n": 330
     },
     "nq.tie.mergeable.cross_voice": {
@@ -24283,11 +24283,11 @@
      "n": 150
     },
     "read.accidentals_per_note": {
-     "mean": 0.018845,
+     "mean": 0.018467,
      "n": 330
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.00048,
+     "mean": -0.000858,
      "n": 330
     },
     "read.bar_completeness": {
@@ -24455,7 +24455,7 @@
      "n": 330
     },
     "sqi": {
-     "mean": 80.24218,
+     "mean": 80.395003,
      "n": 330
     },
     "struct.downbeat.f1": {
@@ -24471,15 +24471,15 @@
      "n": 330
     },
     "struct.key.fifths_exact": {
-     "mean": 0.954545,
+     "mean": 0.969697,
      "n": 330
     },
     "struct.key.mirex": {
-     "mean": 0.973913,
+     "mean": 0.977536,
      "n": 276
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.954545,
+     "mean": 0.969697,
      "n": 330
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -24551,7 +24551,7 @@
      "n": 330
     },
     "usable": {
-     "mean": 0.036364,
+     "mean": 0.039394,
      "n": 330
     }
    },
@@ -25692,7 +25692,7 @@
    "metre:6/8": {
     "cases": 96,
     "critical.accidentals": {
-     "mean": 0.96875,
+     "mean": 0.979167,
      "n": 96
     },
     "critical.beat_placement": {
@@ -25704,7 +25704,7 @@
      "n": 96
     },
     "critical.key": {
-     "mean": 0.875,
+     "mean": 0.885417,
      "n": 96
     },
     "critical.meter": {
@@ -25740,19 +25740,19 @@
      "n": 96
     },
     "notation.accidentals.missing": {
-     "mean": 0.145833,
+     "mean": 0.125,
      "n": 96
     },
     "notation.accidentals.missing.delta": {
-     "mean": 0.145833,
+     "mean": 0.125,
      "n": 96
     },
     "notation.accidentals.required_recall": {
-     "mean": 0.997564,
+     "mean": 0.998072,
      "n": 96
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": -0.002436,
+     "mean": -0.001928,
      "n": 96
     },
     "notation.duration.accuracy": {
@@ -25820,11 +25820,11 @@
      "n": 96
     },
     "notation.spelling.accuracy": {
-     "mean": 0.994907,
+     "mean": 0.995114,
      "n": 96
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.985608,
+     "mean": 0.985815,
      "n": 96
     },
     "notation.ties.extra_per_100": {
@@ -26012,11 +26012,11 @@
      "n": 60
     },
     "read.accidentals_per_note": {
-     "mean": 0.026817,
+     "mean": 0.026735,
      "n": 96
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.006019,
+     "mean": -0.0061,
      "n": 96
     },
     "read.bar_completeness": {
@@ -26184,7 +26184,7 @@
      "n": 96
     },
     "sqi": {
-     "mean": 68.24035,
+     "mean": 68.345549,
      "n": 96
     },
     "struct.downbeat.f1": {
@@ -26200,15 +26200,15 @@
      "n": 96
     },
     "struct.key.fifths_exact": {
-     "mean": 0.875,
+     "mean": 0.885417,
      "n": 96
     },
     "struct.key.mirex": {
-     "mean": 1.0,
+     "mean": 0.983333,
      "n": 60
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.875,
+     "mean": 0.885417,
      "n": 96
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -26280,7 +26280,7 @@
      "n": 96
     },
     "usable": {
-     "mean": 0.135417,
+     "mean": 0.125,
      "n": 96
     }
    },
@@ -26990,11 +26990,11 @@
      "n": 594
     },
     "notation.spelling.accuracy": {
-     "mean": 0.997923,
+     "mean": 0.998007,
      "n": 594
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.982371,
+     "mean": 0.982452,
      "n": 594
     },
     "notation.ties.extra_per_100": {
@@ -27110,11 +27110,11 @@
      "n": 594
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.001797,
+     "mean": 0.001408,
      "n": 594
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": 0.000777,
+     "mean": 0.000389,
      "n": 594
     },
     "nq.tie.mergeable.cross_voice": {
@@ -27182,11 +27182,11 @@
      "n": 270
     },
     "read.accidentals_per_note": {
-     "mean": 0.011768,
+     "mean": 0.011447,
      "n": 594
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.002465,
+     "mean": -0.002786,
      "n": 594
     },
     "read.bar_completeness": {
@@ -27354,7 +27354,7 @@
      "n": 594
     },
     "sqi": {
-     "mean": 76.9641,
+     "mean": 76.964506,
      "n": 594
     },
     "struct.downbeat.f1": {
@@ -27374,7 +27374,7 @@
      "n": 594
     },
     "struct.key.mirex": {
-     "mean": 0.938889,
+     "mean": 0.942761,
      "n": 594
     },
     "struct.key.timeline_accuracy": {
@@ -27450,7 +27450,7 @@
      "n": 594
     },
     "usable": {
-     "mean": 0.050505,
+     "mean": 0.048822,
      "n": 594
     }
    },
@@ -28032,7 +28032,7 @@
    "mode:unknown": {
     "cases": 222,
     "critical.accidentals": {
-     "mean": 0.936937,
+     "mean": 0.95045,
      "n": 222
     },
     "critical.beat_placement": {
@@ -28044,7 +28044,7 @@
      "n": 222
     },
     "critical.key": {
-     "mean": 0.797297,
+     "mean": 0.855856,
      "n": 222
     },
     "critical.meter": {
@@ -28080,19 +28080,19 @@
      "n": 222
     },
     "notation.accidentals.missing": {
-     "mean": 0.207207,
+     "mean": 0.18018,
      "n": 222
     },
     "notation.accidentals.missing.delta": {
-     "mean": 0.207207,
+     "mean": 0.18018,
      "n": 222
     },
     "notation.accidentals.required_recall": {
-     "mean": 0.995149,
+     "mean": 0.996062,
      "n": 222
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": -0.004851,
+     "mean": -0.003938,
      "n": 222
     },
     "notation.duration.accuracy": {
@@ -28160,11 +28160,11 @@
      "n": 222
     },
     "notation.spelling.accuracy": {
-     "mean": 0.995796,
+     "mean": 0.995948,
      "n": 222
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.978238,
+     "mean": 0.978389,
      "n": 222
     },
     "notation.ties.extra_per_100": {
@@ -28280,11 +28280,11 @@
      "n": 222
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.007617,
+     "mean": 0.008181,
      "n": 222
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": 0.003319,
+     "mean": 0.003883,
      "n": 222
     },
     "nq.tie.mergeable.cross_voice": {
@@ -28352,11 +28352,11 @@
      "n": 90
     },
     "read.accidentals_per_note": {
-     "mean": 0.030465,
+     "mean": 0.029352,
      "n": 222
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.002444,
+     "mean": 0.001331,
      "n": 222
     },
     "read.bar_completeness": {
@@ -28524,7 +28524,7 @@
      "n": 222
     },
     "sqi": {
-     "mean": 66.129689,
+     "mean": 66.62594,
      "n": 222
     },
     "struct.downbeat.f1": {
@@ -28540,11 +28540,11 @@
      "n": 222
     },
     "struct.key.fifths_exact": {
-     "mean": 0.824324,
+     "mean": 0.873874,
      "n": 222
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.816932,
+     "mean": 0.870068,
      "n": 222
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -28616,7 +28616,7 @@
      "n": 222
     },
     "usable": {
-     "mean": 0.09009,
+     "mean": 0.099099,
      "n": 222
     }
    },
@@ -29813,7 +29813,7 @@
    "opts:v2": {
     "cases": 282,
     "critical.accidentals": {
-     "mean": 0.989362,
+     "mean": 1.0,
      "n": 282
     },
     "critical.beat_placement": {
@@ -29825,7 +29825,7 @@
      "n": 282
     },
     "critical.key": {
-     "mean": 0.904255,
+     "mean": 0.950355,
      "n": 282
     },
     "critical.meter": {
@@ -29861,19 +29861,19 @@
      "n": 282
     },
     "notation.accidentals.missing": {
-     "mean": 0.021277,
+     "mean": 0.0,
      "n": 282
     },
     "notation.accidentals.missing.delta": {
-     "mean": 0.021277,
+     "mean": 0.0,
      "n": 282
     },
     "notation.accidentals.required_recall": {
-     "mean": 0.999281,
+     "mean": 1.0,
      "n": 282
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": -0.000719,
+     "mean": 0.0,
      "n": 282
     },
     "notation.duration.accuracy": {
@@ -29941,11 +29941,11 @@
      "n": 282
     },
     "notation.spelling.accuracy": {
-     "mean": 0.997143,
+     "mean": 0.997439,
      "n": 282
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.983181,
+     "mean": 0.983471,
      "n": 282
     },
     "notation.ties.extra_per_100": {
@@ -30061,11 +30061,11 @@
      "n": 282
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.003767,
+     "mean": 0.003392,
      "n": 282
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": 0.001923,
+     "mean": 0.001548,
      "n": 282
     },
     "nq.tie.mergeable.cross_voice": {
@@ -30133,11 +30133,11 @@
      "n": 120
     },
     "read.accidentals_per_note": {
-     "mean": 0.019314,
+     "mean": 0.017761,
      "n": 282
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.000647,
+     "mean": -0.002199,
      "n": 282
     },
     "read.bar_completeness": {
@@ -30305,7 +30305,7 @@
      "n": 282
     },
     "sqi": {
-     "mean": 85.776203,
+     "mean": 86.167723,
      "n": 282
     },
     "struct.downbeat.f1": {
@@ -30321,15 +30321,15 @@
      "n": 282
     },
     "struct.key.fifths_exact": {
-     "mean": 0.911348,
+     "mean": 0.950355,
      "n": 282
     },
     "struct.key.mirex": {
-     "mean": 0.941827,
+     "mean": 0.952885,
      "n": 208
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.909408,
+     "mean": 0.951238,
      "n": 282
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -30401,14 +30401,14 @@
      "n": 282
     },
     "usable": {
-     "mean": 0.177305,
+     "mean": 0.180851,
      "n": 282
     }
    },
    "profile:cover-alt": {
     "cases": 846,
     "critical.accidentals": {
-     "mean": 0.98227,
+     "mean": 0.985816,
      "n": 846
     },
     "critical.beat_placement": {
@@ -30420,7 +30420,7 @@
      "n": 846
     },
     "critical.key": {
-     "mean": 0.904255,
+     "mean": 0.919622,
      "n": 846
     },
     "critical.meter": {
@@ -30456,19 +30456,19 @@
      "n": 846
     },
     "notation.accidentals.missing": {
-     "mean": 0.055556,
+     "mean": 0.048463,
      "n": 846
     },
     "notation.accidentals.missing.delta": {
-     "mean": 0.055556,
+     "mean": 0.048463,
      "n": 846
     },
     "notation.accidentals.required_recall": {
-     "mean": 0.998136,
+     "mean": 0.998376,
      "n": 846
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": -0.001864,
+     "mean": -0.001624,
      "n": 846
     },
     "notation.duration.accuracy": {
@@ -30536,11 +30536,11 @@
      "n": 846
     },
     "notation.spelling.accuracy": {
-     "mean": 0.997139,
+     "mean": 0.997237,
      "n": 846
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.98159,
+     "mean": 0.981686,
      "n": 846
     },
     "notation.ties.extra_per_100": {
@@ -30656,11 +30656,11 @@
      "n": 846
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.00326,
+     "mean": 0.003136,
      "n": 846
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": 0.001417,
+     "mean": 0.001292,
      "n": 846
     },
     "nq.tie.mergeable.cross_voice": {
@@ -30728,11 +30728,11 @@
      "n": 360
     },
     "read.accidentals_per_note": {
-     "mean": 0.018957,
+     "mean": 0.018439,
      "n": 846
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.001004,
+     "mean": -0.001521,
      "n": 846
     },
     "read.bar_completeness": {
@@ -30900,7 +30900,7 @@
      "n": 846
     },
     "sqi": {
-     "mean": 73.936729,
+     "mean": 74.067235,
      "n": 846
     },
     "struct.downbeat.f1": {
@@ -30916,15 +30916,15 @@
      "n": 846
     },
     "struct.key.fifths_exact": {
-     "mean": 0.911348,
+     "mean": 0.92435,
      "n": 846
     },
     "struct.key.mirex": {
-     "mean": 0.941827,
+     "mean": 0.945513,
      "n": 624
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.909408,
+     "mean": 0.923351,
      "n": 846
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -30996,14 +30996,14 @@
      "n": 846
     },
     "usable": {
-     "mean": 0.062648,
+     "mean": 0.06383,
      "n": 846
     }
    },
    "seed:1": {
     "cases": 846,
     "critical.accidentals": {
-     "mean": 0.98227,
+     "mean": 0.985816,
      "n": 846
     },
     "critical.beat_placement": {
@@ -31015,7 +31015,7 @@
      "n": 846
     },
     "critical.key": {
-     "mean": 0.904255,
+     "mean": 0.919622,
      "n": 846
     },
     "critical.meter": {
@@ -31051,19 +31051,19 @@
      "n": 846
     },
     "notation.accidentals.missing": {
-     "mean": 0.055556,
+     "mean": 0.048463,
      "n": 846
     },
     "notation.accidentals.missing.delta": {
-     "mean": 0.055556,
+     "mean": 0.048463,
      "n": 846
     },
     "notation.accidentals.required_recall": {
-     "mean": 0.998136,
+     "mean": 0.998376,
      "n": 846
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": -0.001864,
+     "mean": -0.001624,
      "n": 846
     },
     "notation.duration.accuracy": {
@@ -31131,11 +31131,11 @@
      "n": 846
     },
     "notation.spelling.accuracy": {
-     "mean": 0.997139,
+     "mean": 0.997237,
      "n": 846
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.98159,
+     "mean": 0.981686,
      "n": 846
     },
     "notation.ties.extra_per_100": {
@@ -31251,11 +31251,11 @@
      "n": 846
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.00326,
+     "mean": 0.003136,
      "n": 846
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": 0.001417,
+     "mean": 0.001292,
      "n": 846
     },
     "nq.tie.mergeable.cross_voice": {
@@ -31323,11 +31323,11 @@
      "n": 360
     },
     "read.accidentals_per_note": {
-     "mean": 0.018957,
+     "mean": 0.018439,
      "n": 846
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.001004,
+     "mean": -0.001521,
      "n": 846
     },
     "read.bar_completeness": {
@@ -31495,7 +31495,7 @@
      "n": 846
     },
     "sqi": {
-     "mean": 73.936729,
+     "mean": 74.067235,
      "n": 846
     },
     "struct.downbeat.f1": {
@@ -31511,15 +31511,15 @@
      "n": 846
     },
     "struct.key.fifths_exact": {
-     "mean": 0.911348,
+     "mean": 0.92435,
      "n": 846
     },
     "struct.key.mirex": {
-     "mean": 0.941827,
+     "mean": 0.945513,
      "n": 624
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.909408,
+     "mean": 0.923351,
      "n": 846
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -31591,7 +31591,7 @@
      "n": 846
     },
     "usable": {
-     "mean": 0.062648,
+     "mean": 0.06383,
      "n": 846
     }
    },
@@ -31610,7 +31610,7 @@
      "n": 18
     },
     "critical.key": {
-     "mean": 0.833333,
+     "mean": 0.888889,
      "n": 18
     },
     "critical.meter": {
@@ -31898,11 +31898,11 @@
      "n": 6
     },
     "read.accidentals_per_note": {
-     "mean": 0.042458,
+     "mean": 0.039933,
      "n": 18
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.023939,
+     "mean": 0.021414,
      "n": 18
     },
     "read.bar_completeness": {
@@ -32066,7 +32066,7 @@
      "n": 18
     },
     "sqi": {
-     "mean": 66.815236,
+     "mean": 67.370792,
      "n": 18
     },
     "struct.downbeat.f1": {
@@ -32082,15 +32082,15 @@
      "n": 18
     },
     "struct.key.fifths_exact": {
-     "mean": 0.833333,
+     "mean": 0.888889,
      "n": 18
     },
     "struct.key.mirex": {
-     "mean": 0.916667,
+     "mean": 0.944444,
      "n": 18
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.833333,
+     "mean": 0.888889,
      "n": 18
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -32181,7 +32181,7 @@
      "n": 240
     },
     "critical.key": {
-     "mean": 1.0,
+     "mean": 0.991667,
      "n": 240
     },
     "critical.meter": {
@@ -32297,11 +32297,11 @@
      "n": 240
     },
     "notation.spelling.accuracy": {
-     "mean": 0.998019,
+     "mean": 0.998152,
      "n": 240
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.96341,
+     "mean": 0.963536,
      "n": 240
     },
     "notation.ties.extra_per_100": {
@@ -32413,11 +32413,11 @@
      "n": 240
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.002885,
+     "mean": 0.001923,
      "n": 240
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": 0.000361,
+     "mean": -0.000601,
      "n": 240
     },
     "nq.tie.mergeable.cross_voice": {
@@ -32477,11 +32477,11 @@
      "n": 240
     },
     "read.accidentals_per_note": {
-     "mean": 0.017273,
+     "mean": 0.017045,
      "n": 240
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.003644,
+     "mean": -0.003871,
      "n": 240
     },
     "read.bar_completeness": {
@@ -32645,7 +32645,7 @@
      "n": 240
     },
     "sqi": {
-     "mean": 76.525662,
+     "mean": 76.442957,
      "n": 240
     },
     "struct.downbeat.f1": {
@@ -32661,15 +32661,15 @@
      "n": 240
     },
     "struct.key.fifths_exact": {
-     "mean": 1.0,
+     "mean": 0.991667,
      "n": 240
     },
     "struct.key.mirex": {
-     "mean": 0.9475,
+     "mean": 0.945,
      "n": 240
     },
     "struct.key.timeline_accuracy": {
-     "mean": 1.0,
+     "mean": 0.991667,
      "n": 240
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -32748,7 +32748,7 @@
    "set:method": {
     "cases": 438,
     "critical.accidentals": {
-     "mean": 0.968037,
+     "mean": 0.974886,
      "n": 438
     },
     "critical.beat_placement": {
@@ -32760,7 +32760,7 @@
      "n": 438
     },
     "critical.key": {
-     "mean": 0.828767,
+     "mean": 0.858447,
      "n": 438
     },
     "critical.meter": {
@@ -32796,19 +32796,19 @@
      "n": 438
     },
     "notation.accidentals.missing": {
-     "mean": 0.105023,
+     "mean": 0.091324,
      "n": 438
     },
     "notation.accidentals.missing.delta": {
-     "mean": 0.105023,
+     "mean": 0.091324,
      "n": 438
     },
     "notation.accidentals.required_recall": {
-     "mean": 0.997541,
+     "mean": 0.998004,
      "n": 438
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": -0.002459,
+     "mean": -0.001996,
      "n": 438
     },
     "notation.duration.accuracy": {
@@ -32876,11 +32876,11 @@
      "n": 438
     },
     "notation.spelling.accuracy": {
-     "mean": 0.995677,
+     "mean": 0.995795,
      "n": 438
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.985899,
+     "mean": 0.986017,
      "n": 438
     },
     "notation.ties.extra_per_100": {
@@ -32996,11 +32996,11 @@
      "n": 438
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.004717,
+     "mean": 0.005003,
      "n": 438
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": 0.002539,
+     "mean": 0.002824,
      "n": 438
     },
     "nq.tie.mergeable.cross_voice": {
@@ -33068,11 +33068,11 @@
      "n": 114
     },
     "read.accidentals_per_note": {
-     "mean": 0.020721,
+     "mean": 0.020007,
      "n": 438
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.001129,
+     "mean": -0.001843,
      "n": 438
     },
     "read.bar_completeness": {
@@ -33240,7 +33240,7 @@
      "n": 438
     },
     "sqi": {
-     "mean": 71.76977,
+     "mean": 72.0215,
      "n": 438
     },
     "struct.downbeat.f1": {
@@ -33256,15 +33256,15 @@
      "n": 438
     },
     "struct.key.fifths_exact": {
-     "mean": 0.842466,
+     "mean": 0.86758,
      "n": 438
     },
     "struct.key.mirex": {
-     "mean": 0.911111,
+     "mean": 0.917593,
      "n": 216
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.838719,
+     "mean": 0.865651,
      "n": 438
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -33336,7 +33336,7 @@
      "n": 438
     },
     "usable": {
-     "mean": 0.09589,
+     "mean": 0.098174,
      "n": 438
     }
    },
@@ -33355,7 +33355,7 @@
      "n": 144
     },
     "critical.key": {
-     "mean": 0.979167,
+     "mean": 0.986111,
      "n": 144
     },
     "critical.meter": {
@@ -33663,11 +33663,11 @@
      "n": 6
     },
     "read.accidentals_per_note": {
-     "mean": 0.013286,
+     "mean": 0.013113,
      "n": 144
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.000753,
+     "mean": 0.000579,
      "n": 144
     },
     "read.bar_completeness": {
@@ -33835,7 +33835,7 @@
      "n": 144
     },
     "sqi": {
-     "mean": 77.028404,
+     "mean": 77.097848,
      "n": 144
     },
     "struct.downbeat.f1": {
@@ -33851,15 +33851,15 @@
      "n": 144
     },
     "struct.key.fifths_exact": {
-     "mean": 0.979167,
+     "mean": 0.986111,
      "n": 144
     },
     "struct.key.mirex": {
-     "mean": 0.979167,
+     "mean": 0.986111,
      "n": 144
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.979167,
+     "mean": 0.986111,
      "n": 144
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -34505,7 +34505,7 @@
    "size:l": {
     "cases": 192,
     "critical.accidentals": {
-     "mean": 0.927083,
+     "mean": 0.942708,
      "n": 192
     },
     "critical.beat_placement": {
@@ -34517,7 +34517,7 @@
      "n": 192
     },
     "critical.key": {
-     "mean": 0.765625,
+     "mean": 0.822917,
      "n": 192
     },
     "critical.meter": {
@@ -34553,19 +34553,19 @@
      "n": 192
     },
     "notation.accidentals.missing": {
-     "mean": 0.239583,
+     "mean": 0.208333,
      "n": 192
     },
     "notation.accidentals.missing.delta": {
-     "mean": 0.239583,
+     "mean": 0.208333,
      "n": 192
     },
     "notation.accidentals.required_recall": {
-     "mean": 0.994392,
+     "mean": 0.995447,
      "n": 192
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": -0.005608,
+     "mean": -0.004553,
      "n": 192
     },
     "notation.duration.accuracy": {
@@ -34633,11 +34633,11 @@
      "n": 192
     },
     "notation.spelling.accuracy": {
-     "mean": 0.996044,
+     "mean": 0.996313,
      "n": 192
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.979107,
+     "mean": 0.979375,
      "n": 192
     },
     "notation.ties.extra_per_100": {
@@ -34753,11 +34753,11 @@
      "n": 192
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.006943,
+     "mean": 0.007595,
      "n": 192
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": 0.001974,
+     "mean": 0.002626,
      "n": 192
     },
     "nq.tie.mergeable.cross_voice": {
@@ -34825,11 +34825,11 @@
      "n": 78
     },
     "read.accidentals_per_note": {
-     "mean": 0.029579,
+     "mean": 0.028401,
      "n": 192
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.001634,
+     "mean": 0.000456,
      "n": 192
     },
     "read.bar_completeness": {
@@ -34997,7 +34997,7 @@
      "n": 192
     },
     "sqi": {
-     "mean": 65.106655,
+     "mean": 65.576748,
      "n": 192
     },
     "struct.downbeat.f1": {
@@ -35013,15 +35013,15 @@
      "n": 192
     },
     "struct.key.fifths_exact": {
-     "mean": 0.796875,
+     "mean": 0.84375,
      "n": 192
     },
     "struct.key.mirex": {
-     "mean": 1.0,
+     "mean": 0.916667,
      "n": 12
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.788328,
+     "mean": 0.839349,
      "n": 192
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -35093,7 +35093,7 @@
      "n": 192
     },
     "usable": {
-     "mean": 0.09375,
+     "mean": 0.098958,
      "n": 192
     }
    },
@@ -35112,7 +35112,7 @@
      "n": 474
     },
     "critical.key": {
-     "mean": 0.949367,
+     "mean": 0.953586,
      "n": 474
     },
     "critical.meter": {
@@ -35228,11 +35228,11 @@
      "n": 474
     },
     "notation.spelling.accuracy": {
-     "mean": 0.996495,
+     "mean": 0.996562,
      "n": 474
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.97624,
+     "mean": 0.976304,
      "n": 474
     },
     "notation.ties.extra_per_100": {
@@ -35348,11 +35348,11 @@
      "n": 474
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.003007,
+     "mean": 0.00252,
      "n": 474
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": 0.001729,
+     "mean": 0.001242,
      "n": 474
     },
     "nq.tie.mergeable.cross_voice": {
@@ -35420,11 +35420,11 @@
      "n": 282
     },
     "read.accidentals_per_note": {
-     "mean": 0.016891,
+     "mean": 0.016593,
      "n": 474
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.003444,
+     "mean": -0.003742,
      "n": 474
     },
     "read.bar_completeness": {
@@ -35592,7 +35592,7 @@
      "n": 474
     },
     "sqi": {
-     "mean": 76.78209,
+     "mean": 76.824602,
      "n": 474
     },
     "struct.downbeat.f1": {
@@ -35608,15 +35608,15 @@
      "n": 474
     },
     "struct.key.fifths_exact": {
-     "mean": 0.949367,
+     "mean": 0.953586,
      "n": 474
     },
     "struct.key.mirex": {
-     "mean": 0.943056,
+     "mean": 0.946296,
      "n": 432
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.949367,
+     "mean": 0.953586,
      "n": 474
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -36011,11 +36011,11 @@
      "n": 4
     },
     "read.accidentals_per_note": {
-     "mean": 0.013066,
+     "mean": 0.012674,
      "n": 180
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.002609,
+     "mean": 0.002217,
      "n": 180
     },
     "read.bar_completeness": {
@@ -36203,7 +36203,7 @@
      "n": 180
     },
     "struct.key.mirex": {
-     "mean": 0.935,
+     "mean": 0.945556,
      "n": 180
     },
     "struct.key.timeline_accuracy": {
@@ -36286,7 +36286,7 @@
    "staves:2": {
     "cases": 846,
     "critical.accidentals": {
-     "mean": 0.98227,
+     "mean": 0.985816,
      "n": 846
     },
     "critical.beat_placement": {
@@ -36298,7 +36298,7 @@
      "n": 846
     },
     "critical.key": {
-     "mean": 0.904255,
+     "mean": 0.919622,
      "n": 846
     },
     "critical.meter": {
@@ -36334,19 +36334,19 @@
      "n": 846
     },
     "notation.accidentals.missing": {
-     "mean": 0.055556,
+     "mean": 0.048463,
      "n": 846
     },
     "notation.accidentals.missing.delta": {
-     "mean": 0.055556,
+     "mean": 0.048463,
      "n": 846
     },
     "notation.accidentals.required_recall": {
-     "mean": 0.998136,
+     "mean": 0.998376,
      "n": 846
     },
     "notation.accidentals.required_recall.delta": {
-     "mean": -0.001864,
+     "mean": -0.001624,
      "n": 846
     },
     "notation.duration.accuracy": {
@@ -36414,11 +36414,11 @@
      "n": 846
     },
     "notation.spelling.accuracy": {
-     "mean": 0.997139,
+     "mean": 0.997237,
      "n": 846
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.98159,
+     "mean": 0.981686,
      "n": 846
     },
     "notation.ties.extra_per_100": {
@@ -36534,11 +36534,11 @@
      "n": 846
     },
     "nq.spell.mixed_bar_rate": {
-     "mean": 0.00326,
+     "mean": 0.003136,
      "n": 846
     },
     "nq.spell.mixed_bar_rate.delta": {
-     "mean": 0.001417,
+     "mean": 0.001292,
      "n": 846
     },
     "nq.tie.mergeable.cross_voice": {
@@ -36606,11 +36606,11 @@
      "n": 360
     },
     "read.accidentals_per_note": {
-     "mean": 0.018957,
+     "mean": 0.018439,
      "n": 846
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.001004,
+     "mean": -0.001521,
      "n": 846
     },
     "read.bar_completeness": {
@@ -36778,7 +36778,7 @@
      "n": 846
     },
     "sqi": {
-     "mean": 73.936729,
+     "mean": 74.067235,
      "n": 846
     },
     "struct.downbeat.f1": {
@@ -36794,15 +36794,15 @@
      "n": 846
     },
     "struct.key.fifths_exact": {
-     "mean": 0.911348,
+     "mean": 0.92435,
      "n": 846
     },
     "struct.key.mirex": {
-     "mean": 0.941827,
+     "mean": 0.945513,
      "n": 624
     },
     "struct.key.timeline_accuracy": {
-     "mean": 0.909408,
+     "mean": 0.923351,
      "n": 846
     },
     "struct.measure_numbers.app_onset_accuracy": {
@@ -36874,7 +36874,7 @@
      "n": 846
     },
     "usable": {
-     "mean": 0.062648,
+     "mean": 0.06383,
      "n": 846
     }
    }
@@ -38523,7 +38523,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
-    "critical.key": 0.0,
+    "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 0.0,
     "critical.pedal": null,
@@ -38571,11 +38571,11 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 1.0,
-    "sqi": 84.318182,
+    "sqi": 94.318182,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 0.0,
-    "struct.key.timeline_accuracy": 0.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 1.0,
@@ -38587,8 +38587,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "4f8813505a6bc483",
-   "sqi": 84.318182,
+   "semantic": "a56317576eddd4f7",
+   "sqi": 94.318182,
    "status": "ok"
   },
   "catalog/happy-birthday|cover-alt|oracle-noisy|s1|opt:app": {
@@ -50530,8 +50530,8 @@
     "notation.onset_pos.accuracy": 0.984127,
     "notation.onset_pos.accuracy_ref": 0.934673,
     "notation.pedal.f1": null,
-    "notation.spelling.accuracy": 0.984127,
-    "notation.spelling.accuracy_ref": 0.934673,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 0.949749,
     "notation.ties.extra_per_100": 0.529101,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
@@ -50559,7 +50559,7 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.629423,
-    "sqi": 91.375472,
+    "sqi": 91.450849,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -50575,8 +50575,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "4be63f65e6c81029",
-   "sqi": 91.375472,
+   "semantic": "d325034c132677cd",
+   "sqi": 91.450849,
    "status": "ok"
   },
   "hymns/my-hope-is-built|cover-alt|oracle-noisy|s1|opt:app": {
@@ -50752,8 +50752,8 @@
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.949749,
     "notation.pedal.f1": null,
-    "notation.spelling.accuracy": 0.984127,
-    "notation.spelling.accuracy_ref": 0.934673,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 0.949749,
     "notation.ties.extra_per_100": 0.0,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
@@ -50781,7 +50781,7 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.629423,
-    "sqi": 91.971973,
+    "sqi": 92.04735,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -50797,8 +50797,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "83bcc50bb233acda",
-   "sqi": 91.971973,
+   "semantic": "0361316303c5f174",
+   "sqi": 92.04735,
    "status": "ok"
   },
   "hymns/nearer-my-god|cover-alt|none|s1|opt:app": {
@@ -56283,7 +56283,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
-    "critical.key": 1.0,
+    "critical.key": 0.0,
     "critical.meter": 0.0,
     "critical.note_values": 0.0,
     "critical.pedal": null,
@@ -56331,11 +56331,11 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.626728,
-    "sqi": 86.082435,
+    "sqi": 76.082435,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 1.0,
-    "struct.key.timeline_accuracy": 1.0,
+    "struct.key.fifths_exact": 0.0,
+    "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 1.0,
@@ -56347,8 +56347,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "1057025d89be3ea1",
-   "sqi": 86.082435,
+   "semantic": "1e9c1f36035d6885",
+   "sqi": 76.082435,
    "status": "ok"
   },
   "hymns/what-child-is-this|cover-alt|oracle-noisy|s1|opt:app": {
@@ -56505,7 +56505,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
-    "critical.key": 1.0,
+    "critical.key": 0.0,
     "critical.meter": 0.0,
     "critical.note_values": 0.0,
     "critical.pedal": null,
@@ -56553,11 +56553,11 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.626728,
-    "sqi": 86.454335,
+    "sqi": 76.454335,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 1.0,
-    "struct.key.timeline_accuracy": 1.0,
+    "struct.key.fifths_exact": 0.0,
+    "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 1.0,
@@ -56569,8 +56569,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "c128d5f9f5778532",
-   "sqi": 86.454335,
+   "semantic": "6fcdb546c1a5b08c",
+   "sqi": 76.454335,
    "status": "ok"
   },
   "method/beyer/016|cover-alt|none|s1|opt:app": {
@@ -59391,7 +59391,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
-    "critical.key": 1.0,
+    "critical.key": 0.0,
     "critical.meter": 1.0,
     "critical.note_values": 0.0,
     "critical.pedal": null,
@@ -59439,11 +59439,11 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 1.0,
-    "sqi": 95.714286,
+    "sqi": 85.714286,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 1.0,
-    "struct.key.timeline_accuracy": 1.0,
+    "struct.key.fifths_exact": 0.0,
+    "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 1.0,
@@ -59455,8 +59455,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "d8fe650e668504f1",
-   "sqi": 95.714286,
+   "semantic": "cca9b5ea4b1c7d89",
+   "sqi": 85.714286,
    "status": "ok"
   },
   "method/beyer/032|cover-alt|oracle-noisy|s1|opt:app": {
@@ -59613,7 +59613,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
-    "critical.key": 1.0,
+    "critical.key": 0.0,
     "critical.meter": 1.0,
     "critical.note_values": 0.0,
     "critical.pedal": null,
@@ -59661,11 +59661,11 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 1.0,
-    "sqi": 95.510204,
+    "sqi": 85.510204,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 1.0,
-    "struct.key.timeline_accuracy": 1.0,
+    "struct.key.fifths_exact": 0.0,
+    "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 1.0,
@@ -59677,8 +59677,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "be91afb9c3b9a314",
-   "sqi": 95.510204,
+   "semantic": "bcf713a385505447",
+   "sqi": 85.510204,
    "status": "ok"
   },
   "method/beyer/033|cover-alt|none|s1|opt:app": {
@@ -65626,8 +65626,8 @@
     "notation.onset_pos.accuracy": 0.019164,
     "notation.onset_pos.accuracy_ref": 0.019164,
     "notation.pedal.f1": null,
-    "notation.spelling.accuracy": 0.998258,
-    "notation.spelling.accuracy_ref": 0.998258,
+    "notation.spelling.accuracy": 0.984321,
+    "notation.spelling.accuracy_ref": 0.984321,
     "notation.ties.extra_per_100": 0.0,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
@@ -65655,11 +65655,11 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.881068,
-    "sqi": 71.34202,
+    "sqi": 61.272334,
     "struct.downbeat.f1": 0.672269,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 1.0,
-    "struct.key.timeline_accuracy": 0.726481,
+    "struct.key.fifths_exact": 0.0,
+    "struct.key.timeline_accuracy": 0.273519,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 0.0,
@@ -65671,8 +65671,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "d6638b58f2d3df44",
-   "sqi": 71.34202,
+   "semantic": "435ba94c86e1f5b9",
+   "sqi": 61.272334,
    "status": "ok"
   },
   "method/burgmuller25/015|cover-alt|oracle-noisy|s1|opt:app": {
@@ -65829,7 +65829,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 1.0,
     "critical.hands": 0.0,
-    "critical.key": 0.0,
+    "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 0.0,
     "critical.pedal": null,
@@ -65848,8 +65848,8 @@
     "notation.onset_pos.accuracy": 0.972125,
     "notation.onset_pos.accuracy_ref": 0.972125,
     "notation.pedal.f1": null,
-    "notation.spelling.accuracy": 0.998258,
-    "notation.spelling.accuracy_ref": 0.998258,
+    "notation.spelling.accuracy": 0.987805,
+    "notation.spelling.accuracy_ref": 0.987805,
     "notation.ties.extra_per_100": 4.181185,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
@@ -65877,11 +65877,11 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.837097,
-    "sqi": 94.848257,
+    "sqi": 94.795992,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
-    "struct.key.timeline_accuracy": 0.726481,
+    "struct.key.timeline_accuracy": 0.97561,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 0.0,
@@ -65893,8 +65893,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "de79df1fcf26c1ee",
-   "sqi": 94.848257,
+   "semantic": "9d73217eb4e9b8ef",
+   "sqi": 94.795992,
    "status": "ok"
   },
   "method/burgmuller25/016|cover-alt|none|s1|opt:app": {
@@ -67383,7 +67383,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 0.0,
     "critical.hands": 1.0,
-    "critical.key": 1.0,
+    "critical.key": 0.0,
     "critical.meter": 0.0,
     "critical.note_values": 1.0,
     "critical.pedal": null,
@@ -67402,8 +67402,8 @@
     "notation.onset_pos.accuracy": 0.006015,
     "notation.onset_pos.accuracy_ref": 0.006015,
     "notation.pedal.f1": null,
-    "notation.spelling.accuracy": 0.990977,
-    "notation.spelling.accuracy_ref": 0.990977,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 0.0,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
@@ -67431,11 +67431,11 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.966514,
-    "sqi": 63.958011,
+    "sqi": 54.003124,
     "struct.downbeat.f1": 0.075472,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 1.0,
-    "struct.key.timeline_accuracy": 1.0,
+    "struct.key.fifths_exact": 0.0,
+    "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 0.0,
@@ -67447,8 +67447,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "86537cd2a438ed0d",
-   "sqi": 63.958011,
+   "semantic": "668ec9c56818eb4e",
+   "sqi": 54.003124,
    "status": "ok"
   },
   "method/burgmuller25/023|cover-alt|oracle-noisy|s1|opt:app": {
@@ -67605,7 +67605,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
-    "critical.key": 1.0,
+    "critical.key": 0.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
     "critical.pedal": null,
@@ -67624,8 +67624,8 @@
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
     "notation.pedal.f1": null,
-    "notation.spelling.accuracy": 0.990977,
-    "notation.spelling.accuracy_ref": 0.990977,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 2.105263,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
@@ -67653,11 +67653,11 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.967644,
-    "sqi": 99.142857,
+    "sqi": 89.18797,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 1.0,
-    "struct.key.timeline_accuracy": 1.0,
+    "struct.key.fifths_exact": 0.0,
+    "struct.key.timeline_accuracy": 0.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 1.0,
@@ -67667,10 +67667,10 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 1.0
+    "usable": 0.0
    },
-   "semantic": "8a9c7ead42c1c86d",
-   "sqi": 99.142857,
+   "semantic": "c960795f0ab7ffcb",
+   "sqi": 89.18797,
    "status": "ok"
   },
   "method/czerny599/021|cover-alt|none|s1|opt:app": {
@@ -70491,7 +70491,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
-    "critical.key": 0.0,
+    "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 0.0,
     "critical.pedal": null,
@@ -70539,11 +70539,11 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.647059,
-    "sqi": 86.176471,
+    "sqi": 96.176471,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 0.0,
-    "struct.key.timeline_accuracy": 0.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 1.0,
@@ -70555,8 +70555,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "8e4ff08fc51f87a5",
-   "sqi": 86.176471,
+   "semantic": "45dc06bd0fad414e",
+   "sqi": 96.176471,
    "status": "ok"
   },
   "method/czerny599/030|cover-alt|oracle-noisy|s1|opt:app": {
@@ -70713,7 +70713,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
-    "critical.key": 0.0,
+    "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 0.0,
     "critical.pedal": null,
@@ -70761,11 +70761,11 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.650636,
-    "sqi": 86.323529,
+    "sqi": 96.323529,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 0.0,
-    "struct.key.timeline_accuracy": 0.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 1.0,
@@ -70777,8 +70777,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "9cfc0b29234de559",
-   "sqi": 86.323529,
+   "semantic": "6c93b76d5b20044d",
+   "sqi": 96.323529,
    "status": "ok"
   },
   "method/czerny599/034|cover-alt|none|s1|opt:app": {
@@ -74043,7 +74043,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 0.0,
     "critical.hands": 1.0,
-    "critical.key": 0.0,
+    "critical.key": 1.0,
     "critical.meter": 0.0,
     "critical.note_values": 0.0,
     "critical.pedal": null,
@@ -74091,11 +74091,11 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.969617,
-    "sqi": 68.333333,
+    "sqi": 78.333333,
     "struct.downbeat.f1": 0.666667,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 0.0,
-    "struct.key.timeline_accuracy": 0.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 0.0,
@@ -74107,8 +74107,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "efbeaaaa153b33c2",
-   "sqi": 68.333333,
+   "semantic": "41a67523a62d0d9a",
+   "sqi": 78.333333,
    "status": "ok"
   },
   "method/czerny599/048|cover-alt|oracle-noisy|s1|opt:app": {
@@ -74265,7 +74265,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
-    "critical.key": 0.0,
+    "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 0.0,
     "critical.pedal": null,
@@ -74313,11 +74313,11 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.978836,
-    "sqi": 87.740113,
+    "sqi": 97.740113,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 0.0,
-    "struct.key.timeline_accuracy": 0.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 1.0,
@@ -74329,8 +74329,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "ada8ab15c33d77cb",
-   "sqi": 87.740113,
+   "semantic": "822ac916041f694f",
+   "sqi": 97.740113,
    "status": "ok"
   },
   "method/czerny599/049|cover-alt|none|s1|opt:app": {
@@ -76041,7 +76041,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 0.0,
     "critical.hands": 1.0,
-    "critical.key": 0.0,
+    "critical.key": 1.0,
     "critical.meter": 0.0,
     "critical.note_values": 0.0,
     "critical.pedal": null,
@@ -76089,11 +76089,11 @@
     "rec.tuplet.recall": 0.0,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.915292,
-    "sqi": 47.868957,
+    "sqi": 57.868957,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 0.0,
-    "struct.key.timeline_accuracy": 0.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 1.0,
@@ -76105,8 +76105,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "9a6c94c43390225a",
-   "sqi": 47.868957,
+   "semantic": "eb5ceec8413984ad",
+   "sqi": 57.868957,
    "status": "ok"
   },
   "method/czerny849/006|cover-alt|none|s1|opt:app": {
@@ -76707,7 +76707,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 0.0,
     "critical.hands": 1.0,
-    "critical.key": 0.0,
+    "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 0.0,
     "critical.pedal": null,
@@ -76755,11 +76755,11 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.631157,
-    "sqi": 71.788889,
+    "sqi": 81.788889,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 0.0,
-    "struct.key.timeline_accuracy": 0.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 1.0,
@@ -76771,8 +76771,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "ad652c4a0e6aedba",
-   "sqi": 71.788889,
+   "semantic": "85da5936b0d71305",
+   "sqi": 81.788889,
    "status": "ok"
   },
   "method/czerny849/007|cover-alt|oracle-noisy|s1|opt:app": {
@@ -76929,7 +76929,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 0.0,
     "critical.hands": 1.0,
-    "critical.key": 0.0,
+    "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 0.0,
     "critical.pedal": null,
@@ -76977,11 +76977,11 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.636986,
-    "sqi": 77.206063,
+    "sqi": 87.206063,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 0.0,
-    "struct.key.timeline_accuracy": 0.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 1.0,
@@ -76993,8 +76993,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "df423482f23a5f43",
-   "sqi": 77.206063,
+   "semantic": "af87078251393fce",
+   "sqi": 87.206063,
    "status": "ok"
   },
   "method/czerny849/008|cover-alt|none|s1|opt:app": {
@@ -78103,7 +78103,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "1b5cd3b3b5059226",
+   "semantic": "31e2e504f8281709",
    "sqi": 61.612126,
    "status": "ok"
   },
@@ -78261,7 +78261,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
-    "critical.key": 0.0,
+    "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 0.0,
     "critical.pedal": null,
@@ -78309,11 +78309,11 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.692308,
-    "sqi": 82.419552,
+    "sqi": 92.419552,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 0.0,
-    "struct.key.timeline_accuracy": 0.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 1.0,
@@ -78325,8 +78325,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "ac59acddf3bfe720",
-   "sqi": 82.419552,
+   "semantic": "082d1c59def802df",
+   "sqi": 92.419552,
    "status": "ok"
   },
   "method/czerny849/019|cover-alt|none|s1|opt:app": {
@@ -78705,7 +78705,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 0.0,
     "critical.hands": 1.0,
-    "critical.key": 0.0,
+    "critical.key": 1.0,
     "critical.meter": 0.0,
     "critical.note_values": 0.0,
     "critical.pedal": null,
@@ -78753,11 +78753,11 @@
     "rec.tuplet.recall": 0.769231,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.748011,
-    "sqi": 45.5855,
+    "sqi": 55.5855,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 0.0,
-    "struct.key.timeline_accuracy": 0.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 1.0,
@@ -78769,8 +78769,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "5aa2b6d39994d0cd",
-   "sqi": 45.5855,
+   "semantic": "4b006667c63b96dc",
+   "sqi": 55.5855,
    "status": "ok"
   },
   "method/czerny849/020|cover-alt|none|s1|opt:app": {
@@ -78946,8 +78946,8 @@
     "notation.onset_pos.accuracy": 0.158929,
     "notation.onset_pos.accuracy_ref": 0.158082,
     "notation.pedal.f1": null,
-    "notation.spelling.accuracy": 0.989286,
-    "notation.spelling.accuracy_ref": 0.984014,
+    "notation.spelling.accuracy": 0.991071,
+    "notation.spelling.accuracy_ref": 0.98579,
     "notation.ties.extra_per_100": 0.357143,
     "notation.tuplets.f1": 0.0,
     "notation.tuplets.false_per_100": 0.0,
@@ -78975,7 +78975,7 @@
     "rec.tuplet.recall": 0.0,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.838186,
-    "sqi": 60.694108,
+    "sqi": 60.702989,
     "struct.downbeat.f1": 0.958333,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -78991,8 +78991,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "f2cdc659ea4b7299",
-   "sqi": 60.694108,
+   "semantic": "6a3cabe48cb7f2dd",
+   "sqi": 60.702989,
    "status": "ok"
   },
   "method/czerny849/020|cover-alt|oracle-noisy|s1|opt:app": {
@@ -79146,7 +79146,7 @@
   "method/czerny849/020|cover-alt|oracle-noisy|s1|opt:v2": {
    "error_code": null,
    "metrics": {
-    "critical.accidentals": 0.0,
+    "critical.accidentals": 1.0,
     "critical.beat_placement": 0.0,
     "critical.hands": 1.0,
     "critical.key": 1.0,
@@ -79156,7 +79156,7 @@
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
     "critical.structure": 1.0,
-    "notation.accidentals.required_recall": 0.95122,
+    "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.529517,
     "notation.duration.accuracy_ref": 0.525755,
     "notation.duration.page_accuracy": 0.529517,
@@ -79213,7 +79213,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "627dc6468b5c3614",
+   "semantic": "66cd7678f600b687",
    "sqi": 57.789555,
    "status": "ok"
   },
@@ -84033,7 +84033,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
-    "critical.key": 0.0,
+    "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
     "critical.pedal": null,
@@ -84081,11 +84081,11 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.915436,
-    "sqi": 88.0829,
+    "sqi": 98.0829,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 0.0,
-    "struct.key.timeline_accuracy": 0.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 1.0,
@@ -84095,10 +84095,10 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "a605d7ec41d7a064",
-   "sqi": 88.0829,
+   "semantic": "940f9292835a13c3",
+   "sqi": 98.0829,
    "status": "ok"
   },
   "method/sonatina/009|cover-alt|none|s1|opt:app": {
@@ -85140,17 +85140,17 @@
   "method/sonatina/012|cover-alt|none|s1|opt:v2": {
    "error_code": null,
    "metrics": {
-    "critical.accidentals": 0.0,
+    "critical.accidentals": 1.0,
     "critical.beat_placement": 0.0,
     "critical.hands": 1.0,
-    "critical.key": 0.0,
+    "critical.key": 1.0,
     "critical.meter": 0.0,
     "critical.note_values": 0.0,
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
     "critical.structure": 0.0,
-    "notation.accidentals.required_recall": 0.923077,
+    "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.736986,
     "notation.duration.accuracy_ref": 0.736986,
     "notation.duration.page_accuracy": 0.736986,
@@ -85191,11 +85191,11 @@
     "rec.tuplet.recall": 0.866667,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.900243,
-    "sqi": 57.637712,
+    "sqi": 67.637712,
     "struct.downbeat.f1": 0.942308,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 0.0,
-    "struct.key.timeline_accuracy": 0.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 0.0,
@@ -85207,8 +85207,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "c89891eca47f5346",
-   "sqi": 57.637712,
+   "semantic": "74d1dd294104c1ab",
+   "sqi": 67.637712,
    "status": "ok"
   },
   "method/sonatina/012|cover-alt|oracle-noisy|s1|opt:app": {
@@ -85362,17 +85362,17 @@
   "method/sonatina/012|cover-alt|oracle-noisy|s1|opt:v2": {
    "error_code": null,
    "metrics": {
-    "critical.accidentals": 0.0,
+    "critical.accidentals": 1.0,
     "critical.beat_placement": 0.0,
     "critical.hands": 1.0,
-    "critical.key": 0.0,
+    "critical.key": 1.0,
     "critical.meter": 0.0,
     "critical.note_values": 1.0,
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
     "critical.structure": 0.0,
-    "notation.accidentals.required_recall": 0.923077,
+    "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.821918,
     "notation.duration.accuracy_ref": 0.821918,
     "notation.duration.page_accuracy": 0.821918,
@@ -85413,11 +85413,11 @@
     "rec.tuplet.recall": 0.0,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.937539,
-    "sqi": 54.425214,
+    "sqi": 64.425214,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 0.0,
-    "struct.key.timeline_accuracy": 0.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 0.0,
@@ -85429,8 +85429,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "54bfbf0ec50c0361",
-   "sqi": 54.425214,
+   "semantic": "9a0c97e633de3ca1",
+   "sqi": 64.425214,
    "status": "ok"
   },
   "method/sonatina/014|cover-alt|none|s1|opt:app": {
@@ -86031,7 +86031,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 0.0,
     "critical.hands": 1.0,
-    "critical.key": 0.0,
+    "critical.key": 1.0,
     "critical.meter": 0.0,
     "critical.note_values": 1.0,
     "critical.pedal": null,
@@ -86079,11 +86079,11 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.887701,
-    "sqi": 68.069855,
+    "sqi": 78.069855,
     "struct.downbeat.f1": 0.666667,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 0.0,
-    "struct.key.timeline_accuracy": 0.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 0.0,
@@ -86095,8 +86095,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "6a5b0557d6e24a11",
-   "sqi": 68.069855,
+   "semantic": "bec4489ad0e53803",
+   "sqi": 78.069855,
    "status": "ok"
   },
   "method/sonatina/017|cover-alt|oracle-noisy|s1|opt:app": {
@@ -86253,7 +86253,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 0.0,
     "critical.hands": 1.0,
-    "critical.key": 0.0,
+    "critical.key": 1.0,
     "critical.meter": 0.0,
     "critical.note_values": 1.0,
     "critical.pedal": null,
@@ -86301,11 +86301,11 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.89219,
-    "sqi": 68.206812,
+    "sqi": 78.206812,
     "struct.downbeat.f1": 0.666667,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 0.0,
-    "struct.key.timeline_accuracy": 0.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 0.0,
@@ -86317,8 +86317,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "34fb61e4714a1242",
-   "sqi": 68.206812,
+   "semantic": "20f3bee05998de71",
+   "sqi": 78.206812,
    "status": "ok"
   },
   "method/sonatina/018|cover-alt|none|s1|opt:app": {
@@ -86475,7 +86475,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
-    "critical.key": 0.0,
+    "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 0.0,
     "critical.pedal": null,
@@ -86494,8 +86494,8 @@
     "notation.onset_pos.accuracy": 0.930841,
     "notation.onset_pos.accuracy_ref": 0.930841,
     "notation.pedal.f1": null,
-    "notation.spelling.accuracy": 0.953271,
-    "notation.spelling.accuracy_ref": 0.953271,
+    "notation.spelling.accuracy": 0.993458,
+    "notation.spelling.accuracy_ref": 0.993458,
     "notation.ties.extra_per_100": 0.373832,
     "notation.tuplets.f1": 0.738318,
     "notation.tuplets.false_per_100": 4.392523,
@@ -86523,11 +86523,11 @@
     "rec.tuplet.recall": 0.90625,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.875186,
-    "sqi": 85.405407,
+    "sqi": 95.606342,
     "struct.downbeat.f1": 0.9875,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 0.0,
-    "struct.key.timeline_accuracy": 0.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 1.0,
@@ -86539,8 +86539,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "dd218e59ddfd3e3d",
-   "sqi": 85.405407,
+   "semantic": "3baf2f0d3b2cac4a",
+   "sqi": 95.606342,
    "status": "ok"
   },
   "method/sonatina/018|cover-alt|oracle-noisy|s1|opt:app": {
@@ -86697,7 +86697,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
-    "critical.key": 0.0,
+    "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
     "critical.pedal": null,
@@ -86716,8 +86716,8 @@
     "notation.onset_pos.accuracy": 0.98972,
     "notation.onset_pos.accuracy_ref": 0.98972,
     "notation.pedal.f1": null,
-    "notation.spelling.accuracy": 0.953271,
-    "notation.spelling.accuracy_ref": 0.953271,
+    "notation.spelling.accuracy": 0.993458,
+    "notation.spelling.accuracy_ref": 0.993458,
     "notation.ties.extra_per_100": 0.747664,
     "notation.tuplets.f1": 0.907216,
     "notation.tuplets.false_per_100": 1.682243,
@@ -86745,11 +86745,11 @@
     "rec.tuplet.recall": 1.0,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.896654,
-    "sqi": 87.177045,
+    "sqi": 97.37798,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 0.0,
-    "struct.key.timeline_accuracy": 0.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 1.0,
@@ -86759,10 +86759,10 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "f31cabe2942c6af1",
-   "sqi": 87.177045,
+   "semantic": "3fa49285be41dd50",
+   "sqi": 97.37798,
    "status": "ok"
   },
   "method/sonatina/021|cover-alt|none|s1|opt:app": {
@@ -86938,8 +86938,8 @@
     "notation.onset_pos.accuracy": 0.990579,
     "notation.onset_pos.accuracy_ref": 0.990579,
     "notation.pedal.f1": null,
-    "notation.spelling.accuracy": 0.985195,
-    "notation.spelling.accuracy_ref": 0.985195,
+    "notation.spelling.accuracy": 0.973082,
+    "notation.spelling.accuracy_ref": 0.973082,
     "notation.ties.extra_per_100": 0.0,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
@@ -86967,7 +86967,7 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.965375,
-    "sqi": 97.022575,
+    "sqi": 96.962009,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -86983,8 +86983,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "3f66adbe1b9bcadb",
-   "sqi": 97.022575,
+   "semantic": "4d092639a2677007",
+   "sqi": 96.962009,
    "status": "ok"
   },
   "method/sonatina/021|cover-alt|oracle-noisy|s1|opt:app": {
@@ -87160,8 +87160,8 @@
     "notation.onset_pos.accuracy": 0.993271,
     "notation.onset_pos.accuracy_ref": 0.993271,
     "notation.pedal.f1": null,
-    "notation.spelling.accuracy": 0.985195,
-    "notation.spelling.accuracy_ref": 0.985195,
+    "notation.spelling.accuracy": 0.973082,
+    "notation.spelling.accuracy_ref": 0.973082,
     "notation.ties.extra_per_100": 0.0,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
@@ -87189,7 +87189,7 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.970543,
-    "sqi": 97.271418,
+    "sqi": 97.210853,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -87205,8 +87205,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "1a664fa6cee38fe6",
-   "sqi": 97.271418,
+   "semantic": "0cc688990eba03d8",
+   "sqi": 97.210853,
    "status": "ok"
   },
   "method/sonatina/025|cover-alt|none|s1|opt:app": {
@@ -98463,7 +98463,7 @@
     "critical.accidentals": 1.0,
     "critical.beat_placement": 0.0,
     "critical.hands": 1.0,
-    "critical.key": 0.0,
+    "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 0.0,
     "critical.pedal": null,
@@ -98511,11 +98511,11 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 1.0,
-    "sqi": 72.78629,
+    "sqi": 82.78629,
     "struct.downbeat.f1": 0.666667,
     "struct.form.order_exact": 1.0,
-    "struct.key.fifths_exact": 0.0,
-    "struct.key.timeline_accuracy": 0.0,
+    "struct.key.fifths_exact": 1.0,
+    "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
     "struct.measures.count_exact": 0.0,
@@ -98527,8 +98527,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "4e7bfc0481884665",
-   "sqi": 72.78629,
+   "semantic": "2f67955e0e4486f8",
+   "sqi": 82.78629,
    "status": "ok"
   },
   "micro/M22-tempo-change|cover-alt|oracle-noisy|s1|opt:app": {
@@ -100118,6 +100118,14 @@
    "reason": "G10a-2: v2's stage S3 is rec/grid.js (the grid of each beat, AI-5b), on top of S4 (afdb23b); legacy and app rows unchanged case by case; v2 rows move (G10 section 20)",
    "sqi_all": 73.936729,
    "usable_all": 0.062648
+  },
+  {
+   "audio_score_sha256": "7682f733ad574ef9020896400a8f4025b26f650f00876675f2b1d8bd211270eb",
+   "date": "2026-10-03",
+   "git_sha": "6712a447e6dc26c877917e6653df7d40e2917260",
+   "reason": "G10a-3 S8 (rec/key.js, docs/GOALS/G10 section 22): v2 writes its own key signature, spelling and accidentals; legacy and app rows unchanged. v2 critical.key up (57 cases gained, 20 lost on rec-core: what-child-is-this, beyer/032, burgmuller25/015 and 023, czerny849/013 had the right key under the legacy estimator), critical.accidentals fixed (tied-over head no longer counts as in force)",
+   "sqi_all": 74.067235,
+   "usable_all": 0.06383
   }
  ],
  "known_failures": {
@@ -100463,10 +100471,10 @@
  },
  "lock_sha256": "78f76b3cc4ccebdc3f75885cfdf26c07689ff53d69c0cf6b7edfedd9f49fcdb0",
  "recorded": {
-  "audio_score_sha256": "026597c651a913660ff6ec6142d3f0c54be8125c831c929ceddf9a669c3c8c23",
+  "audio_score_sha256": "7682f733ad574ef9020896400a8f4025b26f650f00876675f2b1d8bd211270eb",
   "date": "2026-10-03",
   "git_dirty": true,
-  "git_sha": "25e656711808b0bacaee43f366fdce03b3f2c36a",
+  "git_sha": "6712a447e6dc26c877917e6653df7d40e2917260",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"

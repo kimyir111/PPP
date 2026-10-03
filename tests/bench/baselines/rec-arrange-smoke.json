@@ -8655,15 +8655,23 @@
    "reason": "G10c-0: re-recorded on main b52b693: the v2 row is v2 + S3 (grid) + S4 (hands); the app row is the unguarded baseline",
    "sqi_all": null,
    "usable_all": null
+  },
+  {
+   "audio_score_sha256": "7682f733ad574ef9020896400a8f4025b26f650f00876675f2b1d8bd211270eb",
+   "date": "2026-10-03",
+   "git_sha": "6712a447e6dc26c877917e6653df7d40e2917260",
+   "reason": "G10a-3 S8 (rec/key.js, docs/GOALS/G10 section 22): v2 writes its own key signature, spelling and accidentals; legacy and app rows unchanged. v2 critical.key up (57 cases gained, 20 lost on rec-core: what-child-is-this, beyer/032, burgmuller25/015 and 023, czerny849/013 had the right key under the legacy estimator), critical.accidentals fixed (tied-over head no longer counts as in force)",
+   "sqi_all": null,
+   "usable_all": null
   }
  ],
  "known_failures": null,
  "lock_sha256": "7e1704b3874506dae2947f4d7af586938eb79c4e54d2db42e68c924706d158cc",
  "recorded": {
-  "audio_score_sha256": "026597c651a913660ff6ec6142d3f0c54be8125c831c929ceddf9a669c3c8c23",
+  "audio_score_sha256": "7682f733ad574ef9020896400a8f4025b26f650f00876675f2b1d8bd211270eb",
   "date": "2026-10-03",
-  "git_dirty": false,
-  "git_sha": "01d118fbbdbfc0d6a233c65aafd94db3673ce0c5",
+  "git_dirty": true,
+  "git_sha": "6712a447e6dc26c877917e6653df7d40e2917260",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"
