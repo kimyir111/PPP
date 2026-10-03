@@ -17,7 +17,8 @@ jobs:
   gate:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
-    timeout-minutes: 50                  # was 20: the gate grew (G10a-0 rec suites, the unit tests of the humanizer)
+    timeout-minutes: 80                  # was 50, was 20: the gate grew (G10a-0 rec suites, the humanizer's unit tests, rec-grid); it took
+                                         # 25-44 minutes on the last runs of main (44.1 on 2026-10-03), so 50 was one slow runner from red
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }                 # the ScoreGraph tests compare package.json with the G1 base commit

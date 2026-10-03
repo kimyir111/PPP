@@ -273,7 +273,8 @@ def merge_shards(suite: Dict[str, Any], dirs: List[str], out_dir: Optional[str] 
         shards.append((util.load_json(sp), util.load_json(rp), d))
     first, first_run, _ = shards[0]
     for sh, _, d in shards:
-        if sh.get("schema") != SHARD_SCHEMA or not isinstance(sh.get("shard", {}).get("index"), int)                 or not isinstance(sh.get("shard", {}).get("of"), int):
+        where = sh.get("shard") if isinstance(sh.get("shard"), dict) else {}
+        if sh.get("schema") != SHARD_SCHEMA or not isinstance(where.get("index"), int) or not isinstance(where.get("of"), int):
             raise RunError("SHARD_MISMATCH", f"{d}/shard.json is not a {SHARD_SCHEMA} file with a shard index")
     n = first["shard"]["of"]
     lock_file = suite_mod.lock_path(suite)
