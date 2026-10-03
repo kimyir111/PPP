@@ -335,8 +335,8 @@ cover-pedal, human-real; CI), `rec-core` (141 core references x the humanizer's 
 hold-out seeds 11 and 12; nightly), `rec-mutation` (`python tests/bench/run.py mutation-check --rec`: one planted defect
 per metric, each must be a REGRESSION that names its metric, the no-op byte-identical; nightly; legacy and app rows) and
 `rec-mutation-v2` (the same references and rows with the v2 options only: one planted defect per decision of the v2 time
-skeleton - the metre model's accents, the bar lines, the tempo octave, issue 1, the helper's beats, the on-beat quantiser -
-run by the same command; report in `out/mutation-v2/`).
+skeleton - the metre model's accents, the bar lines, the tempo octave, issue 1, the helper's beats, the on-beat window - and,
+from G10a-2, of its grid stage; run by the same command; report in `out/mutation-v2/`), and `rec-grid` (G10a-2, below).
 
 **The recording conversion v2 (G10a-1, `rec/`).** `toMusicXml(input, {recording: 'v2'})` decides the time skeleton (metre,
 tempo, bar lines, pickup) with `rec/` (S0-S2, a model learned from the catalogue: `rec/weights/ai5a-v1.json`, trained by
@@ -355,6 +355,17 @@ rows). Tools: `tools/hands_report.py --suite S [--out-dir D]` (hand errors of a 
 hand on the other staff - by register and family, and the melody gap count: right-hand top notes written in the left hand),
 `tools/hands_ab.py --a A.json --b B.json [--a-opt app --b-opt app-hands] [--by family|profile|beats]` (case-by-case A/B of two
 runs' results). Results: docs/GOALS/G10_AUDIO_TO_SCORE.md section 19.
+
+**v2's grid stage (G10a-2, S3, `rec/grid.js`).** On v2's skeleton, the grid of each beat (straight 16ths, 32nds, triplet eighths,
+long-short eighths written straight; in compound time the eighths or the 16ths of the dotted quarter) and every onset on it,
+chosen from learned occupancy patterns, a timing-noise density adapted to the piece and a chain over the beats
+(`rec/weights/ai5b-grid-v1.json`, counted by `node tests/bench/tools/train_grid.js` from `tools/grid_data.py`'s humanized
+non-hold-out performances at seeds no suite uses; `--check` in the gate regenerates the data and refits). `opts.grid: 'legacy'`
+keeps G10a-1's quantisers under v2. Suite `rec-grid` (CI): the core references x cover / human-real / cover+of / swing with
+oracle beats and cover with beats none x `v2-s3legacy` (v2, legacy quantisers) / `v2` (v2 with `rec/grid.js`), the very same
+performance and skeleton on both sides. `train_grid.js --evaluate` measures the stage alone (true beat times given) against a
+copy of the legacy quantisers (`rec/tools/ai5b-grid-v1.evaluation.json`). `rec-mutation-v2` carries one planted defect per grid
+decision (no triplets, a triplet bias, no chord groups, no chain, the on-beat window). Results: G10 section 20.
 
 ## The real-AMT tier (`replay-of`, G10a-0 step 5)
 
