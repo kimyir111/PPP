@@ -1517,4 +1517,4 @@ replay-of-v2 (the browser's O&F: no pedal) is unchanged: nothing is invented.
 - **The legacy compound tick defect is live on the production path** (23.2 point 1): 3/8, 6/8 and the 2/4 pieces read as 6/8 get pedal marks a third early today. `opts.pedal: 'v2'` fixes it for the app's path (`app-pedal`) if the Lead wants it before G10a-4.
 
 ### 23.8 Determinism, Linux, budget
-DETERMINISM_PLACEHOLDER
+Three runs on Windows (Python 3.13.5, Node 24.17) of rec-smoke (`23deb7302fcba43a`), rec-robust (`8f108ce46c1d2757`), replay-of-v2 (`5615c28ea3180b9a`), replay-public-v2 (`12d7f7b7ca934e3e`) and rec-core (`d2d60deabc38c24a`) give byte-identical `results.json`; the same five on Linux (`node:24-bookworm`, offline, an LF clone of the pushed commit, the README's recipe) give the same five hashes and every `check` PASS; `npm run test:rec` passes there (59 tests, one skipped by its own todo). The pedal stage costs 2.6 ms for 1,800 notes and 90 spans (section 11's budget for the whole v2 conversion is 300 ms).
