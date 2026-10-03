@@ -462,8 +462,8 @@ REC_V2_MUTATIONS: List[Dict[str, Any]] = [
     # G10a-2: one planted defect per decision of the grid stage (rec/grid.js, S3)
     {"id": "REC-V2-GRID-NO-TRIPLETS", "v2": True,     # no beat is ever a triplet beat
      "file": "rec/grid.js",
-     "find": "    const kinds = (opts.kinds || model.kinds || KINDS).filter(k => KINDS.indexOf(k) >= 0);",
-     "replace": "    const kinds = (opts.kinds || model.kinds || KINDS).filter(k => KINDS.indexOf(k) >= 0 && k !== '3');",
+     "find": "      : (opts.kinds || model.kinds || KINDS).filter(k => KINDS.indexOf(k) >= 0);",
+     "replace": "      : (opts.kinds || model.kinds || KINDS).filter(k => KINDS.indexOf(k) >= 0 && k !== '3');",
      "expect": "REGRESSION", "metrics": ["rec.tuplet.recall", "notation.tuplets.f1"]},
     {"id": "REC-V2-GRID-TRIPLET-BIAS", "v2": True,    # the evidence of a triplet beat counted ten times over (e^4 per beat)
      "file": "rec/grid.js",
@@ -474,7 +474,7 @@ REC_V2_MUTATIONS: List[Dict[str, Any]] = [
      "file": "rec/grid.js",
      "find": "  const MAX_GROUP = 8;",
      "replace": "  const MAX_GROUP = 1;",
-     "expect": "REGRESSION", "metrics": ["notation.onset_pos.accuracy", "rec.onset_f1", "rec.check.6"]},
+     "expect": "REGRESSION", "metrics": ["rec.tuplet.precision", "critical.hands", "rec.rest.false_per_100_bars"]},
     {"id": "REC-V2-GRID-NO-CHAIN", "v2": True,        # no smoothing across beats: every beat decided alone
      "file": "rec/grid.js",
      "find": "      const st = Math.pow(model.stay[a] !== undefined ? model.stay[a] : 0.9, Math.max(1, gap));",
