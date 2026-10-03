@@ -11,8 +11,10 @@ families on the references of smoke / core / full, in the three stage-option set
 ``legacy`` (the library default, ``{}``), ``app`` (what the app passes today, closeGaps + exactBars) and, from G10a-1,
 ``v2`` (the app's options with the recording conversion v2, ``recording: 'v2'``: what the app will pass when
 PPP.recording is 'v2', G10a-4). The beats axis is ``none`` (production: the browser's onset tracker) and
-``oracle-noisy`` (the helper's beats). The three option sets see the very same performance (the humanizer's stream
-does not depend on the options name).
+``oracle-noisy`` (the helper's beats). The three option sets see the same base performance, but the +of / +helper
+overlays and the oracle-noisy beats are drawn on streams named by the option name (G10a-2 found it): those rows of
+different option sets are different draws. A row with ``perform_as`` plays the performance of the named option set
+(rec-hands, G10a-2: the app's very performances with only the hands swapped).
 """
 
 import argparse
@@ -30,6 +32,9 @@ OPTS = {"legacy": {}, "app": {"closeGaps": True, "exactBars": True}, "v2": {"clo
 # G10a-2 (docs/GOALS/G10 section 8, stage S3): v2's grid stage is rec/grid.js; `v2-s3legacy` is v2 with G10a-1's stage S3 (the
 # legacy quantiser, opts.grid 'legacy'), so a suite shows the grid stage's own effect on the very same performances and skeleton
 GRID_OPTS = {"v2-s3legacy": {"closeGaps": True, "exactBars": True, "recording": "v2", "grid": "legacy"}, "v2": OPTS["v2"]}
+# G10a-2 stage S4 in isolation: the app's path (the legacy time skeleton and grid) with only the hands of rec/hands.js
+# (opts.hands 'v2'). Its own suite, rec-hands, a measurement suite (not in the CI gate: v2's rows carry S4 there)
+HANDS_OPTS = {"app-hands": {"closeGaps": True, "exactBars": True, "hands": "v2"}}
 
 # (profile, beats): the rows of each tier
 SMOKE = [("cover", "none"), ("cover-pedal", "none"), ("human-real", "none")]
@@ -85,13 +90,16 @@ def gate(base: dict, scale: float = 1.0, holdout: bool = False) -> dict:
     return g
 
 
-def rows(table, seeds, names=None, opts_axis=None):
+def rows(table, seeds, names=None, opts_table=None, perform_as=None):
     out = []
     for profile, beats in table:
-        for name, opts in (opts_axis or OPTS).items():
+        for name, opts in (opts_table or OPTS).items():
             if names is not None and name not in names:
                 continue
-            out.append({"profile": profile, "beats": beats, "seeds": seeds, "opt_name": name, "opts": opts})
+            row = {"profile": profile, "beats": beats, "seeds": seeds, "opt_name": name, "opts": opts}
+            if perform_as:
+                row["perform_as"] = perform_as      # the very performance of the rows named perform_as (pppbench/suite.py Case)
+            out.append(row)
     return out
 
 
@@ -127,11 +135,17 @@ def build() -> dict:
                                 description="Gate sensitivity of the v2 time skeleton (G10a-1, mutation-check --rec): the rec-mutation "
                                             "references and rows with the v2 options only",
                                 gate=gate(suite_mod.GATE_CORE)),
+        "rec-hands": dict(base, name="rec-hands", references=core["references"],
+                          matrix=rows(CORE + ROBUST, [1], opts_table=HANDS_OPTS, perform_as="app"),
+                          description="G10a-2 stage S4 in isolation (a measurement suite, not in the CI gate): rec-core's and "
+                                      "rec-robust's cases with the app's options and only the hands of rec/hands.js (opts.hands "
+                                      "'v2'); the very performances of their opts:app rows, so tools/hands_ab.py compares them case by case",
+                          gate=gate(suite_mod.GATE_CORE)),
         "rec-full": dict(base, name="rec-full", references=full["references"], holdout_seeds=[11, 12], matrix=rows(FULL, [1, 2]),
                          description="Nightly/manual: every lint-clean reference, hold-out included (seeds 11, 12), x the humanizer's "
                                      "families x legacy / app / v2; the hold-out is reported as an aggregate",
                          gate=gate(suite_mod.GATE_FULL, holdout=True)),
-        "rec-grid": dict(base, name="rec-grid", references=core["references"], matrix=rows(GRID, [1], opts_axis=GRID_OPTS),
+        "rec-grid": dict(base, name="rec-grid", references=core["references"], matrix=rows(GRID, [1], opts_table=GRID_OPTS),
                          description="G10a-2 grid stage (S3, rec/grid.js): the core references x the humanizer's families with the beats "
                                      "given (oracle) and as production finds them (none), the swing family included, x stage options "
                                      "v2-s3legacy (v2 with G10a-1's legacy quantisers) / v2 (v2 with rec/grid.js)",

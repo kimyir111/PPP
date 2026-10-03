@@ -325,7 +325,11 @@ The G0 gates judge a recording's score against the written truth; the `rec.*` me
 
 Suites (`tools/make_rec_suites.py` writes them; every one runs the stage options `legacy` = library default, `app` = what
 the app passes and, from G10a-1, `v2` = the app's options with the recording conversion v2 (`recording: 'v2'`, `rec/`), with
-the very same performance, and is tagged `opts:legacy` / `opts:app` / `opts:v2`): `rec-smoke` (16 references x cover,
+the same base performance, and is tagged `opts:legacy` / `opts:app` / `opts:v2`; **but** the `+of` / `+helper` overlays and the
+`oracle-noisy` beats are drawn on streams named by the case's option name (`perform.py` `case_base`), so on the `cover+of`,
+`cover-pedal+helper` and `cover|oracle-noisy` rows the option sets see different draws of the same profile, not the very same
+input - found in G10a-2; a matrix row may say `"perform_as": "<option name>"` to play exactly that option set's performance,
+which no suite before `rec-hands` does): `rec-smoke` (16 references x cover,
 cover-pedal, human-real; CI), `rec-core` (141 core references x the humanizer's families x beats none / oracle-noisy; CI),
 `rec-robust` (the same references x `cover-alt`, an independent uncalibrated family; CI), `rec-full` (all references,
 hold-out seeds 11 and 12; nightly), `rec-mutation` (`python tests/bench/run.py mutation-check --rec`: one planted defect
@@ -341,6 +345,17 @@ with the legacy quantiser and writer. The SUT snapshot includes `rec/` and its w
 mutation sees the model like its code. Design and results: docs/GOALS/G10_AUDIO_TO_SCORE.md section 18;
 `tools/rec_skeleton_report.py` prints a run's time-skeleton error analysis.
 
+**The hands of v2 (G10a-2, stage S4, `rec/hands.js`).** Under `recording: 'v2'` the staff of every note comes from `rec/hands.js`
+(a beam Viterbi over the onset groups with costs counted on the catalogue's written hands, hold-out excluded:
+`rec/weights/hands-v1.json`; `node tests/bench/tools/train_hands.js` after `python tests/bench/tools/hands_data.py`, `--check`
+in the gate; evaluation `rec/tools/hands-v1.evaluation.json`); `opts.hands: 'legacy'` keeps the legacy pitch split under v2 and
+`opts.hands: 'v2'` swaps only S4 on any path. `rec-hands` (a measurement suite, not in the gate) is rec-core's and rec-robust's
+cases with the app's options and only S4 swapped (`app-hands`, `perform_as: "app"`: the very performances of their `opts:app`
+rows). Tools: `tools/hands_report.py --suite S [--out-dir D]` (hand errors of a run by cause - split point, a crossing, a solo
+hand on the other staff - by register and family, and the melody gap count: right-hand top notes written in the left hand),
+`tools/hands_ab.py --a A.json --b B.json [--a-opt app --b-opt app-hands] [--by family|profile|beats]` (case-by-case A/B of two
+runs' results). Results: docs/GOALS/G10_AUDIO_TO_SCORE.md section 19.
+
 **v2's grid stage (G10a-2, S3, `rec/grid.js`).** On v2's skeleton, the grid of each beat (straight 16ths, 32nds, triplet eighths,
 long-short eighths written straight; in compound time the eighths or the 16ths of the dotted quarter) and every onset on it,
 chosen from learned occupancy patterns, a timing-noise density adapted to the piece and a chain over the beats
@@ -350,7 +365,7 @@ keeps G10a-1's quantisers under v2. Suite `rec-grid` (CI): the core references x
 oracle beats and cover with beats none x `v2-s3legacy` (v2, legacy quantisers) / `v2` (v2 with `rec/grid.js`), the very same
 performance and skeleton on both sides. `train_grid.js --evaluate` measures the stage alone (true beat times given) against a
 copy of the legacy quantisers (`rec/tools/ai5b-grid-v1.evaluation.json`). `rec-mutation-v2` carries one planted defect per grid
-decision (no triplets, a triplet bias, no chord groups, no chain, the on-beat window). Results: G10 section 19.
+decision (no triplets, a triplet bias, no chord groups, no chain, the on-beat window). Results: G10 section 20.
 
 ## The real-AMT tier (`replay-of`, G10a-0 step 5)
 
