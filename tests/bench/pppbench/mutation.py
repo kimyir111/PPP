@@ -384,9 +384,9 @@ REC_MUTATIONS: List[Dict[str, Any]] = [
      "replacements": [(SG_TRAILING_REST, "      /* mutation: no trailing rests */")],
      "all": True, "expect": "REGRESSION", "metrics": ["rec.rest.recall"]},
     {"id": "REC-EXACT-BARS-OFF",          # the app's exact bars switched off: the library's bars, as they were before G9
-     "replacements": [("    if (opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4",
-                       "    if (false && opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4"),
-                      ("    const exactOn = !!opts.exactBars &&", "    const exactOn = false && !!opts.exactBars &&")],
+     "replacements": [("    } else if (opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4",
+                       "    } else if (false && opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4"),
+                      ("    const exactOn = !v2w && !!opts.exactBars &&", "    const exactOn = false && !v2w && !!opts.exactBars &&")],
      "all": True, "expect": "REGRESSION", "metrics": ["rec.check.2", "rec.check.5", "rec.check.6", "rec.check.7"]},
     {"id": "REC-TRIPLETS-EVERYWHERE",     # every beat with two onsets is called a triplet beat
      "find": "      if (e3 * 1.02 < e16 && (off16 >= 2 || (fs.length % 3 === 0 && fs.length >= 3))) flags[+k] = true;",
@@ -483,14 +483,14 @@ REC_ARRANGE_MUTATIONS: List[Dict[str, Any]] = [
                                      "          const t = (!full && t0[0] === '16th') ? ['16th', 1] : t0;")],
      "all": True, "expect": "REGRESSION", "metrics": ["arr.check.4"]},
     {"id": "ARR-EXACT-BARS-OFF",          # the app's exact bars switched off: the bars of the recording do not add up as drawn
-     "replacements": [("    if (opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4",
-                       "    if (false && opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4"),
-                      ("    const exactOn = !!opts.exactBars &&", "    const exactOn = false && !!opts.exactBars &&")],
+     "replacements": [("    } else if (opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4",
+                       "    } else if (false && opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4"),
+                      ("    const exactOn = !v2w && !!opts.exactBars &&", "    const exactOn = false && !v2w && !!opts.exactBars &&")],
      "all": True, "expect": "REGRESSION", "metrics": ["arr.check.5", "arr.check.6"]},
     {"id": "ARR-TUPLET-RATIO",           # the bracket of a triplet beat is written 4:3 (class 7: a tuplet that is not a triplet)
      "file": "scoregraph/rec-tuplet.js",
-     "find": "          groups.push({ events: ids, actual: 3, normal: 2, unit: { type: 'eighth' }, isNew: true });",
-     "replace": "          groups.push({ events: ids, actual: 4, normal: 3, unit: { type: 'eighth' }, isNew: true });",
+     "find": "          groups.push({ events: ids, actual: 3, normal: 2, unit: { type: fx.unit }, isNew: true });",
+     "replace": "          groups.push({ events: ids, actual: 4, normal: 3, unit: { type: fx.unit }, isNew: true });",
      "all": True, "expect": "REGRESSION", "metrics": ["arr.check.7"]},
     {"id": "MUT-NOOP",
      "find": "  const api = {",
@@ -578,6 +578,34 @@ REC_V2_MUTATIONS: List[Dict[str, Any]] = [
      "find": "    emit(L.part + g.shape * (CAP + 1) * (CAP + 1) + Math.min(nL, CAP) * (CAP + 1) + Math.min(nR, CAP));",
      "replace": "    /* mutation: no partition prior */",
      "expect": "REGRESSION", "metrics": ["notation.hand.accuracy"]},
+    # G10a-3: one planted defect per decision of the writer (S7, rec/writer.js), the triplet-16th grid kind (S3) and the
+    # checker's metre-aware class 3. Not guarded: the writer's compound rest tiling (gaps.js mergeRests, which the app's options
+    # run after it, writes the same tiling: tiling compound silences on quarters left every metric identical) and how a compound
+    # note is split at its beat (exact either way; tests/rec/writer.test.js)
+    {"id": "REC-V2-WRITER-LEGACY", "v2": True,        # v2 writes with the x/4-only exact-bars writer again (compound and x/2 bars do not add up)
+     "find": "    const v2Writer = extra.recording === 'v2' && opts.exactBars && !opts.legacyWriter && opts.writer !== 'legacy' && (opts.sourceKind || 'audio-score') === 'audio-score' ? writerLib() : null;",
+     "replace": "    const v2Writer = null;",
+     "expect": "REGRESSION", "metrics": ["rec.check.5"]},
+    {"id": "REC-V2-WRITER-NO-BRACKETS", "v2": True,   # tuplet values written with no bracket
+     "file": "rec/writer.js",
+     "find": "        if (p.tup) {",
+     "replace": "        if (false) {",
+     "expect": "REGRESSION", "metrics": ["rec.check.6", "notation.tuplets.f1"]},   # no bracket: no ratio, so the drawn value is not the length (class 6)
+    {"id": "REC-V2-GRID-NO-SIXTHS", "v2": True,       # no beat is ever a triplet-16th beat
+     "file": "rec/grid.js",
+     "find": "        if (best === '6' && (e.idx.length < SIX_MIN_ONSETS || e.post['6'] < SIX_MIN_CONF)) {",
+     "replace": "        if (best === '6') {",
+     "expect": "REGRESSION", "metrics": ["rec.tuplet.recall"]},
+    {"id": "REC-V2-GRID-SIXTHS-UNGATED", "v2": True,  # a triplet-16th beat needs no evidence beyond the chain's choice
+     "file": "rec/grid.js",
+     "find": "        if (best === '6' && (e.idx.length < SIX_MIN_ONSETS || e.post['6'] < SIX_MIN_CONF)) {",
+     "replace": "        if (false) {",
+     "expect": "REGRESSION", "metrics": ["rec.tuplet.false_per_100_beats", "rec.tuplet.precision"]},
+    {"id": "REC-V2-CHECK-QUARTER-BEAT", "v2": True,   # the checker's class 3 tiles every metre on a quarter-note beat again
+     "file": "scoregraph/tools/notation-check.js",
+     "find": "    const beatOf = bar => (barBeat && barBeat[bar - 1]) || { B: 8, compound: false };",
+     "replace": "    const beatOf = bar => ({ B: 8, compound: false });",
+     "expect": "REGRESSION", "metrics": ["rec.check.3"]},
     {"id": "MUT-NOOP",
      "find": "  const api = {",
      "replace": "  /* noop mutation */\n  const api = {",

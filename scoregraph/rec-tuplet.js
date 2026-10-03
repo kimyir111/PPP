@@ -43,17 +43,48 @@
     return S.noteValue(e.display.type, e.display.dots) || null;
   }
 
-  /* the beat (whole notes) of the metre in force in each measure when it is a simple one with a quarter-note beat; else null */
-  function measureBeats(g) {
+  /* the beat (whole notes) of the metre in force in each measure when it is a simple one with a quarter-note beat; else null. `halfNote` (opts.v2): an x/2
+     bar too, as quarter beats (a 2/2 bar is four quarter beats for its triplets) */
+  function measureBeats(g, halfNote) {
     const byM = new Map((g.timeline.meters || []).map(x => [x.m, x]));
     let cur = null;
     return g.timeline.measures.map(m => {
       if (byM.has(m.id)) cur = byM.get(m.id);
-      if (!cur || !Array.isArray(cur.beats) || cur.beats.length !== 1 || cur.beatType !== 4) return null;
+      if (!cur || !Array.isArray(cur.beats) || cur.beats.length !== 1 || !(cur.beatType === 4 || (halfNote && cur.beatType === 2))) return null;
       if (Array.isArray(cur.groups) && cur.groups.length) return null;
-      const nominal = R.make(cur.beats[0], 4);
-      return R.eq(R.parse(m.dur), nominal) ? { beats: cur.beats[0], beat: R.make(1, 4) } : null;
+      const nominal = R.make(cur.beats[0], cur.beatType);
+      return R.eq(R.parse(m.dur), nominal) ? { beats: cur.beats[0] * (4 / cur.beatType), beat: R.make(1, 4) } : null;
     });
+  }
+
+  /* (opts.v2) the triplet-16th half beats of one voice-measure: events that tile half a quarter beat with sixths and two sixths of the beat, printed as the values a 3:2
+     bracket of 16ths prints (a 16th, an eighth), at least two; never in a beat that is already a triplet beat (`taken`, beat indexes) */
+  function sixthHalvesOf(evs, info, taken) {
+    const out = [];
+    const half = R.mul(info.beat, R.make(1, 2));
+    const third = R.mul(half, THIRD), twoThirds = R.mul(half, R.make(2, 3));
+    for (let k = 0; k < info.beats * 2; k++) {
+      if (taken.has(k >> 1)) continue;
+      const hs = R.mul(half, R.make(k, 1)), he = R.add(hs, half);
+      const inHalf = evs.filter(e => { const at = R.parse(e.at); return R.ge(at, hs) && R.lt(at, he); });
+      if (inHalf.length < 2) continue;
+      let cur = hs, ok = true;
+      for (const e of inHalf) {
+        const at = R.parse(e.at), d = R.parse(e.dur);
+        if (!R.eq(at, cur) || !(R.eq(d, third) || R.eq(d, twoThirds))) { ok = false; break; }
+        const v = printed(e);
+        if (!v || !R.eq(R.mul(v, R.make(2, 3)), d) || (e.display && e.display.measureRest)) { ok = false; break; }
+        cur = R.add(at, d);
+      }
+      if (ok && R.eq(cur, he)) out.push(inHalf);
+    }
+    return out;
+  }
+
+  /* a v2 recording (the recording conversion v2 of audio-score.js, docs/GOALS/G10 section 22): its writer brackets triplet-16th half beats and x/2 bars' triplet beats,
+     which an arrangement copied from it (repair/index.js) must get again */
+  function isV2Recording(g) {
+    return !!(g && g.provenance && (g.provenance.sources || []).some(x => x.kind === 'audio-score' && x.params && x.params.recording && x.params.recording.pipeline === 'v2'));
   }
 
   /* the triplet beats of one voice-measure: [{events: [event], first: index}] (events sorted by onset); `evs` are the non-grace events of the voice in the measure */
@@ -77,15 +108,17 @@
     return out;
   }
 
-  function addTriplets(g) {
-    try { return addTripletsUnsafe(g); } catch (e) { /* never a throw (a graph this pass does not understand is returned as it is) */
+  /* opts.v2 (G10a-3: repair/index.js passes it for the arrangement of a v2 recording; nothing else does): also x/2 bars and triplet-16th half beats (one 3:2 bracket of 16ths
+     per half beat, the recording writer's own notation, rec/writer.js). Without it the pass is exactly what it was. */
+  function addTriplets(g, opts) {
+    try { return addTripletsUnsafe(g, opts || {}); } catch (e) { /* never a throw (a graph this pass does not understand is returned as it is) */
       return { graph: g, changed: false, stats: { beats: 0, tuplets: 0, restsInside: 0, replaced: 0, kept: 0, skipped: 0, failed: String(e && e.message || e).slice(0, 120) }, issues: [] };
     }
   }
 
-  function addTripletsUnsafe(g) {
+  function addTripletsUnsafe(g, opts) {
     const stats = { beats: 0, tuplets: 0, restsInside: 0, replaced: 0, kept: 0, skipped: 0 };
-    const infos = measureBeats(g);
+    const infos = measureBeats(g, !!opts.v2);
     const mIndex = new Map(g.timeline.measures.map((m, i) => [m.id, i]));
     const batches = [];                                   /* per part: [{voice, m, groups}] */
     g.parts.forEach(part => {
@@ -105,13 +138,19 @@
         if (!info) { stats.skipped++; return; }
         evs.sort((a, b) => R.cmp(R.parse(a.at), R.parse(b.at)));
         const inside = new Set(evs.map(e => e.id));
-        const found = tripletBeatsOf(evs, info);
+        const beatsFound = tripletBeatsOf(evs, info);
+        const found = beatsFound.map(list => ({ list: list, unit: 'eighth' }));
+        if (opts.v2) {
+          const taken = new Set(beatsFound.map(list => Math.floor(R.toNumber(R.div(R.parse(list[0].at), info.beat)) + 1e-9)));
+          sixthHalvesOf(evs, info, taken).forEach(list => found.push({ list: list, unit: '16th' }));
+        }
         /* the tuplets of this voice-measure that stay as they are, and the groups to make */
         const existing = [];
         evs.forEach(e => (tupsOf.get(e.id) || []).forEach(s => { if (existing.indexOf(s) < 0) existing.push(s); }));
         const dropped = new Set();                        /* one-note tuplets this pass replaces */
         const groups = [];
-        found.forEach(list => {
+        found.forEach(fx => {
+          const list = fx.list;
           const ids = list.map(e => e.id), idSet = new Set(ids);
           const touching = existing.filter(s => s.events.some(id => idSet.has(id)));
           const same = touching.find(s => s.events.length === ids.length && s.events.every((id, i) => id === ids[i]));
@@ -123,7 +162,7 @@
           if (same) { stats.kept++; return; }
           stats.tuplets++;
           stats.restsInside += list.filter(e => e.kind === 'rest').length;
-          groups.push({ events: ids, actual: 3, normal: 2, unit: { type: 'eighth' }, isNew: true });
+          groups.push({ events: ids, actual: 3, normal: 2, unit: { type: fx.unit }, isNew: true });
         });
         if (!groups.length && !dropped.size) return;
         /* the tuplets that stay: every existing one wholly inside the voice-measure that is not dropped, exactly as it is */
@@ -149,5 +188,5 @@
     return { graph: res.graph, changed: res.changed, stats: stats, issues: res.issues };
   }
 
-  return Object.freeze({ TUPLET_SOURCE, addTriplets, isTranscription, tripletBeatsOf });
+  return Object.freeze({ TUPLET_SOURCE, addTriplets, isTranscription, isV2Recording, tripletBeatsOf, sixthHalvesOf });
 });

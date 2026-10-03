@@ -25,8 +25,9 @@
               points (16 patterns), '3' over the thirds (8), '32' as the 16th-point pattern (16) times independent
               occupancies of the four odd 32nds, at least one of them. Counted on the HEARD onsets of the true beats (a
               written onset the transcription lost or merged is not heard), Laplace-smoothed. Kind of a true beat: S16 -> '16',
-              S32 -> '32', T3 -> '3', a straight beat the swing family played long-short -> 'swing8'; a T6 beat (triplet
-              16ths, which the writer cannot write) is '3' for the chain but has no pattern.
+              S32 -> '32', T3 -> '3', a straight beat the swing family played long-short -> 'swing8', T6 (triplet 16ths)
+              -> '6' over the sixths (64 patterns; G10a-3: rec/writer.js writes them; before, a T6 beat was '3' for the chain
+              with no pattern and came out as 32nds).
    prior      the kinds' shares among beats that hold an onset; stay: the chance that the next beat with an onset keeps the
               kind, as the chain of rec/grid.js models it (stay + (1 - stay) * prior).
    sigmaSec   the timing noise: the root mean square of heard onset minus true time (seconds; the largest 2 % trimmed);
@@ -45,7 +46,7 @@
    onsets took the 32nd lattice, else '16'.
 
    ---- Measures (per beat that holds a heard onset; and per heard note) ----
-   kind accuracy, triplet-beat precision / recall (a beat with an onset WRITTEN on a third vs a true T3/T6 beat), 32nd P/R,
+   kind accuracy, triplet-beat precision / recall (a beat with an onset WRITTEN on a third or a sixth vs a true T3/T6 beat), 32nd P/R,
    the onset position accuracy (the written onset, beat + fraction, equals the true written onset) and, on the swing
    family, the share of swung straight beats written straight. Pooled counts. */
 'use strict';
@@ -207,8 +208,8 @@ function writtenKinds(ticks) {
     const k = Math.floor(t.tick / 24), o = t.tick - k * 24;
     const cur = per.get(k) || '16';
     let kind = '16';
-    if (o === 8 || o === 16) kind = '3'; else if (o % 6) kind = '32';
-    if (kind === '3' || (kind === '32' && cur === '16')) per.set(k, kind); else if (!per.has(k)) per.set(k, cur);
+    if (o === 4 || o === 20) kind = '6'; else if (o === 8 || o === 16) kind = '3'; else if (o % 6) kind = '32';
+    if (kind === '6' || (kind === '3' && cur !== '6') || (kind === '32' && cur === '16')) per.set(k, kind); else if (!per.has(k)) per.set(k, cur);
   });
   return per;
 }
@@ -231,16 +232,17 @@ function score(row, frame, cl, ticks, st) {
       if (!st.byTempo[b]) st.byTempo[b] = newStats();
       const sub = st.byTempo[b];
       sub.beats++;
-      const tr0 = truth === 'T3' || truth === 'T6' ? '3' : (truth === 'S32' ? '32' : '16');
+      const tr0 = truth === 'T3' ? '3' : truth === 'T6' ? '6' : (truth === 'S32' ? '32' : '16');
       if (tr0 === got) sub.kindOk++;
-      if (tr0 === '3' && got === '3') sub.trip.tp++; else if (got === '3') sub.trip.fp++; else if (tr0 === '3') sub.trip.fn++;
+      const t0 = tr0 === '3' || tr0 === '6', g0 = got === '3' || got === '6';
+      if (t0 && g0) sub.trip.tp++; else if (g0) sub.trip.fp++; else if (t0) sub.trip.fn++;
       if (tr0 === '32' && got === '32') sub.b32.tp++; else if (got === '32') sub.b32.fp++; else if (tr0 === '32') sub.b32.fn++;
     }
     st.beats++;
-    const tr = truth === 'T3' || truth === 'T6' ? '3' : (truth === 'S32' ? '32' : '16');
+    const tr = truth === 'T3' ? '3' : truth === 'T6' ? '6' : (truth === 'S32' ? '32' : '16');
     if (tr === got) st.kindOk++;
     addConf(st, truth + (swing ? '~' : ''), got);
-    const tTrip = tr === '3', gTrip = got === '3';
+    const tTrip = tr === '3' || tr === '6', gTrip = got === '3' || got === '6';
     if (tTrip && gTrip) st.trip.tp++; else if (gTrip) st.trip.fp++; else if (tTrip) st.trip.fn++;
     const t32 = tr === '32', g32 = got === '32';
     if (t32 && g32) st.b32.tp++; else if (g32) st.b32.fp++; else if (t32) st.b32.fn++;
@@ -344,7 +346,8 @@ function evaluate(rows, label, opts) {
 
 /* ---------------------------------------------------------------- training (counting) */
 function kindOfWindow(w) {
-  if (w[4] === 'T3' || w[4] === 'T6') return '3';
+  if (w[4] === 'T3') return '3';
+  if (w[4] === 'T6') return '6';
   if (w[4] === 'S32') return '32';
   return w[5] ? 'swing8' : '16';
 }
@@ -352,9 +355,9 @@ function round6(x) { return Math.round(x * 1e6) / 1e6; }
 
 function fit(rows) {
   const kinds = G.KINDS;
-  const pts = { '16': [0, 0.25, 0.5, 0.75], '3': [0, 1 / 3, 2 / 3], 'swing8': [0, 0.25, 0.5, 0.75] };
+  const pts = { '16': [0, 0.25, 0.5, 0.75], '3': [0, 1 / 3, 2 / 3], 'swing8': [0, 0.25, 0.5, 0.75], '6': [0, 1 / 6, 1 / 3, 0.5, 2 / 3, 5 / 6] };
   const ODD = [0.125, 0.375, 0.625, 0.875];
-  const pat = { '16': new Array(16).fill(0), '3': new Array(8).fill(0), 'swing8': new Array(16).fill(0), '32even': new Array(16).fill(0) };
+  const pat = { '16': new Array(16).fill(0), '3': new Array(8).fill(0), 'swing8': new Array(16).fill(0), '32even': new Array(16).fill(0), '6': new Array(64).fill(0) };
   const odd = [0, 0, 0, 0];
   let n32 = 0;
   const maskOf = (fr, P) => P.reduce((m, p, j) => (fr.some(f => Math.abs(f - p) < 1e-6) ? m | (1 << j) : m), 0);
@@ -399,9 +402,8 @@ function fit(rows) {
       }
       const k = kindOfWindow(w);
       const fr = heardFr.get(wi) || [];
-      /* the heard occupancy pattern of the beat (a triplet-16th beat, T6, has no pattern on the thirds: it only counts
-         in the prior and the chain) */
-      if (w[4] !== 'T6' && fr.length) {
+      /* the heard occupancy pattern of the beat (a triplet-16th beat, T6, over the sixths) */
+      if (fr.length) {
         if (k === '32') {
           n32++;
           pat['32even'][maskOf(fr, pts['16'])]++;
@@ -502,7 +504,7 @@ function fit(rows) {
   const total = kinds.reduce((s, k) => s + count[k], 0);
   const prior = {}, stay = {};
   const table = c => { const N = c.reduce((a, b) => a + b, 0); return c.map(x => round6((x + 1) / (N + c.length))); };
-  const patterns = { '16': table(pat['16']), '3': table(pat['3']), 'swing8': table(pat['swing8']), '32even': table(pat['32even']),
+  const patterns = { '16': table(pat['16']), '3': table(pat['3']), 'swing8': table(pat['swing8']), '32even': table(pat['32even']), '6': table(pat['6']),
     '32odd': odd.map(c => round6((c + 1) / (n32 + 2))), c8: table(cpat.c8), c16: table(cpat.c16) };
   const ctotal = ccount.c8 + ccount.c16;
   ['c8', 'c16'].forEach(k => {

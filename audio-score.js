@@ -1362,6 +1362,14 @@
       return typeof module === 'object' && module.exports ? require('./rec/grid.js') : (global && global.PPPRecGrid) || null;
     } catch (e) { return null; }
   }
+  /* G10a-3 (docs/GOALS/G10_AUDIO_TO_SCORE.md section 8, stages S5-S7): rec/writer.js, the written rhythm of every voice in every metre (exact bars for x/4, x/2 and
+     compound bars, triplet and triplet-16th beats, up to two voices per staff, the rest decision of S6). Only the recording conversion v2 with opts.exactBars loads it;
+     a page without it writes v2 with the exact-bars writer below (x/4 only). */
+  function writerLib() {
+    try {
+      return typeof module === 'object' && module.exports ? require('./rec/writer.js') : (global && global.PPPRecWriter) || null;
+    } catch (e) { return null; }
+  }
   /* The hands (docs/GOALS/G10_AUDIO_TO_SCORE.md section 8, stage S4, G10a-2): rec/'s S4 (rec/hands.js, through rec/index.js) writes the
      staff of every note for the recording conversion v2 (opts.recording 'v2'), or on any path with opts.hands 'v2' (a measurement:
      the app's path with only S4 swapped); opts.hands 'legacy' keeps assignHands under v2. Without either, the hands are assignHands'
@@ -1490,11 +1498,79 @@
       });
       if (bar > cursor) rest(cursor, bar);
     };
-    for (let i = 0; i < bars; i++) {
-      writeStaff(b1[i], 1, i);
-      writeStaff(b2[i], 2, i);
+    /* The recording conversion v2's writer (rec/writer.js, S5-S7, G10a-3): every piece of every voice is already decided
+       (values, ties, rests, tuplet groups, up to two voices per staff, every metre); this only emits them. The heads are
+       spelled here as above, with one accidental state per staff and bar walked in time order over the staff's voices. */
+    const writeV2 = Wr => {
+      const vid = { 11: voice[1], 21: voice[2] };
+      Wr.tracks.forEach(tr => {
+        const k = tr.staff * 10 + tr.voice;
+        if (!vid[k] && tr.pieces.length) vid[k] = b.voice(part, { staff: st[tr.staff], label: tr.staff === 1 ? String(tr.voice) : String(4 + tr.voice) }).id;
+      });
+      const evId = new Map();
+      const pending = Wr.tracks.map(() => new Map());       /* track -> midi -> the head its tie continues from */
+      const byBar = [];
+      for (let i = 0; i < bars; i++) byBar.push([[], [], []]);
+      Wr.tracks.forEach((tr, ti) => tr.pieces.forEach((p, pi) => {
+        const i = Math.floor(p.at / bar);
+        if (i >= 0 && i < bars) byBar[i][tr.staff].push({ ti: ti, pi: pi, p: p, tr: tr });
+      }));
+      for (let i = 0; i < bars; i++) {
+        [1, 2].forEach(staff => {
+          const items = byBar[i][staff];
+          const state = keyAlters(key.fifths), accState = {};
+          const heads = new Map();
+          items.filter(x => x.p.kind === 'note').sort((x, y) => x.p.at - y.p.at || x.tr.voice - y.tr.voice).forEach(x => {
+            heads.set(x, x.p.notes.map(n => {
+              const sp = spell(n.midi, table), k = sp.step + sp.octave;
+              const current = k in accState ? accState[k] : state[sp.step];
+              const head = { pitch: sp.alter ? { step: sp.step, alter: sp.alter, oct: sp.octave } : { step: sp.step, oct: sp.octave } };
+              if (sp.alter !== current && !x.p.tieIn) head.acc = { type: ACCIDENTAL_NAME[sp.alter] };
+              /* a tied-over note needs no accidental and changes nothing (the engraver's rule; the legacy writer let it set the bar's state,
+                 which drops the sign of a later note of the same pitch after a note tied over the bar line) */
+              if (!x.p.tieIn) accState[k] = sp.alter;
+              return head;
+            }));
+          });
+          items.sort((x, y) => x.ti - y.ti || x.p.at - y.p.at).forEach(x => {
+            const p = x.p, m = mid[i], from = p.at - i * bar;
+            const display = p.dots ? { type: p.type, dots: p.dots } : { type: p.type };
+            if (p.measureRest) display.measureRest = true;
+            const v = vid[x.tr.staff * 10 + x.tr.voice];
+            if (p.kind === 'rest') {
+              evId.set(x.ti + '|' + x.pi, b.event(part, { kind: 'rest', m: m, at: W(from), dur: W(p.len), voice: v, staff: st[staff], display: display }).id);
+              return;
+            }
+            const event = b.event(part, { kind: 'note', m: m, at: W(from), dur: W(p.len), voice: v, staff: st[staff], display: display, heads: heads.get(x) });
+            evId.set(x.ti + '|' + x.pi, event.id);
+            p.notes.forEach((n, ci) => {
+              const id = event.heads[ci].id;
+              if (p.tieIn) {
+                const f = pending[x.ti].get(n.midi);
+                ties.push(f ? { from: f, to: id } : { to: id });
+                pending[x.ti].delete(n.midi);
+              }
+              if (p.tieOut) pending[x.ti].set(n.midi, id);
+              if (!p.tieIn && p.at === p.evStart) headOf.set(staff + '|' + p.evStart + '|' + n.midi, id);
+            });
+          });
+        });
+      }
+      pending.forEach(mp => mp.forEach(f => ties.push({ from: f })));
+      Wr.tuplets.forEach(t => {
+        const x = { type: 'tuplet', events: t.pieces.map(pi => evId.get(t.track + '|' + pi)), actual: t.actual, normal: t.normal };
+        if (t.unit) x.unit = t.unit;
+        b.spanner(part, x);
+      });
+    };
+    if (model.v2) writeV2(model.v2);
+    else {
+      for (let i = 0; i < bars; i++) {
+        writeStaff(b1[i], 1, i);
+        writeStaff(b2[i], 2, i);
+      }
+      [1, 2].forEach(s => pendingTie[s].forEach(from => ties.push({ from: from })));
     }
-    [1, 2].forEach(s => pendingTie[s].forEach(from => ties.push({ from: from })));
     ties.forEach(t => b.spanner(part, Object.assign({ type: 'tie' }, t)));
     tuplets.forEach(t => {
       const x = { type: 'tuplet', events: t.events, actual: 3, normal: 2 };
@@ -1623,15 +1699,23 @@
     const notationBeat = beatType >= 8 && beatsPerBar % 3 === 0 ? Q * 3 / 2 : Q;
     const allowBarTies = extra.quantizer === 'pm2s';
     /* exact bars (see exactGrid): a recording in a simple-time bar with opts.exactBars; the library default and a MIDI file write the score as they always did */
-    let grid = null, gridReport = null;
-    if (opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4 && ticksPerBeat === Q && tupletLib() && tupletLib().addTriplets) {
+    let grid = null, gridReport = null, v2w = null;
+    /* v2 (G10a-3): the writer of rec/writer.js (S5-S7: voices, rests, exact bars in every metre, the tuplets) instead of exactGrid / staffEvents below;
+       opts.writer 'legacy' keeps them under v2 (for comparison) */
+    const v2Writer = extra.recording === 'v2' && opts.exactBars && !opts.legacyWriter && opts.writer !== 'legacy' && (opts.sourceKind || 'audio-score') === 'audio-score' ? writerLib() : null;
+    if (v2Writer) {
+      /* the run rule of the grid stage (a staff silent before an odd-32nd onset: no 32nd rest is written), now that the hands are known; simple time only (a compound beat's grid has no 32nds) */
+      if (notationBeat !== Q * 3 / 2) gridReport = gridV2 ? Object.assign({ v2: gridV2.report }, gridLib().writable(q)) : snapOnsets(q, bars, bar, beats, origin, ticksPerBeat);
+      v2w = v2Writer.write(q, { bar: bar, bars: bars, beatType: beatType, beatsPerBar: beatsPerBar, compound: notationBeat === Q * 3 / 2,
+        restMin: opts.onsetDurations === false ? 0 : Math.round((opts.restMin !== undefined ? +opts.restMin : REST_MIN) * 4 * Q), allowBarTies: allowBarTies });
+    } else if (opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4 && ticksPerBeat === Q && tupletLib() && tupletLib().addTriplets) {
       /* with rec/grid.js the onsets are already on one grid per beat: snapOnsets' work is done but for its "genuine run" rule (a staff silent before
          an odd-32nd onset cannot be written: no rest shorter than a 16th), applied now that the hands are known */
       gridReport = gridV2 ? Object.assign({ v2: gridV2.report }, gridLib().writable(q)) : snapOnsets(q, bars, bar, beats, origin, ticksPerBeat);
       grid = exactGrid(q, bars, bar, opts.onsetDurations === false ? 0 : Math.round((opts.restMin !== undefined ? +opts.restMin : REST_MIN) * 4 * Q));
     }
-    const events1 = staffEvents(q, 1, bar, notationBeat, allowBarTies, grid);
-    const events2 = staffEvents(q, 2, bar, notationBeat, allowBarTies, grid);
+    const events1 = v2w ? [] : staffEvents(q, 1, bar, notationBeat, allowBarTies, grid);
+    const events2 = v2w ? [] : staffEvents(q, 2, bar, notationBeat, allowBarTies, grid);
 
     const title = (opts.title || extra.title || 'Transcribed recording').trim() || 'Transcribed recording';
     const ibi = ibiOf(beats);
@@ -1647,6 +1731,7 @@
       title: title, key: key, beatsPerBar: beatsPerBar, beatType: beatType, bpm: roundBpm,
       bars: bars, events1: events1, events2: events2, pedals: pedals, table: table, grid: grid
     };
+    if (v2w) model.v2 = v2w;
     /* v2 (G10a-1): issue 1 fixed - a compound metre's printed dotted quarter = bpm plays 3 bpm / 2 quarters a minute */
     const v2Compound = extra.recording === 'v2' && beatType >= 8 && beatsPerBar % 3 === 0;
     if (extra.recording === 'v2') model.qpm = v2Compound ? (roundBpm % 2 ? (3 * roundBpm) + '/2' : String(3 * roundBpm / 2)) : String(roundBpm);
@@ -1732,7 +1817,7 @@
     const built = buildGraph(model, { notes: heardNotes, pedals: extra.pedals || [],
       controls: extra.controls || [], barSeconds: barSeconds });
     let graph = built.graph, graphIssues = built.issues;
-    const exactOn = !!opts.exactBars && (model.sourceKind || 'audio-score') === 'audio-score' && !!(tupletLib() && tupletLib().addTriplets);
+    const exactOn = !v2w && !!opts.exactBars && (model.sourceKind || 'audio-score') === 'audio-score' && !!(tupletLib() && tupletLib().addTriplets);
     const gaps = (opts.closeGaps === undefined ? CLOSE_GAPS_DEFAULT : !!opts.closeGaps) && (model.sourceKind || 'audio-score') === 'audio-score' ? gapsLib() : null;
     /* one tuplet over each triplet beat, rests inside it included (it replaces the one-note tuplets of the beats it describes): opts.exactBars (below: "exact bars"). BEFORE the gaps pass: a rest
        that a tuplet holds is not touched by mergeRests (a quarter rest and the triplet rest after it are not one dotted rest with a hole) */
@@ -1761,6 +1846,7 @@
     if (extra.recReport) result.recReport = extra.recReport;   /* v2's time skeleton report (G10a-1), beside the graph too */
     if (handsReport) result.handsReport = handsReport;         /* the same: v2's hands (S4, G10a-2) */
     if (gridV2) result.gridPlan = { plan: gridV2.plan, report: gridV2.report };   /* rec/grid.js's GridPlan (S3, G10a-2), beside the graph too */
+    if (v2w) result.writerReport = v2w.report;                 /* v2's writer (S5-S7, G10a-3): voices, rest decisions, tuplets; beside the graph too */
     result.xml = scoreGraph().musicxml.export(graph, { software: 'PPP audio transcription' }).xml;
     result.graph = graph;
     result.graphIssues = graphIssues;

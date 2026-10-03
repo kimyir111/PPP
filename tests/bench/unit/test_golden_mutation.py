@@ -132,8 +132,12 @@ class RecMutations(unittest.TestCase):
         hands = {"REC-V2-HANDS-LEGACY", "REC-V2-HANDS-NO-MOTION", "REC-V2-HANDS-ONE-STYLE", "REC-V2-HANDS-NO-PART-PRIOR"}
         # G10a-2: S3's decisions (triplet beats at all, the triplet evidence, chord groups, the chain over beats); the on-beat
         # window, G10a-1's LATE-ON-BEAT, now lives in rec/grid.js too
-        grid = {"REC-V2-GRID-NO-TRIPLETS", "REC-V2-GRID-TRIPLET-BIAS", "REC-V2-GRID-NO-CHORDS", "REC-V2-GRID-NO-CHAIN"}
-        self.assertEqual({m["id"] for m in v2[:-1]}, skeleton | hands | grid)
+        grid = {"REC-V2-GRID-NO-TRIPLETS", "REC-V2-GRID-TRIPLET-BIAS", "REC-V2-GRID-NO-CHORDS", "REC-V2-GRID-NO-CHAIN",
+                # G10a-3: the triplet-16th kind at all, and its evidence gate
+                "REC-V2-GRID-NO-SIXTHS", "REC-V2-GRID-SIXTHS-UNGATED"}
+        # G10a-3: S7's decisions (the writer at all, its tuplet brackets) and the checker's metre-aware class 3
+        writer = {"REC-V2-WRITER-LEGACY", "REC-V2-WRITER-NO-BRACKETS", "REC-V2-CHECK-QUARTER-BEAT"}
+        self.assertEqual({m["id"] for m in v2[:-1]}, skeleton | hands | grid | writer)
         self.assertEqual((v2[-1]["id"], v2[-1]["expect"]), ("MUT-NOOP", "PASS"))
         self.assertFalse([m for m in mutation.REC_MUTATIONS if m.get("v2")])
         for m in v2[:-1]:
@@ -142,6 +146,8 @@ class RecMutations(unittest.TestCase):
                 self.assertIn("notation.hand.accuracy", m["metrics"], m["id"])
             elif m["id"] in grid:
                 self.assertTrue(any(x.startswith(("rec.tuplet.", "notation.tuplets.")) for x in m["metrics"]), m["id"])
+            elif m["id"] in writer:
+                self.assertTrue(any(x.startswith("rec.check.") for x in m["metrics"]), m["id"])
             else:
                 self.assertTrue(any(x.startswith(("critical.", "struct.", "notes.")) for x in m["metrics"]), m["id"])
 

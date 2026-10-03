@@ -1376,3 +1376,110 @@ refusals). On the Lead's private 90-bar piece (aggregates): 8 notes moved, rests
 **Revisit only if v2's flip is delayed** (G10a-4/5): then the legacy path keeps its hand-split holes for longer, and the branch is ready to rebase; the checker-class
 cost on the Hanon exercises would have to be fixed or accepted explicitly, not re-baselined. The benchmark here is what measures it: run
 `rec-arrange-core` against the branch and read the app row.
+
+## 22. G10a-3 lane A: voices, rests and the writer in every metre, stages S5-S7 (2026-10-04; implementer on Opus, AI-5b)
+
+Worktree `D:/PPP-g10a3writer`, from `origin/main` `074f078` (merged with `638f56b`). Lane A of G10a-3: S7 (the writer for every
+metre and the triplet-16th grid kind), S6 (the silence classifier, AI-5b) and S5 (voices). Lane B (keys, spelling, pedal) is a
+parallel worktree; the two meet only in `audio-score.js` `finish()` / `buildGraph()` (22.11). Three stacked PRs: S7 (this
+subsection's numbers), S6 (22.6), S5 (22.7). Measurement first, as in sections 18-20.
+
+### 22.1 Baselines reproduced
+
+At `074f078`, unchanged tree: `run` + `check` of rec-smoke, rec-core, rec-robust and rec-grid PASS, replay-of-v2 PASS; every v2
+aggregate equals the record of section 20 (rec-core beats none: usable 0.156, rec.usable 0.048, note values 0.418, tuplet P / R
+0.905 / 0.290, false rests 114 per 100 bars, classes 5 / 6 / 7 4.0 / 0 / 0). About 10 minutes for the five.
+
+### 22.2 Error analysis of v2 (rec-core, 846 v2 cases; scratch tool: every predicted rest and every paired note value, re-read
+from the run's MusicXML, aligned as the benchmark aligns, put into one cause)
+
+| predicted rests (20,877) | share | | paired note values (224,361) | share |
+| --- | --- | --- | --- | --- |
+| true | 19.3 % | | right | 67.0 % |
+| false: the skeleton is wrong (metre or bar lines) | 37.9 % | | wrong: the skeleton | 22.4 % |
+| false: **the truth is legato, the note was released early** | **37.0 %** | | **shorter: a false rest after it** | **5.7 %** |
+| false: a note held under a moving part (two voices in the truth) | 1.4 % | | shorter: held under a moving part (voices) | 1.0 % |
+| false: other | 4.5 % | | longer: a missed or merged onset | 1.1 % |
+| | | | longer: a missed rest | 0.7 % |
+
+Outside the skeleton, the fixed `REST_MIN` rule is the largest single cause of wrong values; the voices' share is small overall
+but concentrated in the hymns (1,587 of the 2,225 'held under' values; the hymnal writes two voices in 97 % of its staff-bars,
+the other collections in 0-16 %, Czerny 849 the most). By metre, the bars that do not add up (class 5) are the compound and x/2
+bars (6/8 12.4, 3/8 8.4, 2/2 9.0 per 100 bars): the exact-bars writer was x/4-only. Triplet 16ths (T6: 246 of the core's 745
+tuplet beats, 323 in Czerny 849) have no grid kind: written as 32nds (section 20.7, limit 1).
+
+### 22.3 S7: the writer in every metre (`rec/writer.js`; PR "G10a-3 S7")
+
+`toMusicXml(input, {recording: 'v2', exactBars: true})` (the v2 rows' options) now writes its rhythm with `rec/writer.js` (UMD, pure;
+`opts.writer: 'legacy'` keeps the old exact-bars writer under v2; without `opts.recording` it is not even loaded: a test asserts it).
+
+- **A port first.** The x/4 exact-bars writer of `audio-score.js` (`exactGrid`, `staffEvents`, `exactPieces`) was ported exactly and
+  checked before anything changed: synthetic x/4 performances give the same MusicXML byte for byte, and 726 of rec-core's 846 v2
+  cases had identical metrics (the other 120: compound bars, which the old writer did not write exactly).
+- **Every metre.** Compound bars (6/8, 3/8, 9/8, 12/8): values grouped by the dotted quarter (a note across a beat line is split
+  there unless it starts on a beat and lasts whole beats with a plain value), silences tiled on the dotted-quarter beat
+  (`scoregraph/gaps.js tile`, the tiling `mergeRests` uses). x/2 bars: the quarter-note grid, silences on the half-note beat.
+- **Tuplets decided by the writer.** One 3:2 bracket (unit eighth) per triplet beat of a voice, its rests included (before:
+  `rec-tuplet.js addTriplets` after the fact, x/4 only - Czerny 849/002 in 2/2 got one bracket per note, class 7 1,378 per 100
+  bars on rec-robust). **Triplet 16ths**: a new grid kind `'6'` in `rec/grid.js` (six points to a quarter, 64 occupancy
+  patterns counted like the others by `train_grid.js`, which used to count a T6 beat as `'3'` with no pattern) and one 3:2 bracket
+  of 16ths per half beat, the notation of the catalogue's editions (Czerny 849/005, sonatina/012). As the densest grid it needs
+  evidence: a beat is written in sixths only with five heard onsets or more and a chain posterior of 0.9 or more (without that
+  gate Hanon's straight 16ths, pushed off their points by a noisy beat map, became sixths: 26 false `'6'` beats on rec-core's
+  Hanon oracle-noisy rows, 3 with it). A release on the third sixth of a half beat rings to the half beat's end (no silence starts
+  with a piece shorter than a 16th - gaps.js `closeSmallGaps` would lengthen the note inside its bracket).
+- **Two voices per staff** (used by S5, 22.7): every voice has its own events, exact bars and tuplets; a second voice is written
+  only in the bars where it has a note.
+- **The S6 hook**: every silence of `restMin` or more between two notes of a voice is collected and decided in one batch
+  (`ctx.decideRests`); without a decider the old rule (each is a rest).
+- **The emission** (`audio-score.js buildGraph`, v2 only): one accidental state per staff and bar walked in time order over the
+  staff's voices; **a tied-over note changes nothing** - the legacy writer let a tie continuation set the bar's state, so a later
+  note of the same pitch after a note tied over the bar line lost its sign (rec-grid's compound bars: 14 cases lost
+  `critical.accidentals` until this was fixed; the legacy writer keeps its rule).
+- **Arrangements of a v2 recording** (`repair/index.js` copies a recording's events without tuplets and re-brackets them with
+  `addTriplets`): `addTriplets(graph, {v2: true})` - passed only when the source graph is a v2 recording (`isV2Recording`) - also
+  brackets triplet-16th half beats and x/2 bars' triplet beats. Without it the arrangements of v2 recordings lost every
+  half-beat bracket (rec-arrange-core class 6 15.1 -> 25.7 per 100 bars; Czerny 849/019's arrangement 129 acceptance-class hits ->
+  0). Every other source calls it exactly as before.
+
+`writable()` (S3's move of an odd-32nd onset of a staff that was silent before it) stays: it fires on 509 of 230,379 notes of
+rec-core v2 (283 in Czerny 849/011, whose edition does write 32nd rests: the catalogue has 84 written rests shorter than a 16th,
+all in Czerny 849). Writing them would need acceptance class 2 relaxed for plain rests (U7, the teacher's decision): reported, not
+done (22.10).
+
+### 22.4 The checker (`scoregraph/tools/notation-check.js`) - a ruler correction, stated separately
+
+- **Class 3** tiled every bar on a quarter-note beat. In 6/8 that "standard" is eighth, quarter, quarter - a quarter rest across
+  the dotted-quarter beat line - while `gaps.js mergeRests`, which the app's path runs, writes eighth, eighth, dotted quarter. It
+  now uses the bar's metre (`beatUnits`: a quarter in x/4, a half in x/2, a dotted quarter in compound bars). **Legacy and app
+  MusicXML are untouched**, but their `rec.check.3` moves on compound bars: rec-core legacy+app rows, 356 of 1,692 cases (all
+  predicted 6/8 or 12/8), app 6/8 cases 25.5 -> 0 per 100 bars (their bars were right; the ruler was wrong), legacy 36.8 ->
+  26.3; `rec.usable` flips in none.
+- **Class 7** accepts a 3:2 bracket over half a beat (triplet 16ths); **class 2** does not count a rest inside a tuplet printed as a
+  16th or longer (a triplet-16th rest under its bracket). Neither occurs in legacy or app output (no rest there carries a ratio;
+  their one-note brackets never span half a beat).
+
+### 22.5 S7 measured (PR 1: rests still by the fixed rule, one voice per staff; v2 rows, main -> PR 1)
+
+| suite, beats | n | classes 3 / 5 / 6 / 7 per 100 bars | accidentals | tuplet P | tuplet R | false tuplet beats /100 | note values | usable |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| rec-core, none | 564 | 1.8 / 4.0 / 0 / 0 -> **0 / 0 / 0 / 0** | 0.991 -> 1.000 | 0.905 -> 0.88 | 0.29 -> **0.42** | 1.8 -> 2.5 | 0.418 -> 0.42 | 0.156 -> 0.15 |
+| rec-core, oracle-noisy | 282 | 1.0 / 3.7 / 0 / 0 -> **0 / 0 / 0 / 0** | 0.989 -> 1.000 | 0.968 -> 0.94 | 0.38 -> **0.48** | 0.9 -> 1.5 | 0.585 -> 0.59 | 0.262 -> 0.262 |
+| rec-robust, none | 141 | 2.8 / 7.3 / 2.5 / 9.8 -> **0 / 0 / 0 / 0** | 0.993 -> 1.000 | 0.920 -> 0.88 | 0.35 -> 0.44 | 2.0 -> 2.8 | 0.255 -> 0.255 | 0.113 -> 0.113 |
+| rec-grid, human-real (oracle) | 141 | 2.1 / 6.1 / 0 / 0 -> **0 / 0 / 0 / 0** | 0.993 -> 1.000 | 0.992 -> 0.98 | 0.21 -> **0.36** | 0.2 -> 0.4 | 0.411 -> 0.41 | 0.291 -> 0.291 |
+
+rec-arrange (the one-note arranger on recordings, against the true score; nightly core / full): class 3 2.8 -> 0, class 5 9.4 -> 8.3
+/ 9.8 -> 8.4 per 100 bars, nothing else moved. The writer alone barely moves usable and note values: the fixed rest rule (S6, 22.6)
+still decides most wrong values.
+
+**Moved the wrong way, and why** (rebaselined with this reason; nothing hidden): false tuplet beats +0.6-0.8 per 100 beats on v2 rows
+(+0.2-0.3 pooled over every row: rec-full exceeds its +0.25 tolerance) and tuplet precision -0.01 to -0.03: the `'6'` kind writes
+sixths where the skeleton is unsure or wrong (Czerny 849/008: skeleton confidence 0.11, durations 0.33-0.56 -> 0.03-0.18; /011
+oracle-noisy 0.50 -> 0.11) as well as where it is right or reads triplets at double tempo (Czerny 849/001: durations 0.00 -> 0.63-0.90,
+tuplet recall 0 -> 0.36-0.50; /002 0.10 -> 0.30-0.42); neither the skeleton's confidence nor the beat posterior separates the two (both
+near 1.0 on the beats). The `feature:ottava` tag (those Czerny 849 pieces) loses 0.011-0.018 of duration accuracy. Micro M05 / M06
+(32nd runs at 120 / 176 heard with merged frames: 6-7 onsets for 8 32nds) are read as sixths in some rows - a true triplet-16th in
+the training data is as short as 0.055 s a sixth, so no spacing rule separates them. Single values on compound micro pieces (M03,
+M19, M20) change because a note now lasts to the next onset of its voice (G10-D4) where the old compound writer kept the release.
+Three cases lose `critical.beat_placement` on rec-core (onsets on sixths), one `critical.pitch_integrity` (identity F1 0.952 -> 0.949
+against the 0.95 gate while its onset F1 rose 0.79 -> 0.89).
