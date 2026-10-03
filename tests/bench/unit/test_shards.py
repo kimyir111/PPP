@@ -228,6 +228,20 @@ class WorkflowAgrees(unittest.TestCase):
         self.assertIn("pattern: rec-full-shard-*", self.text)                 # the merge job downloads what the shards upload
         self.assertIn("name: rec-full-shard-${{ matrix.shard }}", self.text)
 
+    def test_every_job_that_runs_the_scoregraph_tests_has_the_whole_history(self):
+        """test:scoregraph runs `git show aff7080:package.json` (the G1 base commit): a shallow checkout fails it with
+        'invalid object name' - the nightly job failed so on 2026-10-03, the first time it got that far."""
+        import re
+        jobs = re.split(r"^  (?=[a-z][a-z0-9-]*:\s*$)", self.text.split("\njobs:\n", 1)[1], flags=re.M)
+        seen = 0
+        for body in jobs:
+            if "npm run test:scoregraph" in body:
+                seen += 1
+                name = body.split(":", 1)[0]
+                checkout = body.split("actions/checkout@v4", 1)[1].split("- uses:", 1)[0]
+                self.assertIn("fetch-depth: 0", checkout, f"job {name} checks out a shallow clone")
+        self.assertGreaterEqual(seen, 2)                                              # the gate and the nightly
+
     def test_the_merge_waits_for_the_shards_and_nothing_runs_rec_full_whole(self):
         import re
         self.assertIn("needs: nightly-rec-shard", self.text)
