@@ -10,7 +10,7 @@ const PEDAL = require(path.join(REPO, 'rec', 'pedal.js'));
 /* notes struck every half second from 1 s; each note ends where `release(n)` says */
 function notes(count, release) {
   const out = [];
-  for (let i = 0; i < count; i++) { const on = 1 + i * 0.5; out.push({ on: on, off: release ? release(on, i) : on + 0.45 }); }
+  for (let i = 0; i < count; i++) { const on = 1 + i * 0.5; out.push({ on: on, off: release ? release(on, i) : on + 0.45, midi: 40 + i }); }
   return out;
 }
 /* a pedal over [2, 4]: the notes struck in it ring to its end (3 of them are released at 4.0) */
@@ -50,7 +50,7 @@ test('the policy\'s decisions: a short span, a span over silence, one release is
   assert.deepEqual(PEDAL.analyse([{ on: 2, off: 4 }], one).dropped.map(d => d.why), ['weak'], 'at least two releases at the end');
   assert.equal(PEDAL.analyse([{ on: 2, off: 4 }], one, { minAt: 1, minShare: 0 }).spans.length, 1, 'and with the rule relaxed it is written');
   /* two of many notes: the share */
-  const many = []; for (let i = 0; i < 40; i++) many.push({ on: 2 + i * 0.04, off: i < 2 ? 4 : 2 + i * 0.04 + 0.02 });
+  const many = []; for (let i = 0; i < 40; i++) many.push({ on: 2 + i * 0.04, off: i < 2 ? 4 : 2 + i * 0.04 + 0.02, midi: 30 + i });
   assert.deepEqual(PEDAL.analyse([{ on: 2, off: 4 }], many).dropped.map(d => d.why), ['weak'], 'two of forty is a coincidence, not a pedal');
 });
 
@@ -59,6 +59,19 @@ test('the releases must be at the span\'s end within the helper\'s offset error 
   const far = notes(10, (on) => (on >= 1.9 && on < 3.9 ? 4.6 : on + 0.45));     /* 600 ms after: not this pedal's end */
   assert.equal(PEDAL.analyse([{ on: 2, off: 4 }], near).spans.length, 1);
   assert.equal(PEDAL.analyse([{ on: 2, off: 4 }], far).spans.length, 0);
+});
+
+test('notes released by the re-strike of their own pitch say nothing: a repeated-note passage is judged on the notes that can tell', () => {
+  /* the same pitch struck every tenth of a second, each released a frame before the next strike (99 notes of 112 in the benchmark's repeated-notes
+     piece), and two other pitches that ring to the pedal's end */
+  const rep = [];
+  for (let i = 0; i < 13; i++) rep.push({ on: 2 + i * 0.1, off: 2 + i * 0.1 + 0.05, midi: 60 });
+  const ring = [{ on: 2.1, off: 3.6, midi: 48 }, { on: 2.6, off: 3.65, midi: 55 }];
+  assert.equal(PEDAL.analyse([{ on: 2, off: 3.7 }], rep.concat(ring)).spans.length, 1, 'two of the two notes that can tell agree');
+  const run = []; for (let i = 0; i < 20; i++) run.push({ on: 2 + i * 0.1, off: 2 + i * 0.1 + 0.05, midi: 60 });
+  assert.deepEqual(PEDAL.analyse([{ on: 2, off: 3 }], run).dropped.map(d => d.why), ['blind'], 'only re-struck notes in the span: nothing to judge by');
+  assert.equal(PEDAL.analyse([{ on: 2, off: 3.7 }], rep.concat(ring), { restrike: -1 }).spans.length, 0, 'with the rule off the re-struck notes count against it: two of fifteen');
+  assert.equal(PEDAL.analyse([{ on: 2, off: 3.7 }], [{ on: 2, off: 3.6 }, { on: 2.05, off: 3.65 }]).spans.length, 1, 'notes without a pitch are never taken as re-struck');
 });
 
 test('overlapping spans are one pedal; invalid spans are dropped without throwing', () => {

@@ -4,8 +4,8 @@
 
      analyse(pedals, notes, opts) -> {
        spans:   [{ on, off, alive, atEnd, share, snapped }]   the pedal spans to write as marks, seconds, sorted, disjoint
-       dropped: [{ on, off, why }]                           why: 'invalid' | 'short' | 'nothing' | 'weak'
-       report:  { version, heard, kept, merged, dropped: {invalid, short, nothing, weak}, perMinute }
+       dropped: [{ on, off, why }]                           why: 'invalid' | 'short' | 'nothing' | 'blind' | 'weak'
+       report:  { version, heard, kept, merged, dropped: {invalid, short, nothing, blind, weak}, perMinute }
      }
 
    pedals: [{ on, off }] seconds, as the helper ensemble heard them (the browser's Onsets & Frames model has none: no
@@ -20,7 +20,9 @@
      - it is a pedal: at least MIN_SPAN seconds (0.4: a change shorter than a quarter at 150 a minute is a flutter; the humanizer's
        own floor is 0.25 s, its pedals' tenth percentile is 0.9 s, and the six rendered fixtures' false spans have a median of
        0.35 s and a tenth of them are shorter than 0.1 s),
-     - it holds something: notes sound inside it,
+     - it holds something: notes sound inside it, and some of them can tell: a note released by the re-strike of its own
+       pitch (the next onset of that pitch is within RESTRIKE of its release: a repeated-note passage) says nothing about
+       the pedal and is left out of the count, not counted against it ('blind' when no note is left),
      - its end is confirmed: at least MIN_AT of the notes alive in it, and MIN_SHARE of them, are released within TOL of
        the span's end; the mark then goes where those releases are (their median: a pedal edge is less certain than the
        releases it sustained to), never earlier than the span's own start plus MIN_SPAN.
@@ -43,7 +45,7 @@
   'use strict';
 
   const VERSION = 'pedal/1';
-  const C = Object.freeze({ MIN_SPAN: 0.4, TOL: 0.2, MIN_AT: 2, MIN_SHARE: 0.2 });
+  const C = Object.freeze({ MIN_SPAN: 0.4, TOL: 0.2, MIN_AT: 2, MIN_SHARE: 0.2, RESTRIKE: 0.08 });
   const round = x => Math.round(x * 1e6) / 1e6;
 
   function analyse(pedals, notes, opts) {
@@ -53,7 +55,7 @@
     const minAt = opts.minAt != null ? +opts.minAt : C.MIN_AT;
     const minShare = opts.minShare != null ? +opts.minShare : C.MIN_SHARE;
     const dropped = [];
-    const why = { invalid: 0, short: 0, nothing: 0, weak: 0 };
+    const why = { invalid: 0, short: 0, nothing: 0, blind: 0, weak: 0 };
     const drop = (p, w) => { why[w]++; dropped.push({ on: p.on, off: p.off, why: w }); };
     const ns = (notes || []).filter(n => n && isFinite(n.on) && isFinite(n.off) && n.off > n.on);
     const lastOff = ns.reduce((m, n) => Math.max(m, n.off), 0);
@@ -73,11 +75,22 @@
       if (last && s.on < last.off) last.off = Math.max(last.off, s.off); else merged.push({ on: s.on, off: s.off });
     });
     const unions = spans.length - merged.length;
+    /* a note whose release is the re-strike of its own pitch: the next onset of that pitch is within RESTRIKE after the release */
+    const restrike = opts.restrike != null ? +opts.restrike : C.RESTRIKE;
+    const byPitch = new Map();
+    ns.forEach(n => { if (!isFinite(n.midi)) return; if (!byPitch.has(n.midi)) byPitch.set(n.midi, []); byPitch.get(n.midi).push(n); });
+    const cut = new Set();
+    byPitch.forEach(list => {
+      list.sort((a, b) => a.on - b.on);
+      list.forEach((n, j) => { const nx = list[j + 1]; if (nx && nx.on - n.off <= restrike) cut.add(n); });
+    });
     const kept = [];
     merged.forEach((s, i) => {
       if (s.off - s.on < minSpan) { drop(s, 'short'); return; }
-      const alive = ns.filter(n => n.on < s.off && n.off > s.on);
-      if (!alive.length) { drop(s, 'nothing'); return; }
+      const sounding = ns.filter(n => n.on < s.off && n.off > s.on);
+      if (!sounding.length) { drop(s, 'nothing'); return; }
+      const alive = sounding.filter(n => !cut.has(n));
+      if (!alive.length) { drop(s, 'blind'); return; }
       const ends = alive.filter(n => Math.abs(n.off - s.off) <= tol).map(n => n.off).sort((a, b) => a - b);
       const share = ends.length / alive.length;
       if (ends.length < minAt || share < minShare) { drop(s, 'weak'); return; }

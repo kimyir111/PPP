@@ -149,8 +149,8 @@ class RecMutations(unittest.TestCase):
         """G10a-3: the pedal policy's decisions the benchmark can see (the policy used at all, the notes' agreement, the mark at the releases,
         the compound tick unit) each have a mutation on rec-mutation-pedal; the no-op is last."""
         ms = mutation.REC_PEDAL_MUTATIONS
-        self.assertEqual({m["id"] for m in ms[:-1]}, {"REC-V2-PEDAL-LEGACY", "REC-V2-PEDAL-NO-AGREEMENT", "REC-V2-PEDAL-NO-SNAP",
-                                                      "REC-V2-PEDAL-TICK-UNIT"})
+        self.assertEqual({m["id"] for m in ms[:-1]}, {"REC-V2-PEDAL-LEGACY", "REC-V2-PEDAL-NO-AGREEMENT", "REC-V2-PEDAL-NO-RESTRIKE",
+                                                      "REC-V2-PEDAL-NO-SNAP", "REC-V2-PEDAL-TICK-UNIT"})
         self.assertEqual((ms[-1]["id"], ms[-1]["expect"]), ("MUT-NOOP", "PASS"))
         for m in ms[:-1]:
             self.assertEqual(m["expect"], "REGRESSION")

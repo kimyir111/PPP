@@ -599,6 +599,11 @@ REC_PEDAL_MUTATIONS: List[Dict[str, Any]] = [
      "find": "      if (ends.length < minAt || share < minShare) { drop(s, 'weak'); return; }",
      "replace": "      /* mutation: no agreement */",
      "expect": "REGRESSION", "metrics": ["notation.pedal.false_per_min", "micro:notation.pedal.false_per_min"]},
+    {"id": "REC-V2-PEDAL-NO-RESTRIKE", "v2": True,   # a note released by the re-strike of its own pitch counts against the pedal (a repeated-note passage loses its marks)
+     "file": "rec/pedal.js",
+     "find": "      list.forEach((n, j) => { const nx = list[j + 1]; if (nx && nx.on - n.off <= restrike) cut.add(n); });",
+     "replace": "      /* mutation: no re-strike rule */",
+     "expect": "REGRESSION", "metrics": ["notation.pedal.f1", "critical.pedal", "micro:notation.pedal.f1"]},
     {"id": "REC-V2-PEDAL-NO-SNAP", "v2": True,         # the mark stays where the helper put the pedal-up, not where the releases it held are
      "file": "rec/pedal.js",
      "find": "      let off = ends[Math.floor((ends.length - 1) / 2)];",
