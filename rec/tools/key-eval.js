@@ -120,7 +120,7 @@ if (flag('--grid')) {
 if (flag('--write') || flag('--check')) {
   const text = JSON.stringify(summary(pieces, weights), null, 1) + '\n';
   if (flag('--write')) { fs.writeFileSync(EVALUATION, text); process.stdout.write('wrote ' + path.relative(REPO, EVALUATION) + '\n'); process.exit(0); }
-  const have = fs.existsSync(EVALUATION) ? fs.readFileSync(EVALUATION, 'utf8') : '';
+  const have = fs.existsSync(EVALUATION) ? fs.readFileSync(EVALUATION, 'utf8').split('\r\n').join('\n') : '';     /* a Windows checkout has CRLF */
   if (have === text) { process.stdout.write('key evaluation: same\n'); process.exit(0); }
   process.stdout.write('key evaluation: DIFFERENT from ' + path.relative(REPO, EVALUATION) + '\n');
   process.stdout.write(text);
