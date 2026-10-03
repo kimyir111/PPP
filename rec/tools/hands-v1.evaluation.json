@@ -1,0 +1,239 @@
+{
+ "model": "hands-v1",
+ "weights": {
+  "part": 1.5,
+  "span": 2,
+  "move": 1.5,
+  "reg": 2,
+  "gap": 0.5,
+  "rel": 0.75,
+  "cnt": 1,
+  "ioi": 0.25
+ },
+ "tune": "truth",
+ "train": {
+  "n": 257,
+  "legacy": 0.854,
+  "v2": 0.9838,
+  "styles": {
+   "piano->piano": 187,
+   "chorale->chorale": 68,
+   "chorale->piano": 1,
+   "piano->chorale": 1
+  },
+  "families": {
+   "beyer": {
+    "n": 52,
+    "legacy": 0.6938,
+    "v2": 0.9884,
+    "legacyGate": 0.2885,
+    "v2Gate": 0.9808
+   },
+   "burgmuller25": {
+    "n": 9,
+    "legacy": 0.8729,
+    "v2": 0.9178,
+    "legacyGate": 0.7778,
+    "v2Gate": 1
+   },
+   "catalog": {
+    "n": 3,
+    "legacy": 0.9015,
+    "v2": 0.8836,
+    "legacyGate": 0.6667,
+    "v2Gate": 1
+   },
+   "czerny599": {
+    "n": 43,
+    "legacy": 0.9585,
+    "v2": 0.9852,
+    "legacyGate": 0.9535,
+    "v2Gate": 1
+   },
+   "czerny849": {
+    "n": 22,
+    "legacy": 0.8892,
+    "v2": 0.9827,
+    "legacyGate": 0.8636,
+    "v2Gate": 1
+   },
+   "hanon": {
+    "n": 16,
+    "legacy": 0.7376,
+    "v2": 0.9999,
+    "legacyGate": 0,
+    "v2Gate": 1
+   },
+   "hymns": {
+    "n": 69,
+    "legacy": 0.8515,
+    "v2": 0.9852,
+    "legacyGate": 0.8261,
+    "v2Gate": 0.9855
+   },
+   "micro": {
+    "n": 24,
+    "legacy": 0.9912,
+    "v2": 1,
+    "legacyGate": 1,
+    "v2Gate": 1
+   },
+   "samples": {
+    "n": 1,
+    "legacy": 1,
+    "v2": 0.9474,
+    "legacyGate": 1,
+    "v2Gate": 1
+   },
+   "sonatina": {
+    "n": 18,
+    "legacy": 0.9289,
+    "v2": 0.9789,
+    "legacyGate": 1,
+    "v2Gate": 1
+   }
+  }
+ },
+ "holdout": {
+  "n": 52,
+  "legacy": 0.8437,
+  "v2": 0.9769,
+  "styles": {
+   "chorale->chorale": 19,
+   "piano->piano": 33
+  },
+  "families": {
+   "beyer": {
+    "n": 11,
+    "legacy": 0.7262,
+    "v2": 0.9916,
+    "legacyGate": 0.3636,
+    "v2Gate": 1
+   },
+   "burgmuller25": {
+    "n": 1,
+    "legacy": 0.986,
+    "v2": 0.9965,
+    "legacyGate": 1,
+    "v2Gate": 1
+   },
+   "czerny599": {
+    "n": 9,
+    "legacy": 0.9304,
+    "v2": 0.9976,
+    "legacyGate": 0.8889,
+    "v2Gate": 1
+   },
+   "czerny849": {
+    "n": 6,
+    "legacy": 0.8784,
+    "v2": 0.8805,
+    "legacyGate": 0.8333,
+    "v2Gate": 0.6667
+   },
+   "hanon": {
+    "n": 4,
+    "legacy": 0.7462,
+    "v2": 0.9936,
+    "legacyGate": 0,
+    "v2Gate": 1
+   },
+   "hymns": {
+    "n": 19,
+    "legacy": 0.8669,
+    "v2": 0.9874,
+    "legacyGate": 0.8947,
+    "v2Gate": 1
+   },
+   "sonatina": {
+    "n": 2,
+    "legacy": 0.8988,
+    "v2": 0.9487,
+    "legacyGate": 1,
+    "v2Gate": 1
+   }
+  }
+ },
+ "perfs": {
+  "n": 1538,
+  "seeds": [
+   201
+  ],
+  "role": "evaluated, not fitted",
+  "pipeline": "audio-score.js toMusicXml, closeGaps + exactBars + recording v2 (S4 input)",
+  "legacy": 0.8658,
+  "v2": 0.9727,
+  "families": {
+   "beyer": {
+    "n": 312,
+    "legacy": 0.7295,
+    "v2": 0.9837,
+    "legacyGate": 0.391,
+    "v2Gate": 0.9808
+   },
+   "burgmuller25": {
+    "n": 54,
+    "legacy": 0.879,
+    "v2": 0.9018,
+    "legacyGate": 0.7778,
+    "v2Gate": 0.9259
+   },
+   "catalog": {
+    "n": 18,
+    "legacy": 0.9064,
+    "v2": 0.8865,
+    "legacyGate": 0.6667,
+    "v2Gate": 1
+   },
+   "czerny599": {
+    "n": 258,
+    "legacy": 0.9586,
+    "v2": 0.9783,
+    "legacyGate": 0.9612,
+    "v2Gate": 1
+   },
+   "czerny849": {
+    "n": 132,
+    "legacy": 0.9179,
+    "v2": 0.9324,
+    "legacyGate": 0.9015,
+    "v2Gate": 1
+   },
+   "hanon": {
+    "n": 96,
+    "legacy": 0.7689,
+    "v2": 0.9742,
+    "legacyGate": 0.1979,
+    "v2Gate": 1
+   },
+   "hymns": {
+    "n": 414,
+    "legacy": 0.8547,
+    "v2": 0.9832,
+    "legacyGate": 0.8502,
+    "v2Gate": 0.9855
+   },
+   "micro": {
+    "n": 140,
+    "legacy": 0.9857,
+    "v2": 0.9902,
+    "legacyGate": 0.9857,
+    "v2Gate": 0.9929
+   },
+   "samples": {
+    "n": 6,
+    "legacy": 1,
+    "v2": 0.9518,
+    "legacyGate": 1,
+    "v2Gate": 1
+   },
+   "sonatina": {
+    "n": 108,
+    "legacy": 0.9272,
+    "v2": 0.9641,
+    "legacyGate": 1,
+    "v2Gate": 1
+   }
+  }
+ }
+}

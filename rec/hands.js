@@ -31,16 +31,18 @@
    conf per note: a logistic of the cost margin to the best choice that puts that note in the other hand,
    from the same incoming state (local, an approximation of the posterior).
 
-   The weights are data (rec/hands-model.json, schema ppp.rec-hands-model/1), loaded by Node from this
-   directory, or in a page from opts.model / setModel(json) / window.PPPRecHandsModel. No model, no guess:
-   assign throws E-HANDS-NO-MODEL (the caller keeps the legacy split, audio-score.js assignHands).
+   The weights are data (rec/weights/hands-v1.json, schema ppp.rec-hands-model/1), loaded by Node from rec/weights/,
+   or in a page from opts.model / setModel(json) / window.PPPRecHandsWeights. No model, no guess: assign throws
+   E-HANDS-NO-MODEL (audio-score.js then keeps the legacy split, assignHands, and says so in its handsReport).
+   Browser: rec/hands.js registers PPPRecModules.hands (before rec/index.js, which exposes it as PPPRec.hands).
    ========================================================================== */
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory(function () { return require('./hands-model.json'); });
+    module.exports = factory(function () { try { return require('./weights/hands-v1.json'); } catch (e) { return null; } });
   } else {
-    root.PPPRecHands = factory(function () { return root.PPPRecHandsModel || null; });
+    const M = root.PPPRecModules = root.PPPRecModules || {};
+    M.hands = factory(function () { return root.PPPRecHandsWeights || null; });
   }
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (defaultModel) {
   'use strict';
@@ -69,6 +71,11 @@
   }
   const CAP = 4;                       /* note counts per hand above 4 share a cell */
   const SPAN_MAX = 24, MOVE_MAX = 60, GAP_MAX = 24, REL_MAX = 24;
+  /* the rhythm of a hand: its new inter-onset interval over its previous one, in half-octave steps of the ratio
+     (round(2 log2 r), -6..6); the edges are 2^((j - 0.5) / 2), written out so no platform's log decides a bucket */
+  const IOI_EDGES = [0.148650889, 0.210224104, 0.297301779, 0.420448208, 0.594603558, 0.840896415,
+    1.189207115, 1.681792831, 2.378414230, 3.363585661, 4.756828460, 6.727171322];
+  const IOI_N = IOI_EDGES.length + 1;
 
   function layout(P) {
     const NB = P.dtEdges.length + 1;
@@ -78,15 +85,16 @@
     put('part', SHAPES * (CAP + 1) * (CAP + 1));
     put('span', 2 * (CAP + 1) * (SPAN_MAX + 1));
     put('move', 2 * NB * (2 * MOVE_MAX + 1));
-    put('first', 2);
     put('reg', 2 * 128);
     put('gap', GAP_MAX + 1);
     put('rel', 2 * (2 * REL_MAX + 1));
+    put('cnt', 2 * (CAP + 1) * (CAP + 1));
+    put('ioi', 2 * IOI_N);
     L.size = off;
     L.NB = NB;
     return L;
   }
-  const TABLES = ['part', 'span', 'move', 'first', 'reg', 'gap', 'rel'];
+  const TABLES = ['part', 'span', 'move', 'reg', 'gap', 'rel', 'cnt', 'ioi'];
   function tableOf(L, idx) {
     let name = TABLES[0];
     TABLES.forEach(t => { if (idx >= L[t]) name = t; });
@@ -99,43 +107,59 @@
     while (b < P.dtEdges.length && dt > P.dtEdges[b]) b++;
     return b;
   }
+  function ioiBucket(r) {
+    let b = 0;
+    while (b < IOI_EDGES.length && r >= IOI_EDGES[b]) b++;
+    return b;
+  }
 
-  /* A hand's state: lo, hi (its last notes; -1 = not played yet), t (seconds). The events of one choice, as
-     table indices, go to `emit`; returns the next state. Used by inference (sum of weighted costs) and by the
-     trainer (counts on the written hands), so the two cannot disagree. */
+  /* A hand's state: lo, hi (the notes it last played), t (when, seconds), n (how many), i (the interval before
+     that, seconds; 0 = not known). The events of one choice, as table indices, go to `emit`; returns the next
+     state. Used by inference (the sum of weighted costs) and by the trainer (counts along the written hands), so
+     the two cannot disagree.
+       part  the group's shape x (left count, right count)       span  per hand and count
+       move  per hand and time since: the change of its centre    reg   per hand: each note's pitch
+       gap   both hands play: the interval between them           rel   one hand plays: its notes against the
+       cnt   per hand: its count after its previous count               other hand's position
+       ioi   per hand: its new interval over its previous one */
+  function hand(P, L, h, lo, hi, n, sLo, sHi, t, sN, sI, g, emit) {
+    if (n >= 2) emit(L.span + (h * (CAP + 1) + Math.min(n, CAP)) * (SPAN_MAX + 1) + Math.min(hi - lo, SPAN_MAX));
+    emit(L.move + (h * L.NB + bucketOf(P, g.t - t)) * (2 * MOVE_MAX + 1) + MOVE_MAX + clampI((lo + hi) - (sLo + sHi), -MOVE_MAX, MOVE_MAX));
+    emit(L.cnt + (h * (CAP + 1) + Math.min(sN, CAP)) * (CAP + 1) + Math.min(n, CAP));
+    if (sI > 0) emit(L.ioi + h * IOI_N + ioiBucket((g.t - t) / sI));
+  }
   function step(P, L, s, g, k, emit) {
     const p = g.p, n = p.length;
     const nL = k, nR = n - k;
     emit(L.part + g.shape * (CAP + 1) * (CAP + 1) + Math.min(nL, CAP) * (CAP + 1) + Math.min(nR, CAP));
-    let rLo = s.rLo, rHi = s.rHi, lLo = s.lLo, lHi = s.lHi, tR = s.tR, tL = s.tL;
+    const x = { rLo: s.rLo, rHi: s.rHi, lLo: s.lLo, lHi: s.lHi, tR: s.tR, tL: s.tL, nR: s.nR, nL: s.nL, iR: s.iR, iL: s.iL };
     if (nR) {
       const lo = p[k], hi = p[n - 1];
-      if (nR >= 2) emit(L.span + (0 * (CAP + 1) + Math.min(nR, CAP)) * (SPAN_MAX + 1) + Math.min(hi - lo, SPAN_MAX));
-      if (s.rLo < 0) emit(L.first + 0);
-      else {
-        const b = bucketOf(P, g.t - s.tR);
-        emit(L.move + (0 * L.NB + b) * (2 * MOVE_MAX + 1) + MOVE_MAX + clampI((lo + hi) - (s.rLo + s.rHi), -MOVE_MAX, MOVE_MAX));
-      }
-      if (s.lLo >= 0 && !nL) emit(L.rel + 0 * (2 * REL_MAX + 1) + REL_MAX + clampI(lo - s.lHi, -REL_MAX, REL_MAX));
+      hand(P, L, 0, lo, hi, nR, s.rLo, s.rHi, s.tR, s.nR, s.iR, g, emit);
+      if (!nL) emit(L.rel + 0 * (2 * REL_MAX + 1) + REL_MAX + clampI(lo - s.lHi, -REL_MAX, REL_MAX));
       for (let i = k; i < n; i++) emit(L.reg + 0 * 128 + p[i]);
-      rLo = lo; rHi = hi; tR = g.t;
+      x.rLo = lo; x.rHi = hi; x.tR = g.t; x.nR = nR; x.iR = isFinite(s.tR) ? g.t - s.tR : 0;
     }
     if (nL) {
       const lo = p[0], hi = p[k - 1];
-      if (nL >= 2) emit(L.span + (1 * (CAP + 1) + Math.min(nL, CAP)) * (SPAN_MAX + 1) + Math.min(hi - lo, SPAN_MAX));
-      if (s.lLo < 0) emit(L.first + 1);
-      else {
-        const b = bucketOf(P, g.t - s.tL);
-        emit(L.move + (1 * L.NB + b) * (2 * MOVE_MAX + 1) + MOVE_MAX + clampI((lo + hi) - (s.lLo + s.lHi), -MOVE_MAX, MOVE_MAX));
-      }
-      if (s.rLo >= 0 && !nR) emit(L.rel + 1 * (2 * REL_MAX + 1) + REL_MAX + clampI(s.rLo - hi, -REL_MAX, REL_MAX));
+      hand(P, L, 1, lo, hi, nL, s.lLo, s.lHi, s.tL, s.nL, s.iL, g, emit);
+      if (!nR) emit(L.rel + 1 * (2 * REL_MAX + 1) + REL_MAX + clampI(s.rLo - hi, -REL_MAX, REL_MAX));
       for (let i = 0; i < k; i++) emit(L.reg + 1 * 128 + p[i]);
-      lLo = lo; lHi = hi; tL = g.t;
+      x.lLo = lo; x.lHi = hi; x.tL = g.t; x.nL = nL; x.iL = isFinite(s.tL) ? g.t - s.tL : 0;
     }
     if (nL && nR) emit(L.gap + Math.min(p[k] - p[k - 1], GAP_MAX));
-    return { rLo: rLo, rHi: rHi, lLo: lLo, lHi: lHi, tR: tR, tL: tL };
+    return x;
   }
-  const START = Object.freeze({ rLo: -1, rHi: -1, lLo: -1, lHi: -1, tR: 0, tL: 0 });
+  /* Before its first note a hand is where the piece's register puts it: the left hand at the lower quartile of the
+     piece's pitches, the right at the upper, long ago (the longest-rest bucket), with no count or rhythm yet. */
+  function startOf(groups) {
+    const all = [];
+    groups.forEach(g => g.p.forEach(m => all.push(m)));
+    all.sort((a, b) => a - b);
+    const q = f => (all.length ? all[Math.min(all.length - 1, Math.floor(f * all.length))] : 60);
+    const l = q(0.25), r = q(0.75);
+    return { rLo: r, rHi: r, lLo: l, lHi: l, tR: -Infinity, tL: -Infinity, nR: 0, nL: 0, iR: 0, iL: 0 };
+  }
 
   /* ------------------------------------------------------------ groups */
   function groupsOf(notes, opts) {
@@ -218,18 +242,26 @@
     return defaultModel();
   }
 
-  /* The cost of one choice under one style's tables: the sum of its weighted table costs. */
+  /* The cost of one choice under one style's tables: the sum of its weighted table costs (one accumulator, no
+     closure per call: the decoder calls this a few hundred thousand times for a long piece). */
+  let accWC = null, acc = 0;
+  const addCost = i => { acc += accWC[i]; };
   function costOf(M, WC, s, g, k) {
-    let c = 0;
-    const next = step(M.P, M.L, s, g, k, i => { c += WC[i]; });
-    return { c: c, next: next };
+    accWC = WC; acc = 0;
+    const next = step(M.P, M.L, s, g, k, addCost);
+    return { c: acc, next: next };
   }
 
-  function keyOf(s) { return s.rLo + ',' + s.rHi + ',' + s.lLo + ',' + s.lHi; }
+  /* states that agree on both hands' last notes and counts are one state (the cheaper path is kept); a number, not a
+     string: positions are 0-127, counts 0-CAP */
+  function keyOf(s) {
+    return ((((s.rLo * 128 + s.rHi) * 128 + s.lLo) * 128 + s.lHi) * (CAP + 1) + Math.min(s.nR, CAP)) * (CAP + 1) + Math.min(s.nL, CAP);
+  }
 
   /* Beam Viterbi over the groups under one style's tables (WC): the best k per group. */
   function decode(M, groups, WC) {
     const B = M.P.beam || 32;
+    const START = startOf(groups);
     let beam = [{ s: START, c: 0, from: -1, k: -1 }];
     const trail = [];
     for (let gi = 0; gi < groups.length; gi++) {
@@ -260,7 +292,7 @@
       parents[gi] = e.from >= 0 && gi > 0 ? trail[gi - 1][e.from].s : START;
       at = e.from;
     }
-    return { ks: ks, parents: parents, cost: groups.length ? trail[groups.length - 1][0].c : 0 };
+    return { ks: ks, parents: parents, cost: groups.length ? trail[groups.length - 1][0].c : 0, start: START };
   }
   /* Every style decodes the whole piece; the one whose best path costs least is the piece's (a tie keeps the
      earlier style). The styles share the weights and their tables are counted the same way, so the costs compare
@@ -324,7 +356,7 @@
   return Object.freeze({
     VERSION: VERSION, SCHEMA: SCHEMA, assign: assign, assignQ: assignQ, setModel: setModel,
     /* for the trainer and the tests (tests/bench/tools/train_hands.js): the same layout and events as inference */
-    _: Object.freeze({ layout: layout, step: step, START: START, groupsOf: groupsOf, shapeOf: shapeOf, bucketOf: bucketOf,
-      decode: decode, decodeStyles: decodeStyles, prepare: prepare, tableOf: tableOf, TABLES: TABLES, SHAPES: SHAPES, CAP: CAP })
+    _: Object.freeze({ layout: layout, step: step, groupsOf: groupsOf, shapeOf: shapeOf, bucketOf: bucketOf,
+      decode: decode, decodeStyles: decodeStyles, prepare: prepare, startOf: startOf, ioiBucket: ioiBucket, IOI_N: IOI_N, tableOf: tableOf, TABLES: TABLES, SHAPES: SHAPES, CAP: CAP })
   });
 });
