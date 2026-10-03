@@ -6,6 +6,9 @@
                                                              beats[0] is the bar line of the first attack's bar),
          qpm (quarters a minute, the median of the reading), conf, posterior, metrePosterior, model, report }
      loadWeights() -> the committed weights (Node), or the page's (window.PPPRecWeights)
+     hands       -> S4, the staff of every note (rec/hands.js, G10a-2): hands.assign(notes, opts) -> {staff, conf, report};
+                    hands.assignQ(q) writes q[i].staff (1 right hand / upper staff, 2 left) on audio-score.js's quantized notes.
+                    Its weights: rec/weights/hands-v1.json (Node), window.PPPRecHandsWeights or opts.model (a page)
 
    G10a-1 builds S0 (rec/attacks.js), S1 (rec/beats.js: pulse tracks, a DP over tempo and phase) and S2 (rec/metre.js +
    rec/model.js: metre, tempo octave, downbeat and pickup, chosen by a model learned from the licence-clean catalogue,
@@ -13,14 +16,14 @@
    its own quantiser and writer (S3-S10 stay legacy until G10a-2/3). Without opts.recording, or with 'legacy', nothing
    here runs. The input is the notes audio-score.js has already cleaned and clustered (every note has `attack`).
 
-   Node: require('./rec/index.js'). Browser: rec/attacks.js, beats.js, model.js, metre.js, index.js after scoregraph/,
-   and the weights (rec/weights/ai5a-v1.json) as window.PPPRecWeights or opts.weights.
+   Node: require('./rec/index.js'). Browser: rec/attacks.js, beats.js, model.js, metre.js, hands.js, index.js after scoregraph/,
+   and the weights (rec/weights/ai5a-v1.json) as window.PPPRecWeights or opts.weights (hands: window.PPPRecHandsWeights).
    ========================================================================== */
 (function (root, factory) {
   'use strict';
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./attacks.js'), require('./beats.js'), require('./model.js'), require('./metre.js'));
-  else { const M = root.PPPRecModules = root.PPPRecModules || {}; root.PPPRec = factory(M.attacks, M.beats, M.model, M.metre); }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (attacks, beats, model, metre) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./attacks.js'), require('./beats.js'), require('./model.js'), require('./metre.js'), require('./hands.js'));
+  else { const M = root.PPPRecModules = root.PPPRecModules || {}; root.PPPRec = factory(M.attacks, M.beats, M.model, M.metre, M.hands || null); }
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (attacks, beats, model, metre, hands) {
   'use strict';
 
   const VERSION = '0.1.0';
@@ -69,5 +72,5 @@
     };
   }
 
-  return Object.freeze({ VERSION, skeleton, loadWeights, attacks, beats, model, metre });
+  return Object.freeze({ VERSION, skeleton, loadWeights, attacks, beats, model, metre, hands });
 });

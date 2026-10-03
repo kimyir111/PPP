@@ -1353,12 +1353,24 @@
       return typeof module === 'object' && module.exports ? require('./scoregraph/rec-tuplet.js') : (global && global.PPPScoreGraphModules && global.PPPScoreGraphModules.recTuplet) || null;
     } catch (e) { return null; }
   }
-  /* "Hands v2" (docs/GOALS/G10_AUDIO_TO_SCORE.md section 8, stage S4, G10a-2): rec/hands.js, asked for with opts.hands === 'v2' (off by default: without it
-     the hands are assignHands' as always). Asked for and not loaded is an error, never a silent legacy split: a measurement must know which ran. */
-  function handsLib() {
-    const lib = typeof module === 'object' && module.exports ? require('./rec/hands.js') : (global && global.PPPRecHands) || null;
-    if (!lib) { const e = new Error('opts.hands v2: rec/hands.js is not loaded'); e.code = 'E-HANDS-NO-LIB'; throw e; }
-    return lib;
+  /* The hands (docs/GOALS/G10_AUDIO_TO_SCORE.md section 8, stage S4, G10a-2): rec/'s S4 (rec/hands.js, through rec/index.js) writes the
+     staff of every note for the recording conversion v2 (opts.recording 'v2'), or on any path with opts.hands 'v2' (a measurement:
+     the app's path with only S4 swapped); opts.hands 'legacy' keeps assignHands under v2. Without either, the hands are assignHands'
+     as always. Asked for by name and not loaded is an error (a measurement must know which ran); under v2 without the option, a
+     page whose rec/ has no hand model keeps assignHands and the report says so. */
+  function writeHands(q, opts, extra) {
+    const mode = opts.hands || (extra.recording === 'v2' ? 'v2' : 'legacy');
+    if (mode !== 'v2') { assignHands(q); return null; }
+    const lib = recLib();
+    const H = lib && lib.hands;
+    try {
+      if (!H) { const e = new Error('rec/hands.js (S4) is not loaded'); e.code = 'E-HANDS-NO-LIB'; throw e; }
+      return H.assignQ(q, {}).report;
+    } catch (e) {
+      if (opts.hands === 'v2' || !(e.code === 'E-HANDS-NO-LIB' || e.code === 'E-HANDS-NO-MODEL')) throw e;
+      assignHands(q);
+      return { fallback: 'legacy', code: e.code };
+    }
   }
   const ACCIDENTAL_NAME = { '-2': 'flat-flat', '-1': 'flat', '0': 'natural', '1': 'sharp', '2': 'double-sharp' };
 
@@ -1567,7 +1579,7 @@
 
     const key = estimateKey(notes);
     const table = spellingTable(key);
-    const handsReport = opts.hands === 'v2' ? handsLib().assignQ(q, {}).report : (assignHands(q), null);
+    const handsReport = writeHands(q, opts, extra);
 
     const pedals = [];
     const held = [];
