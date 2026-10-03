@@ -128,9 +128,8 @@ class RecMutations(unittest.TestCase):
         v2 = mutation.REC_V2_MUTATIONS
         skeleton = {"REC-V2-NO-ACCENTS", "REC-V2-BAR-LINE-LATE", "REC-V2-HALF-TEMPO", "REC-V2-ISSUE-1-BACK", "REC-V2-NO-AUDIO-BEATS",
                     "REC-V2-LATE-ON-BEAT"}
-        # G10a-2: S4's decisions (S4 used at all, the hands' motion, the piece's style, the partition prior, the starting register)
-        hands = {"REC-V2-HANDS-LEGACY", "REC-V2-HANDS-NO-MOTION", "REC-V2-HANDS-ONE-STYLE", "REC-V2-HANDS-NO-PART-PRIOR",
-                 "REC-V2-HANDS-START-SWAPPED"}
+        # G10a-2: S4's decisions (S4 used at all, the hands' motion, the piece's style, the partition prior)
+        hands = {"REC-V2-HANDS-LEGACY", "REC-V2-HANDS-NO-MOTION", "REC-V2-HANDS-ONE-STYLE", "REC-V2-HANDS-NO-PART-PRIOR"}
         self.assertEqual({m["id"] for m in v2[:-1]}, skeleton | hands)
         self.assertEqual((v2[-1]["id"], v2[-1]["expect"]), ("MUT-NOOP", "PASS"))
         self.assertFalse([m for m in mutation.REC_MUTATIONS if m.get("v2")])
