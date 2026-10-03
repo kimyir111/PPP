@@ -578,25 +578,34 @@ REC_V2_MUTATIONS: List[Dict[str, Any]] = [
      "find": "    emit(L.part + g.shape * (CAP + 1) * (CAP + 1) + Math.min(nL, CAP) * (CAP + 1) + Math.min(nR, CAP));",
      "replace": "    /* mutation: no partition prior */",
      "expect": "REGRESSION", "metrics": ["notation.hand.accuracy"]},
-    # G10a-3: S8, the key and spelling stage of rec/key.js (one planted defect per decision the benchmark can see: S8 used at all,
-    # the diatonic fit, the flats of the spelling table, the tied-over accidental). The tonal regions, the written key changes, the
-    # cues of the piece's ends and the signature prior are decisions the catalogue's performances hardly exercise (one piece in 312
-    # changes signature; the cues and the prior decide a handful of exercises): tests/rec/key.test.js plants them through the
-    # stage's own weights (a removed decision fails its test); the tie state below is the E2 'accidentals' defect of G10 section 8.1
-    {"id": "REC-V2-KEY-LEGACY", "v2": True,           # v2 estimates the key and spells the way audio-score.js always did (S8 not used)
+    {"id": "MUT-NOOP",
+     "find": "  const api = {",
+     "replace": "  /* noop mutation */\n  const api = {",
+     "expect": "PASS", "metrics": []},
+]
+
+# G10a-3: S8, the key and spelling stage of rec/key.js: its own group on its own suite (rec-mutation-keys: v2 rows only, and the
+# families where the tied-over accidental defect shows - a cover-pedal piece, the browser model's overlay, helper-like beats - which
+# rec-mutation's two rows do not have). One planted defect per decision the benchmark can see: S8 used at all, the diatonic fit,
+# the flats of the spelling table, the tied-over accidental. The tonal regions, the written key changes, the cues of the piece's
+# ends and the signature prior are decisions the catalogue's performances hardly exercise (one piece in 312 changes signature; the
+# cues and the prior decide a handful of exercises): tests/rec/key.test.js plants them through the stage's own weights (a removed
+# decision fails its test); the tie state below is the E2 'accidentals' defect of G10 section 8.1
+REC_KEY_MUTATIONS: List[Dict[str, Any]] = [
+    {"id": "REC-V2-KEY-LEGACY", "v2": True,          # v2 estimates the key and spells the way audio-score.js always did (S8 not used)
      "find": "    const mode = opts.keys || (extra.recording === 'v2' ? 'v2' : 'legacy');",
      "replace": "    const mode = opts.keys || 'legacy';",
-     "all": True, "expect": "REGRESSION", "metrics": ["critical.key", "critical.accidentals", "notation.accidentals.required_recall"]},
-    {"id": "REC-V2-KEY-NO-FIT", "v2": True,           # the key by the correlation alone: no diatonic fit (the accidentals the page would need)
+     "expect": "REGRESSION", "metrics": ["critical.key", "critical.accidentals"]},
+    {"id": "REC-V2-KEY-NO-FIT", "v2": True,          # the key by the correlation alone: no diatonic fit (the accidentals the page would need)
      "file": "rec/key.js",
      "find": "      const score = k.r + c.FIT * k.fit + extra - c.PRIOR * Math.abs(k.fifths);",
      "replace": "      const score = k.r + extra - c.PRIOR * Math.abs(k.fifths);",
-     "expect": "REGRESSION", "metrics": ["critical.key", "struct.key.fifths_exact"]},
+     "expect": "REGRESSION", "metrics": ["critical.key", "micro:critical.key"]},
     {"id": "REC-V2-KEY-SHARPS-ONLY", "v2": True,       # the spelling table writes every chromatic note of a major key with a sharp (E flat as D sharp)
      "file": "rec/key.js",
      "find": "  const CHROMATIC = { major: { 1: 1, 3: -1, 6: 1, 8: 1, 10: -1 }, minor: { 1: -1, 4: 1, 6: 1, 9: 1, 11: 1 } };",
      "replace": "  const CHROMATIC = { major: { 1: 1, 3: 1, 6: 1, 8: 1, 10: 1 }, minor: { 1: 1, 4: 1, 6: 1, 9: 1, 11: 1 } };",
-     "expect": "REGRESSION", "metrics": ["notation.spelling.accuracy"]},
+     "expect": "REGRESSION", "metrics": ["notation.spelling.accuracy", "micro:notation.spelling.accuracy"]},
     {"id": "REC-V2-KEY-TIE-STATE", "v2": True,         # the accidentals state takes a tied-over head in force again (the E2 defect: the next one of the bar prints none)
      "file": "rec/key.js",
      "find": "        if (tieStop) return false;",

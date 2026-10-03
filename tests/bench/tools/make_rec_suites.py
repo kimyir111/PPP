@@ -58,6 +58,12 @@ FULL = [("cover", "none"), ("cover-pedal", "none"), ("human-real", "none"), ("sw
 # noise is drawn per options name, so they would not pair here
 GRID = [("cover", "oracle"), ("human-real", "oracle"), ("cover+of", "oracle"), ("swing", "oracle"), ("cover", "none")]
 
+# rec-mutation-keys (G10a-3): the planted defects of S8 (mutation-check --rec). The rows are the families where S8's decisions show: a
+# cover-pedal piece, the browser model's overlay and helper-like beats, which rec-mutation's two rows lack (the tied-over accidental
+# defect needs them); v2 only, and four more references where that defect shows (Czerny 849/006, 011, 013, sonatina 010)
+KEY_MUTATION = [("cover", "none"), ("cover-pedal", "none"), ("cover+of", "none"), ("cover", "oracle-noisy")]
+KEY_MUTATION_EXTRA = ["method/czerny849/006", "method/czerny849/011", "method/czerny849/013", "method/sonatina/010"]
+
 REC_GATE = {
     "rec.usable": {"dir": "up", "tol": -0.005},
     "rec.mv2h": {"dir": "up", "tol": -0.005},
@@ -144,6 +150,11 @@ def build() -> dict:
                                 description="Gate sensitivity of the v2 time skeleton (G10a-1, mutation-check --rec): the rec-mutation "
                                             "references and rows with the v2 options only",
                                 gate=gate(suite_mod.GATE_CORE)),
+        "rec-mutation-keys": dict(base, name="rec-mutation-keys", references=sorted(set(mutation_refs + KEY_MUTATION_EXTRA)),
+                                  matrix=rows(KEY_MUTATION, [1], ("v2",)),
+                                  description="Gate sensitivity of the key and spelling stage S8 (G10a-3, mutation-check --rec): the rec-mutation "
+                                              "references and four more, cover / cover-pedal / cover+of (beats none) and cover (oracle-noisy), v2 options only",
+                                  gate=gate(suite_mod.GATE_CORE)),
         "rec-hands": dict(base, name="rec-hands", references=core["references"],
                           matrix=rows(CORE + ROBUST, [1], opts_table=HANDS_OPTS, perform_as="app"),
                           description="G10a-2 stage S4 in isolation (a measurement suite, not in the CI gate): rec-core's and "

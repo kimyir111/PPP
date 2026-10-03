@@ -133,9 +133,7 @@ class RecMutations(unittest.TestCase):
         # G10a-2: S3's decisions (triplet beats at all, the triplet evidence, chord groups, the chain over beats); the on-beat
         # window, G10a-1's LATE-ON-BEAT, now lives in rec/grid.js too
         grid = {"REC-V2-GRID-NO-TRIPLETS", "REC-V2-GRID-TRIPLET-BIAS", "REC-V2-GRID-NO-CHORDS", "REC-V2-GRID-NO-CHAIN"}
-        # G10a-3: S8's decisions (S8 used at all, the diatonic fit, the spelling table's flats, the tied-over accidental)
-        keys = {"REC-V2-KEY-LEGACY", "REC-V2-KEY-NO-FIT", "REC-V2-KEY-SHARPS-ONLY", "REC-V2-KEY-TIE-STATE"}
-        self.assertEqual({m["id"] for m in v2[:-1]}, skeleton | hands | grid | keys)
+        self.assertEqual({m["id"] for m in v2[:-1]}, skeleton | hands | grid)
         self.assertEqual((v2[-1]["id"], v2[-1]["expect"]), ("MUT-NOOP", "PASS"))
         self.assertFalse([m for m in mutation.REC_MUTATIONS if m.get("v2")])
         for m in v2[:-1]:
@@ -144,11 +142,23 @@ class RecMutations(unittest.TestCase):
                 self.assertIn("notation.hand.accuracy", m["metrics"], m["id"])
             elif m["id"] in grid:
                 self.assertTrue(any(x.startswith(("rec.tuplet.", "notation.tuplets.")) for x in m["metrics"]), m["id"])
-            elif m["id"] in keys:
-                self.assertTrue(any(x.startswith(("critical.key", "critical.accidentals", "struct.key.", "notation.spelling.",
-                                                  "notation.accidentals.")) for x in m["metrics"]), m["id"])
             else:
                 self.assertTrue(any(x.startswith(("critical.", "struct.", "notes.")) for x in m["metrics"]), m["id"])
+
+    def test_every_s8_decision_has_a_planted_defect(self):
+        """G10a-3: the key stage's decisions the benchmark can see (S8 used at all, the diatonic fit, the spelling table's flats, the
+        tied-over accidental) each have a mutation on rec-mutation-keys; the no-op is last."""
+        keys = mutation.REC_KEY_MUTATIONS
+        self.assertEqual({m["id"] for m in keys[:-1]},
+                         {"REC-V2-KEY-LEGACY", "REC-V2-KEY-NO-FIT", "REC-V2-KEY-SHARPS-ONLY", "REC-V2-KEY-TIE-STATE"})
+        self.assertEqual((keys[-1]["id"], keys[-1]["expect"]), ("MUT-NOOP", "PASS"))
+        for m in keys[:-1]:
+            self.assertEqual(m["expect"], "REGRESSION")
+            self.assertTrue(any(x.split(":")[-1].startswith(("critical.key", "critical.accidentals", "notation.spelling."))
+                                for x in m["metrics"]), m["id"])
+        s = suite_mod.load_suite("rec-mutation-keys")
+        self.assertTrue(s["rec"])
+        self.assertEqual({r["opt_name"] for r in s["matrix"]}, {"v2"})
 
     def test_ids_are_unique_and_the_noop_is_last(self):
         ids = [m["id"] for m in mutation.REC_MUTATIONS]
