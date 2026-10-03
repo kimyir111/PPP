@@ -405,6 +405,9 @@
   function repairSelection(selection, g, sg, request, opts) {
     if (!selection || !selection.ok) return { ok: false, graph: null, changed: false, report: null };
     opts = opts || {};
+    /* G10c-0: the melody guard (candidates/index.js guardMelody) made the melody of a recording continuous before planning; the selection names that source, and the melody this repair protects,
+       the smells it compares with and the gap passes' gate are read from it, not from the graph the caller started with */
+    if (selection.source) g = selection.source;
     const sel = selection.selected;
     const REF = opts.REF || require('../arrangement/reference.js');
     const ctx = {

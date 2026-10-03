@@ -33,6 +33,12 @@ test('a tie continuation is no onset; the position slack is 0.15 quarter; anothe
   assert.equal(M.melodyStats(ix, []), null);
 });
 
+test('the attacks of the melody hand that are no melody note: an accompaniment note in it is counted, a melody note is not', () => {
+  const ix = M.indexNotes([n(0, 1, 72, 0), n(1, 2, 74, 0), n(2, 3, 62, 0), n(3, 4, 77, 0, true), n(0, 4, 48, 1)]);
+  assert.equal(M.notMelody(ix, melody), 1 / 3);            /* 72 and 74 are melody, the 62 is not; the tied 77 is no attack; the left hand is not counted */
+  assert.equal(M.notMelody(M.indexNotes([n(0, 4, 48, 1)]), melody), null);
+});
+
 test('chord agreement counts only the positions a window covers', () => {
   const win = [{ q0: 0, q1: 2, chord: '0:maj' }, { q0: 2, q1: 4, chord: '7:maj' }];
   assert.equal(M.chordAgreement(win, [{ q: 1, chord: '0:maj' }, { q: 3, chord: '0:maj' }, { q: 9, chord: '5:maj' }]), 0.5);

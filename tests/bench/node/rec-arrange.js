@@ -28,6 +28,7 @@
      arr.harmony.agreement     share of the true score's beat windows (G7a root + quality) whose chord the arrangement's window at that moment has
      arr.level.distinct        (distinct arrangements among the levels made - 1) / (levels made - 1): 0 when the levels collapse into one
      arr.level.distance        mean Jaccard distance of the levels' note sets (onset, pitch, hand), over the pairs
+     arr.rh.not_melody         share of the right hand's attacks that are no true melody note (same pitch, onset within 0.15 quarter): a note taken for the melody that is not
      arr.lh.notes_per_bar      left-hand attacks per bar
      arr.rh.above_c6           share of right-hand attacks above C6 (MIDI 84)
      arr.hard.violations       G5 hard violations at the request's hand profile
@@ -162,7 +163,7 @@ function measureLevel(arr, melodyAt, truthChordsAt) {
   const g = arr.graph, ix = M.indexNotes(notesOf(g)), tab = measureTable(g);
   const out = {};
   const ms = M.melodyStats(ix, melodyAt);
-  if (ms) { out['arr.melody.kept'] = ms.kept; out['arr.melody.cross'] = ms.cross; out['arr.melody.lost'] = ms.lost; out['arr.melody.gap_rate'] = ms.gap_rate; }
+  if (ms) { out['arr.melody.kept'] = ms.kept; out['arr.melody.cross'] = ms.cross; out['arr.melody.lost'] = ms.lost; out['arr.melody.gap_rate'] = ms.gap_rate; out['arr.rh.not_melody'] = M.notMelody(ix, melodyAt); }
   out['arr.harmony.agreement'] = truthChordsAt.length ? M.chordAgreement(chordWindows(g), truthChordsAt) : null;
   const hs = M.handStats(ix, tab.bars);
   out['arr.lh.notes_per_bar'] = hs.lh_notes_per_bar; out['arr.rh.above_c6'] = hs.rh_above_c6;

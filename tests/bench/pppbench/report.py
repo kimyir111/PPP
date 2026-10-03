@@ -262,6 +262,7 @@ ARRANGE_HEADLINE = [
     ("arr.melody.cross", "down", "... only in the left hand (the hand split's error)"),
     ("arr.melody.lost", "down", "... nowhere"),
     ("arr.melody.gap_rate", "down", "true melody notes at which the right hand sounds nothing (a rest in the melody staff)"),
+    ("arr.rh.not_melody", "down", "right-hand attacks that are no true melody note (a note taken for the melody that is not)"),
     ("arr.harmony.agreement", "up", "true beat windows whose chord (root + quality) the arrangement has"),
     ("arr.level.distinct", "up", "0 = the three levels are one arrangement"),
     ("arr.level.distance", "up", "mean Jaccard distance between the levels' notes"),

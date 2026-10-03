@@ -79,6 +79,10 @@
    "arr.rh.above_c6": {
     "dir": "down",
     "tol": 0.012
+   },
+   "arr.rh.not_melody": {
+    "dir": "down",
+    "tol": 0.012
    }
   },
   "subgroups": {

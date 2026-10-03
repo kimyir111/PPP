@@ -439,7 +439,7 @@ REC_ARRANGE_MUTATIONS: List[Dict[str, Any]] = [
      "file": REALIZE,
      "find": "    const melodyHand = melodyVoiceId && hands.RH.indexOf(melodyVoiceId) >= 0 ? 'RH'\n      : (melodyVoiceId && hands.LH.indexOf(melodyVoiceId) >= 0 ? 'LH' : 'RH');",
      "replace": "    const melodyHand = melodyVoiceId ? 'LH' : 'RH';",
-     "all": True, "expect": "REGRESSION", "metrics": ["arr.melody.cross", "arr.melody.gap_rate"]},
+     "all": True, "expect": "REGRESSION", "metrics": ["arr.melody.cross", "arr.melody.kept"]},
     {"id": "ARR-LEVELS-COLLAPSE",         # every request is arranged for the same target level: the three levels are one arrangement
      "file": "candidates/index.js",
      "find": "  async function runUncachedAsync(g, sg, request, opts) {\n",
@@ -492,6 +492,11 @@ REC_ARRANGE_MUTATIONS: List[Dict[str, Any]] = [
      "find": "          groups.push({ events: ids, actual: 3, normal: 2, unit: { type: 'eighth' }, isNew: true });",
      "replace": "          groups.push({ events: ids, actual: 4, normal: 3, unit: { type: 'eighth' }, isNew: true });",
      "all": True, "expect": "REGRESSION", "metrics": ["arr.check.7"]},
+    {"id": "ARR-GUARD-LOOSE",           # the melody guard takes any note of the lower staff for the melody (no pitch floor, a step of two octaves): accompaniment in the melody hand
+     "file": "candidates/index.js",
+     "find": "  const MELODY_GUARD = Object.freeze({ MIN_PITCH: 48, STEP_NEAR: 5, STEP_FAR: 7, NEAR_Q: 0.5, WINDOW_Q: 4 });",
+     "replace": "  const MELODY_GUARD = Object.freeze({ MIN_PITCH: 0, STEP_NEAR: 24, STEP_FAR: 24, NEAR_Q: 0.5, WINDOW_Q: 4 });",
+     "all": True, "expect": "REGRESSION", "metrics": ["arr.rh.not_melody"]},
     {"id": "MUT-NOOP",
      "find": "  const api = {",
      "replace": "  /* noop mutation */\n  const api = {",

@@ -119,8 +119,10 @@ test('real transcription: refused without the rescue (every candidate has VELOCI
 
 test('real transcription: only the reported notes are missing (each is a rest now), the melody top line is down by exactly one onset, nothing is moved', () => {
   const sg = SGG.analyze(REAL), req = REQ('intermediate');
-  const on = CAND.run(REAL, sg, req, Object.assign({ relax: 2 }, RUN));
-  const off = CAND.run(REAL, sg, req, Object.assign({ relax: 2, strayRescue: false }, RUN));
+  /* the rescue is compared with and without ITSELF on the same source: the melody guard (G10c-0) would change the source of the run that is arranged and, when the run without the rescue finds
+     no arrangement, fall back to the graph as it was, so both runs are made with the guard off here (the guarded piece is tested in tests/repair/melody-guard.test.js and by the first test above) */
+  const on = CAND.run(REAL, sg, req, Object.assign({ relax: 2, melodyGuard: false }, RUN));
+  const off = CAND.run(REAL, sg, req, Object.assign({ relax: 2, strayRescue: false, melodyGuard: false }, RUN));
   assert.equal(on.ok, true);
   const chosen = on.selected, before = off.scored.find(c => c.index === chosen.index);
   assert.equal(chosen.spec.pattern, before.spec.pattern, 'the same candidate (index ' + chosen.index + ') before and after');

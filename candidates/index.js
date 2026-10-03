@@ -109,15 +109,16 @@
     module.exports = factory(
       require('../arrangement/index.js'), require('../realize/index.js'), require('../critics/index.js'),
       require('../playability/reach.js'), require('../arrangement/reference.js'), require('../scoregraph/serialize.js'),
-      require('../scoregraph/ops.js'), require('../playability/index.js'));
+      require('../scoregraph/ops.js'), require('../playability/index.js'),
+      require('../scoregraph/pitch.js'), require('../scoregraph/gaps.js'), require('../scoregraph/rational.js'), require('../scoregraph/pro-staff.js'), require('../scoregraph/rec-tuplet.js'));
   } else {
     const AR = root.PPPArrangementModules || {};
     const PP = root.PPPPlayabilityModules || {};
     const M = root.PPPRealizeModules || {};
     const SG = root.PPPScoreGraphModules || {};
-    root.PPPCandidates = factory(root.PPPArrangement, root.PPPRealize, root.PPPCritics, PP.reach, AR.reference, SG.serialize, SG.ops, root.PPPPlayability);
+    root.PPPCandidates = factory(root.PPPArrangement, root.PPPRealize, root.PPPCritics, PP.reach, AR.reference, SG.serialize, SG.ops, root.PPPPlayability, SG.pitch, SG.gaps, SG.rational, SG.proStaff, SG.recTuplet);
   }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (ARR, REALIZE, CRIT, REACH, REF, SER, OPS, PLA) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (ARR, REALIZE, CRIT, REACH, REF, SER, OPS, PLA, PITCH, GAPS, R, PS, RECTUP) {
   'use strict';
 
   /* Every pattern the realizer has: auto, hymn, block, broken, ballad, pop, waltz. Kept so the old candidate set stays reproducible. */
@@ -586,6 +587,159 @@
     });
   }
 
+  /* ---- G10c-0 interim melody guard (docs/GOALS/G10 section 9 and 19; only for a TRANSCRIPTION arranged one note per hand) ----
+     A recording's hand split (audio-score.js assignHands: a pitch split per onset group, smoothed) puts a melody note in the LEFT staff where the melody dips toward the split, and the melody
+     voice (the upper staff's) then has a hole: a rest in the melody line where a melody note was heard (G10c-0 measured it: 2.7 % of the true melody notes the transcription heard meet a silent
+     right hand after arranging, 3.5 % are in the left staff before; the one-note-per-hand pass then keeps the lower hand's lowest note, so the melody note is mostly dropped). The arranger copies the melody
+     voice verbatim, so the repair belongs in the SOURCE graph, before planning: `guardMelody` looks across BOTH staves and moves a note of the lower staff into the melody voice when
+       - it is the TOP note of the lower staff at its onset (the skyline: no lower-staff note sounding at that moment is higher), at or above MIN_PITCH (C3), not tied to or from anything;
+       - the upper staff sounds nothing at that onset (a hole, not a second voice) and a melody note lies within WINDOW_Q quarters on at least one side;
+       - it continues the melody on every side that is that near: within STEP_NEAR semitones of the previous melody note (an upper note, or the previous note this pass moved) and of the next upper
+         note when the gap to it is at most NEAR_Q quarters, STEP_FAR semitones when it is wider. A note that does not continue the line is left where the hand split put it (an accompaniment figure
+         in the melody's register: the pitch has to be a step or a third from where the tune is);
+       - the move leaves no silence a recording's writer would not have written (a rest shorter than an eighth between two notes of a hand): the melody note before it is lengthened over the silence
+         that is left (a note lasts until the next onset of its hand), and so is the lower voice's note before the hole the moved note leaves; when that is not possible (no such note in the bar, a
+         tuplet, a length that has no printed value) the note stays where it was.
+     The moved note lasts until the next melody onset when its own length would end before it by less than an eighth, and is cut to it when it would run over. Only the lower staff's TOP head
+     of an event moves (the other heads stay); its id, pitch and onset stay (the performance layer's links hold); the rests around it are written again (scoregraph/pro-staff.js restPieces, as the G3
+     passes do), the triplet brackets and the silences are written again as the recording's source was (rec-tuplet addTriplets, gaps tidyRests), and the edit validates; anything that does not validate
+     leaves the graph as it was. One note per hand is untouched (the pass runs before realize; the one-note pass still decides every hand), and a hard violation the moved note brings is the
+     filter's: run() runs the guarded graph, and when that run finds no arrangement it runs the graph as it was (no piece that is arranged without the guard is refused with it).
+     `opts.melodyGuard === false` turns it off (the rollback); a graph that is not a transcription (provenance source kind audio-score), or a part that is not two staves, is never touched, so the
+     catalogue and every printed score are byte for byte as they were. */
+  const MELODY_GUARD = Object.freeze({ MIN_PITCH: 48, STEP_NEAR: 5, STEP_FAR: 7, NEAR_Q: 0.5, WINDOW_Q: 4 });
+  const MELODY_GUARD_SOURCE = Object.freeze({ kind: 'repair', tool: 'ppp.g10c0-melody-guard', version: '1.0.0' });
+  function guardMelody(g, sg, cfg) {
+    cfg = Object.assign({}, MELODY_GUARD, cfg || {});
+    const none = why => ({ graph: g, changed: false, stats: { moved: 0, skipped: why } });
+    if (!OPS || !PITCH || !GAPS || !GAPS.isTranscription || !GAPS.plainValue || !GAPS.tidyRests || !RECTUP || !RECTUP.addTriplets || !R || !PS || !PS.restPieces || !g || !sg || !sg.melodyBass) return none('modules');
+    if (!GAPS.isTranscription(g)) return none('not a transcription');
+    const part = g.parts && g.parts[0];
+    if (!part || g.parts.length !== 1 || part.staves.length !== 2) return none('not a two-staff piano part');
+    const mb = (sg.melodyBass.parts || []).find(p => p.part === part.id);
+    const mv = mb && mb.melodyVoice;
+    const mVoice = mv && part.voices.find(v => v.id === mv);
+    const U = part.staves[0], L = part.staves[1];
+    if (!mVoice || mVoice.staff !== U.id) return none('the melody voice is not in the upper staff');
+    const EPS = 1e-9, EIGHTH = R.make(1, 8);
+    const mStart = new Map(), mEnd = new Map(); let acc = R.ZERO;
+    g.timeline.measures.forEach(m => { mStart.set(m.id, acc); acc = R.add(acc, R.parse(m.dur)); mEnd.set(m.id, acc); });
+    const ties = new Set(), tuplets = new Set();
+    (part.spanners || []).forEach(sp => {
+      if (sp.type === 'tie') { ties.add(sp.from); ties.add(sp.to); }
+      if (sp.type === 'tuplet') (sp.events || []).forEach(id => tuplets.add(id));
+    });
+    const ev = [];
+    part.events.forEach(e => {
+      if (e.kind !== 'note' || e.grace || !e.heads || !e.heads.length) return;
+      const w0 = R.add(mStart.get(e.m), R.parse(e.at)), w1 = R.add(w0, R.parse(e.dur));
+      const heads = e.heads.map(h => ({ id: h.id, midi: PITCH.midi(h.pitch) }));
+      ev.push({ e: e, w0: w0, w1: w1, q0: R.toNumber(w0) * 4, q1: R.toNumber(w1) * 4, heads: heads, top: Math.max.apply(null, heads.map(h => h.midi)) });
+    });
+    ev.sort((a, b) => a.q0 - b.q0 || a.top - b.top);
+    const up = ev.filter(x => x.e.staff === U.id), lo = ev.filter(x => x.e.staff === L.id);
+    const sounds = (x, q) => x.q0 <= q + EPS && q < x.q1 - EPS;
+    /* a printed value for a length: a plain or dotted one, or a third or two thirds of a beat (a triplet length: the plain value it is 3:2 of; the bracket is written after) */
+    const printed = dur => {
+      const plain = GAPS.plainValue(dur);
+      if (plain) return plain;
+      const two = GAPS.plainValue(R.mul(dur, R.make(3, 2)));
+      return two && !two.dots ? { type: two.type } : null;
+    };
+    const cands = [];
+    let last = null; /* the latest melody point before the onset looked at: an upper note or a note this pass found */
+    let ui = 0;      /* up[] is sorted by onset: the first upper event that starts after the onset looked at */
+    lo.forEach(x => {
+      if (x.heads.some(h => ties.has(h.id)) || x.top < cfg.MIN_PITCH) return;
+      if (up.some(u => sounds(u, x.q0))) return;
+      if (lo.some(o => o !== x && sounds(o, x.q0) && o.top > x.top)) return;
+      while (ui < up.length && up[ui].q0 <= x.q0 + EPS) ui++;
+      let P = ui > 0 ? up[ui - 1] : null;
+      if (last && (!P || last.q0 > P.q0)) P = last;
+      const N = ui < up.length ? up[ui] : null;
+      const pNear = !!P && x.q0 - P.q1 <= cfg.WINDOW_Q + EPS, nNear = !!N && N.q0 - x.q1 <= cfg.WINDOW_Q + EPS;
+      if (!pNear && !nNear) return;
+      if (pNear && Math.abs(P.top - x.top) > (x.q0 - P.q1 > cfg.NEAR_Q ? cfg.STEP_FAR : cfg.STEP_NEAR)) return;
+      if (nNear && Math.abs(N.top - x.top) > (N.q0 - x.q1 > cfg.NEAR_Q ? cfg.STEP_FAR : cfg.STEP_NEAR)) return;
+      cands.push({ x: x, topHead: x.heads.find(h => h.midi === x.top), N: N });
+      last = { q0: x.q0, q1: x.q1, top: x.top };
+    });
+    /* each candidate's length and the lengthenings it needs; a candidate that would leave a silence shorter than an eighth that cannot be closed is dropped */
+    const moves = [];
+    cands.forEach((c, i) => {
+      const x = c.x, m = x.e.m, t = x.w0;
+      const nextMoved = i + 1 < cands.length ? cands[i + 1].x.w0 : null;
+      let nx = c.N ? c.N.w0 : null;
+      if (nextMoved && (!nx || R.lt(nextMoved, nx))) nx = nextMoved;
+      if (nx && R.gt(nx, mEnd.get(m))) nx = mEnd.get(m);
+      let w1 = x.w1, display = null;
+      if (nx && R.gt(w1, nx)) w1 = nx;
+      else if (nx && R.lt(w1, nx) && R.lt(R.sub(nx, w1), EIGHTH)) w1 = nx;
+      if (!R.eq(w1, x.w1)) { display = R.sign(R.sub(w1, t)) > 0 ? printed(R.sub(w1, t)) : null; if (!display) return; }
+      /* the melody before it: a silence of less than an eighth between the note before and this one is closed by lengthening that note (in this bar), or the move is dropped */
+      const prevMoved = moves.length && moves[moves.length - 1].x.e.m === m ? moves[moves.length - 1] : null;
+      const before = up.filter(u => u.e.m === m && R.le(u.w1, t)).sort((a, b) => R.cmp(b.w1, a.w1))[0] || null;
+      const prevEnd = prevMoved && (!before || R.ge(prevMoved.w1, before.w1)) ? prevMoved.w1 : before ? before.w1 : mStart.get(m);
+      const silence = R.sub(t, prevEnd);
+      let extBefore = null;
+      if (R.sign(silence) > 0 && R.lt(silence, EIGHTH)) {
+        const target = prevMoved && R.eq(prevEnd, prevMoved.w1) ? null : before;
+        if (!target || tuplets.has(target.e.id)) return;
+        const shown = printed(R.sub(t, target.w0));
+        if (!shown) return;
+        extBefore = { id: target.e.id, w0: target.w0, to: t, display: shown };
+      }
+      /* the lower voice: a whole event that leaves it shorter than an eighth is closed over by lengthening the note that ended where it started */
+      let extLower = null;
+      if (x.e.heads.length === 1 && R.lt(R.sub(x.w1, t), EIGHTH)) {
+        const prev = lo.find(o => o.e.voice === x.e.voice && o.e.m === m && R.eq(o.w1, t));
+        if (!prev || tuplets.has(prev.e.id)) return;
+        const shown = printed(R.sub(x.w1, prev.w0));
+        if (!shown) return;
+        extLower = { id: prev.e.id, w0: prev.w0, to: x.w1, display: shown };
+      }
+      moves.push({ x: x, topHead: c.topHead, w1: w1, display: display, extBefore: extBefore, extLower: extLower });
+    });
+    if (!moves.length) return { graph: g, changed: false, stats: { moved: 0 } };
+    try {
+      const measures = new Set();
+      const res = OPS.edit(g, d => {
+        const byM = new Map();
+        moves.forEach(m0 => { const m = m0.x.e.m; if (!byM.has(m)) byM.set(m, []); byM.get(m).push(m0); });
+        const setLength = (ext, m) => { const e = d.event(ext.id); const disp = Object.assign({}, e.display); delete disp.dots; e.dur = R.format(R.sub(ext.to, ext.w0)); e.display = Object.assign(disp, ext.display); };
+        byM.forEach((list, m) => {
+          const lowerVoices = new Set();
+          list.forEach(m0 => {
+            const e = m0.x.e, t = m0.x.w0;
+            lowerVoices.add(e.voice);
+            /* the melody voice's rests under the moved note go first; the voice-measure is tiled again around it below */
+            const gone = d.voiceMeasure(mv, m).filter(r => r.kind === 'rest' && R.lt(R.add(mStart.get(m), R.parse(r.at)), m0.w1) && R.gt(R.add(mStart.get(m), R.add(R.parse(r.at), R.parse(r.dur))), t)).map(r => r.id);
+            if (gone.length) d.removeEvents(gone);
+            if (m0.extBefore) setLength(m0.extBefore, m);
+            const id = e.heads.length > 1 ? d.moveHeads(e.id, [m0.topHead.id], mv, U.id) : (d.moveEvent(e.id, mv, U.id), e.id);
+            if (m0.display) { const ne = d.event(id); ne.dur = R.format(R.sub(m0.w1, t)); ne.display = m0.display; }
+            if (m0.extLower) setLength(m0.extLower, m);
+          });
+          d.refillRests(mv, m, (a, b) => PS.restPieces(d, m, a, b));
+          lowerVoices.forEach(v => d.refillRests(v, m, (a, b) => PS.restPieces(d, m, a, b)));
+          measures.add(m);
+        });
+        d.touch();
+      }, { source: MELODY_GUARD_SOURCE });
+      /* the passes a recording's source went through (audio-score.js: the triplet brackets, then the silences written once): a moved event left its brackets, and the rests written around it are a start */
+      const tt = RECTUP.addTriplets(res.graph), tr = GAPS.tidyRests(tt.changed ? tt.graph : res.graph);
+      return { graph: tr.graph, changed: true, stats: { moved: moves.length, measures: measures.size } };
+    } catch (err) {
+      return { graph: g, changed: false, stats: { moved: 0, failed: String(err && err.message || err).slice(0, 200) } };
+    }
+  }
+  /* the guarded source for a request, or null: only a one-note-per-hand request (the Song Arranger's), and not with `opts.melodyGuard === false` */
+  function guardedSource(g, sg, opts) {
+    if (!opts.singleNoteHands || opts.melodyGuard === false) return null;
+    const r = guardMelody(g, sg);
+    return r.changed ? r : null;
+  }
+
   /* ---- caching (G9 §8/design doc §5's own performance line: "results cached by (SongGraph
      fingerprint, request)") ---- opts.cache is a plain Map the CALLER owns and keeps across
      calls (a request-scoped or process-wide cache, per the caller's own needs - this module
@@ -605,7 +759,7 @@
       '|' + JSON.stringify((opts && opts.stride) || 'default') +
       '|' + JSON.stringify(patternsFor(opts)) + '|' + (opts && opts.allowStride ? 'stride' : 'nostride') +
       '|' + JSON.stringify((opts && opts.last) || null) + '|' + (opts && opts.singleNoteHands ? 'single' + (opts.strayRescue === false ? '-norescue' : '') : 'default') +
-      '|' + (opts && opts.fullEngrave ? 'full' : 'gate') + (opts && opts.skipEngrave ? '|noengrave' : '');
+      '|' + (opts && opts.fullEngrave ? 'full' : 'gate') + (opts && opts.skipEngrave ? '|noengrave' : '') + (opts && opts.melodyGuard === false ? '|noguard' : '');
   }
 
   /* `run()`'s production pipeline (round 2, default): enumerate -> score the six cheap
@@ -627,6 +781,16 @@
   }
 
   function runUncached(g, sg, request, opts) {
+    /* G10c-0: the melody guard's source first (a transcription, one note per hand); when its run finds no arrangement the graph as it was is run, so nothing refused or arranged without it changes
+       status. The result names the source it was made from (`source`: repairSelection reads the melody, the gaps and the smells of that graph) and what the guard did (`melodyGuard`). */
+    const gm = guardedSource(g, sg, opts);
+    if (gm) {
+      const out = runPipeline(gm.graph, sg, request, opts);
+      if (out && out.ok) return Object.assign({}, out, { source: gm.graph, melodyGuard: gm.stats });
+    }
+    return runPipeline(g, sg, request, opts);
+  }
+  function runPipeline(g, sg, request, opts) {
     const enumerated = enumerate(g, sg, request, opts);
     if (opts.fullEngrave) {
       const scored = maybeRescue(scoreCandidates(enumerated.candidates, g, sg, request, opts), g, sg, request, opts, opts);
@@ -656,6 +820,14 @@
   }
 
   async function runUncachedAsync(g, sg, request, opts) {
+    const gm = guardedSource(g, sg, opts);
+    if (gm) {
+      const out = await runPipelineAsync(gm.graph, sg, request, opts);
+      if (out && out.ok) return Object.assign({}, out, { source: gm.graph, melodyGuard: gm.stats });
+    }
+    return runPipelineAsync(g, sg, request, opts);
+  }
+  async function runPipelineAsync(g, sg, request, opts) {
     const tick = typeof opts.yield === 'function' ? opts.yield : () => Promise.resolve();
     const it = enumerateSteps(g, sg, request, opts);
     let step;
@@ -680,7 +852,7 @@
 
   return Object.freeze({
     PATTERNS, ALL_PATTERNS, STRIDE_PATTERNS, patternsFor, LEVEL_OFFSETS_DEFAULT, TOP_K_FOR_ENGRAVE_DEFAULT, HAND_CROSSING_MAX,
-    specOrder, patternProfileSpecs, specKey, enumerate, scoreCandidates, badnessOf, select, selectWithEngraveGate, explain, run, runAsync, strayRescue, fewestDrops,
+    specOrder, patternProfileSpecs, specKey, enumerate, scoreCandidates, badnessOf, select, selectWithEngraveGate, explain, run, runAsync, strayRescue, fewestDrops, guardMelody, MELODY_GUARD,
     DEFAULT_WEIGHTS
   });
 });

@@ -830,13 +830,13 @@ against the TRUE score: its melody (SongGraph's melody voice of the true score, 
 the true score), its own arrangement by the same pipeline (the `clean.*` columns: the ceiling). True melody notes are matched to the
 heard notes by pitch and time (one to one, 0.2 s), so a note the transcription never heard is charged to the transcription
 (`src.melody.heard` 0.984), not to the arranger. Metrics (a case's value is the mean over the levels made): `arr.made`,
-`arr.melody.kept / cross / lost / gap_rate`, `arr.harmony.agreement`, `arr.level.distinct / distance`, `arr.lh.notes_per_bar`,
+`arr.melody.kept / cross / lost / gap_rate`, `arr.rh.not_melody` (from PR b: the precision side), `arr.harmony.agreement`, `arr.level.distinct / distance`, `arr.lh.notes_per_bar`,
 `arr.rh.above_c6`, `arr.hard.violations`, `arr.check.1..7`; definitions in the header of `rec-arrange.js` and in the README.
 
 Suites: `rec-arrange-smoke` (16 smoke references x cover, cover+of x app, v2: 64 cases, about 1 min), `rec-arrange-core` (64 small and
 middle-sized core references x cover, plus the 20 real-AMT fixtures of `replay-of`, x app, v2: 168 cases, about 2.5 min), both in the
 `bench` gate; `rec-arrange-full` (all 141 core references x cover x app, v2: 282 cases, about 8 min, aggregates only) and
-`mutation-check --rec-arrange` (13 planted defects, about 6 min) in `nightly-rec`. The system under test now includes the arranger's
+`mutation-check --rec-arrange` (14 planted defects, about 6 min) in `nightly-rec`. The system under test now includes the arranger's
 modules (`pppbench/sut.py` `SUT_TREES`: songgraph, arrangement, candidates, repair, realize, critics, playability, difficulty, with
 scoregraph and rec), so an A/B or a mutant carries the arranger a result names; the ruler (the true score's analysis, the checker,
 hard violations) is always the repository's own, so a planted defect cannot move its own measure.
@@ -885,9 +885,9 @@ suites leave it out (the table is a one-off).
 
 - `results.json` of `rec-arrange-smoke` (`6f6bce30f78ec8d5`) and `rec-arrange-core` (`a2260b1d035534f1`): byte-identical over three
   runs on Windows (Python 3.13.5, Node 24.17); Linux (Docker `node:24-bookworm`, offline, Python 3.11, the README's recipe, an LF clone of the commit): the same two hashes, both `check` PASS.
-- `mutation-check --rec-arrange`: 13 planted defects, one per metric (melody dropped, melody written in the left hand, levels collapsed,
+- `mutation-check --rec-arrange`: 14 planted defects, one per metric (melody dropped, melody written in the left hand, levels collapsed,
   one-note pass off, right hand two octaves up, planner finds no plan, left hand silent, no shortest rest, gaps never closed, rests
-  not tidied, dotted 16th rest, exact bars off, a 4:3 bracket), each a REGRESSION naming its metric; the no-op byte-identical.
+  not tidied, dotted 16th rest, exact bars off, a 4:3 bracket, and from PR b a loosened melody guard), each a REGRESSION naming its metric; the no-op byte-identical.
 - 9 unit tests (`tests/bench/unit/test_rec_arrange.py`) and 8 pure-metric tests (`tests/bench/node/rec-arrange.test.js`).
 
 ### 19.5 Limits and departures from the design
@@ -901,3 +901,78 @@ suites leave it out (the table is a one-off).
   teacher's piece (private) is not in this PR; its aggregates come with the guard.
 - `rec-arrange-core` leaves out the 700- to 1,000-note sonatinas and czernys (one arrangement costs up to a minute); `rec-arrange-full`
   has them.
+
+### 19.6 The interim melody guard (PR b)
+
+**What it is.** `candidates/index.js` `guardMelody(g, sg)` (module-level, exported; opts: `melodyGuard: false` is the rollback). `run()` / `runAsync()`
+call it first, for a one-note-per-hand request (`singleNoteHands`, the Song Arranger's) on a graph whose provenance says `audio-score` (the same gate as the
+gap passes, `GAPS.isTranscription`), on a one-part, two-staff piano graph. It looks across both staves of the SOURCE graph, before the planner, and moves a
+note of the lower staff into the melody voice when all of these hold: it is the top note of the lower staff at its onset (the skyline) and at or above C3, not
+tied; the upper staff sounds nothing at that onset; it continues the melody on every side where a melody note is within four quarters (within a fourth of the
+previous melody note, which may be a note this pass moved, and of the next one; a fifth when the gap is wider than half a quarter); and the move leaves no
+silence a recording's writer would not write (a rest shorter than an eighth between two notes: the melody note before it, and the lower voice's note before the
+hole, are lengthened over it, or the note stays). Only the top head of an event moves; its id, pitch and onset stay (the performance layer's links hold); the
+moved note lasts to the next melody onset when its own length ends before it by less than an eighth, and is cut to it when it would run over; the rests are
+written again (`pro-staff.js` `restPieces`), then `rec-tuplet.addTriplets` and `gaps.tidyRests` as the recording's source was. The edit validates or the graph
+stays as it was. The selection names the source (`selection.source`, `selection.melodyGuard`); `repairSelection` reads the melody to protect, the smells and the
+gap passes' gate from it. When the guarded run finds no arrangement the graph as it was is run: nothing that is arranged or refused without the guard changes
+status. One note per hand is untouched: the guard runs before the realizer; the hard filter, the stray-note rescue and the repair decide as before.
+`arrangeSingleNote` (the app) is not changed: the guard is reached through `CAND.runAsync` and `REPAIR.repairSelection`, which it already calls.
+
+**Parameters** (C3 floor, a fourth, a fifth, four quarters) come from a nine-point sweep of detection precision and recall on the 141 core references
+(the app row's `cover` recordings), not from the arranger's metrics; the sweep's alternatives kept precision 0.64-0.91 at recall 0.22-0.69 (a looser step buys
+recall and loses precision). Measured with the final code against the true melody: **precision 0.929** (of 337 moved notes 313 are true melody notes; 24 are
+not) and **recall 0.465** (of the 673 heard melody notes that sit in the lower staff while the upper staff is silent) on the 141 core references; on the 52
+hold-out references (seeds 11 and 12, never looked at while choosing): precision 0.952, recall 0.273.
+
+**What it does on the benchmark** (`rec-arrange-core`, main `e2c066b` against this branch; the app row and the v2 row, 84 cases each; the `rec-arrange-full`
+aggregate of 282 cases moves the same way: gap rate 0.0203 -> 0.0092, kept 0.9408 -> 0.9512):
+
+| metric | app: main -> guarded | v2: main -> guarded |
+| --- | --- | --- |
+| `arr.melody.gap_rate` (right hand silent at a heard melody note) | 0.0272 -> 0.0124 | 0.0232 -> 0.0084 |
+| `arr.melody.kept` | 0.9415 -> 0.9557 | 0.9430 -> 0.9565 |
+| `arr.melody.cross` / `lost` | 0.0049 -> 0.0040 / 0.0536 -> 0.0402 | 0.0047 -> 0.0037 / 0.0523 -> 0.0398 |
+| `arr.rh.not_melody` (the precision side: right-hand attacks that are no melody note) | 0.0550 -> 0.0555 | 0.0549 -> 0.0556 |
+| `arr.harmony.agreement`, `arr.level.distinct`, `arr.rh.above_c6`, `arr.hard.violations` | unchanged (0.5714 -> 0.5730, 0.1084, 0.0189 -> 0.0188, 0) | unchanged (0.6907, 0.2289, 0.0190 -> 0.0188, 0) |
+| `arr.lh.notes_per_bar` | 3.95 -> 4.02 | 5.77 -> 5.79 |
+| checker classes 1 / 2 / 4 / 5 / 6 per 100 bars | 5.73 -> 6.34 / 0.72 -> 0.91 / 0.10 -> 0.18 / 16.5 -> 18.8 / 30.2 -> 35.8 | 0.377 -> 0.457 (1), 4.25 -> 4.33 (5), the others unchanged |
+| methods (hanon, burgmuller, sonatina, czerny): gap rate / kept | 0.058 -> 0.023 / 0.894 -> 0.928 (app and v2 together) | |
+| the 20 real-AMT fixtures: gap rate / kept | 0.0034 -> 0.0028 / 0.9860 -> 0.9867 | |
+
+Hymns and micro pieces move by thousandths (the hand split rarely errs there); the effect is the methods, Hanon first (the eight exercises' gap rate on the app row 0.09-0.58 -> 0.01-0.24, kept 0.36-0.83 -> 0.68-0.90).
+
+**The price, stated.** Four checker classes (1, 2, 5, 6) rise on the app row, and two of them by a little on the v2 row, and every one of those cases is a Hanon
+exercise: with the true melody in the right hand the generated-accompaniment candidates (`auto` at the small and medium profile) fall to a G5 hard violation
+and the one that survives is the verbatim copy of the source, which carries the recording's own bars that do not add up as drawn (the source of hanon/001
+has 12 of 20 bars so, class 5; without the guard `auto` regenerated them away). The guard creates none of it (on the seeded recording and on hanon/001 the guarded
+source has exactly the checker classes of the unguarded one), the selection moves to a candidate that keeps the melody. The g10 gate therefore reads REGRESSION on those four
+classes against the old baseline; the baselines (smoke, core, full) are re-recorded with this reason. The v2 recording lowers the same classes
+(5 and 6: 16.5 and 30.2 on app, 4.3 and 2.1 on v2), which is where that cost goes away.
+
+**The teacher-like piece** (the Lead's private 90-bar transcription graph, read locally, aggregates only): the guard moves 8 notes in 5 bars; the one-note
+arrangement at all three levels has 487 -> 495 right-hand notes, 120 -> 125 right-hand rests, and the rests that contain the onset of a source note at or
+above C4 that the hand split gave to the left hand go from 17 to 14 (E10's 15 of 118); hard violations 0 before and after; the source's checker classes stay
+0. So on that piece the guard closes about a fifth of the melody-shaped holes, not all of them: the other 14 sit in rests the continuity rule does not call
+melody (the true silences of a piece whose melody has gaps, and accompaniment in the melody's register); there is no truth for that piece to say which.
+The three levels are still one arrangement.
+
+**Identity** (all 975 requests, `tests/bench/tools/arrange-identity.js`: 325 catalogue pieces x 3 levels through the app's own import and `arrangeSingleNote`):
+against a clean `git archive` of origin/main `e2c066b`, **975 of 975 identical (933 results, 42 refusals, the same ones)**, 0 changed. No catalogue piece is a
+recording, and the gate keeps them out.
+
+**Tests.** `tests/repair/melody-guard.test.js` (9: the move on a seeded recording with its hand-split error, every head and onset kept, the performance layer
+untouched, the checker classes not up, idempotent, gated: a printed score and a recording without its provenance are the very same graph, a note that does not
+continue the line stays, `run()` names the source and `melodyGuard: false` is the rollback, the app's arrangement at the three levels has the note in the right
+hand with no hard violation and an unguarded run drops it, the stored 90-bar graph, the guard in the page's bare vm context); one existing test
+(`g9e-stray-note`, the rescue compared with and without itself) now runs both sides with the guard off, with the reason in the test. `test:repair` 152,
+`test:realize` 181, `test:critics` 97, `test:review` 89, `tests/single-note-app.test.js` all passed in the real page (own server, `with-port`),
+`mutation-check --rec-arrange` with a planted loosened guard (`ARR-GUARD-LOOSE`: no pitch floor, a step of two octaves) caught by `arr.rh.not_melody`.
+
+**Limits.** Recall 0.47 (0.27 on the hold-out): a melody that lives wholly in the lower staff (the Hanon exercises whose whole texture the hand split put there: no
+melody note on either side to continue) is not found, and a tied melody note is left alone (about a sixth of the misses); the continuity rule is a pitch rule,
+so an accompaniment note a fourth below the tune inside a rest is moved (7 % of the moves are not the melody); the guard does not touch the levels' collapse, the dense left hand, or the 45 % of right-hand notes above C6 of the
+design's E10; `rec-arrange` does not measure the guard on the teacher's own piece (no truth). Where the design said "the melody is the cross-staff skyline
+above the hand split's local boundary with a continuity cost", this is a skyline with a continuity threshold and a repair of the source, not a path search,
+and it works on the source graph (`candidates/`), not on the arranged one (`repair/`): moving a note after the arranger has thinned the left hand cannot get
+it back, and the planner would already have planned for a melody with a hole.

@@ -31,6 +31,15 @@ function melodyStats(ix, melodyAt) {
   return { kept: kept / n, cross: cross / n, lost: lost / n, gap_rate: gap / n };
 }
 
+/* The upper staff's attacks that are not a true melody note (same pitch, onset within the slack): the share of them, null with none. A note moved into the melody hand that is not the melody
+   (an accompaniment note a guard took for it) shows here; `melodyAt` is the heard true melody. */
+function notMelody(ix, melodyAt) {
+  const up = ix.onsets.filter(n => n.staff === 0);
+  if (!up.length) return null;
+  const isMelody = n => melodyAt.some(m => m.midi === n.midi && Math.abs(m.q - n.q0) <= TOL_Q);
+  return up.filter(n => !isMelody(n)).length / up.length;
+}
+
 /* chordsAt: [{q, chord}] the true chord at a position; `windows`: [{q0, q1, chord}] the graph's own. Share of the true positions that fall in a window with the same chord
    (a position in no window is not counted); null when none is. */
 function chordAgreement(windows, chordsAt) {
@@ -85,4 +94,4 @@ function matchHeard(truth, heard, windowS) {
   return out;
 }
 
-module.exports = { TOL_Q, C6, indexNotes, hasOnset, sounds, melodyStats, chordAgreement, handStats, keysOf, levelSpread, matchHeard };
+module.exports = { TOL_Q, C6, indexNotes, hasOnset, sounds, melodyStats, notMelody, chordAgreement, handStats, keysOf, levelSpread, matchHeard };

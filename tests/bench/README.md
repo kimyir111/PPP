@@ -375,6 +375,7 @@ the arrangements (`node/rec-arrange.js`, the pure part in `node/rec-arrange-metr
 | `arr.made` | share of the three levels that were made (the others are refusals) |
 | `arr.melody.kept` / `.cross` / `.lost` | of the true melody notes the transcription heard: in the right hand (same pitch, onset within 0.15 quarter) / only in the left / nowhere |
 | `arr.melody.gap_rate` | of the same notes: the right hand sounds nothing at the onset (a rest in the melody staff) |
+| `arr.rh.not_melody` | share of the right hand's attacks that are no true melody note (a note taken for the melody that is not: the precision side of the melody guard) |
 | `arr.harmony.agreement` | share of the true score's beat windows (G7a root + quality) whose chord the arrangement has |
 | `arr.level.distinct`, `arr.level.distance` | 0 when the three levels are one arrangement; mean Jaccard distance of their notes |
 | `arr.lh.notes_per_bar`, `arr.rh.above_c6` | left-hand attacks per bar; share of right-hand attacks above C6 |
@@ -393,6 +394,16 @@ python tests/bench/run.py run --suite rec-arrange-smoke    # 16 references x cov
 python tests/bench/run.py run --suite rec-arrange-core     # 64 small and middle-sized core references x cover + the 20 replay-of fixtures x app, v2: ~2-3 min; CI
 python tests/bench/run.py run --suite rec-arrange-full     # every core reference x cover x app, v2 (aggregates only): nightly
 python tests/bench/run.py mutation-check --rec-arrange     # one planted defect per metric in the arranger (rec-arrange-mutation); nightly
+```
+
+`tools/arrange-identity.js` is the identity check for a change that must leave every printed score as it was (G10c-0's melody guard):
+all 975 requests (the 325 catalogue pieces x 3 levels, through the app's own import and `arrangeSingleNote`) on a clean `git archive`
+of origin/main and on a tree, then `--merge` the shards and `--compare` them (`--shard I/N` splits the files; about 3 minutes on 4 shards):
+
+```sh
+node tests/bench/tools/arrange-identity.js --root <clean extract> --out clean-0.json --shard 0/4     # and 1/4 .. 3/4; the same with --root . for the tree
+node tests/bench/tools/arrange-identity.js --merge clean.json clean-0.json clean-1.json clean-2.json clean-3.json
+node tests/bench/tools/arrange-identity.js --compare clean.json tree.json                            # exit 1 unless 975 of 975 are identical
 ```
 
 ## Known production failures (measured, not fixed)

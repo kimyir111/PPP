@@ -135,6 +135,7 @@ ARRANGE_GATE = {
     "arr.melody.cross": {"dir": "down", "tol": 0.002},
     "arr.melody.lost": {"dir": "down", "tol": 0.002},
     "arr.melody.gap_rate": {"dir": "down", "tol": 0.002},
+    "arr.rh.not_melody": {"dir": "down", "tol": 0.003},
     "arr.harmony.agreement": {"dir": "up", "tol": -0.005},
     "arr.level.distinct": {"dir": "up", "tol": -0.01},
     "arr.level.distance": {"dir": "up", "tol": -0.01},
