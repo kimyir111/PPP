@@ -130,24 +130,23 @@ jobs:
       # G04 §21.5, §24.8 (G4f-1): the gate job's npm run test:engrave already carries the whole mutation suite
       # (M1-M25, G04 §23) and bench.js check --suite r - both stay in the gate because they measured well inside
       # A41's <= 90 s budget (G4f-1's record, docs/GOALS/G04_PROFESSIONAL_ENGRAVING.md §40). This job reconfirms the
-      # full suite independently of the gate, then carries the checks that need a live page and puppeteer (A43's
-      # legacy-vs-engrave comparison, A35-A37's CPU 4x throttle) - the gate stays Node-only and npm-install-free by
-      # design; this job is where the expensive, browser-dependent evidence lives. The three engrave/puppeteer
-      # steps run continue-on-error: this is their first time in CI (previously local-only tools, G04 §21.5 marks
-      # legacy-geometry.js and the perf tools "로컬") - a runner-specific hiccup (Chrome download, a missing system
+      # full suite independently of the gate, then carries the checks that need a live page and puppeteer (A35-A37's
+      # CPU 4x throttle, A38-A40's print pipeline) - the gate stays Node-only and npm-install-free by
+      # design; this job is where the expensive, browser-dependent evidence lives. The two puppeteer
+      # steps run continue-on-error: this was their first time in CI (previously local-only tools, G04 §21.5 marks
+      # the perf tools "로컬") - a runner-specific hiccup (Chrome download, a missing system
       # font affecting text metrics) should not turn nightly red before the Lead has seen a first real run; the
-      # uploaded JSON keeps the result visible either way (G4-F3).
+      # uploaded JSON keeps the result visible either way (G4-F3). A third step, A43's legacy-vs-engrave comparison
+      # (tests/engrave/tools/legacy-geometry.js), was removed with the legacy renderer (G4 #54, 4962251): its
+      # continue-on-error hid "Cannot find module" on the first nightly that reached it (2026-10-03).
       - run: npm run test:engrave                          # the full mutation suite (all 25, G04 §23), reconfirmed apart from the gate
       - run: npm run test:scoregraph
-      - run: npm ci                                        # puppeteer, for the three steps below only
+      - run: npm ci                                        # puppeteer, for the two steps below only
       - name: serve this tree for the puppeteer tools
         run: |
           NODE_ENV=production HOST=127.0.0.1 PORT=8801 node server.js &
           for i in $(seq 1 30); do curl -sf http://127.0.0.1:8801/ > /dev/null && break; sleep 1; done
           curl -sf http://127.0.0.1:8801/ > /dev/null || { echo "the server never came up - failing this step so it is not confused with a puppeteer-tool hiccup (Lead re-check, G4f-1)"; exit 1; }
-      - name: A43 - legacy vs engrave (tests/engrave/tools/legacy-geometry.js)
-        continue-on-error: true
-        run: node tests/engrave/tools/legacy-geometry.js --url http://127.0.0.1:8801 --suite r --out tests/engrave/out/legacy-geometry.json
       - name: A35-A37 - page performance at CPU 1x and 4x (tests/engrave/tools/page-check.js)
         continue-on-error: true
         run: node tests/engrave/tools/page-check.js --url http://127.0.0.1:8801 --part perf,a31 --cpu 1,4 --out tests/engrave/out/page
@@ -159,7 +158,6 @@ jobs:
         with:
           name: bench-g4f
           path: |
-            tests/engrave/out/legacy-geometry.json
             tests/engrave/out/page/page-check.json
             tests/engrave/out/print/print-check.json
 

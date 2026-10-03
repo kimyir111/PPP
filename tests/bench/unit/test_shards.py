@@ -242,6 +242,19 @@ class WorkflowAgrees(unittest.TestCase):
                 self.assertIn("fetch-depth: 0", checkout, f"job {name} checks out a shallow clone")
         self.assertGreaterEqual(seen, 2)                                              # the gate and the nightly
 
+    def test_every_script_and_npm_script_a_job_runs_exists(self):
+        """A step that runs a tool that is gone fails with 'Cannot find module'; under continue-on-error nobody sees it
+        (A43's legacy-geometry.js, removed with the legacy renderer in G4, failed so in every nightly that got there)."""
+        import re
+        for m in re.finditer(r"\b(?:node|python)\s+((?:[\w.-]+/)+[\w.-]+\.(?:js|py))", self.text):
+            self.assertTrue(os.path.exists(os.path.join(util.repo_root(), m.group(1))), f"the workflow runs {m.group(1)}")
+        with open(os.path.join(util.repo_root(), "package.json"), encoding="utf-8") as handle:
+            scripts = json.load(handle)["scripts"]
+        used = set(re.findall(r"\bnpm run ([\w:-]+)", self.text))
+        self.assertTrue(used)
+        for name in used:
+            self.assertIn(name, scripts, f"the workflow runs npm run {name}")
+
     def test_the_merge_waits_for_the_shards_and_nothing_runs_rec_full_whole(self):
         import re
         self.assertIn("needs: nightly-rec-shard", self.text)
