@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Write the recording suites (G10a-0, docs/GOALS/G10 section 7.6): rec-smoke, rec-core, rec-robust, rec-full,
-rec-mutation (the sensitivity check of the recording metrics) and rec-mutation-v2 (G10a-1: of the v2 time skeleton).
+rec-mutation (the sensitivity check of the recording metrics), rec-mutation-v2 (G10a-1: of the v2 time skeleton and, from
+G10a-2, of its grid stage) and rec-grid (G10a-2: v2 with and without its grid stage, rec/grid.js).
 
     python tests/bench/tools/make_rec_suites.py            # writes tests/bench/suites/rec-*.json
     python tests/bench/tools/make_rec_suites.py --check    # the committed files are this tool's output (exit 1 if not)
@@ -38,13 +39,11 @@ ROBUST = [("cover-alt", "none"), ("cover-alt", "oracle-noisy")]
 MUTATION = [("cover", "none"), ("human", "oracle")]    # human + oracle beats: the family where G0 passes a quarter of the cases, so rec.usable can move
 FULL = [("cover", "none"), ("cover-pedal", "none"), ("human-real", "none"), ("swing", "none"), ("cover+of", "none"),
         ("cover-pedal+helper", "oracle-noisy")]
-# rec-grid: the grid stage judged where the time skeleton is given (oracle beats: the stage alone; oracle-noisy: the helper's
-# beats) and on the production path (beats none), with the swing family (long-short eighths written straight) and the browser
-# model's error overlay
-GRID = [("cover", "oracle"), ("cover", "oracle-noisy"), ("human-real", "oracle"), ("cover+of", "oracle"), ("swing", "oracle"),
-        ("cover-pedal+helper", "oracle-noisy"), ("cover", "none")]
-GRID_FULL = [("cover", "oracle"), ("cover", "oracle-noisy"), ("human-real", "oracle"), ("swing", "oracle"), ("cover+of", "oracle"),
-             ("cover-alt", "oracle")]
+# rec-grid (G10a-2): v2's grid stage on the very same performances and skeleton with and without rec/grid.js: the beats given
+# (oracle: the grid stage is judged where the time skeleton is right), the swing family (long-short eighths, written straight),
+# the browser model's error overlay, and the production path (beats none). The oracle-noisy rows are in rec-core: their beat
+# noise is drawn per options name, so they would not pair here
+GRID = [("cover", "oracle"), ("human-real", "oracle"), ("cover+of", "oracle"), ("swing", "oracle"), ("cover", "none")]
 
 REC_GATE = {
     "rec.usable": {"dir": "up", "tol": -0.005},
@@ -134,15 +133,9 @@ def build() -> dict:
                          gate=gate(suite_mod.GATE_FULL, holdout=True)),
         "rec-grid": dict(base, name="rec-grid", references=core["references"], matrix=rows(GRID, [1], opts_axis=GRID_OPTS),
                          description="G10a-2 grid stage (S3, rec/grid.js): the core references x the humanizer's families with the beats "
-                                     "given (oracle, oracle-noisy) and as production finds them (none), the swing family included, x stage "
-                                     "options v2-s3legacy (v2 with G10a-1's legacy quantiser) / v2 (v2 with rec/grid.js)",
+                                     "given (oracle) and as production finds them (none), the swing family included, x stage options "
+                                     "v2-s3legacy (v2 with G10a-1's legacy quantisers) / v2 (v2 with rec/grid.js)",
                          gate=gate(suite_mod.GATE_CORE)),
-        "rec-grid-full": dict(base, name="rec-grid-full", references=full["references"], holdout_seeds=[11, 12],
-                              matrix=rows(GRID_FULL, [1, 2], opts_axis=GRID_OPTS),
-                              description="Nightly/manual: the grid stage on every lint-clean reference, hold-out included (seeds 11, 12), "
-                                          "oracle beats (and cover oracle-noisy; cover-alt, the uncalibrated robustness family) x v2-s3legacy / "
-                                          "v2; the hold-out is reported as an aggregate",
-                              gate=gate(suite_mod.GATE_FULL, holdout=True)),
     }
 
 

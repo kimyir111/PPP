@@ -384,9 +384,20 @@ function fit(rows) {
       if (!heardFr.has(wi)) heardFr.set(wi, []);
       heardFr.get(wi).push(tq - W[wi][0]);
     });
+    /* the beats the stage sees an onset in (by time, as rec/grid.js beatsOf assigns them): a beat with no written onset of
+       its own can still hold one - the next beat's first onset heard early - and is then an EMPTY '16' pattern whose onset
+       the early downbeat point explains (without it the empty pattern would have no mass and such an onset would be
+       forced onto a 32nd) */
+    const seen = new Set();
+    const onsT = G._.onsetsOf(cl, SLOT_GAP);
+    G._.beatsOf(onsT, frame.beats);
+    onsT.forEach(o => seen.add(o.beat));
     let prev = null;
     W.forEach((w, wi) => {
-      if (!w[6]) { return; }
+      if (!w[6]) {
+        if (seen.has(wi)) { pat['16'][0]++; count['16']++; if (prev !== null) { from[prev]++; if (prev === '16') same[prev]++; } prev = '16'; }
+        return;
+      }
       const k = kindOfWindow(w);
       const fr = heardFr.get(wi) || [];
       /* the heard occupancy pattern of the beat (a triplet-16th beat, T6, has no pattern on the thirds: it only counts

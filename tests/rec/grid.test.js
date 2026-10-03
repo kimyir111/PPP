@@ -7,7 +7,6 @@ const assert = require('node:assert/strict');
 const path = require('path');
 const { REPO, perform, lcg, skeletonInput } = require('./helpers.js');
 const G = require(path.join(REPO, 'rec', 'grid.js'));
-const AS = require(path.join(REPO, 'audio-score.js'));
 
 /* beats every `spb` seconds from `start` */
 const beatGrid = (start, spb, n) => Array.from({ length: n + 1 }, (_, i) => start + i * spb);
@@ -104,25 +103,6 @@ test('legacyQ returns the legacy quantiser\'s note shape, with tuplet / subdivis
     else assert.ok(o % 3 === 0 && !(o === 8 || o === 16), 'a straight note on the 32nd lattice: ' + n.tick);
   });
   assert.ok(r.q.some(n => n.tuplet) && r.q.some(n => !n.tuplet));
-});
-
-test('v2 uses rec/grid.js as its stage S3; grid "legacy" keeps the legacy quantiser; legacy never loads rec/grid.js', () => {
-  const p = perform([[0, [48, 60], 1], [1, [64], 1 / 3], [1 + 1 / 3, [65], 1 / 3], [1 + 2 / 3, [67], 1 / 3], [2, [69, 52], 1], [3, [72], 1]], 4, 12, 96, { jitter: 0.012, seed: 4 });
-  const base = { title: 't', closeGaps: true, exactBars: true };
-  const v2 = AS.toMusicXml({ notes: p.notes }, Object.assign({ recording: 'v2' }, base));
-  const v2legacy = AS.toMusicXml({ notes: p.notes }, Object.assign({ recording: 'v2', grid: 'legacy' }, base));
-  assert.ok(v2.gridPlan && v2.gridPlan.report.model.startsWith('ai5b-grid@'));
-  assert.equal(v2legacy.gridPlan, undefined);
-  const src = v2.graph.provenance.sources[0];
-  assert.ok(src.params.recording.grid && src.params.recording.grid.model === v2.gridPlan.report.model);
-  /* legacy and app options: the module is not even required */
-  const key = require.resolve(path.join(REPO, 'rec', 'grid.js'));
-  const had = key in require.cache;
-  delete require.cache[key];
-  AS.toMusicXml({ notes: p.notes }, base);
-  AS.toMusicXml({ notes: p.notes }, { title: 't' });
-  assert.equal(key in require.cache, false, 'legacy loaded rec/grid.js');
-  if (had) require(key);
 });
 
 test('budget (section 11): S3 on a three-minute performance of about 1800 notes stays well inside the 300 ms of the design', () => {

@@ -2,7 +2,7 @@
  "align": {
   "window_s": 0.3
  },
- "description": "G10a-2 grid stage (S3, rec/grid.js): the core references x the humanizer's families with the beats given (oracle, oracle-noisy) and as production finds them (none), the swing family included, x stage options v2-s3legacy (v2 with G10a-1's legacy quantiser) / v2 (v2 with rec/grid.js)",
+ "description": "G10a-2 grid stage (S3, rec/grid.js): the core references x the humanizer's families with the beats given (oracle) and as production finds them (none), the swing family included, x stage options v2-s3legacy (v2 with G10a-1's legacy quantisers) / v2 (v2 with rec/grid.js)",
  "gate": {
   "case_fail_drop": 10.0,
   "case_flip_max": 2,
@@ -294,33 +294,6 @@
    ]
   },
   {
-   "beats": "oracle-noisy",
-   "opt_name": "v2-s3legacy",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true,
-    "grid": "legacy",
-    "recording": "v2"
-   },
-   "profile": "cover",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "oracle-noisy",
-   "opt_name": "v2",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true,
-    "recording": "v2"
-   },
-   "profile": "cover",
-   "seeds": [
-    1
-   ]
-  },
-  {
    "beats": "oracle",
    "opt_name": "v2-s3legacy",
    "opts": {
@@ -397,33 +370,6 @@
     "recording": "v2"
    },
    "profile": "swing",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "oracle-noisy",
-   "opt_name": "v2-s3legacy",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true,
-    "grid": "legacy",
-    "recording": "v2"
-   },
-   "profile": "cover-pedal+helper",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "oracle-noisy",
-   "opt_name": "v2",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true,
-    "recording": "v2"
-   },
-   "profile": "cover-pedal+helper",
    "seeds": [
     1
    ]
