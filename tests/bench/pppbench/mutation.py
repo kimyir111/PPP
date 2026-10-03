@@ -423,7 +423,7 @@ REC_MUTATIONS: List[Dict[str, Any]] = [
      "expect": "PASS", "metrics": []},
 ]
 
-# G10c-0 (docs/GOALS/G10 section 17, "G10c-0"): one planted defect per rec-arrange metric (tests/bench/node/rec-arrange.js), run on the
+# G10c-0 (docs/GOALS/G10 section 20): one planted defect per rec-arrange metric (tests/bench/node/rec-arrange.js), run on the
 # `rec-arrange-mutation` suite. The defects are in the arranger (the SUT's realize/, candidates/, scoregraph/, audio-score.js); the ruler (the
 # repository's own songgraph/, playability/, the checker) is never mutated, so a defect cannot move its own measure. Each must be a REGRESSION that
 # names every metric listed; the no-op must leave results.json byte identical.
@@ -536,6 +536,28 @@ REC_V2_MUTATIONS: List[Dict[str, Any]] = [
      "find": "      const r = quantize(clustered, beats, trip, true);",
      "replace": "      const r = quantize(clustered, beats, trip, false);",
      "expect": "REGRESSION", "metrics": ["critical.pitch_integrity", "notes.identity.f1", "rec.onset_f1"]},
+    # G10a-2: S4, the hands of rec/hands.js (one planted defect per decision: S4 used at all, the hands' motion, the piece's
+    # style, the partition prior). The hands' starting register is not guarded: swapping it moved notation.hand.accuracy on
+    # this suite from 0.9870 to 0.9871 (it decides only a piece's first notes) - a decision the gate cannot see
+    {"id": "REC-V2-HANDS-LEGACY", "v2": True,         # v2 writes the legacy pitch split again (S4 not used)
+     "find": "    const mode = opts.hands || (extra.recording === 'v2' ? 'v2' : 'legacy');",
+     "replace": "    const mode = opts.hands || 'legacy';",
+     "all": True, "expect": "REGRESSION", "metrics": ["critical.hands", "notation.hand.accuracy"]},
+    {"id": "REC-V2-HANDS-NO-MOTION", "v2": True,      # S4 ignores how far each hand moves (the continuity of a hand)
+     "file": "rec/hands.js",
+     "find": "    emit(L.move + (h * L.NB + bucketOf(P, g.t - t)) * (2 * MOVE_MAX + 1) + MOVE_MAX + clampI((lo + hi) - (sLo + sHi), -MOVE_MAX, MOVE_MAX));",
+     "replace": "    /* mutation: no motion cost */",
+     "expect": "REGRESSION", "metrics": ["notation.hand.accuracy"]},
+    {"id": "REC-V2-HANDS-ONE-STYLE", "v2": True,      # S4 never reads a chorale: the hymns' tenor goes to the upper staff
+     "file": "rec/hands.js",
+     "find": "    M.styles.forEach((st, si) => {",
+     "replace": "    M.styles.slice(0, 1).forEach((st, si) => {",
+     "expect": "REGRESSION", "metrics": ["notation.hand.accuracy"]},
+    {"id": "REC-V2-HANDS-NO-PART-PRIOR", "v2": True,  # S4 ignores how many notes each hand usually takes for a group's shape
+     "file": "rec/hands.js",
+     "find": "    emit(L.part + g.shape * (CAP + 1) * (CAP + 1) + Math.min(nL, CAP) * (CAP + 1) + Math.min(nR, CAP));",
+     "replace": "    /* mutation: no partition prior */",
+     "expect": "REGRESSION", "metrics": ["notation.hand.accuracy"]},
     {"id": "MUT-NOOP",
      "find": "  const api = {",
      "replace": "  /* noop mutation */\n  const api = {",

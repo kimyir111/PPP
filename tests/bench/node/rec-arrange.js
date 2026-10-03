@@ -19,7 +19,7 @@
    songgraph/, scoregraph/ and playability/ (analysis of the true score, harmony, the checker, hard violations), whatever the system under test is, so a
    planted defect in the system cannot change the ruler. Metric tool: it is not part of the SUT, and meta.sut_modules lists only the SUT's modules.
 
-   Metrics (a case's value is the mean over the levels that were made; names in docs/GOALS/G10 section 17 "G10c-0"):
+   Metrics (a case's value is the mean over the levels that were made; names in docs/GOALS/G10 section 20):
      arr.made                  share of the three levels (beginner, intermediate, advanced) the arranger made (the others are refusals)
      arr.melody.kept           share of the heard true melody notes the arrangement has, same pitch, in the right hand (the melody hand), onset within 0.15 quarter
      arr.melody.cross          ... that it has only in the left hand (the hand split's error, kept)

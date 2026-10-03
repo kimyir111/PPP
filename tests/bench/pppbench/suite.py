@@ -140,6 +140,10 @@ class Case:
     opts: Optional[Dict[str, Any]] = None
     holdout: bool = False
     tags: List[str] = field(default_factory=list)
+    # the stage-options name the performance is drawn under (a matrix row's "perform_as"; default its own opt_name): the
+    # overlays and noisy beats are seeded by that name, so a row that says perform_as "app" plays exactly the app row's
+    # performance with other options (G10a-2's rec-hands). No suite before it sets it: every other case is unchanged.
+    perform_as: Optional[str] = None
 
     @property
     def key(self) -> str:
@@ -221,7 +225,7 @@ def expand(suite: Dict[str, Any], refs: List[corpus.RefEntry]) -> List[Case]:
             for seed in seeds:
                 cid = case_id(rid, row["profile"], row["beats"], seed, row.get("opt_name"))
                 cases[cid] = Case(cid, rid, row["profile"], row["beats"], seed, row.get("opt_name"),
-                                  row.get("opts"), entry.holdout)
+                                  row.get("opts"), entry.holdout, perform_as=row.get("perform_as"))
     return [cases[k] for k in sorted(cases)]
 
 

@@ -814,13 +814,233 @@ relative to this baseline.**
   references move the same way (metre 0.537 -> 0.695): the gain is not memorised pieces.
 - **Not run here:** the teacher tier (the private graph is the Lead's; G10-D15) and the page (G10a-4).
 
-## 19. G10c-0: what the one-note arranger does to recordings (2026-10-03; implementer on Sonnet)
+## 19. G10a-2 (hands): stage S4 (2026-10-03; implementer on Opus, AI-5b)
 
-Worktree `D:/PPP-g10c0`, branch `g10-c0` from main `2e09fad`, merged with main `e2c066b` (G10a-1) before the PRs. Two PRs: (a) the
+Worktree `D:/PPP-g10a2hands`, branch `g10-a2hands` from `origin/main` `2e09fad`, `origin/main` `e2c066b` (G10a-1) merged in.
+Lane: S4 only (the grid, S3, is a parallel phase). Measurement first; every number below is reproducible with the commands in
+19.8.
+
+### 19.1 Baselines reproduced
+
+At `2e09fad`: `run` + `check` of rec-core and rec-robust PASS; `notation.hand.accuracy` 0.8946 (app) / 0.8938 (legacy),
+`critical.hands` 0.829 / 0.826 on rec-core, exactly the committed aggregates (the new `tools/hands_report.py` recomputes both from
+the cases and agrees to four decimals). After G10a-1 (v2, legacy S4): rec-core v2 hands 0.895, gate 0.824 (G10a-1 18.5: 0.824).
+
+### 19.2 Error analysis of the legacy hand split (rec-core, app options, 846 cases, 223,823 matched pairs)
+
+`python tests/bench/tools/hands_report.py --suite rec-core`: 22,907 pairs (10.2 %) on the wrong staff.
+
+| cause (reference onset group of the note) | wrong pairs | share |
+| --- | --- | --- |
+| **split**: both hands start notes there, the split point is wrong | 17,583 | 76.8 % |
+| solo-LH: only the left hand starts there, (part of) it went up | 2,701 | 11.8 % |
+| solo-RH: only the right hand starts there, (part of) it went down | 2,552 | 11.1 % |
+| cross: the reference itself crosses at that onset (no split can be right) | 71 | 0.3 % |
+
+By register: left-hand notes C4-B4 25 % wrong (8,829 of 34,714), left-hand notes >= C5 83 % (1,395 of 1,673), right-hand notes
+C3-B3 65 % (3,158 of 4,855), right-hand C4-B4 11 %. By family and mechanism (read case by case with the reference beside the
+output): **hymns** 7,240 split errors - the hymnal writes the tenor in the lower staff even when it sits above the alto's
+register, and a 4-part chord is two plus two, while the pitch split takes the tenor into the right hand (`my-hope-is-built` 0.70);
+**Hanon and Beyer's first pieces** (4,907 + most of Beyer's) - both hands in parallel octaves, a bare octave fits one hand so the
+split keeps both notes on one staff (Hanon 0.77, Beyer 032-034 0.50); **left-hand figures in the treble** (Beyer 052, Czerny
+849/007, sonatinas) - an Alberti or broken-chord left hand above C4 under a right-hand melody: the split point follows the figure
+up and hands its upper notes to the right hand (the solo causes). The melody gap of section 1 E10: a right-hand top note written
+in the left hand leaves a hole in the right-hand line; 7.3 % of the reference's melody notes (7,151 of 98,580; Hanon 31 %).
+
+### 19.3 What was built
+
+`rec/hands.js` (UMD, Node + page, pure, deterministic; registered as `PPPRecModules.hands`, exposed by `rec/index.js` as
+`hands`), weights `rec/weights/hands-v1.json` (25 KB), evaluation `rec/tools/hands-v1.evaluation.json`.
+
+**The model.** Notes that start together (the same tick; without ticks, attacks within 35 ms) are an onset group; inside a group
+the hands do not cross (the lowest k notes are the left hand's: 0.3 % of reference pairs say otherwise). A beam Viterbi (32 states)
+over the groups carries each hand's last notes (lowest, highest), when it played, how many notes, its previous inter-onset interval,
+and scores each k with the weighted sum of learned costs: **part** (how many notes each hand takes, given the group's size and shape:
+a bare octave, a wide pair, three, four, five or more notes), **span** (per hand and count), **move** (the change of a hand's centre,
+per hand and time since it last played), **reg** (each note's register per hand), **gap** (between the hands when both play), **rel**
+(one hand's new notes against the other hand's position), **cnt** (a hand's count after its previous count: texture continuity),
+**ioi** (a hand's new interval over its previous one: rhythm continuity). Each hand starts at the piece's lower / upper quartile
+(no flat "first note" cost). Two **styles**, each a full set of tables: *piano* (every collection but the hymns) and *chorale*
+(the hymns: four parts on two staves, tenor and bass below); every piece is decoded under both and the cheaper path's style is
+the piece's (the tables are counted the same way and the weights are shared, so the costs compare as weighted likelihoods).
+Confidence per note: a logistic of the cost margin to the best choice that puts the note in the other hand, from the same incoming
+state. Velocity and releases are deliberately not read (G10-D4; loudness is the synthetic performer's voicing cue, which the robust
+family switches off).
+
+**Training (AI-5b).** `python tests/bench/tools/hands_data.py` (the lint-clean, licence-evidenced references with two staves,
+the benchmark's own reader; hold-out flagged) then `node tests/bench/tools/train_hands.js`: each table is -log of add-0.5 smoothed
+counts along the written hands of the 257 training references (hold-out excluded), in integer thousandths; one weight per table by
+coordinate search over a fixed grid on the mean per-reference hand accuracy of the truth. Deterministic (no random, no clock; the
+decoding is spread over worker threads and put back in order); `--check` retrains and compares the weights and the truth evaluation
+byte for byte (in the gate, about 40 s). `hands_data.py --perfs` + the trainer also evaluate **S4's real input**: 1,538 humanized
+performances of the training references (cover, cover-pedal, human-real, cover+of; cover and cover-pedal+helper with helper beats;
+seed 201, which no suite and no other model uses) through `toMusicXml` v2, the quantized notes read where audio-score.js hands them
+to S4 (a require-cache stand-in in the trainer process only). Note-level data never leaves the git-ignored cache.
+
+| hand accuracy (mean per piece) | legacy split | S4 v1 |
+| --- | --- | --- |
+| truth groups, 257 training references | 0.854 | **0.984** |
+| truth groups, 52 hold-out references (never counted, never tuned on) | 0.844 | **0.977** |
+| S4's real input, 1,538 training performances (v2 skeleton and grid) | 0.866 | **0.973** |
+
+Per family (hold-out): Beyer 0.726 -> 0.991, Hanon 0.746 -> 0.994, hymns 0.867 -> 0.987, Czerny 599 0.930 -> 0.998, sonatina
+0.899 -> 0.949, Burgmüller (1 piece) 0.986 -> 0.997, **Czerny 849 0.878 -> 0.881 (gate 5 -> 4 of 6)**.
+
+**Wiring.** `audio-score.js` `finish()`: under `recording: 'v2'` the staff of every quantized note comes from `rec/index.js`'s
+`hands.assignQ` (S4); `opts.hands: 'legacy'` keeps `assignHands` under v2 (the "v2 without S4" arm); `opts.hands: 'v2'` swaps only S4
+on any path (the app's path in the `rec-hands` measurement suite). Without either option nothing changes. Asked for by name and
+missing is an error; under v2 without the option a page whose `rec/` has no hand model keeps `assignHands`, and `result.handsReport`
+(beside the graph, not in `stats`) says `{fallback: 'legacy'}`. Otherwise `handsReport` = `{model, style, groups, notes, right,
+left, lowConfidence}`.
+
+**Budget (section 11).** S4 alone: 25-30 ms for 1,070 notes (sonatina 018), 50-85 ms for a dense synthetic 1,800-note piece of
+three-note groups (Node 24, Windows, a loaded machine); with S0-S2's ~150 ms the v2 front end stays under 300 ms. Model 25 KB.
+
+### 19.4 What was tried and lost (measured, kept out)
+
+- **One table set for all textures** (no styles): truth 0.967 / hold-out 0.947, but the hymnal's two-plus-two leaked into piano
+  block chords (Czerny 599/035, micro M14: a bass note under a right-hand triad split 2+2): v2 path Czerny 599 0.980 -> 0.974.
+- **No count / rhythm continuity**: Beyer 067's right-hand sixths and Czerny 599/030's left-hand sixths split one note per hand
+  (in the piano corpus 88 % of two-note groups 5-9 semitones wide are split). The two features gained +0.002 truth / +0.005 hold-out;
+  Beyer 067 is still the worst training piece (0.61): an emission model pays for every event, so the path that explains the sixths
+  as one hand's dyads pays span and count costs the split path does not (19.7).
+- **Weights fitted on S4's real input** (`--tune both`): mean hand accuracy on rec-core + rec-robust v2 rows 0.9706 against 0.9703,
+  7 fewer cases passing the hands gate (Burgmüller); and it ties the weights to today's grid and skeleton artifacts, which S3 is
+  changing in parallel. Kept as an evaluation.
+- **The start register from the first 32 notes** and **a piece-relative register term** (distance to the legacy writer's global
+  split point): no change beyond noise (0.9703 / 0.9701), not kept.
+- **G3 `pro-staff` as the alternative S4** (G10-D14; `professional: 'on'`, only the staff pass): on rec-core + rec-robust v2 rows
+  0.894 -> 0.912 (gate 0.825 -> 0.886) over the legacy split, against 0.970 (gate 0.979) for S4; G3 on top of S4: 0.968 (it moves
+  hymn tenors back up: hymns 0.988 -> 0.971). Not used.
+
+### 19.5 Results: v2 (legacy S4) against v2 + S4
+
+Same performances, same SUT except S4 (`run.py ab --a git:origin/main --b worktree`, the `opts:v2` rows pair by case id; the
+legacy and app rows are byte-identical, 19.6).
+
+| suite, beats | n | hand acc | hands gate | usable | rec.usable | note values | rec.voice.f1 | rec.mv2h | rest P / R | false rests /100 bars | stability |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| rec-core, none | 564 | 0.894 -> **0.971** | 0.824 -> **0.980** | 0.089 -> **0.112** | 0.016 -> **0.028** | 0.243 -> 0.268 | 0.721 -> 0.798 | | | | 0.342 -> 0.346 |
+| rec-core, oracle-noisy | 282 | 0.895 -> **0.967** | 0.823 -> **0.975** | 0.074 -> **0.103** | 0 -> 0 | 0.270 -> 0.326 | 0.720 -> 0.792 | | | | 0.236 -> 0.232 |
+| rec-core, all | 846 | 0.895 -> **0.969** | 0.824 -> **0.979** (136 gained, 5 lost) | 0.084 -> 0.109 (+27, -6) | 0.011 -> 0.019 | 0.252 -> 0.287 (+46, -16) | 0.721 -> 0.796 | 0.765 -> 0.784 | 0.160 / 0.561 -> 0.190 / 0.547 | 109.0 -> 106.0 | 0.306 -> 0.308 |
+| rec-robust (cover-alt), all | 282 | 0.893 -> **0.973** | 0.826 -> **0.979** (44 / 1) | 0.046 -> 0.053 | 0 -> 0 | 0.085 -> 0.092 | 0.739 -> 0.822 | | | | 0.343 -> 0.341 |
+| rec-smoke | 48 | 0.952 -> **0.986** | 0.938 -> **1.000** | 0.250 -> 0.271 | 0.083 -> 0.104 | 0.333 -> 0.396 | 0.842 -> 0.893 | | | | 0.214 -> 0.216 |
+| **replay-of-v2** (the browser's O&F on rendered audio, 20) | 20 | 0.806 -> **0.966** | 0.65 -> **0.95** | 0.05 -> **0.25** | - | 0.55 -> 0.80 | - | | | | |
+| **hold-out** (rec-full seeds 11, 12: 52 references never counted or tuned on, 6 families) | 624 | 0.849 -> **0.961** | 0.744 -> **0.946** (132 / 6) | 0.087 -> **0.122** | 0.008 -> 0.022 | 0.210 -> 0.264 | 0.641 -> 0.762 | 0.736 -> 0.768 | 0.114 / 0.511 -> 0.154 / 0.498 | 124.1 -> 119.9 | 0.323 -> 0.327 |
+
+Hold-out by family: Beyer 0.744 -> 0.950, Hanon 0.775 -> 0.958, hymns 0.870 -> 0.991, Czerny 599 0.938 -> 0.988, sonatina 0.899 ->
+0.937, Burgmüller 0.983 -> 0.991, **Czerny 849 0.853 -> 0.854, and its hands gate 0.75 -> 0.67: the 6 hold-out cases that lose the
+gate are all Czerny 849** (left-hand figures in the treble, 19.7).
+
+By family (rec-core v2, hand accuracy): Beyer 0.755 -> 0.964 (gate 0.33 -> 0.94), Hanon 0.774 -> 0.971 (0.15 -> 1.00), hymns
+0.858 -> 0.987, sonatina 0.936 -> 0.968, Burgmüller 0.873 -> 0.903 (0.76 -> 0.93), catalog 0.896 -> 0.911, **Czerny 599 0.979 ->
+0.974, Czerny 849 0.952 -> 0.940, micro 0.989 -> 0.987 (2 cases lose the gate), samples 1.000 -> 0.947**.
+
+**Errors by cause and the melody gap** (`hands_report.py`, rec-core v2 rows, 846 cases): wrong pairs 22,858 -> 8,386 (pair accuracy
+0.898 -> 0.963); split 17,570 -> 4,003, solo-LH 2,625 -> 1,371, **solo-RH 2,588 -> 2,890**, cross 75 -> 122. By register: left-hand
+notes C4-B4 wrong 8,905 -> 1,522, left >= C5 1,388 -> 814, right C3-B3 3,098 -> 672, right C4-B4 5,174 -> 4,039, **right >= C5 435 ->
+1,007** (a high left-hand figure's neighbours pulled down: the cost of 19.7). **Melody gap** (a reference melody note - the right
+hand's top note at its onset - written in the left hand, the hole of section 1 E10): **7.0 % -> 3.9 %** of melody notes (6,917 ->
+3,885 of 98,545); Hanon 28.5 % -> 4.8 %, Burgmüller 9.3 -> 7.5 %, sonatina 5.6 -> 4.0 %, hymns 1.5 -> 0.5 %, Czerny 599 1.8 -> 0.6 %;
+worse: Czerny 849 5.6 -> 6.7 %, Beyer 1.6 -> 2.5 %, micro 0.7 -> 1.6 %.
+
+**S4 alone on the app's path** (`rec-hands`, the app's options and skeleton, only S4 swapped, the very performances of the app
+rows; 1,128 cases): hand accuracy 0.894 -> 0.970, critical.hands 0.831 -> 0.981 (174 gained, 5 lost), usable 0.014 -> 0.019,
+rec.voice.f1 0.725 -> 0.802, rest recall 0.540 -> 0.525, notation-check class 7 28.3 -> 30.0 per 100 bars (19.6), class 5 19.3 ->
+19.0, class 6 12.9 -> 12.7. The development numbers before G10a-1 merged (model without styles) were 0.958 on the same cases.
+
+### 19.6 What else moved, and why
+
+- **Notation-check classes** (rec-core v2, per 100 bars): 1 0.95 -> 0.96, 2 0.43 -> 0.43, 3 1.55 -> 1.49, 4 0.04 -> 0.03, 5 8.12 ->
+  8.23, 6 2.95 -> 2.89, **7 1.39 -> 1.41**. On the app path (rec-hands against the app rows) class 7 rises 28.3 -> 30.3: the legacy
+  grid's false triplet brackets (one-note brackets on Hanon's 16ths) are drawn once per staff, and a hand split that put both hands'
+  notes on one staff drew them once; with the hands right each staff draws its own (Hanon +21 per 100 bars). The defect is the grid's
+  (S3), not the hands'; v2's own grid writes few such brackets, so on v2 the effect is +0.03.
+- **Rests**: precision 0.160 -> 0.190 and false rests -3.0 per 100 bars, recall 0.561 -> 0.547. **Hymns' false rests rise 136 -> 167
+  per 100 bars and their note values 0.225 -> 0.196**: with the tenor in the lower staff a staff holds two parts with different
+  rhythms, which the one-voice writer (S5/S6, G10a-3) writes as one line with rests; the legacy split hid it by moving the tenor
+  into the right hand's chords. A voices decision for G10a-3, not a hand error.
+- **rec-full (nightly, 11,196 cases, every option set)**: hand accuracy 0.866 -> 0.902, critical.hands 0.767 -> 0.839, note values
+  0.104 -> 0.127; against its old baseline the check flags `tag set:hymns` note durations 0.537 -> 0.519 (the same tenor-below
+  effect), `feature:dense-chords` and `feature:pickup` durations -0.014 to -0.016, `metre-class:compound-triple` note values 3 of 36
+  cases, the sample's hands 0.999 -> 0.982; rebaselined with that reason.
+- **Accidentals**: 3 rec-core v2 cases lose `critical.accidentals`, 8 hold-out cases lose it and 2 gain it (an accidental's bar
+  state is per staff; a note moving staff changes which accidentals the page needs). **Ledger lines**: replay-of-v2 `read.ledger_lines.heavy_rate` 0 -> 0.014 (a warning:
+  a very high or low note on the other staff).
+- **The micro guard** (no drop allowed on a micro piece) flags v2 rows of micro pieces in the A/B: M05/M06 (32nd runs) hands 1.0 ->
+  0.77-0.94 and two lose the hands gate, M17, M01, M04, M07, M12 by 0.01-0.04. Read case by case: the v2 grid quantizes consecutive
+  32nds of a run to one tick, so S4 receives "chords" like C3 E3 G3 C4 D4 (the left hand's chord and the run's first two notes) and
+  splits them by register (S4's confidence on those notes is 0.2-0.5); the legacy split happened to cut them at middle C. S3's
+  32nd/tuplet acceptance criterion covers the cause; the rebaselined suites carry these values.
+
+### 19.7 Limits
+
+- **Czerny 849** (hold-out 0.88, rec-core 0.94, below the legacy split on rec-core) and **Burgmüller** (0.90): fast figures that the
+  grid merges into chords, and left-hand figures that leap above the right hand's position. **Beyer 067** (0.61 on the truth):
+  right-hand sixths over a sparse left hand read as one note per hand. Both need either a discriminative per-decision model (a CRF:
+  the generative costs charge every event a path explains) or a grid that keeps runs apart (S3).
+- **Styles** are piece-level: a piece that is a chorale in one section and piano writing in another takes one style.
+- **Truth convention**: the chorale style reproduces the hymnal's staves (tenor below) because the benchmark's truth is the hymnal;
+  for a hymn played as a piano arrangement a teacher might accept the tenor in the right hand.
+- **No real recording**: synthetic performances, the replay-of tier (real O&F on rendered audio) and the hold-out; the teacher's
+  private tier was not run (Lead).
+
+### 19.8 Verification
+
+- **Legacy byte-identical.** `run.py ab --a git:origin/main --b worktree` + `ab_identical.py`: smoke, core, robust, smoke-app,
+  core-app, robust-app, replay-public, replay-of, replay-of-app - every case the same (status, metrics, semantic projection). The
+  legacy and app rows of rec-smoke (96), rec-core (1,692) and rec-robust (564) identical case by case. The 975 `arrangeSingleNote`
+  requests (325 catalogue pieces x 3 levels) give the same graphs as a clean `git archive` of `origin/main` (933 arranged, 42
+  refusals with the same codes; none of its modules changed; checked by importing every catalogue file and running the app's extracted glue,
+  `tests/realize/app-single-extract.js`, from each tree, hashing the serialized graphs).
+- **Mutation coverage.** `mutation-check --rec`: the ten G10a-0 recording mutations and the six G10a-1 skeleton mutations still
+  caught, the no-ops byte-identical; S4's four on `rec-mutation-v2`, each a REGRESSION naming its metric: S4 back to the legacy split
+  (critical.hands 0.988 -> 0.786, notation.hand.accuracy 0.987 -> 0.896), no motion cost (-> 0.980), no chorale style (-> 0.928), no
+  partition prior (-> 0.972). Swapping the hands' starting registers moved the hand accuracy 0.9870 -> 0.9871 (it decides a piece's
+  first notes only): not kept as a guard, stated in `mutation.py`. No new metric was added (the melody gap is a report of
+  `hands_report.py`, not a gated metric: a new `rec.*` metric would change every row's results).
+- **Determinism.** The `results.json` of rec-smoke (`d9ed8014b35266a7`), replay-of-v2 (`fb51600af382af77`), rec-core
+  (`555997ad7367ef59`) and rec-robust (`6c547acc1e566b3b`) byte-identical over three runs on Windows (Python 3.13.5, Node 24.17) and
+  on Linux (`node:24-bookworm`, Python 3.11.2, Node 24.21, offline, the README's recipe), every `check` PASS there;
+  `train_hands.js --check` the same on both.
+- **Commands.** `python tests/bench/tools/hands_report.py --suite rec-core` (errors by cause, register, family; melody gap);
+  `python tests/bench/tools/hands_ab.py --a A/results.json --a-opt v2 --b B/results.json --b-opt v2 --by family` (case-by-case A/B);
+  `python tests/bench/run.py run --suite rec-hands` (S4 alone on the app path); `node tests/bench/tools/train_hands.js --check`.
+
+### 19.9 What the next phases need
+
+- **Interface** (`require('./rec/index.js').hands`, page `PPPRec.hands`): `assign(notes, opts) -> {staff, conf, report}`; notes
+  `{midi, tick?, on?, attack?, staff?}` in any order; `staff[i]` 1 (right hand, upper staff) or 2 (left), 0 for a note without a
+  pitch; a note that comes with staff 1 or 2 keeps it (conf 1); `conf[i]` in [0, 1]; opts `{model, chordWindow (0.035 s),
+  secondsPerTick (0.5/24), lowConf (0.75)}`; `report {version, model, style ('piano'|'chorale'), groups, notes, right, left,
+  lowConfidence}`. `assignQ(q, ctx)` writes `q[i].staff` on audio-score.js's quantized notes and returns the same result.
+  `setModel(json)`; a missing or foreign model throws `E-HANDS-NO-MODEL`.
+- **S3 (grid, parallel)**: S4 reads only `tick` (equal ticks = one onset group) and `attack`/`on` (seconds between groups). It runs
+  after the quantiser and before the staff-dependent writers (exact bars' per-staff snapping, rests). Notes S3 puts on one tick are a
+  chord to S4: merging a run's consecutive notes is the micro M05/M06 failure (19.6). A grid change needs no S4 change; the hand
+  weights are fitted on the truth, not on the grid's output, on purpose.
+- **G10a-3 (S5 voices, S6 rests)**: the chorale style marks four-part textures (two parts per staff with their own rhythms: the hymns'
+  rests of 19.6 want two voices per staff there); `conf` per note can feed S5 and G10a-4's uncertain-bar flags.
+- **G10a-4 (page)**: load `rec/hands.js` before `rec/index.js` and `rec/weights/hands-v1.json` as `window.PPPRecHandsWeights`.
+
+### 19.10 Against the design
+
+- `hand accuracy >= 0.95` (section 10, a2): met on every synthetic tier (rec-core 0.969, rec-robust 0.973, rec-smoke 0.986, replay-of-v2
+  0.966, hold-out 0.961) as a relative gain of +0.07-0.16 over the legacy split, not forced: Czerny 849 and Burgmüller stay
+  below it.
+- E10 / section 9's "the hand split creates the melody gaps": confirmed and reduced (melody gap 7.0 % -> 3.9 % on rec-core v2); the remaining gaps are the
+  grid's merged runs and the figures of 19.7.
+- Found on the way: the humanizer's `+of` / `+helper` overlays and `oracle-noisy` beats are seeded by the case's option name
+  (`perform.py`), so legacy / app / v2 rows of those families (3 of rec-core's 6 rows) are different draws, not the same input as
+  the G10a-0/a1 records say; the rec-hands suite uses the new matrix-row field `perform_as` to replay the app rows' very
+  performances. Rows with the same option name (v2 vs v2 + S4 here) were never affected.
+## 20. G10c-0: what the one-note arranger does to recordings (2026-10-03; implementer on Sonnet)
+
+Worktree `D:/PPP-g10c0`, branch `g10-c0` from main `2e09fad`, merged with main `afdb23b` (G10a-1 and G10a-2 hands) before the PRs. Two PRs: (a) the
 `rec-arrange` benchmark (tests, tools and baselines only: no app, no `audio-score.js`, no engine file), (b) the interim melody guard.
 This section records (a); (b) is appended by its PR.
 
-### 19.1 The benchmark
+### 20.1 The benchmark
 
 `"rec_arrange": true` suites (`pppbench/recarrange.py`, `tests/bench/node/rec-arrange.js`, the pure metrics in
 `rec-arrange-metrics.js`) build the same cases as a `rec` suite (calibrated humanizer `perform/3` over the catalogue, the stage
@@ -841,56 +1061,61 @@ modules (`pppbench/sut.py` `SUT_TREES`: songgraph, arrangement, candidates, repa
 scoregraph and rec), so an A/B or a mutant carries the arranger a result names; the ruler (the true score's analysis, the checker,
 hard violations) is always the repository's own, so a planted defect cannot move its own measure.
 
-### 19.2 Baseline (main `e2c066b`; `rec-arrange-core`, 84 cases per stage-option row: `cover` on 64 references and the 20 `replay-of` fixtures)
+### 20.2 Baseline (main `afdb23b`, after G10a-1 and G10a-2 hands; `rec-arrange-core`, 84 cases per stage-option row: `cover` on 64 references and the 20 `replay-of` fixtures)
 
-| metric | legacy (library default) | app (what the app passes) | v2 (`recording:'v2'`) | clean (the true score's own arrangement) |
-| --- | --- | --- | --- | --- |
-| `arr.made` (levels made, of 3) | 0.988 | 0.988 | 0.988 | 0.964 |
-| `arr.melody.kept` (true melody notes in the right hand) | 0.942 | 0.942 | 0.943 | 1.000 |
-| `arr.melody.cross` (only in the left hand) | 0.0048 | 0.0049 | 0.0047 | 0.0001 |
-| `arr.melody.lost` | 0.053 | 0.054 | 0.052 | 0.000 |
-| `arr.melody.gap_rate` (right hand silent at a melody onset) | 0.0271 | 0.0272 | 0.0232 | 0.000 |
-| `arr.harmony.agreement` (true beat windows' chord kept) | 0.560 | 0.571 | 0.691 | 0.864 |
-| `arr.level.distinct` (0 = the three levels are one arrangement) | 0.115 | 0.108 | 0.229 | 0.265 |
-| `arr.level.distance` | 0.104 | 0.089 | 0.199 | 0.236 |
-| `arr.lh.notes_per_bar` | 4.05 | 3.95 | 5.77 | 5.99 |
-| `arr.rh.above_c6` | 0.0188 | 0.0189 | 0.0190 | 0.0140 |
-| `arr.hard.violations` | 0 | 0 | 0 | 0 |
-| checker classes per 100 bars 1 / 2 / 3 / 4 / 5 / 6 / 7 | 25.1 / 2.7 / 4.2 / 0.6 / 74.6 / 94.4 / 1.0 | 5.7 / 0.7 / 3.9 / 0.1 / 16.5 / 30.2 / 0 | 0.4 / 0.2 / 1.6 / 0 / 4.3 / 2.1 / 0 | 2.8 / 0 / 8.7 / 0 / 9.7 / 45.0 / 0 |
-| `src.melody.in_lh` (the hand split's error, before arranging) | 0.0345 | 0.0345 | 0.0330 | |
-| `src.harmony.agreement` (the recording graph itself) | 0.668 | 0.683 | 0.817 | |
+The branch was first measured on `e2c066b` (legacy, app, v2 = G10a-1); S4 (G10a-2 hands) then became part of `recording:'v2'`, so the gate's v2 row is now "v2 + S4" and the old v2 is reproduced here with `hands:'legacy'`. The legacy and app columns did not move.
 
-Where the melody gaps are (app row): methods 0.063 (hanon: 0.14-0.58 in six exercises, where the hand split puts the whole texture in
-the left staff), hymns 0.006, micro pieces 0.001, the real-AMT fixtures 0.005. The legacy row is not a path the app takes; the gate
+| metric | legacy (library default) | app (what the app passes) | v2, hands legacy (G10a-1) | v2 + S4 (main now: `recording:'v2'`) | clean (the true score's own arrangement) |
+| --- | --- | --- | --- | --- | --- |
+| `arr.made` (levels made, of 3) | 0.988 | 0.988 | 0.988 | 0.988 | 0.964 |
+| `arr.melody.kept` (true melody notes in the right hand) | 0.942 | 0.942 | 0.943 | 0.965 | 1.000 |
+| `arr.melody.cross` (only in the left hand) | 0.0048 | 0.0049 | 0.0047 | 0.0099 | 0.0001 |
+| `arr.melody.lost` | 0.053 | 0.054 | 0.052 | 0.025 | 0.000 |
+| `arr.melody.gap_rate` (right hand silent at a melody onset) | 0.0271 | 0.0272 | 0.0232 | 0.0083 | 0.000 |
+| `arr.harmony.agreement` (true beat windows' chord kept) | 0.560 | 0.571 | 0.691 | 0.750 | 0.864 |
+| `arr.level.distinct` (0 = the three levels are one arrangement) | 0.114 | 0.108 | 0.229 | 0.241 | 0.265 |
+| `arr.level.distance` | 0.104 | 0.089 | 0.199 | 0.220 | 0.236 |
+| `arr.lh.notes_per_bar` | 4.05 | 3.95 | 5.77 | 6.21 | 5.99 |
+| `arr.rh.above_c6` | 0.0188 | 0.0189 | 0.0190 | 0.0183 | 0.0140 |
+| `arr.hard.violations` | 0 | 0 | 0 | 0 | 0 |
+| checker classes per 100 bars 1 / 2 / 3 / 4 / 5 / 6 / 7 | 25.1 / 2.7 / 4.2 / 0.6 / 74.6 / 94.4 / 1.0 | 5.7 / 0.7 / 3.9 / 0.1 / 16.5 / 30.2 / 0 | 0.4 / 0.2 / 1.6 / 0 / 4.3 / 2.1 / 0 | 0.5 / 0.2 / 1.7 / 0 / 4.8 / 2.5 / 0 | 2.8 / 0 / 8.7 / 0 / 9.7 / 45.0 / 0 |
+| `src.melody.in_lh` (the hand split's error, before arranging) | 0.0345 | 0.0345 | 0.0330 | 0.0202 | |
+| `src.harmony.agreement` (the recording graph itself) | 0.668 | 0.683 | 0.817 | 0.852 | |
+
+Where the melody gaps are (app row; v2 + S4 in brackets): methods 0.063 (0.008) (hanon: 0.14-0.58 in six exercises, where the hand split puts the whole texture in
+the left staff), hymns 0.007 (0.002), micro pieces 0.001 (0.003), the real-AMT fixtures 0.005 (0.010: S4 leaves more holes than the old hands on those 20, from 0.002
+under v2 with the old hands). The legacy row is not a path the app takes; the gate
 suites leave it out (the table is a one-off).
 
-### 19.3 What the baseline says
+### 20.3 What the baseline says
 
 1. **The levels collapse, as the design said.** On the app's recordings the three levels differ by 0.09 (Jaccard) and
    `arr.level.distinct` is 0.108 (0 = one arrangement, 1 = three different ones); the clean score's own arrangement spreads them 2.6 times as much
-   (0.236). v2 doubles the spread (0.199): its bars and tempo give the planner a real density per section.
+   (0.236). v2 doubles the spread (0.199), v2 + S4 reaches 0.220 (distinct 0.241): its bars, tempo and hands give the planner a real density per section.
 2. **The melody gap is real and concentrated.** 2.7 % of the true melody notes the transcription heard meet a silent right hand in
    the arrangement; the hand split put 3.5 % of them in the left staff, and the arranger keeps few of those there (cross 0.5 %: most
-   are dropped by the one-note-per-hand thinning, `lost` 5.4 %). A clean score has 0 on all three.
+   are dropped by the one-note-per-hand thinning, `lost` 5.4 %). A clean score has 0 on all three. **S4 closes most of it under v2**:
+   the hand split's error falls to 2.0 % of the heard melody (`src.melody.in_lh`), `lost` to 2.5 % and the melody gap rate to 0.8 % (v2 with the old hands 2.3 %), at the
+   price of more notes the arranger keeps in the left hand (`cross` 0.5 -> 1.0 %).
 3. **Hard violations are 0 everywhere**: the G5 filter, not the recording, decides; the cost of a recording shows as refusals
    (`arr.made` 0.988: micro/M12-flats-db is unreachable in both rows) and as bare arrangements.
-4. **v2 helps the arranger more than any arranger change measured so far**: harmony 0.571 -> 0.691, level distinct 0.108 -> 0.229,
-   checker classes 5 and 6 (bars that do not add up, a drawn value that is not the length) 16.5 / 30.2 -> 4.3 / 2.1 per 100 bars.
-   Left-hand notes per bar rise (3.95 -> 5.77, the clean 5.99): the recording's left hand is written fuller and the arranger keeps it.
+4. **v2 helps the arranger more than any arranger change measured so far**: harmony 0.571 -> 0.691 (v2 + S4 0.750; the clean 0.864), level distinct
+   0.108 -> 0.229 (0.241), checker classes 5 and 6 (bars that do not add up, a drawn value that is not the length) 16.5 / 30.2 -> 4.3 / 2.1 (4.8 / 2.5) per 100 bars.
+   Left-hand notes per bar rise (3.95 -> 5.77 -> 6.21, the clean 5.99): the recording's left hand is written fuller and the arranger keeps it.
 5. **The checker classes of an arrangement are not 0** (class 5 and 6, 16.5 and 30.2 per 100 bars on app): the arranger's copy of a
    recording's events has bars that do not add up as drawn; the clean score's own arrangement has them too (9.7 and 45.0), so they
    are the realizer's, not the recording's. Not this phase's to fix; the v2 recording lowers them.
 
-### 19.4 Determinism and sensitivity
+### 20.4 Determinism and sensitivity
 
-- `results.json` of `rec-arrange-smoke` (`6f6bce30f78ec8d5`) and `rec-arrange-core` (`a2260b1d035534f1`): byte-identical over three
+- `results.json` of `rec-arrange-smoke` (`71de18a84d52a0cc`) and `rec-arrange-core` (`d5c95527f53c5ed5`), on main `afdb23b`: byte-identical over three
   runs on Windows (Python 3.13.5, Node 24.17); Linux (Docker `node:24-bookworm`, offline, Python 3.11, the README's recipe, an LF clone of the commit): the same two hashes, both `check` PASS.
 - `mutation-check --rec-arrange`: 14 planted defects, one per metric (melody dropped, melody written in the left hand, levels collapsed,
   one-note pass off, right hand two octaves up, planner finds no plan, left hand silent, no shortest rest, gaps never closed, rests
   not tidied, dotted 16th rest, exact bars off, a 4:3 bracket, and from PR b a loosened melody guard), each a REGRESSION naming its metric; the no-op byte-identical.
 - 9 unit tests (`tests/bench/unit/test_rec_arrange.py`) and 8 pure-metric tests (`tests/bench/node/rec-arrange.test.js`).
 
-### 19.5 Limits and departures from the design
+### 20.5 Limits and departures from the design
 
 - Section 9 asks the melody to be "preserved (vs the clean arrangement's melody)". The benchmark measures it against the TRUE melody
   (SongGraph's melody voice of the true score, the top head of each event), which is the clean arrangement's own source: equal for a

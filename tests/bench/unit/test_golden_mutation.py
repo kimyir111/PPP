@@ -126,13 +126,19 @@ class RecMutations(unittest.TestCase):
         """G10a-1: the time skeleton's decisions (metre, bar lines, tempo octave, the compound tempo of issue 1, the helper's
         beats, the on-beat quantiser fix) each have a mutation that must be flagged on a critical gate or a structure metric."""
         v2 = mutation.REC_V2_MUTATIONS
-        self.assertEqual({m["id"] for m in v2[:-1]}, {"REC-V2-NO-ACCENTS", "REC-V2-BAR-LINE-LATE", "REC-V2-HALF-TEMPO", "REC-V2-ISSUE-1-BACK",
-                                                      "REC-V2-NO-AUDIO-BEATS", "REC-V2-LATE-ON-BEAT"})
+        skeleton = {"REC-V2-NO-ACCENTS", "REC-V2-BAR-LINE-LATE", "REC-V2-HALF-TEMPO", "REC-V2-ISSUE-1-BACK", "REC-V2-NO-AUDIO-BEATS",
+                    "REC-V2-LATE-ON-BEAT"}
+        # G10a-2: S4's decisions (S4 used at all, the hands' motion, the piece's style, the partition prior)
+        hands = {"REC-V2-HANDS-LEGACY", "REC-V2-HANDS-NO-MOTION", "REC-V2-HANDS-ONE-STYLE", "REC-V2-HANDS-NO-PART-PRIOR"}
+        self.assertEqual({m["id"] for m in v2[:-1]}, skeleton | hands)
         self.assertEqual((v2[-1]["id"], v2[-1]["expect"]), ("MUT-NOOP", "PASS"))
         self.assertFalse([m for m in mutation.REC_MUTATIONS if m.get("v2")])
         for m in v2[:-1]:
             self.assertEqual(m["expect"], "REGRESSION")
-            self.assertTrue(any(x.startswith(("critical.", "struct.", "notes.")) for x in m["metrics"]), m["id"])
+            if m["id"] in hands:
+                self.assertIn("notation.hand.accuracy", m["metrics"], m["id"])
+            else:
+                self.assertTrue(any(x.startswith(("critical.", "struct.", "notes.")) for x in m["metrics"]), m["id"])
 
     def test_ids_are_unique_and_the_noop_is_last(self):
         ids = [m["id"] for m in mutation.REC_MUTATIONS]
