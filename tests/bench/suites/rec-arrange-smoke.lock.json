@@ -6,8 +6,18 @@
    "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
   },
   {
+   "id": "catalog/gymnopedie-1|cover+of|none|s1|opt:v2",
+   "input_sha256": "e08cd19fbe508a6e1874aa96bbe66e1a70a830bc0ee92d5a57b07a8e878b4188",
+   "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
+  },
+  {
    "id": "catalog/gymnopedie-1|cover|none|s1|opt:app",
    "input_sha256": "99ddd4ece7bd8631111f1b3a22131c381e8a4eabe44d9ac4b1a233615dc2a78c",
+   "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
+  },
+  {
+   "id": "catalog/gymnopedie-1|cover|none|s1|opt:v2",
+   "input_sha256": "ae4ed12cd8909feba2871f4eccf9677848c5b121f4c757352d76eef31bbb039e",
    "reference_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649"
   },
   {
@@ -16,8 +26,18 @@
    "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
   },
   {
+   "id": "catalog/happy-birthday|cover+of|none|s1|opt:v2",
+   "input_sha256": "82eb02564281f03eb6fa0b7882c52ac442b12b6a07ef1887135e6901c877ba75",
+   "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
+  },
+  {
    "id": "catalog/happy-birthday|cover|none|s1|opt:app",
    "input_sha256": "a71d347cc93b7301d92120c350c4a76c3668a37ba7f9675baabb032789d946db",
+   "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
+  },
+  {
+   "id": "catalog/happy-birthday|cover|none|s1|opt:v2",
+   "input_sha256": "9586b4ba32912a61bd476a6f1190d7d8c5c7f1f4d768e167811d407bc186b05d",
    "reference_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d"
   },
   {
@@ -26,8 +46,18 @@
    "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
   },
   {
+   "id": "hymns/i-know-whom|cover+of|none|s1|opt:v2",
+   "input_sha256": "e9621bfa619b2c17639666f885ba2aedafdd4bfb33676b46850058ceb04a7ced",
+   "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
+  },
+  {
    "id": "hymns/i-know-whom|cover|none|s1|opt:app",
    "input_sha256": "a9e28a5a0fb3193e4915728d0b3f5def186f3a8b0e4d32e59507421f8bac05d1",
+   "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
+  },
+  {
+   "id": "hymns/i-know-whom|cover|none|s1|opt:v2",
+   "input_sha256": "24c4b0a16a9bd3cf5f8dc7a214f727eb32500d954dc3d06f7fd2961248f23aa2",
    "reference_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4"
   },
   {
@@ -36,8 +66,18 @@
    "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
   },
   {
+   "id": "hymns/we-gather-together|cover+of|none|s1|opt:v2",
+   "input_sha256": "078d60a82d46dc8d2e5f6cc41046f15dd8c506f4ff2279c5e4036c58401764e8",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
+  },
+  {
    "id": "hymns/we-gather-together|cover|none|s1|opt:app",
    "input_sha256": "96ae7f8f155cd8bbbcd795cf6fd99b58e5644d8930867d5cbb50d79c1f3dee59",
+   "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
+  },
+  {
+   "id": "hymns/we-gather-together|cover|none|s1|opt:v2",
+   "input_sha256": "00da606d4beacac17063971172b1099634d59eb991672641f38d57f0ee8ad295",
    "reference_sha256": "d0fd49a3ebef0584c6df9164ee080ba13d3c563f6fac95eb3f9bf28db0505c52"
   },
   {
@@ -46,8 +86,18 @@
    "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
   },
   {
+   "id": "method/czerny599/040|cover+of|none|s1|opt:v2",
+   "input_sha256": "26d1d15fd1e421259545276f3a39e892613d91c8d37c152e21937eebc341ff73",
+   "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
+  },
+  {
    "id": "method/czerny599/040|cover|none|s1|opt:app",
    "input_sha256": "c7204fdbe6e4bb3b606c6edc5992b6c512af21a9c456bd01ced133245fd982bd",
+   "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
+  },
+  {
+   "id": "method/czerny599/040|cover|none|s1|opt:v2",
+   "input_sha256": "c2211fc3514b903203f519ab3862c83fb922a887a1e40230638e50f494df5233",
    "reference_sha256": "a3dcc0e1281b5bee45dff8c656b5594259ff8597854824160abd1a95afc45ade"
   },
   {
@@ -56,8 +106,18 @@
    "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
   },
   {
+   "id": "method/sonatina/027|cover+of|none|s1|opt:v2",
+   "input_sha256": "d94faa9bce5f9c38e8c14b1aca600aae65fa7da5d513fffa8f8dba4b45cedcb7",
+   "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
+  },
+  {
    "id": "method/sonatina/027|cover|none|s1|opt:app",
    "input_sha256": "c13db20c0f7a8b94c5ce4e616a86bb4557c50a624209c352445e0cf63f5d547c",
+   "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
+  },
+  {
+   "id": "method/sonatina/027|cover|none|s1|opt:v2",
+   "input_sha256": "c89f26f4b1da70343b40c5ee6b283028058e327765756c8e6a832534d2c32a71",
    "reference_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc"
   },
   {
@@ -66,8 +126,18 @@
    "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
   },
   {
+   "id": "micro/M01-waltz-3-4|cover+of|none|s1|opt:v2",
+   "input_sha256": "37f859547a1cfe039842e9724a2194c985cd728c611ba094c576e18c6fd57715",
+   "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
    "id": "micro/M01-waltz-3-4|cover|none|s1|opt:app",
    "input_sha256": "d66a758adff870804110be0901923ff3163cbdda2c68972a55d1273cf3eaec52",
+   "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
+  },
+  {
+   "id": "micro/M01-waltz-3-4|cover|none|s1|opt:v2",
+   "input_sha256": "dddc5eb6e70c7cb9fe6b225a81279af9b54fa03640a0c21bfa8dd2f647cfce32",
    "reference_sha256": "eb00dc06c7b253afa8c81a6a3057284fac6e444ff8703a7191d295d1ff9118e5"
   },
   {
@@ -76,8 +146,18 @@
    "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
   },
   {
+   "id": "micro/M02-alberti-4-4|cover+of|none|s1|opt:v2",
+   "input_sha256": "cc83e8ecc1faad79b84cd0d2e5884d092547c88238801cc988813eb9907b04c4",
+   "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
+  },
+  {
    "id": "micro/M02-alberti-4-4|cover|none|s1|opt:app",
    "input_sha256": "f266b6ff7007e9dd23dd951733d5906419051a62949640b1c172e582bc5fe206",
+   "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
+  },
+  {
+   "id": "micro/M02-alberti-4-4|cover|none|s1|opt:v2",
+   "input_sha256": "fe9b0aca194964e32a7e8b62a426db5d1c5aca1a113101168ce20fc4c3496c87",
    "reference_sha256": "a524908bb504d161bee77c40e2e04ac55f31712eb636a3e54f2ee63fc84a8786"
   },
   {
@@ -86,8 +166,18 @@
    "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
   },
   {
+   "id": "micro/M03-jig-6-8|cover+of|none|s1|opt:v2",
+   "input_sha256": "519f57ec728a78b73c3e0c85b0033910156155cea346e1dbd44482fbc149b2ce",
+   "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
    "id": "micro/M03-jig-6-8|cover|none|s1|opt:app",
    "input_sha256": "19937979189d23476b012d94d2ff788a747a628dec6fc24aa318d0007f47b552",
+   "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
+  },
+  {
+   "id": "micro/M03-jig-6-8|cover|none|s1|opt:v2",
+   "input_sha256": "6256cb6e8dc255f451e281e42cfe12d519d7e5ee0869a7867c7734f5c359eb10",
    "reference_sha256": "4cfbde97154b6ae3e1fd180d411879a2c52cb3fe8aeef9032a6034f2772d192a"
   },
   {
@@ -96,8 +186,18 @@
    "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
   },
   {
+   "id": "micro/M04-triplets-4-4|cover+of|none|s1|opt:v2",
+   "input_sha256": "51d8e5a908bd404e6a6afb0ec72b711a7b175c23ea32d9d5770b6b2be7997263",
+   "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
+  },
+  {
    "id": "micro/M04-triplets-4-4|cover|none|s1|opt:app",
    "input_sha256": "575a1d8c6aa5d82302b11e705c3e71366c43f2be52a4034b5b0bde8656cbee18",
+   "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
+  },
+  {
+   "id": "micro/M04-triplets-4-4|cover|none|s1|opt:v2",
+   "input_sha256": "b3389e29bfb8bb5dc5d5c2d790bfb8b048c652d4936ffc31346aa3c934af868b",
    "reference_sha256": "40264c807b221eee1fe6c6ceb86df11a24df17f351b787658c27e7c79b2f5c74"
   },
   {
@@ -106,8 +206,18 @@
    "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
   },
   {
+   "id": "micro/M05-32nds-120|cover+of|none|s1|opt:v2",
+   "input_sha256": "ec817d2b677921ed079e55c7b05ddd6dc60ace67666fa08b1588eb25095984e1",
+   "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
    "id": "micro/M05-32nds-120|cover|none|s1|opt:app",
    "input_sha256": "6378147fb5a43158a5003300e36055318dbd95f509fe8c54bdf64c0bea675ba5",
+   "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
+  },
+  {
+   "id": "micro/M05-32nds-120|cover|none|s1|opt:v2",
+   "input_sha256": "11c9f276f7e60f04d44ec88afe059d76bd0de59aec363ec0a7dbff571bc6e8ed",
    "reference_sha256": "6ec47d0d1df8067058c2feac441abe59f91f9e0d1f0ef77777f38076f7160408"
   },
   {
@@ -116,8 +226,18 @@
    "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
   },
   {
+   "id": "micro/M07-pickup-3-4|cover+of|none|s1|opt:v2",
+   "input_sha256": "247c0a0da90dd4b4afb30e91fc38e43938a6ddec7679a98f1df4aff22ffe2f17",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
    "id": "micro/M07-pickup-3-4|cover|none|s1|opt:app",
    "input_sha256": "a0b5a3f14c0bcfa24568fb086a542a4a3957cc4867de7aeef314dd5dcb5f9d29",
+   "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
+  },
+  {
+   "id": "micro/M07-pickup-3-4|cover|none|s1|opt:v2",
+   "input_sha256": "024ca5d5af5328e69d95937953d42b49db60b9f762062d19a9b8139f6ba8d3ad",
    "reference_sha256": "e39a68686f90ca8b39183195f3617af375af9918fe632d76abf8c610e3ca191e"
   },
   {
@@ -126,8 +246,18 @@
    "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
   },
   {
+   "id": "micro/M09-syncopation-ties|cover+of|none|s1|opt:v2",
+   "input_sha256": "4e26988766f73900a1560060985ca6311492a5c991c54fd4e220801a79aec28e",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
    "id": "micro/M09-syncopation-ties|cover|none|s1|opt:app",
    "input_sha256": "be1b885e39e44a150af2204723cb0823ffd1f54c4d172e1197202881bb2c9817",
+   "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
+  },
+  {
+   "id": "micro/M09-syncopation-ties|cover|none|s1|opt:v2",
+   "input_sha256": "e554847d6a8e228dcfc52d10bdb31ac34ee4736e1ffe88be72919d855528a8c9",
    "reference_sha256": "b69a3b006165135d2fe2fa998cef785bf8e8c34ea67e1fac344045cc4ac99ba3"
   },
   {
@@ -136,8 +266,18 @@
    "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
   },
   {
+   "id": "micro/M11-harmonic-minor|cover+of|none|s1|opt:v2",
+   "input_sha256": "b5840f9ea71de108335c11036d79f625408ae192669739652601ac69ce8bbf97",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
    "id": "micro/M11-harmonic-minor|cover|none|s1|opt:app",
    "input_sha256": "171194b3a9f1fdfeaaabe51a9e9a66a8f7b0696267e4264daa4da1cdafea2c8d",
+   "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
+  },
+  {
+   "id": "micro/M11-harmonic-minor|cover|none|s1|opt:v2",
+   "input_sha256": "f5bbf4472e2c30b12e4261b50109653a05c535f2d79b69e29b3d8c772300d70a",
    "reference_sha256": "3a2d5ce4e8b717876ae2bf1237e527df787360daf8f27cb6dcad75ea81f2cc3c"
   },
   {
@@ -146,8 +286,18 @@
    "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
   },
   {
+   "id": "micro/M12-flats-db|cover+of|none|s1|opt:v2",
+   "input_sha256": "a7378716f531f5b2c21535fdc074790d02739860add62565aa507c8ebacb1e4b",
+   "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
    "id": "micro/M12-flats-db|cover|none|s1|opt:app",
    "input_sha256": "c92ab438d267634a0751e0652390a920dcafe93a5cbea79640d1f063426f8ace",
+   "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
+  },
+  {
+   "id": "micro/M12-flats-db|cover|none|s1|opt:v2",
+   "input_sha256": "7599930f5e362f1c2d0fb17925bbca4f00d0835004c399db2656cd30f2799da8",
    "reference_sha256": "24bb48fa308645e04a15994fed68abab73c11c385f23d3aca4e563179f787aae"
   },
   {
@@ -156,13 +306,23 @@
    "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
   },
   {
+   "id": "micro/M14-melody-in-bass|cover+of|none|s1|opt:v2",
+   "input_sha256": "8931bd39ef7f4872fefa0851dc9c328aa10af29377900a6fb419fdddedf7b0a6",
+   "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  },
+  {
    "id": "micro/M14-melody-in-bass|cover|none|s1|opt:app",
    "input_sha256": "792fbd5e68b4df08dd4e28747f2e89b245e6a94ccc67d0d2b7e65d71f5d937e9",
+   "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
+  },
+  {
+   "id": "micro/M14-melody-in-bass|cover|none|s1|opt:v2",
+   "input_sha256": "2314f0254f2b90c2b0738c5216727d1d20537606e10e3a4c3c4cd97d66831124",
    "reference_sha256": "c7fe914d4d84b055182933d8ef31d142b792e2b4f6ecbd4410b351e3e64777cd"
   }
  ],
  "generator": "perform/2+humanize/1",
  "reader": "reader/5",
  "schema": "ppp.bench-lock/1",
- "suite_sha256": "8909c12b118601a2a7cb2b37fbb44d9f41bbe2bc78f6fd39a1e7dd7c29cee50e"
+ "suite_sha256": "9ab107a46ab7831acd326e6aa2f57c789474f18dca676bc37df337f634614522"
 }

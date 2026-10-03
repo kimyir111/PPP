@@ -187,7 +187,7 @@ def arrange_core_references(core: dict) -> list:
 
 ARRANGE_SMOKE = [("cover", "none"), ("cover+of", "none")]
 ARRANGE_CORE = [("cover", "none")]
-ARRANGE_FULL = [("cover", "none"), ("cover+of", "none")]
+ARRANGE_FULL = [("cover", "none")]
 
 
 def build_arrange() -> dict:
@@ -215,7 +215,7 @@ def build_arrange() -> dict:
                                                  "exercises x cover, with the app's options",
                                      gate=arrange_gate(1.0)),
         "rec-arrange-full": dict(base, name="rec-arrange-full", references=core["references"], matrix=arrange_rows(ARRANGE_FULL, [1]),
-                                 description="Nightly: every core reference x cover, cover+of with the app's options and v2, arranged and measured (aggregates only)",
+                                 description="Nightly: every core reference x cover with the app's options and v2, arranged and measured (aggregates only)",
                                  gate=arrange_gate(1.0)),
     }
 

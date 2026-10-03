@@ -40,8 +40,8 @@ class Suites(unittest.TestCase):
         self.assertEqual(s["replay_dirs"], ["replay-of"])
         refs = corpus.by_id(corpus.load_corpus())
         cases = recarrange.replay_cases(s, refs)
-        self.assertEqual(len(cases), 20)
-        self.assertTrue(all(c["id"].endswith("|opt:app") for c in cases))
+        self.assertEqual(len(cases), 40)          # 20 fixtures x the matrix's two stage-option rows
+        self.assertEqual({c["id"].rsplit("|opt:", 1)[1] for c in cases}, {"app", "v2"})
         # the replay fixtures and the new key change this suite's hash, and only the suites that have them: no other suite's moved
         plain = dict(s)
         del plain["replay_dirs"]
@@ -98,7 +98,7 @@ class OneCase(unittest.TestCase):
         suite = suite_mod.load_suite("rec-arrange-smoke")
         refs = corpus.load_corpus()
         cls.by = corpus.by_id(refs)
-        cls.jobs, _, cls.tags = recarrange.generate(suite, refs, "micro/M01-waltz-3-4|cover|none")
+        cls.jobs, _, cls.tags = recarrange.generate(suite, refs, "micro/M01-waltz-3-4|cover|none|s1|opt:app")
 
     def run_once(self):
         return recarrange.run_node(self.jobs, self.by, stages.default_audio_score())
