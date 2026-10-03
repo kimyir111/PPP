@@ -99,7 +99,9 @@ jobs:
   nightly:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 100                 # was 45, when `full` took minutes and the job stopped at its first failing step; run to the
+                                         # end it is ~42 min locally (mutation-check 11, full 7, adversarial 9, final_review 12) and
+                                         # 1.1-1.5x that on a runner
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

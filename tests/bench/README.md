@@ -401,8 +401,9 @@ python tests/bench/run.py check --suite rec-full             # as ever (the hold
   `run.json` has the SUT of the shards, `cases`, `errors`, `shards`, and `timing.total_s` = the longest shard (they run side by
   side; `timing.shard_total_s` lists them). It refuses, with exit 2, anything that is not exactly one complete run of this
   checkout: `SHARD_MISSING` (a shard not there, or none), `SHARD_DUPLICATE`, `SHARD_MISMATCH` (suite definition, lock, metric
-  versions, commit, SUT snapshot or runtime differ between shards or from this checkout), `SHARD_INCOMPLETE` (the union of the
-  rows is not the committed lock's cases).
+  versions, commit or SUT snapshot differ between shards or from this checkout), `SHARD_INCOMPLETE` (the union of the
+  rows is not the committed lock's cases). Shards that ran on different Node or Python releases are merged with a warning
+  (`runtimes` in the merged `run.json`): the rows do not depend on a patch release.
 - **Rebaselining `rec-full`**: run the shards (here, or take the nightly's `rec-full-shard-*` artifacts into
   `out/rec-full/shards/<name>/`), `merge-shards`, then `update-baseline --suite rec-full --reason ...` as for any suite.
 - The shard count is written in the workflow's matrix, in `--shard K/4` and in the artifact paths; `unit/test_shards.py` checks

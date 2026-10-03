@@ -154,10 +154,19 @@ class MergeIsTheWholeRun(unittest.TestCase):
             self.assertIn(key, str(err))
 
     def test_shards_of_another_commit_or_sut_are_refused(self):
-        for key in ("git_sha", "audio_score_sha256", "sut_sha256", "node"):
+        for key in ("git_sha", "audio_score_sha256", "sut_sha256", "audio_score_path"):
             err = self.merge_error(self.tamper(3, edit_run=lambda r, key=key: r.__setitem__(key, "elsewhere")))
             self.assertEqual(err.code, "SHARD_MISMATCH", key)
             self.assertIn(key, str(err))
+
+    def test_another_node_or_python_patch_release_is_noted_not_refused(self):
+        dirs = self.tamper(3, edit_run=lambda r: (r.__setitem__("node", "v99.0.0"), r.__setitem__("python", "9.9.9")))
+        out = os.path.join(self.dir, "mixed-runtimes")
+        r = runner.merge_shards(self.suite, dirs, out_dir=out)
+        self.assertEqual(len(r["run"]["runtimes"]), 2)
+        self.assertIn("node v99.0.0, python 9.9.9", " ".join(r["run"]["runtimes"]))
+        self.assertEqual(self.read("mixed-runtimes", "results.json"), self.read("whole", "results.json"))      # the rows do not care
+        self.assertNotIn("runtimes", self.merged["run"])
 
     def test_shards_of_different_counts_are_refused(self):
         err = self.merge_error(self.tamper(1, edit_shard=lambda s: s["shard"].__setitem__("of", 4)))
@@ -171,6 +180,12 @@ class MergeIsTheWholeRun(unittest.TestCase):
         self.assertEqual(err.code, "SHARD_INCOMPLETE")
         err = self.merge_error(self.tamper(2, edit_shard=lambda s: s["cases"].append(dict(s["cases"][0]))))        # a row twice
         self.assertEqual(err.code, "SHARD_INCOMPLETE")
+
+    def test_a_file_that_is_not_a_shard_is_refused(self):
+        err = self.merge_error(self.tamper(1, edit_shard=lambda s: s.pop("shard")))
+        self.assertEqual(err.code, "SHARD_MISMATCH")
+        err = self.merge_error(self.tamper(2, edit_shard=lambda s: s.__setitem__("schema", "ppp.bench-results/1")))
+        self.assertEqual(err.code, "SHARD_MISMATCH")
 
     def test_a_directory_without_a_shard_is_refused(self):
         os.makedirs(os.path.join(self.dir, "empty"), exist_ok=True)

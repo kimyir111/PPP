@@ -272,7 +272,10 @@ def merge_shards(suite: Dict[str, Any], dirs: List[str], out_dir: Optional[str] 
             raise RunError("SHARD_MISSING", f"{d} has no shard.json and run.json")
         shards.append((util.load_json(sp), util.load_json(rp), d))
     first, first_run, _ = shards[0]
-    n = first.get("shard", {}).get("of")
+    for sh, _, d in shards:
+        if sh.get("schema") != SHARD_SCHEMA or not isinstance(sh.get("shard", {}).get("index"), int)                 or not isinstance(sh.get("shard", {}).get("of"), int):
+            raise RunError("SHARD_MISMATCH", f"{d}/shard.json is not a {SHARD_SCHEMA} file with a shard index")
+    n = first["shard"]["of"]
     lock_file = suite_mod.lock_path(suite)
     lock = util.load_json(lock_file) if os.path.exists(lock_file) else None
     if lock is None:
@@ -280,8 +283,6 @@ def merge_shards(suite: Dict[str, Any], dirs: List[str], out_dir: Optional[str] 
     expect = {"suite": suite["name"], "suite_sha256": suite_mod.suite_sha256(suite), "lock_sha256": util.content_sha256(lock_file),
               "versions": {**VERSIONS, "generator": suite_mod.generator_version(suite)}}
     for sh, run, d in shards:
-        if sh.get("schema") != SHARD_SCHEMA:
-            raise RunError("SHARD_MISMATCH", f"{d}/shard.json is not a {SHARD_SCHEMA} file")
         for key, want in expect.items():
             if sh.get(key) != want:
                 raise RunError("SHARD_MISMATCH", f"{d}: {key} differs from this checkout's ({str(sh.get(key))[:40]} against "
@@ -291,10 +292,10 @@ def merge_shards(suite: Dict[str, Any], dirs: List[str], out_dir: Optional[str] 
                 raise RunError("SHARD_MISMATCH", f"{d}: {key} differs from the first shard's")
         if sh["shard"]["of"] != n:
             raise RunError("SHARD_MISMATCH", f"{d}: shard {sh['shard']['index']}/{sh['shard']['of']}, but the first is of {n}")
-        for key in ("git_sha", "audio_score_path", "audio_score_sha256", "sut_sha256", "node", "python", "platform"):
+        for key in ("git_sha", "audio_score_path", "audio_score_sha256", "sut_sha256"):
             if run.get(key) != first_run.get(key):
                 raise RunError("SHARD_MISMATCH", f"{d}: run.json {key} differs from the first shard's ({run.get(key)} against "
-                                                 f"{first_run.get(key)}): the shards ran on different code or runtimes")
+                                                 f"{first_run.get(key)}): the shards ran on different code")
     seen = sorted(sh["shard"]["index"] for sh, _, _ in shards)
     if seen != list(range(1, n + 1)):
         missing = sorted(set(range(1, n + 1)) - set(seen))
@@ -322,6 +323,9 @@ def merge_shards(suite: Dict[str, Any], dirs: List[str], out_dir: Optional[str] 
     timing["shard_total_s"] = [r["timing"]["total_s"] for r in runs]          # the shards ran side by side: the run took the longest
     run = {k: first_run[k] for k in ("git_sha", "audio_score_path", "audio_score_sha256", "sut_sha256", "sut_files", "node", "python",
                                      "platform") if k in first_run}
+    runtimes = sorted({f"node {r.get('node')}, python {r.get('python')}, {r.get('platform')}" for r in runs})
+    if len(runtimes) > 1:      # a patch release between two shards' setup steps: noted, not refused (the code is the same)
+        run["runtimes"] = runtimes
     run.update({"git_dirty": any(r.get("git_dirty") for r in runs), "started_at": min(r["started_at"] for r in runs),
                 "finished_at": max(r["finished_at"] for r in runs), "argv": ["merge-shards", suite["name"]],
                 "sut_modules": sorted({m for r in runs for m in (r.get("sut_modules") or [])}),
@@ -340,6 +344,8 @@ def cli_merge_shards(args) -> int:
         return 2
     print(f"{suite['name']}: merged {r['run']['shards']} shards, {r['run']['cases']} cases, {r['run']['errors']} errors "
           f"(the longest shard {r['run']['timing']['total_s']} s)")
+    if r["run"].get("runtimes"):
+        print("WARNING: the shards ran on different runtimes: " + "; ".join(r["run"]["runtimes"]))
     print(f"results: {util.rel(os.path.join(r['out'], 'results.json')) if r['out'].startswith(util.repo_root()) else r['out']}"
           f" · next: python tests/bench/run.py check --suite {suite['name']}")
     return 0
