@@ -92,9 +92,15 @@ KEEP = ("usable", "critical.", "sqi", "notes.identity.f1", "notes.onset.f1_50ms"
         "read.bar_integrity", "read.bar_completeness", "notation.note_shape.consistency", "struct.form.order_exact")
 
 
+# G10a-3 (S9): the pedal metrics a recording suite guards besides critical.pedal: F1 and the false marks per minute (G10 issue 17: a pedal the performer
+# never played blurs the practice audio). rec-full (the nightly aggregate baseline, holdout=True) keeps its gate as it was
+PEDAL_KEEP = ("notation.pedal.f1", "notation.pedal.false_per_min")
+
+
 def gate(base: dict, scale: float = 1.0, holdout: bool = False) -> dict:
     g = copy.deepcopy(base)
-    g["metrics"] = {k: v for k, v in g["metrics"].items() if k in KEEP or k.startswith("critical.")}
+    g["metrics"] = {k: v for k, v in g["metrics"].items()
+                    if k in KEEP or k.startswith("critical.") or (k in PEDAL_KEEP and not holdout)}
     g["subgroups"]["metrics"] = {k: v for k, v in g["subgroups"]["metrics"].items() if k in g["metrics"]}
     g["metrics"].update({k: {"dir": v["dir"], "tol": round(v["tol"] * scale, 6)} for k, v in REC_GATE.items()})
     g["subgroups"]["metrics"].update(REC_SUB)

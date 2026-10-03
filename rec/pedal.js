@@ -30,7 +30,7 @@
    (audio-score.js buildGraph writes every span heard, whatever this decides).
 
    What the evidence does and does not say: the humanizer's cover-pedal family makes the notes sustain to the pedal, as a
-   physical pedal does, so a real pedal passes and an invented one mostly does not (G10 section 22: false marks per
+   physical pedal does, so a real pedal passes and an invented one mostly does not (G10 section 23: false marks per
    minute and pedal F1 on the invented-pedal family, and the replay fixtures). A recording whose notes are not extended by
    the pedal, with a pedal the model heard anyway, gets no marks: the safe side of a mark that is optional on the page.
 

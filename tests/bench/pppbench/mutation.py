@@ -598,7 +598,7 @@ REC_PEDAL_MUTATIONS: List[Dict[str, Any]] = [
      "file": "rec/pedal.js",
      "find": "      if (ends.length < minAt || share < minShare) { drop(s, 'weak'); return; }",
      "replace": "      /* mutation: no agreement */",
-     "expect": "REGRESSION", "metrics": ["notation.pedal.false_per_min", "micro:notation.pedal.false_per_min"]},
+     "expect": "REGRESSION", "metrics": ["notation.pedal.false_per_min", "micro:notation.pedal.f1", "micro:critical.pedal"]},
     {"id": "REC-V2-PEDAL-NO-RESTRIKE", "v2": True,   # a note released by the re-strike of its own pitch counts against the pedal (a repeated-note passage loses its marks)
      "file": "rec/pedal.js",
      "find": "      list.forEach((n, j) => { const nx = list[j + 1]; if (nx && nx.on - n.off <= restrike) cut.add(n); });",
