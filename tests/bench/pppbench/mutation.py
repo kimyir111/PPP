@@ -423,7 +423,7 @@ REC_MUTATIONS: List[Dict[str, Any]] = [
      "expect": "PASS", "metrics": []},
 ]
 
-# G10c-0 (docs/GOALS/G10 section 20): one planted defect per rec-arrange metric (tests/bench/node/rec-arrange.js), run on the
+# G10c-0 (docs/GOALS/G10 section 21): one planted defect per rec-arrange metric (tests/bench/node/rec-arrange.js), run on the
 # `rec-arrange-mutation` suite. The defects are in the arranger (the SUT's realize/, candidates/, scoregraph/, audio-score.js); the ruler (the
 # repository's own songgraph/, playability/, the checker) is never mutated, so a defect cannot move its own measure. Each must be a REGRESSION that
 # names every metric listed; the no-op must leave results.json byte identical.
@@ -527,10 +527,35 @@ REC_V2_MUTATIONS: List[Dict[str, Any]] = [
      "find": "    const audio = opts.beats ? beats.audioTrack(opts.beats, att) : null;",
      "replace": "    const audio = null;",
      "expect": "REGRESSION", "metrics": ["critical.meter", "critical.beat_placement", "struct.downbeat.f1"]},
-    {"id": "REC-V2-LATE-ON-BEAT", "v2": True,         # the quantiser's floor slip back in v2: an onset on a beat written a beat late
-     "find": "      const r = quantize(clustered, beats, trip, true);",
-     "replace": "      const r = quantize(clustered, beats, trip, false);",
+    # G10a-2: v2's onsets are placed by rec/grid.js (S3), so the floor slip G10a-1 fixed in quantize() is guarded where v2 now
+    # decides it: an onset heard a hair before its beat is that beat's (the early window of rec/grid.js beatsOf)
+    {"id": "REC-V2-LATE-ON-BEAT", "v2": True,         # the slip back in v2: an onset heard just before its beat written a beat late
+     "file": "rec/grid.js",
+     "find": "      const k = Math.floor(p + WINDOW_EARLY);",
+     "replace": "      const k = Math.floor(p + WINDOW_EARLY) + (p < Math.floor(p + WINDOW_EARLY) ? 1 : 0);",
      "expect": "REGRESSION", "metrics": ["critical.pitch_integrity", "notes.identity.f1", "rec.onset_f1"]},
+    # G10a-2: one planted defect per decision of the grid stage (rec/grid.js, S3)
+    {"id": "REC-V2-GRID-NO-TRIPLETS", "v2": True,     # no beat is ever a triplet beat
+     "file": "rec/grid.js",
+     "find": "      : (opts.kinds || model.kinds || KINDS).filter(k => KINDS.indexOf(k) >= 0);",
+     "replace": "      : (opts.kinds || model.kinds || KINDS).filter(k => KINDS.indexOf(k) >= 0 && k !== '3');",
+     "expect": "REGRESSION", "metrics": ["rec.tuplet.recall", "notation.tuplets.f1"]},
+    {"id": "REC-V2-GRID-TRIPLET-BIAS", "v2": True,    # the evidence of a triplet beat counted ten times over (e^4 per beat)
+     "file": "rec/grid.js",
+     "find": "          keep(kind, r.ll + table[mask] - (sw === null ? 0 : Math.log(SWING_POINTS.length)), r, pts, sw === null ? null : { swing: sw });",
+     "replace": "          keep(kind, r.ll + table[mask] + (kind === '3' ? 4 : 0) - (sw === null ? 0 : Math.log(SWING_POINTS.length)), r, pts, sw === null ? null : { swing: sw });",
+     "expect": "REGRESSION", "metrics": ["rec.tuplet.precision", "rec.tuplet.false_per_100_beats"]},
+    {"id": "REC-V2-GRID-NO-CHORDS", "v2": True,       # a chord heard a frame apart is two onsets (no grouping of onsets)
+     "file": "rec/grid.js",
+     "find": "  const MAX_GROUP = 8;",
+     "replace": "  const MAX_GROUP = 1;",
+     "expect": "REGRESSION", "metrics": ["rec.tuplet.precision", "critical.hands", "rec.rest.false_per_100_bars"]},
+    {"id": "REC-V2-GRID-NO-CHAIN", "v2": True,        # no smoothing across beats: every beat decided alone
+     "file": "rec/grid.js",
+     "find": "      const st = Math.pow(model.stay[a] !== undefined ? model.stay[a] : 0.9, Math.max(1, gap));",
+     "replace": "      const st = 0;",
+     "expect": "REGRESSION", "metrics": ["rec.tuplet.precision", "rec.tuplet.recall", "rec.tuplet.false_per_100_beats",
+                                         "notation.onset_pos.accuracy", "rec.onset_f1"]},
     # G10a-2: S4, the hands of rec/hands.js (one planted defect per decision: S4 used at all, the hands' motion, the piece's
     # style, the partition prior). The hands' starting register is not guarded: swapping it moved notation.hand.accuracy on
     # this suite from 0.9870 to 0.9871 (it decides only a piece's first notes) - a decision the gate cannot see

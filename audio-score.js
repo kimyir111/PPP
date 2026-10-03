@@ -1353,6 +1353,15 @@
       return typeof module === 'object' && module.exports ? require('./scoregraph/rec-tuplet.js') : (global && global.PPPScoreGraphModules && global.PPPScoreGraphModules.recTuplet) || null;
     } catch (e) { return null; }
   }
+  /* G10a-2 (docs/GOALS/G10_AUDIO_TO_SCORE.md section 8, stage S3): rec/grid.js, the grid of each beat decided from the evidence of all its onsets (straight 16ths, 32nds, triplets, swung eighths)
+     and every onset placed on it. The recording conversion v2's stage S3 (recordingV2, opts.recording 'v2'): it replaces this file's onset placement (tripletBeats / snapStraightBest /
+     snapTriplet in quantize and snapOnsets with exactBars for a simple-time skeleton, quantizeCompound for a compound one). opts.grid 'legacy' keeps G10a-1's S3 (the legacy quantisers)
+     under v2, for comparison. Legacy (no opts.recording) never loads it. A page without rec/grid.js writes v2 with the legacy quantisers. */
+  function gridLib() {
+    try {
+      return typeof module === 'object' && module.exports ? require('./rec/grid.js') : (global && global.PPPRecGrid) || null;
+    } catch (e) { return null; }
+  }
   /* The hands (docs/GOALS/G10_AUDIO_TO_SCORE.md section 8, stage S4, G10a-2): rec/'s S4 (rec/hands.js, through rec/index.js) writes the
      staff of every note for the recording conversion v2 (opts.recording 'v2'), or on any path with opts.hands 'v2' (a measurement:
      the app's path with only S4 swapped); opts.hands 'legacy' keeps assignHands under v2. Without either, the hands are assignHands'
@@ -1568,6 +1577,8 @@
     const beatType = extra.beatType || 4;
     const ticksPerBeat = extra.ticksPerBeat || Q;
     const bar = Math.round(beatsPerBar * (4 / beatType) * Q);
+    /* v2's stage S3 (rec/grid.js, G10a-2): the onsets are already on one grid per beat */
+    const gridV2 = extra.gridV2 || null;
     const firstTick = Math.min.apply(null, q.map(n => n.tick));
     let origin = extra.origin != null ? extra.origin : 0;
     while (origin > firstTick) origin -= bar;
@@ -1614,7 +1625,9 @@
     /* exact bars (see exactGrid): a recording in a simple-time bar with opts.exactBars; the library default and a MIDI file write the score as they always did */
     let grid = null, gridReport = null;
     if (opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4 && ticksPerBeat === Q && tupletLib() && tupletLib().addTriplets) {
-      gridReport = snapOnsets(q, bars, bar, beats, origin, ticksPerBeat);
+      /* with rec/grid.js the onsets are already on one grid per beat: snapOnsets' work is done but for its "genuine run" rule (a staff silent before
+         an odd-32nd onset cannot be written: no rest shorter than a 16th), applied now that the hands are known */
+      gridReport = gridV2 ? Object.assign({ v2: gridV2.report }, gridLib().writable(q)) : snapOnsets(q, bars, bar, beats, origin, ticksPerBeat);
       grid = exactGrid(q, bars, bar, opts.onsetDurations === false ? 0 : Math.round((opts.restMin !== undefined ? +opts.restMin : REST_MIN) * 4 * Q));
     }
     const events1 = staffEvents(q, 1, bar, notationBeat, allowBarTies, grid);
@@ -1696,6 +1709,8 @@
     if (extra.tempoAlias) model.params.tempoAlias = extra.tempoAlias;
     /* v2: the time skeleton is inferred by a learned model; the graph's provenance says which, and how sure it was */
     if (extra.recording === 'v2') model.params.recording = { pipeline: 'v2', skeleton: extra.recSkeleton || null };
+    /* and which grid model placed the onsets (S3, G10a-2), with how many beats it was unsure of */
+    if (gridV2) model.params.recording.grid = { model: gridV2.report.model, lowConf: gridV2.report.lowConf, beats: gridV2.plan.length };
     if (extra.arrangement) model.params.arrangement = extra.arrangement;
     /* where each heard note was written: the placed note with the same onset, release and pitch */
     const placed = new Map();
@@ -1745,6 +1760,7 @@
     if (gridReport) result.gridReport = gridReport;            /* beside the graph, not in stats (the benchmark snapshots stats) */
     if (extra.recReport) result.recReport = extra.recReport;   /* v2's time skeleton report (G10a-1), beside the graph too */
     if (handsReport) result.handsReport = handsReport;         /* the same: v2's hands (S4, G10a-2) */
+    if (gridV2) result.gridPlan = { plan: gridV2.plan, report: gridV2.report };   /* rec/grid.js's GridPlan (S3, G10a-2), beside the graph too */
     result.xml = scoreGraph().musicxml.export(graph, { software: 'PPP audio transcription' }).xml;
     result.graph = graph;
     result.graphIssues = graphIssues;
@@ -1820,8 +1836,13 @@
     if (!sk) return null;
     const beats = sk.beats;
     const compound = !!sk.metre.compound;
-    let q, errSum;
-    if (compound) {
+    let q, errSum, gridV2 = null;
+    if (opts.grid !== 'legacy' && gridLib()) {
+      /* S3 (G10a-2): the grid of each beat and the onsets on it, rec/grid.js on the skeleton's beats (ticks from beats[0], as quantize and quantizeCompound
+         place them: 24 a quarter, 36 a dotted quarter) */
+      gridV2 = gridLib().legacyQ(clustered, beats, { compound: compound });
+      q = gridV2.q; errSum = gridV2.errSum;
+    } else if (compound) {
       q = quantizeCompound(clustered, beats);
       errSum = q.reduce((s, n) => s + n.err, 0);
     } else {
@@ -1836,7 +1857,7 @@
       ticksPerBeat: compound ? 36 : Q, tactus: compound ? 'dotted-quarter' : 'quarter',
       arrangement: arrangementPlan, originalNotes: timingNotes.length,
       recording: 'v2', recSkeleton: { model: sk.model.name + '@' + sk.model.version, conf: Math.round(sk.conf * 1000) / 1000, metre: sk.metre.key },
-      recReport: sk
+      recReport: sk, gridV2: gridV2
     });
   }
 

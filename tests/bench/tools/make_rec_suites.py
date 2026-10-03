@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Write the recording suites (G10a-0, docs/GOALS/G10 section 7.6): rec-smoke, rec-core, rec-robust, rec-full,
-rec-mutation (the sensitivity check of the recording metrics) and rec-mutation-v2 (G10a-1: of the v2 time skeleton), and
-G10c-0's rec-arrange-smoke, rec-arrange-core, rec-arrange-mutation and rec-arrange-full (what the one-note arranger does to
-recordings: docs/GOALS/G10 section 9; tests/bench/pppbench/recarrange.py).
+rec-mutation (the sensitivity check of the recording metrics), rec-mutation-v2 (G10a-1: of the v2 time skeleton and, from
+G10a-2, of its grid stage) and rec-grid (G10a-2: v2 with and without its grid stage, rec/grid.js), and G10c-0's rec-arrange-smoke,
+rec-arrange-core, rec-arrange-mutation and rec-arrange-full (what the one-note arranger does to recordings: docs/GOALS/G10
+section 9; tests/bench/pppbench/recarrange.py).
 
     python tests/bench/tools/make_rec_suites.py            # writes tests/bench/suites/rec-*.json
     python tests/bench/tools/make_rec_suites.py --check    # the committed files are this tool's output (exit 1 if not)
@@ -30,6 +31,9 @@ from pppbench import corpus, suite as suite_mod, util  # noqa: E402
 
 util.setup_stdio()
 OPTS = {"legacy": {}, "app": {"closeGaps": True, "exactBars": True}, "v2": {"closeGaps": True, "exactBars": True, "recording": "v2"}}
+# G10a-2 (docs/GOALS/G10 section 8, stage S3): v2's grid stage is rec/grid.js; `v2-s3legacy` is v2 with G10a-1's stage S3 (the
+# legacy quantiser, opts.grid 'legacy'), so a suite shows the grid stage's own effect on the very same performances and skeleton
+GRID_OPTS = {"v2-s3legacy": {"closeGaps": True, "exactBars": True, "recording": "v2", "grid": "legacy"}, "v2": OPTS["v2"]}
 # G10a-2 stage S4 in isolation: the app's path (the legacy time skeleton and grid) with only the hands of rec/hands.js
 # (opts.hands 'v2'). Its own suite, rec-hands, a measurement suite (not in the CI gate: v2's rows carry S4 there)
 HANDS_OPTS = {"app-hands": {"closeGaps": True, "exactBars": True, "hands": "v2"}}
@@ -42,6 +46,11 @@ ROBUST = [("cover-alt", "none"), ("cover-alt", "oracle-noisy")]
 MUTATION = [("cover", "none"), ("human", "oracle")]    # human + oracle beats: the family where G0 passes a quarter of the cases, so rec.usable can move
 FULL = [("cover", "none"), ("cover-pedal", "none"), ("human-real", "none"), ("swing", "none"), ("cover+of", "none"),
         ("cover-pedal+helper", "oracle-noisy")]
+# rec-grid (G10a-2): v2's grid stage on the very same performances and skeleton with and without rec/grid.js: the beats given
+# (oracle: the grid stage is judged where the time skeleton is right), the swing family (long-short eighths, written straight),
+# the browser model's error overlay, and the production path (beats none). The oracle-noisy rows are in rec-core: their beat
+# noise is drawn per options name, so they would not pair here
+GRID = [("cover", "oracle"), ("human-real", "oracle"), ("cover+of", "oracle"), ("swing", "oracle"), ("cover", "none")]
 
 REC_GATE = {
     "rec.usable": {"dir": "up", "tol": -0.005},
@@ -138,6 +147,11 @@ def build() -> dict:
                          description="Nightly/manual: every lint-clean reference, hold-out included (seeds 11, 12), x the humanizer's "
                                      "families x legacy / app / v2; the hold-out is reported as an aggregate",
                          gate=gate(suite_mod.GATE_FULL, holdout=True)),
+        "rec-grid": dict(base, name="rec-grid", references=core["references"], matrix=rows(GRID, [1], opts_table=GRID_OPTS),
+                         description="G10a-2 grid stage (S3, rec/grid.js): the core references x the humanizer's families with the beats "
+                                     "given (oracle) and as production finds them (none), the swing family included, x stage options "
+                                     "v2-s3legacy (v2 with G10a-1's legacy quantisers) / v2 (v2 with rec/grid.js)",
+                         gate=gate(suite_mod.GATE_CORE)),
     }
 
 # ----------------------------------------------------------------------------- rec-arrange (G10c-0)
