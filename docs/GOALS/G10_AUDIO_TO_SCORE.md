@@ -1127,77 +1127,90 @@ suites leave it out (the table is a one-off).
 - `rec-arrange-core` leaves out the 700- to 1,000-note sonatinas and czernys (one arrangement costs up to a minute); `rec-arrange-full`
   has them.
 
-### 19.6 The interim melody guard (PR b)
+### 20.6 The interim melody guard (PR b)
 
-**What it is.** `candidates/index.js` `guardMelody(g, sg)` (module-level, exported; opts: `melodyGuard: false` is the rollback). `run()` / `runAsync()`
-call it first, for a one-note-per-hand request (`singleNoteHands`, the Song Arranger's) on a graph whose provenance says `audio-score` (the same gate as the
-gap passes, `GAPS.isTranscription`), on a one-part, two-staff piano graph. It looks across both staves of the SOURCE graph, before the planner, and moves a
-note of the lower staff into the melody voice when all of these hold: it is the top note of the lower staff at its onset (the skyline) and at or above C3, not
-tied; the upper staff sounds nothing at that onset; it continues the melody on every side where a melody note is within four quarters (within a fourth of the
-previous melody note, which may be a note this pass moved, and of the next one; a fifth when the gap is wider than half a quarter); and the move leaves no
-silence a recording's writer would not write (a rest shorter than an eighth between two notes: the melody note before it, and the lower voice's note before the
-hole, are lengthened over it, or the note stays). Only the top head of an event moves; its id, pitch and onset stay (the performance layer's links hold); the
-moved note lasts to the next melody onset when its own length ends before it by less than an eighth, and is cut to it when it would run over; the rests are
-written again (`pro-staff.js` `restPieces`), then `rec-tuplet.addTriplets` and `gaps.tidyRests` as the recording's source was. The edit validates or the graph
-stays as it was. The selection names the source (`selection.source`, `selection.melodyGuard`); `repairSelection` reads the melody to protect, the smells and the
-gap passes' gate from it. When the guarded run finds no arrangement the graph as it was is run: nothing that is arranged or refused without the guard changes
-status. One note per hand is untouched: the guard runs before the realizer; the hard filter, the stray-note rescue and the repair decide as before.
-`arrangeSingleNote` (the app) is not changed: the guard is reached through `CAND.runAsync` and `REPAIR.repairSelection`, which it already calls.
+**What it is.** `candidates/index.js` `guardMelody(g, sg)` (exported; `opts.melodyGuard: false` is the rollback). `run()` / `runAsync()` call it first, for a
+one-note-per-hand request (`singleNoteHands`, the Song Arranger's) on a graph whose provenance says `audio-score` (the same gate as the gap passes,
+`GAPS.isTranscription`), on a one-part, two-staff piano graph, **made by the legacy conversion** (a source with `recording.pipeline: 'v2'` is skipped: see below).
+It looks across both staves of the SOURCE graph, before the planner, and moves a note of the lower staff into the melody voice when all of these hold: it is the top
+note of the lower staff at its onset (the skyline) and at or above C3, not tied; the upper staff sounds nothing at that onset; it continues the melody on every side
+where a melody note is within four quarters (within a fourth of the previous melody note, which may be a note this pass moved, and of the next one; a fifth when
+the gap is wider than half a quarter); and the move leaves no silence a recording's writer would not write (a rest shorter than an eighth between two notes:
+the melody note before it, and the lower voice's note before the hole, are lengthened over it, or the note stays). Only the top head of an event moves; its id,
+pitch and onset stay (the performance layer's links hold); the moved note lasts to the next melody onset when its own length ends before it by less than an
+eighth, and is cut to it when it would run over; the rests are written again (`pro-staff.js` `restPieces`), then `rec-tuplet.addTriplets` and `gaps.tidyRests`
+as the recording's source was. The edit validates or the graph stays as it was. The selection names the source (`selection.source`, `selection.melodyGuard`);
+`repairSelection` reads the melody to protect, the smells and the gap passes' gate from it. When the guarded run finds no arrangement the graph as it was is
+run: nothing that is arranged or refused without the guard changes status. One note per hand is untouched (the guard runs before the realizer; the hard
+filter, the stray-note rescue and the repair decide as before). `arrangeSingleNote` (the app) is not changed: the guard is reached through `CAND.runAsync` and
+`REPAIR.repairSelection`, which it already calls.
 
-**Parameters** (C3 floor, a fourth, a fifth, four quarters) come from a nine-point sweep of detection precision and recall on the 141 core references
-(the app row's `cover` recordings), not from the arranger's metrics; the sweep's alternatives kept precision 0.64-0.91 at recall 0.22-0.69 (a looser step buys
-recall and loses precision). Measured with the final code against the true melody: **precision 0.929** (of 337 moved notes 313 are true melody notes; 24 are
-not) and **recall 0.465** (of the 673 heard melody notes that sit in the lower staff while the upper staff is silent) on the 141 core references; on the 52
-hold-out references (seeds 11 and 12, never looked at while choosing): precision 0.952, recall 0.273.
+**Re-measured after S4 (G10a-2 hands, main `afdb23b`): the guard stands aside for the v2 conversion.** The guard repairs what the legacy hand split
+(`assignHands`) gets wrong; S4 writes the hands for `recording:'v2'` (hand accuracy 0.895 -> 0.969) and on the core's `cover` recordings leaves 2.0 % of the heard
+melody in the left staff against 3.3 % (`src.melody.in_lh`), and a gap rate of 0.8 % against 2.3 % with the old hands (section 20.2). The guard applied to a v2 source
+still lowers the gap rate (0.0083 -> 0.0043) and raises `kept` (0.9650 -> 0.9688), a gain of four tenths of a point of the melody, but **half of what it moves is
+not melody**: detection precision 0.517 on the 141 core references (30 of 58 moves) and 0.625 on the 52 hold-out ones (10 of 16), recall 0.22 and 0.07; the
+precision side of the benchmark moves with it (`arr.rh.not_melody` 0.0331 -> 0.0349), the level spread shrinks (distinct 0.2410 -> 0.2349) and class 1 rises
+(0.452 -> 0.502). On the legacy hand split the same code has precision 0.929 / 0.952 and recall 0.465 / 0.273 (below). So the guard's gain did not shrink to
+nothing, but under v2 + S4 it is a coin flip per move, and it is gated off there (`audio-score` source params `recording.pipeline === 'v2'`: the v2 rows of the
+suites are exactly the baseline's). It is an interim for the path the app takes today (the legacy hand split) until `PPP.recording` flips to v2 (G10a-4/5); from
+then on it is inert for new transcriptions, and may be deleted with the flip. A source saved with the legacy hands keeps the guard.
 
-**What it does on the benchmark** (`rec-arrange-core`, main `e2c066b` against this branch; the app row and the v2 row, 84 cases each; the `rec-arrange-full`
-aggregate of 282 cases moves the same way: gap rate 0.0203 -> 0.0092, kept 0.9408 -> 0.9512):
+**Parameters** (C3 floor, a fourth, a fifth, four quarters) come from a nine-point sweep of detection precision and recall on the 141 core references (the app
+row's `cover` recordings), not from the arranger's metrics; the sweep's alternatives kept precision 0.64-0.91 at recall 0.22-0.69 (a looser step buys recall and
+loses precision). On the legacy hand split, against the true melody, final code: **precision 0.929** (of 337 moved notes 313 are true melody) and **recall 0.465**
+(of the 673 heard melody notes that sit in the lower staff while the upper staff is silent) on the 141 core references; on the 52 hold-out references (seeds 11 and
+12, never looked at while choosing): precision 0.952, recall 0.273.
 
-| metric | app: main -> guarded | v2: main -> guarded |
-| --- | --- | --- |
-| `arr.melody.gap_rate` (right hand silent at a heard melody note) | 0.0272 -> 0.0124 | 0.0232 -> 0.0084 |
-| `arr.melody.kept` | 0.9415 -> 0.9557 | 0.9430 -> 0.9565 |
-| `arr.melody.cross` / `lost` | 0.0049 -> 0.0040 / 0.0536 -> 0.0402 | 0.0047 -> 0.0037 / 0.0523 -> 0.0398 |
-| `arr.rh.not_melody` (the precision side: right-hand attacks that are no melody note) | 0.0550 -> 0.0555 | 0.0549 -> 0.0556 |
-| `arr.harmony.agreement`, `arr.level.distinct`, `arr.rh.above_c6`, `arr.hard.violations` | unchanged (0.5714 -> 0.5730, 0.1084, 0.0189 -> 0.0188, 0) | unchanged (0.6907, 0.2289, 0.0190 -> 0.0188, 0) |
-| `arr.lh.notes_per_bar` | 3.95 -> 4.02 | 5.77 -> 5.79 |
-| checker classes 1 / 2 / 4 / 5 / 6 per 100 bars | 5.73 -> 6.34 / 0.72 -> 0.91 / 0.10 -> 0.18 / 16.5 -> 18.8 / 30.2 -> 35.8 | 0.377 -> 0.457 (1), 4.25 -> 4.33 (5), the others unchanged |
-| methods (hanon, burgmuller, sonatina, czerny): gap rate / kept | 0.058 -> 0.023 / 0.894 -> 0.928 (app and v2 together) | |
-| the 20 real-AMT fixtures: gap rate / kept | 0.0034 -> 0.0028 / 0.9860 -> 0.9867 | |
+**What it does on the benchmark, app row** (`rec-arrange-core`, main `afdb23b` against this branch, 84 cases; the v2 row is identical to the baseline; the
+`rec-arrange-full` app aggregate of 141 cases moves the same way: gap rate 0.0213 -> 0.0109, kept 0.9400 -> 0.9500, lost 0.0555 -> 0.0464):
 
-Hymns and micro pieces move by thousandths (the hand split rarely errs there); the effect is the methods, Hanon first (the eight exercises' gap rate on the app row 0.09-0.58 -> 0.01-0.24, kept 0.36-0.83 -> 0.68-0.90).
+| metric (app row) | main -> guarded |
+| --- | --- |
+| `arr.melody.gap_rate` (right hand silent at a heard melody note) | 0.0272 -> 0.0124 |
+| `arr.melody.kept` | 0.9415 -> 0.9557 |
+| `arr.melody.cross` / `lost` | 0.0049 -> 0.0040 / 0.0536 -> 0.0402 |
+| `arr.rh.not_melody` (the precision side: right-hand attacks that are no melody note) | 0.0550 -> 0.0555 |
+| `arr.harmony.agreement`, `arr.level.distinct`, `arr.rh.above_c6`, `arr.hard.violations` | 0.5714 -> 0.5730, 0.1084 (same), 0.0189 -> 0.0188, 0 |
+| `arr.lh.notes_per_bar` | 3.95 -> 4.02 |
+| checker classes 1 / 2 / 4 / 5 / 6 per 100 bars | 5.73 -> 6.34 / 0.72 -> 0.91 / 0.10 -> 0.18 / 16.5 -> 18.8 / 30.2 -> 35.8 |
+| methods (hanon, burgmuller, sonatina, czerny): gap rate / kept (app and v2 rows together) | 0.035 -> 0.017 / 0.924 -> 0.941 |
+| hymns, micro, the 20 real-AMT fixtures: gap rate | 0.004 -> 0.004, 0.002 -> 0.001, 0.0075 -> 0.0075 (the fixtures' hand split is rarely wrong) |
 
-**The price, stated.** Four checker classes (1, 2, 5, 6) rise on the app row, and two of them by a little on the v2 row, and every one of those cases is a Hanon
-exercise: with the true melody in the right hand the generated-accompaniment candidates (`auto` at the small and medium profile) fall to a G5 hard violation
-and the one that survives is the verbatim copy of the source, which carries the recording's own bars that do not add up as drawn (the source of hanon/001
-has 12 of 20 bars so, class 5; without the guard `auto` regenerated them away). The guard creates none of it (on the seeded recording and on hanon/001 the guarded
-source has exactly the checker classes of the unguarded one), the selection moves to a candidate that keeps the melody. The g10 gate therefore reads REGRESSION on those four
-classes against the old baseline; the baselines (smoke, core, full) are re-recorded with this reason. The v2 recording lowers the same classes
-(5 and 6: 16.5 and 30.2 on app, 4.3 and 2.1 on v2), which is where that cost goes away.
+The effect is the methods, Hanon first (the eight exercises' gap rate on the app row 0.09-0.58 -> 0.01-0.24, kept 0.36-0.83 -> 0.68-0.90).
 
-**The teacher-like piece** (the Lead's private 90-bar transcription graph, read locally, aggregates only): the guard moves 8 notes in 5 bars; the one-note
-arrangement at all three levels has 487 -> 495 right-hand notes, 120 -> 125 right-hand rests, and the rests that contain the onset of a source note at or
-above C4 that the hand split gave to the left hand go from 17 to 14 (E10's 15 of 118); hard violations 0 before and after; the source's checker classes stay
-0. So on that piece the guard closes about a fifth of the melody-shaped holes, not all of them: the other 14 sit in rests the continuity rule does not call
-melody (the true silences of a piece whose melody has gaps, and accompaniment in the melody's register); there is no truth for that piece to say which.
-The three levels are still one arrangement.
+**The price, stated.** Four checker classes (1, 2, 5, 6) rise on the app row, and every one of those cases is a Hanon exercise: with the true melody in the right
+hand the generated-accompaniment candidates (`auto` at the small and medium profile) fall to a G5 hard violation and the one that survives is the verbatim copy of
+the source, which carries the recording's own bars that do not add up as drawn (the source of hanon/001 has 12 of 20 bars so, class 5; without the guard `auto`
+regenerated them away). The guard creates none of it (on the seeded recording and on hanon/001 the guarded source has exactly the checker classes of the unguarded
+one), the selection moves to a candidate that keeps the melody. The gate therefore reads REGRESSION on those four classes against the old baseline; the baselines
+(smoke, core, full) are re-recorded with this reason. The v2 recording lowers the same classes (5 and 6: 16.5 and 30.2 on app, 4.8 and 2.5 on v2 + S4), which is
+where that cost goes away; the guard does not run there.
+
+**The teacher-like piece** (the Lead's private 90-bar transcription graph, a legacy transcription, read locally, aggregates only): the guard moves 8 notes in 5 bars;
+the one-note arrangement at all three levels has 487 -> 495 right-hand notes, 120 -> 125 right-hand rests, and the rests that contain the onset of a source note at or
+above C4 that the hand split gave to the left hand go from 17 to 14 (E10's 15 of 118); hard violations 0 before and after; the source's checker classes stay 0. So on
+that piece the guard closes about a fifth of the melody-shaped holes, not all of them: the other 14 sit in rests the continuity rule does not call melody (the true
+silences of a piece whose melody has gaps, and accompaniment in the melody's register); there is no truth for that piece to say which. The three levels are still one
+arrangement.
 
 **Identity** (all 975 requests, `tests/bench/tools/arrange-identity.js`: 325 catalogue pieces x 3 levels through the app's own import and `arrangeSingleNote`):
-against a clean `git archive` of origin/main `e2c066b`, **975 of 975 identical (933 results, 42 refusals, the same ones)**, 0 changed. No catalogue piece is a
+against a clean `git archive` of origin/main `afdb23b`, **975 of 975 identical (933 results, 42 refusals, the same ones)**, 0 changed. No catalogue piece is a
 recording, and the gate keeps them out.
 
-**Tests.** `tests/repair/melody-guard.test.js` (9: the move on a seeded recording with its hand-split error, every head and onset kept, the performance layer
-untouched, the checker classes not up, idempotent, gated: a printed score and a recording without its provenance are the very same graph, a note that does not
-continue the line stays, `run()` names the source and `melodyGuard: false` is the rollback, the app's arrangement at the three levels has the note in the right
-hand with no hard violation and an unguarded run drops it, the stored 90-bar graph, the guard in the page's bare vm context); one existing test
-(`g9e-stray-note`, the rescue compared with and without itself) now runs both sides with the guard off, with the reason in the test. `test:repair` 152,
-`test:realize` 181, `test:critics` 97, `test:review` 89, `tests/single-note-app.test.js` all passed in the real page (own server, `with-port`),
-`mutation-check --rec-arrange` with a planted loosened guard (`ARR-GUARD-LOOSE`: no pitch floor, a step of two octaves) caught by `arr.rh.not_melody`.
+**Tests.** `tests/repair/melody-guard.test.js` (10: the move on a seeded recording with its hand-split error, every head and onset kept, the performance layer
+untouched, the checker classes not up, idempotent, gated: a printed score and a recording without its provenance are the very same graph, a v2 recording is skipped
+with its reason, a note that does not continue the line stays, `run()` names the source and `melodyGuard: false` is the rollback, the app's arrangement at the three
+levels has the note in the right hand with no hard violation and an unguarded run drops it, the stored 90-bar graph, the guard in the page's bare vm context); one
+existing test (`g9e-stray-note`, the rescue compared with and without itself) now runs both sides with the guard off, with the reason in the test. `test:repair` 153, `test:realize` 181, `test:critics` 97, `test:review` 89, `tests/single-note-app.test.js` all passed in the real page (own server, `with-port`), bench unit tests 385, `rec-arrange.test.js` 9;
+`mutation-check --rec-arrange` (14 planted defects, all caught by name, the no-op identical) includes a planted loosened guard (`ARR-GUARD-LOOSE`: no pitch floor, a step of two octaves), caught by `arr.rh.not_melody`.
 
 **Limits.** Recall 0.47 (0.27 on the hold-out): a melody that lives wholly in the lower staff (the Hanon exercises whose whole texture the hand split put there: no
-melody note on either side to continue) is not found, and a tied melody note is left alone (about a sixth of the misses); the continuity rule is a pitch rule,
-so an accompaniment note a fourth below the tune inside a rest is moved (7 % of the moves are not the melody); the guard does not touch the levels' collapse, the dense left hand, or the 45 % of right-hand notes above C6 of the
-design's E10; `rec-arrange` does not measure the guard on the teacher's own piece (no truth). Where the design said "the melody is the cross-staff skyline
-above the hand split's local boundary with a continuity cost", this is a skyline with a continuity threshold and a repair of the source, not a path search,
-and it works on the source graph (`candidates/`), not on the arranged one (`repair/`): moving a note after the arranger has thinned the left hand cannot get
-it back, and the planner would already have planned for a melody with a hole.
+melody note on either side to continue) is not found, and a tied melody note is left alone (about a sixth of the misses); the continuity rule is a pitch rule, so an
+accompaniment note a fourth below the tune inside a rest is moved (7 % of the moves on the legacy hand split are not the melody, half on S4's); the guard does not
+touch the levels' collapse, the dense left hand, or the 45 % of right-hand notes above C6 of the design's E10; `rec-arrange` does not measure the guard on the
+teacher's own piece (no truth). Where the design said "the melody is the cross-staff skyline above the hand split's local boundary with a continuity cost", this is a
+skyline with a continuity threshold and a repair of the source, not a path search, and it works on the source graph (`candidates/`), not on the arranged one
+(`repair/`): moving a note after the arranger has thinned the left hand cannot get it back, and the planner would already have planned for a melody with a hole.
+The design's gate "melody gaps down on `rec-arrange`" holds on the legacy path (app row 0.0272 -> 0.0124) and is moot on v2, where S4 took the gain (0.0083 without
+the guard).

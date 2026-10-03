@@ -170,3 +170,18 @@ test('in the page (a bare vm context with the page\'s own scripts: no require, n
   assert.equal(r.stats.moved, 1);
   assert.equal(SG.fingerprint(r.graph), SG.fingerprint(CAND.guardMelody(G, SGRAPH).graph), 'the same graph as in Node');
 });
+
+test('a recording made by the conversion v2 (its hands are S4\'s) is not touched: the guard stands aside, with its reason', () => {
+  const notes = [];
+  const mel = [67, 69, 71, 72, 71, 69, 67, 65, 64, 62, 60, 59, 57, 55, 57, 59];
+  mel.forEach((p, i) => notes.push({ on: 1 + i * 0.5, off: 1.45 + i * 0.5, midi: p, vel: 80 }));
+  for (let b = 0; b < 4; b++) [36, 43].forEach((p, k) => notes.push({ on: 1 + (b * 4 + k * 2) * 0.5, off: 1.95 + (b * 4 + k * 2) * 0.5, midi: p, vel: 60 }));
+  notes.sort((a, b) => a.on - b.on || a.midi - b.midi);
+  const v2 = AUDIO.toMusicXml({ notes: notes, pedals: [], beats: [], downbeats: [] }, { title: 'v2', closeGaps: true, exactBars: true, recording: 'v2' }).graph;
+  assert.equal(GAPS.isTranscription(v2), true);
+  assert.equal(v2.provenance.sources.find(s => s.kind === 'audio-score').params.recording.pipeline, 'v2');
+  const r = CAND.guardMelody(v2, SGG.analyze(v2));
+  assert.equal(r.changed, false);
+  assert.equal(r.graph, v2);
+  assert.match(r.stats.skipped, /recording v2/);
+});

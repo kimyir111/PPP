@@ -614,6 +614,10 @@
     const none = why => ({ graph: g, changed: false, stats: { moved: 0, skipped: why } });
     if (!OPS || !PITCH || !GAPS || !GAPS.isTranscription || !GAPS.plainValue || !GAPS.tidyRests || !RECTUP || !RECTUP.addTriplets || !R || !PS || !PS.restPieces || !g || !sg || !sg.melodyBass) return none('modules');
     if (!GAPS.isTranscription(g)) return none('not a transcription');
+    /* the recording conversion v2 writes the hands with S4 (G10a-2: hand accuracy 0.895 -> 0.969), the stage this guard makes up for; on those sources the guard's own moves were right about half
+       the time (precision 0.52 on the core references, 0.63 on the hold-out, against 0.93 / 0.95 on the legacy hand split's), so it stands aside for them */
+    const asrc = (g.provenance.sources || []).find(x => x.kind === 'audio-score');
+    if (asrc && asrc.params && asrc.params.recording && asrc.params.recording.pipeline === 'v2') return none('recording v2: its hands are written by S4');
     const part = g.parts && g.parts[0];
     if (!part || g.parts.length !== 1 || part.staves.length !== 2) return none('not a two-staff piano part');
     const mb = (sg.melodyBass.parts || []).find(p => p.part === part.id);
