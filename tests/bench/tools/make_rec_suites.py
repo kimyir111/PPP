@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Write the recording suites (G10a-0, docs/GOALS/G10 section 7.6): rec-smoke, rec-core, rec-robust, rec-full,
 rec-mutation (the sensitivity check of the recording metrics), rec-mutation-v2 (G10a-1: of the v2 time skeleton and, from
-G10a-2, of its grid stage) and rec-grid (G10a-2: v2 with and without its grid stage, rec/grid.js).
+G10a-2, of its grid stage) and rec-grid (G10a-2: v2 with and without its grid stage, rec/grid.js), and G10c-0's rec-arrange-smoke,
+rec-arrange-core, rec-arrange-mutation and rec-arrange-full (what the one-note arranger does to recordings: docs/GOALS/G10
+section 9; tests/bench/pppbench/recarrange.py).
 
     python tests/bench/tools/make_rec_suites.py            # writes tests/bench/suites/rec-*.json
     python tests/bench/tools/make_rec_suites.py --check    # the committed files are this tool's output (exit 1 if not)
@@ -25,7 +27,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 
-from pppbench import suite as suite_mod, util  # noqa: E402
+from pppbench import corpus, suite as suite_mod, util  # noqa: E402
 
 util.setup_stdio()
 OPTS = {"legacy": {}, "app": {"closeGaps": True, "exactBars": True}, "v2": {"closeGaps": True, "exactBars": True, "recording": "v2"}}
@@ -152,13 +154,108 @@ def build() -> dict:
                          gate=gate(suite_mod.GATE_CORE)),
     }
 
+# ----------------------------------------------------------------------------- rec-arrange (G10c-0)
+# The gate of the arranger-on-recordings suites. Every case is deterministic, so a tolerance is the size of change a phase may make without a new
+# baseline (about one case in a suite of 60); the rates a guard is meant to move (the melody's gap rate, cross and lost shares) are tight.
+ARRANGE_GATE = {
+    "arr.made": {"dir": "up", "tol": -0.002},
+    "arr.melody.kept": {"dir": "up", "tol": -0.002},
+    "arr.melody.cross": {"dir": "down", "tol": 0.002},
+    "arr.melody.lost": {"dir": "down", "tol": 0.002},
+    "arr.melody.gap_rate": {"dir": "down", "tol": 0.002},
+    "arr.harmony.agreement": {"dir": "up", "tol": -0.005},
+    "arr.level.distinct": {"dir": "up", "tol": -0.01},
+    "arr.level.distance": {"dir": "up", "tol": -0.01},
+    "arr.lh.notes_per_bar": {"dir": "down", "tol": 0.05},
+    "arr.rh.above_c6": {"dir": "down", "tol": 0.003},
+    "arr.hard.violations": {"dir": "down", "tol": 0.0},
+}
+for _c in range(1, 8):
+    ARRANGE_GATE[f"arr.check.{_c}"] = {"dir": "down", "tol": 0.05}
+# the subgroup check reads a drop as a regression, so only the metrics that are better higher are listed
+ARRANGE_SUB = {"arr.made": "mean", "arr.melody.kept": "mean", "arr.harmony.agreement": "mean", "arr.level.distinct": "mean",
+               "arr.level.distance": "mean"}
+# The arranger is measured on what the app writes (closeGaps + exactBars: `app`) and on the recording conversion v2 it will write after G10a-4 (`v2`);
+# the library default (`legacy`) is not what any app path passes, so the gate suites leave it out (the one-off three-way table is in the G10 doc, section 17)
+ARRANGE_ROWS = ("app", "v2")
+
+
+def arrange_gate(scale: float = 1.0) -> dict:
+    return {
+        "metrics": {k: {"dir": v["dir"], "tol": round(v["tol"] * scale, 6)} for k, v in ARRANGE_GATE.items()},
+        "subgroups": {"prefixes": ["set:", "profile:"], "min_cases": 8, "metrics": dict(ARRANGE_SUB),
+                      "rate_abs": 0.02, "mean_abs": 0.01, "mean_per_case": 0.25},
+        "case_fail_drop": 10.0, "case_warn_drop": 2.0, "case_flip_max": 1,
+    }
+
+
+def arrange_rows(table, seeds, names=ARRANGE_ROWS):
+    return [{"profile": profile, "beats": beats, "seeds": seeds, "opt_name": name, "opts": OPTS[name]} for profile, beats in table for name in names]
+
+
+def arrange_core_references(core: dict) -> list:
+    """The references of rec-arrange-core: the core's small and middle-sized pieces, stratified (one arrangement of a 1,000-note sonatina costs a
+    minute; the gate has a time budget). Every micro piece, the catalogue and the sample, then by a fixed hash order: hymns, and a few of each
+    method book (hanon, the book whose melody crosses the hand split most, in full)."""
+    refs = corpus.by_id(corpus.load_corpus())
+    size = {}
+    for r in core["references"]:
+        size[r] = len(corpus.read_reference(refs[r]).played())
+    ids = list(core["references"])
+    pick = [r for r in ids if r.startswith(("micro/", "catalog/", "samples/"))]
+
+    def take(pred, n, max_notes=None):
+        pool = [r for r in ids if pred(r) and (max_notes is None or size[r] <= max_notes)]
+        return sorted(pool, key=lambda r: (util.fnv1a32("arr|" + r), r))[:n]
+    pick += take(lambda r: r.startswith("hymns/"), 10, 260)
+    for book, n, cap in (("beyer", 5, None), ("czerny599", 5, 260), ("burgmuller25", 4, 400), ("hanon", 8, None), ("czerny849", 2, 700), ("sonatina", 2, 800)):
+        pick += take(lambda r, b=book: r.startswith(f"method/{b}/"), n, cap)
+    return sorted(set(pick))
+
+
+ARRANGE_SMOKE = [("cover", "none"), ("cover+of", "none")]
+ARRANGE_CORE = [("cover", "none")]
+ARRANGE_FULL = [("cover", "none")]
+
+
+def build_arrange() -> dict:
+    smoke = suite_mod.load_suite("smoke")
+    core = suite_mod.load_suite("core")
+    base = {"schema": "ppp.bench-suite/1", "kind": "synthetic-notation", "stage": {"name": "notate", "opts": {}},
+            "align": {"window_s": 0.30}, "rec_arrange": True, "subsets": {}}
+    core_refs = arrange_core_references(core)
+    return {
+        "rec-arrange-smoke": dict(base, name="rec-arrange-smoke", references=smoke["references"], matrix=arrange_rows(ARRANGE_SMOKE, [1]),
+                                  description="G10c-0 smoke: the 16 smoke references x cover, cover+of (the browser model's errors), beats none, with the app's "
+                                              "options and with the recording conversion v2, arranged the way the app does at the three levels and measured against the true score (melody, harmony, "
+                                              "levels, left hand, register, hard violations, checker classes)",
+                                  gate=arrange_gate(4.0)),
+        "rec-arrange-core": dict(base, name="rec-arrange-core", references=core_refs, matrix=arrange_rows(ARRANGE_CORE, [1]),
+                                 replay_dirs=["replay-of"],
+                                 description="G10c-0 gate: the small and middle-sized core references (every micro piece, the catalogue, hymns, method books; hanon "
+                                             "in full) x cover (beats none, the app's options and v2), plus the 20 real-AMT fixtures of replay-of (the production browser "
+                                             "model's heard notes on rendered audio), arranged at the three levels and measured against the true score",
+                                 gate=arrange_gate(1.0)),
+        "rec-arrange-mutation": dict(base, name="rec-arrange-mutation",
+                                     references=sorted(r for r in core["references"] if r.startswith("micro/")) + ["method/hanon/005", "method/hanon/007"],
+                                     matrix=arrange_rows([("cover", "none")], [1], ("app",)),
+                                     description="Gate sensitivity of the rec-arrange metrics (mutation-check --rec-arrange): the 24 micro pieces and two hanon "
+                                                 "exercises x cover, with the app's options",
+                                     gate=arrange_gate(1.0)),
+        "rec-arrange-full": dict(base, name="rec-arrange-full", references=core["references"], matrix=arrange_rows(ARRANGE_FULL, [1]),
+                                 description="Nightly: every core reference x cover with the app's options and v2, arranged and measured (aggregates only)",
+                                 gate=arrange_gate(1.0)),
+    }
+
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
     bad = 0
-    for name, s in build().items():
+    suites = dict(build())
+    suites.update(build_arrange())
+    for name, s in suites.items():
         path = os.path.join(suite_mod.SUITES_DIR, name + ".json")
         if args.check:
             have = util.load_json(path) if os.path.exists(path) else None

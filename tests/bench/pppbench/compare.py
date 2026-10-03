@@ -66,7 +66,7 @@ class Verdict:
         return {"PASS": 0, "REGRESSION": 1}.get(self.status, 2)
 
 
-AGGREGATE_ONLY = ("full", "rec-full")   # nightly suites: the baseline holds aggregates, not a row per case
+AGGREGATE_ONLY = ("full", "rec-full", "rec-arrange-full")   # nightly suites: the baseline holds aggregates, not a row per case
 
 
 def baseline_path(name: str) -> str:

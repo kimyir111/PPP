@@ -1,0 +1,181 @@
+{
+ "align": {
+  "window_s": 0.3
+ },
+ "description": "G10c-0 smoke: the 16 smoke references x cover, cover+of (the browser model's errors), beats none, with the app's options and with the recording conversion v2, arranged the way the app does at the three levels and measured against the true score (melody, harmony, levels, left hand, register, hard violations, checker classes)",
+ "gate": {
+  "case_fail_drop": 10.0,
+  "case_flip_max": 1,
+  "case_warn_drop": 2.0,
+  "metrics": {
+   "arr.check.1": {
+    "dir": "down",
+    "tol": 0.2
+   },
+   "arr.check.2": {
+    "dir": "down",
+    "tol": 0.2
+   },
+   "arr.check.3": {
+    "dir": "down",
+    "tol": 0.2
+   },
+   "arr.check.4": {
+    "dir": "down",
+    "tol": 0.2
+   },
+   "arr.check.5": {
+    "dir": "down",
+    "tol": 0.2
+   },
+   "arr.check.6": {
+    "dir": "down",
+    "tol": 0.2
+   },
+   "arr.check.7": {
+    "dir": "down",
+    "tol": 0.2
+   },
+   "arr.hard.violations": {
+    "dir": "down",
+    "tol": 0.0
+   },
+   "arr.harmony.agreement": {
+    "dir": "up",
+    "tol": -0.02
+   },
+   "arr.level.distance": {
+    "dir": "up",
+    "tol": -0.04
+   },
+   "arr.level.distinct": {
+    "dir": "up",
+    "tol": -0.04
+   },
+   "arr.lh.notes_per_bar": {
+    "dir": "down",
+    "tol": 0.2
+   },
+   "arr.made": {
+    "dir": "up",
+    "tol": -0.008
+   },
+   "arr.melody.cross": {
+    "dir": "down",
+    "tol": 0.008
+   },
+   "arr.melody.gap_rate": {
+    "dir": "down",
+    "tol": 0.008
+   },
+   "arr.melody.kept": {
+    "dir": "up",
+    "tol": -0.008
+   },
+   "arr.melody.lost": {
+    "dir": "down",
+    "tol": 0.008
+   },
+   "arr.rh.above_c6": {
+    "dir": "down",
+    "tol": 0.012
+   }
+  },
+  "subgroups": {
+   "mean_abs": 0.01,
+   "mean_per_case": 0.25,
+   "metrics": {
+    "arr.harmony.agreement": "mean",
+    "arr.level.distance": "mean",
+    "arr.level.distinct": "mean",
+    "arr.made": "mean",
+    "arr.melody.kept": "mean"
+   },
+   "min_cases": 8,
+   "prefixes": [
+    "set:",
+    "profile:"
+   ],
+   "rate_abs": 0.02
+  }
+ },
+ "kind": "synthetic-notation",
+ "matrix": [
+  {
+   "beats": "none",
+   "opt_name": "app",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true
+   },
+   "profile": "cover",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "none",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
+   },
+   "profile": "cover",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "none",
+   "opt_name": "app",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true
+   },
+   "profile": "cover+of",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "none",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
+   },
+   "profile": "cover+of",
+   "seeds": [
+    1
+   ]
+  }
+ ],
+ "name": "rec-arrange-smoke",
+ "rec_arrange": true,
+ "references": [
+  "catalog/gymnopedie-1",
+  "catalog/happy-birthday",
+  "hymns/i-know-whom",
+  "hymns/we-gather-together",
+  "method/czerny599/040",
+  "method/sonatina/027",
+  "micro/M01-waltz-3-4",
+  "micro/M02-alberti-4-4",
+  "micro/M03-jig-6-8",
+  "micro/M04-triplets-4-4",
+  "micro/M05-32nds-120",
+  "micro/M07-pickup-3-4",
+  "micro/M09-syncopation-ties",
+  "micro/M11-harmonic-minor",
+  "micro/M12-flats-db",
+  "micro/M14-melody-in-bass"
+ ],
+ "schema": "ppp.bench-suite/1",
+ "stage": {
+  "name": "notate",
+  "opts": {}
+ },
+ "subsets": {}
+}

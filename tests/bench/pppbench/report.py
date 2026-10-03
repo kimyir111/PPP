@@ -55,6 +55,8 @@ def _pct(x: Optional[float]) -> str:
 
 def write_summary(results: Dict[str, Any], run: Dict[str, Any], verdict, baseline: Optional[Dict[str, Any]],
                   path: str, *, reveal_holdout: bool = False, title: Optional[str] = None) -> None:
+    if results.get("rec_arrange"):          # G10c-0: the arranger-on-recordings suites have their own headline
+        return write_arrange_summary(results, run, verdict, baseline, path, title=title)
     agg = results["aggregates"]
     allm = agg["all"]
     base_all = (baseline or {}).get("aggregates", {}).get("all", {})
@@ -251,3 +253,109 @@ def _exclusions(L: List[str], results: Dict[str, Any], visible) -> None:
         exc = ", ".join(f"{k.split(' ', 1)[1]} {v}" for k, v in cnt.items() if k.startswith("excluded"))
         L.append(f"| {col} | {cnt.get('committed', 0)} | {cnt.get('registered', 0)} | {cnt.get('hold-out', 0)} | {exc or '–'} |")
     L.append("")
+
+
+# ----------------------------------------------------------------------------- rec-arrange (G10c-0)
+ARRANGE_HEADLINE = [
+    ("arr.made", "up", "levels the arranger made (the rest are refusals)"),
+    ("arr.melody.kept", "up", "true melody notes in the right hand, same pitch"),
+    ("arr.melody.cross", "down", "... only in the left hand (the hand split's error)"),
+    ("arr.melody.lost", "down", "... nowhere"),
+    ("arr.melody.gap_rate", "down", "true melody notes at which the right hand sounds nothing (a rest in the melody staff)"),
+    ("arr.harmony.agreement", "up", "true beat windows whose chord (root + quality) the arrangement has"),
+    ("arr.level.distinct", "up", "0 = the three levels are one arrangement"),
+    ("arr.level.distance", "up", "mean Jaccard distance between the levels' notes"),
+    ("arr.lh.notes_per_bar", "down", "left-hand attacks per bar"),
+    ("arr.rh.above_c6", "down", "right-hand attacks above C6"),
+    ("arr.hard.violations", "down", "G5 hard violations (mean per level)"),
+    ("arr.check.1", "down", "checker class 1 per 100 bars (rest between notes)"),
+    ("arr.check.2", "down", "class 2 (tiny rest)"),
+    ("arr.check.3", "down", "class 3 (rest run)"),
+    ("arr.check.4", "down", "class 4 (dotted small rest)"),
+    ("arr.check.5", "down", "class 5 (bar does not add up)"),
+    ("arr.check.6", "down", "class 6 (value vs length)"),
+    ("arr.check.7", "down", "class 7 (tuplet)"),
+    ("arr.notes", "-", "notes written per level (information)"),
+    ("src.melody.heard", "-", "true melody notes the transcription heard (information; upstream)"),
+    ("src.melody.in_lh", "-", "heard melody notes the hand split put in the left hand (information; the cause of the gaps)"),
+    ("src.harmony.agreement", "-", "the recording graph's own harmony against the truth (information)"),
+]
+
+
+def write_arrange_summary(results: Dict[str, Any], run: Dict[str, Any], verdict, baseline: Optional[Dict[str, Any]], path: str,
+                          *, title: Optional[str] = None) -> None:
+    agg = results["aggregates"]
+    allm = agg["all"]
+    base_all = (baseline or {}).get("aggregates", {}).get("all", {})
+    L: List[str] = []
+    L.append(f"# {title or 'Benchmark: ' + results['suite']}")
+    L.append("")
+    L.append(f"git `{(run.get('git_sha') or '?')[:10]}`{' (dirty)' if run.get('git_dirty') else ''} · "
+             f"audio-score `{(run.get('audio_score_sha256') or '?')[:12]}` · node {run.get('node')} · "
+             f"python {run.get('python')} · {run.get('platform')} · {run.get('cases')} cases, "
+             f"{allm['errors']['count']} errors · {run.get('timing', {}).get('total_s')} s")
+    L.append("")
+    L.append("## Verdict")
+    L.append("")
+    if verdict is None:
+        L.append("No baseline to compare with (record one with `update-baseline`).")
+    else:
+        L.append(f"**{verdict.status}**")
+        for name, items in (("Errors", verdict.errors), ("Failures", verdict.failures),
+                            ("Warnings", verdict.warnings), ("Improvements", verdict.improvements)):
+            if items:
+                L.append("")
+                L.append(f"{name}:")
+                L += [f"- {x}" for x in items[:30]]
+                if len(items) > 30:
+                    L.append(f"- ... {len(items) - 30} more")
+    L.append("")
+    L.append("## What the one-note arranger does to recordings (G10c-0)")
+    L.append("")
+    L.append("Each recording is arranged the way the app does it, at the three levels, and measured against the true score "
+             "(`tests/bench/node/rec-arrange.js`). `clean` is the same measure on the true score's own arrangement.")
+    L.append("")
+    L.append("| metric | value | n | clean | baseline | change | what it counts |")
+    L.append("| --- | --- | --- | --- | --- | --- | --- |")
+    for k, direction, why in ARRANGE_HEADLINE:
+        v = allm.get(k)
+        if not isinstance(v, dict):
+            continue
+        c = _m(allm, "clean." + k.split(".", 1)[1]) if k.startswith("arr.") else None
+        b = _m(base_all, k)
+        L.append(f"| `{k}` ({direction}) | {_f(v['mean'])} | {v['n']} | {_f(c)} | {_f(b)} | "
+                 f"{_d(v['mean'] - b if v['mean'] is not None and b is not None else None)} | {why} |")
+    L.append("")
+    L.append("## By tag")
+    L.append("")
+    cols = ["arr.made", "arr.melody.kept", "arr.melody.cross", "arr.melody.gap_rate", "arr.harmony.agreement", "arr.level.distinct",
+            "arr.lh.notes_per_bar", "arr.rh.above_c6"]
+    L.append("| tag | cases | " + " | ".join(f"`{c[4:]}`" for c in cols) + " |")
+    L.append("| --- | --- | " + " | ".join("---" for _ in cols) + " |")
+    for tag, t in agg["by_tag"].items():
+        if tag.startswith(("profile:", "set:", "opts:", "kind:")):
+            L.append(f"| {tag} | {t['cases']} | " + " | ".join(_f(_m(t, c), 3) for c in cols) + " |")
+    L.append("")
+    errs = [c for c in results["cases"] if c["status"] == "error"]
+    L.append("## Errors")
+    L.append("")
+    if not errs:
+        L.append("None.")
+    else:
+        L.append("| code | count | example |")
+        L.append("| --- | --- | --- |")
+        by: Dict[str, List[str]] = {}
+        for c in errs:
+            by.setdefault(c["error_code"], []).append(c["id"])
+        for code, ids in sorted(by.items()):
+            L.append(f"| {code} | {len(ids)} | `{_cell(ids[0])}` |")
+    L.append("")
+    refused = [c for c in results["cases"] if c["status"] == "ok" and (c["metrics"].get("arr.made") or 0) < 1]
+    L.append(f"## Refusals ({len(refused)} case(s) with a level the arranger did not make)")
+    L.append("")
+    for c in refused[:20]:
+        L.append(f"- `{_cell(c['id'])}`: made {c['metrics'].get('arr.made'):.2f}; {c['counts'].get('refused')}")
+    L.append("")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8", newline="\n") as handle:
+        handle.write("\n".join(L))

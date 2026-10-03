@@ -154,6 +154,8 @@ def cmd_mutation(args) -> int:
         a = mutation.run_mutation_check(mutation.REC_MUTATIONS, "rec-mutation")
         b = mutation.run_mutation_check(mutation.REC_V2_MUTATIONS, "rec-mutation-v2", out_name="mutation-v2")   # G10a-1
         return max(a, b)
+    if getattr(args, "rec_arrange", False):  # G10c-0: the rec-arrange metrics' planted defects, on the rec-arrange-mutation suite
+        return mutation.run_mutation_check(mutation.REC_ARRANGE_MUTATIONS, "rec-arrange-mutation", out_name="mutation-arrange")
     return mutation.run_mutation_check()
 
 
@@ -245,6 +247,8 @@ def main(argv=None) -> int:
     p = sub.add_parser("mutation-check")
     p.add_argument("--rec", action="store_true", help="the recording metrics' mutations (G10a-0), on the rec-mutation suite, and "
                    "the v2 time skeleton's (G10a-1), on rec-mutation-v2")
+    p.add_argument("--rec-arrange", dest="rec_arrange", action="store_true",
+                   help="the rec-arrange metrics' mutations (G10c-0), on the rec-arrange-mutation suite")
     p.set_defaults(fn=cmd_mutation)
     p = sub.add_parser("human-set", help="the G3 human review set (G03 §21, A36)")
     p.add_argument("--build", action="store_true")
