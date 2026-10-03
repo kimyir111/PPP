@@ -27,7 +27,7 @@
     "n": 2538
    },
    "critical.pedal": {
-    "mean": 0.717494,
+    "mean": 0.764775,
     "n": 846
    },
    "critical.pitch_integrity": {
@@ -127,23 +127,23 @@
     "n": 2538
    },
    "notation.pedal.f1": {
-    "mean": 0.701818,
+    "mean": 0.727967,
     "n": 846
    },
    "notation.pedal.false_per_min": {
-    "mean": 2.745905,
+    "mean": 1.827934,
     "n": 2538
    },
    "notation.pedal.marks": {
-    "mean": 11.703704,
+    "mean": 11.556738,
     "n": 2538
    },
    "notation.pedal.precision": {
-    "mean": 0.751211,
+    "mean": 0.788673,
     "n": 846
    },
    "notation.pedal.recall": {
-    "mean": 0.669625,
+    "mean": 0.69046,
     "n": 846
    },
    "notation.spelling.accuracy": {
@@ -503,7 +503,7 @@
     "n": 180
    },
    "rec.usable": {
-    "mean": 0.017336,
+    "mean": 0.020883,
     "n": 2538
    },
    "rec.voice.f1": {
@@ -607,7 +607,7 @@
     "n": 2538
    },
    "usable": {
-    "mean": 0.070528,
+    "mean": 0.079984,
     "n": 2538
    }
   },
@@ -639,7 +639,7 @@
      "n": 1692
     },
     "critical.pedal": {
-     "mean": 0.929078,
+     "mean": 0.976359,
      "n": 423
     },
     "critical.pitch_integrity": {
@@ -739,23 +739,23 @@
      "n": 1692
     },
     "notation.pedal.f1": {
-     "mean": 0.951479,
+     "mean": 0.980324,
      "n": 423
     },
     "notation.pedal.false_per_min": {
-     "mean": 1.192943,
+     "mean": 0.468975,
      "n": 1692
     },
     "notation.pedal.marks": {
-     "mean": 11.068558,
+     "mean": 11.027778,
      "n": 1692
     },
     "notation.pedal.precision": {
-     "mean": 0.951479,
+     "mean": 0.982703,
      "n": 423
     },
     "notation.pedal.recall": {
-     "mean": 0.951479,
+     "mean": 0.978275,
      "n": 423
     },
     "notation.spelling.accuracy": {
@@ -1115,7 +1115,7 @@
      "n": 120
     },
     "rec.usable": {
-     "mean": 0.016548,
+     "mean": 0.021868,
      "n": 1692
     },
     "rec.voice.f1": {
@@ -1219,7 +1219,7 @@
      "n": 1692
     },
     "usable": {
-     "mean": 0.056738,
+     "mean": 0.06383,
      "n": 1692
     }
    },
@@ -1250,7 +1250,7 @@
      "n": 846
     },
     "critical.pedal": {
-     "mean": 0.50591,
+     "mean": 0.553191,
      "n": 423
     },
     "critical.pitch_integrity": {
@@ -1350,23 +1350,23 @@
      "n": 846
     },
     "notation.pedal.f1": {
-     "mean": 0.452156,
+     "mean": 0.475611,
      "n": 423
     },
     "notation.pedal.false_per_min": {
-     "mean": 5.851829,
+     "mean": 4.545854,
      "n": 846
     },
     "notation.pedal.marks": {
-     "mean": 12.973995,
+     "mean": 12.614657,
      "n": 846
     },
     "notation.pedal.precision": {
-     "mean": 0.550942,
+     "mean": 0.594644,
      "n": 423
     },
     "notation.pedal.recall": {
-     "mean": 0.387772,
+     "mean": 0.402646,
      "n": 423
     },
     "notation.spelling.accuracy": {
@@ -1830,7 +1830,7 @@
      "n": 846
     },
     "usable": {
-     "mean": 0.098109,
+     "mean": 0.112293,
      "n": 846
     }
    },
@@ -1861,7 +1861,7 @@
      "n": 288
     },
     "critical.pedal": {
-     "mean": 0.729167,
+     "mean": 0.75,
      "n": 96
     },
     "critical.pitch_integrity": {
@@ -1961,23 +1961,23 @@
      "n": 288
     },
     "notation.pedal.f1": {
-     "mean": 0.711469,
+     "mean": 0.726936,
      "n": 96
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.243447,
+     "mean": 1.385928,
      "n": 288
     },
     "notation.pedal.marks": {
-     "mean": 9.197917,
+     "mean": 8.923611,
      "n": 288
     },
     "notation.pedal.precision": {
-     "mean": 0.760291,
+     "mean": 0.791031,
      "n": 96
     },
     "notation.pedal.recall": {
-     "mean": 0.679552,
+     "mean": 0.690207,
      "n": 96
     },
     "notation.spelling.accuracy": {
@@ -2317,7 +2317,7 @@
      "n": 288
     },
     "rec.usable": {
-     "mean": 0.027778,
+     "mean": 0.03125,
      "n": 288
     },
     "rec.voice.f1": {
@@ -2421,7 +2421,7 @@
      "n": 288
     },
     "usable": {
-     "mean": 0.048611,
+     "mean": 0.055556,
      "n": 288
     }
    },
@@ -2452,7 +2452,7 @@
      "n": 162
     },
     "critical.pedal": {
-     "mean": 0.740741,
+     "mean": 0.851852,
      "n": 54
     },
     "critical.pitch_integrity": {
@@ -2552,23 +2552,23 @@
      "n": 162
     },
     "notation.pedal.f1": {
-     "mean": 0.68535,
+     "mean": 0.728506,
      "n": 54
     },
     "notation.pedal.false_per_min": {
-     "mean": 5.5045,
+     "mean": 3.30908,
      "n": 162
     },
     "notation.pedal.marks": {
-     "mean": 15.666667,
+     "mean": 15.246914,
      "n": 162
     },
     "notation.pedal.precision": {
-     "mean": 0.742247,
+     "mean": 0.800192,
      "n": 54
     },
     "notation.pedal.recall": {
-     "mean": 0.649558,
+     "mean": 0.683016,
      "n": 54
     },
     "notation.spelling.accuracy": {
@@ -2928,7 +2928,7 @@
      "n": 18
     },
     "rec.usable": {
-     "mean": 0.006173,
+     "mean": 0.012346,
      "n": 162
     },
     "rec.voice.f1": {
@@ -3032,7 +3032,7 @@
      "n": 162
     },
     "usable": {
-     "mean": 0.092593,
+     "mean": 0.104938,
      "n": 162
     }
    },
@@ -3063,7 +3063,7 @@
      "n": 288
     },
     "critical.pedal": {
-     "mean": 0.6875,
+     "mean": 0.770833,
      "n": 96
     },
     "critical.pitch_integrity": {
@@ -3163,23 +3163,23 @@
      "n": 288
     },
     "notation.pedal.f1": {
-     "mean": 0.682413,
+     "mean": 0.73723,
      "n": 96
     },
     "notation.pedal.false_per_min": {
-     "mean": 3.048696,
+     "mean": 1.494875,
      "n": 288
     },
     "notation.pedal.marks": {
-     "mean": 9.097222,
+     "mean": 8.986111,
      "n": 288
     },
     "notation.pedal.precision": {
-     "mean": 0.731679,
+     "mean": 0.797707,
      "n": 96
     },
     "notation.pedal.recall": {
-     "mean": 0.649901,
+     "mean": 0.698501,
      "n": 96
     },
     "notation.spelling.accuracy": {
@@ -3519,7 +3519,7 @@
      "n": 288
     },
     "rec.usable": {
-     "mean": 0.017361,
+     "mean": 0.03125,
      "n": 288
     },
     "rec.voice.f1": {
@@ -3623,7 +3623,7 @@
      "n": 288
     },
     "usable": {
-     "mean": 0.111111,
+     "mean": 0.135417,
      "n": 288
     }
    },
@@ -3654,7 +3654,7 @@
      "n": 180
     },
     "critical.pedal": {
-     "mean": 0.833333,
+     "mean": 0.883333,
      "n": 60
     },
     "critical.pitch_integrity": {
@@ -3754,11 +3754,11 @@
      "n": 180
     },
     "notation.pedal.f1": {
-     "mean": 0.755683,
+     "mean": 0.783758,
      "n": 60
     },
     "notation.pedal.false_per_min": {
-     "mean": 1.814293,
+     "mean": 1.06008,
      "n": 180
     },
     "notation.pedal.marks": {
@@ -3766,11 +3766,11 @@
      "n": 180
     },
     "notation.pedal.precision": {
-     "mean": 0.815991,
+     "mean": 0.85176,
      "n": 60
     },
     "notation.pedal.recall": {
-     "mean": 0.715817,
+     "mean": 0.738982,
      "n": 60
     },
     "notation.spelling.accuracy": {
@@ -4369,7 +4369,7 @@
      "n": 144
     },
     "notation.pedal.marks": {
-     "mean": 15.076389,
+     "mean": 15.0625,
      "n": 144
     },
     "notation.pedal.precision": {
@@ -4840,7 +4840,7 @@
      "n": 252
     },
     "critical.pedal": {
-     "mean": 0.738095,
+     "mean": 0.809524,
      "n": 84
     },
     "critical.pitch_integrity": {
@@ -4940,23 +4940,23 @@
      "n": 252
     },
     "notation.pedal.f1": {
-     "mean": 0.70883,
+     "mean": 0.756442,
      "n": 84
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.739476,
+     "mean": 1.041106,
      "n": 252
     },
     "notation.pedal.marks": {
-     "mean": 33.861111,
+     "mean": 33.686508,
      "n": 252
     },
     "notation.pedal.precision": {
-     "mean": 0.75967,
+     "mean": 0.815534,
      "n": 84
     },
     "notation.pedal.recall": {
-     "mean": 0.673694,
+     "mean": 0.717129,
      "n": 84
     },
     "notation.spelling.accuracy": {
@@ -5416,7 +5416,7 @@
      "n": 252
     },
     "usable": {
-     "mean": 0.087302,
+     "mean": 0.099206,
      "n": 252
     }
    },
@@ -5447,7 +5447,7 @@
      "n": 774
     },
     "critical.pedal": {
-     "mean": 0.689922,
+     "mean": 0.732558,
      "n": 258
     },
     "critical.pitch_integrity": {
@@ -5547,23 +5547,23 @@
      "n": 774
     },
     "notation.pedal.f1": {
-     "mean": 0.694184,
+     "mean": 0.711338,
      "n": 258
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.294948,
+     "mean": 1.754028,
      "n": 774
     },
     "notation.pedal.marks": {
-     "mean": 8.161499,
+     "mean": 8.018088,
      "n": 774
     },
     "notation.pedal.precision": {
-     "mean": 0.741872,
+     "mean": 0.771126,
      "n": 258
     },
     "notation.pedal.recall": {
-     "mean": 0.663829,
+     "mean": 0.675001,
      "n": 258
     },
     "notation.spelling.accuracy": {
@@ -5907,7 +5907,7 @@
      "n": 774
     },
     "rec.usable": {
-     "mean": 0.005168,
+     "mean": 0.007752,
      "n": 774
     },
     "rec.voice.f1": {
@@ -6011,7 +6011,7 @@
      "n": 774
     },
     "usable": {
-     "mean": 0.049096,
+     "mean": 0.05814,
      "n": 774
     }
    },
@@ -6042,7 +6042,7 @@
      "n": 504
     },
     "critical.pedal": {
-     "mean": 0.744048,
+     "mean": 0.809524,
      "n": 168
     },
     "critical.pitch_integrity": {
@@ -6142,23 +6142,23 @@
      "n": 504
     },
     "notation.pedal.f1": {
-     "mean": 0.702023,
+     "mean": 0.740796,
      "n": 168
     },
     "notation.pedal.false_per_min": {
-     "mean": 3.305074,
+     "mean": 1.81644,
      "n": 504
     },
     "notation.pedal.marks": {
-     "mean": 20.10119,
+     "mean": 19.970238,
      "n": 504
     },
     "notation.pedal.precision": {
-     "mean": 0.753403,
+     "mean": 0.79957,
      "n": 168
     },
     "notation.pedal.recall": {
-     "mean": 0.668262,
+     "mean": 0.70245,
      "n": 168
     },
     "notation.spelling.accuracy": {
@@ -6622,7 +6622,7 @@
      "n": 504
     },
     "usable": {
-     "mean": 0.047619,
+     "mean": 0.055556,
      "n": 504
     }
    },
@@ -6653,7 +6653,7 @@
      "n": 54
     },
     "critical.pedal": {
-     "mean": 0.666667,
+     "mean": 0.722222,
      "n": 18
     },
     "critical.pitch_integrity": {
@@ -6753,23 +6753,23 @@
      "n": 54
     },
     "notation.pedal.f1": {
-     "mean": 0.673745,
+     "mean": 0.673421,
      "n": 18
     },
     "notation.pedal.false_per_min": {
-     "mean": 1.971751,
+     "mean": 1.796573,
      "n": 54
     },
     "notation.pedal.marks": {
-     "mean": 5.203704,
+     "mean": 5.055556,
      "n": 54
     },
     "notation.pedal.precision": {
-     "mean": 0.717372,
+     "mean": 0.735891,
      "n": 18
     },
     "notation.pedal.recall": {
-     "mean": 0.64752,
+     "mean": 0.635615,
      "n": 18
     },
     "notation.spelling.accuracy": {
@@ -7205,7 +7205,7 @@
      "n": 54
     },
     "usable": {
-     "mean": 0.018519,
+     "mean": 0.037037,
      "n": 54
     }
    },
@@ -7236,7 +7236,7 @@
      "n": 144
     },
     "critical.pedal": {
-     "mean": 0.6875,
+     "mean": 0.770833,
      "n": 48
     },
     "critical.pitch_integrity": {
@@ -7336,23 +7336,23 @@
      "n": 144
     },
     "notation.pedal.f1": {
-     "mean": 0.645329,
+     "mean": 0.689688,
      "n": 48
     },
     "notation.pedal.false_per_min": {
-     "mean": 4.835628,
+     "mean": 2.812062,
      "n": 144
     },
     "notation.pedal.marks": {
-     "mean": 19.590278,
+     "mean": 19.284722,
      "n": 144
     },
     "notation.pedal.precision": {
-     "mean": 0.686576,
+     "mean": 0.743392,
      "n": 48
     },
     "notation.pedal.recall": {
-     "mean": 0.617984,
+     "mean": 0.65421,
      "n": 48
     },
     "notation.spelling.accuracy": {
@@ -7843,7 +7843,7 @@
      "n": 792
     },
     "critical.pedal": {
-     "mean": 0.734848,
+     "mean": 0.761364,
      "n": 264
     },
     "critical.pitch_integrity": {
@@ -7943,23 +7943,23 @@
      "n": 792
     },
     "notation.pedal.f1": {
-     "mean": 0.714597,
+     "mean": 0.725715,
      "n": 264
     },
     "notation.pedal.false_per_min": {
-     "mean": 1.921451,
+     "mean": 1.569812,
      "n": 792
     },
     "notation.pedal.marks": {
-     "mean": 8.265152,
+     "mean": 8.132576,
      "n": 792
     },
     "notation.pedal.precision": {
-     "mean": 0.76416,
+     "mean": 0.785769,
      "n": 264
     },
     "notation.pedal.recall": {
-     "mean": 0.682465,
+     "mean": 0.688475,
      "n": 264
     },
     "notation.spelling.accuracy": {
@@ -8303,7 +8303,7 @@
      "n": 792
     },
     "rec.usable": {
-     "mean": 0.002525,
+     "mean": 0.003788,
      "n": 792
     },
     "rec.voice.f1": {
@@ -8407,7 +8407,7 @@
      "n": 792
     },
     "usable": {
-     "mean": 0.04798,
+     "mean": 0.05303,
      "n": 792
     }
    },
@@ -8546,7 +8546,7 @@
      "n": 36
     },
     "notation.pedal.marks": {
-     "mean": 9.75,
+     "mean": 9.722222,
      "n": 36
     },
     "notation.pedal.precision": {
@@ -9021,7 +9021,7 @@
      "n": 324
     },
     "critical.pedal": {
-     "mean": 0.740741,
+     "mean": 0.796296,
      "n": 108
     },
     "critical.pitch_integrity": {
@@ -9121,23 +9121,23 @@
      "n": 324
     },
     "notation.pedal.f1": {
-     "mean": 0.702132,
+     "mean": 0.731531,
      "n": 108
     },
     "notation.pedal.false_per_min": {
-     "mean": 3.193664,
+     "mean": 2.125423,
      "n": 324
     },
     "notation.pedal.marks": {
-     "mean": 18.469136,
+     "mean": 18.222222,
      "n": 324
     },
     "notation.pedal.precision": {
-     "mean": 0.752793,
+     "mean": 0.793713,
      "n": 108
     },
     "notation.pedal.recall": {
-     "mean": 0.668654,
+     "mean": 0.691674,
      "n": 108
     },
     "notation.spelling.accuracy": {
@@ -9601,7 +9601,7 @@
      "n": 324
     },
     "usable": {
-     "mean": 0.04321,
+     "mean": 0.046296,
      "n": 324
     }
    },
@@ -9632,7 +9632,7 @@
      "n": 180
     },
     "critical.pedal": {
-     "mean": 0.783333,
+     "mean": 0.833333,
      "n": 60
     },
     "critical.pitch_integrity": {
@@ -9732,23 +9732,23 @@
      "n": 180
     },
     "notation.pedal.f1": {
-     "mean": 0.73049,
+     "mean": 0.769018,
      "n": 60
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.287734,
+     "mean": 1.442722,
      "n": 180
     },
     "notation.pedal.marks": {
-     "mean": 18.533333,
+     "mean": 18.488889,
      "n": 180
     },
     "notation.pedal.precision": {
-     "mean": 0.780244,
+     "mean": 0.828326,
      "n": 60
     },
     "notation.pedal.recall": {
-     "mean": 0.696992,
+     "mean": 0.730079,
      "n": 60
     },
     "notation.spelling.accuracy": {
@@ -10243,7 +10243,7 @@
      "n": 270
     },
     "critical.pedal": {
-     "mean": 0.811111,
+     "mean": 0.855556,
      "n": 90
     },
     "critical.pitch_integrity": {
@@ -10343,23 +10343,23 @@
      "n": 270
     },
     "notation.pedal.f1": {
-     "mean": 0.74896,
+     "mean": 0.778939,
      "n": 90
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.273291,
+     "mean": 1.315116,
      "n": 270
     },
     "notation.pedal.marks": {
-     "mean": 17.214815,
+     "mean": 17.12963,
      "n": 270
     },
     "notation.pedal.precision": {
-     "mean": 0.814082,
+     "mean": 0.852035,
      "n": 90
     },
     "notation.pedal.recall": {
-     "mean": 0.707764,
+     "mean": 0.733156,
      "n": 90
     },
     "notation.spelling.accuracy": {
@@ -10719,7 +10719,7 @@
      "n": 54
     },
     "rec.usable": {
-     "mean": 0.007407,
+     "mean": 0.011111,
      "n": 270
     },
     "rec.voice.f1": {
@@ -10823,7 +10823,7 @@
      "n": 270
     },
     "usable": {
-     "mean": 0.081481,
+     "mean": 0.088889,
      "n": 270
     }
    },
@@ -10854,7 +10854,7 @@
      "n": 180
     },
     "critical.pedal": {
-     "mean": 0.716667,
+     "mean": 0.8,
      "n": 60
     },
     "critical.pitch_integrity": {
@@ -10954,23 +10954,23 @@
      "n": 180
     },
     "notation.pedal.f1": {
-     "mean": 0.712937,
+     "mean": 0.739808,
      "n": 60
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.18963,
+     "mean": 1.428454,
      "n": 180
     },
     "notation.pedal.marks": {
-     "mean": 10.322222,
+     "mean": 10.205556,
      "n": 180
     },
     "notation.pedal.precision": {
-     "mean": 0.762806,
+     "mean": 0.80447,
      "n": 60
     },
     "notation.pedal.recall": {
-     "mean": 0.680614,
+     "mean": 0.699523,
      "n": 60
     },
     "notation.spelling.accuracy": {
@@ -11330,7 +11330,7 @@
      "n": 18
     },
     "rec.usable": {
-     "mean": 0.005556,
+     "mean": 0.011111,
      "n": 180
     },
     "rec.voice.f1": {
@@ -11434,7 +11434,7 @@
      "n": 180
     },
     "usable": {
-     "mean": 0.05,
+     "mean": 0.066667,
      "n": 180
     }
    },
@@ -11465,7 +11465,7 @@
      "n": 144
     },
     "critical.pedal": {
-     "mean": 0.520833,
+     "mean": 0.625,
      "n": 48
     },
     "critical.pitch_integrity": {
@@ -11565,23 +11565,23 @@
      "n": 144
     },
     "notation.pedal.f1": {
-     "mean": 0.591054,
+     "mean": 0.655716,
      "n": 48
     },
     "notation.pedal.false_per_min": {
-     "mean": 6.304048,
+     "mean": 3.479546,
      "n": 144
     },
     "notation.pedal.marks": {
-     "mean": 12.0,
+     "mean": 11.493056,
      "n": 144
     },
     "notation.pedal.precision": {
-     "mean": 0.629175,
+     "mean": 0.726386,
      "n": 48
     },
     "notation.pedal.recall": {
-     "mean": 0.566453,
+     "mean": 0.618951,
      "n": 48
     },
     "notation.spelling.accuracy": {
@@ -11925,7 +11925,7 @@
      "n": 144
     },
     "rec.usable": {
-     "mean": 0.0,
+     "mean": 0.006944,
      "n": 144
     },
     "rec.voice.f1": {
@@ -12029,7 +12029,7 @@
      "n": 144
     },
     "usable": {
-     "mean": 0.034722,
+     "mean": 0.048611,
      "n": 144
     }
    },
@@ -12160,23 +12160,23 @@
      "n": 72
     },
     "notation.pedal.f1": {
-     "mean": 0.70404,
+     "mean": 0.711742,
      "n": 24
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.099475,
+     "mean": 1.742059,
      "n": 72
     },
     "notation.pedal.marks": {
-     "mean": 9.458333,
+     "mean": 9.208333,
      "n": 72
     },
     "notation.pedal.precision": {
-     "mean": 0.750832,
+     "mean": 0.778772,
      "n": 24
     },
     "notation.pedal.recall": {
-     "mean": 0.67365,
+     "mean": 0.670376,
      "n": 24
     },
     "notation.spelling.accuracy": {
@@ -12624,7 +12624,7 @@
      "n": 72
     },
     "usable": {
-     "mean": 0.055556,
+     "mean": 0.041667,
      "n": 72
     }
    },
@@ -12755,23 +12755,23 @@
      "n": 54
     },
     "notation.pedal.f1": {
-     "mean": 0.622714,
+     "mean": 0.629089,
      "n": 18
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.653597,
+     "mean": 2.477937,
      "n": 54
     },
     "notation.pedal.marks": {
-     "mean": 6.462963,
+     "mean": 6.388889,
      "n": 54
     },
     "notation.pedal.precision": {
-     "mean": 0.652448,
+     "mean": 0.666183,
      "n": 18
     },
     "notation.pedal.recall": {
-     "mean": 0.603704,
+     "mean": 0.606944,
      "n": 18
     },
     "notation.spelling.accuracy": {
@@ -13246,7 +13246,7 @@
      "n": 1152
     },
     "critical.pedal": {
-     "mean": 0.716146,
+     "mean": 0.755208,
      "n": 384
     },
     "critical.pitch_integrity": {
@@ -13346,23 +13346,23 @@
      "n": 1152
     },
     "notation.pedal.f1": {
-     "mean": 0.701364,
+     "mean": 0.725862,
      "n": 384
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.797126,
+     "mean": 1.898081,
      "n": 1152
     },
     "notation.pedal.marks": {
-     "mean": 11.459201,
+     "mean": 11.342014,
      "n": 1152
     },
     "notation.pedal.precision": {
-     "mean": 0.750661,
+     "mean": 0.783915,
      "n": 384
     },
     "notation.pedal.recall": {
-     "mean": 0.669085,
+     "mean": 0.68976,
      "n": 384
     },
     "notation.spelling.accuracy": {
@@ -13722,7 +13722,7 @@
      "n": 90
     },
     "rec.usable": {
-     "mean": 0.029514,
+     "mean": 0.033854,
      "n": 1152
     },
     "rec.voice.f1": {
@@ -13826,7 +13826,7 @@
      "n": 1152
     },
     "usable": {
-     "mean": 0.076389,
+     "mean": 0.086806,
      "n": 1152
     }
    },
@@ -13857,7 +13857,7 @@
      "n": 432
     },
     "critical.pedal": {
-     "mean": 0.756944,
+     "mean": 0.8125,
      "n": 144
     },
     "critical.pitch_integrity": {
@@ -13957,23 +13957,23 @@
      "n": 432
     },
     "notation.pedal.f1": {
-     "mean": 0.717241,
+     "mean": 0.746828,
      "n": 144
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.393212,
+     "mean": 1.586197,
      "n": 432
     },
     "notation.pedal.marks": {
-     "mean": 11.555556,
+     "mean": 11.451389,
      "n": 432
     },
     "notation.pedal.precision": {
-     "mean": 0.765259,
+     "mean": 0.803109,
      "n": 144
     },
     "notation.pedal.recall": {
-     "mean": 0.684869,
+     "mean": 0.710039,
      "n": 144
     },
     "notation.spelling.accuracy": {
@@ -14333,7 +14333,7 @@
      "n": 18
     },
     "rec.usable": {
-     "mean": 0.006944,
+     "mean": 0.009259,
      "n": 432
     },
     "rec.voice.f1": {
@@ -14437,7 +14437,7 @@
      "n": 432
     },
     "usable": {
-     "mean": 0.064815,
+     "mean": 0.076389,
      "n": 432
     }
    },
@@ -14468,7 +14468,7 @@
      "n": 198
     },
     "critical.pedal": {
-     "mean": 0.681818,
+     "mean": 0.727273,
      "n": 66
     },
     "critical.pitch_integrity": {
@@ -14568,23 +14568,23 @@
      "n": 198
     },
     "notation.pedal.f1": {
-     "mean": 0.686206,
+     "mean": 0.700654,
      "n": 66
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.086811,
+     "mean": 1.648354,
      "n": 198
     },
     "notation.pedal.marks": {
-     "mean": 9.424242,
+     "mean": 9.282828,
      "n": 198
     },
     "notation.pedal.precision": {
-     "mean": 0.732121,
+     "mean": 0.758198,
      "n": 66
     },
     "notation.pedal.recall": {
-     "mean": 0.657064,
+     "mean": 0.66583,
      "n": 66
     },
     "notation.spelling.accuracy": {
@@ -15032,7 +15032,7 @@
      "n": 198
     },
     "usable": {
-     "mean": 0.060606,
+     "mean": 0.065657,
      "n": 198
     }
    },
@@ -15163,23 +15163,23 @@
      "n": 18
     },
     "notation.pedal.f1": {
-     "mean": 0.840559,
+     "mean": 0.811167,
      "n": 6
     },
     "notation.pedal.false_per_min": {
-     "mean": 1.869318,
+     "mean": 1.744674,
      "n": 18
     },
     "notation.pedal.marks": {
-     "mean": 16.833333,
+     "mean": 15.833333,
      "n": 18
     },
     "notation.pedal.precision": {
-     "mean": 0.887381,
+     "mean": 0.889881,
      "n": 6
     },
     "notation.pedal.recall": {
-     "mean": 0.804598,
+     "mean": 0.752874,
      "n": 6
     },
     "notation.spelling.accuracy": {
@@ -15754,23 +15754,23 @@
      "n": 18
     },
     "notation.pedal.f1": {
-     "mean": 0.689899,
+     "mean": 0.683838,
      "n": 6
     },
     "notation.pedal.false_per_min": {
-     "mean": 3.108536,
+     "mean": 2.066577,
      "n": 18
     },
     "notation.pedal.marks": {
-     "mean": 4.333333,
+     "mean": 3.888889,
      "n": 18
     },
     "notation.pedal.precision": {
-     "mean": 0.738095,
+     "mean": 0.777778,
      "n": 6
     },
     "notation.pedal.recall": {
-     "mean": 0.666667,
+     "mean": 0.645833,
      "n": 6
     },
     "notation.spelling.accuracy": {
@@ -16237,7 +16237,7 @@
      "n": 288
     },
     "critical.pedal": {
-     "mean": 0.604167,
+     "mean": 0.760417,
      "n": 96
     },
     "critical.pitch_integrity": {
@@ -16337,23 +16337,23 @@
      "n": 288
     },
     "notation.pedal.f1": {
-     "mean": 0.640466,
+     "mean": 0.73525,
      "n": 96
     },
     "notation.pedal.false_per_min": {
-     "mean": 4.594633,
+     "mean": 2.38148,
      "n": 288
     },
     "notation.pedal.marks": {
-     "mean": 13.555556,
+     "mean": 13.475694,
      "n": 288
     },
     "notation.pedal.precision": {
-     "mean": 0.685638,
+     "mean": 0.794091,
      "n": 96
     },
     "notation.pedal.recall": {
-     "mean": 0.610678,
+     "mean": 0.697282,
      "n": 96
     },
     "notation.spelling.accuracy": {
@@ -16713,7 +16713,7 @@
      "n": 18
     },
     "rec.usable": {
-     "mean": 0.0,
+     "mean": 0.027778,
      "n": 288
     },
     "rec.voice.f1": {
@@ -16817,7 +16817,7 @@
      "n": 288
     },
     "usable": {
-     "mean": 0.090278,
+     "mean": 0.135417,
      "n": 288
     }
    },
@@ -16848,7 +16848,7 @@
      "n": 18
     },
     "critical.pedal": {
-     "mean": 0.333333,
+     "mean": 0.5,
      "n": 6
     },
     "critical.pitch_integrity": {
@@ -16948,23 +16948,23 @@
      "n": 18
     },
     "notation.pedal.f1": {
-     "mean": 0.47123,
+     "mean": 0.618254,
      "n": 6
     },
     "notation.pedal.false_per_min": {
-     "mean": 4.04202,
+     "mean": 1.781686,
      "n": 18
     },
     "notation.pedal.marks": {
-     "mean": 2.222222,
+     "mean": 2.0,
      "n": 18
     },
     "notation.pedal.precision": {
-     "mean": 0.493056,
+     "mean": 0.736111,
      "n": 6
     },
     "notation.pedal.recall": {
-     "mean": 0.458333,
+     "mean": 0.583333,
      "n": 6
     },
     "notation.spelling.accuracy": {
@@ -17431,7 +17431,7 @@
      "n": 162
     },
     "critical.pedal": {
-     "mean": 0.537037,
+     "mean": 0.740741,
      "n": 54
     },
     "critical.pitch_integrity": {
@@ -17531,23 +17531,23 @@
      "n": 162
     },
     "notation.pedal.f1": {
-     "mean": 0.582514,
+     "mean": 0.702386,
      "n": 54
     },
     "notation.pedal.false_per_min": {
-     "mean": 7.032836,
+     "mean": 1.348368,
      "n": 162
     },
     "notation.pedal.marks": {
-     "mean": 22.753086,
+     "mean": 22.493827,
      "n": 162
     },
     "notation.pedal.precision": {
-     "mean": 0.62162,
+     "mean": 0.754553,
      "n": 54
     },
     "notation.pedal.recall": {
-     "mean": 0.557541,
+     "mean": 0.66817,
      "n": 54
     },
     "notation.spelling.accuracy": {
@@ -17907,7 +17907,7 @@
      "n": 18
     },
     "rec.usable": {
-     "mean": 0.0,
+     "mean": 0.006173,
      "n": 162
     },
     "rec.voice.f1": {
@@ -18011,7 +18011,7 @@
      "n": 162
     },
     "usable": {
-     "mean": 0.074074,
+     "mean": 0.111111,
      "n": 162
     }
    },
@@ -18142,23 +18142,23 @@
      "n": 18
     },
     "notation.pedal.f1": {
-     "mean": 0.639991,
+     "mean": 0.649725,
      "n": 6
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.08194,
+     "mean": 1.850715,
      "n": 18
     },
     "notation.pedal.marks": {
-     "mean": 7.611111,
+     "mean": 7.5,
      "n": 18
     },
     "notation.pedal.precision": {
-     "mean": 0.654915,
+     "mean": 0.671329,
      "n": 6
     },
     "notation.pedal.recall": {
-     "mean": 0.627778,
+     "mean": 0.633333,
      "n": 6
     },
     "notation.spelling.accuracy": {
@@ -18633,7 +18633,7 @@
      "n": 54
     },
     "critical.pedal": {
-     "mean": 0.5,
+     "mean": 0.611111,
      "n": 18
     },
     "critical.pitch_integrity": {
@@ -18733,23 +18733,23 @@
      "n": 54
     },
     "notation.pedal.f1": {
-     "mean": 0.556284,
+     "mean": 0.615464,
      "n": 18
     },
     "notation.pedal.false_per_min": {
-     "mean": 3.323254,
+     "mean": 1.932885,
      "n": 54
     },
     "notation.pedal.marks": {
-     "mean": 5.833333,
+     "mean": 5.62963,
      "n": 54
     },
     "notation.pedal.precision": {
-     "mean": 0.569887,
+     "mean": 0.635946,
      "n": 18
     },
     "notation.pedal.recall": {
-     "mean": 0.547619,
+     "mean": 0.60119,
      "n": 18
     },
     "notation.spelling.accuracy": {
@@ -19228,7 +19228,7 @@
      "n": 504
     },
     "critical.pedal": {
-     "mean": 0.85119,
+     "mean": 0.875,
      "n": 168
     },
     "critical.pitch_integrity": {
@@ -19328,23 +19328,23 @@
      "n": 504
     },
     "notation.pedal.f1": {
-     "mean": 0.784868,
+     "mean": 0.798085,
      "n": 168
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.445951,
+     "mean": 1.979892,
      "n": 504
     },
     "notation.pedal.marks": {
-     "mean": 15.882937,
+     "mean": 15.813492,
      "n": 504
     },
     "notation.pedal.precision": {
-     "mean": 0.855462,
+     "mean": 0.873414,
      "n": 168
     },
     "notation.pedal.recall": {
-     "mean": 0.737695,
+     "mean": 0.74836,
      "n": 168
     },
     "notation.spelling.accuracy": {
@@ -19839,7 +19839,7 @@
      "n": 990
     },
     "critical.pedal": {
-     "mean": 0.693939,
+     "mean": 0.70303,
      "n": 330
     },
     "critical.pitch_integrity": {
@@ -19939,23 +19939,23 @@
      "n": 990
     },
     "notation.pedal.f1": {
-     "mean": 0.690309,
+     "mean": 0.692897,
      "n": 330
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.073082,
+     "mean": 1.796208,
      "n": 990
     },
     "notation.pedal.marks": {
-     "mean": 8.666667,
+     "mean": 8.50202,
      "n": 990
     },
     "notation.pedal.precision": {
-     "mean": 0.730601,
+     "mean": 0.746348,
      "n": 330
     },
     "notation.pedal.recall": {
-     "mean": 0.664121,
+     "mean": 0.661615,
      "n": 330
     },
     "notation.spelling.accuracy": {
@@ -20419,7 +20419,7 @@
      "n": 990
     },
     "usable": {
-     "mean": 0.077778,
+     "mean": 0.081818,
      "n": 990
     }
    },
@@ -20450,7 +20450,7 @@
      "n": 504
     },
     "critical.pedal": {
-     "mean": 0.791667,
+     "mean": 0.815476,
      "n": 168
     },
     "critical.pitch_integrity": {
@@ -20550,23 +20550,23 @@
      "n": 504
     },
     "notation.pedal.f1": {
-     "mean": 0.740815,
+     "mean": 0.749566,
      "n": 168
     },
     "notation.pedal.false_per_min": {
-     "mean": 1.848685,
+     "mean": 1.565724,
      "n": 504
     },
     "notation.pedal.marks": {
-     "mean": 9.994048,
+     "mean": 9.809524,
      "n": 504
     },
     "notation.pedal.precision": {
-     "mean": 0.798654,
+     "mean": 0.817376,
      "n": 168
     },
     "notation.pedal.recall": {
-     "mean": 0.704192,
+     "mean": 0.707919,
      "n": 168
     },
     "notation.spelling.accuracy": {
@@ -21030,7 +21030,7 @@
      "n": 504
     },
     "usable": {
-     "mean": 0.06746,
+     "mean": 0.069444,
      "n": 504
     }
    },
@@ -21061,7 +21061,7 @@
      "n": 18
     },
     "critical.pedal": {
-     "mean": 0.333333,
+     "mean": 0.5,
      "n": 6
     },
     "critical.pitch_integrity": {
@@ -21161,23 +21161,23 @@
      "n": 18
     },
     "notation.pedal.f1": {
-     "mean": 0.47123,
+     "mean": 0.618254,
      "n": 6
     },
     "notation.pedal.false_per_min": {
-     "mean": 4.04202,
+     "mean": 1.781686,
      "n": 18
     },
     "notation.pedal.marks": {
-     "mean": 2.222222,
+     "mean": 2.0,
      "n": 18
     },
     "notation.pedal.precision": {
-     "mean": 0.493056,
+     "mean": 0.736111,
      "n": 6
     },
     "notation.pedal.recall": {
-     "mean": 0.458333,
+     "mean": 0.583333,
      "n": 6
     },
     "notation.spelling.accuracy": {
@@ -21644,7 +21644,7 @@
      "n": 72
     },
     "critical.pedal": {
-     "mean": 0.875,
+     "mean": 0.916667,
      "n": 24
     },
     "critical.pitch_integrity": {
@@ -21744,23 +21744,23 @@
      "n": 72
     },
     "notation.pedal.f1": {
-     "mean": 0.762523,
+     "mean": 0.789254,
      "n": 24
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.33198,
+     "mean": 1.560109,
      "n": 72
     },
     "notation.pedal.marks": {
-     "mean": 10.0,
+     "mean": 9.944444,
      "n": 72
     },
     "notation.pedal.precision": {
-     "mean": 0.816999,
+     "mean": 0.857724,
      "n": 24
     },
     "notation.pedal.recall": {
-     "mean": 0.725934,
+     "mean": 0.74709,
      "n": 24
     },
     "notation.spelling.accuracy": {
@@ -22251,7 +22251,7 @@
      "n": 432
     },
     "critical.pedal": {
-     "mean": 0.847222,
+     "mean": 0.868056,
      "n": 144
     },
     "critical.pitch_integrity": {
@@ -22351,23 +22351,23 @@
      "n": 432
     },
     "notation.pedal.f1": {
-     "mean": 0.788593,
+     "mean": 0.799556,
      "n": 144
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.464946,
+     "mean": 2.049856,
      "n": 432
     },
     "notation.pedal.marks": {
-     "mean": 16.863426,
+     "mean": 16.791667,
      "n": 432
     },
     "notation.pedal.precision": {
-     "mean": 0.861872,
+     "mean": 0.876029,
      "n": 144
     },
     "notation.pedal.recall": {
-     "mean": 0.739655,
+     "mean": 0.748572,
      "n": 144
     },
     "notation.spelling.accuracy": {
@@ -22962,7 +22962,7 @@
      "n": 18
     },
     "notation.pedal.f1": {
-     "mean": 0.625,
+     "mean": 0.619253,
      "n": 6
     },
     "notation.pedal.false_per_min": {
@@ -22970,7 +22970,7 @@
      "n": 18
     },
     "notation.pedal.marks": {
-     "mean": 7.055556,
+     "mean": 6.944444,
      "n": 18
     },
     "notation.pedal.precision": {
@@ -22978,7 +22978,7 @@
      "n": 6
     },
     "notation.pedal.recall": {
-     "mean": 0.605556,
+     "mean": 0.594444,
      "n": 6
     },
     "notation.spelling.accuracy": {
@@ -23445,7 +23445,7 @@
      "n": 486
     },
     "critical.pedal": {
-     "mean": 0.802469,
+     "mean": 0.82716,
      "n": 162
     },
     "critical.pitch_integrity": {
@@ -23545,23 +23545,23 @@
      "n": 486
     },
     "notation.pedal.f1": {
-     "mean": 0.745104,
+     "mean": 0.754393,
      "n": 162
     },
     "notation.pedal.false_per_min": {
-     "mean": 1.849753,
+     "mean": 1.556312,
      "n": 486
     },
     "notation.pedal.marks": {
-     "mean": 10.102881,
+     "mean": 9.915638,
      "n": 486
     },
     "notation.pedal.precision": {
-     "mean": 0.803971,
+     "mean": 0.823386,
      "n": 162
     },
     "notation.pedal.recall": {
-     "mean": 0.707845,
+     "mean": 0.712122,
      "n": 162
     },
     "notation.spelling.accuracy": {
@@ -24025,7 +24025,7 @@
      "n": 486
     },
     "usable": {
-     "mean": 0.069959,
+     "mean": 0.072016,
      "n": 486
     }
    },
@@ -24056,7 +24056,7 @@
      "n": 162
     },
     "critical.pedal": {
-     "mean": 0.537037,
+     "mean": 0.740741,
      "n": 54
     },
     "critical.pitch_integrity": {
@@ -24156,23 +24156,23 @@
      "n": 162
     },
     "notation.pedal.f1": {
-     "mean": 0.582514,
+     "mean": 0.702386,
      "n": 54
     },
     "notation.pedal.false_per_min": {
-     "mean": 7.032836,
+     "mean": 1.348368,
      "n": 162
     },
     "notation.pedal.marks": {
-     "mean": 22.753086,
+     "mean": 22.493827,
      "n": 162
     },
     "notation.pedal.precision": {
-     "mean": 0.62162,
+     "mean": 0.754553,
      "n": 54
     },
     "notation.pedal.recall": {
-     "mean": 0.557541,
+     "mean": 0.66817,
      "n": 54
     },
     "notation.spelling.accuracy": {
@@ -24532,7 +24532,7 @@
      "n": 18
     },
     "rec.usable": {
-     "mean": 0.0,
+     "mean": 0.006173,
      "n": 162
     },
     "rec.voice.f1": {
@@ -24636,7 +24636,7 @@
      "n": 162
     },
     "usable": {
-     "mean": 0.074074,
+     "mean": 0.111111,
      "n": 162
     }
    },
@@ -24667,7 +24667,7 @@
      "n": 990
     },
     "critical.pedal": {
-     "mean": 0.693939,
+     "mean": 0.70303,
      "n": 330
     },
     "critical.pitch_integrity": {
@@ -24767,23 +24767,23 @@
      "n": 990
     },
     "notation.pedal.f1": {
-     "mean": 0.690309,
+     "mean": 0.692897,
      "n": 330
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.073082,
+     "mean": 1.796208,
      "n": 990
     },
     "notation.pedal.marks": {
-     "mean": 8.666667,
+     "mean": 8.50202,
      "n": 990
     },
     "notation.pedal.precision": {
-     "mean": 0.730601,
+     "mean": 0.746348,
      "n": 330
     },
     "notation.pedal.recall": {
-     "mean": 0.664121,
+     "mean": 0.661615,
      "n": 330
     },
     "notation.spelling.accuracy": {
@@ -25247,7 +25247,7 @@
      "n": 990
     },
     "usable": {
-     "mean": 0.077778,
+     "mean": 0.081818,
      "n": 990
     }
    },
@@ -25382,11 +25382,11 @@
      "n": 6
     },
     "notation.pedal.false_per_min": {
-     "mean": 3.262297,
+     "mean": 2.182588,
      "n": 18
     },
     "notation.pedal.marks": {
-     "mean": 3.388889,
+     "mean": 3.055556,
      "n": 18
     },
     "notation.pedal.precision": {
@@ -25857,7 +25857,7 @@
      "n": 36
     },
     "critical.pedal": {
-     "mean": 0.416667,
+     "mean": 0.583333,
      "n": 12
     },
     "critical.pitch_integrity": {
@@ -25957,23 +25957,23 @@
      "n": 36
     },
     "notation.pedal.f1": {
-     "mean": 0.526093,
+     "mean": 0.614863,
      "n": 12
     },
     "notation.pedal.false_per_min": {
-     "mean": 3.353733,
+     "mean": 1.808033,
      "n": 36
     },
     "notation.pedal.marks": {
-     "mean": 7.055556,
+     "mean": 6.916667,
      "n": 36
     },
     "notation.pedal.precision": {
-     "mean": 0.542331,
+     "mean": 0.641419,
      "n": 12
     },
     "notation.pedal.recall": {
-     "mean": 0.515873,
+     "mean": 0.59623,
      "n": 12
     },
     "notation.spelling.accuracy": {
@@ -26452,7 +26452,7 @@
      "n": 288
     },
     "critical.pedal": {
-     "mean": 0.604167,
+     "mean": 0.760417,
      "n": 96
     },
     "critical.pitch_integrity": {
@@ -26552,23 +26552,23 @@
      "n": 288
     },
     "notation.pedal.f1": {
-     "mean": 0.640466,
+     "mean": 0.73525,
      "n": 96
     },
     "notation.pedal.false_per_min": {
-     "mean": 4.594633,
+     "mean": 2.38148,
      "n": 288
     },
     "notation.pedal.marks": {
-     "mean": 13.555556,
+     "mean": 13.475694,
      "n": 288
     },
     "notation.pedal.precision": {
-     "mean": 0.685638,
+     "mean": 0.794091,
      "n": 96
     },
     "notation.pedal.recall": {
-     "mean": 0.610678,
+     "mean": 0.697282,
      "n": 96
     },
     "notation.spelling.accuracy": {
@@ -26928,7 +26928,7 @@
      "n": 18
     },
     "rec.usable": {
-     "mean": 0.0,
+     "mean": 0.027778,
      "n": 288
     },
     "rec.voice.f1": {
@@ -27032,7 +27032,7 @@
      "n": 288
     },
     "usable": {
-     "mean": 0.090278,
+     "mean": 0.135417,
      "n": 288
     }
    },
@@ -27163,23 +27163,23 @@
      "n": 18
     },
     "notation.pedal.f1": {
-     "mean": 0.639991,
+     "mean": 0.649725,
      "n": 6
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.08194,
+     "mean": 1.850715,
      "n": 18
     },
     "notation.pedal.marks": {
-     "mean": 7.611111,
+     "mean": 7.5,
      "n": 18
     },
     "notation.pedal.precision": {
-     "mean": 0.654915,
+     "mean": 0.671329,
      "n": 6
     },
     "notation.pedal.recall": {
-     "mean": 0.627778,
+     "mean": 0.633333,
      "n": 6
     },
     "notation.spelling.accuracy": {
@@ -27654,7 +27654,7 @@
      "n": 1782
     },
     "critical.pedal": {
-     "mean": 0.69697,
+     "mean": 0.739057,
      "n": 594
     },
     "critical.pitch_integrity": {
@@ -27754,23 +27754,23 @@
      "n": 1782
     },
     "notation.pedal.f1": {
-     "mean": 0.693962,
+     "mean": 0.716907,
      "n": 594
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.60438,
+     "mean": 1.833617,
      "n": 1782
     },
     "notation.pedal.marks": {
-     "mean": 7.873737,
+     "mean": 7.717172,
      "n": 1782
     },
     "notation.pedal.precision": {
-     "mean": 0.740476,
+     "mean": 0.776682,
      "n": 594
     },
     "notation.pedal.recall": {
-     "mean": 0.663925,
+     "mean": 0.680981,
      "n": 594
     },
     "notation.spelling.accuracy": {
@@ -28130,7 +28130,7 @@
      "n": 18
     },
     "rec.usable": {
-     "mean": 0.01459,
+     "mean": 0.01908,
      "n": 1782
     },
     "rec.voice.f1": {
@@ -28234,7 +28234,7 @@
      "n": 1782
     },
     "usable": {
-     "mean": 0.071268,
+     "mean": 0.081369,
      "n": 1782
     }
    },
@@ -28265,7 +28265,7 @@
      "n": 90
     },
     "critical.pedal": {
-     "mean": 0.8,
+     "mean": 0.866667,
      "n": 30
     },
     "critical.pitch_integrity": {
@@ -28365,23 +28365,23 @@
      "n": 90
     },
     "notation.pedal.f1": {
-     "mean": 0.708534,
+     "mean": 0.756188,
      "n": 30
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.94511,
+     "mean": 1.057711,
      "n": 90
     },
     "notation.pedal.marks": {
-     "mean": 5.411111,
+     "mean": 5.366667,
      "n": 90
     },
     "notation.pedal.precision": {
-     "mean": 0.761601,
+     "mean": 0.813565,
      "n": 30
     },
     "notation.pedal.recall": {
-     "mean": 0.678009,
+     "mean": 0.722685,
      "n": 30
     },
     "notation.spelling.accuracy": {
@@ -28721,7 +28721,7 @@
      "n": 90
     },
     "rec.usable": {
-     "mean": 0.022222,
+     "mean": 0.033333,
      "n": 90
     },
     "rec.voice.f1": {
@@ -28825,7 +28825,7 @@
      "n": 90
     },
     "usable": {
-     "mean": 0.122222,
+     "mean": 0.144444,
      "n": 90
     }
    },
@@ -28856,7 +28856,7 @@
      "n": 666
     },
     "critical.pedal": {
-     "mean": 0.761261,
+     "mean": 0.81982,
      "n": 222
     },
     "critical.pitch_integrity": {
@@ -28956,23 +28956,23 @@
      "n": 666
     },
     "notation.pedal.f1": {
-     "mean": 0.721928,
+     "mean": 0.753747,
      "n": 222
     },
     "notation.pedal.false_per_min": {
-     "mean": 3.097662,
+     "mean": 1.916814,
      "n": 666
     },
     "notation.pedal.marks": {
-     "mean": 22.801802,
+     "mean": 22.666667,
      "n": 666
     },
     "notation.pedal.precision": {
-     "mean": 0.77853,
+     "mean": 0.817394,
      "n": 222
     },
     "notation.pedal.recall": {
-     "mean": 0.683745,
+     "mean": 0.71147,
      "n": 222
     },
     "notation.spelling.accuracy": {
@@ -29432,7 +29432,7 @@
      "n": 666
     },
     "usable": {
-     "mean": 0.061562,
+     "mean": 0.067568,
      "n": 666
     }
    },
@@ -30685,7 +30685,7 @@
      "n": 846
     },
     "critical.pedal": {
-     "mean": 0.680851,
+     "mean": 0.822695,
      "n": 282
     },
     "critical.pitch_integrity": {
@@ -30785,23 +30785,23 @@
      "n": 846
     },
     "notation.pedal.f1": {
-     "mean": 0.682002,
+     "mean": 0.76045,
      "n": 282
     },
     "notation.pedal.false_per_min": {
-     "mean": 3.65239,
+     "mean": 0.898477,
      "n": 846
     },
     "notation.pedal.marks": {
-     "mean": 11.589835,
+     "mean": 11.148936,
      "n": 846
     },
     "notation.pedal.precision": {
-     "mean": 0.733475,
+     "mean": 0.845863,
      "n": 282
     },
     "notation.pedal.recall": {
-     "mean": 0.648603,
+     "mean": 0.711108,
      "n": 282
     },
     "notation.spelling.accuracy": {
@@ -31161,7 +31161,7 @@
      "n": 60
     },
     "rec.usable": {
-     "mean": 0.050827,
+     "mean": 0.061466,
      "n": 846
     },
     "rec.voice.f1": {
@@ -31265,7 +31265,7 @@
      "n": 846
     },
     "usable": {
-     "mean": 0.191489,
+     "mean": 0.219858,
      "n": 846
     }
    },
@@ -32486,7 +32486,7 @@
      "n": 423
     },
     "critical.pedal": {
-     "mean": 0.929078,
+     "mean": 0.976359,
      "n": 423
     },
     "critical.pitch_integrity": {
@@ -32586,23 +32586,23 @@
      "n": 423
     },
     "notation.pedal.f1": {
-     "mean": 0.951479,
+     "mean": 0.980324,
      "n": 423
     },
     "notation.pedal.false_per_min": {
-     "mean": 4.771773,
+     "mean": 1.875898,
      "n": 423
     },
     "notation.pedal.marks": {
-     "mean": 44.274232,
+     "mean": 44.111111,
      "n": 423
     },
     "notation.pedal.precision": {
-     "mean": 0.951479,
+     "mean": 0.982703,
      "n": 423
     },
     "notation.pedal.recall": {
-     "mean": 0.951479,
+     "mean": 0.978275,
      "n": 423
     },
     "notation.spelling.accuracy": {
@@ -32962,7 +32962,7 @@
      "n": 30
     },
     "rec.usable": {
-     "mean": 0.066194,
+     "mean": 0.08747,
      "n": 423
     },
     "rec.voice.f1": {
@@ -33066,7 +33066,7 @@
      "n": 423
     },
     "usable": {
-     "mean": 0.134752,
+     "mean": 0.163121,
      "n": 423
     }
    },
@@ -33097,7 +33097,7 @@
      "n": 423
     },
     "critical.pedal": {
-     "mean": 0.50591,
+     "mean": 0.553191,
      "n": 423
     },
     "critical.pitch_integrity": {
@@ -33197,23 +33197,23 @@
      "n": 423
     },
     "notation.pedal.f1": {
-     "mean": 0.452156,
+     "mean": 0.475611,
      "n": 423
     },
     "notation.pedal.false_per_min": {
-     "mean": 11.703659,
+     "mean": 9.091708,
      "n": 423
     },
     "notation.pedal.marks": {
-     "mean": 25.947991,
+     "mean": 25.229314,
      "n": 423
     },
     "notation.pedal.precision": {
-     "mean": 0.550942,
+     "mean": 0.594644,
      "n": 423
     },
     "notation.pedal.recall": {
-     "mean": 0.387772,
+     "mean": 0.402646,
      "n": 423
     },
     "notation.spelling.accuracy": {
@@ -33677,7 +33677,7 @@
      "n": 423
     },
     "usable": {
-     "mean": 0.094563,
+     "mean": 0.122931,
      "n": 423
     }
    },
@@ -34303,7 +34303,7 @@
      "n": 2538
     },
     "critical.pedal": {
-     "mean": 0.717494,
+     "mean": 0.764775,
      "n": 846
     },
     "critical.pitch_integrity": {
@@ -34403,23 +34403,23 @@
      "n": 2538
     },
     "notation.pedal.f1": {
-     "mean": 0.701818,
+     "mean": 0.727967,
      "n": 846
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.745905,
+     "mean": 1.827934,
      "n": 2538
     },
     "notation.pedal.marks": {
-     "mean": 11.703704,
+     "mean": 11.556738,
      "n": 2538
     },
     "notation.pedal.precision": {
-     "mean": 0.751211,
+     "mean": 0.788673,
      "n": 846
     },
     "notation.pedal.recall": {
-     "mean": 0.669625,
+     "mean": 0.69046,
      "n": 846
     },
     "notation.spelling.accuracy": {
@@ -34779,7 +34779,7 @@
      "n": 180
     },
     "rec.usable": {
-     "mean": 0.017336,
+     "mean": 0.020883,
      "n": 2538
     },
     "rec.voice.f1": {
@@ -34883,7 +34883,7 @@
      "n": 2538
     },
     "usable": {
-     "mean": 0.070528,
+     "mean": 0.079984,
      "n": 2538
     }
    },
@@ -35014,23 +35014,23 @@
      "n": 54
     },
     "notation.pedal.f1": {
-     "mean": 0.745726,
+     "mean": 0.747112,
      "n": 18
     },
     "notation.pedal.false_per_min": {
-     "mean": 1.854044,
+     "mean": 1.464335,
      "n": 54
     },
     "notation.pedal.marks": {
-     "mean": 3.296296,
+     "mean": 3.148148,
      "n": 54
     },
     "notation.pedal.precision": {
-     "mean": 0.788889,
+     "mean": 0.80463,
      "n": 18
     },
     "notation.pedal.recall": {
-     "mean": 0.718254,
+     "mean": 0.714286,
      "n": 18
     },
     "notation.spelling.accuracy": {
@@ -35501,7 +35501,7 @@
      "n": 720
     },
     "critical.pedal": {
-     "mean": 0.720833,
+     "mean": 0.75,
      "n": 240
     },
     "critical.pitch_integrity": {
@@ -35601,23 +35601,23 @@
      "n": 720
     },
     "notation.pedal.f1": {
-     "mean": 0.708669,
+     "mean": 0.721732,
      "n": 240
     },
     "notation.pedal.false_per_min": {
-     "mean": 1.9853,
+     "mean": 1.598497,
      "n": 720
     },
     "notation.pedal.marks": {
-     "mean": 8.598611,
+     "mean": 8.461111,
      "n": 720
     },
     "notation.pedal.precision": {
-     "mean": 0.758196,
+     "mean": 0.782174,
      "n": 240
     },
     "notation.pedal.recall": {
-     "mean": 0.676712,
+     "mean": 0.684408,
      "n": 240
     },
     "notation.spelling.accuracy": {
@@ -35961,7 +35961,7 @@
      "n": 720
     },
     "rec.usable": {
-     "mean": 0.002778,
+     "mean": 0.004167,
      "n": 720
     },
     "rec.voice.f1": {
@@ -36065,7 +36065,7 @@
      "n": 720
     },
     "usable": {
-     "mean": 0.041667,
+     "mean": 0.047222,
      "n": 720
     }
    },
@@ -36096,7 +36096,7 @@
      "n": 1314
     },
     "critical.pedal": {
-     "mean": 0.742009,
+     "mean": 0.799087,
      "n": 438
     },
     "critical.pitch_integrity": {
@@ -36196,23 +36196,23 @@
      "n": 1314
     },
     "notation.pedal.f1": {
-     "mean": 0.711745,
+     "mean": 0.745447,
      "n": 438
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.992347,
+     "mean": 1.764134,
      "n": 1314
     },
     "notation.pedal.marks": {
-     "mean": 16.330289,
+     "mean": 16.159056,
      "n": 1314
     },
     "notation.pedal.precision": {
-     "mean": 0.765851,
+     "mean": 0.809818,
      "n": 438
     },
     "notation.pedal.recall": {
-     "mean": 0.675925,
+     "mean": 0.704541,
      "n": 438
     },
     "notation.spelling.accuracy": {
@@ -36572,7 +36572,7 @@
      "n": 162
     },
     "rec.usable": {
-     "mean": 0.022831,
+     "mean": 0.027397,
      "n": 1314
     },
     "rec.voice.f1": {
@@ -36676,7 +36676,7 @@
      "n": 1314
     },
     "usable": {
-     "mean": 0.075342,
+     "mean": 0.085997,
      "n": 1314
     }
    },
@@ -36707,7 +36707,7 @@
      "n": 432
     },
     "critical.pedal": {
-     "mean": 0.638889,
+     "mean": 0.694444,
      "n": 144
     },
     "critical.pitch_integrity": {
@@ -36807,23 +36807,23 @@
      "n": 432
     },
     "notation.pedal.f1": {
-     "mean": 0.658316,
+     "mean": 0.68749,
      "n": 144
     },
     "notation.pedal.false_per_min": {
-     "mean": 3.385535,
+     "mean": 2.421653,
      "n": 432
     },
     "notation.pedal.marks": {
-     "mean": 4.194444,
+     "mean": 4.099537,
      "n": 432
     },
     "notation.pedal.precision": {
-     "mean": 0.695586,
+     "mean": 0.740016,
      "n": 144
     },
     "notation.pedal.recall": {
-     "mean": 0.635179,
+     "mean": 0.658213,
      "n": 144
     },
     "notation.spelling.accuracy": {
@@ -37183,7 +37183,7 @@
      "n": 18
     },
     "rec.usable": {
-     "mean": 0.025463,
+     "mean": 0.030093,
      "n": 432
     },
     "rec.voice.f1": {
@@ -37287,7 +37287,7 @@
      "n": 432
     },
     "usable": {
-     "mean": 0.104167,
+     "mean": 0.118056,
      "n": 432
     }
    },
@@ -37901,7 +37901,7 @@
      "n": 576
     },
     "critical.pedal": {
-     "mean": 0.765625,
+     "mean": 0.822917,
      "n": 192
     },
     "critical.pitch_integrity": {
@@ -38001,23 +38001,23 @@
      "n": 576
     },
     "notation.pedal.f1": {
-     "mean": 0.726487,
+     "mean": 0.758582,
      "n": 192
     },
     "notation.pedal.false_per_min": {
-     "mean": 3.495483,
+     "mean": 2.114796,
      "n": 576
     },
     "notation.pedal.marks": {
-     "mean": 24.236111,
+     "mean": 24.109375,
      "n": 576
     },
     "notation.pedal.precision": {
-     "mean": 0.784554,
+     "mean": 0.823031,
      "n": 192
     },
     "notation.pedal.recall": {
-     "mean": 0.687297,
+     "mean": 0.71513,
      "n": 192
     },
     "notation.spelling.accuracy": {
@@ -38377,7 +38377,7 @@
      "n": 126
     },
     "rec.usable": {
-     "mean": 0.026042,
+     "mean": 0.027778,
      "n": 576
     },
     "rec.voice.f1": {
@@ -38481,7 +38481,7 @@
      "n": 576
     },
     "usable": {
-     "mean": 0.059028,
+     "mean": 0.064236,
      "n": 576
     }
    },
@@ -38512,7 +38512,7 @@
      "n": 1422
     },
     "critical.pedal": {
-     "mean": 0.704641,
+     "mean": 0.755274,
      "n": 474
     },
     "critical.pitch_integrity": {
@@ -38612,23 +38612,23 @@
      "n": 1422
     },
     "notation.pedal.f1": {
-     "mean": 0.69345,
+     "mean": 0.720077,
      "n": 474
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.552968,
+     "mean": 1.73681,
      "n": 1422
     },
     "notation.pedal.marks": {
-     "mean": 9.208158,
+     "mean": 9.054852,
      "n": 1422
     },
     "notation.pedal.precision": {
-     "mean": 0.742952,
+     "mean": 0.781278,
      "n": 474
     },
     "notation.pedal.recall": {
-     "mean": 0.661588,
+     "mean": 0.682637,
      "n": 474
     },
     "notation.spelling.accuracy": {
@@ -38988,7 +38988,7 @@
      "n": 36
     },
     "rec.usable": {
-     "mean": 0.011252,
+     "mean": 0.015471,
      "n": 1422
     },
     "rec.voice.f1": {
@@ -39092,7 +39092,7 @@
      "n": 1422
     },
     "usable": {
-     "mean": 0.074543,
+     "mean": 0.085795,
      "n": 1422
     }
    },
@@ -39123,7 +39123,7 @@
      "n": 540
     },
     "critical.pedal": {
-     "mean": 0.7,
+     "mean": 0.727778,
      "n": 180
     },
     "critical.pitch_integrity": {
@@ -39223,23 +39223,23 @@
      "n": 540
     },
     "notation.pedal.f1": {
-     "mean": 0.697539,
+     "mean": 0.716087,
      "n": 180
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.454424,
+     "mean": 1.76191,
      "n": 540
     },
     "notation.pedal.marks": {
-     "mean": 4.907407,
+     "mean": 4.755556,
      "n": 540
     },
     "notation.pedal.precision": {
-     "mean": 0.737393,
+     "mean": 0.771499,
      "n": 180
     },
     "notation.pedal.recall": {
-     "mean": 0.671941,
+     "mean": 0.684748,
      "n": 180
     },
     "notation.spelling.accuracy": {
@@ -39595,7 +39595,7 @@
      "n": 18
     },
     "rec.usable": {
-     "mean": 0.024074,
+     "mean": 0.027778,
      "n": 540
     },
     "rec.voice.f1": {
@@ -39699,7 +39699,7 @@
      "n": 540
     },
     "usable": {
-     "mean": 0.072222,
+     "mean": 0.081481,
      "n": 540
     }
    },
@@ -39730,7 +39730,7 @@
      "n": 2538
     },
     "critical.pedal": {
-     "mean": 0.717494,
+     "mean": 0.764775,
      "n": 846
     },
     "critical.pitch_integrity": {
@@ -39830,23 +39830,23 @@
      "n": 2538
     },
     "notation.pedal.f1": {
-     "mean": 0.701818,
+     "mean": 0.727967,
      "n": 846
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.745905,
+     "mean": 1.827934,
      "n": 2538
     },
     "notation.pedal.marks": {
-     "mean": 11.703704,
+     "mean": 11.556738,
      "n": 2538
     },
     "notation.pedal.precision": {
-     "mean": 0.751211,
+     "mean": 0.788673,
      "n": 846
     },
     "notation.pedal.recall": {
-     "mean": 0.669625,
+     "mean": 0.69046,
      "n": 846
     },
     "notation.spelling.accuracy": {
@@ -40206,7 +40206,7 @@
      "n": 180
     },
     "rec.usable": {
-     "mean": 0.017336,
+     "mean": 0.020883,
      "n": 2538
     },
     "rec.voice.f1": {
@@ -40310,7 +40310,7 @@
      "n": 2538
     },
     "usable": {
-     "mean": 0.070528,
+     "mean": 0.079984,
      "n": 2538
     }
    }
@@ -41373,7 +41373,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "c713b7e7b8f3a4f0",
+   "semantic": "b7a3a9221a694a45",
    "sqi": 66.388889,
    "status": "ok"
   },
@@ -42659,7 +42659,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
-    "notation.pedal.f1": 0.153846,
+    "notation.pedal.f1": 0.3,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 0.0,
@@ -42705,7 +42705,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "4b50333b1cd3eb17",
+   "semantic": "debfd4520629199c",
    "sqi": 97.357204,
    "status": "ok"
   },
@@ -43991,7 +43991,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.977273,
-    "notation.pedal.f1": 0.666667,
+    "notation.pedal.f1": 0.545455,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.977273,
     "notation.ties.extra_per_100": 0.0,
@@ -44037,7 +44037,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "5c66a5e3c857919e",
+   "semantic": "93c53ed13e0cd884",
    "sqi": 98.633751,
    "status": "ok"
   },
@@ -45323,7 +45323,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.994286,
     "notation.onset_pos.accuracy_ref": 0.920635,
-    "notation.pedal.f1": 0.521739,
+    "notation.pedal.f1": 0.695652,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.925926,
     "notation.ties.extra_per_100": 0.0,
@@ -45369,7 +45369,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "1da69f11daae0bf7",
+   "semantic": "1ac8c497ecf68931",
    "sqi": 94.467242,
    "status": "ok"
   },
@@ -46655,7 +46655,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.984615,
     "notation.onset_pos.accuracy_ref": 0.937729,
-    "notation.pedal.f1": 0.516129,
+    "notation.pedal.f1": 0.5,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.952381,
     "notation.ties.extra_per_100": 1.538462,
@@ -46701,7 +46701,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "f84e46290baab9d2",
+   "semantic": "e46ae2a3ef1848e0",
    "sqi": 94.510094,
    "status": "ok"
   },
@@ -47987,7 +47987,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.964912,
-    "notation.pedal.f1": 0.6,
+    "notation.pedal.f1": 0.541667,
     "notation.spelling.accuracy": 0.981818,
     "notation.spelling.accuracy_ref": 0.947368,
     "notation.ties.extra_per_100": 0.0,
@@ -48033,7 +48033,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "8018226fd9c82f1a",
+   "semantic": "7c0d7724ff019cef",
    "sqi": 97.364645,
    "status": "ok"
   },
@@ -49319,7 +49319,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.014388,
     "notation.onset_pos.accuracy_ref": 0.013699,
-    "notation.pedal.f1": 0.518519,
+    "notation.pedal.f1": 0.576923,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.952055,
     "notation.ties.extra_per_100": 0.0,
@@ -49365,7 +49365,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "bad21c3df056f903",
+   "semantic": "9b79f1c1a5cc37b5",
    "sqi": 72.800398,
    "status": "ok"
   },
@@ -50651,7 +50651,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.987952,
     "notation.onset_pos.accuracy_ref": 0.949074,
-    "notation.pedal.f1": 0.580645,
+    "notation.pedal.f1": 0.693548,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.960648,
     "notation.ties.extra_per_100": 0.963855,
@@ -50697,7 +50697,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "5e495bf66173b89a",
+   "semantic": "b943ad1b699bf2e5",
    "sqi": 94.347435,
    "status": "ok"
   },
@@ -50919,7 +50919,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "881ca89603f847d9",
+   "semantic": "bf121cb926429bca",
    "sqi": 95.553634,
    "status": "ok"
   },
@@ -51968,7 +51968,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -51983,7 +51983,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.934694,
-    "notation.pedal.f1": 0.458333,
+    "notation.pedal.f1": 0.583333,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.934694,
     "notation.ties.extra_per_100": 0.0,
@@ -52027,9 +52027,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "6dce055032b2dcda",
+   "semantic": "d91f934de5234993",
    "sqi": 95.942925,
    "status": "ok"
   },
@@ -53361,7 +53361,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "642b898438a17701",
+   "semantic": "471e66cf73bbe3b9",
    "sqi": 92.73004,
    "status": "ok"
   },
@@ -53537,7 +53537,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.047619,
     "notation.onset_pos.accuracy_ref": 0.045045,
-    "notation.pedal.f1": 1.0,
+    "notation.pedal.f1": 0.983051,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.945946,
     "notation.ties.extra_per_100": 0.0,
@@ -53583,7 +53583,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "cdd9d71a46b46fb6",
+   "semantic": "d4d74e8855e62bd2",
    "sqi": 74.698976,
    "status": "ok"
   },
@@ -54647,7 +54647,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.95858,
-    "notation.pedal.f1": 0.315789,
+    "notation.pedal.f1": 0.266667,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.95858,
     "notation.ties.extra_per_100": 0.0,
@@ -54693,7 +54693,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "d5c42f95903dd309",
+   "semantic": "11cc9633c36a0f96",
    "sqi": 96.804734,
    "status": "ok"
   },
@@ -55979,7 +55979,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.987903,
     "notation.onset_pos.accuracy_ref": 0.907407,
-    "notation.pedal.f1": 0.612903,
+    "notation.pedal.f1": 0.741935,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.918519,
     "notation.ties.extra_per_100": 0.806452,
@@ -56025,7 +56025,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "658b69594716ef4a",
+   "semantic": "b223c4d3bf0885b0",
    "sqi": 94.101482,
    "status": "ok"
   },
@@ -56247,7 +56247,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "3ddf9edb6dfb0379",
+   "semantic": "c7b45be8290e1523",
    "sqi": 95.756968,
    "status": "ok"
   },
@@ -57296,7 +57296,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -57311,7 +57311,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.943723,
-    "notation.pedal.f1": 0.32,
+    "notation.pedal.f1": 0.583333,
     "notation.spelling.accuracy": 0.990826,
     "notation.spelling.accuracy_ref": 0.935065,
     "notation.ties.extra_per_100": 0.0,
@@ -57355,9 +57355,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "ea2f70ed34a83795",
+   "semantic": "ff063c2d57ea3be4",
    "sqi": 96.00737,
    "status": "ok"
   },
@@ -57518,7 +57518,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -57533,7 +57533,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.965368,
-    "notation.pedal.f1": 0.333333,
+    "notation.pedal.f1": 0.965517,
     "notation.spelling.accuracy": 0.991031,
     "notation.spelling.accuracy_ref": 0.95671,
     "notation.ties.extra_per_100": 0.0,
@@ -57561,7 +57561,7 @@
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
-    "rec.usable": 0.0,
+    "rec.usable": 1.0,
     "rec.voice.f1": 0.644654,
     "sqi": 97.742815,
     "struct.downbeat.f1": 0.83871,
@@ -57577,9 +57577,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "5ddc0d62bb98ceaa",
+   "semantic": "06ca546a758036ac",
    "sqi": 97.742815,
    "status": "ok"
   },
@@ -58643,7 +58643,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.950413,
-    "notation.pedal.f1": 0.655172,
+    "notation.pedal.f1": 0.56,
     "notation.spelling.accuracy": 0.991304,
     "notation.spelling.accuracy_ref": 0.942149,
     "notation.ties.extra_per_100": 0.0,
@@ -58689,7 +58689,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "4b0f00f30436daf5",
+   "semantic": "d956139b8accaf76",
    "sqi": 96.683103,
    "status": "ok"
   },
@@ -59975,7 +59975,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.975369,
-    "notation.pedal.f1": 0.416667,
+    "notation.pedal.f1": 0.478261,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.975369,
     "notation.ties.extra_per_100": 0.0,
@@ -60021,7 +60021,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "d43bd600662e3e5e",
+   "semantic": "4f4270ca00a69716",
    "sqi": 97.140906,
    "status": "ok"
   },
@@ -61292,7 +61292,7 @@
     "critical.key": 1.0,
     "critical.meter": 0.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -61307,7 +61307,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.944751,
-    "notation.pedal.f1": 0.458333,
+    "notation.pedal.f1": 0.583333,
     "notation.spelling.accuracy": 0.988304,
     "notation.spelling.accuracy_ref": 0.933702,
     "notation.ties.extra_per_100": 0.0,
@@ -61353,7 +61353,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "ad5b469159985485",
+   "semantic": "2ed83ef03162c377",
    "sqi": 89.115672,
    "status": "ok"
   },
@@ -62685,7 +62685,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "35c8065950f6766e",
+   "semantic": "7ac973b0e8e903fc",
    "sqi": 94.812288,
    "status": "ok"
   },
@@ -62861,7 +62861,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.983389,
     "notation.onset_pos.accuracy_ref": 0.961039,
-    "notation.pedal.f1": 1.0,
+    "notation.pedal.f1": 0.983051,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.977273,
     "notation.ties.extra_per_100": 0.664452,
@@ -62907,7 +62907,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "0d6214741578d53b",
+   "semantic": "eb8b9d7cfeeeace7",
    "sqi": 96.906839,
    "status": "ok"
   },
@@ -64017,7 +64017,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "2d607e02656113bd",
+   "semantic": "f0d6e4a433694eff",
    "sqi": 76.908285,
    "status": "ok"
   },
@@ -65303,7 +65303,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.939623,
-    "notation.pedal.f1": 0.4,
+    "notation.pedal.f1": 0.363636,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.939623,
     "notation.ties.extra_per_100": 0.0,
@@ -65349,7 +65349,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "6a67f133d3a448a7",
+   "semantic": "f320103e6f53e4b4",
    "sqi": 95.685486,
    "status": "ok"
   },
@@ -66681,7 +66681,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "f08c0e6977995b72",
+   "semantic": "d676673cdce16822",
    "sqi": 96.111111,
    "status": "ok"
   },
@@ -67967,7 +67967,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.939759,
     "notation.onset_pos.accuracy_ref": 0.879699,
-    "notation.pedal.f1": 0.318182,
+    "notation.pedal.f1": 0.363636,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.93609,
     "notation.ties.extra_per_100": 4.819277,
@@ -68013,7 +68013,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "3f60e2d9183df7cf",
+   "semantic": "d1d34c40e83d7fa1",
    "sqi": 91.916508,
    "status": "ok"
   },
@@ -69299,7 +69299,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.977376,
-    "notation.pedal.f1": 0.083333,
+    "notation.pedal.f1": 0.380952,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.977376,
     "notation.ties.extra_per_100": 0.0,
@@ -69345,7 +69345,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "497341418e295f91",
+   "semantic": "c2fed798b43e5ed7",
    "sqi": 97.564153,
    "status": "ok"
   },
@@ -69521,7 +69521,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.018182,
     "notation.onset_pos.accuracy_ref": 0.0181,
-    "notation.pedal.f1": 1.0,
+    "notation.pedal.f1": 0.962963,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.995475,
     "notation.ties.extra_per_100": 0.0,
@@ -69567,7 +69567,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "42c15e978dd37a72",
+   "semantic": "43da942a617f14fa",
    "sqi": 66.753291,
    "status": "ok"
   },
@@ -70616,7 +70616,7 @@
     "critical.key": 1.0,
     "critical.meter": 0.0,
     "critical.note_values": 0.0,
-    "critical.pedal": 1.0,
+    "critical.pedal": 0.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -70631,7 +70631,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.986014,
     "notation.onset_pos.accuracy_ref": 0.927632,
-    "notation.pedal.f1": 0.52381,
+    "notation.pedal.f1": 0.473684,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.940789,
     "notation.ties.extra_per_100": 0.699301,
@@ -70677,7 +70677,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "1c4971c03b65d334",
+   "semantic": "9e8e0f8da366fe17",
    "sqi": 86.027132,
    "status": "ok"
   },
@@ -71963,7 +71963,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.368984,
     "notation.onset_pos.accuracy_ref": 0.35567,
-    "notation.pedal.f1": 0.666667,
+    "notation.pedal.f1": 0.615385,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.963918,
     "notation.ties.extra_per_100": 1.069519,
@@ -72009,7 +72009,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "1c10a9d02da15cb0",
+   "semantic": "f1bfa8d068520ada",
    "sqi": 71.478338,
    "status": "ok"
   },
@@ -72185,7 +72185,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.074468,
     "notation.onset_pos.accuracy_ref": 0.072165,
-    "notation.pedal.f1": 1.0,
+    "notation.pedal.f1": 0.969697,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.969072,
     "notation.ties.extra_per_100": 0.0,
@@ -72231,7 +72231,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "ce52220472ff7497",
+   "semantic": "07c67b6254be47f2",
    "sqi": 79.118854,
    "status": "ok"
   },
@@ -73563,7 +73563,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "7e937ddb89a6b4cf",
+   "semantic": "289db5e3ca0c3f2a",
    "sqi": 96.283616,
    "status": "ok"
   },
@@ -74627,7 +74627,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.912281,
-    "notation.pedal.f1": 0.684211,
+    "notation.pedal.f1": 0.736842,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.912281,
     "notation.ties.extra_per_100": 0.0,
@@ -74673,7 +74673,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "9f45faff09424580",
+   "semantic": "98e2336a1c43d5ed",
    "sqi": 94.174407,
    "status": "ok"
   },
@@ -75959,7 +75959,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.982143,
     "notation.onset_pos.accuracy_ref": 0.951557,
-    "notation.pedal.f1": 0.674419,
+    "notation.pedal.f1": 0.813953,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.968858,
     "notation.ties.extra_per_100": 1.428571,
@@ -76005,7 +76005,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "9768f5da5f27a801",
+   "semantic": "9475fe675d9c4176",
    "sqi": 95.537731,
    "status": "ok"
   },
@@ -76227,7 +76227,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "ace5a69ec6f2b01c",
+   "semantic": "c8a8154e19b5b9c1",
    "sqi": 96.827377,
    "status": "ok"
   },
@@ -77291,7 +77291,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.017544,
     "notation.onset_pos.accuracy_ref": 0.016667,
-    "notation.pedal.f1": 0.304348,
+    "notation.pedal.f1": 0.318182,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.95,
     "notation.ties.extra_per_100": 0.0,
@@ -77337,7 +77337,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "aa7bc91561f73e29",
+   "semantic": "8cb6e4c49471faa9",
    "sqi": 63.990506,
    "status": "ok"
   },
@@ -78623,7 +78623,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.942308,
-    "notation.pedal.f1": 0.368421,
+    "notation.pedal.f1": 0.352941,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.942308,
     "notation.ties.extra_per_100": 0.0,
@@ -78669,7 +78669,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "91a070c49f54f08f",
+   "semantic": "d0a1ac3f091bfbf4",
    "sqi": 96.138763,
    "status": "ok"
   },
@@ -79940,7 +79940,7 @@
     "critical.key": 0.0,
     "critical.meter": 1.0,
     "critical.note_values": 0.0,
-    "critical.pedal": 1.0,
+    "critical.pedal": 0.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -79955,7 +79955,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.973118,
     "notation.onset_pos.accuracy_ref": 0.909548,
-    "notation.pedal.f1": 0.5,
+    "notation.pedal.f1": 0.4,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.934673,
     "notation.ties.extra_per_100": 1.075269,
@@ -80001,7 +80001,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "bd6528585040d791",
+   "semantic": "14573b0e587792f9",
    "sqi": 83.306004,
    "status": "ok"
   },
@@ -81272,7 +81272,7 @@
     "critical.key": 1.0,
     "critical.meter": 0.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
     "critical.structure": 1.0,
@@ -81287,7 +81287,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.355828,
     "notation.onset_pos.accuracy_ref": 0.333333,
-    "notation.pedal.f1": 0.296296,
+    "notation.pedal.f1": 0.72,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.936782,
     "notation.ties.extra_per_100": 3.067485,
@@ -81333,7 +81333,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "baa1e4818c1bbf3d",
+   "semantic": "e9a4f78c708a0a72",
    "sqi": 65.932144,
    "status": "ok"
   },
@@ -81494,7 +81494,7 @@
     "critical.key": 1.0,
     "critical.meter": 0.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
     "critical.structure": 1.0,
@@ -81509,7 +81509,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.357143,
     "notation.onset_pos.accuracy_ref": 0.344828,
-    "notation.pedal.f1": 0.321429,
+    "notation.pedal.f1": 0.962963,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.965517,
     "notation.ties.extra_per_100": 1.190476,
@@ -81555,7 +81555,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "35dfa2dddb16028c",
+   "semantic": "0a599d350777f552",
    "sqi": 68.15487,
    "status": "ok"
   },
@@ -82619,7 +82619,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.987654,
     "notation.onset_pos.accuracy_ref": 0.923077,
-    "notation.pedal.f1": 0.535714,
+    "notation.pedal.f1": 0.5,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.934615,
     "notation.ties.extra_per_100": 0.0,
@@ -82665,7 +82665,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "bd7889c802caf914",
+   "semantic": "2d98e842b5262a34",
    "sqi": 93.771083,
    "status": "ok"
   },
@@ -83951,7 +83951,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.350365,
     "notation.onset_pos.accuracy_ref": 0.342857,
-    "notation.pedal.f1": 0.666667,
+    "notation.pedal.f1": 0.787234,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.978571,
     "notation.ties.extra_per_100": 0.0,
@@ -83997,7 +83997,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "7123076aa09b8505",
+   "semantic": "b718b51fffd89064",
    "sqi": 72.836873,
    "status": "ok"
   },
@@ -85268,7 +85268,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 1.0,
+    "critical.pedal": 0.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -85283,7 +85283,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.974093,
-    "notation.pedal.f1": 0.6,
+    "notation.pedal.f1": 0.47619,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.974093,
     "notation.ties.extra_per_100": 0.0,
@@ -85327,9 +85327,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 1.0
+    "usable": 0.0
    },
-   "semantic": "7632be89bcbcda08",
+   "semantic": "a0f1a480a9862bd5",
    "sqi": 97.872248,
    "status": "ok"
   },
@@ -85505,7 +85505,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
-    "notation.pedal.f1": 1.0,
+    "notation.pedal.f1": 0.923077,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 0.0,
@@ -85551,7 +85551,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "8f59fa7ffa1e11f6",
+   "semantic": "8e1a1ce7a89d0883",
    "sqi": 99.119171,
    "status": "ok"
   },
@@ -86600,7 +86600,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -86615,7 +86615,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.984127,
-    "notation.pedal.f1": 0.444444,
+    "notation.pedal.f1": 0.5,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.984127,
     "notation.ties.extra_per_100": 0.0,
@@ -86659,9 +86659,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "47f335dbfd78eda7",
+   "semantic": "c413ec997d5b30da",
    "sqi": 98.730866,
    "status": "ok"
   },
@@ -87932,7 +87932,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
     "critical.structure": 0.0,
@@ -87947,7 +87947,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.023529,
     "notation.onset_pos.accuracy_ref": 0.023121,
-    "notation.pedal.f1": 0.444444,
+    "notation.pedal.f1": 0.588235,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.982659,
     "notation.ties.extra_per_100": 0.0,
@@ -87993,7 +87993,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "93b925039658c89d",
+   "semantic": "cdfee29ebb990af8",
    "sqi": 73.357073,
    "status": "ok"
   },
@@ -89325,7 +89325,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "0bfe59bf3ec4c382",
+   "semantic": "88a43aaa57573ba6",
    "sqi": 94.043459,
    "status": "ok"
   },
@@ -89501,7 +89501,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.976744,
     "notation.onset_pos.accuracy_ref": 0.926471,
-    "notation.pedal.f1": 1.0,
+    "notation.pedal.f1": 0.962963,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.948529,
     "notation.ties.extra_per_100": 2.325581,
@@ -89547,7 +89547,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "c05ee43a24cf6854",
+   "semantic": "73bd42696fc2d885",
    "sqi": 95.479051,
    "status": "ok"
   },
@@ -90596,7 +90596,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -90611,7 +90611,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.979798,
     "notation.onset_pos.accuracy_ref": 0.932692,
-    "notation.pedal.f1": 0.48,
+    "notation.pedal.f1": 0.583333,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.951923,
     "notation.ties.extra_per_100": 1.010101,
@@ -90655,9 +90655,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "ee905cacdbe97f51",
+   "semantic": "172d2cffc02ae33a",
    "sqi": 95.513836,
    "status": "ok"
   },
@@ -92165,7 +92165,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.054054,
     "notation.onset_pos.accuracy_ref": 0.053333,
-    "notation.pedal.f1": 1.0,
+    "notation.pedal.f1": 0.965517,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.986667,
     "notation.ties.extra_per_100": 0.0,
@@ -92211,7 +92211,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "bd2f764f99fc29b1",
+   "semantic": "5474a88cf493cd93",
    "sqi": 75.110216,
    "status": "ok"
   },
@@ -93321,7 +93321,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "15b97a11fc3d8db2",
+   "semantic": "5bd262ee57723d9e",
    "sqi": 96.310832,
    "status": "ok"
   },
@@ -95939,7 +95939,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.931937,
-    "notation.pedal.f1": 0.625,
+    "notation.pedal.f1": 0.565217,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.931937,
     "notation.ties.extra_per_100": 0.0,
@@ -95985,7 +95985,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "d14aab3c949fde12",
+   "semantic": "d207b1c737b4529c",
    "sqi": 95.217033,
    "status": "ok"
   },
@@ -97256,7 +97256,7 @@
     "critical.key": 1.0,
     "critical.meter": 0.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 0.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -97271,7 +97271,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.991111,
     "notation.onset_pos.accuracy_ref": 0.921488,
-    "notation.pedal.f1": 0.25,
+    "notation.pedal.f1": 0.607143,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.929752,
     "notation.ties.extra_per_100": 1.777778,
@@ -97317,7 +97317,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "7aa0af98c6a44840",
+   "semantic": "7135a8a6483028c3",
    "sqi": 86.945429,
    "status": "ok"
   },
@@ -97539,7 +97539,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "c02e368c5a808ef0",
+   "semantic": "54a13a9064462dda",
    "sqi": 53.716112,
    "status": "ok"
   },
@@ -98649,7 +98649,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "e0de972698dda7c6",
+   "semantic": "4840c9ac2b27b447",
    "sqi": 98.686233,
    "status": "ok"
   },
@@ -101267,7 +101267,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.989362,
-    "notation.pedal.f1": 0.36,
+    "notation.pedal.f1": 0.3,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.989362,
     "notation.ties.extra_per_100": 0.0,
@@ -101313,7 +101313,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "5a9ce4d56a950f53",
+   "semantic": "ced2eba634dfff46",
    "sqi": 98.199844,
    "status": "ok"
   },
@@ -102599,7 +102599,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.989474,
     "notation.onset_pos.accuracy_ref": 0.989474,
-    "notation.pedal.f1": 0.37037,
+    "notation.pedal.f1": 0.375,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 1.052632,
@@ -102645,7 +102645,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "c257e576c10c3c6e",
+   "semantic": "be9eba11e3501907",
    "sqi": 97.843996,
    "status": "ok"
   },
@@ -103916,7 +103916,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 0.0,
-    "critical.pedal": 1.0,
+    "critical.pedal": 0.0,
     "critical.pitch_integrity": 0.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -103931,7 +103931,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.954545,
-    "notation.pedal.f1": 0.535714,
+    "notation.pedal.f1": 0.434783,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.954545,
     "notation.ties.extra_per_100": 0.0,
@@ -103977,7 +103977,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "9d8c4bbb148bb818",
+   "semantic": "ca42ca200ef76081",
    "sqi": 94.553429,
    "status": "ok"
   },
@@ -105263,7 +105263,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.990909,
-    "notation.pedal.f1": 0.44,
+    "notation.pedal.f1": 0.318182,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.990909,
     "notation.ties.extra_per_100": 0.0,
@@ -105309,7 +105309,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "4c36ab336deb8a3e",
+   "semantic": "85ca9bc5f9cb16e9",
    "sqi": 98.733388,
    "status": "ok"
   },
@@ -106595,7 +106595,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.979592,
-    "notation.pedal.f1": 0.404762,
+    "notation.pedal.f1": 0.470588,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.979592,
     "notation.ties.extra_per_100": 0.0,
@@ -106641,7 +106641,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "33d1be2c5d582447",
+   "semantic": "21b3fb0d29b3a0cc",
    "sqi": 98.367347,
    "status": "ok"
   },
@@ -106817,7 +106817,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.979592,
     "notation.onset_pos.accuracy_ref": 0.979592,
-    "notation.pedal.f1": 1.0,
+    "notation.pedal.f1": 0.977778,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 2.040816,
@@ -106863,7 +106863,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "3928311bb2a71224",
+   "semantic": "03efdbf8c788ee17",
    "sqi": 98.767007,
    "status": "ok"
   },
@@ -107973,7 +107973,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "cba27878fdf4e8c2",
+   "semantic": "b4e542fcdb215581",
    "sqi": 88.253774,
    "status": "ok"
   },
@@ -109259,7 +109259,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.961538,
-    "notation.pedal.f1": 0.307692,
+    "notation.pedal.f1": 0.375,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.961538,
     "notation.ties.extra_per_100": 0.0,
@@ -109305,7 +109305,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "1de21dc5e656a8ac",
+   "semantic": "66fb9292af843eef",
    "sqi": 87.108349,
    "status": "ok"
   },
@@ -111923,7 +111923,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.971429,
-    "notation.pedal.f1": 0.542857,
+    "notation.pedal.f1": 0.5,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.971429,
     "notation.ties.extra_per_100": 0.0,
@@ -111969,7 +111969,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "2674d91c5fa1b8f4",
+   "semantic": "71eb70c7339136f6",
    "sqi": 97.238095,
    "status": "ok"
   },
@@ -113255,7 +113255,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.970588,
-    "notation.pedal.f1": 0.609756,
+    "notation.pedal.f1": 0.578947,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.970588,
     "notation.ties.extra_per_100": 0.0,
@@ -113301,7 +113301,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "64f2302a4869be03",
+   "semantic": "f1cc15cfe1333bcf",
    "sqi": 87.740708,
    "status": "ok"
   },
@@ -114572,7 +114572,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -114587,7 +114587,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.97351,
-    "notation.pedal.f1": 0.3,
+    "notation.pedal.f1": 0.766667,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.97351,
     "notation.ties.extra_per_100": 1.360544,
@@ -114631,9 +114631,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "6e651c04a2229c50",
+   "semantic": "5227b3b5cfab43db",
    "sqi": 97.81457,
    "status": "ok"
   },
@@ -114794,7 +114794,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -114809,7 +114809,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
-    "notation.pedal.f1": 0.323529,
+    "notation.pedal.f1": 1.0,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 0.0,
@@ -114837,7 +114837,7 @@
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
-    "rec.usable": 0.0,
+    "rec.usable": 1.0,
     "rec.voice.f1": 1.0,
     "sqi": 99.801325,
     "struct.downbeat.f1": 1.0,
@@ -114853,9 +114853,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "1f58ceb5ee608b14",
+   "semantic": "85dfb8030cfd4161",
    "sqi": 99.801325,
    "status": "ok"
   },
@@ -115965,7 +115965,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "32189a4313cc7982",
+   "semantic": "29653286e474090c",
    "sqi": 97.857143,
    "status": "ok"
   },
@@ -117458,7 +117458,7 @@
     "critical.key": 1.0,
     "critical.meter": 0.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 0.0,
@@ -117473,7 +117473,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.038961,
     "notation.onset_pos.accuracy_ref": 0.03871,
-    "notation.pedal.f1": 0.33871,
+    "notation.pedal.f1": 1.0,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.993548,
     "notation.ties.extra_per_100": 0.649351,
@@ -117519,7 +117519,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "4d71b41da23e6e5d",
+   "semantic": "1a367d1ade5b8185",
    "sqi": 78.741727,
    "status": "ok"
   },
@@ -118583,7 +118583,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.983193,
-    "notation.pedal.f1": 0.740741,
+    "notation.pedal.f1": 0.692308,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.983193,
     "notation.ties.extra_per_100": 0.0,
@@ -118629,7 +118629,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "9220c65d34e6eb0e",
+   "semantic": "518364f5ffbc3029",
    "sqi": 92.942934,
    "status": "ok"
   },
@@ -118805,7 +118805,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
-    "notation.pedal.f1": 1.0,
+    "notation.pedal.f1": 0.969697,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 0.0,
@@ -118851,7 +118851,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "b5d20cecd7fb9010",
+   "semantic": "d95f55dc08220403",
    "sqi": 93.94958,
    "status": "ok"
   },
@@ -119961,7 +119961,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "7c74e75c5a59448c",
+   "semantic": "908c95c24c93de65",
    "sqi": 90.348692,
    "status": "ok"
   },
@@ -121293,7 +121293,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "db5688abc56561a7",
+   "semantic": "d8a19fc893a9d6b8",
    "sqi": 95.588094,
    "status": "ok"
   },
@@ -122564,7 +122564,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -122579,7 +122579,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.971292,
     "notation.onset_pos.accuracy_ref": 0.953052,
-    "notation.pedal.f1": 0.481481,
+    "notation.pedal.f1": 0.62963,
     "notation.spelling.accuracy": 0.995215,
     "notation.spelling.accuracy_ref": 0.976526,
     "notation.ties.extra_per_100": 0.0,
@@ -122623,9 +122623,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "f43e55e1f4fc0a1b",
+   "semantic": "21436415083c42ec",
    "sqi": 95.137645,
    "status": "ok"
   },
@@ -123896,7 +123896,7 @@
     "critical.key": 1.0,
     "critical.meter": 0.0,
     "critical.note_values": 0.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 0.0,
     "critical.playback_tempo": 0.0,
     "critical.structure": 1.0,
@@ -123911,7 +123911,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.268116,
     "notation.onset_pos.accuracy_ref": 0.22561,
-    "notation.pedal.f1": 0.425,
+    "notation.pedal.f1": 0.575,
     "notation.spelling.accuracy": 0.98913,
     "notation.spelling.accuracy_ref": 0.832317,
     "notation.ties.extra_per_100": 2.173913,
@@ -123957,7 +123957,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "20a373aea485424f",
+   "semantic": "f7d4255ca9f26b7b",
    "sqi": 62.566655,
    "status": "ok"
   },
@@ -124179,7 +124179,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "59b75cc7f91c97ed",
+   "semantic": "da7276a859e60b2a",
    "sqi": 85.658958,
    "status": "ok"
   },
@@ -125228,7 +125228,7 @@
     "critical.key": 0.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 0.0,
@@ -125243,7 +125243,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.989324,
     "notation.onset_pos.accuracy_ref": 0.968641,
-    "notation.pedal.f1": 0.280576,
+    "notation.pedal.f1": 0.75969,
     "notation.spelling.accuracy": 0.998221,
     "notation.spelling.accuracy_ref": 0.977352,
     "notation.ties.extra_per_100": 8.540925,
@@ -125289,7 +125289,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "e0c5e8d30374d5fe",
+   "semantic": "44b1edd7f02695cc",
    "sqi": 94.063674,
    "status": "ok"
   },
@@ -125450,7 +125450,7 @@
     "critical.key": 0.0,
     "critical.meter": 0.0,
     "critical.note_values": 0.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 0.0,
@@ -125465,7 +125465,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.019164,
     "notation.onset_pos.accuracy_ref": 0.019164,
-    "notation.pedal.f1": 0.365385,
+    "notation.pedal.f1": 0.901408,
     "notation.spelling.accuracy": 0.998258,
     "notation.spelling.accuracy_ref": 0.998258,
     "notation.ties.extra_per_100": 17.770035,
@@ -125511,7 +125511,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "b7367a76bdef5ef5",
+   "semantic": "7da1908ca4639a0d",
    "sqi": 74.889981,
    "status": "ok"
   },
@@ -126575,7 +126575,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.972656,
     "notation.onset_pos.accuracy_ref": 0.954023,
-    "notation.pedal.f1": 0.69697,
+    "notation.pedal.f1": 0.727273,
     "notation.spelling.accuracy": 0.957031,
     "notation.spelling.accuracy_ref": 0.938697,
     "notation.ties.extra_per_100": 1.953125,
@@ -126621,7 +126621,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "6b35f62b2c7248b7",
+   "semantic": "34085bb62a40bfcb",
    "sqi": 93.054703,
    "status": "ok"
   },
@@ -127907,7 +127907,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.987854,
     "notation.onset_pos.accuracy_ref": 0.938462,
-    "notation.pedal.f1": 0.796296,
+    "notation.pedal.f1": 0.714286,
     "notation.spelling.accuracy": 0.931174,
     "notation.spelling.accuracy_ref": 0.884615,
     "notation.ties.extra_per_100": 2.024291,
@@ -127953,7 +127953,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "cd2efcf60cba4ecf",
+   "semantic": "1cfda50b6e7e4947",
    "sqi": 93.616895,
    "status": "ok"
   },
@@ -128129,7 +128129,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.995984,
     "notation.onset_pos.accuracy_ref": 0.953846,
-    "notation.pedal.f1": 1.0,
+    "notation.pedal.f1": 0.90566,
     "notation.spelling.accuracy": 0.931727,
     "notation.spelling.accuracy_ref": 0.892308,
     "notation.ties.extra_per_100": 1.204819,
@@ -128175,7 +128175,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "7ca68ac3ac78c3b2",
+   "semantic": "c82ff08707c6de82",
    "sqi": 95.232116,
    "status": "ok"
   },
@@ -129239,7 +129239,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.989474,
     "notation.onset_pos.accuracy_ref": 0.966581,
-    "notation.pedal.f1": 0.6,
+    "notation.pedal.f1": 0.666667,
     "notation.spelling.accuracy": 0.992105,
     "notation.spelling.accuracy_ref": 0.969152,
     "notation.ties.extra_per_100": 11.842105,
@@ -129285,7 +129285,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "c7e35f1b39a60043",
+   "semantic": "480713abfe2f100d",
    "sqi": 94.818692,
    "status": "ok"
   },
@@ -130556,7 +130556,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 0.0,
@@ -130571,7 +130571,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.996951,
     "notation.onset_pos.accuracy_ref": 0.983459,
-    "notation.pedal.f1": 0.266667,
+    "notation.pedal.f1": 0.728814,
     "notation.spelling.accuracy": 0.990854,
     "notation.spelling.accuracy_ref": 0.977444,
     "notation.ties.extra_per_100": 0.762195,
@@ -130617,7 +130617,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "8db3a37e15149ff0",
+   "semantic": "96cdac0ec9497943",
    "sqi": 98.421284,
    "status": "ok"
   },
@@ -130778,7 +130778,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -130793,7 +130793,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.998496,
-    "notation.pedal.f1": 0.337838,
+    "notation.pedal.f1": 0.972222,
     "notation.spelling.accuracy": 0.990964,
     "notation.spelling.accuracy_ref": 0.989474,
     "notation.ties.extra_per_100": 0.753012,
@@ -130821,7 +130821,7 @@
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
-    "rec.usable": 0.0,
+    "rec.usable": 1.0,
     "rec.voice.f1": 0.964177,
     "sqi": 99.548861,
     "struct.downbeat.f1": 1.0,
@@ -130837,9 +130837,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "0dcaf185d7aa4eec",
+   "semantic": "67f395dfce2198d5",
    "sqi": 99.548861,
    "status": "ok"
   },
@@ -132125,7 +132125,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
-    "notation.pedal.f1": 1.0,
+    "notation.pedal.f1": 0.983607,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 0.0,
@@ -132171,7 +132171,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "bdc5bb9679f81b84",
+   "semantic": "8adeef07bc351788",
    "sqi": 100.0,
    "status": "ok"
   },
@@ -133281,7 +133281,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "18e6fe7fade97f79",
+   "semantic": "c36c0f52e2159fd8",
    "sqi": 97.551068,
    "status": "ok"
   },
@@ -134774,7 +134774,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -134789,7 +134789,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
-    "notation.pedal.f1": 0.34375,
+    "notation.pedal.f1": 1.0,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 0.0,
@@ -134817,7 +134817,7 @@
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
-    "rec.usable": 0.0,
+    "rec.usable": 1.0,
     "rec.voice.f1": 1.0,
     "sqi": 100.0,
     "struct.downbeat.f1": 1.0,
@@ -134833,9 +134833,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "8335c4e27d6552ca",
+   "semantic": "6628b44ab6a227d2",
    "sqi": 100.0,
    "status": "ok"
   },
@@ -135899,7 +135899,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.990196,
-    "notation.pedal.f1": 0.24,
+    "notation.pedal.f1": 0.416667,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.990196,
     "notation.ties.extra_per_100": 0.0,
@@ -135945,7 +135945,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "ab423adfbd3e2afd",
+   "semantic": "9c319f0737d2b473",
    "sqi": 98.533219,
    "status": "ok"
   },
@@ -136106,7 +136106,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -136121,7 +136121,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
-    "notation.pedal.f1": 0.34375,
+    "notation.pedal.f1": 0.967742,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 0.0,
@@ -136149,7 +136149,7 @@
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
-    "rec.usable": 0.0,
+    "rec.usable": 1.0,
     "rec.voice.f1": 0.951553,
     "sqi": 99.411765,
     "struct.downbeat.f1": 1.0,
@@ -136165,9 +136165,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "399b37c114a8b5f3",
+   "semantic": "95baea2912194dba",
    "sqi": 99.411765,
    "status": "ok"
   },
@@ -137216,7 +137216,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -137231,7 +137231,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.987179,
-    "notation.pedal.f1": 0.310345,
+    "notation.pedal.f1": 0.896552,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.987179,
     "notation.ties.extra_per_100": 1.298701,
@@ -137275,9 +137275,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "a1887b0a78303d7b",
+   "semantic": "2e5c18ded927d9f3",
    "sqi": 97.768505,
    "status": "ok"
   },
@@ -137438,7 +137438,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -137453,7 +137453,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.987179,
     "notation.onset_pos.accuracy_ref": 0.987179,
-    "notation.pedal.f1": 0.34375,
+    "notation.pedal.f1": 1.0,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 0.0,
@@ -137497,9 +137497,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "e4f02356ad933db7",
+   "semantic": "8309b3cb3889997b",
    "sqi": 99.269592,
    "status": "ok"
   },
@@ -138563,7 +138563,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.983871,
-    "notation.pedal.f1": 0.571429,
+    "notation.pedal.f1": 0.583333,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.983871,
     "notation.ties.extra_per_100": 0.0,
@@ -138609,7 +138609,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "a9ef25a3bccc3a13",
+   "semantic": "8feb8a0b0959777f",
    "sqi": 98.016472,
    "status": "ok"
   },
@@ -139895,7 +139895,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.974265,
-    "notation.pedal.f1": 0.605263,
+    "notation.pedal.f1": 0.583333,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.974265,
     "notation.ties.extra_per_100": 0.0,
@@ -139941,7 +139941,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "8685daa58e1f6421",
+   "semantic": "6cdc015a008042d6",
    "sqi": 94.824198,
    "status": "ok"
   },
@@ -140117,7 +140117,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.996324,
     "notation.onset_pos.accuracy_ref": 0.996324,
-    "notation.pedal.f1": 1.0,
+    "notation.pedal.f1": 0.909091,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 0.0,
@@ -140163,7 +140163,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "d3501f577661b599",
+   "semantic": "c3a4e6048558aa4d",
    "sqi": 96.4375,
    "status": "ok"
   },
@@ -141227,7 +141227,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.978448,
-    "notation.pedal.f1": 0.148148,
+    "notation.pedal.f1": 0.48,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.978448,
     "notation.ties.extra_per_100": 1.762115,
@@ -141273,7 +141273,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "0dfd5b20f5f02ff3",
+   "semantic": "1847736b303cca45",
    "sqi": 97.812614,
    "status": "ok"
   },
@@ -141434,7 +141434,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -141449,7 +141449,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
-    "notation.pedal.f1": 0.34375,
+    "notation.pedal.f1": 1.0,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 0.0,
@@ -141477,7 +141477,7 @@
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
-    "rec.usable": 0.0,
+    "rec.usable": 1.0,
     "rec.voice.f1": 1.0,
     "sqi": 99.956897,
     "struct.downbeat.f1": 1.0,
@@ -141493,9 +141493,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "5e8e203da78d4e9f",
+   "semantic": "5148afb2c6e848b3",
    "sqi": 99.956897,
    "status": "ok"
   },
@@ -143891,7 +143891,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.979798,
-    "notation.pedal.f1": 0.444444,
+    "notation.pedal.f1": 0.48,
     "notation.spelling.accuracy": 0.984536,
     "notation.spelling.accuracy_ref": 0.964646,
     "notation.ties.extra_per_100": 0.0,
@@ -143937,7 +143937,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "f2a9463fdabdc74c",
+   "semantic": "2f0b229c4fb8089a",
    "sqi": 98.509206,
    "status": "ok"
   },
@@ -145208,7 +145208,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -145223,7 +145223,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.974684,
-    "notation.pedal.f1": 0.178571,
+    "notation.pedal.f1": 0.62963,
     "notation.spelling.accuracy": 0.974026,
     "notation.spelling.accuracy_ref": 0.949367,
     "notation.ties.extra_per_100": 0.4329,
@@ -145267,9 +145267,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "f85235d2685d6987",
+   "semantic": "d5c3325436b8d803",
    "sqi": 97.93647,
    "status": "ok"
   },
@@ -145430,7 +145430,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -145445,7 +145445,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
-    "notation.pedal.f1": 0.34375,
+    "notation.pedal.f1": 1.0,
     "notation.spelling.accuracy": 0.974684,
     "notation.spelling.accuracy_ref": 0.974684,
     "notation.ties.extra_per_100": 0.0,
@@ -145473,7 +145473,7 @@
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
-    "rec.usable": 0.0,
+    "rec.usable": 1.0,
     "rec.voice.f1": 0.977483,
     "sqi": 99.704641,
     "struct.downbeat.f1": 1.0,
@@ -145489,9 +145489,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "af55e7a82b19e182",
+   "semantic": "9ff1c88b0b0ab608",
    "sqi": 99.704641,
    "status": "ok"
   },
@@ -146601,7 +146601,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "fa31ee74d1fc11cc",
+   "semantic": "3c3f2b8b8ebe036a",
    "sqi": 98.831567,
    "status": "ok"
   },
@@ -146762,7 +146762,7 @@
     "critical.key": 1.0,
     "critical.meter": 0.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 0.0,
@@ -146777,7 +146777,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.05618,
     "notation.onset_pos.accuracy_ref": 0.05618,
-    "notation.pedal.f1": 0.34375,
+    "notation.pedal.f1": 1.0,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 7.865169,
@@ -146823,7 +146823,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "77cbd60114f9ce5a",
+   "semantic": "54b4bc41999eeba0",
    "sqi": 75.674157,
    "status": "ok"
   },
@@ -147887,7 +147887,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.965753,
-    "notation.pedal.f1": 0.541667,
+    "notation.pedal.f1": 0.5,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.965753,
     "notation.ties.extra_per_100": 0.0,
@@ -147933,7 +147933,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "f265f3f153f5c502",
+   "semantic": "e55bc65e304bff98",
    "sqi": 96.092111,
    "status": "ok"
   },
@@ -149265,7 +149265,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "88187d1ba86448d0",
+   "semantic": "0cc17f447734d53c",
    "sqi": 95.148517,
    "status": "ok"
   },
@@ -150597,7 +150597,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "7e7b1f3a47a62ec1",
+   "semantic": "c2d755ae08976a42",
    "sqi": 87.228258,
    "status": "ok"
   },
@@ -150773,7 +150773,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.084746,
     "notation.onset_pos.accuracy_ref": 0.084746,
-    "notation.pedal.f1": 1.0,
+    "notation.pedal.f1": 0.933333,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 0.0,
@@ -150819,7 +150819,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "7bc79c4c49b2602b",
+   "semantic": "7019a0cebc99ae6a",
    "sqi": 70.762712,
    "status": "ok"
   },
@@ -151883,7 +151883,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.990712,
-    "notation.pedal.f1": 0.518519,
+    "notation.pedal.f1": 0.52,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.990712,
     "notation.ties.extra_per_100": 0.9375,
@@ -151929,7 +151929,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "39e975220614c7b9",
+   "semantic": "385a6e6c7b5021a3",
    "sqi": 93.343413,
    "status": "ok"
   },
@@ -153261,7 +153261,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "6468c552c3fde9ae",
+   "semantic": "741fabcd98cb7d5a",
    "sqi": 49.677424,
    "status": "ok"
   },
@@ -154532,7 +154532,7 @@
     "critical.key": 1.0,
     "critical.meter": 0.0,
     "critical.note_values": 0.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 0.0,
     "critical.playback_tempo": 0.0,
     "critical.structure": 1.0,
@@ -154547,7 +154547,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.144385,
     "notation.onset_pos.accuracy_ref": 0.120357,
-    "notation.pedal.f1": 0.283333,
+    "notation.pedal.f1": 0.783333,
     "notation.spelling.accuracy": 0.99287,
     "notation.spelling.accuracy_ref": 0.827637,
     "notation.ties.extra_per_100": 5.347594,
@@ -154593,7 +154593,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "df9e1690a3a45f09",
+   "semantic": "7dfe5261112d4135",
    "sqi": 41.966329,
    "status": "ok"
   },
@@ -155879,7 +155879,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.107062,
     "notation.onset_pos.accuracy_ref": 0.105856,
-    "notation.pedal.f1": 0.6,
+    "notation.pedal.f1": 0.7,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.988739,
     "notation.ties.extra_per_100": 2.505695,
@@ -155925,7 +155925,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "8dd1d0a88c235eb7",
+   "semantic": "ba8174d8884833fc",
    "sqi": 61.095864,
    "status": "ok"
   },
@@ -156147,7 +156147,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "68c77ab7db368be4",
+   "semantic": "510c5dfb8805d579",
    "sqi": 59.005424,
    "status": "ok"
   },
@@ -157211,7 +157211,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.924242,
     "notation.onset_pos.accuracy_ref": 0.870048,
-    "notation.pedal.f1": 0.563636,
+    "notation.pedal.f1": 0.636364,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.941363,
     "notation.ties.extra_per_100": 3.703704,
@@ -157257,7 +157257,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "d4fda04f4e4c32db",
+   "semantic": "bc473c1dea08e97c",
    "sqi": 92.546449,
    "status": "ok"
   },
@@ -157479,7 +157479,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "a9ffcf422e5a3c68",
+   "semantic": "61b3b92448694c4d",
    "sqi": 93.348685,
    "status": "ok"
   },
@@ -158543,7 +158543,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.822917,
     "notation.onset_pos.accuracy_ref": 0.710797,
-    "notation.pedal.f1": 0.648148,
+    "notation.pedal.f1": 0.685185,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.863753,
     "notation.ties.extra_per_100": 4.910714,
@@ -158589,7 +158589,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "4b2947f22c963a10",
+   "semantic": "a02e7a085bd392aa",
    "sqi": 83.127904,
    "status": "ok"
   },
@@ -158811,7 +158811,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "bb1bbc988a227020",
+   "semantic": "4899f7daf251d616",
    "sqi": 82.873928,
    "status": "ok"
   },
@@ -159860,7 +159860,7 @@
     "critical.key": 1.0,
     "critical.meter": 0.0,
     "critical.note_values": 0.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
     "critical.structure": 1.0,
@@ -159875,7 +159875,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.197292,
     "notation.onset_pos.accuracy_ref": 0.191729,
-    "notation.pedal.f1": 0.261905,
+    "notation.pedal.f1": 0.666667,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.971805,
     "notation.ties.extra_per_100": 3.094778,
@@ -159921,7 +159921,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "3d51ca4f69b3f804",
+   "semantic": "26681ecdcd4ef65b",
    "sqi": 60.420103,
    "status": "ok"
   },
@@ -160143,7 +160143,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "37e39398732c39e6",
+   "semantic": "6dd96372f3bc8b5c",
    "sqi": 57.064984,
    "status": "ok"
   },
@@ -161253,7 +161253,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "55f7ae9d28b3a9fe",
+   "semantic": "e8ac544b18db7dc0",
    "sqi": 81.702613,
    "status": "ok"
   },
@@ -161475,7 +161475,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "6d4800d5dae7889a",
+   "semantic": "39bc1f1d5b744965",
    "sqi": 56.452405,
    "status": "ok"
   },
@@ -162585,7 +162585,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "dca192f3282dba97",
+   "semantic": "b9724c6e653ce9f1",
    "sqi": 73.076011,
    "status": "ok"
   },
@@ -162807,7 +162807,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "70e052b2ff1ff842",
+   "semantic": "ab717dd4e0620652",
    "sqi": 47.431926,
    "status": "ok"
   },
@@ -163856,7 +163856,7 @@
     "critical.key": 0.0,
     "critical.meter": 1.0,
     "critical.note_values": 0.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -163871,7 +163871,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.6,
     "notation.onset_pos.accuracy_ref": 0.566724,
-    "notation.pedal.f1": 0.282051,
+    "notation.pedal.f1": 0.794872,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.944541,
     "notation.ties.extra_per_100": 0.0,
@@ -163917,7 +163917,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "c7c8e18149f218f3",
+   "semantic": "d3925f92a90ce26b",
    "sqi": 69.003641,
    "status": "ok"
   },
@@ -164139,7 +164139,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "44b159e5c42fb9b5",
+   "semantic": "d2250e3cdbecdb0a",
    "sqi": 42.303921,
    "status": "ok"
   },
@@ -165203,7 +165203,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.136861,
     "notation.onset_pos.accuracy_ref": 0.133215,
-    "notation.pedal.f1": 0.371429,
+    "notation.pedal.f1": 0.428571,
     "notation.spelling.accuracy": 0.989051,
     "notation.spelling.accuracy_ref": 0.9627,
     "notation.ties.extra_per_100": 1.642336,
@@ -165249,7 +165249,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "045cb083216600b2",
+   "semantic": "2c18b2a70cda4743",
    "sqi": 56.44646,
    "status": "ok"
   },
@@ -165471,7 +165471,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "d2608d7f73b0338f",
+   "semantic": "36528fc709ed526e",
    "sqi": 59.8189,
    "status": "ok"
   },
@@ -166581,7 +166581,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "590e019969b5b912",
+   "semantic": "35c213f8c84e30ca",
    "sqi": 97.394459,
    "status": "ok"
   },
@@ -166803,7 +166803,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "75ad26db2c620ef6",
+   "semantic": "0024c0a1ab81e8ae",
    "sqi": 77.699053,
    "status": "ok"
   },
@@ -167913,7 +167913,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "4df4db88503bac01",
+   "semantic": "b748a57c56c5b65a",
    "sqi": 98.088095,
    "status": "ok"
   },
@@ -168135,7 +168135,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "59383a5f5196c930",
+   "semantic": "cd71b16e61a7217a",
    "sqi": 79.442063,
    "status": "ok"
   },
@@ -169245,7 +169245,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "31d0e78c1bc7e111",
+   "semantic": "d776a2c47f3a4817",
    "sqi": 96.967722,
    "status": "ok"
   },
@@ -169467,7 +169467,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "786d5e6d3035b5a3",
+   "semantic": "28f1436bfa7cb93b",
    "sqi": 78.740675,
    "status": "ok"
   },
@@ -170577,7 +170577,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "5d6a4ed7ae888a9f",
+   "semantic": "598c01e7ad915c66",
    "sqi": 97.480613,
    "status": "ok"
   },
@@ -171909,7 +171909,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "a0103bb95ffcac45",
+   "semantic": "838bc238b76564ab",
    "sqi": 97.245435,
    "status": "ok"
   },
@@ -173241,7 +173241,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "e5120a65643727c9",
+   "semantic": "1bc8e73930cb487d",
    "sqi": 97.877403,
    "status": "ok"
   },
@@ -173463,7 +173463,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "260e723642814c0f",
+   "semantic": "8300df8ac05178a0",
    "sqi": 78.440079,
    "status": "ok"
   },
@@ -174573,7 +174573,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "ff324b5d5641a62e",
+   "semantic": "7679f48ad6569d83",
    "sqi": 97.277077,
    "status": "ok"
   },
@@ -174795,7 +174795,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "46f30638c6cd7aba",
+   "semantic": "151b88399c7361a5",
    "sqi": 78.574802,
    "status": "ok"
   },
@@ -175905,7 +175905,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "055d23c854222cd1",
+   "semantic": "137549de5cd491b6",
    "sqi": 96.649315,
    "status": "ok"
   },
@@ -176127,7 +176127,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "3ac1bbe5eec536be",
+   "semantic": "e929ebfbc9074335",
    "sqi": 78.174931,
    "status": "ok"
   },
@@ -177191,7 +177191,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.009375,
     "notation.onset_pos.accuracy_ref": 0.009202,
-    "notation.pedal.f1": 0.073171,
+    "notation.pedal.f1": 0.394737,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.981595,
     "notation.ties.extra_per_100": 1.875,
@@ -177237,7 +177237,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "5497d7b4343580c1",
+   "semantic": "d2cb428f545a154f",
    "sqi": 62.508645,
    "status": "ok"
   },
@@ -177398,7 +177398,7 @@
     "critical.key": 1.0,
     "critical.meter": 0.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 0.0,
     "critical.structure": 0.0,
@@ -177413,7 +177413,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.009202,
     "notation.onset_pos.accuracy_ref": 0.009202,
-    "notation.pedal.f1": 0.326923,
+    "notation.pedal.f1": 1.0,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 1.533742,
@@ -177459,7 +177459,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "3c98061265c213b5",
+   "semantic": "025074665a4dbd91",
    "sqi": 63.76394,
    "status": "ok"
   },
@@ -178508,7 +178508,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -178523,7 +178523,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.980562,
     "notation.onset_pos.accuracy_ref": 0.959831,
-    "notation.pedal.f1": 0.317073,
+    "notation.pedal.f1": 0.834711,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.978858,
     "notation.ties.extra_per_100": 1.079914,
@@ -178567,9 +178567,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "6cf811306bfc03a7",
+   "semantic": "b0141f2c79f34065",
    "sqi": 95.876085,
    "status": "ok"
   },
@@ -178730,7 +178730,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -178745,7 +178745,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.989429,
     "notation.onset_pos.accuracy_ref": 0.989429,
-    "notation.pedal.f1": 0.333333,
+    "notation.pedal.f1": 1.0,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 1.057082,
@@ -178789,9 +178789,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "07e12ba88a0d93fc",
+   "semantic": "4261aa5edfe2b3a9",
    "sqi": 98.195122,
    "status": "ok"
   },
@@ -180062,7 +180062,7 @@
     "critical.key": 0.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -180077,7 +180077,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.937673,
     "notation.onset_pos.accuracy_ref": 0.937673,
-    "notation.pedal.f1": 0.340909,
+    "notation.pedal.f1": 0.986175,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 1.246537,
@@ -180123,7 +180123,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "45b1276381383742",
+   "semantic": "85f0a679cd084567",
    "sqi": 86.638065,
    "status": "ok"
   },
@@ -181187,7 +181187,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.996495,
     "notation.onset_pos.accuracy_ref": 0.983852,
-    "notation.pedal.f1": 0.826087,
+    "notation.pedal.f1": 0.801471,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.987313,
     "notation.ties.extra_per_100": 0.700935,
@@ -181233,7 +181233,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "2b36cfa95b99c2ac",
+   "semantic": "610bfb646eab4323",
    "sqi": 97.44998,
    "status": "ok"
   },
@@ -181409,7 +181409,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.018454,
     "notation.onset_pos.accuracy_ref": 0.018454,
-    "notation.pedal.f1": 1.0,
+    "notation.pedal.f1": 0.974684,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 0.230681,
@@ -181455,7 +181455,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "e1eb09400f9929df",
+   "semantic": "63a8ffd668ef41f9",
    "sqi": 78.107288,
    "status": "ok"
   },
@@ -183851,7 +183851,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.154278,
     "notation.onset_pos.accuracy_ref": 0.150685,
-    "notation.pedal.f1": 0.517241,
+    "notation.pedal.f1": 0.597701,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.976712,
     "notation.ties.extra_per_100": 4.628331,
@@ -183897,7 +183897,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "afadf7764c28e6eb",
+   "semantic": "c3673a8b8a8f4a43",
    "sqi": 56.950948,
    "status": "ok"
   },
@@ -184119,7 +184119,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "26fe1c12e5703bba",
+   "semantic": "163bf3ea1749b318",
    "sqi": 58.17987,
    "status": "ok"
   },
@@ -185451,7 +185451,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "90a6bb2c4c6616a8",
+   "semantic": "8cad1dfe953b0971",
    "sqi": 66.333272,
    "status": "ok"
   },
@@ -186500,7 +186500,7 @@
     "critical.key": 0.0,
     "critical.meter": 0.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 0.0,
@@ -186515,7 +186515,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.012889,
     "notation.onset_pos.accuracy_ref": 0.012448,
-    "notation.pedal.f1": 0.297297,
+    "notation.pedal.f1": 0.715596,
     "notation.spelling.accuracy": 0.996778,
     "notation.spelling.accuracy_ref": 0.962656,
     "notation.ties.extra_per_100": 0.75188,
@@ -186561,7 +186561,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "c262691eaf6e7bf6",
+   "semantic": "4ce9d5852f8163d8",
    "sqi": 67.073932,
    "status": "ok"
   },
@@ -190511,7 +190511,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.976471,
-    "notation.pedal.f1": 0.226415,
+    "notation.pedal.f1": 0.311111,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.976471,
     "notation.ties.extra_per_100": 0.0,
@@ -190557,7 +190557,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "97e5aba3dc712425",
+   "semantic": "a67a67835794d359",
    "sqi": 96.6192,
    "status": "ok"
   },
@@ -191889,7 +191889,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "dc99bf989100d0e2",
+   "semantic": "06c85c64dff0df8c",
    "sqi": 89.072439,
    "status": "ok"
   },
@@ -192050,7 +192050,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -192065,7 +192065,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
-    "notation.pedal.f1": 0.333333,
+    "notation.pedal.f1": 1.0,
     "notation.spelling.accuracy": 0.99729,
     "notation.spelling.accuracy_ref": 0.99729,
     "notation.ties.extra_per_100": 3.252033,
@@ -192109,9 +192109,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "19b21db4b1364d13",
+   "semantic": "0c03530bc0060a3a",
    "sqi": 98.143631,
    "status": "ok"
   },
@@ -193175,7 +193175,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.996403,
     "notation.onset_pos.accuracy_ref": 0.977072,
-    "notation.pedal.f1": 0.845528,
+    "notation.pedal.f1": 0.827869,
     "notation.spelling.accuracy": 0.998201,
     "notation.spelling.accuracy_ref": 0.978836,
     "notation.ties.extra_per_100": 1.438849,
@@ -193221,7 +193221,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "2c9975594558b403",
+   "semantic": "0926101a87ed8822",
    "sqi": 96.858639,
    "status": "ok"
   },
@@ -194507,7 +194507,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.998542,
     "notation.onset_pos.accuracy_ref": 0.977175,
-    "notation.pedal.f1": 0.830189,
+    "notation.pedal.f1": 0.822785,
     "notation.spelling.accuracy": 0.98688,
     "notation.spelling.accuracy_ref": 0.965763,
     "notation.ties.extra_per_100": 0.145773,
@@ -194553,7 +194553,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "02d4090e6ac1e8bf",
+   "semantic": "f7daa2238df63558",
    "sqi": 97.355695,
    "status": "ok"
   },
@@ -194775,7 +194775,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "ad06a64222e01379",
+   "semantic": "3491f4bc95bcfd75",
    "sqi": 77.71533,
    "status": "ok"
   },
@@ -195885,7 +195885,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "c563ed65f5c75a56",
+   "semantic": "f4a13db64e9eea21",
    "sqi": 97.875974,
    "status": "ok"
   },
@@ -198488,7 +198488,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -198503,7 +198503,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
-    "notation.pedal.f1": 0.307692,
+    "notation.pedal.f1": 0.615385,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 0.0,
@@ -198547,9 +198547,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "21fa5649ed332e30",
+   "semantic": "0c2df405941576b7",
    "sqi": 99.688711,
    "status": "ok"
   },
@@ -198710,7 +198710,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -198725,7 +198725,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
-    "notation.pedal.f1": 0.3125,
+    "notation.pedal.f1": 1.0,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 0.0,
@@ -198753,7 +198753,7 @@
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
-    "rec.usable": 0.0,
+    "rec.usable": 1.0,
     "rec.voice.f1": 1.0,
     "sqi": 100.0,
     "struct.downbeat.f1": 1.0,
@@ -198769,9 +198769,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "d33abeb79e3c2d07",
+   "semantic": "37f855f4ce5a5830",
    "sqi": 100.0,
    "status": "ok"
   },
@@ -199881,7 +199881,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "2d6fa1e9cdc13df5",
+   "semantic": "6d9dfe15516f3746",
    "sqi": 67.307692,
    "status": "ok"
   },
@@ -202545,7 +202545,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "f7053398e80025ad",
+   "semantic": "ce8b1b8190ded51a",
    "sqi": 53.414352,
    "status": "ok"
   },
@@ -203877,7 +203877,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "e7711445174b1973",
+   "semantic": "40ac64d164a51d5f",
    "sqi": 98.178862,
    "status": "ok"
   },
@@ -206495,7 +206495,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.975,
-    "notation.pedal.f1": 0.461538,
+    "notation.pedal.f1": 0.416667,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.975,
     "notation.ties.extra_per_100": 0.0,
@@ -206541,7 +206541,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "adf1928096d0cac0",
+   "semantic": "c1239bbc9721a815",
    "sqi": 97.997642,
    "status": "ok"
   },
@@ -207827,7 +207827,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
-    "notation.pedal.f1": 0.666667,
+    "notation.pedal.f1": 0.692308,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 0.0,
@@ -207873,7 +207873,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "0cf82c9b7e39789c",
+   "semantic": "b8b80d60724629ae",
    "sqi": 99.548008,
    "status": "ok"
   },
@@ -209159,7 +209159,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.966667,
-    "notation.pedal.f1": 0.625,
+    "notation.pedal.f1": 0.8125,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.966667,
     "notation.ties.extra_per_100": 0.0,
@@ -209205,7 +209205,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "0affb9fa30c267d6",
+   "semantic": "22ec425a840db0cc",
    "sqi": 97.827684,
    "status": "ok"
   },
@@ -210491,7 +210491,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.9625,
-    "notation.pedal.f1": 0.076923,
+    "notation.pedal.f1": 0.25,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.9625,
     "notation.ties.extra_per_100": 0.0,
@@ -210537,7 +210537,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "d47165823c20065b",
+   "semantic": "27eef7ecdcfcd069",
    "sqi": 96.387346,
    "status": "ok"
   },
@@ -211823,7 +211823,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.974138,
-    "notation.pedal.f1": 0.4,
+    "notation.pedal.f1": 0.363636,
     "notation.spelling.accuracy": 0.99115,
     "notation.spelling.accuracy_ref": 0.965517,
     "notation.ties.extra_per_100": 0.0,
@@ -211869,7 +211869,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "5ccfef813bee5e2b",
+   "semantic": "71641b0a9718b837",
    "sqi": 98.058479,
    "status": "ok"
   },
@@ -213155,7 +213155,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.982759,
-    "notation.pedal.f1": 0.428571,
+    "notation.pedal.f1": 0.363636,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.982759,
     "notation.ties.extra_per_100": 0.0,
@@ -213201,7 +213201,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "4850434629fbfe7d",
+   "semantic": "b4b0449b6aab2232",
    "sqi": 98.793103,
    "status": "ok"
   },
@@ -214472,7 +214472,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -214487,7 +214487,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.982143,
-    "notation.pedal.f1": 0.428571,
+    "notation.pedal.f1": 0.583333,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.982143,
     "notation.ties.extra_per_100": 0.0,
@@ -214531,9 +214531,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "3fdd5fa9234dce34",
+   "semantic": "d167b6c8d50cb6d3",
    "sqi": 97.030812,
    "status": "ok"
   },
@@ -216041,7 +216041,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
-    "notation.pedal.f1": 1.0,
+    "notation.pedal.f1": 0.833333,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 0.0,
@@ -216087,7 +216087,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "f3585d158f75826a",
+   "semantic": "c73b37b5127669d5",
    "sqi": 97.333333,
    "status": "ok"
   },
@@ -217197,7 +217197,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "c66150ae4dd8a5b5",
+   "semantic": "ea7d3ea1c637e0c5",
    "sqi": 97.869832,
    "status": "ok"
   },
@@ -217358,7 +217358,7 @@
     "critical.key": 1.0,
     "critical.meter": 0.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 0.0,
@@ -217373,7 +217373,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.072917,
     "notation.onset_pos.accuracy_ref": 0.072917,
-    "notation.pedal.f1": 0.34375,
+    "notation.pedal.f1": 1.0,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 0.0,
@@ -217419,7 +217419,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "8b415bf1c5ac09e2",
+   "semantic": "2181f74b54bc9eca",
    "sqi": 75.412281,
    "status": "ok"
   },
@@ -218483,7 +218483,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.978723,
     "notation.onset_pos.accuracy_ref": 0.958333,
-    "notation.pedal.f1": 0.733333,
+    "notation.pedal.f1": 0.8,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.979167,
     "notation.ties.extra_per_100": 0.0,
@@ -218529,7 +218529,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "57bd2e7df6198f7a",
+   "semantic": "d098b77462556232",
    "sqi": 89.414511,
    "status": "ok"
   },
@@ -219800,7 +219800,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -219815,7 +219815,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 0.96875,
-    "notation.pedal.f1": 0.259259,
+    "notation.pedal.f1": 0.814815,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.96875,
     "notation.ties.extra_per_100": 1.612903,
@@ -219859,9 +219859,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "4210076a82d68e35",
+   "semantic": "311c1245cf9c1834",
    "sqi": 97.358173,
    "status": "ok"
   },
@@ -220022,7 +220022,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -220037,7 +220037,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
-    "notation.pedal.f1": 0.34375,
+    "notation.pedal.f1": 1.0,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 0.0,
@@ -220065,7 +220065,7 @@
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
-    "rec.usable": 0.0,
+    "rec.usable": 1.0,
     "rec.voice.f1": 1.0,
     "sqi": 100.0,
     "struct.downbeat.f1": 1.0,
@@ -220081,9 +220081,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "3c413099833afbd7",
+   "semantic": "e414c4491a14995a",
    "sqi": 100.0,
    "status": "ok"
   },
@@ -221147,7 +221147,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.064516,
     "notation.onset_pos.accuracy_ref": 0.0625,
-    "notation.pedal.f1": 0.142857,
+    "notation.pedal.f1": 0.4,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.96875,
     "notation.ties.extra_per_100": 0.0,
@@ -221193,7 +221193,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "faa1ae5dc410dff6",
+   "semantic": "a972b2174147cf77",
    "sqi": 74.83879,
    "status": "ok"
   },
@@ -221354,7 +221354,7 @@
     "critical.key": 1.0,
     "critical.meter": 0.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 0.0,
@@ -221369,7 +221369,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.0625,
     "notation.onset_pos.accuracy_ref": 0.0625,
-    "notation.pedal.f1": 0.375,
+    "notation.pedal.f1": 1.0,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 0.0,
@@ -221415,7 +221415,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "04f2f574ccd1f7b4",
+   "semantic": "5d09896f73e8e420",
    "sqi": 75.9375,
    "status": "ok"
   },
@@ -222525,7 +222525,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "cdc0db094ba37db6",
+   "semantic": "a2bd1fbb3885088d",
    "sqi": 61.547619,
    "status": "ok"
   },
@@ -225189,7 +225189,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "5f7a522678509a69",
+   "semantic": "d49f3dd86e53a53c",
    "sqi": 99.021018,
    "status": "ok"
   },
@@ -225411,7 +225411,7 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "567b812c2627532f",
+   "semantic": "f466f503702cb46e",
    "sqi": 98.389221,
    "status": "ok"
   },
@@ -226460,7 +226460,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -226475,7 +226475,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
-    "notation.pedal.f1": 0.384615,
+    "notation.pedal.f1": 0.545455,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 0.0,
@@ -226519,9 +226519,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "c54857b1b594fca3",
+   "semantic": "aa1d95e30e86a8ad",
    "sqi": 98.012195,
    "status": "ok"
   },
@@ -228786,6 +228786,30 @@
    "reason": "G10a-2: v2's stage S3 is rec/grid.js (the grid of each beat, AI-5b), on top of S4 (afdb23b); legacy and app rows unchanged case by case; v2 rows move (G10 section 20)",
    "sqi_all": 73.409214,
    "usable_all": 0.070528
+  },
+  {
+   "audio_score_sha256": "08038efc287150356615bef95836017a4d01233e2d1d5c040b8c6859d0739647",
+   "date": "2026-10-03",
+   "git_sha": "39fc383843c5650289168e4e43d4279f6635c93f",
+   "reason": "G10a-3 S9 (rec/pedal.js, docs/GOALS/G10 section 23): v2 writes the pedal marks of its skeleton in the skeleton's ticks (a compound skeleton's beat is 36 ticks: the marks were written at 24, a third early) and writes a heard pedal only where the heard notes agree with it; legacy and app rows unchanged. v2 cover-pedal pedal F1 up (compound pieces 0.56-0.63 -> ~1), helper-invented pedal: false marks per minute down, F1 up",
+   "sqi_all": 73.409214,
+   "usable_all": 0.079984
+  },
+  {
+   "audio_score_sha256": "40880cc8d1af18d5e53fa30d913e4f36e738123b2259950746f34427826cc166",
+   "date": "2026-10-03",
+   "git_sha": "8f3ace0093c4aa99b6b2b2817d573004838c1f55",
+   "reason": "G10a-3 S9 (rec/pedal.js, docs/GOALS/G10 section 23): v2 writes the pedal marks of its skeleton in the skeleton's ticks (a compound skeleton's beat is 36 ticks: the marks were written at 24, a third early) and writes a heard pedal only where the heard notes agree with it; legacy and app rows unchanged. v2 cover-pedal pedal F1 up (compound pieces 0.56-0.63 -> ~1), helper-invented pedal: false marks per minute down, F1 up",
+   "sqi_all": 73.409214,
+   "usable_all": 0.079984
+  },
+  {
+   "audio_score_sha256": "40880cc8d1af18d5e53fa30d913e4f36e738123b2259950746f34427826cc166",
+   "date": "2026-10-03",
+   "git_sha": "ea447c564796ba24fffdefcaee4c044a1ee132b8",
+   "reason": "G10a-3 S9 (rec/pedal.js, docs/GOALS/G10 section 23): v2 writes the pedal marks of its skeleton in the skeleton's ticks (a compound skeleton's beat is 36 ticks: the marks were written at 24, a third early) and writes a heard pedal only where the heard notes agree with it; legacy and app rows unchanged. v2 cover-pedal pedal F1 up (compound pieces 0.56-0.63 -> ~1), helper-invented pedal: false marks per minute down, F1 up",
+   "sqi_all": 73.409214,
+   "usable_all": 0.079984
   }
  ],
  "known_failures": {
@@ -229131,10 +229155,10 @@
  },
  "lock_sha256": "375262587f09549b17ea4a6c8530aae12e7a07a47395fda3d800ddf62474cd43",
  "recorded": {
-  "audio_score_sha256": "026597c651a913660ff6ec6142d3f0c54be8125c831c929ceddf9a669c3c8c23",
+  "audio_score_sha256": "40880cc8d1af18d5e53fa30d913e4f36e738123b2259950746f34427826cc166",
   "date": "2026-10-03",
   "git_dirty": true,
-  "git_sha": "25e656711808b0bacaee43f366fdce03b3f2c36a",
+  "git_sha": "ea447c564796ba24fffdefcaee4c044a1ee132b8",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"

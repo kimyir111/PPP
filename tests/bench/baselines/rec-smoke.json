@@ -27,7 +27,7 @@
     "n": 144
    },
    "critical.pedal": {
-    "mean": 0.958333,
+    "mean": 1.0,
     "n": 48
    },
    "critical.pitch_integrity": {
@@ -127,11 +127,11 @@
     "n": 144
    },
    "notation.pedal.f1": {
-    "mean": 0.972005,
+    "mean": 1.0,
     "n": 48
    },
    "notation.pedal.false_per_min": {
-    "mean": 0.742948,
+    "mean": 0.0,
     "n": 144
    },
    "notation.pedal.marks": {
@@ -139,11 +139,11 @@
     "n": 144
    },
    "notation.pedal.precision": {
-    "mean": 0.972005,
+    "mean": 1.0,
     "n": 48
    },
    "notation.pedal.recall": {
-    "mean": 0.972005,
+    "mean": 1.0,
     "n": 48
    },
    "notation.spelling.accuracy": {
@@ -503,7 +503,7 @@
     "n": 9
    },
    "rec.usable": {
-    "mean": 0.055556,
+    "mean": 0.0625,
     "n": 144
    },
    "rec.voice.f1": {
@@ -607,7 +607,7 @@
     "n": 144
    },
    "usable": {
-    "mean": 0.131944,
+    "mean": 0.138889,
     "n": 144
    }
   },
@@ -639,7 +639,7 @@
      "n": 144
     },
     "critical.pedal": {
-     "mean": 0.958333,
+     "mean": 1.0,
      "n": 48
     },
     "critical.pitch_integrity": {
@@ -739,11 +739,11 @@
      "n": 144
     },
     "notation.pedal.f1": {
-     "mean": 0.972005,
+     "mean": 1.0,
      "n": 48
     },
     "notation.pedal.false_per_min": {
-     "mean": 0.742948,
+     "mean": 0.0,
      "n": 144
     },
     "notation.pedal.marks": {
@@ -751,11 +751,11 @@
      "n": 144
     },
     "notation.pedal.precision": {
-     "mean": 0.972005,
+     "mean": 1.0,
      "n": 48
     },
     "notation.pedal.recall": {
-     "mean": 0.972005,
+     "mean": 1.0,
      "n": 48
     },
     "notation.spelling.accuracy": {
@@ -1115,7 +1115,7 @@
      "n": 9
     },
     "rec.usable": {
-     "mean": 0.055556,
+     "mean": 0.0625,
      "n": 144
     },
     "rec.voice.f1": {
@@ -1219,7 +1219,7 @@
      "n": 144
     },
     "usable": {
-     "mean": 0.131944,
+     "mean": 0.138889,
      "n": 144
     }
    },
@@ -1250,7 +1250,7 @@
      "n": 9
     },
     "critical.pedal": {
-     "mean": 0.666667,
+     "mean": 1.0,
      "n": 3
     },
     "critical.pitch_integrity": {
@@ -1350,11 +1350,11 @@
      "n": 9
     },
     "notation.pedal.f1": {
-     "mean": 0.78125,
+     "mean": 1.0,
      "n": 3
     },
     "notation.pedal.false_per_min": {
-     "mean": 7.30384,
+     "mean": 0.0,
      "n": 9
     },
     "notation.pedal.marks": {
@@ -1362,11 +1362,11 @@
      "n": 9
     },
     "notation.pedal.precision": {
-     "mean": 0.78125,
+     "mean": 1.0,
      "n": 3
     },
     "notation.pedal.recall": {
-     "mean": 0.78125,
+     "mean": 1.0,
      "n": 3
     },
     "notation.spelling.accuracy": {
@@ -5375,7 +5375,7 @@
      "n": 27
     },
     "critical.pedal": {
-     "mean": 0.888889,
+     "mean": 1.0,
      "n": 9
     },
     "critical.pitch_integrity": {
@@ -5475,11 +5475,11 @@
      "n": 27
     },
     "notation.pedal.f1": {
-     "mean": 0.927083,
+     "mean": 1.0,
      "n": 9
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.434613,
+     "mean": 0.0,
      "n": 27
     },
     "notation.pedal.marks": {
@@ -5487,11 +5487,11 @@
      "n": 27
     },
     "notation.pedal.precision": {
-     "mean": 0.927083,
+     "mean": 1.0,
      "n": 9
     },
     "notation.pedal.recall": {
-     "mean": 0.927083,
+     "mean": 1.0,
      "n": 9
     },
     "notation.spelling.accuracy": {
@@ -7735,7 +7735,7 @@
      "n": 27
     },
     "critical.pedal": {
-     "mean": 0.888889,
+     "mean": 1.0,
      "n": 9
     },
     "critical.pitch_integrity": {
@@ -7835,11 +7835,11 @@
      "n": 27
     },
     "notation.pedal.f1": {
-     "mean": 0.923611,
+     "mean": 1.0,
      "n": 9
     },
     "notation.pedal.false_per_min": {
-     "mean": 1.527778,
+     "mean": 0.0,
      "n": 27
     },
     "notation.pedal.marks": {
@@ -7847,11 +7847,11 @@
      "n": 27
     },
     "notation.pedal.precision": {
-     "mean": 0.923611,
+     "mean": 1.0,
      "n": 9
     },
     "notation.pedal.recall": {
-     "mean": 0.923611,
+     "mean": 1.0,
      "n": 9
     },
     "notation.spelling.accuracy": {
@@ -8191,7 +8191,7 @@
      "n": 27
     },
     "rec.usable": {
-     "mean": 0.037037,
+     "mean": 0.074074,
      "n": 27
     },
     "rec.voice.f1": {
@@ -8295,7 +8295,7 @@
      "n": 27
     },
     "usable": {
-     "mean": 0.111111,
+     "mean": 0.148148,
      "n": 27
     }
    },
@@ -8917,7 +8917,7 @@
      "n": 9
     },
     "critical.pedal": {
-     "mean": 0.666667,
+     "mean": 1.0,
      "n": 3
     },
     "critical.pitch_integrity": {
@@ -9017,11 +9017,11 @@
      "n": 9
     },
     "notation.pedal.f1": {
-     "mean": 0.770833,
+     "mean": 1.0,
      "n": 3
     },
     "notation.pedal.false_per_min": {
-     "mean": 4.583333,
+     "mean": 0.0,
      "n": 9
     },
     "notation.pedal.marks": {
@@ -9029,11 +9029,11 @@
      "n": 9
     },
     "notation.pedal.precision": {
-     "mean": 0.770833,
+     "mean": 1.0,
      "n": 3
     },
     "notation.pedal.recall": {
-     "mean": 0.770833,
+     "mean": 1.0,
      "n": 3
     },
     "notation.spelling.accuracy": {
@@ -9365,7 +9365,7 @@
      "n": 9
     },
     "rec.usable": {
-     "mean": 0.0,
+     "mean": 0.111111,
      "n": 9
     },
     "rec.voice.f1": {
@@ -9469,7 +9469,7 @@
      "n": 9
     },
     "usable": {
-     "mean": 0.222222,
+     "mean": 0.333333,
      "n": 9
     }
    },
@@ -9500,7 +9500,7 @@
      "n": 18
     },
     "critical.pedal": {
-     "mean": 0.833333,
+     "mean": 1.0,
      "n": 6
     },
     "critical.pitch_integrity": {
@@ -9600,11 +9600,11 @@
      "n": 18
     },
     "notation.pedal.f1": {
-     "mean": 0.890625,
+     "mean": 1.0,
      "n": 6
     },
     "notation.pedal.false_per_min": {
-     "mean": 3.65192,
+     "mean": 0.0,
      "n": 18
     },
     "notation.pedal.marks": {
@@ -9612,11 +9612,11 @@
      "n": 18
     },
     "notation.pedal.precision": {
-     "mean": 0.890625,
+     "mean": 1.0,
      "n": 6
     },
     "notation.pedal.recall": {
-     "mean": 0.890625,
+     "mean": 1.0,
      "n": 6
     },
     "notation.spelling.accuracy": {
@@ -11293,7 +11293,7 @@
      "n": 18
     },
     "critical.pedal": {
-     "mean": 0.833333,
+     "mean": 1.0,
      "n": 6
     },
     "critical.pitch_integrity": {
@@ -11393,11 +11393,11 @@
      "n": 18
     },
     "notation.pedal.f1": {
-     "mean": 0.890625,
+     "mean": 1.0,
      "n": 6
     },
     "notation.pedal.false_per_min": {
-     "mean": 3.65192,
+     "mean": 0.0,
      "n": 18
     },
     "notation.pedal.marks": {
@@ -11405,11 +11405,11 @@
      "n": 18
     },
     "notation.pedal.precision": {
-     "mean": 0.890625,
+     "mean": 1.0,
      "n": 6
     },
     "notation.pedal.recall": {
-     "mean": 0.890625,
+     "mean": 1.0,
      "n": 6
     },
     "notation.spelling.accuracy": {
@@ -13086,7 +13086,7 @@
      "n": 9
     },
     "critical.pedal": {
-     "mean": 0.666667,
+     "mean": 1.0,
      "n": 3
     },
     "critical.pitch_integrity": {
@@ -13186,11 +13186,11 @@
      "n": 9
     },
     "notation.pedal.f1": {
-     "mean": 0.770833,
+     "mean": 1.0,
      "n": 3
     },
     "notation.pedal.false_per_min": {
-     "mean": 4.583333,
+     "mean": 0.0,
      "n": 9
     },
     "notation.pedal.marks": {
@@ -13198,11 +13198,11 @@
      "n": 9
     },
     "notation.pedal.precision": {
-     "mean": 0.770833,
+     "mean": 1.0,
      "n": 3
     },
     "notation.pedal.recall": {
-     "mean": 0.770833,
+     "mean": 1.0,
      "n": 3
     },
     "notation.spelling.accuracy": {
@@ -13534,7 +13534,7 @@
      "n": 9
     },
     "rec.usable": {
-     "mean": 0.0,
+     "mean": 0.111111,
      "n": 9
     },
     "rec.voice.f1": {
@@ -13638,7 +13638,7 @@
      "n": 9
     },
     "usable": {
-     "mean": 0.222222,
+     "mean": 0.333333,
      "n": 9
     }
    },
@@ -13669,7 +13669,7 @@
      "n": 126
     },
     "critical.pedal": {
-     "mean": 0.952381,
+     "mean": 1.0,
      "n": 42
     },
     "critical.pitch_integrity": {
@@ -13769,11 +13769,11 @@
      "n": 126
     },
     "notation.pedal.f1": {
-     "mean": 0.968006,
+     "mean": 1.0,
      "n": 42
     },
     "notation.pedal.false_per_min": {
-     "mean": 0.849084,
+     "mean": 0.0,
      "n": 126
     },
     "notation.pedal.marks": {
@@ -13781,11 +13781,11 @@
      "n": 126
     },
     "notation.pedal.precision": {
-     "mean": 0.968006,
+     "mean": 1.0,
      "n": 42
     },
     "notation.pedal.recall": {
-     "mean": 0.968006,
+     "mean": 1.0,
      "n": 42
     },
     "notation.spelling.accuracy": {
@@ -14145,7 +14145,7 @@
      "n": 9
     },
     "rec.usable": {
-     "mean": 0.047619,
+     "mean": 0.055556,
      "n": 126
     },
     "rec.voice.f1": {
@@ -14249,7 +14249,7 @@
      "n": 126
     },
     "usable": {
-     "mean": 0.126984,
+     "mean": 0.134921,
      "n": 126
     }
    },
@@ -16660,7 +16660,7 @@
      "n": 48
     },
     "critical.pedal": {
-     "mean": 0.875,
+     "mean": 1.0,
      "n": 16
     },
     "critical.pitch_integrity": {
@@ -16760,11 +16760,11 @@
      "n": 48
     },
     "notation.pedal.f1": {
-     "mean": 0.916016,
+     "mean": 1.0,
      "n": 16
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.228845,
+     "mean": 0.0,
      "n": 48
     },
     "notation.pedal.marks": {
@@ -16772,11 +16772,11 @@
      "n": 48
     },
     "notation.pedal.precision": {
-     "mean": 0.916016,
+     "mean": 1.0,
      "n": 16
     },
     "notation.pedal.recall": {
-     "mean": 0.916016,
+     "mean": 1.0,
      "n": 16
     },
     "notation.spelling.accuracy": {
@@ -17136,7 +17136,7 @@
      "n": 3
     },
     "rec.usable": {
-     "mean": 0.145833,
+     "mean": 0.166667,
      "n": 48
     },
     "rec.voice.f1": {
@@ -17240,7 +17240,7 @@
      "n": 48
     },
     "usable": {
-     "mean": 0.3125,
+     "mean": 0.333333,
      "n": 48
     }
    },
@@ -17866,7 +17866,7 @@
      "n": 48
     },
     "critical.pedal": {
-     "mean": 0.958333,
+     "mean": 1.0,
      "n": 48
     },
     "critical.pitch_integrity": {
@@ -17966,11 +17966,11 @@
      "n": 48
     },
     "notation.pedal.f1": {
-     "mean": 0.972005,
+     "mean": 1.0,
      "n": 48
     },
     "notation.pedal.false_per_min": {
-     "mean": 2.228845,
+     "mean": 0.0,
      "n": 48
     },
     "notation.pedal.marks": {
@@ -17978,11 +17978,11 @@
      "n": 48
     },
     "notation.pedal.precision": {
-     "mean": 0.972005,
+     "mean": 1.0,
      "n": 48
     },
     "notation.pedal.recall": {
-     "mean": 0.972005,
+     "mean": 1.0,
      "n": 48
     },
     "notation.spelling.accuracy": {
@@ -18342,7 +18342,7 @@
      "n": 3
     },
     "rec.usable": {
-     "mean": 0.166667,
+     "mean": 0.1875,
      "n": 48
     },
     "rec.voice.f1": {
@@ -18446,7 +18446,7 @@
      "n": 48
     },
     "usable": {
-     "mean": 0.291667,
+     "mean": 0.3125,
      "n": 48
     }
    },
@@ -19072,7 +19072,7 @@
      "n": 144
     },
     "critical.pedal": {
-     "mean": 0.958333,
+     "mean": 1.0,
      "n": 48
     },
     "critical.pitch_integrity": {
@@ -19172,11 +19172,11 @@
      "n": 144
     },
     "notation.pedal.f1": {
-     "mean": 0.972005,
+     "mean": 1.0,
      "n": 48
     },
     "notation.pedal.false_per_min": {
-     "mean": 0.742948,
+     "mean": 0.0,
      "n": 144
     },
     "notation.pedal.marks": {
@@ -19184,11 +19184,11 @@
      "n": 144
     },
     "notation.pedal.precision": {
-     "mean": 0.972005,
+     "mean": 1.0,
      "n": 48
     },
     "notation.pedal.recall": {
-     "mean": 0.972005,
+     "mean": 1.0,
      "n": 48
     },
     "notation.spelling.accuracy": {
@@ -19548,7 +19548,7 @@
      "n": 9
     },
     "rec.usable": {
-     "mean": 0.055556,
+     "mean": 0.0625,
      "n": 144
     },
     "rec.voice.f1": {
@@ -19652,7 +19652,7 @@
      "n": 144
     },
     "usable": {
-     "mean": 0.131944,
+     "mean": 0.138889,
      "n": 144
     }
    },
@@ -20853,7 +20853,7 @@
      "n": 18
     },
     "critical.pedal": {
-     "mean": 0.833333,
+     "mean": 1.0,
      "n": 6
     },
     "critical.pitch_integrity": {
@@ -20953,11 +20953,11 @@
      "n": 18
     },
     "notation.pedal.f1": {
-     "mean": 0.890625,
+     "mean": 1.0,
      "n": 6
     },
     "notation.pedal.false_per_min": {
-     "mean": 3.65192,
+     "mean": 0.0,
      "n": 18
     },
     "notation.pedal.marks": {
@@ -20965,11 +20965,11 @@
      "n": 18
     },
     "notation.pedal.precision": {
-     "mean": 0.890625,
+     "mean": 1.0,
      "n": 6
     },
     "notation.pedal.recall": {
-     "mean": 0.890625,
+     "mean": 1.0,
      "n": 6
     },
     "notation.spelling.accuracy": {
@@ -21444,7 +21444,7 @@
      "n": 90
     },
     "critical.pedal": {
-     "mean": 0.966667,
+     "mean": 1.0,
      "n": 30
     },
     "critical.pitch_integrity": {
@@ -21544,11 +21544,11 @@
      "n": 90
     },
     "notation.pedal.f1": {
-     "mean": 0.977083,
+     "mean": 1.0,
      "n": 30
     },
     "notation.pedal.false_per_min": {
-     "mean": 0.458333,
+     "mean": 0.0,
      "n": 90
     },
     "notation.pedal.marks": {
@@ -21556,11 +21556,11 @@
      "n": 90
     },
     "notation.pedal.precision": {
-     "mean": 0.977083,
+     "mean": 1.0,
      "n": 30
     },
     "notation.pedal.recall": {
-     "mean": 0.977083,
+     "mean": 1.0,
      "n": 30
     },
     "notation.spelling.accuracy": {
@@ -21920,7 +21920,7 @@
      "n": 9
     },
     "rec.usable": {
-     "mean": 0.088889,
+     "mean": 0.1,
      "n": 90
     },
     "rec.voice.f1": {
@@ -22024,7 +22024,7 @@
      "n": 90
     },
     "usable": {
-     "mean": 0.155556,
+     "mean": 0.166667,
      "n": 90
     }
    },
@@ -22642,7 +22642,7 @@
      "n": 45
     },
     "critical.pedal": {
-     "mean": 0.933333,
+     "mean": 1.0,
      "n": 15
     },
     "critical.pitch_integrity": {
@@ -22742,11 +22742,11 @@
      "n": 45
     },
     "notation.pedal.f1": {
-     "mean": 0.95625,
+     "mean": 1.0,
      "n": 15
     },
     "notation.pedal.false_per_min": {
-     "mean": 1.460768,
+     "mean": 0.0,
      "n": 45
     },
     "notation.pedal.marks": {
@@ -22754,11 +22754,11 @@
      "n": 45
     },
     "notation.pedal.precision": {
-     "mean": 0.95625,
+     "mean": 1.0,
      "n": 15
     },
     "notation.pedal.recall": {
-     "mean": 0.95625,
+     "mean": 1.0,
      "n": 15
     },
     "notation.spelling.accuracy": {
@@ -23233,7 +23233,7 @@
      "n": 90
     },
     "critical.pedal": {
-     "mean": 0.966667,
+     "mean": 1.0,
      "n": 30
     },
     "critical.pitch_integrity": {
@@ -23333,11 +23333,11 @@
      "n": 90
     },
     "notation.pedal.f1": {
-     "mean": 0.977083,
+     "mean": 1.0,
      "n": 30
     },
     "notation.pedal.false_per_min": {
-     "mean": 0.458333,
+     "mean": 0.0,
      "n": 90
     },
     "notation.pedal.marks": {
@@ -23345,11 +23345,11 @@
      "n": 90
     },
     "notation.pedal.precision": {
-     "mean": 0.977083,
+     "mean": 1.0,
      "n": 30
     },
     "notation.pedal.recall": {
-     "mean": 0.977083,
+     "mean": 1.0,
      "n": 30
     },
     "notation.spelling.accuracy": {
@@ -23705,7 +23705,7 @@
      "n": 9
     },
     "rec.usable": {
-     "mean": 0.066667,
+     "mean": 0.077778,
      "n": 90
     },
     "rec.voice.f1": {
@@ -23809,7 +23809,7 @@
      "n": 90
     },
     "usable": {
-     "mean": 0.144444,
+     "mean": 0.155556,
      "n": 90
     }
    },
@@ -23840,7 +23840,7 @@
      "n": 144
     },
     "critical.pedal": {
-     "mean": 0.958333,
+     "mean": 1.0,
      "n": 48
     },
     "critical.pitch_integrity": {
@@ -23940,11 +23940,11 @@
      "n": 144
     },
     "notation.pedal.f1": {
-     "mean": 0.972005,
+     "mean": 1.0,
      "n": 48
     },
     "notation.pedal.false_per_min": {
-     "mean": 0.742948,
+     "mean": 0.0,
      "n": 144
     },
     "notation.pedal.marks": {
@@ -23952,11 +23952,11 @@
      "n": 144
     },
     "notation.pedal.precision": {
-     "mean": 0.972005,
+     "mean": 1.0,
      "n": 48
     },
     "notation.pedal.recall": {
-     "mean": 0.972005,
+     "mean": 1.0,
      "n": 48
     },
     "notation.spelling.accuracy": {
@@ -24316,7 +24316,7 @@
      "n": 9
     },
     "rec.usable": {
-     "mean": 0.055556,
+     "mean": 0.0625,
      "n": 144
     },
     "rec.voice.f1": {
@@ -24420,7 +24420,7 @@
      "n": 144
     },
     "usable": {
-     "mean": 0.131944,
+     "mean": 0.138889,
      "n": 144
     }
    }
@@ -27864,7 +27864,7 @@
     "critical.key": 1.0,
     "critical.meter": 0.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 0.0,
@@ -27879,7 +27879,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 0.05618,
     "notation.onset_pos.accuracy_ref": 0.05618,
-    "notation.pedal.f1": 0.34375,
+    "notation.pedal.f1": 1.0,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 7.865169,
@@ -27925,7 +27925,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "77cbd60114f9ce5a",
+   "semantic": "54b4bc41999eeba0",
    "sqi": 75.674157,
    "status": "ok"
   },
@@ -30528,7 +30528,7 @@
     "critical.key": 1.0,
     "critical.meter": 1.0,
     "critical.note_values": 1.0,
-    "critical.pedal": 0.0,
+    "critical.pedal": 1.0,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
@@ -30543,7 +30543,7 @@
     "notation.note_shape.mismatches": 0.0,
     "notation.onset_pos.accuracy": 1.0,
     "notation.onset_pos.accuracy_ref": 1.0,
-    "notation.pedal.f1": 0.3125,
+    "notation.pedal.f1": 1.0,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
     "notation.ties.extra_per_100": 0.0,
@@ -30571,7 +30571,7 @@
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
-    "rec.usable": 0.0,
+    "rec.usable": 1.0,
     "rec.voice.f1": 1.0,
     "sqi": 100.0,
     "struct.downbeat.f1": 1.0,
@@ -30587,9 +30587,9 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "d33abeb79e3c2d07",
+   "semantic": "37f855f4ce5a5830",
    "sqi": 100.0,
    "status": "ok"
   },
@@ -35740,6 +35740,30 @@
    "reason": "G10a-2: v2's stage S3 is rec/grid.js (the grid of each beat, AI-5b), on top of S4 (afdb23b); legacy and app rows unchanged case by case; v2 rows move (G10 section 20)",
    "sqi_all": 77.029256,
    "usable_all": 0.131944
+  },
+  {
+   "audio_score_sha256": "08038efc287150356615bef95836017a4d01233e2d1d5c040b8c6859d0739647",
+   "date": "2026-10-03",
+   "git_sha": "39fc383843c5650289168e4e43d4279f6635c93f",
+   "reason": "G10a-3 S9 (rec/pedal.js, docs/GOALS/G10 section 23): v2 writes the pedal marks of its skeleton in the skeleton's ticks (a compound skeleton's beat is 36 ticks: the marks were written at 24, a third early) and writes a heard pedal only where the heard notes agree with it; legacy and app rows unchanged. v2 cover-pedal pedal F1 up (compound pieces 0.56-0.63 -> ~1), helper-invented pedal: false marks per minute down, F1 up",
+   "sqi_all": 77.029256,
+   "usable_all": 0.138889
+  },
+  {
+   "audio_score_sha256": "40880cc8d1af18d5e53fa30d913e4f36e738123b2259950746f34427826cc166",
+   "date": "2026-10-03",
+   "git_sha": "8f3ace0093c4aa99b6b2b2817d573004838c1f55",
+   "reason": "G10a-3 S9 (rec/pedal.js, docs/GOALS/G10 section 23): v2 writes the pedal marks of its skeleton in the skeleton's ticks (a compound skeleton's beat is 36 ticks: the marks were written at 24, a third early) and writes a heard pedal only where the heard notes agree with it; legacy and app rows unchanged. v2 cover-pedal pedal F1 up (compound pieces 0.56-0.63 -> ~1), helper-invented pedal: false marks per minute down, F1 up",
+   "sqi_all": 77.029256,
+   "usable_all": 0.138889
+  },
+  {
+   "audio_score_sha256": "40880cc8d1af18d5e53fa30d913e4f36e738123b2259950746f34427826cc166",
+   "date": "2026-10-03",
+   "git_sha": "ea447c564796ba24fffdefcaee4c044a1ee132b8",
+   "reason": "G10a-3 S9 (rec/pedal.js, docs/GOALS/G10 section 23): v2 writes the pedal marks of its skeleton in the skeleton's ticks (a compound skeleton's beat is 36 ticks: the marks were written at 24, a third early) and writes a heard pedal only where the heard notes agree with it; legacy and app rows unchanged. v2 cover-pedal pedal F1 up (compound pieces 0.56-0.63 -> ~1), helper-invented pedal: false marks per minute down, F1 up",
+   "sqi_all": 77.029256,
+   "usable_all": 0.138889
   }
  ],
  "known_failures": {
@@ -36085,10 +36109,10 @@
  },
  "lock_sha256": "99fac9e2449d5f1518e69df897b54e5a529698bd5c33f8c40a05bf3a5a3748d5",
  "recorded": {
-  "audio_score_sha256": "026597c651a913660ff6ec6142d3f0c54be8125c831c929ceddf9a669c3c8c23",
+  "audio_score_sha256": "40880cc8d1af18d5e53fa30d913e4f36e738123b2259950746f34427826cc166",
   "date": "2026-10-03",
   "git_dirty": true,
-  "git_sha": "25e656711808b0bacaee43f366fdce03b3f2c36a",
+  "git_sha": "ea447c564796ba24fffdefcaee4c044a1ee132b8",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"
