@@ -960,6 +960,10 @@ rec.voice.f1 0.725 -> 0.802, rest recall 0.540 -> 0.525, notation-check class 7 
   per 100 bars and their note values 0.225 -> 0.196**: with the tenor in the lower staff a staff holds two parts with different
   rhythms, which the one-voice writer (S5/S6, G10a-3) writes as one line with rests; the legacy split hid it by moving the tenor
   into the right hand's chords. A voices decision for G10a-3, not a hand error.
+- **rec-full (nightly, 11,196 cases, every option set)**: hand accuracy 0.866 -> 0.902, critical.hands 0.767 -> 0.839, note values
+  0.104 -> 0.127; against its old baseline the check flags `tag set:hymns` note durations 0.537 -> 0.519 (the same tenor-below
+  effect), `feature:dense-chords` and `feature:pickup` durations -0.014 to -0.016, `metre-class:compound-triple` note values 3 of 36
+  cases, the sample's hands 0.999 -> 0.982; rebaselined with that reason.
 - **Accidentals**: 3 rec-core v2 cases lose `critical.accidentals`, 8 hold-out cases lose it and 2 gain it (an accidental's bar
   state is per staff; a note moving staff changes which accidentals the page needs). **Ledger lines**: replay-of-v2 `read.ledger_lines.heavy_rate` 0 -> 0.014 (a warning:
   a very high or low note on the other staff).
