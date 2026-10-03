@@ -17,8 +17,9 @@
    written as a mark only when the notes agree with it. A pedal that sustains something ends with the sound: the heard
    releases of the notes it held coincide with its end, within the helper's own offset error (|p90| 191 ms, G10
    section 1 E8). So a span is written when
-     - it is a pedal: at least MIN_SPAN seconds (the humanizer's own floor is 0.25 s; the fixtures' false spans have a
-       median of 0.35 s and a tenth of them are shorter than 0.1 s),
+     - it is a pedal: at least MIN_SPAN seconds (0.4: a change shorter than a quarter at 150 a minute is a flutter; the humanizer's
+       own floor is 0.25 s, its pedals' tenth percentile is 0.9 s, and the six rendered fixtures' false spans have a median of
+       0.35 s and a tenth of them are shorter than 0.1 s),
      - it holds something: notes sound inside it,
      - its end is confirmed: at least MIN_AT of the notes alive in it, and MIN_SHARE of them, are released within TOL of
        the span's end; the mark then goes where those releases are (their median: a pedal edge is less certain than the
@@ -42,7 +43,7 @@
   'use strict';
 
   const VERSION = 'pedal/1';
-  const C = Object.freeze({ MIN_SPAN: 0.3, TOL: 0.2, MIN_AT: 2, MIN_SHARE: 0.2 });
+  const C = Object.freeze({ MIN_SPAN: 0.4, TOL: 0.2, MIN_AT: 2, MIN_SHARE: 0.2 });
   const round = x => Math.round(x * 1e6) / 1e6;
 
   function analyse(pedals, notes, opts) {

@@ -1617,11 +1617,13 @@
     const held = [];
     /* S9 (G10a-3): the spans the heard notes agree with; null = every heard span, as before */
     const pedalV2 = pedalSpans(opts, extra);
-    /* a beat is ticksPerBeat ticks (36 in a compound v2 skeleton, Q otherwise: every legacy call): the mark's tick is a beat position times that */
+    /* v2 (G10a-3): a beat is ticksPerBeat ticks - 36 in a compound skeleton - so a mark's tick is a beat position times that. Legacy multiplies by Q whatever the beat is (a compound piece's marks land a third
+       early: 24 ticks for a 36-tick beat; found on rec-core, kept as it is in legacy like the other defects of section 17) */
+    const pedalTicks = extra.recording === 'v2' || pedalV2 ? ticksPerBeat : Q;
     (pedalV2 ? pedalV2.spans : (extra.pedals || [])).forEach(p => {
       const pp = beatPosition(beats, p.on);
-      const a = Math.round(pp * ticksPerBeat) - origin;
-      const b = Math.round(snapEnd(beatPosition(beats, p.off)) * ticksPerBeat) - origin;
+      const a = Math.round(pp * pedalTicks) - origin;
+      const b = Math.round(snapEnd(beatPosition(beats, p.off)) * pedalTicks) - origin;
       /* A press or release that is not a number leaves no position to write the mark at, the same way
          clean() drops a note whose times are not finite. The three range tests beside it cannot see
          that — every comparison against NaN is false — so it has to be asked for. Without it the pedal
