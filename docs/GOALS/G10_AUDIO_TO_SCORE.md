@@ -1827,6 +1827,8 @@ move only in the corrected class 3 (5.1 -> 0 per 100 bars).
   tiling (gaps.js mergeRests writes the same), a compound note's split at its beat, S5's two-part guard (unit test). The arranger's v2
   re-bracketing is guarded by `tests/rec/arrange-v2.test.js` (the rec-arrange mutation suite has app rows only).
 - **Determinism.** `train_rests.js --check` regenerates the data (the humanizer's LCG) and refits byte for byte, with 2 or 8 worker
-  threads; `train_grid.js --check` same; Linux (Docker) below.
+  threads; `train_grid.js --check` same. The `results.json` of rec-smoke (`2d777510a2296895`), replay-of-v2 (`a9876972b4c8b4db`) and
+  replay-public-v2 (`7b7663a60fb0fdcf`) are byte-identical over three runs on Windows (Python 3.13.5, Node 24.17) and one on Linux
+  (`node:24-bookworm`, offline, an LF clone of PR 3's head, the README's recipe), every `check` PASS there, both trainer checks "same".
 - **Unit tests**: `tests/rec/writer.test.js`, `rests.test.js`, `voices.test.js`, `arrange-v2.test.js`, `tests/bench/unit/test_rec_metrics.py`
   (rec/2) - 94 rec tests, the bench unit tests pass.
