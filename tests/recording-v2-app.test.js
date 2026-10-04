@@ -6,15 +6,21 @@
      - the switch: legacy by default; 'v2' accepted; any other value (typos, null, 'V2', 'g8', true) is legacy; remembered in localStorage ('v2' stored, the key removed for legacy), honoured
        from ?recording=v2, a value in the address is for that visit only
      - the lazy load: a fresh page, however long it stays and whichever screens open, asks for none of v2's 17 files; with v2 selected they come when the Add-sheet-music screen opens or the first
-       conversion starts, once each, in the order rec/index.js's header gives, weights before the modules; a file that cannot be fetched is asked for again with the ones after it and nothing
-       before it twice, and the conversion made meanwhile is the classic one, said so on the review screen (never a blank page)
+       conversion starts, once each, in the order rec/index.js's header gives, weights before the modules; a file that cannot be fetched (or arrives as something else) is asked for again ALONE - plus the few files that read its export when
+       they loaded (model, metre and index read attacks, beats, hands) - and nothing that loaded is run twice; the conversion made meanwhile is the classic one, said so on the review screen
+       (never a blank page)
      - the opt-in: the chip on the Add-sheet-music screen and on the review screen, off by default, in English, Korean, Japanese and Chinese, inside the viewport at 400 px, switching it sets PPP.recording
      - the conversion at the call sites: an import with v2 on is marked source.recordingPipeline 'v2' and transcriptionVersion 8 (TRANSCRIPTION_VERSION stays 7 for every other song), has its bars-that-add-up
        checks at zero (scoregraph/tools/notation-check.js classes 1-7, in the Score and in the graph), a graph that agrees with its Score (via 'live'), no validator error; a stated metre ("Rewrite the
        rhythm") is written the classic way and drops the mark; "Apply arrangement" uses the conversion that wrote the song while its rhythm controls are untouched
      - what is drawn = what is played: every sounded note is a drawn one at the same place, every drawn head is a Score note, a sounding length is the written length (and the pedal); on pieces with
        voices 2 and 6, 3:2 brackets of 16ths over half beats, pedal spanners and key changes; the saved song after a reload; the one-note arranger on the v2 graph does not crash
-     - "Write the notation again": the same heard notes with the chosen method, Undo, nothing rewritten until it is pressed; also for a song opened from My Songs, whose heard notes are its kept graph's
+     - "Write the notation again": the same heard notes with the chosen method, Undo (the notation, its graph, its report and the practice progress that was there), nothing rewritten until it is pressed;
+       also for a song opened from My Songs, whose heard notes are its kept graph's; not offered for a 'Full song' (playable piano arrangement) import, which is not a transcription; the shelf card
+       says the new count of measures
+     - the one-note arranger's refusal of a v2 song (ALL_CANDIDATES_HAVE_HARD_VIOLATIONS): one more try on the conversion of the same heard notes with the classic hands, marked in the copy's source;
+       nothing else is retried
+     - a v2 result the page cannot believe (a tempo outside the rhythm controls' range) is written the classic way and said so; Write again changes nothing
      - the flags: amber cells and a legend for the bars PPP was not sure about, kept in the saved report
      - the classic path: a fresh page, an import and a rewrite with PPP.recording = 'legacy' have no v2 mark and no v2 request
 
@@ -34,8 +40,9 @@ const NEW_KEYS = [
   'An arrangement made from it is taken off.', 'Undo', 'Wrote the notation again with the new method.', 'Wrote the notation again with the classic method.',
   'Before: {{m1}} measures, {{r1}} rests, {{b1}} tuplet brackets. Now: {{m2}} measures, {{r2}} rests, {{b2}} tuplet brackets.',
   'With the new method on, a metre or tempo you set here is written by the classic method. To let the new method decide again, use "Write the notation again".',
-  'Measures where PPP was not sure of the beat ({{n}})', 'PPP was not sure of the beat', 'PPP was not sure which hand plays some notes',
+  'Measures where PPP was not sure of the hands or the beat ({{n}})', 'PPP was not sure of the beat', 'PPP was not sure which hand plays some notes',
   'The new transcription method could not be loaded, so the classic method wrote this score.', 'The new transcription method could not be used for this recording, so the classic method wrote this score.',
+  'The new transcription method gave an unlikely tempo or length for this recording, so the classic method wrote this score.',
   'PPP read this piece as {{metre}} but was not sure of it ({{pct}}%); the bar lines may be in the wrong place.', 'The new transcription method could not be loaded, so nothing was changed.',
   'The heard notes of this song are not kept on this device, so its notation cannot be written again.', 'The new transcription method could not read this performance, so nothing was changed.',
   'Put back the notation that was there before.'
@@ -150,16 +157,50 @@ const NEW_KEYS = [
     ok('an import made meanwhile is written the classic way, marked so, and the review screen says it (an issue line)', imp1.screen === 'review' && s1.pipeline === null && s1.version === 7 && s1.issues.indexOf('recording-v2') > -1, JSON.stringify({ imp1: imp1, p: s1.pipeline, v: s1.version, i: s1.issues }));
     ok('and the review screen shows that line, in English', await pf.evaluate(() => /could not be loaded, so the classic method wrote this score/.test(document.body.innerText)));
     pf.__rec.failOn = false;
-    const before = pf.__rec.requests.filter(u => REC_FILES.test(u)).length;
     const okAgain = await pf.evaluate(() => window.PPP.loadRecordingModules());
     const after = recReqs(pf);
     const once = n => after.filter(u => u === '/rec/' + n + '.js').length;
-    ok('the next attempt asks again for the failed script and the ones after it, nothing before it twice', okAgain === true && once('writer') >= 2 && once('attacks') === 1 && once('index') === 1 && once('grid') === 1 && once('key') >= 1 && once('pedal') >= 1, JSON.stringify({ before: before, writer: once('writer'), attacks: once('attacks'), key: once('key') }));
+    const others = SCRIPTS.map(s => s.replace(/^\/rec\/|\.js$/g, '')).filter(n => n !== 'writer');
+    ok('every attempt asks for the failed script ALONE: writer.js again (and again), every other script and every weights file exactly once, nothing that loaded is run twice',
+      okAgain === true && once('writer') >= 2 && others.every(n => once(n) === 1) && WEIGHTS.every(w => after.filter(u => u === w).length === 1), JSON.stringify({ writer: once('writer'), others: others.map(n => n + ':' + once(n)).join(' '), total: after.length }));
+    ok('and the page ran each script once (one script element a request: nothing is run twice)', await pf.evaluate(() => document.querySelectorAll('script[src*="/rec/"]').length) === after.filter(u => /\.js$/.test(u)).length);
     const imp2 = await importHeard(pf, heardFor.sextuplets);
     const s2 = await stateOf(pf);
     ok('and the import after that is v2', imp2.screen === 'review' && s2.pipeline === 'v2' && s2.version === 8, JSON.stringify({ p: s2.pipeline, v: s2.version }));
     ok('no page error through all of it', pf.__rec.pageErrors.length === 0, errs(pf));
     await pf.close();
+    /* an early file that fails: the three files that read its export when they loaded come with it, and only those */
+    const pe = await openPage(browser, { failWhile: /\/rec\/attacks\.js/ });
+    await pe.evaluate(() => { window.PPP.recording = 'v2'; });
+    ok('attacks.js fails: the load reports false, nothing throws', (await pe.evaluate(() => window.PPP.loadRecordingModules())) === false && (await pe.evaluate(() => window.PPP.recordingModulesReady())) === false && pe.__rec.pageErrors.every(m => /attacks|undefined|Cannot read/.test(m)));
+    pe.__rec.pageErrors.length = 0;
+    pe.__rec.failOn = false;
+    ok('the next attempt loads', (await pe.evaluate(() => window.PPP.loadRecordingModules())) === true && (await pe.evaluate(() => window.PPP.recordingModulesReady())) === true);
+    const pea = recReqs(pe), oncePe = n => pea.filter(u => u === '/rec/' + n + '.js').length;
+    ok('attacks.js and the three files that took its export (model, metre, index) were asked for again, once; the other nine were not',
+      ['attacks', 'model', 'metre', 'index'].every(n => oncePe(n) === 2) && ['beats', 'hands', 'grid', 'voices', 'rests', 'writer', 'key', 'pedal', 'app'].every(n => oncePe(n) === 1), SCRIPTS.map(s => s.slice(5, -3) + ':' + oncePe(s.slice(5, -3))).join(' '));
+    const heMade = await pe.evaluate(() => { const r = window.PPPRec; return !!(r && r.skeleton && r.hands && window.PPPRecModules.model && window.PPPRecModules.metre); });
+    ok('and v2 is whole: rec/index.js holds the stages (skeleton, hands) it was loaded with the second time', heMade);
+    await addChecker(pe);
+    const impE = await importHeard(pe, heardFor.sextuplets);
+    const sE = await stateOf(pe);
+    ok('an import after that is v2, with its bars adding up', impE.screen === 'review' && sE.pipeline === 'v2' && Object.values(sE.scoreClasses).every(v => v === 0), JSON.stringify({ p: sE.pipeline, sc: sE.scoreClasses }));
+    await pe.close();
+    /* a file the server answers 200 with something that is not the script (an error page): it fires load, leaves no global, and is not "loaded" */
+    const pcx = await openPage(browser, { corrupt: { re: /\/rec\/key\.js/, body: '<!doctype html><html><body>Service unavailable</body></html>' } });
+    await addChecker(pcx);
+    await pcx.evaluate(() => { window.PPP.recording = 'v2'; });
+    const cx1 = await pcx.evaluate(() => window.PPP.loadRecordingModules());
+    ok('a corrupt 200 (key.js is an HTML page): the load reports false, v2 is not ready, key.js is not marked loaded (no PPPRecKey), the other twelve scripts are', cx1 === false && (await pcx.evaluate(() => window.PPP.recordingModulesReady())) === false && (await pcx.evaluate(() => !window.PPPRecKey && !!window.PPPRec && !!window.PPPRecPedal && !!window.PPPRecApp)), String(cx1));
+    ok('its only page error is the syntax error of that file', pcx.__rec.pageErrors.length === 1 && /Unexpected token/.test(pcx.__rec.pageErrors[0]), errs(pcx));
+    const impX = await importHeard(pcx, heardFor.sextuplets);
+    const sX = await stateOf(pcx);
+    ok('an import meanwhile is the classic one, said so', impX.screen === 'review' && sX.pipeline === null && sX.issues.indexOf('recording-v2') > -1, JSON.stringify({ p: sX.pipeline, i: sX.issues }));
+    pcx.__rec.failOn = false;
+    const cx2 = await pcx.evaluate(() => window.PPP.loadRecordingModules());
+    const cxr = recReqs(pcx), onceX = n => cxr.filter(u => u === '/rec/' + n + '.js').length;
+    ok('the next attempt asks for key.js alone and v2 is ready', cx2 === true && (await pcx.evaluate(() => window.PPP.recordingModulesReady())) === true && onceX('key') >= 2 && SCRIPTS.map(s => s.slice(5, -3)).filter(n => n !== 'key').every(n => onceX(n) === 1), SCRIPTS.map(s => s.slice(5, -3) + ':' + onceX(s.slice(5, -3))).join(' '));
+    await pcx.close();
     const pw = await openPage(browser, { failWhile: /ai5b-grid-v1\.json/ });
     await pw.evaluate(() => { window.PPP.recording = 'v2'; });
     const fw = await pw.evaluate(() => window.PPP.loadRecordingModules());
@@ -405,15 +446,201 @@ const NEW_KEYS = [
     await sleep(400);
     ok('a metre the new method was not sure of is said on the review screen, from the saved flags', await pu.evaluate(() => /PPP read this piece as 4\/4 but was not sure of it \(42%\)/.test(document.body.innerText)));
     ok('an unsure bar is amber with its reason in the tooltip, a bar that needs checking stays red (and names both reasons), a sure bar is neither; the legend counts them',
-      !!fl.c2 && /warn/.test(fl.c2.bg) && /not sure of the beat/.test(fl.c2.title) && /bad/.test(fl.c5.bg) && /which hand/.test(fl.c5.title) && !/warn|bad/.test(fl.c1.bg) && /Measures where PPP was not sure of the beat \(2\)/.test(fl.legend), JSON.stringify(fl));
+      !!fl.c2 && /warn/.test(fl.c2.bg) && /not sure of the beat/.test(fl.c2.title) && /bad/.test(fl.c5.bg) && /which hand/.test(fl.c5.title) && !/warn|bad/.test(fl.c1.bg) && /Measures where PPP was not sure of the hands or the beat \(2\)/.test(fl.legend), JSON.stringify(fl));
     await pu.close();
     const pk = await openPage(browser, { locale: 'ko-KR' });
     await importHeard(pk, heardFor.sextuplets);
     await pk.evaluate(() => { const A = window.PPP.app, S = A.state; A.setState({ importReport: Object.assign({}, S.importReport, { uncertainMeasures: [3], uncertainWhy: { 3: ['grid'] } }) }); });
     await sleep(600);
     const kl = await pk.evaluate(() => { const l = document.querySelector('[data-uncertain-legend]'); return l && l.innerText.trim(); });
-    ok('in Korean the legend says "PPP가 박자를 확신하지 못한 마디"', /PPP가 박자를 확신하지 못한 마디 \(1개\)/.test(kl || ''), kl);
+    ok('in Korean the legend says "PPP가 손 배분이나 박자를 확신하지 못한 마디" (the hands or the beat)', /PPP가 손 배분이나 박자를 확신하지 못한 마디 \(1개\)/.test(kl || ''), kl);
     await pk.close();
+
+        }
+/* ------------------------------------------------------------------ a "Full song" import is not a transcription */
+    if (want('fullsong')) {
+    console.log('\n── a "Full song" import: no "Write the notation again" (it would replace the easy arrangement with the full transcription) ──');
+    const pa = await openPage(browser, { store: { 'ppp.recording.v1': 'v2' } });
+    await addChecker(pa);
+    await pa.evaluate(() => window.PPP.app.setState({ transcriptionMode: 'arrange' }));
+    const impA = await importHeard(pa, heardFor.sextuplets);
+    const a0 = await stateOf(pa);
+    const ui = () => pa.evaluate(() => ({
+      taskMode: window.PPP.app.state.importSource && window.PPP.app.state.importSource.taskMode,
+      block: !!document.querySelector('[data-recording-choice="review"]'), chip: !!document.querySelector('[data-recording-choice="review"] [data-recording-v2-option]'),
+      method: !!document.querySelector('[data-recording-method]'), write: !!document.querySelector('[data-write-again]'), undo: !!document.querySelector('[data-notation-undo]'),
+      hint: /Writes the notation of this song again/.test(document.body.innerText)
+    }));
+    const ua = await ui();
+    ok('a Full song import is the easy arrangement (taskMode piano-arrangement), written the classic way (v2 is for faithful transcriptions)', impA.screen === 'review' && ua.taskMode === 'piano-arrangement' && a0.pipeline === null, JSON.stringify({ imp: impA.screen, ua: ua, p: a0.pipeline }));
+    ok('its review screen has no "Write the notation again" button and no hint for it', ua.write === false && ua.hint === false && ua.undo === false, JSON.stringify(ua));
+    ok('the rest of the recording block stays as it was: the method line and the chip', ua.block && ua.chip && ua.method, JSON.stringify(ua));
+    /* a stale click, or a script, cannot do it either: the same Score and graph afterwards */
+    await pa.evaluate(() => window.PPP.app.writeNotationAgain());
+    await sleep(2500);
+    const a1 = await stateOf(pa), ua1 = await ui();
+    ok('calling writeNotationAgain() on it changes nothing: the same notation, still the arrangement, no status line, nothing to undo', a1.hash === a0.hash && a1.songId === a0.songId && a1.notes === a0.notes && ua1.taskMode === 'piano-arrangement' && !(await pa.evaluate(() => !!window.PPP.app.state.recNotation)) && !ua1.undo, JSON.stringify({ a0: a0.hash, a1: a1.hash, ua1: ua1 }));
+    ok('no page or console error', clean(pa), errs(pa));
+    await pa.close();
+    const pt = await openPage(browser, { store: { 'ppp.recording.v1': 'v2' } });
+    await importHeard(pt, heardFor.sextuplets);
+    const ut = await pt.evaluate(() => ({ taskMode: window.PPP.app.state.importSource.taskMode, write: !!document.querySelector('[data-write-again]'), hint: /Writes the notation of this song again/.test(document.body.innerText) }));
+    ok('and a faithful transcription (the default recording type) still has the button and its hint', ut.taskMode === 'faithful-transcription' && ut.write && ut.hint, JSON.stringify(ut));
+    await pt.close();
+
+        }
+/* ------------------------------------------------------------------ Undo puts the practice progress back; the shelf card follows the notation */
+    if (want('undo')) {
+    console.log('\n── Undo restores what Write again starts over (mastered, memory level, blind runs, tempo, loop range); the shelf card says the new measure count ──');
+    const pn = await openPage(browser, { store: { 'ppp.recording.v1': 'v2' } });
+    await importHeard(pn, heardFor.sextuplets);
+    const prog = { mastered: true, memLevel: 3, blindRuns: 2, tempo: 70, loopFrom: 3, loopTo: 6 };
+    await pn.evaluate(p => window.PPP.app.setState(p), prog);
+    const progNow = () => pn.evaluate(() => { const S = window.PPP.app.state, e = (S.library || []).find(x => x.id === S.songId); return { mastered: S.mastered, memLevel: S.memLevel, blindRuns: S.blindRuns, tempo: S.tempo, loopFrom: S.loopFrom, loopTo: S.loopTo, card: e && e.measures, n: S.score.measures.length }; });
+    const setCard = n => pn.evaluate(c => { const A = window.PPP.app, lib = A.libraryRead(), e = lib.songs.find(x => x.id === A.state.songId); e.measures = c; A.libraryWrite(lib); }, n);
+    const n0 = (await progNow()).n;
+    await setCard(999);   /* a card that says the wrong count: the rewrite must correct it */
+    ok('before: the progress is set', JSON.stringify(Object.assign({}, await progNow(), { card: 0, n: 0 })) === JSON.stringify(Object.assign({}, prog, { card: 0, n: 0 })));
+    await press(pn, '[data-write-again]');
+    await pn.waitForFunction(() => !window.PPP.app.state.recWriteBusy && window.PPP.app.state.recNotation, { timeout: 60000 });
+    await sleep(800);
+    const w = await progNow();
+    ok('Write again starts the practice over (the notation is new), and the shelf card says the notation has its count of measures (it said 999)', w.mastered === false && w.memLevel === 0 && w.blindRuns === 0 && w.loopFrom !== 3 && w.card === w.n && w.n === n0, JSON.stringify(w));
+    await setCard(888);
+    await press(pn, '[data-notation-undo]');
+    await sleep(1000);
+    const u = await progNow();
+    ok('Undo gives back mastered, memory level, blind runs, tempo and the loop range exactly as they were, and corrects the shelf card', u.mastered === true && u.memLevel === 3 && u.blindRuns === 2 && u.tempo === 70 && u.loopFrom === 3 && u.loopTo === 6 && u.card === u.n, JSON.stringify(u));
+    ok('and what Undo saved is what is on the screen: the slot has the loop range, the tempo and the progress', await pn.evaluate(() => { const S = window.PPP.app.state, slot = JSON.parse(localStorage.getItem('ppp.song.v1.' + S.songId) || 'null'); return !!slot && slot.loopFrom === 3 && slot.loopTo === 6 && slot.tempo === 70 && slot.mastered === true && slot.memLevel === 3 && slot.blindRuns === 2; }));
+    ok('no page or console error', clean(pn), errs(pn));
+    await pn.close();
+
+        }
+/* ------------------------------------------------------------------ the one-note arranger's refusal of a v2 song: one more try with the classic hands */
+    if (want('fallback')) {
+    console.log('\n── the Song Arranger and a refusal for hard violations: one more try on the same heard notes with the classic hands ──');
+    /* The refusal itself is the teacher's piece (three of three runs); no committed fixture reproduces it, so the candidates stage is wrapped: it refuses when the test says so and otherwise runs for real.
+       Everything else is the real page: the saved v2 song, its kept graph, the conversion again with {recording: 'v2', hands: 'legacy'}, the one-note arranger on that graph, the copy and its source. */
+    const wrap = () => {
+      window.__runs = []; window.__conv = []; window.__refuse = 'none';
+      const real = window.PPPCandidates;
+      window.PPPCandidates = Object.assign({}, real, { runAsync: function () {
+        window.__runs.push(1);
+        const m = window.__refuse, n = window.__runs.length;
+        if (m === 'always' || (m === 'first' && n === 1)) return Promise.resolve({ ok: false, reason: 'ALL_CANDIDATES_HAVE_HARD_VIOLATIONS', discarded: [] });
+        if (m === 'other') return Promise.resolve({ ok: false, reason: 'NO_SELECTION' });
+        return real.runAsync.apply(real, arguments);
+      } });
+      const A = window.PPPAudioScore, realConv = A.toMusicXml;
+      window.PPPAudioScore = Object.assign({}, A, { toMusicXml: function (i, o) { window.__conv.push({ recording: o && o.recording || null, hands: o && o.hands || null, closeGaps: !!(o && o.closeGaps), exactBars: !!(o && o.exactBars) }); return realConv.apply(this, arguments); } });
+    };
+    const arrangerCopy = async (page, songId, level, mode) => {
+      await page.evaluate(() => { try { window.PPP.app.closeSongArranger(); } catch (e) { /* none open */ } });
+      await page.evaluate(() => window.__pppTest.nav('My Songs')); await sleep(800);
+      await page.waitForSelector('[data-arrange-song="' + songId + '"]', { timeout: 30000 });
+      await page.evaluate(i => document.querySelector('[data-arrange-song="' + i + '"]').click(), songId); await sleep(700);
+      await page.waitForFunction(() => !!(window.PPPCandidates && window.PPPCandidates.runAsync), { timeout: 60000 });
+      await page.evaluate(src => { if (!window.__wrapped) { (0, eval)('(' + src + ')')(); window.__wrapped = true; } window.__runs = []; window.__conv = []; }, wrap.toString());
+      await page.evaluate(m => { window.__refuse = m; }, mode);
+      await page.select('[data-song-arrange-level]', level);
+      await page.select('[data-song-arrange-style]', 'balanced');
+      const before = await page.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('ppp.song.v1.')));
+      await page.click('[data-create-song-arrangement]');
+      await page.waitForFunction(() => { const S = window.PPP.app.state; return !S.songArrange || (!S.songArrange.busy && (S.songArrange.singleRefusal || S.songArrange.status)); }, { timeout: 300000, polling: 400 });
+      await sleep(800);
+      return page.evaluate(b => {
+        const S = window.PPP.app.state, keys = Object.keys(localStorage).filter(k => k.startsWith('ppp.song.v1.') && b.indexOf(k) < 0);
+        return { refusal: S.songArrange && S.songArrange.singleRefusal ? S.songArrange.singleRefusal.reason : null, notice: !!document.querySelector('[data-single-refusal]'), newKeys: keys, runs: window.__runs.length, conv: window.__conv.slice() };
+      }, before);
+    };
+    const pk2 = await openPage(browser, { store: { 'ppp.recording.v1': 'v2' } });
+    await addChecker(pk2);
+    const impK = await importHeard(pk2, heardFor.sextuplets);
+    const sK = await stateOf(pk2);
+    await accept(pk2);
+    const idK = sK.songId;
+    ok('a saved v2 song to arrange (the import marked v2, accepted)', impK.screen === 'review' && sK.pipeline === 'v2' && !!(await slotOf(pk2, idK)), JSON.stringify({ p: sK.pipeline }));
+    /* a reload: the arranger then has only what the device keeps (the song's graph from the store), as it does for the teacher's saved song; v2's files are not loaded until the fallback needs them */
+    await sleep(2500);
+    await pk2.reload({ waitUntil: 'networkidle2' });
+    await pk2.waitForFunction(() => !!(window.PPP && window.PPP.app)); await sleep(800);
+    await pk2.evaluate(() => { window.PPP.recording = 'legacy'; });
+    ok('after the reload v2 is not loaded (nothing asked for yet)', (await pk2.evaluate(() => window.PPP.recordingModulesReady())) === false);
+    const rA = await arrangerCopy(pk2, idK, 'intermediate', 'first');
+    ok('the first arrangement is refused for hard violations, the retry on the conversion with the classic hands arranges it: a copy is saved, the candidates stage ran twice',
+      rA.refusal === null && rA.newKeys.length === 1 && rA.runs === 2, JSON.stringify(rA));
+    const convA = rA.conv.filter(c => c.recording === 'v2');
+    ok('exactly one conversion was made for it: v2 with hands legacy, closeGaps and exactBars (v2\'s files were fetched for it)', convA.length === 1 && convA[0].hands === 'legacy' && convA[0].closeGaps && convA[0].exactBars && (await pk2.evaluate(() => window.PPP.recordingModulesReady())) === true, JSON.stringify(rA.conv));
+    const copyId = (rA.newKeys[0] || '').replace('ppp.song.v1.', '');
+    const copy = await slotOf(pk2, copyId), orig = await slotOf(pk2, idK);
+    ok('the copy\'s source says it: one-note-per-hand arrangement with handsFallback "legacy", no singleFallback; its library card carries it',
+      !!copy && copy.importSource.kind === 'arrangement' && copy.importSource.arrangement.engine === 'ppp.g9-single' && copy.importSource.arrangement.handsFallback === 'legacy' && !copy.importSource.arrangement.singleFallback
+      && await pk2.evaluate(i => { const e = (window.PPP.app.state.library || []).find(x => x.id === i); return !!e && !!e.arrangement && e.arrangement.handsFallback === 'legacy'; }, copyId), copy ? JSON.stringify(copy.importSource.arrangement) : 'no copy');
+    ok('the saved song itself is untouched (still the v2 notation, version 8, no arrangement)', !!orig && orig.importSource.recordingPipeline === 'v2' && orig.importSource.transcriptionVersion === 8 && !orig.importSource.arrangement);
+    await pk2.evaluate(() => window.__pppTest.nav('My Songs')); await sleep(600);
+    await pk2.evaluate(i => document.querySelector('[data-open-song="' + i + '"]').click(), copyId); await sleep(3000);
+    ok('the copy is a one-note-per-hand arrangement: it opens, the notes are there, at most one a hand at once', await pk2.evaluate(() => {
+      const sc = window.PPP.app.state.score, by = new Map();
+      sc.notes.filter(n => !n.rest).forEach(n => { const k = n.hand + '|' + n.m + '|' + n.b; by.set(k, (by.get(k) || 0) + 1); });
+      return sc.notes.filter(n => !n.rest).length > 20 && Math.max.apply(null, [...by.values()]) === 1;
+    }));
+    /* a second refusal: the refusal the person sees today, one retry only */
+    const rB = await arrangerCopy(pk2, idK, 'beginner', 'always');
+    ok('refused again after the retry: the refusal notice is shown (ALL_CANDIDATES_HAVE_HARD_VIOLATIONS), nothing is saved, and the candidates stage ran exactly twice (no loop)',
+      rB.refusal === 'ALL_CANDIDATES_HAVE_HARD_VIOLATIONS' && rB.notice && rB.newKeys.length === 0 && rB.runs === 2 && rB.conv.filter(c => c.recording === 'v2').length === 1, JSON.stringify(rB));
+    /* any other code: no retry */
+    const rC = await arrangerCopy(pk2, idK, 'advanced', 'other');
+    ok('a refusal with another code (NO_SELECTION) is not retried: the candidates stage ran once, no conversion, the notice is shown', rC.refusal === 'NO_SELECTION' && rC.notice && rC.runs === 1 && rC.conv.length === 0 && rC.newKeys.length === 0, JSON.stringify(rC));
+    ok('no page or console error', clean(pk2), errs(pk2));
+    await pk2.close();
+    /* a classic song: the same refusal is not retried */
+    const pk3 = await openPage(browser);
+    await addChecker(pk3);
+    await importHeard(pk3, heardFor.sextuplets);
+    const sK3 = await stateOf(pk3);
+    await accept(pk3);
+    await sleep(2500);
+    const rD = await arrangerCopy(pk3, sK3.songId, 'intermediate', 'always');
+    ok('a classic song refused for hard violations is NOT retried: the stage ran once, no v2 conversion, the notice is shown', sK3.pipeline === null && rD.refusal === 'ALL_CANDIDATES_HAVE_HARD_VIOLATIONS' && rD.notice && rD.runs === 1 && rD.conv.length === 0 && rD.newKeys.length === 0
+      && (await pk3.evaluate(() => window.PPP.recordingModulesReady())) === false && recReqs(pk3).length === 0, JSON.stringify(rD));
+    ok('no page or console error', clean(pk3), errs(pk3));
+    await pk3.close();
+
+        }
+/* ------------------------------------------------------------------ a v2 result the page cannot believe */
+    if (want('plausible')) {
+    console.log('\n── a v2 result outside what a person could mean (tempo above the rhythm controls\' 240) is not kept ──');
+    const pz = await openPage(browser, { store: { 'ppp.recording.v1': 'v2' } });
+    await addChecker(pz);
+    await pz.evaluate(() => {
+      const A = window.PPPAudioScore, real = A.toMusicXml;
+      window.__calls = []; window.__bad = true;
+      window.PPPAudioScore = Object.assign({}, A, { toMusicXml: function (i, o) {
+        const r = real.apply(this, arguments);
+        window.__calls.push({ recording: o && o.recording || null, v2: !!r.recReport });
+        if (window.__bad && o && o.recording === 'v2' && r.recReport) r.stats.tempo = 243;   /* what the review measured on a 17-minute recording: 3/8 at 243 */
+        return r;
+      } });
+    });
+    const impZ = await importHeard(pz, heardFor.sextuplets);
+    const z0 = await stateOf(pz);
+    const callsZ = await pz.evaluate(() => window.__calls.slice());
+    ok('the import converts twice: v2 (which gave 243), then the classic way; the score is the classic one: no v2 mark, version 7, no flags', impZ.screen === 'review' && callsZ.length === 2 && callsZ[0].recording === 'v2' && callsZ[0].v2 === true && callsZ[1].recording === null && callsZ[1].v2 === false
+      && z0.pipeline === null && z0.version === 7 && z0.unc === null, JSON.stringify({ calls: callsZ, p: z0.pipeline, v: z0.version }));
+    ok('the review screen says so, in the existing notice style (an issue line, kind recording-v2), in English', z0.issues.indexOf('recording-v2') > -1 && await pz.evaluate(() => /gave an unlikely tempo or length for this recording, so the classic method wrote this score/.test(document.body.innerText)));
+    ok('the classic score has its bars adding up as ever', Object.values(z0.scoreClasses).every(v => v === 0) && z0.via === 'live', JSON.stringify(z0.scoreClasses));
+    await press(pz, '[data-write-again]');
+    await sleep(2500);
+    const z1 = await stateOf(pz);
+    ok('Write again with v2 on, while v2 still gives 243: nothing is changed, and the page says so', z1.hash === z0.hash && z1.pipeline === null && !(await pz.evaluate(() => !!window.PPP.app.state.recNotation)) && await pz.evaluate(() => /could not read this performance, so nothing was changed/.test(document.body.innerText + (window.PPP.app.state.toast || ''))), JSON.stringify({ same: z1.hash === z0.hash }));
+    await pz.evaluate(() => { window.__bad = false; });
+    await press(pz, '[data-write-again]');
+    await pz.waitForFunction(() => !window.PPP.app.state.recWriteBusy && window.PPP.app.state.recNotation, { timeout: 60000 });
+    await sleep(600);
+    const z2 = await stateOf(pz);
+    ok('and with a believable result it is v2 as ever', z2.pipeline === 'v2' && z2.version === 8, JSON.stringify({ p: z2.pipeline }));
+    ok('no page or console error', clean(pz), errs(pz));
+    await pz.close();
 
         }
   } catch (e) {

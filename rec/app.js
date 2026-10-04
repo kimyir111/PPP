@@ -12,6 +12,8 @@
                                   the first bar; piecewise linear between the pairs)
      qAtSeconds(map, sec)         the written position (quarters) of a heard time, or null for a map of kind 'none'
      playPlan(heard, opts)        "Play as recorded": [{t, off, midi, vel}] in seconds, sorted; a key held under the damper pedal sounds until the pedal lifts
+     plausible(built, heard)      is a v2 conversion believable? -> {ok, why: null|'tempo'|'length', tempo, ratio}: the tempo in the range the rhythm controls accept, and the bars, as written
+                                  (bars x beats a bar x 60 / tempo), about as long as the heard notes (see PLAUSIBLE below)
 
    FLAGS (G10 section 6.1, 8.1 and 24.11; the review screen's amber marker)
      A bar is flagged where a decision of the conversion was close, by what the stages report beside the graph:
@@ -39,6 +41,10 @@
   const METRE_UNSURE = 0.6;       /* the chosen metre's posterior below this is said of the piece */
   const THRESHOLDS = Object.freeze({ GRID_UNSURE, GRID_MIN_ONSETS, HAND_LOW, HAND_BAR_MIN, METRE_UNSURE });
   const MIN_SOUND = 0.05;         /* a heard note that lasts less than this still sounds this long (seconds) */
+  /* PLAUSIBLE (G10a-4 review, long recordings): past about 15.5 minutes the skeleton's tempo search left its range on the teacher's piece repeated (3/8 at 243, four times the bars) while the classic
+     conversion stayed right; a result outside what a person could mean is not kept. The tempo range is the app's own (the rhythm controls' tempo box: 30 to 240); the written length, bars x beats a bar
+     x 60 / tempo, must be 0.6 to 1.6 of the heard notes' span (first onset to last release), with two bars of slack either side for a short piece (a pickup, the last bar's silence). */
+  const TEMPO_MIN = 30, TEMPO_MAX = 240, LENGTH_LOW = 0.6, LENGTH_HIGH = 1.6, LENGTH_SLACK_BARS = 2;
 
   const round = (x, k) => Math.round(x * k) / k;
 
@@ -213,5 +219,25 @@
     }).sort((a, b) => a.t - b.t || a.midi - b.midi);
   }
 
-  return Object.freeze({ VERSION, THRESHOLDS, GRID_UNSURE, GRID_MIN_ONSETS, HAND_LOW, HAND_BAR_MIN, METRE_UNSURE, normalizeMode, barOfTime, flags, heardFromGraph, timeMap, qAtSeconds, playPlan });
+  /* is a v2 conversion's result believable? built: audio-score.js's result (stats: bars, beatsPerBar, beatType, tempo in quarters a minute); heard: {notes: [{on, off}]} in seconds. A result with no
+     statistics, or no notes to compare it with, is not judged (ok). */
+  function plausible(built, heard) {
+    const st = built && built.stats, notes = heard && heard.notes;
+    const out = { ok: true, why: null, tempo: null, ratio: null };
+    if (!st || !(st.bars > 0) || !(st.beatsPerBar > 0) || !(st.beatType > 0) || !isFinite(st.tempo)) return out;
+    out.tempo = st.tempo;
+    if (!(st.tempo >= TEMPO_MIN && st.tempo <= TEMPO_MAX)) { out.ok = false; out.why = 'tempo'; return out; }
+    if (!Array.isArray(notes) || !notes.length) return out;
+    let first = Infinity, last = -Infinity;
+    notes.forEach(n => { if (n && isFinite(n.on) && isFinite(n.off)) { if (n.on < first) first = n.on; if (n.off > last) last = n.off; } });
+    const span = last - first;
+    if (!(span > 0)) return out;
+    const barSec = st.beatsPerBar * (4 / st.beatType) * 60 / st.tempo, written = st.bars * barSec;
+    out.ratio = round(written / span, 1000);
+    if (written < LENGTH_LOW * span - LENGTH_SLACK_BARS * barSec || written > LENGTH_HIGH * span + LENGTH_SLACK_BARS * barSec) { out.ok = false; out.why = 'length'; }
+    return out;
+  }
+
+  return Object.freeze({ VERSION, THRESHOLDS, GRID_UNSURE, GRID_MIN_ONSETS, HAND_LOW, HAND_BAR_MIN, METRE_UNSURE, normalizeMode, barOfTime, flags, heardFromGraph, timeMap, qAtSeconds, playPlan, plausible,
+    PLAUSIBLE: Object.freeze({ TEMPO_MIN, TEMPO_MAX, LENGTH_LOW, LENGTH_HIGH, LENGTH_SLACK_BARS }) });
 });
