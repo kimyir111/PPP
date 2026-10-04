@@ -955,6 +955,10 @@
                   <option value="arrange">Full song (playable piano arrangement)</option>
                 </select>
               </label>
+              <div data-recording-choice="upload" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; flex-direction: column; align-items: flex-start; gap: 5px;">
+                <button type="button" onClick="{{ toggleRecordingV2 }}" data-recording-v2-option aria-pressed="{{ recordingV2Pressed }}" style="{{ recordingV2Style }}">{{ recordingV2Label }}</button>
+                <p style="margin: 0; font-size: 12px; line-height: 1.45; color: var(--ink3);">{{ recordingV2Hint }}</p>
+              </div>
             </div>
 
             <label data-drop-zone class="ppp-drop" style="{{ dropZoneStyle }}" style-hover="border-color: var(--accent); background: var(--accent-3);">
@@ -2293,10 +2297,32 @@
                 </div>
               </sc-for>
             </div>
+            <sc-if value="{{ showRecordingChoice }}" hint-placeholder-val="{{ false }}">
+              <div data-recording-choice="review" style="margin-top: 18px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+                <div data-recording-method style="font-size: 12.5px; font-weight: 600; color: var(--ink2);">{{ recordingBadge }}</div>
+                <button type="button" onClick="{{ toggleRecordingV2 }}" data-recording-v2-option aria-pressed="{{ recordingV2Pressed }}" style="{{ recordingV2Style }}">{{ recordingV2Label }}</button>
+                <p style="margin: 0; font-size: 12px; line-height: 1.45; color: var(--ink3);">{{ recordingV2Hint }}</p>
+                <sc-if value="{{ showWriteAgain }}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                    <button type="button" onClick="{{ writeNotationAgain }}" data-write-again style="padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">{{ writeAgainLabel }}</button>
+                    <sc-if value="{{ showNotationUndo }}" hint-placeholder-val="{{ false }}">
+                      <button type="button" onClick="{{ undoNotation }}" data-notation-undo style="padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 13px; cursor: pointer;">{{ undoNotationLabel }}</button>
+                    </sc-if>
+                  </div>
+                  <p style="margin: 0; font-size: 12px; line-height: 1.45; color: var(--ink3);">{{ writeAgainHint }}</p>
+                  <sc-if value="{{ hasNotationStatus }}" hint-placeholder-val="{{ false }}">
+                    <p data-notation-status style="margin: 0; font-size: 12px; line-height: 1.45; color: var(--ink2);">{{ notationStatus }}</p>
+                  </sc-if>
+                </sc-if>
+              </div>
+            </sc-if>
             <sc-if value="{{ showRhythmLock }}" hint-placeholder-val="{{ false }}">
               <div data-rhythm-lock="1" style="margin-top: 18px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); display: flex; flex-direction: column; gap: 10px;">
                 <div style="font-size: 13px; font-weight: 600;">{{ lockTitle }}</div>
                 <p style="margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--ink2);">{{ lockHint }}</p>
+                <sc-if value="{{ showLockV2Note }}" hint-placeholder-val="{{ false }}">
+                  <p data-lock-v2-note style="margin: 0; font-size: 12px; line-height: 1.45; color: var(--ink3);">{{ lockV2Note }}</p>
+                </sc-if>
                 <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
                   <label style="font-size: 12px; color: var(--ink3);">{{ lockMetreLabel }}
                     <select value="{{ lockMetre }}" onChange="{{ setLockMetre }}" data-lock-metre style="display: block; margin-top: 5px; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px;">
@@ -2401,7 +2427,7 @@
                 <button onClick="{{ reviewPrev }}" style="margin-left: auto; padding: 6px 11px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 12px; cursor: pointer;">←</button>
                 <button onClick="{{ reviewNext }}" style="padding: 6px 11px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 12px; cursor: pointer;">→</button>
               </div>
-              <div style="padding: 14px 16px; overflow-x: auto;">{{ reviewStaff }}</div>
+              <div data-review-score style="padding: 14px 16px; overflow-x: auto;">{{ reviewStaff }}</div>
               <div style="padding: 0 16px 12px;">
                 <div style="display: flex; gap: 2px;">
                   <sc-for list="{{ reviewCells }}" as="rc" hint-placeholder-count="16">
@@ -2409,6 +2435,9 @@
                   </sc-for>
                 </div>
                 <div style="font-size: 11.5px; color: var(--ink3); margin-top: 8px;">Red measures are the ones PPP is unsure about — click any measure to look at it.</div>
+                <sc-if value="{{ showUncertainLegend }}" hint-placeholder-val="{{ false }}">
+                  <div data-uncertain-legend style="display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--ink3); margin-top: 6px;"><span style="width: 12px; height: 12px; border-radius: 3px; background: var(--warn); flex: none;"></span><span>{{ uncertainLegend }}</span></div>
+                </sc-if>
               </div>
               <div style="padding: 0 16px 16px; display: flex; flex-direction: column; gap: 6px;">
                 <sc-if value="{{ hasReviewIssues }}" hint-placeholder-val="{{ true }}">
@@ -4790,6 +4819,171 @@ async function arrangeSingleNote(builtGraph, plan) {
   } catch (e) {
     return { ok: false, reason: 'SINGLE_CRASH', message: e && e.message };
   }
+}
+
+/* ============================ G10a-4: the recording conversion v2 (PPP.recording) ============================
+   docs/GOALS/G10_AUDIO_TO_SCORE.md sections 6 and 10. PPP.recording = 'legacy' (default) | 'v2'; any other value is 'legacy' (the convention of PPP.arranger and
+   PPP.fingering). 'legacy' is the conversion the app has always made: the page asks for nothing of v2 and the four recording call sites pass the options they always passed.
+   'v2' hands the heard notes to audio-score.js with recording: 'v2' (the staged conversion of rec/: time skeleton, grid per beat, hands, voices, rests, writer, key, pedal).
+   The choice is remembered on this device (localStorage 'ppp.recording.v1'; the key is absent while it is 'legacy'); ?recording=v2 (or any other value) in the address is used for
+   that visit and is not remembered. The chip on the "Add sheet music" screen and on the recognition review screen sets it.
+   v2's scripts (13 files: the stages, rec/app.js) and weights (4 JSON files, 64 KB) are fetched only when v2 is selected and a screen that converts a recording opens, or by the first conversion if that comes sooner,
+   once each, in the order rec/index.js's header gives (the weights as window globals BEFORE the modules that read them when they load). A failed file is asked for again next time; a
+   conversion made while they are missing is the legacy one, said so on the review screen (never a blank page). Only a song written by v2 is marked: source.recordingPipeline 'v2',
+   transcriptionVersion 8 (TRANSCRIPTION_VERSION stays 7 for every other song, so no saved song is touched). */
+const RECORDING_KEY = 'ppp.recording.v1';
+const TRANSCRIPTION_VERSION_V2 = 8;
+const RECORDING_WEIGHTS = [
+  ['PPPRecWeights', 'rec/weights/ai5a-v1.json'], ['PPPRecHandsWeights', 'rec/weights/hands-v1.json'],
+  ['PPPRecGridModel', 'rec/weights/ai5b-grid-v1.json'], ['PPPRecRestsModel', 'rec/weights/ai5b-rests-v1.json']
+];
+const RECORDING_SCRIPTS = [
+  'rec/attacks.js', 'rec/beats.js', 'rec/model.js', 'rec/metre.js', 'rec/hands.js', 'rec/index.js',
+  'rec/grid.js', 'rec/voices.js', 'rec/rests.js', 'rec/writer.js', 'rec/key.js', 'rec/pedal.js', 'rec/app.js'
+];
+const REC_APP_SCRIPT = 'rec/app.js';
+const REC_FILE_V = 1; /* the ?v= of every rec/ file: bump it when one changes */
+function coerceRecordingMode(v) { return v === 'v2' ? 'v2' : 'legacy'; }
+let RECORDING_MODE = (() => {
+  let m = 'legacy';
+  try { m = coerceRecordingMode(localStorage.getItem(RECORDING_KEY)); } catch (e) { /* no storage: the default */ }
+  try { const u = new URLSearchParams(location.search).get('recording'); if (u != null) m = coerceRecordingMode(u); } catch (e) { /* no address to read */ }
+  return m;
+})();
+function setRecordingMode(v) {
+  RECORDING_MODE = coerceRecordingMode(v);
+  try { if (RECORDING_MODE === 'v2') localStorage.setItem(RECORDING_KEY, 'v2'); else localStorage.removeItem(RECORDING_KEY); } catch (e) { /* not remembered */ }
+  return RECORDING_MODE;
+}
+const _recLoaded = new Set();
+const _recGlobals = new Set();
+let _recPromise = null, _recAppPromise = null;
+let RECORDING_LOAD_ERROR = null;
+/* v2 can run: every file is in and the weights are the page's globals */
+function recordingModulesReady() {
+  return RECORDING_SCRIPTS.every(s => _recLoaded.has(s)) && RECORDING_WEIGHTS.every(w => _recGlobals.has(w[0]))
+    && typeof window !== 'undefined' && !!(window.PPPRec && window.PPPRec.skeleton && window.PPPRecGrid && window.PPPRecWriter && window.PPPRecRests && window.PPPRecVoices && window.PPPRecKey && window.PPPRecPedal && window.PPPRecApp);
+}
+/* what each script leaves on the page when it has run: a file the server answered 200 with something that is not that script (an error page, a half file) fires `load` like the real one,
+   so a script counts as loaded only when its own global is there */
+const RECORDING_SCRIPT_GLOBALS = {
+  'rec/attacks.js': ['PPPRecModules', 'attacks'], 'rec/beats.js': ['PPPRecModules', 'beats'], 'rec/model.js': ['PPPRecModules', 'model'], 'rec/metre.js': ['PPPRecModules', 'metre'],
+  'rec/hands.js': ['PPPRecModules', 'hands'], 'rec/index.js': ['PPPRec'], 'rec/grid.js': ['PPPRecGrid'], 'rec/voices.js': ['PPPRecVoices'], 'rec/rests.js': ['PPPRecRests'],
+  'rec/writer.js': ['PPPRecWriter'], 'rec/key.js': ['PPPRecKey'], 'rec/pedal.js': ['PPPRecPedal'], 'rec/app.js': ['PPPRecApp']
+};
+/* the scripts whose factory takes another script's export when it loads (rec/index.js's header: the stages' own order). One of those files asked for again brings these with it: they
+   hold what was missing (nothing) when they ran. The others read nothing at load and are alone. */
+const RECORDING_SCRIPT_NEEDS = {
+  'rec/model.js': ['rec/attacks.js', 'rec/beats.js'], 'rec/metre.js': ['rec/model.js', 'rec/beats.js'],
+  'rec/index.js': ['rec/attacks.js', 'rec/beats.js', 'rec/model.js', 'rec/metre.js', 'rec/hands.js']
+};
+function recScriptGlobalPresent(src) {
+  const g = RECORDING_SCRIPT_GLOBALS[src];
+  if (!g || typeof window === 'undefined') return true;
+  let o = window;
+  for (let k = 0; k < g.length && o; k++) o = o[g[k]];
+  return !!o;
+}
+function forgetRecScript(src) {
+  _recLoaded.delete(src);
+  const g = RECORDING_SCRIPT_GLOBALS[src];
+  if (g && typeof window !== 'undefined') { try { if (g.length === 2) { if (window[g[0]]) delete window[g[0]][g[1]]; } else delete window[g[0]]; } catch (e) { /* the global stays */ } }
+}
+function recScriptTag(src) {
+  return new Promise(resolve => {
+    const el = document.createElement('script');
+    el.src = './' + src + '?v=' + REC_FILE_V;
+    el.async = false;
+    el.onload = () => { const ok = recScriptGlobalPresent(src); if (ok) _recLoaded.add(src); else _recLoaded.delete(src); resolve(ok); };
+    el.onerror = () => { _recLoaded.delete(src); resolve(false); };
+    document.head.appendChild(el);
+  });
+}
+/* the scripts to ask for now: the ones not loaded, and the loaded ones that took an export of one of those (in list order) */
+function recordingScriptsToLoad() {
+  const need = new Set(RECORDING_SCRIPTS.filter(s => !_recLoaded.has(s)));
+  for (let grew = true; grew;) {
+    grew = false;
+    RECORDING_SCRIPTS.forEach(s => { if (!need.has(s) && (RECORDING_SCRIPT_NEEDS[s] || []).some(d => need.has(d))) { need.add(s); grew = true; } });
+  }
+  return RECORDING_SCRIPTS.filter(s => need.has(s));
+}
+/* Resolves true when v2 is ready, false when a file could not be loaded (RECORDING_LOAD_ERROR names it). Never rejects. A download in flight is shared; what has loaded is not asked for again,
+   and nor is it run again: a file that failed is asked for alone (with the few that read its export when they loaded, recordingScriptsToLoad). */
+function loadRecordingModules() {
+  if (recordingModulesReady()) return Promise.resolve(true);
+  if (_recPromise) return _recPromise;
+  _recPromise = (async () => {
+    RECORDING_LOAD_ERROR = null;
+    try {
+      /* the weights are asked for together, then set as the globals the modules read when they load (grid.js and rests.js at load, the others when they run) */
+      const todoW = RECORDING_WEIGHTS.filter(w => !_recGlobals.has(w[0]));
+      const got = await Promise.all(todoW.map(w => (typeof fetch === 'function'
+        ? fetch('./' + w[1] + '?v=' + REC_FILE_V).then(r => (r.ok ? r.json() : null)).catch(() => null) : Promise.resolve(null))));
+      const bad = todoW.find((w, i) => !got[i]);
+      if (bad) { RECORDING_LOAD_ERROR = bad[1]; return false; }
+      todoW.forEach((w, i) => { window[w[0]] = got[i]; _recGlobals.add(w[0]); });
+      if (_recAppPromise) await _recAppPromise; /* rec/app.js alone may be on its way (loadRecApp): not asked for twice */
+      /* requested at once, executed in list order (async = false) */
+      const todo = recordingScriptsToLoad();
+      todo.forEach(forgetRecScript);
+      const results = await Promise.all(todo.map(recScriptTag));
+      const badS = todo.find((s, i) => !results[i]);
+      if (badS) { RECORDING_LOAD_ERROR = badS; return false; }
+      return recordingModulesReady();
+    } catch (e) { RECORDING_LOAD_ERROR = String(e && e.message || e); return false; }
+  })().then(ok => { _recPromise = null; return ok; });
+  return _recPromise;
+}
+/* rec/app.js alone: the heard notes of a kept graph (for "Write the notation again" on a song opened from My Songs), the flags. It needs none of the stages, so a song written the classic way
+   can be written again the classic way without v2's stages or weights. */
+function loadRecApp() {
+  if (typeof window !== 'undefined' && window.PPPRecApp) return Promise.resolve(true);
+  if (_recAppPromise) return _recAppPromise;
+  _recAppPromise = recScriptTag(REC_APP_SCRIPT).then(ok => { _recAppPromise = null; return ok && !!window.PPPRecApp; });
+  return _recAppPromise;
+}
+/* is a v2 conversion's result believable (rec/app.js plausible: the tempo in the rhythm controls' range, the written length about the heard length)? A page without rec/app.js, or a check that
+   throws, does not judge: the result stands. */
+function v2Plausible(built, heard) {
+  try { const A = typeof window !== 'undefined' ? window.PPPRecApp : null; return !A || typeof A.plausible !== 'function' || A.plausible(built, heard).ok; } catch (e) { return true; }
+}
+/* what a conversion's graph says wrote it: only a graph the staged conversion actually made (audio-score.js returns recReport for it) is marked v2 */
+function writtenByV2(built) { return !!(built && built.recReport); }
+/* G10a-4, the one-note arranger's refusal of a v2 transcription (the review of #161, docs/GOALS/G10 section 25.4): on the teacher's piece S4's hands (rec/hands.js) made every candidate fail two gates
+   of candidates/index.js - a right-hand velocity violation (inner notes handed to the right hand just before a leap) and then the relaxed plan's hand-crossing limit (S4 crossed 1.8-2.4% of the moments,
+   the limit is 1%, assignHands' hands 0.17%) - while the same conversion with the classic hands (audio-score.js opts.hands 'legacy': the same skeleton, grid, rests and writer) was arranged at every level.
+   So a refusal with exactly that code, of a graph the staged conversion wrote, is tried ONCE more on the conversion of the same heard notes with the classic hands. The saved song is not touched (its
+   Score and graph stay what they are); only the copy comes from the other graph, and its source says so (arrangement.handsFallback). Anything else - another code, a graph the classic conversion wrote,
+   notes that are not kept, a second refusal - is the refusal the person sees today. */
+const SINGLE_HANDS_FALLBACK_CODE = 'ALL_CANDIDATES_HAVE_HARD_VIOLATIONS';
+/* a graph the staged conversion v2 wrote: its provenance names the pipeline (audio-score.js; scoregraph/rec-tuplet.js isV2Recording reads the same). An arrangement made from one carries no such source. */
+function graphFromV2Recording(g) {
+  return !!(g && g.provenance && (g.provenance.sources || []).some(x => x && x.kind === 'audio-score' && x.params && x.params.recording && x.params.recording.pipeline === 'v2'));
+}
+/* arrangeSingleNote, and (see above) one more try for a v2 transcription it refused for hard violations. Never throws; resolves what arrangeSingleNote does, with handsFallback: 'legacy' on a result made by the retry. */
+async function arrangeSingleNoteWithHandsFallback(graph, plan, title) {
+  const first = await arrangeSingleNote(graph, plan);
+  if (first.ok || first.reason !== SINGLE_HANDS_FALLBACK_CODE || !graphFromV2Recording(graph)) return first;
+  try {
+    if (!(await loadRecordingModules())) return first;
+    const heard = window.PPPRecApp.heardFromGraph(graph);
+    if (!heard || !window.PPPAudioScore) return first;
+    const built = window.PPPAudioScore.toMusicXml({ notes: heard.notes, pedals: heard.pedals },
+      { title: title, closeGaps: true, exactBars: true, recording: 'v2', hands: 'legacy' });
+    if (!writtenByV2(built) || !built.graph) return first;
+    const second = await arrangeSingleNote(built.graph, plan);
+    return second.ok ? Object.assign({}, second, { handsFallback: 'legacy' }) : first;
+  } catch (e) { return first; }
+}
+/* the song's source after a conversion: v2 writes recordingPipeline and version 8; anything else drops a v2 mark that a previous conversion left and is otherwise as it was */
+function applyRecordingMark(source, built) {
+  if (writtenByV2(built)) { source.recordingPipeline = 'v2'; source.transcriptionVersion = TRANSCRIPTION_VERSION_V2; }
+  else if (source.recordingPipeline) {
+    delete source.recordingPipeline;
+    if (source.transcriptionVersion === TRANSCRIPTION_VERSION_V2) source.transcriptionVersion = TRANSCRIPTION_VERSION;
+  }
+  return source;
 }
 
 async function importToGraph(bytes, name, kind) {
@@ -7588,12 +7782,20 @@ const Import = {
     }
     stage('notate', {});
     let built;
+    /* G10a-4: PPP.recording 'v2' writes the notation with the staged conversion (faithful transcription only: a full song in arrangement mode is not piano). Its files are fetched
+       before this runs (readyRecording); a page that could not get them writes the classic way and says so (recordingNotes). */
+    const wantV2 = RECORDING_MODE === 'v2' && what.mode !== 'arrange';
+    const useV2 = wantV2 && recordingModulesReady();
+    let rejectedV2 = false;
+    const convert = v2 => window.PPPAudioScore.toMusicXml({
+      notes: heard.notes, pedals: heard.pedals,
+      beats: heard.beats, downbeats: heard.downbeats,
+      grid: heard.grid, title: title
+    }, Object.assign({ title: title, easy: what.mode === 'arrange', closeGaps: true, exactBars: true }, v2 ? { recording: 'v2' } : {}));
     try {
-      built = window.PPPAudioScore.toMusicXml({
-        notes: heard.notes, pedals: heard.pedals,
-        beats: heard.beats, downbeats: heard.downbeats,
-        grid: heard.grid, title: title
-      }, { title: title, easy: what.mode === 'arrange', closeGaps: true, exactBars: true });
+      built = convert(useV2);
+      /* a v2 result the page cannot believe (a tempo outside what the rhythm controls accept, bars far off the length of the heard notes) is not kept: the classic conversion writes this score and the review screen says so */
+      if (useV2 && writtenByV2(built) && !v2Plausible(built, heard)) { built = convert(false); rejectedV2 = true; }
     } catch (e) {
       throw importError(e.code || 'no-notes',
         e.code === 'no-notes' ? tx('No piano notes were heard in this recording.') : e.message,
@@ -7609,6 +7811,7 @@ const Import = {
     score.composer = '';
     stage('check', {});
     const report = Import.validateTranscription(score, built.stats, heard);
+    if (wantV2) Import.recordingNotes(report, built, score, heard, rejectedV2 ? 'implausible' : useV2 ? 'unreadable' : 'not-loaded');
     const engineLabel = what.mode === 'arrange' ? 'Broad audio model + playable piano reduction'
       : heard.engine === 'ensemble' ? 'Piano ensemble (' + (((heard.ensemble || {}).models || []).join(' + ') || 'multiple models') + ')'
       : heard.engine === 'transkun' ? 'Transkun'
@@ -7636,12 +7839,54 @@ const Import = {
       amtModels: heard.ensemble && heard.ensemble.models ? heard.ensemble.models : null,
       uncertainNotes: heard.ensemble ? heard.ensemble.uncertain : null
     };
+    applyRecordingMark(source, built);
     score.source = source;
     return {
       score: score, source: source, report: report, musicxml: built.xml,
       recording: { url: got.audioUrl, barStarts: built.stats.barStarts },
       heard: heard
     };
+  },
+  /* G10a-4: what the staged conversion adds to the transcription report. A page that asked for v2 and got the classic conversion says so on the review screen (an issue line, not
+     hidden); a v2 conversion lists the bars it was not sure about (rec/app.js flags: report.uncertainMeasures, uncertainWhy) and says so when it was not sure of the metre.
+     why: why the classic conversion ran when v2 was asked for ('not-loaded': its files; 'unreadable': rec/ could not read this performance; 'implausible': it gave a tempo or a length the page does not believe,
+     v2Plausible), used only when built is not v2's. */
+  recordingNotes(report, built, score, heard, why) {
+    if (!report) return report;
+    if (!writtenByV2(built)) {
+      report.issues = (report.issues || []).concat([{ measure: null, kind: 'recording-v2',
+        message: why === 'not-loaded'
+          ? tx('The new transcription method could not be loaded, so the classic method wrote this score.')
+          : why === 'implausible'
+            ? tx('The new transcription method gave an unlikely tempo or length for this recording, so the classic method wrote this score.')
+            : tx('The new transcription method could not be used for this recording, so the classic method wrote this score.') }]);
+      return report;
+    }
+    const A = typeof window !== 'undefined' ? window.PPPRecApp : null;
+    if (!A) return report;
+    let f = null;
+    try { f = A.flags({ built: built, score: score, heard: heard, handsLib: window.PPPRec && window.PPPRec.hands }); } catch (e) { f = null; }
+    if (!f) return report;
+    report.uncertainMeasures = f.measures;
+    report.uncertainWhy = f.why;
+    if (f.piece) report.uncertainPiece = f.piece;   /* said on the review screen from this (reviewIssueList): the issue list is not saved, the flags are */
+    return report;
+  },
+  /* what a person would count to compare two notations of the same song */
+  notationFacts(score) {
+    const notes = (score && score.notes) || [];
+    return { measures: Score.count(score), rests: notes.filter(n => n.rest).length, brackets: notes.filter(n => n.tupletStart).length };
+  },
+  /* a report that no longer describes a v2 conversion (a copy was written another way): what recordingNotes added goes. A no-op for a report that has none of it. */
+  dropRecordingNotes(report) {
+    if (!report) return report;
+    delete report.uncertainMeasures; delete report.uncertainWhy; delete report.uncertainPiece;
+    if (report.issues) report.issues = report.issues.filter(i => !(i && i.kind === 'recording-v2'));
+    return report;
+  },
+  /* v2's files, asked for before the notes are written (a no-op for the classic conversion) */
+  async readyRecording(what) {
+    if (RECORDING_MODE === 'v2' && what.mode !== 'arrange') await loadRecordingModules();
   },
 
   async fromRecording(what, onStage, ctl) {
@@ -7656,6 +7901,7 @@ const Import = {
        The old listen-first order allowed four approximate model notes to
        bypass an exact catalog match. Search by the YouTube title / filename
        before spending time on transcription. */
+    if (RECORDING_MODE === 'v2' && what.mode !== 'arrange') loadRecordingModules(); /* G10a-4: asked for now, while the person waits for the transcription */
     stage('search', {});
     let query = nameGuess;
     if (what.url) {
@@ -7740,8 +7986,10 @@ const Import = {
       try {
         const got = await Import.transcribe(what, onStage, ctl);
         const heard = got && got.heard;
-        if (heard && ((heard.engine === 'catalog' && heard.xml) || (heard.notes || []).length >= 4))
+        if (heard && ((heard.engine === 'catalog' && heard.xml) || (heard.notes || []).length >= 4)) {
+          await Import.readyRecording(what);
           return Import.finishHeard(got, what, onStage);
+        }
       } catch (e) { helperErr = e; }
     }
 
@@ -7749,8 +7997,10 @@ const Import = {
     try {
       generated = await Import.transcribeHere(what, onStage, ctl);
     } catch (e) { genErr = e; }
-    if (generated && generated.heard && (generated.heard.notes || []).length >= 4)
+    if (generated && generated.heard && (generated.heard.notes || []).length >= 4) {
+      await Import.readyRecording(what);
       return Import.finishHeard(generated, what, onStage);
+    }
 
     throw genErr || helperErr || importError('no-score',
       tx('PPP could not hear piano notes in that recording.'),
@@ -9598,6 +9848,10 @@ window.PPP = {
   /* G08b §11: 'single' (default since G9e default-on: one note per hand) | 'legacy' | 'g8'. Any other value is 'legacy' (G4-F2-1's convention). */
   get arranger() { return ARRANGER_MODE; },
   set arranger(v) { ARRANGER_MODE = v === 'g8' ? 'g8' : v === 'single' ? 'single' : 'legacy'; },
+  /* G10a-4: 'legacy' (default) | 'v2' (the staged recording conversion, docs/GOALS/G10 section 6). Any other value is 'legacy'; the choice is remembered on this device. */
+  get recording() { return RECORDING_MODE; },
+  set recording(v) { setRecordingMode(v); },
+  loadRecordingModules, recordingModulesReady, TRANSCRIPTION_VERSION_V2, RECORDING_SCRIPTS, RECORDING_WEIGHTS,
   pitchToMidi, midiToFreq, keyName,
   PIANO, PianoSamples, PianoScore, PianoPlayer,
   PianoVisual: {
@@ -11805,6 +12059,7 @@ class Component extends DCLogic {
       /* what others have shared changes while you are away from it */
       if (this.state.screen === 'shared') this.loadShared(!!this.state.sharedList);
       if (this.state.screen === 'review') this.warmSingleModules();
+      if (this.state.screen === 'upload' || this.state.screen === 'review') this.warmRecordingModules();
     }
     /* signing in or out changes which shared scores are yours */
     const uid = this.state.user ? this.state.user.id : null;
@@ -11886,11 +12141,11 @@ class Component extends DCLogic {
           /* Enough to know where a score came from and how well it was read.
              The PDF or photograph itself is never stored. */
           importSource: S.importSource,
-          importReport: S.importReport ? {
+          importReport: S.importReport ? Object.assign({
             confidence: S.importReport.confidence, level: S.importReport.level,
             suspectMeasures: S.importReport.suspectMeasures, summary: S.importReport.summary,
             advice: S.importReport.advice
-          } : null
+          }, S.importReport.uncertainMeasures ? { uncertainMeasures: S.importReport.uncertainMeasures, uncertainWhy: S.importReport.uncertainWhy || {}, uncertainPiece: S.importReport.uncertainPiece || null } : {}) : null
         };
         /* The score itself lives once in its song slot. The old duplicate here
            doubled storage use and made large transcriptions disappear after a
@@ -12636,6 +12891,16 @@ class Component extends DCLogic {
     if (ARRANGER_MODE !== 'single') return;
     loadSingleModules();
     loadArrangerReference();
+  }
+  /* the issue lines of the review screen: the report's own, and (G10a-4) the metre the new method was not sure of, from the flags the report keeps */
+  reviewIssueList(S) {
+    const rep = S.importReport, list = (rep && rep.issues) || [], p = rep && rep.uncertainPiece;
+    return p ? list.concat([{ measure: null, kind: 'recording-metre',
+      message: tx('PPP read this piece as {{metre}} but was not sure of it ({{pct}}%); the bar lines may be in the wrong place.', { metre: p.metre, pct: Math.round(p.posterior * 100) }) }]) : list;
+  }
+  /* G10a-4: v2's scripts and weights (about 250 KB, 17 requests), fetched ahead of the first conversion when a screen that converts a recording opens. A no-op while the classic method is set. */
+  warmRecordingModules() {
+    if (RECORDING_MODE === 'v2') loadRecordingModules();
   }
   warmMidiIfAllowed() {
     const m = this.midiLayer();
@@ -14020,6 +14285,9 @@ class Component extends DCLogic {
         importReport: r.report, importSource: r.source, analysisPct: 100,
         fileName: yt ? r.score.title : st.fileName
       }));
+      this._v2Lock = r.source && r.source.recordingPipeline === 'v2'
+        ? { metre: m0.time.beats + '/' + m0.time.beatType, bpm: (r.source && r.source.tempo) || r.score.tempo || 80, downbeat: (r.recording && r.recording.barStarts && r.recording.barStarts[0]) || 0 } : null;
+      this._notationBefore = null;
       this.adoptScore(r.score);
       const checked = !!(r.pageImages || r.recording);
       this.enterSong(r.score, r.source, checked, file);
@@ -14096,6 +14364,124 @@ class Component extends DCLogic {
       }, 60);
     }
   }
+  /* G10a-4: does a rewrite of the open transcription from its heard notes (an arrangement, the standard-arrangement fallback) use the staged conversion? Yes when v2 is selected and loaded, v2 wrote
+     this transcription, and the metre, the tempo and the first bar line in the rhythm controls are still what v2 wrote (they are v2's own decision, which it does not take from a person). Otherwise the person's
+     values are written, the classic way, exactly as before. */
+  recordingRewriteV2(S) {
+    S = S || this.state;
+    if (RECORDING_MODE !== 'v2' || !recordingModulesReady()) return false;
+    const src = S.importSource || {}, L = this._v2Lock;
+    if (src.recordingPipeline !== 'v2' || src.referenceScore || !L) return false;
+    return S.lockMetre === L.metre && +S.lockBpm === +L.bpm && (+S.lockDownbeat || 0) === (+L.downbeat || 0);
+  }
+  /* G10a-4: the heard performance of the open song: the review screen's own notes, or the one its kept graph carries on this device (PPPEngrave.app.resolve; a graph rebuilt from the Score has none).
+     Resolves {notes, pedals, duration, beats?, downbeats?} or null. */
+  async heardForSong() {
+    const S = this.state;
+    if (this._heard && this._heard.notes && this._heard.notes.length) return this._heard;
+    if (!window.PPPEngrave || !S.score || !S.songId || S.songId === 'demo') return null;
+    try {
+      const r = await window.PPPEngrave.app.resolve(S.score, { key: S.songId });
+      if (!r || !r.graph || r.via === 'projected' || r.via === 'none') return null;
+      if (!(await loadRecApp())) return null;
+      const h = window.PPPRecApp.heardFromGraph(r.graph);
+      return h ? Object.assign(h, { duration: Math.max(h.duration, +(S.importSource && S.importSource.seconds) || 0) }) : null;
+    } catch (e) { return null; }
+  }
+  /* G10a-4: "Write the notation again": the conversion of the SAME heard notes with the method that is selected now (PPP.recording), replacing this song's notation; the song, its progress and its title stay.
+     Nothing is rewritten until this is pressed. The notation that was there is kept for Undo (undoNotation) until another song opens. */
+  async writeNotationAgain() {
+    const S0 = this.state;
+    if (S0.recWriteBusy || !S0.score || !window.PPPAudioScore) return;
+    if (S0.importSource && S0.importSource.taskMode === 'piano-arrangement') return; /* no button for it either (showWriteAgain) */
+    this.setState({ recWriteBusy: true });
+    const done = (msg) => { this.setState({ recWriteBusy: false }); if (msg) this.say(msg); };
+    try {
+      const wantV2 = RECORDING_MODE === 'v2';
+      if (wantV2 && !(await loadRecordingModules()))
+        return done(tx('The new transcription method could not be loaded, so nothing was changed.'));
+      if (wantV2) await loadRecApp();
+      const heard = await this.heardForSong();
+      if (!heard) return done(tx('The heard notes of this song are not kept on this device, so its notation cannot be written again.'));
+      const S = this.state;
+      let built;
+      try {
+        built = window.PPPAudioScore.toMusicXml({
+          notes: heard.notes, pedals: heard.pedals, beats: heard.beats, downbeats: heard.downbeats, grid: heard.grid, title: S.score.title
+        }, Object.assign({ title: S.score.title, closeGaps: true, exactBars: true }, wantV2 ? { recording: 'v2' } : {}));
+      } catch (e) { return done((e && e.message) || tx('The rhythm could not be rewritten.')); }
+      if (wantV2 && (!writtenByV2(built) || !v2Plausible(built, heard))) return done(tx('The new transcription method could not read this performance, so nothing was changed.'));
+      let score;
+      try { score = engraveRemember(parseMusicXML(built.xml, S.score.title), built.graph, 'rewrite'); } catch (e) {
+        return done(tx('The notes were heard but could not be turned into a score: {{message}}', { message: e.message }));
+      }
+      score.composer = S.score.composer || '';
+      const report = Import.validateTranscription(score, built.stats, heard);
+      if (wantV2) Import.recordingNotes(report, built, score, heard, 'unreadable');
+      /* the graph of the notation that is being replaced, for Undo: the one its song keeps (live, or the store's), so that putting the notation back puts its graph back too */
+      let oldGraph = null;
+      try { const kept = await window.PPPEngrave.app.resolve(S.score, { key: S.songId }); if (kept && (kept.via === 'live' || kept.via === 'store')) oldGraph = kept.graph; } catch (e) { oldGraph = null; }
+      const before = {
+        score: S.score, graph: oldGraph, source: S.importSource, report: S.importReport, songId: S.songId, barStarts: this._recording ? this._recording.barStarts : null,
+        history: S.history, memory: S.memory, secs: S.secs,
+        /* what adoptScore starts over (the practice progress of the notation that was there) comes back with Undo */
+        mastered: S.mastered, memLevel: S.memLevel, blindRuns: S.blindRuns, tempo: S.tempo, loopFrom: S.loopFrom, loopTo: S.loopTo,
+        v2Lock: this._v2Lock, lockMetre: S.lockMetre, lockBpm: S.lockBpm, lockDownbeat: S.lockDownbeat, lockEasy: S.lockEasy,
+        arrangementLevel: S.arrangementLevel, arrangementStyle: S.arrangementStyle, arrangementStatus: S.arrangementStatus
+      };
+      const source = Object.assign({}, S.importSource || {}, {
+        tempo: built.stats.tempo, barStarts: built.stats.barStarts, beatRepairs: built.stats.beatRepairs || 0,
+        beatSource: built.stats.beatSource, quantizer: built.stats.quantizer, transcriptionVersion: TRANSCRIPTION_VERSION,
+        status: report.level === 'poor' ? 'low-confidence' : 'transcribed', easy: false,
+        arrangement: null, arrangementOriginalNotes: built.stats.originalNotes || built.stats.notes, arrangementNotes: built.stats.notes
+      });
+      applyRecordingMark(source, built);
+      score.source = source;
+      if (this._recording) this._recording.barStarts = built.stats.barStarts;
+      const m0 = score.measures[0] || { time: { beats: 4, beatType: 4 } };
+      const lockDown = (built.stats.barStarts && built.stats.barStarts[0]) || 0;
+      this._v2Lock = writtenByV2(built) ? { metre: m0.time.beats + '/' + m0.time.beatType, bpm: built.stats.tempo, downbeat: lockDown } : null;
+      this._notationBefore = before;
+      this.adoptScore(score);
+      this.setState({
+        importReport: report, importSource: source, lockEasy: false, recWriteBusy: false,
+        lockMetre: m0.time.beats + '/' + m0.time.beatType, lockBpm: built.stats.tempo, lockDownbeat: lockDown,
+        arrangementLevel: 'original', arrangementStyle: 'balanced', arrangementStatus: '',
+        recNotation: { method: writtenByV2(built) ? 'v2' : 'legacy', from: Import.notationFacts(before.score), to: Import.notationFacts(score) },
+        reviewFrom: Score.first(score)
+      }, () => { this.syncLibraryMeasures(score); this.saveNow(); });
+      this.say(writtenByV2(built) ? tx('Wrote the notation again with the new method.') : tx('Wrote the notation again with the classic method.'));
+    } catch (e) {
+      done((e && e.message) || tx('The rhythm could not be rewritten.'));
+    }
+  }
+  /* G10a-4: the song's card on the shelf says how many measures it has: a rewrite (or an Undo) that changes the count changes the card */
+  syncLibraryMeasures(score) {
+    try {
+      const id = this.state.songId || 'demo', lib = this.libraryRead(), entry = lib.songs.find(s => s.id === id), n = Score.count(score);
+      if (entry && entry.measures !== n) { entry.measures = n; this.libraryWrite(lib); }
+      if (this._thumbs) delete this._thumbs[id]; /* and its picture of the first two bars */
+    } catch (e) { /* the card keeps its old count */ }
+  }
+  /* G10a-4: put back the notation that "Write the notation again" replaced (same song, this visit) */
+  undoNotation() {
+    const b = this._notationBefore, S = this.state;
+    if (!b || b.songId !== S.songId) return;
+    this._notationBefore = null;
+    this._v2Lock = b.v2Lock || null;
+    if (this._recording) this._recording.barStarts = b.barStarts;
+    /* the saved graph follows the notation: a graph remembered anew is saved anew (one already saved under this song is not saved twice) */
+    if (b.graph) engraveRemember(b.score, b.graph, 'undo');
+    this.adoptScore(b.score);
+    this.setState({
+      importReport: b.report, importSource: b.source, lockMetre: b.lockMetre, lockBpm: b.lockBpm, lockDownbeat: b.lockDownbeat, lockEasy: b.lockEasy,
+      history: b.history, memory: b.memory, secs: b.secs,
+      mastered: b.mastered, memLevel: b.memLevel, blindRuns: b.blindRuns, tempo: b.tempo, loopFrom: b.loopFrom, loopTo: b.loopTo,
+      arrangementLevel: b.arrangementLevel, arrangementStyle: b.arrangementStyle, arrangementStatus: b.arrangementStatus, recNotation: null,
+      reviewFrom: Score.first(b.score)
+    }, () => { this.syncLibraryMeasures(b.score); this.saveNow(); });
+    this.say(tx('Put back the notation that was there before.'));
+  }
   rewriteRhythm() {
     const heard = this._heard;
     if (!heard || !heard.notes || !window.PPPAudioScore) return;
@@ -14136,6 +14522,8 @@ class Component extends DCLogic {
       transcriptionVersion: TRANSCRIPTION_VERSION,
       status: report.level === 'poor' ? 'low-confidence' : 'transcribed'
     });
+    applyRecordingMark(source, built); /* G10a-4: a stated metre is written by the classic conversion, so a v2 mark is dropped */
+    this._v2Lock = null;
     score.source = source;
     if (this._recording) this._recording.barStarts = built.stats.barStarts;
     this.adoptScore(score);
@@ -14181,7 +14569,8 @@ class Component extends DCLogic {
       built = A.toMusicXml({
         notes: heard.notes, pedals: heard.pedals,
         beats: heard.beats, downbeats: heard.downbeats
-      }, { title: S.score.title, lock: lock, closeGaps: true, exactBars: true });
+      }, this.recordingRewriteV2(S) ? { title: S.score.title, closeGaps: true, exactBars: true, recording: 'v2' } /* G10a-4: the same conversion that wrote this song */
+        : { title: S.score.title, lock: lock, closeGaps: true, exactBars: true });
       if (singleRoute(plan)) {
         /* G9e-lite: one note per hand, from the same unarranged built.graph. A refusal is NOT a silent legacy result: the
            standard arrangement below is then shown with a notice that stays on screen, and the result is marked in its source. */
@@ -14258,12 +14647,14 @@ class Component extends DCLogic {
       arrangementOriginalNotes: built.stats.notes,
       arrangementNotes: arranged.notes.filter(n => !n.rest).length
     });
+    applyRecordingMark(source, built); /* G10a-4: what wrote the notation this copy was made from */
     arranged.source = source;
     if (this._recording) this._recording.barStarts = built.stats.barStarts;
     const report = Object.assign({}, S.importReport || {}, {
       measures: Score.count(arranged), notes: source.arrangementNotes,
       staves: arranged.staves, tempo: arranged.tempo
     });
+    if (!writtenByV2(built)) Import.dropRecordingNotes(report);
     this.adoptScore(arranged);
     this.setState({
       importReport: report, importSource: source,
@@ -14433,11 +14824,13 @@ class Component extends DCLogic {
     const arrangement = extra.arrangement || (extra.easy ? { level: 'beginner', style: 'balanced' }
       : (S.importSource && S.importSource.arrangement) || null);
     let built;
+    const v2 = this.recordingRewriteV2(S); /* G10a-4: the conversion that wrote this song, when the rhythm controls are still what it wrote */
     try {
       built = window.PPPAudioScore.toMusicXml({
         notes: heard.notes, pedals: heard.pedals,
         beats: heard.beats, downbeats: heard.downbeats
-      }, { title: S.score.title, lock: lock, arrangement: arrangement, closeGaps: true, exactBars: true });
+      }, v2 ? { title: S.score.title, arrangement: arrangement, closeGaps: true, exactBars: true, recording: 'v2' }
+        : { title: S.score.title, lock: lock, arrangement: arrangement, closeGaps: true, exactBars: true });
     } catch (e) {
       this.say((e && e.message) || tx('The rhythm could not be rewritten.'));
       return;
@@ -14449,6 +14842,7 @@ class Component extends DCLogic {
     }
     score.composer = S.score.composer || '';
     const report = Import.validateTranscription(score, built.stats, heard);
+    if (v2) Import.recordingNotes(report, built, score, heard, 'unreadable');
     const source = Object.assign({}, S.importSource || {}, {
       tempo: built.stats.tempo, barStarts: built.stats.barStarts,
       beatRepairs: built.stats.beatRepairs || 0,
@@ -14460,6 +14854,8 @@ class Component extends DCLogic {
       arrangementOriginalNotes: built.stats.originalNotes || built.stats.notes,
       arrangementNotes: built.stats.notes
     });
+    applyRecordingMark(source, built);
+    if (!v2) this._v2Lock = null;
     score.source = source;
     if (this._recording) this._recording.barStarts = built.stats.barStarts;
     this.adoptScore(score);
@@ -14616,11 +15012,11 @@ class Component extends DCLogic {
       loopFrom: S.loopFrom, loopTo: S.loopTo, tempo: S.tempo,
       memLevel: S.memLevel, blindRuns: S.blindRuns, mastered: S.mastered,
       fileName: S.fileName, fileMeta: S.fileMeta, importSource: S.importSource,
-      importReport: rep ? {
+      importReport: rep ? Object.assign({
         confidence: rep.confidence, level: rep.level, suspectMeasures: rep.suspectMeasures,
         summary: rep.summary, advice: rep.advice, confidenceKind: rep.confidenceKind,
         modelAgreement: rep.modelAgreement, modelCount: rep.modelCount
-      } : null
+      }, rep.uncertainMeasures ? { uncertainMeasures: rep.uncertainMeasures, uncertainWhy: rep.uncertainWhy || {}, uncertainPiece: rep.uncertainPiece || null } : {}) : null
     };
     try { localStorage.setItem(SONG_KEY + id, JSON.stringify(slot)); }
     catch (e) { this.storageFull(); return false; }
@@ -14922,7 +15318,7 @@ class Component extends DCLogic {
       let sn = { ok: false, reason: 'NO_GRAPH' };
       try {
         const src = window.PPPEngrave ? await window.PPPEngrave.app.resolve(sourceScore, { key: d.songId }) : null;
-        if (src && src.graph) sn = await arrangeSingleNote(src.graph, plan);
+        if (src && src.graph) sn = await arrangeSingleNoteWithHandsFallback(src.graph, plan, sourceScore.title);
       } catch (e) { sn = { ok: false, reason: 'SINGLE_CRASH', message: e && e.message }; }
       if (!sn.ok) {
         /* G9e refusals: nothing is saved. The window stays open with the notice (which does not go away by itself) and the choice; the standard arrangement is saved only on its click */
@@ -14935,7 +15331,7 @@ class Component extends DCLogic {
         /* legacy-score.js takes the title of the graph's own meta over the name it is given: the copy is named what the person typed */
         arranged.title = title;
         engraveRemember(arranged, sn.graph, 'g9-single');
-        arranged.source = { arrangement: Object.assign({ engine: 'ppp.g9-single', level: plan.level, style: plan.style, source: plan.source || 'local' }, levelNote ? { levelNote: levelNote } : {}, rescued ? { rescued: rescued.length } : {}) };
+        arranged.source = { arrangement: Object.assign({ engine: 'ppp.g9-single', level: plan.level, style: plan.style, source: plan.source || 'local' }, levelNote ? { levelNote: levelNote } : {}, rescued ? { rescued: rescued.length } : {}, sn.handsFallback ? { handsFallback: sn.handsFallback } : {}) };
         usedSingle = true;
       }
     }
@@ -17401,6 +17797,36 @@ class Component extends DCLogic {
         this.setState(st => st.songArrange
           ? { songArrange: Object.assign({}, st.songArrange, { singleRefusal: null }, st.songArrange.autoTitle ? { copyTitle: this.songArrangeAutoTitle(st.songArrange) } : {}) } : {});
       },
+      /* G10a-4: the opt-in for the new transcription method (PPP.recording): on "Add sheet music" and on the recognition review screen; off by default, remembered on this device */
+      recordingV2Label: tx('New transcription method (experimental)'),
+      recordingV2Hint: tx('A newer way of reading the beat, the hands and the rests. Off keeps the classic method.'),
+      recordingV2Pressed: RECORDING_MODE === 'v2' ? 'true' : 'false',
+      recordingV2Style: this.chip(RECORDING_MODE === 'v2') + ';align-self:flex-start;',
+      toggleRecordingV2: () => {
+        setRecordingMode(RECORDING_MODE === 'v2' ? 'legacy' : 'v2');
+        /* turning it on starts the download of its files now, so the next transcription does not wait for them */
+        this.warmRecordingModules();
+        this.setState(st => ({ recordingTick: (st.recordingTick || 0) + 1 }));
+      },
+      showRecordingChoice: !!(S.importSource && inferredAudioNotation(S.importSource) && !S.importSource.referenceScore && S.importSource.kind !== 'arrangement' && S.importSource.kind !== 'built-in'),
+      /* the 'Full song' (playable piano arrangement) import is not a transcription of what was played: writing it again from the heard notes would replace the easy arrangement with the full one */
+      showWriteAgain: !!(S.importSource && S.importSource.taskMode !== 'piano-arrangement'),
+      recordingBadge: S.importSource && S.importSource.recordingPipeline === 'v2' ? tx('This notation was written with the new method.') : tx('This notation was written with the classic method.'),
+      writeAgainLabel: S.recWriteBusy ? tx('Writing…') : tx('Write the notation again'),
+      writeAgainHint: tx('Writes the notation of this song again from the notes PPP heard, with the method chosen above. The bars may change, so practice history for this song starts over.')
+        + (S.importSource && S.importSource.arrangement ? ' ' + tx('An arrangement made from it is taken off.') : ''),
+      writeNotationAgain: () => this.writeNotationAgain(),
+      showNotationUndo: !!(this._notationBefore && this._notationBefore.songId === S.songId),
+      undoNotationLabel: tx('Undo'),
+      undoNotation: () => this.undoNotation(),
+      hasNotationStatus: !!S.recNotation,
+      notationStatus: S.recNotation ? tx(S.recNotation.method === 'v2' ? 'Wrote the notation again with the new method.' : 'Wrote the notation again with the classic method.') + ' '
+        + tx('Before: {{m1}} measures, {{r1}} rests, {{b1}} tuplet brackets. Now: {{m2}} measures, {{r2}} rests, {{b2}} tuplet brackets.',
+          { m1: S.recNotation.from.measures, r1: S.recNotation.from.rests, b1: S.recNotation.from.brackets, m2: S.recNotation.to.measures, r2: S.recNotation.to.rests, b2: S.recNotation.to.brackets }) : '',
+      showLockV2Note: RECORDING_MODE === 'v2',
+      lockV2Note: tx('With the new method on, a metre or tempo you set here is written by the classic method. To let the new method decide again, use "Write the notation again".'),
+      showUncertainLegend: !!((S.importReport && S.importReport.uncertainMeasures) || []).length,
+      uncertainLegend: tx('Measures where PPP was not sure of the hands or the beat ({{n}})', { n: ((S.importReport && S.importReport.uncertainMeasures) || []).length }),
       applyArrangement: () => this.applyArrangement(),
       aiArrangement: () => this.aiArrangement(),
       showReferenceScore: !!this._recording || !!(S.importSource && ['youtube', 'audio', 'video'].indexOf(S.importSource.kind) > -1),
@@ -17501,23 +17927,26 @@ class Component extends DCLogic {
       reviewNext: () => this.setState(st => ({ reviewFrom: Score.step(score, st.reviewFrom, 4) })),
       reviewCells: score.measures.map(mm => {
         const suspect = ((S.importReport && S.importReport.suspectMeasures) || []).indexOf(mm.number) > -1;
+        /* G10a-4: the bars the new method was not sure about (report.uncertainWhy: 'grid' = the beat, 'hands' = which hand), amber; red (needs checking) wins the colour */
+        const why = (S.importReport && S.importReport.uncertainWhy && S.importReport.uncertainWhy[mm.number]) || null;
         const shown = mm.number >= S.reviewFrom && mm.number <= Score.step(score, S.reviewFrom, 3);
+        const reasons = why ? [why.indexOf('grid') > -1 ? tx('PPP was not sure of the beat') : '', why.indexOf('hands') > -1 ? tx('PPP was not sure which hand plays some notes') : ''].filter(Boolean).join(' · ') : '';
         return {
-          title: tx(suspect ? 'Measure {{n}} · needs checking' : 'Measure {{n}}', { n: mm.number }),
+          title: tx(suspect ? 'Measure {{n}} · needs checking' : 'Measure {{n}}', { n: mm.number }) + (reasons ? ' · ' + reasons : ''),
           style: 'flex:1;min-width:3px;height:22px;padding:0;border-radius:4px;cursor:pointer;border:1px solid '
-            + (shown ? 'var(--accent)' : 'transparent') + ';background:' + (suspect ? 'var(--bad)' : 'var(--accent-2)')
-            + ';opacity:' + (shown ? 1 : suspect ? 0.85 : 0.4) + ';',
+            + (shown ? 'var(--accent)' : 'transparent') + ';background:' + (suspect ? 'var(--bad)' : why ? 'var(--warn)' : 'var(--accent-2)')
+            + ';opacity:' + (shown ? 1 : suspect ? 0.85 : why ? 0.8 : 0.4) + ';',
           on: () => this.setState({ reviewFrom: mm.number })
         };
       }),
-      reviewIssues: ((S.importReport && S.importReport.issues) || []).slice(0, 8).map(i => ({
+      reviewIssues: this.reviewIssueList(S).slice(0, 8).map(i => ({
         message: i.message,
         style: 'display:flex;align-items:flex-start;gap:10px;padding:9px 11px;border-radius:11px;background:var(--bg);border:1px solid var(--line);font-size:12.5px;line-height:1.5;color:var(--ink2);',
         dotStyle: 'width:7px;height:7px;border-radius:999px;flex:none;margin-top:6px;background:'
           + (i.kind === 'page' || i.kind === 'empty' ? 'var(--bad)' : 'var(--warn)') + ';'
       })),
-      hasReviewIssues: !!((S.importReport && S.importReport.issues || []).length),
-      noReviewIssues: !((S.importReport && S.importReport.issues || []).length),
+      hasReviewIssues: !!this.reviewIssueList(S).length,
+      noReviewIssues: !this.reviewIssueList(S).length,
 
       analyzeSummary: failed ? S.parseError
         : added

@@ -172,7 +172,8 @@ test('every producer keeps the graph it made the Score from (G04 §8.2 live)', (
   assert.match(slice('async function scoreFromFile(file)', '\n}\n'), /return engraveRemember\(Score\.finalize\(PPPScoreGraph\.legacy\.toScore\(got\.graph/);
   assert.match(slice("if (kind === 'musicxml' || kind === 'mxl' || kind === 'midi')", 'PDF / photo'), /const score = engraveRemember\(Score\.finalize\(PPPScoreGraph\.legacy\.toScore\(got\.graph[^\n]*'import:' \+ kind\)/);
   assert.match(html, /engraveRemember\(parseMusicXML\(built\.xml, title\), built\.graph, 'recording'\)/);
-  assert.equal((html.match(/engraveRemember\(parseMusicXML\(built\.xml, S\.score\.title\), built\.graph, 'rewrite'\)/g) || []).length, 2);
+  /* the rhythm rewrite, the heard-notes rewrite, and G10a-4's "Write the notation again" */
+  assert.equal((html.match(/engraveRemember\(parseMusicXML\(built\.xml, S\.score\.title\), built\.graph, 'rewrite'\)/g) || []).length, 3);
   assert.match(html, /engraveRememberXml\(parseMusicXML\(heard\.xml, heard\.title \|\| title\), heard\.xml, 'catalog-match'\)/);
   assert.match(html, /scoreXml = mergedXml;[\s\S]{0,4000}engraveRememberXml\(score, scoreXml, 'omr'\)/);
   /* the helpers never throw into an import or a save */

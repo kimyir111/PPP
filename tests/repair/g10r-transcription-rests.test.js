@@ -182,9 +182,12 @@ test('a 32nd or 64th rest at the end of a measure is not drawn when the hand has
 
 test('the app asks for it at every recording call site (and nowhere for a MIDI file)', () => {
   const html = fs.readFileSync(path.join(REPO, 'Piano Coach App.dc.html'), 'utf8').replace(/\r\n/g, '\n');
-  const calls = [...html.matchAll(/\.toMusicXml\(\{[\s\S]*?\}, (\{[^}]*\})\);/g)].map(m => m[1]);
-  assert.equal(calls.length, 4, 'the four recording call sites: ' + calls.join(' / '));
-  calls.forEach(c => assert.match(c, /closeGaps: true/, c));
+  /* the six recording call sites (G10a-4: "Write the notation again" and the one-note arranger's hands fallback are the new ones; most of the options are an alternative or an Object.assign now),
+     each read with its argument list and EACH BRANCH of its condition (the classic options and the v2 ones): `closeGaps` moved into only the v2 alternative is caught */
+  const CS = require('../recording-v2-callsites.js');
+  const calls = CS.toMusicXmlCalls(html);
+  assert.equal(calls.length, 6, 'the six recording call sites: ' + calls.join(' / '));
+  calls.forEach(c => { const b = CS.branchOptions(c); assert.equal(b.classic.closeGaps, true, 'classic branch: ' + c); assert.equal(b.v2.closeGaps, true, 'v2 branch: ' + c); });
   const midi = /PPPAudioScore\.fromMidi\(bytes, (\{[^}]*\})\)/.exec(html);
   assert.ok(midi && !/closeGaps/.test(midi[1]), 'the MIDI import does not ask');
 });
