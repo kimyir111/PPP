@@ -578,8 +578,8 @@ REC_V2_MUTATIONS: List[Dict[str, Any]] = [
      "find": "    emit(L.part + g.shape * (CAP + 1) * (CAP + 1) + Math.min(nL, CAP) * (CAP + 1) + Math.min(nR, CAP));",
      "replace": "    /* mutation: no partition prior */",
      "expect": "REGRESSION", "metrics": ["notation.hand.accuracy"]},
-    # G10a-3: one planted defect per decision of the writer (S7, rec/writer.js), the triplet-16th grid kind (S3) and the
-    # checker's metre-aware class 3. Not guarded: the writer's compound rest tiling (gaps.js mergeRests, which the app's options
+    # G10a-3: one planted defect per decision of the writer (S7, rec/writer.js), the triplet-16th grid kind (S3), the silence
+    # classifier (S6, rec/rests.js) and the checker's metre-aware class 3. Not guarded: the writer's compound rest tiling (gaps.js mergeRests, which the app's options
     # run after it, writes the same tiling: tiling compound silences on quarters left every metric identical) and how a compound
     # note is split at its beat (exact either way; tests/rec/writer.test.js)
     {"id": "REC-V2-WRITER-LEGACY", "v2": True,        # v2 writes with the x/4-only exact-bars writer again (compound and x/2 bars do not add up)
@@ -601,6 +601,20 @@ REC_V2_MUTATIONS: List[Dict[str, Any]] = [
      "find": "        if (best === '6' && (e.idx.length < SIX_MIN_ONSETS || e.post['6'] < SIX_MIN_CONF)) {",
      "replace": "        if (false) {",
      "expect": "REGRESSION", "metrics": ["rec.tuplet.false_per_100_beats", "rec.tuplet.precision"]},
+    {"id": "REC-V2-RESTS-RULE", "v2": True,           # S6 off: every silence of an eighth or more is a rest again
+     "find": "      const RS = opts.rests === 'rule' ? null : restsLib();",
+     "replace": "      const RS = null;",
+     "all": True, "expect": "REGRESSION", "metrics": ["rec.rest.precision", "rec.rest.false_per_100_bars"]},
+    {"id": "REC-V2-RESTS-NO-HELD-RELEASE", "v2": True,   # S6 does not see that a note of the chord is held to the next onset
+     "file": "rec/rests.js",
+     "find": "      x[3] = clip(h.gapMax / h.ioi, -1, 1);",
+     "replace": "      x[3] = 1;",
+     "expect": "REGRESSION", "metrics": ["rec.rest.precision", "rec.rest.false_per_100_bars", "critical.note_values"]},
+    {"id": "REC-V2-RESTS-NEVER", "v2": True,          # S6 never writes a rest (every silence legato)
+     "file": "rec/rests.js",
+     "find": "    const rest = p.map(v => v >= thr);",
+     "replace": "    const rest = p.map(v => false);",
+     "expect": "REGRESSION", "metrics": ["rec.rest.recall"]},
     {"id": "REC-V2-CHECK-QUARTER-BEAT", "v2": True,   # the checker's class 3 tiles every metre on a quarter-note beat again
      "file": "scoregraph/tools/notation-check.js",
      "find": "    const beatOf = bar => (barBeat && barBeat[bar - 1]) || { B: 8, compound: false };",

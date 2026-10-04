@@ -137,7 +137,9 @@ class RecMutations(unittest.TestCase):
                 "REC-V2-GRID-NO-SIXTHS", "REC-V2-GRID-SIXTHS-UNGATED"}
         # G10a-3: S7's decisions (the writer at all, its tuplet brackets) and the checker's metre-aware class 3
         writer = {"REC-V2-WRITER-LEGACY", "REC-V2-WRITER-NO-BRACKETS", "REC-V2-CHECK-QUARTER-BEAT"}
-        self.assertEqual({m["id"] for m in v2[:-1]}, skeleton | hands | grid | writer)
+        # G10a-3: S6's decisions (the classifier at all, its held-release evidence, its threshold)
+        rests = {"REC-V2-RESTS-RULE", "REC-V2-RESTS-NO-HELD-RELEASE", "REC-V2-RESTS-NEVER"}
+        self.assertEqual({m["id"] for m in v2[:-1]}, skeleton | hands | grid | writer | rests)
         self.assertEqual((v2[-1]["id"], v2[-1]["expect"]), ("MUT-NOOP", "PASS"))
         self.assertFalse([m for m in mutation.REC_MUTATIONS if m.get("v2")])
         for m in v2[:-1]:
@@ -148,6 +150,8 @@ class RecMutations(unittest.TestCase):
                 self.assertTrue(any(x.startswith(("rec.tuplet.", "notation.tuplets.")) for x in m["metrics"]), m["id"])
             elif m["id"] in writer:
                 self.assertTrue(any(x.startswith("rec.check.") for x in m["metrics"]), m["id"])
+            elif m["id"] in rests:
+                self.assertTrue(any(x.startswith("rec.rest.") for x in m["metrics"]), m["id"])
             else:
                 self.assertTrue(any(x.startswith(("critical.", "struct.", "notes.")) for x in m["metrics"]), m["id"])
 

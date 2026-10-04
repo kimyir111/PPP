@@ -26,9 +26,9 @@ function addsUp(r, bar, bars) {
   });
 }
 
-test('x/4: v2 through rec/writer.js writes the same MusicXML as the exact-bars writer it replaces', () => {
+test('x/4: v2 through rec/writer.js writes the same MusicXML as the exact-bars writer it replaces (the REST_MIN rule)', () => {
   const p = perform([[0, [48, 60], 0.5], [0.5, [62], 0.5], [1, [64, 55], 1], [2, [65], 0.25], [2.25, [67], 0.25], [2.5, [69], 0.5], [3, [71, 43], 1]], 4, 8, 120, { jitter: 0.012, seed: 4 });
-  const base = { title: 't', closeGaps: true, exactBars: true, recording: 'v2' };
+  const base = { title: 't', closeGaps: true, exactBars: true, recording: 'v2', rests: 'rule' };
   const a = AS.toMusicXml({ notes: p.notes }, base);
   const b = AS.toMusicXml({ notes: p.notes }, Object.assign({ writer: 'legacy' }, base));
   assert.ok(a.writerReport && !b.writerReport);
@@ -115,7 +115,7 @@ test('v2 on a jig (6/8): no acceptance class is hit and the bars add up', () => 
 test('without opts.recording (or with the legacy writer) rec/writer.js is not even loaded', () => {
   const p = perform([[0, [48, 60], 1], [1, [64], 1], [2, [65, 52], 1], [3, [67], 1]], 4, 6, 100, { seed: 2 });
   const key = require.resolve(path.join(REPO, 'rec', 'writer.js'));
-  const keys = [];
+  const keys = [require.resolve(path.join(REPO, 'rec', 'rests.js'))];
   const had = [key].concat(keys).filter(k => k in require.cache);
   [key].concat(keys).forEach(k => { delete require.cache[k]; });
   AS.toMusicXml({ notes: p.notes }, { title: 't', closeGaps: true, exactBars: true });
