@@ -79,15 +79,15 @@
     "n": 6
    },
    "notation.duration.accuracy": {
-    "mean": 0.815308,
+    "mean": 0.827049,
     "n": 6
    },
    "notation.duration.accuracy_ref": {
-    "mean": 0.798335,
+    "mean": 0.809725,
     "n": 6
    },
    "notation.duration.page_accuracy": {
-    "mean": 0.815308,
+    "mean": 0.827049,
     "n": 6
    },
    "notation.hand.accuracy": {
@@ -151,7 +151,7 @@
     "n": 6
    },
    "notation.ties.extra_per_100": {
-    "mean": 8.757595,
+    "mean": 10.559397,
     "n": 6
    },
    "notation.tuplets.false_per_100": {
@@ -207,27 +207,27 @@
     "n": 4
    },
    "nq.ned": {
-    "mean": 0.533553,
+    "mean": 0.463745,
     "n": 6
    },
    "nq.range.ledger4_rate": {
-    "mean": 2.97619,
+    "mean": 2.777778,
     "n": 6
    },
    "nq.range.ledger4_rate.delta": {
-    "mean": 2.97619,
+    "mean": 2.777778,
     "n": 6
    },
    "nq.rest.per_measure_delta": {
-    "mean": 0.057997,
+    "mean": 0.111472,
     "n": 6
    },
    "nq.rhythm.hidden_beat_rate": {
-    "mean": 0.0,
+    "mean": 0.000911,
     "n": 6
    },
    "nq.rhythm.hidden_beat_rate.delta": {
-    "mean": 0.0,
+    "mean": 0.000911,
     "n": 6
    },
    "nq.rhythm.short_rate_delta": {
@@ -311,15 +311,15 @@
     "n": 6
    },
    "nq.voice.poly_recall": {
-    "mean": 0.0,
+    "mean": 1.0,
     "n": 1
    },
    "read.accidentals_per_note": {
-    "mean": 0.004798,
+    "mean": 0.004599,
     "n": 6
    },
    "read.accidentals_per_note.delta": {
-    "mean": -0.001333,
+    "mean": -0.001532,
     "n": 6
    },
    "read.bar_completeness": {
@@ -339,11 +339,11 @@
     "n": 6
    },
    "read.ledger_lines.heavy_rate": {
-    "mean": 0.002976,
+    "mean": 0.002778,
     "n": 6
    },
    "read.ledger_lines.heavy_rate.delta": {
-    "mean": 0.002976,
+    "mean": 0.002778,
     "n": 6
    },
    "read.max_chord_size": {
@@ -363,11 +363,11 @@
     "n": 6
    },
    "read.rests_per_measure": {
-    "mean": 0.162163,
+    "mean": 0.215639,
     "n": 6
    },
    "read.rests_per_measure.delta": {
-    "mean": 0.057997,
+    "mean": 0.111472,
     "n": 6
    },
    "read.short_notes_rate": {
@@ -379,11 +379,11 @@
     "n": 6
    },
    "read.ties_per_note": {
-    "mean": 0.089099,
+    "mean": 0.096639,
     "n": 6
    },
    "read.ties_per_note.delta": {
-    "mean": 0.059072,
+    "mean": 0.066612,
     "n": 6
    },
    "read.tuplets_per_note": {
@@ -395,7 +395,7 @@
     "n": 6
    },
    "sqi": {
-    "mean": 81.59042,
+    "mean": 81.704317,
     "n": 6
    },
    "struct.downbeat.f1": {
@@ -575,15 +575,15 @@
      "n": 6
     },
     "notation.duration.accuracy": {
-     "mean": 0.815308,
+     "mean": 0.827049,
      "n": 6
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.798335,
+     "mean": 0.809725,
      "n": 6
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.815308,
+     "mean": 0.827049,
      "n": 6
     },
     "notation.hand.accuracy": {
@@ -647,7 +647,7 @@
      "n": 6
     },
     "notation.ties.extra_per_100": {
-     "mean": 8.757595,
+     "mean": 10.559397,
      "n": 6
     },
     "notation.tuplets.false_per_100": {
@@ -703,27 +703,27 @@
      "n": 4
     },
     "nq.ned": {
-     "mean": 0.533553,
+     "mean": 0.463745,
      "n": 6
     },
     "nq.range.ledger4_rate": {
-     "mean": 2.97619,
+     "mean": 2.777778,
      "n": 6
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 2.97619,
+     "mean": 2.777778,
      "n": 6
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.057997,
+     "mean": 0.111472,
      "n": 6
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.0,
+     "mean": 0.000911,
      "n": 6
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.0,
+     "mean": 0.000911,
      "n": 6
     },
     "nq.rhythm.short_rate_delta": {
@@ -807,15 +807,15 @@
      "n": 6
     },
     "nq.voice.poly_recall": {
-     "mean": 0.0,
+     "mean": 1.0,
      "n": 1
     },
     "read.accidentals_per_note": {
-     "mean": 0.004798,
+     "mean": 0.004599,
      "n": 6
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.001333,
+     "mean": -0.001532,
      "n": 6
     },
     "read.bar_completeness": {
@@ -835,11 +835,11 @@
      "n": 6
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.002976,
+     "mean": 0.002778,
      "n": 6
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.002976,
+     "mean": 0.002778,
      "n": 6
     },
     "read.max_chord_size": {
@@ -859,11 +859,11 @@
      "n": 6
     },
     "read.rests_per_measure": {
-     "mean": 0.162163,
+     "mean": 0.215639,
      "n": 6
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.057997,
+     "mean": 0.111472,
      "n": 6
     },
     "read.short_notes_rate": {
@@ -875,11 +875,11 @@
      "n": 6
     },
     "read.ties_per_note": {
-     "mean": 0.089099,
+     "mean": 0.096639,
      "n": 6
     },
     "read.ties_per_note.delta": {
-     "mean": 0.059072,
+     "mean": 0.066612,
      "n": 6
     },
     "read.tuplets_per_note": {
@@ -891,7 +891,7 @@
      "n": 6
     },
     "sqi": {
-     "mean": 81.59042,
+     "mean": 81.704317,
      "n": 6
     },
     "struct.downbeat.f1": {
@@ -1070,15 +1070,15 @@
      "n": 6
     },
     "notation.duration.accuracy": {
-     "mean": 0.815308,
+     "mean": 0.827049,
      "n": 6
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.798335,
+     "mean": 0.809725,
      "n": 6
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.815308,
+     "mean": 0.827049,
      "n": 6
     },
     "notation.hand.accuracy": {
@@ -1142,7 +1142,7 @@
      "n": 6
     },
     "notation.ties.extra_per_100": {
-     "mean": 8.757595,
+     "mean": 10.559397,
      "n": 6
     },
     "notation.tuplets.false_per_100": {
@@ -1198,27 +1198,27 @@
      "n": 4
     },
     "nq.ned": {
-     "mean": 0.533553,
+     "mean": 0.463745,
      "n": 6
     },
     "nq.range.ledger4_rate": {
-     "mean": 2.97619,
+     "mean": 2.777778,
      "n": 6
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 2.97619,
+     "mean": 2.777778,
      "n": 6
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.057997,
+     "mean": 0.111472,
      "n": 6
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.0,
+     "mean": 0.000911,
      "n": 6
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.0,
+     "mean": 0.000911,
      "n": 6
     },
     "nq.rhythm.short_rate_delta": {
@@ -1302,15 +1302,15 @@
      "n": 6
     },
     "nq.voice.poly_recall": {
-     "mean": 0.0,
+     "mean": 1.0,
      "n": 1
     },
     "read.accidentals_per_note": {
-     "mean": 0.004798,
+     "mean": 0.004599,
      "n": 6
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.001333,
+     "mean": -0.001532,
      "n": 6
     },
     "read.bar_completeness": {
@@ -1330,11 +1330,11 @@
      "n": 6
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.002976,
+     "mean": 0.002778,
      "n": 6
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.002976,
+     "mean": 0.002778,
      "n": 6
     },
     "read.max_chord_size": {
@@ -1354,11 +1354,11 @@
      "n": 6
     },
     "read.rests_per_measure": {
-     "mean": 0.162163,
+     "mean": 0.215639,
      "n": 6
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.057997,
+     "mean": 0.111472,
      "n": 6
     },
     "read.short_notes_rate": {
@@ -1370,11 +1370,11 @@
      "n": 6
     },
     "read.ties_per_note": {
-     "mean": 0.089099,
+     "mean": 0.096639,
      "n": 6
     },
     "read.ties_per_note.delta": {
-     "mean": 0.059072,
+     "mean": 0.066612,
      "n": 6
     },
     "read.tuplets_per_note": {
@@ -1386,7 +1386,7 @@
      "n": 6
     },
     "sqi": {
-     "mean": 81.59042,
+     "mean": 81.704317,
      "n": 6
     },
     "struct.downbeat.f1": {
@@ -2064,9 +2064,9 @@
     "critical.structure": 1.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.956284,
-    "notation.duration.accuracy_ref": 0.91623,
-    "notation.duration.page_accuracy": 0.956284,
+    "notation.duration.accuracy": 0.972678,
+    "notation.duration.accuracy_ref": 0.931937,
+    "notation.duration.page_accuracy": 0.972678,
     "notation.hand.accuracy": 0.994536,
     "notation.hand.accuracy_ref": 0.95288,
     "notation.ioi.accuracy": 1.0,
@@ -2086,7 +2086,7 @@
     "read.bar_completeness": 1.0,
     "read.bar_integrity": 1.0,
     "read.ledger_lines.heavy_rate": 0.0,
-    "sqi": 97.425596,
+    "sqi": 97.582664,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -2105,8 +2105,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "3797f423b302ecb5",
-   "sqi": 97.425596,
+   "semantic": "408f4c2032a99bcc",
+   "sqi": 97.582664,
    "status": "ok"
   },
   "replay/method/beyer/029|salamander-v1|human|s1": {
@@ -2304,9 +2304,9 @@
     "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.702703,
-    "notation.duration.accuracy_ref": 0.684211,
-    "notation.duration.page_accuracy": 0.702703,
+    "notation.duration.accuracy": 0.756757,
+    "notation.duration.accuracy_ref": 0.736842,
+    "notation.duration.page_accuracy": 0.756757,
     "notation.hand.accuracy": 0.945946,
     "notation.hand.accuracy_ref": 0.921053,
     "notation.ioi.accuracy": 1.0,
@@ -2318,15 +2318,15 @@
     "notation.pedal.false_per_min": 12.003601,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.973684,
-    "notation.ties.extra_per_100": 43.243243,
+    "notation.ties.extra_per_100": 54.054054,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
     "notes.identity.f1": 0.973684,
     "notes.onset.f1_50ms": 0.973684,
     "read.bar_completeness": 1.0,
     "read.bar_integrity": 1.0,
-    "read.ledger_lines.heavy_rate": 0.017857,
-    "sqi": 62.368421,
+    "read.ledger_lines.heavy_rate": 0.016667,
+    "sqi": 62.894737,
     "struct.downbeat.f1": 0.533333,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -2345,8 +2345,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "a15bbb8aa23ac852",
-   "sqi": 62.368421,
+   "semantic": "401bf11bff1bcdbf",
+   "sqi": 62.894737,
    "status": "ok"
   }
  },
@@ -2381,6 +2381,14 @@
    "git_sha": "84b9921109761a54a9cb3678d3eefdabcb0d301c",
    "reason": "G10a-3 S6 (rec/rests.js silence classifier, AI-5b; PR 2 of 3, on PR 1): a silence of an eighth or more between two notes of a voice is a rest only when the model says so (v2 only; hold-out decision accuracy 0.198 -> 0.843). v2 rows gain usable, rec.usable, note values, duration accuracy, rest precision, false rests, stability, MV2H (G10 section 24.6). Moved the wrong way, with cause: rec.rest.recall -0.05 to -0.24 (accuracy-optimal decisions call unclear silences legato; rest-rich etudes under the pedal profiles lose them, a few Burgmueller cases lose critical.note_values), replay-public-v2 extra ties 0 -> 8.8 per 100 notes (two fixtures whose bar lines the skeleton misplaces: legato notes tied over them), rec-arrange arr.lh.notes_per_bar +0.06 to +0.23 and hymns' arr.level.distinct -0.011 (fewer false rests leave more held notes to arrange), single values on micro M10/M16/M17/M19/M20/M22/M23 rows",
    "sqi_all": 81.59042,
+   "usable_all": 0.5
+  },
+  {
+   "audio_score_sha256": "94155165165c4edd9cdc2d171b6a6763aced7aa4389b100afd4a472445543d5f",
+   "date": "2026-10-04",
+   "git_sha": "22abff822c80a7c1005b47809ea0de0223990325",
+   "reason": "G10a-3 S5 (rec/voices.js, PR 3 of 3, on PR 2): two voices per staff for four-part writing (S4's chorale style), each with its own durations and rests; a part's silence while the other part sounds is legato by rule (S6, not trained on); rec.rest rec/2 counts staff silences (rest spans minus sounding notes of the staff; identical for one-voice staff-bars). Gains: rec.voice.f1, rest precision, rec.usable, usable, pitch integrity, MV2H (G10 section 24.7-24.8). Moved the wrong way, with cause: replay-of-v2 duration accuracy -0.028 and extra ties +2.4/100 (two voices hold a part over an AMT-merged or missed repeat), Burgmueller 023 split where its edition has one voice (book voice F1 -0.01 to -0.03), rec-arrange hymns melody kept -0.02 / harmony -0.025 / level distinct -0.026 and left-hand density +0.11 (the arranger on two parts per staff, G10c), rec-grid v2-s3legacy compound class 5 0.18 -> 0.25 (that arm only; v2 rows 0), small rest-precision drops on set:micro and mode:minor tags, single values on a few micro rows",
+   "sqi_all": 81.704317,
    "usable_all": 0.5
   }
  ],
@@ -2727,10 +2735,10 @@
  },
  "lock_sha256": "811c66d96224b4cd065ddc92c78219cb550794947450b9f1099cd10804e49c05",
  "recorded": {
-  "audio_score_sha256": "2762f42893a7b1e866db02b07b929a0ddef2692e9a3f84f2a7ba7104239e292b",
+  "audio_score_sha256": "94155165165c4edd9cdc2d171b6a6763aced7aa4389b100afd4a472445543d5f",
   "date": "2026-10-04",
   "git_dirty": false,
-  "git_sha": "84b9921109761a54a9cb3678d3eefdabcb0d301c",
+  "git_sha": "22abff822c80a7c1005b47809ea0de0223990325",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"

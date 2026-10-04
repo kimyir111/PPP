@@ -132,7 +132,9 @@ function label(lines, results, truth) {
       Array.from(c.keys()).sort().forEach(k => { if (c.get(k) > bn) { bn = c.get(k); best = k; } });
       return best ? best.split('|').map(Number) : null;
     };
+    const OV = require(RESTS_PATH).FEATURES.indexOf('otherVoice');
     res.rows.forEach(r => {
+      if (r.x[OV]) return;                 /* the staff's other part sounds: legato by rule (rec/rests.js decide), not a training row */
       const A = onsetOf(r.a), B = onsetOf(r.b);
       if (!A || !B || !(B[0] > A[0] + 1e-9)) { unlabeled++; return; }
       const list = sil[String(A[1])] || [];

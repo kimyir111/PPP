@@ -579,9 +579,11 @@ REC_V2_MUTATIONS: List[Dict[str, Any]] = [
      "replace": "    /* mutation: no partition prior */",
      "expect": "REGRESSION", "metrics": ["notation.hand.accuracy"]},
     # G10a-3: one planted defect per decision of the writer (S7, rec/writer.js), the triplet-16th grid kind (S3), the silence
-    # classifier (S6, rec/rests.js) and the checker's metre-aware class 3. Not guarded: the writer's compound rest tiling (gaps.js mergeRests, which the app's options
-    # run after it, writes the same tiling: tiling compound silences on quarters left every metric identical) and how a compound
-    # note is split at its beat (exact either way; tests/rec/writer.test.js)
+    # classifier (S6, rec/rests.js), the voices (S5, rec/voices.js) and the checker's metre-aware class 3. Not guarded: the writer's
+    # compound rest tiling (gaps.js mergeRests, which the app's options run after it, writes the same tiling: tiling compound silences
+    # on quarters left every metric identical), how a compound note is split at its beat (exact either way; tests/rec/writer.test.js)
+    # and S5's two-part guard (no benchmark piece both reads as four-part writing and is written in block chords: removing it changed
+    # nothing; tests/rec/voices.test.js guards it)
     {"id": "REC-V2-WRITER-LEGACY", "v2": True,        # v2 writes with the x/4-only exact-bars writer again (compound and x/2 bars do not add up)
      "find": "    const v2Writer = extra.recording === 'v2' && opts.exactBars && !opts.legacyWriter && opts.writer !== 'legacy' && (opts.sourceKind || 'audio-score') === 'audio-score' ? writerLib() : null;",
      "replace": "    const v2Writer = null;",
@@ -615,6 +617,15 @@ REC_V2_MUTATIONS: List[Dict[str, Any]] = [
      "find": "    const rest = p.map(v => v >= thr);",
      "replace": "    const rest = p.map(v => false);",
      "expect": "REGRESSION", "metrics": ["rec.rest.recall"]},
+    {"id": "REC-V2-VOICES-ONE", "v2": True,           # S5 off: one voice per staff in four-part writing
+     "find": "      const VL = opts.voices === 'one' ? null : voicesLib();",
+     "replace": "      const VL = null;",
+     "expect": "REGRESSION", "metrics": ["rec.voice.f1"]},
+    {"id": "REC-V2-VOICES-NO-CONTINUITY", "v2": True,   # S5 gives every single note to the upper part
+     "file": "rec/voices.js",
+     "find": "        const v = cost(2) < cost(1) ? 2 : 1;",
+     "replace": "        const v = 1;",
+     "expect": "REGRESSION", "metrics": ["rec.voice.f1"]},
     {"id": "REC-V2-CHECK-QUARTER-BEAT", "v2": True,   # the checker's class 3 tiles every metre on a quarter-note beat again
      "file": "scoregraph/tools/notation-check.js",
      "find": "    const beatOf = bar => (barBeat && barBeat[bar - 1]) || { B: 8, compound: false };",

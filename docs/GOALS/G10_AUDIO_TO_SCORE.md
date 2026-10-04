@@ -1692,3 +1692,143 @@ gates. What the numbers allow: on candidate decisions the hold-out reaches preci
 precision would need a threshold where recall is near 0.1); on the rec.rest metric, precision 0.38-0.45 overall, where the skeleton
 (wrong metre or bar lines) causes 38 % of the predicted rests that are false (section 24.2) and no rest decision can fix those. The
 16th rests of U7 are therefore not written.
+
+### 24.7 S5: two voices per staff for four-part writing (`rec/voices.js`; PR 3), and rec.rest counted per staff (rec/2)
+
+**What it decides.** The catalogue writes two voices in 97 % of the hymns' staff-bars and in 0-16 % of the other collections'; the
+hymns carry most of the "held under a moving part" value errors (24.2). S5 gives a staff a second voice only where S4 read the
+piece as four-part writing (its piece-level style `chorale`) **and** the staff sounds exactly two notes at half of its onsets or
+more with block chords (3+ notes) at a quarter or fewer; there each staff is an upper and a lower part, as the hymnal writes it: an
+onset of two or more notes gives its highest to the upper part, the rest to the lower; a single note goes to the part it continues
+by pitch. Each part then has its own durations and rests (24.3); a second voice is written only in the bars where it has a note.
+`opts.voices: 'one'` keeps one voice per staff under v2. Piano writing keeps one voice (a release is weak evidence of a held part:
+70 % of real notes are held past the next onset, E5).
+
+**Measured and removed** (each made no difference on the benchmark, so it is not in the code): a part whose last note is still heard
+sounding cannot take a single note (hymn voice F1 0.912 -> 0.92 without it, note values 0.963 -> 0.96); a cost for crossing the other
+part (voice F1 0.9589 -> 0.9581 without it); a cut of a part's note at the staff's next onset when its key was heard up by then
+(meant for notes the AMT missed; cover+of note values 0.925 -> 0.90 with it). Kept but not visible to the benchmark: the two-part
+guard (it was added for Burgmueller 023, which it does not change; no benchmark piece both reads as four-part writing and is written
+in block chords) - its unit test guards it.
+
+**S6 and two voices.** A silence of one part while the staff's other part is heard sounding can never be a silence of the staff
+(rec.rest's truth), so S6 answers legato for it without the model, and the trainer leaves such rows out: as about 13,500 training rows
+(the hymns' parts mostly overlap) they had moved the model for every piece (rec-smoke v2 rec.usable 0.31 -> 0.27, rest precision 0.46 ->
+0.42 against PR 2's weights); without them PR 2's numbers come back (0.312, 0.46). The weights are retrained on PR 3's pipeline
+(`--check` same).
+
+**The metric (rec/2).** rec.rest compared the truth's silences of a staff (nothing of the staff sounds) with predicted rests merged
+per staff across voices, so a second voice's rest under a sounding first voice counted as a false rest of the staff even where the
+hymnal has it too. `predicted_rests` now takes a staff's rests minus where any note of the staff sounds - the truth side's own
+definition; for a staff-bar written in one voice it is exactly rec/1 (every legacy and app row; every v2 row before this PR), as the
+re-recorded legacy/app rows show (0 differing values). Unit tests: `tests/bench/unit/test_rec_metrics.py`.
+
+**Measured** (v2 rows, PR 2 -> PR 3; rec-core hymns, 240 cases): see the table of 24.8. On rec-core hymns before the merge with
+lane B: voice F1 0.62 -> 0.90, usable 0.42 -> 0.47, rec.usable 0.11 -> 0.24, rest precision 0.34 -> 0.54, false rests 9.5 -> 5.9 per
+100 bars, pitch integrity 0.82 -> 0.87 (unisons the performer played in both parts are no longer merged into one chord), MV2H 0.81
+-> 0.88; "held under a moving part" value errors 1,532 -> 506.
+
+**Moved the wrong way, and why.** Where the transcription loses notes, two voices are less forgiving than one: on the AMT-overlay
+family (cover+of) hymns' duration accuracy 0.902 -> 0.87 (note values unchanged at 0.925, usable +0.125, rec.usable +0.05, voice F1
++0.19, rest precision +0.22), and on the real-AMT tier replay-of-v2 duration accuracy 0.925 -> 0.90 (with S6 alone 0.925; note values
+0.95 and usable 0.30 unchanged). The cause, read note by note: an upper part's repeated note that the AMT merged (or a note it missed)
+leaves the part without its next onset, so its note lasts to the part's next heard onset (two beats instead of one); one voice per
+staff cut it at the other part's onset by luck. Release evidence cannot tell a merged repeat from a held note (the merge extends the
+release), which is why the cut above did nothing. Burgmueller 023 (one piece, 6/8) is split where its edition writes one lower voice:
+the family's voice F1 0.80 -> 0.77. **Downstream (G10c):** the one-note arranger on two-voice hymn recordings keeps fewer melody notes
+(rec-arrange-core hymns `arr.melody.kept` 0.989 -> 0.967) with lower harmony agreement (0.670 -> 0.645) and level distinctness (hymns
+0.217 -> 0.191 on rec-arrange-full); its left hand is fuller (+0.11-0.12 notes per bar). The arranger reads a recording's staves; how it
+should read two parts per staff is G10c's question. In the `v2-s3legacy` comparison arm of rec-grid (legacy quantisers under v2), two
+voices add class-5 bars on compound pieces whose onsets that quantiser puts off the compound grid (0.18 -> 0.25 per 100 bars; the v2 rows
+stay at 0).
+
+### 24.8 Lane A together (v2 rows, main `c5d5ad4` -> the three PRs)
+
+| suite, beats | n | usable | rec.usable | note values | rest P / R | false rests /100 bars | tuplet P / R | false tuplets /100 beats | voice F1 | classes 5 / 7 | stability | MV2H |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| rec-core, none | 564 | 0.179 -> **0.36** | 0.062 -> **0.20** | 0.42 -> **0.78** | 0.20 / 0.52 -> 0.46 / 0.32 | 114 -> **18** | 0.905 / 0.29 -> 0.88 / 0.42 | 1.8 -> 2.5 | 0.815 -> 0.89 | 4.0 / 0 -> 0 / 0 | 0.268 -> 0.23 | 0.785 -> 0.83 |
+| rec-core, oracle-noisy | 282 | 0.312 -> **0.51** | 0.057 -> 0.22 | 0.59 -> **0.87** | 0.21 / 0.62 -> 0.49 / 0.40 | 74 -> 10 | 0.968 / 0.38 -> 0.94 / 0.48 | 0.9 -> 1.5 | 0.812 -> 0.89 | 3.7 / 0 -> 0 / 0 | 0.173 -> 0.15 | 0.865 -> 0.90 |
+| rec-robust (never trained), none | 141 | 0.113 -> **0.44** | 0 -> 0.16 | 0.26 -> 0.78 | 0.12 / 0.64 -> 0.39 / 0.39 | 189 -> 24 | 0.920 / 0.35 -> 0.88 / 0.44 | 2.0 -> 2.8 | 0.841 -> 0.93 | 7.3 / 9.8 -> 0 / 0 | 0.306 -> 0.24 | 0.768 -> 0.84 |
+| rec-robust, oracle-noisy | 141 | 0.248 -> **0.64** | 0.035 -> 0.22 | 0.32 -> 0.88 | 0.16 / 0.83 -> 0.42 / 0.55 | 165 -> 16 | 0.981 / 0.28 -> 0.97 / 0.40 | 0.3 -> 0.5 | 0.847 -> 0.93 | 7.5 / 0 -> 0 / 0 | 0.218 -> 0.17 | 0.845 -> 0.92 |
+| rec-smoke | 48 | 0.333 -> 0.66 | 0.167 -> 0.31 | 0.48 -> 0.87 | 0.27 / 0.62 -> 0.46 / 0.45 | 93 -> 21 | 0.979 / 0.02 -> same | 0.03 -> 0.01 | 0.908 -> 0.95 | 2.5 / 0 -> 0 / 0 | 0.185 -> 0.15 | 0.858 -> 0.90 |
+| rec-grid, human-real (oracle) | 141 | 0.312 -> 0.63 | 0.078 -> 0.28 | 0.41 -> 0.90 | 0.20 / 0.82 -> 0.49 / 0.53 | 124 -> 12 | 0.992 / 0.21 -> 0.98 / 0.36 | 0.2 -> 0.4 | 0.856 -> 0.94 | 6.1 / 0 -> 0 / 0 | 0.125 -> 0.08 | 0.864 -> 0.92 |
+
+The hymns (rec-core, 240 v2 cases): usable 0.14 -> **0.50**, rec.usable 0.01 -> 0.26, note values 0.33 -> **0.97**, rest precision 0.08 ->
+0.57, false rests 164 -> 5 per 100 bars, voice F1 0.62 -> 0.91, pitch integrity 0.82 -> 0.87. The real-AMT tier (replay-of-v2, the
+browser's Onsets & Frames on rendered audio, 20 fixtures): usable 0.30 and note values 0.95 unchanged, duration accuracy 0.905 -> 0.925
+(S6) -> 0.897 (S5; 24.7). The helper tier (replay-public-v2): note values 0.50 -> 0.67, usable 0.33 -> 0.50. rec-full (nightly, every
+row pooled): usable 0.080 -> 0.146 after S6.
+
+**Section 11 budget.** A synthetic 3-minute piece of 1,800 notes: the writer and S6's decisions take 14 ms in Node; the whole v2
+`toMusicXml` 298 ms (v2 with the old writer 449 ms: fewer rests reach the gaps pass). S5 is linear in the notes. Model JSON together
+(`rec/weights/`) 63.5 KB of the 200 KB budget. Not measured in the page (G10a-4).
+
+### 24.9 The hold-out slice (the 52 hold-out references, never in any table or fit; rec-full's rows, seeds 11 and 12; a scratch suite; main `c5d5ad4` -> PR 3)
+
+| beats | n | usable | rec.usable | note values | rest P / R | false rests /100 bars | tuplet P / R | false tuplets /100 beats | voice F1 | stability | MV2H |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| none | 520 | 0.183 -> **0.41** | 0.054 -> **0.21** | 0.37 -> **0.77** | 0.16 / 0.53 -> 0.43 / 0.39 | 132 -> **19** | 0.877 / 0.64 -> 0.84 / 0.65 | 2.6 -> **4.2** | 0.78 -> 0.88 | 0.274 -> 0.23 | 0.777 -> 0.83 |
+| oracle-noisy (cover-pedal+helper) | 104 | 0.308 -> 0.32 | 0.048 -> 0.21 | 0.81 -> **0.79** | 0.18 / 0.34 -> 0.50 / 0.19 | 33 -> 8 | 0.962 / 1.0 -> 0.93 / 1.0 | 1.0 -> **2.8** | 0.75 -> 0.83 | 0.180 -> 0.18 | 0.863 -> 0.88 |
+
+The gains generalise; two things move the wrong way on the hold-out: false tuplet beats (almost all one piece, Czerny 849/009, which
+the skeleton reads at 1.5 times its tempo in all 12 rows - its 16ths then fall on sixths; 24.5) and, on the pedal+helper row, note
+values (Beyer 054 and 011: rest-rich etudes whose silences the pedal hides; S6 calls them legato; 24.6). The app rows of the same slice
+move only in the corrected class 3 (5.1 -> 0 per 100 bars).
+
+### 24.10 Limits, and where the numbers contradict the brief or the design (roadmap stop condition 3: reported, not forced)
+
+1. **Rest precision >= 0.95 / recall >= 0.70** (section 10) is not reachable: candidate decisions reach 0.61-0.63 / 0.48 on the hold-out
+   at the accuracy optimum; on rec.rest about 0.46-0.49 / 0.32-0.40, with the skeleton causing a third of the false rests. No 16th rest
+   is written (U7).
+2. **`writable()` stays.** The brief asked for 32nd rests "where writable" so that the workaround could go; acceptance class 2 forbids a
+   rest shorter than a 16th and gaps.js omits such pieces at the edge of a silence. writable() moves 509 of 230,379 notes on rec-core v2
+   (283 in Czerny 849/011, whose edition does write 32nd rests; the catalogue has 84 written rests shorter than a 16th, all in Czerny
+   849). Relaxing class 2 for plain rests is the teacher's decision (U7).
+3. **Triplet 16ths** help where the skeleton is right (or reads triplets at double tempo) and write false sixths where it is unsure or
+   wrong; no signal at hand separates the two (24.5). On the hold-out they add false tuplet beats without adding recall (24.9).
+4. **Two voices and lost notes**: on the AMT-overlay family and the real-AMT tier, two voices hold a part's note over a merged or missed
+   repeat (24.7). Duplicating a heard note into both parts (the hymnal's unisons) would write a head the AMT did not hear: not done.
+5. **Piano-style voices** are not written: no evidence at hand (releases, E5) makes a second voice reliable outside four-part writing;
+   Czerny 849's and Burgmueller's two-voice bars stay one voice.
+6. Compound triplet 16ths (three to an eighth in 6/8, Czerny 849/019 and /020) have no grid kind; neither have 9/8 and 12/8's rarer
+   figures beyond 16ths.
+7. Everything is synthetic or rendered: the teacher's private tier was not run here (the Lead's; G10-D15).
+
+### 24.11 What G10a-4 (and lane B) need
+
+- **Page loading order**: `rec/index.js`'s header (scoregraph incl. gaps.js -> the four weights as globals -> rec/attacks .. index ->
+  rec/grid, voices, rests, writer, key, pedal -> audio-score.js). New globals: `PPPRecWriter`, `PPPRecVoices`, `PPPRecRests`,
+  `PPPRecRestsModel` (rec/weights/ai5b-rests-v1.json). A page without rec/writer.js writes v2 with the x/4 exact-bars writer; without
+  rec/rests.js the fixed rest rule; without rec/voices.js one voice per staff.
+- **Reports beside the graph** (not in stats): `result.writerReport` = `{voices, rests: {asked, rest, legato}, tuplets: {beat, half},
+  restModel, voiceModel}`; per-decision probabilities are available from `rec/rests.js decide()` for uncertain-bar flags (a rest decided
+  near the threshold).
+- **Switches** (all v2-only, for comparison arms and rollback): `opts.writer: 'legacy'`, `opts.rests: 'rule' | 'model'`, `opts.voices:
+  'one'`; `rec-tuplet.addTriplets(g, {v2: true})` is what the arranger needs for a v2 recording's copy (repair/index.js passes it).
+- **The emission and S8**: v2's writer spells with S8's `spellOf` and accidental rule when S8 ran (lane B); one accidental state per staff
+  and bar walked in time order over both voices. A key change written by S8 applies to both voices.
+- **Saved songs**: a v2 graph may have voices '2' and '6' (the second voice of each staff) and 3:2 brackets of 16ths over half beats;
+  `legacy.toScore` and the app's Score reading of those (G10a-4's S4) must be checked in the page.
+
+### 24.12 Verification
+
+- **Legacy byte-identical.** `run.py ab` against `origin/main` before lane B merged (`638f56b`): smoke, core, robust, smoke-app, core-app,
+  robust-app, replay-public, replay-of, replay-of-app - 0 differing cases (status, metrics, semantic projection). The legacy and app rows
+  of rec-smoke, rec-core and rec-robust: the same predicted music in every case; only `rec.check.3` moves, only on 6/8 and 12/8 bars
+  (24.4); `rec.usable` flips in none; rec/2 leaves every one-voice row's rest metrics unchanged. The 975 `arrangeSingleNote` requests of
+  the app's one-note glue (325 catalogue pieces x 3 levels, `tests/realize/app-single-extract.js`) give the same graphs as a git archive
+  of main: 933 arranged, 42 refused, 0 of 975 differing. Golden 17/17, correctness, sg-roundtrip unchanged. Lane B's code is untouched
+  except its tied-accidental test's comparison arm (now keys and writer 'legacy').
+- **Mutation coverage** (rec-mutation-v2): the writer off (`rec.check.5` 0 -> 3.6), no brackets (`rec.check.6` 0 -> 42.8, tuplet F1 ->
+  0), no sixths (`rec.tuplet.recall` 0.224 -> 0.167), sixths ungated (false tuplet beats 1.14 -> 1.72), the checker on quarters
+  (`rec.check.3` 0 -> 1.8), S6 off (rest precision 0.61 -> 0.44, false rests 12 -> 52), S6 blind to a held release (precision, false rests,
+  note values), S6 never a rest (recall 0.50 -> 0.30), S5 off (`rec.voice.f1` 0.958 -> 0.882), S5 without continuity (0.958 -> 0.951);
+  each a REGRESSION naming its metric, the no-op byte-identical. Not guarded, with the reason in mutation.py: the writer's compound rest
+  tiling (gaps.js mergeRests writes the same), a compound note's split at its beat, S5's two-part guard (unit test). The arranger's v2
+  re-bracketing is guarded by `tests/rec/arrange-v2.test.js` (the rec-arrange mutation suite has app rows only).
+- **Determinism.** `train_rests.js --check` regenerates the data (the humanizer's LCG) and refits byte for byte, with 2 or 8 worker
+  threads; `train_grid.js --check` same. The `results.json` of rec-smoke (`2d777510a2296895`), replay-of-v2 (`a9876972b4c8b4db`) and
+  replay-public-v2 (`7b7663a60fb0fdcf`) are byte-identical over three runs on Windows (Python 3.13.5, Node 24.17) and one on Linux
+  (`node:24-bookworm`, offline, an LF clone of PR 3's head, the README's recipe), every `check` PASS there, both trainer checks "same".
+- **Unit tests**: `tests/rec/writer.test.js`, `rests.test.js`, `voices.test.js`, `arrange-v2.test.js`, `tests/bench/unit/test_rec_metrics.py`
+  (rec/2) - 94 rec tests, the bench unit tests pass.
