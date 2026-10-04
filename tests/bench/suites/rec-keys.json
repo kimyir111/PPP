@@ -2,7 +2,7 @@
  "align": {
   "window_s": 0.3
  },
- "description": "G10 recording gate: the core references x the calibrated humanizer's families (cover, cover-pedal, human-real, and the browser model's and the helper's error overlays; swing is in rec-full) x beats none (production) / oracle-noisy (helper) x stage options legacy / app / v2",
+ "description": "G10a-3 stage S8 in isolation (a measurement suite, nightly, not in the CI gate): rec-core's and rec-robust's cases with v2 and the legacy key and spelling (v2-keylegacy, opts.keys 'legacy') and with the app's options and only the key stage of rec/key.js (app-keys, opts.keys 'v2'); the very performances of their v2 / app rows, so the rec-core / rec-robust rows are the other arm",
  "gate": {
   "case_fail_drop": 10.0,
   "case_flip_max": 2,
@@ -277,67 +277,14 @@
  "matrix": [
   {
    "beats": "none",
-   "opt_name": "legacy",
-   "opts": {},
-   "profile": "cover",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
-   "opt_name": "app",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true
-   },
-   "profile": "cover",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
-   "opt_name": "v2",
+   "opt_name": "v2-keylegacy",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
+    "keys": "legacy",
     "recording": "v2"
    },
-   "profile": "cover",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "oracle-noisy",
-   "opt_name": "legacy",
-   "opts": {},
-   "profile": "cover",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "oracle-noisy",
-   "opt_name": "app",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true
-   },
-   "profile": "cover",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "oracle-noisy",
-   "opt_name": "v2",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true,
-    "recording": "v2"
-   },
+   "perform_as": "v2",
    "profile": "cover",
    "seeds": [
     1
@@ -345,8 +292,57 @@
   },
   {
    "beats": "none",
-   "opt_name": "legacy",
-   "opts": {},
+   "opt_name": "app-keys",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "keys": "v2"
+   },
+   "perform_as": "app",
+   "profile": "cover",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "oracle-noisy",
+   "opt_name": "v2-keylegacy",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "keys": "legacy",
+    "recording": "v2"
+   },
+   "perform_as": "v2",
+   "profile": "cover",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "oracle-noisy",
+   "opt_name": "app-keys",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "keys": "v2"
+   },
+   "perform_as": "app",
+   "profile": "cover",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "none",
+   "opt_name": "v2-keylegacy",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "keys": "legacy",
+    "recording": "v2"
+   },
+   "perform_as": "v2",
    "profile": "cover-pedal",
    "seeds": [
     1
@@ -354,11 +350,13 @@
   },
   {
    "beats": "none",
-   "opt_name": "app",
+   "opt_name": "app-keys",
    "opts": {
     "closeGaps": true,
-    "exactBars": true
+    "exactBars": true,
+    "keys": "v2"
    },
+   "perform_as": "app",
    "profile": "cover-pedal",
    "seeds": [
     1
@@ -366,21 +364,14 @@
   },
   {
    "beats": "none",
-   "opt_name": "v2",
+   "opt_name": "v2-keylegacy",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
+    "keys": "legacy",
     "recording": "v2"
    },
-   "profile": "cover-pedal",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
-   "opt_name": "legacy",
-   "opts": {},
+   "perform_as": "v2",
    "profile": "human-real",
    "seeds": [
     1
@@ -388,11 +379,13 @@
   },
   {
    "beats": "none",
-   "opt_name": "app",
+   "opt_name": "app-keys",
    "opts": {
     "closeGaps": true,
-    "exactBars": true
+    "exactBars": true,
+    "keys": "v2"
    },
+   "perform_as": "app",
    "profile": "human-real",
    "seeds": [
     1
@@ -400,21 +393,14 @@
   },
   {
    "beats": "none",
-   "opt_name": "v2",
+   "opt_name": "v2-keylegacy",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
+    "keys": "legacy",
     "recording": "v2"
    },
-   "profile": "human-real",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
-   "opt_name": "legacy",
-   "opts": {},
+   "perform_as": "v2",
    "profile": "cover+of",
    "seeds": [
     1
@@ -422,65 +408,107 @@
   },
   {
    "beats": "none",
-   "opt_name": "app",
+   "opt_name": "app-keys",
    "opts": {
     "closeGaps": true,
-    "exactBars": true
+    "exactBars": true,
+    "keys": "v2"
    },
+   "perform_as": "app",
    "profile": "cover+of",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "oracle-noisy",
+   "opt_name": "v2-keylegacy",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "keys": "legacy",
+    "recording": "v2"
+   },
+   "perform_as": "v2",
+   "profile": "cover-pedal+helper",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "oracle-noisy",
+   "opt_name": "app-keys",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "keys": "v2"
+   },
+   "perform_as": "app",
+   "profile": "cover-pedal+helper",
    "seeds": [
     1
    ]
   },
   {
    "beats": "none",
-   "opt_name": "v2",
+   "opt_name": "v2-keylegacy",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
+    "keys": "legacy",
     "recording": "v2"
    },
-   "profile": "cover+of",
+   "perform_as": "v2",
+   "profile": "cover-alt",
    "seeds": [
     1
    ]
   },
   {
-   "beats": "oracle-noisy",
-   "opt_name": "legacy",
-   "opts": {},
-   "profile": "cover-pedal+helper",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "oracle-noisy",
-   "opt_name": "app",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true
-   },
-   "profile": "cover-pedal+helper",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "oracle-noisy",
-   "opt_name": "v2",
+   "beats": "none",
+   "opt_name": "app-keys",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
+    "keys": "v2"
+   },
+   "perform_as": "app",
+   "profile": "cover-alt",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "oracle-noisy",
+   "opt_name": "v2-keylegacy",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "keys": "legacy",
     "recording": "v2"
    },
-   "profile": "cover-pedal+helper",
+   "perform_as": "v2",
+   "profile": "cover-alt",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "oracle-noisy",
+   "opt_name": "app-keys",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "keys": "v2"
+   },
+   "perform_as": "app",
+   "profile": "cover-alt",
    "seeds": [
     1
    ]
   }
  ],
- "name": "rec-core",
+ "name": "rec-keys",
  "rec": true,
  "references": [
   "catalog/fur-elise",

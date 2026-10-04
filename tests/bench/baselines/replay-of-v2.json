@@ -3202,6 +3202,46 @@
    "reason": "G10a-2: v2's stage S3 is rec/grid.js (the grid of each beat, AI-5b), on top of S4 (afdb23b); legacy and app rows unchanged case by case; v2 rows move (G10 section 20)",
    "sqi_all": 87.064905,
    "usable_all": 0.3
+  },
+  {
+   "audio_score_sha256": "08038efc287150356615bef95836017a4d01233e2d1d5c040b8c6859d0739647",
+   "date": "2026-10-03",
+   "git_sha": "39fc383843c5650289168e4e43d4279f6635c93f",
+   "reason": "G10a-3 S9 (rec/pedal.js, docs/GOALS/G10 section 23): v2 writes the pedal marks of its skeleton in the skeleton's ticks (a compound skeleton's beat is 36 ticks: the marks were written at 24, a third early) and writes a heard pedal only where the heard notes agree with it; legacy and app rows unchanged. v2 cover-pedal pedal F1 up (compound pieces 0.56-0.63 -> ~1), helper-invented pedal: false marks per minute down, F1 up",
+   "sqi_all": 87.064905,
+   "usable_all": 0.3
+  },
+  {
+   "audio_score_sha256": "40880cc8d1af18d5e53fa30d913e4f36e738123b2259950746f34427826cc166",
+   "date": "2026-10-03",
+   "git_sha": "8f3ace0093c4aa99b6b2b2817d573004838c1f55",
+   "reason": "G10a-3 S9 (rec/pedal.js, docs/GOALS/G10 section 23): v2 writes the pedal marks of its skeleton in the skeleton's ticks (a compound skeleton's beat is 36 ticks: the marks were written at 24, a third early) and writes a heard pedal only where the heard notes agree with it; legacy and app rows unchanged. v2 cover-pedal pedal F1 up (compound pieces 0.56-0.63 -> ~1), helper-invented pedal: false marks per minute down, F1 up",
+   "sqi_all": 87.064905,
+   "usable_all": 0.3
+  },
+  {
+   "audio_score_sha256": "40880cc8d1af18d5e53fa30d913e4f36e738123b2259950746f34427826cc166",
+   "date": "2026-10-03",
+   "git_sha": "ea447c564796ba24fffdefcaee4c044a1ee132b8",
+   "reason": "G10a-3 S9 (rec/pedal.js, docs/GOALS/G10 section 23): v2 writes the pedal marks of its skeleton in the skeleton's ticks (a compound skeleton's beat is 36 ticks: the marks were written at 24, a third early) and writes a heard pedal only where the heard notes agree with it; legacy and app rows unchanged. v2 cover-pedal pedal F1 up (compound pieces 0.56-0.63 -> ~1), helper-invented pedal: false marks per minute down, F1 up",
+   "sqi_all": 87.064905,
+   "usable_all": 0.3
+  },
+  {
+   "audio_score_sha256": "40880cc8d1af18d5e53fa30d913e4f36e738123b2259950746f34427826cc166",
+   "date": "2026-10-03",
+   "git_sha": "1797ec998ffd18a005fd8e2f8323c47968752e4d",
+   "reason": "G10a-3 S9 (rec/pedal.js, docs/GOALS/G10 section 23): v2 writes the pedal marks of its skeleton in the skeleton's ticks (a compound skeleton's beat is 36 ticks: the marks were written at 24, a third early) and writes a heard pedal only where the heard notes agree with it; legacy and app rows unchanged. v2 cover-pedal pedal F1 up (compound pieces 0.56-0.63 -> ~1), helper-invented pedal: false marks per minute down, F1 up",
+   "sqi_all": 87.064905,
+   "usable_all": 0.3
+  },
+  {
+   "audio_score_sha256": "c35f2514ce611682ea9ad8ab84f2b3a92b6e2d64f33fe9a0d57100d3b3dda08d",
+   "date": "2026-10-03",
+   "git_sha": "8cdfca7c4b0014fd5c58938450d3dfc1b035858c",
+   "reason": "G10a-3 lane B, S8 + S9 together (rec/key.js, rec/pedal.js; docs/GOALS/G10 sections 22 and 23): v2's key signature, spelling, accidentals (critical.key up, critical.accidentals fixed: a tied-over head no longer counts as in force) and pedal marks (the skeleton's tick unit in compound time, a heard pedal written only where the heard notes agree with it); legacy and app rows unchanged; notation.pedal.f1 and notation.pedal.false_per_min join the recording suites' gate",
+   "sqi_all": 87.064905,
+   "usable_all": 0.3
   }
  ],
  "known_failures": {
@@ -3547,10 +3587,10 @@
  },
  "lock_sha256": "7f0457b78645bacc73e27746f3501ff5d9933d669317389b6c07bf9b9dedab3b",
  "recorded": {
-  "audio_score_sha256": "026597c651a913660ff6ec6142d3f0c54be8125c831c929ceddf9a669c3c8c23",
+  "audio_score_sha256": "c35f2514ce611682ea9ad8ab84f2b3a92b6e2d64f33fe9a0d57100d3b3dda08d",
   "date": "2026-10-03",
   "git_dirty": true,
-  "git_sha": "25e656711808b0bacaee43f366fdce03b3f2c36a",
+  "git_sha": "8cdfca7c4b0014fd5c58938450d3dfc1b035858c",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"

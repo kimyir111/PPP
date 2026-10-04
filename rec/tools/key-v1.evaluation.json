@@ -1,0 +1,50 @@
+{
+ "schema": "ppp.rec-key-eval/1",
+ "stage": "S8",
+ "version": "key/1",
+ "weights": {
+  "FIT": 4,
+  "PRIOR": 0.08,
+  "FIRST": 0.25,
+  "LAST": 0.1,
+  "LAST_IN": 0.1,
+  "LAST_SPAN": 0,
+  "WINDOW": 8,
+  "HOP": 4,
+  "MIN": 4,
+  "CHANGE": 1.5,
+  "FIFTH": 0.5,
+  "SIG_MIN_BARS": 8,
+  "SIG_MIN_FIFTHS": 2,
+  "SIG_SAVE": 8,
+  "SIG_SAVE_SHARE": 0.06
+ },
+ "sets": {
+  "tuning": {
+   "references": 259,
+   "notes": 67199,
+   "keyExactLegacy": 0.888,
+   "keyExactV2": 0.9228,
+   "spellingLegacy": 0.9966,
+   "spellingV2": 0.9966,
+   "spellingV2NoRegions": 0.9967,
+   "withRegions": 9,
+   "signatureChangesWritten": 1,
+   "signatureChangesTrue": 1,
+   "signatureChangesSpurious": 0
+  },
+  "holdout": {
+   "references": 52,
+   "notes": 12619,
+   "keyExactLegacy": 0.9038,
+   "keyExactV2": 0.9423,
+   "spellingLegacy": 0.9958,
+   "spellingV2": 0.9958,
+   "spellingV2NoRegions": 0.9957,
+   "withRegions": 0,
+   "signatureChangesWritten": 0,
+   "signatureChangesTrue": 0,
+   "signatureChangesSpurious": 0
+  }
+ }
+}
